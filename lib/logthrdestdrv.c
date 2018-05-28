@@ -30,7 +30,7 @@
 #define MAX_RETRIES_OF_FAILED_INSERT_DEFAULT 3
 
 static gchar *
-log_threaded_dest_driver_format_seqnum_for_persist(LogThrDestDriver *self)
+_format_seqnum_persist_name(LogThrDestDriver *self)
 {
   static gchar persist_name[256];
 
@@ -41,7 +41,7 @@ log_threaded_dest_driver_format_seqnum_for_persist(LogThrDestDriver *self)
 }
 
 static void
-log_threaded_dest_driver_suspend(LogThrDestDriver *self)
+_suspend(LogThrDestDriver *self)
 {
   iv_validate_now();
   self->timer_reopen.expires  = iv_now;
@@ -50,7 +50,7 @@ log_threaded_dest_driver_suspend(LogThrDestDriver *self)
 }
 
 static void
-log_threaded_dest_driver_message_became_available_in_the_queue(gpointer user_data)
+_message_became_available_callback(gpointer user_data)
 {
   LogThrDestDriver *self = (LogThrDestDriver *) user_data;
   if (!self->under_termination)
@@ -58,7 +58,7 @@ log_threaded_dest_driver_message_became_available_in_the_queue(gpointer user_dat
 }
 
 static void
-log_threaded_dest_driver_wake_up(gpointer data)
+_wakeup_event_callback(gpointer data)
 {
   LogThrDestDriver *self = (LogThrDestDriver *)data;
 
@@ -69,13 +69,13 @@ log_threaded_dest_driver_wake_up(gpointer data)
 }
 
 static void
-log_threaded_dest_driver_start_watches(LogThrDestDriver *self)
+_start_watches(LogThrDestDriver *self)
 {
   iv_task_register(&self->do_work);
 }
 
 static void
-log_threaded_dest_driver_stop_watches(LogThrDestDriver *self)
+_stop_watches(LogThrDestDriver *self)
 {
   if (iv_task_registered(&self->do_work))
     {
@@ -92,16 +92,16 @@ log_threaded_dest_driver_stop_watches(LogThrDestDriver *self)
 }
 
 static void
-log_threaded_dest_driver_shutdown(gpointer data)
+_shutdown_event_callback(gpointer data)
 {
   LogThrDestDriver *self = (LogThrDestDriver *)data;
-  log_threaded_dest_driver_stop_watches(self);
+  _stop_watches(self);
   iv_quit();
 }
 
 
 static void
-__connect(LogThrDestDriver *self)
+_connect(LogThrDestDriver *self)
 {
   self->worker.connected = TRUE;
   if (self->worker.connect)
@@ -112,16 +112,16 @@ __connect(LogThrDestDriver *self)
   if (!self->worker.connected)
     {
       log_queue_reset_parallel_push(self->queue);
-      log_threaded_dest_driver_suspend(self);
+      _suspend(self);
     }
   else
     {
-      log_threaded_dest_driver_start_watches(self);
+      _start_watches(self);
     }
 }
 
 static void
-__disconnect(LogThrDestDriver *self)
+_disconnect(LogThrDestDriver *self)
 {
   if (self->worker.disconnect)
     {
@@ -130,19 +130,17 @@ __disconnect(LogThrDestDriver *self)
   self->worker.connected = FALSE;
 }
 
-
-
 static void
 _disconnect_and_suspend(LogThrDestDriver *self)
 {
   self->suspended = TRUE;
-  __disconnect(self);
+  _disconnect(self);
   log_queue_reset_parallel_push(self->queue);
-  log_threaded_dest_driver_suspend(self);
+  _suspend(self);
 }
 
 static void
-log_threaded_dest_driver_do_insert(LogThrDestDriver *self)
+_perform_inserts(LogThrDestDriver *self)
 {
   LogMessage *msg;
   worker_insert_result_t result;
@@ -222,27 +220,27 @@ log_threaded_dest_driver_do_insert(LogThrDestDriver *self)
 }
 
 static void
-log_threaded_dest_driver_do_work(gpointer data)
+_perform_work(gpointer data)
 {
   LogThrDestDriver *self = (LogThrDestDriver *)data;
   gint timeout_msec = 0;
 
   self->suspended = FALSE;
   main_loop_worker_run_gc();
-  log_threaded_dest_driver_stop_watches(self);
+  _stop_watches(self);
 
   if (!self->worker.connected)
     {
-      __connect(self);
+      _connect(self);
     }
 
   else if (log_queue_check_items(self->queue, &timeout_msec,
-                                 log_threaded_dest_driver_message_became_available_in_the_queue,
+                                 _message_became_available_callback,
                                  self, NULL))
     {
-      log_threaded_dest_driver_do_insert(self);
+      _perform_inserts(self);
       if (!self->suspended)
-        log_threaded_dest_driver_start_watches(self);
+        _start_watches(self);
     }
   else if (timeout_msec != 0)
     {
@@ -255,33 +253,33 @@ log_threaded_dest_driver_do_work(gpointer data)
 }
 
 static void
-log_threaded_dest_driver_init_watches(LogThrDestDriver *self)
+_init_watches(LogThrDestDriver *self)
 {
   IV_EVENT_INIT(&self->wake_up_event);
   self->wake_up_event.cookie = self;
-  self->wake_up_event.handler = log_threaded_dest_driver_wake_up;
+  self->wake_up_event.handler = _wakeup_event_callback;
   iv_event_register(&self->wake_up_event);
 
   IV_EVENT_INIT(&self->shutdown_event);
   self->shutdown_event.cookie = self;
-  self->shutdown_event.handler = log_threaded_dest_driver_shutdown;
+  self->shutdown_event.handler = _shutdown_event_callback;
   iv_event_register(&self->shutdown_event);
 
   IV_TIMER_INIT(&self->timer_reopen);
   self->timer_reopen.cookie = self;
-  self->timer_reopen.handler = log_threaded_dest_driver_do_work;
+  self->timer_reopen.handler = _perform_work;
 
   IV_TIMER_INIT(&self->timer_throttle);
   self->timer_throttle.cookie = self;
-  self->timer_throttle.handler = log_threaded_dest_driver_do_work;
+  self->timer_throttle.handler = _perform_work;
 
   IV_TASK_INIT(&self->do_work);
   self->do_work.cookie = self;
-  self->do_work.handler = log_threaded_dest_driver_do_work;
+  self->do_work.handler = _perform_work;
 }
 
 static void
-log_threaded_dest_driver_worker_thread_main(gpointer arg)
+_worker_thread(gpointer arg)
 {
   LogThrDestDriver *self = (LogThrDestDriver *)arg;
 
@@ -292,16 +290,16 @@ log_threaded_dest_driver_worker_thread_main(gpointer arg)
 
   log_queue_set_use_backlog(self->queue, TRUE);
 
-  log_threaded_dest_driver_init_watches(self);
+  _init_watches(self);
 
-  log_threaded_dest_driver_start_watches(self);
+  _start_watches(self);
 
   if (self->worker.thread_init)
     self->worker.thread_init(self);
 
   iv_main();
 
-  __disconnect(self);
+  _disconnect(self);
   if (self->worker.thread_deinit)
     self->worker.thread_deinit(self);
 
@@ -311,7 +309,7 @@ log_threaded_dest_driver_worker_thread_main(gpointer arg)
 }
 
 static void
-log_threaded_dest_driver_stop_thread(gpointer s)
+_request_worker_exit(gpointer s)
 {
   LogThrDestDriver *self = (LogThrDestDriver *) s;
   self->under_termination = TRUE;
@@ -319,10 +317,10 @@ log_threaded_dest_driver_stop_thread(gpointer s)
 }
 
 static void
-log_threaded_dest_driver_start_thread(LogThrDestDriver *self)
+_start_worker_thread(LogThrDestDriver *self)
 {
-  main_loop_create_worker_thread(log_threaded_dest_driver_worker_thread_main,
-                                 log_threaded_dest_driver_stop_thread,
+  main_loop_create_worker_thread(_worker_thread,
+                                 _request_worker_exit,
                                  self, &self->worker_options);
 }
 
@@ -370,11 +368,11 @@ log_threaded_dest_driver_start(LogPipe *s)
   _update_memory_usage_counter_when_fifo_is_used(self);
 
   self->seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg,
-                                                           log_threaded_dest_driver_format_seqnum_for_persist(self)));
+                                                           _format_seqnum_persist_name(self)));
   if (!self->seq_num)
     init_sequence_number(&self->seq_num);
 
-  log_threaded_dest_driver_start_thread(self);
+  _start_worker_thread(self);
 
   return TRUE;
 }
@@ -389,7 +387,7 @@ log_threaded_dest_driver_deinit_method(LogPipe *s)
   log_queue_set_counters(self->queue, NULL, NULL, NULL);
 
   cfg_persist_config_add(log_pipe_get_config(s),
-                         log_threaded_dest_driver_format_seqnum_for_persist(self),
+                         _format_seqnum_persist_name(self),
                          GINT_TO_POINTER(self->seq_num), NULL, FALSE);
 
   save_counter_to_persistent_storage(log_pipe_get_config(s), self->memory_usage);
