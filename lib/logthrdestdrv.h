@@ -45,6 +45,7 @@ typedef enum
 typedef struct _LogThreadedDestDriver LogThreadedDestDriver;
 typedef struct _LogThreadedDestWorker
 {
+  LogQueue *queue;
   gboolean connected;
   void (*thread_init)(LogThreadedDestDriver *s);
   void (*thread_deinit)(LogThreadedDestDriver *s);
@@ -68,7 +69,6 @@ struct _LogThreadedDestDriver
   gboolean under_termination;
   time_t time_reopen;
 
-  LogQueue *queue;
 
   LogThreadedDestWorker worker;
 
