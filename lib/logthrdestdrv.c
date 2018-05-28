@@ -29,6 +29,14 @@
 
 #define MAX_RETRIES_OF_FAILED_INSERT_DEFAULT 3
 
+void
+log_threaded_dest_driver_set_max_retries(LogDriver *s, gint max_retries)
+{
+  LogThrDestDriver *self = (LogThrDestDriver *)s;
+
+  self->retries.max = max_retries;
+}
+
 static gchar *
 _format_seqnum_persist_name(LogThrDestDriver *self)
 {
@@ -38,34 +46,6 @@ _format_seqnum_persist_name(LogThrDestDriver *self)
              self->super.super.super.generate_persist_name((const LogPipe *)self));
 
   return persist_name;
-}
-
-static void
-_suspend(LogThrDestDriver *self)
-{
-  iv_validate_now();
-  self->timer_reopen.expires  = iv_now;
-  self->timer_reopen.expires.tv_sec += self->time_reopen;
-  iv_timer_register(&self->timer_reopen);
-}
-
-static void
-_message_became_available_callback(gpointer user_data)
-{
-  LogThrDestDriver *self = (LogThrDestDriver *) user_data;
-  if (!self->under_termination)
-    iv_event_post(&self->wake_up_event);
-}
-
-static void
-_wakeup_event_callback(gpointer data)
-{
-  LogThrDestDriver *self = (LogThrDestDriver *)data;
-
-  if (!iv_task_registered(&self->do_work))
-    {
-      iv_task_register(&self->do_work);
-    }
 }
 
 static void
@@ -92,13 +72,34 @@ _stop_watches(LogThrDestDriver *self)
 }
 
 static void
+_wakeup_event_callback(gpointer data)
+{
+  LogThrDestDriver *self = (LogThrDestDriver *)data;
+
+  if (!iv_task_registered(&self->do_work))
+    {
+      iv_task_register(&self->do_work);
+    }
+}
+
+static void
 _shutdown_event_callback(gpointer data)
 {
   LogThrDestDriver *self = (LogThrDestDriver *)data;
+
   _stop_watches(self);
   iv_quit();
 }
 
+
+static void
+_suspend(LogThrDestDriver *self)
+{
+  iv_validate_now();
+  self->timer_reopen.expires  = iv_now;
+  self->timer_reopen.expires.tv_sec += self->time_reopen;
+  iv_timer_register(&self->timer_reopen);
+}
 
 static void
 _connect(LogThrDestDriver *self)
@@ -220,6 +221,14 @@ _perform_inserts(LogThrDestDriver *self)
 }
 
 static void
+_message_became_available_callback(gpointer user_data)
+{
+  LogThrDestDriver *self = (LogThrDestDriver *) user_data;
+  if (!self->under_termination)
+    iv_event_post(&self->wake_up_event);
+}
+
+static void
 _perform_work(gpointer data)
 {
   LogThrDestDriver *self = (LogThrDestDriver *)data;
@@ -312,6 +321,7 @@ static void
 _request_worker_exit(gpointer s)
 {
   LogThrDestDriver *self = (LogThrDestDriver *) s;
+
   self->under_termination = TRUE;
   iv_event_post(&self->shutdown_event);
 }
@@ -322,6 +332,24 @@ _start_worker_thread(LogThrDestDriver *self)
   main_loop_create_worker_thread(_worker_thread,
                                  _request_worker_exit,
                                  self, &self->worker_options);
+}
+
+static void
+log_threaded_dest_driver_queue(LogPipe *s, LogMessage *msg,
+                               const LogPathOptions *path_options)
+{
+  LogThrDestDriver *self = (LogThrDestDriver *)s;
+  LogPathOptions local_options;
+
+  if (!path_options->flow_control_requested)
+    path_options = log_msg_break_ack(msg, path_options, &local_options);
+
+  log_msg_add_ack(msg, path_options);
+  log_queue_push_tail(self->queue, log_msg_ref(msg), path_options);
+
+  stats_counter_inc(self->processed_messages);
+
+  log_dest_driver_queue_method(s, msg, path_options);
 }
 
 static void
@@ -410,30 +438,13 @@ log_threaded_dest_driver_deinit_method(LogPipe *s)
   return TRUE;
 }
 
+
 void
 log_threaded_dest_driver_free(LogPipe *s)
 {
   LogThrDestDriver *self = (LogThrDestDriver *)s;
 
   log_dest_driver_free((LogPipe *)self);
-}
-
-static void
-log_threaded_dest_driver_queue(LogPipe *s, LogMessage *msg,
-                               const LogPathOptions *path_options)
-{
-  LogThrDestDriver *self = (LogThrDestDriver *)s;
-  LogPathOptions local_options;
-
-  if (!path_options->flow_control_requested)
-    path_options = log_msg_break_ack(msg, path_options, &local_options);
-
-  log_msg_add_ack(msg, path_options);
-  log_queue_push_tail(self->queue, log_msg_ref(msg), path_options);
-
-  stats_counter_inc(self->processed_messages);
-
-  log_dest_driver_queue_method(s, msg, path_options);
 }
 
 void
@@ -476,12 +487,4 @@ log_threaded_dest_driver_message_rewind(LogThrDestDriver *self,
 {
   log_queue_rewind_backlog(self->queue, 1);
   log_msg_unref(msg);
-}
-
-void
-log_threaded_dest_driver_set_max_retries(LogDriver *s, gint max_retries)
-{
-  LogThrDestDriver *self = (LogThrDestDriver *)s;
-
-  self->retries.max = max_retries;
 }
