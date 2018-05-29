@@ -196,6 +196,7 @@ typedef struct _LogProtoClientFactory LogProtoClientFactory;
 struct _LogProtoClientFactory
 {
   LogProtoClient *(*construct)(LogTransport *transport, const LogProtoClientOptions *options);
+  gint default_inet_port;
 };
 
 static inline LogProtoClient *

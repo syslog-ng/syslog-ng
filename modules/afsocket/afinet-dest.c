@@ -215,6 +215,9 @@ afinet_dd_setup_addresses(AFSocketDestDriver *s)
   if (!afsocket_dd_setup_addresses_method(s))
     return FALSE;
 
+  if (self->super.proto_factory->default_inet_port)
+    transport_mapper_inet_set_server_port(self->super.transport_mapper, self->super.proto_factory->default_inet_port);
+
   g_sockaddr_unref(self->super.bind_addr);
   g_sockaddr_unref(self->super.dest_addr);
 

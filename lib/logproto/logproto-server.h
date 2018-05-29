@@ -220,6 +220,7 @@ typedef struct _LogProtoServerFactory LogProtoServerFactory;
 struct _LogProtoServerFactory
 {
   LogProtoServer *(*construct)(LogTransport *transport, const LogProtoServerOptions *options);
+  gint default_inet_port;
 };
 
 static inline LogProtoServer *
