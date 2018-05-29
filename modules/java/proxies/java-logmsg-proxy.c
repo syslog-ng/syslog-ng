@@ -76,8 +76,7 @@ Java_org_syslog_1ng_LogMessage_getValue(JNIEnv *env, jobject obj, jlong handle, 
 static gboolean
 __load_object(JavaLogMessageProxy *self)
 {
-  JNIEnv *java_env = NULL;
-  java_env = java_machine_get_env(self->java_machine, &java_env);
+  JNIEnv *java_env = java_machine_get_env(self->java_machine);
   self->loaded_class = java_machine_load_class(self->java_machine, LOG_MESSAGE, NULL);
   if (!self->loaded_class)
     {
@@ -100,7 +99,7 @@ __load_object(JavaLogMessageProxy *self)
 jobject
 java_log_message_proxy_create_java_object(JavaLogMessageProxy *self, LogMessage *msg)
 {
-  JNIEnv *java_env = java_machine_get_env(self->java_machine, &java_env);
+  JNIEnv *java_env = java_machine_get_env(self->java_machine);
   jobject jmsg = CALL_JAVA_FUNCTION(java_env, NewObject, self->loaded_class, self->mi_constructor, log_msg_ref(msg));
   if (!jmsg)
     {
@@ -113,8 +112,7 @@ java_log_message_proxy_create_java_object(JavaLogMessageProxy *self, LogMessage 
 void
 java_log_message_proxy_free(JavaLogMessageProxy *self)
 {
-  JNIEnv *env = NULL;
-  env = java_machine_get_env(self->java_machine, &env);
+  JNIEnv *env = java_machine_get_env(self->java_machine);
 
   if (self->loaded_class)
     {

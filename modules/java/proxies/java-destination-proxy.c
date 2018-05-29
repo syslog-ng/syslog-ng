@@ -60,8 +60,7 @@ struct _JavaDestinationProxy
 static gboolean
 __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, const gchar *class_path, gpointer handle)
 {
-  JNIEnv *java_env = NULL;
-  java_env = java_machine_get_env(self->java_machine, &java_env);
+  JNIEnv *java_env = java_machine_get_env(self->java_machine);
   self->loaded_class = java_machine_load_class(self->java_machine, class_name, class_path);
   if (!self->loaded_class)
     {
@@ -170,8 +169,7 @@ __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, c
 void
 java_destination_proxy_free(JavaDestinationProxy *self)
 {
-  JNIEnv *env = NULL;
-  env = java_machine_get_env(self->java_machine, &env);
+  JNIEnv *env = java_machine_get_env(self->java_machine);
   if (self->dest_impl.dest_object)
     {
       CALL_JAVA_FUNCTION(env, DeleteLocalRef, self->dest_impl.dest_object);
@@ -251,7 +249,7 @@ __queue_formatted_message(JavaDestinationProxy *self, JNIEnv *env, LogMessage *m
 gboolean
 java_destination_proxy_send(JavaDestinationProxy *self, LogMessage *msg)
 {
-  JNIEnv *env = java_machine_get_env(self->java_machine, &env);
+  JNIEnv *env = java_machine_get_env(self->java_machine);
   if (self->dest_impl.mi_send_msg != 0)
     {
       return __queue_native_message(self, env, msg);
@@ -265,8 +263,6 @@ java_destination_proxy_send(JavaDestinationProxy *self, LogMessage *msg)
 gchar *
 java_destination_proxy_get_name_by_uniq_options(JavaDestinationProxy *self)
 {
-  JNIEnv *env = java_machine_get_env(self->java_machine, &env);
-
   return self->name_by_uniq_options;
 }
 
@@ -289,7 +285,7 @@ exit:
 static gchar *
 __get_name_by_uniq_options(JavaDestinationProxy *self)
 {
-  JNIEnv *env = java_machine_get_env(self->java_machine, &env);
+  JNIEnv *env = java_machine_get_env(self->java_machine);
   jstring java_string;
 
   java_string = (jstring) CALL_JAVA_FUNCTION(env, CallObjectMethod, self->dest_impl.dest_object,
@@ -307,7 +303,7 @@ gboolean
 java_destination_proxy_init(JavaDestinationProxy *self)
 {
   jboolean result;
-  JNIEnv *env = java_machine_get_env(self->java_machine, &env);
+  JNIEnv *env = java_machine_get_env(self->java_machine);
 
   result = CALL_JAVA_FUNCTION(env, CallBooleanMethod, self->dest_impl.dest_object, self->dest_impl.mi_init);
 
@@ -327,7 +323,7 @@ java_destination_proxy_init(JavaDestinationProxy *self)
 void
 java_destination_proxy_deinit(JavaDestinationProxy *self)
 {
-  JNIEnv *env = java_machine_get_env(self->java_machine, &env);
+  JNIEnv *env = java_machine_get_env(self->java_machine);
 
   CALL_JAVA_FUNCTION(env, CallVoidMethod, self->dest_impl.dest_object, self->dest_impl.mi_deinit);
 }
@@ -335,7 +331,7 @@ java_destination_proxy_deinit(JavaDestinationProxy *self)
 void
 java_destination_proxy_on_message_queue_empty(JavaDestinationProxy *self)
 {
-  JNIEnv *env = java_machine_get_env(self->java_machine, &env);
+  JNIEnv *env = java_machine_get_env(self->java_machine);
 
   CALL_JAVA_FUNCTION(env, CallVoidMethod, self->dest_impl.dest_object, self->dest_impl.mi_on_message_queue_empty);
 
@@ -344,7 +340,7 @@ java_destination_proxy_on_message_queue_empty(JavaDestinationProxy *self)
 gboolean
 java_destination_proxy_open(JavaDestinationProxy *self)
 {
-  JNIEnv *env = java_machine_get_env(self->java_machine, &env);
+  JNIEnv *env = java_machine_get_env(self->java_machine);
 
   jboolean res = CALL_JAVA_FUNCTION(env, CallBooleanMethod, self->dest_impl.dest_object, self->dest_impl.mi_open);
 
@@ -354,7 +350,7 @@ java_destination_proxy_open(JavaDestinationProxy *self)
 gboolean
 java_destination_proxy_is_opened(JavaDestinationProxy *self)
 {
-  JNIEnv *env = java_machine_get_env(self->java_machine, &env);
+  JNIEnv *env = java_machine_get_env(self->java_machine);
 
   jboolean res = CALL_JAVA_FUNCTION(env, CallBooleanMethod, self->dest_impl.dest_object, self->dest_impl.mi_is_opened);
 
@@ -364,7 +360,7 @@ java_destination_proxy_is_opened(JavaDestinationProxy *self)
 void
 java_destination_proxy_close(JavaDestinationProxy *self)
 {
-  JNIEnv *env = java_machine_get_env(self->java_machine, &env);
+  JNIEnv *env = java_machine_get_env(self->java_machine);
 
   CALL_JAVA_FUNCTION(env, CallBooleanMethod, self->dest_impl.dest_object, self->dest_impl.mi_close);
 

@@ -72,8 +72,7 @@ __jvm_free(JavaVMSingleton *self)
       JavaVM jvm = *(self->jvm);
       if (self->loader)
         {
-          JNIEnv *env;
-          class_loader_free(self->loader, java_machine_get_env(self, &env));
+          class_loader_free(self->loader, java_machine_get_env(self));
         }
       jvm->DestroyJavaVM(self->jvm);
 
@@ -219,17 +218,17 @@ java_machine_detach_thread(void)
 jclass
 java_machine_load_class(JavaVMSingleton *self, const gchar *class_name, const gchar *class_path)
 {
-  JNIEnv *env;
-  return class_loader_load_class(java_machine_get_class_loader(self), java_machine_get_env(self, &env), class_name,
+  return class_loader_load_class(java_machine_get_class_loader(self), java_machine_get_env(self), class_name,
                                  class_path);
 }
 
 JNIEnv *
-java_machine_get_env(JavaVMSingleton *self, JNIEnv **penv)
+java_machine_get_env(JavaVMSingleton *self)
 {
-  if ((*(self->jvm))->GetEnv(self->jvm, (void **)penv, JNI_VERSION_1_6) != JNI_OK)
+  JNIEnv *penv = NULL;
+  if ((*(self->jvm))->GetEnv(self->jvm, (void **)&penv, JNI_VERSION_1_6) != JNI_OK)
     {
-      java_machine_attach_thread(self, penv);
+      java_machine_attach_thread(self, &penv);
     }
-  return *penv;
+  return penv;
 }
