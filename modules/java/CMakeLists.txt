@@ -79,7 +79,7 @@ if ("${Java_VERSION}" VERSION_LESS 1.8)
   endif()
 
   create_javah(GENERATED_FILES BUILT_HEADERS
-        CLASSES    org.syslog_ng.LogMessage org.syslog_ng.InternalMessageSender org.syslog_ng.LogDestination org.syslog_ng.LogTemplate
+        CLASSES    org.syslog_ng.LogMessage org.syslog_ng.InternalMessageSender org.syslog_ng.LogDestination org.syslog_ng.LogTemplate org.syslog_ng.LogPipe
         CLASSPATH ${SYSLOG_NG_CLASSPATH}
         OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}
         DEPENDS syslog-ng-core
