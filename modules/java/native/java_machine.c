@@ -44,6 +44,19 @@ struct _JavaVMSingleton
 
 static JavaVMSingleton *g_jvm_s;
 
+static JavaVMSingleton *
+_jvm_new(void)
+{
+  msg_debug("Java machine new");
+  JavaVMSingleton *jvm = g_new0(JavaVMSingleton, 1);
+  g_atomic_counter_set(&jvm->ref_cnt, 1);
+
+  jvm->class_path = g_string_new(get_installation_path_for(SYSLOG_NG_JAVA_MODULE_PATH));
+  g_string_append(jvm->class_path, "/syslog-ng-core.jar");
+
+  return jvm;
+}
+
 JavaVMSingleton *
 java_machine_ref(void)
 {
@@ -53,17 +66,13 @@ java_machine_ref(void)
     }
   else
     {
-      g_jvm_s = g_new0(JavaVMSingleton, 1);
-      g_atomic_counter_set(&g_jvm_s->ref_cnt, 1);
-
-      g_jvm_s->class_path = g_string_new(get_installation_path_for(SYSLOG_NG_JAVA_MODULE_PATH));
-      g_string_append(g_jvm_s->class_path, "/syslog-ng-core.jar");
+      g_jvm_s = _jvm_new();
     }
   return g_jvm_s;
 }
 
 static inline void
-__jvm_free(JavaVMSingleton *self)
+_jvm_free(JavaVMSingleton *self)
 {
   msg_debug("Java machine free");
   g_string_free(self->class_path, TRUE);
@@ -78,7 +87,6 @@ __jvm_free(JavaVMSingleton *self)
 
     }
   g_free(self);
-  g_jvm_s = NULL;
 }
 
 void
@@ -87,7 +95,8 @@ java_machine_unref(JavaVMSingleton *self)
   g_assert(self == g_jvm_s);
   if (g_atomic_counter_dec_and_test(&self->ref_cnt))
     {
-      __jvm_free(self);
+      _jvm_free(self);
+      g_jvm_s = NULL;
     }
 }
 
