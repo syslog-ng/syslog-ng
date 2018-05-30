@@ -129,7 +129,7 @@ if test "x$exec_prefix" = "xNONE"; then
 fi
 pidfiledir='${localstatedir}'
 moduledir='${exec_prefix}/lib/syslog-ng'
-loggenplugindir='${exec_prefix}/lib/syslog-ng/loggen'
+loggenplugindir='${moduledir}/loggen'
 toolsdir='${datadir}/syslog-ng/tools'
 xsddir='${datadir}/syslog-ng/xsd'
 
