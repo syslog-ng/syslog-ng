@@ -34,7 +34,7 @@
 #include <errno.h>
 #include <unistd.h>
 
-static void
+static void G_GNUC_UNUSED
 _add_nv_pair_int(LogTransportAuxData *aux, const gchar *name, gint value)
 {
   ScratchBuffersMarker marker;
@@ -100,7 +100,7 @@ _read_text_file_content_without_trailing_newline(const gchar *filename, gchar *b
 }
 
 
-static void
+static void G_GNUC_UNUSED
 _add_nv_pair_proc_read_unless_unset(LogTransportAuxData *aux, const gchar *name, pid_t pid, const gchar *proc_file,
                                     const gchar *unset_value)
 {
@@ -114,7 +114,7 @@ _add_nv_pair_proc_read_unless_unset(LogTransportAuxData *aux, const gchar *name,
     log_transport_aux_data_add_nv_pair(aux, name, content);
 }
 
-static void
+static void G_GNUC_UNUSED
 _add_nv_pair_proc_read_argv(LogTransportAuxData *aux, const gchar *name, pid_t pid, const gchar *proc_file)
 {
   gchar filename[64];
@@ -134,7 +134,7 @@ _add_nv_pair_proc_read_argv(LogTransportAuxData *aux, const gchar *name, pid_t p
     log_transport_aux_data_add_nv_pair(aux, name, content);
 }
 
-static void
+static void G_GNUC_UNUSED
 _add_nv_pair_proc_readlink(LogTransportAuxData *aux, const gchar *name, pid_t pid, const gchar *proc_file)
 {
   gchar filename[64];
