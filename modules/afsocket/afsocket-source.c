@@ -212,8 +212,6 @@ afsocket_sd_kill_connection(AFSocketSourceConnection *connection)
 {
   log_pipe_deinit(&connection->super);
 
-  log_reader_close_transport(connection->reader);
-
   /* Remove the circular reference between the connection and its
    * reader (through the connection->reader and reader->control
    * pointers these have a circular references).

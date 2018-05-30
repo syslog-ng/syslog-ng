@@ -632,13 +632,6 @@ log_reader_idle_timeout(void *cookie)
 }
 
 void
-log_reader_close_transport(LogReader *self)
-{
-  if (self->proto)
-    log_proto_server_close_transport(self->proto);
-}
-
-void
 log_reader_set_peer_addr(LogReader *s, GSockAddr *peer_addr)
 {
   LogReader *self = (LogReader *) s;
