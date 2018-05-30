@@ -42,7 +42,7 @@ struct _JavaVMSingleton
   ClassLoader *loader;
 };
 
-static JavaVMSingleton *g_jvm_s;
+static JavaVMSingleton *global_jvm;
 
 static JavaVMSingleton *
 _jvm_new(void)
@@ -60,15 +60,15 @@ _jvm_new(void)
 JavaVMSingleton *
 java_machine_ref(void)
 {
-  if (g_jvm_s)
+  if (global_jvm)
     {
-      g_atomic_counter_inc(&g_jvm_s->ref_cnt);
+      g_atomic_counter_inc(&global_jvm->ref_cnt);
     }
   else
     {
-      g_jvm_s = _jvm_new();
+      global_jvm = _jvm_new();
     }
-  return g_jvm_s;
+  return global_jvm;
 }
 
 static inline void
@@ -92,11 +92,11 @@ _jvm_free(JavaVMSingleton *self)
 void
 java_machine_unref(JavaVMSingleton *self)
 {
-  g_assert(self == g_jvm_s);
+  g_assert(self == global_jvm);
   if (g_atomic_counter_dec_and_test(&self->ref_cnt))
     {
       _jvm_free(self);
-      g_jvm_s = NULL;
+      global_jvm = NULL;
     }
 }
 
@@ -179,7 +179,7 @@ _setup_jvm_options_array(JavaVMSingleton *self, const gchar *jvm_options_str)
 gboolean
 java_machine_start(JavaVMSingleton *self, const gchar *jvm_options)
 {
-  g_assert(self == g_jvm_s);
+  g_assert(self == global_jvm);
   if (!self->jvm)
     {
       long status;
@@ -210,7 +210,7 @@ java_machine_get_class_loader(JavaVMSingleton *self)
 void
 java_machine_attach_thread(JavaVMSingleton *self, JNIEnv **penv)
 {
-  g_assert(self == g_jvm_s);
+  g_assert(self == global_jvm);
   if ((*(self->jvm))->AttachCurrentThread(self->jvm, (void **)penv, &self->vm_args) == JNI_OK)
     {
       class_loader_init_current_thread(java_machine_get_class_loader(self), *penv);
@@ -220,7 +220,7 @@ java_machine_attach_thread(JavaVMSingleton *self, JNIEnv **penv)
 void
 java_machine_detach_thread(void)
 {
-  (*(g_jvm_s->jvm))->DetachCurrentThread(g_jvm_s->jvm);
+  (*(global_jvm->jvm))->DetachCurrentThread(global_jvm->jvm);
 }
 
 
