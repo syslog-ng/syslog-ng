@@ -197,6 +197,20 @@ if (CRITERION_FOUND)
   include(CTest)
 endif()
 
+
+# Default warnings
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wshadow -fcommon")
+
+# Acceptable warnings
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-stack-protector -Wno-unused-parameter -Wno-variadic-macros")
+
+# Enable Extra Warnings
+option(ENABLE_WARNINGS "Enable Extra warnings" ON)
+if (ENABLE_WARNINGS)
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wimplicit-function-declaration -Wnested-externs -Wold-style-declaration -Wstrict-prototypes -Wswitch-default -Wall -Wmissing-parameter-type -Wuninitialized -Wunused-but-set-parameter -Wcast-align -Wdeprecated -Wdeprecated-declarations -Woverflow -Wdouble-promotion -Wfloat-equal")
+endif()
+
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/syslog-ng-config.h.in ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-config.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
