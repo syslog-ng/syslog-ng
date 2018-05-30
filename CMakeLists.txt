@@ -86,6 +86,7 @@ endif()
 
 include(CheckCreds)
 set(SYSLOG_NG_HAVE_STRUCT_UCRED (HAVE_STRUCT_UCRED OR HAVE_STRUCT_CMSGCRED))
+check_struct_member ("struct msghdr" "msg_control" "sys/types.h;sys/socket.h" SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR)
 
 include(CheckIPv6)
 
