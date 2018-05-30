@@ -193,6 +193,11 @@ enumerate_plugins(const gchar *plugin_path, GPtrArray *plugin_array, GOptionCont
       DEBUG("%s in %s is a loggen plugin\n", plugin->name, fname);
     }
 
+  if (plugin_array->len == 0)
+    {
+      ERROR("no loggen plugin found in %s\n", plugin_path);
+    }
+
   return plugin_array->len;
 }
 
@@ -269,13 +274,32 @@ init_csv_statistics(void)
     }
 }
 
-static void
+static int
 start_plugins(GPtrArray *plugin_array)
 {
   if (!plugin_array)
     {
       ERROR("invalid reference for plugin_array\n");
-      return;
+      return 0;
+    }
+
+  /* check plugins to see how many is activated by command line parameters */
+  int number_of_active_plugins = 0;
+  for (int i=0; i < plugin_array->len; i++)
+    {
+      PluginInfo *plugin = g_ptr_array_index(plugin_array,i);
+      if (!plugin)
+        continue;
+
+      if (plugin->is_plugin_activated())
+        number_of_active_plugins++;
+    }
+
+  if (number_of_active_plugins != 1)
+    {
+      ERROR("%d plugins activated. You should activate exactly one plugin at a time. See \"loggen --help-all\" for available plugin options\n",
+            number_of_active_plugins);
+      return 0;
     }
 
   for (int i=0; i < plugin_array->len; i++)
@@ -284,11 +308,14 @@ start_plugins(GPtrArray *plugin_array)
       if (!plugin)
         continue;
 
-      if (plugin->start_plugin)
-        plugin->start_plugin((gpointer)&global_plugin_option);
+      if (plugin->start_plugin && plugin->is_plugin_activated())
+        {
+          plugin->start_plugin((gpointer)&global_plugin_option);
+          break;
+        }
     }
 
-  DEBUG("all plugin have been started\n");
+  return number_of_active_plugins;
 }
 
 void
@@ -450,11 +477,12 @@ main(int argc, char *argv[])
   init_logline_generator(plugin_array);
   init_csv_statistics();
 
-  start_plugins(plugin_array);
+  if (start_plugins(plugin_array) > 0)
+    {
+      wait_all_plugin_to_finish(plugin_array);
+      stop_plugins(plugin_array);
+    }
 
-  wait_all_plugin_to_finish(plugin_array);
-
-  stop_plugins(plugin_array);
   close_file_reader(global_plugin_option.active_connections);
 
   if (message_counter_lock)
