@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2013 Balabit
+ * Copyright (c) 2002-2018 Balabit
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,70 +20,55 @@
  * COPYING for details.
  *
  */
-#include "testutils.h"
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
 #include "reloc.h"
 
 CacheResolver *path_resolver;
 Cache *path_cache;
 
-static void
-assert_install_path(const gchar *template, const gchar *expected)
+typedef struct _LookupParameter
 {
-  const gchar *expanded_path;
+  const gchar *template;
+  const gchar *expected;
+} LookupParameter;
 
-  expanded_path = cache_lookup(path_cache, template);
-  assert_string(expanded_path, expected, "Expanded install path doesn't match expected value");
+ParameterizedTestParameters(reloc, test_path)
+{
+  static LookupParameter test_data_list[] =
+  {
+    {"/opt/syslog-ng", "/opt/syslog-ng"}, /* absoulte path remains unchanged */
+    {"${prefix}/bin", "/test/bin"}, /* variables are resolved */
+    {"/foo/${prefix}/bar", "/foo//test/bar"}, /* variables are resolved in the middle */
+    {"${foo}/bin", "/foo/bin"}, /* variables are resolved recursively */
+    {"${bar}/bin", "/foo/bin"} /* variables are resolved recursively */
+  };
+
+  return cr_make_param_array(LookupParameter, test_data_list, sizeof(test_data_list) / sizeof(test_data_list[0]));
+}
+
+ParameterizedTest(LookupParameter *test_data, reloc, test_path)
+{
+  const gchar *result;
+  result = cache_lookup(path_cache, test_data->template);
+  cr_assert_str_eq(result, test_data->expected, "Expanded install path (%s) doesn't match expected value (%s)", result,
+                   test_data->expected);
 }
 
 static void
-test_absolute_dirs_remain_unchanged(void)
-{
-  assert_install_path("/opt/syslog-ng", "/opt/syslog-ng");
-}
-
-static void
-test_configure_variables_are_resolved(void)
-{
-  assert_install_path("${prefix}/bin", "/test/bin");
-}
-
-static void
-test_configure_variables_are_resolved_recursively(void)
-{
-  path_resolver_add_configure_variable(path_resolver, "${foo}", "/foo");
-  path_resolver_add_configure_variable(path_resolver, "${bar}", "${foo}");
-
-  assert_install_path("${foo}/bin", "/foo/bin");
-  assert_install_path("${bar}/bin", "/foo/bin");
-}
-
-static void
-test_confiure_variables_are_resolved_in_the_middle(void)
-{
-  assert_install_path("/foo/${prefix}/bar", "/foo//test/bar");
-}
-
-static void
-init_path_cache(void)
+setup(void)
 {
   path_resolver = path_resolver_new("/test");
   path_cache = cache_new(path_resolver);
+
+  path_resolver_add_configure_variable(path_resolver, "${foo}", "/foo");
+  path_resolver_add_configure_variable(path_resolver, "${bar}", "${foo}");
 }
 
 static void
-free_path_cache(void)
+teardown(void)
 {
   cache_free(path_cache);
 }
 
-int
-main(int argc, char *argv[])
-{
-  init_path_cache();
-  test_absolute_dirs_remain_unchanged();
-  test_configure_variables_are_resolved();
-  test_configure_variables_are_resolved_recursively();
-  test_confiure_variables_are_resolved_in_the_middle();
-  free_path_cache();
-  return 0;
-}
+TestSuite(reloc, .init = setup, .fini = teardown);
