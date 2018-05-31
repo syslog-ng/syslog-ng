@@ -30,7 +30,6 @@ int parser_expr_parse(CfgLexer *lexer, LogExprNode **node, gpointer arg);
 
 static CfgLexerKeyword parser_expr_keywords[] =
 {
-  { "file",               KW_FILE },
   { NULL }
 };
 

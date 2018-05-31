@@ -60,6 +60,7 @@ LogProtoFileReaderOptions *last_log_proto_options;
 
 /* INCLUDE_DECLS */
 
+%token KW_FILE
 %token KW_PIPE
 
 %token KW_FSYNC
