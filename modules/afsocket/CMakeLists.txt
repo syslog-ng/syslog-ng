@@ -40,8 +40,6 @@ set(AFSOCKET_SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/afsocket-grammar.h
 )
 
-check_struct_member ("struct msghdr" "msg_control" "sys/types.h;sys/socket.h" SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR)
-
 generate_y_from_ym(modules/afsocket/afsocket-grammar)
 
 bison_target(AFSocketGrammar

@@ -83,8 +83,8 @@ assert_decode_with_three_tabs_as_delimiter_equals(const gchar *input, const gcha
 {
   StrReprDecodeOptions options =
   {
-    0,
     .match_delimiter = _match_three_tabs_as_delimiter,
+    0
   };
   GString *str = g_string_new("");
   const gchar *end;

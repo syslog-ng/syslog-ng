@@ -70,7 +70,7 @@ AM_CFLAGS += \
 	-Wdeprecated-declarations \
 	-Woverflow \
 	-Wdouble-promotion \
-      	-Wfloat-equal
+	-Wfloat-equal
 endif
 
 TEST_CFLAGS		= -I$(top_srcdir)/libtest $(AM_CFLAGS)

@@ -20,8 +20,6 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules ${PROJECT_SOURCE_DIR}/
 set(CMAKE_POSITION_INDEPENDENT_CODE 1)
 set(BISON_FLAGS "-Wno-other")
 
-add_compile_options("-Wno-initializer-overrides")
-
 include(CheckIncludeFiles)
 include(ExternalProject)
 include(external_or_find_package)
@@ -85,11 +83,8 @@ else()
 endif()
 
 include(CheckCreds)
-if (HAVE_STRUCT_UCRED OR HAVE_STRUCT_CMSGCRED)
-    set(SYSLOG_NG_HAVE_STRUCT_UCRED 1)
-else()
-    set(SYSLOG_NG_HAVE_STRUCT_UCRED 0)
-endif()
+set(SYSLOG_NG_HAVE_STRUCT_UCRED (HAVE_STRUCT_UCRED OR HAVE_STRUCT_CMSGCRED))
+check_struct_member ("struct msghdr" "msg_control" "sys/types.h;sys/socket.h" SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR)
 
 include(CheckIPv6)
 
@@ -196,6 +191,37 @@ if (CRITERION_FOUND)
     "G_DEBUG=fatal-warnings,fatal-criticals,gc-friendly")
   include(CTest)
 endif()
+
+set(IMPORTANT_WARNINGS
+  -Wshadow
+  -fcommon)
+
+set(ACCEPTABLE_WARNINGS
+  -Wno-stack-protector
+  -Wno-unused-parameter
+  -Wno-variadic-macros)
+
+option(ENABLE_EXTRA_WARNINGS "Enable extra warnings" ON)
+if (ENABLE_EXTRA_WARNINGS)
+  set(EXTRA_WARNINGS
+    -Wimplicit-function-declaration
+    -Wnested-externs
+    -Wold-style-declaration
+    -Wstrict-prototypes
+    -Wswitch-default
+    -Wall
+    -Wmissing-parameter-type
+    -Wuninitialized
+    -Wunused-but-set-parameter
+    -Wcast-align
+    -Wdeprecated
+    -Wdeprecated-declarations
+    -Woverflow
+    -Wdouble-promotion
+    -Wfloat-equal)
+endif()
+
+add_compile_options(${IMPORTANT_WARNINGS} ${ACCEPTABLE_WARNINGS} ${EXTRA_WARNINGS})
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/syslog-ng-config.h.in ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-config.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
