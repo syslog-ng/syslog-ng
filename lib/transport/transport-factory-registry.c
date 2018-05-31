@@ -76,3 +76,12 @@ transport_factory_registry_lookup(TransportFactoryRegistry *self, const Transpor
 {
   return g_hash_table_lookup(self->registry, id);
 }
+
+TransportFactory *
+transport_factory_registry_remove(TransportFactoryRegistry *self, const TransportFactoryId *id)
+{
+  TransportFactory *factory = g_hash_table_lookup(self->registry, id);
+  g_hash_table_steal(self->registry, id);
+
+  return factory;
+}
