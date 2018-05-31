@@ -55,6 +55,11 @@ Test(transport_factory_registry, basic_functionality)
                                               test_transport_factory_id());
   cr_expect_eq((gpointer)factory, (gpointer)looked_up_factory);
 
+  TestTransportFactory *removed_factory = (TestTransportFactory *)transport_factory_registry_remove(registry,
+                                          test_transport_factory_id());
+  cr_expect_eq((gpointer)factory, (gpointer)removed_factory);
+  cr_expect_null(transport_factory_registry_lookup(registry, test_transport_factory_id()));
+  transport_factory_free(&removed_factory->super);
   transport_factory_registry_free(registry);
 }
 
