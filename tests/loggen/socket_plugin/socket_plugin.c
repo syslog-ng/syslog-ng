@@ -103,6 +103,9 @@ set_generate_message(generate_message_func gen_message)
 static gint
 get_thread_count(void)
 {
+  if (!thread_lock)
+    return 0;
+
   int num;
   g_mutex_lock(thread_lock);
   num = active_thread_count + idle_thread_count;
