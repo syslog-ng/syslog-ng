@@ -187,7 +187,6 @@ log_proto_server_wakeup_cb_call(LogProtoServerWakeupCallback *wakeup_callback)
 
 gboolean log_proto_server_validate_options_method(LogProtoServer *s);
 void log_proto_server_init(LogProtoServer *s, LogTransport *transport, const LogProtoServerOptions *options);
-void log_proto_server_close_transport(LogProtoServer *s);
 void log_proto_server_free_method(LogProtoServer *s);
 void log_proto_server_free(LogProtoServer *s);
 

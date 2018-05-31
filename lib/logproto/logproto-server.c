@@ -107,19 +107,9 @@ log_proto_server_validate_options_method(LogProtoServer *s)
 }
 
 void
-log_proto_server_close_transport(LogProtoServer *s)
-{
-  if (s->transport)
-    {
-      log_transport_free(s->transport);
-      s->transport = NULL;
-    }
-}
-
-void
 log_proto_server_free_method(LogProtoServer *s)
 {
-  log_proto_server_close_transport(s);
+  log_transport_free(s->transport);
 }
 
 void

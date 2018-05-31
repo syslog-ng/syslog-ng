@@ -620,6 +620,12 @@ log_reader_reopen(LogReader *self, LogProtoServer *proto, PollEvents *poll_event
     }
 }
 
+void
+log_reader_close_proto(LogReader *self)
+{
+  log_reader_reopen(self, NULL, NULL);
+}
+
 static void
 log_reader_idle_timeout(void *cookie)
 {
@@ -629,13 +635,6 @@ log_reader_idle_timeout(void *cookie)
              evt_tag_int("fd", log_proto_server_get_fd(self->proto)));
 
   log_pipe_notify(self->control, NC_CLOSE, self);
-}
-
-void
-log_reader_close_transport(LogReader *self)
-{
-  if (self->proto)
-    log_proto_server_close_transport(self->proto);
 }
 
 void
