@@ -65,6 +65,7 @@ SyntheticMessage *last_message;
 %token KW_AGGREGATE
 %token KW_VALUE
 %token KW_DROP_UNMATCHED
+%token KW_FILE
 
 %type <num> stateful_parser_inject_mode
 %type <ptr> synthetic_message

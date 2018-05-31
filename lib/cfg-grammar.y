@@ -180,7 +180,6 @@ extern struct _StatsOptions *last_stats_options;
 
 /* source & destination items */
 %token KW_INTERNAL                    10020
-%token KW_FILE                        10021
 %token KW_SYSLOG                      10060
 
 /* option items */
