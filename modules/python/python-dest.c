@@ -49,7 +49,6 @@ typedef struct
     PyObject *class;
     PyObject *instance;
     PyObject *is_opened;
-    PyObject *retry_error;
     PyObject *send;
   } py;
 } PythonDestDriver;
@@ -142,13 +141,6 @@ _dd_py_invoke_bool_function(PythonDestDriver *self, PyObject *func, PyObject *ar
 }
 
 static void
-_dd_py_invoke_void_function(PythonDestDriver *self, PyObject *func, PyObject *arg)
-{
-  _py_invoke_void_function(func, arg, self->class, self->super.super.super.id);
-}
-
-
-static void
 _dd_py_invoke_void_method_by_name(PythonDestDriver *self, const gchar *method_name)
 {
   _py_invoke_void_method_by_name(self->py.instance, method_name, self->class, self->super.super.super.id);
@@ -175,14 +167,6 @@ _py_invoke_is_opened(PythonDestDriver *self)
     return TRUE;
 
   return _dd_py_invoke_bool_function(self, self->py.is_opened, NULL);
-}
-
-static void
-_py_invoke_retry_error(PythonDestDriver *self, PyObject *dict)
-{
-  if (!self->py.retry_error)
-    return;
-  _dd_py_invoke_void_function(self, self->py.retry_error, dict);
 }
 
 static gboolean
@@ -246,7 +230,6 @@ _py_init_bindings(PythonDestDriver *self)
 
   /* these are fast paths, store references to be faster */
   self->py.is_opened = _py_get_attr_or_null(self->py.instance, "is_opened");
-  self->py.retry_error = _py_get_attr_or_null(self->py.instance, "retry_error");
   self->py.send = _py_get_attr_or_null(self->py.instance, "send");
   if (!self->py.send)
     {
@@ -264,7 +247,6 @@ _py_free_bindings(PythonDestDriver *self)
   Py_CLEAR(self->py.instance);
   Py_CLEAR(self->py.is_opened);
   Py_CLEAR(self->py.send);
-  Py_CLEAR(self->py.retry_error);
 }
 
 static gboolean
@@ -362,23 +344,6 @@ python_dd_open(PythonDestDriver *self)
 }
 
 static void
-python_dd_retry_error(PythonDestDriver *self, LogMessage *msg)
-{
-  PyGILState_STATE gstate;
-  PyObject *msg_object;
-
-  gstate = PyGILState_Ensure();
-  if(_py_construct_message(self, msg, &msg_object))
-    {
-      _py_invoke_retry_error(self, msg_object);
-      Py_DECREF(msg_object);
-    }
-
-  PyGILState_Release(gstate);
-}
-
-
-static void
 python_dd_close(PythonDestDriver *self)
 {
   PyGILState_STATE gstate;
@@ -403,13 +368,6 @@ python_dd_disconnect(LogThreadedDestDriver *d)
   PythonDestDriver *self = (PythonDestDriver *) d;
 
   python_dd_close(self);
-}
-
-static void
-python_dd_over_message(LogThreadedDestDriver *s, LogMessage *msg)
-{
-  PythonDestDriver *self = (PythonDestDriver *)s;
-  python_dd_retry_error(self, msg);
 }
 
 static gboolean
@@ -499,8 +457,6 @@ python_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.deinit = python_dd_deinit;
   self->super.super.super.super.free_fn = python_dd_free;
   self->super.super.super.super.generate_persist_name = python_dd_format_persist_name;
-
-  self->super.messages.retry_over = python_dd_over_message;
 
   self->super.worker.thread_init = python_dd_worker_init;
   self->super.worker.disconnect = python_dd_disconnect;

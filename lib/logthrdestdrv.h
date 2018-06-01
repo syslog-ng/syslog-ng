@@ -71,13 +71,7 @@ struct _LogThreadedDestDriver
   time_t time_reopen;
   gint batch_size;
 
-
   LogThreadedDestWorker worker;
-
-  struct
-  {
-    void (*retry_over) (LogThreadedDestDriver *s, LogMessage *msg);
-  } messages;
 
   struct
   {
