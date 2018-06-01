@@ -108,8 +108,8 @@ _get_body(HTTPDestinationDriver *self, LogMessage *msg)
     return log_msg_get_value(msg, LM_V_MESSAGE, NULL);
 }
 
-static
-void _http_trace_sanitize_dump(const gchar *text, gchar *data, size_t size)
+static void
+_http_trace_sanitize_dump(const gchar *text, gchar *data, size_t size)
 {
   gchar *sanitized = g_new0(gchar, size+1);
   int i;
@@ -135,10 +135,10 @@ gchar *curl_infotype_to_text[] =
   "curl_trace_ssl_data_out",
 };
 
-static
-gint _http_trace(CURL *handle, curl_infotype type,
-                 char *data, size_t size,
-                 void *userp)
+static gint
+_http_trace(CURL *handle, curl_infotype type,
+            char *data, size_t size,
+            void *userp)
 {
   if (!G_UNLIKELY(trace_flag))
     return 0;
