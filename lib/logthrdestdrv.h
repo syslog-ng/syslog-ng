@@ -52,7 +52,7 @@ typedef struct _LogThreadedDestWorker
   void (*thread_deinit)(LogThreadedDestDriver *s);
   worker_insert_result_t (*insert)(LogThreadedDestDriver *s, LogMessage *msg);
   gboolean (*connect)(LogThreadedDestDriver *s);
-  void (*worker_message_queue_empty)(LogThreadedDestDriver *s);
+  worker_insert_result_t (*worker_message_queue_empty)(LogThreadedDestDriver *s);
   void (*disconnect)(LogThreadedDestDriver *s);
 } LogThreadedDestWorker;
 
