@@ -24,8 +24,6 @@
 #include "syslog-names.h"
 #include "scratch-buffers.h"
 
-#include <curl/curl.h>
-
 static const gchar *
 _format_persist_name(const LogPipe *s)
 {

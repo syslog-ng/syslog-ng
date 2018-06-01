@@ -30,10 +30,13 @@
 
 #include "logthrdestdrv.h"
 
+#define CURL_NO_OLDIES 1
+#include <curl/curl.h>
+
 typedef struct
 {
   LogThreadedDestDriver super;
-  gchar *curl;
+  CURL *curl;
   gchar *url;
   gchar *user;
   gchar *password;
