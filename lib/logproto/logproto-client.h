@@ -197,6 +197,7 @@ struct _LogProtoClientFactory
 {
   LogProtoClient *(*construct)(LogTransport *transport, const LogProtoClientOptions *options);
   gint default_inet_port;
+  gboolean use_multitransport;
 };
 
 static inline LogProtoClient *
