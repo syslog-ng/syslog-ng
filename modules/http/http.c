@@ -57,17 +57,6 @@ _http_write_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
   return nmemb * size;
 }
 
-static gboolean
-_connect(LogThreadedDestDriver *s)
-{
-  return TRUE;
-}
-
-static void
-_disconnect(LogThreadedDestDriver *s)
-{
-}
-
 static void
 _add_custom_curl_header(gpointer data, gpointer curl_headers)
 {
@@ -545,14 +534,12 @@ http_dd_new(GlobalConfig *cfg)
   log_threaded_dest_driver_init_instance(&self->super, cfg);
 
   self->super.super.super.super.init = http_dd_init;
+  self->super.super.super.super.free_fn = http_dd_free;
   self->super.super.super.super.deinit = http_dd_deinit;
-  self->super.worker.connect = _connect;
-  self->super.worker.disconnect = _disconnect;
-  self->super.worker.insert = _insert;
   self->super.super.super.super.generate_persist_name = _format_persist_name;
   self->super.format_stats_instance = _format_stats_instance;
   self->super.stats_source = SCS_HTTP;
-  self->super.super.super.super.free_fn = http_dd_free;
+  self->super.worker.insert = _insert;
 
   curl_global_init(CURL_GLOBAL_ALL);
 
