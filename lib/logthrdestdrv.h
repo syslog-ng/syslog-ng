@@ -59,6 +59,11 @@ typedef struct _LogThreadedDestWorker
 struct _LogThreadedDestDriver
 {
   LogDestDriver super;
+  struct iv_task  do_work;
+  struct iv_event wake_up_event;
+  struct iv_event shutdown_event;
+  struct iv_timer timer_reopen;
+  struct iv_timer timer_throttle;
 
   StatsCounterItem *dropped_messages;
   StatsCounterItem *queued_messages;
@@ -80,11 +85,6 @@ struct _LogThreadedDestDriver
 
   WorkerOptions worker_options;
   gchar *(*format_stats_instance)(LogThreadedDestDriver *s);
-  struct iv_event wake_up_event;
-  struct iv_event shutdown_event;
-  struct iv_timer timer_reopen;
-  struct iv_timer timer_throttle;
-  struct iv_task  do_work;
 };
 
 void log_threaded_dest_driver_ack_messages(LogThreadedDestDriver *self, gint batch_size);
