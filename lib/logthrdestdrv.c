@@ -202,7 +202,7 @@ _rewind_batch(LogThreadedDestDriver *self)
 }
 
 static void
-_process_result(LogThreadedDestDriver *self, gint result, LogMessage *triggering_message)
+_process_result(LogThreadedDestDriver *self, gint result)
 {
   switch (result)
     {
@@ -288,7 +288,7 @@ _perform_inserts(LogThreadedDestDriver *self)
       scratch_buffers_reclaim_marked(mark);
 
       self->batch_size++;
-      _process_result(self, result, msg);
+      _process_result(self, result);
 
       log_msg_unref(msg);
       msg_set_context(NULL);
@@ -299,7 +299,7 @@ _perform_inserts(LogThreadedDestDriver *self)
       if (self->worker.worker_message_queue_empty)
         {
           result = self->worker.worker_message_queue_empty(self);
-          _process_result(self, result, NULL);
+          _process_result(self, result);
         }
     }
 }
