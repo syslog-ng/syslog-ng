@@ -365,6 +365,9 @@ afsocket_dd_setup_proto_factory(AFSocketDestDriver *self)
                 evt_tag_str("transport", self->transport_mapper->logproto));
       return FALSE;
     }
+
+  self->transport_mapper->create_multitransport = self->proto_factory->use_multitransport;
+
   return TRUE;
 }
 
