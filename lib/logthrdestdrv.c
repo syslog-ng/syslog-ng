@@ -186,6 +186,69 @@ _rewind_batch(LogThreadedDestDriver *self)
   self->batch_size = 0;
 }
 
+static void
+_process_result(LogThreadedDestDriver *self, gint result, LogMessage *triggering_message)
+{
+  switch (result)
+    {
+    case WORKER_INSERT_RESULT_DROP:
+      msg_error("Message(s) dropped while sending message to destination",
+                evt_tag_str("driver", self->super.super.id),
+                evt_tag_int("batch_size", self->batch_size));
+
+      _drop_batch(self);
+      _disconnect_and_suspend(self);
+      break;
+
+    case WORKER_INSERT_RESULT_ERROR:
+      self->retries.counter++;
+
+      if (self->retries.counter >= self->retries.max)
+        {
+          if (self->messages.retry_over && triggering_message)
+            self->messages.retry_over(self, triggering_message);
+
+          msg_error("Multiple failures while sending message(s) to destination, message(s) dropped",
+                    evt_tag_str("driver", self->super.super.id),
+                    evt_tag_int("number_of_retries", self->retries.max),
+                    evt_tag_int("batch_size", self->batch_size));
+
+          _drop_batch(self);
+        }
+      else
+        {
+          msg_error("Error occurred while trying to send a message, trying again",
+                    evt_tag_str("driver", self->super.super.id),
+                    evt_tag_int("retries", self->retries.counter),
+                    evt_tag_int("batch_size", self->batch_size));
+          _rewind_batch(self);
+          _disconnect_and_suspend(self);
+        }
+      break;
+
+    case WORKER_INSERT_RESULT_NOT_CONNECTED:
+      msg_debug("Server disconnected while preparing messages for sending, trying again",
+                evt_tag_str("driver", self->super.super.id),
+                evt_tag_int("batch_size", self->batch_size));
+      _rewind_batch(self);
+      _disconnect_and_suspend(self);
+      break;
+
+    case WORKER_INSERT_RESULT_SUCCESS:
+      stats_counter_inc(self->written_messages);
+      _accept_batch(self);
+      break;
+
+    case WORKER_INSERT_RESULT_QUEUED:
+      _queue_message_into_batch(self);
+      break;
+
+    default:
+      break;
+    }
+
+}
+
 /* NOTE: runs in the worker thread, whenever items on our queue are
  * available. It iterates all elements on the queue, however will terminate
  * if the mainloop requests that we exit. */
@@ -209,59 +272,7 @@ _perform_inserts(LogThreadedDestDriver *self)
       scratch_buffers_reclaim_marked(mark);
 
       self->batch_size++;
-      switch (result)
-        {
-        case WORKER_INSERT_RESULT_DROP:
-          msg_error("Message(s) dropped while sending message to destination",
-                    evt_tag_str("driver", self->super.super.id),
-                    evt_tag_int("batch_size", self->batch_size));
-
-          _drop_batch(self);
-          _disconnect_and_suspend(self);
-          break;
-
-        case WORKER_INSERT_RESULT_ERROR:
-          self->retries.counter++;
-
-          if (self->retries.counter >= self->retries.max)
-            {
-              if (self->messages.retry_over)
-                self->messages.retry_over(self, msg);
-
-              msg_error("Multiple failures while sending message(s) to destination, message(s) dropped",
-                        evt_tag_str("driver", self->super.super.id),
-                        evt_tag_int("number_of_retries", self->retries.max),
-                        evt_tag_int("batch_size", self->batch_size));
-
-              _drop_batch(self);
-            }
-          else
-            {
-              _rewind_batch(self);
-              _disconnect_and_suspend(self);
-            }
-          break;
-
-        case WORKER_INSERT_RESULT_NOT_CONNECTED:
-          msg_debug("Server disconnected while preparing messages for sending, trying again",
-                    evt_tag_str("driver", self->super.super.id),
-                    evt_tag_int("batch_size", self->batch_size));
-          _rewind_batch(self);
-          _disconnect_and_suspend(self);
-          break;
-
-        case WORKER_INSERT_RESULT_SUCCESS:
-          stats_counter_inc(self->written_messages);
-          _accept_batch(self);
-          break;
-
-        case WORKER_INSERT_RESULT_QUEUED:
-          _queue_message_into_batch(self);
-          break;
-
-        default:
-          break;
-        }
+      _process_result(self, result, msg);
 
       log_msg_unref(msg);
       msg_set_context(NULL);
@@ -271,8 +282,8 @@ _perform_inserts(LogThreadedDestDriver *self)
     {
       if (self->worker.worker_message_queue_empty)
         {
-          /* FIXME: error handling */
-          self->worker.worker_message_queue_empty(self);
+          result = self->worker.worker_message_queue_empty(self);
+          _process_result(self, result, NULL);
         }
     }
 }

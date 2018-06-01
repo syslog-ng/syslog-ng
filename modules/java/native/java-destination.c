@@ -192,11 +192,16 @@ java_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
   return sent ? WORKER_INSERT_RESULT_SUCCESS : WORKER_INSERT_RESULT_ERROR;
 }
 
-static void
+static worker_insert_result_t
 java_worker_message_queue_empty(LogThreadedDestDriver *d)
 {
   JavaDestDriver *self = (JavaDestDriver *)d;
   java_destination_proxy_on_message_queue_empty(self->proxy);
+
+  /* FIXME: the java API as we published does not yet support returning a
+   * status from this call, so return success */
+
+  return WORKER_INSERT_RESULT_SUCCESS;
 }
 
 static void
