@@ -57,38 +57,30 @@ _http_write_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
   return nmemb * size;
 }
 
-static void
-_add_custom_curl_header(gpointer data, gpointer curl_headers)
+static struct curl_slist *
+_add_header(struct curl_slist *curl_headers, const gchar *header, const gchar *value)
 {
-  curl_headers = curl_slist_append((struct curl_slist *)curl_headers, data);
+  GString *buffer = scratch_buffers_alloc();
+
+  g_string_append(buffer, header);
+  g_string_append(buffer, ": ");
+  g_string_append(buffer, value);
+  return curl_slist_append(curl_headers, buffer->str);
 }
 
 static struct curl_slist *
 _get_curl_headers(HTTPDestinationDriver *self, LogMessage *msg)
 {
   struct curl_slist *curl_headers = NULL;
-  gchar header_host[128] = {0};
-  gchar header_program[32] = {0};
-  gchar header_facility[32] = {0};
-  gchar header_level[32] = {0};
+  GList *l;
 
-  g_snprintf(header_host, sizeof(header_host),
-             "X-Syslog-Host: %s", log_msg_get_value(msg, LM_V_HOST, NULL));
-  curl_headers = curl_slist_append(curl_headers, header_host);
+  curl_headers = _add_header(curl_headers, "X-Syslog-Host", log_msg_get_value(msg, LM_V_HOST, NULL));
+  curl_headers = _add_header(curl_headers, "X-Syslog-Program", log_msg_get_value(msg, LM_V_PROGRAM, NULL));
+  curl_headers = _add_header(curl_headers, "X-Syslog-Facility", syslog_name_lookup_name_by_value(msg->pri & LOG_FACMASK, sl_facilities));
+  curl_headers = _add_header(curl_headers, "X-Syslog-Level", syslog_name_lookup_name_by_value(msg->pri & LOG_PRIMASK, sl_levels));
 
-  g_snprintf(header_program, sizeof(header_program),
-             "X-Syslog-Program: %s", log_msg_get_value(msg, LM_V_PROGRAM, NULL));
-  curl_headers = curl_slist_append(curl_headers, header_program);
-
-  g_snprintf(header_facility, sizeof(header_facility),
-             "X-Syslog-Facility: %s", syslog_name_lookup_name_by_value(msg->pri & LOG_FACMASK, sl_facilities));
-  curl_headers = curl_slist_append(curl_headers, header_facility);
-
-  g_snprintf(header_level, sizeof(header_level),
-             "X-Syslog-Level: %s", syslog_name_lookup_name_by_value(msg->pri & LOG_PRIMASK, sl_levels));
-  curl_headers = curl_slist_append(curl_headers, header_level);
-
-  g_list_foreach(self->headers, _add_custom_curl_header, curl_headers);
+  for (l = self->headers; l; l = l->next)
+    curl_headers = curl_slist_append(curl_headers, l->data);
 
   return curl_headers;
 }
