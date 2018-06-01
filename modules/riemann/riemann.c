@@ -662,11 +662,23 @@ riemann_worker_thread_deinit(LogThreadedDestDriver *s)
   riemann_worker_batch_flush(self);
 }
 
-static void
+static worker_insert_result_t
 riemann_flush_queue(LogThreadedDestDriver *s)
 {
   RiemannDestDriver *self = (RiemannDestDriver *)s;
+
   riemann_worker_batch_flush(self);
+
+  /* NOTE: the riemann destination is clearly doing a private batching
+   * implementation, which should rather be using the framework provided by
+   * LogThreadedDestDriver instead.  As the interfaces of
+   * LogThreadedDestDriver slightly changed, this return value is just a
+   * quick port of the old behavior, however it should be ported to actually
+   * use that framework not just be adapted to it.  I lack a riemann test
+   * harness though, so I can't test it.
+   */
+
+  return WORKER_INSERT_RESULT_SUCCESS;
 }
 
 /*
@@ -714,7 +726,7 @@ riemann_dd_new(GlobalConfig *cfg)
   self->super.worker.disconnect = riemann_dd_disconnect;
   self->super.worker.insert = riemann_worker_insert;
   self->super.worker.thread_deinit = riemann_worker_thread_deinit;
-  self->super.worker.worker_message_queue_empty = riemann_flush_queue;
+  self->super.worker.flush = riemann_flush_queue;
 
   self->super.format_stats_instance = riemann_dd_format_stats_instance;
   self->super.stats_source = SCS_RIEMANN;

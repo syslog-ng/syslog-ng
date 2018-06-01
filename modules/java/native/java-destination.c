@@ -193,7 +193,7 @@ java_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
 }
 
 static worker_insert_result_t
-java_worker_message_queue_empty(LogThreadedDestDriver *d)
+java_worker_flush(LogThreadedDestDriver *d)
 {
   JavaDestDriver *self = (JavaDestDriver *)d;
   java_destination_proxy_on_message_queue_empty(self->proxy);
@@ -277,10 +277,10 @@ java_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.generate_persist_name = java_dd_format_persist_name;
 
   self->super.worker.thread_deinit = java_worker_thread_deinit;
-  self->super.worker.insert = java_worker_insert;
   self->super.worker.connect = java_dd_open;
   self->super.worker.disconnect = java_dd_close;
-  self->super.worker.worker_message_queue_empty = java_worker_message_queue_empty;
+  self->super.worker.insert = java_worker_insert;
+  self->super.worker.flush = java_worker_flush;
 
   self->super.format_stats_instance = java_dd_format_stats_instance;
   self->super.stats_source = SCS_JAVA;

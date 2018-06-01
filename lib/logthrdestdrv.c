@@ -294,13 +294,10 @@ _perform_inserts(LogThreadedDestDriver *self)
       msg_set_context(NULL);
       log_msg_refcache_stop();
     }
-  if (!self->suspended)
+  if (!self->suspended && self->batch_size > 0 && self->worker.flush)
     {
-      if (self->worker.worker_message_queue_empty)
-        {
-          result = self->worker.worker_message_queue_empty(self);
-          _process_result(self, result);
-        }
+      result = self->worker.flush(self);
+      _process_result(self, result);
     }
 }
 

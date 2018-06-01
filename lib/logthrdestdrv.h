@@ -50,10 +50,10 @@ typedef struct _LogThreadedDestWorker
   gboolean connected;
   void (*thread_init)(LogThreadedDestDriver *s);
   void (*thread_deinit)(LogThreadedDestDriver *s);
-  worker_insert_result_t (*insert)(LogThreadedDestDriver *s, LogMessage *msg);
   gboolean (*connect)(LogThreadedDestDriver *s);
-  worker_insert_result_t (*worker_message_queue_empty)(LogThreadedDestDriver *s);
   void (*disconnect)(LogThreadedDestDriver *s);
+  worker_insert_result_t (*insert)(LogThreadedDestDriver *s, LogMessage *msg);
+  worker_insert_result_t (*flush)(LogThreadedDestDriver *s);
 } LogThreadedDestWorker;
 
 struct _LogThreadedDestDriver
