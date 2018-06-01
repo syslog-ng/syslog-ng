@@ -32,6 +32,9 @@ TransportFactory *transport_factory_tls_new(TLSContext *ctx,
                                             TLSSessionVerifyFunc tls_verify_cb,
                                             gpointer tls_verify_data);
 
+void transport_factory_tls_enable_compression(TransportFactory *);
+void transport_factory_tls_disable_compression(TransportFactory *);
+
 const TransportFactoryId *transport_factory_tls_id(void);
 
 #endif
