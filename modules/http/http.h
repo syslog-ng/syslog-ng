@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2018 Balazs Scheidler
  * Copyright (c) 2016 Marc Falzon
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -20,8 +21,8 @@
  *
  */
 
-#ifndef HTTP_PLUGIN_H_INCLUDED
-#define HTTP_PLUGIN_H_INCLUDED 1
+#ifndef HTTP_H_INCLUDED
+#define HTTP_H_INCLUDED 1
 
 #define HTTP_DEFAULT_URL "http://localhost/"
 #define METHOD_TYPE_POST 1

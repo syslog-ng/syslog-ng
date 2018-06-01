@@ -30,7 +30,7 @@
 
 #include "cfg-grammar.h"
 #include "cfg-parser.h"
-#include "http-plugin.h"
+#include "http.h"
 #include "http-grammar.h"
 #include "plugin.h"
 

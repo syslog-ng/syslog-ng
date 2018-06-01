@@ -20,11 +20,11 @@
  *
  */
 
-#include <curl/curl.h>
-
+#include "http.h"
 #include "syslog-names.h"
-#include "http-plugin.h"
 #include "scratch-buffers.h"
+
+#include <curl/curl.h>
 
 static const gchar *
 _format_persist_name(const LogPipe *s)
