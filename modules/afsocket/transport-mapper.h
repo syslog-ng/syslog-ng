@@ -42,6 +42,8 @@ struct _TransportMapper
   gint sock_type;
   /* protocol parameter for the socket() call, 0 for default or IPPROTO_XXX for specific transports */
   gint sock_proto;
+  /* when a proto needs a Multitransport instance */
+  gboolean create_multitransport;
 
   const gchar *logproto;
   gint stats_source;

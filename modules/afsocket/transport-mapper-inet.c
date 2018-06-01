@@ -87,32 +87,57 @@ transport_mapper_inet_apply_transport_method(TransportMapper *s, GlobalConfig *c
 }
 
 static LogTransport *
+_construct_multitransport_with_tls_factory(TransportMapperInet *self, gint fd)
+{
+  TransportFactory *default_factory = transport_factory_tls_new(self->tls_context,
+                                      self->tls_verify_callback,
+                                      self->tls_verify_data);
+  return multitransport_new(default_factory, fd);
+}
+
+static LogTransport *
 _construct_tls_transport(TransportMapperInet *self, gint fd)
 {
-  LogTransport *transport = NULL;
+  if (self->super.create_multitransport)
+    return _construct_multitransport_with_tls_factory(self, fd);
+
   TLSSession *tls_session = tls_context_setup_session(self->tls_context);
   if (!tls_session)
     return NULL;
 
   tls_session_set_verify(tls_session, self->tls_verify_callback, self->tls_verify_data, NULL);
-  transport = log_transport_tls_new(tls_session, fd);
 
-  return transport;
+  return log_transport_tls_new(tls_session, fd);
+}
+
+static LogTransport *
+_construct_multitransport_with_plain_tcp_factory(TransportMapperInet *self, gint fd)
+{
+  TransportFactory *default_factory = transport_factory_socket_new(self->super.sock_type);
+
+  return multitransport_new(default_factory, fd);
 }
 
 static LogTransport *
 _construct_multitransport_with_plain_and_tls_factories(TransportMapperInet *self, gint fd)
 {
-  LogTransport *transport = NULL;
+  LogTransport *transport = _construct_multitransport_with_plain_tcp_factory(self, fd);
 
-  TransportFactory *default_factory = transport_factory_socket_new(self->super.sock_type);
-  transport = multitransport_new(default_factory, fd);
   TransportFactory *tls_factory = transport_factory_tls_new(self->tls_context,
                                                             self->tls_verify_callback,
                                                             self->tls_verify_data);
   multitransport_add_factory((MultiTransport *)transport, tls_factory);
 
   return transport;
+}
+
+static LogTransport *
+_construct_plain_tcp_transport(TransportMapperInet *self, gint fd)
+{
+  if (self->super.create_multitransport)
+    return _construct_multitransport_with_plain_tcp_factory(self, fd);
+
+  return transport_mapper_construct_log_transport_method(&self->super, fd);
 }
 
 static LogTransport *
@@ -130,7 +155,7 @@ transport_mapper_inet_construct_log_transport(TransportMapper *s, gint fd)
       return _construct_multitransport_with_plain_and_tls_factories(self, fd);
     }
 
-  return transport_mapper_construct_log_transport_method(s, fd);
+  return _construct_plain_tcp_transport(self, fd);
 }
 
 static gboolean
