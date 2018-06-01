@@ -34,7 +34,7 @@ log_threaded_dest_driver_set_max_retries(LogDriver *s, gint max_retries)
 {
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
 
-  self->retries.max = max_retries;
+  self->retries_max = max_retries;
 }
 
 static gchar *
@@ -155,7 +155,7 @@ _disconnect_and_suspend(LogThreadedDestDriver *self)
 void
 _accept_batch(LogThreadedDestDriver *self)
 {
-  self->retries.counter = 0;
+  self->retries_counter = 0;
   step_sequence_number(&self->seq_num);
   log_queue_ack_backlog(self->worker.queue, self->batch_size);
   self->batch_size = 0;
@@ -201,13 +201,13 @@ _process_result(LogThreadedDestDriver *self, gint result)
       break;
 
     case WORKER_INSERT_RESULT_ERROR:
-      self->retries.counter++;
+      self->retries_counter++;
 
-      if (self->retries.counter >= self->retries.max)
+      if (self->retries_counter >= self->retries_max)
         {
           msg_error("Multiple failures while sending message(s) to destination, message(s) dropped",
                     evt_tag_str("driver", self->super.super.id),
-                    evt_tag_int("number_of_retries", self->retries.max),
+                    evt_tag_int("number_of_retries", self->retries_max),
                     evt_tag_int("batch_size", self->batch_size));
 
           _drop_batch(self);
@@ -216,7 +216,7 @@ _process_result(LogThreadedDestDriver *self, gint result)
         {
           msg_error("Error occurred while trying to send a message, trying again",
                     evt_tag_str("driver", self->super.super.id),
-                    evt_tag_int("retries", self->retries.counter),
+                    evt_tag_int("retries", self->retries_counter),
                     evt_tag_int("batch_size", self->batch_size));
           _rewind_batch(self);
           _disconnect_and_suspend(self);
@@ -478,7 +478,7 @@ _register_stats(LogThreadedDestDriver *self)
   StatsClusterKey sc_key;
   stats_cluster_logpipe_key_set(&sc_key,self->stats_source | SCS_DESTINATION,
                                 self->super.super.id,
-                                self->format.stats_instance(self));
+                                self->format_stats_instance(self));
   stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
   stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
@@ -494,7 +494,7 @@ _unregister_stats(LogThreadedDestDriver *self)
   StatsClusterKey sc_key;
   stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_DESTINATION,
                                 self->super.super.id,
-                                self->format.stats_instance(self));
+                                self->format_stats_instance(self));
   stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &self->queued_messages);
   stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
   stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
@@ -577,5 +577,5 @@ log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalConfig
   self->time_reopen = -1;
   self->batch_size = 0;
 
-  self->retries.max = MAX_RETRIES_OF_FAILED_INSERT_DEFAULT;
+  self->retries_max = MAX_RETRIES_OF_FAILED_INSERT_DEFAULT;
 }

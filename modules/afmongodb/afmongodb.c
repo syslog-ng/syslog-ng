@@ -573,7 +573,7 @@ afmongodb_dd_new(GlobalConfig *cfg)
   self->super.worker.thread_deinit = _worker_thread_deinit;
   self->super.worker.disconnect = _worker_disconnect;
   self->super.worker.insert = _worker_insert;
-  self->super.format.stats_instance = _format_stats_instance;
+  self->super.format_stats_instance = _format_stats_instance;
   self->super.stats_source = SCS_MONGODB;
 
 #if SYSLOG_NG_ENABLE_LEGACY_MONGODB_OPTIONS

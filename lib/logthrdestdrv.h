@@ -69,23 +69,16 @@ struct _LogThreadedDestDriver
   gboolean under_termination;
   time_t time_reopen;
   gint batch_size;
+  gint retries_counter;
+  gint retries_max;
 
   LogThreadedDestWorker worker;
 
-  struct
-  {
-    gchar *(*stats_instance) (LogThreadedDestDriver *s);
-  } format;
   gint stats_source;
   gint32 seq_num;
 
-  struct
-  {
-    gint counter;
-    gint max;
-  } retries;
-
   WorkerOptions worker_options;
+  gchar *(*format_stats_instance)(LogThreadedDestDriver *s);
   struct iv_event wake_up_event;
   struct iv_event shutdown_event;
   struct iv_timer timer_reopen;

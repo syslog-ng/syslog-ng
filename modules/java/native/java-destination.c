@@ -282,7 +282,7 @@ java_dd_new(GlobalConfig *cfg)
   self->super.worker.disconnect = java_dd_close;
   self->super.worker.worker_message_queue_empty = java_worker_message_queue_empty;
 
-  self->super.format.stats_instance = java_dd_format_stats_instance;
+  self->super.format_stats_instance = java_dd_format_stats_instance;
   self->super.stats_source = SCS_JAVA;
 
   self->template = log_template_new(cfg, NULL);
