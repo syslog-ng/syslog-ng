@@ -360,17 +360,6 @@ _vp_process_value(const gchar *name, const gchar *prefix, TypeHint type,
   return FALSE;
 }
 
-static void
-_worker_retry_over_message(LogThreadedDestDriver *s, LogMessage *msg)
-{
-  MongoDBDestDriver *self = (MongoDBDestDriver *)s;
-
-  msg_error("Dropped message",
-            evt_tag_str("driver", self->super.super.super.id),
-            evt_tag_value_pairs("message", self->vp, msg, self->super.seq_num,
-                                LTZ_SEND, &self->template_options));
-}
-
 static worker_insert_result_t
 _worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
 {
@@ -586,7 +575,6 @@ afmongodb_dd_new(GlobalConfig *cfg)
   self->super.worker.insert = _worker_insert;
   self->super.format.stats_instance = _format_stats_instance;
   self->super.stats_source = SCS_MONGODB;
-  self->super.messages.retry_over = _worker_retry_over_message;
 
 #if SYSLOG_NG_ENABLE_LEGACY_MONGODB_OPTIONS
   afmongodb_dd_init_legacy(self);

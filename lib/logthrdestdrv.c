@@ -205,9 +205,6 @@ _process_result(LogThreadedDestDriver *self, gint result, LogMessage *triggering
 
       if (self->retries.counter >= self->retries.max)
         {
-          if (self->messages.retry_over && triggering_message)
-            self->messages.retry_over(self, triggering_message);
-
           msg_error("Multiple failures while sending message(s) to destination, message(s) dropped",
                     evt_tag_str("driver", self->super.super.id),
                     evt_tag_int("number_of_retries", self->retries.max),
