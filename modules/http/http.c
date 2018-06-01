@@ -57,22 +57,6 @@ _http_write_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
   return nmemb * size;
 }
 
-static void
-_thread_init(LogThreadedDestDriver *s)
-{
-  HTTPDestinationDriver *self = (HTTPDestinationDriver *) s;
-
-  curl_version_info_data *curl_info = curl_version_info(CURLVERSION_NOW);
-  if (!self->user_agent)
-    self->user_agent = g_strdup_printf("syslog-ng %s/libcurl %s",
-                                       SYSLOG_NG_VERSION, curl_info->version);
-}
-
-static void
-_thread_deinit(LogThreadedDestDriver *s)
-{
-}
-
 static gboolean
 _connect(LogThreadedDestDriver *s)
 {
@@ -512,6 +496,11 @@ http_dd_init(LogPipe *s)
       self->url = g_strdup(HTTP_DEFAULT_URL);
     }
 
+  curl_version_info_data *curl_info = curl_version_info(CURLVERSION_NOW);
+  if (!self->user_agent)
+    self->user_agent = g_strdup_printf("syslog-ng %s/libcurl %s",
+                                       SYSLOG_NG_VERSION, curl_info->version);
+
   _set_curl_opt(self);
 
   return log_threaded_dest_driver_init_method(s);
@@ -557,8 +546,6 @@ http_dd_new(GlobalConfig *cfg)
 
   self->super.super.super.super.init = http_dd_init;
   self->super.super.super.super.deinit = http_dd_deinit;
-  self->super.worker.thread_init = _thread_init;
-  self->super.worker.thread_deinit = _thread_deinit;
   self->super.worker.connect = _connect;
   self->super.worker.disconnect = _disconnect;
   self->super.worker.insert = _insert;
