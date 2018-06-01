@@ -148,7 +148,7 @@ static gboolean
 _execute_compare_stats_name(const gchar *expected_name)
 {
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)mongodb;
-  const gchar *name = self->format.stats_instance(self);
+  const gchar *name = self->format_stats_instance(self);
   return assert_nstring_non_fatal(name, -1, expected_name, -1, "mismatch");
 }
 

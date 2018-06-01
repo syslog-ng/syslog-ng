@@ -672,7 +672,7 @@ afsmtp_dd_new(GlobalConfig *cfg)
   self->super.worker.thread_deinit = afsmtp_worker_thread_deinit;
   self->super.worker.insert = afsmtp_worker_insert;
 
-  self->super.format.stats_instance = afsmtp_dd_format_stats_instance;
+  self->super.format_stats_instance = afsmtp_dd_format_stats_instance;
   self->super.stats_source = SCS_SMTP;
 
   afsmtp_dd_set_host((LogDriver *)self, "127.0.0.1");
