@@ -72,6 +72,9 @@ Test(rcptid, test_rcptid_is_persistent_across_persist_backend_reinits)
 
   state = restart_persist_state(state);
 
+  rcptid_deinit();
+  rcptid_init(state, TRUE);
+
   rcptid = rcptid_generate_id();
   cr_assert_eq(rcptid, 0xFFFFFFFFFFFFFFFF, "Rcptid did not persisted across persist backend reinit!");
   teardown_persist_id_test(state);
