@@ -362,20 +362,20 @@ _add_header(struct curl_slist *curl_headers, const gchar *header, const gchar *v
 }
 
 static struct curl_slist *
-_get_curl_headers(HTTPDestinationDriver *self, LogMessage *msg)
+_format_request_headers(HTTPDestinationDriver *self, LogMessage *msg)
 {
-  struct curl_slist *curl_headers = NULL;
+  struct curl_slist *headers = NULL;
   GList *l;
 
-  curl_headers = _add_header(curl_headers, "X-Syslog-Host", log_msg_get_value(msg, LM_V_HOST, NULL));
-  curl_headers = _add_header(curl_headers, "X-Syslog-Program", log_msg_get_value(msg, LM_V_PROGRAM, NULL));
-  curl_headers = _add_header(curl_headers, "X-Syslog-Facility", syslog_name_lookup_name_by_value(msg->pri & LOG_FACMASK, sl_facilities));
-  curl_headers = _add_header(curl_headers, "X-Syslog-Level", syslog_name_lookup_name_by_value(msg->pri & LOG_PRIMASK, sl_levels));
+  headers = _add_header(headers, "X-Syslog-Host", log_msg_get_value(msg, LM_V_HOST, NULL));
+  headers = _add_header(headers, "X-Syslog-Program", log_msg_get_value(msg, LM_V_PROGRAM, NULL));
+  headers = _add_header(headers, "X-Syslog-Facility", syslog_name_lookup_name_by_value(msg->pri & LOG_FACMASK, sl_facilities));
+  headers = _add_header(headers, "X-Syslog-Level", syslog_name_lookup_name_by_value(msg->pri & LOG_PRIMASK, sl_levels));
 
   for (l = self->headers; l; l = l->next)
-    curl_headers = curl_slist_append(curl_headers, l->data);
+    headers = curl_slist_append(headers, l->data);
 
-  return curl_headers;
+  return headers;
 }
 
 static const gchar *
@@ -436,9 +436,9 @@ _insert(LogThreadedDestDriver *s, LogMessage *msg)
 
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) s;
 
-  struct curl_slist *curl_headers = _get_curl_headers(self, msg);
+  struct curl_slist *headers = _format_request_headers(self, msg);
   const gchar *body = _get_body(self, msg);
-  _set_payload(self, curl_headers, body);
+  _set_payload(self, headers, body);
 
   if ((ret = curl_easy_perform(self->curl)) != CURLE_OK)
     {
@@ -446,7 +446,7 @@ _insert(LogThreadedDestDriver *s, LogMessage *msg)
                 evt_tag_str("error", curl_easy_strerror(ret)),
                 log_pipe_location_tag(&s->super.super.super));
 
-      curl_slist_free_all(curl_headers);
+      curl_slist_free_all(headers);
 
       return WORKER_INSERT_RESULT_NOT_CONNECTED;
     }
@@ -455,7 +455,7 @@ _insert(LogThreadedDestDriver *s, LogMessage *msg)
   curl_easy_getinfo (self->curl, CURLINFO_RESPONSE_CODE, &http_code);
   retval = _map_http_status_to_worker_status(http_code);
 
-  curl_slist_free_all(curl_headers);
+  curl_slist_free_all(headers);
 
   return retval;
 }
