@@ -59,6 +59,7 @@ typedef struct
   GString *delimiter;
   int ssl_version;
   gboolean peer_verify;
+  gboolean accept_redirects;
   short int method_type;
   glong timeout;
   glong flush_bytes;
@@ -76,6 +77,7 @@ void http_dd_set_method(LogDriver *d, const gchar *method);
 void http_dd_set_user_agent(LogDriver *d, const gchar *user_agent);
 void http_dd_set_headers(LogDriver *d, GList *headers);
 void http_dd_set_body(LogDriver *d, LogTemplate *body);
+void http_dd_set_accept_redirects(LogDriver *d, gboolean accept_redirects);
 void http_dd_set_ca_dir(LogDriver *d, const gchar *ca_dir);
 void http_dd_set_ca_file(LogDriver *d, const gchar *ca_file);
 void http_dd_set_cert_file(LogDriver *d, const gchar *cert_file);
