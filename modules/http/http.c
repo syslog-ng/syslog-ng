@@ -439,18 +439,12 @@ _map_http_status_to_worker_status(glong http_code)
   switch (http_code/100)
     {
     case 4:
-      msg_debug("curl: 4XX: msg dropped",
-                evt_tag_int("status_code", http_code));
       retval = WORKER_INSERT_RESULT_DROP;
       break;
     case 5:
-      msg_debug("curl: 5XX: message will be retried",
-                evt_tag_int("status_code", http_code));
       retval = WORKER_INSERT_RESULT_ERROR;
       break;
     default:
-      msg_debug("curl: OK status code",
-                evt_tag_int("status_code", http_code));
       retval = WORKER_INSERT_RESULT_SUCCESS;
       break;
     }
@@ -485,7 +479,24 @@ _flush(LogThreadedDestDriver *s)
     }
 
   glong http_code = 0;
-  curl_easy_getinfo (self->curl, CURLINFO_RESPONSE_CODE, &http_code);
+
+  curl_easy_getinfo(self->curl, CURLINFO_RESPONSE_CODE, &http_code);
+
+  if (debug_flag)
+    {
+      gdouble total_time = 0;
+      glong redirect_count = 0;
+
+      curl_easy_getinfo(self->curl, CURLINFO_TOTAL_TIME, &total_time);
+      curl_easy_getinfo(self->curl, CURLINFO_REDIRECT_COUNT, &redirect_count);
+      msg_debug("curl: HTTP response received",
+                evt_tag_str("url", self->url),
+                evt_tag_int("status_code", http_code),
+                evt_tag_int("body_size", self->request_body->len),
+                evt_tag_int("batch_size", self->super.batch_size),
+                evt_tag_int("redirected", redirect_count != 0),
+                evt_tag_printf("total_time", "%.3f", total_time));
+    }
   retval = _map_http_status_to_worker_status(http_code);
 
 exit:
