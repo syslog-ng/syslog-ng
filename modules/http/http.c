@@ -301,52 +301,11 @@ _format_stats_instance(LogThreadedDestDriver *s)
   return stats;
 }
 
-static struct curl_slist *
-_add_header(struct curl_slist *curl_headers, const gchar *header, const gchar *value)
-{
-  GString *buffer = scratch_buffers_alloc();
-
-  g_string_append(buffer, header);
-  g_string_append(buffer, ": ");
-  g_string_append(buffer, value);
-  return curl_slist_append(curl_headers, buffer->str);
-}
-
-static struct curl_slist *
-_get_curl_headers(HTTPDestinationDriver *self, LogMessage *msg)
-{
-  struct curl_slist *curl_headers = NULL;
-  GList *l;
-
-  curl_headers = _add_header(curl_headers, "X-Syslog-Host", log_msg_get_value(msg, LM_V_HOST, NULL));
-  curl_headers = _add_header(curl_headers, "X-Syslog-Program", log_msg_get_value(msg, LM_V_PROGRAM, NULL));
-  curl_headers = _add_header(curl_headers, "X-Syslog-Facility", syslog_name_lookup_name_by_value(msg->pri & LOG_FACMASK, sl_facilities));
-  curl_headers = _add_header(curl_headers, "X-Syslog-Level", syslog_name_lookup_name_by_value(msg->pri & LOG_PRIMASK, sl_levels));
-
-  for (l = self->headers; l; l = l->next)
-    curl_headers = curl_slist_append(curl_headers, l->data);
-
-  return curl_headers;
-}
-
-static const gchar *
-_get_body(HTTPDestinationDriver *self, LogMessage *msg)
-{
-  GString *body_rendered = scratch_buffers_alloc();
-
-  if (self->body_template)
-    {
-      log_template_format(self->body_template, msg, &self->template_options, LTZ_SEND,
-                          self->super.seq_num, NULL, body_rendered);
-      return body_rendered->str;
-    }
-  else
-    return log_msg_get_value(msg, LM_V_MESSAGE, NULL);
-}
-
-
+/* Set up options that are static over the course of a single configuration,
+ * request specific options will be set separately
+ */
 static void
-_set_curl_opt(HTTPDestinationDriver *self)
+_setup_static_options_in_curl(HTTPDestinationDriver *self)
 {
   curl_easy_reset(self->curl);
 
@@ -390,6 +349,50 @@ _set_curl_opt(HTTPDestinationDriver *self)
   if (self->method_type == METHOD_TYPE_PUT)
     curl_easy_setopt(self->curl, CURLOPT_CUSTOMREQUEST, "PUT");
 }
+
+static struct curl_slist *
+_add_header(struct curl_slist *curl_headers, const gchar *header, const gchar *value)
+{
+  GString *buffer = scratch_buffers_alloc();
+
+  g_string_append(buffer, header);
+  g_string_append(buffer, ": ");
+  g_string_append(buffer, value);
+  return curl_slist_append(curl_headers, buffer->str);
+}
+
+static struct curl_slist *
+_get_curl_headers(HTTPDestinationDriver *self, LogMessage *msg)
+{
+  struct curl_slist *curl_headers = NULL;
+  GList *l;
+
+  curl_headers = _add_header(curl_headers, "X-Syslog-Host", log_msg_get_value(msg, LM_V_HOST, NULL));
+  curl_headers = _add_header(curl_headers, "X-Syslog-Program", log_msg_get_value(msg, LM_V_PROGRAM, NULL));
+  curl_headers = _add_header(curl_headers, "X-Syslog-Facility", syslog_name_lookup_name_by_value(msg->pri & LOG_FACMASK, sl_facilities));
+  curl_headers = _add_header(curl_headers, "X-Syslog-Level", syslog_name_lookup_name_by_value(msg->pri & LOG_PRIMASK, sl_levels));
+
+  for (l = self->headers; l; l = l->next)
+    curl_headers = curl_slist_append(curl_headers, l->data);
+
+  return curl_headers;
+}
+
+static const gchar *
+_get_body(HTTPDestinationDriver *self, LogMessage *msg)
+{
+  GString *body_rendered = scratch_buffers_alloc();
+
+  if (self->body_template)
+    {
+      log_template_format(self->body_template, msg, &self->template_options, LTZ_SEND,
+                          self->super.seq_num, NULL, body_rendered);
+      return body_rendered->str;
+    }
+  else
+    return log_msg_get_value(msg, LM_V_MESSAGE, NULL);
+}
+
 
 static void
 _set_payload(HTTPDestinationDriver *self, struct curl_slist *curl_headers, const gchar *body)
@@ -486,7 +489,7 @@ http_dd_init(LogPipe *s)
     self->user_agent = g_strdup_printf("syslog-ng %s/libcurl %s",
                                        SYSLOG_NG_VERSION, curl_info->version);
 
-  _set_curl_opt(self);
+  _setup_static_options_in_curl(self);
 
   return log_threaded_dest_driver_init_method(s);
 }
