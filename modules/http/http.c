@@ -385,6 +385,7 @@ _format_request_headers(HTTPDestinationDriver *self, LogMessage *msg)
   struct curl_slist *headers = NULL;
   GList *l;
 
+  headers = _add_header(headers, "Expect", "");
   if (msg)
     {
       /* NOTE: I have my doubts that these headers make sense at all.  None of
