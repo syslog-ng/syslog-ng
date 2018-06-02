@@ -23,6 +23,7 @@ SCL_SUBDIRS	= \
 	sudo		\
 	syslogconf	\
 	system		\
+	telegram	\
 	windowseventlog
 
 
