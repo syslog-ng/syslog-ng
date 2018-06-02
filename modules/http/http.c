@@ -223,6 +223,22 @@ http_dd_set_timeout(LogDriver *d, glong timeout)
   self->timeout = timeout;
 }
 
+void
+http_dd_set_flush_lines(LogDriver *d, glong flush_lines)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  self->flush_lines = flush_lines;
+}
+
+void
+http_dd_set_flush_bytes(LogDriver *d, glong flush_bytes)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  self->flush_bytes = flush_bytes;
+}
+
 
 static gchar *
 _sanitize_curl_debug_message(const gchar *data, gsize size)
@@ -301,6 +317,7 @@ _format_stats_instance(LogThreadedDestDriver *s)
   return stats;
 }
 
+
 /* Set up options that are static over the course of a single configuration,
  * request specific options will be set separately
  */
@@ -350,6 +367,7 @@ _setup_static_options_in_curl(HTTPDestinationDriver *self)
     curl_easy_setopt(self->curl, CURLOPT_CUSTOMREQUEST, "PUT");
 }
 
+
 static struct curl_slist *
 _add_header(struct curl_slist *curl_headers, const gchar *header, const gchar *value)
 {
@@ -367,10 +385,28 @@ _format_request_headers(HTTPDestinationDriver *self, LogMessage *msg)
   struct curl_slist *headers = NULL;
   GList *l;
 
-  headers = _add_header(headers, "X-Syslog-Host", log_msg_get_value(msg, LM_V_HOST, NULL));
-  headers = _add_header(headers, "X-Syslog-Program", log_msg_get_value(msg, LM_V_PROGRAM, NULL));
-  headers = _add_header(headers, "X-Syslog-Facility", syslog_name_lookup_name_by_value(msg->pri & LOG_FACMASK, sl_facilities));
-  headers = _add_header(headers, "X-Syslog-Level", syslog_name_lookup_name_by_value(msg->pri & LOG_PRIMASK, sl_levels));
+  if (msg)
+    {
+      /* NOTE: I have my doubts that these headers make sense at all.  None of
+       * the HTTP collectors I know of, extract this information from the
+       * headers and it makes batching several messages into the same request a
+       * bit more complicated than it needs to be.  I didn't want to break
+       * backward compatibility when batching was introduced, however I think
+       * this should eventually be removed */
+
+      headers = _add_header(headers,
+                            "X-Syslog-Host",
+                            log_msg_get_value(msg, LM_V_HOST, NULL));
+      headers = _add_header(headers,
+                            "X-Syslog-Program",
+                            log_msg_get_value(msg, LM_V_PROGRAM, NULL));
+      headers = _add_header(headers,
+                            "X-Syslog-Facility",
+                            syslog_name_lookup_name_by_value(msg->pri & LOG_FACMASK, sl_facilities));
+      headers = _add_header(headers,
+                            "X-Syslog-Level",
+                            syslog_name_lookup_name_by_value(msg->pri & LOG_PRIMASK, sl_levels));
+    }
 
   for (l = self->headers; l; l = l->next)
     headers = curl_slist_append(headers, l->data);
@@ -378,27 +414,20 @@ _format_request_headers(HTTPDestinationDriver *self, LogMessage *msg)
   return headers;
 }
 
-static const gchar *
-_get_body(HTTPDestinationDriver *self, LogMessage *msg)
+static void
+_add_message_to_batch(HTTPDestinationDriver *self, LogMessage *msg)
 {
-  GString *body_rendered = scratch_buffers_alloc();
-
   if (self->body_template)
     {
-      log_template_format(self->body_template, msg, &self->template_options, LTZ_SEND,
-                          self->super.seq_num, NULL, body_rendered);
-      return body_rendered->str;
+      log_template_append_format(self->body_template, msg, &self->template_options, LTZ_SEND,
+                                 self->super.seq_num, NULL, self->request_body);
     }
   else
-    return log_msg_get_value(msg, LM_V_MESSAGE, NULL);
-}
-
-
-static void
-_set_payload(HTTPDestinationDriver *self, struct curl_slist *curl_headers, const gchar *body)
-{
-  curl_easy_setopt(self->curl, CURLOPT_HTTPHEADER, curl_headers);
-  curl_easy_setopt(self->curl, CURLOPT_POSTFIELDS, body);
+    {
+      if (self->request_body->len)
+        g_string_append_c(self->request_body, '\n');
+      g_string_append(self->request_body, log_msg_get_value(msg, LM_V_MESSAGE, NULL));
+    }
 }
 
 static worker_insert_result_t
@@ -428,38 +457,77 @@ _map_http_status_to_worker_status(glong http_code)
   return retval;
 }
 
+/* we flush the accumulated data if
+ *   1) we reach batch_size,
+ *   2) the message queue becomes empty
+ */
 static worker_insert_result_t
-_insert(LogThreadedDestDriver *s, LogMessage *msg)
+_flush(LogThreadedDestDriver *s)
 {
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) s;
   CURLcode ret;
   worker_insert_result_t retval;
 
-  HTTPDestinationDriver *self = (HTTPDestinationDriver *) s;
+  if (self->super.batch_size == 0)
+    return WORKER_INSERT_RESULT_SUCCESS;
 
-  struct curl_slist *headers = _format_request_headers(self, msg);
-  const gchar *body = _get_body(self, msg);
-  _set_payload(self, headers, body);
+  curl_easy_setopt(self->curl, CURLOPT_HTTPHEADER, self->request_headers);
+  curl_easy_setopt(self->curl, CURLOPT_POSTFIELDS, self->request_body->str);
 
   if ((ret = curl_easy_perform(self->curl)) != CURLE_OK)
     {
       msg_error("curl: error sending HTTP request",
                 evt_tag_str("error", curl_easy_strerror(ret)),
-                log_pipe_location_tag(&s->super.super.super));
-
-      curl_slist_free_all(headers);
-
-      return WORKER_INSERT_RESULT_NOT_CONNECTED;
+                log_pipe_location_tag(&self->super.super.super.super));
+      retval = WORKER_INSERT_RESULT_NOT_CONNECTED;
+      goto exit;
     }
 
   glong http_code = 0;
   curl_easy_getinfo (self->curl, CURLINFO_RESPONSE_CODE, &http_code);
   retval = _map_http_status_to_worker_status(http_code);
 
-  curl_slist_free_all(headers);
-
+exit:
+  g_string_truncate(self->request_body, 0);
+  curl_slist_free_all(self->request_headers);
+  self->request_headers = NULL;
   return retval;
 }
 
+static worker_insert_result_t
+_insert_batched(HTTPDestinationDriver *self, LogMessage *msg)
+{
+  if (self->request_headers == NULL)
+    self->request_headers = _format_request_headers(self, NULL);
+
+  _add_message_to_batch(self, msg);
+
+  if ((self->flush_bytes && self->request_body->len >= self->flush_bytes) ||
+      (self->flush_lines && self->super.batch_size >= self->flush_lines))
+    {
+      return _flush(&self->super);
+    }
+  return WORKER_INSERT_RESULT_QUEUED;
+}
+
+static worker_insert_result_t
+_insert_single(HTTPDestinationDriver *self, LogMessage *msg)
+{
+  self->request_headers = _format_request_headers(self, msg);
+  _add_message_to_batch(self, msg);
+  return _flush(&self->super);
+}
+
+static worker_insert_result_t
+_insert(LogThreadedDestDriver *s, LogMessage *msg)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) s;
+
+  if (self->flush_lines > 0)
+    return _insert_batched(self, msg);
+  else
+    return _insert_single(self, msg);
+}
 
 gboolean
 http_dd_init(LogPipe *s)
@@ -507,6 +575,8 @@ http_dd_free(LogPipe *s)
 
   log_template_options_destroy(&self->template_options);
 
+  g_string_free(self->request_body, TRUE);
+
   curl_easy_cleanup(self->curl);
   curl_global_cleanup();
 
@@ -524,7 +594,6 @@ http_dd_free(LogPipe *s)
   log_threaded_dest_driver_free(s);
 }
 
-
 LogDriver *
 http_dd_new(GlobalConfig *cfg)
 {
@@ -539,11 +608,15 @@ http_dd_new(GlobalConfig *cfg)
   self->super.format_stats_instance = _format_stats_instance;
   self->super.stats_source = SCS_HTTP;
   self->super.worker.insert = _insert;
+  self->super.worker.flush = _flush;
 
   curl_global_init(CURL_GLOBAL_ALL);
 
   self->ssl_version = CURL_SSLVERSION_DEFAULT;
   self->peer_verify = TRUE;
+  self->request_body = g_string_sized_new(32768);
+  self->flush_lines = 0;
+  self->flush_bytes = 0;
 
   return &self->super.super.super;
 }
