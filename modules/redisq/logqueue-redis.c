@@ -37,7 +37,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define ITEMS_PER_MESSAGE 1
+#define ITEMS_PER_MESSAGE 2
 
 QueueType log_queue_redis_type = "FIFO";
 
@@ -49,11 +49,17 @@ _get_length(LogQueue *s)
 }
 
 static void
-_empty_queue(GQueue *self)
+_empty_queue(GQueue *q)
 {
-  while (self && self->length > 0)
+  while (q && (q->length) > 0)
     {
-      LogMessage *msg = g_queue_pop_head(self);
+      LogMessage *msg;
+      LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+
+      msg = g_queue_pop_head(q);
+      POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(q), &path_options);
+
+      log_msg_drop(msg, &path_options, AT_PROCESSED);
     }
 }
 
@@ -61,7 +67,7 @@ static void
 _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   LogQueueRedis *self = (LogQueueRedis *) s;
-  GString *output = g_string_sized_new(128);
+  GString *output = g_string_sized_new(512);
   LogTemplate *template = NULL;
 
   msg_debug("redisq: Pushing msg to tail");
@@ -71,7 +77,15 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
   msg_debug("redisq: push tail", evt_tag_str("message:", output->str));
 
   g_queue_push_tail (self->qredis, msg);
+  g_queue_push_tail (self->qredis, LOG_PATH_OPTIONS_TO_POINTER(path_options));
+
+  g_static_mutex_lock(&self->super.lock);
+  log_queue_push_notify (&self->super);
+  log_msg_ref (msg);
+  g_static_mutex_unlock(&self->super.lock);
+
   stats_counter_inc(self->super.queued_messages);
+  stats_counter_add(self->super.memory_usage, log_msg_get_size(msg));
 }
 
 static LogMessage *
@@ -79,7 +93,7 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
 {
   LogQueueRedis *self = (LogQueueRedis *) s;
   LogMessage *msg = NULL;
-  GString *output = g_string_sized_new(128);
+  GString *output = g_string_sized_new(512);
   LogTemplate *template = NULL;
 
   msg_debug("redisq: Pop msg from head");
@@ -87,6 +101,7 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
   if (self->qredis->length > 0)
     {
       msg = g_queue_pop_head (self->qredis);
+      POINTER_TO_LOG_PATH_OPTIONS (g_queue_pop_head(self->qredis), path_options);
     }
 
   if (msg != NULL)
@@ -97,6 +112,10 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
       msg_debug("redisq: pop head", evt_tag_str("message:", output->str));
 
       stats_counter_dec(self->super.queued_messages);
+      stats_counter_sub(self->super.memory_usage, log_msg_get_size(msg));
+
+      log_msg_ack(msg, path_options, AT_PROCESSED);
+      log_msg_unref(msg);
     }
 
   return msg;
