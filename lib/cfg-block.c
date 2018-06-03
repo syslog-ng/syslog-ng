@@ -125,7 +125,11 @@ cfg_block_generate(CfgBlockGenerator *s, GlobalConfig *cfg, CfgArgs *args, GStri
     return FALSE;
 
   if (cfg_args_is_accepting_varargs(self->arg_defs))
-    cfg_args_set(args, "__VARARGS__", cfg_args_format_varargs(args, self->arg_defs));
+    {
+      gchar *formatted_varargs = cfg_args_format_varargs(args, self->arg_defs);
+      cfg_args_set(args, "__VARARGS__", formatted_varargs);
+      g_free(formatted_varargs);
+    }
 
   value = cfg_lexer_subst_args_in_input(cfg->globals, self->arg_defs, args, self->content, -1, &length, &error);
   if (!value)
