@@ -38,6 +38,7 @@
  * include them all here. If it causes compilation times to increase
  * drastically, we should probably make them into separate compilation
  * units. (Bazsi) */
+#include "urlencode.c"
 #include "numeric-funcs.c"
 #include "str-funcs.c"
 #include "cond-funcs.c"
@@ -102,7 +103,8 @@ static Plugin basicfuncs_plugins[] =
 
   /* misc funcs */
   TEMPLATE_FUNCTION_PLUGIN(tf_env, "env"),
-  TEMPLATE_FUNCTION_PLUGIN(tf_template, "template")
+  TEMPLATE_FUNCTION_PLUGIN(tf_template, "template"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_urlencode, "urlencode")
 };
 
 gboolean
