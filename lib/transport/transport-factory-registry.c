@@ -71,7 +71,7 @@ transport_factory_registry_add(TransportFactoryRegistry *self, TransportFactory 
   g_hash_table_insert(self->registry, (TransportFactoryId *)id, factory);
 }
 
-const TransportFactory *
+TransportFactory *
 transport_factory_registry_lookup(TransportFactoryRegistry *self, const TransportFactoryId *id)
 {
   return g_hash_table_lookup(self->registry, id);
