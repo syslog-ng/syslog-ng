@@ -29,17 +29,23 @@
 
 typedef struct _TransportFactoryId TransportFactoryId;
 
+/*
+ * public API
+ * */
 void transport_factory_id_global_init(void);
 void transport_factory_id_global_deinit(void);
-
-void transport_factory_id_register(TransportFactoryId *);
-GList *transport_factory_id_clone_registered_ids(void);
+const gchar *transport_factory_id_get_transport_name(const TransportFactoryId *);
 void transport_factory_id_free(TransportFactoryId *);
 guint transport_factory_id_hash(gconstpointer);
 gboolean transport_factory_id_equal(const TransportFactoryId *, const TransportFactoryId *);
-TransportFactoryId *transport_factory_id_clone(const TransportFactoryId *);
-TransportFactoryId *transport_factory_id_new(const gchar *transport_name);
-const gchar *transport_factory_id_get_transport_name(const TransportFactoryId *);
+
+/**
+ * private API (for internal usage and test)
+ */
+TransportFactoryId *_transport_factory_id_new(const gchar *transport_name);
+void _transport_factory_id_register(TransportFactoryId *);
+GList *_transport_factory_id_clone_registered_ids(void);
+TransportFactoryId *_transport_factory_id_clone(const TransportFactoryId *);
 
 void _transport_factory_id_lock(void);
 void _transport_factory_id_unlock(void);
@@ -51,8 +57,8 @@ void _transport_factory_id_unlock(void);
     _transport_factory_id_lock(); \
     if (!id)\
       {\
-        id = transport_factory_id_new(transport_name);\
-        transport_factory_id_register(id);\
+        id = _transport_factory_id_new(transport_name);\
+        _transport_factory_id_register(id);\
       }\
     _transport_factory_id_unlock(); \
     return id;\

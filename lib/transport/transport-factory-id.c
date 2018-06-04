@@ -81,7 +81,7 @@ transport_factory_id_global_deinit(void)
 }
 
 void
-transport_factory_id_register(TransportFactoryId *id)
+_transport_factory_id_register(TransportFactoryId *id)
 {
   transport_factory_ids = g_list_append(transport_factory_ids, id);
 }
@@ -99,7 +99,7 @@ _clone(gconstpointer s)
 }
 
 TransportFactoryId *
-transport_factory_id_clone(const TransportFactoryId *id)
+_transport_factory_id_clone(const TransportFactoryId *id)
 {
   return (TransportFactoryId *)_clone((gconstpointer) id);
 }
@@ -111,7 +111,7 @@ _copy_func(gconstpointer src, gpointer data)
 }
 
 GList *
-transport_factory_id_clone_registered_ids(void)
+_transport_factory_id_clone_registered_ids(void)
 {
   return g_list_copy_deep(transport_factory_ids, _copy_func, NULL);
 }
@@ -155,7 +155,7 @@ _transport_factory_id_unlock(void)
 }
 
 TransportFactoryId *
-transport_factory_id_new(const gchar *transport_name)
+_transport_factory_id_new(const gchar *transport_name)
 {
   TransportFactoryId *id = g_new0(TransportFactoryId, 1);
 
