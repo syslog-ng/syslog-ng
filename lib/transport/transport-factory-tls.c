@@ -35,17 +35,50 @@ struct _TransportFactoryTLS
   TLSContext *tls_context;
   TLSSessionVerifyFunc tls_verify_cb;
   gpointer tls_verify_data;
+  gboolean allow_compress;
 };
+
+static void
+_tls_session_allow_compress(TLSSession *tls_session, gboolean allow_compress)
+{
+  if (!allow_compress)
+    {
+      SSL_set_options(tls_session->ssl, SSL_OP_NO_COMPRESSION);
+    }
+  else
+    {
+      SSL_clear_options(tls_session->ssl, SSL_OP_NO_COMPRESSION);
+    }
+}
 
 static LogTransport *
 _construct_transport(const TransportFactory *s, gint fd)
 {
   TransportFactoryTLS *self = (TransportFactoryTLS *)s;
   TLSSession *tls_session = tls_context_setup_session(self->tls_context);
+
   if (!tls_session)
     return NULL;
+
+  _tls_session_allow_compress(tls_session, self->allow_compress);
+
   tls_session_set_verify(tls_session, self->tls_verify_cb, self->tls_verify_data, NULL);
+
   return log_transport_tls_new(tls_session, fd);
+}
+
+void
+transport_factory_tls_enable_compression(TransportFactory *s)
+{
+  TransportFactoryTLS *self = (TransportFactoryTLS *)s;
+  self->allow_compress = TRUE;
+}
+
+void
+transport_factory_tls_disable_compression(TransportFactory *s)
+{
+  TransportFactoryTLS *self = (TransportFactoryTLS *)s;
+  self->allow_compress = FALSE;
 }
 
 TransportFactory *

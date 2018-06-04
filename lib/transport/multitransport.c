@@ -99,6 +99,8 @@ _multitransport_write(LogTransport *s, gpointer buf, gsize count)
 {
   MultiTransport *self = (MultiTransport *)s;
   gssize r = log_transport_write(self->active_transport, buf, count);
+  self->super.cond = self->active_transport->cond;
+
   return r;
 }
 
@@ -107,6 +109,8 @@ _multitransport_read(LogTransport *s, gpointer buf, gsize count, LogTransportAux
 {
   MultiTransport *self = (MultiTransport *)s;
   gssize r = log_transport_read(self->active_transport, buf, count, aux);
+  self->super.cond = self->active_transport->cond;
+
   return r;
 }
 
