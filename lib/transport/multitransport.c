@@ -94,6 +94,14 @@ gboolean multitransport_switch(MultiTransport *self, const TransportFactoryId *f
   return TRUE;
 }
 
+gboolean
+multitransport_contains_factory(MultiTransport *self, const TransportFactoryId *factory_id)
+{
+  const TransportFactory *factory = _lookup_transport_factory(self->registry, factory_id);
+
+  return (factory != NULL);
+}
+
 static gssize
 _multitransport_write(LogTransport *s, gpointer buf, gsize count)
 {
