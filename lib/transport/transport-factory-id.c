@@ -57,11 +57,13 @@ sequence_reset(Sequence *seq, gint init_value)
 }
 
 static GList *transport_factory_ids;
+GStaticMutex transport_factory_ids_mutex;
 
 void
 transport_factory_id_global_init(void)
 {
   sequence_reset(&sequence, 1);
+  g_static_mutex_init(&transport_factory_ids_mutex);
 }
 
 static inline void
@@ -75,12 +77,12 @@ transport_factory_id_global_deinit(void)
 {
   g_list_free_full(transport_factory_ids, _free);
   transport_factory_ids = NULL;
+  g_static_mutex_free(&transport_factory_ids_mutex);
 }
 
 void
 transport_factory_id_register(TransportFactoryId *id)
 {
-  main_loop_assert_main_thread();
   transport_factory_ids = g_list_append(transport_factory_ids, id);
 }
 
@@ -138,6 +140,18 @@ const gchar *
 transport_factory_id_get_transport_name(const TransportFactoryId *id)
 {
   return id->transport_name;
+}
+
+void
+_transport_factory_id_lock(void)
+{
+  g_static_mutex_lock(&transport_factory_ids_mutex);
+}
+
+void
+_transport_factory_id_unlock(void)
+{
+  g_static_mutex_unlock(&transport_factory_ids_mutex);
 }
 
 TransportFactoryId *

@@ -31,6 +31,7 @@ typedef struct _TransportFactoryId TransportFactoryId;
 
 void transport_factory_id_global_init(void);
 void transport_factory_id_global_deinit(void);
+
 void transport_factory_id_register(TransportFactoryId *);
 GList *transport_factory_id_clone_registered_ids(void);
 void transport_factory_id_free(TransportFactoryId *);
@@ -40,15 +41,20 @@ TransportFactoryId *transport_factory_id_clone(const TransportFactoryId *);
 TransportFactoryId *transport_factory_id_new(const gchar *transport_name);
 const gchar *transport_factory_id_get_transport_name(const TransportFactoryId *);
 
+void _transport_factory_id_lock(void);
+void _transport_factory_id_unlock(void);
+
 #define DEFINE_TRANSPORT_FACTORY_ID_FUN(transport_name, func_name) \
   const TransportFactoryId* func_name(void) \
   {\
     static TransportFactoryId *id;\
+    _transport_factory_id_lock(); \
     if (!id)\
       {\
         id = transport_factory_id_new(transport_name);\
         transport_factory_id_register(id);\
       }\
+    _transport_factory_id_unlock(); \
     return id;\
   }
 
