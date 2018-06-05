@@ -28,6 +28,17 @@
 #include "transport/transport-factory.h"
 #include "tlscontext.h"
 
+typedef struct _TransportFactoryTLS TransportFactoryTLS;
+
+struct _TransportFactoryTLS
+{
+  TransportFactory super;
+  TLSContext *tls_context;
+  TLSSessionVerifyFunc tls_verify_cb;
+  gpointer tls_verify_data;
+  gboolean allow_compress;
+};
+
 TransportFactory *transport_factory_tls_new(TLSContext *ctx,
                                             TLSSessionVerifyFunc tls_verify_cb,
                                             gpointer tls_verify_data);
