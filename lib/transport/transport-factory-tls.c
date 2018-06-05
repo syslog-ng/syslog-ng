@@ -27,17 +27,6 @@
 
 DEFINE_TRANSPORT_FACTORY_ID_FUN("tls", transport_factory_tls_id);
 
-typedef struct _TransportFactoryTLS TransportFactoryTLS;
-
-struct _TransportFactoryTLS
-{
-  TransportFactory super;
-  TLSContext *tls_context;
-  TLSSessionVerifyFunc tls_verify_cb;
-  gpointer tls_verify_data;
-  gboolean allow_compress;
-};
-
 static void
 _tls_session_allow_compress(TLSSession *tls_session, gboolean allow_compress)
 {

@@ -28,6 +28,13 @@
 #include "transport/transport-factory.h"
 #include "transport/transport-socket.h"
 
+typedef struct _TransportFactorySocket TransportFactorySocket;
+
+struct _TransportFactorySocket
+{
+  TransportFactory super;
+};
+
 TransportFactory *transport_factory_socket_new(gint sock_type);
 
 const TransportFactoryId *transport_factory_socket_id(void);
