@@ -35,7 +35,7 @@ TransportFactoryRegistry *transport_factory_registry_new(void);
 void transport_factory_registry_free(TransportFactoryRegistry *self);
 
 void transport_factory_registry_add(TransportFactoryRegistry *self, TransportFactory *factory);
-const TransportFactory *transport_factory_registry_lookup(TransportFactoryRegistry *self, const TransportFactoryId *id);
+TransportFactory *transport_factory_registry_lookup(TransportFactoryRegistry *self, const TransportFactoryId *id);
 TransportFactory *transport_factory_registry_remove(TransportFactoryRegistry *self, const TransportFactoryId *id);
 
 #endif

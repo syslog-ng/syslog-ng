@@ -42,6 +42,7 @@ struct _MultiTransport
 LogTransport *multitransport_new(TransportFactory *default_transport_factory, gint fd);
 void multitransport_add_factory(MultiTransport *, TransportFactory *);
 gboolean multitransport_switch(MultiTransport *, const TransportFactoryId *);
+gboolean multitransport_contains_factory(MultiTransport *, const TransportFactoryId *);
 
 #endif
 

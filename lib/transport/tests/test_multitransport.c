@@ -91,6 +91,9 @@ Test(multitransport, test_switch_transport)
   cr_expect_str_eq(multi_transport->active_transport->name, "default");
 
   multitransport_add_factory(multi_transport, fake_factory);
+  cr_expect_not(multitransport_contains_factory(multi_transport, unregistered_transport_factory_id()));
+  cr_expect(multitransport_contains_factory(multi_transport, fake_transport_factory_id()));
+  cr_expect(multitransport_contains_factory(multi_transport, default_transport_factory_id()));
   cr_expect_not(multitransport_switch(multi_transport, unregistered_transport_factory_id()));
   cr_expect_eq(multi_transport->active_transport->read, default_read);
   cr_expect_eq(multi_transport->active_transport->write, default_write);
