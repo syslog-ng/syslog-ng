@@ -25,14 +25,7 @@
 #include "transport/transport-factory-socket.h"
 #include "transport/transport-socket.h"
 
-typedef struct _TransportFactorySocket TransportFactorySocket;
-
 DEFINE_TRANSPORT_FACTORY_ID_FUN("socket", transport_factory_socket_id);
-
-struct _TransportFactorySocket
-{
-  TransportFactory super;
-};
 
 static LogTransport *
 _construct_transport_dgram(const TransportFactory *s, gint fd)
