@@ -70,7 +70,7 @@ _validate_args_callback(gpointer k, gpointer v, gpointer user_data)
   const gchar *reference = ((gpointer *) user_data)[1];
   gboolean *problem_found = ((gpointer *) user_data)[2];
 
-  if ((!defs || cfg_args_get(defs, k) == NULL))
+  if ((!defs || !cfg_args_contains(defs, k)))
     {
       if (cfg_args_is_accepting_varargs(defs))
         {
