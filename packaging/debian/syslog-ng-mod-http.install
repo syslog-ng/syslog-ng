@@ -1,1 +1,2 @@
 usr/lib/syslog-ng/*/libhttp.so
+usr/share/syslog-ng/include/scl/telegram/*

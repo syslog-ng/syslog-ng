@@ -392,3 +392,12 @@ Test(basicfuncs, test_context_funcs)
   assert_template_format_with_context("$(context-values ${comma_value})",
                                       "\"value,with,a,comma\",\"value,with,a,comma\"");
 }
+
+
+Test(basicfuncs, test_tfurlencode)
+{
+  assert_template_format("$(urlencode '')", "");
+  assert_template_format("$(urlencode test)", "test");
+  assert_template_format("$(urlencode <>)", "%3C%3E");
+  assert_template_format("$(urlencode &)", "%26");
+}

@@ -1,29 +1,31 @@
 SCL_SUBDIRS	= \
-	system		\
-	pacct		\
-	syslogconf	\
-	rewrite		\
-	nodejs		\
-	graphite	\
+	apache		\
 	cim		\
-	solaris		\
-	mbox		\
+	cisco		\
+	default-network-drivers	\
 	elasticsearch	\
+	ewmm		\
+	graphite	\
 	graylog2	\
-	kafka		\
 	hdfs		\
 	iptables	\
-	apache		\
-	cisco		\
-	default-network-drivers		\
-	ewmm		\
-	sudo		\
+	kafka		\
+	loadbalancer	\
 	loggly		\
 	logmatic	\
-	snmptrap        \
-	osquery	        \
-        windowseventlog  \
-        loadbalancer
+	mbox		\
+	nodejs		\
+	osquery	\
+	pacct		\
+	rewrite	\
+	snmptrap	\
+	solaris	\
+	sudo		\
+	syslogconf	\
+	system		\
+	telegram	\
+	windowseventlog
+
 
 SCL_CONFIGS	= scl.conf syslog-ng.conf
 

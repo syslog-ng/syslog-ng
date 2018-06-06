@@ -23,6 +23,7 @@ set(SCL_DIRS
     sudo
     syslogconf
     system
+    telegram
     windowseventlog
 )
 
