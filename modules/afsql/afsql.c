@@ -198,14 +198,6 @@ afsql_dd_set_flush_lines(LogDriver *s, gint flush_lines)
 }
 
 void
-afsql_dd_set_flush_timeout(LogDriver *s, gint flush_timeout)
-{
-  AFSqlDestDriver *self = (AFSqlDestDriver *) s;
-
-  self->flush_timeout = flush_timeout;
-}
-
-void
 afsql_dd_set_session_statements(LogDriver *s, GList *session_statements)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
@@ -1064,8 +1056,6 @@ afsql_dd_init(LogPipe *s)
 
   if (self->flush_lines == -1)
     self->flush_lines = cfg->flush_lines;
-  if (self->flush_timeout == -1)
-    self->flush_timeout = cfg->flush_timeout;
 
   if (!dbi_initialized)
     {
@@ -1176,7 +1166,6 @@ afsql_dd_new(GlobalConfig *cfg)
   self->failed_message_counter = 0;
 
   self->flush_lines = -1;
-  self->flush_timeout = -1;
   self->session_statements = NULL;
   self->num_retries = MAX_FAILED_ATTEMPTS;
 

@@ -89,7 +89,6 @@ typedef struct _AFSqlDestDriver
   gint time_reopen;
   gint num_retries;
   gint flush_lines;
-  gint flush_timeout;
   gint flags;
   gboolean ignore_tns_config;
   GList *session_statements;
@@ -121,7 +120,6 @@ void afsql_dd_set_null_value(LogDriver *s, const gchar *null);
 void afsql_dd_set_indexes(LogDriver *s, GList *indexes);
 void afsql_dd_set_retries(LogDriver *s, gint num_retries);
 void afsql_dd_set_flush_lines(LogDriver *s, gint flush_lines);
-void afsql_dd_set_flush_timeout(LogDriver *s, gint flush_timeout);
 void afsql_dd_set_session_statements(LogDriver *s, GList *session_statements);
 void afsql_dd_set_flags(LogDriver *s, gint flags);
 void afsql_dd_set_create_statement_append(LogDriver *s, const gchar *create_statement_append);
