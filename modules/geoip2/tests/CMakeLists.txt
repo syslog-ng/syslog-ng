@@ -3,4 +3,3 @@ add_unit_test(LIBTEST
   INCLUDES "${GEOIP2_INCLUDE_DIR}"
   DEPENDS geoip2-plugin
   SOURCES test_geoip_parser)
-target_compile_definitions(test_geoip2_parser PRIVATE TOP_SRCDIR="${PROJECT_SOURCE_DIR}")

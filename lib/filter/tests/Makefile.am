@@ -16,7 +16,7 @@ lib_filter_tests_test_filters_SOURCES = 			\
 	lib/filter/tests/test_filters.c
 
 lib_filter_tests_test_filters_in_list_CFLAGS     = $(TEST_CFLAGS) \
-	-I${top_srcdir}/lib/filter/tests -DTOP_SRCDIR="\"$(abs_topsrcdir)\""
+	-I${top_srcdir}/lib/filter/tests
 lib_filter_tests_test_filters_in_list_LDADD      = $(TEST_LDADD)  \
 	$(PREOPEN_SYSLOGFORMAT)
 
