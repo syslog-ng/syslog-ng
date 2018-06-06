@@ -885,6 +885,17 @@ afsql_dd_flush(LogThreadedDestDriver *s)
   return WORKER_INSERT_RESULT_SUCCESS;
 }
 
+static gboolean
+afsql_dd_run_insert_query(AFSqlDestDriver *self, GString *table, LogMessage *msg)
+{
+  GString *insert_command;
+
+  insert_command = afsql_dd_build_insert_command(self, msg, table);
+  gboolean success = afsql_dd_run_query(self, insert_command->str, FALSE, NULL);
+  g_string_free(insert_command, TRUE);
+  return success;
+}
+
 /**
  * afsql_dd_insert_db:
  *
@@ -898,7 +909,6 @@ afsql_dd_insert(LogThreadedDestDriver *s, LogMessage *msg)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
   GString *table = NULL;
-  GString *insert_command = NULL;
   worker_insert_result_t retval = WORKER_INSERT_RESULT_ERROR;
 
   table = afsql_dd_ensure_accessible_database_table(self, msg);
@@ -907,12 +917,8 @@ afsql_dd_insert(LogThreadedDestDriver *s, LogMessage *msg)
 
   if (afsql_dd_should_begin_new_transaction(self) && !afsql_dd_begin_transaction(self))
     goto error;
-
-  insert_command = afsql_dd_build_insert_command(self, msg, table);
-  gboolean success = afsql_dd_run_query(self, insert_command->str, FALSE, NULL);
-  g_string_free(insert_command, TRUE);
   
-  if (!success)
+  if (!afsql_dd_run_insert_query(self, table, msg))
     {
       retval = afsql_dd_handle_insert_row_error_depending_on_connection_availability(self);
       goto error;
