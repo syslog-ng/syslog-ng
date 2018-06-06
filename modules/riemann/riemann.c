@@ -298,10 +298,9 @@ _set_timeout_on_connection(RiemannDestDriver *self)
 }
 
 static gboolean
-riemann_dd_connect(RiemannDestDriver *self, gboolean reconnect)
+riemann_dd_connect(LogThreadedDestDriver *s)
 {
-  if (reconnect && self->client)
-    return TRUE;
+  RiemannDestDriver *self = (RiemannDestDriver *)s;
 
   self->client = riemann_client_create(self->type, self->server, self->port,
                                        RIEMANN_CLIENT_OPTION_TLS_CA_FILE, self->tls.cacert,
@@ -563,9 +562,6 @@ riemann_worker_batch_flush(RiemannDestDriver *self)
   if (self->event.n == 0)
     return WORKER_INSERT_RESULT_SUCCESS;
 
-  if (!riemann_dd_connect(self, TRUE))
-    return WORKER_INSERT_RESULT_NOT_CONNECTED;
-
   message = riemann_message_new();
 
   riemann_message_set_events_n(message, self->event.n, self->event.list);
@@ -716,6 +712,7 @@ riemann_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.free_fn = riemann_dd_free;
   self->super.super.super.super.generate_persist_name = riemann_dd_format_persist_name;
 
+  self->super.worker.connect = riemann_dd_connect;
   self->super.worker.disconnect = riemann_dd_disconnect;
   self->super.worker.insert = riemann_worker_insert;
   self->super.worker.flush = riemann_flush_queue;
