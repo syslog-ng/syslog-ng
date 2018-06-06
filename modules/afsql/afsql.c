@@ -1036,6 +1036,35 @@ _init_fields_from_columns_and_values(AFSqlDestDriver *self)
 }
 
 static gboolean
+_initialize_dbi(void)
+{
+  if (!dbi_initialized)
+    {
+      errno = 0;
+      gint rc = dbi_initialize_r(NULL, &dbi_instance);
+
+      if (rc < 0)
+        {
+          /* NOTE: errno might be unreliable, but that's all we have */
+          msg_error("Unable to initialize database access (DBI)",
+                    evt_tag_int("rc", rc),
+                    evt_tag_error("error"));
+          return FALSE;
+        }
+      else if (rc == 0)
+        {
+          msg_error("The database access library (DBI) reports no usable SQL drivers, perhaps DBI drivers are not installed properly");
+          return FALSE;
+        }
+      else
+        {
+          dbi_initialized = TRUE;
+        }
+    }
+  return TRUE;
+}
+
+static gboolean
 afsql_dd_init(LogPipe *s)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
@@ -1065,29 +1094,9 @@ afsql_dd_init(LogPipe *s)
   if (self->flush_lines == -1)
     self->flush_lines = cfg->flush_lines;
 
-  if (!dbi_initialized)
-    {
-      errno = 0;
-      gint rc = dbi_initialize_r(NULL, &dbi_instance);
+  if (!_initialize_dbi())
+    return FALSE;
 
-      if (rc < 0)
-        {
-          /* NOTE: errno might be unreliable, but that's all we have */
-          msg_error("Unable to initialize database access (DBI)",
-                    evt_tag_int("rc", rc),
-                    evt_tag_error("error"));
-          return FALSE;
-        }
-      else if (rc == 0)
-        {
-          msg_error("The database access library (DBI) reports no usable SQL drivers, perhaps DBI drivers are not installed properly");
-          return FALSE;
-        }
-      else
-        {
-          dbi_initialized = TRUE;
-        }
-    }
 
   return TRUE;
 }
