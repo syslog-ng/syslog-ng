@@ -340,54 +340,6 @@ _value_pairs_always_exclude_properties(RiemannDestDriver *self)
     value_pairs_add_glob_pattern(self->fields.attributes, properties[i], FALSE);
 }
 
-static gboolean
-riemann_worker_init(LogPipe *s)
-{
-  RiemannDestDriver *self = (RiemannDestDriver *)s;
-  GlobalConfig *cfg = log_pipe_get_config(s);
-
-  if (!log_dest_driver_init_method(s))
-    return FALSE;
-
-  log_template_options_init(&self->template_options, cfg);
-
-  if (!self->server)
-    self->server = g_strdup("127.0.0.1");
-  if (self->port == -1)
-    self->port = 5555;
-
-  if (!self->fields.host)
-    {
-      self->fields.host = log_template_new(cfg, NULL);
-      log_template_compile(self->fields.host, "${HOST}", NULL);
-    }
-  if (!self->fields.service)
-    {
-      self->fields.service = log_template_new(cfg, NULL);
-      log_template_compile(self->fields.service, "${PROGRAM}", NULL);
-    }
-
-  if (!self->fields.event_time)
-    {
-      self->fields.event_time = log_template_new(cfg, NULL);
-      log_template_compile(self->fields.event_time, "${UNIXTIME}", NULL);
-      self->fields.event_time_unit = RIEMANN_EVENT_FIELD_TIME;
-    }
-
-  _value_pairs_always_exclude_properties(self);
-
-  if (self->event.batch_size_max <= 0)
-    self->event.batch_size_max = 1;
-  self->event.list = (riemann_event_t **)malloc (sizeof (riemann_event_t *) *
-                                                 self->event.batch_size_max);
-
-  msg_verbose("Initializing Riemann destination",
-              evt_tag_str("driver", self->super.super.super.id),
-              evt_tag_str("server", self->server),
-              evt_tag_int("port", self->port));
-
-  return log_threaded_dest_driver_init_method(s);
-}
 
 static void
 riemann_dd_field_string_maybe_add(riemann_event_t *event, LogMessage *msg,
@@ -681,6 +633,55 @@ riemann_flush_queue(LogThreadedDestDriver *s)
   return WORKER_INSERT_RESULT_SUCCESS;
 }
 
+static gboolean
+riemann_dd_init(LogPipe *s)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
+
+  if (!log_dest_driver_init_method(s))
+    return FALSE;
+
+  log_template_options_init(&self->template_options, cfg);
+
+  if (!self->server)
+    self->server = g_strdup("127.0.0.1");
+  if (self->port == -1)
+    self->port = 5555;
+
+  if (!self->fields.host)
+    {
+      self->fields.host = log_template_new(cfg, NULL);
+      log_template_compile(self->fields.host, "${HOST}", NULL);
+    }
+  if (!self->fields.service)
+    {
+      self->fields.service = log_template_new(cfg, NULL);
+      log_template_compile(self->fields.service, "${PROGRAM}", NULL);
+    }
+
+  if (!self->fields.event_time)
+    {
+      self->fields.event_time = log_template_new(cfg, NULL);
+      log_template_compile(self->fields.event_time, "${UNIXTIME}", NULL);
+      self->fields.event_time_unit = RIEMANN_EVENT_FIELD_TIME;
+    }
+
+  _value_pairs_always_exclude_properties(self);
+
+  if (self->event.batch_size_max <= 0)
+    self->event.batch_size_max = 1;
+  self->event.list = (riemann_event_t **)malloc (sizeof (riemann_event_t *) *
+                                                 self->event.batch_size_max);
+
+  msg_verbose("Initializing Riemann destination",
+              evt_tag_str("driver", self->super.super.super.id),
+              evt_tag_str("server", self->server),
+              evt_tag_int("port", self->port));
+
+  return log_threaded_dest_driver_init_method(s);
+}
+
 /*
  * Plugin glue.
  */
@@ -719,7 +720,7 @@ riemann_dd_new(GlobalConfig *cfg)
 
   log_threaded_dest_driver_init_instance(&self->super, cfg);
 
-  self->super.super.super.super.init = riemann_worker_init;
+  self->super.super.super.super.init = riemann_dd_init;
   self->super.super.super.super.free_fn = riemann_dd_free;
   self->super.super.super.super.generate_persist_name = riemann_dd_format_persist_name;
 
