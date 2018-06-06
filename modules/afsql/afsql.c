@@ -965,11 +965,81 @@ afsql_dd_format_persist_name(const LogPipe *s)
 }
 
 static gboolean
+_init_fields_from_columns_and_values(AFSqlDestDriver *self)
+{
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super.super);
+  GList *col, *value;
+  gint len_cols, len_values;
+  gint i;
+
+  if (self->fields)
+    return TRUE;
+
+  len_cols = g_list_length(self->columns);
+  len_values = g_list_length(self->values);
+  if (len_cols != len_values)
+    {
+      msg_error("The number of columns and values do not match",
+                evt_tag_int("len_columns", len_cols),
+                evt_tag_int("len_values", len_values));
+      return FALSE;
+    }
+  self->fields_len = len_cols;
+  self->fields = g_new0(AFSqlField, len_cols);
+
+  for (i = 0, col = self->columns, value = self->values; col && value; i++, col = col->next, value = value->next)
+    {
+      gchar *space;
+
+      space = strchr(col->data, ' ');
+      if (space)
+        {
+          self->fields[i].name = g_strndup(col->data, space - (gchar *) col->data);
+          while (*space == ' ')
+            space++;
+          if (*space != '\0')
+            self->fields[i].type = g_strdup(space);
+          else
+            self->fields[i].type = g_strdup("text");
+        }
+      else
+        {
+          self->fields[i].name = g_strdup(col->data);
+          self->fields[i].type = g_strdup("text");
+        }
+      if (!_is_sql_identifier_sanitized(self->fields[i].name))
+        {
+          msg_error("Column name is not a proper SQL name",
+                    evt_tag_str("column", self->fields[i].name));
+          return FALSE;
+        }
+
+      if (GPOINTER_TO_UINT(value->data) > 4096)
+        {
+          self->fields[i].value = log_template_new(cfg, NULL);
+          log_template_compile(self->fields[i].value, (gchar *) value->data, NULL);
+        }
+      else
+        {
+          switch (GPOINTER_TO_UINT(value->data))
+            {
+            case AFSQL_COLUMN_DEFAULT:
+              self->fields[i].flags |= AFSQL_FF_DEFAULT;
+              break;
+            default:
+              g_assert_not_reached();
+              break;
+            }
+        }
+    }
+  return TRUE;
+}
+
+static gboolean
 afsql_dd_init(LogPipe *s)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
-  gint len_cols, len_values;
 
   if (!log_threaded_dest_driver_init_method(s))
     return FALSE;
@@ -987,69 +1057,8 @@ afsql_dd_init(LogPipe *s)
                   evt_tag_str("type", self->type));
     }
 
-  if (!self->fields)
-    {
-      GList *col, *value;
-      gint i;
-
-      len_cols = g_list_length(self->columns);
-      len_values = g_list_length(self->values);
-      if (len_cols != len_values)
-        {
-          msg_error("The number of columns and values do not match",
-                    evt_tag_int("len_columns", len_cols),
-                    evt_tag_int("len_values", len_values));
-          return FALSE;
-        }
-      self->fields_len = len_cols;
-      self->fields = g_new0(AFSqlField, len_cols);
-
-      for (i = 0, col = self->columns, value = self->values; col && value; i++, col = col->next, value = value->next)
-        {
-          gchar *space;
-
-          space = strchr(col->data, ' ');
-          if (space)
-            {
-              self->fields[i].name = g_strndup(col->data, space - (gchar *) col->data);
-              while (*space == ' ')
-                space++;
-              if (*space != '\0')
-                self->fields[i].type = g_strdup(space);
-              else
-                self->fields[i].type = g_strdup("text");
-            }
-          else
-            {
-              self->fields[i].name = g_strdup(col->data);
-              self->fields[i].type = g_strdup("text");
-            }
-          if (!_is_sql_identifier_sanitized(self->fields[i].name))
-            {
-              msg_error("Column name is not a proper SQL name",
-                        evt_tag_str("column", self->fields[i].name));
-              return FALSE;
-            }
-
-          if (GPOINTER_TO_UINT(value->data) > 4096)
-            {
-              self->fields[i].value = log_template_new(cfg, NULL);
-              log_template_compile(self->fields[i].value, (gchar *) value->data, NULL);
-            }
-          else
-            {
-              switch (GPOINTER_TO_UINT(value->data))
-                {
-                case AFSQL_COLUMN_DEFAULT:
-                  self->fields[i].flags |= AFSQL_FF_DEFAULT;
-                  break;
-                default:
-                  g_assert_not_reached();
-                  break;
-                }
-            }
-        }
-    }
+  if (!_init_fields_from_columns_and_values(self))
+    return FALSE;
 
   log_template_options_init(&self->template_options, cfg);
 
