@@ -744,7 +744,7 @@ afsql_dd_ensure_accessible_database_table(AFSqlDestDriver *self, LogMessage *msg
     {
       /* If validate table is FALSE then close the connection and wait time_reopen time (next call) */
       msg_error("Error checking table, disconnecting from database, trying again shortly",
-                evt_tag_int("time_reopen", self->time_reopen));
+                evt_tag_int("time_reopen", self->super.time_reopen));
       g_string_free(table, TRUE);
       return NULL;
     }
@@ -1049,8 +1049,6 @@ afsql_dd_init(LogPipe *s)
             }
         }
     }
-
-  self->time_reopen = cfg->time_reopen;
 
   log_template_options_init(&self->template_options, cfg);
 

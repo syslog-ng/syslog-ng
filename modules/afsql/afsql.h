@@ -86,7 +86,6 @@ typedef struct _AFSqlDestDriver
   gint fields_len;
   AFSqlField *fields;
   gchar *null_value;
-  gint time_reopen;
   gint num_retries;
   gint flush_lines;
   gint flags;
