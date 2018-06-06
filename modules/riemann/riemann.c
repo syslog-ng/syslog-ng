@@ -273,14 +273,6 @@ riemann_dd_format_persist_name(const LogPipe *s)
   return persist_name;
 }
 
-static void
-riemann_dd_disconnect(LogThreadedDestDriver *s)
-{
-  RiemannDestDriver *self = (RiemannDestDriver *)s;
-
-  riemann_client_disconnect(self->client);
-  self->client = NULL;
-}
 
 static void
 _set_timeout_on_connection(RiemannDestDriver *self)
@@ -319,25 +311,18 @@ riemann_dd_connect(LogThreadedDestDriver *s)
   return TRUE;
 }
 
+static void
+riemann_dd_disconnect(LogThreadedDestDriver *s)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)s;
+
+  riemann_client_disconnect(self->client);
+  self->client = NULL;
+}
+
 /*
  * Main thread
  */
-static void
-_value_pairs_always_exclude_properties(RiemannDestDriver *self)
-{
-  static const gchar *properties[] = {"host", "service", "description", "state",
-                                      "ttl", "metric", "tags", NULL
-                                     };
-  gint i;
-
-  if (!self->fields.attributes)
-    {
-      return;
-    }
-
-  for (i = 0; properties[i]; i++)
-    value_pairs_add_glob_pattern(self->fields.attributes, properties[i], FALSE);
-}
 
 
 static void
@@ -603,6 +588,23 @@ riemann_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
       return riemann_worker_batch_flush(&self->super);
     }
   return WORKER_INSERT_RESULT_QUEUED;
+}
+
+static void
+_value_pairs_always_exclude_properties(RiemannDestDriver *self)
+{
+  static const gchar *properties[] = {"host", "service", "description", "state",
+                                      "ttl", "metric", "tags", NULL
+                                     };
+  gint i;
+
+  if (!self->fields.attributes)
+    {
+      return;
+    }
+
+  for (i = 0; properties[i]; i++)
+    value_pairs_add_glob_pattern(self->fields.attributes, properties[i], FALSE);
 }
 
 static gboolean
