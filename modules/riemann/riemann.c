@@ -40,6 +40,7 @@ typedef struct
   gint port;
   riemann_client_type_t type;
   guint timeout;
+  gint flush_lines;
 
   struct
   {
@@ -69,7 +70,6 @@ typedef struct
   {
     riemann_event_t **list;
     gint n;
-    gint batch_size_max;
   } event;
 } RiemannDestDriver;
 
@@ -179,7 +179,7 @@ riemann_dd_set_flush_lines(LogDriver *d, gint lines)
 {
   RiemannDestDriver *self = (RiemannDestDriver *)d;
 
-  self->event.batch_size_max = lines;
+  self->flush_lines = lines;
 }
 
 gboolean
@@ -487,7 +487,7 @@ _append_event(RiemannDestDriver *self, riemann_event_t *event)
   self->event.n++;
 }
 
-static worker_insert_result_t
+static gboolean
 riemann_worker_insert_one(RiemannDestDriver *self, LogMessage *msg)
 {
   riemann_event_t *event;
@@ -547,15 +547,13 @@ riemann_worker_insert_one(RiemannDestDriver *self, LogMessage *msg)
       _append_event(self, event);
     }
 
-  if (success)
-    return WORKER_INSERT_RESULT_SUCCESS;
-  else
-    return WORKER_INSERT_RESULT_DROP;
+  return success;
 }
 
 static worker_insert_result_t
-riemann_worker_batch_flush(RiemannDestDriver *self)
+riemann_worker_batch_flush(LogThreadedDestDriver *s)
 {
+  RiemannDestDriver *self = (RiemannDestDriver *) s;
   riemann_message_t *message;
   int r;
 
@@ -574,7 +572,7 @@ riemann_worker_batch_flush(RiemannDestDriver *self)
    */
   self->event.n = 0;
   self->event.list = (riemann_event_t **)malloc (sizeof (riemann_event_t *) *
-                                                 self->event.batch_size_max);
+                                                 self->flush_lines);
   if (r != 0)
     return WORKER_INSERT_RESULT_ERROR;
   else
@@ -585,40 +583,24 @@ static worker_insert_result_t
 riemann_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
 {
   RiemannDestDriver *self = (RiemannDestDriver *)s;
-  worker_insert_result_t result;
 
-  if (self->event.n == self->event.batch_size_max)
+  if (!riemann_worker_insert_one(self, msg))
     {
-      result = riemann_worker_batch_flush(self);
-      if (result != WORKER_INSERT_RESULT_SUCCESS)
-        return result;
+      msg_error("riemann: error inserting message to batch, probably a type mismatch. Dropping message",
+                log_pipe_location_tag(&self->super.super.super.super));
+
+      /* in this case, we don't return RESULT_DROPPED as that would drop the
+       * entire batch.  Rather, we simply don't add this message to our
+       * current batch thereby dropping it.  Should we ever get rewind the
+       * current batch we would log the same again.
+       */
     }
 
-  result = riemann_worker_insert_one(self, msg);
-
-  if (self->event.n < self->event.batch_size_max)
-    return result;
-
-  return riemann_worker_batch_flush(self);
-}
-
-static worker_insert_result_t
-riemann_flush_queue(LogThreadedDestDriver *s)
-{
-  RiemannDestDriver *self = (RiemannDestDriver *)s;
-
-  riemann_worker_batch_flush(self);
-
-  /* NOTE: the riemann destination is clearly doing a private batching
-   * implementation, which should rather be using the framework provided by
-   * LogThreadedDestDriver instead.  As the interfaces of
-   * LogThreadedDestDriver slightly changed, this return value is just a
-   * quick port of the old behavior, however it should be ported to actually
-   * use that framework not just be adapted to it.  I lack a riemann test
-   * harness though, so I can't test it.
-   */
-
-  return WORKER_INSERT_RESULT_SUCCESS;
+  if (self->flush_lines && self->super.batch_size >= self->flush_lines)
+    {
+      return riemann_worker_batch_flush(&self->super);
+    }
+  return WORKER_INSERT_RESULT_QUEUED;
 }
 
 static gboolean
@@ -657,10 +639,8 @@ riemann_dd_init(LogPipe *s)
 
   _value_pairs_always_exclude_properties(self);
 
-  if (self->event.batch_size_max <= 0)
-    self->event.batch_size_max = 1;
   self->event.list = (riemann_event_t **)malloc (sizeof (riemann_event_t *) *
-                                                 self->event.batch_size_max);
+                                                 self->flush_lines);
 
   msg_verbose("Initializing Riemann destination",
               evt_tag_str("driver", self->super.super.super.id),
@@ -715,13 +695,14 @@ riemann_dd_new(GlobalConfig *cfg)
   self->super.worker.connect = riemann_dd_connect;
   self->super.worker.disconnect = riemann_dd_disconnect;
   self->super.worker.insert = riemann_worker_insert;
-  self->super.worker.flush = riemann_flush_queue;
+  self->super.worker.flush = riemann_worker_batch_flush;
 
   self->super.format_stats_instance = riemann_dd_format_stats_instance;
   self->super.stats_source = SCS_RIEMANN;
 
   self->port = -1;
   self->type = RIEMANN_CLIENT_TCP;
+  self->flush_lines = 0; /* don't inherit global value */
 
   log_template_options_defaults(&self->template_options);
 
