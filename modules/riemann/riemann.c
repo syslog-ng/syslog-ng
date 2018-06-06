@@ -464,7 +464,7 @@ riemann_dd_field_add_attribute_vp(const gchar *name,
 }
 
 static gboolean
-riemann_add_metric_to_event(RiemannDestDriver *self, riemann_event_t *event, LogMessage *msg, GString *str)
+__riemann_add_metric_to_event(RiemannDestDriver *self, riemann_event_t *event, LogMessage *msg, GString *str)
 {
   log_template_format(self->fields.metric, msg, &self->template_options,
                       LTZ_SEND, self->super.seq_num, NULL, str);
@@ -506,10 +506,16 @@ riemann_add_metric_to_event(RiemannDestDriver *self, riemann_event_t *event, Log
       break;
     }
   return FALSE;
-};
+}
 
 static gboolean
-riemann_add_ttl_to_event(RiemannDestDriver *self, riemann_event_t *event, LogMessage *msg, GString *str)
+riemann_add_metric_to_event(RiemannDestDriver *self, riemann_event_t *event, LogMessage *msg, GString *str)
+{
+  return !riemann_add_metric_to_event(self, event, msg, str);
+}
+
+static gboolean
+__riemann_add_ttl_to_event(RiemannDestDriver *self, riemann_event_t *event, LogMessage *msg, GString *str)
 {
   gdouble d;
 
@@ -529,6 +535,12 @@ riemann_add_ttl_to_event(RiemannDestDriver *self, riemann_event_t *event, LogMes
   return FALSE;
 }
 
+static gboolean
+riemann_add_ttl_to_event(RiemannDestDriver *self, riemann_event_t *event, LogMessage *msg, GString *str)
+{
+  return !__riemann_add_ttl_to_event(self, event, msg, str);
+}
+
 static void
 _append_event(RiemannDestDriver *self, riemann_event_t *event)
 {
@@ -540,7 +552,7 @@ static worker_insert_result_t
 riemann_worker_insert_one(RiemannDestDriver *self, LogMessage *msg)
 {
   riemann_event_t *event;
-  gboolean need_drop = FALSE;
+  gboolean success = TRUE;
   GString *str;
 
   event = riemann_event_new();
@@ -549,15 +561,15 @@ riemann_worker_insert_one(RiemannDestDriver *self, LogMessage *msg)
 
   if (self->fields.metric)
     {
-      need_drop = riemann_add_metric_to_event(self, event, msg, str);
+      success = riemann_add_metric_to_event(self, event, msg, str);
     }
 
-  if (!need_drop && self->fields.ttl)
+  if (success && self->fields.ttl)
     {
-      need_drop = riemann_add_ttl_to_event(self, event, msg, str);
+      success = riemann_add_ttl_to_event(self, event, msg, str);
     }
 
-  if (!need_drop)
+  if (success)
     {
       riemann_dd_field_string_maybe_add(event, msg, self->fields.host,
                                         &self->template_options,
@@ -596,10 +608,10 @@ riemann_worker_insert_one(RiemannDestDriver *self, LogMessage *msg)
       _append_event(self, event);
     }
 
-  if (need_drop)
-    return WORKER_INSERT_RESULT_DROP;
-  else
+  if (success)
     return WORKER_INSERT_RESULT_SUCCESS;
+  else
+    return WORKER_INSERT_RESULT_DROP;
 }
 
 static worker_insert_result_t
