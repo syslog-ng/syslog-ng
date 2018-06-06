@@ -546,6 +546,8 @@ riemann_worker_insert_one(RiemannDestDriver *self, LogMessage *msg)
 
       _append_event(self, event);
     }
+  else
+    riemann_event_free(event);
 
   return success;
 }
