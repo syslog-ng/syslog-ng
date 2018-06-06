@@ -133,12 +133,12 @@ _check_deserialized_message(LogMessage *msg, SerializeArchive *sa)
 }
 
 static LogMessage *
-_create_message_to_be_serialized(void)
+_create_message_to_be_serialized(const gchar *raw_msg, const int raw_msg_len)
 {
   parse_options.flags |= LP_SYSLOG_PROTOCOL;
   NVHandle test_handle = log_msg_get_value_handle("aaa");
 
-  LogMessage *msg = log_msg_new(RAW_MSG, strlen(RAW_MSG), NULL, &parse_options);
+  LogMessage *msg = log_msg_new(raw_msg, raw_msg_len, NULL, &parse_options);
   log_msg_set_value(msg, test_handle, "test_value", -1);
 
   NVHandle indirect_handle = log_msg_get_value_handle("indirect_1");
@@ -162,11 +162,11 @@ _create_message_to_be_serialized(void)
 }
 
 static SerializeArchive *
-_serialize_message_for_test(GString *stream)
+_serialize_message_for_test(GString *stream, const gchar *raw_msg)
 {
   SerializeArchive *sa = serialize_string_archive_new(stream);
 
-  LogMessage *msg = _create_message_to_be_serialized();
+  LogMessage *msg = _create_message_to_be_serialized(raw_msg, strlen(raw_msg));
   log_msg_serialize(msg, sa);
   log_msg_unref(msg);
   return sa;
@@ -178,7 +178,7 @@ Test(logmsg_serialize, serialize)
   gssize length = 0;
   GString *stream = g_string_new("");
 
-  SerializeArchive *sa = _serialize_message_for_test(stream);
+  SerializeArchive *sa = _serialize_message_for_test(stream, RAW_MSG);
   _reset_log_msg_registry();
   LogMessage *msg = log_msg_new_empty();
 
@@ -225,7 +225,7 @@ Test(logmsg_serialize, pe_serialized_message)
 
 Test(logmsg_serialize, serialization_performance)
 {
-  LogMessage *msg = _create_message_to_be_serialized();
+  LogMessage *msg = _create_message_to_be_serialized(RAW_MSG, strlen(RAW_MSG));
   GString *stream = g_string_sized_new(512);
   const int iterations = 100000;
 
@@ -245,7 +245,7 @@ Test(logmsg_serialize, serialization_performance)
 Test(logmsg_serialize, deserialization_performance)
 {
   GString *stream = g_string_sized_new(512);
-  SerializeArchive *sa = _serialize_message_for_test(stream);
+  SerializeArchive *sa = _serialize_message_for_test(stream, RAW_MSG);
   const int iterations = 100000;
   LogMessage *msg;
 
