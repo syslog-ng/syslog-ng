@@ -464,13 +464,13 @@ riemann_dd_field_add_attribute_vp(const gchar *name,
 }
 
 static gboolean
-__riemann_add_metric_to_event(RiemannDestDriver *self, riemann_event_t *event, LogMessage *msg, GString *str)
+riemann_add_metric_to_event(RiemannDestDriver *self, riemann_event_t *event, LogMessage *msg, GString *str)
 {
   log_template_format(self->fields.metric, msg, &self->template_options,
                       LTZ_SEND, self->super.seq_num, NULL, str);
 
   if (str->len == 0)
-    return FALSE;
+    return TRUE;
 
   switch (self->fields.metric->type_hint)
     {
@@ -483,8 +483,8 @@ __riemann_add_metric_to_event(RiemannDestDriver *self, riemann_event_t *event, L
         riemann_event_set(event, RIEMANN_EVENT_FIELD_METRIC_S64, i,
                           RIEMANN_EVENT_FIELD_NONE);
       else
-        return type_cast_drop_helper(self->template_options.on_error,
-                                     str->str, "int");
+        return !type_cast_drop_helper(self->template_options.on_error,
+                                      str->str, "int");
       break;
     }
     case TYPE_HINT_DOUBLE:
@@ -496,26 +496,20 @@ __riemann_add_metric_to_event(RiemannDestDriver *self, riemann_event_t *event, L
         riemann_event_set(event, RIEMANN_EVENT_FIELD_METRIC_D, d,
                           RIEMANN_EVENT_FIELD_NONE);
       else
-        return type_cast_drop_helper(self->template_options.on_error,
-                                     str->str, "double");
+        return !type_cast_drop_helper(self->template_options.on_error,
+                                      str->str, "double");
       break;
     }
     default:
-      return type_cast_drop_helper(self->template_options.on_error,
-                                   str->str, "<unknown>");
+      return !type_cast_drop_helper(self->template_options.on_error,
+                                    str->str, "<unknown>");
       break;
     }
-  return FALSE;
+  return TRUE;
 }
 
 static gboolean
-riemann_add_metric_to_event(RiemannDestDriver *self, riemann_event_t *event, LogMessage *msg, GString *str)
-{
-  return !riemann_add_metric_to_event(self, event, msg, str);
-}
-
-static gboolean
-__riemann_add_ttl_to_event(RiemannDestDriver *self, riemann_event_t *event, LogMessage *msg, GString *str)
+riemann_add_ttl_to_event(RiemannDestDriver *self, riemann_event_t *event, LogMessage *msg, GString *str)
 {
   gdouble d;
 
@@ -524,21 +518,15 @@ __riemann_add_ttl_to_event(RiemannDestDriver *self, riemann_event_t *event, LogM
                       str);
 
   if (str->len == 0)
-    return FALSE;
+    return TRUE;
 
   if (type_cast_to_double (str->str, &d, NULL))
     riemann_event_set(event, RIEMANN_EVENT_FIELD_TTL, d,
                       RIEMANN_EVENT_FIELD_NONE);
   else
-    return type_cast_drop_helper(self->template_options.on_error,
-                                 str->str, "double");
-  return FALSE;
-}
-
-static gboolean
-riemann_add_ttl_to_event(RiemannDestDriver *self, riemann_event_t *event, LogMessage *msg, GString *str)
-{
-  return !__riemann_add_ttl_to_event(self, event, msg, str);
+    return !type_cast_drop_helper(self->template_options.on_error,
+                                  str->str, "double");
+  return TRUE;
 }
 
 static void
