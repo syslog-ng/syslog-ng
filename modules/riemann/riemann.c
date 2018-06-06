@@ -606,14 +606,6 @@ riemann_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
   return riemann_worker_batch_flush(self);
 }
 
-static void
-riemann_worker_thread_deinit(LogThreadedDestDriver *s)
-{
-  RiemannDestDriver *self = (RiemannDestDriver *)s;
-
-  riemann_worker_batch_flush(self);
-}
-
 static worker_insert_result_t
 riemann_flush_queue(LogThreadedDestDriver *s)
 {
@@ -726,7 +718,6 @@ riemann_dd_new(GlobalConfig *cfg)
 
   self->super.worker.disconnect = riemann_dd_disconnect;
   self->super.worker.insert = riemann_worker_insert;
-  self->super.worker.thread_deinit = riemann_worker_thread_deinit;
   self->super.worker.flush = riemann_flush_queue;
 
   self->super.format_stats_instance = riemann_dd_format_stats_instance;
