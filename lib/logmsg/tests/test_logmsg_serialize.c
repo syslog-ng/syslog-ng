@@ -195,7 +195,7 @@ test_serialize(void)
 
   indirect_handle = log_msg_get_value_handle("indirect_1");
   const gchar *indirect_value = log_msg_get_value(msg, indirect_handle, &length);
-  assert_nstring(indirect_value, length, "val", 3, ERROR_MSG);
+  assert_nstring(indirect_value, length, "value", 5, ERROR_MSG);
 
   log_msg_unref(msg);
   serialize_archive_free(sa);
