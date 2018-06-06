@@ -31,8 +31,8 @@ usr/lib/syslog-ng/*/libappmodel.so
 usr/lib/syslog-ng/*/libjson-plugin.so
 usr/lib/syslog-ng/libloggen_helper-*.so.*
 usr/lib/syslog-ng/libloggen_plugin-*.so.*
-usr/lib/syslog-ng/loggen/libloggen_socket_plugin*.so*
-usr/lib/syslog-ng/loggen/libloggen_ssl_plugin*.so*
+usr/lib/syslog-ng/*/loggen/libloggen_socket_plugin*.so*
+usr/lib/syslog-ng/*/loggen/libloggen_ssl_plugin*.so*
 usr/share/syslog-ng/include/scl/system/*
 usr/share/syslog-ng/include/scl/syslogconf/*
 usr/share/syslog-ng/include/scl/rewrite/*
