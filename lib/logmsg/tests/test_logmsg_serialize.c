@@ -22,12 +22,14 @@
  *
  */
 
-#include "testutils.h"
+#include "logmsg/logmsg.h"
+#include "msg-format.h"
 #include "stopwatch.h"
 #include "apphook.h"
 #include "cfg.h"
 #include "plugin.h"
 #include "logmsg/logmsg-serialize.h"
+#include <criterion/criterion.h>
 
 GlobalConfig *cfg;
 
@@ -118,25 +120,25 @@ _check_deserialized_message(LogMessage *msg, SerializeArchive *sa)
 
   cfg->template_options.frac_digits = 3;
   log_template_append_format(template, msg, &cfg->template_options, LTZ_SEND, 0, NULL, output);
-  assert_string(output->str, "2006-10-29T01:59:59.156+01:00", ERROR_MSG);
+  cr_assert_str_eq(output->str, "2006-10-29T01:59:59.156+01:00", ERROR_MSG);
 
-  assert_string(log_msg_get_value(msg, LM_V_HOST, NULL), "mymachine", ERROR_MSG);
-  assert_string(log_msg_get_value(msg, LM_V_PROGRAM, NULL), "evntslog", ERROR_MSG);
-  assert_string(log_msg_get_value(msg, LM_V_MESSAGE, NULL), "An application event log entry...", ERROR_MSG);
-  assert_null(log_msg_get_value_if_set(msg, log_msg_get_value_handle("unset_value"), NULL), ERROR_MSG);
-  assert_string(log_msg_get_value_by_name(msg, ".SDATA.exampleSDID@0.eventSource", NULL), "Application", ERROR_MSG);
-  assert_guint16(msg->pri, 132, ERROR_MSG);
+  cr_assert_str_eq(log_msg_get_value(msg, LM_V_HOST, NULL), "mymachine", ERROR_MSG);
+  cr_assert_str_eq(log_msg_get_value(msg, LM_V_PROGRAM, NULL), "evntslog", ERROR_MSG);
+  cr_assert_str_eq(log_msg_get_value(msg, LM_V_MESSAGE, NULL), "An application event log entry...", ERROR_MSG);
+  cr_assert_null(log_msg_get_value_if_set(msg, log_msg_get_value_handle("unset_value"), NULL), ERROR_MSG);
+  cr_assert_str_eq(log_msg_get_value_by_name(msg, ".SDATA.exampleSDID@0.eventSource", NULL), "Application", ERROR_MSG);
+  cr_assert_eq(msg->pri, 132, ERROR_MSG);
   log_template_unref(template);
   g_string_free(output, TRUE);
 }
 
 static LogMessage *
-_create_message_to_be_serialized(void)
+_create_message_to_be_serialized(const gchar *raw_msg, const int raw_msg_len)
 {
   parse_options.flags |= LP_SYSLOG_PROTOCOL;
   NVHandle test_handle = log_msg_get_value_handle("aaa");
 
-  LogMessage *msg = log_msg_new(RAW_MSG, strlen(RAW_MSG), NULL, &parse_options);
+  LogMessage *msg = log_msg_new(raw_msg, raw_msg_len, NULL, &parse_options);
   log_msg_set_value(msg, test_handle, "test_value", -1);
 
   NVHandle indirect_handle = log_msg_get_value_handle("indirect_1");
@@ -160,42 +162,41 @@ _create_message_to_be_serialized(void)
 }
 
 static SerializeArchive *
-_serialize_message_for_test(GString *stream)
+_serialize_message_for_test(GString *stream, const gchar *raw_msg)
 {
   SerializeArchive *sa = serialize_string_archive_new(stream);
 
-  LogMessage *msg = _create_message_to_be_serialized();
+  LogMessage *msg = _create_message_to_be_serialized(raw_msg, strlen(raw_msg));
   log_msg_serialize(msg, sa);
   log_msg_unref(msg);
   return sa;
 }
 
-static void
-test_serialize(void)
+Test(logmsg_serialize, serialize)
 {
   NVHandle indirect_handle = 0;
   gssize length = 0;
   GString *stream = g_string_new("");
 
-  SerializeArchive *sa = _serialize_message_for_test(stream);
+  SerializeArchive *sa = _serialize_message_for_test(stream, RAW_MSG);
   _reset_log_msg_registry();
   LogMessage *msg = log_msg_new_empty();
 
-  assert_true(log_msg_deserialize(msg, sa), ERROR_MSG);
+  cr_assert(log_msg_deserialize(msg, sa), ERROR_MSG);
 
   /* we use nv_registry_get_handle() as it will not change the name-value
    * pair flags, whereas log_msg_get_value_handle() would */
   NVHandle sdata_handle = nv_registry_get_handle(logmsg_registry, ".SDATA.exampleSDID@0.eventSource");
-  assert_true(sdata_handle != 0,
-              "the .SDATA.exampleSDID@0.eventSource handle was not defined during deserialization");
-  assert_true(log_msg_is_handle_sdata(sdata_handle),
-              "deserialized SDATA name-value pairs have to marked as such");
+  cr_assert(sdata_handle != 0,
+            "the .SDATA.exampleSDID@0.eventSource handle was not defined during deserialization");
+  cr_assert(log_msg_is_handle_sdata(sdata_handle),
+            "deserialized SDATA name-value pairs have to marked as such");
 
   _check_deserialized_message(msg, sa);
 
   indirect_handle = log_msg_get_value_handle("indirect_1");
   const gchar *indirect_value = log_msg_get_value(msg, indirect_handle, &length);
-  assert_nstring(indirect_value, length, "val", 3, ERROR_MSG);
+  cr_assert(0==strncmp(indirect_value, "value", length), ERROR_MSG);
 
   log_msg_unref(msg);
   serialize_archive_free(sa);
@@ -203,8 +204,7 @@ test_serialize(void)
 
 }
 
-static void
-test_pe_serialized_message(void)
+Test(logmsg_serialize, pe_serialized_message)
 {
   GString serialized = {0};
   serialized.allocated_len = 0;
@@ -215,7 +215,7 @@ test_pe_serialized_message(void)
   SerializeArchive *sa = serialize_string_archive_new(&serialized);
   _reset_log_msg_registry();
 
-  assert_true(log_msg_deserialize(msg, sa), ERROR_MSG);
+  cr_assert(log_msg_deserialize(msg, sa), ERROR_MSG);
 
   _check_deserialized_message(msg, sa);
 
@@ -223,10 +223,9 @@ test_pe_serialized_message(void)
   serialize_archive_free(sa);
 }
 
-static void
-test_serialization_performance(void)
+Test(logmsg_serialize, serialization_performance)
 {
-  LogMessage *msg = _create_message_to_be_serialized();
+  LogMessage *msg = _create_message_to_be_serialized(RAW_MSG, strlen(RAW_MSG));
   GString *stream = g_string_sized_new(512);
   const int iterations = 100000;
 
@@ -243,11 +242,10 @@ test_serialization_performance(void)
   g_string_free(stream, TRUE);
 }
 
-static void
-test_deserialization_performance(void)
+Test(logmsg_serialize, deserialization_performance)
 {
   GString *stream = g_string_sized_new(512);
-  SerializeArchive *sa = _serialize_message_for_test(stream);
+  SerializeArchive *sa = _serialize_message_for_test(stream, RAW_MSG);
   const int iterations = 100000;
   LogMessage *msg;
 
@@ -264,19 +262,22 @@ test_deserialization_performance(void)
   g_string_free(stream, TRUE);
 }
 
-int
-main(int argc, char **argv)
+static void
+setup(void)
 {
   app_startup();
   cfg = cfg_new_snippet();
   cfg_load_module(cfg, "syslogformat");
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, cfg);
-  test_serialize();
-  test_pe_serialized_message();
-  test_serialization_performance();
-  test_deserialization_performance();
+}
+
+static void
+teardown(void)
+{
   cfg_free(cfg);
   app_shutdown();
-  return 0;
 }
+
+TestSuite(logmsg_serialize, .init = setup, .fini = teardown);
+
