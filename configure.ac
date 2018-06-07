@@ -1669,6 +1669,8 @@ else
 fi
 YFLAGS="-d"
 
+TOOL_DEPS_LIBS="${TOOL_DEPS_LIBS} \$(top_builddir)/lib/secret-storage/libsecret-storage.la"
+
 enable_value()
 {
         if test "x$1" = "xyes" ; then
