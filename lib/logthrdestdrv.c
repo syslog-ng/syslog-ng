@@ -155,20 +155,10 @@ _disconnect_and_suspend(LogThreadedDestDriver *self)
 void
 _accept_batch(LogThreadedDestDriver *self)
 {
-  step_sequence_number(&self->seq_num);
   log_queue_ack_backlog(self->worker.queue, self->batch_size);
   stats_counter_add(self->written_messages, self->batch_size);
   self->retries_counter = 0;
   self->batch_size = 0;
-}
-
-/* Put the message on the backlog by increasing batch_size.  It will be
- * acknowledged by the next _accept_message(), rewound by the next
- * _rewind_message() or dropped by the next _drop_message() */
-void
-_queue_message_into_batch(LogThreadedDestDriver *self)
-{
-  step_sequence_number(&self->seq_num);
 }
 
 /* NOTE: runs in the worker thread */
@@ -236,10 +226,11 @@ _process_result(LogThreadedDestDriver *self, gint result)
 
     case WORKER_INSERT_RESULT_SUCCESS:
       _accept_batch(self);
+      step_sequence_number(&self->seq_num);
       break;
 
     case WORKER_INSERT_RESULT_QUEUED:
-      _queue_message_into_batch(self);
+      step_sequence_number(&self->seq_num);
       break;
 
     default:
