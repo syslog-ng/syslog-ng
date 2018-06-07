@@ -263,12 +263,12 @@ _perform_inserts(LogThreadedDestDriver *self)
       msg_set_context(msg);
       log_msg_refcache_start_consumer(msg, &path_options);
 
+      self->batch_size++;
       ScratchBuffersMarker mark;
       scratch_buffers_mark(&mark);
       result = self->worker.insert(self, msg);
       scratch_buffers_reclaim_marked(mark);
 
-      self->batch_size++;
       _process_result(self, result);
 
       log_msg_unref(msg);
