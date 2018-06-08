@@ -574,6 +574,7 @@ log_reader_set_options(LogReader *s, LogPipe *control, LogReaderOptions *options
 
   self->options = options;
   log_proto_server_set_options(self->proto, &self->options->proto_options.super);
+  log_proto_server_set_ack_tracker(self->proto, self->super.ack_tracker);
 }
 
 /* run in the main thread in reaction to a log_reader_reopen to change

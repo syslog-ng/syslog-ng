@@ -169,6 +169,7 @@ pkginclude_HEADERS			+= \
 	lib/bookmark.h			\
 	lib/ringbuffer.h		\
 	lib/ack_tracker.h		\
+	lib/late_ack_tracker.h \
 	lib/host-id.h			\
 	lib/resolved-configurable-paths.h \
 	lib/pe-versioning.h
