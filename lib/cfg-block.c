@@ -90,8 +90,8 @@ _validate_args_callback(gpointer k, gpointer v, gpointer user_data)
     }
 }
 
-static gboolean
-_validate_args(CfgArgs *self, CfgArgs *defs, const gchar *reference)
+gboolean
+_validate_spurious_args(CfgArgs *self, CfgArgs *defs, const gchar *reference)
 {
   gboolean problem_found = FALSE;
   gpointer validate_params[] = { defs, (gchar *) reference, &problem_found };
@@ -104,6 +104,11 @@ _validate_args(CfgArgs *self, CfgArgs *defs, const gchar *reference)
   return TRUE;
 }
 
+static gboolean
+_validate_args(CfgArgs *self, CfgArgs *defs, const gchar *reference)
+{
+  return _validate_spurious_args(self, defs, reference);
+}
 
 /*
  * cfg_block_generate:
