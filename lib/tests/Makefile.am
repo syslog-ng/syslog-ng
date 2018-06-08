@@ -17,8 +17,15 @@ lib_tests_TESTS		= \
 
 check_PROGRAMS		+= ${lib_tests_TESTS}
 
+if ENABLE_TESTING
 noinst_PROGRAMS 	= \
 	lib/tests/test_host_resolve
+
+lib_tests_test_host_resolve_CFLAGS	=	\
+	$(TEST_CFLAGS)
+lib_tests_test_host_resolve_LDADD	=	\
+	$(TEST_LDADD)
+endif
 
 lib_tests_test_cfg_lexer_subst_CFLAGS	=	\
 	$(TEST_CFLAGS)
@@ -48,11 +55,6 @@ lib_tests_test_reloc_LDADD	=	\
 lib_tests_test_hostname_CFLAGS	=	\
 	$(TEST_CFLAGS)
 lib_tests_test_hostname_LDADD	=	\
-	$(TEST_LDADD)
-
-lib_tests_test_host_resolve_CFLAGS	=	\
-	$(TEST_CFLAGS)
-lib_tests_test_host_resolve_LDADD	=	\
 	$(TEST_LDADD)
 
 lib_tests_test_rcptid_CFLAGS = $(TEST_CFLAGS)
