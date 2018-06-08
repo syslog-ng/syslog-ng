@@ -42,6 +42,8 @@ struct _LogQueueRedis
   LogQueue super;
 
   GQueue *qredis;
+  GQueue *qbacklog;
+
   GlobalConfig *cfg;
 };
 

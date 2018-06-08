@@ -67,14 +67,8 @@ static void
 _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   LogQueueRedis *self = (LogQueueRedis *) s;
-  GString *output = g_string_sized_new(512);
-  LogTemplate *template = NULL;
 
   msg_debug("redisq: Pushing msg to tail");
-  template = log_template_new(self->cfg, NULL);
-  log_template_compile(template, "$MSG\n", NULL);
-  log_template_format(template, msg, NULL, LTZ_LOCAL, 0, NULL, output);
-  msg_debug("redisq: push tail", evt_tag_str("message:", output->str));
 
   g_queue_push_tail (self->qredis, msg);
   g_queue_push_tail (self->qredis, LOG_PATH_OPTIONS_TO_POINTER(path_options));
@@ -93,8 +87,6 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
 {
   LogQueueRedis *self = (LogQueueRedis *) s;
   LogMessage *msg = NULL;
-  GString *output = g_string_sized_new(512);
-  LogTemplate *template = NULL;
 
   msg_debug("redisq: Pop msg from head");
 
@@ -106,16 +98,18 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
 
   if (msg != NULL)
     {
-      template = log_template_new(self->cfg, NULL);
-      log_template_compile(template, "$MSG\n", NULL);
-      log_template_format(template, msg, NULL, LTZ_LOCAL, 0, NULL, output);
-      msg_debug("redisq: pop head", evt_tag_str("message:", output->str));
-
       stats_counter_dec(self->super.queued_messages);
       stats_counter_sub(self->super.memory_usage, log_msg_get_size(msg));
 
-      log_msg_ack(msg, path_options, AT_PROCESSED);
       log_msg_unref(msg);
+
+      if (self->super.use_backlog)
+        {
+          msg_debug("redisq: qbacklog push");
+          log_msg_ref (msg);
+          g_queue_push_tail (self->qbacklog, msg);
+          g_queue_push_tail (self->qbacklog, LOG_PATH_OPTIONS_TO_POINTER (path_options));
+        }
     }
 
   return msg;
@@ -125,18 +119,40 @@ static void
 _ack_backlog(LogQueue *s, gint num_msg_to_ack)
 {
   LogQueueRedis *self = (LogQueueRedis *) s;
+  LogMessage *msg;
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  guint i;
+
+  msg_debug("redisq: ack backlog");
+
+  for (i = 0; i < num_msg_to_ack; i++)
+    {
+      if (self->qbacklog->length < ITEMS_PER_MESSAGE)
+        return;
+
+      msg_debug("redisq: ack backlog loop");
+
+      msg = g_queue_pop_head (self->qbacklog);
+      POINTER_TO_LOG_PATH_OPTIONS (g_queue_pop_head (self->qbacklog), &path_options);
+      log_msg_ack (msg, &path_options, AT_PROCESSED);
+      log_msg_unref (msg);
+    }
 }
 
 static void
 _rewind_backlog(LogQueue *s, guint rewind_count)
 {
   LogQueueRedis *self = (LogQueueRedis *) s;
+
+  msg_debug("redisq: rewind backlog msg");
 }
 
 void
 _backlog_all(LogQueue *s)
 {
   LogQueueRedis *self = (LogQueueRedis *) s;
+
+  msg_debug("redisq: backlog all");
 }
 
 static void
@@ -149,6 +165,10 @@ _free(LogQueue *s)
   _empty_queue(self->qredis);
   g_queue_free(self->qredis);
   self->qredis = NULL;
+
+  _empty_queue(self->qbacklog);
+  g_queue_free(self->qbacklog);
+  self->qbacklog = NULL;
 
   log_queue_free_method(&self->super);
 }
@@ -175,6 +195,7 @@ log_queue_redis_init_instance(GlobalConfig *cfg, const gchar *persist_name)
 
   log_queue_init_instance(&self->super, persist_name);
   self->qredis = g_queue_new();
+  self->qbacklog = g_queue_new();
   self->cfg = cfg;
   _set_virtual_functions(self);
   return &self->super;
