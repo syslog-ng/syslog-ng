@@ -30,6 +30,7 @@
 
 void child_manager_register(pid_t pid, void (*callback)(pid_t, int, gpointer), gpointer user_data,
                             GDestroyNotify user_data_destroy);
+void child_manager_register_external_sigchld_handler(void (*callback)(int));
 void child_manager_unregister(pid_t pid);
 void child_manager_sigchild(pid_t pid, int status);
 
