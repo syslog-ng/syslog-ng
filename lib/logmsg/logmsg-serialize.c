@@ -327,7 +327,8 @@ error:
 }
 
 static gboolean
-log_msg_read_sd_param_first(SerializeArchive *sa, gchar *sd_element_name, LogMessage *self, gboolean *has_more)
+log_msg_read_sd_param_first(SerializeArchive *sa, gchar *sd_element_name, gsize sd_element_name_len, LogMessage *self,
+                            gboolean *has_more)
 {
   gchar *name = NULL, *value = NULL;
   gsize name_len, value_len;
@@ -340,7 +341,7 @@ log_msg_read_sd_param_first(SerializeArchive *sa, gchar *sd_element_name, LogMes
 
   if (name_len != 0 && value_len != 0)
     {
-      strncpy(sd_param_name, sd_element_name, sizeof(sd_element_name)/sizeof(sd_element_name[0]));
+      strncpy(sd_param_name, sd_element_name, sd_element_name_len);
       strncpy(sd_param_name + strlen(sd_element_name), name, name_len);
       log_msg_set_value(self, log_msg_get_value_handle(sd_param_name), value, value_len);
       *has_more = TRUE;
@@ -378,7 +379,7 @@ log_msg_read_sd_element(SerializeArchive *sa, LogMessage *self, gboolean *has_mo
   sd_element_root[logmsg_sd_prefix_len + sd_id_len]='.';
 
 
-  if (!log_msg_read_sd_param_first(sa, sd_element_root, self, &has_more_param))
+  if (!log_msg_read_sd_param_first(sa, sd_element_root, G_N_ELEMENTS(sd_element_root), self, &has_more_param))
     goto error;
 
   while (has_more_param)
