@@ -54,13 +54,25 @@ typedef struct _ConfgenExec
   gchar *exec;
 } ConfgenExec;
 
+static void
+_read_program_output(FILE *out, GString *result)
+{
+  gchar buf[1024];
+  gsize res;
+
+  while ((res = fread(buf, 1, sizeof(buf), out)) > 0)
+    {
+      g_string_append_len(result, buf, res);
+    }
+}
+
 gboolean
 confgen_exec_generate(CfgBlockGenerator *s, GlobalConfig *cfg, CfgArgs *args, GString *result, const gchar *reference)
 {
   ConfgenExec *self = (ConfgenExec *) s;
   FILE *out;
-  gsize res;
   gchar buf[256];
+  gint res;
 
   g_snprintf(buf, sizeof(buf), "%s confgen %s", cfg_lexer_lookup_context_name_by_type(self->super.context),
              self->super.name);
@@ -79,12 +91,8 @@ confgen_exec_generate(CfgBlockGenerator *s, GlobalConfig *cfg, CfgArgs *args, GS
                 evt_tag_error("error"));
       return FALSE;
     }
-  g_string_set_size(result, 1024);
-  while ((res = fread(result->str + result->len, 1, 1024, out)) > 0)
-    {
-      result->len += res;
-      g_string_set_size(result, result->len + 1024);
-    }
+
+  _read_program_output(out, result);
   res = pclose(out);
   if (res != 0)
     {
