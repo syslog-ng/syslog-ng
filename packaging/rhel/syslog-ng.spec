@@ -1,8 +1,8 @@
 %global ivykis_ver 0.36.1
 
 Name: syslog-ng
-Version: 3.15.1
-Release: 2%{?dist}
+Version: 3.16.1
+Release: 1%{?dist}
 Summary: Next-generation syslog server
 
 Group: System Environment/Daemons
@@ -420,6 +420,9 @@ fi
 %{_datadir}/%{name}/tools/
 
 %changelog
+* Thu Jun 14 2018 Gabor Nagy <gabor.nagy@balabit.com> - 3.16.1-1
+- update to 3.16.1
+
 * Wed May 30 2018 Peter Czanik <peter@czanik.hu> - 3.15.1-2
 - add support for modularized loggen
 - use external rabbitmq-devel as it's no more bundled
