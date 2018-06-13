@@ -26,6 +26,7 @@
 
 #include "syslog-ng.h"
 #include "messages.h"
+#include "atomic.h"
 #include <openssl/ssl.h>
 
 typedef enum
@@ -94,7 +95,9 @@ void tls_session_set_trusted_fingerprints(TLSContext *self, GList *fingerprints)
 void tls_session_set_trusted_dn(TLSContext *self, GList *dns);
 
 TLSContext *tls_context_new(TLSMode mode, const gchar *config_location);
-void tls_context_free(TLSContext *s);
+TLSContext *tls_context_ref(TLSContext *self);
+void tls_context_unref(TLSContext *self);
+
 
 gboolean tls_context_set_verify_mode_by_name(TLSContext *self, const gchar *mode_str);
 gboolean tls_context_set_ssl_options_by_name(TLSContext *self, GList *options);

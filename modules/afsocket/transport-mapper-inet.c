@@ -277,7 +277,7 @@ transport_mapper_inet_free_method(TransportMapper *s)
     }
 
   if (self->tls_context)
-    tls_context_free(self->tls_context);
+    tls_context_unref(self->tls_context);
 
   transport_mapper_free_method(s);
 }
