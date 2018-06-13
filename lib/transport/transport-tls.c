@@ -144,8 +144,7 @@ log_transport_tls_write_method(LogTransport *s, const gpointer buf, gsize buflen
 tls_error:
 
   msg_error("SSL error while writing stream",
-            tls_context_format_tls_error_tag(self->tls_session->ctx),
-            tls_context_format_location_tag(self->tls_session->ctx));
+            tls_context_format_tls_error_tag(self->tls_session->ctx));
   ERR_clear_error();
 
   errno = EPIPE;
