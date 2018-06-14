@@ -263,11 +263,11 @@ Test(secretstorage, test_rlimit)
   cr_assert(!getrlimit(RLIMIT_MEMLOCK, &locked_limit));
   locked_limit.rlim_cur = MIN(locked_limit.rlim_max, 64 * 1024);
   cr_assert(!setrlimit(RLIMIT_MEMLOCK, &locked_limit));
-  const gsize PAGESIZE = sysconf(_SC_PAGE_SIZE);
+  const gsize pagesize = sysconf(_SC_PAGE_SIZE);
 
   gchar *key_fmt = g_strdup("keyXXX");
   int i = 0;
-  int for_limit = locked_limit.rlim_cur/PAGESIZE;
+  int for_limit = locked_limit.rlim_cur/pagesize;
   for (; i < for_limit; i++)
     {
       sprintf(key_fmt, "key%03d", i);
