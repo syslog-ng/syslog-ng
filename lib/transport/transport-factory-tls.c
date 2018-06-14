@@ -70,6 +70,13 @@ transport_factory_tls_disable_compression(TransportFactory *s)
   self->allow_compress = FALSE;
 }
 
+static void
+_free(TransportFactory *s)
+{
+  TransportFactoryTLS *self = (TransportFactoryTLS *)s;
+  tls_context_unref(self->tls_context);
+}
+
 TransportFactory *
 transport_factory_tls_new(TLSContext *ctx,
                           TLSSessionVerifyFunc tls_verify_cb,
@@ -77,12 +84,13 @@ transport_factory_tls_new(TLSContext *ctx,
 {
   TransportFactoryTLS *instance = g_new0(TransportFactoryTLS, 1);
 
-  instance->tls_context = ctx;
+  instance->tls_context = tls_context_ref(ctx);
   instance->tls_verify_cb = tls_verify_cb;
   instance->tls_verify_data  = tls_verify_data;
 
   instance->super.id = transport_factory_tls_id();
   instance->super.construct_transport = _construct_transport;
+  instance->super.free_fn = _free;
 
   return &instance->super;
 }
