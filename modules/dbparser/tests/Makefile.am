@@ -1,5 +1,3 @@
-EXTRA_DIST  += modules/dbparser/tests/test_parsers_e2e.c
-
 modules_dbparser_tests_TESTS			=	\
 	modules/dbparser/tests/test_timer_wheel		\
 	modules/dbparser/tests/test_patternize		\
@@ -31,6 +29,9 @@ modules_dbparser_tests_test_patternize_LDFLAGS	=	\
 modules_dbparser_tests_test_patterndb_CFLAGS	=	\
 	$(TEST_CFLAGS)					\
 	-I$(top_srcdir)/modules/dbparser
+modules_dbparser_tests_test_patterndb_SOURCES	=	\
+	modules/dbparser/tests/test_patterndb.c \
+	modules/dbparser/tests/test_patterndb.h
 modules_dbparser_tests_test_patterndb_LDADD	=	\
 	$(TEST_LDADD)					\
 	$(top_builddir)/modules/dbparser/libsyslog-ng-patterndb.la
