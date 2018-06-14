@@ -2,7 +2,7 @@
 
 Name: syslog-ng
 Version: 3.15.1
-Release: 8%{?dist}
+Release: 2%{?dist}
 Summary: Next-generation syslog server
 
 Group: System Environment/Daemons
@@ -42,6 +42,7 @@ BuildRequires: libmaxminddb-devel
 %if 0%{?rhel}
 BuildRequires: mongo-c-driver-devel
 BuildRequires: tcp_wrappers-devel
+BuildRequires: librabbitmq-devel
 %endif
 
 Requires: logrotate
@@ -329,9 +330,11 @@ fi
 %{_bindir}/pdbtool
 %{_bindir}/dqtool
 %{_bindir}/update-patterndb
-%{_libdir}/lib%{name}-3.15.so.*
-%{_libdir}/libevtlog-3.15.so.*
+%{_libdir}/lib%{name}-*.so.*
+%{_libdir}/libevtlog-*.so.*
 %{_libdir}/libsecret-storage.so.*
+%{_libdir}/libloggen_helper-*.so.*
+%{_libdir}/libloggen_plugin-*.so.*
 %{_libdir}/%{name}/*.so
 %exclude %{_libdir}/%{name}/libafsql.so
 %if 0%{?rhel}
@@ -345,6 +348,9 @@ fi
 %exclude %{_libdir}/%{name}/libhttp.so
 %exclude %{_libdir}/%{name}/libmod-python.so
 %exclude %{_libdir}/%{name}/libmod-java.so
+
+%dir %{_libdir}/%{name}/loggen
+%{_libdir}/%{name}/loggen/libloggen*
 
 %dir %{_datadir}/%{name}
 %{_datadir}/%{name}/syslog-ng.vim
@@ -406,12 +412,18 @@ fi
 %{_libdir}/libevtlog.so
 %{_libdir}/libsecret-storage.so
 %{_libdir}/libsyslog-ng-native-connector.a
+%{_libdir}/libloggen_helper.so
+%{_libdir}/libloggen_plugin.so
 %{_includedir}/%{name}/
 %{_libdir}/pkgconfig/syslog-ng.pc
 %{_libdir}/pkgconfig/syslog-ng-native-connector.pc
 %{_datadir}/%{name}/tools/
 
 %changelog
+* Wed May 30 2018 Peter Czanik <peter@czanik.hu> - 3.15.1-2
+- add support for modularized loggen
+- use external rabbitmq-devel as it's no more bundled
+
 * Tue May  8 2018 Laszlo Szemere <laszlo.szemere@balabit.com> - 3.15.1-1
 - update to 3.15.1
 
