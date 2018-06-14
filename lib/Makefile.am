@@ -125,6 +125,7 @@ pkginclude_HEADERS			+= \
 	lib/logthrdestdrv.h		\
 	lib/logwriter.h			\
 	lib/mainloop.h			\
+	lib/signal-handler.h		\
 	lib/mainloop-call.h		\
 	lib/mainloop-worker.h		\
 	lib/mainloop-io-worker.h	\
@@ -212,6 +213,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/logthrdestdrv.c		\
 	lib/logwriter.c			\
 	lib/mainloop.c			\
+	lib/signal-handler.c		\
 	lib/mainloop-call.c		\
 	lib/mainloop-worker.c		\
 	lib/mainloop-io-worker.c	\

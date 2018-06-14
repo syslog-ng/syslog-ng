@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2010 Balabit
- * Copyright (c) 1998-2010 Balázs Scheidler
+ * Copyright (c) 2018 Balabit
+ * Copyright (c) 2018 Kokan
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,20 +21,11 @@
  * COPYING for details.
  *
  */
+#ifndef SIGNAL_HANDLER_H_INCLUDED
+#define SIGNAL_HANDLER_H_INCLUDED
 
-#ifndef CHILDREN_H_INCLUDED
-#define CHILDREN_H_INCLUDED
+#include <signal.h>
 
-#include "syslog-ng.h"
-#include <sys/types.h>
-
-void child_manager_register(pid_t pid, void (*callback)(pid_t, int, gpointer), gpointer user_data,
-                            GDestroyNotify user_data_destroy);
-void child_manager_register_external_sigchld_handler(void (*callback)(int));
-void child_manager_unregister(pid_t pid);
-void child_manager_sigchild(pid_t pid, int status);
-
-void child_manager_init(void);
-void child_manager_deinit(void);
+void trigger_sigchld_handler_chain(int);
 
 #endif
