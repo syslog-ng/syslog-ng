@@ -150,7 +150,7 @@ journald_seek_cursor(Journald *self, const gchar *cursor)
 int
 journald_test_cursor(Journald *self, const gchar *cursor)
 {
-  return 0;
+  return 1;
 }
 
 int
