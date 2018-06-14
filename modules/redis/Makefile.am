@@ -33,6 +33,7 @@ BUILT_SOURCES				+=	\
 	modules/redis/redis-grammar.c		\
 	modules/redis/redis-grammar.h
 EXTRA_DIST				+=	\
-	modules/redis/redis-grammar.ym
+	modules/redis/redis-grammar.ym	\
+	modules/redis/CMakeLists.txt
 
 .PHONY: modules/redis/ mod-redis

@@ -1,6 +1,8 @@
 module_LTLIBRARIES				+= 				\
 	modules/add-contextual-data/libadd-contextual-data.la
 
+EXTRA_DIST += modules/add-contextual-data/CMakeLists.txt
+
 modules_add_contextual_data_libadd_contextual_data_la_SOURCES	=		\
 	modules/add-contextual-data/add-contextual-data.c			\
 	modules/add-contextual-data/add-contextual-data.h			\

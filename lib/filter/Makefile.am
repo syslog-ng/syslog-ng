@@ -34,6 +34,7 @@ BUILT_SOURCES += 				\
 	lib/filter/filter-expr-grammar.c	\
 	lib/filter/filter-expr-grammar.h
 
-EXTRA_DIST += lib/filter/filter-expr-grammar.ym
+EXTRA_DIST += lib/filter/filter-expr-grammar.ym \
+	lib/filter/CMakeLists.txt
 
 include lib/filter/tests/Makefile.am

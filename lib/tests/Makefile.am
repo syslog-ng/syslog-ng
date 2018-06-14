@@ -15,6 +15,8 @@ lib_tests_TESTS		= \
 	lib/tests/test_userdb		\
 	lib/tests/test_str-utils
 
+EXTRA_DIST += lib/tests/CMakeLists.txt
+
 check_PROGRAMS		+= ${lib_tests_TESTS}
 
 if ENABLE_TESTING

@@ -8,7 +8,8 @@ EXTRA_DIST				+=\
   modules/getent/getent-protocols.c	  \
   modules/getent/getent-services.c	  \
   modules/getent/getent-group.c	  \
-  modules/getent/getent-passwd.c
+  modules/getent/getent-passwd.c	\
+  modules/getent/CMakeLists.txt
 
 modules_getent_libtfgetent_la_CPPFLAGS	= \
   $(AM_CPPFLAGS)			  \

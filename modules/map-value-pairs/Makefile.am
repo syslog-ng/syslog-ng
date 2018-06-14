@@ -31,6 +31,7 @@ BUILT_SOURCES					+= \
 modules/map-value-pairs mod-map-value-pairs: modules/map-value-pairs/libmod-map-value-pairs.la
 
 EXTRA_DIST					+= \
-	modules/map-value-pairs/map-value-pairs-grammar.ym
+	modules/map-value-pairs/map-value-pairs-grammar.ym \
+	modules/map-value-pairs/CMakeLists.txt
 
 .PHONY: modules/map-value-pairs mod-map-value-pairs

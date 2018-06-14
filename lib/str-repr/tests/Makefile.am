@@ -2,6 +2,7 @@ lib_str_repr_tests_TESTS		= \
 	lib/str-repr/tests/test_decode		\
 	lib/str-repr/tests/test_encode
 
+EXTRA_DIST += lib/str-repr/tests/CMakeLists.txt
 
 check_PROGRAMS		+= ${lib_str_repr_tests_TESTS}
 

@@ -33,7 +33,8 @@ BUILT_SOURCES				+=	\
 	modules/kvformat/kv-parser-grammar.c	\
 	modules/kvformat/kv-parser-grammar.h
 EXTRA_DIST				+=	\
-	modules/kvformat/kv-parser-grammar.ym
+	modules/kvformat/kv-parser-grammar.ym	\
+	modules/kvformat/CMakeLists.txt
 
 
 .PHONY: modules/kvformat/ mod-kvformat

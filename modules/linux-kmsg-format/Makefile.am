@@ -1,6 +1,8 @@
 module_LTLIBRARIES 						+=	\
 	modules/linux-kmsg-format/liblinux-kmsg-format.la
 
+EXTRA_DIST += modules/linux-kmsg-format/CMakeLists.txt
+
 modules_linux_kmsg_format_liblinux_kmsg_format_la_SOURCES	=	\
 	modules/linux-kmsg-format/linux-kmsg-format.c			\
 	modules/linux-kmsg-format/linux-kmsg-format.h			\

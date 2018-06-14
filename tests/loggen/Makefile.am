@@ -1,3 +1,9 @@
+EXTRA_DIST +=	\
+	tests/loggen/ssl_plugin/CMakeLists.txt	\
+	tests/loggen/socket_plugin/CMakeLists.txt	\
+	tests/loggen/loggen.md	\
+	tests/loggen/CMakeLists.txt
+
 # lib loggen helper common static lib
 lib_LTLIBRARIES		+= tests/loggen/libloggen_helper.la
 tests_loggen_libloggen_helper_la_SOURCES	=	\
@@ -37,7 +43,7 @@ tests_loggen_libloggen_plugin_la_LIBADD = \
 
 pkginclude_HEADERS			+= \
    tests/loggen/loggen_helper.h \
-   tests/loggen/loggen_plugin.h 
+   tests/loggen/loggen_plugin.h
 
 # binary program loggen
 bin_PROGRAMS			+= tests/loggen/loggen

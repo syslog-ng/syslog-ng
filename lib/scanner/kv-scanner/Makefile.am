@@ -1,5 +1,7 @@
 kvscannerincludedir			= ${pkgincludedir}/scanner/kv-scanner
 
+EXTRA_DIST += lib/scanner/kv-scanner/CMakeLists.txt
+
 kvscannerinclude_HEADERS = 			\
 	lib/scanner/kv-scanner/kv-scanner.h
 

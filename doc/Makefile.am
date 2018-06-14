@@ -13,10 +13,11 @@ EXTRA_DIST	+=  \
 		doc/man/syslog-ng-ctl.1.xml \
 		doc/man/syslog-ng.8.xml \
 		doc/man/syslog-ng.conf.5.xml \
+		doc/man/update-manpages.sh \
 		doc/security/bof-2002-09-27.txt \
 		doc/security/dos-2000-11-22.txt \
+		doc/xsd/examples/patterndb-1.xml \
 		$(xsd_DATA)
-
 
 if ENABLE_MANPAGES
 man_MANS	+= \

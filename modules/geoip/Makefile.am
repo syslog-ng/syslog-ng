@@ -37,7 +37,8 @@ BUILT_SOURCES					+=	\
 	modules/geoip/geoip-parser-grammar.h
 EXTRA_DIST					+=	\
 	modules/geoip/geoip-parser-grammar.ym		\
-	modules/geoip/tfgeoip.c
+	modules/geoip/tfgeoip.c	\
+	modules/geoip/CMakeLists.txt
 
 .PHONY: modules/geoip/ mod-geoip
 

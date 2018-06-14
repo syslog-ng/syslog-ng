@@ -1,6 +1,8 @@
 modules_linux_kmsg_format_tests_TESTS				=	\
 	modules/linux-kmsg-format/tests/test_linux_format_kmsg
 
+EXTRA_DIST += modules/linux-kmsg-format/tests/CMakeLists.txt
+
 check_PROGRAMS							+=	\
 	${modules_linux_kmsg_format_tests_TESTS}
 

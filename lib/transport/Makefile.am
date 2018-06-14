@@ -1,5 +1,7 @@
 transportincludedir			= ${pkgincludedir}/transport
 
+EXTRA_DIST += lib/transport/CMakeLists.txt
+
 transportinclude_HEADERS = \
 	lib/transport/logtransport.h	\
 	lib/transport/transport-aux-data.h	\

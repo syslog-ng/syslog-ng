@@ -7,15 +7,12 @@ modules_openbsd_libopenbsd_la_SOURCES = \
   modules/openbsd/openbsd-parser.h        \
   modules/openbsd/openbsd-plugin.c        \
   modules/openbsd/openbsd-driver.c 		\
-  modules/openbsd/openbsd-driver.h 		
+  modules/openbsd/openbsd-driver.h
 
 BUILT_SOURCES       +=      \
   modules/openbsd/openbsd-grammar.y       \
   modules/openbsd/openbsd-grammar.c       \
   modules/openbsd/openbsd-grammar.h
-
-EXTRA_DIST        +=      \
-  modules/openbsd/openbsd-grammar.ym
 
 modules_openbsd_libopenbsd_la_CPPFLAGS  =     \
   $(AM_CPPFLAGS)            \
@@ -27,4 +24,9 @@ modules_openbsd_libopenbsd_la_DEPENDENCIES= $(MODULE_DEPS_LIBS)
 
 modules/openbsd modules/openbsd/ mod-openbsd: modules/openbsd/libopenbsd.la
 endif
+
+EXTRA_DIST        +=      \
+  modules/openbsd/openbsd-grammar.ym \
+  modules/openbsd/CMakeLists.txt
+
 .PHONY: modules/openbsd/ mod-openbsd

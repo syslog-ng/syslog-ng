@@ -31,6 +31,7 @@ BUILT_SOURCES					+=	\
 	modules/afstreams/afstreams-grammar.c		\
 	modules/afstreams/afstreams-grammar.h
 EXTRA_DIST					+=	\
-	modules/afstreams/afstreams-grammar.ym
+	modules/afstreams/afstreams-grammar.ym	\
+	modules/afstreams/CMakeLists.txt
 
 .PHONY: modules/afstreams/ mod-afstreams mod-streams

@@ -32,7 +32,8 @@ BUILT_SOURCES					+=	\
 	modules/appmodel/appmodel-grammar.c		\
 	modules/appmodel/appmodel-grammar.h
 EXTRA_DIST					+=	\
-	modules/appmodel/appmodel-grammar.ym
+	modules/appmodel/appmodel-grammar.ym	\
+	modules/appmodel/CMakeLists.txt
 
 modules/appmodel modules/appmodel/ mod-tags-parser: modules/appmodel/libappmodel.la
 .PHONY: modules/appmodel/ mod-tags-parser

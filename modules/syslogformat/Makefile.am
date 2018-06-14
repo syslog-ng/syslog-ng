@@ -13,6 +13,9 @@ BUILT_SOURCES					+=	\
 	modules/syslogformat/syslog-parser-grammar.c	\
 	modules/syslogformat/syslog-parser-grammar.h
 
+EXTRA_DIST += modules/syslogformat/CMakeLists.txt \
+	modules/syslogformat/syslog-parser-grammar.ym
+
 modules_syslogformat_libsyslogformat_la_CPPFLAGS=	\
 	$(AM_CPPFLAGS)					\
 	-I${top_srcdir}/modules/syslogformat		\

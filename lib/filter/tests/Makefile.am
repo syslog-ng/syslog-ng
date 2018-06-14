@@ -2,6 +2,8 @@ lib_filter_tests_TESTS		 =              \
     lib/filter/tests/test_filters               \
     lib/filter/tests/test_filters_in_list
 
+EXTRA_DIST += lib/filter/tests/CMakeLists.txt
+
 if ENABLE_IPV6
 lib_filter_tests_TESTS += lib/filter/tests/test_filters_netmask6
 endif

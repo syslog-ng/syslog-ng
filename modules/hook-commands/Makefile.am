@@ -13,7 +13,8 @@ BUILT_SOURCES += \
   modules/hook-commands/hook-commands-grammar.c \
   modules/hook-commands/hook-commands-grammar.h
 
-EXTRA_DIST += modules/hook-commands/hook-commands-grammar.ym
+EXTRA_DIST += modules/hook-commands/hook-commands-grammar.ym	\
+	modules/hook-commands/CMakeLists.txt
 
 modules_hook_commands_libhook_commands_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/modules/hook-commands -I$(top_builddir)/modules/hook-commands
 modules_hook_commands_libhook_commands_la_LIBADD = $(MODULE_DEPS_LIBS)

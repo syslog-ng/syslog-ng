@@ -23,9 +23,9 @@ BUILT_SOURCES				+=	\
 	modules/pseudofile/pseudofile-grammar.c		\
 	modules/pseudofile/pseudofile-grammar.h
 EXTRA_DIST				+=	\
-	modules/pseudofile/pseudofile-grammar.ym
+	modules/pseudofile/pseudofile-grammar.ym	\
+	modules/pseudofile/CMakeLists.txt
 
 modules/pseudofile modules/pseudofile/ mod-pseudofile: \
 	modules/pseudofile/libpseudofile.la
 .PHONY: modules/pseudofile/ mod-pseudofile
-

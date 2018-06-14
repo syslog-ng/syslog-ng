@@ -5,6 +5,8 @@ modules_kvformat_tests_TESTS		= \
 
 check_PROGRAMS				+= ${modules_kvformat_tests_TESTS}
 
+EXTRA_DIST += modules/kvformat/tests/CMakeLists.txt
+
 modules_kvformat_tests_test_format_welf_CFLAGS	= $(TEST_CFLAGS)
 modules_kvformat_tests_test_format_welf_LDADD	= $(TEST_LDADD)
 modules_kvformat_tests_test_format_welf_LDFLAGS	= \

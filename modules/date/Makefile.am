@@ -33,6 +33,8 @@ include modules/date/tests/Makefile.am
 modules/date mod-date: modules/date/libdate.la
 
 EXTRA_DIST += \
-	modules/date/date-grammar.ym
+	modules/date/date-grammar.ym	\
+	modules/date/CMakeLists.txt	\
+	modules/date/README.md
 
 .PHONY: modules/date mod-date

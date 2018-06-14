@@ -1,5 +1,7 @@
 debuggerincludedir			= ${pkgincludedir}/debugger
 
+EXTRA_DIST += lib/debugger/CMakeLists.txt
+
 debuggerinclude_HEADERS = \
 	lib/debugger/debugger.h		\
 	lib/debugger/tracer.h		\

@@ -12,11 +12,13 @@ EXTRA_DIST		+= \
 		packaging/debian/syslog-ng-mod-sql.preinst \
 		packaging/debian/syslog-ng-core.syslog-ng.logcheck.ignore.paranoid \
 		packaging/debian/syslog-ng-core.postrm \
+		packaging/debian/syslog-ng-core.NEWS \
 		packaging/debian/tools \
 		packaging/debian/tools/list-modules.sh \
 		packaging/debian/changelog \
 		packaging/debian/syslog-ng-mod-amqp.install \
 		packaging/debian/syslog-ng-dev.install \
+		packaging/debian/syslog-ng-java-http.install	\
 		packaging/debian/syslog-ng-mod-sql.postrm \
 		packaging/debian/syslog-ng.conf \
 		packaging/debian/syslog-ng-core.syslog-ng.init \
@@ -57,6 +59,7 @@ EXTRA_DIST		+= \
 		packaging/debian/syslog-ng-core.syslog-ng.upstart \
 		packaging/debian/syslog-ng-mod-graphite.install \
 		packaging/debian/syslog-ng-mod-add-contextual-data.install \
+		packaging/debian/syslog-ng-mod-amqp.docs	\
 		packaging/debian/syslog-ng-mod-getent.install \
 		packaging/debian/syslog-ng-mod-stardate.install \
 		packaging/debian/syslog-ng-mod-map-value-pairs.install \
@@ -64,8 +67,16 @@ EXTRA_DIST		+= \
 		packaging/debian/syslog-ng-mod-snmptrapd-parser.install \
 		packaging/debian/syslog-ng-mod-geoip2.install \
 		packaging/debian/syslog-ng-mod-java-http.install \
-		packaging/debian/syslog-ng.systemd
-
+		packaging/debian/syslog-ng.systemd \
+		packaging/debian/copyright \
+		packaging/debian/MPL \
+		packaging/debian/not-installed \
+		packaging/debian/tests \
+		packaging/debian/tests/baseconfig \
+		packaging/debian/tests/basic \
+		packaging/debian/tests/config.syslog \
+		packaging/debian/tests/control \
+		packaging/debian/tests/upgrade
 
 
 MAINTAINERCLEANFILES	= packaging/debian/control packaging/debian/rules packaging/debian/changelog

@@ -32,6 +32,7 @@ BUILT_SOURCES				+=	\
 		modules/afamqp/afamqp-grammar.h
 
 EXTRA_DIST				+=	\
-		modules/afamqp/afamqp-grammar.ym
+		modules/afamqp/afamqp-grammar.ym	\
+		modules/afamqp/CMakeLists.txt
 
 .PHONY: modules/afamqp/ mod-afamqp mod-amqp

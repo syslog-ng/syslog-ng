@@ -41,7 +41,7 @@ modules_affile_libaffile_la_SOURCES	=			\
 	modules/affile/affile-plugin.c \
 	modules/affile/file-list.h				\
 	modules/affile/file-list.c				\
-  modules/affile/affile-dest-internal-queue-filter.h	
+  modules/affile/affile-dest-internal-queue-filter.h
 
 if HAVE_INOTIFY
   modules_affile_libaffile_la_SOURCES +=      \
@@ -58,7 +58,8 @@ BUILT_SOURCES				+= 			\
 	modules/affile/affile-grammar.c				\
 	modules/affile/affile-grammar.h
 EXTRA_DIST				+=			\
-	modules/affile/affile-grammar.ym
+	modules/affile/affile-grammar.ym	\
+	modules/affile/CMakeLists.txt
 
 modules_affile_libaffile_la_CPPFLAGS	=			\
 	$(AM_CPPFLAGS)						\

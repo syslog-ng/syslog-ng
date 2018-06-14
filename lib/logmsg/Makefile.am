@@ -1,5 +1,7 @@
 logmsgincludedir = ${pkgincludedir}/logmsg
 
+EXTRA_DIST += lib/logmsg/CMakeLists.txt
+
 logmsginclude_HEADERS =     \
  lib/logmsg/gsockaddr-serialize.h           \
  lib/logmsg/logmsg.h                        \

@@ -23,7 +23,8 @@ BUILT_SOURCES				+=	\
 	modules/afuser/afuser-grammar.c		\
 	modules/afuser/afuser-grammar.h
 EXTRA_DIST				+=	\
-	modules/afuser/afuser-grammar.ym
+	modules/afuser/afuser-grammar.ym	\
+	modules/afuser/CMakeLists.txt
 
 modules/afuser modules/afuser/ mod-afuser mod-usertty: \
 	modules/afuser/libafuser.la

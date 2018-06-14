@@ -1,5 +1,8 @@
 templateincludedir			= ${pkgincludedir}/template
 
+EXTRA_DIST += lib/template/CMakeLists.txt	\
+	lib/template/tests/CMakeLists.txt
+
 templateinclude_HEADERS = \
 	lib/template/templates.h		\
 	lib/template/macros.h			\

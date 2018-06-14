@@ -30,6 +30,7 @@ BUILT_SOURCES				+=	\
 	modules/afsmtp/afsmtp-grammar.c		\
 	modules/afsmtp/afsmtp-grammar.h
 EXTRA_DIST				+=	\
-	modules/afsmtp/afsmtp-grammar.ym
+	modules/afsmtp/afsmtp-grammar.ym	\
+	modules/afsmtp/CMakeLists.txt
 
 .PHONY: modules/afsmtp/ mod-afsmtp mod-smtp

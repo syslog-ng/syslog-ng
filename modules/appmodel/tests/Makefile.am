@@ -1,3 +1,5 @@
+EXTRA_DIST += modules/appmodel/tests/CMakeLists.txt
+
 modules_appmodel_tests_TESTS			= \
 	modules/appmodel/tests/test_appmodel	\
 	modules/appmodel/tests/test_appmodel_context	\

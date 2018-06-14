@@ -1,6 +1,8 @@
 module_LTLIBRARIES				+= \
   modules/graphite/libgraphite.la
 
+EXTRA_DIST += modules/graphite/CMakeLists.txt
+
 modules_graphite_libgraphite_la_SOURCES		 = \
   modules/graphite/graphite-plugin.c		   \
   modules/graphite/graphite-output.h		   \

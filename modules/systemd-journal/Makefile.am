@@ -28,6 +28,8 @@ BUILT_SOURCES += modules/systemd-journal/systemd-journal-grammar.y \
 		 modules/systemd-journal/systemd-journal-grammar.c \
 		 modules/systemd-journal/systemd-journal-grammar.h
 
-EXTRA_DIST += modules/systemd-journal/systemd-journal-grammar.ym
+EXTRA_DIST +=	\
+	modules/systemd-journal/CMakeLists.txt	\
+	modules/systemd-journal/systemd-journal-grammar.ym
 
 .PHONY: modules/systemd-journal mod-systemd-journal

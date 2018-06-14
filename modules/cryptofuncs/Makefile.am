@@ -1,6 +1,8 @@
 module_LTLIBRARIES					+=	\
 	modules/cryptofuncs/libcryptofuncs.la
 
+EXTRA_DIST += modules/cryptofuncs/CMakeLists.txt
+
 modules_cryptofuncs_libcryptofuncs_la_SOURCES		=	\
 	modules/cryptofuncs/cryptofuncs.c
 modules_cryptofuncs_libcryptofuncs_la_LIBADD		=	\

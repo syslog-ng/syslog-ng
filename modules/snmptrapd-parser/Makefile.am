@@ -18,7 +18,8 @@ BUILT_SOURCES       += \
   modules/snmptrapd-parser/snmptrapd-parser-grammar.h
 
 EXTRA_DIST          += \
-  modules/snmptrapd-parser/snmptrapd-parser-grammar.ym
+  modules/snmptrapd-parser/snmptrapd-parser-grammar.ym	\
+  modules/snmptrapd-parser/CMakeLists.txt
 
 modules_snmptrapd_parser_libsnmptrapd_parser_la_CPPFLAGS =  \
   $(AM_CPPFLAGS)                                            \

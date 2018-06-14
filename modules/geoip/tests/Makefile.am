@@ -11,3 +11,5 @@ modules_geoip_tests_test_geoip_parser_LDFLAGS	= \
 	-dlpreopen $(top_builddir)/modules/geoip/libgeoip-plugin.la
 modules_geoip_tests_test_geoip_parser_DEPENDENCIES = $(top_builddir)/modules/geoip/libgeoip-plugin.la
 endif
+
+EXTRA_DIST += modules/geoip/tests/CMakeLists.txt

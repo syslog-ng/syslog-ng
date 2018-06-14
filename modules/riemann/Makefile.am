@@ -36,6 +36,7 @@ BUILT_SOURCES					+= \
 
 EXTRA_DIST					+= \
 	modules/riemann/riemann-grammar.ym	   \
-	modules/riemann/riemann-example.conf
+	modules/riemann/riemann-example.conf	\
+	modules/riemann/CMakeLists.txt
 
 .PHONY: modules/riemann mod-riemann

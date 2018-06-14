@@ -17,7 +17,10 @@ EXTRA_DIST	+= \
 		tests/functional/test_input_drivers.py \
 		tests/functional/test_performance.py \
 		tests/functional/test_python.py \
-		tests/functional/test_sql.py
+		tests/functional/test_sql.py	\
+		tests/functional/test_map_value_pairs.py	\
+		tests/functional/sngtestmod.py	\
+		tests/functional/CMakeLists.txt
 
 func-test:
 	@$(top_srcdir)/tests/functional/runtests.sh

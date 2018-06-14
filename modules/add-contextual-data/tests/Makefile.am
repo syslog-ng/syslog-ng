@@ -2,6 +2,8 @@ modules_add_contextual_data_tests_TESTS	= \
         modules/add-contextual-data/tests/test_selector_filter \
         modules/add-contextual-data/tests/test_selector
 
+EXTRA_DIST += modules/add-contextual-data/tests/CMakeLists.txt
+
 check_PROGRAMS				+= \
 	${modules_add_contextual_data_tests_TESTS}
 

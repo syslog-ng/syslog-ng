@@ -6,4 +6,26 @@ EXTRA_DIST += \
 	dbld/generate-rpm-specfile \
 	dbld/generate-debian-directory \
 	dbld/shell \
-	dbld/rules
+	dbld/rules \
+	dbld/bootstrap	\
+	dbld/images/artful.dockerfile \
+	dbld/images/centos6.dockerfile \
+	dbld/images/centos7.dockerfile \
+	dbld/images/devshell-apt \
+	dbld/images/devshell.dockerfile \
+	dbld/images/devshell-pip \
+	dbld/images/helpers/entrypoint.sh \
+	dbld/images/helpers/fake-sudo.sh \
+	dbld/images/helpers/functions.sh \
+	dbld/images/helpers/gosu.pubkey \
+	dbld/images/jessie.dockerfile \
+	dbld/images/README.md \
+	dbld/images/required-apt \
+	dbld/images/required-epel \
+	dbld/images/required-obs \
+	dbld/images/required-pip \
+	dbld/images/required-yum \
+	dbld/images/trusty.dockerfile \
+	dbld/images/xenial.dockerfile \
+	dbld/make \
+	dbld/README.md

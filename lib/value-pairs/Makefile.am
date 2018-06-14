@@ -1,5 +1,8 @@
 value_pairsincludedir			= ${pkgincludedir}/value-pairs
 
+EXTRA_DIST += lib/value-pairs/CMakeLists.txt	\
+	lib/value-pairs/tests/CMakeLists.txt
+
 value_pairsinclude_HEADERS = \
 	lib/value-pairs/value-pairs.h		\
 	lib/value-pairs/transforms.h		\

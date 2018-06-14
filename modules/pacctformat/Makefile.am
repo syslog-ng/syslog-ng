@@ -21,4 +21,6 @@ else
 modules/pacctformat modules/pacctformat/ mod-pacctformat:
 endif
 
+EXTRA_DIST += modules/pacctformat/CMakeLists.txt
+
 .PHONY: modules/pacctformat/ mod-pacctformat

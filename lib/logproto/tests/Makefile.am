@@ -2,6 +2,8 @@ lib_logproto_tests_TESTS		 = \
 	lib/logproto/tests/test_logproto   \
 	lib/logproto/tests/test_findeom
 
+EXTRA_DIST += lib/logproto/tests/CMakeLists.txt
+
 check_PROGRAMS				+= ${lib_logproto_tests_TESTS}
 
 lib_logproto_tests_test_logproto_CFLAGS  = $(TEST_CFLAGS) \

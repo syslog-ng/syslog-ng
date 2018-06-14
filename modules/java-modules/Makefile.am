@@ -111,4 +111,16 @@ EXTRA_DIST += \
 	modules/java-modules/elastic-v2/src/main/java/org/syslog_ng/elasticsearch_v2/client/http/ESHttpsClient.java \
 	modules/java-modules/elastic-v2/src/main/java/org/syslog_ng/elasticsearch_v2/messageprocessor/http/HttpBulkMessageProcessor.java \
 	modules/java-modules/elastic-v2/src/main/java/org/syslog_ng/elasticsearch_v2/messageprocessor/http/HttpMessageProcessor.java \
-	modules/java-modules/elastic-v2/src/main/java/org/syslog_ng/elasticsearch_v2/messageprocessor/http/HttpSingleMessageProcessor.java
+	modules/java-modules/elastic-v2/src/main/java/org/syslog_ng/elasticsearch_v2/messageprocessor/http/HttpSingleMessageProcessor.java \
+	modules/java-modules/kafka/src/test/java/org/syslog_ng/test/MockLogDestination.java \
+	modules/java-modules/kafka/src/test/java/org/syslog_ng/test/TestBooleanOptionDecorator.java \
+	modules/java-modules/kafka/src/test/java/org/syslog_ng/test/TestEnumOptionDecorator.java \
+	modules/java-modules/kafka/src/test/java/org/syslog_ng/test/TestIntegerOptionDecorator.java \
+	modules/java-modules/kafka/src/test/java/org/syslog_ng/test/TestIntegerRangeCheckOptionDecorator.java \
+	modules/java-modules/kafka/src/test/java/org/syslog_ng/test/TestOption.java \
+	modules/java-modules/kafka/src/test/java/org/syslog_ng/test/TestPortCheckDecorator.java \
+	modules/java-modules/kafka/src/test/java/org/syslog_ng/test/TestRequiredOptionDecorator.java \
+	modules/java-modules/kafka/src/test/java/org/syslog_ng/test/TestStringOption.java \
+	modules/java-modules/CMakeLists.txt \
+	modules/java-modules/common/README.md	\
+	modules/java/README.md

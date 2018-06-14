@@ -1,5 +1,8 @@
 controlincludedir			= ${pkgincludedir}/control
 
+EXTRA_DIST +=	\
+	lib/control/CMakeLists.txt
+
 controlinclude_HEADERS = \
 	lib/control/control.h			\
 	lib/control/control-commands.h		\
