@@ -104,8 +104,8 @@ gpointer
 nondumpable_buffer_alloc(gsize len)
 {
   gsize minimum_size = len + ALLOCATION_HEADER_SIZE;
-  gsize PAGESIZE = sysconf(_SC_PAGE_SIZE);
-  gsize alloc_size = round_to_nearest(minimum_size, PAGESIZE);
+  gsize pagesize = sysconf(_SC_PAGE_SIZE);
+  gsize alloc_size = round_to_nearest(minimum_size, pagesize);
 
   Allocation *buffer = _mmap(alloc_size);
   if (!buffer)
