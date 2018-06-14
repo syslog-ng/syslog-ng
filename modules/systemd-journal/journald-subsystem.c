@@ -146,6 +146,9 @@ _load_journald_symbols(void)
   if (!LOAD_SYMBOL(journald_module, sd_journal_get_realtime_usec))
     return FALSE;
 
+  if (!LOAD_SYMBOL(journald_module, sd_journal_test_cursor))
+    return FALSE;
+
   return TRUE;
 }
 
