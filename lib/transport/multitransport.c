@@ -97,7 +97,7 @@ gboolean multitransport_switch(MultiTransport *self, const TransportFactoryId *f
 gboolean
 multitransport_contains_factory(MultiTransport *self, const TransportFactoryId *factory_id)
 {
-  const TransportFactory *factory = _lookup_transport_factory(self->registry, factory_id);
+  const TransportFactory *factory = transport_factory_registry_lookup(self->registry, factory_id);
 
   return (factory != NULL);
 }

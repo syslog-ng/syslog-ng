@@ -22,7 +22,7 @@
  *
  */
 
-#include "ack_tracker.h"
+#include "late_ack_tracker.h"
 #include "bookmark.h"
 #include "ringbuffer.h"
 #include "syslog-ng.h"
@@ -40,6 +40,7 @@ typedef struct LateAckTracker
   LateAckRecord *pending_ack_record;
   RingBuffer ack_record_storage;
   GStaticMutex storage_mutex;
+  AckTrackerOnAllAcked on_all_acked;
 } LateAckTracker;
 
 static inline void
@@ -49,18 +50,48 @@ late_ack_record_destroy(LateAckRecord *self)
     self->bookmark.destroy(&(self->bookmark));
 }
 
-static inline void
-_late_tracker_lock(LateAckTracker *self)
+void
+late_ack_tracker_lock(AckTracker *s)
 {
+  LateAckTracker *self = (LateAckTracker *)s;
   g_static_mutex_lock(&self->storage_mutex);
 }
 
-static inline void
-_late_tracker_unlock(LateAckTracker *self)
+void
+late_ack_tracker_unlock(AckTracker *s)
 {
+  LateAckTracker *self = (LateAckTracker *)s;
   g_static_mutex_unlock(&self->storage_mutex);
 }
 
+void
+late_ack_tracker_set_on_all_acked(AckTracker *s, AckTrackerOnAllAckedFunc func, gpointer user_data,
+                                  GDestroyNotify user_data_free_fn)
+{
+  LateAckTracker *self = (LateAckTracker *)s;
+  if (self->on_all_acked.user_data && self->on_all_acked.user_data_free_fn)
+    {
+      self->on_all_acked.user_data_free_fn(self->on_all_acked.user_data);
+    }
+
+  self->on_all_acked = (AckTrackerOnAllAcked)
+  {
+    .func = func,
+     .user_data = user_data,
+      .user_data_free_fn = user_data_free_fn
+  };
+}
+
+static inline void
+late_ack_tracker_on_all_acked_call(AckTracker *s)
+{
+  LateAckTracker *self = (LateAckTracker *)s;
+  AckTrackerOnAllAcked *handler = &self->on_all_acked;
+  if (handler->func)
+    {
+      handler->func(handler->user_data);
+    }
+}
 static inline gboolean
 _ack_range_is_continuous(void *data)
 {
@@ -106,13 +137,13 @@ late_ack_tracker_track_msg(AckTracker *s, LogMessage *msg)
 
   msg->ack_record = (AckRecord *)self->pending_ack_record;
 
-  _late_tracker_lock(self);
+  late_ack_tracker_lock(s);
   {
     LateAckRecord *ack_rec;
     ack_rec = (LateAckRecord *)ring_buffer_push(&self->ack_record_storage);
     g_assert(ack_rec == self->pending_ack_record);
   }
-  _late_tracker_unlock(self);
+  late_ack_tracker_unlock(s);
 
   self->pending_ack_record = NULL;
 }
@@ -127,7 +158,7 @@ late_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type
 
   ack_rec->acked = TRUE;
 
-  _late_tracker_lock(self);
+  late_ack_tracker_lock(s);
   {
     ack_range_length = _get_continuous_range_length(self);
     if (ack_range_length > 0)
@@ -144,12 +175,22 @@ late_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type
           log_source_flow_control_suspend(self->super.source);
         else
           log_source_flow_control_adjust(self->super.source, ack_range_length);
+
+        if (ring_buffer_is_empty(&self->ack_record_storage))
+          late_ack_tracker_on_all_acked_call(s);
       }
   }
-  _late_tracker_unlock(self);
+  late_ack_tracker_unlock(s);
 
   log_msg_unref(msg);
   log_pipe_unref((LogPipe *)self->super.source);
+}
+
+gboolean
+late_ack_tracker_is_empty(AckTracker *s)
+{
+  LateAckTracker *self = (LateAckTracker *)s;
+  return ring_buffer_is_empty(&self->ack_record_storage);
 }
 
 static Bookmark *
@@ -157,11 +198,11 @@ late_ack_tracker_request_bookmark(AckTracker *s)
 {
   LateAckTracker *self = (LateAckTracker *)s;
 
-  _late_tracker_lock(self);
+  late_ack_tracker_lock(s);
   {
     self->pending_ack_record = ring_buffer_tail(&self->ack_record_storage);
   }
-  _late_tracker_unlock(self);
+  late_ack_tracker_unlock(s);
 
   if (self->pending_ack_record)
     {
@@ -202,6 +243,13 @@ void
 late_ack_tracker_free(AckTracker *s)
 {
   LateAckTracker *self = (LateAckTracker *)s;
+  AckTrackerOnAllAcked *handler = &self->on_all_acked;
+
+  if (handler->user_data_free_fn && handler->user_data)
+    {
+      handler->user_data_free_fn(handler->user_data);
+    }
+
   guint32 count = ring_buffer_count(&self->ack_record_storage);
 
   g_static_mutex_free(&self->storage_mutex);

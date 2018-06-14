@@ -79,6 +79,7 @@ struct _LogProtoServer
   LogProtoStatus status;
   const LogProtoServerOptions *options;
   LogTransport *transport;
+  AckTracker *ack_tracker;
   LogProtoServerWakeupCallback wakeup_callback;
   /* FIXME: rename to something else */
   gboolean (*is_position_tracked)(LogProtoServer *s);
@@ -189,6 +190,12 @@ gboolean log_proto_server_validate_options_method(LogProtoServer *s);
 void log_proto_server_init(LogProtoServer *s, LogTransport *transport, const LogProtoServerOptions *options);
 void log_proto_server_free_method(LogProtoServer *s);
 void log_proto_server_free(LogProtoServer *s);
+
+static inline void
+log_proto_server_set_ack_tracker(LogProtoServer *s, AckTracker *ack_tracker)
+{
+  s->ack_tracker = ack_tracker;
+}
 
 #define DEFINE_LOG_PROTO_SERVER(prefix) \
   static gpointer                                                       \
