@@ -76,6 +76,8 @@ typedef int
 typedef int
 (*SD_JOURNAL_SEEK_CURSOR)(sd_journal *j, const char *cursor);
 typedef int
+(*SD_JOURNAL_TEST_CURSOR)(sd_journal *j, const char *cursor);
+typedef int
 (*SD_JOURNAL_GET_FD)(sd_journal *j);
 typedef int
 (*SD_JOURNAL_PROCESS)(sd_journal *j);
@@ -91,6 +93,7 @@ static SD_JOURNAL_NEXT sd_journal_next;
 static SD_JOURNAL_RESTART_DATA sd_journal_restart_data;
 static SD_JOURNAL_ENUMERATE_DATA sd_journal_enumerate_data;
 static SD_JOURNAL_SEEK_CURSOR sd_journal_seek_cursor;
+static SD_JOURNAL_TEST_CURSOR sd_journal_test_cursor;
 static SD_JOURNAL_GET_FD sd_journal_get_fd;
 static SD_JOURNAL_PROCESS sd_journal_process;
 static SD_JOURNAL_GET_REALTIME_USEC sd_journal_get_realtime_usec;
@@ -141,6 +144,9 @@ _load_journald_symbols(void)
     return FALSE;
 
   if (!LOAD_SYMBOL(journald_module, sd_journal_get_realtime_usec))
+    return FALSE;
+
+  if (!LOAD_SYMBOL(journald_module, sd_journal_test_cursor))
     return FALSE;
 
   return TRUE;
@@ -222,6 +228,12 @@ int
 journald_seek_cursor(Journald *self, const gchar *cursor)
 {
   return sd_journal_seek_cursor(self->journal, cursor);
+}
+
+int
+journald_test_cursor(Journald *self, const gchar *cursor)
+{
+  return sd_journal_test_cursor(self->journal, cursor);
 }
 
 int

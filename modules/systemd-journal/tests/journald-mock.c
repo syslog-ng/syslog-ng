@@ -148,6 +148,12 @@ journald_seek_cursor(Journald *self, const gchar *cursor)
 }
 
 int
+journald_test_cursor(Journald *self, const gchar *cursor)
+{
+  return 1;
+}
+
+int
 journald_get_fd(Journald *self)
 {
   g_assert(self->opened);
