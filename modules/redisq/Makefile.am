@@ -9,9 +9,10 @@ modules_redisq_libsyslog_ng_redis_queue_la_SOURCES = \
 
 modules_redisq_libsyslog_ng_redis_queue_la_CPPFLAGS = \
   $(AM_CPPFLAGS) \
+  $(HIREDIS_CFLAGS) \
   -I$(top_srcdir)/modules/redisq
 modules_redisq_libsyslog_ng_redis_queue_la_LIBADD	=	\
-  $(MODULE_DEPS_LIBS)
+  $(HIREDIS_LIBS) $(MODULE_DEPS_LIBS)
 modules_redisq_libsyslog_ng_redis_queue_la_DEPENDENCIES	=	\
   $(MODULE_DEPS_LIBS)
 

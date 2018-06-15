@@ -41,4 +41,4 @@ void redis_queue_options_check_plugin_settings(RedisQueueOptions *self);
 void redis_queue_options_set_default_options(RedisQueueOptions *self);
 void redis_queue_options_destroy(RedisQueueOptions *self);
 
-#endif /* DISKQ_OPTIONS_H_ */
+#endif /* REDISQ_OPTIONS_H_ */
