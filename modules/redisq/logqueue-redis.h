@@ -24,6 +24,9 @@
 #ifndef LOGQUEUE_REDIS_H_INCLUDED
 #define LOGQUEUE_REDIS_H_INCLUDED
 
+#include <hiredis/hiredis.h>
+
+#include "redisq-options.h"
 #include "logmsg/logmsg.h"
 #include "logqueue.h"
 
@@ -43,12 +46,14 @@ struct _LogQueueRedis
 
   GQueue *qredis;
   GQueue *qbacklog;
+  redisContext *c;
 
-  GlobalConfig *cfg;
+  LogMessage *(*read_message)(LogQueueRedis *self, LogPathOptions *path_options);
+  gboolean (*write_message)(LogQueueRedis *self, LogMessage *msg);
 };
 
 extern QueueType log_queue_redis_type;
 
-LogQueue *log_queue_redis_init_instance(GlobalConfig *cfg, const gchar *persist_name);
+LogQueue *log_queue_redis_init_instance(RedisQueueOptions *options, const gchar *persist_name);
 
 #endif
