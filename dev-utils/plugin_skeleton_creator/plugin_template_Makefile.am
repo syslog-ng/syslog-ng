@@ -11,7 +11,8 @@ BUILT_SOURCES       +=      \
   modules/@PLUGIN_NAME@/@PLUGIN_NAME@-grammar.h
 
 EXTRA_DIST        +=      \
-  modules/@PLUGIN_NAME@/@PLUGIN_NAME@-grammar.ym
+  modules/@PLUGIN_NAME@/@PLUGIN_NAME@-grammar.ym \
+  modules/@PLUGIN_NAME@/CMakeLists.txt
 
 modules_@PLUGIN_NAME_US@_lib@PLUGIN_NAME_US@_la_CPPFLAGS  =     \
   $(AM_CPPFLAGS)            \
@@ -23,4 +24,3 @@ modules_@PLUGIN_NAME_US@_lib@PLUGIN_NAME_US@_la_DEPENDENCIES= $(MODULE_DEPS_LIBS
 
 modules/@PLUGIN_NAME@ modules/@PLUGIN_NAME@/ mod-@PLUGIN_NAME@: modules/@PLUGIN_NAME@/lib@PLUGIN_NAME@.la
 .PHONY: modules/@PLUGIN_NAME@/ mod-@PLUGIN_NAME@
-
