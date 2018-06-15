@@ -21,6 +21,8 @@
  *
  */
 
+#include "syslog-ng.h"
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -32,8 +34,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include <glib.h>
 
 gboolean thread_exit = FALSE;
 gboolean thread_started;
@@ -155,9 +155,7 @@ read_thread_func(gpointer args)
     {
       gint err;
       gchar buf[1024];
-      gint count = 0;
-
-      count = read(pair[1], buf, sizeof(buf));
+      gint count G_GNUC_UNUSED = read(pair[1], buf, sizeof(buf));
       err = errno;
 
       if (thread_exit)
