@@ -1,8 +1,6 @@
 usr/include/syslog-ng/*
 usr/lib/syslog-ng/libsyslog-ng.so
-usr/lib/syslog-ng/syslog-ng/libtest/libsyslog-ng-test.a
 usr/lib/syslog-ng/libsyslog-ng-native-connector.a
 usr/lib/**/syslog-ng.pc
-usr/lib/**/syslog-ng-test.pc
 usr/lib/**/syslog-ng-native-connector.pc
 usr/share/syslog-ng/tools
