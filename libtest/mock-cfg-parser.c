@@ -25,7 +25,7 @@
 #include <string.h>
 
 void
-test_parser_clear_token(TestParser *self)
+cfg_parser_mock_clear_token(CfgParserMock *self)
 {
   if (self->yylval->type)
     cfg_lexer_free_token(self->yylval);
@@ -33,22 +33,22 @@ test_parser_clear_token(TestParser *self)
 }
 
 void
-test_parser_next_token(TestParser *self)
+cfg_parser_mock_next_token(CfgParserMock *self)
 {
-  test_parser_clear_token(self);
+  cfg_parser_mock_clear_token(self);
   cfg_lexer_lex(self->lexer, self->yylval, self->yylloc);
 }
 
 void
-test_parser_input(TestParser *self, const gchar *buffer)
+cfg_parser_mock_input(CfgParserMock *self, const gchar *buffer)
 {
   cfg_lexer_include_buffer(self->lexer, "#test-buffer", buffer, strlen(buffer));
 }
 
-TestParser *
-test_parser_new(void)
+CfgParserMock *
+cfg_parser_mock_new(void)
 {
-  TestParser *self = g_new0(TestParser, 1);
+  CfgParserMock *self = g_new0(CfgParserMock, 1);
 
   self->yylval = g_new0(YYSTYPE, 1);
   self->yylloc = g_new0(YYLTYPE, 1);
@@ -64,9 +64,9 @@ test_parser_new(void)
 }
 
 void
-test_parser_free(TestParser *self)
+cfg_parser_mock_free(CfgParserMock *self)
 {
-  test_parser_clear_token(self);
+  cfg_parser_mock_clear_token(self);
   if (self->lexer)
     cfg_lexer_free(self->lexer);
   g_free(self->yylval);

@@ -30,19 +30,19 @@
 #define TESTDATA_DIR TOP_SRCDIR "/lib/tests/testdata-lexer"
 
 
-TestParser *parser = NULL;
+CfgParserMock *parser = NULL;
 
 
 static void
 _input(const gchar *input)
 {
-  test_parser_input(parser, input);
+  cfg_parser_mock_input(parser, input);
 }
 
 static void
 _next_token(void)
 {
-  test_parser_next_token(parser);
+  cfg_parser_mock_next_token(parser);
 }
 
 static YYSTYPE *
@@ -346,13 +346,13 @@ static void
 setup(void)
 {
   configuration = cfg_new_snippet();
-  parser = test_parser_new();
+  parser = cfg_parser_mock_new();
 }
 
 static void
 teardown(void)
 {
-  test_parser_free(parser);
+  cfg_parser_mock_free(parser);
   cfg_free(configuration);
   configuration = NULL;
 }

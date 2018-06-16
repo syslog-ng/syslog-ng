@@ -30,14 +30,14 @@ typedef struct
   YYSTYPE *yylval;
   YYLTYPE *yylloc;
   CfgLexer *lexer;
-} TestParser;
+} CfgParserMock;
 
-void test_parser_input(TestParser *self, const gchar *buffer);
-void test_parser_clear_token(TestParser *self);
-void test_parser_next_token(TestParser *self);
+void cfg_parser_mock_input(CfgParserMock *self, const gchar *buffer);
+void cfg_parser_mock_clear_token(CfgParserMock *self);
+void cfg_parser_mock_next_token(CfgParserMock *self);
 
 
-TestParser *test_parser_new(void);
-void test_parser_free(TestParser *self);
+CfgParserMock *cfg_parser_mock_new(void);
+void cfg_parser_mock_free(CfgParserMock *self);
 
 #endif
