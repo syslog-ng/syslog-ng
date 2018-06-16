@@ -113,10 +113,12 @@ define_stmt
 module_stmt
 	: KW_MODULE string { last_module_args = cfg_args_new(); } module_params
           {
-            plugin_load_module(&configuration->plugin_context, $2, last_module_args);
+            gboolean success = plugin_load_module(&configuration->plugin_context, $2, last_module_args);
             free($2);
             cfg_args_unref(last_module_args);
             last_module_args = NULL;
+	    if (!success)
+              YYERROR;
           }
 	;
 
