@@ -74,6 +74,28 @@ display_grabbed_messages(void)
 }
 
 void
+format_grabbed_messages(GString *log_buffer)
+{
+  GList *l;
+
+  if (internal_messages)
+    {
+      g_string_append(log_buffer, "  # Grabbed internal messages follow:\n");
+      for (l = internal_messages; l; l = l->next)
+        {
+          LogMessage *msg = (LogMessage *) l->data;
+          const gchar *msg_text = log_msg_get_value(msg, LM_V_MESSAGE, NULL);
+
+          g_string_append_printf(log_buffer, "  #\t%s\n", msg_text);
+        }
+    }
+  else
+    {
+      g_string_append(log_buffer, "  # No internal messeges grabbed!\n");
+    }
+}
+
+void
 stop_grabbing_messages(void)
 {
   msg_set_post_func(NULL);

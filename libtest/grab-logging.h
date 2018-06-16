@@ -32,5 +32,6 @@ void reset_grabbed_messages(void);
 void start_grabbing_messages(void);
 void stop_grabbing_messages(void);
 void display_grabbed_messages(void);
+void format_grabbed_messages(GString *log_buffer);
 
 #endif
