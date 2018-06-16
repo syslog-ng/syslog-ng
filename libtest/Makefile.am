@@ -14,6 +14,8 @@ libtest_libsyslog_ng_test_a_SOURCES =   \
 	libtest/testutils.h		\
 	libtest/stopwatch.c		\
 	libtest/stopwatch.h		\
+	libtest/grab-logging.c		\
+	libtest/grab-logging.h		\
 	libtest/msg_parse_lib.c		\
 	libtest/msg_parse_lib.h		\
 	libtest/cr_template.c		\

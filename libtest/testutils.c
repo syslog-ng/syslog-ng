@@ -24,7 +24,6 @@
  */
 
 #include "testutils.h"
-#include "messages.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -36,7 +35,6 @@ static gboolean testutils_global_success = TRUE;
 GString *current_testcase_description = NULL;
 const gchar *current_testcase_function = NULL;
 gchar *current_testcase_file = NULL;
-GList *internal_messages = NULL;
 
 static void
 print_failure(const gchar *custom_template, va_list custom_args, const gchar *assertion_failure_template, ...)
@@ -69,71 +67,13 @@ print_failure(const gchar *custom_template, va_list custom_args, const gchar *as
   fprintf(stderr, "  #\n  ###########################################################################\n\n");
 }
 
-static void
-grab_message(LogMessage *msg)
-{
-  internal_messages = g_list_append(internal_messages, msg);
-}
-
-void
-reset_grabbed_messages(void)
-{
-  g_list_foreach(internal_messages, (GFunc) log_msg_unref, NULL);
-  g_list_free(internal_messages);
-  internal_messages = NULL;
-}
-
-void
-start_grabbing_messages(void)
-{
-  reset_grabbed_messages();
-  msg_set_post_func(grab_message);
-}
-
-void
-display_grabbed_messages(void)
-{
-  GList *l;
-
-  if (internal_messages)
-    {
-      fprintf(stderr, "  # Grabbed internal messages follow:\n");
-      for (l = internal_messages; l; l = l->next)
-        {
-          LogMessage *msg = (LogMessage *) l->data;
-          const gchar *msg_text = log_msg_get_value(msg, LM_V_MESSAGE, NULL);
-
-          fprintf(stderr, "  #\t%s\n", msg_text);
-        }
-    }
-  else
-    {
-      fprintf(stderr, "  # No internal messeges grabbed!\n");
-    }
-}
-
-void
-stop_grabbing_messages(void)
-{
-  msg_set_post_func(NULL);
-}
-
 gboolean
 assert_grabbed_messages_contain_non_fatal(const gchar *pattern, const gchar *error_message, ...)
 {
-  GList *l;
   va_list args;
 
-  for (l = internal_messages; l; l = l->next)
-    {
-      LogMessage *msg = (LogMessage *) l->data;
-      const gchar *msg_text = log_msg_get_value(msg, LM_V_MESSAGE, NULL);
-
-      if (strstr(msg_text, pattern))
-        {
-          return TRUE;
-        }
-    }
+  if (find_grabbed_message(pattern))
+    return TRUE;
 
   va_start(args, error_message);
   print_failure(error_message, args, "no grabbed message contains the pattern=%s", pattern);
