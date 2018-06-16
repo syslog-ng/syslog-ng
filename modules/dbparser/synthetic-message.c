@@ -215,9 +215,7 @@ synthetic_message_generate_with_context(SyntheticMessage *self, CorrellationCont
       g_assert_not_reached();
       break;
     }
-  g_ptr_array_add(context->messages, genmsg);
   synthetic_message_apply(self, context, genmsg, buffer);
-  g_ptr_array_remove_index_fast(context->messages, context->messages->len - 1);
   return genmsg;
 }
 
@@ -236,7 +234,7 @@ synthetic_message_generate_without_context(SyntheticMessage *self, LogMessage *m
    * messages, but without allocating a full-blown
    * structure.
    */
-  LogMessage *dummy_msgs[] = { msg, genmsg, NULL };
+  LogMessage *dummy_msgs[] = { msg, NULL };
   GPtrArray dummy_ptr_array = { .pdata = (void **) dummy_msgs, .len = 2 };
   CorrellationContext dummy_context = { .messages = &dummy_ptr_array, 0 };
 

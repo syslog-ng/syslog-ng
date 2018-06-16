@@ -1072,8 +1072,8 @@ test_patterndb_context_length(void)
 {
   _load_pattern_db_from_string(pdb_msg_count_skeleton);
 
-  assert_msg_matches_and_output_message_nvpair_equals("pattern13", 1, "CONTEXT_LENGTH", "2");
-  assert_msg_matches_and_output_message_nvpair_equals("pattern14", 1, "CONTEXT_LENGTH", "2");
+  assert_msg_matches_and_output_message_nvpair_equals("pattern13", 1, "CONTEXT_LENGTH", "1");
+  assert_msg_matches_and_output_message_nvpair_equals("pattern14", 1, "CONTEXT_LENGTH", "1");
 
   assert_msg_with_program_matches_and_nvpair_equals("prog2", "pattern15-a", "p15", "-a");
 
