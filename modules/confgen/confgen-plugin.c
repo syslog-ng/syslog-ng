@@ -134,6 +134,7 @@ gboolean
 confgen_module_init(PluginContext *plugin_context, CfgArgs *args)
 {
   const gchar *name, *context, *exec;
+  gint context_value;
 
   name = cfg_args_get(args, "name");
   if (!name)
@@ -147,14 +148,21 @@ confgen_module_init(PluginContext *plugin_context, CfgArgs *args)
       msg_error("confgen: context argument expected");
       return FALSE;
     }
+  context_value = cfg_lexer_lookup_context_type_by_name(context);
+  if (context_value == 0)
+    {
+      msg_error("confgen: context value is unknown",
+                evt_tag_str("context", context));
+      return FALSE;
+    }
   exec = cfg_args_get(args, "exec");
   if (!exec)
     {
       msg_error("confgen: exec argument expected");
       return FALSE;
     }
-  cfg_lexer_register_generator_plugin(plugin_context, confgen_exec_new(cfg_lexer_lookup_context_type_by_name(context),
-                                      name, exec));
+  cfg_lexer_register_generator_plugin(plugin_context,
+                                      confgen_exec_new(context_value, name, exec));
   return TRUE;
 }
 
