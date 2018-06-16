@@ -41,6 +41,4 @@ void synthetic_context_set_context_scope(SyntheticContext *self, const gchar *sc
 void synthetic_context_init(SyntheticContext *self);
 void synthetic_context_deinit(SyntheticContext *self);
 
-gint synthetic_context_lookup_context_scope(const gchar *context_scope);
-
 #endif
