@@ -64,4 +64,14 @@ log_transport_mock_read_chunk_from_write_buffer(LogTransportMock *self, gchar *b
 
 LogTransportMock *
 log_transport_mock_clone(LogTransportMock *self);
+
+void
+log_transport_mock_init(LogTransportMock *self, const gchar *read_buffer1, gssize read_buffer_length1, va_list va);
+gssize
+log_transport_mock_write_method(LogTransport *s, const gpointer buf, gsize count);
+gssize
+log_transport_mock_read_method(LogTransport *s, gpointer buf, gsize count, LogTransportAuxData *aux);
+void
+log_transport_mock_free_method(LogTransport *s);
+
 #endif
