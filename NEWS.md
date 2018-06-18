@@ -1,68 +1,69 @@
-3.15.1
+3.16.1
 
-<!-- Thu, 19 Apr 2018 10:55:16 +0200 -->
+<!-- Mon, 18 Jun 2018 14:16:44 +0200 -->
 
 ## Features
 
- * Support added for `if`/`elif`/`else` blocks to the configuration file syntax.
-   (#1856)
- * Dramatically improved debug messages during filter/parser evaluation. (#1898)
- * Similarly improved the error messages shown on syntax errors, they now show a
-   full backtrace of inclusions, among other things. (#1932)
- * The `hook-commands` module was added, allowing one to run custom commands on
-   source or destination setup and teardown. (#1951)
- * Implemented a way to skip processing included config file snippets in case a
-   dependency is missing: The `@requires json` pragma. (#827, #1956)
- * Basic client-side failover support was implemented. (#1905)
- * Errors from python destinations are now reported together with any exception
-   text (if any). (#1931)
- * `add-contextual-data` gained a new `ignore-case()` option. (#1911)
+ * Telegram destination and $(urlencode) template function (#2085)
+ * Error reporting on misspelled block args (#1952)
+ * New ignore_tns_config Oracle SQL destination config option (#2054)
+ * Per-source "src.host" and "src.sender" counters (#2013)
 
 ## Bugfixes
 
- * Fix a crash that happened on disk queue restart. (#1886)
- * Fixed another crash when a corrupted disk queue file was being moved away.
-   (#1924)
- * Fixed a crash that could happen during nvtable deserialization. (#1967)
- * Fixed a crash that occurred when NVTables were stored on low memory
-   addresses. (#1970)
- * Fixed an issue with TLS session resumption, the session id context value is
-   now properly set. (#1936, #2000)
- * We now link directly to the `evtlog` shipped with syslog-ng, and are not
-   using the system library, not even when present. (#1915)
- * TLS destinations now work again without `key-file` or `cert-file` specified.
-   (#1916, #1917)
- * SDATA block names are now sanitized, in order to not break the spec when we
-   get our SDATA from sources that are more lax (such as JSON). (#1948)
- * Some internal messages contained key-value pairs where the key had spaces in
-   it, this has been addressed, they do not contain spaces anymore.
- * The STOMP destination will now correctly use template options when formatting
-   its body part. (#1957)
- * Fix compilation with OpenSSL 1.1.0 (#1921, #1997)
- * Fix compilation on FreeBSD. (#1901)
- * Fix compilation on SLES 11. (#1897)
- * Fix compilation on Hurd. (#1912, #1914)
- * Fix compiltaion on Solaris 10. (#1982, #1983)
- * Fix compilation on MacOS.
- * Fixed a value conflict in the `afstreams` module's grammar file.
- * Various compiler warning-related fixes all over the codebase.
+ * Fix possible loss of log messages in the systemd-journal() source (#1570, #1587, #1612)
+ * Fix file source location information in internal logs (#2028)
+ * Fix SDATA deserialization (disk-buffer crash) (#1919, #2067)
+ * Fix unaccepted embedded 'file' keyword (file source and destination) (#2076)
+ * Fix memory leaks in appmodel and varargs (#2086)
+ * Fix a bug in the old LogMessage deserialization (#2103)
+ * Fix reading the output of the confgen program (#1780, #2108)
+ * Add safer mem_zero() to secret-storage (#2049)
+ * Fix undefined behavior in syslog-ng-ctl query (#2043)
+ * Fix lloc tracking for multi line blockrefs (#2035)
+ * Added missing 'else {};' to default-network-drivers() to forward unparsable messages (#2027)
+ * Fix mixed linking (#2020, #2022)
+ * Fix compilation of evtlog on FreeBSD (#2014, #2015)
+ * Fix thread_id allocation for more than 32 CPUs (crash) (#2008)
+ * Add safe logging of errno (#1990, #1999)
+ * Fix warnings related to floating point operations (#1959, #1996)
+ * Partial revert of plugin discovery to bring back valgrind (#1953, #1995)
+ * Fix connection close in network sources (#1991)
+ * Fix file deletion in the wildcard-file() source (#1974)
+ * Disable the DNS cache if use-dns(no) is used (#1923)
+ * Fix compiler error for gcc 4.4 (#2044)
+ * Fix emitted warnings due to -no-pie detection for gcc 4.4 (#2037)
+ * Fix date format in functional tests (#2036)
+ * Dbld fixes (#2034)
+ * Rename PAGESIZE variables to pagesize in secret-storage (compilation fix) (#2111)
+ * Fix the lifetime of TLSContext to prevent crash on reload (#2080, #2109)
+ * Fix reaping program() source and destination when a Java-based destination is used (#2099)
 
 ## Other changes
 
- * POSIX RegExp support was dropped from the filters, PCRE remains available. (#1899)
- * Miscellaneous build-system related fixes and improvements (both autotools and
-   CMake).
- * Update `lib/json-c` to `json-c-0.13-20171207`. (#1900)
+ * Add debug message to program source/destination about successful start (#2046)
+ * Report memory exhaustion errors during config parsing (#2033)
+ * Improved debug logs (#2032)
+ * Dbld coverage (#2031)
+ * LogTransportMock enhancement (#2017)
+ * Modify the license of loggen from GPL to LGPL (#2006)
+ * Loggen refactor (#1987)
+ * Update RPM generation (#1980, #2113)
+ * Support ENABLE_EXTRA_WARNINGS with CMake (#2072)
+ * Rewrite unit tests based on Criterion (#2026, #2058, #2039, #2018, #2003)
+ * Lexer test coverage improvements (#2062)
+ * preparation for 3.16 OSE rhel/packaging (#2113)
 
 ## Notes to the developers
 
- * The `init()` function is now optional for Python destinations. (#1756)
- * The Docker environment (`dbld/`) has seen significant changes, among them an
-   upgrade to Ubuntu Xenial. (#1876)
- * `dbld/rules` gained two new targets: `login` and `build`, that do what their
-   names suggest. (#1927)
- * The `LogPipe` object gained a `pre_init()` and a `post_deinit()` method, used
-   by the `hook-commands` module.
+ * Do not ship rabbitmq-c with syslog-ng (remove as submodule) (#2052)
+ * Multitransport (#2057)
+ * Timeout support for LogReader and LogWriter (#2056)
+ * Update ivykis to 0.42.3 (submodule) (#2012)
+ * Drop explicit version numbers from requirements.txt (#2050)
+ * CMake modernization pt. 1 (#2007)
+ * Assert when log_pipe_clone() is not implemented (#2019)
+ * Small Java code refactor (#2066)
 
 ## Credits
 
@@ -74,7 +75,7 @@ feedback are all important contributions, so please if you are a user
 of syslog-ng, contribute.
 
 We would like to thank the following people for their contribution:
-Andras Mitzki, Antal Nemes, Balazs Scheidler, Budai Laszlo, Gabor Nagy, Gábor
-Nagy, Gergely Nagy, Juhasz Viktor, Kókai Péter, Laszlo Budai, László Szemere,
-László Várady, Mehul Prajapati, Norbert Takacs, Robert Fekete, SZALAY Attila,
-Tamas Nagy, Terez Nemes, Utsav Krishnan, Videet Singhai, Vivek Raj
+Andras Mitzki, Andrej Valek, Antal Nemes, Balazs Scheidler, Gabor Nagy,
+Gergely Nagy, German Service Network, Jakub Wilk, Laszlo Budai, Laszlo Szemere,
+Laszlo Varady, Mehul Prajapati, Norbert Takacs, Peter Czanik, Peter Kokai,
+Tomasz Kazimierczak, Viktor Juhasz

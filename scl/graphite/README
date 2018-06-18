@@ -1,6 +1,6 @@
 An example graphite() destination config can be found below:
 
-@version: 3.15
+@version: 3.16
 @include "scl.conf"
 
 source s_all {

@@ -229,11 +229,11 @@ Test(lexer, at_version_stores_config_version_in_parsed_version_in_hex_form)
 {
   parser->lexer->ignore_pragma = FALSE;
 
-  _input("@version: 3.15\n\
+  _input("@version: 3.16\n\
 foo\n");
   assert_parser_identifier("foo");
-  cr_assert_eq(configuration->parsed_version, 0x030f,
-               "@version parsing mismatch, value %04x expected %04x", configuration->parsed_version, 0x030f);
+  cr_assert_eq(configuration->parsed_version, 0x0310,
+               "@version parsing mismatch, value %04x expected %04x", configuration->parsed_version, 0x0310);
 
   _input("@version: 3.1\n\
 bar\n");
