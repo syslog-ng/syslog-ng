@@ -139,11 +139,9 @@ file_perm_options_defaults(FilePermOptions *self)
 void
 file_perm_options_global_defaults(FilePermOptions *self)
 {
-  self->file_uid = 0;
-  self->file_gid = 0;
+  self->file_uid = self->file_gid = -1;
   self->file_perm = 0600;
-  self->dir_uid = 0;
-  self->dir_gid = 0;
+  self->dir_uid = self->dir_gid = -1;
   self->dir_perm = 0700;
 }
 
