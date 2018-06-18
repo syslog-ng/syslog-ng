@@ -242,7 +242,7 @@ exit:
   return count;
 }
 
-static gssize
+gssize
 log_transport_mock_write_method(LogTransport *s, const gpointer buf, gsize count)
 {
   LogTransportMock *self = (LogTransportMock *)s;
@@ -257,7 +257,7 @@ log_transport_mock_write_method(LogTransport *s, const gpointer buf, gsize count
   return count;
 }
 
-static void
+void
 log_transport_mock_free_method(LogTransport *s)
 {
   LogTransportMock *self = (LogTransportMock *)s;
@@ -300,7 +300,7 @@ log_transport_mock_inject_data(LogTransportMock *self, const gchar *buffer, gssi
     inject_chunk(self, buffer, length);
 }
 
-static void
+void
 log_transport_mock_init(LogTransportMock *self, const gchar *read_buffer1, gssize read_buffer_length1, va_list va)
 {
   const gchar *buffer;
