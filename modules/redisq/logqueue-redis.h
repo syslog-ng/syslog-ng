@@ -46,9 +46,12 @@ struct _LogQueueRedis
 
   GQueue *qredis;
   GQueue *qbacklog;
-  redisContext *c;
 
-  LogMessage *(*read_message)(LogQueueRedis *self, LogPathOptions *path_options);
+  redisContext *c;
+  RedisQueueOptions *redis_options;
+  gchar *persist_name;
+
+  LogMessage *(*read_message)(LogQueueRedis *self);
   gboolean (*write_message)(LogQueueRedis *self, LogMessage *msg);
 };
 
