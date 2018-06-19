@@ -55,6 +55,17 @@ redis_queue_options_auth_set(RedisQueueOptions *self, gchar *auth)
 }
 
 void
+redis_queue_options_key_prefix_set(RedisQueueOptions *self, gchar *keyprefix)
+{
+  if (self->keyprefix)
+    {
+      g_free(self->keyprefix);
+    }
+
+  self->keyprefix = g_strdup(keyprefix);
+}
+
+void
 redis_queue_options_check_plugin_settings(RedisQueueOptions *self)
 {
 
@@ -66,6 +77,7 @@ redis_queue_options_set_default_options(RedisQueueOptions *self)
   self->host = g_strdup("127.0.0.1");
   self->port = 6379;
   self->auth = NULL;
+  self->keyprefix = g_strdup("syslogng_redisq");
 }
 
 void
@@ -81,5 +93,11 @@ redis_queue_options_destroy(RedisQueueOptions *self)
     {
       g_free(self->auth);
       self->auth = NULL;
+    }
+
+  if (self->keyprefix)
+    {
+      g_free(self->keyprefix);
+      self->keyprefix = NULL;
     }
 }

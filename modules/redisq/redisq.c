@@ -74,9 +74,7 @@ _release_queue(LogDestDriver *dd, LogQueue *queue)
 static gboolean
 _attach(LogDriverPlugin *s, LogDriver *d)
 {
-  RedisQDestPlugin *self = (RedisQDestPlugin *) s;
   LogDestDriver *dd = (LogDestDriver *) d;
-  GlobalConfig *cfg = log_pipe_get_config(&d->super);
 
   msg_debug("redisq: plugin attach");
 
