@@ -34,6 +34,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <criterion/criterion.h>
 
 gboolean thread_exit = FALSE;
 gboolean thread_started;
@@ -130,16 +131,9 @@ test_accept_wakeup(void)
   sock = socket(PF_UNIX, SOCK_STREAM, 0);
   s.sun_family = AF_UNIX;
   strcpy(s.sun_path, "almafa");
-  if (bind(sock, (struct sockaddr *) &s, sizeof(s)) < 0)
-    {
-      perror("error binding socket");
-      return 1;
-    }
-  if (listen(sock, 255) < 0)
-    {
-      perror("error in listen()");
-      return 1;
-    }
+  cr_assert_not(bind(sock, (struct sockaddr *) &s, sizeof(s)), "error binding socket: %s", strerror(errno));
+  cr_assert_not(listen(sock, 255), "error in listen(): %s", strerror(errno));
+
   return create_test_thread(accept_thread_func, NULL);
 }
 
@@ -179,16 +173,13 @@ test_read_wakeup(void)
   return create_test_thread(read_thread_func, pair);
 }
 
-int
-main(int argc, char *argv[])
+Test(test_thread_wakeup, testcase)
 {
   g_thread_init(NULL);
 
   thread_lock = g_mutex_new();
   thread_startup = g_cond_new();
 
-  if (!test_accept_wakeup() ||
-      !test_read_wakeup())
-    return 1;
-  return 0;
+  cr_assert(test_accept_wakeup());
+  cr_assert(test_read_wakeup());
 }
