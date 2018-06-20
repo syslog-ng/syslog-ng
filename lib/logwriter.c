@@ -774,6 +774,7 @@ log_writer_mark_timeout(void *cookie)
   main_loop_assert_main_thread();
 
   msg = log_msg_new_mark();
+  path_options.ack_needed = FALSE;
   /* timeout: there was no new message on the writer or it is in periodical mode */
   hostname = resolve_sockaddr_to_hostname(&hostname_len, msg->saddr, &self->options->host_resolve_options);
 
