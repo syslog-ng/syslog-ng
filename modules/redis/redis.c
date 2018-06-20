@@ -36,7 +36,7 @@
 
 typedef struct
 {
-  LogThrDestDriver super;
+  LogThreadedDestDriver super;
 
   gchar *host;
   gint   port;
@@ -117,7 +117,7 @@ redis_dd_get_template_options(LogDriver *d)
  */
 
 static gchar *
-redis_dd_format_stats_instance(LogThrDestDriver *d)
+redis_dd_format_stats_instance(LogThreadedDestDriver *d)
 {
   RedisDriver *self = (RedisDriver *)d;
   static gchar persist_name[1024];
@@ -219,7 +219,7 @@ redis_dd_connect(RedisDriver *self, gboolean reconnect)
 }
 
 static void
-redis_dd_disconnect(LogThrDestDriver *s)
+redis_dd_disconnect(LogThreadedDestDriver *s)
 {
   RedisDriver *self = (RedisDriver *)s;
 
@@ -233,7 +233,7 @@ redis_dd_disconnect(LogThrDestDriver *s)
  */
 
 static worker_insert_result_t
-redis_worker_insert(LogThrDestDriver *s, LogMessage *msg)
+redis_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
 {
   RedisDriver *self = (RedisDriver *)s;
   redisReply *reply;
@@ -309,7 +309,7 @@ redis_worker_insert(LogThrDestDriver *s, LogMessage *msg)
 }
 
 static void
-redis_worker_thread_init(LogThrDestDriver *d)
+redis_worker_thread_init(LogThreadedDestDriver *d)
 {
   RedisDriver *self = (RedisDriver *)d;
 
@@ -324,7 +324,7 @@ redis_worker_thread_init(LogThrDestDriver *d)
 }
 
 static void
-redis_worker_thread_deinit(LogThrDestDriver *d)
+redis_worker_thread_deinit(LogThreadedDestDriver *d)
 {
   RedisDriver *self = (RedisDriver *)d;
 
@@ -360,7 +360,7 @@ redis_dd_init(LogPipe *s)
               evt_tag_str("host", self->host),
               evt_tag_int("port", self->port));
 
-  return log_threaded_dest_driver_start(s);
+  return log_threaded_dest_driver_init_method(s);
 }
 
 static void

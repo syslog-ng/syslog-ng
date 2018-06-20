@@ -34,7 +34,7 @@
 
 typedef struct
 {
-  LogThrDestDriver super;
+  LogThreadedDestDriver super;
 
   gchar *server;
   gint port;
@@ -246,7 +246,7 @@ riemann_dd_get_template_options(LogDriver *d)
  */
 
 static gchar *
-riemann_dd_format_stats_instance(LogThrDestDriver *s)
+riemann_dd_format_stats_instance(LogThreadedDestDriver *s)
 {
   RiemannDestDriver *self = (RiemannDestDriver *)s;
   static gchar persist_name[1024];
@@ -274,7 +274,7 @@ riemann_dd_format_persist_name(const LogPipe *s)
 }
 
 static void
-riemann_dd_disconnect(LogThrDestDriver *s)
+riemann_dd_disconnect(LogThreadedDestDriver *s)
 {
   RiemannDestDriver *self = (RiemannDestDriver *)s;
 
@@ -386,7 +386,7 @@ riemann_worker_init(LogPipe *s)
               evt_tag_str("server", self->server),
               evt_tag_int("port", self->port));
 
-  return log_threaded_dest_driver_start(s);
+  return log_threaded_dest_driver_init_method(s);
 }
 
 static void
@@ -634,7 +634,7 @@ riemann_worker_batch_flush(RiemannDestDriver *self)
 }
 
 static worker_insert_result_t
-riemann_worker_insert(LogThrDestDriver *s, LogMessage *msg)
+riemann_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
 {
   RiemannDestDriver *self = (RiemannDestDriver *)s;
   worker_insert_result_t result;
@@ -655,7 +655,7 @@ riemann_worker_insert(LogThrDestDriver *s, LogMessage *msg)
 }
 
 static void
-riemann_worker_thread_deinit(LogThrDestDriver *s)
+riemann_worker_thread_deinit(LogThreadedDestDriver *s)
 {
   RiemannDestDriver *self = (RiemannDestDriver *)s;
 
@@ -663,7 +663,7 @@ riemann_worker_thread_deinit(LogThrDestDriver *s)
 }
 
 static void
-riemann_flush_queue(LogThrDestDriver *s)
+riemann_flush_queue(LogThreadedDestDriver *s)
 {
   RiemannDestDriver *self = (RiemannDestDriver *)s;
   riemann_worker_batch_flush(self);

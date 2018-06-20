@@ -35,7 +35,7 @@
 
 typedef struct _MongoDBDestDriver
 {
-  LogThrDestDriver super;
+  LogThreadedDestDriver super;
 
   /* Shared between main/writer; only read by the writer, never
    written */
@@ -53,8 +53,6 @@ typedef struct _MongoDBDestDriver
 #endif
 
   LogTemplateOptions template_options;
-
-  time_t last_msg_stamp;
 
   ValuePairs *vp;
 

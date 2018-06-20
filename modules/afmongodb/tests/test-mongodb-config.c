@@ -130,7 +130,7 @@ _expect_uri_in_log(const gchar *testcase, const gchar *uri, const gchar *db, con
 static gboolean
 _execute_compare_persist_name(const gchar *expected_name)
 {
-  LogThrDestDriver *self = (LogThrDestDriver *)mongodb;
+  LogThreadedDestDriver *self = (LogThreadedDestDriver *)mongodb;
   const gchar *name = log_pipe_get_persist_name((const LogPipe *)self);
   return assert_nstring_non_fatal(name, -1, expected_name, -1, "mismatch");
 }
@@ -147,7 +147,7 @@ _test_persist_name(void)
 static gboolean
 _execute_compare_stats_name(const gchar *expected_name)
 {
-  LogThrDestDriver *self = (LogThrDestDriver *)mongodb;
+  LogThreadedDestDriver *self = (LogThreadedDestDriver *)mongodb;
   const gchar *name = self->format.stats_instance(self);
   return assert_nstring_non_fatal(name, -1, expected_name, -1, "mismatch");
 }
