@@ -1,6 +1,6 @@
 $PATH$/etc/syslog-ng.conf(.*)?	--	gen_context(system_u:object_r:syslog_conf_t,s0)
+$PATH$/etc/conf.d/.*.conf	--	gen_context(system_u:object_r:syslog_conf_t,s0)
 $PATH$/var/syslog-ng.*		--	gen_context(system_u:object_r:syslogd_var_lib_t,s0)
 $PATH$/libexec/syslog-ng	--	gen_context(system_u:object_r:syslogd_exec_t,s0)
 $PATH$/libexec/syslog-ng-wrapper.sh	--	gen_context(system_u:object_r:syslogd_exec_t,s0)
-/etc/rc\.d/init\.d/syslog-ng	--	gen_context(system_u:object_r:syslogd_initrc_exec_t,s0)
 $PATH$/share/include/scl/system/generate-system-source.sh	--	gen_context(system_u:object_r:bin_t,s0)
