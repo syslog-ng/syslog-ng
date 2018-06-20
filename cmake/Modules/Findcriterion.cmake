@@ -21,6 +21,8 @@
 #
 #############################################################################
 
+include(LibFindMacros)
+
 libfind_pkg_check_modules(CRITERION_PKGCONF criterion)
 
 libfind_pkg_detect(CRITERION criterion FIND_PATH criterion/criterion.h FIND_LIBRARY criterion)
