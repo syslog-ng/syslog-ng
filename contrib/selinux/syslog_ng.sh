@@ -144,7 +144,7 @@ prepare_files() {
 	else
 		omit_install_path > "syslog_ng.fc"
 	fi
-	cp "src/${EL_TE}" "syslog_ng.te"
+	cat "src/syslog_ng.module.version" "src/${EL_TE}" > "syslog_ng.te"
 }
 
 

@@ -1,5 +1,3 @@
-policy_module(syslog_ng, 1.0.5)
-
 require {
         type syslogd_t, shell_exec_t, bin_t;
         class file { ioctl read getattr lock execute execute_no_trans open };
