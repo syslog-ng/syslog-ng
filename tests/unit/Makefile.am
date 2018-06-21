@@ -11,7 +11,8 @@ tests_unit_TESTS			= \
 	tests/unit/test_hostid		   \
 	tests/unit/test_zone		   \
 	tests/unit/test_pathutils	   \
-	tests/unit/test_logwriter
+	tests/unit/test_logwriter	\
+	tests/unit/test_thread_wakeup
 
 check_PROGRAMS				+= \
 	${tests_unit_TESTS}
@@ -70,3 +71,6 @@ tests_unit_test_zone_CFLAGS		= $(TEST_CFLAGS)
 tests_unit_test_pathutils_CFLAGS	= $(TEST_CFLAGS)
 tests_unit_test_pathutils_LDADD	= \
 	$(TEST_LDADD) $(unit_test_extra_modules)
+
+tests_unit_test_thread_wakeup_CFLAGS	= $(TEST_CFLAGS)
+tests_unit_test_thread_wakeup_LDADD	= $(TEST_LDADD)
