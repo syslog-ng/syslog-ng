@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2014 Balabit
+ * Copyright (c) 2010-2018 Balabit
  * Copyright (c) 2010-2014 Balázs Scheidler <balazs.scheidler@balabit.com>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -20,22 +20,18 @@
  * COPYING for details.
  *
  */
+#include "apphook.h"
+#include "logmsg/logmsg.h"
+#include "patterndb.h"
+#include "cfg.h"
+#include <string.h>
+#include <stdlib.h>
+#include <glib/gstdio.h>
 
-gboolean fail = FALSE;
-gboolean verbose = FALSE;
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
 
-#define test_fail(fmt, args...) \
-do {\
-  printf(fmt, ##args); \
-  fail = TRUE; \
-} while (0);
-
-#define test_msg(fmt, args...) \
-do { \
-  if (verbose) printf(fmt, ##args); \
-} while (0);
-
-
+#define MYHOST "MYHOST"
 
 gchar *pdb_parser_skeleton_prefix ="<?xml version='1.0' encoding='UTF-8'?>\
 <patterndb version='4' pub_date='2010-02-22'>\
@@ -55,9 +51,8 @@ gchar *pdb_parser_skeleton_postfix =  /* HERE IS THE GENERATED PATTERN */ "</pat
   </ruleset>\
 </patterndb>";
 
-
 void
-test_pattern(const gchar *pattern, const gchar *rule, gboolean match)
+_assert_pattern(PatternDB *patterndb, const gchar *pattern, const gchar *rule, gboolean match)
 {
   gboolean result;
   LogMessage *msg = log_msg_new_empty();
@@ -70,191 +65,136 @@ test_pattern(const gchar *pattern, const gchar *rule, gboolean match)
 
   if (match)
     {
-      assert_true(result, "Value '%s' is not matching for pattern '%s'\n", rule, pattern);
+      cr_assert(result, "Value '%s' is not matching for pattern '%s'\n", rule, pattern);
     }
   else
     {
-      assert_false(result, "Value '%s' is matching for pattern '%s'\n", rule, pattern);
+      cr_assert_not(result, "Value '%s' is matching for pattern '%s'\n", rule, pattern);
     }
 
   log_msg_unref(msg);
 }
 
-void
-test_parser(gchar **test)
+static PatternDB *
+_load_pattern_db_from_string(const gchar *pdb, gchar **filename)
 {
-  GString *str;
-  gsize i = 1;
+  PatternDB *patterndb = pattern_db_new();
 
-  str = g_string_new(pdb_parser_skeleton_prefix);
-  g_string_append(str, test[0]);
+  g_file_open_tmp("patterndbXXXXXX.xml", filename, NULL);
+  g_file_set_contents(*filename, pdb, strlen(pdb), NULL);
+
+  cr_assert(pattern_db_reload_ruleset(patterndb, configuration, *filename), "Error loading ruleset [[[%s]]]", pdb);
+  cr_assert_str_eq(pattern_db_get_ruleset_pub_date(patterndb), "2010-02-22", "Invalid pubdate");
+
+  return patterndb;
+}
+
+static void
+_destroy_pattern_db(PatternDB *patterndb, gchar *filename)
+{
+  pattern_db_free(patterndb);
+  g_unlink(filename);
+}
+
+typedef struct _test_parsers_e2e_param
+{
+  const gchar *rule;
+  const gchar *pattern;
+  gboolean match;
+} TestParsersE2EParam;
+
+ParameterizedTestParameters(parsers_e2e, test_parsers)
+{
+  static TestParsersE2EParam parser_params[] =
+  {
+    {"@ANYSTRING:TEST@", "ab ba ab", TRUE},
+    {"@ANYSTRING:TEST@", "1234ab", TRUE},
+    {"@ANYSTRING:TEST@", "ab1234", TRUE},
+    {"@ANYSTRING:TEST@", "1.2.3.4", TRUE},
+    {"@ANYSTRING:TEST@", "ab  1234  ba", TRUE},
+    {"@ANYSTRING:TEST@", "&lt;ab ba&gt;", TRUE},
+    {"@DOUBLE:TEST@", "1234", TRUE},
+    {"@DOUBLE:TEST@", "1234.567", TRUE},
+    {"@DOUBLE:TEST@", "1.2.3.4", TRUE},
+    {"@DOUBLE:TEST@", "1234ab", TRUE},
+    {"@DOUBLE:TEST@", "ab1234", FALSE},
+    {"@ESTRING:TEST:endmark@","ab ba endmark", TRUE},
+    {"@ESTRING:TEST:endmark@","ab ba", FALSE},
+    {"@ESTRING:TEST:&gt;@","ab ba > ab", TRUE},
+    {"@ESTRING:TEST:&gt;@","ab ba", FALSE},
+    {"@FLOAT:TEST@", "1234", TRUE},
+    {"@FLOAT:TEST@", "1234.567", TRUE},
+    {"@FLOAT:TEST@", "1.2.3.4", TRUE},
+    {"@FLOAT:TEST@", "1234ab", TRUE},
+    {"@FLOAT:TEST@", "ab1234", FALSE},
+    {"@SET:TEST: 	@", " a ", TRUE},
+    {"@SET:TEST: 	@", "  a ", TRUE},
+    {"@SET:TEST: 	@", " 	a ", TRUE},
+    {"@SET:TEST: 	@", " 	 a ", TRUE},
+    {"@SET:TEST: 	@", "ab1234", FALSE},
+    {"@IPv4:TEST@", "1.2.3.4", TRUE},
+    {"@IPv4:TEST@", "0.0.0.0", TRUE},
+    {"@IPv4:TEST@", "255.255.255.255", TRUE},
+    {"@IPv4:TEST@", "256.256.256.256", FALSE},
+    {"@IPv4:TEST@", "1234", FALSE},
+    {"@IPv4:TEST@", "ab1234", FALSE},
+    {"@IPv4:TEST@", "ab1.2.3.4", FALSE},
+    {"@IPv4:TEST@", "1,2,3,4", FALSE},
+    {"@IPv6:TEST@", "2001:0db8:0000:0000:0000:0000:1428:57ab", TRUE},
+    {"@IPv6:TEST@", "2001:0db8:0000:0000:0000::1428:57ab", TRUE},
+    {"@IPv6:TEST@", "2001:0db8:0:0:0:0:1428:57ab", TRUE},
+    {"@IPv6:TEST@", "2001:0db8:0:0::1428:57ab", TRUE},
+    {"@IPv6:TEST@", "2001:0db8::1428:57ab", TRUE},
+    {"@IPv6:TEST@", "2001:db8::1428:57ab", TRUE},
+    {"@IPv6:TEST@", "2001:0db8::34d2::1428:57ab", FALSE},
+    {"@NUMBER:TEST@", "1234", TRUE},
+    {"@NUMBER:TEST@", "1.2", TRUE},
+    {"@NUMBER:TEST@", "1.2.3.4", TRUE},
+    {"@NUMBER:TEST@", "1234ab", TRUE},
+    {"@NUMBER:TEST@", "ab1234", FALSE},
+    {"@QSTRING:TEST:&lt;&gt;@", "<aa bb>", TRUE},
+    {"@QSTRING:TEST:&lt;&gt;@", "< aabb >", TRUE},
+    {"@QSTRING:TEST:&lt;&gt;@", "aabb>", FALSE},
+    {"@QSTRING:TEST:&lt;&gt;@", "<aabb", FALSE},
+    {"@STRING:TEST@", "aabb", TRUE},
+    {"@STRING:TEST@", "aa bb", TRUE},
+    {"@STRING:TEST@", "1234", TRUE},
+    {"@STRING:TEST@", "ab1234", TRUE},
+    {"@STRING:TEST@", "1234bb", TRUE},
+    {"@STRING:TEST@", "1.2.3.4", TRUE}
+  };
+
+  return cr_make_param_array(TestParsersE2EParam, parser_params, G_N_ELEMENTS(parser_params));
+};
+
+ParameterizedTest(TestParsersE2EParam *param, parsers_e2e, test_parsers)
+{
+  GString *str = g_string_new(pdb_parser_skeleton_prefix);
+  g_string_append(str, param->rule);
   g_string_append(str, pdb_parser_skeleton_postfix);
 
-  _load_pattern_db_from_string(str->str);
+  gchar *filename;
+  PatternDB *patterndb = _load_pattern_db_from_string(str->str, &filename);
   g_string_free(str, TRUE);
-  while(test[i] != NULL)
-    test_pattern(test[i++], test[0], TRUE);
-  i++;
-  while(test[i] != NULL)
-    test_pattern(test[i++], test[0], FALSE);
+  _assert_pattern(patterndb, param->pattern, param->rule, param->match);
 
-  _destroy_pattern_db();
+  _destroy_pattern_db(patterndb, filename);
+  g_free(filename);
 }
 
-gchar *test1 [] =
+void setup(void)
 {
-  "@ANYSTRING:TEST@",
-  "ab ba ab",
-  "ab ba ab",
-  "1234ab",
-  "ab1234",
-  "1.2.3.4",
-  "ab  1234  ba",
-  "&lt;ab ba&gt;",
-  NULL,
-  NULL
-};
-
-gchar *test2 [] =
-{
-  "@DOUBLE:TEST@",
-  "1234",
-  "1234.567",
-  "1.2.3.4",
-  "1234ab",
-  NULL, // not match
-  "ab1234",NULL
-};
-
-gchar *test3 [] =
-{
-  "@ESTRING:TEST:endmark@",
-  "ab ba endmark",
-  NULL,
-  "ab ba",NULL
-};
-
-gchar *test4 [] =
-{
-  "@ESTRING:TEST:&gt;@",
-  "ab ba > ab",
-  NULL,
-  "ab ba",NULL
-};
-
-gchar *test5 [] =
-{
-  "@FLOAT:TEST@",
-  "1234",
-  "1234.567",
-  "1.2.3.4",
-  "1234ab",
-  NULL, // not match
-  "ab1234",NULL
-};
-
-gchar *test6 [] =
-{
-  "@SET:TEST: 	@",
-  " a ",
-  "  a ",
-  " 	a ",
-  " 	 a ",
-  NULL, // not match
-  "ab1234",NULL
-};
-
-gchar *test7 [] =
-{
-  "@IPv4:TEST@",
-  "1.2.3.4",
-  "0.0.0.0",
-  "255.255.255.255",
-  NULL,
-  "256.256.256.256",
-  "1234",
-  "ab1234",
-  "ab1.2.3.4",
-  "1,2,3,4",NULL
-};
-
-gchar *test8 [] =
-{
-  "@IPv6:TEST@",
-  "2001:0db8:0000:0000:0000:0000:1428:57ab",
-  "2001:0db8:0000:0000:0000::1428:57ab",
-  "2001:0db8:0:0:0:0:1428:57ab",
-  "2001:0db8:0:0::1428:57ab",
-  "2001:0db8::1428:57ab",
-  "2001:db8::1428:57ab",
-  NULL,
-  "2001:0db8::34d2::1428:57ab",NULL
-};
-
-gchar *test9 [] =
-{
-  "@IPvANY:TEST@",
-  "1.2.3.4",
-  "0.0.0.0",
-  "255.255.255.255",
-  "2001:0db8:0000:0000:0000:0000:1428:57ab",
-  "2001:0db8:0000:0000:0000::1428:57ab",
-  "2001:0db8:0:0:0:0:1428:57ab",
-  "2001:0db8:0:0::1428:57ab",
-  "2001:0db8::1428:57ab",
-  "2001:db8::1428:57ab",
-  NULL,
-  "256.256.256.256",
-  "1234",
-  "ab1234",
-  "ab1.2.3.4",
-  "1,2,3,4",
-  "2001:0db8::34d2::1428:57ab",NULL
-};
-
-gchar *test10 [] =
-{
-  "@NUMBER:TEST@",
-  "1234",
-  "1.2",
-  "1.2.3.4",
-  "1234ab",
-  NULL,
-  "ab1234",
-  NULL
-};
-
-gchar *test11 [] =
-{
-  "@QSTRING:TEST:&lt;&gt;@",
-  "<aa bb>",
-  "< aabb >",
-  NULL,
-  "aabb>",
-  "<aabb",NULL
-};
-
-gchar *test12 [] =
-{
-  "@STRING:TEST@",
-  "aabb",
-  "aa bb",
-  "1234",
-  "ab1234",
-  "1234bb",
-  "1.2.3.4",
-  NULL,NULL
-};
-
-gchar **parsers[] = {test1, test2, test3, test4, test5, test6, test7, test8, test9, test10, test11, test12, NULL};
-
-void
-test_patterndb_parsers(void)
-{
-  gint i;
-
-  for (i = 0; parsers[i]; i++)
-    {
-      test_parser(parsers[i]);
-    }
+  app_startup();
+  msg_init(TRUE);
+  configuration = cfg_new_snippet();
+  cfg_load_module(configuration, "basicfuncs");
+  cfg_load_module(configuration, "syslogformat");
+  pattern_db_global_init();
 }
+
+void teardown(void)
+{
+  app_shutdown();
+}
+
+TestSuite(parsers_e2e, .init = setup, .fini = teardown);

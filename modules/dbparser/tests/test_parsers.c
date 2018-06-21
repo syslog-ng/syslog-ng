@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Balabit
+ * Copyright (c) 2018 Balabit
  * Copyright (c) 2013 Balázs Scheidler <balazs.scheidler@balabit.com>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -21,30 +21,12 @@
  *
  */
 
-#include "testutils.h"
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
 #include <string.h>
 
 /* NOTE: including the implementation file to access static functions */
 #include "radix.c"
-
-
-#define PARSER_TESTCASE(x, ...) do { parser_testcase_begin(#x, #__VA_ARGS__); x(__VA_ARGS__); parser_testcase_end(); } while(0)
-
-#define parser_testcase_begin(func, args)                     \
-  do                                                            \
-    {                                                           \
-      testcase_begin("%s(%s)", func, args);                     \
-    }                                                           \
-  while (0)
-
-#define parser_testcase_end()                                 \
-  do                                                            \
-    {                                                           \
-      testcase_end();                                           \
-    }                                                           \
-  while (0)
-
-
 
 static gboolean
 _invoke_parser(gboolean (*parser)(guint8 *str, gint *len, const gchar *param, gpointer state, RParserMatch *match),
@@ -74,56 +56,71 @@ _invoke_parser(gboolean (*parser)(guint8 *str, gint *len, const gchar *param, gp
   return result;
 }
 
-static void
-assert_parser_success(gboolean (*parser)(guint8 *str, gint *len, const gchar *param, gpointer state,
-                                         RParserMatch *match), const gchar *str, gpointer param, gpointer state, const gchar *expected_string)
+typedef struct _parser_test_param
+{
+  gchar *str;
+  gpointer param;
+  gchar *expected_string;
+  gboolean expected_result;
+} ParserTestParam;
+
+ParameterizedTestParameters(parser, test_string_parser)
+{
+  static ParserTestParam parser_params[] =
+  {
+    {.str = "foo", .param = NULL, .expected_string = "foo", .expected_result = TRUE},
+    {.str = "foo bar", .param = NULL, .expected_string = "foo", .expected_result = TRUE},
+    {.str = "foo123 bar", .param = NULL, .expected_string = "foo123", .expected_result = TRUE},
+    {.str = "foo{}", .param = NULL, .expected_string = "foo", .expected_result = TRUE},
+    {.str = "foo[]", .param = NULL, .expected_string = "foo", .expected_result = TRUE},
+    {.str = "foo", .param = "X", .expected_string = "foo", .expected_result = TRUE},
+    {.str = "foo=bar", .param = "=", .expected_string = "foo=bar", .expected_result = TRUE},
+    {.str = "", .param = NULL, .expected_string = NULL, .expected_result = FALSE},
+  };
+
+  return cr_make_param_array(ParserTestParam, parser_params, G_N_ELEMENTS(parser_params));
+}
+
+ParameterizedTest(ParserTestParam *param, parser, test_string_parser)
 {
   gchar *result_string = NULL;
   gboolean result;
 
-  result = _invoke_parser(parser, str, param, state, &result_string);
-  assert_true(result, "Mismatching parser result");
-  assert_string(result_string, expected_string, "Mismatching parser result");
-  g_free(result_string);
+  result = _invoke_parser(r_parser_string, param->str, param->param, NULL, &result_string);
+  if (param->expected_result == TRUE)
+    {
+      cr_assert(result, "Mismatching parser result (true expected)");
+      cr_assert_str_eq(result_string, param->expected_string, "Mismatching parser result (exp:%s, res:%s)",
+                       param->expected_string, result_string);
+      g_free(result_string);
+    }
+  else
+    {
+      cr_assert_not(result, "Mismatching parser result (false expected)");
+    }
 }
 
-static void
-assert_parser_failure(gboolean (*parser)(guint8 *str, gint *len, const gchar *param, gpointer state,
-                                         RParserMatch *match), const gchar *str, gpointer param, gpointer state)
+typedef struct _parser_test_qstring_param
 {
-  gboolean result;
+  gchar *str;
+  gchar *quotes;
+  gchar *expected_string;
+} ParserQStringTestParam;
 
-  result = _invoke_parser(parser, str, param, state, NULL);
-  assert_false(result, "Mismatching parser result");
-}
-
-static void
-test_string_parser_without_parameter_parses_a_word(void)
+ParameterizedTestParameters(parser, test_qstring_parser)
 {
-  assert_parser_success(r_parser_string, "foo", NULL, NULL, "foo");
-  assert_parser_success(r_parser_string, "foo bar", NULL, NULL, "foo");
-  assert_parser_success(r_parser_string, "foo123 bar", NULL, NULL, "foo123");
-  assert_parser_success(r_parser_string, "foo{}", NULL, NULL, "foo");
-  assert_parser_success(r_parser_string, "foo[]", NULL, NULL, "foo");
-  assert_parser_failure(r_parser_string, "", NULL, NULL);
-}
+  static ParserQStringTestParam parser_params[] =
+  {
+    {.str = "'foo'", .quotes = "''", .expected_string = "foo"},
+    {.str = "\"foo\"", .quotes = "\"\"", .expected_string = "foo"},
+    {.str = "{foo}", .quotes = "{}", .expected_string = "foo"},
+  };
 
-static void
-test_string_parser_with_additional_end_characters(void)
-{
-  assert_parser_success(r_parser_string, "foo", "X", NULL, "foo");
-  assert_parser_success(r_parser_string, "foo=bar", "=", NULL, "foo=bar");
-}
-
-void
-test_string(void)
-{
-  PARSER_TESTCASE(test_string_parser_without_parameter_parses_a_word);
-  PARSER_TESTCASE(test_string_parser_with_additional_end_characters);
+  return cr_make_param_array(ParserQStringTestParam, parser_params, G_N_ELEMENTS(parser_params));
 }
 
 static gpointer
-compile_qstring_state(const gchar *quotes)
+_compile_qstring_state(const gchar *quotes)
 {
   union
   {
@@ -136,35 +133,15 @@ compile_qstring_state(const gchar *quotes)
   return state.ptr;
 }
 
-static void
-assert_qstring_parser_success(const gchar *str, gchar *quotes, const gchar *expected_string)
+ParameterizedTest(ParserQStringTestParam *param, parser, test_qstring_parser)
 {
-  assert_parser_success(r_parser_qstring, str, quotes, compile_qstring_state(quotes), expected_string);
-}
+  gchar *result_string = NULL;
+  gboolean result;
 
-static void
-test_qstring_parser_extracts_word_from_quotes(void)
-{
-  gchar *single_quotes = "''";
-  gchar *double_quotes = "\"\"";
-  gchar *braces = "{}";
-
-  assert_qstring_parser_success("'foo'", single_quotes, "foo");
-  assert_qstring_parser_success("\"foo\"", double_quotes, "foo");
-  assert_qstring_parser_success("{foo}", braces, "foo");
-}
-
-void
-test_qstring(void)
-{
-  PARSER_TESTCASE(test_qstring_parser_extracts_word_from_quotes);
-}
-
-/* NOTE: incomplete, the rest of the testcases are missing */
-
-int
-main(void)
-{
-  test_string();
-  test_qstring();
+  result = _invoke_parser(r_parser_qstring, param->str, param->quotes, _compile_qstring_state(param->quotes),
+                          &result_string);
+  cr_assert(result, "Mismatching parser result");
+  cr_assert_str_eq(result_string, param->expected_string, "Mismatching parser result (exp:%s, res:%s)",
+                   param->expected_string,result_string);
+  g_free(result_string);
 }

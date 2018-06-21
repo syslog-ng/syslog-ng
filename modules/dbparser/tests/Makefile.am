@@ -1,9 +1,8 @@
-EXTRA_DIST  += modules/dbparser/tests/test_parsers_e2e.c
-
 modules_dbparser_tests_TESTS			=	\
 	modules/dbparser/tests/test_timer_wheel		\
 	modules/dbparser/tests/test_patternize		\
 	modules/dbparser/tests/test_patterndb		\
+	modules/dbparser/tests/test_parsers_e2e		\
 	modules/dbparser/tests/test_radix		\
 	modules/dbparser/tests/test_parsers
 
@@ -31,10 +30,22 @@ modules_dbparser_tests_test_patternize_LDFLAGS	=	\
 modules_dbparser_tests_test_patterndb_CFLAGS	=	\
 	$(TEST_CFLAGS)					\
 	-I$(top_srcdir)/modules/dbparser
+modules_dbparser_tests_test_patterndb_SOURCES	=	\
+	modules/dbparser/tests/test_patterndb.c \
+	modules/dbparser/tests/test_patterndb.h
 modules_dbparser_tests_test_patterndb_LDADD	=	\
 	$(TEST_LDADD)					\
 	$(top_builddir)/modules/dbparser/libsyslog-ng-patterndb.la
 modules_dbparser_tests_test_patterndb_LDFLAGS	=	\
+	$(PREOPEN_CORE)
+
+modules_dbparser_tests_test_parsers_e2e_CFLAGS	=	\
+	$(TEST_CFLAGS)					\
+	-I$(top_srcdir)/modules/dbparser
+modules_dbparser_tests_test_parsers_e2e_LDADD	=	\
+	$(TEST_LDADD)					\
+	$(top_builddir)/modules/dbparser/libsyslog-ng-patterndb.la
+modules_dbparser_tests_test_parsers_e2e_LDFLAGS	=	\
 	$(PREOPEN_CORE)
 
 modules_dbparser_tests_test_radix_CFLAGS	=	\
