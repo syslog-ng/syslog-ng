@@ -1,9 +1,4 @@
-set (PYTHON_VERSION "AUTO" CACHE STRING "Version of the installed development library" )
-
 if ("${PYTHON_VERSION}" STREQUAL "AUTO")
-  find_package(PythonInterp)
-  find_package(PythonLibs)
-
   if (PYTHONLIBS_FOUND)
     option(ENABLE_PYTHON "Enable Python module" ON)
   else()
@@ -17,10 +12,6 @@ if ("${PYTHON_VERSION}" STREQUAL "AUTO")
   if (NOT PYTHONLIBS_FOUND)
     message(FATAL_ERROR "Python module enabled, but python library not found.")
   endif()
-
-else ()
-  find_package(PythonInterp EXACT "${PYTHON_VERSION}" REQUIRED)
-  find_package(PythonLibs EXACT "${PYTHON_VERSION}" REQUIRED)
 endif ()
 
 MESSAGE(STATUS "Found python ${PYTHONLIBS_VERSION_STRING}")

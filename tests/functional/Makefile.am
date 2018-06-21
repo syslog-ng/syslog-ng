@@ -20,7 +20,7 @@ EXTRA_DIST	+= \
 		tests/functional/test_sql.py
 
 func-test:
-	@$(top_srcdir)/tests/functional/runtests.sh
+	@PYTHON=${PYTHON} $(top_srcdir)/tests/functional/runtests.sh
 
 .PHONY: func-test
 
