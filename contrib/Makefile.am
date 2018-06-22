@@ -60,6 +60,7 @@ EXTRA_DIST += \
 	contrib/selinux/labels.txt \
 	contrib/selinux/syslog_ng.sh \
 	contrib/selinux/src/syslog_ng.el67.te.in \
+	contrib/selinux/src/syslog_ng.module.version \
 	contrib/selinux/src/root_unsafe/syslog_ng.el7.fc.in \
 	contrib/selinux/src/root_unsafe/syslog_ng.el6.fc.in \
 	contrib/selinux/src/root_unsafe/syslog_ng.el5.fc.in \
