@@ -49,10 +49,15 @@ function (add_unit_test)
     target_include_directories(${ADD_UNIT_TEST_TARGET} PUBLIC ${CRITERION_INCLUDE_DIRS})
     set_property(TARGET ${ADD_UNIT_TEST_TARGET} PROPERTY POSITION_INDEPENDENT_CODE FALSE)
 
-    if (APPLE)
-      # https://gitlab.kitware.com/cmake/cmake/issues/16561
+    # https://gitlab.kitware.com/cmake/cmake/issues/16561
+    include(CheckCCompilerFlag)
+    check_c_compiler_flag(-no-pie NO_PIE_AVAILABLE)
+    if (NO_PIE_AVAILABLE)
+      set_property(TARGET ${ADD_UNIT_TEST_TARGET} APPEND_STRING PROPERTY LINK_FLAGS " -no-pie")
+    elseif (APPLE)
       set_property(TARGET ${ADD_UNIT_TEST_TARGET} APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-no_pie")
     endif()
+
   endif()
 
   if (${ADD_UNIT_TEST_LIBTEST})
