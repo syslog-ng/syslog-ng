@@ -41,7 +41,7 @@ function (add_unit_test)
   target_link_libraries(${ADD_UNIT_TEST_TARGET} ${ADD_UNIT_TEST_DEPENDS} syslog-ng)
   target_include_directories(${ADD_UNIT_TEST_TARGET} PUBLIC ${ADD_UNIT_TEST_INCLUDES})
   if (NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-    set_property(TARGET ${ADD_UNIT_TEST_TARGET} APPEND PROPERTY LINK_FLAGS "-Wl,--no-as-needed")
+    set_property(TARGET ${ADD_UNIT_TEST_TARGET} APPEND_STRING PROPERTY LINK_FLAGS " -Wl,--no-as-needed")
   endif()
 
   if (${ADD_UNIT_TEST_CRITERION})
@@ -51,7 +51,7 @@ function (add_unit_test)
 
     if (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
       # https://gitlab.kitware.com/cmake/cmake/issues/16561
-      set_property(TARGET ${ADD_UNIT_TEST_TARGET} APPEND PROPERTY LINK_FLAGS "-Wl,-no_pie")
+      set_property(TARGET ${ADD_UNIT_TEST_TARGET} APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-no_pie")
     endif()
   endif()
 
