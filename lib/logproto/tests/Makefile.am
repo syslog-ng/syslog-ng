@@ -23,6 +23,7 @@ lib_logproto_tests_test_findeom_CFLAGS	= \
 	-I${top_srcdir}/libtest
 lib_logproto_tests_test_findeom_LDADD	= \
 	${top_builddir}/lib/libsyslog-ng.la \
-	${top_builddir}/libtest/libsyslog-ng-test.a
+	${top_builddir}/libtest/libsyslog-ng-test.a \
+	$(TEST_LDADD)
 lib_logproto_tests_test_findeom_SOURCES = \
 	lib/logproto/tests/test_findeom.c
