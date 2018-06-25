@@ -1,18 +1,16 @@
-if ("${PYTHON_VERSION}" STREQUAL "AUTO")
-  if (PYTHONLIBS_FOUND)
-    option(ENABLE_PYTHON "Enable Python module" ON)
-  else()
-    option(ENABLE_PYTHON "Enable Python module" OFF)
-  endif()
+if (PYTHONLIBS_FOUND)
+  option(ENABLE_PYTHON "Enable Python module" ON)
+else()
+  option(ENABLE_PYTHON "Enable Python module" OFF)
+endif()
 
-  if (NOT ENABLE_PYTHON)
-    return()
-  endif ()
-
-  if (NOT PYTHONLIBS_FOUND)
-    message(FATAL_ERROR "Python module enabled, but python library not found.")
-  endif()
+if (NOT ENABLE_PYTHON)
+  return()
 endif ()
+
+if (NOT PYTHONLIBS_FOUND)
+  message(FATAL_ERROR "Python module enabled, but python library not found.")
+endif()
 
 MESSAGE(STATUS "Found python ${PYTHONLIBS_VERSION_STRING}")
 
