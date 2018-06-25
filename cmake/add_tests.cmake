@@ -40,8 +40,8 @@ function (add_unit_test)
   target_compile_definitions(${ADD_UNIT_TEST_TARGET} PRIVATE TOP_SRCDIR="${PROJECT_SOURCE_DIR}")
   target_link_libraries(${ADD_UNIT_TEST_TARGET} ${ADD_UNIT_TEST_DEPENDS} syslog-ng)
   target_include_directories(${ADD_UNIT_TEST_TARGET} PUBLIC ${ADD_UNIT_TEST_INCLUDES})
-  if (NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-    set_property(TARGET ${ADD_UNIT_TEST_TARGET} APPEND PROPERTY LINK_FLAGS "-Wl,--no-as-needed")
+  if (NOT APPLE)
+    set_property(TARGET ${ADD_UNIT_TEST_TARGET} APPEND_STRING PROPERTY LINK_FLAGS " -Wl,--no-as-needed")
   endif()
 
   if (${ADD_UNIT_TEST_CRITERION})
@@ -49,10 +49,15 @@ function (add_unit_test)
     target_include_directories(${ADD_UNIT_TEST_TARGET} PUBLIC ${CRITERION_INCLUDE_DIRS})
     set_property(TARGET ${ADD_UNIT_TEST_TARGET} PROPERTY POSITION_INDEPENDENT_CODE FALSE)
 
-    if (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-      # https://gitlab.kitware.com/cmake/cmake/issues/16561
-      set_property(TARGET ${ADD_UNIT_TEST_TARGET} APPEND PROPERTY LINK_FLAGS "-Wl,-no_pie")
+    # https://gitlab.kitware.com/cmake/cmake/issues/16561
+    include(CheckCCompilerFlag)
+    check_c_compiler_flag(-no-pie NO_PIE_AVAILABLE)
+    if (NO_PIE_AVAILABLE)
+      set_property(TARGET ${ADD_UNIT_TEST_TARGET} APPEND_STRING PROPERTY LINK_FLAGS " -no-pie")
+    elseif (APPLE)
+      set_property(TARGET ${ADD_UNIT_TEST_TARGET} APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-no_pie")
     endif()
+
   endif()
 
   if (${ADD_UNIT_TEST_LIBTEST})
