@@ -467,8 +467,8 @@ log_queue_fifo_rewind_backlog_all(LogQueue *s)
 {
   LogQueueFifo *self = (LogQueueFifo *) s;
 
-  iv_list_splice_tail_init(&self->qbacklog, &self->qoverflow_output);
   iv_list_update_msg_size(self, &self->qbacklog);
+  iv_list_splice_tail_init(&self->qbacklog, &self->qoverflow_output);
 
   self->qoverflow_output_len += self->qbacklog_len;
   stats_counter_add(self->super.queued_messages, self->qbacklog_len);
