@@ -90,7 +90,7 @@ redis_option
             redis_dd_set_command(last_driver, $3, $4, $5, $6);
             free($3);
           }
-        | dest_driver_option
+        | threaded_dest_driver_option
         | { last_template_options = redis_dd_get_template_options(last_driver); } template_option
         ;
 

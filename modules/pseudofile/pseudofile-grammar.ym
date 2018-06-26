@@ -77,6 +77,7 @@ pseudofile_opts
 pseudofile_opt
 	: KW_TEMPLATE '(' template_content ')'			{ pseudofile_dd_set_template(last_driver, $3); }
 	| { last_template_options = pseudofile_dd_get_template_options(last_driver); } template_option
+	| dest_driver_option
 	;
 
 /* INCLUDE_RULES */
