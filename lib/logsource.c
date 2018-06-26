@@ -70,12 +70,12 @@ _flow_control_window_size_adjust(LogSource *self, guint32 window_size_increment)
 static void
 _flow_control_rate_adjust(LogSource *self)
 {
+#ifdef SYSLOG_NG_HAVE_CLOCK_GETTIME
   guint32 cur_ack_count, last_ack_count;
   /* NOTE: this is racy. msg_ack may be executing in different writer
    * threads. I don't want to lock, all we need is an approximate value of
    * the ACK rate of the last couple of seconds.  */
 
-#ifdef SYSLOG_NG_HAVE_CLOCK_GETTIME
   if (accurate_nanosleep && self->threaded)
     {
       cur_ack_count = ++self->ack_count;
