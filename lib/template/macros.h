@@ -94,6 +94,7 @@ enum
   M_RECVD_OFS = M_TIME_MACROS_MAX,
   M_STAMP_OFS = 2 * M_TIME_MACROS_MAX,
   M_CSTAMP_OFS = 3 * M_TIME_MACROS_MAX,
+  M_PROCESSED_OFS = 4 * M_TIME_MACROS_MAX,
 };
 
 /* macros (not NV pairs!) that syslog-ng knows about. This was the
