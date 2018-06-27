@@ -100,6 +100,7 @@ struct _AFInterSource
 };
 
 static void afinter_source_update_watches(AFInterSource *self);
+void afinter_message_posted(LogMessage *msg);
 
 static void
 afinter_source_post(gpointer s)
@@ -125,8 +126,6 @@ static void
 afinter_source_mark(gpointer s)
 {
   AFInterSource *self = (AFInterSource *) s;
-  LogMessage *msg;
-  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   struct timespec nmt;
 
   main_loop_assert_main_thread();
@@ -135,14 +134,11 @@ afinter_source_mark(gpointer s)
   nmt = next_mark_target;
   g_static_mutex_unlock(&internal_mark_target_lock);
 
-  if (log_source_free_to_send(&self->super) && nmt.tv_sec <= self->mark_timer.expires.tv_sec)
+  if (nmt.tv_sec <= self->mark_timer.expires.tv_sec)
     {
       /* the internal_mark_target has not been overwritten by an incoming message in afinter_postpone_mark
          (there was no msg in the meantime) -> the mark msg can be sent */
-      msg = log_msg_new_mark();
-      path_options.ack_needed = FALSE;
-
-      log_pipe_queue(&self->super.super, msg, &path_options);
+      afinter_message_posted(log_msg_new_mark());
 
       /* the next_mark_target will be increased in afinter_postpone_mark */
     }
