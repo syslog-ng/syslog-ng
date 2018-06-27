@@ -26,9 +26,8 @@
 #define CONTROL_MAIN_H_INCLUDED
 
 #include "mainloop.h"
-#include "control/control-commands.h"
+#include "control/control-server.h"
 
-void control_init(MainLoop *main_loop, const gchar *control_name);
-void control_destroy(void);
+ControlServer *control_init(MainLoop *main_loop, const gchar *control_name);
 
 #endif
