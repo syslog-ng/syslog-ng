@@ -60,7 +60,8 @@ BUILT_SOURCES					+=	\
 	modules/afsocket/afsocket-grammar.c		\
 	modules/afsocket/afsocket-grammar.h
 EXTRA_DIST 					+=	\
-	modules/afsocket/afsocket-grammar.ym
+	modules/afsocket/afsocket-grammar.ym	\
+	modules/afsocket/CMakeLists.txt
 
 CLEANFILES					+= \
 	modules/afsocket/libafsocket.la

@@ -1,5 +1,7 @@
 str_reprincludedir = ${pkgincludedir}/str-repr
 
+EXTRA_DIST += lib/str-repr/CMakeLists.txt
+
 str_reprinclude_HEADERS =	\
   lib/str-repr/decode.h		\
   lib/str-repr/encode.h

@@ -1,6 +1,18 @@
 
 lib_LTLIBRARIES += lib/eventlog/src/libevtlog.la
 
+EXTRA_DIST +=	\
+	lib/eventlog/AUTHORS	\
+	lib/eventlog/ChangeLog	\
+	lib/eventlog/ChangeLog.0	\
+	lib/eventlog/CMakeLists.txt	\
+	lib/eventlog/COPYING	\
+	lib/eventlog/CREDITS	\
+	lib/eventlog/doc	\
+	lib/eventlog/doc/API.txt	\
+	lib/eventlog/doc/DESIGN.txt	\
+	lib/eventlog/NEWS
+
 lib_eventlog_src_libevtlog_la_SOURCES = \
 		lib/eventlog/src/evtrec.c \
 		lib/eventlog/src/evtfmt.c \

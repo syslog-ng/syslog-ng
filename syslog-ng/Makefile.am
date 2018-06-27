@@ -7,6 +7,8 @@ endif
 
 syslog_ng_syslog_ng_SOURCES	= syslog-ng/main.c
 
+EXTRA_DIST += syslog-ng/CMakeLists.txt
+
 # NOTE: we're referring to the syslog-ng lib directly instead of via
 # libtool, because in mixed mode libtool is not used for the final linking
 # phase.  See the comment in the configure script for details.

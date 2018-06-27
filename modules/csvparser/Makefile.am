@@ -25,7 +25,8 @@ BUILT_SOURCES					+=	\
 	modules/csvparser/csvparser-grammar.c		\
 	modules/csvparser/csvparser-grammar.h
 EXTRA_DIST					+=	\
-	modules/csvparser/csvparser-grammar.ym
+	modules/csvparser/csvparser-grammar.ym	\
+	modules/csvparser/CMakeLists.txt
 
 modules/csvparser modules/csvparser/ mod-csvparser: modules/csvparser/libcsvparser.la
 .PHONY: modules/csvparser/ mod-csvparser

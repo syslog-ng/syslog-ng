@@ -2,6 +2,8 @@ lib_secret_storage_tests_TESTS			= \
 	lib/secret-storage/tests/test_secret_storage \
 	lib/secret-storage/tests/test_nondumpable_allocator
 
+EXTRA_DIST += lib/secret-storage/tests/CMakeLists.txt
+
 check_PROGRAMS					+= ${lib_secret_storage_tests_TESTS}
 
 lib_secret_storage_tests_test_secret_storage_CFLAGS	= $(TEST_CFLAGS) \

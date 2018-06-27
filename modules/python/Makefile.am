@@ -75,6 +75,7 @@ EXTRA_DIST					+= \
 	modules/python/compat/compat-python-v3.c   \
 	modules/python/python-grammar.ym	   \
 	modules/python/python-example.conf	   \
-	modules/python/sngexample.py
+	modules/python/sngexample.py	\
+	modules/python/CMakeLists.txt
 
 .PHONY: modules/python mod-python

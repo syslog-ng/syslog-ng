@@ -58,7 +58,8 @@ lib/ivykis/src/libivykis.la:
 CLEAN_SUBDIRS				+= @IVYKIS_SUBDIRS@
 
 EXTRA_DIST += \
-	lib/ivykis/configure.gnu
+	lib/ivykis/configure.gnu	\
+	lib/CMakeLists.txt
 
 install-ivykis:
 	${MAKE} -C lib/ivykis/src \

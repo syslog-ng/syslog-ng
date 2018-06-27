@@ -1,6 +1,8 @@
 lib_debugger_tests_TESTS		 = \
 	lib/debugger/tests/test_debugger
 
+EXTRA_DIST += lib/debugger/tests/CMakeLists.txt
+
 check_PROGRAMS				+= ${lib_debugger_tests_TESTS}
 
 lib_debugger_tests_test_debugger_CFLAGS  = $(TEST_CFLAGS) \

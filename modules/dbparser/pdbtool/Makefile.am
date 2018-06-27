@@ -1,5 +1,7 @@
 bin_PROGRAMS				+= modules/dbparser/pdbtool/pdbtool
 
+EXTRA_DIST += modules/dbparser/pdbtool/CMakeLists.txt
+
 modules_dbparser_pdbtool_pdbtool_SOURCES =	\
 	modules/dbparser/pdbtool/pdbtool.c
 modules_dbparser_pdbtool_pdbtool_CPPFLAGS=	\

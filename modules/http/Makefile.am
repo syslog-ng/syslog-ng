@@ -32,7 +32,8 @@ BUILT_SOURCES       +=      \
   modules/http/http-grammar.h
 
 EXTRA_DIST        +=      \
-  modules/http/http-grammar.ym
-
+  modules/http/http-grammar.ym	\
+  modules/http/CMakeLists.txt	\
+  modules/http/README.md
 
 .PHONY: modules/http/ mod-http

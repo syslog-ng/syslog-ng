@@ -1,5 +1,7 @@
 rewriteincludedir			= ${pkgincludedir}/rewrite
 
+EXTRA_DIST += lib/rewrite/CMakeLists.txt
+
 rewriteinclude_HEADERS = 			\
 	lib/rewrite/rewrite-expr.h		\
 	lib/rewrite/rewrite-set-tag.h		\

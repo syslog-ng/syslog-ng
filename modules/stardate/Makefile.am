@@ -3,7 +3,8 @@ modules_stardate_libstardate_la_SOURCES = \
   modules/stardate/stardate-plugin.c
 
 EXTRA_DIST        +=      \
-  modules/stardate/stardate.c
+  modules/stardate/stardate.c	\
+  modules/stardate/CMakeLists.txt
 
 modules_stardate_libstardate_la_CPPFLAGS  =     \
   $(AM_CPPFLAGS)            \

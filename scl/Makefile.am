@@ -29,7 +29,7 @@ SCL_SUBDIRS	= \
 
 SCL_CONFIGS	= scl.conf syslog-ng.conf
 
-EXTRA_DIST	+= $(addprefix scl/,$(SCL_CONFIGS) $(SCL_SUBDIRS))
+EXTRA_DIST	+= $(addprefix scl/,$(SCL_CONFIGS) $(SCL_SUBDIRS)) scl/CMakeLists.txt
 
 scl-install-data-local:
 	for cfg in $(SCL_CONFIGS); do \

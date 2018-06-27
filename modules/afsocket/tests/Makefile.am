@@ -1,5 +1,7 @@
 TEST_TRANSPORT_MAPPER_CFLAGS = $(TEST_CFLAGS)
 
+EXTRA_DIST += modules/afsocket/tests/CMakeLists.txt
+
 TRANSPORT_MAPPER_LIB = 					\
 	modules/afsocket/tests/transport-mapper-lib.c	\
 	modules/afsocket/tests/transport-mapper-lib.h

@@ -1,6 +1,8 @@
 check_PROGRAMS						+= \
 	${modules_affile_tests_TESTS}
 
+EXTRA_DIST += modules/affile/tests/CMakeLists.txt
+
 modules_affile_tests_TESTS 				= \
   modules/affile/tests/test_wildcard_source \
 	modules/affile/tests/test_directory_monitor \

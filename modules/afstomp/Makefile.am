@@ -34,7 +34,8 @@ BUILT_SOURCES += \
     modules/afstomp/afstomp-grammar.h
 
 EXTRA_DIST += \
-    modules/afstomp/afstomp-grammar.ym
+    modules/afstomp/afstomp-grammar.ym	\
+    modules/afstomp/CMakeLists.txt
 
 .PHONY: modules/afstomp/ mod-afstomp mod-stomp
 

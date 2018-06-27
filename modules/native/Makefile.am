@@ -29,7 +29,7 @@ BUILT_SOURCES       +=      \
   modules/native/native-grammar.h
 
 EXTRA_DIST        +=      \
-  modules/native/native-grammar.ym
+  modules/native/native-grammar.ym	\
+  modules/native/CMakeLists.txt
 
 .PHONY: modules/native/ mod-native
-

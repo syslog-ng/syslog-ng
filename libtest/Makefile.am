@@ -3,6 +3,8 @@ libtestdir			    =	\
 libtestincludedir		    =	\
 	$(pkgincludedir)/libtest
 
+EXTRA_DIST += libtest/CMakeLists.txt
+
 libtest_LIBRARIES		    =	\
 	libtest/libsyslog-ng-test.a
 

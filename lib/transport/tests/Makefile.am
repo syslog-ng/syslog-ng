@@ -5,6 +5,8 @@ lib_transport_tests_TESTS		 = \
 	lib/transport/tests/test_transport_factory_registry \
 	lib/transport/tests/test_multitransport
 
+EXTRA_DIST += lib/transport/tests/CMakeLists.txt
+
 check_PROGRAMS				+= ${lib_transport_tests_TESTS}
 
 lib_transport_tests_test_aux_data_CFLAGS  = $(TEST_CFLAGS) \

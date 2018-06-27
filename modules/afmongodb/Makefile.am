@@ -32,7 +32,7 @@ modules_afmongodb_libafmongodb_la_SOURCES	+=	\
 	modules/afmongodb/afmongodb-legacy-uri.h			\
 	modules/afmongodb/afmongodb-legacy-grammar.c			\
 	modules/afmongodb/afmongodb-legacy-grammar.h			\
-	modules/afmongodb/afmongodb-legacy-private.h				\
+	modules/afmongodb/afmongodb-legacy-private.h			\
 	modules/afmongodb/host-list.c				\
 	modules/afmongodb/host-list.h
 endif

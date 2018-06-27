@@ -1,5 +1,7 @@
 logprotoincludedir			= ${pkgincludedir}/logproto
 
+EXTRA_DIST += lib/logproto/CMakeLists.txt
+
 logprotoinclude_HEADERS = \
 	lib/logproto/logproto-client.h	\
 	lib/logproto/logproto-server.h	\

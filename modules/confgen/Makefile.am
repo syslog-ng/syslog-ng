@@ -11,5 +11,7 @@ modules_confgen_libconfgen_la_LDFLAGS		=	\
 modules_confgen_libconfgen_la_DEPENDENCIES	=	\
 	$(MODULE_DEPS_LIBS)
 
+EXTRA_DIST += modules/confgen/CMakeLists.txt
+
 modules/confgen modules/confgen/ mod-confgen: modules/confgen/libconfgen.la
 .PHONY: modules/confgen/ mod-confgen

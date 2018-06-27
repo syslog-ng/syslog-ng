@@ -84,7 +84,8 @@ BUILT_SOURCES						+=	\
 	modules/dbparser/dbparser-grammar.c			\
 	modules/dbparser/dbparser-grammar.h
 EXTRA_DIST						+=	\
-	modules/dbparser/dbparser-grammar.ym
+	modules/dbparser/dbparser-grammar.ym	\
+	modules/dbparser/CMakeLists.txt
 
 modules/dbparser modules/dbparser/ mod-dbparser: modules/dbparser/libdbparser.la \
 						 modules/dbparser/pdbtool/pdbtool

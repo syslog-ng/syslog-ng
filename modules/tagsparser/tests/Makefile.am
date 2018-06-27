@@ -10,3 +10,5 @@ modules_tagsparser_tests_test_tagsparser_LDADD	=	\
 modules_tagsparser_tests_test_tagsparser_LDFLAGS	=	\
 	$(PREOPEN_SYSLOGFORMAT)				\
 	-dlpreopen $(top_builddir)/modules/tagsparser/libtags-parser.la
+
+EXTRA_DIST += modules/tagsparser/tests/CMakeLists.txt

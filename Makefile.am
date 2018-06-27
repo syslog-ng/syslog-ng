@@ -33,7 +33,17 @@ ACLOCAL_AMFLAGS		= -I m4 --install
 EXTRA_DIST		= ${BUILT_SOURCES} VERSION NEWS.md autogen.sh \
 			  syslog-ng.spec syslog-ng.spec.in \
 			  dist.conf dist.conf.in syslog-ng.pc.in \
-			  CONTRIBUTING.md
+			  syslog-ng-config.h.in	\
+			  CONTRIBUTING.md	\
+			  sub-configure.sh	\
+			  syslog-ng.pc.cmake	\
+			  syslog-ng-native-connector.pc.cmake	\
+			  syslog-ng-ctl/CMakeLists.txt	\
+			  requirements.txt	\
+			  README.md	\
+			  .astylerc	\
+			  .travis.yml
+
 
 pkgconfigdir		= $(libdir)/pkgconfig
 pkgconfig_DATA		= syslog-ng.pc
@@ -206,12 +216,18 @@ include contrib/Makefile.am
 include scl/Makefile.am
 include packaging/debian/Makefile.am
 include dbld/Makefile.am
+include cmake/Makefile.am
+include dev-utils/plugin_skeleton_creator/Makefile.am
 
 TEST_EXTENSIONS = .sh
 @VALGRIND_CHECK_RULES@
 
 VALGRIND_SUPPRESSIONS_FILES = $(top_srcdir)/tests/valgrind/unit-test-leak.supp
-EXTRA_DIST += syslog-ng.supp
+EXTRA_DIST += syslog-ng.supp	\
+	ISSUE_TEMPLATE.md	\
+	GPL.txt	\
+	LGPL.txt	\
+	CMakeLists.txt
 
 VALGRIND_FLAGS = \
   --num-callers=30 \

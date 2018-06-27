@@ -35,7 +35,8 @@ BUILT_SOURCES += \
   modules/diskq/diskq-grammar.c \
   modules/diskq/diskq-grammar.h
 
-EXTRA_DIST += modules/diskq/diskq-grammar.ym
+EXTRA_DIST += modules/diskq/diskq-grammar.ym	\
+	modules/diskq/CMakeLists.txt
 
 LIBSYSLOG_NG_DISK_BUFFER = $(top_builddir)/modules/diskq/libsyslog-ng-disk-buffer.la
 

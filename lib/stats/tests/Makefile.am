@@ -1,6 +1,8 @@
 lib_stats_tests_TESTS		 = \
 	lib/stats/tests/test_stats_cluster
 
+EXTRA_DIST += lib/stats/tests/CMakeLists.txt
+
 check_PROGRAMS				+= ${lib_stats_tests_TESTS}
 
 lib_stats_tests_test_stats_cluster_CFLAGS	= $(TEST_CFLAGS) \

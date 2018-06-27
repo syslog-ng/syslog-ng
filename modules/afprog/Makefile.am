@@ -12,7 +12,8 @@ BUILT_SOURCES				+=	\
 	modules/afprog/afprog-grammar.c		\
 	modules/afprog/afprog-grammar.h
 EXTRA_DIST				+=	\
-	modules/afprog/afprog-grammar.ym
+	modules/afprog/afprog-grammar.ym	\
+	modules/afprog/CMakeLists.txt
 
 modules_afprog_libafprog_la_CPPFLAGS	= 	\
 	$(AM_CPPFLAGS)				\

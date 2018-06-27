@@ -1,3 +1,5 @@
+EXTRA_DIST += modules/afstomp/tests/CMakeLists.txt
+
 if ENABLE_STOMP
 modules_afstomp_tests_test_stomp_proto_CFLAGS = \
     $(TEST_CFLAGS) \

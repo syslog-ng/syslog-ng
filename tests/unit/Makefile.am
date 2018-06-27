@@ -1,3 +1,5 @@
+EXTRA_DIST += tests/unit/CMakeLists.txt
+
 tests_unit_TESTS			= \
 	tests/unit/test_logqueue	   \
 	tests/unit/test_matcher		   \

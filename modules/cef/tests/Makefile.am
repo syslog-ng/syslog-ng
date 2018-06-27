@@ -3,6 +3,8 @@ modules_cef_tests_TESTS		= \
 
 check_PROGRAMS				+= ${modules_cef_tests_TESTS}
 
+EXTRA_DIST += modules/cef/tests/CMakeLists.txt
+
 modules_cef_tests_test_format_cef_extension_CFLAGS	= $(TEST_CFLAGS)
 modules_cef_tests_test_format_cef_extension_LDADD	= $(TEST_LDADD)
 modules_cef_tests_test_format_cef_extension_LDFLAGS	= \

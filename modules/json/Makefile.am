@@ -38,7 +38,8 @@ BUILT_SOURCES				+=	\
 	modules/json/json-parser-grammar.c	\
 	modules/json/json-parser-grammar.h
 EXTRA_DIST				+=	\
-	modules/json/json-parser-grammar.ym
+	modules/json/json-parser-grammar.ym	\
+	modules/json/CMakeLists.txt
 
 .PHONY: modules/json/ mod-json
 

@@ -73,7 +73,7 @@ modules_java_libmod_java_la_CFLAGS = \
     -I$(top_srcdir)/modules/java    \
     -I$(top_builddir)/modules/java	\
     -I$(top_srcdir)/modules/java/native \
-    -I$(top_builddir)/modules/java/native 
+    -I$(top_builddir)/modules/java/native
 
 modules_java_libmod_java_la_SOURCES = \
     modules/java/native/java-grammar.y \
@@ -143,6 +143,8 @@ BUILT_SOURCES += \
 
 EXTRA_DIST += \
     modules/java/native/java-grammar.ym \
+    modules/java/CMakeLists.txt	\
+    modules/java/tools/syslog-ng.conf.example	\
     $(JAVA_FILES)
 
 if ENABLE_JAVA

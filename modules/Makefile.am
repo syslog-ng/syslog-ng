@@ -74,4 +74,6 @@ modules_test_subdirs	=	\
 	modules_cef modules_diskq modules-add-contextual-data modules_getent \
 	modules_map-value-pairs modules_tagsparser modules_xml modules_appmodel
 
+EXTRA_DIST += modules/CMakeLists.txt
+
 .PHONY: modules modules/

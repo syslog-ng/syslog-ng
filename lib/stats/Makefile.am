@@ -1,5 +1,7 @@
 statsincludedir			= ${pkgincludedir}/stats
 
+EXTRA_DIST += lib/stats/CMakeLists.txt
+
 statsinclude_HEADERS = \
 	lib/stats/stats.h			\
 	lib/stats/stats-control.h		\

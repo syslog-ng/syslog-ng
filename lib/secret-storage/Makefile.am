@@ -1,5 +1,7 @@
 lib_LTLIBRARIES += lib/secret-storage/libsecret-storage.la
 
+EXTRA_DIST += lib/secret-storage/CMakeLists.txt
+
 lib_secret_storageincludedir = $(pkgincludedir)
 
 lib_secret_storageinclude_HEADERS =     \

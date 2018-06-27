@@ -14,7 +14,8 @@ BUILT_SOURCES       +=      \
   modules/xml/xml-grammar.h
 
 EXTRA_DIST        +=      \
-  modules/xml/xml-grammar.ym
+  modules/xml/xml-grammar.ym	\
+  modules/xml/CMakeLists.txt
 
 modules_xml_libxml_la_CPPFLAGS  =     \
   $(AM_CPPFLAGS)            \

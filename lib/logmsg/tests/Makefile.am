@@ -3,6 +3,7 @@ lib_logmsg_tests_TESTS =                       \
  lib/logmsg/tests/test_timestamp_serialize  \
  lib/logmsg/tests/test_tags
 
+EXTRA_DIST += lib/logmsg/tests/CMakeLists.txt
 
 check_PROGRAMS       += ${lib_logmsg_tests_TESTS}
 

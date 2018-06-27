@@ -23,7 +23,8 @@ BUILT_SOURCES					+=	\
 	modules/tagsparser/tags-parser-grammar.c		\
 	modules/tagsparser/tags-parser-grammar.h
 EXTRA_DIST					+=	\
-	modules/tagsparser/tags-parser-grammar.ym
+	modules/tagsparser/tags-parser-grammar.ym	\
+	modules/tagsparser/CMakeLists.txt
 
 modules/tagsparser modules/tagsparser/ mod-tags-parser: modules/tagsparser/libtags-parser.la
 .PHONY: modules/tagsparser/ mod-tags-parser

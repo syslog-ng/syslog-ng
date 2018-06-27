@@ -4,6 +4,8 @@ lib_eventlog_tests_TESTS = \
 	lib/eventlog/tests/evtsyslog \
 	lib/eventlog/tests/evtsyslog-macros
 
+EXTRA_DIST += lib/eventlog/tests/CMakeLists.txt
+
 check_PROGRAMS += ${lib_eventlog_tests_TESTS}
 
 lib_eventlog_tests_evtrec_CFLAGS = $(AM_CFLAGS) -I$(top_srcdir)/lib/eventlog/src

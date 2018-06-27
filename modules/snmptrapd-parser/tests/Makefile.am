@@ -4,6 +4,8 @@ modules_snmptrapd_parser_tests_TESTS                             = \
 
 check_PROGRAMS                                                   += ${modules_snmptrapd_parser_tests_TESTS}
 
+EXTRA_DIST += modules/snmptrapd-parser/tests/CMakeLists.txt
+
 modules_snmptrapd_parser_tests_test_varbindlist_scanner_CFLAGS   = \
   $(TEST_CFLAGS) -I$(top_srcdir)/modules/snmptrapd-parser
 modules_snmptrapd_parser_tests_test_varbindlist_scanner_LDADD    = $(TEST_LDADD) \

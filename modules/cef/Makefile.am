@@ -1,5 +1,7 @@
 module_LTLIBRARIES				+= modules/cef/libcef.la
 
+EXTRA_DIST += modules/cef/CMakeLists.txt
+
 modules_cef_libcef_la_SOURCES	=	\
 	modules/cef/format-cef-extension.c	\
 	modules/cef/format-cef-extension.h	\

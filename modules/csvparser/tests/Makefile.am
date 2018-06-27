@@ -5,6 +5,8 @@ modules_csvparser_tests_TESTS			=	\
 check_PROGRAMS					+=	\
 	${modules_csvparser_tests_TESTS}
 
+EXTRA_DIST += modules/csvparser/tests/CMakeLists.txt
+
 modules_csvparser_tests_test_csvparser_CFLAGS	=	\
 	$(TEST_CFLAGS) -I$(top_srcdir)/modules/csvparser
 modules_csvparser_tests_test_csvparser_LDADD	=	\

@@ -3,6 +3,8 @@ modules_cryptofuncs_tests_TESTS				=	\
 check_PROGRAMS						+=	\
 	${modules_cryptofuncs_tests_TESTS}
 
+EXTRA_DIST += modules/cryptofuncs/tests/CMakeLists.txt
+
 modules_cryptofuncs_tests_test_cryptofuncs_CFLAGS	=	\
 	$(TEST_CFLAGS)
 modules_cryptofuncs_tests_test_cryptofuncs_LDADD	=	\
