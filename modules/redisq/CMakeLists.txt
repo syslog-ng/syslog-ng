@@ -20,6 +20,8 @@ set(REDIS_QUEUE_SOURCES
 
 generate_y_from_ym(modules/redisq/redisq-grammar)
 
+find_package(Hiredis)
+
 bison_target(RedisQueueGrammar
     ${CMAKE_CURRENT_BINARY_DIR}/redisq-grammar.y
     ${CMAKE_CURRENT_BINARY_DIR}/redisq-grammar.c

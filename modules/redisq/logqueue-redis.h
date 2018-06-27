@@ -44,15 +44,13 @@ struct _LogQueueRedis
 {
   LogQueue super;
 
-  GQueue *qredis;
-  GQueue *qbacklog;
-
   redisContext *c;
   RedisQueueOptions *redis_options;
   gchar *persist_name;
 
-  LogMessage *(*read_message)(LogQueueRedis *self);
-  gboolean (*write_message)(LogQueueRedis *self, LogMessage *msg);
+  LogMessage *(*read_message)(LogQueueRedis *self, LogPathOptions *path_options);
+  gboolean (*write_message)(LogQueueRedis *self, LogMessage *msg, const LogPathOptions *path_options);
+  gboolean (*delete_message)(LogQueueRedis *self);
 };
 
 extern QueueType log_queue_redis_type;
