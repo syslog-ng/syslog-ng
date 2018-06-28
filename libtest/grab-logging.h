@@ -33,5 +33,6 @@ void start_grabbing_messages(void);
 void stop_grabbing_messages(void);
 void display_grabbed_messages(void);
 void format_grabbed_messages(GString *log_buffer);
+void assert_grabbed_log_contains(const gchar *pattern);
 
 #endif

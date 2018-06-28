@@ -83,14 +83,11 @@ AM_CFLAGS += \
 	-Wfloat-equal
 endif
 
-TEST_CFLAGS		= -I$(top_srcdir)/libtest -DTOP_SRCDIR=\"$(abs_top_srcdir)\" $(AM_CFLAGS)
+TEST_CFLAGS		= -I$(top_srcdir)/libtest -DTOP_SRCDIR=\"$(abs_top_srcdir)\" $(AM_CFLAGS) $(CRITERION_CFLAGS)
 
-TEST_LDADD		= $(LIBTEST_LIBS) \
+TEST_LDADD		= $(LIBTEST_LIBS) $(CRITERION_LIBS) \
 			  $(top_builddir)/lib/libsyslog-ng.la \
 			  $(TOOL_DEPS_LIBS)
-
-TEST_CFLAGS		+= $(CRITERION_CFLAGS)
-TEST_LDADD		+= $(CRITERION_LIBS)
 
 test_ldflags		= -no-install $(NO_PIE_LDFLAG)
 
