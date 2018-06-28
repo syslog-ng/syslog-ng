@@ -135,9 +135,9 @@ requires_stmt
                   }
                 else
                   {
-                    msg_warning("Included file was skipped because of a missing module",
-                                evt_tag_str("module", $2),
-                                cfg_lexer_format_location_tag(lexer,&@1));
+                    msg_debug("Included file was skipped because of a missing module",
+                              evt_tag_str("module", $2),
+                              cfg_lexer_format_location_tag(lexer,&@1));
                     cfg_lexer_start_next_include(lexer);
                   }
               }
