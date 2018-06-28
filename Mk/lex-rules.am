@@ -1,6 +1,6 @@
 %.y: %.ym $(syslog_ng_tools)/merge-grammar.py $(syslog_ng_tools)/cfg-grammar.y
 	$(AM_V_at) $(mkinstalldirs) $(dir $@)
-	$(AM_V_GEN) $(syslog_ng_tools)/merge-grammar.py $< > $@
+	$(AM_V_GEN) $(PYTHON) $(syslog_ng_tools)/merge-grammar.py $< > $@
 
 .l.c:
 	$(AM_V_LEX)$(am__skiplex) $(SHELL) $(YLWRAP) $< $(LEX_OUTPUT_ROOT).c $*.c $(LEX_OUTPUT_ROOT).h $*.h -- $(LEXCOMPILE) | ($(EGREP) -v "(^updating|unchanged)" || true)

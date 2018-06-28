@@ -23,7 +23,7 @@ EXTRA_DIST	+= \
 		tests/functional/CMakeLists.txt
 
 func-test:
-	@$(top_srcdir)/tests/functional/runtests.sh
+	@PYTHON=${PYTHON} $(top_srcdir)/tests/functional/runtests.sh
 
 .PHONY: func-test
 

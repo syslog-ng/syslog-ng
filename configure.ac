@@ -391,8 +391,12 @@ AM_PROG_LEX
 AC_PROG_MAKE_SET
 PKG_PROG_PKG_CONFIG
 LT_INIT([dlopen disable-static])
-AC_PATH_PROG(PYTHON, python)
-if test -z "${PYTHON}"; then
+if test "x$with_python" = "xauto"; then
+  AM_PATH_PYTHON()
+else
+  AM_PATH_PYTHON([$with_python])
+fi
+if test "${PYTHON}" = ":"; then
 	AC_MSG_ERROR([Python interpreter is required])
 fi
 

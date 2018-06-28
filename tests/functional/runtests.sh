@@ -33,4 +33,4 @@ export srcdir
 
 install -d ${top_builddir}/tests/functional
 cd ${top_builddir}/tests/functional
-${top_srcdir}/tests/functional/func_test.py
+${PYTHON} ${top_srcdir}/tests/functional/func_test.py

@@ -139,6 +139,16 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 set(SYSLOG_NG_HAVE_INOTIFY "${Inotify_FOUND}")
 
+set (PYTHON_VERSION "AUTO" CACHE STRING "Version of the installed development library" )
+
+if ("${PYTHON_VERSION}" STREQUAL "AUTO")
+  find_package(PythonInterp)
+  find_package(PythonLibs)
+else ()
+  find_package(PythonInterp EXACT "${PYTHON_VERSION}" REQUIRED)
+  find_package(PythonLibs EXACT "${PYTHON_VERSION}" REQUIRED)
+endif ()
+
 include(openssl_functions)
 openssl_set_defines()
 
