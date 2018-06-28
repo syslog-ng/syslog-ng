@@ -363,12 +363,10 @@ _init_watches(LogThreadedDestDriver *self)
   IV_EVENT_INIT(&self->wake_up_event);
   self->wake_up_event.cookie = self;
   self->wake_up_event.handler = _wakeup_event_callback;
-  iv_event_register(&self->wake_up_event);
 
   IV_EVENT_INIT(&self->shutdown_event);
   self->shutdown_event.cookie = self;
   self->shutdown_event.handler = _shutdown_event_callback;
-  iv_event_register(&self->shutdown_event);
 
   IV_TIMER_INIT(&self->timer_reopen);
   self->timer_reopen.cookie = self;
@@ -395,7 +393,8 @@ _worker_thread(gpointer arg)
 
   log_queue_set_use_backlog(self->worker.queue, TRUE);
 
-  _init_watches(self);
+  iv_event_register(&self->wake_up_event);
+  iv_event_register(&self->shutdown_event);
 
   if (self->worker.thread_init)
     self->worker.thread_init(self);
@@ -568,4 +567,5 @@ log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalConfig
   self->batch_size = 0;
 
   self->retries_max = MAX_RETRIES_OF_FAILED_INSERT_DEFAULT;
+  _init_watches(self);
 }
