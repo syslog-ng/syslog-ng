@@ -245,7 +245,7 @@ riemann_dd_get_template_options(LogDriver *d)
  * Utilities
  */
 
-static gchar *
+static const gchar *
 riemann_dd_format_stats_instance(LogThreadedDestDriver *s)
 {
   RiemannDestDriver *self = (RiemannDestDriver *)s;

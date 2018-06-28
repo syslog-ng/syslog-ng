@@ -116,7 +116,7 @@ redis_dd_get_template_options(LogDriver *d)
  * Utilities
  */
 
-static gchar *
+static const gchar *
 redis_dd_format_stats_instance(LogThreadedDestDriver *d)
 {
   RedisDriver *self = (RedisDriver *)d;

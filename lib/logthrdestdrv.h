@@ -83,7 +83,7 @@ struct _LogThreadedDestDriver
   gint32 seq_num;
 
   WorkerOptions worker_options;
-  gchar *(*format_stats_instance)(LogThreadedDestDriver *s);
+  const gchar *(*format_stats_instance)(LogThreadedDestDriver *s);
 };
 
 void log_threaded_dest_driver_ack_messages(LogThreadedDestDriver *self, gint batch_size);

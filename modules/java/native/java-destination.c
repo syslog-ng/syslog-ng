@@ -226,7 +226,7 @@ java_dd_format_persist_name(const LogPipe *s)
   return persist_name;
 }
 
-static gchar *
+static const gchar *
 java_dd_format_stats_instance(LogThreadedDestDriver *d)
 {
   JavaDestDriver *self = (JavaDestDriver *)d;

@@ -125,7 +125,7 @@ _format_instance_id(const LogThreadedDestDriver *d, const gchar *format)
   return id;
 }
 
-static gchar *
+static const gchar *
 _format_stats_instance(LogThreadedDestDriver *d)
 {
   return _format_instance_id(d, "mongodb,%s");

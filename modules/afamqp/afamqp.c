@@ -233,7 +233,7 @@ afamqp_dd_set_peer_verify(LogDriver *d, gboolean verify)
  * Utilities
  */
 
-static gchar *
+static const gchar *
 afamqp_dd_format_stats_instance(LogThreadedDestDriver *s)
 {
   AMQPDestDriver *self = (AMQPDestDriver *) s;

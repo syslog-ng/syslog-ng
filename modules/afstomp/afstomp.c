@@ -157,7 +157,7 @@ afstomp_dd_get_template_options(LogDriver *s)
  * Utilities
  */
 
-static gchar *
+static const gchar *
 afstomp_dd_format_stats_instance(LogThreadedDestDriver *s)
 {
   STOMPDestDriver *self = (STOMPDestDriver *) s;

@@ -40,7 +40,7 @@ _format_persist_name(const LogPipe *s)
   return persist_name;
 }
 
-static gchar *
+static const gchar *
 _format_stats_instance(LogThreadedDestDriver *s)
 {
   static gchar stats[1024];

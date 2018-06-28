@@ -198,7 +198,7 @@ ignore_sigpipe (void)
   sigaction(SIGPIPE, &sa, NULL);
 }
 
-static gchar *
+static const gchar *
 afsmtp_dd_format_stats_instance(LogThreadedDestDriver *d)
 {
   AFSMTPDriver *self = (AFSMTPDriver *)d;

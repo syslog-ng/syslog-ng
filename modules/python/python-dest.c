@@ -106,7 +106,7 @@ python_dd_get_template_options(LogDriver *d)
 
 /** Helpers for stats & persist_name formatting **/
 
-static gchar *
+static const gchar *
 python_dd_format_stats_instance(LogThreadedDestDriver *d)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
