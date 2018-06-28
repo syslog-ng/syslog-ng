@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <libgen.h>
+#include "grab-logging.h"
 #include "logmsg/logmsg.h"
 
 #define PRETTY_STRING_FORMAT "%s%s%s"
@@ -46,10 +47,6 @@
 #define ASSERTION_ERROR(message) "%s:%d/%s\n  #       %s", \
                                  basename(__FILE__), __LINE__, __FUNCTION__, ((message) ? (message) : "")
 
-void reset_grabbed_messages(void);
-void start_grabbing_messages(void);
-void stop_grabbing_messages(void);
-void display_grabbed_messages(void);
 gboolean assert_grabbed_messages_contain_non_fatal(const gchar *pattern, const gchar *error_message, ...);
 
 #define assert_grabbed_messages_contain(pattern, error_message, ...) (assert_grabbed_messages_contain_non_fatal(pattern, error_message, ##__VA_ARGS__) ? 1 : (exit(1),0))

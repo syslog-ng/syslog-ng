@@ -25,78 +25,24 @@
 #include "cfg-lexer.h"
 #include "cfg-grammar.h"
 #include <criterion/criterion.h>
+#include "mock-cfg-parser.h"
 
 #define TESTDATA_DIR TOP_SRCDIR "/lib/tests/testdata-lexer"
 
-typedef struct
-{
-  YYSTYPE *yylval;
-  YYLTYPE *yylloc;
-  CfgLexer *lexer;
-} TestParser;
 
-TestParser *parser = NULL;
+CfgParserMock *parser = NULL;
 
-static void
-test_parser_clear_token(TestParser *self)
-{
-  if (self->yylval->type)
-    cfg_lexer_free_token(self->yylval);
-  self->yylval->type = 0;
-}
-
-static void
-test_parser_next_token(TestParser *self)
-{
-  test_parser_clear_token(self);
-  cfg_lexer_lex(self->lexer, self->yylval, self->yylloc);
-}
-
-static void
-test_parser_input(TestParser *self, const gchar *buffer)
-{
-  cfg_lexer_include_buffer(self->lexer, "#test-buffer", buffer, strlen(buffer));
-}
-
-TestParser *
-test_parser_new(void)
-{
-  TestParser *self = g_new0(TestParser, 1);
-
-  self->yylval = g_new0(YYSTYPE, 1);
-  self->yylloc = g_new0(YYLTYPE, 1);
-  self->yylval->type = LL_CONTEXT_ROOT;
-  self->yylloc->first_column = 1;
-  self->yylloc->first_line = 1;
-  self->yylloc->last_column = 1;
-  self->yylloc->last_line = 1;
-  self->yylloc->level = &self->lexer->include_stack[0];
-
-  self->lexer = cfg_lexer_new_buffer(configuration, "", 0);
-  return self;
-}
-
-void
-test_parser_free(TestParser *self)
-{
-  test_parser_clear_token(self);
-  if (self->lexer)
-    cfg_lexer_free(self->lexer);
-  g_free(self->yylval);
-  g_free(self->yylloc);
-  g_free(self);
-}
 
 static void
 _input(const gchar *input)
 {
-  test_parser_input(parser, input);
+  cfg_parser_mock_input(parser, input);
 }
 
 static void
 _next_token(void)
 {
-  test_parser_next_token(parser);
+  cfg_parser_mock_next_token(parser);
 }
 
 static YYSTYPE *
@@ -400,13 +346,13 @@ static void
 setup(void)
 {
   configuration = cfg_new_snippet();
-  parser = test_parser_new();
+  parser = cfg_parser_mock_new();
 }
 
 static void
 teardown(void)
 {
-  test_parser_free(parser);
+  cfg_parser_mock_free(parser);
   cfg_free(configuration);
   configuration = NULL;
 }

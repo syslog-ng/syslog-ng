@@ -1,12 +1,14 @@
 set(LIBTEST_HEADERS
     config_parse_lib.h
     mock-transport.h
+    mock-cfg-parser.h
     msg_parse_lib.h
     persist_lib.h
     proto_lib.h
     queue_utils_lib.h
     stopwatch.h
     cr_template.h
+    grab-logging.h
     testutils.h
 )
 
@@ -14,12 +16,14 @@ set(LIBTEST_SOURCES
     config_parse_lib.c
     libtest.c
     mock-transport.c
+    mock-cfg-parser.c
     msg_parse_lib.c
     persist_lib.c
     proto_lib.c
     queue_utils_lib.c
     stopwatch.c
     cr_template.c
+    grab-logging.c
     testutils.c
 )
 
