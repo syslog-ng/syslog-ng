@@ -382,6 +382,24 @@ _init_watches(LogThreadedDestDriver *self)
 }
 
 static void
+_signal_startup_finished(LogThreadedDestDriver *self)
+{
+  g_mutex_lock(self->lock);
+  self->startup_finished = TRUE;
+  g_cond_signal(self->started_up);
+  g_mutex_unlock(self->lock);
+}
+
+static void
+_wait_for_startup_finished(LogThreadedDestDriver *self)
+{
+  g_mutex_lock(self->lock);
+  while (!self->startup_finished)
+    g_cond_wait(self->started_up, self->lock);
+  g_mutex_unlock(self->lock);
+}
+
+static void
 _worker_thread(gpointer arg)
 {
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)arg;
@@ -398,6 +416,8 @@ _worker_thread(gpointer arg)
 
   if (self->worker.thread_init)
     self->worker.thread_init(self);
+
+  _signal_startup_finished(self);
 
   _start_watches(self);
   iv_main();
@@ -427,6 +447,7 @@ _start_worker_thread(LogThreadedDestDriver *self)
   main_loop_create_worker_thread(_worker_thread,
                                  _request_worker_exit,
                                  self, &self->worker_options);
+  _wait_for_startup_finished(self);
 }
 
 /* the feeding side of the driver, runs in the source thread and puts an
@@ -549,6 +570,8 @@ log_threaded_dest_driver_free(LogPipe *s)
 {
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
 
+  g_mutex_free(self->lock);
+  g_cond_free(self->started_up);
   log_dest_driver_free((LogPipe *)self);
 }
 
@@ -568,4 +591,6 @@ log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalConfig
 
   self->retries_max = MAX_RETRIES_OF_FAILED_INSERT_DEFAULT;
   _init_watches(self);
+  self->lock = g_mutex_new();
+  self->started_up = g_cond_new();
 }

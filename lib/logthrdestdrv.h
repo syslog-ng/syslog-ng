@@ -63,6 +63,9 @@ struct _LogThreadedDestDriver
   struct iv_event shutdown_event;
   struct iv_timer timer_reopen;
   struct iv_timer timer_throttle;
+  gboolean startup_finished;
+  GCond *started_up;
+  GMutex *lock;
 
   StatsCounterItem *dropped_messages;
   StatsCounterItem *queued_messages;
