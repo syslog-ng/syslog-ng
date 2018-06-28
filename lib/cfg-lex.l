@@ -257,6 +257,7 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 <block>[^{( \t]+           { return LL_ERROR; }
 <block>\({white}*\)        { yy_pop_state(yyscanner); yylval->cptr = NULL; return LL_BLOCK; }
 <block>\({white}*\"\"{white}*\) { yy_pop_state(yyscanner); yylval->cptr = g_strdup(""); return LL_BLOCK; }
+<block>\({white}*\'\'{white}*\) { yy_pop_state(yyscanner); yylval->cptr = g_strdup(""); return LL_BLOCK; }
 <block>[{(]                {
                              if (yytext[0] != yyextra->block_boundary[0])
                                REJECT;
