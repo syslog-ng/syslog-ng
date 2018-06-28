@@ -80,6 +80,7 @@ void main_loop_create_worker_thread(WorkerThreadFunc func, WorkerExitNotificatio
                                     WorkerOptions *worker_options);
 
 void main_loop_worker_sync_call(void (*func)(void *user_data), void *user_data);
+void main_loop_sync_worker_startup_and_teardown(void);
 
 void main_loop_worker_init(void);
 void main_loop_worker_deinit(void);
@@ -92,6 +93,5 @@ main_loop_worker_job_quit(void)
 {
   return main_loop_workers_quit;
 }
-
 
 #endif
