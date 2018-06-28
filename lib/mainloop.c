@@ -501,6 +501,8 @@ main_loop_init(MainLoop *self, MainLoopOptions *options)
 
   main_loop_init_events(self);
   setup_signals(self);
+
+  self->current_configuration = cfg_new(0);
 }
 
 /*
@@ -511,7 +513,6 @@ main_loop_read_and_init_config(MainLoop *self)
 {
   MainLoopOptions *options = self->options;
 
-  self->current_configuration = cfg_new(0);
   if (!cfg_read_config(self->current_configuration, resolvedConfigurablePaths.cfgfilename, options->syntax_only,
                        options->preprocess_into))
     {
