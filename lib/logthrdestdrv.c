@@ -217,9 +217,9 @@ _process_result(LogThreadedDestDriver *self, gint result)
       break;
 
     case WORKER_INSERT_RESULT_NOT_CONNECTED:
-      msg_debug("Server disconnected while preparing messages for sending, trying again",
-                evt_tag_str("driver", self->super.super.id),
-                evt_tag_int("batch_size", self->batch_size));
+      msg_info("Server disconnected while preparing messages for sending, trying again",
+               evt_tag_str("driver", self->super.super.id),
+               evt_tag_int("batch_size", self->batch_size));
       _rewind_batch(self);
       _disconnect_and_suspend(self);
       break;
