@@ -1,5 +1,6 @@
 lib_tests_TESTS		= \
 	lib/tests/test_cfg_lexer_subst	\
+	lib/tests/test_lexer_block	\
 	lib/tests/test_cfg_tree		\
 	lib/tests/test_type_hints	\
 	lib/tests/test_parse_number	\
@@ -32,6 +33,11 @@ endif
 lib_tests_test_cfg_lexer_subst_CFLAGS	=	\
 	$(TEST_CFLAGS)
 lib_tests_test_cfg_lexer_subst_LDADD	=	\
+	$(TEST_LDADD)
+
+lib_tests_test_lexer_block_CFLAGS	=	\
+	$(TEST_CFLAGS)
+lib_tests_test_lexer_block_LDADD	=	\
 	$(TEST_LDADD)
 
 lib_tests_test_cfg_tree_CFLAGS		=	\

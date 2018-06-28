@@ -117,7 +117,7 @@ yy_input_run_backtick_substitution(CfgLexer *self, gchar *buf, gsize buf_size)
       }                                                                 \
   } while (0);                                                          \
   break;
-  
+
 #define YY_FATAL_ERROR(msg)						\
   do {									\
     struct yyguts_t * __yyg = (struct yyguts_t*) yyscanner;		\
@@ -255,6 +255,9 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
      /* rules to parse a block as a LL_BLOCK token */
 <block>{white}+            ;
 <block>[^{( \t]+           { return LL_ERROR; }
+<block>\({white}*\)        { yy_pop_state(yyscanner); yylval->cptr = NULL; return LL_BLOCK; }
+<block>\({white}*\"\"{white}*\) { yy_pop_state(yyscanner); yylval->cptr = g_strdup(""); return LL_BLOCK; }
+<block>\({white}*\'\'{white}*\) { yy_pop_state(yyscanner); yylval->cptr = g_strdup(""); return LL_BLOCK; }
 <block>[{(]                {
                              if (yytext[0] != yyextra->block_boundary[0])
                                REJECT;

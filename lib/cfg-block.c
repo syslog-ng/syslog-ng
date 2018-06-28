@@ -70,7 +70,7 @@ _validate_args_callback(gpointer k, gpointer v, gpointer user_data)
   const gchar *reference = ((gpointer *) user_data)[1];
   gboolean *problem_found = ((gpointer *) user_data)[2];
 
-  if ((!defs || cfg_args_get(defs, k) == NULL))
+  if ((!defs || !cfg_args_contains(defs, k)))
     {
       if (cfg_args_is_accepting_varargs(defs))
         {
@@ -90,8 +90,39 @@ _validate_args_callback(gpointer k, gpointer v, gpointer user_data)
     }
 }
 
+static void
+_validate_mandatory_options_callback(gpointer parameter, gpointer default_value, gpointer user_data)
+{
+  CfgArgs *user_args = ((gpointer *) user_data)[0];
+  const gchar *reference = ((gpointer *) user_data)[1];
+  gboolean *missing_parameter_found = ((gpointer *) user_data)[2];
+
+  const gchar *value = cfg_args_get(user_args, parameter);
+
+  if (default_value == NULL && value == NULL)
+    {
+      *missing_parameter_found = TRUE;
+      msg_error("Mandatory parameter not overridden",
+                evt_tag_str("parameter", parameter),
+                evt_tag_str("reference", reference));
+    }
+}
+
 static gboolean
-_validate_args(CfgArgs *self, CfgArgs *defs, const gchar *reference)
+_validate_mandatory_options(CfgArgs *arg_defs, CfgArgs *args, const gchar *reference)
+{
+  gboolean missing_parameter_found = FALSE;
+  gpointer validate_params[] = { args, (gchar *)reference, &missing_parameter_found };
+  cfg_args_foreach(arg_defs, _validate_mandatory_options_callback, validate_params);
+
+  if (missing_parameter_found)
+    return FALSE;
+
+  return TRUE;
+};
+
+gboolean
+_validate_spurious_args(CfgArgs *self, CfgArgs *defs, const gchar *reference)
 {
   gboolean problem_found = FALSE;
   gpointer validate_params[] = { defs, (gchar *) reference, &problem_found };
@@ -104,6 +135,11 @@ _validate_args(CfgArgs *self, CfgArgs *defs, const gchar *reference)
   return TRUE;
 }
 
+static gboolean
+_validate_args(CfgArgs *self, CfgArgs *defs, const gchar *reference)
+{
+  return _validate_mandatory_options(defs, self, reference) && _validate_spurious_args(self, defs, reference);
+}
 
 /*
  * cfg_block_generate:

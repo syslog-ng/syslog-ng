@@ -57,7 +57,7 @@ _resolve_unknown_blockargs_as_varargs(gpointer key, gpointer value, gpointer use
   CfgArgs *defaults = ((gpointer *) user_data)[0];
   GString *varargs = ((gpointer *) user_data)[1];
 
-  if (!defaults || cfg_args_get(defaults, key) == NULL)
+  if (!defaults || !cfg_args_contains(defaults, key))
     {
       g_string_append_printf(varargs, "%s(%s) ", (gchar *)key, (gchar *)value);
     }
@@ -92,6 +92,15 @@ cfg_args_get(CfgArgs *self, const gchar *name)
     }
 
   return value;
+}
+
+gboolean
+cfg_args_contains(CfgArgs *self, const gchar *name)
+{
+  gchar *normalized_name = __normalize_key(name);
+  gboolean contains = g_hash_table_lookup_extended(self->args, normalized_name, NULL, NULL);
+  g_free(normalized_name);
+  return contains;
 }
 
 CfgArgs *
