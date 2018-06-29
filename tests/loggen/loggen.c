@@ -29,8 +29,10 @@
 #include "logline_generator.h"
 
 #include <stdio.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <signal.h>
 #include <string.h>
 #include <gmodule.h>
 #include <errno.h>

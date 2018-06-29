@@ -21,16 +21,19 @@
  *
  */
 
+#include "compat/glib.h"
 #include "loggen_plugin.h"
 #include "loggen_helper.h"
+#include "crypto.h"
 
+#include <stddef.h>
 #include <stdio.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <string.h>
 #include <netdb.h>
 
-#include <crypto.h>
 #include <openssl/crypto.h>
 #include <openssl/x509.h>
 #include <openssl/pem.h>

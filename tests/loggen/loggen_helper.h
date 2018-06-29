@@ -27,6 +27,8 @@
 #include "compat/compat.h"
 #include "compat/glib.h"
 
+#include <stddef.h>
+#include <stdio.h>
 #include <glib.h>
 #include <sys/un.h>
 #include <netdb.h>

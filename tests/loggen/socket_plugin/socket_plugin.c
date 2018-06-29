@@ -21,11 +21,15 @@
  *
  */
 
+#include "compat/glib.h"
 #include "loggen_plugin.h"
 #include "loggen_helper.h"
 
+#include <time.h>
 #include <signal.h>
+#include <stddef.h>
 #include <stdio.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <string.h>
