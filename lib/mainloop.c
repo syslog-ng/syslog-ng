@@ -330,6 +330,12 @@ block_till_workers_exit(void)
   g_static_mutex_unlock(&workers_running_lock);
 }
 
+GlobalConfig *
+main_loop_get_current_config(MainLoop *self)
+{
+  return self->current_configuration;
+}
+
 /************************************************************************************
  * syncronized exit
  ************************************************************************************/
