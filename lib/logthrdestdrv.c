@@ -226,11 +226,9 @@ _process_result(LogThreadedDestDriver *self, gint result)
 
     case WORKER_INSERT_RESULT_SUCCESS:
       _accept_batch(self);
-      step_sequence_number(&self->seq_num);
       break;
 
     case WORKER_INSERT_RESULT_QUEUED:
-      step_sequence_number(&self->seq_num);
       break;
 
     default:
@@ -262,7 +260,10 @@ _perform_inserts(LogThreadedDestDriver *self)
       result = self->worker.insert(self, msg);
       scratch_buffers_reclaim_marked(mark);
 
+      step_sequence_number(&self->seq_num);
+
       _process_result(self, result);
+
 
       log_msg_unref(msg);
       msg_set_context(NULL);
