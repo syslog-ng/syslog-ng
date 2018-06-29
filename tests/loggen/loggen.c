@@ -247,7 +247,7 @@ init_logline_generator(GPtrArray *plugin_array)
   int framing;
   if (syslog_proto && !noframing)
     framing = 1;
-  else if(!syslog_proto && require_framing && !noframing)
+  else if (!syslog_proto && require_framing && !noframing)
     framing = 1;
   else
     framing = 0;
@@ -265,7 +265,7 @@ init_csv_statistics(void)
   /* message counter for csv output */
   thread_stat_count = (gint64 *) g_malloc0(global_plugin_option.active_connections * sizeof(gint64));
   thread_stat_count_last = (gint64 *) g_malloc0(global_plugin_option.active_connections * sizeof(gint64));
-  if(csv)
+  if (csv)
     {
       /* print CSV header and initial line about time zero */
       printf("ThreadId;Time;Rate;Count\n");

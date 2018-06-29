@@ -28,6 +28,8 @@
 #include <gmodule.h>
 #include <sys/time.h>
 
+#define LOGGEN_PLUGIN_INFO "loggen_plugin_info"
+
 typedef struct _plugin_option
 {
   int message_length;
@@ -59,7 +61,6 @@ typedef int (*generate_message_func)(char *buffer, int buffer_size, int thread_i
 typedef void (*set_generate_message_func)(generate_message_func gen_message);
 typedef int (*get_thread_count_func)(void);
 typedef gboolean (*is_plugin_activated_func)(void);
-#define LOGGEN_PLUGIN_INFO "loggen_plugin_info"
 
 typedef struct _plugin_info
 {
