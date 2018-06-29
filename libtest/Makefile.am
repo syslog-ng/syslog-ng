@@ -34,6 +34,7 @@ libtest_libsyslog_ng_test_a_SOURCES =   \
 
 libtestinclude_HEADERS		    =	\
 	libtest/cr_template.h		\
+	libtest/grab-logging.h		\
 	libtest/mock-transport.h	\
 	libtest/msg_parse_lib.h		\
 	libtest/persist_lib.h		\
