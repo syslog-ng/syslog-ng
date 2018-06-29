@@ -269,7 +269,14 @@ _perform_inserts(LogThreadedDestDriver *self)
       msg_set_context(NULL);
       log_msg_refcache_stop();
     }
-  if (!self->suspended && self->batch_size > 0 && self->worker.flush)
+
+  /* NOTE: earlier we had a condition on only calling flush() if batch_size
+   * is non-zero.  This was removed, as the language bindings that were done
+   * _before_ the batching support in LogThreadedDestDriver relies on
+   * flush() being called always, even if WORKER_INSERT_RESULT_SUCCESS is
+   * returned, in which case batch_size is already zero at this point.
+   */
+  if (!self->suspended && self->worker.flush)
     {
       result = self->worker.flush(self);
       _process_result(self, result);
