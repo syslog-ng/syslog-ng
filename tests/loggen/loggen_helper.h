@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef __HELPER_H__
-#define __HELPER_H__
+#ifndef LOGGEN_HELPER_H_INCLUDED
+#define LOGGEN_HELPER_H_INCLUDED
 
 #include "compat/compat.h"
 #include "compat/glib.h"

@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef __LOGGEN_PLUGIN_H__
-#define __LOGGEN_PLUGIN_H__
+#ifndef LOGGEN_PLUGIN_H_INCLUDED
+#define LOGGEN_PLUGIN_H_INCLUDED
 
 #include "compat/glib.h"
 #include <gmodule.h>
