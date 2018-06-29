@@ -439,7 +439,7 @@ _register_stats(LogThreadedDestDriver *self)
   stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
   stats_register_counter_and_index(1, &sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
-  stats_register_counter(1, &sc_key, SC_TYPE_WRITTEN, &self->written_messages);
+  stats_register_counter(0, &sc_key, SC_TYPE_WRITTEN, &self->written_messages);
   stats_unlock();
 }
 
