@@ -27,6 +27,7 @@
 
 #include "logpipe.h"
 #include "stats/stats-registry.h"
+#include "atomic-gssize.h"
 
 typedef struct _LogSourceOptions
 {
@@ -46,6 +47,7 @@ typedef struct _LogSourceOptions
   GList *source_queue_callbacks;
   gint stats_level;
   gint stats_source;
+  guint64 max_memory;
 } LogSourceOptions;
 
 typedef struct _LogSource LogSource;
@@ -75,6 +77,8 @@ struct _LogSource
   glong window_full_sleep_nsec;
   struct timespec last_ack_rate_time;
   AckTracker *ack_tracker;
+  atomic_gssize memory_usage;
+  guint32 pending_window_size_increment;
 
   void (*wakeup)(LogSource *s);
   void (*window_empty_cb)(LogSource *s);
@@ -109,6 +113,7 @@ void log_source_free(LogPipe *s);
 void log_source_wakeup(LogSource *self);
 void log_source_window_empty(LogSource *self);
 void log_source_flow_control_adjust(LogSource *self, guint32 window_size_increment);
+void log_source_flow_control_adjust_memory_usage(LogSource *self, guint32 memory_decrement);
 void log_source_flow_control_suspend(LogSource *self);
 
 void log_source_global_init(void);

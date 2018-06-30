@@ -136,7 +136,6 @@ late_ack_tracker_track_msg(AckTracker *s, LogMessage *msg)
   log_pipe_ref((LogPipe *)source);
 
   msg->ack_record = (AckRecord *)self->pending_ack_record;
-
   late_ack_tracker_lock(s);
   {
     LateAckRecord *ack_rec;
@@ -172,9 +171,13 @@ late_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type
         _drop_range(self, ack_range_length);
 
         if (ack_type == AT_SUSPENDED)
-          log_source_flow_control_suspend(self->super.source);
+          {
+            log_source_flow_control_suspend(self->super.source);
+          }
         else
-          log_source_flow_control_adjust(self->super.source, ack_range_length);
+          {
+            log_source_flow_control_adjust(self->super.source, ack_range_length);
+          }
 
         if (ring_buffer_is_empty(&self->ack_record_storage))
           late_ack_tracker_on_all_acked_call(s);
@@ -182,7 +185,9 @@ late_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type
   }
   late_ack_tracker_unlock(s);
 
+  gsize queued_bytes = msg->queued_bytes;
   log_msg_unref(msg);
+  log_source_flow_control_adjust_memory_usage(self->super.source, queued_bytes);
   log_pipe_unref((LogPipe *)self->super.source);
 }
 

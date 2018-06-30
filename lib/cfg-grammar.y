@@ -203,6 +203,7 @@ extern struct _StatsOptions *last_stats_options;
 %token KW_KEEP_HOSTNAME               10092
 %token KW_CHECK_HOSTNAME              10093
 %token KW_BAD_HOSTNAME                10094
+%token KW_MAX_MEMORY                  10095
 
 %token KW_KEEP_TIMESTAMP              10100
 
@@ -1194,6 +1195,7 @@ source_option
 	| KW_LOG_PREFIX '(' string ')'	        { gchar *p = strrchr($3, ':'); if (p) *p = 0; last_source_options->program_override = g_strdup($3); free($3); }
 	| KW_KEEP_TIMESTAMP '(' yesno ')'	{ last_source_options->keep_timestamp = $3; }
 	| KW_READ_OLD_RECORDS '(' yesno ')'	{ last_source_options->read_old_records = $3; }
+	| KW_MAX_MEMORY '(' positive_integer64 ')' { last_source_options->max_memory = $3; }
         | KW_TAGS '(' string_list ')'		{ log_source_options_set_tags(last_source_options, $3); }
         | { last_host_resolve_options = &last_source_options->host_resolve_options; } host_resolve_option
         ;
