@@ -167,6 +167,7 @@ _free(LogDriverPlugin *s)
 {
   DiskQDestPlugin *self = (DiskQDestPlugin *)s;
   disk_queue_options_destroy(&self->options);
+  log_driver_plugin_free_method(s);
 }
 
 DiskQueueOptions *diskq_get_options(DiskQDestPlugin *self)
