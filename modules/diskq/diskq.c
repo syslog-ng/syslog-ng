@@ -21,10 +21,10 @@
  *
  */
 
+#include "diskq.h"
+
 #include "driver.h"
 #include "messages.h"
-
-#include "diskq.h"
 #include "logqueue-disk.h"
 #include "logqueue-disk-reliable.h"
 #include "logqueue-disk-non-reliable.h"
