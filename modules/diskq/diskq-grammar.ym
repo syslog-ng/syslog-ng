@@ -78,7 +78,7 @@ dest_diskq
           {
             last_plugin = diskq_dest_plugin_new();
             *instance = &last_plugin->super;
-            last_options = &last_plugin->options;
+            last_options = diskq_get_options(last_plugin);
           }
           '(' dest_diskq_options ')' { disk_queue_options_check_plugin_settings(last_options); }
         ;

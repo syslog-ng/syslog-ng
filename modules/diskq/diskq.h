@@ -36,5 +36,6 @@ typedef struct _DiskQDestPlugin
 } DiskQDestPlugin;
 
 DiskQDestPlugin *diskq_dest_plugin_new(void);
+DiskQueueOptions *diskq_get_options(DiskQDestPlugin *self);
 
 #endif
