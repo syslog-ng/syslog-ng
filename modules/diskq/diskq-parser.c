@@ -48,7 +48,7 @@ CfgParser diskq_parser =
   .name = "disk_buffer",
   .keywords = diskq_keywords,
   .parse = (int (*)(CfgLexer *lexer, gpointer *instance, gpointer arg)) diskq_parse,
-  .cleanup = (void (*)(gpointer)) log_pipe_unref,
+  .cleanup = (void (*)(gpointer)) log_driver_plugin_free,
 
 };
 
