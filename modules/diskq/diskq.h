@@ -29,11 +29,7 @@
 #include "logmsg/logmsg-serialize.h"
 #include "diskq-options.h"
 
-typedef struct _DiskQDestPlugin
-{
-  LogDriverPlugin super;
-  DiskQueueOptions options;
-} DiskQDestPlugin;
+typedef struct _DiskQDestPlugin DiskQDestPlugin;
 
 DiskQDestPlugin *diskq_dest_plugin_new(void);
 DiskQueueOptions *diskq_get_options(DiskQDestPlugin *self);

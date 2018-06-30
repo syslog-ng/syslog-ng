@@ -32,6 +32,12 @@
 
 #define DISKQ_PLUGIN_NAME "diskq"
 
+struct _DiskQDestPlugin
+{
+  LogDriverPlugin super;
+  DiskQueueOptions options;
+};
+
 static gboolean
 log_queue_disk_is_file_in_directory(const gchar *file, const gchar *directory)
 {
