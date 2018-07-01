@@ -77,6 +77,7 @@ struct _LogThreadedDestDriver
   gboolean under_termination;
   time_t time_reopen;
   gint batch_size;
+  gint rewound_batch_size;
   gint retries_counter;
   gint retries_max;
 

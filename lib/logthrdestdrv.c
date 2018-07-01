@@ -176,6 +176,7 @@ void
 _rewind_batch(LogThreadedDestDriver *self)
 {
   log_queue_rewind_backlog(self->worker.queue, self->batch_size);
+  self->rewound_batch_size = self->batch_size;
   self->batch_size = 0;
 }
 
@@ -268,7 +269,15 @@ _perform_inserts(LogThreadedDestDriver *self)
       log_msg_unref(msg);
       msg_set_context(NULL);
       log_msg_refcache_stop();
+
+      if (self->rewound_batch_size)
+        {
+          self->rewound_batch_size--;
+          if (self->rewound_batch_size == 0)
+            break;
+        }
     }
+  self->rewound_batch_size = 0;
 
   /* NOTE: earlier we had a condition on only calling flush() if batch_size
    * is non-zero.  This was removed, as the language bindings that were done
