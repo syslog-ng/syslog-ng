@@ -1056,6 +1056,7 @@ cfg_tree_compile_junction(CfgTree *self,
           if (!fork_mpx)
             {
               fork_mpx = cfg_tree_new_mpx(self, node);
+              *outer_pipe_head = &fork_mpx->super;
             }
           log_multiplexer_add_next_hop(fork_mpx, sub_pipe_head);
         }
@@ -1082,7 +1083,6 @@ cfg_tree_compile_junction(CfgTree *self,
         }
     }
 
-  *outer_pipe_head = &fork_mpx->super;
   if (outer_pipe_tail)
     *outer_pipe_tail = join_pipe;
   return TRUE;

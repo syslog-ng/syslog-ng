@@ -79,6 +79,11 @@ serialize_file_archive_read_bytes(SerializeArchive *s, gchar *buf, gsize buflen,
 
   g_return_val_if_fail(error == NULL || (*error) == NULL, FALSE);
 
+  if (buflen == 0)
+    {
+      return TRUE;
+    }
+
   bytes_read = fread(buf, 1, buflen, self->f);
   if (bytes_read < 0 || bytes_read != buflen)
     {
@@ -133,6 +138,11 @@ serialize_string_archive_read_bytes(SerializeArchive *s, gchar *buf, gsize bufle
   SerializeStringArchive *self = (SerializeStringArchive *) s;
 
   g_return_val_if_fail(error == NULL || (*error) == NULL, FALSE);
+
+  if (buflen == 0)
+    {
+      return TRUE;
+    }
 
   if ((gssize) self->pos + buflen > (gssize) self->string->len)
     {
