@@ -632,7 +632,9 @@ log_writer_suppress_timeout(gpointer pt)
 static gboolean
 _is_message_a_mark(LogMessage *msg)
 {
-  return strcmp(log_msg_get_value(msg, LM_V_MESSAGE, NULL), "-- MARK --") == 0;
+  gssize msg_len;
+  const gchar *value = log_msg_get_value(msg, LM_V_MESSAGE, &msg_len);
+  return strncmp(value, "-- MARK --", msg_len) == 0;
 }
 
 static gboolean
