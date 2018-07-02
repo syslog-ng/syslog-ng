@@ -14,7 +14,8 @@ lib_tests_TESTS		= \
 	lib/tests/test_pathutils	\
 	lib/tests/test_utf8utils	\
 	lib/tests/test_userdb		\
-	lib/tests/test_str-utils
+	lib/tests/test_str-utils \
+	lib/tests/test_atomic_gssize
 
 EXTRA_DIST += lib/tests/CMakeLists.txt
 
@@ -104,6 +105,12 @@ lib_tests_test_str_utils_CFLAGS	=	\
 	$(TEST_CFLAGS)
 lib_tests_test_str_utils_LDADD	=	\
 	$(TEST_LDADD)
+
+lib_tests_test_atomic_gssize_CFLAGS	=	\
+	$(TEST_CFLAGS)
+lib_tests_test_atomic_gssize_LDADD	=	\
+	$(TEST_LDADD)
+
 
 CLEANFILES				+= \
 	test_values.persist		   \
