@@ -142,7 +142,6 @@ afinter_source_mark(gpointer s)
 
       /* the next_mark_target will be increased in afinter_postpone_mark */
     }
-  afinter_source_update_watches(self);
 }
 
 static void
