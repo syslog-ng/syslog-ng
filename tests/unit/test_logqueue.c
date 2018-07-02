@@ -200,7 +200,7 @@ Test(logqueue, test_zero_diskbuf_and_normal_acks)
 
   log_queue_set_use_backlog(q, TRUE);
 
-  cr_assert_eq(q->queued_messages->value, 0);
+  cr_assert_eq(atomic_gssize_racy_get(&q->queued_messages->value), 0);
 
   fed_messages = 0;
   acked_messages = 0;
