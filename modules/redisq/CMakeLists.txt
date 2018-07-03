@@ -37,4 +37,4 @@ target_link_libraries(redis-queue PRIVATE syslog-ng)
 
 install(TARGETS redis-queue LIBRARY DESTINATION lib/syslog-ng COMPONENT redisqueue)
 
-add_test_subdirectory(tests)
+#add_test_subdirectory(tests)

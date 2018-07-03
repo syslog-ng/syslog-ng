@@ -44,6 +44,8 @@ struct _LogQueueRedis
 {
   LogQueue super;
 
+  GQueue *qbacklog;
+
   redisContext *c;
   RedisQueueOptions *redis_options;
   gchar *persist_name;
