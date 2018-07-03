@@ -27,6 +27,17 @@
 
 #define HOOK_COMMANDS_PLUGIN "hook-commands"
 
+struct _HookCommandsPlugin
+{
+  LogDriverPlugin super;
+  gchar *startup;
+  gchar *setup;
+  gchar *teardown;
+  gchar *shutdown;
+  gboolean (*saved_init)(LogPipe *s);
+  gboolean (*saved_deinit)(LogPipe *s);
+};
+
 void
 hook_commands_plugin_set_startup(HookCommandsPlugin *self, const gchar *startup)
 {

@@ -77,8 +77,8 @@ dest_diskq
         : KW_DISK_BUFFER
           {
             last_plugin = diskq_dest_plugin_new();
-            *instance = &last_plugin->super;
-            last_options = &last_plugin->options;
+            *instance = (LogDriverPlugin*)last_plugin;
+            last_options = diskq_get_options(last_plugin);
           }
           '(' dest_diskq_options ')' { disk_queue_options_check_plugin_settings(last_options); }
         ;

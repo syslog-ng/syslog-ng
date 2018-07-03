@@ -25,16 +25,7 @@
 
 #include "driver.h"
 
-typedef struct _HookCommandsPlugin
-{
-  LogDriverPlugin super;
-  gchar *startup;
-  gchar *setup;
-  gchar *teardown;
-  gchar *shutdown;
-  gboolean (*saved_init)(LogPipe *s);
-  gboolean (*saved_deinit)(LogPipe *s);
-} HookCommandsPlugin;
+typedef struct _HookCommandsPlugin HookCommandsPlugin;
 
 void hook_commands_plugin_set_startup(HookCommandsPlugin *s, const gchar *command);
 void hook_commands_plugin_set_setup(HookCommandsPlugin *s, const gchar *command);
