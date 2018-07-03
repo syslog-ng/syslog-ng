@@ -43,7 +43,8 @@ Test(test_atomic_gssize, set_max_value)
   cr_assert_eq(atomic_gssize_get(&max), G_MAXSSIZE);
   atomic_gssize_dec(&max);
   cr_assert_eq(atomic_gssize_get(&max), G_MAXSSIZE - 1);
-  atomic_gssize_add(&max, 2);
+  gssize old = atomic_gssize_add(&max, 2);
+  cr_assert_eq(old, G_MAXSSIZE - 1);
   cr_assert_eq(atomic_gssize_get(&max), G_MINSSIZE);
 }
 
