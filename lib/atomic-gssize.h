@@ -34,31 +34,28 @@ typedef struct
   gssize value;
 } atomic_gssize;
 
-static inline void
+static inline gssize
 atomic_gssize_add(atomic_gssize *a, gssize add)
 {
-  g_atomic_pointer_add(&a->value, add);
+  return g_atomic_pointer_add(&a->value, add);
 }
 
-static inline void
+static inline gssize
 atomic_gssize_sub(atomic_gssize *a, gssize sub)
 {
-  if (a)
-    g_atomic_pointer_add(&a->value, -1 * sub);
+  return g_atomic_pointer_add(&a->value, -1 * sub);
 }
 
-static inline void
+static inline gssize
 atomic_gssize_inc(atomic_gssize *a)
 {
-  if (a)
-    g_atomic_pointer_add(&a->value, 1);
+  return g_atomic_pointer_add(&a->value, 1);
 }
 
-static inline void
+static inline gssize
 atomic_gssize_dec(atomic_gssize *a)
 {
-  if (a)
-    g_atomic_pointer_add(&a->value, -1);
+  return g_atomic_pointer_add(&a->value, -1);
 }
 
 static inline gssize
