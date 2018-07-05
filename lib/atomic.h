@@ -25,11 +25,14 @@
 #ifndef ATOMIC_H_INCLUDED
 #define ATOMIC_H_INCLUDED
 
+#include "compat/glib.h"
 
 typedef struct
 {
   gint counter;
 } GAtomicCounter;
+
+typedef GAtomicCounter GAtomicBool;
 
 static inline void
 g_atomic_counter_inc(GAtomicCounter *c)
@@ -68,13 +71,20 @@ g_atomic_counter_racy_get(GAtomicCounter *c)
 static inline void
 g_atomic_counter_set(GAtomicCounter *c, gint value)
 {
-  /* FIXME: we should use g_atomic_int_set, but that's available starting
-   * with GLib 2.10 only, and we only use this function for initialization,
-   * thus atomic write is not strictly needed as there's no concurrency
-   * while initializing a refcounter.
-   */
+  g_atomic_int_set(&c->counter, value);
+}
 
-  c->counter = value;
+
+static inline gboolean
+g_atomic_bool_get(GAtomicBool *b)
+{
+  return !!g_atomic_counter_get(b);
+}
+
+static inline void
+g_atomic_bool_set(GAtomicBool *b, gboolean value)
+{
+  g_atomic_counter_set(b, !!value);
 }
 
 #endif

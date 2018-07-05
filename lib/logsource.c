@@ -38,6 +38,8 @@ gboolean accurate_nanosleep = FALSE;
 void
 log_source_wakeup(LogSource *self)
 {
+  g_atomic_bool_set(&self->forced_suspend, FALSE);
+
   if (self->wakeup)
     self->wakeup(self);
 
@@ -55,14 +57,11 @@ log_source_window_empty(LogSource *self)
 static inline void
 _flow_control_window_size_adjust(LogSource *self, guint32 window_size_increment)
 {
-  guint32 old_window_size;
+  guint32 old_window_size = g_atomic_counter_exchange_and_add(&self->window_size, window_size_increment);
 
-  window_size_increment += g_atomic_counter_get(&self->suspended_window_size);
-  old_window_size = g_atomic_counter_exchange_and_add(&self->window_size, window_size_increment);
-  g_atomic_counter_set(&self->suspended_window_size, 0);
-
-  if (old_window_size == 0)
+  if (old_window_size == 0 || g_atomic_bool_get(&self->forced_suspend))
     log_source_wakeup(self);
+
   if (g_atomic_counter_get(&self->window_size) == self->options->init_window_size)
     log_source_window_empty(self);
 }
@@ -155,8 +154,7 @@ log_source_flow_control_suspend(LogSource *self)
 {
   msg_debug("Source has been suspended", log_pipe_location_tag(&self->super));
 
-  g_atomic_counter_set(&self->suspended_window_size, g_atomic_counter_get(&self->window_size));
-  g_atomic_counter_set(&self->window_size, 0);
+  g_atomic_bool_set(&self->forced_suspend, TRUE);
   _flow_control_rate_adjust(self);
 }
 

@@ -67,7 +67,7 @@ struct _LogSource
   gchar *stats_id;
   gchar *stats_instance;
   GAtomicCounter window_size;
-  GAtomicCounter suspended_window_size;
+  GAtomicBool forced_suspend;
   StatsCounterItem *last_message_seen;
   StatsCounterItem *recvd_messages;
   guint32 last_ack_count;
@@ -83,7 +83,8 @@ struct _LogSource
 static inline gboolean
 log_source_free_to_send(LogSource *self)
 {
-  return g_atomic_counter_get(&self->window_size) > 0;
+  return !g_atomic_bool_get(&self->forced_suspend)
+         && g_atomic_counter_get(&self->window_size) > 0;
 }
 
 static inline gint
