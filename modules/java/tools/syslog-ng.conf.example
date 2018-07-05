@@ -13,7 +13,7 @@ source s_tcp{
 
 destination d_java{
   java(
-    class_name("org.syslog_ng.TextDummyDestination")
+    class_name("org.syslog_ng.DummyTextDestination")
     option("name", "d_java")
   );
 };
