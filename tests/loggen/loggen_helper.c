@@ -22,9 +22,15 @@
  */
 
 #include "loggen_helper.h"
+
 #include <syslog-ng-config.h>
+#include <string.h>
 #include <unistd.h>
+#include <time.h>
+#include <arpa/inet.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 #include <openssl/err.h>
 
 static int debug = 0;

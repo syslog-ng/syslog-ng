@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef __FILE_READER_H__
-#define __FILE_READER_H__
+#ifndef LOGGEN_FILE_READER_H_INCLUDED
+#define LOGGEN_FILE_READER_H_INCLUDED
 
 #include "compat/glib.h"
 #include <glib.h>

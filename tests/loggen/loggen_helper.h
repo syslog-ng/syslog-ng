@@ -21,18 +21,24 @@
  *
  */
 
-#ifndef __HELPER_H__
-#define __HELPER_H__
+#ifndef LOGGEN_HELPER_H_INCLUDED
+#define LOGGEN_HELPER_H_INCLUDED
 
 #include "compat/compat.h"
 #include "compat/glib.h"
 
+#include <stddef.h>
+#include <stdio.h>
 #include <glib.h>
 #include <sys/un.h>
 #include <netdb.h>
 #include <openssl/ssl.h>
 
 #include <libgen.h>
+
+#define MAX_MESSAGE_LENGTH 8192
+#define USEC_PER_SEC      1000000
+#define CONNECTION_TIMEOUT_SEC 5
 
 int get_debug_level(void);
 void set_debug_level(int new_debug);
@@ -46,21 +52,17 @@ int connect_unix_domain_socket(int sock_type, const char *path);
 SSL *open_ssl_connection(int sock_fd);
 void close_ssl_connection(SSL *ssl);
 
-#define MAX_MESSAGE_LENGTH 8192
-#define USEC_PER_SEC      1000000
-#define CONNECTION_TIMEOUT_SEC 5
-
-#define ERROR(format,...) do{\
-  fprintf(stderr,"error [%s:%s:%d] ",basename(__FILE__),__func__,__LINE__);\
-  fprintf(stderr,format,##__VA_ARGS__);\
-}while(0)
+#define ERROR(format,...) do {\
+  fprintf(stderr, "error [%s:%s:%d] ", basename(__FILE__), __func__, __LINE__);\
+  fprintf(stderr, format, ##__VA_ARGS__);\
+} while (0)
 
 /* debug messages can be turned on by "--debug" command line option */
-#define DEBUG(format,...) do{\
+#define DEBUG(format,...) do {\
   if (!get_debug_level()) \
     break; \
-  fprintf(stdout,"debug [%s:%s:%d] ",basename(__FILE__),__func__,__LINE__); \
-  fprintf(stdout,format,##__VA_ARGS__);\
-}while(0)
+  fprintf(stdout, "debug [%s:%s:%d] ", basename(__FILE__), __func__, __LINE__); \
+  fprintf(stdout, format, ##__VA_ARGS__);\
+} while(0)
 
 #endif
