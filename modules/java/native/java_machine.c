@@ -108,6 +108,12 @@ void
 java_machine_unref(JavaVMSingleton *self)
 {
   g_assert(self == global_jvm);
+  /* The last reference is always hold by a AH_SHUTDOWN app hook, when there is no java configured.
+   * The only way to get rid of it to shutdown syslog-ng.  */
+  if (g_atomic_counter_get(&self->ref_cnt) == 2)
+    {
+      msg_warning("The JVM is not used anymore, but it is not stopped, if you want to stop it, you have to restart syslog-ng");
+    }
   if (g_atomic_counter_dec_and_test(&self->ref_cnt))
     {
       _jvm_free(self);
