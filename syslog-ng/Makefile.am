@@ -14,8 +14,7 @@ EXTRA_DIST += syslog-ng/CMakeLists.txt
 # phase.  See the comment in the configure script for details.
 
 syslog_ng_syslog_ng_LDADD		= -L${top_builddir}/lib/.libs \
-					  -lsyslog-ng @SYSLOGNG_DEPS_LIBS@ \
-					  $(top_builddir)/lib/secret-storage/libsecret-storage.la
+					  -lsyslog-ng @SYSLOGNG_DEPS_LIBS@
 syslog_ng_syslog_ng_LINK		=  @SYSLOGNG_LINK@
 syslog_ng_syslog_ng_DEPENDENCIES	= lib/libsyslog-ng.la
 
