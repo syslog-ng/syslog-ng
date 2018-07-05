@@ -27,6 +27,7 @@
 
 #include "logpipe.h"
 #include "stats/stats-registry.h"
+#include "window-size-counter.h"
 
 typedef struct _LogSourceOptions
 {
@@ -66,8 +67,7 @@ struct _LogSource
   gboolean pos_tracked;
   gchar *stats_id;
   gchar *stats_instance;
-  GAtomicCounter window_size;
-  GAtomicCounter suspended_window_size;
+  WindowSizeCounter window_size;
   StatsCounterItem *last_message_seen;
   StatsCounterItem *recvd_messages;
   guint32 last_ack_count;
@@ -83,7 +83,7 @@ struct _LogSource
 static inline gboolean
 log_source_free_to_send(LogSource *self)
 {
-  return g_atomic_counter_get(&self->window_size) > 0;
+  return !window_size_counter_suspended(&self->window_size);
 }
 
 static inline gint
@@ -109,6 +109,7 @@ void log_source_free(LogPipe *s);
 void log_source_wakeup(LogSource *self);
 void log_source_window_empty(LogSource *self);
 void log_source_flow_control_adjust(LogSource *self, guint32 window_size_increment);
+void log_source_flow_control_adjust_when_suspended(LogSource *self, guint32 window_size_increment);
 void log_source_flow_control_suspend(LogSource *self);
 
 void log_source_global_init(void);

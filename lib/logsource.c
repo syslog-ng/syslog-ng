@@ -53,17 +53,25 @@ log_source_window_empty(LogSource *self)
 }
 
 static inline void
-_flow_control_window_size_adjust(LogSource *self, guint32 window_size_increment)
+_flow_control_window_size_adjust(LogSource *self, guint32 window_size_increment, gboolean last_ack_type_is_suspended)
 {
-  guint32 old_window_size;
+  gboolean suspended;
+  gsize old_window_size = window_size_counter_add(&self->window_size, window_size_increment, &suspended);
 
-  window_size_increment += g_atomic_counter_get(&self->suspended_window_size);
-  old_window_size = g_atomic_counter_exchange_and_add(&self->window_size, window_size_increment);
-  g_atomic_counter_set(&self->suspended_window_size, 0);
+  msg_debug("Window size adjustment",
+            evt_tag_int("old_window_size", old_window_size),
+            evt_tag_int("window_size_increment", window_size_increment),
+            evt_tag_str("suspended_before_increment", suspended ? "TRUE" : "FALSE"),
+            evt_tag_str("last_ack_type_is_suspended", last_ack_type_is_suspended ? "TRUE" : "FALSE"));
 
-  if (old_window_size == 0)
+
+  gboolean need_to_resume_counter = !last_ack_type_is_suspended && suspended;
+  if (need_to_resume_counter)
+    window_size_counter_resume(&self->window_size);
+  if (old_window_size == 0 || need_to_resume_counter)
     log_source_wakeup(self);
-  if (g_atomic_counter_get(&self->window_size) == self->options->init_window_size)
+
+  if (old_window_size+window_size_increment == self->options->init_window_size)
     log_source_window_empty(self);
 }
 
@@ -133,7 +141,14 @@ _flow_control_rate_adjust(LogSource *self)
 void
 log_source_flow_control_adjust(LogSource *self, guint32 window_size_increment)
 {
-  _flow_control_window_size_adjust(self, window_size_increment);
+  _flow_control_window_size_adjust(self, window_size_increment, FALSE);
+  _flow_control_rate_adjust(self);
+}
+
+void
+log_source_flow_control_adjust_when_suspended(LogSource *self, guint32 window_size_increment)
+{
+  _flow_control_window_size_adjust(self, window_size_increment, TRUE);
   _flow_control_rate_adjust(self);
 }
 
@@ -153,11 +168,11 @@ log_source_msg_ack(LogMessage *msg, AckType ack_type)
 void
 log_source_flow_control_suspend(LogSource *self)
 {
-  msg_debug("Source has been suspended", log_pipe_location_tag(&self->super));
+  msg_debug("Source has been suspended",
+            log_pipe_location_tag(&self->super),
+            evt_tag_str("function", __FUNCTION__));
 
-  g_atomic_counter_set(&self->suspended_window_size, g_atomic_counter_get(&self->window_size));
-  g_atomic_counter_set(&self->window_size, 0);
-  _flow_control_rate_adjust(self);
+  window_size_counter_suspend(&self->window_size);
 }
 
 void
@@ -259,10 +274,14 @@ log_source_post(LogSource *self, LogMessage *msg)
   log_msg_add_ack(msg, &path_options);
   msg->ack_func = log_source_msg_ack;
 
-  old_window_size = g_atomic_counter_exchange_and_add(&self->window_size, -1);
+  old_window_size = window_size_counter_sub(&self->window_size, 1, NULL);
 
   if (G_UNLIKELY(old_window_size == 1))
-    msg_debug("Source has been suspended", log_pipe_location_tag(&self->super));
+    {
+      msg_debug("Source has been suspended",
+                log_pipe_location_tag(&self->super),
+                evt_tag_str("function", __FUNCTION__));
+    }
 
   /*
    * NOTE: this assertion validates that the source is not overflowing its
@@ -425,8 +444,8 @@ log_source_set_options(LogSource *self, LogSourceOptions *options,
    * configuration and we received a SIGHUP.  This means that opened
    * connections will not have their window_size changed. */
 
-  if (g_atomic_counter_get(&self->window_size) == -1)
-    g_atomic_counter_set(&self->window_size, options->init_window_size);
+  if ((gint)window_size_counter_get(&self->window_size, NULL) == -1)
+    window_size_counter_set(&self->window_size, options->init_window_size);
   self->options = options;
   if (self->stats_id)
     g_free(self->stats_id);
@@ -448,7 +467,7 @@ log_source_init_instance(LogSource *self, GlobalConfig *cfg)
   self->super.free_fn = log_source_free;
   self->super.init = log_source_init;
   self->super.deinit = log_source_deinit;
-  g_atomic_counter_set(&self->window_size, -1);
+  window_size_counter_set(&self->window_size, (gsize)-1);
   self->ack_tracker = NULL;
 }
 

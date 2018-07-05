@@ -158,6 +158,9 @@ late_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type
 
   ack_rec->acked = TRUE;
 
+  if (ack_type == AT_SUSPENDED)
+    log_source_flow_control_suspend(self->super.source);
+
   late_ack_tracker_lock(s);
   {
     ack_range_length = _get_continuous_range_length(self);
@@ -172,7 +175,7 @@ late_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type
         _drop_range(self, ack_range_length);
 
         if (ack_type == AT_SUSPENDED)
-          log_source_flow_control_suspend(self->super.source);
+          log_source_flow_control_adjust_when_suspended(self->super.source, ack_range_length);
         else
           log_source_flow_control_adjust(self->super.source, ack_range_length);
 
