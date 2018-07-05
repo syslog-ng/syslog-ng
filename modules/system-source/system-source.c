@@ -26,6 +26,7 @@
 #include "messages.h"
 #include "plugin.h"
 #include "plugin-types.h"
+#include "str-utils.h"
 
 #include <fcntl.h>
 #include <sys/utsname.h>
@@ -42,6 +43,29 @@
 #include <sys/sysctl.h>
 #include <inttypes.h>
 #endif
+
+static gboolean
+_system_normalized_compare(const gchar *s1, const gchar *s2)
+{
+  gchar *normalized_s1 = __normalize_key(s1);
+  gchar *normalized_s2 = __normalize_key(s2);
+  gboolean result = g_ascii_strcasecmp(s1, s2) == 0;
+  g_free(normalized_s1);
+  g_free(normalized_s2);
+  return result;
+}
+
+static gboolean
+_system_option_normalized_test_and_remove(CfgArgs *args, const gchar *option, const gchar *test)
+{
+  const gchar *option_string = cfg_args_get(args, option);
+  if (option_string == NULL)
+    return FALSE;
+
+  gboolean result = _system_normalized_compare(option_string, test);
+  cfg_args_remove(args, option);
+  return result;
+}
 
 static void
 system_sysblock_add_unix_dgram_driver(GString *sysblock, const gchar *path,
@@ -216,48 +240,24 @@ system_sysblock_add_linux_kmsg(GString *sysblock)
                              "kernel", "kernel", format, TRUE);
 }
 
-static gboolean
-_is_running_in_linux_container(void)
-{
-  FILE *f;
-  char line[2048];
-  gboolean container = FALSE;
-
-  f = fopen("/proc/1/cgroup", "r");
-  if (!f)
-    return FALSE;
-
-  while (fgets(line, sizeof(line), f) != NULL)
-    {
-      if (line[strlen(line) - 2] != '/')
-        {
-          container = TRUE;
-          break;
-        }
-    }
-
-  fclose (f);
-
-  return container;
-}
-
 static void
-system_sysblock_add_linux(GString *sysblock)
+system_sysblock_add_linux(GString *sysblock, const gboolean exclude_kernel_messages)
 {
   if (service_management_get_type() == SMT_SYSTEMD)
     system_sysblock_add_systemd_source(sysblock);
   else
     {
       system_sysblock_add_unix_dgram(sysblock, "/dev/log", NULL, "8192");
-      if (!_is_running_in_linux_container())
+      if (!exclude_kernel_messages)
         system_sysblock_add_linux_kmsg(sysblock);
     }
 }
 
 static gboolean
-system_generate_system_transports(GString *sysblock)
+system_generate_system_transports(GString *sysblock, CfgArgs *args)
 {
   struct utsname u;
+  gboolean exclude_kernel_messages = _system_option_normalized_test_and_remove(args, "exclude-kmsg", "yes");
 
   if (uname(&u) < 0)
     {
@@ -268,7 +268,7 @@ system_generate_system_transports(GString *sysblock)
 
   if (strcmp(u.sysname, "Linux") == 0)
     {
-      system_sysblock_add_linux(sysblock);
+      system_sysblock_add_linux(sysblock, exclude_kernel_messages);
     }
   else if (strcmp(u.sysname, "SunOS") == 0)
     {
@@ -292,7 +292,8 @@ system_generate_system_transports(GString *sysblock)
   else if (strcmp(u.sysname, "GNU/kFreeBSD") == 0)
     {
       system_sysblock_add_unix_dgram(sysblock, "/var/run/log", NULL, NULL);
-      system_sysblock_add_freebsd_klog(sysblock, u.release);
+      if (!exclude_kernel_messages)
+        system_sysblock_add_freebsd_klog(sysblock, u.release);
     }
   else if (strcmp(u.sysname, "HP-UX") == 0)
     {
@@ -350,7 +351,7 @@ system_source_generate(CfgBlockGenerator *self, GlobalConfig *cfg, CfgArgs *args
                   "channel {\n"
                   "    source {\n");
 
-  if (!system_generate_system_transports(sysblock))
+  if (!system_generate_system_transports(sysblock, args))
     {
       goto exit;
     }
