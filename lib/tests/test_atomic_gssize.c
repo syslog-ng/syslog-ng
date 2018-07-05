@@ -57,3 +57,16 @@ Test(test_atomic_gssize, use_as_unsigned)
   atomic_gssize_dec(&a);
   cr_assert_eq(atomic_gssize_get_unsigned(&a), G_MAXSIZE);
 }
+
+Test(test_atomic_gssize, or_xor_and)
+{
+  atomic_gssize a;
+  atomic_gssize_set(&a, 1);
+  atomic_gssize_or(&a, 2);
+  cr_assert_eq(atomic_gssize_get_unsigned(&a), 3);
+  atomic_gssize_xor(&a, 3);
+  cr_assert_eq(atomic_gssize_get_unsigned(&a), 0);
+  atomic_gssize_set(&a, 3);
+  atomic_gssize_and(&a, 2);
+  cr_assert_eq(atomic_gssize_get_unsigned(&a), 2);
+}

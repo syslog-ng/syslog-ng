@@ -94,4 +94,21 @@ atomic_gssize_racy_set(atomic_gssize *a, gssize value)
   a->value = value;
 }
 
+static inline gsize
+atomic_gssize_or(atomic_gssize *a, gsize value)
+{
+  return g_atomic_pointer_or(&a->value, value);
+}
+
+static inline gsize
+atomic_gssize_xor(atomic_gssize *a, gsize value)
+{
+  return g_atomic_pointer_xor(&a->value, value);
+}
+
+static inline gsize
+atomic_gssize_and(atomic_gssize *a, gsize value)
+{
+  return g_atomic_pointer_and(&a->value, value);
+}
 #endif
