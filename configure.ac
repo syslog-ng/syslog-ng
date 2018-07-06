@@ -1488,13 +1488,17 @@ fi
 
 
 if test "x$enable_linux_caps" = "xyes" -o "x$enable_linux_caps" = "xauto"; then
-        if test "x$ac_cv_header_sys_capability_h" = "xyes"; then
-                AC_CHECK_LIB(cap, cap_set_proc, LIBCAP_LIBS="-lcap"; has_linux_caps="yes", has_linux_caps="no")
-        else
-                has_linux_caps="no"
+        PKG_CHECK_MODULES(LIBCAP, libcap, has_linux_caps="yes", has_linux_caps="no")
+
+        if test "x$has_linux_caps" = "xno"; then
+                if test "x$ac_cv_header_sys_capability_h" = "xyes"; then
+                        AC_CHECK_LIB(cap, cap_set_proc, LIBCAP_LIBS="-lcap"; has_linux_caps="yes", has_linux_caps="no")
+                else
+                        has_linux_caps="no"
+                fi
+                AC_MSG_CHECKING(whether to enable Linux capability support)
+                AC_MSG_RESULT([$has_linux_caps])
         fi
-        AC_MSG_CHECKING(whether to enable Linux capability support)
-        AC_MSG_RESULT([$has_linux_caps])
 
         if test "x$enable_linux_caps" = "xyes" -a "x$has_linux_caps" = "xno"; then
            AC_MSG_ERROR([Cannot enable Linux capability support.])
@@ -1603,7 +1607,7 @@ if test "x$module_path" = "x"; then
 	java_module_path="$moduledir"/java-modules
 fi
 
-CPPFLAGS="$CPPFLAGS $GLIB_CFLAGS $EVTLOG_CFLAGS $PCRE_CFLAGS $OPENSSL_CFLAGS $LIBNET_CFLAGS $LIBDBI_CFLAGS $IVYKIS_CFLAGS -D_GNU_SOURCE -D_DEFAULT_SOURCE -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
+CPPFLAGS="$CPPFLAGS $GLIB_CFLAGS $EVTLOG_CFLAGS $PCRE_CFLAGS $OPENSSL_CFLAGS $LIBNET_CFLAGS $LIBDBI_CFLAGS $IVYKIS_CFLAGS $LIBCAP_CFLAGS -D_GNU_SOURCE -D_DEFAULT_SOURCE -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
 
 ########################################################
 ## NOTES: on how syslog-ng is linked
