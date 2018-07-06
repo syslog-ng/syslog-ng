@@ -40,6 +40,7 @@
 #include "rewrite/rewrite-expr-parser.h"
 #include "logmatcher.h"
 #include "logthrdestdrv.h"
+#include "str-utils.h"
 
 /* uses struct declarations instead of the typedefs to avoid having to
  * include logreader/logwriter/driver.h, which defines the typedefs.  This
@@ -444,6 +445,7 @@ DNSCacheOptions *last_dns_cache_options;
 
 %type	<cptr> string
 %type	<cptr> string_or_number
+%type	<cptr> normalized_flag
 %type   <ptr> string_list
 %type   <ptr> string_list_build
 %type   <num> facility_string
@@ -1060,6 +1062,10 @@ string_or_number
         : string                                { $$ = $1; }
         | LL_NUMBER                             { $$ = strdup(lexer->token_text->str); }
         | LL_FLOAT                              { $$ = strdup(lexer->token_text->str); }
+        ;
+
+normalized_flag
+        : string                                { $$ = normalize_flag($1); free($1); }
         ;
 
 string_list

@@ -81,6 +81,7 @@ g_string_append_unichar_optimized(GString *string, gunichar wc)
   } while (0)
 
 gchar *__normalize_key(const gchar *buffer);
+gchar *normalize_flag(const gchar *buffer);
 
 
 /* This version of strchr() is optimized for cases where the string we are
