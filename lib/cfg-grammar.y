@@ -799,7 +799,7 @@ log_flags
 	;
 
 log_flags_items
-	: string log_flags_items		{ $$ = log_expr_node_lookup_flag($1) | $2; free($1); }
+	: normalized_flag log_flags_items	{ $$ = log_expr_node_lookup_flag($1) | $2; free($1); }
 	|					{ $$ = 0; }
 	;
 

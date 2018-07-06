@@ -572,15 +572,15 @@ log_expr_node_new_conditional_with_block(LogExprNode *block, YYLTYPE *yylloc)
 gint
 log_expr_node_lookup_flag(const gchar *flag)
 {
-  if (strcmp(flag, "catch-all") == 0 || strcmp(flag, "catchall") == 0 || strcmp(flag, "catch_all") == 0)
+  if (strcmp(flag, "catch-all") == 0 || strcmp(flag, "catchall") == 0)
     return LC_CATCHALL;
   else if (strcmp(flag, "fallback") == 0)
     return LC_FALLBACK;
   else if (strcmp(flag, "final") == 0)
     return LC_FINAL;
-  else if (strcmp(flag, "flow_control") == 0 || strcmp(flag, "flow-control") == 0)
+  else if (strcmp(flag, "flow-control") == 0)
     return LC_FLOW_CONTROL;
-  else if (strcmp(flag, "drop_unmatched") == 0 || strcmp(flag, "drop-unmatched") == 0)
+  else if (strcmp(flag, "drop-unmatched") == 0)
     return LC_DROP_UNMATCHED;
   msg_error("Unknown log statement flag", evt_tag_str("flag", flag));
   return 0;
