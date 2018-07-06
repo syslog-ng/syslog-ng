@@ -265,7 +265,6 @@ _perform_inserts(LogThreadedDestDriver *self)
 
       _process_result(self, result);
 
-
       log_msg_unref(msg);
       msg_set_context(NULL);
       log_msg_refcache_stop();
@@ -278,7 +277,11 @@ _perform_inserts(LogThreadedDestDriver *self)
         }
     }
   self->rewound_batch_size = 0;
+}
 
+static void
+_perform_flush(LogThreadedDestDriver *self)
+{
   /* NOTE: earlier we had a condition on only calling flush() if batch_size
    * is non-zero.  This was removed, as the language bindings that were done
    * _before_ the batching support in LogThreadedDestDriver relies on
@@ -287,7 +290,7 @@ _perform_inserts(LogThreadedDestDriver *self)
    */
   if (!self->suspended && self->worker.flush)
     {
-      result = self->worker.flush(self);
+      worker_insert_result_t result = self->worker.flush(self);
       _process_result(self, result);
     }
 }
@@ -328,6 +331,7 @@ _perform_work(gpointer data)
                                  self, NULL))
     {
       _perform_inserts(self);
+      _perform_flush(self);
       if (!self->suspended)
         _start_watches(self);
     }
