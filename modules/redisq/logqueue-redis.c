@@ -54,8 +54,11 @@ _send_redis_command(LogQueueRedis *self, const char *format, ...)
 {
   va_list ap;
   va_start(ap, format);
+
+  g_static_mutex_lock(&self->rlock);
   redisReply *reply = redisvCommand(self->c, format, ap);
   va_end(ap);
+  g_static_mutex_unlock(&self->rlock);
 
   msg_debug("redisq: send redis command");
 
@@ -70,8 +73,11 @@ _get_redis_reply(LogQueueRedis *self, const char *format, ...)
 {
   va_list ap;
   va_start(ap, format);
+
+  g_static_mutex_lock(&self->rlock);
   redisReply *reply = redisvCommand(self->c, format, ap);
   va_end(ap);
+  g_static_mutex_unlock(&self->rlock);
 
   msg_debug("redisq: get redis reply");
 
