@@ -627,6 +627,48 @@ Test(logthrdestdrv, test_connect_failure_kicks_in_suspend_retry_logic_which_keep
   assert_grabbed_log_contains("Error establishing connection to server");
 }
 
+/* we batch 5 messages but then flush them only one-by-one */
+static worker_insert_result_t
+_insert_explicit_acks_message_success(LogThreadedDestDriver *s, LogMessage *msg)
+{
+  TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
+
+  self->insert_counter++;
+  if (self->super.batch_size < 5)
+    return WORKER_INSERT_RESULT_QUEUED;
+
+  self->flush_size += 1;
+  log_threaded_dest_driver_ack_messages(s, 1);
+  return WORKER_INSERT_RESULT_EXPLICIT_ACK_MGMT;
+}
+
+static worker_insert_result_t
+_flush_explicit_acks_message_success(LogThreadedDestDriver *s)
+{
+  TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
+
+  self->flush_size += 1;
+  log_threaded_dest_driver_ack_messages(s, 1);
+  return WORKER_INSERT_RESULT_EXPLICIT_ACK_MGMT;
+}
+
+Test(logthrdestdrv, test_explicit_ack_accept)
+{
+  dd->super.worker.insert = _insert_explicit_acks_message_success;
+  dd->super.worker.flush = _flush_explicit_acks_message_success;
+
+  _generate_messages(dd, 10);
+  _spin_for_counter_value(dd->super.queued_messages, 0);
+  cr_assert(dd->insert_counter == 10, "%d", dd->insert_counter);
+  cr_assert(dd->flush_size == 10);
+
+  cr_assert(stats_counter_get(dd->super.processed_messages) == 10);
+  cr_assert(stats_counter_get(dd->super.written_messages) == 10);
+  cr_assert(stats_counter_get(dd->super.dropped_messages) == 0);
+  cr_assert(stats_counter_get(dd->super.memory_usage) == 0);
+  cr_assert(dd->super.seq_num == 11, "%d", dd->super.seq_num);
+}
+
 MainLoopOptions main_loop_options = {0};
 
 static void

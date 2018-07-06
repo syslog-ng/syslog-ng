@@ -37,6 +37,7 @@ typedef enum
 {
   WORKER_INSERT_RESULT_DROP,
   WORKER_INSERT_RESULT_ERROR,
+  WORKER_INSERT_RESULT_EXPLICIT_ACK_MGMT,
   WORKER_INSERT_RESULT_SUCCESS,
   WORKER_INSERT_RESULT_QUEUED,
   WORKER_INSERT_RESULT_NOT_CONNECTED
@@ -91,6 +92,7 @@ struct _LogThreadedDestDriver
 };
 
 void log_threaded_dest_driver_ack_messages(LogThreadedDestDriver *self, gint batch_size);
+void log_threaded_dest_driver_drop_messages(LogThreadedDestDriver *self, gint batch_size);
 void log_threaded_dest_driver_rewind_messages(LogThreadedDestDriver *self, gint batch_size);
 
 gboolean log_threaded_dest_driver_deinit_method(LogPipe *s);

@@ -37,6 +37,33 @@ log_threaded_dest_driver_set_max_retries(LogDriver *s, gint max_retries)
   self->retries_max = max_retries;
 }
 
+/* this should be used in combination with WORKER_INSERT_RESULT_EXPLICIT_ACK_MGMT to actually confirm message delivery. */
+void
+log_threaded_dest_driver_ack_messages(LogThreadedDestDriver *self, gint batch_size)
+{
+  log_queue_ack_backlog(self->worker.queue, batch_size);
+  stats_counter_add(self->written_messages, batch_size);
+  self->retries_counter = 0;
+  self->batch_size -= batch_size;
+}
+
+void
+log_threaded_dest_driver_drop_messages(LogThreadedDestDriver *self, gint batch_size)
+{
+  log_queue_ack_backlog(self->worker.queue, batch_size);
+  stats_counter_add(self->dropped_messages, batch_size);
+  self->retries_counter = 0;
+  self->batch_size -= batch_size;
+}
+
+void
+log_threaded_dest_driver_rewind_messages(LogThreadedDestDriver *self, gint batch_size)
+{
+  log_queue_rewind_backlog(self->worker.queue, batch_size);
+  self->rewound_batch_size = self->batch_size;
+  self->batch_size -= batch_size;
+}
+
 static gchar *
 _format_seqnum_persist_name(LogThreadedDestDriver *self)
 {
@@ -144,29 +171,21 @@ _disconnect_and_suspend(LogThreadedDestDriver *self)
 void
 _accept_batch(LogThreadedDestDriver *self)
 {
-  log_queue_ack_backlog(self->worker.queue, self->batch_size);
-  stats_counter_add(self->written_messages, self->batch_size);
-  self->retries_counter = 0;
-  self->batch_size = 0;
+  log_threaded_dest_driver_ack_messages(self, self->batch_size);
 }
 
 /* NOTE: runs in the worker thread */
 void
 _drop_batch(LogThreadedDestDriver *self)
 {
-  log_queue_ack_backlog(self->worker.queue, self->batch_size);
-  stats_counter_add(self->dropped_messages, self->batch_size);
-  self->retries_counter = 0;
-  self->batch_size = 0;
+  log_threaded_dest_driver_drop_messages(self, self->batch_size);
 }
 
 /* NOTE: runs in the worker thread */
 void
 _rewind_batch(LogThreadedDestDriver *self)
 {
-  log_queue_rewind_backlog(self->worker.queue, self->batch_size);
-  self->rewound_batch_size = self->batch_size;
-  self->batch_size = 0;
+  log_threaded_dest_driver_rewind_messages(self, self->batch_size);
 }
 
 static void
@@ -215,6 +234,10 @@ _process_result(LogThreadedDestDriver *self, gint result)
                evt_tag_int("batch_size", self->batch_size));
       _rewind_batch(self);
       _disconnect_and_suspend(self);
+      break;
+
+    case WORKER_INSERT_RESULT_EXPLICIT_ACK_MGMT:
+      /* we require the instance to use explicit calls to ack_messages/rewind_messages */
       break;
 
     case WORKER_INSERT_RESULT_SUCCESS:
@@ -346,6 +369,12 @@ _perform_work(gpointer data)
                                  self, NULL))
     {
       _perform_inserts(self);
+      _perform_flush(self);
+      _schedule_restart(self);
+    }
+  else if (self->batch_size > 0)
+    {
+      /* nothing in queue, but pending batch size is still there perform flush */
       _perform_flush(self);
       _schedule_restart(self);
     }
