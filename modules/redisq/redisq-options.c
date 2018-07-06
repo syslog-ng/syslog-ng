@@ -66,6 +66,12 @@ redis_queue_options_key_prefix_set(RedisQueueOptions *self, gchar *keyprefix)
 }
 
 void
+redis_queue_options_conn_timeout_set(RedisQueueOptions *self, gint conn_timeout)
+{
+  self->conn_timeout = conn_timeout;
+}
+
+void
 redis_queue_options_check_plugin_settings(RedisQueueOptions *self)
 {
 
@@ -78,6 +84,7 @@ redis_queue_options_set_default_options(RedisQueueOptions *self)
   self->port = 6379;
   self->auth = NULL;
   self->keyprefix = g_strdup("syslogng_redisq");
+  self->conn_timeout = 1;
 }
 
 void
