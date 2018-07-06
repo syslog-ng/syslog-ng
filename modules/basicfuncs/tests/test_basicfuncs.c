@@ -172,6 +172,10 @@ Test(basicfuncs, test_str_funcs)
   assert_template_format("$(padding foo 10)", "       foo");
   assert_template_format("$(padding foo 10 x)", "xxxxxxxfoo");
   assert_template_format("$(padding foo 10 abc)", "abcabcafoo");
+  assert_template_format("$(padding foo 2)", "foo");        // longer macro than padding
+  assert_template_format("$(padding foo 3)", "foo");        // len(macro) == padding length
+  assert_template_format("$(padding foo 6 abc)", "abcfoo"); // len(padding string) == padding length
+  assert_template_format("$(padding foo 4 '')", " foo");    // padding string == ''
 
   assert_template_failure("$(binary)", "Incorrect parameters");
   assert_template_failure("$(binary abc)", "unable to parse abc");
