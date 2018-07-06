@@ -35,5 +35,6 @@ typedef struct _RedisQDestPlugin
 } RedisQDestPlugin;
 
 RedisQDestPlugin *redisq_dest_plugin_new(void);
+RedisQueueOptions *redisq_get_options(RedisQDestPlugin *self);
 
 #endif
