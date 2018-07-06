@@ -1758,13 +1758,13 @@ log_writer_options_destroy(LogWriterOptions *options)
 gint
 log_writer_options_lookup_flag(const gchar *flag)
 {
-  if (strcmp(flag, "syslog_protocol") == 0 || strcmp(flag, "syslog-protocol") == 0)
+  if (strcmp(flag, "syslog-protocol") == 0)
     return LWO_SYSLOG_PROTOCOL;
-  if (strcmp(flag, "no-multi-line") == 0 || strcmp(flag, "no_multi_line") == 0)
+  if (strcmp(flag, "no-multi-line") == 0)
     return LWO_NO_MULTI_LINE;
   if (strcmp(flag, "threaded") == 0)
     return LWO_THREADED;
-  if (strcmp(flag, "ignore-errors") == 0 || strcmp(flag, "ignore_errors") == 0)
+  if (strcmp(flag, "ignore-errors") == 0)
     return LWO_IGNORE_ERRORS;
   msg_error("Unknown dest writer flag", evt_tag_str("flag", flag));
   return 0;

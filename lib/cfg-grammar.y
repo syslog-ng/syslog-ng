@@ -1291,8 +1291,8 @@ dest_writer_option
 	;
 
 dest_writer_options_flags
-	: string dest_writer_options_flags      { $$ = log_writer_options_lookup_flag($1) | $2; free($1); }
-	|					{ $$ = 0; }
+	: normalized_flag dest_writer_options_flags   { $$ = log_writer_options_lookup_flag($1) | $2; free($1); }
+	|					      { $$ = 0; }
 	;
 
 file_perm_option
