@@ -34,7 +34,8 @@ static CfgLexerKeyword redisq_keywords[] =
   { "host",          KW_HOST },
   { "port",          KW_PORT },
   { "auth",          KW_AUTH },
-  { "key-prefix",    KW_KEY_PREFIX },
+  { "key_prefix",    KW_KEY_PREFIX },
+  { "conn_timeout",  KW_CONN_TIMEOUT },
   { NULL }
 };
 

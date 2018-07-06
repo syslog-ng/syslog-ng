@@ -63,6 +63,7 @@ RedisQueueOptions *last_options;
 %token KW_PORT
 %token KW_AUTH
 %token KW_KEY_PREFIX
+%token KW_CONN_TIMEOUT
 
 
 %%
@@ -87,10 +88,11 @@ dest_redisq_options
         ;
 
 dest_redisq_option
-        : KW_HOST '(' string ')'            { redis_queue_options_host_set(last_options, $3); free($3); }
-        | KW_PORT '(' positive_integer ')'  { redis_queue_options_port_set(last_options, $3); }
-        | KW_AUTH '(' string ')'            { redis_queue_options_auth_set(last_options, $3); free($3); }
-        | KW_KEY_PREFIX '(' string ')'      { redis_queue_options_key_prefix_set(last_options, $3); free($3); }
+        : KW_HOST '(' string ')'            		{ redis_queue_options_host_set(last_options, $3); free($3); }
+        | KW_PORT '(' positive_integer ')'  		{ redis_queue_options_port_set(last_options, $3); }
+        | KW_AUTH '(' string ')'            		{ redis_queue_options_auth_set(last_options, $3); free($3); }
+        | KW_KEY_PREFIX '(' string ')'      		{ redis_queue_options_key_prefix_set(last_options, $3); free($3); }
+        | KW_CONN_TIMEOUT '(' positive_integer ')'	{ redis_queue_options_conn_timeout_set(last_options, $3); }
         ;
 /* INCLUDE_RULES */
 

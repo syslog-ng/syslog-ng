@@ -99,7 +99,9 @@ static gboolean
 _redis_dp_connect(LogQueueRedis *self, gboolean reconnect)
 {
   redisReply *reply;
-  struct timeval timeout = {0, 5000};
+  struct timeval timeout = {0, 0};
+
+  timeout.tv_sec = self->redis_options->conn_timeout;
 
   msg_debug("redisq: Connecting to redis server");
 
@@ -128,13 +130,13 @@ _redis_dp_connect(LogQueueRedis *self, gboolean reconnect)
   if (self->redis_options->auth)
     if (!_authenticate_to_redis(self, self->redis_options->auth))
       {
-        msg_error("redisq: redis server: failed to authenticate");
+        msg_error("redisq: failed to authenticate with redis server");
         return FALSE;
       }
 
   if (!_check_connection_to_redis(self))
     {
-      msg_error("redisq: redis server: failed to connect");
+      msg_error("redisq: failed to connect with redis server");
       return FALSE;
     }
 
@@ -167,8 +169,13 @@ _get_length(LogQueue *s)
 
       reply = _get_redis_reply(self, "LLEN %s", redis_list_name);
 
-      if (reply && (reply->type == REDIS_REPLY_INTEGER))
-        list_len = reply->integer;
+      if (reply)
+        {
+          if (reply->type == REDIS_REPLY_INTEGER)
+            list_len = reply->integer;
+
+          freeReplyObject(reply);
+        }
     }
 
   msg_debug("redisq: get length", evt_tag_int("size", list_len));
@@ -262,6 +269,8 @@ static void
 _rewind_backlog(LogQueue *s, guint rewind_count)
 {
   LogQueueRedis *self = (LogQueueRedis *) s;
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  LogMessage *msg = NULL;
   guint i;
 
   msg_debug("redisq: rewind backlog msg");
@@ -270,25 +279,28 @@ _rewind_backlog(LogQueue *s, guint rewind_count)
 
   for (i = 0; i < rewind_count; i++)
     {
-      gpointer ptr_opt = g_queue_pop_tail (self->qbacklog);
-      gpointer ptr_msg = g_queue_pop_tail (self->qbacklog);
-
-      if (!self->write_message(self, ptr_msg, ptr_opt))
+      if (self->qbacklog->length > 0)
         {
-          msg_error("redisq: Pushing backlog msg to redis server failed");
-        }
+          msg = g_queue_pop_head (self->qbacklog);
+          POINTER_TO_LOG_PATH_OPTIONS (g_queue_pop_head (self->qbacklog), &path_options);
 
-      stats_counter_dec(self->super.queued_messages);
-      stats_counter_sub(self->super.memory_usage, log_msg_get_size(ptr_msg));
+          if (!self->write_message(self, msg, &path_options))
+            {
+              msg_error("redisq: Pushing backlog msg to redis server failed");
+            }
+
+          stats_counter_dec(self->super.queued_messages);
+          stats_counter_sub(self->super.memory_usage, log_msg_get_size(msg));
+        }
     }
 }
 
 void
 _backlog_all(LogQueue *s)
 {
-  //LogQueueRedis *self = (LogQueueRedis *) s;
-
   msg_debug("redisq: backlog all");
+
+  _rewind_backlog(s, -1);
 }
 
 static void
@@ -296,7 +308,7 @@ _free(LogQueue *s)
 {
   LogQueueRedis *self = (LogQueueRedis *) s;
 
-  msg_debug("redisq: free up queue");
+  msg_debug("redisq: free up");
 
   _empty_queue(self->qbacklog);
   g_queue_free(self->qbacklog);
@@ -327,21 +339,25 @@ _read_message(LogQueueRedis *self, LogPathOptions *path_options)
   g_snprintf(redis_list_name, sizeof(redis_list_name), "%s_%s", self->redis_options->keyprefix, self->persist_name);
   reply = _get_redis_reply(self, "LRANGE %s 0 0", redis_list_name);
 
-  if (reply && (reply->elements > 0) && (reply->type == REDIS_REPLY_ARRAY))
+  if (reply)
     {
-      msg_debug("got msg from redis server");
+      if ((reply->elements > 0) && (reply->type == REDIS_REPLY_ARRAY))
+        {
+          msg_debug("redisq: got msg from redis server");
 
-      serialized = g_string_new_len(reply->element[0]->str, reply->element[0]->len);
-      g_string_set_size(serialized, reply->element[0]->len);
-      sa = serialize_string_archive_new(serialized);
+          serialized = g_string_new_len(reply->element[0]->str, reply->element[0]->len);
+          g_string_set_size(serialized, reply->element[0]->len);
+          sa = serialize_string_archive_new(serialized);
 
-      msg = log_msg_new_empty();
+          msg = log_msg_new_empty();
 
-      if (!log_msg_deserialize(msg, sa))
-        msg_error("Can't read correct message from redis server");
+          if (!log_msg_deserialize(msg, sa))
+            msg_error("Can't read correct message from redis server");
 
-      serialize_archive_free(sa);
-      g_string_free(serialized, TRUE);
+          serialize_archive_free(sa);
+          g_string_free(serialized, TRUE);
+        }
+
       freeReplyObject(reply);
     }
 
@@ -385,7 +401,7 @@ _delete_message(LogQueueRedis *self)
 
   if (_check_connection_to_redis(self))
     {
-      msg_debug("redisq: removing msg to redis db");
+      msg_debug("redisq: removing msg from redis list");
       g_snprintf(redis_list_name, sizeof(redis_list_name), "%s_%s", self->redis_options->keyprefix, self->persist_name);
 
       removed = _send_redis_command(self, "LPOP %s", redis_list_name);
