@@ -312,6 +312,22 @@ _message_became_available_callback(gpointer user_data)
 }
 
 static void
+_schedule_restart(LogThreadedDestDriver *self)
+{
+  if (!self->suspended)
+    _start_watches(self);
+}
+
+static void
+_schedule_restart_on_throttle_timeout(LogThreadedDestDriver *self, gint timeout_msec)
+{
+  iv_validate_now();
+  self->timer_throttle.expires = iv_now;
+  timespec_add_msec(&self->timer_throttle.expires, timeout_msec);
+  iv_timer_register(&self->timer_throttle);
+}
+
+static void
 _perform_work(gpointer data)
 {
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)data;
@@ -325,26 +341,21 @@ _perform_work(gpointer data)
     {
       _connect(self);
     }
-
   else if (log_queue_check_items(self->worker.queue, &timeout_msec,
                                  _message_became_available_callback,
                                  self, NULL))
     {
       _perform_inserts(self);
       _perform_flush(self);
-      if (!self->suspended)
-        _start_watches(self);
+      _schedule_restart(self);
     }
   else if (timeout_msec != 0)
     {
       /* NOTE: in this case we don't need to reset parallel push
        * notification, as check_items returned with a timeout.  No callback
        * is set up at this time.  */
+      _schedule_restart_on_throttle_timeout(self, timeout_msec);
 
-      iv_validate_now();
-      self->timer_throttle.expires = iv_now;
-      timespec_add_msec(&self->timer_throttle.expires, timeout_msec);
-      iv_timer_register(&self->timer_throttle);
     }
   else
     {
