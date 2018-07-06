@@ -47,7 +47,7 @@ CfgParser redisq_parser =
   .name = "redis_queue",
   .keywords = redisq_keywords,
   .parse = (int (*)(CfgLexer *lexer, gpointer *instance, gpointer arg)) redisq_parse,
-  .cleanup = (void (*)(gpointer)) log_pipe_unref,
+  .cleanup = (void (*)(gpointer)) log_driver_plugin_free,
 
 };
 

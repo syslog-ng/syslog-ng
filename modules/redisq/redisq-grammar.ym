@@ -76,8 +76,8 @@ dest_redisq
         : KW_REDIS_QUEUE
           {
             last_plugin = redisq_dest_plugin_new();
-            *instance = &last_plugin->super;
-            last_options = &last_plugin->options;
+            *instance = (LogDriverPlugin*)last_plugin;
+            last_options = redisq_get_options(last_plugin);
           }
           '(' dest_redisq_options ')' { redis_queue_options_check_plugin_settings(last_options); }
         ;

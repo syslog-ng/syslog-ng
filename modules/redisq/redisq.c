@@ -21,10 +21,10 @@
  *
  */
 
+#include "redisq.h"
+
 #include "driver.h"
 #include "messages.h"
-
-#include "redisq.h"
 #include "logqueue-redis.h"
 #include "persist-state.h"
 
@@ -90,8 +90,14 @@ _free(LogDriverPlugin *s)
   msg_debug("redisq: plugin free");
 
   redis_queue_options_destroy(&self->options);
+  log_driver_plugin_free_method(s);
 }
 
+RedisQueueOptions *
+redisq_get_options(RedisQDestPlugin *self)
+{
+  return &self->options;
+}
 
 RedisQDestPlugin *
 redisq_dest_plugin_new(void)
