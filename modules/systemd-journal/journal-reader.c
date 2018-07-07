@@ -233,6 +233,7 @@ _set_program(JournalReaderOptions *options, LogMessage *msg)
     }
   else
     {
+      g_free(value);
       value = g_strdup(_get_value_from_message(options, msg, "_COMM", &value_length));
       log_msg_set_value(msg, LM_V_PROGRAM, value, value_length);
     }
