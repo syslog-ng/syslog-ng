@@ -139,7 +139,11 @@ maxminddb_parser_free(LogPipe *s)
 
   g_free(self->database_path);
   g_free(self->prefix);
-  g_free(self->database);
+  if (self->database)
+    {
+      MMDB_close(self->database);
+      g_free(self->database);
+    }
 
   log_parser_free_method(s);
 }
