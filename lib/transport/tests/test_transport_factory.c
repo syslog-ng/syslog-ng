@@ -93,15 +93,15 @@ TestSuite(transport_factory, .init = app_startup, .fini = app_shutdown);
 
 Test(transport_factory, fake_transport_factory)
 {
-  FakeTransportFactory *fake_factory = (FakeTransportFactory *)_fake_transport_factory_new();
-  cr_expect_not_null(fake_factory->super.id);
+  TransportFactory *fake_factory = _fake_transport_factory_new();
+  cr_expect_not_null(fake_factory->id);
 
   gint fd = 11;
-  FakeTransport *fake_transport = (FakeTransport *) transport_factory_construct_transport(&fake_factory->super, fd);
+  FakeTransport *fake_transport = (FakeTransport *) transport_factory_construct_transport(fake_factory, fd);
   cr_expect_eq(fake_transport->constructed, TRUE);
   cr_expect_eq(fake_transport->super.read, _fake_read);
   cr_expect_eq(fake_transport->super.write, _fake_write);
   log_transport_free(&fake_transport->super);
 
-  transport_factory_free(&fake_factory->super);
+  transport_factory_free(fake_factory);
 }
