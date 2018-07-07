@@ -80,18 +80,12 @@ _transport_factory_construct(const TransportFactory *s, gint fd)
   return fake_transport;
 }
 
-static void
-_transport_factory_free(TransportFactory *s)
-{
-  FakeTransportFactory *self = (FakeTransportFactory *)s;
-}
 TransportFactory *
 _fake_transport_factory_new(void)
 {
   FakeTransportFactory *instance = g_new0(FakeTransportFactory, 1);
   instance->super.id = _fake_transport_factory_id();
   instance->super.construct_transport = _transport_factory_construct;
-  instance->super.free_fn = _transport_factory_free;
   return &instance->super;
 }
 
