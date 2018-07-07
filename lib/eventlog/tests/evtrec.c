@@ -16,5 +16,6 @@ main(void)
                    evt_tag_errno("test:error", EAGAIN),
                    NULL);
   evt_log(e);
+  evt_ctx_free(ctx);
   return 0;
 }
