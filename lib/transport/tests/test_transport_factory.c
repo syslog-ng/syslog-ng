@@ -66,7 +66,6 @@ _fake_transport_new(void)
 struct _FakeTransportFactory
 {
   TransportFactory super;
-  gboolean destroyed;
 };
 
 DEFINE_TRANSPORT_FACTORY_ID_FUN("fake", _fake_transport_factory_id);
@@ -85,9 +84,7 @@ static void
 _transport_factory_free(TransportFactory *s)
 {
   FakeTransportFactory *self = (FakeTransportFactory *)s;
-  self->destroyed = TRUE;
 }
-
 TransportFactory *
 _fake_transport_factory_new(void)
 {
@@ -104,7 +101,6 @@ Test(transport_factory, fake_transport_factory)
 {
   FakeTransportFactory *fake_factory = (FakeTransportFactory *)_fake_transport_factory_new();
   cr_expect_not_null(fake_factory->super.id);
-  cr_expect_eq(fake_factory->destroyed, FALSE);
 
   gint fd = 11;
   FakeTransport *fake_transport = (FakeTransport *) transport_factory_construct_transport(&fake_factory->super, fd);
@@ -114,5 +110,4 @@ Test(transport_factory, fake_transport_factory)
   log_transport_free(&fake_transport->super);
 
   transport_factory_free(&fake_factory->super);
-  cr_expect_eq(fake_factory->destroyed, TRUE);
 }
