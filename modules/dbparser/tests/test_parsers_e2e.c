@@ -57,9 +57,9 @@ _assert_pattern(PatternDB *patterndb, const gchar *pattern, const gchar *rule, g
   gboolean result;
   LogMessage *msg = log_msg_new_empty();
 
-  log_msg_set_value(msg, LM_V_HOST, MYHOST, strlen(MYHOST));
-  log_msg_set_value(msg, LM_V_PROGRAM, "test", strlen(MYHOST));
-  log_msg_set_value(msg, LM_V_MESSAGE, pattern, strlen(pattern));
+  log_msg_set_value(msg, LM_V_HOST, MYHOST, -1);
+  log_msg_set_value(msg, LM_V_PROGRAM, "test", -1);
+  log_msg_set_value(msg, LM_V_MESSAGE, pattern, -1);
 
   result = pattern_db_process(patterndb, msg);
 
