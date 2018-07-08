@@ -55,10 +55,10 @@ _send_redis_command(LogQueueRedis *self, const char *format, ...)
   va_list ap;
   va_start(ap, format);
 
-  g_static_mutex_lock(&self->rlock);
+  g_mutex_lock(self->redis_thread_mutex);
   redisReply *reply = redisvCommand(self->c, format, ap);
   va_end(ap);
-  g_static_mutex_unlock(&self->rlock);
+  g_mutex_unlock(self->redis_thread_mutex);
 
   msg_debug("redisq: send redis command");
 
@@ -74,10 +74,10 @@ _get_redis_reply(LogQueueRedis *self, const char *format, ...)
   va_list ap;
   va_start(ap, format);
 
-  g_static_mutex_lock(&self->rlock);
+  g_mutex_lock(self->redis_thread_mutex);
   redisReply *reply = redisvCommand(self->c, format, ap);
   va_end(ap);
-  g_static_mutex_unlock(&self->rlock);
+  g_mutex_unlock(self->redis_thread_mutex);
 
   msg_debug("redisq: get redis reply");
 
@@ -324,8 +324,9 @@ _free(LogQueue *s)
   self->persist_name = NULL;
   self->redis_options = NULL;
 
-  log_queue_free_method(&self->super);
   _redis_dp_disconnect(self);
+  g_mutex_free(self->redis_thread_mutex);
+  log_queue_free_method(s);
 }
 
 static LogMessage *
@@ -469,6 +470,7 @@ log_queue_redis_init_instance(RedisQueueOptions *options, const gchar *persist_n
 
   self->qbacklog = g_queue_new();
   self->c = NULL;
+  self->redis_thread_mutex = g_mutex_new();
   self->redis_options = options;
   self->persist_name = g_strdup(persist_name);
 

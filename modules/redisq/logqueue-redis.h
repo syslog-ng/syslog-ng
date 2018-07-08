@@ -46,7 +46,7 @@ struct _LogQueueRedis
 
   GQueue *qbacklog;
 
-  GStaticMutex rlock;
+  GMutex *redis_thread_mutex;
   redisContext *c;
   RedisQueueOptions *redis_options;
   gchar *persist_name;
