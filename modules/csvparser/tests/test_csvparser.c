@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2015 Balabit
+ * Copyright (c) 2008-2018 Balabit
  * Copyright (c) 2008-2015 Balázs Scheidler <balazs.scheidler@balabit.com>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -29,35 +29,737 @@
 #include "string-list.h"
 #include "cfg.h"
 #include "plugin.h"
+#include "scratch-buffers.h"
 
 #include <time.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-
-
-#define TEST_ASSERT(x, desc)    \
-  do        \
-    {         \
-        if (!(x))   \
-          {     \
-            fprintf(stderr, "Testcase failed: %s; msg='%s', cond='%s', value='%s', expected_value='%s'\n", desc, msg, #x, value, expected_value); \
-            exit(1);    \
-          }     \
-    }       \
-  while (0)
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
 
 MsgFormatOptions parse_options;
 
-int
-testcase(gchar *msg, guint parse_flags, gint max_columns, gint dialect, guint32 flags, gchar *delimiters, gchar *quotes,
-         gchar *null_value, const gchar *string_delims[], gchar *first_value, ...)
+typedef struct _csvparser_test_param
+{
+  const gchar *msg;
+  guint parse_flags;
+  gint max_columns;
+  gint dialect;
+  guint32 flags;
+  const gchar *delimiters;
+  const gchar *quotes;
+  const gchar *null_value;
+  const gchar *string_delims[2];
+  const gchar *expected_values[13];
+} CsvParserTestParam;
+
+ParameterizedTestParameters(parser, test_csv_parser)
+{
+  static CsvParserTestParam parser_params[] =
+  {
+    // string delim & single char & a char is in the string
+    {
+      .msg = "<15> openvpn[2499]: PTHREAD support :initialized",
+      .parse_flags = 0,
+      .max_columns = -1,
+      .dialect = CSV_SCANNER_ESCAPE_NONE,
+      .flags = 0,
+      .delimiters = " ",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {" :", NULL},
+      .expected_values = {"PTHREAD", "support", "initialized", NULL}
+    },
+
+    // string delim & single char & a char not in the string
+    {
+      .msg = "<15> openvpn[2499]: PTHREAD,support :initialized",
+      .parse_flags = 0,
+      .max_columns = -1,
+      .dialect = CSV_SCANNER_ESCAPE_NONE,
+      .flags = 0,
+      .delimiters = ",",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {" :", NULL},
+      .expected_values = {"PTHREAD", "support", "initialized", NULL}
+    },
+
+    // string delim & multi char & a char is in the string
+    {
+      .msg = "<15> openvpn[2499]: PTHREAD support :initialized",
+      .parse_flags = 0,
+      .max_columns = -1,
+      .dialect = CSV_SCANNER_ESCAPE_NONE,
+      .flags = 0,
+      .delimiters = " :",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {" :", NULL},
+      .expected_values = {"PTHREAD", "support", "initialized", NULL}
+    },
+
+    // string delim & multi char & a char not in the string
+    {
+      .msg = "<15> openvpn[2499]: PTHREAD,support :initialized",
+      .parse_flags = 0,
+      .max_columns = -1,
+      .dialect = CSV_SCANNER_ESCAPE_NONE,
+      .flags = 0,
+      .delimiters = ";,",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {" :", NULL},
+      .expected_values = {"PTHREAD", "support", "initialized", NULL}
+    },
+
+    // quote + string delim & multi char & char is in the string too
+    {
+      .msg = "<15> openvpn[2499]: 'PTHREAD' 'support' :'initialized'",
+      .parse_flags = 0,
+      .max_columns = -1,
+      .dialect = CSV_SCANNER_ESCAPE_NONE,
+      .flags = 0,
+      .delimiters = " :",
+      .quotes = "''",
+      .null_value = NULL,
+      .string_delims = {" :", NULL},
+      .expected_values = {"PTHREAD", "support", "initialized", NULL}
+    },
+
+    // BE + quote + string delim & multi char & char is in the string too
+    {
+      .msg = "<15> openvpn[2499]: 'PTHRE\\\'AD' 'support' :'initialized'",
+      .parse_flags = 0,
+      .max_columns = -1,
+      .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
+      .flags = 0,
+      .delimiters = " :",
+      .quotes = "''",
+      .null_value = NULL,
+      .string_delims = {" :", NULL},
+      .expected_values = {"PTHRE'AD", "support", "initialized", NULL}
+    },
+
+    // DCE + quote + string delim & multi char & char not in the string
+    {
+      .msg = "<15> openvpn[2499]: 'PTHREAD','sup''port' :'initialized'",
+      .parse_flags = 0,
+      .max_columns = -1,
+      .dialect = CSV_SCANNER_ESCAPE_DOUBLE_CHAR,
+      .flags = 0,
+      .delimiters = ";,",
+      .quotes = "''",
+      .null_value = NULL,
+      .string_delims = {" :", NULL},
+      .expected_values = {"PTHREAD", "sup'port", "initialized", NULL}
+    },
+
+    {
+      .msg = "<15> openvpn[2499]: PTHREAD support initialized",
+      .parse_flags = 0,
+      .max_columns = 3,
+      .dialect = CSV_SCANNER_ESCAPE_NONE,
+      .flags = 0,
+      .delimiters = " ",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {NULL},
+      .expected_values = {"PTHREAD", "support", "initialized", NULL}
+    },
+
+    {
+      .msg = "<16> openvpn[2499]: PTHREAD support initialized",
+      .parse_flags = 0,
+      .max_columns = 2,
+      .dialect = CSV_SCANNER_ESCAPE_NONE,
+      .flags = CSV_SCANNER_DROP_INVALID,
+      .delimiters = " ",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {NULL},
+      .expected_values = {NULL}
+    },
+
+    {
+      .msg = "<17> openvpn[2499]: PTHREAD support initialized",
+      .parse_flags = 0,
+      .max_columns = 2,
+      .dialect = CSV_SCANNER_ESCAPE_NONE,
+      .flags = CSV_SCANNER_GREEDY,
+      .delimiters = " ",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {NULL},
+      .expected_values = {"PTHREAD", "support initialized", NULL}
+    },
+
+    {
+      .msg = "<18> openvpn[2499]: PTHREAD support initialized",
+      .parse_flags = 0,
+      .max_columns = -1,
+      .dialect = CSV_SCANNER_ESCAPE_NONE,
+      .flags = 0,
+      .delimiters = " ,;",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {NULL},
+      .expected_values = {"PTHREAD", "support", "initialized", NULL}
+    },
+
+    {
+      .msg = "<19> openvpn[2499]: PTHREAD support initialized",
+      .parse_flags = 0,
+      .max_columns = -1,
+      .dialect = CSV_SCANNER_ESCAPE_NONE,
+      .flags = 0,
+      .delimiters = " ,;",
+      .quotes = NULL,
+      .null_value = "support",
+      .string_delims = {NULL},
+      .expected_values = {"PTHREAD", "", "initialized", NULL}
+    },
+
+    {
+      .msg = "<15> openvpn[2499]: \"PTHREAD\" \"support\" \"initialized\"",
+      .parse_flags = 0,
+      .max_columns = -1,
+      .dialect = CSV_SCANNER_ESCAPE_NONE,
+      .flags = 0,
+      .delimiters = " ",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {NULL},
+      .expected_values = {"PTHREAD", "support", "initialized", NULL}
+    },
+
+    {
+      .msg = "<15> openvpn[2499]: \"  PTHREAD  \" \" support\" \"initialized \"",
+      .parse_flags = 0,
+      .max_columns = -1,
+      .dialect = CSV_SCANNER_ESCAPE_NONE,
+      .flags = CSV_SCANNER_STRIP_WHITESPACE,
+      .delimiters = " ",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {NULL},
+      .expected_values = {"PTHREAD", "support", "initialized", NULL}
+    },
+
+    {
+      .msg = "<15> openvpn[2499]: \"PTHREAD support\" \"initialized\"",
+      .parse_flags = 0,
+      .max_columns = -1,
+      .dialect = CSV_SCANNER_ESCAPE_NONE,
+      .flags = 0,
+      .delimiters = " ",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {NULL},
+      .expected_values = {"PTHREAD support", "initialized", NULL}
+    },
+
+    {
+      .msg = "<15> openvpn[2499]: \"PTHREAD support initialized\"",
+      .parse_flags = 0,
+      .max_columns = -1,
+      .dialect = CSV_SCANNER_ESCAPE_NONE,
+      .flags = 0,
+      .delimiters = " ",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {NULL},
+      .expected_values = {"PTHREAD support initialized", NULL}
+    },
+
+    {
+      .msg = "<15> openvpn[2499]: \"PTHREAD support initialized",
+      .parse_flags = 0,
+      .max_columns = -1,
+      .dialect = CSV_SCANNER_ESCAPE_NONE,
+      .flags = 0,
+      .delimiters = " ",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {NULL},
+      .expected_values = {"PTHREAD support initialized", NULL}
+    },
+
+    {
+      .msg = "<20> openvpn[2499]: PTHREAD support initialized",
+      .parse_flags = 0,
+      .max_columns = -1,
+      .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
+      .flags = 0,
+      .delimiters = " ",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {NULL},
+      .expected_values = {"PTHREAD", "support", "initialized", NULL}
+    },
+
+    {
+      .msg = "<21> openvpn[2499]: PTHREAD support initialized",
+      .parse_flags = 0,
+      .max_columns = 2,
+      .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
+      .flags = CSV_SCANNER_GREEDY,
+      .delimiters = " ",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {NULL},
+      .expected_values = {"PTHREAD", "support initialized", NULL}
+    },
+
+    {
+      .msg = "<22> openvpn[2499]: PTHREAD support initialized",
+      .parse_flags = 0,
+      .max_columns = -1,
+      .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
+      .flags = 0,
+      .delimiters = " ;,",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {NULL},
+      .expected_values = {"PTHREAD", "support", "initialized", NULL}
+    },
+
+    {
+      .msg = "<15> openvpn[2499]: \"PTHREAD\" \"support\" \"initialized\"",
+      .parse_flags = 0,
+      .max_columns = -1,
+      .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
+      .flags = 0,
+      .delimiters = " ",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {NULL},
+      .expected_values = {"PTHREAD", "support", "initialized", NULL}
+    },
+
+    {
+      .msg = "<15> openvpn[2499]: \"PTHREAD\" \"support\" \"initialized\"",
+      .parse_flags = 0,
+      .max_columns = 2,
+      .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
+      .flags = CSV_SCANNER_GREEDY,
+      .delimiters = " ",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {NULL},
+      .expected_values = {"PTHREAD", "\"support\" \"initialized\"", NULL}
+    },
+
+    {
+      .msg = "<15> openvpn[2499]: \"  PTHREAD \" \"  support\" \"initialized  \"",
+      .parse_flags = 0,
+      .max_columns = -1,
+      .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
+      .flags = CSV_SCANNER_STRIP_WHITESPACE,
+      .delimiters = " ",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {NULL},
+      .expected_values = {"PTHREAD", "support", "initialized", NULL}
+    },
+
+    {
+      .msg = "<15> openvpn[2499]: \"PTHREAD support\" \"initialized\"",
+      .parse_flags = 0,
+      .max_columns = -1,
+      .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
+      .flags = 0,
+      .delimiters = " ",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {NULL},
+      .expected_values = {"PTHREAD support", "initialized", NULL}
+    },
+
+    {
+      .msg = "<15> openvpn[2499]: \"PTHREAD \\\"support initialized\"",
+      .parse_flags = 0,
+      .max_columns = -1,
+      .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
+      .flags = 0,
+      .delimiters = " ",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {NULL},
+      .expected_values = {"PTHREAD \"support initialized", NULL}
+    },
+
+    {
+      .msg = "<15> openvpn[2499]: \"PTHREAD support initialized",
+      .parse_flags = 0,
+      .max_columns = -1,
+      .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
+      .flags = 0,
+      .delimiters = " ",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {NULL},
+      .expected_values = {"PTHREAD support initialized", NULL}
+    },
+
+    {
+      .msg = "<23> openvpn[2499]: PTHREAD support initialized",
+      .parse_flags = 0,
+      .max_columns = -1,
+      .dialect = CSV_SCANNER_ESCAPE_DOUBLE_CHAR,
+      .flags = 0,
+      .delimiters = " ",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {NULL},
+      .expected_values = {"PTHREAD", "support", "initialized", NULL}
+    },
+
+    {
+      .msg = "<15> openvpn[2499]: \"PTHREAD\" \"support\" \"initialized\"",
+      .parse_flags = 0,
+      .max_columns = -1,
+      .dialect = CSV_SCANNER_ESCAPE_DOUBLE_CHAR,
+      .flags = 0,
+      .delimiters = " ",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {NULL},
+      .expected_values = {"PTHREAD", "support", "initialized", NULL}
+    },
+
+    {
+      .msg = "<15> openvpn[2499]: \"PTHREAD\" \"support\" \"initialized\"",
+      .parse_flags = 0,
+      .max_columns = 2,
+      .dialect = CSV_SCANNER_ESCAPE_DOUBLE_CHAR,
+      .flags = CSV_SCANNER_GREEDY,
+      .delimiters = " ",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {NULL},
+      .expected_values = {"PTHREAD", "\"support\" \"initialized\"", NULL}
+    },
+
+    {
+      .msg = "<15> openvpn[2499]: \"  PTHREAD \" \"  support\" \"initialized  \"",
+      .parse_flags = 0,
+      .max_columns = -1,
+      .dialect = CSV_SCANNER_ESCAPE_DOUBLE_CHAR,
+      .flags = CSV_SCANNER_STRIP_WHITESPACE,
+      .delimiters = " ",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {NULL},
+      .expected_values = {"PTHREAD", "support", "initialized", NULL}
+    },
+
+    {
+      .msg = "<15> openvpn[2499]: \"  PTHREAD \" \"  support\" \"initialized  \"",
+      .parse_flags = 0,
+      .max_columns = 2,
+      .dialect = CSV_SCANNER_ESCAPE_DOUBLE_CHAR,
+      .flags = CSV_SCANNER_GREEDY + CSV_SCANNER_STRIP_WHITESPACE,
+      .delimiters = " ",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {NULL},
+      .expected_values = {"PTHREAD", "\"  support\" \"initialized  \"", NULL}
+    },
+
+    {
+      .msg = "<15> openvpn[2499]: \"PTHREAD support\" \"initialized\"",
+      .parse_flags = 0,
+      .max_columns = -1,
+      .dialect = CSV_SCANNER_ESCAPE_DOUBLE_CHAR,
+      .flags = 0,
+      .delimiters = " ",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {NULL},
+      .expected_values = {"PTHREAD support", "initialized", NULL}
+    },
+
+    {
+      .msg = "<15> openvpn[2499]: \"PTHREAD \"\"support initialized\"",
+      .parse_flags = 0,
+      .max_columns = -1,
+      .dialect = CSV_SCANNER_ESCAPE_DOUBLE_CHAR,
+      .flags = 0,
+      .delimiters = " ",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {NULL},
+      .expected_values = {"PTHREAD \"support initialized", NULL}
+    },
+
+    {
+      .msg = "<15> openvpn[2499]: \"PTHREAD support initialized",
+      .parse_flags = 0,
+      .max_columns = -1,
+      .dialect = CSV_SCANNER_ESCAPE_DOUBLE_CHAR,
+      .flags = 0,
+      .delimiters = " ",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {NULL},
+      .expected_values = {"PTHREAD support initialized", NULL}
+    },
+
+    {
+      .msg = "postfix/smtpd",
+      .parse_flags = LP_NOPARSE,
+      .max_columns = 2,
+      .dialect = CSV_SCANNER_ESCAPE_NONE,
+      .flags = CSV_SCANNER_GREEDY | CSV_SCANNER_DROP_INVALID,
+      .delimiters = "/",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {NULL},
+      .expected_values = {"postfix", "smtpd", NULL}
+    },
+
+    {
+      .msg = "postfix",
+      .parse_flags = LP_NOPARSE,
+      .max_columns = 3,
+      .dialect = CSV_SCANNER_ESCAPE_NONE,
+      .flags = CSV_SCANNER_GREEDY | CSV_SCANNER_DROP_INVALID,
+      .delimiters = "/",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {NULL},
+      .expected_values = {NULL}
+    },
+
+    {
+      .msg = "postfix/smtpd/ququ",
+      .parse_flags = LP_NOPARSE,
+      .max_columns = 2,
+      .dialect = CSV_SCANNER_ESCAPE_NONE,
+      .flags = CSV_SCANNER_GREEDY | CSV_SCANNER_DROP_INVALID,
+      .delimiters = "/",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {NULL},
+      .expected_values = {"postfix", "smtpd/ququ", NULL}
+    },
+
+    {
+      .msg = "Jul 27 19:55:33 myhost zabbix: ZabbixConnector.log : 19:55:32,782 INFO  [Thread-2834]     - [ZabbixEventSyncCommand] Processing   message <?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+      .parse_flags = LP_EXPECT_HOSTNAME,
+      .max_columns = 2,
+      .dialect = CSV_SCANNER_ESCAPE_NONE,
+      .flags = CSV_SCANNER_GREEDY,
+      .delimiters = " ",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {NULL},
+      .expected_values = {"ZabbixConnector.log",
+        ": 19:55:32,782 INFO  [Thread-2834]     - [ZabbixEventSyncCommand] Processing   message <?xml version=\"1.0\" encoding=\"UTF-8\"?>", NULL
+      }
+    },
+
+    {
+      .msg = "10.100.20.1 - - [31/Dec/2007:00:17:10 +0100] \"GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1\" 200 2708 \"-\" \"curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5\" 2 bugzilla.balabit",
+      .parse_flags = LP_NOPARSE,
+      .max_columns = -1,
+      .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
+      .flags = 0,
+      .delimiters = " ",
+      .quotes = "\"\"[]",
+      .null_value = "-",
+      .string_delims = {NULL},
+      .expected_values = {"10.100.20.1",
+        "",
+        "",
+        "31/Dec/2007:00:17:10 +0100",
+        "GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1",
+        "200",
+        "2708",
+        "",
+        "curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5",
+        "2",
+        "bugzilla.balabit",
+        NULL
+      }
+    },
+
+    {
+      .msg = "10.100.20.1 - - [31/Dec/2007:00:17:10 +0100] \"GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1\" 200 2708 \"-\" \"curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5\" 2 bugzilla.balabit",
+      .parse_flags = LP_NOPARSE,
+      .max_columns = 11,
+      .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
+      .flags = 0,
+      .delimiters = " ",
+      .quotes = "\"\"[]",
+      .null_value = "-",
+      .string_delims = {NULL},
+      .expected_values = {"10.100.20.1",
+        "",
+        "",
+        "31/Dec/2007:00:17:10 +0100",
+        "GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1",
+        "200",
+        "2708",
+        "",
+        "curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5", "2", "bugzilla.balabit",
+        NULL
+      }
+    },
+
+    {
+      .msg = "10.100.20.1 - - [31/Dec/2007:00:17:10 +0100] \"GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1\" 200 2708 \"-\" \"curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5\" 2 bugzilla.balabit",
+      .parse_flags = LP_NOPARSE,
+      .max_columns = 10,
+      .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
+      .flags = 0,
+      .delimiters = " ",
+      .quotes = "\"\"[]",
+      .null_value = "-",
+      .string_delims = {NULL},
+      .expected_values = {"10.100.20.1",
+        "",
+        "",
+        "31/Dec/2007:00:17:10 +0100",
+        "GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1",
+        "200",
+        "2708",
+        "",
+        "curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5",
+        "2",
+        NULL
+      }
+    },
+
+    {
+      .msg = "10.100.20.1 - - [31/Dec/2007:00:17:10 +0100] \"GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1\" 200 2708 \"-\" \"curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5\" 2 bugzilla.balabit",
+      .parse_flags = LP_NOPARSE,
+      .max_columns = 12,
+      .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
+      .flags = 0,
+      .delimiters = " ",
+      .quotes = "\"\"[]",
+      .null_value = "-",
+      .string_delims = {NULL},
+      .expected_values = {"10.100.20.1",
+        "",
+        "",
+        "31/Dec/2007:00:17:10 +0100",
+        "GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1",
+        "200",
+        "2708",
+        "",
+        "curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5",
+        "2",
+        "bugzilla.balabit",
+        "",
+        NULL
+      }
+    },
+
+    {
+      .msg = "10.100.20.1 - - [31/Dec/2007:00:17:10 +0100] \"GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1\" 200 2708 \"-\" \"curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5\" 2 bugzilla.balabit almafa",
+      .parse_flags = LP_NOPARSE,
+      .max_columns = 11,
+      .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
+      .flags = CSV_SCANNER_DROP_INVALID,
+      .delimiters = " ",
+      .quotes = "\"\"[]",
+      .null_value = "-",
+      .string_delims = {NULL},
+      .expected_values = {NULL}
+    },
+
+    {
+      .msg = "random.vhost 10.0.0.1 - \"GET /index.html HTTP/1.1\" 200",
+      .parse_flags = LP_NOPARSE,
+      .max_columns = 5,
+      .dialect = CSV_SCANNER_ESCAPE_NONE,
+      .flags = CSV_SCANNER_DROP_INVALID,
+      .delimiters = " ",
+      .quotes = "\"\"[]",
+      .null_value = "-",
+      .string_delims = {NULL},
+      .expected_values = {"random.vhost", "10.0.0.1", "", "GET /index.html HTTP/1.1", "200", NULL}
+    },
+
+    {
+      .msg = "random.vhost 10.0.0.1 - \"GET /index.html HTTP/1.1\" 200",
+      .parse_flags = LP_NOPARSE,
+      .max_columns = 5,
+      .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
+      .flags = CSV_SCANNER_DROP_INVALID,
+      .delimiters = " ",
+      .quotes = "\"\"[]",
+      .null_value = "-",
+      .string_delims = {NULL},
+      .expected_values = {"random.vhost", "10.0.0.1", "", "GET /index.html HTTP/1.1", "200", NULL}
+    },
+
+    /* greedy column can be empty */
+    {
+      .msg = "random.vhost 10.0.0.1 - \"GET /index.html HTTP/1.1\" 200",
+      .parse_flags = LP_NOPARSE,
+      .max_columns = 6,
+      .dialect = CSV_SCANNER_ESCAPE_NONE,
+      .flags = CSV_SCANNER_GREEDY | CSV_SCANNER_DROP_INVALID,
+      .delimiters = " ",
+      .quotes = "\"\"[]",
+      .null_value = "-",
+      .string_delims = {NULL},
+      .expected_values = {"random.vhost", "10.0.0.1", "", "GET /index.html HTTP/1.1", "200", "", NULL}
+    },
+
+    {
+      .msg = "random.vhost 10.0.0.1 - \"GET /index.html HTTP/1.1\" 200",
+      .parse_flags = LP_NOPARSE,
+      .max_columns = 6,
+      .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
+      .flags = CSV_SCANNER_GREEDY | CSV_SCANNER_DROP_INVALID,
+      .delimiters = " ",
+      .quotes = "\"\"[]",
+      .null_value = "-",
+      .string_delims = {NULL},
+      .expected_values = {"random.vhost", "10.0.0.1", "", "GET /index.html HTTP/1.1", "200", "", NULL}
+    },
+
+    {
+      .msg = "random.vhost\t10.0.0.1\t-\t\"GET /index.html HTTP/1.1\"\t200",
+      .parse_flags = LP_NOPARSE,
+      .max_columns = 6,
+      .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
+      .flags = 0,
+      .delimiters = "\t",
+      .quotes = "\"\"",
+      .null_value = "-",
+      .string_delims = {NULL},
+      .expected_values = {"random.vhost", "10.0.0.1", "", "GET /index.html HTTP/1.1", "200", "", NULL}
+    },
+
+    {
+      .msg = "random.vhost\t10.0.0.1\t-\t\"GET /index.html HTTP/1.1\"\t\t200",
+      .parse_flags = LP_NOPARSE,
+      .max_columns = 7,
+      .dialect = CSV_SCANNER_ESCAPE_BACKSLASH,
+      .flags = 0,
+      .delimiters = "\t",
+      .quotes = "\"\"",
+      .null_value = "-",
+      .string_delims = {NULL},
+      .expected_values = {"random.vhost", "10.0.0.1", "", "GET /index.html HTTP/1.1", "", "200", "", NULL}
+    },
+  };
+
+  return cr_make_param_array(CsvParserTestParam, parser_params, G_N_ELEMENTS(parser_params));
+}
+
+ParameterizedTest(CsvParserTestParam *param, parser, test_csv_parser)
 {
   LogMessage *logmsg;
   LogParser *p, *pclone;
-  gchar *expected_value;
   gint i;
-  va_list va;
   NVTable *nvtable;
 
   const gchar *column_array[] =
@@ -96,29 +798,28 @@ testcase(gchar *msg, guint parse_flags, gint max_columns, gint dialect, guint32 
   };
   gboolean success;
 
-  if (max_columns != -1)
+  if (param->max_columns != -1)
     {
-      g_assert(max_columns < (sizeof(column_array) / sizeof(column_array[0])));
-
-      column_array[max_columns] = NULL;
+      cr_assert(param->max_columns < (sizeof(column_array) / sizeof(column_array[0])));
+      column_array[param->max_columns] = NULL;
     }
 
-  parse_options.flags = parse_flags;
-  logmsg = log_msg_new(msg, strlen(msg), NULL, &parse_options);
+  parse_options.flags = param->parse_flags;
+  logmsg = log_msg_new(param->msg, strlen(param->msg), NULL, &parse_options);
 
   p = csv_parser_new(NULL);
-  csv_scanner_options_set_flags(csv_parser_get_scanner_options(p), flags);
-  csv_scanner_options_set_dialect(csv_parser_get_scanner_options(p), dialect);
+  csv_scanner_options_set_flags(csv_parser_get_scanner_options(p), param->flags);
+  csv_scanner_options_set_dialect(csv_parser_get_scanner_options(p), param->dialect);
   csv_scanner_options_set_columns(csv_parser_get_scanner_options(p), string_array_to_list(column_array));
-  if (delimiters)
-    csv_scanner_options_set_delimiters(csv_parser_get_scanner_options(p), delimiters);
-  if (quotes)
-    csv_scanner_options_set_quote_pairs(csv_parser_get_scanner_options(p), quotes);
-  if (null_value)
-    csv_scanner_options_set_null_value(csv_parser_get_scanner_options(p), null_value);
+  if (param->delimiters)
+    csv_scanner_options_set_delimiters(csv_parser_get_scanner_options(p), param->delimiters);
+  if (param->quotes)
+    csv_scanner_options_set_quote_pairs(csv_parser_get_scanner_options(p), param->quotes);
+  if (param->null_value)
+    csv_scanner_options_set_null_value(csv_parser_get_scanner_options(p), param->null_value);
 
-  if (string_delims)
-    csv_scanner_options_set_string_delimiters(csv_parser_get_scanner_options(p), string_array_to_list(string_delims));
+  csv_scanner_options_set_string_delimiters(csv_parser_get_scanner_options(p),
+                                            string_array_to_list(param->string_delims));
 
   pclone = (LogParser *) log_pipe_clone(&p->super);
   log_pipe_unref(&p->super);
@@ -127,49 +828,57 @@ testcase(gchar *msg, guint parse_flags, gint max_columns, gint dialect, guint32 
   success = log_parser_process(pclone, &logmsg, NULL, log_msg_get_value(logmsg, LM_V_MESSAGE, NULL), -1);
   nv_table_unref(nvtable);
 
-  if (success && !first_value)
-    {
-      fprintf(stderr, "unexpected match; msg=%s\n", msg);
-      exit(1);
-    }
-  if (!success && first_value)
-    {
-      fprintf(stderr, "unexpected non-match; msg=%s\n", msg);
-      exit(1);
-    }
+  cr_assert_not((success && !param->expected_values[0]), "unexpected match; msg=%s\n", param->msg);
+  cr_assert_not((!success && param->expected_values[0]), "unexpected non-match; msg=%s\n", param->msg);
+
   log_pipe_unref(&pclone->super);
 
-  va_start(va, first_value);
-  expected_value = first_value;
   i = 0;
-  while (expected_value && column_array[i])
+  while (param->expected_values[i] && column_array[i])
     {
       const gchar *value;
       gssize value_len;
 
       value = log_msg_get_value_by_name(logmsg, column_array[i], &value_len);
 
-      if (expected_value && expected_value[0])
+      if (param->expected_values[i] && param->expected_values[i][0])
         {
-          TEST_ASSERT(value && value[0], "expected value set, but no actual value");
-          TEST_ASSERT(strlen(expected_value) == value_len, "value length doesn't match actual length");
-          TEST_ASSERT(strncmp(value, expected_value, value_len) == 0, "value does not match expected value");
+          cr_assert(value
+                    && value[0],
+                    "Testcase failed: expected value set, but no actual value; msg=\n'%s'\n, cond='value && value[0]', value='%s', expected_value='%s'\n",
+                    param->msg,
+                    value,
+                    param->expected_values[i]);
+
+          cr_assert(strlen(param->expected_values[i]) == value_len,
+                    "Testcase failed: value length doesn't match actual length; msg=\n'%s'\n, cond='strlen(expected_value) == value_len', value_len='%d', strlen(expected_value)='%d', value=%s, expected_value=%s\n",
+                    param->msg, (int)value_len,
+                    (int)strlen(param->expected_values[i]),
+                    value,
+                    param->expected_values[i]);
+
+          cr_assert(strncmp(value, param->expected_values[i], value_len) == 0,
+                    "Testcase failed: value does not match expected value; msg=\n'%s'\n, cond='strncmp(value, expected_value, value_len) == 0', value='%s', expected_value='%s' value_len=%d\n",
+                    param->msg,
+                    value,
+                    param->expected_values[i],
+                    (int)value_len);
         }
       else
         {
-          TEST_ASSERT(!(value && value[0]), "expected unset, but actual value present");
+          cr_assert(!(value
+                      && value[0]),
+                    "Testcase failed: expected unset, but actual value present; msg='%s', cond='!(value && value[0])', value='%s', expected_value='%s'\n",
+                    param->msg, value, param->expected_values[i]);
         }
 
-      expected_value = va_arg(va, char *);
       i++;
     }
 
   log_msg_unref(logmsg);
-  return 1;
 }
 
-int
-main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
+void setup(void)
 {
   app_startup();
 
@@ -180,230 +889,12 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   cfg_load_module(configuration, "syslogformat");
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);
-
-  // string delim & single char & a char benne van a stringben is
-  const char *string_delims[] = {" :", NULL};
-  testcase("<15> openvpn[2499]: PTHREAD support :initialized", 0, -1, CSV_SCANNER_ESCAPE_NONE, 0, " ", NULL, NULL,
-           string_delims,
-           "PTHREAD", "support", "initialized", NULL);
-
-  // string delim & single char & a char nincs benne a stringben
-  testcase("<15> openvpn[2499]: PTHREAD,support :initialized", 0, -1, CSV_SCANNER_ESCAPE_NONE, 0, ",", NULL, NULL,
-           string_delims,
-           "PTHREAD", "support", "initialized", NULL);
-
-  // string delim & multi char & a char benne van a stringben is
-  testcase("<15> openvpn[2499]: PTHREAD support :initialized", 0, -1, CSV_SCANNER_ESCAPE_NONE, 0, " :", NULL, NULL,
-           string_delims,
-           "PTHREAD", "support", "initialized", NULL);
-
-  // string delim & multi char & a char nincs benne a stringben
-  testcase("<15> openvpn[2499]: PTHREAD,support :initialized", 0, -1, CSV_SCANNER_ESCAPE_NONE, 0, ";,", NULL, NULL,
-           string_delims,
-           "PTHREAD", "support", "initialized", NULL);
-
-  // quote + string delim & multi char & a char benne van a stringben is
-  testcase("<15> openvpn[2499]: 'PTHREAD' 'support' :'initialized'", 0, -1, CSV_SCANNER_ESCAPE_NONE, 0, " :", "''", NULL,
-           string_delims,
-           "PTHREAD", "support", "initialized", NULL);
-
-  // quote + string delim & multi char & a char nincs benne a stringben
-  testcase("<15> openvpn[2499]: 'PTHREAD','support' :'initialized'", 0, -1, CSV_SCANNER_ESCAPE_NONE, 0, ";,", "''", NULL,
-           string_delims,
-           "PTHREAD", "support", "initialized", NULL);
-
-  // BE + quote + string delim & multi char & a char benne van a stringben is
-  testcase("<15> openvpn[2499]: 'PTHRE\\\'AD' 'support' :'initialized'", 0, -1, CSV_SCANNER_ESCAPE_BACKSLASH, 0, " :",
-           "''", NULL, string_delims,
-           "PTHRE'AD", "support", "initialized", NULL);
-
-  // DCE + quote + string delim & multi char & a char nincs benne a stringben
-  testcase("<15> openvpn[2499]: 'PTHREAD','sup''port' :'initialized'", 0, -1, CSV_SCANNER_ESCAPE_DOUBLE_CHAR, 0, ";,",
-           "''", NULL, string_delims,
-           "PTHREAD", "sup'port", "initialized", NULL);
-
-  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, 3, CSV_SCANNER_ESCAPE_NONE, 0, " ", NULL, NULL, NULL,
-           "PTHREAD", "support", "initialized", NULL);
-
-  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, 2, CSV_SCANNER_ESCAPE_NONE, CSV_SCANNER_DROP_INVALID,
-           " ", NULL, NULL, NULL,
-           NULL);
-
-  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, 2, CSV_SCANNER_ESCAPE_NONE, CSV_SCANNER_GREEDY, " ",
-           NULL, NULL, NULL,
-           "PTHREAD", "support initialized", NULL);
-
-  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, -1, CSV_SCANNER_ESCAPE_NONE, 0, " ,;", NULL, NULL, NULL,
-           "PTHREAD", "support", "initialized", NULL);
-
-  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, -1, CSV_SCANNER_ESCAPE_NONE, 0, " ,;", NULL, "support",
-           NULL,
-           "PTHREAD", "", "initialized", NULL);
-
-  testcase("<15> openvpn[2499]: \"PTHREAD\" \"support\" \"initialized\"", 0, -1, CSV_SCANNER_ESCAPE_NONE, 0, " ", NULL,
-           NULL, NULL,
-           "PTHREAD", "support", "initialized", NULL);
-
-  //  testcase("<15> openvpn[2499]: \"PTHREAD\"+\"support\" \"initialized\"", 0, -1, CSV_SCANNER_ESCAPE_NONE, " ", NULL, NULL, NULL,
-  //           "PTHREAD\"+\"support", "initialized", NULL);
-
-  testcase("<15> openvpn[2499]: \"  PTHREAD  \" \" support\" \"initialized \"", 0, -1, CSV_SCANNER_ESCAPE_NONE,
-           CSV_SCANNER_STRIP_WHITESPACE, " ", NULL, NULL, NULL,
-           "PTHREAD", "support", "initialized", NULL);
-
-  testcase("<15> openvpn[2499]: \"PTHREAD support\" \"initialized\"", 0, -1, CSV_SCANNER_ESCAPE_NONE, 0, " ", NULL, NULL,
-           NULL,
-           "PTHREAD support", "initialized", NULL);
-
-  testcase("<15> openvpn[2499]: \"PTHREAD support initialized\"", 0, -1, CSV_SCANNER_ESCAPE_NONE, 0, " ", NULL, NULL,
-           NULL,
-           "PTHREAD support initialized", NULL);
-
-  testcase("<15> openvpn[2499]: \"PTHREAD support initialized", 0, -1, CSV_SCANNER_ESCAPE_NONE, 0, " ", NULL, NULL, NULL,
-           "PTHREAD support initialized", NULL);
-
-  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, -1, CSV_SCANNER_ESCAPE_BACKSLASH, 0, " ", NULL, NULL,
-           NULL,
-           "PTHREAD", "support", "initialized", NULL);
-
-  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, 2, CSV_SCANNER_ESCAPE_BACKSLASH, CSV_SCANNER_GREEDY, " ",
-           NULL, NULL, NULL,
-           "PTHREAD", "support initialized", NULL);
-
-  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, -1, CSV_SCANNER_ESCAPE_BACKSLASH, 0, " ;,", NULL, NULL,
-           NULL,
-           "PTHREAD", "support", "initialized", NULL);
-
-  testcase("<15> openvpn[2499]: \"PTHREAD\" \"support\" \"initialized\"", 0, -1, CSV_SCANNER_ESCAPE_BACKSLASH, 0, " ",
-           NULL, NULL, NULL,
-           "PTHREAD", "support", "initialized", NULL);
-
-  testcase("<15> openvpn[2499]: \"PTHREAD\" \"support\" \"initialized\"", 0, 2, CSV_SCANNER_ESCAPE_BACKSLASH,
-           CSV_SCANNER_GREEDY, " ", NULL, NULL, NULL,
-           "PTHREAD", "\"support\" \"initialized\"", NULL);
-
-  testcase("<15> openvpn[2499]: \"  PTHREAD \" \"  support\" \"initialized  \"", 0, -1, CSV_SCANNER_ESCAPE_BACKSLASH,
-           CSV_SCANNER_STRIP_WHITESPACE, " ", NULL, NULL, NULL,
-           "PTHREAD", "support", "initialized", NULL);
-
-  testcase("<15> openvpn[2499]: \"PTHREAD support\" \"initialized\"", 0, -1, CSV_SCANNER_ESCAPE_BACKSLASH, 0, " ", NULL,
-           NULL, NULL,
-           "PTHREAD support", "initialized", NULL);
-
-  testcase("<15> openvpn[2499]: \"PTHREAD \\\"support initialized\"", 0, -1, CSV_SCANNER_ESCAPE_BACKSLASH, 0, " ", NULL,
-           NULL, NULL,
-           "PTHREAD \"support initialized", NULL);
-
-  testcase("<15> openvpn[2499]: \"PTHREAD support initialized", 0, -1, CSV_SCANNER_ESCAPE_BACKSLASH, 0, " ", NULL, NULL,
-           NULL,
-           "PTHREAD support initialized", NULL);
-
-  testcase("<15> openvpn[2499]: PTHREAD support initialized", 0, -1, CSV_SCANNER_ESCAPE_DOUBLE_CHAR, 0, " ", NULL, NULL,
-           NULL,
-           "PTHREAD", "support", "initialized", NULL);
-
-  testcase("<15> openvpn[2499]: \"PTHREAD\" \"support\" \"initialized\"", 0, -1, CSV_SCANNER_ESCAPE_DOUBLE_CHAR, 0, " ",
-           NULL, NULL, NULL,
-           "PTHREAD", "support", "initialized", NULL);
-
-  testcase("<15> openvpn[2499]: \"PTHREAD\" \"support\" \"initialized\"", 0, 2, CSV_SCANNER_ESCAPE_DOUBLE_CHAR,
-           CSV_SCANNER_GREEDY, " ", NULL, NULL, NULL,
-           "PTHREAD", "\"support\" \"initialized\"", NULL);
-
-  testcase("<15> openvpn[2499]: \"  PTHREAD \" \"  support\" \"initialized  \"", 0, -1, CSV_SCANNER_ESCAPE_DOUBLE_CHAR,
-           CSV_SCANNER_STRIP_WHITESPACE, " ", NULL, NULL, NULL,
-           "PTHREAD", "support", "initialized", NULL);
-
-  testcase("<15> openvpn[2499]: \"  PTHREAD \" \"  support\" \"initialized  \"", 0, 2, CSV_SCANNER_ESCAPE_DOUBLE_CHAR,
-           CSV_SCANNER_GREEDY + CSV_SCANNER_STRIP_WHITESPACE, " ", NULL, NULL, NULL,
-           "PTHREAD", "\"  support\" \"initialized  \"", NULL);
-
-  testcase("<15> openvpn[2499]: \"PTHREAD support\" \"initialized\"", 0, -1, CSV_SCANNER_ESCAPE_DOUBLE_CHAR, 0, " ", NULL,
-           NULL, NULL,
-           "PTHREAD support", "initialized", NULL);
-
-  testcase("<15> openvpn[2499]: \"PTHREAD \"\"support initialized\"", 0, -1, CSV_SCANNER_ESCAPE_DOUBLE_CHAR, 0, " ", NULL,
-           NULL, NULL,
-           "PTHREAD \"support initialized", NULL);
-
-  testcase("<15> openvpn[2499]: \"PTHREAD support initialized", 0, -1, CSV_SCANNER_ESCAPE_DOUBLE_CHAR, 0, " ", NULL, NULL,
-           NULL,
-           "PTHREAD support initialized", NULL);
-
-  testcase("postfix/smtpd", LP_NOPARSE, 2, CSV_SCANNER_ESCAPE_NONE, CSV_SCANNER_GREEDY | CSV_SCANNER_DROP_INVALID, "/",
-           NULL, NULL, NULL,
-           "postfix", "smtpd", NULL);
-
-  testcase("postfix", LP_NOPARSE, 3, CSV_SCANNER_ESCAPE_NONE, CSV_SCANNER_GREEDY | CSV_SCANNER_DROP_INVALID, "/", NULL,
-           NULL, NULL,
-           NULL);
-
-  testcase("postfix/smtpd/ququ", LP_NOPARSE, 2, CSV_SCANNER_ESCAPE_NONE, CSV_SCANNER_GREEDY | CSV_SCANNER_DROP_INVALID,
-           "/", NULL, NULL, NULL,
-           "postfix", "smtpd/ququ", NULL);
-
-  testcase("Jul 27 19:55:33 myhost zabbix: ZabbixConnector.log : 19:55:32,782 INFO  [Thread-2834]     - [ZabbixEventSyncCommand] Processing   message <?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-           LP_EXPECT_HOSTNAME, 2, CSV_SCANNER_ESCAPE_NONE, CSV_SCANNER_GREEDY, " ", NULL, NULL, NULL,
-           "ZabbixConnector.log",
-           ": 19:55:32,782 INFO  [Thread-2834]     - [ZabbixEventSyncCommand] Processing   message <?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-           NULL);
-
-  testcase("10.100.20.1 - - [31/Dec/2007:00:17:10 +0100] \"GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1\" 200 2708 \"-\" \"curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5\" 2 bugzilla.balabit",
-           LP_NOPARSE, -1, CSV_SCANNER_ESCAPE_BACKSLASH, 0, " ", "\"\"[]", "-", NULL,
-           "10.100.20.1", "", "", "31/Dec/2007:00:17:10 +0100",
-           "GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1", "200", "2708", "",
-           "curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5", "2", "bugzilla.balabit",
-           NULL);
-
-  testcase("10.100.20.1 - - [31/Dec/2007:00:17:10 +0100] \"GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1\" 200 2708 \"-\" \"curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5\" 2 bugzilla.balabit",
-           LP_NOPARSE, 11, CSV_SCANNER_ESCAPE_BACKSLASH, 0, " ", "\"\"[]", "-", NULL,
-           "10.100.20.1", "", "", "31/Dec/2007:00:17:10 +0100",
-           "GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1", "200", "2708", "",
-           "curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5", "2", "bugzilla.balabit",
-           NULL);
-
-  testcase("10.100.20.1 - - [31/Dec/2007:00:17:10 +0100] \"GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1\" 200 2708 \"-\" \"curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5\" 2 bugzilla.balabit",
-           LP_NOPARSE, 10, CSV_SCANNER_ESCAPE_BACKSLASH, 0, " ", "\"\"[]", "-", NULL,
-           "10.100.20.1", "", "", "31/Dec/2007:00:17:10 +0100",
-           "GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1", "200", "2708", "",
-           "curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5", "2", NULL);
-
-  testcase("10.100.20.1 - - [31/Dec/2007:00:17:10 +0100] \"GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1\" 200 2708 \"-\" \"curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5\" 2 bugzilla.balabit",
-           LP_NOPARSE, 12, CSV_SCANNER_ESCAPE_BACKSLASH, 0, " ", "\"\"[]", "-", NULL,
-           "10.100.20.1", "", "", "31/Dec/2007:00:17:10 +0100",
-           "GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1", "200", "2708", "",
-           "curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5", "2", "bugzilla.balabit", "",
-           NULL);
-
-  testcase("10.100.20.1 - - [31/Dec/2007:00:17:10 +0100] \"GET /cgi-bin/bugzilla/buglist.cgi?keywords_type=allwords&keywords=public&format=simple HTTP/1.1\" 200 2708 \"-\" \"curl/7.15.5 (i4 86-pc-linux-gnu) libcurl/7.15.5 OpenSSL/0.9.8c zlib/1.2.3 libidn/0.6.5\" 2 bugzilla.balabit almafa",
-           LP_NOPARSE, 11, CSV_SCANNER_ESCAPE_BACKSLASH, CSV_SCANNER_DROP_INVALID, " ", "\"\"[]", "-", NULL,
-           NULL);
-
-  testcase("random.vhost 10.0.0.1 - \"GET /index.html HTTP/1.1\" 200", LP_NOPARSE, 5, CSV_SCANNER_ESCAPE_NONE,
-           CSV_SCANNER_DROP_INVALID, " ", "\"\"", "-", NULL,
-           "random.vhost", "10.0.0.1", "", "GET /index.html HTTP/1.1", "200", NULL);
-
-  testcase("random.vhost 10.0.0.1 - \"GET /index.html HTTP/1.1\" 200", LP_NOPARSE, 5, CSV_SCANNER_ESCAPE_BACKSLASH,
-           CSV_SCANNER_DROP_INVALID, " ", "\"\"", "-", NULL,
-           "random.vhost", "10.0.0.1", "", "GET /index.html HTTP/1.1", "200", NULL);
-
-  /* greedy column can be empty */
-  testcase("random.vhost 10.0.0.1 - \"GET /index.html HTTP/1.1\" 200", LP_NOPARSE, 6, CSV_SCANNER_ESCAPE_NONE,
-           CSV_SCANNER_GREEDY | CSV_SCANNER_DROP_INVALID, " ", "\"\"", "-", NULL,
-           "random.vhost", "10.0.0.1", "", "GET /index.html HTTP/1.1", "200", "", NULL);
-
-  testcase("random.vhost 10.0.0.1 - \"GET /index.html HTTP/1.1\" 200", LP_NOPARSE, 6, CSV_SCANNER_ESCAPE_BACKSLASH,
-           CSV_SCANNER_GREEDY | CSV_SCANNER_DROP_INVALID, " ", "\"\"", "-", NULL,
-           "random.vhost", "10.0.0.1", "", "GET /index.html HTTP/1.1", "200", "", NULL);
-
-  testcase("random.vhost\t10.0.0.1\t-\t\"GET /index.html HTTP/1.1\"\t200", LP_NOPARSE, 6, CSV_SCANNER_ESCAPE_BACKSLASH, 0,
-           "\t", "\"\"", "-", NULL,
-           "random.vhost", "10.0.0.1", "", "GET /index.html HTTP/1.1", "200", "", NULL);
-  testcase("random.vhost\t10.0.0.1\t-\t\"GET /index.html HTTP/1.1\"\t\t200", LP_NOPARSE, 7, CSV_SCANNER_ESCAPE_BACKSLASH,
-           0, "\t", "\"\"", "-", NULL,
-           "random.vhost", "10.0.0.1", "", "GET /index.html HTTP/1.1", "", "200", "", NULL);
-
-
-  app_shutdown();
-  return 0;
 }
+
+void teardown(void)
+{
+  scratch_buffers_explicit_gc();
+  app_shutdown();
+}
+
+TestSuite(parser, .init = setup, .fini = teardown);
