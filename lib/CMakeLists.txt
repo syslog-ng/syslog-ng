@@ -53,6 +53,7 @@ set (LIB_HEADERS
     alarms.h
     apphook.h
     atomic.h
+    atomic-gssize.h
     block-ref-parser.h
     cache.h
     cfg.h

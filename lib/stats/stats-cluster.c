@@ -126,9 +126,7 @@ _get_module_name(gint source)
     "stdin",
     "openbsd"
   };
-#if defined(static_assert)
-  static_assert(sizeof(module_names)/sizeof(module_names[0])==SCS_MAX, "The module_names must match the SCS_ items.");
-#endif
+  G_STATIC_ASSERT(sizeof(module_names)/sizeof(module_names[0])==SCS_MAX);
   return module_names[source & SCS_SOURCE_MASK];
 }
 

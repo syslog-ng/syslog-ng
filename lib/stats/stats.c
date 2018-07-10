@@ -101,7 +101,7 @@ stats_cluster_is_expired(StatsOptions *options, StatsCluster *sc, time_t now)
   if ((sc->live_mask & (1 << SC_TYPE_STAMP)) == 0)
     return FALSE;
 
-  tstamp = sc->counter_group.counters[SC_TYPE_STAMP].value;
+  tstamp = atomic_gssize_racy_get(&(sc->counter_group.counters[SC_TYPE_STAMP].value));
   return (tstamp <= now - options->lifetime);
 }
 
@@ -122,7 +122,7 @@ stats_prune_counter(StatsCluster *sc, StatsTimerState *st)
   expired = stats_cluster_is_expired(st->options, sc, st->now.tv_sec);
   if (expired)
     {
-      time_t tstamp = sc->counter_group.counters[SC_TYPE_STAMP].value;
+      time_t tstamp = atomic_gssize_racy_get(&(sc->counter_group.counters[SC_TYPE_STAMP].value));
       if ((st->oldest_counter) == 0 || st->oldest_counter > tstamp)
         st->oldest_counter = tstamp;
       st->dropped_counters++;

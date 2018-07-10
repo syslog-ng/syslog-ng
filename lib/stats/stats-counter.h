@@ -25,10 +25,11 @@
 #define STATS_COUNTER_H_INCLUDED 1
 
 #include "syslog-ng.h"
+#include "atomic-gssize.h"
 
 typedef struct _StatsCounterItem
 {
-  gssize value;
+  atomic_gssize value;
   gchar *name;
   gint type;
 } StatsCounterItem;
@@ -38,28 +39,28 @@ static inline void
 stats_counter_add(StatsCounterItem *counter, gssize add)
 {
   if (counter)
-    g_atomic_pointer_add(&counter->value, add);
+    atomic_gssize_add(&counter->value, add);
 }
 
 static inline void
 stats_counter_sub(StatsCounterItem *counter, gssize sub)
 {
   if (counter)
-    g_atomic_pointer_add(&counter->value, -1 * sub);
+    atomic_gssize_sub(&counter->value, sub);
 }
 
 static inline void
 stats_counter_inc(StatsCounterItem *counter)
 {
   if (counter)
-    g_atomic_pointer_add(&counter->value, 1);
+    atomic_gssize_inc(&counter->value);
 }
 
 static inline void
 stats_counter_dec(StatsCounterItem *counter)
 {
   if (counter)
-    g_atomic_pointer_add(&counter->value, -1);
+    atomic_gssize_dec(&counter->value);
 }
 
 /* NOTE: this is _not_ atomic and doesn't have to be as sets would race anyway */
@@ -67,7 +68,7 @@ static inline void
 stats_counter_set(StatsCounterItem *counter, gsize value)
 {
   if (counter)
-    counter->value = value;
+    atomic_gssize_racy_set(&counter->value, value);
 }
 
 /* NOTE: this is _not_ atomic and doesn't have to be as sets would race anyway */
@@ -77,7 +78,7 @@ stats_counter_get(StatsCounterItem *counter)
   gssize result = 0;
 
   if (counter)
-    result = counter->value;
+    result = atomic_gssize_racy_get_unsigned(&counter->value);
   return result;
 }
 
