@@ -98,6 +98,7 @@ log_queue_is_empty_racy(LogQueue *self)
 static inline void
 log_queue_push_tail(LogQueue *self, LogMessage *msg, const LogPathOptions *path_options)
 {
+  msg->queued_bytes = log_msg_get_size(msg);
   self->push_tail(self, msg, path_options);
 }
 

@@ -80,7 +80,8 @@ test_diskq_become_full(gboolean reliable)
   log_queue_disk_load_queue(q, DISKQ_FILENAME);
   feed_some_messages(q, 1000, &parse_options);
 
-  assert_gint(q->dropped_messages->value, 1000, "Bad dropped message number (reliable: %s)", reliable ? "TRUE" : "FALSE");
+  assert_gint(atomic_gssize_racy_get(&q->dropped_messages->value), 1000, "Bad dropped message number (reliable: %s)",
+              reliable ? "TRUE" : "FALSE");
 
   log_queue_unref(q);
   disk_queue_options_destroy(&options);

@@ -131,9 +131,33 @@ _flow_control_rate_adjust(LogSource *self)
 }
 
 void
+log_source_flow_control_adjust_memory_usage(LogSource *self, guint32 memory_decrement)
+{
+  if (self->options->max_memory > 0 && memory_decrement > 0)
+    {
+      gssize old = atomic_gssize_sub(&self->memory_usage, memory_decrement);
+      if (old >= self->options->max_memory && old - memory_decrement < self->options->max_memory)
+        {
+          msg_warning("Memory usage is back to normal ",
+                      log_pipe_location_tag(&self->super),
+                      evt_tag_int("max_memory", self->options->max_memory),
+                      evt_tag_int("current_memory_usage", old-memory_decrement));
+          log_source_flow_control_adjust(self, self->pending_window_size_increment);
+        }
+    }
+}
+
+void
 log_source_flow_control_adjust(LogSource *self, guint32 window_size_increment)
 {
-  _flow_control_window_size_adjust(self, window_size_increment);
+  if (self->options->max_memory > 0 && atomic_gssize_get(&self->memory_usage) >= self->options->max_memory)
+    {
+      self->pending_window_size_increment += window_size_increment;
+      return;
+    }
+
+  _flow_control_window_size_adjust(self, window_size_increment + self->pending_window_size_increment);
+  self->pending_window_size_increment = 0;
   _flow_control_rate_adjust(self);
 }
 
@@ -245,13 +269,35 @@ log_source_deinit(LogPipe *s)
   return TRUE;
 }
 
+static void
+_post_message(LogSource *self, LogMessage *msg, LogPathOptions *path_options)
+{
+  if (self->options->max_memory <= 0)
+    {
+      log_pipe_queue(&self->super, msg, path_options);
+      return;
+    }
+
+  log_msg_ref(msg);
+  {
+    log_pipe_queue(&self->super, msg, path_options);
+    gsize old_memory_usage = atomic_gssize_add(&self->memory_usage, msg->queued_bytes);
+    if (old_memory_usage + msg->queued_bytes >= self->options->max_memory)
+      {
+        msg_warning("Maximum memory reached",
+                    log_pipe_location_tag(&self->super),
+                    evt_tag_int("max_memory", self->options->max_memory));
+        log_source_flow_control_suspend(self);
+      }
+  }
+  log_msg_unref(msg);
+}
+
 void
 log_source_post(LogSource *self, LogMessage *msg)
 {
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   gint old_window_size;
-
-  ack_tracker_track_msg(self->ack_tracker, msg);
 
   /* NOTE: we start by enabling flow-control, thus we need an acknowledgement */
   path_options.ack_needed = TRUE;
@@ -273,7 +319,8 @@ log_source_post(LogSource *self, LogMessage *msg)
    */
 
   g_assert(old_window_size > 0);
-  log_pipe_queue(&self->super, msg, &path_options);
+  ack_tracker_track_msg(self->ack_tracker, msg);
+  _post_message(self, msg, &path_options);
 }
 
 static gboolean

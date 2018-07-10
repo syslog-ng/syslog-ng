@@ -173,6 +173,7 @@ struct _LogMessage
   LMAckFunc ack_func;
   LogMessage *original;
   gsize allocated_bytes;
+  gsize queued_bytes;
 
   /* message parts */
 

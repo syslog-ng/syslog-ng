@@ -92,6 +92,7 @@ pkginclude_HEADERS			+= \
 	lib/alarms.h			\
 	lib/apphook.h			\
 	lib/atomic.h			\
+	lib/atomic-gssize.h \
 	lib/block-ref-parser.h		\
 	lib/cache.h			\
 	lib/cfg.h			\
