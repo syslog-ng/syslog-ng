@@ -58,6 +58,8 @@ struct _LogQueueRedis
 
 extern QueueType log_queue_redis_type;
 
-LogQueue *log_queue_redis_init_instance(RedisQueueOptions *options, const gchar *persist_name);
+LogQueue *log_queue_redis_init_instance(LogQueueRedis *self, const gchar *persist_name);
+LogQueueRedis *redis_server_init(RedisQueueOptions *options, const gchar *name);
+void redis_server_free(LogQueueRedis *self);
 
 #endif
