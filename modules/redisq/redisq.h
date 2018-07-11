@@ -27,11 +27,13 @@
 #include "logqueue.h"
 #include "driver.h"
 #include "redisq-options.h"
+#include "logqueue-redis.h"
 
 typedef struct _RedisQDestPlugin
 {
   LogDriverPlugin super;
   RedisQueueOptions options;
+  LogQueueRedis *logq_redis;
 } RedisQDestPlugin;
 
 RedisQDestPlugin *redisq_dest_plugin_new(void);

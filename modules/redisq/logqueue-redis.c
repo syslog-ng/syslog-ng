@@ -151,16 +151,6 @@ _redis_dp_connect(LogQueueRedis *self, gboolean reconnect)
   return TRUE;
 }
 
-static void
-_redis_dp_disconnect(LogQueueRedis *self)
-{
-  msg_debug("redisq: disconnecting from redis server");
-
-  if (self->c)
-    redisFree(self->c);
-  self->c = NULL;
-}
-
 static gint64
 _get_length(LogQueue *s)
 {
@@ -322,11 +312,9 @@ _free(LogQueue *s)
 
   g_free(self->persist_name);
   self->persist_name = NULL;
-  self->redis_options = NULL;
 
-  _redis_dp_disconnect(self);
-  g_mutex_free(self->redis_thread_mutex);
-  log_queue_free_method(s);
+  g_static_mutex_free(&self->super.lock);
+  g_free(self->super.persist_name);
 }
 
 static LogMessage *
@@ -430,14 +418,14 @@ redis_thread_func(gpointer arg)
 }
 
 static gboolean
-_create_redis_thread(gpointer s, const gchar *persist_name)
+_create_redis_thread(gpointer s, const gchar *name)
 {
   LogQueueRedis *self = (LogQueueRedis *) s;
   GThread *t;
 
   msg_debug("redisq: Create Worker thread");
 
-  t = g_thread_new(persist_name, redis_thread_func, self);
+  t = g_thread_new(name, redis_thread_func, self);
 
   return (g_thread_join(t) != NULL);
 }
@@ -460,21 +448,43 @@ _set_virtual_functions(LogQueueRedis *self)
 }
 
 LogQueue *
-log_queue_redis_init_instance(RedisQueueOptions *options, const gchar *persist_name)
+log_queue_redis_init_instance(LogQueueRedis *self, const gchar *persist_name)
 {
-  LogQueueRedis *self = g_new0(LogQueueRedis, 1);
-
   msg_debug("redisq: log queue init");
 
   log_queue_init_instance(&self->super, persist_name);
-
   self->qbacklog = g_queue_new();
-  self->c = NULL;
-  self->redis_thread_mutex = g_mutex_new();
-  self->redis_options = options;
   self->persist_name = g_strdup(persist_name);
 
-  _create_redis_thread(self, persist_name);
   _set_virtual_functions(self);
   return &self->super;
+}
+
+LogQueueRedis *
+redis_server_init(RedisQueueOptions *options, const gchar *name)
+{
+  LogQueueRedis *self = g_new0(LogQueueRedis, 1);
+
+  msg_debug("redisq: redis server init");
+
+  self->redis_thread_mutex = g_mutex_new();
+  self->redis_options = options;
+
+  _create_redis_thread(self, name);
+  return self;
+}
+
+void
+redis_server_free(LogQueueRedis *self)
+{
+  msg_debug("redisq: redis server free");
+
+  g_mutex_free(self->redis_thread_mutex);
+  self->redis_options = NULL;
+
+  if (self->c)
+    redisFree(self->c);
+  self->c = NULL;
+
+  g_free(self);
 }
