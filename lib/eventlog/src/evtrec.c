@@ -74,6 +74,7 @@ evt_rec_add_tags(EVTREC *e, EVTTAG *first, ...)
   va_list ap;
 
   va_start(ap, first);
+  evt_rec_add_tag(e, first);
   evt_rec_add_tagsv(e, ap);
   va_end(ap);
 }

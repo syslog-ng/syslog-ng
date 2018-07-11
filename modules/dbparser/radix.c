@@ -468,12 +468,12 @@ r_parser_ipv6(guint8 *str, gint *len, const gchar *param, gpointer state, RParse
       (*len)++;
     }
 
-  if (G_UNLIKELY(str[*len - 1] == '.'))
+  if (G_UNLIKELY(*len > 0 && str[*len-1] == '.'))
     {
       (*len)--;
       dots--;
     }
-  else if (G_UNLIKELY(str[*len - 1] == ':' && str[*len - 2] != ':'))
+  else if (G_UNLIKELY(*len > 1 && str[*len-1] == ':' && str[*len - 2] != ':'))
     {
       (*len)--;
       colons--;

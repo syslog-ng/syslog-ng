@@ -159,7 +159,7 @@ Test(gsockaddr_serialize, test_bad_family)
 
   cr_assert(g_sockaddr_serialize(sa, addr), "failed to serialize GSockAddr");
 
-  g_string_overwrite(stream, 0, (const gchar *)&bad_family);
+  g_string_overwrite_len(stream, 0, (const gchar *)&bad_family, sizeof(bad_family)/sizeof(gchar));
   cr_assert_not(g_sockaddr_deserialize(sa, &read_addr), "SHOULD HAVE FAILED HERE");
 
   serialize_archive_free(sa);

@@ -161,6 +161,7 @@ _free(LogPipe *s)
 
   g_free(self->prefix);
   g_free(self->pair_separator);
+  g_free(self->stray_words_value_name);
   log_parser_free_method(s);
 }
 

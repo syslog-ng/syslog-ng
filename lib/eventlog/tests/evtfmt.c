@@ -25,5 +25,6 @@ main(void)
   free(es);
 
   evt_log(e);
+  evt_ctx_free(ctx);
   return 0;
 }
