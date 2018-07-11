@@ -83,6 +83,8 @@ void afsocket_dd_set_keep_alive(LogDriver *self, gint enable);
 void afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *socket_options,
                                TransportMapper *transport_mapper, GlobalConfig *cfg);
 LogTransport *afsocket_dd_construct_transport_method(AFSocketDestDriver *self, gint fd);
+void afsocket_dd_reconnect(AFSocketDestDriver *self);
+void afsocket_dd_stop_watches(AFSocketDestDriver *self);
 
 gboolean afsocket_dd_init(LogPipe *s);
 void afsocket_dd_free(LogPipe *s);

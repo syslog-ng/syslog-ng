@@ -230,8 +230,11 @@ _afinet_dd_tcp_probe_succeded(AFInetDestDriver *self)
 
   if (self->successful_probes_received >= self->successful_probes_required)
     {
-      msg_notice("Primary server seems to be stable, reconnecting primary server");
-      // TODO reconnect to primary
+      msg_notice("Primary server seems to be stable, reconnecting to primary server");
+      self->successful_probes_received = 0;
+      self->current_server_candidate = NULL;
+      afsocket_dd_stop_watches(&self->super);
+      afsocket_dd_reconnect(&self->super);
     }
   else
     {
@@ -412,18 +415,33 @@ _current_server_candidate_hostname(AFInetDestDriver *self)
   return (gchar *)self->current_server_candidate->data;
 }
 
-static gchar *
-_get_next_destination_candidate(AFInetDestDriver *self)
+static void
+_get_next_with_failback(AFInetDestDriver *self)
 {
-  if (!self->server_candidates)
-    return self->hostname;
-
-  if (!self->current_server_candidate)
+  if (self->current_server_candidate == g_list_first(self->server_candidates))
     {
-      self->current_server_candidate = g_list_first(self->server_candidates);
-      return _current_server_candidate_hostname(self);
+      _afinet_dd_start_failback_timer(self);
+      self->current_server_candidate = g_list_next(self->current_server_candidate);
+      msg_warning("2/3A Current server is inaccessible, sending the messages to the next failover server",
+                  evt_tag_str("host", (const gchar *)_current_server_candidate_hostname(self)),
+                  log_pipe_location_tag(&self->super.super.super.super));
     }
+  else
+    {
+      self->current_server_candidate = g_list_next(self->current_server_candidate);
+      if (!self->current_server_candidate)
+        {
+          self->current_server_candidate = g_list_nth(self->server_candidates, 1);
+          msg_warning("2B/3C Last failover server reached, trying the original host again",
+                      evt_tag_str("host", (const gchar *)_current_server_candidate_hostname(self)),
+                      log_pipe_location_tag(&self->super.super.super.super));
+        }
+    }
+}
 
+static void
+_get_next_without_failback(AFInetDestDriver *self)
+{
   self->current_server_candidate = g_list_next(self->current_server_candidate);
   if (!self->current_server_candidate)
     {
@@ -439,6 +457,25 @@ _get_next_destination_candidate(AFInetDestDriver *self)
                   evt_tag_str("failover", (const gchar *)_current_server_candidate_hostname(self)),
                   log_pipe_location_tag(&self->super.super.super.super));
     }
+}
+
+
+static gchar *
+_get_next_destination_candidate(AFInetDestDriver *self)
+{
+  if (!self->server_candidates)
+    return self->hostname;
+
+  if (!self->current_server_candidate)
+    {
+      self->current_server_candidate = g_list_first(self->server_candidates);
+      return _current_server_candidate_hostname(self);
+    }
+
+  if (self->is_failback_mode)
+    _get_next_with_failback(self);
+  else
+    _get_next_without_failback(self);
 
   return _current_server_candidate_hostname(self);
 }
