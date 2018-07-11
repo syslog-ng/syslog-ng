@@ -53,6 +53,10 @@ typedef struct _AFInetDestDriver
   gboolean is_failback_mode;
   guint tcp_probe_interval;
   guint successful_probes_required;
+  guint successful_probes_received;
+  GSockAddr *primary_addr;
+  struct iv_timer failback_timer;
+  struct iv_fd failback_fd;
 
   /* character as it can contain a service name from /etc/services */
   gchar *bind_port;
