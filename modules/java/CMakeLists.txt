@@ -69,7 +69,7 @@ endif()
   include(syslog_ng_core_java_native)
   create_syslog_ng_core_java_native()
 
-  add_library(mod-java SHARED ${NATIVE_SOURCES} ${PROXIES_SOURCES} ${BUILT_HEADERS})
+  add_library(mod-java SHARED ${NATIVE_SOURCES} ${PROXIES_SOURCES})
   target_include_directories (mod-java
       PRIVATE
       ${CMAKE_CURRENT_BINARY_DIR}
@@ -77,7 +77,7 @@ endif()
       ${CMAKE_CURRENT_SOURCE_DIR}/native
   )
   target_include_directories (mod-java SYSTEM PRIVATE ${JNI_INCLUDE_DIRS})
-  target_link_libraries(mod-java PRIVATE syslog-ng ${JNI_LIBRARIES})
+  target_link_libraries(mod-java PRIVATE syslog-ng ${JNI_LIBRARIES} syslog-ng-core-java-native)
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-core.jar DESTINATION lib/syslog-ng/java-modules)
   install(TARGETS mod-java LIBRARY DESTINATION lib/syslog-ng COMPONENT java)
 endif()
