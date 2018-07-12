@@ -78,7 +78,7 @@ stats_counter_get(StatsCounterItem *counter)
   gssize result = 0;
 
   if (counter)
-    result = atomic_gssize_racy_get_unsigned(&counter->value);
+    result = atomic_gssize_get_unsigned(&counter->value);
   return result;
 }
 
