@@ -49,12 +49,6 @@ _format_seqnum_persist_name(LogThreadedDestDriver *self)
 }
 
 static void
-_start_watches(LogThreadedDestDriver *self)
-{
-  iv_task_register(&self->do_work);
-}
-
-static void
 _stop_watches(LogThreadedDestDriver *self)
 {
   if (iv_task_registered(&self->do_work))
@@ -102,10 +96,7 @@ _shutdown_event_callback(gpointer data)
 static void
 _suspend(LogThreadedDestDriver *self)
 {
-  iv_validate_now();
-  self->timer_reopen.expires  = iv_now;
-  self->timer_reopen.expires.tv_sec += self->time_reopen;
-  iv_timer_register(&self->timer_reopen);
+  self->suspended = TRUE;
 }
 
 /* NOTE: runs in the worker thread */
@@ -121,10 +112,6 @@ _connect(LogThreadedDestDriver *self)
   if (!self->worker.connected)
     {
       _suspend(self);
-    }
-  else
-    {
-      _start_watches(self);
     }
 }
 
@@ -143,7 +130,6 @@ _disconnect(LogThreadedDestDriver *self)
 static void
 _disconnect_and_suspend(LogThreadedDestDriver *self)
 {
-  self->suspended = TRUE;
   _disconnect(self);
   _suspend(self);
 }
@@ -314,8 +300,15 @@ _message_became_available_callback(gpointer user_data)
 static void
 _schedule_restart(LogThreadedDestDriver *self)
 {
-  if (!self->suspended)
-    _start_watches(self);
+  if (self->suspended)
+    {
+      iv_validate_now();
+      self->timer_reopen.expires  = iv_now;
+      self->timer_reopen.expires.tv_sec += self->time_reopen;
+      iv_timer_register(&self->timer_reopen);
+    }
+  else
+    iv_task_register(&self->do_work);
 }
 
 static void
@@ -340,6 +333,7 @@ _perform_work(gpointer data)
   if (!self->worker.connected)
     {
       _connect(self);
+      _schedule_restart(self);
     }
   else if (log_queue_check_items(self->worker.queue, &timeout_msec,
                                  _message_became_available_callback,
@@ -451,7 +445,7 @@ _worker_thread(gpointer arg)
 
   _signal_startup_finished(self);
 
-  _start_watches(self);
+  _schedule_restart(self);
   iv_main();
 
   _disconnect(self);
