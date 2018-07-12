@@ -30,6 +30,7 @@
 #include "reloc.h"
 #include "plugin.h"
 #include "resolved-configurable-paths.h"
+#include "apphook.h"
 #include <string.h>
 
 struct _JavaVMSingleton
@@ -57,6 +58,14 @@ _jvm_new(void)
   return jvm;
 }
 
+void
+java_machine_unref_callback(gint hook_type, gpointer user_data)
+{
+  JavaVMSingleton *jvm = (JavaVMSingleton *)user_data;
+
+  java_machine_unref(jvm);
+}
+
 JavaVMSingleton *
 java_machine_ref(void)
 {
@@ -67,6 +76,12 @@ java_machine_ref(void)
   else
     {
       global_jvm = _jvm_new();
+
+      /* The application hook is going to hold a reference to the global g_jvm_s,
+       * therefore the reference counter must be incremented before that.
+       * But we are in the _ref() function, so the counter must be updated as below.  */
+      g_atomic_counter_inc(&global_jvm->ref_cnt);
+      register_application_hook(AH_SHUTDOWN, java_machine_unref_callback, global_jvm);
     }
   return global_jvm;
 }
@@ -93,6 +108,12 @@ void
 java_machine_unref(JavaVMSingleton *self)
 {
   g_assert(self == global_jvm);
+  /* The last reference is always hold by a AH_SHUTDOWN app hook, when there is no java configured.
+   * The only way to get rid of it to shutdown syslog-ng.  */
+  if (g_atomic_counter_get(&self->ref_cnt) == 2)
+    {
+      msg_warning("The JVM is not used anymore, but it is not stopped, if you want to stop it, you have to restart syslog-ng");
+    }
   if (g_atomic_counter_dec_and_test(&self->ref_cnt))
     {
       _jvm_free(self);
