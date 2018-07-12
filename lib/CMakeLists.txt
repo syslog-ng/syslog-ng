@@ -133,6 +133,7 @@ set (LIB_HEADERS
     ack_tracker.h
     host-id.h
     resolved-configurable-paths.h
+    window-size-counter.h
     ${PROJECT_BINARY_DIR}/lib/cfg-grammar.h
     ${PROJECT_BINARY_DIR}/lib/block-ref-grammar.h
     ${PROJECT_BINARY_DIR}/lib/cfg-lex.h
@@ -215,6 +216,7 @@ set(LIB_SOURCES
     utf8utils.c
     host-id.c
     resolved-configurable-paths.c
+    window-size-counter.c
     ${COMPAT_SOURCES}
     ${CONTROL_SOURCES}
     ${DEBUGGER_SOURCES}
