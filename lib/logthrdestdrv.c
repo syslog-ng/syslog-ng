@@ -111,6 +111,9 @@ _connect(LogThreadedDestDriver *self)
 
   if (!self->worker.connected)
     {
+      msg_debug("Error establishing connection to server",
+                evt_tag_str("driver", self->super.super.id),
+                log_expr_node_location_tag(self->super.super.super.expr_node));
       _suspend(self);
     }
 }
@@ -187,7 +190,8 @@ _process_result(LogThreadedDestDriver *self, gint result)
         {
           msg_error("Multiple failures while sending message(s) to destination, message(s) dropped",
                     evt_tag_str("driver", self->super.super.id),
-                    evt_tag_int("number_of_retries", self->retries_max),
+                    log_expr_node_location_tag(self->super.super.super.expr_node),
+                    evt_tag_int("retries", self->retries_counter),
                     evt_tag_int("batch_size", self->batch_size));
 
           _drop_batch(self);
@@ -196,6 +200,7 @@ _process_result(LogThreadedDestDriver *self, gint result)
         {
           msg_error("Error occurred while trying to send a message, trying again",
                     evt_tag_str("driver", self->super.super.id),
+                    log_expr_node_location_tag(self->super.super.super.expr_node),
                     evt_tag_int("retries", self->retries_counter),
                     evt_tag_int("batch_size", self->batch_size));
           _rewind_batch(self);
@@ -206,6 +211,7 @@ _process_result(LogThreadedDestDriver *self, gint result)
     case WORKER_INSERT_RESULT_NOT_CONNECTED:
       msg_info("Server disconnected while preparing messages for sending, trying again",
                evt_tag_str("driver", self->super.super.id),
+               log_expr_node_location_tag(self->super.super.super.expr_node),
                evt_tag_int("batch_size", self->batch_size));
       _rewind_batch(self);
       _disconnect_and_suspend(self);
