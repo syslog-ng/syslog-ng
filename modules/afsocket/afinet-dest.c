@@ -233,11 +233,12 @@ _afinet_dd_tcp_probe_succeded(AFInetDestDriver *self)
       msg_notice("Primary server seems to be stable, reconnecting to primary server");
       self->successful_probes_received = 0;
       self->current_server_candidate = NULL;
-      afsocket_dd_stop_watches(&self->super);
-      afsocket_dd_reconnect(&self->super);
+      afsocket_connected_with_fd(&self->super, self->failback_fd.fd);
+      self->failback_fd.fd = -1;
     }
   else
     {
+       close(self->failback_fd.fd);
       _afinet_dd_start_failback_timer(self);
     }
 }
@@ -281,7 +282,6 @@ _afinet_dd_handle_tcp_probe_socket(gpointer s)
       return;
     }
 
-  close(self->failback_fd.fd);
   _afinet_dd_tcp_probe_succeded(self);
 }
 
@@ -303,7 +303,7 @@ _afinet_dd_tcp_probe_primary_server(AFInetDestDriver *self)
   GIOStatus iostatus = g_connect(self->failback_fd.fd, self->primary_addr);
   if (_connect_normal(iostatus))
     {
-      close(self->failback_fd.fd);
+      msg_notice("Successfully connected to primary");
       _afinet_dd_tcp_probe_succeded(self);
       return;
     }
@@ -354,19 +354,13 @@ _resolve_primary_address(AFInetDestDriver *self)
 static gboolean
 _setup_failback_fd(AFInetDestDriver  *self)
 {
-  self->failback_fd.fd = socket(self->super.transport_mapper->address_family,
-                                self->super.transport_mapper->sock_type,
-                                self->super.transport_mapper->sock_proto);
-  if (self->failback_fd.fd < 0)
+  if (!transport_mapper_open_socket(self->super.transport_mapper, self->super.socket_options, self->super.bind_addr,
+                                    AFSOCKET_DIR_SEND, &self->failback_fd.fd))
     {
       msg_error("Error creating socket for tcp-probe the primary server",
                 evt_tag_error(EVT_TAG_OSERROR));
       return FALSE;
     }
-
-  g_fd_set_nonblock(self->failback_fd.fd, TRUE);
-  g_fd_set_cloexec(self->failback_fd.fd, TRUE);
-
   return TRUE;
 }
 

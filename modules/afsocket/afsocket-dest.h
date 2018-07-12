@@ -88,5 +88,6 @@ void afsocket_dd_stop_watches(AFSocketDestDriver *self);
 
 gboolean afsocket_dd_init(LogPipe *s);
 void afsocket_dd_free(LogPipe *s);
+void afsocket_connected_with_fd(AFSocketDestDriver *self, gint fd);
 
 #endif

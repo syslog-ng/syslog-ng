@@ -261,6 +261,15 @@ error_reconnect:
   return FALSE;
 }
 
+void
+afsocket_connected_with_fd(AFSocketDestDriver *self, gint fd)
+{
+  afsocket_dd_stop_watches(self);
+  self->fd = fd;
+  afsocket_dd_connected(self);
+}
+
+
 static gboolean
 afsocket_dd_start_connect(AFSocketDestDriver *self)
 {
