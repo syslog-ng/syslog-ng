@@ -30,10 +30,6 @@
 
 #include <glib.h>
 
-#if !SYSLOG_NG_HAVE_G_MAPPED_FILE_UNREF
-#define g_mapped_file_unref g_mapped_file_free
-#endif
-
 #if !SYSLOG_NG_HAVE_G_LIST_COPY_DEEP
 GList *g_list_copy_deep (GList *list, GCopyFunc func, gpointer user_data);
 #endif
