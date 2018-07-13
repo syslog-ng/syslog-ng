@@ -35,6 +35,8 @@ set(PYTHON_SOURCES
     python-logmsg.c
     python-logtemplate.h
     python-logtemplate.c
+    python-logtemplate-options.h
+    python-logtemplate-options.c
     python-global-code-loader.h
     python-global-code-loader.c
     python-debugger.c

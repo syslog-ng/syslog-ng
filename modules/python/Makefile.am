@@ -44,6 +44,8 @@ modules_python_libmod_python_la_SOURCES		= \
 	modules/python/python-logmsg.c	          \
 	modules/python/python-logtemplate.h	  \
 	modules/python/python-logtemplate.c       \
+	modules/python/python-logtemplate-options.h\
+	modules/python/python-logtemplate-options.c\
 	modules/python/python-global-code-loader.h\
 	modules/python/python-global-code-loader.c\
 	modules/python/python-debugger.h	  \
