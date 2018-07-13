@@ -70,12 +70,13 @@ static void
 log_rewrite_groupset_process(LogRewrite *s, LogMessage **msg, const LogPathOptions *path_options)
 {
   LogRewriteGroupSet *self = (LogRewriteGroupSet *) s;
+  GlobalConfig *cfg = log_pipe_get_config(&s->super);
   LogRewriteGroupSetCallbackData userdata;
 
   log_msg_make_writable(msg, path_options);
   userdata.msg = *msg;
   userdata.template = self->replacement;
-  value_pairs_foreach(self->query, self->vp_func, *msg, 0, LTZ_LOCAL, NULL, &userdata);
+  value_pairs_foreach(self->query, self->vp_func, *msg, 0, LTZ_LOCAL, &cfg->template_options, &userdata);
 }
 
 static void
