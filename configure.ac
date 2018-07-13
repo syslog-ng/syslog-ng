@@ -40,7 +40,7 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 dnl ***************************************************************************
 dnl dependencies
 
-GLIB_MIN_VERSION="2.10.1"
+GLIB_MIN_VERSION="2.26.1"
 OPENSSL_MIN_VERSION="0.9.8"
 LIBDBI_MIN_VERSION="0.9.0"
 LIBRABBITMQ_MIN_VERSION="0.5.3"
@@ -910,7 +910,7 @@ LDFLAGS="$LDFLAGS $GLIB_LIBS"
 
 old_LIBS=$LIBS
 LIBS="$LIBS $GLIB_LIBS"
-AC_CHECK_FUNCS(g_mapped_file_unref g_list_copy_deep g_queue_free_full g_list_free_full)
+AC_CHECK_FUNCS(g_list_copy_deep g_queue_free_full g_list_free_full)
 LIBS=$old_LIBS
 
 AC_CACHE_CHECK(sanity checking Glib headers,
