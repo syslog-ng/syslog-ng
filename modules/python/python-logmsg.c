@@ -27,12 +27,6 @@
 #include "messages.h"
 #include "str-utils.h"
 
-typedef struct _PyLogMessage
-{
-  PyObject_HEAD
-  LogMessage *msg;
-} PyLogMessage;
-
 static PyTypeObject py_log_message_type;
 
 static int

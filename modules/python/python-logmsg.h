@@ -27,6 +27,12 @@
 
 #include "python-module.h"
 
+typedef struct _PyLogMessage
+{
+  PyObject_HEAD
+  LogMessage *msg;
+} PyLogMessage;
+
 PyObject *py_log_message_new(LogMessage *msg);
 void py_log_message_init(void);
 
