@@ -69,6 +69,7 @@ _py_init_interpreter(void)
 
       PyEval_InitThreads();
       py_log_message_init();
+      py_log_template_init();
       py_global_code_loader_init();
       PyEval_SaveThread();
 
