@@ -137,7 +137,7 @@ afsocket_dd_stats_instance(AFSocketDestDriver *self)
   return buf;
 }
 
-static gboolean afsocket_dd_connected(AFSocketDestDriver *self);
+static void _afsocket_dd_connection_in_progress(AFSocketDestDriver *self);
 static void afsocket_dd_try_connect(AFSocketDestDriver *self);
 static gboolean afsocket_dd_setup_connection(AFSocketDestDriver *self);
 
@@ -146,7 +146,7 @@ afsocket_dd_init_watches(AFSocketDestDriver *self)
 {
   IV_FD_INIT(&self->connect_fd);
   self->connect_fd.cookie = self;
-  self->connect_fd.handler_out = (void (*)(void *)) afsocket_dd_connected;
+  self->connect_fd.handler_out = (void (*)(void *)) _afsocket_dd_connection_in_progress;
 
   IV_TIMER_INIT(&self->reconnect_timer);
   self->reconnect_timer.cookie = self;
@@ -178,6 +178,7 @@ afsocket_dd_stop_watches(AFSocketDestDriver *self)
       msg_verbose("Closing connecting fd",
                   evt_tag_int("fd", self->fd));
       close(self->fd);
+      self->fd = -1;
     }
   if (iv_timer_registered(&self->reconnect_timer))
     iv_timer_unregister(&self->reconnect_timer);
@@ -207,14 +208,49 @@ static gboolean
 afsocket_dd_connected(AFSocketDestDriver *self)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
-
-  gchar buf1[256], buf2[256];
-  int error = 0;
-  socklen_t errorlen = sizeof(error);
   LogTransport *transport;
   LogProtoClient *proto;
+  gchar buf1[256], buf2[256];
 
   main_loop_assert_main_thread();
+
+  msg_notice("Syslog connection established",
+             evt_tag_int("fd", self->fd),
+             evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2), GSA_FULL)),
+             evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf1, sizeof(buf1), GSA_FULL)));
+
+  transport = afsocket_dd_construct_transport(self, self->fd);
+  if (!transport)
+    return FALSE;
+
+  proto = log_proto_client_factory_construct(self->proto_factory, transport, &self->writer_options.proto_options.super);
+
+  log_proto_client_restart_with_state(proto, cfg->state, afsocket_dd_format_connections_name(self));
+  log_writer_reopen(self->writer, proto);
+  return TRUE;
+}
+
+void
+afsocket_dd_connected_with_fd(AFSocketDestDriver *self, gint fd, GSockAddr *saddr)
+{
+  afsocket_dd_stop_watches(self);
+  g_sockaddr_unref(self->dest_addr);
+  self->dest_addr = saddr;
+  self->fd = fd;
+  if (!afsocket_dd_connected(self))
+    {
+      close(self->fd);
+      self->fd = -1;
+      afsocket_dd_start_reconnect_timer(self);
+    }
+}
+
+static void
+_afsocket_dd_connection_in_progress(AFSocketDestDriver *self)
+{
+  gchar buf[256];
+  int error = 0;
+  socklen_t errorlen = sizeof(error);
 
   if (iv_fd_registered(&self->connect_fd))
     iv_fd_unregister(&self->connect_fd);
@@ -225,7 +261,7 @@ afsocket_dd_connected(AFSocketDestDriver *self)
         {
           msg_error("getsockopt(SOL_SOCKET, SO_ERROR) failed for connecting socket",
                     evt_tag_int("fd", self->fd),
-                    evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2), GSA_FULL)),
+                    evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf, sizeof(buf), GSA_FULL)),
                     evt_tag_error(EVT_TAG_OSERROR),
                     evt_tag_int("time_reopen", self->time_reopen));
           goto error_reconnect;
@@ -234,41 +270,21 @@ afsocket_dd_connected(AFSocketDestDriver *self)
         {
           msg_error("Syslog connection failed",
                     evt_tag_int("fd", self->fd),
-                    evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2), GSA_FULL)),
+                    evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf, sizeof(buf), GSA_FULL)),
                     evt_tag_errno(EVT_TAG_OSERROR, error),
                     evt_tag_int("time_reopen", self->time_reopen));
           goto error_reconnect;
         }
     }
-  msg_notice("Syslog connection established",
-             evt_tag_int("fd", self->fd),
-             evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf2, sizeof(buf2), GSA_FULL)),
-             evt_tag_str("local", g_sockaddr_format(self->bind_addr, buf1, sizeof(buf1), GSA_FULL)));
 
-  transport = afsocket_dd_construct_transport(self, self->fd);
-  if (!transport)
-    goto error_reconnect;
+  if (afsocket_dd_connected(self))
+    return;
 
-  proto = log_proto_client_factory_construct(self->proto_factory, transport, &self->writer_options.proto_options.super);
-
-  log_proto_client_restart_with_state(proto, cfg->state, afsocket_dd_format_connections_name(self));
-  log_writer_reopen(self->writer, proto);
-  return TRUE;
 error_reconnect:
   close(self->fd);
   self->fd = -1;
   afsocket_dd_start_reconnect_timer(self);
-  return FALSE;
 }
-
-void
-afsocket_connected_with_fd(AFSocketDestDriver *self, gint fd)
-{
-  afsocket_dd_stop_watches(self);
-  self->fd = fd;
-  afsocket_dd_connected(self);
-}
-
 
 static gboolean
 afsocket_dd_start_connect(AFSocketDestDriver *self)
@@ -293,7 +309,12 @@ afsocket_dd_start_connect(AFSocketDestDriver *self)
   if (rc == G_IO_STATUS_NORMAL)
     {
       self->fd = sock;
-      afsocket_dd_connected(self);
+      if (!afsocket_dd_connected(self))
+        {
+          close(self->fd);
+          self->fd = -1;
+          return FALSE;
+        }
     }
   else if (rc == G_IO_STATUS_ERROR && errno == EINPROGRESS)
     {

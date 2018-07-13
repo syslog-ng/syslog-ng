@@ -220,6 +220,23 @@ _afinet_dd_stop_failback_handlers(AFInetDestDriver *self)
     }
 }
 
+static gchar *
+_current_server_candidate_hostname(AFInetDestDriver *self)
+{
+  return (gchar *)self->current_server_candidate->data;
+}
+
+static void
+_afinet_dd_hand_over_connection_to_afsocket(AFInetDestDriver *self)
+{
+  self->successful_probes_received = 0;
+  self->current_server_candidate = g_list_first(self->server_candidates);
+  self->hostname = _current_server_candidate_hostname(self);
+  afsocket_dd_connected_with_fd(&self->super, self->failback_fd.fd, self->primary_addr);
+  self->primary_addr = NULL;
+  self->failback_fd.fd = -1;
+}
+
 static void
 _afinet_dd_tcp_probe_succeded(AFInetDestDriver *self)
 {
@@ -231,14 +248,11 @@ _afinet_dd_tcp_probe_succeded(AFInetDestDriver *self)
   if (self->successful_probes_received >= self->successful_probes_required)
     {
       msg_notice("Primary server seems to be stable, reconnecting to primary server");
-      self->successful_probes_received = 0;
-      self->current_server_candidate = NULL;
-      afsocket_connected_with_fd(&self->super, self->failback_fd.fd);
-      self->failback_fd.fd = -1;
+      _afinet_dd_hand_over_connection_to_afsocket(self);
     }
   else
     {
-       close(self->failback_fd.fd);
+      close(self->failback_fd.fd);
       _afinet_dd_start_failback_timer(self);
     }
 }
@@ -401,12 +415,6 @@ _afinet_dd_init_failback_handlers(AFInetDestDriver *s)
   IV_FD_INIT(&self->failback_fd);
   self->failback_fd.cookie = self;
   self->failback_fd.handler_out = (void (*)(void *)) _afinet_dd_handle_tcp_probe_socket;
-}
-
-static gchar *
-_current_server_candidate_hostname(AFInetDestDriver *self)
-{
-  return (gchar *)self->current_server_candidate->data;
 }
 
 static void
