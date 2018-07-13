@@ -121,7 +121,7 @@ set(WITH_GETTEXT "" CACHE STRING "Set the prefix where gettext is installed (e.g
 set(CMAKE_C_STANDARD 99)
 
 find_package(BISON 2.4 REQUIRED)
-find_package(GLIB COMPONENTS gmodule gthread 2.10.1 REQUIRED)
+find_package(GLIB COMPONENTS gmodule gthread 2.26.1 REQUIRED)
 
 set (SYSLOG_NG_USE_CONST_IVYKIS_MOCK 1)
 external_or_find_package(IVYKIS REQUIRED)
