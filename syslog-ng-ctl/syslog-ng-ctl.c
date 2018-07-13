@@ -636,6 +636,7 @@ main(int argc, char *argv[])
   GString *cmdname_accumulator = g_string_new(argv[0]);
   CommandDescriptor *active_mode = find_active_mode(modes, &argc, argv, cmdname_accumulator);
   GOptionContext *ctx = setup_help_context(cmdname_accumulator->str, active_mode);
+  g_string_free(cmdname_accumulator, TRUE);
 
   if (!ctx)
     {

@@ -117,7 +117,7 @@ parser_csv_delimiters_opt
         ;
 
 parser_csv_flags
-        : string parser_csv_flags
+        : normalized_flag parser_csv_flags
           {
             guint32 flag = csv_parser_lookup_flag($1);
             CHECK_ERROR(flag != 0, @1, "unknown csv-parser() flag %s", $1);
@@ -128,7 +128,7 @@ parser_csv_flags
         ;
 
 parser_csv_dialect
-        : string                                {
+        : normalized_flag                       {
                                                   gint mode = csv_parser_lookup_dialect($1);
                                                   CHECK_ERROR(mode >= 0, @1, "unknown dialect() argument for csv-parser()");
                                                   free($1);

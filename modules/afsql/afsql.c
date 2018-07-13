@@ -33,6 +33,7 @@
 #include "apphook.h"
 #include "timeutils.h"
 #include "mainloop-worker.h"
+#include "str-utils.h"
 
 #include <string.h>
 #include <errno.h>
@@ -1478,9 +1479,9 @@ afsql_dd_new(GlobalConfig *cfg)
 gint
 afsql_dd_lookup_flag(const gchar *flag)
 {
-  if (strcmp(flag, "explicit-commits") == 0 || strcmp(flag, "explicit_commits") == 0)
+  if (strcmp(flag, "explicit-commits") == 0)
     return AFSQL_DDF_EXPLICIT_COMMITS;
-  else if (strcmp(flag, "dont-create-tables") == 0 || strcmp(flag, "dont_create_tables") == 0)
+  else if (strcmp(flag, "dont-create-tables") == 0)
     return AFSQL_DDF_DONT_CREATE_TABLES;
   else
     msg_warning("Unknown SQL flag",

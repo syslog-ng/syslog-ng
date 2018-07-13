@@ -138,7 +138,7 @@ dest_afsql_values_build
         ;
 
 dest_afsql_flags
-        : string dest_afsql_flags               { $$ = afsql_dd_lookup_flag($1) | $2; free($1); }
+        : normalized_flag dest_afsql_flags      { $$ = afsql_dd_lookup_flag($1) | $2; free($1); }
         |                                       { $$ = 0; }
         ;
 
