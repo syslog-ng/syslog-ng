@@ -27,6 +27,7 @@
 #include "python-dest.h"
 #include "python-tf.h"
 #include "python-logmsg.h"
+#include "python-logtemplate.h"
 #include "python-global-code-loader.h"
 #include "python-debugger.h"
 

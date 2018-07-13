@@ -21,16 +21,73 @@
  *
  */
 #include "python-logtemplate.h"
+#include "python-logmsg.h"
 #include "python-helpers.h"
+#include "scratch-buffers.h"
 #include "messages.h"
 
 PyTypeObject py_log_template_type;
 
-static void
+void
 py_log_template_free(PyLogTemplate *self)
 {
+  log_template_unref(self->template);
+  g_free(self->template_options);
   Py_TYPE(self)->tp_free((PyObject *) self);
 }
+
+PyObject *
+py_log_template_format(PyObject *s, PyObject *args)
+{
+  PyLogTemplate *self = (PyLogTemplate *)s;
+
+  PyLogMessage *msg;
+  if (!PyArg_ParseTuple(args, "O", &msg))
+    return NULL;
+
+  GString *result = scratch_buffers_alloc();
+  log_template_format(self->template, msg->msg, self->template_options, LTZ_SEND, 0, NULL, result);
+
+  return _py_string_from_string(result->str, result->len);
+}
+
+PyObject *
+py_log_template_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+{
+  const gchar *template_string;
+  if (!PyArg_ParseTuple(args, "s", &template_string))
+    return NULL;
+
+  LogTemplate *template = log_template_new(NULL, NULL);
+  GError *error = NULL;
+  if (!log_template_compile(template, template_string, &error))
+    {
+      PyErr_Format(PyExc_RuntimeError,
+                   "Error compiling template: %s", error->message);
+      g_clear_error(&error);
+      log_template_unref(template);
+      return NULL;
+    }
+
+  PyLogTemplate *self = (PyLogTemplate *)type->tp_alloc(type, 0);
+  if (!self)
+    {
+      log_template_unref(template);
+      return NULL;
+    }
+
+  self->template = template;
+  self->template_options = g_new0(LogTemplateOptions, 1);
+  log_template_options_defaults(self->template_options);
+
+  return (PyObject *)self;
+}
+
+static PyMethodDef py_log_template_methods[] =
+{
+  { "format", (PyCFunction)py_log_template_format, METH_VARARGS, "format template" },
+  { NULL }
+};
 
 PyTypeObject py_log_template_type =
 {
@@ -40,7 +97,8 @@ PyTypeObject py_log_template_type =
   .tp_dealloc = (destructor) py_log_template_free,
   .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
   .tp_doc = "LogTemplate class encapsulating a syslog-ng template",
-  .tp_new = PyType_GenericNew,
+  .tp_methods = py_log_template_methods,
+  .tp_new = py_log_template_new,
   0,
 };
 
