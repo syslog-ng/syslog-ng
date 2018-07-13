@@ -44,7 +44,9 @@ py_log_template_format(PyObject *s, PyObject *args)
 
   PyLogMessage *msg;
   PyLogTemplateOptions *py_log_template_options = NULL;
-  if (!PyArg_ParseTuple(args, "O|O", &msg, &py_log_template_options))
+  gint tz = LTZ_SEND;
+
+  if (!PyArg_ParseTuple(args, "O|Oi", &msg, &py_log_template_options, &tz))
     return NULL;
 
   if (py_log_template_options && (Py_TYPE(py_log_template_options) != &py_log_template_options_type))
@@ -64,7 +66,7 @@ py_log_template_format(PyObject *s, PyObject *args)
     }
 
   GString *result = scratch_buffers_alloc();
-  log_template_format(self->template, msg->msg, log_template_options, LTZ_SEND, 0, NULL, result);
+  log_template_format(self->template, msg->msg, log_template_options, tz, 0, NULL, result);
 
   return _py_string_from_string(result->str, result->len);
 }
@@ -135,4 +137,12 @@ py_log_template_init(void)
 
   PyType_Ready(&py_log_template_type);
   PyModule_AddObject(PyImport_AddModule("syslogng"), "LogTemplate", (PyObject *) &py_log_template_type);
+  PyObject *PY_LTZ_LOCAL = int_as_pyobject(0);
+  PyObject *PY_LTZ_SEND = int_as_pyobject(1);
+
+  PyObject_SetAttrString(PyImport_AddModule("syslogng"), "LTZ_LOCAL", PY_LTZ_LOCAL);
+  PyObject_SetAttrString(PyImport_AddModule("syslogng"), "LTZ_SEND", PY_LTZ_SEND);
+
+  Py_DECREF(PY_LTZ_LOCAL);
+  Py_DECREF(PY_LTZ_SEND);
 }

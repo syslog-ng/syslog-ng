@@ -36,5 +36,6 @@
 #endif
 
 void py_init_argv(void);
+PyObject *int_as_pyobject(gint num);
 
 #endif
