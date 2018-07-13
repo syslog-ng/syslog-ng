@@ -21,6 +21,7 @@
  *
  */
 #include "python-logtemplate.h"
+#include "python-logtemplate-options.h"
 #include "python-logmsg.h"
 #include "python-helpers.h"
 #include "scratch-buffers.h"
@@ -42,11 +43,28 @@ py_log_template_format(PyObject *s, PyObject *args)
   PyLogTemplate *self = (PyLogTemplate *)s;
 
   PyLogMessage *msg;
-  if (!PyArg_ParseTuple(args, "O", &msg))
+  PyLogTemplateOptions *py_log_template_options = NULL;
+  if (!PyArg_ParseTuple(args, "O|O", &msg, &py_log_template_options))
     return NULL;
 
+  if (py_log_template_options && (Py_TYPE(py_log_template_options) != &py_log_template_options_type))
+    {
+      PyErr_Format(PyExc_TypeError,
+                   "LogTemplateOptions expected");
+      return NULL;
+    }
+
+  LogTemplateOptions *log_template_options = py_log_template_options ? py_log_template_options->template_options :
+                                             self->template_options;
+  if (!log_template_options)
+    {
+      PyErr_Format(PyExc_RuntimeError,
+                   "LogTemplateOptions must be provided either in the LogTemplate constructor or as parameter of format");
+      return NULL;
+    }
+
   GString *result = scratch_buffers_alloc();
-  log_template_format(self->template, msg->msg, self->template_options, LTZ_SEND, 0, NULL, result);
+  log_template_format(self->template, msg->msg, log_template_options, LTZ_SEND, 0, NULL, result);
 
   return _py_string_from_string(result->str, result->len);
 }
@@ -55,8 +73,16 @@ PyObject *
 py_log_template_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
   const gchar *template_string;
-  if (!PyArg_ParseTuple(args, "s", &template_string))
+  PyLogTemplateOptions *py_log_template_options = NULL;
+  if (!PyArg_ParseTuple(args, "s|O", &template_string, &py_log_template_options))
     return NULL;
+
+  if (py_log_template_options && (Py_TYPE(py_log_template_options) != &py_log_template_options_type))
+    {
+      PyErr_Format(PyExc_TypeError,
+                   "LogTemplateOptions expected in the second parameter");
+      return NULL;
+    }
 
   LogTemplate *template = log_template_new(NULL, NULL);
   GError *error = NULL;
@@ -77,8 +103,8 @@ py_log_template_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     }
 
   self->template = template;
-  self->template_options = g_new0(LogTemplateOptions, 1);
-  log_template_options_defaults(self->template_options);
+  if (py_log_template_options)
+    self->template_options = py_log_template_options->template_options;
 
   return (PyObject *)self;
 }

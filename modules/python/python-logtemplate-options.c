@@ -23,8 +23,6 @@
 
 #include "python-logtemplate-options.h"
 
-static PyTypeObject py_log_template_options_type;
-
 PyObject *
 py_log_template_options_new(LogTemplateOptions *template_options)
 {
@@ -38,7 +36,7 @@ py_log_template_options_new(LogTemplateOptions *template_options)
 }
 
 
-static PyTypeObject py_log_template_options_type =
+PyTypeObject py_log_template_options_type =
 {
   PyVarObject_HEAD_INIT(&PyType_Type, 0)
   .tp_name = "LogTemplateOptions",
