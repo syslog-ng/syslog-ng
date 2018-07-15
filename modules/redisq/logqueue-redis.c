@@ -417,17 +417,18 @@ redis_thread_func(gpointer arg)
   return NULL;
 }
 
-static gboolean
-_create_redis_thread(gpointer s, const gchar *name)
+static void
+redis_server_init(RedisServer *self, RedisQueueOptions *options, const gchar *name)
 {
-  LogQueueRedis *self = (LogQueueRedis *) s;
-  GThread *t;
+  self->super.redis_options = options;
+  self->redis_thread = g_thread_new(name, redis_thread_func, &self->super);
+}
 
-  msg_debug("redisq: Create Worker thread");
-
-  t = g_thread_new(name, redis_thread_func, self);
-
-  return (g_thread_join(t) != NULL);
+static void
+redis_server_deinit(RedisServer *self)
+{
+  self->super.redis_options = NULL;
+  self->super.c = NULL;
 }
 
 static void
@@ -448,9 +449,12 @@ _set_virtual_functions(LogQueueRedis *self)
 }
 
 LogQueue *
-log_queue_redis_init_instance(LogQueueRedis *self, const gchar *persist_name)
+log_queue_redis_new(LogQueueRedis *self, const gchar *persist_name)
 {
-  msg_debug("redisq: log queue init");
+  msg_debug("redisq: log queue new");
+
+  if (!_check_connection_to_redis(self))
+    return NULL;
 
   log_queue_init_instance(&self->super, persist_name);
   self->qbacklog = g_queue_new();
@@ -460,31 +464,32 @@ log_queue_redis_init_instance(LogQueueRedis *self, const gchar *persist_name)
   return &self->super;
 }
 
-LogQueueRedis *
-redis_server_init(RedisQueueOptions *options, const gchar *name)
+RedisServer *
+redis_server_new(RedisQueueOptions *options, const gchar *name)
 {
-  LogQueueRedis *self = g_new0(LogQueueRedis, 1);
+  RedisServer *self = g_new0(RedisServer, 1);
 
-  msg_debug("redisq: redis server init");
+  msg_debug("redisq: redis server new");
 
-  self->redis_thread_mutex = g_mutex_new();
-  self->redis_options = options;
-
-  _create_redis_thread(self, name);
+  self->super.redis_thread_mutex = g_mutex_new();
+  redis_server_init(self, options, name);
+  g_thread_join(self->redis_thread);
   return self;
 }
 
 void
-redis_server_free(LogQueueRedis *self)
+redis_server_free(RedisServer *self)
 {
   msg_debug("redisq: redis server free");
 
-  g_mutex_free(self->redis_thread_mutex);
-  self->redis_options = NULL;
+  if (self)
+    {
+      g_mutex_free(self->super.redis_thread_mutex);
 
-  if (self->c)
-    redisFree(self->c);
-  self->c = NULL;
+      if (self->super.c)
+        redisFree(self->super.c);
 
-  g_free(self);
+      redis_server_deinit(self);
+      g_free(self);
+    }
 }
