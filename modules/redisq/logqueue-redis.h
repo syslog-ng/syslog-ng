@@ -39,6 +39,7 @@
 #define POINTER_TO_LOG_PATH_OPTIONS(ptr, lpo) (lpo)->ack_needed = (GPOINTER_TO_INT(ptr) & ~0x80000000)
 
 typedef struct _LogQueueRedis LogQueueRedis;
+typedef struct _RedisServer RedisServer;
 
 struct _LogQueueRedis
 {
@@ -56,10 +57,16 @@ struct _LogQueueRedis
   gboolean (*delete_message)(LogQueueRedis *self);
 };
 
+struct _RedisServer
+{
+  LogQueueRedis super;
+  GThread *redis_thread;
+};
+
 extern QueueType log_queue_redis_type;
 
-LogQueue *log_queue_redis_init_instance(LogQueueRedis *self, const gchar *persist_name);
-LogQueueRedis *redis_server_init(RedisQueueOptions *options, const gchar *name);
-void redis_server_free(LogQueueRedis *self);
+LogQueue *log_queue_redis_new(LogQueueRedis *self, const gchar *persist_name);
+RedisServer *redis_server_new(RedisQueueOptions *options, const gchar *name);
+void redis_server_free(RedisServer *self);
 
 #endif

@@ -47,7 +47,7 @@ _acquire_queue(LogDestDriver *dd, const gchar *persist_name)
       queue = NULL;
     }
 
-  queue = log_queue_redis_init_instance(self->logq_redis, persist_name);
+  queue = log_queue_redis_new(&self->redis_server->super, persist_name);
   log_queue_set_throttle(queue, dd->throttle);
 
   return queue;
@@ -78,21 +78,11 @@ _attach(LogDriverPlugin *s, LogDriver *d)
 
   msg_debug("redisq: plugin attach");
 
-  self->logq_redis = redis_server_init(&self->options, self->super.name);
+  self->redis_server = redis_server_new(&self->options, self->super.name);
 
   dd->acquire_queue = _acquire_queue;
   dd->release_queue = _release_queue;
   return TRUE;
-}
-
-static void
-_detach(LogDriverPlugin *s, LogDriver *d)
-{
-  RedisQDestPlugin *self = (RedisQDestPlugin *) s;
-
-  msg_debug("redisq: plugin detach");
-
-  redis_server_free(self->logq_redis);
 }
 
 static void
@@ -101,6 +91,7 @@ _free(LogDriverPlugin *s)
   RedisQDestPlugin *self = (RedisQDestPlugin *)s;
   msg_debug("redisq: plugin free");
 
+  redis_server_free(self->redis_server);
   redis_queue_options_destroy(&self->options);
   log_driver_plugin_free_method(s);
 }
@@ -121,7 +112,6 @@ redisq_dest_plugin_new(void)
   log_driver_plugin_init_instance(&self->super, REDISQ_PLUGIN_NAME);
   redis_queue_options_set_default_options(&self->options);
   self->super.attach = _attach;
-  self->super.detach = _detach;
   self->super.free_fn = _free;
   return self;
 }
