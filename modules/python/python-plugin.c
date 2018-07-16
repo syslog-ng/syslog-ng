@@ -29,6 +29,7 @@
 #include "python-logmsg.h"
 #include "python-global-code-loader.h"
 #include "python-debugger.h"
+#include "python-stats.h"
 
 #include "plugin.h"
 #include "plugin-types.h"
@@ -63,6 +64,7 @@ _py_init_interpreter(void)
   if (!interpreter_initialized)
     {
       python_debugger_append_inittab();
+      python_stats_append_inittab();
 
       Py_Initialize();
       py_init_argv();
