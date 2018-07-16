@@ -82,10 +82,12 @@ static CfgLexerKeyword afsocket_keywords[] =
   { "listen_backlog",     KW_LISTEN_BACKLOG },
   { "keep_alive",         KW_KEEP_ALIVE },
   { "systemd_syslog",     KW_SYSTEMD_SYSLOG  },
-  { "failover_servers",   KW_FAILOVER_SERVERS },
-  { "failback",           KW_FAILOVER_FAILBACK },
-  { "tcp_probe_interval", KW_FAILOVER_TCP_PROBE_INTERVAL },
-  { "successful_probes_required", KW_FAILOVER_SUCCESSFUL_PROBES_REQUIRED },
+  { "failover_servers",   KW_FAILOVER, KWS_OBSOLETE, "failover-servers has been deprecated, try failover() and use servers() option inside it." },
+  { "failover",           KW_FAILOVER },
+  { "failback",           KW_FAILBACK },
+  { "servers",            KW_SERVERS },
+  { "tcp_probe_interval", KW_TCP_PROBE_INTERVAL },
+  { "successful_probes_required", KW_SUCCESSFUL_PROBES_REQUIRED },
   { NULL }
 };
 
