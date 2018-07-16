@@ -27,3 +27,4 @@ coverage-clean:
 include tests/unit/Makefile.am
 include tests/loggen/Makefile.am
 include tests/functional/Makefile.am
+include tests/pytest_framework/Makefile.am
