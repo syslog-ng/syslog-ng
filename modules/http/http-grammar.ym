@@ -66,6 +66,8 @@
 %token KW_TIMEOUT
 %token KW_TLS
 %token KW_FLUSH_BYTES
+%token KW_BODY_PREFIX
+%token KW_BODY_SUFFIX
 
 %type   <ptr> driver
 %type   <ptr> http_destination
@@ -108,6 +110,8 @@ http_option
     | KW_USER_AGENT '(' string ')'            { http_dd_set_user_agent(last_driver, $3); free($3); }
     | KW_HEADERS    '(' string_list ')'       { http_dd_set_headers(last_driver, $3); g_list_free_full($3, free); }
     | KW_METHOD     '(' string ')'            { http_dd_set_method(last_driver, $3); free($3); }
+    | KW_BODY_PREFIX '(' string ')'        { http_dd_set_body_prefix(last_driver, $3); free($3); }
+    | KW_BODY_SUFFIX '(' string ')'        { http_dd_set_body_suffix(last_driver, $3); free($3); }
     | KW_BODY       '(' template_content ')'  { http_dd_set_body(last_driver, $3); log_template_unref($3); }
     | KW_TIMEOUT '(' nonnegative_integer ')'  { http_dd_set_timeout(last_driver, $3); }
     | KW_FLUSH_LINES '(' nonnegative_integer ')' { http_dd_set_flush_lines(last_driver, $3); }

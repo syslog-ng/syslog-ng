@@ -239,6 +239,21 @@ http_dd_set_flush_bytes(LogDriver *d, glong flush_bytes)
   self->flush_bytes = flush_bytes;
 }
 
+void
+http_dd_set_body_prefix(LogDriver *d, const gchar *body_prefix)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  g_string_assign(self->body_prefix, body_prefix);
+}
+
+void
+http_dd_set_body_suffix(LogDriver *d, const gchar *body_suffix)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  g_string_assign(self->body_suffix, body_suffix);
+}
 
 static gchar *
 _sanitize_curl_debug_message(const gchar *data, gsize size)
@@ -452,6 +467,21 @@ _map_http_status_to_worker_status(glong http_code)
   return retval;
 }
 
+static void
+_reinit_request_body(HTTPDestinationDriver *self)
+{
+  g_string_truncate(self->request_body, 0);
+  if (self->body_prefix->len > 0)
+    g_string_append_len(self->request_body, self->body_prefix->str, self->body_prefix->len);
+}
+
+static void
+_finish_request_body(HTTPDestinationDriver *self)
+{
+  if (self->body_suffix->len > 0)
+    g_string_append_len(self->request_body, self->body_suffix->str, self->body_suffix->len);
+}
+
 /* we flush the accumulated data if
  *   1) we reach batch_size,
  *   2) the message queue becomes empty
@@ -465,6 +495,8 @@ _flush(LogThreadedDestDriver *s)
 
   if (self->super.batch_size == 0)
     return WORKER_INSERT_RESULT_SUCCESS;
+
+  _finish_request_body(self);
 
   curl_easy_setopt(self->curl, CURLOPT_HTTPHEADER, self->request_headers);
   curl_easy_setopt(self->curl, CURLOPT_POSTFIELDS, self->request_body->str);
@@ -500,7 +532,7 @@ _flush(LogThreadedDestDriver *s)
   retval = _map_http_status_to_worker_status(http_code);
 
 exit:
-  g_string_truncate(self->request_body, 0);
+  _reinit_request_body(self);
   curl_slist_free_all(self->request_headers);
   self->request_headers = NULL;
   return retval;
@@ -509,7 +541,7 @@ exit:
 static gboolean
 _should_initiate_flush(HTTPDestinationDriver *self)
 {
-  return (self->flush_bytes && self->request_body->len >= self->flush_bytes) ||
+  return (self->flush_bytes && self->request_body->len + self->body_suffix->len >= self->flush_bytes) ||
          (self->flush_lines && self->super.batch_size >= self->flush_lines);
 }
 
@@ -576,6 +608,7 @@ http_dd_init(LogPipe *s)
                                        SYSLOG_NG_VERSION, curl_info->version);
 
   _setup_static_options_in_curl(self);
+  _reinit_request_body(self);
 
   return log_threaded_dest_driver_init_method(s);
 }
@@ -594,6 +627,8 @@ http_dd_free(LogPipe *s)
   log_template_options_destroy(&self->template_options);
 
   g_string_free(self->request_body, TRUE);
+  g_string_free(self->body_prefix, TRUE);
+  g_string_free(self->body_suffix, TRUE);
 
   curl_easy_cleanup(self->curl);
   curl_global_cleanup();
@@ -635,6 +670,8 @@ http_dd_new(GlobalConfig *cfg)
   self->request_body = g_string_sized_new(32768);
   self->flush_lines = 0;
   self->flush_bytes = 0;
+  self->body_prefix = g_string_new("");
+  self->body_suffix = g_string_new("");
 
   return &self->super.super.super;
 }
