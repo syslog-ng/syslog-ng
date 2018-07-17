@@ -36,8 +36,7 @@ typedef struct _TransportMapperInet
   gboolean allow_tls;
   gboolean require_tls_when_has_tls_context;
   TLSContext *tls_context;
-  TLSSessionVerifyFunc tls_verify_callback;
-  gpointer tls_verify_data;
+  TLSVerifier *tls_verifier;
   gpointer secret_store_cb_data;
 } TransportMapperInet;
 
@@ -62,12 +61,10 @@ transport_mapper_inet_get_port_change_warning(TransportMapper *s)
 }
 
 static inline void
-transport_mapper_inet_set_tls_context(TransportMapperInet *self, TLSContext *tls_context,
-                                      TLSSessionVerifyFunc tls_verify_callback, gpointer tls_verify_data)
+transport_mapper_inet_set_tls_context(TransportMapperInet *self, TLSContext *tls_context, TLSVerifier *tls_verifier)
 {
   self->tls_context = tls_context;
-  self->tls_verify_callback = tls_verify_callback;
-  self->tls_verify_data = tls_verify_data;
+  self->tls_verifier = tls_verifier;
 }
 
 void transport_mapper_inet_init_instance(TransportMapperInet *self, const gchar *transport);

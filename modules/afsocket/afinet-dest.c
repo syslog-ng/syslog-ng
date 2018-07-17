@@ -50,6 +50,12 @@
 #  define _GNU_SOURCE 1
 #endif
 
+typedef struct _AFInetDestDriverTLSVerifyData
+{
+  TLSContext *tls_context;
+  gchar *hostname;
+} AFInetDestDriverTLSVerifyData;
+
 void
 afinet_dd_set_localip(LogDriver *s, gchar *ip)
 {
@@ -95,14 +101,13 @@ afinet_dd_set_spoof_source(LogDriver *s, gboolean enable)
 static gint
 afinet_dd_verify_callback(gint ok, X509_STORE_CTX *ctx, gpointer user_data)
 {
-  AFInetDestDriver *self G_GNUC_UNUSED = (AFInetDestDriver *) user_data;
-  TransportMapperInet *transport_mapper_inet = (TransportMapperInet *) self->super.transport_mapper;
+  AFInetDestDriverTLSVerifyData *self G_GNUC_UNUSED = (AFInetDestDriverTLSVerifyData *) user_data;
 
   X509 *current_cert = X509_STORE_CTX_get_current_cert(ctx);
   X509 *cert = X509_STORE_CTX_get0_cert(ctx);
 
   if (ok && current_cert == cert && self->hostname
-      && (tls_context_get_verify_mode(transport_mapper_inet->tls_context) & TVM_TRUSTED))
+      && (tls_context_get_verify_mode(self->tls_context) & TVM_TRUSTED))
     {
       ok = tls_verify_certificate_name(cert, self->hostname);
     }
@@ -110,12 +115,41 @@ afinet_dd_verify_callback(gint ok, X509_STORE_CTX *ctx, gpointer user_data)
   return ok;
 }
 
+static AFInetDestDriverTLSVerifyData *
+afinet_dd_tls_verify_data_new(TLSContext *ctx, const gchar *hostname)
+{
+  AFInetDestDriverTLSVerifyData *self = g_new0(AFInetDestDriverTLSVerifyData, 1);
+
+  self->tls_context = tls_context_ref(ctx);
+  self->hostname = g_strdup(hostname);
+  return self;
+}
+
+static void
+afinet_dd_tls_verify_data_free(gpointer s)
+{
+  AFInetDestDriverTLSVerifyData *self = (AFInetDestDriverTLSVerifyData *)s;
+
+  g_assert(self);
+
+  if (self)
+    {
+      tls_context_unref(self->tls_context);
+      g_free(self->hostname);
+      g_free(self);
+    }
+}
+
 void
 afinet_dd_set_tls_context(LogDriver *s, TLSContext *tls_context)
 {
   AFInetDestDriver *self = (AFInetDestDriver *) s;
-  transport_mapper_inet_set_tls_context((TransportMapperInet *) self->super.transport_mapper, tls_context,
-                                        afinet_dd_verify_callback, self);
+  AFInetDestDriverTLSVerifyData *verify_data;
+  TLSVerifier *verifier;
+
+  verify_data = afinet_dd_tls_verify_data_new(tls_context, self->hostname);
+  verifier = tls_verifier_new(afinet_dd_verify_callback, verify_data, afinet_dd_tls_verify_data_free);
+  transport_mapper_inet_set_tls_context((TransportMapperInet *) self->super.transport_mapper, tls_context, verifier);
 }
 
 void

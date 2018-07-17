@@ -34,14 +34,11 @@ struct _TransportFactoryTLS
 {
   TransportFactory super;
   TLSContext *tls_context;
-  TLSSessionVerifyFunc tls_verify_cb;
-  gpointer tls_verify_data;
+  TLSVerifier *tls_verifier;
   gboolean allow_compress;
 };
 
-TransportFactory *transport_factory_tls_new(TLSContext *ctx,
-                                            TLSSessionVerifyFunc tls_verify_cb,
-                                            gpointer tls_verify_data);
+TransportFactory *transport_factory_tls_new(TLSContext *ctx, TLSVerifier *tls_verifier);
 
 void transport_factory_tls_enable_compression(TransportFactory *);
 void transport_factory_tls_disable_compression(TransportFactory *);
