@@ -402,11 +402,8 @@ typedef struct _TFStringPaddingState
 } TFStringPaddingState;
 
 static gboolean
-tf_string_padding_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
-                          gint argc, gchar *argv[], GError **error)
+_padding_prepare_parse_state(TFStringPaddingState *state, gint argc, gchar **argv, GError **error)
 {
-  TFStringPaddingState *state = (TFStringPaddingState *) s;
-
   if (argc < 3)
     {
       g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
@@ -421,7 +418,12 @@ tf_string_padding_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *pa
                   "Padding template function requires a number as second argument!");
       return FALSE;
     }
+  return TRUE;
+}
 
+static void
+_padding_prepare_fill_padding_pattern(TFStringPaddingState *state, gint argc, gchar **argv)
+{
   state->padding_pattern = g_string_sized_new(state->width);
   if (argc < 4)
     {
@@ -444,6 +446,18 @@ tf_string_padding_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *pa
           g_string_append_len(state->padding_pattern, argv[3], state->width - (repeat * len));
         }
     }
+}
+
+static gboolean
+tf_string_padding_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent,
+                          gint argc, gchar *argv[], GError **error)
+{
+  TFStringPaddingState *state = (TFStringPaddingState *) s;
+
+  if (!_padding_prepare_parse_state(state, argc, argv, error))
+    return FALSE;
+
+  _padding_prepare_fill_padding_pattern(state, argc, argv);
 
   if (!tf_simple_func_prepare(self, state, parent, 2, argv, error))
     {
