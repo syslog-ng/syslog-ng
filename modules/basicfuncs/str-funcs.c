@@ -411,7 +411,7 @@ _padding_prepare_parse_state(TFStringPaddingState *state, gint argc, gchar **arg
       return FALSE;
     }
 
-  if (!parse_number_with_suffix(argv[2], &state->width))
+  if (!parse_number(argv[2], &state->width))
     {
 
       g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
