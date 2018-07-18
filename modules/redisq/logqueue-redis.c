@@ -134,11 +134,13 @@ _redis_dp_connect(LogQueueRedis *self, gboolean reconnect)
     }
 
   if (self->redis_options->auth)
-    if (!_authenticate_to_redis(self, self->redis_options->auth))
-      {
-        msg_error("redisq: failed to authenticate with redis server");
-        return FALSE;
-      }
+    {
+      if (!_authenticate_to_redis(self, self->redis_options->auth))
+        {
+          msg_error("redisq: failed to authenticate with redis server");
+          return FALSE;
+        }
+    }
 
   if (!_check_connection_to_redis(self))
     {

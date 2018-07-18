@@ -48,7 +48,9 @@ _acquire_queue(LogDestDriver *dd, const gchar *persist_name)
     }
 
   queue = log_queue_redis_new(&self->redis_server->super, persist_name);
-  log_queue_set_throttle(queue, dd->throttle);
+
+  if (queue)
+    log_queue_set_throttle(queue, dd->throttle);
 
   return queue;
 }

@@ -41,7 +41,6 @@ void redis_queue_options_port_set(RedisQueueOptions *self, gint port);
 void redis_queue_options_auth_set(RedisQueueOptions *self, gchar *auth);
 void redis_queue_options_key_prefix_set(RedisQueueOptions *self, gchar *keyprefix);
 void redis_queue_options_conn_timeout_set(RedisQueueOptions *self, gint conn_timeout);
-void redis_queue_options_check_plugin_settings(RedisQueueOptions *self);
 void redis_queue_options_set_default_options(RedisQueueOptions *self);
 void redis_queue_options_destroy(RedisQueueOptions *self);
 

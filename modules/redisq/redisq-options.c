@@ -29,11 +29,7 @@
 void
 redis_queue_options_host_set(RedisQueueOptions *self, gchar *host)
 {
-  if (self->host)
-    {
-      g_free(self->host);
-    }
-
+  g_free(self->host);
   self->host = g_strdup(host);
 }
 
@@ -46,22 +42,14 @@ redis_queue_options_port_set(RedisQueueOptions *self, gint port)
 void
 redis_queue_options_auth_set(RedisQueueOptions *self, gchar *auth)
 {
-  if (self->auth)
-    {
-      g_free(self->auth);
-    }
-
+  g_free(self->auth);
   self->auth = g_strdup(auth);
 }
 
 void
 redis_queue_options_key_prefix_set(RedisQueueOptions *self, gchar *keyprefix)
 {
-  if (self->keyprefix)
-    {
-      g_free(self->keyprefix);
-    }
-
+  g_free(self->keyprefix);
   self->keyprefix = g_strdup(keyprefix);
 }
 
@@ -69,12 +57,6 @@ void
 redis_queue_options_conn_timeout_set(RedisQueueOptions *self, gint conn_timeout)
 {
   self->conn_timeout = conn_timeout;
-}
-
-void
-redis_queue_options_check_plugin_settings(RedisQueueOptions *self)
-{
-
 }
 
 void
@@ -90,21 +72,12 @@ redis_queue_options_set_default_options(RedisQueueOptions *self)
 void
 redis_queue_options_destroy(RedisQueueOptions *self)
 {
-  if (self->host)
-    {
-      g_free(self->host);
-      self->host = NULL;
-    }
+  g_free(self->host);
+  self->host = NULL;
 
-  if (self->auth)
-    {
-      g_free(self->auth);
-      self->auth = NULL;
-    }
+  g_free(self->auth);
+  self->auth = NULL;
 
-  if (self->keyprefix)
-    {
-      g_free(self->keyprefix);
-      self->keyprefix = NULL;
-    }
+  g_free(self->keyprefix);
+  self->keyprefix = NULL;
 }
