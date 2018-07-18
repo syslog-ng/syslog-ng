@@ -3,6 +3,7 @@
 # required for configure
 libsystemd-dev
 openjdk-8-jdk
+man-db
 
 # required for make
 
