@@ -1,1 +1,1 @@
-dbld/images/required-pip/all.txt
+dbld/images/required-pip/trusty.txt
