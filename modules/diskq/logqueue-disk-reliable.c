@@ -269,8 +269,7 @@ _push_tail(LogQueueDisk *s, LogMessage *msg, LogPathOptions *local_options, cons
     }
 
   /* check the remaining space: if it is less than the mem_buf_size, the message cannot be acked */
-  gboolean overflow = qdisk_get_empty_space(self->super.qdisk) < qdisk_get_memory_size (self->super.qdisk);
-  if (overflow)
+  if (qdisk_get_empty_space(self->super.qdisk) < qdisk_get_memory_size (self->super.qdisk))
     {
       /* we have reached the reserved buffer size, keep the msg in memory
        * the message is written but into the overflow area
