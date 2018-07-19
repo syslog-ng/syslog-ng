@@ -119,15 +119,14 @@ static LogProtoStatus
 log_proto_text_client_post(LogProtoClient *s, LogMessage *logmsg, guchar *msg, gsize msg_len, gboolean *consumed)
 {
   LogProtoTextClient *self = (LogProtoTextClient *) s;
-  gint rc;
 
   /* try to flush already buffered data */
   *consumed = FALSE;
-  rc = log_proto_text_client_flush(s);
-  if (rc == LPS_ERROR)
+  const LogProtoStatus status = log_proto_text_client_flush(s);
+  if (status == LPS_ERROR)
     {
       /* log_proto_flush() already logs in the case of an error */
-      return rc;
+      return status;
     }
 
   if (self->partial)
@@ -143,7 +142,7 @@ log_proto_text_client_post(LogProtoClient *s, LogMessage *logmsg, guchar *msg, g
        * This obviously would cause the framing to break. Also libssl
        * returns an error in this case, which is how this was discovered.
        */
-      return rc;
+      return status;
     }
 
   *consumed = TRUE;
