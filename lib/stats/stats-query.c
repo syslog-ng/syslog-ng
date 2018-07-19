@@ -265,11 +265,8 @@ _get_counters(const gchar *key_str)
 
   if (simple_counters != NULL && aggregated_counters != NULL)
     return g_list_concat(simple_counters, aggregated_counters);
-  if (simple_counters != NULL)
-    return simple_counters;
-  if (aggregated_counters != NULL)
-    return aggregated_counters;
-  return NULL;
+
+  return simple_counters ? simple_counters : aggregated_counters;
 }
 
 static void
