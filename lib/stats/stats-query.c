@@ -346,7 +346,7 @@ _sum_selected_counters(GList *counters, gpointer user_data)
 }
 
 gboolean
-_stats_query_get_sum(const gchar *expr, StatsFormatCb format_cb, gpointer result, gboolean must_reset)
+_stats_query_get_sum(const gchar *expr, StatsSumFormatCb format_cb, gpointer result, gboolean must_reset)
 {
   if (!expr)
     return FALSE;
@@ -358,7 +358,9 @@ _stats_query_get_sum(const gchar *expr, StatsFormatCb format_cb, gpointer result
   const gchar *key_str = _setup_filter_expression(expr);
   GList *counters = _get_counters(key_str);
   _sum_selected_counters(counters, (gpointer)args);
-  _format_selected_counters(counters, format_cb, (gpointer)args);
+
+  if (counters)
+    format_cb(args);
 
   if (must_reset)
     _reset_selected_counters(counters);
@@ -372,13 +374,13 @@ _stats_query_get_sum(const gchar *expr, StatsFormatCb format_cb, gpointer result
 }
 
 gboolean
-stats_query_get_sum(const gchar *expr, StatsFormatCb format_cb, gpointer result)
+stats_query_get_sum(const gchar *expr, StatsSumFormatCb format_cb, gpointer result)
 {
   return _stats_query_get_sum(expr, format_cb, result, FALSE);
 }
 
 gboolean
-stats_query_get_sum_and_reset_counters(const gchar *expr, StatsFormatCb format_cb, gpointer result)
+stats_query_get_sum_and_reset_counters(const gchar *expr, StatsSumFormatCb format_cb, gpointer result)
 {
   return _stats_query_get_sum(expr, format_cb, result, TRUE);
 }

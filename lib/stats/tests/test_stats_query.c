@@ -162,26 +162,25 @@ _test_format_str_get(StatsCounterItem *ctr, gpointer user_data)
 }
 
 static gboolean
-_test_format_log_msg_get_sum(StatsCounterItem *ctr, gpointer user_data)
+_test_format_log_msg_get_sum(gpointer user_data)
 {
   gchar *name, *value;
   gpointer *args = (gpointer *) user_data;
   LogMessage *msg = (LogMessage *) args[0];
   gint *sum = (gint *) args[1];
 
-  name = g_strdup_printf("%s", stats_counter_get_name(ctr));
+  name = "sum";
   value = g_strdup_printf("%d", *sum);
 
   log_msg_set_value_by_name(msg, name, value, -1);
 
-  g_free(name);
   g_free(value);
 
   return TRUE;
 }
 
 static gboolean
-_test_format_str_get_sum(StatsCounterItem *ctr, gpointer user_data)
+_test_format_str_get_sum(gpointer user_data)
 {
   gpointer *args = (gpointer *) user_data;
   GString *result = (GString *) args[0];
@@ -299,7 +298,7 @@ ParameterizedTest(QueryTestCase *test_cases, stats_query, test_stats_query_get_s
   LogMessage *msg = log_msg_new_empty();
 
   stats_query_get_sum(test_cases->pattern, _test_format_log_msg_get_sum, (gpointer)msg);
-  actual = log_msg_get_value_by_name(msg, test_cases->pattern, NULL);
+  actual = log_msg_get_value_by_name(msg, "sum", NULL);
   cr_assert_str_eq(actual, test_cases->expected,
                    "Pattern: '%s'; expected number: '%s';, got: '%s';", test_cases->pattern, test_cases->expected, actual);
 
