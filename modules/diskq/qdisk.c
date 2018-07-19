@@ -214,6 +214,21 @@ _truncate_file(QDisk *self, gint64 new_size)
   return success;
 }
 
+gint64
+qdisk_get_empty_space(QDisk *self)
+{
+  gint64 wpos = qdisk_get_writer_head(self);
+  gint64 bpos = qdisk_get_backlog_head(self);
+
+  if (wpos > bpos)
+    {
+      return (qdisk_get_size(self) - wpos) +
+             (bpos - QDISK_RESERVED_SPACE);
+    }
+
+  return bpos - wpos;
+}
+
 gboolean
 qdisk_push_tail(QDisk *self, GString *record)
 {
