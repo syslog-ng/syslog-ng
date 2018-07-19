@@ -1,2 +1,0 @@
-# intentionally empty. You can list pip packages to be installed into the
-# devshell image.
