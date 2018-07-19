@@ -558,6 +558,13 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
                evt_tag_str("filename", self->filename),
                evt_tag_long("queue_length", self->hdr->length),
                evt_tag_long("size", self->hdr->write_head - self->hdr->read_head));
+
+      msg_debug("Reliable disk-buffer internal state",
+                evt_tag_str("filename", self->filename),
+                evt_tag_long("backlog_head", self->hdr->backlog_head),
+                evt_tag_long("read_head", self->hdr->read_head),
+                evt_tag_long("write_head", self->hdr->write_head),
+                evt_tag_long("backlog_len", self->hdr->backlog_len));
     }
 
   return TRUE;
