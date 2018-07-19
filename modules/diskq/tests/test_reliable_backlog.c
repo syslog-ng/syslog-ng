@@ -56,7 +56,7 @@ _dummy_ack(LogMessage *lm,  AckType ack_type)
 }
 
 static LogQueueDiskReliable *
-_init_diskq_for_test(gint64 size, gint64 membuf_size)
+_init_diskq_for_test(const gchar *filename, gint64 size, gint64 membuf_size)
 {
   LogQueueDiskReliable *dq;
 
@@ -64,7 +64,6 @@ _init_diskq_for_test(gint64 size, gint64 membuf_size)
   LogQueue *q = log_queue_disk_reliable_new(&options, NULL);
   struct stat st;
   num_of_ack = 0;
-  gchar *filename = FILENAME;
   unlink(filename);
   log_queue_disk_load_queue(q, filename);
   dq = (LogQueueDiskReliable *)q;
@@ -218,7 +217,7 @@ test_ack_over_eof(LogQueueDiskReliable *dq, LogMessage *msg1, LogMessage *msg2)
 static void
 test_over_EOF(void)
 {
-  LogQueueDiskReliable *dq = _init_diskq_for_test(TEST_DISKQ_SIZE, TEST_DISKQ_SIZE);
+  LogQueueDiskReliable *dq = _init_diskq_for_test(FILENAME, TEST_DISKQ_SIZE, TEST_DISKQ_SIZE);
   LogMessage *msg1;
   LogMessage *msg2;
 
@@ -362,7 +361,7 @@ test_rewind_backlog_use_whole_qbacklog(LogQueueDiskReliable *dq)
 void
 test_rewind_backlog(void)
 {
-  LogQueueDiskReliable *dq = _init_diskq_for_test(QDISK_RESERVED_SPACE + mark_message_serialized_size * 10,
+  LogQueueDiskReliable *dq = _init_diskq_for_test(FILENAME, QDISK_RESERVED_SPACE + mark_message_serialized_size * 10,
                                                   mark_message_serialized_size * 5);
   gint64 old_read_pos;
 
