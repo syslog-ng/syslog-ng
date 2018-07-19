@@ -86,9 +86,8 @@ static void
 _add_counter_to_index(StatsCluster *sc, gint type)
 {
   StatsCounterItem *counter = &sc->counter_group.counters[type];
-  gchar *counter_full_name = NULL;
 
-  counter_full_name = stats_counter_get_name(counter);
+  gchar *counter_full_name = stats_counter_get_name(counter);
   if (counter_full_name == NULL)
     {
       counter_full_name = _construct_counter_item_name(sc, type);
@@ -296,11 +295,10 @@ _stats_query_get(const gchar *expr, StatsFormatCb format_cb, gpointer result, gb
   if (!expr)
     return FALSE;
 
-  GList *counters = NULL;
   gboolean found_match = FALSE;
 
   const gchar *key_str = _setup_filter_expression(expr);
-  counters = _get_counters(key_str);
+  GList *counters = _get_counters(key_str);
   _format_selected_counters(counters, format_cb, result);
 
   if (must_reset)
@@ -353,13 +351,12 @@ _stats_query_get_sum(const gchar *expr, StatsFormatCb format_cb, gpointer result
   if (!expr)
     return FALSE;
 
-  GList *counters = NULL;
   gboolean found_match = FALSE;
   gint64 sum = 0;
   gpointer args[] = {result, &sum};
 
   const gchar *key_str = _setup_filter_expression(expr);
-  counters = _get_counters(key_str);
+  GList *counters = _get_counters(key_str);
   _sum_selected_counters(counters, (gpointer)args);
   _format_selected_counters(counters, format_cb, (gpointer)args);
 
@@ -389,11 +386,10 @@ stats_query_get_sum_and_reset_counters(const gchar *expr, StatsFormatCb format_c
 gboolean
 _stats_query_list(const gchar *expr, StatsFormatCb format_cb, gpointer result, gboolean must_reset)
 {
-  GList *counters = NULL;
   gboolean found_match = FALSE;
 
   const gchar *key_str = _setup_filter_expression(expr);
-  counters = _get_counters(key_str);
+  GList *counters = _get_counters(key_str);
   _format_selected_counters(counters, format_cb, result);
 
   if (must_reset)
