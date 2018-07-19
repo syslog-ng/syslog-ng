@@ -286,15 +286,15 @@ stats_counter_group_free(StatsCounterGroup *self)
 
 
 static void
-stats_cluster_free_counter_name(StatsCluster *self, gint type, StatsCounterItem *item, gpointer user_data)
+stats_cluster_free_counter(StatsCluster *self, gint type, StatsCounterItem *item, gpointer user_data)
 {
-  g_free(item->name);
+  stats_counter_free(item);
 }
 
 void
 stats_cluster_free(StatsCluster *self)
 {
-  stats_cluster_foreach_counter(self, stats_cluster_free_counter_name, NULL);
+  stats_cluster_foreach_counter(self, stats_cluster_free_counter, NULL);
   _stats_cluster_key_cloned_free(&self->key);
   g_free(self->query_key);
   stats_counter_group_free(&self->counter_group);
