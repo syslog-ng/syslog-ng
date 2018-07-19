@@ -61,17 +61,13 @@ stats_register_view(gchar *name, GList *queries, const AggregatedMetricsCb aggre
   g_hash_table_insert(stats_views, name, record);
 }
 
-static void
-_setup_filter_expression(const gchar *expr, gchar **key_str)
+static const gchar *
+_setup_filter_expression(const gchar *expr)
 {
   if (!expr || g_str_equal(expr, ""))
-    {
-      *key_str = g_strdup("*");
-    }
+    return "*";
   else
-    {
-      *key_str = g_strdup(expr);
-    }
+    return expr;
 }
 
 static gchar *
@@ -306,11 +302,10 @@ _stats_query_get(const gchar *expr, StatsFormatCb format_cb, gpointer result, gb
   if (!expr)
     return FALSE;
 
-  gchar *key_str = NULL;
   GList *counters = NULL;
   gboolean found_match = FALSE;
 
-  _setup_filter_expression(expr, &key_str);
+  const gchar *key_str = _setup_filter_expression(expr);
   counters = _get_counters(key_str);
   _format_selected_counters(counters, format_cb, result);
 
@@ -320,7 +315,6 @@ _stats_query_get(const gchar *expr, StatsFormatCb format_cb, gpointer result, gb
   if (g_list_length(counters) > 0)
     found_match = TRUE;
 
-  g_free(key_str);
   g_list_free(counters);
 
   return found_match;
@@ -365,13 +359,12 @@ _stats_query_get_sum(const gchar *expr, StatsFormatCb format_cb, gpointer result
   if (!expr)
     return FALSE;
 
-  gchar *key_str = NULL;
   GList *counters = NULL;
   gboolean found_match = FALSE;
   gint64 sum = 0;
   gpointer args[] = {result, &sum};
 
-  _setup_filter_expression(expr, &key_str);
+  const gchar *key_str = _setup_filter_expression(expr);
   counters = _get_counters(key_str);
   _sum_selected_counters(counters, (gpointer)args);
   _format_selected_counters(counters, format_cb, (gpointer)args);
@@ -382,7 +375,6 @@ _stats_query_get_sum(const gchar *expr, StatsFormatCb format_cb, gpointer result
   if (g_list_length(counters) > 0)
     found_match = TRUE;
 
-  g_free(key_str);
   g_list_free(counters);
 
   return found_match;
@@ -403,11 +395,10 @@ stats_query_get_sum_and_reset_counters(const gchar *expr, StatsFormatCb format_c
 gboolean
 _stats_query_list(const gchar *expr, StatsFormatCb format_cb, gpointer result, gboolean must_reset)
 {
-  gchar *key_str = NULL;
   GList *counters = NULL;
   gboolean found_match = FALSE;
 
-  _setup_filter_expression(expr, &key_str);
+  const gchar *key_str = _setup_filter_expression(expr);
   counters = _get_counters(key_str);
   _format_selected_counters(counters, format_cb, result);
 
@@ -417,7 +408,6 @@ _stats_query_list(const gchar *expr, StatsFormatCb format_cb, gpointer result, g
   if (g_list_length(counters) > 0)
     found_match = TRUE;
 
-  g_free(key_str);
   g_list_free(counters);
 
   return found_match;
