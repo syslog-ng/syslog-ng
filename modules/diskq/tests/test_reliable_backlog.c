@@ -36,7 +36,7 @@
 
 MsgFormatOptions parse_options;
 
-#define FILENAME "test_reliable_backlog.qf"
+#define FILENAME "test_reliable_backlog.rqf"
 #define TEST_DISKQ_SIZE QDISK_RESERVED_SPACE + 1000 /* 4096 + 1000 */
 
 static gint num_of_ack;
