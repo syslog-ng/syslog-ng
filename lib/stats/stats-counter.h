@@ -85,7 +85,7 @@ stats_counter_get(StatsCounterItem *counter)
 static inline gchar *
 stats_counter_get_name(StatsCounterItem *counter)
 {
-  if (counter && counter->name)
+  if (counter)
     return counter->name;
   return NULL;
 }
