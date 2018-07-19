@@ -146,10 +146,7 @@ _is_pattern_matches_key(GPatternSpec *pattern, gpointer key)
 static gboolean
 _is_single_match(const gchar *key_str)
 {
-  gboolean is_wildcard = strchr(key_str, '*') ? TRUE : FALSE;
-  gboolean is_joker = strchr(key_str, '?') ? TRUE : FALSE;
-
-  return !is_wildcard && !is_joker;
+  return !strpbrk(key_str, "*?");
 }
 
 static GList *
