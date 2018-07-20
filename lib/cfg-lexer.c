@@ -864,6 +864,21 @@ cfg_lexer_consume_next_injected_token(CfgLexer *self, gint *tok, YYSTYPE *yylval
   return FALSE;
 }
 
+static gint
+cfg_lexer_lex_next_token(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
+{
+  yylval->type = 0;
+
+  g_string_truncate(self->token_text, 0);
+  g_string_truncate(self->token_pretext, 0);
+
+  gint tok = _invoke__cfg_lexer_lex(self, yylval, yylloc);
+  if (yylval->type == 0)
+    yylval->type = tok;
+
+  return tok;
+}
+
 int
 cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
 {
@@ -882,14 +897,7 @@ relex:
       else if (cfg_lexer_get_context_type(self) == LL_CONTEXT_BLOCK_ARG)
         cfg_lexer_start_block_state(self, "()");
 
-      yylval->type = 0;
-
-      g_string_truncate(self->token_text, 0);
-      g_string_truncate(self->token_pretext, 0);
-
-      tok = _invoke__cfg_lexer_lex(self, yylval, yylloc);
-      if (yylval->type == 0)
-        yylval->type = tok;
+      tok = cfg_lexer_lex_next_token(self, yylval, yylloc);
 
       if (self->preprocess_output)
         g_string_append_printf(self->preprocess_output, "%s", self->token_pretext->str);
