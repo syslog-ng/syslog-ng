@@ -936,6 +936,41 @@ cfg_lexer_parse_and_run_block_generator(CfgLexer *self, CfgBlockGenerator *gen, 
   return TRUE;
 }
 
+static gboolean
+cfg_lexer_parse_include(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
+{
+  self->preprocess_suppress_tokens++;
+  gint tok = cfg_lexer_lex(self, yylval, yylloc);
+  if (tok != LL_STRING && tok != LL_IDENTIFIER)
+    {
+      self->preprocess_suppress_tokens--;
+      return FALSE;
+    }
+
+  gchar *include_file = g_strdup(yylval->cptr);
+  free(yylval->cptr);
+
+  tok = cfg_lexer_lex(self, yylval, yylloc);
+  if (tok != ';')
+    {
+      self->preprocess_suppress_tokens--;
+      g_free(include_file);
+      return FALSE;
+    }
+
+  if (!cfg_lexer_include_file(self, include_file))
+    {
+      g_free(include_file);
+      self->preprocess_suppress_tokens--;
+      return FALSE;
+    }
+
+  self->preprocess_suppress_tokens--;
+  g_free(include_file);
+
+  return TRUE;
+}
+
 int
 cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
 {
@@ -1007,35 +1042,8 @@ relex:;
     }
   else if (tok == KW_INCLUDE && cfg_lexer_get_context_type(self) != LL_CONTEXT_PRAGMA)
     {
-      gchar *include_file;
-
-      self->preprocess_suppress_tokens++;
-      tok = cfg_lexer_lex(self, yylval, yylloc);
-      if (tok != LL_STRING && tok != LL_IDENTIFIER)
-        {
-          self->preprocess_suppress_tokens--;
-          return LL_ERROR;
-        }
-
-      include_file = g_strdup(yylval->cptr);
-      free(yylval->cptr);
-
-      tok = cfg_lexer_lex(self, yylval, yylloc);
-      if (tok != ';')
-        {
-          self->preprocess_suppress_tokens--;
-          g_free(include_file);
-          return LL_ERROR;
-        }
-
-      if (!cfg_lexer_include_file(self, include_file))
-        {
-          g_free(include_file);
-          self->preprocess_suppress_tokens--;
-          return LL_ERROR;
-        }
-      self->preprocess_suppress_tokens--;
-      g_free(include_file);
+      if (!cfg_lexer_parse_include(self, yylval, yylloc))
+        return LL_ERROR;
       goto relex;
     }
   else if (self->cfg->user_version == 0 && self->cfg->parsed_version != 0)
