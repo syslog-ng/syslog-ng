@@ -913,16 +913,14 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
    * grammar. (on Windows glib, malloc/g_malloc are NOT equivalent)
    *
    */
-
   CfgBlockGenerator *gen;
   gint tok;
-  gboolean injected;
 
-relex:
+relex:;
 
-  injected = cfg_lexer_consume_next_injected_token(self, &tok, yylval, yylloc);
+  gboolean is_token_injected = cfg_lexer_consume_next_injected_token(self, &tok, yylval, yylloc);
 
-  if (!injected)
+  if (!is_token_injected)
     {
       if (cfg_lexer_get_context_type(self) == LL_CONTEXT_BLOCK_CONTENT)
         cfg_lexer_start_block_state(self, "{}");
@@ -1061,7 +1059,7 @@ relex:
       self->non_pragma_seen = TRUE;
     }
 
-  if (!injected && self->preprocess_suppress_tokens == 0)
+  if (!is_token_injected && self->preprocess_suppress_tokens == 0)
     cfg_lexer_append_preprocessed_output(self, self->token_text->str);
 
   return tok;
