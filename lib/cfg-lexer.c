@@ -896,41 +896,7 @@ cfg_lexer_parse_and_run_block_generator(CfgLexer *self, CfgBlockGenerator *gen, 
 
   gint saved_line = level->lloc.first_line;
   gint saved_column = level->lloc.first_column;
-  if (cfg_parser_parse(&block_ref_parser, self, (gpointer *) &args, NULL))
-    {
-      gboolean success;
-      gchar buf[256];
-      GString *result = g_string_sized_new(256);
-
-      level->lloc.first_line = saved_line;
-      level->lloc.first_column = saved_column;
-      self->preprocess_suppress_tokens--;
-      success = cfg_block_generator_generate(gen, self->cfg, args, result,
-                                             cfg_lexer_format_location(self, &level->lloc, buf, sizeof(buf)));
-
-      free(yylval->cptr);
-      cfg_args_unref(args);
-
-      if (!success)
-        {
-          g_string_free(result, TRUE);
-          return FALSE;
-        }
-
-      cfg_block_generator_format_name(gen, buf, sizeof(buf));
-
-      if (gen->suppress_backticks)
-        success = cfg_lexer_include_buffer_without_backtick_substitution(self, buf, result->str, result->len);
-      else
-        success = cfg_lexer_include_buffer(self, buf, result->str, result->len);
-      g_string_free(result, TRUE);
-
-      if (!success)
-        return FALSE;
-
-      return TRUE;
-    }
-  else
+  if (!cfg_parser_parse(&block_ref_parser, self, (gpointer *) &args, NULL))
     {
       level->lloc.first_line = saved_line;
       level->lloc.first_column = saved_column;
@@ -938,6 +904,36 @@ cfg_lexer_parse_and_run_block_generator(CfgLexer *self, CfgBlockGenerator *gen, 
       self->preprocess_suppress_tokens--;
       return FALSE;
     }
+
+  GString *result = g_string_sized_new(256);
+  gchar buf[256];
+  level->lloc.first_line = saved_line;
+  level->lloc.first_column = saved_column;
+  self->preprocess_suppress_tokens--;
+  gboolean success = cfg_block_generator_generate(gen, self->cfg, args, result,
+                                                  cfg_lexer_format_location(self, &level->lloc, buf, sizeof(buf)));
+
+  free(yylval->cptr);
+  cfg_args_unref(args);
+
+  if (!success)
+    {
+      g_string_free(result, TRUE);
+      return FALSE;
+    }
+
+  cfg_block_generator_format_name(gen, buf, sizeof(buf));
+
+  if (gen->suppress_backticks)
+    success = cfg_lexer_include_buffer_without_backtick_substitution(self, buf, result->str, result->len);
+  else
+    success = cfg_lexer_include_buffer(self, buf, result->str, result->len);
+  g_string_free(result, TRUE);
+
+  if (!success)
+    return FALSE;
+
+  return TRUE;
 }
 
 int
