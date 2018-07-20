@@ -61,17 +61,13 @@ stats_register_view(gchar *name, GList *queries, const AggregatedMetricsCb aggre
   g_hash_table_insert(stats_views, name, record);
 }
 
-static void
-_setup_filter_expression(const gchar *expr, gchar **key_str)
+static const gchar *
+_setup_filter_expression(const gchar *expr)
 {
   if (!expr || g_str_equal(expr, ""))
-    {
-      *key_str = g_strdup("*");
-    }
+    return "*";
   else
-    {
-      *key_str = g_strdup(expr);
-    }
+    return expr;
 }
 
 static gchar *
@@ -90,9 +86,8 @@ static void
 _add_counter_to_index(StatsCluster *sc, gint type)
 {
   StatsCounterItem *counter = &sc->counter_group.counters[type];
-  gchar *counter_full_name = NULL;
 
-  counter_full_name = stats_counter_get_name(counter);
+  gchar *counter_full_name = stats_counter_get_name(counter);
   if (counter_full_name == NULL)
     {
       counter_full_name = _construct_counter_item_name(sc, type);
@@ -108,7 +103,7 @@ _remove_counter_from_index(StatsCluster *sc, gint type)
 {
   gchar *key = stats_counter_get_name(&sc->counter_group.counters[type]);
   g_hash_table_remove(counter_index, key);
-  sc->indexed_mask |= (1 << type);
+  sc->indexed_mask &= ~(1 << type);
 }
 
 static void
@@ -150,10 +145,7 @@ _is_pattern_matches_key(GPatternSpec *pattern, gpointer key)
 static gboolean
 _is_single_match(const gchar *key_str)
 {
-  gboolean is_wildcard = strchr(key_str, '*') ? TRUE : FALSE;
-  gboolean is_joker = strchr(key_str, '?') ? TRUE : FALSE;
-
-  return !is_wildcard && !is_joker;
+  return !strpbrk(key_str, "*?");
 }
 
 static GList *
@@ -272,11 +264,8 @@ _get_counters(const gchar *key_str)
 
   if (simple_counters != NULL && aggregated_counters != NULL)
     return g_list_concat(simple_counters, aggregated_counters);
-  if (simple_counters != NULL)
-    return simple_counters;
-  if (aggregated_counters != NULL)
-    return aggregated_counters;
-  return NULL;
+
+  return simple_counters ? simple_counters : aggregated_counters;
 }
 
 static void
@@ -306,12 +295,10 @@ _stats_query_get(const gchar *expr, StatsFormatCb format_cb, gpointer result, gb
   if (!expr)
     return FALSE;
 
-  gchar *key_str = NULL;
-  GList *counters = NULL;
   gboolean found_match = FALSE;
 
-  _setup_filter_expression(expr, &key_str);
-  counters = _get_counters(key_str);
+  const gchar *key_str = _setup_filter_expression(expr);
+  GList *counters = _get_counters(key_str);
   _format_selected_counters(counters, format_cb, result);
 
   if (must_reset)
@@ -320,7 +307,6 @@ _stats_query_get(const gchar *expr, StatsFormatCb format_cb, gpointer result, gb
   if (g_list_length(counters) > 0)
     found_match = TRUE;
 
-  g_free(key_str);
   g_list_free(counters);
 
   return found_match;
@@ -360,21 +346,21 @@ _sum_selected_counters(GList *counters, gpointer user_data)
 }
 
 gboolean
-_stats_query_get_sum(const gchar *expr, StatsFormatCb format_cb, gpointer result, gboolean must_reset)
+_stats_query_get_sum(const gchar *expr, StatsSumFormatCb format_cb, gpointer result, gboolean must_reset)
 {
   if (!expr)
     return FALSE;
 
-  gchar *key_str = NULL;
-  GList *counters = NULL;
   gboolean found_match = FALSE;
   gint64 sum = 0;
   gpointer args[] = {result, &sum};
 
-  _setup_filter_expression(expr, &key_str);
-  counters = _get_counters(key_str);
+  const gchar *key_str = _setup_filter_expression(expr);
+  GList *counters = _get_counters(key_str);
   _sum_selected_counters(counters, (gpointer)args);
-  _format_selected_counters(counters, format_cb, (gpointer)args);
+
+  if (counters)
+    format_cb(args);
 
   if (must_reset)
     _reset_selected_counters(counters);
@@ -382,20 +368,19 @@ _stats_query_get_sum(const gchar *expr, StatsFormatCb format_cb, gpointer result
   if (g_list_length(counters) > 0)
     found_match = TRUE;
 
-  g_free(key_str);
   g_list_free(counters);
 
   return found_match;
 }
 
 gboolean
-stats_query_get_sum(const gchar *expr, StatsFormatCb format_cb, gpointer result)
+stats_query_get_sum(const gchar *expr, StatsSumFormatCb format_cb, gpointer result)
 {
   return _stats_query_get_sum(expr, format_cb, result, FALSE);
 }
 
 gboolean
-stats_query_get_sum_and_reset_counters(const gchar *expr, StatsFormatCb format_cb, gpointer result)
+stats_query_get_sum_and_reset_counters(const gchar *expr, StatsSumFormatCb format_cb, gpointer result)
 {
   return _stats_query_get_sum(expr, format_cb, result, TRUE);
 }
@@ -403,12 +388,10 @@ stats_query_get_sum_and_reset_counters(const gchar *expr, StatsFormatCb format_c
 gboolean
 _stats_query_list(const gchar *expr, StatsFormatCb format_cb, gpointer result, gboolean must_reset)
 {
-  gchar *key_str = NULL;
-  GList *counters = NULL;
   gboolean found_match = FALSE;
 
-  _setup_filter_expression(expr, &key_str);
-  counters = _get_counters(key_str);
+  const gchar *key_str = _setup_filter_expression(expr);
+  GList *counters = _get_counters(key_str);
   _format_selected_counters(counters, format_cb, result);
 
   if (must_reset)
@@ -417,7 +400,6 @@ _stats_query_list(const gchar *expr, StatsFormatCb format_cb, gpointer result, g
   if (g_list_length(counters) > 0)
     found_match = TRUE;
 
-  g_free(key_str);
   g_list_free(counters);
 
   return found_match;

@@ -55,6 +55,5 @@ stats_reset_counters(void)
 void
 stats_counter_free(StatsCounterItem *counter)
 {
-  if (counter->name)
-    g_free(counter->name);
+  g_free(counter->name);
 }

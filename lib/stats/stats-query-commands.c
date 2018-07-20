@@ -69,7 +69,7 @@ _ctl_format_name_without_value(StatsCounterItem *ctr, gpointer user_data)
 }
 
 static gboolean
-_ctl_format_get_sum(StatsCounterItem *ctr, gpointer user_data)
+_ctl_format_get_sum(gpointer user_data)
 {
   gpointer *args = (gpointer *) user_data;
   GString *result = (GString *) args[0];
