@@ -1054,15 +1054,9 @@ int
 cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
 {
   /*
-   * NOTES:
+   * NOTE:
    *
-   * 1) the role of the relex label is to restart the lexing process once
-   * new tokens were injected into the input stream.  (e.g.  after a
-   * generator was called).  This should really be a loop, and quite
-   * possible any refactors should start here by eliminating that
-   * loop-using-goto
-   *
-   * 2) make note that string tokens are allocated by malloc/free and not
+   * String tokens are allocated by malloc/free and not
    * g_malloc/g_free, this is significant.  The grammar contains the free()
    * call, so getting rid of that would require a lot of changes to the
    * grammar. (on Windows glib, malloc/g_malloc are NOT equivalent)
@@ -1070,28 +1064,28 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
    */
 
   gint tok;
-  gboolean relex_required;
+  gboolean lex_again;
+  gboolean is_token_injected;
 
-relex:;
-
-  gboolean is_token_injected = cfg_lexer_consume_next_injected_token(self, &tok, yylval, yylloc);
-
-  if (!is_token_injected)
+  do
     {
-      if (cfg_lexer_get_context_type(self) == LL_CONTEXT_BLOCK_CONTENT)
-        cfg_lexer_start_block_state(self, "{}");
-      else if (cfg_lexer_get_context_type(self) == LL_CONTEXT_BLOCK_ARG)
-        cfg_lexer_start_block_state(self, "()");
+      is_token_injected = cfg_lexer_consume_next_injected_token(self, &tok, yylval, yylloc);
 
-      tok = cfg_lexer_lex_next_token(self, yylval, yylloc);
-      cfg_lexer_append_preprocessed_output(self, self->token_pretext->str);
+      if (!is_token_injected)
+        {
+          if (cfg_lexer_get_context_type(self) == LL_CONTEXT_BLOCK_CONTENT)
+            cfg_lexer_start_block_state(self, "{}");
+          else if (cfg_lexer_get_context_type(self) == LL_CONTEXT_BLOCK_ARG)
+            cfg_lexer_start_block_state(self, "()");
+
+          tok = cfg_lexer_lex_next_token(self, yylval, yylloc);
+          cfg_lexer_append_preprocessed_output(self, self->token_pretext->str);
+        }
+
+      if (!cfg_lexer_process_token(self, tok, yylval, yylloc, &lex_again))
+        return LL_ERROR;
     }
-
-  if (!cfg_lexer_process_token(self, tok, yylval, yylloc, &relex_required))
-    return LL_ERROR;
-
-  if (relex_required)
-    goto relex;
+  while (lex_again);
 
   if (!is_token_injected && self->preprocess_suppress_tokens == 0)
     cfg_lexer_append_preprocessed_output(self, self->token_text->str);
