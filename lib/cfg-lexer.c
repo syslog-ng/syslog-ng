@@ -879,6 +879,13 @@ cfg_lexer_lex_next_token(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
   return tok;
 }
 
+static void
+cfg_lexer_append_preprocessed_output(CfgLexer *self, const gchar *token_text)
+{
+  if (self->preprocess_output)
+    g_string_append_printf(self->preprocess_output, "%s", token_text);
+}
+
 int
 cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
 {
@@ -898,9 +905,7 @@ relex:
         cfg_lexer_start_block_state(self, "()");
 
       tok = cfg_lexer_lex_next_token(self, yylval, yylloc);
-
-      if (self->preprocess_output)
-        g_string_append_printf(self->preprocess_output, "%s", self->token_pretext->str);
+      cfg_lexer_append_preprocessed_output(self, self->token_pretext->str);
     }
 
   /* NOTE: most of the code below is a monster, which should be factored out
@@ -994,8 +999,7 @@ relex:
     {
       gpointer dummy;
 
-      if (self->preprocess_output)
-        g_string_append_printf(self->preprocess_output, "@");
+      cfg_lexer_append_preprocessed_output(self, "@");
       if (!cfg_parser_parse(&pragma_parser, self, &dummy, NULL))
         {
           return LL_ERROR;
@@ -1058,13 +1062,9 @@ relex:
       self->non_pragma_seen = TRUE;
     }
 
-  if (!injected)
-    {
-      if (self->preprocess_suppress_tokens == 0 && self->preprocess_output)
-        {
-          g_string_append_printf(self->preprocess_output, "%s", self->token_text->str);
-        }
-    }
+  if (!injected && self->preprocess_suppress_tokens == 0)
+    cfg_lexer_append_preprocessed_output(self, self->token_text->str);
+
   return tok;
 }
 
