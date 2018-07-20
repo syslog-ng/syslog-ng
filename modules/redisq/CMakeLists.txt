@@ -1,40 +1,47 @@
-set(SYSLOG_NG_REDIS_QUEUE_SOURCES
-    redisq-options.h
-    redisq-options.c
-    logqueue-redis.c
-    logqueue-redis.h
+set(REDIS_QUEUE_HEADERS
+    "${CMAKE_CURRENT_BINARY_DIR}/redisq-grammar.h"
+    "redisq-parser.h"
+    "redisq.h"
+    "logqueue-redis.h"
+    "redisq-options.h"
 )
 
-add_library(syslog-ng-redis-queue ${SYSLOG_NG_REDIS_QUEUE_SOURCES})
-target_link_libraries(syslog-ng-redis-queue PUBLIC syslog-ng)
-
 set(REDIS_QUEUE_SOURCES
-    redisq.c
-    redisq.h
-    redisq-parser.c
-    redisq-parser.h
-    redisq-plugin.c
-    ${CMAKE_CURRENT_BINARY_DIR}/redisq-grammar.c
-    ${CMAKE_CURRENT_BINARY_DIR}/redisq-grammar.h
+    "${CMAKE_CURRENT_BINARY_DIR}/redisq-grammar.c"
+    "redisq-parser.c"
+    "redisq.c"
+    "logqueue-redis.c"
+    "redisq-options.c"
 )
 
 generate_y_from_ym(modules/redisq/redisq-grammar)
 
 find_package(Hiredis)
 
-bison_target(RedisQueueGrammar
+if (HIREDIS_FOUND)
+  option(ENABLE_REDIS_QUEUE "Enable redis module" ON)
+else()
+  option(ENABLE_REDIS_QUEUE "Enable redis module" OFF)
+endif()
+
+if (ENABLE_REDIS_QUEUE)
+
+  bison_target(RedisQueueGrammar
     ${CMAKE_CURRENT_BINARY_DIR}/redisq-grammar.y
     ${CMAKE_CURRENT_BINARY_DIR}/redisq-grammar.c
     COMPILE_FLAGS ${BISON_FLAGS})
 
-add_library(redis-queue SHARED ${REDIS_QUEUE_SOURCES})
-target_link_libraries(redis-queue PRIVATE syslog-ng-redis-queue)
-target_include_directories(redis-queue
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-  PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
-)
-target_link_libraries(redis-queue PRIVATE syslog-ng)
+  add_library(redis-queue SHARED ${REDIS_QUEUE_SOURCES})
 
-install(TARGETS redis-queue LIBRARY DESTINATION lib/syslog-ng COMPONENT redisqueue)
+  target_include_directories(redis-queue
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+    PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+    
+  target_include_directories (redis-queue PRIVATE ${HIREDIS_INCLUDE_DIR})
+    
+  target_link_libraries(redis-queue PRIVATE syslog-ng ${HIREDIS_LIBRARIES})
+  install(TARGETS redis-queue LIBRARY DESTINATION lib/syslog-ng COMPONENT redisqueue)
+
+endif()
 
 #add_test_subdirectory(tests)
