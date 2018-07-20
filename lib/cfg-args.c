@@ -103,6 +103,24 @@ cfg_args_contains(CfgArgs *self, const gchar *name)
   return contains;
 }
 
+void
+cfg_args_remove_normalized(CfgArgs *self, const gchar *normalized_name)
+{
+  gpointer orig_key;
+  if (g_hash_table_lookup_extended(self->args, normalized_name, &orig_key, NULL))
+    {
+      g_hash_table_remove(self->args, orig_key);
+    }
+}
+
+void
+cfg_args_remove(CfgArgs *self, const gchar *name)
+{
+  gchar *normalized_name = __normalize_key(name);
+  cfg_args_remove_normalized(self, normalized_name);
+  g_free(normalized_name);
+}
+
 CfgArgs *
 cfg_args_new(void)
 {

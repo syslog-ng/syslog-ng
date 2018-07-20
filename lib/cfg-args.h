@@ -34,6 +34,8 @@ gchar *cfg_args_format_varargs(CfgArgs *self, CfgArgs *defaults);
 void cfg_args_set(CfgArgs *self, const gchar *name, const gchar *value);
 const gchar *cfg_args_get(CfgArgs *self, const gchar *name);
 gboolean cfg_args_contains(CfgArgs *self, const gchar *name);
+void cfg_args_remove_normalized(CfgArgs *self, const gchar *normalized_name);
+void cfg_args_remove(CfgArgs *self, const gchar *name);
 void cfg_args_foreach(CfgArgs *self, GHFunc func, gpointer user_data);
 void cfg_args_accept_varargs(CfgArgs *self);
 gboolean cfg_args_is_accepting_varargs(CfgArgs *self);
