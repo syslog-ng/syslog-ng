@@ -207,7 +207,7 @@ _truncate_file(QDisk *self, gint64 new_size)
       msg_error("Error truncating disk-queue file",
                 evt_tag_error("error"),
                 evt_tag_str("filename", self->filename),
-                evt_tag_int("newsize", self->hdr->write_head),
+                evt_tag_long("newsize", self->hdr->write_head),
                 evt_tag_int("fd", self->fd));
     }
 
@@ -464,9 +464,9 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
     {
       msg_error("Inconsistent header data in disk-queue file, ignoring",
                 evt_tag_str("filename", self->filename),
-                evt_tag_int("read_head", self->hdr->read_head),
-                evt_tag_int("write_head", self->hdr->write_head),
-                evt_tag_int("qdisk_length",  self->hdr->length));
+                evt_tag_long("read_head", self->hdr->read_head),
+                evt_tag_long("write_head", self->hdr->write_head),
+                evt_tag_long("qdisk_length",  self->hdr->length));
       return FALSE;
     }
 
@@ -481,8 +481,8 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
         {
           msg_error("Inconsistent header data in disk-queue file, ignoring qout",
                     evt_tag_str("filename", self->filename),
-                    evt_tag_int("qout_ofs", qout_ofs),
-                    evt_tag_int("qdisk_length",  self->hdr->length));
+                    evt_tag_long("qout_ofs", qout_ofs),
+                    evt_tag_long("qdisk_length",  self->hdr->length));
         }
 
       if (!(qbacklog_ofs > 0 && qbacklog_ofs < self->hdr->write_head))
@@ -494,8 +494,8 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
         {
           msg_error("Inconsistent header data in disk-queue file, ignoring qbacklog",
                     evt_tag_str("filename", self->filename),
-                    evt_tag_int("qbacklog_ofs", qbacklog_ofs),
-                    evt_tag_int("qdisk_length",  self->hdr->length));
+                    evt_tag_long("qbacklog_ofs", qbacklog_ofs),
+                    evt_tag_long("qdisk_length",  self->hdr->length));
         }
 
       if (!(qoverflow_ofs > 0 && qoverflow_ofs < self->hdr->write_head))
@@ -507,8 +507,8 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
         {
           msg_error("Inconsistent header data in disk-queue file, ignoring qoverflow",
                     evt_tag_str("filename", self->filename),
-                    evt_tag_int("qoverflow_ofs", qoverflow_ofs),
-                    evt_tag_int("qdisk_length",  self->hdr->length));
+                    evt_tag_long("qoverflow_ofs", qoverflow_ofs),
+                    evt_tag_long("qdisk_length",  self->hdr->length));
         }
     }
 
@@ -532,7 +532,7 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
                evt_tag_int("qout_length", qout_count),
                evt_tag_int("qbacklog_length", qbacklog_count),
                evt_tag_int("qoverflow_length", qoverflow_count),
-               evt_tag_int("qdisk_length", self->hdr->length));
+               evt_tag_long("qdisk_length", self->hdr->length));
     }
   else
     {
@@ -541,8 +541,8 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
       self->file_size = st.st_size;
       msg_info("Reliable disk-buffer state loaded",
                evt_tag_str("filename", self->filename),
-               evt_tag_int("queue_length", self->hdr->length),
-               evt_tag_int("size", self->hdr->write_head - self->hdr->read_head));
+               evt_tag_long("queue_length", self->hdr->length),
+               evt_tag_long("size", self->hdr->write_head - self->hdr->read_head));
     }
 
   return TRUE;
@@ -676,11 +676,11 @@ qdisk_save_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
              evt_tag_int("qout_length", qout_count),
              evt_tag_int("qbacklog_length", qbacklog_count),
              evt_tag_int("qoverflow_length", qoverflow_count),
-             evt_tag_int("qdisk_length", self->hdr->length));
+             evt_tag_long("qdisk_length", self->hdr->length));
   else
     msg_info("Reliable disk-buffer state saved",
              evt_tag_str("filename", self->filename),
-             evt_tag_int("qdisk_length", self->hdr->length));
+             evt_tag_long("qdisk_length", self->hdr->length));
 
   return TRUE;
 }

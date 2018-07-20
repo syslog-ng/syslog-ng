@@ -146,7 +146,7 @@ _attach(LogDriverPlugin *s, LogDriver *d)
   if (self->options.disk_buf_size < MIN_DISK_BUF_SIZE && self->options.disk_buf_size != 0)
     {
       msg_warning("The value of 'disk_buf_size()' is too low, setting to the smallest acceptable value",
-                  evt_tag_int("min_space", MIN_DISK_BUF_SIZE));
+                  evt_tag_long("min_space", MIN_DISK_BUF_SIZE));
       self->options.disk_buf_size = MIN_DISK_BUF_SIZE;
     }
 
