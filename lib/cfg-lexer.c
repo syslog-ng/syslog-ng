@@ -889,25 +889,6 @@ cfg_lexer_append_preprocessed_output(CfgLexer *self, const gchar *token_text)
 int
 cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
 {
-  CfgBlockGenerator *gen;
-  gint tok;
-  gboolean injected;
-
-relex:
-
-  injected = cfg_lexer_consume_next_injected_token(self, &tok, yylval, yylloc);
-
-  if (!injected)
-    {
-      if (cfg_lexer_get_context_type(self) == LL_CONTEXT_BLOCK_CONTENT)
-        cfg_lexer_start_block_state(self, "{}");
-      else if (cfg_lexer_get_context_type(self) == LL_CONTEXT_BLOCK_ARG)
-        cfg_lexer_start_block_state(self, "()");
-
-      tok = cfg_lexer_lex_next_token(self, yylval, yylloc);
-      cfg_lexer_append_preprocessed_output(self, self->token_pretext->str);
-    }
-
   /* NOTE: most of the code below is a monster, which should be factored out
    * to tiny little functions.  This is not very simple and I am in the
    * middle of something that I would rather close than doing the
@@ -933,6 +914,24 @@ relex:
    *
    */
 
+  CfgBlockGenerator *gen;
+  gint tok;
+  gboolean injected;
+
+relex:
+
+  injected = cfg_lexer_consume_next_injected_token(self, &tok, yylval, yylloc);
+
+  if (!injected)
+    {
+      if (cfg_lexer_get_context_type(self) == LL_CONTEXT_BLOCK_CONTENT)
+        cfg_lexer_start_block_state(self, "{}");
+      else if (cfg_lexer_get_context_type(self) == LL_CONTEXT_BLOCK_ARG)
+        cfg_lexer_start_block_state(self, "()");
+
+      tok = cfg_lexer_lex_next_token(self, yylval, yylloc);
+      cfg_lexer_append_preprocessed_output(self, self->token_pretext->str);
+    }
 
   if (tok == LL_IDENTIFIER &&
       self->cfg &&
