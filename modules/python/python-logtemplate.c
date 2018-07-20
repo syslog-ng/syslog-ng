@@ -45,8 +45,9 @@ py_log_template_format(PyObject *s, PyObject *args)
   PyLogMessage *msg;
   PyLogTemplateOptions *py_log_template_options = NULL;
   gint tz = LTZ_SEND;
+  gint seqnum = 0;
 
-  if (!PyArg_ParseTuple(args, "O|Oi", &msg, &py_log_template_options, &tz))
+  if (!PyArg_ParseTuple(args, "O|Oii", &msg, &py_log_template_options, &tz, &seqnum))
     return NULL;
 
   if (py_log_template_options && (Py_TYPE(py_log_template_options) != &py_log_template_options_type))
@@ -66,7 +67,7 @@ py_log_template_format(PyObject *s, PyObject *args)
     }
 
   GString *result = scratch_buffers_alloc();
-  log_template_format(self->template, msg->msg, log_template_options, tz, 0, NULL, result);
+  log_template_format(self->template, msg->msg, log_template_options, tz, seqnum, NULL, result);
 
   return _py_string_from_string(result->str, result->len);
 }
