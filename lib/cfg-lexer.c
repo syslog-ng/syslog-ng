@@ -971,35 +971,106 @@ cfg_lexer_parse_include(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
   return TRUE;
 }
 
-int
-cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
+static gboolean
+cfg_lexer_process_token(CfgLexer *self, gint tok, YYSTYPE *yylval, YYLTYPE *yylloc, gboolean *lex_again)
 {
-  /* NOTE: most of the code below is a monster, which should be factored out
-   * to tiny little functions.  This is not very simple and I am in the
-   * middle of something that I would rather close than doing the
-   * refactoring desperately needed here.  I am silencing my conscience with
-   * this note and also take the time to document some of the quirks below.
+  /*
+   * NOTE:
    *
-   * 1) This code is deeply coupled with GlobalConfig and most of it does
+   * This code is deeply coupled with GlobalConfig and most of it does
    * not make sense to execute if self->cfg is NULL.  Thus, some of the
    * conditionals contain an explicit self->cfg check, in other cases it is
    * implicitly checked by the first conditional of a series of if-then-else
    * statements.
    *
-   * 2) the role of the relex label is to restart the lexing process once
+   */
+
+  CfgBlockGenerator *gen;
+  *lex_again = FALSE;
+
+  if (tok == LL_IDENTIFIER &&
+      self->cfg &&
+      (gen = cfg_lexer_find_generator(self, self->cfg, cfg_lexer_get_context_type(self), yylval->cptr)))
+    {
+      if (!cfg_lexer_parse_and_run_block_generator(self, gen, yylval))
+        return FALSE;
+
+      *lex_again = TRUE;
+      return TRUE;
+    }
+
+  if (self->ignore_pragma || self->cfg == NULL)
+    {
+      /* only process @pragma/@include tokens in case pragma allowed is set
+       * and the associated configuration is not NULL */
+      ;
+    }
+  else if (tok == LL_PRAGMA)
+    {
+      gpointer dummy;
+
+      cfg_lexer_append_preprocessed_output(self, "@");
+      if (!cfg_parser_parse(&pragma_parser, self, &dummy, NULL))
+        return FALSE;
+
+      *lex_again = TRUE;
+      return TRUE;
+    }
+  else if (tok == KW_INCLUDE && cfg_lexer_get_context_type(self) != LL_CONTEXT_PRAGMA)
+    {
+      if (!cfg_lexer_parse_include(self, yylval, yylloc))
+        return FALSE;
+
+      *lex_again = TRUE;
+      return TRUE;
+    }
+  else if (self->cfg->user_version == 0 && self->cfg->parsed_version != 0)
+    {
+      if (!cfg_set_version(self->cfg, configuration->parsed_version))
+        return FALSE;
+    }
+  else if (cfg_lexer_get_context_type(self) != LL_CONTEXT_PRAGMA && !self->non_pragma_seen)
+    {
+      /* first non-pragma token */
+
+      if (self->cfg->user_version == 0 && self->cfg->parsed_version == 0)
+        {
+          msg_error("ERROR: configuration files without a version number has become unsupported in " VERSION_3_13
+                    ", please specify a version number using @version and update your configuration accordingly");
+          return FALSE;
+        }
+
+      cfg_load_candidate_modules(self->cfg);
+
+      cfg_load_forced_modules(self->cfg);
+
+      self->non_pragma_seen = TRUE;
+    }
+
+  return TRUE;
+}
+
+int
+cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
+{
+  /*
+   * NOTES:
+   *
+   * 1) the role of the relex label is to restart the lexing process once
    * new tokens were injected into the input stream.  (e.g.  after a
    * generator was called).  This should really be a loop, and quite
    * possible any refactors should start here by eliminating that
    * loop-using-goto
    *
-   * 3) make note that string tokens are allocated by malloc/free and not
+   * 2) make note that string tokens are allocated by malloc/free and not
    * g_malloc/g_free, this is significant.  The grammar contains the free()
    * call, so getting rid of that would require a lot of changes to the
    * grammar. (on Windows glib, malloc/g_malloc are NOT equivalent)
    *
    */
-  CfgBlockGenerator *gen;
+
   gint tok;
+  gboolean relex_required;
 
 relex:;
 
@@ -1016,58 +1087,11 @@ relex:;
       cfg_lexer_append_preprocessed_output(self, self->token_pretext->str);
     }
 
-  if (tok == LL_IDENTIFIER &&
-      self->cfg &&
-      (gen = cfg_lexer_find_generator(self, self->cfg, cfg_lexer_get_context_type(self), yylval->cptr)))
-    {
-      if (!cfg_lexer_parse_and_run_block_generator(self, gen, yylval))
-        return LL_ERROR;
-      goto relex;
-    }
+  if (!cfg_lexer_process_token(self, tok, yylval, yylloc, &relex_required))
+    return LL_ERROR;
 
-  if (self->ignore_pragma || self->cfg == NULL)
-    {
-      /* only process @pragma/@include tokens in case pragma allowed is set
-       * and the associated configuration is not NULL */
-      ;
-    }
-  else if (tok == LL_PRAGMA)
-    {
-      gpointer dummy;
-
-      cfg_lexer_append_preprocessed_output(self, "@");
-      if (!cfg_parser_parse(&pragma_parser, self, &dummy, NULL))
-        return LL_ERROR;
-      goto relex;
-    }
-  else if (tok == KW_INCLUDE && cfg_lexer_get_context_type(self) != LL_CONTEXT_PRAGMA)
-    {
-      if (!cfg_lexer_parse_include(self, yylval, yylloc))
-        return LL_ERROR;
-      goto relex;
-    }
-  else if (self->cfg->user_version == 0 && self->cfg->parsed_version != 0)
-    {
-      if (!cfg_set_version(self->cfg, configuration->parsed_version))
-        return LL_ERROR;
-    }
-  else if (cfg_lexer_get_context_type(self) != LL_CONTEXT_PRAGMA && !self->non_pragma_seen)
-    {
-      /* first non-pragma token */
-
-      if (self->cfg->user_version == 0 && self->cfg->parsed_version == 0)
-        {
-          msg_error("ERROR: configuration files without a version number has become unsupported in " VERSION_3_13
-                    ", please specify a version number using @version and update your configuration accordingly");
-          return LL_ERROR;
-        }
-
-      cfg_load_candidate_modules(self->cfg);
-
-      cfg_load_forced_modules(self->cfg);
-
-      self->non_pragma_seen = TRUE;
-    }
+  if (relex_required)
+    goto relex;
 
   if (!is_token_injected && self->preprocess_suppress_tokens == 0)
     cfg_lexer_append_preprocessed_output(self, self->token_text->str);
