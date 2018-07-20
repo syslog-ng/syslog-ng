@@ -32,6 +32,7 @@
 
 static DirectoryMonitor *_add_directory_monitor(WildcardSourceDriver *self, const gchar *directory);
 
+static void _create_file_reader(WildcardSourceDriver *self, const gchar *full_path);
 
 static gboolean
 _check_required_options(WildcardSourceDriver *self)
@@ -66,10 +67,34 @@ _stop_file_reader(FileReader *reader, gpointer user_data)
   file_reader_stop_follow_file(reader);
 }
 
+static void
+_remove_file_reader(FileReader *reader, gpointer user_data)
+{
+  WildcardSourceDriver *self = (WildcardSourceDriver *) user_data;
+
+  _deleted_cb(reader, user_data);
+  log_pipe_ref(&reader->super);
+  if (g_hash_table_remove(self->file_readers, reader->filename->str))
+    {
+      msg_debug("File is removed from the file list", evt_tag_str("Filename", reader->filename->str));
+    }
+  else
+    {
+      msg_error("Can't remove the file reader", evt_tag_str("Filename", reader->filename->str));
+    }
+  log_pipe_unref(&reader->super);
+  gchar *full_path = pending_file_list_pop(self->waiting_list);
+  if (full_path)
+    {
+      _create_file_reader(self, full_path);
+      g_free(full_path);
+    }
+}
+
 void
 _create_file_reader(WildcardSourceDriver *self, const gchar *full_path)
 {
-  FileReader *reader = NULL;
+  WildcardFileReader *reader = NULL;
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
 
   if (g_hash_table_size(self->file_readers) >= self->max_files)
@@ -86,16 +111,18 @@ _create_file_reader(WildcardSourceDriver *self, const gchar *full_path)
                                     &self->file_reader_options,
                                     self->file_opener,
                                     &self->super,
-                                    cfg,
-                                    &self->deleted_file_events);
+                                    cfg);
 
-  log_pipe_append(&reader->super, &self->super.super.super);
-  if (!log_pipe_init(&reader->super))
+  wildcard_file_reader_on_deleted_file_finished(reader, _remove_file_reader, self);
+  wildcard_file_reader_on_deleted_file_eof(reader, _stop_file_reader, self);
+
+  log_pipe_append(&reader->super.super, &self->super.super.super);
+  if (!log_pipe_init(&reader->super.super))
     {
       msg_warning("File reader initialization failed",
                   evt_tag_str("filename", full_path),
                   evt_tag_str("source_driver", self->super.super.group));
-      log_pipe_unref(&reader->super);
+      log_pipe_unref(&reader->super.super);
     }
   else
     {
@@ -117,7 +144,7 @@ _handle_file_created(WildcardSourceDriver *self, const DirectoryMonitorEvent *ev
         }
       else
         {
-          if (reader->file_state.deleted)
+          if (wildcard_file_reader_is_deleted(reader))
             {
               msg_info("File is deleted, new file create with same name. "
                        "While old file is reading, skip the new one",
@@ -203,30 +230,6 @@ _on_directory_monitor_changed(const DirectoryMonitorEvent *event, gpointer user_
   else if (event->event_type == DIRECTORY_DELETED)
     {
       _handler_directory_deleted(self, event);
-    }
-}
-
-static void
-_remove_file_reader(FileReader *reader, gpointer user_data)
-{
-  WildcardSourceDriver *self = (WildcardSourceDriver *) user_data;
-
-  _deleted_cb(reader, user_data);
-  log_pipe_ref(&reader->super);
-  if (g_hash_table_remove(self->file_readers, reader->filename->str))
-    {
-      msg_debug("File is removed from the file list", evt_tag_str("Filename", reader->filename->str));
-    }
-  else
-    {
-      msg_error("Can't remove the file reader", evt_tag_str("Filename", reader->filename->str));
-    }
-  log_pipe_unref(&reader->super);
-  gchar *full_path = pending_file_list_pop(self->waiting_list);
-  if (full_path)
-    {
-      _create_file_reader(self, full_path);
-      g_free(full_path);
     }
 }
 
@@ -442,10 +445,6 @@ wildcard_sd_new(GlobalConfig *cfg)
 
   self->max_files = DEFAULT_MAX_FILES;
   self->file_opener = file_opener_for_regular_source_files_new();
-
-  self->deleted_file_events.user_data = self;
-  self->deleted_file_events.deleted_file_eof = _stop_file_reader;
-  self->deleted_file_events.deleted_file_finised = _remove_file_reader;
 
   self->waiting_list = pending_file_list_new();
 

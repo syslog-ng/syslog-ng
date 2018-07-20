@@ -33,9 +33,10 @@ typedef void (*FileStateEventCallback)(FileReader *file_reader, gpointer user_da
 
 typedef struct _FileStateEvent
 {
-  FileStateEventCallback deleted_file_finised;
+  FileStateEventCallback deleted_file_finished;
+  gpointer deleted_file_finished_user_data;
   FileStateEventCallback deleted_file_eof;
-  gpointer user_data;
+  gpointer deleted_file_eof_user_data;
 } FileStateEvent;
 
 typedef struct _FileState
@@ -50,14 +51,19 @@ struct _WildcardFileReader
 {
   FileReader super;
   FileState file_state;
-  FileStateEvent *file_state_event;
+  FileStateEvent file_state_event;
   struct iv_task file_state_event_handler;
 };
 
-FileReader *
+WildcardFileReader *
 wildcard_file_reader_new(const gchar *filename, FileReaderOptions *options,
                          FileOpener *opener, LogSrcDriver *owner,
-                         GlobalConfig *cfg, FileStateEvent *file_state_event);
+                         GlobalConfig *cfg);
+
+void wildcard_file_reader_on_deleted_file_finished(WildcardFileReader *self, FileStateEventCallback cb,
+                                                   gpointer user_data);
+void wildcard_file_reader_on_deleted_file_eof(WildcardFileReader *self, FileStateEventCallback cb, gpointer user_data);
+gboolean wildcard_file_reader_is_deleted(WildcardFileReader *self);
 
 
 #endif /* MODULES_AFFILE_WILDCARD_FILE_READER_H_ */
