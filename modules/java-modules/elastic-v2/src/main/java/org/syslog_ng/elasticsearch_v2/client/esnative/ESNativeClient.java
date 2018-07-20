@@ -145,7 +145,7 @@ public abstract class ESNativeClient implements ESClient {
 	}
 
     @Override
-    public void onMessageQueueEmpty() {
-
+    public boolean flush() {
+      return true;
     }
 }

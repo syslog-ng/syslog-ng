@@ -56,8 +56,8 @@ public abstract class LogDestination extends LogPipe {
 
 	private native int getSeqNum(long ptr);
 
-	protected void onMessageQueueEmpty() {
-		return;
+	protected boolean flush() {
+		return true;
 	}
 
 	public boolean openProxy() {
@@ -89,12 +89,13 @@ public abstract class LogDestination extends LogPipe {
 		}
 	}
 
-	public void onMessageQueueEmptyProxy() {
+	public boolean flushProxy() {
 		try {
-			onMessageQueueEmpty();
+			return flush();
 		}
 		catch (Exception e) {
 			sendExceptionMessage(e);
+      return false;
 		}
 	}
 

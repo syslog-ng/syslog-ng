@@ -217,7 +217,7 @@ public class HdfsDestination extends StructuredLogDestination {
     }
 
     @Override
-    public void onMessageQueueEmpty() {
+    public boolean flush() {
         /*
          * Trying to flush however the effect is questionable... (It is not guaranteed
          * that data has been flushed to persistent store on the datanode)
@@ -232,9 +232,11 @@ public class HdfsDestination extends StructuredLogDestination {
                     outputStream.hsync();
                 } catch (IOException e) {
                     logger.debug(String.format("Flush failed on file %s, reason: %s", entry.getKey(), e.getMessage()));
+                    return false;
                 }
             }
         }
+        return true;
     }
 
     @Override

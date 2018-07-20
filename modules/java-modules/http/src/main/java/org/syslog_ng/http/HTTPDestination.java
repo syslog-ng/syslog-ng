@@ -115,7 +115,8 @@ public class HTTPDestination extends StructuredLogDestination {
     }
 
     @Override
-    public void onMessageQueueEmpty() {
+    public boolean flush() {
+      return true;
     }
 
     @Override

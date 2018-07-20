@@ -41,7 +41,7 @@ typedef struct _JavaDestinationImpl
   jmethodID mi_open;
   jmethodID mi_close;
   jmethodID mi_is_opened;
-  jmethodID mi_on_message_queue_empty;
+  jmethodID mi_flush;
   jmethodID mi_get_name_by_uniq_options;
 } JavaDestinationImpl;
 
@@ -107,13 +107,13 @@ __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, c
                 evt_tag_str("method", "boolean send(String) or boolean send(LogMessage)"));
     }
 
-  self->dest_impl.mi_on_message_queue_empty = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class,
-      "onMessageQueueEmptyProxy", "()V");
-  if (!self->dest_impl.mi_on_message_queue_empty)
+  self->dest_impl.mi_flush = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class,
+      "flushProxy", "()V");
+  if (!self->dest_impl.mi_flush)
     {
       msg_error("Can't find method in class",
                 evt_tag_str("class_name", class_name),
-                evt_tag_str("method", "void onMessageQueueEmpty()"));
+                evt_tag_str("method", "void flush()"));
       return FALSE;
     }
 
@@ -328,13 +328,14 @@ java_destination_proxy_deinit(JavaDestinationProxy *self)
   CALL_JAVA_FUNCTION(env, CallVoidMethod, self->dest_impl.dest_object, self->dest_impl.mi_deinit);
 }
 
-void
-java_destination_proxy_on_message_queue_empty(JavaDestinationProxy *self)
+gboolean
+java_destination_proxy_flush(JavaDestinationProxy *self)
 {
   JNIEnv *env = java_machine_get_env(self->java_machine);
 
-  CALL_JAVA_FUNCTION(env, CallVoidMethod, self->dest_impl.dest_object, self->dest_impl.mi_on_message_queue_empty);
+  jboolean res = CALL_JAVA_FUNCTION(env, CallBooleanMethod, self->dest_impl.dest_object, self->dest_impl.mi_flush);
 
+  return !!(res);
 }
 
 gboolean
