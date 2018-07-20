@@ -102,34 +102,27 @@ _authenticate_to_redis(LogQueueRedis *self, const gchar *password)
 }
 
 static gboolean
-_redis_dp_connect(LogQueueRedis *self, gboolean reconnect)
+_redis_dp_connect(LogQueueRedis *self)
 {
-  redisReply *reply;
   struct timeval timeout = {0, 0};
 
   timeout.tv_sec = self->redis_options->conn_timeout;
 
   msg_debug("redisq: Connecting to redis server");
 
-  if (reconnect && (self->c != NULL))
+  if (self->c != NULL)
     {
-      reply = redisCommand(self->c, "ping");
-
-      if (reply)
-        freeReplyObject(reply);
-
-      if (!self->c->err)
+      if (_check_connection_to_redis(self))
         return TRUE;
       else
-        self->c = redisConnectWithTimeout(self->redis_options->host, self->redis_options->port, timeout);
+        redisFree(self->c);
     }
-  else
-    self->c = redisConnectWithTimeout(self->redis_options->host, self->redis_options->port, timeout);
+
+  self->c = redisConnectWithTimeout(self->redis_options->host, self->redis_options->port, timeout);
 
   if (self->c->err)
     {
-      msg_error("redisq: redis server error, suspending",
-                evt_tag_str("error", self->c->errstr));
+      msg_error("redisq: redis server error, suspending", evt_tag_str("error", self->c->errstr));
       return FALSE;
     }
 
@@ -153,19 +146,32 @@ _redis_dp_connect(LogQueueRedis *self, gboolean reconnect)
   return TRUE;
 }
 
+static gboolean
+_is_redis_connection_alive(LogQueueRedis *self)
+{
+  if (!_check_connection_to_redis(self))
+    {
+      if (!_redis_dp_connect(self))
+        {
+          msg_error("redisq: Message was dropped, There is no redis connection");
+          return FALSE;
+        }
+    }
+
+  return TRUE;
+}
+
+
 static gint64
 _get_length(LogQueue *s)
 {
   LogQueueRedis *self = (LogQueueRedis *) s;
-  gchar redis_list_name[1024] = "";
   redisReply *reply = NULL;
   glong list_len = 0;
 
-  if (_check_connection_to_redis(self))
+  if (_is_redis_connection_alive(self))
     {
-      g_snprintf(redis_list_name, sizeof(redis_list_name), "%s_%s", self->redis_options->keyprefix, self->persist_name);
-
-      reply = _get_redis_reply(self, "LLEN %s", redis_list_name);
+      reply = _get_redis_reply(self, "LLEN %s", self->redis_list_name);
 
       if (reply)
         {
@@ -312,8 +318,8 @@ _free(LogQueue *s)
   g_queue_free(self->qbacklog);
   self->qbacklog = NULL;
 
-  g_free(self->persist_name);
-  self->persist_name = NULL;
+  g_free(self->redis_list_name);
+  self->redis_list_name = NULL;
 
   g_static_mutex_free(&self->super.lock);
   g_free(self->super.persist_name);
@@ -323,18 +329,16 @@ static LogMessage *
 _read_message(LogQueueRedis *self, LogPathOptions *path_options)
 {
   LogMessage *msg = NULL;
-  gchar redis_list_name[1024] = "";
   GString *serialized;
   SerializeArchive *sa;
   redisReply *reply = NULL;
 
   msg_debug("redisq: read message from redis");
 
-  if (!_check_connection_to_redis(self))
+  if (!_is_redis_connection_alive(self))
     return NULL;
 
-  g_snprintf(redis_list_name, sizeof(redis_list_name), "%s_%s", self->redis_options->keyprefix, self->persist_name);
-  reply = _get_redis_reply(self, "LRANGE %s 0 0", redis_list_name);
+  reply = _get_redis_reply(self, "LRANGE %s 0 0", self->redis_list_name);
 
   if (reply)
     {
@@ -349,7 +353,7 @@ _read_message(LogQueueRedis *self, LogPathOptions *path_options)
           msg = log_msg_new_empty();
 
           if (!log_msg_deserialize(msg, sa))
-            msg_error("Can't read correct message from redis server");
+            msg_error("redisq: Can't read correct message from redis server");
 
           serialize_archive_free(sa);
           g_string_free(serialized, TRUE);
@@ -365,23 +369,20 @@ static gboolean
 _write_message(LogQueueRedis *self, LogMessage *msg, const LogPathOptions *path_options)
 {
   GString *serialized;
-  gchar redis_list_name[1024] = "";
   SerializeArchive *sa;
   gboolean consumed = FALSE;
 
-  if (_check_connection_to_redis(self))
+  if (_is_redis_connection_alive(self))
     {
       msg_debug("redisq: writing msg to redis db");
       serialized = g_string_sized_new(4096);
       sa = serialize_string_archive_new(serialized);
       log_msg_serialize(msg, sa);
 
-      g_snprintf(redis_list_name, sizeof(redis_list_name), "%s_%s", self->redis_options->keyprefix, self->persist_name);
-
-      msg_debug("redisq: serialized msg", evt_tag_str("list", redis_list_name),
+      msg_debug("redisq: serialized msg", evt_tag_str("list", self->redis_list_name),
                 evt_tag_str("msg", serialized->str), evt_tag_int("len", serialized->len));
 
-      consumed = _send_redis_command(self, "RPUSH %s %b", redis_list_name, serialized->str, serialized->len);
+      consumed = _send_redis_command(self, "RPUSH %s %b", self->redis_list_name, serialized->str, serialized->len);
 
       serialize_archive_free(sa);
       g_string_free(serialized, TRUE);
@@ -393,15 +394,13 @@ _write_message(LogQueueRedis *self, LogMessage *msg, const LogPathOptions *path_
 static gboolean
 _delete_message(LogQueueRedis *self)
 {
-  gchar redis_list_name[1024] = "";
   gboolean removed = FALSE;
 
-  if (_check_connection_to_redis(self))
+  if (_is_redis_connection_alive(self))
     {
       msg_debug("redisq: removing msg from redis list");
-      g_snprintf(redis_list_name, sizeof(redis_list_name), "%s_%s", self->redis_options->keyprefix, self->persist_name);
 
-      removed = _send_redis_command(self, "LPOP %s", redis_list_name);
+      removed = _send_redis_command(self, "LPOP %s", self->redis_list_name);
     }
 
   return removed;
@@ -414,7 +413,7 @@ redis_thread_func(gpointer arg)
 
   msg_debug("redisq: redis thread started");
 
-  _redis_dp_connect(self, FALSE);
+  _redis_dp_connect(self);
 
   return NULL;
 }
@@ -453,6 +452,8 @@ _set_virtual_functions(LogQueueRedis *self)
 LogQueue *
 log_queue_redis_new(LogQueueRedis *self, const gchar *persist_name)
 {
+  gchar list_name[1024] = "";
+
   msg_debug("redisq: log queue new");
 
   if (!_check_connection_to_redis(self))
@@ -460,7 +461,9 @@ log_queue_redis_new(LogQueueRedis *self, const gchar *persist_name)
 
   log_queue_init_instance(&self->super, persist_name);
   self->qbacklog = g_queue_new();
-  self->persist_name = g_strdup(persist_name);
+
+  g_snprintf(list_name, sizeof(list_name), "%s_%s", self->redis_options->keyprefix, persist_name);
+  self->redis_list_name = g_strdup(list_name);
 
   _set_virtual_functions(self);
   return &self->super;
