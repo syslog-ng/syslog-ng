@@ -209,23 +209,19 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
 
   msg_debug("redisq: Pushing msg to tail");
 
-  if (!self->write_message(self, msg, path_options))
+  if (self->write_message(self, msg, path_options))
     {
-      msg_error("redisq: Pushing msg to redis server failed");
+      g_static_mutex_lock(&self->super.lock);
+      log_queue_push_notify (&self->super);
+      g_static_mutex_unlock(&self->super.lock);
 
-      g_queue_push_tail (self->qbacklog, msg);
-      g_queue_push_tail (self->qbacklog, LOG_PATH_OPTIONS_TO_POINTER(path_options));
-
-      stats_counter_inc(self->super.queued_messages);
-      stats_counter_add(self->super.memory_usage, log_msg_get_size(msg));
+      log_msg_ref (msg);
+      log_msg_ack (msg, path_options, AT_PROCESSED);
+      return;
     }
 
-  g_static_mutex_lock(&self->super.lock);
-  log_queue_push_notify (&self->super);
-  g_static_mutex_unlock(&self->super.lock);
-
-  log_msg_ref (msg);
-  log_msg_ack (msg, path_options, AT_PROCESSED);
+  stats_counter_inc (self->super.dropped_messages);
+  msg_error("redisq: Pushing msg to redis server failed");
 }
 
 static LogMessage *
@@ -240,6 +236,18 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
 
   if (msg != NULL)
     {
+      if (self->super.use_backlog)
+        {
+          log_msg_ref (msg);
+          g_queue_push_tail (self->qbacklog, msg);
+          g_queue_push_tail (self->qbacklog, LOG_PATH_OPTIONS_TO_POINTER (path_options));
+
+          stats_counter_inc(self->super.queued_messages);
+          stats_counter_add(self->super.memory_usage, log_msg_get_size(msg));
+
+          self->delete_message(self);
+        }
+
       path_options->ack_needed = FALSE;
       log_msg_ack (msg, path_options, AT_PROCESSED);
     }
@@ -259,13 +267,15 @@ _ack_backlog(LogQueue *s, gint num_msg_to_ack)
 
   for (i = 0; i < num_msg_to_ack; i++)
     {
-      msg = self->read_message(self, &path_options);
+      if (self->qbacklog->length < ITEMS_PER_MESSAGE)
+        return;
 
-      if (msg != NULL)
-        {
-          self->delete_message(self);
-          log_msg_unref(msg);
-        }
+      msg = g_queue_pop_head (self->qbacklog);
+      POINTER_TO_LOG_PATH_OPTIONS (g_queue_pop_head (self->qbacklog), &path_options);
+
+      stats_counter_dec(self->super.queued_messages);
+      stats_counter_sub(self->super.memory_usage, log_msg_get_size(msg));
+      log_msg_unref(msg);
     }
 }
 
@@ -288,13 +298,12 @@ _rewind_backlog(LogQueue *s, guint rewind_count)
           msg = g_queue_pop_head (self->qbacklog);
           POINTER_TO_LOG_PATH_OPTIONS (g_queue_pop_head (self->qbacklog), &path_options);
 
-          if (!self->write_message(self, msg, &path_options))
-            {
-              msg_error("redisq: Pushing backlog msg to redis server failed");
-            }
-
           stats_counter_dec(self->super.queued_messages);
           stats_counter_sub(self->super.memory_usage, log_msg_get_size(msg));
+
+          if (!self->write_message(self, msg, &path_options))
+            msg_error("redisq: Pushing backlog msg to redis server failed");
+
         }
     }
 }
@@ -456,7 +465,7 @@ log_queue_redis_new(LogQueueRedis *self, const gchar *persist_name)
 
   msg_debug("redisq: log queue new");
 
-  if (!_check_connection_to_redis(self))
+  if (!_is_redis_connection_alive(self))
     return NULL;
 
   log_queue_init_instance(&self->super, persist_name);
