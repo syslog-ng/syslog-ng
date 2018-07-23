@@ -89,9 +89,7 @@ transport_mapper_inet_apply_transport_method(TransportMapper *s, GlobalConfig *c
 static LogTransport *
 _construct_multitransport_with_tls_factory(TransportMapperInet *self, gint fd)
 {
-  TransportFactory *default_factory = transport_factory_tls_new(self->tls_context,
-                                      self->tls_verify_callback,
-                                      self->tls_verify_data);
+  TransportFactory *default_factory = transport_factory_tls_new(self->tls_context, self->tls_verifier);
   return multitransport_new(default_factory, fd);
 }
 
@@ -105,7 +103,7 @@ _construct_tls_transport(TransportMapperInet *self, gint fd)
   if (!tls_session)
     return NULL;
 
-  tls_session_set_verify(tls_session, self->tls_verify_callback, self->tls_verify_data, NULL);
+  tls_session_set_verifier(tls_session, self->tls_verifier);
 
   return log_transport_tls_new(tls_session, fd);
 }
@@ -123,9 +121,7 @@ _construct_multitransport_with_plain_and_tls_factories(TransportMapperInet *self
 {
   LogTransport *transport = _construct_multitransport_with_plain_tcp_factory(self, fd);
 
-  TransportFactory *tls_factory = transport_factory_tls_new(self->tls_context,
-                                                            self->tls_verify_callback,
-                                                            self->tls_verify_data);
+  TransportFactory *tls_factory = transport_factory_tls_new(self->tls_context, self->tls_verifier);
   multitransport_add_factory((MultiTransport *)transport, tls_factory);
 
   return transport;
@@ -276,6 +272,8 @@ transport_mapper_inet_free_method(TransportMapper *s)
       g_free(self->secret_store_cb_data);
     }
 
+  if (self->tls_verifier)
+    tls_verifier_unref(self->tls_verifier);
   if (self->tls_context)
     tls_context_unref(self->tls_context);
 

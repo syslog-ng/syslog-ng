@@ -250,8 +250,8 @@ tls_session_verify_callback(int ok, X509_STORE_CTX *ctx)
 
       tls_log_certificate_validation_progress(ok, ctx);
 
-      if (self->verify_func)
-        return self->verify_func(ok, ctx, self->verify_data);
+      if (self->verifier && self->verifier->verify_func)
+        return self->verifier->verify_func(ok, ctx, self->verifier->verify_data);
     }
   return ok;
 }
@@ -273,12 +273,9 @@ tls_session_set_trusted_dn(TLSContext *self, GList *dn)
 }
 
 void
-tls_session_set_verify(TLSSession *self, TLSSessionVerifyFunc verify_func, gpointer verify_data,
-                       GDestroyNotify verify_destroy)
+tls_session_set_verifier(TLSSession *self, TLSVerifier *verifier)
 {
-  self->verify_func = verify_func;
-  self->verify_data = verify_data;
-  self->verify_data_destroy = verify_destroy;
+  self->verifier = verifier ? tls_verifier_ref(verifier) : NULL;
 }
 
 void
@@ -312,7 +309,7 @@ tls_session_new(SSL *ssl, TLSContext *ctx)
   self->ctx = tls_context_ref(ctx);
 
   /* to set verify callback */
-  tls_session_set_verify(self, NULL, NULL, NULL);
+  tls_session_set_verifier(self, NULL);
 
   SSL_set_info_callback(ssl, tls_session_info_callback);
 
@@ -323,8 +320,8 @@ void
 tls_session_free(TLSSession *self)
 {
   tls_context_unref(self->ctx);
-  if (self->verify_data && self->verify_data_destroy)
-    self->verify_data_destroy(self->verify_data);
+  if (self->verifier)
+    tls_verifier_unref(self->verifier);
   SSL_free(self->ssl);
 
   g_free(self);
@@ -802,6 +799,52 @@ tls_context_unref(TLSContext *self)
   g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
   if (self && (g_atomic_counter_dec_and_test(&self->ref_cnt)))
     _tls_context_free(self);
+}
+
+TLSVerifier *
+tls_verifier_new(TLSSessionVerifyFunc verify_func, gpointer verify_data,
+                 GDestroyNotify verify_data_destroy)
+{
+  TLSVerifier *self = g_new0(TLSVerifier, 1);
+
+  g_atomic_counter_set(&self->ref_cnt, 1);
+  self->verify_func = verify_func;
+  self->verify_data = verify_data;
+  self->verify_data_destroy = verify_data_destroy;
+  return self;
+}
+
+TLSVerifier *
+tls_verifier_ref(TLSVerifier *self)
+{
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt) > 0);
+
+  if (self)
+    g_atomic_counter_inc(&self->ref_cnt);
+
+  return self;
+}
+
+static void
+_tls_verifier_free(TLSVerifier *self)
+{
+  g_assert(self);
+
+  if (self)
+    {
+      if (self->verify_data && self->verify_data_destroy)
+        self->verify_data_destroy(self->verify_data);
+      g_free(self);
+    }
+}
+
+void
+tls_verifier_unref(TLSVerifier *self)
+{
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
+
+  if (self && (g_atomic_counter_dec_and_test(&self->ref_cnt)))
+    _tls_verifier_free(self);
 }
 
 gboolean
