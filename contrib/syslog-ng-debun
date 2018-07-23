@@ -3,11 +3,11 @@
 
 ### syslog-ng-debun: syslog debug bundle generator
 ### Written/Copyright: Gyorgy Pasztor <pasztor@linux.gyakg.u-szeged.hu>, (c) 2014-2016.
-### Further enhancements: Janos Szigetvari - jszigetvari at gmail dot com, (c) 2016-2017.
+### Further enhancements: Janos Szigetvari - jszigetvari at gmail dot com, (c) 2016-2018.
 ### This software may be used and distributed according to the terms of GNU GPLv2
 ### http://www.gnu.org/licenses/gpl-2.0.html
 
-version="0.3.10.20180119"
+version="0.3.12.20180723"
 
 ### Check for "local" variable support
 if type local >/dev/null; then
