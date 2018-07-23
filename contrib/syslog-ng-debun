@@ -642,7 +642,8 @@ acquire_syslog_config () {
 	find . > ${tmpdir}/syslog.etc.files
 	grep '\.key$' ${tmpdir}/syslog.etc.files > ${tmpdir}/syslog.etc.files.removed
 	grep '\.jks$' ${tmpdir}/syslog.etc.files > ${tmpdir}/syslog.etc.files.removed
-	grep -v '\.key$' ${tmpdir}/syslog.etc.files | grep -v '\.jks' | \
+	grep '\.keytab$' ${tmpdir}/syslog.etc.files > ${tmpdir}/syslog.etc.files.removed
+	grep -v '\.key$' ${tmpdir}/syslog.etc.files | grep -v '\.jks$' | grep -v '\.keytab$' | \
 		while read FILE; do \
 			if pki_is_private_key "${FILE}" 2>/dev/null; then
 				echo "${FILE}" >> ${tmpdir}/syslog.etc.files.removed
@@ -717,6 +718,9 @@ acquire_syslog_info () {
 		${syslogngctlbin} show-license-info --json > ${tmpdir}/syslog.license-usage.json 2>/dev/null
 	fi
 	echo ${syslogngctlbin} show-license-info
+	${syslogngctlbin} credentials status > ${tmpdir}/syslog.credentials.status 2>&1
+	echo ${syslogngctlbin} credentials status
+
 	for i in ${sngallpids} ; do
 		is_available ${lsof%% *} && $lsof $i >${tmpdir}/syslog.$i.lsof 2>/dev/null || echo "No lsof in path." >${tmpdir}/syslog.$i.lsof
 		myplimit $i >${tmpdir}/syslog.$i.limits
