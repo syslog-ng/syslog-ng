@@ -157,7 +157,7 @@ afstomp_dd_get_template_options(LogDriver *s)
  * Utilities
  */
 
-static gchar *
+static const gchar *
 afstomp_dd_format_stats_instance(LogThreadedDestDriver *s)
 {
   STOMPDestDriver *self = (STOMPDestDriver *) s;
@@ -391,7 +391,7 @@ afstomp_dd_new(GlobalConfig *cfg)
   self->super.worker.disconnect = afstomp_dd_disconnect;
   self->super.worker.insert = afstomp_worker_insert;
 
-  self->super.format.stats_instance = afstomp_dd_format_stats_instance;
+  self->super.format_stats_instance = afstomp_dd_format_stats_instance;
   self->super.stats_source = SCS_STOMP;
 
   afstomp_dd_set_host((LogDriver *) self, "127.0.0.1");

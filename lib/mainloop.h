@@ -66,6 +66,7 @@ int main_loop_read_and_init_config(MainLoop *self);
 void main_loop_run(MainLoop *self);
 
 MainLoop *main_loop_get_instance(void);
+GlobalConfig *main_loop_get_current_config(MainLoop *self);
 void main_loop_init(MainLoop *self, MainLoopOptions *options);
 void main_loop_deinit(MainLoop *self);
 

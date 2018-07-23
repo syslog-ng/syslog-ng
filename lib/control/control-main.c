@@ -26,18 +26,11 @@
 #include "control-server.h"
 #include "control-commands.h"
 
-static ControlServer *control_server;
-
-void
+ControlServer *
 control_init(MainLoop *main_loop, const gchar *control_name)
 {
-  control_server = control_server_new(control_name,
-                                      control_register_default_commands(main_loop));
+  ControlServer *control_server = control_server_new(control_name,
+                                                     control_register_default_commands(main_loop));
   control_server_start(control_server);
-}
-
-void
-control_destroy(void)
-{
-  control_server_free(control_server);
+  return control_server;
 }

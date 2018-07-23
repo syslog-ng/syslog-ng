@@ -156,6 +156,7 @@ struct _MainLoop
   GlobalConfig *new_config;
 
   MainLoopOptions *options;
+  ControlServer *control_server;
 };
 
 static MainLoop main_loop;
@@ -329,6 +330,12 @@ block_till_workers_exit(void)
   g_static_mutex_unlock(&workers_running_lock);
 }
 
+GlobalConfig *
+main_loop_get_current_config(MainLoop *self)
+{
+  return self->current_configuration;
+}
+
 /************************************************************************************
  * syncronized exit
  ************************************************************************************/
@@ -499,9 +506,9 @@ main_loop_init(MainLoop *self, MainLoopOptions *options)
   main_loop_call_init();
 
   main_loop_init_events(self);
-  if (!self->options->syntax_only)
-    control_init(self, resolvedConfigurablePaths.ctlfilename);
   setup_signals(self);
+
+  self->current_configuration = cfg_new(0);
 }
 
 /*
@@ -512,7 +519,6 @@ main_loop_read_and_init_config(MainLoop *self)
 {
   MainLoopOptions *options = self->options;
 
-  self->current_configuration = cfg_new(0);
   if (!cfg_read_config(self->current_configuration, resolvedConfigurablePaths.cfgfilename, options->syntax_only,
                        options->preprocess_into))
     {
@@ -528,6 +534,7 @@ main_loop_read_and_init_config(MainLoop *self)
     {
       return 2;
     }
+  self->control_server = control_init(self, resolvedConfigurablePaths.ctlfilename);
   return 0;
 }
 
@@ -543,8 +550,8 @@ main_loop_deinit(MainLoop *self)
 {
   main_loop_free_config(self);
 
-  if (!self->options->syntax_only)
-    control_destroy();
+  if (self->control_server)
+    control_server_free(self->control_server);
 
   iv_event_unregister(&self->exit_requested);
   iv_event_unregister(&self->reload_config_requested);

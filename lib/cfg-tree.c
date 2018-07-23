@@ -604,6 +604,12 @@ cfg_tree_new_mpx(CfgTree *self, LogExprNode *related_expr)
   return pipe;
 }
 
+static gchar *
+_format_anon_rule_name(CfgTree *self, gint content)
+{
+  return g_strdup_printf("#anon-%s%d", log_expr_node_get_content_name(content), self->anon_counters[content]++);
+}
+
 /*
  * Return the name of the rule that contains a LogExprNode. Generates
  * one automatically for anonymous log expressions.
@@ -613,11 +619,21 @@ cfg_tree_new_mpx(CfgTree *self, LogExprNode *related_expr)
 gchar *
 cfg_tree_get_rule_name(CfgTree *self, gint content, LogExprNode *node)
 {
-  LogExprNode *rule = log_expr_node_get_container_rule(node, content);
+  gchar *rule_name;
 
-  if (!rule->name)
-    rule->name = g_strdup_printf("#anon-%s%d", log_expr_node_get_content_name(content), self->anon_counters[content]++);
-  return g_strdup(rule->name);
+  if (node)
+    {
+      LogExprNode *rule = log_expr_node_get_container_rule(node, content);
+      if (!rule->name)
+        rule->name = _format_anon_rule_name(self, content);
+      rule_name = g_strdup(rule->name);
+    }
+  else
+    {
+      rule_name = _format_anon_rule_name(self, content);
+    }
+
+  return rule_name;
 }
 
 /*
@@ -629,11 +645,18 @@ cfg_tree_get_rule_name(CfgTree *self, gint content, LogExprNode *node)
 gchar *
 cfg_tree_get_child_id(CfgTree *self, gint content, LogExprNode *node)
 {
-  LogExprNode *rule = log_expr_node_get_container_rule(node, content);
   gchar *rule_name = cfg_tree_get_rule_name(self, content, node);
+  gint cur_child_id;
   gchar *res;
 
-  res = g_strdup_printf("%s#%d", rule_name, rule->child_id++);
+  if (node)
+    {
+      LogExprNode *rule = log_expr_node_get_container_rule(node, content);
+      cur_child_id = rule->child_id++;
+    }
+  else
+    cur_child_id = 0;
+  res = g_strdup_printf("%s#%d", rule_name, cur_child_id);
   g_free(rule_name);
   return res;
 }

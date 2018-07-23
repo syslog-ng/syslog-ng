@@ -386,7 +386,6 @@ _reenable_worker_jobs(void *s)
 void
 main_loop_worker_sync_call(void (*func)(gpointer user_data), gpointer user_data)
 {
-
   _register_sync_call_action(&sync_call_actions, func, user_data);
 
   if (main_loop_jobs_running == 0)
@@ -398,6 +397,35 @@ main_loop_worker_sync_call(void (*func)(gpointer user_data), gpointer user_data)
     {
       _request_all_threads_to_exit();
     }
+}
+
+/* This function is intended to be used from test programs to properly
+ * synchronize threaded worker startups and then trigger everything to exit
+ * and wait for that too.  This is useful in LogThreadedDestDriver test
+ * cases, where the test program itself is the "main" thread and we don't
+ * want to launch an entire main loop, because in that case we'd be forced
+ * to feed the worker thread from ivykis callbacks, which is a lot more
+ * difficult to write/maintain.
+ *
+ * This function clearly shows the level of ugly couplings between the
+ * various mainloop components.  (e.g.  mainloop and mainloop worker).  I
+ * consider that this should be part of the mainloop layer (semantically, it
+ * is the main loop that we are launching in a special mode.  This is also
+ * indicated by the iv_main() call below). However its implementation
+ * requires access to the main_loop_workers variable.
+ */
+void
+main_loop_sync_worker_startup_and_teardown(void)
+{
+  struct iv_task request_exit;
+  if (main_loop_jobs_running == 0)
+    return;
+
+  IV_TASK_INIT(&request_exit);
+  request_exit.handler = (void (*)(void *)) _request_all_threads_to_exit;
+  iv_task_register(&request_exit);
+  _register_sync_call_action(&sync_call_actions, (void (*)(gpointer user_data)) iv_quit, NULL);
+  iv_main();
 }
 
 void

@@ -27,6 +27,8 @@
 #include "logmsg/logmsg.h"
 #include "messages.h"
 
+#include <criterion/criterion.h>
+
 GList *internal_messages = NULL;
 
 
@@ -117,4 +119,17 @@ find_grabbed_message(const gchar *pattern)
         }
     }
   return FALSE;
+}
+
+void
+assert_grabbed_log_contains(const gchar *pattern)
+{
+  if (find_grabbed_message(pattern))
+    return;
+
+  GString *log_buffer = g_string_sized_new(1024);
+
+  format_grabbed_messages(log_buffer);
+  cr_assert(FALSE, "Cannot find pattern `%s' in the log output:\n%s\n", pattern, log_buffer->str);
+  g_string_free(log_buffer, TRUE);
 }

@@ -192,11 +192,16 @@ java_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
   return sent ? WORKER_INSERT_RESULT_SUCCESS : WORKER_INSERT_RESULT_ERROR;
 }
 
-static void
-java_worker_message_queue_empty(LogThreadedDestDriver *d)
+static worker_insert_result_t
+java_worker_flush(LogThreadedDestDriver *d)
 {
   JavaDestDriver *self = (JavaDestDriver *)d;
   java_destination_proxy_on_message_queue_empty(self->proxy);
+
+  /* FIXME: the java API as we published does not yet support returning a
+   * status from this call, so return success */
+
+  return WORKER_INSERT_RESULT_SUCCESS;
 }
 
 static void
@@ -221,7 +226,7 @@ java_dd_format_persist_name(const LogPipe *s)
   return persist_name;
 }
 
-static gchar *
+static const gchar *
 java_dd_format_stats_instance(LogThreadedDestDriver *d)
 {
   JavaDestDriver *self = (JavaDestDriver *)d;
@@ -272,12 +277,12 @@ java_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.generate_persist_name = java_dd_format_persist_name;
 
   self->super.worker.thread_deinit = java_worker_thread_deinit;
-  self->super.worker.insert = java_worker_insert;
   self->super.worker.connect = java_dd_open;
   self->super.worker.disconnect = java_dd_close;
-  self->super.worker.worker_message_queue_empty = java_worker_message_queue_empty;
+  self->super.worker.insert = java_worker_insert;
+  self->super.worker.flush = java_worker_flush;
 
-  self->super.format.stats_instance = java_dd_format_stats_instance;
+  self->super.format_stats_instance = java_dd_format_stats_instance;
   self->super.stats_source = SCS_JAVA;
 
   self->template = log_template_new(cfg, NULL);

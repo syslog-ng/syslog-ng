@@ -37,26 +37,36 @@ typedef enum
 {
   WORKER_INSERT_RESULT_DROP,
   WORKER_INSERT_RESULT_ERROR,
-  WORKER_INSERT_RESULT_REWIND,
+  WORKER_INSERT_RESULT_EXPLICIT_ACK_MGMT,
   WORKER_INSERT_RESULT_SUCCESS,
+  WORKER_INSERT_RESULT_QUEUED,
   WORKER_INSERT_RESULT_NOT_CONNECTED
 } worker_insert_result_t;
 
 typedef struct _LogThreadedDestDriver LogThreadedDestDriver;
 typedef struct _LogThreadedDestWorker
 {
+  LogQueue *queue;
   gboolean connected;
   void (*thread_init)(LogThreadedDestDriver *s);
   void (*thread_deinit)(LogThreadedDestDriver *s);
-  worker_insert_result_t (*insert)(LogThreadedDestDriver *s, LogMessage *msg);
   gboolean (*connect)(LogThreadedDestDriver *s);
-  void (*worker_message_queue_empty)(LogThreadedDestDriver *s);
   void (*disconnect)(LogThreadedDestDriver *s);
+  worker_insert_result_t (*insert)(LogThreadedDestDriver *s, LogMessage *msg);
+  worker_insert_result_t (*flush)(LogThreadedDestDriver *s);
 } LogThreadedDestWorker;
 
 struct _LogThreadedDestDriver
 {
   LogDestDriver super;
+  struct iv_task  do_work;
+  struct iv_event wake_up_event;
+  struct iv_event shutdown_event;
+  struct iv_timer timer_reopen;
+  struct iv_timer timer_throttle;
+  gboolean startup_finished;
+  GCond *started_up;
+  GMutex *lock;
 
   StatsCounterItem *dropped_messages;
   StatsCounterItem *queued_messages;
@@ -67,36 +77,23 @@ struct _LogThreadedDestDriver
   gboolean suspended;
   gboolean under_termination;
   time_t time_reopen;
-
-  LogQueue *queue;
+  gint batch_size;
+  gint rewound_batch_size;
+  gint retries_counter;
+  gint retries_max;
 
   LogThreadedDestWorker worker;
 
-  struct
-  {
-    void (*retry_over) (LogThreadedDestDriver *s, LogMessage *msg);
-  } messages;
-
-  struct
-  {
-    gchar *(*stats_instance) (LogThreadedDestDriver *s);
-  } format;
   gint stats_source;
   gint32 seq_num;
 
-  struct
-  {
-    gint counter;
-    gint max;
-  } retries;
-
   WorkerOptions worker_options;
-  struct iv_event wake_up_event;
-  struct iv_event shutdown_event;
-  struct iv_timer timer_reopen;
-  struct iv_timer timer_throttle;
-  struct iv_task  do_work;
+  const gchar *(*format_stats_instance)(LogThreadedDestDriver *s);
 };
+
+void log_threaded_dest_driver_ack_messages(LogThreadedDestDriver *self, gint batch_size);
+void log_threaded_dest_driver_drop_messages(LogThreadedDestDriver *self, gint batch_size);
+void log_threaded_dest_driver_rewind_messages(LogThreadedDestDriver *self, gint batch_size);
 
 gboolean log_threaded_dest_driver_deinit_method(LogPipe *s);
 gboolean log_threaded_dest_driver_init_method(LogPipe *s);

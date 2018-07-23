@@ -34,7 +34,34 @@ log_threaded_dest_driver_set_max_retries(LogDriver *s, gint max_retries)
 {
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
 
-  self->retries.max = max_retries;
+  self->retries_max = max_retries;
+}
+
+/* this should be used in combination with WORKER_INSERT_RESULT_EXPLICIT_ACK_MGMT to actually confirm message delivery. */
+void
+log_threaded_dest_driver_ack_messages(LogThreadedDestDriver *self, gint batch_size)
+{
+  log_queue_ack_backlog(self->worker.queue, batch_size);
+  stats_counter_add(self->written_messages, batch_size);
+  self->retries_counter = 0;
+  self->batch_size -= batch_size;
+}
+
+void
+log_threaded_dest_driver_drop_messages(LogThreadedDestDriver *self, gint batch_size)
+{
+  log_queue_ack_backlog(self->worker.queue, batch_size);
+  stats_counter_add(self->dropped_messages, batch_size);
+  self->retries_counter = 0;
+  self->batch_size -= batch_size;
+}
+
+void
+log_threaded_dest_driver_rewind_messages(LogThreadedDestDriver *self, gint batch_size)
+{
+  log_queue_rewind_backlog(self->worker.queue, batch_size);
+  self->rewound_batch_size = self->batch_size;
+  self->batch_size -= batch_size;
 }
 
 static gchar *
@@ -46,12 +73,6 @@ _format_seqnum_persist_name(LogThreadedDestDriver *self)
              self->super.super.super.generate_persist_name((const LogPipe *)self));
 
   return persist_name;
-}
-
-static void
-_start_watches(LogThreadedDestDriver *self)
-{
-  iv_task_register(&self->do_work);
 }
 
 static void
@@ -93,6 +114,7 @@ _shutdown_event_callback(gpointer data)
 {
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)data;
 
+  log_queue_reset_parallel_push(self->worker.queue);
   _stop_watches(self);
   iv_quit();
 }
@@ -101,10 +123,7 @@ _shutdown_event_callback(gpointer data)
 static void
 _suspend(LogThreadedDestDriver *self)
 {
-  iv_validate_now();
-  self->timer_reopen.expires  = iv_now;
-  self->timer_reopen.expires.tv_sec += self->time_reopen;
-  iv_timer_register(&self->timer_reopen);
+  self->suspended = TRUE;
 }
 
 /* NOTE: runs in the worker thread */
@@ -119,12 +138,10 @@ _connect(LogThreadedDestDriver *self)
 
   if (!self->worker.connected)
     {
-      log_queue_reset_parallel_push(self->queue);
+      msg_debug("Error establishing connection to server",
+                evt_tag_str("driver", self->super.super.id),
+                log_expr_node_location_tag(self->super.super.super.expr_node));
       _suspend(self);
-    }
-  else
-    {
-      _start_watches(self);
     }
 }
 
@@ -143,36 +160,97 @@ _disconnect(LogThreadedDestDriver *self)
 static void
 _disconnect_and_suspend(LogThreadedDestDriver *self)
 {
-  self->suspended = TRUE;
   _disconnect(self);
-  log_queue_reset_parallel_push(self->queue);
   _suspend(self);
 }
 
-/* NOTE: runs in the worker thread */
+/* Accepts the current batch including the current message by acking it back
+ * to the source.
+ *
+ * NOTE: runs in the worker thread */
 void
-_accept_message(LogThreadedDestDriver *self, LogMessage *msg)
+_accept_batch(LogThreadedDestDriver *self)
 {
-  self->retries.counter = 0;
-  step_sequence_number(&self->seq_num);
-  log_queue_ack_backlog(self->queue, 1);
-  log_msg_unref(msg);
+  log_threaded_dest_driver_ack_messages(self, self->batch_size);
 }
 
 /* NOTE: runs in the worker thread */
 void
-_drop_message(LogThreadedDestDriver *self, LogMessage *msg)
+_drop_batch(LogThreadedDestDriver *self)
 {
-  stats_counter_inc(self->dropped_messages);
-  _accept_message(self, msg);
+  log_threaded_dest_driver_drop_messages(self, self->batch_size);
 }
 
 /* NOTE: runs in the worker thread */
 void
-_rewind_message(LogThreadedDestDriver *self, LogMessage *msg)
+_rewind_batch(LogThreadedDestDriver *self)
 {
-  log_queue_rewind_backlog(self->queue, 1);
-  log_msg_unref(msg);
+  log_threaded_dest_driver_rewind_messages(self, self->batch_size);
+}
+
+static void
+_process_result(LogThreadedDestDriver *self, gint result)
+{
+  switch (result)
+    {
+    case WORKER_INSERT_RESULT_DROP:
+      msg_error("Message(s) dropped while sending message to destination",
+                evt_tag_str("driver", self->super.super.id),
+                evt_tag_int("batch_size", self->batch_size));
+
+      _drop_batch(self);
+      _disconnect_and_suspend(self);
+      break;
+
+    case WORKER_INSERT_RESULT_ERROR:
+      self->retries_counter++;
+
+      if (self->retries_counter >= self->retries_max)
+        {
+          msg_error("Multiple failures while sending message(s) to destination, message(s) dropped",
+                    evt_tag_str("driver", self->super.super.id),
+                    log_expr_node_location_tag(self->super.super.super.expr_node),
+                    evt_tag_int("retries", self->retries_counter),
+                    evt_tag_int("batch_size", self->batch_size));
+
+          _drop_batch(self);
+        }
+      else
+        {
+          msg_error("Error occurred while trying to send a message, trying again",
+                    evt_tag_str("driver", self->super.super.id),
+                    log_expr_node_location_tag(self->super.super.super.expr_node),
+                    evt_tag_int("retries", self->retries_counter),
+                    evt_tag_int("batch_size", self->batch_size));
+          _rewind_batch(self);
+          _disconnect_and_suspend(self);
+        }
+      break;
+
+    case WORKER_INSERT_RESULT_NOT_CONNECTED:
+      msg_info("Server disconnected while preparing messages for sending, trying again",
+               evt_tag_str("driver", self->super.super.id),
+               log_expr_node_location_tag(self->super.super.super.expr_node),
+               evt_tag_int("batch_size", self->batch_size));
+      _rewind_batch(self);
+      _disconnect_and_suspend(self);
+      break;
+
+    case WORKER_INSERT_RESULT_EXPLICIT_ACK_MGMT:
+      /* we require the instance to use explicit calls to ack_messages/rewind_messages */
+      break;
+
+    case WORKER_INSERT_RESULT_SUCCESS:
+      _accept_batch(self);
+      break;
+
+    case WORKER_INSERT_RESULT_QUEUED:
+      break;
+
+    default:
+      break;
+    }
+
 }
 
 /* NOTE: runs in the worker thread, whenever items on our queue are
@@ -187,74 +265,48 @@ _perform_inserts(LogThreadedDestDriver *self)
 
   while (G_LIKELY(!self->under_termination) &&
          !self->suspended &&
-         (msg = log_queue_pop_head(self->queue, &path_options)) != NULL)
+         (msg = log_queue_pop_head(self->worker.queue, &path_options)) != NULL)
     {
       msg_set_context(msg);
       log_msg_refcache_start_consumer(msg, &path_options);
 
+      self->batch_size++;
       ScratchBuffersMarker mark;
       scratch_buffers_mark(&mark);
       result = self->worker.insert(self, msg);
       scratch_buffers_reclaim_marked(mark);
 
-      switch (result)
-        {
-        case WORKER_INSERT_RESULT_DROP:
-          msg_error("Message dropped while sending message to destination",
-                    evt_tag_str("driver", self->super.super.id));
+      step_sequence_number(&self->seq_num);
 
-          _drop_message(self, msg);
-          _disconnect_and_suspend(self);
-          break;
+      _process_result(self, result);
 
-        case WORKER_INSERT_RESULT_ERROR:
-          self->retries.counter++;
-
-          if (self->retries.counter >= self->retries.max)
-            {
-              if (self->messages.retry_over)
-                self->messages.retry_over(self, msg);
-
-              msg_error("Multiple failures while sending message to destination, message dropped",
-                        evt_tag_str("driver", self->super.super.id),
-                        evt_tag_int("number_of_retries", self->retries.max));
-
-              _drop_message(self, msg);
-            }
-          else
-            {
-              _rewind_message(self, msg);
-              _disconnect_and_suspend(self);
-            }
-          break;
-
-        case WORKER_INSERT_RESULT_NOT_CONNECTED:
-          _rewind_message(self, msg);
-          _disconnect_and_suspend(self);
-          break;
-
-        case WORKER_INSERT_RESULT_REWIND:
-          _rewind_message(self, msg);
-          break;
-
-        case WORKER_INSERT_RESULT_SUCCESS:
-          stats_counter_inc(self->written_messages);
-          _accept_message(self, msg);
-          break;
-
-        default:
-          break;
-        }
-
+      log_msg_unref(msg);
       msg_set_context(NULL);
       log_msg_refcache_stop();
-    }
-  if (!self->suspended)
-    {
-      if (self->worker.worker_message_queue_empty)
+
+      if (self->rewound_batch_size)
         {
-          self->worker.worker_message_queue_empty(self);
+          self->rewound_batch_size--;
+          if (self->rewound_batch_size == 0)
+            break;
         }
+    }
+  self->rewound_batch_size = 0;
+}
+
+static void
+_perform_flush(LogThreadedDestDriver *self)
+{
+  /* NOTE: earlier we had a condition on only calling flush() if batch_size
+   * is non-zero.  This was removed, as the language bindings that were done
+   * _before_ the batching support in LogThreadedDestDriver relies on
+   * flush() being called always, even if WORKER_INSERT_RESULT_SUCCESS is
+   * returned, in which case batch_size is already zero at this point.
+   */
+  if (!self->suspended && self->worker.flush)
+    {
+      worker_insert_result_t result = self->worker.flush(self);
+      _process_result(self, result);
     }
 }
 
@@ -275,6 +327,29 @@ _message_became_available_callback(gpointer user_data)
 }
 
 static void
+_schedule_restart(LogThreadedDestDriver *self)
+{
+  if (self->suspended)
+    {
+      iv_validate_now();
+      self->timer_reopen.expires  = iv_now;
+      self->timer_reopen.expires.tv_sec += self->time_reopen;
+      iv_timer_register(&self->timer_reopen);
+    }
+  else
+    iv_task_register(&self->do_work);
+}
+
+static void
+_schedule_restart_on_throttle_timeout(LogThreadedDestDriver *self, gint timeout_msec)
+{
+  iv_validate_now();
+  self->timer_throttle.expires = iv_now;
+  timespec_add_msec(&self->timer_throttle.expires, timeout_msec);
+  iv_timer_register(&self->timer_throttle);
+}
+
+static void
 _perform_work(gpointer data)
 {
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)data;
@@ -287,23 +362,42 @@ _perform_work(gpointer data)
   if (!self->worker.connected)
     {
       _connect(self);
+      _schedule_restart(self);
     }
-
-  else if (log_queue_check_items(self->queue, &timeout_msec,
+  else if (log_queue_check_items(self->worker.queue, &timeout_msec,
                                  _message_became_available_callback,
                                  self, NULL))
     {
       _perform_inserts(self);
-      if (!self->suspended)
-        _start_watches(self);
+      _perform_flush(self);
+      _schedule_restart(self);
+    }
+  else if (self->batch_size > 0)
+    {
+      /* nothing in queue, but pending batch size is still there perform flush */
+      _perform_flush(self);
+      _schedule_restart(self);
     }
   else if (timeout_msec != 0)
     {
-      log_queue_reset_parallel_push(self->queue);
-      iv_validate_now();
-      self->timer_throttle.expires = iv_now;
-      timespec_add_msec(&self->timer_throttle.expires, timeout_msec);
-      iv_timer_register(&self->timer_throttle);
+      /* NOTE: in this case we don't need to reset parallel push
+       * notification, as check_items returned with a timeout.  No callback
+       * is set up at this time.  */
+      _schedule_restart_on_throttle_timeout(self, timeout_msec);
+
+    }
+  else
+    {
+      /* NOTE: at this point we are not doing anything but keep the
+       * parallel_push callback alive, which will call
+       * _message_became_available_callback(), which in turn wakes us up by
+       * posting an event which causes this function to be run again
+       *
+       * NOTE/2: the parallel_push callback may need to be cancelled if we
+       * need to exit.  That happens in the shutdown_event_callback(), or
+       * here in this very function, as log_queue_check_items() will cancel
+       * outstanding parallel push callbacks automatically.
+       */
     }
 }
 
@@ -330,12 +424,10 @@ _init_watches(LogThreadedDestDriver *self)
   IV_EVENT_INIT(&self->wake_up_event);
   self->wake_up_event.cookie = self;
   self->wake_up_event.handler = _wakeup_event_callback;
-  iv_event_register(&self->wake_up_event);
 
   IV_EVENT_INIT(&self->shutdown_event);
   self->shutdown_event.cookie = self;
   self->shutdown_event.handler = _shutdown_event_callback;
-  iv_event_register(&self->shutdown_event);
 
   IV_TIMER_INIT(&self->timer_reopen);
   self->timer_reopen.cookie = self;
@@ -351,6 +443,24 @@ _init_watches(LogThreadedDestDriver *self)
 }
 
 static void
+_signal_startup_finished(LogThreadedDestDriver *self)
+{
+  g_mutex_lock(self->lock);
+  self->startup_finished = TRUE;
+  g_cond_signal(self->started_up);
+  g_mutex_unlock(self->lock);
+}
+
+static void
+_wait_for_startup_finished(LogThreadedDestDriver *self)
+{
+  g_mutex_lock(self->lock);
+  while (!self->startup_finished)
+    g_cond_wait(self->started_up, self->lock);
+  g_mutex_unlock(self->lock);
+}
+
+static void
 _worker_thread(gpointer arg)
 {
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)arg;
@@ -360,17 +470,21 @@ _worker_thread(gpointer arg)
   msg_debug("Worker thread started",
             evt_tag_str("driver", self->super.super.id));
 
-  log_queue_set_use_backlog(self->queue, TRUE);
+  log_queue_set_use_backlog(self->worker.queue, TRUE);
 
-  _init_watches(self);
+  iv_event_register(&self->wake_up_event);
+  iv_event_register(&self->shutdown_event);
 
   if (self->worker.thread_init)
     self->worker.thread_init(self);
 
-  _start_watches(self);
+  _signal_startup_finished(self);
+
+  _schedule_restart(self);
   iv_main();
 
   _disconnect(self);
+
   if (self->worker.thread_deinit)
     self->worker.thread_deinit(self);
 
@@ -394,6 +508,7 @@ _start_worker_thread(LogThreadedDestDriver *self)
   main_loop_create_worker_thread(_worker_thread,
                                  _request_worker_exit,
                                  self, &self->worker_options);
+  _wait_for_startup_finished(self);
 }
 
 /* the feeding side of the driver, runs in the source thread and puts an
@@ -410,7 +525,7 @@ log_threaded_dest_driver_queue(LogPipe *s, LogMessage *msg,
     path_options = log_msg_break_ack(msg, path_options, &local_options);
 
   log_msg_add_ack(msg, path_options);
-  log_queue_push_tail(self->queue, log_msg_ref(msg), path_options);
+  log_queue_push_tail(self->worker.queue, log_msg_ref(msg), path_options);
 
   stats_counter_inc(self->processed_messages);
 
@@ -420,7 +535,7 @@ log_threaded_dest_driver_queue(LogPipe *s, LogMessage *msg,
 static void
 _update_memory_usage_counter_when_fifo_is_used(LogThreadedDestDriver *self)
 {
-  if (!g_strcmp0(self->queue->type, "FIFO") && self->memory_usage)
+  if (!g_strcmp0(self->worker.queue->type, "FIFO") && self->memory_usage)
     {
       LogPipe *_pipe = &self->super.super.super;
       load_counter_from_persistent_storage(log_pipe_get_config(_pipe), self->memory_usage);
@@ -434,12 +549,12 @@ _register_stats(LogThreadedDestDriver *self)
   StatsClusterKey sc_key;
   stats_cluster_logpipe_key_set(&sc_key,self->stats_source | SCS_DESTINATION,
                                 self->super.super.id,
-                                self->format.stats_instance(self));
+                                self->format_stats_instance(self));
   stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
   stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
   stats_register_counter_and_index(1, &sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
-  stats_register_counter(1, &sc_key, SC_TYPE_WRITTEN, &self->written_messages);
+  stats_register_counter(0, &sc_key, SC_TYPE_WRITTEN, &self->written_messages);
   stats_unlock();
 }
 
@@ -450,7 +565,7 @@ _unregister_stats(LogThreadedDestDriver *self)
   StatsClusterKey sc_key;
   stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_DESTINATION,
                                 self->super.super.id,
-                                self->format.stats_instance(self));
+                                self->format_stats_instance(self));
   stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &self->queued_messages);
   stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
   stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
@@ -468,17 +583,16 @@ log_threaded_dest_driver_init_method(LogPipe *s)
   if (cfg && self->time_reopen == -1)
     self->time_reopen = cfg->time_reopen;
 
-  self->queue = log_dest_driver_acquire_queue(
-                  &self->super, self->super.super.super.generate_persist_name((const LogPipe *)self));
+  self->worker.queue = log_dest_driver_acquire_queue(
+                         &self->super,
+                         s->generate_persist_name(s));
 
-  if (self->queue == NULL)
-    {
-      return FALSE;
-    }
+  if (self->worker.queue == NULL)
+    return FALSE;
 
   _register_stats(self);
 
-  log_queue_set_counters(self->queue, self->queued_messages,
+  log_queue_set_counters(self->worker.queue, self->queued_messages,
                          self->dropped_messages, self->memory_usage);
   _update_memory_usage_counter_when_fifo_is_used(self);
 
@@ -497,9 +611,8 @@ log_threaded_dest_driver_deinit_method(LogPipe *s)
 {
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
 
-  log_queue_reset_parallel_push(self->queue);
 
-  log_queue_set_counters(self->queue, NULL, NULL, NULL);
+  log_queue_set_counters(self->worker.queue, NULL, NULL, NULL);
 
   cfg_persist_config_add(log_pipe_get_config(s),
                          _format_seqnum_persist_name(self),
@@ -518,6 +631,8 @@ log_threaded_dest_driver_free(LogPipe *s)
 {
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
 
+  g_mutex_free(self->lock);
+  g_cond_free(self->started_up);
   log_dest_driver_free((LogPipe *)self);
 }
 
@@ -533,6 +648,10 @@ log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalConfig
   self->super.super.super.queue = log_threaded_dest_driver_queue;
   self->super.super.super.free_fn = log_threaded_dest_driver_free;
   self->time_reopen = -1;
+  self->batch_size = 0;
 
-  self->retries.max = MAX_RETRIES_OF_FAILED_INSERT_DEFAULT;
+  self->retries_max = MAX_RETRIES_OF_FAILED_INSERT_DEFAULT;
+  _init_watches(self);
+  self->lock = g_mutex_new();
+  self->started_up = g_cond_new();
 }

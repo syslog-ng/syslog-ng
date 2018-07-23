@@ -210,6 +210,7 @@ struct _LogPathOptions
 };
 
 #define LOG_PATH_OPTIONS_INIT { TRUE, FALSE, NULL }
+#define LOG_PATH_OPTIONS_INIT_NOACK { FALSE, FALSE, NULL }
 
 struct _LogPipe
 {

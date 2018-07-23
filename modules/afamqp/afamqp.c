@@ -233,7 +233,7 @@ afamqp_dd_set_peer_verify(LogDriver *d, gboolean verify)
  * Utilities
  */
 
-static gchar *
+static const gchar *
 afamqp_dd_format_stats_instance(LogThreadedDestDriver *s)
 {
   AMQPDestDriver *self = (AMQPDestDriver *) s;
@@ -685,7 +685,7 @@ afamqp_dd_new(GlobalConfig *cfg)
   self->super.worker.disconnect = afamqp_dd_disconnect;
   self->super.worker.insert = afamqp_worker_insert;
 
-  self->super.format.stats_instance = afamqp_dd_format_stats_instance;
+  self->super.format_stats_instance = afamqp_dd_format_stats_instance;
   self->super.stats_source = SCS_AMQP;
 
   self->routing_key_template = log_template_new(cfg, NULL);
