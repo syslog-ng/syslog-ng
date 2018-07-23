@@ -951,27 +951,23 @@ debun_extra_genlinux () {
 }
 
 debun_linux () {
-	if [ "$dist" = "Debian" ]; then
-		add_extra debun_extra_debian
-	elif [ "$dist" = "Ubuntu" ]; then
-		add_extra debun_extra_debian
-	elif [ "$dist" = "CentOS" ]; then
-		add_extra debun_extra_redhat
-	elif [ "$dist" = "RedHatEnterpriseServer" ]; then
-		add_extra debun_extra_redhat
-	elif [ "$dist" = "RHEL" ]; then
-		add_extra debun_extra_redhat
-	elif [ "$dist" = "OracleServer" ]; then
-		add_extra debun_extra_redhat
-	elif [ "$dist" = "EnterpriseEnterpriseServer" ]; then
-		add_extra debun_extra_redhat
-	elif [ "$dist" = "SUSE LINUX" ]; then
-		add_extra debun_extra_suse
-	elif [ "$dist" = "Slackware" ]; then
-		add_extra debun_extra_slackware
-	else
-		echo "Unknown Distro, perhaps unsupported"
-	fi
+	case "${dist}" in
+		"Debian"|"Ubuntu")
+			add_extra debun_extra_debian
+			;;
+		"CentOS"|"RedHatEnterpriseServer"|"RHEL"|"OracleServer"|"EnterpriseEnterpriseServer")
+			add_extra debun_extra_redhat
+			;;
+		"SUSE LINUX")
+			add_extra debun_extra_suse
+			;;
+		"Slackware")
+			add_extra debun_extra_slackware
+			;;
+		*)
+			echo "Unknown Distro, perhaps unsupported"
+			;;
+	esac
 
 	add_extra debun_extra_genlinux
 }
@@ -1044,16 +1040,24 @@ debun_aix () {
 
 detect_env_linux () {
 	if is_available lsb_release ; then
-		lsb_release -a | tee ${tmpdir}/lsb.all
+		lsb_release -a | tee ${tmpdir}/sys.linux.lsb-all
 		dist=$( lsb_release -si )
-	elif [ -r /etc/debian_version ]; then
+	fi
+	if [ -r /etc/debian_version ]; then
+		cat /etc/debian_version >${tmpdir}/sys.linux.os-release
 		dist="Debian"
 	elif [ -r /etc/redhat-release ]; then
+		cat /etc/redhat-release >${tmpdir}/sys.linux.os-release
 		dist="RHEL"
 	elif [ -r /etc/slackware-version ]; then
+		cat /etc/slackware-version >${tmpdir}/sys.linux.os-release
 		dist="Slackware"
 	elif [ -r /etc/SuSE-release ]; then
+		cat /etc/SuSE-release >${tmpdir}/sys.linux.os-release
 		dist="SUSE LINUX"
+	else
+		echo "Unknown or unsupported Linux distribution!"
+		cat /etc/*release /etc/*version >${tmpdir}/sys.linux.os-release 2>/dev/null
 	fi
 }
 
@@ -1209,27 +1213,23 @@ setup_env_genlinux () {
 }
 
 setup_env_linux () {
-	if [ "$dist" = "Debian" ]; then
-		setup_env_debian
-	elif [ "$dist" = "Ubuntu" ]; then
-		setup_env_debian
-	elif [ "$dist" = "CentOS" ]; then
-		setup_env_redhat
-	elif [ "$dist" = "RedHatEnterpriseServer" ]; then
-		setup_env_redhat
-	elif [ "$dist" = "RHEL" ]; then
-		setup_env_redhat
-	elif [ "$dist" = "OracleServer" ]; then
-		setup_env_redhat
-	elif [ "$dist" = "EnterpriseEnterpriseServer" ]; then
-		setup_env_redhat
-	elif [ "$dist" = "SUSE LINUX" ]; then
-		setup_env_suse
-	elif [ "$dist" = "Slackware" ]; then
-		setup_env_slackware
-	else
-		echo "Unknown Distro, perhaps unsupported"
-	fi
+	case "${dist}" in
+		"Debian"|"Ubuntu")
+			setup_env_debian
+			;;
+		"CentOS"|"RedHatEnterpriseServer"|"RHEL"|"OracleServer"|"EnterpriseEnterpriseServer")
+			setup_env_redhat
+			;;
+		"SUSE LINUX")
+			setup_env_suse
+			;;
+		"Slackware")
+			setup_env_slackware
+			;;
+		*)
+			echo "Unknown Distro, perhaps unsupported"
+			;;
+	esac
 
 	setup_env_genlinux
 }
