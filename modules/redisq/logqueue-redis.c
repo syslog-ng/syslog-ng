@@ -169,7 +169,7 @@ _get_length(LogQueue *s)
   redisReply *reply = NULL;
   glong list_len = 0;
 
-  if (_is_redis_connection_alive(self))
+  if (self->check_conn(self))
     {
       reply = _get_redis_reply(self, "LLEN %s", self->redis_list_name);
 
@@ -303,7 +303,6 @@ _rewind_backlog(LogQueue *s, guint rewind_count)
 
           if (!self->write_message(self, msg, &path_options))
             msg_error("redisq: Pushing backlog msg to redis server failed");
-
         }
     }
 }
@@ -344,7 +343,7 @@ _read_message(LogQueueRedis *self, LogPathOptions *path_options)
 
   msg_debug("redisq: read message from redis");
 
-  if (!_is_redis_connection_alive(self))
+  if (!self->check_conn(self))
     return NULL;
 
   reply = _get_redis_reply(self, "LRANGE %s 0 0", self->redis_list_name);
@@ -381,7 +380,7 @@ _write_message(LogQueueRedis *self, LogMessage *msg, const LogPathOptions *path_
   SerializeArchive *sa;
   gboolean consumed = FALSE;
 
-  if (_is_redis_connection_alive(self))
+  if (self->check_conn(self))
     {
       msg_debug("redisq: writing msg to redis db");
       serialized = g_string_sized_new(4096);
@@ -405,7 +404,7 @@ _delete_message(LogQueueRedis *self)
 {
   gboolean removed = FALSE;
 
-  if (_is_redis_connection_alive(self))
+  if (self->check_conn(self))
     {
       msg_debug("redisq: removing msg from redis list");
 
@@ -465,7 +464,7 @@ log_queue_redis_new(LogQueueRedis *self, const gchar *persist_name)
 
   msg_debug("redisq: log queue new");
 
-  if (!_is_redis_connection_alive(self))
+  if (!self->check_conn(self))
     return NULL;
 
   log_queue_init_instance(&self->super, persist_name);
@@ -486,6 +485,7 @@ redis_server_new(RedisQueueOptions *options, const gchar *name)
   msg_debug("redisq: redis server new");
 
   self->super.redis_thread_mutex = g_mutex_new();
+  self->super.check_conn = _is_redis_connection_alive;
   redis_server_init(self, options, name);
   g_thread_join(self->redis_thread);
   return self;
