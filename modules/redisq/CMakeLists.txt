@@ -44,4 +44,4 @@ if (ENABLE_REDIS_QUEUE)
 
 endif()
 
-#add_test_subdirectory(tests)
+add_test_subdirectory(tests)

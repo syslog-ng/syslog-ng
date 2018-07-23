@@ -50,12 +50,12 @@ struct _LogQueueRedis
   GMutex *redis_thread_mutex;
   redisContext *c;
   RedisQueueOptions *redis_options;
-
   gchar *redis_list_name;
 
   LogMessage *(*read_message)(LogQueueRedis *self, LogPathOptions *path_options);
   gboolean (*write_message)(LogQueueRedis *self, LogMessage *msg, const LogPathOptions *path_options);
   gboolean (*delete_message)(LogQueueRedis *self);
+  gboolean (*check_conn)(LogQueueRedis *self);
 };
 
 struct _RedisServer

@@ -40,6 +40,6 @@ modules_redisq_libredis_queue_la_DEPENDENCIES = $(MODULE_DEPS_LIBS) $(LIBSYSLOG_
 
 modules/redisq modules/redisq/ mod-redisq: modules/redisq/libredis_queue.la
 
-#include modules/redisq/tests/Makefile.am
+include modules/redisq/tests/Makefile.am
 
 .PHONY: modules/redisq/ mod-redisq
