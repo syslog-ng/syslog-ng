@@ -260,25 +260,16 @@ _push_tail(LogQueueDisk *s, LogMessage *msg, LogPathOptions *local_options, cons
       /* we were not able to store the msg, warn */
       msg_error("Destination reliable queue full, dropping message",
                 evt_tag_str("filename", qdisk_get_filename (self->super.qdisk)),
-                evt_tag_int("queue_len", _get_length(s)),
+                evt_tag_long("queue_len", _get_length(s)),
                 evt_tag_int("mem_buf_size", qdisk_get_memory_size (self->super.qdisk)),
-                evt_tag_int("disk_buf_size", qdisk_get_size (self->super.qdisk)),
+                evt_tag_long("disk_buf_size", qdisk_get_size (self->super.qdisk)),
                 evt_tag_str("persist_name", self->super.super.persist_name));
 
       return FALSE;
     }
 
   /* check the remaining space: if it is less than the mem_buf_size, the message cannot be acked */
-  gint64 wpos = qdisk_get_writer_head (self->super.qdisk);
-  gint64 bpos = qdisk_get_backlog_head (self->super.qdisk);
-  gint64 diff;
-  if (wpos > bpos)
-    diff = qdisk_get_size (self->super.qdisk) - wpos + bpos - QDISK_RESERVED_SPACE;
-  else
-    diff = bpos - wpos;
-  gboolean overflow = diff < qdisk_get_memory_size (self->super.qdisk);
-
-  if (overflow)
+  if (qdisk_get_empty_space(self->super.qdisk) < qdisk_get_memory_size (self->super.qdisk))
     {
       /* we have reached the reserved buffer size, keep the msg in memory
        * the message is written but into the overflow area

@@ -46,9 +46,9 @@ disk_queue_options_disk_buf_size_set(DiskQueueOptions *self, gint64 disk_buf_siz
   if (disk_buf_size < MIN_DISK_BUF_SIZE)
     {
       msg_warning("WARNING: The configured disk buffer size is smaller than the minimum allowed",
-                  evt_tag_int("configured_size", disk_buf_size),
-                  evt_tag_int("minimum_allowed_size", MIN_DISK_BUF_SIZE),
-                  evt_tag_int("new_size", MIN_DISK_BUF_SIZE));
+                  evt_tag_long("configured_size", disk_buf_size),
+                  evt_tag_long("minimum_allowed_size", MIN_DISK_BUF_SIZE),
+                  evt_tag_long("new_size", MIN_DISK_BUF_SIZE));
       disk_buf_size = MIN_DISK_BUF_SIZE;
     }
   self->disk_buf_size = disk_buf_size;

@@ -36,7 +36,7 @@
 
 MsgFormatOptions parse_options;
 
-#define FILENAME "test_reliable_backlog.qf"
+#define FILENAME "test_reliable_backlog.rqf"
 #define TEST_DISKQ_SIZE QDISK_RESERVED_SPACE + 1000 /* 4096 + 1000 */
 
 static gint num_of_ack;
@@ -56,7 +56,7 @@ _dummy_ack(LogMessage *lm,  AckType ack_type)
 }
 
 static LogQueueDiskReliable *
-_init_diskq_for_test(gint64 size, gint64 membuf_size)
+_init_diskq_for_test(const gchar *filename, gint64 size, gint64 membuf_size)
 {
   LogQueueDiskReliable *dq;
 
@@ -64,7 +64,6 @@ _init_diskq_for_test(gint64 size, gint64 membuf_size)
   LogQueue *q = log_queue_disk_reliable_new(&options, NULL);
   struct stat st;
   num_of_ack = 0;
-  gchar *filename = FILENAME;
   unlink(filename);
   log_queue_disk_load_queue(q, filename);
   dq = (LogQueueDiskReliable *)q;
@@ -218,7 +217,7 @@ test_ack_over_eof(LogQueueDiskReliable *dq, LogMessage *msg1, LogMessage *msg2)
 static void
 test_over_EOF(void)
 {
-  LogQueueDiskReliable *dq = _init_diskq_for_test(TEST_DISKQ_SIZE, TEST_DISKQ_SIZE);
+  LogQueueDiskReliable *dq = _init_diskq_for_test(FILENAME, TEST_DISKQ_SIZE, TEST_DISKQ_SIZE);
   LogMessage *msg1;
   LogMessage *msg2;
 
@@ -236,6 +235,37 @@ test_over_EOF(void)
   log_msg_drop(msg2, &read_options, AT_PROCESSED);
   assert_gint(num_of_ack, 2, ASSERTION_ERROR("Messages aren't acked"));
   _common_cleanup(dq);
+}
+
+/* TestCase:
+   * - create a diskq with one message that is in the backlog(push, and pop but do not ack)
+   * - close diskq
+   * - try to get back the message from diskq buffer
+   */
+static void
+test_not_empty_backlog(void)
+{
+  const gchar *filename = "non_empty_backlog.rqf";
+  LogPathOptions local_options = LOG_PATH_OPTIONS_INIT;
+
+  LogQueueDiskReliable *dq = _init_diskq_for_test(filename, TEST_DISKQ_SIZE, TEST_DISKQ_SIZE);
+
+  log_queue_push_tail(&dq->super.super, log_msg_new_mark(), &local_options);
+
+  LogMessage *msg = log_queue_pop_head(&dq->super.super, &local_options);
+  assert_not_null(msg, "Could not find message in the disk-buffer.");
+
+  log_queue_unref(&dq->super.super);
+
+  dq = (LogQueueDiskReliable *)log_queue_disk_reliable_new(&options, NULL);
+  log_queue_disk_load_queue(&dq->super.super, filename);
+
+  msg = log_queue_pop_head(&dq->super.super, &local_options);
+  assert_not_null(msg, "Could not find message in the disk-buffer.");
+
+  log_queue_unref(&dq->super.super);
+  unlink(filename);
+  disk_queue_options_destroy(&options);
 }
 
 /*
@@ -362,7 +392,7 @@ test_rewind_backlog_use_whole_qbacklog(LogQueueDiskReliable *dq)
 void
 test_rewind_backlog(void)
 {
-  LogQueueDiskReliable *dq = _init_diskq_for_test(QDISK_RESERVED_SPACE + mark_message_serialized_size * 10,
+  LogQueueDiskReliable *dq = _init_diskq_for_test(FILENAME, QDISK_RESERVED_SPACE + mark_message_serialized_size * 10,
                                                   mark_message_serialized_size * 5);
   gint64 old_read_pos;
 
@@ -394,6 +424,8 @@ main(gint argc, gchar **argv)
   test_over_EOF();
 
   test_rewind_backlog();
+
+  test_not_empty_backlog();
 
   cfg_free(configuration);
   app_shutdown();
