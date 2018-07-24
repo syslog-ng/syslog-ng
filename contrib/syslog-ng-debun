@@ -3,17 +3,21 @@
 
 ### syslog-ng-debun: syslog debug bundle generator
 ### Written/Copyright: Gyorgy Pasztor <pasztor@linux.gyakg.u-szeged.hu>, (c) 2014-2016.
-### Further enhancements: Janos Szigetvari - jszigetvari at gmail dot com, (c) 2016-2017.
+### Further enhancements: Janos Szigetvari - jszigetvari at gmail dot com, (c) 2016-2018.
 ### This software may be used and distributed according to the terms of GNU GPLv2
 ### http://www.gnu.org/licenses/gpl-2.0.html
 
-version="0.3.10.20180119"
+unalias -a
+LANG=en_US
+LC_ALL=C
+export LANG LC_ALL
+
+version="0.3.12.20180723"
 
 ### Check for "local" variable support
-if type local >/dev/null; then
+if type local | grep builtin >/dev/null; then
 	:
 elif type bash >/dev/null; then
-	#printf "There is no local, re-exec self in bash\n" >&2
 	exec bash $0 "$@"
 else
 	printf "No local variable support on this system\n" >&2
@@ -358,6 +362,7 @@ acquire_debun_info () {
 	echo "${0} ${argv_backup}" > ${tmpdir}/debun.argv
 	echo "${version}" > ${tmpdir}/debun.version
 	id > ${tmpdir}/debun.runas
+	echo $PATH > ${tmpdir}/debun.path
 }
 
 acquire_system_info () {
@@ -637,7 +642,8 @@ acquire_syslog_config () {
 	find . > ${tmpdir}/syslog.etc.files
 	grep '\.key$' ${tmpdir}/syslog.etc.files > ${tmpdir}/syslog.etc.files.removed
 	grep '\.jks$' ${tmpdir}/syslog.etc.files > ${tmpdir}/syslog.etc.files.removed
-	grep -v '\.key$' ${tmpdir}/syslog.etc.files | grep -v '\.jks' | \
+	grep '\.keytab$' ${tmpdir}/syslog.etc.files > ${tmpdir}/syslog.etc.files.removed
+	grep -v '\.key$' ${tmpdir}/syslog.etc.files | grep -v '\.jks$' | grep -v '\.keytab$' | \
 		while read FILE; do \
 			if pki_is_private_key "${FILE}" 2>/dev/null; then
 				echo "${FILE}" >> ${tmpdir}/syslog.etc.files.removed
@@ -712,6 +718,9 @@ acquire_syslog_info () {
 		${syslogngctlbin} show-license-info --json > ${tmpdir}/syslog.license-usage.json 2>/dev/null
 	fi
 	echo ${syslogngctlbin} show-license-info
+	${syslogngctlbin} credentials status > ${tmpdir}/syslog.credentials.status 2>&1
+	echo ${syslogngctlbin} credentials status
+
 	for i in ${sngallpids} ; do
 		is_available ${lsof%% *} && $lsof $i >${tmpdir}/syslog.$i.lsof 2>/dev/null || echo "No lsof in path." >${tmpdir}/syslog.$i.lsof
 		myplimit $i >${tmpdir}/syslog.$i.limits
@@ -951,27 +960,23 @@ debun_extra_genlinux () {
 }
 
 debun_linux () {
-	if [ "$dist" = "Debian" ]; then
-		add_extra debun_extra_debian
-	elif [ "$dist" = "Ubuntu" ]; then
-		add_extra debun_extra_debian
-	elif [ "$dist" = "CentOS" ]; then
-		add_extra debun_extra_redhat
-	elif [ "$dist" = "RedHatEnterpriseServer" ]; then
-		add_extra debun_extra_redhat
-	elif [ "$dist" = "RHEL" ]; then
-		add_extra debun_extra_redhat
-	elif [ "$dist" = "OracleServer" ]; then
-		add_extra debun_extra_redhat
-	elif [ "$dist" = "EnterpriseEnterpriseServer" ]; then
-		add_extra debun_extra_redhat
-	elif [ "$dist" = "SUSE LINUX" ]; then
-		add_extra debun_extra_suse
-	elif [ "$dist" = "Slackware" ]; then
-		add_extra debun_extra_slackware
-	else
-		echo "Unknown Distro, perhaps unsupported"
-	fi
+	case "${dist}" in
+		"Debian"|"Ubuntu")
+			add_extra debun_extra_debian
+			;;
+		"CentOS"|"RedHatEnterpriseServer"|"RHEL"|"OracleServer"|"EnterpriseEnterpriseServer")
+			add_extra debun_extra_redhat
+			;;
+		"SUSE LINUX")
+			add_extra debun_extra_suse
+			;;
+		"Slackware")
+			add_extra debun_extra_slackware
+			;;
+		*)
+			echo "Unknown Distro, perhaps unsupported"
+			;;
+	esac
 
 	add_extra debun_extra_genlinux
 }
@@ -990,6 +995,7 @@ debun_extra_gensolaris () {
 	if is_available top; then
 		top -b -t -n 1 -c >${tmpdir}/sys.top.threads
 	fi
+	[ -x "/usr/platform/$( uname -i )/sbin/prtdiag" ] && /usr/platform/$(uname -i)/sbin/prtdiag -v &>${tmpdir}/sys.prtdiag
 }
 
 ### Here comes solaris specific parts
@@ -1025,6 +1031,8 @@ debun_hpux () {
 
 debun_extra_aix () {
 	alog -o -t console >${tmpdir}/sys.console-log
+	oslevel -s >${tmpdir}/sys.aix.oslevel-s
+	oslevel -sq >${tmpdir}/sys.aix.oslevel-sq
 
 	if is_available sar ; then
 		sar -u 1 5 >${tmpdir}/sys.sar.cpu 2>/dev/null
@@ -1044,16 +1052,24 @@ debun_aix () {
 
 detect_env_linux () {
 	if is_available lsb_release ; then
-		lsb_release -a | tee ${tmpdir}/lsb.all
+		lsb_release -a | tee ${tmpdir}/sys.linux.lsb-all
 		dist=$( lsb_release -si )
-	elif [ -r /etc/debian_version ]; then
+	fi
+	if [ -r /etc/debian_version ]; then
+		cat /etc/debian_version >${tmpdir}/sys.linux.os-release
 		dist="Debian"
 	elif [ -r /etc/redhat-release ]; then
+		cat /etc/redhat-release >${tmpdir}/sys.linux.os-release
 		dist="RHEL"
 	elif [ -r /etc/slackware-version ]; then
+		cat /etc/slackware-version >${tmpdir}/sys.linux.os-release
 		dist="Slackware"
 	elif [ -r /etc/SuSE-release ]; then
+		cat /etc/SuSE-release >${tmpdir}/sys.linux.os-release
 		dist="SUSE LINUX"
+	else
+		echo "Unknown or unsupported Linux distribution!"
+		cat /etc/*release /etc/*version >${tmpdir}/sys.linux.os-release 2>/dev/null
 	fi
 }
 
@@ -1209,27 +1225,23 @@ setup_env_genlinux () {
 }
 
 setup_env_linux () {
-	if [ "$dist" = "Debian" ]; then
-		setup_env_debian
-	elif [ "$dist" = "Ubuntu" ]; then
-		setup_env_debian
-	elif [ "$dist" = "CentOS" ]; then
-		setup_env_redhat
-	elif [ "$dist" = "RedHatEnterpriseServer" ]; then
-		setup_env_redhat
-	elif [ "$dist" = "RHEL" ]; then
-		setup_env_redhat
-	elif [ "$dist" = "OracleServer" ]; then
-		setup_env_redhat
-	elif [ "$dist" = "EnterpriseEnterpriseServer" ]; then
-		setup_env_redhat
-	elif [ "$dist" = "SUSE LINUX" ]; then
-		setup_env_suse
-	elif [ "$dist" = "Slackware" ]; then
-		setup_env_slackware
-	else
-		echo "Unknown Distro, perhaps unsupported"
-	fi
+	case "${dist}" in
+		"Debian"|"Ubuntu")
+			setup_env_debian
+			;;
+		"CentOS"|"RedHatEnterpriseServer"|"RHEL"|"OracleServer"|"EnterpriseEnterpriseServer")
+			setup_env_redhat
+			;;
+		"SUSE LINUX")
+			setup_env_suse
+			;;
+		"Slackware")
+			setup_env_slackware
+			;;
+		*)
+			echo "Unknown Distro, perhaps unsupported"
+			;;
+	esac
 
 	setup_env_genlinux
 }
