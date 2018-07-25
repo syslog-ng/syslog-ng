@@ -67,6 +67,13 @@ typedef struct _CfgLexerContext
   gchar desc[0];
 } CfgLexerContext;
 
+typedef enum
+{
+  CLPR_ERROR,
+  CLPR_OK,
+  CLPR_LEX_AGAIN
+} CfgLexerPreprocessResult;
+
 /*
  * cfg_lexer_push_context:
  *
@@ -971,8 +978,8 @@ cfg_lexer_parse_include(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
   return TRUE;
 }
 
-static gboolean
-cfg_lexer_preprocess(CfgLexer *self, gint tok, YYSTYPE *yylval, YYLTYPE *yylloc, gboolean *lex_again)
+static CfgLexerPreprocessResult
+cfg_lexer_preprocess(CfgLexer *self, gint tok, YYSTYPE *yylval, YYLTYPE *yylloc)
 {
   /*
    * NOTE:
@@ -986,17 +993,15 @@ cfg_lexer_preprocess(CfgLexer *self, gint tok, YYSTYPE *yylval, YYLTYPE *yylloc,
    */
 
   CfgBlockGenerator *gen;
-  *lex_again = FALSE;
 
   if (tok == LL_IDENTIFIER &&
       self->cfg &&
       (gen = cfg_lexer_find_generator(self, self->cfg, cfg_lexer_get_context_type(self), yylval->cptr)))
     {
       if (!cfg_lexer_parse_and_run_block_generator(self, gen, yylval))
-        return FALSE;
+        return CLPR_ERROR;
 
-      *lex_again = TRUE;
-      return TRUE;
+      return CLPR_LEX_AGAIN;
     }
 
   if (self->ignore_pragma || self->cfg == NULL)
@@ -1011,23 +1016,21 @@ cfg_lexer_preprocess(CfgLexer *self, gint tok, YYSTYPE *yylval, YYLTYPE *yylloc,
 
       cfg_lexer_append_preprocessed_output(self, "@");
       if (!cfg_parser_parse(&pragma_parser, self, &dummy, NULL))
-        return FALSE;
+        return CLPR_ERROR;
 
-      *lex_again = TRUE;
-      return TRUE;
+      return CLPR_LEX_AGAIN;
     }
   else if (tok == KW_INCLUDE && cfg_lexer_get_context_type(self) != LL_CONTEXT_PRAGMA)
     {
       if (!cfg_lexer_parse_include(self, yylval, yylloc))
-        return FALSE;
+        return CLPR_ERROR;
 
-      *lex_again = TRUE;
-      return TRUE;
+      return CLPR_LEX_AGAIN;
     }
   else if (self->cfg->user_version == 0 && self->cfg->parsed_version != 0)
     {
       if (!cfg_set_version(self->cfg, configuration->parsed_version))
-        return FALSE;
+        return CLPR_ERROR;
     }
   else if (cfg_lexer_get_context_type(self) != LL_CONTEXT_PRAGMA && !self->non_pragma_seen)
     {
@@ -1037,7 +1040,7 @@ cfg_lexer_preprocess(CfgLexer *self, gint tok, YYSTYPE *yylval, YYLTYPE *yylloc,
         {
           msg_error("ERROR: configuration files without a version number has become unsupported in " VERSION_3_13
                     ", please specify a version number using @version and update your configuration accordingly");
-          return FALSE;
+          return CLPR_ERROR;
         }
 
       cfg_load_candidate_modules(self->cfg);
@@ -1047,7 +1050,7 @@ cfg_lexer_preprocess(CfgLexer *self, gint tok, YYSTYPE *yylval, YYLTYPE *yylloc,
       self->non_pragma_seen = TRUE;
     }
 
-  return TRUE;
+  return CLPR_OK;
 }
 
 int
@@ -1064,8 +1067,8 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
    */
 
   gint tok;
-  gboolean lex_again;
   gboolean is_token_injected;
+  CfgLexerPreprocessResult preprocess_result;
 
   do
     {
@@ -1082,10 +1085,11 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
           cfg_lexer_append_preprocessed_output(self, self->token_pretext->str);
         }
 
-      if (!cfg_lexer_preprocess(self, tok, yylval, yylloc, &lex_again))
+      preprocess_result = cfg_lexer_preprocess(self, tok, yylval, yylloc);
+      if (preprocess_result == CLPR_ERROR)
         return LL_ERROR;
     }
-  while (lex_again);
+  while (preprocess_result == CLPR_LEX_AGAIN);
 
   if (!is_token_injected && self->preprocess_suppress_tokens == 0)
     cfg_lexer_append_preprocessed_output(self, self->token_text->str);
