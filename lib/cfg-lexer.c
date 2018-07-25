@@ -972,7 +972,7 @@ cfg_lexer_parse_include(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
 }
 
 static gboolean
-cfg_lexer_process_token(CfgLexer *self, gint tok, YYSTYPE *yylval, YYLTYPE *yylloc, gboolean *lex_again)
+cfg_lexer_preprocess(CfgLexer *self, gint tok, YYSTYPE *yylval, YYLTYPE *yylloc, gboolean *lex_again)
 {
   /*
    * NOTE:
@@ -1082,7 +1082,7 @@ cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
           cfg_lexer_append_preprocessed_output(self, self->token_pretext->str);
         }
 
-      if (!cfg_lexer_process_token(self, tok, yylval, yylloc, &lex_again))
+      if (!cfg_lexer_preprocess(self, tok, yylval, yylloc, &lex_again))
         return LL_ERROR;
     }
   while (lex_again);
