@@ -148,7 +148,15 @@ int connect_unix_domain_socket(int sock_type, const char *path)
 
   DEBUG("unix domain socket: %s\n",path);
   saun.sun_family = AF_UNIX;
-  strncpy(saun.sun_path, path, sizeof(saun.sun_path));
+
+  gsize max_target_path_size = sizeof(saun.sun_path);
+  if (strlen(path) >= max_target_path_size)
+    {
+      ERROR("Target path is too long; max_target_length=%" G_GSIZE_FORMAT "\n", max_target_path_size - 1);
+      return -1;
+    }
+
+  strcpy(saun.sun_path, path);
 
   dest_addr = (struct sockaddr *) &saun;
   dest_addr_len = sizeof(saun);

@@ -146,7 +146,7 @@ void evt_rec_free(EVTREC *e);
  **/
 EVTTAG *evt_tag_str(const char *tag, const char *value);
 EVTTAG *evt_tag_int(const char *tag, int value);
-EVTTAG *evt_tag_long(const char *tag, long value);
+EVTTAG *evt_tag_long(const char *tag, long long value);
 EVTTAG *evt_tag_errno(const char *tag, int err);
 EVTTAG *evt_tag_printf(const char *tag, const char *format, ...) EVT_GNUC_PRINTF_FUNC(2, 3);
 EVTTAG *evt_tag_inaddr(const char *tag, const struct in_addr *addr);

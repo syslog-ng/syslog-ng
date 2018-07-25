@@ -90,11 +90,11 @@ evt_tag_int(const char *tag, int value)
 }
 
 EVTTAG *
-evt_tag_long(const char *tag, long value)
+evt_tag_long(const char *tag, long long value)
 {
   char buf[32]; /* a 64 bit int fits into 20 characters */
 
-  snprintf(buf, sizeof(buf), "%ld", value);
+  snprintf(buf, sizeof(buf), "%lld", value);
   return evt_tag_str(tag, buf);
 }
 
