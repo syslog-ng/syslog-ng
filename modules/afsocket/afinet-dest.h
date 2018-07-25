@@ -46,7 +46,6 @@ typedef struct _AFInetDestDriver
   GString *lnet_buffer;
   gint spoof_source_maxmsglen;
 #endif
-  gchar *hostname;
   GList *server_candidates;
   GList *current_server_candidate;
 
@@ -76,6 +75,7 @@ void afinet_dd_add_failovers(LogDriver *s, GList *failovers);
 void afinet_dd_set_failback_mode(LogDriver *s, gboolean enable);
 void afinet_dd_set_failback_tcp_probe_interval(LogDriver *s, gint tcp_probe_interval);
 void afinet_dd_set_failback_successful_probes_required(LogDriver *s, gint successful_probes_required);
+const gchar *afinet_dd_get_hostname(const AFInetDestDriver *self);
 
 AFInetDestDriver *afinet_dd_new_tcp(gchar *host, GlobalConfig *cfg);
 AFInetDestDriver *afinet_dd_new_tcp6(gchar *host, GlobalConfig *cfg);
