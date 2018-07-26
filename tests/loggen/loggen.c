@@ -299,7 +299,7 @@ start_plugins(GPtrArray *plugin_array)
 
   if (number_of_active_plugins != 1)
     {
-      ERROR("%d plugins activated. You should activate exactly one plugin at a time. See \"loggen --help-all\" for available plugin options\n",
+      ERROR("%d plugins activated. You should activate exactly one plugin at a time.\nDid you forget to add -S ?\nSee \"loggen --help-all\" for available plugin options\n",
             number_of_active_plugins);
       return 0;
     }
@@ -432,7 +432,7 @@ main(int argc, char *argv[])
   DEBUG("%d plugin successfuly loaded\n",plugin_num);
 
   /* create sub group for file reader functions */
-  GOptionGroup *group = g_option_group_new("File reader", "File reader", "Show options", NULL, NULL);
+  GOptionGroup *group = g_option_group_new("file-reader", "file-reader", "Show options", NULL, NULL);
   g_option_group_add_entries(group, get_file_reader_options());
   g_option_context_add_group(ctx, group);
 
