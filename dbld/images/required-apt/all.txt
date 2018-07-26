@@ -52,3 +52,4 @@ dh-systemd
 docbook
 docbook-xsl
 dh-exec
+gnupg
