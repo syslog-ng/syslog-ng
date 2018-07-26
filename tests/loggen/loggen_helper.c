@@ -201,6 +201,17 @@ get_now_timestamp(char *stamp, gsize stamp_size)
   return strftime(stamp, stamp_size, "%Y-%m-%dT%H:%M:%S", &tm);
 }
 
+size_t
+get_now_timestamp_bsd(char *stamp, gsize stamp_size)
+{
+  struct timeval now;
+  struct tm tm;
+
+  gettimeofday(&now, NULL);
+  localtime_r(&now.tv_sec, &tm);
+  return strftime(stamp, stamp_size, "%b %d %T", &tm);
+}
+
 void
 format_timezone_offset_with_colon(char *timestamp, int timestamp_size, struct tm *tm)
 {

@@ -46,6 +46,7 @@ unsigned long time_val_diff_in_usec(struct timeval *t1, struct timeval *t2);
 double time_val_diff_in_sec(struct timeval *t1, struct timeval *t2);
 void time_val_diff_in_timeval(struct timeval *res, const struct timeval *t1, const struct timeval *t2);
 size_t get_now_timestamp(char *stamp, gsize stamp_size);
+size_t get_now_timestamp_bsd(char *stamp, gsize stamp_size);
 void format_timezone_offset_with_colon(char *timestamp, int timestamp_size, struct tm *tm);
 int connect_ip_socket(int sock_type, const char *target, const char *port, int use_ipv6);
 int connect_unix_domain_socket(int sock_type, const char *path);
