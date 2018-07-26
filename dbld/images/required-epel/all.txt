@@ -3,5 +3,4 @@ libdbi
 libdbi-drivers
 riemann-c-client-devel
 syslog-ng-java-deps
-gradle
 librabbitmq-devel
