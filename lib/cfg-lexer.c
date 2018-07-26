@@ -67,6 +67,13 @@ typedef struct _CfgLexerContext
   gchar desc[0];
 } CfgLexerContext;
 
+typedef enum
+{
+  CLPR_ERROR,
+  CLPR_OK,
+  CLPR_LEX_AGAIN
+} CfgLexerPreprocessResult;
+
 /*
  * cfg_lexer_push_context:
  *
@@ -864,116 +871,137 @@ cfg_lexer_consume_next_injected_token(CfgLexer *self, gint *tok, YYSTYPE *yylval
   return FALSE;
 }
 
-int
-cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
+static gint
+cfg_lexer_lex_next_token(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
 {
-  CfgBlockGenerator *gen;
-  gint tok;
-  gboolean injected;
+  yylval->type = 0;
 
-relex:
+  g_string_truncate(self->token_text, 0);
+  g_string_truncate(self->token_pretext, 0);
 
-  injected = cfg_lexer_consume_next_injected_token(self, &tok, yylval, yylloc);
+  gint tok = _invoke__cfg_lexer_lex(self, yylval, yylloc);
+  if (yylval->type == 0)
+    yylval->type = tok;
 
-  if (!injected)
+  return tok;
+}
+
+static void
+cfg_lexer_append_preprocessed_output(CfgLexer *self, const gchar *token_text)
+{
+  if (self->preprocess_output)
+    g_string_append_printf(self->preprocess_output, "%s", token_text);
+}
+
+static gboolean
+cfg_lexer_parse_and_run_block_generator(CfgLexer *self, CfgBlockGenerator *gen, YYSTYPE *yylval)
+{
+  CfgArgs *args;
+  CfgIncludeLevel *level = &self->include_stack[self->include_depth];
+
+  self->preprocess_suppress_tokens++;
+
+  gint saved_line = level->lloc.first_line;
+  gint saved_column = level->lloc.first_column;
+  if (!cfg_parser_parse(&block_ref_parser, self, (gpointer *) &args, NULL))
     {
-      if (cfg_lexer_get_context_type(self) == LL_CONTEXT_BLOCK_CONTENT)
-        cfg_lexer_start_block_state(self, "{}");
-      else if (cfg_lexer_get_context_type(self) == LL_CONTEXT_BLOCK_ARG)
-        cfg_lexer_start_block_state(self, "()");
-
-      yylval->type = 0;
-
-      g_string_truncate(self->token_text, 0);
-      g_string_truncate(self->token_pretext, 0);
-
-      tok = _invoke__cfg_lexer_lex(self, yylval, yylloc);
-      if (yylval->type == 0)
-        yylval->type = tok;
-
-      if (self->preprocess_output)
-        g_string_append_printf(self->preprocess_output, "%s", self->token_pretext->str);
+      level->lloc.first_line = saved_line;
+      level->lloc.first_column = saved_column;
+      free(yylval->cptr);
+      self->preprocess_suppress_tokens--;
+      return FALSE;
     }
 
-  /* NOTE: most of the code below is a monster, which should be factored out
-   * to tiny little functions.  This is not very simple and I am in the
-   * middle of something that I would rather close than doing the
-   * refactoring desperately needed here.  I am silencing my conscience with
-   * this note and also take the time to document some of the quirks below.
+  GString *result = g_string_sized_new(256);
+  gchar buf[256];
+  level->lloc.first_line = saved_line;
+  level->lloc.first_column = saved_column;
+  self->preprocess_suppress_tokens--;
+  gboolean success = cfg_block_generator_generate(gen, self->cfg, args, result,
+                                                  cfg_lexer_format_location(self, &level->lloc, buf, sizeof(buf)));
+
+  free(yylval->cptr);
+  cfg_args_unref(args);
+
+  if (!success)
+    {
+      g_string_free(result, TRUE);
+      return FALSE;
+    }
+
+  cfg_block_generator_format_name(gen, buf, sizeof(buf));
+
+  if (gen->suppress_backticks)
+    success = cfg_lexer_include_buffer_without_backtick_substitution(self, buf, result->str, result->len);
+  else
+    success = cfg_lexer_include_buffer(self, buf, result->str, result->len);
+  g_string_free(result, TRUE);
+
+  if (!success)
+    return FALSE;
+
+  return TRUE;
+}
+
+static gboolean
+cfg_lexer_parse_include(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
+{
+  self->preprocess_suppress_tokens++;
+  gint tok = cfg_lexer_lex(self, yylval, yylloc);
+  if (tok != LL_STRING && tok != LL_IDENTIFIER)
+    {
+      self->preprocess_suppress_tokens--;
+      return FALSE;
+    }
+
+  gchar *include_file = g_strdup(yylval->cptr);
+  free(yylval->cptr);
+
+  tok = cfg_lexer_lex(self, yylval, yylloc);
+  if (tok != ';')
+    {
+      self->preprocess_suppress_tokens--;
+      g_free(include_file);
+      return FALSE;
+    }
+
+  if (!cfg_lexer_include_file(self, include_file))
+    {
+      g_free(include_file);
+      self->preprocess_suppress_tokens--;
+      return FALSE;
+    }
+
+  self->preprocess_suppress_tokens--;
+  g_free(include_file);
+
+  return TRUE;
+}
+
+static CfgLexerPreprocessResult
+cfg_lexer_preprocess(CfgLexer *self, gint tok, YYSTYPE *yylval, YYLTYPE *yylloc)
+{
+  /*
+   * NOTE:
    *
-   * 1) This code is deeply coupled with GlobalConfig and most of it does
+   * This code is deeply coupled with GlobalConfig and most of it does
    * not make sense to execute if self->cfg is NULL.  Thus, some of the
    * conditionals contain an explicit self->cfg check, in other cases it is
    * implicitly checked by the first conditional of a series of if-then-else
    * statements.
    *
-   * 2) the role of the relex label is to restart the lexing process once
-   * new tokens were injected into the input stream.  (e.g.  after a
-   * generator was called).  This should really be a loop, and quite
-   * possible any refactors should start here by eliminating that
-   * loop-using-goto
-   *
-   * 3) make note that string tokens are allocated by malloc/free and not
-   * g_malloc/g_free, this is significant.  The grammar contains the free()
-   * call, so getting rid of that would require a lot of changes to the
-   * grammar. (on Windows glib, malloc/g_malloc are NOT equivalent)
-   *
    */
 
+  CfgBlockGenerator *gen;
 
   if (tok == LL_IDENTIFIER &&
       self->cfg &&
       (gen = cfg_lexer_find_generator(self, self->cfg, cfg_lexer_get_context_type(self), yylval->cptr)))
     {
-      CfgArgs *args;
-      CfgIncludeLevel *level = &self->include_stack[self->include_depth];
+      if (!cfg_lexer_parse_and_run_block_generator(self, gen, yylval))
+        return CLPR_ERROR;
 
-      self->preprocess_suppress_tokens++;
-
-      gint saved_line = level->lloc.first_line;
-      gint saved_column = level->lloc.first_column;
-      if (cfg_parser_parse(&block_ref_parser, self, (gpointer *) &args, NULL))
-        {
-          gboolean success;
-          gchar buf[256];
-          GString *result = g_string_sized_new(256);
-
-          level->lloc.first_line = saved_line;
-          level->lloc.first_column = saved_column;
-          self->preprocess_suppress_tokens--;
-          success = cfg_block_generator_generate(gen, self->cfg, args, result,
-                                                 cfg_lexer_format_location(self, &level->lloc, buf, sizeof(buf)));
-
-          free(yylval->cptr);
-          cfg_args_unref(args);
-
-          if (!success)
-            {
-              g_string_free(result, TRUE);
-              return LL_ERROR;
-            }
-
-          cfg_block_generator_format_name(gen, buf, sizeof(buf));
-
-          if (gen->suppress_backticks)
-            success = cfg_lexer_include_buffer_without_backtick_substitution(self, buf, result->str, result->len);
-          else
-            success = cfg_lexer_include_buffer(self, buf, result->str, result->len);
-          g_string_free(result, TRUE);
-
-          if (!success)
-            return LL_ERROR;
-
-          goto relex;
-        }
-      else
-        {
-          level->lloc.first_line = saved_line;
-          level->lloc.first_column = saved_column;
-          free(yylval->cptr);
-          self->preprocess_suppress_tokens--;
-          return LL_ERROR;
-        }
+      return CLPR_LEX_AGAIN;
     }
 
   if (self->ignore_pragma || self->cfg == NULL)
@@ -986,51 +1014,23 @@ relex:
     {
       gpointer dummy;
 
-      if (self->preprocess_output)
-        g_string_append_printf(self->preprocess_output, "@");
+      cfg_lexer_append_preprocessed_output(self, "@");
       if (!cfg_parser_parse(&pragma_parser, self, &dummy, NULL))
-        {
-          return LL_ERROR;
-        }
-      goto relex;
+        return CLPR_ERROR;
+
+      return CLPR_LEX_AGAIN;
     }
   else if (tok == KW_INCLUDE && cfg_lexer_get_context_type(self) != LL_CONTEXT_PRAGMA)
     {
-      gchar *include_file;
+      if (!cfg_lexer_parse_include(self, yylval, yylloc))
+        return CLPR_ERROR;
 
-      self->preprocess_suppress_tokens++;
-      tok = cfg_lexer_lex(self, yylval, yylloc);
-      if (tok != LL_STRING && tok != LL_IDENTIFIER)
-        {
-          self->preprocess_suppress_tokens--;
-          return LL_ERROR;
-        }
-
-      include_file = g_strdup(yylval->cptr);
-      free(yylval->cptr);
-
-      tok = cfg_lexer_lex(self, yylval, yylloc);
-      if (tok != ';')
-        {
-          self->preprocess_suppress_tokens--;
-          g_free(include_file);
-          return LL_ERROR;
-        }
-
-      if (!cfg_lexer_include_file(self, include_file))
-        {
-          g_free(include_file);
-          self->preprocess_suppress_tokens--;
-          return LL_ERROR;
-        }
-      self->preprocess_suppress_tokens--;
-      g_free(include_file);
-      goto relex;
+      return CLPR_LEX_AGAIN;
     }
   else if (self->cfg->user_version == 0 && self->cfg->parsed_version != 0)
     {
       if (!cfg_set_version(self->cfg, configuration->parsed_version))
-        return LL_ERROR;
+        return CLPR_ERROR;
     }
   else if (cfg_lexer_get_context_type(self) != LL_CONTEXT_PRAGMA && !self->non_pragma_seen)
     {
@@ -1040,7 +1040,7 @@ relex:
         {
           msg_error("ERROR: configuration files without a version number has become unsupported in " VERSION_3_13
                     ", please specify a version number using @version and update your configuration accordingly");
-          return LL_ERROR;
+          return CLPR_ERROR;
         }
 
       cfg_load_candidate_modules(self->cfg);
@@ -1050,13 +1050,50 @@ relex:
       self->non_pragma_seen = TRUE;
     }
 
-  if (!injected)
+  return CLPR_OK;
+}
+
+int
+cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
+{
+  /*
+   * NOTE:
+   *
+   * String tokens are allocated by malloc/free and not
+   * g_malloc/g_free, this is significant.  The grammar contains the free()
+   * call, so getting rid of that would require a lot of changes to the
+   * grammar. (on Windows glib, malloc/g_malloc are NOT equivalent)
+   *
+   */
+
+  gint tok;
+  gboolean is_token_injected;
+  CfgLexerPreprocessResult preprocess_result;
+
+  do
     {
-      if (self->preprocess_suppress_tokens == 0 && self->preprocess_output)
+      is_token_injected = cfg_lexer_consume_next_injected_token(self, &tok, yylval, yylloc);
+
+      if (!is_token_injected)
         {
-          g_string_append_printf(self->preprocess_output, "%s", self->token_text->str);
+          if (cfg_lexer_get_context_type(self) == LL_CONTEXT_BLOCK_CONTENT)
+            cfg_lexer_start_block_state(self, "{}");
+          else if (cfg_lexer_get_context_type(self) == LL_CONTEXT_BLOCK_ARG)
+            cfg_lexer_start_block_state(self, "()");
+
+          tok = cfg_lexer_lex_next_token(self, yylval, yylloc);
+          cfg_lexer_append_preprocessed_output(self, self->token_pretext->str);
         }
+
+      preprocess_result = cfg_lexer_preprocess(self, tok, yylval, yylloc);
+      if (preprocess_result == CLPR_ERROR)
+        return LL_ERROR;
     }
+  while (preprocess_result == CLPR_LEX_AGAIN);
+
+  if (!is_token_injected && self->preprocess_suppress_tokens == 0)
+    cfg_lexer_append_preprocessed_output(self, self->token_text->str);
+
   return tok;
 }
 
