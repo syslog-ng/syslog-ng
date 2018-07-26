@@ -81,4 +81,4 @@ install(TARGETS loggen RUNTIME DESTINATION bin)
 set(LOGGEN_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 add_subdirectory(socket_plugin)
 add_subdirectory(ssl_plugin)
-
+add_subdirectory(tests)
