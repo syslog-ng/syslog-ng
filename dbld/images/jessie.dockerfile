@@ -12,7 +12,7 @@ RUN apt-get update -qq && apt-get install --no-install-recommends -y \
   python-setuptools \
   wget
 
-COPY required-pip/all.txt required-pip/${DISTRO}*.txt /required-pip/
+COPY required-pip/${DISTRO}*.txt /required-pip/
 RUN cat /required-pip/* | grep -v '^$\|^#' | xargs pip install
 
 COPY required-apt/all.txt required-apt/${DISTRO}*.txt /required-apt/

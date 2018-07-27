@@ -14,9 +14,8 @@ RUN yum install -y \
   python-pip \
   python-setuptools
 
-COPY required-pip/all.txt required-pip/${DISTRO}*.txt /required-pip/
+COPY required-pip/${DISTRO}*.txt /required-pip/
 RUN cat /required-pip/* | grep -v '^$\|^#' | xargs pip install
-
 
 COPY required-yum/all.txt required-yum/${DISTRO}*.txt /required-yum/
 RUN cat /required-yum/* | grep -v '^$\|^#' | xargs yum install -y
