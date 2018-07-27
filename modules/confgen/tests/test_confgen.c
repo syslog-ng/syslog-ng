@@ -97,6 +97,7 @@ Test(confgen, confgen_unknown_context_is_reported_as_an_error)
     "confgentest()\n"
     "from-config2\n");
 
+  _next_token();
   assert_parser_identifier("from-config1");
   assert_grabbed_log_contains("context value is unknown");
   /* confgen is not registered */
