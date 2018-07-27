@@ -73,7 +73,7 @@ Test(confgen, confgen_script_output_is_included_into_the_config)
 
   cfg_lexer_push_context(parser->lexer, main_parser.context, main_parser.keywords, main_parser.name);
   _input(
-    "@module confgen context(root) name(confgentest) exec("TESTDATA_DIR "/confgentest.sh)\n"
+    "@module confgen context(root) name(confgentest) exec('"TESTDATA_DIR "/confgentest.sh')\n"
     "from-config1\n"
     "confgentest()\n"
     "from-config2\n");
@@ -92,7 +92,7 @@ Test(confgen, confgen_unknown_context_is_reported_as_an_error)
   start_grabbing_messages();
   cfg_lexer_push_context(parser->lexer, main_parser.context, main_parser.keywords, main_parser.name);
   _input(
-    "@module confgen context(unknown-context) name(confgentest) exec("TESTDATA_DIR "/confgentest.sh)\n"
+    "@module confgen context(unknown-context) name(confgentest) exec('"TESTDATA_DIR "/confgentest.sh')\n"
     "from-config1\n"
     "confgentest()\n"
     "from-config2\n");
