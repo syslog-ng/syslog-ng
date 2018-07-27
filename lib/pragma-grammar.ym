@@ -52,6 +52,10 @@
 
 #include <stdlib.h>
 
+#define PRAGMA_BEGIN() ({ lexer->tokenize_eol++; })
+#define PRAGMA_END() ({ lexer->tokenize_eol--; })
+#define PRAGMA_ERROR() ({ PRAGMA_END(); YYERROR; })
+
 CfgArgs *last_module_args = NULL;
 
 gint
@@ -81,8 +85,8 @@ __process_version_string(gchar *value)
 %%
 
 start
-        : { lexer->tokenize_eol++; }
-          stmt_and_eol                                  { lexer->tokenize_eol--; if (yychar != YYEMPTY) { cfg_lexer_unput_token(lexer, &yylval); } YYACCEPT; }
+        : { PRAGMA_BEGIN(); }
+          stmt_and_eol                                  { if (yychar != YYEMPTY) { cfg_lexer_unput_token(lexer, &yylval); } PRAGMA_END(); YYACCEPT; }
 
 stmt_and_eol
         : pragma_stmt LL_EOL
@@ -117,8 +121,8 @@ module_stmt
             free($2);
             cfg_args_unref(last_module_args);
             last_module_args = NULL;
-	    if (!success)
-              YYERROR;
+            if (!success)
+              PRAGMA_ERROR();
           }
 	;
 
@@ -133,7 +137,7 @@ requires_stmt
                                 evt_tag_str("module", $2),
                                 cfg_lexer_format_location_tag(lexer,&@1));
                     free($2);
-                    YYERROR;
+                    PRAGMA_ERROR();
                   }
                 else
                   {
