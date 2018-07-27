@@ -978,6 +978,27 @@ cfg_lexer_parse_include(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
   return TRUE;
 }
 
+static gboolean
+cfg_lexer_parse_pragma(CfgLexer *self)
+{
+  gpointer dummy;
+  CfgIncludeLevel *level = &self->include_stack[self->include_depth];
+
+  cfg_lexer_append_preprocessed_output(self, "@");
+
+  gint saved_line = level->lloc.first_line;
+  gint saved_column = level->lloc.first_column;
+
+  if (!cfg_parser_parse(&pragma_parser, self, &dummy, NULL))
+    {
+      level->lloc.first_line = saved_line;
+      level->lloc.first_column = saved_column;
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
 static CfgLexerPreprocessResult
 cfg_lexer_preprocess(CfgLexer *self, gint tok, YYSTYPE *yylval, YYLTYPE *yylloc)
 {
@@ -1012,20 +1033,8 @@ cfg_lexer_preprocess(CfgLexer *self, gint tok, YYSTYPE *yylval, YYLTYPE *yylloc)
     }
   else if (tok == LL_PRAGMA)
     {
-      gpointer dummy;
-      CfgIncludeLevel *level = &self->include_stack[self->include_depth];
-
-      cfg_lexer_append_preprocessed_output(self, "@");
-
-      gint saved_line = level->lloc.first_line;
-      gint saved_column = level->lloc.first_column;
-
-      if (!cfg_parser_parse(&pragma_parser, self, &dummy, NULL))
-        {
-          level->lloc.first_line = saved_line;
-          level->lloc.first_column = saved_column;
-          return CLPR_ERROR;
-        }
+      if (!cfg_lexer_parse_pragma(self))
+        return CLPR_ERROR;
 
       return CLPR_LEX_AGAIN;
     }
