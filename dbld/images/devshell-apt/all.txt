@@ -13,3 +13,7 @@ libjemalloc-dev
 locales
 lcov
 gdbserver
+libriemann-client-dev
+libdbi-dev
+libdbd-sqlite3
+clang
