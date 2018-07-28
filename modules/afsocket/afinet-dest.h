@@ -36,6 +36,17 @@
 struct libnet_context;
 #endif
 
+typedef struct _AFInetDestDriverFailbackOptions
+{
+  gboolean enabled;
+  guint tcp_probe_interval;
+  guint successful_probes_required;
+  guint successful_probes_received;
+  GSockAddr *primary_addr;
+  struct iv_timer timer;
+  struct iv_fd fd;
+} AFInetDestDriverFailbackOptions;
+
 typedef struct _AFInetDestDriver
 {
   AFSocketDestDriver super;
@@ -49,13 +60,7 @@ typedef struct _AFInetDestDriver
   GList *server_candidates;
   GList *current_server_candidate;
 
-  gboolean is_failback_mode;
-  guint tcp_probe_interval;
-  guint successful_probes_required;
-  guint successful_probes_received;
-  GSockAddr *primary_addr;
-  struct iv_timer failback_timer;
-  struct iv_fd failback_fd;
+  AFInetDestDriverFailbackOptions *failback;
 
   /* character as it can contain a service name from /etc/services */
   gchar *bind_port;
