@@ -136,6 +136,12 @@ confgen_module_init(PluginContext *plugin_context, CfgArgs *args)
   const gchar *name, *context, *exec;
   gint context_value;
 
+  if (!args)
+    {
+      msg_error("confgen: no arguments");
+      return FALSE;
+    }
+
   name = cfg_args_get(args, "name");
   if (!name)
     {
