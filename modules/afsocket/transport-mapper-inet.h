@@ -41,7 +41,7 @@ typedef struct _TransportMapperInet
 } TransportMapperInet;
 
 static inline gint
-transport_mapper_inet_get_server_port(TransportMapper *self)
+transport_mapper_inet_get_server_port(const TransportMapper *self)
 {
   return ((TransportMapperInet *) self)->server_port;
 }

@@ -572,7 +572,7 @@ dest_afinet_option
 	| KW_LOCALPORT '(' string_or_number ')'	{ afinet_dd_set_localport(last_driver, $3); free($3); }
 	| KW_PORT '(' string_or_number ')'	{ afinet_dd_set_destport(last_driver, $3); free($3); }
 	| KW_DESTPORT '(' string_or_number ')'	{ afinet_dd_set_destport(last_driver, $3); free($3); }
-	| KW_FAILOVER '(' dest_failover_options ')'	{ afinet_dd_enable_failover(last_driver); $$ = $3; }
+	| KW_FAILOVER {afinet_dd_enable_failover(last_driver);} '(' dest_failover_options ')'	{ $$ = $4; }
 	| inet_socket_option
 	| dest_writer_option
 	| dest_afsocket_option

@@ -26,6 +26,7 @@
 
 #include "afinet.h"
 #include "afsocket-dest.h"
+#include "afinet-dest-failover.h"
 #include "tlscontext.h"
 
 #if SYSLOG_NG_ENABLE_SPOOF_SOURCE
@@ -36,21 +37,7 @@
 struct libnet_context;
 #endif
 
-typedef struct _AFInetDestDriverFailover
-{  
-  GList *server_candidates;
-  GList *current_server_candidate;
-  gboolean failback;
-  LogExprNode *owner_expression;
 
-  guint tcp_probe_interval;
-  guint successful_probes_required;
-  guint successful_probes_received;
-  const gchar *primary_hostname;
-  GSockAddr *primary_addr;
-  struct iv_timer timer;
-  struct iv_fd fd;
-} AFInetDestDriverFailover;
 
 typedef struct _AFInetDestDriver
 {
@@ -79,6 +66,8 @@ void afinet_dd_set_localip(LogDriver *self, gchar *ip);
 void afinet_dd_set_sync_freq(LogDriver *self, gint sync_freq);
 void afinet_dd_set_spoof_source(LogDriver *self, gboolean enable);
 void afinet_dd_set_tls_context(LogDriver *s, TLSContext *tls_context);
+
+gint afinet_dd_determine_port(const TransportMapper *transport_mapper, const gchar *service_port);
 
 void afinet_dd_enable_failover(LogDriver *s);
 void afinet_dd_add_failovers(LogDriver *s, GList *failovers);

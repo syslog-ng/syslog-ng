@@ -13,6 +13,8 @@ set(AFSOCKET_SOURCES
     afinet.h
     afinet-source.c
     afinet-source.h
+    afinet-dest-failover.c
+    afinet-dest-failover.h
     afinet-dest.c
     afinet-dest.h
     socket-options-inet.c

@@ -231,8 +231,9 @@ afsocket_dd_connected(AFSocketDestDriver *self)
 }
 
 void
-afsocket_dd_connected_with_fd(AFSocketDestDriver *self, gint fd, GSockAddr *saddr)
+afsocket_dd_connected_with_fd(gpointer s, gint fd, GSockAddr *saddr)
 {
+  AFSocketDestDriver *self = (AFSocketDestDriver *)s;
   afsocket_dd_stop_watches(self);
   g_sockaddr_unref(self->dest_addr);
   self->dest_addr = saddr;

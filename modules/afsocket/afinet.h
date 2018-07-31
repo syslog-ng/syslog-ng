@@ -27,6 +27,7 @@
 #include "afsocket.h"
 #include "transport-mapper.h"
 
-guint16 afinet_lookup_service(TransportMapper *transport_mapper, const gchar *service);
+guint16 afinet_lookup_service(const TransportMapper *transport_mapper, const gchar *service);
+gint afinet_determine_port(const TransportMapper *transport_mapper, const gchar *service_port);
 
 #endif
