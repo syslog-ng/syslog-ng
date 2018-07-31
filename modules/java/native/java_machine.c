@@ -112,7 +112,7 @@ java_machine_unref(JavaVMSingleton *self)
    * The only way to get rid of it to shutdown syslog-ng.  */
   if (g_atomic_counter_get(&self->ref_cnt) == 2)
     {
-      msg_warning("The JVM is not used anymore, but it is not stopped, if you want to stop it, you have to restart syslog-ng");
+      msg_warning("If you have reloaded syslog-ng, the JVM is not used anymore, but it is still running. If you want to stop JVM, stop syslog-ng and then start syslog-ng again");
     }
   if (g_atomic_counter_dec_and_test(&self->ref_cnt))
     {
