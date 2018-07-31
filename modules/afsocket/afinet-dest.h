@@ -36,16 +36,21 @@
 struct libnet_context;
 #endif
 
-typedef struct _AFInetDestDriverFailbackOptions
-{
-  gboolean enabled;
+typedef struct _AFInetDestDriverFailover
+{  
+  GList *server_candidates;
+  GList *current_server_candidate;
+  gboolean failback;
+  LogExprNode *owner_expression;
+
   guint tcp_probe_interval;
   guint successful_probes_required;
   guint successful_probes_received;
+  const gchar *primary_hostname;
   GSockAddr *primary_addr;
   struct iv_timer timer;
   struct iv_fd fd;
-} AFInetDestDriverFailbackOptions;
+} AFInetDestDriverFailover;
 
 typedef struct _AFInetDestDriver
 {
@@ -57,10 +62,8 @@ typedef struct _AFInetDestDriver
   GString *lnet_buffer;
   gint spoof_source_maxmsglen;
 #endif
-  GList *server_candidates;
-  GList *current_server_candidate;
-
-  AFInetDestDriverFailbackOptions *failback;
+  gchar *primary;
+  AFInetDestDriverFailover *failover;
 
   /* character as it can contain a service name from /etc/services */
   gchar *bind_port;
@@ -76,10 +79,15 @@ void afinet_dd_set_localip(LogDriver *self, gchar *ip);
 void afinet_dd_set_sync_freq(LogDriver *self, gint sync_freq);
 void afinet_dd_set_spoof_source(LogDriver *self, gboolean enable);
 void afinet_dd_set_tls_context(LogDriver *s, TLSContext *tls_context);
+
+void afinet_dd_enable_failover(LogDriver *s);
 void afinet_dd_add_failovers(LogDriver *s, GList *failovers);
-void afinet_dd_set_failback_mode(LogDriver *s, gboolean enable);
+//void afinet_dd_set_failback_mode(LogDriver *s, gboolean enable);
+void afinet_dd_enable_failback(LogDriver *s);
+
 void afinet_dd_set_failback_tcp_probe_interval(LogDriver *s, gint tcp_probe_interval);
 void afinet_dd_set_failback_successful_probes_required(LogDriver *s, gint successful_probes_required);
+
 const gchar *afinet_dd_get_hostname(const AFInetDestDriver *self);
 
 AFInetDestDriver *afinet_dd_new_tcp(gchar *host, GlobalConfig *cfg);

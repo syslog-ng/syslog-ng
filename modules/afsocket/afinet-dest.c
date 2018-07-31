@@ -158,65 +158,31 @@ afinet_dd_set_tls_context(LogDriver *s, TLSContext *tls_context)
   transport_mapper_inet_set_tls_context((TransportMapperInet *) self->super.transport_mapper, tls_context, verifier);
 }
 
-void
-afinet_dd_add_failovers(LogDriver *s, GList *failovers)
+static void
+_afinet_dd_failover_add_servers(AFInetDestDriverFailover *self, GList *failovers)
 {
-  AFInetDestDriver *self = (AFInetDestDriver *)s;
   self->server_candidates = g_list_concat(self->server_candidates, failovers);
 }
 
-void
-afinet_dd_set_failback_mode(LogDriver *s, gboolean enable)
-{
-  AFInetDestDriver *self = (AFInetDestDriver *) s;
-  self->failback->enabled = enable;
-}
-
-void
-afinet_dd_set_failback_tcp_probe_interval(LogDriver *s, gint tcp_probe_interval)
-{
-  AFInetDestDriver *self = (AFInetDestDriver *) s;
-  self->failback->tcp_probe_interval = tcp_probe_interval;
-}
-
-void
-afinet_dd_set_failback_successful_probes_required(LogDriver *s, gint successful_probes_required)
-{
-  AFInetDestDriver *self = (AFInetDestDriver *) s;
-  self->failback->successful_probes_required = successful_probes_required;
-}
 
 static void
-_afinet_dd_start_failback_timer(AFInetDestDriver *self)
+_afinet_dd_start_failback_timer(AFInetDestDriverFailover *self)
 {
   glong elapsed_time;
 
   iv_validate_now();
-  elapsed_time = timespec_diff_msec(&iv_now, &(self->failback->timer.expires));
-  self->failback->timer.expires = iv_now;
+  elapsed_time = timespec_diff_msec(&iv_now, &(self->timer.expires));
+  self->timer.expires = iv_now;
 
-  if (elapsed_time < (self->failback->tcp_probe_interval*1000))
+  if (elapsed_time < (self->tcp_probe_interval*1000))
     {
-      timespec_add_msec(&self->failback->timer.expires, (self->failback->tcp_probe_interval*1000 - elapsed_time));
+      timespec_add_msec(&self->timer.expires, (self->tcp_probe_interval*1000 - elapsed_time));
     }
-  iv_timer_register(&self->failback->timer);
-}
-
-static void
-_afinet_dd_stop_failback_handlers(AFInetDestDriver *self)
-{
-  if (iv_timer_registered(&self->failback->timer))
-    iv_timer_unregister(&self->failback->timer);
-
-  if (iv_fd_registered(&self->failback->fd))
-    {
-      iv_fd_unregister(&self->failback->fd);
-      close(self->failback->fd.fd);
-    }
+  iv_timer_register(&self->timer);
 }
 
 static GList *
-_primary(AFInetDestDriver *self)
+_primary(AFInetDestDriverFailover *self)
 {
   return g_list_first(self->server_candidates);
 }
@@ -224,40 +190,41 @@ _primary(AFInetDestDriver *self)
 static void
 _afinet_dd_hand_over_connection_to_afsocket(AFInetDestDriver *self)
 {
-  self->failback->successful_probes_received = 0;
-  self->current_server_candidate = _primary(self);
-  afsocket_dd_connected_with_fd(&self->super, self->failback->fd.fd, self->failback->primary_addr);
-  self->failback->primary_addr = NULL;
-  self->failback->fd.fd = -1;
+  self->failover->successful_probes_received = 0;
+  self->failover->current_server_candidate = _primary(self->failover);
+  afsocket_dd_connected_with_fd(&self->super, self->failover->fd.fd, self->failover->primary_addr);
+  self->failover->primary_addr = NULL;
+  self->failover->fd.fd = -1;
 }
+
 
 static void
 _afinet_dd_tcp_probe_succeded(AFInetDestDriver *self)
 {
-  self->failback->successful_probes_received++;
+  self->failover->successful_probes_received++;
   msg_notice("Probing primary server successful",
-             evt_tag_int("successful-probes-received", self->failback->successful_probes_received),
-             evt_tag_int("successful-probes-required", self->failback->successful_probes_required));
+             evt_tag_int("successful-probes-received", self->failover->successful_probes_received),
+             evt_tag_int("successful-probes-required", self->failover->successful_probes_required));
 
-  if (self->failback->successful_probes_received >= self->failback->successful_probes_required)
+  if (self->failover->successful_probes_received >= self->failover->successful_probes_required)
     {
       msg_notice("Primary server seems to be stable, reconnecting to primary server");
       _afinet_dd_hand_over_connection_to_afsocket(self);
     }
   else
     {
-      close(self->failback->fd.fd);
-      g_sockaddr_unref(self->failback->primary_addr);
-      _afinet_dd_start_failback_timer(self);
+      close(self->failover->fd.fd);
+      g_sockaddr_unref(self->failover->primary_addr);
+      _afinet_dd_start_failback_timer(self->failover);
     }
 }
 
 static void
 _afinet_dd_tcp_probe_failed(AFInetDestDriver *self)
 {
-  self->failback->successful_probes_received = 0;
-  g_sockaddr_unref(self->failback->primary_addr);
-  _afinet_dd_start_failback_timer(self);
+  self->failover->successful_probes_received = 0;
+  g_sockaddr_unref(self->failover->primary_addr);
+  _afinet_dd_start_failback_timer(self->failover);
 }
 
 static void
@@ -268,14 +235,14 @@ _afinet_dd_handle_tcp_probe_socket(gpointer s)
   socklen_t errorlen = sizeof(error);
   gchar buf[MAX_SOCKADDR_STRING];
 
-  if (iv_fd_registered(&self->failback->fd))
-    iv_fd_unregister(&self->failback->fd);
+  if (iv_fd_registered(&self->failover->fd))
+    iv_fd_unregister(&self->failover->fd);
 
-  if (getsockopt(self->failback->fd.fd, SOL_SOCKET, SO_ERROR, &error, &errorlen) == -1)
+  if (getsockopt(self->failover->fd.fd, SOL_SOCKET, SO_ERROR, &error, &errorlen) == -1)
     {
       msg_error("getsockopt(SOL_SOCKET, SO_ERROR) failed for connecting socket",
-                evt_tag_int("fd", self->failback->fd.fd),
-                evt_tag_str("server", g_sockaddr_format(self->failback->primary_addr, buf, sizeof(buf), GSA_FULL)),
+                evt_tag_int("fd", self->failover->fd.fd),
+                evt_tag_str("server", g_sockaddr_format(self->failover->primary_addr, buf, sizeof(buf), GSA_FULL)),
                 evt_tag_error(EVT_TAG_OSERROR));
       _afinet_dd_tcp_probe_failed(self);
       return;
@@ -284,10 +251,10 @@ _afinet_dd_handle_tcp_probe_socket(gpointer s)
   if (error)
     {
       msg_error("Connection towards primary server failed",
-                evt_tag_int("fd", self->failback->fd.fd),
-                evt_tag_str("server", g_sockaddr_format(self->failback->primary_addr, buf, sizeof(buf), GSA_FULL)),
+                evt_tag_int("fd", self->failover->fd.fd),
+                evt_tag_str("server", g_sockaddr_format(self->failover->primary_addr, buf, sizeof(buf), GSA_FULL)),
                 evt_tag_errno(EVT_TAG_OSERROR, error));
-      close(self->failback->fd.fd);
+      close(self->failover->fd.fd);
       _afinet_dd_tcp_probe_failed(self);
       return;
     }
@@ -310,7 +277,7 @@ _connect_in_progress(GIOStatus iostatus)
 static void
 _afinet_dd_tcp_probe_primary_server(AFInetDestDriver *self)
 {
-  GIOStatus iostatus = g_connect(self->failback->fd.fd, self->failback->primary_addr);
+  GIOStatus iostatus = g_connect(self->failover->fd.fd, self->failover->primary_addr);
   if (_connect_normal(iostatus))
     {
       msg_notice("Successfully connected to primary");
@@ -320,18 +287,19 @@ _afinet_dd_tcp_probe_primary_server(AFInetDestDriver *self)
 
   if (_connect_in_progress(iostatus))
     {
-      iv_fd_register(&self->failback->fd);
+      iv_fd_register(&self->failover->fd);
       return;
     }
 
   gchar buf[MAX_SOCKADDR_STRING];
   msg_error("Connection towards primary server failed",
-            evt_tag_int("fd", self->failback->fd.fd),
-            evt_tag_str("server", g_sockaddr_format(self->failback->primary_addr, buf, sizeof(buf), GSA_FULL)),
+            evt_tag_int("fd", self->failover->fd.fd),
+            evt_tag_str("server", g_sockaddr_format(self->failover->primary_addr, buf, sizeof(buf), GSA_FULL)),
             evt_tag_error(EVT_TAG_OSERROR));
-  close(self->failback->fd.fd);
+  close(self->failover->fd.fd);
   _afinet_dd_tcp_probe_failed(self);
 }
+
 
 static gint
 _determine_port(const AFInetDestDriver *self)
@@ -349,14 +317,14 @@ _determine_port(const AFInetDestDriver *self)
 static gboolean
 _resolve_primary_address(AFInetDestDriver *self)
 {
-  if (!resolve_hostname_to_sockaddr(&self->failback->primary_addr, self->super.transport_mapper->address_family,
-                                    g_list_first(self->server_candidates)->data))
+  if (!resolve_hostname_to_sockaddr(&self->failover->primary_addr, self->super.transport_mapper->address_family,
+                                    g_list_first(self->failover->server_candidates)->data))
     {
       msg_warning("Unable to resolve the address of the primary server",
-                  evt_tag_str("address", g_list_first(self->server_candidates)->data));
+                  evt_tag_str("address", g_list_first(self->failover->server_candidates)->data));
       return FALSE;
     }
-  g_sockaddr_set_port(self->failback->primary_addr, _determine_port(self));
+  g_sockaddr_set_port(self->failover->primary_addr, _determine_port(self));
   return TRUE;
 }
 
@@ -364,7 +332,7 @@ static gboolean
 _setup_failback_fd(AFInetDestDriver  *self)
 {
   if (!transport_mapper_open_socket(self->super.transport_mapper, self->super.socket_options, self->super.bind_addr,
-                                    AFSOCKET_DIR_SEND, &self->failback->fd.fd))
+                                    AFSOCKET_DIR_SEND, &self->failover->fd.fd))
     {
       msg_error("Error creating socket for tcp-probe the primary server",
                 evt_tag_error(EVT_TAG_OSERROR));
@@ -379,10 +347,10 @@ _afinet_dd_failback_timer_elapsed(void *cookie)
   AFInetDestDriver *self = (AFInetDestDriver *) cookie;
 
   msg_notice("Probing the primary server.",
-             evt_tag_int("tcp-probe-interval", self->failback->tcp_probe_interval));
+             evt_tag_int("tcp-probe-interval", self->failover->tcp_probe_interval));
 
   iv_validate_now();
-  self->failback->timer.expires = iv_now; // register starting time, required for "elapsed_time"
+  self->failover->timer.expires = iv_now; // register starting time, required for "elapsed_time"
 
   if (!_resolve_primary_address(self))
     {
@@ -399,46 +367,136 @@ _afinet_dd_failback_timer_elapsed(void *cookie)
   _afinet_dd_tcp_probe_primary_server(self);
 }
 
-static void
-_afinet_dd_init_failback_handlers(AFInetDestDriver *self)
-{
-  IV_TIMER_INIT(&self->failback->timer);
-  self->failback->timer.cookie = self;
-  self->failback->timer.handler = _afinet_dd_failback_timer_elapsed;
 
-  IV_FD_INIT(&self->failback->fd);
-  self->failback->fd.cookie = self;
-  self->failback->fd.handler_out = (void (*)(void *)) _afinet_dd_handle_tcp_probe_socket;
+
+static void
+_afinet_dd_init_failback_handlers(AFInetDestDriverFailover *self)
+{
+  IV_TIMER_INIT(&self->timer);
+  self->timer.cookie = self;
+  self->timer.handler = _afinet_dd_failback_timer_elapsed;
+
+  IV_FD_INIT(&self->fd);
+  self->fd.cookie = self;
+  self->fd.handler_out = (void (*)(void *)) _afinet_dd_handle_tcp_probe_socket;
+}
+
+static AFInetDestDriverFailover *
+_afinet_dd_failover_new(LogExprNode *owner_expr, const gchar *primary)
+{
+  AFInetDestDriverFailover *self = g_new0(AFInetDestDriverFailover, 1);
+
+  g_assert(self->server_candidates == NULL);
+  self->server_candidates = g_list_append(self->server_candidates, g_strdup(primary));
+  self->owner_expression = owner_expr;
+/*
+  self->tcp_probe_interval = -1;
+  self->successful_probes_required = -1;
+  self->successful_probes_received = 0;
+  self->primary_addr = NULL;
+*/
+
+  _afinet_dd_init_failback_handlers(self);
+  return self;
+}
+
+void
+afinet_dd_enable_failover(LogDriver *s)
+{
+  AFInetDestDriver *self = (AFInetDestDriver *) s;
+  self->failover = _afinet_dd_failover_new(s->super.expr_node, self->primary);
+}
+
+void
+afinet_dd_add_failovers(LogDriver *s, GList *failovers)
+{
+  AFInetDestDriver *self = (AFInetDestDriver *)s;
+  _afinet_dd_failover_add_servers(self->failover, failovers);
+}
+
+static void
+_afinet_dd_failover_enable_failback(AFInetDestDriverFailover *self)
+{
+  self->failback = TRUE;
+}
+
+void
+afinet_dd_enable_failback(LogDriver *s)
+{
+  AFInetDestDriver *self = (AFInetDestDriver *) s;
+  _afinet_dd_failover_enable_failback(self->failover);
+}
+
+void
+afinet_dd_set_failback_tcp_probe_interval(LogDriver *s, gint tcp_probe_interval) //TODO
+{
+  AFInetDestDriver *self = (AFInetDestDriver *) s;
+  self->failover->tcp_probe_interval = tcp_probe_interval;
+}
+
+void
+afinet_dd_set_failback_successful_probes_required(LogDriver *s, gint successful_probes_required) // TODO
+{
+  AFInetDestDriver *self = (AFInetDestDriver *) s;
+  self->failover->successful_probes_required = successful_probes_required;
+}
+
+static void
+_afinet_dd_stop_failback_handlers(AFInetDestDriverFailover *self)
+{
+  if (iv_timer_registered(&self->timer))
+    iv_timer_unregister(&self->timer);
+
+  if (iv_fd_registered(&self->fd))
+    {
+      iv_fd_unregister(&self->fd);
+      close(self->fd.fd);
+    }
+}
+
+const gchar *
+_failover_get_hostname(GList * l)
+{
+  return (const gchar *)(l->data);
 }
 
 const gchar *
 afinet_dd_get_hostname(const AFInetDestDriver *self)
 {
-  return (const gchar *)(self->current_server_candidate->data);
+  if (!self->failover)
+    return self->primary;
+
+  return (const gchar *)(self->failover->current_server_candidate->data);
 }
 
 static void
-_init_current_server_candidate(AFInetDestDriver *self )
+_init_current_server_candidate(AFInetDestDriverFailover *self )
 {
-  self->current_server_candidate = self->failback->enabled ? g_list_next(_primary(self)) : _primary(self);
+  self->current_server_candidate = self->failback ? g_list_next(_primary(self)) : _primary(self);
 
   if (_primary(self) == self->current_server_candidate)
     {
       msg_warning("Last failover server reached, trying the original host again",
-                  evt_tag_str("host", afinet_dd_get_hostname(self)),
-                  log_pipe_location_tag(&self->super.super.super.super));
+                  evt_tag_str("host", _failover_get_hostname(self->current_server_candidate)),
+                  log_expr_node_location_tag(self->owner_expression));
     }
   else
     {
       msg_warning("Last failover server reached, trying the first failover again",
-                  evt_tag_str("next_failover_server", afinet_dd_get_hostname(self)),
-                  log_pipe_location_tag(&self->super.super.super.super));
+                  evt_tag_str("next_failover_server", _failover_get_hostname(self->current_server_candidate)),
+                  log_expr_node_location_tag(self->owner_expression));
     }
 }
 
 static void
-_step_current_server_candidate(AFInetDestDriver *self)
+_step_current_server_iterator(AFInetDestDriverFailover *self)
 {
+  if (!self->current_server_candidate)
+    {
+      self->current_server_candidate = _primary(self);
+      return;
+    }
+
   GList *current = self->current_server_candidate;
   self->current_server_candidate = g_list_next(self->current_server_candidate);
 
@@ -448,18 +506,18 @@ _step_current_server_candidate(AFInetDestDriver *self)
       return;
     }
 
-  if (self->failback->enabled && _primary(self) == current)
+  if (self->failback && _primary(self) == current)
     {
       _afinet_dd_start_failback_timer(self);
       msg_warning("Current primary server is inaccessible, sending the messages to the next failover server",
-                  evt_tag_str("next_failover_server", afinet_dd_get_hostname(self)),
-                  log_pipe_location_tag(&self->super.super.super.super));
+                  evt_tag_str("next_failover_server", _failover_get_hostname(self->current_server_candidate)),
+                  log_expr_node_location_tag(self->owner_expression));
       return;
     }
 
   msg_warning("Current failover server is inaccessible, sending the messages to the next failover server",
-              evt_tag_str("next_failover_server", afinet_dd_get_hostname(self)),
-              log_pipe_location_tag(&self->super.super.super.super));
+              evt_tag_str("next_failover_server", _failover_get_hostname(self->current_server_candidate)),
+              log_expr_node_location_tag(self->owner_expression));
 }
 
 static LogWriter *
@@ -486,7 +544,7 @@ afinet_dd_construct_writer(AFSocketDestDriver *s)
 static gboolean
 _is_failover_used(AFInetDestDriver *self)
 {
-  return (g_list_next(_primary(self)) != NULL);
+  return self->failover != NULL;
 }
 
 static void
@@ -495,13 +553,7 @@ _setup_next_hostname(AFInetDestDriver *self)
   if (!_is_failover_used(self))
     return;
 
-  if (!self->current_server_candidate)
-    {
-      self->current_server_candidate = _primary(self);
-      return;
-    }
-
-  _step_current_server_candidate(self);
+  _step_current_server_iterator(self->failover);
 }
 
 static gboolean
@@ -593,16 +645,18 @@ afinet_dd_init(LogPipe *s)
     }
 #endif
 
+/*
   _afinet_dd_init_failback_handlers(self);
 
-  if (self->failback->tcp_probe_interval == -1)
-    self->failback->tcp_probe_interval = TCP_PROBE_INTERVAL_DEFAULT;
+  if (self->failover->tcp_probe_interval == -1)
+    self->failover->tcp_probe_interval = TCP_PROBE_INTERVAL_DEFAULT;
 
-  if (self->failback->successful_probes_required == -1)
-    self->failback->successful_probes_required = SUCCESSFUL_PROBES_REQUIRED_DEFAULT;
+  if (self->failover->successful_probes_required == -1)
+    self->failover->successful_probes_required = SUCCESSFUL_PROBES_REQUIRED_DEFAULT;
 
-  if (!self->failback->enabled)
+  if (!self->failover->enabled)
     self->current_server_candidate = _primary(self);
+*/
 
   return TRUE;
 }
@@ -784,10 +838,20 @@ afinet_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 }
 
 void
-_afinet_dd_failback_free(AFInetDestDriverFailbackOptions *self)
+_afinet_dd_failback_free(AFInetDestDriverFailover *self)
 {
   g_sockaddr_unref(self->primary_addr);
   g_free(self);
+}
+
+static void
+_afinet_dd_failover_free(AFInetDestDriverFailover *self)
+{
+  if (!self)
+    return;
+
+  _afinet_dd_stop_failback_handlers(self);
+  g_list_free_full(self->server_candidates, g_free);
 }
 
 void
@@ -795,7 +859,9 @@ afinet_dd_free(LogPipe *s)
 {
   AFInetDestDriver *self = (AFInetDestDriver *) s;
 
-  g_list_free_full(self->server_candidates, g_free);
+  //g_list_free_full(self->server_candidates, g_free);
+  g_free(self->primary);
+
   g_free(self->bind_ip);
   g_free(self->bind_port);
   g_free(self->dest_port);
@@ -806,20 +872,7 @@ afinet_dd_free(LogPipe *s)
 #endif
   afsocket_dd_free(s);
 
-  _afinet_dd_stop_failback_handlers(self);
-  _afinet_dd_failback_free(self->failback);
-}
-
-static AFInetDestDriverFailbackOptions *
-_afinet_dd_failback_new_instance(void)
-{
-  AFInetDestDriverFailbackOptions *self = g_new0(AFInetDestDriverFailbackOptions, 1);
-  self->enabled= FALSE;
-  self->tcp_probe_interval = -1;
-  self->successful_probes_required = -1;
-  self->successful_probes_received = 0;
-  self->primary_addr = NULL;
-  return self;
+  _afinet_dd_failover_free(self->failover);
 }
 
 static AFInetDestDriver *
@@ -835,9 +888,7 @@ afinet_dd_new_instance(TransportMapper *transport_mapper, gchar *hostname, Globa
   self->super.setup_addresses = afinet_dd_setup_addresses;
   self->super.get_dest_name = afinet_dd_get_dest_name;
 
-  self->server_candidates = g_list_append(self->server_candidates, g_strdup(hostname));
-
-  self->failback = _afinet_dd_failback_new_instance();
+  self->primary = g_strdup(hostname);
 
 #if SYSLOG_NG_ENABLE_SPOOF_SOURCE
   g_static_mutex_init(&self->lnet_lock);
