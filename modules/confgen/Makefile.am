@@ -15,3 +15,5 @@ EXTRA_DIST += modules/confgen/CMakeLists.txt
 
 modules/confgen modules/confgen/ mod-confgen: modules/confgen/libconfgen.la
 .PHONY: modules/confgen/ mod-confgen
+
+include modules/confgen/tests/Makefile.am

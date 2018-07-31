@@ -52,6 +52,10 @@
 
 #include <stdlib.h>
 
+#define PRAGMA_BEGIN() ({ lexer->tokenize_eol++; })
+#define PRAGMA_END() ({ lexer->tokenize_eol--; })
+#define PRAGMA_ERROR() ({ PRAGMA_END(); YYERROR; })
+
 CfgArgs *last_module_args = NULL;
 
 gint
@@ -81,8 +85,8 @@ __process_version_string(gchar *value)
 %%
 
 start
-        : { lexer->tokenize_eol++; }
-          stmt_and_eol                                  { lexer->tokenize_eol--; if (yychar != YYEMPTY) { cfg_lexer_unput_token(lexer, &yylval); } YYACCEPT; }
+        : { PRAGMA_BEGIN(); }
+          stmt_and_eol                                  { if (yychar != YYEMPTY) { cfg_lexer_unput_token(lexer, &yylval); } PRAGMA_END(); YYACCEPT; }
 
 stmt_and_eol
         : pragma_stmt LL_EOL
@@ -111,12 +115,21 @@ define_stmt
 								  cfg_args_set(configuration->globals, $2, $3); free($2); free($3); }
 
 module_stmt
-	: KW_MODULE string { last_module_args = cfg_args_new(); } module_params
+	: KW_MODULE string { last_module_args = cfg_args_new(); } module_param module_params
           {
-            plugin_load_module(&configuration->plugin_context, $2, last_module_args);
+            gboolean success = plugin_load_module(&configuration->plugin_context, $2, last_module_args);
             free($2);
+
             cfg_args_unref(last_module_args);
             last_module_args = NULL;
+
+            if (!success)
+              PRAGMA_ERROR();
+          }
+	| KW_MODULE string
+          {
+            plugin_load_module(&configuration->plugin_context, $2, NULL);
+            free($2);
           }
 	;
 
@@ -131,7 +144,7 @@ requires_stmt
                                 evt_tag_str("module", $2),
                                 cfg_lexer_format_location_tag(lexer,&@1));
                     free($2);
-                    YYERROR;
+                    PRAGMA_ERROR();
                   }
                 else
                   {
