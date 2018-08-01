@@ -538,20 +538,6 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
         _truncate_file(self, end_ofs);
     }
 
-  if (!self->options->read_only && self->options->reliable)
-    {
-      if (self->hdr->backlog_len > 0 || self->hdr->backlog_head != self->hdr->read_head)
-        {
-          msg_warning("Reliable disk-buffer backlog is not empty, resetting",
-                      evt_tag_long("backlog_head", self->hdr->backlog_head),
-                      evt_tag_long("backlog_len", self->hdr->backlog_len));
-
-          self->hdr->length += self->hdr->backlog_len;
-          self->hdr->read_head = self->hdr->backlog_head;
-          self->hdr->backlog_len = 0;
-        }
-    }
-
   if (!self->options->reliable)
     {
       self->file_size = qout_ofs;

@@ -237,37 +237,6 @@ test_over_EOF(void)
   _common_cleanup(dq);
 }
 
-/* TestCase:
-   * - create a diskq with one message that is in the backlog(push, and pop but do not ack)
-   * - close diskq
-   * - try to get back the message from diskq buffer
-   */
-static void
-test_not_empty_backlog(void)
-{
-  const gchar *filename = "non_empty_backlog.rqf";
-  LogPathOptions local_options = LOG_PATH_OPTIONS_INIT;
-
-  LogQueueDiskReliable *dq = _init_diskq_for_test(filename, TEST_DISKQ_SIZE, TEST_DISKQ_SIZE);
-
-  log_queue_push_tail(&dq->super.super, log_msg_new_mark(), &local_options);
-
-  LogMessage *msg = log_queue_pop_head(&dq->super.super, &local_options);
-  assert_not_null(msg, "Could not find message in the disk-buffer.");
-
-  log_queue_unref(&dq->super.super);
-
-  dq = (LogQueueDiskReliable *)log_queue_disk_reliable_new(&options, NULL);
-  log_queue_disk_load_queue(&dq->super.super, filename);
-
-  msg = log_queue_pop_head(&dq->super.super, &local_options);
-  assert_not_null(msg, "Could not find message in the disk-buffer.");
-
-  log_queue_unref(&dq->super.super);
-  unlink(filename);
-  disk_queue_options_destroy(&options);
-}
-
 /*
  * The method make the following situation
  * the backlog contains 6 messages
@@ -424,8 +393,6 @@ main(gint argc, gchar **argv)
   test_over_EOF();
 
   test_rewind_backlog();
-
-  test_not_empty_backlog();
 
   cfg_free(configuration);
   app_shutdown();
