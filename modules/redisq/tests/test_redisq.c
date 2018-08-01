@@ -23,12 +23,13 @@
 
 #include "logqueue-redis.h"
 #include "logmsg/logmsg-serialize.h"
+#include "logpipe.h"
 #include <criterion/criterion.h>
 #include "plugin.h"
 #include "apphook.h"
-#include "queue_utils_lib.h"
 #include "redisq-options.h"
 
+#define HELLO_MSG "Hello redis queue"
 #define ITEMS_PER_MESSAGE 2
 
 typedef struct _FakeRedisQueue FakeRedisQueue;
@@ -60,7 +61,7 @@ void *redisvCommand(redisContext *c, const char *format, va_list ap)
 
   if (strstr(format, "RPUSH"))
     {
-      test_msg = _construct_msg("Hello redis queue");
+      test_msg = _construct_msg(HELLO_MSG);
     }
   else if (strstr(format, "LRANGE") && test_msg)
     {
@@ -79,6 +80,8 @@ void *redisvCommand(redisContext *c, const char *format, va_list ap)
 
       serialize_archive_free(sa);
       g_string_free(serialized, TRUE);
+      log_msg_unref(test_msg);
+      test_msg = NULL;
 
       return reply;
     }
@@ -89,8 +92,6 @@ void *redisvCommand(redisContext *c, const char *format, va_list ap)
 void freeReplyObject(void *reply)
 {
   redisReply *rep = (redisReply *) reply;
-
-  printf("freeReplyObject\n");
 
   if (rep->elements > 0)
     {
@@ -133,38 +134,52 @@ _fake_logq_redis_free(FakeRedisQueue *self)
   g_free(self->super.super.persist_name);
 }
 
+static void
+_compare_log_msg(LogMessage *msg1, LogMessage *msg2)
+{
+  GString *serialized1, *serialized2;
+  SerializeArchive *sa1, *sa2;
+
+  cr_assert_not_null(msg1, "msg1 is NULL");
+  cr_assert_not_null(msg2, "msg2 is NULL");
+
+  serialized1 = g_string_sized_new(4096);
+  sa1 = serialize_string_archive_new(serialized1);
+  log_msg_serialize(msg1, sa1);
+
+  serialized2 = g_string_sized_new(4096);
+  sa2 = serialize_string_archive_new(serialized2);
+  log_msg_serialize(msg2, sa2);
+
+  cr_assert_gt(serialized1->len, 0, "Failed to serialize a log message");
+  cr_assert_eq(memcmp(serialized1->str, serialized2->str, serialized1->len), 0, "log messages are not identical");
+
+  serialize_archive_free(sa1);
+  g_string_free(serialized1, TRUE);
+
+  serialize_archive_free(sa2);
+  g_string_free(serialized2, TRUE);
+}
+
 Test(redisq, test_push_pop_msg)
 {
-  GString *serialized, *out_serialized;
-  SerializeArchive *sa, *out_sa;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-  LogMessage *msg, *out_msg = NULL;
+  LogMessage *msg = _construct_msg(HELLO_MSG);
+  LogMessage *orig_msg = _construct_msg(HELLO_MSG);
+  LogMessage *out_msg = NULL;
   LogQueue *q;
 
   q = _fake_logq_redis_new(&fakeRedisQ);
 
-  msg = _construct_msg("Hello redis queue");
   log_queue_push_tail(q, msg, &path_options);
   out_msg = log_queue_pop_head(q, &path_options);
 
-  serialized = g_string_sized_new(4096);
-  sa = serialize_string_archive_new(serialized);
-  log_msg_serialize(test_msg, sa);
-
-  out_serialized = g_string_sized_new(4096);
-  out_sa = serialize_string_archive_new(out_serialized);
-  log_msg_serialize(out_msg, out_sa);
-
-  cr_assert_eq(memcmp(serialized->str, out_serialized->str, serialized->len), 0, "Can't read msg from queue");
-
-  serialize_archive_free(sa);
-  g_string_free(serialized, TRUE);
-
-  serialize_archive_free(out_sa);
-  g_string_free(out_serialized, TRUE);
+  _compare_log_msg(orig_msg, out_msg);
 
   log_msg_unref(msg);
+  log_msg_unref(orig_msg);
   log_msg_unref(out_msg);
+
   _fake_logq_redis_free(&fakeRedisQ);
 }
 
@@ -173,46 +188,68 @@ Test(redisq, test_pop_empty_msg)
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   LogQueue *q;
   LogMessage *msg;
+  guint qlen = 0;
 
   q = _fake_logq_redis_new(&fakeRedisQ);
-  msg = log_queue_pop_head(q, &path_options);
 
+  msg = log_queue_pop_head(q, &path_options);
   cr_assert_null(msg, "Queue is not empty");
+
+  qlen = fakeRedisQ.super.super.get_length((LogQueue *)&fakeRedisQ.super);
+  cr_assert_eq(qlen, 0, "Message is present in a Queue");
 
   _fake_logq_redis_free(&fakeRedisQ);
 }
-
-#if 0
 
 Test(redisq, test_rewind_backlog)
 {
   guint qlen = 0;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   LogQueue *q;
-  LogMessage *mark_msg = log_msg_new_mark();
-  LogMessage *backlog_msg;
+  LogMessage *msg = _construct_msg(HELLO_MSG);
+  LogMessage *backlog_msg, *out_msg;
 
   q = _fake_logq_redis_new(&fakeRedisQ);
 
-  log_queue_push_tail(q, mark_msg, &path_options);
-  log_queue_pop_head(q, &path_options);
+  log_queue_push_tail(q, msg, &path_options);
+  out_msg = log_queue_pop_head(q, &path_options);
   log_queue_rewind_backlog(q, 1);
 
-// qlen = _get_length_from_qredis(NULL);
-// cr_assert_eq(qlen, 1, "Queue is empty");
+  qlen = fakeRedisQ.super.qbacklog->length / ITEMS_PER_MESSAGE;
+  cr_assert_eq(qlen, 0, "Backlog is not empty");
 
   backlog_msg = log_queue_pop_head(q, &path_options);
-  cr_assert_eq(mark_msg, backlog_msg, "Can't read message from backlog");
+  _compare_log_msg(out_msg, backlog_msg);
 
-  log_msg_unref(mark_msg);
+  log_msg_unref(msg);
+  log_msg_unref(out_msg);
+  log_msg_unref(backlog_msg);
+
   _fake_logq_redis_free(&fakeRedisQ);
 }
 
-Test(redisq, test_multiple_msgs)
+Test(redisq, test_ack_backlog)
 {
+  guint qlen = 0;
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  LogQueue *q;
+  LogMessage *msg = _construct_msg(HELLO_MSG), *out_msg;
 
+  q = _fake_logq_redis_new(&fakeRedisQ);
+
+  log_queue_push_tail(q, msg, &path_options);
+  log_queue_pop_head(q, &path_options);
+  log_queue_ack_backlog(q, 1);
+
+  qlen = fakeRedisQ.super.qbacklog->length / ITEMS_PER_MESSAGE;
+  cr_assert_eq(qlen, 0, "Backlog is not empty");
+
+  out_msg = log_queue_pop_head(q, &path_options);
+  cr_assert_null(out_msg, "Queue is not empty");
+
+  log_msg_unref(msg);
+  _fake_logq_redis_free(&fakeRedisQ);
 }
-#endif
 
 static void
 setup(void)
