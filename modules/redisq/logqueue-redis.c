@@ -215,7 +215,6 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
       log_queue_push_notify (&self->super);
       g_static_mutex_unlock(&self->super.lock);
 
-      log_msg_ref (msg);
       log_msg_ack (msg, path_options, AT_PROCESSED);
       return;
     }
