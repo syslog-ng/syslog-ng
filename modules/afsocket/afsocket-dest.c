@@ -513,6 +513,20 @@ _dd_init_dgram(AFSocketDestDriver *self)
   return _finalize_init(self);
 }
 
+static gboolean
+_dd_init_socket(AFSocketDestDriver *self)
+{
+  switch (self->transport_mapper->sock_type)
+    {
+    case SOCK_STREAM:
+      return _dd_init_stream(self);
+
+    case SOCK_DGRAM:
+    default:
+      return _dd_init_dgram(self);
+    }
+}
+
 gboolean
 afsocket_dd_init(LogPipe *s)
 {
@@ -524,12 +538,7 @@ afsocket_dd_init(LogPipe *s)
       return FALSE;
     }
 
-  if (self->transport_mapper->sock_type == SOCK_STREAM)
-    {
-      return _dd_init_stream(self);
-    }
-
-  return _dd_init_dgram(self);
+  return _dd_init_socket(self);
 }
 
 static void
