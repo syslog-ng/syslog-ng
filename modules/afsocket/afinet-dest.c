@@ -334,9 +334,18 @@ afinet_dd_init(LogPipe *s)
 #endif
 
   if (_is_failover_used(self))
-    afinet_dd_failover_init(self->failover,s->expr_node, self->super.transport_mapper,
-                            self->primary, self->dest_port,
-                            self->super.socket_options, self->super.bind_addr);
+    {
+      FailoverTransportMapper ftm =
+      {
+        .transport_mapper = self->super.transport_mapper,
+        .dest_port = self->dest_port,
+        .socket_options = self->super.socket_options,
+        .bind_addr = self->super.bind_addr
+      };
+
+      afinet_dd_failover_init(self->failover,self->primary,
+                              s->expr_node, &ftm);
+    }
 
   return TRUE;
 }

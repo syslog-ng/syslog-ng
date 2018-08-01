@@ -8,15 +8,21 @@
 
 typedef struct _AFInetDestDriverFailover AFInetDestDriverFailover;
 typedef void (*AFInetOnPrimaryAvailable)(gpointer cookie, gint fd, GSockAddr *addr);
+typedef struct _FailoverTransportMapper
+{
+  TransportMapper *transport_mapper;
+  const gchar *dest_port;
+  SocketOptions *socket_options;
+  GSockAddr *bind_addr;
+} FailoverTransportMapper;
 
 AFInetDestDriverFailover *
 afinet_dd_failover_new(void);
 
 void
-afinet_dd_failover_init(AFInetDestDriverFailover *self,
-                        LogExprNode *owner_expr, TransportMapper *transport_mapper,
-                        const gchar *primary, gchar *dest_port,
-                        SocketOptions *socket_options, GSockAddr *bind_addr);
+afinet_dd_failover_init(AFInetDestDriverFailover *self, const gchar *primary,
+                        LogExprNode *owner_expr,
+                        FailoverTransportMapper *failover_transport_mapper);
 
 void afinet_dd_failover_free(AFInetDestDriverFailover *self);
 

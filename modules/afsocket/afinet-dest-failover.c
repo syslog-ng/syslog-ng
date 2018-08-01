@@ -12,10 +12,8 @@ struct _AFInetDestDriverFailover
   GList *current_server_candidate;
 
   LogExprNode *owner_expression;
-  TransportMapper *transport_mapper;
-  SocketOptions *socket_options;
-  GSockAddr *bind_addr;
-  gchar *dest_port;
+
+  FailoverTransportMapper failover_transport_mapper;
 
   gpointer on_primary_available_cookie;
   AFInetOnPrimaryAvailable on_primary_available_func;
@@ -193,24 +191,39 @@ _failover_get_hostname(GList *l)
   return (const gchar *)(l->data);
 }
 
+static GSockAddr *
+_resolve_primary_addres_with_transport_mapper(const gchar *hostname, TransportMapper *transport_mapper)
+{
+  GSockAddr *addr;
+  if (!resolve_hostname_to_sockaddr(&addr, transport_mapper->address_family, hostname))
+    {
+      msg_warning("Unable to resolve the address of the primary server",
+                  evt_tag_str("address", hostname));
+      return NULL;
+    }
+  return addr;
+}
+
+// TODO - use determine port result (in init)
+// TODO - address-family
 static gboolean
 _resolve_primary_address(AFInetDestDriverFailover *self)
 {
-  if (!resolve_hostname_to_sockaddr(&self->primary_addr, self->transport_mapper->address_family,
-                                    _failover_get_hostname(_primary(self))))
-    {
-      msg_warning("Unable to resolve the address of the primary server",
-                  evt_tag_str("address", _failover_get_hostname(_primary(self))));
-      return FALSE;
-    }
-  g_sockaddr_set_port(self->primary_addr, afinet_determine_port(self->transport_mapper, self->dest_port));
+  self->primary_addr = _resolve_primary_addres_with_transport_mapper(_failover_get_hostname(_primary(self)),
+                       self->failover_transport_mapper.transport_mapper);
+  if (!self->primary_addr)
+    return FALSE;
+
+  g_sockaddr_set_port(self->primary_addr,
+                      afinet_determine_port(self->failover_transport_mapper.transport_mapper, self->failover_transport_mapper.dest_port));
   return TRUE;
 }
 
 static gboolean
 _setup_failback_fd(AFInetDestDriverFailover *self)
 {
-  if (!transport_mapper_open_socket(self->transport_mapper, self->socket_options, self->bind_addr,
+  if (!transport_mapper_open_socket(self->failover_transport_mapper.transport_mapper,
+                                    self->failover_transport_mapper.socket_options, self->failover_transport_mapper.bind_addr,
                                     AFSOCKET_DIR_SEND, &self->fd.fd))
     {
       msg_error("Error creating socket for tcp-probe the primary server",
@@ -343,17 +356,14 @@ _afinet_dd_init_failback_handlers(AFInetDestDriverFailover *self)
 }
 
 void
-afinet_dd_failover_init(AFInetDestDriverFailover *self,
-                        LogExprNode *owner_expr, TransportMapper *transport_mapper,
-                        const gchar *primary, gchar *dest_port,
-                        SocketOptions *socket_options, GSockAddr *bind_addr)
+afinet_dd_failover_init(AFInetDestDriverFailover *self, const gchar *primary,
+                        LogExprNode *owner_expr,
+                        FailoverTransportMapper *failover_transport_mapper)
 {
   self->server_candidates = g_list_prepend(self->server_candidates, g_strdup(primary));
   self->owner_expression = owner_expr;
-  self->transport_mapper = transport_mapper;
-  self->dest_port = dest_port;
-  self->socket_options = socket_options;
-  self->bind_addr = bind_addr;
+
+  self->failover_transport_mapper = *failover_transport_mapper;
   _afinet_dd_init_failback_handlers(self);
 }
 
