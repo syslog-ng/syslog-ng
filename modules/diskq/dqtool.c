@@ -140,6 +140,9 @@ dqtool_cat(int argc, char *argv[])
       if (!open_queue(argv[i], &lq, &options))
         continue;
 
+      log_queue_set_use_backlog(lq, TRUE);
+      log_queue_rewind_backlog_all(lq);
+
       while ((log_msg = log_queue_pop_head(lq, &local_options)) != NULL)
         {
           /* format log */
