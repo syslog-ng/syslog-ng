@@ -513,6 +513,15 @@ _dd_init_dgram(AFSocketDestDriver *self)
   return _finalize_init(self);
 }
 
+static void
+_dd_rewind_stateless_proto_backlog(AFSocketDestDriver *self)
+{
+  if (!log_proto_client_factory_is_proto_stateful(self->proto_factory))
+    {
+      log_writer_msg_rewind(self->writer);
+    }
+}
+
 static gboolean
 _dd_init_socket(AFSocketDestDriver *self)
 {
@@ -538,7 +547,14 @@ afsocket_dd_init(LogPipe *s)
       return FALSE;
     }
 
-  return _dd_init_socket(self);
+  if (!_dd_init_socket(self))
+    {
+      return FALSE;
+    }
+
+  _dd_rewind_stateless_proto_backlog(self);
+
+  return TRUE;
 }
 
 static void
