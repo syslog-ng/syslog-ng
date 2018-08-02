@@ -149,7 +149,7 @@ _is_failover_used(const AFInetDestDriver *self)
 static const gchar *
 _afinet_dd_get_hostname(const AFInetDestDriver *self)
 {
-  if (_is_failover_used(self))
+  if (!_is_failover_used(self))
     return self->primary;
 
   return afinet_dd_failover_get_hostname(self->failover);
@@ -281,9 +281,6 @@ afinet_dd_setup_addresses(AFSocketDestDriver *s)
   if (self->super.proto_factory->default_inet_port)
     transport_mapper_inet_set_server_port(self->super.transport_mapper, self->super.proto_factory->default_inet_port);
 
-  if (!_setup_bind_addr(self))
-    return FALSE;
-
   if (_is_failover_used(self))
     afinet_dd_failover_next(self->failover);
 
@@ -317,6 +314,22 @@ afinet_dd_init(LogPipe *s)
     self->super.connections_kept_alive_across_reloads = TRUE;
 #endif
 
+  if (!_setup_bind_addr(self))
+    return FALSE;
+
+  if (_is_failover_used(self))
+    {
+      FailoverTransportMapper ftm =
+      {
+        .transport_mapper = self->super.transport_mapper,
+        .dest_port = self->dest_port,
+        .socket_options = self->super.socket_options,
+        .bind_addr = self->super.bind_addr
+      };
+
+      afinet_dd_failover_init(self->failover,self->primary, s->expr_node, &ftm);
+    }
+
   if (!afsocket_dd_init(s))
     return FALSE;
 
@@ -340,19 +353,6 @@ afinet_dd_init(LogPipe *s)
         }
     }
 #endif
-
-  if (_is_failover_used(self))
-    {
-      FailoverTransportMapper ftm =
-      {
-        .transport_mapper = self->super.transport_mapper,
-        .dest_port = self->dest_port,
-        .socket_options = self->super.socket_options,
-        .bind_addr = self->super.bind_addr
-      };
-
-      afinet_dd_failover_init(self->failover,self->primary, s->expr_node, &ftm);
-    }
 
   return TRUE;
 }

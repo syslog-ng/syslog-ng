@@ -49,13 +49,13 @@ static const int TCP_PROBE_INTERVAL_DEFAULT = 60;
 static const int SUCCESSFUL_PROBES_REQUIRED_DEFAULT = 3;
 
 void
-afinet_dd_failover_set_probe_interval(AFInetDestDriverFailover *self, gint tcp_probe_interval)
+afinet_dd_failover_set_tcp_probe_interval(AFInetDestDriverFailover *self, gint tcp_probe_interval)
 {
   self->probe_interval = tcp_probe_interval;
 }
 
 void
-afinet_dd_failover_set_probes_required(AFInetDestDriverFailover *self, gint successful_probes_required)
+afinet_dd_failover_set_successful_probes_required(AFInetDestDriverFailover *self, gint successful_probes_required)
 {
   self->probes_required = successful_probes_required;
 }
@@ -245,7 +245,8 @@ static gboolean
 _setup_failback_fd(AFInetDestDriverFailover *self)
 {
   if (!transport_mapper_open_socket(self->failover_transport_mapper.transport_mapper,
-                                    self->failover_transport_mapper.socket_options, self->failover_transport_mapper.bind_addr,
+                                    self->failover_transport_mapper.socket_options,
+                                    self->failover_transport_mapper.bind_addr,
                                     AFSOCKET_DIR_SEND, &self->fd.fd))
     {
       msg_error("Error creating socket for tcp-probe the primary server",
@@ -334,8 +335,13 @@ _step_current_server_iterator(AFInetDestDriverFailover *self)
 
 
 const gchar *
-afinet_dd_get_hostname(AFInetDestDriverFailover *self)
+afinet_dd_failover_get_hostname(AFInetDestDriverFailover *self)
 {
+  if (self->current_server == NULL)
+    {
+      return _get_hostname(_primary(self));
+    }
+
   return _get_hostname(self->current_server);
 }
 
