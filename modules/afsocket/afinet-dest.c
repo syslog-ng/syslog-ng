@@ -243,7 +243,7 @@ _setup_bind_addr(AFInetDestDriver *self)
   if (self->bind_port)
     g_sockaddr_set_port(self->super.bind_addr, afinet_lookup_service(self->super.transport_mapper, self->bind_port));
 
-  return TRUE;  
+  return TRUE;
 }
 
 static gboolean
