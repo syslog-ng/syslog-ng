@@ -1,3 +1,24 @@
+/*
+ * Copyright (c) 2002-2018 Balabit
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
 
 #include "afinet-dest-failover.h"
 #include "messages.h"
@@ -355,6 +376,19 @@ _afinet_dd_init_failback_handlers(AFInetDestDriverFailover *self)
   self->fd.handler_out = (void (*)(void *)) _afinet_dd_handle_tcp_probe_socket;
 }
 
+static void
+_afinet_dd_stop_failback_handlers(AFInetDestDriverFailover *self)
+{
+  if (iv_timer_registered(&self->timer))
+    iv_timer_unregister(&self->timer);
+
+  if (iv_fd_registered(&self->fd))
+    {
+      iv_fd_unregister(&self->fd);
+      close(self->fd.fd);
+    }
+}
+
 void
 afinet_dd_failover_init(AFInetDestDriverFailover *self, const gchar *primary,
                         LogExprNode *owner_expr,
@@ -374,19 +408,6 @@ afinet_dd_failover_new(void)
   self->tcp_probe_interval = TCP_PROBE_INTERVAL_DEFAULT;
   self->successful_probes_required = SUCCESSFUL_PROBES_REQUIRED_DEFAULT;
   return self;
-}
-
-static void
-_afinet_dd_stop_failback_handlers(AFInetDestDriverFailover *self)
-{
-  if (iv_timer_registered(&self->timer))
-    iv_timer_unregister(&self->timer);
-
-  if (iv_fd_registered(&self->fd))
-    {
-      iv_fd_unregister(&self->fd);
-      close(self->fd.fd);
-    }
 }
 
 void

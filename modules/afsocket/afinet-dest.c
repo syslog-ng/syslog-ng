@@ -27,8 +27,6 @@
 #include "messages.h"
 #include "gprocess.h"
 #include "compat/openssl_support.h"
-#include "timeutils.h"
-#include "gsocket.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -229,15 +227,6 @@ afinet_dd_construct_writer(AFSocketDestDriver *s)
   return writer;
 }
 
-static void
-_setup_next_hostname(AFInetDestDriver *self)
-{
-  if (!_is_failover_used(self))
-    return;
-
-  afinet_dd_failover_next(self->failover);
-}
-
 static gint
 _determine_port(const AFInetDestDriver *self)
 {
@@ -245,26 +234,22 @@ _determine_port(const AFInetDestDriver *self)
 }
 
 static gboolean
-afinet_dd_setup_addresses(AFSocketDestDriver *s)
+_setup_bind_addr(AFInetDestDriver *self)
 {
-  AFInetDestDriver *self = (AFInetDestDriver *) s;
-
-  if (!afsocket_dd_setup_addresses_method(s))
-    return FALSE;
-
-  if (self->super.proto_factory->default_inet_port)
-    transport_mapper_inet_set_server_port(self->super.transport_mapper, self->super.proto_factory->default_inet_port);
-
   g_sockaddr_unref(self->super.bind_addr);
-  g_sockaddr_unref(self->super.dest_addr);
-
   if (!resolve_hostname_to_sockaddr(&self->super.bind_addr, self->super.transport_mapper->address_family, self->bind_ip))
     return FALSE;
 
   if (self->bind_port)
     g_sockaddr_set_port(self->super.bind_addr, afinet_lookup_service(self->super.transport_mapper, self->bind_port));
 
-  _setup_next_hostname(self);
+  return TRUE;  
+}
+
+static gboolean
+_setup_dest_addr(AFInetDestDriver *self)
+{
+  g_sockaddr_unref(self->super.dest_addr);
   if (!resolve_hostname_to_sockaddr(&self->super.dest_addr, self->super.transport_mapper->address_family,
                                     _afinet_dd_get_hostname(self)))
     return FALSE;
@@ -281,6 +266,29 @@ afinet_dd_setup_addresses(AFSocketDestDriver *s)
     }
 
   g_sockaddr_set_port(self->super.dest_addr, _determine_port(self));
+
+  return TRUE;
+}
+
+static gboolean
+afinet_dd_setup_addresses(AFSocketDestDriver *s)
+{
+  AFInetDestDriver *self = (AFInetDestDriver *) s;
+
+  if (!afsocket_dd_setup_addresses_method(s))
+    return FALSE;
+
+  if (self->super.proto_factory->default_inet_port)
+    transport_mapper_inet_set_server_port(self->super.transport_mapper, self->super.proto_factory->default_inet_port);
+
+  if (!_setup_bind_addr(self))
+    return FALSE;
+
+  if (_is_failover_used(self))
+    afinet_dd_failover_next(self->failover);
+
+  if (!_setup_dest_addr(self))
+    return FALSE;
 
   return TRUE;
 }
@@ -343,8 +351,7 @@ afinet_dd_init(LogPipe *s)
         .bind_addr = self->super.bind_addr
       };
 
-      afinet_dd_failover_init(self->failover,self->primary,
-                              s->expr_node, &ftm);
+      afinet_dd_failover_init(self->failover,self->primary, s->expr_node, &ftm);
     }
 
   return TRUE;
