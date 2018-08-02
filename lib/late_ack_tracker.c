@@ -128,13 +128,11 @@ static void
 late_ack_tracker_track_msg(AckTracker *s, LogMessage *msg)
 {
   LateAckTracker *self = (LateAckTracker *)s;
-  LogSource *source = self->super.source;
 
   g_assert(self->pending_ack_record != NULL);
 
-  log_pipe_ref((LogPipe *)source);
-
   msg->ack_record = (AckRecord *)self->pending_ack_record;
+  self->pending_ack_record->bookmark.persist_state = msg->source->super.cfg->state;
 
   late_ack_tracker_lock(s);
   {
@@ -158,7 +156,7 @@ late_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type
   ack_rec->acked = TRUE;
 
   if (ack_type == AT_SUSPENDED)
-    log_source_flow_control_suspend(self->super.source);
+    log_source_flow_control_suspend(msg->source);
 
   late_ack_tracker_lock(s);
   {
@@ -174,9 +172,9 @@ late_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type
         _drop_range(self, ack_range_length);
 
         if (ack_type == AT_SUSPENDED)
-          log_source_flow_control_adjust_when_suspended(self->super.source, ack_range_length);
+          log_source_flow_control_adjust_when_suspended(msg->source, ack_range_length);
         else
-          log_source_flow_control_adjust(self->super.source, ack_range_length);
+          log_source_flow_control_adjust(msg->source, ack_range_length);
 
         if (ring_buffer_is_empty(&self->ack_record_storage))
           late_ack_tracker_on_all_acked_call(s);
@@ -185,7 +183,6 @@ late_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type
   late_ack_tracker_unlock(s);
 
   log_msg_unref(msg);
-  log_pipe_unref((LogPipe *)self->super.source);
 }
 
 gboolean
@@ -208,8 +205,6 @@ late_ack_tracker_request_bookmark(AckTracker *s)
 
   if (self->pending_ack_record)
     {
-      self->pending_ack_record->bookmark.persist_state = s->source->super.cfg->state;
-
       self->pending_ack_record->super.tracker = (AckTracker *)self;
 
       return &(self->pending_ack_record->bookmark);
@@ -249,22 +244,20 @@ _setup_callbacks(LateAckTracker *self)
 }
 
 static void
-late_ack_tracker_init_instance(LateAckTracker *self, LogSource *source)
+late_ack_tracker_init_instance(LateAckTracker *self, gint init_window_size)
 {
   self->super.late = TRUE;
-  self->super.source = source;
-  source->ack_tracker = (AckTracker *)self;
-  ring_buffer_alloc(&self->ack_record_storage, sizeof(LateAckRecord), log_source_get_init_window_size(source));
+  ring_buffer_alloc(&self->ack_record_storage, sizeof(LateAckRecord), init_window_size);
   g_static_mutex_init(&self->storage_mutex);
   _setup_callbacks(self);
 }
 
 AckTracker *
-late_ack_tracker_new(LogSource *source)
+late_ack_tracker_new(gint init_window_size)
 {
   LateAckTracker *self = g_new0(LateAckTracker, 1);
 
-  late_ack_tracker_init_instance(self, source);
+  late_ack_tracker_init_instance(self, init_window_size);
 
   return (AckTracker *)self;
 }

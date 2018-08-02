@@ -31,12 +31,10 @@
 
 typedef struct _AckTracker AckTracker;
 typedef struct _AckRecord AckRecord;
-typedef struct _LogSource LogSource;
 
 struct _AckTracker
 {
   gboolean late;
-  LogSource *source;
   Bookmark *(*request_bookmark)(AckTracker *self);
   void (*track_msg)(AckTracker *self, LogMessage *msg);
   void (*manage_msg_ack)(AckTracker *self, LogMessage *msg, AckType ack_type);
@@ -48,8 +46,8 @@ struct _AckRecord
   AckTracker *tracker;
 };
 
-AckTracker *late_ack_tracker_new(LogSource *source);
-AckTracker *early_ack_tracker_new(LogSource *source);
+AckTracker *late_ack_tracker_new(gint init_window_size);
+AckTracker *early_ack_tracker_new(void);
 
 static inline void
 ack_tracker_free(AckTracker *self)

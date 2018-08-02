@@ -50,6 +50,7 @@ typedef struct _GlobalConfig GlobalConfig;
 typedef struct _CfgLexer CfgLexer;
 typedef struct _PluginContext PluginContext;
 typedef struct _StatsClusterKey StatsClusterKey;
+typedef struct _LogSource LogSource;
 
 /* configuration being parsed, used by the bison generated code, NULL whenever parsing is finished. */
 extern GlobalConfig *configuration;

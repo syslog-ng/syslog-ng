@@ -50,8 +50,6 @@ typedef struct _LogSourceOptions
   gint stats_source;
 } LogSourceOptions;
 
-typedef struct _LogSource LogSource;
-
 /**
  * LogSource:
  *
