@@ -28,6 +28,7 @@
 #include "logpipe.h"
 #include "stats/stats-registry.h"
 #include "window-size-counter.h"
+#include "ack_tracker.h"
 
 typedef struct _LogSourceOptions
 {

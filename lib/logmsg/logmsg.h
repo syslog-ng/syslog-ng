@@ -33,20 +33,13 @@
 #include "logmsg/nvtable.h"
 #include "msg-format.h"
 #include "logmsg/tags.h"
+#include "ack-type.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/time.h>
 #include <iv_list.h>
-
-typedef enum
-{
-  AT_UNDEFINED,
-  AT_PROCESSED,
-  AT_ABORTED,
-  AT_SUSPENDED
-} AckType;
 
 #define IS_ACK_ABORTED(x) ((x) == AT_ABORTED ? 1 : 0)
 

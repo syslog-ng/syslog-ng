@@ -26,7 +26,12 @@
 #define ACK_TRACKER_H_INCLUDED
 
 #include "syslog-ng.h"
-#include "logsource.h"
+#include "ack-type.h"
+#include "bookmark.h"
+
+typedef struct _AckTracker AckTracker;
+typedef struct _AckRecord AckRecord;
+typedef struct _LogSource LogSource;
 
 struct _AckTracker
 {

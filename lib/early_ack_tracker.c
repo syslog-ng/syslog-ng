@@ -23,8 +23,7 @@
  */
 
 #include "ack_tracker.h"
-#include "bookmark.h"
-#include "syslog-ng.h"
+#include "logsource.h"
 
 typedef struct _EarlyAckRecord
 {
