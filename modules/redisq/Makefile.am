@@ -1,3 +1,4 @@
+bin_PROGRAMS += modules/redisq/rqtool
 noinst_LTLIBRARIES += modules/redisq/libsyslog-ng-redis-queue.la
 module_LTLIBRARIES += modules/redisq/libredis-queue.la
 
@@ -38,7 +39,14 @@ modules_redisq_libredis_queue_la_LIBADD = $(MODULE_DEPS_LIBS) $(LIBSYSLOG_NG_RED
 modules_redisq_libredis_queue_la_LDFLAGS = $(MODULE_LDFLAGS)
 modules_redisq_libredis_queue_la_DEPENDENCIES = $(MODULE_DEPS_LIBS) $(LIBSYSLOG_NG_REDIS_QUEUE)
 
-modules/redisq modules/redisq/ mod-redisq: modules/redisq/libredis_queue.la
+modules_redisq_rqtool_SOURCES = modules/redisq/rqtool.c
+modules_redisq_rqtool_LDADD = \
+  $(MODULE_DEPS_LIBS) \
+  $(TOOL_DEPS_LIBS) \
+  $(LIBSYSLOG_NG_REDIS_QUEUE)
+
+modules/redisq modules/redisq/ mod-redisq: modules/redisq/libredis_queue.la \
+  modules/redisq/rqtool
 
 include modules/redisq/tests/Makefile.am
 

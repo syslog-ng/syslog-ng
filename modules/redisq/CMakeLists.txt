@@ -42,6 +42,10 @@ if (ENABLE_REDIS_QUEUE)
   target_link_libraries(redis-queue PRIVATE syslog-ng ${HIREDIS_LIBRARIES})
   install(TARGETS redis-queue LIBRARY DESTINATION lib/syslog-ng COMPONENT redisqueue)
 
+  add_executable(rqtool rqtool.c)
+  target_link_libraries(rqtool PRIVATE eventlog syslog-ng-redis-queue ${HIREDIS_LIBRARIES})
+  target_include_directories(rqtool PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
 endif()
 
 add_test_subdirectory(tests)
