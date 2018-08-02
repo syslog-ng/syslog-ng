@@ -79,16 +79,22 @@ early_ack_tracker_free(AckTracker *s)
 }
 
 static void
+_setup_callbacks(EarlyAckTracker *self)
+{
+  self->super.request_bookmark = early_ack_tracker_request_bookmark;
+  self->super.track_msg = early_ack_tracker_track_msg;
+  self->super.manage_msg_ack = early_ack_tracker_manage_msg_ack;
+  self->super.free_fn = early_ack_tracker_free;
+}
+
+static void
 early_ack_tracker_init_instance(EarlyAckTracker *self, LogSource *source)
 {
   self->super.late = FALSE;
   self->super.source = source;
   source->ack_tracker = (AckTracker *)self;
-  self->super.request_bookmark = early_ack_tracker_request_bookmark;
-  self->super.track_msg = early_ack_tracker_track_msg;
-  self->super.manage_msg_ack = early_ack_tracker_manage_msg_ack;
-  self->super.free_fn = early_ack_tracker_free;
   self->ack_record_storage.super.tracker = (AckTracker *)self;
+  _setup_callbacks(self);
 }
 
 AckTracker *
