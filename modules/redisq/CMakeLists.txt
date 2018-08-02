@@ -46,6 +46,8 @@ if (ENABLE_REDIS_QUEUE)
   target_link_libraries(rqtool PRIVATE eventlog syslog-ng-redis-queue ${HIREDIS_LIBRARIES})
   target_include_directories(rqtool PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
+  install(TARGETS rqtool RUNTIME DESTINATION bin COMPONENT redisqueue)
+
 endif()
 
 add_test_subdirectory(tests)
