@@ -409,6 +409,12 @@ _afinet_dd_stop_failback_handlers(AFInetDestDriverFailover *self)
 }
 
 void
+afinet_dd_failover_deinit(AFInetDestDriverFailover *self)
+{
+  _afinet_dd_stop_failback_handlers(self);
+}
+
+void
 afinet_dd_failover_init(AFInetDestDriverFailover *self, LogExprNode *owner_expr,
                         FailoverTransportMapper *failover_transport_mapper)
 {
@@ -435,7 +441,6 @@ afinet_dd_failover_free(AFInetDestDriverFailover *self)
   if (!self)
     return;
 
-  _afinet_dd_stop_failback_handlers(self);
   g_list_free_full(self->servers, g_free);
   g_sockaddr_unref(self->primary_addr);
   g_sockaddr_unref(self->bind_addr);

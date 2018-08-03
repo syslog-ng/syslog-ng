@@ -310,6 +310,11 @@ afinet_dd_get_dest_name(const AFSocketDestDriver *s)
 static gboolean
 afinet_dd_deinit(LogPipe *s)
 {
+  AFInetDestDriver *self = (AFInetDestDriver *) s;
+
+  if (_is_failover_used(self))
+    afinet_dd_failover_deinit(self->failover);
+
   return afsocket_dd_deinit(s);
 }
 
