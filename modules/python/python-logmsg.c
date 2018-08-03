@@ -27,8 +27,6 @@
 #include "messages.h"
 #include "str-utils.h"
 
-static PyTypeObject py_log_message_type;
-
 static int
 _str_cmp(const void *s1, const void *s2)
 {
@@ -231,7 +229,7 @@ static PyMethodDef py_log_message_methods[] =
   {NULL}
 };
 
-static PyTypeObject py_log_message_type =
+PyTypeObject py_log_message_type =
 {
   PyVarObject_HEAD_INIT(&PyType_Type, 0)
   .tp_name = "LogMessage",
