@@ -64,6 +64,9 @@ void setup(void)
 {
   app_startup();
   log_template_options_defaults(&log_template_options);
+  log_template_options.ts_format = TS_FMT_BSD;
+  log_template_options.time_zone_info[LTZ_SEND]=time_zone_info_new("+05:00");
+
   py_template_options = py_log_template_options_new(&log_template_options);
   msg_format_options_defaults(&parse_options);
   _py_init_interpreter();
@@ -127,6 +130,28 @@ Test(python_log_logtemplate, test_python_template)
   PyLogTemplate *py_template = create_py_log_template("${PROGRAM}");
 
   assert_format("prg00000", py_template, py_log_msg);
+
+  Py_DECREF(py_log_msg);
+  Py_DECREF(py_template);
+  PyGILState_Release(gstate);
+}
+
+Test(python_log_logtemplate, format_all_parameters)
+{
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+
+  PyLogMessage *py_log_msg = create_parsed_message("<38>2018-07-20T00:00:00+00:00 localhost prg00000[1234]: test\n");
+  PyLogTemplate *py_template = create_py_log_template("${S_STAMP} | ${SEQNUM}");
+
+  PyObject *args = PyTuple_Pack(4, py_log_msg, py_template_options, int_as_pyobject(1), int_as_pyobject(10));
+  PyObject *result = py_log_template_format((PyObject *)py_template, args);
+  Py_DECREF(args);
+
+  cr_assert(result);
+  cr_assert_str_eq(_py_get_string_as_string(result), "Jul 20 05:00:00 | 10");
+  Py_DECREF(result);
+
 
   Py_DECREF(py_log_msg);
   Py_DECREF(py_template);
