@@ -25,84 +25,107 @@
 #include "logmsg/logmsg.h"
 #include <stdlib.h>
 
-static void
-testcase(const gchar *msg_, gsize msg_len, gint eom_ofs)
+#include <criterion/parameterized.h>
+#include <criterion/criterion.h>
+
+
+struct testcase_tuple
 {
-  const guchar *eom;
-  const guchar *msg = (const guchar *) msg_;
+  gchar *msg;
+  gsize msg_len;
+  gint eom_ofs;
+};
 
-  eom = find_eom((guchar *) msg, msg_len);
+ParameterizedTestParameters(findeom, test_success)
+{
+  static struct testcase_tuple params[] =
+  {
+    {"a\nb\nc\n",  6,  1},
+    {"ab\nb\nc\n",  7,  2},
+    {"abc\nb\nc\n",  8,  3},
+    {"abcd\nb\nc\n",  9,  4},
+    {"abcde\nb\nc\n", 10,  5},
+    {"abcdef\nb\nc\n", 11,  6},
+    {"abcdefg\nb\nc\n", 12,  7},
+    {"abcdefgh\nb\nc\n", 13,  8},
+    {"abcdefghi\nb\nc\n", 14,  9},
+    {"abcdefghij\nb\nc\n", 15, 10},
+    {"abcdefghijk\nb\nc\n", 16, 11},
+    {"abcdefghijkl\nb\nc\n", 17, 12},
+    {"abcdefghijklm\nb\nc\n", 18, 13},
+    {"abcdefghijklmn\nb\nc\n", 19, 14},
+    {"abcdefghijklmno\nb\nc\n", 20, 15},
+    {"abcdefghijklmnop\nb\nc\n", 21, 16},
+    {"abcdefghijklmnopq\nb\nc\n", 22, 17},
+    {"abcdefghijklmnopqr\nb\nc\n", 23, 18},
+    {"abcdefghijklmnopqrs\nb\nc\n", 24, 19},
+    {"abcdefghijklmnopqrst\nb\nc\n", 25, 20},
+    {"abcdefghijklmnopqrstu\nb\nc\n", 26, 21},
+    {"abcdefghijklmnopqrstuv\nb\nc\n", 27, 22},
+    {"abcdefghijklmnopqrstuvw\nb\nc\n", 28, 23},
+    {"abcdefghijklmnopqrstuvwx\nb\nc\n", 29, 24},
+    {"abcdefghijklmnopqrstuvwxy\nb\nc\n", 30, 25},
+    {"abcdefghijklmnopqrstuvwxyz\nb\nc\n", 31, 26},
+  };
 
-  if (eom_ofs == -1 && eom != NULL)
-    {
-      fprintf(stderr, "EOM returned is not NULL, which was expected. eom_ofs=%d, eom=%s\n", eom_ofs, eom);
-      exit(1);
-    }
-  if (eom_ofs == -1)
-    return;
 
-  if (eom - msg != eom_ofs)
-    {
-      fprintf(stderr, "EOM is at wrong location. msg=%s, eom_ofs=%d, eom=%s\n", msg, eom_ofs, eom);
-      exit(1);
-    }
+  return cr_make_param_array(struct testcase_tuple, params, G_N_ELEMENTS(params));
 }
 
-int
-main(void)
+ParameterizedTest(struct testcase_tuple *tup, findeom, test_success)
 {
-  testcase("a\nb\nc\n",  6,  1);
-  testcase("ab\nb\nc\n",  7,  2);
-  testcase("abc\nb\nc\n",  8,  3);
-  testcase("abcd\nb\nc\n",  9,  4);
-  testcase("abcde\nb\nc\n", 10,  5);
-  testcase("abcdef\nb\nc\n", 11,  6);
-  testcase("abcdefg\nb\nc\n", 12,  7);
-  testcase("abcdefgh\nb\nc\n", 13,  8);
-  testcase("abcdefghi\nb\nc\n", 14,  9);
-  testcase("abcdefghij\nb\nc\n", 15, 10);
-  testcase("abcdefghijk\nb\nc\n", 16, 11);
-  testcase("abcdefghijkl\nb\nc\n", 17, 12);
-  testcase("abcdefghijklm\nb\nc\n", 18, 13);
-  testcase("abcdefghijklmn\nb\nc\n", 19, 14);
-  testcase("abcdefghijklmno\nb\nc\n", 20, 15);
-  testcase("abcdefghijklmnop\nb\nc\n", 21, 16);
-  testcase("abcdefghijklmnopq\nb\nc\n", 22, 17);
-  testcase("abcdefghijklmnopqr\nb\nc\n", 23, 18);
-  testcase("abcdefghijklmnopqrs\nb\nc\n", 24, 19);
-  testcase("abcdefghijklmnopqrst\nb\nc\n", 25, 20);
-  testcase("abcdefghijklmnopqrstu\nb\nc\n", 26, 21);
-  testcase("abcdefghijklmnopqrstuv\nb\nc\n", 27, 22);
-  testcase("abcdefghijklmnopqrstuvw\nb\nc\n", 28, 23);
-  testcase("abcdefghijklmnopqrstuvwx\nb\nc\n", 29, 24);
-  testcase("abcdefghijklmnopqrstuvwxy\nb\nc\n", 30, 25);
-  testcase("abcdefghijklmnopqrstuvwxyz\nb\nc\n", 31, 26);
+  const guchar *eom;
+  const guchar *msg = (const guchar *) tup->msg;
 
-  testcase("a",  1, -1);
-  testcase("ab",  2, -1);
-  testcase("abc",  3, -1);
-  testcase("abcd",  4, -1);
-  testcase("abcde",  5, -1);
-  testcase("abcdef",  6, -1);
-  testcase("abcdefg",  7, -1);
-  testcase("abcdefgh",  8, -1);
-  testcase("abcdefghi",  9, -1);
-  testcase("abcdefghij", 10, -1);
-  testcase("abcdefghijk", 11, -1);
-  testcase("abcdefghijkl", 12, -1);
-  testcase("abcdefghijklm", 13, -1);
-  testcase("abcdefghijklmn", 14, -1);
-  testcase("abcdefghijklmno", 15, -1);
-  testcase("abcdefghijklmnop", 16, -1);
-  testcase("abcdefghijklmnopq", 17, -1);
-  testcase("abcdefghijklmnopqr", 18, -1);
-  testcase("abcdefghijklmnopqrs", 19, -1);
-  testcase("abcdefghijklmnopqrst", 20, -1);
-  testcase("abcdefghijklmnopqrstu", 21, -1);
-  testcase("abcdefghijklmnopqrstuv", 22, -1);
-  testcase("abcdefghijklmnopqrstuvw", 23, -1);
-  testcase("abcdefghijklmnopqrstuvwx", 24, -1);
-  testcase("abcdefghijklmnopqrstuvwxy", 25, -1);
-  testcase("abcdefghijklmnopqrstuvwxyz", 26, -1);
-  return 0;
+  eom = find_eom((guchar *) msg,tup-> msg_len);
+
+  cr_assert(eom - msg == tup->eom_ofs,
+            "EOM is at wrong location. msg=%s, eom_ofs=%d, eom=%s\n",
+            msg, tup->eom_ofs, eom);
+}
+
+ParameterizedTestParameters(findeom, test_failed)
+{
+  static struct testcase_tuple params[] =
+  {
+    {"a",  1, -1},
+    {"ab",  2, -1},
+    {"abc",  3, -1},
+    {"abcd",  4, -1},
+    {"abcde",  5, -1},
+    {"abcdef",  6, -1},
+    {"abcdefg",  7, -1},
+    {"abcdefgh",  8, -1},
+    {"abcdefghi",  9, -1},
+    {"abcdefghij", 10, -1},
+    {"abcdefghijk", 11, -1},
+    {"abcdefghijkl", 12, -1},
+    {"abcdefghijklm", 13, -1},
+    {"abcdefghijklmn", 14, -1},
+    {"abcdefghijklmno", 15, -1},
+    {"abcdefghijklmnop", 16, -1},
+    {"abcdefghijklmnopq", 17, -1},
+    {"abcdefghijklmnopqr", 18, -1},
+    {"abcdefghijklmnopqrs", 19, -1},
+    {"abcdefghijklmnopqrst", 20, -1},
+    {"abcdefghijklmnopqrstu", 21, -1},
+    {"abcdefghijklmnopqrstuv", 22, -1},
+    {"abcdefghijklmnopqrstuvw", 23, -1},
+    {"abcdefghijklmnopqrstuvwx", 24, -1},
+    {"abcdefghijklmnopqrstuvwxy", 25, -1},
+    {"abcdefghijklmnopqrstuvwxyz", 26, -1},
+  };
+  return cr_make_param_array(struct testcase_tuple, params, G_N_ELEMENTS(params));
+}
+
+ParameterizedTest(struct testcase_tuple *tup, findeom, test_failed)
+{
+  const guchar *eom;
+  const guchar *msg = (const guchar *) tup->msg;
+
+  eom = find_eom((guchar *) msg,tup-> msg_len);
+
+  cr_assert_null(eom,
+                 "EOM returned is not NULL, which was expected. eom_ofs=%d, eom=%s\n",
+                 tup->eom_ofs, eom);
 }
