@@ -33,17 +33,17 @@ typedef void (*AFInetOnPrimaryAvailable)(gpointer cookie, gint fd, GSockAddr *ad
 typedef struct _FailoverTransportMapper
 {
   TransportMapper *transport_mapper;
-  const gchar *dest_port;
   SocketOptions *socket_options;
-  GSockAddr *bind_addr;
+  const gchar *dest_port;
+  const gchar *bind_ip;
+  const gchar *bind_port;
 } FailoverTransportMapper;
 
 AFInetDestDriverFailover *
-afinet_dd_failover_new(void);
+afinet_dd_failover_new(const gchar *primary);
 
 void
-afinet_dd_failover_init(AFInetDestDriverFailover *self, const gchar *primary,
-                        LogExprNode *owner_expr,
+afinet_dd_failover_init(AFInetDestDriverFailover *self, LogExprNode *owner_expr,
                         FailoverTransportMapper *failover_transport_mapper);
 
 void afinet_dd_failover_free(AFInetDestDriverFailover *self);
