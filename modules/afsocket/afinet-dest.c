@@ -308,6 +308,12 @@ afinet_dd_get_dest_name(const AFSocketDestDriver *s)
 }
 
 static gboolean
+afinet_dd_deinit(LogPipe *s)
+{
+  return afsocket_dd_deinit(s);
+}
+
+static gboolean
 afinet_dd_init(LogPipe *s)
 {
   AFInetDestDriver *self G_GNUC_UNUSED = (AFInetDestDriver *) s;
@@ -542,6 +548,7 @@ afinet_dd_free(LogPipe *s)
   g_free(self->primary);
   afinet_dd_failover_free(self->failover);
 
+
   g_free(self->bind_ip);
   g_free(self->bind_port);
   g_free(self->dest_port);
@@ -560,6 +567,7 @@ afinet_dd_new_instance(TransportMapper *transport_mapper, gchar *hostname, Globa
 
   afsocket_dd_init_instance(&self->super, socket_options_inet_new(), transport_mapper, cfg);
   self->super.super.super.super.init = afinet_dd_init;
+  self->super.super.super.super.deinit = afinet_dd_deinit;
   self->super.super.super.super.queue = afinet_dd_queue;
   self->super.super.super.super.free_fn = afinet_dd_free;
   self->super.construct_writer = afinet_dd_construct_writer;
