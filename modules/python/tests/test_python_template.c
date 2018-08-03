@@ -113,7 +113,7 @@ assert_format(gchar *expected, PyLogTemplate *template, PyLogMessage *msg)
 {
 
   PyObject *args = PyTuple_Pack(2, msg,  py_template_options);
-  PyObject *result = py_log_template_format((PyObject *)template, args);
+  PyObject *result = py_log_template_format((PyObject *)template, args, NULL);
   Py_DECREF(args);
 
   cr_assert(result);
@@ -145,7 +145,7 @@ Test(python_log_logtemplate, format_all_parameters)
   PyLogTemplate *py_template = create_py_log_template("${S_STAMP} | ${SEQNUM}");
 
   PyObject *args = PyTuple_Pack(4, py_log_msg, py_template_options, int_as_pyobject(1), int_as_pyobject(10));
-  PyObject *result = py_log_template_format((PyObject *)py_template, args);
+  PyObject *result = py_log_template_format((PyObject *)py_template, args, NULL);
   Py_DECREF(args);
 
   cr_assert(result);

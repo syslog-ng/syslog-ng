@@ -38,7 +38,7 @@ py_log_template_free(PyLogTemplate *self)
 }
 
 PyObject *
-py_log_template_format(PyObject *s, PyObject *args)
+py_log_template_format(PyObject *s, PyObject *args, PyObject *kwrds)
 {
   PyLogTemplate *self = (PyLogTemplate *)s;
 
@@ -47,7 +47,10 @@ py_log_template_format(PyObject *s, PyObject *args)
   gint tz = LTZ_SEND;
   gint seqnum = 0;
 
-  if (!PyArg_ParseTuple(args, "O|Oii", &msg, &py_log_template_options, &tz, &seqnum))
+  static const gchar *kwlist[] = {"msg", "options", "tz", "seqnum", NULL};
+
+  if (!PyArg_ParseTupleAndKeywords(args, kwrds, "O|Oii", (gchar **)kwlist,
+                                   &msg, &py_log_template_options, &tz, &seqnum))
     return NULL;
 
   if (py_log_template_options && (Py_TYPE(py_log_template_options) != &py_log_template_options_type))
@@ -114,7 +117,7 @@ py_log_template_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 
 static PyMethodDef py_log_template_methods[] =
 {
-  { "format", (PyCFunction)py_log_template_format, METH_VARARGS, "format template" },
+  { "format", (PyCFunction)py_log_template_format, METH_VARARGS | METH_KEYWORDS, "format template" },
   { NULL }
 };
 
