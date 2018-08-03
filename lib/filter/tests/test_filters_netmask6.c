@@ -34,6 +34,9 @@
 #include "testutils.h"
 #include "filter/filter-netmask6.h"
 
+#include <criterion/parameterized.h>
+#include <criterion/criterion.h>
+
 static void
 _replace_last_zero_with_wildcard(gchar *ipv6)
 {
@@ -59,70 +62,74 @@ calculate_network6(const gchar *ipv6, int prefix, gchar *calculated_network)
   return calculated_network;
 }
 
-void
-assert_netmask6(const gchar *ipv6, gint prefix, const gchar *expected_network)
+struct netmask6_tuple
 {
-  char error_msg[64];
-  sprintf(error_msg, "prefix: %d", prefix);
+  gint prefix;
+  const gchar *expected_network;
+};
 
+ParameterizedTestParameters(netmask6, test_filter)
+{
+  static struct netmask6_tuple params[] =
+  {
+    { 1,   "::"},
+    { 3,   "2000::"},
+    { 16,  "2001::"},
+    { 17,  "2001:8000::"},
+    { 18,  "2001:c000::"},
+    { 20,  "2001:d000::"},
+    { 21,  "2001:d800::"},
+    { 23,  "2001:da00::"},
+    { 24,  "2001:db00::"},
+    { 25,  "2001:db80::"},
+    { 33,  "2001:db80:8000::"},
+    { 38,  "2001:db80:8400::"},
+    { 40,  "2001:db80:8500::"},
+    { 41,  "2001:db80:8580::"},
+    { 43,  "2001:db80:85a0::"},
+    { 47,  "2001:db80:85a2::"},
+    { 48,  "2001:db80:85a3::"},
+    { 49,  "2001:db80:85a3:8000::"},
+    { 54,  "2001:db80:85a3:8c00::"},
+    { 56,  "2001:db80:85a3:8d00::"},
+    { 59,  "2001:db80:85a3:8d20::"},
+    { 60,  "2001:db80:85a3:8d30::"},
+    { 68,  "2001:db80:85a3:8d30:1000::"},
+    { 71,  "2001:db80:85a3:8d30:1200::"},
+    { 72,  "2001:db80:85a3:8d30:1300::"},
+    { 76,  "2001:db80:85a3:8d30:1310::"},
+    { 77,  "2001:db80:85a3:8d30:1318::"},
+    { 80,  "2001:db80:85a3:8d30:1319::"},
+    { 81,  "2001:db80:85a3:8d30:1319:8000::"},
+    { 87,  "2001:db80:85a3:8d30:1319:8a00::"},
+    { 91,  "2001:db80:85a3:8d30:1319:8a20::"},
+    { 93,  "2001:db80:85a3:8d30:1319:8a28::"},
+    { 94,  "2001:db80:85a3:8d30:1319:8a2c::"},
+    { 95,  "2001:db80:85a3:8d30:1319:8a2e::"},
+    { 99,  "2001:db80:85a3:8d30:1319:8a2e:2000::"},
+    { 100, "2001:db80:85a3:8d30:1319:8a2e:3000::"},
+    { 102, "2001:db80:85a3:8d30:1319:8a2e:3400::"},
+    { 103, "2001:db80:85a3:8d30:1319:8a2e:3600::"},
+    { 104, "2001:db80:85a3:8d30:1319:8a2e:3700::"},
+    { 114, "2001:db80:85a3:8d30:1319:8a2e:3700:4000"},
+    { 115, "2001:db80:85a3:8d30:1319:8a2e:3700:6000"},
+    { 116, "2001:db80:85a3:8d30:1319:8a2e:3700:7000"},
+    { 119, "2001:db80:85a3:8d30:1319:8a2e:3700:7200"},
+    { 120, "2001:db80:85a3:8d30:1319:8a2e:3700:7300"},
+    { 122, "2001:db80:85a3:8d30:1319:8a2e:3700:7340"},
+    { 125, "2001:db80:85a3:8d30:1319:8a2e:3700:7348"},
+
+  };
+  return cr_make_param_array(struct netmask6_tuple, params, G_N_ELEMENTS(params));
+}
+
+const gchar *ipv6 = "2001:db80:85a3:8d30:1319:8a2e:3700:7348";
+
+ParameterizedTest(struct netmask6_tuple *tup, netmask6, test_filter)
+{
   gchar *calculated_network = g_new0(char, INET6_ADDRSTRLEN);
-  calculate_network6(ipv6, prefix, calculated_network);
-  assert_string(calculated_network, expected_network, error_msg);
+  calculate_network6(ipv6, tup->prefix, calculated_network);
+  cr_assert_str_eq(calculated_network, tup->expected_network, "prefix: %d", tup->prefix);
   g_free(calculated_network);
 }
-
-int
-main(void)
-{
-  const gchar *ipv6 = "2001:db80:85a3:8d30:1319:8a2e:3700:7348";
-
-  assert_netmask6(ipv6, 1,   "::");
-  assert_netmask6(ipv6, 3,   "2000::");
-  assert_netmask6(ipv6, 16,  "2001::");
-  assert_netmask6(ipv6, 17,  "2001:8000::");
-  assert_netmask6(ipv6, 18,  "2001:c000::");
-  assert_netmask6(ipv6, 20,  "2001:d000::");
-  assert_netmask6(ipv6, 21,  "2001:d800::");
-  assert_netmask6(ipv6, 23,  "2001:da00::");
-  assert_netmask6(ipv6, 24,  "2001:db00::");
-  assert_netmask6(ipv6, 25,  "2001:db80::");
-  assert_netmask6(ipv6, 33,  "2001:db80:8000::");
-  assert_netmask6(ipv6, 38,  "2001:db80:8400::");
-  assert_netmask6(ipv6, 40,  "2001:db80:8500::");
-  assert_netmask6(ipv6, 41,  "2001:db80:8580::");
-  assert_netmask6(ipv6, 43,  "2001:db80:85a0::");
-  assert_netmask6(ipv6, 47,  "2001:db80:85a2::");
-  assert_netmask6(ipv6, 48,  "2001:db80:85a3::");
-  assert_netmask6(ipv6, 49,  "2001:db80:85a3:8000::");
-  assert_netmask6(ipv6, 54,  "2001:db80:85a3:8c00::");
-  assert_netmask6(ipv6, 56,  "2001:db80:85a3:8d00::");
-  assert_netmask6(ipv6, 59,  "2001:db80:85a3:8d20::");
-  assert_netmask6(ipv6, 60,  "2001:db80:85a3:8d30::");
-  assert_netmask6(ipv6, 68,  "2001:db80:85a3:8d30:1000::");
-  assert_netmask6(ipv6, 71,  "2001:db80:85a3:8d30:1200::");
-  assert_netmask6(ipv6, 72,  "2001:db80:85a3:8d30:1300::");
-  assert_netmask6(ipv6, 76,  "2001:db80:85a3:8d30:1310::");
-  assert_netmask6(ipv6, 77,  "2001:db80:85a3:8d30:1318::");
-  assert_netmask6(ipv6, 80,  "2001:db80:85a3:8d30:1319::");
-  assert_netmask6(ipv6, 81,  "2001:db80:85a3:8d30:1319:8000::");
-  assert_netmask6(ipv6, 87,  "2001:db80:85a3:8d30:1319:8a00::");
-  assert_netmask6(ipv6, 91,  "2001:db80:85a3:8d30:1319:8a20::");
-  assert_netmask6(ipv6, 93,  "2001:db80:85a3:8d30:1319:8a28::");
-  assert_netmask6(ipv6, 94,  "2001:db80:85a3:8d30:1319:8a2c::");
-  assert_netmask6(ipv6, 95,  "2001:db80:85a3:8d30:1319:8a2e::");
-  assert_netmask6(ipv6, 99,  "2001:db80:85a3:8d30:1319:8a2e:2000::");
-  assert_netmask6(ipv6, 100, "2001:db80:85a3:8d30:1319:8a2e:3000::");
-  assert_netmask6(ipv6, 102, "2001:db80:85a3:8d30:1319:8a2e:3400::");
-  assert_netmask6(ipv6, 103, "2001:db80:85a3:8d30:1319:8a2e:3600::");
-  assert_netmask6(ipv6, 104, "2001:db80:85a3:8d30:1319:8a2e:3700::");
-  assert_netmask6(ipv6, 114, "2001:db80:85a3:8d30:1319:8a2e:3700:4000");
-  assert_netmask6(ipv6, 115, "2001:db80:85a3:8d30:1319:8a2e:3700:6000");
-  assert_netmask6(ipv6, 116, "2001:db80:85a3:8d30:1319:8a2e:3700:7000");
-  assert_netmask6(ipv6, 119, "2001:db80:85a3:8d30:1319:8a2e:3700:7200");
-  assert_netmask6(ipv6, 120, "2001:db80:85a3:8d30:1319:8a2e:3700:7300");
-  assert_netmask6(ipv6, 122, "2001:db80:85a3:8d30:1319:8a2e:3700:7340");
-  assert_netmask6(ipv6, 125, "2001:db80:85a3:8d30:1319:8a2e:3700:7348");
-  return 0;
-}
-
 
