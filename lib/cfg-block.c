@@ -178,7 +178,7 @@ cfg_block_generate(CfgBlockGenerator *s, GlobalConfig *cfg, CfgArgs *args, GStri
       return FALSE;
     }
 
-  g_string_assign_len(result, value, length);
+  g_string_append_len(result, value, length);
   g_free(value);
   return TRUE;
 }
