@@ -77,11 +77,48 @@ _build_cfg_args(const gchar *key, const gchar *value, ...)
   return args;
 }
 
+
+static GString *
+_remove_comments(const GString *str)
+{
+  GString *prune = g_string_new("");
+  gboolean is_inside_comment = FALSE;
+
+  for (gint i=0; i < str->len; ++i)
+    {
+      const gchar curr = str->str[i];
+      const gboolean is_comment_start = '#' == curr;
+      const gboolean is_comment_end = curr == '\n';
+      const gboolean does_comment_continue_next_line = is_comment_end && (i+1) < str->len && '#' == str->str[i+1];
+
+      if (is_comment_start || does_comment_continue_next_line)
+        {
+          is_inside_comment = TRUE;
+        }
+
+      if (!is_inside_comment)
+        {
+          g_string_append_c(prune, str->str[i]);
+        }
+
+      if (is_comment_end)
+        {
+          is_inside_comment = FALSE;
+        }
+
+    }
+
+  return prune;
+}
+
 static void
 _app_parser_generate_with_args(const gchar *topic, CfgArgs *args)
 {
+  GString *tmp = g_string_new("");
   cfg_args_set(args, "topic", topic);
-  cfg_block_generator_generate(app_parser, configuration, args, result, "dummy-reference");
+  cfg_block_generator_generate(app_parser, configuration, args, tmp, "dummy-reference");
+  result = _remove_comments(tmp);
+  g_string_free(tmp, TRUE);
   cfg_args_unref(args);
 }
 
