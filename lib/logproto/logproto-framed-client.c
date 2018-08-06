@@ -39,7 +39,7 @@ log_proto_framed_client_post(LogProtoClient *s, LogMessage *logmsg, guchar *msg,
 {
   LogProtoFramedClient *self = (LogProtoFramedClient *) s;
   gint frame_hdr_len;
-  gint rc;
+  LogProtoStatus status;
 
   if (msg_len > 9999999)
     {
@@ -54,25 +54,25 @@ log_proto_framed_client_post(LogProtoClient *s, LogMessage *logmsg, guchar *msg,
       msg_len = 9999999;
     }
 
-  rc = LPS_SUCCESS;
-  while (rc == LPS_SUCCESS && !(*consumed) && self->super.partial == NULL)
+  status = LPS_SUCCESS;
+  while (status == LPS_SUCCESS && !(*consumed) && self->super.partial == NULL)
     {
       switch (self->super.state)
         {
         case LPFCS_FRAME_SEND:
           frame_hdr_len = g_snprintf((gchar *) self->frame_hdr_buf, sizeof(self->frame_hdr_buf), "%" G_GSIZE_FORMAT" ", msg_len);
-          rc = log_proto_text_client_submit_write(s, self->frame_hdr_buf, frame_hdr_len, NULL, LPFCS_MESSAGE_SEND);
+          status = log_proto_text_client_submit_write(s, self->frame_hdr_buf, frame_hdr_len, NULL, LPFCS_MESSAGE_SEND);
           break;
         case LPFCS_MESSAGE_SEND:
           *consumed = TRUE;
-          rc = log_proto_text_client_submit_write(s, msg, msg_len, (GDestroyNotify) g_free, LPFCS_FRAME_SEND);
+          status = log_proto_text_client_submit_write(s, msg, msg_len, (GDestroyNotify) g_free, LPFCS_FRAME_SEND);
           break;
         default:
           g_assert_not_reached();
         }
     }
 
-  return rc;
+  return status;
 }
 
 LogProtoClient *
