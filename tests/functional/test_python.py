@@ -96,6 +96,7 @@ def test_python():
     expected = []
     for msg in messages:
         expected.extend(s.sendMessages(msg, pri=7))
+    flush_files(2)
     stopped = stop_syslogng()
     if not stopped or not check_file_expected('test-python', expected, settle_time=2):
         return False
@@ -112,6 +113,7 @@ def test_python_parser():
     expected = []
     for msg in messages:
         expected.extend(s.sendMessages(msg, pri=7))
+    flush_files(2)
     stopped = stop_syslogng()
     if not stopped or not check_file_expected('test-python-parser', expected, settle_time=2):
         return False
