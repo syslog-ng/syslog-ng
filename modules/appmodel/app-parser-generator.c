@@ -109,11 +109,13 @@ _generate_application(Application *app, Application *base_app, gpointer user_dat
   if (_is_application_excluded(self, app))
     return;
 
+  g_string_append_printf(self->block, "\n#Start Application %s\n",app->name);
   g_string_append(self->block, "channel {\n");
   _generate_filter(self, _get_filter_expr(app, base_app));
   _generate_parser(self, _get_parser_expr(app, base_app));
   _generate_action(self, app);
   g_string_append(self->block, "};\n");
+  g_string_append_printf(self->block, "\n#End Application %s\n",app->name);
 
 }
 
