@@ -67,7 +67,7 @@ log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTr
               errno = EAGAIN;
               break;
             case SSL_ERROR_WANT_WRITE:
-              /* although we are writing this fd, libssl wants to write. This
+              /* although we are reading this fd, libssl wants to write. This
                * happens during renegotiation for example */
               self->super.cond = G_IO_OUT;
               errno = EAGAIN;
