@@ -246,7 +246,6 @@ _setup_callbacks(LateAckTracker *self)
 static void
 late_ack_tracker_init_instance(LateAckTracker *self, gint init_window_size)
 {
-  self->super.late = TRUE;
   ring_buffer_alloc(&self->ack_record_storage, sizeof(LateAckRecord), init_window_size);
   g_static_mutex_init(&self->storage_mutex);
   _setup_callbacks(self);

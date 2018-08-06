@@ -85,7 +85,6 @@ _setup_callbacks(EarlyAckTracker *self)
 static void
 early_ack_tracker_init_instance(EarlyAckTracker *self)
 {
-  self->super.late = FALSE;
   self->ack_record_storage.super.tracker = (AckTracker *)self;
   _setup_callbacks(self);
 }
