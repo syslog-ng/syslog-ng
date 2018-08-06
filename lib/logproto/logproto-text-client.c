@@ -46,45 +46,45 @@ log_proto_text_client_flush(LogProtoClient *s)
   LogProtoTextClient *self = (LogProtoTextClient *) s;
   gint rc;
 
-  /* attempt to flush previously buffered data */
-  if (self->partial)
+  if (!self->partial)
     {
-      gint len = self->partial_len - self->partial_pos;
-
-      rc = log_transport_write(self->super.transport, &self->partial[self->partial_pos], len);
-      if (rc < 0)
-        {
-          if (errno != EAGAIN && errno != EINTR)
-            {
-              msg_error("I/O error occurred while writing",
-                        evt_tag_int("fd", self->super.transport->fd),
-                        evt_tag_error(EVT_TAG_OSERROR));
-              return LPS_ERROR;
-            }
-          return LPS_SUCCESS;
-        }
-      else if (rc != len)
-        {
-          self->partial_pos += rc;
-          return LPS_SUCCESS;
-        }
-      else
-        {
-          if (self->partial_free)
-            self->partial_free(self->partial);
-          self->partial = NULL;
-          if (self->next_state >= 0)
-            {
-              self->state = self->next_state;
-              self->next_state = -1;
-            }
-
-          log_proto_client_msg_ack(&self->super, 1);
-
-          /* NOTE: we return here to give a chance to the framed protocol to send the frame header. */
-          return LPS_SUCCESS;
-        }
+      return LPS_SUCCESS;
     }
+
+  /* attempt to flush previously buffered data */
+  gint len = self->partial_len - self->partial_pos;
+
+  rc = log_transport_write(self->super.transport, &self->partial[self->partial_pos], len);
+  if (rc < 0)
+    {
+      if (errno != EAGAIN && errno != EINTR)
+        {
+          msg_error("I/O error occurred while writing",
+                    evt_tag_int("fd", self->super.transport->fd),
+                    evt_tag_error(EVT_TAG_OSERROR));
+          return LPS_ERROR;
+        }
+      return LPS_SUCCESS;
+    }
+
+  if (rc != len)
+    {
+      self->partial_pos += rc;
+      return LPS_SUCCESS;
+    }
+
+  if (self->partial_free)
+    self->partial_free(self->partial);
+  self->partial = NULL;
+  if (self->next_state >= 0)
+    {
+      self->state = self->next_state;
+      self->next_state = -1;
+    }
+
+  log_proto_client_msg_ack(&self->super, 1);
+
+  /* NOTE: we return here to give a chance to the framed protocol to send the frame header. */
   return LPS_SUCCESS;
 }
 
