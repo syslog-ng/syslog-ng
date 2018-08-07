@@ -39,7 +39,8 @@
 #define SERVER_PORT 6379
 
 gboolean display_version;
-gboolean deserialize_msg;
+gboolean raw_msg;
+gchar *template_string;
 gchar *server_ip;
 gint port_no = 0;
 
@@ -47,6 +48,14 @@ static struct timeval timeout = {1, 0};
 
 static GOptionEntry cat_options[] =
 {
+  {
+    "template",  't', 0, G_OPTION_ARG_STRING, &template_string,
+    "Template to format the serialized messages", "<template>"
+  },
+  {
+    "raw",   'r', 0, G_OPTION_ARG_NONE, &raw_msg,
+    "Raw message string", NULL
+  },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
@@ -73,67 +82,90 @@ get_redis_reply(redisContext *rc, const char *format, va_list ap)
   return reply;
 }
 
-static void print_redis_lists(redisReply *reply)
+static void
+print_redisq_names(redisReply *reply)
 {
-  gint idx = 0;
+  gint64 idx = 0;
 
-  if (reply->type == REDIS_REPLY_ARRAY && reply->elements > 0)
+  if (reply->type == REDIS_REPLY_ARRAY)
     {
       for (idx = 0; idx < reply->elements; idx++)
-        printf("%u) %s\n", idx, reply->element[idx]->str);
+        printf("%ld) %s\n", idx, reply->element[idx]->str);
     }
 }
 
 static void
-print_redis_list_data(redisReply *reply)
+print_redisq_message(redisReply *reply)
 {
-  gint idx = 0;
+  gint64 idx = 0;
   GString *serialized;
   SerializeArchive *sa;
   GString *msg;
+  GError *error = NULL;
   LogMessage *log_msg = NULL;
   LogTemplate *template = NULL;
 
-  template = log_template_new(configuration, NULL);
-  log_template_compile(template, "$DATE $HOST $MSGHDR$MSG\n", NULL);
-  msg = g_string_sized_new(128);
+  if (reply->type != REDIS_REPLY_ARRAY)
+    return;
 
-  if (reply->type == REDIS_REPLY_ARRAY && reply->elements > 0)
+  if (template_string)
     {
-      for (idx = 0; idx < reply->elements; idx++)
+      template_string = g_strcompress(template_string);
+      template = log_template_new(configuration, NULL);
+      if (!log_template_compile(template, template_string, &error))
         {
-          if (deserialize_msg)
+          fprintf(stderr, "Error compiling template: %s, error: %s\n", template->template, error->message);
+          g_clear_error(&error);
+          return;
+        }
+      g_free(template_string);
+    }
+
+  if (!template)
+    {
+      template = log_template_new(configuration, NULL);
+      log_template_compile(template, "$DATE $HOST $MSGHDR$MSG\n", NULL);
+    }
+
+  msg = g_string_sized_new(128);
+  serialized = g_string_sized_new(2048);
+
+  for (idx = 0; idx < reply->elements; idx++)
+    {
+      if (raw_msg)
+        {
+          printf("%ld) %s\n", idx, reply->element[idx]->str);
+        }
+      else
+        {
+          g_string_append_len(serialized, reply->element[idx]->str, reply->element[idx]->len);
+          g_string_set_size(serialized, reply->element[idx]->len);
+          sa = serialize_string_archive_new(serialized);
+          log_msg = log_msg_new_empty();
+
+          if (log_msg_deserialize(log_msg, sa))
             {
-              serialized = g_string_new_len(reply->element[idx]->str, reply->element[idx]->len);
-              g_string_set_size(serialized, reply->element[idx]->len);
-              sa = serialize_string_archive_new(serialized);
-
-              log_msg = log_msg_new_empty();
-
-              if (!log_msg_deserialize(log_msg, sa))
-                printf("rqtool: Failed to deserialize a message");
-
-              serialize_archive_free(sa);
-              g_string_free(serialized, TRUE);
-
               /* format log */
               log_template_format(template, log_msg, &configuration->template_options, LTZ_LOCAL, 0, NULL, msg);
-              log_msg_unref(log_msg);
-              log_msg = NULL;
-
               printf("%s", msg->str);
             }
           else
-            printf("%u) %s\n", idx, reply->element[idx]->str);
+            fprintf(stderr, "rqtool: failed to deserialize a log message\n");
+
+          g_string_truncate(serialized, 0);
+          serialize_archive_free(sa);
+          log_msg_unref(log_msg);
+          log_msg = NULL;
         }
     }
+  g_string_free(serialized, TRUE);
   g_string_free(msg, TRUE);
 }
 
 static redisReply *
 send_redis_command(const char *format, ...)
 {
-  redisContext *rc;
+  redisContext *rctx;
   redisReply *reply = NULL;
 
   if (!server_ip)
@@ -143,12 +175,12 @@ send_redis_command(const char *format, ...)
     port_no = SERVER_PORT;
 
   /* Connect to redis server */
-  rc = redisConnectWithTimeout(server_ip, port_no, timeout);
+  rctx = redisConnectWithTimeout(server_ip, port_no, timeout);
 
-  if (rc == NULL || rc->err)
+  if (rctx == NULL || rctx->err)
     {
-      if (rc)
-        printf("rqtool: redis connection error: %s\n", rc->errstr);
+      if (rctx)
+        printf("rqtool: redis connection error: %s\n", rctx->errstr);
       else
         printf("rqtool: redis connection error: can't allocate redis context\n");
     }
@@ -156,12 +188,12 @@ send_redis_command(const char *format, ...)
     {
       va_list ap;
       va_start(ap, format);
-      reply = get_redis_reply(rc, format, ap);
+      reply = get_redis_reply(rctx, format, ap);
       va_end(ap);
     }
 
-  if (rc)
-    redisFree(rc);
+  if (rctx)
+    redisFree(rctx);
 
   g_free(server_ip);
   server_ip = NULL;
@@ -182,7 +214,7 @@ rqtool_cat(int argc, char *argv[])
 
       if (reply)
         {
-          print_redis_list_data(reply);
+          print_redisq_message(reply);
           freeReplyObject(reply);
         }
     }
@@ -203,10 +235,12 @@ rqtool_info(int argc, char *argv[])
       if (reply)
         {
           if (reply->type == REDIS_REPLY_INTEGER)
-            printf("listname = '%s', qlen = '%lld'\n", argv[idx], reply->integer);
+            printf("qname = '%s', qlen = '%lld'\n", argv[idx], reply->integer);
 
           freeReplyObject(reply);
         }
+      else
+        fprintf(stderr, "rqtool: redis reply failed");
     }
 
   return 0;
@@ -221,7 +255,7 @@ rqtool_list(int argc, char *argv[])
 
   if (reply)
     {
-      print_redis_lists(reply);
+      print_redisq_names(reply);
       freeReplyObject(reply);
     }
 
@@ -242,10 +276,6 @@ static GOptionEntry rqtool_options[] =
     "version",   'V', 0, G_OPTION_ARG_NONE, &display_version,
     "Display version number (" SYSLOG_NG_VERSION ")", NULL
   },
-  {
-    "deserialize",   'd', 0, G_OPTION_ARG_NONE, &deserialize_msg,
-    "Deserialize log message", NULL
-  },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
@@ -257,9 +287,9 @@ static struct
   gint (*main)(gint argc, gchar *argv[]);
 } modes[] =
 {
-  { "cat", cat_options, "Print the contents of a redis list", rqtool_cat },
-  { "list", list_options, "Print all available redis lists", rqtool_list },
-  { "info", info_options, "Print infos about the given redis list", rqtool_info },
+  { "cat", cat_options, "Print the contents of a redis queue", rqtool_cat },
+  { "list", list_options, "Print all redis queue names", rqtool_list },
+  { "info", info_options, "Print infos about the given redis queue", rqtool_info },
   { NULL, NULL },
 };
 
@@ -287,7 +317,7 @@ usage(void)
 {
   gint mode;
 
-  fprintf(stderr, "Syntax: rqtool <command> [list name] [-s <server ip> -p <port>] [-d]\nPossible commands are:\n");
+  fprintf(stderr, "Syntax: rqtool <command> [list name] [-s <server ip> -p <port>] [-r]\nPossible commands are:\n");
   for (mode = 0; modes[mode].mode; mode++)
     {
       fprintf(stderr, "    %-12s %s\n", modes[mode].mode, modes[mode].description);
