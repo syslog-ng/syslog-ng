@@ -39,12 +39,10 @@ typedef struct _FailoverTransportMapper
   const gchar *bind_port;
 } FailoverTransportMapper;
 
-AFInetDestDriverFailover *
-afinet_dd_failover_new(const gchar *primary);
+AFInetDestDriverFailover *afinet_dd_failover_new(const gchar *primary);
 
-void
-afinet_dd_failover_init(AFInetDestDriverFailover *self, LogExprNode *owner_expr,
-                        FailoverTransportMapper *failover_transport_mapper);
+void afinet_dd_failover_init(AFInetDestDriverFailover *self, LogExprNode *owner_expr,
+                             FailoverTransportMapper *failover_transport_mapper);
 void afinet_dd_failover_deinit(AFInetDestDriverFailover *self);
 
 void afinet_dd_failover_free(AFInetDestDriverFailover *self);
