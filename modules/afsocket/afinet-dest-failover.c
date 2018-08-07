@@ -29,6 +29,7 @@
 
 struct _AFInetDestDriverFailover
 {
+  gboolean initialized;
   GList *servers;
   GList *current_server;
   GSockAddr *primary_addr;
@@ -357,7 +358,7 @@ afinet_dd_failover_get_hostname(AFInetDestDriverFailover *self)
 void
 afinet_dd_failover_next(AFInetDestDriverFailover *self)
 {
-  if (self->failover_transport_mapper.transport_mapper == NULL) // not initialized
+  if (!self->initialized)
     return;
 
   if (!self->current_server)
@@ -422,6 +423,7 @@ afinet_dd_failover_init(AFInetDestDriverFailover *self, LogExprNode *owner_expr,
   self->failover_transport_mapper = *failover_transport_mapper;
   self->current_server = NULL;
   _init_failback_handlers(self);
+  self->initialized = TRUE;
 }
 
 AFInetDestDriverFailover *
