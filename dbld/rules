@@ -104,6 +104,7 @@ shell-%: setup
 images: $(foreach image,$(IMAGES), image-$(image))
 image: image-$(DEFAULT_IMAGE)
 image-%:
+	@if [ "$*" = "devshell" ]; then echo "\nWarning! Make sure that the base of devshell (artful) is updated first!\n"; fi
 	cd $(DBLD_DIR)/images/ && $(DOCKER) build --network=host -t balabit/syslog-ng-$* -f $*.dockerfile .
 
 exec: exec-$(DEFAULT_IMAGE)

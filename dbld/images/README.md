@@ -58,3 +58,6 @@ Platform specific list of packages. If there is no such file for your platform y
  - Add a new file, starting with the same name as your platform.
  - Make sure there is an empty line at the end of the file, because they are concatenated together.
  - Rebuild you image with the dbld/rules command.
+
+### devshell
+As mentioned in the beginning, these "Dockerfiles look very much alike". There is only one exception: **devshell** This image is based on the **artful** image, and contains usefull developer tools to make it possible to work (and debug) inside the build image.
