@@ -1,4 +1,4 @@
-REDISQ_TEST_C_FLAGS = $(TEST_CFLAGS) -I$(top_srcdir)/modules/redisq @CFLAGS_NOWARN_POINTER_SIGN@
+REDISQ_TEST_C_FLAGS = $(TEST_CFLAGS) -I$(top_srcdir)/modules/redisq
 REDISQ_TEST_LD_FLAGS = $(TEST_LDFLAGS) ${PREOPEN_SYSLOGFORMAT} -dlpreopen $(top_builddir)/modules/redisq/libredis-queue.la
 REDISQ_TEST_LD_ADD = $(TEST_LDADD)
 
