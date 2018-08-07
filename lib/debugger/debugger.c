@@ -25,6 +25,7 @@
 #include "debugger/tracer.h"
 #include "logmsg/logmsg.h"
 #include "logpipe.h"
+#include "apphook.h"
 #include "mainloop.h"
 
 #include <stdio.h>
@@ -315,6 +316,7 @@ _handle_interactive_prompt(Debugger *self)
 static gpointer
 _interactive_console_thread_func(Debugger *self)
 {
+  app_thread_start();
   printf("Waiting for breakpoint...\n");
   while (1)
     {
@@ -323,6 +325,7 @@ _interactive_console_thread_func(Debugger *self)
       _handle_interactive_prompt(self);
       tracer_resume_after_breakpoint(self->tracer);
     }
+  app_thread_stop();
   return NULL;
 }
 
