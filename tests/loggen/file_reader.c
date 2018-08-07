@@ -292,18 +292,27 @@ parse_line_rfc3164(const char *line, SyslogMsgElements *elements)
   return 1;
 }
 
-static int
-parse_line(const char *line, SyslogMsgElements *elements, int skip)
+static const char *
+str_skip_tokens(const char *line, int number_of_skips)
 {
-  while (skip--)
+  while (number_of_skips--)
     {
       line = strchr(line, ' ');
 
       if (!line)
-        return -1;
+        return NULL;
 
-      line += 1;
+      ++line;
     }
+
+  return line;
+}
+
+static int
+parse_line(const char *line, SyslogMsgElements *elements)
+{
+  if (!line)
+    return -1;
 
   int ret_val;
   switch (get_line_format(line))
@@ -364,7 +373,7 @@ read_next_message_from_file(char *buf, int buflen, int syslog_proto, int thread_
       if (dont_parse)
         break;
 
-      if (parse_line(buf, &parsed_elements, skip_tokens) > 0)
+      if (parse_line(str_skip_tokens(buf, skip_tokens), &parsed_elements) > 0)
         break;
 
       fprintf(stderr, "Invalid line %d\n", ++lineno);
