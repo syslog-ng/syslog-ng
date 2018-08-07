@@ -535,7 +535,7 @@ _insert(LogThreadedDestDriver *s, LogMessage *msg)
 {
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) s;
 
-  if (self->flush_lines > 0)
+  if (self->flush_lines > 0 || self->flush_bytes)
     return _insert_batched(self, msg);
   else
     return _insert_single(self, msg);
