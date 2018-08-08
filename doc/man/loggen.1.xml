@@ -191,7 +191,7 @@
             <command>--skip-tokens &lt;number&gt;</command>
           </term>
           <listitem>
-            <para>Skip the specified number of space-separated tokens (words) at the beginning of every line. For example, if the messages in the file look like <parameter>foo bar message</parameter>, <parameter>--skip-tokens 2</parameter> skips the <parameter>foo bar</parameter> part of the line, and sends only the <parameter>message</parameter> part. Works only when used together with the <parameter>--read-file</parameter> parameter. Default value: 3</para>
+            <para>Skips the specified number of space-separated tokens (words) at the beginning of every line. For example, if the messages in the file look like <parameter>foo bar message</parameter>, <parameter>--skip-tokens 2</parameter> skips the <parameter>foo bar</parameter> part of the line, and sends only the <parameter>message</parameter> part. Works only when used together with the <parameter>--read-file</parameter> parameter. Default value: 0</para>
           </listitem>
         </varlistentry>
         <varlistentry>
@@ -234,7 +234,7 @@
     <refsection>
       <title>Examples</title>
       <para>The following command generates 100 messages per second for ten minutes, and sends them to port 2010 of the localhost via TCP. Each message is 300 bytes long.</para>
-      <synopsis>loggen --size 300 --rate 100 --interval 600 127.0.0.1 2010</synopsis>
+      <synopsis>loggen --stream --size 300 --rate 100 --interval 600 127.0.0.1 2010</synopsis>
       <para>The following command is similar to the one above, but uses the UDP protocol.</para>
       <synopsis>loggen --inet --dgram --size 300 --rate 100 --interval 600 127.0.0.1 2010</synopsis>
       <para>Send a single message on TCP6 to the <parameter>::1</parameter> IPv6 address, port <parameter>1061</parameter>:</para>

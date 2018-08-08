@@ -68,3 +68,4 @@ tests_loggen_loggen_LDADD	= \
 
 include tests/loggen/socket_plugin/Makefile.am
 include tests/loggen/ssl_plugin/Makefile.am
+include tests/loggen/tests/Makefile.am
