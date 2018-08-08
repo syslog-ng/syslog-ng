@@ -159,6 +159,11 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 %token KW_LOCALPORT
 %token KW_DESTPORT
 %token KW_FAILOVER_SERVERS
+%token KW_FAILOVER
+%token KW_SERVERS
+%token KW_FAILBACK
+%token KW_TCP_PROBE_INTERVAL
+%token KW_SUCCESSFUL_PROBES_REQUIRED
 
 /* SSL support */
 
@@ -209,6 +214,11 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 %type   <ptr> dest_afnetwork_params
 
 %type   <num> inet_ip_protocol_option
+
+%type <ptr> dest_afinet_option
+
+%type <ptr> dest_failover_options
+%type <ptr> dest_failover_modes_options
 
 %%
 
@@ -563,11 +573,35 @@ dest_afinet_option
 	| KW_LOCALPORT '(' string_or_number ')'	{ afinet_dd_set_localport(last_driver, $3); free($3); }
 	| KW_PORT '(' string_or_number ')'	{ afinet_dd_set_destport(last_driver, $3); free($3); }
 	| KW_DESTPORT '(' string_or_number ')'	{ afinet_dd_set_destport(last_driver, $3); free($3); }
-	| KW_FAILOVER_SERVERS '(' string_list ')' { afinet_dd_add_failovers(last_driver, $3); }
+	| KW_FAILOVER_SERVERS { afinet_dd_enable_failover(last_driver); } '(' string_list ')'	{ afinet_dd_add_failovers(last_driver, $4); }
+	| KW_FAILOVER { afinet_dd_enable_failover(last_driver); } '(' dest_failover_options ')'	{ $$ = $4; }
 	| inet_socket_option
 	| dest_writer_option
 	| dest_afsocket_option
 	| dest_driver_option
+	;
+
+dest_failover_options
+	: KW_SERVERS '(' string_list ')' { afinet_dd_add_failovers(last_driver, $3); } dest_failover_modes_options
+	;
+
+dest_failover_modes_options
+  : dest_failback_options
+	|
+	;
+
+dest_failback_options
+  : KW_FAILBACK { afinet_dd_enable_failback(last_driver); } '(' dest_failback_probe_options ')'
+	;
+
+dest_failback_probe_options
+	: dest_failback_probe_options dest_failback_probe_option
+	|
+	;
+
+dest_failback_probe_option
+	: KW_TCP_PROBE_INTERVAL '(' positive_integer ')' { afinet_dd_set_failback_tcp_probe_interval(last_driver, $3); }
+	| KW_SUCCESSFUL_PROBES_REQUIRED '(' positive_integer ')' { afinet_dd_set_failback_successful_probes_required(last_driver, $3); }
 	;
 
 
