@@ -50,13 +50,13 @@ _get_len_from_queue(GQueue *queue)
 }
 
 static gboolean
-_send_redis_command(LogQueueRedis *self, const char *format, ...)
+_send_redis_command(RedisServer *self, const char *format, ...)
 {
   va_list ap;
   va_start(ap, format);
 
   g_mutex_lock(self->redis_thread_mutex);
-  redisReply *reply = redisvCommand(self->c, format, ap);
+  redisReply *reply = redisvCommand(self->ctx, format, ap);
   va_end(ap);
   g_mutex_unlock(self->redis_thread_mutex);
 
@@ -69,13 +69,13 @@ _send_redis_command(LogQueueRedis *self, const char *format, ...)
 }
 
 static redisReply *
-_get_redis_reply(LogQueueRedis *self, const char *format, ...)
+_get_redis_reply(RedisServer *self, const char *format, ...)
 {
   va_list ap;
   va_start(ap, format);
 
   g_mutex_lock(self->redis_thread_mutex);
-  redisReply *reply = redisvCommand(self->c, format, ap);
+  redisReply *reply = redisvCommand(self->ctx, format, ap);
   va_end(ap);
   g_mutex_unlock(self->redis_thread_mutex);
 
@@ -90,19 +90,25 @@ _get_redis_reply(LogQueueRedis *self, const char *format, ...)
 }
 
 static gboolean
-_check_connection_to_redis(LogQueueRedis *self)
+_check_ping_to_redis(RedisServer *self)
 {
-  return _send_redis_command(self, "ping");
+  return self->send_cmd(self, "ping");
 }
 
 static gboolean
-_authenticate_to_redis(LogQueueRedis *self, const gchar *password)
+_check_connection_to_redis(RedisServer *self)
 {
-  return _send_redis_command(self, "AUTH %s", password);
+  return self->is_conn(self);
 }
 
 static gboolean
-_redis_dp_connect(LogQueueRedis *self)
+_authenticate_to_redis(RedisServer *self, const gchar *password)
+{
+  return self->send_cmd(self, "AUTH %s", password);
+}
+
+static gboolean
+_redis_connect(RedisServer *self)
 {
   struct timeval timeout = {0, 0};
 
@@ -110,19 +116,11 @@ _redis_dp_connect(LogQueueRedis *self)
 
   msg_debug("redisq: Connecting to redis server");
 
-  if (self->c != NULL)
-    {
-      if (_check_connection_to_redis(self))
-        return TRUE;
-      else
-        redisFree(self->c);
-    }
+  self->ctx = redisConnectWithTimeout(self->redis_options->host, self->redis_options->port, timeout);
 
-  self->c = redisConnectWithTimeout(self->redis_options->host, self->redis_options->port, timeout);
-
-  if (self->c->err)
+  if (self->ctx->err)
     {
-      msg_error("redisq: redis server error, suspending", evt_tag_str("error", self->c->errstr));
+      msg_error("redisq: redis server error, suspending", evt_tag_str("error", self->ctx->errstr));
       return FALSE;
     }
 
@@ -135,9 +133,9 @@ _redis_dp_connect(LogQueueRedis *self)
         }
     }
 
-  if (!_check_connection_to_redis(self))
+  if (!_check_ping_to_redis(self))
     {
-      msg_error("redisq: failed to connect with redis server");
+      msg_error("redisq: ping to redis server failed");
       return FALSE;
     }
 
@@ -147,11 +145,36 @@ _redis_dp_connect(LogQueueRedis *self)
 }
 
 static gboolean
-_is_redis_connection_alive(LogQueueRedis *self)
+_redis_reconnect(RedisServer *self)
 {
-  if (!_check_connection_to_redis(self))
+  msg_debug("redisq: reconnecting to redis server");
+
+  if (self->ctx != NULL)
     {
-      if (!_redis_dp_connect(self))
+      redisFree(self->ctx);
+      self->ctx = NULL;
+    }
+
+  return _redis_connect(self);
+}
+
+static void
+_redis_disconnect(RedisServer *self)
+{
+  msg_debug("redisq: redis disconnect");
+
+  if (self->ctx)
+    redisFree(self->ctx);
+
+  self->ctx = NULL;
+}
+
+static gboolean
+_is_redis_connection_alive(RedisServer *self)
+{
+  if (!_check_ping_to_redis(self))
+    {
+      if (!self->reconnect(self))
         {
           msg_error("redisq: Message was dropped, There is no redis connection");
           return FALSE;
@@ -167,24 +190,26 @@ _get_length(LogQueue *s)
 {
   LogQueueRedis *self = (LogQueueRedis *) s;
   redisReply *reply = NULL;
-  glong list_len = 0;
+  glong qlen = 0;
 
-  if (self->check_conn(self))
+  if (_check_connection_to_redis(self->redis_server))
     {
-      reply = _get_redis_reply(self, "LLEN %s", self->redis_list_name);
+      reply = _get_redis_reply(self->redis_server, "LLEN %s", self->redis_queue_name);
 
       if (reply)
         {
           if (reply->type == REDIS_REPLY_INTEGER)
-            list_len = reply->integer;
+            qlen = reply->integer;
 
           freeReplyObject(reply);
         }
+      else
+        msg_error("redisq: get length redis reply failed");
     }
 
-  msg_debug("redisq: get length", evt_tag_int("size", list_len));
+  msg_debug("redisq: get length", evt_tag_int("size", qlen));
 
-  return list_len;
+  return qlen;
 }
 
 static void
@@ -220,7 +245,7 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
     }
 
   stats_counter_inc (self->super.dropped_messages);
-  msg_error("redisq: Pushing msg to redis server failed");
+  msg_error("redisq: write msg to redis server failed");
 }
 
 static LogMessage *
@@ -244,7 +269,8 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
           stats_counter_inc(self->super.queued_messages);
           stats_counter_add(self->super.memory_usage, log_msg_get_size(msg));
 
-          self->delete_message(self);
+          if (!self->delete_message(self))
+            msg_error("redisq: delete msg from redis server failed");
         }
 
       path_options->ack_needed = FALSE;
@@ -325,8 +351,8 @@ _free(LogQueue *s)
   g_queue_free(self->qbacklog);
   self->qbacklog = NULL;
 
-  g_free(self->redis_list_name);
-  self->redis_list_name = NULL;
+  g_free(self->redis_queue_name);
+  self->redis_queue_name = NULL;
 
   g_static_mutex_free(&self->super.lock);
   g_free(self->super.persist_name);
@@ -342,14 +368,14 @@ _read_message(LogQueueRedis *self, LogPathOptions *path_options)
 
   msg_debug("redisq: read message from redis");
 
-  if (!self->check_conn(self))
+  if (!_check_connection_to_redis(self->redis_server))
     return NULL;
 
-  reply = _get_redis_reply(self, "LRANGE %s 0 0", self->redis_list_name);
+  reply = _get_redis_reply(self->redis_server, "LRANGE %s 0 0", self->redis_queue_name);
 
   if (reply)
     {
-      if ((reply->elements > 0) && (reply->type == REDIS_REPLY_ARRAY))
+      if ((reply->elements == 1) && (reply->type == REDIS_REPLY_ARRAY))
         {
           msg_debug("redisq: got msg from redis server");
 
@@ -360,7 +386,7 @@ _read_message(LogQueueRedis *self, LogPathOptions *path_options)
           msg = log_msg_new_empty();
 
           if (!log_msg_deserialize(msg, sa))
-            msg_error("redisq: Can't read correct message from redis server");
+            msg_error("redisq: failed to deserialize a log message");
 
           serialize_archive_free(sa);
           g_string_free(serialized, TRUE);
@@ -379,17 +405,18 @@ _write_message(LogQueueRedis *self, LogMessage *msg, const LogPathOptions *path_
   SerializeArchive *sa;
   gboolean consumed = FALSE;
 
-  if (self->check_conn(self))
+  if (_check_connection_to_redis(self->redis_server))
     {
-      msg_debug("redisq: writing msg to redis db");
+      msg_debug("redisq: writing msg to redis queue");
       serialized = g_string_sized_new(4096);
       sa = serialize_string_archive_new(serialized);
       log_msg_serialize(msg, sa);
 
-      msg_debug("redisq: serialized msg", evt_tag_str("list", self->redis_list_name),
+      msg_debug("redisq: serialized msg", evt_tag_str("list", self->redis_queue_name),
                 evt_tag_str("msg", serialized->str), evt_tag_int("len", serialized->len));
 
-      consumed = _send_redis_command(self, "RPUSH %s %b", self->redis_list_name, serialized->str, serialized->len);
+      consumed = self->redis_server->send_cmd(self->redis_server, "RPUSH %s %b", self->redis_queue_name, serialized->str,
+                                              serialized->len);
 
       serialize_archive_free(sa);
       g_string_free(serialized, TRUE);
@@ -403,46 +430,72 @@ _delete_message(LogQueueRedis *self)
 {
   gboolean removed = FALSE;
 
-  if (self->check_conn(self))
+  if (_check_connection_to_redis(self->redis_server))
     {
-      msg_debug("redisq: removing msg from redis list");
+      msg_debug("redisq: removing msg from redis queue");
 
-      removed = _send_redis_command(self, "LPOP %s", self->redis_list_name);
+      removed = self->redis_server->send_cmd(self->redis_server, "LPOP %s", self->redis_queue_name);
     }
 
   return removed;
 }
 
-gpointer
-redis_thread_func(gpointer arg)
+static void
+_redis_server_init(RedisServer *self, RedisQueueOptions *options)
 {
-  LogQueueRedis *self = (LogQueueRedis *) arg;
-
-  msg_debug("redisq: redis thread started");
-
-  _redis_dp_connect(self);
-
-  return NULL;
+  self->redis_options = options;
+  self->connect(self);
 }
 
 static void
-redis_server_init(RedisServer *self, RedisQueueOptions *options, const gchar *name)
+_redis_server_deinit(RedisServer *self)
 {
-  self->super.redis_options = options;
-  self->redis_thread = g_thread_new(name, redis_thread_func, &self->super);
+  self->redis_options = NULL;
+  self->disconnect(self);
 }
 
 static void
-redis_server_deinit(RedisServer *self)
+_set_redis_queue_name(LogQueueRedis *self, gchar *keyprefix, const gchar *persist_name)
 {
-  self->super.redis_options = NULL;
-  self->super.c = NULL;
+  gchar qname[1024] = "";
+
+  g_snprintf(qname, sizeof(qname), "%s_%s", keyprefix, persist_name);
+  self->redis_queue_name = g_strdup(qname);
+}
+
+static RedisServer *
+_redis_server_new(RedisQueueOptions *options)
+{
+  RedisServer *self = g_new0(RedisServer, 1);
+
+  msg_debug("redisq: redis server new");
+
+  self->redis_thread_mutex = g_mutex_new();
+
+  self->is_conn = _is_redis_connection_alive;
+  self->connect = _redis_connect;
+  self->reconnect = _redis_reconnect;
+  self->disconnect = _redis_disconnect;
+  self->send_cmd = _send_redis_command;
+
+  _redis_server_init(self, options);
+
+  return self;
+}
+
+static void
+_redis_server_free(RedisServer *self)
+{
+  msg_debug("redisq: redis server free");
+
+  g_mutex_free(self->redis_thread_mutex);
+  _redis_server_deinit(self);
+  g_free(self);
 }
 
 static void
 _set_virtual_functions(LogQueueRedis *self)
 {
-  self->super.type = log_queue_redis_type;
   self->super.get_length = _get_length;
   self->super.push_tail = _push_tail;
   self->super.pop_head = _pop_head;
@@ -456,53 +509,42 @@ _set_virtual_functions(LogQueueRedis *self)
   self->delete_message = _delete_message;
 }
 
+LogQueueRedis *
+log_queue_redis_new_instance(RedisQueueOptions *options)
+{
+  LogQueueRedis *self = g_new0(LogQueueRedis, 1);
+
+  msg_debug("redisq: log queue redis new instance");
+
+  self->redis_server = _redis_server_new(options);
+  return self;
+}
+
 LogQueue *
 log_queue_redis_new(LogQueueRedis *self, const gchar *persist_name)
 {
-  gchar list_name[1024] = "";
-
   msg_debug("redisq: log queue new");
 
-  if (!self->check_conn(self))
+  if (!_check_connection_to_redis(self->redis_server))
     return NULL;
 
   log_queue_init_instance(&self->super, persist_name);
+  self->super.type = log_queue_redis_type;
   self->qbacklog = g_queue_new();
-
-  g_snprintf(list_name, sizeof(list_name), "%s_%s", self->redis_options->keyprefix, persist_name);
-  self->redis_list_name = g_strdup(list_name);
+  _set_redis_queue_name(self, self->redis_server->redis_options->keyprefix, persist_name);
 
   _set_virtual_functions(self);
   return &self->super;
 }
 
-RedisServer *
-redis_server_new(RedisQueueOptions *options, const gchar *name)
-{
-  RedisServer *self = g_new0(RedisServer, 1);
-
-  msg_debug("redisq: redis server new");
-
-  self->super.redis_thread_mutex = g_mutex_new();
-  self->super.check_conn = _is_redis_connection_alive;
-  redis_server_init(self, options, name);
-  g_thread_join(self->redis_thread);
-  return self;
-}
-
 void
-redis_server_free(RedisServer *self)
+log_queue_redis_free(LogQueueRedis *self)
 {
-  msg_debug("redisq: redis server free");
+  msg_debug("redisq: log queue redis free");
 
   if (self)
     {
-      g_mutex_free(self->super.redis_thread_mutex);
-
-      if (self->super.c)
-        redisFree(self->super.c);
-
-      redis_server_deinit(self);
+      _redis_server_free(self->redis_server);
       g_free(self);
     }
 }
