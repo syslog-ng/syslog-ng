@@ -32,9 +32,9 @@
 #define HELLO_MSG "Hello redis queue"
 #define ITEMS_PER_MESSAGE 2
 
-static LogQueueRedis logqredis;
 static RedisQueueOptions options;
 static LogMessage *test_msg = NULL;
+LogQueueRedis *logqredis = NULL;
 
 static LogMessage *
 _construct_msg(const gchar *msg)
@@ -51,14 +51,16 @@ void *redisvCommand(redisContext *c, const char *format, va_list ap)
   redisReply *reply = g_new0(redisReply, 1);
   GString *serialized;
   SerializeArchive *sa;
+  static gint qlen = 0;
 
   if (strstr(format, "RPUSH"))
     {
       test_msg = _construct_msg(HELLO_MSG);
+      qlen++;
     }
   else if (strstr(format, "LRANGE") && test_msg)
     {
-      serialized = g_string_sized_new(4096);
+      serialized = g_string_sized_new(2048);
       sa = serialize_string_archive_new(serialized);
       log_msg_serialize(test_msg, sa);
 
@@ -66,7 +68,7 @@ void *redisvCommand(redisContext *c, const char *format, va_list ap)
       reply->type = REDIS_REPLY_ARRAY;
       reply->element = g_malloc0(sizeof(redisReply *));
       reply->element[0] = g_new0(redisReply, 1);
-      reply->element[0]->str = g_malloc0(2048);
+      reply->element[0]->str = g_malloc0(1024);
 
       memcpy(reply->element[0]->str, serialized->str, serialized->len);
       reply->element[0]->len = serialized->len;
@@ -78,7 +80,17 @@ void *redisvCommand(redisContext *c, const char *format, va_list ap)
 
       return reply;
     }
+  else if (strstr(format, "LLEN"))
+    {
+      reply->type = REDIS_REPLY_INTEGER;
+      reply->integer = qlen;
 
+      return reply;
+    }
+  else if (strstr(format, "LPOP"))
+    {
+      qlen--;
+    }
   return NULL;
 }
 
@@ -86,7 +98,7 @@ void freeReplyObject(void *reply)
 {
   redisReply *rep = (redisReply *) reply;
 
-  if (rep->elements > 0)
+  if (rep->elements == 1)
     {
       g_free(rep->element[0]->str);
       g_free(rep->element[0]);
@@ -97,24 +109,40 @@ void freeReplyObject(void *reply)
 }
 
 static gboolean
-_is_conn_alive(LogQueueRedis *self)
+_is_conn_alive(RedisServer *self)
 {
   return TRUE;
 }
 
+static gboolean
+_connect_redis(RedisServer *self)
+{
+  return TRUE;
+}
+
+static void
+_disconnect_redis(RedisServer *self)
+{
+}
+
 static LogQueue *
-_logq_redis_new(LogQueueRedis *self)
+_logq_redis_new(LogQueueRedis **self)
 {
   const gchar *persist_name = "test_redisq";
   LogQueue *q;
+  LogQueueRedis *lqredis;
 
   redis_queue_options_set_default_options(&options);
-  self->redis_options = &options;
-  self->check_conn = _is_conn_alive;
-  self->redis_thread_mutex = g_mutex_new();
+  lqredis = log_queue_redis_new_instance(&options);
 
-  q = log_queue_redis_new(self, persist_name);
+  lqredis->redis_server->is_conn = _is_conn_alive;
+  lqredis->redis_server->connect = _connect_redis;
+  lqredis->redis_server->disconnect = _disconnect_redis;
+
+  q = log_queue_redis_new(lqredis, persist_name);
   log_queue_set_use_backlog(q, TRUE);
+
+  *self = lqredis;
 
   return q;
 }
@@ -123,8 +151,12 @@ static void
 _logq_redis_free(LogQueueRedis *self)
 {
   redis_queue_options_destroy(&options);
+  g_free(self->redis_queue_name);
+  self->redis_queue_name = NULL;
+
   g_static_mutex_free(&self->super.lock);
   g_free(self->super.persist_name);
+  log_queue_redis_free(self);
 }
 
 static void
@@ -152,14 +184,16 @@ Test(redisq, test_push_pop_msg)
   q = _logq_redis_new(&logqredis);
 
   log_queue_push_tail(q, msg, &path_options);
+  cr_assert_eq(log_queue_get_length((LogQueue *)logqredis), 1, "log queue push failed.");
+
   out_msg = log_queue_pop_head(q, &path_options);
+  cr_assert_eq(log_queue_get_length((LogQueue *)logqredis), 0, "log queue pop failed.");
 
   _compare_log_msg(msg, out_msg);
 
   log_msg_unref(msg);
   log_msg_unref(out_msg);
-
-  _logq_redis_free(&logqredis);
+  _logq_redis_free(logqredis);
 }
 
 Test(redisq, test_pop_empty_msg)
@@ -167,22 +201,18 @@ Test(redisq, test_pop_empty_msg)
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   LogQueue *q;
   LogMessage *msg;
-  guint qlen = 0;
 
   q = _logq_redis_new(&logqredis);
 
   msg = log_queue_pop_head(q, &path_options);
-  cr_assert_null(msg, "Queue is not empty");
+  cr_assert_null(msg, "log queue is not empty");
+  cr_assert_eq(log_queue_get_length((LogQueue *)logqredis), 0, "log message is available in a queue");
 
-  qlen = logqredis.super.get_length((LogQueue *)&logqredis);
-  cr_assert_eq(qlen, 0, "Message is present in a Queue");
-
-  _logq_redis_free(&logqredis);
+  _logq_redis_free(logqredis);
 }
 
 Test(redisq, test_rewind_backlog)
 {
-  guint qlen = 0;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   LogQueue *q;
   LogMessage *msg = _construct_msg(HELLO_MSG);
@@ -194,8 +224,7 @@ Test(redisq, test_rewind_backlog)
   out_msg = log_queue_pop_head(q, &path_options);
   log_queue_rewind_backlog(q, 1);
 
-  qlen = logqredis.qbacklog->length / ITEMS_PER_MESSAGE;
-  cr_assert_eq(qlen, 0, "Backlog is not empty");
+  cr_assert_eq(log_queue_get_length((LogQueue *)logqredis), 1, "log queue rewind backlog failed");
 
   backlog_msg = log_queue_pop_head(q, &path_options);
   _compare_log_msg(out_msg, backlog_msg);
@@ -204,12 +233,11 @@ Test(redisq, test_rewind_backlog)
   log_msg_unref(out_msg);
   log_msg_unref(backlog_msg);
 
-  _logq_redis_free(&logqredis);
+  _logq_redis_free(logqredis);
 }
 
 Test(redisq, test_ack_backlog)
 {
-  guint qlen = 0;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   LogQueue *q;
   LogMessage *msg = _construct_msg(HELLO_MSG), *out_msg;
@@ -220,14 +248,13 @@ Test(redisq, test_ack_backlog)
   log_queue_pop_head(q, &path_options);
   log_queue_ack_backlog(q, 1);
 
-  qlen = logqredis.qbacklog->length / ITEMS_PER_MESSAGE;
-  cr_assert_eq(qlen, 0, "Backlog is not empty");
+  cr_assert_eq(log_queue_get_length((LogQueue *)logqredis), 0, "log queue ack backlog failed.");
 
   out_msg = log_queue_pop_head(q, &path_options);
   cr_assert_null(out_msg, "Queue is not empty");
 
   log_msg_unref(msg);
-  _logq_redis_free(&logqredis);
+  _logq_redis_free(logqredis);
 }
 
 static void

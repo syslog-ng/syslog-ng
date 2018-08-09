@@ -28,6 +28,14 @@
 #include "logmsg/logmsg.h"
 #include "stats/stats-registry.h"
 
+#define LOG_PATH_OPTIONS_TO_POINTER(lpo) GUINT_TO_POINTER(0x80000000 | (lpo)->ack_needed)
+
+/* NOTE: this must not evaluate ptr multiple times, otherwise the code that
+ * uses this breaks, as it passes the result of a g_queue_pop_head call,
+ * which has side effects.
+ */
+#define POINTER_TO_LOG_PATH_OPTIONS(ptr, lpo) (lpo)->ack_needed = (GPOINTER_TO_INT(ptr) & ~0x80000000)
+
 extern gint log_queue_max_threads;
 
 typedef void (*LogQueuePushNotifyFunc)(gpointer user_data);
