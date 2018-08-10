@@ -665,6 +665,22 @@ g_process_detach_stdio(void)
     }
 }
 
+static void
+g_process_set_dumpable(void)
+{
+#if SYSLOG_NG_ENABLE_LINUX_CAPS
+  if (!prctl(PR_GET_DUMPABLE, 0, 0, 0, 0))
+    {
+      gint rc;
+
+      rc = prctl(PR_SET_DUMPABLE, 1, 0, 0, 0);
+
+      if (rc < 0)
+        g_process_message("Cannot set process to be dumpable; error='%s'", g_strerror(errno));
+    }
+#endif
+}
+
 /**
  * g_process_enable_core:
  *
@@ -678,17 +694,7 @@ g_process_enable_core(void)
 
   if (process_opts.core)
     {
-#if SYSLOG_NG_ENABLE_LINUX_CAPS
-      if (!prctl(PR_GET_DUMPABLE, 0, 0, 0, 0))
-        {
-          gint rc;
-
-          rc = prctl(PR_SET_DUMPABLE, 1, 0, 0, 0);
-
-          if (rc < 0)
-            g_process_message("Cannot set process to be dumpable; error='%s'", g_strerror(errno));
-        }
-#endif
+      g_process_set_dumpable();
 
       limit.rlim_cur = limit.rlim_max = RLIM_INFINITY;
       if (setrlimit(RLIMIT_CORE, &limit) < 0)
@@ -803,6 +809,15 @@ g_process_change_root(void)
   return TRUE;
 }
 
+static void
+g_process_keep_caps(void)
+{
+#if SYSLOG_NG_ENABLE_LINUX_CAPS
+  if (process_opts.caps)
+    prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0);
+#endif
+}
+
 /**
  * g_process_change_user:
  *
@@ -815,10 +830,7 @@ g_process_change_root(void)
 static gboolean
 g_process_change_user(void)
 {
-#if SYSLOG_NG_ENABLE_LINUX_CAPS
-  if (process_opts.caps)
-    prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0);
-#endif
+  g_process_keep_caps();
 
   if (process_opts.gid >= 0)
     {
