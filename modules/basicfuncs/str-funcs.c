@@ -570,3 +570,36 @@ tf_binary_free_state(gpointer s)
 
 TEMPLATE_FUNCTION(TFBinaryState, tf_binary, tf_binary_prepare, tf_simple_func_eval, tf_binary_call,
                   tf_binary_free_state, NULL);
+
+static inline gsize
+_get_base64_encoded_size(gsize len)
+{
+  return (len / 3 + 1) * 4 + 4;
+}
+
+static void
+tf_base64encode(LogMessage *msg, gint argc, GString *argv[], GString *result)
+{
+  gint i;
+  gint state = 0;
+  gint save = 0;
+  gsize out_len = 0;
+  gsize init_len = result->len;
+
+  for (i = 0; i < argc; i++)
+    {
+      /* expand the buffer and add space for the base64 encoded string */
+      g_string_set_size(result, init_len + out_len + _get_base64_encoded_size(argv[i]->len));
+      out_len +=
+        g_base64_encode_step((guchar *) argv[i]->str, argv[i]->len,
+                             FALSE /* break_lines */,
+                             result->str + init_len + out_len,
+                             &state, &save);
+    }
+  g_string_set_size(result, init_len + out_len + _get_base64_encoded_size(0));
+  out_len += g_base64_encode_close(FALSE, result->str + init_len + out_len, &state, &save);
+
+  g_string_set_size(result, init_len + out_len);
+};
+
+TEMPLATE_FUNCTION_SIMPLE(tf_base64encode);
