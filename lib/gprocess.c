@@ -202,6 +202,33 @@ inherit_systemd_activation(void)
 
 #if SYSLOG_NG_ENABLE_LINUX_CAPS
 
+typedef enum _cap_result_type
+{
+  CAP_NOT_SUPPORTED_BY_KERNEL = -2,
+  CAP_NOT_SUPPORTED_BY_LIBCAP = -1,
+  CAP_SUPPORTED               =  1,
+} cap_result_type;
+
+static cap_result_type
+_check_and_get_cap_from_text(const gchar *cap_text, cap_value_t *cap)
+{
+  int ret;
+
+  ret = cap_from_name(cap_text, cap);
+  if (ret == -1)
+    {
+      return CAP_NOT_SUPPORTED_BY_LIBCAP;
+    }
+
+  ret = prctl(PR_CAPBSET_READ, *cap);
+  if (ret == -1)
+    {
+      return CAP_NOT_SUPPORTED_BY_KERNEL;
+    }
+
+  return CAP_SUPPORTED;
+}
+
 /**
  * g_process_enable_cap:
  * @capability: capability to turn on
