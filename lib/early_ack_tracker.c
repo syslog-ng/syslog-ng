@@ -23,8 +23,7 @@
  */
 
 #include "ack_tracker.h"
-#include "bookmark.h"
-#include "syslog-ng.h"
+#include "logsource.h"
 
 typedef struct _EarlyAckRecord
 {
@@ -52,50 +51,51 @@ static void
 early_ack_tracker_track_msg(AckTracker *s, LogMessage *msg)
 {
   EarlyAckTracker *self = (EarlyAckTracker *)s;
-  log_pipe_ref((LogPipe *)self->super.source);
   msg->ack_record = (AckRecord *)(&self->ack_record_storage);
 }
 
 static void
 early_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type)
 {
-  EarlyAckTracker *self = (EarlyAckTracker *)s;
-
   if (ack_type == AT_SUSPENDED)
-    log_source_flow_control_suspend(self->super.source);
+    log_source_flow_control_suspend(msg->source);
 
-  log_source_flow_control_adjust(self->super.source, 1);
+  log_source_flow_control_adjust(msg->source, 1);
 
   log_msg_unref(msg);
-  log_pipe_unref((LogPipe *)self->super.source);
 }
 
 static void
-early_ack_tracker_init_instance(EarlyAckTracker *self, LogSource *source)
-{
-  self->super.late = FALSE;
-  self->super.source = source;
-  source->ack_tracker = (AckTracker *)self;
-  self->super.request_bookmark = early_ack_tracker_request_bookmark;
-  self->super.track_msg = early_ack_tracker_track_msg;
-  self->super.manage_msg_ack = early_ack_tracker_manage_msg_ack;
-  self->ack_record_storage.super.tracker = (AckTracker *)self;
-}
-
-AckTracker *
-early_ack_tracker_new(LogSource *source)
-{
-  EarlyAckTracker *self = (EarlyAckTracker *)g_new0(EarlyAckTracker, 1);
-
-  early_ack_tracker_init_instance(self, source);
-
-  return (AckTracker *)self;
-}
-
-void
 early_ack_tracker_free(AckTracker *s)
 {
   EarlyAckTracker *self = (EarlyAckTracker *)s;
 
   g_free(self);
 }
+
+static void
+_setup_callbacks(EarlyAckTracker *self)
+{
+  self->super.request_bookmark = early_ack_tracker_request_bookmark;
+  self->super.track_msg = early_ack_tracker_track_msg;
+  self->super.manage_msg_ack = early_ack_tracker_manage_msg_ack;
+  self->super.free_fn = early_ack_tracker_free;
+}
+
+static void
+early_ack_tracker_init_instance(EarlyAckTracker *self)
+{
+  self->ack_record_storage.super.tracker = (AckTracker *)self;
+  _setup_callbacks(self);
+}
+
+AckTracker *
+early_ack_tracker_new(void)
+{
+  EarlyAckTracker *self = (EarlyAckTracker *)g_new0(EarlyAckTracker, 1);
+
+  early_ack_tracker_init_instance(self);
+
+  return (AckTracker *)self;
+}
+

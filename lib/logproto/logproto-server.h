@@ -28,6 +28,7 @@
 #include "logproto.h"
 #include "persist-state.h"
 #include "transport/transport-aux-data.h"
+#include "ack_tracker.h"
 #include "bookmark.h"
 
 typedef struct _LogProtoServer LogProtoServer;

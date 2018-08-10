@@ -26,15 +26,18 @@
 #define ACK_TRACKER_H_INCLUDED
 
 #include "syslog-ng.h"
-#include "logsource.h"
+#include "ack-type.h"
+#include "bookmark.h"
+
+typedef struct _AckTracker AckTracker;
+typedef struct _AckRecord AckRecord;
 
 struct _AckTracker
 {
-  gboolean late;
-  LogSource *source;
   Bookmark *(*request_bookmark)(AckTracker *self);
   void (*track_msg)(AckTracker *self, LogMessage *msg);
   void (*manage_msg_ack)(AckTracker *self, LogMessage *msg, AckType ack_type);
+  void (*free_fn)(AckTracker *self);
 };
 
 struct _AckRecord
@@ -42,28 +45,16 @@ struct _AckRecord
   AckTracker *tracker;
 };
 
-AckTracker *late_ack_tracker_new(LogSource *source);
-AckTracker *early_ack_tracker_new(LogSource *source);
-
-void late_ack_tracker_free(AckTracker *self);
-void early_ack_tracker_free(AckTracker *self);
+AckTracker *late_ack_tracker_new(gint init_window_size);
+AckTracker *early_ack_tracker_new(void);
 
 static inline void
 ack_tracker_free(AckTracker *self)
 {
-  if (self)
+  if (self && self->free_fn)
     {
-      if (self->late)
-        late_ack_tracker_free(self);
-      else
-        early_ack_tracker_free(self);
+      self->free_fn(self);
     }
-}
-
-static inline gboolean
-ack_tracker_is_late(AckTracker *self)
-{
-  return self->late;
 }
 
 static inline Bookmark *

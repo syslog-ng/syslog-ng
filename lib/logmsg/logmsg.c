@@ -38,6 +38,7 @@
 #include "template/macros.h"
 #include "host-id.h"
 #include "ack_tracker.h"
+#include "logsource.h"
 
 #include <glib/gprintf.h>
 #include <sys/types.h>
@@ -1210,6 +1211,8 @@ log_msg_clone_cow(LogMessage *msg, const LogPathOptions *path_options)
 
   memcpy(self, msg, sizeof(*msg));
   msg->allocated_bytes = allocated_bytes;
+  if (msg->source)
+    self->source = (LogSource *)log_pipe_ref(&msg->source->super);
 
   msg_debug("Message was cloned",
             evt_tag_printf("original_msg", "%p", msg),
@@ -1373,6 +1376,9 @@ log_msg_free(LogMessage *self)
     log_msg_unref(self->original);
 
   stats_counter_sub(count_allocated_bytes, self->allocated_bytes);
+
+  if (self->source)
+    log_pipe_unref(&self->source->super);
 
   g_free(self);
 }

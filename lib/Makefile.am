@@ -176,7 +176,8 @@ pkginclude_HEADERS			+= \
 	lib/host-id.h			\
 	lib/resolved-configurable-paths.h \
 	lib/pe-versioning.h \
-	lib/window-size-counter.h
+	lib/window-size-counter.h \
+	lib/ack-type.h
 
 # this is intentionally formatted so conflicts are less likely to arise. one name in every line.
 lib_libsyslog_ng_la_SOURCES		= \

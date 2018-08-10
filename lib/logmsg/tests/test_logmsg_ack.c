@@ -26,18 +26,21 @@
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
 
-struct _AckRecord
+typedef struct _TestAckRecord TestAckRecord;
+
+struct _TestAckRecord
 {
+  AckRecord super;
   LogMessage *original;
   LogPathOptions path_options;
   gboolean acked;
-  void (*init)(AckRecord *);
-  void (*deinit)(AckRecord *);
+  void (*init)(TestAckRecord *);
+  void (*deinit)(TestAckRecord *);
   void (*ack_message)(LogMessage *lm, AckType ack_type);
 };
 
 static void
-_init(AckRecord *self)
+_init(TestAckRecord *self)
 {
   self->acked = FALSE;
   log_msg_ref(self->original);
@@ -49,7 +52,7 @@ _init(AckRecord *self)
 }
 
 static void
-_deinit(AckRecord *self)
+_deinit(TestAckRecord *self)
 {
   log_msg_drop(self->original, &self->path_options, AT_PROCESSED);
   log_msg_refcache_stop();
@@ -58,27 +61,27 @@ _deinit(AckRecord *self)
 static void
 _ack_message(LogMessage *msg, AckType type)
 {
-  AckRecord *self = msg->ack_record;
+  TestAckRecord *self = (TestAckRecord *)msg->ack_record;
   self->acked = TRUE;
 }
 
 static void
-ack_record_free(AckRecord *self)
+ack_record_free(TestAckRecord *self)
 {
   log_msg_unref(self->original);
   g_free(self);
 }
 
-static AckRecord *
+static TestAckRecord *
 ack_record_new(void)
 {
-  AckRecord *self = g_new0(AckRecord, 1);
+  TestAckRecord *self = g_new0(TestAckRecord, 1);
   self->init = _init;
   self->deinit = _deinit;
   self->ack_message = _ack_message;
   self->original = log_msg_new_empty();
   self->original->ack_func = self->ack_message;
-  self->original->ack_record = self;
+  self->original->ack_record = &self->super;
   self->path_options.ack_needed = TRUE;
   return self;
 }
@@ -108,7 +111,7 @@ TestSuite(msg_ack, .init = setup, .fini = teardown);
 
 Test(msg_ack, normal_ack)
 {
-  AckRecord *t = ack_record_new();
+  TestAckRecord *t = ack_record_new();
   t->init(t);
   t->deinit(t);
   cr_assert(t->acked);
@@ -118,7 +121,7 @@ Test(msg_ack, normal_ack)
 
 Test(msg_ack, clone_ack)
 {
-  AckRecord *t = ack_record_new();
+  TestAckRecord *t = ack_record_new();
   t->init(t);
 
   LogMessage *cloned = create_clone(t->original, &t->path_options);
@@ -157,7 +160,7 @@ ParameterizedTestParameters(msg_ack, test_cloned_clone)
  */
 ParameterizedTest(struct nv_pair *param, msg_ack, test_cloned_clone)
 {
-  AckRecord *t = ack_record_new();
+  TestAckRecord *t = ack_record_new();
   t->init(t);
 
   LogMessage *cloned = create_clone(t->original, &t->path_options);

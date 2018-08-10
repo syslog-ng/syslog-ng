@@ -28,6 +28,7 @@
 #include "logpipe.h"
 #include "stats/stats-registry.h"
 #include "window-size-counter.h"
+#include "ack_tracker.h"
 
 typedef struct _LogSourceOptions
 {
@@ -48,8 +49,6 @@ typedef struct _LogSourceOptions
   gint stats_level;
   gint stats_source;
 } LogSourceOptions;
-
-typedef struct _LogSource LogSource;
 
 /**
  * LogSource:

@@ -134,6 +134,7 @@ set (LIB_HEADERS
     host-id.h
     resolved-configurable-paths.h
     window-size-counter.h
+    ack-type.h
     ${PROJECT_BINARY_DIR}/lib/cfg-grammar.h
     ${PROJECT_BINARY_DIR}/lib/block-ref-grammar.h
     ${PROJECT_BINARY_DIR}/lib/cfg-lex.h

@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2014 Balabit
- * Copyright (c) 2014 Laszlo Budai
+ * Copyright (c) 2002-2018 Balabit
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,36 +21,15 @@
  *
  */
 
-#ifndef BOOKMARK_H_INCLUDED
-#define BOOKMARK_H_INCLUDED
+#ifndef ACK_TYPE_H_INCLUDED
+#define ACK_TYPE_H_INCLUDED
 
-#include "syslog-ng.h"
-#include "persist-state.h"
-
-#define MAX_BOOKMARK_DATA_LENGTH (128)
-
-typedef struct _Bookmark Bookmark;
-
-typedef struct _BookmarkContainer
+typedef enum AckType
 {
-  /* Bookmark structure should be aligned (ie. HPUX-11v2 ia64) */
-  gint64 other_state[MAX_BOOKMARK_DATA_LENGTH/sizeof(gint64)];
-} BookmarkContainer;
-
-struct _Bookmark
-{
-  PersistState *persist_state;
-  void (*save)(Bookmark *self);
-  void (*destroy)(Bookmark *self);
-  BookmarkContainer container;
-};
-
-static inline void
-bookmark_init(Bookmark *self)
-{
-  self->persist_state = NULL;
-  self->save = NULL;
-  self->destroy = NULL;
-}
+  AT_UNDEFINED,
+  AT_PROCESSED,
+  AT_ABORTED,
+  AT_SUSPENDED
+} AckType;
 
 #endif
