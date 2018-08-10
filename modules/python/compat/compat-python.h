@@ -44,4 +44,5 @@ PyObject *int_as_pyobject(gint num);
 void py_datetime_init(void);
 gboolean py_datetime_to_logstamp(PyObject *py_timestamp, LogStamp *logstamp);
 
+gint pyobject_as_int(PyObject *object);
 #endif

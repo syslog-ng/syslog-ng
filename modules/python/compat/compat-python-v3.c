@@ -83,3 +83,9 @@ py_datetime_to_logstamp(PyObject *py_timestamp, LogStamp *logstamp)
 
   return TRUE;
 }
+
+gint
+pyobject_as_int(PyObject *object)
+{
+  return PyLong_AsLong(object);
+};
