@@ -21,7 +21,6 @@
  *
  */
 
-#include "syslog-ng.h"
 #include "template/templates.h"
 #include "logmsg/logmsg.h"
 #include "messages.h"

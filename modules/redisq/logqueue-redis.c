@@ -118,9 +118,16 @@ _redis_connect(RedisServer *self)
 
   self->ctx = redisConnectWithTimeout(self->redis_options->host, self->redis_options->port, timeout);
 
+  if (!self->ctx)
+    {
+      msg_error("redisq: failed to allocate redis context");
+      return FALSE;
+    }
+
   if (self->ctx->err)
     {
       msg_error("redisq: redis server error, suspending", evt_tag_str("error", self->ctx->errstr));
+      redisFree(self->ctx);
       return FALSE;
     }
 
@@ -129,6 +136,7 @@ _redis_connect(RedisServer *self)
       if (!_authenticate_to_redis(self, self->redis_options->auth))
         {
           msg_error("redisq: failed to authenticate with redis server");
+          redisFree(self->ctx);
           return FALSE;
         }
     }
@@ -136,6 +144,7 @@ _redis_connect(RedisServer *self)
   if (!_check_ping_to_redis(self))
     {
       msg_error("redisq: ping to redis server failed");
+      redisFree(self->ctx);
       return FALSE;
     }
 

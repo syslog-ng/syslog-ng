@@ -35,15 +35,13 @@ if (ENABLE_REDIS_QUEUE)
 
   target_include_directories(redis-queue
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-    PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-    
-  target_include_directories (redis-queue PRIVATE ${HIREDIS_INCLUDE_DIR})
+    PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${HIREDIS_INCLUDE_DIR})
     
   target_link_libraries(redis-queue PRIVATE syslog-ng ${HIREDIS_LIBRARIES})
   install(TARGETS redis-queue LIBRARY DESTINATION lib/syslog-ng COMPONENT redisqueue)
 
   add_executable(rqtool rqtool.c)
-  target_link_libraries(rqtool PRIVATE eventlog ${HIREDIS_LIBRARIES})
+  target_link_libraries(rqtool PRIVATE eventlog syslog-ng ${HIREDIS_LIBRARIES})
   target_include_directories(rqtool PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
   install(TARGETS rqtool RUNTIME DESTINATION bin COMPONENT redisqueue)
