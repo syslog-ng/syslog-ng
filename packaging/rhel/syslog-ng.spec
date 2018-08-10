@@ -1,7 +1,7 @@
 %global ivykis_ver 0.36.1
 
 Name: syslog-ng
-Version: 3.17.1
+Version: 3.17.2
 Release: 1%{?dist}
 Summary: Next-generation syslog server
 
@@ -420,7 +420,10 @@ fi
 %{_datadir}/%{name}/tools/
 
 %changelog
-* Wed Aug 17 2018 Laszlo Budai <laszlo.budai@balabit.com> - 3.17.1-1
+* Wed Aug 10 2018 Laszlo Budai <laszlo.budai@balabit.com> - 3.17.2-1
+- update to 3.17.2
+
+* Wed Aug 9 2018 Laszlo Budai <laszlo.budai@balabit.com> - 3.17.1-1
 - update to 3.17.1
 
 * Thu Jun 14 2018 Gabor Nagy <gabor.nagy@balabit.com> - 3.16.1-1
