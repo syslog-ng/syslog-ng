@@ -340,7 +340,7 @@ afinet_dd_init(LogPipe *s)
           cap_t saved_caps;
 
           saved_caps = g_process_cap_save();
-          g_process_cap_modify(CAP_NET_RAW, TRUE);
+          g_process_enable_cap(CAP_NET_RAW);
           self->lnet_ctx = libnet_init(self->super.bind_addr->sa.sa_family == AF_INET ? LIBNET_RAW4 : LIBNET_RAW6, NULL, error);
           g_process_cap_restore(saved_caps);
           if (!self->lnet_ctx)

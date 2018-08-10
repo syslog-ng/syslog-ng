@@ -98,12 +98,12 @@ _obtain_capabilities(FileOpener *self, const gchar *name, cap_t *act_caps)
 {
   if (self->options->needs_privileges)
     {
-      g_process_cap_modify(CAP_DAC_READ_SEARCH, TRUE);
-      g_process_cap_modify(CAP_SYSLOG, TRUE);
+      g_process_enable_cap(CAP_DAC_READ_SEARCH);
+      g_process_enable_cap(CAP_SYSLOG);
     }
   else
     {
-      g_process_cap_modify(CAP_DAC_OVERRIDE, TRUE);
+      g_process_enable_cap(CAP_DAC_OVERRIDE);
     }
 
   if (self->options->create_dirs &&
@@ -122,8 +122,8 @@ _set_fd_permission(FileOpener *self, int fd)
     {
       g_fd_set_cloexec(fd, TRUE);
 
-      g_process_cap_modify(CAP_CHOWN, TRUE);
-      g_process_cap_modify(CAP_FOWNER, TRUE);
+      g_process_enable_cap(CAP_CHOWN);
+      g_process_enable_cap(CAP_FOWNER);
 
       file_perm_options_apply_fd(&self->options->file_perm_options, fd);
     }

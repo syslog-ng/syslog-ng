@@ -203,17 +203,16 @@ inherit_systemd_activation(void)
 #if SYSLOG_NG_ENABLE_LINUX_CAPS
 
 /**
- * g_process_cap_modify:
- * @capability: capability to turn off or on
- * @onoff: specifies whether the capability should be enabled or disabled
+ * g_process_enable_cap:
+ * @capability: capability to turn on
  *
  * This function modifies the current permitted set of capabilities by
- * enabling or disabling the capability specified in @capability.
+ * enabling the capability specified in @capability.
  *
  * Returns: whether the operation was successful.
  **/
 gboolean
-g_process_cap_modify(int capability, int onoff)
+g_process_enable_cap(int capability)
 {
   cap_t caps;
 
@@ -231,7 +230,7 @@ g_process_cap_modify(int capability, int onoff)
   if (!caps)
     return FALSE;
 
-  if (cap_set_flag(caps, CAP_EFFECTIVE, 1, &capability, onoff) == -1)
+  if (cap_set_flag(caps, CAP_EFFECTIVE, 1, &capability, CAP_SET) == -1)
     {
       msg_error("Error managing capability set, cap_set_flag returned an error",
                 evt_tag_error("error"));

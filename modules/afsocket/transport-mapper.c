@@ -39,8 +39,8 @@ transport_mapper_privileged_bind(gint sock, GSockAddr *bind_addr)
   GIOStatus status;
 
   saved_caps = g_process_cap_save();
-  g_process_cap_modify(CAP_NET_BIND_SERVICE, TRUE);
-  g_process_cap_modify(CAP_DAC_OVERRIDE, TRUE);
+  g_process_enable_cap(CAP_NET_BIND_SERVICE);
+  g_process_enable_cap(CAP_DAC_OVERRIDE);
 
   status = g_bind(sock, bind_addr);
 
