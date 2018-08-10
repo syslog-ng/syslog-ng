@@ -1,3 +1,11 @@
+3.17.2
+======
+
+## Bugfixes
+
+ * Fix a bug in flow-control (#2224)
+ * Fix template function evaluation in debugger (#2220)
+
 3.17.1
 ======
 
