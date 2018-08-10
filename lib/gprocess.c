@@ -102,6 +102,7 @@ static GProcessKind process_kind = G_PK_STARTUP;
 static gboolean stderr_present = TRUE;
 #if SYSLOG_NG_ENABLE_LINUX_CAPS
 static int have_capsyslog = FALSE;
+static cap_value_t cap_syslog;
 #endif
 #ifdef SYSLOG_NG_HAVE_ENVIRON
 extern char **environ;
@@ -250,7 +251,7 @@ g_process_enable_cap(int capability)
    * if libcap or kernel doesn't support cap_syslog, then resort to
    * cap_sys_admin
    */
-  if (capability == CAP_SYSLOG && (!have_capsyslog || CAP_SYSLOG == -1))
+  if (capability == cap_syslog && !have_capsyslog)
     capability = CAP_SYS_ADMIN;
 
   caps = cap_get_proc();
@@ -342,28 +343,34 @@ g_process_cap_restore(cap_t r)
 gboolean
 g_process_check_cap_syslog(void)
 {
-  int ret;
 
   if (have_capsyslog)
     return TRUE;
 
-  if (CAP_SYSLOG == -1)
-    return FALSE;
-
-  ret = prctl(PR_CAPBSET_READ, CAP_SYSLOG);
-  if (ret == -1)
-    return FALSE;
-
-  ret = cap_from_name("cap_syslog", NULL);
-  if (ret == -1)
+  switch (_check_and_get_cap_from_text("cap_syslog", &cap_syslog))
     {
-      fprintf (stderr, "CAP_SYSLOG seems to be supported by the system, but "
-               "libcap can't parse it. Falling back to CAP_SYS_ADMIN!\n");
+    case CAP_NOT_SUPPORTED_BY_LIBCAP:
+      fprintf (stderr, "The CAP_SYSLOG is not supported by libcap;"
+               "Falling back to CAP_SYS_ADMIN!\n");
       return FALSE;
-    }
+      break;
 
-  have_capsyslog = TRUE;
-  return TRUE;
+    case CAP_NOT_SUPPORTED_BY_KERNEL:
+      fprintf (stderr, "CAP_SYSLOG seems to be supported by libcap, but "
+               "the kernel does not appear to recognize it. Falling back "
+               "to CAP_SYS_ADMIN!\n");
+      return FALSE;
+      break;
+
+    case CAP_SUPPORTED:
+      have_capsyslog = TRUE;
+      return TRUE;
+      break;
+
+    default:
+      return FALSE;
+      break;
+    }
 }
 
 #endif
