@@ -240,46 +240,57 @@ _check_and_get_cap_from_text(const gchar *cap_text, cap_value_t *cap)
  * Returns: whether the operation was successful.
  **/
 gboolean
-g_process_enable_cap(int capability)
+g_process_enable_cap(const gchar *cap_name)
 {
-  cap_t caps;
-
   if (!process_opts.caps)
     return TRUE;
+
+  cap_value_t capability;
+
+  cap_result_type ret = _check_and_get_cap_from_text(cap_name, &capability);
+  if (CAP_SUPPORTED != ret)
+    return FALSE;
 
   /*
    * if libcap or kernel doesn't support cap_syslog, then resort to
    * cap_sys_admin
    */
   if (capability == cap_syslog && !have_capsyslog)
-    capability = CAP_SYS_ADMIN;
+    {
+      ret = _check_and_get_cap_from_text("cap_sys_admin", &capability);
+      if (ret != CAP_SUPPORTED)
+        return FALSE;
+    }
 
-  caps = cap_get_proc();
+  cap_t caps = cap_get_proc();
   if (!caps)
     return FALSE;
 
   if (cap_set_flag(caps, CAP_EFFECTIVE, 1, &capability, CAP_SET) == -1)
     {
-      msg_error("Error managing capability set, cap_set_flag returned an error",
-                evt_tag_error("error"));
-      cap_free(caps);
-      return FALSE;
+      goto error;
     }
 
   if (cap_set_proc(caps) == -1)
     {
-      gchar *cap_text;
-
-      cap_text = cap_to_text(caps, NULL);
-      msg_error("Error managing capability set, cap_set_proc returned an error",
-                evt_tag_str("caps", cap_text),
-                evt_tag_error("error"));
-      cap_free(cap_text);
-      cap_free(caps);
-      return FALSE;
+      goto error;
     }
+
   cap_free(caps);
   return TRUE;
+
+  char *cap_text = NULL;
+
+error:
+
+  cap_text = cap_to_text(caps, NULL);
+  msg_error("Error managing capability set",
+            evt_tag_str("caps", cap_text),
+            evt_tag_error("error"));
+
+  cap_free(cap_text);
+  cap_free(caps);
+  return FALSE;
 }
 
 /**

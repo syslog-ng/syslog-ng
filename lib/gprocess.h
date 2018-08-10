@@ -42,13 +42,9 @@ typedef enum
 
 #if SYSLOG_NG_ENABLE_LINUX_CAPS
 
-gboolean g_process_enable_cap(int capability);
+gboolean g_process_enable_cap(const gchar *cap_name);
 cap_t g_process_cap_save(void);
 void g_process_cap_restore(cap_t r);
-
-#ifndef CAP_SYSLOG
-#define CAP_SYSLOG -1
-#endif
 
 #else
 

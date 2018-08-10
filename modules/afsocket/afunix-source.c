@@ -78,9 +78,9 @@ afunix_sd_apply_perms_to_socket(AFUnixSourceDriver *self)
   cap_t saved_caps;
 
   saved_caps = g_process_cap_save();
-  g_process_enable_cap(CAP_CHOWN);
-  g_process_enable_cap(CAP_FOWNER);
-  g_process_enable_cap(CAP_DAC_OVERRIDE);
+  g_process_enable_cap("cap_chown");
+  g_process_enable_cap("cap_fowner");
+  g_process_enable_cap("cap_dac_override");
   file_perm_options_apply_file(&self->file_perm_options, self->filename);
   g_process_cap_restore(saved_caps);
   return TRUE;
