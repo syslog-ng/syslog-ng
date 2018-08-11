@@ -327,7 +327,6 @@ g_process_cap_restore(cap_t r)
     return;
 
   rc = cap_set_proc(r) != -1;
-  cap_free(r);
   if (!rc)
     {
       gchar *cap_text;
@@ -337,10 +336,8 @@ g_process_cap_restore(cap_t r)
                 evt_tag_str("caps", cap_text),
                 evt_tag_error("error"));
       cap_free(cap_text);
-      return;
     }
-
-  return;
+  cap_free(r);
 }
 
 #ifndef PR_CAPBSET_READ
