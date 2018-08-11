@@ -54,7 +54,7 @@ py_log_template_format(PyObject *s, PyObject *args, PyObject *kwrds)
                                    &msg, &py_log_template_options, &tz, &seqnum))
     return NULL;
 
-  if (Py_TYPE(msg) != &py_log_message_type)
+  if (!py_is_log_message((PyObject *)msg))
     {
       PyErr_Format(PyExc_TypeError,
                    "LogMessage expected in the first parameter");

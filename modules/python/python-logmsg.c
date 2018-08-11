@@ -27,6 +27,12 @@
 #include "messages.h"
 #include "str-utils.h"
 
+int
+py_is_log_message(PyObject *obj)
+{
+  return PyType_IsSubtype(Py_TYPE(obj), &py_log_message_type);
+}
+
 static int
 _str_cmp(const void *s1, const void *s2)
 {

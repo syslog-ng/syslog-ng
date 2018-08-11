@@ -144,3 +144,19 @@ Test(python_log_message, test_python_logmessage_set_value_indirect)
   }
   PyGILState_Release(gstate);
 }
+
+Test(python_log_message, test_py_is_log_message)
+{
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+
+  LogMessage *msg = log_msg_new_empty();
+  PyObject *msg_object = py_log_message_new(msg);
+
+  cr_assert(py_is_log_message(msg_object));
+  cr_assert_not(py_is_log_message(_python_main));
+
+  log_msg_unref(msg);
+  Py_DECREF(msg_object);
+  PyGILState_Release(gstate);
+}

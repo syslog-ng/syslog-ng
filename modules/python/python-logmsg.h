@@ -38,4 +38,6 @@ extern PyTypeObject py_log_message_type;
 PyObject *py_log_message_new(LogMessage *msg);
 void py_log_message_init(void);
 
+int py_is_log_message(PyObject *obj);
+
 #endif
