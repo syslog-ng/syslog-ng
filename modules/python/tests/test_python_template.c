@@ -174,3 +174,27 @@ Test(python_log_logtemplate, test_logtemplate_exception)
   PyGILState_Release(gstate);
 
 }
+
+Test(python_log_logtemplate, test_py_is_log_template_options)
+{
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+
+  cr_assert(py_is_log_template_options((PyObject *)py_template_options));
+
+  PyObject *template_str = _py_string_from_string("${PROGRAM}", -1);
+  cr_assert_not(py_is_log_template_options((PyObject *)template_str));
+
+  PyObject *args = PyTuple_Pack(2, template_str, Py_None); /* Second argument must be PyLogTemplateOptions */
+  PyLogTemplate *py_template = (PyLogTemplate *)py_log_template_new(&py_log_template_type, args, NULL);
+  Py_DECREF(template_str);
+  Py_DECREF(args);
+  cr_assert_null(py_template);
+
+  gchar buf[256];
+  _py_format_exception_text(buf, sizeof(buf));
+  cr_assert(g_strstr_len(buf, sizeof(buf), "TypeError"), "Wrong exception : %s", buf);
+
+  PyGILState_Release(gstate);
+
+}

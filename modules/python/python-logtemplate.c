@@ -61,7 +61,7 @@ py_log_template_format(PyObject *s, PyObject *args, PyObject *kwrds)
       return NULL;
     }
 
-  if (py_log_template_options && (Py_TYPE(py_log_template_options) != &py_log_template_options_type))
+  if (py_log_template_options && !py_is_log_template_options((PyObject *)py_log_template_options))
     {
       PyErr_Format(PyExc_TypeError,
                    "LogTemplateOptions expected in the second parameter");
@@ -91,7 +91,7 @@ py_log_template_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
   if (!PyArg_ParseTuple(args, "s|O", &template_string, &py_log_template_options))
     return NULL;
 
-  if (py_log_template_options && (Py_TYPE(py_log_template_options) != &py_log_template_options_type))
+  if (py_log_template_options && !py_is_log_template_options((PyObject *)py_log_template_options))
     {
       PyErr_Format(PyExc_TypeError,
                    "LogTemplateOptions expected in the second parameter");

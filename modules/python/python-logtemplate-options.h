@@ -38,4 +38,6 @@ extern PyTypeObject py_log_template_options_type;
 PyObject *py_log_template_options_new(LogTemplateOptions *template_options);
 void py_log_template_options_init(void);
 
+int py_is_log_template_options(PyObject *obj);
+
 #endif

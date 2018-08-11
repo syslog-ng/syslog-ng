@@ -23,6 +23,12 @@
 
 #include "python-logtemplate-options.h"
 
+int
+py_is_log_template_options(PyObject *obj)
+{
+  return PyType_IsSubtype(Py_TYPE(obj), &py_log_template_options_type);
+}
+
 PyObject *
 py_log_template_options_new(LogTemplateOptions *template_options)
 {
