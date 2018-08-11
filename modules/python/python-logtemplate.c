@@ -28,6 +28,7 @@
 #include "messages.h"
 
 PyTypeObject py_log_template_type;
+PyObject *PyExc_LogTemplate;
 
 void
 py_log_template_free(PyLogTemplate *self)
@@ -101,7 +102,7 @@ py_log_template_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
   GError *error = NULL;
   if (!log_template_compile(template, template_string, &error))
     {
-      PyErr_Format(PyExc_RuntimeError,
+      PyErr_Format(PyExc_LogTemplate,
                    "Error compiling template: %s", error->message);
       g_clear_error(&error);
       log_template_unref(template);
@@ -156,4 +157,7 @@ py_log_template_init(void)
 
   Py_DECREF(PY_LTZ_LOCAL);
   Py_DECREF(PY_LTZ_SEND);
+
+  PyExc_LogTemplate = PyErr_NewException("syslogng.LogTemplateException", NULL, NULL);
+  PyModule_AddObject(PyImport_AddModule("syslogng"), "LogTemplateException", (PyObject *)PyExc_LogTemplate);
 }

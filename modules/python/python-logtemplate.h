@@ -35,6 +35,8 @@ typedef struct _PyLogTemplate
 } PyLogTemplate;
 
 extern PyTypeObject py_log_template_type;
+extern PyObject *PyExc_LogTemplate;
+
 
 void py_log_template_init(void);
 PyObject *py_log_template_new(PyTypeObject *type, PyObject *args, PyObject *kwds);

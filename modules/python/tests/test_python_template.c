@@ -103,7 +103,6 @@ create_py_log_template(const gchar *template)
   PyLogTemplate *py_template = (PyLogTemplate *)py_log_template_new(&py_log_template_type, args, NULL);
   Py_DECREF(template_str);
   Py_DECREF(args);
-  cr_assert(py_template);
 
   return py_template;
 }
@@ -128,7 +127,7 @@ Test(python_log_logtemplate, test_python_template)
 
   PyLogMessage *py_log_msg = create_parsed_message("<38>2018-07-20T00:00:00+00:00 localhost prg00000[1234]: test\n");
   PyLogTemplate *py_template = create_py_log_template("${PROGRAM}");
-
+  cr_assert(py_template);
   assert_format("prg00000", py_template, py_log_msg);
 
   Py_DECREF(py_log_msg);
@@ -143,7 +142,7 @@ Test(python_log_logtemplate, format_all_parameters)
 
   PyLogMessage *py_log_msg = create_parsed_message("<38>2018-07-20T00:00:00+00:00 localhost prg00000[1234]: test\n");
   PyLogTemplate *py_template = create_py_log_template("${S_STAMP} | ${SEQNUM}");
-
+  cr_assert(py_template);
   PyObject *args = PyTuple_Pack(4, py_log_msg, py_template_options, int_as_pyobject(1), int_as_pyobject(10));
   PyObject *result = py_log_template_format((PyObject *)py_template, args, NULL);
   Py_DECREF(args);
@@ -156,4 +155,22 @@ Test(python_log_logtemplate, format_all_parameters)
   Py_DECREF(py_log_msg);
   Py_DECREF(py_template);
   PyGILState_Release(gstate);
+}
+
+Test(python_log_logtemplate, test_logtemplate_exception)
+{
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+
+  PyLogTemplate *py_template = create_py_log_template("${incomplete");
+  cr_assert_not(py_template);
+
+  gchar buf[256];
+  _py_format_exception_text(buf, sizeof(buf));
+
+  cr_assert(g_strstr_len(buf, sizeof(buf), "LogTemplateException"), "Wrong exception type: %s", buf);
+  cr_assert(g_strstr_len(buf, sizeof(buf), "Error compiling template"), "Wrong exception string: %s", buf);
+
+  PyGILState_Release(gstate);
+
 }
