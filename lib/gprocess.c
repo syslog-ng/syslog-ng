@@ -230,6 +230,17 @@ _check_and_get_cap_from_text(const gchar *cap_text, cap_value_t *cap)
   return CAP_SUPPORTED;
 }
 
+static EVTTAG *
+evt_tag_cap_t(const char *tag, cap_t cap)
+{
+  gchar *cap_text = cap_to_text(cap, NULL);
+  EVTTAG *evt_tag = evt_tag_str(tag, cap_text);
+
+  cap_free(cap_text);
+
+  return evt_tag;
+}
+
 /**
  * g_process_enable_cap:
  * @capability: capability to turn on
@@ -279,16 +290,12 @@ g_process_enable_cap(const gchar *cap_name)
   cap_free(caps);
   return TRUE;
 
-  char *cap_text = NULL;
-
 error:
 
-  cap_text = cap_to_text(caps, NULL);
   msg_error("Error managing capability set",
-            evt_tag_str("caps", cap_text),
+            evt_tag_cap_t("caps", caps),
             evt_tag_error("error"));
 
-  cap_free(cap_text);
   cap_free(caps);
   return FALSE;
 }
@@ -329,13 +336,9 @@ g_process_cap_restore(cap_t r)
   rc = cap_set_proc(r) != -1;
   if (!rc)
     {
-      gchar *cap_text;
-
-      cap_text = cap_to_text(r, NULL);
       msg_error("Error managing capability set, cap_set_proc returned an error",
-                evt_tag_str("caps", cap_text),
+                evt_tag_cap_t("caps", r),
                 evt_tag_error("error"));
-      cap_free(cap_text);
     }
   cap_free(r);
 }
