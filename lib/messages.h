@@ -99,16 +99,12 @@ void msg_add_option_group(GOptionContext *ctx);
             msg_event_create(EVT_PRI_DEBUG, desc, ##tags, NULL ));          \
   } while (0)
 
-#if SYSLOG_NG_ENABLE_DEBUG
 #define msg_trace(desc, tags...)              \
   do {                    \
     if (G_UNLIKELY(trace_flag))                     \
-            msg_event_suppress_recursions_and_send(                               \
-                  msg_event_create(EVT_PRI_DEBUG, desc, ##tags, NULL ));          \
+      msg_event_suppress_recursions_and_send(                               \
+            msg_event_create(EVT_PRI_DEBUG, desc, ##tags, NULL ));          \
   } while (0)
-#else
-#define msg_trace(desc, tags...)
-#endif
 
 #define __once()          \
         ({            \
