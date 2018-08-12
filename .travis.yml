@@ -79,8 +79,7 @@ script:
       {
         S=$?;
         make V=1 distcheck;
-        find . -name test-suite.log |
-        xargs cat;
+        find . -name test-suite.log | xargs cat;
         return $S;
       };
       find . -name test-suite.log | xargs cat;
