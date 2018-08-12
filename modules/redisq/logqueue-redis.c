@@ -127,8 +127,7 @@ _redis_connect(RedisServer *self)
   if (self->ctx->err)
     {
       msg_error("redisq: redis server error, suspending", evt_tag_str("error", self->ctx->errstr));
-      redisFree(self->ctx);
-      return FALSE;
+      goto error;
     }
 
   if (self->redis_options->auth)
@@ -136,21 +135,24 @@ _redis_connect(RedisServer *self)
       if (!_authenticate_to_redis(self, self->redis_options->auth))
         {
           msg_error("redisq: failed to authenticate with redis server");
-          redisFree(self->ctx);
-          return FALSE;
+          goto error;
         }
     }
 
   if (!_check_ping_to_redis(self))
     {
       msg_error("redisq: ping to redis server failed");
-      redisFree(self->ctx);
-      return FALSE;
+      goto error;
     }
 
   msg_debug("redisq: Connection to redis server succeeded");
 
   return TRUE;
+
+error:
+  redisFree(self->ctx);
+  self->ctx = NULL;
+  return FALSE;
 }
 
 static gboolean
@@ -181,16 +183,20 @@ _redis_disconnect(RedisServer *self)
 static gboolean
 _is_redis_connection_alive(RedisServer *self)
 {
-  if (!_check_ping_to_redis(self))
+  if (self->ctx != NULL)
     {
-      if (!self->reconnect(self))
-        {
-          msg_error("redisq: Message was dropped, There is no redis connection");
-          return FALSE;
-        }
+      if (_check_ping_to_redis(self))
+        return TRUE;
     }
 
-  return TRUE;
+  if (self->reconnect(self))
+    {
+      if (_check_ping_to_redis(self))
+        return TRUE;
+    }
+
+  msg_error("redisq: Message was dropped, There is no redis connection");
+  return FALSE;
 }
 
 
