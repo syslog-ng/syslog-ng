@@ -597,6 +597,27 @@ tf_base64encode(LogMessage *msg, gint argc, GString *argv[], GString *result)
                              &state, &save);
     }
   g_string_set_size(result, init_len + out_len + _get_base64_encoded_size(0));
+
+#if !GLIB_CHECK_VERSION(2, 54, 0)
+  /* NOTE: this is an ugly workaround for glib versions < 2.54 (which is
+   * pretty recent and not widely available yet) to fix an encoding issue.
+   *
+   * This is the bug:
+   *    https://bugzilla.gnome.org/show_bug.cgi?id=780066
+   *
+   * This is the fix:
+   *    https://gitlab.gnome.org/GNOME/glib/commits/35c0dd2755dbcea2539117cf33959a1a9e497f12
+   *
+   * We basically set the c2 byte used in a base64 encode to zero, if only 1
+   * remaining byte is there. Read the bugreport for reasons.
+   *
+   * Yes, I've actually stumbled into this in the unit test and could easily
+   * anyone.
+   */
+
+  if (((unsigned char *) &save)[0] == 1)
+    ((unsigned char *) &save)[2] = 0;
+#endif
   out_len += g_base64_encode_close(FALSE, result->str + init_len + out_len, &state, &save);
 
   g_string_set_size(result, init_len + out_len);
