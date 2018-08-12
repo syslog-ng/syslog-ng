@@ -209,7 +209,7 @@ log_db_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pat
   if (self->db)
     {
       log_msg_make_writable(pmsg, path_options);
-      msg_debug("db-parser message processing started",
+      msg_trace("db-parser message processing started",
                 evt_tag_str ("input", input),
                 evt_tag_printf("msg", "%p", *pmsg));
       if (G_UNLIKELY(self->super.super.template))

@@ -41,7 +41,7 @@ _process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options,
   MapValuePairs *self = (MapValuePairs *) s;
   GlobalConfig *cfg = log_pipe_get_config(&s->super);
   LogMessage *msg = log_msg_make_writable(pmsg, path_options);
-  msg_debug("value-pairs message processing started",
+  msg_trace("value-pairs message processing started",
             evt_tag_str ("input", input),
             evt_tag_printf("msg", "%p", *pmsg));
 

@@ -126,7 +126,7 @@ _process(LogParser *s, LogMessage **pmsg,
 {
   AddContextualData *self = (AddContextualData *) s;
   LogMessage *msg = log_msg_make_writable(pmsg, path_options);
-  msg_debug("add-contextual-data message processing started",
+  msg_trace("add-contextual-data message processing started",
             evt_tag_str ("input", input),
             evt_tag_printf("msg", "%p", *pmsg));
   gchar *resolved_selector = add_contextual_data_selector_resolve(self->selector, msg);

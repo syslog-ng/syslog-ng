@@ -56,7 +56,7 @@ log_filter_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
   gboolean res;
   gchar *filter_result;
 
-  msg_debug(">>>>>> filter rule evaluation begin",
+  msg_trace(">>>>>> filter rule evaluation begin",
             evt_tag_str("rule", self->name),
             log_pipe_location_tag(s),
             evt_tag_printf("msg", "%p", msg));
@@ -77,7 +77,7 @@ log_filter_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
       log_msg_drop(msg, path_options, AT_PROCESSED);
       stats_counter_inc(self->not_matched);
     }
-  msg_debug("<<<<<< filter rule evaluation result",
+  msg_trace("<<<<<< filter rule evaluation result",
             evt_tag_str("result", filter_result),
             evt_tag_str("rule", self->name),
             log_pipe_location_tag(s),

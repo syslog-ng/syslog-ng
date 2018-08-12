@@ -215,7 +215,7 @@ json_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_
   struct json_object *jso;
   struct json_tokener *tok;
 
-  msg_debug("json-parser message processing started",
+  msg_trace("json-parser message processing started",
             evt_tag_str ("input", input),
             evt_tag_str ("prefix", self->prefix),
             evt_tag_str ("marker", self->marker),

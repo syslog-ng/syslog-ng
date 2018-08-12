@@ -128,7 +128,7 @@ _eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
   else
     result = FALSE;
 
-  msg_debug("netmask6() evaluation started",
+  msg_trace("netmask6() evaluation started",
             evt_tag_inaddr6("msg_address", address),
             evt_tag_inaddr6("address", &self->address),
             evt_tag_int("prefix", self->prefix),

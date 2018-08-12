@@ -147,7 +147,7 @@ void _http_trace_sanitize_dump(const gchar *text, gchar *data, size_t size)
       sanitized[i] = g_ascii_isprint(data[i]) ? data[i] : '.';
     }
   sanitized[i] = 0;
-  msg_debug("curl trace log",
+  msg_trace("curl trace log",
             evt_tag_str("curl_info_type", text),
             evt_tag_str("data", sanitized));
   g_free(sanitized);
@@ -169,7 +169,7 @@ gint _http_trace(CURL *handle, curl_infotype type,
                  char *data, size_t size,
                  void *userp)
 {
-  if (!G_UNLIKELY(debug_flag))
+  if (!G_UNLIKELY(trace_flag))
     return 0;
 
   g_assert(type < sizeof(curl_infotype_to_text)/sizeof(curl_infotype_to_text[0]));

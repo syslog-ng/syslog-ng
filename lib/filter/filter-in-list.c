@@ -50,7 +50,7 @@ filter_in_list_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
   APPEND_ZERO(value, value, len);
 
   gboolean result = (g_tree_lookup(self->tree, value) != NULL);
-  msg_debug("in-list() evaluation started",
+  msg_trace("in-list() evaluation started",
             evt_tag_str("value", value),
             evt_tag_printf("msg", "%p", msg));
 

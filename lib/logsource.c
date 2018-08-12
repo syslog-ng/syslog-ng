@@ -58,7 +58,7 @@ _flow_control_window_size_adjust(LogSource *self, guint32 window_size_increment,
   gboolean suspended;
   gsize old_window_size = window_size_counter_add(&self->window_size, window_size_increment, &suspended);
 
-  msg_debug("Window size adjustment",
+  msg_trace("Window size adjustment",
             evt_tag_int("old_window_size", old_window_size),
             evt_tag_int("window_size_increment", window_size_increment),
             evt_tag_str("suspended_before_increment", suspended ? "TRUE" : "FALSE"),
@@ -351,7 +351,7 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   LogSource *self = (LogSource *) s;
   gint i;
 
-  msg_debug(">>>>>> Source side message processing begin",
+  msg_trace(">>>>>> Source side message processing begin",
             evt_tag_str("instance", self->stats_instance ? self->stats_instance : "internal"),
             log_pipe_location_tag(s),
             evt_tag_printf("msg", "%p", msg));
@@ -416,7 +416,7 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
       ts.tv_nsec = self->window_full_sleep_nsec;
       nanosleep(&ts, NULL);
     }
-  msg_debug("<<<<<< Source side message processing finish",
+  msg_trace("<<<<<< Source side message processing finish",
             evt_tag_str("instance", self->stats_instance ? self->stats_instance : "internal"),
             log_pipe_location_tag(s),
             evt_tag_printf("msg", "%p", msg));

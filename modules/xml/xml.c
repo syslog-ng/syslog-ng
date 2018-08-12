@@ -210,7 +210,7 @@ xml_parser_process(LogParser *s, LogMessage **pmsg,
 {
   XMLParser *self = (XMLParser *) s;
   LogMessage *msg = log_msg_make_writable(pmsg, path_options);
-  msg_debug("xml-parser message processing started",
+  msg_trace("xml-parser message processing started",
             evt_tag_str ("input", input),
             evt_tag_str ("prefix", self->prefix),
             evt_tag_printf("msg", "%p", *pmsg));

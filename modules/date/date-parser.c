@@ -183,7 +183,7 @@ date_parser_process(LogParser *s,
 {
   DateParser *self = (DateParser *) s;
   LogMessage *msg = log_msg_make_writable(pmsg, path_options);
-  msg_debug("date-parser message processing started",
+  msg_trace("date-parser message processing started",
             evt_tag_str ("input", input),
             evt_tag_str ("format", self->date_format),
             evt_tag_printf("msg", "%p", *pmsg));
