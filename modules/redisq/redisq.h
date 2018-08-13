@@ -33,7 +33,7 @@ typedef struct _RedisQDestPlugin
 {
   LogDriverPlugin super;
   RedisQueueOptions options;
-  LogQueueRedis *logQredis;
+  RedisServer *redis_server;
 } RedisQDestPlugin;
 
 RedisQDestPlugin *redisq_dest_plugin_new(void);

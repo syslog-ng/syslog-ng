@@ -47,7 +47,7 @@ _acquire_queue(LogDestDriver *dd, const gchar *persist_name)
       queue = NULL;
     }
 
-  queue = log_queue_redis_new(self->logQredis, persist_name);
+  queue = log_queue_redis_new(self->redis_server, persist_name);
 
   if (queue)
     log_queue_set_throttle(queue, dd->throttle);
@@ -80,7 +80,10 @@ _attach(LogDriverPlugin *s, LogDriver *d)
 
   msg_debug("redisq: plugin attach");
 
-  self->logQredis = log_queue_redis_new_instance(&self->options);
+  self->redis_server = redis_server_new(&self->options);
+
+  if (!self->redis_server->is_conn(self->redis_server))
+    return FALSE;
 
   dd->acquire_queue = _acquire_queue;
   dd->release_queue = _release_queue;
@@ -93,7 +96,7 @@ _free(LogDriverPlugin *s)
   RedisQDestPlugin *self = (RedisQDestPlugin *)s;
   msg_debug("redisq: plugin free");
 
-  log_queue_redis_free(self->logQredis);
+  redis_server_free(self->redis_server);
   redis_queue_options_destroy(&self->options);
   log_driver_plugin_free_method(s);
 }
