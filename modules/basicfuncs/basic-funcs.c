@@ -104,7 +104,9 @@ static Plugin basicfuncs_plugins[] =
   /* misc funcs */
   TEMPLATE_FUNCTION_PLUGIN(tf_env, "env"),
   TEMPLATE_FUNCTION_PLUGIN(tf_template, "template"),
-  TEMPLATE_FUNCTION_PLUGIN(tf_urlencode, "urlencode")
+  TEMPLATE_FUNCTION_PLUGIN(tf_urlencode, "urlencode"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_urlencode, "url-encode"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_base64encode, "base64-encode")
 };
 
 gboolean

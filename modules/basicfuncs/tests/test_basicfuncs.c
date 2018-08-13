@@ -184,6 +184,18 @@ Test(basicfuncs, test_str_funcs)
   assert_template_format("$(binary 1 0x1)", "\1\1");
   assert_template_format("$(binary 0xFF 255 0377)", "\xFF\xFF\xFF");
   assert_template_format_with_len("$(binary 0xFF 0x00 0x40)", "\xFF\000@", 3);
+
+  assert_template_format("[$(base64-encode)]", "[]");
+  assert_template_format("[$(base64-encode abc)]", "[YWJj]");
+  assert_template_format("[$(base64-encode abcxyz)]", "[YWJjeHl6]");
+  assert_template_format("[$(base64-encode abcd)]", "[YWJjZA==]");
+  assert_template_format("[$(base64-encode abcdabcdabcdabcd)]", "[YWJjZGFiY2RhYmNkYWJjZA==]");
+  assert_template_format("[$(base64-encode abcd abcd abcd abcd)]", "[YWJjZGFiY2RhYmNkYWJjZA==]");
+  assert_template_format("[$(base64-encode 'X X')]", "[WCBY]");
+  assert_template_format("[$(base64-encode xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx)]",
+                         "[eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4"
+                         "eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4"
+                         "eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHg=]");
 }
 
 Test(basicfuncs, test_numeric_funcs)
