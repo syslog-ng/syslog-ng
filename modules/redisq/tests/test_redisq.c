@@ -46,6 +46,11 @@ _construct_msg(const gchar *msg)
   return logmsg;
 }
 
+redisContext *redisConnectWithTimeout(const char *ip, int port, const struct timeval tv)
+{
+  return NULL;
+}
+
 void *redisvCommand(redisContext *c, const char *format, va_list ap)
 {
   redisReply *reply = g_new0(redisReply, 1);
