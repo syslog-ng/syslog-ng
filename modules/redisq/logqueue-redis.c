@@ -92,7 +92,7 @@ _get_redis_reply(RedisServer *self, const char *format, ...)
 static gboolean
 _check_ping_to_redis(RedisServer *self)
 {
-  return self->send_cmd(self, "ping");
+  return self->send_cmd(self, "PING");
 }
 
 static gboolean
@@ -209,7 +209,7 @@ _get_length(LogQueue *s)
 
   if (_check_connection_to_redis(self->redis_server))
     {
-      reply = _get_redis_reply(self->redis_server, "LLEN %s", self->redis_queue_name);
+      reply = self->redis_server->get_reply(self->redis_server, "LLEN %s", self->redis_queue_name);
 
       if (reply)
         {
@@ -369,8 +369,8 @@ _free(LogQueue *s)
   g_free(self->redis_queue_name);
   self->redis_queue_name = NULL;
 
-  g_static_mutex_free(&self->super.lock);
-  g_free(self->super.persist_name);
+  self->redis_server = NULL;
+  log_queue_free_method(s);
 }
 
 static LogMessage *
@@ -386,7 +386,7 @@ _read_message(LogQueueRedis *self, LogPathOptions *path_options)
   if (!_check_connection_to_redis(self->redis_server))
     return NULL;
 
-  reply = _get_redis_reply(self->redis_server, "LRANGE %s 0 0", self->redis_queue_name);
+  reply = self->redis_server->get_reply(self->redis_server, "LRANGE %s 0 0", self->redis_queue_name);
 
   if (reply)
     {
@@ -478,38 +478,46 @@ _set_redis_queue_name(LogQueueRedis *self, gchar *keyprefix, const gchar *persis
   self->redis_queue_name = g_strdup(qname);
 }
 
-static RedisServer *
-_redis_server_new(RedisQueueOptions *options)
+static void
+_set_redis_virtual_functions(RedisServer *self)
+{
+  self->is_conn = _is_redis_connection_alive;
+  self->connect = _redis_connect;
+  self->reconnect = _redis_reconnect;
+  self->disconnect = _redis_disconnect;
+  self->send_cmd = _send_redis_command;
+  self->get_reply = _get_redis_reply;
+}
+
+RedisServer *
+redis_server_new(RedisQueueOptions *options)
 {
   RedisServer *self = g_new0(RedisServer, 1);
 
   msg_debug("redisq: redis server new");
 
   self->redis_thread_mutex = g_mutex_new();
-
-  self->is_conn = _is_redis_connection_alive;
-  self->connect = _redis_connect;
-  self->reconnect = _redis_reconnect;
-  self->disconnect = _redis_disconnect;
-  self->send_cmd = _send_redis_command;
-
+  _set_redis_virtual_functions(self);
   _redis_server_init(self, options);
 
   return self;
 }
 
-static void
-_redis_server_free(RedisServer *self)
+void
+redis_server_free(RedisServer *self)
 {
   msg_debug("redisq: redis server free");
 
-  g_mutex_free(self->redis_thread_mutex);
-  _redis_server_deinit(self);
-  g_free(self);
+  if (self)
+    {
+      g_mutex_free(self->redis_thread_mutex);
+      _redis_server_deinit(self);
+      g_free(self);
+    }
 }
 
 static void
-_set_virtual_functions(LogQueueRedis *self)
+_set_log_queue_virtual_functions(LogQueueRedis *self)
 {
   self->super.get_length = _get_length;
   self->super.push_tail = _push_tail;
@@ -524,42 +532,24 @@ _set_virtual_functions(LogQueueRedis *self)
   self->delete_message = _delete_message;
 }
 
-LogQueueRedis *
-log_queue_redis_new_instance(RedisQueueOptions *options)
-{
-  LogQueueRedis *self = g_new0(LogQueueRedis, 1);
-
-  msg_debug("redisq: log queue redis new instance");
-
-  self->redis_server = _redis_server_new(options);
-  return self;
-}
-
 LogQueue *
-log_queue_redis_new(LogQueueRedis *self, const gchar *persist_name)
+log_queue_redis_new(RedisServer *redis_server, const gchar *persist_name)
 {
+  LogQueueRedis *self;
+
   msg_debug("redisq: log queue new");
 
-  if (!_check_connection_to_redis(self->redis_server))
+  if (!_check_connection_to_redis(redis_server))
     return NULL;
 
+  self = g_new0(LogQueueRedis, 1);
   log_queue_init_instance(&self->super, persist_name);
+
+  self->redis_server = redis_server;
   self->super.type = log_queue_redis_type;
   self->qbacklog = g_queue_new();
   _set_redis_queue_name(self, self->redis_server->redis_options->keyprefix, persist_name);
 
-  _set_virtual_functions(self);
+  _set_log_queue_virtual_functions(self);
   return &self->super;
-}
-
-void
-log_queue_redis_free(LogQueueRedis *self)
-{
-  msg_debug("redisq: log queue redis free");
-
-  if (self)
-    {
-      _redis_server_free(self->redis_server);
-      g_free(self);
-    }
 }

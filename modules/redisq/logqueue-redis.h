@@ -45,6 +45,7 @@ struct _RedisServer
   gboolean (*reconnect)(RedisServer *self);
   void (*disconnect)(RedisServer *self);
   gboolean (*send_cmd)(RedisServer *self, const char *format, ...);
+  redisReply *(*get_reply)(RedisServer *self, const char *format, ...);
 };
 
 struct _LogQueueRedis
@@ -63,8 +64,8 @@ struct _LogQueueRedis
 
 extern QueueType log_queue_redis_type;
 
-LogQueueRedis *log_queue_redis_new_instance(RedisQueueOptions *options);
-LogQueue *log_queue_redis_new(LogQueueRedis *self, const gchar *persist_name);
-void log_queue_redis_free(LogQueueRedis *self);
+RedisServer *redis_server_new(RedisQueueOptions *options);
+void redis_server_free(RedisServer *self);
+LogQueue *log_queue_redis_new(RedisServer *self, const gchar *persist_name);
 
 #endif
