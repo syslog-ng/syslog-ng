@@ -359,7 +359,7 @@ _setup_static_options_in_curl(HTTPDestinationDriver *self)
   curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYPEER, self->peer_verify ? 1L : 0L);
 
   curl_easy_setopt(self->curl, CURLOPT_DEBUGFUNCTION, _curl_debug_function);
-  curl_easy_setopt(self->curl, CURLOPT_VERBOSE, (long) (debug_flag || trace_flag));
+  curl_easy_setopt(self->curl, CURLOPT_VERBOSE, 1L);
 
   curl_easy_setopt(self->curl, CURLOPT_TIMEOUT, self->timeout);
 
