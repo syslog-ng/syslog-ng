@@ -221,9 +221,12 @@ Test(redisq, test_rewind_backlog)
   q = _logq_redis_new(&logqredis);
 
   log_queue_push_tail(q, msg, &path_options);
-  out_msg = log_queue_pop_head(q, &path_options);
-  log_queue_rewind_backlog(q, 1);
+  cr_assert_eq(log_queue_get_length((LogQueue *)logqredis), 1, "log queue push failed.");
 
+  out_msg = log_queue_pop_head(q, &path_options);
+  cr_assert_eq(log_queue_get_length((LogQueue *)logqredis), 0, "log queue pop failed.");
+
+  log_queue_rewind_backlog(q, 1);
   cr_assert_eq(log_queue_get_length((LogQueue *)logqredis), 1, "log queue rewind backlog failed");
 
   backlog_msg = log_queue_pop_head(q, &path_options);
@@ -245,9 +248,12 @@ Test(redisq, test_ack_backlog)
   q = _logq_redis_new(&logqredis);
 
   log_queue_push_tail(q, msg, &path_options);
-  log_queue_pop_head(q, &path_options);
-  log_queue_ack_backlog(q, 1);
+  cr_assert_eq(log_queue_get_length((LogQueue *)logqredis), 1, "log queue push failed.");
 
+  log_queue_pop_head(q, &path_options);
+  cr_assert_eq(log_queue_get_length((LogQueue *)logqredis), 0, "log queue pop failed.");
+
+  log_queue_ack_backlog(q, 1);
   cr_assert_eq(log_queue_get_length((LogQueue *)logqredis), 0, "log queue ack backlog failed.");
 
   out_msg = log_queue_pop_head(q, &path_options);
