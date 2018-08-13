@@ -33,8 +33,6 @@
 %code {
 
 #include "cfg-parser.h"
-#include "syslog-names.h"
-#include "messages.h"
 #include "redisq.h"
 #include "redisq-options.h"
 #include "redisq-grammar.h"
