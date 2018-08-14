@@ -34,6 +34,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#define REDIS_QUEUE_SET "REDISQ_SYSLOG_NG"
 #define SERVER_IP "127.0.0.1"
 #define SERVER_PORT 6379
 
@@ -250,7 +251,7 @@ rqtool_list(int argc, char *argv[])
 {
   redisReply *reply = NULL;
 
-  reply = send_redis_command("KEYS *");
+  reply = send_redis_command("SMEMBERS %s", REDIS_QUEUE_SET);
 
   if (reply)
     {

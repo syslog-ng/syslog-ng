@@ -40,6 +40,7 @@
 #include <stdlib.h>
 
 #define ITEMS_PER_MESSAGE 2
+#define REDIS_QUEUE_SET "REDISQ_SYSLOG_NG"
 
 QueueType log_queue_redis_type = "FIFO";
 
@@ -366,6 +367,9 @@ _free(LogQueue *s)
   g_queue_free(self->qbacklog);
   self->qbacklog = NULL;
 
+  if (!log_queue_get_length(s))
+    self->redis_server->send_cmd(self->redis_server, "SREM %s %s", REDIS_QUEUE_SET, self->redis_queue_name);
+
   g_free(self->redis_queue_name);
   self->redis_queue_name = NULL;
 
@@ -476,6 +480,8 @@ _set_redis_queue_name(LogQueueRedis *self, gchar *keyprefix, const gchar *persis
 
   g_snprintf(qname, sizeof(qname), "%s_%s", keyprefix, persist_name);
   self->redis_queue_name = g_strdup(qname);
+
+  self->redis_server->send_cmd(self->redis_server, "SADD %s %s", REDIS_QUEUE_SET, self->redis_queue_name);
 }
 
 static void
