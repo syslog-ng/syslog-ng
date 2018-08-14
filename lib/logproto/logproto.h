@@ -32,6 +32,7 @@ typedef enum
   LPS_SUCCESS,
   LPS_ERROR,
   LPS_EOF,
+  LPS_PARTIAL,
 } LogProtoStatus;
 
 

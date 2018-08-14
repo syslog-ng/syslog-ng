@@ -46,45 +46,45 @@ log_proto_text_client_flush(LogProtoClient *s)
   LogProtoTextClient *self = (LogProtoTextClient *) s;
   gint rc;
 
-  /* attempt to flush previously buffered data */
-  if (self->partial)
+  if (!self->partial)
     {
-      gint len = self->partial_len - self->partial_pos;
-
-      rc = log_transport_write(self->super.transport, &self->partial[self->partial_pos], len);
-      if (rc < 0)
-        {
-          if (errno != EAGAIN && errno != EINTR)
-            {
-              msg_error("I/O error occurred while writing",
-                        evt_tag_int("fd", self->super.transport->fd),
-                        evt_tag_error(EVT_TAG_OSERROR));
-              return LPS_ERROR;
-            }
-          return LPS_SUCCESS;
-        }
-      else if (rc != len)
-        {
-          self->partial_pos += rc;
-          return LPS_SUCCESS;
-        }
-      else
-        {
-          if (self->partial_free)
-            self->partial_free(self->partial);
-          self->partial = NULL;
-          if (self->next_state >= 0)
-            {
-              self->state = self->next_state;
-              self->next_state = -1;
-            }
-
-          log_proto_client_msg_ack(&self->super, 1);
-
-          /* NOTE: we return here to give a chance to the framed protocol to send the frame header. */
-          return LPS_SUCCESS;
-        }
+      return LPS_SUCCESS;
     }
+
+  /* attempt to flush previously buffered data */
+  gint len = self->partial_len - self->partial_pos;
+
+  rc = log_transport_write(self->super.transport, &self->partial[self->partial_pos], len);
+  if (rc < 0)
+    {
+      if (errno != EAGAIN && errno != EINTR)
+        {
+          msg_error("I/O error occurred while writing",
+                    evt_tag_int("fd", self->super.transport->fd),
+                    evt_tag_error(EVT_TAG_OSERROR));
+          return LPS_ERROR;
+        }
+      return LPS_SUCCESS;
+    }
+
+  if (rc != len)
+    {
+      self->partial_pos += rc;
+      return LPS_PARTIAL;
+    }
+
+  if (self->partial_free)
+    self->partial_free(self->partial);
+  self->partial = NULL;
+  if (self->next_state >= 0)
+    {
+      self->state = self->next_state;
+      self->next_state = -1;
+    }
+
+  log_proto_client_msg_ack(&self->super, 1);
+
+  /* NOTE: we return here to give a chance to the framed protocol to send the frame header. */
   return LPS_SUCCESS;
 }
 
@@ -119,18 +119,17 @@ static LogProtoStatus
 log_proto_text_client_post(LogProtoClient *s, LogMessage *logmsg, guchar *msg, gsize msg_len, gboolean *consumed)
 {
   LogProtoTextClient *self = (LogProtoTextClient *) s;
-  gint rc;
 
   /* try to flush already buffered data */
   *consumed = FALSE;
-  rc = log_proto_text_client_flush(s);
-  if (rc == LPS_ERROR)
+  const LogProtoStatus status = log_proto_text_client_flush(s);
+  if (status == LPS_ERROR)
     {
       /* log_proto_flush() already logs in the case of an error */
-      return rc;
+      return status;
     }
 
-  if (self->partial)
+  if (self->partial || LPS_PARTIAL == status)
     {
       /* NOTE: the partial buffer has not been emptied yet even with the
        * flush above, we shouldn't attempt to write again.
@@ -143,7 +142,7 @@ log_proto_text_client_post(LogProtoClient *s, LogMessage *logmsg, guchar *msg, g
        * This obviously would cause the framing to break. Also libssl
        * returns an error in this case, which is how this was discovered.
        */
-      return rc;
+      return LPS_PARTIAL;
     }
 
   *consumed = TRUE;
