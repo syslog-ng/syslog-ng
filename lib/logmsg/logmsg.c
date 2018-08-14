@@ -523,7 +523,7 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
 
   if (_log_name_value_updates(self))
     {
-      msg_debug("Setting value",
+      msg_trace("Setting value",
                 evt_tag_str("name", name),
                 evt_tag_printf("value", "%.*s", (gint) value_len, value),
                 evt_tag_printf("msg", "%p", self));
@@ -599,7 +599,7 @@ log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handl
 
   if (_log_name_value_updates(self))
     {
-      msg_debug("Setting indirect value",
+      msg_trace("Setting indirect value",
                 evt_tag_printf("msg", "%p", self),
                 evt_tag_str("name", name),
                 evt_tag_int("ref_handle", ref_handle),
@@ -1275,7 +1275,7 @@ log_msg_new(const gchar *msg, gint length,
 
   if (G_LIKELY(parse_options->format_handler))
     {
-      msg_debug("Initial message parsing follows");
+      msg_trace("Initial message parsing follows");
       parse_options->format_handler->parse(parse_options, (guchar *) msg, length, self);
     }
   else

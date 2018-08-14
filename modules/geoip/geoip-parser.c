@@ -126,7 +126,7 @@ geoip_parser_process(LogParser *s, LogMessage **pmsg,
 {
   GeoIPParser *self = (GeoIPParser *) s;
   LogMessage *msg = log_msg_make_writable(pmsg, path_options);
-  msg_debug("geoip-parser message processing started",
+  msg_trace("geoip-parser message processing started",
             evt_tag_str ("input", input),
             evt_tag_str ("prefix", self->prefix),
             evt_tag_printf("msg", "%p", *pmsg));

@@ -110,7 +110,7 @@ _process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, co
   GString *formatted_key = scratch_buffers_alloc();
 
   log_msg_make_writable(pmsg, path_options);
-  msg_debug("kv-parser message processing started",
+  msg_trace("kv-parser message processing started",
             evt_tag_str ("input", input),
             evt_tag_str ("prefix", self->prefix),
             evt_tag_printf("msg", "%p", *pmsg));

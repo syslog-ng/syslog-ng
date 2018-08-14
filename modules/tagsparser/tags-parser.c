@@ -38,7 +38,7 @@ _process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, co
          gsize input_len)
 {
   LogMessage *msg = log_msg_make_writable(pmsg, path_options);
-  msg_debug("tags-parser message processing started",
+  msg_trace("tags-parser message processing started",
             evt_tag_str ("input", input),
             evt_tag_printf("msg", "%p", *pmsg));
 

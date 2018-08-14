@@ -176,7 +176,7 @@ snmptrapd_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *
   ScratchBuffersMarker marker;
 
   log_msg_make_writable(pmsg, path_options);
-  msg_debug("snmptrapd-parser message processing started",
+  msg_trace("snmptrapd-parser message processing started",
             evt_tag_str ("input", input),
             evt_tag_str ("prefix", self->prefix->str),
             evt_tag_printf("msg", "%p", *pmsg));
