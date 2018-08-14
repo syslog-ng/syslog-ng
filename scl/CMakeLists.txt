@@ -10,6 +10,7 @@ set(SCL_DIRS
     hdfs
     iptables
     kafka
+    linux-audit
     loadbalancer
     loggly
     logmatic
