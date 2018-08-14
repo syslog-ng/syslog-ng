@@ -30,7 +30,6 @@
 
 struct _AckTracker
 {
-  gboolean late;
   LogSource *source;
   Bookmark *(*request_bookmark)(AckTracker *self);
   void (*track_msg)(AckTracker *self, LogMessage *msg);
@@ -53,12 +52,6 @@ ack_tracker_free(AckTracker *self)
     {
       self->free_fn(self);
     }
-}
-
-static inline gboolean
-ack_tracker_is_late(AckTracker *self)
-{
-  return self->late;
 }
 
 static inline Bookmark *

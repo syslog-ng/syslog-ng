@@ -252,7 +252,6 @@ _setup_callbacks(LateAckTracker *self)
 static void
 late_ack_tracker_init_instance(LateAckTracker *self, LogSource *source)
 {
-  self->super.late = TRUE;
   self->super.source = source;
   source->ack_tracker = (AckTracker *)self;
   ring_buffer_alloc(&self->ack_record_storage, sizeof(LateAckRecord), log_source_get_init_window_size(source));

@@ -90,7 +90,6 @@ _setup_callbacks(EarlyAckTracker *self)
 static void
 early_ack_tracker_init_instance(EarlyAckTracker *self, LogSource *source)
 {
-  self->super.late = FALSE;
   self->super.source = source;
   source->ack_tracker = (AckTracker *)self;
   self->ack_record_storage.super.tracker = (AckTracker *)self;
