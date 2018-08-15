@@ -287,8 +287,8 @@ file_perm_options_create_containing_directory(const FilePermOptions *self, const
               goto finish;
             }
           saved_caps = g_process_cap_save();
-          g_process_cap_modify(CAP_CHOWN, TRUE);
-          g_process_cap_modify(CAP_FOWNER, TRUE);
+          g_process_enable_cap("cap_chown");
+          g_process_enable_cap("cap_fowner");
           file_perm_options_apply_dir(self, _path);
           g_process_cap_restore(saved_caps);
         }

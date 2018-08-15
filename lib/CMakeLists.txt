@@ -280,6 +280,7 @@ set(CORE_INCLUDE_DIRS
     ${Gettext_INCLUDE_DIR}
     ${IVYKIS_INCLUDE_DIR}
     ${LIBPCRE_INCLUDE_DIRS}
+    ${LIBCAP_INCLUDE_DIR}
 )
 
 add_library(syslog-ng SHARED ${LIB_SOURCES})
@@ -302,6 +303,7 @@ target_link_libraries(
     ${IVYKIS_LIBRARY}
     ${RESOLV_LIBRARIES}
     ${LIBPCRE_LIBRARIES}
+    ${LIBCAP_LIBRARY}
     OpenSSL::SSL
     OpenSSL::Crypto
     Threads::Threads
