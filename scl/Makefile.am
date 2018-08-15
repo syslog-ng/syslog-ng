@@ -10,6 +10,7 @@ SCL_SUBDIRS	= \
 	hdfs		\
 	iptables	\
 	kafka		\
+	linux-audit	\
 	loadbalancer	\
 	loggly		\
 	logmatic	\
