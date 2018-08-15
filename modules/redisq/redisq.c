@@ -36,8 +36,6 @@ _acquire_queue(LogDestDriver *dd, const gchar *persist_name)
   GlobalConfig *cfg = log_pipe_get_config(&dd->super.super);
   LogQueue *queue = NULL;
 
-  msg_debug("redisq: acquire queue");
-
   if (persist_name)
     queue = cfg_persist_config_fetch(cfg, persist_name);
 
@@ -60,8 +58,6 @@ _release_queue(LogDestDriver *dd, LogQueue *queue)
 {
   GlobalConfig *cfg = log_pipe_get_config(&dd->super.super);
 
-  msg_debug("redisq: release queue");
-
   if (queue->persist_name)
     {
       cfg_persist_config_add(cfg, queue->persist_name, queue, (GDestroyNotify) log_queue_unref, FALSE);
@@ -78,8 +74,6 @@ _attach(LogDriverPlugin *s, LogDriver *d)
   RedisQDestPlugin *self = (RedisQDestPlugin *) s;
   LogDestDriver *dd = (LogDestDriver *) d;
 
-  msg_debug("redisq: plugin attach");
-
   self->redis_server = redis_server_new(&self->options);
 
   if (!self->redis_server->is_conn(self->redis_server))
@@ -94,7 +88,6 @@ static void
 _free(LogDriverPlugin *s)
 {
   RedisQDestPlugin *self = (RedisQDestPlugin *)s;
-  msg_debug("redisq: plugin free");
 
   redis_server_free(self->redis_server);
   redis_queue_options_destroy(&self->options);
@@ -111,8 +104,6 @@ RedisQDestPlugin *
 redisq_dest_plugin_new(void)
 {
   RedisQDestPlugin *self = g_new0(RedisQDestPlugin, 1);
-
-  msg_debug("redisq: plugin init");
 
   log_driver_plugin_init_instance(&self->super, REDISQ_PLUGIN_NAME);
   redis_queue_options_set_default_options(&self->options);
