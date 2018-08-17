@@ -223,81 +223,6 @@ http_dd_set_timeout(LogDriver *d, glong timeout)
   self->timeout = timeout;
 }
 
-static const gchar *
-_format_persist_name(const LogPipe *s)
-{
-  const HTTPDestinationDriver *self = (const HTTPDestinationDriver *)s;
-  static gchar persist_name[1024];
-
-  if (s->persist_name)
-    g_snprintf(persist_name, sizeof(persist_name), "http.%s", s->persist_name);
-  else
-    g_snprintf(persist_name, sizeof(persist_name), "http(%s,)", self->url);
-
-  return persist_name;
-}
-
-static const gchar *
-_format_stats_instance(LogThreadedDestDriver *s)
-{
-  static gchar stats[1024];
-
-  HTTPDestinationDriver *self = (HTTPDestinationDriver *) s;
-
-  g_snprintf(stats, sizeof(stats), "http,%s", self->url);
-
-  return stats;
-}
-
-static size_t
-_http_write_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
-{
-  // Discard response content
-  return nmemb * size;
-}
-
-static struct curl_slist *
-_add_header(struct curl_slist *curl_headers, const gchar *header, const gchar *value)
-{
-  GString *buffer = scratch_buffers_alloc();
-
-  g_string_append(buffer, header);
-  g_string_append(buffer, ": ");
-  g_string_append(buffer, value);
-  return curl_slist_append(curl_headers, buffer->str);
-}
-
-static struct curl_slist *
-_get_curl_headers(HTTPDestinationDriver *self, LogMessage *msg)
-{
-  struct curl_slist *curl_headers = NULL;
-  GList *l;
-
-  curl_headers = _add_header(curl_headers, "X-Syslog-Host", log_msg_get_value(msg, LM_V_HOST, NULL));
-  curl_headers = _add_header(curl_headers, "X-Syslog-Program", log_msg_get_value(msg, LM_V_PROGRAM, NULL));
-  curl_headers = _add_header(curl_headers, "X-Syslog-Facility", syslog_name_lookup_name_by_value(msg->pri & LOG_FACMASK, sl_facilities));
-  curl_headers = _add_header(curl_headers, "X-Syslog-Level", syslog_name_lookup_name_by_value(msg->pri & LOG_PRIMASK, sl_levels));
-
-  for (l = self->headers; l; l = l->next)
-    curl_headers = curl_slist_append(curl_headers, l->data);
-
-  return curl_headers;
-}
-
-static const gchar *
-_get_body(HTTPDestinationDriver *self, LogMessage *msg)
-{
-  GString *body_rendered = scratch_buffers_alloc();
-
-  if (self->body_template)
-    {
-      log_template_format(self->body_template, msg, &self->template_options, LTZ_SEND,
-                          self->super.seq_num, NULL, body_rendered);
-      return body_rendered->str;
-    }
-  else
-    return log_msg_get_value(msg, LM_V_MESSAGE, NULL);
-}
 
 static gchar *
 _sanitize_curl_debug_message(const gchar *data, gsize size)
@@ -343,12 +268,89 @@ _curl_debug_function(CURL *handle, curl_infotype type,
   return 0;
 }
 
+static size_t
+_curl_write_function(char *ptr, size_t size, size_t nmemb, void *userdata)
+{
+  // Discard response content
+  return nmemb * size;
+}
+
+static const gchar *
+_format_persist_name(const LogPipe *s)
+{
+  const HTTPDestinationDriver *self = (const HTTPDestinationDriver *)s;
+  static gchar persist_name[1024];
+
+  if (s->persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "http.%s", s->persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "http(%s,)", self->url);
+
+  return persist_name;
+}
+
+static const gchar *
+_format_stats_instance(LogThreadedDestDriver *s)
+{
+  static gchar stats[1024];
+
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) s;
+
+  g_snprintf(stats, sizeof(stats), "http,%s", self->url);
+
+  return stats;
+}
+
+static struct curl_slist *
+_add_header(struct curl_slist *curl_headers, const gchar *header, const gchar *value)
+{
+  GString *buffer = scratch_buffers_alloc();
+
+  g_string_append(buffer, header);
+  g_string_append(buffer, ": ");
+  g_string_append(buffer, value);
+  return curl_slist_append(curl_headers, buffer->str);
+}
+
+static struct curl_slist *
+_get_curl_headers(HTTPDestinationDriver *self, LogMessage *msg)
+{
+  struct curl_slist *curl_headers = NULL;
+  GList *l;
+
+  curl_headers = _add_header(curl_headers, "X-Syslog-Host", log_msg_get_value(msg, LM_V_HOST, NULL));
+  curl_headers = _add_header(curl_headers, "X-Syslog-Program", log_msg_get_value(msg, LM_V_PROGRAM, NULL));
+  curl_headers = _add_header(curl_headers, "X-Syslog-Facility", syslog_name_lookup_name_by_value(msg->pri & LOG_FACMASK, sl_facilities));
+  curl_headers = _add_header(curl_headers, "X-Syslog-Level", syslog_name_lookup_name_by_value(msg->pri & LOG_PRIMASK, sl_levels));
+
+  for (l = self->headers; l; l = l->next)
+    curl_headers = curl_slist_append(curl_headers, l->data);
+
+  return curl_headers;
+}
+
+static const gchar *
+_get_body(HTTPDestinationDriver *self, LogMessage *msg)
+{
+  GString *body_rendered = scratch_buffers_alloc();
+
+  if (self->body_template)
+    {
+      log_template_format(self->body_template, msg, &self->template_options, LTZ_SEND,
+                          self->super.seq_num, NULL, body_rendered);
+      return body_rendered->str;
+    }
+  else
+    return log_msg_get_value(msg, LM_V_MESSAGE, NULL);
+}
+
+
 static void
 _set_curl_opt(HTTPDestinationDriver *self)
 {
   curl_easy_reset(self->curl);
 
-  curl_easy_setopt(self->curl, CURLOPT_WRITEFUNCTION, _http_write_cb);
+  curl_easy_setopt(self->curl, CURLOPT_WRITEFUNCTION, _curl_write_function);
 
   curl_easy_setopt(self->curl, CURLOPT_URL, self->url);
 
