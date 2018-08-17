@@ -406,6 +406,11 @@ _flush_batched_message_error_drop(LogThreadedDestDriver *s)
 
   self->flush_size += self->super.batch_size;
   _assert_batch_size_remains_the_same_accross_retries(self);
+
+  /* see the note in logthrdestdrv.c:_perform_flush() */
+  if (self->super.batch_size == 0)
+    return WORKER_INSERT_RESULT_SUCCESS;
+
   return WORKER_INSERT_RESULT_ERROR;
 }
 
@@ -472,6 +477,11 @@ _flush_batched_message_error_success(LogThreadedDestDriver *s)
 
   self->flush_size += self->super.batch_size;
   _assert_batch_size_remains_the_same_accross_retries(self);
+
+  /* see the note in logthrdestdrv.c:_perform_flush() */
+  if (self->super.batch_size == 0)
+    return WORKER_INSERT_RESULT_SUCCESS;
+
   return _inject_error_a_few_times(self);
 }
 
@@ -541,6 +551,11 @@ _flush_batched_message_not_connected(LogThreadedDestDriver *s)
 
   self->flush_size += self->super.batch_size;
   _assert_batch_size_remains_the_same_accross_retries(self);
+
+  /* see the note in logthrdestdrv.c:_perform_flush() */
+  if (self->super.batch_size == 0)
+    return WORKER_INSERT_RESULT_SUCCESS;
+
   return _inject_not_connected_a_few_times(self);
 }
 
