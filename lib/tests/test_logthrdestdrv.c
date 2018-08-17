@@ -657,13 +657,13 @@ Test(logthrdestdrv, test_explicit_ack_accept)
   dd->super.worker.insert = _insert_explicit_acks_message_success;
   dd->super.worker.flush = _flush_explicit_acks_message_success;
 
-  _generate_messages(dd, 10);
-  _spin_for_counter_value(dd->super.queued_messages, 0);
+  _generate_messages_and_wait_for_processing(dd, 10, dd->super.written_messages);
   cr_assert(dd->insert_counter == 10, "%d", dd->insert_counter);
   cr_assert(dd->flush_size == 10);
 
   cr_assert(stats_counter_get(dd->super.processed_messages) == 10);
   cr_assert(stats_counter_get(dd->super.written_messages) == 10);
+  cr_assert(stats_counter_get(dd->super.queued_messages) == 0);
   cr_assert(stats_counter_get(dd->super.dropped_messages) == 0);
   cr_assert(stats_counter_get(dd->super.memory_usage) == 0);
   cr_assert(dd->super.seq_num == 11, "%d", dd->super.seq_num);
