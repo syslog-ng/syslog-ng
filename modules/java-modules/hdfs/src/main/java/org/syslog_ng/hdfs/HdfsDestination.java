@@ -56,6 +56,7 @@ public class HdfsDestination extends StructuredLogDestination {
     private boolean isOpened;
     private int maxFileNameLength = 255;
     private boolean appendEnabled;
+    private String archiveDir;
 
     HashMap<String, HdfsFile> openedFiles;
 
@@ -74,6 +75,8 @@ public class HdfsDestination extends StructuredLogDestination {
             logger.error(e.getMessage());
             return false;
         }
+        appendEnabled = options.getAppendEnabled();
+        archiveDir = options.getArchiveDir();
         return true;
     }
 
@@ -87,7 +90,6 @@ public class HdfsDestination extends StructuredLogDestination {
         logger.debug("Opening hdfs");
         openedFiles = new HashMap<String, HdfsFile>();
         isOpened = false;
-        appendEnabled = options.getAppendEnabled();
         try {
             Configuration configuration = new Configuration();
             loadConfigResources(configuration);
@@ -137,7 +139,7 @@ public class HdfsDestination extends StructuredLogDestination {
         FSDataOutputStream fsDataOutputStream = getFSDataOutputStream(resolvedFileName);
         if (fsDataOutputStream == null) {
             // Unable to open file
-            closeAll(options.getArchiveDir() != null);
+            closeAll(archiveDir != null);
             return false;
         }
 
@@ -240,7 +242,7 @@ public class HdfsDestination extends StructuredLogDestination {
     @Override
     public void close() {
         logger.debug("Closing hdfs");
-        closeAll(options.getArchiveDir() != null);
+        closeAll(archiveDir != null);
         isOpened = false;
     }
 
@@ -282,11 +284,11 @@ public class HdfsDestination extends StructuredLogDestination {
     }
 
     private void archiveFiles() {
-        if (options.getArchiveDir() != null) {
+        if (archiveDir != null) {
             for (Map.Entry<String, HdfsFile> entry : openedFiles.entrySet()) {
                 Path filePath = entry.getValue().getPath();
-                logger.debug(String.format("Trying to archive %s to %s", filePath.getName(), options.getArchiveDir()));
-                Path archiveDirPath = new Path(String.format("%s/%s", options.getUri(), options.getArchiveDir()));
+                logger.debug(String.format("Trying to archive %s to %s", filePath.getName(), archiveDir));
+                Path archiveDirPath = new Path(String.format("%s/%s", options.getUri(), archiveDir));
                 try {
                     hdfs.mkdirs(archiveDirPath);
                     hdfs.rename(filePath, archiveDirPath);
