@@ -299,45 +299,47 @@ _get_body(HTTPDestinationDriver *self, LogMessage *msg)
     return log_msg_get_value(msg, LM_V_MESSAGE, NULL);
 }
 
-static void
-_http_trace_sanitize_dump(const gchar *text, gchar *data, size_t size)
+static gchar *
+_sanitize_curl_debug_message(const gchar *data, gsize size)
 {
-  gchar *sanitized = g_new0(gchar, size+1);
-  int i;
+  gchar *sanitized = g_new0(gchar, size + 1);
+  gint i;
+
   for (i = 0; i < size && data[i]; i++)
     {
       sanitized[i] = g_ascii_isprint(data[i]) ? data[i] : '.';
     }
   sanitized[i] = 0;
-  msg_trace("curl trace log",
-            evt_tag_str("curl_info_type", text),
-            evt_tag_str("data", sanitized));
-  g_free(sanitized);
+  return sanitized;
 }
 
-gchar *curl_infotype_to_text[] =
+static const gchar *curl_infotype_to_text[] =
 {
-  "curl_trace_text",
-  "curl_trace_header_in",
-  "curl_trace_header_out",
-  "curl_trace_data_in",
-  "curl_trace_data_out",
-  "curl_trace_ssl_data_in",
-  "curl_trace_ssl_data_out",
+  "text",
+  "header_in",
+  "header_out",
+  "data_in",
+  "data_out",
+  "ssl_data_in",
+  "ssl_data_out",
 };
 
 static gint
-_http_trace(CURL *handle, curl_infotype type,
-            char *data, size_t size,
-            void *userp)
+_curl_debug_function(CURL *handle, curl_infotype type,
+                     char *data, size_t size,
+                     void *userp)
 {
   if (!G_UNLIKELY(trace_flag))
     return 0;
 
   g_assert(type < sizeof(curl_infotype_to_text)/sizeof(curl_infotype_to_text[0]));
 
-  _http_trace_sanitize_dump(curl_infotype_to_text[type], data, size);
-
+  const gchar *text = curl_infotype_to_text[type];
+  gchar *sanitized = _sanitize_curl_debug_message(data, size);
+  msg_trace("cURL debug",
+            evt_tag_str("type", text),
+            evt_tag_str("data", sanitized));
+  g_free(sanitized);
   return 0;
 }
 
@@ -375,11 +377,10 @@ _set_curl_opt(HTTPDestinationDriver *self)
     curl_easy_setopt(self->curl, CURLOPT_SSL_CIPHER_LIST, self->ciphers);
 
   curl_easy_setopt(self->curl, CURLOPT_SSLVERSION, self->ssl_version);
-
   curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYHOST, self->peer_verify ? 2L : 0L);
   curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYPEER, self->peer_verify ? 1L : 0L);
 
-  curl_easy_setopt(self->curl, CURLOPT_DEBUGFUNCTION, _http_trace);
+  curl_easy_setopt(self->curl, CURLOPT_DEBUGFUNCTION, _curl_debug_function);
   curl_easy_setopt(self->curl, CURLOPT_VERBOSE, 1L);
 
   curl_easy_setopt(self->curl, CURLOPT_TIMEOUT, self->timeout);
