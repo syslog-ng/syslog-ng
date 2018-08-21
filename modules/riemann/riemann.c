@@ -301,8 +301,12 @@ riemann_dd_connect(LogThreadedDestDriver *s)
                                        RIEMANN_CLIENT_OPTION_NONE);
   if (!self->client)
     {
-      msg_error("Error connecting to Riemann",
-                evt_tag_error("errno"));
+      msg_error("riemann: error connecting to Riemann server",
+                evt_tag_str("server", self->server),
+                evt_tag_int("port", self->port),
+                evt_tag_error("errno"),
+                evt_tag_str("driver", self->super.super.super.id),
+                log_pipe_location_tag(&self->super.super.super.super));
       return FALSE;
     }
 
@@ -528,7 +532,12 @@ riemann_worker_insert_one(RiemannDestDriver *self, LogMessage *msg)
                             riemann_dd_field_add_attribute_vp,
                             msg, self->super.seq_num, LTZ_SEND,
                             &self->template_options, event);
-
+      msg_trace("riemann: adding message to Riemann event",
+                evt_tag_str("server", self->server),
+                evt_tag_int("port", self->port),
+                evt_tag_str("message", log_msg_get_value(msg, LM_V_MESSAGE, NULL)),
+                evt_tag_str("driver", self->super.super.super.id),
+                log_pipe_location_tag(&self->super.super.super.super));
       _append_event(self, event);
     }
   else
@@ -552,6 +561,14 @@ riemann_worker_batch_flush(LogThreadedDestDriver *s)
   riemann_message_set_events_n(message, self->event.n, self->event.list);
   r = riemann_client_send_message_oneshot(self->client, message);
 
+  msg_trace("riemann: flushing messages to Riemann server",
+            evt_tag_str("server", self->server),
+            evt_tag_int("port", self->port),
+            evt_tag_int("batch_size", self->event.n),
+            evt_tag_int("result", r),
+            evt_tag_str("driver", self->super.super.super.id),
+            log_pipe_location_tag(&self->super.super.super.super));
+
   /*
    * riemann_client_send_message_oneshot() will free self->event.list,
    * whether the send succeeds or fails. So we need to reallocate it,
@@ -574,7 +591,11 @@ riemann_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
   if (!riemann_worker_insert_one(self, msg))
     {
       msg_error("riemann: error inserting message to batch, probably a type mismatch. Dropping message",
-                log_pipe_location_tag(&self->super.super.super.super));
+                evt_tag_str("server", self->server),
+                evt_tag_int("port", self->port),
+                evt_tag_str("message", log_msg_get_value(msg, LM_V_MESSAGE, NULL)),
+                log_pipe_location_tag(&self->super.super.super.super),
+                evt_tag_str("driver", self->super.super.super.id));
 
       /* in this case, we don't return RESULT_DROPPED as that would drop the
        * entire batch.  Rather, we simply don't add this message to our
@@ -647,9 +668,10 @@ riemann_dd_init(LogPipe *s)
                                                  self->flush_lines);
 
   msg_verbose("Initializing Riemann destination",
-              evt_tag_str("driver", self->super.super.super.id),
               evt_tag_str("server", self->server),
-              evt_tag_int("port", self->port));
+              evt_tag_int("port", self->port),
+              evt_tag_str("driver", self->super.super.super.id),
+              log_pipe_location_tag(&self->super.super.super.super));
 
   return log_threaded_dest_driver_init_method(s);
 }
