@@ -167,8 +167,7 @@ tf_getent(LogMessage *msg, gint argc, GString *argv[], GString *result)
   if (argc != 2 && argc != 3)
     {
       msg_error("$(getent) takes either two or three arguments",
-                evt_tag_int("argc", argc),
-                NULL);
+                evt_tag_int("argc", argc));
       return FALSE;
     }
 
@@ -176,8 +175,7 @@ tf_getent(LogMessage *msg, gint argc, GString *argv[], GString *result)
   if (!lookup)
     {
       msg_error("Unsupported $(getent) NSS service",
-                evt_tag_str("service", argv[0]->str),
-                NULL);
+                evt_tag_str("service", argv[0]->str));
       return FALSE;
     }
 

@@ -123,8 +123,7 @@ yy_input_run_backtick_substitution(CfgLexer *self, gchar *buf, gsize buf_size)
     struct yyguts_t * __yyg = (struct yyguts_t*) yyscanner;		\
                                                                         \
     msg_error("Fatal error in configuration lexer, giving up",		\
-              evt_tag_str("error", msg),				\
-              NULL);							\
+              evt_tag_str("error", msg));							\
     longjmp(__yyg->yyextra_r->fatal_error, 1);				\
   } while(0)
 

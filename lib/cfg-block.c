@@ -172,8 +172,7 @@ cfg_block_generate(CfgBlockGenerator *s, GlobalConfig *cfg, CfgArgs *args, GStri
     {
       msg_warning("Syntax error while resolving backtick references in block",
                   evt_tag_str("block_definition", cfg_block_generator_format_name(s, buf, sizeof(buf))),
-                  evt_tag_str("error", error->message),
-                  NULL);
+                  evt_tag_str("error", error->message));
       g_clear_error(&error);
       return FALSE;
     }

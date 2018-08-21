@@ -247,8 +247,7 @@ plugin_dlopen_module_as_filename(const gchar *module_file_name, const gchar *mod
 
   msg_trace("Trying to open module",
             evt_tag_str("module", module_name),
-            evt_tag_str("filename", module_file_name),
-            NULL);
+            evt_tag_str("filename", module_file_name));
 
   mod = g_module_open(module_file_name, G_MODULE_BIND_LAZY);
   if (!mod)
