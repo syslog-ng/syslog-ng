@@ -52,8 +52,7 @@ tf_getent_group(gchar *key, gchar *member_name, GString *result)
     {
       msg_error("$(getent group) failed",
                 evt_tag_str("key", key),
-                evt_tag_error("errno"),
-                NULL);
+                evt_tag_error("errno"));
       g_free(buf);
       return FALSE;
     }
@@ -78,8 +77,7 @@ tf_getent_group(gchar *key, gchar *member_name, GString *result)
     {
       msg_error("$(getent group): unknown member",
                 evt_tag_str("key", key),
-                evt_tag_str("member", member_name),
-                NULL);
+                evt_tag_str("member", member_name));
       g_free(buf);
       return FALSE;
     }

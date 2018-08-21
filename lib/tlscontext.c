@@ -480,8 +480,7 @@ _load_dh_from_file(TLSContext *self, const gchar *dhparam_file)
   if (!_is_dh_valid(dh))
     {
       msg_error("Error setting up TLS session context, invalid DH parameters",
-                evt_tag_str("dhparam_file", dhparam_file),
-                NULL);
+                evt_tag_str("dhparam_file", dhparam_file));
 
       DH_free(dh);
       return NULL;

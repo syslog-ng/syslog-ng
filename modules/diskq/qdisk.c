@@ -585,8 +585,7 @@ qdisk_write_serialized_string_to_file(QDisk *self, GString const *serialized, gi
     {
       msg_error("Error writing in-memory buffer of disk-queue to disk",
                 evt_tag_str("filename", self->filename),
-                evt_tag_error("error"),
-                NULL);
+                evt_tag_error("error"));
       return FALSE;
     }
   return TRUE;

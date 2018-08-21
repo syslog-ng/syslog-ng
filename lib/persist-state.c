@@ -193,8 +193,7 @@ _increase_file_size(PersistState *self, guint32 new_size)
       msg_error("Can't grow the persist file",
                 evt_tag_int("old_size", self->current_size),
                 evt_tag_int("new_size", new_size),
-                evt_tag_str("error", rc < 0 ? g_strerror(errno) : "short write"),
-                NULL);
+                evt_tag_str("error", rc < 0 ? g_strerror(errno) : "short write"));
       result = FALSE;
     }
   g_free(pad_buffer);
@@ -296,7 +295,7 @@ _alloc_value(PersistState *self, guint32 orig_size, gboolean in_use, guint8 vers
 
   if (!_check_free_space(self, size))
     {
-      msg_error("No more free space exhausted in persist file", NULL);
+      msg_error("No more free space exhausted in persist file");
       return 0;
     }
 
