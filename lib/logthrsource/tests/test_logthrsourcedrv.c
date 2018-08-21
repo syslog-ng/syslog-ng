@@ -97,6 +97,7 @@ static void
 start_test_threaded_source(TestThreadedSourceDriver *s)
 {
   cr_assert(log_pipe_init(&s->super.super.super.super));
+  app_post_config_loaded();
 }
 
 static void

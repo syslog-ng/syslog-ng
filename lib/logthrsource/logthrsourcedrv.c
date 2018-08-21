@@ -25,6 +25,7 @@
 #include "logthrsourcedrv.h"
 #include "mainloop-worker.h"
 #include "messages.h"
+#include "apphook.h"
 
 typedef struct _WakeupCondition
 {
@@ -133,6 +134,16 @@ _worker_wakeup(LogSource *s)
   self->wakeup(self->control);
 }
 
+static void
+_start_worker_thread(gint type, gpointer data)
+{
+  LogThreadedSourceWorker *self =  (LogThreadedSourceWorker *) data;
+
+  main_loop_create_worker_thread((WorkerThreadFunc) log_threaded_source_worker_run,
+                                 (WorkerExitNotificationFunc) log_threaded_source_worker_request_exit,
+                                 self, &self->options);
+}
+
 static gboolean
 log_threaded_source_worker_init(LogPipe *s)
 {
@@ -143,9 +154,8 @@ log_threaded_source_worker_init(LogPipe *s)
   g_assert(self->run);
   g_assert(self->request_exit);
 
-  main_loop_create_worker_thread((WorkerThreadFunc) log_threaded_source_worker_run,
-                                 (WorkerExitNotificationFunc) log_threaded_source_worker_request_exit,
-                                 self, &self->options);
+  /* The worker thread has to be started after CfgTree is completely initialized. */
+  register_application_hook(AH_POST_CONFIG_LOADED, _start_worker_thread, self);
 
   return TRUE;
 }
