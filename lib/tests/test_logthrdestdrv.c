@@ -377,10 +377,14 @@ Test(logthrdestdrv, batched_set_of_messages_are_dropped_as_a_whole)
 }
 
 static inline void
-_assert_batch_size_remains_the_same_across_retries(TestThreadedDestDriver *self)
+_expect_batch_size_remains_the_same_across_retries(TestThreadedDestDriver *self)
 {
   if (self->super.retries_counter > 0)
-    cr_assert(self->super.batch_size == self->prev_flush_size);
+    {
+      cr_expect(self->super.batch_size == self->prev_flush_size,
+                "batch_size has to remain the same across retries, batch_size=%d, prev_flush_size=%d",
+                self->super.batch_size, self->prev_flush_size);
+    }
   else
     self->prev_flush_size = self->super.batch_size;
 }
@@ -395,7 +399,7 @@ _insert_batched_message_error_drop(LogThreadedDestDriver *s, LogMessage *msg)
     return WORKER_INSERT_RESULT_QUEUED;
 
   self->flush_size += self->super.batch_size;
-  _assert_batch_size_remains_the_same_across_retries(self);
+  _expect_batch_size_remains_the_same_across_retries(self);
   return WORKER_INSERT_RESULT_ERROR;
 }
 
@@ -405,7 +409,7 @@ _flush_batched_message_error_drop(LogThreadedDestDriver *s)
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
 
   self->flush_size += self->super.batch_size;
-  _assert_batch_size_remains_the_same_across_retries(self);
+  _expect_batch_size_remains_the_same_across_retries(self);
 
   /* see the note in logthrdestdrv.c:_perform_flush() */
   if (self->super.batch_size == 0)
@@ -466,7 +470,7 @@ _insert_batched_message_error_success(LogThreadedDestDriver *s, LogMessage *msg)
     return WORKER_INSERT_RESULT_QUEUED;
 
   self->flush_size += self->super.batch_size;
-  _assert_batch_size_remains_the_same_across_retries(self);
+  _expect_batch_size_remains_the_same_across_retries(self);
   return _inject_error_a_few_times(self);
 }
 
@@ -476,7 +480,7 @@ _flush_batched_message_error_success(LogThreadedDestDriver *s)
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
 
   self->flush_size += self->super.batch_size;
-  _assert_batch_size_remains_the_same_across_retries(self);
+  _expect_batch_size_remains_the_same_across_retries(self);
 
   /* see the note in logthrdestdrv.c:_perform_flush() */
   if (self->super.batch_size == 0)
@@ -540,7 +544,7 @@ _insert_batched_message_not_connected(LogThreadedDestDriver *s, LogMessage *msg)
     return WORKER_INSERT_RESULT_QUEUED;
 
   self->flush_size += self->super.batch_size;
-  _assert_batch_size_remains_the_same_across_retries(self);
+  _expect_batch_size_remains_the_same_across_retries(self);
   return _inject_not_connected_a_few_times(self);
 }
 
@@ -550,7 +554,7 @@ _flush_batched_message_not_connected(LogThreadedDestDriver *s)
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
 
   self->flush_size += self->super.batch_size;
-  _assert_batch_size_remains_the_same_across_retries(self);
+  _expect_batch_size_remains_the_same_across_retries(self);
 
   /* see the note in logthrdestdrv.c:_perform_flush() */
   if (self->super.batch_size == 0)
