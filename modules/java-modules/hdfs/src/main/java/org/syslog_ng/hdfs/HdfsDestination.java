@@ -144,7 +144,7 @@ public class HdfsDestination extends StructuredLogDestination {
         HdfsFile hdfsfile = getHdfsFile(resolvedFileName);
         if (hdfsfile == null) {
             // Unable to open file
-            closeAll(archiveDir != null);
+            closeAll(true);
             return false;
         }
 
@@ -245,7 +245,7 @@ public class HdfsDestination extends StructuredLogDestination {
     @Override
     public void close() {
         logger.debug("Closing hdfs");
-        closeAll(archiveDir != null);
+        closeAll(true);
         isOpened = false;
     }
 
