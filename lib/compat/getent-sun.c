@@ -21,40 +21,45 @@
  *
  */
 
-#if defined(sun) || defined(__sun)
+#include "compat/getent-sun.h"
 
-#include "compat/getent-bb.h"
+#if defined(sun) || defined(__sun)
 #include <errno.h>
 
-int bb__getprotobynumber_r(int proto,
-                           struct protoent *result_buf, char *buf,
-                           size_t buflen, struct protoent **result)
+int
+_compat_sun__getprotobynumber_r(int proto,
+                                struct protoent *result_buf, char *buf,
+                                size_t buflen, struct protoent **result)
 {
   *result = getprotobynumber_r(proto, result_buf, buf, buflen);
   return (*result ? NULL : errno);
 }
 
-int bb__getprotobyname_r(const char *name,
-                         struct protoent *result_buf, char *buf,
-                         size_t buflen, struct protoent **result)
+int
+_compat_sun__getprotobyname_r(const char *name,
+                              struct protoent *result_buf, char *buf,
+                              size_t buflen, struct protoent **result)
 {
   *result = getprotobyname_r(name, result_buf, buf, buflen);
   return (*result ? NULL : errno);
 }
 
-int bb__getservbyport_r(int port, const char *proto,
-                        struct servent *result_buf, char *buf,
-                        size_t buflen, struct servent **result)
+int
+_compat_sun__getservbyport_r(int port, const char *proto,
+                             struct servent *result_buf, char *buf,
+                             size_t buflen, struct servent **result)
 {
   *result =  getservbyport_r(port, proto, result_buf, buf, buflen);
   return (*result ? NULL : errno);
 }
 
-int bb__getservbyname_r(const char *name, const char *proto,
-                        struct servent *result_buf, char *buf,
-                        size_t buflen, struct servent **result)
+int
+_compat_sun__getservbyname_r(const char *name, const char *proto,
+                             struct servent *result_buf, char *buf,
+                             size_t buflen, struct servent **result)
 {
   *result =  getservbyname_r(name, proto, result_buf, buf, buflen);
   return (*result ? NULL : errno);
 }
+
 #endif

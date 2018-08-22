@@ -21,31 +21,33 @@
  *
  */
 
-#ifndef GETENT_BB_H_INCLUDED
-#define GETENT_BB_H_INCLUDED
+#ifndef COMPAT_GETENT_GENERIC_H_INCLUDED
+#define COMPAT_GETENT_GENERIC_H_INCLUDED
 
-#if defined(sun) || defined(__sun)
+#include "compat/compat.h"
+
+#ifndef SYSLOG_NG_HAVE_GETPROTOBYNUMBER_R
 
 #include <sys/types.h>
 #include <grp.h>
 #include <pwd.h>
 #include <netdb.h>
 
-int bb__getprotobynumber_r(int proto,
-                           struct protoent *result_buf, char *buf,
-                           size_t buflen, struct protoent **result);
+int _compat_generic__getprotobynumber_r(int proto,
+                                        struct protoent *result_buf, char *buf,
+                                        size_t buflen, struct protoent **result);
 
-int bb__getprotobyname_r(const char *name,
-                         struct protoent *result_buf, char *buf,
-                         size_t buflen, struct protoent **result);
+int _compat_generic__getprotobyname_r(const char *name,
+                                      struct protoent *result_buf, char *buf,
+                                      size_t buflen, struct protoent **result);
 
-int bb__getservbyport_r(int port, const char *proto,
-                        struct servent *result_buf, char *buf,
-                        size_t buflen, struct servent **result);
+int _compat_generic__getservbyport_r(int port, const char *proto,
+                                     struct servent *result_buf, char *buf,
+                                     size_t buflen, struct servent **result);
 
-int bb__getservbyname_r(const char *name, const char *proto,
-                        struct servent *result_buf, char *buf,
-                        size_t buflen, struct servent **result);
+int _compat_generic__getservbyname_r(const char *name, const char *proto,
+                                     struct servent *result_buf, char *buf,
+                                     size_t buflen, struct servent **result);
 
 #endif
 

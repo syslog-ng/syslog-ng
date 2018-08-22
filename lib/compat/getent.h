@@ -21,22 +21,28 @@
  *
  */
 
-#ifndef GETENT_COMPAT_H_INCLUDED
-#define GETENT_COMPAT_H_INCLUDED
+#ifndef COMPAT_GETENT_H_INCLUDED
+#define COMPAT_GETENT_H_INCLUDED
 
-#include <sys/types.h>
-#include <grp.h>
-#include <pwd.h>
-#include <netdb.h>
+#include "compat/compat.h"
 
-#if defined(sun) || defined(__sun)
+#ifndef SYSLOG_NG_HAVE_GETPROTOBYNUMBER_R
 
-#define getprotobynumber_r bb__getprotobynumber_r
-#define getprotobyname_r bb__getprotobyname_r
-#define getservbyport_r bb__getservbyport_r
-#define getservbyname_r bb__getservbyname_r
+#define getprotobynumber_r _compat_generic__getprotobynumber_r
+#define getprotobyname_r _compat_generic__getprotobyname_r
+#define getservbyport_r _compat_generic__getservbyport_r
+#define getservbyname_r _compat_generic__getservbyname_r
 
-#include "getent-bb.h"
+#include "getent-generic.h"
 
-#endif // Solaris
+#elif defined(sun) || defined(__sun)
+
+#define getprotobynumber_r _compat_sun__getprotobynumber_r
+#define getprotobyname_r _compat_sun__getprotobyname_r
+#define getservbyport_r _compat_sun__getservbyport_r
+#define getservbyname_r _compat_sun__getservbyname_r
+
+#include "getent-sun.h"
+
+#endif
 #endif
