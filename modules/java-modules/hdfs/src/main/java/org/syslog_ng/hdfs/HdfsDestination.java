@@ -272,31 +272,33 @@ public class HdfsDestination extends StructuredLogDestination {
     }
 
     private void closeHdfs() {
-        if (hdfs != null) {
-            try {
-                hdfs.close();
-            } catch (IOException e) {
-                hdfs = null;
-                printStackTrace(e);
-            }
+        if (hdfs == null)
+           return;
+
+        try {
+            hdfs.close();
+        } catch (IOException e) {
+            printStackTrace(e);
+        } finally {
+            hdfs = null;
         }
     }
 
     private void archiveFiles() {
-        if (archiveDir != null) {
-            for (Map.Entry<String, HdfsFile> entry : openedFiles.entrySet()) {
-                Path filePath = entry.getValue().getPath();
-                logger.debug(String.format("Trying to archive %s to %s", filePath.getName(), archiveDir));
-                Path archiveDirPath = new Path(String.format("%s/%s", options.getUri(), archiveDir));
-                try {
-                    hdfs.mkdirs(archiveDirPath);
-                    hdfs.rename(filePath, archiveDirPath);
-                } catch (IOException e) {
-                    logger.debug(String.format("Unable to archive, reason: %s", e.getMessage()));
-                }
+        if (archiveDir == null)
+           return;
+
+        for (Map.Entry<String, HdfsFile> entry : openedFiles.entrySet()) {
+            Path filePath = entry.getValue().getPath();
+            logger.debug(String.format("Trying to archive %s to %s", filePath.getName(), archiveDir));
+            Path archiveDirPath = new Path(String.format("%s/%s", options.getUri(), archiveDir));
+            try {
+                hdfs.mkdirs(archiveDirPath);
+                hdfs.rename(filePath, archiveDirPath);
+            } catch (IOException e) {
+                logger.debug(String.format("Unable to archive, reason: %s", e.getMessage()));
             }
         }
-
     }
 
     private void printStackTrace(Throwable e) {
