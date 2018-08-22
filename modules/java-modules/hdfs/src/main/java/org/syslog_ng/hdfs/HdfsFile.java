@@ -55,4 +55,12 @@ public class HdfsFile {
          fsDataOutputStream.hflush();
          fsDataOutputStream.hsync();
     }
+
+    public void close() throws IOException {
+         if (fsDataOutputStream == null)
+            return;
+
+          fsDataOutputStream.close();
+          fsDataOutputStream = null;
+    }
 }

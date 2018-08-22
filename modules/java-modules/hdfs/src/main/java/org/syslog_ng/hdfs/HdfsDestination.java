@@ -249,7 +249,7 @@ public class HdfsDestination extends StructuredLogDestination {
     }
 
     private void closeAll(boolean isArchiving) {
-        closeDataOutputStreams();
+        closeAllHdfsFiles();
 
         if (isArchiving) {
             archiveFiles();
@@ -259,18 +259,15 @@ public class HdfsDestination extends StructuredLogDestination {
         isOpened = false;
     }
 
-    private void closeDataOutputStreams() {
+    private void closeAllHdfsFiles() {
         for (Map.Entry<String, HdfsFile> entry : openedFiles.entrySet()) {
-            FSDataOutputStream outputStream = entry.getValue().getFsDataOutputStream();
-            if (outputStream != null) {
-                try {
-                    logger.debug(String.format("Closing file: %s", entry.getKey()));
-                    outputStream.close();
-                } catch (IOException e) {
-                    printStackTrace(e);
-                }
+            HdfsFile hdfsfile = entry.getValue();
+            try {
+                logger.debug(String.format("Closing file: %s", entry.getKey()));
+                hdfsfile.close();
+            } catch (IOException e) {
+                printStackTrace(e);
             }
-            entry.getValue().setFsDataOutputStream(null);
         }
     }
 
