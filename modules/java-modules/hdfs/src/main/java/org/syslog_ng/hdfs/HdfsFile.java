@@ -26,6 +26,8 @@ package org.syslog_ng.hdfs;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.Path;
 
+import java.io.IOException;
+
 public class HdfsFile {
     private FSDataOutputStream fsDataOutputStream;
     private Path path;
@@ -44,5 +46,13 @@ public class HdfsFile {
 
     public void setPath(Path path) {
         this.path = path;
+    }
+
+    public void flush() throws IOException {
+         if (fsDataOutputStream == null)
+            return;
+
+         fsDataOutputStream.hflush();
+         fsDataOutputStream.hsync();
     }
 }

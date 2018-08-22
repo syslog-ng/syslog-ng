@@ -232,14 +232,11 @@ public class HdfsDestination extends StructuredLogDestination {
 
         logger.debug("Flushing hdfs");
         for (Map.Entry<String, HdfsFile> entry : openedFiles.entrySet()) {
-            FSDataOutputStream outputStream = entry.getValue().getFsDataOutputStream();
-            if (outputStream != null) {
-                try {
-                    outputStream.hflush();
-                    outputStream.hsync();
-                } catch (IOException e) {
-                    logger.debug(String.format("Flush failed on file %s, reason: %s", entry.getKey(), e.getMessage()));
-                }
+            HdfsFile hdfsfile = entry.getValue();
+            try {
+                hdfsfile.flush();
+            } catch (IOException e) {
+                logger.debug(String.format("Flush failed on file %s, reason: %s", entry.getKey(), e.getMessage()));
             }
         }
     }
