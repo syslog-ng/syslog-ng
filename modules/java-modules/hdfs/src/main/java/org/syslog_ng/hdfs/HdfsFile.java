@@ -32,20 +32,17 @@ public class HdfsFile {
     private FSDataOutputStream fsDataOutputStream;
     private Path path;
 
+    public HdfsFile(Path filepath, FSDataOutputStream outputstream) {
+        this.path = filepath;
+        this.fsDataOutputStream = outputstream;
+    }
+
     public FSDataOutputStream getFsDataOutputStream() {
         return fsDataOutputStream;
     }
 
-    public void setFsDataOutputStream(FSDataOutputStream fsDataOutputStream) {
-        this.fsDataOutputStream = fsDataOutputStream;
-    }
-
     public Path getPath() {
         return path;
-    }
-
-    public void setPath(Path path) {
-        this.path = path;
     }
 
     public void flush() throws IOException {
