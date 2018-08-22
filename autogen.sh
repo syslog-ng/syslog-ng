@@ -25,7 +25,7 @@
 # This script is needed to setup build environment from checked out
 # source tree.
 #
-SUBMODULES="lib/ivykis modules/afmongodb/mongo-c-driver/src/libbson modules/afmongodb/mongo-c-driver lib/jsonc"
+SUBMODULES="lib/ivykis lib/jsonc"
 GIT=`which git`
 
 include_automake_from_dir_if_exists()
@@ -63,8 +63,7 @@ autogen_submodules()
 		echo "Running autogen in '$submod'..."
 		cd "$submod"
 		if [ -x autogen.sh ]; then
-			# NOCONFIGURE needed by mongo-c-driver
-			NOCONFIGURE=1 ./autogen.sh
+			./autogen.sh
 		elif [ -f configure.in ] || [ -f configure.ac ]; then
 			autoreconf -i
 		else
@@ -73,8 +72,6 @@ autogen_submodules()
 		fi
 
 		CONFIGURE_OPTS="--disable-shared --enable-static --with-pic"
-		# kludge needed by make distcheck in mongo-c-driver
-		CONFIGURE_OPTS="$CONFIGURE_OPTS --enable-man-pages --disable-shm-counters --with-libbson=bundled"
 
 		sed -e "s/@__CONFIGURE_OPTS__@/${CONFIGURE_OPTS}/g" ${origdir}/sub-configure.sh >configure.gnu
 		cd "$origdir"

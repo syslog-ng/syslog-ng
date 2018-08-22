@@ -6,8 +6,3 @@
         path = lib/jsonc
         url = https://github.com/json-c/json-c.git
         ignore = dirty
-[submodule "modules/afmongodb/mongo-c-driver"]
-        path = modules/afmongodb/mongo-c-driver
-        url = https://github.com/mongodb/mongo-c-driver.git
-        branch = 1.2.0-dev
-        ignore = dirty

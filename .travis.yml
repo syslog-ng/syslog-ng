@@ -28,6 +28,7 @@ install:
       libhiredis-dev
       libivykis-dev
       librabbitmq-dev
+      libmongoc-dev
       libjson0-dev
       libnet1-dev
       libriemann-client-dev
@@ -47,14 +48,10 @@ before_script:
   - if [ "$CC" = "gcc" ]; then
       EXTRA_WARN="--enable-extra-warnings";
     fi
-  - if [ "$CC" = "clang" ]; then
-      DISABLE_MONGODB="--disable-mongodb";
-    fi
   - CONFIGURE_FLAGS="
       CFLAGS=-Werror
       --prefix=$HOME/install/syslog-ng
       --with-ivykis=internal
-      --with-mongoc=internal
       --with-jsonc=system
       --disable-env-wrapper
       --disable-memtrace
