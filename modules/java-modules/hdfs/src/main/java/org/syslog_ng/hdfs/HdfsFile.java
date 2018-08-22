@@ -37,10 +37,6 @@ public class HdfsFile {
         this.fsDataOutputStream = outputstream;
     }
 
-    public FSDataOutputStream getFsDataOutputStream() {
-        return fsDataOutputStream;
-    }
-
     public Path getPath() {
         return path;
     }
@@ -51,6 +47,10 @@ public class HdfsFile {
 
          fsDataOutputStream.hflush();
          fsDataOutputStream.hsync();
+    }
+
+    public void write(byte[] message) throws IOException {
+         fsDataOutputStream.write(message);
     }
 
     public void close() throws IOException {

@@ -150,8 +150,12 @@ public class HdfsDestination extends StructuredLogDestination {
 
         try {
             String formattedMessage = options.getTemplate().getResolvedString(logMessage);
+
             logger.debug("Outgoing message: " + formattedMessage);
-            hdfsfile.getFsDataOutputStream().write(formattedMessage.getBytes(Charset.forName("UTF-8")));
+
+            byte[] rawMessage = formattedMessage.getBytes(Charset.forName("UTF-8"));
+
+            hdfsfile.write(rawMessage);
         } catch (IOException e) {
             printStackTrace(e);
             closeAll(false);
