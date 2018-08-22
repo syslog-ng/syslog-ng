@@ -141,8 +141,8 @@ public class HdfsDestination extends StructuredLogDestination {
     public boolean send(LogMessage logMessage) {
         isOpened = false;
         String resolvedFileName = options.getFileNameTemplate().getResolvedString(logMessage);
-        FSDataOutputStream fsDataOutputStream = getFSDataOutputStream(resolvedFileName);
-        if (fsDataOutputStream == null) {
+        HdfsFile hdfsfile = getHdfsFile(resolvedFileName);
+        if (hdfsfile == null) {
             // Unable to open file
             closeAll(archiveDir != null);
             return false;
@@ -151,7 +151,7 @@ public class HdfsDestination extends StructuredLogDestination {
         try {
             String formattedMessage = options.getTemplate().getResolvedString(logMessage);
             logger.debug("Outgoing message: " + formattedMessage);
-            fsDataOutputStream.write(formattedMessage.getBytes(Charset.forName("UTF-8")));
+            hdfsfile.getFsDataOutputStream().write(formattedMessage.getBytes(Charset.forName("UTF-8")));
         } catch (IOException e) {
             printStackTrace(e);
             closeAll(false);
@@ -162,13 +162,13 @@ public class HdfsDestination extends StructuredLogDestination {
         return true;
     }
 
-    private FSDataOutputStream getFSDataOutputStream(String resolvedFileName) {
+    private HdfsFile getHdfsFile(String resolvedFileName) {
         HdfsFile hdfsFile = openedFiles.get(resolvedFileName);
         if (hdfsFile == null) {
             hdfsFile = createHdfsFile(resolvedFileName);
             openedFiles.put(resolvedFileName, hdfsFile);
         }
-        return hdfsFile.getFsDataOutputStream();
+        return hdfsFile;
     }
 
     private HdfsFile createHdfsFile(String resolvedFileName) {
