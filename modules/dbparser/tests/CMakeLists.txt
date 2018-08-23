@@ -1,4 +1,4 @@
-add_unit_test(TARGET test_timer_wheel DEPENDS patterndb)
+add_unit_test(CRITERION TARGET test_timer_wheel DEPENDS patterndb)
 add_unit_test(TARGET test_patternize DEPENDS patterndb syslogformat)
 add_unit_test(CRITERION LIBTEST TARGET test_patterndb DEPENDS patterndb basicfuncs syslogformat)
 add_unit_test(CRITERION TARGET test_parsers_e2e DEPENDS patterndb basicfuncs syslogformat)
