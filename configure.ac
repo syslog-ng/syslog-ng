@@ -236,11 +236,6 @@ AC_ARG_ENABLE(mongodb,
 	      [  --enable-mongodb        Enable mongodb destination (default: auto)]
               ,,enable_mongodb="auto")
 
-AC_ARG_WITH(mongoc,
-              [  --with-mongoc=[system/internal/auto/no]
-                                         Link against the system supplied or the built-in mongo-c-driver library. (default: auto)]
-              ,,with_mongoc="internal")
-
 AC_ARG_ENABLE(legacy-mongodb-options,
               [  --enable-legacy-mongodb-options=[yes/no]
                                          Support libmongo-client non-URI MongoDB options. (default: yes)]
@@ -1194,44 +1189,10 @@ else
 fi
 AC_DEFINE_UNQUOTED(ENABLE_LEGACY_MONGODB_OPTIONS, [$enable_legacy_mongodb_options_bit], [Support libmongo-client non-URI MongoDB options])
 
-if test "x$with_mongoc" = "xauto"; then
-  with_mongoc="system"
-  PKG_CHECK_MODULES(LIBMONGO, libmongoc-1.0 >= $LMC_MIN_VERSION,,with_mongoc="auto-internal")
-elif test "x$with_mongoc" = "xsystem"; then
-  PKG_CHECK_MODULES(LIBMONGO, libmongoc-1.0 >= $LMC_MIN_VERSION)
-fi
+PKG_CHECK_MODULES(LIBMONGO, libmongoc-1.0 >= $LMC_MIN_VERSION, with_mongoc="yes", with_mongoc="no")
 
-if test "x$with_mongoc" = "xinternal" || test "x$with_mongoc" = "xauto-internal"; then
-        with_mongoc="internal"
-	if test -f "$srcdir/modules/afmongodb/mongo-c-driver/src/mongoc/mongoc.h"; then
-		AC_CONFIG_SUBDIRS([modules/afmongodb/mongo-c-driver])
-
-		# these can only be used in modules/mongodb as it assumes
-		# the current directory just one below mongo-c-driver
-
-		LIBMONGO_LIBS="\
-			-L\$(top_builddir)/modules/afmongodb/mongo-c-driver \
-			-L\$(top_builddir)/modules/afmongodb/mongo-c-driver/src/libbson \
-			-lmongoc-1.0 -lbson $OPENSSL_LIBS"
-		LIBMONGO_CFLAGS="\
-			-I\$(top_srcdir)/modules/afmongodb/mongo-c-driver/src/mongoc \
-			-I\$(top_srcdir)/modules/afmongodb/mongo-c-driver/src/libbson/src/bson \
-			-I\$(top_builddir)/modules/afmongodb/mongo-c-driver/src/libbson/src/bson \
-			-I\$(top_builddir)/modules/afmongodb/mongo-c-driver/src/mongoc \
-		"
-		LIBMONGO_SUBDIRS="modules/afmongodb/mongo-c-driver"
-		AC_CHECK_LIB(sasl2, prop_get, LIBMONGO_LIBS="$LIBMONGO_LIBS -lsasl2")
-	else
-		AC_MSG_WARN([Internal mongo-c-driver sources not found in modules/afmongodb/mongo-c-driver])
-		with_mongoc="no"
-	fi
-fi
-
-if test "x$with_mongoc" = "xno"; then
-   if test "x$enable_mongodb" = "xyes"; then
-      AC_MSG_ERROR([Could not find mongo-c-driver, and MongoDB support was explicitly enabled.])
-   fi
-   enable_mongodb="no"
+if test "x$with_mongoc" = "xno" && test "x$enable_mongodb" = "xyes"; then
+   AC_MSG_ERROR([Could not find mongo-c-driver, and MongoDB support was explicitly enabled.])
 fi
 
 dnl ***************************************************************************
@@ -1878,7 +1839,6 @@ echo "  Criterion                   : ${with_criterion:=no}"
 echo "  Unit tests                  : ${enable_tests:=no}"
 echo " Submodules:"
 echo "  ivykis                      : $with_ivykis"
-echo "  mongoc                      : $with_mongoc"
 echo "  jsonc                       : $with_jsonc"
 echo " Features:"
 echo "  Forced server mode          : ${enable_forced_server_mode:=yes}"

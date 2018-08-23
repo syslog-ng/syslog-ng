@@ -11,6 +11,7 @@ brew "libtool"
 brew "pkg-config"
 brew "ivykis"
 brew "rabbitmq-c"
+brew "mongo-c-driver"
 brew "openssl"
 # brew "pcre"
 
