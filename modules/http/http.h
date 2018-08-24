@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2018 Balazs Scheidler
  * Copyright (c) 2016 Marc Falzon
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -20,8 +21,8 @@
  *
  */
 
-#ifndef HTTP_PLUGIN_H_INCLUDED
-#define HTTP_PLUGIN_H_INCLUDED 1
+#ifndef HTTP_H_INCLUDED
+#define HTTP_H_INCLUDED 1
 
 #define HTTP_DEFAULT_URL "http://localhost/"
 #define METHOD_TYPE_POST 1
@@ -29,10 +30,13 @@
 
 #include "logthrdestdrv.h"
 
+#define CURL_NO_OLDIES 1
+#include <curl/curl.h>
+
 typedef struct
 {
   LogThreadedDestDriver super;
-  gchar *curl;
+  CURL *curl;
   gchar *url;
   gchar *user;
   gchar *password;
@@ -47,6 +51,10 @@ typedef struct
   gboolean peer_verify;
   short int method_type;
   glong timeout;
+  glong flush_lines;
+  glong flush_bytes;
+  struct curl_slist *request_headers;
+  GString *request_body;
   LogTemplate *body_template;
   LogTemplateOptions template_options;
 } HTTPDestinationDriver;
@@ -69,6 +77,8 @@ void http_dd_set_cipher_suite(LogDriver *d, const gchar *ciphers);
 void http_dd_set_ssl_version(LogDriver *d, const gchar *value);
 void http_dd_set_peer_verify(LogDriver *d, gboolean verify);
 void http_dd_set_timeout(LogDriver *d, glong timeout);
+void http_dd_set_flush_lines(LogDriver *d, glong flush_lines);
+void http_dd_set_flush_bytes(LogDriver *d, glong flush_bytes);
 LogTemplateOptions *http_dd_get_template_options(LogDriver *d);
 
 #endif

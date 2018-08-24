@@ -20,277 +20,9 @@
  *
  */
 
-#include <curl/curl.h>
-
+#include "http.h"
 #include "syslog-names.h"
-#include "http-plugin.h"
 #include "scratch-buffers.h"
-
-static const gchar *
-_format_persist_name(const LogPipe *s)
-{
-  const HTTPDestinationDriver *self = (const HTTPDestinationDriver *)s;
-  static gchar persist_name[1024];
-
-  if (s->persist_name)
-    g_snprintf(persist_name, sizeof(persist_name), "http.%s", s->persist_name);
-  else
-    g_snprintf(persist_name, sizeof(persist_name), "http(%s,)", self->url);
-
-  return persist_name;
-}
-
-static const gchar *
-_format_stats_instance(LogThreadedDestDriver *s)
-{
-  static gchar stats[1024];
-
-  HTTPDestinationDriver *self = (HTTPDestinationDriver *) s;
-
-  g_snprintf(stats, sizeof(stats), "http,%s", self->url);
-
-  return stats;
-}
-
-static size_t
-_http_write_cb(char *ptr, size_t size, size_t nmemb, void *userdata)
-{
-  // Discard response content
-  return nmemb * size;
-}
-
-static void
-_thread_init(LogThreadedDestDriver *s)
-{
-  HTTPDestinationDriver *self = (HTTPDestinationDriver *) s;
-
-  curl_version_info_data *curl_info = curl_version_info(CURLVERSION_NOW);
-  if (!self->user_agent)
-    self->user_agent = g_strdup_printf("syslog-ng %s/libcurl %s",
-                                       SYSLOG_NG_VERSION, curl_info->version);
-}
-
-static void
-_thread_deinit(LogThreadedDestDriver *s)
-{
-}
-
-static gboolean
-_connect(LogThreadedDestDriver *s)
-{
-  return TRUE;
-}
-
-static void
-_disconnect(LogThreadedDestDriver *s)
-{
-}
-
-static void
-_add_custom_curl_header(gpointer data, gpointer curl_headers)
-{
-  curl_headers = curl_slist_append((struct curl_slist *)curl_headers, data);
-}
-
-static struct curl_slist *
-_get_curl_headers(HTTPDestinationDriver *self, LogMessage *msg)
-{
-  struct curl_slist *curl_headers = NULL;
-  gchar header_host[128] = {0};
-  gchar header_program[32] = {0};
-  gchar header_facility[32] = {0};
-  gchar header_level[32] = {0};
-
-  g_snprintf(header_host, sizeof(header_host),
-             "X-Syslog-Host: %s", log_msg_get_value(msg, LM_V_HOST, NULL));
-  curl_headers = curl_slist_append(curl_headers, header_host);
-
-  g_snprintf(header_program, sizeof(header_program),
-             "X-Syslog-Program: %s", log_msg_get_value(msg, LM_V_PROGRAM, NULL));
-  curl_headers = curl_slist_append(curl_headers, header_program);
-
-  g_snprintf(header_facility, sizeof(header_facility),
-             "X-Syslog-Facility: %s", syslog_name_lookup_name_by_value(msg->pri & LOG_FACMASK, sl_facilities));
-  curl_headers = curl_slist_append(curl_headers, header_facility);
-
-  g_snprintf(header_level, sizeof(header_level),
-             "X-Syslog-Level: %s", syslog_name_lookup_name_by_value(msg->pri & LOG_PRIMASK, sl_levels));
-  curl_headers = curl_slist_append(curl_headers, header_level);
-
-  g_list_foreach(self->headers, _add_custom_curl_header, curl_headers);
-
-  return curl_headers;
-}
-
-static const gchar *
-_get_body(HTTPDestinationDriver *self, LogMessage *msg)
-{
-  GString *body_rendered = scratch_buffers_alloc();
-
-  if (self->body_template)
-    {
-      log_template_format(self->body_template, msg, &self->template_options, LTZ_SEND,
-                          self->super.seq_num, NULL, body_rendered);
-      return body_rendered->str;
-    }
-  else
-    return log_msg_get_value(msg, LM_V_MESSAGE, NULL);
-}
-
-static
-void _http_trace_sanitize_dump(const gchar *text, gchar *data, size_t size)
-{
-  gchar *sanitized = g_new0(gchar, size+1);
-  int i;
-  for (i = 0; i < size && data[i]; i++)
-    {
-      sanitized[i] = g_ascii_isprint(data[i]) ? data[i] : '.';
-    }
-  sanitized[i] = 0;
-  msg_trace("curl trace log",
-            evt_tag_str("curl_info_type", text),
-            evt_tag_str("data", sanitized));
-  g_free(sanitized);
-}
-
-gchar *curl_infotype_to_text[] =
-{
-  "curl_trace_text",
-  "curl_trace_header_in",
-  "curl_trace_header_out",
-  "curl_trace_data_in",
-  "curl_trace_data_out",
-  "curl_trace_ssl_data_in",
-  "curl_trace_ssl_data_out",
-};
-
-static
-gint _http_trace(CURL *handle, curl_infotype type,
-                 char *data, size_t size,
-                 void *userp)
-{
-  if (!G_UNLIKELY(trace_flag))
-    return 0;
-
-  g_assert(type < sizeof(curl_infotype_to_text)/sizeof(curl_infotype_to_text[0]));
-
-  _http_trace_sanitize_dump(curl_infotype_to_text[type], data, size);
-
-  return 0;
-}
-
-static void
-_set_curl_opt(HTTPDestinationDriver *self)
-{
-  curl_easy_reset(self->curl);
-
-  curl_easy_setopt(self->curl, CURLOPT_WRITEFUNCTION, _http_write_cb);
-
-  curl_easy_setopt(self->curl, CURLOPT_URL, self->url);
-
-  if (self->user)
-    curl_easy_setopt(self->curl, CURLOPT_USERNAME, self->user);
-
-  if (self->password)
-    curl_easy_setopt(self->curl, CURLOPT_PASSWORD, self->password);
-
-  if (self->user_agent)
-    curl_easy_setopt(self->curl, CURLOPT_USERAGENT, self->user_agent);
-
-  if (self->ca_dir)
-    curl_easy_setopt(self->curl, CURLOPT_CAPATH, self->ca_dir);
-
-  if (self->ca_file)
-    curl_easy_setopt(self->curl, CURLOPT_CAINFO, self->ca_file);
-
-  if (self->cert_file)
-    curl_easy_setopt(self->curl, CURLOPT_SSLCERT, self->cert_file);
-
-  if (self->key_file)
-    curl_easy_setopt(self->curl, CURLOPT_SSLKEY, self->key_file);
-
-  if (self->ciphers)
-    curl_easy_setopt(self->curl, CURLOPT_SSL_CIPHER_LIST, self->ciphers);
-
-  curl_easy_setopt(self->curl, CURLOPT_SSLVERSION, self->ssl_version);
-
-  curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYHOST, self->peer_verify ? 2L : 0L);
-  curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYPEER, self->peer_verify ? 1L : 0L);
-
-  curl_easy_setopt(self->curl, CURLOPT_DEBUGFUNCTION, _http_trace);
-  curl_easy_setopt(self->curl, CURLOPT_VERBOSE, 1L);
-
-  curl_easy_setopt(self->curl, CURLOPT_TIMEOUT, self->timeout);
-
-  if (self->method_type == METHOD_TYPE_PUT)
-    curl_easy_setopt(self->curl, CURLOPT_CUSTOMREQUEST, "PUT");
-}
-
-static void
-_set_payload(HTTPDestinationDriver *self, struct curl_slist *curl_headers, const gchar *body)
-{
-  curl_easy_setopt(self->curl, CURLOPT_HTTPHEADER, curl_headers);
-  curl_easy_setopt(self->curl, CURLOPT_POSTFIELDS, body);
-}
-
-static worker_insert_result_t
-_map_http_status_to_worker_status(glong http_code)
-{
-  worker_insert_result_t retval;
-
-  switch (http_code/100)
-    {
-    case 4:
-      msg_debug("curl: 4XX: msg dropped",
-                evt_tag_int("status_code", http_code));
-      retval = WORKER_INSERT_RESULT_DROP;
-      break;
-    case 5:
-      msg_debug("curl: 5XX: message will be retried",
-                evt_tag_int("status_code", http_code));
-      retval = WORKER_INSERT_RESULT_ERROR;
-      break;
-    default:
-      msg_debug("curl: OK status code",
-                evt_tag_int("status_code", http_code));
-      retval = WORKER_INSERT_RESULT_SUCCESS;
-      break;
-    }
-
-  return retval;
-}
-
-static worker_insert_result_t
-_insert(LogThreadedDestDriver *s, LogMessage *msg)
-{
-  CURLcode ret;
-  worker_insert_result_t retval;
-
-  HTTPDestinationDriver *self = (HTTPDestinationDriver *) s;
-
-  struct curl_slist *curl_headers = _get_curl_headers(self, msg);
-  const gchar *body = _get_body(self, msg);
-  _set_payload(self, curl_headers, body);
-
-  if ((ret = curl_easy_perform(self->curl)) != CURLE_OK)
-    {
-      msg_error("curl: error sending HTTP request",
-                evt_tag_str("error", curl_easy_strerror(ret)),
-                log_pipe_location_tag(&s->super.super.super));
-
-      curl_slist_free_all(curl_headers);
-
-      return WORKER_INSERT_RESULT_NOT_CONNECTED;
-    }
-
-  glong http_code = 0;
-  curl_easy_getinfo (self->curl, CURLINFO_RESPONSE_CODE, &http_code);
-  retval = _map_http_status_to_worker_status(http_code);
-
-  curl_slist_free_all(curl_headers);
-
-  return retval;
-}
 
 void
 http_dd_set_url(LogDriver *d, const gchar *url)
@@ -491,6 +223,324 @@ http_dd_set_timeout(LogDriver *d, glong timeout)
   self->timeout = timeout;
 }
 
+void
+http_dd_set_flush_lines(LogDriver *d, glong flush_lines)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  self->flush_lines = flush_lines;
+}
+
+void
+http_dd_set_flush_bytes(LogDriver *d, glong flush_bytes)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  self->flush_bytes = flush_bytes;
+}
+
+
+static gchar *
+_sanitize_curl_debug_message(const gchar *data, gsize size)
+{
+  gchar *sanitized = g_new0(gchar, size + 1);
+  gint i;
+
+  for (i = 0; i < size && data[i]; i++)
+    {
+      sanitized[i] = g_ascii_isprint(data[i]) ? data[i] : '.';
+    }
+  sanitized[i] = 0;
+  return sanitized;
+}
+
+static const gchar *curl_infotype_to_text[] =
+{
+  "text",
+  "header_in",
+  "header_out",
+  "data_in",
+  "data_out",
+  "ssl_data_in",
+  "ssl_data_out",
+};
+
+static gint
+_curl_debug_function(CURL *handle, curl_infotype type,
+                     char *data, size_t size,
+                     void *userp)
+{
+  if (!G_UNLIKELY(trace_flag))
+    return 0;
+
+  g_assert(type < sizeof(curl_infotype_to_text)/sizeof(curl_infotype_to_text[0]));
+
+  const gchar *text = curl_infotype_to_text[type];
+  gchar *sanitized = _sanitize_curl_debug_message(data, size);
+  msg_trace("cURL debug",
+            evt_tag_str("type", text),
+            evt_tag_str("data", sanitized));
+  g_free(sanitized);
+  return 0;
+}
+
+static size_t
+_curl_write_function(char *ptr, size_t size, size_t nmemb, void *userdata)
+{
+  // Discard response content
+  return nmemb * size;
+}
+
+static const gchar *
+_format_persist_name(const LogPipe *s)
+{
+  const HTTPDestinationDriver *self = (const HTTPDestinationDriver *)s;
+  static gchar persist_name[1024];
+
+  if (s->persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "http.%s", s->persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "http(%s,)", self->url);
+
+  return persist_name;
+}
+
+static const gchar *
+_format_stats_instance(LogThreadedDestDriver *s)
+{
+  static gchar stats[1024];
+
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) s;
+
+  g_snprintf(stats, sizeof(stats), "http,%s", self->url);
+
+  return stats;
+}
+
+
+/* Set up options that are static over the course of a single configuration,
+ * request specific options will be set separately
+ */
+static void
+_setup_static_options_in_curl(HTTPDestinationDriver *self)
+{
+  curl_easy_reset(self->curl);
+
+  curl_easy_setopt(self->curl, CURLOPT_WRITEFUNCTION, _curl_write_function);
+
+  curl_easy_setopt(self->curl, CURLOPT_URL, self->url);
+
+  if (self->user)
+    curl_easy_setopt(self->curl, CURLOPT_USERNAME, self->user);
+
+  if (self->password)
+    curl_easy_setopt(self->curl, CURLOPT_PASSWORD, self->password);
+
+  if (self->user_agent)
+    curl_easy_setopt(self->curl, CURLOPT_USERAGENT, self->user_agent);
+
+  if (self->ca_dir)
+    curl_easy_setopt(self->curl, CURLOPT_CAPATH, self->ca_dir);
+
+  if (self->ca_file)
+    curl_easy_setopt(self->curl, CURLOPT_CAINFO, self->ca_file);
+
+  if (self->cert_file)
+    curl_easy_setopt(self->curl, CURLOPT_SSLCERT, self->cert_file);
+
+  if (self->key_file)
+    curl_easy_setopt(self->curl, CURLOPT_SSLKEY, self->key_file);
+
+  if (self->ciphers)
+    curl_easy_setopt(self->curl, CURLOPT_SSL_CIPHER_LIST, self->ciphers);
+
+  curl_easy_setopt(self->curl, CURLOPT_SSLVERSION, self->ssl_version);
+  curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYHOST, self->peer_verify ? 2L : 0L);
+  curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYPEER, self->peer_verify ? 1L : 0L);
+
+  curl_easy_setopt(self->curl, CURLOPT_DEBUGFUNCTION, _curl_debug_function);
+  curl_easy_setopt(self->curl, CURLOPT_VERBOSE, 1L);
+
+  curl_easy_setopt(self->curl, CURLOPT_TIMEOUT, self->timeout);
+
+  if (self->method_type == METHOD_TYPE_PUT)
+    curl_easy_setopt(self->curl, CURLOPT_CUSTOMREQUEST, "PUT");
+}
+
+
+static struct curl_slist *
+_add_header(struct curl_slist *curl_headers, const gchar *header, const gchar *value)
+{
+  GString *buffer = scratch_buffers_alloc();
+
+  g_string_append(buffer, header);
+  g_string_append(buffer, ": ");
+  g_string_append(buffer, value);
+  return curl_slist_append(curl_headers, buffer->str);
+}
+
+static struct curl_slist *
+_format_request_headers(HTTPDestinationDriver *self, LogMessage *msg)
+{
+  struct curl_slist *headers = NULL;
+  GList *l;
+
+  headers = _add_header(headers, "Expect", "");
+  if (msg)
+    {
+      /* NOTE: I have my doubts that these headers make sense at all.  None of
+       * the HTTP collectors I know of, extract this information from the
+       * headers and it makes batching several messages into the same request a
+       * bit more complicated than it needs to be.  I didn't want to break
+       * backward compatibility when batching was introduced, however I think
+       * this should eventually be removed */
+
+      headers = _add_header(headers,
+                            "X-Syslog-Host",
+                            log_msg_get_value(msg, LM_V_HOST, NULL));
+      headers = _add_header(headers,
+                            "X-Syslog-Program",
+                            log_msg_get_value(msg, LM_V_PROGRAM, NULL));
+      headers = _add_header(headers,
+                            "X-Syslog-Facility",
+                            syslog_name_lookup_name_by_value(msg->pri & LOG_FACMASK, sl_facilities));
+      headers = _add_header(headers,
+                            "X-Syslog-Level",
+                            syslog_name_lookup_name_by_value(msg->pri & LOG_PRIMASK, sl_levels));
+    }
+
+  for (l = self->headers; l; l = l->next)
+    headers = curl_slist_append(headers, l->data);
+
+  return headers;
+}
+
+static void
+_add_message_to_batch(HTTPDestinationDriver *self, LogMessage *msg)
+{
+  if (self->body_template)
+    {
+      log_template_append_format(self->body_template, msg, &self->template_options, LTZ_SEND,
+                                 self->super.seq_num, NULL, self->request_body);
+    }
+  else
+    {
+      if (self->request_body->len)
+        g_string_append_c(self->request_body, '\n');
+      g_string_append(self->request_body, log_msg_get_value(msg, LM_V_MESSAGE, NULL));
+    }
+}
+
+static worker_insert_result_t
+_map_http_status_to_worker_status(glong http_code)
+{
+  worker_insert_result_t retval;
+
+  switch (http_code/100)
+    {
+    case 4:
+      retval = WORKER_INSERT_RESULT_DROP;
+      break;
+    case 5:
+      retval = WORKER_INSERT_RESULT_ERROR;
+      break;
+    default:
+      retval = WORKER_INSERT_RESULT_SUCCESS;
+      break;
+    }
+
+  return retval;
+}
+
+/* we flush the accumulated data if
+ *   1) we reach batch_size,
+ *   2) the message queue becomes empty
+ */
+static worker_insert_result_t
+_flush(LogThreadedDestDriver *s)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) s;
+  CURLcode ret;
+  worker_insert_result_t retval;
+
+  if (self->super.batch_size == 0)
+    return WORKER_INSERT_RESULT_SUCCESS;
+
+  curl_easy_setopt(self->curl, CURLOPT_HTTPHEADER, self->request_headers);
+  curl_easy_setopt(self->curl, CURLOPT_POSTFIELDS, self->request_body->str);
+
+  if ((ret = curl_easy_perform(self->curl)) != CURLE_OK)
+    {
+      msg_error("curl: error sending HTTP request",
+                evt_tag_str("error", curl_easy_strerror(ret)),
+                log_pipe_location_tag(&self->super.super.super.super));
+      retval = WORKER_INSERT_RESULT_NOT_CONNECTED;
+      goto exit;
+    }
+
+  glong http_code = 0;
+
+  curl_easy_getinfo(self->curl, CURLINFO_RESPONSE_CODE, &http_code);
+
+  if (debug_flag)
+    {
+      gdouble total_time = 0;
+      glong redirect_count = 0;
+
+      curl_easy_getinfo(self->curl, CURLINFO_TOTAL_TIME, &total_time);
+      curl_easy_getinfo(self->curl, CURLINFO_REDIRECT_COUNT, &redirect_count);
+      msg_debug("curl: HTTP response received",
+                evt_tag_str("url", self->url),
+                evt_tag_int("status_code", http_code),
+                evt_tag_int("body_size", self->request_body->len),
+                evt_tag_int("batch_size", self->super.batch_size),
+                evt_tag_int("redirected", redirect_count != 0),
+                evt_tag_printf("total_time", "%.3f", total_time));
+    }
+  retval = _map_http_status_to_worker_status(http_code);
+
+exit:
+  g_string_truncate(self->request_body, 0);
+  curl_slist_free_all(self->request_headers);
+  self->request_headers = NULL;
+  return retval;
+}
+
+static worker_insert_result_t
+_insert_batched(HTTPDestinationDriver *self, LogMessage *msg)
+{
+  if (self->request_headers == NULL)
+    self->request_headers = _format_request_headers(self, NULL);
+
+  _add_message_to_batch(self, msg);
+
+  if ((self->flush_bytes && self->request_body->len >= self->flush_bytes) ||
+      (self->flush_lines && self->super.batch_size >= self->flush_lines))
+    {
+      return _flush(&self->super);
+    }
+  return WORKER_INSERT_RESULT_QUEUED;
+}
+
+static worker_insert_result_t
+_insert_single(HTTPDestinationDriver *self, LogMessage *msg)
+{
+  self->request_headers = _format_request_headers(self, msg);
+  _add_message_to_batch(self, msg);
+  return _flush(&self->super);
+}
+
+static worker_insert_result_t
+_insert(LogThreadedDestDriver *s, LogMessage *msg)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) s;
+
+  if (self->flush_lines > 0 || self->flush_bytes)
+    return _insert_batched(self, msg);
+  else
+    return _insert_single(self, msg);
+}
+
 gboolean
 http_dd_init(LogPipe *s)
 {
@@ -514,7 +564,12 @@ http_dd_init(LogPipe *s)
       self->url = g_strdup(HTTP_DEFAULT_URL);
     }
 
-  _set_curl_opt(self);
+  curl_version_info_data *curl_info = curl_version_info(CURLVERSION_NOW);
+  if (!self->user_agent)
+    self->user_agent = g_strdup_printf("syslog-ng %s/libcurl %s",
+                                       SYSLOG_NG_VERSION, curl_info->version);
+
+  _setup_static_options_in_curl(self);
 
   return log_threaded_dest_driver_init_method(s);
 }
@@ -531,6 +586,8 @@ http_dd_free(LogPipe *s)
   HTTPDestinationDriver *self = (HTTPDestinationDriver *)s;
 
   log_template_options_destroy(&self->template_options);
+
+  g_string_free(self->request_body, TRUE);
 
   curl_easy_cleanup(self->curl);
   curl_global_cleanup();
@@ -549,7 +606,6 @@ http_dd_free(LogPipe *s)
   log_threaded_dest_driver_free(s);
 }
 
-
 LogDriver *
 http_dd_new(GlobalConfig *cfg)
 {
@@ -558,21 +614,21 @@ http_dd_new(GlobalConfig *cfg)
   log_threaded_dest_driver_init_instance(&self->super, cfg);
 
   self->super.super.super.super.init = http_dd_init;
+  self->super.super.super.super.free_fn = http_dd_free;
   self->super.super.super.super.deinit = http_dd_deinit;
-  self->super.worker.thread_init = _thread_init;
-  self->super.worker.thread_deinit = _thread_deinit;
-  self->super.worker.connect = _connect;
-  self->super.worker.disconnect = _disconnect;
-  self->super.worker.insert = _insert;
   self->super.super.super.super.generate_persist_name = _format_persist_name;
   self->super.format_stats_instance = _format_stats_instance;
   self->super.stats_source = SCS_HTTP;
-  self->super.super.super.super.free_fn = http_dd_free;
+  self->super.worker.insert = _insert;
+  self->super.worker.flush = _flush;
 
   curl_global_init(CURL_GLOBAL_ALL);
 
   self->ssl_version = CURL_SSLVERSION_DEFAULT;
   self->peer_verify = TRUE;
+  self->request_body = g_string_sized_new(32768);
+  self->flush_lines = 0;
+  self->flush_bytes = 0;
 
   return &self->super.super.super;
 }

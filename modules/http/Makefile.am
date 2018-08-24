@@ -2,7 +2,7 @@ if ENABLE_HTTP
 
 module_LTLIBRARIES      += modules/http/libhttp.la
 modules_http_libhttp_la_SOURCES = \
-  modules/http/http-plugin.h        \
+  modules/http/http.h 		    \
   modules/http/http.c               \
   modules/http/http-grammar.y       \
   modules/http/http-parser.c        \

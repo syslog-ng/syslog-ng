@@ -30,7 +30,7 @@
 
 #include "cfg-grammar.h"
 #include "cfg-parser.h"
-#include "http-plugin.h"
+#include "http.h"
 #include "http-grammar.h"
 #include "plugin.h"
 
@@ -65,6 +65,7 @@
 %token KW_PEER_VERIFY
 %token KW_TIMEOUT
 %token KW_TLS
+%token KW_FLUSH_BYTES
 
 %type   <ptr> driver
 %type   <ptr> http_destination
@@ -109,6 +110,8 @@ http_option
     | KW_METHOD     '(' string ')'            { http_dd_set_method(last_driver, $3); free($3); }
     | KW_BODY       '(' template_content ')'  { http_dd_set_body(last_driver, $3); log_template_unref($3); }
     | KW_TIMEOUT '(' nonnegative_integer ')'  { http_dd_set_timeout(last_driver, $3); }
+    | KW_FLUSH_LINES '(' nonnegative_integer ')' { http_dd_set_flush_lines(last_driver, $3); }
+    | KW_FLUSH_BYTES '(' nonnegative_integer ')' { http_dd_set_flush_bytes(last_driver, $3); }
     | threaded_dest_driver_option
     | http_tls_option
     | KW_TLS '(' http_tls_options ')'

@@ -15,7 +15,7 @@ if (NOT Curl_FOUND)
 endif ()
 
 set(HTTP_DESTINATION_SOURCES
-    http-plugin.h
+    http.h
     http.c
     http-parser.c
     http-parser.h

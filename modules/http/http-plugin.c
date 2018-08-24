@@ -20,11 +20,9 @@
  *
  */
 
-#include "http-plugin.h"
+#include "http-parser.h"
 #include "plugin.h"
 #include "plugin-types.h"
-
-extern CfgParser http_parser;
 
 static Plugin http_plugins[] =
 {
