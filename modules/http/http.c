@@ -506,6 +506,13 @@ exit:
   return retval;
 }
 
+static gboolean
+_should_initiate_flush(HTTPDestinationDriver *self)
+{
+  return (self->flush_bytes && self->request_body->len >= self->flush_bytes) ||
+         (self->flush_lines && self->super.batch_size >= self->flush_lines);
+}
+
 static worker_insert_result_t
 _insert_batched(HTTPDestinationDriver *self, LogMessage *msg)
 {
@@ -514,8 +521,7 @@ _insert_batched(HTTPDestinationDriver *self, LogMessage *msg)
 
   _add_message_to_batch(self, msg);
 
-  if ((self->flush_bytes && self->request_body->len >= self->flush_bytes) ||
-      (self->flush_lines && self->super.batch_size >= self->flush_lines))
+  if (_should_initiate_flush(self))
     {
       return _flush(&self->super);
     }
