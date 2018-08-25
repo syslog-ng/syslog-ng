@@ -95,6 +95,14 @@ http_dd_set_body(LogDriver *d, LogTemplate *body)
   self->body_template = log_template_ref(body);
 }
 
+void
+http_dd_set_delimiter(LogDriver *d, const gchar *delimiter)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  g_string_assign(self->delimiter, delimiter);
+}
+
 LogTemplateOptions *
 http_dd_get_template_options(LogDriver *d)
 {
@@ -433,6 +441,10 @@ _format_request_headers(HTTPDestinationDriver *self, LogMessage *msg)
 static void
 _add_message_to_batch(HTTPDestinationDriver *self, LogMessage *msg)
 {
+  if (self->super.batch_size > 1)
+    {
+      g_string_append_len(self->request_body, self->delimiter->str, self->delimiter->len);
+    }
   if (self->body_template)
     {
       log_template_append_format(self->body_template, msg, &self->template_options, LTZ_SEND,
@@ -440,8 +452,6 @@ _add_message_to_batch(HTTPDestinationDriver *self, LogMessage *msg)
     }
   else
     {
-      if (self->request_body->len)
-        g_string_append_c(self->request_body, '\n');
       g_string_append(self->request_body, log_msg_get_value(msg, LM_V_MESSAGE, NULL));
     }
 }
@@ -625,7 +635,7 @@ http_dd_free(LogPipe *s)
   HTTPDestinationDriver *self = (HTTPDestinationDriver *)s;
 
   log_template_options_destroy(&self->template_options);
-
+  g_string_free(self->delimiter, TRUE);
   g_string_free(self->request_body, TRUE);
   g_string_free(self->body_prefix, TRUE);
   g_string_free(self->body_suffix, TRUE);
@@ -672,6 +682,7 @@ http_dd_new(GlobalConfig *cfg)
   self->flush_bytes = 0;
   self->body_prefix = g_string_new("");
   self->body_suffix = g_string_new("");
+  self->delimiter = g_string_new("\n");
 
   return &self->super.super.super;
 }
