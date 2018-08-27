@@ -119,7 +119,7 @@ affile_dw_arm_reaper(AFFileDestWriter *self)
   /* not yet reaped, set up the next callback */
   iv_validate_now();
   self->reap_timer.expires = iv_now;
-  timespec_add_msec(&self->reap_timer.expires, self->owner->time_reap * 1000);
+  timespec_add_msec(&self->reap_timer.expires, self->owner->time_reap * 1000L);
   iv_timer_register(&self->reap_timer);
 }
 
