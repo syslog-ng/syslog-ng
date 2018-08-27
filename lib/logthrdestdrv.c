@@ -130,13 +130,7 @@ _suspend(LogThreadedDestDriver *self)
 static void
 _connect(LogThreadedDestDriver *self)
 {
-  self->worker.connected = TRUE;
-  if (self->worker.connect)
-    {
-      self->worker.connected = self->worker.connect(self);
-    }
-
-  if (!self->worker.connected)
+  if (!log_threaded_dest_worker_connect(self))
     {
       msg_debug("Error establishing connection to server",
                 evt_tag_str("driver", self->super.super.id),
@@ -149,11 +143,7 @@ _connect(LogThreadedDestDriver *self)
 static void
 _disconnect(LogThreadedDestDriver *self)
 {
-  if (self->worker.disconnect)
-    {
-      self->worker.disconnect(self);
-    }
-  self->worker.connected = FALSE;
+  log_threaded_dest_worker_disconnect(self);
 }
 
 /* NOTE: runs in the worker thread */
@@ -273,7 +263,8 @@ _perform_inserts(LogThreadedDestDriver *self)
       self->batch_size++;
       ScratchBuffersMarker mark;
       scratch_buffers_mark(&mark);
-      result = self->worker.insert(self, msg);
+
+      result = log_threaded_dest_worker_insert(self, msg);
       scratch_buffers_reclaim_marked(mark);
 
       step_sequence_number(&self->seq_num);
@@ -303,9 +294,9 @@ _perform_flush(LogThreadedDestDriver *self)
    * flush() being called always, even if WORKER_INSERT_RESULT_SUCCESS is
    * returned, in which case batch_size is already zero at this point.
    */
-  if (!self->suspended && self->worker.flush)
+  if (!self->suspended)
     {
-      worker_insert_result_t result = self->worker.flush(self);
+      worker_insert_result_t result = log_threaded_dest_worker_flush(self);
       _process_result(self, result);
     }
 }
@@ -475,8 +466,7 @@ _worker_thread(gpointer arg)
   iv_event_register(&self->wake_up_event);
   iv_event_register(&self->shutdown_event);
 
-  if (self->worker.thread_init)
-    self->worker.thread_init(self);
+  log_threaded_dest_worker_thread_init(self);
 
   _signal_startup_finished(self);
 
@@ -485,8 +475,7 @@ _worker_thread(gpointer arg)
 
   _disconnect(self);
 
-  if (self->worker.thread_deinit)
-    self->worker.thread_deinit(self);
+  log_threaded_dest_worker_thread_deinit(self);
 
   msg_debug("Worker thread finished",
             evt_tag_str("driver", self->super.super.id));

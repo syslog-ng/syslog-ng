@@ -91,6 +91,55 @@ struct _LogThreadedDestDriver
   const gchar *(*format_stats_instance)(LogThreadedDestDriver *s);
 };
 
+static inline void
+log_threaded_dest_worker_thread_init(LogThreadedDestDriver *self)
+{
+  if (self->worker.thread_init)
+    self->worker.thread_init(self);
+}
+
+static inline void
+log_threaded_dest_worker_thread_deinit(LogThreadedDestDriver *self)
+{
+  if (self->worker.thread_deinit)
+    self->worker.thread_deinit(self);
+}
+
+static inline gboolean
+log_threaded_dest_worker_connect(LogThreadedDestDriver *self)
+{
+  if (self->worker.connect)
+    self->worker.connected = self->worker.connect(self);
+  else
+    self->worker.connected = TRUE;
+
+  return self->worker.connected;
+}
+
+static inline void
+log_threaded_dest_worker_disconnect(LogThreadedDestDriver *self)
+{
+  if (self->worker.disconnect)
+    self->worker.disconnect(self);
+  self->worker.connected = FALSE;
+}
+
+static inline worker_insert_result_t
+log_threaded_dest_worker_insert(LogThreadedDestDriver *self, LogMessage *msg)
+{
+  return self->worker.insert(self, msg);
+}
+
+static inline worker_insert_result_t
+log_threaded_dest_worker_flush(LogThreadedDestDriver *self)
+{
+  worker_insert_result_t result = WORKER_INSERT_RESULT_SUCCESS;
+
+  if (self->worker.flush)
+    result = self->worker.flush(self);
+  return result;
+}
+
 void log_threaded_dest_driver_ack_messages(LogThreadedDestDriver *self, gint batch_size);
 void log_threaded_dest_driver_drop_messages(LogThreadedDestDriver *self, gint batch_size);
 void log_threaded_dest_driver_rewind_messages(LogThreadedDestDriver *self, gint batch_size);
