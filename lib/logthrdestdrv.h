@@ -56,6 +56,7 @@ typedef struct _LogThreadedDestWorker
   worker_insert_result_t (*flush)(LogThreadedDestDriver *s);
 } LogThreadedDestWorker;
 
+
 struct _LogThreadedDestDriver
 {
   LogDestDriver super;
@@ -64,6 +65,7 @@ struct _LogThreadedDestDriver
   struct iv_event shutdown_event;
   struct iv_timer timer_reopen;
   struct iv_timer timer_throttle;
+  struct iv_timer timer_flush;
   gboolean startup_finished;
   GCond *started_up;
   GMutex *lock;
@@ -75,6 +77,8 @@ struct _LogThreadedDestDriver
   StatsCounterItem *memory_usage;
 
   gint flush_lines;
+  struct timespec last_flush_time;
+  gint flush_timeout;
   gboolean suspended;
   gboolean under_termination;
   time_t time_reopen;
@@ -82,6 +86,7 @@ struct _LogThreadedDestDriver
   gint rewound_batch_size;
   gint retries_counter;
   gint retries_max;
+  gboolean enable_flush_timeout;
 
   LogThreadedDestWorker worker;
 
@@ -138,6 +143,8 @@ log_threaded_dest_worker_flush(LogThreadedDestDriver *self)
 
   if (self->worker.flush)
     result = self->worker.flush(self);
+  iv_validate_now();
+  self->last_flush_time = iv_now;
   return result;
 }
 
@@ -153,5 +160,6 @@ void log_threaded_dest_driver_free(LogPipe *s);
 
 void log_threaded_dest_driver_set_max_retries(LogDriver *s, gint max_retries);
 void log_threaded_dest_driver_set_flush_lines(LogDriver *s, gint flush_lines);
+void log_threaded_dest_driver_set_flush_timeout(LogDriver *s, gint flush_timeout);
 
 #endif
