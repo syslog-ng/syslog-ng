@@ -4,7 +4,7 @@ if (${JSONC_INTERNAL})
   add_dependencies(test_format_json JSONC)
 endif()
 
-add_unit_test(LIBTEST TARGET test_json_parser
+add_unit_test(LIBTEST CRITERION TARGET test_json_parser
   INCLUDES "${JSON_INCLUDE_DIR}"
   DEPENDS json-plugin ${JSONC_LIBRARY})
 if (${JSONC_INTERNAL})
