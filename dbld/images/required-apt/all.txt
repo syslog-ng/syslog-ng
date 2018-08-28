@@ -53,3 +53,6 @@ docbook
 docbook-xsl
 dh-exec
 gnupg
+
+# required for kira
+netbase
