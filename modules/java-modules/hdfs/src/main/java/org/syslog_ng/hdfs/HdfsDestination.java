@@ -289,20 +289,25 @@ public class HdfsDestination extends StructuredLogDestination {
         }
     }
 
+    private void archiveFile(HdfsFile hdfsfile) {
+        Path filePath = hdfsfile.getPath();
+        logger.debug(String.format("Trying to archive %s to %s", filePath.getName(), archiveDir));
+        Path archiveDirPath = new Path(String.format("%s/%s", options.getUri(), archiveDir));
+
+        try {
+           hdfs.mkdirs(archiveDirPath);
+           hdfs.rename(filePath, archiveDirPath);
+        } catch (IOException e) {
+            logger.debug(String.format("Unable to archive, reason: %s", e.getMessage()));
+        }
+    }
+
     private void archiveFiles() {
         if (archiveDir == null)
            return;
 
         for (Map.Entry<String, HdfsFile> entry : openedFiles.entrySet()) {
-            Path filePath = entry.getValue().getPath();
-            logger.debug(String.format("Trying to archive %s to %s", filePath.getName(), archiveDir));
-            Path archiveDirPath = new Path(String.format("%s/%s", options.getUri(), archiveDir));
-            try {
-                hdfs.mkdirs(archiveDirPath);
-                hdfs.rename(filePath, archiveDirPath);
-            } catch (IOException e) {
-                logger.debug(String.format("Unable to archive, reason: %s", e.getMessage()));
-            }
+            archiveFile( entry.getValue() );
         }
     }
 
