@@ -232,14 +232,6 @@ http_dd_set_timeout(LogDriver *d, glong timeout)
 }
 
 void
-http_dd_set_flush_lines(LogDriver *d, glong flush_lines)
-{
-  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
-
-  self->flush_lines = flush_lines;
-}
-
-void
 http_dd_set_flush_bytes(LogDriver *d, glong flush_bytes)
 {
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
@@ -560,7 +552,7 @@ static gboolean
 _should_initiate_flush(HTTPDestinationDriver *self)
 {
   return (self->flush_bytes && self->request_body->len + self->body_suffix->len >= self->flush_bytes) ||
-         (self->flush_lines && self->super.batch_size >= self->flush_lines);
+         (self->super.flush_lines && self->super.batch_size >= self->super.flush_lines);
 }
 
 static worker_insert_result_t
@@ -591,7 +583,7 @@ _insert(LogThreadedDestDriver *s, LogMessage *msg)
 {
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) s;
 
-  if (self->flush_lines > 0 || self->flush_bytes)
+  if (self->super.flush_lines > 0 || self->flush_bytes)
     return _insert_batched(self, msg);
   else
     return _insert_single(self, msg);
@@ -686,7 +678,8 @@ http_dd_new(GlobalConfig *cfg)
   self->ssl_version = CURL_SSLVERSION_DEFAULT;
   self->peer_verify = TRUE;
   self->request_body = g_string_sized_new(32768);
-  self->flush_lines = 0;
+  /* disable batching even if the global flush_lines is specified */
+  self->super.flush_lines = 0;
   self->flush_bytes = 0;
   self->body_prefix = g_string_new("");
   self->body_suffix = g_string_new("");

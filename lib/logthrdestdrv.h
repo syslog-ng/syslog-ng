@@ -74,6 +74,7 @@ struct _LogThreadedDestDriver
   StatsCounterItem *written_messages;
   StatsCounterItem *memory_usage;
 
+  gint flush_lines;
   gboolean suspended;
   gboolean under_termination;
   time_t time_reopen;
@@ -151,5 +152,6 @@ void log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalC
 void log_threaded_dest_driver_free(LogPipe *s);
 
 void log_threaded_dest_driver_set_max_retries(LogDriver *s, gint max_retries);
+void log_threaded_dest_driver_set_flush_lines(LogDriver *s, gint flush_lines);
 
 #endif

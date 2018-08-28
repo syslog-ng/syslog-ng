@@ -37,6 +37,14 @@ log_threaded_dest_driver_set_max_retries(LogDriver *s, gint max_retries)
   self->retries_max = max_retries;
 }
 
+void
+log_threaded_dest_driver_set_flush_lines(LogDriver *s, gint flush_lines)
+{
+  LogThreadedDestDriver *self = (LogThreadedDestDriver *) s;
+
+  self->flush_lines = flush_lines;
+}
+
 /* this should be used in combination with WORKER_INSERT_RESULT_EXPLICIT_ACK_MGMT to actually confirm message delivery. */
 void
 log_threaded_dest_driver_ack_messages(LogThreadedDestDriver *self, gint batch_size)
@@ -572,6 +580,9 @@ log_threaded_dest_driver_init_method(LogPipe *s)
   if (cfg && self->time_reopen == -1)
     self->time_reopen = cfg->time_reopen;
 
+  if (cfg && self->flush_lines == -1)
+    self->flush_lines = cfg->flush_lines;
+
   self->worker.queue = log_dest_driver_acquire_queue(
                          &self->super,
                          s->generate_persist_name(s));
@@ -638,6 +649,7 @@ log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalConfig
   self->super.super.super.free_fn = log_threaded_dest_driver_free;
   self->time_reopen = -1;
   self->batch_size = 0;
+  self->flush_lines = -1;
 
   self->retries_max = MAX_RETRIES_OF_FAILED_INSERT_DEFAULT;
   _init_watches(self);

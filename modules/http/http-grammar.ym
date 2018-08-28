@@ -116,7 +116,7 @@ http_option
     | KW_DELIMITER  '(' string ')'        { http_dd_set_delimiter(last_driver, $3); free($3); }
     | KW_BODY       '(' template_content ')'  { http_dd_set_body(last_driver, $3); log_template_unref($3); }
     | KW_TIMEOUT '(' nonnegative_integer ')'  { http_dd_set_timeout(last_driver, $3); }
-    | KW_FLUSH_LINES '(' nonnegative_integer ')' { http_dd_set_flush_lines(last_driver, $3); }
+    | KW_FLUSH_LINES '(' nonnegative_integer ')' { log_threaded_dest_driver_set_flush_lines(last_driver, $3); }
     | KW_FLUSH_BYTES '(' nonnegative_integer ')' { http_dd_set_flush_bytes(last_driver, $3); }
     | threaded_dest_driver_option
     | http_tls_option
