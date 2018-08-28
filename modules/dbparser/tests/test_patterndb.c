@@ -185,20 +185,6 @@ assert_msg_with_program_matches_and_nvpair_equals(PatternDB *patterndb, const gc
 }
 
 static void
-assert_msg_doesnot_match(PatternDB *patterndb, const gchar *message)
-{
-  LogMessage *msg;
-  gboolean result;
-
-  msg = _construct_message("prog1", message);
-  result = _process(patterndb, msg);
-  cr_assert_not(result, "patterndb expected to match but it didn't");
-  assert_log_message_value(msg, log_msg_get_value_handle(".classifier.class"), "unknown");
-  assert_log_message_has_tag(msg, ".classifier.unknown");
-  log_msg_unref(msg);
-}
-
-static void
 assert_msg_matches_and_nvpair_equals(PatternDB *patterndb, const gchar *pattern, const gchar *name, const gchar *value)
 {
   assert_msg_with_program_matches_and_nvpair_equals(patterndb, "prog1", pattern, name, value);
