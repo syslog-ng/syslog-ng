@@ -178,8 +178,8 @@ Test(logthrsourcedrv, test_threaded_source_blocking_post)
   TestThreadedSourceDriver *s = create_threaded_source();
 
   s->num_of_messages_to_generate = 10;
-  log_threaded_source_driver_set_worker_run(&s->super, _run_using_blocking_posts);
-  log_threaded_source_driver_set_worker_request_exit(&s->super, _request_exit);
+  log_threaded_source_driver_set_worker_run_func(&s->super, _run_using_blocking_posts);
+  log_threaded_source_driver_set_worker_request_exit_func(&s->super, _request_exit);
 
   start_test_threaded_source(s);
   request_exit_and_wait_for_stop(s);
@@ -198,8 +198,8 @@ Test(logthrsourcedrv, test_threaded_source_suspend)
   s->num_of_messages_to_generate = 5;
   s->super.worker_options.super.init_window_size = 5;
   s->super.super.super.super.queue = _do_not_ack_messages;
-  log_threaded_source_driver_set_worker_run(&s->super, _run_simple);
-  log_threaded_source_driver_set_worker_request_exit(&s->super, _request_exit);
+  log_threaded_source_driver_set_worker_run_func(&s->super, _run_simple);
+  log_threaded_source_driver_set_worker_request_exit_func(&s->super, _request_exit);
 
   start_test_threaded_source(s);
   request_exit_and_wait_for_stop(s);

@@ -41,9 +41,9 @@ struct _LogThreadedSourceWorker
   WakeupCondition wakeup_cond;
   WorkerOptions options;
 
-  LogThreadedSourceWorkerRun run;
-  LogThreadedSourceWorkerRequestExit request_exit;
-  LogThreadedSourceWorkerWakeup wakeup;
+  LogThreadedSourceWorkerRunFunc run;
+  LogThreadedSourceWorkerRequestExitFunc request_exit;
+  LogThreadedSourceWorkerWakeupFunc wakeup;
 };
 
 static LogPipe *
@@ -243,20 +243,20 @@ log_threaded_source_driver_free_method(LogPipe *s)
 }
 
 void
-log_threaded_source_driver_set_worker_run(LogThreadedSourceDriver *self, LogThreadedSourceWorkerRun run)
+log_threaded_source_driver_set_worker_run_func(LogThreadedSourceDriver *self, LogThreadedSourceWorkerRunFunc run)
 {
   self->worker->run = run;
 }
 
 void
-log_threaded_source_driver_set_worker_request_exit(LogThreadedSourceDriver *self,
-                                                   LogThreadedSourceWorkerRequestExit request_exit)
+log_threaded_source_driver_set_worker_request_exit_func(LogThreadedSourceDriver *self,
+                                                        LogThreadedSourceWorkerRequestExitFunc request_exit)
 {
   self->worker->request_exit = request_exit;
 }
 
 void
-log_threaded_source_set_wakeup(LogThreadedSourceDriver *self, LogThreadedSourceWorkerWakeup wakeup)
+log_threaded_source_set_wakeup_func(LogThreadedSourceDriver *self, LogThreadedSourceWorkerWakeupFunc wakeup)
 {
   self->worker->wakeup = wakeup;
 }

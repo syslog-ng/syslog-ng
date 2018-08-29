@@ -267,9 +267,9 @@ log_threaded_fetcher_driver_init_instance(LogThreadedFetcherDriver *self, Global
 
   _init_watches(self);
 
-  log_threaded_source_driver_set_worker_run(&self->super, _worker_run);
-  log_threaded_source_driver_set_worker_request_exit(&self->super, _worker_request_exit);
-  log_threaded_source_set_wakeup(&self->super, _wakeup);
+  log_threaded_source_driver_set_worker_run_func(&self->super, _worker_run);
+  log_threaded_source_driver_set_worker_request_exit_func(&self->super, _worker_request_exit);
+  log_threaded_source_set_wakeup_func(&self->super, _wakeup);
 
   self->super.super.super.super.init = log_threaded_fetcher_driver_init_method;
   self->super.super.super.super.deinit = log_threaded_fetcher_driver_deinit_method;

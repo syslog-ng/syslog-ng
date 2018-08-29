@@ -35,9 +35,9 @@
 typedef struct _LogThreadedSourceDriver LogThreadedSourceDriver;
 typedef struct _LogThreadedSourceWorker LogThreadedSourceWorker;
 
-typedef void (*LogThreadedSourceWorkerRun)(LogThreadedSourceDriver *);
-typedef void (*LogThreadedSourceWorkerRequestExit)(LogThreadedSourceDriver *);
-typedef void (*LogThreadedSourceWorkerWakeup)(LogThreadedSourceDriver *);
+typedef void (*LogThreadedSourceWorkerRunFunc)(LogThreadedSourceDriver *);
+typedef void (*LogThreadedSourceWorkerRequestExitFunc)(LogThreadedSourceDriver *);
+typedef void (*LogThreadedSourceWorkerWakeupFunc)(LogThreadedSourceDriver *);
 
 typedef struct _LogThreadedSourceWorkerOptions
 {
@@ -63,15 +63,15 @@ gboolean log_threaded_source_driver_init_method(LogPipe *s);
 gboolean log_threaded_source_driver_deinit_method(LogPipe *s);
 void log_threaded_source_driver_free_method(LogPipe *s);
 
-void log_threaded_source_driver_set_worker_run(LogThreadedSourceDriver *self, LogThreadedSourceWorkerRunFunc run);
-void log_threaded_source_driver_set_worker_request_exit(LogThreadedSourceDriver *self,
-                                                        LogThreadedSourceWorkerRequestExitFunc request_exit);
+void log_threaded_source_driver_set_worker_run_func(LogThreadedSourceDriver *self, LogThreadedSourceWorkerRunFunc run);
+void log_threaded_source_driver_set_worker_request_exit_func(LogThreadedSourceDriver *self,
+    LogThreadedSourceWorkerRequestExitFunc request_exit);
 
 /* blocking API */
 void log_threaded_source_blocking_post(LogThreadedSourceDriver *self, LogMessage *msg);
 
 /* non-blocking API, use it wisely (thread boundaries) */
-void log_threaded_source_set_wakeup(LogThreadedSourceDriver *self, LogThreadedSourceWorkerWakeupFunc wakeup);
+void log_threaded_source_set_wakeup_func(LogThreadedSourceDriver *self, LogThreadedSourceWorkerWakeupFunc wakeup);
 void log_threaded_source_post(LogThreadedSourceDriver *self, LogMessage *msg);
 gboolean log_threaded_source_free_to_send(LogThreadedSourceDriver *self);
 
