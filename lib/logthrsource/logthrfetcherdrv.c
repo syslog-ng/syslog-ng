@@ -26,7 +26,7 @@
 #include "messages.h"
 
 static EVTTAG *
-evt_tag_driver(LogThreadedFetcherDriver *f)
+_tag_driver(LogThreadedFetcherDriver *f)
 {
   return evt_tag_str("driver", f->super.super.super.id);
 }
@@ -34,7 +34,7 @@ evt_tag_driver(LogThreadedFetcherDriver *f)
 static inline void
 _thread_init(LogThreadedFetcherDriver *self)
 {
-  msg_trace("Fetcher thread_init()", evt_tag_driver(self));
+  msg_trace("Fetcher thread_init()", _tag_driver(self));
   if (self->thread_init)
     self->thread_init(self);
 }
@@ -42,7 +42,7 @@ _thread_init(LogThreadedFetcherDriver *self)
 static inline void
 _thread_deinit(LogThreadedFetcherDriver *self)
 {
-  msg_trace("Fetcher thread_deinit()", evt_tag_driver(self));
+  msg_trace("Fetcher thread_deinit()", _tag_driver(self));
   if (self->thread_deinit)
     self->thread_deinit(self);
 }
@@ -50,13 +50,13 @@ _thread_deinit(LogThreadedFetcherDriver *self)
 static inline gboolean
 _connect(LogThreadedFetcherDriver *self)
 {
-  msg_trace("Fetcher connect()", evt_tag_driver(self));
+  msg_trace("Fetcher connect()", _tag_driver(self));
   if (!self->connect)
     return TRUE;
 
   if (!self->connect(self))
     {
-      msg_debug("Error establishing connection", evt_tag_driver(self));
+      msg_debug("Error establishing connection", _tag_driver(self));
       return FALSE;
     }
 
@@ -66,7 +66,7 @@ _connect(LogThreadedFetcherDriver *self)
 static inline void
 _disconnect(LogThreadedFetcherDriver *self)
 {
-  msg_trace("Fetcher disconnect()", evt_tag_driver(self));
+  msg_trace("Fetcher disconnect()", _tag_driver(self));
   if (self->disconnect)
     self->disconnect(self);
 }
@@ -138,21 +138,21 @@ _fetch(gpointer data)
 {
   LogThreadedFetcherDriver *self = (LogThreadedFetcherDriver *) data;
 
-  msg_trace("Fetcher fetch()", evt_tag_driver(self));
+  msg_trace("Fetcher fetch()", _tag_driver(self));
 
   LogThreadedFetchResult fetch_result = self->fetch(self);
 
   switch (fetch_result.result)
     {
     case THREADED_FETCH_ERROR:
-      msg_error("Error during fetching messages", evt_tag_driver(self));
+      msg_error("Error during fetching messages", _tag_driver(self));
       _disconnect(self);
       _start_reconnect_timer(self);
       break;
 
     case THREADED_FETCH_NOT_CONNECTED:
       msg_info("Fetcher disconnected while receiving messages, reconnecting",
-               evt_tag_driver(self));
+               _tag_driver(self));
       _start_reconnect_timer(self);
       break;
 
