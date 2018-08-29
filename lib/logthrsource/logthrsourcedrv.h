@@ -67,6 +67,14 @@ void log_threaded_source_driver_set_worker_run_func(LogThreadedSourceDriver *sel
 void log_threaded_source_driver_set_worker_request_exit_func(LogThreadedSourceDriver *self,
     LogThreadedSourceWorkerRequestExitFunc request_exit);
 
+static inline LogSourceOptions *
+log_threaded_source_driver_get_source_options(LogDriver *s)
+{
+  LogThreadedSourceDriver *self = (LogThreadedSourceDriver *) s;
+
+  return &self->worker_options.super;
+}
+
 /* blocking API */
 void log_threaded_source_blocking_post(LogThreadedSourceDriver *self, LogMessage *msg);
 
