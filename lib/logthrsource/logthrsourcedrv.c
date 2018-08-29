@@ -46,6 +46,51 @@ struct _LogThreadedSourceWorker
   LogThreadedSourceWorkerWakeupFunc wakeup;
 };
 
+static void
+wakeup_cond_init(WakeupCondition *cond)
+{
+  cond->lock = g_mutex_new();
+  cond->cond = g_cond_new();
+  cond->awoken = TRUE;
+}
+
+static void
+wakeup_cond_destroy(WakeupCondition *cond)
+{
+  g_cond_free(cond->cond);
+  g_mutex_free(cond->lock);
+}
+
+static inline void
+wakeup_cond_lock(WakeupCondition *cond)
+{
+  g_mutex_lock(cond->lock);
+}
+
+static inline void
+wakeup_cond_unlock(WakeupCondition *cond)
+{
+  g_mutex_unlock(cond->lock);
+}
+
+/* The wakeup lock must be held before calling this function. */
+static inline void
+wakeup_cond_wait(WakeupCondition *cond)
+{
+  cond->awoken = FALSE;
+  while (!cond->awoken)
+    g_cond_wait(cond->cond, cond->lock);
+}
+
+static inline void
+wakeup_cond_signal(WakeupCondition *cond)
+{
+  g_mutex_lock(cond->lock);
+  cond->awoken = TRUE;
+  g_cond_signal(cond->cond);
+  g_mutex_unlock(cond->lock);
+}
+
 static LogPipe *
 log_threaded_source_worker_logpipe(LogThreadedSourceWorker *self)
 {
@@ -91,9 +136,7 @@ log_threaded_source_suspend(LogThreadedSourceDriver *self)
 {
   LogThreadedSourceWorker *worker = self->worker;
 
-  worker->wakeup_cond.awoken = FALSE;
-  while (!worker->wakeup_cond.awoken)
-    g_cond_wait(worker->wakeup_cond.cond, worker->wakeup_cond.lock);
+  wakeup_cond_wait(&worker->wakeup_cond);
 }
 
 static void
@@ -101,10 +144,7 @@ log_threaded_source_wakeup(LogThreadedSourceDriver *self)
 {
   LogThreadedSourceWorker *worker = self->worker;
 
-  g_mutex_lock(worker->wakeup_cond.lock);
-  worker->wakeup_cond.awoken = TRUE;
-  g_cond_signal(worker->wakeup_cond.cond);
-  g_mutex_unlock(worker->wakeup_cond.lock);
+  wakeup_cond_signal(&worker->wakeup_cond);
 }
 
 static void
@@ -164,8 +204,7 @@ log_threaded_source_worker_free(LogPipe *s)
 {
   LogThreadedSourceWorker *self = (LogThreadedSourceWorker *) s;
 
-  g_cond_free(self->wakeup_cond.cond);
-  g_mutex_free(self->wakeup_cond.lock);
+  wakeup_cond_destroy(&self->wakeup_cond);
 
   log_pipe_unref(&self->control->super.super.super);
   self->control = NULL;
@@ -179,8 +218,7 @@ log_threaded_source_worker_new(GlobalConfig *cfg)
   LogThreadedSourceWorker *self = g_new0(LogThreadedSourceWorker, 1);
   log_source_init_instance(&self->super, cfg);
 
-  self->wakeup_cond.lock = g_mutex_new();
-  self->wakeup_cond.cond = g_cond_new();
+  wakeup_cond_init(&self->wakeup_cond);
 
   self->options.is_external_input = TRUE;
 
@@ -298,10 +336,10 @@ log_threaded_source_blocking_post(LogThreadedSourceDriver *self, LogMessage *msg
    * "schedule_wakeup" event are guaranteed to be scheduled in the right order.
    */
 
-  g_mutex_lock(worker->wakeup_cond.lock);
+  wakeup_cond_lock(&worker->wakeup_cond);
   if (!log_threaded_source_free_to_send(self))
     log_threaded_source_suspend(self);
-  g_mutex_unlock(worker->wakeup_cond.lock);
+  wakeup_cond_unlock(&worker->wakeup_cond);
 }
 
 void
