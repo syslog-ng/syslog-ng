@@ -134,6 +134,28 @@ _schedule_next_fetch_if_free_to_send(LogThreadedFetcherDriver *self)
 }
 
 static void
+_on_fetch_error(LogThreadedFetcherDriver *self)
+{
+  msg_error("Error during fetching messages", _tag_driver(self));
+  _disconnect(self);
+  _start_reconnect_timer(self);
+}
+
+static void
+_on_not_connected(LogThreadedFetcherDriver *self)
+{
+  msg_info("Fetcher disconnected while receiving messages, reconnecting", _tag_driver(self));
+  _start_reconnect_timer(self);
+}
+
+static void
+_on_fetch_success(LogThreadedFetcherDriver *self, LogMessage *msg)
+{
+  log_threaded_source_post(&self->super, msg);
+  _schedule_next_fetch_if_free_to_send(self);
+}
+
+static void
 _fetch(gpointer data)
 {
   LogThreadedFetcherDriver *self = (LogThreadedFetcherDriver *) data;
@@ -145,20 +167,15 @@ _fetch(gpointer data)
   switch (fetch_result.result)
     {
     case THREADED_FETCH_ERROR:
-      msg_error("Error during fetching messages", _tag_driver(self));
-      _disconnect(self);
-      _start_reconnect_timer(self);
+      _on_fetch_error(self);
       break;
 
     case THREADED_FETCH_NOT_CONNECTED:
-      msg_info("Fetcher disconnected while receiving messages, reconnecting",
-               _tag_driver(self));
-      _start_reconnect_timer(self);
+      _on_not_connected(self);
       break;
 
     case THREADED_FETCH_SUCCESS:
-      log_threaded_source_post(&self->super, fetch_result.msg);
-      _schedule_next_fetch_if_free_to_send(self);
+      _on_fetch_success(self, fetch_result.msg);
       break;
 
     default:
