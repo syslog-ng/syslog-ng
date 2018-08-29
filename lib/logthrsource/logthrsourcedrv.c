@@ -255,12 +255,6 @@ log_threaded_source_driver_set_worker_request_exit(LogThreadedSourceDriver *self
   self->worker->request_exit = request_exit;
 }
 
-LogSource *
-_log_threaded_source_driver_get_source(LogThreadedSourceDriver *self)
-{
-  return &self->worker->super;
-}
-
 void
 log_threaded_source_set_wakeup(LogThreadedSourceDriver *self, LogThreadedSourceWorkerWakeup wakeup)
 {

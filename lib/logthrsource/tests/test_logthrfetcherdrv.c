@@ -71,7 +71,7 @@ static void _source_queue_mock(LogPipe *s, LogMessage *msg, const LogPathOptions
 static LogSource *
 _get_source(TestThreadedFetcherDriver *self)
 {
-  return _log_threaded_source_driver_get_source(&self->super.super);
+  return (LogSource *) self->super.super.worker;
 }
 
 static void

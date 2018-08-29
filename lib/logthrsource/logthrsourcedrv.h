@@ -63,19 +63,16 @@ gboolean log_threaded_source_driver_init_method(LogPipe *s);
 gboolean log_threaded_source_driver_deinit_method(LogPipe *s);
 void log_threaded_source_driver_free_method(LogPipe *s);
 
-void log_threaded_source_driver_set_worker_run(LogThreadedSourceDriver *self, LogThreadedSourceWorkerRun run);
+void log_threaded_source_driver_set_worker_run(LogThreadedSourceDriver *self, LogThreadedSourceWorkerRunFunc run);
 void log_threaded_source_driver_set_worker_request_exit(LogThreadedSourceDriver *self,
-                                                        LogThreadedSourceWorkerRequestExit request_exit);
+                                                        LogThreadedSourceWorkerRequestExitFunc request_exit);
 
 /* blocking API */
 void log_threaded_source_blocking_post(LogThreadedSourceDriver *self, LogMessage *msg);
 
 /* non-blocking API, use it wisely (thread boundaries) */
-void log_threaded_source_set_wakeup(LogThreadedSourceDriver *self, LogThreadedSourceWorkerWakeup wakeup);
+void log_threaded_source_set_wakeup(LogThreadedSourceDriver *self, LogThreadedSourceWorkerWakeupFunc wakeup);
 void log_threaded_source_post(LogThreadedSourceDriver *self, LogMessage *msg);
 gboolean log_threaded_source_free_to_send(LogThreadedSourceDriver *self);
-
-/* for testing */
-LogSource *_log_threaded_source_driver_get_source(LogThreadedSourceDriver *self);
 
 #endif
