@@ -81,7 +81,7 @@ test_threaded_sd_new(GlobalConfig *cfg)
   self->super.format_stats_instance = _format_stats_instance;
   self->super.super.super.super.generate_persist_name = _generate_persist_name;
 
-  /* this is extremely ugly, but we want to mock out the hard-coded DNS lookup calls inside log_source_queue() */
+  /* mock out the hard-coded DNS lookup calls inside log_source_queue() */
   _get_source(self)->super.queue = _source_queue_mock;
 
   return self;

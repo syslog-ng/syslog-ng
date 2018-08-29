@@ -120,7 +120,6 @@ log_threaded_source_worker_run(LogThreadedSourceWorker *self)
 static void
 log_threaded_source_worker_request_exit(LogThreadedSourceWorker *self)
 {
-  /* TODO force exit after timeout */
   msg_debug("Requesting worker thread exit", evt_tag_str("driver", self->control->super.super.id));
   self->request_exit(self->control);
   log_threaded_source_wakeup(self->control);
