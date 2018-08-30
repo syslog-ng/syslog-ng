@@ -43,6 +43,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
 
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import static java.lang.Math.abs;
+
 public class HdfsDestination extends StructuredLogDestination {
     private static final String LOG_TAG = "HDFS:";
     private static final String HADOOP_SECURITY_AUTH_KEY = "hadoop.security.authentication";
@@ -60,11 +66,92 @@ public class HdfsDestination extends StructuredLogDestination {
 
     HashMap<String, HdfsFile> openedFiles;
 
+    private Timer timeReap;
+
+    private Lock lock;
+
+    class TimeReapTask extends TimerTask {
+        private boolean closeFile(HdfsFile hdfsfile) {
+           logger.info("Closing file " + hdfsfile.getPath() + "; reason=reaping");
+
+           try {
+               hdfsfile.flush();
+               hdfsfile.close();
+           } catch (IOException e) {
+               printStackTrace(e);
+               return false;
+           }
+
+           if (archiveDir != null) {
+               archiveFile(hdfsfile);
+           }
+
+           return true;
+        }
+
+        private void closeExpiredFiles() {
+           for (Iterator<Map.Entry<String, HdfsFile>> it = openedFiles.entrySet().iterator(); it.hasNext();) {
+               HdfsFile file = it.next().getValue();
+               long current = file.timeSinceLastWrite();
+
+               if (current >= options.getTimeReap()) {
+                  closeFile(file);
+                  it.remove();
+               }
+           }
+        }
+
+        private long calculateNextWakeUp() {
+           if (openedFiles.isEmpty())
+              return 0;
+
+           long nextTimerExpires = -1;
+           for (Map.Entry<String, HdfsFile> entry : openedFiles.entrySet()) {
+               logger.debug("key: " + entry.getKey());
+               long current = entry.getValue().timeSinceLastWrite();
+
+               if (current > nextTimerExpires) {
+                  nextTimerExpires = current;
+               }
+           }
+
+           if (nextTimerExpires <= 0)
+              return 0;
+
+           nextTimerExpires = Math.abs(options.getTimeReap() - nextTimerExpires);
+           logger.trace("Next schedule in " + nextTimerExpires);
+
+           return nextTimerExpires;
+        }
+
+        @Override
+        public void run() {
+           logger.debug("time-reap run");
+           lock.lock();
+           try {
+               closeExpiredFiles();
+
+               long nextTimerExpires = calculateNextWakeUp();
+
+               if (nextTimerExpires <= 0) {
+                  timeReap.cancel();
+                  timeReap = null;
+                  return;
+               }
+
+               timeReap.schedule(new TimeReapTask(), nextTimerExpires);
+           } finally {
+             lock.unlock();
+           }
+        }
+    }
+
     public HdfsDestination(long handle) {
         super(handle);
         logger = Logger.getRootLogger();
         SyslogNgInternalLogger.register(logger);
         options = new HdfsOptions(this);
+        lock = new ReentrantLock();
     }
 
     @Override
@@ -93,6 +180,7 @@ public class HdfsDestination extends StructuredLogDestination {
     @Override
     public boolean open() {
         logger.debug("Opening hdfs");
+        lock.lock();
         openedFiles = new HashMap<String, HdfsFile>();
         isOpened = false;
         try {
@@ -111,6 +199,8 @@ public class HdfsDestination extends StructuredLogDestination {
         } catch (Exception e) {
             printStackTrace(e);
             closeAll(false);
+        } finally {
+          lock.unlock();
         }
         return isOpened;
     }
@@ -137,10 +227,23 @@ public class HdfsDestination extends StructuredLogDestination {
         UserGroupInformation.loginUserFromKeytab(options.getKerberosPrincipal(), options.getKerberosKeytabFile());
     }
 
+
+    protected void updateFilesTimer(HdfsFile hdfsfile) {
+        if (options.getTimeReap() == 0)
+           return;
+
+        if (timeReap != null)
+           return;
+
+        timeReap = new Timer();
+        timeReap.schedule( new TimeReapTask(), options.getTimeReap());
+    }
+
     @Override
     public boolean send(LogMessage logMessage) {
         isOpened = false;
         String resolvedFileName = options.getFileNameTemplate().getResolvedString(logMessage);
+        lock.lock();
         HdfsFile hdfsfile = getHdfsFile(resolvedFileName);
         if (hdfsfile == null) {
             // Unable to open file
@@ -156,11 +259,16 @@ public class HdfsDestination extends StructuredLogDestination {
             byte[] rawMessage = formattedMessage.getBytes(Charset.forName("UTF-8"));
 
             hdfsfile.write(rawMessage);
+
+            updateFilesTimer(hdfsfile);
         } catch (IOException e) {
             printStackTrace(e);
             closeAll(false);
             return false;
+        } finally {
+          lock.unlock();
         }
+
 
         isOpened = true;
         return true;
@@ -236,6 +344,8 @@ public class HdfsDestination extends StructuredLogDestination {
          */
 
         logger.debug("Flushing hdfs");
+        lock.lock();
+        try {
         for (Map.Entry<String, HdfsFile> entry : openedFiles.entrySet()) {
             HdfsFile hdfsfile = entry.getValue();
             try {
@@ -244,16 +354,30 @@ public class HdfsDestination extends StructuredLogDestination {
                 logger.debug(String.format("Flush failed on file %s, reason: %s", entry.getKey(), e.getMessage()));
             }
         }
+        } finally {
+          lock.unlock();
+        }
     }
 
     @Override
     public void close() {
         logger.debug("Closing hdfs");
+
+        lock.lock();
+        try {
         closeAll(true);
+        } finally {
+          lock.unlock();
+        }
         isOpened = false;
     }
 
     private void closeAll(boolean isArchiving) {
+        if (timeReap != null) {
+            timeReap.cancel();
+            timeReap = null;
+        }
+
         closeAllHdfsFiles();
 
         if (isArchiving) {
