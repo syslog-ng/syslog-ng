@@ -41,8 +41,12 @@ public class HdfsFile {
         return path;
     }
 
+    public boolean isOpen() {
+        return fsDataOutputStream != null;
+    }
+
     public void flush() throws IOException {
-         if (fsDataOutputStream == null)
+         if (!isOpen())
             return;
 
          fsDataOutputStream.hflush();
@@ -50,11 +54,14 @@ public class HdfsFile {
     }
 
     public void write(byte[] message) throws IOException {
+         if (!isOpen())
+            throw new IOException("File is not open: "+path);
+
          fsDataOutputStream.write(message);
     }
 
     public void close() throws IOException {
-         if (fsDataOutputStream == null)
+         if (!isOpen())
             return;
 
           fsDataOutputStream.close();

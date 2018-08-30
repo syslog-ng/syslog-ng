@@ -168,7 +168,7 @@ public class HdfsDestination extends StructuredLogDestination {
 
     private HdfsFile getHdfsFile(String resolvedFileName) {
         HdfsFile hdfsFile = openedFiles.get(resolvedFileName);
-        if (hdfsFile == null) {
+        if (hdfsFile == null || !hdfsFile.isOpen()) {
             hdfsFile = createHdfsFile(resolvedFileName);
             openedFiles.put(resolvedFileName, hdfsFile);
         }
