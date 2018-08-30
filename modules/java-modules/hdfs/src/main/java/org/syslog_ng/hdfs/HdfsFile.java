@@ -31,10 +31,12 @@ import java.io.IOException;
 public class HdfsFile {
     private FSDataOutputStream fsDataOutputStream;
     private Path path;
+    private long lastWrite;
 
     public HdfsFile(Path filepath, FSDataOutputStream outputstream) {
         this.path = filepath;
         this.fsDataOutputStream = outputstream;
+        this.lastWrite = 0;
     }
 
     public Path getPath() {
@@ -58,6 +60,15 @@ public class HdfsFile {
             throw new IOException("File is not open: "+path);
 
          fsDataOutputStream.write(message);
+
+         lastWrite = System.currentTimeMillis();
+    }
+
+    public long timeSinceLastWrite() {
+       if (!isOpen())
+          return 0;
+
+       return System.currentTimeMillis() - lastWrite;
     }
 
     public void close() throws IOException {
@@ -66,5 +77,6 @@ public class HdfsFile {
 
           fsDataOutputStream.close();
           fsDataOutputStream = null;
+          lastWrite = 0;
     }
 }
