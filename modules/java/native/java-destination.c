@@ -42,8 +42,7 @@ Java_org_syslog_1ng_LogDestination_getOption(JNIEnv *env, jobject obj, jlong s, 
     {
       return NULL;
     }
-  gchar *normalized_key = g_strdup(key_str);
-  normalized_key = __normalize_key(normalized_key);
+  gchar *normalized_key = __normalize_key(key_str);
   value = g_hash_table_lookup(self->options, normalized_key);
   (*env)->ReleaseStringUTFChars(env, key, key_str);  // release resources
   g_free(normalized_key);
@@ -82,9 +81,8 @@ Java_org_syslog_1ng_LogPipe_getConfigHandle(JNIEnv *env, jobject obj, jlong hand
 void java_dd_set_option(LogDriver *s, const gchar *key, const gchar *value)
 {
   JavaDestDriver *self = (JavaDestDriver *)s;
-  gchar *normalized_key = g_strdup(key);
-  normalized_key = __normalize_key(normalized_key);
-  g_hash_table_insert(self->options, g_strdup(normalized_key), g_strdup(value));
+  gchar *normalized_key = __normalize_key(key);
+  g_hash_table_insert(self->options, normalized_key, g_strdup(value));
 }
 
 
