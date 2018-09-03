@@ -27,6 +27,8 @@
 #include "messages.h"
 #include "apphook.h"
 
+#include <iv.h>
+
 typedef struct _WakeupCondition
 {
   GMutex *lock;
@@ -152,7 +154,12 @@ log_threaded_source_worker_run(LogThreadedSourceWorker *self)
 {
   msg_debug("Worker thread started", evt_tag_str("driver", self->control->super.super.id));
 
+  /* ivykis is not used here, but mark-freq() requires all source threads to be iv-initialized. */
+  iv_init();
+
   self->run(self->control);
+
+  iv_deinit();
 
   msg_debug("Worker thread finished", evt_tag_str("driver", self->control->super.super.id));
 }
