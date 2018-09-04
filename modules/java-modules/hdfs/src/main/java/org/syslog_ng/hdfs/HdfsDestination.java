@@ -388,6 +388,7 @@ public class HdfsDestination extends StructuredLogDestination {
             HdfsFile hdfsfile = entry.getValue();
             try {
                 logger.debug(String.format("Closing file: %s", entry.getKey()));
+                hdfsfile.flush();
                 hdfsfile.close();
             } catch (IOException e) {
                 printStackTrace(e);
