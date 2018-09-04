@@ -199,11 +199,15 @@ _handle_file_deleted(WildcardSourceDriver *self, const DirectoryMonitorEvent *ev
 void
 _handler_directory_deleted(WildcardSourceDriver *self, const DirectoryMonitorEvent *event)
 {
-  DirectoryMonitor *monitor = g_hash_table_lookup(self->directory_monitors, event->full_path);
-  if (monitor)
+  gchar *key;
+  DirectoryMonitor *monitor;
+  gboolean found = g_hash_table_lookup_extended(self->directory_monitors, event->full_path,
+                                                (gpointer *)&key, (gpointer *)&monitor);
+  if (found)
     {
       msg_debug("Monitored directory is deleted", evt_tag_str("dir", event->full_path));
       g_hash_table_steal(self->directory_monitors, event->full_path);
+      g_free(key);
       directory_monitor_schedule_destroy(monitor);
     }
 }
