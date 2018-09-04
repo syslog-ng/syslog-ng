@@ -145,8 +145,12 @@ LogMacroDef macros[] =
   { "C_MONTH_NAME",     M_CSTAMP_OFS + M_MONTH_NAME },
   { "C_DAY",            M_CSTAMP_OFS + M_DAY },
   { "C_HOUR",           M_CSTAMP_OFS + M_HOUR },
+  { "C_HOUR12",         M_CSTAMP_OFS + M_HOUR12 },
   { "C_MIN",            M_CSTAMP_OFS + M_MIN },
   { "C_SEC",            M_CSTAMP_OFS + M_SEC },
+  { "C_MSEC",           M_CSTAMP_OFS + M_MSEC },
+  { "C_USEC",           M_CSTAMP_OFS + M_USEC },
+  { "C_AMPM",           M_CSTAMP_OFS + M_AMPM },
   { "C_WEEKDAY",        M_CSTAMP_OFS + M_WEEK_DAY_ABBREV }, /* deprecated */
   { "C_WEEK_DAY",       M_CSTAMP_OFS + M_WEEK_DAY },
   { "C_WEEK_DAY_ABBREV",M_CSTAMP_OFS + M_WEEK_DAY_ABBREV },
