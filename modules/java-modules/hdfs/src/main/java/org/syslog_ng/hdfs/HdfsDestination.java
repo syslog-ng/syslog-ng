@@ -54,20 +54,15 @@ public class HdfsDestination extends StructuredLogDestination {
     private static final String HADOOP_SECURITY_AUTH_KEY = "hadoop.security.authentication";
     private static final String DFS_SUPPORT_APPEND_KEY = "dfs.support.append";
 
-    HdfsOptions options;
-    Logger logger;
-
+    private HdfsOptions options;
+    private Logger logger;
     private FileSystem hdfs;
-
     private boolean isOpened;
     private int maxFileNameLength = 255;
     private boolean appendEnabled;
     private String archiveDir;
-
-    HashMap<String, HdfsFile> openedFiles;
-
+    private HashMap<String, HdfsFile> openedFiles;
     private Timer timeReap;
-
     private Lock lock;
 
     class TimeReapTask extends TimerTask {
