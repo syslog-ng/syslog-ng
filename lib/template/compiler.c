@@ -305,7 +305,7 @@ log_template_compiler_process_arg_list(LogTemplateCompiler *self, GPtrArray *res
   gint parens = 1;
   self->cursor++;
 
-  while (*self->cursor && *self->cursor == ' ')
+  while (*self->cursor && g_ascii_isspace(*self->cursor))
     self->cursor++;
 
   while(*self->cursor)
@@ -337,12 +337,12 @@ log_template_compiler_process_arg_list(LogTemplateCompiler *self, GPtrArray *res
           arg_buf_has_a_value = TRUE;
           continue;
         }
-      else if (parens == 1 && (*self->cursor == ' ' || *self->cursor == '\t'))
+      else if (parens == 1 && g_ascii_isspace(*self->cursor))
         {
           g_ptr_array_add(result, g_strndup(arg_buf->str, arg_buf->len));
           g_string_truncate(arg_buf, 0);
           arg_buf_has_a_value = FALSE;
-          while (*self->cursor && (*self->cursor == ' ' || *self->cursor == '\t'))
+          while (*self->cursor && g_ascii_isspace(*self->cursor))
             self->cursor++;
           continue;
         }
