@@ -87,9 +87,9 @@ _start_failback_timer(AFInetDestDriverFailover *self)
   elapsed_time = timespec_diff_msec(&iv_now, &(self->timer.expires));
   self->timer.expires = iv_now;
 
-  if (elapsed_time < (self->probe_interval*1000))
+  if (elapsed_time < (self->probe_interval*1000L))
     {
-      timespec_add_msec(&self->timer.expires, (self->probe_interval*1000 - elapsed_time));
+      timespec_add_msec(&self->timer.expires, (self->probe_interval*1000L - elapsed_time));
     }
   iv_timer_register(&self->timer);
 }

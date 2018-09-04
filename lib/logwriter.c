@@ -365,7 +365,7 @@ log_writer_update_fd_callbacks(LogWriter *self, GIOCondition cond)
 }
 
 static void
-log_writer_arm_suspend_timer(LogWriter *self, void (*handler)(void *), gint timeout_msec)
+log_writer_arm_suspend_timer(LogWriter *self, void (*handler)(void *), glong timeout_msec)
 {
   main_loop_assert_main_thread();
 
@@ -422,7 +422,7 @@ log_writer_suspend(LogWriter *self)
   /* flush code indicates that we need to suspend our writing activities
    * until time_reopen elapses */
 
-  log_writer_arm_suspend_timer(self, log_writer_error_suspend_elapsed, (gint)(self->options->time_reopen * 1e3));
+  log_writer_arm_suspend_timer(self, log_writer_error_suspend_elapsed, self->options->time_reopen * 1000L);
   self->suspended = TRUE;
 }
 
@@ -454,7 +454,7 @@ log_writer_update_watches(LogWriter *self)
 
       log_writer_update_fd_callbacks(self, 0);
       self->waiting_for_throttle = TRUE;
-      log_writer_arm_suspend_timer(self, (void (*)(void *)) log_writer_update_watches, timeout_msec);
+      log_writer_arm_suspend_timer(self, (void (*)(void *)) log_writer_update_watches, (glong)timeout_msec);
     }
   else
     {
