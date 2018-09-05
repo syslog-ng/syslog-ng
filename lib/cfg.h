@@ -112,6 +112,8 @@ struct _GlobalConfig
   LogTemplate *file_template;
   LogTemplate *proto_template;
 
+  guint min_iw_size_per_reader;
+
   PersistConfig *persist;
   PersistState *state;
   GHashTable *module_config;

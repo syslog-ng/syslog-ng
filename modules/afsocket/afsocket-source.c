@@ -474,20 +474,21 @@ afsocket_sd_setup_reader_options(AFSocketSourceDriver *self)
 
   if (self->transport_mapper->sock_type == SOCK_STREAM && !self->window_size_initialized)
     {
-      /* distribute the window evenly between each of our possible
+      /* Distribute the window evenly between each of our possible
        * connections.  This is quite pessimistic and can result in very low
-       * window sizes. Increase that but warn the user at the same time
+       * window sizes. Increase that but warn the user at the same time.
        */
 
       self->reader_options.super.init_window_size /= self->max_connections;
-      if (self->reader_options.super.init_window_size < 100)
+      if (self->reader_options.super.init_window_size < cfg->min_iw_size_per_reader)
         {
           msg_warning("WARNING: window sizing for tcp sources were changed in " VERSION_3_3
-                      ", the configuration value was divided by the value of max-connections(). The result was too small, clamping to 100 entries. Ensure you have a proper log_fifo_size setting to avoid message loss.",
+                      ", the configuration value was divided by the value of max-connections(). The result was too small, clamping to value of min_iw_size_per_reader. Ensure you have a proper log_fifo_size setting to avoid message loss.",
                       evt_tag_int("orig_log_iw_size", self->reader_options.super.init_window_size),
-                      evt_tag_int("new_log_iw_size", 100),
-                      evt_tag_int("min_log_fifo_size", 100 * self->max_connections));
-          self->reader_options.super.init_window_size = 100;
+                      evt_tag_int("new_log_iw_size", cfg->min_iw_size_per_reader),
+                      evt_tag_int("min_iw_size_per_reader", cfg->min_iw_size_per_reader),
+                      evt_tag_int("min_log_fifo_size", cfg->min_iw_size_per_reader * self->max_connections));
+          self->reader_options.super.init_window_size = cfg->min_iw_size_per_reader;
         }
       self->window_size_initialized = TRUE;
     }

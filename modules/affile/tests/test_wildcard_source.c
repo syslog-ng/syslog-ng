@@ -145,7 +145,7 @@ Test(wildcard_source, test_minimum_window_size)
                                                              "recursive(yes)"
                                                              "max_files(100)"
                                                              "log_iw_size(1000)");
-  cr_assert_eq(driver->file_reader_options.reader_options.super.init_window_size, MINIMUM_WINDOW_SIZE);
+  cr_assert_eq(driver->file_reader_options.reader_options.super.init_window_size, 100);
 }
 
 Test(wildcard_source, test_window_size)

@@ -232,17 +232,18 @@ _remove_file_reader(FileReader *reader, gpointer user_data)
 
 
 static void
-_ensure_minimum_window_size(WildcardSourceDriver *self)
+_ensure_minimum_window_size(WildcardSourceDriver *self, GlobalConfig *cfg)
 {
-  if (self->file_reader_options.reader_options.super.init_window_size < MINIMUM_WINDOW_SIZE)
+  if (self->file_reader_options.reader_options.super.init_window_size < cfg->min_iw_size_per_reader)
     {
       msg_warning("log_iw_size configuration value was divided by the value of max-files()."
                   " The result was too small, clamping to minimum entries."
                   " Ensure you have a proper log_fifo_size setting to avoid message loss.",
                   evt_tag_int("orig_log_iw_size", self->file_reader_options.reader_options.super.init_window_size),
-                  evt_tag_int("new_log_iw_size", MINIMUM_WINDOW_SIZE),
-                  evt_tag_int("min_log_fifo_size", MINIMUM_WINDOW_SIZE * self->max_files));
-      self->file_reader_options.reader_options.super.init_window_size = MINIMUM_WINDOW_SIZE;
+                  evt_tag_int("new_log_iw_size", cfg->min_iw_size_per_reader),
+                  evt_tag_int("min_iw_size_per_reader", cfg->min_iw_size_per_reader),
+                  evt_tag_int("min_log_fifo_size", cfg->min_iw_size_per_reader * self->max_files));
+      self->file_reader_options.reader_options.super.init_window_size = cfg->min_iw_size_per_reader;
     }
 }
 
@@ -252,7 +253,7 @@ _init_reader_options(WildcardSourceDriver *self, GlobalConfig *cfg)
   if (!self->window_size_initialized)
     {
       self->file_reader_options.reader_options.super.init_window_size /= self->max_files;
-      _ensure_minimum_window_size(self);
+      _ensure_minimum_window_size(self, cfg);
       self->window_size_initialized = TRUE;
 
     }
@@ -436,7 +437,7 @@ wildcard_sd_new(GlobalConfig *cfg)
   file_reader_options_defaults(&self->file_reader_options);
   file_opener_options_defaults_dont_change_permissions(&self->file_opener_options);
   self->file_reader_options.follow_freq = 1000;
-  self->file_reader_options.reader_options.super.init_window_size = MINIMUM_WINDOW_SIZE * DEFAULT_MAX_FILES;
+  self->file_reader_options.reader_options.super.init_window_size = cfg->min_iw_size_per_reader * DEFAULT_MAX_FILES;
   self->file_reader_options.reader_options.super.stats_source = SCS_FILE;
   self->file_reader_options.restore_state = TRUE;
 

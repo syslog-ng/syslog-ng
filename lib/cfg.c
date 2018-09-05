@@ -448,6 +448,8 @@ cfg_new(gint version)
 
   stats_options_defaults(&self->stats_options);
 
+  self->min_iw_size_per_reader = 100;
+
   cfg_tree_init_instance(&self->tree, self);
   plugin_context_init_instance(&self->plugin_context);
   self->use_plugin_discovery = TRUE;
