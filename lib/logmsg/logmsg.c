@@ -1083,7 +1083,9 @@ log_msg_init(LogMessage *self, GSockAddr *saddr)
   self->timestamps[LM_TS_RECVD].tv_usec = tv.tv_usec;
   self->timestamps[LM_TS_RECVD].zone_offset = get_local_timezone_ofs(self->timestamps[LM_TS_RECVD].tv_sec);
   self->timestamps[LM_TS_STAMP] = self->timestamps[LM_TS_RECVD];
-  self->timestamps[LM_TS_PROCESSED] = self->timestamps[LM_TS_RECVD];
+  self->timestamps[LM_TS_PROCESSED].tv_sec = 0;
+  self->timestamps[LM_TS_PROCESSED].tv_usec = 0;
+  self->timestamps[LM_TS_PROCESSED].zone_offset = LOGSTAMP_ZONE_OFFSET_UNSET;
 
   self->sdata = NULL;
   self->saddr = g_sockaddr_ref(saddr);

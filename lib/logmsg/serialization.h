@@ -28,6 +28,7 @@
 
 #include "serialize.h"
 #include "logmsg/logmsg.h"
+#include "logstamp.h"
 
 typedef struct _LogMessageSerializationState
 {
@@ -39,6 +40,7 @@ typedef struct _LogMessageSerializationState
   guint8 handle_changed;
   NVHandle *updated_sdata_handles;
   NVIndexEntry *updated_index;
+  const LogStamp *processed;
 } LogMessageSerializationState;
 
 #endif

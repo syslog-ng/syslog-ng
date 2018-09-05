@@ -25,7 +25,7 @@
 #include "timestamp-serialize.h"
 
 static gboolean
-_write_log_stamp(SerializeArchive *sa, LogStamp *stamp)
+_write_log_stamp(SerializeArchive *sa, const LogStamp *stamp)
 {
   return serialize_write_uint64(sa, stamp->tv_sec) &&
          serialize_write_uint32(sa, stamp->tv_usec) &&

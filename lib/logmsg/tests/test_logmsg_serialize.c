@@ -201,7 +201,141 @@ Test(logmsg_serialize, serialize)
   log_msg_unref(msg);
   serialize_archive_free(sa);
   g_string_free(stream, TRUE);
+}
 
+static LogMessage *
+_create_message_to_be_serialized_with_ts_processed(const gchar *raw_msg, const int raw_msg_len, LogStamp *processed)
+{
+  LogMessage *msg = _create_message_to_be_serialized(RAW_MSG, strlen(RAW_MSG));
+
+  msg->timestamps[LM_TS_PROCESSED].tv_sec = processed->tv_sec;
+  msg->timestamps[LM_TS_PROCESSED].tv_usec = processed->tv_usec;
+  msg->timestamps[LM_TS_PROCESSED].zone_offset = processed->zone_offset;
+
+  return msg;
+}
+
+static void
+_check_processed_timestamp(LogMessage *msg, LogStamp *processed)
+{
+  cr_assert_eq(msg->timestamps[LM_TS_PROCESSED].tv_sec, processed->tv_sec,
+               "tv_sec value does not match");
+  cr_assert_eq(msg->timestamps[LM_TS_PROCESSED].tv_usec, processed->tv_usec,
+               "tv_usec value does not match");
+  cr_assert_eq(msg->timestamps[LM_TS_PROCESSED].zone_offset, processed->zone_offset,
+               "zone_offset value does not match");
+}
+
+Test(logmsg_serialize, simple_serialization)
+{
+  LogMessage *msg = _create_message_to_be_serialized(RAW_MSG, strlen(RAW_MSG));
+  GString *stream = g_string_sized_new(512);
+  SerializeArchive *sa = serialize_string_archive_new(stream);
+
+  log_msg_serialize(msg, sa);
+
+  log_msg_unref(msg);
+  msg = log_msg_new_empty();
+
+  log_msg_deserialize(msg, sa);
+
+  LogStamp ls =
+  {
+    .tv_sec = msg->timestamps[LM_TS_RECVD].tv_sec,
+    .tv_usec = msg->timestamps[LM_TS_RECVD].tv_usec,
+    .zone_offset = msg->timestamps[LM_TS_RECVD].zone_offset
+  };
+
+  _check_processed_timestamp(msg, &ls);
+
+  log_msg_unref(msg);
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, given_ts_processed)
+{
+  LogMessage *msg = _create_message_to_be_serialized(RAW_MSG, strlen(RAW_MSG));
+  GString *stream = g_string_sized_new(512);
+  SerializeArchive *sa = serialize_string_archive_new(stream);
+
+  LogStamp ls =
+  {
+    .tv_sec = 11,
+    .tv_usec = 12,
+    .zone_offset = 13
+  };
+
+  log_msg_serialize_with_ts_processed(msg, sa, &ls);
+
+  log_msg_unref(msg);
+  msg = log_msg_new_empty();
+
+  log_msg_deserialize(msg, sa);
+
+  _check_processed_timestamp(msg, &ls);
+
+  log_msg_unref(msg);
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, existing_ts_processed)
+{
+  LogStamp ls =
+  {
+    .tv_sec = 1,
+    .tv_usec = 2,
+    .zone_offset = 3
+  };
+
+  LogMessage *msg = _create_message_to_be_serialized_with_ts_processed(RAW_MSG, strlen(RAW_MSG), &ls);
+  GString *stream = g_string_sized_new(512);
+  SerializeArchive *sa = serialize_string_archive_new(stream);
+
+  log_msg_serialize(msg, sa);
+
+  log_msg_unref(msg);
+  msg = log_msg_new_empty();
+
+  log_msg_deserialize(msg, sa);
+
+  _check_processed_timestamp(msg, &ls);
+
+  log_msg_unref(msg);
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
+}
+
+Test(logmsg_serialize, existing_and_given_ts_processed)
+{
+  LogStamp ls =
+  {
+    .tv_sec = 1,
+    .tv_usec = 2,
+    .zone_offset = 3
+  };
+
+  LogMessage *msg = _create_message_to_be_serialized_with_ts_processed(RAW_MSG, strlen(RAW_MSG), &ls);
+  GString *stream = g_string_sized_new(512);
+  SerializeArchive *sa = serialize_string_archive_new(stream);
+
+  ls.tv_sec = 11;
+  ls.tv_usec = 12;
+  ls.zone_offset = 13;
+
+  log_msg_serialize_with_ts_processed(msg, sa, &ls);
+
+  log_msg_unref(msg);
+  msg = log_msg_new_empty();
+
+  log_msg_deserialize(msg, sa);
+
+  _check_processed_timestamp(msg, &ls);
+
+  log_msg_unref(msg);
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
 }
 
 Test(logmsg_serialize, pe_serialized_message)
@@ -280,4 +414,3 @@ teardown(void)
 }
 
 TestSuite(logmsg_serialize, .init = setup, .fini = teardown);
-
