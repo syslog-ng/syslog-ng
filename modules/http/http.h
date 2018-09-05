@@ -47,6 +47,8 @@ typedef struct
   gchar *cert_file;
   gchar *key_file;
   gchar *ciphers;
+  GString *body_prefix;
+  GString *body_suffix;
   int ssl_version;
   gboolean peer_verify;
   short int method_type;
@@ -55,6 +57,7 @@ typedef struct
   glong flush_bytes;
   struct curl_slist *request_headers;
   GString *request_body;
+  GString *delimiter;
   LogTemplate *body_template;
   LogTemplateOptions template_options;
 } HTTPDestinationDriver;
@@ -79,6 +82,9 @@ void http_dd_set_peer_verify(LogDriver *d, gboolean verify);
 void http_dd_set_timeout(LogDriver *d, glong timeout);
 void http_dd_set_flush_lines(LogDriver *d, glong flush_lines);
 void http_dd_set_flush_bytes(LogDriver *d, glong flush_bytes);
+void http_dd_set_body_prefix(LogDriver *d, const gchar *body_prefix);
+void http_dd_set_body_suffix(LogDriver *d, const gchar *body_suffix);
+void http_dd_set_delimiter(LogDriver *d, const gchar *delimiter);
 LogTemplateOptions *http_dd_get_template_options(LogDriver *d);
 
 #endif

@@ -48,6 +48,9 @@ static CfgLexerKeyword http_keywords[] =
   { "timeout",      KW_TIMEOUT },
   { "tls",          KW_TLS },
   { "flush_bytes",  KW_FLUSH_BYTES },
+  { "body_prefix",  KW_BODY_PREFIX },
+  { "body_suffix",  KW_BODY_SUFFIX },
+  { "delimiter",    KW_DELIMITER },
   { NULL }
 };
 
