@@ -15,3 +15,7 @@ python-pep8
 # other tools
 
 # debian packaging tools
+
+# kira
+netbase
+systemd-sysv

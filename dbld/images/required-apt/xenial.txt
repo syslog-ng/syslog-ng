@@ -16,3 +16,6 @@ python-pep8
 libbson-dev
 librabbitmq-dev
 libmongoc-dev
+
+# kira
+netbase
