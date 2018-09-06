@@ -44,6 +44,7 @@ include modules/xml/Makefile.am
 include modules/appmodel/Makefile.am
 include modules/openbsd/Makefile.am
 include modules/hook-commands/Makefile.am
+include modules/examples/Makefile.am
 
 SYSLOG_NG_CORE_JAR=$(top_builddir)/modules/java/syslog-ng-core/libs/syslog-ng-core.jar
 
