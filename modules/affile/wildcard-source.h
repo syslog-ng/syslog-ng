@@ -29,7 +29,6 @@
 #include "directory-monitor.h"
 #include "directory-monitor-factory.h"
 
-#define MINIMUM_WINDOW_SIZE 100
 #define DEFAULT_MAX_FILES 100
 
 typedef struct _WildcardSourceDriver
