@@ -99,6 +99,7 @@ _rescan_directory(DirectoryMonitorPoll *self)
     {
       collection_comparator_stop(self->comparator);
       _handle_deleted_self(self);
+      g_clear_error(&error);
     }
 }
 
