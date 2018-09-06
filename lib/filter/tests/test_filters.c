@@ -45,7 +45,6 @@
 #include <stdio.h>
 
 int debug = 1;
-GSockAddr *sender_saddr;
 MsgFormatOptions parse_options;
 
 static gint
@@ -110,11 +109,33 @@ create_template(const gchar *template)
   return t;
 }
 
+#if SYSLOG_NG_ENABLE_IPV6
+static gboolean
+_is_ipv6(const gchar *sockaddr)
+{
+  return (NULL != strchr(sockaddr, ':'));
+}
+#endif
+
+static GSockAddr *
+_get_sockaddr(const gchar *sockaddr)
+{
+  if (!sockaddr)
+    return NULL;
+
+#if SYSLOG_NG_ENABLE_IPV6
+  if (_is_ipv6(sockaddr))
+    {
+      return g_sockaddr_inet6_new(sockaddr, 5000);
+    }
+#endif
+  return g_sockaddr_inet_new(sockaddr, 5000);
+}
 
 void
-testcase(const gchar *msg,
-         FilterExprNode *f,
-         gboolean expected_result)
+testcase_with_socket(const gchar *msg, const gchar *sockaddr,
+                     FilterExprNode *f,
+                     gboolean expected_result)
 {
   LogMessage *logmsg;
   gboolean res;
@@ -122,7 +143,7 @@ testcase(const gchar *msg,
   filter_expr_init(f, configuration);
 
   logmsg = log_msg_new(msg, strlen(msg), NULL, &parse_options);
-  logmsg->saddr = g_sockaddr_ref(sender_saddr);
+  logmsg->saddr = _get_sockaddr(sockaddr);
 
   res = filter_expr_eval(f, logmsg);
   if (res != expected_result)
@@ -141,6 +162,14 @@ testcase(const gchar *msg,
 
   log_msg_unref(logmsg);
   filter_expr_unref(f);
+}
+
+void
+testcase(const gchar *msg,
+         FilterExprNode *f,
+         gboolean expected_result)
+{
+  testcase_with_socket(msg, NULL, f, expected_result);
 }
 
 void
@@ -291,7 +320,8 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase("<32> openvpn[2499]: PTHREAD support initialized", filter_facility_new(0x80000000 | (LOG_AUTH >> 3)), TRUE);
 #ifdef LOG_AUTHPRIV
   testcase("<80> openvpn[2499]: PTHREAD support initialized", filter_facility_new(facility_bits("authpriv")), TRUE);
-  testcase("<80> openvpn[2499]: PTHREAD support initialized", filter_facility_new(0x80000000 | (LOG_AUTHPRIV >> 3)), TRUE);
+  testcase("<80> openvpn[2499]: PTHREAD support initialized", filter_facility_new(0x80000000 | (LOG_AUTHPRIV >> 3)),
+           TRUE);
 #endif
 
   testcase("<15> openvpn[2499]: PTHREAD support initialized", filter_level_new(level_bits("debug") | level_bits("emerg")),
@@ -327,7 +357,8 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
   testcase("<15> openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_filter(LM_V_PROGRAM, "^openvpn$", 0),
            TRUE);
-  testcase("<15> openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_filter(LM_V_PROGRAM, "^open$", 0), FALSE);
+  testcase("<15> openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_filter(LM_V_PROGRAM, "^open$", 0),
+           FALSE);
 
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_filter(LM_V_HOST,
            "^host$", 0), TRUE);
@@ -360,31 +391,40 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
 
 #if SYSLOG_NG_ENABLE_IPV6
-  sender_saddr = g_sockaddr_inet6_new("2001:db80:85a3:8d30:1319:8a2e:3700:7348", 5000);
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter_netmask6_new("::/1"), TRUE);
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized",
-           filter_netmask6_new("2001:db80:85a3:8d30:1319:8a2e::/95"), TRUE);
+  testcase_with_socket("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized",
+                       "2001:db80:85a3:8d30:1319:8a2e:3700:7348", filter_netmask6_new("::/1"), TRUE);
+  testcase_with_socket("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized",
+                       "2001:db80:85a3:8d30:1319:8a2e:3700:7348",
+                       filter_netmask6_new("2001:db80:85a3:8d30:1319:8a2e::/95"), TRUE);
 
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized",
-           filter_netmask6_new("2001:db80:85a3:8d30:1319:8a2e:3700:7348/60"), TRUE);
+  testcase_with_socket("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized",
+                       "2001:db80:85a3:8d30:1319:8a2e:3700:7348",
+                       filter_netmask6_new("2001:db80:85a3:8d30:1319:8a2e:3700:7348/60"), TRUE);
 
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized",
-           filter_netmask6_new("2001:db80:85a3:8d30:1319:8a2e:3700::/114"), FALSE);
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized",
-           filter_netmask6_new("::85a3:8d30:1319:8a2e:3700::/114"), FALSE);
+  testcase_with_socket("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized",
+                       "2001:db80:85a3:8d30:1319:8a2e:3700:7348",
+                       filter_netmask6_new("2001:db80:85a3:8d30:1319:8a2e:3700::/114"), FALSE);
+  testcase_with_socket("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized",
+                       "2001:db80:85a3:8d30:1319:8a2e:3700:7348",
+                       filter_netmask6_new("::85a3:8d30:1319:8a2e:3700::/114"), FALSE);
 
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter_netmask6_new("aaaaaa/32"), FALSE);
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter_netmask6_new("/8"), FALSE);
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter_netmask6_new("::"), FALSE);
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter_netmask6_new(""), FALSE);
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter_netmask6_new("::1/8"), FALSE);
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter_netmask6_new("::1/128"), FALSE);
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter_netmask6_new("::2/32"), FALSE);
+  testcase_with_socket("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized",
+                       "2001:db80:85a3:8d30:1319:8a2e:3700:7348", filter_netmask6_new("aaaaaa/32"), FALSE);
+  testcase_with_socket("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized",
+                       "2001:db80:85a3:8d30:1319:8a2e:3700:7348", filter_netmask6_new("/8"), FALSE);
+  testcase_with_socket("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized",
+                       "2001:db80:85a3:8d30:1319:8a2e:3700:7348", filter_netmask6_new("::"), FALSE);
+  testcase_with_socket("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized",
+                       "2001:db80:85a3:8d30:1319:8a2e:3700:7348", filter_netmask6_new(""), FALSE);
+  testcase_with_socket("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized",
+                       "2001:db80:85a3:8d30:1319:8a2e:3700:7348", filter_netmask6_new("::1/8"), FALSE);
+  testcase_with_socket("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized",
+                       "2001:db80:85a3:8d30:1319:8a2e:3700:7348", filter_netmask6_new("::1/128"), FALSE);
+  testcase_with_socket("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized",
+                       "2001:db80:85a3:8d30:1319:8a2e:3700:7348", filter_netmask6_new("::2/32"), FALSE);
 
-  g_sockaddr_unref(sender_saddr);
-
-  sender_saddr = NULL;
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter_netmask6_new("aaaaaa/32"), FALSE);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter_netmask6_new("aaaaaa/32"),
+           FALSE);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter_netmask6_new("/8"), FALSE);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter_netmask6_new(""), FALSE);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter_netmask6_new("::1"), TRUE);
@@ -396,16 +436,19 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter_netmask6_new("::/aaa"), FALSE);
 #endif
 
-  sender_saddr = g_sockaddr_inet_new("10.10.0.1", 5000);
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter_netmask_new("10.10.0.0/16"), TRUE);
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter_netmask_new("10.10.0.0/24"), TRUE);
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter_netmask_new("10.10.10.0/24"), FALSE);
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter_netmask_new("0.0.10.10/24"), FALSE);
-  g_sockaddr_unref(sender_saddr);
+  testcase_with_socket("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", "10.10.0.1",
+                       filter_netmask_new("10.10.0.0/16"), TRUE);
+  testcase_with_socket("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", "10.10.0.1",
+                       filter_netmask_new("10.10.0.0/24"), TRUE);
+  testcase_with_socket("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", "10.10.0.1",
+                       filter_netmask_new("10.10.10.0/24"), FALSE);
+  testcase_with_socket("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", "10.10.0.1",
+                       filter_netmask_new("0.0.10.10/24"), FALSE);
 
-  sender_saddr = NULL;
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter_netmask_new("127.0.0.1/32"), TRUE);
-  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter_netmask_new("127.0.0.2/32"), FALSE);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter_netmask_new("127.0.0.1/32"),
+           TRUE);
+  testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", filter_netmask_new("127.0.0.2/32"),
+           FALSE);
 
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized",
            fop_or_new(create_pcre_regexp_match(" PTHREAD ", 0), create_pcre_regexp_match("PTHREAD", 0)), TRUE);
@@ -488,8 +531,10 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
 
 
 
-  testcase("<15> openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_filter(LM_V_PROGRAM, "^openvpn$", 0), TRUE);
-  testcase("<15> openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_filter(LM_V_PROGRAM, "^open$", 0), FALSE);
+  testcase("<15> openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_filter(LM_V_PROGRAM, "^openvpn$", 0),
+           TRUE);
+  testcase("<15> openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_filter(LM_V_PROGRAM, "^open$", 0),
+           FALSE);
 
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_filter(LM_V_HOST,
            "^host$", 0), TRUE);
@@ -536,7 +581,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_match("pthread",
            LMF_ICASE), TRUE);
 
-   teardown();
+  teardown();
 
   return 0;
 }
