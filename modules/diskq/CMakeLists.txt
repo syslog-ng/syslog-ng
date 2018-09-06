@@ -11,7 +11,8 @@ set(SYSLOG_NG_DISK_BUFFER_SOURCES
     qdisk.c
 )
 
-add_library(syslog-ng-disk-buffer ${SYSLOG_NG_DISK_BUFFER_SOURCES})
+add_library(syslog-ng-disk-buffer STATIC ${SYSLOG_NG_DISK_BUFFER_SOURCES})
+target_include_directories(syslog-ng-disk-buffer INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(syslog-ng-disk-buffer PUBLIC syslog-ng)
 
 set(DISK_BUFFER_SOURCES
