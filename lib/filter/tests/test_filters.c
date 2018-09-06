@@ -220,8 +220,8 @@ testcase_with_backref_chk(const gchar *msg,
       exit(1);                                                  \
     }
 
-int
-main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
+void
+setup(void)
 {
   app_startup();
 
@@ -229,6 +229,18 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   cfg_load_module(configuration, "syslogformat");
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);
+}
+
+void
+teardown(void)
+{
+  app_shutdown();
+}
+
+int
+main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
+{
+  setup();
 
   TEST_ASSERT(create_pcre_regexp_filter(LM_V_PROGRAM, "((", 0) == NULL);
   TEST_ASSERT(create_pcre_regexp_filter(LM_V_HOST, "((", 0) == NULL);
@@ -524,8 +536,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_match("pthread",
            LMF_ICASE), TRUE);
 
+   teardown();
 
-
-  app_shutdown();
   return 0;
 }
