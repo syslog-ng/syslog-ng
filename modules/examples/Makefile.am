@@ -3,6 +3,10 @@ include modules/examples/sources/msg-generator/Makefile.am
 EXAMPLE_PLUGINS = \
   $(top_builddir)/modules/examples/sources/libmsg-generator.la
 
+if HAVE_GETRANDOM
+include modules/examples/sources/threaded-random-generator/Makefile.am
+EXAMPLE_PLUGINS += $(top_builddir)/modules/examples/sources/libthreaded-random-generator.la
+endif
 
 
 module_LTLIBRARIES += modules/examples/libexamples.la

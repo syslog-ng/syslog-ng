@@ -21,45 +21,33 @@
  *
  */
 
+#include "driver.h"
 #include "cfg-parser.h"
-#include "plugin.h"
-#include "plugin-types.h"
+#include "threaded-random-generator-grammar.h"
 
-extern CfgParser msg_generator_parser;
+extern int threaded_random_generator_debug;
 
-#if SYSLOG_NG_HAVE_GETRANDOM
-extern CfgParser threaded_random_generator_parser;
-#endif
+int threaded_random_generator_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
-static Plugin example_plugins[] =
+static CfgLexerKeyword threaded_random_generator_keywords[] =
 {
-  {
-    .type = LL_CONTEXT_SOURCE,
-    .name = "msg_generator",
-    .parser = &msg_generator_parser,
-  },
-#if SYSLOG_NG_HAVE_GETRANDOM
-  {
-    .type = LL_CONTEXT_SOURCE,
-    .name = "random_generator",
-    .parser = &threaded_random_generator_parser,
-  },
-#endif
+  { "random_generator", KW_RANDOM_GENERATOR },
+  { "freq", KW_FREQ },
+  { "bytes", KW_BYTES },
+  { "type", KW_TYPE },
+  { NULL }
 };
 
-gboolean
-examples_module_init(PluginContext *context, CfgArgs *args)
+CfgParser threaded_random_generator_parser =
 {
-  plugin_register(context, example_plugins, G_N_ELEMENTS(example_plugins));
-  return TRUE;
-}
-
-const ModuleInfo module_info =
-{
-  .canonical_name = "examples",
-  .version = SYSLOG_NG_VERSION,
-  .description = "Example modules",
-  .core_revision = SYSLOG_NG_SOURCE_REVISION,
-  .plugins = example_plugins,
-  .plugins_len = G_N_ELEMENTS(example_plugins),
+#if ENABLE_DEBUG
+  .debug_flag = &threaded_random_generator_debug,
+#endif
+  .name = "threaded_random_generator",
+  .keywords = threaded_random_generator_keywords,
+  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) threaded_random_generator_parse,
+  .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
+
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(threaded_random_generator_, LogDriver **)
+

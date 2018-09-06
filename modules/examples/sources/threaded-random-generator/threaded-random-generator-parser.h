@@ -21,45 +21,16 @@
  *
  */
 
+#ifndef THREADED_RANDOM_GENERATOR_PARSER_H
+#define THREADED_RANDOM_GENERATOR_PARSER_H
+
 #include "cfg-parser.h"
-#include "plugin.h"
-#include "plugin-types.h"
+#include "cfg-lexer.h"
+#include "driver.h"
 
-extern CfgParser msg_generator_parser;
-
-#if SYSLOG_NG_HAVE_GETRANDOM
 extern CfgParser threaded_random_generator_parser;
+
+CFG_PARSER_DECLARE_LEXER_BINDING(threaded_random_generator_, LogDriver **)
+
 #endif
 
-static Plugin example_plugins[] =
-{
-  {
-    .type = LL_CONTEXT_SOURCE,
-    .name = "msg_generator",
-    .parser = &msg_generator_parser,
-  },
-#if SYSLOG_NG_HAVE_GETRANDOM
-  {
-    .type = LL_CONTEXT_SOURCE,
-    .name = "random_generator",
-    .parser = &threaded_random_generator_parser,
-  },
-#endif
-};
-
-gboolean
-examples_module_init(PluginContext *context, CfgArgs *args)
-{
-  plugin_register(context, example_plugins, G_N_ELEMENTS(example_plugins));
-  return TRUE;
-}
-
-const ModuleInfo module_info =
-{
-  .canonical_name = "examples",
-  .version = SYSLOG_NG_VERSION,
-  .description = "Example modules",
-  .core_revision = SYSLOG_NG_SOURCE_REVISION,
-  .plugins = example_plugins,
-  .plugins_len = G_N_ELEMENTS(example_plugins),
-};

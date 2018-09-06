@@ -793,6 +793,11 @@ dnl ***************************************************************************
 AC_CHECK_FUNCS([inotify_init])
 
 dnl ***************************************************************************
+dnl check getrandom
+dnl ***************************************************************************
+AC_CHECK_FUNCS([getrandom])
+
+dnl ***************************************************************************
 dnl libevtlog headers/libraries (remove after relicensing libevtlog)
 dnl ***************************************************************************
 
@@ -1714,6 +1719,7 @@ AC_DEFINE_UNQUOTED(ENABLE_ENV_WRAPPER, `enable_value $enable_env_wrapper`, [Enab
 AC_DEFINE_UNQUOTED(ENABLE_SYSTEMD, `enable_value $enable_systemd`, [Enable systemd support])
 AC_DEFINE_UNQUOTED(SYSTEMD_JOURNAL_MODE, `journald_mode`, [Systemd-journal support mode])
 AC_DEFINE_UNQUOTED(HAVE_INOTIFY, `enable_value $ac_cv_func_inotify_init`, [Have inotify])
+AC_DEFINE_UNQUOTED(HAVE_GETRANDOM, `enable_value $ac_cv_func_getrandom`, [Have getrandom])
 AC_DEFINE_UNQUOTED(ENABLE_PYTHONv2, `(echo "$with_python" | grep -Eq "python-?2.*") && echo 1 || echo 0`, [Python2 c api])
 AC_DEFINE_UNQUOTED(ENABLE_PYTHONv3, `(echo "$with_python" | grep -Eq "python-?3.*") && echo 1 || echo 0`, [Python3 c api])
 AC_DEFINE_UNQUOTED(HAVE_RIEMANN_MICROSECONDS, `enable_value $riemann_micros`, [Riemann microseconds support])
@@ -1750,6 +1756,7 @@ AM_CONDITIONAL(ENABLE_EXTRA_WARNINGS, [test "$enable_extra_warnings" = "yes"])
 AM_CONDITIONAL(ENABLE_LEGACY_MONGODB_OPTIONS, [test x"$enable_legacy_mongodb_options" != x"no"])
 AM_CONDITIONAL(ENABLE_TESTING, [test "$enable_tests" != "no"])
 AM_CONDITIONAL([HAVE_INOTIFY], [test x$ac_cv_func_inotify_init = xyes])
+AM_CONDITIONAL([HAVE_GETRANDOM], [test x$ac_cv_func_getrandom = xyes])
 AM_CONDITIONAL([HAVE_FMEMOPEN], [test x$ac_cv_func_fmemopen = xyes])
 AM_CONDITIONAL(ENABLE_IPV6, [test $enable_ipv6 = yes])
 
