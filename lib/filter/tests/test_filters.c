@@ -118,15 +118,8 @@ testcase(const gchar *msg,
 {
   LogMessage *logmsg;
   gboolean res;
-  static gint testno = 0;
 
-  testno++;
-
-  if (!filter_expr_init(f, configuration))
-    {
-      fprintf(stderr, "Filter init failed; num='%d', msg='%s'\n", testno, msg);
-      exit(1);
-    }
+  filter_expr_init(f, configuration);
 
   logmsg = log_msg_new(msg, strlen(msg), NULL, &parse_options);
   logmsg->saddr = g_sockaddr_ref(sender_saddr);
@@ -134,7 +127,7 @@ testcase(const gchar *msg,
   res = filter_expr_eval(f, logmsg);
   if (res != expected_result)
     {
-      fprintf(stderr, "Filter test failed; num='%d', msg='%s'\n", testno, msg);
+      fprintf(stderr, "Filter test failed; msg='%s'\n", msg);
       exit(1);
     }
 
@@ -142,7 +135,7 @@ testcase(const gchar *msg,
   res = filter_expr_eval(f, logmsg);
   if (res != !expected_result)
     {
-      fprintf(stderr, "Filter test failed (negated); num='%d', msg='%s'\n", testno, msg);
+      fprintf(stderr, "Filter test failed (negated); msg='%s'\n", msg);
       exit(1);
     }
 
@@ -162,13 +155,11 @@ testcase_with_backref_chk(const gchar *msg,
   const gchar *value_msg;
   NVTable *nv_table;
   gboolean res;
-  static gint testno = 0;
   gssize length;
   NVHandle nonasciiz = log_msg_get_value_handle("NON-ASCIIZ");
   gssize msglen;
   gchar buf[1024];
 
-  testno++;
   logmsg = log_msg_new(msg, strlen(msg), NULL, &parse_options);
   logmsg->saddr = g_sockaddr_inet_new("10.10.0.1", 5000);
 
@@ -183,7 +174,7 @@ testcase_with_backref_chk(const gchar *msg,
   res = filter_expr_eval(f, logmsg);
   if (res != expected_result)
     {
-      fprintf(stderr, "Filter test failed; num='%d', msg='%s'\n", testno, msg);
+      fprintf(stderr, "Filter test failed; msg='%s'\n", msg);
       exit(1);
     }
   nv_table_unref(nv_table);
@@ -193,7 +184,7 @@ testcase_with_backref_chk(const gchar *msg,
   res = filter_expr_eval(f, logmsg);
   if (res != !expected_result)
     {
-      fprintf(stderr, "Filter test failed (negated); num='%d', msg='%s'\n", testno, msg);
+      fprintf(stderr, "Filter test failed (negated); msg='%s'\n", msg);
       exit(1);
     }
 
@@ -203,8 +194,8 @@ testcase_with_backref_chk(const gchar *msg,
     {
       if (value_msg != NULL && value_msg[0] != 0)
         {
-          fprintf(stderr, "Filter test failed (NULL value chk); num='%d', msg='%s', expected_value='%s', value_in_msg='%s'",
-                  testno, msg, value, value_msg);
+          fprintf(stderr, "Filter test failed (NULL value chk); msg='%s', expected_value='%s', value_in_msg='%s'",
+                  msg, value, value_msg);
           exit(1);
         }
     }
@@ -212,7 +203,7 @@ testcase_with_backref_chk(const gchar *msg,
     {
       if (strncmp(value_msg, value, length) != 0)
         {
-          fprintf(stderr, "Filter test failed (value chk); num='%d', msg='%s', expected_value='%s', value_in_msg='%s'", testno,
+          fprintf(stderr, "Filter test failed (value chk); msg='%s', expected_value='%s', value_in_msg='%s'",
                   msg, value, value_msg);
           exit(1);
         }
