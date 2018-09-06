@@ -241,6 +241,35 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);
 
+  TEST_ASSERT(create_pcre_regexp_filter(LM_V_PROGRAM, "((", 0) == NULL);
+  TEST_ASSERT(create_pcre_regexp_filter(LM_V_HOST, "((", 0) == NULL);
+  TEST_ASSERT(create_pcre_regexp_match("((", 0) == NULL);
+  TEST_ASSERT(create_pcre_regexp_filter(LM_V_PROGRAM, "((", 0) == NULL);
+  TEST_ASSERT(create_pcre_regexp_filter(LM_V_HOST, "((", 0) == NULL);
+  TEST_ASSERT(create_pcre_regexp_filter(LM_V_HOST, "(?iana", 0) == NULL);
+  TEST_ASSERT(create_pcre_regexp_filter(LM_V_HOST, "(?iana", 0) == NULL);
+  TEST_ASSERT(create_pcre_regexp_match("((", 0) == NULL);
+
+
+  testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: al fa", create_pcre_regexp_filter(LM_V_MESSAGE,
+                            "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "1","a");
+  testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: al fa", create_pcre_regexp_filter(LM_V_MESSAGE,
+                            "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "0","al fa");
+  testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: al fa", create_pcre_regexp_filter(LM_V_MESSAGE,
+                            "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "232", NULL);
+  testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: alma fa", create_pcre_regexp_filter(LM_V_MESSAGE,
+                            "(?P<a>a)(?P<l>l)(?P<MM>m)(?P<aa>a) (?P<fa>fa)", LMF_STORE_MATCHES), 1, "MM","m");
+  testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: alma fa", create_pcre_regexp_filter(LM_V_MESSAGE,
+                            "(?P<a>a)(?P<l>l)(?P<MM>m)(?P<aa>a) (?P<fa>fa)", LMF_STORE_MATCHES), 1, "aaaa", NULL);
+  testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: alma fa", create_pcre_regexp_filter(LM_V_MESSAGE,
+                            "(?P<a>a)(?P<l>l)(?P<MM>m)(?P<aa>a) (?P<fa_name>fa)", LMF_STORE_MATCHES), 1, "fa_name","fa");
+  testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: al fa", create_pcre_regexp_filter(LM_V_MESSAGE,
+                            "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "2","l");
+  testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: al fa", create_pcre_regexp_filter(LM_V_MESSAGE,
+                            "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "0","al fa");
+  testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: al fa", create_pcre_regexp_filter(LM_V_MESSAGE,
+                            "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "233",NULL);
+
 
   testcase("<15> openvpn[2499]: PTHREAD support initialized", filter_facility_new(facility_bits("user")), 1);
   testcase("<15> openvpn[2499]: PTHREAD support initialized", filter_facility_new(facility_bits("daemon")), 0);
@@ -301,7 +330,6 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase("<15> openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_filter(LM_V_PROGRAM, "^openvpn$", 0),
            1);
   testcase("<15> openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_filter(LM_V_PROGRAM, "^open$", 0), 0);
-  TEST_ASSERT(create_pcre_regexp_filter(LM_V_PROGRAM, "((", 0) == NULL);
 
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_filter(LM_V_HOST,
            "^host$", 0), 1);
@@ -309,7 +337,6 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "^hos$", 0), 0);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_filter(LM_V_HOST,
            "pthread", 0), 0);
-  TEST_ASSERT(create_pcre_regexp_filter(LM_V_HOST, "((", 0) == NULL);
 
 
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_filter(LM_V_MESSAGE,
@@ -333,7 +360,6 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_match("pthread",
            LMF_ICASE), 1);
 
-  TEST_ASSERT(create_pcre_regexp_match("((", 0) == NULL);
 
 #if SYSLOG_NG_ENABLE_IPV6
   sender_saddr = g_sockaddr_inet6_new("2001:db80:85a3:8d30:1319:8a2e:3700:7348", 5000);
@@ -462,19 +488,10 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            create_template("alma"), KW_GT), 0);
 
 
-  testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: al fa", create_pcre_regexp_filter(LM_V_MESSAGE,
-                            "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "1","a");
-
-  testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: al fa", create_pcre_regexp_filter(LM_V_MESSAGE,
-                            "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "0","al fa");
-
-  testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: al fa", create_pcre_regexp_filter(LM_V_MESSAGE,
-                            "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "232", NULL);
 
 
   testcase("<15> openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_filter(LM_V_PROGRAM, "^openvpn$", 0), 1);
   testcase("<15> openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_filter(LM_V_PROGRAM, "^open$", 0), 0);
-  TEST_ASSERT(create_pcre_regexp_filter(LM_V_PROGRAM, "((", 0) == NULL);
 
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_filter(LM_V_HOST,
            "^host$", 0), 1);
@@ -482,11 +499,6 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
            "^hos$", 0), 0);
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_filter(LM_V_HOST,
            "pthread", 0), 0);
-  TEST_ASSERT(create_pcre_regexp_filter(LM_V_HOST, "((", 0) == NULL);
-
-  TEST_ASSERT(create_pcre_regexp_filter(LM_V_HOST, "(?iana", 0) == NULL);
-
-  TEST_ASSERT(create_pcre_regexp_filter(LM_V_HOST, "(?iana", 0) == NULL);
 
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_filter(LM_V_MESSAGE,
            "^PTHREAD ", 0), 1);
@@ -526,21 +538,7 @@ main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
   testcase("<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_match("pthread",
            LMF_ICASE), 1);
 
-  TEST_ASSERT(create_pcre_regexp_match("((", 0) == NULL);
 
-  testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: alma fa", create_pcre_regexp_filter(LM_V_MESSAGE,
-                            "(?P<a>a)(?P<l>l)(?P<MM>m)(?P<aa>a) (?P<fa>fa)", LMF_STORE_MATCHES), 1, "MM","m");
-  testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: alma fa", create_pcre_regexp_filter(LM_V_MESSAGE,
-                            "(?P<a>a)(?P<l>l)(?P<MM>m)(?P<aa>a) (?P<fa>fa)", LMF_STORE_MATCHES), 1, "aaaa", NULL);
-  testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: alma fa", create_pcre_regexp_filter(LM_V_MESSAGE,
-                            "(?P<a>a)(?P<l>l)(?P<MM>m)(?P<aa>a) (?P<fa_name>fa)", LMF_STORE_MATCHES), 1, "fa_name","fa");
-
-  testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: al fa", create_pcre_regexp_filter(LM_V_MESSAGE,
-                            "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "2","l");
-  testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: al fa", create_pcre_regexp_filter(LM_V_MESSAGE,
-                            "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "0","al fa");
-  testcase_with_backref_chk("<15>Oct 15 16:17:01 host openvpn[2499]: al fa", create_pcre_regexp_filter(LM_V_MESSAGE,
-                            "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "233",NULL);
 
   app_shutdown();
   return 0;
