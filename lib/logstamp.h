@@ -33,6 +33,7 @@
 #define TS_FMT_FULL  2
 #define TS_FMT_UNIX  3
 
+#define LOGSTAMP_ZONE_OFFSET_UNSET G_MININT32
 
 typedef struct _LogStamp
 {

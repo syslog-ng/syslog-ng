@@ -36,11 +36,32 @@
 
 #define OLD_LMM_REF_MATCH 0x0001
 
+static void
+_set_ts_processed(LogStamp *timestamps, const LogStamp *processed)
+{
+  if (processed != NULL)
+    {
+      timestamps[LM_TS_PROCESSED].tv_sec = processed->tv_sec;
+      timestamps[LM_TS_PROCESSED].tv_usec = processed->tv_usec;
+      timestamps[LM_TS_PROCESSED].zone_offset = processed->zone_offset;
+    }
+  else if (timestamps[LM_TS_PROCESSED].zone_offset == LOGSTAMP_ZONE_OFFSET_UNSET)
+    {
+      timestamps[LM_TS_PROCESSED].tv_sec = timestamps[LM_TS_RECVD].tv_sec;
+      timestamps[LM_TS_PROCESSED].tv_usec = timestamps[LM_TS_RECVD].tv_usec;
+      timestamps[LM_TS_PROCESSED].zone_offset = timestamps[LM_TS_RECVD].zone_offset;
+    }
+}
+
 static gboolean
 _serialize_message(LogMessageSerializationState *state)
 {
   LogMessage *msg = state->msg;
   SerializeArchive *sa = state->sa;
+  LogStamp timestamps[LM_TS_MAX];
+
+  memcpy(&timestamps, msg->timestamps, LM_TS_MAX*sizeof(LogStamp));
+  _set_ts_processed(timestamps, state->processed);
 
   serialize_write_uint8(sa, state->version);
   serialize_write_uint64(sa, msg->rcptid);
@@ -48,7 +69,7 @@ _serialize_message(LogMessageSerializationState *state)
   serialize_write_uint32(sa, msg->flags & ~LF_STATE_MASK);
   serialize_write_uint16(sa, msg->pri);
   g_sockaddr_serialize(sa, msg->saddr);
-  timestamp_serialize(sa, msg->timestamps);
+  timestamp_serialize(sa, timestamps);
   serialize_write_uint32(sa, msg->host_id);
   tags_serialize(msg, sa);
   serialize_write_uint8(sa, msg->initial_parse);
@@ -61,14 +82,21 @@ _serialize_message(LogMessageSerializationState *state)
 }
 
 gboolean
-log_msg_serialize(LogMessage *self, SerializeArchive *sa)
+log_msg_serialize_with_ts_processed(LogMessage *self, SerializeArchive *sa, const LogStamp *processed)
 {
   LogMessageSerializationState state = { 0 };
 
   state.version = LGM_V26;
   state.msg = self;
   state.sa = sa;
+  state.processed = processed;
   return _serialize_message(&state);
+}
+
+gboolean
+log_msg_serialize(LogMessage *self, SerializeArchive *sa)
+{
+  return log_msg_serialize_with_ts_processed(self, sa, NULL);
 }
 
 static gboolean
@@ -139,8 +167,12 @@ _deserialize_message_version_2x(LogMessageSerializationState *state)
     return FALSE;
   if (!g_sockaddr_deserialize(sa, &msg->saddr))
     return FALSE;
-  if ((state->version < LGM_V24) && !timestamp_deserialize_legacy(sa, msg->timestamps))
-    return FALSE;
+  if (state->version < LGM_V24)
+    {
+      if (!timestamp_deserialize_legacy(sa, msg->timestamps))
+        return FALSE;
+      msg->timestamps[LM_TS_PROCESSED] = msg->timestamps[LM_TS_RECVD];
+    }
   if ((state->version >= LGM_V24) && !timestamp_deserialize(sa, msg->timestamps))
     return FALSE;
   if ((state->version >= LGM_V25) && (!serialize_read_uint32(sa, &msg->host_id)))

@@ -36,6 +36,9 @@
   input_timestamps[LM_TS_RECVD].tv_sec = 4; \
   input_timestamps[LM_TS_RECVD].tv_usec = 5; \
   input_timestamps[LM_TS_RECVD].zone_offset = 6; \
+  input_timestamps[LM_TS_PROCESSED].tv_sec = 255; \
+  input_timestamps[LM_TS_PROCESSED].tv_usec = 255; \
+  input_timestamps[LM_TS_PROCESSED].zone_offset = LOGSTAMP_ZONE_OFFSET_UNSET; \
   SerializeArchive *sa = serialize_string_archive_new(stream);
 
 #define CLEAN_TEST serialize_archive_free(sa); \
