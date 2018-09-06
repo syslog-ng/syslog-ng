@@ -34,7 +34,7 @@ BuildRequires: hiredis-devel
 BuildRequires: riemann-c-client-devel
 BuildRequires: python-devel
 BuildRequires: java-devel
-BuildRequires: gradle
+#BuildRequires: gradle    # Upstream version installed manually, discussed in: https://github.com/balabit/syslog-ng/issues/2262
 BuildRequires: syslog-ng-java-deps
 BuildRequires: libcurl-devel
 BuildRequires: cyrus-sasl-devel
@@ -185,9 +185,6 @@ developing applications that use %{name}.
 
 
 %build
-
-# hack to enable gradle-2.6, where necessary
-export PATH=/opt/gradle/bin:$PATH
 
 export GEOIP_LIBS=-lGeoIP
 %configure \
