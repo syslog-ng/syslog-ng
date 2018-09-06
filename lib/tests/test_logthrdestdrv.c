@@ -82,7 +82,7 @@ test_threaded_dd_new(GlobalConfig *cfg)
 static void
 _sleep_msec(long msec)
 {
-  struct timespec sleep_time = { 0, msec * 1000000 };
+  struct timespec sleep_time = { msec / 1000, (msec % 1000) * 1000000 };
   nanosleep(&sleep_time, NULL);
 }
 
