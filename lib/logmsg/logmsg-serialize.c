@@ -37,7 +37,7 @@
 #define OLD_LMM_REF_MATCH 0x0001
 
 static void
-_set_ts_processed(LogStamp *timestamps, const LogStamp *processed)
+_setup_ts_processed(LogStamp *timestamps, const LogStamp *processed)
 {
   if (processed != NULL)
     {
@@ -61,7 +61,7 @@ _serialize_message(LogMessageSerializationState *state)
   LogStamp timestamps[LM_TS_MAX];
 
   memcpy(&timestamps, msg->timestamps, LM_TS_MAX*sizeof(LogStamp));
-  _set_ts_processed(timestamps, state->processed);
+  _setup_ts_processed(timestamps, state->processed);
 
   serialize_write_uint8(sa, state->version);
   serialize_write_uint64(sa, msg->rcptid);
