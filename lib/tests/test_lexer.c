@@ -237,6 +237,15 @@ Test(lexer, test_location_tracking)
   assert_location_tag("location='#buffer:3:1'");
 }
 
+Test(lexer, test_multiline_string_literals)
+{
+  _input("\"test another\\\nfoo\"\nbar");
+  assert_parser_string("test anotherfoo");
+  assert_location(1, 1);
+  assert_parser_identifier("bar");
+  assert_location(3, 1);
+}
+
 Test(lexer, defined_variables_are_substituted_when_enclosed_in_backticks)
 {
   parser->lexer->ignore_pragma = FALSE;
