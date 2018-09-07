@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2015 Balabit
+ * Copyright (c) 2008-2018 Balabit
  * Copyright (c) 2008-2015 Balázs Scheidler <balazs.scheidler@balabit.com>
  * Copyright (c) 2009 Marton Illes
  *
@@ -32,46 +32,21 @@
 #include <string.h>
 #include <stdlib.h>
 
-gboolean fail = FALSE;
-gboolean verbose = FALSE;
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
 
-void r_print_node(RNode *node, int depth);
+#define RADIX_TEST_MAX_PATTERN 5
+#define RADIX_TEST_MAX_NODE 5
 
-void
-r_print_pnode(RNode *node, int depth)
+typedef struct _radix_test_param
 {
-  int i;
-  for (i = 0; i < depth; i++)
-    printf(" ");
-
-  printf("%dPNODE: %d('%s') => '%s'\n", depth, node->parser->type, log_msg_get_value_name(node->parser->handle, NULL),
-         (char *)node->value);
-
-  for (i = 0; i < node->num_children; i++)
-    r_print_node(node->children[i], depth + 1);
-
-  for (i = 0; i < node->num_pchildren; i++)
-    r_print_pnode(node->pchildren[i], depth + 1);
-}
+  const gchar *node_to_insert[RADIX_TEST_MAX_NODE];
+  const gchar *key;
+  const gchar *expected_pattern[RADIX_TEST_MAX_PATTERN];
+} RadixTestParam;
 
 void
-r_print_node(RNode *node, int depth)
-{
-  int i;
-  for (i = 0; i < depth; i++)
-    printf(" ");
-
-  printf("%dNODE: '%s' => '%s'\n", depth, node->key, (char *)node->value);
-
-  for (i = 0; i < node->num_children; i++)
-    r_print_node(node->children[i], depth + 1);
-
-  for (i = 0; i < node->num_pchildren; i++)
-    r_print_pnode(node->pchildren[i], depth + 1);
-}
-
-void
-insert_node_with_value(RNode *root, gchar *key, gpointer value)
+insert_node_with_value(RNode *root, const gchar *key, const gpointer value)
 {
   gchar *dup;
 
@@ -79,151 +54,89 @@ insert_node_with_value(RNode *root, gchar *key, gpointer value)
    * and it might be a read-only string literal */
 
   dup = g_strdup(key);
-  r_insert_node(root, dup, value ? : key, NULL);
+  r_insert_node(root, dup, value ? : (gpointer)key, NULL);
   g_free(dup);
 }
 
 void
-insert_node(RNode *root, gchar *key)
+insert_node(RNode *root, const gchar *key)
 {
   insert_node_with_value(root, key, NULL);
 }
 
 void
-test_search_value(RNode *root, gchar *key, gchar *expected_value)
+test_search_value(RNode *root, const gchar *key, const gchar *expected_value)
 {
-  RNode *ret = r_find_node(root, key, strlen(key), NULL);
+  RNode *ret = r_find_node(root, (gchar *)key, strlen(key), NULL);
 
-  if (ret && expected_value)
+  if (expected_value)
     {
-      if (strcmp(ret->value, expected_value) != 0)
-        {
-          printf("FAIL: returned value does not match expected: '%s' <> '%s'\n", (gchar *) ret->value, expected_value);
-          fail = TRUE;
-        }
-      else if (verbose)
-        {
-          printf("PASS: found expected: '%s' => '%s'\n", key, (gchar *) ret->value);
-        }
+      cr_assert(ret, "node not found. key=%s\n", key);
+      cr_expect_str_eq(ret->value, expected_value, "FAIL: returned value does not match expected: '%s' <> '%s'\n",
+                       (gchar *) ret->value, expected_value);
     }
-  else if (ret && !expected_value)
+  else
     {
-      printf("FAIL: found unexpected: '%s' => '%s'\n", key, (gchar *) ret->value);
-      fail = TRUE;
-    }
-  else if (expected_value)
-    {
-      printf("FAIL: not found while expected: '%s' => none\n", key);
-      fail = TRUE;
+      cr_assert_not(ret, "found unexpected: '%s' => '%s'\n", key, (gchar *) ret->value);
     }
 }
 
 void
-test_search(RNode *root, gchar *key, gboolean expect)
+test_search(RNode *root, const gchar *key, gboolean expect)
 {
   test_search_value(root, key, expect ? key : NULL);
 }
 
 void
-test_search_matches(RNode *root, gchar *key, gchar *name1, ...)
+test_search_matches(RNode *root, const gchar *key, const gchar *search_pattern[])
 {
-  RNode *ret;
-  va_list args;
   GArray *matches = g_array_new(FALSE, TRUE, sizeof(RParserMatch));
+  g_array_set_size(matches, 1);
+
   RParserMatch *match;
   const gchar *match_name;
 
-  g_array_set_size(matches, 1);
-  va_start(args, name1);
+  RNode *ret = r_find_node(root, (guint8 *)key, strlen(key), matches);
 
-  ret = r_find_node(root, key, strlen(key), matches);
-  if (ret && !name1)
+  if (!search_pattern[0])
     {
-      printf("FAIL: found unexpected: '%s' => '%s' matches: ", key, (gchar *) ret->value);
-      for (gsize i = 0; i < matches->len; i++)
-        {
-          match = &g_array_index(matches, RParserMatch, i);
-          match_name = log_msg_get_value_name(match->handle, NULL);
-          if (match_name)
-            {
-              if (!match->match)
-                printf("'%s' => '%.*s'", match_name, match->len, &key[match->ofs]);
-              else
-                printf("'%s' => '%s'", match_name, match->match);
-            }
-        }
-      printf("\n");
-      fail = TRUE;
-    }
-  else if (ret && name1)
-    {
-      gsize i = 1;
-      gchar *name, *value;
-
-      name = name1;
-      value = va_arg(args, gchar *);
-      while (name)
-        {
-          if (i >= matches->len)
-            {
-              printf("FAIL: not enough matches: '%s' => expecting %" G_GSIZE_FORMAT ". match, value %s, "
-                     " total %u\n",
-                     key, i, value, matches->len);
-              fail = TRUE;
-              goto out;
-            }
-          match = &g_array_index(matches, RParserMatch, i);
-          match_name = log_msg_get_value_name(match->handle, NULL);
-
-          if (strcmp(match_name, name) != 0)
-            {
-              printf("FAIL: name does not match: '%s' => expecting %" G_GSIZE_FORMAT ". match, "
-                     "name %s != %s\n",
-                     key, i, name, match_name);
-              fail = TRUE;
-            }
-
-          if (!match->match)
-            {
-              if (strncmp(&key[match->ofs], value, match->len) != 0 || strlen(value) != match->len)
-                {
-                  printf("FAIL: value does not match: '%s' => expecting %" G_GSIZE_FORMAT ". match, "
-                         "value '%s' != '%.*s', total %d\n",
-                         key, i, value, match->len, &key[match->ofs], matches->len);
-                  fail = TRUE;
-                }
-            }
-          else
-            {
-              if (strcmp(match->match, value) != 0)
-                {
-                  printf("FAIL: value does not match: '%s' => expecting %" G_GSIZE_FORMAT ". match, "
-                         "value '%s' != '%s', total %d\n",
-                         key, i, value, match->match, matches->len);
-                  fail = TRUE;
-                }
-            }
-          name = va_arg(args, gchar *);
-          if (name)
-            value = va_arg(args, gchar *);
-          i++;
-        }
-      if (verbose)
-        printf("PASS: all values match: '%s'\n", key);
-    }
-  else if (!ret && !name1)
-    {
-      if (verbose)
-        printf("PASS: nothing was matched as expected: '%s'\n", key);
+      cr_expect_not(ret, "found unexpected: '%s' => '%s' matches: ", key, (gchar *) ret->value);
     }
   else
     {
-      printf("FAIL: not found while expected: '%s' => none\n", key);
-      fail = TRUE;
-    }
+      cr_assert(ret, "not found while expected: '%s' => none %s\n", key, search_pattern[0]);
 
-out:
-  va_end(args);
+      for (int i=0; search_pattern[i]; i+=2)
+        {
+          cr_assert_lt(i/2, matches->len, "not enough matches: %d => expecting %d", i, matches->len);
+
+          const gchar *expected_name = search_pattern[i];
+          const gchar *expected_value = search_pattern[i+1];
+
+          match = &g_array_index(matches, RParserMatch, (i/2)+1);
+          match_name = log_msg_get_value_name(match->handle, NULL);
+
+          cr_expect_str_eq(match_name, expected_name,
+                           "name does not match (key=%s): '%s' => expecting '%s'\n",
+                           key, match_name, expected_name);
+
+          if (!match->match)
+            {
+              cr_expect_eq(match->len, strlen(expected_value),
+                           "value length does not match (key=%s): %d => expecting %zu\n",
+                           key, match->len, strlen(expected_value));
+              cr_expect_eq(strncmp(&key[match->ofs], expected_value, match->len), 0,
+                           "value does not match (key=%s): %*s => expecting %s\n",
+                           key, match->len, &key[match->ofs], expected_value);
+            }
+          else
+            {
+              cr_expect_str_eq(match->match, expected_value,
+                               "value does not match (key=%s): '%s' => expecting '%s'\n",
+                               key, match->match, expected_value);
+            }
+        }
+    }
 
   for (gsize i = 0; i < matches->len; i++)
     {
@@ -236,8 +149,18 @@ out:
   g_array_free(matches, TRUE);
 }
 
-void
-test_literals(void)
+void test_setup(void)
+{
+  app_startup();
+  msg_init(TRUE);
+}
+
+void test_teardown(void)
+{
+  app_shutdown();
+}
+
+Test(dbparser, test_literals, .init = test_setup, .fini = test_teardown)
 {
   RNode *root = r_new_node("", NULL);
 
@@ -296,8 +219,7 @@ test_literals(void)
   r_free_node(root, NULL);
 }
 
-void
-test_parsers(void)
+Test(dbparser, test_parsers, .init = test_setup, .fini = test_teardown)
 {
   RNode *root = r_new_node("", NULL);
 
@@ -324,29 +246,19 @@ test_parsers(void)
   insert_node(root, "@@");
   insert_node(root, "@@@@");
 
-  printf("We excpect an error message\n");
   insert_node(root, "xxx@ESTRING@");
-  printf("We excpect an error message\n");
   insert_node(root, "xxx@QSTRING@");
   insert_node(root, "xxx@STRING@");
   insert_node(root, "xxx@ANYSTRING@");
-
-  printf("We excpect an error message\n");
   insert_node(root, "xxx@ESTRING@x");
-  printf("We excpect an error message\n");
   insert_node(root, "xxx@QSTRING@x");
   insert_node(root, "xxx@STRING@x");
   insert_node(root, "xxx@ANYSTRING@x");
-  printf("We excpect an error message\n");
   insert_node(root, "AAA@NUMBER:invalid=@AAA");
-  printf("We excpect an error message\n");
   insert_node(root, "AAA@SET@AAA");
-  printf("We excpect an error message\n");
   insert_node(root, "AAA@SET:set@AAA");
   insert_node(root, "AAA@MACADDR@AAA");
   insert_node(root, "newline@NUMBER@\n2ndline\n");
-
-  printf("We excpect an error message\n");
   insert_node(root, "AAA@PCRE:set@AAA");
 
   test_search_value(root, "a@", NULL);
@@ -361,13 +273,7 @@ test_parsers(void)
   /* CRLF sequence immediately after a parser, e.g. in the initial position */
   test_search_value(root, "newline123\r\n2ndline\n", "newline@NUMBER@\n2ndline\n");
 
-  /* FIXME: this one fails, because the shorter match is returned. The
-   * current radix implementation does not ensure the longest match when the
-   * radix tree is split on a parser node. */
-
-#if 0
   test_search_value(root, "a15555aaa", "a@NUMBER:szamx@aaa");
-#endif
   test_search_value(root, "@a", "@@a");
   test_search_value(root, "@", "@@");
   test_search_value(root, "@@", "@@@@");
@@ -375,500 +281,766 @@ test_parsers(void)
   r_free_node(root, NULL);
 }
 
-void
-test_ip_matches(void)
+ParameterizedTestParameters(dbparser, test_radix_search_matches)
+{
+  static RadixTestParam parser_params[] =
+  {
+    /* test_ip_matches */
+    {
+      .node_to_insert = {"@IPvANY:ip@", NULL},
+      .key = "192.168.1.1 huhuhu",
+      .expected_pattern = {"ip", "192.168.1.1", NULL}
+    },
+    {
+      .node_to_insert = {"@IPvANY:ip@", NULL},
+      .key = "192.168.1.1. huhuhu",
+      .expected_pattern = {"ip", "192.168.1.1", NULL}
+    },
+    {
+      .node_to_insert = {"@IPvANY:ip@", NULL},
+      .key = "192.168.1huhuhu",
+      .expected_pattern = {NULL}
+    },
+    {
+      .node_to_insert = {"@IPvANY:ip@", NULL},
+      .key = "192.168.1.huhuhu",
+      .expected_pattern = {NULL}
+    },
+    {
+      .node_to_insert = {"@IPvANY:ip@", NULL},
+      .key = "192.168.1 huhuhu",
+      .expected_pattern = {NULL}
+    },
+    {
+      .node_to_insert = {"@IPvANY:ip@", NULL},
+      .key = "192.168.1. huhuhu",
+      .expected_pattern = {NULL}
+    },
+    {
+      .node_to_insert = {"@IPvANY:ip@", NULL},
+      .key = "192.168.1.1huhuhu",
+      .expected_pattern = {"ip","192.168.1.1",NULL}
+    },
+    {
+      .node_to_insert = {"@IPvANY:ip@", NULL},
+      .key ="ABCD:EF01:2345:6789:ABCD:EF01:2345:6789 huhuhu",
+      .expected_pattern = {"ip", "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789", NULL}
+    },
+    {
+      .node_to_insert = {"@IPvANY:ip@", NULL},
+      .key ="abcd:ef01:2345:6789:abcd:ef01:2345:6789 huhuhu",
+      .expected_pattern = {"ip", "abcd:ef01:2345:6789:abcd:ef01:2345:6789", NULL}
+    },
+    {
+      .node_to_insert = {"@IPvANY:ip@", NULL},
+      .key =":: huhuhu",
+      .expected_pattern = {"ip", "::", NULL}
+    },
+    {
+      .node_to_insert = {"@IPvANY:ip@", NULL},
+      .key ="0:0:0:0:0:0:13.1.68.3 huhuhu",
+      .expected_pattern = {"ip", "0:0:0:0:0:0:13.1.68.3", NULL}
+    },
+    {
+      .node_to_insert = {"@IPvANY:ip@", NULL},
+      .key ="::202.1.68.3 huhuhu",
+      .expected_pattern = {"ip", "::202.1.68.3", NULL}
+    },
+    {
+      .node_to_insert = {"@IPvANY:ip@", NULL},
+      .key ="2001:0DB8:0:CD30:: huhuhu",
+      .expected_pattern = {"ip", "2001:0DB8:0:CD30::", NULL}
+    },
+    {
+      .node_to_insert = {"@IPvANY:ip@", NULL},
+      .key ="ABCD:EF01:2345:6789:ABCD:EF01:2345:6789.huhuhu",
+      .expected_pattern = {"ip", "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789", NULL}
+    },
+    {
+      .node_to_insert = {"@IPvANY:ip@", NULL},
+      .key ="abcd:ef01:2345:6789:abcd:ef01:2345:6789.huhuhu",
+      .expected_pattern = {"ip", "abcd:ef01:2345:6789:abcd:ef01:2345:6789", NULL}
+    },
+    {
+      .node_to_insert = {"@IPvANY:ip@", NULL},
+      .key ="::.huhuhu",
+      .expected_pattern = {"ip", "::", NULL}
+    },
+    {
+      .node_to_insert = {"@IPvANY:ip@", NULL},
+      .key ="0:0:0:0:0:0:13.1.68.3.huhuhu",
+      .expected_pattern = {"ip", "0:0:0:0:0:0:13.1.68.3", NULL}
+    },
+    {
+      .node_to_insert = {"@IPvANY:ip@", NULL},
+      .key ="::202.1.68.3.huhuhu",
+      .expected_pattern = {"ip", "::202.1.68.3", NULL}
+    },
+    {
+      .node_to_insert = {"@IPvANY:ip@", NULL},
+      .key ="2001:0DB8:0:CD30::.huhuhu",
+      .expected_pattern = {"ip", "2001:0DB8:0:CD30::", NULL}
+    },
+    {
+      .node_to_insert = {"@IPvANY:ip@", NULL},
+      .key ="1:2:3:4:5:6:7:8.huhuhu",
+      .expected_pattern = {"ip", "1:2:3:4:5:6:7:8", NULL}
+    },
+    {
+      .node_to_insert = {"@IPvANY:ip@", NULL},
+      .key ="1:2:3:4:5:6:7:8 huhuhu",
+      .expected_pattern = {"ip", "1:2:3:4:5:6:7:8", NULL}
+    },
+    {
+      .node_to_insert = {"@IPvANY:ip@", NULL},
+      .key ="1:2:3:4:5:6:7:8:huhuhu",
+      .expected_pattern = {"ip", "1:2:3:4:5:6:7:8", NULL}
+    },
+    {
+      .node_to_insert = {"@IPvANY:ip@", NULL},
+      .key ="1:2:3:4:5:6:7 huhu",
+      .expected_pattern = {NULL}
+    },
+    {
+      .node_to_insert = {"@IPvANY:ip@", NULL},
+      .key ="1:2:3:4:5:6:7.huhu",
+      .expected_pattern = {NULL}
+    },
+    {
+      .node_to_insert = {"@IPvANY:ip@", NULL},
+      .key ="1:2:3:4:5:6:7:huhu",
+      .expected_pattern = {NULL}
+    },
+    {
+      .node_to_insert = {"@IPvANY:ip@", NULL},
+      .key ="1:2:3:4:5:6:77777:8 huhu",
+      .expected_pattern = {NULL}
+    },
+    {
+      .node_to_insert = {"@IPvANY:ip@", NULL},
+      .key ="1:2:3:4:5:6:1.2.333.4 huhu",
+      .expected_pattern = {NULL}
+    },
+    {
+      .node_to_insert = {"@IPvANY:ip@", NULL},
+      .key ="v12345",
+      .expected_pattern = {NULL}
+    },
+    /* test_ipv4_matches */
+    {
+      .node_to_insert = {"@IPv4:ipv4@", NULL},
+      .key = "192.168.1.1 huhuhu",
+      .expected_pattern = {"ipv4", "192.168.1.1",NULL}
+    },
+    {
+      .node_to_insert = {"@IPv4:ipv4@", NULL},
+      .key = "192.168.1.1. huhuhu",
+      .expected_pattern = {"ipv4", "192.168.1.1", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv4:ipv4@", NULL},
+      .key = "192.168.1.1.huhuhu",
+      .expected_pattern = {"ipv4", "192.168.1.1", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv4:ipv4@", NULL},
+      .key = "192.168.1.1.. huhuhu",
+      .expected_pattern = {"ipv4", "192.168.1.1", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv4:ipv4@", NULL},
+      .key = "192.168.1.1.2 huhuhu",
+      .expected_pattern = {"ipv4", "192.168.1.1", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv4:ipv4@", NULL},
+      .key = "192.168.1.1..huhuhu",
+      .expected_pattern = {"ipv4", "192.168.1.1", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv4:ipv4@", NULL},
+      .key = "192.168.1.1huhuhu",
+      .expected_pattern = {"ipv4", "192.168.1.1", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv4:ipv4@", NULL},
+      .key = "192.168.1huhuhu",
+      .expected_pattern = {NULL}
+    },
+    {
+      .node_to_insert = {"@IPv4:ipv4@", NULL},
+      .key = "192.168.1.huhuhu",
+      .expected_pattern = {NULL}
+    },
+    {
+      .node_to_insert = {"@IPv4:ipv4@", NULL},
+      .key = "192.168.1 huhuhu",
+      .expected_pattern = {NULL}
+    },
+    {
+      .node_to_insert = {"@IPv4:ipv4@", NULL},
+      .key = "192.168.1. huhuhu",
+      .expected_pattern = {NULL}
+    },
+    {
+      .node_to_insert = {"@IPv4:ipv4@", NULL},
+      .key = "v12345",
+      .expected_pattern = {NULL}
+    },
+    /* test_ipv6_matches */
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "1:2:3:4:5:6:7 huhu",
+      .expected_pattern = {NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "1:2:3:4:5:6:7.huhu",
+      .expected_pattern = {NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "1:2:3:4:5:6:7:huhu",
+      .expected_pattern = {NULL},
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "v12345",
+      .expected_pattern = {NULL},
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789 huhuhu",
+      .expected_pattern = {"ipv6", "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "abcd:ef01:2345:6789:abcd:ef01:2345:6789 huhuhu",
+      .expected_pattern = {"ipv6", "abcd:ef01:2345:6789:abcd:ef01:2345:6789", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "0:0:0:0:0:0:0:0 huhuhu",
+      .expected_pattern = {"ipv6", "0:0:0:0:0:0:0:0", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "2001:DB8::8:800:200C:417A huhuhu",
+      .expected_pattern = {"ipv6", "2001:DB8::8:800:200C:417A", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "FF01::101 huhuhu",
+      .expected_pattern = {"ipv6", "FF01::101", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "::1 huhuhu",
+      .expected_pattern = {"ipv6", "::1", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = ":: huhuhu",
+      .expected_pattern = {"ipv6", "::", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "0:0:0:0:0:0:13.1.68.3 huhuhu",
+      .expected_pattern = {"ipv6", "0:0:0:0:0:0:13.1.68.3", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "::202.1.68.3 huhuhu",
+      .expected_pattern = {"ipv6", "::202.1.68.3", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "2001:0DB8:0:CD30:: huhuhu",
+      .expected_pattern = {"ipv6", "2001:0DB8:0:CD30::", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "2001:0DB8:0:CD30::huhuhu",
+      .expected_pattern = {"ipv6", "2001:0DB8:0:CD30::", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "::ffff:200.200.200.200huhuhu",
+      .expected_pattern = {"ipv6", "::ffff:200.200.200.200", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "2001:0DB8:0:CD30::huhuhu",
+      .expected_pattern = {"ipv6", "2001:0DB8:0:CD30::", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "::ffff:200.200.200.200 :huhuhu",
+      .expected_pattern = {"ipv6", "::ffff:200.200.200.200", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "::ffff:200.200.200.200: huhuhu",
+      .expected_pattern = {"ipv6", "::ffff:200.200.200.200", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "::ffff:200.200.200.200. :huhuhu",
+      .expected_pattern = {"ipv6", "::ffff:200.200.200.200", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "::ffff:200.200.200.200.:huhuhu",
+      .expected_pattern = {"ipv6", "::ffff:200.200.200.200", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "::ffff:200.200.200.200.2:huhuhu",
+      .expected_pattern = {"ipv6", "::ffff:200.200.200.200", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "::0: huhuhu",
+      .expected_pattern = {"ipv6", "::0", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "0:0:0:0:0:0:0:0: huhuhu",
+      .expected_pattern = {"ipv6", "0:0:0:0:0:0:0:0", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "::129.144.52.38: huhuhu",
+      .expected_pattern = {"ipv6", "::129.144.52.38", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "::ffff:129.144.52.38: huhuhu",
+      .expected_pattern = {"ipv6", "::ffff:129.144.52.38", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789.huhuhu",
+      .expected_pattern = {"ipv6", "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "abcd:ef01:2345:6789:abcd:ef01:2345:6789.huhuhu",
+      .expected_pattern = {"ipv6", "abcd:ef01:2345:6789:abcd:ef01:2345:6789", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "0:0:0:0:0:0:0:0.huhuhu",
+      .expected_pattern = {"ipv6", "0:0:0:0:0:0:0:0", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "2001:DB8::8:800:200C:417A.huhuhu",
+      .expected_pattern = {"ipv6", "2001:DB8::8:800:200C:417A", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "FF01::101.huhuhu",
+      .expected_pattern = {"ipv6", "FF01::101", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "::1.huhuhu",
+      .expected_pattern = {"ipv6", "::1", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "::.huhuhu",
+      .expected_pattern = {"ipv6", "::", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "0:0:0:0:0:0:13.1.68.3.huhuhu",
+      .expected_pattern = {"ipv6", "0:0:0:0:0:0:13.1.68.3", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "::202.1.68.3.huhuhu",
+      .expected_pattern = {"ipv6", "::202.1.68.3", NULL}
+    },
+    {
+      .node_to_insert = {"@IPv6:ipv6@", NULL},
+      .key = "2001:0DB8:0:CD30::.huhuhu",
+      .expected_pattern = {"ipv6", "2001:0DB8:0:CD30::", NULL}
+    },
+    /* test_number_matches */
+    {
+      .node_to_insert = {"@NUMBER:number@", NULL},
+      .key = "12345 hihihi",
+      .expected_pattern = {"number", "12345", NULL}
+    },
+    {
+      .node_to_insert = {"@NUMBER:number@", NULL},
+      .key = "12345 hihihi",
+      .expected_pattern = {"number", "12345", NULL}
+    },
+    {
+      .node_to_insert = {"@NUMBER:number@", NULL},
+      .key = "0xaf12345 hihihi",
+      .expected_pattern = {"number", "0xaf12345", NULL}
+    },
+    {
+      .node_to_insert = {"@NUMBER:number@", NULL},
+      .key = "0xAF12345 hihihi",
+      .expected_pattern = {"number", "0xAF12345", NULL}
+    },
+    {
+      .node_to_insert = {"@NUMBER:number@", NULL},
+      .key = "0x12345 hihihi",
+      .expected_pattern = {"number", "0x12345", NULL}
+    },
+    {
+      .node_to_insert = {"@NUMBER:number@", NULL},
+      .key = "0XABCDEF12345ABCDEF hihihi",
+      .expected_pattern = {"number", "0XABCDEF12345ABCDEF", NULL}
+    },
+    {
+      .node_to_insert = {"@NUMBER:number@", NULL},
+      .key = "-12345 hihihi",
+      .expected_pattern = {"number", "-12345", NULL}
+    },
+    {
+      .node_to_insert = {"@NUMBER:number@", NULL},
+      .key = "v12345",
+      .expected_pattern = {NULL}
+    },
+    /* test_qstring_matches */
+    {
+      .node_to_insert = {"@QSTRING:qstring:'@", NULL},
+      .key = "'quoted string' hehehe",
+      .expected_pattern = {"qstring", "quoted string", NULL}
+    },
+    {
+      .node_to_insert = {"@QSTRING:qstring:'@", NULL},
+      .key = "v12345",
+      .expected_pattern = {NULL}
+    },
+    /* test_estring_matches */
+    {
+      .node_to_insert = {"ddd @ESTRING:estring::@",
+        "dddd @ESTRING:estring::*@",
+        "dddd2 @ESTRING:estring::*@ d",
+        "zzz @ESTRING:test:gép@",
+        NULL
+      },
+      .key = "ddd estring: hehehe",
+      .expected_pattern = {"estring", "estring", NULL},
+    },
+    {
+      .node_to_insert = {"ddd @ESTRING:estring::@",
+        "dddd @ESTRING:estring::*@",
+        "dddd2 @ESTRING:estring::*@ d",
+        "zzz @ESTRING:test:gép@",
+        NULL
+      },
+      .key = "ddd v12345",
+      .expected_pattern = {NULL},
+    },
+    {
+      .node_to_insert = {"ddd @ESTRING:estring::@",
+        "dddd @ESTRING:estring::*@",
+        "dddd2 @ESTRING:estring::*@ d",
+        "zzz @ESTRING:test:gép@",
+        NULL
+      },
+      .key = "dddd estring:* hehehe",
+      .expected_pattern = {"estring", "estring", NULL},
+    },
+    {
+      .node_to_insert = {"ddd @ESTRING:estring::@",
+        "dddd @ESTRING:estring::*@",
+        "dddd2 @ESTRING:estring::*@ d",
+        "zzz @ESTRING:test:gép@",
+        NULL
+      },
+      .key = "dddd estring:estring:* hehehe",
+      .expected_pattern = {"estring", "estring:estring", NULL},
+    },
+    {
+      .node_to_insert = {"ddd @ESTRING:estring::@",
+        "dddd @ESTRING:estring::*@",
+        "dddd2 @ESTRING:estring::*@ d",
+        "zzz @ESTRING:test:gép@",
+        NULL
+      },
+      .key = "dddd estring:estring::* hehehe",
+      .expected_pattern = {"estring", "estring:estring:", NULL},
+    },
+    {
+      .node_to_insert = {"ddd @ESTRING:estring::@",
+        "dddd @ESTRING:estring::*@",
+        "dddd2 @ESTRING:estring::*@ d",
+        "zzz @ESTRING:test:gép@",
+        NULL
+      },
+      .key = "dddd2 estring:estring::* d",
+      .expected_pattern = {"estring", "estring:estring:", NULL}
+    },
+    {
+      .node_to_insert = {"ddd @ESTRING:estring::@",
+        "dddd @ESTRING:estring::*@",
+        "dddd2 @ESTRING:estring::*@ d",
+        "zzz @ESTRING:test:gép@",
+        NULL
+      },
+      .key = "dddd2 estring:estring::* ",
+      .expected_pattern = {NULL},
+    },
+    {
+      .node_to_insert = {"ddd @ESTRING:estring::@",
+        "dddd @ESTRING:estring::*@",
+        "dddd2 @ESTRING:estring::*@ d",
+        "zzz @ESTRING:test:gép@",
+        NULL
+      },
+      .key = "dddd2 estring:estring::*",
+      .expected_pattern = {NULL},
+    },
+    {
+      .node_to_insert = {"ddd @ESTRING:estring::@",
+        "dddd @ESTRING:estring::*@",
+        "dddd2 @ESTRING:estring::*@ d",
+        "zzz @ESTRING:test:gép@",
+        NULL
+      },
+      .key = "dddd2 estring:estring:*",
+      .expected_pattern = {NULL}
+    },
+    {
+      .node_to_insert = {"ddd @ESTRING:estring::@",
+        "dddd @ESTRING:estring::*@",
+        "dddd2 @ESTRING:estring::*@ d",
+        "zzz @ESTRING:test:gép@",
+        NULL
+      },
+      .key = "dddd2 estring:estring",
+      .expected_pattern = {NULL},
+    },
+    {
+      .node_to_insert = {"ddd @ESTRING:estring::@",
+        "dddd @ESTRING:estring::*@",
+        "dddd2 @ESTRING:estring::*@ d",
+        "zzz @ESTRING:test:gép@",
+        NULL
+      },
+      .key = "dddd v12345",
+      .expected_pattern = {NULL},
+    },
+    {
+      .node_to_insert = {"ddd @ESTRING:estring::@",
+        "dddd @ESTRING:estring::*@",
+        "dddd2 @ESTRING:estring::*@ d",
+        "zzz @ESTRING:test:gép@",
+        NULL
+      },
+      .key = "zzz árvíztűrőtükörfúrógép",
+      .expected_pattern = {"test", "árvíztűrőtükörfúró", NULL},
+    },
+    /* test_string_matches */
+    {
+      .node_to_insert = {"@STRING:string@", NULL},
+      .key = "string hehehe",
+      .expected_pattern = {"string", "string", NULL},
+    },
+    /* test_float_matches */
+    {
+      .node_to_insert = {"@FLOAT:float@", NULL},
+      .key = "12345 hihihi",
+      .expected_pattern = {"float", "12345", NULL},
+    },
+    {
+      .node_to_insert = {"@FLOAT:float@", NULL},
+      .key = "12345hihihi",
+      .expected_pattern = {"float", "12345", NULL},
+    },
+    {
+      .node_to_insert = {"@FLOAT:float@", NULL},
+      .key = "12.345hihihi",
+      .expected_pattern = {"float", "12.345", NULL},
+    },
+    {
+      .node_to_insert = {"@FLOAT:float@", NULL},
+      .key = "12.345.hihihi",
+      .expected_pattern = {"float", "12.345", NULL},
+    },
+    {
+      .node_to_insert = {"@FLOAT:float@", NULL},
+      .key = "12.345.6hihihi",
+      .expected_pattern = {"float", "12.345", NULL},
+    },
+    {
+      .node_to_insert = {"@FLOAT:float@", NULL},
+      .key = "12345.hihihi",
+      .expected_pattern = {"float", "12345.", NULL}
+    },
+    {
+      .node_to_insert = {"@FLOAT:float@", NULL},
+      .key = "-12.345 hihihi",
+      .expected_pattern = {"float", "-12.345", NULL},
+    },
+    {
+      .node_to_insert = {"@FLOAT:float@", NULL},
+      .key = "-12.345e12 hihihi",
+      .expected_pattern = {"float", "-12.345e12", NULL},
+    },
+    {
+      .node_to_insert = {"@FLOAT:float@", NULL},
+      .key = "-12.345e-12 hihihi",
+      .expected_pattern = {"float", "-12.345e-12", NULL},
+    },
+    {
+      .node_to_insert = {"@FLOAT:float@", NULL},
+      .key = "12.345e12 hihihi",
+      .expected_pattern = {"float", "12.345e12", NULL}
+    },
+    {
+      .node_to_insert = {"@FLOAT:float@", NULL},
+      .key = "12.345e-12 hihihi",
+      .expected_pattern = {"float", "12.345e-12", NULL},
+    },
+    {
+      .node_to_insert = {"@FLOAT:float@", NULL},
+      .key = "-12.345E12 hihihi",
+      .expected_pattern = {"float", "-12.345E12", NULL},
+    },
+    {
+      .node_to_insert = {"@FLOAT:float@", NULL},
+      .key = "-12.345E-12 hihihi",
+      .expected_pattern = {"float", "-12.345E-12", NULL},
+    },
+    {
+      .node_to_insert = {"@FLOAT:float@", NULL},
+      .key = "12.345E12 hihihi",
+      .expected_pattern = {"float", "12.345E12", NULL},
+    },
+    {
+      .node_to_insert = {"@FLOAT:float@", NULL},
+      .key = "12.345E-12 hihihi",
+      .expected_pattern = {"float", "12.345E-12", NULL},
+    },
+    {
+      .node_to_insert = {"@FLOAT:float@", NULL},
+      .key = "v12345",
+      .expected_pattern = {NULL},
+    },
+    {
+      .node_to_insert = {"@FLOAT:float@", NULL},
+      .key = "12345.hihihi",
+      .expected_pattern = {"float", "12345.", NULL},
+    },
+    /* test_set_matches */
+    {
+      .node_to_insert = {"@SET:set:  @", NULL},
+      .key = " aaa",
+      .expected_pattern = {"set", " ", NULL},
+    },
+    {
+      .node_to_insert = {"@SET:set:  @", NULL},
+      .key = "  aaa",
+      .expected_pattern = {"set", "  ", NULL},
+    },
+    /* test_mcaddr_matches */
+    {
+      .node_to_insert = {"@MACADDR:macaddr@", NULL},
+      .key = "82:63:25:93:eb:51.iii",
+      .expected_pattern = {"macaddr", "82:63:25:93:eb:51", NULL},
+    },
+    {
+      .node_to_insert = {"@MACADDR:macaddr@", NULL},
+      .key = "82:63:25:93:EB:51.iii",
+      .expected_pattern = {"macaddr", "82:63:25:93:EB:51", NULL},
+    },
+    /* test_email_matches */
+    {
+      .node_to_insert = {"@EMAIL:email:[<]>@", NULL },
+      .key = "blint@balabit.hu",
+      .expected_pattern = {"email", "blint@balabit.hu", NULL},
+    },
+    {
+      .node_to_insert = {"@EMAIL:email:[<]>@", NULL },
+      .key = "<blint@balabit.hu>",
+      .expected_pattern = {"email", "blint@balabit.hu", NULL},
+    },
+    {
+      .node_to_insert = {"@EMAIL:email:[<]>@", NULL },
+      .key = "[blint@balabit.hu]",
+      .expected_pattern = {"email", "blint@balabit.hu", NULL},
+    },
+    /* test_hostname_matches */
+    {
+      .node_to_insert = {"@HOSTNAME:hostname@", NULL},
+      .key = "www.example.org",
+      .expected_pattern = {"hostname", "www.example.org", NULL},
+    },
+    {
+      .node_to_insert = {"@HOSTNAME:hostname@", NULL},
+      .key = "www.example.org. kkk",
+      .expected_pattern = {"hostname", "www.example.org.", NULL},
+    },
+    /* test_lladdr_matches */
+    {
+      .node_to_insert = {"@LLADDR:lladdr6:6@", NULL},
+      .key = "83:63:25:93:eb:51:aa:bb.iii",
+      .expected_pattern = {"lladdr6", "83:63:25:93:eb:51", NULL},
+    },
+    {
+      .node_to_insert = {"@LLADDR:lladdr6:6@", NULL},
+      .key = "83:63:25:93:EB:51:aa:bb.iii",
+      .expected_pattern = {"lladdr6", "83:63:25:93:EB:51", NULL},
+    },
+    /* test_pcre_matches */
+    {
+      .node_to_insert = {"jjj @PCRE:regexp:[abc]+@", "jjjj @PCRE:regexp:[abc]+@d foobar", NULL},
+      .key = "jjj abcabcd",
+      .expected_pattern = {"regexp", "abcabc", NULL},
+    },
+    {
+      .node_to_insert = {"jjj @PCRE:regexp:[abc]+@", "jjjj @PCRE:regexp:[abc]+@d foobar", NULL},
+      .key = "jjjj abcabcd foobar",
+      .expected_pattern = {"regexp", "abcabc", NULL},
+    },
+    /* test_nlstring_matches */
+    {
+      .node_to_insert = {"@NLSTRING:nlstring@\n", NULL},
+      .key = "foobar\r\nbaz",
+      .expected_pattern = {"nlstring", "foobar", NULL},
+    },
+    {
+      .node_to_insert = {"@NLSTRING:nlstring@\n", NULL},
+      .key = "foobar\nbaz",
+      .expected_pattern = {"nlstring", "foobar", NULL},
+    },
+    {
+      .node_to_insert = {"@NLSTRING:nlstring@\n", NULL},
+      .key = "\nbaz",
+      .expected_pattern = {"nlstring", "", NULL},
+    },
+    {
+      .node_to_insert = {"@NLSTRING:nlstring@\n", NULL},
+      .key = "\r\nbaz",
+      .expected_pattern = {"nlstring", "", NULL},
+    }
+  };
+  return cr_make_param_array(RadixTestParam, parser_params, G_N_ELEMENTS(parser_params));
+}
+
+ParameterizedTest(RadixTestParam *param, dbparser, test_radix_search_matches, .init = test_setup, .fini = test_teardown)
 {
   RNode *root = r_new_node("", NULL);
-  insert_node(root, "@IPvANY:ip@");
 
-  test_search_matches(root, "192.168.1.1 huhuhu",
-                      "ip", "192.168.1.1",
-                      NULL);
+  for (int i=0; param->node_to_insert[i]; i++)
+    insert_node(root, param->node_to_insert[i]);
 
-  test_search_matches(root, "192.168.1.1 huhuhu",
-                      "ip", "192.168.1.1",
-                      NULL);
-
-  test_search_matches(root, "192.168.1.1. huhuhu",
-                      "ip", "192.168.1.1",
-                      NULL);
-
-  test_search_matches(root, "192.168.1huhuhu", NULL);
-  test_search_matches(root, "192.168.1.huhuhu", NULL);
-  test_search_matches(root, "192.168.1 huhuhu", NULL);
-  test_search_matches(root, "192.168.1. huhuhu", NULL);
-  test_search_matches(root, "192.168.1.1huhuhu",
-                      "ip", "192.168.1.1",
-                      NULL);
-
-  test_search_matches(root, "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789 huhuhu",
-                      "ip", "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789", NULL);
-
-  test_search_matches(root, "abcd:ef01:2345:6789:abcd:ef01:2345:6789 huhuhu",
-                      "ip", "abcd:ef01:2345:6789:abcd:ef01:2345:6789", NULL);
-
-  test_search_matches(root, ":: huhuhu",
-                      "ip", "::", NULL);
-
-  test_search_matches(root, "0:0:0:0:0:0:13.1.68.3 huhuhu",
-                      "ip", "0:0:0:0:0:0:13.1.68.3", NULL);
-
-  test_search_matches(root, "::202.1.68.3 huhuhu",
-                      "ip", "::202.1.68.3", NULL);
-
-  test_search_matches(root, "2001:0DB8:0:CD30:: huhuhu",
-                      "ip", "2001:0DB8:0:CD30::", NULL);
-
-  test_search_matches(root, "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789.huhuhu",
-                      "ip", "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789", NULL);
-
-  test_search_matches(root, "abcd:ef01:2345:6789:abcd:ef01:2345:6789.huhuhu",
-                      "ip", "abcd:ef01:2345:6789:abcd:ef01:2345:6789", NULL);
-
-  test_search_matches(root, "::.huhuhu",
-                      "ip", "::", NULL);
-
-  test_search_matches(root, "0:0:0:0:0:0:13.1.68.3.huhuhu",
-                      "ip", "0:0:0:0:0:0:13.1.68.3", NULL);
-
-  test_search_matches(root, "::202.1.68.3.huhuhu",
-                      "ip", "::202.1.68.3", NULL);
-
-  test_search_matches(root, "2001:0DB8:0:CD30::.huhuhu",
-                      "ip", "2001:0DB8:0:CD30::", NULL);
-
-  test_search_matches(root, "1:2:3:4:5:6:7:8.huhuhu",
-                      "ip", "1:2:3:4:5:6:7:8", NULL);
-
-  test_search_matches(root, "1:2:3:4:5:6:7:8 huhuhu",
-                      "ip", "1:2:3:4:5:6:7:8", NULL);
-
-  test_search_matches(root, "1:2:3:4:5:6:7:8:huhuhu",
-                      "ip", "1:2:3:4:5:6:7:8", NULL);
-
-  test_search_matches(root, "1:2:3:4:5:6:7 huhu", NULL);
-  test_search_matches(root, "1:2:3:4:5:6:7.huhu", NULL);
-  test_search_matches(root, "1:2:3:4:5:6:7:huhu", NULL);
-  test_search_matches(root, "1:2:3:4:5:6:77777:8 huhu", NULL);
-  test_search_matches(root, "1:2:3:4:5:6:1.2.333.4 huhu", NULL);
-
-  test_search_matches(root, "v12345", NULL);
-
+  test_search_matches(root, param->key, param->expected_pattern);
   r_free_node(root, NULL);
 }
 
-void
-test_ipv4_matches(void)
-{
-  RNode *root = r_new_node("", NULL);
-  insert_node(root, "@IPv4:ipv4@");
-
-  test_search_matches(root, "192.168.1.1 huhuhu",
-                      "ipv4", "192.168.1.1",
-                      NULL);
-
-  test_search_matches(root, "192.168.1.1. huhuhu",
-                      "ipv4", "192.168.1.1",
-                      NULL);
-
-  test_search_matches(root, "192.168.1.1.huhuhu",
-                      "ipv4", "192.168.1.1",
-                      NULL);
-
-  test_search_matches(root, "192.168.1.1.. huhuhu",
-                      "ipv4", "192.168.1.1",
-                      NULL);
-
-  test_search_matches(root, "192.168.1.1.2 huhuhu",
-                      "ipv4", "192.168.1.1",
-                      NULL);
-
-  test_search_matches(root, "192.168.1.1..huhuhu",
-                      "ipv4", "192.168.1.1",
-                      NULL);
-
-  test_search_matches(root, "192.168.1.1huhuhu",
-                      "ipv4", "192.168.1.1",
-                      NULL);
-
-  test_search_matches(root, "192.168.1huhuhu", NULL);
-  test_search_matches(root, "192.168.1.huhuhu", NULL);
-  test_search_matches(root, "192.168.1 huhuhu", NULL);
-  test_search_matches(root, "192.168.1. huhuhu", NULL);
-
-  test_search_matches(root, "v12345", NULL);
-
-  r_free_node(root, NULL);
-}
-
-void
-test_ipv6_matches(void)
-{
-  RNode *root = r_new_node("", NULL);
-  insert_node(root, "@IPv6:ipv6@");
-
-  test_search_matches(root, "1:2:3:4:5:6:7 huhu", NULL);
-  test_search_matches(root, "1:2:3:4:5:6:7.huhu", NULL);
-  test_search_matches(root, "1:2:3:4:5:6:7:huhu", NULL);
-
-  test_search_matches(root, "v12345", NULL);
-
-  test_search_matches(root, "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789 huhuhu",
-                      "ipv6", "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789", NULL);
-
-  test_search_matches(root, "abcd:ef01:2345:6789:abcd:ef01:2345:6789 huhuhu",
-                      "ipv6", "abcd:ef01:2345:6789:abcd:ef01:2345:6789", NULL);
-
-  test_search_matches(root, "0:0:0:0:0:0:0:0 huhuhu",
-                      "ipv6", "0:0:0:0:0:0:0:0", NULL);
-
-  test_search_matches(root, "2001:DB8::8:800:200C:417A huhuhu",
-                      "ipv6", "2001:DB8::8:800:200C:417A", NULL);
-
-  test_search_matches(root, "FF01::101 huhuhu",
-                      "ipv6", "FF01::101", NULL);
-
-  test_search_matches(root, "::1 huhuhu",
-                      "ipv6", "::1", NULL);
-
-  test_search_matches(root, ":: huhuhu",
-                      "ipv6", "::", NULL);
-
-  test_search_matches(root, "0:0:0:0:0:0:13.1.68.3 huhuhu",
-                      "ipv6", "0:0:0:0:0:0:13.1.68.3", NULL);
-
-  test_search_matches(root, "::202.1.68.3 huhuhu",
-                      "ipv6", "::202.1.68.3", NULL);
-
-  test_search_matches(root, "2001:0DB8:0:CD30:: huhuhu",
-                      "ipv6", "2001:0DB8:0:CD30::", NULL);
-
-  test_search_matches(root, "2001:0DB8:0:CD30::huhuhu",
-                      "ipv6", "2001:0DB8:0:CD30::", NULL);
-
-  test_search_matches(root, "::ffff:200.200.200.200huhuhu",
-                      "ipv6", "::ffff:200.200.200.200", NULL);
-
-  test_search_matches(root, "2001:0DB8:0:CD30::huhuhu",
-                      "ipv6", "2001:0DB8:0:CD30::", NULL);
-
-  test_search_matches(root, "::ffff:200.200.200.200 :huhuhu",
-                      "ipv6", "::ffff:200.200.200.200", NULL);
-
-  test_search_matches(root, "::ffff:200.200.200.200: huhuhu",
-                      "ipv6", "::ffff:200.200.200.200", NULL);
-
-  test_search_matches(root, "::ffff:200.200.200.200. :huhuhu",
-                      "ipv6", "::ffff:200.200.200.200", NULL);
-
-  test_search_matches(root, "::ffff:200.200.200.200.:huhuhu",
-                      "ipv6", "::ffff:200.200.200.200", NULL);
-
-  test_search_matches(root, "::ffff:200.200.200.200.2:huhuhu",
-                      "ipv6", "::ffff:200.200.200.200", NULL);
-
-  test_search_matches(root, "::0: huhuhu",
-                      "ipv6", "::0", NULL);
-
-  test_search_matches(root, "0:0:0:0:0:0:0:0: huhuhu",
-                      "ipv6", "0:0:0:0:0:0:0:0", NULL);
-
-  test_search_matches(root, "::129.144.52.38: huhuhu",
-                      "ipv6", "::129.144.52.38", NULL);
-
-  test_search_matches(root, "::ffff:129.144.52.38: huhuhu",
-                      "ipv6", "::ffff:129.144.52.38", NULL);
-
-  test_search_matches(root, "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789.huhuhu",
-                      "ipv6", "ABCD:EF01:2345:6789:ABCD:EF01:2345:6789", NULL);
-
-  test_search_matches(root, "abcd:ef01:2345:6789:abcd:ef01:2345:6789.huhuhu",
-                      "ipv6", "abcd:ef01:2345:6789:abcd:ef01:2345:6789", NULL);
-
-  test_search_matches(root, "0:0:0:0:0:0:0:0.huhuhu",
-                      "ipv6", "0:0:0:0:0:0:0:0", NULL);
-
-  test_search_matches(root, "2001:DB8::8:800:200C:417A.huhuhu",
-                      "ipv6", "2001:DB8::8:800:200C:417A", NULL);
-
-  test_search_matches(root, "FF01::101.huhuhu",
-                      "ipv6", "FF01::101", NULL);
-
-  test_search_matches(root, "::1.huhuhu",
-                      "ipv6", "::1", NULL);
-
-  test_search_matches(root, "::.huhuhu",
-                      "ipv6", "::", NULL);
-
-  test_search_matches(root, "0:0:0:0:0:0:13.1.68.3.huhuhu",
-                      "ipv6", "0:0:0:0:0:0:13.1.68.3", NULL);
-
-  test_search_matches(root, "::202.1.68.3.huhuhu",
-                      "ipv6", "::202.1.68.3", NULL);
-
-  test_search_matches(root, "2001:0DB8:0:CD30::.huhuhu",
-                      "ipv6", "2001:0DB8:0:CD30::", NULL);
-
-  r_free_node(root, NULL);
-}
-
-void
-test_number_matches(void)
-{
-  RNode *root = r_new_node("", NULL);
-  insert_node(root, "@NUMBER:number@");
-
-  test_search_matches(root, "12345 hihihi",
-                      "number", "12345",
-                      NULL);
-
-  test_search_matches(root, "12345 hihihi",
-                      "number", "12345",
-                      NULL);
-
-  test_search_matches(root, "0xaf12345 hihihi",
-                      "number", "0xaf12345",
-                      NULL);
-
-  test_search_matches(root, "0xAF12345 hihihi",
-                      "number", "0xAF12345",
-                      NULL);
-
-  test_search_matches(root, "0x12345 hihihi",
-                      "number", "0x12345",
-                      NULL);
-
-  test_search_matches(root, "0XABCDEF12345ABCDEF hihihi",
-                      "number", "0XABCDEF12345ABCDEF",
-                      NULL);
-
-  test_search_matches(root, "-12345 hihihi",
-                      "number", "-12345",
-                      NULL);
-
-  test_search_matches(root, "v12345", NULL);
-
-  r_free_node(root, NULL);
-}
-
-void
-test_qstring_matches(void)
-{
-  RNode *root = r_new_node("", NULL);
-  insert_node(root, "@QSTRING:qstring:'@");
-
-  test_search_matches(root, "'quoted string' hehehe",
-                      "qstring", "quoted string",
-                      NULL);
-
-  test_search_matches(root, "v12345", NULL);
-
-  r_free_node(root, NULL);
-}
-
-void
-test_estring_matches(void)
-{
-  RNode *root = r_new_node("", NULL);
-  insert_node(root, "ddd @ESTRING:estring::@");
-  insert_node(root, "dddd @ESTRING:estring::*@");
-  insert_node(root, "dddd2 @ESTRING:estring::*@ d");
-  insert_node(root, "zzz @ESTRING:test:gép@");
-
-  test_search_matches(root, "ddd estring: hehehe",
-                      "estring", "estring",
-                      NULL);
-
-  test_search_matches(root, "ddd v12345", NULL);
-
-  test_search_matches(root, "dddd estring:* hehehe",
-                      "estring", "estring",
-                      NULL);
-
-  test_search_matches(root, "dddd estring:estring:* hehehe",
-                      "estring", "estring:estring",
-                      NULL);
-
-  test_search_matches(root, "dddd estring:estring::* hehehe",
-                      "estring", "estring:estring:",
-                      NULL);
-
-  test_search_matches(root, "dddd2 estring:estring::* d",
-                      "estring", "estring:estring:",
-                      NULL);
-
-  test_search_matches(root, "dddd2 estring:estring::* ", NULL);
-  test_search_matches(root, "dddd2 estring:estring::*", NULL);
-  test_search_matches(root, "dddd2 estring:estring:*", NULL);
-  test_search_matches(root, "dddd2 estring:estring", NULL);
-
-  test_search_matches(root, "dddd v12345", NULL);
-
-  test_search_matches(root, "zzz árvíztűrőtükörfúrógép", "test", "árvíztűrőtükörfúró", NULL);
-
-  r_free_node(root, NULL);
-}
-
-void
-test_string_matches(void)
-{
-  RNode *root = r_new_node("", NULL);
-  insert_node(root, "@STRING:string@");
-
-  test_search_matches(root, "string hehehe",
-                      "string", "string",
-                      NULL);
-
-  r_free_node(root, NULL);
-}
-
-void
-test_float_matches(void)
-{
-  RNode *root = r_new_node("", NULL);
-  insert_node(root, "@FLOAT:float@");
-
-  test_search_matches(root, "12345 hihihi",
-                      "float", "12345", NULL);
-
-  test_search_matches(root, "12345hihihi",
-                      "float", "12345", NULL);
-
-  test_search_matches(root, "12.345hihihi",
-                      "float", "12.345", NULL);
-
-  test_search_matches(root, "12.345.hihihi",
-                      "float", "12.345", NULL);
-
-  test_search_matches(root, "12.345.6hihihi",
-                      "float", "12.345", NULL);
-
-  test_search_matches(root, "12345.hihihi",
-                      "float", "12345.", NULL);
-
-  test_search_matches(root, "-12.345 hihihi",
-                      "float", "-12.345", NULL);
-
-  test_search_matches(root, "-12.345e12 hihihi",
-                      "float", "-12.345e12", NULL);
-
-  test_search_matches(root, "-12.345e-12 hihihi",
-                      "float", "-12.345e-12", NULL);
-
-  test_search_matches(root, "12.345e12 hihihi",
-                      "float", "12.345e12", NULL);
-
-  test_search_matches(root, "12.345e-12 hihihi",
-                      "float", "12.345e-12", NULL);
-
-  test_search_matches(root, "-12.345E12 hihihi",
-                      "float", "-12.345E12", NULL);
-
-  test_search_matches(root, "-12.345E-12 hihihi",
-                      "float", "-12.345E-12", NULL);
-
-  test_search_matches(root, "12.345E12 hihihi",
-                      "float", "12.345E12", NULL);
-
-  test_search_matches(root, "12.345E-12 hihihi",
-                      "float", "12.345E-12", NULL);
-
-  test_search_matches(root, "v12345", NULL);
-  test_search_matches(root, "12345.hihihi","float", "12345.", NULL);
-
-  r_free_node(root, NULL);
-}
-
-void
-test_set_matches(void)
-{
-  RNode *root = r_new_node("", NULL);
-  insert_node(root, "@SET:set:  @");
-
-  test_search_matches(root, " aaa", "set", " ", NULL);
-  test_search_matches(root, "  aaa", "set", "  ", NULL);
-
-  r_free_node(root, NULL);
-}
-
-void
-test_macaddr_matches(void)
-{
-  RNode *root = r_new_node("", NULL);
-  insert_node(root, "@MACADDR:macaddr@");
-
-  test_search_matches(root, "82:63:25:93:eb:51.iii", "macaddr", "82:63:25:93:eb:51", NULL);
-  test_search_matches(root, "82:63:25:93:EB:51.iii", "macaddr", "82:63:25:93:EB:51", NULL);
-
-  r_free_node(root, NULL);
-}
-
-void
-test_email_matches(void)
-{
-  RNode *root = r_new_node("", NULL);
-  insert_node(root, "@EMAIL:email:[<]>@");
-
-  test_search_matches(root, "blint@balabit.hu","email", "blint@balabit.hu", NULL);
-  test_search_matches(root, "<blint@balabit.hu>","email", "blint@balabit.hu", NULL);
-  test_search_matches(root, "[blint@balabit.hu]","email", "blint@balabit.hu", NULL);
-
-  r_free_node(root, NULL);
-}
-
-void
-test_hostname_matches(void)
-{
-  RNode *root = r_new_node("", NULL);
-  insert_node(root, "@HOSTNAME:hostname@");
-
-  test_search_matches(root, "www.example.org", "hostname", "www.example.org", NULL);
-  test_search_matches(root, "www.example.org. kkk", "hostname", "www.example.org.", NULL);
-
-  r_free_node(root, NULL);
-}
-
-void
-test_lladdr_matches(void)
-{
-  RNode *root = r_new_node("", NULL);
-  insert_node(root, "@LLADDR:lladdr6:6@");
-
-  test_search_matches(root, "83:63:25:93:eb:51:aa:bb.iii", "lladdr6", "83:63:25:93:eb:51", NULL);
-  test_search_matches(root, "83:63:25:93:EB:51:aa:bb.iii", "lladdr6", "83:63:25:93:EB:51", NULL);
-
-  r_free_node(root, NULL);
-}
-
-void
-test_pcre_matches(void)
-{
-  RNode *root = r_new_node("", NULL);
-  insert_node(root, "jjj @PCRE:regexp:[abc]+@");
-  insert_node(root, "jjjj @PCRE:regexp:[abc]+@d foobar");
-
-  test_search_matches(root, "jjj abcabcd", "regexp", "abcabc", NULL);
-  test_search_matches(root, "jjjj abcabcd foobar", "regexp", "abcabc", NULL);
-
-  r_free_node(root, NULL);
-}
-
-void
-test_nlstring_matches(void)
-{
-  RNode *root = r_new_node("", NULL);
-  insert_node(root, "@NLSTRING:nlstring@\n");
-
-  test_search_matches(root, "foobar\r\nbaz", "nlstring", "foobar", NULL);
-  test_search_matches(root, "foobar\nbaz", "nlstring", "foobar", NULL);
-  test_search_matches(root, "\nbaz", "nlstring", "", NULL);
-  test_search_matches(root, "\r\nbaz", "nlstring", "", NULL);
-
-  r_free_node(root, NULL);
-}
-
-void
-test_zorp_logs(void)
+Test(dbparser, test_radix_zorp_log, .init = test_setup, .fini = test_teardown)
 {
   RNode *root = r_new_node("", NULL);
 
@@ -890,45 +1062,9 @@ test_zorp_logs(void)
   test_search_value(root,
                     "Deny udp src OUTSIDE:10.0.0.0/1234 dst INSIDE:192.168.0.0/5678 by access-group \"OUTSIDE\" [0xb74026ad, 0x0]",
                     "CISCO");
-  test_search_matches(root, "1, 2006-08-22 16:31:39,INFO,BLK,", "Seq", "1", "DateTime", "2006-08-22 16:31:39", "Severity",
-                      "INFO", "Comp", "BLK", NULL);
+
+  const gchar *search_pattern[] = {"Seq", "1", "DateTime", "2006-08-22 16:31:39", "Severity", "INFO", "Comp", "BLK", NULL};
+  test_search_matches(root, "1, 2006-08-22 16:31:39,INFO,BLK,", search_pattern);
 
   r_free_node(root, NULL);
-
-}
-
-
-int
-main(int argc, char *argv[])
-{
-  app_startup();
-
-  if (argc > 1)
-    verbose = TRUE;
-
-  msg_init(TRUE);
-
-  test_literals();
-  test_parsers();
-
-  test_ip_matches();
-  test_ipv4_matches();
-  test_ipv6_matches();
-  test_number_matches();
-  test_qstring_matches();
-  test_estring_matches();
-  test_string_matches();
-  test_float_matches();
-  test_set_matches();
-  test_macaddr_matches();
-  test_email_matches();
-  test_hostname_matches();
-  test_lladdr_matches();
-  test_pcre_matches();
-  test_nlstring_matches();
-
-  test_zorp_logs();
-
-  app_shutdown();
-  return  (fail ? 1 : 0);
 }

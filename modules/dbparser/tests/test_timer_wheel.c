@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2015 Balabit
+ * Copyright (c) 2010, 2018 Balabit
  * Copyright (c) 2010, 2015 Balázs Scheidler <balazs.scheidler@balabit.com>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -29,6 +29,8 @@
 #include <time.h>
 #include <string.h>
 
+#include <criterion/criterion.h>
+
 #define NUM_TIMERS 10000
 
 gint num_callbacks;
@@ -39,19 +41,14 @@ timer_callback(TimerWheel *self, guint64 now, gpointer user_data)
 {
   guint64 expires = *(guint64 *) user_data;
 
-  if (now != expires)
-    {
-      fprintf(stderr, "Expected time is not matching current time in callback, "
-              "now=%" G_GUINT64_FORMAT ", expires=%" G_GUINT64_FORMAT "\n",
-              now, expires);
-      exit(1);
-    }
-  if (prev_now > now)
-    {
-      fprintf(stderr, "Callback current time is not monotonically increasing, "
-              "prev_now=%" G_GUINT64_FORMAT ", now=%" G_GUINT64_FORMAT "\n",
-              prev_now, now);
-    }
+  cr_assert_eq(now, expires, "Expected time is not matching current time in callback, "
+               "now=%" G_GUINT64_FORMAT ", expires=%" G_GUINT64_FORMAT "\n",
+               now, expires);
+
+  cr_expect_leq(prev_now, now, "Callback current time is not monotonically increasing, "
+                "prev_now=%" G_GUINT64_FORMAT ", now=%" G_GUINT64_FORMAT "\n",
+                prev_now, now);
+
   prev_now = now;
   num_callbacks++;
 }
@@ -62,12 +59,9 @@ static void
 _test_assoc_data(TimerWheel *wheel)
 {
   timer_wheel_set_associated_data(wheel, g_strdup(ASSOC_DATA_STRING), (GDestroyNotify) g_free);
-  if (strcmp(timer_wheel_get_associated_data(wheel), ASSOC_DATA_STRING) != 0)
-    {
-      fprintf(stderr, "Associated data mismatch, found=%s, expected=%s",
-              (gchar *) timer_wheel_get_associated_data(wheel), ASSOC_DATA_STRING);
-      exit(1);
-    }
+  cr_expect_str_eq(timer_wheel_get_associated_data(wheel), ASSOC_DATA_STRING,
+                   "Associated data mismatch, found=%s, expected=%s",
+                   (gchar *) timer_wheel_get_associated_data(wheel), ASSOC_DATA_STRING);
 }
 
 void
@@ -97,6 +91,7 @@ test_wheel(gint seed)
 
       if (expires > latest)
         latest = expires;
+
       timer1 = timer_wheel_add_timer(wheel, expires - 1, timer_callback,
                                      g_memdup(&expires, sizeof(expires)), (GDestroyNotify) g_free);
       timer2 = timer_wheel_add_timer(wheel, expires - 1, timer_callback,
@@ -125,20 +120,19 @@ test_wheel(gint seed)
         }
     }
   timer_wheel_set_time(wheel, latest + 1);
-  if (num_callbacks != expected_callbacks)
-    {
-      fprintf(stderr, "Error: not enough callbacks received, "
-              "num_callbacks=%d, expected=%d\n",
-              num_callbacks, expected_callbacks);
-      exit(1);
-    }
+  cr_assert_eq(num_callbacks, expected_callbacks, "Error: not enough callbacks received, "
+               "num_callbacks=%d, expected=%d\n",
+               num_callbacks, expected_callbacks);
+
   timer_wheel_free(wheel);
 }
 
-int
-main(void)
+Test(dbparser, test_timer_wheel_const)
 {
   test_wheel(1234567890);
+}
+
+Test(dbparser, test_timer_wheel_current_time)
+{
   test_wheel(time(NULL));
-  return 0;
 }
