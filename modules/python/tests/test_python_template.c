@@ -27,6 +27,8 @@
 #include "logmsg/logmsg.h"
 #include "syslog-format.h"
 
+#include "python-integerpointer.h"
+
 #include <criterion/criterion.h>
 
 static MsgFormatOptions parse_options;
@@ -46,6 +48,7 @@ _py_init_interpreter(void)
   PyEval_InitThreads();
   py_log_message_init();
   py_log_template_init();
+  py_integer_pointer_init();
   PyEval_SaveThread();
 }
 
@@ -197,4 +200,29 @@ Test(python_log_logtemplate, test_py_is_log_template_options)
 
   PyGILState_Release(gstate);
 
+}
+
+Test(python_log_logtemplate, test_integerpointer)
+{
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+
+  int number = 0;
+  PyObject *py_intptr = py_integer_pointer_new(&number);
+
+  /* py_intptr PyObject converts to PyInteger */
+  cr_assert_eq(0, PyLong_AsLong(py_intptr));
+  number++;
+  cr_assert_eq(1, PyLong_AsLong(py_intptr));
+
+  PyObject *args = PyTuple_Pack(1, py_intptr);
+
+  int parsed_num = 0;
+  cr_assert(PyArg_ParseTuple(args, "i", &parsed_num));
+  cr_assert_eq(1, parsed_num);
+
+  Py_DECREF(args);
+  Py_DECREF(py_intptr);
+
+  PyGILState_Release(gstate);
 }
