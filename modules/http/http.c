@@ -522,7 +522,15 @@ _flush(LogThreadedDestDriver *s)
 
   glong http_code = 0;
 
-  curl_easy_getinfo(self->curl, CURLINFO_RESPONSE_CODE, &http_code);
+  CURLcode code = curl_easy_getinfo(self->curl, CURLINFO_RESPONSE_CODE, &http_code);
+  if (code != CURLE_OK)
+    {
+      msg_error("curl: error calculating response code",
+                evt_tag_str("error", curl_easy_strerror(ret)),
+                log_pipe_location_tag(&self->super.super.super.super));
+      retval = WORKER_INSERT_RESULT_NOT_CONNECTED;
+      goto exit;
+    }
 
   if (debug_flag)
     {
