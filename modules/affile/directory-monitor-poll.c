@@ -23,6 +23,7 @@
 #include <collection-comparator.h>
 #include "directory-monitor-poll.h"
 #include "timeutils.h"
+#include "messages.h"
 
 #include <iv.h>
 
@@ -99,6 +100,10 @@ _rescan_directory(DirectoryMonitorPoll *self)
     {
       collection_comparator_stop(self->comparator);
       _handle_deleted_self(self);
+      msg_debug("Error while opening directory",
+                evt_tag_str("dirname", self->super.real_path),
+                evt_tag_str("error", error->message));
+      g_clear_error(&error);
     }
 }
 
@@ -116,8 +121,7 @@ _start_watches(DirectoryMonitor *s)
 {
   DirectoryMonitorPoll *self = (DirectoryMonitorPoll *)s;
   GDir *directory = NULL;
-  GError *error = NULL;
-  directory = g_dir_open(self->super.real_path, 0, &error);
+  directory = g_dir_open(self->super.real_path, 0, NULL);
   if (directory)
     {
       const gchar *filename = g_dir_read_name(directory);
