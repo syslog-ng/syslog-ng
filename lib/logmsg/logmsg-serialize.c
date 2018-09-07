@@ -40,17 +40,9 @@ static void
 _setup_ts_processed(LogStamp *timestamps, const LogStamp *processed)
 {
   if (processed != NULL)
-    {
-      timestamps[LM_TS_PROCESSED].tv_sec = processed->tv_sec;
-      timestamps[LM_TS_PROCESSED].tv_usec = processed->tv_usec;
-      timestamps[LM_TS_PROCESSED].zone_offset = processed->zone_offset;
-    }
+    timestamps[LM_TS_PROCESSED] = *processed;
   else if (timestamps[LM_TS_PROCESSED].zone_offset == LOGSTAMP_ZONE_OFFSET_UNSET)
-    {
-      timestamps[LM_TS_PROCESSED].tv_sec = timestamps[LM_TS_RECVD].tv_sec;
-      timestamps[LM_TS_PROCESSED].tv_usec = timestamps[LM_TS_RECVD].tv_usec;
-      timestamps[LM_TS_PROCESSED].zone_offset = timestamps[LM_TS_RECVD].zone_offset;
-    }
+    timestamps[LM_TS_PROCESSED] = timestamps[LM_TS_RECVD];
 }
 
 static gboolean
