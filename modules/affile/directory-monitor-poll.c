@@ -121,8 +121,7 @@ _start_watches(DirectoryMonitor *s)
 {
   DirectoryMonitorPoll *self = (DirectoryMonitorPoll *)s;
   GDir *directory = NULL;
-  GError *error = NULL;
-  directory = g_dir_open(self->super.real_path, 0, &error);
+  directory = g_dir_open(self->super.real_path, 0, NULL);
   if (directory)
     {
       const gchar *filename = g_dir_read_name(directory);
