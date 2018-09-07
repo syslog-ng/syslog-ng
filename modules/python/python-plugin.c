@@ -28,6 +28,7 @@
 #include "python-tf.h"
 #include "python-logmsg.h"
 #include "python-logtemplate.h"
+#include "python-integerpointer.h"
 #include "python-global-code-loader.h"
 #include "python-debugger.h"
 
@@ -71,6 +72,7 @@ _py_init_interpreter(void)
       PyEval_InitThreads();
       py_log_message_init();
       py_log_template_init();
+      py_integer_pointer_init();
       py_global_code_loader_init();
       PyEval_SaveThread();
 
