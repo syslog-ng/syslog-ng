@@ -168,21 +168,21 @@ _disconnect_and_suspend(LogThreadedDestDriver *self)
  * to the source.
  *
  * NOTE: runs in the worker thread */
-void
+static void
 _accept_batch(LogThreadedDestDriver *self)
 {
   log_threaded_dest_driver_ack_messages(self, self->batch_size);
 }
 
 /* NOTE: runs in the worker thread */
-void
+static void
 _drop_batch(LogThreadedDestDriver *self)
 {
   log_threaded_dest_driver_drop_messages(self, self->batch_size);
 }
 
 /* NOTE: runs in the worker thread */
-void
+static void
 _rewind_batch(LogThreadedDestDriver *self)
 {
   log_threaded_dest_driver_rewind_messages(self, self->batch_size);

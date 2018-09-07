@@ -37,20 +37,12 @@
 #define OLD_LMM_REF_MATCH 0x0001
 
 static void
-_set_ts_processed(LogStamp *timestamps, const LogStamp *processed)
+_setup_ts_processed(LogStamp *timestamps, const LogStamp *processed)
 {
   if (processed != NULL)
-    {
-      timestamps[LM_TS_PROCESSED].tv_sec = processed->tv_sec;
-      timestamps[LM_TS_PROCESSED].tv_usec = processed->tv_usec;
-      timestamps[LM_TS_PROCESSED].zone_offset = processed->zone_offset;
-    }
+    timestamps[LM_TS_PROCESSED] = *processed;
   else if (timestamps[LM_TS_PROCESSED].zone_offset == LOGSTAMP_ZONE_OFFSET_UNSET)
-    {
-      timestamps[LM_TS_PROCESSED].tv_sec = timestamps[LM_TS_RECVD].tv_sec;
-      timestamps[LM_TS_PROCESSED].tv_usec = timestamps[LM_TS_RECVD].tv_usec;
-      timestamps[LM_TS_PROCESSED].zone_offset = timestamps[LM_TS_RECVD].zone_offset;
-    }
+    timestamps[LM_TS_PROCESSED] = timestamps[LM_TS_RECVD];
 }
 
 static gboolean
@@ -61,7 +53,7 @@ _serialize_message(LogMessageSerializationState *state)
   LogStamp timestamps[LM_TS_MAX];
 
   memcpy(&timestamps, msg->timestamps, LM_TS_MAX*sizeof(LogStamp));
-  _set_ts_processed(timestamps, state->processed);
+  _setup_ts_processed(timestamps, state->processed);
 
   serialize_write_uint8(sa, state->version);
   serialize_write_uint64(sa, msg->rcptid);
