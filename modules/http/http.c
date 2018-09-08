@@ -202,20 +202,40 @@ _add_message_to_batch(HTTPDestinationWorker *self, LogMessage *msg)
 }
 
 static worker_insert_result_t
-_map_http_status_to_worker_status(glong http_code)
+_map_http_status_to_worker_status(HTTPDestinationWorker *self, glong http_code)
 {
+  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
   worker_insert_result_t retval;
 
   switch (http_code/100)
     {
-    case 4:
-      retval = WORKER_INSERT_RESULT_DROP;
+    case 1:
+    case 2:
+      retval = WORKER_INSERT_RESULT_SUCCESS;
       break;
-    case 5:
+    case 3:
+      msg_notice("Server returned with a 3XX (redirect) status code, which was not handled by curl. "
+                 "Either accept-redirect() is set to no, or this status code is unknown. Trying again",
+                 evt_tag_str("url", owner->url),
+                 evt_tag_int("status_code", http_code),
+                 log_pipe_location_tag(&owner->super.super.super.super));
+      retval = WORKER_INSERT_RESULT_ERROR;
+      break;
+    case 4:
+      msg_notice("Server returned with a 4XX (client errors) status code, which means we are not "
+                 "authorized or the URL is not found. Trying again",
+                 evt_tag_str("url", owner->url),
+                 evt_tag_int("status_code", http_code),
+                 log_pipe_location_tag(&owner->super.super.super.super));
       retval = WORKER_INSERT_RESULT_ERROR;
       break;
     default:
-      retval = WORKER_INSERT_RESULT_SUCCESS;
+      msg_error("Unknown HTTP response code",
+                evt_tag_str("url", owner->url),
+                evt_tag_int("status_code", http_code),
+                log_pipe_location_tag(&owner->super.super.super.super));
+    case 5:
+      retval = WORKER_INSERT_RESULT_ERROR;
       break;
     }
 
@@ -276,7 +296,7 @@ _flush(LogThreadedDestWorker *s)
   CURLcode code = curl_easy_getinfo(self->curl, CURLINFO_RESPONSE_CODE, &http_code);
   if (code != CURLE_OK)
     {
-      msg_error("curl: error calculating response code",
+      msg_error("curl: error querying response code",
                 evt_tag_str("error", curl_easy_strerror(ret)),
                 log_pipe_location_tag(&owner->super.super.super.super));
       retval = WORKER_INSERT_RESULT_NOT_CONNECTED;
@@ -296,9 +316,10 @@ _flush(LogThreadedDestWorker *s)
                 evt_tag_int("body_size", self->request_body->len),
                 evt_tag_int("batch_size", self->super.batch_size),
                 evt_tag_int("redirected", redirect_count != 0),
-                evt_tag_printf("total_time", "%.3f", total_time));
+                evt_tag_printf("total_time", "%.3f", total_time),
+                log_pipe_location_tag(&owner->super.super.super.super));
     }
-  retval = _map_http_status_to_worker_status(http_code);
+  retval = _map_http_status_to_worker_status(self, http_code);
 
 exit:
   _reinit_request_body(self);
