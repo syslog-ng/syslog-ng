@@ -286,6 +286,7 @@ Test(secretstorage, test_rlimit)
     {
       cr_assert_not(secret_storage_store_string(key_fmt, "value"), "offending_key: %s", key_fmt);
     }
+  g_free(key_fmt);
 }
 
 static void
