@@ -177,19 +177,21 @@ matrix:
             --disable-smtp
             --disable-geoip
             --enable-all-modules
-        - make --keep-going -j $(nproc) ||
+        - make --keep-going -j $(sysctl -n hw.physicalcpu) ||
           {
             S=$?;
             make V=1;
             return $S;
           }
       script:
-        - make --keep-going check -j $(nproc) ||
+        - make --keep-going check -j $(sysctl -n hw.physicalcpu) ||
           {
             S=$?;
+            echo "Output of first test invocation:";
+            find . -name test-suite.log | xargs cat;
             make V=1 check;
-            find . -name test-suite.log |
-            xargs cat;
+            echo "Output of second test invocation:";
+            find . -name test-suite.log | xargs cat;
             return $S;
           }
 
