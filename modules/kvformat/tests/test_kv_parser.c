@@ -164,6 +164,13 @@ test_kv_parser_extract_stray_words(void)
   assert_log_message_value_by_name(msg, "stray", "\"interzone-emtn_s1_vpn-enodeb_om inbound;\"");
   log_msg_unref(msg);
 
+  kv_parser_set_prefix(kv_parser, ".prefix.");
+  kv_parser_set_pair_separator(kv_parser, " ");
+  kv_parser_set_stray_words_value_name(kv_parser, ".stray");
+  msg = parse_kv_into_log_message("foo='qu'x asd");
+  assert_log_message_value(msg, log_msg_get_value_handle(".prefix.foo"), "'qu'");
+  assert_log_message_value(msg, log_msg_get_value_handle(".stray"), "asd");
+  log_msg_unref(msg);
 }
 
 static void

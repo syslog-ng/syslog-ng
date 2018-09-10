@@ -75,6 +75,7 @@ typedef struct _StrReprDecodeState
 {
   GString *value;
   const gchar *cur;
+  const gchar *closing_delimiter;
   gchar quote_char;
   const StrReprDecodeOptions *options;
 } StrReprDecodeState;
@@ -161,6 +162,7 @@ _process_backslash_escaped_character_in_strings(StrReprDecodeState *state)
 static gint
 _process_delimiter_characters_after_a_quoted_string(StrReprDecodeState *state)
 {
+  state->closing_delimiter = state->cur;
   if (_match_and_skip_delimiter(state))
     return KV_FINISH_SUCCESS;
   return KV_QUOTE_ERROR;
@@ -238,6 +240,7 @@ str_repr_decode_append_with_options(GString *value, const gchar *input, const gc
   {
     .value = value,
     .cur = input,
+    .closing_delimiter = 0,
     .quote_char = 0,
     .options = options,
   };
@@ -248,8 +251,17 @@ str_repr_decode_append_with_options(GString *value, const gchar *input, const gc
 
   if (!success)
     {
-      g_string_truncate(value, initial_len);
-      g_string_append_len(value, input, state.cur - input);
+      if (state.closing_delimiter)
+        {
+          g_string_truncate(value, initial_len);
+          g_string_append_len(value, input, state.closing_delimiter - input);
+        }
+      else
+        {
+          g_string_truncate(value, initial_len);
+          g_string_append_len(value, input, state.cur - input);
+        }
+
       return FALSE;
     }
   return TRUE;

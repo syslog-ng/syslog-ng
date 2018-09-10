@@ -266,15 +266,12 @@ _decode_value(KVScanner *self)
   };
 
   self->value_was_quoted = _is_quoted(input);
-  if (str_repr_decode_with_options(self->value, input, &end, &options))
-    {
-      self->input_pos = end - self->input;
-    }
-  else
+  if (!str_repr_decode_with_options(self->value, input, &end, &options))
     {
       /* quotation error, set was_quoted to FALSE */
       self->value_was_quoted = FALSE;
     }
+  self->input_pos = end - self->input;
 }
 
 static void
