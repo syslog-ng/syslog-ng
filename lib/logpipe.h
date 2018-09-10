@@ -261,6 +261,8 @@ LogPipe *log_pipe_new(GlobalConfig *cfg);
 void log_pipe_init_instance(LogPipe *self, GlobalConfig *cfg);
 void log_pipe_forward_notify(LogPipe *self, gint notify_code, gpointer user_data);
 EVTTAG *log_pipe_location_tag(LogPipe *pipe);
+void log_pipe_attach_expr_node(LogPipe *self, LogExprNode *expr_node);
+void log_pipe_detach_expr_node(LogPipe *self);
 
 static inline GlobalConfig *
 log_pipe_get_config(LogPipe *s)
