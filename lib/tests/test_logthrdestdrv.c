@@ -72,6 +72,8 @@ test_threaded_dd_new(GlobalConfig *cfg)
   self->super.worker.connect = _connect_success;
   /* the insert function will be initialized explicitly in testcases */
   self->super.worker.insert = NULL;
+  self->super.flush_timeout = 0;
+  self->super.flush_lines = 0;
   return self;
 }
 
@@ -82,7 +84,7 @@ test_threaded_dd_new(GlobalConfig *cfg)
 static void
 _sleep_msec(long msec)
 {
-  struct timespec sleep_time = { 0, msec * 1000000 };
+  struct timespec sleep_time = { msec / 1000, (msec % 1000) * 1000000 };
   nanosleep(&sleep_time, NULL);
 }
 
@@ -298,7 +300,7 @@ _insert_batched_message_success(LogThreadedDestDriver *s, LogMessage *msg)
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
 
   self->insert_counter++;
-  if (self->super.batch_size < 5)
+  if (self->super.batch_size < s->flush_lines)
     return WORKER_INSERT_RESULT_QUEUED;
 
   self->flush_size += self->super.batch_size;
@@ -319,6 +321,7 @@ Test(logthrdestdrv, batched_set_of_messages_are_successfully_delivered)
 {
   dd->super.worker.insert = _insert_batched_message_success;
   dd->super.worker.flush = _flush_batched_message_success;
+  dd->super.flush_lines = 5;
 
   _generate_messages_and_wait_for_processing(dd, 10, dd->super.written_messages);
   cr_assert(dd->insert_counter == 10,
@@ -340,7 +343,7 @@ _insert_batched_message_drop(LogThreadedDestDriver *s, LogMessage *msg)
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
 
   self->insert_counter++;
-  if (self->super.batch_size < 5)
+  if (self->super.batch_size < s->flush_lines)
     return WORKER_INSERT_RESULT_QUEUED;
 
   self->flush_size += self->super.batch_size;
@@ -395,7 +398,7 @@ _insert_batched_message_error_drop(LogThreadedDestDriver *s, LogMessage *msg)
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
 
   self->insert_counter++;
-  if (self->super.batch_size < 5)
+  if (self->super.batch_size < s->flush_lines)
     return WORKER_INSERT_RESULT_QUEUED;
 
   self->flush_size += self->super.batch_size;
@@ -466,7 +469,7 @@ _insert_batched_message_error_success(LogThreadedDestDriver *s, LogMessage *msg)
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
 
   self->insert_counter++;
-  if (self->super.batch_size < 5)
+  if (self->super.batch_size < s->flush_lines)
     return WORKER_INSERT_RESULT_QUEUED;
 
   self->flush_size += self->super.batch_size;
@@ -540,7 +543,7 @@ _insert_batched_message_not_connected(LogThreadedDestDriver *s, LogMessage *msg)
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
 
   self->insert_counter++;
-  if (self->super.batch_size < 5)
+  if (self->super.batch_size < s->flush_lines)
     return WORKER_INSERT_RESULT_QUEUED;
 
   self->flush_size += self->super.batch_size;
@@ -595,6 +598,7 @@ Test(logthrdestdrv, throttle_is_applied_to_delivery_and_causes_flush_to_be_calle
   log_queue_set_throttle(dd->super.worker.queue, 3);
   dd->super.worker.insert = _insert_batched_message_success;
   dd->super.worker.flush = _flush_batched_message_success;
+  dd->super.flush_lines = 5;
 
   start_stopwatch();
   _generate_messages_and_wait_for_processing(dd, 20, dd->super.written_messages);
@@ -613,6 +617,83 @@ Test(logthrdestdrv, throttle_is_applied_to_delivery_and_causes_flush_to_be_calle
   cr_assert(stats_counter_get(dd->super.dropped_messages) == 0);
   cr_assert(stats_counter_get(dd->super.memory_usage) == 0);
   cr_assert(dd->super.seq_num == 21, "%d", dd->super.seq_num);
+}
+
+Test(logthrdestdrv, flush_timeout_delays_flush_to_the_specified_interval)
+{
+  /* 3 messages per second, we need to set this explicitly on the queue as it has already been initialized */
+  dd->super.worker.insert = _insert_batched_message_success;
+  dd->super.worker.flush = _flush_batched_message_success;
+  dd->super.flush_lines = 5;
+  dd->super.flush_timeout = 1000;
+
+  start_stopwatch();
+  _generate_messages(dd, 2);
+  gint flush_counter = dd->flush_counter;
+  guint64 initial_feed_time = stop_stopwatch_and_get_result();
+
+  /* NOTE: this is a racy check. The rationale that this should be safe:
+   *  - we've set flush_timeout to 1 second
+   *  - the sending of two messages to the thread shouldn't take this much
+   *  - we only assert on the flush counter if this assertion does not fail
+   *
+   * if we need, we can always increase flush-timeout() if for some reason 1
+   * seconds wouldn't be enough time to do this validation.
+   */
+  cr_assert(initial_feed_time < 1000000,
+            "The initial feeding took more than flush_timeout(), e.g. 1 seconds. "
+            "We can't validate that no flush happened in this period, check the "
+            "comment above this assert for more information. initial_feed_time=%"
+            G_GUINT64_FORMAT, initial_feed_time);
+
+  cr_assert(flush_counter == 0,
+            "Although the flush time has not yet elapsed, "
+            "flush_counter is not zero, flush_counter=%d, initial_feed_time=%"
+            G_GUINT64_FORMAT, flush_counter, initial_feed_time);
+  _spin_for_counter_value(dd->super.written_messages, 2);
+
+  cr_assert(dd->flush_size == 2);
+  cr_assert(dd->flush_counter == 1);
+}
+
+Test(logthrdestdrv, flush_timeout_limits_flush_frequency)
+{
+  /* 3 messages per second, we need to set this explicitly on the queue as it has already been initialized */
+  dd->super.worker.insert = _insert_batched_message_success;
+  dd->super.worker.flush = _flush_batched_message_success;
+  dd->super.flush_lines = 5;
+  dd->super.flush_timeout = 1000;
+
+  for (gint i = 0; i < 5; i++)
+    {
+      gint flush_counter;
+
+      start_stopwatch();
+      _generate_messages(dd, 2);
+      _sleep_msec(100);
+      flush_counter = dd->flush_counter;
+      guint64 initial_feed_time = stop_stopwatch_and_get_result();
+
+      /* NOTE: the same rationale applies to this assert than in
+       * flush_timeout_delays_flush_to_the_specified_interval() */
+
+      cr_assert(initial_feed_time < 1000000,
+                "The initial feeding took more than flush_timeout(), e.g. 1 seconds. "
+                "We can't validate that no flush happened in this period, check the "
+                "comment above this assert for more information. initial_feed_time=%"
+                G_GUINT64_FORMAT, initial_feed_time);
+      cr_assert(flush_counter == i,
+                "Although the flush time has not yet elapsed, flush_counter has already changed"
+                "flush_counter=%d, expected %d, initial_feed_time=%" G_GUINT64_FORMAT,
+                dd->flush_counter, i, initial_feed_time);
+
+      /* force flush_timeout() to elapse, give some time to the thread to flush */
+      _sleep_msec(1200);
+      cr_assert(dd->flush_counter == i + 1,
+                "The flush time has now been forcibly spent, but the flush has not happened as expected."
+                "flush_counter=%d, expected %d", dd->flush_counter, i + 1);
+    }
+  cr_assert(dd->flush_size == 10);
 }
 
 static gboolean
@@ -653,7 +734,7 @@ _insert_explicit_acks_message_success(LogThreadedDestDriver *s, LogMessage *msg)
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
 
   self->insert_counter++;
-  if (self->super.batch_size < 5)
+  if (self->super.batch_size < s->flush_lines)
     return WORKER_INSERT_RESULT_QUEUED;
 
   self->flush_size += 1;
@@ -675,6 +756,7 @@ Test(logthrdestdrv, test_explicit_ack_accept)
 {
   dd->super.worker.insert = _insert_explicit_acks_message_success;
   dd->super.worker.flush = _flush_explicit_acks_message_success;
+  dd->super.flush_lines = 5;
 
   _generate_messages_and_wait_for_processing(dd, 10, dd->super.written_messages);
   cr_assert(dd->insert_counter == 10, "%d", dd->insert_counter);
