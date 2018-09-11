@@ -515,6 +515,11 @@ log_msg_parse_date_unnormalized(LogMessage *self, const guchar **data, gint *len
     }
 
 
+  if (*src == ':')
+    {
+      ++src;
+      --left;
+    }
   *data = src;
   *length = left;
   return TRUE;
