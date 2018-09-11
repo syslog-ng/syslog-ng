@@ -25,6 +25,7 @@ add_subdirectory(scanner)
 add_subdirectory(str-repr)
 add_subdirectory(eventlog)
 add_subdirectory(secret-storage)
+add_subdirectory(logthrsource)
 
 set(LIB_SUBDIR_HEADERS
     ${COMPAT_HEADERS}
@@ -43,6 +44,7 @@ set(LIB_SUBDIR_HEADERS
     ${LIST_SCANNER_HEADERS}
     ${KV_SCANNER_HEADERS}
     ${STR_REPR_HEADERS}
+    ${LOGTHRSOURCE_HEADERS}
     ${CMAKE_CURRENT_BINARY_DIR}/filter/filter-expr-grammar.h
     ${CMAKE_CURRENT_BINARY_DIR}/rewrite/rewrite-expr-grammar.h
     ${CMAKE_CURRENT_BINARY_DIR}/parser/parser-expr-grammar.h
@@ -231,6 +233,7 @@ set(LIB_SOURCES
     ${VALUE_PAIRS_SOURCES}
     ${SCANNER_SOURCES}
     ${STR_REPR_SOURCES}
+    ${LOGTHRSOURCE_SOURCES}
     ${PROJECT_BINARY_DIR}/lib/cfg-grammar.c
     ${PROJECT_BINARY_DIR}/lib/block-ref-grammar.c
     ${PROJECT_BINARY_DIR}/lib/cfg-lex.c
@@ -335,6 +338,7 @@ install(FILES ${STATS_HEADERS} DESTINATION include/syslog-ng/stats)
 install(FILES ${TEMPLATE_HEADERS} DESTINATION include/syslog-ng/template)
 install(FILES ${TRANSPORT_HEADERS} DESTINATION include/syslog-ng/transport)
 install(FILES ${CSV_SCANNER_HEADERS} DESTINATION include/syslog-ng/scanner/csv-scanner)
+install(FILES ${LOGTHRSOURCE_HEADERS} DESTINATION include/syslog-ng/logthrsource)
 
 set(TOOLS
     merge-grammar.py
