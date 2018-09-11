@@ -976,8 +976,6 @@ Test(msgparse, test_expected_sd_pairs_tz_known)
 {
   struct sdata_pair expected_sd_pairs_test_7a[] =
   {
-    /*{ ".SDATA.timeQuality.isSynced", "0"},
-    { ".SDATA.timeQuality.tzKnown", "0"},*/
     {  NULL , NULL}
   };
 
@@ -1007,8 +1005,6 @@ Test(msgparse, test_expected_sd_pairs_enterprise_id)
 {
   struct sdata_pair expected_sd_pairs_test_8[] =
   {
-    /*{ ".SDATA.timeQuality.isSynced", "0"},
-    { ".SDATA.timeQuality.tzKnown", "1"},*/
     { ".SDATA.origin.enterpriseId", "1.3.6.1.4.1"},
     {  NULL , NULL}
   };
@@ -1038,8 +1034,6 @@ Test(msgparse, test_expected_sd_pairs_without_sd_param)
 {
   struct sdata_pair expected_sd_pairs_test_9[] =
   {
-    /*{ ".SDATA.timeQuality.isSynced", "0"},
-    { ".SDATA.timeQuality.tzKnown", "1"},*/
     { ".SDATA.origin.enterpriseId", "1.3.6.1.4.1"},
     {  NULL , NULL}
   };
@@ -1123,6 +1117,17 @@ Test(msgparse, test_ip_in_host)
       .expected_stamp_ofs = 3600,
       .expected_program = "prg0",
       .expected_msg = "msgtxt"
+    },
+    (struct msgparse_params)
+    {
+      .msg = "<0>91: *Oct 07 03:10:04: mydevice.com %CRYPTO-4-RECVD_PKT_INV_SPI: decaps: rec'd IPSEC packet has invalid spi for destaddr=150.1.1.1, prot=50, spi=0x72662541(1919296833), srcaddr=150.3.1.3",
+      .parse_flags = LP_EXPECT_HOSTNAME,
+      .expected_stamp_sec = _get_epoch_with_bsd_year(9, 7, 3, 10, 4),
+      .expected_stamp_ofs = 7200,
+      .expected_program = "%CRYPTO-4-RECVD_PKT_INV_SPI",
+      .expected_host = "mydevice.com",
+      .expected_msg =
+      "decaps: rec'd IPSEC packet has invalid spi for destaddr=150.1.1.1, prot=50, spi=0x72662541(1919296833), srcaddr=150.3.1.3"
     },
     {NULL}
   };
