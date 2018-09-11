@@ -976,8 +976,6 @@ Test(msgparse, test_expected_sd_pairs_tz_known)
 {
   struct sdata_pair expected_sd_pairs_test_7a[] =
   {
-    /*{ ".SDATA.timeQuality.isSynced", "0"},
-    { ".SDATA.timeQuality.tzKnown", "0"},*/
     {  NULL , NULL}
   };
 
@@ -1007,8 +1005,6 @@ Test(msgparse, test_expected_sd_pairs_enterprise_id)
 {
   struct sdata_pair expected_sd_pairs_test_8[] =
   {
-    /*{ ".SDATA.timeQuality.isSynced", "0"},
-    { ".SDATA.timeQuality.tzKnown", "1"},*/
     { ".SDATA.origin.enterpriseId", "1.3.6.1.4.1"},
     {  NULL , NULL}
   };
@@ -1038,8 +1034,6 @@ Test(msgparse, test_expected_sd_pairs_without_sd_param)
 {
   struct sdata_pair expected_sd_pairs_test_9[] =
   {
-    /*{ ".SDATA.timeQuality.isSynced", "0"},
-    { ".SDATA.timeQuality.tzKnown", "1"},*/
     { ".SDATA.origin.enterpriseId", "1.3.6.1.4.1"},
     {  NULL , NULL}
   };
