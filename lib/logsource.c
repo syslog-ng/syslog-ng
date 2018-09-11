@@ -243,6 +243,7 @@ log_source_init(LogPipe *s)
                          SC_TYPE_PROCESSED, &self->recvd_messages);
   stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_STAMP, &self->last_message_seen);
   stats_unlock();
+
   return TRUE;
 }
 
@@ -257,6 +258,7 @@ log_source_deinit(LogPipe *s)
   stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->recvd_messages);
   stats_unregister_counter(&sc_key, SC_TYPE_STAMP, &self->last_message_seen);
   stats_unlock();
+
   return TRUE;
 }
 
@@ -455,7 +457,9 @@ log_source_set_options(LogSource *self, LogSourceOptions *options,
   self->stats_instance = stats_instance ? g_strdup(stats_instance): NULL;
   self->threaded = threaded;
   self->pos_tracked = pos_tracked;
-  self->super.expr_node = expr_node;
+  log_pipe_detach_expr_node(&self->super);
+  log_pipe_attach_expr_node(&self->super, expr_node);
+
   _create_ack_tracker_if_not_exists(self, pos_tracked);
 }
 
@@ -478,6 +482,7 @@ log_source_free(LogPipe *s)
 
   g_free(self->stats_id);
   g_free(self->stats_instance);
+  log_pipe_detach_expr_node(&self->super);
   log_pipe_free_method(s);
 
   ack_tracker_free(self->ack_tracker);

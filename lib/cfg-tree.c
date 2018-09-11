@@ -28,6 +28,33 @@
 
 #include <string.h>
 
+static void _log_expr_node_free(LogExprNode *self);
+
+LogExprNode *
+log_expr_node_ref(LogExprNode *self)
+{
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt) > 0);
+
+  if (self)
+    {
+      g_atomic_counter_inc(&self->ref_cnt);
+    }
+  return self;
+}
+
+LogExprNode *
+log_expr_node_unref(LogExprNode *self)
+{
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
+
+  if (self && (g_atomic_counter_dec_and_test(&self->ref_cnt)))
+    {
+      _log_expr_node_free(self);
+      return NULL;
+    }
+  return self;
+}
+
 /*
  * Return the textual representation of a node content type.
  */
@@ -232,6 +259,8 @@ log_expr_node_new(gint layout, gint content, const gchar *name, LogExprNode *chi
 {
   LogExprNode *self = g_new0(LogExprNode, 1);
 
+  g_atomic_counter_set(&self->ref_cnt, 1);
+
   self->layout = layout;
   self->content = content;
   self->name = g_strdup(name);
@@ -253,15 +282,15 @@ log_expr_node_new(gint layout, gint content, const gchar *name, LogExprNode *chi
  * This function frees the LogExprNode object encapsulating a log
  * expression node pointed to by @self.
  **/
-void
-log_expr_node_free(LogExprNode *self)
+static void
+_log_expr_node_free(LogExprNode *self)
 {
   LogExprNode *next, *p;
 
   for (p = self->children ; p; p = next)
     {
       next = p->next;
-      log_expr_node_free(p);
+      log_expr_node_unref(p);
     }
   if (self->object && self->object_destroy)
     self->object_destroy(self->object);
@@ -484,7 +513,7 @@ log_expr_node_conditional_set_false_branch_of_the_last_if(LogExprNode *condition
   LogExprNode *old_false_branch = branches->next;
   branches->next = false_branch;
   false_branch->parent = conditional_node;
-  log_expr_node_free(old_false_branch);
+  log_expr_node_unref(old_false_branch);
 }
 
 /*
@@ -1393,7 +1422,7 @@ cfg_tree_init_instance(CfgTree *self, GlobalConfig *cfg)
   memset(self, 0, sizeof(*self));
   self->initialized_pipes = g_ptr_array_new();
   self->objects = g_hash_table_new_full(cfg_tree_objects_hash, cfg_tree_objects_equal, NULL,
-                                        (GDestroyNotify) log_expr_node_free);
+                                        (GDestroyNotify) log_expr_node_unref);
   self->templates = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, (GDestroyNotify) log_template_unref);
   self->rules = g_ptr_array_new();
   self->cfg = cfg;
@@ -1405,7 +1434,7 @@ cfg_tree_free_instance(CfgTree *self)
   g_ptr_array_foreach(self->initialized_pipes, (GFunc) log_pipe_unref, NULL);
   g_ptr_array_free(self->initialized_pipes, TRUE);
 
-  g_ptr_array_foreach(self->rules, (GFunc) log_expr_node_free, NULL);
+  g_ptr_array_foreach(self->rules, (GFunc) log_expr_node_unref, NULL);
   g_ptr_array_free(self->rules, TRUE);
 
   g_hash_table_destroy(self->objects);
