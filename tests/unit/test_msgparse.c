@@ -1118,6 +1118,17 @@ Test(msgparse, test_ip_in_host)
       .expected_program = "prg0",
       .expected_msg = "msgtxt"
     },
+    (struct msgparse_params)
+    {
+      .msg = "<0>91: *Oct 07 03:10:04: mydevice.com %CRYPTO-4-RECVD_PKT_INV_SPI: decaps: rec'd IPSEC packet has invalid spi for destaddr=150.1.1.1, prot=50, spi=0x72662541(1919296833), srcaddr=150.3.1.3",
+      .parse_flags = LP_EXPECT_HOSTNAME,
+      .expected_stamp_sec = _get_epoch_with_bsd_year(9, 7, 3, 10, 4),
+      .expected_stamp_ofs = 7200,
+      .expected_program = "%CRYPTO-4-RECVD_PKT_INV_SPI",
+      .expected_host = "mydevice.com",
+      .expected_msg =
+      "decaps: rec'd IPSEC packet has invalid spi for destaddr=150.1.1.1, prot=50, spi=0x72662541(1919296833), srcaddr=150.3.1.3"
+    },
     {NULL}
   };
   run_parameterized_test(params);
