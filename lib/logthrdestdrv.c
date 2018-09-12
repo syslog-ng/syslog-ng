@@ -96,7 +96,7 @@ _should_flush_now(LogThreadedDestDriver *self)
   now = iv_now;
   diff = timespec_diff_msec(&now, &self->last_flush_time);
 
-  return (diff > self->flush_timeout);
+  return (diff >= self->flush_timeout);
 }
 
 static gchar *
