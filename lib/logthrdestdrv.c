@@ -345,6 +345,10 @@ _perform_flush(LogThreadedDestDriver *self)
    */
   if (!self->suspended)
     {
+      msg_trace("flushing batch",
+                evt_tag_str("driver", self->super.super.id),
+                evt_tag_int("batch_size", self->batch_size));
+
       worker_insert_result_t result = log_threaded_dest_worker_flush(self);
       _process_result(self, result);
     }
@@ -433,6 +437,10 @@ _perform_work(gpointer data)
                                  _message_became_available_callback,
                                  self, NULL))
     {
+
+      msg_trace("message(s) available in queue",
+                evt_tag_str("driver", self->super.super.id));
+
       /* Something is in the queue, buffer them up and flush (if needed) */
       _perform_inserts(self);
       if (_should_flush_now(self))
@@ -447,6 +455,8 @@ _perform_work(gpointer data)
        * everything.  We are awoken either by the
        * _message_became_available_callback() or if the next flush time has
        * arrived.  */
+      msg_trace("queue empty",
+                evt_tag_str("driver", self->super.super.id));
 
       if (_should_flush_now(self))
         _perform_flush(self);
@@ -463,6 +473,10 @@ _perform_work(gpointer data)
        * items in the queue were already accepted by throttling, so they can
        * be flushed.
        */
+      msg_trace("delay due to throttling",
+                evt_tag_int("timeout_msec", timeout_msec),
+                evt_tag_str("driver", self->super.super.id));
+
       _schedule_restart_on_throttle_timeout(self, timeout_msec);
 
     }
