@@ -495,6 +495,16 @@ _perform_work(gpointer data)
     }
 }
 
+static void
+_flush_timer_cb(gpointer data)
+{
+  LogThreadedDestDriver *self = (LogThreadedDestDriver *)data;
+  msg_debug("flush timer expired",
+            evt_tag_str("driver", self->super.super.id),
+            evt_tag_int("batch_size", self->batch_size));
+  _perform_work(data);
+}
+
 /* these are events of the _worker_ thread and are not registered to the
  * actual main thread.  We basically run our workload in the handler of the
  * do_work task, which might be invoked in a number of ways.
@@ -533,7 +543,7 @@ _init_watches(LogThreadedDestDriver *self)
 
   IV_TIMER_INIT(&self->timer_flush);
   self->timer_flush.cookie = self;
-  self->timer_flush.handler = _perform_work;
+  self->timer_flush.handler = _flush_timer_cb;
 
   IV_TASK_INIT(&self->do_work);
   self->do_work.cookie = self;
