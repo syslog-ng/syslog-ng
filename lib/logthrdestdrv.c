@@ -331,6 +331,8 @@ _perform_inserts(LogThreadedDestDriver *self)
           if (self->rewound_batch_size == 0)
             break;
         }
+
+      iv_invalidate_now();
     }
   self->rewound_batch_size = 0;
 }
@@ -353,6 +355,8 @@ _perform_flush(LogThreadedDestDriver *self)
       worker_insert_result_t result = log_threaded_dest_worker_flush(self);
       _process_result(self, result);
     }
+
+  iv_invalidate_now();
 }
 
 /* this callback is invoked by LogQueue and is registered using
