@@ -115,7 +115,7 @@ public class ElasticSearchDestination extends StructuredLogDestination {
 	}
 
 	@Override
-	public void onMessageQueueEmpty() {
-	    client.onMessageQueueEmpty();
+	public boolean flush() {
+	    return client.flush();
 	}
 }

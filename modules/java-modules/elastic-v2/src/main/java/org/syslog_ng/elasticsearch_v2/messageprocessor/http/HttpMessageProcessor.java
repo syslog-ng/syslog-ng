@@ -62,7 +62,4 @@ public abstract class HttpMessageProcessor implements ESMessageProcessor {
 		return send(req);
 	}
 
-    public void onMessageQueueEmpty() {
-
-    }
 }
