@@ -244,6 +244,7 @@ Test(template, test_template_functions)
 {
   /* template functions */
   assert_template_format("$(echo $HOST $PID)", "bzorp 23323");
+  assert_template_format("$(echo\n$HOST\n$PID)", "bzorp 23323");
   assert_template_format("$(echo \"$(echo $HOST)\" $PID)", "bzorp 23323");
   assert_template_format("$(echo \"$(echo '$(echo $HOST)')\" $PID)", "bzorp 23323");
   assert_template_format("$(echo \"$(echo '$(echo $HOST)')\" $PID)", "bzorp 23323");

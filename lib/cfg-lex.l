@@ -129,7 +129,7 @@ yy_input_run_backtick_substitution(CfgLexer *self, gchar *buf, gsize buf_size)
 
 
 static void
-_cfg_lex_new_line(CfgLexer *lexer)
+_cfg_lex_move_token_location_to_new_line(CfgLexer *lexer)
 {
   CfgIncludeLevel *level = &lexer->include_stack[lexer->include_depth];
 
@@ -143,6 +143,32 @@ _cfg_lex_new_line(CfgLexer *lexer)
   level->lloc.last_column = 1;
 }
 
+static void
+_cfg_lex_extend_token_location_to_next_line(CfgLexer *lexer)
+{
+  CfgIncludeLevel *level = &lexer->include_stack[lexer->include_depth];
+
+  /* this function is used when encountering an NL character within a
+   * multi-line string literal.
+   *
+   * Example:
+   * |    "this is the start of the literal\
+   * |    and this is the end"
+   *
+   *
+   * In this case the string contains a escaped NL character, causing the
+   * literal to span two distinct lines in the source file, which would be
+   * dropped from the parsed string.
+   *
+   * In this case, we need to move yylloc to point from the end of the
+   * current line to the beginning of the next line.  This way, by the time
+   * we return the entire token, yylloc would be spanning the
+   * starting-ending lines of the string literal as needed.
+   * */
+
+  level->lloc.last_line++;
+  level->lloc.last_column = 1;
+}
 %}
 
 %option bison-bridge bison-locations reentrant
@@ -188,9 +214,11 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 ^@                         {
                              return LL_PRAGMA;
                            }
+
+<*>\\\r?\n                 { _cfg_lex_extend_token_location_to_next_line(yyextra); }
 <*>\r?\n                   {
                              *yylloc = yyextra->include_stack[yyextra->include_depth].lloc;
-                             _cfg_lex_new_line(yyextra);
+                             _cfg_lex_move_token_location_to_new_line(yyextra);
                              if (yyextra->tokenize_eol)
                                return LL_EOL;
                              else
