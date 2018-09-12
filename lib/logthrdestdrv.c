@@ -299,6 +299,7 @@ _perform_inserts(LogThreadedDestDriver *self)
        * won't expedite the flush even if the previous one was a long
        * time ago */
 
+      iv_validate_now();
       self->last_flush_time = iv_now;
     }
 
@@ -382,7 +383,6 @@ _schedule_restart_on_suspend_timeout(LogThreadedDestDriver *self)
 static void
 _schedule_restart_on_flush_timeout(LogThreadedDestDriver *self)
 {
-  iv_validate_now();
   self->timer_flush.expires = self->last_flush_time;
   timespec_add_msec(&self->timer_flush.expires, self->flush_timeout);
   iv_timer_register(&self->timer_flush);
