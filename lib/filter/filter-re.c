@@ -68,13 +68,15 @@ filter_re_free(FilterExprNode *s)
   log_matcher_options_destroy(&self->matcher_options);
 }
 
-static void
+static gboolean
 filter_re_init(FilterExprNode *s, GlobalConfig *cfg)
 {
   FilterRE *self = (FilterRE *) s;
 
   if (self->matcher_options.flags & LMF_STORE_MATCHES)
     self->super.modify = TRUE;
+
+  return TRUE;
 }
 
 gboolean

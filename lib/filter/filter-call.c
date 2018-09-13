@@ -56,7 +56,7 @@ filter_call_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
   return res ^ s->comp;
 }
 
-static void
+static gboolean
 filter_call_init(FilterExprNode *s, GlobalConfig *cfg)
 {
   FilterCall *self = (FilterCall *) s;
@@ -64,7 +64,7 @@ filter_call_init(FilterExprNode *s, GlobalConfig *cfg)
 
   /* skip initialize if filter_call_init already called. */
   if (self->filter_expr)
-    return;
+    return TRUE;
 
   rule = cfg_tree_get_object(&cfg->tree, ENC_FILTER, self->rule);
   if (rule)
@@ -77,7 +77,8 @@ filter_call_init(FilterExprNode *s, GlobalConfig *cfg)
       LogFilterPipe *filter_pipe = (LogFilterPipe *) rule->children->object;
 
       self->filter_expr = filter_expr_ref(filter_pipe->expr);
-      filter_expr_init(self->filter_expr, cfg);
+      if (!filter_expr_init(self->filter_expr, cfg))
+        return FALSE;
       self->super.modify = self->filter_expr->modify;
 
       stats_lock();
@@ -91,7 +92,10 @@ filter_call_init(FilterExprNode *s, GlobalConfig *cfg)
     {
       msg_error("Referenced filter rule not found in filter() expression",
                 evt_tag_str("rule", self->rule));
+      return FALSE;
     }
+
+  return TRUE;
 }
 
 static void

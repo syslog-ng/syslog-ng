@@ -1,5 +1,6 @@
 lib_filter_tests_TESTS		 =              \
     lib/filter/tests/test_filters               \
+    lib/filter/tests/test_filter_call           \
     lib/filter/tests/test_filters_in_list
 
 EXTRA_DIST += lib/filter/tests/CMakeLists.txt
@@ -35,5 +36,9 @@ lib_filter_tests_test_filters_statistics_CFLAGS  = $(TEST_CFLAGS) \
     -I${top_srcdir}/lib/filter/tests
 lib_filter_tests_test_filters_statistics_LDADD     = $(TEST_LDADD)  \
     $(PREOPEN_SYSLOGFORMAT)
+
+lib_filter_tests_test_filter_call_CFLAGS  = $(TEST_CFLAGS) \
+    -I${top_srcdir}/lib/filter/tests
+lib_filter_tests_test_filter_call_LDADD   = $(TEST_LDADD)
 
 include lib/filter/tests/filters-in-list/Makefile.am

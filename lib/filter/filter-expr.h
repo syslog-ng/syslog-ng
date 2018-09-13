@@ -39,18 +39,20 @@ struct _FilterExprNode
   guint32 comp:1,   /* this not is negated */
           modify:1; /* this filter changes the log message */
   const gchar *type;
-  void (*init)(FilterExprNode *self, GlobalConfig *cfg);
+  gboolean (*init)(FilterExprNode *self, GlobalConfig *cfg);
   gboolean (*eval)(FilterExprNode *self, LogMessage **msg, gint num_msg);
   void (*free_fn)(FilterExprNode *self);
   StatsCounterItem *matched;
   StatsCounterItem *not_matched;
 };
 
-static inline void
+static inline gboolean
 filter_expr_init(FilterExprNode *self, GlobalConfig *cfg)
 {
   if (self->init)
-    self->init(self, cfg);
+    return self->init(self, cfg);
+
+  return TRUE;
 }
 
 gboolean filter_expr_eval(FilterExprNode *self, LogMessage *msg);
