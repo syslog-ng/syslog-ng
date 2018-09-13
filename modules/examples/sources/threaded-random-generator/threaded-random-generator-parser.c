@@ -31,7 +31,7 @@ int threaded_random_generator_parse(CfgLexer *lexer, LogDriver **instance, gpoin
 
 static CfgLexerKeyword threaded_random_generator_keywords[] =
 {
-  { "random_generator", KW_RANDOM_GENERATOR },
+  { "example_random_generator", KW_RANDOM_GENERATOR },
   { "freq", KW_FREQ },
   { "bytes", KW_BYTES },
   { "type", KW_TYPE },

@@ -12,7 +12,7 @@ calls are allowed.
 
 ```
 source s_generator {
-  random-generator(
+  example-random-generator(
     bytes(32)
     freq(0.5)
     type(random)

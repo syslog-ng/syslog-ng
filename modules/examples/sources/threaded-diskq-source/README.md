@@ -15,7 +15,7 @@ Note that this is a sample plugin, it is meant to be used only in debugging envi
 
 ```
 source s_diskq {
-  diskq-source(file("/var/disk-buffers/syslog-ng-00000.rqf"));
+  example-diskq-source(file("/var/disk-buffers/syslog-ng-00000.rqf"));
 };
 
 log {

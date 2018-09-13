@@ -12,7 +12,7 @@ options {
 };
 
 source s_generator {
-  msg-generator(
+  example-msg-generator(
     template("-- ${ISODATE} ${LOGHOST} ${UNIQID} Generated message. --")
     freq(0.5)
   );

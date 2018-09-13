@@ -31,7 +31,7 @@ int threaded_diskq_source_parse(CfgLexer *lexer, LogDriver **instance, gpointer 
 
 static CfgLexerKeyword threaded_diskq_source_keywords[] =
 {
-  { "diskq_source", KW_DISKQ_SOURCE },
+  { "example_diskq_source", KW_DISKQ_SOURCE },
   { "file", KW_FILE },
   { NULL }
 };

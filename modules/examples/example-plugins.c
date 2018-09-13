@@ -37,19 +37,19 @@ static Plugin example_plugins[] =
 {
   {
     .type = LL_CONTEXT_SOURCE,
-    .name = "msg_generator",
+    .name = "example_msg_generator",
     .parser = &msg_generator_parser,
   },
 #if SYSLOG_NG_HAVE_GETRANDOM
   {
     .type = LL_CONTEXT_SOURCE,
-    .name = "random_generator",
+    .name = "example_random_generator",
     .parser = &threaded_random_generator_parser,
   },
 #endif
   {
     .type = LL_CONTEXT_SOURCE,
-    .name = "diskq_source",
+    .name = "example_diskq_source",
     .parser = &threaded_diskq_source_parser,
   },
 };

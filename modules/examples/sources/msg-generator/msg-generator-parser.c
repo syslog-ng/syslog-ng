@@ -31,7 +31,7 @@ int msg_generator_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
 static CfgLexerKeyword msg_generator_keywords[] =
 {
-  { "msg_generator", KW_MSG_GENERATOR },
+  { "example_msg_generator", KW_MSG_GENERATOR },
   { "freq", KW_FREQ },
   { "template", KW_TEMPLATE },
   { NULL }
