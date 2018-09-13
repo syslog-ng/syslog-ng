@@ -26,23 +26,57 @@ package org.syslog_ng.hdfs;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.Path;
 
+import java.io.IOException;
+
 public class HdfsFile {
     private FSDataOutputStream fsDataOutputStream;
     private Path path;
+    private long lastWrite;
 
-    public FSDataOutputStream getFsDataOutputStream() {
-        return fsDataOutputStream;
-    }
-
-    public void setFsDataOutputStream(FSDataOutputStream fsDataOutputStream) {
-        this.fsDataOutputStream = fsDataOutputStream;
+    public HdfsFile(Path filepath, FSDataOutputStream outputstream) {
+        this.path = filepath;
+        this.fsDataOutputStream = outputstream;
+        this.lastWrite = 0;
     }
 
     public Path getPath() {
         return path;
     }
 
-    public void setPath(Path path) {
-        this.path = path;
+    public boolean isOpen() {
+        return fsDataOutputStream != null;
+    }
+
+    public void flush() throws IOException {
+         if (!isOpen())
+            return;
+
+         fsDataOutputStream.hflush();
+         fsDataOutputStream.hsync();
+    }
+
+    public void write(byte[] message) throws IOException {
+         if (!isOpen())
+            throw new IOException("File is not open: "+path);
+
+         fsDataOutputStream.write(message);
+
+         lastWrite = System.currentTimeMillis();
+    }
+
+    public long timeSinceLastWrite() {
+       if (!isOpen())
+          return 0;
+
+       return System.currentTimeMillis() - lastWrite;
+    }
+
+    public void close() throws IOException {
+         if (!isOpen())
+            return;
+
+          fsDataOutputStream.close();
+          fsDataOutputStream = null;
+          lastWrite = 0;
     }
 }

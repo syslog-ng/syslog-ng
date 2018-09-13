@@ -43,6 +43,8 @@ public class HdfsOptions {
     public static String TEMPLATE_DEFAULT = "${ISODATE} ${HOST} ${MSGHDR}${MSG}\n";
     public static String APPEND_ENABLED = "hdfs_append_enabled";
     public static String APPEND_ENABLED_DEFAULT = "false";
+    public static String TIME_REAP = "time_reap";
+    public static String TIME_REAP_DEFAULT = "0";
 
     private LogDestination owner;
     private Options options;
@@ -107,6 +109,10 @@ public class HdfsOptions {
         return options.get(APPEND_ENABLED).getValueAsBoolean();
     }
 
+    public int getTimeReap() {
+        return 1000 * options.get(TIME_REAP).getValueAsInteger();
+    }
+
     private void fillStringOptions() {
         options.put(new RequiredOptionDecorator(new StringOption(owner, URI)));
         options.put(new StringOption(owner, ARCHIVE_DIR));
@@ -114,6 +120,7 @@ public class HdfsOptions {
         options.put(new StringOption(owner, MAX_FILENAME_LENGTH, MAX_FILENAME_LENGTH_DEFAULT));
         options.put(new StringOption(owner, KERBEROS_PRINCIPAL));
         options.put(new StringOption(owner, KERBEROS_KEYTAB_FILE));
+        options.put(new IntegerRangeCheckOptionDecorator(new StringOption(owner, TIME_REAP, TIME_REAP_DEFAULT), 0, Integer.MAX_VALUE));
     }
 
     private void fillBooleanOptions() {
