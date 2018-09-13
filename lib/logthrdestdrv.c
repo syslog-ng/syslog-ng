@@ -96,7 +96,7 @@ _should_flush_now(LogThreadedDestDriver *self)
   now = iv_now;
   diff = timespec_diff_msec(&now, &self->last_flush_time);
 
-  return (diff > self->flush_timeout);
+  return (diff >= self->flush_timeout);
 }
 
 static gchar *
@@ -299,6 +299,7 @@ _perform_inserts(LogThreadedDestDriver *self)
        * won't expedite the flush even if the previous one was a long
        * time ago */
 
+      iv_validate_now();
       self->last_flush_time = iv_now;
     }
 
@@ -330,6 +331,8 @@ _perform_inserts(LogThreadedDestDriver *self)
           if (self->rewound_batch_size == 0)
             break;
         }
+
+      iv_invalidate_now();
     }
   self->rewound_batch_size = 0;
 }
@@ -345,9 +348,15 @@ _perform_flush(LogThreadedDestDriver *self)
    */
   if (!self->suspended)
     {
+      msg_trace("flushing batch",
+                evt_tag_str("driver", self->super.super.id),
+                evt_tag_int("batch_size", self->batch_size));
+
       worker_insert_result_t result = log_threaded_dest_worker_flush(self);
       _process_result(self, result);
     }
+
+  iv_invalidate_now();
 }
 
 /* this callback is invoked by LogQueue and is registered using
@@ -378,7 +387,6 @@ _schedule_restart_on_suspend_timeout(LogThreadedDestDriver *self)
 static void
 _schedule_restart_on_flush_timeout(LogThreadedDestDriver *self)
 {
-  iv_validate_now();
   self->timer_flush.expires = self->last_flush_time;
   timespec_add_msec(&self->timer_flush.expires, self->flush_timeout);
   iv_timer_register(&self->timer_flush);
@@ -433,6 +441,10 @@ _perform_work(gpointer data)
                                  _message_became_available_callback,
                                  self, NULL))
     {
+
+      msg_trace("message(s) available in queue",
+                evt_tag_str("driver", self->super.super.id));
+
       /* Something is in the queue, buffer them up and flush (if needed) */
       _perform_inserts(self);
       if (_should_flush_now(self))
@@ -447,6 +459,8 @@ _perform_work(gpointer data)
        * everything.  We are awoken either by the
        * _message_became_available_callback() or if the next flush time has
        * arrived.  */
+      msg_trace("queue empty",
+                evt_tag_str("driver", self->super.super.id));
 
       if (_should_flush_now(self))
         _perform_flush(self);
@@ -463,6 +477,10 @@ _perform_work(gpointer data)
        * items in the queue were already accepted by throttling, so they can
        * be flushed.
        */
+      msg_trace("delay due to throttling",
+                evt_tag_int("timeout_msec", timeout_msec),
+                evt_tag_str("driver", self->super.super.id));
+
       _schedule_restart_on_throttle_timeout(self, timeout_msec);
 
     }
@@ -479,6 +497,16 @@ _perform_work(gpointer data)
        * outstanding parallel push callbacks automatically.
        */
     }
+}
+
+static void
+_flush_timer_cb(gpointer data)
+{
+  LogThreadedDestDriver *self = (LogThreadedDestDriver *)data;
+  msg_debug("flush timer expired",
+            evt_tag_str("driver", self->super.super.id),
+            evt_tag_int("batch_size", self->batch_size));
+  _perform_work(data);
 }
 
 /* these are events of the _worker_ thread and are not registered to the
@@ -519,7 +547,7 @@ _init_watches(LogThreadedDestDriver *self)
 
   IV_TIMER_INIT(&self->timer_flush);
   self->timer_flush.cookie = self;
-  self->timer_flush.handler = _perform_work;
+  self->timer_flush.handler = _flush_timer_cb;
 
   IV_TASK_INIT(&self->do_work);
   self->do_work.cookie = self;
