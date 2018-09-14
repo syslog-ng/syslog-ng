@@ -304,27 +304,6 @@ stats_get_counter(const StatsClusterKey *sc_key, gint type)
   return stats_cluster_get_counter(sc, type);
 }
 
-void
-save_counter_to_persistent_storage(GlobalConfig *cfg, StatsCounterItem *counter)
-{
-  if (counter)
-    {
-      g_assert(counter->name);
-      gssize *orig_value = g_new(gssize, 1);
-      *orig_value = stats_counter_get(counter);
-      cfg_persist_config_add(cfg, counter->name, orig_value, (GDestroyNotify) g_free, FALSE);
-    }
-}
-
-void
-load_counter_from_persistent_storage(GlobalConfig *cfg, StatsCounterItem *counter)
-{
-  g_assert(counter->name);
-  gssize *orig_value = cfg_persist_config_fetch(cfg, counter->name);
-  if (orig_value)
-    stats_counter_set(counter, *orig_value);
-}
-
 static void
 _foreach_cluster_helper(gpointer key, gpointer value, gpointer user_data)
 {
