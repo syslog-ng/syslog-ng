@@ -643,18 +643,9 @@ log_threaded_dest_driver_queue(LogPipe *s, LogMessage *msg,
 }
 
 static void
-_update_memory_usage_counter_when_fifo_is_used(LogThreadedDestDriver *self)
-{
-  if (!g_strcmp0(self->worker.queue->type, "FIFO") && self->memory_usage)
-    {
-      LogPipe *_pipe = &self->super.super.super;
-      load_counter_from_persistent_storage(log_pipe_get_config(_pipe), self->memory_usage);
-    }
-}
-
-static void
 _register_stats(LogThreadedDestDriver *self)
 {
+  gboolean need_to_init_queue_counters = TRUE;
   stats_lock();
   StatsClusterKey sc_key;
   stats_cluster_logpipe_key_set(&sc_key,self->stats_source | SCS_DESTINATION,
@@ -663,9 +654,15 @@ _register_stats(LogThreadedDestDriver *self)
   stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
   stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
+  if (stats_check_level(1))
+    need_to_init_queue_counters = !stats_contains_counter(&sc_key, SC_TYPE_MEMORY_USAGE);
   stats_register_counter_and_index(1, &sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
   stats_register_counter(0, &sc_key, SC_TYPE_WRITTEN, &self->written_messages);
   stats_unlock();
+  log_queue_set_counters(self->worker.queue, self->queued_messages,
+                         self->dropped_messages, self->memory_usage);
+  if (need_to_init_queue_counters)
+    log_queue_init_counters(self->worker.queue);
 }
 
 static void
@@ -708,11 +705,6 @@ log_threaded_dest_driver_init_method(LogPipe *s)
 
   _register_stats(self);
 
-  log_queue_set_counters(self->worker.queue, self->queued_messages,
-                         self->dropped_messages, self->memory_usage);
-  log_queue_init_counters(self->worker.queue);
-  _update_memory_usage_counter_when_fifo_is_used(self);
-
   self->seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg,
                                                            _format_seqnum_persist_name(self)));
   if (!self->seq_num)
@@ -734,8 +726,6 @@ log_threaded_dest_driver_deinit_method(LogPipe *s)
   cfg_persist_config_add(log_pipe_get_config(s),
                          _format_seqnum_persist_name(self),
                          GINT_TO_POINTER(self->seq_num), NULL, FALSE);
-
-  save_counter_to_persistent_storage(log_pipe_get_config(s), self->memory_usage);
 
   _unregister_stats(self);
 
