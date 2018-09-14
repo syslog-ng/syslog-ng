@@ -75,7 +75,7 @@ stats_counter_set(StatsCounterItem *counter, gsize value)
 static inline gsize
 stats_counter_get(StatsCounterItem *counter)
 {
-  gssize result = 0;
+  gsize result = 0;
 
   if (counter)
     result = atomic_gssize_get_unsigned(&counter->value);
