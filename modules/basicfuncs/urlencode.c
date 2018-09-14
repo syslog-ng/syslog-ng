@@ -36,3 +36,26 @@ tf_urlencode(LogMessage *msg, gint argc, GString *argv[], GString *result)
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_urlencode);
+
+static void
+tf_urldecode(LogMessage *msg, gint argc, GString *argv[], GString *result)
+{
+  if (argc < 1)
+    return;
+
+  for (gint i = 0; i < argc; i++)
+    {
+      gchar *escaped = g_uri_unescape_string(argv[i]->str, NULL);
+      if (escaped)
+        {
+          g_string_append(result, escaped);
+          g_free(escaped);
+        }
+      else
+        {
+          msg_error("Could not urldecode", evt_tag_str("str", argv[i]->str));
+        }
+    }
+}
+
+TEMPLATE_FUNCTION_SIMPLE(tf_urldecode);
