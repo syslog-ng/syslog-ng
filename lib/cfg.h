@@ -120,6 +120,7 @@ struct _GlobalConfig
 
   CfgTree tree;
 
+  GString *preprocess_config;
 };
 
 gboolean cfg_load_module(GlobalConfig *cfg, const gchar *module_name);

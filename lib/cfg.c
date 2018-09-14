@@ -535,16 +535,16 @@ cfg_read_config(GlobalConfig *self, const gchar *fname, gboolean syntax_only, gc
   if ((cfg_file = fopen(fname, "r")) != NULL)
     {
       CfgLexer *lexer;
-      GString *preprocess_output = g_string_sized_new(8192);
+      self->preprocess_config = g_string_sized_new(8192);
 
-      lexer = cfg_lexer_new(self, cfg_file, fname, preprocess_output);
+      lexer = cfg_lexer_new(self, cfg_file, fname, self->preprocess_config);
       res = cfg_run_parser(self, lexer, &main_parser, (gpointer *) &self, NULL);
       fclose(cfg_file);
       if (preprocess_into)
         {
-          cfg_dump_processed_config(preprocess_output, preprocess_into);
+          cfg_dump_processed_config(self->preprocess_config, preprocess_into);
         }
-      g_string_free(preprocess_output, TRUE);
+
       if (res)
         {
           /* successfully parsed */
@@ -587,6 +587,9 @@ cfg_free(GlobalConfig *self)
 
   if (self->state)
     persist_state_free(self->state);
+
+  if (self->preprocess_config)
+    g_string_free(self->preprocess_config, TRUE);
 
   g_free(self);
 }
