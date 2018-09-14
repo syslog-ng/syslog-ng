@@ -525,29 +525,6 @@ cfg_dump_processed_config(GString *preprocess_output, gchar *output_filename)
 }
 
 gboolean
-cfg_load_config(GlobalConfig *self, gchar *config_string, gboolean syntax_only, gchar *preprocess_into)
-{
-  gint res;
-  CfgLexer *lexer;
-  GString *preprocess_output = g_string_sized_new(8192);
-
-  lexer = cfg_lexer_new_buffer(self, config_string, strlen(config_string));
-  lexer->preprocess_output = preprocess_output;
-
-  res = cfg_run_parser(self, lexer, &main_parser, (gpointer *) &self, NULL);
-  if (preprocess_into)
-    {
-      cfg_dump_processed_config(preprocess_output, preprocess_into);
-    }
-  g_string_free(preprocess_output, TRUE);
-  if (res)
-    {
-      return TRUE;
-    }
-  return FALSE;
-}
-
-gboolean
 cfg_read_config(GlobalConfig *self, const gchar *fname, gboolean syntax_only, gchar *preprocess_into)
 {
   FILE *cfg_file;
