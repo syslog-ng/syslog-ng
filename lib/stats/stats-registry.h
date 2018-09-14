@@ -43,6 +43,9 @@ void stats_register_associated_counter(StatsCluster *handle, gint type, StatsCou
 void stats_unregister_counter(const StatsClusterKey *sc_key, gint type, StatsCounterItem **counter);
 void stats_unregister_dynamic_counter(StatsCluster *handle, gint type, StatsCounterItem **counter);
 
+gboolean stats_contains_counter(const StatsClusterKey *sc_key, gint type);
+StatsCounterItem *stats_get_counter(const StatsClusterKey *sc_key, gint type);
+
 void save_counter_to_persistent_storage(GlobalConfig *cfg, StatsCounterItem *counter);
 
 void stats_foreach_counter(StatsForeachCounterFunc func, gpointer user_data);

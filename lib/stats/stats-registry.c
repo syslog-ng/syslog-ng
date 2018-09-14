@@ -265,6 +265,45 @@ stats_unregister_dynamic_counter(StatsCluster *sc, gint type, StatsCounterItem *
   stats_cluster_untrack_counter(sc, type, counter);
 }
 
+static StatsCluster *
+_lookup_cluster(const StatsClusterKey *sc_key)
+{
+  g_assert(stats_locked);
+
+  StatsCluster *sc = g_hash_table_lookup(stats_cluster_container.static_clusters, sc_key);
+
+  if (!sc)
+    sc = g_hash_table_lookup(stats_cluster_container.dynamic_clusters, sc_key);
+
+  return sc;
+}
+
+gboolean
+stats_contains_counter(const StatsClusterKey *sc_key, gint type)
+{
+  g_assert(stats_locked);
+
+  StatsCluster *sc = _lookup_cluster(sc_key);
+  if (!sc)
+    {
+      return FALSE;
+    }
+
+  return stats_cluster_is_alive(sc, type);
+}
+
+StatsCounterItem *
+stats_get_counter(const StatsClusterKey *sc_key, gint type)
+{
+  g_assert(stats_locked);
+  StatsCluster *sc = _lookup_cluster(sc_key);
+
+  if (!sc)
+    return NULL;
+
+  return stats_cluster_get_counter(sc, type);
+}
+
 void
 save_counter_to_persistent_storage(GlobalConfig *cfg, StatsCounterItem *counter)
 {
