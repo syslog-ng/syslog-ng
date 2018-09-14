@@ -1337,6 +1337,8 @@ log_writer_init_watches(LogWriter *self)
 static void
 _register_counters(LogWriter *self)
 {
+  gboolean need_to_init_queue_counters = TRUE;
+
   stats_lock();
   {
     StatsClusterKey sc_key;
@@ -1349,21 +1351,15 @@ _register_counters(LogWriter *self)
     stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
     stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
     stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_WRITTEN, &self->written_messages);
+    if (stats_check_level(STATS_LEVEL1))
+      need_to_init_queue_counters = !stats_contains_counter(&sc_key, SC_TYPE_MEMORY_USAGE);
     stats_register_counter_and_index(STATS_LEVEL1, &sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
-
   }
   stats_unlock();
 
-}
-
-static void
-_update_memory_usage_counter_when_fifo_is_used(LogWriter *self)
-{
-  if (!g_strcmp0(self->queue->type, "FIFO") && self->memory_usage)
-    {
-      LogPipe *_pipe = &self->super;
-      load_counter_from_persistent_storage(log_pipe_get_config(_pipe), self->memory_usage);
-    }
+  log_queue_set_counters(self->queue, self->queued_messages, self->dropped_messages, self->memory_usage);
+  if (need_to_init_queue_counters)
+    log_queue_init_counters(self->queue);
 }
 
 static gboolean
@@ -1379,11 +1375,6 @@ log_writer_init(LogPipe *s)
 
   if ((self->options->options & LWO_NO_STATS) == 0 && !self->dropped_messages)
     _register_counters(self);
-
-  log_queue_set_counters(self->queue, self->queued_messages, self->dropped_messages, self->memory_usage);
-  log_queue_init_counters(self->queue);
-
-  _update_memory_usage_counter_when_fifo_is_used(self);
 
   if (self->proto)
     {
@@ -1408,10 +1399,6 @@ log_writer_init(LogPipe *s)
 static void
 _unregister_counters(LogWriter *self)
 {
-
-  if (self->memory_usage)
-    save_counter_to_persistent_storage(log_pipe_get_config(&self->super), self->memory_usage);
-
   stats_lock();
   {
     StatsClusterKey sc_key;
