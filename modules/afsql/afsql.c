@@ -1206,6 +1206,7 @@ afsql_dd_init(LogPipe *s)
                   evt_tag_str("type", self->type));
     }
 
+  gboolean need_to_init_queue_counters = TRUE;
   stats_lock();
   {
     StatsClusterKey sc_key;
@@ -1213,10 +1214,11 @@ afsql_dd_init(LogPipe *s)
                                   afsql_dd_format_stats_instance(self) );
     stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
     stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
+    if (stats_check_level(STATS_LEVEL1))
+      need_to_init_queue_counters = !stats_contains_counter(&sc_key, SC_TYPE_MEMORY_USAGE);
     stats_register_counter(STATS_LEVEL1, &sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
   }
   stats_unlock();
-
   self->seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg, afsql_dd_format_persist_sequence_number(self)));
   if (!self->seq_num)
     init_sequence_number(&self->seq_num);
@@ -1231,9 +1233,11 @@ afsql_dd_init(LogPipe *s)
     {
       if (self->flags & AFSQL_DDF_EXPLICIT_COMMITS)
         log_queue_set_use_backlog(self->queue, TRUE);
+      log_queue_set_counters(self->queue, self->queued_messages, self->dropped_messages, self->memory_usage);
+      if (need_to_init_queue_counters)
+        log_queue_init_counters(self->queue);
     }
-  log_queue_set_counters(self->queue, self->queued_messages, self->dropped_messages, self->memory_usage);
-  log_queue_init_counters(self->queue);
+
   if (!self->fields)
     {
       GList *col, *value;
