@@ -29,6 +29,7 @@
 #include "apphook.h"
 #include "stats/stats-query-commands.h"
 #include "string.h"
+#include "cfg.h"
 
 static GList *command_list = NULL;
 
@@ -110,6 +111,33 @@ control_connection_stop_process(GString *command, gpointer user_data)
   MainLoop *main_loop = (MainLoop *) user_data;
 
   main_loop_exit(main_loop);
+  return result;
+}
+
+static GString *
+control_connection_config(GString *command, gpointer user_data)
+{
+  MainLoop *main_loop = (MainLoop *) user_data;
+  GlobalConfig *config = main_loop_get_current_config(main_loop);
+  GString *result = g_string_sized_new(128);
+  gchar **arguments = g_strsplit(command->str, " ", 0);
+
+  if (g_str_equal(arguments[1], "PREPROCESSED"))
+    {
+      g_string_assign(result, config->preprocess_config->str);
+      goto exit;
+    }
+
+  if (g_str_equal(arguments[1], "ORIGINAL"))
+    {
+      g_string_assign(result, config->original_config->str);
+      goto exit;
+    }
+
+  g_string_assign(result, "Invalid arguments received");
+
+exit:
+  g_strfreev(arguments);
   return result;
 }
 
@@ -223,6 +251,7 @@ ControlCommand default_commands[] =
   { "REOPEN", NULL, control_connection_reopen },
   { "QUERY", NULL, process_query_command },
   { "PWD", NULL, process_credentials },
+  { "CONFIG", NULL, control_connection_config },
   { NULL, NULL, NULL },
 };
 

@@ -190,6 +190,20 @@ slng_reload(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
   return _dispatch_command("RELOAD");
 }
 
+static gboolean config_options_preprocessed = FALSE;
+
+static GOptionEntry config_options[] =
+{
+  { "preprocessed", 'p', 0, G_OPTION_ARG_NONE, &config_options_preprocessed, "preprocessed", NULL },
+  { NULL,           0,   0, G_OPTION_ARG_NONE, NULL,                         NULL,           NULL }
+};
+
+static gint
+slng_config(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
+{
+  return _dispatch_command(config_options_preprocessed ? "CONFIG PREPROCESSED" : "CONFIG ORIGINAL");
+}
+
 static gint
 slng_reopen(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 {
@@ -556,6 +570,7 @@ static CommandDescriptor modes[] =
   { "query", query_options, "Query syslog-ng statistics. Possible commands: list, get, get --sum", slng_query, NULL },
   { "show-license-info", license_options, "Show information about the license", slng_license, NULL },
   { "credentials", no_options, "Credentials manager", NULL, credentials_commands },
+  { "config", config_options, "Print current config", slng_config, NULL },
   { NULL, NULL },
 };
 
