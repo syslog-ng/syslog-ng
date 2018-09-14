@@ -16,7 +16,8 @@ compatinclude_HEADERS		= 	\
 	lib/compat/pcre.h		\
 	lib/compat/getent.h		\
 	lib/compat/getent-sun.h		\
-	lib/compat/getent-generic.h
+	lib/compat/getent-generic.h	\
+	lib/compat/un.h
 
 compat_sources			= 	\
 	lib/compat/getutent.c		\

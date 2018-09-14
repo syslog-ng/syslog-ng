@@ -529,21 +529,6 @@ static GSockAddrFuncs unix_sockaddr_funcs =
   .format = g_sockaddr_unix_format
 };
 
-/*
-  SUN_LEN is not a POSIX standard, thus not available on all platforms.
-  If it is available we should rely on it. Otherwise we use the formula
-  from the Linux man page.
-*/
-static int
-_calculate_salen(GSockAddrUnix *addr)
-{
-#ifdef SUN_LEN
-  return SUN_LEN(&(addr->saun));
-#else
-  return sizeof(addr->saun) - sizeof(addr->saun.sun_path) + strlen(addr->saun.sun_path) + 1;
-#endif
-}
-
 /* anonymous if name == NULL */
 
 /*+
@@ -570,7 +555,7 @@ g_sockaddr_unix_new(const gchar *name)
     {
       strncpy(addr->saun.sun_path, name, sizeof(addr->saun.sun_path) - 1);
       addr->saun.sun_path[sizeof(addr->saun.sun_path) - 1] = 0;
-      addr->salen = _calculate_salen(addr);
+      addr->salen = SUN_LEN(&(addr->saun));
     }
   else
     {
