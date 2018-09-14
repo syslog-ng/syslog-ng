@@ -220,29 +220,6 @@ late_ack_tracker_request_bookmark(AckTracker *s)
 }
 
 static void
-late_ack_tracker_init_instance(LateAckTracker *self, LogSource *source)
-{
-  self->super.late = TRUE;
-  self->super.source = source;
-  source->ack_tracker = (AckTracker *)self;
-  self->super.request_bookmark = late_ack_tracker_request_bookmark;
-  self->super.track_msg = late_ack_tracker_track_msg;
-  self->super.manage_msg_ack = late_ack_tracker_manage_msg_ack;
-  ring_buffer_alloc(&self->ack_record_storage, sizeof(LateAckRecord), log_source_get_init_window_size(source));
-  g_static_mutex_init(&self->storage_mutex);
-}
-
-AckTracker *
-late_ack_tracker_new(LogSource *source)
-{
-  LateAckTracker *self = g_new0(LateAckTracker, 1);
-
-  late_ack_tracker_init_instance(self, source);
-
-  return (AckTracker *)self;
-}
-
-void
 late_ack_tracker_free(AckTracker *s)
 {
   LateAckTracker *self = (LateAckTracker *)s;
@@ -262,3 +239,33 @@ late_ack_tracker_free(AckTracker *s)
   ring_buffer_free(&self->ack_record_storage);
   g_free(self);
 }
+
+static void
+_setup_callbacks(LateAckTracker *self)
+{
+  self->super.request_bookmark = late_ack_tracker_request_bookmark;
+  self->super.track_msg = late_ack_tracker_track_msg;
+  self->super.manage_msg_ack = late_ack_tracker_manage_msg_ack;
+  self->super.free_fn = late_ack_tracker_free;
+}
+
+static void
+late_ack_tracker_init_instance(LateAckTracker *self, LogSource *source)
+{
+  self->super.source = source;
+  source->ack_tracker = (AckTracker *)self;
+  ring_buffer_alloc(&self->ack_record_storage, sizeof(LateAckRecord), log_source_get_init_window_size(source));
+  g_static_mutex_init(&self->storage_mutex);
+  _setup_callbacks(self);
+}
+
+AckTracker *
+late_ack_tracker_new(LogSource *source)
+{
+  LateAckTracker *self = g_new0(LateAckTracker, 1);
+
+  late_ack_tracker_init_instance(self, source);
+
+  return (AckTracker *)self;
+}
+
