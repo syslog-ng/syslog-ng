@@ -710,6 +710,7 @@ log_threaded_dest_driver_init_method(LogPipe *s)
 
   log_queue_set_counters(self->worker.queue, self->queued_messages,
                          self->dropped_messages, self->memory_usage);
+  log_queue_init_counters(self->worker.queue);
   _update_memory_usage_counter_when_fifo_is_used(self);
 
   self->seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg,

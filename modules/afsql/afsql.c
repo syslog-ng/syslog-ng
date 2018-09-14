@@ -1233,6 +1233,7 @@ afsql_dd_init(LogPipe *s)
         log_queue_set_use_backlog(self->queue, TRUE);
     }
   log_queue_set_counters(self->queue, self->queued_messages, self->dropped_messages, self->memory_usage);
+  log_queue_init_counters(self->queue);
   if (!self->fields)
     {
       GList *col, *value;

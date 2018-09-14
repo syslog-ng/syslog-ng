@@ -1381,6 +1381,7 @@ log_writer_init(LogPipe *s)
     _register_counters(self);
 
   log_queue_set_counters(self->queue, self->queued_messages, self->dropped_messages, self->memory_usage);
+  log_queue_init_counters(self->queue);
 
   _update_memory_usage_counter_when_fifo_is_used(self);
 

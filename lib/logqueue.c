@@ -175,6 +175,11 @@ log_queue_set_counters(LogQueue *self, StatsCounterItem *queued_messages, StatsC
   self->queued_messages = queued_messages;
   self->dropped_messages = dropped_messages;
   self->memory_usage = memory_usage;
+}
+
+void
+log_queue_init_counters(LogQueue *self)
+{
   stats_counter_set(self->memory_usage,
                     self->memory_usage_qout_initial_value + self->memory_usage_overflow_initial_value);
   stats_counter_set(self->queued_messages, log_queue_get_length(self));

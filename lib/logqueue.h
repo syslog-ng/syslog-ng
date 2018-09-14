@@ -202,6 +202,7 @@ gboolean log_queue_check_items(LogQueue *self, gint *timeout, LogQueuePushNotify
                                gpointer user_data, GDestroyNotify user_data_destroy);
 void log_queue_set_counters(LogQueue *self, StatsCounterItem *queued_messages, StatsCounterItem *dropped_messages,
                             StatsCounterItem *memory_usage);
+void log_queue_init_counters(LogQueue *self);
 void log_queue_init_instance(LogQueue *self, const gchar *persist_name);
 void log_queue_free_method(LogQueue *self);
 
