@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # Helper functions for container creation.
 
 function add_obs_repo {
