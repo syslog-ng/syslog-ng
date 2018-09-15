@@ -49,7 +49,6 @@ struct _ValuePairsTransform
 typedef struct
 {
   ValuePairsTransform super;
-
   gint amount;
 } VPTransShift;
 
@@ -146,6 +145,40 @@ value_pairs_new_transform_shift (gint amount)
   vpt = g_new(VPTransShift, 1);
   vp_trans_init((ValuePairsTransform *)vpt,
                 vp_trans_shift, NULL);
+
+  vpt->amount = amount;
+
+  return (ValuePairsTransform *)vpt;
+}
+
+/* shift-levels() */
+
+static void
+vp_trans_shift_levels(ValuePairsTransform *t, GString *key)
+{
+  VPTransShift *self = (VPTransShift *)t;
+  const gchar *dot;
+  gint levels_left = self->amount - 1;
+
+  dot = strchr(key->str, '.');
+  while (dot && levels_left > 0)
+    {
+      dot = strchr(dot + 1, '.');
+      levels_left--;
+    }
+
+  if (dot)
+    g_string_erase(key, 0, dot + 1 - key->str);
+}
+
+ValuePairsTransform *
+value_pairs_new_transform_shift_levels(gint amount)
+{
+  VPTransShift *vpt;
+
+  vpt = g_new(VPTransShift, 1);
+  vp_trans_init((ValuePairsTransform *)vpt,
+                vp_trans_shift_levels, NULL);
 
   vpt->amount = amount;
 

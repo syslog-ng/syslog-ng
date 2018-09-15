@@ -331,6 +331,15 @@ vp_cmdline_parse_rekey_shift (const gchar *option_name, const gchar *value,
   gpointer *args = (gpointer *) data;
   ValuePairsTransformSet *vpts = (ValuePairsTransformSet *) args[2];
   gchar *key = (gchar *) args[3];
+  gchar *end = NULL;
+  gint number_to_shift = strtol(value, &end, 0);
+
+  if (number_to_shift <= 0 || *end != 0)
+    {
+      g_set_error (error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED,
+                   "Error parsing value-pairs, argument to --shift is not numeric or not a positive number");
+      return FALSE;
+    }
 
   vpts = vp_cmdline_rekey_verify (key, vpts, data);
   if (!vpts)
@@ -340,8 +349,38 @@ vp_cmdline_parse_rekey_shift (const gchar *option_name, const gchar *value,
       return FALSE;
     }
 
-  value_pairs_transform_set_add_func
-  (vpts, value_pairs_new_transform_shift (atoi (value)));
+  value_pairs_transform_set_add_func(vpts,
+                                     value_pairs_new_transform_shift (number_to_shift));
+  return TRUE;
+}
+
+static gboolean
+vp_cmdline_parse_rekey_shift_levels (const gchar *option_name, const gchar *value,
+                                     gpointer data, GError **error)
+{
+  gpointer *args = (gpointer *) data;
+  ValuePairsTransformSet *vpts = (ValuePairsTransformSet *) args[2];
+  gchar *key = (gchar *) args[3];
+  gchar *end = NULL;
+  gint number_to_shift = strtol(value, &end, 0);
+
+  if (number_to_shift <= 0 || *end != 0)
+    {
+      g_set_error (error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED,
+                   "Error parsing value-pairs, argument to --shift-levels is not numeric or not a positive number");
+      return FALSE;
+    }
+
+  vpts = vp_cmdline_rekey_verify (key, vpts, data);
+  if (!vpts)
+    {
+      g_set_error (error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED,
+                   "Error parsing value-pairs: --shift-levels used without --key or --rekey");
+      return FALSE;
+    }
+
+  value_pairs_transform_set_add_func(vpts,
+                                     value_pairs_new_transform_shift_levels (number_to_shift));
   return TRUE;
 }
 
@@ -378,6 +417,10 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
     },
     {
       "shift", 'S', 0, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_rekey_shift,
+      NULL, NULL
+    },
+    {
+      "shift-levels", 0, 0, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_rekey_shift_levels,
       NULL, NULL
     },
     {

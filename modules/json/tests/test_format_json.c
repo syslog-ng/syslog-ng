@@ -90,6 +90,8 @@ Test(format_json, test_format_json)
                          "{\".program\":{\"@name\":\"syslog-ng\"}}");
   assert_template_format("$(format-json --leave-initial-dot .program.@name=${PROGRAM} .program.foo .program.bar)",
                          "{\".program\":{\"@name\":\"syslog-ng\"}}");
+  assert_template_format("$(format-json .program.@name=${PROGRAM} .program.foo .program.bar --key .program.* --shift-levels 2 --add-prefix _)",
+                         "{\"_@name\":\"syslog-ng\"}");
 }
 
 Test(format_json, test_format_json_key)
