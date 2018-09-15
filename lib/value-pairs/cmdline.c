@@ -169,7 +169,7 @@ value_pairs_parse_type(gchar *spec, gchar **value, gchar **type)
       return;
     }
 
-  ep = strchr(sp, ')');
+  ep = strrchr(sp, ')');
   if (ep == NULL || ep[1] != '\0')
     {
       *value = spec;
