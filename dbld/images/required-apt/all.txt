@@ -1,3 +1,6 @@
+# requiled for building docker image
+unzip
+
 # required for autogen
 autoconf-archive
 automake
