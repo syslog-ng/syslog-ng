@@ -34,6 +34,7 @@
 #include "cfg.h"
 #include "timeutils.h"
 #include "plugin.h"
+#include "scratch-buffers.h"
 
 #include <time.h>
 #include <stdlib.h>
@@ -54,6 +55,9 @@ format_template_thread(gpointer s)
   GString *result;
   gint i;
 
+  scratch_buffers_allocator_init();
+
+
   g_mutex_lock(thread_lock);
   while (!thread_start)
     g_cond_wait(thread_ping, thread_lock);
@@ -64,8 +68,10 @@ format_template_thread(gpointer s)
     {
       log_template_format(templ, msg, NULL, LTZ_SEND, 5555, NULL, result);
       cr_assert_str_eq(result->str, expected, "multi-threaded formatting yielded invalid result (iteration: %d)", i);
+      scratch_buffers_explicit_gc();
     }
   g_string_free(result, TRUE);
+  scratch_buffers_allocator_deinit();
   return NULL;
 }
 
@@ -126,6 +132,7 @@ setup(void)
 void
 teardown(void)
 {
+  scratch_buffers_explicit_gc();
   deinit_template_tests();
   app_shutdown();
 }
@@ -304,4 +311,18 @@ Test(template, test_template_function_args)
   assert_template_format("$(echo 'foobar' \"barfoo\")", "foobar barfoo");
   assert_template_format("$(echo foo '' bar)", "foo  bar");
   assert_template_format("$(echo foo '')", "foo ");
+
+  assert_template_failure("$(echo 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 "
+                          "17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 "
+                          "33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 "
+                          "49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65)",
+                          "Too many arguments (65)");
+  assert_template_format("$(echo 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 "
+                         "17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 "
+                         "33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 "
+                         "49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64)",
+                         "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 "
+                         "17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 "
+                         "33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 "
+                         "49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64");
 }

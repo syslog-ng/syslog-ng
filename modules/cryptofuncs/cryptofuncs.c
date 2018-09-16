@@ -107,7 +107,7 @@ tf_hash_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
 }
 
 static guint
-_hash(const EVP_MD *md, GString **argv, gint argc, guchar *hash, guint hash_size)
+_hash(const EVP_MD *md, GString *const *argv, gint argc, guchar *hash, guint hash_size)
 {
   gint i;
   guint md_len;
@@ -131,14 +131,13 @@ static void
 tf_hash_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
 {
   TFHashState *state = (TFHashState *) s;
-  GString **argv;
   gint argc;
   guchar hash[EVP_MAX_MD_SIZE];
   gchar hash_str[EVP_MAX_MD_SIZE * 2 + 1];
   guint md_len;
-  argv = (GString **) args->bufs->pdata;
-  argc = args->bufs->len;
-  md_len = _hash(state->md, argv, argc, hash, sizeof(hash));
+
+  argc = state->super.argc;
+  md_len = _hash(state->md, args->argv, argc, hash, sizeof(hash));
   // we fetch the entire hash in a hex format otherwise we cannot truncate at
   // odd character numbers
   format_hex_string(hash, md_len, hash_str, sizeof(hash_str));

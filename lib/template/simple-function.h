@@ -39,7 +39,7 @@ typedef void (*TFSimpleFunc)(LogMessage *msg, gint argc, GString *argv[], GStrin
 
 gboolean tf_simple_func_prepare(LogTemplateFunction *self, gpointer state, LogTemplate *parent, gint argc,
                                 gchar *argv[], GError **error);
-void tf_simple_func_eval(LogTemplateFunction *self, gpointer state, const LogTemplateInvokeArgs *args);
+void tf_simple_func_eval(LogTemplateFunction *self, gpointer state, LogTemplateInvokeArgs *args);
 void tf_simple_func_call(LogTemplateFunction *self, gpointer state, const LogTemplateInvokeArgs *args, GString *result);
 void tf_simple_func_free_state(gpointer state);
 

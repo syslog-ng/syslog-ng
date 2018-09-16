@@ -24,6 +24,7 @@
 
 #include "template/simple-function.h"
 #include "template/templates.h"
+#include "scratch-buffers.h"
 
 void
 log_template_append_format_recursive(LogTemplate *self, const LogTemplateInvokeArgs *args, GString *result)
@@ -63,22 +64,16 @@ error:
 }
 
 void
-tf_simple_func_eval(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args)
+tf_simple_func_eval(LogTemplateFunction *self, gpointer s, LogTemplateInvokeArgs *args)
 {
   TFSimpleFuncState *state = (TFSimpleFuncState *) s;
   gint i;
 
+  g_assert(state->argc <= TEMPLATE_INVOKE_MAX_ARGS);
   for (i = 0; i < state->argc; i++)
     {
-      GString **arg;
-
-      if (args->bufs->len <= i)
-        g_ptr_array_add(args->bufs, g_string_sized_new(256));
-
-      arg = (GString **) &g_ptr_array_index(args->bufs, i);
-      g_string_truncate(*arg, 0);
-
-      log_template_append_format_recursive(state->argv[i], args, *arg);
+      args->argv[i] = scratch_buffers_alloc();
+      log_template_append_format_recursive(state->argv[i], args, args->argv[i]);
     }
 }
 
@@ -88,7 +83,7 @@ tf_simple_func_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvo
   TFSimpleFunc simple_func = (TFSimpleFunc) self->arg;
   TFSimpleFuncState *state = (TFSimpleFuncState *) s;
 
-  simple_func(args->messages[args->num_messages-1], state->argc, (GString **) args->bufs->pdata, result);
+  simple_func(args->messages[args->num_messages-1], state->argc, (GString **) args->argv, result);
 }
 
 void

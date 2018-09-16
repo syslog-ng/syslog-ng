@@ -132,15 +132,10 @@ log_template_append_format_with_context(LogTemplate *self, LogMessage **messages
         }
         case LTE_FUNC:
         {
-          g_static_mutex_lock(&self->arg_lock);
-          if (!self->arg_bufs)
-            self->arg_bufs = g_ptr_array_sized_new(0);
-
           if (1)
             {
               LogTemplateInvokeArgs args =
               {
-                self->arg_bufs,
                 e->msg_ref ? &messages[msg_ndx] : messages,
                 e->msg_ref ? 1 : num_messages,
                 opts,
@@ -159,7 +154,6 @@ log_template_append_format_with_context(LogTemplate *self, LogMessage **messages
                 e->func.ops->eval(e->func.ops, e->func.state, &args);
               e->func.ops->call(e->func.ops, e->func.state, &args, result);
             }
-          g_static_mutex_unlock(&self->arg_lock);
           break;
         }
         default:
@@ -232,25 +226,15 @@ log_template_new(GlobalConfig *cfg, const gchar *name)
   log_template_set_name(self, name);
   self->ref_cnt = 1;
   self->cfg = cfg;
-  g_static_mutex_init(&self->arg_lock);
   return self;
 }
 
 static void
 log_template_free(LogTemplate *self)
 {
-  if (self->arg_bufs)
-    {
-      gint i;
-
-      for (i = 0; i < self->arg_bufs->len; i++)
-        g_string_free(g_ptr_array_index(self->arg_bufs, i), TRUE);
-      g_ptr_array_free(self->arg_bufs, TRUE);
-    }
   log_template_reset_compiled(self);
   g_free(self->name);
   g_free(self->template);
-  g_static_mutex_free(&self->arg_lock);
   g_free(self);
 }
 
