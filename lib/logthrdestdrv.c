@@ -591,8 +591,16 @@ _worker_thread(gpointer arg)
 
   _signal_startup_finished(self);
 
+  /* if we have anything on the backlog, that was a partial, potentially
+   * not-flushed batch.  Rewind it, so we start with that */
+
+  log_queue_rewind_backlog_all(self->worker.queue);
+
   _schedule_restart(self);
   iv_main();
+
+  log_threaded_dest_worker_flush(self);
+  log_queue_rewind_backlog_all(self->worker.queue);
 
   _disconnect(self);
 
