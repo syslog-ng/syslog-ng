@@ -133,7 +133,7 @@ _calculate_new_size(NVTable *self)
 
 static inline NVEntry *
 _deserialize_old_entry(GString *old_nvtable_payload, guint32 old_offset,
-                       void *payload_start, gboolean different_endianness)
+                       gchar *payload_start, gboolean different_endianness)
 {
   OldNVEntry *old_entry =
     (OldNVEntry *) (old_nvtable_payload->str + old_nvtable_payload->len - old_offset);
@@ -166,11 +166,11 @@ _deserialize_old_entry(GString *old_nvtable_payload, guint32 old_offset,
 }
 
 static gboolean
-_deserialize_blob_v22(SerializeArchive *sa, NVTable *self, void *table_top,
+_deserialize_blob_v22(SerializeArchive *sa, NVTable *self, gchar *table_top,
                       gboolean different_endianness)
 {
   GString *old_nvtable_payload;
-  void *current_payload_pointer = table_top;
+  gchar *current_payload_pointer = table_top;
   int i;
   NVIndexEntry *dyn_entries;
 
@@ -204,7 +204,7 @@ _deserialize_blob_v22(SerializeArchive *sa, NVTable *self, void *table_top,
             _deserialize_old_entry(old_nvtable_payload, old_entry_offset,
                                    current_payload_pointer, different_endianness);
 
-          self->static_entries[i] = (guint32)(table_top - (void *)new_entry);
+          self->static_entries[i] = (guint32)(table_top - (gchar *)new_entry);
           current_payload_pointer = current_payload_pointer - new_entry->alloc_len;
         }
     }
@@ -218,7 +218,7 @@ _deserialize_blob_v22(SerializeArchive *sa, NVTable *self, void *table_top,
         _deserialize_old_entry(old_nvtable_payload, old_entry_offset,
                                current_payload_pointer, different_endianness);
 
-      dynvalue->ofs = (guint32) (table_top - (void *)new_entry);
+      dynvalue->ofs = (guint32) (table_top - (gchar *) new_entry);
       current_payload_pointer = current_payload_pointer - new_entry->alloc_len;
     }
 
@@ -280,7 +280,7 @@ nv_table_deserialize_22(SerializeArchive *sa)
     {
       magic = GUINT32_SWAP_LE_BE(magic);
     }
-  if (memcmp((void *) &magic, (const void *) NV_TABLE_MAGIC_V2, 4) != 0)
+  if (memcmp(&magic, NV_TABLE_MAGIC_V2, 4) != 0)
     return NULL;
 
   res = (NVTable *)g_malloc(sizeof(NVTable));
