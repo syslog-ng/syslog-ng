@@ -80,9 +80,7 @@ ring_buffer_is_empty(RingBuffer *self)
 gpointer
 ring_buffer_push(RingBuffer *self)
 {
-  gpointer r = NULL;
-
-  r = ring_buffer_tail(self);
+  gpointer r = ring_buffer_tail(self);
 
   if (!r)
     return NULL;
@@ -96,14 +94,12 @@ ring_buffer_push(RingBuffer *self)
 gpointer
 ring_buffer_tail (RingBuffer *self)
 {
-  gpointer r = NULL;
-
   g_assert(self->buffer != NULL);
 
   if (ring_buffer_is_full(self))
     return NULL;
 
-  r = self->buffer + self->tail * self->element_size;
+  gpointer r = (guint8 *) (self->buffer) + self->tail * self->element_size;
 
   return r;
 }
@@ -111,14 +107,12 @@ ring_buffer_tail (RingBuffer *self)
 gpointer
 ring_buffer_pop(RingBuffer *self)
 {
-  gpointer r = NULL;
-
   g_assert(self->buffer != NULL);
 
   if (ring_buffer_is_empty(self))
     return NULL;
 
-  r = self->buffer + self->head * self->element_size;
+  gpointer r = (guint8 *) (self->buffer) + self->head * self->element_size;
 
   --self->count;
   self->head = (self->head + 1) % self->capacity;
@@ -160,7 +154,7 @@ ring_buffer_element_at(RingBuffer *self, guint32 idx)
   if (idx >= self->count)
     return NULL;
 
-  return self->buffer + ((self->head + idx) % self->capacity) * self->element_size;
+  return (guint8 *) (self->buffer) + ((self->head + idx) % self->capacity) * self->element_size;
 }
 
 guint32
