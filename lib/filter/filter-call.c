@@ -30,6 +30,7 @@ typedef struct _FilterCall
   FilterExprNode super;
   FilterExprNode *filter_expr;
   gchar *rule;
+  gboolean visited; /* Used for filter call loop detection */
 } FilterCall;
 
 static gboolean
@@ -61,6 +62,13 @@ filter_call_init(FilterExprNode *s, GlobalConfig *cfg)
 {
   FilterCall *self = (FilterCall *) s;
   LogExprNode *rule;
+
+  if (self->visited)
+    {
+      msg_error("Loop detected in filter rule", evt_tag_str("rule", self->rule));
+      return FALSE;
+    }
+  self->visited = TRUE;
 
   /* skip initialize if filter_call_init already called. */
   if (self->filter_expr)
@@ -94,6 +102,8 @@ filter_call_init(FilterExprNode *s, GlobalConfig *cfg)
                 evt_tag_str("rule", self->rule));
       return FALSE;
     }
+
+  self->visited = FALSE;
 
   return TRUE;
 }
