@@ -645,39 +645,35 @@ log_threaded_dest_driver_queue(LogPipe *s, LogMessage *msg,
 static void
 _register_stats(LogThreadedDestDriver *self)
 {
-  gboolean need_to_init_queue_counters = TRUE;
   stats_lock();
-  StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key,self->stats_source | SCS_DESTINATION,
-                                self->super.super.id,
-                                self->format_stats_instance(self));
-  stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
-  stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
-  stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
-  if (stats_check_level(1))
-    need_to_init_queue_counters = !stats_contains_counter(&sc_key, SC_TYPE_MEMORY_USAGE);
-  stats_register_counter_and_index(1, &sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
-  stats_register_counter(0, &sc_key, SC_TYPE_WRITTEN, &self->written_messages);
+  {
+    StatsClusterKey sc_key;
+    stats_cluster_logpipe_key_set(&sc_key,self->stats_source | SCS_DESTINATION,
+                                  self->super.super.id,
+                                  self->format_stats_instance(self));
+    stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
+    stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
+    stats_register_counter(0, &sc_key, SC_TYPE_WRITTEN, &self->written_messages);
+    log_queue_register_stats_counters(self->worker.queue, 0, &sc_key);
+  }
   stats_unlock();
-  log_queue_set_counters(self->worker.queue, self->queued_messages,
-                         self->dropped_messages, self->memory_usage);
-  if (need_to_init_queue_counters)
-    log_queue_init_counters(self->worker.queue);
+  log_queue_set_dropped_counter(self->worker.queue, self->dropped_messages);
 }
 
 static void
 _unregister_stats(LogThreadedDestDriver *self)
 {
   stats_lock();
-  StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_DESTINATION,
-                                self->super.super.id,
-                                self->format_stats_instance(self));
-  stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &self->queued_messages);
-  stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
-  stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
-  stats_unregister_counter(&sc_key, SC_TYPE_WRITTEN, &self->written_messages);
-  stats_unregister_counter(&sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
+  {
+    StatsClusterKey sc_key;
+    stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_DESTINATION,
+                                  self->super.super.id,
+                                  self->format_stats_instance(self));
+    stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
+    stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
+    stats_unregister_counter(&sc_key, SC_TYPE_WRITTEN, &self->written_messages);
+    log_queue_unregister_stats_counters(self->worker.queue, &sc_key);
+  }
   stats_unlock();
 }
 
@@ -721,7 +717,7 @@ log_threaded_dest_driver_deinit_method(LogPipe *s)
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
 
 
-  log_queue_set_counters(self->worker.queue, NULL, NULL, NULL);
+  log_queue_set_dropped_counter(self->worker.queue, NULL);
 
   cfg_persist_config_add(log_pipe_get_config(s),
                          _format_seqnum_persist_name(self),
