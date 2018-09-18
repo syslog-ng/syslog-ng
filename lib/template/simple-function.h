@@ -32,7 +32,7 @@
 typedef struct _TFSimpleFuncState
 {
   gint argc;
-  LogTemplate **argv;
+  LogTemplate **argv_templates;
 } TFSimpleFuncState;
 
 typedef void (*TFSimpleFunc)(LogMessage *msg, gint argc, GString *argv[], GString *result);

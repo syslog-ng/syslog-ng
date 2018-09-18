@@ -45,16 +45,16 @@ tf_simple_func_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *paren
   gint i;
 
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
-  state->argv = g_malloc(sizeof(LogTemplate *) * (argc - 1));
+  state->argv_templates = g_malloc(sizeof(LogTemplate *) * (argc - 1));
 
   /* NOTE: the argv argument contains the function name as argv[0],
    * but the LogTemplate array doesn't. Thus the index is shifted by
    * one. */
   for (i = 0; i < argc - 1; i++)
     {
-      state->argv[i] = log_template_new(parent->cfg, NULL);
-      log_template_set_escape(state->argv[i], parent->escape);
-      if (!log_template_compile(state->argv[i], argv[i + 1], error))
+      state->argv_templates[i] = log_template_new(parent->cfg, NULL);
+      log_template_set_escape(state->argv_templates[i], parent->escape);
+      if (!log_template_compile(state->argv_templates[i], argv[i + 1], error))
         goto error;
     }
   state->argc = argc - 1;
@@ -73,7 +73,7 @@ tf_simple_func_eval(LogTemplateFunction *self, gpointer s, LogTemplateInvokeArgs
   for (i = 0; i < state->argc; i++)
     {
       args->argv[i] = scratch_buffers_alloc();
-      log_template_append_format_recursive(state->argv[i], args, args->argv[i]);
+      log_template_append_format_recursive(state->argv_templates[i], args, args->argv[i]);
     }
 }
 
@@ -94,8 +94,8 @@ tf_simple_func_free_state(gpointer s)
 
   for (i = 0; i < state->argc; i++)
     {
-      if (state->argv[i])
-        log_template_unref(state->argv[i]);
+      if (state->argv_templates[i])
+        log_template_unref(state->argv_templates[i]);
     }
-  g_free(state->argv);
+  g_free(state->argv_templates);
 }

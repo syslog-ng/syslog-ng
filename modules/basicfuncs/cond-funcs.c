@@ -123,7 +123,9 @@ tf_grep_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs 
                 g_string_append_c(result, ',');
 
               /* NOTE: not recursive, as the message context is just one message */
-              log_template_append_format(state->super.argv[i], msg, args->opts, args->tz, args->seq_num, args->context_id, result);
+              log_template_append_format(state->super.argv_templates[i], msg,
+                                         args->opts, args->tz, args->seq_num, args->context_id,
+                                         result);
               first = FALSE;
             }
           if (state->grep_max_count && count >= state->grep_max_count)
@@ -154,13 +156,17 @@ tf_if_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *a
 
   if (filter_expr_eval_with_context(state->filter, args->messages, args->num_messages))
     {
-      log_template_append_format_with_context(state->super.argv[0], args->messages, args->num_messages, args->opts, args->tz,
-                                              args->seq_num, args->context_id, result);
+      log_template_append_format_with_context(state->super.argv_templates[0],
+                                              args->messages, args->num_messages, args->opts, args->tz,
+                                              args->seq_num, args->context_id,
+                                              result);
     }
   else
     {
-      log_template_append_format_with_context(state->super.argv[1], args->messages, args->num_messages, args->opts, args->tz,
-                                              args->seq_num, args->context_id, result);
+      log_template_append_format_with_context(state->super.argv_templates[1],
+                                              args->messages, args->num_messages, args->opts, args->tz,
+                                              args->seq_num, args->context_id,
+                                              result);
     }
 }
 
