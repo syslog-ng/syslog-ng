@@ -524,27 +524,19 @@ cfg_dump_processed_config(GString *preprocess_output, gchar *output_filename)
     }
 }
 
-gboolean
-cfg_load_config(GlobalConfig *self, gchar *config_string, gboolean syntax_only, gchar *preprocess_into)
+static GString *
+_load_file_into_string(const gchar *fname)
 {
-  gint res;
-  CfgLexer *lexer;
-  GString *preprocess_output = g_string_sized_new(8192);
+  gchar *buff;
+  GString *content = g_string_new("");
 
-  lexer = cfg_lexer_new_buffer(self, config_string, strlen(config_string));
-  lexer->preprocess_output = preprocess_output;
+  if (g_file_get_contents(fname, &buff, NULL, NULL))
+    {
+      g_string_append(content, buff);
+      g_free(buff);
+    }
 
-  res = cfg_run_parser(self, lexer, &main_parser, (gpointer *) &self, NULL);
-  if (preprocess_into)
-    {
-      cfg_dump_processed_config(preprocess_output, preprocess_into);
-    }
-  g_string_free(preprocess_output, TRUE);
-  if (res)
-    {
-      return TRUE;
-    }
-  return FALSE;
+  return content;
 }
 
 gboolean
@@ -558,16 +550,17 @@ cfg_read_config(GlobalConfig *self, const gchar *fname, gboolean syntax_only, gc
   if ((cfg_file = fopen(fname, "r")) != NULL)
     {
       CfgLexer *lexer;
-      GString *preprocess_output = g_string_sized_new(8192);
+      self->preprocess_config = g_string_sized_new(8192);
+      self->original_config = _load_file_into_string(fname);
 
-      lexer = cfg_lexer_new(self, cfg_file, fname, preprocess_output);
+      lexer = cfg_lexer_new(self, cfg_file, fname, self->preprocess_config);
       res = cfg_run_parser(self, lexer, &main_parser, (gpointer *) &self, NULL);
       fclose(cfg_file);
       if (preprocess_into)
         {
-          cfg_dump_processed_config(preprocess_output, preprocess_into);
+          cfg_dump_processed_config(self->preprocess_config, preprocess_into);
         }
-      g_string_free(preprocess_output, TRUE);
+
       if (res)
         {
           /* successfully parsed */
@@ -610,6 +603,11 @@ cfg_free(GlobalConfig *self)
 
   if (self->state)
     persist_state_free(self->state);
+
+  if (self->preprocess_config)
+    g_string_free(self->preprocess_config, TRUE);
+  if (self->original_config)
+    g_string_free(self->original_config, TRUE);
 
   g_free(self);
 }
