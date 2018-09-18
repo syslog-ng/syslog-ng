@@ -68,6 +68,8 @@ struct _LogQueue
   void (*ack_backlog)(LogQueue *self, gint n);
   void (*rewind_backlog)(LogQueue *self, guint rewind_count);
   void (*rewind_backlog_all)(LogQueue *self);
+  void (*register_stats_counters)(LogQueue *self, gint stats_level, const StatsClusterKey *sc_key);
+  void (*unregister_stats_counters)(LogQueue *self, const StatsClusterKey *sc_key);
 
   void (*free_fn)(LogQueue *self);
 };
@@ -204,6 +206,10 @@ void log_queue_set_counters(LogQueue *self, StatsCounterItem *queued_messages, S
                             StatsCounterItem *memory_usage);
 void log_queue_init_counters(LogQueue *self);
 void log_queue_init_instance(LogQueue *self, const gchar *persist_name);
+void log_queue_register_stats_counters(LogQueue *self, gint stats_level, const StatsClusterKey *sc_key);
+void log_queue_unregister_stats_counters(LogQueue *self, const StatsClusterKey *sc_key);
+void log_queue_set_dropped_counter(LogQueue *self, StatsCounterItem *dropped_messages);
+
 void log_queue_free_method(LogQueue *self);
 
 void log_queue_set_max_threads(gint max_threads);

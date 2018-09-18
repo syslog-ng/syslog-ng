@@ -185,6 +185,60 @@ log_queue_init_counters(LogQueue *self)
   stats_counter_set(self->queued_messages, log_queue_get_length(self));
 }
 
+static void
+_reset_counters(LogQueue *self)
+{
+  stats_counter_set(self->memory_usage,
+                    self->memory_usage_qout_initial_value + self->memory_usage_overflow_initial_value);
+  stats_counter_set(self->queued_messages, log_queue_get_length(self));
+}
+
+static void
+_register_common_counters(LogQueue *self, gint stats_level, const StatsClusterKey *sc_key)
+{
+  gboolean need_to_reset_counters = TRUE;
+
+  stats_register_counter(stats_level, sc_key, SC_TYPE_QUEUED, &self->queued_messages);
+
+  if (stats_check_level(STATS_LEVEL1))
+    need_to_reset_counters = !stats_contains_counter(sc_key, SC_TYPE_MEMORY_USAGE);
+
+  stats_register_counter_and_index(STATS_LEVEL1, sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
+
+  if (need_to_reset_counters)
+    _reset_counters(self);
+}
+
+void
+log_queue_register_stats_counters(LogQueue *self, gint stats_level, const StatsClusterKey *sc_key)
+{
+  _register_common_counters(self, stats_level, sc_key);
+
+  if (self->register_stats_counters)
+    self->register_stats_counters(self, stats_level, sc_key);
+}
+
+static void
+_unregister_common_counters(LogQueue *self, const StatsClusterKey *sc_key)
+{
+  stats_unregister_counter(sc_key, SC_TYPE_QUEUED, &self->queued_messages);
+  stats_unregister_counter(sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
+}
+
+void
+log_queue_unregister_stats_counters(LogQueue *self, const StatsClusterKey *sc_key)
+{
+  _unregister_common_counters(self, sc_key);
+
+  if (self->unregister_stats_counters)
+    self->unregister_stats_counters(self, sc_key);
+}
+void
+log_queue_set_dropped_counter(LogQueue *self, StatsCounterItem *dropped_messages)
+{
+  self->dropped_messages = dropped_messages;
+}
+
 void
 log_queue_init_instance(LogQueue *self, const gchar *persist_name)
 {
