@@ -202,9 +202,6 @@ void log_queue_set_parallel_push(LogQueue *self, LogQueuePushNotifyFunc parallel
                                  GDestroyNotify user_data_destroy);
 gboolean log_queue_check_items(LogQueue *self, gint *timeout, LogQueuePushNotifyFunc parallel_push_notify,
                                gpointer user_data, GDestroyNotify user_data_destroy);
-void log_queue_set_counters(LogQueue *self, StatsCounterItem *queued_messages, StatsCounterItem *dropped_messages,
-                            StatsCounterItem *memory_usage);
-void log_queue_init_counters(LogQueue *self);
 void log_queue_init_instance(LogQueue *self, const gchar *persist_name);
 void log_queue_register_stats_counters(LogQueue *self, gint stats_level, const StatsClusterKey *sc_key);
 void log_queue_unregister_stats_counters(LogQueue *self, const StatsClusterKey *sc_key);
