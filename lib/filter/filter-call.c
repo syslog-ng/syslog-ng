@@ -68,11 +68,12 @@ filter_call_init(FilterExprNode *s, GlobalConfig *cfg)
       msg_error("Loop detected in filter rule", evt_tag_str("rule", self->rule));
       return FALSE;
     }
-  self->visited = TRUE;
 
   /* skip initialize if filter_call_init already called. */
   if (self->filter_expr)
     return TRUE;
+
+  self->visited = TRUE;
 
   rule = cfg_tree_get_object(&cfg->tree, ENC_FILTER, self->rule);
   if (rule)
