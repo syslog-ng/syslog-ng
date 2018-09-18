@@ -40,7 +40,6 @@ typedef struct
   gint port;
   riemann_client_type_t type;
   guint timeout;
-  gint flush_lines;
 
   struct
   {
@@ -172,14 +171,6 @@ riemann_dd_set_field_attributes(LogDriver *d, ValuePairs *vp)
 
   value_pairs_unref(self->fields.attributes);
   self->fields.attributes = vp;
-}
-
-void
-riemann_dd_set_flush_lines(LogDriver *d, gint lines)
-{
-  RiemannDestDriver *self = (RiemannDestDriver *)d;
-
-  self->flush_lines = lines;
 }
 
 gboolean
@@ -576,7 +567,7 @@ riemann_worker_batch_flush(LogThreadedDestDriver *s)
    */
   self->event.n = 0;
   self->event.list = (riemann_event_t **)malloc (sizeof (riemann_event_t *) *
-                                                 self->flush_lines);
+                                                 self->super.flush_lines);
   if (r != 0)
     return WORKER_INSERT_RESULT_ERROR;
   else
@@ -604,7 +595,7 @@ riemann_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
        */
     }
 
-  if (self->flush_lines && self->super.batch_size >= self->flush_lines)
+  if (self->super.flush_lines && self->super.batch_size >= self->super.flush_lines)
     {
       return riemann_worker_batch_flush(&self->super);
     }
@@ -665,7 +656,7 @@ riemann_dd_init(LogPipe *s)
   _value_pairs_always_exclude_properties(self);
 
   self->event.list = (riemann_event_t **)malloc (sizeof (riemann_event_t *) *
-                                                 self->flush_lines);
+                                                 self->super.flush_lines);
 
   msg_verbose("Initializing Riemann destination",
               evt_tag_str("server", self->server),
@@ -728,7 +719,7 @@ riemann_dd_new(GlobalConfig *cfg)
 
   self->port = -1;
   self->type = RIEMANN_CLIENT_TCP;
-  self->flush_lines = 0; /* don't inherit global value */
+  self->super.flush_lines = 0; /* don't inherit global value */
 
   log_template_options_defaults(&self->template_options);
 

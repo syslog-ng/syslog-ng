@@ -138,7 +138,7 @@ riemann_option
           }
         | KW_FLUSH_LINES '(' nonnegative_integer ')'
           {
-            riemann_dd_set_flush_lines(last_driver,  $3);
+            log_threaded_dest_driver_set_flush_lines(last_driver,  $3);
           }
         | threaded_dest_driver_option
         | KW_TLS '(' riemann_tls_options ')'
