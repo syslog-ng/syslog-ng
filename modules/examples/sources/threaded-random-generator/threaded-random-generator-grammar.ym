@@ -1,0 +1,109 @@
+/*
+ * Copyright (c) 2018 Balabit
+ * Copyright (c) 2018 László Várady <laszlo.varady@balabit.com>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#include "threaded-random-generator-parser.h"
+
+}
+
+%code {
+
+#include "threaded-random-generator.h"
+#include "logthrsource/logthrsourcedrv.h"
+#include "cfg-parser.h"
+#include "threaded-random-generator-grammar.h"
+#include "syslog-names.h"
+#include "messages.h"
+#include "plugin.h"
+#include "cfg-grammar.h"
+#include "template/templates.h"
+
+#include <string.h>
+
+}
+
+%name-prefix "threaded_random_generator_"
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_RANDOM_GENERATOR
+%token KW_FREQ
+%token KW_BYTES
+%token KW_TYPE
+
+%type <ptr> source_threaded_random_generator
+
+%%
+
+start
+  : LL_CONTEXT_SOURCE source_threaded_random_generator          { YYACCEPT; }
+  ;
+
+source_threaded_random_generator
+  : KW_RANDOM_GENERATOR
+    {
+      last_driver = *instance = threaded_random_generator_sd_new(configuration);
+      last_source_options = log_threaded_source_driver_get_source_options(last_driver);
+    }
+    '(' source_threaded_random_generator_options ')' { $$ = last_driver; }
+  ;
+
+source_threaded_random_generator_options
+  : source_threaded_random_generator_option source_threaded_random_generator_options
+  |
+  ;
+
+source_threaded_random_generator_option
+  : KW_FREQ '(' LL_FLOAT ')'
+    {
+      threaded_random_generator_sd_set_freq(last_driver, $3);
+    }
+  | KW_FREQ '(' positive_integer ')'
+    {
+      threaded_random_generator_sd_set_freq(last_driver, $3);
+    }
+  | KW_BYTES '(' positive_integer ')'
+    {
+      threaded_random_generator_sd_set_bytes(last_driver, $3);
+    }
+  | KW_TYPE '(' string ')'
+    {
+      CHECK_ERROR(threaded_random_generator_sd_set_type(last_driver, $3), @3, "unknown type() argument");
+      free($3);
+    }
+  | source_option
+  | source_driver_option
+  ;
+
+/* INCLUDE_RULES */
+
+%%
+

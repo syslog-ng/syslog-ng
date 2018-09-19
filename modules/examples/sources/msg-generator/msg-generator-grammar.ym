@@ -1,0 +1,107 @@
+/*
+ * Copyright (c) 2018 Balabit
+ * Copyright (c) 2018 László Várady <laszlo.varady@balabit.com>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#include "msg-generator-parser.h"
+
+}
+
+%code {
+
+#include "msg-generator.h"
+#include "msg-generator-source-options.h"
+#include "cfg-parser.h"
+#include "msg-generator-grammar.h"
+#include "syslog-names.h"
+#include "messages.h"
+#include "plugin.h"
+#include "cfg-grammar.h"
+#include "template/templates.h"
+
+#include <string.h>
+
+MsgGeneratorSourceOptions *last_msg_generator_source_options;
+
+}
+
+%name-prefix "msg_generator_"
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_MSG_GENERATOR
+%token KW_FREQ
+%token KW_TEMPLATE
+
+%type <ptr> source_msg_generator
+
+%%
+
+start
+  : LL_CONTEXT_SOURCE source_msg_generator          { YYACCEPT; }
+  ;
+
+source_msg_generator
+  : KW_MSG_GENERATOR
+    {
+      last_driver = *instance = msg_generator_sd_new(configuration);
+      last_msg_generator_source_options = msg_generator_sd_get_source_options(last_driver);
+      last_source_options = &last_msg_generator_source_options->super;
+    }
+    '(' source_msg_generator_options ')' { $$ = last_driver; }
+  ;
+
+source_msg_generator_options
+  : source_msg_generator_option source_msg_generator_options
+  |
+  ;
+
+source_msg_generator_option
+  : KW_FREQ '(' LL_FLOAT ')'
+    {
+      msg_generator_source_options_set_freq(last_msg_generator_source_options, $3);
+    }
+  | KW_FREQ '(' positive_integer ')'
+    {
+      msg_generator_source_options_set_freq(last_msg_generator_source_options, $3);
+    }
+  | KW_TEMPLATE '(' template_content ')'
+    {
+      msg_generator_source_options_set_template(last_msg_generator_source_options, $3);
+      log_template_unref($3);
+    }
+  | source_option
+  | source_driver_option
+  ;
+
+/* INCLUDE_RULES */
+
+%%
+

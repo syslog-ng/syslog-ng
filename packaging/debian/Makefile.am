@@ -67,6 +67,7 @@ EXTRA_DIST		+= \
 		packaging/debian/syslog-ng-mod-snmptrapd-parser.install \
 		packaging/debian/syslog-ng-mod-geoip2.install \
 		packaging/debian/syslog-ng-mod-java-http.install \
+		packaging/debian/syslog-ng-mod-examples.install \
 		packaging/debian/syslog-ng.systemd \
 		packaging/debian/copyright \
 		packaging/debian/MPL \

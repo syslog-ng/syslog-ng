@@ -1,0 +1,95 @@
+/*
+ * Copyright (c) 2018 Balabit
+ * Copyright (c) 2018 László Várady <laszlo.varady@balabit.com>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#include "threaded-diskq-source-parser.h"
+
+}
+
+%code {
+
+#include "threaded-diskq-source.h"
+#include "logthrsource/logthrsourcedrv.h"
+#include "cfg-parser.h"
+#include "threaded-diskq-source-grammar.h"
+#include "syslog-names.h"
+#include "messages.h"
+#include "plugin.h"
+#include "cfg-grammar.h"
+#include "template/templates.h"
+
+#include <string.h>
+
+}
+
+%name-prefix "threaded_diskq_source_"
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_DISKQ_SOURCE
+%token KW_FILE
+
+%type <ptr> threaded_diskq_source
+
+%%
+
+start
+  : LL_CONTEXT_SOURCE threaded_diskq_source          { YYACCEPT; }
+  ;
+
+threaded_diskq_source
+  : KW_DISKQ_SOURCE
+    {
+      last_driver = *instance = threaded_diskq_sd_new(configuration);
+      last_source_options = log_threaded_source_driver_get_source_options(last_driver);
+    }
+    '(' threaded_diskq_source_options ')' { $$ = last_driver; }
+  ;
+
+threaded_diskq_source_options
+  : threaded_diskq_source_option threaded_diskq_source_options
+  |
+  ;
+
+threaded_diskq_source_option
+  : KW_FILE '(' string ')'
+    {
+      threaded_diskq_sd_set_file(last_driver, $3);
+      free($3);
+    }
+  | source_option
+  | source_driver_option
+  ;
+
+/* INCLUDE_RULES */
+
+%%
+
