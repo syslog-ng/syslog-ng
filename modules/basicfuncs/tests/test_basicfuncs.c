@@ -417,3 +417,16 @@ Test(basicfuncs, test_tfurlencode)
   assert_template_format("$(urlencode <>)", "%3C%3E");
   assert_template_format("$(urlencode &)", "%26");
 }
+
+Test(basicfuncs, test_tfurldecode)
+{
+  assert_template_format("$(url-decode '')", "");
+  assert_template_format("$(url-decode test)", "test");
+  assert_template_format("$(url-decode %3C%3E)", "<>");
+  assert_template_format("$(url-decode %26)", "&");
+  assert_template_format("$(url-decode %26 %26)", "&&");
+
+  assert_template_format("$(url-decode %)", "");
+  assert_template_format("$(url-decode %00a)", "");
+}
+
