@@ -30,6 +30,9 @@
 # Find another package and make it a dependency of the current package.
 # This also automatically forwards the "REQUIRED" argument.
 # Usage: libfind_package(<prefix> <another package> [extra args to find_package])
+
+# Modified by https://github.com/Tronic/cmake-modules/pull/1
+
 macro (libfind_package PREFIX PKG)
   set(${PREFIX}_args ${PKG} ${ARGN})
   if (${PREFIX}_FIND_REQUIRED)
@@ -147,7 +150,7 @@ function (libfind_process PREFIX)
   set(includeopts ${${PREFIX}_PROCESS_INCLUDES})
   set(libraryopts ${${PREFIX}_PROCESS_LIBS})
 
-  # Process deps to add to 
+  # Process deps to add to
   foreach (i ${PREFIX} ${${PREFIX}_DEPENDENCIES})
     if (DEFINED ${i}_INCLUDE_OPTS OR DEFINED ${i}_LIBRARY_OPTS)
       # The package seems to export option lists that we can use, woohoo!
@@ -170,11 +173,11 @@ function (libfind_process PREFIX)
       endif()
     endif()
   endforeach()
-  
+
   if (includeopts)
     list(REMOVE_DUPLICATES includeopts)
   endif()
-  
+
   if (libraryopts)
     list(REMOVE_DUPLICATES libraryopts)
   endif()
@@ -233,13 +236,15 @@ function (libfind_process PREFIX)
         message(STATUS "  ${PREFIX}_LIBRARY_OPTS=${libraryopts}")
         message(STATUS "  ${PREFIX}_LIBRARIES=${libs}")
       endif()
-      set (${PREFIX}_INCLUDE_OPTS ${includeopts} PARENT_SCOPE)
-      set (${PREFIX}_LIBRARY_OPTS ${libraryopts} PARENT_SCOPE)
-      set (${PREFIX}_INCLUDE_DIRS ${includes} PARENT_SCOPE)
-      set (${PREFIX}_LIBRARIES ${libs} PARENT_SCOPE)
-      set (${PREFIX}_FOUND TRUE PARENT_SCOPE)
     endif()
-    return()    
+
+    set (${PREFIX}_INCLUDE_OPTS ${includeopts} PARENT_SCOPE)
+    set (${PREFIX}_LIBRARY_OPTS ${libraryopts} PARENT_SCOPE)
+    set (${PREFIX}_INCLUDE_DIRS ${includes} PARENT_SCOPE)
+    set (${PREFIX}_LIBRARIES ${libs} PARENT_SCOPE)
+    set (${PREFIX}_FOUND TRUE PARENT_SCOPE)
+
+    return()
   endif()
 
   # Format messages for debug info and the type of error

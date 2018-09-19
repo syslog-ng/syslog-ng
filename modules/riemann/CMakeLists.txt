@@ -24,12 +24,18 @@ else()
     option(ENABLE_RIEMANN "Enable riemann destination" OFF)
 endif()
 
-if (BUILD_RIEMANN)
-    add_library(riemann MODULE ${RIEMANN_SOURCES})
-    target_include_directories (riemann PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-    target_include_directories (riemann PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-    target_include_directories (riemann PRIVATE ${Riemann_INCLUDE_DIR})
-    target_link_libraries(riemann PRIVATE syslog-ng ${Riemann_LIBRARIES})
-
-    install(TARGETS riemann LIBRARY DESTINATION lib/syslog-ng/)
+if (NOT ENABLE_RIEMANN)
+  return()
 endif()
+
+if (NOT Riemann_FOUND)
+  message(FATAL_ERROR "Riemann enabled but riemann-c-client is missing!")
+endif()
+
+add_library(riemann MODULE ${RIEMANN_SOURCES})
+target_include_directories (riemann PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories (riemann PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories (riemann PRIVATE ${Riemann_INCLUDE_DIR})
+target_link_libraries(riemann PRIVATE syslog-ng ${Riemann_LIBRARIES})
+
+install(TARGETS riemann LIBRARY DESTINATION lib/syslog-ng/)
