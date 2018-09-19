@@ -24,6 +24,10 @@ else()
     option(ENABLE_RIEMANN "Enable riemann destination" OFF)
 endif()
 
+if (NOT Riemann_FOUND AND ENABLE_RIEMANN)
+  message(FATAL_ERROR "Riemann enabled but riemann-c-client is missing!")
+endif()
+
 if (ENABLE_RIEMANN)
     add_library(riemann MODULE ${RIEMANN_SOURCES})
     target_include_directories (riemann PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
