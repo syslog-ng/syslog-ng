@@ -275,17 +275,15 @@ static void
 tf_sanitize_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
 {
   TFSanitizeState *state = (TFSanitizeState *) s;
-  GString **argv;
   gint argc;
   gint i, pos;
 
-  argv = (GString **) args->bufs->pdata;
-  argc = args->bufs->len;
+  argc = state->super.argc;
   for (i = 0; i < argc; i++)
     {
-      for (pos = 0; pos < argv[i]->len; pos++)
+      for (pos = 0; pos < args->argv[i]->len; pos++)
         {
-          guchar last_char = argv[i]->str[pos];
+          guchar last_char = args->argv[i]->str[pos];
 
           if ((state->ctrl_chars && last_char < 32) ||
               (strchr(state->invalid_chars, (gchar) last_char) != NULL))
@@ -473,16 +471,15 @@ static void
 tf_string_padding_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
 {
   TFStringPaddingState *state = (TFStringPaddingState *) s;
-  GString **argv = (GString **) args->bufs->pdata;
 
-  if (argv[0]->len > state->width)
+  if (args->argv[0]->len > state->width)
     {
-      g_string_append_len(result, argv[0]->str, argv[0]->len);
+      g_string_append_len(result, args->argv[0]->str, args->argv[0]->len);
     }
   else
     {
-      g_string_append_len(result, state->padding_pattern->str, state->width - argv[0]->len);
-      g_string_append_len(result, argv[0]->str, argv[0]->len);
+      g_string_append_len(result, state->padding_pattern->str, state->width - args->argv[0]->len);
+      g_string_append_len(result, args->argv[0]->str, args->argv[0]->len);
     }
 }
 

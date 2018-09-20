@@ -29,6 +29,7 @@
 #include "parse-number.h"
 #include "str-format.h"
 #include "plugin-types.h"
+#include "scratch-buffers.h"
 
 #include <stdlib.h>
 #include <errno.h>

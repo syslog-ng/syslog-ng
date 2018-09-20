@@ -99,6 +99,19 @@ log_template_lookup_and_setup_function_call(LogTemplateCompiler *self, LogTempla
   Plugin *p;
 
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
+
+  /* the plus one denotes the function name, which'll be removed from argc
+   * during parsing */
+
+  if (argc > TEMPLATE_INVOKE_MAX_ARGS + 1)
+    {
+      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
+                  "Too many arguments (%d) to template function \"%s\", "
+                  "maximum number of arguments is %d", argc - 1, argv[0],
+                  TEMPLATE_INVOKE_MAX_ARGS);
+      goto error;
+    }
+
   p = cfg_find_plugin(self->template->cfg, LL_CONTEXT_TEMPLATE_FUNC, argv[0]);
 
   if (!p)

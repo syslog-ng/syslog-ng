@@ -108,9 +108,6 @@ tf_stardate_call(LogTemplateFunction *self, gpointer s,
                  const LogTemplateInvokeArgs *args, GString *result)
 {
   TFStardateState  *state = (TFStardateState *) s;
-  GString **argv;
-
-  argv = (GString **) args->bufs->pdata;
 
   char format[7]; // "%0.xlf\0"
   if (g_snprintf(format, sizeof(format),"%%0.%dlf", state->precision) < 0)
@@ -121,11 +118,11 @@ tf_stardate_call(LogTemplateFunction *self, gpointer s,
     }
 
   char *status;
-  time_t time_to_convert = strtol(argv[0]->str, &status, 10);
+  time_t time_to_convert = strtol(args->argv[0]->str, &status, 10);
   if (*status)
     {
       msg_error("stardate: wrong format: expected unixtime like value",
-                evt_tag_str("got:", argv[0]->str));
+                evt_tag_str("got:", args->argv[0]->str));
       return;
     }
 

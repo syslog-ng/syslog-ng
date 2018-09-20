@@ -29,18 +29,14 @@
 #include "plugin-types.h"
 #include "common-template-typedefs.h"
 
+#define TEMPLATE_INVOKE_MAX_ARGS 64
+
 /* This structure contains the arguments for template-function
  * expansion. It is defined in a struct because otherwise a large
  * number of function arguments, that are passed around, possibly
  * several times. */
 typedef struct _LogTemplateInvokeArgs
 {
-  /* scratch buffers, stores GString *, elements are managed by the
-   * function, storage/free is performed by the core. Can be used to
-   * avoid allocating GString buffers in the fast-path. */
-
-  GPtrArray *bufs;
-
   /* context in case of correllation */
   LogMessage **messages;
   gint num_messages;
@@ -50,6 +46,7 @@ typedef struct _LogTemplateInvokeArgs
   gint tz;
   gint seq_num;
   const gchar *context_id;
+  GString *argv[TEMPLATE_INVOKE_MAX_ARGS];
 } LogTemplateInvokeArgs;
 
 typedef struct _LogTemplateFunction LogTemplateFunction;
@@ -67,7 +64,7 @@ struct _LogTemplateFunction
 
   /* evaluate arguments, storing argument buffers in arg_bufs in case it
    * makes sense to reuse those buffers */
-  void (*eval)(LogTemplateFunction *self, gpointer state, const LogTemplateInvokeArgs *args);
+  void (*eval)(LogTemplateFunction *self, gpointer state, LogTemplateInvokeArgs *args);
 
   /* call the function */
   void (*call)(LogTemplateFunction *self, gpointer state, const LogTemplateInvokeArgs *args, GString *result);

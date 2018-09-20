@@ -133,27 +133,16 @@ tf_num_mod(LogMessage *msg, gint argc, GString *argv[], GString *result)
 
 TEMPLATE_FUNCTION_SIMPLE(tf_num_mod);
 
-
-static GString *
-_get_gstring_scratch_buffer(const LogTemplateInvokeArgs *args,
-                            gsize initial_capacity)
-{
-  if (args->bufs->len == 0)
-    g_ptr_array_add(args->bufs, g_string_sized_new(initial_capacity));
-
-  return (GString *) g_ptr_array_index(args->bufs, 0);
-}
-
 static gboolean
 _tf_num_parse_arg_with_message(const TFSimpleFuncState *state,
                                LogMessage *message,
                                const LogTemplateInvokeArgs *args,
                                gint64 *number)
 {
-  GString *formatted_template = _get_gstring_scratch_buffer(args, 64);
+  GString *formatted_template = scratch_buffers_alloc();
   gint on_error = args->opts->on_error;
 
-  log_template_format(state->argv[0], message, args->opts, args->tz,
+  log_template_format(state->argv_templates[0], message, args->opts, args->tz,
                       args->seq_num, args->context_id, formatted_template);
 
   if (!parse_number_with_suffix(formatted_template->str, number))

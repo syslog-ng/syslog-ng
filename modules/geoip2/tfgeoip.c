@@ -113,12 +113,11 @@ error:
 static void
 tf_geoip_maxminddb_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
 {
-  GString **argv = (GString **) args->bufs->pdata;
   TFMaxMindDBState *state = (TFMaxMindDBState *) s;
 
   int _gai_error, mmdb_error;
   MMDB_lookup_result_s mmdb_result =
-    MMDB_lookup_string(state->database, argv[0]->str, &_gai_error, &mmdb_error);
+    MMDB_lookup_string(state->database, args->argv[0]->str, &_gai_error, &mmdb_error);
 
   if (!mmdb_result.found_entry)
     {

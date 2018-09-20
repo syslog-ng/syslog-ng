@@ -73,7 +73,7 @@ tf_context_lookup_call(LogTemplateFunction *self, gpointer s, const LogTemplateI
                 g_string_append_c(result, ',');
 
               /* NOTE: not recursive, as the message context is just one message */
-              log_template_format(state->super.argv[i], msg, args->opts, args->tz, args->seq_num, args->context_id, buf);
+              log_template_format(state->super.argv_templates[i], msg, args->opts, args->tz, args->seq_num, args->context_id, buf);
               str_repr_encode_append(result, buf->str, buf->len, ",");
 
               first = FALSE;
@@ -110,7 +110,7 @@ tf_context_values_call(LogTemplateFunction *self, gpointer s, const LogTemplateI
             g_string_append_c(result, ',');
 
           /* NOTE: not recursive, as the message context is just one message */
-          log_template_format(state->argv[i], msg, args->opts, args->tz, args->seq_num, args->context_id, buf);
+          log_template_format(state->argv_templates[i], msg, args->opts, args->tz, args->seq_num, args->context_id, buf);
           str_repr_encode_append(result, buf->str, buf->len, ",");
 
           first = FALSE;

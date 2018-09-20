@@ -150,9 +150,8 @@ static void
 tf_geoip_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
 {
   TFGeoIPState *state = (TFGeoIPState *) s;
-  GString **argv = (GString **) args->bufs->pdata;
 
-  state->add_geoip_result(state, result, argv[0]->str);
+  state->add_geoip_result(state, result, args->argv[0]->str);
 
 }
 
