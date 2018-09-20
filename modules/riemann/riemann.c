@@ -567,7 +567,7 @@ riemann_worker_batch_flush(LogThreadedDestDriver *s)
    */
   self->event.n = 0;
   self->event.list = (riemann_event_t **)malloc (sizeof (riemann_event_t *) *
-                                                 self->super.flush_lines);
+                                                 MAX(1,self->super.flush_lines));
   if (r != 0)
     return WORKER_INSERT_RESULT_ERROR;
   else
@@ -656,7 +656,7 @@ riemann_dd_init(LogPipe *s)
   _value_pairs_always_exclude_properties(self);
 
   self->event.list = (riemann_event_t **)malloc (sizeof (riemann_event_t *) *
-                                                 self->super.flush_lines);
+                                                 MAX(1,self->super.flush_lines));
 
   msg_verbose("Initializing Riemann destination",
               evt_tag_str("server", self->server),
