@@ -22,6 +22,7 @@ add_unit_test(CRITERION TARGET test_timeutils)
 add_unit_test(CRITERION TARGET test_messages)
 add_unit_test(CRITERION TARGET test_atomic_gssize)
 add_unit_test(CRITERION TARGET test_window_size_counter)
+add_unit_test(CRITERION TARGET test_apphook)
 
 SET_DIRECTORY_PROPERTIES(PROPERTIES
   ADDITIONAL_MAKE_CLEAN_FILES

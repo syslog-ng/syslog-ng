@@ -17,7 +17,8 @@ lib_tests_TESTS		= \
 	lib/tests/test_userdb		\
 	lib/tests/test_str-utils \
 	lib/tests/test_atomic_gssize \
-	lib/tests/test_window_size_counter
+	lib/tests/test_window_size_counter \
+	lib/tests/test_apphook
 
 EXTRA_DIST += lib/tests/CMakeLists.txt
 
@@ -121,6 +122,11 @@ lib_tests_test_atomic_gssize_LDADD	=	\
 lib_tests_test_window_size_counter_CFLAGS	=	\
 	$(TEST_CFLAGS)
 lib_tests_test_window_size_counter_LDADD	=	\
+	$(TEST_LDADD)
+
+lib_tests_test_apphook_CFLAGS	=	\
+	$(TEST_CFLAGS)
+lib_tests_test_apphook_LDADD	=	\
 	$(TEST_LDADD)
 
 
