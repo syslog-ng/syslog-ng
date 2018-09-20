@@ -95,14 +95,23 @@ register_application_hook(gint type, ApplicationHookFunc func, gpointer user_dat
 }
 
 static void
+_update_current_state(gint type)
+{
+  if (AH_REOPEN == type)
+     return;
+
+  g_assert(current_state <= type);
+  current_state = type;
+}
+
+static void
 run_application_hook(gint type, gboolean remove_hook)
 {
   GList *l, *l_next;
 
   if (remove_hook)
     {
-      g_assert(current_state <= type);
-      current_state = type;
+      _update_current_state(type);
     }
 
   msg_debug("Running application hooks", evt_tag_int("hook", type));
