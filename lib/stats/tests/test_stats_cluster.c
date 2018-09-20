@@ -251,6 +251,45 @@ test_get_counter(void)
 }
 
 static void
+_track_counter_with_value_then_untrack(StatsCluster *sc, gint counter_type, const gchar *name, gsize init_value)
+{
+  StatsCounterItem *ctr = stats_cluster_track_counter(sc, counter_type);
+  stats_counter_set(ctr, init_value);
+  stats_cluster_untrack_counter(sc, counter_type, &ctr);
+  assert_true(stats_cluster_is_alive(sc, counter_type), "counter should exists after untracked : %s", name);
+}
+
+static void
+_assert_counter_eq(StatsCluster *sc, gint counter_type, const gchar *name, gsize expected_value)
+{
+  StatsCounterItem *ctr = stats_cluster_use_counter(sc, counter_type);
+  gsize actual_value = stats_counter_get(ctr);
+  assert_true(actual_value == expected_value, "ctr:%p;unexpected value:%s, actual: %d, expected: %d", ctr,name,
+              actual_value, expected_value);
+  stats_cluster_untrack_counter(sc, counter_type, &ctr);
+}
+
+static void
+test_autoreset(void)
+{
+  StatsClusterKey sc_key;
+  stats_cluster_logpipe_key_set(&sc_key, SCS_SOURCE | SCS_FILE, "id", "instance" );
+  StatsCluster *sc = stats_cluster_new(&sc_key);
+  guint16 autoreset_mask = (1 << SC_TYPE_MEMORY_USAGE) | (1 << SC_TYPE_QUEUED);
+  assert_true(sc->counter_group.autoreset_mask == autoreset_mask, "unexpected autoreset mask for StatsClusterLogPipe");
+
+  _track_counter_with_value_then_untrack(sc, SC_TYPE_PROCESSED, "processed", 11);
+  _track_counter_with_value_then_untrack(sc, SC_TYPE_MEMORY_USAGE, "memory_usage", 23);
+  _track_counter_with_value_then_untrack(sc, SC_TYPE_QUEUED, "queued", 333);
+
+  _assert_counter_eq(sc, SC_TYPE_PROCESSED, "processed", 11);
+  _assert_counter_eq(sc, SC_TYPE_MEMORY_USAGE, "memory_usage", 0);
+  _assert_counter_eq(sc, SC_TYPE_QUEUED, "queued", 0);
+
+  stats_cluster_free(sc);
+}
+
+static void
 test_stats_cluster(void)
 {
   STATS_CLUSTER_TESTCASE(test_stats_cluster_new_replaces_NULL_with_an_empty_string);
@@ -262,6 +301,7 @@ test_stats_cluster(void)
   STATS_CLUSTER_TESTCASE(test_stats_cluster_key_not_equal_when_custom_tags_are_different);
   STATS_CLUSTER_TESTCASE(test_stats_cluster_key_equal_when_custom_tags_are_the_same);
   STATS_CLUSTER_TESTCASE(test_get_counter);
+  STATS_CLUSTER_TESTCASE(test_autoreset);
 }
 
 int
