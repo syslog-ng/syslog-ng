@@ -223,6 +223,31 @@ stats_cluster_use_counter(StatsCluster *self, gint type)
   return &self->counter_group.counters[type];
 }
 
+
+static gboolean
+_is_autoreset_enabled_for_counter_type(StatsCluster *self, gint type)
+{
+  g_assert(type < self->counter_group.capacity);
+
+  return !!((1<<type) & self->counter_group.autoreset_mask);
+}
+
+static void
+_reset_counter_if_autoreset_enabled(StatsCluster *self, gint type, StatsCounterItem *counter, gpointer user_data)
+{
+  if (_is_autoreset_enabled_for_counter_type(self, type))
+    {
+      stats_counter_set(counter, 0);
+    }
+}
+
+
+static void
+_autoreset_counters(StatsCluster *self)
+{
+  stats_cluster_foreach_counter(self, _reset_counter_if_autoreset_enabled, NULL);
+}
+
 void
 stats_cluster_untrack_counter(StatsCluster *self, gint type, StatsCounterItem **counter)
 {
@@ -230,6 +255,10 @@ stats_cluster_untrack_counter(StatsCluster *self, gint type, StatsCounterItem **
   g_assert(self->use_count > 0);
 
   self->use_count--;
+  if (self->use_count == 0)
+    {
+      _autoreset_counters(self);
+    }
   *counter = NULL;
 }
 

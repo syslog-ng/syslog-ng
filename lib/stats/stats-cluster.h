@@ -88,12 +88,14 @@ struct _StatsCounterGroup
   StatsCounterItem *counters;
   const gchar **counter_names;
   guint16 capacity;
+  guint16 autoreset_mask;
   void (*free_fn)(StatsCounterGroup *self);
 };
 
 struct _StatsCounterGroupInit
 {
   const gchar **counter_names;
+  guint16 autoreset_mask;
   void (*init)(StatsCounterGroupInit *self, StatsCounterGroup *counter_group);
   gboolean (*equals)(const StatsCounterGroupInit *self, const StatsCounterGroupInit *other);
 };
