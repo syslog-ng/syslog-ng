@@ -239,14 +239,14 @@ test_get_counter(void)
   StatsCluster *sc = stats_cluster_new(&sc_key);
   StatsCounterItem *processed;
 
-  assert_true(stats_cluster_get_counter(sc, SC_TYPE_PROCESSED) == NULL, "get counter before tracked");
+  assert_true(stats_cluster_use_counter(sc, SC_TYPE_PROCESSED) == NULL, "get counter before tracked");
   processed = stats_cluster_track_counter(sc, SC_TYPE_PROCESSED);
-  assert_true(stats_cluster_get_counter(sc, SC_TYPE_PROCESSED) == processed, "get counter after tracked");
+  assert_true(stats_cluster_use_counter(sc, SC_TYPE_PROCESSED) == processed, "get counter after tracked");
 
   StatsCounterItem *saved_processed = processed;
   stats_cluster_untrack_counter(sc, SC_TYPE_PROCESSED, &processed);
   assert_true(processed == NULL, "untrack counter");
-  assert_true(stats_cluster_get_counter(sc, SC_TYPE_PROCESSED) == saved_processed, "get counter after untracked");
+  assert_true(stats_cluster_use_counter(sc, SC_TYPE_PROCESSED) == saved_processed, "get counter after untracked");
   stats_cluster_free(sc);
 }
 

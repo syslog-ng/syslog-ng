@@ -209,7 +209,7 @@ stats_cluster_track_counter(StatsCluster *self, gint type)
 }
 
 StatsCounterItem *
-stats_cluster_get_counter(StatsCluster *self, gint type)
+stats_cluster_use_counter(StatsCluster *self, gint type)
 {
   gint type_mask = 1 << type;
 
@@ -217,6 +217,8 @@ stats_cluster_get_counter(StatsCluster *self, gint type)
 
   if (!(self->live_mask & type_mask))
     return NULL;
+
+  self->use_count++;
 
   return &self->counter_group.counters[type];
 }
