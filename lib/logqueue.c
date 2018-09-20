@@ -178,8 +178,8 @@ _register_queued_messages_counter(LogQueue *self, gint stats_level, const StatsC
   else
     {
       stats_register_counter(stats_level, sc_key, SC_TYPE_QUEUED, &self->queued_messages);
-      stats_counter_set(self->queued_messages, log_queue_get_length(self));
     }
+  stats_counter_add(self->queued_messages, log_queue_get_length(self));
 }
 
 static void
@@ -192,9 +192,10 @@ _register_memory_usage_counter(LogQueue *self, gint stats_level, const StatsClus
   else
     {
       stats_register_counter_and_index(STATS_LEVEL1, sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
-      stats_counter_set(self->memory_usage,
-                        self->memory_usage_qout_initial_value + self->memory_usage_overflow_initial_value);
     }
+
+  stats_counter_add(self->memory_usage,
+                    self->memory_usage_qout_initial_value + self->memory_usage_overflow_initial_value);
 }
 
 static void
