@@ -265,25 +265,43 @@ stats_unregister_dynamic_counter(StatsCluster *sc, gint type, StatsCounterItem *
   stats_cluster_untrack_counter(sc, type, counter);
 }
 
-void
-save_counter_to_persistent_storage(GlobalConfig *cfg, StatsCounterItem *counter)
+static StatsCluster *
+_lookup_cluster(const StatsClusterKey *sc_key)
 {
-  if (counter)
-    {
-      g_assert(counter->name);
-      gssize *orig_value = g_new(gssize, 1);
-      *orig_value = stats_counter_get(counter);
-      cfg_persist_config_add(cfg, counter->name, orig_value, (GDestroyNotify) g_free, FALSE);
-    }
+  g_assert(stats_locked);
+
+  StatsCluster *sc = g_hash_table_lookup(stats_cluster_container.static_clusters, sc_key);
+
+  if (!sc)
+    sc = g_hash_table_lookup(stats_cluster_container.dynamic_clusters, sc_key);
+
+  return sc;
 }
 
-void
-load_counter_from_persistent_storage(GlobalConfig *cfg, StatsCounterItem *counter)
+gboolean
+stats_contains_counter(const StatsClusterKey *sc_key, gint type)
 {
-  g_assert(counter->name);
-  gssize *orig_value = cfg_persist_config_fetch(cfg, counter->name);
-  if (orig_value)
-    stats_counter_set(counter, *orig_value);
+  g_assert(stats_locked);
+
+  StatsCluster *sc = _lookup_cluster(sc_key);
+  if (!sc)
+    {
+      return FALSE;
+    }
+
+  return stats_cluster_is_alive(sc, type);
+}
+
+StatsCounterItem *
+stats_get_counter(const StatsClusterKey *sc_key, gint type)
+{
+  g_assert(stats_locked);
+  StatsCluster *sc = _lookup_cluster(sc_key);
+
+  if (!sc)
+    return NULL;
+
+  return stats_cluster_get_counter(sc, type);
 }
 
 static void

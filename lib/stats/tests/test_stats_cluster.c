@@ -232,6 +232,25 @@ test_get_component_name_translates_component_to_name_properly(void)
 }
 
 static void
+test_get_counter(void)
+{
+  StatsClusterKey sc_key;
+  stats_cluster_logpipe_key_set(&sc_key, SCS_SOURCE | SCS_FILE, "id", "instance" );
+  StatsCluster *sc = stats_cluster_new(&sc_key);
+  StatsCounterItem *processed;
+
+  assert_true(stats_cluster_get_counter(sc, SC_TYPE_PROCESSED) == NULL, "get counter before tracked");
+  processed = stats_cluster_track_counter(sc, SC_TYPE_PROCESSED);
+  assert_true(stats_cluster_get_counter(sc, SC_TYPE_PROCESSED) == processed, "get counter after tracked");
+
+  StatsCounterItem *saved_processed = processed;
+  stats_cluster_untrack_counter(sc, SC_TYPE_PROCESSED, &processed);
+  assert_true(processed == NULL, "untrack counter");
+  assert_true(stats_cluster_get_counter(sc, SC_TYPE_PROCESSED) == saved_processed, "get counter after untracked");
+  stats_cluster_free(sc);
+}
+
+static void
 test_stats_cluster(void)
 {
   STATS_CLUSTER_TESTCASE(test_stats_cluster_new_replaces_NULL_with_an_empty_string);
@@ -242,6 +261,7 @@ test_stats_cluster(void)
   STATS_CLUSTER_TESTCASE(test_stats_cluster_single);
   STATS_CLUSTER_TESTCASE(test_stats_cluster_key_not_equal_when_custom_tags_are_different);
   STATS_CLUSTER_TESTCASE(test_stats_cluster_key_equal_when_custom_tags_are_the_same);
+  STATS_CLUSTER_TESTCASE(test_get_counter);
 }
 
 int

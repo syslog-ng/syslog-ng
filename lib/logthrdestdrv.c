@@ -643,44 +643,37 @@ log_threaded_dest_driver_queue(LogPipe *s, LogMessage *msg,
 }
 
 static void
-_update_memory_usage_counter_when_fifo_is_used(LogThreadedDestDriver *self)
-{
-  if (!g_strcmp0(self->worker.queue->type, "FIFO") && self->memory_usage)
-    {
-      LogPipe *_pipe = &self->super.super.super;
-      load_counter_from_persistent_storage(log_pipe_get_config(_pipe), self->memory_usage);
-    }
-}
-
-static void
 _register_stats(LogThreadedDestDriver *self)
 {
   stats_lock();
-  StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key,self->stats_source | SCS_DESTINATION,
-                                self->super.super.id,
-                                self->format_stats_instance(self));
-  stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &self->queued_messages);
-  stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
-  stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
-  stats_register_counter_and_index(1, &sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
-  stats_register_counter(0, &sc_key, SC_TYPE_WRITTEN, &self->written_messages);
+  {
+    StatsClusterKey sc_key;
+    stats_cluster_logpipe_key_set(&sc_key,self->stats_source | SCS_DESTINATION,
+                                  self->super.super.id,
+                                  self->format_stats_instance(self));
+    stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
+    stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
+    stats_register_counter(0, &sc_key, SC_TYPE_WRITTEN, &self->written_messages);
+    log_queue_register_stats_counters(self->worker.queue, 0, &sc_key);
+  }
   stats_unlock();
+  log_queue_set_dropped_counter(self->worker.queue, self->dropped_messages);
 }
 
 static void
 _unregister_stats(LogThreadedDestDriver *self)
 {
   stats_lock();
-  StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_DESTINATION,
-                                self->super.super.id,
-                                self->format_stats_instance(self));
-  stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &self->queued_messages);
-  stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
-  stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
-  stats_unregister_counter(&sc_key, SC_TYPE_WRITTEN, &self->written_messages);
-  stats_unregister_counter(&sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
+  {
+    StatsClusterKey sc_key;
+    stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_DESTINATION,
+                                  self->super.super.id,
+                                  self->format_stats_instance(self));
+    stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
+    stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
+    stats_unregister_counter(&sc_key, SC_TYPE_WRITTEN, &self->written_messages);
+    log_queue_unregister_stats_counters(self->worker.queue, &sc_key);
+  }
   stats_unlock();
 }
 
@@ -708,10 +701,6 @@ log_threaded_dest_driver_init_method(LogPipe *s)
 
   _register_stats(self);
 
-  log_queue_set_counters(self->worker.queue, self->queued_messages,
-                         self->dropped_messages, self->memory_usage);
-  _update_memory_usage_counter_when_fifo_is_used(self);
-
   self->seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg,
                                                            _format_seqnum_persist_name(self)));
   if (!self->seq_num)
@@ -728,13 +717,11 @@ log_threaded_dest_driver_deinit_method(LogPipe *s)
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
 
 
-  log_queue_set_counters(self->worker.queue, NULL, NULL, NULL);
+  log_queue_set_dropped_counter(self->worker.queue, NULL);
 
   cfg_persist_config_add(log_pipe_get_config(s),
                          _format_seqnum_persist_name(self),
                          GINT_TO_POINTER(self->seq_num), NULL, FALSE);
-
-  save_counter_to_persistent_storage(log_pipe_get_config(s), self->memory_usage);
 
   _unregister_stats(self);
 

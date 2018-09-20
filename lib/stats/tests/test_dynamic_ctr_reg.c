@@ -76,9 +76,12 @@ Test(stats_dynamic_clusters, register_limited)
     stats_cluster_logpipe_key_set(&sc_key, SCS_HOST | SCS_SENDER, NULL, "testhost2");
     sc = stats_register_dynamic_counter(1, &sc_key, SC_TYPE_PROCESSED, &counter);
     cr_assert_not_null(sc);
+    cr_assert_eq(stats_contains_counter(&sc_key, SC_TYPE_PROCESSED), TRUE);
+    cr_assert_eq(counter, stats_get_counter(&sc_key, SC_TYPE_PROCESSED));
     stats_cluster_logpipe_key_set(&sc_key, SCS_HOST | SCS_SENDER, NULL, "testhost3");
     sc = stats_register_dynamic_counter(1, &sc_key, SC_TYPE_PROCESSED, &counter);
     cr_assert_null(sc);
+    cr_expect_not(stats_contains_counter(&sc_key, SC_TYPE_PROCESSED));
   }
   stats_unlock();
 }

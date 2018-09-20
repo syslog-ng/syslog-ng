@@ -208,6 +208,19 @@ stats_cluster_track_counter(StatsCluster *self, gint type)
   return &self->counter_group.counters[type];
 }
 
+StatsCounterItem *
+stats_cluster_get_counter(StatsCluster *self, gint type)
+{
+  gint type_mask = 1 << type;
+
+  g_assert(type < self->counter_group.capacity);
+
+  if (!(self->live_mask & type_mask))
+    return NULL;
+
+  return &self->counter_group.counters[type];
+}
+
 void
 stats_cluster_untrack_counter(StatsCluster *self, gint type, StatsCounterItem **counter)
 {
@@ -244,7 +257,7 @@ stats_cluster_is_alive(StatsCluster *self, gint type)
 {
   g_assert(type < self->counter_group.capacity);
 
-  return ((1<<type) & self->live_mask);
+  return ((1<<type) & self->live_mask) == (1 << type);
 }
 
 gboolean
@@ -252,7 +265,7 @@ stats_cluster_is_indexed(StatsCluster *self, gint type)
 {
   g_assert(type < self->counter_group.capacity);
 
-  return ((1<<type) & self->indexed_mask);
+  return ((1<<type) & self->indexed_mask) == (1 << type);
 }
 
 StatsCluster *

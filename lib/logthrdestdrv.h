@@ -71,10 +71,8 @@ struct _LogThreadedDestDriver
   GMutex *lock;
 
   StatsCounterItem *dropped_messages;
-  StatsCounterItem *queued_messages;
   StatsCounterItem *processed_messages;
   StatsCounterItem *written_messages;
-  StatsCounterItem *memory_usage;
 
   gint flush_lines;
   struct timespec last_flush_time;
