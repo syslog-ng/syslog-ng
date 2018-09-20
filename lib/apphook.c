@@ -98,21 +98,18 @@ static void
 _update_current_state(gint type)
 {
   if (AH_REOPEN == type)
-     return;
+    return;
 
   g_assert(current_state <= type);
   current_state = type;
 }
 
 static void
-run_application_hook(gint type, gboolean remove_hook)
+run_application_hook(gint type)
 {
   GList *l, *l_next;
 
-  if (remove_hook)
-    {
-      _update_current_state(type);
-    }
+  _update_current_state(type);
 
   msg_debug("Running application hooks", evt_tag_int("hook", type));
   for (l = application_hooks; l; l = l_next)
@@ -123,12 +120,9 @@ run_application_hook(gint type, gboolean remove_hook)
         {
           l_next = l->next;
           e->func(type, e->user_data);
-          if (remove_hook)
-            {
-              application_hooks = g_list_remove_link(application_hooks, l);
-              g_free(e);
-              g_list_free_1(l);
-            }
+          application_hooks = g_list_remove_link(application_hooks, l);
+          g_free(e);
+          g_list_free_1(l);
         }
       else
         {
@@ -190,7 +184,7 @@ app_finish_app_startup_after_cfg_init(void)
 void
 app_post_daemonized(void)
 {
-  run_application_hook(AH_POST_DAEMONIZED, TRUE);
+  run_application_hook(AH_POST_DAEMONIZED);
 }
 
 void
@@ -202,20 +196,20 @@ app_pre_config_loaded(void)
 void
 app_post_config_loaded(void)
 {
-  run_application_hook(AH_POST_CONFIG_LOADED, TRUE);
+  run_application_hook(AH_POST_CONFIG_LOADED);
   res_init();
 }
 
 void
 app_pre_shutdown(void)
 {
-  run_application_hook(AH_PRE_SHUTDOWN, TRUE);
+  run_application_hook(AH_PRE_SHUTDOWN);
 }
 
 void
 app_shutdown(void)
 {
-  run_application_hook(AH_SHUTDOWN, TRUE);
+  run_application_hook(AH_SHUTDOWN);
   main_loop_thread_resource_deinit();
   secret_storage_deinit();
   scratch_buffers_allocator_deinit();
@@ -254,7 +248,7 @@ app_shutdown(void)
 void
 app_reopen(void)
 {
-  run_application_hook(AH_REOPEN, FALSE);
+  run_application_hook(AH_REOPEN);
 }
 
 void
