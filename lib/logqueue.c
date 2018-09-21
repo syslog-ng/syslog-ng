@@ -28,6 +28,18 @@
 
 gint log_queue_max_threads = 0;
 
+void
+log_queue_memory_usage_add(LogQueue *self, gsize value)
+{
+  stats_counter_add(self->memory_usage, value);
+}
+
+void
+log_queue_memory_usage_sub(LogQueue *self, gsize value)
+{
+  stats_counter_sub(self->memory_usage, value);
+}
+
 /*
  * When this is called, it is assumed that the output thread is currently
  * not running (since this is the function that wakes it up), thus we can

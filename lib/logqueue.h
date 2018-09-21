@@ -196,6 +196,9 @@ log_queue_set_use_backlog(LogQueue *self, gboolean use_backlog)
     self->use_backlog = use_backlog;
 }
 
+void log_queue_memory_usage_add(LogQueue *self, gsize value);
+void log_queue_memory_usage_sub(LogQueue *self, gsize value);
+
 void log_queue_push_notify(LogQueue *self);
 void log_queue_reset_parallel_push(LogQueue *self);
 void log_queue_set_parallel_push(LogQueue *self, LogQueuePushNotifyFunc parallel_push_notify, gpointer user_data,
