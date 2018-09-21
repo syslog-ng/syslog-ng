@@ -538,7 +538,7 @@ riemann_worker_insert_one(RiemannDestDriver *self, LogMessage *msg)
 }
 
 static worker_insert_result_t
-riemann_worker_batch_flush(LogThreadedDestDriver *s)
+riemann_worker_flush(LogThreadedDestDriver *s)
 {
   RiemannDestDriver *self = (RiemannDestDriver *) s;
   riemann_message_t *message;
@@ -575,7 +575,27 @@ riemann_worker_batch_flush(LogThreadedDestDriver *s)
 }
 
 static worker_insert_result_t
-riemann_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
+_insert_single(LogThreadedDestDriver *s, LogMessage *msg)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)s;
+
+  if (!riemann_worker_insert_one(self, msg))
+    {
+      msg_error("riemann: error inserting message to batch, probably a type mismatch. Dropping message",
+                evt_tag_str("server", self->server),
+                evt_tag_int("port", self->port),
+                evt_tag_str("message", log_msg_get_value(msg, LM_V_MESSAGE, NULL)),
+                log_pipe_location_tag(&self->super.super.super.super),
+                evt_tag_str("driver", self->super.super.super.id));
+
+      return WORKER_INSERT_RESULT_DROP;
+    }
+
+  return riemann_worker_flush(&self->super);
+}
+
+static worker_insert_result_t
+_insert_batch(LogThreadedDestDriver *s, LogMessage *msg)
 {
   RiemannDestDriver *self = (RiemannDestDriver *)s;
 
@@ -595,11 +615,20 @@ riemann_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
        */
     }
 
-  if (self->super.flush_lines && self->super.batch_size >= self->super.flush_lines)
+  if (self->super.flush_lines > 1 && self->super.batch_size >= self->super.flush_lines)
     {
-      return riemann_worker_batch_flush(&self->super);
+      return log_threaded_dest_worker_flush(&self->super);
     }
   return WORKER_INSERT_RESULT_QUEUED;
+}
+
+static worker_insert_result_t
+riemann_worker_insert(LogThreadedDestDriver *self, LogMessage *msg)
+{
+  if (self->flush_lines <= 1)
+    return _insert_single(self, msg);
+  else
+    return _insert_batch(self, msg);
 }
 
 static void
@@ -712,7 +741,7 @@ riemann_dd_new(GlobalConfig *cfg)
   self->super.worker.connect = riemann_dd_connect;
   self->super.worker.disconnect = riemann_dd_disconnect;
   self->super.worker.insert = riemann_worker_insert;
-  self->super.worker.flush = riemann_worker_batch_flush;
+  self->super.worker.flush = riemann_worker_flush;
 
   self->super.format_stats_instance = riemann_dd_format_stats_instance;
   self->super.stats_source = SCS_RIEMANN;
