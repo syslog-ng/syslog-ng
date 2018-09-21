@@ -137,25 +137,45 @@ tf_json_obj_end(const gchar *name,
   return FALSE;
 }
 
-static gboolean
-tf_json_append_value(const gchar *name, const gchar *value, gsize value_len,
-                     json_state_t *state, gboolean quoted)
+static void
+tf_json_append_key(const gchar *name, json_state_t *state)
 {
   if (state->need_comma)
     g_string_append_c(state->buffer, ',');
 
   g_string_append_c(state->buffer, '"');
   tf_json_append_escaped(state->buffer, name, -1);
+  g_string_append_c(state->buffer, '"');
+
+}
+
+static gboolean
+tf_json_append_value(const gchar *name, const gchar *value, gsize value_len,
+                     json_state_t *state, gboolean quoted)
+{
+  tf_json_append_key(name, state);
 
   if (quoted)
-    g_string_append(state->buffer, "\":\"");
+    g_string_append(state->buffer, ":\"");
   else
-    g_string_append(state->buffer, "\":");
+    g_string_append_c(state->buffer, ':');
 
   tf_json_append_escaped(state->buffer, value, value_len);
 
   if (quoted)
     g_string_append_c(state->buffer, '"');
+
+  return TRUE;
+}
+
+static gboolean
+tf_json_append_literal(const gchar *name, const gchar *value, gsize value_len,
+                       json_state_t *state)
+{
+  tf_json_append_key(name, state);
+
+  g_string_append_c(state->buffer, ':');
+  g_string_append_len(state->buffer, value, value_len);
 
   return TRUE;
 }
@@ -176,7 +196,7 @@ tf_json_value(const gchar *name, const gchar *prefix,
       tf_json_append_value(name, value, value_len, state, TRUE);
       break;
     case TYPE_HINT_LITERAL:
-      tf_json_append_value(name, value, value_len, state, FALSE);
+      tf_json_append_literal(name, value, value_len, state);
       break;
     case TYPE_HINT_INT32:
     case TYPE_HINT_INT64:
