@@ -24,7 +24,7 @@
 #ifndef AFSQL_H_INCLUDED
 #define AFSQL_H_INCLUDED
 
-#include "driver.h"
+#include "logthrdestdrv.h"
 #include "mainloop-worker.h"
 #include "string-list.h"
 
@@ -69,7 +69,7 @@ typedef struct _AFSqlField
  **/
 typedef struct _AFSqlDestDriver
 {
-  LogDestDriver super;
+  LogThreadedDestDriver super;
   /* read by the db thread */
   gchar *type;
   gchar *host;
