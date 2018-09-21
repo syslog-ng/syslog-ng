@@ -32,36 +32,42 @@ void
 log_queue_memory_usage_add(LogQueue *self, gsize value)
 {
   stats_counter_add(self->memory_usage, value);
+  self->stats_cache.memory_usage += value;
 }
 
 void
 log_queue_memory_usage_sub(LogQueue *self, gsize value)
 {
   stats_counter_sub(self->memory_usage, value);
+  self->stats_cache.memory_usage -= value;
 }
 
 void
 log_queue_queued_messages_add(LogQueue *self, gsize value)
 {
   stats_counter_add(self->queued_messages, value);
+  self->stats_cache.queued_messages += value;
 }
 
 void
 log_queue_queued_messages_sub(LogQueue *self, gsize value)
 {
   stats_counter_sub(self->queued_messages, value);
+  self->stats_cache.queued_messages -= value;
 }
 
 void
 log_queue_queued_messages_inc(LogQueue *self)
 {
   stats_counter_inc(self->queued_messages);
+  self->stats_cache.queued_messages++;
 }
 
 void
 log_queue_queued_messages_dec(LogQueue *self)
 {
   stats_counter_dec(self->queued_messages);
+  self->stats_cache.queued_messages--;
 }
 
 /*

@@ -53,6 +53,12 @@ struct _LogQueue
   gssize memory_usage_qout_initial_value;
   gssize memory_usage_overflow_initial_value;
 
+  struct
+  {
+    gsize memory_usage;
+    gsize queued_messages;
+  } stats_cache;
+
   GStaticMutex lock;
   LogQueuePushNotifyFunc parallel_push_notify;
   gpointer parallel_push_data;
