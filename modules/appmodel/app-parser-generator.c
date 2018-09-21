@@ -74,8 +74,13 @@ _generate_parser(AppParserGenerator *self, const gchar *parser_expr)
 static void
 _generate_action(AppParserGenerator *self, Application *app)
 {
-  g_string_append_printf(self->block, "    rewrite { set-tag('.app.%s'); };\n", app->name);
-  g_string_append(self->block, "    flags(final);\n");
+  g_string_append_printf(self->block,
+                         "    rewrite {\n"
+                         "       set-tag('.app.%s');\n"
+                         "       set('%s' value('.app.name'));\n"
+                         "    };\n"
+                         "    flags(final);\n",
+                         app->name, app->name);
 }
 
 static gboolean
