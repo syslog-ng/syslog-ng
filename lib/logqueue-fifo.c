@@ -112,7 +112,7 @@ iv_list_update_msg_size(LogQueueFifo *self, struct iv_list_head *head)
   iv_list_for_each_safe(ilh, ilh2, head)
   {
     msg = iv_list_entry(ilh, LogMessageQueueNode, list)->msg;
-    stats_counter_add(self->super.memory_usage, log_msg_get_size(msg));
+    log_queue_memory_usage_add(&self->super, log_msg_get_size(msg));
   }
 }
 
@@ -312,7 +312,7 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
       self->qoverflow_wait_len++;
       log_queue_push_notify(&self->super);
       stats_counter_inc(self->super.queued_messages);
-      stats_counter_add(self->super.memory_usage, log_msg_get_size(msg));
+      log_queue_memory_usage_add(&self->super, log_msg_get_size(msg));
       g_static_mutex_unlock(&self->super.lock);
 
       log_msg_unref(msg);
@@ -358,7 +358,7 @@ log_queue_fifo_push_head(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
   log_msg_unref(msg);
 
   stats_counter_inc(self->super.queued_messages);
-  stats_counter_add(self->super.memory_usage, log_msg_get_size(msg));
+  log_queue_memory_usage_add(&self->super, log_msg_get_size(msg));
 }
 
 /*
@@ -413,7 +413,7 @@ log_queue_fifo_pop_head(LogQueue *s, LogPathOptions *path_options)
       return NULL;
     }
   stats_counter_dec(self->super.queued_messages);
-  stats_counter_sub(self->super.memory_usage, log_msg_get_size(msg));
+  log_queue_memory_usage_sub(&self->super, log_msg_get_size(msg));
 
   if (self->super.use_backlog)
     {
@@ -498,7 +498,7 @@ log_queue_fifo_rewind_backlog(LogQueue *s, guint rewind_count)
       self->qbacklog_len--;
       self->qoverflow_output_len++;
       stats_counter_inc(self->super.queued_messages);
-      stats_counter_add(self->super.memory_usage, log_msg_get_size(node->msg));
+      log_queue_memory_usage_add(&self->super, log_msg_get_size(node->msg));
     }
 }
 
