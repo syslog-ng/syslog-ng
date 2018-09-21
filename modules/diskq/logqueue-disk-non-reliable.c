@@ -244,7 +244,7 @@ _rewind_backlog (LogQueueDisk *s, guint rewind_count)
       g_queue_push_head (self->qout, ptr_opt);
       g_queue_push_head (self->qout, ptr_msg);
 
-      stats_counter_inc (self->super.super.queued_messages);
+      log_queue_queued_messages_inc(&self->super.super);
       log_queue_memory_usage_add(&self->super.super, log_msg_get_size((LogMessage *)ptr_msg));
     }
 }
@@ -300,7 +300,7 @@ _push_head (LogQueueDisk *s, LogMessage *msg, const LogPathOptions *path_options
   g_static_mutex_lock(&self->super.super.lock);
   g_queue_push_head (self->qout, LOG_PATH_OPTIONS_TO_POINTER (path_options));
   g_queue_push_head (self->qout, msg);
-  stats_counter_inc (self->super.super.queued_messages);
+  log_queue_queued_messages_inc(&self->super.super);
   log_queue_memory_usage_add(&self->super.super, log_msg_get_size(msg));
   g_static_mutex_unlock(&self->super.super.lock);
 }

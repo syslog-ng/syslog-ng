@@ -188,7 +188,7 @@ _rewind_backlog(LogQueueDisk *s, guint rewind_count)
   qdisk_set_reader_head (self->super.qdisk, new_read_head);
   qdisk_set_length (self->super.qdisk, qdisk_get_length (self->super.qdisk) + rewind_count);
 
-  stats_counter_add (self->super.super.queued_messages, rewind_count);
+  log_queue_queued_messages_add(&self->super.super, rewind_count);
 }
 
 static LogMessage *
