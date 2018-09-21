@@ -24,7 +24,7 @@ static gboolean
 tf_getent_protocols(gchar *key, gchar *member_name, GString *result)
 {
   struct protoent proto, *res;
-  glong d;
+  gint64 d;
   gboolean is_num;
   char buf[4096];
 
