@@ -332,13 +332,14 @@ extern struct _StatsOptions *last_stats_options;
 %token KW_KEY                         10504
 %token KW_SCOPE                       10505
 %token KW_SHIFT                       10506
-%token KW_REKEY                       10507
-%token KW_ADD_PREFIX                  10508
-%token KW_REPLACE_PREFIX              10509
+%token KW_SHIFT_LEVELS                10507
+%token KW_REKEY                       10508
+%token KW_ADD_PREFIX                  10509
+%token KW_REPLACE_PREFIX              10510
 
-%token KW_ON_ERROR                    10510
+%token KW_ON_ERROR                    10511
 
-%token KW_RETRIES                     10511
+%token KW_RETRIES                     10512
 
 /* END_DECLS */
 
@@ -1393,7 +1394,8 @@ vp_rekey_options
 	;
 
 vp_rekey_option
-	: KW_SHIFT '(' LL_NUMBER ')' { value_pairs_transform_set_add_func(last_vp_transset, value_pairs_new_transform_shift($3)); }
+	: KW_SHIFT '(' positive_integer ')' { value_pairs_transform_set_add_func(last_vp_transset, value_pairs_new_transform_shift($3)); }
+	| KW_SHIFT_LEVELS '(' positive_integer ')' { value_pairs_transform_set_add_func(last_vp_transset, value_pairs_new_transform_shift_levels($3)); }
 	| KW_ADD_PREFIX '(' string ')' { value_pairs_transform_set_add_func(last_vp_transset, value_pairs_new_transform_add_prefix($3)); free($3); }
 	| KW_REPLACE_PREFIX '(' string string ')' { value_pairs_transform_set_add_func(last_vp_transset, value_pairs_new_transform_replace_prefix($3, $4)); free($3); free($4); }
 	;

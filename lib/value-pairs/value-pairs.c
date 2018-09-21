@@ -822,8 +822,17 @@ value_pairs_add_scope(ValuePairs *vp, const gchar *scope)
 {
   gboolean result;
 
-  result = cfg_process_flag(value_pair_scope, vp, scope);
-  vp_update_builtin_list_of_values(vp);
+  if (strcmp(scope, "none") != 0)
+    {
+      result = cfg_process_flag(value_pair_scope, vp, scope);
+      vp_update_builtin_list_of_values(vp);
+    }
+  else
+    {
+      result = TRUE;
+      vp->scopes = 0;
+      vp_update_builtin_list_of_values(vp);
+    }
   return result;
 }
 

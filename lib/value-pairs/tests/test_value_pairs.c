@@ -92,7 +92,7 @@ create_template(const gchar *type_hint_string, const gchar *template_string)
 
 
 void
-testcase(const gchar *scope, const gchar *exclude, const gchar *expected, GPtrArray *transformers)
+testcase(const gchar *scope, const gchar *exclude, const gchar *expected)
 {
   ValuePairs *vp;
   GList *vp_keys_list = NULL;
@@ -112,10 +112,41 @@ testcase(const gchar *scope, const gchar *exclude, const gchar *expected, GPtrAr
   value_pairs_add_pair(vp, "test.key", template);
   log_template_unref(template);
 
+  args[0] = &vp_keys_list;
+  args[1] = &test_key_found;
+  value_pairs_foreach(vp, vp_keys_foreach, msg, 11, LTZ_LOCAL, &template_options, args);
+  g_list_foreach(vp_keys_list, (GFunc) cat_keys_foreach, vp_keys);
+
+  cr_expect_str_eq(vp_keys->str, expected, "Scope keys mismatch, scope=[%s], exclude=[%s], value=[%s], expected=[%s]",
+                   scope, exclude ? exclude : "(none)", vp_keys->str, expected);
+  cr_expect(test_key_found, "test.key is not found in the result set");
+
+  g_list_foreach(vp_keys_list, (GFunc) g_free, NULL);
+  g_list_free(vp_keys_list);
+  g_string_free(vp_keys, TRUE);
+  log_msg_unref(msg);
+  value_pairs_unref(vp);
+}
+
+void
+transformers_testcase(const gchar *scope, const gchar *transformed_keys, const gchar *expected, GPtrArray *transformers)
+{
+  ValuePairs *vp;
+  GList *vp_keys_list = NULL;
+  GString *vp_keys;
+  LogMessage *msg = create_message();
+  gpointer args[2];
+  gboolean test_key_found = FALSE;
+
+  vp_keys = g_string_sized_new(0);
+
+  vp = value_pairs_new();
+  value_pairs_add_scope(vp, scope);
+
   if (transformers)
     {
       gint i;
-      ValuePairsTransformSet *vpts = value_pairs_transform_set_new("*");
+      ValuePairsTransformSet *vpts = value_pairs_transform_set_new(transformed_keys ? : "*");
 
       for (i = 0; i < transformers->len; i++)
              value_pairs_transform_set_add_func(vpts, g_ptr_array_index(transformers, i));
@@ -127,9 +158,8 @@ testcase(const gchar *scope, const gchar *exclude, const gchar *expected, GPtrAr
   value_pairs_foreach(vp, vp_keys_foreach, msg, 11, LTZ_LOCAL, &template_options, args);
   g_list_foreach(vp_keys_list, (GFunc) cat_keys_foreach, vp_keys);
 
-  cr_expect_str_eq(vp_keys->str, expected, "Scope keys mismatch, scope=[%s], exclude=[%s], value=[%s], expected=[%s]",
-                   scope, exclude ? exclude : "(none)", vp_keys->str, expected);
-  cr_expect(test_key_found, "test.key is not found in the result set");
+  cr_expect_str_eq(vp_keys->str, expected, "Scope keys mismatch, scope=[%s], keys=[%s], value=[%s], expected=[%s]",
+                   scope, transformed_keys ? : "*", vp_keys->str, expected);
 
   g_list_foreach(vp_keys_list, (GFunc) g_free, NULL);
   g_list_free(vp_keys_list);
@@ -188,7 +218,7 @@ ParameterizedTestParameters(value_pairs, test)
 
 ParameterizedTest(struct value_pairs_params *param, value_pairs, test)
 {
-  testcase(param->scope, param->exclude, param->expected, NULL);
+  testcase(param->scope, param->exclude, param->expected);
 }
 
 Test(value_pairs, test_transformers)
@@ -199,9 +229,50 @@ Test(value_pairs, test_transformers)
   g_ptr_array_add(transformers, value_pairs_new_transform_shift(2));
   g_ptr_array_add(transformers, value_pairs_new_transform_replace_prefix("C_", "CC_"));
 
-  testcase("everything", NULL,
-           ".SDATA.EventData@18372.4.Data,.SDATA.Keywords@18372.4.Keyword,.SDATA.meta.sequenceId,.SDATA.meta.sysUpTime,.SDATA.origin.ip,AMPM,BSDTAG,CC_AMPM,CC_DATE,CC_DAY,CC_FULLDATE,CC_HOUR,CC_HOUR12,CC_ISODATE,CC_MIN,CC_MONTH,CC_MONTH_ABBREV,CC_MONTH_NAME,CC_MONTH_WEEK,CC_MSEC,CC_SEC,CC_STAMP,CC_TZ,CC_TZOFFSET,CC_UNIXTIME,CC_USEC,CC_WEEK,CC_WEEKDAY,CC_WEEK_DAY,CC_WEEK_DAY_ABBREV,CC_WEEK_DAY_NAME,CC_YEAR,CC_YEAR_DAY,DATE,DAY,FACILITY,FACILITY_NUM,FULLDATE,HOST,HOSTID,HOUR,HOUR12,ISODATE,LEVEL,LEVEL_NUM,LOGHOST,MESSAGE,MIN,MONTH,MONTH_ABBREV,MONTH_NAME,MONTH_WEEK,MSEC,MSG,MSGHDR,MSGID,PID,PRI,PRIORITY,PROGRAM,P_AMPM,P_DATE,P_DAY,P_FULLDATE,P_HOUR,P_HOUR12,P_ISODATE,P_MIN,P_MONTH,P_MONTH_ABBREV,P_MONTH_NAME,P_MONTH_WEEK,P_MSEC,P_SEC,P_STAMP,P_TZ,P_TZOFFSET,P_UNIXTIME,P_USEC,P_WEEK,P_WEEKDAY,P_WEEK_DAY,P_WEEK_DAY_ABBREV,P_WEEK_DAY_NAME,P_YEAR,P_YEAR_DAY,R_AMPM,R_DATE,R_DAY,R_FULLDATE,R_HOUR,R_HOUR12,R_ISODATE,R_MIN,R_MONTH,R_MONTH_ABBREV,R_MONTH_NAME,R_MONTH_WEEK,R_MSEC,R_SEC,R_STAMP,R_TZ,R_TZOFFSET,R_UNIXTIME,R_USEC,R_WEEK,R_WEEKDAY,R_WEEK_DAY,R_WEEK_DAY_ABBREV,R_WEEK_DAY_NAME,R_YEAR,R_YEAR_DAY,SDATA,SEC,SEQNUM,SOURCEIP,STAMP,SYSUPTIME,S_AMPM,S_DATE,S_DAY,S_FULLDATE,S_HOUR,S_HOUR12,S_ISODATE,S_MIN,S_MONTH,S_MONTH_ABBREV,S_MONTH_NAME,S_MONTH_WEEK,S_MSEC,S_SEC,S_STAMP,S_TZ,S_TZOFFSET,S_UNIXTIME,S_USEC,S_WEEK,S_WEEKDAY,S_WEEK_DAY,S_WEEK_DAY_ABBREV,S_WEEK_DAY_NAME,S_YEAR,S_YEAR_DAY,TAG,TAGS,TZ,TZOFFSET,UNIXTIME,USEC,WEEK,WEEKDAY,WEEK_DAY,WEEK_DAY_ABBREV,WEEK_DAY_NAME,YEAR,YEAR_DAY",
-           transformers);
+  transformers_testcase("everything", NULL,
+                        ".SDATA.EventData@18372.4.Data,.SDATA.Keywords@18372.4.Keyword,"
+                        ".SDATA.meta.sequenceId,.SDATA.meta.sysUpTime,.SDATA.origin.ip,"
+                        "AMPM,BSDTAG,CC_AMPM,CC_DATE,CC_DAY,CC_FULLDATE,CC_HOUR,CC_HOUR12,"
+                        "CC_ISODATE,CC_MIN,CC_MONTH,CC_MONTH_ABBREV,CC_MONTH_NAME,"
+                        "CC_MONTH_WEEK,CC_MSEC,CC_SEC,CC_STAMP,CC_TZ,CC_TZOFFSET,"
+                        "CC_UNIXTIME,CC_USEC,CC_WEEK,CC_WEEKDAY,CC_WEEK_DAY,"
+                        "CC_WEEK_DAY_ABBREV,CC_WEEK_DAY_NAME,CC_YEAR,CC_YEAR_DAY,"
+                        "DATE,DAY,FACILITY,FACILITY_NUM,FULLDATE,HOST,HOSTID,HOUR,"
+                        "HOUR12,ISODATE,LEVEL,LEVEL_NUM,LOGHOST,MESSAGE,MIN,MONTH,"
+                        "MONTH_ABBREV,MONTH_NAME,MONTH_WEEK,MSEC,MSG,MSGHDR,MSGID,"
+                        "PID,PRI,PRIORITY,PROGRAM,P_AMPM,P_DATE,P_DAY,P_FULLDATE,"
+                        "P_HOUR,P_HOUR12,P_ISODATE,P_MIN,P_MONTH,P_MONTH_ABBREV,"
+                        "P_MONTH_NAME,P_MONTH_WEEK,P_MSEC,P_SEC,P_STAMP,P_TZ,P_TZOFFSET,"
+                        "P_UNIXTIME,P_USEC,P_WEEK,P_WEEKDAY,P_WEEK_DAY,P_WEEK_DAY_ABBREV,"
+                        "P_WEEK_DAY_NAME,P_YEAR,P_YEAR_DAY,R_AMPM,R_DATE,R_DAY,R_FULLDATE,"
+                        "R_HOUR,R_HOUR12,R_ISODATE,R_MIN,R_MONTH,R_MONTH_ABBREV,R_MONTH_NAME,"
+                        "R_MONTH_WEEK,R_MSEC,R_SEC,R_STAMP,R_TZ,R_TZOFFSET,R_UNIXTIME,R_USEC,"
+                        "R_WEEK,R_WEEKDAY,R_WEEK_DAY,R_WEEK_DAY_ABBREV,R_WEEK_DAY_NAME,R_YEAR,"
+                        "R_YEAR_DAY,SDATA,SEC,SEQNUM,SOURCEIP,STAMP,SYSUPTIME,S_AMPM,S_DATE,"
+                        "S_DAY,S_FULLDATE,S_HOUR,S_HOUR12,S_ISODATE,S_MIN,S_MONTH,S_MONTH_ABBREV,"
+                        "S_MONTH_NAME,S_MONTH_WEEK,S_MSEC,S_SEC,S_STAMP,S_TZ,S_TZOFFSET,S_UNIXTIME,"
+                        "S_USEC,S_WEEK,S_WEEKDAY,S_WEEK_DAY,S_WEEK_DAY_ABBREV,S_WEEK_DAY_NAME,"
+                        "S_YEAR,S_YEAR_DAY,TAG,TAGS,TZ,TZOFFSET,UNIXTIME,USEC,WEEK,WEEKDAY,"
+                        "WEEK_DAY,WEEK_DAY_ABBREV,WEEK_DAY_NAME,YEAR,YEAR_DAY",
+                        transformers);
+  g_ptr_array_free(transformers, TRUE);
+}
+
+Test(value_pairs, test_transformer_shift_levels)
+{
+  /* test the value-pair transformators */
+  GPtrArray *transformers = g_ptr_array_new();
+  /* remove . from before .SDATA prefix */
+  g_ptr_array_add(transformers, value_pairs_new_transform_shift_levels(1));
+
+  /* add a new prefix, would become .foo.bar.baz.SDATA */
+  g_ptr_array_add(transformers, value_pairs_new_transform_add_prefix(".foo.bar.baz."));
+  /* remove just added prefix, should start with SDATA without leading dot */
+  g_ptr_array_add(transformers, value_pairs_new_transform_shift_levels(4));
+
+  transformers_testcase("sdata", ".SDATA.meta.*",
+                        ".SDATA.EventData@18372.4.Data,.SDATA.Keywords@18372.4.Keyword,.SDATA.origin.ip,SDATA.meta.sequenceId,SDATA.meta.sysUpTime",
+                        transformers);
   g_ptr_array_free(transformers, TRUE);
 }
 
