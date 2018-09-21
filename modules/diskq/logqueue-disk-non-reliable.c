@@ -104,7 +104,7 @@ _get_next_message(LogQueueDiskNonReliable *self, LogPathOptions *path_options)
       result = self->super.read_message(&self->super, path_options);
       if(result)
         {
-          stats_counter_add(self->super.super.memory_usage, log_msg_get_size(result));
+          log_queue_memory_usage_add(&self->super.super, log_msg_get_size(result));
           path_options->ack_needed = FALSE;
         }
     }
@@ -164,7 +164,7 @@ _move_messages_from_overflow(LogQueueDiskNonReliable *self)
         {
           if (self->super.write_message(&self->super, msg))
             {
-              stats_counter_sub(self->super.super.memory_usage, log_msg_get_size(msg));
+              log_queue_memory_usage_sub(&self->super.super, log_msg_get_size(msg));
             }
           else
             {
@@ -245,8 +245,7 @@ _rewind_backlog (LogQueueDisk *s, guint rewind_count)
       g_queue_push_head (self->qout, ptr_msg);
 
       stats_counter_inc (self->super.super.queued_messages);
-      stats_counter_add(self->super.super.memory_usage, log_msg_get_size((LogMessage *)ptr_msg));
-
+      log_queue_memory_usage_add(&self->super.super, log_msg_get_size((LogMessage *)ptr_msg));
     }
 }
 
@@ -260,7 +259,7 @@ _pop_head (LogQueueDisk *s, LogPathOptions *path_options)
     {
       msg = g_queue_pop_head (self->qout);
       POINTER_TO_LOG_PATH_OPTIONS (g_queue_pop_head (self->qout), path_options);
-      stats_counter_sub(self->super.super.memory_usage, log_msg_get_size(msg));
+      log_queue_memory_usage_sub(&self->super.super, log_msg_get_size(msg));
     }
   if (msg == NULL)
     {
@@ -276,7 +275,7 @@ _pop_head (LogQueueDisk *s, LogPathOptions *path_options)
         {
           msg = g_queue_pop_head (self->qoverflow);
           POINTER_TO_LOG_PATH_OPTIONS (g_queue_pop_head (self->qoverflow), path_options);
-          stats_counter_sub(self->super.super.memory_usage, log_msg_get_size(msg));
+          log_queue_memory_usage_sub(&self->super.super, log_msg_get_size(msg));
         }
     }
 
@@ -302,7 +301,7 @@ _push_head (LogQueueDisk *s, LogMessage *msg, const LogPathOptions *path_options
   g_queue_push_head (self->qout, LOG_PATH_OPTIONS_TO_POINTER (path_options));
   g_queue_push_head (self->qout, msg);
   stats_counter_inc (self->super.super.queued_messages);
-  stats_counter_add (self->super.super.memory_usage, log_msg_get_size(msg));
+  log_queue_memory_usage_add(&self->super.super, log_msg_get_size(msg));
   g_static_mutex_unlock(&self->super.super.lock);
 }
 
@@ -320,7 +319,7 @@ _push_tail (LogQueueDisk *s, LogMessage *msg, LogPathOptions *local_options, con
       g_queue_push_tail (self->qout, LOG_PATH_OPTIONS_FOR_BACKLOG);
       log_msg_ref (msg);
 
-      stats_counter_add(self->super.super.memory_usage, log_msg_get_size(msg));
+      log_queue_memory_usage_add(&self->super.super, log_msg_get_size(msg));
     }
   else
     {
@@ -332,7 +331,7 @@ _push_tail (LogQueueDisk *s, LogMessage *msg, LogPathOptions *local_options, con
               g_queue_push_tail (self->qoverflow, LOG_PATH_OPTIONS_TO_POINTER (path_options));
               log_msg_ref (msg);
               local_options->ack_needed = FALSE;
-              stats_counter_add(self->super.super.memory_usage, log_msg_get_size(msg));
+              log_queue_memory_usage_add(&self->super.super, log_msg_get_size(msg));
             }
           else
             {
@@ -375,7 +374,6 @@ _freefn (LogQueueDisk *s)
   self->qout = NULL;
   _free_queue (self->qbacklog);
   self->qbacklog = NULL;
-  stats_counter_set(self->super.super.memory_usage, 0);
 }
 
 static gboolean
