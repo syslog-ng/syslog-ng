@@ -39,7 +39,7 @@ tf_getent_passwd(gchar *key, gchar *member_name, GString *result)
   char *buf;
   long bufsize;
   int s;
-  glong d;
+  gint64 d;
   gboolean is_num, r;
 
   bufsize = sysconf(_SC_GETPW_R_SIZE_MAX);
