@@ -341,7 +341,7 @@ print_statistic(struct timeval *start_time)
 
           if (count > last_count && last_count > 0)
             {
-              fprintf(stderr, "count=%ld, rate = %.2lf msg/sec\n",
+              fprintf(stderr, "count=%"G_GINT64_FORMAT", rate = %.2lf msg/sec\n",
                       count,
                       ((double) (count - last_count) * USEC_PER_SEC) / diff_usec);
             }
@@ -363,7 +363,7 @@ print_statistic(struct timeval *start_time)
           count = thread_stat_count[j];
           g_mutex_unlock(message_counter_lock);
 
-          fprintf(stderr,"%d;%lu.%06lu;%.2lf;%lu\n",
+          fprintf(stderr,"%d;%lu.%06lu;%.2lf;%"G_GINT64_FORMAT"\n",
                   j,
                   (long) diff_tv.tv_sec,
                   (long) diff_tv.tv_usec,
@@ -404,7 +404,7 @@ void wait_all_plugin_to_finish(GPtrArray *plugin_array)
   double total_runtime_sec = time_val_diff_in_sec(&now, &start_time);
   if (total_runtime_sec > 0 && count > 0)
     fprintf(stderr,
-            "average rate = %.2lf msg/sec, count=%ld, time=%g, (average) msg size=%ld, bandwidth=%.2f kB/sec\n",
+            "average rate = %.2lf msg/sec, count=%ld, time=%g, (average) msg size=%"G_GINT64_FORMAT", bandwidth=%.2f kB/sec\n",
             (double)count/total_runtime_sec,
             count,
             total_runtime_sec,
