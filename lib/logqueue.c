@@ -215,6 +215,7 @@ _register_common_counters(LogQueue *self, gint stats_level, const StatsClusterKe
 {
   stats_register_counter(stats_level, sc_key, SC_TYPE_QUEUED, &self->queued_messages);
   stats_register_counter_and_index(STATS_LEVEL1, sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
+  self->stats_cache.queued_messages = log_queue_get_length(self);
   stats_counter_add(self->queued_messages, self->stats_cache.queued_messages);
   stats_counter_add(self->memory_usage, self->stats_cache.memory_usage);
 }
