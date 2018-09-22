@@ -88,12 +88,14 @@ struct _StatsCounterGroup
   StatsCounterItem *counters;
   const gchar **counter_names;
   guint16 capacity;
+  guint16 autoreset_mask;
   void (*free_fn)(StatsCounterGroup *self);
 };
 
 struct _StatsCounterGroupInit
 {
   const gchar **counter_names;
+  guint16 autoreset_mask;
   void (*init)(StatsCounterGroupInit *self, StatsCounterGroup *counter_group);
   gboolean (*equals)(const StatsCounterGroupInit *self, const StatsCounterGroupInit *other);
 };
@@ -143,7 +145,7 @@ gboolean stats_cluster_equal(const StatsCluster *sc1, const StatsCluster *sc2);
 guint stats_cluster_hash(const StatsCluster *self);
 
 StatsCounterItem *stats_cluster_track_counter(StatsCluster *self, gint type);
-StatsCounterItem *stats_cluster_get_counter(StatsCluster *self, gint type);
+StatsCounterItem *stats_cluster_use_counter(StatsCluster *self, gint type);
 void stats_cluster_untrack_counter(StatsCluster *self, gint type, StatsCounterItem **counter);
 gboolean stats_cluster_is_alive(StatsCluster *self, gint type);
 gboolean stats_cluster_is_indexed(StatsCluster *self, gint type);

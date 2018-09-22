@@ -39,6 +39,9 @@ static const gchar *tag_names[SC_TYPE_MAX] =
   /* [SC_TYPE_WRITTEN] = */ "written",
 };
 
+static guint16 AUTORESET_MASK = (1 << SC_TYPE_QUEUED)  |
+                                (1 << SC_TYPE_MEMORY_USAGE);
+
 static void
 _counter_group_logpipe_free(StatsCounterGroup *counter_group)
 {
@@ -52,6 +55,7 @@ _counter_group_logpipe_init(StatsCounterGroupInit *self, StatsCounterGroup *coun
   counter_group->capacity = SC_TYPE_MAX;
   counter_group->counter_names = self->counter_names;
   counter_group->free_fn = _counter_group_logpipe_free;
+  counter_group->autoreset_mask = self->autoreset_mask;
 }
 
 void
@@ -59,6 +63,8 @@ stats_cluster_logpipe_key_set(StatsClusterKey *key, guint16 component, const gch
 {
   stats_cluster_key_set(key, component, id, instance, (StatsCounterGroupInit)
   {
-    tag_names, _counter_group_logpipe_init
+    .counter_names = tag_names,
+     .autoreset_mask = AUTORESET_MASK,
+      .init = _counter_group_logpipe_init
   });
 }

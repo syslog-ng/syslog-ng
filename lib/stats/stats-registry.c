@@ -293,7 +293,7 @@ stats_contains_counter(const StatsClusterKey *sc_key, gint type)
 }
 
 StatsCounterItem *
-stats_get_counter(const StatsClusterKey *sc_key, gint type)
+stats_use_counter(const StatsClusterKey *sc_key, gint type)
 {
   g_assert(stats_locked);
   StatsCluster *sc = _lookup_cluster(sc_key);
@@ -301,7 +301,7 @@ stats_get_counter(const StatsClusterKey *sc_key, gint type)
   if (!sc)
     return NULL;
 
-  return stats_cluster_get_counter(sc, type);
+  return stats_cluster_use_counter(sc, type);
 }
 
 static void

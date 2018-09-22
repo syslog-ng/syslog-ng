@@ -169,27 +169,40 @@ log_queue_check_items(LogQueue *self, gint *timeout, LogQueuePushNotifyFunc para
 }
 
 static void
-_reset_counters(LogQueue *self)
+_register_queued_messages_counter(LogQueue *self, gint stats_level, const StatsClusterKey *sc_key)
 {
-  stats_counter_set(self->memory_usage,
+  if (stats_contains_counter(sc_key, SC_TYPE_QUEUED))
+    {
+      self->queued_messages = stats_use_counter(sc_key, SC_TYPE_QUEUED);
+    }
+  else
+    {
+      stats_register_counter(stats_level, sc_key, SC_TYPE_QUEUED, &self->queued_messages);
+    }
+  stats_counter_add(self->queued_messages, log_queue_get_length(self));
+}
+
+static void
+_register_memory_usage_counter(LogQueue *self, gint stats_level, const StatsClusterKey *sc_key)
+{
+  if (stats_contains_counter(sc_key, SC_TYPE_MEMORY_USAGE))
+    {
+      self->memory_usage = stats_use_counter(sc_key, SC_TYPE_MEMORY_USAGE);
+    }
+  else
+    {
+      stats_register_counter_and_index(STATS_LEVEL1, sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
+    }
+
+  stats_counter_add(self->memory_usage,
                     self->memory_usage_qout_initial_value + self->memory_usage_overflow_initial_value);
-  stats_counter_set(self->queued_messages, log_queue_get_length(self));
 }
 
 static void
 _register_common_counters(LogQueue *self, gint stats_level, const StatsClusterKey *sc_key)
 {
-  gboolean need_to_reset_counters = TRUE;
-
-  stats_register_counter(stats_level, sc_key, SC_TYPE_QUEUED, &self->queued_messages);
-
-  if (stats_check_level(STATS_LEVEL1))
-    need_to_reset_counters = !stats_contains_counter(sc_key, SC_TYPE_MEMORY_USAGE);
-
-  stats_register_counter_and_index(STATS_LEVEL1, sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
-
-  if (need_to_reset_counters)
-    _reset_counters(self);
+  _register_queued_messages_counter(self, stats_level, sc_key);
+  _register_memory_usage_counter(self, stats_level, sc_key);
 }
 
 void

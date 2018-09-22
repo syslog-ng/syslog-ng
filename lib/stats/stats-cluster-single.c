@@ -43,6 +43,7 @@ _counter_group_init(StatsCounterGroupInit *self, StatsCounterGroup *counter_grou
   counter_group->capacity = SC_TYPE_SINGLE_MAX;
   counter_group->counter_names = self->counter_names;
   counter_group->free_fn = _counter_group_free;
+  counter_group->autoreset_mask = self->autoreset_mask;
 }
 
 void
@@ -50,7 +51,9 @@ stats_cluster_single_key_set(StatsClusterKey *key, guint16 component, const gcha
 {
   stats_cluster_key_set(key, component, id, instance, (StatsCounterGroupInit)
   {
-    tag_names,_counter_group_init
+    .counter_names = tag_names,
+     .autoreset_mask = SC_TYPE_SINGLE_AUTORESET_DISABLED,
+      .init = _counter_group_init
   });
 }
 
@@ -83,7 +86,10 @@ stats_cluster_single_key_set_with_name(StatsClusterKey *key, guint16 component, 
 {
   stats_cluster_key_set(key, component, id, instance, (StatsCounterGroupInit)
   {
-    tag_names, _counter_group_init_with_name, _group_init_equals
+    .counter_names = tag_names,
+     .autoreset_mask = SC_TYPE_SINGLE_AUTORESET_DISABLED,
+      .init = _counter_group_init_with_name,
+       .equals = _group_init_equals
   });
   key->counter_group_init.counter_names = g_new0(const char *, 1);
   key->counter_group_init.counter_names[0] = name;
