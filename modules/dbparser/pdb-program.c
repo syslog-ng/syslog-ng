@@ -34,7 +34,7 @@ pdb_program_new(void)
 {
   PDBProgram *self = g_new0(PDBProgram, 1);
 
-  self->rules = r_new_node((guint8 *) "", NULL);
+  self->rules = r_new_node("", NULL);
   self->ref_cnt = 1;
   return self;
 }

@@ -29,12 +29,12 @@
 #include "radix.c"
 
 static gboolean
-_invoke_parser(gboolean (*parser)(guint8 *str, gint *len, const gchar *param, gpointer state, RParserMatch *match),
+_invoke_parser(gboolean (*parser)(gchar *str, gint *len, const gchar *param, gpointer state, RParserMatch *match),
                const gchar *str, gpointer param, gpointer state, gchar **result_string)
 {
   gboolean result;
   gint len = 0;
-  guint8 *dup = g_strdup(str);
+  gchar *dup = g_strdup(str);
   RParserMatch match;
 
   memset(&match, 0, sizeof(match));
