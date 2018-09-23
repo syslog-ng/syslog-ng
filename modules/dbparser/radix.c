@@ -25,6 +25,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <limits.h>
 
 #include <pcre.h>
 
@@ -568,8 +569,8 @@ r_new_pnode(gchar *key)
   gchar **params = g_strsplit(key, ":", 3);
   guint params_len = g_strv_length(params);
 
-  parser_node->first = 0;
-  parser_node->last = 255;
+  parser_node->first = CHAR_MIN;
+  parser_node->last = CHAR_MAX;
 
   if (strcmp(params[0], "IPv4") == 0)
     {
