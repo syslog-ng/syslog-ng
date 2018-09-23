@@ -214,6 +214,7 @@ static void
 _register_common_counters(LogQueue *self, gint stats_level, const StatsClusterKey *sc_key)
 {
   stats_register_counter(stats_level, sc_key, SC_TYPE_QUEUED, &self->queued_messages);
+  stats_register_counter(stats_level, sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
   stats_register_counter_and_index(STATS_LEVEL1, sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
   self->stats_cache.queued_messages = log_queue_get_length(self);
   stats_counter_add(self->queued_messages, self->stats_cache.queued_messages);
@@ -236,6 +237,7 @@ _unregister_common_counters(LogQueue *self, const StatsClusterKey *sc_key)
   stats_counter_sub(self->memory_usage, self->stats_cache.memory_usage);
   stats_unregister_counter(sc_key, SC_TYPE_QUEUED, &self->queued_messages);
   stats_unregister_counter(sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
+  stats_unregister_counter(sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
 }
 
 void
@@ -245,11 +247,6 @@ log_queue_unregister_stats_counters(LogQueue *self, const StatsClusterKey *sc_ke
 
   if (self->unregister_stats_counters)
     self->unregister_stats_counters(self, sc_key);
-}
-void
-log_queue_set_dropped_counter(LogQueue *self, StatsCounterItem *dropped_messages)
-{
-  self->dropped_messages = dropped_messages;
 }
 
 void

@@ -1349,7 +1349,6 @@ _register_counters(LogWriter *self)
     log_queue_register_stats_counters(self->queue, self->options->stats_level, &sc_key);
   }
   stats_unlock();
-  log_queue_set_dropped_counter(self->queue, self->dropped_messages);
 }
 
 static gboolean
@@ -1430,7 +1429,6 @@ log_writer_deinit(LogPipe *s)
   ml_batched_timer_unregister(&self->mark_timer);
 
   _unregister_counters(self);
-  log_queue_set_dropped_counter(self->queue, NULL);
 
   return TRUE;
 }

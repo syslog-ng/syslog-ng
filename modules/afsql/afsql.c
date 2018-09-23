@@ -1246,7 +1246,6 @@ afsql_dd_init(LogPipe *s)
     }
 
   _register_stats(self);
-  log_queue_set_dropped_counter(self->queue, self->dropped_messages);
 
   if (self->flags & AFSQL_DDF_EXPLICIT_COMMITS)
     log_queue_set_use_backlog(self->queue, TRUE);
@@ -1366,7 +1365,6 @@ afsql_dd_deinit(LogPipe *s)
 
   log_queue_reset_parallel_push(self->queue);
 
-  log_queue_set_dropped_counter(self->queue, NULL);
   cfg_persist_config_add(log_pipe_get_config(s), afsql_dd_format_persist_sequence_number(self),
                          GINT_TO_POINTER(self->seq_num), NULL, FALSE);
 

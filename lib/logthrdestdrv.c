@@ -657,7 +657,6 @@ _register_stats(LogThreadedDestDriver *self)
     log_queue_register_stats_counters(self->worker.queue, 0, &sc_key);
   }
   stats_unlock();
-  log_queue_set_dropped_counter(self->worker.queue, self->dropped_messages);
 }
 
 static void
@@ -715,9 +714,6 @@ gboolean
 log_threaded_dest_driver_deinit_method(LogPipe *s)
 {
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
-
-
-  log_queue_set_dropped_counter(self->worker.queue, NULL);
 
   cfg_persist_config_add(log_pipe_get_config(s),
                          _format_seqnum_persist_name(self),
