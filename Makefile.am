@@ -81,7 +81,8 @@ AM_CFLAGS += \
 	-Woverflow \
 	-Wdouble-promotion \
 	-Wfloat-equal \
-	-Wpointer-arith
+	-Wpointer-arith \
+	-Wpointer-sign
 endif
 
 TEST_CFLAGS		= -I$(top_srcdir)/libtest -DTOP_SRCDIR=\"$(abs_top_srcdir)\" $(AM_CFLAGS) $(CRITERION_CFLAGS)

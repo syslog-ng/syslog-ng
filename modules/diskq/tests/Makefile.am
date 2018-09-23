@@ -1,4 +1,4 @@
-DISKQ_TEST_C_FLAGS = $(TEST_CFLAGS) -I$(top_srcdir)/modules/diskq @CFLAGS_NOWARN_POINTER_SIGN@
+DISKQ_TEST_C_FLAGS = $(TEST_CFLAGS) -I$(top_srcdir)/modules/diskq
 DISKQ_TEST_LD_FLAGS = $(TEST_LDFLAGS) ${PREOPEN_SYSLOGFORMAT} -dlpreopen $(top_builddir)/modules/diskq/libdisk-buffer.la
 DISKQ_TEST_LD_ADD = $(TEST_LDADD)
 
