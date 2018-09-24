@@ -278,7 +278,7 @@ _py_construct_message(PythonDestDriver *self, LogMessage *msg, PyObject **msg_ob
 
   if (self->vp)
     {
-      success = py_value_pairs_apply(self->vp, &self->template_options, self->super.seq_num, msg, msg_object);
+      success = py_value_pairs_apply(self->vp, &self->template_options, self->super.worker.instance.seq_num, msg, msg_object);
       if (!success && (self->template_options.on_error & ON_ERROR_DROP_MESSAGE))
         return FALSE;
     }

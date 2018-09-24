@@ -254,14 +254,14 @@ redis_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
     }
 
   log_template_format(self->key, msg, &self->template_options, LTZ_SEND,
-                      self->super.seq_num, NULL, self->key_str);
+                      self->super.worker.instance.seq_num, NULL, self->key_str);
 
   if (self->param1)
     log_template_format(self->param1, msg, &self->template_options, LTZ_SEND,
-                        self->super.seq_num, NULL, self->param1_str);
+                        self->super.worker.instance.seq_num, NULL, self->param1_str);
   if (self->param2)
     log_template_format(self->param2, msg, &self->template_options, LTZ_SEND,
-                        self->super.seq_num, NULL, self->param2_str);
+                        self->super.worker.instance.seq_num, NULL, self->param2_str);
 
   argv[0] = self->command->str;
   argvlen[0] = self->command->len;

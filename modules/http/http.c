@@ -440,7 +440,7 @@ _add_message_to_batch(HTTPDestinationDriver *self, LogMessage *msg)
   if (self->body_template)
     {
       log_template_append_format(self->body_template, msg, &self->template_options, LTZ_SEND,
-                                 self->super.seq_num, NULL, self->request_body);
+                                 self->super.shared_seq_num, NULL, self->request_body);
     }
   else
     {

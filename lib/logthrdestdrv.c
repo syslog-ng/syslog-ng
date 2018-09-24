@@ -115,17 +115,6 @@ _should_flush_now(LogThreadedDestWorker *self)
   return (diff >= self->owner->flush_timeout);
 }
 
-static gchar *
-_format_seqnum_persist_name(LogThreadedDestDriver *self)
-{
-  static gchar persist_name[256];
-
-  g_snprintf(persist_name, sizeof(persist_name), "%s.seqnum",
-             self->super.super.super.generate_persist_name((const LogPipe *)self));
-
-  return persist_name;
-}
-
 static void
 _stop_watches(LogThreadedDestWorker *self)
 {
@@ -332,9 +321,6 @@ _perform_inserts(LogThreadedDestWorker *self)
 
       result = log_threaded_dest_worker_insert(self, msg);
       scratch_buffers_reclaim_marked(mark);
-
-      /* FIXME: this only works as long as we have only 1 thread! */
-      step_sequence_number(&self->owner->seq_num);
 
       _process_result(self, result);
 
@@ -922,6 +908,17 @@ _unregister_stats(LogThreadedDestDriver *self)
   stats_unlock();
 }
 
+static gchar *
+_format_seqnum_persist_name(LogThreadedDestDriver *self)
+{
+  static gchar persist_name[256];
+
+  g_snprintf(persist_name, sizeof(persist_name), "%s.seqnum",
+             self->super.super.super.generate_persist_name((const LogPipe *)self));
+
+  return persist_name;
+}
+
 gboolean
 log_threaded_dest_driver_init_method(LogPipe *s)
 {
@@ -939,10 +936,10 @@ log_threaded_dest_driver_init_method(LogPipe *s)
 
   _register_stats(self);
 
-  self->seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg,
-                                                           _format_seqnum_persist_name(self)));
-  if (!self->seq_num)
-    init_sequence_number(&self->seq_num);
+  self->shared_seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg,
+                                                                  _format_seqnum_persist_name(self)));
+  if (!self->shared_seq_num)
+    init_sequence_number(&self->shared_seq_num);
 
   /* free previous workers array if set to cope with num_workers change */
   g_free(self->workers);
@@ -966,7 +963,7 @@ log_threaded_dest_driver_deinit_method(LogPipe *s)
 
   cfg_persist_config_add(log_pipe_get_config(s),
                          _format_seqnum_persist_name(self),
-                         GINT_TO_POINTER(self->seq_num), NULL, FALSE);
+                         GINT_TO_POINTER(self->shared_seq_num), NULL, FALSE);
 
   _unregister_stats(self);
 

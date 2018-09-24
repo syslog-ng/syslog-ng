@@ -376,7 +376,7 @@ _worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
                              _vp_obj_start,
                              _vp_process_value,
                              _vp_obj_end,
-                             msg, self->super.seq_num,
+                             msg, self->super.worker.instance.seq_num,
                              LTZ_SEND,
                              &self->template_options,
                              self);
@@ -386,7 +386,7 @@ _worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
       if (!drop_silently)
         {
           msg_error("Failed to format message for MongoDB, dropping message",
-                    evt_tag_value_pairs("message", self->vp, msg, self->super.seq_num,
+                    evt_tag_value_pairs("message", self->vp, msg, self->super.worker.instance.seq_num,
                                         LTZ_SEND, &self->template_options),
                     evt_tag_str("driver", self->super.super.super.id));
         }
@@ -394,7 +394,7 @@ _worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
     }
 
   msg_debug("Outgoing message to MongoDB destination",
-            evt_tag_value_pairs("message", self->vp, msg, self->super.seq_num, LTZ_SEND,
+            evt_tag_value_pairs("message", self->vp, msg, self->super.worker.instance.seq_num, LTZ_SEND,
                                 &self->template_options),
             evt_tag_str("driver", self->super.super.super.id));
 

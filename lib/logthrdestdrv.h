@@ -30,6 +30,8 @@
 #include "stats/stats-registry.h"
 #include "logqueue.h"
 #include "mainloop-worker.h"
+#include "seqnum.h"
+
 #include <iv.h>
 #include <iv_event.h>
 
@@ -63,6 +65,7 @@ struct _LogThreadedDestWorker
   gint batch_size;
   gint rewound_batch_size;
   gint retries_counter;
+  gint seq_num;
   struct timespec last_flush_time;
   gboolean enable_flush_timeout;
   gboolean suspended;
@@ -116,7 +119,13 @@ struct _LogThreadedDestDriver
   gint workers_started;
 
   gint stats_source;
-  gint32 seq_num;
+
+  /* this counter is not thread safe if there are multiple worker threads,
+   * in that case, one needs to use LogThreadedDestWorker->seq_num, which is
+   * static for a single insert() invocation, whereas this might be
+   * increased in parallel by the multiple threads. */
+
+  gint32 shared_seq_num;
 
   WorkerOptions worker_options;
   const gchar *(*format_stats_instance)(LogThreadedDestDriver *s);
@@ -159,6 +168,10 @@ log_threaded_dest_worker_disconnect(LogThreadedDestWorker *self)
 static inline worker_insert_result_t
 log_threaded_dest_worker_insert(LogThreadedDestWorker *self, LogMessage *msg)
 {
+  if (self->owner->num_workers > 1)
+    self->seq_num = step_sequence_number_atomic(&self->owner->shared_seq_num);
+  else
+    self->seq_num = step_sequence_number(&self->owner->shared_seq_num);
   return self->insert(self, msg);
 }
 

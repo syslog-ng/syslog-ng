@@ -267,7 +267,7 @@ afstomp_set_frame_body(STOMPDestDriver *self, GString *body, stomp_frame *frame,
   if (self->body_template)
     {
       log_template_format(self->body_template, msg, &self->template_options, LTZ_LOCAL,
-                          self->super.seq_num, NULL, body);
+                          self->super.worker.instance.seq_num, NULL, body);
       stomp_frame_set_body(frame, body->str, body->len);
     }
 }
@@ -296,12 +296,12 @@ afstomp_worker_publish(STOMPDestDriver *self, LogMessage *msg)
   stomp_frame_add_header(&frame, "destination", self->destination);
   if (self->ack_needed)
     {
-      g_snprintf(seq_num, sizeof(seq_num), "%i", self->super.seq_num);
+      g_snprintf(seq_num, sizeof(seq_num), "%i", self->super.worker.instance.seq_num);
       stomp_frame_add_header(&frame, "receipt", seq_num);
     };
 
   value_pairs_foreach(self->vp, afstomp_vp_foreach, msg,
-                      self->super.seq_num, LTZ_SEND,
+                      self->super.worker.instance.seq_num, LTZ_SEND,
                       &self->template_options, &frame);
 
   afstomp_set_frame_body(self, body, &frame, msg);
