@@ -551,12 +551,25 @@ _init_watches(LogThreadedDestWorker *self)
 }
 
 static void
-_signal_startup_finished(LogThreadedDestWorker *self)
+_signal_startup_finished(LogThreadedDestWorker *self, gboolean thread_failure)
 {
   g_mutex_lock(self->owner->lock);
   self->startup_finished = TRUE;
+  self->startup_failure |= thread_failure;
   g_cond_signal(self->started_up);
   g_mutex_unlock(self->owner->lock);
+}
+
+static void
+_signal_startup_success(LogThreadedDestWorker *self)
+{
+  _signal_startup_finished(self, FALSE);
+}
+
+static void
+_signal_startup_failure(LogThreadedDestWorker *self)
+{
+  _signal_startup_finished(self, TRUE);
 }
 
 static void
@@ -583,9 +596,10 @@ _worker_thread(gpointer arg)
   iv_event_register(&self->wake_up_event);
   iv_event_register(&self->shutdown_event);
 
-  log_threaded_dest_worker_thread_init(self);
+  if (!log_threaded_dest_worker_thread_init(self))
+    goto error;
 
-  _signal_startup_finished(self);
+  _signal_startup_success(self);
 
   /* if we have anything on the backlog, that was a partial, potentially
    * not-flushed batch.  Rewind it, so we start with that */
@@ -605,6 +619,11 @@ _worker_thread(gpointer arg)
   msg_debug("Worker thread finished",
             evt_tag_str("driver", self->owner->super.super.id));
   iv_deinit();
+  return;
+
+ error:
+  _signal_startup_failure(self);
+  iv_deinit();
 }
 
 
@@ -619,11 +638,13 @@ log_threaded_dest_worker_init_instance(LogThreadedDestWorker *self, LogThreadedD
 
 /* compatibility bridge between LogThreadedDestWorker */
 
-static void
+static gboolean
 _compat_thread_init(LogThreadedDestWorker *self)
 {
+  /* NOTE: driver level thread_init() didn't have a gboolean return */
   if (self->owner->worker.thread_init)
     self->owner->worker.thread_init(self->owner);
+  return TRUE;
 }
 
 static void
@@ -692,7 +713,7 @@ _request_worker_exit(gpointer s)
   iv_event_post(&self->shutdown_event);
 }
 
-static void
+static gboolean
 _start_worker_thread(LogThreadedDestDriver *self)
 {
   LogThreadedDestWorker *dw = _construct_worker(self);
@@ -701,6 +722,7 @@ _start_worker_thread(LogThreadedDestDriver *self)
                                  _request_worker_exit,
                                  dw, &self->worker_options);
   _wait_for_startup_finished(dw);
+  return !dw->startup_failure;
 }
 
 void
@@ -796,9 +818,7 @@ log_threaded_dest_driver_init_method(LogPipe *s)
   if (!self->seq_num)
     init_sequence_number(&self->seq_num);
 
-  _start_worker_thread(self);
-
-  return TRUE;
+  return _start_worker_thread(self);
 }
 
 gboolean

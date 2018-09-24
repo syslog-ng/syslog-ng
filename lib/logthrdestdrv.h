@@ -66,9 +66,10 @@ struct _LogThreadedDestWorker
   gboolean enable_flush_timeout;
   gboolean suspended;
   gboolean startup_finished;
+  gboolean startup_failure;
   GCond *started_up;
 
-  void (*thread_init)(LogThreadedDestWorker *s);
+  gboolean (*thread_init)(LogThreadedDestWorker *s);
   void (*thread_deinit)(LogThreadedDestWorker *s);
   gboolean (*connect)(LogThreadedDestWorker *s);
   void (*disconnect)(LogThreadedDestWorker *s);
@@ -113,11 +114,12 @@ struct _LogThreadedDestDriver
   const gchar *(*format_stats_instance)(LogThreadedDestDriver *s);
 };
 
-static inline void
+static inline gboolean
 log_threaded_dest_worker_thread_init(LogThreadedDestWorker *self)
 {
   if (self->thread_init)
-    self->thread_init(self);
+    return self->thread_init(self);
+  return TRUE;
 }
 
 static inline void
