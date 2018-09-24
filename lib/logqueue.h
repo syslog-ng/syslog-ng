@@ -50,8 +50,12 @@ struct _LogQueue
   StatsCounterItem *queued_messages;
   StatsCounterItem *dropped_messages;
   StatsCounterItem *memory_usage;
-  gssize memory_usage_qout_initial_value;
-  gssize memory_usage_overflow_initial_value;
+
+  struct
+  {
+    gsize memory_usage;
+    gsize queued_messages;
+  } stats_cache;
 
   GStaticMutex lock;
   LogQueuePushNotifyFunc parallel_push_notify;
@@ -196,6 +200,14 @@ log_queue_set_use_backlog(LogQueue *self, gboolean use_backlog)
     self->use_backlog = use_backlog;
 }
 
+void log_queue_memory_usage_add(LogQueue *self, gsize value);
+void log_queue_memory_usage_sub(LogQueue *self, gsize value);
+
+void log_queue_queued_messages_add(LogQueue *self, gsize value);
+void log_queue_queued_messages_sub(LogQueue *self, gsize value);
+void log_queue_queued_messages_inc(LogQueue *self);
+void log_queue_queued_messages_dec(LogQueue *self);
+
 void log_queue_push_notify(LogQueue *self);
 void log_queue_reset_parallel_push(LogQueue *self);
 void log_queue_set_parallel_push(LogQueue *self, LogQueuePushNotifyFunc parallel_push_notify, gpointer user_data,
@@ -205,7 +217,6 @@ gboolean log_queue_check_items(LogQueue *self, gint *timeout, LogQueuePushNotify
 void log_queue_init_instance(LogQueue *self, const gchar *persist_name);
 void log_queue_register_stats_counters(LogQueue *self, gint stats_level, const StatsClusterKey *sc_key);
 void log_queue_unregister_stats_counters(LogQueue *self, const StatsClusterKey *sc_key);
-void log_queue_set_dropped_counter(LogQueue *self, StatsCounterItem *dropped_messages);
 
 void log_queue_free_method(LogQueue *self);
 

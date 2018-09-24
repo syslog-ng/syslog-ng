@@ -28,6 +28,48 @@
 
 gint log_queue_max_threads = 0;
 
+void
+log_queue_memory_usage_add(LogQueue *self, gsize value)
+{
+  stats_counter_add(self->memory_usage, value);
+  self->stats_cache.memory_usage += value;
+}
+
+void
+log_queue_memory_usage_sub(LogQueue *self, gsize value)
+{
+  stats_counter_sub(self->memory_usage, value);
+  self->stats_cache.memory_usage -= value;
+}
+
+void
+log_queue_queued_messages_add(LogQueue *self, gsize value)
+{
+  stats_counter_add(self->queued_messages, value);
+  self->stats_cache.queued_messages += value;
+}
+
+void
+log_queue_queued_messages_sub(LogQueue *self, gsize value)
+{
+  stats_counter_sub(self->queued_messages, value);
+  self->stats_cache.queued_messages -= value;
+}
+
+void
+log_queue_queued_messages_inc(LogQueue *self)
+{
+  stats_counter_inc(self->queued_messages);
+  self->stats_cache.queued_messages++;
+}
+
+void
+log_queue_queued_messages_dec(LogQueue *self)
+{
+  stats_counter_dec(self->queued_messages);
+  self->stats_cache.queued_messages--;
+}
+
 /*
  * When this is called, it is assumed that the output thread is currently
  * not running (since this is the function that wakes it up), thus we can
@@ -169,27 +211,14 @@ log_queue_check_items(LogQueue *self, gint *timeout, LogQueuePushNotifyFunc para
 }
 
 static void
-_reset_counters(LogQueue *self)
-{
-  stats_counter_set(self->memory_usage,
-                    self->memory_usage_qout_initial_value + self->memory_usage_overflow_initial_value);
-  stats_counter_set(self->queued_messages, log_queue_get_length(self));
-}
-
-static void
 _register_common_counters(LogQueue *self, gint stats_level, const StatsClusterKey *sc_key)
 {
-  gboolean need_to_reset_counters = TRUE;
-
   stats_register_counter(stats_level, sc_key, SC_TYPE_QUEUED, &self->queued_messages);
-
-  if (stats_check_level(STATS_LEVEL1))
-    need_to_reset_counters = !stats_contains_counter(sc_key, SC_TYPE_MEMORY_USAGE);
-
+  stats_register_counter(stats_level, sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
   stats_register_counter_and_index(STATS_LEVEL1, sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
-
-  if (need_to_reset_counters)
-    _reset_counters(self);
+  self->stats_cache.queued_messages = log_queue_get_length(self);
+  stats_counter_add(self->queued_messages, self->stats_cache.queued_messages);
+  stats_counter_add(self->memory_usage, self->stats_cache.memory_usage);
 }
 
 void
@@ -204,8 +233,11 @@ log_queue_register_stats_counters(LogQueue *self, gint stats_level, const StatsC
 static void
 _unregister_common_counters(LogQueue *self, const StatsClusterKey *sc_key)
 {
+  stats_counter_sub(self->queued_messages, self->stats_cache.queued_messages);
+  stats_counter_sub(self->memory_usage, self->stats_cache.memory_usage);
   stats_unregister_counter(sc_key, SC_TYPE_QUEUED, &self->queued_messages);
   stats_unregister_counter(sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
+  stats_unregister_counter(sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
 }
 
 void
@@ -215,11 +247,6 @@ log_queue_unregister_stats_counters(LogQueue *self, const StatsClusterKey *sc_ke
 
   if (self->unregister_stats_counters)
     self->unregister_stats_counters(self, sc_key);
-}
-void
-log_queue_set_dropped_counter(LogQueue *self, StatsCounterItem *dropped_messages)
-{
-  self->dropped_messages = dropped_messages;
 }
 
 void

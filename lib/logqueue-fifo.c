@@ -112,7 +112,7 @@ iv_list_update_msg_size(LogQueueFifo *self, struct iv_list_head *head)
   iv_list_for_each_safe(ilh, ilh2, head)
   {
     msg = iv_list_entry(ilh, LogMessageQueueNode, list)->msg;
-    stats_counter_add(self->super.memory_usage, log_msg_get_size(msg));
+    log_queue_memory_usage_add(&self->super, log_msg_get_size(msg));
   }
 }
 
@@ -208,7 +208,7 @@ log_queue_fifo_move_input_unlocked(LogQueueFifo *self, gint thread_id)
                 evt_tag_int("count", n),
                 evt_tag_str("persist_name", self->super.persist_name));
     }
-  stats_counter_add(self->super.queued_messages, self->qoverflow_input[thread_id].len);
+  log_queue_queued_messages_add(&self->super, self->qoverflow_input[thread_id].len);
   iv_list_update_msg_size(self, &self->qoverflow_input[thread_id].items);
 
   iv_list_splice_tail_init(&self->qoverflow_input[thread_id].items, &self->qoverflow_wait);
@@ -311,8 +311,9 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
       iv_list_add_tail(&node->list, &self->qoverflow_wait);
       self->qoverflow_wait_len++;
       log_queue_push_notify(&self->super);
-      stats_counter_inc(self->super.queued_messages);
-      stats_counter_add(self->super.memory_usage, log_msg_get_size(msg));
+      log_queue_queued_messages_inc(&self->super);
+
+      log_queue_memory_usage_add(&self->super, log_msg_get_size(msg));
       g_static_mutex_unlock(&self->super.lock);
 
       log_msg_unref(msg);
@@ -357,8 +358,8 @@ log_queue_fifo_push_head(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
   self->qoverflow_output_len++;
   log_msg_unref(msg);
 
-  stats_counter_inc(self->super.queued_messages);
-  stats_counter_add(self->super.memory_usage, log_msg_get_size(msg));
+  log_queue_queued_messages_inc(&self->super);
+  log_queue_memory_usage_add(&self->super, log_msg_get_size(msg));
 }
 
 /*
@@ -412,8 +413,8 @@ log_queue_fifo_pop_head(LogQueue *s, LogPathOptions *path_options)
        */
       return NULL;
     }
-  stats_counter_dec(self->super.queued_messages);
-  stats_counter_sub(self->super.memory_usage, log_msg_get_size(msg));
+  log_queue_queued_messages_dec(&self->super);
+  log_queue_memory_usage_sub(&self->super, log_msg_get_size(msg));
 
   if (self->super.use_backlog)
     {
@@ -471,7 +472,7 @@ log_queue_fifo_rewind_backlog_all(LogQueue *s)
   iv_list_splice_tail_init(&self->qbacklog, &self->qoverflow_output);
 
   self->qoverflow_output_len += self->qbacklog_len;
-  stats_counter_add(self->super.queued_messages, self->qbacklog_len);
+  log_queue_queued_messages_add(&self->super, self->qbacklog_len);
   self->qbacklog_len = 0;
 }
 
@@ -497,8 +498,8 @@ log_queue_fifo_rewind_backlog(LogQueue *s, guint rewind_count)
 
       self->qbacklog_len--;
       self->qoverflow_output_len++;
-      stats_counter_inc(self->super.queued_messages);
-      stats_counter_add(self->super.memory_usage, log_msg_get_size(node->msg));
+      log_queue_queued_messages_inc(&self->super);
+      log_queue_memory_usage_add(&self->super, log_msg_get_size(node->msg));
     }
 }
 
