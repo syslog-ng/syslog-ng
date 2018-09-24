@@ -26,7 +26,7 @@
 
 static gboolean
 syslog_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_options, const gchar *input,
-                      gsize input_len G_GNUC_UNUSED)
+                      gsize input_len)
 {
   SyslogParser *self = (SyslogParser *) s;
   LogMessage *msg;
@@ -36,7 +36,7 @@ syslog_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pat
             evt_tag_str ("input", input),
             evt_tag_printf("msg", "%p", *pmsg));
 
-  syslog_format_handler(&self->parse_options, (guchar *) input, strlen(input), msg);
+  syslog_format_handler(&self->parse_options, (guchar *) input, input_len, msg);
   return TRUE;
 }
 
