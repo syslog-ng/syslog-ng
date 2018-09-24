@@ -257,7 +257,7 @@ stats_cluster_is_alive(StatsCluster *self, gint type)
 {
   g_assert(type < self->counter_group.capacity);
 
-  return ((1<<type) & self->live_mask) == (1 << type);
+  return !!((1<<type) & self->live_mask);
 }
 
 gboolean
@@ -265,7 +265,7 @@ stats_cluster_is_indexed(StatsCluster *self, gint type)
 {
   g_assert(type < self->counter_group.capacity);
 
-  return ((1<<type) & self->indexed_mask) == (1 << type);
+  return !!((1<<type) & self->indexed_mask);
 }
 
 StatsCluster *
