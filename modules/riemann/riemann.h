@@ -46,7 +46,7 @@ gboolean riemann_dd_set_connection_type(LogDriver *d, const gchar *type);
 void riemann_dd_set_tls_cacert(LogDriver *d, const gchar *path);
 void riemann_dd_set_tls_cert(LogDriver *d, const gchar *path);
 void riemann_dd_set_tls_key(LogDriver *d, const gchar *path);
-void riemann_dd_set_flush_lines(LogDriver *d, gint lines);
 void riemann_dd_set_timeout(LogDriver *d, guint timeout);
 void riemann_dd_set_event_time_unit(LogDriver *d, gint unit);
+
 #endif

@@ -40,7 +40,6 @@ typedef struct
   gint port;
   riemann_client_type_t type;
   guint timeout;
-  gint flush_lines;
 
   struct
   {
@@ -172,14 +171,6 @@ riemann_dd_set_field_attributes(LogDriver *d, ValuePairs *vp)
 
   value_pairs_unref(self->fields.attributes);
   self->fields.attributes = vp;
-}
-
-void
-riemann_dd_set_flush_lines(LogDriver *d, gint lines)
-{
-  RiemannDestDriver *self = (RiemannDestDriver *)d;
-
-  self->flush_lines = lines;
 }
 
 gboolean
@@ -547,7 +538,7 @@ riemann_worker_insert_one(RiemannDestDriver *self, LogMessage *msg)
 }
 
 static worker_insert_result_t
-riemann_worker_batch_flush(LogThreadedDestDriver *s)
+riemann_worker_flush(LogThreadedDestDriver *s)
 {
   RiemannDestDriver *self = (RiemannDestDriver *) s;
   riemann_message_t *message;
@@ -576,7 +567,7 @@ riemann_worker_batch_flush(LogThreadedDestDriver *s)
    */
   self->event.n = 0;
   self->event.list = (riemann_event_t **)malloc (sizeof (riemann_event_t *) *
-                                                 self->flush_lines);
+                                                 MAX(1,self->super.flush_lines));
   if (r != 0)
     return WORKER_INSERT_RESULT_ERROR;
   else
@@ -584,7 +575,27 @@ riemann_worker_batch_flush(LogThreadedDestDriver *s)
 }
 
 static worker_insert_result_t
-riemann_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
+_insert_single(LogThreadedDestDriver *s, LogMessage *msg)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)s;
+
+  if (!riemann_worker_insert_one(self, msg))
+    {
+      msg_error("riemann: error inserting message to batch, probably a type mismatch. Dropping message",
+                evt_tag_str("server", self->server),
+                evt_tag_int("port", self->port),
+                evt_tag_str("message", log_msg_get_value(msg, LM_V_MESSAGE, NULL)),
+                log_pipe_location_tag(&self->super.super.super.super),
+                evt_tag_str("driver", self->super.super.super.id));
+
+      return WORKER_INSERT_RESULT_DROP;
+    }
+
+  return riemann_worker_flush(&self->super);
+}
+
+static worker_insert_result_t
+_insert_batch(LogThreadedDestDriver *s, LogMessage *msg)
 {
   RiemannDestDriver *self = (RiemannDestDriver *)s;
 
@@ -604,11 +615,20 @@ riemann_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
        */
     }
 
-  if (self->flush_lines && self->super.batch_size >= self->flush_lines)
+  if (self->super.flush_lines > 1 && self->super.batch_size >= self->super.flush_lines)
     {
-      return riemann_worker_batch_flush(&self->super);
+      return log_threaded_dest_worker_flush(&self->super);
     }
   return WORKER_INSERT_RESULT_QUEUED;
+}
+
+static worker_insert_result_t
+riemann_worker_insert(LogThreadedDestDriver *self, LogMessage *msg)
+{
+  if (self->flush_lines <= 1)
+    return _insert_single(self, msg);
+  else
+    return _insert_batch(self, msg);
 }
 
 static void
@@ -665,7 +685,7 @@ riemann_dd_init(LogPipe *s)
   _value_pairs_always_exclude_properties(self);
 
   self->event.list = (riemann_event_t **)malloc (sizeof (riemann_event_t *) *
-                                                 self->flush_lines);
+                                                 MAX(1,self->super.flush_lines));
 
   msg_verbose("Initializing Riemann destination",
               evt_tag_str("server", self->server),
@@ -721,14 +741,14 @@ riemann_dd_new(GlobalConfig *cfg)
   self->super.worker.connect = riemann_dd_connect;
   self->super.worker.disconnect = riemann_dd_disconnect;
   self->super.worker.insert = riemann_worker_insert;
-  self->super.worker.flush = riemann_worker_batch_flush;
+  self->super.worker.flush = riemann_worker_flush;
 
   self->super.format_stats_instance = riemann_dd_format_stats_instance;
   self->super.stats_source = SCS_RIEMANN;
 
   self->port = -1;
   self->type = RIEMANN_CLIENT_TCP;
-  self->flush_lines = 0; /* don't inherit global value */
+  self->super.flush_lines = 0; /* don't inherit global value */
 
   log_template_options_defaults(&self->template_options);
 
