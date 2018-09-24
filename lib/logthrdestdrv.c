@@ -29,13 +29,9 @@
 
 #define MAX_RETRIES_OF_FAILED_INSERT_DEFAULT 3
 
-void
-log_threaded_dest_driver_set_max_retries(LogDriver *s, gint max_retries)
-{
-  LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
 
-  self->retries_max = max_retries;
-}
+/* LogThreadedDestWorker */
+
 
 void
 log_threaded_dest_driver_set_flush_lines(LogDriver *s, gint flush_lines)
@@ -58,7 +54,7 @@ log_threaded_dest_driver_set_flush_timeout(LogDriver *s, gint flush_timeout)
 void
 log_threaded_dest_driver_ack_messages(LogThreadedDestDriver *self, gint batch_size)
 {
-  log_queue_ack_backlog(self->worker.queue, batch_size);
+  log_queue_ack_backlog(self->worker.instance.queue, batch_size);
   stats_counter_add(self->written_messages, batch_size);
   self->retries_counter = 0;
   self->batch_size -= batch_size;
@@ -67,7 +63,7 @@ log_threaded_dest_driver_ack_messages(LogThreadedDestDriver *self, gint batch_si
 void
 log_threaded_dest_driver_drop_messages(LogThreadedDestDriver *self, gint batch_size)
 {
-  log_queue_ack_backlog(self->worker.queue, batch_size);
+  log_queue_ack_backlog(self->worker.instance.queue, batch_size);
   stats_counter_add(self->dropped_messages, batch_size);
   self->retries_counter = 0;
   self->batch_size -= batch_size;
@@ -76,7 +72,7 @@ log_threaded_dest_driver_drop_messages(LogThreadedDestDriver *self, gint batch_s
 void
 log_threaded_dest_driver_rewind_messages(LogThreadedDestDriver *self, gint batch_size)
 {
-  log_queue_rewind_backlog(self->worker.queue, batch_size);
+  log_queue_rewind_backlog(self->worker.instance.queue, batch_size);
   self->rewound_batch_size = self->batch_size;
   self->batch_size -= batch_size;
 }
@@ -153,7 +149,7 @@ _shutdown_event_callback(gpointer data)
 {
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)data;
 
-  log_queue_reset_parallel_push(self->worker.queue);
+  log_queue_reset_parallel_push(self->worker.instance.queue);
   _stop_watches(self);
   iv_quit();
 }
@@ -305,7 +301,7 @@ _perform_inserts(LogThreadedDestDriver *self)
 
   while (G_LIKELY(!self->under_termination) &&
          !self->suspended &&
-         (msg = log_queue_pop_head(self->worker.queue, &path_options)) != NULL)
+         (msg = log_queue_pop_head(self->worker.instance.queue, &path_options)) != NULL)
     {
       msg_set_context(msg);
       log_msg_refcache_start_consumer(msg, &path_options);
@@ -431,13 +427,13 @@ _perform_work(gpointer data)
   main_loop_worker_run_gc();
   _stop_watches(self);
 
-  if (!self->worker.connected)
+  if (!self->worker.instance.connected)
     {
       /* try to connect and come back if successful, would be suspended otherwise. */
       _connect(self);
       _schedule_restart(self);
     }
-  else if (log_queue_check_items(self->worker.queue, &timeout_msec,
+  else if (log_queue_check_items(self->worker.instance.queue, &timeout_msec,
                                  _message_became_available_callback,
                                  self, NULL))
     {
@@ -582,7 +578,7 @@ _worker_thread(gpointer arg)
   msg_debug("Worker thread started",
             evt_tag_str("driver", self->super.super.id));
 
-  log_queue_set_use_backlog(self->worker.queue, TRUE);
+  log_queue_set_use_backlog(self->worker.instance.queue, TRUE);
 
   iv_event_register(&self->wake_up_event);
   iv_event_register(&self->shutdown_event);
@@ -594,13 +590,13 @@ _worker_thread(gpointer arg)
   /* if we have anything on the backlog, that was a partial, potentially
    * not-flushed batch.  Rewind it, so we start with that */
 
-  log_queue_rewind_backlog_all(self->worker.queue);
+  log_queue_rewind_backlog_all(self->worker.instance.queue);
 
   _schedule_restart(self);
   iv_main();
 
   log_threaded_dest_worker_flush(self);
-  log_queue_rewind_backlog_all(self->worker.queue);
+  log_queue_rewind_backlog_all(self->worker.instance.queue);
 
   _disconnect(self);
 
@@ -629,6 +625,17 @@ _start_worker_thread(LogThreadedDestDriver *self)
   _wait_for_startup_finished(self);
 }
 
+/* LogThreadedDestDriver */
+
+void
+log_threaded_dest_driver_set_max_retries(LogDriver *s, gint max_retries)
+{
+  LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
+
+  self->retries_max = max_retries;
+}
+
+
 /* the feeding side of the driver, runs in the source thread and puts an
  * incoming message to the associated queue.
  */
@@ -643,7 +650,7 @@ log_threaded_dest_driver_queue(LogPipe *s, LogMessage *msg,
     path_options = log_msg_break_ack(msg, path_options, &local_options);
 
   log_msg_add_ack(msg, path_options);
-  log_queue_push_tail(self->worker.queue, log_msg_ref(msg), path_options);
+  log_queue_push_tail(self->worker.instance.queue, log_msg_ref(msg), path_options);
 
   stats_counter_inc(self->processed_messages);
 
@@ -662,7 +669,7 @@ _register_stats(LogThreadedDestDriver *self)
     stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
     stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
     stats_register_counter(0, &sc_key, SC_TYPE_WRITTEN, &self->written_messages);
-    log_queue_register_stats_counters(self->worker.queue, 0, &sc_key);
+    log_queue_register_stats_counters(self->worker.instance.queue, 0, &sc_key);
   }
   stats_unlock();
 }
@@ -679,7 +686,7 @@ _unregister_stats(LogThreadedDestDriver *self)
     stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
     stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
     stats_unregister_counter(&sc_key, SC_TYPE_WRITTEN, &self->written_messages);
-    log_queue_unregister_stats_counters(self->worker.queue, &sc_key);
+    log_queue_unregister_stats_counters(self->worker.instance.queue, &sc_key);
   }
   stats_unlock();
 }
@@ -699,11 +706,11 @@ log_threaded_dest_driver_init_method(LogPipe *s)
   if (cfg && self->flush_timeout == -1)
     self->flush_timeout = cfg->flush_timeout;
 
-  self->worker.queue = log_dest_driver_acquire_queue(
+  self->worker.instance.queue = log_dest_driver_acquire_queue(
                          &self->super,
                          s->generate_persist_name(s));
 
-  if (self->worker.queue == NULL)
+  if (self->worker.instance.queue == NULL)
     return FALSE;
 
   _register_stats(self);

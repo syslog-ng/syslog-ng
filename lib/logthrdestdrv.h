@@ -48,12 +48,6 @@ typedef struct _LogThreadedDestWorker
 {
   LogQueue *queue;
   gboolean connected;
-  void (*thread_init)(LogThreadedDestDriver *s);
-  void (*thread_deinit)(LogThreadedDestDriver *s);
-  gboolean (*connect)(LogThreadedDestDriver *s);
-  void (*disconnect)(LogThreadedDestDriver *s);
-  worker_insert_result_t (*insert)(LogThreadedDestDriver *s, LogMessage *msg);
-  worker_insert_result_t (*flush)(LogThreadedDestDriver *s);
 } LogThreadedDestWorker;
 
 
@@ -86,7 +80,16 @@ struct _LogThreadedDestDriver
   gint retries_max;
   gboolean enable_flush_timeout;
 
-  LogThreadedDestWorker worker;
+  struct
+  {
+    LogThreadedDestWorker instance;
+    void (*thread_init)(LogThreadedDestDriver *s);
+    void (*thread_deinit)(LogThreadedDestDriver *s);
+    gboolean (*connect)(LogThreadedDestDriver *s);
+    void (*disconnect)(LogThreadedDestDriver *s);
+    worker_insert_result_t (*insert)(LogThreadedDestDriver *s, LogMessage *msg);
+    worker_insert_result_t (*flush)(LogThreadedDestDriver *s);
+  } worker;
 
   gint stats_source;
   gint32 seq_num;
@@ -113,11 +116,11 @@ static inline gboolean
 log_threaded_dest_worker_connect(LogThreadedDestDriver *self)
 {
   if (self->worker.connect)
-    self->worker.connected = self->worker.connect(self);
+    self->worker.instance.connected = self->worker.connect(self);
   else
-    self->worker.connected = TRUE;
+    self->worker.instance.connected = TRUE;
 
-  return self->worker.connected;
+  return self->worker.instance.connected;
 }
 
 static inline void
@@ -125,7 +128,7 @@ log_threaded_dest_worker_disconnect(LogThreadedDestDriver *self)
 {
   if (self->worker.disconnect)
     self->worker.disconnect(self);
-  self->worker.connected = FALSE;
+  self->worker.instance.connected = FALSE;
 }
 
 static inline worker_insert_result_t
