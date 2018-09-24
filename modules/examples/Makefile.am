@@ -1,12 +1,12 @@
 include modules/examples/sources/msg-generator/Makefile.am
 include modules/examples/sources/threaded-diskq-source/Makefile.am
+include modules/examples/sources/threaded-random-generator/Makefile.am
 
 EXAMPLE_PLUGINS = \
   $(top_builddir)/modules/examples/sources/libmsg-generator.la \
   $(top_builddir)/modules/examples/sources/libthreaded-diskq-source.la
 
 if HAVE_GETRANDOM
-include modules/examples/sources/threaded-random-generator/Makefile.am
 EXAMPLE_PLUGINS += $(top_builddir)/modules/examples/sources/libthreaded-random-generator.la
 endif
 
