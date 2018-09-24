@@ -69,6 +69,7 @@
 %token KW_BODY_PREFIX
 %token KW_BODY_SUFFIX
 %token KW_DELIMITER
+%token KW_WORKERS
 
 %type   <ptr> driver
 %type   <ptr> http_destination
@@ -119,6 +120,7 @@ http_option
     | KW_FLUSH_LINES '(' nonnegative_integer ')' { log_threaded_dest_driver_set_flush_lines(last_driver, $3); }
     | KW_FLUSH_BYTES '(' nonnegative_integer ')' { http_dd_set_flush_bytes(last_driver, $3); }
     | KW_FLUSH_TIMEOUT '(' nonnegative_integer ')' { log_threaded_dest_driver_set_flush_timeout(last_driver, $3); }
+    | KW_WORKERS '(' nonnegative_integer ')'  { log_threaded_dest_driver_set_num_workers(last_driver, $3); }
     | threaded_dest_driver_option
     | http_tls_option
     | KW_TLS '(' http_tls_options ')'
