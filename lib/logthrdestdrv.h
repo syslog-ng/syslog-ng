@@ -75,6 +75,7 @@ struct _LogThreadedDestWorker
   void (*disconnect)(LogThreadedDestWorker *s);
   worker_insert_result_t (*insert)(LogThreadedDestWorker *s, LogMessage *msg);
   worker_insert_result_t (*flush)(LogThreadedDestWorker *s);
+  void (*free_fn)(LogThreadedDestWorker *s);
 };
 
 struct _LogThreadedDestDriver
@@ -176,6 +177,10 @@ log_threaded_dest_driver_flush(LogThreadedDestDriver *self)
 void log_threaded_dest_worker_ack_messages(LogThreadedDestWorker *self, gint batch_size);
 void log_threaded_dest_worker_drop_messages(LogThreadedDestWorker *self, gint batch_size);
 void log_threaded_dest_worker_rewind_messages(LogThreadedDestWorker *self, gint batch_size);
+gboolean log_threaded_dest_worker_init_method(LogThreadedDestWorker *self);
+void log_threaded_dest_worker_deinit_method(LogThreadedDestWorker *self);
+void log_threaded_dest_worker_init_instance(LogThreadedDestWorker *self, LogThreadedDestDriver *owner);
+void log_threaded_dest_worker_free_method(LogThreadedDestWorker *self);
 
 gboolean log_threaded_dest_driver_deinit_method(LogPipe *s);
 gboolean log_threaded_dest_driver_init_method(LogPipe *s);

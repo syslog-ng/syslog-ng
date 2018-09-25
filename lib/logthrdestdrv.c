@@ -76,6 +76,14 @@ log_threaded_dest_worker_rewind_messages(LogThreadedDestWorker *self, gint batch
   self->batch_size -= batch_size;
 }
 
+static const gchar *
+_format_queue_persist_name(LogThreadedDestWorker *self)
+{
+  LogPipe *owner = &self->owner->super.super.super;
+
+  return owner->generate_persist_name(owner);
+}
+
 static gboolean
 _should_flush_now(LogThreadedDestWorker *self)
 {
@@ -614,8 +622,6 @@ _worker_thread(gpointer arg)
   msg_debug("Worker thread started",
             evt_tag_str("driver", self->owner->super.super.id));
 
-  log_queue_set_use_backlog(self->queue, TRUE);
-  _register_worker_stats(self);
 
   iv_event_register(&self->wake_up_event);
   iv_event_register(&self->shutdown_event);
@@ -639,7 +645,6 @@ _worker_thread(gpointer arg)
   _disconnect(self);
 
   log_threaded_dest_worker_thread_deinit(self);
-  _unregister_worker_stats(self);
 
   msg_debug("Worker thread finished",
             evt_tag_str("driver", self->owner->super.super.id));
@@ -651,11 +656,51 @@ _worker_thread(gpointer arg)
   iv_deinit();
 }
 
+gboolean
+log_threaded_dest_worker_init_method(LogThreadedDestWorker *self)
+{
+  self->queue = log_dest_driver_acquire_queue(
+                         &self->owner->super,
+                         _format_queue_persist_name(self));
+
+  if (!self->queue)
+    return FALSE;
+
+  log_queue_set_use_backlog(self->queue, TRUE);
+  _register_worker_stats(self);
+
+  return TRUE;
+}
+
+void
+log_threaded_dest_worker_deinit_method(LogThreadedDestWorker *self)
+{
+  _unregister_worker_stats(self);
+}
+
+void
+log_threaded_dest_worker_free_method(LogThreadedDestWorker *self)
+{
+  g_cond_free(self->started_up);
+}
+
 void
 log_threaded_dest_worker_init_instance(LogThreadedDestWorker *self, LogThreadedDestDriver *owner)
 {
+  self->thread_init = log_threaded_dest_worker_init_method;
+  self->thread_deinit = log_threaded_dest_worker_deinit_method;
+  self->free_fn = log_threaded_dest_worker_free_method;
   self->owner = owner;
+  self->started_up = g_cond_new();
   _init_watches(self);
+}
+
+void
+log_threaded_dest_worker_free(LogThreadedDestWorker *self)
+{
+  if (self->free_fn)
+    self->free_fn(self);
+  g_free(self);
 }
 
 /* LogThreadedDestDriver */
@@ -665,6 +710,9 @@ log_threaded_dest_worker_init_instance(LogThreadedDestWorker *self, LogThreadedD
 static gboolean
 _compat_thread_init(LogThreadedDestWorker *self)
 {
+  if (!log_threaded_dest_worker_init_method(self))
+    return FALSE;
+
   /* NOTE: driver level thread_init() didn't have a gboolean return */
   if (self->owner->worker.thread_init)
     self->owner->worker.thread_init(self->owner);
@@ -676,6 +724,7 @@ _compat_thread_deinit(LogThreadedDestWorker *self)
 {
   if (self->owner->worker.thread_deinit)
     self->owner->worker.thread_deinit(self->owner);
+  log_threaded_dest_worker_deinit_method(self);
 }
 
 static gboolean
@@ -723,8 +772,6 @@ _init_worker_compat_layer(LogThreadedDestWorker *self)
 static LogThreadedDestWorker *
 _construct_worker(LogThreadedDestDriver *self)
 {
-  log_threaded_dest_worker_init_instance(&self->worker.instance, self);
-  _init_worker_compat_layer(&self->worker.instance);
   return &self->worker.instance;
 }
 
@@ -832,13 +879,6 @@ log_threaded_dest_driver_init_method(LogPipe *s)
   if (cfg && self->flush_timeout == -1)
     self->flush_timeout = cfg->flush_timeout;
 
-  self->worker.instance.queue = log_dest_driver_acquire_queue(
-                         &self->super,
-                         s->generate_persist_name(s));
-
-  if (self->worker.instance.queue == NULL)
-    return FALSE;
-
   _register_stats(self);
 
   self->seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg,
@@ -853,6 +893,9 @@ gboolean
 log_threaded_dest_driver_deinit_method(LogPipe *s)
 {
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
+
+  /* NOTE: workers are shut down by the time we get here, through the
+   * request_exit mechanism of main loop worker threads */
 
   cfg_persist_config_add(log_pipe_get_config(s),
                          _format_seqnum_persist_name(self),
@@ -869,8 +912,8 @@ log_threaded_dest_driver_free(LogPipe *s)
 {
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
 
+  log_threaded_dest_worker_free_method(&self->worker.instance);
   g_mutex_free(self->lock);
-  g_cond_free(self->worker.instance.started_up);
   log_dest_driver_free((LogPipe *)self);
 }
 
@@ -888,9 +931,9 @@ log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalConfig
   self->time_reopen = -1;
   self->flush_lines = -1;
   self->flush_timeout = -1;
-  self->worker.instance.batch_size = 0;
 
   self->retries_max = MAX_RETRIES_OF_FAILED_INSERT_DEFAULT;
   self->lock = g_mutex_new();
-  self->worker.instance.started_up = g_cond_new();
+  log_threaded_dest_worker_init_instance(&self->worker.instance, self);
+  _init_worker_compat_layer(&self->worker.instance);
 }
