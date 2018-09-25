@@ -71,7 +71,6 @@ source_threaded_random_generator
   : KW_RANDOM_GENERATOR
     {
       last_driver = *instance = threaded_random_generator_sd_new(configuration);
-      last_source_options = log_threaded_source_driver_get_source_options(last_driver);
     }
     '(' source_threaded_random_generator_options ')' { $$ = last_driver; }
   ;
@@ -99,8 +98,7 @@ source_threaded_random_generator_option
       CHECK_ERROR(threaded_random_generator_sd_set_type(last_driver, $3), @3, "unknown type() argument");
       free($3);
     }
-  | source_option
-  | source_driver_option
+  | threaded_source_driver_option
   ;
 
 /* INCLUDE_RULES */
