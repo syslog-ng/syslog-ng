@@ -42,6 +42,7 @@ struct _LogThreadedSourceWorker
   LogThreadedSourceDriver *control;
   WakeupCondition wakeup_cond;
   WorkerOptions options;
+  gboolean under_termination;
 
   LogThreadedSourceWorkerRunFunc run;
   LogThreadedSourceWorkerRequestExitFunc request_exit;
@@ -88,12 +89,8 @@ static inline void
 wakeup_cond_signal(WakeupCondition *cond)
 {
   g_mutex_lock(cond->lock);
-
-  if (!cond->awoken)
-    {
-      cond->awoken = TRUE;
-      g_cond_signal(cond->cond);
-    }
+  cond->awoken = TRUE;
+  g_cond_signal(cond->cond);
   g_mutex_unlock(cond->lock);
 }
 
@@ -142,7 +139,8 @@ log_threaded_source_suspend(LogThreadedSourceDriver *self)
 {
   LogThreadedSourceWorker *worker = self->worker;
 
-  wakeup_cond_wait(&worker->wakeup_cond);
+  while (!log_threaded_source_free_to_send(self) && !worker->under_termination)
+    wakeup_cond_wait(&worker->wakeup_cond);
 }
 
 static void
@@ -172,6 +170,7 @@ static void
 log_threaded_source_worker_request_exit(LogThreadedSourceWorker *self)
 {
   msg_debug("Requesting worker thread exit", evt_tag_str("driver", self->control->super.super.id));
+  self->under_termination = TRUE;
   self->request_exit(self->control);
   log_threaded_source_wakeup(self->control);
 }
@@ -313,14 +312,6 @@ void
 log_threaded_source_post(LogThreadedSourceDriver *self, LogMessage *msg)
 {
   msg_debug("Incoming log message", evt_tag_str("msg", log_msg_get_value(msg, LM_V_MESSAGE, NULL)));
-
-  /*
-   * TODO: offload (main_loop_io_worker_job_submit)
-   *
-   * In this case, we should modify or split log_source_post(), because
-   * free_to_send() has to be called before log_pipe_queue() but after
-   * decrementing the window.
-   */
   log_source_post(&self->worker->super, msg);
 }
 
