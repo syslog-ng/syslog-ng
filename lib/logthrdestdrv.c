@@ -29,6 +29,7 @@
 
 #define MAX_RETRIES_OF_FAILED_INSERT_DEFAULT 3
 
+static void _init_stats_key(LogThreadedDestDriver *self, StatsClusterKey *sc_key);
 
 /* LogThreadedDestWorker */
 
@@ -582,6 +583,28 @@ _wait_for_startup_finished(LogThreadedDestWorker *self)
 }
 
 static void
+_register_worker_stats(LogThreadedDestWorker *self)
+{
+  StatsClusterKey sc_key;
+
+  stats_lock();
+  _init_stats_key(self->owner, &sc_key);
+  log_queue_register_stats_counters(self->queue, 0, &sc_key);
+  stats_unlock();
+}
+
+static void
+_unregister_worker_stats(LogThreadedDestWorker *self)
+{
+  StatsClusterKey sc_key;
+
+  stats_lock();
+  _init_stats_key(self->owner, &sc_key);
+  log_queue_unregister_stats_counters(self->queue, &sc_key);
+  stats_unlock();
+}
+
+static void
 _worker_thread(gpointer arg)
 {
   LogThreadedDestWorker *self = (LogThreadedDestWorker *) arg;
@@ -592,6 +615,7 @@ _worker_thread(gpointer arg)
             evt_tag_str("driver", self->owner->super.super.id));
 
   log_queue_set_use_backlog(self->queue, TRUE);
+  _register_worker_stats(self);
 
   iv_event_register(&self->wake_up_event);
   iv_event_register(&self->shutdown_event);
@@ -615,6 +639,7 @@ _worker_thread(gpointer arg)
   _disconnect(self);
 
   log_threaded_dest_worker_thread_deinit(self);
+  _unregister_worker_stats(self);
 
   msg_debug("Worker thread finished",
             evt_tag_str("driver", self->owner->super.super.id));
@@ -625,7 +650,6 @@ _worker_thread(gpointer arg)
   _signal_startup_failure(self);
   iv_deinit();
 }
-
 
 void
 log_threaded_dest_worker_init_instance(LogThreadedDestWorker *self, LogThreadedDestDriver *owner)
@@ -756,18 +780,24 @@ log_threaded_dest_driver_queue(LogPipe *s, LogMessage *msg,
 }
 
 static void
+_init_stats_key(LogThreadedDestDriver *self, StatsClusterKey *sc_key)
+{
+  stats_cluster_logpipe_key_set(sc_key, self->stats_source | SCS_DESTINATION,
+                                self->super.super.id,
+                                self->format_stats_instance(self));
+}
+
+static void
 _register_stats(LogThreadedDestDriver *self)
 {
   stats_lock();
   {
     StatsClusterKey sc_key;
-    stats_cluster_logpipe_key_set(&sc_key,self->stats_source | SCS_DESTINATION,
-                                  self->super.super.id,
-                                  self->format_stats_instance(self));
+
+    _init_stats_key(self, &sc_key);
     stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
     stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
     stats_register_counter(0, &sc_key, SC_TYPE_WRITTEN, &self->written_messages);
-    log_queue_register_stats_counters(self->worker.instance.queue, 0, &sc_key);
   }
   stats_unlock();
 }
@@ -778,13 +808,11 @@ _unregister_stats(LogThreadedDestDriver *self)
   stats_lock();
   {
     StatsClusterKey sc_key;
-    stats_cluster_logpipe_key_set(&sc_key, self->stats_source | SCS_DESTINATION,
-                                  self->super.super.id,
-                                  self->format_stats_instance(self));
+
+    _init_stats_key(self, &sc_key);
     stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
     stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
     stats_unregister_counter(&sc_key, SC_TYPE_WRITTEN, &self->written_messages);
-    log_queue_unregister_stats_counters(self->worker.instance.queue, &sc_key);
   }
   stats_unlock();
 }
