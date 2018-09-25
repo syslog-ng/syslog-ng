@@ -48,8 +48,14 @@ typedef struct _LogThreadedDestWorker
 {
   LogQueue *queue;
   gboolean connected;
+  gint batch_size;
+  gint rewound_batch_size;
+  gint retries_counter;
+  struct timespec last_flush_time;
+  gboolean suspended;
+  gboolean startup_finished;
+  GCond *started_up;
 } LogThreadedDestWorker;
-
 
 struct _LogThreadedDestDriver
 {
@@ -60,8 +66,6 @@ struct _LogThreadedDestDriver
   struct iv_timer timer_reopen;
   struct iv_timer timer_throttle;
   struct iv_timer timer_flush;
-  gboolean startup_finished;
-  GCond *started_up;
   GMutex *lock;
 
   StatsCounterItem *dropped_messages;
@@ -69,20 +73,16 @@ struct _LogThreadedDestDriver
   StatsCounterItem *written_messages;
 
   gint flush_lines;
-  struct timespec last_flush_time;
   gint flush_timeout;
-  gboolean suspended;
+  gboolean enable_flush_timeout;
   gboolean under_termination;
   time_t time_reopen;
-  gint batch_size;
-  gint rewound_batch_size;
-  gint retries_counter;
   gint retries_max;
-  gboolean enable_flush_timeout;
 
   struct
   {
     LogThreadedDestWorker instance;
+
     void (*thread_init)(LogThreadedDestDriver *s);
     void (*thread_deinit)(LogThreadedDestDriver *s);
     gboolean (*connect)(LogThreadedDestDriver *s);
@@ -145,7 +145,7 @@ log_threaded_dest_worker_flush(LogThreadedDestDriver *self)
   if (self->worker.flush)
     result = self->worker.flush(self);
   iv_validate_now();
-  self->last_flush_time = iv_now;
+  self->worker.instance.last_flush_time = iv_now;
   return result;
 }
 

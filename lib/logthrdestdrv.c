@@ -56,8 +56,8 @@ log_threaded_dest_driver_ack_messages(LogThreadedDestDriver *self, gint batch_si
 {
   log_queue_ack_backlog(self->worker.instance.queue, batch_size);
   stats_counter_add(self->written_messages, batch_size);
-  self->retries_counter = 0;
-  self->batch_size -= batch_size;
+  self->worker.instance.retries_counter = 0;
+  self->worker.instance.batch_size -= batch_size;
 }
 
 void
@@ -65,16 +65,16 @@ log_threaded_dest_driver_drop_messages(LogThreadedDestDriver *self, gint batch_s
 {
   log_queue_ack_backlog(self->worker.instance.queue, batch_size);
   stats_counter_add(self->dropped_messages, batch_size);
-  self->retries_counter = 0;
-  self->batch_size -= batch_size;
+  self->worker.instance.retries_counter = 0;
+  self->worker.instance.batch_size -= batch_size;
 }
 
 void
 log_threaded_dest_driver_rewind_messages(LogThreadedDestDriver *self, gint batch_size)
 {
   log_queue_rewind_backlog(self->worker.instance.queue, batch_size);
-  self->rewound_batch_size = self->batch_size;
-  self->batch_size -= batch_size;
+  self->worker.instance.rewound_batch_size = self->worker.instance.batch_size;
+  self->worker.instance.batch_size -= batch_size;
 }
 
 static gboolean
@@ -90,7 +90,7 @@ _should_flush_now(LogThreadedDestDriver *self)
 
   iv_validate_now();
   now = iv_now;
-  diff = timespec_diff_msec(&now, &self->last_flush_time);
+  diff = timespec_diff_msec(&now, &self->worker.instance.last_flush_time);
 
   return (diff >= self->flush_timeout);
 }
@@ -158,7 +158,7 @@ _shutdown_event_callback(gpointer data)
 static void
 _suspend(LogThreadedDestDriver *self)
 {
-  self->suspended = TRUE;
+  self->worker.instance.suspended = TRUE;
 }
 
 /* NOTE: runs in the worker thread */
@@ -196,21 +196,21 @@ _disconnect_and_suspend(LogThreadedDestDriver *self)
 static void
 _accept_batch(LogThreadedDestDriver *self)
 {
-  log_threaded_dest_driver_ack_messages(self, self->batch_size);
+  log_threaded_dest_driver_ack_messages(self, self->worker.instance.batch_size);
 }
 
 /* NOTE: runs in the worker thread */
 static void
 _drop_batch(LogThreadedDestDriver *self)
 {
-  log_threaded_dest_driver_drop_messages(self, self->batch_size);
+  log_threaded_dest_driver_drop_messages(self, self->worker.instance.batch_size);
 }
 
 /* NOTE: runs in the worker thread */
 static void
 _rewind_batch(LogThreadedDestDriver *self)
 {
-  log_threaded_dest_driver_rewind_messages(self, self->batch_size);
+  log_threaded_dest_driver_rewind_messages(self, self->worker.instance.batch_size);
 }
 
 static void
@@ -221,22 +221,22 @@ _process_result(LogThreadedDestDriver *self, gint result)
     case WORKER_INSERT_RESULT_DROP:
       msg_error("Message(s) dropped while sending message to destination",
                 evt_tag_str("driver", self->super.super.id),
-                evt_tag_int("batch_size", self->batch_size));
+                evt_tag_int("batch_size", self->worker.instance.batch_size));
 
       _drop_batch(self);
       _disconnect_and_suspend(self);
       break;
 
     case WORKER_INSERT_RESULT_ERROR:
-      self->retries_counter++;
+      self->worker.instance.retries_counter++;
 
-      if (self->retries_counter >= self->retries_max)
+      if (self->worker.instance.retries_counter >= self->retries_max)
         {
           msg_error("Multiple failures while sending message(s) to destination, message(s) dropped",
                     evt_tag_str("driver", self->super.super.id),
                     log_expr_node_location_tag(self->super.super.super.expr_node),
-                    evt_tag_int("retries", self->retries_counter),
-                    evt_tag_int("batch_size", self->batch_size));
+                    evt_tag_int("retries", self->worker.instance.retries_counter),
+                    evt_tag_int("batch_size", self->worker.instance.batch_size));
 
           _drop_batch(self);
         }
@@ -245,8 +245,8 @@ _process_result(LogThreadedDestDriver *self, gint result)
           msg_error("Error occurred while trying to send a message, trying again",
                     evt_tag_str("driver", self->super.super.id),
                     log_expr_node_location_tag(self->super.super.super.expr_node),
-                    evt_tag_int("retries", self->retries_counter),
-                    evt_tag_int("batch_size", self->batch_size));
+                    evt_tag_int("retries", self->worker.instance.retries_counter),
+                    evt_tag_int("batch_size", self->worker.instance.batch_size));
           _rewind_batch(self);
           _disconnect_and_suspend(self);
         }
@@ -256,7 +256,7 @@ _process_result(LogThreadedDestDriver *self, gint result)
       msg_info("Server disconnected while preparing messages for sending, trying again",
                evt_tag_str("driver", self->super.super.id),
                log_expr_node_location_tag(self->super.super.super.expr_node),
-               evt_tag_int("batch_size", self->batch_size));
+               evt_tag_int("batch_size", self->worker.instance.batch_size));
       _rewind_batch(self);
       _disconnect_and_suspend(self);
       break;
@@ -289,24 +289,24 @@ _perform_inserts(LogThreadedDestDriver *self)
   worker_insert_result_t result;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
-  if (self->batch_size == 0)
+  if (self->worker.instance.batch_size == 0)
     {
       /* first message in the batch sets the last_flush_time, so we
        * won't expedite the flush even if the previous one was a long
        * time ago */
 
       iv_validate_now();
-      self->last_flush_time = iv_now;
+      self->worker.instance.last_flush_time = iv_now;
     }
 
   while (G_LIKELY(!self->under_termination) &&
-         !self->suspended &&
+         !self->worker.instance.suspended &&
          (msg = log_queue_pop_head(self->worker.instance.queue, &path_options)) != NULL)
     {
       msg_set_context(msg);
       log_msg_refcache_start_consumer(msg, &path_options);
 
-      self->batch_size++;
+      self->worker.instance.batch_size++;
       ScratchBuffersMarker mark;
       scratch_buffers_mark(&mark);
 
@@ -321,16 +321,16 @@ _perform_inserts(LogThreadedDestDriver *self)
       msg_set_context(NULL);
       log_msg_refcache_stop();
 
-      if (self->rewound_batch_size)
+      if (self->worker.instance.rewound_batch_size)
         {
-          self->rewound_batch_size--;
-          if (self->rewound_batch_size == 0)
+          self->worker.instance.rewound_batch_size--;
+          if (self->worker.instance.rewound_batch_size == 0)
             break;
         }
 
       iv_invalidate_now();
     }
-  self->rewound_batch_size = 0;
+  self->worker.instance.rewound_batch_size = 0;
 }
 
 static void
@@ -342,11 +342,11 @@ _perform_flush(LogThreadedDestDriver *self)
    * flush() being called always, even if WORKER_INSERT_RESULT_SUCCESS is
    * returned, in which case batch_size is already zero at this point.
    */
-  if (!self->suspended)
+  if (!self->worker.instance.suspended)
     {
       msg_trace("flushing batch",
                 evt_tag_str("driver", self->super.super.id),
-                evt_tag_int("batch_size", self->batch_size));
+                evt_tag_int("batch_size", self->worker.instance.batch_size));
 
       worker_insert_result_t result = log_threaded_dest_worker_flush(self);
       _process_result(self, result);
@@ -383,7 +383,7 @@ _schedule_restart_on_suspend_timeout(LogThreadedDestDriver *self)
 static void
 _schedule_restart_on_flush_timeout(LogThreadedDestDriver *self)
 {
-  self->timer_flush.expires = self->last_flush_time;
+  self->timer_flush.expires = self->worker.instance.last_flush_time;
   timespec_add_msec(&self->timer_flush.expires, self->flush_timeout);
   iv_timer_register(&self->timer_flush);
 }
@@ -391,7 +391,7 @@ _schedule_restart_on_flush_timeout(LogThreadedDestDriver *self)
 static void
 _schedule_restart(LogThreadedDestDriver *self)
 {
-  if (self->suspended)
+  if (self->worker.instance.suspended)
     _schedule_restart_on_suspend_timeout(self);
   else
     iv_task_register(&self->do_work);
@@ -400,7 +400,7 @@ _schedule_restart(LogThreadedDestDriver *self)
 static void
 _schedule_restart_on_next_flush(LogThreadedDestDriver *self)
 {
-  if (self->suspended)
+  if (self->worker.instance.suspended)
     _schedule_restart_on_suspend_timeout(self);
   else if (!_should_flush_now(self))
     _schedule_restart_on_flush_timeout(self);
@@ -423,7 +423,7 @@ _perform_work(gpointer data)
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)data;
   gint timeout_msec = 0;
 
-  self->suspended = FALSE;
+  self->worker.instance.suspended = FALSE;
   main_loop_worker_run_gc();
   _stop_watches(self);
 
@@ -447,7 +447,7 @@ _perform_work(gpointer data)
         _perform_flush(self);
       _schedule_restart(self);
     }
-  else if (self->batch_size > 0)
+  else if (self->worker.instance.batch_size > 0)
     {
       /* nothing in the queue, but there are pending elements in the buffer
        * (e.g.  batch size != 0).  perform a round of flushing.  We might
@@ -501,7 +501,7 @@ _flush_timer_cb(gpointer data)
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)data;
   msg_debug("flush timer expired",
             evt_tag_str("driver", self->super.super.id),
-            evt_tag_int("batch_size", self->batch_size));
+            evt_tag_int("batch_size", self->worker.instance.batch_size));
   _perform_work(data);
 }
 
@@ -554,8 +554,8 @@ static void
 _signal_startup_finished(LogThreadedDestDriver *self)
 {
   g_mutex_lock(self->lock);
-  self->startup_finished = TRUE;
-  g_cond_signal(self->started_up);
+  self->worker.instance.startup_finished = TRUE;
+  g_cond_signal(self->worker.instance.started_up);
   g_mutex_unlock(self->lock);
 }
 
@@ -563,8 +563,8 @@ static void
 _wait_for_startup_finished(LogThreadedDestDriver *self)
 {
   g_mutex_lock(self->lock);
-  while (!self->startup_finished)
-    g_cond_wait(self->started_up, self->lock);
+  while (!self->worker.instance.startup_finished)
+    g_cond_wait(self->worker.instance.started_up, self->lock);
   g_mutex_unlock(self->lock);
 }
 
@@ -746,7 +746,7 @@ log_threaded_dest_driver_free(LogPipe *s)
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
 
   g_mutex_free(self->lock);
-  g_cond_free(self->started_up);
+  g_cond_free(self->worker.instance.started_up);
   log_dest_driver_free((LogPipe *)self);
 }
 
@@ -762,12 +762,12 @@ log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalConfig
   self->super.super.super.queue = log_threaded_dest_driver_queue;
   self->super.super.super.free_fn = log_threaded_dest_driver_free;
   self->time_reopen = -1;
-  self->batch_size = 0;
   self->flush_lines = -1;
   self->flush_timeout = -1;
+  self->worker.instance.batch_size = 0;
 
   self->retries_max = MAX_RETRIES_OF_FAILED_INSERT_DEFAULT;
   _init_watches(self);
   self->lock = g_mutex_new();
-  self->started_up = g_cond_new();
+  self->worker.instance.started_up = g_cond_new();
 }

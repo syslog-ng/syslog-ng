@@ -433,7 +433,7 @@ _format_request_headers(HTTPDestinationDriver *self, LogMessage *msg)
 static void
 _add_message_to_batch(HTTPDestinationDriver *self, LogMessage *msg)
 {
-  if (self->super.batch_size > 1)
+  if (self->super.worker.instance.batch_size > 1)
     {
       g_string_append_len(self->request_body, self->delimiter->str, self->delimiter->len);
     }
@@ -495,7 +495,7 @@ _flush(LogThreadedDestDriver *s)
   CURLcode ret;
   worker_insert_result_t retval;
 
-  if (self->super.batch_size == 0)
+  if (self->super.worker.instance.batch_size == 0)
     return WORKER_INSERT_RESULT_SUCCESS;
 
   _finish_request_body(self);
@@ -535,7 +535,7 @@ _flush(LogThreadedDestDriver *s)
                 evt_tag_str("url", self->url),
                 evt_tag_int("status_code", http_code),
                 evt_tag_int("body_size", self->request_body->len),
-                evt_tag_int("batch_size", self->super.batch_size),
+                evt_tag_int("batch_size", self->super.worker.instance.batch_size),
                 evt_tag_int("redirected", redirect_count != 0),
                 evt_tag_printf("total_time", "%.3f", total_time));
     }
@@ -552,7 +552,7 @@ static gboolean
 _should_initiate_flush(HTTPDestinationDriver *self)
 {
   return (self->flush_bytes && self->request_body->len + self->body_suffix->len >= self->flush_bytes) ||
-         (self->super.flush_lines && self->super.batch_size >= self->super.flush_lines);
+         (self->super.flush_lines && self->super.worker.instance.batch_size >= self->super.flush_lines);
 }
 
 static worker_insert_result_t
