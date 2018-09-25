@@ -653,7 +653,7 @@ _worker_thread(gpointer arg)
   iv_deinit();
   return;
 
- error:
+error:
   _signal_startup_failure(self);
   iv_deinit();
 }
@@ -661,9 +661,8 @@ _worker_thread(gpointer arg)
 gboolean
 log_threaded_dest_worker_init_method(LogThreadedDestWorker *self)
 {
-  self->queue = log_dest_driver_acquire_queue(
-                         &self->owner->super,
-                         _format_queue_persist_name(self));
+  self->queue = log_dest_driver_acquire_queue(&self->owner->super,
+                                              _format_queue_persist_name(self));
 
   if (!self->queue)
     return FALSE;
@@ -937,7 +936,7 @@ log_threaded_dest_driver_init_method(LogPipe *s)
   _register_stats(self);
 
   self->shared_seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg,
-                                                                  _format_seqnum_persist_name(self)));
+                                         _format_seqnum_persist_name(self)));
   if (!self->shared_seq_num)
     init_sequence_number(&self->shared_seq_num);
 
