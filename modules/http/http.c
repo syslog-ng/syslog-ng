@@ -565,7 +565,7 @@ _insert_batched(HTTPDestinationDriver *self, LogMessage *msg)
 
   if (_should_initiate_flush(self))
     {
-      return log_threaded_dest_worker_flush(&self->super);
+      return log_threaded_dest_worker_flush(&self->super.worker.instance);
     }
   return WORKER_INSERT_RESULT_QUEUED;
 }

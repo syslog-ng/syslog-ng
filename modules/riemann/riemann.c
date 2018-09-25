@@ -591,7 +591,7 @@ _insert_single(LogThreadedDestDriver *s, LogMessage *msg)
       return WORKER_INSERT_RESULT_DROP;
     }
 
-  return riemann_worker_flush(&self->super);
+  return log_threaded_dest_driver_flush(&self->super);
 }
 
 static worker_insert_result_t
@@ -615,9 +615,9 @@ _insert_batch(LogThreadedDestDriver *s, LogMessage *msg)
        */
     }
 
-  if (self->super.flush_lines > 1 && self->super.batch_size >= self->super.flush_lines)
+  if (self->super.flush_lines > 1 && self->super.worker.instance.batch_size >= self->super.flush_lines)
     {
-      return log_threaded_dest_worker_flush(&self->super);
+      return log_threaded_dest_driver_flush(&self->super);
     }
   return WORKER_INSERT_RESULT_QUEUED;
 }

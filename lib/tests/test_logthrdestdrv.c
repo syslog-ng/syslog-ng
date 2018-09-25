@@ -413,7 +413,6 @@ _flush_batched_message_error_drop(LogThreadedDestDriver *s)
 
   self->flush_size += self->super.worker.instance.batch_size;
   _expect_batch_size_remains_the_same_across_retries(self);
-
   /* see the note in logthrdestdrv.c:_perform_flush() */
   if (self->super.worker.instance.batch_size == 0)
     return WORKER_INSERT_RESULT_SUCCESS;
@@ -738,7 +737,7 @@ _insert_explicit_acks_message_success(LogThreadedDestDriver *s, LogMessage *msg)
     return WORKER_INSERT_RESULT_QUEUED;
 
   self->flush_size += 1;
-  log_threaded_dest_driver_ack_messages(s, 1);
+  log_threaded_dest_worker_ack_messages(&s->worker.instance, 1);
   return WORKER_INSERT_RESULT_EXPLICIT_ACK_MGMT;
 }
 
@@ -748,7 +747,7 @@ _flush_explicit_acks_message_success(LogThreadedDestDriver *s)
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
 
   self->flush_size += 1;
-  log_threaded_dest_driver_ack_messages(s, 1);
+  log_threaded_dest_worker_ack_messages(&s->worker.instance, 1);
   return WORKER_INSERT_RESULT_EXPLICIT_ACK_MGMT;
 }
 
