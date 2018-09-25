@@ -79,10 +79,23 @@ log_threaded_dest_worker_rewind_messages(LogThreadedDestWorker *self, gint batch
 static const gchar *
 _format_queue_persist_name(LogThreadedDestWorker *self)
 {
+  static gchar persist_name[1024];
   LogPipe *owner = &self->owner->super.super.super;
 
-  return owner->generate_persist_name(owner);
+  if (self->worker_index == 0)
+    {
+      /* the first worker uses the legacy persist name, e.g.  to be able to
+       * recover the queue previously used.  */
+
+      return owner->generate_persist_name(owner);
+    }
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "%s.%d.queue",
+               owner->generate_persist_name(owner), self->worker_index);
+
+  return persist_name;
 }
+
 
 static gboolean
 _should_flush_now(LogThreadedDestWorker *self)
@@ -619,9 +632,10 @@ _worker_thread(gpointer arg)
 
   iv_init();
 
-  msg_debug("Worker thread started",
-            evt_tag_str("driver", self->owner->super.super.id));
-
+  msg_debug("Dedicated worker thread started",
+            evt_tag_int("index", self->worker_index),
+            evt_tag_str("driver", self->owner->super.super.id),
+            log_expr_node_location_tag(self->owner->super.super.super.expr_node));
 
   iv_event_register(&self->wake_up_event);
   iv_event_register(&self->shutdown_event);
@@ -646,8 +660,10 @@ _worker_thread(gpointer arg)
 
   log_threaded_dest_worker_thread_deinit(self);
 
-  msg_debug("Worker thread finished",
-            evt_tag_str("driver", self->owner->super.super.id));
+  msg_debug("Dedicated worker thread finished",
+            evt_tag_int("index", self->worker_index),
+            evt_tag_str("driver", self->owner->super.super.id),
+            log_expr_node_location_tag(self->owner->super.super.super.expr_node));
   iv_deinit();
   return;
 
@@ -685,8 +701,9 @@ log_threaded_dest_worker_free_method(LogThreadedDestWorker *self)
 }
 
 void
-log_threaded_dest_worker_init_instance(LogThreadedDestWorker *self, LogThreadedDestDriver *owner)
+log_threaded_dest_worker_init_instance(LogThreadedDestWorker *self, LogThreadedDestDriver *owner, gint worker_index)
 {
+  self->worker_index = worker_index;
   self->thread_init = log_threaded_dest_worker_init_method;
   self->thread_deinit = log_threaded_dest_worker_deinit_method;
   self->free_fn = log_threaded_dest_worker_free_method;
@@ -704,6 +721,14 @@ log_threaded_dest_worker_free(LogThreadedDestWorker *self)
 }
 
 /* LogThreadedDestDriver */
+
+void
+log_threaded_dest_driver_set_num_workers(LogDriver *s, gint num_workers)
+{
+  LogThreadedDestDriver *self = (LogThreadedDestDriver *) s;
+
+  self->num_workers = num_workers;
+}
 
 /* compatibility bridge between LogThreadedDestWorker */
 
@@ -770,9 +795,17 @@ _init_worker_compat_layer(LogThreadedDestWorker *self)
 /* temporary function until proper LogThreadedDestWorker allocation logic is
  * created.  Right now it is just using a singleton within the driver */
 static LogThreadedDestWorker *
-_construct_worker(LogThreadedDestDriver *self)
+_construct_worker(LogThreadedDestDriver *self, gint worker_index)
 {
-  return &self->worker.instance;
+  if (!self->worker.construct)
+    {
+      /* kick in the compat layer, this case self->worker.instance is the
+       * single worker we have and all Worker related state is in the
+       * (derived) Driver class. */
+
+      return &self->worker.instance;
+    }
+  return self->worker.construct(self, worker_index);
 }
 
 static void
@@ -780,6 +813,10 @@ _request_worker_exit(gpointer s)
 {
   LogThreadedDestWorker *self = (LogThreadedDestWorker *) s;
 
+  msg_debug("Shutting down dedicated worker thread",
+            evt_tag_int("index", self->worker_index),
+            evt_tag_str("driver", self->owner->super.super.id),
+            log_expr_node_location_tag(self->owner->super.super.super.expr_node));
   self->owner->under_termination = TRUE;
   iv_event_post(&self->shutdown_event);
 }
@@ -787,7 +824,16 @@ _request_worker_exit(gpointer s)
 static gboolean
 _start_worker_thread(LogThreadedDestDriver *self)
 {
-  LogThreadedDestWorker *dw = _construct_worker(self);
+  gint worker_index = self->workers_started;
+  LogThreadedDestWorker *dw = _construct_worker(self, worker_index);
+
+  msg_debug("Starting dedicated worker thread",
+            evt_tag_int("index", worker_index),
+            evt_tag_str("driver", self->super.super.id),
+            log_expr_node_location_tag(self->super.super.super.expr_node));
+  g_assert(self->workers[worker_index] == NULL);
+  self->workers[worker_index] = dw;
+  self->workers_started++;
 
   main_loop_create_worker_thread(_worker_thread,
                                  _request_worker_exit,
@@ -804,6 +850,17 @@ log_threaded_dest_driver_set_max_retries(LogDriver *s, gint max_retries)
   self->retries_max = max_retries;
 }
 
+LogThreadedDestWorker *
+_lookup_worker(LogThreadedDestDriver *self, LogMessage *msg)
+{
+  static gint last_worker = 0;
+
+  gint worker_index = last_worker % self->num_workers;
+  last_worker++;
+
+  /* here would come the lookup mechanism that maps msg -> worker that doesn't exist yet. */
+  return self->workers[worker_index];
+}
 
 /* the feeding side of the driver, runs in the source thread and puts an
  * incoming message to the associated queue.
@@ -813,13 +870,14 @@ log_threaded_dest_driver_queue(LogPipe *s, LogMessage *msg,
                                const LogPathOptions *path_options)
 {
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
+  LogThreadedDestWorker *dw = _lookup_worker(self, msg);
   LogPathOptions local_options;
 
   if (!path_options->flow_control_requested)
     path_options = log_msg_break_ack(msg, path_options, &local_options);
 
   log_msg_add_ack(msg, path_options);
-  log_queue_push_tail(self->worker.instance.queue, log_msg_ref(msg), path_options);
+  log_queue_push_tail(dw->queue, log_msg_ref(msg), path_options);
 
   stats_counter_inc(self->processed_messages);
 
@@ -886,7 +944,16 @@ log_threaded_dest_driver_init_method(LogPipe *s)
   if (!self->seq_num)
     init_sequence_number(&self->seq_num);
 
-  return _start_worker_thread(self);
+  /* free previous workers array if set to cope with num_workers change */
+  g_free(self->workers);
+  self->workers = g_new0(LogThreadedDestWorker *, self->num_workers);
+
+  gboolean startup_success = TRUE;
+  for (gint i = 0; startup_success && i < self->num_workers; i++)
+    {
+      startup_success &= _start_worker_thread(self);
+    }
+  return startup_success;
 }
 
 gboolean
@@ -914,6 +981,7 @@ log_threaded_dest_driver_free(LogPipe *s)
 
   log_threaded_dest_worker_free_method(&self->worker.instance);
   g_mutex_free(self->lock);
+  g_free(self->workers);
   log_dest_driver_free((LogPipe *)self);
 }
 
@@ -931,9 +999,10 @@ log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalConfig
   self->time_reopen = -1;
   self->flush_lines = -1;
   self->flush_timeout = -1;
+  self->num_workers = 1;
 
   self->retries_max = MAX_RETRIES_OF_FAILED_INSERT_DEFAULT;
   self->lock = g_mutex_new();
-  log_threaded_dest_worker_init_instance(&self->worker.instance, self);
+  log_threaded_dest_worker_init_instance(&self->worker.instance, self, 0);
   _init_worker_compat_layer(&self->worker.instance);
 }
