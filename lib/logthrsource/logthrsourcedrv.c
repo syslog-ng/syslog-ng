@@ -118,6 +118,8 @@ void
 log_threaded_source_worker_options_defaults(LogThreadedSourceWorkerOptions *options)
 {
   log_source_options_defaults(&options->super);
+  msg_format_options_defaults(&options->parse_options);
+  options->parse_options.flags |= LP_SYSLOG_PROTOCOL;
 }
 
 void
@@ -125,12 +127,14 @@ log_threaded_source_worker_options_init(LogThreadedSourceWorkerOptions *options,
                                         const gchar *group_name)
 {
   log_source_options_init(&options->super, cfg, group_name);
+  msg_format_options_init(&options->parse_options, cfg);
 }
 
 void
 log_threaded_source_worker_options_destroy(LogThreadedSourceWorkerOptions *options)
 {
   log_source_options_destroy(&options->super);
+  msg_format_options_destroy(&options->parse_options);
 }
 
 /* The wakeup lock must be held before calling this function. */

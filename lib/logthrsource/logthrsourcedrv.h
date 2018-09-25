@@ -42,6 +42,7 @@ typedef void (*LogThreadedSourceWorkerWakeupFunc)(LogThreadedSourceDriver *);
 typedef struct _LogThreadedSourceWorkerOptions
 {
   LogSourceOptions super;
+  MsgFormatOptions parse_options;
 } LogThreadedSourceWorkerOptions;
 
 struct _LogThreadedSourceDriver
@@ -73,6 +74,14 @@ log_threaded_source_driver_get_source_options(LogDriver *s)
   LogThreadedSourceDriver *self = (LogThreadedSourceDriver *) s;
 
   return &self->worker_options.super;
+}
+
+static inline MsgFormatOptions *
+log_threaded_source_driver_get_parse_options(LogDriver *s)
+{
+  LogThreadedSourceDriver *self = (LogThreadedSourceDriver *) s;
+
+  return &self->worker_options.parse_options;
 }
 
 /* blocking API */
