@@ -90,31 +90,19 @@ typedef struct _AFSqlDestDriver
   gint num_retries;
   gint flush_lines;
   gint flush_timeout;
-  gint flush_lines_queued;
   gint flags;
   gboolean ignore_tns_config;
   GList *session_statements;
 
   LogTemplateOptions template_options;
 
-  StatsCounterItem *dropped_messages;
-
   GHashTable *dbd_options;
   GHashTable *dbd_options_numeric;
 
-  /* shared by the main/db thread */
-  GMutex *db_thread_mutex;
-  GCond *db_thread_wakeup_cond;
-  gboolean db_thread_terminate;
-  gboolean db_thread_suspended;
-  GTimeVal db_thread_suspend_target;
-  LogQueue *queue;
   /* used exclusively by the db thread */
-  gint32 seq_num;
   dbi_conn dbi_ctx;
   GHashTable *syslogng_conform_tables;
   guint32 failed_message_counter;
-  WorkerOptions worker_options;
   gboolean transaction_active;
 } AFSqlDestDriver;
 
