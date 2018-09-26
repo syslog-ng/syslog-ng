@@ -72,197 +72,7 @@ typedef struct
   } event;
 } RiemannDestDriver;
 
-/*
- * Configuration
- */
-void
-riemann_dd_set_server(LogDriver *d, const gchar *host)
-{
-  RiemannDestDriver *self = (RiemannDestDriver *)d;
 
-  g_free(self->server);
-  self->server = g_strdup(host);
-}
-
-void
-riemann_dd_set_port(LogDriver *d, gint port)
-{
-  RiemannDestDriver *self = (RiemannDestDriver *)d;
-
-  self->port = port;
-}
-
-void
-riemann_dd_set_field_host(LogDriver *d, LogTemplate *value)
-{
-  RiemannDestDriver *self = (RiemannDestDriver *)d;
-
-  self->fields.host = log_template_ref(value);
-}
-
-void
-riemann_dd_set_field_service(LogDriver *d, LogTemplate *value)
-{
-  RiemannDestDriver *self = (RiemannDestDriver *)d;
-
-  self->fields.service = log_template_ref(value);
-}
-
-void
-riemann_dd_set_field_event_time(LogDriver *d, LogTemplate *value)
-{
-  RiemannDestDriver *self = (RiemannDestDriver *)d;
-
-  self->fields.event_time = log_template_ref(value);
-}
-
-void riemann_dd_set_event_time_unit(LogDriver *d, gint unit)
-{
-  RiemannDestDriver *self = (RiemannDestDriver *)d;
-
-  self->fields.event_time_unit = unit;
-}
-
-void
-riemann_dd_set_field_state(LogDriver *d, LogTemplate *value)
-{
-  RiemannDestDriver *self = (RiemannDestDriver *)d;
-
-  self->fields.state = log_template_ref(value);
-}
-
-void
-riemann_dd_set_field_description(LogDriver *d, LogTemplate *value)
-{
-  RiemannDestDriver *self = (RiemannDestDriver *)d;
-
-  self->fields.description = log_template_ref(value);
-}
-
-void
-riemann_dd_set_field_metric(LogDriver *d, LogTemplate *value)
-{
-  RiemannDestDriver *self = (RiemannDestDriver *)d;
-
-  self->fields.metric = log_template_ref(value);
-}
-
-void
-riemann_dd_set_field_ttl(LogDriver *d, LogTemplate *value)
-{
-  RiemannDestDriver *self = (RiemannDestDriver *)d;
-
-  self->fields.ttl = log_template_ref(value);
-}
-
-void
-riemann_dd_set_field_tags(LogDriver *d, GList *taglist)
-{
-  RiemannDestDriver *self = (RiemannDestDriver *)d;
-
-  string_list_free(self->fields.tags);
-  self->fields.tags = taglist;
-}
-
-void
-riemann_dd_set_field_attributes(LogDriver *d, ValuePairs *vp)
-{
-  RiemannDestDriver *self = (RiemannDestDriver *)d;
-
-  value_pairs_unref(self->fields.attributes);
-  self->fields.attributes = vp;
-}
-
-gboolean
-riemann_dd_set_connection_type(LogDriver *d, const gchar *type)
-{
-  RiemannDestDriver *self = (RiemannDestDriver *)d;
-
-  if (strcmp(type, "tcp") == 0)
-    self->type = RIEMANN_CLIENT_TCP;
-  else if (strcmp(type, "udp") == 0)
-    self->type = RIEMANN_CLIENT_UDP;
-  else if (strcmp(type, "tls") == 0)
-    self->type = RIEMANN_CLIENT_TLS;
-  else
-    return FALSE;
-
-  return TRUE;
-}
-
-void
-riemann_dd_set_timeout(LogDriver *d, guint timeout)
-{
-  RiemannDestDriver *self = (RiemannDestDriver *)d;
-  self->timeout = timeout;
-}
-
-void
-riemann_dd_set_tls_cacert(LogDriver *d, const gchar *path)
-{
-  RiemannDestDriver *self = (RiemannDestDriver *)d;
-
-  g_free(self->tls.cacert);
-  self->tls.cacert = g_strdup(path);
-}
-
-void
-riemann_dd_set_tls_cert(LogDriver *d, const gchar *path)
-{
-  RiemannDestDriver *self = (RiemannDestDriver *)d;
-
-  g_free(self->tls.cert);
-  self->tls.cert = g_strdup(path);
-}
-
-void
-riemann_dd_set_tls_key(LogDriver *d, const gchar *path)
-{
-  RiemannDestDriver *self = (RiemannDestDriver *)d;
-
-  g_free(self->tls.key);
-  self->tls.key = g_strdup(path);
-}
-
-LogTemplateOptions *
-riemann_dd_get_template_options(LogDriver *d)
-{
-  RiemannDestDriver *self = (RiemannDestDriver *)d;
-
-  return &self->template_options;
-}
-
-/*
- * Utilities
- */
-
-static const gchar *
-riemann_dd_format_stats_instance(LogThreadedDestDriver *s)
-{
-  RiemannDestDriver *self = (RiemannDestDriver *)s;
-  static gchar persist_name[1024];
-
-  if (s->super.super.super.persist_name)
-    g_snprintf(persist_name, sizeof(persist_name), "riemann,%s", s->super.super.super.persist_name);
-  else
-    g_snprintf(persist_name, sizeof(persist_name), "riemann,%s,%u", self->server, self->port);
-
-  return persist_name;
-}
-
-static const gchar *
-riemann_dd_format_persist_name(const LogPipe *s)
-{
-  const RiemannDestDriver *self = (const RiemannDestDriver *)s;
-  static gchar persist_name[1024];
-
-  if (s->persist_name)
-    g_snprintf(persist_name, sizeof(persist_name), "riemann.%s", s->persist_name);
-  else
-    g_snprintf(persist_name, sizeof(persist_name), "riemann(%s,%u)", self->server, self->port);
-
-  return persist_name;
-}
 
 
 static void
@@ -699,8 +509,199 @@ riemann_dd_init(LogPipe *s)
 }
 
 /*
- * Plugin glue.
+ * RiemanDestDriver
  */
+
+void
+riemann_dd_set_server(LogDriver *d, const gchar *host)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)d;
+
+  g_free(self->server);
+  self->server = g_strdup(host);
+}
+
+void
+riemann_dd_set_port(LogDriver *d, gint port)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)d;
+
+  self->port = port;
+}
+
+void
+riemann_dd_set_field_host(LogDriver *d, LogTemplate *value)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)d;
+
+  self->fields.host = log_template_ref(value);
+}
+
+void
+riemann_dd_set_field_service(LogDriver *d, LogTemplate *value)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)d;
+
+  self->fields.service = log_template_ref(value);
+}
+
+void
+riemann_dd_set_field_event_time(LogDriver *d, LogTemplate *value)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)d;
+
+  self->fields.event_time = log_template_ref(value);
+}
+
+void
+riemann_dd_set_event_time_unit(LogDriver *d, gint unit)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)d;
+
+  self->fields.event_time_unit = unit;
+}
+
+void
+riemann_dd_set_field_state(LogDriver *d, LogTemplate *value)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)d;
+
+  self->fields.state = log_template_ref(value);
+}
+
+void
+riemann_dd_set_field_description(LogDriver *d, LogTemplate *value)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)d;
+
+  self->fields.description = log_template_ref(value);
+}
+
+void
+riemann_dd_set_field_metric(LogDriver *d, LogTemplate *value)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)d;
+
+  self->fields.metric = log_template_ref(value);
+}
+
+void
+riemann_dd_set_field_ttl(LogDriver *d, LogTemplate *value)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)d;
+
+  self->fields.ttl = log_template_ref(value);
+}
+
+void
+riemann_dd_set_field_tags(LogDriver *d, GList *taglist)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)d;
+
+  string_list_free(self->fields.tags);
+  self->fields.tags = taglist;
+}
+
+void
+riemann_dd_set_field_attributes(LogDriver *d, ValuePairs *vp)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)d;
+
+  value_pairs_unref(self->fields.attributes);
+  self->fields.attributes = vp;
+}
+
+gboolean
+riemann_dd_set_connection_type(LogDriver *d, const gchar *type)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)d;
+
+  if (strcmp(type, "tcp") == 0)
+    self->type = RIEMANN_CLIENT_TCP;
+  else if (strcmp(type, "udp") == 0)
+    self->type = RIEMANN_CLIENT_UDP;
+  else if (strcmp(type, "tls") == 0)
+    self->type = RIEMANN_CLIENT_TLS;
+  else
+    return FALSE;
+
+  return TRUE;
+}
+
+void
+riemann_dd_set_timeout(LogDriver *d, guint timeout)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)d;
+  self->timeout = timeout;
+}
+
+void
+riemann_dd_set_tls_cacert(LogDriver *d, const gchar *path)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)d;
+
+  g_free(self->tls.cacert);
+  self->tls.cacert = g_strdup(path);
+}
+
+void
+riemann_dd_set_tls_cert(LogDriver *d, const gchar *path)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)d;
+
+  g_free(self->tls.cert);
+  self->tls.cert = g_strdup(path);
+}
+
+void
+riemann_dd_set_tls_key(LogDriver *d, const gchar *path)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)d;
+
+  g_free(self->tls.key);
+  self->tls.key = g_strdup(path);
+}
+
+LogTemplateOptions *
+riemann_dd_get_template_options(LogDriver *d)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)d;
+
+  return &self->template_options;
+}
+
+/*
+ * Utilities
+ */
+
+static const gchar *
+riemann_dd_format_stats_instance(LogThreadedDestDriver *s)
+{
+  RiemannDestDriver *self = (RiemannDestDriver *)s;
+  static gchar persist_name[1024];
+
+  if (s->super.super.super.persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "riemann,%s", s->super.super.super.persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "riemann,%s,%u", self->server, self->port);
+
+  return persist_name;
+}
+
+static const gchar *
+riemann_dd_format_persist_name(const LogPipe *s)
+{
+  const RiemannDestDriver *self = (const RiemannDestDriver *)s;
+  static gchar persist_name[1024];
+
+  if (s->persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "riemann.%s", s->persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "riemann(%s,%u)", self->server, self->port);
+
+  return persist_name;
+}
+
 
 static void
 riemann_dd_free(LogPipe *d)
