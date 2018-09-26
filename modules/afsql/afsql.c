@@ -938,8 +938,9 @@ error:
 }
 
 static const gchar *
-afsql_dd_format_stats_instance(AFSqlDestDriver *self)
+afsql_dd_format_stats_instance(LogThreadedDestDriver *s)
 {
+  AFSqlDestDriver *self = (AFSqlDestDriver *) s;
   static gchar persist_name[64];
 
   g_snprintf(persist_name, sizeof(persist_name),
@@ -998,7 +999,7 @@ afsql_dd_init(LogPipe *s)
           msg_error("The number of columns and values do not match",
                     evt_tag_int("len_columns", len_cols),
                     evt_tag_int("len_values", len_values));
-          goto error;
+          return FALSE;
         }
       self->fields_len = len_cols;
       self->fields = g_new0(AFSqlField, len_cols);
@@ -1066,32 +1067,18 @@ afsql_dd_init(LogPipe *s)
           msg_error("Unable to initialize database access (DBI)",
                     evt_tag_int("rc", rc),
                     evt_tag_error("error"));
-          goto error;
+          return FALSE;
         }
       else if (rc == 0)
         {
           msg_error("The database access library (DBI) reports no usable SQL drivers, perhaps DBI drivers are not installed properly");
-          goto error;
+          return FALSE;
         }
       else
         {
           dbi_initialized = TRUE;
         }
     }
-
-  return TRUE;
-
-error:
-  return FALSE;
-}
-
-static gboolean
-afsql_dd_deinit(LogPipe *s)
-{
-  AFSqlDestDriver *self = (AFSqlDestDriver *) s;
-
-  if (!log_threaded_dest_driver_deinit_method(s))
-    return FALSE;
 
   return TRUE;
 }
@@ -1141,9 +1128,9 @@ afsql_dd_new(GlobalConfig *cfg)
   log_threaded_dest_driver_init_instance(&self->super, cfg);
 
   self->super.super.super.super.init = afsql_dd_init;
-  self->super.super.super.super.deinit = afsql_dd_deinit;
   self->super.super.super.super.free_fn = afsql_dd_free;
   self->super.super.super.super.generate_persist_name = afsql_dd_format_persist_name;
+  self->super.format_stats_instance = afsql_dd_format_stats_instance;
   self->super.worker.connect = afsql_dd_connect;
   self->super.worker.disconnect = afsql_dd_disconnect;
   self->super.worker.insert = afsql_dd_insert;
@@ -1172,6 +1159,7 @@ afsql_dd_new(GlobalConfig *cfg)
   self->dbd_options_numeric = g_hash_table_new_full(g_str_hash, g_int_equal, g_free, NULL);
 
   log_template_options_defaults(&self->template_options);
+  self->super.stats_source = SCS_SQL;
 
   return &self->super.super.super;
 }
