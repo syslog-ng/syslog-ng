@@ -144,6 +144,7 @@ resolve_hostname_to_sockaddr_using_getaddrinfo(GSockAddr **addr, gint family, co
   hints.ai_family = family;
   hints.ai_socktype = 0;
   hints.ai_protocol = 0;
+  hints.ai_flags = AI_V4MAPPED | AI_ADDRCONFIG;
 
   if (getaddrinfo(name, NULL, &hints, &res) == 0)
     {
