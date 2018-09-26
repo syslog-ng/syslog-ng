@@ -398,7 +398,6 @@ static gboolean
 _add_key(PersistState *self, const gchar *key, PersistEntryHandle handle)
 {
   PersistEntry *entry;
-  gpointer key_area;
   gboolean new_block_created = FALSE;
   SerializeArchive *sa;
 
@@ -417,7 +416,7 @@ _add_key(PersistState *self, const gchar *key, PersistEntryHandle handle)
       guint32 chain_size = sizeof(guint32) + sizeof(guint32);
       gboolean success;
 
-      key_area = persist_state_map_entry(self, self->current_key_block);
+      gchar *key_area = persist_state_map_entry(self, self->current_key_block);
 
       /* we reserve space for the next area pointer */
       sa = serialize_buffer_archive_new(key_area + self->current_key_ofs,
@@ -500,12 +499,11 @@ _load_v23(PersistState *self, gint version, SerializeArchive *sa)
       guint32 str_len;
       if (key[0] && serialize_read_cstring(sa, &value, &len))
         {
-          gpointer new_block;
           PersistEntryHandle new_handle;
 
           /*  add length of the string */
           new_handle = _alloc_value(self, len + sizeof(str_len), FALSE, version);
-          new_block = persist_state_map_entry(self, new_handle);
+          gchar *new_block = persist_state_map_entry(self, new_handle);
 
           /* NOTE: we add an extra length field to the old value, as our
            * persist_state_lookup_string() needs that.

@@ -110,7 +110,7 @@ log_proto_file_writer_flush(LogProtoClient *s)
       self->partial = (guchar *)g_malloc(self->partial_len);
       ofs = sum - rc; /* the length of the remaning (not processed) chunk in the first message */
       pos = self->buffer[i0].iov_len - ofs;
-      memcpy(self->partial, self->buffer[i0].iov_base + pos, ofs);
+      memcpy(self->partial, (guchar *) self->buffer[i0].iov_base + pos, ofs);
       i = i0 + 1;
       while (i < self->buf_count)
         {

@@ -506,13 +506,6 @@ AX_CFLAGS_GCC_OPTION(-Winitializer-overrides,
 		     CFLAGS_INITIALIZER_OVERRIDES,
 		     CFLAGS_ADD="${CFLAGS_ADD} -Wno-initializer-overrides")
 
-dnl This CFLAGS is used in db-parser, as it uses guint8 and gchar *
-dnl interchangeably, producing a lot of warnings, it is only added during the
-dnl compilation of db-parser().
-dnl
-
-AX_CFLAGS_GCC_OPTION(-Wno-pointer-sign, CFLAGS_NOWARN_POINTER_SIGN)
-
 dnl User supplied CFLAGS come last
 CFLAGS="${CFLAGS_ADD} ${ac_cv_env_CFLAGS_value}"
 
@@ -1802,7 +1795,6 @@ AC_SUBST(JSON_SUBDIRS)
 AC_SUBST(JSON_DEPENDENCY)
 AC_SUBST(IVYKIS_SUBDIRS)
 AC_SUBST(RESOLV_LIBS)
-AC_SUBST(CFLAGS_NOWARN_POINTER_SIGN)
 AC_SUBST(UUID_CFLAGS)
 AC_SUBST(UUID_LIBS)
 

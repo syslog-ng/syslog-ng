@@ -232,7 +232,9 @@ if (ENABLE_EXTRA_WARNINGS)
     -Wdeprecated-declarations
     -Woverflow
     -Wdouble-promotion
-    -Wfloat-equal)
+    -Wfloat-equal
+    -Wpointer-arith
+    -Wpointer-sign)
 endif()
 
 add_compile_options(${IMPORTANT_WARNINGS} ${ACCEPTABLE_WARNINGS} ${EXTRA_WARNINGS})

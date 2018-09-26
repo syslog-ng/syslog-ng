@@ -96,7 +96,7 @@ test_search_matches(RNode *root, const gchar *key, const gchar *search_pattern[]
   RParserMatch *match;
   const gchar *match_name;
 
-  RNode *ret = r_find_node(root, (guint8 *)key, strlen(key), matches);
+  RNode *ret = r_find_node(root, (gchar *) key, strlen(key), matches);
 
   if (!search_pattern[0])
     {

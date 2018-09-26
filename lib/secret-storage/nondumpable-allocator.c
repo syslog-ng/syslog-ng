@@ -31,7 +31,7 @@
 #include "nondumpable-allocator.h"
 
 #define ALLOCATION_HEADER_SIZE offsetof(Allocation, user_data)
-#define BUFFER_TO_ALLOCATION(buffer) (buffer - ALLOCATION_HEADER_SIZE)
+#define BUFFER_TO_ALLOCATION(buffer) ((Allocation *) ((guint8 *) buffer - ALLOCATION_HEADER_SIZE))
 
 void(*logger)(gchar *summary, gchar *reason) INTERNAL;
 
