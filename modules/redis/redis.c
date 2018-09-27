@@ -343,7 +343,7 @@ redis_dd_init(LogPipe *s)
   RedisDriver *self = (RedisDriver *)s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
-  if (!log_dest_driver_init_method(s))
+  if (!log_threaded_dest_driver_init_method(s))
     return FALSE;
 
   if (!self->key && !self->param1)
@@ -360,7 +360,7 @@ redis_dd_init(LogPipe *s)
               evt_tag_str("host", self->host),
               evt_tag_int("port", self->port));
 
-  return log_threaded_dest_driver_init_method(s);
+  return log_threaded_dest_driver_start_workers(&self->super);
 }
 
 static void
