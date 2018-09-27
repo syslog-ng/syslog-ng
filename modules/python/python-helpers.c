@@ -275,6 +275,21 @@ _py_get_optional_method(PyObject *instance, const gchar *class, const gchar *met
   return method;
 }
 
+PyObject *
+_py_invoke_method_by_name(PyObject *instance, const gchar *method_name, PyObject *arg, const gchar *class,
+                          const gchar *module)
+{
+  PyObject *method = _py_get_optional_method(instance, class, method_name, module);
+
+  if (!method)
+    return NULL;
+
+  PyObject *ret = _py_invoke_function(method, arg, class, module);
+  Py_DECREF(method);
+
+  return ret;
+}
+
 void
 _py_invoke_void_method_by_name(PyObject *instance, const gchar *method_name, const gchar *class, const gchar *module)
 {
