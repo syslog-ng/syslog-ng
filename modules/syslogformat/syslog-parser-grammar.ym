@@ -81,8 +81,9 @@ parser_syslog_opt
         ;
 
 parser_syslog_opt_flags
-        : string parser_syslog_opt_flags     { CHECK_ERROR(msg_format_options_process_flag(&((SyslogParser *) last_parser)->parse_options, $1), @1, "Unknown flag %s", $1); free($1); }
-	|
+        : string parser_syslog_opt_flags                { CHECK_ERROR(msg_format_options_process_flag(&((SyslogParser *) last_parser)->parse_options, $1), @1, "Unknown flag %s", $1); free($1); }
+        | KW_CHECK_HOSTNAME parser_syslog_opt_flags     { msg_format_options_process_flag(&((SyslogParser *) last_parser)->parse_options, "check-hostname");  }
+        |
 	;
 
 /* INCLUDE_RULES */
