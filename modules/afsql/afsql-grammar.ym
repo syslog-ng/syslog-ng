@@ -118,7 +118,7 @@ dest_afsql_option
         | KW_NULL '(' string ')'                { afsql_dd_set_null_value(last_driver, $3); free($3); }
         | KW_RETRIES '(' nonnegative_integer ')'          { afsql_dd_set_retries(last_driver, $3); }
         | KW_FLUSH_LINES '(' nonnegative_integer ')'      { afsql_dd_set_flush_lines(last_driver, $3); }
-        | KW_FLUSH_TIMEOUT '(' positive_integer ')'    { /* this is deprecated parameter as of 3.5, doing nothing */ }
+        | KW_FLUSH_TIMEOUT '(' positive_integer ')'    { log_threaded_dest_driver_set_flush_timeout(last_driver, $3); }
         | KW_SESSION_STATEMENTS '(' string_list ')' { afsql_dd_set_session_statements(last_driver, $3); }
         | KW_FLAGS '(' dest_afsql_flags ')'     { afsql_dd_set_flags(last_driver, $3); }
 	| KW_CREATE_STATEMENT_APPEND '(' string ')' { afsql_dd_set_create_statement_append(last_driver, $3); free($3); }
