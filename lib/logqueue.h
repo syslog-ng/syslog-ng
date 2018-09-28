@@ -53,8 +53,8 @@ struct _LogQueue
 
   struct
   {
-    gsize memory_usage;
-    gsize queued_messages;
+    atomic_gssize memory_usage;
+    atomic_gssize queued_messages;
   } stats_cache;
 
   GStaticMutex lock;
