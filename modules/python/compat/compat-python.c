@@ -21,7 +21,7 @@
  *
  */
 
-#include "compat-python.h"
+#include "python-module.h"
 
 #if SYSLOG_NG_ENABLE_PYTHONv2
 #include "compat-python-v2.c"
