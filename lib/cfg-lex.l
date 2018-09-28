@@ -308,6 +308,11 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
                              yy_push_state(block_qstring, yyscanner);
                            }
 
+<block_content>\#          {
+                             g_string_append_c(yyextra->string_buffer, yytext[0]);
+                             _process_commented_line(yyscanner, yyextra->string_buffer, TRUE);
+                           }
+
 <block_string>[^"]+        { g_string_append(yyextra->string_buffer, yytext); }
 <block_string>\\\"         { g_string_append(yyextra->string_buffer, yytext); }
 <block_string>\"           {
