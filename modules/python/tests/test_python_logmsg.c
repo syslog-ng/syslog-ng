@@ -212,3 +212,23 @@ Test(python_log_message, test_py_log_message_constructor_with_binary)
   Py_DECREF(py_msg);
   PyGILState_Release(gstate);
 }
+
+Test(python_log_message, test_py_log_message_set_pri)
+{
+  gint pri = 165;
+
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+
+  PyObject *arg = Py_BuildValue("i", pri);
+  PyLogMessage *py_msg = _construct_py_log_msg(NULL);
+  Py_DECREF(arg);
+
+  PyObject *ret = _py_invoke_method_by_name((PyObject *) py_msg, "set_pri", arg, NULL, NULL);
+  Py_XDECREF(ret);
+
+  cr_assert_eq(py_msg->msg->pri, pri);
+
+  Py_DECREF(py_msg);
+  PyGILState_Release(gstate);
+}

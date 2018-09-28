@@ -254,12 +254,25 @@ _logmessage_get_keys_method(PyLogMessage *self)
   return keys;
 }
 
+static PyLogMessage *
+py_log_message_set_pri(PyLogMessage *self, PyObject *args, PyObject *kwrds)
+{
+  guint pri;
+
+  static const gchar *kwlist[] = {"pri", NULL};
+  if (!PyArg_ParseTupleAndKeywords(args, kwrds, "I", (gchar **) kwlist, &pri))
+    return NULL;
+
+  self->msg->pri = pri;
+
+  Py_INCREF(self);
+  return self;
+}
+
 static PyMethodDef py_log_message_methods[] =
 {
-  {
-    "keys", (PyCFunction)_logmessage_get_keys_method,
-    METH_NOARGS, "Return keys."
-  },
+  { "keys", (PyCFunction)_logmessage_get_keys_method, METH_NOARGS, "Return keys." },
+  { "set_pri", (PyCFunction)py_log_message_set_pri, METH_VARARGS | METH_KEYWORDS, "Set priority" },
   {NULL}
 };
 
