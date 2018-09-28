@@ -127,6 +127,23 @@ yy_input_run_backtick_substitution(CfgLexer *self, gchar *buf, gsize buf_size)
     longjmp(__yyg->yyextra_r->fatal_error, 1);				\
   } while(0)
 
+#define _process_commented_line(scanner,content,cond) \
+  do {                                                \
+    int ch;                                           \
+                                                      \
+    ch = input(scanner);                              \
+    while (ch != '\n' && ch != EOF && ch != 0)        \
+      {                                               \
+        if (cond)                                     \
+          g_string_append_c(content, ch);             \
+        ch = input(scanner);                          \
+      }                                               \
+    if (ch == '\n')                                   \
+      {                                               \
+        unput(ch);                                    \
+      }                                               \
+  } while (0)
+
 
 static void
 _cfg_lex_move_token_location_to_new_line(CfgLexer *lexer)
@@ -197,19 +214,7 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 %%
 
 \#                         {
-                             int ch;
-
-                             ch = input(yyscanner);
-                             while (ch != '\n' && ch != EOF && ch != 0)
-                               {
-                                 if (yyextra->token_text)
-                                   g_string_append_c(yyextra->token_text, ch);
-                                 ch = input(yyscanner);
-                               }
-                             if (ch == '\n')
-                               {
-                                 unput(ch);
-                               }
+                             _process_commented_line(yyscanner,yyextra->token_text,yyextra->token_text);
                            }
 ^@                         {
                              return LL_PRAGMA;
