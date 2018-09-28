@@ -158,6 +158,29 @@ py_log_message_new(LogMessage *msg)
   return (PyObject *) self;
 }
 
+static PyObject *
+py_log_message_new_empty(PyTypeObject *subtype, PyObject *args, PyObject *kwds)
+{
+  const gchar *message = NULL;
+  gint message_length = 0;
+
+  static const gchar *kwlist[] = {"message", NULL};
+  if (!PyArg_ParseTupleAndKeywords(args, kwds, "|z#", (gchar **) kwlist, &message, &message_length))
+    return NULL;
+
+  PyLogMessage *self = (PyLogMessage *) subtype->tp_alloc(subtype, 0);
+  if (!self)
+    return NULL;
+
+  self->msg = log_msg_new_empty();
+  invalidate_cached_time();
+
+  if (message)
+    log_msg_set_value(self->msg, LM_V_MESSAGE, message, message_length);
+
+  return (PyObject *) self;
+}
+
 static PyMappingMethods py_log_message_mapping =
 {
   .mp_length = NULL,
@@ -248,7 +271,7 @@ PyTypeObject py_log_message_type =
   .tp_dealloc = (destructor) py_log_message_free,
   .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
   .tp_doc = "LogMessage class encapsulating a syslog-ng log message",
-  .tp_new = PyType_GenericNew,
+  .tp_new = py_log_message_new_empty,
   .tp_as_mapping = &py_log_message_mapping,
   .tp_methods = py_log_message_methods,
   0,
