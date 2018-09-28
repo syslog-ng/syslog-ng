@@ -142,7 +142,7 @@ static void
 py_log_message_free(PyLogMessage *self)
 {
   log_msg_unref(self->msg);
-  PyObject_Del(self);
+  Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
 PyObject *
