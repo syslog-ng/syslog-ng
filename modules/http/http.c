@@ -314,12 +314,6 @@ http_dd_init(LogPipe *s)
       self->url = g_strdup(HTTP_DEFAULT_URL);
     }
 
-  curl_version_info_data *curl_info = curl_version_info(CURLVERSION_NOW);
-  if (!self->user_agent)
-    self->user_agent = g_strdup_printf("syslog-ng %s/libcurl %s",
-                                       SYSLOG_NG_VERSION, curl_info->version);
-
-
   return log_threaded_dest_driver_start_workers(&self->super);
 }
 
@@ -374,6 +368,10 @@ http_dd_new(GlobalConfig *cfg)
   self->body_prefix = g_string_new("");
   self->body_suffix = g_string_new("");
   self->delimiter = g_string_new("\n");
+  curl_version_info_data *curl_info = curl_version_info(CURLVERSION_NOW);
+  if (!self->user_agent)
+    self->user_agent = g_strdup_printf("syslog-ng %s/libcurl %s",
+                                       SYSLOG_NG_VERSION, curl_info->version);
 
   return &self->super.super.super;
 }
