@@ -49,7 +49,7 @@ log_source_window_empty(LogSource *self)
 {
   if (self->window_empty_cb)
     self->window_empty_cb(self);
-  msg_debug("LogSource window is empty");
+  msg_trace("LogSource window is empty");
 }
 
 static inline void
