@@ -323,12 +323,6 @@ http_dd_init(LogPipe *s)
   return log_threaded_dest_driver_start_workers(&self->super);
 }
 
-gboolean
-http_dd_deinit(LogPipe *s)
-{
-  return log_threaded_dest_driver_deinit_method(s);
-}
-
 static void
 http_dd_free(LogPipe *s)
 {
@@ -365,7 +359,6 @@ http_dd_new(GlobalConfig *cfg)
 
   self->super.super.super.super.init = http_dd_init;
   self->super.super.super.super.free_fn = http_dd_free;
-  self->super.super.super.super.deinit = http_dd_deinit;
   self->super.super.super.super.generate_persist_name = _format_persist_name;
   self->super.format_stats_instance = _format_stats_instance;
   self->super.stats_source = SCS_HTTP;
