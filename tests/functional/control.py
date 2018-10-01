@@ -43,7 +43,7 @@ def start_syslogng(conf, keep_persist=False, verbose=False):
     f = open('test.conf', 'w')
     f.write(conf)
     f.close()
-
+# Check if verbose is true
     if verbose:
         verbose_opt = '-edv'
     else:
