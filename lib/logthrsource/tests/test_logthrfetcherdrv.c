@@ -169,8 +169,6 @@ _fetch(LogThreadedFetcherDriver *s)
       };
     }
 
-  LogMessage *msg = create_sample_message();
-
   g_mutex_lock(self->lock);
   if (self->num_of_messages_to_generate <= 0)
     {
@@ -181,6 +179,8 @@ _fetch(LogThreadedFetcherDriver *s)
         THREADED_FETCH_ERROR, NULL
       };
     }
+
+  LogMessage *msg = create_sample_message();
 
   self->num_of_messages_to_generate--;
   g_mutex_unlock(self->lock);
