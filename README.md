@@ -1,8 +1,8 @@
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/balabit/syslog-ng?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=body_badge)
 [![Build Status](https://travis-ci.org/balabit/syslog-ng.svg?branch=master)](https://travis-ci.org/balabit/syslog-ng)
 
-syslog-ng
-=========
+<h1 align ="center">syslog-ng </h1>
+
 
 syslog-ng is an enhanced log daemon, supporting a wide range of input
 and output methods: syslog, unstructured text, message queues,
@@ -146,7 +146,7 @@ Binaries are available in various Linux distributions and contributors
 maintain packages of the latest and greatest syslog-ng version for
 various OSes.
 
-### Debian/Ubuntu
+### *Debian/Ubuntu* 
 
 Simply invoke the following command as root:
 
@@ -160,7 +160,7 @@ and Ubuntu releases and architectures from an
 
 For instructions on how to install syslog-ng on Debian/Ubuntu distributions, see the blog post [Installing the latest syslog-ng on Ubuntu and other DEB distributions](https://syslog-ng.com/blog/installing-the-latest-syslog-ng-on-ubuntu-and-other-deb-distributions/).
 
-### Fedora
+### *Fedora*
 
 syslog-ng is available as a Fedora package that you can install using
 yum:
@@ -173,14 +173,14 @@ For instructions on how to install syslog-ng on RPM distributions, see the blog 
 
 If you wish to install the latest RPM package that comes from a recent commit in Git for testing purposes, then read the blog post [RPM packages from syslog-ng Git HEAD](https://syslog-ng.com/blog/rpm-packages-from-syslog-ng-git-head/).
 
-### Others
+### *Others*
 
 Binaries for other platforms are listed on the
 official [third party page][3rd-party].
 
  [3rd-party]: https://syslog-ng.com/3rd-party-binaries
 
-## Installation from Docker image
+## Installation from Docker 🐳 image
 
 Binaries are also available as a Docker image. To find out more, check out the blog post [Your central log server in Docker](https://syslog-ng.com/blog/central-log-server-docker/).
 
