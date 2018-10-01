@@ -47,12 +47,7 @@ create_log_filter_pipe(void)
 
   LogFilterPipe *p = (LogFilterPipe *)log_filter_pipe_new(filter, configuration);
 
-  stats_lock();
-  StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, SCS_FILTER, "filter-matching", NULL );
-  stats_register_counter(1, &sc_key, SC_TYPE_MATCHED, &p->matched);
-  stats_register_counter(1, &sc_key, SC_TYPE_NOT_MATCHED, &p->not_matched);
-  stats_unlock();
+  log_pipe_init(&p->super);
 
   return p;
 }
@@ -68,15 +63,29 @@ queue_and_assert_statistics(LogFilterPipe *pipe, gchar *msg, guint32 matched_exp
   cr_assert_eq(stats_counter_get(pipe->matched), matched_expected);
 }
 
-Test(test_filters_statistics, filter_stastistics)
+void
+setup(void)
 {
   app_startup();
 
   configuration = cfg_new_snippet();
   configuration->stats_options.level = 1;
   cfg_load_module(configuration, "syslogformat");
-  cr_assert(cfg_init(configuration));
+  cfg_init(configuration);
+}
 
+void
+teardown(void)
+{
+  cfg_deinit(configuration);
+  cfg_free(configuration);
+  app_shutdown();
+}
+
+TestSuite(test_filters_statistics, .init = setup, .fini = teardown);
+
+Test(test_filters_statistics, filter_stastistics)
+{
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);
 
@@ -85,7 +94,6 @@ Test(test_filters_statistics, filter_stastistics)
   queue_and_assert_statistics(p, "<16> openvpn[2499]: PTHREAD support initialized", 1, 1);
   queue_and_assert_statistics(p, "<16> openvpn[2499]: PTHREAD support initialized", 1, 2);
 
-  cfg_deinit(configuration);
-  cfg_free(configuration);
-  app_shutdown();
+  log_pipe_deinit(&p->super);
+  log_pipe_unref(&p->super);
 }
