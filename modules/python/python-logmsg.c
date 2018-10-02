@@ -286,11 +286,50 @@ py_log_message_set_timestamp(PyLogMessage *self, PyObject *args, PyObject *kwrds
   return self;
 }
 
+static PyObject *
+py_log_message_parse(PyObject *_none, PyObject *args, PyObject *kwrds)
+{
+  const gchar *raw_msg;
+  gint raw_msg_length;
+
+  PyObject *py_parse_options;
+
+  static const gchar *kwlist[] = {"raw_msg", "parse_options", NULL};
+  if (!PyArg_ParseTupleAndKeywords(args, kwrds, "s#O", (gchar **) kwlist, &raw_msg, &raw_msg_length, &py_parse_options))
+    return NULL;
+
+  if (!PyCapsule_CheckExact(py_parse_options))
+    {
+      PyErr_Format(PyExc_TypeError, "Parse options (PyCapsule) expected in the second parameter");
+      return NULL;
+    }
+
+  MsgFormatOptions *parse_options = PyCapsule_GetPointer(py_parse_options, NULL);
+  if (!parse_options)
+    {
+      PyErr_Clear();
+      PyErr_Format(PyExc_TypeError, "Invalid parse options (PyCapsule)");
+      return NULL;
+    }
+
+  PyLogMessage *py_msg = PyObject_New(PyLogMessage, &py_log_message_type);
+  if (!py_msg)
+    {
+      PyErr_Format(PyExc_TypeError, "Error creating new PyLogMessage");
+      return NULL;
+    }
+
+  py_msg->msg = log_msg_new(raw_msg, raw_msg_length, NULL, parse_options);
+
+  return (PyObject *) py_msg;
+}
+
 static PyMethodDef py_log_message_methods[] =
 {
   { "keys", (PyCFunction)_logmessage_get_keys_method, METH_NOARGS, "Return keys." },
   { "set_pri", (PyCFunction)py_log_message_set_pri, METH_VARARGS | METH_KEYWORDS, "Set priority" },
   { "set_timestamp", (PyCFunction)py_log_message_set_timestamp, METH_VARARGS | METH_KEYWORDS, "Set timestamp" },
+  { "parse", (PyCFunction)py_log_message_parse, METH_STATIC|METH_VARARGS|METH_KEYWORDS, "Parse and create LogMessage" },
   {NULL}
 };
 
