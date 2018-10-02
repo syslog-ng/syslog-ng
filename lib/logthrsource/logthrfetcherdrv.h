@@ -56,6 +56,7 @@ struct _LogThreadedFetcherDriver
   struct iv_event wakeup_event;
   struct iv_event shutdown_event;
   struct iv_timer reconnect_timer;
+  gboolean suspended;
   gboolean under_termination;
 
   void (*thread_init)(LogThreadedFetcherDriver *self);

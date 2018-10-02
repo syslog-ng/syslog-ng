@@ -129,6 +129,8 @@ _schedule_next_fetch_if_free_to_send(LogThreadedFetcherDriver *self)
 {
   if (log_threaded_source_free_to_send(&self->super))
     iv_task_register(&self->fetch_task);
+  else
+    self->suspended = TRUE;
 }
 
 static void
@@ -186,8 +188,13 @@ _wakeup_event_handler(gpointer data)
 {
   LogThreadedFetcherDriver *self = (LogThreadedFetcherDriver *) data;
 
-  if (!iv_task_registered(&self->fetch_task))
-    iv_task_register(&self->fetch_task);
+  if (self->suspended && log_threaded_source_free_to_send(&self->super))
+    {
+      self->suspended = FALSE;
+
+      if (!iv_task_registered(&self->fetch_task))
+        iv_task_register(&self->fetch_task);
+    }
 }
 
 static void
