@@ -205,7 +205,7 @@ static worker_insert_result_t
 _map_http_status_to_worker_status(HTTPDestinationWorker *self, glong http_code)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
-  worker_insert_result_t retval;
+  worker_insert_result_t retval = WORKER_INSERT_RESULT_ERROR;
 
   switch (http_code/100)
     {
@@ -215,9 +215,9 @@ _map_http_status_to_worker_status(HTTPDestinationWorker *self, glong http_code)
                 evt_tag_str("url", owner->url),
                 evt_tag_int("status_code", http_code),
                 log_pipe_location_tag(&owner->super.super.super.super));
-      retval = WORKER_INSERT_RESULT_ERROR;
       break;
     case 2:
+      /* everything is dandy */
       retval = WORKER_INSERT_RESULT_SUCCESS;
       break;
     case 3:
@@ -226,7 +226,6 @@ _map_http_status_to_worker_status(HTTPDestinationWorker *self, glong http_code)
                  evt_tag_str("url", owner->url),
                  evt_tag_int("status_code", http_code),
                  log_pipe_location_tag(&owner->super.super.super.super));
-      retval = WORKER_INSERT_RESULT_ERROR;
       break;
     case 4:
       msg_notice("Server returned with a 4XX (client errors) status code, which means we are not "
@@ -234,15 +233,19 @@ _map_http_status_to_worker_status(HTTPDestinationWorker *self, glong http_code)
                  evt_tag_str("url", owner->url),
                  evt_tag_int("status_code", http_code),
                  log_pipe_location_tag(&owner->super.super.super.super));
-      retval = WORKER_INSERT_RESULT_ERROR;
+      break;
+    case 5:
+      msg_notice("Server returned with a 5XX (server errors) status code, which indicates server failure. "
+                 "Trying again",
+                 evt_tag_str("url", owner->url),
+                 evt_tag_int("status_code", http_code),
+                 log_pipe_location_tag(&owner->super.super.super.super));
       break;
     default:
       msg_error("Unknown HTTP response code",
                 evt_tag_str("url", owner->url),
                 evt_tag_int("status_code", http_code),
                 log_pipe_location_tag(&owner->super.super.super.super));
-    case 5:
-      retval = WORKER_INSERT_RESULT_ERROR;
       break;
     }
 
