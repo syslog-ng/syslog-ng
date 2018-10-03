@@ -13,7 +13,7 @@ BEGIN {
 	print \
 "source msgs {\n" \
 "	system();\n" \
-"	udp();\n" \
+"	network(transport(udp));\n" \
 "	internal();\n" \
 "};\n";
 }
@@ -115,7 +115,7 @@ function make_destination(d, destNo) {
 	printf "destination d_" destNo " { \n";
 
 	if (d ~ /^@/) {
-		printf "\tudp(\"" substr(d, 2) "\" port(514));\n";
+		printf "\tnetwork(\"" substr(d, 2) "\" transport(udp) port(514));\n";
 	}
 	else if (d ~ /^\|\//) {
 		printf "\tpipe(\"" substr(d, 2) "\");\n";
