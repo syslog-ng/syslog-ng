@@ -33,10 +33,17 @@
 #define CURL_NO_OLDIES 1
 #include <curl/curl.h>
 
+typedef struct _HTTPDestinationWorker
+{
+  LogThreadedDestWorker super;
+  CURL *curl;
+  GString *request_body;
+  struct curl_slist *request_headers;
+} HTTPDestinationWorker;
+
 typedef struct
 {
   LogThreadedDestDriver super;
-  CURL *curl;
   gchar *url;
   gchar *user;
   gchar *password;
@@ -49,14 +56,12 @@ typedef struct
   gchar *ciphers;
   GString *body_prefix;
   GString *body_suffix;
+  GString *delimiter;
   int ssl_version;
   gboolean peer_verify;
   short int method_type;
   glong timeout;
   glong flush_bytes;
-  struct curl_slist *request_headers;
-  GString *request_body;
-  GString *delimiter;
   LogTemplate *body_template;
   LogTemplateOptions template_options;
 } HTTPDestinationDriver;

@@ -24,6 +24,7 @@
 #include "syslog-names.h"
 #include "scratch-buffers.h"
 
+/* HTTPDestinationWorker */
 
 static gchar *
 _sanitize_curl_debug_message(const gchar *data, gsize size)
@@ -55,6 +56,7 @@ _curl_debug_function(CURL *handle, curl_infotype type,
                      char *data, size_t size,
                      void *userp)
 {
+  HTTPDestinationWorker *self = (HTTPDestinationWorker *) userp;
   if (!G_UNLIKELY(trace_flag))
     return 0;
 
@@ -63,11 +65,13 @@ _curl_debug_function(CURL *handle, curl_infotype type,
   const gchar *text = curl_infotype_to_text[type];
   gchar *sanitized = _sanitize_curl_debug_message(data, size);
   msg_trace("cURL debug",
+            evt_tag_int("worker", self->super.worker_index),
             evt_tag_str("type", text),
             evt_tag_str("data", sanitized));
   g_free(sanitized);
   return 0;
 }
+
 
 static size_t
 _curl_write_function(char *ptr, size_t size, size_t nmemb, void *userdata)
@@ -76,53 +80,55 @@ _curl_write_function(char *ptr, size_t size, size_t nmemb, void *userdata)
   return nmemb * size;
 }
 
-
 /* Set up options that are static over the course of a single configuration,
  * request specific options will be set separately
  */
 static void
-_setup_static_options_in_curl(HTTPDestinationDriver *self)
+_setup_static_options_in_curl(HTTPDestinationWorker *self)
 {
+  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
+
   curl_easy_reset(self->curl);
 
   curl_easy_setopt(self->curl, CURLOPT_WRITEFUNCTION, _curl_write_function);
 
-  curl_easy_setopt(self->curl, CURLOPT_URL, self->url);
+  curl_easy_setopt(self->curl, CURLOPT_URL, owner->url);
 
-  if (self->user)
-    curl_easy_setopt(self->curl, CURLOPT_USERNAME, self->user);
+  if (owner->user)
+    curl_easy_setopt(self->curl, CURLOPT_USERNAME, owner->user);
 
-  if (self->password)
-    curl_easy_setopt(self->curl, CURLOPT_PASSWORD, self->password);
+  if (owner->password)
+    curl_easy_setopt(self->curl, CURLOPT_PASSWORD, owner->password);
 
-  if (self->user_agent)
-    curl_easy_setopt(self->curl, CURLOPT_USERAGENT, self->user_agent);
+  if (owner->user_agent)
+    curl_easy_setopt(self->curl, CURLOPT_USERAGENT, owner->user_agent);
 
-  if (self->ca_dir)
-    curl_easy_setopt(self->curl, CURLOPT_CAPATH, self->ca_dir);
+  if (owner->ca_dir)
+    curl_easy_setopt(self->curl, CURLOPT_CAPATH, owner->ca_dir);
 
-  if (self->ca_file)
-    curl_easy_setopt(self->curl, CURLOPT_CAINFO, self->ca_file);
+  if (owner->ca_file)
+    curl_easy_setopt(self->curl, CURLOPT_CAINFO, owner->ca_file);
 
-  if (self->cert_file)
-    curl_easy_setopt(self->curl, CURLOPT_SSLCERT, self->cert_file);
+  if (owner->cert_file)
+    curl_easy_setopt(self->curl, CURLOPT_SSLCERT, owner->cert_file);
 
-  if (self->key_file)
-    curl_easy_setopt(self->curl, CURLOPT_SSLKEY, self->key_file);
+  if (owner->key_file)
+    curl_easy_setopt(self->curl, CURLOPT_SSLKEY, owner->key_file);
 
-  if (self->ciphers)
-    curl_easy_setopt(self->curl, CURLOPT_SSL_CIPHER_LIST, self->ciphers);
+  if (owner->ciphers)
+    curl_easy_setopt(self->curl, CURLOPT_SSL_CIPHER_LIST, owner->ciphers);
 
-  curl_easy_setopt(self->curl, CURLOPT_SSLVERSION, self->ssl_version);
-  curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYHOST, self->peer_verify ? 2L : 0L);
-  curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYPEER, self->peer_verify ? 1L : 0L);
+  curl_easy_setopt(self->curl, CURLOPT_SSLVERSION, owner->ssl_version);
+  curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYHOST, owner->peer_verify ? 2L : 0L);
+  curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYPEER, owner->peer_verify ? 1L : 0L);
 
   curl_easy_setopt(self->curl, CURLOPT_DEBUGFUNCTION, _curl_debug_function);
+  curl_easy_setopt(self->curl, CURLOPT_DEBUGDATA, self);
   curl_easy_setopt(self->curl, CURLOPT_VERBOSE, 1L);
 
-  curl_easy_setopt(self->curl, CURLOPT_TIMEOUT, self->timeout);
+  curl_easy_setopt(self->curl, CURLOPT_TIMEOUT, owner->timeout);
 
-  if (self->method_type == METHOD_TYPE_PUT)
+  if (owner->method_type == METHOD_TYPE_PUT)
     curl_easy_setopt(self->curl, CURLOPT_CUSTOMREQUEST, "PUT");
 }
 
@@ -139,8 +145,9 @@ _add_header(struct curl_slist *curl_headers, const gchar *header, const gchar *v
 }
 
 static struct curl_slist *
-_format_request_headers(HTTPDestinationDriver *self, LogMessage *msg)
+_format_request_headers(HTTPDestinationWorker *self, LogMessage *msg)
 {
+  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
   struct curl_slist *headers = NULL;
   GList *l;
 
@@ -168,23 +175,25 @@ _format_request_headers(HTTPDestinationDriver *self, LogMessage *msg)
                             syslog_name_lookup_name_by_value(msg->pri & LOG_PRIMASK, sl_levels));
     }
 
-  for (l = self->headers; l; l = l->next)
+  for (l = owner->headers; l; l = l->next)
     headers = curl_slist_append(headers, l->data);
 
   return headers;
 }
 
 static void
-_add_message_to_batch(HTTPDestinationDriver *self, LogMessage *msg)
+_add_message_to_batch(HTTPDestinationWorker *self, LogMessage *msg)
 {
-  if (self->super.worker.instance.batch_size > 1)
+  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
+
+  if (self->super.batch_size > 1)
     {
-      g_string_append_len(self->request_body, self->delimiter->str, self->delimiter->len);
+      g_string_append_len(self->request_body, owner->delimiter->str, owner->delimiter->len);
     }
-  if (self->body_template)
+  if (owner->body_template)
     {
-      log_template_append_format(self->body_template, msg, &self->template_options, LTZ_SEND,
-                                 self->super.shared_seq_num, NULL, self->request_body);
+      log_template_append_format(owner->body_template, msg, &owner->template_options, LTZ_SEND,
+                                 self->super.seq_num, NULL, self->request_body);
     }
   else
     {
@@ -214,18 +223,23 @@ _map_http_status_to_worker_status(glong http_code)
 }
 
 static void
-_reinit_request_body(HTTPDestinationDriver *self)
+_reinit_request_body(HTTPDestinationWorker *self)
 {
+  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
+
   g_string_truncate(self->request_body, 0);
-  if (self->body_prefix->len > 0)
-    g_string_append_len(self->request_body, self->body_prefix->str, self->body_prefix->len);
+  if (owner->body_prefix->len > 0)
+    g_string_append_len(self->request_body, owner->body_prefix->str, owner->body_prefix->len);
+
 }
 
 static void
-_finish_request_body(HTTPDestinationDriver *self)
+_finish_request_body(HTTPDestinationWorker *self)
 {
-  if (self->body_suffix->len > 0)
-    g_string_append_len(self->request_body, self->body_suffix->str, self->body_suffix->len);
+  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
+
+  if (owner->body_suffix->len > 0)
+    g_string_append_len(self->request_body, owner->body_suffix->str, owner->body_suffix->len);
 }
 
 /* we flush the accumulated data if
@@ -233,13 +247,14 @@ _finish_request_body(HTTPDestinationDriver *self)
  *   2) the message queue becomes empty
  */
 static worker_insert_result_t
-_flush(LogThreadedDestDriver *s)
+_flush(LogThreadedDestWorker *s)
 {
-  HTTPDestinationDriver *self = (HTTPDestinationDriver *) s;
+  HTTPDestinationWorker *self = (HTTPDestinationWorker *) s;
+  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) s->owner;
   CURLcode ret;
   worker_insert_result_t retval;
 
-  if (self->super.worker.instance.batch_size == 0)
+  if (self->super.batch_size == 0)
     return WORKER_INSERT_RESULT_SUCCESS;
 
   _finish_request_body(self);
@@ -251,7 +266,7 @@ _flush(LogThreadedDestDriver *s)
     {
       msg_error("curl: error sending HTTP request",
                 evt_tag_str("error", curl_easy_strerror(ret)),
-                log_pipe_location_tag(&self->super.super.super.super));
+                log_pipe_location_tag(&owner->super.super.super.super));
       retval = WORKER_INSERT_RESULT_NOT_CONNECTED;
       goto exit;
     }
@@ -263,7 +278,7 @@ _flush(LogThreadedDestDriver *s)
     {
       msg_error("curl: error calculating response code",
                 evt_tag_str("error", curl_easy_strerror(ret)),
-                log_pipe_location_tag(&self->super.super.super.super));
+                log_pipe_location_tag(&owner->super.super.super.super));
       retval = WORKER_INSERT_RESULT_NOT_CONNECTED;
       goto exit;
     }
@@ -276,10 +291,10 @@ _flush(LogThreadedDestDriver *s)
       curl_easy_getinfo(self->curl, CURLINFO_TOTAL_TIME, &total_time);
       curl_easy_getinfo(self->curl, CURLINFO_REDIRECT_COUNT, &redirect_count);
       msg_debug("curl: HTTP response received",
-                evt_tag_str("url", self->url),
+                evt_tag_str("url", owner->url),
                 evt_tag_int("status_code", http_code),
                 evt_tag_int("body_size", self->request_body->len),
-                evt_tag_int("batch_size", self->super.worker.instance.batch_size),
+                evt_tag_int("batch_size", self->super.batch_size),
                 evt_tag_int("redirected", redirect_count != 0),
                 evt_tag_printf("total_time", "%.3f", total_time));
     }
@@ -293,15 +308,20 @@ exit:
 }
 
 static gboolean
-_should_initiate_flush(HTTPDestinationDriver *self)
+_should_initiate_flush(HTTPDestinationWorker *self)
 {
-  return (self->flush_bytes && self->request_body->len + self->body_suffix->len >= self->flush_bytes) ||
-         (self->super.flush_lines && self->super.worker.instance.batch_size >= self->super.flush_lines);
+  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
+
+  return (owner->flush_bytes && self->request_body->len + owner->body_suffix->len >= owner->flush_bytes) ||
+         (owner->super.flush_lines && self->super.batch_size >= owner->super.flush_lines);
+
 }
 
 static worker_insert_result_t
-_insert_batched(HTTPDestinationDriver *self, LogMessage *msg)
+_insert_batched(LogThreadedDestWorker *s, LogMessage *msg)
 {
+  HTTPDestinationWorker *self = (HTTPDestinationWorker *) s;
+
   if (self->request_headers == NULL)
     self->request_headers = _format_request_headers(self, NULL);
 
@@ -309,28 +329,64 @@ _insert_batched(HTTPDestinationDriver *self, LogMessage *msg)
 
   if (_should_initiate_flush(self))
     {
-      return log_threaded_dest_worker_flush(&self->super.worker.instance);
+      return log_threaded_dest_worker_flush(&self->super);
     }
   return WORKER_INSERT_RESULT_QUEUED;
 }
 
 static worker_insert_result_t
-_insert_single(HTTPDestinationDriver *self, LogMessage *msg)
+_insert_single(LogThreadedDestWorker *s, LogMessage *msg)
 {
+  HTTPDestinationWorker *self = (HTTPDestinationWorker *) s;
+
   self->request_headers = _format_request_headers(self, msg);
   _add_message_to_batch(self, msg);
   return _flush(&self->super);
 }
 
-static worker_insert_result_t
-_insert(LogThreadedDestDriver *s, LogMessage *msg)
+static gboolean
+_thread_init(LogThreadedDestWorker *s)
 {
-  HTTPDestinationDriver *self = (HTTPDestinationDriver *) s;
+  HTTPDestinationWorker *self = (HTTPDestinationWorker *) s;
+  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
 
-  if (self->super.flush_lines > 0 || self->flush_bytes)
-    return _insert_batched(self, msg);
+  self->request_body = g_string_sized_new(32768);
+  if (!(self->curl = curl_easy_init()))
+    {
+      msg_error("curl: cannot initialize libcurl",
+                log_pipe_location_tag(&owner->super.super.super.super));
+      return FALSE;
+    }
+  _setup_static_options_in_curl(self);
+  _reinit_request_body(self);
+  return log_threaded_dest_worker_init_method(s);
+}
+
+static void
+_thread_deinit(LogThreadedDestWorker *s)
+{
+  HTTPDestinationWorker *self = (HTTPDestinationWorker *) s;
+
+  g_string_free(self->request_body, TRUE);
+  curl_easy_cleanup(self->curl);
+  log_threaded_dest_worker_deinit_method(s);
+}
+
+HTTPDestinationWorker *
+http_dw_new(HTTPDestinationDriver *owner, gint worker_index)
+{
+  HTTPDestinationWorker *self = g_new0(HTTPDestinationWorker, 1);
+
+  log_threaded_dest_worker_init_instance(&self->super, &owner->super, worker_index);
+  self->super.thread_init = _thread_init;
+  self->super.thread_deinit = _thread_deinit;
+  self->super.flush = _flush;
+
+  if (owner->super.flush_lines > 0 || owner->flush_bytes > 0)
+    self->super.insert = _insert_batched;
   else
-    return _insert_single(self, msg);
+    self->super.insert = _insert_single;
+  return self;
 }
 
 /* HTTPDestinationDriver */
@@ -592,6 +648,12 @@ _format_stats_instance(LogThreadedDestDriver *s)
   return stats;
 }
 
+static LogThreadedDestWorker *
+_construct_worker(LogThreadedDestDriver  *s, gint worker_index)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *)s;
+  return &http_dw_new(self, worker_index)->super;
+}
 
 gboolean
 http_dd_init(LogPipe *s)
@@ -604,13 +666,6 @@ http_dd_init(LogPipe *s)
 
   log_template_options_init(&self->template_options, cfg);
 
-  if (!(self->curl = curl_easy_init()))
-    {
-      msg_error("curl: cannot initialize libcurl",
-                log_pipe_location_tag(s));
-      return FALSE;
-    }
-
   if (!self->url)
     {
       self->url = g_strdup(HTTP_DEFAULT_URL);
@@ -621,8 +676,6 @@ http_dd_init(LogPipe *s)
     self->user_agent = g_strdup_printf("syslog-ng %s/libcurl %s",
                                        SYSLOG_NG_VERSION, curl_info->version);
 
-  _setup_static_options_in_curl(self);
-  _reinit_request_body(self);
 
   return log_threaded_dest_driver_init_method(s);
 }
@@ -639,12 +692,11 @@ http_dd_free(LogPipe *s)
   HTTPDestinationDriver *self = (HTTPDestinationDriver *)s;
 
   log_template_options_destroy(&self->template_options);
+
   g_string_free(self->delimiter, TRUE);
-  g_string_free(self->request_body, TRUE);
   g_string_free(self->body_prefix, TRUE);
   g_string_free(self->body_suffix, TRUE);
 
-  curl_easy_cleanup(self->curl);
   curl_global_cleanup();
 
   g_free(self->url);
@@ -674,14 +726,12 @@ http_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.generate_persist_name = _format_persist_name;
   self->super.format_stats_instance = _format_stats_instance;
   self->super.stats_source = SCS_HTTP;
-  self->super.worker.insert = _insert;
-  self->super.worker.flush = _flush;
+  self->super.worker.construct = _construct_worker;
 
   curl_global_init(CURL_GLOBAL_ALL);
 
   self->ssl_version = CURL_SSLVERSION_DEFAULT;
   self->peer_verify = TRUE;
-  self->request_body = g_string_sized_new(32768);
   /* disable batching even if the global flush_lines is specified */
   self->super.flush_lines = 0;
   self->flush_bytes = 0;

@@ -111,9 +111,9 @@ http_option
     | KW_USER_AGENT '(' string ')'            { http_dd_set_user_agent(last_driver, $3); free($3); }
     | KW_HEADERS    '(' string_list ')'       { http_dd_set_headers(last_driver, $3); g_list_free_full($3, free); }
     | KW_METHOD     '(' string ')'            { http_dd_set_method(last_driver, $3); free($3); }
-    | KW_BODY_PREFIX '(' string ')'        { http_dd_set_body_prefix(last_driver, $3); free($3); }
-    | KW_BODY_SUFFIX '(' string ')'        { http_dd_set_body_suffix(last_driver, $3); free($3); }
-    | KW_DELIMITER  '(' string ')'        { http_dd_set_delimiter(last_driver, $3); free($3); }
+    | KW_BODY_PREFIX '(' string ')'           { http_dd_set_body_prefix(last_driver, $3); free($3); }
+    | KW_BODY_SUFFIX '(' string ')'           { http_dd_set_body_suffix(last_driver, $3); free($3); }
+    | KW_DELIMITER  '(' string ')'            { http_dd_set_delimiter(last_driver, $3); free($3); }
     | KW_BODY       '(' template_content ')'  { http_dd_set_body(last_driver, $3); log_template_unref($3); }
     | KW_TIMEOUT '(' nonnegative_integer ')'  { http_dd_set_timeout(last_driver, $3); }
     | KW_FLUSH_LINES '(' nonnegative_integer ')' { log_threaded_dest_driver_set_flush_lines(last_driver, $3); }
