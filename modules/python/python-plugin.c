@@ -29,6 +29,7 @@
 #include "python-logmsg.h"
 #include "python-logtemplate.h"
 #include "python-integerpointer.h"
+#include "python-source.h"
 #include "python-global-code-loader.h"
 #include "python-debugger.h"
 
@@ -42,6 +43,11 @@ static Plugin python_plugins[] =
 {
   {
     .type = LL_CONTEXT_DESTINATION,
+    .name = "python",
+    .parser = &python_parser,
+  },
+  {
+    .type = LL_CONTEXT_SOURCE,
     .name = "python",
     .parser = &python_parser,
   },
@@ -74,6 +80,7 @@ _py_init_interpreter(void)
       py_log_message_init();
       py_log_template_init();
       py_integer_pointer_init();
+      py_log_source_init();
       py_global_code_loader_init();
       PyEval_SaveThread();
 

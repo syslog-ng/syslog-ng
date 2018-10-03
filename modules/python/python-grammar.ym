@@ -25,9 +25,11 @@
 
 #include "python-parser.h"
 #include "python-dest.h"
+#include "python-source.h"
 #include "python-logparser.h"
 #include "python-main.h"
 #include "value-pairs/value-pairs.h"
+#include "logthrsource/logthrsourcedrv.h"
 
 }
 
@@ -64,6 +66,12 @@ start
 	    last_parser = *instance = python_parser_new(configuration);
           }
           '(' python_parser_options ')' { YYACCEPT; }
+        | LL_CONTEXT_SOURCE KW_PYTHON
+          {
+            last_driver = *instance = python_sd_new(configuration);
+            last_source_options = log_threaded_source_driver_get_source_options(last_driver);
+          }
+          '(' python_sd_options ')'         { YYACCEPT; }
 	| LL_CONTEXT_ROOT KW_PYTHON
           { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_CONTENT, NULL, "Python code"); }
           LL_BLOCK
@@ -115,6 +123,39 @@ python_dd_custom_option
         }
         ;
 
+
+python_sd_options
+        : python_sd_option python_sd_options
+        |
+        ;
+
+python_sd_option
+        : KW_CLASS '(' string ')'
+          {
+            python_sd_set_class(last_driver, $3);
+            free($3);
+          }
+        | KW_LOADERS python_sd_loaders
+        | KW_OPTIONS '(' python_sd_custom_options ')'
+        | source_option
+        | source_driver_option
+        ;
+
+python_sd_custom_options
+        : python_sd_custom_option python_sd_custom_options
+        |
+        ;
+
+python_sd_custom_option
+        : string string_or_number
+        {
+          python_sd_set_option(last_driver, $1, $2);
+          free($1);
+          free($2);
+        }
+        ;
+
+
 python_parser_options
         : python_parser_option python_parser_options
         |
@@ -149,6 +190,12 @@ python_dd_loaders
           : '(' string_list ')'
           {
             python_dd_set_loaders(last_driver, $2);
+          }
+
+python_sd_loaders
+          : '(' string_list ')'
+          {
+            python_sd_set_loaders(last_driver, $2);
           }
 
 python_parser_loaders
