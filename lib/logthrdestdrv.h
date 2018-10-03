@@ -65,7 +65,7 @@ struct _LogThreadedDestWorker
   gint batch_size;
   gint rewound_batch_size;
   gint retries_counter;
-  gint seq_num;
+  gint32 seq_num;
   struct timespec last_flush_time;
   gboolean enable_flush_timeout;
   gboolean suspended;
