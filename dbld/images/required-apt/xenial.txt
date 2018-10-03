@@ -20,3 +20,8 @@ libmongoc-dev
 # kira
 netbase
 faketime
+python-yaml
+python-numpy
+netcat
+lsof
+openssh-client
