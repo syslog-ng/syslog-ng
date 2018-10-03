@@ -315,6 +315,11 @@ afinet_dd_deinit(LogPipe *s)
   if (_is_failover_used(self))
     afinet_dd_failover_deinit(self->failover);
 
+#if SYSLOG_NG_ENABLE_SPOOF_SOURCE
+  if (self->lnet_ctx)
+    libnet_destroy(self->lnet_ctx);
+#endif
+
   return afsocket_dd_deinit(s);
 }
 
