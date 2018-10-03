@@ -6,7 +6,7 @@ set -e
 
 function add_obs_repo {
     DISTRO=$1
-    wget -qO - http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/${DISTRO}/Release.key | apt-key add -
+    wget --max-redirect=1 -qO - http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/${DISTRO}/Release.key | apt-key add -
     echo "deb http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/"${DISTRO}" ./" | tee --append /etc/apt/sources.list.d/syslog-ng-obs.list
     apt-get update -qq
 }
