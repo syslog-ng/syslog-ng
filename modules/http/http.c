@@ -210,6 +210,13 @@ _map_http_status_to_worker_status(HTTPDestinationWorker *self, glong http_code)
   switch (http_code/100)
     {
     case 1:
+      msg_error("Server returned with a 1XX (continuation) status code, which was not handled by curl. "
+                "Trying again",
+                evt_tag_str("url", owner->url),
+                evt_tag_int("status_code", http_code),
+                log_pipe_location_tag(&owner->super.super.super.super));
+      retval = WORKER_INSERT_RESULT_ERROR;
+      break;
     case 2:
       retval = WORKER_INSERT_RESULT_SUCCESS;
       break;
