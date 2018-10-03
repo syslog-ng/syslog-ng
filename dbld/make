@@ -4,3 +4,4 @@ set -e
 
 cd /build
 make "$@"
+make install
