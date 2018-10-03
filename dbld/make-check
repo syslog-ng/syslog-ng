@@ -1,0 +1,7 @@
+#!/bin/bash
+
+set -e
+
+cd /build
+make check ; ret=$? ; if [ $ret -ne 0 ]; then cat test-suite.log ; exit $ret ; fi
+make func-test ; ret=$? ; if [ $ret -ne 0 ]; then cat test-suite.log ; exit $ret ; fi

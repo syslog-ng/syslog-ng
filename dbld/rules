@@ -66,6 +66,10 @@ make: setup-$(DEFAULT_IMAGE)
 make-%: setup
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$* /source/dbld/make $(MAKE_ARGS)
 
+make-check: setup-$(DEFAULT_IMAGE)
+make-check-%: setup
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$* /source/dbld/make-check
+
 tarball: tarball-$(DEFAULT_IMAGE)
 tarball-%: setup
 	if [ -f $(TARBALL) ]; then \
