@@ -23,14 +23,11 @@
  */
 
 #include "afamqp.h"
-#include "afamqp-parser.h"
-#include "plugin.h"
 #include "messages.h"
 #include "stats/stats-registry.h"
 #include "logmsg/nvtable.h"
 #include "logqueue.h"
 #include "scratch-buffers.h"
-#include "plugin-types.h"
 #include "logthrdestdrv.h"
 
 #include <amqp.h>
@@ -708,28 +705,3 @@ afamqp_dd_new(GlobalConfig *cfg)
 
   return (LogDriver *) self;
 }
-
-extern CfgParser afamqp_dd_parser;
-
-static Plugin afamqp_plugin =
-{
-  .type = LL_CONTEXT_DESTINATION,
-  .name = "amqp",
-  .parser = &afamqp_parser
-};
-
-gboolean
-afamqp_module_init(PluginContext *context, CfgArgs *args)
-{
-  plugin_register(context, &afamqp_plugin, 1);
-  return TRUE;
-}
-
-const ModuleInfo module_info =
-{
-  .canonical_name = "afamqp",
-  .version = SYSLOG_NG_VERSION,
-  .description = "The afamqp module provides AMQP destination support for syslog-ng.",
-  .core_revision = SYSLOG_NG_SOURCE_REVISION, .plugins = &afamqp_plugin,
-  .plugins_len = 1,
-};
