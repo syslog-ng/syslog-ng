@@ -53,6 +53,22 @@ typedef struct
   guint8 user_data[];
 } Allocation;
 
+static gboolean
+_exclude_memory_from_core_dump(gpointer area, gsize len)
+{
+#if defined(MADV_DONTDUMP)
+  if (madvise(area, len, MADV_DONTDUMP) < 0)
+    {
+      char reason[32] = { 0 };
+      snprintf(reason, sizeof(reason), "errno: %d\n", errno);
+      logger_fatal("secret storage: cannot madvise buffer", reason);
+
+      return FALSE;
+    }
+#endif
+  return TRUE;
+}
+
 static gpointer
 _mmap(gsize len)
 {
@@ -66,17 +82,8 @@ _mmap(gsize len)
       return NULL;
     }
 
-#if defined(MADV_DONTDUMP)
-  if (madvise(area, len, MADV_DONTDUMP) < 0)
-    {
-
-      char reason[32] = { 0 };
-      snprintf(reason, sizeof(reason), "errno: %d\n", errno);
-      logger_fatal("secret storage: cannot madvise buffer", reason);
-
-      goto err_munmap;
-    }
-#endif
+  if (!_exclude_memory_from_core_dump(area, len))
+    goto err_munmap;
 
   if (mlock(area, len) < 0)
     {
