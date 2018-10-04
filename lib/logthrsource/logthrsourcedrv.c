@@ -88,8 +88,12 @@ static inline void
 wakeup_cond_signal(WakeupCondition *cond)
 {
   g_mutex_lock(cond->lock);
-  cond->awoken = TRUE;
-  g_cond_signal(cond->cond);
+
+  if (!cond->awoken)
+    {
+      cond->awoken = TRUE;
+      g_cond_signal(cond->cond);
+    }
   g_mutex_unlock(cond->lock);
 }
 
