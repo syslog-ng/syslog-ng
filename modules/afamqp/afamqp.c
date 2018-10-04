@@ -55,6 +55,9 @@ typedef struct
   gchar *user;
   gchar *password;
 
+  gint max_channel;
+  gint frame_size;
+
   LogTemplateOptions template_options;
   ValuePairs *vp;
 
@@ -224,6 +227,22 @@ afamqp_dd_set_peer_verify(LogDriver *d, gboolean verify)
   AMQPDestDriver *self = (AMQPDestDriver *) d;
 
   self->peer_verify = verify;
+}
+
+void
+afamqp_dd_set_max_channel(LogDriver *d, gint max_channel)
+{
+  AMQPDestDriver *self = (AMQPDestDriver *) d;
+
+  self->max_channel = max_channel;
+}
+
+void
+afamqp_dd_set_frame_size(LogDriver *d, gint frame_size)
+{
+  AMQPDestDriver *self = (AMQPDestDriver *) d;
+
+  self->frame_size = frame_size;
 }
 
 /*
@@ -444,7 +463,7 @@ afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
       goto exception_amqp_dd_connect_failed_init;
     }
 
-  ret = amqp_login(self->conn, self->vhost, AMQP_DEFAULT_MAX_CHANNELS, AMQP_DEFAULT_FRAME_SIZE, 0,
+  ret = amqp_login(self->conn, self->vhost, self->max_channel, self->frame_size, 0,
                    AMQP_SASL_METHOD_PLAIN, self->user, self->password);
   if (!afamqp_is_ok(self, "Error during AMQP login", ret))
     {
@@ -696,6 +715,8 @@ afamqp_dd_new(GlobalConfig *cfg)
   afamqp_dd_set_routing_key(driver, "");
   afamqp_dd_set_persistent(driver, TRUE);
   afamqp_dd_set_exchange_declare(driver, FALSE);
+  afamqp_dd_set_max_channel(driver, AMQP_DEFAULT_MAX_CHANNELS);
+  afamqp_dd_set_frame_size(driver, AMQP_DEFAULT_FRAME_SIZE);
 
   self->max_entries = 256;
   self->entries = g_new(amqp_table_entry_t, self->max_entries);
