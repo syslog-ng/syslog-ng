@@ -33,7 +33,12 @@
 #define ALLOCATION_HEADER_SIZE offsetof(Allocation, user_data)
 #define BUFFER_TO_ALLOCATION(buffer) ((Allocation *) ((guint8 *) buffer - ALLOCATION_HEADER_SIZE))
 
-NonDumpableLogger logger_fatal INTERNAL;
+static void
+_silent(gchar *summary, gchar *reason)
+{
+}
+
+NonDumpableLogger logger_fatal INTERNAL = _silent;
 
 void
 nondumpable_setlogger(NonDumpableLogger _fatal)
@@ -54,37 +59,32 @@ _mmap(gsize len)
   gpointer area = mmap(NULL, len, PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, -1, 0);
   if (!area)
     {
-      if (logger_fatal)
-        {
-          char reason[32] = { 0 };
-          snprintf(reason, sizeof(reason), "len: %"G_GSIZE_FORMAT", errno: %d\n", len, errno);
-          logger_fatal("secret storage: cannot mmap buffer", reason);
-        }
+      char reason[32] = { 0 };
+      snprintf(reason, sizeof(reason), "len: %"G_GSIZE_FORMAT", errno: %d\n", len, errno);
+      logger_fatal("secret storage: cannot mmap buffer", reason);
+
       return NULL;
     }
 
 #if defined(MADV_DONTDUMP)
   if (madvise(area, len, MADV_DONTDUMP) < 0)
     {
-      if (logger_fatal)
-        {
-          char reason[32] = { 0 };
-          snprintf(reason, sizeof(reason), "errno: %d\n", errno);
-          logger_fatal("secret storage: cannot madvise buffer", reason);
-        }
+
+      char reason[32] = { 0 };
+      snprintf(reason, sizeof(reason), "errno: %d\n", errno);
+      logger_fatal("secret storage: cannot madvise buffer", reason);
+
       goto err_munmap;
     }
 #endif
 
   if (mlock(area, len) < 0)
     {
-      if (logger_fatal)
-        {
-          char reason[200] = { 0 };
-          gchar *hint = (errno == ENOMEM) ? ". Maybe RLIMIT_MEMLOCK is too small?" : "";
-          snprintf(reason, sizeof(reason), "len: %"G_GSIZE_FORMAT", errno: %d%s\n", len, errno, hint);
-          logger_fatal("secret storage: cannot lock buffer", reason);
-        }
+      char reason[200] = { 0 };
+      gchar *hint = (errno == ENOMEM) ? ". Maybe RLIMIT_MEMLOCK is too small?" : "";
+      snprintf(reason, sizeof(reason), "len: %"G_GSIZE_FORMAT", errno: %d%s\n", len, errno, hint);
+      logger_fatal("secret storage: cannot lock buffer", reason);
+
       goto err_munmap;
     }
 
