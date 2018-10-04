@@ -38,6 +38,7 @@ _silent(gchar *summary, gchar *reason)
 {
 }
 
+NonDumpableLogger logger_debug INTERNAL = _silent;
 NonDumpableLogger logger_fatal INTERNAL = _silent;
 
 void
@@ -59,6 +60,15 @@ _exclude_memory_from_core_dump(gpointer area, gsize len)
 #if defined(MADV_DONTDUMP)
   if (madvise(area, len, MADV_DONTDUMP) < 0)
     {
+
+      if (errno == EINVAL)
+        {
+          char reason[32] = { 0 };
+          snprintf(reason, sizeof(reason), "len: %"G_GSIZE_FORMAT", errno: %d\n", len, errno);
+          logger_debug("secret storage: MADV_DONTDUMP not supported", reason);
+          return TRUE;
+        }
+
       char reason[32] = { 0 };
       snprintf(reason, sizeof(reason), "errno: %d\n", errno);
       logger_fatal("secret storage: cannot madvise buffer", reason);
