@@ -139,7 +139,7 @@ app_fatal(const char *msg)
 }
 
 void
-nondumpable_allocator_logger(gchar *summary, gchar *reason)
+nondumpable_allocator_logger_fatal(gchar *summary, gchar *reason)
 {
   msg_fatal(summary, evt_tag_str("reason", reason));
 }
@@ -168,7 +168,7 @@ app_startup(void)
   service_management_init();
   scratch_buffers_allocator_init();
   main_loop_thread_resource_init();
-  nondumpable_setlogger(nondumpable_allocator_logger);
+  nondumpable_setlogger(nondumpable_allocator_logger_fatal);
   secret_storage_init();
   transport_factory_id_global_init();
 }
