@@ -687,14 +687,15 @@ afamqp_dd_new(GlobalConfig *cfg)
 
   self->routing_key_template = log_template_new(cfg, NULL);
 
-  afamqp_dd_set_vhost((LogDriver *) self, "/");
-  afamqp_dd_set_host((LogDriver *) self, "127.0.0.1");
-  afamqp_dd_set_port((LogDriver *) self, 5672);
-  afamqp_dd_set_exchange((LogDriver *) self, "syslog");
-  afamqp_dd_set_exchange_type((LogDriver *) self, "fanout");
-  afamqp_dd_set_routing_key((LogDriver *) self, "");
-  afamqp_dd_set_persistent((LogDriver *) self, TRUE);
-  afamqp_dd_set_exchange_declare((LogDriver *) self, FALSE);
+  LogDriver *driver = &self->super.super.super;
+  afamqp_dd_set_vhost(driver, "/");
+  afamqp_dd_set_host(driver, "127.0.0.1");
+  afamqp_dd_set_port(driver, 5672);
+  afamqp_dd_set_exchange(driver, "syslog");
+  afamqp_dd_set_exchange_type(driver, "fanout");
+  afamqp_dd_set_routing_key(driver, "");
+  afamqp_dd_set_persistent(driver, TRUE);
+  afamqp_dd_set_exchange_declare(driver, FALSE);
 
   self->max_entries = 256;
   self->entries = g_new(amqp_table_entry_t, self->max_entries);
