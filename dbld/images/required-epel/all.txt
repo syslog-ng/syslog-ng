@@ -4,3 +4,5 @@ libdbi-drivers
 riemann-c-client-devel
 syslog-ng-java-deps
 librabbitmq-devel
+python-yaml
+lsof

@@ -4,3 +4,4 @@ pep8==1.7.1
 pylint==1.8.2
 astroid==1.6.1
 logilab-common<=0.63.0
+hy>=0.15.0
