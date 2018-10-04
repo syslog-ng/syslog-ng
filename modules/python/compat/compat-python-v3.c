@@ -21,9 +21,17 @@
  *
  */
 
+#include "compat-python.h"
+
 void
 py_init_argv(void)
 {
   static wchar_t *argv[] = {L"syslog-ng"};
   PySys_SetArgvEx(1, argv, 0);
 }
+
+PyObject *
+int_as_pyobject(gint num)
+{
+  return PyLong_FromLong(num);
+};

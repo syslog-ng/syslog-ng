@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Balabit
+ * Copyright (c) 2018 Balabit
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,17 +21,40 @@
  *
  */
 
-#include "compat-python.h"
+#include "python-logtemplate-options.h"
 
-void
-py_init_argv(void)
+int
+py_is_log_template_options(PyObject *obj)
 {
-  static char *argv[] = {"syslog-ng"};
-  PySys_SetArgvEx(1, argv, 0);
+  return PyType_IsSubtype(Py_TYPE(obj), &py_log_template_options_type);
 }
 
 PyObject *
-int_as_pyobject(gint num)
+py_log_template_options_new(LogTemplateOptions *template_options)
 {
-  return PyInt_FromLong(num);
+  PyLogTemplateOptions *self = PyObject_New(PyLogTemplateOptions, &py_log_template_options_type);
+  if (!self)
+    return NULL;
+
+  self->template_options = template_options;
+
+  return (PyObject *) self;
+}
+
+
+PyTypeObject py_log_template_options_type =
+{
+  PyVarObject_HEAD_INIT(&PyType_Type, 0)
+  .tp_name = "LogTemplateOptions",
+  .tp_basicsize = sizeof(PyLogTemplateOptions),
+  .tp_dealloc = (destructor) PyObject_Del,
+  .tp_flags = Py_TPFLAGS_DEFAULT,
+  .tp_doc = "LogTemplateOptions class encapsulating a syslog-ng LogTemplateOptions",
+  0,
 };
+
+void
+py_log_template_options_init(void)
+{
+  PyType_Ready(&py_log_template_options_type);
+}

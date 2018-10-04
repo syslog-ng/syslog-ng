@@ -33,12 +33,18 @@ set(PYTHON_SOURCES
     python-parser.h
     python-logmsg.h
     python-logmsg.c
+    python-logtemplate.h
+    python-logtemplate.c
+    python-logtemplate-options.h
+    python-logtemplate-options.c
     python-global-code-loader.h
     python-global-code-loader.c
     python-debugger.c
     python-debugger.h
     python-logparser.h
     python-logparser.c
+    python-integerpointer.h
+    python-integerpointer.c
     compat/compat-python.c
     ${CMAKE_CURRENT_BINARY_DIR}/python-grammar.c
     ${CMAKE_CURRENT_BINARY_DIR}/python-grammar.h

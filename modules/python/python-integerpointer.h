@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Balabit
+ * Copyright (c) 2018 Balabit
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,17 +21,20 @@
  *
  */
 
-#include "compat-python.h"
+#ifndef _SNG_PYTHON_INTEGERPOINTER_H
+#define _SNG_PYTHON_INTEGERPOINTER_H
 
-void
-py_init_argv(void)
-{
-  static char *argv[] = {"syslog-ng"};
-  PySys_SetArgvEx(1, argv, 0);
-}
+#include "python-module.h"
 
-PyObject *
-int_as_pyobject(gint num)
+typedef struct _PyIntegerPointer
 {
-  return PyInt_FromLong(num);
-};
+  PyObject_HEAD
+  gint *ptr;
+} PyIntegerPointer;
+
+extern PyTypeObject py_integer_pointer_type;
+
+PyObject *py_integer_pointer_new(gpointer ptr);
+void py_integer_pointer_init(void);
+
+#endif

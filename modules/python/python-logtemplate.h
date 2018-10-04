@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Balabit
+ * Copyright (c) 2018 Balabit
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,17 +21,26 @@
  *
  */
 
-#include "compat-python.h"
+#ifndef _SNG_PYTHON_TEMPLATE_H
+#define _SNG_PYTHON_TEMPLATE_H
 
-void
-py_init_argv(void)
-{
-  static char *argv[] = {"syslog-ng"};
-  PySys_SetArgvEx(1, argv, 0);
-}
+#include "python-module.h"
+#include "template/templates.h"
 
-PyObject *
-int_as_pyobject(gint num)
+typedef struct _PyLogTemplate
 {
-  return PyInt_FromLong(num);
-};
+  PyObject_HEAD
+  LogTemplate *template;
+  LogTemplateOptions *template_options;
+} PyLogTemplate;
+
+extern PyTypeObject py_log_template_type;
+extern PyObject *PyExc_LogTemplate;
+
+
+void py_log_template_init(void);
+PyObject *py_log_template_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
+void py_log_template_free(PyLogTemplate *self);
+PyObject *py_log_template_format(PyObject *s, PyObject *args, PyObject *kwds);
+
+#endif

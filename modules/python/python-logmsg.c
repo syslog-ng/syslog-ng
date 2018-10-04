@@ -27,13 +27,11 @@
 #include "messages.h"
 #include "str-utils.h"
 
-typedef struct _PyLogMessage
+int
+py_is_log_message(PyObject *obj)
 {
-  PyObject_HEAD
-  LogMessage *msg;
-} PyLogMessage;
-
-static PyTypeObject py_log_message_type;
+  return PyType_IsSubtype(Py_TYPE(obj), &py_log_message_type);
+}
 
 static int
 _str_cmp(const void *s1, const void *s2)
@@ -237,7 +235,7 @@ static PyMethodDef py_log_message_methods[] =
   {NULL}
 };
 
-static PyTypeObject py_log_message_type =
+PyTypeObject py_log_message_type =
 {
   PyVarObject_HEAD_INIT(&PyType_Type, 0)
   .tp_name = "LogMessage",

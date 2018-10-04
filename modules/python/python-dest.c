@@ -26,6 +26,8 @@
 #include "python-module.h"
 #include "python-value-pairs.h"
 #include "python-logmsg.h"
+#include "python-logtemplate-options.h"
+#include "python-integerpointer.h"
 #include "python-helpers.h"
 #include "logthrdestdrv.h"
 #include "stats/stats.h"
@@ -50,6 +52,8 @@ typedef struct
     PyObject *instance;
     PyObject *is_opened;
     PyObject *send;
+    PyObject *log_template_options;
+    PyObject *seqnum;
   } py;
 } PythonDestDriver;
 
@@ -215,6 +219,12 @@ _py_init_bindings(PythonDestDriver *self)
       return FALSE;
     }
 
+  self->py.log_template_options = py_log_template_options_new(&self->template_options);
+  PyObject_SetAttrString(self->py.class, "template_options", self->py.log_template_options);
+  self->py.seqnum = py_integer_pointer_new(&self->super.seq_num);
+  PyObject_SetAttrString(self->py.class, "seqnum", self->py.seqnum);
+  Py_DECREF(self->py.log_template_options);
+
   self->py.instance = _py_invoke_function(self->py.class, NULL, self->class, self->super.super.super.id);
   if (!self->py.instance)
     {
@@ -247,6 +257,8 @@ _py_free_bindings(PythonDestDriver *self)
   Py_CLEAR(self->py.instance);
   Py_CLEAR(self->py.is_opened);
   Py_CLEAR(self->py.send);
+  Py_CLEAR(self->py.log_template_options);
+  Py_CLEAR(self->py.seqnum);
 }
 
 static gboolean
