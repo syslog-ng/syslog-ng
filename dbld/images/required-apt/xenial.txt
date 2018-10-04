@@ -25,3 +25,4 @@ python-numpy
 netcat
 lsof
 openssh-client
+python3-yaml
