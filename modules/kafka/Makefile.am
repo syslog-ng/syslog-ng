@@ -1,4 +1,9 @@
-noinst_LTLIBRARIES += modules/kafka/libkafka.la
+if ENABLE_KAFKA
+module_LTLIBRARIES += modules/kafka/libkafka.la
+
+modules_kafka_libkafka_la_CFLAGS  = \
+  $(AM_CFLAGS) \
+  $(LIBRDKAFKA_CFLAGS)
 
 modules_kafka_libkafka_la_SOURCES = \
   modules/kafka/kafka-grammar.y \
@@ -10,11 +15,13 @@ modules_kafka_libkafka_la_SOURCES = \
 
 modules_kafka_libkafka_la_CPPFLAGS  = \
   $(AM_CPPFLAGS) \
+  $(LIBRDKAFKA_CFLAGS) \
   -I$(top_srcdir)/modules/kafka \
   -I$(top_builddir)/modules/kafka
 
 modules_kafka_libkafka_la_LIBADD  = \
-  $(MODULE_DEPS_LIBS)
+  $(MODULE_DEPS_LIBS) \
+  $(LIBRDKAFKA_LIBS)
 
 modules_kafka_libkafka_la_LDFLAGS = $(MODULE_LDFLAGS)
 
@@ -23,6 +30,9 @@ modules_kafka_libkafka_la_DEPENDENCIES = \
 
 modules/kafka modules/kafka/ mod-kafka: \
 	modules/kafka/libkafka.la
+else
+modules/kafka modules/kafka/ mod-kafka:
+endif
 
 BUILT_SOURCES += \
   modules/kafka/kafka-grammar.y \

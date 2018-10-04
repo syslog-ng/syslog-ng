@@ -26,6 +26,7 @@
 #include "logmsg/logmsg.h"
 #include "messages.h"
 
+#include <librdkafka/rdkafka.h>
 #include <stdio.h>
 #include <sys/stat.h>
 #include <sys/types.h>
