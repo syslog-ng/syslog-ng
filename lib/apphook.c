@@ -138,11 +138,15 @@ app_fatal(const char *msg)
   fprintf(stderr, "%s\n", msg);
 }
 
-void
-nondumpable_allocator_logger_fatal(gchar *summary, gchar *reason)
-{
-  msg_fatal(summary, evt_tag_str("reason", reason));
+#define construct_nondumpable_logger(logger) \
+void \
+nondumpable_allocator_ ## logger (gchar *summary, gchar *reason) \
+{ \
+  logger(summary, evt_tag_str("reason", reason)); \
 }
+
+construct_nondumpable_logger(msg_debug);
+construct_nondumpable_logger(msg_fatal);
 
 void
 app_startup(void)
@@ -168,7 +172,7 @@ app_startup(void)
   service_management_init();
   scratch_buffers_allocator_init();
   main_loop_thread_resource_init();
-  nondumpable_setlogger(nondumpable_allocator_logger_fatal);
+  nondumpable_setlogger(nondumpable_allocator_msg_debug, nondumpable_allocator_msg_fatal);
   secret_storage_init();
   transport_factory_id_global_init();
 }

@@ -42,8 +42,9 @@ NonDumpableLogger logger_debug INTERNAL = _silent;
 NonDumpableLogger logger_fatal INTERNAL = _silent;
 
 void
-nondumpable_setlogger(NonDumpableLogger _fatal)
+nondumpable_setlogger(NonDumpableLogger _debug, NonDumpableLogger _fatal)
 {
+  logger_debug = _debug;
   logger_fatal = _fatal;
 }
 
