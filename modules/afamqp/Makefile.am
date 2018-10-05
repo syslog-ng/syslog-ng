@@ -11,7 +11,8 @@ modules_afamqp_libafamqp_la_SOURCES	= 	\
 	modules/afamqp/afamqp.c			\
 	modules/afamqp/afamqp.h			\
 	modules/afamqp/afamqp-parser.c		\
-	modules/afamqp/afamqp-parser.h
+	modules/afamqp/afamqp-parser.h          \
+	modules/afamqp/afamqp-plugin.c
 modules_afamqp_libafamqp_la_LIBADD	= 	\
 	$(MODULE_DEPS_LIBS) $(LIBRABBITMQ_LIBS)
 modules_afamqp_libafamqp_la_LDFLAGS	=	\

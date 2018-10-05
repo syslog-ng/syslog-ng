@@ -23,14 +23,11 @@
  */
 
 #include "afamqp.h"
-#include "afamqp-parser.h"
-#include "plugin.h"
 #include "messages.h"
 #include "stats/stats-registry.h"
 #include "logmsg/nvtable.h"
 #include "logqueue.h"
 #include "scratch-buffers.h"
-#include "plugin-types.h"
 #include "logthrdestdrv.h"
 
 #include <amqp.h>
@@ -57,6 +54,9 @@ typedef struct
 
   gchar *user;
   gchar *password;
+
+  gint max_channel;
+  gint frame_size;
 
   LogTemplateOptions template_options;
   ValuePairs *vp;
@@ -227,6 +227,22 @@ afamqp_dd_set_peer_verify(LogDriver *d, gboolean verify)
   AMQPDestDriver *self = (AMQPDestDriver *) d;
 
   self->peer_verify = verify;
+}
+
+void
+afamqp_dd_set_max_channel(LogDriver *d, gint max_channel)
+{
+  AMQPDestDriver *self = (AMQPDestDriver *) d;
+
+  self->max_channel = max_channel;
+}
+
+void
+afamqp_dd_set_frame_size(LogDriver *d, gint frame_size)
+{
+  AMQPDestDriver *self = (AMQPDestDriver *) d;
+
+  self->frame_size = frame_size;
 }
 
 /*
@@ -447,7 +463,7 @@ afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
       goto exception_amqp_dd_connect_failed_init;
     }
 
-  ret = amqp_login(self->conn, self->vhost, 0, 131072, 0,
+  ret = amqp_login(self->conn, self->vhost, self->max_channel, self->frame_size, 0,
                    AMQP_SASL_METHOD_PLAIN, self->user, self->password);
   if (!afamqp_is_ok(self, "Error during AMQP login", ret))
     {
@@ -690,14 +706,17 @@ afamqp_dd_new(GlobalConfig *cfg)
 
   self->routing_key_template = log_template_new(cfg, NULL);
 
-  afamqp_dd_set_vhost((LogDriver *) self, "/");
-  afamqp_dd_set_host((LogDriver *) self, "127.0.0.1");
-  afamqp_dd_set_port((LogDriver *) self, 5672);
-  afamqp_dd_set_exchange((LogDriver *) self, "syslog");
-  afamqp_dd_set_exchange_type((LogDriver *) self, "fanout");
-  afamqp_dd_set_routing_key((LogDriver *) self, "");
-  afamqp_dd_set_persistent((LogDriver *) self, TRUE);
-  afamqp_dd_set_exchange_declare((LogDriver *) self, FALSE);
+  LogDriver *driver = &self->super.super.super;
+  afamqp_dd_set_vhost(driver, "/");
+  afamqp_dd_set_host(driver, "127.0.0.1");
+  afamqp_dd_set_port(driver, 5672);
+  afamqp_dd_set_exchange(driver, "syslog");
+  afamqp_dd_set_exchange_type(driver, "fanout");
+  afamqp_dd_set_routing_key(driver, "");
+  afamqp_dd_set_persistent(driver, TRUE);
+  afamqp_dd_set_exchange_declare(driver, FALSE);
+  afamqp_dd_set_max_channel(driver, AMQP_DEFAULT_MAX_CHANNELS);
+  afamqp_dd_set_frame_size(driver, AMQP_DEFAULT_FRAME_SIZE);
 
   self->max_entries = 256;
   self->entries = g_new(amqp_table_entry_t, self->max_entries);
@@ -708,28 +727,3 @@ afamqp_dd_new(GlobalConfig *cfg)
 
   return (LogDriver *) self;
 }
-
-extern CfgParser afamqp_dd_parser;
-
-static Plugin afamqp_plugin =
-{
-  .type = LL_CONTEXT_DESTINATION,
-  .name = "amqp",
-  .parser = &afamqp_parser
-};
-
-gboolean
-afamqp_module_init(PluginContext *context, CfgArgs *args)
-{
-  plugin_register(context, &afamqp_plugin, 1);
-  return TRUE;
-}
-
-const ModuleInfo module_info =
-{
-  .canonical_name = "afamqp",
-  .version = SYSLOG_NG_VERSION,
-  .description = "The afamqp module provides AMQP destination support for syslog-ng.",
-  .core_revision = SYSLOG_NG_SOURCE_REVISION, .plugins = &afamqp_plugin,
-  .plugins_len = 1,
-};

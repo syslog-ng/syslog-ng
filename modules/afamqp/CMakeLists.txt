@@ -16,6 +16,7 @@ set(AFAMQP_HEADERS
 
 set(AFAMQP_SOURCES
     "afamqp-parser.c"
+    "afamqp-plugin.c"
     "afamqp.c"
     "${CMAKE_CURRENT_BINARY_DIR}/afamqp-grammar.c"
 )

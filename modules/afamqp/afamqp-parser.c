@@ -42,6 +42,8 @@ static CfgLexerKeyword afamqp_keywords[] =
   { "persistent",   KW_PERSISTENT },
   { "username",     KW_USERNAME },
   { "password",     KW_PASSWORD },
+  { "max_channel",     KW_MAX_CHANNEL },
+  { "frame_size",     KW_FRAME_SIZE },
   { "log_fifo_size",    KW_LOG_FIFO_SIZE  },
   { "body",     KW_BODY },
   { "ca_file",        KW_CA_FILE },
