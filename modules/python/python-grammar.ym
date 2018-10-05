@@ -39,6 +39,7 @@
 #include "cfg-grammar.h"
 #include "cfg-parser.h"
 #include "plugin.h"
+#include "syslog-names.h"
 }
 
 %name-prefix "python_"
@@ -71,13 +72,11 @@ start
         | LL_CONTEXT_SOURCE KW_PYTHON
           {
             last_driver = *instance = python_sd_new(configuration);
-            last_source_options = log_threaded_source_driver_get_source_options(last_driver);
           }
           '(' python_sd_options ')'         { YYACCEPT; }
         | LL_CONTEXT_SOURCE KW_PYTHON_FETCHER
           {
             last_driver = *instance = python_fetcher_new(configuration);
-            last_source_options = log_threaded_source_driver_get_source_options(last_driver);
           }
           '(' python_fetcher_options ')'         { YYACCEPT; }
 	| LL_CONTEXT_ROOT KW_PYTHON
@@ -145,8 +144,7 @@ python_sd_option
           }
         | KW_LOADERS python_sd_loaders
         | KW_OPTIONS '(' python_sd_custom_options ')'
-        | source_option
-        | source_driver_option
+        | threaded_source_driver_option
         ;
 
 python_sd_custom_options
@@ -177,8 +175,7 @@ python_fetcher_option
           }
         | KW_LOADERS python_fetcher_loaders
         | KW_OPTIONS '(' python_fetcher_custom_options ')'
-        | source_option
-        | source_driver_option
+        | threaded_source_driver_option
         ;
 
 python_fetcher_custom_options
