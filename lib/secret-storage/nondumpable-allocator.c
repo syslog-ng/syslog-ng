@@ -38,14 +38,28 @@ _silent(gchar *summary, gchar *reason)
 {
 }
 
-NonDumpableLogger logger_debug INTERNAL = _silent;
-NonDumpableLogger logger_fatal INTERNAL = _silent;
+NonDumpableLogger logger_debug_fn INTERNAL = _silent;
+NonDumpableLogger logger_fatal_fn INTERNAL = _silent;
 
 void
 nondumpable_setlogger(NonDumpableLogger _debug, NonDumpableLogger _fatal)
 {
-  logger_debug = _debug;
-  logger_fatal = _fatal;
+  logger_debug_fn = _debug;
+  logger_fatal_fn = _fatal;
+}
+
+#define logger_debug(summary, fmt, ...) \
+{ \
+ char reason[32] = { 0 }; \
+ snprintf(reason, sizeof(reason), fmt, __VA_ARGS__); \
+ logger_debug_fn(summary, reason);   \
+}
+
+#define logger_fatal(summary, fmt, ...) \
+{ \
+ char reason[32] = { 0 }; \
+ snprintf(reason, sizeof(reason), fmt, __VA_ARGS__); \
+ logger_fatal_fn(summary, reason);   \
 }
 
 typedef struct
@@ -64,16 +78,12 @@ _exclude_memory_from_core_dump(gpointer area, gsize len)
 
       if (errno == EINVAL)
         {
-          char reason[32] = { 0 };
-          snprintf(reason, sizeof(reason), "len: %"G_GSIZE_FORMAT", errno: %d\n", len, errno);
-          logger_debug("secret storage: MADV_DONTDUMP not supported", reason);
+          logger_debug("secret storage: MADV_DONTDUMP not supported",
+                       "len: %"G_GSIZE_FORMAT", errno: %d\n", len, errno);
           return TRUE;
         }
 
-      char reason[32] = { 0 };
-      snprintf(reason, sizeof(reason), "errno: %d\n", errno);
-      logger_fatal("secret storage: cannot madvise buffer", reason);
-
+      logger_fatal("secret storage: cannot madvise buffer", "errno: %d\n", errno);
       return FALSE;
     }
 #endif
@@ -86,10 +96,8 @@ _mmap(gsize len)
   gpointer area = mmap(NULL, len, PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, -1, 0);
   if (!area)
     {
-      char reason[32] = { 0 };
-      snprintf(reason, sizeof(reason), "len: %"G_GSIZE_FORMAT", errno: %d\n", len, errno);
-      logger_fatal("secret storage: cannot mmap buffer", reason);
-
+      logger_fatal("secret storage: cannot mmap buffer",
+                   "len: %"G_GSIZE_FORMAT", errno: %d\n", len, errno);
       return NULL;
     }
 
@@ -98,10 +106,8 @@ _mmap(gsize len)
 
   if (mlock(area, len) < 0)
     {
-      char reason[200] = { 0 };
       gchar *hint = (errno == ENOMEM) ? ". Maybe RLIMIT_MEMLOCK is too small?" : "";
-      snprintf(reason, sizeof(reason), "len: %"G_GSIZE_FORMAT", errno: %d%s\n", len, errno, hint);
-      logger_fatal("secret storage: cannot lock buffer", reason);
+      logger_fatal("secret storage: cannot lock buffer", "len: %"G_GSIZE_FORMAT", errno: %d%s\n", len, errno, hint);
 
       goto err_munmap;
     }
