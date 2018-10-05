@@ -39,7 +39,7 @@ void
 secret_storage_testsuite_init(void)
 {
   secret_storage_init();
-  nondumpable_setlogger(logger);
+  nondumpable_setlogger(logger, logger);
 }
 
 void
