@@ -307,6 +307,15 @@ afinet_dd_get_dest_name(const AFSocketDestDriver *s)
   return buf;
 }
 
+static inline void
+_libnet_destroy_when_spoof_source_enabled(AFInetDestDriver *self)
+{
+#if SYSLOG_NG_ENABLE_SPOOF_SOURCE
+  if (self->lnet_ctx)
+    libnet_destroy(self->lnet_ctx);
+#endif
+}
+
 static gboolean
 afinet_dd_deinit(LogPipe *s)
 {
@@ -314,6 +323,8 @@ afinet_dd_deinit(LogPipe *s)
 
   if (_is_failover_used(self))
     afinet_dd_failover_deinit(self->failover);
+
+  _libnet_destroy_when_spoof_source_enabled(self);
 
   return afsocket_dd_deinit(s);
 }
