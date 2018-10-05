@@ -32,6 +32,12 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+static void
+_logger_glue(const rd_kafka_t *rk, int level, const char *fac, const char *buf)
+{
+  msg_error(buf);
+}
+
 struct KafkaSourceDriver
 {
   LogThreadedFetcherDriver super;
@@ -187,6 +193,8 @@ _init(LogPipe *s)
   self->conf = rd_kafka_conf_new();
   if (!self->conf)
     return FALSE;
+
+  rd_kafka_conf_set_log_cb(self->conf, _logger_glue);
 
   gchar errstr[255];
   const gchar *group = _format_stats_instance(&self->super.super);
