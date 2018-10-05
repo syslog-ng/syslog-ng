@@ -42,6 +42,8 @@ struct KafkaSourceDriver
   rd_kafka_topic_partition_list_t *topics;
 
   gboolean should_exit;
+
+  gchar *brokers;
 };
 
 static gboolean
@@ -56,10 +58,10 @@ _connect(LogThreadedFetcherDriver *s)
       return FALSE;
     }
 
-  const gint number_of_brokers = rd_kafka_brokers_add(self->rk, "localhost:9092");
+  const gint number_of_brokers = rd_kafka_brokers_add(self->rk, self->brokers);
   if (number_of_brokers == 0)
     {
-      msg_error("Kafka no valid broker specified");
+      msg_error("Kafka no valid broker specified", evt_tag_str("brokers",self->brokers));
       return FALSE;
     }
 
@@ -155,9 +157,21 @@ _format_stats_instance(LogThreadedSourceDriver *s)
   if (s->super.super.super.persist_name)
     g_snprintf(persist_name, sizeof(persist_name), "kafka-source,%s", s->super.super.super.persist_name);
   else
-    g_snprintf(persist_name, sizeof(persist_name), "kafka-source");
+    g_snprintf(persist_name, sizeof(persist_name), "kafka-source,%s", self->brokers);
 
   return persist_name;
+}
+
+static gboolean
+_check_options(KafkaSourceDriver *self)
+{
+  if (!self->brokers)
+    {
+      msg_error("The brokers() option for kafka() is mandatory", log_pipe_location_tag(&self->super.super.super.super.super));
+      return FALSE;
+    }
+
+  return TRUE;
 }
 
 static gboolean
@@ -166,6 +180,9 @@ _init(LogPipe *s)
   KafkaSourceDriver *self = (KafkaSourceDriver *) s;
 
   self->should_exit = FALSE;
+
+  if (!_check_options(self))
+    return FALSE;
 
   self->conf = rd_kafka_conf_new();
   if (!self->conf)
@@ -198,7 +215,18 @@ _free(LogPipe *s)
 {
   KafkaSourceDriver *self = (KafkaSourceDriver *) s;
 
+  g_free(self->brokers);
+
   log_threaded_fetcher_driver_free_method(s);
+}
+
+void
+kafka_sd_set_brokers(LogDriver *s, const gchar *brokers)
+{
+  KafkaSourceDriver *self = (KafkaSourceDriver *) s;
+
+  g_free(self->brokers);
+  self->brokers = g_strdup(brokers);
 }
 
 LogDriver *

@@ -32,6 +32,7 @@ int kafka_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 static CfgLexerKeyword kafka_keywords[] =
 {
   { "kafka", KW_KAFKA },
+  { "brokers", KW_BROKERS },
   { NULL }
 };
 
