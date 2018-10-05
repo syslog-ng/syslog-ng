@@ -93,7 +93,7 @@ const ModuleInfo module_info =
 {
   .canonical_name = "python",
   .version = SYSLOG_NG_VERSION,
-  .description = "The python module provides Python scripted destination support for syslog-ng.",
+  .description = "The python ("PYTHON_MODULE_VERSION") module provides Python scripted destination support for syslog-ng.",
   .core_revision = VERSION_CURRENT_VER_ONLY,
   .plugins = python_plugins,
   .plugins_len = G_N_ELEMENTS(python_plugins),

@@ -29,10 +29,12 @@
 
 #if (SYSLOG_NG_ENABLE_PYTHONv2)
 #define PYTHON_BUILTIN_MODULE_NAME "__builtin__"
+#define PYTHON_MODULE_VERSION "python2"
 #endif
 
 #if (SYSLOG_NG_ENABLE_PYTHONv3)
 #define PYTHON_BUILTIN_MODULE_NAME "builtins"
+#define PYTHON_MODULE_VERSION "python3"
 #endif
 
 void py_init_argv(void);
