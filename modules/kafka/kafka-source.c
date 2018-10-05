@@ -40,6 +40,8 @@ struct KafkaSourceDriver
   rd_kafka_topic_conf_t *topic_conf;
   rd_kafka_t *rk;
   rd_kafka_topic_partition_list_t *topics;
+
+  gboolean should_exit;
 };
 
 static gboolean
@@ -104,12 +106,15 @@ _fetch(LogThreadedFetcherDriver *s)
     goto no_message;
 
   rd_kafka_message_t *rkmessage;
-  while (1)
+  while (!self->should_exit)
     {
       rkmessage = rd_kafka_consumer_poll(self->rk, 1000);
       if (rkmessage)
         break;
     }
+
+  if (self->should_exit)
+    goto no_message;
 
   if (rkmessage->err)
     goto error;
@@ -134,6 +139,13 @@ no_message:
   return result;
 }
 
+static void
+_request_exit(LogThreadedFetcherDriver *s)
+{
+  KafkaSourceDriver *self = (KafkaSourceDriver *) s;
+  self->should_exit = TRUE;
+}
+
 static const gchar *
 _format_stats_instance(LogThreadedSourceDriver *s)
 {
@@ -152,6 +164,8 @@ static gboolean
 _init(LogPipe *s)
 {
   KafkaSourceDriver *self = (KafkaSourceDriver *) s;
+
+  self->should_exit = FALSE;
 
   self->conf = rd_kafka_conf_new();
   if (!self->conf)
@@ -196,6 +210,7 @@ kafka_sd_new(GlobalConfig *cfg)
   self->super.connect = _connect;
   self->super.disconnect = _disconnect;
   self->super.fetch = _fetch;
+  self->super.request_exit = _request_exit;
 
   self->super.super.super.super.super.init = _init;
   self->super.super.super.super.super.free_fn = _free;
