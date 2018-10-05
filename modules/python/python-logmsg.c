@@ -255,7 +255,7 @@ _logmessage_get_keys_method(PyLogMessage *self)
   return keys;
 }
 
-static PyLogMessage *
+static PyObject *
 py_log_message_set_pri(PyLogMessage *self, PyObject *args, PyObject *kwrds)
 {
   guint pri;
@@ -266,11 +266,10 @@ py_log_message_set_pri(PyLogMessage *self, PyObject *args, PyObject *kwrds)
 
   self->msg->pri = pri;
 
-  Py_INCREF(self);
-  return self;
+  Py_RETURN_NONE;
 }
 
-static PyLogMessage *
+static PyObject *
 py_log_message_set_timestamp(PyLogMessage *self, PyObject *args, PyObject *kwrds)
 {
   PyObject *py_timestamp;
@@ -282,8 +281,7 @@ py_log_message_set_timestamp(PyLogMessage *self, PyObject *args, PyObject *kwrds
   if (!py_datetime_to_logstamp((PyObject *) py_timestamp, &self->msg->timestamps[LM_TS_STAMP]))
     return NULL;
 
-  Py_INCREF(self);
-  return self;
+  Py_RETURN_NONE;
 }
 
 static PyObject *
