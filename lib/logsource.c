@@ -348,6 +348,22 @@ _increment_dynamic_stats_counters(const gchar *source_id, const LogMessage *msg)
 }
 
 static void
+log_source_override_host(LogSource *self, LogMessage *msg)
+{
+  if (self->options->host_override_len < 0)
+    self->options->host_override_len = strlen(self->options->host_override);
+  log_msg_set_value(msg, LM_V_HOST, self->options->host_override, self->options->host_override_len);
+}
+
+static void
+log_source_override_program(LogSource *self, LogMessage *msg)
+{
+  if (self->options->program_override_len < 0)
+    self->options->program_override_len = strlen(self->options->program_override);
+  log_msg_set_value(msg, LM_V_PROGRAM, self->options->program_override, self->options->program_override_len);
+}
+
+static void
 log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   LogSource *self = (LogSource *) s;
@@ -368,22 +384,6 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   /* $HOST setup */
   log_source_mangle_hostname(self, msg);
 
-  /* $PROGRAM override */
-  if (self->options->program_override)
-    {
-      if (self->options->program_override_len < 0)
-        self->options->program_override_len = strlen(self->options->program_override);
-      log_msg_set_value(msg, LM_V_PROGRAM, self->options->program_override, self->options->program_override_len);
-    }
-
-  /* $HOST override */
-  if (self->options->host_override)
-    {
-      if (self->options->host_override_len < 0)
-        self->options->host_override_len = strlen(self->options->host_override);
-      log_msg_set_value(msg, LM_V_HOST, self->options->host_override, self->options->host_override_len);
-    }
-
   /* source specific tags */
   if (self->options->tags)
     {
@@ -395,13 +395,20 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
 
   log_msg_set_tag_by_id(msg, self->options->source_group_tag);
 
+
+  if (!_invoke_mangle_callbacks(s, msg, path_options))
+    return;
+
+  if (self->options->host_override)
+    log_source_override_host(self, msg);
+
+  if (self->options->program_override)
+    log_source_override_program(self, msg);
+
   _increment_dynamic_stats_counters(self->stats_id, msg);
   stats_syslog_process_message_pri(msg->pri);
 
   /* message setup finished, send it out */
-
-  if (!_invoke_mangle_callbacks(s, msg, path_options))
-    return;
 
   stats_counter_inc(self->recvd_messages);
   stats_counter_set(self->last_message_seen, msg->timestamps[LM_TS_RECVD].tv_sec);
