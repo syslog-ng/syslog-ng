@@ -225,6 +225,7 @@ map_http_status_to_worker_status(HTTPDestinationWorker *self, glong http_code)
                 "Trying again",
                 evt_tag_str("url", owner->url),
                 evt_tag_int("status_code", http_code),
+                evt_tag_str("driver", owner->super.super.super.id),
                 log_pipe_location_tag(&owner->super.super.super.super));
       break;
     case 2:
@@ -236,6 +237,7 @@ map_http_status_to_worker_status(HTTPDestinationWorker *self, glong http_code)
                  "Either accept-redirect() is set to no, or this status code is unknown. Trying again",
                  evt_tag_str("url", owner->url),
                  evt_tag_int("status_code", http_code),
+                 evt_tag_str("driver", owner->super.super.super.id),
                  log_pipe_location_tag(&owner->super.super.super.super));
       break;
     case 4:
@@ -243,6 +245,7 @@ map_http_status_to_worker_status(HTTPDestinationWorker *self, glong http_code)
                  "authorized or the URL is not found.",
                  evt_tag_str("url", owner->url),
                  evt_tag_int("status_code", http_code),
+                 evt_tag_str("driver", owner->super.super.super.id),
                  log_pipe_location_tag(&owner->super.super.super.super));
       retval = WORKER_INSERT_RESULT_DROP;
       break;
@@ -251,12 +254,14 @@ map_http_status_to_worker_status(HTTPDestinationWorker *self, glong http_code)
                  "Trying again",
                  evt_tag_str("url", owner->url),
                  evt_tag_int("status_code", http_code),
+                 evt_tag_str("driver", owner->super.super.super.id),
                  log_pipe_location_tag(&owner->super.super.super.super));
       break;
     default:
       msg_error("Unknown HTTP response code",
                 evt_tag_str("url", owner->url),
                 evt_tag_int("status_code", http_code),
+                evt_tag_str("driver", owner->super.super.super.id),
                 log_pipe_location_tag(&owner->super.super.super.super));
       break;
     }
@@ -308,6 +313,8 @@ _flush(LogThreadedDestWorker *s)
     {
       msg_error("curl: error sending HTTP request",
                 evt_tag_str("error", curl_easy_strerror(ret)),
+                evt_tag_int("worker_index", self->super.worker_index),
+                evt_tag_str("driver", owner->super.super.super.id),
                 log_pipe_location_tag(&owner->super.super.super.super));
       retval = WORKER_INSERT_RESULT_NOT_CONNECTED;
       goto exit;
@@ -320,6 +327,8 @@ _flush(LogThreadedDestWorker *s)
     {
       msg_error("curl: error querying response code",
                 evt_tag_str("error", curl_easy_strerror(ret)),
+                evt_tag_int("worker_index", self->super.worker_index),
+                evt_tag_str("driver", owner->super.super.super.id),
                 log_pipe_location_tag(&owner->super.super.super.super));
       retval = WORKER_INSERT_RESULT_NOT_CONNECTED;
       goto exit;
@@ -332,13 +341,15 @@ _flush(LogThreadedDestWorker *s)
 
       curl_easy_getinfo(self->curl, CURLINFO_TOTAL_TIME, &total_time);
       curl_easy_getinfo(self->curl, CURLINFO_REDIRECT_COUNT, &redirect_count);
-      msg_debug("curl: HTTP response received",
+      msg_debug("curl: HTTP request completed",
                 evt_tag_str("url", owner->url),
                 evt_tag_int("status_code", http_code),
                 evt_tag_int("body_size", self->request_body->len),
                 evt_tag_int("batch_size", self->super.batch_size),
                 evt_tag_int("redirected", redirect_count != 0),
                 evt_tag_printf("total_time", "%.3f", total_time),
+                evt_tag_int("worker_index", self->super.worker_index),
+                evt_tag_str("driver", owner->super.super.super.id),
                 log_pipe_location_tag(&owner->super.super.super.super));
     }
   retval = map_http_status_to_worker_status(self, http_code);
@@ -397,6 +408,8 @@ _thread_init(LogThreadedDestWorker *s)
   if (!(self->curl = curl_easy_init()))
     {
       msg_error("curl: cannot initialize libcurl",
+                evt_tag_int("worker_index", self->super.worker_index),
+                evt_tag_str("driver", owner->super.super.super.id),
                 log_pipe_location_tag(&owner->super.super.super.super));
       return FALSE;
     }
