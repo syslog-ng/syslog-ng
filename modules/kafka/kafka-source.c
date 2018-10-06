@@ -50,6 +50,7 @@ struct KafkaSourceDriver
   gboolean should_exit;
 
   gchar *brokers;
+  gchar *topic;
 };
 
 static gboolean
@@ -72,7 +73,7 @@ _connect(LogThreadedFetcherDriver *s)
     }
 
   self->topics = rd_kafka_topic_partition_list_new(1);
-  rd_kafka_topic_partition_list_add(self->topics, "syslog-ng", 0);
+  rd_kafka_topic_partition_list_add(self->topics, self->topic, 0);
 
   rd_kafka_resp_err_t err;
   if ((err = rd_kafka_assign(self->rk, self->topics)))
@@ -102,6 +103,18 @@ _disconnect(LogThreadedFetcherDriver *s)
   rd_kafka_destroy(self->rk);
 }
 
+static gboolean
+_skip_error(rd_kafka_message_t *message)
+{
+  if (!message)
+    return TRUE;
+
+  if (message->err == RD_KAFKA_RESP_ERR__PARTITION_EOF)
+    return TRUE;
+
+  return FALSE;
+}
+
 /* runs in a dedicated thread */
 static LogThreadedFetchResult
 _fetch(LogThreadedFetcherDriver *s)
@@ -117,7 +130,7 @@ _fetch(LogThreadedFetcherDriver *s)
   while (!self->should_exit)
     {
       rkmessage = rd_kafka_consumer_poll(self->rk, 1000);
-      if (rkmessage)
+      if (!_skip_error(rkmessage))
         break;
     }
 
@@ -176,6 +189,11 @@ _check_options(KafkaSourceDriver *self)
       msg_error("The brokers() option for kafka() is mandatory", log_pipe_location_tag(&self->super.super.super.super.super));
       return FALSE;
     }
+  if (!self->topic)
+    {
+      msg_error("The topic() option for kafka() is mandatory", log_pipe_location_tag(&self->super.super.super.super.super));
+      return FALSE;
+    }
 
   return TRUE;
 }
@@ -224,6 +242,7 @@ _free(LogPipe *s)
   KafkaSourceDriver *self = (KafkaSourceDriver *) s;
 
   g_free(self->brokers);
+  g_free(self->topic);
 
   log_threaded_fetcher_driver_free_method(s);
 }
@@ -235,6 +254,15 @@ kafka_sd_set_brokers(LogDriver *s, const gchar *brokers)
 
   g_free(self->brokers);
   self->brokers = g_strdup(brokers);
+}
+
+void
+kafka_sd_set_topic(LogDriver *s, const gchar *topic)
+{
+  KafkaSourceDriver *self = (KafkaSourceDriver *) s;
+
+  g_free(self->topic);
+  self->topic = g_strdup(topic);
 }
 
 LogDriver *

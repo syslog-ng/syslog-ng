@@ -33,5 +33,6 @@ typedef struct KafkaSourceDriver KafkaSourceDriver;
 LogDriver *kafka_sd_new(GlobalConfig *cfg);
 
 void kafka_sd_set_brokers(LogDriver *s, const gchar *filename);
+void kafka_sd_set_topic(LogDriver *s, const gchar *topic);
 
 #endif

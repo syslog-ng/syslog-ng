@@ -33,6 +33,7 @@ static CfgLexerKeyword kafka_keywords[] =
 {
   { "kafka", KW_KAFKA },
   { "brokers", KW_BROKERS },
+  { "topic", KW_TOPIC },
   { NULL }
 };
 
