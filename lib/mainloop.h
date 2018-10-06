@@ -60,6 +60,7 @@ main_loop_is_main_thread(void)
 }
 
 void main_loop_reload_config(MainLoop *self);
+void main_loop_verify_config(GString *result, MainLoop *self);
 void main_loop_exit(MainLoop *self);
 
 int main_loop_read_and_init_config(MainLoop *self);

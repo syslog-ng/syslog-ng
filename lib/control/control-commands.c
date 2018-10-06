@@ -122,15 +122,23 @@ control_connection_config(GString *command, gpointer user_data)
   GString *result = g_string_sized_new(128);
   gchar **arguments = g_strsplit(command->str, " ", 0);
 
-  if (g_str_equal(arguments[1], "PREPROCESSED"))
+  if (g_str_equal(arguments[1], "GET"))
     {
-      g_string_assign(result, config->preprocess_config->str);
-      goto exit;
+      if (g_str_equal(arguments[2], "ORIGINAL"))
+        {
+          g_string_assign(result, config->original_config->str);
+          goto exit;
+        }
+      else if (g_str_equal(arguments[2], "PREPROCESSED"))
+        {
+          g_string_assign(result, config->preprocess_config->str);
+          goto exit;
+        }
     }
 
-  if (g_str_equal(arguments[1], "ORIGINAL"))
+  if (g_str_equal(arguments[1], "VERIFY"))
     {
-      g_string_assign(result, config->original_config->str);
+      main_loop_verify_config(result, main_loop);
       goto exit;
     }
 

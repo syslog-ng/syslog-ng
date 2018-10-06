@@ -191,18 +191,39 @@ slng_reload(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 }
 
 static gboolean config_options_preprocessed = FALSE;
+static gboolean config_options_verify = FALSE;
 
 static GOptionEntry config_options[] =
 {
   { "preprocessed", 'p', 0, G_OPTION_ARG_NONE, &config_options_preprocessed, "preprocessed", NULL },
+  { "verify", 'v', 0, G_OPTION_ARG_NONE, &config_options_verify, "verify", NULL },
   { NULL,           0,   0, G_OPTION_ARG_NONE, NULL,                         NULL,           NULL }
 };
+
 
 static gint
 slng_config(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 {
-  return _dispatch_command(config_options_preprocessed ? "CONFIG PREPROCESSED" : "CONFIG ORIGINAL");
+  GString *cmd = g_string_new("CONFIG ");
+
+  if (config_options_verify)
+    g_string_append(cmd, "VERIFY ");
+  else
+    {
+      g_string_append(cmd, "GET ");
+
+      if(config_options_preprocessed)
+        g_string_append(cmd, "PREPROCESSED");
+      else
+        g_string_append(cmd, "ORIGINAL");
+    }
+
+  gint res = _dispatch_command(cmd->str);
+  g_string_free(cmd, TRUE);
+
+  return res;
 }
+
 
 static gint
 slng_reopen(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)

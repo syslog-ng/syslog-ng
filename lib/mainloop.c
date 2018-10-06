@@ -273,6 +273,7 @@ finish:
   return;
 }
 
+
 /* initiate configuration reload */
 void
 main_loop_reload_config_initiate(gpointer user_data)
@@ -334,6 +335,34 @@ GlobalConfig *
 main_loop_get_current_config(MainLoop *self)
 {
   return self->current_configuration;
+}
+
+/* main_loop_verify_config
+ * compares active configuration versus config file */
+
+void
+main_loop_verify_config(GString *result, MainLoop *self)
+{
+  const gchar *file_path = resolvedConfigurablePaths.cfgfilename;
+  gchar *config_mem = self -> current_configuration -> original_config -> str;
+  GError *err = NULL;
+  gchar *file_contents;
+
+  if (!g_file_get_contents(file_path, &file_contents, NULL, &err))
+    {
+      g_string_assign(result, "Cannot read configuration file: ");
+      g_string_append(result, err -> message);
+      g_error_free(err);
+      err = NULL;
+      return;
+    }
+
+  if (strcmp(file_contents, config_mem) == 0)
+    g_string_assign(result, "Configuration file matches active configuration");
+  else
+    g_string_assign(result, "Configuration file does not match active configuration");
+
+  g_free(file_contents);
 }
 
 /************************************************************************************
@@ -493,6 +522,7 @@ main_loop_reload_config(MainLoop *self)
   iv_event_post(&self->reload_config_requested);
   return;
 }
+
 
 void
 main_loop_init(MainLoop *self, MainLoopOptions *options)
