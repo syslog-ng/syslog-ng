@@ -356,8 +356,9 @@ _flush(LogThreadedDestWorker *s)
 {
   HTTPDestinationWorker *self = (HTTPDestinationWorker *) s;
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) s->owner;
-  HTTPLoadBalancerTarget *target;
-  worker_insert_result_t retval;
+  HTTPLoadBalancerTarget *target, *alt_target = NULL;
+  worker_insert_result_t retval = WORKER_INSERT_RESULT_NOT_CONNECTED;
+  gint retry_attempts = owner->load_balancer->num_targets;
 
   if (self->super.batch_size == 0)
     return WORKER_INSERT_RESULT_SUCCESS;
@@ -365,14 +366,37 @@ _flush(LogThreadedDestWorker *s)
   _finish_request_body(self);
 
   target = http_load_balancer_choose_target(owner->load_balancer, &self->lbc);
-  retval = _flush_on_target(self, target);
 
+  while (--retry_attempts >= 0)
+    {
+      retval = _flush_on_target(self, target);
+      if (retval == WORKER_INSERT_RESULT_SUCCESS)
+        {
+          http_load_balancer_set_target_successful(owner->load_balancer, target);
+          break;
+        }
+      http_load_balancer_set_target_failed(owner->load_balancer, target);
 
-  if (retval == WORKER_INSERT_RESULT_SUCCESS)
-    http_load_balancer_set_target_successful(owner->load_balancer, target);
-  else
-    http_load_balancer_set_target_failed(owner->load_balancer, target);
+      alt_target = http_load_balancer_choose_target(owner->load_balancer, &self->lbc);
+      if (alt_target == target)
+        {
+          msg_debug("Target server down, but no alternative server available. Falling back to retrying after time-reopen()",
+                    evt_tag_str("url", target->url),
+                    evt_tag_int("worker_index", self->super.worker_index),
+                    evt_tag_str("driver", owner->super.super.super.id),
+                    log_pipe_location_tag(&owner->super.super.super.super));
+          break;
+        }
 
+      msg_debug("Target server down, trying an alternative server",
+                evt_tag_str("url", target->url),
+                evt_tag_str("alternative_url", alt_target->url),
+                evt_tag_int("worker_index", self->super.worker_index),
+                evt_tag_str("driver", owner->super.super.super.id),
+                log_pipe_location_tag(&owner->super.super.super.super));
+
+      target = alt_target;
+    }
   _reinit_request_body(self);
   curl_slist_free_all(self->request_headers);
   self->request_headers = NULL;

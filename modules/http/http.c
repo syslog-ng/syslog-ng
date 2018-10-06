@@ -314,14 +314,17 @@ http_dd_init(LogPipe *s)
   HTTPDestinationDriver *self = (HTTPDestinationDriver *)s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
+  if (self->load_balancer->num_targets == 0)
+    http_load_balancer_add_target(self->load_balancer, HTTP_DEFAULT_URL);
+
+  /* we need to set up url before we call the inherited init method, so our stats key is correct */
+  self->url = self->load_balancer->targets[0].url;
+
   if (!log_threaded_dest_driver_init_method(s))
     return FALSE;
 
   log_template_options_init(&self->template_options, cfg);
 
-  if (self->load_balancer->num_targets == 0)
-    http_load_balancer_add_target(self->load_balancer, HTTP_DEFAULT_URL);
-  self->url = self->load_balancer->targets[0].url;
   http_load_balancer_set_recovery_timeout(self->load_balancer, self->super.time_reopen);
 
   return log_threaded_dest_driver_start_workers(&self->super);
