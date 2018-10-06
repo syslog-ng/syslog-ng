@@ -62,8 +62,13 @@ bootstrap: bootstrap-$(DEFAULT_IMAGE)
 bootstrap-%: setup
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -e CONFIGURE_OPTS="$${CONFIGURE_OPTS:-$(CONFIGURE_OPTS)}" -ti  balabit/syslog-ng-$* /source/dbld/bootstrap
 
+make: setup-$(DEFAULT_IMAGE)
 make-%: setup
-	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$(DEFAULT_IMAGE) /source/dbld/make $(MAKE_ARGS) $*
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$* /source/dbld/make $(MAKE_ARGS)
+
+make-check: setup-$(DEFAULT_IMAGE)
+make-check-%: setup
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti  balabit/syslog-ng-$* /source/dbld/make-check
 
 tarball: tarball-$(DEFAULT_IMAGE)
 tarball-%: setup
