@@ -321,6 +321,13 @@ py_log_source_post(PyObject *s, PyObject *args, PyObject *kwrds)
       return NULL;
     }
 
+  if (!log_threaded_source_free_to_send(&sd->super))
+    {
+      msg_error("Incorrectly suspended source, dropping message",
+                evt_tag_str("driver", sd->super.super.super.id));
+      Py_RETURN_NONE;
+    }
+
   /* keep a reference until the PyLogMessage instance is freed */
   LogMessage *message = log_msg_ref(pymsg->msg);
   sd->post_message(sd, message);
