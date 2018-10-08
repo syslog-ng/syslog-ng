@@ -340,11 +340,9 @@ _py_init_object(PythonFetcherDriver *self)
   return TRUE;
 }
 
-static gboolean
-_py_set_parse_options(PythonFetcherDriver *self)
+static PyObject *
+_py_parse_options_new(PythonFetcherDriver *self, MsgFormatOptions *parse_options)
 {
-  MsgFormatOptions *parse_options = log_threaded_source_driver_get_parse_options(&self->super.super.super.super);
-
   PyObject *py_parse_options = PyCapsule_New(parse_options, NULL, NULL);
 
   if (!py_parse_options)
@@ -356,8 +354,20 @@ _py_set_parse_options(PythonFetcherDriver *self)
                 evt_tag_str("class", self->class),
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
-      return FALSE;
+      return NULL;
     }
+
+  return py_parse_options;
+}
+
+static gboolean
+_py_set_parse_options(PythonFetcherDriver *self)
+{
+  MsgFormatOptions *parse_options = log_threaded_source_driver_get_parse_options(&self->super.super.super.super);
+
+  PyObject *py_parse_options = _py_parse_options_new(self, parse_options);
+  if (!py_parse_options)
+    return FALSE;
 
   if (PyObject_SetAttrString(self->py.instance, "parse_options", py_parse_options) == -1)
     {
