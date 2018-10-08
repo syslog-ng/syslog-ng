@@ -228,9 +228,10 @@ _py_free_bindings(PythonFetcherDriver *self)
 }
 
 static gboolean
-_py_init_bindings(PythonFetcherDriver *self)
+_py_resolve_class(PythonFetcherDriver *self)
 {
   self->py.class = _py_resolve_qualified_name(self->class);
+
   if (!self->py.class)
     {
       gchar buf[256];
@@ -240,10 +241,17 @@ _py_init_bindings(PythonFetcherDriver *self)
                 evt_tag_str("class", self->class),
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
-      goto error;
+      return FALSE;
     }
 
+  return TRUE;
+}
+
+static gboolean
+_py_init_instance(PythonFetcherDriver *self)
+{
   self->py.instance = _py_invoke_function(self->py.class, NULL, self->class, self->super.super.super.super.id);
+
   if (!self->py.instance)
     {
       gchar buf[256];
@@ -253,7 +261,7 @@ _py_init_bindings(PythonFetcherDriver *self)
                 evt_tag_str("class", self->class),
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
-      goto error;
+      return FALSE;
     }
 
   if (!_py_is_log_fetcher(self->py.instance))
@@ -261,29 +269,54 @@ _py_init_bindings(PythonFetcherDriver *self)
       msg_error("Error initializing Python fetcher, class is not a subclass of LogFetcher",
                 evt_tag_str("driver", self->super.super.super.super.id),
                 evt_tag_str("class", self->class));
-      goto error;
+      return FALSE;
     }
 
   ((PyLogFetcher *) self->py.instance)->driver = self;
 
+  return TRUE;
+}
+
+static gboolean
+_py_lookup_fetch_method(PythonFetcherDriver *self)
+{
   self->py.fetch_method = _py_get_attr_or_null(self->py.instance, "fetch");
+
   if (!self->py.fetch_method)
     {
       msg_error("Error initializing Python fetcher, class does not have a fetch() method",
                 evt_tag_str("driver", self->super.super.super.super.id),
                 evt_tag_str("class", self->class));
-      goto error;
+      return FALSE;
     }
+
+  return TRUE;
+}
+
+static gboolean
+_py_init_methods(PythonFetcherDriver *self)
+{
+  if (!_py_lookup_fetch_method(self))
+    return FALSE;
 
   self->py.request_exit_method = _py_get_attr_or_null(self->py.instance, "request_exit");
   self->py.open_method = _py_get_attr_or_null(self->py.instance, "open");
   self->py.close_method = _py_get_attr_or_null(self->py.instance, "close");
 
   return TRUE;
+}
 
-error:
-  _py_free_bindings(self);
-  return FALSE;
+static gboolean
+_py_init_bindings(PythonFetcherDriver *self)
+{
+  gboolean initialized = _py_resolve_class(self)
+                         && _py_init_instance(self)
+                         && _py_init_methods(self);
+
+  if (!initialized)
+    _py_free_bindings(self);
+
+  return initialized;
 }
 
 static gboolean
