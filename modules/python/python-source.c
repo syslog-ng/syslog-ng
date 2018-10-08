@@ -353,6 +353,73 @@ _py_set_parse_options(PythonSourceDriver *self)
   return TRUE;
 }
 
+static void
+python_sd_suspend(PythonSourceDriver *self)
+{
+  PyGILState_STATE gstate = PyGILState_Ensure();
+  _py_invoke_suspend(self);
+  PyGILState_Release(gstate);
+}
+
+static void
+python_sd_wakeup(LogThreadedSourceDriver *s)
+{
+  PythonSourceDriver *self = (PythonSourceDriver *) s;
+
+  PyGILState_STATE gstate = PyGILState_Ensure();
+  _py_invoke_wakeup(self);
+  PyGILState_Release(gstate);
+}
+
+static void
+_post_message_non_blocking(PythonSourceDriver *self, LogMessage *msg)
+{
+  PyThreadState *state = PyEval_SaveThread();
+  log_threaded_source_post(&self->super, msg);
+  PyEval_RestoreThread(state);
+
+  /* GIL is used to synchronize free_to_send(), suspend() and wakeup() */
+  if (!log_threaded_source_free_to_send(&self->super))
+    python_sd_suspend(self);
+}
+
+static void
+_post_message_blocking(PythonSourceDriver *self, LogMessage *msg)
+{
+  PyThreadState *state = PyEval_SaveThread();
+  log_threaded_source_blocking_post(&self->super, msg);
+  PyEval_RestoreThread(state);
+}
+
+static gboolean
+_py_sd_init(PythonSourceDriver *self)
+{
+  PyGILState_STATE gstate = PyGILState_Ensure();
+
+  _py_perform_imports(self->loaders);
+  if (!_py_init_bindings(self))
+    goto error;
+
+  if (self->py.suspend_method && self->py.wakeup_method)
+    {
+      self->post_message = _post_message_non_blocking;
+      log_threaded_source_set_wakeup_func(&self->super, python_sd_wakeup);
+    }
+
+  if (!_py_init_object(self))
+    goto error;
+
+  if (!_py_set_parse_options(self))
+    goto error;
+
+  PyGILState_Release(gstate);
+  return TRUE;
+
+error:
+  PyGILState_Release(gstate);
+  return FALSE;
+}
+
 static PyObject *
 py_log_source_post(PyObject *s, PyObject *args, PyObject *kwrds)
 {
@@ -405,44 +472,6 @@ python_sd_request_exit(LogThreadedSourceDriver *s)
   PyGILState_Release(gstate);
 }
 
-static void
-python_sd_suspend(PythonSourceDriver *self)
-{
-  PyGILState_STATE gstate = PyGILState_Ensure();
-  _py_invoke_suspend(self);
-  PyGILState_Release(gstate);
-}
-
-static void
-python_sd_wakeup(LogThreadedSourceDriver *s)
-{
-  PythonSourceDriver *self = (PythonSourceDriver *) s;
-
-  PyGILState_STATE gstate = PyGILState_Ensure();
-  _py_invoke_wakeup(self);
-  PyGILState_Release(gstate);
-}
-
-static void
-_post_message_non_blocking(PythonSourceDriver *self, LogMessage *msg)
-{
-  PyThreadState *state = PyEval_SaveThread();
-  log_threaded_source_post(&self->super, msg);
-  PyEval_RestoreThread(state);
-
-  /* GIL is used to synchronize free_to_send(), suspend() and wakeup() */
-  if (!log_threaded_source_free_to_send(&self->super))
-    python_sd_suspend(self);
-}
-
-static void
-_post_message_blocking(PythonSourceDriver *self, LogMessage *msg)
-{
-  PyThreadState *state = PyEval_SaveThread();
-  log_threaded_source_blocking_post(&self->super, msg);
-  PyEval_RestoreThread(state);
-}
-
 static gboolean
 python_sd_init(LogPipe *s)
 {
@@ -455,35 +484,14 @@ python_sd_init(LogPipe *s)
       return FALSE;
     }
 
-  PyGILState_STATE gstate = PyGILState_Ensure();
-
-  _py_perform_imports(self->loaders);
-  if (!_py_init_bindings(self))
-    goto fail;
-
-  if (self->py.suspend_method && self->py.wakeup_method)
-    {
-      self->post_message = _post_message_non_blocking;
-      log_threaded_source_set_wakeup_func(&self->super, python_sd_wakeup);
-    }
-
-  if (!_py_init_object(self))
-    goto fail;
-
-  if (!_py_set_parse_options(self))
-    goto fail;
-
-  PyGILState_Release(gstate);
+  if(!_py_sd_init(self))
+    return FALSE;
 
   msg_verbose("Python source initialized",
               evt_tag_str("driver", self->super.super.super.id),
               evt_tag_str("class", self->class));
 
   return log_threaded_source_driver_init_method(s);
-
-fail:
-  PyGILState_Release(gstate);
-  return FALSE;
 }
 
 static gboolean

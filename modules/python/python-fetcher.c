@@ -399,6 +399,48 @@ python_fetcher_close(LogThreadedFetcherDriver *s)
   PyGILState_Release(gstate);
 }
 
+static void
+python_fetcher_request_exit(LogThreadedFetcherDriver *s)
+{
+  PythonFetcherDriver *self = (PythonFetcherDriver *) s;
+
+  PyGILState_STATE gstate = PyGILState_Ensure();
+  _py_invoke_request_exit(self);
+  PyGILState_Release(gstate);
+}
+
+static gboolean
+_py_fetcher_init(PythonFetcherDriver *self)
+{
+  PyGILState_STATE gstate = PyGILState_Ensure();
+
+  _py_perform_imports(self->loaders);
+  if (!_py_init_bindings(self))
+    goto error;
+
+  if (self->py.open_method)
+    self->super.connect = python_fetcher_open;
+
+  if (self->py.close_method)
+    self->super.disconnect = python_fetcher_close;
+
+  if (self->py.request_exit_method)
+    self->super.request_exit = python_fetcher_request_exit;
+
+  if (!_py_init_object(self))
+    goto error;
+
+  if (!_py_set_parse_options(self))
+    goto error;
+
+  PyGILState_Release(gstate);
+  return TRUE;
+
+error:
+  PyGILState_Release(gstate);
+  return FALSE;
+}
+
 static LogThreadedFetchResult
 python_fetcher_fetch(LogThreadedFetcherDriver *s)
 {
@@ -409,16 +451,6 @@ python_fetcher_fetch(LogThreadedFetcherDriver *s)
   PyGILState_Release(gstate);
 
   return result;
-}
-
-static void
-python_fetcher_request_exit(LogThreadedFetcherDriver *s)
-{
-  PythonFetcherDriver *self = (PythonFetcherDriver *) s;
-
-  PyGILState_STATE gstate = PyGILState_Ensure();
-  _py_invoke_request_exit(self);
-  PyGILState_Release(gstate);
 }
 
 static gboolean
@@ -435,38 +467,14 @@ python_fetcher_init(LogPipe *s)
 
   self->super.time_reopen = 1;
 
-  PyGILState_STATE gstate = PyGILState_Ensure();
-
-  _py_perform_imports(self->loaders);
-  if (!_py_init_bindings(self))
-    goto fail;
-
-  if (self->py.open_method)
-    self->super.connect = python_fetcher_open;
-
-  if (self->py.close_method)
-    self->super.disconnect = python_fetcher_close;
-
-  if (self->py.request_exit_method)
-    self->super.request_exit = python_fetcher_request_exit;
-
-  if (!_py_init_object(self))
-    goto fail;
-
-  if (!_py_set_parse_options(self))
-    goto fail;
-
-  PyGILState_Release(gstate);
+  if (!_py_fetcher_init(self))
+    return FALSE;
 
   msg_verbose("Python fetcher initialized",
               evt_tag_str("driver", self->super.super.super.super.id),
               evt_tag_str("class", self->class));
 
   return log_threaded_fetcher_driver_init_method(s);
-
-fail:
-  PyGILState_Release(gstate);
-  return FALSE;
 }
 
 static gboolean
