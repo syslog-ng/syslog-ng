@@ -24,48 +24,205 @@
 
 package org.syslog_ng.elasticsearch_v2.messageprocessor.http;
 
+import io.searchbox.client.JestResultHandler;
+import io.searchbox.client.http.ESJestHttpClient;
 import io.searchbox.core.Bulk;
-import io.searchbox.core.Index;
-import io.searchbox.client.JestResult;
+import io.searchbox.core.BulkResult;
+import io.searchbox.core.ESJestBulkActions;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
 import org.syslog_ng.elasticsearch_v2.client.http.ESHttpClient;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
-public class HttpBulkMessageProcessor extends  HttpMessageProcessor {
+public class HttpBulkMessageProcessor extends HttpMessageProcessor {
 
-	private Bulk.Builder bulk;
+  private volatile ESJestBulkActions bulk;
+  private ESJestHttpClient httpClient;
+  private int flushLimit;
+  private int messageCounter;
 
-	public HttpBulkMessageProcessor(ElasticSearchOptions options, ESHttpClient client) {
-		super(options, client);
-		bulk = new Bulk.Builder();
-	}
+  private final String name;
+  private final ArrayList<Thread> senders;
+  private final BlockingQueue<ESJestBulkActions> messageQueue;
+  private final int concurrency;
+  private volatile boolean shutDown = false;
 
-	@Override
-	public boolean flush() {
-		JestResult jestResult = null;
-		logger.debug("Flushing messages for ES destination [mode=" + options.getClientMode() + "]");
-		Bulk bulkActions = bulk.build();
-		try {
-			jestResult = client.getClient().execute(bulkActions);
-		}
-		catch (IOException e) {
-			logger.error(e.getMessage());
-			return false;
-		}
-		finally {
-			bulk = new Bulk.Builder();
-		}
-		if (! jestResult.isSucceeded()) {
-			logger.error(jestResult.getErrorMessage());
-			return false;
-		}
-		return true;
-	}
+  private boolean isInitialized = false;
 
-	@Override
-	public boolean send(Index index) {
-		bulk = bulk.addAction(index);
-		return true;
-	}
+  public HttpBulkMessageProcessor(ElasticSearchOptions options, ESHttpClient client) {
+    super(options, client);
+    bulk = null;
+    concurrency = options.getConcurrentRequests();
+    final String qSzTimes = System.getProperty("BulkRequestQSzTimes",
+            Integer.toString(10));
+    messageQueue = new ArrayBlockingQueue<>(concurrency * Integer.valueOf(qSzTimes));
+    senders = new ArrayList<>(concurrency);
+    name = options.getIdentifier().getValue();
+  }
+
+  @Override
+  public void init() {
+
+    if (isInitialized) {
+      logger.error("SB: INITIALIZED invoked again....");
+    }
+
+    flushLimit = options.getFlushLimit();
+    assert client.getClient() != null : "Client must be initialized by this time.";
+
+    for (int i = 0; i < concurrency; i++) {
+      senders.add(new Thread(() -> {
+        ESJestBulkActions bulkActions;
+        int ioExceptionCount = 0;
+        int httpRequestErrorCount = 0;
+
+        try {
+          while (!shutDown) {
+            if ((bulkActions = messageQueue.poll(
+                    100, TimeUnit.MILLISECONDS)) == null) {
+              continue;
+            }
+
+            BulkResult jestResult;
+            try {
+              jestResult = client.getClient().execute(bulkActions);
+              ioExceptionCount = 0;
+            } catch (IOException e) {
+              if (ioExceptionCount++ < 3) {
+                logger.error("[ " + ioExceptionCount + "] IOException in bulk execution: "
+                        + e.getMessage());
+              } else if (ioExceptionCount < 20) {
+                logger.info("IOException in bulk execution: " + e.getMessage());
+              } else if (logger.isDebugEnabled()) {
+                logger.debug("IOException in bulk execution: " + e.getMessage());
+              }
+              continue;
+            } finally {
+              bulkActions = null;
+            }
+
+            // if clientRequest.isSuccessFull declares true, jestResult == null
+            // indicates the request is success and here we DONOT want to completely deserialize
+            // the http response.
+            if (jestResult != null && !jestResult.isSucceeded()) {
+              StringBuilder sb = new StringBuilder();
+              jestResult.getFailedItems().forEach(action ->
+                      sb.append(action.id).append("=").append(action.error).append("\n"));
+              if (httpRequestErrorCount++ < 10)
+                logger.warn(jestResult.getErrorMessage() + ". FailedItem Details: \n" + sb.toString());
+              else if (httpRequestErrorCount < 100)
+                logger.info(jestResult.getErrorMessage() + ". FailedItem Details: \n" + sb.toString());
+              else if (logger.isDebugEnabled())
+                logger.debug(jestResult.getErrorMessage() + ". FailedItem Details: \n" + sb.toString());
+              //SB: TEMP failedRequests.offer(bulkActions);
+              continue;
+            }
+
+            httpRequestErrorCount = 0;
+            if (logger.isDebugEnabled()) {
+              logger.debug("Processed " + jestResult.getJsonString());
+            }
+          }
+        } catch (InterruptedException e) {
+          if (!shutDown) {
+            logger.error("Bulk Execution Thread interrupted without shutdown initiated", e);
+          }
+        } finally {
+          bulkActions = null;
+        }
+      }, name + "-HttpSender-" + i));
+
+      isInitialized = true;
+    }
+
+    senders.forEach(t -> {
+      logger.info("SB: Starting " + t.getName());
+      t.start();
+    });
+
+  }
+
+  @Override
+  public boolean flush() {
+    if (logger.isDebugEnabled()) {
+      logger.debug("Flushing messages for ES destination [mode=" + options.getClientMode() + "]");
+    }
+    if (bulk != null) {
+      scheduleBulkAction(bulk);
+    }
+    bulk = null;
+    messageCounter = 0;
+    return true;
+  }
+
+  @Override
+  public void deinit() {
+    shutDown = true;
+    senders.forEach(t -> {
+      logger.info("SB: Waiting for " + t.getName() + " to terminate");
+      try {
+        t.join(10000);
+      } catch (InterruptedException e) {
+        logger.error("SB: " + Thread.currentThread() + " " +
+                t.getName() + " interrupted while waiting for termination.");
+        Thread.currentThread().interrupt();
+      }
+    });
+  }
+
+  private void scheduleBulkAction(final ESJestBulkActions bulkActions) {
+    int waitTime = 1;
+    try {
+      while (!messageQueue.offer(bulkActions, waitTime, TimeUnit.SECONDS)) {
+        logger.warn("SB: " + waitTime + " second(s) elapsed to schedule bulk request. " +
+                "Queue full with " + messageQueue.size() + " messages. " +
+                "Consider increasing concurrent_request or elastic cluster capacity.");
+        if (waitTime > 8) {
+          logger.error("SB: Giving up to schedule bulk message as messageQueue size is " + messageQueue.size());
+          break;
+        }
+        waitTime *= 2;
+      }
+    } catch (InterruptedException ie) {
+      // ignore
+    }
+  }
+
+  private static Object addIndex(HttpBulkMessageProcessor processor,
+                                 String index,
+                                 String type,
+                                 String id,
+                                 String pipeline,
+                                 String formattedMessage) {
+
+    if (processor.bulk == null) {
+      processor.bulk = new ESJestBulkActions(index, type, pipeline);
+    }
+    processor.bulk.addMessage(formattedMessage, index, type, pipeline, id);
+
+    return processor.bulk;
+  }
+
+  @Override
+  public boolean sendImpl(Function<IndexFieldHandler, Object> msgBuilder) {
+    if (messageCounter >= flushLimit) {
+      if (!flush())
+        return false;
+    }
+
+    msgBuilder.apply((index, type, id, pipeline, formattedMessage) ->
+            addIndex(this, index, type, id, pipeline, formattedMessage));
+    messageCounter++;
+    return true;
+  }
+
+  @Override
+  public void onMessageQueueEmpty() {
+    flush();
+  }
 }

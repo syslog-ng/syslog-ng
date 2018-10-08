@@ -23,6 +23,10 @@
 
 package org.syslog_ng.elasticsearch_v2.messageprocessor;
 
+import org.syslog_ng.elasticsearch_v2.messageprocessor.http.IndexFieldHandler;
+
+import java.util.function.Function;
+
 public interface ESMessageProcessor {
-	boolean send(ESIndex index);
+	boolean send(Function<IndexFieldHandler, Object> messageBuilder);
 }

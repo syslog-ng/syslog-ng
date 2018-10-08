@@ -23,7 +23,10 @@
 
 package org.syslog_ng.elasticsearch_v2.client;
 
-import org.syslog_ng.elasticsearch_v2.messageprocessor.ESIndex;
+import org.syslog_ng.elasticsearch_v2.messageprocessor.http.IndexFieldHandler;
+
+import java.util.function.Function;
+
 
 public interface ESClient {
 	boolean open();
@@ -31,7 +34,7 @@ public interface ESClient {
 	boolean isOpened();
 	void init();
 	void deinit();
-	boolean send(ESIndex index);
+	boolean send(Function<IndexFieldHandler, Object> messageBuilder);
 	String getClusterName();
 	boolean flush();
 }
