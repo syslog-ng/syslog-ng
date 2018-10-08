@@ -216,6 +216,17 @@ _py_is_log_fetcher(PyObject *obj)
   return PyType_IsSubtype(Py_TYPE(obj), &py_log_fetcher_type);
 }
 
+static void
+_py_free_bindings(PythonFetcherDriver *self)
+{
+  Py_CLEAR(self->py.class);
+  Py_CLEAR(self->py.instance);
+  Py_CLEAR(self->py.fetch_method);
+  Py_CLEAR(self->py.open_method);
+  Py_CLEAR(self->py.close_method);
+  Py_CLEAR(self->py.request_exit_method);
+}
+
 static gboolean
 _py_init_bindings(PythonFetcherDriver *self)
 {
@@ -229,7 +240,7 @@ _py_init_bindings(PythonFetcherDriver *self)
                 evt_tag_str("class", self->class),
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
-      return FALSE;
+      goto error;
     }
 
   self->py.instance = _py_invoke_function(self->py.class, NULL, self->class, self->super.super.super.super.id);
@@ -242,7 +253,7 @@ _py_init_bindings(PythonFetcherDriver *self)
                 evt_tag_str("class", self->class),
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
-      return FALSE;
+      goto error;
     }
 
   if (!_py_is_log_fetcher(self->py.instance))
@@ -250,7 +261,7 @@ _py_init_bindings(PythonFetcherDriver *self)
       msg_error("Error initializing Python fetcher, class is not a subclass of LogFetcher",
                 evt_tag_str("driver", self->super.super.super.super.id),
                 evt_tag_str("class", self->class));
-      return FALSE;
+      goto error;
     }
 
   ((PyLogFetcher *) self->py.instance)->driver = self;
@@ -261,7 +272,7 @@ _py_init_bindings(PythonFetcherDriver *self)
       msg_error("Error initializing Python fetcher, class does not have a fetch() method",
                 evt_tag_str("driver", self->super.super.super.super.id),
                 evt_tag_str("class", self->class));
-      return FALSE;
+      goto error;
     }
 
   self->py.request_exit_method = _py_get_attr_or_null(self->py.instance, "request_exit");
@@ -269,17 +280,10 @@ _py_init_bindings(PythonFetcherDriver *self)
   self->py.close_method = _py_get_attr_or_null(self->py.instance, "close");
 
   return TRUE;
-}
 
-static void
-_py_free_bindings(PythonFetcherDriver *self)
-{
-  Py_CLEAR(self->py.class);
-  Py_CLEAR(self->py.instance);
-  Py_CLEAR(self->py.fetch_method);
-  Py_CLEAR(self->py.open_method);
-  Py_CLEAR(self->py.close_method);
-  Py_CLEAR(self->py.request_exit_method);
+error:
+  _py_free_bindings(self);
+  return FALSE;
 }
 
 static gboolean

@@ -161,6 +161,17 @@ _py_is_log_source(PyObject *obj)
   return PyType_IsSubtype(Py_TYPE(obj), &py_log_source_type);
 }
 
+static void
+_py_free_bindings(PythonSourceDriver *self)
+{
+  Py_CLEAR(self->py.class);
+  Py_CLEAR(self->py.instance);
+  Py_CLEAR(self->py.run_method);
+  Py_CLEAR(self->py.request_exit_method);
+  Py_CLEAR(self->py.suspend_method);
+  Py_CLEAR(self->py.wakeup_method);
+}
+
 static gboolean
 _py_init_bindings(PythonSourceDriver *self)
 {
@@ -174,7 +185,7 @@ _py_init_bindings(PythonSourceDriver *self)
                 evt_tag_str("class", self->class),
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
-      return FALSE;
+      goto error;
     }
 
   self->py.instance = _py_invoke_function(self->py.class, NULL, self->class, self->super.super.super.id);
@@ -187,7 +198,7 @@ _py_init_bindings(PythonSourceDriver *self)
                 evt_tag_str("class", self->class),
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
-      return FALSE;
+      goto error;
     }
 
   if (!_py_is_log_source(self->py.instance))
@@ -195,7 +206,7 @@ _py_init_bindings(PythonSourceDriver *self)
       msg_error("Error initializing Python source, class is not a subclass of LogSource",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("class", self->class));
-      return FALSE;
+      goto error;
     }
 
   ((PyLogSource *) self->py.instance)->driver = self;
@@ -207,7 +218,7 @@ _py_init_bindings(PythonSourceDriver *self)
       msg_error("Error initializing Python source, class does not have a run() method",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("class", self->class));
-      return FALSE;
+      goto error;
     }
 
   if (!self->py.request_exit_method)
@@ -215,7 +226,7 @@ _py_init_bindings(PythonSourceDriver *self)
       msg_error("Error initializing Python source, class does not have a request_exit() method",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("class", self->class));
-      return FALSE;
+      goto error;
     }
 
   self->py.suspend_method = _py_get_attr_or_null(self->py.instance, "suspend");
@@ -227,22 +238,15 @@ _py_init_bindings(PythonSourceDriver *self)
           msg_error("Error initializing Python source, class implements suspend() but wakeup() is missing",
                     evt_tag_str("driver", self->super.super.super.id),
                     evt_tag_str("class", self->class));
-          return FALSE;
+          goto error;
         }
     }
 
   return TRUE;
-}
 
-static void
-_py_free_bindings(PythonSourceDriver *self)
-{
-  Py_CLEAR(self->py.class);
-  Py_CLEAR(self->py.instance);
-  Py_CLEAR(self->py.run_method);
-  Py_CLEAR(self->py.request_exit_method);
-  Py_CLEAR(self->py.suspend_method);
-  Py_CLEAR(self->py.wakeup_method);
+error:
+  _py_free_bindings(self);
+  return FALSE;
 }
 
 static gboolean
