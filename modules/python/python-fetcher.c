@@ -167,8 +167,8 @@ _ulong_to_fetch_result(unsigned long ulong, ThreadedFetchResult *result)
     }
 }
 
-static LogThreadedFetchResult
-_py_invoke_fetch(PythonFetcherDriver *self)
+static ThreadedFetchResult
+_py_invoke_fetch(PythonFetcherDriver *self, LogMessage **msg)
 {
   PyObject *ret = _py_invoke_function(self->py.fetch_method, NULL, self->class, self->super.super.super.super.id);
 
@@ -176,22 +176,21 @@ _py_invoke_fetch(PythonFetcherDriver *self)
     goto error;
 
   PyObject *result = PyTuple_GetItem(ret, 0);
-  PyLogMessage *pymsg = (PyLogMessage *) PyTuple_GetItem(ret, 1);
-
   if (!result || !PyLong_Check(result))
     goto error;
 
-  LogThreadedFetchResult fetch_result = { .msg = NULL };
-  if (!_ulong_to_fetch_result(PyLong_AsUnsignedLong(result), &fetch_result.result))
+  ThreadedFetchResult fetch_result;
+  if (!_ulong_to_fetch_result(PyLong_AsUnsignedLong(result), &fetch_result))
     goto error;
 
-  if (fetch_result.result == THREADED_FETCH_SUCCESS)
+  if (fetch_result == THREADED_FETCH_SUCCESS)
     {
+      PyLogMessage *pymsg = (PyLogMessage *) PyTuple_GetItem(ret, 1);
       if (!pymsg || !py_is_log_message((PyObject *) pymsg))
         goto error;
 
       /* keep a reference until the PyLogMessage instance is freed */
-      fetch_result.msg = log_msg_ref(pymsg->msg);
+      *msg = log_msg_ref(pymsg->msg);
     }
 
   Py_XDECREF(ret);
@@ -206,8 +205,7 @@ error:
   Py_XDECREF(ret);
   PyErr_Clear();
 
-  LogThreadedFetchResult result_error = { THREADED_FETCH_ERROR, NULL };
-  return result_error;
+  return THREADED_FETCH_ERROR;
 }
 
 static gboolean
@@ -455,12 +453,21 @@ static LogThreadedFetchResult
 python_fetcher_fetch(LogThreadedFetcherDriver *s)
 {
   PythonFetcherDriver *self = (PythonFetcherDriver *) s;
+  LogThreadedFetchResult fetch_result;
 
   PyGILState_STATE gstate = PyGILState_Ensure();
-  LogThreadedFetchResult result = _py_invoke_fetch(self);
+  {
+    LogMessage *msg = NULL;
+    ThreadedFetchResult result = _py_invoke_fetch(self, &msg);
+
+    fetch_result = (LogThreadedFetchResult)
+    {
+      result, msg
+    };
+  }
   PyGILState_Release(gstate);
 
-  return result;
+  return fetch_result;
 }
 
 static gboolean
