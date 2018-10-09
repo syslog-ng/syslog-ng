@@ -1,0 +1,633 @@
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:61:8: error: unknown type name 'gboolean'
+ static gboolean display_version = FALSE;
+        ^~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:61:35: error: 'FALSE' undeclared here (not in a function)
+ static gboolean display_version = FALSE;
+                                   ^~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:62:8: error: unknown type name 'gboolean'
+ static gboolean display_module_registry = FALSE;
+        ^~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:63:8: error: unknown type name 'gboolean'
+ static gboolean dummy = FALSE;
+        ^~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:65:8: error: unknown type name 'MainLoopOptions'
+ static MainLoopOptions main_loop_options;
+        ^~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:71:8: error: unknown type name 'GOptionEntry'
+ static GOptionEntry syslogng_options[] =
+        ^~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:73:3: warning: braces around scalar initializer
+   { "version",            'V',         0, G_OPTION_ARG_NONE, &display_version, "Display version number (" SYSLOG_NG_PACKAGE_NAME " " SYSLOG_NG_COMBINED_VERSION ")", NULL },
+   ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:73:3: note: (near initialization for 'syslogng_options[0]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:73:5: warning: initialization makes integer from pointer without a cast [-Wint-conversion]
+   { "version",            'V',         0, G_OPTION_ARG_NONE, &display_version, "Display version number (" SYSLOG_NG_PACKAGE_NAME " " SYSLOG_NG_COMBINED_VERSION ")", NULL },
+     ^~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:73:5: note: (near initialization for 'syslogng_options[0]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:73:27: warning: excess elements in scalar initializer
+   { "version",            'V',         0, G_OPTION_ARG_NONE, &display_version, "Display version number (" SYSLOG_NG_PACKAGE_NAME " " SYSLOG_NG_COMBINED_VERSION ")", NULL },
+                           ^~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:73:27: note: (near initialization for 'syslogng_options[0]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:73:40: warning: excess elements in scalar initializer
+   { "version",            'V',         0, G_OPTION_ARG_NONE, &display_version, "Display version number (" SYSLOG_NG_PACKAGE_NAME " " SYSLOG_NG_COMBINED_VERSION ")", NULL },
+                                        ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:73:40: note: (near initialization for 'syslogng_options[0]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:73:43: error: 'G_OPTION_ARG_NONE' undeclared here (not in a function)
+   { "version",            'V',         0, G_OPTION_ARG_NONE, &display_version, "Display version number (" SYSLOG_NG_PACKAGE_NAME " " SYSLOG_NG_COMBINED_VERSION ")", NULL },
+                                           ^~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:73:43: warning: excess elements in scalar initializer
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:73:43: note: (near initialization for 'syslogng_options[0]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:73:62: warning: excess elements in scalar initializer
+   { "version",            'V',         0, G_OPTION_ARG_NONE, &display_version, "Display version number (" SYSLOG_NG_PACKAGE_NAME " " SYSLOG_NG_COMBINED_VERSION ")", NULL },
+                                                              ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:73:62: note: (near initialization for 'syslogng_options[0]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:73:80: warning: excess elements in scalar initializer
+   { "version",            'V',         0, G_OPTION_ARG_NONE, &display_version, "Display version number (" SYSLOG_NG_PACKAGE_NAME " " SYSLOG_NG_COMBINED_VERSION ")", NULL },
+                                                                                ^~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:73:80: note: (near initialization for 'syslogng_options[0]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:73:107: error: expected '}' before 'SYSLOG_NG_PACKAGE_NAME'
+   { "version",            'V',         0, G_OPTION_ARG_NONE, &display_version, "Display version number (" SYSLOG_NG_PACKAGE_NAME " " SYSLOG_NG_COMBINED_VERSION ")", NULL },
+                                                                                                           ^~~~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:74:3: warning: braces around scalar initializer
+   { "module-path",         0,         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.initial_module_path, "Set the list of colon separated directories to search for modules, default=" SYSLOG_NG_MODULE_PATH, "<path>" },
+   ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:74:3: note: (near initialization for 'syslogng_options[1]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:74:5: warning: initialization makes integer from pointer without a cast [-Wint-conversion]
+   { "module-path",         0,         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.initial_module_path, "Set the list of colon separated directories to search for modules, default=" SYSLOG_NG_MODULE_PATH, "<path>" },
+     ^~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:74:5: note: (near initialization for 'syslogng_options[1]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:74:28: warning: excess elements in scalar initializer
+   { "module-path",         0,         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.initial_module_path, "Set the list of colon separated directories to search for modules, default=" SYSLOG_NG_MODULE_PATH, "<path>" },
+                            ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:74:28: note: (near initialization for 'syslogng_options[1]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:74:39: warning: excess elements in scalar initializer
+   { "module-path",         0,         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.initial_module_path, "Set the list of colon separated directories to search for modules, default=" SYSLOG_NG_MODULE_PATH, "<path>" },
+                                       ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:74:39: note: (near initialization for 'syslogng_options[1]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:74:42: error: 'G_OPTION_ARG_STRING' undeclared here (not in a function)
+   { "module-path",         0,         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.initial_module_path, "Set the list of colon separated directories to search for modules, default=" SYSLOG_NG_MODULE_PATH, "<path>" },
+                                          ^~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:74:42: warning: excess elements in scalar initializer
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:74:42: note: (near initialization for 'syslogng_options[1]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:74:64: error: 'resolvedConfigurablePaths' undeclared here (not in a function)
+   { "module-path",         0,         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.initial_module_path, "Set the list of colon separated directories to search for modules, default=" SYSLOG_NG_MODULE_PATH, "<path>" },
+                                                                ^~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:74:63: warning: excess elements in scalar initializer
+   { "module-path",         0,         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.initial_module_path, "Set the list of colon separated directories to search for modules, default=" SYSLOG_NG_MODULE_PATH, "<path>" },
+                                                               ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:74:63: note: (near initialization for 'syslogng_options[1]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:74:111: warning: excess elements in scalar initializer
+   { "module-path",         0,         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.initial_module_path, "Set the list of colon separated directories to search for modules, default=" SYSLOG_NG_MODULE_PATH, "<path>" },
+                                                                                                               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:74:111: note: (near initialization for 'syslogng_options[1]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:74:189: error: expected '}' before 'SYSLOG_NG_MODULE_PATH'
+   { "module-path",         0,         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.initial_module_path, "Set the list of colon separated directories to search for modules, default=" SYSLOG_NG_MODULE_PATH, "<path>" },
+                                                                                                                                                                                             ^~~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:75:3: warning: braces around scalar initializer
+   { "module-registry",     0,         0, G_OPTION_ARG_NONE, &display_module_registry, "Display module information", NULL },
+   ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:75:3: note: (near initialization for 'syslogng_options[2]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:75:5: warning: initialization makes integer from pointer without a cast [-Wint-conversion]
+   { "module-registry",     0,         0, G_OPTION_ARG_NONE, &display_module_registry, "Display module information", NULL },
+     ^~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:75:5: note: (near initialization for 'syslogng_options[2]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:75:28: warning: excess elements in scalar initializer
+   { "module-registry",     0,         0, G_OPTION_ARG_NONE, &display_module_registry, "Display module information", NULL },
+                            ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:75:28: note: (near initialization for 'syslogng_options[2]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:75:39: warning: excess elements in scalar initializer
+   { "module-registry",     0,         0, G_OPTION_ARG_NONE, &display_module_registry, "Display module information", NULL },
+                                       ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:75:39: note: (near initialization for 'syslogng_options[2]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:75:42: warning: excess elements in scalar initializer
+   { "module-registry",     0,         0, G_OPTION_ARG_NONE, &display_module_registry, "Display module information", NULL },
+                                          ^~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:75:42: note: (near initialization for 'syslogng_options[2]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:75:61: warning: excess elements in scalar initializer
+   { "module-registry",     0,         0, G_OPTION_ARG_NONE, &display_module_registry, "Display module information", NULL },
+                                                             ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:75:61: note: (near initialization for 'syslogng_options[2]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:75:87: warning: excess elements in scalar initializer
+   { "module-registry",     0,         0, G_OPTION_ARG_NONE, &display_module_registry, "Display module information", NULL },
+                                                                                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:75:87: note: (near initialization for 'syslogng_options[2]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:75:117: warning: excess elements in scalar initializer
+   { "module-registry",     0,         0, G_OPTION_ARG_NONE, &display_module_registry, "Display module information", NULL },
+                                                                                                                     ^~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:75:117: note: (near initialization for 'syslogng_options[2]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:76:3: warning: braces around scalar initializer
+   { "seed",              'S',         0, G_OPTION_ARG_NONE, &dummy, "Does nothing, the need to seed the random generator is autodetected", NULL},
+   ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:76:3: note: (near initialization for 'syslogng_options[3]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:76:5: warning: initialization makes integer from pointer without a cast [-Wint-conversion]
+   { "seed",              'S',         0, G_OPTION_ARG_NONE, &dummy, "Does nothing, the need to seed the random generator is autodetected", NULL},
+     ^~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:76:5: note: (near initialization for 'syslogng_options[3]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:76:26: warning: excess elements in scalar initializer
+   { "seed",              'S',         0, G_OPTION_ARG_NONE, &dummy, "Does nothing, the need to seed the random generator is autodetected", NULL},
+                          ^~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:76:26: note: (near initialization for 'syslogng_options[3]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:76:39: warning: excess elements in scalar initializer
+   { "seed",              'S',         0, G_OPTION_ARG_NONE, &dummy, "Does nothing, the need to seed the random generator is autodetected", NULL},
+                                       ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:76:39: note: (near initialization for 'syslogng_options[3]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:76:42: warning: excess elements in scalar initializer
+   { "seed",              'S',         0, G_OPTION_ARG_NONE, &dummy, "Does nothing, the need to seed the random generator is autodetected", NULL},
+                                          ^~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:76:42: note: (near initialization for 'syslogng_options[3]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:76:61: warning: excess elements in scalar initializer
+   { "seed",              'S',         0, G_OPTION_ARG_NONE, &dummy, "Does nothing, the need to seed the random generator is autodetected", NULL},
+                                                             ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:76:61: note: (near initialization for 'syslogng_options[3]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:76:69: warning: excess elements in scalar initializer
+   { "seed",              'S',         0, G_OPTION_ARG_NONE, &dummy, "Does nothing, the need to seed the random generator is autodetected", NULL},
+                                                                     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:76:69: note: (near initialization for 'syslogng_options[3]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:76:140: warning: excess elements in scalar initializer
+   { "seed",              'S',         0, G_OPTION_ARG_NONE, &dummy, "Does nothing, the need to seed the random generator is autodetected", NULL},
+                                                                                                                                            ^~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:76:140: note: (near initialization for 'syslogng_options[3]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:80:3: warning: braces around scalar initializer
+   { "cfgfile",           'f',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.cfgfilename, "Set config file name, default=" PATH_SYSLOG_NG_CONF, "<config>" },
+   ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:80:3: note: (near initialization for 'syslogng_options[4]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:80:5: warning: initialization makes integer from pointer without a cast [-Wint-conversion]
+   { "cfgfile",           'f',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.cfgfilename, "Set config file name, default=" PATH_SYSLOG_NG_CONF, "<config>" },
+     ^~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:80:5: note: (near initialization for 'syslogng_options[4]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:80:26: warning: excess elements in scalar initializer
+   { "cfgfile",           'f',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.cfgfilename, "Set config file name, default=" PATH_SYSLOG_NG_CONF, "<config>" },
+                          ^~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:80:26: note: (near initialization for 'syslogng_options[4]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:80:39: warning: excess elements in scalar initializer
+   { "cfgfile",           'f',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.cfgfilename, "Set config file name, default=" PATH_SYSLOG_NG_CONF, "<config>" },
+                                       ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:80:39: note: (near initialization for 'syslogng_options[4]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:80:42: warning: excess elements in scalar initializer
+   { "cfgfile",           'f',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.cfgfilename, "Set config file name, default=" PATH_SYSLOG_NG_CONF, "<config>" },
+                                          ^~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:80:42: note: (near initialization for 'syslogng_options[4]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:80:63: warning: excess elements in scalar initializer
+   { "cfgfile",           'f',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.cfgfilename, "Set config file name, default=" PATH_SYSLOG_NG_CONF, "<config>" },
+                                                               ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:80:63: note: (near initialization for 'syslogng_options[4]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:80:103: warning: excess elements in scalar initializer
+   { "cfgfile",           'f',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.cfgfilename, "Set config file name, default=" PATH_SYSLOG_NG_CONF, "<config>" },
+                                                                                                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:80:103: note: (near initialization for 'syslogng_options[4]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:80:136: error: expected '}' before 'PATH_SYSLOG_NG_CONF'
+   { "cfgfile",           'f',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.cfgfilename, "Set config file name, default=" PATH_SYSLOG_NG_CONF, "<config>" },
+                                                                                                                                        ^~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:81:3: warning: braces around scalar initializer
+   { "persist-file",      'R',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.persist_file, "Set the name of the persistent configuration file, default=" PATH_PERSIST_CONFIG, "<fname>" },
+   ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:81:3: note: (near initialization for 'syslogng_options[5]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:81:5: warning: initialization makes integer from pointer without a cast [-Wint-conversion]
+   { "persist-file",      'R',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.persist_file, "Set the name of the persistent configuration file, default=" PATH_PERSIST_CONFIG, "<fname>" },
+     ^~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:81:5: note: (near initialization for 'syslogng_options[5]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:81:26: warning: excess elements in scalar initializer
+   { "persist-file",      'R',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.persist_file, "Set the name of the persistent configuration file, default=" PATH_PERSIST_CONFIG, "<fname>" },
+                          ^~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:81:26: note: (near initialization for 'syslogng_options[5]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:81:39: warning: excess elements in scalar initializer
+   { "persist-file",      'R',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.persist_file, "Set the name of the persistent configuration file, default=" PATH_PERSIST_CONFIG, "<fname>" },
+                                       ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:81:39: note: (near initialization for 'syslogng_options[5]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:81:42: warning: excess elements in scalar initializer
+   { "persist-file",      'R',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.persist_file, "Set the name of the persistent configuration file, default=" PATH_PERSIST_CONFIG, "<fname>" },
+                                          ^~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:81:42: note: (near initialization for 'syslogng_options[5]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:81:63: warning: excess elements in scalar initializer
+   { "persist-file",      'R',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.persist_file, "Set the name of the persistent configuration file, default=" PATH_PERSIST_CONFIG, "<fname>" },
+                                                               ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:81:63: note: (near initialization for 'syslogng_options[5]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:81:104: warning: excess elements in scalar initializer
+   { "persist-file",      'R',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.persist_file, "Set the name of the persistent configuration file, default=" PATH_PERSIST_CONFIG, "<fname>" },
+                                                                                                        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:81:104: note: (near initialization for 'syslogng_options[5]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:81:166: error: expected '}' before 'PATH_PERSIST_CONFIG'
+   { "persist-file",      'R',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.persist_file, "Set the name of the persistent configuration file, default=" PATH_PERSIST_CONFIG, "<fname>" },
+                                                                                                                                                                      ^~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:82:3: warning: braces around scalar initializer
+   { "preprocess-into",     0,         0, G_OPTION_ARG_STRING, &main_loop_options.preprocess_into, "Write the preprocessed configuration file to the file specified and quit", "output" },
+   ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:82:3: note: (near initialization for 'syslogng_options[6]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:82:5: warning: initialization makes integer from pointer without a cast [-Wint-conversion]
+   { "preprocess-into",     0,         0, G_OPTION_ARG_STRING, &main_loop_options.preprocess_into, "Write the preprocessed configuration file to the file specified and quit", "output" },
+     ^~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:82:5: note: (near initialization for 'syslogng_options[6]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:82:28: warning: excess elements in scalar initializer
+   { "preprocess-into",     0,         0, G_OPTION_ARG_STRING, &main_loop_options.preprocess_into, "Write the preprocessed configuration file to the file specified and quit", "output" },
+                            ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:82:28: note: (near initialization for 'syslogng_options[6]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:82:39: warning: excess elements in scalar initializer
+   { "preprocess-into",     0,         0, G_OPTION_ARG_STRING, &main_loop_options.preprocess_into, "Write the preprocessed configuration file to the file specified and quit", "output" },
+                                       ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:82:39: note: (near initialization for 'syslogng_options[6]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:82:42: warning: excess elements in scalar initializer
+   { "preprocess-into",     0,         0, G_OPTION_ARG_STRING, &main_loop_options.preprocess_into, "Write the preprocessed configuration file to the file specified and quit", "output" },
+                                          ^~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:82:42: note: (near initialization for 'syslogng_options[6]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:82:81: error: request for member 'preprocess_into' in something not a structure or union
+   { "preprocess-into",     0,         0, G_OPTION_ARG_STRING, &main_loop_options.preprocess_into, "Write the preprocessed configuration file to the file specified and quit", "output" },
+                                                                                 ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:82:63: warning: excess elements in scalar initializer
+   { "preprocess-into",     0,         0, G_OPTION_ARG_STRING, &main_loop_options.preprocess_into, "Write the preprocessed configuration file to the file specified and quit", "output" },
+                                                               ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:82:63: note: (near initialization for 'syslogng_options[6]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:82:99: warning: excess elements in scalar initializer
+   { "preprocess-into",     0,         0, G_OPTION_ARG_STRING, &main_loop_options.preprocess_into, "Write the preprocessed configuration file to the file specified and quit", "output" },
+                                                                                                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:82:99: note: (near initialization for 'syslogng_options[6]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:82:175: warning: excess elements in scalar initializer
+   { "preprocess-into",     0,         0, G_OPTION_ARG_STRING, &main_loop_options.preprocess_into, "Write the preprocessed configuration file to the file specified and quit", "output" },
+                                                                                                                                                                               ^~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:82:175: note: (near initialization for 'syslogng_options[6]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:83:3: warning: braces around scalar initializer
+   { "syntax-only",       's',         0, G_OPTION_ARG_NONE, &main_loop_options.syntax_only, "Only read and parse config file", NULL},
+   ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:83:3: note: (near initialization for 'syslogng_options[7]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:83:5: warning: initialization makes integer from pointer without a cast [-Wint-conversion]
+   { "syntax-only",       's',         0, G_OPTION_ARG_NONE, &main_loop_options.syntax_only, "Only read and parse config file", NULL},
+     ^~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:83:5: note: (near initialization for 'syslogng_options[7]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:83:26: warning: excess elements in scalar initializer
+   { "syntax-only",       's',         0, G_OPTION_ARG_NONE, &main_loop_options.syntax_only, "Only read and parse config file", NULL},
+                          ^~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:83:26: note: (near initialization for 'syslogng_options[7]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:83:39: warning: excess elements in scalar initializer
+   { "syntax-only",       's',         0, G_OPTION_ARG_NONE, &main_loop_options.syntax_only, "Only read and parse config file", NULL},
+                                       ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:83:39: note: (near initialization for 'syslogng_options[7]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:83:42: warning: excess elements in scalar initializer
+   { "syntax-only",       's',         0, G_OPTION_ARG_NONE, &main_loop_options.syntax_only, "Only read and parse config file", NULL},
+                                          ^~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:83:42: note: (near initialization for 'syslogng_options[7]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:83:79: error: request for member 'syntax_only' in something not a structure or union
+   { "syntax-only",       's',         0, G_OPTION_ARG_NONE, &main_loop_options.syntax_only, "Only read and parse config file", NULL},
+                                                                               ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:83:61: warning: excess elements in scalar initializer
+   { "syntax-only",       's',         0, G_OPTION_ARG_NONE, &main_loop_options.syntax_only, "Only read and parse config file", NULL},
+                                                             ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:83:61: note: (near initialization for 'syslogng_options[7]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:83:93: warning: excess elements in scalar initializer
+   { "syntax-only",       's',         0, G_OPTION_ARG_NONE, &main_loop_options.syntax_only, "Only read and parse config file", NULL},
+                                                                                             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:83:93: note: (near initialization for 'syslogng_options[7]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:83:128: warning: excess elements in scalar initializer
+   { "syntax-only",       's',         0, G_OPTION_ARG_NONE, &main_loop_options.syntax_only, "Only read and parse config file", NULL},
+                                                                                                                                ^~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:83:128: note: (near initialization for 'syslogng_options[7]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:84:3: warning: braces around scalar initializer
+   { "control",           'c',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.ctlfilename, "Set syslog-ng control socket, default=" PATH_CONTROL_SOCKET, "<ctlpath>" },
+   ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:84:3: note: (near initialization for 'syslogng_options[8]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:84:5: warning: initialization makes integer from pointer without a cast [-Wint-conversion]
+   { "control",           'c',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.ctlfilename, "Set syslog-ng control socket, default=" PATH_CONTROL_SOCKET, "<ctlpath>" },
+     ^~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:84:5: note: (near initialization for 'syslogng_options[8]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:84:26: warning: excess elements in scalar initializer
+   { "control",           'c',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.ctlfilename, "Set syslog-ng control socket, default=" PATH_CONTROL_SOCKET, "<ctlpath>" },
+                          ^~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:84:26: note: (near initialization for 'syslogng_options[8]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:84:39: warning: excess elements in scalar initializer
+   { "control",           'c',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.ctlfilename, "Set syslog-ng control socket, default=" PATH_CONTROL_SOCKET, "<ctlpath>" },
+                                       ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:84:39: note: (near initialization for 'syslogng_options[8]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:84:42: warning: excess elements in scalar initializer
+   { "control",           'c',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.ctlfilename, "Set syslog-ng control socket, default=" PATH_CONTROL_SOCKET, "<ctlpath>" },
+                                          ^~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:84:42: note: (near initialization for 'syslogng_options[8]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:84:63: warning: excess elements in scalar initializer
+   { "control",           'c',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.ctlfilename, "Set syslog-ng control socket, default=" PATH_CONTROL_SOCKET, "<ctlpath>" },
+                                                               ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:84:63: note: (near initialization for 'syslogng_options[8]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:84:103: warning: excess elements in scalar initializer
+   { "control",           'c',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.ctlfilename, "Set syslog-ng control socket, default=" PATH_CONTROL_SOCKET, "<ctlpath>" },
+                                                                                                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:84:103: note: (near initialization for 'syslogng_options[8]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:84:144: error: expected '}' before 'PATH_CONTROL_SOCKET'
+   { "control",           'c',         0, G_OPTION_ARG_STRING, &resolvedConfigurablePaths.ctlfilename, "Set syslog-ng control socket, default=" PATH_CONTROL_SOCKET, "<ctlpath>" },
+                                                                                                                                                ^~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:85:3: warning: braces around scalar initializer
+   { "interactive",       'i',         0, G_OPTION_ARG_NONE, &main_loop_options.interactive_mode, "Enable interactive mode" },
+   ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:85:3: note: (near initialization for 'syslogng_options[9]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:85:5: warning: initialization makes integer from pointer without a cast [-Wint-conversion]
+   { "interactive",       'i',         0, G_OPTION_ARG_NONE, &main_loop_options.interactive_mode, "Enable interactive mode" },
+     ^~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:85:5: note: (near initialization for 'syslogng_options[9]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:85:26: warning: excess elements in scalar initializer
+   { "interactive",       'i',         0, G_OPTION_ARG_NONE, &main_loop_options.interactive_mode, "Enable interactive mode" },
+                          ^~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:85:26: note: (near initialization for 'syslogng_options[9]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:85:39: warning: excess elements in scalar initializer
+   { "interactive",       'i',         0, G_OPTION_ARG_NONE, &main_loop_options.interactive_mode, "Enable interactive mode" },
+                                       ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:85:39: note: (near initialization for 'syslogng_options[9]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:85:42: warning: excess elements in scalar initializer
+   { "interactive",       'i',         0, G_OPTION_ARG_NONE, &main_loop_options.interactive_mode, "Enable interactive mode" },
+                                          ^~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:85:42: note: (near initialization for 'syslogng_options[9]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:85:79: error: request for member 'interactive_mode' in something not a structure or union
+   { "interactive",       'i',         0, G_OPTION_ARG_NONE, &main_loop_options.interactive_mode, "Enable interactive mode" },
+                                                                               ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:85:61: warning: excess elements in scalar initializer
+   { "interactive",       'i',         0, G_OPTION_ARG_NONE, &main_loop_options.interactive_mode, "Enable interactive mode" },
+                                                             ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:85:61: note: (near initialization for 'syslogng_options[9]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:85:98: warning: excess elements in scalar initializer
+   { "interactive",       'i',         0, G_OPTION_ARG_NONE, &main_loop_options.interactive_mode, "Enable interactive mode" },
+                                                                                                  ^~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:85:98: note: (near initialization for 'syslogng_options[9]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:86:3: warning: braces around scalar initializer
+   { NULL },
+   ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:86:3: note: (near initialization for 'syslogng_options[10]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:86:5: warning: initialization makes integer from pointer without a cast [-Wint-conversion]
+   { NULL },
+     ^~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:86:5: note: (near initialization for 'syslogng_options[10]')
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c: In function 'interactive_mode':
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:94:3: error: 'debug_flag' undeclared (first use in this function)
+   debug_flag = FALSE;
+   ^~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:94:3: note: each undeclared identifier is reported only once for each function it appears in
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:95:3: error: 'verbose_flag' undeclared (first use in this function)
+   verbose_flag = FALSE;
+   ^~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:96:3: warning: implicit declaration of function 'msg_init' [-Wimplicit-function-declaration]
+   msg_init(TRUE);
+   ^~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:96:12: error: 'TRUE' undeclared (first use in this function)
+   msg_init(TRUE);
+            ^~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c: At top level:
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:99:1: error: unknown type name 'gboolean'
+ gboolean
+ ^~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:100:23: error: unknown type name 'gchar'
+ get_installer_version(gchar **inst_version)
+                       ^~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c: In function 'version':
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:132:3: error: unknown type name 'gchar'
+   gchar *installer_version;
+   ^~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:134:8: warning: implicit declaration of function 'get_installer_version' [-Wimplicit-function-declaration]
+   if (!get_installer_version(&installer_version) || installer_version == NULL)
+        ^~~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:136:27: warning: implicit declaration of function 'g_strdup' [-Wimplicit-function-declaration]
+       installer_version = g_strdup(SYSLOG_NG_VERSION);
+                           ^~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:136:36: error: 'SYSLOG_NG_VERSION' undeclared (first use in this function)
+       installer_version = g_strdup(SYSLOG_NG_VERSION);
+                                    ^~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:136:25: warning: assignment makes pointer from integer without a cast [-Wint-conversion]
+       installer_version = g_strdup(SYSLOG_NG_VERSION);
+                         ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:138:3: warning: implicit declaration of function 'printf' [-Wimplicit-function-declaration]
+   printf(SYSLOG_NG_PACKAGE_NAME " " SYSLOG_NG_COMBINED_VERSION "\n"
+   ^~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:138:3: warning: incompatible implicit declaration of built-in function 'printf'
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:138:3: note: include '<stdio.h>' or provide a declaration of 'printf'
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:138:10: error: 'SYSLOG_NG_PACKAGE_NAME' undeclared (first use in this function)
+   printf(SYSLOG_NG_PACKAGE_NAME " " SYSLOG_NG_COMBINED_VERSION "\n"
+          ^~~~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:138:33: error: expected ')' before string constant
+   printf(SYSLOG_NG_PACKAGE_NAME " " SYSLOG_NG_COMBINED_VERSION "\n"
+                                 ^~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:138:10: warning: passing argument 1 of 'printf' from incompatible pointer type [-Wincompatible-pointer-types]
+   printf(SYSLOG_NG_PACKAGE_NAME " " SYSLOG_NG_COMBINED_VERSION "\n"
+          ^~~~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:138:10: note: expected 'const char *' but argument is of type 'int *'
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:148:36: warning: implicit declaration of function 'get_installation_path_for' [-Wimplicit-function-declaration]
+   printf("Module-Directory: %s\n", get_installation_path_for(SYSLOG_NG_PATH_MODULEDIR));
+                                    ^~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:148:62: error: 'SYSLOG_NG_PATH_MODULEDIR' undeclared (first use in this function)
+   printf("Module-Directory: %s\n", get_installation_path_for(SYSLOG_NG_PATH_MODULEDIR));
+                                                              ^~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:149:56: error: request for member 'initial_module_path' in something not a structure or union
+   printf("Module-Path: %s\n", resolvedConfigurablePaths.initial_module_path);
+                                                        ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:151:3: warning: implicit declaration of function 'plugin_list_modules' [-Wimplicit-function-declaration]
+   plugin_list_modules(stdout, FALSE);
+   ^~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:151:23: error: 'stdout' undeclared (first use in this function)
+   plugin_list_modules(stdout, FALSE);
+                       ^~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:161:21: error: 'SYSLOG_NG_ENABLE_DEBUG' undeclared (first use in this function)
+          ON_OFF_STR(SYSLOG_NG_ENABLE_DEBUG),
+                     ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:126:24: note: in definition of macro 'ON_OFF_STR'
+ #define ON_OFF_STR(x) (x ? "on" : "off")
+                        ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:162:21: error: 'SYSLOG_NG_ENABLE_GPROF' undeclared (first use in this function)
+          ON_OFF_STR(SYSLOG_NG_ENABLE_GPROF),
+                     ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:126:24: note: in definition of macro 'ON_OFF_STR'
+ #define ON_OFF_STR(x) (x ? "on" : "off")
+                        ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:163:21: error: 'SYSLOG_NG_ENABLE_MEMTRACE' undeclared (first use in this function)
+          ON_OFF_STR(SYSLOG_NG_ENABLE_MEMTRACE),
+                     ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:126:24: note: in definition of macro 'ON_OFF_STR'
+ #define ON_OFF_STR(x) (x ? "on" : "off")
+                        ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:164:21: error: 'SYSLOG_NG_ENABLE_IPV6' undeclared (first use in this function)
+          ON_OFF_STR(SYSLOG_NG_ENABLE_IPV6),
+                     ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:126:24: note: in definition of macro 'ON_OFF_STR'
+ #define ON_OFF_STR(x) (x ? "on" : "off")
+                        ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:165:21: error: 'SYSLOG_NG_ENABLE_SPOOF_SOURCE' undeclared (first use in this function)
+          ON_OFF_STR(SYSLOG_NG_ENABLE_SPOOF_SOURCE),
+                     ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:126:24: note: in definition of macro 'ON_OFF_STR'
+ #define ON_OFF_STR(x) (x ? "on" : "off")
+                        ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:166:21: error: 'SYSLOG_NG_ENABLE_TCP_WRAPPER' undeclared (first use in this function)
+          ON_OFF_STR(SYSLOG_NG_ENABLE_TCP_WRAPPER),
+                     ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:126:24: note: in definition of macro 'ON_OFF_STR'
+ #define ON_OFF_STR(x) (x ? "on" : "off")
+                        ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:167:21: error: 'SYSLOG_NG_ENABLE_LINUX_CAPS' undeclared (first use in this function)
+          ON_OFF_STR(SYSLOG_NG_ENABLE_LINUX_CAPS),
+                     ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:126:24: note: in definition of macro 'ON_OFF_STR'
+ #define ON_OFF_STR(x) (x ? "on" : "off")
+                        ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:168:21: error: 'SYSLOG_NG_ENABLE_SYSTEMD' undeclared (first use in this function)
+          ON_OFF_STR(SYSLOG_NG_ENABLE_SYSTEMD));
+                     ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:126:24: note: in definition of macro 'ON_OFF_STR'
+ #define ON_OFF_STR(x) (x ? "on" : "off")
+                        ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:170:3: warning: implicit declaration of function 'g_free' [-Wimplicit-function-declaration]
+   g_free(installer_version);
+   ^~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c: In function 'main':
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:206:3: error: unknown type name 'gint'
+   gint rc;
+   ^~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:207:3: error: unknown type name 'GOptionContext'
+   GOptionContext *ctx;
+   ^~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:208:3: error: unknown type name 'GError'
+   GError *error = NULL;
+   ^~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:210:3: error: unknown type name 'MainLoop'
+   MainLoop *main_loop = main_loop_get_instance();
+   ^~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:210:25: warning: implicit declaration of function 'main_loop_get_instance' [-Wimplicit-function-declaration]
+   MainLoop *main_loop = main_loop_get_instance();
+                         ^~~~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:210:25: warning: initialization makes pointer from integer without a cast [-Wint-conversion]
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:212:3: warning: implicit declaration of function 'z_mem_trace_init' [-Wimplicit-function-declaration]
+   z_mem_trace_init("syslog-ng.trace");
+   ^~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:214:3: warning: implicit declaration of function 'g_process_set_argv_space' [-Wimplicit-function-declaration]
+   g_process_set_argv_space(argc, (gchar **) argv);
+   ^~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:214:35: error: 'gchar' undeclared (first use in this function)
+   g_process_set_argv_space(argc, (gchar **) argv);
+                                   ^~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:214:43: error: expected expression before ')' token
+   g_process_set_argv_space(argc, (gchar **) argv);
+                                           ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:214:41: error: invalid operands to binary * (have 'int *' and 'int')
+   g_process_set_argv_space(argc, (gchar **) argv);
+                                   ~~~~~ ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:216:3: warning: implicit declaration of function 'resolved_configurable_paths_init' [-Wimplicit-function-declaration]
+   resolved_configurable_paths_init(&resolvedConfigurablePaths);
+   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:218:9: warning: implicit declaration of function 'g_option_context_new' [-Wimplicit-function-declaration]
+   ctx = g_option_context_new("syslog-ng");
+         ^~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:218:7: warning: assignment makes pointer from integer without a cast [-Wint-conversion]
+   ctx = g_option_context_new("syslog-ng");
+       ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:219:3: warning: implicit declaration of function 'g_process_add_option_group' [-Wimplicit-function-declaration]
+   g_process_add_option_group(ctx);
+   ^~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:220:3: warning: implicit declaration of function 'msg_add_option_group' [-Wimplicit-function-declaration]
+   msg_add_option_group(ctx);
+   ^~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:221:3: warning: implicit declaration of function 'g_option_context_add_main_entries' [-Wimplicit-function-declaration]
+   g_option_context_add_main_entries(ctx, syslogng_options, NULL);
+   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:222:3: warning: implicit declaration of function 'main_loop_add_options' [-Wimplicit-function-declaration]
+   main_loop_add_options(ctx);
+   ^~~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:223:8: warning: implicit declaration of function 'g_option_context_parse' [-Wimplicit-function-declaration]
+   if (!g_option_context_parse(ctx, &argc, &argv, &error))
+        ^~~~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:225:7: warning: implicit declaration of function 'fprintf' [-Wimplicit-function-declaration]
+       fprintf(stderr, "Error parsing command line arguments: %s\n", error ? error->message : "Invalid arguments");
+       ^~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:225:7: warning: incompatible implicit declaration of built-in function 'fprintf'
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:225:7: note: include '<stdio.h>' or provide a declaration of 'fprintf'
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:225:15: error: 'stderr' undeclared (first use in this function)
+       fprintf(stderr, "Error parsing command line arguments: %s\n", error ? error->message : "Invalid arguments");
+               ^~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:225:82: error: request for member 'message' in something not a structure or union
+       fprintf(stderr, "Error parsing command line arguments: %s\n", error ? error->message : "Invalid arguments");
+                                                                                  ^~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:225:92: warning: pointer type mismatch in conditional expression
+       fprintf(stderr, "Error parsing command line arguments: %s\n", error ? error->message : "Invalid arguments");
+                                                                                            ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:226:7: warning: implicit declaration of function 'g_option_context_free' [-Wimplicit-function-declaration]
+       g_option_context_free(ctx);
+       ^~~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:232:7: warning: incompatible implicit declaration of built-in function 'fprintf'
+       fprintf(stderr, "Excess number of arguments\n");
+       ^~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:232:7: note: include '<stdio.h>' or provide a declaration of 'fprintf'
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:245:27: error: 'stdout' undeclared (first use in this function)
+       plugin_list_modules(stdout, TRUE);
+                           ^~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:245:35: error: 'TRUE' undeclared (first use in this function)
+       plugin_list_modules(stdout, TRUE);
+                                   ^~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:251:6: error: 'startup_debug_flag' undeclared (first use in this function)
+   if(startup_debug_flag && debug_flag)
+      ^~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:251:28: error: 'debug_flag' undeclared (first use in this function)
+   if(startup_debug_flag && debug_flag)
+                            ^~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:263:7: error: 'log_stderr' undeclared (first use in this function)
+       log_stderr = TRUE;
+       ^~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:266:3: error: unknown type name 'gboolean'
+   gboolean exit_before_main_loop_run = main_loop_options.syntax_only || main_loop_options.preprocess_into;
+   ^~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:266:57: error: request for member 'syntax_only' in something not a structure or union
+   gboolean exit_before_main_loop_run = main_loop_options.syntax_only || main_loop_options.preprocess_into;
+                                                         ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:266:90: error: request for member 'preprocess_into' in something not a structure or union
+   gboolean exit_before_main_loop_run = main_loop_options.syntax_only || main_loop_options.preprocess_into;
+                                                                                          ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:269:7: warning: implicit declaration of function 'g_process_set_mode' [-Wimplicit-function-declaration]
+       g_process_set_mode(G_PM_FOREGROUND);
+       ^~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:269:26: error: 'G_PM_FOREGROUND' undeclared (first use in this function)
+       g_process_set_mode(G_PM_FOREGROUND);
+                          ^~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:271:3: warning: implicit declaration of function 'g_process_set_name' [-Wimplicit-function-declaration]
+   g_process_set_name("syslog-ng");
+   ^~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:276:3: warning: implicit declaration of function 'g_process_start' [-Wimplicit-function-declaration]
+   g_process_start();
+   ^~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:277:3: warning: implicit declaration of function 'app_startup' [-Wimplicit-function-declaration]
+   app_startup();
+   ^~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:278:20: error: request for member 'server_mode' in something not a structure or union
+   main_loop_options.server_mode = ((SYSLOG_NG_ENABLE_FORCED_SERVER_MODE) == 1 ? TRUE : FALSE);
+                    ^
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:278:37: error: 'SYSLOG_NG_ENABLE_FORCED_SERVER_MODE' undeclared (first use in this function)
+   main_loop_options.server_mode = ((SYSLOG_NG_ENABLE_FORCED_SERVER_MODE) == 1 ? TRUE : FALSE);
+                                     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:278:74: warning: comparison between pointer and integer
+   main_loop_options.server_mode = ((SYSLOG_NG_ENABLE_FORCED_SERVER_MODE) == 1 ? TRUE : FALSE);
+                                                                          ^~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:279:3: warning: implicit declaration of function 'main_loop_init' [-Wimplicit-function-declaration]
+   main_loop_init(main_loop, &main_loop_options);
+   ^~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:280:8: warning: implicit declaration of function 'main_loop_read_and_init_config' [-Wimplicit-function-declaration]
+   rc = main_loop_read_and_init_config(main_loop);
+        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:281:3: warning: implicit declaration of function 'app_finish_app_startup_after_cfg_init' [-Wimplicit-function-declaration]
+   app_finish_app_startup_after_cfg_init();
+   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:285:7: warning: implicit declaration of function 'g_process_startup_failed' [-Wimplicit-function-declaration]
+       g_process_startup_failed(rc, TRUE);
+       ^~~~~~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:293:9: warning: implicit declaration of function 'g_process_startup_ok' [-Wimplicit-function-declaration]
+         g_process_startup_ok();
+         ^~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:298:3: warning: implicit declaration of function 'app_post_daemonized' [-Wimplicit-function-declaration]
+   app_post_daemonized();
+   ^~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:299:3: warning: implicit declaration of function 'app_post_config_loaded' [-Wimplicit-function-declaration]
+   app_post_config_loaded();
+   ^~~~~~~~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:309:3: warning: implicit declaration of function 'main_loop_run' [-Wimplicit-function-declaration]
+   main_loop_run(main_loop);
+   ^~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:310:3: warning: implicit declaration of function 'main_loop_deinit' [-Wimplicit-function-declaration]
+   main_loop_deinit(main_loop);
+   ^~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:312:3: warning: implicit declaration of function 'app_shutdown' [-Wimplicit-function-declaration]
+   app_shutdown();
+   ^~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:313:3: warning: implicit declaration of function 'z_mem_trace_dump' [-Wimplicit-function-declaration]
+   z_mem_trace_dump();
+   ^~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:314:3: warning: implicit declaration of function 'g_process_finish' [-Wimplicit-function-declaration]
+   g_process_finish();
+   ^~~~~~~~~~~~~~~~
+C:\Users\kartik\Desktop\hacktoberfest\syslog-ng\syslog-ng\main.c:315:3: warning: implicit declaration of function 'reloc_deinit' [-Wimplicit-function-declaration]
+   reloc_deinit();
+   ^~~~~~~~~~~~
