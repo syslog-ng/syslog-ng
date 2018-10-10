@@ -34,7 +34,6 @@ typedef struct _AFInetSourceDriver
   /* character as it can contain a service name from /etc/services */
   gchar *bind_port;
   gchar *bind_ip;
-  gchar *ip_protocol;
 } AFInetSourceDriver;
 
 void afinet_sd_set_tls_context(LogDriver *s, TLSContext *tls_context);
