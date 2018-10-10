@@ -24,9 +24,8 @@
 #include <criterion/criterion.h>
 #include "apphook.h"
 #include "msg-format.h"
+#include "msg_parse_lib.h"
 #include "logmsg/logmsg.h"
-
-static MsgFormatOptions parse_options;
 
 static PyObject *_python_main;
 static PyObject *_python_main_dict;
@@ -72,16 +71,39 @@ _dict_clone_value(PyObject *dict, const gchar *key)
   return res;
 }
 
+static PyLogMessage *
+_construct_py_log_msg(PyObject *args)
+{
+  PyLogMessage *py_msg = (PyLogMessage *) PyObject_CallFunctionObjArgs((PyObject *) &py_log_message_type, args, NULL);
+  cr_assert_not_null(py_msg);
+
+  return (PyLogMessage *) py_msg;
+
+}
+
+static PyObject *
+_construct_py_parse_options(void)
+{
+  PyObject *py_parse_options = PyCapsule_New(&parse_options, NULL, NULL);
+
+  cr_assert_not_null(py_parse_options);
+
+  return py_parse_options;
+}
+
 void setup(void)
 {
   app_startup();
-  msg_format_options_defaults(&parse_options);
+
+  init_and_load_syslogformat_module();
+
   _py_init_interpreter();
   _init_python_main();
 }
 
 void teardown(void)
 {
+  deinit_syslogformat_module();
   app_shutdown();
 }
 
@@ -158,5 +180,100 @@ Test(python_log_message, test_py_is_log_message)
 
   log_msg_unref(msg);
   Py_DECREF(msg_object);
+  PyGILState_Release(gstate);
+}
+
+Test(python_log_message, test_py_log_message_constructor_with_str)
+{
+  const gchar *test_str_msg = "árvíztűrőtükörfúrógép";
+
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+
+  PyObject *arg_str = Py_BuildValue("s", test_str_msg);
+  PyLogMessage *py_msg = _construct_py_log_msg(arg_str);
+  Py_DECREF(arg_str);
+
+  gssize msg_length;
+  const gchar *msg = log_msg_get_value(py_msg->msg, LM_V_MESSAGE, &msg_length);
+
+  cr_assert_eq(msg_length, strlen(test_str_msg));
+  cr_assert_str_eq(msg, test_str_msg);
+
+  Py_DECREF(py_msg);
+  PyGILState_Release(gstate);
+}
+
+Test(python_log_message, test_py_log_message_constructor_with_binary)
+{
+  const gchar test_binary_msg[] = "űú\0\u2603\n\rő";
+
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+
+  PyObject *arg_binary = Py_BuildValue("s#", test_binary_msg, sizeof(test_binary_msg));
+  PyLogMessage *py_msg = _construct_py_log_msg(arg_binary);
+  Py_DECREF(arg_binary);
+
+  gssize msg_length;
+  const gchar *msg = log_msg_get_value(py_msg->msg, LM_V_MESSAGE, &msg_length);
+
+  cr_assert_eq(msg_length, sizeof(test_binary_msg));
+  cr_assert_arr_eq(msg, test_binary_msg, sizeof(test_binary_msg));
+
+  Py_DECREF(py_msg);
+  PyGILState_Release(gstate);
+}
+
+Test(python_log_message, test_py_log_message_set_pri)
+{
+  gint pri = 165;
+
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+
+  PyObject *arg = Py_BuildValue("i", pri);
+  PyLogMessage *py_msg = _construct_py_log_msg(NULL);
+  Py_DECREF(arg);
+
+  PyObject *ret = _py_invoke_method_by_name((PyObject *) py_msg, "set_pri", arg, NULL, NULL);
+  Py_XDECREF(ret);
+
+  cr_assert_eq(py_msg->msg->pri, pri);
+
+  Py_DECREF(py_msg);
+  PyGILState_Release(gstate);
+}
+
+Test(python_log_message, test_py_log_message_parse)
+{
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+
+  PyObject *py_parse_options = _construct_py_parse_options();
+  PyObject *arg = Py_BuildValue("s", "<34>Oct 11 22:14:15 mymachine su: 'su root' failed for lonvick on /dev/pts/8");
+
+  PyObject *parse_method = _py_get_attr_or_null((PyObject *) &py_log_message_type, "parse");
+  cr_assert_not_null(parse_method);
+
+  PyLogMessage *py_msg = (PyLogMessage *) PyObject_CallFunctionObjArgs(parse_method, arg, py_parse_options, NULL);
+  cr_assert_not_null(py_msg);
+
+  Py_DECREF(parse_method);
+  Py_DECREF(arg);
+  Py_DECREF(py_parse_options);
+
+  const gchar *msg = log_msg_get_value(py_msg->msg, LM_V_MESSAGE, NULL);
+  cr_assert_str_eq(msg, "'su root' failed for lonvick on /dev/pts/8");
+
+  const gchar *host = log_msg_get_value(py_msg->msg, LM_V_HOST, NULL);
+  cr_assert_str_eq(host, "mymachine");
+
+  const gchar *program = log_msg_get_value(py_msg->msg, LM_V_PROGRAM, NULL);
+  cr_assert_str_eq(program, "su");
+
+  cr_assert_eq(py_msg->msg->pri, 34);
+
+  Py_DECREF(py_msg);
   PyGILState_Release(gstate);
 }

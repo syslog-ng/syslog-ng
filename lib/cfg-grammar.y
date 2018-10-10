@@ -40,6 +40,7 @@
 #include "rewrite/rewrite-expr-parser.h"
 #include "logmatcher.h"
 #include "logthrdestdrv.h"
+#include "logthrsource/logthrsourcedrv.h"
 #include "str-utils.h"
 
 /* uses struct declarations instead of the typedefs to avoid having to
@@ -1191,6 +1192,23 @@ threaded_dest_driver_option
         | dest_driver_option
         ;
 
+/* implies source_driver_option and source_option */
+threaded_source_driver_option
+	: KW_FORMAT '(' string ')' { log_threaded_source_driver_get_parse_options(last_driver)->format = g_strdup($3); free($3); }
+        | KW_FLAGS '(' threaded_source_driver_option_flags ')'
+        | { last_msg_format_options = log_threaded_source_driver_get_parse_options(last_driver); } msg_format_option
+        | { last_source_options = log_threaded_source_driver_get_source_options(last_driver); } source_option
+        | source_driver_option
+        ;
+
+threaded_source_driver_option_flags
+	: string threaded_source_driver_option_flags
+        {
+          CHECK_ERROR(msg_format_options_process_flag(log_threaded_source_driver_get_parse_options(last_driver), $1), @1, "Unknown flag %s", $1);
+          free($1);
+        }
+        |
+        ;
 
 /* LogSource related options */
 source_option

@@ -63,7 +63,6 @@ LogReader *log_reader_new(GlobalConfig *cfg);
 void log_reader_options_defaults(LogReaderOptions *options);
 void log_reader_options_init(LogReaderOptions *options, GlobalConfig *cfg, const gchar *group_name);
 void log_reader_options_destroy(LogReaderOptions *options);
-gint log_reader_options_lookup_flag(const gchar *flag);
 void log_reader_options_set_tags(LogReaderOptions *options, GList *tags);
 gboolean log_reader_options_process_flag(LogReaderOptions *options, const gchar *flag);
 

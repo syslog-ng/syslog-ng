@@ -454,6 +454,8 @@ python_dd_free(LogPipe *d)
   if (self->options)
     g_hash_table_unref(self->options);
 
+  string_list_free(self->loaders);
+
   log_threaded_dest_driver_free(d);
 }
 

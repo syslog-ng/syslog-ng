@@ -53,7 +53,11 @@ modules_python_libmod_python_la_SOURCES		= \
 	modules/python/python-debugger.h	  \
 	modules/python/python-debugger.c	  \
 	modules/python/python-logparser.h	  \
-	modules/python/python-logparser.c
+	modules/python/python-logparser.c	  \
+	modules/python/python-source.h	  \
+	modules/python/python-source.c	  \
+	modules/python/python-fetcher.h	  \
+	modules/python/python-fetcher.c
 
 modules_python_libmod_python_la_LDFLAGS		 = \
 	$(MODULE_LDFLAGS) \

@@ -69,7 +69,6 @@ threaded_diskq_source
   : KW_DISKQ_SOURCE
     {
       last_driver = *instance = threaded_diskq_sd_new(configuration);
-      last_source_options = log_threaded_source_driver_get_source_options(last_driver);
     }
     '(' threaded_diskq_source_options ')' { $$ = last_driver; }
   ;
@@ -85,8 +84,7 @@ threaded_diskq_source_option
       threaded_diskq_sd_set_file(last_driver, $3);
       free($3);
     }
-  | source_option
-  | source_driver_option
+  | threaded_source_driver_option
   ;
 
 /* INCLUDE_RULES */

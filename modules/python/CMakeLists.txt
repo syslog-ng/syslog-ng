@@ -45,6 +45,10 @@ set(PYTHON_SOURCES
     python-logparser.c
     python-integerpointer.h
     python-integerpointer.c
+    python-source.h
+    python-source.c
+    python-fetcher.h
+    python-fetcher.c
     compat/compat-python.c
     ${CMAKE_CURRENT_BINARY_DIR}/python-grammar.c
     ${CMAKE_CURRENT_BINARY_DIR}/python-grammar.h
