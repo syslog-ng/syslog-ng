@@ -40,7 +40,6 @@ pcre-devel
 make
 cmake
 # required for make check
-#criterion-devel
 # other tools
 gdb
 git

@@ -3,6 +3,13 @@
 set -e
 set -x
 
+function install_criterion() {
+    CRITERION_VERSION=2.3.2
+    download_target "https://github.com/Snaipe/Criterion/releases/download/v${CRITERION_VERSION}/criterion-v${CRITERION_VERSION}-linux-x86_64.tar.bz2" /tmp/criterion.tar.bz2
+    tar xvjf /tmp/criterion.tar.bz2 --strip 1 -C /usr
+    rm -rf /tmp/criterion.tar.bz2
+}
+
 function install_gosu() {
     GOSU_VERSION=1.10
     ARCHITECTURE=$1

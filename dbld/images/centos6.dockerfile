@@ -24,6 +24,7 @@ RUN /helpers/functions.sh add_epel_repo ${DISTRO}
 COPY required-epel/all.txt required-epel/${DISTRO}*.txt /required-epel/
 RUN cat /required-epel/* | grep -v '^$\|^#' | xargs yum install -y
 
+RUN /helpers/dependencies.sh install_criterion
 RUN /helpers/dependencies.sh install_gradle
 RUN /helpers/dependencies.sh install_gosu amd64
 
