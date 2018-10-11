@@ -126,12 +126,3 @@ setup:
 	@mkdir -p dbld/build || true
 	@mkdir -p dbld/install || true
 	@mkdir -p dbld/release || true
-
-
-# list apt packages
-apt-%:
-	@cat $(DBLD_DIR)/images/required-apt/all.txt \
-	     $(DBLD_DIR)/images/required-apt/$*.txt  \
-	     $(DBLD_DIR)/images/required-obs/all.txt | \
-	grep -v '^$$\|^#' | \
-	sort -u

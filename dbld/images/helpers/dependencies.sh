@@ -38,5 +38,30 @@ function download_target() {
     wget --no-check-certificate $target --output-document=$output
 }
 
+function filter_packages_by_platform {
+    FILENAME=$1
+    OS_GROUP=$(echo ${OS_PLATFORM} | cut -d"-" -f1)
+    grep -v "#" ${FILENAME} | grep -e "${OS_PLATFORM}" -e "${OS_GROUP}[^-]" | cut -d"[" -f1
+}
+
+function install_apt_packages {
+    apt-get update -qq -o Acquire::CompressionTypes::Order::=gz
+    filter_packages_by_platform /helpers/packages.manifest | xargs apt-get install --no-install-recommends --yes
+}
+
+function install_yum_packages {
+    yum install -y epel-release
+    filter_packages_by_platform /helpers/packages.manifest | xargs yum install -y
+}
+
+function install_pip_packages {
+    if [ "${OS_PLATFORM}" == "centos-6" ]; then
+        filter_packages_by_platform /helpers/pip_packages.manifest | xargs pip install -U
+    else
+        python -m pip install --upgrade pip
+        filter_packages_by_platform /helpers/pip_packages.manifest | xargs python -m pip install -U
+    fi
+}
+
 # DO NOT REMOVE!
 "$@"

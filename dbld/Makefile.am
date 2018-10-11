@@ -16,12 +16,9 @@ EXTRA_DIST += \
 	dbld/images/helpers/fake-sudo.sh \
 	dbld/images/helpers/functions.sh \
 	dbld/images/helpers/gosu.pubkey \
+	dbld/images/helpers/packages.manifest \
+	dbld/images/helpers/pip_packages.manifest \
 	dbld/images/README.md \
-	dbld/images/required-apt \
-	dbld/images/required-epel \
-	dbld/images/required-obs \
-	dbld/images/required-pip \
-	dbld/images/required-yum \
 	dbld/images/centos-6.dockerfile \
 	dbld/images/centos-7.dockerfile \
 	dbld/images/debian-jessie.dockerfile \

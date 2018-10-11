@@ -1,6 +1,0 @@
-nose
-ply
-pep8
-pylint
-astroid
-logilab-common
