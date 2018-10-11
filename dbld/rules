@@ -1,9 +1,9 @@
 #!/usr/bin/make -f
 
-IMAGES=centos6 centos7 jessie artful xenial trusty devshell
-DEFAULT_IMAGE ?= xenial
+IMAGES=centos-6 centos-7 debian-jessie debian-stretch artful ubuntu-xenial ubuntu-trusty devshell
+DEFAULT_IMAGE ?= ubuntu-xenial
 DEFAULT_DEB_IMAGE=$(DEFAULT_IMAGE)
-DEFAULT_RPM_IMAGE=centos7
+DEFAULT_RPM_IMAGE=centos-7
 DOCKER=docker
 DOCKER_RUN_ARGS=-e USER_NAME_ON_HOST=$(shell whoami)	\
         --network=host --privileged \
