@@ -66,8 +66,9 @@ control_replace_command(const gchar *command_name, const gchar *description, Com
                                           (GCompareFunc)control_command_start_with_command);
   if (!command_it)
     {
-      msg_error("Failed to replace control command",
+      msg_debug("Trying to replace a non-existent command. Command will be registered as a new command.",
                 evt_tag_str("command", command_name));
+      control_register_command(command_name, description, function, user_data);
       return;
     }
 
