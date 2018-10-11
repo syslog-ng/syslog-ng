@@ -32,12 +32,20 @@ init_sequence_number(gint32 *seqnum)
   *seqnum = 1;
 }
 
-static inline void
+static inline gint32
 step_sequence_number(gint32 *seqnum)
 {
+  gint32 old_value = *seqnum;
   (*seqnum)++;
   if (*seqnum < 0)
     *seqnum = 1;
+  return old_value;
+}
+
+static inline gint32
+step_sequence_number_atomic(gint32 *seqnum)
+{
+  return (gint32) g_atomic_int_exchange_and_add(seqnum, 1);
 }
 
 

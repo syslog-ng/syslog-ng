@@ -68,7 +68,7 @@ JNIEXPORT jint JNICALL
 Java_org_syslog_1ng_LogDestination_getSeqNum(JNIEnv *env, jobject obj, jlong handle)
 {
   JavaDestDriver *self = (JavaDestDriver *)handle;
-  return (jint)(self->super.seq_num);
+  return (jint)(self->super.worker.instance.seq_num);
 }
 
 JNIEXPORT jlong JNICALL
@@ -131,7 +131,7 @@ java_dd_init(LogPipe *s)
 
   const gchar *jvm_options = java_config_get_jvm_options(cfg);
   self->proxy = java_destination_proxy_new(self->class_name, self->class_path->str, self, self->template,
-                                           &self->super.seq_num, jvm_options);
+                                           &self->super.worker.instance.seq_num, jvm_options);
   if (!self->proxy)
     return FALSE;
 

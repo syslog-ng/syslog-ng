@@ -30,6 +30,8 @@
 #include "stats/stats-registry.h"
 #include "logqueue.h"
 #include "mainloop-worker.h"
+#include "seqnum.h"
+
 #include <iv.h>
 #include <iv_event.h>
 
@@ -44,30 +46,45 @@ typedef enum
 } worker_insert_result_t;
 
 typedef struct _LogThreadedDestDriver LogThreadedDestDriver;
-typedef struct _LogThreadedDestWorker
+typedef struct _LogThreadedDestWorker LogThreadedDestWorker;
+
+struct _LogThreadedDestWorker
 {
   LogQueue *queue;
-  gboolean connected;
-  void (*thread_init)(LogThreadedDestDriver *s);
-  void (*thread_deinit)(LogThreadedDestDriver *s);
-  gboolean (*connect)(LogThreadedDestDriver *s);
-  void (*disconnect)(LogThreadedDestDriver *s);
-  worker_insert_result_t (*insert)(LogThreadedDestDriver *s, LogMessage *msg);
-  worker_insert_result_t (*flush)(LogThreadedDestDriver *s);
-} LogThreadedDestWorker;
-
-
-struct _LogThreadedDestDriver
-{
-  LogDestDriver super;
   struct iv_task  do_work;
   struct iv_event wake_up_event;
   struct iv_event shutdown_event;
   struct iv_timer timer_reopen;
   struct iv_timer timer_throttle;
   struct iv_timer timer_flush;
+
+  LogThreadedDestDriver *owner;
+
+  gint worker_index;
+  gboolean connected;
+  gint batch_size;
+  gint rewound_batch_size;
+  gint retries_counter;
+  gint32 seq_num;
+  struct timespec last_flush_time;
+  gboolean enable_flush_timeout;
+  gboolean suspended;
   gboolean startup_finished;
+  gboolean startup_failure;
   GCond *started_up;
+
+  gboolean (*thread_init)(LogThreadedDestWorker *s);
+  void (*thread_deinit)(LogThreadedDestWorker *s);
+  gboolean (*connect)(LogThreadedDestWorker *s);
+  void (*disconnect)(LogThreadedDestWorker *s);
+  worker_insert_result_t (*insert)(LogThreadedDestWorker *s, LogMessage *msg);
+  worker_insert_result_t (*flush)(LogThreadedDestWorker *s);
+  void (*free_fn)(LogThreadedDestWorker *s);
+};
+
+struct _LogThreadedDestDriver
+{
+  LogDestDriver super;
   GMutex *lock;
 
   StatsCounterItem *dropped_messages;
@@ -75,80 +92,117 @@ struct _LogThreadedDestDriver
   StatsCounterItem *written_messages;
 
   gint flush_lines;
-  struct timespec last_flush_time;
   gint flush_timeout;
-  gboolean suspended;
   gboolean under_termination;
   time_t time_reopen;
-  gint batch_size;
-  gint rewound_batch_size;
-  gint retries_counter;
   gint retries_max;
-  gboolean enable_flush_timeout;
 
-  LogThreadedDestWorker worker;
+  struct
+  {
+    LogThreadedDestWorker *(*construct)(LogThreadedDestDriver *s, gint worker_index);
+
+    /* this is a compatibility layer that can be removed once all drivers have
+     * been migrated to the use of LogThreadedDestWorker based interface.
+     * Right now, if a driver is not overriding the Worker instance, we would
+     * be calling these methods from the functions named `_compat_*()`. */
+    LogThreadedDestWorker instance;
+    void (*thread_init)(LogThreadedDestDriver *s);
+    void (*thread_deinit)(LogThreadedDestDriver *s);
+    gboolean (*connect)(LogThreadedDestDriver *s);
+    void (*disconnect)(LogThreadedDestDriver *s);
+    worker_insert_result_t (*insert)(LogThreadedDestDriver *s, LogMessage *msg);
+    worker_insert_result_t (*flush)(LogThreadedDestDriver *s);
+  } worker;
+
+  LogThreadedDestWorker **workers;
+  gint num_workers;
+  gint workers_started;
 
   gint stats_source;
-  gint32 seq_num;
+
+  /* this counter is not thread safe if there are multiple worker threads,
+   * in that case, one needs to use LogThreadedDestWorker->seq_num, which is
+   * static for a single insert() invocation, whereas this might be
+   * increased in parallel by the multiple threads. */
+
+  gint32 shared_seq_num;
 
   WorkerOptions worker_options;
   const gchar *(*format_stats_instance)(LogThreadedDestDriver *s);
 };
 
-static inline void
-log_threaded_dest_worker_thread_init(LogThreadedDestDriver *self)
+static inline gboolean
+log_threaded_dest_worker_thread_init(LogThreadedDestWorker *self)
 {
-  if (self->worker.thread_init)
-    self->worker.thread_init(self);
+  if (self->thread_init)
+    return self->thread_init(self);
+  return TRUE;
 }
 
 static inline void
-log_threaded_dest_worker_thread_deinit(LogThreadedDestDriver *self)
+log_threaded_dest_worker_thread_deinit(LogThreadedDestWorker *self)
 {
-  if (self->worker.thread_deinit)
-    self->worker.thread_deinit(self);
+  if (self->thread_deinit)
+    self->thread_deinit(self);
 }
 
 static inline gboolean
-log_threaded_dest_worker_connect(LogThreadedDestDriver *self)
+log_threaded_dest_worker_connect(LogThreadedDestWorker *self)
 {
-  if (self->worker.connect)
-    self->worker.connected = self->worker.connect(self);
+  if (self->connect)
+    self->connected = self->connect(self);
   else
-    self->worker.connected = TRUE;
+    self->connected = TRUE;
 
-  return self->worker.connected;
+  return self->connected;
 }
 
 static inline void
-log_threaded_dest_worker_disconnect(LogThreadedDestDriver *self)
+log_threaded_dest_worker_disconnect(LogThreadedDestWorker *self)
 {
-  if (self->worker.disconnect)
-    self->worker.disconnect(self);
-  self->worker.connected = FALSE;
+  if (self->disconnect)
+    self->disconnect(self);
+  self->connected = FALSE;
 }
 
 static inline worker_insert_result_t
-log_threaded_dest_worker_insert(LogThreadedDestDriver *self, LogMessage *msg)
+log_threaded_dest_worker_insert(LogThreadedDestWorker *self, LogMessage *msg)
 {
-  return self->worker.insert(self, msg);
+  if (self->owner->num_workers > 1)
+    self->seq_num = step_sequence_number_atomic(&self->owner->shared_seq_num);
+  else
+    self->seq_num = step_sequence_number(&self->owner->shared_seq_num);
+  return self->insert(self, msg);
 }
 
 static inline worker_insert_result_t
-log_threaded_dest_worker_flush(LogThreadedDestDriver *self)
+log_threaded_dest_worker_flush(LogThreadedDestWorker *self)
 {
   worker_insert_result_t result = WORKER_INSERT_RESULT_SUCCESS;
 
-  if (self->worker.flush)
-    result = self->worker.flush(self);
+  if (self->flush)
+    result = self->flush(self);
   iv_validate_now();
   self->last_flush_time = iv_now;
   return result;
 }
 
-void log_threaded_dest_driver_ack_messages(LogThreadedDestDriver *self, gint batch_size);
-void log_threaded_dest_driver_drop_messages(LogThreadedDestDriver *self, gint batch_size);
-void log_threaded_dest_driver_rewind_messages(LogThreadedDestDriver *self, gint batch_size);
+/* function for drivers that are not yet using the worker API */
+static inline worker_insert_result_t
+log_threaded_dest_driver_flush(LogThreadedDestDriver *self)
+{
+  return log_threaded_dest_worker_flush(&self->worker.instance);
+}
+
+void log_threaded_dest_worker_ack_messages(LogThreadedDestWorker *self, gint batch_size);
+void log_threaded_dest_worker_drop_messages(LogThreadedDestWorker *self, gint batch_size);
+void log_threaded_dest_worker_rewind_messages(LogThreadedDestWorker *self, gint batch_size);
+gboolean log_threaded_dest_worker_init_method(LogThreadedDestWorker *self);
+void log_threaded_dest_worker_deinit_method(LogThreadedDestWorker *self);
+void log_threaded_dest_worker_init_instance(LogThreadedDestWorker *self,
+                                            LogThreadedDestDriver *owner,
+                                            gint worker_index);
+void log_threaded_dest_worker_free_method(LogThreadedDestWorker *self);
 
 gboolean log_threaded_dest_driver_deinit_method(LogPipe *s);
 gboolean log_threaded_dest_driver_init_method(LogPipe *s);
@@ -157,6 +211,7 @@ void log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalC
 void log_threaded_dest_driver_free(LogPipe *s);
 
 void log_threaded_dest_driver_set_max_retries(LogDriver *s, gint max_retries);
+void log_threaded_dest_driver_set_num_workers(LogDriver *s, gint num_workers);
 void log_threaded_dest_driver_set_flush_lines(LogDriver *s, gint flush_lines);
 void log_threaded_dest_driver_set_flush_timeout(LogDriver *s, gint flush_timeout);
 

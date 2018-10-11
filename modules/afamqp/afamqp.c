@@ -550,7 +550,7 @@ afamqp_worker_publish(AMQPDestDriver *self, LogMessage *msg)
   gpointer user_data[] = { &self->entries, &pos, &self->max_entries };
 
   value_pairs_foreach(self->vp, afamqp_vp_foreach, msg,
-                      self->super.seq_num,
+                      self->super.worker.instance.seq_num,
                       LTZ_SEND, &self->template_options, user_data);
 
   table.num_entries = pos;
@@ -563,13 +563,13 @@ afamqp_worker_publish(AMQPDestDriver *self, LogMessage *msg)
   props.headers = table;
 
   log_template_format(self->routing_key_template, msg, &self->template_options, LTZ_LOCAL,
-                      self->super.seq_num,
+                      self->super.worker.instance.seq_num,
                       NULL, routing_key);
 
   if (self->body_template)
     {
       log_template_format(self->body_template, msg, &self->template_options, LTZ_LOCAL,
-                          self->super.seq_num,
+                          self->super.worker.instance.seq_num,
                           NULL, body);
       body_bytes = amqp_cstring_bytes(body->str);
     }

@@ -398,7 +398,7 @@ static gboolean
 riemann_add_metric_to_event(RiemannDestDriver *self, riemann_event_t *event, LogMessage *msg, GString *str)
 {
   log_template_format(self->fields.metric, msg, &self->template_options,
-                      LTZ_SEND, self->super.seq_num, NULL, str);
+                      LTZ_SEND, self->super.worker.instance.seq_num, NULL, str);
 
   if (str->len == 0)
     return TRUE;
@@ -445,7 +445,7 @@ riemann_add_ttl_to_event(RiemannDestDriver *self, riemann_event_t *event, LogMes
   gdouble d;
 
   log_template_format(self->fields.ttl, msg, &self->template_options,
-                      LTZ_SEND, self->super.seq_num, NULL,
+                      LTZ_SEND, self->super.worker.instance.seq_num, NULL,
                       str);
 
   if (str->len == 0)
@@ -493,23 +493,23 @@ riemann_worker_insert_one(RiemannDestDriver *self, LogMessage *msg)
       riemann_dd_field_string_maybe_add(event, msg, self->fields.host,
                                         &self->template_options,
                                         RIEMANN_EVENT_FIELD_HOST,
-                                        self->super.seq_num, str);
+                                        self->super.worker.instance.seq_num, str);
       riemann_dd_field_string_maybe_add(event, msg, self->fields.service,
                                         &self->template_options,
                                         RIEMANN_EVENT_FIELD_SERVICE,
-                                        self->super.seq_num, str);
+                                        self->super.worker.instance.seq_num, str);
       riemann_dd_field_integer_maybe_add(event, msg, self->fields.event_time,
                                          &self->template_options,
                                          self->fields.event_time_unit,
-                                         self->super.seq_num, str);
+                                         self->super.worker.instance.seq_num, str);
       riemann_dd_field_string_maybe_add(event, msg, self->fields.description,
                                         &self->template_options,
                                         RIEMANN_EVENT_FIELD_DESCRIPTION,
-                                        self->super.seq_num, str);
+                                        self->super.worker.instance.seq_num, str);
       riemann_dd_field_string_maybe_add(event, msg, self->fields.state,
                                         &self->template_options,
                                         RIEMANN_EVENT_FIELD_STATE,
-                                        self->super.seq_num, str);
+                                        self->super.worker.instance.seq_num, str);
 
       if (self->fields.tags)
         g_list_foreach(self->fields.tags, riemann_dd_field_add_tag,
@@ -521,7 +521,7 @@ riemann_worker_insert_one(RiemannDestDriver *self, LogMessage *msg)
       if (self->fields.attributes)
         value_pairs_foreach(self->fields.attributes,
                             riemann_dd_field_add_attribute_vp,
-                            msg, self->super.seq_num, LTZ_SEND,
+                            msg, self->super.worker.instance.seq_num, LTZ_SEND,
                             &self->template_options, event);
       msg_trace("riemann: adding message to Riemann event",
                 evt_tag_str("server", self->server),
@@ -591,7 +591,7 @@ _insert_single(LogThreadedDestDriver *s, LogMessage *msg)
       return WORKER_INSERT_RESULT_DROP;
     }
 
-  return riemann_worker_flush(&self->super);
+  return log_threaded_dest_driver_flush(&self->super);
 }
 
 static worker_insert_result_t
@@ -615,9 +615,9 @@ _insert_batch(LogThreadedDestDriver *s, LogMessage *msg)
        */
     }
 
-  if (self->super.flush_lines > 1 && self->super.batch_size >= self->super.flush_lines)
+  if (self->super.flush_lines > 1 && self->super.worker.instance.batch_size >= self->super.flush_lines)
     {
-      return log_threaded_dest_worker_flush(&self->super);
+      return log_threaded_dest_driver_flush(&self->super);
     }
   return WORKER_INSERT_RESULT_QUEUED;
 }

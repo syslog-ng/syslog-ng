@@ -176,9 +176,9 @@ Test(logthrdestdrv, driver_can_be_instantiated_and_one_message_is_properly_proce
   cr_assert(stats_counter_get(dd->super.processed_messages) == 1);
   cr_assert(stats_counter_get(dd->super.written_messages) == 1);
   cr_assert(stats_counter_get(dd->super.dropped_messages) == 0);
-  cr_assert(stats_counter_get(dd->super.worker.queue->memory_usage) == 0);
-  cr_assert(dd->super.seq_num == 2,
-            "seq_num expected to be 1 larger than the amount of messages generated, found %d", dd->super.seq_num);
+  cr_assert(stats_counter_get(dd->super.worker.instance.queue->memory_usage) == 0);
+  cr_assert(dd->super.shared_seq_num == 2,
+            "seq_num expected to be 1 larger than the amount of messages generated, found %d", dd->super.shared_seq_num);
 }
 
 static worker_insert_result_t
@@ -202,8 +202,8 @@ Test(logthrdestdrv, message_drops_are_accounted_in_the_drop_counter_and_are_repo
   cr_assert(stats_counter_get(dd->super.processed_messages) == 1);
   cr_assert(stats_counter_get(dd->super.written_messages) == 0);
   cr_assert(stats_counter_get(dd->super.dropped_messages) == 1);
-  cr_assert(dd->super.seq_num == 2,
-            "seq_num expected to be 1 larger than the amount of messages generated, found %d", dd->super.seq_num);
+  cr_assert(dd->super.shared_seq_num == 2,
+            "seq_num expected to be 1 larger than the amount of messages generated, found %d", dd->super.shared_seq_num);
   assert_grabbed_log_contains("dropped while sending");
 }
 
@@ -230,8 +230,8 @@ Test(logthrdestdrv, connection_failure_is_considered_an_error_and_retried_indefi
   cr_assert(stats_counter_get(dd->super.processed_messages) == 1);
   cr_assert(stats_counter_get(dd->super.written_messages) == 1);
   cr_assert(stats_counter_get(dd->super.dropped_messages) == 0);
-  cr_assert(dd->super.seq_num == 12,
-            "seq_num expected to be 1 larger than the number of insert attempts, found %d", dd->super.seq_num);
+  cr_assert(dd->super.shared_seq_num == 12,
+            "seq_num expected to be 1 larger than the number of insert attempts, found %d", dd->super.shared_seq_num);
   assert_grabbed_log_contains("Server disconnected");
 }
 
@@ -258,8 +258,8 @@ Test(logthrdestdrv, error_result_retries_sending_retry_max_times_and_then_drops)
   cr_assert(stats_counter_get(dd->super.processed_messages) == 1);
   cr_assert(stats_counter_get(dd->super.written_messages) == 0);
   cr_assert(stats_counter_get(dd->super.dropped_messages) == 1);
-  cr_assert(dd->super.seq_num == 6,
-            "seq_num expected to be 1 larger than the number of insert attempts, found %d", dd->super.seq_num);
+  cr_assert(dd->super.shared_seq_num == 6,
+            "seq_num expected to be 1 larger than the number of insert attempts, found %d", dd->super.shared_seq_num);
   assert_grabbed_log_contains("Error occurred while");
   assert_grabbed_log_contains("Multiple failures while sending");
 }
@@ -289,8 +289,8 @@ Test(logthrdestdrv, error_result_retries_sending_retry_max_times_and_then_accept
   cr_assert(stats_counter_get(dd->super.processed_messages) == 1);
   cr_assert(stats_counter_get(dd->super.written_messages) == 1);
   cr_assert(stats_counter_get(dd->super.dropped_messages) == 0);
-  cr_assert(dd->super.seq_num == 6,
-            "seq_num expected to be 1 larger than the number of insert attempts, found %d", dd->super.seq_num);
+  cr_assert(dd->super.shared_seq_num == 6,
+            "seq_num expected to be 1 larger than the number of insert attempts, found %d", dd->super.shared_seq_num);
   assert_grabbed_log_contains("Error occurred while");
 }
 
@@ -300,10 +300,10 @@ _insert_batched_message_success(LogThreadedDestDriver *s, LogMessage *msg)
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
 
   self->insert_counter++;
-  if (self->super.batch_size < s->flush_lines)
+  if (self->super.worker.instance.batch_size < s->flush_lines)
     return WORKER_INSERT_RESULT_QUEUED;
 
-  self->flush_size += self->super.batch_size;
+  self->flush_size += self->super.worker.instance.batch_size;
   return WORKER_INSERT_RESULT_SUCCESS;
 }
 
@@ -313,7 +313,7 @@ _flush_batched_message_success(LogThreadedDestDriver *s)
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
 
   self->flush_counter++;
-  self->flush_size += self->super.batch_size;
+  self->flush_size += self->super.worker.instance.batch_size;
   return WORKER_INSERT_RESULT_SUCCESS;
 }
 
@@ -332,9 +332,9 @@ Test(logthrdestdrv, batched_set_of_messages_are_successfully_delivered)
   cr_assert(stats_counter_get(dd->super.processed_messages) == 10);
   cr_assert(stats_counter_get(dd->super.written_messages) == 10);
   cr_assert(stats_counter_get(dd->super.dropped_messages) == 0);
-  cr_assert(stats_counter_get(dd->super.worker.queue->memory_usage) == 0);
-  cr_assert(dd->super.seq_num == 11,
-            "seq_num expected to be 1 larger than the number of insert attempts, found %d", dd->super.seq_num);
+  cr_assert(stats_counter_get(dd->super.worker.instance.queue->memory_usage) == 0);
+  cr_assert(dd->super.shared_seq_num == 11,
+            "seq_num expected to be 1 larger than the number of insert attempts, found %d", dd->super.shared_seq_num);
 }
 
 static worker_insert_result_t
@@ -343,10 +343,10 @@ _insert_batched_message_drop(LogThreadedDestDriver *s, LogMessage *msg)
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
 
   self->insert_counter++;
-  if (self->super.batch_size < s->flush_lines)
+  if (self->super.worker.instance.batch_size < s->flush_lines)
     return WORKER_INSERT_RESULT_QUEUED;
 
-  self->flush_size += self->super.batch_size;
+  self->flush_size += self->super.worker.instance.batch_size;
   return WORKER_INSERT_RESULT_DROP;
 }
 
@@ -356,7 +356,7 @@ _flush_batched_message_drop(LogThreadedDestDriver *s)
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
 
   self->flush_counter++;
-  self->flush_size += self->super.batch_size;
+  self->flush_size += self->super.worker.instance.batch_size;
   return WORKER_INSERT_RESULT_DROP;
 }
 
@@ -374,22 +374,22 @@ Test(logthrdestdrv, batched_set_of_messages_are_dropped_as_a_whole)
   cr_assert(stats_counter_get(dd->super.processed_messages) == 10);
   cr_assert(stats_counter_get(dd->super.written_messages) == 0);
   cr_assert(stats_counter_get(dd->super.dropped_messages) == 10);
-  cr_assert(stats_counter_get(dd->super.worker.queue->memory_usage) == 0);
-  cr_assert(dd->super.seq_num == 11, "%d", dd->super.seq_num);
+  cr_assert(stats_counter_get(dd->super.worker.instance.queue->memory_usage) == 0);
+  cr_assert(dd->super.shared_seq_num == 11, "%d", dd->super.shared_seq_num);
   assert_grabbed_log_contains("dropped while sending message");
 }
 
 static inline void
 _expect_batch_size_remains_the_same_across_retries(TestThreadedDestDriver *self)
 {
-  if (self->super.retries_counter > 0)
+  if (self->super.worker.instance.retries_counter > 0)
     {
-      cr_expect(self->super.batch_size == self->prev_flush_size,
+      cr_expect(self->super.worker.instance.batch_size == self->prev_flush_size,
                 "batch_size has to remain the same across retries, batch_size=%d, prev_flush_size=%d",
-                self->super.batch_size, self->prev_flush_size);
+                self->super.worker.instance.batch_size, self->prev_flush_size);
     }
   else
-    self->prev_flush_size = self->super.batch_size;
+    self->prev_flush_size = self->super.worker.instance.batch_size;
 }
 
 static worker_insert_result_t
@@ -398,10 +398,10 @@ _insert_batched_message_error_drop(LogThreadedDestDriver *s, LogMessage *msg)
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
 
   self->insert_counter++;
-  if (self->super.batch_size < s->flush_lines)
+  if (self->super.worker.instance.batch_size < s->flush_lines)
     return WORKER_INSERT_RESULT_QUEUED;
 
-  self->flush_size += self->super.batch_size;
+  self->flush_size += self->super.worker.instance.batch_size;
   _expect_batch_size_remains_the_same_across_retries(self);
   return WORKER_INSERT_RESULT_ERROR;
 }
@@ -411,11 +411,10 @@ _flush_batched_message_error_drop(LogThreadedDestDriver *s)
 {
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
 
-  self->flush_size += self->super.batch_size;
+  self->flush_size += self->super.worker.instance.batch_size;
   _expect_batch_size_remains_the_same_across_retries(self);
-
   /* see the note in logthrdestdrv.c:_perform_flush() */
-  if (self->super.batch_size == 0)
+  if (self->super.worker.instance.batch_size == 0)
     return WORKER_INSERT_RESULT_SUCCESS;
 
   return WORKER_INSERT_RESULT_ERROR;
@@ -440,9 +439,9 @@ Test(logthrdestdrv,
   cr_assert(stats_counter_get(dd->super.processed_messages) == 10);
   cr_assert(stats_counter_get(dd->super.written_messages) == 0);
   cr_assert(stats_counter_get(dd->super.dropped_messages) == 10);
-  cr_assert(stats_counter_get(dd->super.worker.queue->memory_usage) == 0);
-  cr_assert(dd->super.seq_num == dd->super.retries_max * 10 + 1,
-            "seq_num needs to be one larger than the number of insert attempts, found %d", dd->super.seq_num);
+  cr_assert(stats_counter_get(dd->super.worker.instance.queue->memory_usage) == 0);
+  cr_assert(dd->super.shared_seq_num == dd->super.retries_max * 10 + 1,
+            "seq_num needs to be one larger than the number of insert attempts, found %d", dd->super.shared_seq_num);
   assert_grabbed_log_contains("Error occurred while");
   assert_grabbed_log_contains("Multiple failures while sending");
 }
@@ -457,7 +456,7 @@ Test(logthrdestdrv,
 static inline worker_insert_result_t
 _inject_error_a_few_times(TestThreadedDestDriver *self)
 {
-  if (self->super.retries_counter >= FAILING_ATTEMPTS_DROP)
+  if (self->super.worker.instance.retries_counter >= FAILING_ATTEMPTS_DROP)
     return WORKER_INSERT_RESULT_SUCCESS;
   else
     return WORKER_INSERT_RESULT_ERROR;
@@ -469,10 +468,10 @@ _insert_batched_message_error_success(LogThreadedDestDriver *s, LogMessage *msg)
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
 
   self->insert_counter++;
-  if (self->super.batch_size < s->flush_lines)
+  if (self->super.worker.instance.batch_size < s->flush_lines)
     return WORKER_INSERT_RESULT_QUEUED;
 
-  self->flush_size += self->super.batch_size;
+  self->flush_size += self->super.worker.instance.batch_size;
   _expect_batch_size_remains_the_same_across_retries(self);
   return _inject_error_a_few_times(self);
 }
@@ -482,11 +481,11 @@ _flush_batched_message_error_success(LogThreadedDestDriver *s)
 {
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
 
-  self->flush_size += self->super.batch_size;
+  self->flush_size += self->super.worker.instance.batch_size;
   _expect_batch_size_remains_the_same_across_retries(self);
 
   /* see the note in logthrdestdrv.c:_perform_flush() */
-  if (self->super.batch_size == 0)
+  if (self->super.worker.instance.batch_size == 0)
     return WORKER_INSERT_RESULT_SUCCESS;
 
   return _inject_error_a_few_times(self);
@@ -513,8 +512,8 @@ Test(logthrdestdrv,
   cr_assert(stats_counter_get(dd->super.processed_messages) == 10);
   cr_assert(stats_counter_get(dd->super.written_messages) == 10);
   cr_assert(stats_counter_get(dd->super.dropped_messages) == 0);
-  cr_assert(stats_counter_get(dd->super.worker.queue->memory_usage) == 0);
-  cr_assert(dd->super.seq_num == total_attempts * 10 + 1, "%d", dd->super.seq_num);
+  cr_assert(stats_counter_get(dd->super.worker.instance.queue->memory_usage) == 0);
+  cr_assert(dd->super.shared_seq_num == total_attempts * 10 + 1, "%d", dd->super.shared_seq_num);
   assert_grabbed_log_contains("Error occurred while");
 }
 
@@ -543,10 +542,10 @@ _insert_batched_message_not_connected(LogThreadedDestDriver *s, LogMessage *msg)
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
 
   self->insert_counter++;
-  if (self->super.batch_size < s->flush_lines)
+  if (self->super.worker.instance.batch_size < s->flush_lines)
     return WORKER_INSERT_RESULT_QUEUED;
 
-  self->flush_size += self->super.batch_size;
+  self->flush_size += self->super.worker.instance.batch_size;
   _expect_batch_size_remains_the_same_across_retries(self);
   return _inject_not_connected_a_few_times(self);
 }
@@ -556,11 +555,11 @@ _flush_batched_message_not_connected(LogThreadedDestDriver *s)
 {
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
 
-  self->flush_size += self->super.batch_size;
+  self->flush_size += self->super.worker.instance.batch_size;
   _expect_batch_size_remains_the_same_across_retries(self);
 
   /* see the note in logthrdestdrv.c:_perform_flush() */
-  if (self->super.batch_size == 0)
+  if (self->super.worker.instance.batch_size == 0)
     return WORKER_INSERT_RESULT_SUCCESS;
 
   return _inject_not_connected_a_few_times(self);
@@ -587,15 +586,15 @@ Test(logthrdestdrv,
   cr_assert(stats_counter_get(dd->super.processed_messages) == 10);
   cr_assert(stats_counter_get(dd->super.written_messages) == 10);
   cr_assert(stats_counter_get(dd->super.dropped_messages) == 0);
-  cr_assert(stats_counter_get(dd->super.worker.queue->memory_usage) == 0);
-  cr_assert(dd->super.seq_num == total_attempts * 10 + 1, "%d", dd->super.seq_num);
+  cr_assert(stats_counter_get(dd->super.worker.instance.queue->memory_usage) == 0);
+  cr_assert(dd->super.shared_seq_num == total_attempts * 10 + 1, "%d", dd->super.shared_seq_num);
   assert_grabbed_log_contains("Server disconnected");
 }
 
 Test(logthrdestdrv, throttle_is_applied_to_delivery_and_causes_flush_to_be_called_more_often)
 {
   /* 3 messages per second, we need to set this explicitly on the queue as it has already been initialized */
-  log_queue_set_throttle(dd->super.worker.queue, 3);
+  log_queue_set_throttle(dd->super.worker.instance.queue, 3);
   dd->super.worker.insert = _insert_batched_message_success;
   dd->super.worker.flush = _flush_batched_message_success;
   dd->super.flush_lines = 5;
@@ -615,8 +614,8 @@ Test(logthrdestdrv, throttle_is_applied_to_delivery_and_causes_flush_to_be_calle
   cr_assert(stats_counter_get(dd->super.processed_messages) == 20);
   cr_assert(stats_counter_get(dd->super.written_messages) == 20);
   cr_assert(stats_counter_get(dd->super.dropped_messages) == 0);
-  cr_assert(stats_counter_get(dd->super.worker.queue->memory_usage) == 0);
-  cr_assert(dd->super.seq_num == 21, "%d", dd->super.seq_num);
+  cr_assert(stats_counter_get(dd->super.worker.instance.queue->memory_usage) == 0);
+  cr_assert(dd->super.shared_seq_num == 21, "%d", dd->super.shared_seq_num);
 }
 
 Test(logthrdestdrv, flush_timeout_delays_flush_to_the_specified_interval)
@@ -734,11 +733,11 @@ _insert_explicit_acks_message_success(LogThreadedDestDriver *s, LogMessage *msg)
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
 
   self->insert_counter++;
-  if (self->super.batch_size < s->flush_lines)
+  if (self->super.worker.instance.batch_size < s->flush_lines)
     return WORKER_INSERT_RESULT_QUEUED;
 
   self->flush_size += 1;
-  log_threaded_dest_driver_ack_messages(s, 1);
+  log_threaded_dest_worker_ack_messages(&s->worker.instance, 1);
   return WORKER_INSERT_RESULT_EXPLICIT_ACK_MGMT;
 }
 
@@ -748,7 +747,7 @@ _flush_explicit_acks_message_success(LogThreadedDestDriver *s)
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
 
   self->flush_size += 1;
-  log_threaded_dest_driver_ack_messages(s, 1);
+  log_threaded_dest_worker_ack_messages(&s->worker.instance, 1);
   return WORKER_INSERT_RESULT_EXPLICIT_ACK_MGMT;
 }
 
@@ -764,10 +763,10 @@ Test(logthrdestdrv, test_explicit_ack_accept)
 
   cr_assert(stats_counter_get(dd->super.processed_messages) == 10);
   cr_assert(stats_counter_get(dd->super.written_messages) == 10);
-  cr_assert(stats_counter_get(dd->super.worker.queue->queued_messages) == 0);
+  cr_assert(stats_counter_get(dd->super.worker.instance.queue->queued_messages) == 0);
   cr_assert(stats_counter_get(dd->super.dropped_messages) == 0);
-  cr_assert(stats_counter_get(dd->super.worker.queue->memory_usage) == 0);
-  cr_assert(dd->super.seq_num == 11, "%d", dd->super.seq_num);
+  cr_assert(stats_counter_get(dd->super.worker.instance.queue->memory_usage) == 0);
+  cr_assert(dd->super.shared_seq_num == 11, "%d", dd->super.shared_seq_num);
 }
 
 MainLoopOptions main_loop_options = {0};
