@@ -28,10 +28,7 @@ RUN cat /required-epel/* | grep -v '^$\|^#' | xargs yum install -y
 RUN /helpers/functions.sh gradle_installer
 RUN echo "/usr/lib/jvm/jre/lib/amd64/server" | tee --append /etc/ld.so.conf.d/openjdk-libjvm.conf && ldconfig
 
-
-# grab gosu for easy step-down from root
-RUN /helpers/functions.sh step_down_from_root_with_gosu amd64
-
+RUN /helpers/dependencies.sh install_gosu amd64
 
 # add a fake sudo command
 RUN mv /helpers/fake-sudo.sh /usr/bin/sudo
