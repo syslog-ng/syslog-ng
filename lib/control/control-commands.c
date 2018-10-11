@@ -161,6 +161,12 @@ exit:
 }
 
 static GString *
+show_ose_license_info(GString *command, gpointer user_data)
+{
+  return g_string_new("You are using the Open Source Edition of syslog-ng.");
+}
+
+static GString *
 control_connection_reload(GString *command, gpointer user_data)
 {
   GString *result = g_string_new("OK Config reload initiated");
@@ -271,6 +277,7 @@ ControlCommand default_commands[] =
   { "QUERY", NULL, process_query_command },
   { "PWD", NULL, process_credentials },
   { "CONFIG", NULL, control_connection_config },
+  { "LICENSE", NULL, show_ose_license_info },
   { NULL, NULL, NULL },
 };
 
