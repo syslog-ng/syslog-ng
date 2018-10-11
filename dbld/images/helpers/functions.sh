@@ -4,24 +4,6 @@ set -e
 
 # Helper functions for container creation.
 
-function add_obs_repo {
-    DISTRO=$1
-    wget -qO - http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/${DISTRO}/Release.key | apt-key add -
-    echo "deb http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/"${DISTRO}" ./" | tee --append /etc/apt/sources.list.d/syslog-ng-obs.list
-    apt-get update -qq
-}
-
-function add_epel_repo {
-    cd /etc/yum.repos.d
-    if [ "$1" == "centos6" ]; then
-        wget https://copr.fedorainfracloud.org/coprs/czanik/syslog-ng39epel6/repo/epel-6/czanik-syslog-ng39epel6-epel-6.repo
-    elif [ "$1" == "centos7" ]; then
-        wget https://copr.fedorainfracloud.org/coprs/czanik/syslog-ng-githead/repo/epel-7/czanik-syslog-ng-githead-epel-7.repo
-    else
-        return 1
-    fi
-}
-
 function enable_dbgsyms {
     apt-get install --no-install-recommends -y lsb-release dirmngr
     echo "deb http://ddebs.ubuntu.com $(lsb_release -cs) main restricted universe multiverse
