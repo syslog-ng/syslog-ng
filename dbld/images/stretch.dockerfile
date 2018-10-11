@@ -22,6 +22,7 @@ RUN /helpers/functions.sh add_obs_repo ${OBS_REPO}
 COPY required-obs/all.txt required-obs/${DISTRO}*.txt /required-obs/
 RUN cat /required-obs/* | grep -v '^$\|^#' | xargs apt-get install --no-install-recommends -y
 
+RUN /helpers/dependencies.sh install_gradle
 RUN /helpers/dependencies.sh install_gosu amd64
 
 # add a fake sudo command

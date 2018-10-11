@@ -24,10 +24,7 @@ RUN /helpers/functions.sh add_epel_repo ${DISTRO}
 COPY required-epel/all.txt required-epel/${DISTRO}*.txt /required-epel/
 RUN cat /required-epel/* | grep -v '^$\|^#' | xargs yum install -y
 
-
-RUN /helpers/functions.sh gradle_installer
-RUN echo "/usr/lib/jvm/jre/lib/amd64/server" | tee --append /etc/ld.so.conf.d/openjdk-libjvm.conf && ldconfig
-
+RUN /helpers/dependencies.sh install_gradle
 RUN /helpers/dependencies.sh install_gosu amd64
 
 # add a fake sudo command
