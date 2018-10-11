@@ -3,6 +3,17 @@
 set -e
 set -x
 
+function install_cmake() {
+    CMAKE_VERSION=3.12.2
+    CMAKE_SHORT_VERSION=$(echo ${CMAKE_VERSION} | cut -d"." -f1-2)
+    download_target "https://cmake.org/files/v${CMAKE_SHORT_VERSION}/cmake-${CMAKE_VERSION}-Linux-x86_64.sh" /tmp/cmake.sh
+    chmod +x /tmp/cmake.sh
+    mkdir -p /opt/cmake
+    /tmp/cmake.sh --skip-license --prefix=/opt/cmake/
+    ln -s /opt/cmake/bin/cmake /usr/bin/cmake
+    rm -rf /tmp/cmake.sh
+}
+
 function install_criterion() {
     CRITERION_VERSION=2.3.2
     download_target "https://github.com/Snaipe/Criterion/releases/download/v${CRITERION_VERSION}/criterion-v${CRITERION_VERSION}-linux-x86_64.tar.bz2" /tmp/criterion.tar.bz2
@@ -30,6 +41,60 @@ function install_gradle {
     ln -s /opt/gradle/gradle-${GRADLE_VERSION}/bin/gradle /usr/bin/gradle
     find / -name 'libjvm.so' | sed 's@/libjvm.so@@g' | tee --append /etc/ld.so.conf.d/openjdk-libjvm.conf
     ldconfig
+}
+
+function install_libmaxminddb() {
+    LIBMAXMINDDB_VERSION=1.3.2
+    download_target "https://github.com/maxmind/libmaxminddb/releases/download/${LIBMAXMINDDB_VERSION}/libmaxminddb-${LIBMAXMINDDB_VERSION}.tar.gz" /tmp/libmaxminddb.tar.gz
+    cd /tmp/
+    tar xvf /tmp/libmaxminddb.tar.gz
+    cd /tmp/libmaxminddb-${LIBMAXMINDDB_VERSION}
+    ./configure
+    make
+    make install
+    ldconfig
+    rm -rf /tmp/libmaxminddb.tar.gz /tmp/libmaxminddb-${LIBMAXMINDDB_VERSION}
+}
+
+function install_mongoc() {
+    MONGOC_VERSION=1.13.0
+    download_target "https://github.com/mongodb/mongo-c-driver/releases/download/${MONGOC_VERSION}/mongo-c-driver-${MONGOC_VERSION}.tar.gz" /tmp/mongo-c-driver.tar.gz
+    cd /tmp/
+    tar xvf /tmp/mongo-c-driver.tar.gz
+    cd /tmp/mongo-c-driver-${MONGOC_VERSION}
+    mkdir cmake-build/
+    cd cmake-build/
+    cmake -DENABLE_AUTOMATIC_INIT_AND_CLEANUP=OFF ..
+    make
+    make install
+    rm -rf /tmp/mongo-c-driver.tar.gz /tmp/mongo-c-driver-${MONGOC_VERSION}
+}
+
+function install_rabbitmqc() {
+    RABBITMQC_VERSION=0.9.0
+    download_target "https://github.com/alanxz/rabbitmq-c/archive/v${RABBITMQC_VERSION}.tar.gz" /tmp/rabbitmq-c.tar.gz
+    cd /tmp/
+    tar xfz /tmp/rabbitmq-c.tar.gz
+    cd /tmp/rabbitmq-c-${RABBITMQC_VERSION}/
+    mkdir cmake-build/
+    cd cmake-build/
+    cmake ..
+    make
+    make install
+    rm -rf /tmp/rabbitmq-c.tar.gz /tmp/rabbitmq-c-${RABBITMQC_VERSION}/
+}
+
+function install_riemann() {
+    RIEMANN_VERSION=1.10.3
+    download_target "https://github.com/algernon/riemann-c-client/archive/riemann-c-client-${RIEMANN_VERSION}.tar.gz" /tmp/riemann.tar.gz
+    cd /tmp/
+    tar xfz /tmp/riemann.tar.gz
+    cd /tmp/riemann-c-client-riemann-c-client-${RIEMANN_VERSION}
+    autoreconf -i
+    ./configure
+    make
+    make install
+    rm -rf /tmp/riemann.tar.gz /tmp/riemann-c-client-riemann-c-client-${RIEMANN_VERSION}
 }
 
 function download_target() {
