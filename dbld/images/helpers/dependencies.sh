@@ -14,6 +14,17 @@ function install_gosu() {
     chmod +x /usr/local/bin/gosu
 }
 
+function install_gradle {
+    GRADLE_VERSION=4.10
+    download_target "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" /tmp/gradle.zip
+    mkdir -p /opt/gradle
+    unzip -d /opt/gradle /tmp/gradle.zip
+    rm -rf /tmp/gradle.zip
+    ln -s /opt/gradle/gradle-${GRADLE_VERSION}/bin/gradle /usr/bin/gradle
+    find / -name 'libjvm.so' | sed 's@/libjvm.so@@g' | tee --append /etc/ld.so.conf.d/openjdk-libjvm.conf
+    ldconfig
+}
+
 function download_target() {
     target=$1
     output=$2
