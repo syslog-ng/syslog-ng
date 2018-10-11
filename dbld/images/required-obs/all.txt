@@ -1,2 +1,1 @@
-criterion-dev
 libmaxminddb-dev
