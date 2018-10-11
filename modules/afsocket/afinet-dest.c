@@ -494,6 +494,59 @@ afinet_dd_construct_ipv6_packet(AFInetDestDriver *self, LogMessage *msg, GString
 
 #endif
 
+#if SYSLOG_NG_ENABLE_SPOOF_SOURCE
+static gboolean
+afinet_dd_spoof_write_message(AFInetDestDriver *self, LogMessage *msg, const LogPathOptions *path_options)
+{
+  gboolean success = FALSE;
+
+  g_assert(self->super.transport_mapper->sock_type == SOCK_DGRAM);
+
+  g_static_mutex_lock(&self->lnet_lock);
+
+  if (!self->lnet_buffer)
+    self->lnet_buffer = g_string_sized_new(self->spoof_source_maxmsglen);
+
+  log_writer_format_log(self->super.writer, msg, self->lnet_buffer);
+
+  if (self->lnet_buffer->len > self->spoof_source_maxmsglen)
+    g_string_truncate(self->lnet_buffer, self->spoof_source_maxmsglen);
+
+  switch (self->super.dest_addr->sa.sa_family)
+    {
+    case AF_INET:
+      success = afinet_dd_construct_ipv4_packet(self, msg, self->lnet_buffer);
+      break;
+#if SYSLOG_NG_ENABLE_IPV6
+    case AF_INET6:
+      success = afinet_dd_construct_ipv6_packet(self, msg, self->lnet_buffer);
+      break;
+#endif
+    default:
+      g_assert_not_reached();
+    }
+  if (success)
+    {
+      if (libnet_write(self->lnet_ctx) >= 0)
+        {
+          /* we have finished processing msg */
+          log_msg_ack(msg, path_options, AT_PROCESSED);
+          log_msg_unref(msg);
+
+          g_static_mutex_unlock(&self->lnet_lock);
+          return TRUE;
+        }
+      else
+        {
+          msg_error("Error sending raw frame",
+                    evt_tag_str("error", libnet_geterror(self->lnet_ctx)));
+        }
+    }
+  g_static_mutex_unlock(&self->lnet_lock);
+  return FALSE;
+}
+#endif
+
 static void
 afinet_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
@@ -506,51 +559,8 @@ afinet_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
   if (self->spoof_source && self->lnet_ctx && msg->saddr && (msg->saddr->sa.sa_family == AF_INET
                                                              || msg->saddr->sa.sa_family == AF_INET6) && log_writer_opened(self->super.writer))
     {
-      gboolean success = FALSE;
-
-      g_assert(self->super.transport_mapper->sock_type == SOCK_DGRAM);
-
-      g_static_mutex_lock(&self->lnet_lock);
-
-      if (!self->lnet_buffer)
-        self->lnet_buffer = g_string_sized_new(self->spoof_source_maxmsglen);
-
-      log_writer_format_log(self->super.writer, msg, self->lnet_buffer);
-
-      if (self->lnet_buffer->len > self->spoof_source_maxmsglen)
-        g_string_truncate(self->lnet_buffer, self->spoof_source_maxmsglen);
-
-      switch (self->super.dest_addr->sa.sa_family)
-        {
-        case AF_INET:
-          success = afinet_dd_construct_ipv4_packet(self, msg, self->lnet_buffer);
-          break;
-#if SYSLOG_NG_ENABLE_IPV6
-        case AF_INET6:
-          success = afinet_dd_construct_ipv6_packet(self, msg, self->lnet_buffer);
-          break;
-#endif
-        default:
-          g_assert_not_reached();
-        }
-      if (success)
-        {
-          if (libnet_write(self->lnet_ctx) >= 0)
-            {
-              /* we have finished processing msg */
-              log_msg_ack(msg, path_options, AT_PROCESSED);
-              log_msg_unref(msg);
-
-              g_static_mutex_unlock(&self->lnet_lock);
-              return;
-            }
-          else
-            {
-              msg_error("Error sending raw frame",
-                        evt_tag_str("error", libnet_geterror(self->lnet_ctx)));
-            }
-        }
-      g_static_mutex_unlock(&self->lnet_lock);
+      if (afinet_dd_spoof_write_message(self, msg, path_options))
+        return;
     }
 #endif
   log_dest_driver_queue_method(s, msg, path_options);
