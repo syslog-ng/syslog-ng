@@ -58,6 +58,25 @@ control_register_command(const gchar *command_name, const gchar *description, Co
   command_list = g_list_append(command_list, new_command);
 }
 
+void
+control_replace_command(const gchar *command_name, const gchar *description, CommandFunction function,
+                        gpointer user_data)
+{
+  GList *command_it =  g_list_find_custom(command_list, command_name,
+                                          (GCompareFunc)control_command_start_with_command);
+  if (!command_it)
+    {
+      msg_error("Failed to replace control command",
+                evt_tag_str("command", command_name));
+      return;
+    }
+
+  ControlCommand *command = (ControlCommand *)command_it->data;
+  command->description = description;
+  command->func = function;
+  command->user_data = user_data;
+}
+
 static GString *
 control_connection_message_log(GString *command, gpointer user_data)
 {

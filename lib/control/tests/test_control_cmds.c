@@ -182,3 +182,32 @@ Test(control_cmds, test_reset_stats)
   g_string_free(command, TRUE);
 }
 
+static GString *
+_original_replace(GString *result, gpointer user_data)
+{
+  return NULL;
+}
+
+static GString *
+_new_replace(GString *result, gpointer user_data)
+{
+  return NULL;
+}
+
+Test(control_cmds, test_replace_command)
+{
+  control_register_command("REPLACE", "original", _original_replace, (gpointer)0xbaadf00d);
+  ControlCommand *cmd = command_test_get("REPLACE");
+  cr_assert_eq(cmd->func, _original_replace);
+  cr_assert_str_eq(cmd->command_name, "REPLACE");
+  cr_assert_str_eq(cmd->description, "original");
+  cr_assert_eq(cmd->user_data, (gpointer)0xbaadf00d);
+
+  control_replace_command("REPLACE", "new", _new_replace, (gpointer)0xd006f00d);
+  ControlCommand *new_cmd = command_test_get("REPLACE");
+  cr_assert_eq(cmd, new_cmd);
+  cr_assert_eq(new_cmd->func, _new_replace);
+  cr_assert_str_eq(new_cmd->command_name, "REPLACE");
+  cr_assert_str_eq(new_cmd->description, "new");
+  cr_assert_eq(new_cmd->user_data, (gpointer)0xd006f00d);
+}
