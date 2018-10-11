@@ -22,16 +22,6 @@ function add_epel_repo {
     fi
 }
 
-function step_down_from_root_with_gosu {
-    ARCHITECTURE=$1
-    cat /helpers/gosu.pubkey | gpg --import
-    wget -O /usr/local/bin/gosu "https://github.com/tianon/gosu/releases/download/1.7/gosu-${ARCHITECTURE}"
-    wget -O /usr/local/bin/gosu.asc "https://github.com/tianon/gosu/releases/download/1.7/gosu-${ARCHITECTURE}.asc"
-    gpg --verify /usr/local/bin/gosu.asc
-    rm /usr/local/bin/gosu.asc
-    chmod +x /usr/local/bin/gosu
-}
-
 function gradle_installer {
     export GRADLE_HOME=/opt/gradle
     export GRADLE_VERSION=4.1

@@ -24,9 +24,7 @@ RUN cat /required-obs/* | grep -v '^$\|^#' | xargs apt-get install --no-install-
 
 RUN /helpers/functions.sh gradle_installer
 
-# grab gosu for easy step-down from root
-RUN /helpers/functions.sh step_down_from_root_with_gosu $(dpkg --print-architecture)
-
+RUN /helpers/dependencies.sh install_gosu amd64
 
 # add a fake sudo command
 #RUN mv /helpers/fake-sudo.sh /usr/bin/sudo
