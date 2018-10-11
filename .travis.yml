@@ -39,7 +39,7 @@ install:
       criterion-dev
       libmaxminddb-dev
       libxml2-utils
-  - sudo pip install -r dbld/images/required-pip/devshell.txt
+  - sudo pip install -r requirements.txt
 before_script:
   - echo 'Europe/Budapest' | sudo tee /etc/timezone
   - sudo dpkg-reconfigure --frontend noninteractive tzdata
@@ -165,7 +165,7 @@ matrix:
         - export PKG_CONFIG_PATH=/usr/local/opt/openssl/lib/pkgconfig:$PKG_CONFIG_PATH
         - brew update > /dev/null
         - brew install python@2 &> /dev/null || brew link --overwrite python@2
-        - pip2 install --user -r dbld/images/required-pip/devshell.txt
+        - pip2 install --user -r requirements.txt
         - brew bundle --file=contrib/Brewfile
       before_script:
         - ./autogen.sh
