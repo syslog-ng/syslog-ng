@@ -495,6 +495,25 @@ afinet_dd_construct_ipv6_packet(AFInetDestDriver *self, LogMessage *msg, GString
 #endif
 
 #if SYSLOG_NG_ENABLE_SPOOF_SOURCE
+
+static inline gboolean
+afinet_dd_construct_ip_packet(AFInetDestDriver *self, LogMessage *msg, GString *msg_line)
+{
+  switch (self->super.dest_addr->sa.sa_family)
+    {
+    case AF_INET:
+      return afinet_dd_construct_ipv4_packet(self, msg, msg_line);
+#if SYSLOG_NG_ENABLE_IPV6
+    case AF_INET6:
+      return afinet_dd_construct_ipv6_packet(self, msg, msg_line);
+#endif
+    default:
+      g_assert_not_reached();
+    }
+
+  return FALSE;
+}
+
 static gboolean
 afinet_dd_spoof_write_message(AFInetDestDriver *self, LogMessage *msg, const LogPathOptions *path_options)
 {
@@ -510,20 +529,7 @@ afinet_dd_spoof_write_message(AFInetDestDriver *self, LogMessage *msg, const Log
   if (self->lnet_buffer->len > self->spoof_source_maxmsglen)
     g_string_truncate(self->lnet_buffer, self->spoof_source_maxmsglen);
 
-  gboolean success = FALSE;
-  switch (self->super.dest_addr->sa.sa_family)
-    {
-    case AF_INET:
-      success = afinet_dd_construct_ipv4_packet(self, msg, self->lnet_buffer);
-      break;
-#if SYSLOG_NG_ENABLE_IPV6
-    case AF_INET6:
-      success = afinet_dd_construct_ipv6_packet(self, msg, self->lnet_buffer);
-      break;
-#endif
-    default:
-      g_assert_not_reached();
-    }
+  gboolean success = afinet_dd_construct_ip_packet(self, msg, self->lnet_buffer);
 
   if (!success)
     goto finish;
