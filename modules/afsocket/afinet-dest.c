@@ -547,6 +547,18 @@ afinet_dd_spoof_write_message(AFInetDestDriver *self, LogMessage *msg, const Log
 }
 #endif
 
+static inline gboolean
+_is_message_spoofable(LogMessage *msg)
+{
+  return msg->saddr && (msg->saddr->sa.sa_family == AF_INET || msg->saddr->sa.sa_family == AF_INET6);
+}
+
+static inline gboolean
+_is_spoof_source_enabled(AFInetDestDriver *self)
+{
+  return self->spoof_source && self->lnet_ctx;
+}
+
 static void
 afinet_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
@@ -556,8 +568,7 @@ afinet_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
   /* NOTE: this code should probably become a LogTransport instance so that
    * spoofed packets are also going through the LogWriter queue */
 
-  if (self->spoof_source && self->lnet_ctx && msg->saddr && (msg->saddr->sa.sa_family == AF_INET
-                                                             || msg->saddr->sa.sa_family == AF_INET6) && log_writer_opened(self->super.writer))
+  if (_is_spoof_source_enabled(self) && _is_message_spoofable(msg) && log_writer_opened(self->super.writer))
     {
       if (afinet_dd_spoof_write_message(self, msg, path_options))
         return;
