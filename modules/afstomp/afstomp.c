@@ -346,7 +346,7 @@ afstomp_dd_init(LogPipe *s)
   STOMPDestDriver *self = (STOMPDestDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
-  if (!log_dest_driver_init_method(s))
+  if (!log_threaded_dest_driver_init_method(s))
     return FALSE;
 
   log_template_options_init(&self->template_options, cfg);
@@ -358,7 +358,7 @@ afstomp_dd_init(LogPipe *s)
               evt_tag_int("port", self->port),
               evt_tag_str("destination", self->destination));
 
-  return log_threaded_dest_driver_init_method(s);
+  return log_threaded_dest_driver_start_workers(&self->super);
 }
 
 static void

@@ -116,9 +116,6 @@ java_dd_init(LogPipe *s)
   GlobalConfig *cfg = log_pipe_get_config(s);
   GError *error = NULL;
 
-  if (!log_dest_driver_init_method(s))
-    return FALSE;
-
   log_template_options_init(&self->template_options, cfg);
 
   if (!log_template_compile(self->template, self->template_string, &error))
@@ -138,7 +135,10 @@ java_dd_init(LogPipe *s)
   if (!java_destination_proxy_init(self->proxy))
     return FALSE;
 
-  return log_threaded_dest_driver_init_method(s);
+  if (!log_threaded_dest_driver_init_method(s))
+    return FALSE;
+
+  return log_threaded_dest_driver_start_workers(&self->super);
 }
 
 gboolean

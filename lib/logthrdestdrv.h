@@ -206,6 +206,7 @@ void log_threaded_dest_worker_free_method(LogThreadedDestWorker *self);
 
 gboolean log_threaded_dest_driver_deinit_method(LogPipe *s);
 gboolean log_threaded_dest_driver_init_method(LogPipe *s);
+gboolean log_threaded_dest_driver_start_workers(LogThreadedDestDriver *self);
 
 void log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalConfig *cfg);
 void log_threaded_dest_driver_free(LogPipe *s);
