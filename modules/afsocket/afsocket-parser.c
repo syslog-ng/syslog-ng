@@ -34,13 +34,13 @@ static CfgLexerKeyword afsocket_keywords[] =
 {
   { "unix_dgram", KW_UNIX_DGRAM },
   { "unix_stream",  KW_UNIX_STREAM },
-  { "udp",                KW_UDP },
-  { "tcp",                KW_TCP },
+  { "udp",                KW_UDP, KWS_OBSOLETE, "The udp() option is deprecated in favour of network()" },
+  { "tcp",                KW_TCP, KWS_OBSOLETE, "The tcp() option is deprecated in favour of network()" },
   { "syslog",             KW_SYSLOG },
   { "network",            KW_NETWORK },
 #if SYSLOG_NG_ENABLE_IPV6
-  { "udp6",               KW_UDP6 },
-  { "tcp6",               KW_TCP6 },
+  { "udp6",               KW_UDP6, KWS_OBSOLETE, "The udp6() option is deprecated in favour of network()" },
+  { "tcp6",               KW_TCP6, KWS_OBSOLETE, "The tcp6() option is deprecated in favour of network()" },
 #endif
   /* ssl */
   { "tls",                KW_TLS },
@@ -55,7 +55,7 @@ static CfgLexerKeyword afsocket_keywords[] =
   { "trusted_dn",         KW_TRUSTED_DN },
   { "cipher_suite",       KW_CIPHER_SUITE },
   { "ecdh_curve_list",    KW_ECDH_CURVE_LIST },
-  { "curve_list",         KW_ECDH_CURVE_LIST, KWS_OBSOLETE, "ecdh_curve_list"},
+  { "curve_list",         KW_ECDH_CURVE_LIST, KWS_OBSOLETE, "ecdh_curve_list" },
   { "ssl_options",        KW_SSL_OPTIONS },
 
   { "localip",            KW_LOCALIP },
