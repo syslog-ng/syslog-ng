@@ -50,12 +50,42 @@ void
 control_register_command(const gchar *command_name, const gchar *description, CommandFunction function,
                          gpointer user_data)
 {
+  GList *command_it = g_list_find_custom(command_list, command_name, (GCompareFunc)control_command_start_with_command);
+  if (command_it)
+    {
+      ControlCommand *cmd = (ControlCommand *)command_it->data;
+      if (cmd->func != function)
+        {
+          msg_debug("Trying to register an already registered ControlCommand with different CommandFunction.");
+        }
+      return;
+    }
   ControlCommand *new_command = g_new0(ControlCommand, 1);
   new_command->command_name = command_name;
   new_command->description = description;
   new_command->func = function;
   new_command->user_data = user_data;
   command_list = g_list_append(command_list, new_command);
+}
+
+void
+control_replace_command(const gchar *command_name, const gchar *description, CommandFunction function,
+                        gpointer user_data)
+{
+  GList *command_it =  g_list_find_custom(command_list, command_name,
+                                          (GCompareFunc)control_command_start_with_command);
+  if (!command_it)
+    {
+      msg_debug("Trying to replace a non-existent command. Command will be registered as a new command.",
+                evt_tag_str("command", command_name));
+      control_register_command(command_name, description, function, user_data);
+      return;
+    }
+
+  ControlCommand *command = (ControlCommand *)command_it->data;
+  command->description = description;
+  command->func = function;
+  command->user_data = user_data;
 }
 
 static GString *
@@ -139,6 +169,12 @@ control_connection_config(GString *command, gpointer user_data)
 exit:
   g_strfreev(arguments);
   return result;
+}
+
+static GString *
+show_ose_license_info(GString *command, gpointer user_data)
+{
+  return g_string_new("You are using the Open Source Edition of syslog-ng.");
 }
 
 static GString *
@@ -252,6 +288,7 @@ ControlCommand default_commands[] =
   { "QUERY", NULL, process_query_command },
   { "PWD", NULL, process_credentials },
   { "CONFIG", NULL, control_connection_config },
+  { "LICENSE", NULL, show_ose_license_info },
   { NULL, NULL, NULL },
 };
 
