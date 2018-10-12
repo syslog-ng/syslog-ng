@@ -50,6 +50,16 @@ void
 control_register_command(const gchar *command_name, const gchar *description, CommandFunction function,
                          gpointer user_data)
 {
+  GList *command_it = g_list_find_custom(command_list, command_name, (GCompareFunc)control_command_start_with_command);
+  if (command_it)
+    {
+      ControlCommand *cmd = (ControlCommand *)command_it->data;
+      if (cmd->func != function)
+        {
+          msg_debug("Trying to register an already registered ControlCommand with different CommandFunction.");
+        }
+      return;
+    }
   ControlCommand *new_command = g_new0(ControlCommand, 1);
   new_command->command_name = command_name;
   new_command->description = description;
