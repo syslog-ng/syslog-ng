@@ -492,10 +492,6 @@ afinet_dd_construct_ipv6_packet(AFInetDestDriver *self, LogMessage *msg, GString
 }
 #endif
 
-#endif
-
-#if SYSLOG_NG_ENABLE_SPOOF_SOURCE
-
 static inline gboolean
 afinet_dd_construct_ip_packet(AFInetDestDriver *self, LogMessage *msg, GString *msg_line)
 {
@@ -550,7 +546,6 @@ finish:
   g_static_mutex_unlock(&self->lnet_lock);
   return success;
 }
-#endif
 
 static inline gboolean
 _is_message_spoofable(LogMessage *msg)
@@ -563,6 +558,8 @@ _is_spoof_source_enabled(AFInetDestDriver *self)
 {
   return self->spoof_source && self->lnet_ctx;
 }
+
+#endif
 
 static void
 afinet_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
