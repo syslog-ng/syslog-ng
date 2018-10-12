@@ -498,8 +498,6 @@ afinet_dd_construct_ipv6_packet(AFInetDestDriver *self, LogMessage *msg, GString
 static gboolean
 afinet_dd_spoof_write_message(AFInetDestDriver *self, LogMessage *msg, const LogPathOptions *path_options)
 {
-  gboolean success = FALSE;
-
   g_assert(self->super.transport_mapper->sock_type == SOCK_DGRAM);
 
   g_static_mutex_lock(&self->lnet_lock);
@@ -512,6 +510,7 @@ afinet_dd_spoof_write_message(AFInetDestDriver *self, LogMessage *msg, const Log
   if (self->lnet_buffer->len > self->spoof_source_maxmsglen)
     g_string_truncate(self->lnet_buffer, self->spoof_source_maxmsglen);
 
+  gboolean success = FALSE;
   switch (self->super.dest_addr->sa.sa_family)
     {
     case AF_INET:
@@ -525,25 +524,25 @@ afinet_dd_spoof_write_message(AFInetDestDriver *self, LogMessage *msg, const Log
     default:
       g_assert_not_reached();
     }
-  if (success)
-    {
-      if (libnet_write(self->lnet_ctx) >= 0)
-        {
-          /* we have finished processing msg */
-          log_msg_ack(msg, path_options, AT_PROCESSED);
-          log_msg_unref(msg);
 
-          g_static_mutex_unlock(&self->lnet_lock);
-          return TRUE;
-        }
-      else
-        {
-          msg_error("Error sending raw frame",
-                    evt_tag_str("error", libnet_geterror(self->lnet_ctx)));
-        }
+  if (!success)
+    goto finish;
+
+  success = libnet_write(self->lnet_ctx) >= 0;
+
+  if (!success)
+    {
+      msg_error("Error sending raw frame", evt_tag_str("error", libnet_geterror(self->lnet_ctx)));
+      goto finish;
     }
+
+  /* we have finished processing msg */
+  log_msg_ack(msg, path_options, AT_PROCESSED);
+  log_msg_unref(msg);
+
+finish:
   g_static_mutex_unlock(&self->lnet_lock);
-  return FALSE;
+  return success;
 }
 #endif
 
