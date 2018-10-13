@@ -492,6 +492,16 @@ _load_non_reliable_queues(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *q
   return TRUE;
 }
 
+#define _clear(obj) memset(&obj, 0, sizeof(obj));
+
+static void
+_reset_queue_pointers(QDisk *self)
+{
+  _clear(self->hdr->qout_pos);
+  _clear(self->hdr->qbacklog_pos);
+  _clear(self->hdr->qoverflow_pos);
+};
+
 static gboolean
 _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 {
@@ -549,6 +559,7 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
   if (!self->options->reliable)
     {
       self->file_size = qout_ofs;
+      _reset_queue_pointers(self);
 
       msg_info("Disk-buffer state loaded",
                evt_tag_str("filename", self->filename),
