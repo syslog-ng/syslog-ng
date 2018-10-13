@@ -451,7 +451,7 @@ _load_queue(QDisk *self, GQueue *q, gint64 q_ofs, gint32 q_len, gint32 q_count)
 }
 
 static gboolean
-_load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
+_load_non_reliable_queues(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 {
   gint64 qout_ofs;
   gint qout_count, qout_len;
@@ -459,6 +459,68 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
   gint qbacklog_count, qbacklog_len;
   gint64 qoverflow_ofs;
   gint qoverflow_count, qoverflow_len;
+
+  qout_count = self->hdr->qout_pos.count;
+  qout_len = self->hdr->qout_pos.len;
+  qout_ofs = self->hdr->qout_pos.ofs;
+  qbacklog_count = self->hdr->qbacklog_pos.count;
+  qbacklog_len = self->hdr->qbacklog_pos.len;
+  qbacklog_ofs = self->hdr->qbacklog_pos.ofs;
+  qoverflow_count = self->hdr->qoverflow_pos.count;
+  qoverflow_len = self->hdr->qoverflow_pos.len;
+  qoverflow_ofs = self->hdr->qoverflow_pos.ofs;
+
+  if (!(qout_ofs > 0 && qout_ofs < self->hdr->write_head))
+    {
+      if (!_load_queue(self, qout, qout_ofs, qout_len, qout_count))
+        return !self->options->read_only;
+    }
+  else
+    {
+      msg_error("Inconsistent header data in disk-queue file, ignoring qout",
+                evt_tag_str("filename", self->filename),
+                evt_tag_long("qout_ofs", qout_ofs),
+                evt_tag_long("qdisk_length",  self->hdr->length));
+    }
+
+  if (!(qbacklog_ofs > 0 && qbacklog_ofs < self->hdr->write_head))
+    {
+      if(!_load_queue(self, qbacklog, qbacklog_ofs, qbacklog_len, qbacklog_count))
+        return !self->options->read_only;
+    }
+  else
+    {
+      msg_error("Inconsistent header data in disk-queue file, ignoring qbacklog",
+                evt_tag_str("filename", self->filename),
+                evt_tag_long("qbacklog_ofs", qbacklog_ofs),
+                evt_tag_long("qdisk_length",  self->hdr->length));
+    }
+
+  if (!(qoverflow_ofs > 0 && qoverflow_ofs < self->hdr->write_head))
+    {
+      if(!_load_queue(self, qoverflow, qoverflow_ofs, qoverflow_len, qoverflow_count))
+        return !self->options->read_only;
+    }
+  else
+    {
+      msg_error("Inconsistent header data in disk-queue file, ignoring qoverflow",
+                evt_tag_str("filename", self->filename),
+                evt_tag_long("qoverflow_ofs", qoverflow_ofs),
+                evt_tag_long("qdisk_length",  self->hdr->length));
+    }
+
+  return TRUE;
+}
+
+static gboolean
+_load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
+{
+  gint64 qout_ofs;
+  gint qout_count;
+  gint64 qbacklog_ofs;
+  gint qbacklog_count;
+  gint64 qoverflow_ofs;
+  gint qoverflow_count;
   gint64 end_ofs;
 
   if (memcmp(self->hdr->magic, self->file_id, 4) != 0)
@@ -469,13 +531,10 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
     }
 
   qout_count = self->hdr->qout_pos.count;
-  qout_len = self->hdr->qout_pos.len;
   qout_ofs = self->hdr->qout_pos.ofs;
   qbacklog_count = self->hdr->qbacklog_pos.count;
-  qbacklog_len = self->hdr->qbacklog_pos.len;
   qbacklog_ofs = self->hdr->qbacklog_pos.ofs;
   qoverflow_count = self->hdr->qoverflow_pos.count;
-  qoverflow_len = self->hdr->qoverflow_pos.len;
   qoverflow_ofs = self->hdr->qoverflow_pos.ofs;
 
   if ((self->hdr->read_head < QDISK_RESERVED_SPACE) ||
@@ -492,44 +551,8 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 
   if (!self->options->reliable)
     {
-      if (!(qout_ofs > 0 && qout_ofs < self->hdr->write_head))
-        {
-          if (!_load_queue(self, qout, qout_ofs, qout_len, qout_count))
-            return !self->options->read_only;
-        }
-      else
-        {
-          msg_error("Inconsistent header data in disk-queue file, ignoring qout",
-                    evt_tag_str("filename", self->filename),
-                    evt_tag_long("qout_ofs", qout_ofs),
-                    evt_tag_long("qdisk_length",  self->hdr->length));
-        }
-
-      if (!(qbacklog_ofs > 0 && qbacklog_ofs < self->hdr->write_head))
-        {
-          if(!_load_queue(self, qbacklog, qbacklog_ofs, qbacklog_len, qbacklog_count))
-            return !self->options->read_only;
-        }
-      else
-        {
-          msg_error("Inconsistent header data in disk-queue file, ignoring qbacklog",
-                    evt_tag_str("filename", self->filename),
-                    evt_tag_long("qbacklog_ofs", qbacklog_ofs),
-                    evt_tag_long("qdisk_length",  self->hdr->length));
-        }
-
-      if (!(qoverflow_ofs > 0 && qoverflow_ofs < self->hdr->write_head))
-        {
-          if(!_load_queue(self, qoverflow, qoverflow_ofs, qoverflow_len, qoverflow_count))
-            return !self->options->read_only;
-        }
-      else
-        {
-          msg_error("Inconsistent header data in disk-queue file, ignoring qoverflow",
-                    evt_tag_str("filename", self->filename),
-                    evt_tag_long("qoverflow_ofs", qoverflow_ofs),
-                    evt_tag_long("qdisk_length",  self->hdr->length));
-        }
+      if (!_load_non_reliable_queues(self, qout, qbacklog, qoverflow))
+        return FALSE;
     }
 
   if (!self->options->read_only)
