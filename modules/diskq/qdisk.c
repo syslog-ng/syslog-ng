@@ -204,10 +204,24 @@ _truncate_file(QDisk *self, gint64 new_size)
   if (ftruncate(self->fd, (glong)new_size) < 0)
     {
       success = FALSE;
+      off_t file_size = -1;
+
+      struct stat st;
+      if (fstat(self->fd, &st) < 0)
+        {
+          msg_error("truncate file: cannot stat",
+                    evt_tag_error("error"));
+        }
+      else
+        {
+          file_size = st.st_size;
+        }
+
       msg_error("Error truncating disk-queue file",
                 evt_tag_error("error"),
                 evt_tag_str("filename", self->filename),
-                evt_tag_long("newsize", self->hdr->write_head),
+                evt_tag_long("expected-size", new_size),
+                evt_tag_long("file_size", file_size),
                 evt_tag_int("fd", self->fd));
     }
 
