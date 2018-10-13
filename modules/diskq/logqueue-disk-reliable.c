@@ -27,6 +27,9 @@
 #include "logqueue-disk-reliable.h"
 #include "messages.h"
 
+/*pessimistic default for reliable disk queue 10000 x 16 kbyte*/
+#define PESSIMISTIC_MEM_BUF_SIZE 10000 * 16 *1024
+
 static gboolean
 _start(LogQueueDisk *s, const gchar *filename)
 {
@@ -316,6 +319,13 @@ _save_queue (LogQueueDisk *s, gboolean *persistent)
   return TRUE;
 }
 
+static void
+_restart(LogQueueDisk *s, DiskQueueOptions *options)
+{
+  LogQueueDiskReliable *self = (LogQueueDiskReliable *) s;
+  qdisk_init(self->super.qdisk, options, "SLRQ");
+}
+
 
 static void
 _set_virtual_functions(LogQueueDisk *self)
@@ -329,6 +339,7 @@ _set_virtual_functions(LogQueueDisk *self)
   self->load_queue = _load_queue;
   self->start = _start;
   self->save_queue = _save_queue;
+  self->restart = _restart;
 }
 
 LogQueue *
@@ -337,7 +348,11 @@ log_queue_disk_reliable_new(DiskQueueOptions *options, const gchar *persist_name
   g_assert(options->reliable == TRUE);
   LogQueueDiskReliable *self = g_new0(LogQueueDiskReliable, 1);
   log_queue_disk_init_instance(&self->super, persist_name);
-  qdisk_init(self->super.qdisk, options);
+  qdisk_init(self->super.qdisk, options, "SLRQ");
+  if (options->mem_buf_size < 0)
+    {
+      options->mem_buf_size = PESSIMISTIC_MEM_BUF_SIZE;
+    }
   self->qreliable = g_queue_new();
   self->qbacklog = g_queue_new();
   _set_virtual_functions(&self->super);

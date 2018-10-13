@@ -43,9 +43,6 @@
 #define MADV_RANDOM 1
 #endif
 
-/*pessimistic default for reliable disk queue 10000 x 16 kbyte*/
-#define PESSIMISTIC_MEM_BUF_SIZE 10000 * 16 *1024
-
 #define MAX_RECORD_LENGTH 100 * 1024 * 1024
 
 #define PATH_QDISK              PATH_LOCALSTATEDIR
@@ -890,21 +887,13 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
 }
 
 void
-qdisk_init(QDisk *self, DiskQueueOptions *options)
+qdisk_init(QDisk *self, DiskQueueOptions *options, const gchar *file_id)
 {
   self->fd = -1;
   self->file_size = 0;
   self->options = options;
-  if (!self->options->reliable)
-    self->file_id = "SLQF";
-  else
-    {
-      self->file_id = "SLRQ";
-      if (self->options->mem_buf_size < 0)
-        {
-          self->options->mem_buf_size = PESSIMISTIC_MEM_BUF_SIZE;
-        }
-    }
+
+  self->file_id = file_id;
 }
 
 void

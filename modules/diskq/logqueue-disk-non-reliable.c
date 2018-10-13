@@ -399,6 +399,13 @@ _save_queue (LogQueueDisk *s, gboolean *persistent)
 }
 
 static void
+_restart(LogQueueDisk *s, DiskQueueOptions *options)
+{
+  LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *) s;
+  qdisk_init(self->super.qdisk, options, "SLQF");
+}
+
+static void
 _set_virtual_functions (LogQueueDisk *self)
 {
   self->get_length = _get_length;
@@ -411,6 +418,7 @@ _set_virtual_functions (LogQueueDisk *self)
   self->free_fn = _freefn;
   self->load_queue = _load_queue;
   self->save_queue = _save_queue;
+  self->restart = _restart;
 }
 
 LogQueue *
@@ -419,7 +427,7 @@ log_queue_disk_non_reliable_new(DiskQueueOptions *options, const gchar *persist_
   g_assert(options->reliable == FALSE);
   LogQueueDiskNonReliable *self = g_new0(LogQueueDiskNonReliable, 1);
   log_queue_disk_init_instance(&self->super, persist_name);
-  qdisk_init (self->super.qdisk, options);
+  qdisk_init(self->super.qdisk, options, "SLQF");
   self->qbacklog = g_queue_new ();
   self->qout = g_queue_new ();
   self->qoverflow = g_queue_new ();

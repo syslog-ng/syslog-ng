@@ -354,7 +354,7 @@ testcase_diskbuffer_restart_corrupted(void)
       assert_gint(fed_messages, 100, "Failed to push all messages to the disk-queue!\n");
 
       LogQueueDisk *disk_queue = (LogQueueDisk *)q;
-      disk_queue->restart_corrupted(disk_queue);
+      log_queue_disk_restart_corrupted(disk_queue);
 
       struct stat file_stat;
       assert_gint(stat(filename, &file_stat), 0,
