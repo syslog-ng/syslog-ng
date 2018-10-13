@@ -936,12 +936,7 @@ log_threaded_dest_driver_init_method(LogPipe *s)
   if (cfg && self->flush_timeout == -1)
     self->flush_timeout = cfg->flush_timeout;
 
-  _register_stats(self);
 
-  self->shared_seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg,
-                                         _format_seqnum_persist_name(self)));
-  if (!self->shared_seq_num)
-    init_sequence_number(&self->shared_seq_num);
 
   /* free previous workers array if set to cope with num_workers change */
   g_free(self->workers);
@@ -952,7 +947,15 @@ log_threaded_dest_driver_init_method(LogPipe *s)
 gboolean
 log_threaded_dest_driver_start_workers(LogThreadedDestDriver *self)
 {
+  GlobalConfig *cfg = log_pipe_get_config((LogPipe *) self);
   gboolean startup_success = TRUE;
+
+  self->shared_seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg,
+                                         _format_seqnum_persist_name(self)));
+  if (!self->shared_seq_num)
+    init_sequence_number(&self->shared_seq_num);
+
+  _register_stats(self);
   for (gint i = 0; startup_success && i < self->num_workers; i++)
     {
       startup_success &= _start_worker_thread(self);
