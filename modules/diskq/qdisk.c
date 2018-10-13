@@ -451,24 +451,14 @@ _load_queue(QDisk *self, GQueue *q, gint64 q_ofs, gint32 q_len, gint32 q_count)
 }
 
 static gboolean
-_load_non_reliable_queues(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
+_try_to_load_qout(QDisk *self, GQueue *qout)
 {
   gint64 qout_ofs;
   gint qout_count, qout_len;
-  gint64 qbacklog_ofs;
-  gint qbacklog_count, qbacklog_len;
-  gint64 qoverflow_ofs;
-  gint qoverflow_count, qoverflow_len;
 
   qout_count = self->hdr->qout_pos.count;
   qout_len = self->hdr->qout_pos.len;
   qout_ofs = self->hdr->qout_pos.ofs;
-  qbacklog_count = self->hdr->qbacklog_pos.count;
-  qbacklog_len = self->hdr->qbacklog_pos.len;
-  qbacklog_ofs = self->hdr->qbacklog_pos.ofs;
-  qoverflow_count = self->hdr->qoverflow_pos.count;
-  qoverflow_len = self->hdr->qoverflow_pos.len;
-  qoverflow_ofs = self->hdr->qoverflow_pos.ofs;
 
   if (!(qout_ofs > 0 && qout_ofs < self->hdr->write_head))
     {
@@ -483,6 +473,19 @@ _load_non_reliable_queues(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *q
                 evt_tag_long("qdisk_length",  self->hdr->length));
     }
 
+  return TRUE;
+}
+
+static gboolean
+_try_to_load_qbacklog(QDisk *self, GQueue *qbacklog)
+{
+  gint64 qbacklog_ofs;
+  gint qbacklog_count, qbacklog_len;
+
+  qbacklog_count = self->hdr->qbacklog_pos.count;
+  qbacklog_len = self->hdr->qbacklog_pos.len;
+  qbacklog_ofs = self->hdr->qbacklog_pos.ofs;
+
   if (!(qbacklog_ofs > 0 && qbacklog_ofs < self->hdr->write_head))
     {
       if(!_load_queue(self, qbacklog, qbacklog_ofs, qbacklog_len, qbacklog_count))
@@ -496,6 +499,19 @@ _load_non_reliable_queues(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *q
                 evt_tag_long("qdisk_length",  self->hdr->length));
     }
 
+  return TRUE;
+}
+
+static gboolean
+_try_to_load_qoverflow(QDisk *self, GQueue *qoverflow)
+{
+  gint64 qoverflow_ofs;
+  gint qoverflow_count, qoverflow_len;
+
+  qoverflow_count = self->hdr->qoverflow_pos.count;
+  qoverflow_len = self->hdr->qoverflow_pos.len;
+  qoverflow_ofs = self->hdr->qoverflow_pos.ofs;
+
   if (!(qoverflow_ofs > 0 && qoverflow_ofs < self->hdr->write_head))
     {
       if(!_load_queue(self, qoverflow, qoverflow_ofs, qoverflow_len, qoverflow_count))
@@ -508,6 +524,22 @@ _load_non_reliable_queues(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *q
                 evt_tag_long("qoverflow_ofs", qoverflow_ofs),
                 evt_tag_long("qdisk_length",  self->hdr->length));
     }
+
+  return TRUE;
+}
+
+static gboolean
+_load_non_reliable_queues(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
+{
+
+  if (!_try_to_load_qout(self, qout))
+    return FALSE;
+
+  if (!_try_to_load_qbacklog(self, qbacklog))
+    return FALSE;
+
+  if (!_try_to_load_qoverflow(self, qoverflow))
+    return FALSE;
 
   return TRUE;
 }
