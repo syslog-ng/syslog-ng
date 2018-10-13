@@ -3,7 +3,7 @@ In order to convert an existing syslog.conf file into syslog-ng
 configuration automatically, you need to use the syslogconf SCL plugin and
 write a skeleton syslog-ng.conf file which need not be changed, like this:
 
-@version: 3.17
+@version: 3.18
 @include "scl.conf"
 
 syslogconf()
