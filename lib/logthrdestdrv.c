@@ -924,6 +924,9 @@ log_threaded_dest_driver_init_method(LogPipe *s)
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
+  if (!log_dest_driver_init_method(&self->super.super.super))
+    return FALSE;
+
   if (cfg && self->time_reopen == -1)
     self->time_reopen = cfg->time_reopen;
 
@@ -933,23 +936,44 @@ log_threaded_dest_driver_init_method(LogPipe *s)
   if (cfg && self->flush_timeout == -1)
     self->flush_timeout = cfg->flush_timeout;
 
-  _register_stats(self);
+
+
+  /* free previous workers array if set to cope with num_workers change */
+  g_free(self->workers);
+  self->workers = g_new0(LogThreadedDestWorker *, self->num_workers);
+  return TRUE;
+}
+
+gboolean
+log_threaded_dest_driver_start_workers(LogThreadedDestDriver *self)
+{
+  GlobalConfig *cfg = log_pipe_get_config((LogPipe *) self);
+  gboolean startup_success = TRUE;
 
   self->shared_seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg,
                                          _format_seqnum_persist_name(self)));
   if (!self->shared_seq_num)
     init_sequence_number(&self->shared_seq_num);
 
-  /* free previous workers array if set to cope with num_workers change */
-  g_free(self->workers);
-  self->workers = g_new0(LogThreadedDestWorker *, self->num_workers);
-
-  gboolean startup_success = TRUE;
+  _register_stats(self);
   for (gint i = 0; startup_success && i < self->num_workers; i++)
     {
       startup_success &= _start_worker_thread(self);
     }
   return startup_success;
+}
+
+
+/* This method is only used when a LogThreadedDestDriver is directly used
+ * without overriding its init method.  If there's an overridden method, the
+ * caller is responsible for explicitly calling _start_workers() at the end
+ * of init(). */
+static gboolean
+log_threaded_dest_driver_init(LogPipe *s)
+{
+  LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
+
+  return log_threaded_dest_driver_init_method(s) && log_threaded_dest_driver_start_workers(self);
 }
 
 gboolean
@@ -988,7 +1012,7 @@ log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalConfig
 
   self->worker_options.is_output_thread = TRUE;
 
-  self->super.super.super.init = log_threaded_dest_driver_init_method;
+  self->super.super.super.init = log_threaded_dest_driver_init;
   self->super.super.super.deinit = log_threaded_dest_driver_deinit_method;
   self->super.super.super.queue = log_threaded_dest_driver_queue;
   self->super.super.super.free_fn = log_threaded_dest_driver_free;

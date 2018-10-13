@@ -396,7 +396,7 @@ python_dd_init(LogPipe *d)
       return FALSE;
     }
 
-  if (!log_dest_driver_init_method(d))
+  if (!log_threaded_dest_driver_init_method(d))
     return FALSE;
 
   log_template_options_init(&self->template_options, cfg);
@@ -415,7 +415,7 @@ python_dd_init(LogPipe *d)
               evt_tag_str("driver", self->super.super.super.id),
               evt_tag_str("class", self->class));
 
-  return log_threaded_dest_driver_init_method(d);
+  return log_threaded_dest_driver_start_workers(&self->super);
 
 fail:
   PyGILState_Release(gstate);
