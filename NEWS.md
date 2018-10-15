@@ -18,6 +18,7 @@
  * Value pairs improvements (#2287)
  * syslog-ng-ctl config to print pre-processed configuration (#2280)
  * Add support for whitespace in template functions (#2271)
+ * verify the configuration is the same as on the disk (#2345)
 
 ## Bugfixes
 
@@ -93,6 +94,6 @@ of syslog-ng, contribute.
 We would like to thank the following people for their contribution:
 
 Andras Mitzki, Antal Nemes, Balazs Scheidler, Gabor Nagy, Gergely Tonté,
-Laszlo Budai, Laszlo Szemere, László Várady, Maurice T. Meyer, Norbert Takacs,
-Peter Czanik, Peter Gyorko, Peter Kokai, Robert Fekete, Terez Nemes,
-Tibor Bodnar, Zoltan Pallagi, y-l-i.
+Laszlo Budai, Laszlo Szemere, László Várady, Maurice T. Meyer, Mahmoud Salama,
+Norbert Takacs, Peter Czanik, Peter Gyorko, Peter Kokai, Robert Fekete,
+Terez Nemes, Tibor Bodnar, Zoltan Pallagi, y-l-i.
