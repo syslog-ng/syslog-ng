@@ -1,7 +1,7 @@
 #!/usr/bin/make -f
 
-IMAGES=centos-6 centos-7 debian-jessie debian-stretch debian-buster artful ubuntu-xenial ubuntu-trusty ubuntu-cosmic devshell
-DEFAULT_IMAGE ?= ubuntu-xenial
+IMAGES=centos-6 centos-7 debian-jessie debian-stretch debian-buster artful ubuntu-xenial ubuntu-trusty ubuntu-cosmic ubuntu-bionic devshell
+DEFAULT_IMAGE ?= ubuntu-bionic
 DEFAULT_DEB_IMAGE=$(DEFAULT_IMAGE)
 DEFAULT_RPM_IMAGE=centos-7
 DOCKER=docker

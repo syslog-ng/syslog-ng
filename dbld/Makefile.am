@@ -27,5 +27,6 @@ EXTRA_DIST += \
 	dbld/images/ubuntu-trusty.dockerfile \
 	dbld/images/ubuntu-xenial.dockerfile \
 	dbld/images/ubuntu-cosmic.dockerfile \
+	dbld/images/ubuntu-bionic.dockerfile \
 	dbld/make \
 	dbld/README.md
