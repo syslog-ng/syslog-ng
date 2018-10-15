@@ -36,20 +36,20 @@ pcre-devel                      [centos]
 
 # packages to run successful configure with module support
     # libbson-dev
-    libbson-dev                 [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-cosmic]
+    libbson-dev                 [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
     libbson-devel               [centos-7]
 
     # librabbitmq-dev
-    librabbitmq-dev             [debian-jessie, debian-stretch, debian-buster, ubuntu-xenial, ubuntu-cosmic]
+    librabbitmq-dev             [debian-jessie, debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
     librabbitmq-devel           [centos-7]
 
     # libmongoc-dev
-    libmongoc-dev               [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-cosmic]
+    libmongoc-dev               [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
     libmongo-client-dev         [debian-jessie]
     libmongo-client-devel       [centos-7]
 
     # libmaxmindb-dev
-    libmaxminddb-dev            [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-cosmic]
+    libmaxminddb-dev            [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
     libmaxminddb-devel          [centos-7]
 
     # libcurl-dev
@@ -77,7 +77,7 @@ pcre-devel                      [centos]
     libnet-devel                [centos]
 
     # libriemann-dev
-    libriemann-client-dev       [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-cosmic]
+    libriemann-client-dev       [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
     riemann-c-client-devel      [centos-7]
 
     # java-7
@@ -85,7 +85,7 @@ pcre-devel                      [centos]
     java-1.7.0-openjdk-devel    [centos-6]
 
     # java-8
-    openjdk-8-jdk               [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-cosmic]
+    openjdk-8-jdk               [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
     java-1.8.0-openjdk-devel    [centos-7]
 
     # python-dev
@@ -102,7 +102,7 @@ pcre-devel                      [centos]
     libcap-devel                [centos]
 
     # systemd-dev
-    libsystemd-dev              [debian, ubuntu-xenial, ubuntu-cosmic]
+    libsystemd-dev              [debian, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
     systemd-devel               [centos]
 
     # uuid-dev
@@ -114,7 +114,7 @@ pcre-devel                      [centos]
 
 
 # packages to run successful make
-cmake                           [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-cosmic]
+cmake                           [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
 make                            [centos, debian, ubuntu]
 
     # libwrap-dev
@@ -197,7 +197,7 @@ openssh-client                  [debian, ubuntu]
 python-numpy                    [debian, ubuntu]
 python-yaml                     [debian, ubuntu]
 python3-yaml                    [debian, ubuntu]
-systemd-sysv                    [debian, ubuntu-xenial, ubuntu-cosmic]
+systemd-sysv                    [debian, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
 
 
 
