@@ -90,4 +90,8 @@ void http_dd_set_body_suffix(LogDriver *d, const gchar *body_suffix);
 void http_dd_set_delimiter(LogDriver *d, const gchar *delimiter);
 LogTemplateOptions *http_dd_get_template_options(LogDriver *d);
 
+/* internal api */
+worker_insert_result_t map_http_status_to_worker_status(HTTPDestinationWorker *self, glong http_code);
+HTTPDestinationWorker *http_dw_new(HTTPDestinationDriver *owner, gint worker_index);
+
 #endif

@@ -22,12 +22,24 @@
 
 #include <syslog-ng.h>
 #include <logmsg/logmsg.h>
+#include <apphook.h>
 #include "http.h"
-
+#include "logthrdestdrv.h"
 
 #include <criterion/criterion.h>
 
-Test(http, test_dummy)
+TestSuite(http, .init = app_startup, .fini = app_shutdown);
+
+Test(http, test_error_codes)
 {
-  cr_assert(TRUE);
+  HTTPDestinationDriver *driver = (HTTPDestinationDriver *)http_dd_new(configuration);
+  HTTPDestinationWorker *worker = http_dw_new(driver, 0);
+
+  cr_assert_eq(map_http_status_to_worker_status(worker, 200), WORKER_INSERT_RESULT_SUCCESS);
+  cr_assert_eq(map_http_status_to_worker_status(worker, 301), WORKER_INSERT_RESULT_ERROR);
+  cr_assert_eq(map_http_status_to_worker_status(worker, 404), WORKER_INSERT_RESULT_DROP);
+  cr_assert_eq(map_http_status_to_worker_status(worker, 500), WORKER_INSERT_RESULT_ERROR);
+
+  log_threaded_dest_worker_free(&worker->super);
+  log_pipe_unref((LogPipe *)driver);
 }
