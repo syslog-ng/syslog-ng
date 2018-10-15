@@ -36,20 +36,20 @@ pcre-devel                      [centos]
 
 # packages to run successful configure with module support
     # libbson-dev
-    libbson-dev                 [debian-stretch, ubuntu-xenial]
+    libbson-dev                 [debian-stretch, debian-buster, ubuntu-xenial]
     libbson-devel               [centos-7]
 
     # librabbitmq-dev
-    librabbitmq-dev             [debian-jessie, debian-stretch, ubuntu-xenial]
+    librabbitmq-dev             [debian-jessie, debian-stretch, debian-buster, ubuntu-xenial]
     librabbitmq-devel           [centos-7]
 
     # libmongoc-dev
-    libmongoc-dev               [debian-stretch, ubuntu-xenial]
+    libmongoc-dev               [debian-stretch, debian-buster, ubuntu-xenial]
     libmongo-client-dev         [debian-jessie]
     libmongo-client-devel       [centos-7]
 
     # libmaxmindb-dev
-    libmaxminddb-dev            [debian-stretch, ubuntu-xenial]
+    libmaxminddb-dev            [debian-stretch, debian-buster, ubuntu-xenial]
     libmaxminddb-devel          [centos-7]
 
     # libcurl-dev
@@ -77,7 +77,7 @@ pcre-devel                      [centos]
     libnet-devel                [centos]
 
     # libriemann-dev
-    libriemann-client-dev       [debian-stretch, ubuntu-xenial]
+    libriemann-client-dev       [debian-stretch, debian-buster, ubuntu-xenial]
     riemann-c-client-devel      [centos-7]
 
     # java-7
@@ -85,7 +85,7 @@ pcre-devel                      [centos]
     java-1.7.0-openjdk-devel    [centos-6]
 
     # java-8
-    openjdk-8-jdk               [debian-stretch, ubuntu-xenial]
+    openjdk-8-jdk               [debian-stretch, debian-buster, ubuntu-xenial]
     java-1.8.0-openjdk-devel    [centos-7]
 
     # python-dev
@@ -114,7 +114,7 @@ pcre-devel                      [centos]
 
 
 # packages to run successful make
-cmake                           [debian-stretch, ubuntu-xenial]
+cmake                           [debian-stretch, debian-buster, ubuntu-xenial]
 make                            [centos, debian, ubuntu]
 
     # libwrap-dev

@@ -23,6 +23,7 @@ EXTRA_DIST += \
 	dbld/images/centos-7.dockerfile \
 	dbld/images/debian-jessie.dockerfile \
 	dbld/images/debian-stretch.dockerfile \
+	dbld/images/debian-buster.dockerfile \
 	dbld/images/ubuntu-trusty.dockerfile \
 	dbld/images/ubuntu-xenial.dockerfile \
 	dbld/make \
