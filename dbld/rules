@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-IMAGES=centos-6 centos-7 debian-jessie debian-stretch artful ubuntu-xenial ubuntu-trusty devshell
+IMAGES=centos-6 centos-7 debian-jessie debian-stretch debian-buster artful ubuntu-xenial ubuntu-trusty devshell
 DEFAULT_IMAGE ?= ubuntu-xenial
 DEFAULT_DEB_IMAGE=$(DEFAULT_IMAGE)
 DEFAULT_RPM_IMAGE=centos-7
