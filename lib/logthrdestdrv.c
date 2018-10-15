@@ -947,6 +947,7 @@ log_threaded_dest_driver_init_method(LogPipe *s)
   /* free previous workers array if set to cope with num_workers change */
   g_free(self->workers);
   self->workers = g_new0(LogThreadedDestWorker *, self->num_workers);
+  self->workers_started = 0;
   return TRUE;
 }
 
@@ -995,6 +996,12 @@ log_threaded_dest_driver_deinit_method(LogPipe *s)
                          GINT_TO_POINTER(self->shared_seq_num), NULL, FALSE);
 
   _unregister_stats(self);
+
+  if (!_is_worker_compat_mode(self))
+    {
+      for (int i = 0; i < self->workers_started; i++)
+        log_threaded_dest_worker_free(self->workers[i]);
+    }
 
   return log_dest_driver_deinit_method(s);
 }
