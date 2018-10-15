@@ -26,5 +26,6 @@ EXTRA_DIST += \
 	dbld/images/debian-buster.dockerfile \
 	dbld/images/ubuntu-trusty.dockerfile \
 	dbld/images/ubuntu-xenial.dockerfile \
+	dbld/images/ubuntu-cosmic.dockerfile \
 	dbld/make \
 	dbld/README.md
