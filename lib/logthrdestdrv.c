@@ -777,12 +777,18 @@ _init_worker_compat_layer(LogThreadedDestWorker *self)
   self->flush = _compat_flush;
 }
 
+static gboolean
+_is_worker_compat_mode(LogThreadedDestDriver *self)
+{
+  return !self->worker.construct;
+}
+
 /* temporary function until proper LogThreadedDestWorker allocation logic is
  * created.  Right now it is just using a singleton within the driver */
 static LogThreadedDestWorker *
 _construct_worker(LogThreadedDestDriver *self, gint worker_index)
 {
-  if (!self->worker.construct)
+  if (_is_worker_compat_mode(self))
     {
       /* kick in the compat layer, this case self->worker.instance is the
        * single worker we have and all Worker related state is in the
