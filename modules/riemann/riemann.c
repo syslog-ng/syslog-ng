@@ -312,6 +312,7 @@ riemann_dd_disconnect(LogThreadedDestDriver *s)
   RiemannDestDriver *self = (RiemannDestDriver *)s;
 
   riemann_client_disconnect(self->client);
+  riemann_client_free(self->client);
   self->client = NULL;
 }
 
@@ -684,8 +685,9 @@ riemann_dd_init(LogPipe *s)
 
   _value_pairs_always_exclude_properties(self);
 
-  self->event.list = (riemann_event_t **)malloc (sizeof (riemann_event_t *) *
-                                                 MAX(1,self->super.flush_lines));
+  if (!self->event.list)
+    self->event.list = (riemann_event_t **)malloc (sizeof (riemann_event_t *) *
+                                                   MAX(1,self->super.flush_lines));
 
   msg_verbose("Initializing Riemann destination",
               evt_tag_str("server", self->server),
@@ -712,7 +714,7 @@ riemann_dd_free(LogPipe *d)
 
   log_template_options_destroy(&self->template_options);
 
-  riemann_client_free(self->client);
+  free(self->event.list);
 
   log_template_unref(self->fields.host);
   log_template_unref(self->fields.service);
