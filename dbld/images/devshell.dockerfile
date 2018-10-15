@@ -1,17 +1,12 @@
-FROM balabit/syslog-ng-artful:latest
-ARG DISTRO=artful
+FROM balabit/syslog-ng-ubuntu-bionic:latest
+LABEL maintainer="Andras Mitzki <andras.mitzki@balabit.com>, Laszlo Szemere <laszlo.szemere@balabit.com>, Balazs Scheidler <balazs.scheidler@oneidentity.com>"
 
-LABEL maintainer="Andras Mitzki <andras.mitzki@balabit.com>, Laszlo Szemere <laszlo.szemere@balabit.com>"
+ENV DEBIAN_FRONTEND=noninteractive
+ENV DEBCONF_NONINTERACTIVE_SEEN=true
+ENV LANG C.UTF-8
+ENV OS_PLATFORM devshell
 
-COPY helpers/* /helpers/
+RUN /helpers/dependencies.sh enable_dbgsyms
+RUN /helpers/dependencies.sh install_perf
 
-RUN /helpers/functions.sh enable_dbgsyms
-RUN /helpers/functions.sh install_perf
-
-COPY devshell-pip/all.txt devshell-pip/${DISTRO}*.txt /devshell-pip/
-RUN cat /devshell-pip/* | grep -v '^$\|^#' | xargs pip install
-
-COPY devshell-apt/all.txt devshell-apt/${DISTRO}*.txt /devshell-apt/
-RUN cat /devshell-apt/* | grep -v '^$\|^#' | xargs apt-get install --no-install-recommends -y
-
-RUN echo en_US.UTF-8 UTF-8 > /etc/locale.gen && locale-gen
+RUN /helpers/dependencies.sh install_apt_packages

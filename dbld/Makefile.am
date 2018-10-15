@@ -8,13 +8,9 @@ EXTRA_DIST += \
 	dbld/shell \
 	dbld/rules \
 	dbld/bootstrap	\
-	dbld/images/artful.dockerfile \
-	dbld/images/devshell-apt \
 	dbld/images/devshell.dockerfile \
-	dbld/images/devshell-pip \
 	dbld/images/helpers/entrypoint.sh \
 	dbld/images/helpers/fake-sudo.sh \
-	dbld/images/helpers/functions.sh \
 	dbld/images/helpers/gosu.pubkey \
 	dbld/images/helpers/packages.manifest \
 	dbld/images/helpers/pip_packages.manifest \
