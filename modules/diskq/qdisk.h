@@ -57,7 +57,7 @@ gboolean qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *q
 void qdisk_init(QDisk *self, DiskQueueOptions *options, const gchar *file_id);
 void qdisk_deinit(QDisk *self);
 void qdisk_reset_file_if_possible(QDisk *self);
-gboolean qdisk_initialized(QDisk *self);
+gboolean qdisk_started(QDisk *self);
 void qdisk_free(QDisk *self);
 
 gboolean qdisk_save_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow);

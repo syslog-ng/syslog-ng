@@ -42,7 +42,7 @@ _skip_message(LogQueueDisk *self)
   GString *serialized;
   SerializeArchive *sa;
 
-  if (!qdisk_initialized(self->qdisk))
+  if (!qdisk_started(self->qdisk))
     return FALSE;
 
   serialized = g_string_sized_new(64);

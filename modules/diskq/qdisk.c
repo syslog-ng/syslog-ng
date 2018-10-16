@@ -146,7 +146,7 @@ _next_filename(QDisk *self)
 }
 
 gboolean
-qdisk_initialized(QDisk *self)
+qdisk_started(QDisk *self)
 {
   return self->fd >= 0;
 }
@@ -747,7 +747,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
    * it can cause message loosing.
    * We need this assert to detect programming error as soon as possible.
    */
-  g_assert(!qdisk_initialized(self));
+  g_assert(!qdisk_started(self));
 
   if (self->options->disk_buf_size <= 0)
     return TRUE;

@@ -380,7 +380,7 @@ static gboolean
 _load_queue (LogQueueDisk *s, const gchar *filename)
 {
   /* qdisk portion is not yet started when this happens */
-  g_assert(!qdisk_initialized (s->qdisk));
+  g_assert(!qdisk_started (s->qdisk));
 
   return _start(s, filename);
 }
