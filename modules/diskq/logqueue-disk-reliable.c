@@ -323,7 +323,7 @@ static void
 _restart(LogQueueDisk *s, DiskQueueOptions *options)
 {
   LogQueueDiskReliable *self = (LogQueueDiskReliable *) s;
-  qdisk_init(self->super.qdisk, options, "SLRQ");
+  qdisk_init_instance(self->super.qdisk, options, "SLRQ");
 }
 
 
@@ -348,7 +348,7 @@ log_queue_disk_reliable_new(DiskQueueOptions *options, const gchar *persist_name
   g_assert(options->reliable == TRUE);
   LogQueueDiskReliable *self = g_new0(LogQueueDiskReliable, 1);
   log_queue_disk_init_instance(&self->super, persist_name);
-  qdisk_init(self->super.qdisk, options, "SLRQ");
+  qdisk_init_instance(self->super.qdisk, options, "SLRQ");
   if (options->mem_buf_size < 0)
     {
       options->mem_buf_size = PESSIMISTIC_MEM_BUF_SIZE;

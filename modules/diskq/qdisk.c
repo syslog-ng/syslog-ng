@@ -896,7 +896,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
 }
 
 void
-qdisk_init(QDisk *self, DiskQueueOptions *options, const gchar *file_id)
+qdisk_init_instance(QDisk *self, DiskQueueOptions *options, const gchar *file_id)
 {
   self->fd = -1;
   self->file_size = 0;
