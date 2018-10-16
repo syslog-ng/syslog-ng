@@ -71,5 +71,6 @@ modules/(afamqp|affile|afmongodb|afprog|afsmtp|afsocket|afsql|afstomp|afstreams|
 modules/(add-contextual-data|tagsparser|map-value-pairs|hook-commands|appmodel|[^/]*$)
 scl
 scripts
+modules/http/tests
  GPLv2+_SSL,non-balabit
-modules/http
+modules/http/(http.c|http-parser.c|http-plugin.c|http.h|http-parser.h|http-grammar.ym)

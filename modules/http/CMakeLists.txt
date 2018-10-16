@@ -31,11 +31,13 @@ bison_target(HttpParserGrammar
     ${CMAKE_CURRENT_BINARY_DIR}/http-grammar.c
     COMPILE_FLAGS ${BISON_FLAGS})
 
-add_library(http MODULE ${HTTP_DESTINATION_SOURCES})
+add_library(http SHARED ${HTTP_DESTINATION_SOURCES})
 
-target_include_directories (http PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories (http PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories (http PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_include_directories (http PRIVATE ${Curl_INCLUDE_DIR})
 target_link_libraries(http PRIVATE syslog-ng ${Curl_LIBRARIES})
 
 install(TARGETS http LIBRARY DESTINATION lib/syslog-ng/)
+
+add_test_subdirectory(tests)

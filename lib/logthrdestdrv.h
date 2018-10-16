@@ -203,6 +203,7 @@ void log_threaded_dest_worker_init_instance(LogThreadedDestWorker *self,
                                             LogThreadedDestDriver *owner,
                                             gint worker_index);
 void log_threaded_dest_worker_free_method(LogThreadedDestWorker *self);
+void log_threaded_dest_worker_free(LogThreadedDestWorker *self);
 
 gboolean log_threaded_dest_driver_deinit_method(LogPipe *s);
 gboolean log_threaded_dest_driver_init_method(LogPipe *s);

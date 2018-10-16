@@ -201,8 +201,8 @@ _add_message_to_batch(HTTPDestinationWorker *self, LogMessage *msg)
     }
 }
 
-static worker_insert_result_t
-_map_http_status_to_worker_status(HTTPDestinationWorker *self, glong http_code)
+worker_insert_result_t
+map_http_status_to_worker_status(HTTPDestinationWorker *self, glong http_code)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
   worker_insert_result_t retval = WORKER_INSERT_RESULT_ERROR;
@@ -229,10 +229,11 @@ _map_http_status_to_worker_status(HTTPDestinationWorker *self, glong http_code)
       break;
     case 4:
       msg_notice("Server returned with a 4XX (client errors) status code, which means we are not "
-                 "authorized or the URL is not found. Trying again",
+                 "authorized or the URL is not found.",
                  evt_tag_str("url", owner->url),
                  evt_tag_int("status_code", http_code),
                  log_pipe_location_tag(&owner->super.super.super.super));
+      retval = WORKER_INSERT_RESULT_DROP;
       break;
     case 5:
       msg_notice("Server returned with a 5XX (server errors) status code, which indicates server failure. "
@@ -329,7 +330,7 @@ _flush(LogThreadedDestWorker *s)
                 evt_tag_printf("total_time", "%.3f", total_time),
                 log_pipe_location_tag(&owner->super.super.super.super));
     }
-  retval = _map_http_status_to_worker_status(self, http_code);
+  retval = map_http_status_to_worker_status(self, http_code);
 
 exit:
   _reinit_request_body(self);

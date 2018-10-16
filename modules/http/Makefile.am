@@ -37,3 +37,5 @@ EXTRA_DIST        +=      \
   modules/http/README.md
 
 .PHONY: modules/http/ mod-http
+
+include modules/http/tests/Makefile.am
