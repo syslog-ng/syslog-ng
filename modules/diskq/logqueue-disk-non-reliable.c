@@ -392,7 +392,7 @@ _save_queue (LogQueueDisk *s, gboolean *persistent)
   if (qdisk_save_state (s->qdisk, self->qout, self->qbacklog, self->qoverflow))
     {
       *persistent = TRUE;
-      qdisk_deinit (s->qdisk);
+      qdisk_stop (s->qdisk);
       return TRUE;
     }
   return FALSE;

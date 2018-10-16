@@ -213,7 +213,7 @@ _free(LogQueue *s)
   if (self->free_fn)
     self->free_fn(self);
 
-  qdisk_deinit(self->qdisk);
+  qdisk_stop(self->qdisk);
   qdisk_free(self->qdisk);
 
   log_queue_free_method(s);
@@ -307,7 +307,7 @@ _restart_diskq(LogQueueDisk *self)
   gchar *new_file = NULL;
   DiskQueueOptions *options = qdisk_get_options(self->qdisk);
 
-  qdisk_deinit(self->qdisk);
+  qdisk_stop(self->qdisk);
 
   new_file = g_strdup_printf("%s.corrupted", filename);
   rename(filename, new_file);

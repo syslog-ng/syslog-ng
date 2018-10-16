@@ -315,7 +315,7 @@ static gboolean
 _save_queue (LogQueueDisk *s, gboolean *persistent)
 {
   *persistent = TRUE;
-  qdisk_deinit (s->qdisk);
+  qdisk_stop (s->qdisk);
   return TRUE;
 }
 
