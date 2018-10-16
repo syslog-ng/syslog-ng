@@ -388,14 +388,15 @@ _load_queue (LogQueueDisk *s, const gchar *filename)
 static gboolean
 _save_queue (LogQueueDisk *s, gboolean *persistent)
 {
+  gboolean success = FALSE;
   LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *) s;
   if (qdisk_save_state (s->qdisk, self->qout, self->qbacklog, self->qoverflow))
     {
       *persistent = TRUE;
-      qdisk_stop (s->qdisk);
-      return TRUE;
+      success = TRUE;
     }
-  return FALSE;
+  qdisk_stop (s->qdisk);
+  return success;
 }
 
 static void
