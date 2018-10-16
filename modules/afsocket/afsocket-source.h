@@ -32,8 +32,6 @@
 
 #include <iv.h>
 
-#define AFSOCKET_WNDSIZE_INITED      0x10000
-
 typedef struct _AFSocketSourceDriver AFSocketSourceDriver;
 
 struct _AFSocketSourceDriver
@@ -90,7 +88,6 @@ afsocket_sd_setup_addresses(AFSocketSourceDriver *s)
   return s->setup_addresses(s);
 }
 
-LogTransport *afsocket_sd_construct_transport_method(AFSocketSourceDriver *self, gint fd);
 gboolean afsocket_sd_setup_addresses_method(AFSocketSourceDriver *self);
 
 gboolean afsocket_sd_init_method(LogPipe *s);
