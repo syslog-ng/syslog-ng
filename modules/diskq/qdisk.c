@@ -933,29 +933,6 @@ qdisk_stop(QDisk *self)
 }
 
 gssize
-qdisk_read_from_backlog(QDisk *self, gpointer buffer, gsize bytes_to_read)
-{
-  gssize res;
-  res = pread(self->fd, buffer, bytes_to_read, self->hdr->backlog_head);
-  if (res == 0)
-    {
-      self->hdr->backlog_head = QDISK_RESERVED_SPACE;
-      res = pread(self->fd, buffer, bytes_to_read, self->hdr->backlog_head);
-    }
-  if (res != bytes_to_read)
-    {
-      msg_error("Error reading disk-queue file",
-                evt_tag_str("error", res < 0 ? g_strerror(errno) : "short read"),
-                evt_tag_str("filename", self->filename));
-    }
-  if (self->hdr->backlog_head > self->hdr->write_head)
-    {
-      self->hdr->backlog_head = _correct_position_if_eof(self, &self->hdr->backlog_head);
-    }
-  return res;
-}
-
-gssize
 qdisk_read(QDisk *self, gpointer buffer, gsize bytes_to_read, gint64 position)
 {
   gssize res;
