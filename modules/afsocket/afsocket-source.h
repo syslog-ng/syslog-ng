@@ -37,9 +37,7 @@ typedef struct _AFSocketSourceDriver AFSocketSourceDriver;
 struct _AFSocketSourceDriver
 {
   LogSrcDriver super;
-  guint32 recvd_messages_are_local:1,
-          connections_kept_alive_across_reloads:1,
-          require_tls:1,
+  guint32 connections_kept_alive_across_reloads:1,
           window_size_initialized:1;
   struct iv_fd listen_fd;
   gint fd;
