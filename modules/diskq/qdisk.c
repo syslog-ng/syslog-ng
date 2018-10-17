@@ -727,7 +727,7 @@ qdisk_save_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 }
 
 static void
-_reset_backlog(QDisk *self)
+_update_header_with_default_values(QDisk *self)
 {
   self->hdr->big_endian = TRUE;
   self->hdr->version = 1;
@@ -861,7 +861,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
           return FALSE;
         }
       if (self->hdr->version == 0)
-        _reset_backlog(self);
+        _update_header_with_default_values(self);
 
       if ((self->hdr->big_endian && G_BYTE_ORDER == G_LITTLE_ENDIAN) ||
           (!self->hdr->big_endian && G_BYTE_ORDER == G_BIG_ENDIAN))
