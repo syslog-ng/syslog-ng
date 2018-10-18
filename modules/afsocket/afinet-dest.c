@@ -567,7 +567,7 @@ afinet_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 #if SYSLOG_NG_ENABLE_SPOOF_SOURCE
   AFInetDestDriver *self = (AFInetDestDriver *) s;
 
-  /* NOTE: this code should probably become a LogTransport instance so that
+  /* NOTE: This code should probably be moved to the LogProto layer so that
    * spoofed packets are also going through the LogWriter queue */
 
   if (_is_spoof_source_enabled(self) && _is_message_spoofable(msg) && log_writer_opened(self->super.writer))
