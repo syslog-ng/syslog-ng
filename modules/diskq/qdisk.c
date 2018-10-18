@@ -477,16 +477,16 @@ _try_to_load_queue(QDisk *self, GQueue *queue, QDiskQueuePosition *pos, gchar *t
   return TRUE;
 }
 
+#define try_load_queue(self, queue) _try_to_load_queue(self, queue, &self->hdr->queue ##_pos, #queue)
+
 static gboolean
 _load_non_reliable_queues(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 {
-  if (!_try_to_load_queue(self, qout, &self->hdr->qout_pos, "qout"))
+  if (!try_load_queue(self, qout))
     return FALSE;
-
-  if (!_try_to_load_queue(self, qbacklog, &self->hdr->qbacklog_pos, "qbacklog"))
+  if (!try_load_queue(self, qbacklog))
     return FALSE;
-
-  if (!_try_to_load_queue(self, qoverflow, &self->hdr->qoverflow_pos, "qoverflow"))
+  if (!try_load_queue(self, qoverflow))
     return FALSE;
 
   return TRUE;
