@@ -29,10 +29,15 @@
 #define METHOD_TYPE_PUT  2
 
 #include "logthrdestdrv.h"
+#include "http-loadbalancer.h"
 
 typedef struct
 {
   LogThreadedDestDriver super;
+  HTTPLoadBalancer *load_balancer;
+
+  /* this is the first URL in load-balanced configurations and serves as the
+   * identifier in persist/stats */
   gchar *url;
   gchar *user;
   gchar *password;
@@ -61,6 +66,7 @@ gboolean http_dd_init(LogPipe *s);
 gboolean http_dd_deinit(LogPipe *s);
 LogDriver *http_dd_new(GlobalConfig *cfg);
 void http_dd_set_url(LogDriver *d, const gchar *url);
+void http_dd_set_urls(LogDriver *d, GList *urls);
 void http_dd_set_user(LogDriver *d, const gchar *user);
 void http_dd_set_password(LogDriver *d, const gchar *password);
 void http_dd_set_method(LogDriver *d, const gchar *method);

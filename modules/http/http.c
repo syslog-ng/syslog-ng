@@ -30,8 +30,18 @@ http_dd_set_url(LogDriver *d, const gchar *url)
 {
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
 
-  g_free(self->url);
-  self->url = g_strdup(url);
+  http_load_balancer_drop_all_targets(self->load_balancer);
+  http_load_balancer_add_target(self->load_balancer, url);
+}
+
+void
+http_dd_set_urls(LogDriver *d, GList *urls)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  http_load_balancer_drop_all_targets(self->load_balancer);
+  for (GList *l = urls; l; l = l->next)
+    http_load_balancer_add_target(self->load_balancer, l->data);
 }
 
 void
@@ -309,10 +319,10 @@ http_dd_init(LogPipe *s)
 
   log_template_options_init(&self->template_options, cfg);
 
-  if (!self->url)
-    {
-      self->url = g_strdup(HTTP_DEFAULT_URL);
-    }
+  if (self->load_balancer->num_targets == 0)
+    http_load_balancer_add_target(self->load_balancer, HTTP_DEFAULT_URL);
+  self->url = self->load_balancer->targets[0].url;
+  http_load_balancer_set_recovery_timeout(self->load_balancer, self->super.time_reopen);
 
   return log_threaded_dest_driver_start_workers(&self->super);
 }
@@ -330,7 +340,6 @@ http_dd_free(LogPipe *s)
 
   curl_global_cleanup();
 
-  g_free(self->url);
   g_free(self->user);
   g_free(self->password);
   g_free(self->user_agent);
@@ -340,6 +349,7 @@ http_dd_free(LogPipe *s)
   g_free(self->key_file);
   g_free(self->ciphers);
   g_list_free_full(self->headers, g_free);
+  http_load_balancer_free(self->load_balancer);
 
   log_threaded_dest_driver_free(s);
 }
@@ -368,6 +378,7 @@ http_dd_new(GlobalConfig *cfg)
   self->body_prefix = g_string_new("");
   self->body_suffix = g_string_new("");
   self->delimiter = g_string_new("\n");
+  self->load_balancer = http_load_balancer_new();
   curl_version_info_data *curl_info = curl_version_info(CURLVERSION_NOW);
   if (!self->user_agent)
     self->user_agent = g_strdup_printf("syslog-ng %s/libcurl %s",
