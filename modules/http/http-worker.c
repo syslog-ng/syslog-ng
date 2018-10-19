@@ -289,25 +289,11 @@ _finish_request_body(HTTPDestinationWorker *self)
     g_string_append_len(self->request_body, owner->body_suffix->str, owner->body_suffix->len);
 }
 
-/* we flush the accumulated data if
- *   1) we reach batch_size,
- *   2) the message queue becomes empty
- */
 static worker_insert_result_t
-_flush(LogThreadedDestWorker *s)
+_flush_on_target(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
 {
-  HTTPDestinationWorker *self = (HTTPDestinationWorker *) s;
-  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) s->owner;
-  HTTPLoadBalancerTarget *target;
+  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
   CURLcode ret;
-  worker_insert_result_t retval;
-
-  if (self->super.batch_size == 0)
-    return WORKER_INSERT_RESULT_SUCCESS;
-
-  _finish_request_body(self);
-
-  target = http_load_balancer_choose_target(owner->load_balancer, &self->lbc);
 
   msg_trace("Sending HTTP request",
             evt_tag_str("url", target->url));
@@ -323,8 +309,7 @@ _flush(LogThreadedDestWorker *s)
                 evt_tag_int("worker_index", self->super.worker_index),
                 evt_tag_str("driver", owner->super.super.super.id),
                 log_pipe_location_tag(&owner->super.super.super.super));
-      retval = WORKER_INSERT_RESULT_NOT_CONNECTED;
-      goto exit;
+      return WORKER_INSERT_RESULT_NOT_CONNECTED;
     }
 
   glong http_code = 0;
@@ -338,8 +323,7 @@ _flush(LogThreadedDestWorker *s)
                 evt_tag_int("worker_index", self->super.worker_index),
                 evt_tag_str("driver", owner->super.super.super.id),
                 log_pipe_location_tag(&owner->super.super.super.super));
-      retval = WORKER_INSERT_RESULT_NOT_CONNECTED;
-      goto exit;
+      return WORKER_INSERT_RESULT_NOT_CONNECTED;
     }
 
   if (debug_flag)
@@ -360,9 +344,30 @@ _flush(LogThreadedDestWorker *s)
                 evt_tag_str("driver", owner->super.super.super.id),
                 log_pipe_location_tag(&owner->super.super.super.super));
     }
-  retval = map_http_status_to_worker_status(self, target->url, http_code);
+  return map_http_status_to_worker_status(self, target->url, http_code);
+}
 
-exit:
+/* we flush the accumulated data if
+ *   1) we reach batch_size,
+ *   2) the message queue becomes empty
+ */
+static worker_insert_result_t
+_flush(LogThreadedDestWorker *s)
+{
+  HTTPDestinationWorker *self = (HTTPDestinationWorker *) s;
+  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) s->owner;
+  HTTPLoadBalancerTarget *target;
+  worker_insert_result_t retval;
+
+  if (self->super.batch_size == 0)
+    return WORKER_INSERT_RESULT_SUCCESS;
+
+  _finish_request_body(self);
+
+  target = http_load_balancer_choose_target(owner->load_balancer, &self->lbc);
+  retval = _flush_on_target(self, target);
+
+
   if (retval == WORKER_INSERT_RESULT_SUCCESS)
     http_load_balancer_set_target_successful(owner->load_balancer, target);
   else
