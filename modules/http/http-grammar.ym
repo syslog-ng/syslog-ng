@@ -50,6 +50,7 @@
 
 %token KW_HTTP
 %token KW_URL
+%token KW_URLS
 %token KW_USER
 %token KW_PASSWORD
 %token KW_USER_AGENT
@@ -109,6 +110,7 @@ http_options
 
 http_option
     : KW_URL        '(' string ')'            { http_dd_set_url(last_driver, $3); free($3); }
+    | KW_URLS       '(' string_list ')'       { http_dd_set_urls(last_driver, $3); g_list_free_full($3, free); }
     | KW_USER       '(' string ')'            { http_dd_set_user(last_driver, $3); free($3); }
     | KW_PASSWORD   '(' string ')'            { http_dd_set_password(last_driver, $3); free($3); }
     | KW_USER_AGENT '(' string ')'            { http_dd_set_user_agent(last_driver, $3); free($3); }
