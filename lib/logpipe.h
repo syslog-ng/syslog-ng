@@ -354,7 +354,7 @@ log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
       local_path_options.flow_control_requested = 1;
       path_options = &local_path_options;
 
-      msg_debug("Requesting flow control", log_pipe_location_tag(s));
+      msg_trace("Requesting flow control", log_pipe_location_tag(s));
     }
 
   if (s->queue)

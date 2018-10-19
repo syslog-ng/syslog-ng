@@ -667,8 +667,8 @@ log_proto_buffered_server_fetch_into_buffer(LogProtoBufferedServer *self)
   else if (rc == 0)
     {
       /* EOF read */
-      msg_verbose("EOF occurred while reading",
-                  evt_tag_int(EVT_TAG_FD, self->super.transport->fd));
+      msg_trace("EOF occurred while reading",
+                evt_tag_int(EVT_TAG_FD, self->super.transport->fd));
       if (state->raw_buffer_leftover_size > 0)
         {
           msg_error("EOF read on a channel with leftovers from previous character conversion, dropping input");
