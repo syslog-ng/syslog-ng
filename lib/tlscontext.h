@@ -108,6 +108,7 @@ TLSVerifier *tls_verifier_ref(TLSVerifier *self);
 void tls_verifier_unref(TLSVerifier *self);
 
 
+void tls_session_configure_allow_compress(TLSSession *tls_session, gboolean allow_compress);
 gboolean tls_context_set_verify_mode_by_name(TLSContext *self, const gchar *mode_str);
 gboolean tls_context_set_ssl_options_by_name(TLSContext *self, GList *options);
 gint tls_context_get_verify_mode(const TLSContext *self);

@@ -66,6 +66,19 @@ typedef enum
   TLS_CONTEXT_PASSWORD_ERROR
 } TLSContextLoadResult;
 
+void
+tls_session_configure_allow_compress(TLSSession *tls_session, gboolean allow_compress)
+{
+  if (allow_compress)
+    {
+      SSL_clear_options(tls_session->ssl, SSL_OP_NO_COMPRESSION);
+    }
+  else
+    {
+      SSL_set_options(tls_session->ssl, SSL_OP_NO_COMPRESSION);
+    }
+}
+
 gboolean
 tls_get_x509_digest(X509 *x, GString *hash_string)
 {
