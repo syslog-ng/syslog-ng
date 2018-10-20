@@ -8,7 +8,24 @@ syslog-ng is an enhanced log daemon, supporting a wide range of input
 and output methods: syslog, unstructured text, message queues,
 databases (SQL and NoSQL alike), and more.
 
-## Quickstart
+## Table of contents
+
+1 [Quickstart](#Quickstart)
+
+2 [Features](#Features)
+
+3 [Feedback](#Feedback)
+
+4 [Installation from source](#Installationfromsource)
+
+5 [Installation from binaries](#Installationfrombinaries)
+
+6 [Installation from Docker image](#InstallationfromDockerimage)
+
+7 [Documentation](#Documentation)
+
+8 [Contributing](#Contributing)
+## <a name="Quickstart">Quickstart</a>
 
 The easiest configuration that accepts system logs on /dev/log (from
 applications or forwarded by systemd) and writes everything to a single
@@ -64,7 +81,7 @@ name1=value1 name2=value2
 For a brief introduction to configuring the syslog-ng application, see the [quickstart guide](https://syslog-ng.com/documents/html/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/chapter-quickstart.html).
 
 
-## Features
+## <a name="Features">Features</a>
 
   * receive and send [RFC3164](https://tools.ietf.org/html/rfc3164)
     and [RFC5424](https://tools.ietf.org/html/rfc5424) style syslog
@@ -107,7 +124,7 @@ For a brief introduction to configuring the syslog-ng application, see the [quic
     largest current sponsor of the syslog-ng project, they provide support,
     professional services, and addons you might be interested in.
 
-## Feedback
+## <a name="Feedback">Feedback</a>
 
 We are really interested in who uses our software, so if you do and you like
 what you see, please tell us about it.  A "star" on github, an email
@@ -120,7 +137,7 @@ Should not take more than a minute, right?  Now go ahead. Please.
 
  *FeedbackPowersOpenSource.*
 
-## Installation from source
+## <a name="Installationfromsource">Installation from source</a>
 
 Releases and tarballs ready to compile are are made available on [GitHub][github-repo].
 
@@ -140,7 +157,7 @@ summary of enabled features at the end of its run.
 For details, see the [syslog-ng compiling instructions](https://www.balabit.com/sites/default/files/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/compiling-syslog-ng.html).
 
 
-## Installation from binaries
+## <a name="Installationfrombinaries">Installation from binaries</a>
 
 Binaries are available in various Linux distributions and contributors
 maintain packages of the latest and greatest syslog-ng version for
@@ -180,14 +197,14 @@ official [third party page][3rd-party].
 
  [3rd-party]: https://syslog-ng.com/3rd-party-binaries
 
-## Installation from Docker image
+## <a name="InstallationfromDockerimage">Installation from Docker image</a>
 
 Binaries are also available as a Docker image. To find out more, check out the blog post [Your central log server in Docker](https://syslog-ng.com/blog/central-log-server-docker/).
 
-## Documentation
+## <a name="Documentation">Documentation</a>
 
 The documentation of the latest released version of syslog-ng Open Source Edition is available [here](https://www.balabit.com/sites/default/files/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/index.html). For earlier versions, see the [syslog-ng Documentation Page](https://syslog-ng.com/documentation). For ancient versions, see the [Balabit Documentation Archive](https://my.balabit.com/downloads/archived_documents).
 
-## Contributing
+## <a name="Contributing">Contributing</a>
 
 If you want to modify the source of syslog-ng, for example, to correct a bug or develop a new module, the [syslog-ng gitbook](https://syslog-ng.gitbooks.io/getting-started/content/) helps you to take the first steps with the code base.
