@@ -101,6 +101,7 @@ _construct_tls_transport(TransportMapperInet *self, gint fd)
   if (!tls_session)
     return NULL;
 
+  tls_session_configure_allow_compress(tls_session, self->allow_compress);
   tls_session_set_verifier(tls_session, self->tls_verifier);
 
   return log_transport_tls_new(tls_session, fd);

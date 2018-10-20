@@ -32,6 +32,7 @@ typedef struct _TransportMapperInet
 
   gint server_port;
   const gchar *server_port_change_warning;
+  gboolean allow_compress;
   gboolean require_tls;
   gboolean allow_tls;
   gboolean require_tls_when_has_tls_context;
@@ -39,6 +40,13 @@ typedef struct _TransportMapperInet
   TLSVerifier *tls_verifier;
   gpointer secret_store_cb_data;
 } TransportMapperInet;
+
+static inline void
+transport_mapper_inet_set_allow_compress(TransportMapper *s, gboolean value)
+{
+  TransportMapperInet *self = (TransportMapperInet *) s;
+  self->allow_compress = value;
+}
 
 static inline gint
 transport_mapper_inet_get_server_port(const TransportMapper *self)
