@@ -126,6 +126,13 @@ _setup_static_options_in_curl(HTTPDestinationWorker *self)
   curl_easy_setopt(self->curl, CURLOPT_DEBUGDATA, self);
   curl_easy_setopt(self->curl, CURLOPT_VERBOSE, 1L);
 
+  if (owner->accept_redirects)
+    {
+      curl_easy_setopt(self->curl, CURLOPT_FOLLOWLOCATION, 1);
+      curl_easy_setopt(self->curl, CURLOPT_POSTREDIR, CURL_REDIR_POST_ALL);
+      curl_easy_setopt(self->curl, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+      curl_easy_setopt(self->curl, CURLOPT_MAXREDIRS, 3);
+    }
   curl_easy_setopt(self->curl, CURLOPT_TIMEOUT, owner->timeout);
 
   if (owner->method_type == METHOD_TYPE_PUT)
@@ -620,6 +627,14 @@ http_dd_set_peer_verify(LogDriver *d, gboolean verify)
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
 
   self->peer_verify = verify;
+}
+
+void
+http_dd_set_accept_redirects(LogDriver *d, gboolean accept_redirects)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  self->accept_redirects = accept_redirects;
 }
 
 void
