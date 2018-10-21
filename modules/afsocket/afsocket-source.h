@@ -32,16 +32,12 @@
 
 #include <iv.h>
 
-#define AFSOCKET_WNDSIZE_INITED      0x10000
-
 typedef struct _AFSocketSourceDriver AFSocketSourceDriver;
 
 struct _AFSocketSourceDriver
 {
   LogSrcDriver super;
-  guint32 recvd_messages_are_local:1,
-          connections_kept_alive_across_reloads:1,
-          require_tls:1,
+  guint32 connections_kept_alive_across_reloads:1,
           window_size_initialized:1;
   struct iv_fd listen_fd;
   gint fd;
@@ -90,7 +86,6 @@ afsocket_sd_setup_addresses(AFSocketSourceDriver *s)
   return s->setup_addresses(s);
 }
 
-LogTransport *afsocket_sd_construct_transport_method(AFSocketSourceDriver *self, gint fd);
 gboolean afsocket_sd_setup_addresses_method(AFSocketSourceDriver *self);
 
 gboolean afsocket_sd_init_method(LogPipe *s);

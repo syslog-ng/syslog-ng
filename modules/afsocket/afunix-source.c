@@ -126,7 +126,6 @@ afunix_sd_new_instance(TransportMapper *transport_mapper, gchar *filename, Globa
   self->super.setup_addresses = afunix_sd_setup_addresses;
 
   self->super.max_connections = 256;
-  self->super.recvd_messages_are_local = TRUE;
 
   self->filename = g_strdup(filename);
   file_perm_options_defaults(&self->file_perm_options);

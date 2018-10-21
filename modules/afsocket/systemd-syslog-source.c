@@ -142,7 +142,6 @@ systemd_syslog_sd_new(GlobalConfig *cfg, gboolean fallback)
 
   self->super.acquire_socket = systemd_syslog_sd_acquire_socket;
   self->super.max_connections = 256;
-  self->super.recvd_messages_are_local = TRUE;
 
   if (!self->super.bind_addr)
     self->super.bind_addr = g_sockaddr_unix_new(NULL);
