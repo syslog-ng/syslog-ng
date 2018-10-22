@@ -129,6 +129,7 @@ struct _MainLoop
    * would be gone.
    */
   gboolean _is_terminating;
+  gboolean last_config_reload_successful;
 
   /* signal handling */
   struct iv_signal sighup_poll;
@@ -211,6 +212,12 @@ main_loop_is_terminating(MainLoop *self)
   return self->_is_terminating;
 }
 
+gboolean
+main_loop_was_last_reload_successful(MainLoop *self)
+{
+  return self->last_config_reload_successful;
+}
+
 /* called to apply the new configuration once all I/O worker threads have finished */
 static void
 main_loop_reload_config_apply(gpointer user_data)
@@ -231,7 +238,8 @@ main_loop_reload_config_apply(gpointer user_data)
   cfg_deinit(self->old_config);
   cfg_persist_config_move(self->old_config, self->new_config);
 
-  if (cfg_init(self->new_config))
+  self->last_config_reload_successful = cfg_init(self->new_config);
+  if (self->last_config_reload_successful)
     {
       msg_verbose("New configuration initialized");
       persist_config_free(self->new_config->persist);
@@ -279,6 +287,7 @@ main_loop_reload_config_prepare(MainLoop *self, GError **error)
 {
   g_return_val_if_fail(error == NULL || (*error) == NULL, FALSE);
 
+  self->last_config_reload_successful = FALSE;
   if (main_loop_is_terminating(self))
     {
       g_set_error(error, MAIN_LOOP_ERROR, MAIN_LOOP_ERROR_RELOAD_FAILED,

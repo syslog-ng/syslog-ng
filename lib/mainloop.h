@@ -66,6 +66,7 @@ void main_loop_verify_config(GString *result, MainLoop *self);
 void main_loop_exit(MainLoop *self);
 
 int main_loop_read_and_init_config(MainLoop *self);
+gboolean main_loop_was_last_reload_successful(MainLoop *self);
 void main_loop_run(MainLoop *self);
 
 MainLoop *main_loop_get_instance(void);
