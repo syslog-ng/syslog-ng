@@ -24,8 +24,8 @@
 #ifndef STATS_QUERY_COMMANDS_H_INCLUDED
 #define STATS_QUERY_COMMANDS_H_INCLUDED
 
-#include "syslog-ng.h"
+#include "control/control.h"
 
-GString *process_query_command(GString *cmd, gpointer user_data);
+GString *process_query_command(ControlConnection *cc, GString *cmd, gpointer user_data);
 
 #endif

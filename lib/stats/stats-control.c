@@ -28,7 +28,7 @@
 #include "control/control-commands.h"
 
 static GString *
-control_connection_send_stats(GString *command, gpointer user_data)
+control_connection_send_stats(ControlConnection *cc, GString *command, gpointer user_data)
 {
   gchar *stats = stats_generate_csv();
   GString *result = g_string_new(stats);
@@ -37,7 +37,7 @@ control_connection_send_stats(GString *command, gpointer user_data)
 }
 
 static GString *
-control_connection_reset_stats(GString *command, gpointer user_data)
+control_connection_reset_stats(ControlConnection *cc, GString *command, gpointer user_data)
 {
   GString *result = g_string_new("The statistics of syslog-ng have been reset to 0.");
   stats_reset_counters();

@@ -142,7 +142,7 @@ control_connection_moc_new(ControlServer *server)
 }
 
 GString *
-test_command(GString *command, gpointer user_data)
+test_command(ControlConnection *cc, GString *command, gpointer user_data)
 {
   cr_assert_str_eq(command->str,"test command", "Bad command handling");
   return g_string_new("OK");

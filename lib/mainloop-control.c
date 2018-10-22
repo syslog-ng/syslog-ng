@@ -32,7 +32,7 @@
 #include <string.h>
 
 static GString *
-control_connection_message_log(GString *command, gpointer user_data)
+control_connection_message_log(ControlConnection *cc, GString *command, gpointer user_data)
 {
   gchar **cmds = g_strsplit(command->str, " ", 3);
   gboolean on;
@@ -78,7 +78,7 @@ exit:
 }
 
 static GString *
-control_connection_stop_process(GString *command, gpointer user_data)
+control_connection_stop_process(ControlConnection *cc, GString *command, gpointer user_data)
 {
   GString *result = g_string_new("OK Shutdown initiated");
   MainLoop *main_loop = (MainLoop *) user_data;
@@ -88,7 +88,7 @@ control_connection_stop_process(GString *command, gpointer user_data)
 }
 
 static GString *
-control_connection_config(GString *command, gpointer user_data)
+control_connection_config(ControlConnection *cc, GString *command, gpointer user_data)
 {
   MainLoop *main_loop = (MainLoop *) user_data;
   GlobalConfig *config = main_loop_get_current_config(main_loop);
@@ -123,13 +123,13 @@ exit:
 }
 
 static GString *
-show_ose_license_info(GString *command, gpointer user_data)
+show_ose_license_info(ControlConnection *cc, GString *command, gpointer user_data)
 {
   return g_string_new("You are using the Open Source Edition of syslog-ng.");
 }
 
 static GString *
-control_connection_reload(GString *command, gpointer user_data)
+control_connection_reload(ControlConnection *cc, GString *command, gpointer user_data)
 {
   GString *result = g_string_new("OK Config reload initiated");
   MainLoop *main_loop = (MainLoop *) user_data;
@@ -139,7 +139,7 @@ control_connection_reload(GString *command, gpointer user_data)
 }
 
 static GString *
-control_connection_reopen(GString *command, gpointer user_data)
+control_connection_reopen(ControlConnection *cc, GString *command, gpointer user_data)
 {
   GString *result = g_string_new("OK Re-open of log destination files initiated");
   app_reopen_files();
@@ -203,7 +203,7 @@ process_credentials_add(GString *result, guint argc, gchar **arguments)
 }
 
 static GString *
-process_credentials(GString *command, gpointer user_data)
+process_credentials(ControlConnection *cc, GString *command, gpointer user_data)
 {
   gchar **arguments = g_strsplit(command->str, " ", 4);
   guint argc = g_strv_length(arguments);

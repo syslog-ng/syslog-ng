@@ -29,9 +29,6 @@
 
 #define MAX_CONTROL_LINE_LENGTH 4096
 
-typedef struct _ControlServer ControlServer;
-typedef struct _ControlConnection ControlConnection;
-
 struct _ControlConnection
 {
   GString *input_buffer;

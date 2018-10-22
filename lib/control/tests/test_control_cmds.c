@@ -34,6 +34,9 @@
 #include "stats/stats-registry.h"
 #include "apphook.h"
 
+static ControlConnection dummy = {0};
+static ControlConnection *conn = &dummy;
+
 static ControlCommand *
 command_test_get(const char *cmd)
 {
@@ -62,19 +65,18 @@ TestSuite(control_cmds, .init = setup, .fini = teardown);
 
 Test(control_cmds, test_log)
 {
-  msg_init(FALSE);
   GString *command = g_string_sized_new(128);
   GString *reply;
 
   CommandFunction control_connection_message_log = command_test_get("LOG")->func;
 
   g_string_assign(command,"LOG");
-  reply = control_connection_message_log(command, NULL);
+  reply = control_connection_message_log(conn, command, NULL);
   cr_assert_str_eq(reply->str, "Invalid arguments received, expected at least one argument", "Bad reply");
   g_string_free(reply, TRUE);
 
   g_string_assign(command,"LOG fakelog");
-  reply = control_connection_message_log(command, NULL);
+  reply = control_connection_message_log(conn, command, NULL);
   cr_assert_str_eq(reply->str, "Invalid arguments received", "Bad reply");
   g_string_free(reply, TRUE);
 
@@ -82,18 +84,18 @@ Test(control_cmds, test_log)
   debug_flag = 1;
   trace_flag = 1;
   g_string_assign(command,"LOG VERBOSE");
-  reply = control_connection_message_log(command, NULL);
+  reply = control_connection_message_log(conn, command, NULL);
   cr_assert_str_eq(reply->str, "VERBOSE=0", "Bad reply");
   g_string_free(reply, TRUE);
 
   g_string_assign(command,"LOG VERBOSE ON");
-  reply = control_connection_message_log(command, NULL);
+  reply = control_connection_message_log(conn, command, NULL);
   cr_assert_str_eq(reply->str, "OK", "Bad reply");
   cr_assert_eq(verbose_flag,1,"Flag isn't changed");
   g_string_free(reply, TRUE);
 
   g_string_assign(command,"LOG VERBOSE OFF");
-  reply = control_connection_message_log(command, NULL);
+  reply = control_connection_message_log(conn, command, NULL);
   cr_assert_str_eq(reply->str, "OK", "Bad reply");
   cr_assert_eq(verbose_flag,0,"Flag isn't changed");
   g_string_free(reply, TRUE);
@@ -102,7 +104,7 @@ Test(control_cmds, test_log)
   verbose_flag = 1;
   trace_flag = 1;
   g_string_assign(command,"LOG DEBUG");
-  reply = control_connection_message_log(command, NULL);
+  reply = control_connection_message_log(conn, command, NULL);
   cr_assert_str_eq(reply->str, "DEBUG=0", "Bad reply");
   g_string_free(reply, TRUE);
 
@@ -110,7 +112,7 @@ Test(control_cmds, test_log)
   verbose_flag = 1;
   debug_flag = 1;
   g_string_assign(command,"LOG TRACE");
-  reply = control_connection_message_log(command, NULL);
+  reply = control_connection_message_log(conn, command, NULL);
   cr_assert_str_eq(reply->str, "TRACE=0", "Bad reply");
   g_string_free(reply, TRUE);
 
@@ -136,7 +138,7 @@ Test(control_cmds, test_stats)
 
   g_string_assign(command,"STATS");
 
-  reply = control_connection_send_stats(command, NULL);
+  reply = control_connection_send_stats(conn, command, NULL);
   stats_result = g_strsplit(reply->str, "\n", 2);
   cr_assert_str_eq(stats_result[0], "SourceName;SourceId;SourceInstance;State;Type;Number",
                    "Bad reply");
@@ -166,11 +168,11 @@ Test(control_cmds, test_reset_stats)
   stats_unlock();
 
   g_string_assign(command, "RESET_STATS");
-  reply = (*control_connection_reset_stats)(command, NULL);
+  reply = control_connection_reset_stats(conn, command, NULL);
   cr_assert_str_eq(reply->str, "The statistics of syslog-ng have been reset to 0.", "Bad reply");
   g_string_free(reply, TRUE);
 
-  reply = control_connection_send_stats(command, NULL);
+  reply = control_connection_send_stats(conn, command, NULL);
   cr_assert_str_eq(reply->str, "SourceName;SourceId;SourceInstance;State;Type;Number\ncenter;id;received;a;processed;0\n",
                    "Bad reply");
   g_string_free(reply, TRUE);
@@ -180,13 +182,13 @@ Test(control_cmds, test_reset_stats)
 }
 
 static GString *
-_original_replace(GString *result, gpointer user_data)
+_original_replace(ControlConnection *cc, GString *result, gpointer user_data)
 {
   return NULL;
 }
 
 static GString *
-_new_replace(GString *result, gpointer user_data)
+_new_replace(ControlConnection *cc, GString *result, gpointer user_data)
 {
   return NULL;
 }

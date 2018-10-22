@@ -168,7 +168,7 @@ control_connection_io_input(void *s)
     }
   ControlCommand *cmd_desc = (ControlCommand *) iter->data;
 
-  reply = cmd_desc->func(command, cmd_desc->user_data);
+  reply = cmd_desc->func(self, command, cmd_desc->user_data);
   control_connection_send_reply(self, reply);
 
   control_connection_update_watches(self);

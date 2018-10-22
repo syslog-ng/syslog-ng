@@ -27,7 +27,10 @@
 
 #include "syslog-ng.h"
 
-typedef GString *(*CommandFunction)(GString *, gpointer user_data);
+typedef struct _ControlServer ControlServer;
+typedef struct _ControlConnection ControlConnection;
+
+typedef GString *(*CommandFunction)(ControlConnection *cc, GString *, gpointer user_data);
 typedef struct _ControlCommand
 {
   const gchar *command_name;
