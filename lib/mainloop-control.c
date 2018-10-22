@@ -128,14 +128,43 @@ show_ose_license_info(ControlConnection *cc, GString *command, gpointer user_dat
   return g_string_new("You are using the Open Source Edition of syslog-ng.");
 }
 
+static void
+_respond_config_reload_status(gint type, gpointer user_data)
+{
+  gpointer *args = user_data;
+  MainLoop *main_loop = (MainLoop *) args[0];
+  ControlConnection *cc = (ControlConnection *) args[1];
+  GString *reply;
+
+  if (main_loop_was_last_reload_successful(main_loop))
+    reply = g_string_new("OK Config reload successful");
+  else
+    reply = g_string_new("FAIL Config reload failed, reverted to previous config");
+
+  control_connection_send_reply(cc, reply);
+}
+
 static GString *
 control_connection_reload(ControlConnection *cc, GString *command, gpointer user_data)
 {
-  GString *result = g_string_new("OK Config reload initiated");
   MainLoop *main_loop = (MainLoop *) user_data;
+  static gpointer args[2];
+  GError *error = NULL;
 
-  main_loop_reload_config(main_loop);
-  return result;
+
+  if (!main_loop_reload_config_prepare(main_loop, &error))
+    {
+      GString *result = g_string_new("");
+      g_string_printf(result, "FAIL %s, previous config remained intact", error->message);
+      g_clear_error(&error);
+      return result;
+    }
+
+  args[0] = main_loop;
+  args[1] = cc;
+  register_application_hook(AH_CONFIG_CHANGED, _respond_config_reload_status, args);
+  main_loop_reload_config_commence(main_loop);
+  return NULL;
 }
 
 static GString *
