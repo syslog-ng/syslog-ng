@@ -79,7 +79,13 @@ static void
 control_connection_unix_update_watches(ControlConnection *s)
 {
   ControlConnectionUnix *self = (ControlConnectionUnix *)s;
-  if (s->output_buffer->len > s->pos)
+
+  if (s->waiting_for_output)
+    {
+      iv_fd_set_handler_out(&self->control_io, NULL);
+      iv_fd_set_handler_in(&self->control_io, NULL);
+    }
+  else if (s->output_buffer->len > s->pos)
     {
       iv_fd_set_handler_out(&self->control_io, s->handle_output);
       iv_fd_set_handler_in(&self->control_io, NULL);

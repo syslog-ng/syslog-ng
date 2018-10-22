@@ -31,6 +31,7 @@
 
 struct _ControlConnection
 {
+  gboolean waiting_for_output;
   GString *input_buffer;
   GString *output_buffer;
   gsize pos;
@@ -63,6 +64,7 @@ void control_server_free(ControlServer *self);
 void control_server_init_instance(ControlServer *self, const gchar *path);
 
 
+void control_connection_send_reply(ControlConnection *self, GString *reply);
 void control_connection_start_watches(ControlConnection *self);
 void control_connection_update_watches(ControlConnection *self);
 void control_connection_stop_watches(ControlConnection *self);

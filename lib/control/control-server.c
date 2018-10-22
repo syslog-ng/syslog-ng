@@ -48,20 +48,28 @@ control_connection_free(ControlConnection *self)
   g_free(self);
 }
 
-static void
+void
 control_connection_send_reply(ControlConnection *self, GString *reply)
 {
   g_string_assign(self->output_buffer, reply->str);
   g_string_free(reply, TRUE);
 
   self->pos = 0;
-
+  self->waiting_for_output = FALSE;
   if (self->output_buffer->str[self->output_buffer->len - 1] != '\n')
     {
       g_string_append_c(self->output_buffer, '\n');
     }
   g_string_append(self->output_buffer, ".\n");
 
+  control_connection_update_watches(self);
+}
+
+void
+control_connection_wait_for_output(ControlConnection *self)
+{
+  if (self->output_buffer->len == 0)
+    self->waiting_for_output = TRUE;
   control_connection_update_watches(self);
 }
 
@@ -169,9 +177,11 @@ control_connection_io_input(void *s)
   ControlCommand *cmd_desc = (ControlCommand *) iter->data;
 
   reply = cmd_desc->func(self, command, cmd_desc->user_data);
-  control_connection_send_reply(self, reply);
+  if (reply)
+    control_connection_send_reply(self, reply);
+  else
+    control_connection_wait_for_output(self);
 
-  control_connection_update_watches(self);
   secret_storage_wipe(command->str, command->len);
   g_string_free(command, TRUE);
   return;
