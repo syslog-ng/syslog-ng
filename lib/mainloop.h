@@ -37,6 +37,7 @@ typedef struct _MainLoopOptions
   gboolean syntax_only;
   gboolean interactive_mode;
   gboolean server_mode;
+  gboolean auto_reload;
 } MainLoopOptions;
 
 extern ThreadId main_thread_handle;

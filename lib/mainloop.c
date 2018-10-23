@@ -40,6 +40,7 @@
 #include "plugin.h"
 #include "resolved-configurable-paths.h"
 #include "scratch-buffers.h"
+#include "monitor.h"
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -607,7 +608,12 @@ main_loop_run(MainLoop *self)
       cfg_load_module(self->current_configuration, "mod-python");
       debugger_start(self, self->current_configuration);
     }
-  iv_main();
+
+  if (self->options->auto_reload)
+    monitor_start(resolvedConfigurablePaths.cfgfilename, self); /* iv_main() moved inside */
+  else
+    iv_main();
+ 
   service_management_publish_status("Shutting down...");
 }
 
