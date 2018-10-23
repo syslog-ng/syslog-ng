@@ -107,9 +107,9 @@ Test(test_apphook, shutdown_hook)
 Test(test_apphook, reopen_hook)
 {
   gint triggered_count = 0;
-  register_application_hook(AH_REOPEN, _hook_counter, (gpointer)&triggered_count);
+  register_application_hook(AH_REOPEN_FILES, _hook_counter, (gpointer)&triggered_count);
 
-  app_reopen();
+  app_reopen_files();
 
   cr_assert_eq(triggered_count, 1);
 }
@@ -122,9 +122,9 @@ Test(test_apphook, trigger_all_state_hook)
   register_application_hook(AH_POST_CONFIG_LOADED, _hook_counter, (gpointer)&triggered_count);
   register_application_hook(AH_PRE_SHUTDOWN, _hook_counter, (gpointer)&triggered_count);
   register_application_hook(AH_SHUTDOWN, _hook_counter, (gpointer)&triggered_count);
-  register_application_hook(AH_REOPEN, _hook_counter, (gpointer)&triggered_count);
+  register_application_hook(AH_REOPEN_FILES, _hook_counter, (gpointer)&triggered_count);
 
-  app_reopen();
+  app_reopen_files();
   app_startup(); //This is needed for app_shutdown
   app_post_daemonized();
   app_pre_config_loaded();

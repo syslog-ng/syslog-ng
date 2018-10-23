@@ -199,7 +199,7 @@ static GString *
 control_connection_reopen(GString *command, gpointer user_data)
 {
   GString *result = g_string_new("OK Re-open of log destination files initiated");
-  app_reopen();
+  app_reopen_files();
   return result;
 }
 

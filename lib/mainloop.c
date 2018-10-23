@@ -454,7 +454,7 @@ sig_child_handler(gpointer user_data)
 static void
 sig_usr1_handler(gpointer user_data)
 {
-  app_reopen();
+  app_reopen_files();
 }
 
 static void

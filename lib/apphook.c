@@ -97,7 +97,7 @@ register_application_hook(gint type, ApplicationHookFunc func, gpointer user_dat
 static void
 _update_current_state(gint type)
 {
-  if (AH_REOPEN == type)
+  if (AH_REOPEN_FILES == type)
     return;
 
   g_assert(current_state <= type);
@@ -250,9 +250,9 @@ app_shutdown(void)
 }
 
 void
-app_reopen(void)
+app_reopen_files(void)
 {
-  run_application_hook(AH_REOPEN);
+  run_application_hook(AH_REOPEN_FILES);
 }
 
 void
