@@ -67,6 +67,14 @@ void csv_scanner_options_set_null_value(CSVScannerOptions *options, const gchar 
 typedef struct
 {
   CSVScannerOptions *options;
+  enum
+  {
+    CSV_STATE_INITIAL,
+    CSV_STATE_COLUMNS,
+    CSV_STATE_GREEDY_COLUMN,
+    CSV_STATE_PARTIAL_INPUT,
+    CSV_STATE_FINISH,
+  } state;
   GList *current_column;
   const gchar *src;
   GString *current_value;

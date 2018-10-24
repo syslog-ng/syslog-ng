@@ -27,6 +27,7 @@
 #include "string-list.h"
 
 CSVScannerOptions options;
+CSVScanner scanner;
 
 CSVScannerOptions *
 _default_options(const gchar *columns[])
@@ -41,43 +42,151 @@ _default_options(const gchar *columns[])
   return &options;
 }
 
+CSVScannerOptions *
+_default_options_with_flags(const gchar *columns[], gint flags)
+{
+  CSVScannerOptions *o;
+  o = _default_options(columns);
+  csv_scanner_options_set_flags(&options, flags);
+  return o;
+}
+
+static gboolean
+_column_name_equals(const gchar *name)
+{
+  return strcmp(csv_scanner_get_current_name(&scanner), name) == 0;
+}
+
+static gboolean
+_column_name_unset(void)
+{
+  return csv_scanner_get_current_name(&scanner) == NULL;
+}
+
+static gboolean
+_column_nv_equals(const gchar *name, const gchar *value)
+{
+  return _column_name_equals(name) && strcmp(csv_scanner_get_current_value(&scanner), value) == 0;
+}
+
+static gboolean
+_scan_complete(void)
+{
+  return csv_scanner_is_scan_complete(&scanner);
+}
+
+static gboolean
+_scan_next(void)
+{
+  return csv_scanner_scan_next(&scanner);
+}
+
 Test(csv_scanner, simple_comma_separate_values)
 {
-  CSVScanner scanner;
   const gchar *columns[] = { "foo", "bar", "baz", NULL };
 
   csv_scanner_init(&scanner, _default_options(columns), "val1,val2,val3");
 
-  cr_expect_str_eq(csv_scanner_get_current_name(&scanner), "foo");
-  cr_assert(!csv_scanner_is_scan_complete(&scanner));
+  cr_expect(_column_name_equals("foo"));
+  cr_expect(!_scan_complete());
 
-  cr_expect(csv_scanner_scan_next(&scanner));
-  cr_expect_str_eq(csv_scanner_get_current_name(&scanner), "foo");
-  cr_expect_str_eq(csv_scanner_get_current_value(&scanner), "val1");
-  cr_expect(!csv_scanner_is_scan_complete(&scanner));
+  cr_expect(_scan_next());
+  cr_expect(_column_nv_equals("foo", "val1"));
+  cr_expect(!_scan_complete());
 
-  cr_expect(csv_scanner_scan_next(&scanner));
-  cr_expect_str_eq(csv_scanner_get_current_name(&scanner), "bar");
-  cr_expect_str_eq(csv_scanner_get_current_value(&scanner), "val2");
-  cr_expect(!csv_scanner_is_scan_complete(&scanner));
+  cr_expect(_scan_next());
+  cr_expect(_column_nv_equals("bar", "val2"));
+  cr_expect(!_scan_complete());
 
-  cr_expect(csv_scanner_scan_next(&scanner));
-  cr_expect_str_eq(csv_scanner_get_current_name(&scanner), "baz");
-  cr_expect_str_eq(csv_scanner_get_current_value(&scanner), "val3");
+  cr_expect(_scan_next());
+  cr_expect(_column_nv_equals("baz", "val3"));
+  cr_expect(!_scan_complete());
 
   /* go past the last column */
-  cr_expect(!csv_scanner_scan_next(&scanner));
-  cr_expect(csv_scanner_is_scan_complete(&scanner));
+  cr_expect(!_scan_next());
+  cr_expect(_scan_complete());
+  cr_expect(_column_name_unset());
   csv_scanner_deinit(&scanner);
 }
 
-Test(csv_scanner, comma_separate_values_more_columns)
+Test(csv_scanner, empty_input_with_some_expected_columns)
 {
-  CSVScanner scanner;
   const gchar *columns[] = { "foo", "bar", "baz", NULL };
 
-  csv_scanner_init(&scanner, _default_options(columns), "val1,val2,val3,val4");
-  csv_scanner_scan_next(&scanner);
+  csv_scanner_init(&scanner, _default_options(columns), "");
+
+  cr_expect(_column_name_equals("foo"));
+  cr_expect(!_scan_complete());
+  cr_expect(!_scan_next());
+  cr_expect(_column_name_equals("foo"));
+  cr_expect(!_scan_complete());
+  csv_scanner_deinit(&scanner);
+}
+
+Test(csv_scanner, empty_input_with_no_columns)
+{
+  const gchar *columns[] = { NULL };
+
+  csv_scanner_init(&scanner, _default_options(columns), "");
+
+  cr_expect(_column_name_unset());
+  cr_expect(!_scan_complete());
+  cr_expect(!_scan_next());
+  cr_expect(_column_name_unset());
+  cr_expect(_scan_complete());
+  csv_scanner_deinit(&scanner);
+}
+
+Test(csv_scanner, partial_input)
+{
+  const gchar *columns[] = { "foo", "bar", "baz", NULL };
+
+  csv_scanner_init(&scanner, _default_options(columns), "val1,val2");
+
+  cr_expect(_column_name_equals("foo"));
+  cr_expect(!_scan_complete());
+
+  cr_expect(_scan_next());
+  cr_expect(_column_nv_equals("foo", "val1"));
+  cr_expect(!_scan_complete());
+
+  cr_expect(_scan_next());
+  cr_expect(_column_nv_equals("bar", "val2"));
+  cr_expect(!_scan_complete());
+
+  cr_expect(!_scan_next());
+  cr_expect(_column_name_equals("baz"));
+  cr_expect(!_scan_complete());
+
+  /* go past the last column */
+  cr_expect(!_scan_next());
+  cr_expect(!_scan_complete());
+  cr_expect(_column_name_equals("baz"));
+  csv_scanner_deinit(&scanner);
+}
+
+Test(csv_scanner, greedy_column)
+{
+  const gchar *columns[] = { "foo", "bar", NULL };
+
+  csv_scanner_init(&scanner, _default_options_with_flags(columns, CSV_SCANNER_GREEDY), "foo,bar,baz");
+
+  cr_expect(_column_name_equals("foo"));
+  cr_expect(!_scan_complete());
+
+  cr_expect(_scan_next());
+  cr_expect(_column_name_equals("foo"));
+  cr_expect(!_scan_complete());
+
+  cr_expect(_scan_next());
+  cr_expect(_column_name_equals("bar"));
+  cr_expect(_column_nv_equals("bar", "bar,baz"));
+  cr_expect(!_scan_complete());
+
+  /* go past the last column */
+  cr_expect(!_scan_next());
+  cr_expect(_scan_complete());
+  cr_expect(_column_name_unset());
   csv_scanner_deinit(&scanner);
 }
 
