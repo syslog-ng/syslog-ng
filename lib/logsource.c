@@ -317,8 +317,8 @@ _invoke_mangle_callbacks(LogPipe *s, LogMessage *msg, const LogPathOptions *path
   return TRUE;
 }
 
-static inline void
-_increment_dynamic_stats_counters(const gchar *source_id, const LogMessage *msg)
+static void
+_update_stats_counters(const gchar *source_id, const LogMessage *msg)
 {
   if (stats_check_level(2))
     {
@@ -344,6 +344,7 @@ _increment_dynamic_stats_counters(const gchar *source_id, const LogMessage *msg)
 
       stats_unlock();
     }
+  stats_syslog_process_message_pri(msg->pri);
 }
 
 static void
@@ -404,8 +405,7 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   if (self->options->program_override)
     log_source_override_program(self, msg);
 
-  _increment_dynamic_stats_counters(self->stats_id, msg);
-  stats_syslog_process_message_pri(msg->pri);
+  _update_stats_counters(self->stats_id, msg);
 
   /* message setup finished, send it out */
 
