@@ -650,13 +650,34 @@ afsql_dd_set_dbd_opt_numeric(gpointer key, gpointer value, gpointer user_data)
                               GPOINTER_TO_INT(value));
 }
 
+/*
+ * NOTE: there's a bug in libdbd-sqlite3 and this function basically works
+ * that around.  The issue is that the database path cannot be an empty
+ * string as it causes an invalid read (it is using -1 as an index in that
+ * case).  What we do is that if database is a fully specified path to a
+ * filename (e.g.  starts with a slash), we use another slash, so it remains
+ * a root-relative filename.  Otherwise, we simply use the current
+ * directory.
+ */
+static const gchar *
+_sqlite_db_dir(const gchar *database, gchar *buf, gsize buflen)
+{
+  if (database[0] == '/')
+    return strncpy(buf, "/", buflen);
+  else
+    return getcwd(buf, buflen);
+  return buf;
+}
+
 static void
 _enable_database_specific_hacks(AFSqlDestDriver *self)
 {
+  gchar buf[1024];
+
   if (strcmp(self->type, "sqlite") == 0)
-    dbi_conn_set_option(self->dbi_ctx, "sqlite_dbdir", "");
+    dbi_conn_set_option(self->dbi_ctx, "sqlite_dbdir", _sqlite_db_dir(self->database, buf, sizeof(buf)));
   else if (strcmp(self->type, "sqlite3") == 0)
-    dbi_conn_set_option(self->dbi_ctx, "sqlite3_dbdir", "");
+    dbi_conn_set_option(self->dbi_ctx, "sqlite3_dbdir", _sqlite_db_dir(self->database, buf, sizeof(buf)));
   else if (strcmp(self->type, s_oracle) == 0)
     dbi_conn_set_option_numeric(self->dbi_ctx, "oracle_ignore_tns_config", self->ignore_tns_config);
 }
