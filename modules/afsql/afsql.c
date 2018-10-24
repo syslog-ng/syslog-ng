@@ -650,6 +650,17 @@ afsql_dd_set_dbd_opt_numeric(gpointer key, gpointer value, gpointer user_data)
                               GPOINTER_TO_INT(value));
 }
 
+static void
+_enable_database_specific_hacks(AFSqlDestDriver *self)
+{
+  if (strcmp(self->type, "sqlite") == 0)
+    dbi_conn_set_option(self->dbi_ctx, "sqlite_dbdir", "");
+  else if (strcmp(self->type, "sqlite3") == 0)
+    dbi_conn_set_option(self->dbi_ctx, "sqlite3_dbdir", "");
+  else if (strcmp(self->type, s_oracle) == 0)
+    dbi_conn_set_option_numeric(self->dbi_ctx, "oracle_ignore_tns_config", self->ignore_tns_config);
+}
+
 static gboolean
 afsql_dd_connect(LogThreadedDestDriver *s)
 {
@@ -677,12 +688,7 @@ afsql_dd_connect(LogThreadedDestDriver *s)
   dbi_conn_set_option(self->dbi_ctx, "encoding", self->encoding);
   dbi_conn_set_option(self->dbi_ctx, "auto-commit", self->flags & AFSQL_DDF_EXPLICIT_COMMITS ? "false" : "true");
 
-  /* database specific hacks */
-  dbi_conn_set_option(self->dbi_ctx, "sqlite_dbdir", "");
-  dbi_conn_set_option(self->dbi_ctx, "sqlite3_dbdir", "");
-
-  if (strcmp(self->type, s_oracle) == 0)
-    dbi_conn_set_option_numeric(self->dbi_ctx, "oracle_ignore_tns_config", self->ignore_tns_config);
+  _enable_database_specific_hacks(self);
 
   /* Set user-specified options */
   g_hash_table_foreach(self->dbd_options, afsql_dd_set_dbd_opt, self->dbi_ctx);
