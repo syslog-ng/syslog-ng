@@ -180,7 +180,6 @@ app_startup(void)
 void
 app_finish_app_startup_after_cfg_init(void)
 {
-  log_tags_reinit_stats();
   log_msg_stats_global_init();
   scratch_buffers_global_init();
 }
