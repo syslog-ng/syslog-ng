@@ -301,19 +301,17 @@ _write_message(LogQueueDisk *self, LogMessage *msg)
 }
 
 static void
-_restart_diskq(LogQueueDisk *self, gboolean corrupted)
+_restart_diskq(LogQueueDisk *self)
 {
   gchar *filename = g_strdup(qdisk_get_filename(self->qdisk));
   gchar *new_file = NULL;
   DiskQueueOptions *options = qdisk_get_options(self->qdisk);
 
   qdisk_deinit(self->qdisk);
-  if (corrupted)
-    {
-      new_file = g_strdup_printf("%s.corrupted",filename);
-      rename(filename,new_file);
-      g_free(new_file);
-    }
+
+  new_file = g_strdup_printf("%s.corrupted", filename);
+  rename(filename, new_file);
+  g_free(new_file);
 
   if (self->restart)
     self->restart(self, options);
@@ -328,7 +326,7 @@ _restart_diskq(LogQueueDisk *self, gboolean corrupted)
 void
 log_queue_disk_restart_corrupted(LogQueueDisk *self)
 {
-  _restart_diskq(self, TRUE);
+  _restart_diskq(self);
 }
 
 
