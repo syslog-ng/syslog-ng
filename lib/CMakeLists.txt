@@ -98,6 +98,7 @@ set (LIB_HEADERS
     messages.h
     ml-batched-timer.h
     msg-format.h
+    msg-stats.h
     parse-number.h
     pathutils.h
     persist-state.h
@@ -188,6 +189,7 @@ set(LIB_SOURCES
     messages.c
     ml-batched-timer.c
     msg-format.c
+    msg-stats.c
     parse-number.c
     pathutils.c
     persist-state.c

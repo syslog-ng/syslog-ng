@@ -21,12 +21,14 @@
  * COPYING for details.
  *
  */
-#ifndef STATS_SYSLOG_H_INCLUDED
-#define STATS_SYSLOG_H_INCLUDED 1
+#ifndef MSG_STATS_H_INCLUDED
+#define MSG_STATS_H_INCLUDED 1
 
 #include "stats/stats-registry.h"
 
-void stats_syslog_process_message_pri(guint16 pri);
-void stats_syslog_reinit(void);
+void msg_stats_update_counters(const gchar *stats_id, const LogMessage *msg);
+
+void msg_stats_init(void);
+void msg_stats_deinit(void);
 
 #endif

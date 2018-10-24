@@ -10,7 +10,6 @@ statsinclude_HEADERS = \
 	lib/stats/stats-csv.h			\
 	lib/stats/stats-log.h			\
 	lib/stats/stats-registry.h		\
-	lib/stats/stats-syslog.h		\
 	lib/stats/stats-query.h			\
 	lib/stats/stats-query-commands.h \
 	lib/stats/stats-cluster-logpipe.h \
@@ -24,7 +23,6 @@ stats_sources = \
 	lib/stats/stats-csv.c			\
 	lib/stats/stats-log.c			\
 	lib/stats/stats-registry.c		\
-	lib/stats/stats-syslog.c		\
 	lib/stats/stats-query.c			\
 	lib/stats/stats-query-commands.c \
 	lib/stats/stats-cluster-logpipe.c \

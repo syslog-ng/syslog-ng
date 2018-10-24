@@ -44,6 +44,7 @@
 #include "secret-storage/nondumpable-allocator.h"
 #include "secret-storage/secret-storage.h"
 #include "transport/transport-factory-id.h"
+#include "msg-stats.h"
 
 #include <iv.h>
 #include <iv_work.h>
@@ -176,6 +177,7 @@ app_startup(void)
   secret_storage_init();
   transport_factory_id_global_init();
   scratch_buffers_global_init();
+  msg_stats_init();
 }
 
 void
@@ -200,6 +202,7 @@ app_pre_shutdown(void)
 void
 app_shutdown(void)
 {
+  msg_stats_deinit();
   run_application_hook(AH_SHUTDOWN);
   main_loop_thread_resource_deinit();
   secret_storage_deinit();

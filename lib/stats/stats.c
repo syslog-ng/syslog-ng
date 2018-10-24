@@ -26,7 +26,6 @@
 #include "stats/stats-log.h"
 #include "stats/stats-query.h"
 #include "stats/stats-registry.h"
-#include "stats/stats-syslog.h"
 #include "stats/stats.h"
 #include "timeutils.h"
 
@@ -231,7 +230,6 @@ void
 stats_reinit(StatsOptions *options)
 {
   stats_options = options;
-  stats_syslog_reinit();
   stats_timer_reinit(options);
 }
 

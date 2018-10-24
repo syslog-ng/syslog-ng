@@ -21,9 +21,10 @@
  * COPYING for details.
  *
  */
-#include "stats/stats-syslog.h"
+#include "msg-stats.h"
 #include "syslog-names.h"
-
+#include "logmsg/logmsg.h"
+#include "apphook.h"
 
 /* Static counters for severities and facilities */
 /* LOG_DEBUG 0x7 */
@@ -34,8 +35,8 @@
 static StatsCounterItem *severity_counters[SEVERITY_MAX];
 static StatsCounterItem *facility_counters[FACILITY_MAX];
 
-void
-stats_syslog_process_message_pri(guint16 pri)
+static void
+_process_message_pri(guint16 pri)
 {
   int lpri = LOG_FAC(pri);
 
@@ -49,6 +50,36 @@ stats_syslog_process_message_pri(guint16 pri)
 }
 
 void
+msg_stats_update_counters(const gchar *source_id, const LogMessage *msg)
+{
+  if (stats_check_level(2))
+    {
+      stats_lock();
+
+      StatsClusterKey sc_key;
+      stats_cluster_logpipe_key_set(&sc_key, SCS_HOST | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST, NULL) );
+      stats_register_and_increment_dynamic_counter(2, &sc_key, msg->timestamps[LM_TS_RECVD].tv_sec);
+
+      if (stats_check_level(3))
+        {
+          stats_cluster_logpipe_key_set(&sc_key, SCS_SENDER | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST_FROM, NULL) );
+          stats_register_and_increment_dynamic_counter(3, &sc_key, msg->timestamps[LM_TS_RECVD].tv_sec);
+          stats_cluster_logpipe_key_set(&sc_key, SCS_PROGRAM | SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_PROGRAM, NULL) );
+          stats_register_and_increment_dynamic_counter(3, &sc_key, msg->timestamps[LM_TS_RECVD].tv_sec);
+
+          stats_cluster_logpipe_key_set(&sc_key, SCS_HOST | SCS_SOURCE, source_id, log_msg_get_value(msg, LM_V_HOST, NULL));
+          stats_register_and_increment_dynamic_counter(3, &sc_key, msg->timestamps[LM_TS_RECVD].tv_sec);
+          stats_cluster_logpipe_key_set(&sc_key, SCS_SENDER | SCS_SOURCE, source_id, log_msg_get_value(msg, LM_V_HOST_FROM,
+                                        NULL));
+          stats_register_and_increment_dynamic_counter(3, &sc_key, msg->timestamps[LM_TS_RECVD].tv_sec);
+        }
+
+      stats_unlock();
+    }
+  _process_message_pri(msg->pri);
+}
+
+static void
 stats_syslog_reinit(void)
 {
   gchar name[11] = "";
@@ -95,4 +126,15 @@ stats_syslog_reinit(void)
       stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &facility_counters[FACILITY_MAX - 1]);
     }
   stats_unlock();
+}
+
+void
+msg_stats_init(void)
+{
+  register_application_hook(AH_CONFIG_CHANGED, (ApplicationHookFunc) stats_syslog_reinit, NULL);
+}
+
+void
+msg_stats_deinit(void)
+{
 }
