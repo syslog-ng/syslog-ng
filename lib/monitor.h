@@ -23,9 +23,30 @@
 #ifndef MONITOR_H_INCLUDED
 #define MONITOR_H_INCLUDED
 
-#include "mainloop.h"
+#include "messages.h"
 
-void initialize_inotify();
-void monitor_start(const gchar *file_path, MainLoop *self);
+#include <stdio.h>
+#include <stdlib.h>
+#include <iv.h>
+
+//#if SYSLOG_NG_HAVE_INOTIFY
+#include <iv_inotify.h>
+
+typedef struct _FileMonitor
+{
+  struct iv_inotify_watch *w;
+  struct iv_inotify inotify;
+  gpointer *self;
+  const gchar *file_path;
+  void (*main_loop_reload_config)(void *);
+} FileMonitor;
+
+//#else
+
+//#endif
+
+FileMonitor *file_monitor_create(const gchar *file_path);
+void file_monitor_config_reload_callback_function(FileMonitor *fm, void (*mainloop_callback)(void *), gpointer *self);
+void file_monitor_start(FileMonitor *fm);
 
 #endif

@@ -610,10 +610,13 @@ main_loop_run(MainLoop *self)
     }
 
   if (self->options->auto_reload)
-    monitor_start(resolvedConfigurablePaths.cfgfilename, self); /* iv_main() moved inside */
-  else
-    iv_main();
- 
+    {
+      FileMonitor *fm = file_monitor_create(resolvedConfigurablePaths.cfgfilename);
+      file_monitor_config_reload_callback_function(fm, (void (*)(void *))main_loop_reload_config, (gpointer *)self);
+      file_monitor_start(fm);
+    }
+
+  iv_main();
   service_management_publish_status("Shutting down...");
 }
 
