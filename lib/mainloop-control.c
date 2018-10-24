@@ -62,16 +62,11 @@ control_connection_message_log(ControlConnection *cc, GString *command, gpointer
               msg_info("Verbosity changed", evt_tag_str("type", cmds[1]), evt_tag_int("on", on));
               *type = on;
             }
-
-          g_string_assign(result,"OK");
         }
-      else
-        {
-          g_string_printf(result,"%s=%d", cmds[1], *type);
-        }
+      g_string_printf(result, "OK %s=%d", cmds[1], *type);
     }
   else
-    g_string_assign(result, "Invalid arguments received");
+    g_string_assign(result, "FAIL Invalid arguments received");
 exit:
   g_strfreev(cmds);
   return result;
@@ -115,7 +110,7 @@ control_connection_config(ControlConnection *cc, GString *command, gpointer user
       goto exit;
     }
 
-  g_string_assign(result, "Invalid arguments received");
+  g_string_assign(result, "FAIL Invalid arguments received");
 
 exit:
   g_strfreev(arguments);
@@ -125,7 +120,7 @@ exit:
 static GString *
 show_ose_license_info(ControlConnection *cc, GString *command, gpointer user_data)
 {
-  return g_string_new("You are using the Open Source Edition of syslog-ng.");
+  return g_string_new("OK You are using the Open Source Edition of syslog-ng.");
 }
 
 static void
@@ -205,7 +200,7 @@ secret_storage_status_accumulator(SecretStatus *status, gpointer user_data)
 static GString *
 process_credentials_status(GString *result)
 {
-  g_string_assign(result,"Credential storage status:\n");
+  g_string_assign(result, "OK Credential storage status follows\n");
   secret_storage_status_foreach(secret_storage_status_accumulator, (gpointer) result);
   return result;
 }
@@ -215,7 +210,7 @@ process_credentials_add(GString *result, guint argc, gchar **arguments)
 {
   if (argc < 4)
     {
-      g_string_assign(result,"error: missing arguments\n");
+      g_string_assign(result, "FAIL missing arguments to add\n");
       return result;
     }
 
@@ -223,9 +218,9 @@ process_credentials_add(GString *result, guint argc, gchar **arguments)
   gchar *secret = arguments[3];
 
   if (secret_storage_store_secret(id, secret, strlen(secret)))
-    g_string_assign(result,"Credentials stored successfully\n");
+    g_string_assign(result, "OK Credentials stored successfully\n");
   else
-    g_string_assign(result,"Error while saving credentials\n");
+    g_string_assign(result, "FAIL Error while saving credentials\n");
 
   secret_storage_wipe(secret, strlen(secret));
   return result;
@@ -241,19 +236,19 @@ process_credentials(ControlConnection *cc, GString *command, gpointer user_data)
 
   if (argc < 1)
     {
-      g_string_assign(result,"error: missing subcommand\n");
+      g_string_assign(result, "FAIL missing subcommand\n");
       g_strfreev(arguments);
       return result;
     }
 
   gchar *subcommand = arguments[1];
 
-  if (strcmp(subcommand,"status")==0)
+  if (strcmp(subcommand, "status") == 0)
     result = process_credentials_status(result);
-  else if (g_strcmp0(subcommand,"add") == 0)
+  else if (g_strcmp0(subcommand, "add") == 0)
     result = process_credentials_add(result, argc, arguments);
   else
-    g_string_printf(result,"error: invalid subcommand %s\n", subcommand);
+    g_string_printf(result, "FAIL invalid subcommand %s\n", subcommand);
 
   g_strfreev(arguments);
   return result;

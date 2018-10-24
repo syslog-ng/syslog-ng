@@ -99,6 +99,22 @@ clear_and_free(GString *str)
 }
 
 static gint
+_process_response_status(GString *response)
+{
+  if (strncmp(response->str, "FAIL ", 5) == 0)
+    {
+      g_string_erase(response, 0, 5);
+      return 1;
+    }
+  else if (strncmp(response->str, "OK ", 3) == 0)
+    {
+      g_string_erase(response, 0, 3);
+      return 0;
+    }
+  return 0;
+}
+
+static gint
 _dispatch_command(const gchar *cmd)
 {
   gint retval = 0;
@@ -106,9 +122,14 @@ _dispatch_command(const gchar *cmd)
   GString *rsp = slng_run_command(dispatchable_command);
 
   if (_is_response_empty(rsp))
-    retval = 1;
+    {
+      retval = 1;
+    }
   else
-    printf("%s\n", rsp->str);
+    {
+      retval = _process_response_status(rsp);
+      printf("%s\n", rsp->str);
+    }
 
   clear_and_free(rsp);
 
@@ -148,10 +169,8 @@ slng_verbose(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
   if (rsp == NULL)
     return 1;
 
-  if (!verbose_set)
-    printf("%s\n", rsp->str);
-  else
-    ret = g_str_equal(rsp->str, "OK");
+  ret = _process_response_status(rsp);
+  printf("%s\n", rsp->str);
 
   g_string_free(rsp, TRUE);
 
@@ -268,7 +287,6 @@ static GOptionEntry license_options[] =
 static gint
 slng_license(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 {
-  GString *rsp = NULL;
   gchar buff[256];
 
   if (license_json)
@@ -276,14 +294,7 @@ slng_license(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
   else
     g_snprintf(buff, 255, "LICENSE\n");
 
-  if (!(slng_send_cmd(buff) && ((rsp = control_client_read_reply(control_client)) != NULL)))
-    return 1;
-
-  printf("%s\n", rsp->str);
-
-  g_string_free(rsp, TRUE);
-
-  return 0;
+  return _dispatch_command(buff);
 }
 
 static gint

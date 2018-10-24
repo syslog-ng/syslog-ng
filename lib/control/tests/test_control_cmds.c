@@ -77,7 +77,7 @@ Test(control_cmds, test_log)
 
   g_string_assign(command,"LOG fakelog");
   reply = control_connection_message_log(conn, command, NULL);
-  cr_assert_str_eq(reply->str, "Invalid arguments received", "Bad reply");
+  cr_assert_str_eq(reply->str, "FAIL Invalid arguments received", "Bad reply");
   g_string_free(reply, TRUE);
 
   verbose_flag = 0;
@@ -85,18 +85,18 @@ Test(control_cmds, test_log)
   trace_flag = 1;
   g_string_assign(command,"LOG VERBOSE");
   reply = control_connection_message_log(conn, command, NULL);
-  cr_assert_str_eq(reply->str, "VERBOSE=0", "Bad reply");
+  cr_assert_str_eq(reply->str, "OK VERBOSE=0", "Bad reply");
   g_string_free(reply, TRUE);
 
   g_string_assign(command,"LOG VERBOSE ON");
   reply = control_connection_message_log(conn, command, NULL);
-  cr_assert_str_eq(reply->str, "OK", "Bad reply");
+  cr_assert_str_eq(reply->str, "OK VERBOSE=1", "Bad reply");
   cr_assert_eq(verbose_flag,1,"Flag isn't changed");
   g_string_free(reply, TRUE);
 
   g_string_assign(command,"LOG VERBOSE OFF");
   reply = control_connection_message_log(conn, command, NULL);
-  cr_assert_str_eq(reply->str, "OK", "Bad reply");
+  cr_assert_str_eq(reply->str, "OK VERBOSE=0", "Bad reply");
   cr_assert_eq(verbose_flag,0,"Flag isn't changed");
   g_string_free(reply, TRUE);
 
@@ -105,7 +105,7 @@ Test(control_cmds, test_log)
   trace_flag = 1;
   g_string_assign(command,"LOG DEBUG");
   reply = control_connection_message_log(conn, command, NULL);
-  cr_assert_str_eq(reply->str, "DEBUG=0", "Bad reply");
+  cr_assert_str_eq(reply->str, "OK DEBUG=0", "Bad reply");
   g_string_free(reply, TRUE);
 
   trace_flag = 0;
@@ -113,7 +113,7 @@ Test(control_cmds, test_log)
   debug_flag = 1;
   g_string_assign(command,"LOG TRACE");
   reply = control_connection_message_log(conn, command, NULL);
-  cr_assert_str_eq(reply->str, "TRACE=0", "Bad reply");
+  cr_assert_str_eq(reply->str, "OK TRACE=0", "Bad reply");
   g_string_free(reply, TRUE);
 
   g_string_free(command, TRUE);
@@ -169,7 +169,7 @@ Test(control_cmds, test_reset_stats)
 
   g_string_assign(command, "RESET_STATS");
   reply = control_connection_reset_stats(conn, command, NULL);
-  cr_assert_str_eq(reply->str, "The statistics of syslog-ng have been reset to 0.", "Bad reply");
+  cr_assert_str_eq(reply->str, "OK The statistics of syslog-ng have been reset to 0.", "Bad reply");
   g_string_free(reply, TRUE);
 
   reply = control_connection_send_stats(conn, command, NULL);
