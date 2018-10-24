@@ -26,6 +26,8 @@
 #include "stats/stats-registry.h"
 #include "timeutils.h"
 #include "messages.h"
+#include "apphook.h"
+
 #include <iv.h>
 
 /*
@@ -292,7 +294,7 @@ scratch_buffers_automatic_gc_deinit(void)
 }
 
 void
-scratch_buffers_global_init(void)
+scratch_buffers_register_stats(void)
 {
   StatsClusterKey sc_key;
 
@@ -305,7 +307,7 @@ scratch_buffers_global_init(void)
 }
 
 void
-scratch_buffers_global_deinit(void)
+scratch_buffers_unregister_stats(void)
 {
   StatsClusterKey sc_key;
 
@@ -315,4 +317,16 @@ scratch_buffers_global_deinit(void)
   stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "scratch_buffers_bytes", NULL);
   stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &stats_scratch_buffers_bytes);
   stats_unlock();
+}
+
+void
+scratch_buffers_global_init(void)
+{
+  register_application_hook(AH_RUNNING, (ApplicationHookFunc) scratch_buffers_register_stats, NULL);
+}
+
+void
+scratch_buffers_global_deinit(void)
+{
+  scratch_buffers_unregister_stats();
 }

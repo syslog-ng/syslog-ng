@@ -175,12 +175,12 @@ app_startup(void)
   nondumpable_setlogger(nondumpable_allocator_msg_debug, nondumpable_allocator_msg_fatal);
   secret_storage_init();
   transport_factory_id_global_init();
+  scratch_buffers_global_init();
 }
 
 void
 app_finish_app_startup_after_cfg_init(void)
 {
-  scratch_buffers_global_init();
 }
 
 void
