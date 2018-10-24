@@ -1,0 +1,237 @@
+# packages to run successful autogen.sh
+autoconf                    [centos, debian, ubuntu]
+autoconf-archive            [centos, debian, ubuntu]
+automake                    [centos, debian, ubuntu]
+ca-certificates             [centos, debian, ubuntu]
+git                         [centos, debian, ubuntu]
+libtool                     [centos, debian, ubuntu]
+
+    # pkgconfig
+    pkg-config              [debian, ubuntu]
+    pkgconfig               [centos]
+
+
+
+
+
+# packages to run successful configure
+bison                           [centos, debian, ubuntu]
+build-essential                 [debian, ubuntu]
+byacc                           [centos]
+file                            [centos, debian, ubuntu]
+flex                            [centos, debian, ubuntu]
+pcre-devel                      [centos]
+
+    # glib-dev
+    libglib2.0-dev              [debian, ubuntu]
+    glib2-devel                 [centos]
+
+    # ssl-dev
+    libssl-dev                  [debian, ubuntu]
+    openssl-devel               [centos]
+
+
+
+
+
+# packages to run successful configure with module support
+    # libbson-dev
+    libbson-dev                 [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
+    libbson-devel               [centos-7]
+
+    # librabbitmq-dev
+    librabbitmq-dev             [debian-jessie, debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
+    librabbitmq-devel           [centos-7]
+
+    # libmongoc-dev
+    libmongoc-dev               [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
+    libmongo-client-dev         [debian-jessie]
+    libmongo-client-devel       [centos-7]
+
+    # libmaxmindb-dev
+    libmaxminddb-dev            [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
+    libmaxminddb-devel          [centos-7]
+
+    # libcurl-dev
+    libcurl4-openssl-dev        [debian, ubuntu]
+    libcurl-devel               [centos]
+
+    # libdbi-dev
+    libdbi-dev                  [debian, ubuntu]
+    libdbi-devel                [centos]
+
+    # libesmtp-dev
+    libesmtp-dev                [debian, ubuntu]
+    libesmtp-devel              [centos]
+
+    # libgeoip-dev
+    libgeoip-dev                [debian, ubuntu]
+    GeoIP-devel                 [centos]
+
+    # redis-dev
+    libhiredis-dev              [debian, ubuntu]
+    hiredis-devel               [centos]
+
+    # libnet-dev
+    libnet1-dev                 [debian, ubuntu]
+    libnet-devel                [centos]
+
+    # libriemann-dev
+    libriemann-client-dev       [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
+    riemann-c-client-devel      [centos-7]
+
+    # java-7
+    openjdk-7-jdk               [debian-jessie, ubuntu-trusty]
+    java-1.7.0-openjdk-devel    [centos-6]
+
+    # java-8
+    openjdk-8-jdk               [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
+    java-1.8.0-openjdk-devel    [centos-7]
+
+    # python-dev
+    python-dev                  [debian, ubuntu]
+    python-devel                [centos]
+
+
+
+
+
+# optional packages to run configure
+    # libcap-dev
+    libcap-dev                  [debian, ubuntu]
+    libcap-devel                [centos]
+
+    # systemd-dev
+    libsystemd-dev              [debian, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
+    systemd-devel               [centos]
+
+    # uuid-dev
+    uuid-dev                    [debian, ubuntu]
+    libuuid-devel               [centos]
+
+
+
+
+
+# packages to run successful make
+cmake                           [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
+make                            [centos, debian, ubuntu]
+
+    # libwrap-dev
+    libwrap0-dev                [debian, ubuntu]
+    tcp_wrappers-devel          [centos]
+
+    # xsltproc
+    xsltproc                    [debian, ubuntu]
+    libxslt                     [centos]
+
+
+
+
+
+# packages to run successful make check
+python-pip                      [centos, debian, ubuntu]
+python-setuptools               [centos, debian, ubuntu]
+tzdata                          [centos, debian, ubuntu]
+
+    # geoip-database
+    geoip-database              [debian, ubuntu]
+    GeoIP-data                  [centos]
+
+    # libxml2-utils
+    libxml2-utils               [debian, ubuntu]
+    libxml2                     [centos]
+
+    # sqlite
+    sqlite3                     [debian, ubuntu]
+    sqlite                      [centos]
+
+
+
+
+# packages to run successful packaging
+debhelper                       [debian, ubuntu]
+devscripts                      [debian, ubuntu]
+dh-autoreconf                   [debian, ubuntu]
+dh-exec                         [debian, ubuntu]
+dh-systemd                      [debian, ubuntu]
+dpkg-dev                        [debian, ubuntu]
+fakeroot                        [centos, debian, ubuntu]
+rpm-build                       [centos]
+cyrus-sasl-devel                [centos-7]
+
+    #libivykis-dev
+    libivykis-dev               [debian, ubuntu]
+    ivykis-devel                [centos]
+
+    #libjson-dev
+    libjson-c-dev               [debian, ubuntu]
+    json-c-devel                [centos]
+
+
+
+
+
+# packages to run successful stylecheck
+astyle                          [debian, ubuntu]
+
+
+
+
+
+# packages to run gosu installation
+gnupg                           [centos, debian, ubuntu]
+
+
+
+
+
+# packages to run Kira
+faketime                        [debian, ubuntu]
+libdbd-mysql                    [debian, ubuntu]
+lsb-release                     [debian, ubuntu]
+lsof                            [debian, ubuntu]
+netbase                         [debian, ubuntu]
+netcat                          [debian, ubuntu]
+openssh-client                  [debian, ubuntu]
+python-numpy                    [debian, ubuntu]
+python-yaml                     [debian, ubuntu]
+python3-yaml                    [debian, ubuntu]
+systemd-sysv                    [debian, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
+
+
+
+
+
+# common tools
+bzip2                           [centos, debian, ubuntu]
+less                            [centos, debian, ubuntu]
+unzip                           [centos, debian, ubuntu]
+vim                             [centos, debian, ubuntu]
+wget                            [centos, debian, ubuntu]
+
+
+
+
+# devtools
+clang                           [devshell]
+dirmngr                         [devshell]
+gdb                             [devshell]
+gdbserver                       [devshell]
+joe                             [devshell]
+lcov                            [devshell]
+libc6-dbg                       [devshell]
+libglib2.0-0-dbgsym             [devshell]
+libjemalloc-dev                 [devshell]
+libjemalloc1-dbgsym             [devshell]
+libpcre2-dbg                    [devshell]
+libssl1.0.0-dbg                 [devshell]
+linux-tools-generic             [devshell]
+locales                         [devshell]
+lsof                            [devshell]
+netcat                          [devshell]
+python-dbg                      [devshell]
+python3-dbg                     [devshell]
+strace                          [devshell]
+valgrind                        [devshell]
+virtualenv                      [devshell]

@@ -8,24 +8,21 @@ EXTRA_DIST += \
 	dbld/shell \
 	dbld/rules \
 	dbld/bootstrap	\
-	dbld/images/artful.dockerfile \
-	dbld/images/centos6.dockerfile \
-	dbld/images/centos7.dockerfile \
-	dbld/images/devshell-apt \
 	dbld/images/devshell.dockerfile \
-	dbld/images/devshell-pip \
 	dbld/images/helpers/entrypoint.sh \
 	dbld/images/helpers/fake-sudo.sh \
-	dbld/images/helpers/functions.sh \
 	dbld/images/helpers/gosu.pubkey \
-	dbld/images/jessie.dockerfile \
+	dbld/images/helpers/packages.manifest \
+	dbld/images/helpers/pip_packages.manifest \
 	dbld/images/README.md \
-	dbld/images/required-apt \
-	dbld/images/required-epel \
-	dbld/images/required-obs \
-	dbld/images/required-pip \
-	dbld/images/required-yum \
-	dbld/images/trusty.dockerfile \
-	dbld/images/xenial.dockerfile \
+	dbld/images/centos-6.dockerfile \
+	dbld/images/centos-7.dockerfile \
+	dbld/images/debian-jessie.dockerfile \
+	dbld/images/debian-stretch.dockerfile \
+	dbld/images/debian-buster.dockerfile \
+	dbld/images/ubuntu-trusty.dockerfile \
+	dbld/images/ubuntu-xenial.dockerfile \
+	dbld/images/ubuntu-cosmic.dockerfile \
+	dbld/images/ubuntu-bionic.dockerfile \
 	dbld/make \
 	dbld/README.md
