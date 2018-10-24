@@ -30,7 +30,7 @@ tf_basename(LogMessage *msg, gint argc, GString *argv[], GString *result)
   gchar *base;
 
   base = g_path_get_basename(argv[0]->str);
-  g_string_assign(result, base);
+  g_string_append(result, base);
   g_free(base);
 }
 
@@ -42,7 +42,7 @@ tf_dirname(LogMessage *msg, gint argc, GString *argv[], GString *result)
   gchar *dir;
 
   dir = g_path_get_dirname(argv[0]->str);
-  g_string_assign(result, dir);
+  g_string_append(result, dir);
   g_free(dir);
 }
 
