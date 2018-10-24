@@ -38,6 +38,7 @@
 #include "template/macros.h"
 #include "host-id.h"
 #include "ack_tracker.h"
+#include "apphook.h"
 
 #include <glib/gprintf.h>
 #include <sys/types.h>
@@ -1804,14 +1805,8 @@ log_msg_registry_foreach(GHFunc func, gpointer user_data)
   nv_registry_foreach(logmsg_registry, func, user_data);
 }
 
-void
-log_msg_global_init(void)
-{
-  log_msg_registry_init();
-}
-
-void
-log_msg_stats_global_init(void)
+static void
+log_msg_register_stats(void)
 {
   stats_lock();
   StatsClusterKey sc_key;
@@ -1828,6 +1823,18 @@ log_msg_stats_global_init(void)
   stats_register_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &count_allocated_bytes);
   stats_unlock();
 }
+
+void
+log_msg_global_init(void)
+{
+  log_msg_registry_init();
+
+  /* NOTE: we always initialize counters as they are on stats-level(0),
+   * however we need to defer that as the stats subsystem may not be
+   * operational yet */
+  register_application_hook(AH_RUNNING, (ApplicationHookFunc) log_msg_register_stats, NULL);
+}
+
 
 const gchar *
 log_msg_get_handle_name(NVHandle handle, gssize *length)
