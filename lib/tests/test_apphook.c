@@ -76,9 +76,9 @@ Test(test_apphook, pre_config_loaded_no_hook)
 Test(test_apphook, post_config_loaded)
 {
   gint triggered_count = 0;
-  register_application_hook(AH_POST_CONFIG_LOADED, _hook_counter, (gpointer)&triggered_count);
+  register_application_hook(AH_CONFIG_CHANGED, _hook_counter, (gpointer)&triggered_count);
 
-  app_post_config_loaded();
+  app_config_changed();
 
   cr_assert_eq(triggered_count, 1);
 }
@@ -119,7 +119,7 @@ Test(test_apphook, trigger_all_state_hook)
   gint triggered_count = 0;
   register_application_hook(AH_POST_DAEMONIZED, _hook_counter, (gpointer)&triggered_count);
   register_application_hook(AH_PRE_CONFIG_LOADED, _hook_not_reached, NULL);
-  register_application_hook(AH_POST_CONFIG_LOADED, _hook_counter, (gpointer)&triggered_count);
+  register_application_hook(AH_CONFIG_CHANGED, _hook_counter, (gpointer)&triggered_count);
   register_application_hook(AH_PRE_SHUTDOWN, _hook_counter, (gpointer)&triggered_count);
   register_application_hook(AH_SHUTDOWN, _hook_counter, (gpointer)&triggered_count);
   register_application_hook(AH_REOPEN_FILES, _hook_counter, (gpointer)&triggered_count);
@@ -128,7 +128,7 @@ Test(test_apphook, trigger_all_state_hook)
   app_startup(); //This is needed for app_shutdown
   app_post_daemonized();
   app_pre_config_loaded();
-  app_post_config_loaded();
+  app_config_changed();
   app_pre_shutdown();
   app_shutdown();
 

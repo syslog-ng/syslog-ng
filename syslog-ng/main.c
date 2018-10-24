@@ -298,7 +298,7 @@ main(int argc, char *argv[])
   /* we are running as a non-root user from this point */
 
   app_post_daemonized();
-  app_post_config_loaded();
+  app_config_changed();
 
   if(startup_debug_flag)
     {

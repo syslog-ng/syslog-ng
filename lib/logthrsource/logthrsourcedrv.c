@@ -208,7 +208,7 @@ log_threaded_source_worker_init(LogPipe *s)
   g_assert(self->request_exit);
 
   /* The worker thread has to be started after CfgTree is completely initialized. */
-  register_application_hook(AH_POST_CONFIG_LOADED, _start_worker_thread, self);
+  register_application_hook(AH_CONFIG_CHANGED, _start_worker_thread, self);
 
   return TRUE;
 }

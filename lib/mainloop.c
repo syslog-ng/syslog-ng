@@ -263,7 +263,7 @@ main_loop_reload_config_apply(gpointer user_data)
     }
 
   /* this is already running with the new config in place */
-  app_post_config_loaded();
+  app_config_changed();
   msg_notice("Configuration reload request received, reloading configuration");
 
 finish:

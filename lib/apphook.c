@@ -197,12 +197,6 @@ app_pre_config_loaded(void)
   current_state = AH_PRE_CONFIG_LOADED;
 }
 
-void
-app_post_config_loaded(void)
-{
-  run_application_hook(AH_POST_CONFIG_LOADED);
-  res_init();
-}
 
 void
 app_pre_shutdown(void)
@@ -247,6 +241,13 @@ app_shutdown(void)
     iv_deinit();
 
    */
+}
+
+void
+app_config_changed(void)
+{
+  run_application_hook(AH_CONFIG_CHANGED);
+  res_init();
 }
 
 void
