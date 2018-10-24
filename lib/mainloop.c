@@ -239,6 +239,8 @@ main_loop_reload_config_apply(gpointer user_data)
       cfg_free(self->old_config);
       self->current_configuration = self->new_config;
       service_management_clear_status();
+      msg_notice("Configuration reload request received, reloading configuration");
+
     }
   else
     {
@@ -259,14 +261,11 @@ main_loop_reload_config_apply(gpointer user_data)
       self->old_config->persist = NULL;
       cfg_free(self->new_config);
       self->current_configuration = self->old_config;
-      goto finish;
     }
 
   /* this is already running with the new config in place */
   app_config_changed();
-  msg_notice("Configuration reload request received, reloading configuration");
 
-finish:
   self->new_config = NULL;
   self->old_config = NULL;
 
