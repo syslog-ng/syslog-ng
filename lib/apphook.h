@@ -27,32 +27,43 @@
 
 #include "syslog-ng.h"
 
-/* this enum must be in the order the given events actually happen in time */
 enum
 {
+  /* these states happen as a sequence and only happen once */
   AH_STARTUP,
   AH_POST_DAEMONIZED,
-  AH_PRE_CONFIG_LOADED,
+  AH_RUNNING,
   AH_PRE_SHUTDOWN,
   AH_SHUTDOWN,
+
+  /* this item separates state-like hooks from events happening regularly in
+   * the RUNNING state */
+  __AH_STATE_MAX,
+
+  /* these happen from time to time and don't update the current state of
+   * the process */
   AH_CONFIG_CHANGED,
   AH_REOPEN_FILES,
 };
 
+/* state-like hook entry points */
+void app_startup(void);
+void app_post_daemonized(void);
+void app_running(void);
+void app_pre_shutdown(void);
+void app_shutdown(void);
+
+/* stateless entry points */
 void app_config_changed(void);
 void app_reopen_files(void);
+
 typedef void (*ApplicationHookFunc)(gint type, gpointer user_data);
 
 gboolean app_is_starting_up(void);
 gboolean app_is_shutting_down(void);
-void register_application_hook(gint type, ApplicationHookFunc func, gpointer user_data);
-void app_startup(void);
-void app_finish_app_startup_after_cfg_init(void);
 
-void app_post_daemonized(void);
-void app_pre_config_loaded(void);
-void app_pre_shutdown(void);
-void app_shutdown(void);
+void register_application_hook(gint type, ApplicationHookFunc func, gpointer user_data);
+void app_finish_app_startup_after_cfg_init(void);
 
 void app_thread_start(void);
 void app_thread_stop(void);

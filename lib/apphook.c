@@ -62,7 +62,7 @@ static gint current_state = AH_STARTUP;
 gboolean
 app_is_starting_up(void)
 {
-  return current_state < AH_PRE_CONFIG_LOADED;
+  return current_state < AH_RUNNING;
 }
 
 gboolean
@@ -74,7 +74,7 @@ app_is_shutting_down(void)
 void
 register_application_hook(gint type, ApplicationHookFunc func, gpointer user_data)
 {
-  if (current_state < type)
+  if (type > __AH_STATE_MAX || current_state < type)
     {
       ApplicationHookEntry *entry = g_new0(ApplicationHookEntry, 1);
 
@@ -97,7 +97,7 @@ register_application_hook(gint type, ApplicationHookFunc func, gpointer user_dat
 static void
 _update_current_state(gint type)
 {
-  if (AH_REOPEN_FILES == type)
+  if (type > __AH_STATE_MAX)
     return;
 
   g_assert(current_state <= type);
@@ -192,9 +192,9 @@ app_post_daemonized(void)
 }
 
 void
-app_pre_config_loaded(void)
+app_running(void)
 {
-  current_state = AH_PRE_CONFIG_LOADED;
+  run_application_hook(AH_RUNNING);
 }
 
 

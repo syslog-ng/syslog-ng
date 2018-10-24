@@ -39,12 +39,6 @@ _hook_counter(gint type, gpointer user_data)
   (*triggered_count)++;
 }
 
-static void
-_hook_not_reached(gint type, gpointer user_data)
-{
-  cr_assert_fail("This hook should not be triggered!");
-}
-
 Test(test_apphook, post_daemon_hook)
 {
   gint triggered_count = 0;
@@ -62,23 +56,6 @@ Test(test_apphook, post_daemon_triggered_twice)
 
   app_post_daemonized();
   app_post_daemonized();
-
-  cr_assert_eq(triggered_count, 1);
-}
-
-Test(test_apphook, pre_config_loaded_no_hook)
-{
-  register_application_hook(AH_PRE_CONFIG_LOADED, _hook_not_reached, NULL);
-
-  app_pre_config_loaded();
-}
-
-Test(test_apphook, post_config_loaded)
-{
-  gint triggered_count = 0;
-  register_application_hook(AH_CONFIG_CHANGED, _hook_counter, (gpointer)&triggered_count);
-
-  app_config_changed();
 
   cr_assert_eq(triggered_count, 1);
 }
@@ -104,6 +81,17 @@ Test(test_apphook, shutdown_hook)
   cr_assert_eq(triggered_count, 1);
 }
 
+Test(test_apphook, config_changed)
+{
+  gint triggered_count = 0;
+  register_application_hook(AH_CONFIG_CHANGED, _hook_counter, (gpointer)&triggered_count);
+
+  app_config_changed();
+
+  cr_assert_eq(triggered_count, 1);
+}
+
+
 Test(test_apphook, reopen_hook)
 {
   gint triggered_count = 0;
@@ -118,20 +106,32 @@ Test(test_apphook, trigger_all_state_hook)
 {
   gint triggered_count = 0;
   register_application_hook(AH_POST_DAEMONIZED, _hook_counter, (gpointer)&triggered_count);
-  register_application_hook(AH_PRE_CONFIG_LOADED, _hook_not_reached, NULL);
-  register_application_hook(AH_CONFIG_CHANGED, _hook_counter, (gpointer)&triggered_count);
+  register_application_hook(AH_RUNNING, _hook_counter, (gpointer)&triggered_count);
   register_application_hook(AH_PRE_SHUTDOWN, _hook_counter, (gpointer)&triggered_count);
   register_application_hook(AH_SHUTDOWN, _hook_counter, (gpointer)&triggered_count);
+
+  register_application_hook(AH_CONFIG_CHANGED, _hook_counter, (gpointer)&triggered_count);
   register_application_hook(AH_REOPEN_FILES, _hook_counter, (gpointer)&triggered_count);
 
-  app_reopen_files();
-  app_startup(); //This is needed for app_shutdown
+  app_startup();
   app_post_daemonized();
-  app_pre_config_loaded();
+  cr_assert_eq(triggered_count, 1);
+
+  app_running();
+  cr_assert_eq(triggered_count, 2);
+
+  /* check that a state that has already passed would be invoked immediately */
+  register_application_hook(AH_POST_DAEMONIZED, _hook_counter, (gpointer)&triggered_count);
+
+  cr_assert_eq(triggered_count, 3);
+
   app_config_changed();
+  app_reopen_files();
+  cr_assert_eq(triggered_count, 5);
+
   app_pre_shutdown();
   app_shutdown();
 
-  cr_assert_eq(triggered_count, 5);
+  cr_assert_eq(triggered_count, 7);
 }
 

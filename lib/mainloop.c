@@ -291,7 +291,6 @@ main_loop_reload_config_initiate(gpointer user_data)
   service_management_publish_status("Reloading configuration");
 
   self->old_config = self->current_configuration;
-  app_pre_config_loaded();
   self->new_config = cfg_new(0);
   if (!cfg_read_config(self->new_config, resolvedConfigurablePaths.cfgfilename, FALSE, NULL))
     {
@@ -607,6 +606,7 @@ main_loop_run(MainLoop *self)
       cfg_load_module(self->current_configuration, "mod-python");
       debugger_start(self, self->current_configuration);
     }
+  app_running();
   iv_main();
   service_management_publish_status("Shutting down...");
 }
