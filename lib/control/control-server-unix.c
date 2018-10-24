@@ -201,11 +201,11 @@ control_server_unix_free(ControlServer *s)
 }
 
 ControlServer *
-control_server_new(const gchar *path, GList *commands)
+control_server_new(const gchar *path)
 {
   ControlServerUnix *self = g_new(ControlServerUnix,1);
 
-  control_server_init_instance(&self->super, path, commands);
+  control_server_init_instance(&self->super, path);
   IV_FD_INIT(&self->control_listen);
   self->super.free_fn = control_server_unix_free;
   return &self->super;

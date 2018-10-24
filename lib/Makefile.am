@@ -132,6 +132,7 @@ pkginclude_HEADERS			+= \
 	lib/mainloop-call.h		\
 	lib/mainloop-worker.h		\
 	lib/mainloop-io-worker.h	\
+	lib/mainloop-control.h		\
 	lib/module-config.h		\
 	lib/memtrace.h			\
 	lib/messages.h			\
@@ -222,6 +223,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/mainloop-call.c		\
 	lib/mainloop-worker.c		\
 	lib/mainloop-io-worker.c	\
+	lib/mainloop-control.c		\
 	lib/module-config.c		\
 	lib/memtrace.c			\
 	lib/messages.c			\

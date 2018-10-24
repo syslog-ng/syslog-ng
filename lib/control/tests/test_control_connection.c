@@ -26,6 +26,7 @@
 
 #include "control/control.h"
 #include "control/control-server.h"
+#include "control/control-commands.h"
 #include "apphook.h"
 
 typedef struct _PositionedBuffer
@@ -147,13 +148,6 @@ test_command(GString *command, gpointer user_data)
   return g_string_new("OK");
 }
 
-ControlCommand command =
-{
-  .command_name = "test",
-  .description = NULL,
-  .func = test_command
-};
-
 static void
 update_watches_stub(ControlConnection *s)
 {
@@ -202,8 +196,7 @@ test_control_connection(gsize transaction_size)
 
 Test(control_connection, test_control_connection)
 {
-  GList *commands = g_list_append(NULL, &command);
-  moc_server.control_commands = commands;
+  control_register_command("test", NULL, test_command, NULL);
   gsize  i = 0;
 
   app_startup();
@@ -212,6 +205,6 @@ Test(control_connection, test_control_connection)
       test_control_connection(i);
     }
   app_shutdown();
-  g_list_free(commands);
+  reset_control_command_list();
 }
 

@@ -22,6 +22,7 @@
  */
 
 #include "control-server.h"
+#include "control-commands.h"
 #include "messages.h"
 #include "str-utils.h"
 #include "secret-storage/secret-storage.h"
@@ -30,10 +31,9 @@
 #include <errno.h>
 
 void
-control_server_init_instance(ControlServer *self, const gchar *path, GList *control_commands)
+control_server_init_instance(ControlServer *self, const gchar *path)
 {
   self->control_socket_name = g_strdup(path);
-  self->control_commands = control_commands;
 }
 
 void
@@ -157,7 +157,7 @@ control_connection_io_input(void *s)
       return;
     }
 
-  iter = g_list_find_custom(self->server->control_commands, command->str,
+  iter = g_list_find_custom(get_control_command_list(), command->str,
                             (GCompareFunc)control_command_start_with_command);
   if (iter == NULL)
     {

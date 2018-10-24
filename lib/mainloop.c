@@ -25,6 +25,7 @@
 #include "mainloop-worker.h"
 #include "mainloop-io-worker.h"
 #include "mainloop-call.h"
+#include "mainloop-control.h"
 #include "apphook.h"
 #include "cfg.h"
 #include "stats/stats-registry.h"
@@ -563,7 +564,8 @@ main_loop_read_and_init_config(MainLoop *self)
     {
       return 2;
     }
-  self->control_server = control_init(self, resolvedConfigurablePaths.ctlfilename);
+  self->control_server = control_init(resolvedConfigurablePaths.ctlfilename);
+  main_loop_register_control_commands(self);
   return 0;
 }
 
@@ -579,8 +581,7 @@ main_loop_deinit(MainLoop *self)
 {
   main_loop_free_config(self);
 
-  if (self->control_server)
-    control_server_free(self->control_server);
+  control_deinit(self->control_server);
 
   iv_event_unregister(&self->exit_requested);
   iv_event_unregister(&self->reload_config_requested);

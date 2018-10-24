@@ -24,6 +24,7 @@
 #include "stats/stats-control.h"
 #include "stats/stats-csv.h"
 #include "stats/stats-counter.h"
+#include "stats/stats-query-commands.h"
 #include "control/control-commands.h"
 
 static GString *
@@ -48,10 +49,5 @@ stats_register_control_commands(void)
 {
   control_register_command("STATS", NULL, control_connection_send_stats, NULL);
   control_register_command("RESET_STATS", NULL, control_connection_reset_stats, NULL);
-}
-
-void
-stats_unregister_control_commands(void)
-{
-  reset_control_command_list();
+  control_register_command("QUERY", NULL, process_query_command, NULL);
 }

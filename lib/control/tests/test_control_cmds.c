@@ -27,18 +27,17 @@
 #include "messages.h"
 #include "control/control.h"
 #include "control/control-commands.h"
+#include "mainloop-control.h"
 #include "stats/stats-control.h"
 #include "control/control-server.h"
 #include "stats/stats-cluster.h"
 #include "stats/stats-registry.h"
 #include "apphook.h"
 
-static GList *command_list = NULL;
-
 static ControlCommand *
 command_test_get(const char *cmd)
 {
-  GList *command = g_list_find_custom(command_list, cmd, (GCompareFunc)control_command_start_with_command);
+  GList *command = g_list_find_custom(get_control_command_list(), cmd, (GCompareFunc)control_command_start_with_command);
   if (NULL == command)
     return NULL;
   return (ControlCommand *)command->data;
@@ -48,7 +47,7 @@ void
 setup(void)
 {
   msg_init(FALSE);
-  command_list = control_register_default_commands(NULL);
+  main_loop_register_control_commands(NULL);
   stats_register_control_commands();
 }
 
@@ -126,7 +125,6 @@ Test(control_cmds, test_stats)
   gchar **stats_result;
 
   stats_init();
-  command_list = control_register_default_commands(NULL);
 
   CommandFunction control_connection_send_stats = command_test_get("STATS")->func;
 
@@ -156,7 +154,6 @@ Test(control_cmds, test_reset_stats)
   StatsCounterItem *counter = NULL;
 
   stats_init();
-  command_list = control_register_default_commands(NULL);
 
   CommandFunction control_connection_send_stats = command_test_get("STATS")->func;
   CommandFunction control_connection_reset_stats = command_test_get("RESET_STATS")->func;

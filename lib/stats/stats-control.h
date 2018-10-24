@@ -27,6 +27,5 @@
 #include "syslog-ng.h"
 
 void stats_register_control_commands(void);
-void stats_unregister_control_commands(void);
 
 #endif

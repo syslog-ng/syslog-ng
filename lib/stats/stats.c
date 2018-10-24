@@ -246,7 +246,6 @@ stats_destroy(void)
 {
   stats_query_deinit();
   stats_registry_deinit();
-  stats_unregister_control_commands();
 }
 
 void

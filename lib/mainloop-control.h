@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2002-2017 Balabit
+ * Copyright (c) 1998-2017 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,22 +22,9 @@
  *
  */
 
-#include "control-main.h"
-#include "control-server.h"
-#include "control-commands.h"
+#ifndef MAINLOOP_CONTROL_H_INCLUDED
+#define MAINLOOP_CONTROL_H_INCLUDED
 
-ControlServer *
-control_init(const gchar *control_name)
-{
-  ControlServer *control_server = control_server_new(control_name);
-  control_server_start(control_server);
-  return control_server;
-}
+void main_loop_register_control_commands(MainLoop *main_loop);
 
-void
-control_deinit(ControlServer *control_server)
-{
-  reset_control_command_list();
-  if (control_server)
-    control_server_free(control_server);
-}
+#endif
