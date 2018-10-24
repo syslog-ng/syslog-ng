@@ -126,14 +126,17 @@ _process(LogParser *s, LogMessage **pmsg,
 {
   AddContextualData *self = (AddContextualData *) s;
   LogMessage *msg = log_msg_make_writable(pmsg, path_options);
-  msg_trace("add-contextual-data message processing started",
-            evt_tag_str ("input", input),
-            evt_tag_printf("msg", "%p", *pmsg));
   gchar *resolved_selector = add_contextual_data_selector_resolve(self->selector, msg);
   const gchar *selector = resolved_selector;
 
   if (!context_info_db_contains(self->context_info_db, selector) && _is_default_selector_set(self))
     selector = self->default_selector;
+
+  msg_trace("add-contextual-data(): message processing",
+            evt_tag_str("input", input),
+            evt_tag_str("resolved_selector", resolved_selector),
+            evt_tag_str("selector", selector),
+            evt_tag_printf("msg", "%p", *pmsg));
 
   if (selector)
     context_info_db_foreach_record(self->context_info_db, selector,
