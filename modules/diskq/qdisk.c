@@ -469,6 +469,7 @@ _try_to_load_queue(QDisk *self, GQueue *queue, QDiskQueuePosition *pos, gchar *t
     {
       msg_error("Inconsistent header data in disk-queue file, ignoring queue",
                 evt_tag_str("filename", self->filename),
+                evt_tag_long("write_head", self->hdr->write_head),
                 evt_tag_str("type", type),
                 evt_tag_long("ofs", ofs),
                 evt_tag_long("qdisk_length",  self->hdr->length));
