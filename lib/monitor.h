@@ -29,7 +29,7 @@
 #include <stdlib.h>
 #include <iv.h>
 
-//#if SYSLOG_NG_HAVE_INOTIFY
+#if SYSLOG_NG_HAVE_INOTIFY
 #include <iv_inotify.h>
 
 typedef struct _FileMonitor
@@ -43,7 +43,7 @@ typedef struct _FileMonitor
 
 //#else
 
-//#endif
+#endif
 
 FileMonitor *file_monitor_create(const gchar *file_path);
 void file_monitor_config_reload_callback_function(FileMonitor *fm, void (*mainloop_callback)(void *), gpointer *self);

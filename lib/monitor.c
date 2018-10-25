@@ -23,7 +23,7 @@
 
 #include "monitor.h"
 
-//#if SYSLOG_NG_HAVE_INOTIFY
+#if SYSLOG_NG_HAVE_INOTIFY
 static void
 handler(void *_fm, struct inotify_event *event)
 {
@@ -123,5 +123,5 @@ monitor_start(const gchar *file_path, MainLoop *self)
 }
 */
 
-//#endif
+#endif
 
