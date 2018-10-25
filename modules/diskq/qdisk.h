@@ -37,6 +37,14 @@
  */
 #define POINTER_TO_LOG_PATH_OPTIONS(ptr, lpo) (lpo)->ack_needed = (GPOINTER_TO_INT(ptr) & ~0x80000000)
 
+typedef struct
+{
+  gint64 ofs;
+  gint32 len;
+  gint32 count;
+}
+QDiskQueuePosition;
+
 typedef struct _QDisk QDisk;
 
 QDisk *qdisk_new(void);
