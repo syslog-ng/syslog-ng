@@ -24,8 +24,10 @@
 
 #include "cfg-lexer.h"
 #include "cfg-grammar.h"
+#include "apphook.h"
 #include <criterion/criterion.h>
 #include "mock-cfg-parser.h"
+#include "grab-logging.h"
 
 #define TESTDATA_DIR TOP_SRCDIR "/lib/tests/testdata-lexer"
 
@@ -74,7 +76,7 @@ _current_lloc(void)
   assert_token_type(LL_BLOCK);                                         \
   cr_assert_str_eq(_current_token()->cptr, expected, "Unexpected block value parsed >>>%s<<< != >>>%s<<<", _current_token()->cptr, expected);
 
-#define assert_parser_block_bad() \
+#define assert_parser_error() \
   _next_token();                                                        \
   assert_token_type(LL_ERROR);
 
@@ -108,6 +110,15 @@ _current_lloc(void)
   cr_assert_eq(_current_lloc()->first_column, column,          \
               "The column number in the location information "        \
               "does not match the expected value, %d != %d", _current_lloc()->first_column, column);
+
+#define assert_location_range(_first_line, _first_column, _last_line, _last_column) \
+  assert_location(_first_line, _first_column); \
+  cr_assert_eq(_current_lloc()->last_line, _last_line,          \
+              "The last_line number in the location information "        \
+              "does not match the expected value, %d != %d", _current_lloc()->last_line, _last_line);  \
+  cr_assert_eq(_current_lloc()->last_column, _last_column,          \
+              "The last_column number in the location information "        \
+              "does not match the expected value, %d != %d", _current_lloc()->last_column, _last_column);
 
 
 static gchar *
@@ -157,18 +168,120 @@ Test(lexer, test_qstring)
   assert_parser_string("\"test\\n\\r\"");
 }
 
-#define TEST_BLOCK " {'hello world' \"test value\" {other_block} other\text}"
-#define TEST_BAD_BLOCK "this is a bad block starting " TEST_BLOCK
-
 Test(lexer, block_token_is_taken_literally_between_a_pair_of_enclosing_characters)
 {
-  _input(TEST_BLOCK);
+  _input(" { hello }");
+  cfg_lexer_start_block_state(parser->lexer, "{}");
+  assert_parser_block(" hello ");
+  assert_location_range(1, 1, 1, 11);
+
+  _input(" { hello\nworld }");
+  cfg_lexer_start_block_state(parser->lexer, "{}");
+  assert_parser_block(" hello\nworld ");
+  assert_location_range(1, 1, 2, 8);
+
+  _input(" { hello\\\nworld }");
+  cfg_lexer_start_block_state(parser->lexer, "{}");
+  assert_parser_block(" hello\\\nworld ");
+  assert_location_range(1, 1, 2, 8);
+
+  _input(" { 'hello' }");
+  cfg_lexer_start_block_state(parser->lexer, "{}");
+  assert_parser_block(" 'hello' ");
+  assert_location_range(1, 1, 1, 13);
+
+  _input(" { 'hello\nworld' }");
+  cfg_lexer_start_block_state(parser->lexer, "{}");
+  assert_parser_block(" 'hello\nworld' ");
+  assert_location_range(1, 1, 2, 9);
+
+  _input(" { 'hello\\\nworld' }");
+  cfg_lexer_start_block_state(parser->lexer, "{}");
+  assert_parser_block(" 'hello\\\nworld' ");
+  assert_location_range(1, 1, 2, 9);
+
+  _input(" { \"hello\" }");
+  cfg_lexer_start_block_state(parser->lexer, "{}");
+  assert_parser_block(" \"hello\" ");
+  assert_location_range(1, 1, 1, 13);
+
+  _input(" { \"hello\nworld\" }");
+  cfg_lexer_start_block_state(parser->lexer, "{}");
+  assert_parser_block(" \"hello\nworld\" ");
+  assert_location_range(1, 1, 2, 9);
+
+  _input(" { \"hello\\\nworld\" }");
+  cfg_lexer_start_block_state(parser->lexer, "{}");
+  assert_parser_block(" \"hello\\\nworld\" ");
+  assert_location_range(1, 1, 2, 9);
+}
+
+Test(lexer, block_new_lines_in_text_leading_to_the_opening_bracket_are_tracked_properly)
+{
+  _input("\n\n\n{ \"hello\\\nworld\" }");
+  cfg_lexer_start_block_state(parser->lexer, "{}");
+  assert_parser_block(" \"hello\\\nworld\" ");
+  assert_location_range(4, 1, 5, 9);
+
+}
+
+Test(lexer, block_closing_brackets_in_embedded_strings_or_comments_dont_close_the_block)
+{
+  _input(" { 'hello}' }");
+  cfg_lexer_start_block_state(parser->lexer, "{}");
+  assert_parser_block(" 'hello}' ");
+
+  _input(" { \"hello}\" }");
+  cfg_lexer_start_block_state(parser->lexer, "{}");
+  assert_parser_block(" \"hello}\" ");
+
+  _input(" {\nfoo# hello}\nbar\n}");
+  cfg_lexer_start_block_state(parser->lexer, "{}");
+  assert_parser_block("\nfoo# hello}\nbar\n");
+}
+
+Test(lexer, block_imbalanced_closing_dont_close_the_block)
+{
+  _input(" {foo {hello} bar}");
+  cfg_lexer_start_block_state(parser->lexer, "{}");
+  assert_parser_block("foo {hello} bar");
+}
+
+Test(lexer, block_complex_input)
+{
+  _input("\t \n{'hello world' \"test value\" {other_block} other\text}");
   cfg_lexer_start_block_state(parser->lexer, "{}");
   assert_parser_block("'hello world' \"test value\" {other_block} other\text");
+}
 
-  _input(TEST_BAD_BLOCK);
+Test(lexer, block_input_without_opening_character_is_reported_as_an_error)
+{
+  start_grabbing_messages();
+  _input("this is a block that does not start with an opening brace");
   cfg_lexer_start_block_state(parser->lexer, "{}");
-  assert_parser_block_bad();
+  assert_parser_error();
+  assert_grabbed_log_contains("Expected opening bracket as block boundary");
+  stop_grabbing_messages();
+}
+
+Test(lexer, block_empty_input_in_parens_is_processed_as_a_NULL_pointer)
+{
+  _input("()");
+  cfg_lexer_start_block_state(parser->lexer, "()");
+  _next_token();
+  assert_token_type(LL_BLOCK);
+  cr_assert(_current_token()->cptr == NULL, "%p", _current_token()->cptr);
+}
+
+Test(lexer, block_empty_string_in_parens_input_is_processed_as_an_empty_string)
+{
+  _input("('')");
+  cfg_lexer_start_block_state(parser->lexer, "()");
+  assert_parser_block("");
+
+  _input("(\"\")");
+  cfg_lexer_start_block_state(parser->lexer, "()");
+  assert_parser_block("");
 }
 
 Test(lexer, at_version_stores_config_version_in_parsed_version_in_hex_form)
@@ -241,6 +354,27 @@ Test(lexer, test_multiline_string_literals)
 {
   _input("\"test another\\\nfoo\"\nbar");
   assert_parser_string("test anotherfoo");
+  assert_location(1, 1);
+  assert_parser_identifier("bar");
+  assert_location(3, 1);
+
+  _input("\"test another\nfoo\"\nbar");
+  assert_parser_string("test another\nfoo");
+  assert_location(1, 1);
+  assert_parser_identifier("bar");
+  assert_location(3, 1);
+}
+
+Test(lexer, test_multiline_qstring_literals)
+{
+  _input("'test another\nfoo'\nbar");
+  assert_parser_string("test another\nfoo");
+  assert_location(1, 1);
+  assert_parser_identifier("bar");
+  assert_location(3, 1);
+
+  _input("'test another\\\nfoo'\nbar");
+  assert_parser_string("test another\\\nfoo");
   assert_location(1, 1);
   assert_parser_identifier("bar");
   assert_location(3, 1);
@@ -354,6 +488,7 @@ Test(lexer, generator_plugins_are_expanded)
 static void
 setup(void)
 {
+  app_startup();
   configuration = cfg_new_snippet();
   parser = cfg_parser_mock_new();
 }
@@ -364,6 +499,7 @@ teardown(void)
   cfg_parser_mock_free(parser);
   cfg_free(configuration);
   configuration = NULL;
+  app_shutdown();
 }
 
 TestSuite(lexer, .init = setup, .fini = teardown);

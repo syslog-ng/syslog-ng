@@ -221,7 +221,7 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
                            }
 
 <*>\\\r?\n                 { _cfg_lex_extend_token_location_to_next_line(yyextra); }
-<*>\r?\n                   {
+\r?\n                      {
                              *yylloc = yyextra->include_stack[yyextra->include_depth].lloc;
                              _cfg_lex_move_token_location_to_new_line(yyextra);
                              if (yyextra->tokenize_eol)
@@ -275,21 +275,51 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 			     yylval->cptr = strdup(yyextra->string_buffer->str);
 			     return LL_STRING;
 		           }
-<string>[^"\\]+		   { g_string_append(yyextra->string_buffer, yytext); }
-<qstring>[^']+		   { g_string_append(yyextra->string_buffer, yytext); }
+<string>[^"\\\r\n]+	   { g_string_append(yyextra->string_buffer, yytext); }
+<qstring>[^'\r\n]+	   { g_string_append(yyextra->string_buffer, yytext); }
 <qstring>\'		   {
 			     yy_pop_state(yyscanner);
 			     yylval->cptr = strdup(yyextra->string_buffer->str);
 			     return LL_STRING;
 			   }
 
+    /* the rule below will only be applied to embedded newlines within
+     * string/qstring.  There's a difference how we handle backslash quotation
+     * of newline though.
+     *
+     * If a \\\n sequence is in a <string> (e.g. quoted newline)
+     *   - the backslash is explicitly not allowed in the greedy rule that eats string characters
+     *   - thus <*>\\\r?\n rule gets applied, at the top of the file, removing the newline
+     *   - location tracking is preserved
+     *
+     * If a \n sequence is in a <string> (e.g. embedded newline)
+     *   - the newline character is processed by the rule below, thus it is
+     *     included as a literal newline
+     *
+     * If a \\\n sequence is in a <qstring> (e.g. quotation is not supported)
+     *   - the backslash is eaten by the greedy rule for qstring
+     *   - <*>\\\r?\n is not matching as the backslash is not there
+     *   - the rule below gets matched and the newline is included in the string
+     *
+     * If a \n sequence is in a <qstring> (e.g. embedded newline)
+     *   - the rule below gets matched and the newline is included in the string
+     */
 
-     /* rules to parse a block as a LL_BLOCK token */
+<string,qstring>\r?\n	   {
+                             g_string_append(yyextra->string_buffer, yytext);
+                             _cfg_lex_extend_token_location_to_next_line(yyextra);
+                           }
+
+
+    /* rules to parse a block as a LL_BLOCK token */
 <block>{white}+            ;
-<block>[^{( \t]+           { return LL_ERROR; }
+<block>[^{( \t\r\n]+       { YY_FATAL_ERROR("Expected opening bracket as block boundary, e.g. opening brace or parenthesis"); return LL_ERROR; }
+<block>\r?\n		   { _cfg_lex_move_token_location_to_new_line(yyextra); };
 <block>\({white}*\)        { yy_pop_state(yyscanner); yylval->cptr = NULL; return LL_BLOCK; }
 <block>\({white}*\"\"{white}*\) { yy_pop_state(yyscanner); yylval->cptr = g_strdup(""); return LL_BLOCK; }
 <block>\({white}*\'\'{white}*\) { yy_pop_state(yyscanner); yylval->cptr = g_strdup(""); return LL_BLOCK; }
+
+    /* start character of the block */
 <block>[{(]                {
                              if (yytext[0] != yyextra->block_boundary[0])
                                REJECT;
@@ -297,6 +327,10 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
                              yyextra->brace_count = 1;
                              yy_push_state(block_content, yyscanner);
                            }
+
+    /* block_content, handle embedded string/qstring/comments properly, count
+     * braces so we only end the block if they are pairing up, unless they are
+     * in a string/qstring/comment. */
 
 <block_content>\"          {
                              g_string_append_c(yyextra->string_buffer, yytext[0]);
@@ -312,22 +346,6 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
                              g_string_append_c(yyextra->string_buffer, yytext[0]);
                              _process_commented_line(yyscanner, yyextra->string_buffer, TRUE);
                            }
-
-<block_string>[^"]+        { g_string_append(yyextra->string_buffer, yytext); }
-<block_string>\\\"         { g_string_append(yyextra->string_buffer, yytext); }
-<block_string>\"           {
-                             g_string_append_c(yyextra->string_buffer, yytext[0]);
-                             yy_pop_state(yyscanner);
-                           }
-
-<block_qstring>\'          {
-                             g_string_append_c(yyextra->string_buffer, yytext[0]);
-                             yy_pop_state(yyscanner);
-                           }
-<block_qstring>[^']+       {
-                             g_string_append(yyextra->string_buffer, yytext);
-                           }
-
 
 <block_content>[{(]        {
                              g_string_append_c(yyextra->string_buffer, yytext[0]);
@@ -351,7 +369,32 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 
                            }
 
-<block_content>[^{}()\"\'\n\r]+   { g_string_append(yyextra->string_buffer, yytext); }
+<block_content>[^{}()\"\'\n\r#]+   { g_string_append(yyextra->string_buffer, yytext); }
+
+<block_string>[^"\r\n]+    { g_string_append(yyextra->string_buffer, yytext); }
+<block_string>\\\"         { g_string_append(yyextra->string_buffer, yytext); }
+<block_string>\"           {
+                             g_string_append_c(yyextra->string_buffer, yytext[0]);
+                             yy_pop_state(yyscanner);
+                           }
+
+<block_qstring>\'          {
+                             g_string_append_c(yyextra->string_buffer, yytext[0]);
+                             yy_pop_state(yyscanner);
+                           }
+<block_qstring>[^'\r\n]+   {
+                             g_string_append(yyextra->string_buffer, yytext);
+                           }
+
+    /* The newlines embedded in block_string/block_qstring/block_content is
+     * literally coped into the block token, even if there's backslash as the
+     * last character.  Basically we behave just as if the entire block was a
+     * qstring.
+     */
+<block_string,block_qstring,block_content>\r?\n    {
+                             g_string_append(yyextra->string_buffer, yytext);
+                             _cfg_lex_extend_token_location_to_next_line(yyextra);
+                           }
 
 <INITIAL><<EOF>>           {
                              if (!cfg_lexer_start_next_include(yyextra))
