@@ -49,8 +49,7 @@ struct _LogQueueDisk
   gboolean (*is_reliable)(LogQueueDisk *s);
   LogMessage *(*read_message)(LogQueueDisk *self, LogPathOptions *path_options);
   gboolean (*write_message)(LogQueueDisk *self, LogMessage *msg);
-  void (*restart)(LogQueueDisk *self);
-  void (*restart_corrupted)(LogQueueDisk *self);
+  void (*restart)(LogQueueDisk *self, DiskQueueOptions *options);
 };
 
 extern QueueType log_queue_disk_type;
@@ -60,5 +59,6 @@ const gchar *log_queue_disk_get_filename(LogQueue *self);
 gboolean log_queue_disk_save_queue(LogQueue *self, gboolean *persistent);
 gboolean log_queue_disk_load_queue(LogQueue *self, const gchar *filename);
 void log_queue_disk_init_instance(LogQueueDisk *self, const gchar *persist_name);
+void log_queue_disk_restart_corrupted(LogQueueDisk *self);
 
 #endif

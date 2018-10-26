@@ -271,7 +271,7 @@ _read_message(LogQueueDisk *self, LogPathOptions *path_options)
         {
           msg_error("Error reading from disk-queue file, dropping disk queue",
                     evt_tag_str("filename", qdisk_get_filename(self->qdisk)));
-          self->restart_corrupted(self);
+          log_queue_disk_restart_corrupted(self);
           if (msg)
             log_msg_unref (msg);
           msg = NULL;
@@ -301,20 +301,21 @@ _write_message(LogQueueDisk *self, LogMessage *msg)
 }
 
 static void
-_restart_diskq(LogQueueDisk *self, gboolean corrupted)
+_restart_diskq(LogQueueDisk *self)
 {
   gchar *filename = g_strdup(qdisk_get_filename(self->qdisk));
   gchar *new_file = NULL;
   DiskQueueOptions *options = qdisk_get_options(self->qdisk);
 
   qdisk_deinit(self->qdisk);
-  if (corrupted)
-    {
-      new_file = g_strdup_printf("%s.corrupted",filename);
-      rename(filename,new_file);
-      g_free(new_file);
-    }
-  qdisk_init(self->qdisk, options);
+
+  new_file = g_strdup_printf("%s.corrupted", filename);
+  rename(filename, new_file);
+  g_free(new_file);
+
+  if (self->restart)
+    self->restart(self, options);
+
   if (self->start)
     {
       self->start(self, filename);
@@ -322,16 +323,10 @@ _restart_diskq(LogQueueDisk *self, gboolean corrupted)
   g_free(filename);
 }
 
-static void
-_restart(LogQueueDisk *self)
+void
+log_queue_disk_restart_corrupted(LogQueueDisk *self)
 {
-  _restart_diskq(self, FALSE);
-}
-
-static void
-_restart_corrupted(LogQueueDisk *self)
-{
-  _restart_diskq(self, TRUE);
+  _restart_diskq(self);
 }
 
 
@@ -353,6 +348,4 @@ log_queue_disk_init_instance(LogQueueDisk *self, const gchar *persist_name)
 
   self->read_message = _read_message;
   self->write_message = _write_message;
-  self->restart = _restart;
-  self->restart_corrupted = _restart_corrupted;
 }

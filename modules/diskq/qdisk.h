@@ -37,6 +37,14 @@
  */
 #define POINTER_TO_LOG_PATH_OPTIONS(ptr, lpo) (lpo)->ack_needed = (GPOINTER_TO_INT(ptr) & ~0x80000000)
 
+typedef struct
+{
+  gint64 ofs;
+  gint32 len;
+  gint32 count;
+}
+QDiskQueuePosition;
+
 typedef struct _QDisk QDisk;
 
 QDisk *qdisk_new(void);
@@ -46,7 +54,7 @@ gint64 qdisk_get_empty_space(QDisk *self);
 gboolean qdisk_push_tail(QDisk *self, GString *record);
 gboolean qdisk_pop_head(QDisk *self, GString *record);
 gboolean qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow);
-void qdisk_init(QDisk *self, DiskQueueOptions *options);
+void qdisk_init(QDisk *self, DiskQueueOptions *options, const gchar *file_id);
 void qdisk_deinit(QDisk *self);
 void qdisk_reset_file_if_possible(QDisk *self);
 gboolean qdisk_initialized(QDisk *self);

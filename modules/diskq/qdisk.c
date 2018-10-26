@@ -43,9 +43,6 @@
 #define MADV_RANDOM 1
 #endif
 
-/*pessimistic default for reliable disk queue 10000 x 16 kbyte*/
-#define PESSIMISTIC_MEM_BUF_SIZE 10000 * 16 *1024
-
 #define MAX_RECORD_LENGTH 100 * 1024 * 1024
 
 #define PATH_QDISK              PATH_LOCALSTATEDIR
@@ -63,15 +60,9 @@ typedef union _QDiskFileHeader
     gint64 write_head;
     gint64 length;
 
-    gint64 qout_ofs;
-    gint32 qout_len;
-    gint32 qout_count;
-    gint64 qbacklog_ofs;
-    gint32 qbacklog_len;
-    gint32 qbacklog_count;
-    gint64 qoverflow_ofs;
-    gint32 qoverflow_len;
-    gint32 qoverflow_count;
+    QDiskQueuePosition qout_pos;
+    QDiskQueuePosition qbacklog_pos;
+    QDiskQueuePosition qoverflow_pos;
     gint64 backlog_head;
     gint64 backlog_len;
   };
@@ -204,10 +195,24 @@ _truncate_file(QDisk *self, gint64 new_size)
   if (ftruncate(self->fd, (glong)new_size) < 0)
     {
       success = FALSE;
+      off_t file_size = -1;
+
+      struct stat st;
+      if (fstat(self->fd, &st) < 0)
+        {
+          msg_error("truncate file: cannot stat",
+                    evt_tag_error("error"));
+        }
+      else
+        {
+          file_size = st.st_size;
+        }
+
       msg_error("Error truncating disk-queue file",
                 evt_tag_error("error"),
                 evt_tag_str("filename", self->filename),
-                evt_tag_long("newsize", self->hdr->write_head),
+                evt_tag_long("expected-size", new_size),
+                evt_tag_long("file_size", file_size),
                 evt_tag_int("fd", self->fd));
     }
 
@@ -377,7 +382,7 @@ qdisk_pop_head(QDisk *self, GString *record)
           self->hdr->backlog_head = self->hdr->read_head;
         }
 
-      if (self->hdr->length == 0 && !self->options->reliable)
+      if (!self->options->read_only && self->hdr->length == 0 && !self->options->reliable)
         {
           msg_debug("Queue file became empty, truncating file",
                     evt_tag_str("filename", self->filename));
@@ -446,14 +451,67 @@ _load_queue(QDisk *self, GQueue *q, gint64 q_ofs, gint32 q_len, gint32 q_count)
 }
 
 static gboolean
+_try_to_load_queue(QDisk *self, GQueue *queue, QDiskQueuePosition *pos, gchar *type)
+{
+  gint64 ofs;
+  gint32 count, len;
+
+  count = pos->count;
+  len = pos->len;
+  ofs = pos->ofs;
+
+  if (!(ofs > 0 && ofs < self->hdr->write_head))
+    {
+      if (!_load_queue(self, queue, ofs, len, count))
+        return !self->options->read_only;
+    }
+  else
+    {
+      msg_error("Inconsistent header data in disk-queue file, ignoring queue",
+                evt_tag_str("filename", self->filename),
+                evt_tag_long("write_head", self->hdr->write_head),
+                evt_tag_str("type", type),
+                evt_tag_long("ofs", ofs),
+                evt_tag_long("qdisk_length",  self->hdr->length));
+    }
+
+  return TRUE;
+}
+
+#define try_load_queue(self, queue) _try_to_load_queue(self, queue, &self->hdr->queue ##_pos, #queue)
+
+static gboolean
+_load_non_reliable_queues(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
+{
+  if (!try_load_queue(self, qout))
+    return FALSE;
+  if (!try_load_queue(self, qbacklog))
+    return FALSE;
+  if (!try_load_queue(self, qoverflow))
+    return FALSE;
+
+  return TRUE;
+}
+
+#define _clear(obj) memset(&obj, 0, sizeof(obj));
+
+static void
+_reset_queue_pointers(QDisk *self)
+{
+  _clear(self->hdr->qout_pos);
+  _clear(self->hdr->qbacklog_pos);
+  _clear(self->hdr->qoverflow_pos);
+};
+
+static gboolean
 _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 {
   gint64 qout_ofs;
-  gint qout_count, qout_len;
+  gint qout_count;
   gint64 qbacklog_ofs;
-  gint qbacklog_count, qbacklog_len;
+  gint qbacklog_count;
   gint64 qoverflow_ofs;
-  gint qoverflow_count, qoverflow_len;
+  gint qoverflow_count;
   gint64 end_ofs;
 
   if (memcmp(self->hdr->magic, self->file_id, 4) != 0)
@@ -463,15 +521,12 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
       return FALSE;
     }
 
-  qout_count = self->hdr->qout_count;
-  qout_len = self->hdr->qout_len;
-  qout_ofs = self->hdr->qout_ofs;
-  qbacklog_count = self->hdr->qbacklog_count;
-  qbacklog_len = self->hdr->qbacklog_len;
-  qbacklog_ofs = self->hdr->qbacklog_ofs;
-  qoverflow_count = self->hdr->qoverflow_count;
-  qoverflow_len = self->hdr->qoverflow_len;
-  qoverflow_ofs = self->hdr->qoverflow_ofs;
+  qout_count = self->hdr->qout_pos.count;
+  qout_ofs = self->hdr->qout_pos.ofs;
+  qbacklog_count = self->hdr->qbacklog_pos.count;
+  qbacklog_ofs = self->hdr->qbacklog_pos.ofs;
+  qoverflow_count = self->hdr->qoverflow_pos.count;
+  qoverflow_ofs = self->hdr->qoverflow_pos.ofs;
 
   if ((self->hdr->read_head < QDISK_RESERVED_SPACE) ||
       (self->hdr->write_head < QDISK_RESERVED_SPACE) ||
@@ -487,44 +542,8 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 
   if (!self->options->reliable)
     {
-      if (!(qout_ofs > 0 && qout_ofs < self->hdr->write_head))
-        {
-          if (!_load_queue(self, qout, qout_ofs, qout_len, qout_count))
-            return !self->options->read_only;
-        }
-      else
-        {
-          msg_error("Inconsistent header data in disk-queue file, ignoring qout",
-                    evt_tag_str("filename", self->filename),
-                    evt_tag_long("qout_ofs", qout_ofs),
-                    evt_tag_long("qdisk_length",  self->hdr->length));
-        }
-
-      if (!(qbacklog_ofs > 0 && qbacklog_ofs < self->hdr->write_head))
-        {
-          if(!_load_queue(self, qbacklog, qbacklog_ofs, qbacklog_len, qbacklog_count))
-            return !self->options->read_only;
-        }
-      else
-        {
-          msg_error("Inconsistent header data in disk-queue file, ignoring qbacklog",
-                    evt_tag_str("filename", self->filename),
-                    evt_tag_long("qbacklog_ofs", qbacklog_ofs),
-                    evt_tag_long("qdisk_length",  self->hdr->length));
-        }
-
-      if (!(qoverflow_ofs > 0 && qoverflow_ofs < self->hdr->write_head))
-        {
-          if(!_load_queue(self, qoverflow, qoverflow_ofs, qoverflow_len, qoverflow_count))
-            return !self->options->read_only;
-        }
-      else
-        {
-          msg_error("Inconsistent header data in disk-queue file, ignoring qoverflow",
-                    evt_tag_str("filename", self->filename),
-                    evt_tag_long("qoverflow_ofs", qoverflow_ofs),
-                    evt_tag_long("qdisk_length",  self->hdr->length));
-        }
+      if (!_load_non_reliable_queues(self, qout, qbacklog, qoverflow))
+        return FALSE;
     }
 
   if (!self->options->read_only)
@@ -541,6 +560,7 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
   if (!self->options->reliable)
     {
       self->file_size = qout_ofs;
+      _reset_queue_pointers(self);
 
       msg_info("Disk-buffer state loaded",
                evt_tag_str("filename", self->filename),
@@ -679,17 +699,17 @@ qdisk_save_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 
   memcpy(self->hdr->magic, self->file_id, 4);
 
-  self->hdr->qout_ofs = qout_ofs;
-  self->hdr->qout_len = qout_len;
-  self->hdr->qout_count = qout_count;
+  self->hdr->qout_pos.ofs = qout_ofs;
+  self->hdr->qout_pos.len = qout_len;
+  self->hdr->qout_pos.count = qout_count;
 
-  self->hdr->qbacklog_ofs = qbacklog_ofs;
-  self->hdr->qbacklog_len = qbacklog_len;
-  self->hdr->qbacklog_count = qbacklog_count;
+  self->hdr->qbacklog_pos.ofs = qbacklog_ofs;
+  self->hdr->qbacklog_pos.len = qbacklog_len;
+  self->hdr->qbacklog_pos.count = qbacklog_count;
 
-  self->hdr->qoverflow_ofs = qoverflow_ofs;
-  self->hdr->qoverflow_len = qoverflow_len;
-  self->hdr->qoverflow_count = qoverflow_count;
+  self->hdr->qoverflow_pos.ofs = qoverflow_ofs;
+  self->hdr->qoverflow_pos.len = qoverflow_len;
+  self->hdr->qoverflow_pos.count = qoverflow_count;
 
   if (!self->options->reliable)
     msg_info("Disk-buffer state saved",
@@ -849,15 +869,15 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
           self->hdr->read_head = GUINT64_SWAP_LE_BE(self->hdr->read_head);
           self->hdr->write_head = GUINT64_SWAP_LE_BE(self->hdr->write_head);
           self->hdr->length = GUINT64_SWAP_LE_BE(self->hdr->length);
-          self->hdr->qout_ofs = GUINT64_SWAP_LE_BE(self->hdr->qout_ofs);
-          self->hdr->qout_len = GUINT32_SWAP_LE_BE(self->hdr->qout_len);
-          self->hdr->qout_count = GUINT32_SWAP_LE_BE(self->hdr->qout_count);
-          self->hdr->qbacklog_ofs = GUINT64_SWAP_LE_BE(self->hdr->qbacklog_ofs);
-          self->hdr->qbacklog_len = GUINT32_SWAP_LE_BE(self->hdr->qbacklog_len);
-          self->hdr->qbacklog_count = GUINT32_SWAP_LE_BE(self->hdr->qbacklog_count);
-          self->hdr->qoverflow_ofs = GUINT64_SWAP_LE_BE(self->hdr->qoverflow_ofs);
-          self->hdr->qoverflow_len = GUINT32_SWAP_LE_BE(self->hdr->qoverflow_len);
-          self->hdr->qoverflow_count = GUINT32_SWAP_LE_BE(self->hdr->qoverflow_count);
+          self->hdr->qout_pos.ofs = GUINT64_SWAP_LE_BE(self->hdr->qout_pos.ofs);
+          self->hdr->qout_pos.len = GUINT32_SWAP_LE_BE(self->hdr->qout_pos.len);
+          self->hdr->qout_pos.count = GUINT32_SWAP_LE_BE(self->hdr->qout_pos.count);
+          self->hdr->qbacklog_pos.ofs = GUINT64_SWAP_LE_BE(self->hdr->qbacklog_pos.ofs);
+          self->hdr->qbacklog_pos.len = GUINT32_SWAP_LE_BE(self->hdr->qbacklog_pos.len);
+          self->hdr->qbacklog_pos.count = GUINT32_SWAP_LE_BE(self->hdr->qbacklog_pos.count);
+          self->hdr->qoverflow_pos.ofs = GUINT64_SWAP_LE_BE(self->hdr->qoverflow_pos.ofs);
+          self->hdr->qoverflow_pos.len = GUINT32_SWAP_LE_BE(self->hdr->qoverflow_pos.len);
+          self->hdr->qoverflow_pos.count = GUINT32_SWAP_LE_BE(self->hdr->qoverflow_pos.count);
           self->hdr->backlog_head = GUINT64_SWAP_LE_BE(self->hdr->backlog_head);
           self->hdr->backlog_len = GUINT64_SWAP_LE_BE(self->hdr->backlog_len);
           self->hdr->big_endian = (G_BYTE_ORDER == G_BIG_ENDIAN);
@@ -876,21 +896,13 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
 }
 
 void
-qdisk_init(QDisk *self, DiskQueueOptions *options)
+qdisk_init(QDisk *self, DiskQueueOptions *options, const gchar *file_id)
 {
   self->fd = -1;
   self->file_size = 0;
   self->options = options;
-  if (!self->options->reliable)
-    self->file_id = "SLQF";
-  else
-    {
-      self->file_id = "SLRQ";
-      if (self->options->mem_buf_size < 0)
-        {
-          self->options->mem_buf_size = PESSIMISTIC_MEM_BUF_SIZE;
-        }
-    }
+
+  self->file_id = file_id;
 }
 
 void
