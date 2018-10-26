@@ -224,6 +224,7 @@ _print_underlined_source_block(YYLTYPE *yylloc, gchar **lines, gint error_index)
 {
   gint line_ndx;
   gchar line_prefix[12];
+  gint error_length = yylloc->last_line - yylloc->first_line + 1;
 
   for (line_ndx = 0; lines[line_ndx]; line_ndx++)
     {
@@ -232,7 +233,8 @@ _print_underlined_source_block(YYLTYPE *yylloc, gchar **lines, gint error_index)
       gint line_len = strlen(line);
       gboolean line_ends_with_newline = line_len > 0 && line[line_len - 1] == '\n';
 
-      _format_source_prefix(line_prefix, sizeof(line_prefix), lineno, line_ndx == error_index);
+      _format_source_prefix(line_prefix, sizeof(line_prefix), lineno,
+                            line_ndx >= error_index && line_ndx < error_index + error_length);
 
       fprintf(stderr, "%-8s%s%s", line_prefix, line, line_ends_with_newline ? "" : "\n");
 
