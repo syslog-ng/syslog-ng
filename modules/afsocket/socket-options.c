@@ -49,6 +49,20 @@ socket_options_setup_socket_method(SocketOptions *self, gint fd, GSockAddr *bind
                           evt_tag_int("so_rcvbuf_set", so_rcvbuf_set));
             }
         }
+      if (self->so_reuseport)
+        {
+#ifdef SO_REUSEPORT
+          if (setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &self->so_reuseport, sizeof(self->so_reuseport)) < 0)
+            {
+              msg_error("The kernel refused our SO_REUSEPORT setting, which should be supported by Linux 3.9+",
+                        evt_tag_error("error"));
+              return FALSE;
+            }
+#else
+          msg_error("You enabled so-reuseport(), but your platform does not support SO_REUSEPORT socket option, which should be supported on Linux 3.9+");
+          return FALSE;
+#endif
+        }
     }
   if (dir & AFSOCKET_DIR_SEND)
     {
