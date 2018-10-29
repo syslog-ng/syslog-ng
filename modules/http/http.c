@@ -366,7 +366,7 @@ _insert_batched(LogThreadedDestWorker *s, LogMessage *msg)
 
   _add_message_to_batch(self, msg);
 
-  if (_should_initiate_flush(self))
+  if (_should_initiate_flush(self) || log_msg_is_source_suspended(msg))
     {
       return log_threaded_dest_worker_flush(&self->super);
     }
