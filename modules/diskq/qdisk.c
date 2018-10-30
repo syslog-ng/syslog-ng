@@ -504,6 +504,15 @@ _reset_queue_pointers(QDisk *self)
 };
 
 static gboolean
+qdisk_header_is_inconsistent(QDisk *self)
+{
+  return ((self->hdr->read_head < QDISK_RESERVED_SPACE) ||
+          (self->hdr->write_head < QDISK_RESERVED_SPACE) ||
+          (self->hdr->read_head == self->hdr->write_head && self->hdr->length != 0));
+}
+
+
+static gboolean
 _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 {
   gint64 qout_ofs;
@@ -528,9 +537,7 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
   qoverflow_count = self->hdr->qoverflow_pos.count;
   qoverflow_ofs = self->hdr->qoverflow_pos.ofs;
 
-  if ((self->hdr->read_head < QDISK_RESERVED_SPACE) ||
-      (self->hdr->write_head < QDISK_RESERVED_SPACE) ||
-      (self->hdr->read_head == self->hdr->write_head && self->hdr->length != 0))
+  if (qdisk_header_is_inconsistent(self))
     {
       msg_error("Inconsistent header data in disk-queue file, ignoring",
                 evt_tag_str("filename", self->filename),
