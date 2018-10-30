@@ -68,7 +68,7 @@ _free(TransportFactory *s)
 }
 
 TransportFactory *
-transport_factory_tls_new(TLSContext *ctx, TLSVerifier *tls_verifier)
+transport_factory_tls_new(TLSContext *ctx, TLSVerifier *tls_verifier, gboolean allow_compress)
 {
   TransportFactoryTLS *instance = g_new0(TransportFactoryTLS, 1);
 
@@ -78,6 +78,11 @@ transport_factory_tls_new(TLSContext *ctx, TLSVerifier *tls_verifier)
   instance->super.id = transport_factory_tls_id();
   instance->super.construct_transport = _construct_transport;
   instance->super.free_fn = _free;
+
+  if (allow_compress)
+    transport_factory_tls_enable_compression((TransportFactory *)instance);
+  else
+    transport_factory_tls_disable_compression((TransportFactory *)instance);
 
   return &instance->super;
 }
