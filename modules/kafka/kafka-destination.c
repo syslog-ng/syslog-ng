@@ -26,7 +26,7 @@
 #include <stdlib.h>
 #include <zlib.h>
 
-#include "kafka.h"
+#include "kafka-destination.h"
 #include "kafka-parser.h"
 #include "plugin.h"
 #include "messages.h"
@@ -521,30 +521,3 @@ kafka_dd_new(GlobalConfig *cfg)
 
   return (LogDriver *)self;
 }
-
-extern CfgParser kafka_c_parser;
-
-static Plugin kafka_plugin =
-{
-  .type = LL_CONTEXT_DESTINATION,
-  .name = "kafka-c",
-  .parser = &kafka_c_parser,
-};
-
-gboolean
-kafka_c_module_init(PluginContext *context, CfgArgs *args)
-{
-  plugin_register(context, &kafka_plugin, 1);
-
-  return TRUE;
-}
-
-const ModuleInfo module_info =
-{
-  .canonical_name = "kafka-c",
-  .version = SYSLOG_NG_VERSION,
-  .description = "The kafka-c module provides Kafka destination support for syslog-ng.",
-  .core_revision = VERSION_CURRENT_VER_ONLY,
-  .plugins = &kafka_plugin,
-  .plugins_len = 1,
-};

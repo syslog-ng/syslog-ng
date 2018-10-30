@@ -1,6 +1,7 @@
 /*
+ * Copyright (c) 2019 Balabit
+ * Copyright (c) 2018 Kokan <kokaipeter@gmail.com>
  * Copyright (c) 2014 Pierre-Yves Ritschard <pyr@spootnik.org>
- *
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -21,34 +22,22 @@
  *
  */
 
-#include "kafka.h"
+#ifndef KAFKA_PARSER_H_INCLUDED
+#define KAFKA_PARSER_H_INCLUDED
+
 #include "cfg-parser.h"
-#include "kafka-grammar.h"
+#include "cfg-lexer.h"
+#include "kafka-destination.h"
 
-extern int kafka_debug;
-int kafka_c_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
+extern CfgParser kafka_parser;
 
-static CfgLexerKeyword kafka_keywords[] = {
-    { "field",          KW_FIELD },
-    { "kafka_c",        KW_KAFKA_C },
-    { "partition",      KW_PARTITION },
-    { "payload",        KW_PAYLOAD },
-    { "properties",     KW_PROP },
-    { "random",         KW_RANDOM },
-    { "topic",          KW_TOPIC },
-    { "sync",           KW_SYNC },
-    { NULL }
+struct kafka_property {
+    gchar *key;
+    gchar *val;
 };
 
-CfgParser kafka_c_parser =
-{
-#if ENABLE_DEBUG
-  .debug_flag = &kafka_debug,
+void kafka_property_free(void *);
+
+CFG_PARSER_DECLARE_LEXER_BINDING(kafka_, LogDriver **)
+
 #endif
-  .name = "kafka-c",
-  .keywords = kafka_keywords,
-  .parse = (int (*)(CfgLexer *lexer, gpointer *instance, gpointer)) kafka_c_parse,
-  .cleanup = (void (*)(gpointer)) log_pipe_unref,
-};
-
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(kafka_c_, LogDriver **)

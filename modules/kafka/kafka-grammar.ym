@@ -1,7 +1,9 @@
 /*
- * Copyright (c) 2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2019 Balabit
+ * Copyright (c) 2018 Kokan <kokaipeter@gmail.com>
  * Copyright (c) 2013 Tihamer Petrovics <tihameri@gmail.com>
  * Copyright (c) 2014 Pierre-Yves Ritschard <pyr@spootnik.org>
+ * Copyright (c) 2019 Balazs Scheidler
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -36,7 +38,11 @@
 extern GList *last_property;
 }
 
-%name-prefix "kafka_c_"
+%name-prefix "kafka_"
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {LogDriver **instance}
@@ -44,7 +50,7 @@ extern GList *last_property;
 
 /* INCLUDE_DECLS */
 
-%token KW_KAFKA_C
+%token KW_KAFKA
 %token KW_TOPIC
 %token KW_PROP
 %token KW_PAYLOAD
@@ -57,7 +63,7 @@ extern GList *last_property;
 %%
 
 start
-        : LL_CONTEXT_DESTINATION KW_KAFKA_C
+        : LL_CONTEXT_DESTINATION KW_KAFKA
           {
             last_driver = *instance = kafka_dd_new(configuration);
             last_property = NULL;
@@ -95,7 +101,7 @@ kafka_option
         {
             kafka_dd_set_payload(last_driver, $3);
         }
-        | dest_driver_option
+        | threaded_dest_driver_option
         | { last_template_options = kafka_dd_get_template_options(last_driver); } template_option
         ;
 

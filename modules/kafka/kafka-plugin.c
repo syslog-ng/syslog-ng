@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2014 Pierre-Yves Ritschard <pyr@spootnik.org>
+ * Copyright (c) 2018 Balabit
+ * Copyright (c) 2018 Kokan
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,22 +21,34 @@
  *
  */
 
-#ifndef KAFKA_PARSER_H_INCLUDED
-#define KAFKA_PARSER_H_INCLUDED
-
 #include "cfg-parser.h"
-#include "cfg-lexer.h"
-#include "kafka.h"
+#include "plugin.h"
+#include "plugin-types.h"
 
-extern CfgParser kafka_c_parser;
+extern CfgParser kafka_parser;
 
-struct kafka_property {
-    gchar *key;
-    gchar *val;
+static Plugin kafka_plugins[] =
+{
+  {
+    .type = LL_CONTEXT_DESTINATION,
+    .name = "kafka",
+    .parser = &kafka_parser,
+  },
 };
 
-void kafka_property_free(void *);
+gboolean
+kafka_module_init(PluginContext *context, CfgArgs *args)
+{
+  plugin_register(context, kafka_plugins, G_N_ELEMENTS(kafka_plugins));
+  return TRUE;
+}
 
-CFG_PARSER_DECLARE_LEXER_BINDING(kafka_c_, LogDriver **)
-
-#endif
+const ModuleInfo module_info =
+{
+  .canonical_name = "kafka",
+  .version = SYSLOG_NG_VERSION,
+  .description = "The kafka module provides native librdkafka based Kafka support for syslog-ng.",
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
+  .plugins = kafka_plugins,
+  .plugins_len = G_N_ELEMENTS(kafka_plugins),
+};
