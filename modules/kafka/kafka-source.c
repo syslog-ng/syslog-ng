@@ -27,6 +27,7 @@
 #include "messages.h"
 
 #include <librdkafka/rdkafka.h>
+
 #include <stdio.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -35,11 +36,42 @@ struct KafkaSourceDriver
 {
   LogThreadedFetcherDriver super;
 
+  rd_kafka_conf_t *conf;
+  rd_kafka_topic_conf_t *topic_conf;
+  rd_kafka_t *rk;
+  rd_kafka_topic_partition_list_t *topics;
 };
 
 static gboolean
 _connect(LogThreadedFetcherDriver *s)
 {
+  KafkaSourceDriver *self = (KafkaSourceDriver *)s;
+
+  gchar errstr[255];
+  if (!(self->rk = rd_kafka_new(RD_KAFKA_CONSUMER, self->conf, errstr, sizeof(errstr))))
+    {
+      msg_error("Kafka new error", evt_tag_str("error",errstr));
+      return FALSE;
+    }
+
+  const gint number_of_brokers = rd_kafka_brokers_add(self->rk, "localhost:9092");
+  if (number_of_brokers == 0)
+    {
+      msg_error("Kafka no valid broker specified");
+      return FALSE;
+    }
+
+  self->topics = rd_kafka_topic_partition_list_new(1);
+  rd_kafka_topic_partition_list_add(self->topics, "syslog-ng", 0);
+
+  rd_kafka_resp_err_t err;
+  if ((err = rd_kafka_assign(self->rk, self->topics)))
+    {
+      msg_error("Kafka failed to assing partitions", evt_tag_str("error",rd_kafka_err2str(err)));
+      return FALSE;
+    }
+
+  rd_kafka_poll_set_consumer(self->rk);
 
   return TRUE;
 }
@@ -47,7 +79,17 @@ _connect(LogThreadedFetcherDriver *s)
 static void
 _disconnect(LogThreadedFetcherDriver *s)
 {
+  KafkaSourceDriver *self = (KafkaSourceDriver *)s;
 
+  rd_kafka_resp_err_t err = rd_kafka_consumer_close(self->rk);
+  if (err)
+    {
+      msg_error("Failed to close consumer", evt_tag_str("error",rd_kafka_err2str(err)));
+    }
+
+  rd_kafka_topic_partition_list_destroy(self->topics);
+
+  rd_kafka_destroy(self->rk);
 }
 
 /* runs in a dedicated thread */
@@ -56,32 +98,40 @@ _fetch(LogThreadedFetcherDriver *s)
 {
   KafkaSourceDriver *self = (KafkaSourceDriver *) s;
 
-  LogMessage *msg = log_msg_new_empty();
+  LogThreadedFetchResult result;
 
-  if (!msg)
+  if (!self->rk)
+    goto no_message;
+
+  rd_kafka_message_t *rkmessage;
+  while (1)
     {
-      LogThreadedFetchResult result = { THREADED_FETCH_NOT_CONNECTED, NULL };
-      return result;
+      rkmessage = rd_kafka_consumer_poll(self->rk, 1000);
+      if (rkmessage)
+        break;
     }
 
-  LogThreadedFetchResult result = { THREADED_FETCH_SUCCESS, msg };
+  if (rkmessage->err)
+    goto error;
+
+  LogMessage *msg = log_msg_new_empty();
+
+  log_msg_set_value(msg, LM_V_MESSAGE, rkmessage->payload, rkmessage->len);
+
+  rd_kafka_message_destroy(rkmessage);
+  result.result = THREADED_FETCH_SUCCESS;
+  result.msg = msg;
   return result;
-}
 
-static gboolean
-_init(LogPipe *s)
-{
-  KafkaSourceDriver *self = (KafkaSourceDriver *) s;
-
-  return log_threaded_fetcher_driver_init_method(s);
-}
-
-static void
-_free(LogPipe *s)
-{
-  KafkaSourceDriver *self = (KafkaSourceDriver *) s;
-
-  log_threaded_fetcher_driver_free_method(s);
+error:
+  msg_error("error",
+            evt_tag_str("err",rd_kafka_message_errstr(rkmessage))
+           );
+  rd_kafka_message_destroy(rkmessage);
+no_message:
+  result.result = THREADED_FETCH_NOT_CONNECTED;
+  result.msg = NULL;
+  return result;
 }
 
 static const gchar *
@@ -96,6 +146,45 @@ _format_stats_instance(LogThreadedSourceDriver *s)
     g_snprintf(persist_name, sizeof(persist_name), "kafka-source");
 
   return persist_name;
+}
+
+static gboolean
+_init(LogPipe *s)
+{
+  KafkaSourceDriver *self = (KafkaSourceDriver *) s;
+
+  self->conf = rd_kafka_conf_new();
+  if (!self->conf)
+    return FALSE;
+
+  gchar errstr[255];
+  const gchar *group = _format_stats_instance(&self->super.super);
+  if (rd_kafka_conf_set(self->conf, "group.id", group, errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK)
+    {
+      msg_error("Kafka config set error", evt_tag_str("error",errstr));
+      return FALSE;
+    }
+
+  self->topic_conf = rd_kafka_topic_conf_new();
+
+  rd_kafka_conf_set_default_topic_conf(self->conf, self->topic_conf);
+
+  if (rd_kafka_topic_conf_set(self->topic_conf, "offset.store.method", "broker", errstr,
+                              sizeof(errstr)) != RD_KAFKA_CONF_OK)
+    {
+      msg_error("Kafka config set error", evt_tag_str("error",errstr));
+      return FALSE;
+    }
+
+  return log_threaded_fetcher_driver_init_method(s);
+}
+
+static void
+_free(LogPipe *s)
+{
+  KafkaSourceDriver *self = (KafkaSourceDriver *) s;
+
+  log_threaded_fetcher_driver_free_method(s);
 }
 
 LogDriver *
