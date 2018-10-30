@@ -178,6 +178,8 @@ redis_dd_connect(RedisDriver *self)
       return TRUE;
     }
 
+  if (self->c)
+    redisFree(self->c);
 
   self->c = redisConnect(self->host, self->port);
 
@@ -322,6 +324,8 @@ redis_worker_thread_deinit(LogThreadedDestDriver *d)
   g_string_free(self->key_str, TRUE);
   g_string_free(self->param1_str, TRUE);
   g_string_free(self->param2_str, TRUE);
+
+  redis_dd_disconnect(d);
 }
 
 /*
