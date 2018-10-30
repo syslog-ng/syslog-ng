@@ -647,19 +647,6 @@ dnl ***************************************************************************
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_STRUCT_TM
 
-AC_CACHE_CHECK(for SO_ACCEPTCONN, blb_cv_c_so_acceptconn,
-  [AC_EGREP_CPP(SO_ACCEPTCONN,
-[
-#include <sys/types.h>
-#include <socket.h>
-SO_ACCEPTCONN
-],
-  blb_cv_c_so_acceptconn=no, blb_cv_c_so_acceptconn=yes)])
-
-if test "x$blb_cv_c_so_acceptconn" = "xyes"; then
-        AC_DEFINE(HAVE_SO_ACCEPTCONN, 1, [SO_ACCEPTCONN is present])
-fi
-
 AC_CHECK_MEMBER(struct tm.tm_gmtoff,AC_DEFINE(HAVE_STRUCT_TM_TM_GMTOFF,1,[Whether you have tm_gmtoff field in struct tm]),,[
 #if TM_IN_SYS_TIME
 #include <sys/time.h>
@@ -1325,6 +1312,13 @@ if test "$enable_riemann" != "no"; then
 fi
 
 dnl ***************************************************************************
+dnl libsystemd headers/libraries
+dnl ***************************************************************************
+
+PKG_CHECK_MODULES(libsystemd, libsystemd >= ${LIBSYSTEMD_MIN_VERSION},
+                  have_libsystemd="yes", have_libsystemd="no")
+
+dnl ***************************************************************************
 dnl python checks
 dnl ***************************************************************************
 if test "x$enable_python" != "xno"; then
@@ -1487,8 +1481,9 @@ if test "x$enable_amqp" = "xauto"; then
     AC_MSG_RESULT([$enable_amqp])
 fi
 
+
 if test "x$enable_systemd" = "xauto"; then
-	if test "$ostype" = "Linux" -a "$blb_cv_c_so_acceptconn" = "yes"; then
+	if test "$ostype" = "Linux" -a "$have_libsystemd" = "yes"; then
 		enable_systemd=yes
 	else
 		enable_systemd=no
@@ -1503,8 +1498,6 @@ if test "x$enable_systemd" != "xyes"; then
 fi
 
 if test "x$enable_systemd" = "xyes"; then
-        PKG_CHECK_MODULES(libsystemd, libsystemd >= ${LIBSYSTEMD_MIN_VERSION},
-                          have_libsystemd="yes", have_libsystemd="no")
 
         if test "x$with_systemdsystemunitdir" = "xyes"; then
 		# no arguments, just --with-systemdsystemunitdir

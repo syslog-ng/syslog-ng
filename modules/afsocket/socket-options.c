@@ -26,53 +26,102 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+static gboolean
+_setup_receive_buffer(gint fd, gint so_rcvbuf)
+{
+  gint so_rcvbuf_set = 0;
+  socklen_t sz = sizeof(so_rcvbuf_set);
+  gint rc;
+
+  rc = setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &so_rcvbuf, sizeof(so_rcvbuf));
+  if (rc < 0 ||
+      getsockopt(fd, SOL_SOCKET, SO_RCVBUF, &so_rcvbuf_set, &sz) < 0 ||
+      sz != sizeof(so_rcvbuf_set) ||
+      so_rcvbuf_set < so_rcvbuf)
+    {
+      msg_warning("The kernel refused to set the receive buffer (SO_RCVBUF) to the requested size, you probably need to adjust buffer related kernel parameters",
+                  evt_tag_int("so_rcvbuf", so_rcvbuf),
+                  evt_tag_int("so_rcvbuf_set", so_rcvbuf_set));
+    }
+  return TRUE;
+}
+
+static gboolean
+_setup_send_buffer(gint fd, gint so_sndbuf)
+{
+  gint so_sndbuf_set = 0;
+  socklen_t sz = sizeof(so_sndbuf_set);
+  gint rc;
+
+  rc = setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &so_sndbuf, sizeof(so_sndbuf));
+
+  if (rc < 0 ||
+      getsockopt(fd, SOL_SOCKET, SO_SNDBUF, &so_sndbuf_set, &sz) < 0 ||
+      sz != sizeof(so_sndbuf_set) ||
+      so_sndbuf_set < so_sndbuf)
+    {
+      msg_warning("The kernel refused to set the send buffer (SO_SNDBUF) to the requested size, you probably need to adjust buffer related kernel parameters",
+                  evt_tag_int("so_sndbuf", so_sndbuf),
+                  evt_tag_int("so_sndbuf_set", so_sndbuf_set));
+    }
+  return TRUE;
+}
+
+static gboolean
+_setup_broadcast(gint fd)
+{
+  gint on = 1;
+  setsockopt(fd, SOL_SOCKET, SO_BROADCAST, &on, sizeof(on));
+  return TRUE;
+}
+
+static gboolean
+_setup_keepalive(gint fd)
+{
+  gint on = 1;
+  setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &on, sizeof(on));
+  return TRUE;
+}
+
+static gboolean
+_setup_reuseport(gint fd)
+{
+#ifdef SO_REUSEPORT
+  gint on = 1;
+  if (setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &on, sizeof(on)) < 0)
+    {
+      msg_error("The kernel refused our SO_REUSEPORT setting, which should be supported by Linux 3.9+",
+                evt_tag_error("error"));
+      return FALSE;
+    }
+  return TRUE;
+#else
+  msg_error("You enabled so-reuseport(), but your platform does not support SO_REUSEPORT socket option, which should be supported on Linux 3.9+");
+  return FALSE;
+#endif
+}
+
 gboolean
 socket_options_setup_socket_method(SocketOptions *self, gint fd, GSockAddr *bind_addr, AFSocketDirection dir)
 {
 
-  gint rc;
   if (dir & AFSOCKET_DIR_RECV)
     {
-      if (self->so_rcvbuf)
-        {
-          gint so_rcvbuf_set = 0;
-          socklen_t sz = sizeof(so_rcvbuf_set);
-
-          rc = setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &self->so_rcvbuf, sizeof(self->so_rcvbuf));
-          if (rc < 0 ||
-              getsockopt(fd, SOL_SOCKET, SO_RCVBUF, &so_rcvbuf_set, &sz) < 0 ||
-              sz != sizeof(so_rcvbuf_set) ||
-              so_rcvbuf_set < self->so_rcvbuf)
-            {
-              msg_warning("The kernel refused to set the receive buffer (SO_RCVBUF) to the requested size, you probably need to adjust buffer related kernel parameters",
-                          evt_tag_int("so_rcvbuf", self->so_rcvbuf),
-                          evt_tag_int("so_rcvbuf_set", so_rcvbuf_set));
-            }
-        }
+      if (self->so_rcvbuf && !_setup_receive_buffer(fd, self->so_rcvbuf))
+        return FALSE;
+      if (self->so_reuseport && !_setup_reuseport(fd))
+        return FALSE;
     }
   if (dir & AFSOCKET_DIR_SEND)
     {
-      if (self->so_sndbuf)
-        {
-          gint so_sndbuf_set = 0;
-          socklen_t sz = sizeof(so_sndbuf_set);
+      if (self->so_sndbuf && !_setup_send_buffer(fd, self->so_sndbuf))
+        return FALSE;
 
-          rc = setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &self->so_sndbuf, sizeof(self->so_sndbuf));
-
-          if (rc < 0 ||
-              getsockopt(fd, SOL_SOCKET, SO_SNDBUF, &so_sndbuf_set, &sz) < 0 ||
-              sz != sizeof(so_sndbuf_set) ||
-              so_sndbuf_set < self->so_sndbuf)
-            {
-              msg_warning("The kernel refused to set the send buffer (SO_SNDBUF) to the requested size, you probably need to adjust buffer related kernel parameters",
-                          evt_tag_int("so_sndbuf", self->so_sndbuf),
-                          evt_tag_int("so_sndbuf_set", so_sndbuf_set));
-            }
-        }
-      if (self->so_broadcast)
-        setsockopt(fd, SOL_SOCKET, SO_BROADCAST, &self->so_broadcast, sizeof(self->so_broadcast));
+      if (self->so_broadcast && !_setup_broadcast(fd))
+        return FALSE;
     }
-  setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &self->so_keepalive, sizeof(self->so_keepalive));
+  if (self->so_keepalive && !_setup_keepalive(fd))
+    return FALSE;
   return TRUE;
 }
 

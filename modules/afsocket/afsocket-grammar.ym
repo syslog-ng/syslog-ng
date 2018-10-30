@@ -145,6 +145,7 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 %token KW_SO_SNDBUF
 %token KW_SO_RCVBUF
 %token KW_SO_KEEPALIVE
+%token KW_SO_REUSEPORT
 %token KW_TCP_KEEPALIVE_TIME
 %token KW_TCP_KEEPALIVE_PROBES
 %token KW_TCP_KEEPALIVE_INTVL
@@ -833,6 +834,7 @@ socket_option
 	}
 	| KW_SO_BROADCAST '(' yesno ')'             { last_sock_options->so_broadcast = $3; }
 	| KW_SO_KEEPALIVE '(' yesno ')'             { last_sock_options->so_keepalive = $3; }
+	| KW_SO_REUSEPORT '(' yesno ')'             { last_sock_options->so_reuseport = $3; }
 	;
 
 inet_socket_option

@@ -40,6 +40,7 @@ struct _SocketOptions
   gint so_rcvbuf;
   gint so_broadcast;
   gint so_keepalive;
+  gboolean so_reuseport;
   gboolean (*setup_socket)(SocketOptions *s, gint sock, GSockAddr *bind_addr, AFSocketDirection dir);
   void (*free)(gpointer s);
 };
