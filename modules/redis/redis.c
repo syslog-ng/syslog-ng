@@ -171,24 +171,17 @@ authenticate_to_redis(RedisDriver *self, const gchar *password)
 }
 
 static gboolean
-redis_dd_connect(RedisDriver *self, gboolean reconnect)
+redis_dd_connect(RedisDriver *self)
 {
-  redisReply *reply;
-
-  if (reconnect && (self->c != NULL))
+  if (self->c && check_connection_to_redis(self))
     {
-      reply = redisCommand(self->c, "ping");
-
-      if (reply)
-        freeReplyObject(reply);
-
-      if (!self->c->err)
-        return TRUE;
-      else
-        self->c = redisConnect(self->host, self->port);
+      return TRUE;
     }
-  else
-    self->c = redisConnect(self->host, self->port);
+
+  if (self->c)
+    redisFree(self->c);
+
+  self->c = redisConnect(self->host, self->port);
 
   if (self->c->err)
     {
@@ -241,7 +234,7 @@ redis_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
   size_t argvlen[5];
   int argc = 2;
 
-  if (!redis_dd_connect(self, TRUE))
+  if (!redis_dd_connect(self))
     return WORKER_INSERT_RESULT_NOT_CONNECTED;
 
   if (self->c->err)
@@ -320,7 +313,7 @@ redis_worker_thread_init(LogThreadedDestDriver *d)
   self->param1_str = g_string_sized_new(1024);
   self->param2_str = g_string_sized_new(1024);
 
-  redis_dd_connect(self, FALSE);
+  redis_dd_connect(self);
 }
 
 static void
@@ -331,6 +324,8 @@ redis_worker_thread_deinit(LogThreadedDestDriver *d)
   g_string_free(self->key_str, TRUE);
   g_string_free(self->param1_str, TRUE);
   g_string_free(self->param2_str, TRUE);
+
+  redis_dd_disconnect(d);
 }
 
 /*
