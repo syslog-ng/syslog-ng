@@ -38,6 +38,7 @@
 #include "template/macros.h"
 #include "host-id.h"
 #include "ack_tracker.h"
+#include "logsource.h"
 
 #include <glib/gprintf.h>
 #include <sys/types.h>
@@ -1861,6 +1862,14 @@ gssize log_msg_get_size(LogMessage *self)
     sizeof(GSockAddr) + sizeof (GSockAddrFuncs) + // msg.saddr + msg.saddr.sa_func
     ((self->num_tags) ? sizeof(self->tags[0]) * self->num_tags : 0) +
     nv_table_get_memory_consumption(self->payload); // msg.payload (nvtable)
+}
+
+gboolean log_msg_is_source_suspended(LogMessage *self)
+{
+  if (!self->ack_record)
+    return FALSE;
+  LogSource *src = self->ack_record->tracker->source;
+  return !log_source_free_to_send(src);
 }
 
 #ifdef __linux__
