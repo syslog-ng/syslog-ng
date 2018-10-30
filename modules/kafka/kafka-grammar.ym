@@ -1,0 +1,89 @@
+/*
+ * Copyright (c) 2018 Balabit
+ * Copyright (c) 2018 Kokan <kokaipeter@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#include "kafka-parser.h"
+
+}
+
+%code {
+
+#include "kafka-source.h"
+#include "logthrsource/logthrsourcedrv.h"
+#include "cfg-parser.h"
+#include "kafka-grammar.h"
+#include "syslog-names.h"
+#include "messages.h"
+#include "plugin.h"
+#include "cfg-grammar.h"
+#include "template/templates.h"
+
+#include <string.h>
+
+}
+
+%name-prefix "kafka_"
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_KAFKA
+
+%type <ptr> kafka_source
+
+%%
+
+start
+  : LL_CONTEXT_SOURCE kafka_source          { YYACCEPT; }
+  ;
+
+kafka_source
+  : KW_KAFKA
+    {
+      last_driver = *instance = kafka_sd_new(configuration);
+      last_source_options = log_threaded_source_driver_get_source_options(last_driver);
+    }
+    '(' kafka_source_options ')' { $$ = last_driver; }
+  ;
+
+kafka_source_options
+  : kafka_source_option kafka_source_options
+  |
+  ;
+
+kafka_source_option
+  : source_option
+  | source_driver_option
+  ;
+
+/* INCLUDE_RULES */
+
+%%
+
