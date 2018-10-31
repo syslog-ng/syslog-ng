@@ -1708,8 +1708,6 @@ log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint32 op
 
   if (options->flush_lines == -1)
     options->flush_lines = cfg->flush_lines;
-  if (options->flush_timeout == -1)
-    options->flush_timeout = cfg->flush_timeout;
   if (options->suppress == -1)
     options->suppress = cfg->suppress;
   if (options->time_reopen == -1)

@@ -957,7 +957,7 @@ options_item
             cfg_set_mark_mode(configuration, $3);
             free($3);
           }
-	| KW_FLUSH_TIMEOUT '(' positive_integer ')'	{ configuration->flush_timeout = $3; }
+	| KW_FLUSH_TIMEOUT '(' positive_integer ')'     { }
 	| KW_CHAIN_HOSTNAMES '(' yesno ')'	{ configuration->chain_hostnames = $3; }
 	| KW_KEEP_HOSTNAME '(' yesno ')'	{ configuration->keep_hostname = $3; }
 	| KW_CHECK_HOSTNAME '(' yesno ')'	{ configuration->check_hostname = $3; }

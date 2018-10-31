@@ -418,7 +418,6 @@ cfg_new(gint version)
   self->user_version = version;
 
   self->flush_lines = 100;
-  self->flush_timeout = 10000;  /* 10 seconds */
   self->mark_freq = 1200; /* 20 minutes */
   self->mark_mode = MM_HOST_IDLE;
   self->chain_hostnames = 0;
