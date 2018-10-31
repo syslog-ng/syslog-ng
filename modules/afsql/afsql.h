@@ -24,7 +24,7 @@
 #ifndef AFSQL_H_INCLUDED
 #define AFSQL_H_INCLUDED
 
-#include "driver.h"
+#include "logthrdestdrv.h"
 #include "mainloop-worker.h"
 #include "string-list.h"
 
@@ -69,7 +69,7 @@ typedef struct _AFSqlField
  **/
 typedef struct _AFSqlDestDriver
 {
-  LogDestDriver super;
+  LogThreadedDestDriver super;
   /* read by the db thread */
   gchar *type;
   gchar *host;
@@ -86,35 +86,21 @@ typedef struct _AFSqlDestDriver
   gint fields_len;
   AFSqlField *fields;
   gchar *null_value;
-  gint time_reopen;
   gint num_retries;
   gint flush_lines;
-  gint flush_timeout;
-  gint flush_lines_queued;
   gint flags;
   gboolean ignore_tns_config;
   GList *session_statements;
 
   LogTemplateOptions template_options;
 
-  StatsCounterItem *dropped_messages;
-
   GHashTable *dbd_options;
   GHashTable *dbd_options_numeric;
 
-  /* shared by the main/db thread */
-  GMutex *db_thread_mutex;
-  GCond *db_thread_wakeup_cond;
-  gboolean db_thread_terminate;
-  gboolean db_thread_suspended;
-  GTimeVal db_thread_suspend_target;
-  LogQueue *queue;
   /* used exclusively by the db thread */
-  gint32 seq_num;
   dbi_conn dbi_ctx;
   GHashTable *syslogng_conform_tables;
   guint32 failed_message_counter;
-  WorkerOptions worker_options;
   gboolean transaction_active;
 } AFSqlDestDriver;
 
@@ -133,7 +119,6 @@ void afsql_dd_set_null_value(LogDriver *s, const gchar *null);
 void afsql_dd_set_indexes(LogDriver *s, GList *indexes);
 void afsql_dd_set_retries(LogDriver *s, gint num_retries);
 void afsql_dd_set_flush_lines(LogDriver *s, gint flush_lines);
-void afsql_dd_set_flush_timeout(LogDriver *s, gint flush_timeout);
 void afsql_dd_set_session_statements(LogDriver *s, GList *session_statements);
 void afsql_dd_set_flags(LogDriver *s, gint flags);
 void afsql_dd_set_create_statement_append(LogDriver *s, const gchar *create_statement_append);

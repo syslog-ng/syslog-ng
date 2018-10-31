@@ -51,7 +51,7 @@ static CfgLexerKeyword afsql_keywords[] =
   { "null",               KW_NULL },
   { "retry_sql_inserts",  KW_RETRIES },
   { "flush_lines",        KW_FLUSH_LINES },
-  { "flush_timeout",      KW_FLUSH_TIMEOUT },
+  { "flush_timeout",      KW_FLUSH_TIMEOUT, KWS_OBSOLETE, "The flush-timeout() option for sql() destinations has been broken without deprecation since " VERSION_3_5 },
   { "flags",              KW_FLAGS },
   { "create_statement_append", KW_CREATE_STATEMENT_APPEND },
   { "ignore_tns_config",  KW_IGNORE_TNS_CONFIG },
