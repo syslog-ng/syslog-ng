@@ -56,7 +56,6 @@ connect_to_server(struct sockaddr *dest_addr, int dest_addr_len, int sock_type)
       ERROR("error creating socket: %s\n", g_strerror(errno));
       return -1;
     }
-
   if (sock_type == SOCK_STREAM)
     {
 #ifdef TCP_SYNCNT
@@ -75,7 +74,6 @@ connect_to_server(struct sockaddr *dest_addr, int dest_addr_len, int sock_type)
   DEBUG("server connection established (%d)\n",sock);
   return sock;
 }
-
 int
 connect_ip_socket(int sock_type, const char *target, const char *port, int use_ipv6)
 {
@@ -126,7 +124,6 @@ connect_ip_socket(int sock_type, const char *target, const char *port, int use_i
     s_in.sin_port = se->s_port;
   else
     s_in.sin_port = htons(atoi(port));
-
   dest_addr = (struct sockaddr *) &s_in;
   dest_addr_len = sizeof(s_in);
 #endif
@@ -194,7 +191,7 @@ size_t
 get_now_timestamp(char *stamp, gsize stamp_size)
 {
   struct timeval now;
-  struct tm tm;
+  struct tm;
 
   gettimeofday(&now, NULL);
   localtime_r(&now.tv_sec, &tm);
@@ -252,7 +249,6 @@ open_ssl_connection(int sock_fd)
   DEBUG("SSL connection established\n");
   return ssl;
 }
-
 void
 close_ssl_connection(SSL *ssl)
 {
