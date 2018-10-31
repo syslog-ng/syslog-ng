@@ -28,13 +28,12 @@ extern CfgParser @PLUGIN_NAME_US@_parser;
 
 static Plugin @PLUGIN_NAME_US@_plugins[] =
 {
-  {
+  
     .type = @PLUGIN_TYPE@,
     .name = "@PLUGIN_KEY@",
     .parser = &@PLUGIN_NAME_US@_parser,
-  },
+  
 };
-
 gboolean
 @PLUGIN_NAME_US@_module_init(PluginContext *context, CfgArgs *args)
 {
