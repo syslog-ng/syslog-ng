@@ -936,9 +936,6 @@ log_threaded_dest_driver_init_method(LogPipe *s)
   if (cfg && self->time_reopen == -1)
     self->time_reopen = cfg->time_reopen;
 
-  if (cfg && self->flush_lines == -1)
-    self->flush_lines = cfg->flush_lines;
-
   /* free previous workers array if set to cope with num_workers change */
   g_free(self->workers);
   self->workers = g_new0(LogThreadedDestWorker *, self->num_workers);
