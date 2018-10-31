@@ -1289,7 +1289,7 @@ dest_writer_option
 
 	: KW_FLAGS '(' dest_writer_options_flags ')' { last_writer_options->options = $3; }
 	| KW_FLUSH_LINES '(' nonnegative_integer ')'		{ last_writer_options->flush_lines = $3; }
-	| KW_FLUSH_TIMEOUT '(' positive_integer ')'	{ last_writer_options->flush_timeout = $3; }
+	| KW_FLUSH_TIMEOUT '(' positive_integer ')'	{ }
         | KW_SUPPRESS '(' nonnegative_integer ')'            { last_writer_options->suppress = $3; }
 	| KW_TEMPLATE '(' string ')'       	{
                                                   GError *error = NULL;

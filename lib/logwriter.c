@@ -1642,7 +1642,6 @@ log_writer_options_defaults(LogWriterOptions *options)
 {
   options->template = NULL;
   options->flush_lines = -1;
-  options->flush_timeout = -1;
   log_template_options_defaults(&options->template_options);
   options->time_reopen = -1;
   options->suppress = -1;

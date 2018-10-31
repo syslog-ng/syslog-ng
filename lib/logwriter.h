@@ -57,8 +57,6 @@ typedef struct _LogWriterOptions
   /* minimum number of entries to trigger a flush */
   gint flush_lines;
 
-  /* flush anyway if this time was elapsed */
-  gint flush_timeout;
   LogTemplate *template;
   LogTemplate *file_template;
   LogTemplate *proto_template;
