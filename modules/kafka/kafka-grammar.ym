@@ -57,6 +57,8 @@
 %token KW_KAFKA
 %token KW_BROKERS
 %token KW_TOPIC
+%token KW_GLOBAL_CONF
+%token KW_TOPIC_CONF
 
 %type <ptr> kafka_source
 
@@ -83,6 +85,8 @@ kafka_source_options
 kafka_source_option
   : KW_BROKERS '(' string ')' { kafka_sd_set_brokers(last_driver, $3); free($3); }
   | KW_TOPIC '(' string ')' { kafka_sd_set_topic(last_driver, $3); free($3); }
+  | KW_GLOBAL_CONF '(' string, string ')' { CHECK_ERROR_WITHOUT_MESSAGE(kafka_sd_set_global_conf(last_driver, $3, $4), @$); free($3); free($4); }
+  | KW_TOPIC_CONF '(' string, string ')' { CHECK_ERROR_WITHOUT_MESSAGE(kafka_sd_set_topic_conf(last_driver, $3, $4), @$); free($3); free($4); }
   | source_option
   | source_driver_option
   ;

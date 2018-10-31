@@ -35,4 +35,7 @@ LogDriver *kafka_sd_new(GlobalConfig *cfg);
 void kafka_sd_set_brokers(LogDriver *s, const gchar *filename);
 void kafka_sd_set_topic(LogDriver *s, const gchar *topic);
 
+gboolean kafka_sd_set_global_conf(LogDriver *s, const gchar *property, const gchar *value);
+gboolean kafka_sd_set_topic_conf(LogDriver *s, const gchar *property, const gchar *value);
+
 #endif

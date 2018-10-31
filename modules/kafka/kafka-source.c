@@ -53,6 +53,42 @@ struct KafkaSourceDriver
   gchar *topic;
 };
 
+gboolean
+kafka_sd_set_global_conf(LogDriver *s, const gchar *property, const gchar *value)
+{
+  KafkaSourceDriver *self = (KafkaSourceDriver *)s;
+
+  gchar errstr[255];
+  if (rd_kafka_conf_set(self->conf, property, value, errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK)
+    {
+      msg_error("Kafka config set error",
+                evt_tag_str("propery", property),
+                evt_tag_str("value", value),
+                evt_tag_str("error",errstr));
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
+gboolean
+kafka_sd_set_topic_conf(LogDriver *s, const gchar *property, const gchar *value)
+{
+  KafkaSourceDriver *self = (KafkaSourceDriver *)s;
+
+  gchar errstr[255];
+  if (rd_kafka_topic_conf_set(self->topic_conf, property, value, errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK)
+    {
+      msg_error("Kafka topic config set error",
+                evt_tag_str("propery", property),
+                evt_tag_str("value", value),
+                evt_tag_str("error",errstr));
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
 static gboolean
 _connect(LogThreadedFetcherDriver *s)
 {
