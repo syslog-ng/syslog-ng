@@ -73,6 +73,9 @@ Test(test_block, mandatory_arguments)
   cfg_args_set(args, "mandatory-param", "value");
   cr_assert(generator->generate(generator, configuration, args, result, ""));
   cr_assert_str_eq(result->str, "value");
+
+  cfg_args_unref(args);
+  cfg_block_generator_unref(generator);
 }
 
 Test(test_block, varargs)
@@ -90,4 +93,7 @@ Test(test_block, varargs)
   cfg_args_accept_varargs(arg_defs);
   cr_assert(generator->generate(generator, configuration, args, result, ""));
   cr_assert_str_eq(result->str, "value");
+
+  cfg_args_unref(args);
+  cfg_block_generator_unref(generator);
 }
