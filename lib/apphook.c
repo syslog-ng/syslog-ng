@@ -179,11 +179,6 @@ app_startup(void)
 }
 
 void
-app_finish_app_startup_after_cfg_init(void)
-{
-}
-
-void
 app_post_daemonized(void)
 {
   run_application_hook(AH_POST_DAEMONIZED);
