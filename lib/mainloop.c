@@ -625,7 +625,14 @@ main_loop_thread_resource_init(void)
   main_thread_handle = get_thread_id();
 }
 
-void main_loop_thread_resource_deinit(void)
+void
+main_loop_thread_resource_deinit(void)
 {
   g_cond_free(thread_halt_cond);
+}
+
+GQuark
+main_loop_error_quark(void)
+{
+  return g_quark_from_static_string("main-loop-error-quark");
 }
