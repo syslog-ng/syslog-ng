@@ -35,7 +35,10 @@ typedef struct _SocketOptionsInet
   gint tcp_keepalive_time;
   gint tcp_keepalive_intvl;
   gint tcp_keepalive_probes;
+  char *interface_name;
 } SocketOptionsInet;
+
+void socket_options_inet_set_interface_name(SocketOptionsInet *self, const gchar *interface);
 
 SocketOptionsInet *socket_options_inet_new_instance(void);
 SocketOptions *socket_options_inet_new(void);

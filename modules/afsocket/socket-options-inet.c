@@ -23,6 +23,7 @@
 #include "socket-options-inet.h"
 #include "gsockaddr.h"
 #include "messages.h"
+#include "gprocess.h"
 
 #include <string.h>
 #include <netinet/tcp.h>
@@ -37,6 +38,22 @@
 
 #ifndef SOL_TCP
 #define SOL_TCP IPPROTO_TCP
+#endif
+
+#ifdef SO_BINDTODEVICE
+static int
+socket_options_inet_set_interface(SocketOptionsInet *self, gint fd)
+{
+  cap_t saved_caps;
+  int result;
+
+  saved_caps = g_process_cap_save();
+  g_process_enable_cap("cap_net_raw");
+  result = setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, self->interface_name,
+                      strlen(self->interface_name)) < 0 ? errno : 0;
+  g_process_cap_restore(saved_caps);
+  return result;
+}
 #endif
 
 static gboolean
@@ -73,6 +90,21 @@ socket_options_inet_setup_socket(SocketOptions *s, gint fd, GSockAddr *addr, AFS
       setsockopt(fd, SOL_TCP, TCP_KEEPINTVL, &self->tcp_keepalive_intvl, sizeof(self->tcp_keepalive_intvl));
 #else
       msg_error("tcp-keepalive-intvl() is set but no TCP_KEEPINTVL setsockopt on this platform");
+      return FALSE;
+#endif
+    }
+
+  if (self->interface_name)
+    {
+#ifdef SO_BINDTODEVICE
+      int result = socket_options_inet_set_interface(self, fd);
+      if (result != 0)
+        {
+          msg_error("Can't bind to interface", evt_tag_str("interface", self->interface_name), evt_tag_errno("error", result));
+          return FALSE;
+        }
+#else
+      msg_error("interfacel() is set but no SO_BINDTODEVICE setsockopt on this platform");
       return FALSE;
 #endif
     }
@@ -166,6 +198,26 @@ socket_options_inet_setup_socket(SocketOptions *s, gint fd, GSockAddr *addr, AFS
   return TRUE;
 }
 
+void
+socket_options_inet_set_interface_name(SocketOptionsInet *self, const gchar *interface_name)
+{
+  if (self->interface_name)
+    {
+      g_free(self->interface_name);
+    }
+  self->interface_name = g_strdup(interface_name);
+}
+
+void
+socket_options_inet_free(gpointer s)
+{
+  SocketOptionsInet *self = (SocketOptionsInet *) s;
+  if (self->interface_name)
+    {
+      g_free(self->interface_name);
+    }
+}
+
 SocketOptionsInet *
 socket_options_inet_new_instance(void)
 {
@@ -179,6 +231,7 @@ socket_options_inet_new_instance(void)
   self->tcp_keepalive_intvl = 10;
   self->tcp_keepalive_probes = 6;
 #endif
+  self->super.free = socket_options_inet_free;
   return self;
 }
 
