@@ -45,14 +45,33 @@ static int
 socket_options_inet_set_interface(SocketOptionsInet *self, gint fd)
 {
   cap_t saved_caps;
-  int result;
+  int result, rc;
 
   saved_caps = g_process_cap_save();
   g_process_enable_cap("cap_net_raw");
-  result = setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, self->interface_name,
-                      strlen(self->interface_name)) < 0 ? errno : 0;
+  rc = setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, self->interface_name, strlen(self->interface_name));
+  result = (rc < 0) ? errno : 0;
   g_process_cap_restore(saved_caps);
   return result;
+}
+
+static gboolean
+socket_options_inet_try_to_set_interface(SocketOptionsInet *self, gint fd)
+{
+  int result = socket_options_inet_set_interface(self, fd);
+  if (result != 0)
+    {
+      msg_error("Can't bind to interface", evt_tag_str("interface", self->interface_name), evt_tag_errno("error", result));
+      return FALSE;
+    }
+  return TRUE;
+}
+#else
+static gboolean
+socket_options_inet_try_to_set_interface(SocketOptionsInet *self, gint fd)
+{
+  msg_error("interface() is set but no SO_BINDTODEVICE setsockopt on this platform");
+  return FALSE;
 }
 #endif
 
@@ -96,17 +115,8 @@ socket_options_inet_setup_socket(SocketOptions *s, gint fd, GSockAddr *addr, AFS
 
   if (self->interface_name)
     {
-#ifdef SO_BINDTODEVICE
-      int result = socket_options_inet_set_interface(self, fd);
-      if (result != 0)
-        {
-          msg_error("Can't bind to interface", evt_tag_str("interface", self->interface_name), evt_tag_errno("error", result));
-          return FALSE;
-        }
-#else
-      msg_error("interfacel() is set but no SO_BINDTODEVICE setsockopt on this platform");
-      return FALSE;
-#endif
+      if (!socket_options_inet_try_to_set_interface(self, fd))
+        return FALSE;
     }
 
   switch (addr->sa.sa_family)
@@ -201,10 +211,7 @@ socket_options_inet_setup_socket(SocketOptions *s, gint fd, GSockAddr *addr, AFS
 void
 socket_options_inet_set_interface_name(SocketOptionsInet *self, const gchar *interface_name)
 {
-  if (self->interface_name)
-    {
-      g_free(self->interface_name);
-    }
+  g_free(self->interface_name);
   self->interface_name = g_strdup(interface_name);
 }
 
@@ -212,10 +219,8 @@ void
 socket_options_inet_free(gpointer s)
 {
   SocketOptionsInet *self = (SocketOptionsInet *) s;
-  if (self->interface_name)
-    {
-      g_free(self->interface_name);
-    }
+  g_free(self->interface_name);
+  g_free(self);
 }
 
 SocketOptionsInet *
