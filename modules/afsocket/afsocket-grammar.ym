@@ -157,6 +157,7 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 
 %token KW_LOCALIP
 %token KW_IP
+%token KW_INTERFACE
 %token KW_LOCALPORT
 %token KW_DESTPORT
 %token KW_FAILOVER_SERVERS
@@ -842,6 +843,7 @@ inet_socket_option
 	| KW_IP_TTL '(' nonnegative_integer ')'               { ((SocketOptionsInet *) last_sock_options)->ip_ttl = $3; }
 	| KW_IP_TOS '(' nonnegative_integer ')'               { ((SocketOptionsInet *) last_sock_options)->ip_tos = $3; }
 	| KW_IP_FREEBIND '(' yesno ')'              { ((SocketOptionsInet *) last_sock_options)->ip_freebind = $3; }
+	| KW_INTERFACE '(' string ')'		    { socket_options_inet_set_interface_name((SocketOptionsInet *) last_sock_options, $3); free($3); }
 	| KW_TCP_KEEPALIVE_TIME '(' nonnegative_integer ')'   { ((SocketOptionsInet *) last_sock_options)->tcp_keepalive_time = $3; }
 	| KW_TCP_KEEPALIVE_INTVL '(' nonnegative_integer ')'  { ((SocketOptionsInet *) last_sock_options)->tcp_keepalive_intvl = $3; }
 	| KW_TCP_KEEPALIVE_PROBES '(' nonnegative_integer ')' { ((SocketOptionsInet *) last_sock_options)->tcp_keepalive_probes = $3; }
