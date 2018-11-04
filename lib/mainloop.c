@@ -275,15 +275,22 @@ finish:
 
 
 /* initiate configuration reload */
-void
-main_loop_reload_config(MainLoop *self)
+gboolean
+main_loop_reload_config_prepare(MainLoop *self, GError **error)
 {
+  g_return_val_if_fail(error == NULL || (*error) == NULL, FALSE);
+
   if (main_loop_is_terminating(self))
-    return;
+    {
+      g_set_error(error, MAIN_LOOP_ERROR, MAIN_LOOP_ERROR_RELOAD_FAILED,
+                  "Unable to trigger a reload while a termination is in progress");
+      return FALSE;
+    }
   if (is_reloading_scheduled)
     {
-      msg_notice("Error initiating reload, reload is already ongoing");
-      return;
+      g_set_error(error, MAIN_LOOP_ERROR, MAIN_LOOP_ERROR_RELOAD_FAILED,
+                  "Unable to trigger a reload while another reload attempt is in progress");
+      return FALSE;
     }
 
   service_management_publish_status("Reloading configuration");
@@ -295,14 +302,35 @@ main_loop_reload_config(MainLoop *self)
       cfg_free(self->new_config);
       self->new_config = NULL;
       self->old_config = NULL;
-      msg_error("Error parsing configuration",
-                evt_tag_str(EVT_TAG_FILENAME, resolvedConfigurablePaths.cfgfilename));
       service_management_publish_status("Error parsing new configuration, using the old config");
+      g_set_error(error, MAIN_LOOP_ERROR, MAIN_LOOP_ERROR_RELOAD_FAILED,
+                  "Syntax error parsing configuration file");
+      return FALSE;
+    }
+  is_reloading_scheduled = TRUE;
+  return TRUE;
+}
+
+void
+main_loop_reload_config_commence(MainLoop *self)
+{
+  g_assert(is_reloading_scheduled == TRUE);
+  main_loop_worker_sync_call(main_loop_reload_config_apply, self);
+}
+
+void
+main_loop_reload_config(MainLoop *self)
+{
+  GError *error = NULL;
+
+  if (!main_loop_reload_config_prepare(self, &error))
+    {
+      msg_error("Error reloading configuration",
+                evt_tag_str("reason", error->message));
+      g_clear_error(&error);
       return;
     }
-
-  is_reloading_scheduled = TRUE;
-  main_loop_worker_sync_call(main_loop_reload_config_apply, self);
+  main_loop_reload_config_commence(self);
 }
 
 static void

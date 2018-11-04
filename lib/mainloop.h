@@ -59,6 +59,8 @@ main_loop_is_main_thread(void)
   return threads_equal(main_thread_handle, get_thread_id());
 }
 
+gboolean main_loop_reload_config_prepare(MainLoop *self, GError **error);
+void main_loop_reload_config_commence(MainLoop *self);
 void main_loop_reload_config(MainLoop *self);
 void main_loop_verify_config(GString *result, MainLoop *self);
 void main_loop_exit(MainLoop *self);
@@ -87,6 +89,7 @@ GQuark main_loop_error_quark(void);
 enum MainLoopError
 {
   MAIN_LOOP_ERROR_FAILED,
+  MAIN_LOOP_ERROR_RELOAD_FAILED,
 };
 
 #endif
