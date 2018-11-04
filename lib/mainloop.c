@@ -247,13 +247,14 @@ main_loop_reload_config_apply(gpointer user_data)
       cfg_free(self->old_config);
       self->current_configuration = self->new_config;
       service_management_clear_status();
-      msg_notice("Configuration reload request received, reloading configuration");
-
+      msg_notice("Configuration reload request received, configuration successfully reloaded",
+                 evt_tag_str("config", resolvedConfigurablePaths.cfgfilename));
     }
   else
     {
-      msg_error("Error initializing new configuration, reverting to old config");
-      service_management_publish_status("Error initializing new configuration, using the old config");
+      msg_error("Error initializing new configuration, reverting to old config",
+                evt_tag_str("config", resolvedConfigurablePaths.cfgfilename));
+      service_management_publish_status("Error initializing new configuration, reverting to the old config");
       cfg_persist_config_move(self->new_config, self->old_config);
       cfg_deinit(self->new_config);
       if (!cfg_init(self->old_config))
@@ -279,7 +280,6 @@ main_loop_reload_config_apply(gpointer user_data)
 
   return;
 }
-
 
 /* initiate configuration reload */
 gboolean

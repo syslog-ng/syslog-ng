@@ -379,7 +379,7 @@ _reenable_worker_jobs(void *s)
 {
   main_loop_workers_quit = FALSE;
   if (is_reloading_scheduled)
-    msg_notice("Configuration reload finished");
+    msg_debug("Configuration reload finished, restarting worker threads");
   is_reloading_scheduled = FALSE;
 }
 
