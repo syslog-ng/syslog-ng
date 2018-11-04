@@ -138,7 +138,6 @@ struct _MainLoop
   struct iv_signal sigusr1_poll;
 
   struct iv_event exit_requested;
-  struct iv_event reload_config_requested;
 
   struct iv_timer exit_timer;
 
@@ -277,10 +276,8 @@ finish:
 
 /* initiate configuration reload */
 void
-main_loop_reload_config_initiate(gpointer user_data)
+main_loop_reload_config(MainLoop *self)
 {
-  MainLoop *self = (MainLoop *) user_data;
-
   if (main_loop_is_terminating(self))
     return;
   if (is_reloading_scheduled)
@@ -422,7 +419,7 @@ sig_hup_handler(gpointer user_data)
 {
   MainLoop *self = (MainLoop *) user_data;
 
-  main_loop_reload_config_initiate(self);
+  main_loop_reload_config(self);
 }
 
 static void
@@ -506,7 +503,6 @@ static void
 main_loop_init_events(MainLoop *self)
 {
   _register_event(&self->exit_requested, main_loop_exit_initiate, self);
-  _register_event(&self->reload_config_requested, main_loop_reload_config_initiate, self);
 }
 
 void
@@ -515,14 +511,6 @@ main_loop_exit(MainLoop *self)
   iv_event_post(&self->exit_requested);
   return;
 }
-
-void
-main_loop_reload_config(MainLoop *self)
-{
-  iv_event_post(&self->reload_config_requested);
-  return;
-}
-
 
 void
 main_loop_init(MainLoop *self, MainLoopOptions *options)
@@ -584,7 +572,6 @@ main_loop_deinit(MainLoop *self)
   control_deinit(self->control_server);
 
   iv_event_unregister(&self->exit_requested);
-  iv_event_unregister(&self->reload_config_requested);
   main_loop_call_deinit();
   main_loop_io_worker_deinit();
   main_loop_worker_deinit();
