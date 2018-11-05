@@ -654,7 +654,7 @@ Description: Enhanced system logging daemon (getent)
 Package: syslog-ng-mod-java
 Architecture: any
 Multi-Arch: foreign
-Depends: syslog-ng-core (= ${binary:Version}), default-jre
+Depends: syslog-ng-core (= ${binary:Version}), default-jre-headless
 Recommends: syslog-ng-mod-java-common-lib
 Description: Enhanced system logging daemon (Java destination)
  syslog-ng is an enhanced log daemon, supporting a wide range of input
