@@ -159,6 +159,8 @@ static CfgLexerKeyword main_keywords[] =
   { "persist_name",            KW_PERSIST_NAME, VERSION_VALUE_3_8 },
 
   { "retries",            KW_RETRIES },
+  { "batch_lines",        KW_BATCH_LINES },
+  { "batch_timeout",      KW_BATCH_TIMEOUT },
 
   { "read_old_records",   KW_READ_OLD_RECORDS},
   /* filter items */
