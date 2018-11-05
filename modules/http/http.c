@@ -351,8 +351,8 @@ _should_initiate_flush(HTTPDestinationWorker *self)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
 
-  return (owner->flush_bytes && self->request_body->len + owner->body_suffix->len >= owner->flush_bytes) ||
-         (owner->super.flush_lines && self->super.batch_size >= owner->super.flush_lines);
+  return (owner->batch_bytes && self->request_body->len + owner->body_suffix->len >= owner->batch_bytes) ||
+         (owner->super.batch_lines && self->super.batch_size >= owner->super.batch_lines);
 
 }
 
@@ -421,7 +421,7 @@ http_dw_new(HTTPDestinationDriver *owner, gint worker_index)
   self->super.thread_deinit = _thread_deinit;
   self->super.flush = _flush;
 
-  if (owner->super.flush_lines > 0 || owner->flush_bytes > 0)
+  if (owner->super.batch_lines > 0 || owner->batch_bytes > 0)
     self->super.insert = _insert_batched;
   else
     self->super.insert = _insert_single;
@@ -646,11 +646,11 @@ http_dd_set_timeout(LogDriver *d, glong timeout)
 }
 
 void
-http_dd_set_flush_bytes(LogDriver *d, glong flush_bytes)
+http_dd_set_batch_bytes(LogDriver *d, glong batch_bytes)
 {
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
 
-  self->flush_bytes = flush_bytes;
+  self->batch_bytes = batch_bytes;
 }
 
 void
@@ -780,8 +780,8 @@ http_dd_new(GlobalConfig *cfg)
   self->ssl_version = CURL_SSLVERSION_DEFAULT;
   self->peer_verify = TRUE;
   /* disable batching even if the global flush_lines is specified */
-  self->super.flush_lines = 0;
-  self->flush_bytes = 0;
+  self->super.batch_lines = 0;
+  self->batch_bytes = 0;
   self->body_prefix = g_string_new("");
   self->body_suffix = g_string_new("");
   self->delimiter = g_string_new("\n");

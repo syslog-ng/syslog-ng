@@ -568,7 +568,7 @@ riemann_worker_flush(LogThreadedDestDriver *s)
    */
   self->event.n = 0;
   self->event.list = (riemann_event_t **)malloc (sizeof (riemann_event_t *) *
-                                                 MAX(1,self->super.flush_lines));
+                                                 MAX(1,self->super.batch_lines));
   if (r != 0)
     return WORKER_INSERT_RESULT_ERROR;
   else
@@ -616,7 +616,7 @@ _insert_batch(LogThreadedDestDriver *s, LogMessage *msg)
        */
     }
 
-  if (self->super.flush_lines > 1 && self->super.worker.instance.batch_size >= self->super.flush_lines)
+  if (self->super.batch_lines > 1 && self->super.worker.instance.batch_size >= self->super.batch_lines)
     {
       return log_threaded_dest_driver_flush(&self->super);
     }
@@ -626,7 +626,7 @@ _insert_batch(LogThreadedDestDriver *s, LogMessage *msg)
 static worker_insert_result_t
 riemann_worker_insert(LogThreadedDestDriver *self, LogMessage *msg)
 {
-  if (self->flush_lines <= 1)
+  if (self->batch_lines <= 1)
     return _insert_single(self, msg);
   else
     return _insert_batch(self, msg);
@@ -687,7 +687,7 @@ riemann_dd_init(LogPipe *s)
 
   if (!self->event.list)
     self->event.list = (riemann_event_t **)malloc (sizeof (riemann_event_t *) *
-                                                   MAX(1,self->super.flush_lines));
+                                                   MAX(1,self->super.batch_lines));
 
   msg_verbose("Initializing Riemann destination",
               evt_tag_str("server", self->server),
@@ -750,7 +750,7 @@ riemann_dd_new(GlobalConfig *cfg)
 
   self->port = -1;
   self->type = RIEMANN_CLIENT_TCP;
-  self->super.flush_lines = 0; /* don't inherit global value */
+  self->super.batch_lines = 0; /* don't inherit global value */
 
   log_template_options_defaults(&self->template_options);
 

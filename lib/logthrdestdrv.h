@@ -67,7 +67,7 @@ struct _LogThreadedDestWorker
   gint retries_counter;
   gint32 seq_num;
   struct timespec last_flush_time;
-  gboolean enable_flush_timeout;
+  gboolean enable_batch_timeout;
   gboolean suspended;
   gboolean startup_finished;
   gboolean startup_failure;
@@ -91,8 +91,8 @@ struct _LogThreadedDestDriver
   StatsCounterItem *processed_messages;
   StatsCounterItem *written_messages;
 
-  gint flush_lines;
-  gint flush_timeout;
+  gint batch_lines;
+  gint batch_timeout;
   gboolean under_termination;
   time_t time_reopen;
   gint retries_max;
@@ -214,7 +214,7 @@ void log_threaded_dest_driver_free(LogPipe *s);
 
 void log_threaded_dest_driver_set_max_retries(LogDriver *s, gint max_retries);
 void log_threaded_dest_driver_set_num_workers(LogDriver *s, gint num_workers);
-void log_threaded_dest_driver_set_flush_lines(LogDriver *s, gint flush_lines);
-void log_threaded_dest_driver_set_flush_timeout(LogDriver *s, gint flush_timeout);
+void log_threaded_dest_driver_set_batch_lines(LogDriver *s, gint batch_lines);
+void log_threaded_dest_driver_set_batch_timeout(LogDriver *s, gint batch_timeout);
 
 #endif

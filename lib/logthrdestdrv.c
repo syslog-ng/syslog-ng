@@ -34,19 +34,19 @@ static void _init_stats_key(LogThreadedDestDriver *self, StatsClusterKey *sc_key
 /* LogThreadedDestWorker */
 
 void
-log_threaded_dest_driver_set_flush_lines(LogDriver *s, gint flush_lines)
+log_threaded_dest_driver_set_batch_lines(LogDriver *s, gint batch_lines)
 {
   LogThreadedDestDriver *self = (LogThreadedDestDriver *) s;
 
-  self->flush_lines = flush_lines;
+  self->batch_lines = batch_lines;
 }
 
 void
-log_threaded_dest_driver_set_flush_timeout(LogDriver *s, gint flush_timeout)
+log_threaded_dest_driver_set_batch_timeout(LogDriver *s, gint batch_timeout)
 {
   LogThreadedDestDriver *self = (LogThreadedDestDriver *) s;
 
-  self->flush_timeout = flush_timeout;
+  self->batch_timeout = batch_timeout;
 }
 
 /* this should be used in combination with WORKER_INSERT_RESULT_EXPLICIT_ACK_MGMT to actually confirm message delivery. */
@@ -103,16 +103,16 @@ _should_flush_now(LogThreadedDestWorker *self)
   struct timespec now;
   glong diff;
 
-  if (self->owner->flush_timeout <= 0 ||
-      self->owner->flush_lines <= 1 ||
-      !self->enable_flush_timeout)
+  if (self->owner->batch_timeout <= 0 ||
+      self->owner->batch_lines <= 1 ||
+      !self->enable_batch_timeout)
     return TRUE;
 
   iv_validate_now();
   now = iv_now;
   diff = timespec_diff_msec(&now, &self->last_flush_time);
 
-  return (diff >= self->owner->flush_timeout);
+  return (diff >= self->owner->batch_timeout);
 }
 
 static void
@@ -279,7 +279,7 @@ _process_result(LogThreadedDestWorker *self, gint result)
       break;
 
     case WORKER_INSERT_RESULT_QUEUED:
-      self->enable_flush_timeout = TRUE;
+      self->enable_batch_timeout = TRUE;
       break;
 
     default:
@@ -388,10 +388,10 @@ _schedule_restart_on_suspend_timeout(LogThreadedDestWorker *self)
 }
 
 static void
-_schedule_restart_on_flush_timeout(LogThreadedDestWorker *self)
+_schedule_restart_on_batch_timeout(LogThreadedDestWorker *self)
 {
   self->timer_flush.expires = self->last_flush_time;
-  timespec_add_msec(&self->timer_flush.expires, self->owner->flush_timeout);
+  timespec_add_msec(&self->timer_flush.expires, self->owner->batch_timeout);
   iv_timer_register(&self->timer_flush);
 }
 
@@ -410,7 +410,7 @@ _schedule_restart_on_next_flush(LogThreadedDestWorker *self)
   if (self->suspended)
     _schedule_restart_on_suspend_timeout(self);
   else if (!_should_flush_now(self))
-    _schedule_restart_on_flush_timeout(self);
+    _schedule_restart_on_batch_timeout(self);
   else
     iv_task_register(&self->do_work);
 }
@@ -1022,8 +1022,8 @@ log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalConfig
   self->super.super.super.queue = log_threaded_dest_driver_queue;
   self->super.super.super.free_fn = log_threaded_dest_driver_free;
   self->time_reopen = -1;
-  self->flush_lines = -1;
-  self->flush_timeout = -1;
+  self->batch_lines = -1;
+  self->batch_timeout = -1;
   self->num_workers = 1;
 
   self->retries_max = MAX_RETRIES_OF_FAILED_INSERT_DEFAULT;

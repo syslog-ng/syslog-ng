@@ -1191,8 +1191,8 @@ threaded_dest_driver_option
         {
           log_threaded_dest_driver_set_max_retries(last_driver, $3);
         }
-        | KW_BATCH_LINES '(' nonnegative_integer ')' { log_threaded_dest_driver_set_flush_lines(last_driver, $3); }
-        | KW_BATCH_TIMEOUT '(' positive_integer ')' { log_threaded_dest_driver_set_flush_timeout(last_driver, $3); }
+        | KW_BATCH_LINES '(' nonnegative_integer ')' { log_threaded_dest_driver_set_batch_lines(last_driver, $3); }
+        | KW_BATCH_TIMEOUT '(' positive_integer ')' { log_threaded_dest_driver_set_batch_timeout(last_driver, $3); }
         | dest_driver_option
         ;
 
