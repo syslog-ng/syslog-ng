@@ -226,7 +226,14 @@ cached_gmtime(time_t *when, struct tm *tm)
       struct tm *ltm;
 
       g_static_mutex_lock(&localtime_lock);
-      ltm = gmtime(when);
+      /*
+       * Disable LGTM's reporting of this call as a dangerous function.
+       * gmtime() works in a static variable and without the guarding locks
+       * in this function, it'd be a reentrancy issue in multithreaded
+       * applications.  Since we do proper locking and copying of the data
+       * under the guards of the locks, this is not an issue.
+       */
+      ltm = gmtime(when);			// [cpp/potentially-dangerous-function]
       *tm = *ltm;
       g_static_mutex_unlock(&localtime_lock);
 #endif
