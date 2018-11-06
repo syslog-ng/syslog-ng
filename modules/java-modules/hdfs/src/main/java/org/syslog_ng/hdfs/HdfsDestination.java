@@ -273,16 +273,20 @@ public class HdfsDestination extends StructuredLogDestination {
         HdfsFile hdfsFile = openedFiles.get(resolvedFileName);
         if (hdfsFile == null || !hdfsFile.isOpen()) {
             hdfsFile = createHdfsFile(resolvedFileName);
-            openedFiles.put(resolvedFileName, hdfsFile);
+            if (hdfsFile != null)
+                openedFiles.put(resolvedFileName, hdfsFile);
         }
         return hdfsFile;
     }
 
     private HdfsFile createHdfsFile(String resolvedFileName) {
+        HdfsFile hdfsFile = null;
+
         Path filePath = getFilePath(resolvedFileName);
         FSDataOutputStream fsDataOutputStream = createFsDataOutputStream(hdfs, filePath);
 
-        HdfsFile hdfsFile = new HdfsFile(filePath, fsDataOutputStream);
+        if (fsDataOutputStream != null)
+            hdfsFile = new HdfsFile(filePath, fsDataOutputStream);
 
         return hdfsFile;
     }
