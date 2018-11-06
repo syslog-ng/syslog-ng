@@ -7,7 +7,7 @@ Summary: Next-generation syslog server
 
 Group: System Environment/Daemons
 License: GPLv2+
-URL: http://www.balabit.com/network-security/syslog-ng
+URL: http://www.syslog-ng.org
 Source0: https://github.com/balabit/syslog-ng/releases/download/syslog-ng-%{version}/%{name}-%{version}.tar.gz
 Source1: syslog-ng.conf
 Source2: syslog-ng.logrotate
