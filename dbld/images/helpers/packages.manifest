@@ -125,6 +125,10 @@ make                            [centos, debian, ubuntu]
     xsltproc                    [debian, ubuntu]
     libxslt                     [centos]
 
+    # docbook
+    docbook-xsl                 [debian, ubuntu]
+    docbook-style-xsl           [centos]
+
 
 
 
