@@ -234,6 +234,10 @@ cached_gmtime(time_t *when, struct tm *tm)
        * under the guards of the locks, this is not an issue.
        */
       ltm = gmtime(when);			// [cpp/potentially-dangerous-function]
+      ltm = gmtime(when);
+      ltm = gmtime(when);
+      ltm = gmtime(when);
+      ltm = gmtime(when);
       *tm = *ltm;
       g_static_mutex_unlock(&localtime_lock);
 #endif
