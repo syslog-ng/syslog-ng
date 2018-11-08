@@ -36,4 +36,5 @@ void feed_some_messages(LogQueue *q, int n);
 
 void send_some_messages(LogQueue *q, gint n);
 
+gsize get_one_message_serialized_size(void);
 #endif

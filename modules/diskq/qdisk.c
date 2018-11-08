@@ -224,6 +224,43 @@ _truncate_file(QDisk *self, gint64 new_size)
   return success;
 }
 
+static gint64
+qdisk_get_lowest_used_queue_offset(QDisk *self)
+{
+  gint64 lowest_offset = G_MAXINT64;
+
+  if (self->hdr->qout_pos.ofs > 0)
+    lowest_offset = MIN(lowest_offset, self->hdr->qout_pos.ofs);
+
+  if (self->hdr->qbacklog_pos.ofs > 0)
+    lowest_offset = MIN(lowest_offset, self->hdr->qbacklog_pos.ofs);
+
+  if (self->hdr->qoverflow_pos.ofs > 0)
+    lowest_offset = MIN(lowest_offset, self->hdr->qoverflow_pos.ofs);
+
+  return lowest_offset < G_MAXINT64 ? lowest_offset : 0;
+}
+
+static void
+qdisk_try_to_truncate_file_to_minimal(QDisk *self, gint64 *new_file_end_offset)
+{
+  gint64 file_end_offset = 0;
+  if (qdisk_is_file_empty(self))
+    {
+      _truncate_file(self, QDISK_RESERVED_SPACE);
+      file_end_offset = QDISK_RESERVED_SPACE;
+    }
+  else
+    {
+      file_end_offset = qdisk_get_lowest_used_queue_offset(self);
+      if(file_end_offset > QDISK_RESERVED_SPACE)
+        _truncate_file(self, file_end_offset);
+    }
+  if (new_file_end_offset)
+    *new_file_end_offset = file_end_offset;
+}
+
+
 gint64
 qdisk_get_empty_space(QDisk *self)
 {
@@ -526,7 +563,7 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
   gint qbacklog_count;
   gint64 qoverflow_ofs;
   gint qoverflow_count;
-  gint64 end_ofs;
+  gint64 end_ofs = QDISK_RESERVED_SPACE;
 
   if (memcmp(self->hdr->magic, self->file_id, 4) != 0)
     {
@@ -560,18 +597,12 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 
   if (!self->options->read_only)
     {
-      end_ofs = qout_ofs;
-      if (qbacklog_ofs && qbacklog_ofs < end_ofs)
-        end_ofs = qbacklog_ofs;
-      if (qoverflow_ofs && qoverflow_ofs < end_ofs)
-        end_ofs = qoverflow_ofs;
-      if(end_ofs > QDISK_RESERVED_SPACE)
-        _truncate_file(self, end_ofs);
+      qdisk_try_to_truncate_file_to_minimal(self, &end_ofs);
     }
 
   if (!self->options->reliable)
     {
-      self->file_size = qout_ofs;
+      self->file_size = MAX(end_ofs, QDISK_RESERVED_SPACE);
       _reset_queue_pointers(self);
 
       msg_info("Disk-buffer state loaded",
