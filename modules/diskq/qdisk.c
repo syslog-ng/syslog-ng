@@ -593,12 +593,11 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
     {
       if (!_load_non_reliable_queues(self, qout, qbacklog, qoverflow))
         return FALSE;
-    }
 
-  if (!self->options->read_only)
-    {
-      qdisk_try_to_truncate_file_to_minimal(self, &end_ofs);
-    }
+      if (!self->options->read_only)
+        {
+          qdisk_try_to_truncate_file_to_minimal(self, &end_ofs);
+        }
 
   if (!self->options->reliable)
     {
