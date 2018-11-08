@@ -557,27 +557,12 @@ qdisk_header_is_inconsistent(QDisk *self)
 static gboolean
 _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 {
-  gint64 qout_ofs;
-  gint qout_count;
-  gint64 qbacklog_ofs;
-  gint qbacklog_count;
-  gint64 qoverflow_ofs;
-  gint qoverflow_count;
-  gint64 end_ofs = QDISK_RESERVED_SPACE;
-
   if (memcmp(self->hdr->magic, self->file_id, 4) != 0)
     {
       msg_error("Error reading disk-queue file header",
                 evt_tag_str("filename", self->filename));
       return FALSE;
     }
-
-  qout_count = self->hdr->qout_pos.count;
-  qout_ofs = self->hdr->qout_pos.ofs;
-  qbacklog_count = self->hdr->qbacklog_pos.count;
-  qbacklog_ofs = self->hdr->qbacklog_pos.ofs;
-  qoverflow_count = self->hdr->qoverflow_pos.count;
-  qoverflow_ofs = self->hdr->qoverflow_pos.ofs;
 
   if (qdisk_header_is_inconsistent(self))
     {
@@ -594,6 +579,7 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
       if (!_load_non_reliable_queues(self, qout, qbacklog, qoverflow))
         return FALSE;
 
+      gint64 end_ofs = QDISK_RESERVED_SPACE;
       if (!self->options->read_only)
         {
           qdisk_try_to_truncate_file_to_minimal(self, &end_ofs);
@@ -606,9 +592,9 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 
       msg_info("Disk-buffer state loaded",
                evt_tag_str("filename", self->filename),
-               evt_tag_int("qout_length", qout_count),
-               evt_tag_int("qbacklog_length", qbacklog_count),
-               evt_tag_int("qoverflow_length", qoverflow_count),
+               evt_tag_int("qout_length", self->hdr->qout_pos.count),
+               evt_tag_int("qbacklog_length", self->hdr->qbacklog_pos.count),
+               evt_tag_int("qoverflow_length", self->hdr->qoverflow_pos.count),
                evt_tag_long("qdisk_length", self->hdr->length));
     }
   else
