@@ -175,6 +175,11 @@ _is_free_space_between_write_head_and_backlog_head(QDisk *self, gint msg_len)
   return self->hdr->write_head + msg_len < self->hdr->backlog_head;
 }
 
+gboolean
+qdisk_is_file_empty(QDisk *self)
+{
+  return self->hdr->length == 0 && self->hdr->backlog_len == 0;
+}
 
 gboolean
 qdisk_is_space_avail(QDisk *self, gint at_least)
@@ -977,7 +982,7 @@ qdisk_set_backlog_count(QDisk *self, gint64 new_value)
 void
 qdisk_reset_file_if_possible(QDisk *self)
 {
-  if (self->hdr->length == 0 && self->hdr->backlog_len == 0)
+  if (qdisk_is_file_empty(self))
     {
       self->hdr->read_head = QDISK_RESERVED_SPACE;
       self->hdr->write_head = QDISK_RESERVED_SPACE;
