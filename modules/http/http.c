@@ -106,8 +106,7 @@ _setup_static_options_in_curl(HTTPDestinationWorker *self)
   if (owner->ca_dir)
     curl_easy_setopt(self->curl, CURLOPT_CAPATH, owner->ca_dir);
 
-  if (owner->ca_file)
-    curl_easy_setopt(self->curl, CURLOPT_CAINFO, owner->ca_file);
+  curl_easy_setopt(self->curl, CURLOPT_CAINFO, owner->ca_file);
 
   if (owner->cert_file)
     curl_easy_setopt(self->curl, CURLOPT_SSLCERT, owner->cert_file);
