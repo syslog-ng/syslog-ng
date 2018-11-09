@@ -639,7 +639,8 @@ _worker_thread(gpointer arg)
   _schedule_restart(self);
   iv_main();
 
-  log_threaded_dest_worker_flush(self);
+  worker_insert_result_t result = log_threaded_dest_worker_flush(self);
+  _process_result(self, result);
   log_queue_rewind_backlog_all(self->queue);
 
   _disconnect(self);
