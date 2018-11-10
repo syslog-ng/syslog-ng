@@ -58,6 +58,7 @@ riemann_dd_set_field_host(LogDriver *d, LogTemplate *value)
 {
   RiemannDestDriver *self = (RiemannDestDriver *)d;
 
+  log_template_unref(self->fields.host);
   self->fields.host = log_template_ref(value);
 }
 
@@ -66,6 +67,7 @@ riemann_dd_set_field_service(LogDriver *d, LogTemplate *value)
 {
   RiemannDestDriver *self = (RiemannDestDriver *)d;
 
+  log_template_unref(self->fields.service);
   self->fields.service = log_template_ref(value);
 }
 
@@ -74,6 +76,7 @@ riemann_dd_set_field_event_time(LogDriver *d, LogTemplate *value)
 {
   RiemannDestDriver *self = (RiemannDestDriver *)d;
 
+  log_template_unref(self->fields.event_time);
   self->fields.event_time = log_template_ref(value);
 }
 
@@ -90,6 +93,7 @@ riemann_dd_set_field_state(LogDriver *d, LogTemplate *value)
 {
   RiemannDestDriver *self = (RiemannDestDriver *)d;
 
+  log_template_unref(self->fields.state);
   self->fields.state = log_template_ref(value);
 }
 
@@ -98,6 +102,7 @@ riemann_dd_set_field_description(LogDriver *d, LogTemplate *value)
 {
   RiemannDestDriver *self = (RiemannDestDriver *)d;
 
+  log_template_unref(self->fields.description);
   self->fields.description = log_template_ref(value);
 }
 
@@ -106,6 +111,7 @@ riemann_dd_set_field_metric(LogDriver *d, LogTemplate *value)
 {
   RiemannDestDriver *self = (RiemannDestDriver *)d;
 
+  log_template_unref(self->fields.metric);
   self->fields.metric = log_template_ref(value);
 }
 
@@ -114,6 +120,7 @@ riemann_dd_set_field_ttl(LogDriver *d, LogTemplate *value)
 {
   RiemannDestDriver *self = (RiemannDestDriver *)d;
 
+  log_template_unref(self->fields.ttl);
   self->fields.ttl = log_template_ref(value);
 }
 
