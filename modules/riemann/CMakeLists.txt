@@ -2,6 +2,8 @@ set (RIEMANN_SOURCES
     riemann-grammar.y
     riemann.c
     riemann.h
+    riemann-worker.c
+    riemann-worker.h
     riemann-parser.c
     riemann-parser.h
     riemann-plugin.c
