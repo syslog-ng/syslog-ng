@@ -180,6 +180,7 @@ TEMPLATE_FUNCTION_SIMPLE(tf_substr);
 static void
 tf_strip(LogMessage *msg, gint argc, GString *argv[], GString *result)
 {
+  gsize initial_len = result->len;
   gint i;
 
   for (i = 0; i < argc; i++)
@@ -198,7 +199,7 @@ tf_strip(LogMessage *msg, gint argc, GString *argv[], GString *result)
       while (isspace(argv[i]->str[spaces_start]))
         spaces_start++;
 
-      if (result->len > 0)
+      if (result->len > initial_len)
         g_string_append_c(result, ' ');
 
       g_string_append_len(result, &argv[i]->str[spaces_start], argv[i]->len - spaces_end - spaces_start);
