@@ -28,6 +28,7 @@
 #include "plugin.h"
 #include "cfg.h"
 #include "logmsg/logmsg.h"
+#include "scratch-buffers.h"
 
 static void
 add_dummy_template_to_configuration(void)
@@ -81,6 +82,7 @@ void
 teardown(void)
 {
   deinit_template_tests();
+  scratch_buffers_explicit_gc();
   app_shutdown();
 }
 
