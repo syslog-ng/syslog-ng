@@ -650,11 +650,14 @@ _worker_thread(gpointer arg)
             evt_tag_int("index", self->worker_index),
             evt_tag_str("driver", self->owner->super.super.id),
             log_expr_node_location_tag(self->owner->super.super.super.expr_node));
-  iv_deinit();
-  return;
+
+  goto ok;
 
 error:
   _signal_startup_failure(self);
+ok:
+  iv_event_unregister(&self->wake_up_event);
+  iv_event_unregister(&self->shutdown_event);
   iv_deinit();
 }
 
