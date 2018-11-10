@@ -584,11 +584,7 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
         {
           qdisk_try_to_truncate_file_to_minimal(self, &end_ofs);
         }
-
-  if (!self->options->reliable)
-    {
       self->file_size = MAX(end_ofs, QDISK_RESERVED_SPACE);
-      _reset_queue_pointers(self);
 
       msg_info("Disk-buffer state loaded",
                evt_tag_str("filename", self->filename),
@@ -596,6 +592,8 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
                evt_tag_int("qbacklog_length", self->hdr->qbacklog_pos.count),
                evt_tag_int("qoverflow_length", self->hdr->qoverflow_pos.count),
                evt_tag_long("qdisk_length", self->hdr->length));
+
+      _reset_queue_pointers(self);
     }
   else
     {
