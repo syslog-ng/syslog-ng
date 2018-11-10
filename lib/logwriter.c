@@ -1642,7 +1642,6 @@ log_writer_options_defaults(LogWriterOptions *options)
 {
   options->template = NULL;
   options->flush_lines = -1;
-  options->flush_timeout = -1;
   log_template_options_defaults(&options->template_options);
   options->time_reopen = -1;
   options->suppress = -1;
@@ -1708,8 +1707,6 @@ log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint32 op
 
   if (options->flush_lines == -1)
     options->flush_lines = cfg->flush_lines;
-  if (options->flush_timeout == -1)
-    options->flush_timeout = cfg->flush_timeout;
   if (options->suppress == -1)
     options->suppress = cfg->suppress;
   if (options->time_reopen == -1)

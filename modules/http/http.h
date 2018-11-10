@@ -62,7 +62,7 @@ typedef struct
   gboolean accept_redirects;
   short int method_type;
   glong timeout;
-  glong flush_bytes;
+  glong batch_bytes;
   LogTemplate *body_template;
   LogTemplateOptions template_options;
 } HTTPDestinationDriver;
@@ -86,7 +86,7 @@ void http_dd_set_cipher_suite(LogDriver *d, const gchar *ciphers);
 void http_dd_set_ssl_version(LogDriver *d, const gchar *value);
 void http_dd_set_peer_verify(LogDriver *d, gboolean verify);
 void http_dd_set_timeout(LogDriver *d, glong timeout);
-void http_dd_set_flush_bytes(LogDriver *d, glong flush_bytes);
+void http_dd_set_batch_bytes(LogDriver *d, glong batch_bytes);
 void http_dd_set_body_prefix(LogDriver *d, const gchar *body_prefix);
 void http_dd_set_body_suffix(LogDriver *d, const gchar *body_suffix);
 void http_dd_set_delimiter(LogDriver *d, const gchar *delimiter);

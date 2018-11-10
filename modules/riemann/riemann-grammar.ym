@@ -136,10 +136,6 @@ riemann_option
           {
             riemann_dd_set_field_attributes(last_driver, last_value_pairs);
           }
-        | KW_FLUSH_LINES '(' nonnegative_integer ')'
-          {
-            log_threaded_dest_driver_set_flush_lines(last_driver,  $3);
-          }
         | threaded_dest_driver_option
         | KW_TLS '(' riemann_tls_options ')'
         | { last_template_options = riemann_dd_get_template_options(last_driver); } template_option

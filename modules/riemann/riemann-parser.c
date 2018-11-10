@@ -48,6 +48,7 @@ static CfgLexerKeyword riemann_keywords[] =
   { "ca_file",                  KW_CA_FILE },
   { "cert_file",                KW_CERT_FILE },
   { "key_file",                 KW_KEY_FILE },
+  { "flush_lines",              KW_BATCH_LINES, KWS_OBSOLETE, "The flush-lines option is deprecated in favour of batch-lines()" },
 
   /* compatibility with original but inconsistent option naming */
   { "cacert",                   KW_CA_FILE, KWS_OBSOLETE, "The cacert() option is deprecated in favour of ca-file()" },

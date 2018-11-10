@@ -200,6 +200,8 @@ extern struct _StatsOptions *last_stats_options;
 %token KW_TYPE                        10083
 %token KW_STATS_MAX_DYNAMIC           10084
 %token KW_MIN_IW_SIZE_PER_READER      10085
+%token KW_BATCH_LINES                 10087
+%token KW_BATCH_TIMEOUT               10088
 
 %token KW_CHAIN_HOSTNAMES             10090
 %token KW_NORMALIZE_HOSTNAMES         10091
@@ -957,7 +959,7 @@ options_item
             cfg_set_mark_mode(configuration, $3);
             free($3);
           }
-	| KW_FLUSH_TIMEOUT '(' positive_integer ')'	{ configuration->flush_timeout = $3; }
+	| KW_FLUSH_TIMEOUT '(' positive_integer ')'     { }
 	| KW_CHAIN_HOSTNAMES '(' yesno ')'	{ configuration->chain_hostnames = $3; }
 	| KW_KEEP_HOSTNAME '(' yesno ')'	{ configuration->keep_hostname = $3; }
 	| KW_CHECK_HOSTNAME '(' yesno ')'	{ configuration->check_hostname = $3; }
@@ -1189,6 +1191,8 @@ threaded_dest_driver_option
         {
           log_threaded_dest_driver_set_max_retries(last_driver, $3);
         }
+        | KW_BATCH_LINES '(' nonnegative_integer ')' { log_threaded_dest_driver_set_batch_lines(last_driver, $3); }
+        | KW_BATCH_TIMEOUT '(' positive_integer ')' { log_threaded_dest_driver_set_batch_timeout(last_driver, $3); }
         | dest_driver_option
         ;
 
@@ -1289,7 +1293,7 @@ dest_writer_option
 
 	: KW_FLAGS '(' dest_writer_options_flags ')' { last_writer_options->options = $3; }
 	| KW_FLUSH_LINES '(' nonnegative_integer ')'		{ last_writer_options->flush_lines = $3; }
-	| KW_FLUSH_TIMEOUT '(' positive_integer ')'	{ last_writer_options->flush_timeout = $3; }
+	| KW_FLUSH_TIMEOUT '(' positive_integer ')'	{ }
         | KW_SUPPRESS '(' nonnegative_integer ')'            { last_writer_options->suppress = $3; }
 	| KW_TEMPLATE '(' string ')'       	{
                                                   GError *error = NULL;

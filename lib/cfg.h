@@ -76,7 +76,6 @@ struct _GlobalConfig
   gint mark_freq;
   gint flush_lines;
   gint mark_mode;
-  gint flush_timeout;
   gboolean threaded;
   gboolean pass_unix_credentials;
   gboolean chain_hostnames;

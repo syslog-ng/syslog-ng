@@ -92,7 +92,7 @@ static CfgLexerKeyword main_keywords[] =
   { "stats_max_dynamics", KW_STATS_MAX_DYNAMIC },
   { "min_iw_size_per_reader", KW_MIN_IW_SIZE_PER_READER },
   { "flush_lines",        KW_FLUSH_LINES },
-  { "flush_timeout",      KW_FLUSH_TIMEOUT },
+  { "flush_timeout",      KW_FLUSH_TIMEOUT, KWS_OBSOLETE, "Some drivers support batch-timeout() instead that you can specify at the destination level." },
   { "suppress",           KW_SUPPRESS },
   { "sync_freq",          KW_FLUSH_LINES, KWS_OBSOLETE, "flush_lines" },
   { "sync",               KW_FLUSH_LINES, KWS_OBSOLETE, "flush_lines" },
@@ -159,6 +159,8 @@ static CfgLexerKeyword main_keywords[] =
   { "persist_name",            KW_PERSIST_NAME, VERSION_VALUE_3_8 },
 
   { "retries",            KW_RETRIES },
+  { "batch_lines",        KW_BATCH_LINES },
+  { "batch_timeout",      KW_BATCH_TIMEOUT },
 
   { "read_old_records",   KW_READ_OLD_RECORDS},
   /* filter items */
