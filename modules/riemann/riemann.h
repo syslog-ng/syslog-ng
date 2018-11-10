@@ -24,8 +24,44 @@
 #ifndef SNG_RIEMANN_H_INCLUDED
 #define SNG_RIEMANN_H_INCLUDED
 
-#include "driver.h"
+#include "logthrdestdrv.h"
 #include "value-pairs/value-pairs.h"
+
+#include <riemann/riemann-client.h>
+
+typedef struct
+{
+  LogThreadedDestDriver super;
+
+  gchar *server;
+  gint port;
+  riemann_client_type_t type;
+  guint timeout;
+
+  struct
+  {
+    LogTemplate *host;
+    LogTemplate *service;
+    LogTemplate *event_time;
+    gint event_time_unit;
+    LogTemplate *state;
+    LogTemplate *description;
+    LogTemplate *metric;
+    LogTemplate *ttl;
+    GList *tags;
+    ValuePairs *attributes;
+  } fields;
+  LogTemplateOptions template_options;
+
+  struct
+  {
+    gchar *cacert;
+    gchar *cert;
+    gchar *key;
+  } tls;
+
+} RiemannDestDriver;
+
 
 LogDriver *riemann_dd_new(GlobalConfig *cfg);
 

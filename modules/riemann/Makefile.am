@@ -12,6 +12,8 @@ modules_riemann_libriemann_la_SOURCES		 = \
 	modules/riemann/riemann-grammar.y	   \
 	modules/riemann/riemann.c		   \
 	modules/riemann/riemann.h		   \
+	modules/riemann/riemann-worker.c	   \
+	modules/riemann/riemann-worker.h	   \
 	modules/riemann/riemann-parser.c	   \
 	modules/riemann/riemann-parser.h	   \
 	modules/riemann/riemann-plugin.c
