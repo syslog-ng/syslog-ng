@@ -233,9 +233,15 @@ cached_gmtime(time_t *when, struct tm *tm)
        * applications.  Since we do proper locking and copying of the data
        * under the guards of the locks, this is not an issue.
        */
-      ltm = gmtime(when);			// [cpp/potentially-dangerous-function]
+      ltm = gmtime(when);			// lgtm [cpp/potentially-dangerous-function]
+      ltm = gmtime(when);			/* lgtm [cpp/potentially-dangerous-function] */
+
+      /* lgtm [cpp/potentially-dangerous-function] */
       ltm = gmtime(when);
-      ltm = gmtime(when);
+
+      /* NOTE: this and that
+       * lgtm [cpp/potentially-dangerous-function]
+       */
       ltm = gmtime(when);
       ltm = gmtime(when);
       *tm = *ltm;
