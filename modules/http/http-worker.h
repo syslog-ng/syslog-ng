@@ -1,5 +1,7 @@
 /*
- * Copyright (c) 2018 Balabit
+ * Copyright (c) 2018 One Identity
+ * Copyright (c) 2018 Balazs Scheidler
+ * Copyright (c) 2016 Marc Falzon
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,27 +22,24 @@
  *
  */
 
-#include <syslog-ng.h>
-#include <logmsg/logmsg.h>
-#include <apphook.h>
-#include "http.h"
-#include "http-worker.h"
+#ifndef HTTP_WORKER_H_INCLUDED
+#define HTTP_WORKER_H_INCLUDED 1
+
 #include "logthrdestdrv.h"
 
-#include <criterion/criterion.h>
+#define CURL_NO_OLDIES 1
+#include <curl/curl.h>
 
-TestSuite(http, .init = app_startup, .fini = app_shutdown);
 
-Test(http, test_error_codes)
+typedef struct _HTTPDestinationWorker
 {
-  HTTPDestinationDriver *driver = (HTTPDestinationDriver *) http_dd_new(configuration);
-  HTTPDestinationWorker *worker = (HTTPDestinationWorker *) http_dw_new(&driver->super, 0);
+  LogThreadedDestWorker super;
+  CURL *curl;
+  GString *request_body;
+  struct curl_slist *request_headers;
+} HTTPDestinationWorker;
 
-  cr_assert_eq(map_http_status_to_worker_status(worker, 200), WORKER_INSERT_RESULT_SUCCESS);
-  cr_assert_eq(map_http_status_to_worker_status(worker, 301), WORKER_INSERT_RESULT_ERROR);
-  cr_assert_eq(map_http_status_to_worker_status(worker, 404), WORKER_INSERT_RESULT_DROP);
-  cr_assert_eq(map_http_status_to_worker_status(worker, 500), WORKER_INSERT_RESULT_ERROR);
+worker_insert_result_t map_http_status_to_worker_status(HTTPDestinationWorker *self, glong http_code);
+LogThreadedDestWorker *http_dw_new(LogThreadedDestDriver *owner, gint worker_index);
 
-  log_threaded_dest_worker_free(&worker->super);
-  log_pipe_unref((LogPipe *)driver);
-}
+#endif
