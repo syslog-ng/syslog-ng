@@ -204,6 +204,37 @@ _is_fd_pollable(gint fd)
   return pollable;
 }
 
+static gboolean
+_detect_linux_dev_kmsg(void)
+{
+  gint fd;
+
+  if ((fd = open("/dev/kmsg", O_RDONLY)) != -1)
+    {
+      if ((lseek (fd, 0, SEEK_END) != -1) && _is_fd_pollable(fd))
+        {
+          return TRUE;
+        }
+      close (fd);
+    }
+  return FALSE;
+}
+
+static gboolean
+_detect_linux_proc_kmsg(void)
+{
+  gint fd;
+
+  if ((fd = open("/proc/kmsg", O_RDONLY)) != -1)
+    {
+      if (_is_fd_pollable(fd))
+        {
+          return TRUE;
+        }
+      close (fd);
+    }
+  return FALSE;
+}
 
 static void
 system_sysblock_add_systemd_source(GString *sysblock)
@@ -214,30 +245,32 @@ system_sysblock_add_systemd_source(GString *sysblock)
 static void
 system_sysblock_add_linux_kmsg(GString *sysblock)
 {
-  const gchar *kmsg = "/proc/kmsg";
-  int fd;
+  const gchar *kmsg = NULL;
   const gchar *format = NULL;
 
-  if ((fd = open("/dev/kmsg", O_RDONLY)) != -1)
+  if (_detect_linux_dev_kmsg())
     {
-      if ((lseek (fd, 0, SEEK_END) != -1) && _is_fd_pollable(fd))
-        {
-          kmsg = "/dev/kmsg";
-          format = "linux-kmsg";
-        }
-      close (fd);
+      kmsg = "/dev/kmsg";
+      format = "linux-kmsg";
     }
-
-  if (access(kmsg, R_OK) == -1)
+  else if (_detect_linux_proc_kmsg())
     {
-      msg_warning("system(): The kernel message buffer is not readable, "
-                  "please check permissions if this is unintentional.",
-                  evt_tag_str("device", kmsg),
-                  evt_tag_error("error"));
+      kmsg = "/proc/kmsg";
+      format = NULL;
     }
   else
-    system_sysblock_add_file(sysblock, kmsg, -1,
-                             "kernel", "kernel", format, TRUE);
+    {
+      msg_notice("system(): Neither of the Linux kernel log devices was detected, continuing without polling either /proc/kmsg or /dev/kmsg");
+    }
+
+  if (kmsg)
+    {
+      msg_debug("system(): Enabling Linux kernel log device",
+                evt_tag_str("device", kmsg),
+                evt_tag_str("format", format));
+      system_sysblock_add_file(sysblock, kmsg, -1,
+                               "kernel", "kernel", format, TRUE);
+    }
 }
 
 static void
