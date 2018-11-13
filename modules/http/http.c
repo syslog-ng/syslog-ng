@@ -103,8 +103,7 @@ _setup_static_options_in_curl(HTTPDestinationWorker *self)
   if (owner->user_agent)
     curl_easy_setopt(self->curl, CURLOPT_USERAGENT, owner->user_agent);
 
-  if (owner->ca_dir)
-    curl_easy_setopt(self->curl, CURLOPT_CAPATH, owner->ca_dir);
+  curl_easy_setopt(self->curl, CURLOPT_CAPATH, owner->ca_dir);
 
   curl_easy_setopt(self->curl, CURLOPT_CAINFO, owner->ca_file);
 
