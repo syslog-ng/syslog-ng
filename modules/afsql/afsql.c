@@ -43,6 +43,7 @@ static gboolean dbi_initialized = FALSE;
 static const char *s_oracle = "oracle";
 static const char *s_freetds = "freetds";
 static dbi_inst dbi_instance;
+static const gint DEFAULT_SQL_TX_SIZE = 100;
 
 #define MAX_FAILED_ATTEMPTS 3
 
@@ -175,26 +176,11 @@ afsql_dd_set_null_value(LogDriver *s, const gchar *null)
 }
 
 void
-afsql_dd_set_retries(LogDriver *s, gint num_retries)
-{
-  AFSqlDestDriver *self = (AFSqlDestDriver *) s;
-  self->num_retries = num_retries;
-}
-
-void
 afsql_dd_set_ignore_tns_config(LogDriver *s, const gboolean ignore_tns_config)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
 
   self->ignore_tns_config = ignore_tns_config;
-}
-
-void
-afsql_dd_set_flush_lines(LogDriver *s, gint flush_lines)
-{
-  AFSqlDestDriver *self = (AFSqlDestDriver *) s;
-
-  self->flush_lines = flush_lines;
 }
 
 void
@@ -859,10 +845,19 @@ afsql_dd_should_begin_new_transaction(const AFSqlDestDriver *self)
   return afsql_dd_is_transaction_handling_enabled(self) && self->super.worker.instance.batch_size == 1;
 }
 
+static gint
+_batch_size(const AFSqlDestDriver *self)
+{
+  if (self->super.batch_lines <= 0)
+    return DEFAULT_SQL_TX_SIZE;
+
+  return self->super.batch_lines;
+}
+
 static inline gboolean
 afsql_dd_should_commit_transaction(const AFSqlDestDriver *self)
 {
-  return afsql_dd_is_transaction_handling_enabled(self) && self->super.worker.instance.batch_size >= self->flush_lines;
+  return afsql_dd_is_transaction_handling_enabled(self) && self->super.worker.instance.batch_size >= _batch_size(self);
 }
 
 static worker_insert_result_t
@@ -1123,9 +1118,6 @@ afsql_dd_init(LogPipe *s)
                   evt_tag_str("type", self->type));
     }
 
-  if (self->flush_lines == -1)
-    self->flush_lines = cfg->flush_lines;
-
   if (!_init_fields_from_columns_and_values(self))
     return FALSE;
 
@@ -1200,9 +1192,7 @@ afsql_dd_new(GlobalConfig *cfg)
   log_template_compile(self->table, "messages", NULL);
   self->failed_message_counter = 0;
 
-  self->flush_lines = -1;
   self->session_statements = NULL;
-  self->num_retries = MAX_FAILED_ATTEMPTS;
 
   self->syslogng_conform_tables = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
   self->dbd_options = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
