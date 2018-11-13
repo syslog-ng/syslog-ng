@@ -15,9 +15,6 @@ subprojects {
             dirs syslogBuildDir + '/common/gradle/libs'
         }
       mavenCentral()
-      maven {
-        url "http://maven.elasticsearch.org/releases"
-      }
     }
 
     compileJava {
