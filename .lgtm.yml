@@ -1,0 +1,4 @@
+# Disable LGTM's built-in query to detect unsafe uses of gmtime; there's a
+# custom query to check for that
+queries:
+  - exclude: cpp/potentially-dangerous-function
