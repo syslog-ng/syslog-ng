@@ -39,7 +39,7 @@ install:
       criterion-dev
       libmaxminddb-dev
       libxml2-utils
-  - sudo pip install -r requirements.txt
+  - pip install --user -r requirements.txt
 before_script:
   - echo 'Europe/Budapest' | sudo tee /etc/timezone
   - sudo dpkg-reconfigure --frontend noninteractive tzdata
