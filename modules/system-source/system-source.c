@@ -44,29 +44,6 @@
 #include <inttypes.h>
 #endif
 
-static gboolean
-_system_normalized_compare(const gchar *s1, const gchar *s2)
-{
-  gchar *normalized_s1 = __normalize_key(s1);
-  gchar *normalized_s2 = __normalize_key(s2);
-  gboolean result = g_ascii_strcasecmp(s1, s2) == 0;
-  g_free(normalized_s1);
-  g_free(normalized_s2);
-  return result;
-}
-
-static gboolean
-_system_option_normalized_test_and_remove(CfgArgs *args, const gchar *option, const gchar *test)
-{
-  const gchar *option_string = cfg_args_get(args, option);
-  if (option_string == NULL)
-    return FALSE;
-
-  gboolean result = _system_normalized_compare(option_string, test);
-  cfg_args_remove(args, option);
-  return result;
-}
-
 static void
 system_sysblock_add_unix_dgram_driver(GString *sysblock, const gchar *path,
                                       const gchar *perms, const gchar *recvbuf_size)
@@ -204,6 +181,37 @@ _is_fd_pollable(gint fd)
   return pollable;
 }
 
+static gboolean
+_detect_linux_dev_kmsg(void)
+{
+  gint fd;
+
+  if ((fd = open("/dev/kmsg", O_RDONLY)) != -1)
+    {
+      if ((lseek (fd, 0, SEEK_END) != -1) && _is_fd_pollable(fd))
+        {
+          return TRUE;
+        }
+      close (fd);
+    }
+  return FALSE;
+}
+
+static gboolean
+_detect_linux_proc_kmsg(void)
+{
+  gint fd;
+
+  if ((fd = open("/proc/kmsg", O_RDONLY)) != -1)
+    {
+      if (_is_fd_pollable(fd))
+        {
+          return TRUE;
+        }
+      close (fd);
+    }
+  return FALSE;
+}
 
 static void
 system_sysblock_add_systemd_source(GString *sysblock)
@@ -214,42 +222,43 @@ system_sysblock_add_systemd_source(GString *sysblock)
 static void
 system_sysblock_add_linux_kmsg(GString *sysblock)
 {
-  const gchar *kmsg = "/proc/kmsg";
-  int fd;
+  const gchar *kmsg = NULL;
   const gchar *format = NULL;
 
-  if ((fd = open("/dev/kmsg", O_RDONLY)) != -1)
+  if (_detect_linux_dev_kmsg())
     {
-      if ((lseek (fd, 0, SEEK_END) != -1) && _is_fd_pollable(fd))
-        {
-          kmsg = "/dev/kmsg";
-          format = "linux-kmsg";
-        }
-      close (fd);
+      kmsg = "/dev/kmsg";
+      format = "linux-kmsg";
     }
-
-  if (access(kmsg, R_OK) == -1)
+  else if (_detect_linux_proc_kmsg())
     {
-      msg_warning("system(): The kernel message buffer is not readable, "
-                  "please check permissions if this is unintentional.",
-                  evt_tag_str("device", kmsg),
-                  evt_tag_error("error"));
+      kmsg = "/proc/kmsg";
+      format = NULL;
     }
   else
-    system_sysblock_add_file(sysblock, kmsg, -1,
-                             "kernel", "kernel", format, TRUE);
+    {
+      msg_notice("system(): Neither of the Linux kernel log devices was detected, continuing without polling either /proc/kmsg or /dev/kmsg");
+    }
+
+  if (kmsg)
+    {
+      msg_debug("system(): Enabling Linux kernel log device",
+                evt_tag_str("device", kmsg),
+                evt_tag_str("format", format));
+      system_sysblock_add_file(sysblock, kmsg, -1,
+                               "kernel", "kernel", format, TRUE);
+    }
 }
 
 static void
-system_sysblock_add_linux(GString *sysblock, const gboolean exclude_kernel_messages)
+system_sysblock_add_linux(GString *sysblock)
 {
   if (service_management_get_type() == SMT_SYSTEMD)
     system_sysblock_add_systemd_source(sysblock);
   else
     {
       system_sysblock_add_unix_dgram(sysblock, "/dev/log", NULL, "8192");
-      if (!exclude_kernel_messages)
-        system_sysblock_add_linux_kmsg(sysblock);
+      system_sysblock_add_linux_kmsg(sysblock);
     }
 }
 
@@ -257,7 +266,6 @@ static gboolean
 system_generate_system_transports(GString *sysblock, CfgArgs *args)
 {
   struct utsname u;
-  gboolean exclude_kernel_messages = _system_option_normalized_test_and_remove(args, "exclude-kmsg", "yes");
 
   if (uname(&u) < 0)
     {
@@ -268,7 +276,7 @@ system_generate_system_transports(GString *sysblock, CfgArgs *args)
 
   if (strcmp(u.sysname, "Linux") == 0)
     {
-      system_sysblock_add_linux(sysblock, exclude_kernel_messages);
+      system_sysblock_add_linux(sysblock);
     }
   else if (strcmp(u.sysname, "SunOS") == 0)
     {
@@ -292,8 +300,7 @@ system_generate_system_transports(GString *sysblock, CfgArgs *args)
   else if (strcmp(u.sysname, "GNU/kFreeBSD") == 0)
     {
       system_sysblock_add_unix_dgram(sysblock, "/var/run/log", NULL, NULL);
-      if (!exclude_kernel_messages)
-        system_sysblock_add_freebsd_klog(sysblock, u.release);
+      system_sysblock_add_freebsd_klog(sysblock, u.release);
     }
   else if (strcmp(u.sysname, "HP-UX") == 0)
     {
@@ -346,6 +353,12 @@ system_source_generate(CfgBlockGenerator *self, GlobalConfig *cfg, CfgArgs *args
                        const gchar *reference)
 {
   gboolean result = FALSE;
+
+  /* NOTE: we used to have an exclude-kmsg() option that was removed, still
+   * we need to ignore it */
+
+  if (args)
+    cfg_args_remove(args, "exclude-kmsg");
 
   g_string_append(sysblock,
                   "channel {\n"
