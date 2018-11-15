@@ -28,6 +28,7 @@
 #include "plugin.h"
 #include "cfg.h"
 #include "logmsg/logmsg.h"
+#include "scratch-buffers.h"
 
 static void
 add_dummy_template_to_configuration(void)
@@ -81,6 +82,7 @@ void
 teardown(void)
 {
   deinit_template_tests();
+  scratch_buffers_explicit_gc();
   app_shutdown();
 }
 
@@ -222,19 +224,11 @@ Test(basicfuncs, test_fname_funcs)
   assert_template_format("$(basename foo)", "foo");
   assert_template_format("$(basename /foo/bar)", "bar");
   assert_template_format("$(basename /foo/bar/baz)", "baz");
-  assert_template_format("/prefix/$(basename foo)", "/prefix/foo");
-  assert_template_format("/prefix/$(basename /foo/bar)", "/prefix/bar");
-  assert_template_format("/prefix/$(basename /foo/bar/baz)", "/prefix/baz");
 
   assert_template_format("$(dirname foo)", ".");
   assert_template_format("$(dirname /foo/bar)", "/foo");
   assert_template_format("$(dirname /foo/bar/)", "/foo/bar");
   assert_template_format("$(dirname /foo/bar/baz)", "/foo/bar");
-
-  assert_template_format("/prefix/$(dirname foo)", "/prefix/.");
-  assert_template_format("/prefix/$(dirname /foo/bar)", "/prefix//foo");
-  assert_template_format("/prefix/$(dirname /foo/bar/)", "/prefix//foo/bar");
-  assert_template_format("/prefix/$(dirname /foo/bar/baz)", "/prefix//foo/bar");
 }
 
 typedef struct

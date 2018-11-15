@@ -153,20 +153,27 @@ assert_template_format_with_escaping_and_context_msgs(const gchar *template, gbo
                                                       LogMessage **msgs, gint num_messages)
 {
   LogTemplate *templ = compile_template(template, escaping);
+  const gchar *prefix = "somevoodooprefix/";
+  gint prefix_len = strlen(prefix);
   if (!templ)
     return;
 
-  GString *res = g_string_sized_new(128);
+  GString *res = g_string_new(prefix);
   const gchar *context_id = "test-context-id";
 
-  log_template_format_with_context(templ, msgs, num_messages, NULL, LTZ_LOCAL, 999, context_id, res);
-  gsize result_length = expected_len >= 0 ? expected_len : strlen(expected);
-  cr_assert_eq(res->len, result_length, "context template test failed, template=%s, actual=%.*s, expected=%.*s",
-               template, (gint) res->len, res->str, (gint) result_length, expected);
+  log_template_append_format_with_context(templ, msgs, num_messages, NULL, LTZ_LOCAL, 999, context_id, res);
+  cr_assert(strncmp(res->str, prefix, prefix_len) == 0,
+            "the prefix was overwritten by the template, template=%s, res=%s, expected_prefix=%s",
+            template, res->str, prefix);
 
-  cr_assert_arr_eq(res->str, expected, result_length,
+  expected_len = (expected_len >= 0 ? expected_len : strlen(expected));
+  cr_assert_eq(res->len - prefix_len, expected_len,
+               "context template test failed, expected length mismatch, template=%s, actual=%.*s, expected=%.*s",
+               template, (gint) res->len - prefix_len, res->str + prefix_len, (gint) expected_len, expected);
+
+  cr_assert_arr_eq(res->str + prefix_len, expected, expected_len,
                    "context template test failed, template=%s, actual=%.*s, expected=%.*s",
-                   template, (gint) res->len, res->str, (gint) result_length, expected);
+                   template, (gint) res->len - prefix_len, res->str + prefix_len, (gint) expected_len, expected);
   log_template_unref(templ);
   g_string_free(res, TRUE);
 }
