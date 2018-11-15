@@ -253,6 +253,7 @@ java_dd_free(LogPipe *s)
 
   log_template_options_destroy(&self->template_options);
   g_string_free(self->class_path, TRUE);
+  g_free(self->template_string);
 }
 
 LogTemplateOptions *
