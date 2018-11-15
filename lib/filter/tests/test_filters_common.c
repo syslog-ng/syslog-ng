@@ -36,7 +36,7 @@
 #include "logmsg/logmsg.h"
 #include "apphook.h"
 #include "plugin.h"
-
+#include <criterion/criterion.h>
 
 #include <time.h>
 #include <string.h>
@@ -138,25 +138,18 @@ testcase_with_socket(const gchar *msg, const gchar *sockaddr,
   LogMessage *logmsg;
   gboolean res;
 
-  filter_expr_init(f, configuration);
+  res = filter_expr_init(f, configuration);
+  cr_assert(res, "Filter init failed; msg='%s'\n", msg);
 
   logmsg = log_msg_new(msg, strlen(msg), NULL, &parse_options);
   logmsg->saddr = _get_sockaddr(sockaddr);
 
   res = filter_expr_eval(f, logmsg);
-  if (res != expected_result)
-    {
-      fprintf(stderr, "Filter test failed; msg='%s'\n", msg);
-      exit(1);
-    }
+  cr_assert_eq(res, expected_result, "Filter test failed; msg='%s'\n", msg);
 
   f->comp = 1;
   res = filter_expr_eval(f, logmsg);
-  if (res != !expected_result)
-    {
-      fprintf(stderr, "Filter test failed (negated); msg='%s'\n", msg);
-      exit(1);
-    }
+  cr_assert_eq(res, !expected_result, "Filter test failed (negated); msg='%s'\n", msg);
 
   log_msg_unref(logmsg);
   filter_expr_unref(f);
@@ -199,41 +192,28 @@ testcase_with_backref_chk(const gchar *msg,
 
   nv_table = nv_table_ref(logmsg->payload);
   res = filter_expr_eval(f, logmsg);
-  if (res != expected_result)
-    {
-      fprintf(stderr, "Filter test failed; msg='%s'\n", msg);
-      exit(1);
-    }
+  cr_assert_eq(res, expected_result, "Filter test failed; msg='%s'\n", msg);
+
   nv_table_unref(nv_table);
   f->comp = 1;
 
   nv_table = nv_table_ref(logmsg->payload);
   res = filter_expr_eval(f, logmsg);
-  if (res != !expected_result)
-    {
-      fprintf(stderr, "Filter test failed (negated); msg='%s'\n", msg);
-      exit(1);
-    }
+  cr_assert_eq(res, !expected_result, "Filter test failed (negated); msg='%s'\n", msg);
 
   value_msg = log_msg_get_value_by_name(logmsg, name, &length);
   nv_table_unref(nv_table);
   if(value == NULL || value[0] == 0)
     {
-      if (value_msg != NULL && value_msg[0] != 0)
-        {
-          fprintf(stderr, "Filter test failed (NULL value chk); msg='%s', expected_value='%s', value_in_msg='%s'",
-                  msg, value, value_msg);
-          exit(1);
-        }
+      cr_assert_not(value_msg != NULL
+                    && value_msg[0] != 0, "Filter test failed (NULL value chk); msg='%s', expected_value='%s', value_in_msg='%s'",
+                    msg, value, value_msg);
     }
   else
     {
-      if (strncmp(value_msg, value, length) != 0)
-        {
-          fprintf(stderr, "Filter test failed (value chk); msg='%s', expected_value='%s', value_in_msg='%s'",
-                  msg, value, value_msg);
-          exit(1);
-        }
+      cr_assert_eq(strncmp(value_msg, value, length), 0,
+                   "Filter test failed (value chk); msg='%s', expected_value='%s', value_in_msg='%s'",
+                   msg, value, value_msg);
     }
   log_msg_unref(logmsg);
   filter_expr_unref(f);
