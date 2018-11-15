@@ -1,0 +1,1 @@
+add_unit_test(LIBTEST CRITERION TARGET test_csv_scanner INCLUDES "${CSV_SCANNER_INCLUDE_DIR}")

@@ -8,3 +8,5 @@ csvscannerinclude_HEADERS = 			\
 
 csvscanner_sources = 				\
 	lib/scanner/csv-scanner/csv-scanner.c
+
+include lib/scanner/csv-scanner/tests/Makefile.am
