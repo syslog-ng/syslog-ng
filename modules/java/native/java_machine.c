@@ -101,6 +101,7 @@ _jvm_free(JavaVMSingleton *self)
       jvm->DestroyJavaVM(self->jvm);
 
     }
+  g_free(self->vm_args.options);
   g_free(self);
 }
 
@@ -195,6 +196,7 @@ _setup_jvm_options_array(JavaVMSingleton *self, const gchar *jvm_options_str)
 
   self->vm_args.nOptions = jvm_options_array->len;
   self->vm_args.options = (JavaVMOption *)jvm_options_array->data;
+  g_array_free(jvm_options_array, FALSE);
 }
 
 gboolean
