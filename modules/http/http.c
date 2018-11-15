@@ -103,9 +103,11 @@ _setup_static_options_in_curl(HTTPDestinationWorker *self)
   if (owner->user_agent)
     curl_easy_setopt(self->curl, CURLOPT_USERAGENT, owner->user_agent);
 
-  curl_easy_setopt(self->curl, CURLOPT_CAPATH, owner->ca_dir);
+  if (owner->ca_dir || !owner->use_system_cert_store)
+    curl_easy_setopt(self->curl, CURLOPT_CAPATH, owner->ca_dir);
 
-  curl_easy_setopt(self->curl, CURLOPT_CAINFO, owner->ca_file);
+  if (owner->ca_file || !owner->use_system_cert_store)
+    curl_easy_setopt(self->curl, CURLOPT_CAINFO, owner->ca_file);
 
   if (owner->cert_file)
     curl_easy_setopt(self->curl, CURLOPT_SSLCERT, owner->cert_file);
@@ -522,6 +524,14 @@ http_dd_set_ca_dir(LogDriver *d, const gchar *ca_dir)
 
   g_free(self->ca_dir);
   self->ca_dir = g_strdup(ca_dir);
+}
+
+void
+http_dd_set_use_system_cert_store(LogDriver *d, gboolean enable)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  self->use_system_cert_store = enable;
 }
 
 void

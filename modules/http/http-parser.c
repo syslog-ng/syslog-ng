@@ -43,6 +43,7 @@ static CfgLexerKeyword http_keywords[] =
   { "cert_file",        KW_CERT_FILE },
   { "key_file",         KW_KEY_FILE },
   { "cipher_suite",     KW_CIPHER_SUITE },
+  { "use_system_cert_store", KW_USE_SYSTEM_CERT_STORE },
   { "ssl_version",      KW_SSL_VERSION },
   { "peer_verify",      KW_PEER_VERIFY },
   { "accept_redirects", KW_ACCEPT_REDIRECTS },
