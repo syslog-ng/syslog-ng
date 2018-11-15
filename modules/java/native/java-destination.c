@@ -288,7 +288,6 @@ java_dd_new(GlobalConfig *cfg)
 
   java_dd_set_template_string(&self->super.super.super, "$ISODATE $HOST $MSGHDR$MSG\n");
 
-  self->formatted_message = g_string_sized_new(1024);
   self->options = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
 
   log_template_options_defaults(&self->template_options);
