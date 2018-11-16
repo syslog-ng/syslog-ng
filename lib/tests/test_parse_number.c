@@ -115,6 +115,7 @@ Test(parse_number,test_c_like_prefixes_select_base)
 
   assert_parse("20", 20);
   assert_parse_fails("FF");
+  assert_parse_fails("1FF");
 }
 
 Test(parse_number_dec, test_simple_numbers_are_parsed_properly)
@@ -126,9 +127,15 @@ Test(parse_number_dec, test_simple_numbers_are_parsed_properly)
 
 Test(parse_number_dec, test_c_like_prefixes_select_base)
 {
+  assert_parse_dec_fails("1F20");
+  assert_parse_dec_fails("0x20");
+  assert_parse_dec_fails("0xFF");
+  assert_parse_dec_fails("-0x09");
+
   assert_parse_dec("020", 20);
   assert_parse_dec("-010", -10);
   assert_parse_dec("08", 8);
+  assert_parse_fails("0A");
 
   assert_parse_dec("20", 20);
   assert_parse_dec_fails("FF");
