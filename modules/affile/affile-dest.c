@@ -127,21 +127,22 @@ static void
 affile_dw_reap(gpointer s)
 {
   AFFileDestWriter *self = (AFFileDestWriter *) s;
+  AFFileDestDriver *owner = self->owner;
 
   main_loop_assert_main_thread();
 
-  g_static_mutex_lock(&self->owner->lock);
+  g_static_mutex_lock(&owner->lock);
   if (!log_writer_has_pending_writes((LogWriter *) self->writer) && !self->queue_pending)
     {
       msg_verbose("Destination timed out, reaping",
                   evt_tag_str("template", self->owner->filename_template->template),
                   evt_tag_str("filename", self->filename));
       affile_dd_reap_writer(self->owner, self);
-      g_static_mutex_unlock(&self->owner->lock);
+      g_static_mutex_unlock(&owner->lock);
     }
   else
     {
-      g_static_mutex_unlock(&self->owner->lock);
+      g_static_mutex_unlock(&owner->lock);
       affile_dw_arm_reaper(self);
     }
 }
