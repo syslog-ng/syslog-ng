@@ -48,7 +48,7 @@ tf_getent_passwd(gchar *key, gchar *member_name, GString *result)
 
   buf = g_malloc(bufsize);
 
-  if ((is_num = parse_number(key, &d)) == TRUE)
+  if ((is_num = parse_dec_number(key, &d)) == TRUE)
     s = getpwuid_r((uid_t)d, &pwd, buf, bufsize, &res);
   else
     s = getpwnam_r(key, &pwd, buf, bufsize, &res);

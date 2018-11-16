@@ -43,7 +43,7 @@ tf_getent_group(gchar *key, gchar *member_name, GString *result)
 
   buf = g_malloc(bufsize);
 
-  if ((is_num = parse_number(key, &d)) == TRUE)
+  if ((is_num = parse_dec_number(key, &d)) == TRUE)
     s = getgrgid_r((gid_t)d, &grp, buf, bufsize, &res);
   else
     s = getgrnam_r(key, &grp, buf, bufsize, &res);

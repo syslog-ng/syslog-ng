@@ -199,7 +199,7 @@ tf_list_nth(LogMessage *msg, gint argc, GString *argv[], GString *result)
 
   ndx_spec = argv[0]->str;
   /* get start position from first argument */
-  if (!parse_number(ndx_spec, &ndx))
+  if (!parse_dec_number(ndx_spec, &ndx))
     {
       msg_error("$(list-nth) parsing failed, index must be the first argument",
                 evt_tag_str("ndx", ndx_spec));
@@ -255,7 +255,7 @@ tf_list_slice(LogMessage *msg, gint argc, GString *argv[], GString *result)
 
   /* get start position from first argument */
   if (first_spec && first_spec[0] &&
-      !parse_number(first_spec, &first_ndx))
+      !parse_dec_number(first_spec, &first_ndx))
     {
       msg_error("$(list-slice) parsing failed, first could not be parsed",
                 evt_tag_str("start", first_spec));
@@ -264,7 +264,7 @@ tf_list_slice(LogMessage *msg, gint argc, GString *argv[], GString *result)
 
   /* get last position from second argument */
   if (last_spec && last_spec[0] &&
-      !parse_number(last_spec, &last_ndx))
+      !parse_dec_number(last_spec, &last_ndx))
     {
       msg_error("$(list-slice) parsing failed, last could not be parsed",
                 evt_tag_str("last", last_spec));

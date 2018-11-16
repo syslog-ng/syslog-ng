@@ -34,7 +34,7 @@ tf_num_parse(gint argc, GString *argv[],
       return FALSE;
     }
 
-  if (!parse_number_with_suffix(argv[0]->str, n))
+  if (!parse_dec_number(argv[0]->str, n))
     {
       msg_debug("Parsing failed, template function's first argument is not a number",
                 evt_tag_str("function", func_name),
@@ -42,7 +42,7 @@ tf_num_parse(gint argc, GString *argv[],
       return FALSE;
     }
 
-  if (!parse_number_with_suffix(argv[1]->str, m))
+  if (!parse_dec_number(argv[1]->str, m))
     {
       msg_debug("Parsing failed, template function's second argument is not a number",
                 evt_tag_str("function", func_name),
@@ -145,7 +145,7 @@ _tf_num_parse_arg_with_message(const TFSimpleFuncState *state,
   log_template_format(state->argv_templates[0], message, args->opts, args->tz,
                       args->seq_num, args->context_id, formatted_template);
 
-  if (!parse_number_with_suffix(formatted_template->str, number))
+  if (!parse_dec_number(formatted_template->str, number))
     {
       if (!(on_error & ON_ERROR_SILENT))
         msg_error("Parsing failed, template function's argument is not a number",
