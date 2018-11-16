@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2013-2018 Balabit
  * Copyright (c) 2013 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2018 Kokan <kokaipeter@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -81,8 +82,16 @@ Test(parse_number, test_simple_numbers_are_parsed_properly)
 Test(parse_number,test_c_like_prefixes_select_base)
 {
   assert_parse("0x20", 32);
+  assert_parse("0xFF", 255);
+  assert_parse("-0x09", -9);
+
   assert_parse("020", 16);
+  assert_parse("-010", -8);
+  assert_parse_fails("08");
+  assert_parse_fails("0A");
+
   assert_parse("20", 20);
+  assert_parse_fails("FF");
 }
 
 Test(parse_number_with_suffix, test_simple_numbers_are_parsed_properly)
@@ -95,8 +104,16 @@ Test(parse_number_with_suffix, test_simple_numbers_are_parsed_properly)
 Test(parse_number_with_suffix, test_c_like_prefixes_select_base)
 {
   assert_parse_with_suffix("0x20", 32);
+  assert_parse_with_suffix("0xFF", 255);
+  assert_parse_with_suffix("-0x09", -9);
+
   assert_parse_with_suffix("020", 16);
+  assert_parse_with_suffix("-010", -8);
+  assert_parse_with_suffix_fails("08");
+  assert_parse_with_suffix_fails("0A");
+
   assert_parse_with_suffix("20", 20);
+  assert_parse_with_suffix_fails("FF");
 }
 
 Test(parse_number_with_suffix, test_exponent_suffix_is_parsed_properly)
