@@ -78,37 +78,6 @@ Test(filter, test_filters, .init = setup, .fini = teardown)
   testcase_with_backref_chk("<15>Oct 15 16:17:06 host openvpn[2499]: al fa", create_pcre_regexp_filter(LM_V_MESSAGE,
                             "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "233",NULL);
 
-  testcase("<15> openvpn[2499]: PTHREAD support initialized", filter_level_new(level_bits("debug") | level_bits("emerg")),
-           TRUE);
-  testcase("<15> openvpn[2499]: PTHREAD support initialized", filter_level_new(level_bits("emerg")), FALSE);
-
-  testcase("<8> openvpn[2499]: PTHREAD support initialized", filter_level_new(level_range("crit", "emerg")), TRUE);
-  testcase("<9> openvpn[2499]: PTHREAD support initialized", filter_level_new(level_range("crit", "emerg")), TRUE);
-  testcase("<10> openvpn[2499]: PTHREAD support initialized", filter_level_new(level_range("crit", "emerg")), TRUE);
-  testcase("<11> openvpn[2499]: PTHREAD support initialized", filter_level_new(level_range("crit", "emerg")), FALSE);
-  testcase("<12> openvpn[2499]: PTHREAD support initialized", filter_level_new(level_range("crit", "emerg")), FALSE);
-  testcase("<13> openvpn[2499]: PTHREAD support initialized", filter_level_new(level_range("crit", "emerg")), FALSE);
-  testcase("<14> openvpn[2499]: PTHREAD support initialized", filter_level_new(level_range("crit", "emerg")), FALSE);
-  testcase("<15> openvpn[2499]: PTHREAD support initialized", filter_level_new(level_range("crit", "emerg")), FALSE);
-
-  testcase("<8> openvpn[2499]: PTHREAD support initialized", filter_level_new(level_range("debug", "notice")), FALSE);
-  testcase("<9> openvpn[2499]: PTHREAD support initialized", filter_level_new(level_range("debug", "notice")), FALSE);
-  testcase("<10> openvpn[2499]: PTHREAD support initialized", filter_level_new(level_range("debug", "notice")), FALSE);
-  testcase("<11> openvpn[2499]: PTHREAD support initialized", filter_level_new(level_range("debug", "notice")), FALSE);
-  testcase("<12> openvpn[2499]: PTHREAD support initialized", filter_level_new(level_range("debug", "notice")), FALSE);
-  testcase("<13> openvpn[2499]: PTHREAD support initialized", filter_level_new(level_range("debug", "notice")), TRUE);
-  testcase("<14> openvpn[2499]: PTHREAD support initialized", filter_level_new(level_range("debug", "notice")), TRUE);
-  testcase("<15> openvpn[2499]: PTHREAD support initialized", filter_level_new(level_range("debug", "notice")), TRUE);
-
-  testcase("<0> openvpn[2499]: PTHREAD support initialized", filter_level_new(level_bits("emerg")), TRUE);
-  testcase("<1> openvpn[2499]: PTHREAD support initialized", filter_level_new(level_bits("alert")), TRUE);
-  testcase("<2> openvpn[2499]: PTHREAD support initialized", filter_level_new(level_bits("crit")), TRUE);
-  testcase("<3> openvpn[2499]: PTHREAD support initialized", filter_level_new(level_bits("err")), TRUE);
-  testcase("<4> openvpn[2499]: PTHREAD support initialized", filter_level_new(level_bits("warning")), TRUE);
-  testcase("<5> openvpn[2499]: PTHREAD support initialized", filter_level_new(level_bits("notice")), TRUE);
-  testcase("<6> openvpn[2499]: PTHREAD support initialized", filter_level_new(level_bits("info")), TRUE);
-  testcase("<7> openvpn[2499]: PTHREAD support initialized", filter_level_new(level_bits("debug")), TRUE);
-
   testcase("<15> openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_filter(LM_V_PROGRAM, "^openvpn$", 0),
            TRUE);
   testcase("<15> openvpn[2499]: PTHREAD support initialized", create_pcre_regexp_filter(LM_V_PROGRAM, "^open$", 0),
