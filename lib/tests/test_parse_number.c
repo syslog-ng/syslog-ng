@@ -73,11 +73,9 @@ assert_parse_fails(const gchar *str)
 
 Test(parse_number, test_simple_numbers_are_parsed_properly)
 {
-  assert_parse_with_suffix("1234", 1234);
-  assert_parse_with_suffix("+1234", 1234);
-  assert_parse_with_suffix("-1234", -1234);
-
   assert_parse("1234", 1234);
+  assert_parse("+1234", 1234);
+  assert_parse("-1234", -1234);
 }
 
 Test(parse_number,test_c_like_prefixes_select_base)
@@ -85,10 +83,23 @@ Test(parse_number,test_c_like_prefixes_select_base)
   assert_parse("0x20", 32);
   assert_parse("020", 16);
   assert_parse("20", 20);
-  assert_parse_with_suffix("0x20kiB", 32 * 1024);
 }
 
-Test(parse_number,test_exponent_suffix_is_parsed_properly)
+Test(parse_number_with_suffix, test_simple_numbers_are_parsed_properly)
+{
+  assert_parse_with_suffix("1234", 1234);
+  assert_parse_with_suffix("+1234", 1234);
+  assert_parse_with_suffix("-1234", -1234);
+}
+
+Test(parse_number_with_suffix, test_c_like_prefixes_select_base)
+{
+  assert_parse_with_suffix("0x20", 32);
+  assert_parse_with_suffix("020", 16);
+  assert_parse_with_suffix("20", 20);
+}
+
+Test(parse_number_with_suffix, test_exponent_suffix_is_parsed_properly)
 {
   assert_parse_with_suffix("1K", 1000);
   assert_parse_with_suffix("1k", 1000);
@@ -98,7 +109,7 @@ Test(parse_number,test_exponent_suffix_is_parsed_properly)
   assert_parse_with_suffix("1g", 1000 * 1000 * 1000);
 }
 
-Test(parse_number,test_byte_units_are_accepted)
+Test(parse_number_with_suffix, test_byte_units_are_accepted)
 {
   assert_parse_with_suffix("1b", 1);
   assert_parse_with_suffix("1B", 1);
@@ -110,7 +121,7 @@ Test(parse_number,test_byte_units_are_accepted)
   assert_parse_with_suffix("1gB", 1000 * 1000 * 1000);
 }
 
-Test(parse_number,test_base2_is_selected_by_an_i_modifier)
+Test(parse_number_with_suffix, test_base2_is_selected_by_an_i_modifier)
 {
   assert_parse_with_suffix("1Kib", 1024);
   assert_parse_with_suffix("1kiB", 1024);
@@ -123,7 +134,7 @@ Test(parse_number,test_base2_is_selected_by_an_i_modifier)
   assert_parse_with_suffix("1024giB", 1024LL * 1024LL * 1024LL * 1024LL);
 }
 
-Test(parse_number,test_invalid_formats_are_not_accepted)
+Test(parse_number_with_suffix, test_invalid_formats_are_not_accepted)
 {
   assert_parse_with_suffix_fails("1234Z");
   assert_parse_with_suffix_fails("1234kZ");
