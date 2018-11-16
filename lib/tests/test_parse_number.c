@@ -72,6 +72,29 @@ assert_parse_fails(const gchar *str)
   cr_assert_eq(res, FALSE, "Parsing (w/o suffix) %s succeeded, while expecting failure", str);
 }
 
+static void
+assert_parse_dec(const gchar *str, gint64 expected)
+{
+  gint64 n;
+  gboolean res;
+
+  res = parse_dec_number(str, &n);
+
+  cr_assert_eq(res, TRUE, "Parsing (w/o suffix) %s failed", str);
+  cr_assert_eq(n, expected, "Parsing (w/o suffix) %s failed", str);
+}
+
+static void
+assert_parse_dec_fails(const gchar *str)
+{
+  gint64 n;
+  gboolean res;
+
+  res = parse_dec_number(str, &n);
+
+  cr_assert_eq(res, FALSE, "Parsing (w/o suffix) %s succeeded, while expecting failure", str);
+}
+
 Test(parse_number, test_simple_numbers_are_parsed_properly)
 {
   assert_parse("1234", 1234);
@@ -92,6 +115,23 @@ Test(parse_number,test_c_like_prefixes_select_base)
 
   assert_parse("20", 20);
   assert_parse_fails("FF");
+}
+
+Test(parse_number_dec, test_simple_numbers_are_parsed_properly)
+{
+  assert_parse_dec("1234", 1234);
+  assert_parse_dec("+1234", 1234);
+  assert_parse_dec("-1234", -1234);
+}
+
+Test(parse_number_dec, test_c_like_prefixes_select_base)
+{
+  assert_parse_dec("020", 20);
+  assert_parse_dec("-010", -10);
+  assert_parse_dec("08", 8);
+
+  assert_parse_dec("20", 20);
+  assert_parse_dec_fails("FF");
 }
 
 Test(parse_number_with_suffix, test_simple_numbers_are_parsed_properly)

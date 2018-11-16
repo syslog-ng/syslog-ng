@@ -28,6 +28,7 @@
 #include <errno.h>
 #include <stdlib.h>
 
+static const gint DECIMAL_BASE = 10;
 static const gint DETECT_BASE  = 0;
 
 static gboolean
@@ -171,6 +172,16 @@ parse_number(const gchar *s, gint64 *d)
   if (!_parse_number(s, &endptr, DETECT_BASE, d))
     return FALSE;
   if (*endptr)
+    return FALSE;
+  return TRUE;
+}
+
+gboolean
+parse_dec_number(const gchar *s, gint64 *d)
+{
+  gchar *endptr;
+
+  if (!_parse_number(s, &endptr, DECIMAL_BASE, d))
     return FALSE;
   return TRUE;
 }
