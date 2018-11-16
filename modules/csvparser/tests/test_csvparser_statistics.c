@@ -46,8 +46,8 @@ _create_parser(GlobalConfig *cfg)
   stats_unlock();
 
   csv_scanner_options_set_delimiters(csv_parser_get_scanner_options(p), ",");
-  csv_scanner_options_set_flags(csv_parser_get_scanner_options(p), CSV_SCANNER_DROP_INVALID);
   csv_scanner_options_set_columns(csv_parser_get_scanner_options(p), string_array_to_list(column_array));
+  csv_parser_set_drop_invalid(p, TRUE);
 
   return p;
 }

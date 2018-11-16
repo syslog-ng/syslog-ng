@@ -32,16 +32,20 @@ typedef struct _CSVParser
 {
   LogParser super;
   CSVScannerOptions options;
+  gboolean drop_invalid;
   gchar *prefix;
   gint prefix_len;
 } CSVParser;
 
-#define _ESCAPE_MODE_SHIFT 16
-#define _ESCAPE_MODE_MASK  0xFFFF0000
+#define CSV_PARSER_FLAGS_SHIFT 16
+#define CSV_PARSER_FLAGS_MASK  0xFFFF0000
+#define CSV_SCANNER_FLAGS_MASK 0xFFFF
 
-#define _ESCAPE_MODE_NONE          (1 << _ESCAPE_MODE_SHIFT)
-#define _ESCAPE_MODE_BACKSLASH     (2 << _ESCAPE_MODE_SHIFT)
-#define _ESCAPE_MODE_DOUBLE_CHAR   (4 << _ESCAPE_MODE_SHIFT)
+#define CSV_PARSER_DIALECT_MASK              (0x7 << CSV_PARSER_FLAGS_SHIFT)
+#define CSV_PARSER_ESCAPE_MODE_NONE          (1 << CSV_PARSER_FLAGS_SHIFT)
+#define CSV_PARSER_ESCAPE_MODE_BACKSLASH     (2 << CSV_PARSER_FLAGS_SHIFT)
+#define CSV_PARSER_ESCAPE_MODE_DOUBLE_CHAR   (4 << CSV_PARSER_FLAGS_SHIFT)
+#define CSV_PARSER_DROP_INVALID              (8 << CSV_PARSER_FLAGS_SHIFT)
 
 CSVScannerOptions *
 csv_parser_get_scanner_options(LogParser *s)
@@ -55,26 +59,28 @@ gboolean
 csv_parser_set_flags(LogParser *s, guint32 flags)
 {
   CSVParser *self = (CSVParser *) s;
-  guint32 dialect = (flags & _ESCAPE_MODE_MASK);
-  guint32 scanner_flags = flags & 0xFFFF;
+  guint32 dialect = (flags & CSV_PARSER_DIALECT_MASK);
+  guint32 scanner_flags = flags & CSV_SCANNER_FLAGS_MASK;
 
   csv_scanner_options_set_flags(&self->options, scanner_flags);
   switch (dialect)
     {
     case 0:
       break;
-    case _ESCAPE_MODE_NONE:
+    case CSV_PARSER_ESCAPE_MODE_NONE:
       csv_scanner_options_set_dialect(&self->options, CSV_SCANNER_ESCAPE_NONE);
       break;
-    case _ESCAPE_MODE_BACKSLASH:
+    case CSV_PARSER_ESCAPE_MODE_BACKSLASH:
       csv_scanner_options_set_dialect(&self->options, CSV_SCANNER_ESCAPE_BACKSLASH);
       break;
-    case _ESCAPE_MODE_DOUBLE_CHAR:
+    case CSV_PARSER_ESCAPE_MODE_DOUBLE_CHAR:
       csv_scanner_options_set_dialect(&self->options, CSV_SCANNER_ESCAPE_DOUBLE_CHAR);
       break;
     default:
       return FALSE;
     }
+  if (flags & CSV_PARSER_DROP_INVALID)
+    self->drop_invalid = TRUE;
   return TRUE;
 }
 
@@ -94,6 +100,14 @@ csv_parser_set_prefix(LogParser *s, const gchar *prefix)
       self->prefix = NULL;
       self->prefix_len = 0;
     }
+}
+
+void
+csv_parser_set_drop_invalid(LogParser *s, gboolean drop_invalid)
+{
+  CSVParser *self = (CSVParser *) s;
+
+  self->drop_invalid = drop_invalid;
 }
 
 static const gchar *
@@ -146,7 +160,9 @@ csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_o
                                 csv_scanner_get_current_value_len(&scanner));
     }
 
-  gboolean result = csv_scanner_is_scan_finished(&scanner);
+  gboolean result = TRUE;
+  if (self->drop_invalid)
+    result = csv_scanner_is_scan_complete(&scanner);
   csv_scanner_deinit(&scanner);
 
   return result;
@@ -162,6 +178,7 @@ csv_parser_clone(LogPipe *s)
   csv_scanner_options_copy(&cloned->options, &self->options);
   cloned->super.template = log_template_ref(self->super.template);
   csv_parser_set_prefix(&cloned->super, self->prefix);
+  csv_parser_set_drop_invalid(&cloned->super, self->drop_invalid);
   return &cloned->super.super;
 }
 
@@ -198,17 +215,17 @@ guint32
 csv_parser_lookup_flag(const gchar *flag)
 {
   if (strcmp(flag, "escape-none") == 0)
-    return _ESCAPE_MODE_NONE;
+    return CSV_PARSER_ESCAPE_MODE_NONE;
   else if (strcmp(flag, "escape-backslash") == 0)
-    return _ESCAPE_MODE_BACKSLASH;
+    return CSV_PARSER_ESCAPE_MODE_BACKSLASH;
   else if (strcmp(flag, "escape-double-char") == 0)
-    return _ESCAPE_MODE_DOUBLE_CHAR;
+    return CSV_PARSER_ESCAPE_MODE_DOUBLE_CHAR;
   else if (strcmp(flag, "strip-whitespace") == 0)
     return CSV_SCANNER_STRIP_WHITESPACE;
   else if (strcmp(flag, "greedy") == 0)
     return CSV_SCANNER_GREEDY;
   else if (strcmp(flag, "drop-invalid") == 0)
-    return CSV_SCANNER_DROP_INVALID;
+    return CSV_PARSER_DROP_INVALID;
   return 0;
 }
 

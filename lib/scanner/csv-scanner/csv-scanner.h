@@ -37,7 +37,6 @@ typedef enum
 
 #define CSV_SCANNER_STRIP_WHITESPACE   0x0001
 #define CSV_SCANNER_GREEDY             0x0002
-#define CSV_SCANNER_DROP_INVALID       0x0004
 
 typedef struct _CSVScannerOptions
 {
@@ -78,7 +77,7 @@ const gchar *csv_scanner_get_current_name(CSVScanner *pstate);
 const gchar *csv_scanner_get_current_value(CSVScanner *pstate);
 gint csv_scanner_get_current_value_len(CSVScanner *self);
 gboolean csv_scanner_scan_next(CSVScanner *pstate);
-gboolean csv_scanner_is_scan_finished(CSVScanner *pstate);
+gboolean csv_scanner_is_scan_complete(CSVScanner *pstate);
 gchar *csv_scanner_dup_current_value(CSVScanner *self);
 
 void csv_scanner_init(CSVScanner *pstate, CSVScannerOptions *options, const gchar *input);

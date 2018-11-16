@@ -380,16 +380,13 @@ csv_scanner_get_current_name(CSVScanner *self)
 }
 
 gboolean
-csv_scanner_is_scan_finished(CSVScanner *self)
+csv_scanner_is_scan_complete(CSVScanner *self)
 {
-  if ((self->options->flags & CSV_SCANNER_DROP_INVALID) &&
-      (!_is_at_the_end_of_columns(self) || (self->src && *self->src)))
-    {
-      /* there are unfilled variables, OR not all of the input was processed
-       * and "drop-invalid" flag is specified */
-      return FALSE;
-    }
-  return TRUE;
+  /* we didn't process all of the input */
+  if (self->src && self->src[0] != 0)
+    return FALSE;
+
+  return _is_at_the_end_of_columns(self);
 }
 
 void
