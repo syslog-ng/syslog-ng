@@ -78,30 +78,6 @@ Test(filter, test_filters, .init = setup, .fini = teardown)
   testcase_with_backref_chk("<15>Oct 15 16:17:06 host openvpn[2499]: al fa", create_pcre_regexp_filter(LM_V_MESSAGE,
                             "(a)(l) (fa)", LMF_STORE_MATCHES), 1, "233",NULL);
 
-
-  testcase("<15> openvpn[2499]: PTHREAD support initialized", filter_facility_new(facility_bits("user")), TRUE);
-  testcase("<15> openvpn[2499]: PTHREAD support initialized", filter_facility_new(facility_bits("daemon")), FALSE);
-  testcase("<15> openvpn[2499]: PTHREAD support initialized",
-           filter_facility_new(facility_bits("daemon") | facility_bits("user")), TRUE);
-  testcase("<15> openvpn[2499]: PTHREAD support initialized",
-           filter_facility_new(facility_bits("uucp") | facility_bits("local4")), FALSE);
-  testcase("<15> openvpn[2499]: PTHREAD support initialized", filter_facility_new(0x80000000 | (LOG_USER >> 3)), TRUE);
-  testcase("<15> openvpn[2499]: PTHREAD support initialized", filter_facility_new(0x80000000 | (LOG_DAEMON >> 3)), FALSE);
-
-  testcase("<2> openvpn[2499]: PTHREAD support initialized", filter_facility_new(facility_bits("kern")), TRUE);
-  testcase("<2> openvpn[2499]: PTHREAD support initialized", filter_facility_new(0x80000000 | (LOG_KERN >> 3)), TRUE);
-
-  testcase("<128> openvpn[2499]: PTHREAD support initialized", filter_facility_new(facility_bits("local0")), TRUE);
-  testcase("<128> openvpn[2499]: PTHREAD support initialized", filter_facility_new(0x80000000 | (LOG_LOCAL0 >> 3)), TRUE);
-  testcase("<32> openvpn[2499]: PTHREAD support initialized", filter_facility_new(facility_bits("local1")), FALSE);
-  testcase("<32> openvpn[2499]: PTHREAD support initialized", filter_facility_new(facility_bits("auth")), TRUE);
-  testcase("<32> openvpn[2499]: PTHREAD support initialized", filter_facility_new(0x80000000 | (LOG_AUTH >> 3)), TRUE);
-#ifdef LOG_AUTHPRIV
-  testcase("<80> openvpn[2499]: PTHREAD support initialized", filter_facility_new(facility_bits("authpriv")), TRUE);
-  testcase("<80> openvpn[2499]: PTHREAD support initialized", filter_facility_new(0x80000000 | (LOG_AUTHPRIV >> 3)),
-           TRUE);
-#endif
-
   testcase("<15> openvpn[2499]: PTHREAD support initialized", filter_level_new(level_bits("debug") | level_bits("emerg")),
            TRUE);
   testcase("<15> openvpn[2499]: PTHREAD support initialized", filter_level_new(level_bits("emerg")), FALSE);
