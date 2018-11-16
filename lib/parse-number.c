@@ -28,6 +28,8 @@
 #include <errno.h>
 #include <stdlib.h>
 
+static const gint DETECT_BASE  = 0;
+
 static gboolean
 _valid_unit(const gchar unit_char)
 {
@@ -144,12 +146,12 @@ _process_suffix(const gchar *suffix, gint64 *d)
 }
 
 static gboolean
-_parse_number(const gchar *s, gchar **endptr, gint64 *d)
+_parse_number(const gchar *s, gchar **endptr, gint base, gint64 *d)
 {
   gint64 val;
 
   errno = 0;
-  val = strtoll(s, endptr, 0);
+  val = strtoll(s, endptr, base);
 
   if (errno == ERANGE || errno == EINVAL)
     return FALSE;
@@ -166,7 +168,7 @@ parse_number(const gchar *s, gint64 *d)
 {
   gchar *endptr;
 
-  if (!_parse_number(s, &endptr, d))
+  if (!_parse_number(s, &endptr, DETECT_BASE, d))
     return FALSE;
   if (*endptr)
     return FALSE;
@@ -178,7 +180,7 @@ parse_number_with_suffix(const gchar *s, gint64 *d)
 {
   gchar *endptr;
 
-  if (!_parse_number(s, &endptr, d))
+  if (!_parse_number(s, &endptr, DETECT_BASE, d))
     return FALSE;
   return _process_suffix(endptr, d);
 }
