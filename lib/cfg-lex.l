@@ -233,8 +233,20 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 \.\.                       { return LL_DOTDOT; }
 \.\.\.                     { return LL_DOTDOTDOT; }
 (-|\+)?{digit}+\.{digit}+  { yylval->fnum = strtod(yytext, NULL); return LL_FLOAT; }
-0x{xdigit}+ 		   { yylval->num = strtoll(yytext + 2, NULL, 16); return LL_NUMBER; }
-0{odigit}+		   { yylval->num = strtoll(yytext + 1, NULL, 8); return LL_NUMBER; }
+0x{xdigit}+ 		   {
+                             if (!parse_number_with_suffix(yytext, &yylval->num))
+                               {
+                                 return LL_ERROR;
+                               }
+                             return LL_NUMBER;
+                           }
+0{odigit}+		   {
+                             if (!parse_number_with_suffix(yytext, &yylval->num))
+                               {
+                                 return LL_ERROR;
+                               }
+                             return LL_NUMBER;
+                           }
 (-|\+)?{digit}+(M|m|G|g|k|K)?(i|I)?(b|B)? {
                              if (!parse_number_with_suffix(yytext, &yylval->num))
                                {
