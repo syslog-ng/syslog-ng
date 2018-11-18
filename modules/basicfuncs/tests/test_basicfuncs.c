@@ -182,6 +182,7 @@ Test(basicfuncs, test_str_funcs)
   assert_template_failure("$(binary)", "Incorrect parameters");
   assert_template_failure("$(binary abc)", "unable to parse abc");
   assert_template_failure("$(binary 256)", "256 is above 255");
+  assert_template_failure("$(binary 08)", "unable to parse 08");
   assert_template_format("$(binary 1)", "\1");
   assert_template_format("$(binary 1 0x1)", "\1\1");
   assert_template_format("$(binary 0xFF 255 0377)", "\xFF\xFF\xFF");

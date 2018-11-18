@@ -530,9 +530,16 @@ tf_binary_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gi
       gchar *token = argv[i];
       if (!parse_number(token, &number))
         {
+          gchar *base = "dec";
+
+          if (token[0] == '0')
+            {
+              base = token[1] == 'x' ? "hex" : "oct";
+            }
+
           g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
-                      "$(binary) template function requires list of dec/hex/oct numbers as arguments, unable to parse %s as a number",
-                      token);
+                      "$(binary) template function requires list of dec/hex/oct numbers as arguments, unable to parse %s as a %s number",
+                      token, base);
           goto error;
         }
       if (number > 0xFF)
