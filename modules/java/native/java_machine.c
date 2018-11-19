@@ -99,8 +99,12 @@ _jvm_free(JavaVMSingleton *self)
           class_loader_free(self->loader, java_machine_get_env(self));
         }
       jvm->DestroyJavaVM(self->jvm);
-
     }
+
+  for (gint i = 0; i < self->vm_args.nOptions; i++)
+    g_free(self->vm_args.options[i].optionString);
+  g_free(self->vm_args.options);
+
   g_free(self);
 }
 
@@ -170,7 +174,7 @@ _jvm_options_split(const gchar *jvm_options_str)
           continue;
         }
 
-      jvm_options_array = _jvm_options_array_append(jvm_options_array, options_str_array[i]);
+      jvm_options_array = _jvm_options_array_append(jvm_options_array, g_strdup(options_str_array[i]));
     }
   g_free(options_str_array);
 
@@ -195,6 +199,7 @@ _setup_jvm_options_array(JavaVMSingleton *self, const gchar *jvm_options_str)
 
   self->vm_args.nOptions = jvm_options_array->len;
   self->vm_args.options = (JavaVMOption *)jvm_options_array->data;
+  g_array_free(jvm_options_array, FALSE);
 }
 
 gboolean
