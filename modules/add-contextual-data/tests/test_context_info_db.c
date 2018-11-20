@@ -350,7 +350,7 @@ Test(add_contextual_data, test_import_with_invalid_csv_content)
 Test(add_contextual_data, test_import_with_csv_contains_invalid_line)
 {
   gchar csv_content[] = "selector1,name1,value1\n"
-                        ",,value1.1\n";
+                        ",value1.1\n";
   FILE *fp = fmemopen(csv_content, strlen(csv_content) + 1, "r");
   ContextInfoDB *db = context_info_db_new();
   context_info_db_init(db);
