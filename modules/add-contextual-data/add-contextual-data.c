@@ -228,7 +228,7 @@ _get_scanner(AddContextualData *self)
 
   if (!scanner)
     {
-      msg_error("Unknown file extension",
+      msg_error("add-contextual-data(): unknown file extension, only files with a .csv extension are supported",
                 evt_tag_str("filename", self->filename));
       return NULL;
     }
@@ -249,8 +249,9 @@ _load_context_info_db(AddContextualData *self)
   FILE *f = _open_data_file(self->filename);
   if (!f)
     {
-      msg_error("Error loading add_contextual_data database",
-                evt_tag_str("filename", self->filename));
+      msg_error("add-contextual-data(): Error opening database",
+                evt_tag_str("filename", self->filename),
+                evt_tag_error("error"));
       contextual_data_record_scanner_free(scanner);
       return FALSE;
     }
@@ -262,7 +263,8 @@ _load_context_info_db(AddContextualData *self)
   fclose(f);
   if (!tag_db_loaded)
     {
-      msg_error("Error while parsing add_contextual_data database");
+      msg_error("add-contextual-data(): Error while parsing database",
+                evt_tag_str("filename", self->filename));
       return FALSE;
     }
 
@@ -281,13 +283,12 @@ _init_context_info_db(AddContextualData *self)
 
   if (self->filename == NULL)
     {
-      msg_error("No database file set.");
+      msg_error("add-contextual-data(): No database file set, specifying the database() option is mandatory");
       return FALSE;
     }
 
   if (!context_info_db_is_loaded(self->context_info_db) && !_load_context_info_db(self))
     {
-      msg_error("Failed to load the database file.");
       return FALSE;
     }
 

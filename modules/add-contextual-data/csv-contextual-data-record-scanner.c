@@ -23,6 +23,8 @@
 #include "csv-contextual-data-record-scanner.h"
 #include "scanner/csv-scanner/csv-scanner.h"
 #include "string-list.h"
+#include "messages.h"
+
 #include <string.h>
 
 static gchar *
@@ -39,6 +41,8 @@ _fetch_next_with_prefix(CSVContextualDataRecordScanner *record_scanner,
 {
   if (!csv_scanner_scan_next(&record_scanner->scanner))
     {
+      msg_error("add-contextual-data(): error parsing CSV file, expecting an additional column which was not found. Expecting (selector, name, value) triplets",
+                evt_tag_str("target", csv_scanner_get_current_name(&record_scanner->scanner)));
       return FALSE;
     }
   gchar *next = _csv_scanner_dup_current_value_with_prefix(&record_scanner->scanner, prefix);
@@ -58,8 +62,12 @@ _fetch_next_without_prefix(CSVContextualDataRecordScanner *
 static gboolean
 _is_whole_record_parsed(CSVContextualDataRecordScanner *csv_record_scanner)
 {
-  csv_scanner_scan_next(&csv_record_scanner->scanner);
-  return csv_scanner_is_scan_complete(&csv_record_scanner->scanner);
+  if (!csv_scanner_scan_next(&csv_record_scanner->scanner) &&
+      csv_scanner_is_scan_complete(&csv_record_scanner->scanner))
+    return TRUE;
+
+  msg_error("add-contextual-data(): extra data found at the end of line, expecting (selector, name, value) triplets");
+  return FALSE;
 }
 
 static gboolean
@@ -69,15 +77,22 @@ _get_next_record(ContextualDataRecordScanner *s, const gchar *input, ContextualD
   csv_scanner_init(&csv_record_scanner->scanner, &csv_record_scanner->options, input);
 
   if (!_fetch_next_without_prefix(csv_record_scanner, &record->selector))
-    return FALSE;
+    goto error;
 
   if (!_fetch_next_with_prefix(csv_record_scanner, &record->name, s->name_prefix))
-    return FALSE;
+    goto error;
 
   if (!_fetch_next_without_prefix(csv_record_scanner, &record->value))
-    return FALSE;
+    goto error;
 
-  return _is_whole_record_parsed(csv_record_scanner);
+  if (!_is_whole_record_parsed(csv_record_scanner))
+    goto error;
+
+  return TRUE;
+error:
+  msg_error("add-contextual-data(): the failing line is",
+            evt_tag_str("input", input));
+  return FALSE;
 }
 
 static void

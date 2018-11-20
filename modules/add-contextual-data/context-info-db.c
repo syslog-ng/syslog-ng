@@ -384,6 +384,10 @@ context_info_db_import(ContextInfoDB *self, FILE *fp,
           g_free(line_buf);
           return FALSE;
         }
+      msg_trace("add-contextual-data(): adding database entry",
+                evt_tag_str("selector", next_record->selector->str),
+                evt_tag_str("name", next_record->name->str),
+                evt_tag_str("value", next_record->value->str));
       context_info_db_insert(self, next_record);
     }
 
