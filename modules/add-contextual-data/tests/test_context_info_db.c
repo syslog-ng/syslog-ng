@@ -206,7 +206,7 @@ static void
 _assert_import_csv_with_single_selector(gchar *csv_content, gchar *selector_to_check,
                                         TestNVPair *expected_nvpairs, gsize expected_nvpairs_size)
 {
-  FILE *fp = fmemopen(csv_content, strlen(csv_content) + 1, "r");
+  FILE *fp = fmemopen(csv_content, strlen(csv_content), "r");
   ContextInfoDB *db = context_info_db_new();
   context_info_db_init(db);
   ContextualDataRecordScanner *scanner =
@@ -328,7 +328,7 @@ Test(add_contextual_data, test_import_from_csv_with_escaped_double_quote,
 Test(add_contextual_data, test_import_with_invalid_csv_content)
 {
   gchar csv_content[] = "xxx";
-  FILE *fp = fmemopen(csv_content, strlen(csv_content) + 1, "r");
+  FILE *fp = fmemopen(csv_content, strlen(csv_content), "r");
   ContextInfoDB *db = context_info_db_new();
   context_info_db_init(db);
 
@@ -351,7 +351,7 @@ Test(add_contextual_data, test_import_with_csv_contains_invalid_line)
 {
   gchar csv_content[] = "selector1,name1,value1\n"
                         ",value1.1\n";
-  FILE *fp = fmemopen(csv_content, strlen(csv_content) + 1, "r");
+  FILE *fp = fmemopen(csv_content, strlen(csv_content), "r");
   ContextInfoDB *db = context_info_db_new();
   context_info_db_init(db);
 
@@ -443,7 +443,7 @@ ParameterizedTest(struct TestNVPairPrefix *param, add_contextual_data, test_impo
 Test(add_contextual_data, test_ignore_case_on)
 {
   gchar csv_content[] = "LoCaLhOsT,tag1,value1";
-  FILE *fp = fmemopen(csv_content, strlen(csv_content) + 1, "r");
+  FILE *fp = fmemopen(csv_content, strlen(csv_content), "r");
   ContextInfoDB *db = context_info_db_new();
   context_info_db_set_ignore_case(db, TRUE);
   context_info_db_init(db);
@@ -468,7 +468,7 @@ Test(add_contextual_data, test_ignore_case_on)
 Test(add_contextual_data, test_ignore_case_off)
 {
   gchar csv_content[] = "LoCaLhOsT,tag1,value1";
-  FILE *fp = fmemopen(csv_content, strlen(csv_content) + 1, "r");
+  FILE *fp = fmemopen(csv_content, strlen(csv_content), "r");
   ContextInfoDB *db = context_info_db_new();
   context_info_db_set_ignore_case(db, FALSE);
   context_info_db_init(db);
