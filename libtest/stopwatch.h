@@ -30,6 +30,7 @@
 
 void start_stopwatch(void);
 guint64 stop_stopwatch_and_get_result(void);
-void stop_stopwatch_and_display_result(gint iterations, const gchar *message_template, ...);
+void stop_stopwatch_and_display_result(gint iterations, const gchar *message_template,
+                                       ...) G_GNUC_PRINTF(2, 3);
 
 #endif

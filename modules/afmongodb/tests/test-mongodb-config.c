@@ -80,7 +80,7 @@ _execute(const gchar *testcase, Checks checks, const gchar *user_data)
 static gboolean
 _execute_find_text_in_log(const gchar *pattern)
 {
-  return assert_grabbed_messages_contain_non_fatal(pattern, "mismatch", NULL);
+  return assert_grabbed_messages_contain_non_fatal(pattern, "mismatch");
 }
 
 static void

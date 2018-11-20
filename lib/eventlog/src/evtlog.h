@@ -48,6 +48,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <glib.h>
 
 #include "evtmaps.h"
 
@@ -82,12 +83,6 @@
 #define EVT_FAC_LOCAL5      (21<<3) /* reserved for local use */
 #define EVT_FAC_LOCAL6      (22<<3) /* reserved for local use */
 #define EVT_FAC_LOCAL7      (23<<3) /* reserved for local use */
-
-#ifdef __GNUC__
-#define EVT_GNUC_PRINTF_FUNC(format_idx, first_arg_idx)  __attribute__((format(printf, format_idx, first_arg_idx)))
-#else
-#define EVT_GNUC_PRINTF_FUNC(format_idx, first_arg_idx)
-#endif
 
 /* EVTCONTEXT encapsulates logging specific parameters like the
  * program name and facility to use */
@@ -148,7 +143,7 @@ EVTTAG *evt_tag_str(const char *tag, const char *value);
 EVTTAG *evt_tag_int(const char *tag, int value);
 EVTTAG *evt_tag_long(const char *tag, long long value);
 EVTTAG *evt_tag_errno(const char *tag, int err);
-EVTTAG *evt_tag_printf(const char *tag, const char *format, ...) EVT_GNUC_PRINTF_FUNC(2, 3);
+EVTTAG *evt_tag_printf(const char *tag, const char *format, ...) G_GNUC_PRINTF(2, 3);
 EVTTAG *evt_tag_inaddr(const char *tag, const struct in_addr *addr);
 EVTTAG *evt_tag_inaddr6(const char *tag, const struct in6_addr *addr);
 
@@ -180,8 +175,8 @@ int evt_log(EVTREC *e);
 /* syslog wrapper */
 void evt_openlog(const char *ident, int option, int facility);
 void evt_closelog(void);
-void evt_vsyslog(int pri, const char *format, va_list ap);
-void evt_syslog(int pri, const char *format, ...) EVT_GNUC_PRINTF_FUNC(2, 3);
+void evt_vsyslog(int pri, const char *format, va_list ap) G_GNUC_PRINTF(2, 0);
+void evt_syslog(int pri, const char *format, ...) G_GNUC_PRINTF(2, 3);
 
 #ifdef EVENTLOG_SYSLOG_MACROS
 

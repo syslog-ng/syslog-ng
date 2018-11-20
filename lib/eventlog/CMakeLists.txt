@@ -8,7 +8,18 @@ add_library(eventlog SHARED
   src/evttags.c
 )
 
-target_include_directories(eventlog SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_include_directories(eventlog
+  SYSTEM
+  INTERFACE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+  PRIVATE
+    ${GLIB_INCLUDE_DIRS}
+)
+
+target_link_libraries(eventlog
+  PRIVATE
+    ${GLIB_LIBRARIES}
+)
 
 install(TARGETS eventlog DESTINATION lib)
 

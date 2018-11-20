@@ -71,7 +71,7 @@ struct __evtsyslogopts
 {
   void (*es_openlog)(const char *ident, int option, int facility);
   void (*es_closelog)(void);
-  void (*es_syslog)(int priority, const char *format, ...);
+  void (*es_syslog)(int priority, const char *format, ...) G_GNUC_PRINTF(2, 3);
   int es_options;
 };
 

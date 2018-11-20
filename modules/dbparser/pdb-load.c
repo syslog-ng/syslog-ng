@@ -119,7 +119,7 @@ _pdb_state_stack_pop(PDBStateStack *self)
   return self->stack[self->top];
 }
 
-static void
+static void G_GNUC_PRINTF(3, 4)
 pdb_loader_set_error(PDBLoader *state, GError **error, const gchar *format, ...)
 {
   gchar *error_text;

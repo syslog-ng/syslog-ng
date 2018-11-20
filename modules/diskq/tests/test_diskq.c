@@ -360,7 +360,7 @@ testcase_diskbuffer_restart_corrupted(void)
       assert_gint(stat(filename, &file_stat), 0,
                   "New disk-queue file does not exists!!");
       assert_gint(S_ISREG(file_stat.st_mode), TRUE,
-                  "New disk-queue file expected to be a regular file!! st_mode value=",
+                  "New disk-queue file expected to be a regular file!! st_mode value=%04o",
                   (file_stat.st_mode & S_IFMT));
       stat(filename_corrupted_dq, &file_stat);
       assert_gint(S_ISREG(file_stat.st_mode), TRUE,

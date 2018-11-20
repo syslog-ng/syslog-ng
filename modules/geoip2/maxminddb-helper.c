@@ -296,7 +296,7 @@ dump_geodata_into_msg_array(LogMessage *msg, MMDB_entry_data_list_s *entry_data_
   return entry_data_list;
 }
 
-static void
+static void G_GNUC_PRINTF(3, 4)
 dump_geodata_into_msg_data(LogMessage *msg, GArray *path, gchar *fmt, ...)
 {
   GString *value = scratch_buffers_alloc();
