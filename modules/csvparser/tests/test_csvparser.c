@@ -74,6 +74,21 @@ ParameterizedTestParameters(parser, test_csv_parser)
       .expected_values = {"PTHREAD", "support", "initialized", NULL}
     },
 
+    // empty message
+    {
+      .msg = "<15> openvpn[2499]:",
+      .parse_flags = 0,
+      .max_columns = -1,
+      .drop_invalid = TRUE,
+      .dialect = CSV_SCANNER_ESCAPE_NONE,
+      .flags = 0,
+      .delimiters = " ",
+      .quotes = NULL,
+      .null_value = NULL,
+      .string_delims = {" :", NULL},
+      .expected_values = {NULL}
+    },
+
     // string delim & single char & a char not in the string
     {
       .msg = "<15> openvpn[2499]: PTHREAD,support :initialized",
