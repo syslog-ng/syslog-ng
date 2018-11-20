@@ -50,6 +50,7 @@ typedef struct
   GList *headers;
   gchar *user_agent;
   gchar *ca_dir;
+  gboolean use_system_cert_store;
   gchar *ca_file;
   gchar *cert_file;
   gchar *key_file;
@@ -79,6 +80,7 @@ void http_dd_set_headers(LogDriver *d, GList *headers);
 void http_dd_set_body(LogDriver *d, LogTemplate *body);
 void http_dd_set_accept_redirects(LogDriver *d, gboolean accept_redirects);
 void http_dd_set_ca_dir(LogDriver *d, const gchar *ca_dir);
+void http_dd_set_use_system_cert_store(LogDriver *d, gboolean enable);
 void http_dd_set_ca_file(LogDriver *d, const gchar *ca_file);
 void http_dd_set_cert_file(LogDriver *d, const gchar *cert_file);
 void http_dd_set_key_file(LogDriver *d, const gchar *key_file);
