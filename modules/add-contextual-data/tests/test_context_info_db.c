@@ -22,6 +22,7 @@
 
 #include "context-info-db.h"
 #include "apphook.h"
+#include "scratch-buffers.h"
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
 #include <stdio.h>
@@ -29,7 +30,6 @@
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
-TestSuite(add_contextual_data, .init=app_startup, .fini=app_shutdown);
 
 static void
 _count_records(gpointer arg, const ContextualDataRecord *record)
@@ -538,3 +538,12 @@ Test(add_contextual_data, test_selected_nvpairs_when_ignore_case_on)
   context_info_db_free(db);
   contextual_data_record_scanner_free(scanner);
 }
+
+static void
+teardown(void)
+{
+  scratch_buffers_explicit_gc();
+  app_shutdown();
+}
+
+TestSuite(add_contextual_data, .init=app_startup, .fini=teardown);
