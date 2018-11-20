@@ -210,7 +210,7 @@ _assert_import_csv_with_single_selector(gchar *csv_content, gchar *selector_to_c
   ContextInfoDB *db = context_info_db_new();
   context_info_db_init(db);
   ContextualDataRecordScanner *scanner =
-    create_contextual_data_record_scanner_by_type("csv");
+    create_contextual_data_record_scanner_by_type("dummy.csv", "csv");
 
   cr_assert(context_info_db_import(db, fp, scanner),
             "Failed to import valid CSV file.");
@@ -253,7 +253,7 @@ Test(add_contextual_data, test_import_with_valid_csv)
   ContextInfoDB *db = context_info_db_new();
   context_info_db_init(db);
   ContextualDataRecordScanner *scanner =
-    create_contextual_data_record_scanner_by_type("csv");
+    create_contextual_data_record_scanner_by_type("dummy.csv", "csv");
 
   cr_assert(context_info_db_import(db, fp, scanner),
             "Failed to import valid CSV file.");
@@ -333,7 +333,7 @@ Test(add_contextual_data, test_import_with_invalid_csv_content)
   context_info_db_init(db);
 
   ContextualDataRecordScanner *scanner =
-    create_contextual_data_record_scanner_by_type("csv");
+    create_contextual_data_record_scanner_by_type("dummy.csv", "csv");
 
   cr_assert_not(context_info_db_import(db, fp, scanner),
                 "Successfully import an invalid CSV file.");
@@ -356,7 +356,7 @@ Test(add_contextual_data, test_import_with_csv_contains_invalid_line)
   context_info_db_init(db);
 
   ContextualDataRecordScanner *scanner =
-    create_contextual_data_record_scanner_by_type("csv");
+    create_contextual_data_record_scanner_by_type("dummy.csv", "csv");
 
   cr_assert_not(context_info_db_import(db, fp, scanner),
                 "Successfully import an invalid CSV file.");
@@ -422,7 +422,7 @@ ParameterizedTest(struct TestNVPairPrefix *param, add_contextual_data, test_impo
   ContextInfoDB *db = context_info_db_new();
   context_info_db_init(db);
   ContextualDataRecordScanner *scanner =
-    create_contextual_data_record_scanner_by_type("csv");
+    create_contextual_data_record_scanner_by_type("dummy.csv", "csv");
 
   contextual_data_record_scanner_set_name_prefix(scanner, param->prefix);
 
@@ -449,7 +449,7 @@ Test(add_contextual_data, test_ignore_case_on)
   context_info_db_init(db);
 
   ContextualDataRecordScanner *scanner =
-    create_contextual_data_record_scanner_by_type("csv");
+    create_contextual_data_record_scanner_by_type("dummy.csv", "csv");
 
   cr_assert(context_info_db_import(db, fp, scanner),
             "Failed to import valid CSV file.");
@@ -474,7 +474,7 @@ Test(add_contextual_data, test_ignore_case_off)
   context_info_db_init(db);
 
   ContextualDataRecordScanner *scanner =
-    create_contextual_data_record_scanner_by_type("csv");
+    create_contextual_data_record_scanner_by_type("dummy.csv", "csv");
 
   cr_assert(context_info_db_import(db, fp, scanner),
             "Failed to import valid CSV file.");
@@ -503,7 +503,7 @@ Test(add_contextual_data, test_selected_nvpairs_when_ignore_case_on)
   context_info_db_set_ignore_case(db, TRUE);
   context_info_db_init(db);
   ContextualDataRecordScanner *scanner =
-    create_contextual_data_record_scanner_by_type("csv");
+    create_contextual_data_record_scanner_by_type("dummy.csv", "csv");
 
   cr_assert(context_info_db_import(db, fp, scanner),
             "Failed to import valid CSV file.");

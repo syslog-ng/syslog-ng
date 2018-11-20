@@ -42,6 +42,7 @@ _fetch_next_with_prefix(CSVContextualDataRecordScanner *record_scanner,
   if (!csv_scanner_scan_next(&record_scanner->scanner))
     {
       msg_error("add-contextual-data(): error parsing CSV file, expecting an additional column which was not found. Expecting (selector, name, value) triplets",
+                evt_tag_str("filename", record_scanner->filename),
                 evt_tag_str("target", csv_scanner_get_current_name(&record_scanner->scanner)));
       return FALSE;
     }
@@ -66,7 +67,8 @@ _is_whole_record_parsed(CSVContextualDataRecordScanner *csv_record_scanner)
       csv_scanner_is_scan_complete(&csv_record_scanner->scanner))
     return TRUE;
 
-  msg_error("add-contextual-data(): extra data found at the end of line, expecting (selector, name, value) triplets");
+  msg_error("add-contextual-data(): extra data found at the end of line, expecting (selector, name, value) triplets",
+            evt_tag_str("filename", csv_record_scanner->filename));
   return FALSE;
 }
 
@@ -91,6 +93,7 @@ _get_next_record(ContextualDataRecordScanner *s, const gchar *input, ContextualD
   return TRUE;
 error:
   msg_error("add-contextual-data(): the failing line is",
+            evt_tag_str("filename", csv_record_scanner->filename),
             evt_tag_str("input", input));
   return FALSE;
 }
@@ -101,11 +104,12 @@ csv_contextual_data_record_scanner_free(ContextualDataRecordScanner *s)
   CSVContextualDataRecordScanner *self = (CSVContextualDataRecordScanner *) s;
   csv_scanner_options_clean(&self->options);
   csv_scanner_deinit(&self->scanner);
+  g_free(self->filename);
   g_free(self);
 }
 
 ContextualDataRecordScanner *
-csv_contextual_data_record_scanner_new(void)
+csv_contextual_data_record_scanner_new(const gchar *filename)
 {
   CSVContextualDataRecordScanner *self =
     g_new0(CSVContextualDataRecordScanner, 1);
@@ -116,6 +120,7 @@ csv_contextual_data_record_scanner_new(void)
                                   string_array_to_list(column_array));
   csv_scanner_options_set_flags(&self->options, CSV_SCANNER_STRIP_WHITESPACE);
   csv_scanner_options_set_dialect(&self->options, CSV_SCANNER_ESCAPE_DOUBLE_CHAR);
+  self->filename = g_strdup(filename);
   self->super.get_next = _get_next_record;
   self->super.free_fn = csv_contextual_data_record_scanner_free;
 

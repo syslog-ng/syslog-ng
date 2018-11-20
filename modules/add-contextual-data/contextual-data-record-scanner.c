@@ -63,7 +63,7 @@ contextual_data_record_clean(ContextualDataRecord *record)
 }
 
 ContextualDataRecordScanner *
-create_contextual_data_record_scanner_by_type(const gchar *type)
+create_contextual_data_record_scanner_by_type(const gchar *filename, const gchar *type)
 {
   ContextualDataRecordScanner *scanner = NULL;
 
@@ -72,7 +72,7 @@ create_contextual_data_record_scanner_by_type(const gchar *type)
 
   if (!strcmp(type, "csv"))
     {
-      scanner = csv_contextual_data_record_scanner_new();
+      scanner = csv_contextual_data_record_scanner_new(filename);
     }
 
   if (!scanner)

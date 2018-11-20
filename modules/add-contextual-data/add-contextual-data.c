@@ -227,7 +227,7 @@ _get_scanner(AddContextualData *self)
 {
   const gchar *type = get_filename_extension(self->filename);
   ContextualDataRecordScanner *scanner =
-    create_contextual_data_record_scanner_by_type(type);
+    create_contextual_data_record_scanner_by_type(self->filename, type);
 
   if (!scanner)
     {
