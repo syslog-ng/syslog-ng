@@ -57,6 +57,9 @@ class FileDestination(DestinationDriver):
     def read_logs(self, counter):
         return self.dd_read_logs(self.get_positional_option_value(), counter=counter)
 
+    def get_path(self):
+        return self.options[self.get_positional_option_name()]
+
     def __construct_file_path(self, instance_paths):
         if self.get_positional_option_name() in self.options.keys():
             given_positional_option_value = self.options[self.get_positional_option_name()]
