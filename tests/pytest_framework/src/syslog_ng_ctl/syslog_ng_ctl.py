@@ -31,6 +31,9 @@ class SyslogNgCtl(object):
     def reload(self):
         return self.__syslog_ng_ctl_cli.reload()
 
+    def reopen(self):
+        return self.__syslog_ng_ctl_cli.reopen()
+
     def stop(self):
         return self.__syslog_ng_ctl_cli.stop()
 
