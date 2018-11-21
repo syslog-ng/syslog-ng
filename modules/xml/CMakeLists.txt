@@ -1,6 +1,7 @@
 set(xml_HEADERS
     "xml-parser.h"
     "xml.h"
+    "xml-scanner.h"
     "${CMAKE_CURRENT_BINARY_DIR}/xml-grammar.h"
 )
 
@@ -8,6 +9,7 @@ set(xml_SOURCES
     "xml-plugin.c"
     "xml-parser.c"
     "xml.c"
+    "xml-scanner.c"
     "${CMAKE_CURRENT_BINARY_DIR}/xml-grammar.c"
 )
 
