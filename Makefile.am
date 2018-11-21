@@ -83,7 +83,8 @@ AM_CFLAGS += \
 	-Wfloat-equal \
 	-Wpointer-arith \
 	-Wpointer-sign \
-	-Wmissing-format-attribute
+	-Wmissing-format-attribute \
+	-Wsuggest-attribute=noreturn
 endif
 
 TEST_CFLAGS		= -I$(top_srcdir)/libtest -DTOP_SRCDIR=\"$(abs_top_srcdir)\" $(AM_CFLAGS) $(CRITERION_CFLAGS)
