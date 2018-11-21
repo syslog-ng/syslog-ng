@@ -317,6 +317,14 @@ http_dd_init(LogPipe *s)
   if (self->load_balancer->num_targets == 0)
     http_load_balancer_add_target(self->load_balancer, HTTP_DEFAULT_URL);
 
+  if (self->load_balancer->num_targets > 1 && s->persist_name == NULL)
+    {
+      msg_warning("WARNING: your http() driver instance uses multiple urls without persist-name(). "
+                  "It is recommended that you set persist-name() in this case as syslog-ng will be "
+                  "using the first URL in urls() to register persistent data, such as the disk queue "
+                  "name, which might change",
+                  evt_tag_str("url", self->load_balancer->targets[0].url));
+    }
   /* we need to set up url before we call the inherited init method, so our stats key is correct */
   self->url = self->load_balancer->targets[0].url;
 
