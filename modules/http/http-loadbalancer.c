@@ -162,7 +162,7 @@ _locate_target(HTTPLoadBalancer *self, HTTPLoadBalancerClient *lbc)
                      : 0;
   for (gint i = 0; i < self->num_targets; i++)
     {
-      HTTPLoadBalancerTarget *target = &self->targets[i + start_index];
+      HTTPLoadBalancerTarget *target = &self->targets[(i + start_index) % self->num_targets];
 
       if (target->state == HTTP_TARGET_OPERATIONAL &&
           target->number_of_clients < target->max_clients)
