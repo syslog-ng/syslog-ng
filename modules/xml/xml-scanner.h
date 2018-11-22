@@ -29,7 +29,6 @@ typedef struct
 {
   LogMessage *msg;
   GString *key;
-  gboolean pop_next_time;
   XMLParser *parser;
 } InserterState;
 
@@ -37,6 +36,7 @@ typedef struct
 {
   GMarkupParseContext *xml_ctx;
   InserterState *state;
+  gboolean pop_next_time;
 } XMLScanner;
 
 // see Inserterstate->parser elements

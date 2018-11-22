@@ -87,7 +87,7 @@ start_element_cb(GMarkupParseContext  *context,
     {
       msg_debug("xml: subtree skipped",
                 evt_tag_str("tag", element_name));
-      state->pop_next_time = 1;
+      scanner->pop_next_time = 1;
       g_markup_parse_context_push(context, &skip, NULL);
       g_free(reversed);
       return;
@@ -117,10 +117,10 @@ end_element_cb(GMarkupParseContext *context,
   XMLScanner *scanner = (XMLScanner *)user_data;
   InserterState *state = scanner->state;
 
-  if (state->pop_next_time)
+  if (scanner->pop_next_time)
     {
       g_markup_parse_context_pop(context);
-      state->pop_next_time = 0;
+      scanner->pop_next_time = 0;
       return;
     }
   g_string_truncate(state->key, before_last_dot(state->key));
