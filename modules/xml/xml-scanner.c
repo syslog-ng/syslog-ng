@@ -72,7 +72,8 @@ start_element_cb(GMarkupParseContext  *context,
                  gpointer              user_data,
                  GError              **error)
 {
-  InserterState *state = (InserterState *)user_data;
+  XMLScanner *scanner = (XMLScanner *)user_data;
+  InserterState *state = scanner->state;
 
   gchar *reversed = NULL;
   guint tag_length = strlen(element_name);
@@ -113,7 +114,8 @@ end_element_cb(GMarkupParseContext *context,
                gpointer             user_data,
                GError              **error)
 {
-  InserterState *state = (InserterState *)user_data;
+  XMLScanner *scanner = (XMLScanner *)user_data;
+  InserterState *state = scanner->state;
 
   if (state->pop_next_time)
     {
@@ -171,7 +173,8 @@ text_cb(GMarkupParseContext *context,
   if (text_len == 0)
     return;
 
-  InserterState *state = (InserterState *)user_data;
+  XMLScanner *scanner = (XMLScanner *)user_data;
+  InserterState *state = scanner->state;
   const gchar *current_value = log_msg_get_value_by_name(state->msg, state->key->str, NULL);
 
   GString *value = _append_text(current_value, text, text_len, state->parser);
@@ -203,7 +206,7 @@ xml_scanner_init(XMLScanner *self, InserterState *state)
 {
   memset(self, 0, sizeof(*self));
   self->state = state;
-  self->xml_ctx = g_markup_parse_context_new(&xml_scanner, 0, self->state, NULL);
+  self->xml_ctx = g_markup_parse_context_new(&xml_scanner, 0, self, NULL);
 }
 
 void
