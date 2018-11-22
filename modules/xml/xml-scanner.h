@@ -37,6 +37,8 @@ typedef struct
   GMarkupParseContext *xml_ctx;
   InserterState *state;
   gboolean pop_next_time;
+  gboolean matchstring_shouldreverse;
+  GPtrArray *exclude_patterns;
 } XMLScanner;
 
 // see Inserterstate->parser elements
@@ -47,4 +49,6 @@ void xml_scanner_deinit(XMLScanner *self);
 void xml_scanner_parse(XMLScanner *self, const gchar *input, gsize input_len, GError **error);
 void xml_scanner_end_parse(XMLScanner *self, GError **error);
 
+
+gboolean joker_or_wildcard(GList *patterns);
 #endif

@@ -78,12 +78,12 @@ start_element_cb(GMarkupParseContext  *context,
   gchar *reversed = NULL;
   guint tag_length = strlen(element_name);
 
-  if (state->parser->matchstring_shouldreverse)
+  if (scanner->matchstring_shouldreverse)
     {
       reversed = g_utf8_strreverse(element_name, tag_length);
     }
 
-  if (tag_matches_patterns(state->parser->exclude_patterns, tag_length, element_name, reversed))
+  if (tag_matches_patterns(scanner->exclude_patterns, tag_length, element_name, reversed))
     {
       msg_debug("xml: subtree skipped",
                 evt_tag_str("tag", element_name));
@@ -201,11 +201,62 @@ static GMarkupParser xml_scanner =
   .text = text_cb
 };
 
+/*
+  For some patterns, GPatternSpec stores the pattern as reversed
+  string. In such cases, the matching must be executed against the
+  reversed matchstring. If one uses g_pattern_match_string, glib will
+  reverse the string internally in these cases, but it is suboptimal if
+  the same matchstring must be matched against different patterns,
+  because memory is allocated each time and string is copied as
+  reversed, though it would be enough to execute this reverse once. For
+  that reason one can use g_pattern_match(), which accepts both the
+  matchstring and a reversed matchstring as parameters.
+
+  Though there are cases when no reverse is needed at all. This is
+  decided in the constructor of GPatternSpec, but at this time of
+  writing this information is not exported, and cannot be extracted in
+  any safe way, because GPatternSpec is forward declared.
+
+  This function below is an oversimplified/safe version of the logic
+  used glib to decide if the pattern will be reversed or not. One need
+  to note the worst case scenario is if syslog-ng will not reverse the
+  matchstring, though it should because in that case number of extra
+  memory allocations and string reversals scale linearly with the number
+  of patterns. We need to avoid not pre-reversing, when glib would.
+ */
+gboolean
+joker_or_wildcard(GList *patterns)
+{
+  gboolean retval = FALSE;
+  GList *pattern = patterns;
+  while (pattern != NULL)
+    {
+      gchar *str = ((gchar *)pattern->data);
+      if (strpbrk(str, "*?"))
+        {
+          retval = TRUE;
+          break;
+        }
+      pattern = g_list_next(pattern);
+    }
+
+  return retval;
+}
+
+static void
+_compile_and_add(gpointer tag_glob, gpointer exclude_patterns)
+{
+  g_ptr_array_add(exclude_patterns, g_pattern_spec_new(tag_glob));
+}
+
 void
 xml_scanner_init(XMLScanner *self, InserterState *state)
 {
   memset(self, 0, sizeof(*self));
   self->state = state;
+  self->exclude_patterns = g_ptr_array_new_with_free_func((GDestroyNotify)g_pattern_spec_free);
+  g_list_foreach(self->state->parser->exclude_tags, _compile_and_add, self->exclude_patterns);
+  self->matchstring_shouldreverse = joker_or_wildcard(self->state->parser->exclude_tags);
   self->xml_ctx = g_markup_parse_context_new(&xml_scanner, 0, self, NULL);
 }
 
@@ -214,4 +265,6 @@ xml_scanner_deinit(XMLScanner *self)
 {
   g_markup_parse_context_free(self->xml_ctx);
   self->state = NULL; // ownership
+  g_ptr_array_free(self->exclude_patterns, TRUE);
+  self->exclude_patterns = NULL;
 }

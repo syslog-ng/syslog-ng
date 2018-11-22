@@ -31,8 +31,6 @@ typedef struct
   gchar *prefix;
   gboolean forward_invalid;
   GList *exclude_tags;
-  GPtrArray *exclude_patterns;
-  gboolean matchstring_shouldreverse;
   gboolean strip_whitespaces;
 } XMLParser;
 
@@ -42,7 +40,5 @@ void xml_parser_set_prefix(LogParser *s, const gchar *prefix);
 void xml_parser_set_forward_invalid(LogParser *s, gboolean setting);
 void xml_parser_set_exclude_tags(LogParser *s, GList *exclude_tags);
 void xml_parser_set_strip_whitespaces(LogParser *s, gboolean setting);
-
-gboolean joker_or_wildcard(GList *patterns);
 
 #endif
