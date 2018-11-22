@@ -3,7 +3,8 @@ lib_filter_tests_TESTS		 =              \
 		lib/filter/tests/test_filters_facility      \
 		lib/filter/tests/test_filters_level_new      \
     lib/filter/tests/test_filter_call           \
-    lib/filter/tests/test_filters_in_list
+    lib/filter/tests/test_filters_in_list		\
+		lib/filter/tests/test_filters_regexp
 
 EXTRA_DIST += lib/filter/tests/CMakeLists.txt
 
@@ -36,6 +37,15 @@ lib_filter_tests_test_filters_level_new_LDADD      = $(TEST_LDADD)  \
 	$(PREOPEN_SYSLOGFORMAT)
 lib_filter_tests_test_filters_level_new_SOURCES = 			\
 	lib/filter/tests/test_filters_level_new.c \
+	lib/filter/tests/test_filters_common.c \
+	lib/filter/tests/test_filters_common.h
+
+lib_filter_tests_test_filters_regexp_CFLAGS     = $(TEST_CFLAGS) \
+	-I${top_srcdir}/lib/filter/tests
+lib_filter_tests_test_filters_regexp_LDADD      = $(TEST_LDADD)  \
+	$(PREOPEN_SYSLOGFORMAT)
+lib_filter_tests_test_filters_regexp_SOURCES = 			\
+	lib/filter/tests/test_filters_regexp.c \
 	lib/filter/tests/test_filters_common.c \
 	lib/filter/tests/test_filters_common.h
 
