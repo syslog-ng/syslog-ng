@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Balabit
+ * Copyright (c) 2018 Balabit
  * Copyright (c) 2014 Zoltan Fried
  *
  * This library is free software; you can redistribute it and/or
@@ -22,20 +22,21 @@
  *
  */
 
-#include "gsocket.h"
-#include "logmsg/logmsg.h"
-
-#include <stdlib.h>
-#include <string.h>
-
-#include <arpa/inet.h>
-#include <netinet/in.h>
-
-#include "testutils.h"
+#include "filter/filter-expr.h"
 #include "filter/filter-netmask6.h"
+#include "filter/filter-netmask.h"
+#include "filter/filter-re.h"
+#include "filter/filter-pri.h"
+#include "filter/filter-op.h"
+#include "filter/filter-cmp.h"
+#include "cfg.h"
+#include "test_filters_common.h"
 
-#include <criterion/parameterized.h>
 #include <criterion/criterion.h>
+#include <criterion/parameterized.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 static void
 _replace_last_zero_with_wildcard(gchar *ipv6)
@@ -133,3 +134,61 @@ ParameterizedTest(struct netmask6_tuple *tup, netmask6, test_filter)
   g_free(calculated_network);
 }
 
+
+typedef struct _FilterParamNetmask
+{
+  const gchar *msg;
+  const gchar *sockaddr;
+  const gchar *cidr;
+  gboolean    expected_result;
+} FilterParamNetmask;
+
+ParameterizedTestParameters(filter, test_filter_netmask_ip6_socket)
+{
+  static FilterParamNetmask test_data_list[] =
+  {
+    {.msg = "<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", .sockaddr = "2001:db80:85a3:8d30:1319:8a2e:3700:7348", .cidr = "::/1", .expected_result = TRUE},
+    {.msg = "<15>Oct 15 16:17:02 host openvpn[2499]: PTHREAD support initialized", .sockaddr = "2001:db80:85a3:8d30:1319:8a2e:3700:7348", .cidr = "2001:db80:85a3:8d30:1319:8a2e::/95", .expected_result = TRUE},
+    {.msg = "<15>Oct 15 16:17:03 host openvpn[2499]: PTHREAD support initialized", .sockaddr = "2001:db80:85a3:8d30:1319:8a2e:3700:7348", .cidr = "2001:db80:85a3:8d30:1319:8a2e:3700:7348/60", .expected_result = TRUE},
+    {.msg = "<15>Oct 15 16:17:04 host openvpn[2499]: PTHREAD support initialized", .sockaddr = "2001:db80:85a3:8d30:1319:8a2e:3700:7348", .cidr = "2001:db80:85a3:8d30:1319:8a2e:3700::/114", .expected_result = FALSE},
+    {.msg = "<15>Oct 15 16:17:05 host openvpn[2499]: PTHREAD support initialized", .sockaddr = "2001:db80:85a3:8d30:1319:8a2e:3700:7348", .cidr = "::85a3:8d30:1319:8a2e:3700::/114", .expected_result = FALSE},
+    {.msg = "<15>Oct 15 16:17:06 host openvpn[2499]: PTHREAD support initialized", .sockaddr = "2001:db80:85a3:8d30:1319:8a2e:3700:7348", .cidr = "aaaaaa/32", .expected_result = FALSE},
+    {.msg = "<15>Oct 15 16:17:07 host openvpn[2499]: PTHREAD support initialized", .sockaddr = "2001:db80:85a3:8d30:1319:8a2e:3700:7348", .cidr = "/8", .expected_result = FALSE},
+    {.msg = "<15>Oct 15 16:17:08 host openvpn[2499]: PTHREAD support initialized", .sockaddr = "2001:db80:85a3:8d30:1319:8a2e:3700:7348", .cidr = "::", .expected_result = FALSE},
+    {.msg = "<15>Oct 15 16:17:09 host openvpn[2499]: PTHREAD support initialized", .sockaddr = "2001:db80:85a3:8d30:1319:8a2e:3700:7348", .cidr = "", .expected_result = FALSE},
+    {.msg = "<15>Oct 15 16:17:10 host openvpn[2499]: PTHREAD support initialized", .sockaddr = "2001:db80:85a3:8d30:1319:8a2e:3700:7348", .cidr = "::1/8", .expected_result = FALSE},
+    {.msg = "<15>Oct 15 16:17:11 host openvpn[2499]: PTHREAD support initialized", .sockaddr = "2001:db80:85a3:8d30:1319:8a2e:3700:7348", .cidr = "::1/128", .expected_result = FALSE},
+    {.msg = "<15>Oct 15 16:17:12 host openvpn[2499]: PTHREAD support initialized", .sockaddr = "2001:db80:85a3:8d30:1319:8a2e:3700:7348", .cidr = "::2/32", .expected_result = FALSE}
+  };
+
+  return cr_make_param_array(FilterParamNetmask, test_data_list, G_N_ELEMENTS(test_data_list));
+}
+
+ParameterizedTest(FilterParamNetmask *param, filter, test_filter_netmask_ip6_socket, .init = setup, .fini = teardown)
+{
+  testcase_with_socket(param->msg, param->sockaddr, filter_netmask6_new(param->cidr), param->expected_result);
+}
+
+ParameterizedTestParameters(filter, test_filter_netmask_ip6)
+{
+  static FilterParamNetmask test_data_list[] =
+  {
+    {.msg = "<15>Oct 15 16:18:01 host openvpn[2499]: PTHREAD support initialized", .cidr = "aaaaaa/32", .expected_result = FALSE},
+    {.msg = "<15>Oct 15 16:18:02 host openvpn[2499]: PTHREAD support initialized", .cidr = "/8", .expected_result = FALSE},
+    {.msg = "<15>Oct 15 16:18:03 host openvpn[2499]: PTHREAD support initialized", .cidr = "", .expected_result = FALSE},
+    {.msg = "<15>Oct 15 16:18:04 host openvpn[2499]: PTHREAD support initialized", .cidr = "::1", .expected_result = TRUE},
+    {.msg = "<15>Oct 15 16:18:05 host openvpn[2499]: PTHREAD support initialized", .cidr = "::/32", .expected_result = TRUE},
+    {.msg = "<15>Oct 15 16:18:06 host openvpn[2499]: PTHREAD support initialized", .cidr = "::1/8", .expected_result = TRUE},
+    {.msg = "<15>Oct 15 16:18:07 host openvpn[2499]: PTHREAD support initialized", .cidr = "::1/128", .expected_result = TRUE},
+    {.msg = "<15>Oct 15 16:18:08 host openvpn[2499]: PTHREAD support initialized", .cidr = "::/16", .expected_result = TRUE},
+    {.msg = "<15>Oct 15 16:18:09 host openvpn[2499]: PTHREAD support initialized", .cidr = "::/599", .expected_result = FALSE},
+    {.msg = "<15>Oct 15 16:18:10 host openvpn[2499]: PTHREAD support initialized", .cidr = "::/aaa", .expected_result = FALSE},
+  };
+
+  return cr_make_param_array(FilterParamNetmask, test_data_list, G_N_ELEMENTS(test_data_list));
+}
+
+ParameterizedTest(FilterParamNetmask *param, filter, test_filter_netmask_ip6, .init = setup, .fini = teardown)
+{
+  testcase(param->msg, filter_netmask6_new(param->cidr), param->expected_result);
+}
