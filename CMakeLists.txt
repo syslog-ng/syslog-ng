@@ -234,7 +234,9 @@ if (ENABLE_EXTRA_WARNINGS)
     -Wdouble-promotion
     -Wfloat-equal
     -Wpointer-arith
-    -Wpointer-sign)
+    -Wpointer-sign
+    -Wmissing-format-attribute
+    -Wsuggest-attribute=noreturn)
 endif()
 
 add_compile_options(${IMPORTANT_WARNINGS} ${ACCEPTABLE_WARNINGS} ${EXTRA_WARNINGS})

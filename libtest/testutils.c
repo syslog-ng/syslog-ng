@@ -36,7 +36,7 @@ GString *current_testcase_description = NULL;
 const gchar *current_testcase_function = NULL;
 gchar *current_testcase_file = NULL;
 
-static void
+static void G_GNUC_PRINTF(1, 0) G_GNUC_PRINTF(3, 4)
 print_failure(const gchar *custom_template, va_list custom_args, const gchar *assertion_failure_template, ...)
 {
   testutils_global_success = FALSE;
@@ -127,7 +127,7 @@ assert_gint64_non_fatal(gint64 actual, gint64 expected, const gchar *error_messa
     return TRUE;
 
   va_start(args, error_message);
-  print_failure(error_message, args, "actual=%lld, expected=%lld", actual, expected);
+  print_failure(error_message, args, "actual=%"G_GINT64_FORMAT", expected=%"G_GINT64_FORMAT, actual, expected);
   va_end(args);
 
   return FALSE;
@@ -142,7 +142,7 @@ assert_guint64_non_fatal(guint64 actual, guint64 expected, const gchar *error_me
     return TRUE;
 
   va_start(args, error_message);
-  print_failure(error_message, args, "actual=%llu, expected=%llu", actual, expected);
+  print_failure(error_message, args, "actual=%"G_GUINT64_FORMAT", expected=%"G_GUINT64_FORMAT, actual, expected);
   va_end(args);
 
   return FALSE;
@@ -166,7 +166,7 @@ assert_gdouble_non_fatal(gdouble actual, gdouble expected, const gchar *error_me
   return FALSE;
 }
 
-static gboolean
+static gboolean G_GNUC_PRINTF(5, 0)
 assert_nstring_non_fatal_va(const gchar *actual, gint actual_len, const gchar *expected, gint expected_len,
                             const gchar *error_message, va_list args)
 {
@@ -211,7 +211,7 @@ assert_nstring_non_fatal(const gchar *actual, gint actual_len, const gchar *expe
 }
 
 
-static gboolean
+static gboolean G_GNUC_PRINTF(5, 0)
 compare_arrays_trivially(void *actual, guint32 actual_length,
                          void *expected, guint32 expected_length,
                          const gchar *error_message_template, va_list error_message_args)
@@ -333,13 +333,13 @@ assert_gboolean_non_fatal(gboolean actual, gboolean expected, const gchar *error
   return FALSE;
 }
 
-gboolean
+gboolean G_GNUC_PRINTF(2, 0)
 assert_null_non_fatal_va(const void *pointer, const gchar *error_message, va_list args)
 {
   if (pointer == NULL)
     return TRUE;
 
-  print_failure(error_message, args, "Pointer expected to be NULL; pointer=%llx", (guint64)pointer);
+  print_failure(error_message, args, "Pointer expected to be NULL; pointer=%p", pointer);
 
   return FALSE;
 }
@@ -356,7 +356,7 @@ assert_null_non_fatal(const void *pointer, const gchar *error_message, ...)
   return success;
 }
 
-gboolean
+gboolean G_GNUC_PRINTF(2, 0)
 assert_not_null_non_fatal_va(void *pointer, const gchar *error_message, va_list args)
 {
   if (pointer != NULL)
@@ -434,7 +434,7 @@ assert_gpointer_non_fatal(gpointer actual, gpointer expected, const gchar *error
     return TRUE;
 
   va_start(args, error_message);
-  print_failure(error_message, args, "actual=%x, expected=%x", actual, expected);
+  print_failure(error_message, args, "actual=%p, expected=%p", actual, expected);
   va_end(args);
 
   return FALSE;

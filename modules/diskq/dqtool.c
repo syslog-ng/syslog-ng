@@ -235,7 +235,6 @@ usage(void)
     {
       fprintf(stderr, "    %-12s %s\n", modes[mode].mode, modes[mode].description);
     }
-  exit(1);
 }
 
 void
@@ -256,6 +255,7 @@ main(int argc, char *argv[])
   if (!mode_string)
     {
       usage();
+      return 1;
     }
 
   ctx = NULL;
@@ -277,6 +277,7 @@ main(int argc, char *argv[])
     {
       fprintf(stderr, "Unknown command\n");
       usage();
+      return 1;
     }
 
   if (!g_option_context_parse(ctx, &argc, &argv, &error))

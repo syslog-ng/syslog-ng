@@ -360,7 +360,7 @@ accumulator_assert_that_lines_are_starting_with_sequence_number(LogProtoTextServ
 {
   assert_true((msg[0] - '0') == accumulate_seq,
               "accumulate_line: Message doesn't start with sequence number, msg=%.*s, seq=%d",
-              msg_len, msg, accumulate_seq);
+              (int)msg_len, msg, accumulate_seq);
   assert_gint(consumed_len, -1, "Initial invocation of the accumulator expects -1 as consumed_len");
   accumulate_seq++;
   return LPT_CONSUME_LINE | LPT_EXTRACTED;

@@ -27,6 +27,8 @@ lib_eventlog_src_libevtlog_la_LDFLAGS = -no-undefined -release ${LSNG_RELEASE} \
 
 lib_eventlog_src_libevtlog_la_CFLAGS = $(AM_CFLAGS)
 
+lib_eventlog_src_libevtlog_la_LIBADD = @GLIB_LIBS@
+
 
 noinst_HEADERS = lib/eventlog/src/evt_internals.h
 

@@ -28,6 +28,7 @@
 #include "syslog-ng.h"
 
 #include <sys/types.h>
+#include <glib.h>
 
 #if SYSLOG_NG_ENABLE_LINUX_CAPS
 #  include <sys/capability.h>
@@ -57,7 +58,7 @@ typedef gpointer cap_t;
 
 #endif
 
-void g_process_message(const gchar *fmt, ...);
+void g_process_message(const gchar *fmt, ...) G_GNUC_PRINTF(1, 2);
 
 void g_process_set_mode(GProcessMode mode);
 GProcessMode g_process_get_mode(void);

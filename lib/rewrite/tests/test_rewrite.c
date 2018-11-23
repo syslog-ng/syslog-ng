@@ -99,7 +99,7 @@ void
 cr_assert_msg_field_equals(LogMessage *msg, const gchar *field_name, const gchar *expected_value,
                            gssize expected_value_len)
 {
-  const gboolean result = assert_msg_field_equals_non_fatal(msg, field_name, expected_value, expected_value_len, "");
+  const gboolean result = assert_msg_field_equals_non_fatal(msg, field_name, expected_value, expected_value_len, NULL);
   cr_assert(result, "Message field assert");
 }
 
