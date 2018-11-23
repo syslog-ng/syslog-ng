@@ -369,12 +369,12 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   LogSource *self = (LogSource *) s;
   gint i;
 
+  msg_set_context(msg);
+
   msg_trace(">>>>>> Source side message processing begin",
             evt_tag_str("instance", self->stats_instance ? self->stats_instance : "internal"),
             log_pipe_location_tag(s),
             evt_tag_printf("msg", "%p", msg));
-
-  msg_set_context(msg);
 
   if (!self->options->keep_timestamp)
     msg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_RECVD];
@@ -414,8 +414,6 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   stats_counter_set(self->last_message_seen, msg->timestamps[LM_TS_RECVD].tv_sec);
   log_pipe_forward_msg(s, msg, path_options);
 
-  msg_set_context(NULL);
-
   if (accurate_nanosleep && self->threaded && self->window_full_sleep_nsec > 0 && !log_source_free_to_send(self))
     {
       struct timespec ts;
@@ -429,6 +427,8 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
             evt_tag_str("instance", self->stats_instance ? self->stats_instance : "internal"),
             log_pipe_location_tag(s),
             evt_tag_printf("msg", "%p", msg));
+
+  msg_set_context(NULL);
 
 }
 
