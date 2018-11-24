@@ -148,6 +148,7 @@ version(void)
 
   printf("Module-Directory: %s\n", get_installation_path_for(SYSLOG_NG_PATH_MODULEDIR));
   printf("Module-Path: %s\n", resolvedConfigurablePaths.initial_module_path);
+  printf("Include-Path: %s\n", get_installation_path_for(SYSLOG_NG_PATH_CONFIG_INCLUDEDIR));
   printf("Available-Modules: ");
   plugin_list_modules(stdout, FALSE);
 
