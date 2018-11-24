@@ -613,6 +613,10 @@ cfg_lexer_include_file(CfgLexer *self, const gchar *filename_)
   struct stat st;
   gchar *filename;
 
+  msg_debug("Processing @include statement",
+            evt_tag_str("filename", filename_),
+            evt_tag_str("include-path", _get_include_path(self)));
+
   if (self->include_depth >= MAX_INCLUDE_DEPTH - 1)
     {
       msg_error("Include file depth is too deep, increase MAX_INCLUDE_DEPTH and recompile",
