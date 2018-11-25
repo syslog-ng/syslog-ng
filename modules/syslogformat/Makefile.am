@@ -33,3 +33,5 @@ modules_syslogformat_libsyslogformat_la_DEPENDENCIES =	\
 modules/syslogformat modules/syslogformat/ mod-syslogformat: \
 	modules/syslogformat/libsyslogformat.la
 .PHONY: modules/syslogformat/ mod-syslogformat
+
+include modules/syslogformat/tests/Makefile.am

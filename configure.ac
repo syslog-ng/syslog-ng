@@ -468,6 +468,25 @@ fi
 AC_SUBST([NO_PIE_LDFLAG])
 
 dnl ***************************************************************************
+dnl Set up LDFLAGS_FORCE_FLAT_NAMESPACE
+
+
+if test $ostype = "Darwin"; then
+  LDFLAGS_FORCE_FLAT_NAMESPACE="-Wl,-force_flat_namespace"
+fi
+
+old_LDFLAGS="$LDFLAGS"
+LDFLAGS="$LDFLAGS $LDFLAGS_FORCE_FLAT_NAMESPACE"
+
+AC_LINK_IFELSE([AC_LANG_SOURCE([int main(void) {return 0;}])],
+	,
+	[LDFLAGS_FORCE_FLAT_NAMESPACE=""])
+
+LDFLAGS="$old_LDFLAGS"
+
+AC_SUBST([LDFLAGS_FORCE_FLAT_NAMESPACE])
+
+dnl ***************************************************************************
 dnl Set up CFLAGS
 
 

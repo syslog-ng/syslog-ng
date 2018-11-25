@@ -42,6 +42,8 @@ function (add_unit_test)
   target_include_directories(${ADD_UNIT_TEST_TARGET} PUBLIC ${ADD_UNIT_TEST_INCLUDES})
   if (NOT APPLE)
     set_property(TARGET ${ADD_UNIT_TEST_TARGET} APPEND_STRING PROPERTY LINK_FLAGS " -Wl,--no-as-needed")
+  else()
+    set_property(TARGET ${ADD_UNIT_TEST_TARGET} APPEND_STRING PROPERTY LINK_FLAGS " -Wl,-force_flat_namespace")
   endif()
 
   if (${ADD_UNIT_TEST_CRITERION})

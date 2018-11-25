@@ -27,3 +27,5 @@ target_include_directories(syslogformat
 target_link_libraries(syslogformat PRIVATE syslog-ng)
 
 install(TARGETS syslogformat LIBRARY DESTINATION lib/syslog-ng/)
+
+add_test_subdirectory(tests)
