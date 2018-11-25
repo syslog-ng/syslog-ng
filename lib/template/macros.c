@@ -494,7 +494,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
           cached_g_current_time(&tv);
           sstamp.tv_sec = tv.tv_sec;
           sstamp.tv_usec = tv.tv_usec;
-          sstamp.zone_offset = -1;
+          sstamp.zone_offset = msg->timestamps[LM_TS_RECVD].zone_offset;
           stamp = &sstamp;
         }
       else if (id >= M_TIME_FIRST + M_PROCESSED_OFS && id <= M_TIME_LAST + M_PROCESSED_OFS)
