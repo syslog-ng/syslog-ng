@@ -119,7 +119,7 @@ xml_scanner_options_defaults(XMLScannerOptions *self)
 }
 
 static void
-msg_add_attributes(LogMessage *msg, GString *key, const gchar **names, const gchar **values)
+scanner_push_attributes(XMLScanner *scanner, GString *key, const gchar **names, const gchar **values)
 {
   GString *attr_key;
 
@@ -138,7 +138,7 @@ msg_add_attributes(LogMessage *msg, GString *key, const gchar **names, const gch
   while (names[attrs])
     {
       attr_key = g_string_overwrite(attr_key, base_index, names[attrs]);
-      log_msg_set_value_by_name(msg, attr_key->str, values[attrs], -1);
+      xml_scanner_push_current_key_value(scanner, attr_key->str, values[attrs], -1);
       attrs++;
     }
 }
@@ -190,7 +190,7 @@ start_element_cb(GMarkupParseContext  *context,
 
   g_string_append_c(state->key, '.');
   g_string_append(state->key, element_name);
-  msg_add_attributes(state->msg, state->key, attribute_names, attribute_values);
+  scanner_push_attributes(scanner, state->key, attribute_names, attribute_values);
 
   g_free(reversed);
 }
@@ -222,40 +222,18 @@ end_element_cb(GMarkupParseContext *context,
 }
 
 static GString *
-_append_strip(const gchar *current, const gchar *text, gsize text_len)
+strip_text(const gchar *text, gsize text_len)
 {
-  gchar *text_to_append = NULL;
-  text_to_append = g_strndup(text, text_len);
-  g_strstrip(text_to_append);
-
-  if (!text_to_append[0])
-    {
-      g_free(text_to_append);
-      return NULL;
-    }
-
   GString *value = scratch_buffers_alloc();
-  g_string_assign(value, current);
-  g_string_append(value, text_to_append);
-  g_free(text_to_append);
+  g_string_append_len(value, text, text_len);
+
+  g_strstrip(value->str);
+  g_string_set_size(value, strlen(value->str));
+
+  if (!value->str[0])
+    return NULL;
 
   return value;
-}
-
-static GString *
-_append_text(const gchar *current, const gchar *text, gsize text_len, gboolean strip_whitespaces)
-{
-  if (strip_whitespaces)
-    {
-      return _append_strip(current, text, text_len);
-    }
-  else
-    {
-      GString *value = scratch_buffers_alloc();
-      g_string_assign(value, current);
-      g_string_append_len(value, text, text_len);
-      return value;
-    }
 }
 
 static void
@@ -270,16 +248,23 @@ text_cb(GMarkupParseContext *context,
 
   XMLScanner *scanner = (XMLScanner *)user_data;
   InserterState *state = scanner->state;
-  const gchar *current_value = log_msg_get_value_by_name(state->msg, state->key->str, NULL);
 
-  GString *value = _append_text(current_value, text, text_len, scanner->options->strip_whitespaces);
-  if (value)
-    log_msg_set_value_by_name(state->msg, state->key->str, value->str, value->len);
+  if (scanner->options->strip_whitespaces)
+    {
+      GString *stripped_text = strip_text(text, text_len);
+      if (stripped_text)
+        xml_scanner_push_current_key_value(scanner, state->key->str, stripped_text->str, stripped_text->len);
+    }
+  else
+    {
+      xml_scanner_push_current_key_value(scanner, state->key->str, text, text_len);
+    }
 }
 
 void
 xml_scanner_parse(XMLScanner *self, const gchar *input, gsize input_len, GError **error)
 {
+  g_assert(self->push_function);
   g_markup_parse_context_parse(self->xml_ctx, input, input_len, error);
 }
 
@@ -298,12 +283,14 @@ static GMarkupParser xml_scanner =
 
 
 void
-xml_scanner_init(XMLScanner *self, InserterState *state, XMLScannerOptions *options)
+xml_scanner_init(XMLScanner *self, InserterState *state, XMLScannerOptions *options, PushCurrentKeyValue push_function, gpointer user_data)
 {
   memset(self, 0, sizeof(*self));
   self->state = state;
   self->options = options;
   self->xml_ctx = g_markup_parse_context_new(&xml_scanner, 0, self, NULL);
+  self->push_function = push_function;
+  self->user_data = user_data;
 }
 
 void

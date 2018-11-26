@@ -39,6 +39,31 @@ remove_trailing_dot(gchar *str)
     str[strlen(str)-1] = 0;
 }
 
+static GString *
+append_values(const gchar *previous_value, gssize previous_value_len, const gchar *value, gssize value_length)
+{
+  GString *result = scratch_buffers_alloc();
+  g_string_append_len(result, previous_value, previous_value_len);
+  g_string_append_len(result, value, value_length);
+  return result;
+}
+
+static void
+scanner_push_function(const gchar *name, const gchar *value, gssize value_length, gpointer user_data)
+{
+  LogMessage *msg = (LogMessage *) user_data;
+
+  gssize current_value_len = 0;
+  const gchar *current_value = log_msg_get_value_by_name(msg, name, &current_value_len);
+  if (current_value_len > 0)
+    {
+      GString *values_appended = append_values(current_value, current_value_len, value, value_length);
+      log_msg_set_value_by_name(msg, name, values_appended->str, values_appended->len);
+      return;
+    }
+  log_msg_set_value_by_name(msg, name, value, value_length);
+}
+
 static gboolean
 xml_parser_process(LogParser *s, LogMessage **pmsg,
                    const LogPathOptions *path_options,
@@ -55,8 +80,8 @@ xml_parser_process(LogParser *s, LogMessage **pmsg,
   GString *key = scratch_buffers_alloc();
   key = g_string_append(key, self->prefix);
 
-  InserterState state = { .msg = msg, .key = key};
-  xml_scanner_init(&xml_scanner, &state, &self->options);
+  InserterState state = { .key = key};
+  xml_scanner_init(&xml_scanner, &state, &self->options, &scanner_push_function, msg);
 
   GError *error = NULL;
   xml_scanner_parse(&xml_scanner, input, input_len, &error);
