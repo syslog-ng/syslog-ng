@@ -655,10 +655,9 @@ afinet_dd_new_udp6(gchar *host, GlobalConfig *cfg)
 static LogWriter *
 afinet_dd_syslog_construct_writer(AFSocketDestDriver *s)
 {
-  AFInetDestDriver *self G_GNUC_UNUSED = (AFInetDestDriver *) s;
-  LogWriter *writer;
+  AFInetDestDriver *self = (AFInetDestDriver *) s;
+  LogWriter *writer = afsocket_dd_construct_writer_method(s);
 
-  writer = afsocket_dd_construct_writer_method(s);
   log_writer_set_flags(writer, log_writer_get_flags(writer) | LW_SYSLOG_PROTOCOL);
   return writer;
 }
