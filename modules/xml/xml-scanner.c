@@ -188,9 +188,9 @@ start_element_cb(GMarkupParseContext  *context,
       return;
     }
 
-  g_string_append_c(state->key, '.');
-  g_string_append(state->key, element_name);
-  scanner_push_attributes(scanner, state->key, attribute_names, attribute_values);
+  g_string_append_c(scanner->key, '.');
+  g_string_append(scanner->key, element_name);
+  scanner_push_attributes(scanner, scanner->key, attribute_names, attribute_values);
 
   g_free(reversed);
 }
@@ -218,7 +218,7 @@ end_element_cb(GMarkupParseContext *context,
       scanner->pop_next_time = 0;
       return;
     }
-  g_string_truncate(state->key, before_last_dot(state->key));
+  g_string_truncate(scanner->key, before_last_dot(scanner->key));
 }
 
 static GString *
@@ -253,11 +253,11 @@ text_cb(GMarkupParseContext *context,
     {
       GString *stripped_text = strip_text(text, text_len);
       if (stripped_text)
-        xml_scanner_push_current_key_value(scanner, state->key->str, stripped_text->str, stripped_text->len);
+        xml_scanner_push_current_key_value(scanner, scanner->key->str, stripped_text->str, stripped_text->len);
     }
   else
     {
-      xml_scanner_push_current_key_value(scanner, state->key->str, text, text_len);
+      xml_scanner_push_current_key_value(scanner, scanner->key->str, text, text_len);
     }
 }
 
@@ -291,6 +291,7 @@ xml_scanner_init(XMLScanner *self, InserterState *state, XMLScannerOptions *opti
   self->xml_ctx = g_markup_parse_context_new(&xml_scanner, 0, self, NULL);
   self->push_function = push_function;
   self->user_data = user_data;
+  self->key = scratch_buffers_alloc();
 }
 
 void

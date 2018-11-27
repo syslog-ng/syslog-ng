@@ -50,6 +50,7 @@ typedef struct
   gboolean pop_next_time;
   PushCurrentKeyValue push_function;
   gpointer user_data;
+  GString *key;
 } XMLScanner;
 
 // see Inserterstate->parser elements

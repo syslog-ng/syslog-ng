@@ -77,10 +77,7 @@ xml_parser_process(LogParser *s, LogMessage **pmsg,
             evt_tag_str ("prefix", self->prefix),
             evt_tag_printf("msg", "%p", *pmsg));
 
-  GString *key = scratch_buffers_alloc();
-  key = g_string_append(key, self->prefix);
-
-  InserterState state = { .key = key};
+  InserterState state = { };
   xml_scanner_init(&xml_scanner, &state, &self->options, &scanner_push_function, msg);
 
   GError *error = NULL;
