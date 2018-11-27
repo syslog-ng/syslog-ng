@@ -280,7 +280,8 @@ static GMarkupParser xml_scanner =
 
 
 void
-xml_scanner_init(XMLScanner *self, XMLScannerOptions *options, PushCurrentKeyValue push_function, gpointer user_data)
+xml_scanner_init(XMLScanner *self, XMLScannerOptions *options, PushCurrentKeyValue push_function,
+                 gpointer user_data, gchar *key_prefix)
 {
   memset(self, 0, sizeof(*self));
   self->options = options;
@@ -288,6 +289,7 @@ xml_scanner_init(XMLScanner *self, XMLScannerOptions *options, PushCurrentKeyVal
   self->push_function = push_function;
   self->user_data = user_data;
   self->key = scratch_buffers_alloc();
+  g_string_assign(self->key, key_prefix);
 }
 
 void

@@ -48,7 +48,8 @@ typedef struct
   GString *key;
 } XMLScanner;
 
-void xml_scanner_init(XMLScanner *self, XMLScannerOptions *options, PushCurrentKeyValue push_function, gpointer user_data);
+void xml_scanner_init(XMLScanner *self, XMLScannerOptions *options, PushCurrentKeyValue push_function,
+                      gpointer user_data, gchar *key_prefix);
 void xml_scanner_deinit(XMLScanner *self);
 void xml_scanner_parse(XMLScanner *self, const gchar *input, gsize input_len, GError **error);
 void xml_scanner_end_parse(XMLScanner *self, GError **error);
