@@ -656,7 +656,12 @@ static LogWriter *
 afinet_dd_syslog_construct_writer(AFSocketDestDriver *s)
 {
   AFInetDestDriver *self = (AFInetDestDriver *) s;
+  TransportMapperInet *transport_mapper_inet = ((TransportMapperInet *) (self->super.transport_mapper));
+
   LogWriter *writer = afsocket_dd_construct_writer_method(s);
+
+  if (((self->super.transport_mapper->sock_type == SOCK_STREAM) && transport_mapper_inet->tls_context))
+    _disable_connection_closure_on_input(writer);
 
   log_writer_set_flags(writer, log_writer_get_flags(writer) | LW_SYSLOG_PROTOCOL);
   return writer;
