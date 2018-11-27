@@ -244,9 +244,9 @@ log_writer_io_flush_output(gpointer s)
   main_loop_assert_main_thread();
 
   log_writer_stop_watches(self);
-  log_pipe_ref(&self->super);
   if ((self->options->options & LWO_THREADED))
     {
+      log_pipe_ref(&self->super);
       main_loop_io_worker_job_submit(&self->io_job);
     }
   else
@@ -262,6 +262,7 @@ log_writer_io_flush_output(gpointer s)
 
       if (!main_loop_worker_job_quit())
         {
+          log_pipe_ref(s);
           log_writer_work_perform(s);
           log_writer_work_finished(s);
           log_pipe_unref(s);

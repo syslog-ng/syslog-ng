@@ -32,13 +32,24 @@
 
 static struct iv_work_pool main_loop_io_workers;
 
+static void
+_release(MainLoopIOWorkerJob *self)
+{
+  if (self->release)
+    self->release(self->user_data);
+}
+
 /* NOTE: runs in the main thread */
 void
 main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self)
 {
   g_assert(self->working == FALSE);
   if (main_loop_workers_quit)
-    return;
+    {
+      _release(self);
+      return;
+    }
+
   main_loop_worker_job_start();
   self->working = TRUE;
   iv_work_pool_submit_work(&main_loop_io_workers, &self->work_item);
@@ -61,8 +72,7 @@ _complete(MainLoopIOWorkerJob *self)
   self->working = FALSE;
   self->completion(self->user_data);
   main_loop_worker_job_complete();
-  if (self->release)
-    self->release(self->user_data);
+  _release(self);
 }
 
 void

@@ -544,15 +544,16 @@ _io_process_input(gpointer s)
   JournalReader *self = (JournalReader *) s;
 
   _stop_watches(self);
-  log_pipe_ref(&self->super.super);
   if ((self->options->flags & JR_THREADED))
     {
+      log_pipe_ref(&self->super.super);
       main_loop_io_worker_job_submit(&self->io_job);
     }
   else
     {
       if (!main_loop_worker_job_quit())
         {
+          log_pipe_ref(s);
           _work_perform(s);
           _work_finished(s);
           log_pipe_unref(s);
