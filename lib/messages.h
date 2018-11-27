@@ -43,6 +43,7 @@ EVTREC *msg_event_create_from_desc(gint prio, const char *desc);
 void msg_event_free(EVTREC *e);
 void msg_event_send(EVTREC *e);
 void msg_event_suppress_recursions_and_send(EVTREC *e);
+void msg_event_print_event_to_stderr(EVTREC *e);
 
 
 void msg_set_post_func(MsgPostFunc func);
@@ -103,6 +104,13 @@ void msg_add_option_group(GOptionContext *ctx);
   do {                    \
     if (G_UNLIKELY(trace_flag))                     \
       msg_event_suppress_recursions_and_send(                               \
+            msg_event_create(EVT_PRI_DEBUG, desc, ##tags, NULL ));          \
+  } while (0)
+
+#define msg_diagnostics(desc, tags...)              \
+  do {                    \
+    if (G_UNLIKELY(trace_flag))                     \
+      msg_event_print_event_to_stderr(              \
             msg_event_create(EVT_PRI_DEBUG, desc, ##tags, NULL ));          \
   } while (0)
 
