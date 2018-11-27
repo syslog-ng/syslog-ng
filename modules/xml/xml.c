@@ -77,8 +77,7 @@ xml_parser_process(LogParser *s, LogMessage **pmsg,
             evt_tag_str ("prefix", self->prefix),
             evt_tag_printf("msg", "%p", *pmsg));
 
-  InserterState state = { };
-  xml_scanner_init(&xml_scanner, &state, &self->options, &scanner_push_function, msg);
+  xml_scanner_init(&xml_scanner, &self->options, &scanner_push_function, msg);
 
   GError *error = NULL;
   xml_scanner_parse(&xml_scanner, input, input_len, &error);

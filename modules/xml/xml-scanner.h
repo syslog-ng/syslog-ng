@@ -29,10 +29,6 @@
 
 typedef void (*PushCurrentKeyValue)(const gchar *name, const gchar *value, gssize value_length, gpointer user_data);
 
-typedef struct
-{
-  GString *key;
-} InserterState;
 
 typedef struct
 {
@@ -46,16 +42,13 @@ typedef struct
 {
   GMarkupParseContext *xml_ctx;
   XMLScannerOptions *options;
-  InserterState *state;
   gboolean pop_next_time;
   PushCurrentKeyValue push_function;
   gpointer user_data;
   GString *key;
 } XMLScanner;
 
-// see Inserterstate->parser elements
-// they could be become internal options initialized by parser options and defaults
-void xml_scanner_init(XMLScanner *self, InserterState *state, XMLScannerOptions *options, PushCurrentKeyValue push_function, gpointer user_data);
+void xml_scanner_init(XMLScanner *self, XMLScannerOptions *options, PushCurrentKeyValue push_function, gpointer user_data);
 void xml_scanner_deinit(XMLScanner *self);
 void xml_scanner_parse(XMLScanner *self, const gchar *input, gsize input_len, GError **error);
 void xml_scanner_end_parse(XMLScanner *self, GError **error);

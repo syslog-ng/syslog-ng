@@ -168,7 +168,6 @@ start_element_cb(GMarkupParseContext  *context,
                  GError              **error)
 {
   XMLScanner *scanner = (XMLScanner *)user_data;
-  InserterState *state = scanner->state;
 
   gchar *reversed = NULL;
   guint tag_length = strlen(element_name);
@@ -210,7 +209,6 @@ end_element_cb(GMarkupParseContext *context,
                GError              **error)
 {
   XMLScanner *scanner = (XMLScanner *)user_data;
-  InserterState *state = scanner->state;
 
   if (scanner->pop_next_time)
     {
@@ -247,7 +245,6 @@ text_cb(GMarkupParseContext *context,
     return;
 
   XMLScanner *scanner = (XMLScanner *)user_data;
-  InserterState *state = scanner->state;
 
   if (scanner->options->strip_whitespaces)
     {
@@ -283,10 +280,9 @@ static GMarkupParser xml_scanner =
 
 
 void
-xml_scanner_init(XMLScanner *self, InserterState *state, XMLScannerOptions *options, PushCurrentKeyValue push_function, gpointer user_data)
+xml_scanner_init(XMLScanner *self, XMLScannerOptions *options, PushCurrentKeyValue push_function, gpointer user_data)
 {
   memset(self, 0, sizeof(*self));
-  self->state = state;
   self->options = options;
   self->xml_ctx = g_markup_parse_context_new(&xml_scanner, 0, self, NULL);
   self->push_function = push_function;
@@ -298,6 +294,5 @@ void
 xml_scanner_deinit(XMLScanner *self)
 {
   g_markup_parse_context_free(self->xml_ctx);
-  self->state = NULL; // ownership
   self->options = NULL;
 }
