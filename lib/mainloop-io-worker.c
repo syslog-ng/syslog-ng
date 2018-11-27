@@ -61,6 +61,8 @@ _complete(MainLoopIOWorkerJob *self)
   self->working = FALSE;
   self->completion(self->user_data);
   main_loop_worker_job_complete();
+  if (self->release)
+    self->release(self->user_data);
 }
 
 void
