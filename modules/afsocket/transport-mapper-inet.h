@@ -32,7 +32,7 @@ typedef struct _TransportMapperInet
 
   gint server_port;
   const gchar *server_port_change_warning;
-  gboolean allow_compress;
+  guint32 flags;
   gboolean require_tls;
   gboolean allow_tls;
   gboolean require_tls_when_has_tls_context;
@@ -45,7 +45,10 @@ static inline void
 transport_mapper_inet_set_allow_compress(TransportMapper *s, gboolean value)
 {
   TransportMapperInet *self = (TransportMapperInet *) s;
-  self->allow_compress = value;
+  if (value)
+    self->flags |= TMI_ALLOW_COMPRESS;
+  else
+    self->flags &= ~TMI_ALLOW_COMPRESS;
 }
 
 static inline gint

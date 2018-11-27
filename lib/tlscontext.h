@@ -91,6 +91,8 @@ typedef struct _TLSSession
   } peer_info;
 } TLSSession;
 
+#define TMI_ALLOW_COMPRESS 0x1
+
 void tls_session_set_verifier(TLSSession *self, TLSVerifier *verifier);
 void tls_session_free(TLSSession *self);
 
