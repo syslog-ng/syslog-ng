@@ -53,6 +53,7 @@ system_sysblock_add_unix_dgram_driver(GString *sysblock, const gchar *path,
     g_string_append_printf(sysblock, " perm(%s)", perms);
   if (recvbuf_size)
     g_string_append_printf(sysblock, " so_rcvbuf(%s)", recvbuf_size);
+  g_string_append(sysblock, " flags(syslog-protocol)");
   g_string_append(sysblock, ");\n");
 }
 
