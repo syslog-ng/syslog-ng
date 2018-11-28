@@ -197,6 +197,18 @@ msg_event_suppress_recursions_and_send(EVTREC *e)
   msg_event_send_with_suppression(e, msg_limit_internal_message);
 }
 
+void
+msg_event_print_event_to_stderr(EVTREC *e)
+{
+  gchar *msg;
+
+  msg = evt_format(e);
+  msg_send_formatted_message_to_stderr(msg);
+  free(msg);
+  msg_event_free(e);
+
+}
+
 EVTREC *
 msg_event_create(gint prio, const gchar *desc, EVTTAG *tag1, ...)
 {
@@ -322,4 +334,3 @@ msg_add_option_group(GOptionContext *ctx)
   g_option_group_add_entries(group, msg_option_entries);
   g_option_context_add_group(ctx, group);
 }
-

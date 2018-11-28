@@ -58,12 +58,11 @@ _flow_control_window_size_adjust(LogSource *self, guint32 window_size_increment,
   gboolean suspended;
   gsize old_window_size = window_size_counter_add(&self->window_size, window_size_increment, &suspended);
 
-  msg_trace("Window size adjustment",
-            evt_tag_int("old_window_size", old_window_size),
-            evt_tag_int("window_size_increment", window_size_increment),
-            evt_tag_str("suspended_before_increment", suspended ? "TRUE" : "FALSE"),
-            evt_tag_str("last_ack_type_is_suspended", last_ack_type_is_suspended ? "TRUE" : "FALSE"));
-
+  msg_diagnostics("Window size adjustment",
+                  evt_tag_int("old_window_size", old_window_size),
+                  evt_tag_int("window_size_increment", window_size_increment),
+                  evt_tag_str("suspended_before_increment", suspended ? "TRUE" : "FALSE"),
+                  evt_tag_str("last_ack_type_is_suspended", last_ack_type_is_suspended ? "TRUE" : "FALSE"));
 
   gboolean need_to_resume_counter = !last_ack_type_is_suspended && suspended;
   if (need_to_resume_counter)
@@ -369,12 +368,12 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   LogSource *self = (LogSource *) s;
   gint i;
 
-  msg_trace(">>>>>> Source side message processing begin",
-            evt_tag_str("instance", self->stats_instance ? self->stats_instance : "internal"),
-            log_pipe_location_tag(s),
-            evt_tag_printf("msg", "%p", msg));
-
   msg_set_context(msg);
+
+  msg_diagnostics(">>>>>> Source side message processing begin",
+                  evt_tag_str("instance", self->stats_instance ? self->stats_instance : "internal"),
+                  log_pipe_location_tag(s),
+                  evt_tag_printf("msg", "%p", msg));
 
   if (!self->options->keep_timestamp)
     msg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_RECVD];
@@ -414,8 +413,6 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   stats_counter_set(self->last_message_seen, msg->timestamps[LM_TS_RECVD].tv_sec);
   log_pipe_forward_msg(s, msg, path_options);
 
-  msg_set_context(NULL);
-
   if (accurate_nanosleep && self->threaded && self->window_full_sleep_nsec > 0 && !log_source_free_to_send(self))
     {
       struct timespec ts;
@@ -425,10 +422,12 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
       ts.tv_nsec = self->window_full_sleep_nsec;
       nanosleep(&ts, NULL);
     }
-  msg_trace("<<<<<< Source side message processing finish",
-            evt_tag_str("instance", self->stats_instance ? self->stats_instance : "internal"),
-            log_pipe_location_tag(s),
-            evt_tag_printf("msg", "%p", msg));
+  msg_diagnostics("<<<<<< Source side message processing finish",
+                  evt_tag_str("instance", self->stats_instance ? self->stats_instance : "internal"),
+                  log_pipe_location_tag(s),
+                  evt_tag_printf("msg", "%p", msg));
+
+  msg_set_context(NULL);
 
 }
 
