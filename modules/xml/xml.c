@@ -84,10 +84,6 @@ xml_parser_process(LogParser *s, LogMessage **pmsg,
   if (error)
     goto err;
 
-  xml_scanner_end_parse(&xml_scanner, &error);
-  if (error)
-    goto err;
-
   xml_scanner_deinit(&xml_scanner);
   return TRUE;
 

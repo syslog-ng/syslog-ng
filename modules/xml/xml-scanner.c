@@ -263,11 +263,8 @@ xml_scanner_parse(XMLScanner *self, const gchar *input, gsize input_len, GError 
 {
   g_assert(self->push_function);
   g_markup_parse_context_parse(self->xml_ctx, input, input_len, error);
-}
-
-void
-xml_scanner_end_parse(XMLScanner *self, GError **error)
-{
+  if (error && *error)
+    return;
   g_markup_parse_context_end_parse(self->xml_ctx, error);
 }
 
