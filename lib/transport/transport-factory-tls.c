@@ -22,23 +22,11 @@
  *
  */
 
+#include "tlscontext.h"
 #include "transport/transport-factory-tls.h"
 #include "transport/transport-tls.h"
 
 DEFINE_TRANSPORT_FACTORY_ID_FUN("tls", transport_factory_tls_id);
-
-static void
-_tls_session_allow_compress(TLSSession *tls_session, gboolean allow_compress)
-{
-  if (!allow_compress)
-    {
-      SSL_set_options(tls_session->ssl, SSL_OP_NO_COMPRESSION);
-    }
-  else
-    {
-      SSL_clear_options(tls_session->ssl, SSL_OP_NO_COMPRESSION);
-    }
-}
 
 static LogTransport *
 _construct_transport(const TransportFactory *s, gint fd)
@@ -49,7 +37,7 @@ _construct_transport(const TransportFactory *s, gint fd)
   if (!tls_session)
     return NULL;
 
-  _tls_session_allow_compress(tls_session, self->allow_compress);
+  tls_session_configure_allow_compress(tls_session, self->allow_compress);
 
   tls_session_set_verifier(tls_session, self->tls_verifier);
 
@@ -80,7 +68,7 @@ _free(TransportFactory *s)
 }
 
 TransportFactory *
-transport_factory_tls_new(TLSContext *ctx, TLSVerifier *tls_verifier)
+transport_factory_tls_new(TLSContext *ctx, TLSVerifier *tls_verifier, guint32 flags)
 {
   TransportFactoryTLS *instance = g_new0(TransportFactoryTLS, 1);
 
@@ -90,6 +78,11 @@ transport_factory_tls_new(TLSContext *ctx, TLSVerifier *tls_verifier)
   instance->super.id = transport_factory_tls_id();
   instance->super.construct_transport = _construct_transport;
   instance->super.free_fn = _free;
+
+  if (flags & TMI_ALLOW_COMPRESS)
+    transport_factory_tls_enable_compression((TransportFactory *)instance);
+  else
+    transport_factory_tls_disable_compression((TransportFactory *)instance);
 
   return &instance->super;
 }

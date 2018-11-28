@@ -38,7 +38,7 @@ struct _TransportFactoryTLS
   gboolean allow_compress;
 };
 
-TransportFactory *transport_factory_tls_new(TLSContext *ctx, TLSVerifier *tls_verifier);
+TransportFactory *transport_factory_tls_new(TLSContext *ctx, TLSVerifier *tls_verifier, guint32 flags);
 
 void transport_factory_tls_enable_compression(TransportFactory *);
 void transport_factory_tls_disable_compression(TransportFactory *);

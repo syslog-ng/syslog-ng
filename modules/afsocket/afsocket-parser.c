@@ -57,6 +57,7 @@ static CfgLexerKeyword afsocket_keywords[] =
   { "ecdh_curve_list",    KW_ECDH_CURVE_LIST },
   { "curve_list",         KW_ECDH_CURVE_LIST, KWS_OBSOLETE, "ecdh_curve_list"},
   { "ssl_options",        KW_SSL_OPTIONS },
+  { "allow_compress",     KW_ALLOW_COMPRESS },
 
   { "localip",            KW_LOCALIP },
   { "ip",                 KW_IP },
