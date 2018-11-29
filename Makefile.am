@@ -37,7 +37,6 @@ EXTRA_DIST		= ${BUILT_SOURCES} VERSION NEWS.md autogen.sh \
 			  CONTRIBUTING.md	\
 			  sub-configure.sh	\
 			  syslog-ng.pc.cmake	\
-			  syslog-ng-native-connector.pc.cmake	\
 			  syslog-ng-ctl/CMakeLists.txt	\
 			  requirements.txt	\
 			  README.md	\

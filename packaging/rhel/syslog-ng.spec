@@ -408,12 +408,10 @@ fi
 %{_libdir}/libsyslog-ng.so
 %{_libdir}/libevtlog.so
 %{_libdir}/libsecret-storage.so
-%{_libdir}/libsyslog-ng-native-connector.a
 %{_libdir}/libloggen_helper.so
 %{_libdir}/libloggen_plugin.so
 %{_includedir}/%{name}/
 %{_libdir}/pkgconfig/syslog-ng.pc
-%{_libdir}/pkgconfig/syslog-ng-native-connector.pc
 %{_datadir}/%{name}/tools/
 
 %changelog

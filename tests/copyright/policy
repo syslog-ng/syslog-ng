@@ -55,7 +55,6 @@ libtest
 syslog-ng(-ctl)?
 modules/java-modules/common
 modules/java/(native|proxies|src)
-modules/native
 tests/loggen
  GPLv2+_SSL
 dev-utils/plugin_skeleton_creator/create_plugin.sh

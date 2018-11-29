@@ -333,10 +333,6 @@ AC_ARG_ENABLE(java, [ --enable-java  Enable java destination (default: auto)],, 
 
 AC_ARG_ENABLE(java-modules, [ --enable-java-modules  Compile all Java modules (default: auto)],, enable_java_modules="auto")
 
-AC_ARG_ENABLE(native,
-              [  --enable-native        Enable native bindings (default: auto)]
-              ,,enable_native="auto")
-
 AC_ARG_ENABLE(all-modules,
               [  --enable-all-modules    Forcibly enable all modules. (default: auto)]
               ,,enable_all_modules="auto")
@@ -345,7 +341,7 @@ if test "x$enable_all_modules" != "xauto"; then
    state="$enable_all_modules"
 
    MODULES="spoof_source sun_streams sql pacct mongodb json amqp stomp \
-            redis systemd geoip geoip2 riemann ipv6 smtp native python java java_modules \
+            redis systemd geoip geoip2 riemann ipv6 smtp python java java_modules \
             http"
    for mod in ${MODULES}; do
        modstate=$(eval echo \$enable_${mod})
@@ -1283,11 +1279,6 @@ if test "$enable_amqp" = "yes" && test "$with_librabbitmq_client" = "no"; then
        AC_MSG_ERROR([Could not find librabbitmq-c, and AMQP support was explicitly enabled.])
 fi
 
-
-if test "x$enable_native" = "xyes" -o "x$enable_native" = "xauto"; then
-    AC_CONFIG_FILES([syslog-ng-native-connector.pc])
-fi
-
 dnl ***************************************************************************
 dnl riemann-client headers/libraries
 dnl ***************************************************************************
@@ -1737,7 +1728,6 @@ AM_CONDITIONAL(ENABLE_PYTHON, [test "$enable_python" != "no"])
 AM_CONDITIONAL(ENABLE_JAVA, [test "$enable_java" = "yes"])
 AM_CONDITIONAL(ENABLE_JAVA_MODULES, [test "$enable_java_modules" = "yes"])
 AM_CONDITIONAL(ENABLE_MANPAGES, [test "$enable_manpages" != "no"])
-AM_CONDITIONAL(ENABLE_NATIVE, [test "$enable_native" != "no"])
 AM_CONDITIONAL(ENABLE_EXTRA_WARNINGS, [test "$enable_extra_warnings" = "yes"])
 AM_CONDITIONAL(ENABLE_LEGACY_MONGODB_OPTIONS, [test x"$enable_legacy_mongodb_options" != x"no"])
 AM_CONDITIONAL(ENABLE_TESTING, [test "$enable_tests" != "no"])
@@ -1865,4 +1855,3 @@ echo "  Riemann destination (module): ${enable_riemann:=no}, microseconds: ${rie
 echo "  python                      : ${enable_python:=no} (pkg-config package: ${with_python:=none})"
 echo "  java                        : ${enable_java:=no}"
 echo "  java modules                : ${enable_java_modules:=no}"
-echo "  native bindings             : ${enable_native:=no}"
