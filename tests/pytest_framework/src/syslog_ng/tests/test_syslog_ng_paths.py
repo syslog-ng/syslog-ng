@@ -38,6 +38,9 @@ def test_syslog_ng_paths(tc_unittest):
         "control_socket_path",
         "stderr",
         "stdout",
+        "valgrind",
+        "perf",
+        "strace",
     }
     assert set(list(syslog_ng_paths._SyslogNgPaths__syslog_ng_paths["binary_file_paths"])) == {
         "syslog_ng_binary",

@@ -30,10 +30,42 @@ class SyslogNgExecutor(object):
         self.__instance_paths = instance_paths
         self.__process_executor = ProcessExecutor(logger_factory)
         self.__command_executor = CommandExecutor(logger_factory)
+        self.__external_tool_args = {
+            "strace": ["strace", "-s", "8192", "-ff", "-o", self.__instance_paths.get_strace_log_path()],
+            "perf": [
+                "perf",
+                "record",
+                "-g",
+                "--verbose",
+                "--stat",
+                "--freq=99",
+                "--output={}".format(self.__instance_paths.get_strace_log_path()),
+            ],
+            "valgrind": [
+                "valgrind",
+                "--show-leak-kinds=all",
+                "--track-origins=yes",
+                "--tool=memcheck",
+                "--leak-check=full",
+                "--keep-stacktraces=alloc-and-free",
+                "--read-var-info=yes",
+                "--error-limit=no",
+                "--num-callers=40",
+                "--verbose",
+                "--log-file={}".format(self.__instance_paths.get_valgrind_log_path()),
+            ],
+        }
 
     def run_process(self):
         return self.__process_executor.start(
             command=self.__construct_syslog_ng_process(),
+            stdout_path=self.__instance_paths.get_stdout_path(),
+            stderr_path=self.__instance_paths.get_stderr_path(),
+        )
+
+    def run_process_behind(self, external_tool):
+        return self.__process_executor.start(
+            command=self.__construct_syslog_ng_process_behind_external_tool(external_tool),
             stdout_path=self.__instance_paths.get_stdout_path(),
             stderr_path=self.__instance_paths.get_stderr_path(),
         )
@@ -106,3 +138,8 @@ class SyslogNgExecutor(object):
         syslog_ng_command_args = [self.__instance_paths.get_syslog_ng_bin()]
         syslog_ng_command_args += command
         return syslog_ng_command_args
+
+    def __construct_syslog_ng_process_behind_external_tool(self, external_tool):
+        external_tool_args = self.__external_tool_args[external_tool]
+        syslog_ng_process_args = self.__construct_syslog_ng_process()
+        return external_tool_args + syslog_ng_process_args

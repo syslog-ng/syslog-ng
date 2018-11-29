@@ -50,6 +50,9 @@ class SyslogNgPaths(object):
                 "control_socket_path": Path(relative_working_dir, "syslog_ng_{}.ctl".format(instance_name)),
                 "stderr": Path(working_dir, "syslog_ng_{}_stderr".format(instance_name)),
                 "stdout": Path(working_dir, "syslog_ng_{}_stdout".format(instance_name)),
+                "valgrind": Path(working_dir, "valgrind.log"),
+                "perf": Path(working_dir, "perf.log"),
+                "strace": Path(working_dir, "strace.log"),
             },
             "binary_file_paths": {
                 "syslog_ng_binary": Path(install_dir, "sbin", "syslog-ng"),
@@ -96,3 +99,12 @@ class SyslogNgPaths(object):
 
     def get_syslog_ng_ctl_bin(self):
         return self.__syslog_ng_paths["binary_file_paths"]["syslog_ng_ctl"]
+
+    def get_strace_log_path(self):
+        return self.__syslog_ng_paths["file_paths"]["strace"]
+
+    def get_perf_log_path(self):
+        return self.__syslog_ng_paths["file_paths"]["perf"]
+
+    def get_valgrind_log_path(self):
+        return self.__syslog_ng_paths["file_paths"]["valgrind"]

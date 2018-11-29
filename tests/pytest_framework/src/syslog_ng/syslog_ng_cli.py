@@ -53,7 +53,7 @@ class SyslogNgCli(object):
         )
 
     # Process commands
-    def start(self, config):
+    def start(self, config, external_tool):
         self.__logger.info("Beginning of syslog-ng start")
         config.write_config_content()
 
@@ -64,7 +64,10 @@ class SyslogNgCli(object):
             raise Exception("syslog-ng can not started")
 
         # effective start
-        self.__process = self.__syslog_ng_executor.run_process()
+        if external_tool:
+            self.__process = self.__syslog_ng_executor.run_process_behind(external_tool=external_tool)
+        else:
+            self.__process = self.__syslog_ng_executor.run_process()
 
         # wait for start and check start result
         if not self.__syslog_ng_ctl.wait_for_control_socket_alive():

@@ -27,12 +27,13 @@ from src.syslog_ng.syslog_ng_cli import SyslogNgCli
 
 class SyslogNg(object):
     def __init__(self, logger_factory, instance_paths, syslog_ng_ctl):
+        self.instance_paths = instance_paths
         self.__syslog_ng_cli = SyslogNgCli(
             logger_factory, instance_paths, ConsoleLogReader(logger_factory, instance_paths), syslog_ng_ctl
         )
 
-    def start(self, config):
-        self.__syslog_ng_cli.start(config)
+    def start(self, config, external_tool=None):
+        self.__syslog_ng_cli.start(config, external_tool)
 
     def stop(self, unexpected_messages=None):
         self.__syslog_ng_cli.stop(unexpected_messages)
@@ -40,9 +41,12 @@ class SyslogNg(object):
     def reload(self, config):
         self.__syslog_ng_cli.reload(config)
 
-    def restart(self, config):
-        self.__syslog_ng_cli.start(config)
+    def restart(self, config, external_tool=None):
+        self.__syslog_ng_cli.start(config, external_tool)
         self.__syslog_ng_cli.stop()
 
     def get_version(self):
         return self.__syslog_ng_cli.get_version()
+
+    def get_instance_paths(self):
+        return self.instance_paths
