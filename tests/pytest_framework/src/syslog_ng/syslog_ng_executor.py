@@ -45,6 +45,22 @@ class SyslogNgExecutor(object):
             stderr_path=self.__instance_paths.get_stderr_path_with_postfix(postfix=command_short_name),
         )
 
+    def get_backtrace_from_core(self, core_file):
+        gdb_command_args = [
+            "gdb",
+            "-ex",
+            "bt full",
+            "--batch",
+            self.__instance_paths.get_syslog_ng_bin(),
+            "--core",
+            core_file,
+        ]
+        return self.__command_executor.run(
+            command=gdb_command_args,
+            stdout_path=self.__instance_paths.get_stdout_path_with_postfix(postfix="gdb_core"),
+            stderr_path=self.__instance_paths.get_stderr_path_with_postfix(postfix="gdb_core"),
+        )
+
     def __construct_syslog_ng_process(
         self,
         stderr=True,
