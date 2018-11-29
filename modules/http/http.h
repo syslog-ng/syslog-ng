@@ -65,7 +65,6 @@ typedef struct
 gboolean http_dd_init(LogPipe *s);
 gboolean http_dd_deinit(LogPipe *s);
 LogDriver *http_dd_new(GlobalConfig *cfg);
-void http_dd_set_url(LogDriver *d, const gchar *url);
 void http_dd_set_urls(LogDriver *d, GList *urls);
 void http_dd_set_user(LogDriver *d, const gchar *user);
 void http_dd_set_password(LogDriver *d, const gchar *password);

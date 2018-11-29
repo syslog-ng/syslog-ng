@@ -26,15 +26,6 @@
 /* HTTPDestinationDriver */
 
 void
-http_dd_set_url(LogDriver *d, const gchar *url)
-{
-  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
-
-  http_load_balancer_drop_all_targets(self->load_balancer);
-  http_load_balancer_add_target(self->load_balancer, url);
-}
-
-void
 http_dd_set_urls(LogDriver *d, GList *urls)
 {
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;

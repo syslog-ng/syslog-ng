@@ -35,7 +35,6 @@ static CfgLexerKeyword http_keywords[] =
   { "password",         KW_PASSWORD },
   { "user_agent",       KW_USER_AGENT },
   { "url",              KW_URL },
-  { "urls",             KW_URLS },
   { "headers",          KW_HEADERS },
   { "method",           KW_METHOD },
   { "body",             KW_BODY },
