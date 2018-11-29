@@ -21,6 +21,7 @@
 #
 #############################################################################
 
+from pathlib2 import Path
 from src.syslog_ng.syslog_ng_executor import SyslogNgExecutor
 
 
@@ -92,7 +93,6 @@ class SyslogNgCli(object):
     def stop(self, unexpected_messages=None):
         self.__logger.info("Beginning of syslog-ng stop")
         if self.__process:
-
             # effective stop
             result = self.__syslog_ng_ctl.stop()
 
@@ -112,3 +112,15 @@ class SyslogNgCli(object):
     # Helper functions
     def __error_handling(self):
         self.__console_log_reader.dump_stderr()
+        self.__handle_core_file()
+
+    def __handle_core_file(self):
+        if self.__process.wait(1) != 0:
+            core_file_found = False
+            for core_file in Path(".").glob("*core*"):
+                core_file_found = True
+                self.__process = None
+                self.__syslog_ng_executor.get_backtrace_from_core(core_file=str(core_file))
+                core_file.replace(Path(self.__instance_paths.get_working_dir(), core_file))
+            if core_file_found:
+                raise Exception("syslog-ng core file was found and processed")

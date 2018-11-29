@@ -23,6 +23,7 @@
 
 from src.executors.command_executor import CommandExecutor
 from src.executors.process_executor import ProcessExecutor
+from src.common.random_id import RandomId
 
 
 class SyslogNgExecutor(object):
@@ -43,6 +44,23 @@ class SyslogNgExecutor(object):
             command=self.__construct_syslog_ng_command(command),
             stdout_path=self.__instance_paths.get_stdout_path_with_postfix(postfix=command_short_name),
             stderr_path=self.__instance_paths.get_stderr_path_with_postfix(postfix=command_short_name),
+        )
+
+    def get_backtrace_from_core(self, core_file):
+        gdb_command_args = [
+            "gdb",
+            "-ex",
+            "bt full",
+            "--batch",
+            self.__instance_paths.get_syslog_ng_bin(),
+            "--core",
+            core_file,
+        ]
+        core_postfix = "gdb_core_{}".format(RandomId(use_static_seed=False).get_unique_id())
+        return self.__command_executor.run(
+            command=gdb_command_args,
+            stdout_path=self.__instance_paths.get_stdout_path_with_postfix(postfix=core_postfix),
+            stderr_path=self.__instance_paths.get_stderr_path_with_postfix(postfix=core_postfix),
         )
 
     def __construct_syslog_ng_process(
