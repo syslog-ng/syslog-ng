@@ -65,9 +65,13 @@ class SyslogNgConfig(object):
         self.__syslog_ng_config["destinations"].update(config_group.full_group_node)
         return config_group
 
-    def create_logpath(self, sources, destinations):
+    def create_logpath(self, sources=None, destinations=None, flags=None):
         logpath = LogPath()
-        logpath.add_source_groups(sources)
-        logpath.add_destination_groups(destinations)
+        if sources:
+            logpath.add_source_groups(sources)
+        if destinations:
+            logpath.add_destination_groups(destinations)
+        if flags:
+            logpath.add_flags(flags)
         self.__syslog_ng_config["logpaths"].update(logpath.full_logpath_node)
         return logpath

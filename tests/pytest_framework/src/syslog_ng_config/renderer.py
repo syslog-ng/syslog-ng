@@ -89,4 +89,6 @@ class ConfigRenderer(object):
                 self.__syslog_ng_config_content += "    source({});\n".format(src_driver)
             for dst_driver in self.__syslog_ng_config["logpaths"][logpath]["destinations"]:
                 self.__syslog_ng_config_content += "    destination({});\n".format(dst_driver)
+            for flags in self.__syslog_ng_config["logpaths"][logpath]["flags"]:
+                self.__syslog_ng_config_content += "    flags({});\n".format(flags)
             self.__syslog_ng_config_content += "};\n"
