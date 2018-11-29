@@ -4,6 +4,10 @@ module_LTLIBRARIES      += modules/http/libhttp.la
 modules_http_libhttp_la_SOURCES = \
   modules/http/http.h 		    \
   modules/http/http.c               \
+  modules/http/http-worker.c	    \
+  modules/http/http-worker.h	    \
+  modules/http/http-loadbalancer.c  \
+  modules/http/http-loadbalancer.h  \
   modules/http/http-grammar.y       \
   modules/http/http-parser.c        \
   modules/http/http-parser.h        \

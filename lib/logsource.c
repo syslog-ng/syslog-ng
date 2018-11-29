@@ -41,7 +41,7 @@ log_source_wakeup(LogSource *self)
   if (self->wakeup)
     self->wakeup(self);
 
-  msg_debug("Source has been resumed", log_pipe_location_tag(&self->super));
+  msg_diagnostics("Source has been resumed", log_pipe_location_tag(&self->super));
 }
 
 void
@@ -49,7 +49,7 @@ log_source_window_empty(LogSource *self)
 {
   if (self->window_empty_cb)
     self->window_empty_cb(self);
-  msg_debug("LogSource window is empty");
+  msg_diagnostics("LogSource window is empty");
 }
 
 static inline void

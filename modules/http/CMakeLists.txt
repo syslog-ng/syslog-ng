@@ -17,6 +17,10 @@ endif ()
 set(HTTP_DESTINATION_SOURCES
     http.h
     http.c
+    http-worker.h
+    http-worker.c
+    http-loadbalancer.h
+    http-loadbalancer.c
     http-parser.c
     http-parser.h
     http-plugin.c

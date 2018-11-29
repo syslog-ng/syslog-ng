@@ -70,8 +70,10 @@ modules/java/(tools|[^/]*$)
 modules/java-modules/(dummy|elastic|elastic-v2|hdfs|http|kafka|[^/]*$)
 modules/(afamqp|affile|afmongodb|afprog|afsmtp|afsocket|afsql|afstomp|afstreams|afuser|basicfuncs|cef|confgen|cryptofuncs|csvparser|date|diskq|dbparser|geoip|geoip2|graphite|json|kvformat|linux-kmsg-format|pacctformat|pseudofile|python|redis|riemann|syslogformat|systemd-journal|getent|system-source|stardate|snmptrapd-parser|xml|openbsd|examples|[^/]*$)
 modules/(add-contextual-data|tagsparser|map-value-pairs|hook-commands|appmodel|[^/]*$)
+modules/http/(http-loadbalancer)\.[ch]$
 scl
 scripts
 modules/http/tests
  GPLv2+_SSL,non-balabit
-modules/http/(http.c|http-parser.c|http-plugin.c|http.h|http-parser.h|http-grammar.ym)
+modules/http/(http|http-parser|http-worker|http-plugin|)\.[ch]
+modules/http/http-grammar.ym

@@ -29,21 +29,15 @@
 #define METHOD_TYPE_PUT  2
 
 #include "logthrdestdrv.h"
-
-#define CURL_NO_OLDIES 1
-#include <curl/curl.h>
-
-typedef struct _HTTPDestinationWorker
-{
-  LogThreadedDestWorker super;
-  CURL *curl;
-  GString *request_body;
-  struct curl_slist *request_headers;
-} HTTPDestinationWorker;
+#include "http-loadbalancer.h"
 
 typedef struct
 {
   LogThreadedDestDriver super;
+  HTTPLoadBalancer *load_balancer;
+
+  /* this is the first URL in load-balanced configurations and serves as the
+   * identifier in persist/stats */
   gchar *url;
   gchar *user;
   gchar *password;
@@ -71,7 +65,7 @@ typedef struct
 gboolean http_dd_init(LogPipe *s);
 gboolean http_dd_deinit(LogPipe *s);
 LogDriver *http_dd_new(GlobalConfig *cfg);
-void http_dd_set_url(LogDriver *d, const gchar *url);
+void http_dd_set_urls(LogDriver *d, GList *urls);
 void http_dd_set_user(LogDriver *d, const gchar *user);
 void http_dd_set_password(LogDriver *d, const gchar *password);
 void http_dd_set_method(LogDriver *d, const gchar *method);
@@ -93,9 +87,5 @@ void http_dd_set_body_prefix(LogDriver *d, const gchar *body_prefix);
 void http_dd_set_body_suffix(LogDriver *d, const gchar *body_suffix);
 void http_dd_set_delimiter(LogDriver *d, const gchar *delimiter);
 LogTemplateOptions *http_dd_get_template_options(LogDriver *d);
-
-/* internal api */
-worker_insert_result_t map_http_status_to_worker_status(HTTPDestinationWorker *self, glong http_code);
-HTTPDestinationWorker *http_dw_new(HTTPDestinationDriver *owner, gint worker_index);
 
 #endif
