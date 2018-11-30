@@ -41,6 +41,8 @@ class ConfigRenderer(object):
             self.__render_version()
         if self.__syslog_ng_config["sources"]:
             self.__render_statements(root_statement="sources", statement_name="source")
+        if self.__syslog_ng_config["filters"]:
+            self.__render_statements(root_statement="filters", statement_name="filter")
         if self.__syslog_ng_config["destinations"]:
             self.__render_statements(root_statement="destinations", statement_name="destination")
         if self.__syslog_ng_config["logpaths"]:
@@ -87,6 +89,8 @@ class ConfigRenderer(object):
             self.__syslog_ng_config_content += "\nlog {\n"
             for src_driver in self.__syslog_ng_config["logpaths"][logpath]["sources"]:
                 self.__syslog_ng_config_content += "    source({});\n".format(src_driver)
+            for filter in self.__syslog_ng_config["logpaths"][logpath]["filters"]:
+                self.__syslog_ng_config_content += "    filter({});\n".format(filter)
             for dst_driver in self.__syslog_ng_config["logpaths"][logpath]["destinations"]:
                 self.__syslog_ng_config_content += "    destination({});\n".format(dst_driver)
             for flags in self.__syslog_ng_config["logpaths"][logpath]["flags"]:

@@ -27,6 +27,7 @@ from src.syslog_ng_config.statements.logpath.logpath import LogPath
 from src.syslog_ng_config.statements.sources.file_source import FileSource
 from src.syslog_ng_config.statements.destinations.file_destination import FileDestination
 from src.syslog_ng_config.config_group import ConfigGroup
+from src.syslog_ng_config.statements.filters.filter import Filter
 
 
 class SyslogNgConfig(object):
@@ -35,7 +36,13 @@ class SyslogNgConfig(object):
         self.__config_path = instance_paths.get_config_path()
         self.__logger_factory = logger_factory
         self.__logger = logger_factory.create_logger("SyslogNgConfig")
-        self.__syslog_ng_config = {"version": syslog_ng_version, "sources": {}, "destinations": {}, "logpaths": {}}
+        self.__syslog_ng_config = {
+            "version": syslog_ng_version,
+            "sources": {},
+            "filters": {},
+            "destinations": {},
+            "logpaths": {},
+        }
 
     def write_config_content(self):
         rendered_config = ConfigRenderer(self.__syslog_ng_config, self.__instance_paths).get_rendered_config()
@@ -65,10 +72,21 @@ class SyslogNgConfig(object):
         self.__syslog_ng_config["destinations"].update(config_group.full_group_node)
         return config_group
 
-    def create_logpath(self, sources=None, destinations=None, flags=None):
+    def create_filter(self, **kwargs):
+        return Filter(self.__logger_factory, self.__instance_paths, **kwargs)
+
+    def create_filter_group(self, filters):
+        config_group = ConfigGroup(group_type="filter")
+        config_group.update_group_node(filters)
+        self.__syslog_ng_config["filters"].update(config_group.full_group_node)
+        return config_group
+
+    def create_logpath(self, sources=None, filters=None, destinations=None, flags=None):
         logpath = LogPath()
         if sources:
             logpath.add_source_groups(sources)
+        if filters:
+            logpath.add_filter_groups(filters)
         if destinations:
             logpath.add_destination_groups(destinations)
         if flags:

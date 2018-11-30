@@ -27,12 +27,16 @@ from src.common.random_id import RandomId
 class LogPath(object):
     def __init__(self):
         self.logpath_id = "logpath_%s" % RandomId(use_static_seed=False).get_unique_id()
-        self.full_logpath_node = {self.logpath_id: {"sources": [], "destinations": [], "flags": []}}
+        self.full_logpath_node = {self.logpath_id: {"sources": [], "filters": [], "destinations": [], "flags": []}}
         self.logpath_node = self.full_logpath_node[self.logpath_id]
 
     def add_source_groups(self, source_groups):
         target_node = self.logpath_node["sources"]
         self.update_logpath_node(target_node, source_groups)
+
+    def add_filter_groups(self, filter_groups):
+        target_node = self.logpath_node["filters"]
+        self.update_logpath_node(target_node, filter_groups)
 
     def add_destination_groups(self, destination_groups):
         target_node = self.logpath_node["destinations"]
