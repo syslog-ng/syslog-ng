@@ -54,6 +54,7 @@ typedef struct
   Text  text_function;
   gpointer user_data;
   GString *key;
+  GString *text;
 } XMLScanner;
 
 void xml_scanner_init(XMLScanner *self, XMLScannerOptions *options, PushCurrentKeyValue push_function,

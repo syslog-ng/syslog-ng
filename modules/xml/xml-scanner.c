@@ -217,21 +217,14 @@ xml_scanner_end_element_method(GMarkupParseContext *context,
       return;
     }
   g_string_truncate(self->key, before_last_dot(self->key));
+  g_string_truncate(self->text, 0);
 }
 
-static GString *
-strip_text(const gchar *text, gsize text_len)
+static void
+xml_scanner_strip_current_text(XMLScanner *self)
 {
-  GString *value = scratch_buffers_alloc();
-  g_string_append_len(value, text, text_len);
-
-  g_strstrip(value->str);
-  g_string_set_size(value, strlen(value->str));
-
-  if (!value->str[0])
-    return NULL;
-
-  return value;
+  g_strstrip(self->text->str);
+  g_string_set_size(self->text, strlen(self->text->str));
 }
 
 void
@@ -246,16 +239,14 @@ xml_scanner_text_method(GMarkupParseContext *context,
 
   XMLScanner *self = (XMLScanner *)user_data;
 
+  g_string_append_len(self->text, text, text_len);
   if (self->options->strip_whitespaces)
     {
-      GString *stripped_text = strip_text(text, text_len);
-      if (stripped_text)
-        xml_scanner_push_current_key_value(self, self->key->str, stripped_text->str, stripped_text->len);
+      xml_scanner_strip_current_text(self);
     }
-  else
-    {
-      xml_scanner_push_current_key_value(self, self->key->str, text, text_len);
-    }
+
+  if(self->text->len)
+    xml_scanner_push_current_key_value(self, self->key->str, self->text->str, self->text->len);
 }
 
 void
@@ -292,6 +283,7 @@ xml_scanner_init(XMLScanner *self, XMLScannerOptions *options, PushCurrentKeyVal
   self->user_data = user_data;
   self->key = scratch_buffers_alloc();
   g_string_assign(self->key, key_prefix);
+  self->text = scratch_buffers_alloc();
 }
 
 void
