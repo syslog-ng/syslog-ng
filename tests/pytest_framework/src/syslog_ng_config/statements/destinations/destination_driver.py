@@ -35,11 +35,12 @@ class DestinationDriver(object):
     def dd_read_logs(self, path, counter):
         if path not in self.__native_driver_io_collection.keys():
             native_driver_io = self.__native_driver_io_ref(self.__logger_factory, path)
-            self.__native_driver_io_collection.update({path: native_driver_io})
             native_driver_io.wait_for_creation()
             message_reader = MessageReader(
                 self.__logger_factory, native_driver_io.read, SingleLineParser(self.__logger_factory)
             )
+            self.__native_driver_io_collection.update({path: message_reader})
+        message_reader = self.__native_driver_io_collection[path]
         messages = message_reader.pop_messages(counter)
         self.__logger.print_io_content(path, messages, "Content has been read from")
         return messages
