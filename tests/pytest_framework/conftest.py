@@ -29,7 +29,7 @@ from src.setup.unit_testcase import SetupUnitTestcase
 
 
 def pytest_addoption(parser):
-    parser.addoption("--runslow", action="store_true", help="Also run @slow tests.")
+    parser.addoption("--runslow", action="store_true", default=False, help="run slow tests")
     parser.addoption(
         "--loglevel",
         action="store",
@@ -65,9 +65,13 @@ def loglevel(request):
     return request.config.getoption("--loglevel")
 
 
-@pytest.fixture
-def runslow(request):
-    return request.config.getoption("--runslow")
+def pytest_collection_modifyitems(config, items):
+    if config.getoption("--runslow"):
+        return
+    skip_slow = pytest.mark.skip(reason="need --runslow option to run")
+    for item in items:
+        if "slow" in item.keywords:
+            item.add_marker(skip_slow)
 
 
 def get_relative_report_dir():
