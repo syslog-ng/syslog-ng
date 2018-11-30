@@ -35,8 +35,8 @@ class SyslogNg(object):
     def start(self, config, external_tool=None):
         self.__syslog_ng_cli.start(config, external_tool)
 
-    def stop(self, unexpected_messages=None):
-        self.__syslog_ng_cli.stop(unexpected_messages)
+    def stop(self, unexpected_messages=None, signal=None):
+        self.__syslog_ng_cli.stop(unexpected_messages, signal)
 
     def reload(self, config):
         self.__syslog_ng_cli.reload(config)

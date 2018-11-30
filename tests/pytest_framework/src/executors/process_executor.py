@@ -43,3 +43,8 @@ class ProcessExecutor(object):
         )
         self.__logger.info("Process started with pid [{}]".format(self.process.pid))
         return self.process
+
+    def stop(self, signal):
+        self.process.send_signal(signal)
+        exit_code = self.process.process.wait(timeout=2)
+        return exit_code

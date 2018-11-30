@@ -94,12 +94,15 @@ class SyslogNgCli(object):
             raise Exception("Reload message not arrived")
         self.__logger.info("End of syslog-ng reload")
 
-    def stop(self, unexpected_messages=None):
+    def stop(self, unexpected_messages=None, signal=None):
         self.__logger.info("Beginning of syslog-ng stop")
         if self.__process and not self.__core_file_exist:
 
             # effective stop
-            result = self.__syslog_ng_ctl.stop()
+            if signal:
+                result = self.__syslog_ng_executor.stop_process_with_signal(signal)
+            else:
+                result = self.__syslog_ng_ctl.stop()
 
             # wait for stop and check stop result
             if result["exit_code"] != 0:

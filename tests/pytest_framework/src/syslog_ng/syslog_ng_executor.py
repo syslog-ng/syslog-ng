@@ -63,6 +63,9 @@ class SyslogNgExecutor(object):
             stderr_path=self.__instance_paths.get_stderr_path(),
         )
 
+    def stop_process_with_signal(self, signal):
+        return self.__process_executor.stop(signal)
+
     def run_process_behind(self, external_tool):
         return self.__process_executor.start(
             command=self.__construct_syslog_ng_process_behind_external_tool(external_tool),
