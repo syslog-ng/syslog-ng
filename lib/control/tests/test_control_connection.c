@@ -196,7 +196,7 @@ test_control_connection(gsize transaction_size)
 
 Test(control_connection, test_control_connection)
 {
-  control_register_command("test", NULL, test_command, NULL);
+  control_register_command("test", test_command, NULL);
   gsize  i = 0;
 
   app_startup();

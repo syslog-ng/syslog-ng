@@ -40,7 +40,6 @@ typedef GString *(*CommandFunction)(ControlConnection *cc, GString *, gpointer u
 typedef struct _ControlCommand
 {
   const gchar *command_name;
-  const gchar *description;
   CommandFunction func;
   gpointer user_data;
 } ControlCommand;

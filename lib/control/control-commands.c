@@ -41,7 +41,7 @@ reset_control_command_list(void)
 }
 
 void
-control_register_command(const gchar *command_name, const gchar *description, CommandFunction function,
+control_register_command(const gchar *command_name, CommandFunction function,
                          gpointer user_data)
 {
   GList *command_it = g_list_find_custom(command_list, command_name, (GCompareFunc)control_command_start_with_command);
@@ -56,14 +56,13 @@ control_register_command(const gchar *command_name, const gchar *description, Co
     }
   ControlCommand *new_command = g_new0(ControlCommand, 1);
   new_command->command_name = command_name;
-  new_command->description = description;
   new_command->func = function;
   new_command->user_data = user_data;
   command_list = g_list_append(command_list, new_command);
 }
 
 void
-control_replace_command(const gchar *command_name, const gchar *description, CommandFunction function,
+control_replace_command(const gchar *command_name, CommandFunction function,
                         gpointer user_data)
 {
   GList *command_it =  g_list_find_custom(command_list, command_name,
@@ -72,12 +71,11 @@ control_replace_command(const gchar *command_name, const gchar *description, Com
     {
       msg_debug("Trying to replace a non-existent command. Command will be registered as a new command.",
                 evt_tag_str("command", command_name));
-      control_register_command(command_name, description, function, user_data);
+      control_register_command(command_name, function, user_data);
       return;
     }
 
   ControlCommand *command = (ControlCommand *)command_it->data;
-  command->description = description;
   command->func = function;
   command->user_data = user_data;
 }

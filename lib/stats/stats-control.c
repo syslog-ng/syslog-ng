@@ -47,7 +47,7 @@ control_connection_reset_stats(ControlConnection *cc, GString *command, gpointer
 void
 stats_register_control_commands(void)
 {
-  control_register_command("STATS", NULL, control_connection_send_stats, NULL);
-  control_register_command("RESET_STATS", NULL, control_connection_reset_stats, NULL);
-  control_register_command("QUERY", NULL, process_query_command, NULL);
+  control_register_command("STATS", control_connection_send_stats, NULL);
+  control_register_command("RESET_STATS", control_connection_reset_stats, NULL);
+  control_register_command("QUERY", process_query_command, NULL);
 }

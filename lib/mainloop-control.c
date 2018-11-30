@@ -257,14 +257,14 @@ process_credentials(ControlConnection *cc, GString *command, gpointer user_data)
 
 ControlCommand default_commands[] =
 {
-  { "LOG", NULL, control_connection_message_log },
-  { "STOP", NULL, control_connection_stop_process },
-  { "RELOAD", NULL, control_connection_reload },
-  { "REOPEN", NULL, control_connection_reopen },
-  { "CONFIG", NULL, control_connection_config },
-  { "LICENSE", NULL, show_ose_license_info },
-  { "PWD", NULL, process_credentials },
-  { NULL, NULL, NULL },
+  { "LOG", control_connection_message_log },
+  { "STOP", control_connection_stop_process },
+  { "RELOAD", control_connection_reload },
+  { "REOPEN", control_connection_reopen },
+  { "CONFIG", control_connection_config },
+  { "LICENSE", show_ose_license_info },
+  { "PWD", process_credentials },
+  { NULL, NULL },
 };
 
 void
@@ -276,6 +276,6 @@ main_loop_register_control_commands(MainLoop *main_loop)
   for (i = 0; default_commands[i].command_name != NULL; i++)
     {
       cmd = &default_commands[i];
-      control_register_command(cmd->command_name, cmd->description, cmd->func, main_loop);
+      control_register_command(cmd->command_name, cmd->func, main_loop);
     }
 }
