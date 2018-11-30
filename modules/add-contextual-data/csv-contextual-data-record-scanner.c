@@ -23,6 +23,8 @@
 #include "csv-contextual-data-record-scanner.h"
 #include "scanner/csv-scanner/csv-scanner.h"
 #include "string-list.h"
+#include "messages.h"
+
 #include <string.h>
 
 static gchar *
@@ -39,6 +41,9 @@ _fetch_next_with_prefix(CSVContextualDataRecordScanner *record_scanner,
 {
   if (!csv_scanner_scan_next(&record_scanner->scanner))
     {
+      msg_error("add-contextual-data(): error parsing CSV file, expecting an additional column which was not found. Expecting (selector, name, value) triplets",
+                evt_tag_str("filename", record_scanner->filename),
+                evt_tag_str("target", csv_scanner_get_current_name(&record_scanner->scanner)));
       return FALSE;
     }
   gchar *next = _csv_scanner_dup_current_value_with_prefix(&record_scanner->scanner, prefix);
@@ -58,8 +63,13 @@ _fetch_next_without_prefix(CSVContextualDataRecordScanner *
 static gboolean
 _is_whole_record_parsed(CSVContextualDataRecordScanner *csv_record_scanner)
 {
-  csv_scanner_scan_next(&csv_record_scanner->scanner);
-  return csv_scanner_is_scan_finished(&csv_record_scanner->scanner);
+  if (!csv_scanner_scan_next(&csv_record_scanner->scanner) &&
+      csv_scanner_is_scan_complete(&csv_record_scanner->scanner))
+    return TRUE;
+
+  msg_error("add-contextual-data(): extra data found at the end of line, expecting (selector, name, value) triplets",
+            evt_tag_str("filename", csv_record_scanner->filename));
+  return FALSE;
 }
 
 static gboolean
@@ -69,15 +79,23 @@ _get_next_record(ContextualDataRecordScanner *s, const gchar *input, ContextualD
   csv_scanner_init(&csv_record_scanner->scanner, &csv_record_scanner->options, input);
 
   if (!_fetch_next_without_prefix(csv_record_scanner, &record->selector))
-    return FALSE;
+    goto error;
 
   if (!_fetch_next_with_prefix(csv_record_scanner, &record->name, s->name_prefix))
-    return FALSE;
+    goto error;
 
   if (!_fetch_next_without_prefix(csv_record_scanner, &record->value))
-    return FALSE;
+    goto error;
 
-  return _is_whole_record_parsed(csv_record_scanner);
+  if (!_is_whole_record_parsed(csv_record_scanner))
+    goto error;
+
+  return TRUE;
+error:
+  msg_error("add-contextual-data(): the failing line is",
+            evt_tag_str("filename", csv_record_scanner->filename),
+            evt_tag_str("input", input));
+  return FALSE;
 }
 
 static void
@@ -86,11 +104,12 @@ csv_contextual_data_record_scanner_free(ContextualDataRecordScanner *s)
   CSVContextualDataRecordScanner *self = (CSVContextualDataRecordScanner *) s;
   csv_scanner_options_clean(&self->options);
   csv_scanner_deinit(&self->scanner);
+  g_free(self->filename);
   g_free(self);
 }
 
 ContextualDataRecordScanner *
-csv_contextual_data_record_scanner_new(void)
+csv_contextual_data_record_scanner_new(const gchar *filename)
 {
   CSVContextualDataRecordScanner *self =
     g_new0(CSVContextualDataRecordScanner, 1);
@@ -99,8 +118,9 @@ csv_contextual_data_record_scanner_new(void)
   const gchar *column_array[] = { "selector", "name", "value", NULL };
   csv_scanner_options_set_columns(&self->options,
                                   string_array_to_list(column_array));
-  csv_scanner_options_set_flags(&self->options, CSV_SCANNER_STRIP_WHITESPACE | CSV_SCANNER_DROP_INVALID);
+  csv_scanner_options_set_flags(&self->options, CSV_SCANNER_STRIP_WHITESPACE);
   csv_scanner_options_set_dialect(&self->options, CSV_SCANNER_ESCAPE_DOUBLE_CHAR);
+  self->filename = g_strdup(filename);
   self->super.get_next = _get_next_record;
   self->super.free_fn = csv_contextual_data_record_scanner_free;
 

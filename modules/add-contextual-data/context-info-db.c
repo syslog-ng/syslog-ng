@@ -363,7 +363,7 @@ _get_line_without_eol(gchar **line_buf, gsize *line_buf_len, FILE *fp)
     return FALSE;
 
   _truncate_eol(*line_buf, n);
-
+  *line_buf_len = strlen(*line_buf);
   return TRUE;
 }
 
@@ -377,6 +377,8 @@ context_info_db_import(ContextInfoDB *self, FILE *fp,
 
   while (_get_line_without_eol(&line_buf, &line_buf_len, fp))
     {
+      if (line_buf_len == 0)
+        continue;
       next_record = contextual_data_record_scanner_get_next(scanner, line_buf);
       if (!next_record)
         {
@@ -384,6 +386,10 @@ context_info_db_import(ContextInfoDB *self, FILE *fp,
           g_free(line_buf);
           return FALSE;
         }
+      msg_trace("add-contextual-data(): adding database entry",
+                evt_tag_str("selector", next_record->selector->str),
+                evt_tag_str("name", next_record->name->str),
+                evt_tag_str("value", next_record->value->str));
       context_info_db_insert(self, next_record);
     }
 

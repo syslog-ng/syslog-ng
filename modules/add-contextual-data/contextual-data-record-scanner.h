@@ -56,7 +56,7 @@ void contextual_data_record_init(ContextualDataRecord *record);
 void contextual_data_record_clean(ContextualDataRecord *record);
 
 ContextualDataRecordScanner
-*create_contextual_data_record_scanner_by_type(const gchar *type);
+*create_contextual_data_record_scanner_by_type(const gchar *filename, const gchar *type);
 
 ContextualDataRecord *
 contextual_data_record_scanner_get_next(ContextualDataRecordScanner *self, const gchar *input);

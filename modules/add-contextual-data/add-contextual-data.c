@@ -126,14 +126,17 @@ _process(LogParser *s, LogMessage **pmsg,
 {
   AddContextualData *self = (AddContextualData *) s;
   LogMessage *msg = log_msg_make_writable(pmsg, path_options);
-  msg_trace("add-contextual-data message processing started",
-            evt_tag_str ("input", input),
-            evt_tag_printf("msg", "%p", *pmsg));
   gchar *resolved_selector = add_contextual_data_selector_resolve(self->selector, msg);
   const gchar *selector = resolved_selector;
 
   if (!context_info_db_contains(self->context_info_db, selector) && _is_default_selector_set(self))
     selector = self->default_selector;
+
+  msg_trace("add-contextual-data(): message processing",
+            evt_tag_str("input", input),
+            evt_tag_str("resolved_selector", resolved_selector),
+            evt_tag_str("selector", selector),
+            evt_tag_printf("msg", "%p", *pmsg));
 
   if (selector)
     context_info_db_foreach_record(self->context_info_db, selector,
@@ -224,11 +227,11 @@ _get_scanner(AddContextualData *self)
 {
   const gchar *type = get_filename_extension(self->filename);
   ContextualDataRecordScanner *scanner =
-    create_contextual_data_record_scanner_by_type(type);
+    create_contextual_data_record_scanner_by_type(self->filename, type);
 
   if (!scanner)
     {
-      msg_error("Unknown file extension",
+      msg_error("add-contextual-data(): unknown file extension, only files with a .csv extension are supported",
                 evt_tag_str("filename", self->filename));
       return NULL;
     }
@@ -249,8 +252,9 @@ _load_context_info_db(AddContextualData *self)
   FILE *f = _open_data_file(self->filename);
   if (!f)
     {
-      msg_error("Error loading add_contextual_data database",
-                evt_tag_str("filename", self->filename));
+      msg_error("add-contextual-data(): Error opening database",
+                evt_tag_str("filename", self->filename),
+                evt_tag_error("error"));
       contextual_data_record_scanner_free(scanner);
       return FALSE;
     }
@@ -262,7 +266,8 @@ _load_context_info_db(AddContextualData *self)
   fclose(f);
   if (!tag_db_loaded)
     {
-      msg_error("Error while parsing add_contextual_data database");
+      msg_error("add-contextual-data(): Error while parsing database",
+                evt_tag_str("filename", self->filename));
       return FALSE;
     }
 
@@ -281,13 +286,12 @@ _init_context_info_db(AddContextualData *self)
 
   if (self->filename == NULL)
     {
-      msg_error("No database file set.");
+      msg_error("add-contextual-data(): No database file set, specifying the database() option is mandatory");
       return FALSE;
     }
 
   if (!context_info_db_is_loaded(self->context_info_db) && !_load_context_info_db(self))
     {
-      msg_error("Failed to load the database file.");
       return FALSE;
     }
 
