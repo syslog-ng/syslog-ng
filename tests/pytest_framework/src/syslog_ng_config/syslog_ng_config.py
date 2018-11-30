@@ -81,7 +81,7 @@ class SyslogNgConfig(object):
         self.__syslog_ng_config["filters"].update(config_group.full_group_node)
         return config_group
 
-    def create_logpath(self, sources=None, filters=None, destinations=None, flags=None):
+    def create_logpath(self, sources=None, filters=None, destinations=None, logpaths=None, flags=None):
         logpath = LogPath()
         if sources:
             logpath.add_source_groups(sources)
@@ -89,7 +89,23 @@ class SyslogNgConfig(object):
             logpath.add_filter_groups(filters)
         if destinations:
             logpath.add_destination_groups(destinations)
+        if logpaths:
+            logpath.add_logpaths(logpaths)
         if flags:
             logpath.add_flags(flags)
         self.__syslog_ng_config["logpaths"].update(logpath.full_logpath_node)
+        return logpath
+
+    def create_inner_logpath(self, sources=None, filters=None, destinations=None, logpaths=None, flags=None):
+        logpath = LogPath()
+        if sources:
+            logpath.add_source_groups(sources)
+        if filters:
+            logpath.add_filter_groups(filters)
+        if destinations:
+            logpath.add_destination_groups(destinations)
+        if logpaths:
+            logpath.add_logpaths(logpaths)
+        if flags:
+            logpath.add_flags(flags)
         return logpath

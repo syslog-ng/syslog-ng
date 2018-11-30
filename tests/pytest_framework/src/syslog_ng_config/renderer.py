@@ -46,7 +46,7 @@ class ConfigRenderer(object):
         if self.__syslog_ng_config["destinations"]:
             self.__render_statements(root_statement="destinations", statement_name="destination")
         if self.__syslog_ng_config["logpaths"]:
-            self.__render_logpath()
+            self.__render_logpath(self.__syslog_ng_config["logpaths"])
 
     def __render_version(self):
         self.__syslog_ng_config_content += "@version: {}\n".format(self.__syslog_ng_config["version"])
@@ -84,15 +84,20 @@ class ConfigRenderer(object):
             # statement footer
             self.__syslog_ng_config_content += "};\n"
 
-    def __render_logpath(self):
-        for logpath in self.__syslog_ng_config["logpaths"]:
+    def __render_logpath(self, logpath_node):
+        for logpath_id in logpath_node:
+
             self.__syslog_ng_config_content += "\nlog {\n"
-            for src_driver in self.__syslog_ng_config["logpaths"][logpath]["sources"]:
+            for src_driver in logpath_node[logpath_id]["sources"]:
                 self.__syslog_ng_config_content += "    source({});\n".format(src_driver)
-            for filter in self.__syslog_ng_config["logpaths"][logpath]["filters"]:
+            for filter in logpath_node[logpath_id]["filters"]:
                 self.__syslog_ng_config_content += "    filter({});\n".format(filter)
-            for dst_driver in self.__syslog_ng_config["logpaths"][logpath]["destinations"]:
+            for dst_driver in logpath_node[logpath_id]["destinations"]:
                 self.__syslog_ng_config_content += "    destination({});\n".format(dst_driver)
-            for flags in self.__syslog_ng_config["logpaths"][logpath]["flags"]:
+
+            if len(logpath_node[logpath_id]["logpaths"]) > 0:
+                self.__render_logpath(logpath_node=logpath_node[logpath_id]["logpaths"])
+
+            for flags in logpath_node[logpath_id]["flags"]:
                 self.__syslog_ng_config_content += "    flags({});\n".format(flags)
             self.__syslog_ng_config_content += "};\n"
