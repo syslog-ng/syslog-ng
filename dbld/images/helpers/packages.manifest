@@ -48,6 +48,13 @@ pcre-devel                      [centos]
     libmongo-client-dev         [debian-jessie]
     libmongo-client-devel       [centos-7]
 
+    # librdkafka-dev (we are using a specific version from OBS and need to
+    # list all interdependent packages as an apt preferences would prevent
+    # installation otherwise
+    librdkafka1=1.0.0-1         [ubuntu-bionic]
+    librdkafka++1=1.0.0-1       [ubuntu-bionic]
+    librdkafka-dev=1.0.0-1      [ubuntu-bionic]
+
     # libmaxmindb-dev
     libmaxminddb-dev            [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
     libmaxminddb-devel          [centos-7]

@@ -109,9 +109,21 @@ function filter_packages_by_platform {
     grep -v "#" ${FILENAME} | grep -e "${OS_PLATFORM}" -e "${OS_GROUP}[^-]" | cut -d"[" -f1
 }
 
+function add_obs_repo {
+    apt-get update && apt-get install --no-install-recommends --yes wget gnupg2
+    echo 'deb http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_18.04 ./' | tee /etc/apt/sources.list.d/lbudai.list
+    cat | tee /etc/apt/preferences.d/lbudai <<EOF
+Package: *
+Pin: origin "download.opensuse.org"
+Pin-Priority: 1
+EOF
+    wget -qO - http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_18.04/Release.key | apt-key add -
+    apt-get update
+}
+
 function install_apt_packages {
     apt-get update -qq -o Acquire::CompressionTypes::Order::=gz
-    filter_packages_by_platform /helpers/packages.manifest | xargs apt-get install --no-install-recommends --yes
+    filter_packages_by_platform /helpers/packages.manifest | xargs -t apt-get install --no-install-recommends --yes
 }
 
 function install_yum_packages {
