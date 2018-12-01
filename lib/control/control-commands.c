@@ -40,18 +40,25 @@ reset_control_command_list(void)
   command_list = NULL;
 }
 
+ControlCommand *
+control_find_command(const char *cmd)
+{
+  GList *command = g_list_find_custom(command_list, cmd, (GCompareFunc) control_command_start_with_command);
+  if (NULL == command)
+    return NULL;
+  return (ControlCommand *) command->data;
+}
+
 void
 control_register_command(const gchar *command_name, CommandFunction function,
                          gpointer user_data)
 {
-  GList *command_it = g_list_find_custom(command_list, command_name, (GCompareFunc)control_command_start_with_command);
-  if (command_it)
+  ControlCommand *command = control_find_command(command_name);
+
+  if (command && command->func != function)
     {
-      ControlCommand *cmd = (ControlCommand *)command_it->data;
-      if (cmd->func != function)
-        {
-          msg_debug("Trying to register an already registered ControlCommand with different CommandFunction.");
-        }
+      msg_debug("Trying to register an already registered ControlCommand with different CommandFunction.",
+                evt_tag_str("command", command_name));
       return;
     }
   ControlCommand *new_command = g_new0(ControlCommand, 1);
@@ -65,9 +72,9 @@ void
 control_replace_command(const gchar *command_name, CommandFunction function,
                         gpointer user_data)
 {
-  GList *command_it =  g_list_find_custom(command_list, command_name,
-                                          (GCompareFunc)control_command_start_with_command);
-  if (!command_it)
+  ControlCommand *command = control_find_command(command_name);
+
+  if (!command)
     {
       msg_debug("Trying to replace a non-existent command. Command will be registered as a new command.",
                 evt_tag_str("command", command_name));
@@ -75,7 +82,6 @@ control_replace_command(const gchar *command_name, CommandFunction function,
       return;
     }
 
-  ControlCommand *command = (ControlCommand *)command_it->data;
   command->func = function;
   command->user_data = user_data;
 }
