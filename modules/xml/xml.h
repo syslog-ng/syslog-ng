@@ -24,7 +24,7 @@
 #define XML_H_INCLUDED
 
 #include "parser/parser-expr.h"
-#include "xml-scanner.h"
+#include "scanner/xml-scanner/xml-scanner.h"
 
 typedef struct
 {

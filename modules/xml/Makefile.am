@@ -4,8 +4,6 @@ modules_xml_libxml_la_SOURCES = \
   modules/xml/xml-parser.c        \
   modules/xml/xml-parser.h        \
   modules/xml/xml-plugin.c        \
-  modules/xml/xml-scanner.c       \
-  modules/xml/xml-scanner.h       \
   modules/xml/xml.h               \
   modules/xml/xml.c
 

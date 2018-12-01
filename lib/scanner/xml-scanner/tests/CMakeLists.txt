@@ -1,0 +1,1 @@
+add_unit_test(LIBTEST CRITERION TARGET test_xml_scanner INCLUDES "${XML_SCANNER_INCLUDE_DIR}")

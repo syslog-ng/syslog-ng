@@ -17,6 +17,7 @@ include lib/logmsg/Makefile.am
 include lib/scanner/csv-scanner/Makefile.am
 include lib/scanner/list-scanner/Makefile.am
 include lib/scanner/kv-scanner/Makefile.am
+include lib/scanner/xml-scanner/Makefile.am
 include lib/str-repr/Makefile.am
 include lib/timeutils/Makefile.am
 include lib/secret-storage/Makefile.am
@@ -268,6 +269,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	$(csvscanner_sources)		\
 	$(kvscanner_sources)		\
 	$(listscanner_sources)		\
+	$(xmlscanner_sources)		\
 	$(transport_sources)		\
 	$(logproto_sources)		\
 	$(filter_sources)		\
