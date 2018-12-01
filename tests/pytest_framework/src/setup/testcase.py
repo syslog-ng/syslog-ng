@@ -109,10 +109,6 @@ class SetupTestCase(object):
         return self.__instances[instance_name]["ctl"]
 
     @staticmethod
-    def create_dummy_bsd_message():
-        return BSDFormat().create_dummy_message()
-
-    @staticmethod
     def format_as_bsd(log_message):
         return BSDFormat().format_message(log_message)
 
