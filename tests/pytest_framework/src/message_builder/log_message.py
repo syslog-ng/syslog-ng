@@ -21,15 +21,18 @@
 #
 #############################################################################
 
+import time
+import socket
+
 
 class LogMessage(object):
     def __init__(self):
-        self.priority_value = ""
-        self.timestamp_value = ""
-        self.hostname_value = ""
-        self.program_value = ""
-        self.pid_value = ""
-        self.message_value = ""
+        self.priority_value = "38"
+        self.timestamp_value = time.time()
+        self.hostname_value = socket.gethostname()
+        self.program_value = "testprogram"
+        self.pid_value = "9999"
+        self.message_value = "test message"
 
     def priority(self, pri):
         self.priority_value = pri
