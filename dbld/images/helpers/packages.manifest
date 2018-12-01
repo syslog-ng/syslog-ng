@@ -48,6 +48,9 @@ pcre-devel                      [centos]
     libmongo-client-dev         [debian-jessie]
     libmongo-client-devel       [centos-7]
 
+    # librdkafka-dev
+    librdkafka-dev               [ubuntu]
+
     # libmaxmindb-dev
     libmaxminddb-dev            [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
     libmaxminddb-devel          [centos-7]
