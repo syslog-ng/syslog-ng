@@ -224,8 +224,7 @@ json_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_
     {
       if (strncmp(input, self->marker, self->marker_len) != 0)
         {
-          msg_debug("json-parser failed",
-                    evt_tag_str ("error", "json marker not found at the beginning of the message"),
+          msg_debug("json-parser(): no marker at the beginning of the message, skipping JSON parsing ",
                     evt_tag_str ("input", input),
                     evt_tag_str ("marker", self->marker));
           return FALSE;
@@ -240,8 +239,7 @@ json_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_
   jso = json_tokener_parse_ex(tok, input, input_len);
   if (tok->err != json_tokener_success || !jso)
     {
-      msg_debug("json-parser failed",
-                evt_tag_str ("error", "Unparsable JSON stream encountered"),
+      msg_error("json-parser(): failed to parse JSON payload",
                 evt_tag_str ("input", input),
                 tok->err != json_tokener_success ? evt_tag_str ("json_error", json_tokener_error_desc(tok->err)) : NULL);
       json_tokener_free (tok);
@@ -252,9 +250,9 @@ json_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_
   log_msg_make_writable(pmsg, path_options);
   if (!json_parser_extract(self, jso, *pmsg))
     {
-      msg_error("json-parser failed",
-                evt_tag_str ("error", "Error extracting JSON members into LogMessage as the top-level JSON object is not an object"),
-                evt_tag_str ("input", input));
+      msg_error("json-parser(): failed to extract JSON members into name-value pairs. The parsed/extracted JSON payload was not an object",
+                evt_tag_str("input", input),
+                evt_tag_str("extract_prefix", self->extract_prefix));
       json_object_put(jso);
       return FALSE;
     }
