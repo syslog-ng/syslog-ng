@@ -262,10 +262,8 @@ log_writer_io_flush_output(gpointer s)
 
       if (!main_loop_worker_job_quit())
         {
-          log_pipe_ref(s);
           log_writer_work_perform(s);
           log_writer_work_finished(s);
-          log_pipe_unref(s);
         }
     }
 }

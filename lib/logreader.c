@@ -214,10 +214,8 @@ log_reader_io_process_input(gpointer s)
        */
       if (!main_loop_worker_job_quit())
         {
-          log_pipe_ref(s);
           log_reader_work_perform(s);
           log_reader_work_finished(s);
-          log_pipe_unref(s);
         }
     }
 }
