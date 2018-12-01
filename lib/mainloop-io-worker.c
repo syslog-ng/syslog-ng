@@ -39,17 +39,22 @@ _release(MainLoopIOWorkerJob *self)
     self->release(self->user_data);
 }
 
+static void
+_engage(MainLoopIOWorkerJob *self)
+{
+  if (self->engage)
+    self->engage(self->user_data);
+}
+
 /* NOTE: runs in the main thread */
 void
 main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self)
 {
   g_assert(self->working == FALSE);
   if (main_loop_workers_quit)
-    {
-      _release(self);
-      return;
-    }
+    return;
 
+  _engage(self);
   main_loop_worker_job_start();
   self->working = TRUE;
   iv_work_pool_submit_work(&main_loop_io_workers, &self->work_item);
