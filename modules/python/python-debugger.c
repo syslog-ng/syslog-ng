@@ -34,7 +34,8 @@ _add_nv_keys_to_list(gpointer key, gpointer value, gpointer user_data)
   PyObject *list = (PyObject *) user_data;
   const gchar *name = (const gchar *) key;
 
-  PyObject *py_name = PyBytes_FromString(name);
+  PyObject *py_name = _py_string_from_string(name, -1);
+
   PyList_Append(list, py_name);
   Py_XDECREF(py_name);
 }
@@ -63,7 +64,7 @@ static PyMethodDef _syslogngdbg_functions[] =
 static struct PyModuleDef syslogngdbgmodule =
 {
   .m_base    = PyModuleDef_HEAD_INIT,
-  .m_name    = "syslogngdbg",
+  .m_name    = "_syslogngdbg",
   .m_size    = -1,
   .m_methods = _syslogngdbg_functions
 };
@@ -84,7 +85,7 @@ static void
 PyInit_syslogngdbg(void)
 {
   PyGILState_STATE gstate = PyGILState_Ensure();
-  Py_InitModule("syslogngdbg", _syslogngdbg_functions);
+  Py_InitModule("_syslogngdbg", _syslogngdbg_functions);
   PyGILState_Release(gstate);
 }
 
@@ -93,7 +94,7 @@ PyInit_syslogngdbg(void)
 void
 python_debugger_append_inittab(void)
 {
-  PyImport_AppendInittab("syslogngdbg", &PyInit_syslogngdbg);
+  PyImport_AppendInittab("_syslogngdbg", &PyInit_syslogngdbg);
 }
 
 #define DEBUGGER_FETCH_COMMAND "syslogng.debuggercli.fetch_command"
