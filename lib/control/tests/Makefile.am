@@ -12,7 +12,9 @@ lib_control_tests_test_control_cmds_CFLAGS	= $(TEST_CFLAGS) \
 lib_control_tests_test_control_cmds_LDADD	= $(TEST_LDADD) \
 	 -dlpreopen $(top_builddir)/lib/secret-storage/libsecret-storage.la
 lib_control_tests_test_control_cmds_SOURCES	= 		\
-	lib/control/tests/test_control_cmds.c
+	lib/control/tests/test_control_cmds.c		\
+	lib/control/tests/control-server-dummy.c	\
+	lib/control/tests/control-server-dummy.h
 
 lib_control_tests_test_control_connection_CFLAGS	= $(TEST_CFLAGS) \
 	-I${top_srcdir}/lib/control/tests

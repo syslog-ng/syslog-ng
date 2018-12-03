@@ -27,6 +27,7 @@
 #include "messages.h"
 #include "control/control.h"
 #include "control/control-commands.h"
+#include "control-server-dummy.h"
 #include "mainloop-control.h"
 #include "stats/stats-control.h"
 #include "control/control-server.h"
@@ -34,17 +35,9 @@
 #include "stats/stats-registry.h"
 #include "apphook.h"
 
-static ControlConnection dummy = {0};
-static ControlConnection *conn = &dummy;
 
-static ControlCommand *
-command_test_get(const char *cmd)
-{
-  GList *command = g_list_find_custom(get_control_command_list(), cmd, (GCompareFunc)control_command_start_with_command);
-  if (NULL == command)
-    return NULL;
-  return (ControlCommand *)command->data;
-}
+ControlServer *control_server;
+ControlConnection *control_connection;
 
 void
 setup(void)
@@ -52,83 +45,123 @@ setup(void)
   msg_init(FALSE);
   main_loop_register_control_commands(NULL);
   stats_register_control_commands();
+  control_server = control_server_dummy_new();
+  control_connection = control_connection_dummy_new(control_server);
 }
 
 void
 teardown(void)
 {
+  control_connection_free(control_connection);
+  control_server_free(control_server);
   msg_deinit();
   reset_control_command_list();
 }
 
 TestSuite(control_cmds, .init = setup, .fini = teardown);
 
+static void
+_send_request(const gchar *request)
+{
+  control_connection_dummy_set_input(control_connection, request);
+  control_connection_dummy_reset_output(control_connection);
+}
+
+static void
+_fetch_response(const gchar **response)
+{
+  *response = control_connection_dummy_get_output(control_connection);
+}
+
+static void
+_run_command(const gchar *request, const gchar **response)
+{
+  _send_request(request);
+  control_connection->handle_input(control_connection);
+  _fetch_response(response);
+}
+
+static gboolean
+first_line_eq(const gchar *buf, const gchar *expected)
+{
+  const gchar *nl = strchr(buf, '\n');
+
+  return strncmp(buf, expected, nl - buf) == 0;
+}
+
 Test(control_cmds, test_log)
 {
-  GString *command = g_string_sized_new(128);
-  GString *reply;
+  const gchar *response;
 
-  CommandFunction control_connection_message_log = command_test_get("LOG")->func;
+  _run_command("LOG", &response);
+  cr_assert(first_line_eq(response, "Invalid arguments received, expected at least one argument"),
+            "Bad reply: [%s]", response);
 
-  g_string_assign(command,"LOG");
-  reply = control_connection_message_log(conn, command, NULL);
-  cr_assert_str_eq(reply->str, "Invalid arguments received, expected at least one argument", "Bad reply");
-  g_string_free(reply, TRUE);
-
-  g_string_assign(command,"LOG fakelog");
-  reply = control_connection_message_log(conn, command, NULL);
-  cr_assert_str_eq(reply->str, "FAIL Invalid arguments received", "Bad reply");
-  g_string_free(reply, TRUE);
+  _run_command("LOG fakelog", &response);
+  cr_assert(first_line_eq(response, "FAIL Invalid arguments received"),
+            "Bad reply: [%s]", response);
 
   verbose_flag = 0;
   debug_flag = 1;
   trace_flag = 1;
-  g_string_assign(command,"LOG VERBOSE");
-  reply = control_connection_message_log(conn, command, NULL);
-  cr_assert_str_eq(reply->str, "OK VERBOSE=0", "Bad reply");
-  g_string_free(reply, TRUE);
+  _run_command("LOG VERBOSE", &response);
+  cr_assert(first_line_eq(response, "OK VERBOSE=0"),
+            "Bad reply: [%s]", response);
 
-  g_string_assign(command,"LOG VERBOSE ON");
-  reply = control_connection_message_log(conn, command, NULL);
-  cr_assert_str_eq(reply->str, "OK VERBOSE=1", "Bad reply");
-  cr_assert_eq(verbose_flag,1,"Flag isn't changed");
-  g_string_free(reply, TRUE);
+  _run_command("LOG VERBOSE ON", &response);
+  cr_assert(first_line_eq(response, "OK VERBOSE=1"),
+            "Bad reply: [%s]", response);
+  cr_assert_eq(verbose_flag, 1, "Flag isn't changed");
 
-  g_string_assign(command,"LOG VERBOSE OFF");
-  reply = control_connection_message_log(conn, command, NULL);
-  cr_assert_str_eq(reply->str, "OK VERBOSE=0", "Bad reply");
-  cr_assert_eq(verbose_flag,0,"Flag isn't changed");
-  g_string_free(reply, TRUE);
+  _run_command("LOG VERBOSE OFF", &response);
+  cr_assert(first_line_eq(response, "OK VERBOSE=0"),
+            "Bad reply: [%s]", response);
+  cr_assert_eq(verbose_flag, 0, "Flag isn't changed");
+
 
   debug_flag = 0;
   verbose_flag = 1;
   trace_flag = 1;
-  g_string_assign(command,"LOG DEBUG");
-  reply = control_connection_message_log(conn, command, NULL);
-  cr_assert_str_eq(reply->str, "OK DEBUG=0", "Bad reply");
-  g_string_free(reply, TRUE);
+  _run_command("LOG DEBUG", &response);
+  cr_assert(first_line_eq(response, "OK DEBUG=0"),
+            "Bad reply: [%s]", response);
 
-  trace_flag = 0;
-  verbose_flag = 1;
+  _run_command("LOG DEBUG ON", &response);
+  cr_assert(first_line_eq(response, "OK DEBUG=1"),
+            "Bad reply: [%s]", response);
+  cr_assert_eq(debug_flag, 1, "Flag isn't changed");
+
+  _run_command("LOG DEBUG OFF", &response);
+  cr_assert(first_line_eq(response, "OK DEBUG=0"),
+            "Bad reply: [%s]", response);
+  cr_assert_eq(debug_flag, 0, "Flag isn't changed");
+
   debug_flag = 1;
-  g_string_assign(command,"LOG TRACE");
-  reply = control_connection_message_log(conn, command, NULL);
-  cr_assert_str_eq(reply->str, "OK TRACE=0", "Bad reply");
-  g_string_free(reply, TRUE);
+  verbose_flag = 1;
+  trace_flag = 0;
+  _run_command("LOG TRACE", &response);
+  cr_assert(first_line_eq(response, "OK TRACE=0"),
+            "Bad reply: [%s]", response);
 
-  g_string_free(command, TRUE);
+  _run_command("LOG TRACE ON", &response);
+  cr_assert(first_line_eq(response, "OK TRACE=1"),
+            "Bad reply: [%s]", response);
+  cr_assert_eq(trace_flag, 1, "Flag isn't changed");
+
+  _run_command("LOG TRACE OFF", &response);
+  cr_assert(first_line_eq(response, "OK TRACE=0"),
+            "Bad reply: [%s]", response);
+  cr_assert_eq(trace_flag, 0, "Flag isn't changed");
+
 }
 
 Test(control_cmds, test_stats)
 {
-  GString *reply = NULL;
-  GString *command = g_string_sized_new(128);
   StatsCounterItem *counter = NULL;
   gchar **stats_result;
+  const gchar *response;
 
   stats_init();
-
-  CommandFunction control_connection_send_stats = command_test_get("STATS")->func;
 
   stats_lock();
   StatsClusterKey sc_key;
@@ -136,29 +169,21 @@ Test(control_cmds, test_stats)
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &counter);
   stats_unlock();
 
-  g_string_assign(command,"STATS");
+  _run_command("STATS", &response);
 
-  reply = control_connection_send_stats(conn, command, NULL);
-  stats_result = g_strsplit(reply->str, "\n", 2);
+  stats_result = g_strsplit(response, "\n", 2);
   cr_assert_str_eq(stats_result[0], "SourceName;SourceId;SourceInstance;State;Type;Number",
                    "Bad reply");
   g_strfreev(stats_result);
-  g_string_free(reply, TRUE);
-
-  g_string_free(command, TRUE);
   stats_destroy();
 }
 
 Test(control_cmds, test_reset_stats)
 {
-  GString *reply = NULL;
-  GString *command = g_string_sized_new(128);
   StatsCounterItem *counter = NULL;
+  const gchar *response;
 
   stats_init();
-
-  CommandFunction control_connection_send_stats = command_test_get("STATS")->func;
-  CommandFunction control_connection_reset_stats = command_test_get("RESET_STATS")->func;
 
   stats_lock();
   StatsClusterKey sc_key;
@@ -167,18 +192,14 @@ Test(control_cmds, test_reset_stats)
   stats_counter_set(counter, 666);
   stats_unlock();
 
-  g_string_assign(command, "RESET_STATS");
-  reply = control_connection_reset_stats(conn, command, NULL);
-  cr_assert_str_eq(reply->str, "OK The statistics of syslog-ng have been reset to 0.", "Bad reply");
-  g_string_free(reply, TRUE);
+  _run_command("RESET_STATS", &response);
+  cr_assert(first_line_eq(response, "OK The statistics of syslog-ng have been reset to 0."), "Bad reply");
 
-  reply = control_connection_send_stats(conn, command, NULL);
-  cr_assert_str_eq(reply->str, "SourceName;SourceId;SourceInstance;State;Type;Number\ncenter;id;received;a;processed;0\n",
+  _run_command("STATS", &response);
+  cr_assert_str_eq(response,
+                   "SourceName;SourceId;SourceInstance;State;Type;Number\ncenter;id;received;a;processed;0\n.\n",
                    "Bad reply");
-  g_string_free(reply, TRUE);
-
   stats_destroy();
-  g_string_free(command, TRUE);
 }
 
 static GString *
@@ -198,31 +219,28 @@ _assert_control_command_eq(ControlCommand *cmd, ControlCommand *cmd_other)
 {
   cr_assert_eq(cmd->func, cmd_other->func);
   cr_assert_str_eq(cmd->command_name, cmd_other->command_name);
-  cr_assert_str_eq(cmd->description, cmd_other->description);
   cr_assert_eq(cmd->user_data, cmd_other->user_data);
 }
 
 Test(control_cmds, test_replace_existing_command)
 {
-  control_register_command("REPLACE", "original", _original_replace, (gpointer)0xbaadf00d);
-  ControlCommand *cmd = command_test_get("REPLACE");
+  control_register_command("REPLACE", _original_replace, (gpointer)0xbaadf00d);
+  ControlCommand *cmd = control_find_command("REPLACE");
   ControlCommand expected_original =
   {
     .func = _original_replace,
     .command_name = "REPLACE",
-    .description = "original",
     .user_data = (gpointer)0xbaadf00d
   };
 
   _assert_control_command_eq(cmd, &expected_original);
 
-  control_replace_command("REPLACE", "new", _new_replace, (gpointer)0xd006f00d);
-  ControlCommand *new_cmd = command_test_get("REPLACE");
+  control_replace_command("REPLACE", _new_replace, (gpointer)0xd006f00d);
+  ControlCommand *new_cmd = control_find_command("REPLACE");
   ControlCommand expected_new =
   {
     .func = _new_replace,
     .command_name = "REPLACE",
-    .description = "new",
     .user_data = (gpointer) 0xd006f00d
   };
   _assert_control_command_eq(new_cmd, &expected_new);
@@ -230,13 +248,12 @@ Test(control_cmds, test_replace_existing_command)
 
 Test(control_cmds, test_replace_non_existing_command)
 {
-  control_replace_command("REPLACE", "new", _new_replace, (gpointer)0xd006f00d);
-  ControlCommand *new_cmd = command_test_get("REPLACE");
+  control_replace_command("REPLACE", _new_replace, (gpointer)0xd006f00d);
+  ControlCommand *new_cmd = control_find_command("REPLACE");
   ControlCommand expected_new =
   {
     .func = _new_replace,
     .command_name = "REPLACE",
-    .description = "new",
     .user_data = (gpointer) 0xd006f00d
   };
   _assert_control_command_eq(new_cmd, &expected_new);
