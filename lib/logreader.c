@@ -143,7 +143,6 @@ log_reader_work_finished(void *s)
       log_proto_server_reset_error(self->proto);
       log_reader_update_watches(self);
     }
-  log_pipe_unref(&self->super.super);
 }
 
 static void
@@ -198,7 +197,6 @@ log_reader_io_process_input(gpointer s)
   LogReader *self = (LogReader *) s;
 
   log_reader_stop_watches(self);
-  log_pipe_ref(&self->super.super);
   if ((self->options->flags & LR_THREADED))
     {
       main_loop_io_worker_job_submit(&self->io_job);
@@ -244,6 +242,8 @@ log_reader_init_watches(LogReader *self)
   self->io_job.user_data = self;
   self->io_job.work = (void (*)(void *)) log_reader_work_perform;
   self->io_job.completion = (void (*)(void *)) log_reader_work_finished;
+  self->io_job.engage = (void (*)(void *)) log_pipe_ref;
+  self->io_job.release = (void (*)(void *)) log_pipe_unref;
 }
 
 static void

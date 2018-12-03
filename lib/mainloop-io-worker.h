@@ -30,8 +30,10 @@
 
 typedef struct _MainLoopIOWorkerJob
 {
+  void (*engage)(gpointer user_data);
   void (*work)(gpointer user_data);
   void (*completion)(gpointer user_data);
+  void (*release)(gpointer user_data);
   gpointer user_data;
   gboolean working:1;
   struct iv_work_item work_item;
