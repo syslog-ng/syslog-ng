@@ -119,14 +119,14 @@ xml_scanner_options_defaults(XMLScannerOptions *self)
 }
 
 static void
-scanner_push_attributes(XMLScanner *scanner, GString *key, const gchar **names, const gchar **values)
+scanner_push_attributes(XMLScanner *self, const gchar **attribute_names, const gchar **attribute_values)
 {
   GString *attr_key;
 
-  if (names[0])
+  if (attribute_names[0])
     {
       attr_key = scratch_buffers_alloc();
-      g_string_assign(attr_key, key->str);
+      g_string_assign(attr_key, self->key->str);
       g_string_append(attr_key, "._");
     }
   else
@@ -135,10 +135,10 @@ scanner_push_attributes(XMLScanner *scanner, GString *key, const gchar **names, 
   gint base_index = attr_key->len;
   gint attrs = 0;
 
-  while (names[attrs])
+  while (attribute_names[attrs])
     {
-      attr_key = g_string_overwrite(attr_key, base_index, names[attrs]);
-      xml_scanner_push_current_key_value(scanner, attr_key->str, values[attrs], -1);
+      attr_key = g_string_overwrite(attr_key, base_index, attribute_names[attrs]);
+      xml_scanner_push_current_key_value(self, attr_key->str, attribute_values[attrs], -1);
       attrs++;
     }
 }
@@ -159,37 +159,37 @@ tag_matches_patterns(const GPtrArray *patterns, const gint tag_length,
 
 static GMarkupParser skip = {};
 
-static void
-start_element_cb(GMarkupParseContext  *context,
-                 const gchar          *element_name,
-                 const gchar         **attribute_names,
-                 const gchar         **attribute_values,
-                 gpointer              user_data,
-                 GError              **error)
+void
+xml_scanner_start_element_method(GMarkupParseContext  *context,
+                                 const gchar          *element_name,
+                                 const gchar         **attribute_names,
+                                 const gchar         **attribute_values,
+                                 gpointer              user_data,
+                                 GError              **error)
 {
-  XMLScanner *scanner = (XMLScanner *)user_data;
+  XMLScanner *self = (XMLScanner *)user_data;
 
   gchar *reversed = NULL;
   guint tag_length = strlen(element_name);
 
-  if (scanner->options->matchstring_shouldreverse)
+  if (self->options->matchstring_shouldreverse)
     {
       reversed = g_utf8_strreverse(element_name, tag_length);
     }
 
-  if (tag_matches_patterns(scanner->options->exclude_patterns, tag_length, element_name, reversed))
+  if (tag_matches_patterns(self->options->exclude_patterns, tag_length, element_name, reversed))
     {
       msg_debug("xml: subtree skipped",
                 evt_tag_str("tag", element_name));
-      scanner->pop_next_time = 1;
+      self->pop_next_time = 1;
       g_markup_parse_context_push(context, &skip, NULL);
       g_free(reversed);
       return;
     }
 
-  g_string_append_c(scanner->key, '.');
-  g_string_append(scanner->key, element_name);
-  scanner_push_attributes(scanner, scanner->key, attribute_names, attribute_values);
+  g_string_append_c(self->key, '.');
+  g_string_append(self->key, element_name);
+  scanner_push_attributes(self, attribute_names, attribute_values);
 
   g_free(reversed);
 }
@@ -202,21 +202,21 @@ before_last_dot(GString *str)
   return (pos-s);
 }
 
-static void
-end_element_cb(GMarkupParseContext *context,
-               const gchar         *element_name,
-               gpointer             user_data,
-               GError              **error)
+void
+xml_scanner_end_element_method(GMarkupParseContext *context,
+                               const gchar         *element_name,
+                               gpointer             user_data,
+                               GError              **error)
 {
-  XMLScanner *scanner = (XMLScanner *)user_data;
+  XMLScanner *self = (XMLScanner *)user_data;
 
-  if (scanner->pop_next_time)
+  if (self->pop_next_time)
     {
       g_markup_parse_context_pop(context);
-      scanner->pop_next_time = 0;
+      self->pop_next_time = 0;
       return;
     }
-  g_string_truncate(scanner->key, before_last_dot(scanner->key));
+  g_string_truncate(self->key, before_last_dot(self->key));
 }
 
 static GString *
@@ -234,27 +234,27 @@ strip_text(const gchar *text, gsize text_len)
   return value;
 }
 
-static void
-text_cb(GMarkupParseContext *context,
-        const gchar         *text,
-        gsize                text_len,
-        gpointer             user_data,
-        GError             **error)
+void
+xml_scanner_text_method(GMarkupParseContext *context,
+                        const gchar         *text,
+                        gsize                text_len,
+                        gpointer             user_data,
+                        GError             **error)
 {
   if (text_len == 0)
     return;
 
-  XMLScanner *scanner = (XMLScanner *)user_data;
+  XMLScanner *self = (XMLScanner *)user_data;
 
-  if (scanner->options->strip_whitespaces)
+  if (self->options->strip_whitespaces)
     {
       GString *stripped_text = strip_text(text, text_len);
       if (stripped_text)
-        xml_scanner_push_current_key_value(scanner, scanner->key->str, stripped_text->str, stripped_text->len);
+        xml_scanner_push_current_key_value(self, self->key->str, stripped_text->str, stripped_text->len);
     }
   else
     {
-      xml_scanner_push_current_key_value(scanner, scanner->key->str, text, text_len);
+      xml_scanner_push_current_key_value(self, self->key->str, text, text_len);
     }
 }
 
@@ -262,18 +262,20 @@ void
 xml_scanner_parse(XMLScanner *self, const gchar *input, gsize input_len, GError **error)
 {
   g_assert(self->push_function);
-  g_markup_parse_context_parse(self->xml_ctx, input, input_len, error);
+
+  GMarkupParser scanner_callbacks = { .start_element = self->start_element_function,
+                                      .end_element = self->end_element_function,
+                                      .text = self->text_function };
+  GMarkupParseContext *xml_ctx = g_markup_parse_context_new(&scanner_callbacks, 0, self, NULL);
+  g_markup_parse_context_parse(xml_ctx, input, input_len, error);
   if (error && *error)
-    return;
-  g_markup_parse_context_end_parse(self->xml_ctx, error);
+    goto exit;
+  g_markup_parse_context_end_parse(xml_ctx, error);
+
+exit:
+  g_markup_parse_context_free(xml_ctx);
 }
 
-static GMarkupParser xml_scanner =
-{
-  .start_element = start_element_cb,
-  .end_element = end_element_cb,
-  .text = text_cb
-};
 
 
 void
@@ -281,8 +283,11 @@ xml_scanner_init(XMLScanner *self, XMLScannerOptions *options, PushCurrentKeyVal
                  gpointer user_data, gchar *key_prefix)
 {
   memset(self, 0, sizeof(*self));
+  self->start_element_function = xml_scanner_start_element_method;
+  self->end_element_function = xml_scanner_end_element_method;
+  self->text_function = xml_scanner_text_method;
+
   self->options = options;
-  self->xml_ctx = g_markup_parse_context_new(&xml_scanner, 0, self, NULL);
   self->push_function = push_function;
   self->user_data = user_data;
   self->key = scratch_buffers_alloc();
@@ -292,6 +297,5 @@ xml_scanner_init(XMLScanner *self, XMLScannerOptions *options, PushCurrentKeyVal
 void
 xml_scanner_deinit(XMLScanner *self)
 {
-  g_markup_parse_context_free(self->xml_ctx);
   self->options = NULL;
 }

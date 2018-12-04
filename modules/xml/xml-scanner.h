@@ -29,6 +29,12 @@
 
 typedef void (*PushCurrentKeyValue)(const gchar *name, const gchar *value, gssize value_length, gpointer user_data);
 
+typedef void (*StartElement) (GMarkupParseContext *context, const gchar *element_name, const gchar **attribute_names,
+                              const gchar **attribute_values, gpointer user_data, GError **error);
+typedef void (*EndElement) (GMarkupParseContext *context, const gchar *element_name, gpointer user_data,
+                            GError **error);
+typedef void (*Text) (GMarkupParseContext *context, const gchar *text, gsize text_len, gpointer user_data,
+                      GError **error);
 
 typedef struct
 {
@@ -40,10 +46,12 @@ typedef struct
 
 typedef struct
 {
-  GMarkupParseContext *xml_ctx;
   XMLScannerOptions *options;
   gboolean pop_next_time;
   PushCurrentKeyValue push_function;
+  StartElement start_element_function;
+  EndElement  end_element_function;
+  Text  text_function;
   gpointer user_data;
   GString *key;
 } XMLScanner;
@@ -58,6 +66,13 @@ xml_scanner_push_current_key_value(XMLScanner *self, const gchar *name, const gc
 {
   self->push_function(name, value, value_length, self->user_data);
 }
+
+void xml_scanner_start_element_method(GMarkupParseContext *context, const gchar *element_name,
+                                      const gchar **attribute_names, const gchar **attribute_values, gpointer user_data, GError **error);
+void xml_scanner_end_element_method(GMarkupParseContext *context, const gchar *element_name, gpointer user_data,
+                                    GError **error);
+void xml_scanner_text_method(GMarkupParseContext *context, const gchar *text, gsize text_len, gpointer user_data,
+                             GError **error);
 
 void xml_scanner_options_set_and_compile_exclude_tags(XMLScannerOptions *self, GList *exclude_tags);
 void xml_scanner_options_set_strip_whitespaces(XMLScannerOptions *self, gboolean setting);
