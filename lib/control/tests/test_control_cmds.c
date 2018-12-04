@@ -202,16 +202,14 @@ Test(control_cmds, test_reset_stats)
   stats_destroy();
 }
 
-static GString *
+static void
 _original_replace(ControlConnection *cc, GString *result, gpointer user_data)
 {
-  return NULL;
 }
 
-static GString *
+static void
 _new_replace(ControlConnection *cc, GString *result, gpointer user_data)
 {
-  return NULL;
 }
 
 static void

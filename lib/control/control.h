@@ -31,12 +31,7 @@ typedef struct _ControlServer ControlServer;
 typedef struct _ControlConnection ControlConnection;
 
 
-/* the command function gets the command string and should return the
- * response to be returned to syslog-ng-ctl over the UNIX domain socket.  if
- * the response is NULL, no response is written to the peer and we are
- * blocked until control_connection_send_reply() is invoked in a future
- * callback. */
-typedef GString *(*CommandFunction)(ControlConnection *cc, GString *, gpointer user_data);
+typedef void (*CommandFunction)(ControlConnection *cc, GString *, gpointer user_data);
 typedef struct _ControlCommand
 {
   const gchar *command_name;

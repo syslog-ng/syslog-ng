@@ -26,6 +26,6 @@
 
 #include "control/control.h"
 
-GString *process_query_command(ControlConnection *cc, GString *cmd, gpointer user_data);
+void process_query_command(ControlConnection *cc, GString *cmd, gpointer user_data);
 
 #endif

@@ -26,22 +26,23 @@
 #include "stats/stats-counter.h"
 #include "stats/stats-query-commands.h"
 #include "control/control-commands.h"
+#include "control/control-server.h"
 
-static GString *
+static void
 control_connection_send_stats(ControlConnection *cc, GString *command, gpointer user_data)
 {
   gchar *stats = stats_generate_csv();
   GString *result = g_string_new(stats);
   g_free(stats);
-  return result;
+  control_connection_send_reply(cc, result);
 }
 
-static GString *
+static void
 control_connection_reset_stats(ControlConnection *cc, GString *command, gpointer user_data)
 {
   GString *result = g_string_new("OK The statistics of syslog-ng have been reset to 0.");
   stats_reset_counters();
-  return result;
+  control_connection_send_reply(cc, result);
 }
 
 void

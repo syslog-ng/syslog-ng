@@ -31,7 +31,7 @@
 
 #include <string.h>
 
-static GString *
+static void
 control_connection_message_log(ControlConnection *cc, GString *command, gpointer user_data)
 {
   gchar **cmds = g_strsplit(command->str, " ", 3);
@@ -69,20 +69,21 @@ control_connection_message_log(ControlConnection *cc, GString *command, gpointer
     g_string_assign(result, "FAIL Invalid arguments received");
 exit:
   g_strfreev(cmds);
-  return result;
+  control_connection_send_reply(cc, result);
 }
 
-static GString *
+static void
 control_connection_stop_process(ControlConnection *cc, GString *command, gpointer user_data)
 {
   GString *result = g_string_new("OK Shutdown initiated");
   MainLoop *main_loop = (MainLoop *) user_data;
 
   main_loop_exit(main_loop);
-  return result;
+
+  control_connection_send_reply(cc, result);
 }
 
-static GString *
+static void
 control_connection_config(ControlConnection *cc, GString *command, gpointer user_data)
 {
   MainLoop *main_loop = (MainLoop *) user_data;
@@ -114,13 +115,14 @@ control_connection_config(ControlConnection *cc, GString *command, gpointer user
 
 exit:
   g_strfreev(arguments);
-  return result;
+  control_connection_send_reply(cc, result);
 }
 
-static GString *
+static void
 show_ose_license_info(ControlConnection *cc, GString *command, gpointer user_data)
 {
-  return g_string_new("OK You are using the Open Source Edition of syslog-ng.");
+  control_connection_send_reply(cc,
+                                g_string_new("OK You are using the Open Source Edition of syslog-ng."));
 }
 
 static void
@@ -139,7 +141,7 @@ _respond_config_reload_status(gint type, gpointer user_data)
   control_connection_send_reply(cc, reply);
 }
 
-static GString *
+static void
 control_connection_reload(ControlConnection *cc, GString *command, gpointer user_data)
 {
   MainLoop *main_loop = (MainLoop *) user_data;
@@ -152,22 +154,22 @@ control_connection_reload(ControlConnection *cc, GString *command, gpointer user
       GString *result = g_string_new("");
       g_string_printf(result, "FAIL %s, previous config remained intact", error->message);
       g_clear_error(&error);
-      return result;
+      control_connection_send_reply(cc, result);
+      return;
     }
 
   args[0] = main_loop;
   args[1] = cc;
   register_application_hook(AH_CONFIG_CHANGED, _respond_config_reload_status, args);
   main_loop_reload_config_commence(main_loop);
-  return NULL;
 }
 
-static GString *
+static void
 control_connection_reopen(ControlConnection *cc, GString *command, gpointer user_data)
 {
   GString *result = g_string_new("OK Re-open of log destination files initiated");
   app_reopen_files();
-  return result;
+  control_connection_send_reply(cc, result);
 }
 
 static const gchar *
@@ -226,7 +228,7 @@ process_credentials_add(GString *result, guint argc, gchar **arguments)
   return result;
 }
 
-static GString *
+static void
 process_credentials(ControlConnection *cc, GString *command, gpointer user_data)
 {
   gchar **arguments = g_strsplit(command->str, " ", 4);
@@ -238,7 +240,8 @@ process_credentials(ControlConnection *cc, GString *command, gpointer user_data)
     {
       g_string_assign(result, "FAIL missing subcommand\n");
       g_strfreev(arguments);
-      return result;
+      control_connection_send_reply(cc, result);
+      return;
     }
 
   gchar *subcommand = arguments[1];
@@ -251,7 +254,7 @@ process_credentials(ControlConnection *cc, GString *command, gpointer user_data)
     g_string_printf(result, "FAIL invalid subcommand %s\n", subcommand);
 
   g_strfreev(arguments);
-  return result;
+  control_connection_send_reply(cc, result);
 }
 
 
