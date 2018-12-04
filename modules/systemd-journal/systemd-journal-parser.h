@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef AFPROG_PARSER_H_INCLUDED
-#define AFPROG_PARSER_H_INCLUDED
+#ifndef SYSTEMD_JOURNAL_PARSER_H_INCLUDED
+#define SYSTEMD_JOURNAL_PARSER_H_INCLUDED
 
 #include "cfg-parser.h"
 #include "driver.h"
