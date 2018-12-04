@@ -28,14 +28,9 @@
 
 #include <string.h>
 
-typedef void (*PushCurrentKeyValueCB)(const gchar *name, const gchar *value, gssize value_length, gpointer user_data);
+typedef struct _XMLScanner XMLScanner;
 
-typedef void (*StartElement) (GMarkupParseContext *context, const gchar *element_name, const gchar **attribute_names,
-                              const gchar **attribute_values, gpointer user_data, GError **error);
-typedef void (*EndElement) (GMarkupParseContext *context, const gchar *element_name, gpointer user_data,
-                            GError **error);
-typedef void (*Text) (GMarkupParseContext *context, const gchar *text, gsize text_len, gpointer user_data,
-                      GError **error);
+typedef void (*PushCurrentKeyValueCB)(const gchar *name, const gchar *value, gssize value_length, gpointer user_data);
 
 typedef struct
 {
@@ -51,17 +46,20 @@ typedef struct
   gpointer user_data;
 } PushCurrentKeyValue;
 
-typedef struct
+struct _XMLScanner
 {
+  GMarkupParseContext *xml_ctx;
   XMLScannerOptions *options;
   gboolean pop_next_time;
   GString *key;
   GString *text;
-  StartElement start_element_function;
-  EndElement  end_element_function;
-  Text  text_function;
+  gboolean (*start_element_cb) (XMLScanner *self, const gchar *element_name, const gchar **attribute_names,
+                                const gchar **attribute_values, GError **error);
+  void (*end_element_cb) (XMLScanner *self, const gchar *element_name, GError **error);
+  void (*text_cb) (XMLScanner *self, const gchar *element_name,
+                   const gchar *text, gsize text_len, GError **error);
   PushCurrentKeyValue push_key_value;
-} XMLScanner;
+};
 
 void xml_scanner_init(XMLScanner *self, XMLScannerOptions *options, PushCurrentKeyValueCB push_function,
                       gpointer user_data, gchar *key_prefix);
@@ -74,12 +72,11 @@ xml_scanner_push_current_key_value(XMLScanner *self, const gchar *name, const gc
   self->push_key_value.push_function(name, value, value_length, self->push_key_value.user_data);
 }
 
-void xml_scanner_start_element_method(GMarkupParseContext *context, const gchar *element_name,
-                                      const gchar **attribute_names, const gchar **attribute_values, gpointer user_data, GError **error);
-void xml_scanner_end_element_method(GMarkupParseContext *context, const gchar *element_name, gpointer user_data,
-                                    GError **error);
-void xml_scanner_text_method(GMarkupParseContext *context, const gchar *text, gsize text_len, gpointer user_data,
-                             GError **error);
+gboolean xml_scanner_start_element_method(XMLScanner *self, const gchar *element_name, const gchar **attribute_names,
+                                          const gchar **attribute_values, GError **error);
+void xml_scanner_end_element_method(XMLScanner *self, const gchar *element_name, GError **error);
+void xml_scanner_text_method(XMLScanner *self, const gchar *element_name,
+                             const gchar *text, gsize text_len, GError **error);
 
 void xml_scanner_options_set_and_compile_exclude_tags(XMLScannerOptions *self, GList *exclude_tags);
 void xml_scanner_options_set_strip_whitespaces(XMLScannerOptions *self, gboolean setting);

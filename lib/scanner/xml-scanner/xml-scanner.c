@@ -160,16 +160,13 @@ tag_matches_patterns(const GPtrArray *patterns, const gint tag_length,
 
 static GMarkupParser skip = {};
 
-void
-xml_scanner_start_element_method(GMarkupParseContext  *context,
+gboolean
+xml_scanner_start_element_method(XMLScanner *self,
                                  const gchar          *element_name,
                                  const gchar         **attribute_names,
                                  const gchar         **attribute_values,
-                                 gpointer              user_data,
                                  GError              **error)
 {
-  XMLScanner *self = (XMLScanner *)user_data;
-
   gchar *reversed = NULL;
   guint tag_length = strlen(element_name);
 
@@ -183,16 +180,29 @@ xml_scanner_start_element_method(GMarkupParseContext  *context,
       msg_debug("xml: subtree skipped",
                 evt_tag_str("tag", element_name));
       self->pop_next_time = 1;
-      g_markup_parse_context_push(context, &skip, NULL);
+      g_markup_parse_context_push(self->xml_ctx, &skip, NULL);
       g_free(reversed);
-      return;
+      return FALSE;
     }
+  g_free(reversed);
 
   g_string_append_c(self->key, '.');
   g_string_append(self->key, element_name);
-  scanner_push_attributes(self, attribute_names, attribute_values);
+  return TRUE;
+}
 
-  g_free(reversed);
+static void
+_xml_scanner_start_element(GMarkupParseContext  *context,
+                           const gchar          *element_name,
+                           const gchar         **attribute_names,
+                           const gchar         **attribute_values,
+                           gpointer              user_data,
+                           GError              **error)
+{
+  XMLScanner *self = (XMLScanner *)user_data;
+
+  if (self->start_element_cb(self, element_name, attribute_names, attribute_values, error))
+    scanner_push_attributes(self, attribute_names, attribute_values);
 }
 
 static gint
@@ -204,21 +214,28 @@ before_last_dot(GString *str)
 }
 
 void
-xml_scanner_end_element_method(GMarkupParseContext *context,
+xml_scanner_end_element_method(XMLScanner *self,
                                const gchar         *element_name,
-                               gpointer             user_data,
                                GError              **error)
 {
-  XMLScanner *self = (XMLScanner *)user_data;
-
   if (self->pop_next_time)
     {
-      g_markup_parse_context_pop(context);
+      g_markup_parse_context_pop(self->xml_ctx);
       self->pop_next_time = 0;
       return;
     }
   g_string_truncate(self->key, before_last_dot(self->key));
-  g_string_truncate(self->text, 0);
+}
+
+
+void
+_xml_scanner_end_element(GMarkupParseContext *context,
+                         const gchar         *element_name,
+                         gpointer             user_data,
+                         GError              **error)
+{
+  XMLScanner *self = (XMLScanner *)user_data;
+  (void)self->end_element_cb(self, element_name, error);
 }
 
 static void
@@ -229,25 +246,37 @@ xml_scanner_strip_current_text(XMLScanner *self)
 }
 
 void
-xml_scanner_text_method(GMarkupParseContext *context,
+xml_scanner_text_method(XMLScanner *self,
+                        const gchar *element_name,
                         const gchar         *text,
                         gsize                text_len,
-                        gpointer             user_data,
                         GError             **error)
 {
   if (text_len == 0)
     return;
-
-  XMLScanner *self = (XMLScanner *)user_data;
 
   g_string_append_len(self->text, text, text_len);
   if (self->options->strip_whitespaces)
     {
       xml_scanner_strip_current_text(self);
     }
+}
 
-  if(self->text->len)
-    xml_scanner_push_current_key_value(self, self->key->str, self->text->str, self->text->len);
+static void
+_xml_scanner_text(GMarkupParseContext *context,
+                  const gchar         *text,
+                  gsize                text_len,
+                  gpointer             user_data,
+                  GError             **error)
+{
+  XMLScanner *self = (XMLScanner *)user_data;
+
+  const gchar *element_name  = g_markup_parse_context_get_element(context);
+  if(self->text_cb(self, element_name, text, text_len, error))
+    {
+      xml_scanner_push_current_key_value(self, self->key->str, self->text->str, self->text->len);
+      g_string_truncate(self->text, 0);
+    }
 }
 
 void
@@ -255,17 +284,19 @@ xml_scanner_parse(XMLScanner *self, const gchar *input, gsize input_len, GError 
 {
   g_assert(self->push_key_value.push_function);
 
-  GMarkupParser scanner_callbacks = { .start_element = self->start_element_function,
-                                      .end_element = self->end_element_function,
-                                      .text = self->text_function };
-  GMarkupParseContext *xml_ctx = g_markup_parse_context_new(&scanner_callbacks, 0, self, NULL);
-  g_markup_parse_context_parse(xml_ctx, input, input_len, error);
+  GMarkupParser scanner_callbacks = { .start_element = _xml_scanner_start_element,
+                                      .end_element = _xml_scanner_end_element,
+                                      .text =  _xml_scanner_text
+                                    };
+  self->xml_ctx = g_markup_parse_context_new(&scanner_callbacks, 0, self, NULL);
+  g_markup_parse_context_parse(self->xml_ctx, input, input_len, error);
   if (error && *error)
     goto exit;
-  g_markup_parse_context_end_parse(xml_ctx, error);
+  g_markup_parse_context_end_parse(self->xml_ctx, error);
 
 exit:
-  g_markup_parse_context_free(xml_ctx);
+  g_markup_parse_context_free(self->xml_ctx);
+  self->xml_ctx = NULL;
 }
 
 
@@ -275,9 +306,9 @@ xml_scanner_init(XMLScanner *self, XMLScannerOptions *options, PushCurrentKeyVal
                  gpointer user_data, gchar *key_prefix)
 {
   memset(self, 0, sizeof(*self));
-  self->start_element_function = xml_scanner_start_element_method;
-  self->end_element_function = xml_scanner_end_element_method;
-  self->text_function = xml_scanner_text_method;
+  self->start_element_cb = xml_scanner_start_element_method;
+  self->end_element_cb = xml_scanner_end_element_method;
+  self->text_cb = xml_scanner_text_method;
 
   self->options = options;
   self->push_key_value.push_function = push_function;
