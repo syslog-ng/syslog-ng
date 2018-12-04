@@ -147,12 +147,6 @@ _process_suffix(const gchar *suffix, gint64 *d)
 }
 
 static gboolean
-_no_suffix(const gchar *suffix)
-{
-  return (*suffix == '\0' || g_ascii_isspace(*suffix));
-}
-
-static gboolean
 _parse_number(const gchar *s, gchar **endptr, gint base, gint64 *d)
 {
   gint64 val;
@@ -179,7 +173,7 @@ parse_number(const gchar *s, gint64 *d)
     return FALSE;
   if (*endptr)
     return FALSE;
-  return _no_suffix(endptr);
+  return TRUE;
 }
 
 gboolean
@@ -189,7 +183,9 @@ parse_dec_number(const gchar *s, gint64 *d)
 
   if (!_parse_number(s, &endptr, DECIMAL_BASE, d))
     return FALSE;
-  return _no_suffix(endptr);
+  if (*endptr)
+    return FALSE;
+  return TRUE;
 }
 
 gboolean
