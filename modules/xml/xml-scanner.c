@@ -252,7 +252,7 @@ xml_scanner_text_method(GMarkupParseContext *context,
 void
 xml_scanner_parse(XMLScanner *self, const gchar *input, gsize input_len, GError **error)
 {
-  g_assert(self->push_function);
+  g_assert(self->push_key_value.push_function);
 
   GMarkupParser scanner_callbacks = { .start_element = self->start_element_function,
                                       .end_element = self->end_element_function,
@@ -270,7 +270,7 @@ exit:
 
 
 void
-xml_scanner_init(XMLScanner *self, XMLScannerOptions *options, PushCurrentKeyValue push_function,
+xml_scanner_init(XMLScanner *self, XMLScannerOptions *options, PushCurrentKeyValueCB push_function,
                  gpointer user_data, gchar *key_prefix)
 {
   memset(self, 0, sizeof(*self));
@@ -279,8 +279,8 @@ xml_scanner_init(XMLScanner *self, XMLScannerOptions *options, PushCurrentKeyVal
   self->text_function = xml_scanner_text_method;
 
   self->options = options;
-  self->push_function = push_function;
-  self->user_data = user_data;
+  self->push_key_value.push_function = push_function;
+  self->push_key_value.user_data = user_data;
   self->key = scratch_buffers_alloc();
   g_string_assign(self->key, key_prefix);
   self->text = scratch_buffers_alloc();

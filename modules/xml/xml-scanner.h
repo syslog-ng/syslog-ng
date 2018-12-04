@@ -27,7 +27,7 @@
 
 #include <string.h>
 
-typedef void (*PushCurrentKeyValue)(const gchar *name, const gchar *value, gssize value_length, gpointer user_data);
+typedef void (*PushCurrentKeyValueCB)(const gchar *name, const gchar *value, gssize value_length, gpointer user_data);
 
 typedef void (*StartElement) (GMarkupParseContext *context, const gchar *element_name, const gchar **attribute_names,
                               const gchar **attribute_values, gpointer user_data, GError **error);
@@ -46,18 +46,23 @@ typedef struct
 
 typedef struct
 {
+  PushCurrentKeyValueCB push_function;
+  gpointer user_data;
+} PushCurrentKeyValue;
+
+typedef struct
+{
   XMLScannerOptions *options;
   gboolean pop_next_time;
-  PushCurrentKeyValue push_function;
+  GString *key;
+  GString *text;
   StartElement start_element_function;
   EndElement  end_element_function;
   Text  text_function;
-  gpointer user_data;
-  GString *key;
-  GString *text;
+  PushCurrentKeyValue push_key_value;
 } XMLScanner;
 
-void xml_scanner_init(XMLScanner *self, XMLScannerOptions *options, PushCurrentKeyValue push_function,
+void xml_scanner_init(XMLScanner *self, XMLScannerOptions *options, PushCurrentKeyValueCB push_function,
                       gpointer user_data, gchar *key_prefix);
 void xml_scanner_deinit(XMLScanner *self);
 void xml_scanner_parse(XMLScanner *self, const gchar *input, gsize input_len, GError **error);
@@ -65,7 +70,7 @@ void xml_scanner_parse(XMLScanner *self, const gchar *input, gsize input_len, GE
 static inline void
 xml_scanner_push_current_key_value(XMLScanner *self, const gchar *name, const gchar *value, gssize value_length)
 {
-  self->push_function(name, value, value_length, self->user_data);
+  self->push_key_value.push_function(name, value, value_length, self->push_key_value.user_data);
 }
 
 void xml_scanner_start_element_method(GMarkupParseContext *context, const gchar *element_name,
