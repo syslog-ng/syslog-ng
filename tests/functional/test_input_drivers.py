@@ -25,7 +25,7 @@ from log import *
 from messagegen import *
 from messagecheck import *
 
-config = """@version: 3.18
+config = """@version: 3.19
 
 options { ts_format(iso); chain_hostnames(no); keep_hostname(yes); threaded(yes); };
 

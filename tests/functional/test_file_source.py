@@ -26,7 +26,7 @@ from messagegen import *
 from messagecheck import *
 from control import *
 
-config_poll = """@version: 3.18
+config_poll = """@version: 3.19
 
 options { ts_format(iso); chain_hostnames(no); keep_hostname(yes); threaded(yes); };
 
@@ -43,7 +43,7 @@ log { source(s_wildcard); destination(d_wildcard); };
 
 """ % locals()
 
-config_auto = """@version: 3.18
+config_auto = """@version: 3.19
 
 options { ts_format(iso); chain_hostnames(no); keep_hostname(yes); threaded(yes); };
 
