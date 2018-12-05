@@ -19,6 +19,7 @@ set(SCL_DIRS
     osquery
     pacct
     rewrite
+    slack
     snmptrap
     solaris
     sudo
