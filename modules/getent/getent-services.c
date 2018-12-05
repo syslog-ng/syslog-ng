@@ -28,7 +28,7 @@ tf_getent_services(gchar *key, gchar *member_name, GString *result)
   gboolean is_num;
   char buf[4096];
 
-  if ((is_num = parse_number(key, &d)) == TRUE)
+  if ((is_num = parse_dec_number(key, &d)) == TRUE)
     getservbyport_r((int)ntohs(d), NULL, &serv, buf, sizeof(buf), &res);
   else
     getservbyname_r(key, NULL, &serv, buf, sizeof(buf), &res);

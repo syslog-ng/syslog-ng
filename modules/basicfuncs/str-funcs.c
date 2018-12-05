@@ -88,7 +88,7 @@ tf_substr(LogMessage *msg, gint argc, GString *argv[], GString *result)
     return;
 
   /* get offset position from second argument */
-  if (!parse_number(argv[1]->str, &start))
+  if (!parse_dec_number(argv[1]->str, &start))
     {
       msg_error("$(substr) parsing failed, start could not be parsed",
                 evt_tag_str("start", argv[1]->str));
@@ -98,7 +98,7 @@ tf_substr(LogMessage *msg, gint argc, GString *argv[], GString *result)
   /* if we were called with >2 arguments, third was desired length */
   if (argc > 2)
     {
-      if (!parse_number(argv[2]->str, &len))
+      if (!parse_dec_number(argv[2]->str, &len))
         {
           msg_error("$(substr) parsing failed, length could not be parsed",
                     evt_tag_str("length", argv[2]->str));
@@ -410,7 +410,7 @@ _padding_prepare_parse_state(TFStringPaddingState *state, gint argc, gchar **arg
       return FALSE;
     }
 
-  if (!parse_number(argv[2], &state->width))
+  if (!parse_dec_number(argv[2], &state->width))
     {
 
       g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
@@ -530,9 +530,16 @@ tf_binary_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gi
       gchar *token = argv[i];
       if (!parse_number(token, &number))
         {
+          gchar *base = "dec";
+
+          if (token[0] == '0')
+            {
+              base = token[1] == 'x' ? "hex" : "oct";
+            }
+
           g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
-                      "$(binary) template function requires list of dec/hex/oct numbers as arguments, unable to parse %s as a number",
-                      token);
+                      "$(binary) template function requires list of dec/hex/oct numbers as arguments, unable to parse %s as a %s number",
+                      token, base);
           goto error;
         }
       if (number > 0xFF)

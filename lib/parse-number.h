@@ -29,5 +29,6 @@
 
 gboolean parse_number_with_suffix(const gchar *str, gint64 *result);
 gboolean parse_number(const gchar *str, gint64 *result);
+gboolean parse_dec_number(const gchar *str, gint64 *result);
 
 #endif

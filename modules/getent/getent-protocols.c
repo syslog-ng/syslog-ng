@@ -28,7 +28,7 @@ tf_getent_protocols(gchar *key, gchar *member_name, GString *result)
   gboolean is_num;
   char buf[4096];
 
-  if ((is_num = parse_number(key, &d)) == TRUE)
+  if ((is_num = parse_dec_number(key, &d)) == TRUE)
     getprotobynumber_r((int) d, &proto, buf, sizeof(buf), &res);
   else
     getprotobyname_r(key, &proto, buf, sizeof(buf), &res);
