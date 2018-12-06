@@ -19,6 +19,7 @@ SCL_SUBDIRS	= \
 	osquery	\
 	pacct		\
 	rewrite	\
+	slack \
 	snmptrap	\
 	solaris	\
 	sudo		\
