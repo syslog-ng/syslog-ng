@@ -458,35 +458,44 @@ __fixup_hour_in_struct_tm_within_transition_periods(LogStamp *stamp, struct tm *
                   - stamp->zone_offset;
 }
 
-/* FIXME: this function should really be exploded to a lot of smaller functions... (Bazsi) */
 static gboolean
-log_msg_parse_date_unnormalized(LogMessage *self, const guchar **data, gint *length, guint parse_flags, struct tm *tm)
+log_msg_extract_cisco_timestamp_attributes(LogMessage *self, const guchar **data, gint *length, gint parse_flags)
 {
   const guchar *src = *data;
   gint left = *length;
+
+  /* Cisco timestamp extensions, the first '*' indicates that the clock is
+   * unsynced, '.' if it is known to be synced */
+  if (G_UNLIKELY(src[0] == '*'))
+    {
+      if (!(parse_flags & LP_NO_PARSE_DATE))
+        log_msg_set_value(self, handles.is_synced, "0", 1);
+      src++;
+      left--;
+    }
+  else if (G_UNLIKELY(src[0] == '.'))
+    {
+      if (!(parse_flags & LP_NO_PARSE_DATE))
+        log_msg_set_value(self, handles.is_synced, "1", 1);
+      src++;
+      left--;
+    }
+  *data = src;
+  *length = left;
+  return TRUE;
+}
+
+static gboolean
+log_msg_parse_date_unnormalized(LogMessage *self, const guchar **data, gint *length, guint parse_flags, struct tm *tm)
+{
   GTimeVal now;
 
   cached_g_current_time(&now);
-
   if ((parse_flags & LP_SYSLOG_PROTOCOL) == 0)
-    {
-      /* Cisco timestamp extensions, the first '*' indicates that the clock is
-       * unsynced, '.' if it is known to be synced */
-      if (G_UNLIKELY(src[0] == '*'))
-        {
-          if (!(parse_flags & LP_NO_PARSE_DATE))
-            log_msg_set_value(self, handles.is_synced, "0", 1);
-          src++;
-          left--;
-        }
-      else if (G_UNLIKELY(src[0] == '.'))
-        {
-          if (!(parse_flags & LP_NO_PARSE_DATE))
-            log_msg_set_value(self, handles.is_synced, "1", 1);
-          src++;
-          left--;
-        }
-    }
+    log_msg_extract_cisco_timestamp_attributes(self, data, length, parse_flags);
+
+  const guchar *src = *data;
+  gint left = *length;
   /* If the next chars look like a date, then read them as a date. */
   if (__is_iso_stamp((const gchar *)src, left))
     {
