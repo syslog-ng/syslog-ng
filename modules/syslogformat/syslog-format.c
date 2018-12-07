@@ -486,16 +486,56 @@ log_msg_extract_cisco_timestamp_attributes(LogMessage *self, const guchar **data
 }
 
 static gboolean
-log_msg_parse_date_unnormalized(LogMessage *self, const guchar **data, gint *length, guint parse_flags, struct tm *tm)
+log_msg_parse_rfc3164_date_unnormalized(LogMessage *self, const guchar **data, gint *length, guint parse_flags, struct tm *tm)
 {
   GTimeVal now;
+  const guchar *src = *data;
+  gint left = *length;
+
+  cached_g_current_time(&now);
+
+  log_msg_extract_cisco_timestamp_attributes(self, &src, &left, parse_flags);
+
+  /* If the next chars look like a date, then read them as a date. */
+  if (__is_iso_stamp((const gchar *)src, left))
+    {
+      if (!__parse_iso_stamp(&now, self, tm, &src, &left))
+        goto error;
+    }
+  else
+    {
+      glong usec = 0;
+      if (!__parse_bsd_timestamp(&src, &left, &now, tm, &usec))
+        goto error;
+      self->timestamps[LM_TS_STAMP].tv_usec = usec;
+    }
+
+  if (*src == ':')
+    {
+      ++src;
+      --left;
+    }
+  *data = src;
+  *length = left;
+  return TRUE;
+error:
+  /* no recognizable timestamp, use current time */
+
+  self->timestamps[LM_TS_STAMP] = self->timestamps[LM_TS_RECVD];
+  return FALSE;
+}
+
+static gboolean
+log_msg_parse_rfc5424_date_unnormalized(LogMessage *self, const guchar **data, gint *length, guint parse_flags, struct tm *tm)
+{
+  GTimeVal now;
+  const guchar *src = *data;
+  gint left = *length;
 
   cached_g_current_time(&now);
   if ((parse_flags & LP_SYSLOG_PROTOCOL) == 0)
-    log_msg_extract_cisco_timestamp_attributes(self, data, length, parse_flags);
+    log_msg_extract_cisco_timestamp_attributes(self, &src, &left, parse_flags);
 
-  const guchar *src = *data;
-  gint left = *length;
   /* If the next chars look like a date, then read them as a date. */
   if (__is_iso_stamp((const gchar *)src, left))
     {
@@ -539,6 +579,14 @@ error:
   return FALSE;
 }
 
+static gboolean
+log_msg_parse_date_unnormalized(LogMessage *self, const guchar **data, gint *length, guint parse_flags, struct tm *tm)
+{
+  if ((parse_flags & LP_SYSLOG_PROTOCOL) == 0)
+    return log_msg_parse_rfc3164_date_unnormalized(self, data, length, parse_flags, tm);
+  else
+    return log_msg_parse_rfc5424_date_unnormalized(self, data, length, parse_flags, tm);
+}
 
 static gboolean
 log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint parse_flags, glong recv_timezone_ofs)
