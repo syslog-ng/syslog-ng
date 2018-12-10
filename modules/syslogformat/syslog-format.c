@@ -486,15 +486,13 @@ log_msg_extract_cisco_timestamp_attributes(LogMessage *self, const guchar **data
 }
 
 static gboolean
-log_msg_parse_rfc3164_date_unnormalized(LogMessage *self, const guchar **data, gint *length, guint parse_flags, struct tm *tm)
+log_msg_parse_rfc3164_date_unnormalized(LogMessage *self, const guchar **data, gint *length, struct tm *tm)
 {
   GTimeVal now;
   const guchar *src = *data;
   gint left = *length;
 
   cached_g_current_time(&now);
-
-  log_msg_extract_cisco_timestamp_attributes(self, &src, &left, parse_flags);
 
   /* If the next chars look like a date, then read them as a date. */
   if (__is_iso_stamp((const gchar *)src, left))
@@ -526,7 +524,7 @@ log_msg_parse_rfc3164_date_unnormalized(LogMessage *self, const guchar **data, g
 }
 
 static gboolean
-log_msg_parse_rfc5424_date_unnormalized(LogMessage *self, const guchar **data, gint *length, guint parse_flags, struct tm *tm)
+log_msg_parse_rfc5424_date_unnormalized(LogMessage *self, const guchar **data, gint *length, struct tm *tm)
 {
   GTimeVal now;
   const guchar *src = *data;
@@ -553,9 +551,12 @@ static gboolean
 log_msg_parse_date_unnormalized(LogMessage *self, const guchar **data, gint *length, guint parse_flags, struct tm *tm)
 {
   if ((parse_flags & LP_SYSLOG_PROTOCOL) == 0)
-    return log_msg_parse_rfc3164_date_unnormalized(self, data, length, parse_flags, tm);
+    {
+      return (log_msg_extract_cisco_timestamp_attributes(self, data, length, parse_flags) &&
+              log_msg_parse_rfc3164_date_unnormalized(self, data, length, tm));
+    }
   else
-    return log_msg_parse_rfc5424_date_unnormalized(self, data, length, parse_flags, tm);
+    return log_msg_parse_rfc5424_date_unnormalized(self, data, length, tm);
 }
 
 static gboolean
