@@ -500,15 +500,20 @@ log_msg_parse_rfc3164_date_unnormalized(LogMessage *self, const guchar **data, g
   if (__is_iso_stamp((const gchar *)src, left))
     {
       if (!__parse_iso_stamp(&now, self, tm, &src, &left))
-        goto error;
+        return FALSE;
     }
   else
     {
       glong usec = 0;
       if (!__parse_bsd_timestamp(&src, &left, &now, tm, &usec))
-        goto error;
+        return FALSE;
+
       self->timestamps[LM_TS_STAMP].tv_usec = usec;
     }
+
+  /* we might have a closing colon at the end of the timestamp, "Cisco" I am
+   * looking at you, skip that as well, so we can reliably detect IPv6
+   * addresses as hostnames, which would be using ":" as well. */
 
   if (*src == ':')
     {
@@ -518,11 +523,6 @@ log_msg_parse_rfc3164_date_unnormalized(LogMessage *self, const guchar **data, g
   *data = src;
   *length = left;
   return TRUE;
-error:
-  /* no recognizable timestamp, use current time */
-
-  self->timestamps[LM_TS_STAMP] = self->timestamps[LM_TS_RECVD];
-  return FALSE;
 }
 
 static gboolean
@@ -540,13 +540,13 @@ log_msg_parse_rfc5424_date_unnormalized(LogMessage *self, const guchar **data, g
   if (__is_iso_stamp((const gchar *)src, left))
     {
       if (!__parse_iso_stamp(&now, self, tm, &src, &left))
-        goto error;
+        return FALSE;
     }
   else if ((parse_flags & LP_SYSLOG_PROTOCOL) == 0)
     {
       glong usec = 0;
       if (!__parse_bsd_timestamp(&src, &left, &now, tm, &usec))
-        goto error;
+        return FALSE;
       self->timestamps[LM_TS_STAMP].tv_usec = usec;
     }
   else
@@ -572,11 +572,6 @@ log_msg_parse_rfc5424_date_unnormalized(LogMessage *self, const guchar **data, g
   *data = src;
   *length = left;
   return TRUE;
-error:
-  /* no recognizable timestamp, use current time */
-
-  self->timestamps[LM_TS_STAMP] = self->timestamps[LM_TS_RECVD];
-  return FALSE;
 }
 
 static gboolean
