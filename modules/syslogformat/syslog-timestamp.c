@@ -27,35 +27,9 @@
 
 #include <ctype.h>
 
-static guint32
-__parse_iso_timezone(const guchar **data, gint *length)
-{
-  gint hours, mins;
-  const guchar *src = *data;
-  guint32 tz = 0;
-  /* timezone offset */
-  gint sign = *src == '-' ? -1 : 1;
-
-  hours = (*(src + 1) - '0') * 10 + *(src + 2) - '0';
-  mins = (*(src + 4) - '0') * 10 + *(src + 5) - '0';
-  tz = sign * (hours * 3600 + mins * 60);
-  src += 6;
-  (*length) -= 6;
-  *data = src;
-  return tz;
-}
-
-static gboolean
-__is_iso_stamp(const gchar *stamp, gint length)
-{
-  return (length >= 19
-          && stamp[4] == '-'
-          && stamp[7] == '-'
-          && stamp[10] == 'T'
-          && stamp[13] == ':'
-          && stamp[16] == ':'
-         );
-}
+/*******************************************************************************
+ * Parse ISO timestamp
+ *******************************************************************************/
 
 static guint32
 __parse_usec(const guchar **data, gint *length)
@@ -101,6 +75,36 @@ __has_iso_timezone(const guchar *src, gint length)
          !isdigit(*(src+6));
 }
 
+static guint32
+__parse_iso_timezone(const guchar **data, gint *length)
+{
+  gint hours, mins;
+  const guchar *src = *data;
+  guint32 tz = 0;
+  /* timezone offset */
+  gint sign = *src == '-' ? -1 : 1;
+
+  hours = (*(src + 1) - '0') * 10 + *(src + 2) - '0';
+  mins = (*(src + 4) - '0') * 10 + *(src + 5) - '0';
+  tz = sign * (hours * 3600 + mins * 60);
+  src += 6;
+  (*length) -= 6;
+  *data = src;
+  return tz;
+}
+
+static gboolean
+__is_iso_stamp(const gchar *stamp, gint length)
+{
+  return (length >= 19
+          && stamp[4] == '-'
+          && stamp[7] == '-'
+          && stamp[10] == 'T'
+          && stamp[13] == ':'
+          && stamp[16] == ':'
+         );
+}
+
 static gboolean
 __parse_iso_stamp(const GTimeVal *now, LogStamp *stamp, struct tm *tm, const guchar **data, gint *length)
 {
@@ -143,22 +147,9 @@ __parse_iso_stamp(const GTimeVal *now, LogStamp *stamp, struct tm *tm, const guc
   return TRUE;
 }
 
-static gboolean
-__is_bsd_pix_or_asa(const guchar *src, guint32 left)
-{
-  return (left >= 21
-          && src[3] == ' '
-          && src[6] == ' '
-          && src[11] == ' '
-          && src[14] == ':'
-          && src[17] == ':'
-          && (src[20] == ':' || src[20] == ' ')
-          && isdigit(src[7])
-          && isdigit(src[8])
-          && isdigit(src[9])
-          && isdigit(src[10])
-         );
-}
+/*******************************************************************************
+ * Parse BSD timestamp
+ *******************************************************************************/
 
 static gboolean
 __is_bsd_rfc_3164(const guchar *src, guint32 left)
@@ -177,6 +168,23 @@ __is_bsd_linksys(const guchar *src, guint32 left)
           && isdigit(src[18])
           && isdigit(src[19])
           && isspace(src[20])
+         );
+}
+
+static gboolean
+__is_bsd_pix_or_asa(const guchar *src, guint32 left)
+{
+  return (left >= 21
+          && src[3] == ' '
+          && src[6] == ' '
+          && src[11] == ' '
+          && src[14] == ':'
+          && src[17] == ':'
+          && (src[20] == ':' || src[20] == ' ')
+          && isdigit(src[7])
+          && isdigit(src[8])
+          && isdigit(src[9])
+          && isdigit(src[10])
          );
 }
 
