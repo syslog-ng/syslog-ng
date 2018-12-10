@@ -283,13 +283,13 @@ __has_iso_timezone(const guchar *src, gint length)
 }
 
 static gboolean
-__parse_iso_stamp(const GTimeVal *now, LogMessage *self, struct tm *tm, const guchar **data, gint *length)
+__parse_iso_stamp(const GTimeVal *now, LogStamp *stamp, struct tm *tm, const guchar **data, gint *length)
 {
   /* RFC3339 timestamp, expected format: YYYY-MM-DDTHH:MM:SS[.frac]<+/->ZZ:ZZ */
   time_t now_tv_sec = (time_t) now->tv_sec;
   const guchar *src = *data;
 
-  self->timestamps[LM_TS_STAMP].tv_usec = 0;
+  stamp->tv_usec = 0;
 
   /* NOTE: we initialize various unportable fields in tm using a
    * localtime call, as the value of tm_gmtoff does matter but it does
@@ -302,22 +302,22 @@ __parse_iso_stamp(const GTimeVal *now, LogMessage *self, struct tm *tm, const gu
       return FALSE;
     }
 
-  self->timestamps[LM_TS_STAMP].tv_usec = __parse_usec(&src, length);
+  stamp->tv_usec = __parse_usec(&src, length);
 
   if (*length > 0 && *src == 'Z')
     {
       /* Z is special, it means UTC */
-      self->timestamps[LM_TS_STAMP].zone_offset = 0;
+      stamp->zone_offset = 0;
       src++;
       (*length)--;
     }
   else if (__has_iso_timezone(src, *length))
     {
-      self->timestamps[LM_TS_STAMP].zone_offset = __parse_iso_timezone(&src, length);
+      stamp->zone_offset = __parse_iso_timezone(&src, length);
     }
   else
     {
-      self->timestamps[LM_TS_STAMP].zone_offset = -1;
+      stamp->zone_offset = -1;
     }
 
   *data = src;
@@ -486,7 +486,7 @@ log_msg_extract_cisco_timestamp_attributes(LogMessage *self, const guchar **data
 }
 
 static gboolean
-log_msg_parse_rfc3164_date_unnormalized(LogMessage *self, const guchar **data, gint *length, struct tm *tm)
+log_msg_parse_rfc3164_date_unnormalized(LogStamp *stamp, const guchar **data, gint *length, struct tm *tm)
 {
   GTimeVal now;
   const guchar *src = *data;
@@ -497,7 +497,7 @@ log_msg_parse_rfc3164_date_unnormalized(LogMessage *self, const guchar **data, g
   /* If the next chars look like a date, then read them as a date. */
   if (__is_iso_stamp((const gchar *)src, left))
     {
-      if (!__parse_iso_stamp(&now, self, tm, &src, &left))
+      if (!__parse_iso_stamp(&now, stamp, tm, &src, &left))
         return FALSE;
     }
   else
@@ -506,7 +506,7 @@ log_msg_parse_rfc3164_date_unnormalized(LogMessage *self, const guchar **data, g
       if (!__parse_bsd_timestamp(&src, &left, &now, tm, &usec))
         return FALSE;
 
-      self->timestamps[LM_TS_STAMP].tv_usec = usec;
+      stamp->tv_usec = usec;
     }
 
   /* we might have a closing colon at the end of the timestamp, "Cisco" I am
@@ -539,7 +539,7 @@ log_msg_parse_rfc5424_date_unnormalized(LogMessage *self, const guchar **data, g
       left--;
       src++;
     }
-  else if (!__parse_iso_stamp(&now, self, tm, &src, &left))
+  else if (!__parse_iso_stamp(&now, &self->timestamps[LM_TS_STAMP], tm, &src, &left))
     return FALSE;
 
   *data = src;
@@ -553,7 +553,7 @@ log_msg_parse_date_unnormalized(LogMessage *self, const guchar **data, gint *len
   if ((parse_flags & LP_SYSLOG_PROTOCOL) == 0)
     {
       return (log_msg_extract_cisco_timestamp_attributes(self, data, length, parse_flags) &&
-              log_msg_parse_rfc3164_date_unnormalized(self, data, length, tm));
+              log_msg_parse_rfc3164_date_unnormalized(&self->timestamps[LM_TS_STAMP], data, length, tm));
     }
   else
     return log_msg_parse_rfc5424_date_unnormalized(self, data, length, tm);
