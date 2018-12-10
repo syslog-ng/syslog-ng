@@ -19,10 +19,16 @@ LogTemplate_CLASS_DEPS = \
 StructuredLogDestination_CLASS_DEPS = \
 	$(SYSLOG_NG_CORE_PACKAGE_DIR)/LogDestination.class
 
+ThreadedStructuredLogDestination_CLASS_DEPS = \
+	$(SYSLOG_NG_CORE_PACKAGE_DIR)/LogDestination.class
+
 SyslogNgClassLoader_CLASS_DEPS = \
 	$(SYSLOG_NG_CORE_PACKAGE_DIR)/InternalMessageSender.class
 
 TextLogDestination_CLASS_DEPS = \
+	$(SYSLOG_NG_CORE_PACKAGE_DIR)/LogDestination.class
+
+ThreadedTextLogDestination_CLASS_DEPS = \
 	$(SYSLOG_NG_CORE_PACKAGE_DIR)/LogDestination.class
 
 DummyTextDestination_CLASS_DEPS = \
@@ -112,7 +118,9 @@ JAVA_FILES = \
     LogPipe.java \
     LogDestination.java \
     TextLogDestination.java \
+    ThreadedTextLogDestination.java \
     StructuredLogDestination.java \
+    ThreadedStructuredLogDestination.java \
     DummyTextDestination.java \
     DummyStructuredDestination.java
 
