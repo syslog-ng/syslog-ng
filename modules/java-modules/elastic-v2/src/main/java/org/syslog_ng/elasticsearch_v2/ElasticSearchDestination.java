@@ -25,7 +25,7 @@ package org.syslog_ng.elasticsearch_v2;
 
 import org.syslog_ng.LogMessage;
 import org.syslog_ng.LogTemplate;
-import org.syslog_ng.StructuredLogDestination;
+import org.syslog_ng.ThreadedStructuredLogDestination;
 import org.syslog_ng.elasticsearch_v2.client.ESClient;
 import org.syslog_ng.elasticsearch_v2.client.ESClientFactory;
 import org.syslog_ng.elasticsearch_v2.client.UnknownESClientModeException;
@@ -34,7 +34,7 @@ import org.syslog_ng.options.InvalidOptionException;
 import org.syslog_ng.logging.SyslogNgInternalLogger;
 import org.apache.log4j.Logger;
 
-public class ElasticSearchDestination extends StructuredLogDestination {
+public class ElasticSearchDestination extends ThreadedStructuredLogDestination {
 
 	ESClient client;
 	ElasticSearchOptions options;
@@ -87,12 +87,14 @@ public class ElasticSearchDestination extends StructuredLogDestination {
     }
 
 	@Override
-	protected boolean send(LogMessage msg) {
+	protected int send(LogMessage msg) {
 		if (!client.isOpened()) {
-			close();
-			return false;
+			return WORKER_INSERT_RESULT_NOT_CONNECTED;
 		}
-		return client.send(createIndexRequest(msg));
+		if (client.send(createIndexRequest(msg)))
+			return WORKER_INSERT_RESULT_SUCCESS;
+		else
+			return WORKER_INSERT_RESULT_ERROR;
 	}
 
 	@Override
@@ -115,7 +117,8 @@ public class ElasticSearchDestination extends StructuredLogDestination {
 	}
 
 	@Override
-	public void onMessageQueueEmpty() {
-	    client.onMessageQueueEmpty();
+	public int flush() {
+		client.onMessageQueueEmpty();
+		return WORKER_INSERT_RESULT_SUCCESS;
 	}
 }
