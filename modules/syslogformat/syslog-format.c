@@ -552,8 +552,7 @@ log_msg_parse_date_unnormalized(LogMessage *self, const guchar **data, gint *len
 {
   if ((parse_flags & LP_SYSLOG_PROTOCOL) == 0)
     {
-      return (log_msg_extract_cisco_timestamp_attributes(self, data, length, parse_flags) &&
-              log_msg_parse_rfc3164_date_unnormalized(&self->timestamps[LM_TS_STAMP], data, length, tm));
+      return log_msg_parse_rfc3164_date_unnormalized(&self->timestamps[LM_TS_STAMP], data, length, tm);
     }
   else
     return log_msg_parse_rfc5424_date_unnormalized(self, data, length, tm);
@@ -1065,6 +1064,12 @@ log_msg_parse_legacy(const MsgFormatOptions *parse_options,
 
   log_msg_parse_seq(self, &src, &left);
   log_msg_parse_skip_chars(self, &src, &left, " ", -1);
+
+  if (!log_msg_extract_cisco_timestamp_attributes(self, &src, &left, parse_options->flags))
+    {
+      goto error;
+    }
+
   cached_g_current_time(&now);
   if (log_msg_parse_date(self, &src, &left, parse_options->flags & ~LP_SYSLOG_PROTOCOL,
                          time_zone_info_get_offset(parse_options->recv_time_zone_info, (time_t)now.tv_sec)))
