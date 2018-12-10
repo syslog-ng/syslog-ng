@@ -67,6 +67,10 @@ public abstract class LogDestination extends LogPipe {
 		return;
 	}
 
+	protected int flush() {
+		return WORKER_INSERT_RESULT_SUCCESS;
+	}
+
 	public boolean openProxy() {
 		try {
 			return open();
@@ -102,6 +106,16 @@ public abstract class LogDestination extends LogPipe {
 		}
 		catch (Exception e) {
 			sendExceptionMessage(e);
+		}
+	}
+
+	public int flushProxy() {
+		try {
+			return flush();
+		}
+		catch (Exception e) {
+			sendExceptionMessage(e);
+			return WORKER_INSERT_RESULT_ERROR;
 		}
 	}
 
