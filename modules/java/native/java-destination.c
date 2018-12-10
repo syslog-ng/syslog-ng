@@ -149,7 +149,7 @@ java_dd_deinit(LogPipe *s)
   return log_threaded_dest_driver_deinit_method(s);
 }
 
-gboolean
+gint
 java_dd_send_to_object(JavaDestDriver *self, LogMessage *msg)
 {
   return java_destination_proxy_send(self->proxy, msg);
@@ -186,8 +186,7 @@ java_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
       return WORKER_INSERT_RESULT_NOT_CONNECTED;
     }
 
-  gboolean sent = java_dd_send_to_object(self, msg);
-  return sent ? WORKER_INSERT_RESULT_SUCCESS : WORKER_INSERT_RESULT_ERROR;
+  return java_dd_send_to_object(self, msg);
 }
 
 static worker_insert_result_t

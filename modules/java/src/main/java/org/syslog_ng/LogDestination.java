@@ -26,6 +26,13 @@ package org.syslog_ng;
 
 public abstract class LogDestination extends LogPipe {
 
+	protected static final int WORKER_INSERT_RESULT_DROP = 0;
+	protected static final int WORKER_INSERT_RESULT_ERROR = 1;
+	protected static final int WORKER_INSERT_RESULT_EXPLICIT_ACK_MGMT = 2;
+	protected static final int WORKER_INSERT_RESULT_SUCCESS = 3;
+	protected static final int WORKER_INSERT_RESULT_QUEUED = 4;
+	protected static final int WORKER_INSERT_RESULT_NOT_CONNECTED = 5;
+
 	public LogDestination(long pipeHandle) {
 		super(pipeHandle);
 	}

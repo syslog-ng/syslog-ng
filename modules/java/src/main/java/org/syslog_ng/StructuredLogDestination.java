@@ -30,13 +30,16 @@ public abstract class StructuredLogDestination extends LogDestination {
 	}
 
 	protected abstract boolean send(LogMessage msg);
-	public boolean sendProxy(LogMessage msg) {
+	public int sendProxy(LogMessage msg) {
 		try {
-			return send(msg);
+			if (send(msg))
+				return WORKER_INSERT_RESULT_SUCCESS;
+			else
+				return WORKER_INSERT_RESULT_ERROR;
 		}
 		catch (Exception e) {
 			sendExceptionMessage(e);
-			return false;
+			return WORKER_INSERT_RESULT_ERROR;
 		}
 		finally {
 			msg.release();

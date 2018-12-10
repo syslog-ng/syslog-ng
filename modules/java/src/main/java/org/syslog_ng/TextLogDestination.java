@@ -30,13 +30,16 @@ public abstract class TextLogDestination extends LogDestination {
 	}
 
 	protected abstract boolean send(String formattedMessage);
-	public boolean sendProxy(String formattedMessage) {
+	public int sendProxy(String formattedMessage) {
 		try {
-			return send(formattedMessage);
+			if (send(formattedMessage))
+				return WORKER_INSERT_RESULT_SUCCESS;
+			else
+				return WORKER_INSERT_RESULT_ERROR;
 		}
 		catch (Exception e) {
 			sendExceptionMessage(e);
-			return false;
+			return WORKER_INSERT_RESULT_ERROR;
 		}
 	}
 }

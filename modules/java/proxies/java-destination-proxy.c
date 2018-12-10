@@ -96,15 +96,15 @@ __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, c
     }
 
   self->dest_impl.mi_send = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "sendProxy",
-                                               "(Ljava/lang/String;)Z");
+                                               "(Ljava/lang/String;)I");
   self->dest_impl.mi_send_msg = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "sendProxy",
-                                                   "(Lorg/syslog_ng/LogMessage;)Z");
+                                                   "(Lorg/syslog_ng/LogMessage;)I");
 
   if (!self->dest_impl.mi_send_msg && !self->dest_impl.mi_send)
     {
       msg_error("Can't find any queue method in class",
                 evt_tag_str("class_name", class_name),
-                evt_tag_str("method", "boolean send(String) or boolean send(LogMessage)"));
+                evt_tag_str("method", "int send(String) or int send(LogMessage)"));
     }
 
   self->dest_impl.mi_on_message_queue_empty = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class,
@@ -227,32 +227,32 @@ error:
   return NULL;
 }
 
-static gboolean
+static gint
 __queue_native_message(JavaDestinationProxy *self, JNIEnv *env, LogMessage *msg)
 {
   jobject jmsg = java_log_message_proxy_create_java_object(self->msg_builder, msg);
-  jboolean res = CALL_JAVA_FUNCTION(env,
-                                    CallBooleanMethod,
-                                    self->dest_impl.dest_object,
-                                    self->dest_impl.mi_send_msg,
-                                    jmsg);
+  jint res = CALL_JAVA_FUNCTION(env,
+                                CallIntMethod,
+                                self->dest_impl.dest_object,
+                                self->dest_impl.mi_send_msg,
+                                jmsg);
 
   CALL_JAVA_FUNCTION(env, DeleteLocalRef, jmsg);
-  return !!(res);
+  return res;
 }
 
-static gboolean
+static gint
 __queue_formatted_message(JavaDestinationProxy *self, JNIEnv *env, LogMessage *msg)
 {
   log_template_format(self->template, msg, NULL, LTZ_SEND, *self->seq_num, NULL, self->formatted_message);
   jstring message = CALL_JAVA_FUNCTION(env, NewStringUTF, self->formatted_message->str);
-  jboolean res = CALL_JAVA_FUNCTION(env, CallBooleanMethod, self->dest_impl.dest_object, self->dest_impl.mi_send,
-                                    message);
+  jint res = CALL_JAVA_FUNCTION(env, CallIntMethod, self->dest_impl.dest_object, self->dest_impl.mi_send,
+                                message);
   CALL_JAVA_FUNCTION(env, DeleteLocalRef, message);
-  return !!(res);
+  return res;
 }
 
-gboolean
+gint
 java_destination_proxy_send(JavaDestinationProxy *self, LogMessage *msg)
 {
   JNIEnv *env = java_machine_get_env(self->java_machine);
