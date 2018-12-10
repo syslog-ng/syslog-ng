@@ -533,42 +533,17 @@ log_msg_parse_rfc5424_date_unnormalized(LogMessage *self, const guchar **data, g
   gint left = *length;
 
   cached_g_current_time(&now);
-  if ((parse_flags & LP_SYSLOG_PROTOCOL) == 0)
-    log_msg_extract_cisco_timestamp_attributes(self, &src, &left, parse_flags);
 
-  /* If the next chars look like a date, then read them as a date. */
-  if (__is_iso_stamp((const gchar *)src, left))
+  /* NILVALUE */
+  if (G_UNLIKELY(left >= 1 && src[0] == '-'))
     {
-      if (!__parse_iso_stamp(&now, self, tm, &src, &left))
-        return FALSE;
+      self->timestamps[LM_TS_STAMP] = self->timestamps[LM_TS_RECVD];
+      left--;
+      src++;
     }
-  else if ((parse_flags & LP_SYSLOG_PROTOCOL) == 0)
-    {
-      glong usec = 0;
-      if (!__parse_bsd_timestamp(&src, &left, &now, tm, &usec))
-        return FALSE;
-      self->timestamps[LM_TS_STAMP].tv_usec = usec;
-    }
-  else
-    {
-      if (left >= 1 && src[0] == '-')
-        {
-          /* NILVALUE */
-          self->timestamps[LM_TS_STAMP] = self->timestamps[LM_TS_RECVD];
-          *length = --left;
-          *data = ++src;
-          return TRUE;
-        }
-      else
-        return FALSE;
-    }
+  else if (!__parse_iso_stamp(&now, self, tm, &src, &left))
+    return FALSE;
 
-
-  if (*src == ':')
-    {
-      ++src;
-      --left;
-    }
   *data = src;
   *length = left;
   return TRUE;
