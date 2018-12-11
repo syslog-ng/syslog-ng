@@ -80,9 +80,4 @@ public class HttpBulkMessageProcessor extends  HttpMessageProcessor {
 		messageCounter++;
 		return true;
 	}
-
-    @Override
-    public void onMessageQueueEmpty() {
-        flush();
-    }
 }

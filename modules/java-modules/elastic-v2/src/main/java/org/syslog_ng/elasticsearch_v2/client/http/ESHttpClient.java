@@ -175,7 +175,6 @@ public class ESHttpClient implements ESClient {
 
 	@Override
 	public boolean flush() {
-		messageProcessor.onMessageQueueEmpty();
-		return true;
+		return messageProcessor.flush();
 	}
 }
