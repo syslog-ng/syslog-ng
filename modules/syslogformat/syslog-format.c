@@ -209,60 +209,6 @@ log_msg_parse_seq(LogMessage *self, const guchar **data, gint *length)
   return TRUE;
 }
 
-
-static inline void
-__determine_recv_timezone_offset(LogStamp *const timestamp, glong const recv_timezone_ofs)
-{
-  if (!log_stamp_is_timezone_set(timestamp))
-    timestamp->zone_offset = recv_timezone_ofs;
-
-  if (!log_stamp_is_timezone_set(timestamp))
-    timestamp->zone_offset = get_local_timezone_ofs(timestamp->tv_sec);
-}
-
-static void
-__fixup_hour_in_struct_tm_within_transition_periods(LogStamp *stamp, struct tm *tm, glong recv_timezone_ofs)
-{
-  /* save the tm_hour value as received from the client */
-  gint unnormalized_hour = tm->tm_hour;
-
-  /* NOTE: mktime() returns the time assuming that the timestamp we
-   * received was in local time. */
-
-  /* tell cached_mktime() that we have no clue whether Daylight Saving is enabled or not */
-  tm->tm_isdst = -1;
-  stamp->tv_sec = cached_mktime(tm);
-
-  /* We need to determine the timezone we want to assume the message was
-   * received from.  This depends on the recv-time-zone() setting and the
-   * the tv_sec value as converted by mktime() above. */
-  __determine_recv_timezone_offset(stamp, recv_timezone_ofs);
-
-  /* save the tm_hour as adjusted by mktime() */
-  gint normalized_hour = tm->tm_hour;
-
-  /* fix up the tv_sec value by transposing it into the target timezone:
-   *
-   * First we add the local time zone offset then subtract the target time
-   * zone offset.  This is not trivial however, as we have to determine
-   * exactly what the local timezone offset is at the current second, as
-   * used by mktime(). It is composed of these values:
-   *
-   *  1) get_local_timezone_ofs()
-   *  2) then in transition periods, mktime() will change tm->tm_hour
-   *     according to its understanding (e.g.  sprint time, 02:01 is changed
-   *     to 03:01), which is an additional factor that needs to be taken care
-   *     of.  This is the (normalized_hour - unnormalized_hour) part below
-   *
-   */
-  stamp->tv_sec = stamp->tv_sec
-                  /* these two components are the zone offset as used by mktime() */
-                  + get_local_timezone_ofs(stamp->tv_sec)
-                  - (normalized_hour - unnormalized_hour) * 3600
-                  /* this is the zone offset value we want to be */
-                  - stamp->zone_offset;
-}
-
 static gboolean
 log_msg_extract_cisco_timestamp_attributes(LogMessage *self, const guchar **data, gint *length, gint parse_flags)
 {
@@ -291,35 +237,28 @@ log_msg_extract_cisco_timestamp_attributes(LogMessage *self, const guchar **data
 }
 
 static gboolean
-log_msg_parse_date_unnormalized(LogMessage *self, const guchar **data, gint *length, guint parse_flags, struct tm *tm)
+log_msg_parse_timestamp(LogStamp *stamp, const guchar **data, gint *length, guint parse_flags, glong recv_timezone_ofs)
 {
+  gboolean result;
+
   if ((parse_flags & LP_SYSLOG_PROTOCOL) == 0)
-    {
-      return log_msg_parse_rfc3164_date_unnormalized(&self->timestamps[LM_TS_STAMP], data, length, tm);
-    }
-  else if (G_UNLIKELY(*length >= 1 && (*data)[0] == '-'))
-    {
-      /* NILVALUE in syslog protocol */
-      self->timestamps[LM_TS_STAMP] = self->timestamps[LM_TS_RECVD];
-      (*length)--;
-      (*data)++;
-      return TRUE;
-    }
+    result = log_msg_parse_rfc3164_date_unnormalized(stamp, data, length, (parse_flags & LP_NO_PARSE_DATE), recv_timezone_ofs);
   else
-    return log_msg_parse_rfc5424_date_unnormalized(&self->timestamps[LM_TS_STAMP], data, length, tm);
+    result = log_msg_parse_rfc5424_date_unnormalized(stamp, data, length, (parse_flags & LP_NO_PARSE_DATE), recv_timezone_ofs);
+
+  return result;
 }
 
 static gboolean
 log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint parse_flags, glong recv_timezone_ofs)
 {
-  struct tm tm;
 
   LogStamp *stamp = &self->timestamps[LM_TS_STAMP];
   stamp->tv_sec = -1;
   stamp->tv_usec = 0;
   stamp->zone_offset = -1;
 
-  if (!log_msg_parse_date_unnormalized(self, data, length, parse_flags, &tm))
+  if (!log_msg_parse_timestamp(stamp, data, length, parse_flags, recv_timezone_ofs))
     {
       *stamp = self->timestamps[LM_TS_RECVD];
       return FALSE;
@@ -328,10 +267,6 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
   if (parse_flags & LP_NO_PARSE_DATE)
     {
       *stamp = self->timestamps[LM_TS_RECVD];
-    }
-  else
-    {
-      __fixup_hour_in_struct_tm_within_transition_periods(stamp, &tm, recv_timezone_ofs);
     }
 
   return TRUE;

@@ -28,6 +28,63 @@
 #include <ctype.h>
 
 /*******************************************************************************
+ * Timezone conversions
+ *******************************************************************************/
+
+static inline void
+__determine_recv_timezone_offset(LogStamp *const timestamp, glong const recv_timezone_ofs)
+{
+  if (!log_stamp_is_timezone_set(timestamp))
+    timestamp->zone_offset = recv_timezone_ofs;
+
+  if (!log_stamp_is_timezone_set(timestamp))
+    timestamp->zone_offset = get_local_timezone_ofs(timestamp->tv_sec);
+}
+
+static void
+__fixup_hour_in_struct_tm_within_transition_periods(LogStamp *stamp, struct tm *tm, glong recv_timezone_ofs)
+{
+  /* save the tm_hour value as received from the client */
+  gint unnormalized_hour = tm->tm_hour;
+
+  /* NOTE: mktime() returns the time assuming that the timestamp we
+   * received was in local time. */
+
+  /* tell cached_mktime() that we have no clue whether Daylight Saving is enabled or not */
+  tm->tm_isdst = -1;
+  stamp->tv_sec = cached_mktime(tm);
+
+  /* We need to determine the timezone we want to assume the message was
+   * received from.  This depends on the recv-time-zone() setting and the
+   * the tv_sec value as converted by mktime() above. */
+  __determine_recv_timezone_offset(stamp, recv_timezone_ofs);
+
+  /* save the tm_hour as adjusted by mktime() */
+  gint normalized_hour = tm->tm_hour;
+
+  /* fix up the tv_sec value by transposing it into the target timezone:
+   *
+   * First we add the local time zone offset then subtract the target time
+   * zone offset.  This is not trivial however, as we have to determine
+   * exactly what the local timezone offset is at the current second, as
+   * used by mktime(). It is composed of these values:
+   *
+   *  1) get_local_timezone_ofs()
+   *  2) then in transition periods, mktime() will change tm->tm_hour
+   *     according to its understanding (e.g.  sprint time, 02:01 is changed
+   *     to 03:01), which is an additional factor that needs to be taken care
+   *     of.  This is the (normalized_hour - unnormalized_hour) part below
+   *
+   */
+  stamp->tv_sec = stamp->tv_sec
+                  /* these two components are the zone offset as used by mktime() */
+                  + get_local_timezone_ofs(stamp->tv_sec)
+                  - (normalized_hour - unnormalized_hour) * 3600
+                  /* this is the zone offset value we want to be */
+                  - stamp->zone_offset;
+}
+
+/*******************************************************************************
  * Parse ISO timestamp
  *******************************************************************************/
 
@@ -233,24 +290,25 @@ __parse_bsd_timestamp(const guchar **data, gint *length, const GTimeVal *now, st
 }
 
 gboolean
-log_msg_parse_rfc3164_date_unnormalized(LogStamp *stamp, const guchar **data, gint *length, struct tm *tm)
+log_msg_parse_rfc3164_date_unnormalized(LogStamp *stamp, const guchar **data, gint *length, gboolean ignore_result, glong recv_timezone_ofs)
 {
   GTimeVal now;
   const guchar *src = *data;
   gint left = *length;
+  struct tm tm;
 
   cached_g_current_time(&now);
 
   /* If the next chars look like a date, then read them as a date. */
   if (__is_iso_stamp((const gchar *)src, left))
     {
-      if (!__parse_iso_stamp(&now, stamp, tm, &src, &left))
+      if (!__parse_iso_stamp(&now, stamp, &tm, &src, &left))
         return FALSE;
     }
   else
     {
       glong usec = 0;
-      if (!__parse_bsd_timestamp(&src, &left, &now, tm, &usec))
+      if (!__parse_bsd_timestamp(&src, &left, &now, &tm, &usec))
         return FALSE;
 
       stamp->tv_usec = usec;
@@ -265,21 +323,39 @@ log_msg_parse_rfc3164_date_unnormalized(LogStamp *stamp, const guchar **data, gi
       ++src;
       --left;
     }
+
+  if (!ignore_result)
+    __fixup_hour_in_struct_tm_within_transition_periods(stamp, &tm, recv_timezone_ofs);
+
   *data = src;
   *length = left;
   return TRUE;
 }
 
 gboolean
-log_msg_parse_rfc5424_date_unnormalized(LogStamp *stamp, const guchar **data, gint *length, struct tm *tm)
+log_msg_parse_rfc5424_date_unnormalized(LogStamp *stamp, const guchar **data, gint *length, gboolean ignore_result, glong recv_timezone_ofs)
 {
   GTimeVal now;
   const guchar *src = *data;
   gint left = *length;
+  struct tm tm;
 
   cached_g_current_time(&now);
 
-  if (!__parse_iso_stamp(&now, stamp, tm, &src, &left))
+  if (G_UNLIKELY(left >= 1 && src[0] == '-'))
+    {
+      stamp->tv_sec = now.tv_sec;
+      stamp->tv_usec = now.tv_usec;
+      stamp->zone_offset = get_local_timezone_ofs(now.tv_sec);
+      src++;
+      left--;
+    }
+  else if (__parse_iso_stamp(&now, stamp, &tm, &src, &left))
+    {
+      if (!ignore_result)
+        __fixup_hour_in_struct_tm_within_transition_periods(stamp, &tm, recv_timezone_ofs);
+    }
+  else
     return FALSE;
 
   *data = src;
