@@ -90,15 +90,31 @@ public class ElasticSearchDestination extends ThreadedStructuredLogDestination {
 		return new ESIndex.Builder().formattedMessage(formattedMessage).index(index).id(customId).type(type).build();
     }
 
+	private int send_batch(ESIndex index) {
+		if (client.send(index))
+			return WORKER_INSERT_RESULT_QUEUED;
+		else
+			return WORKER_INSERT_RESULT_ERROR;
+	}
+
+	private int send_single(ESIndex index) {
+		if (client.send(index))
+			return WORKER_INSERT_RESULT_SUCCESS;
+		else
+			return WORKER_INSERT_RESULT_ERROR;
+	}
+
 	@Override
 	protected int send(LogMessage msg) {
 		if (!client.isOpened()) {
 			return WORKER_INSERT_RESULT_NOT_CONNECTED;
 		}
-		if (client.send(createIndexRequest(msg)))
-			return WORKER_INSERT_RESULT_SUCCESS;
+
+                ESIndex index = createIndexRequest(msg);
+		if (options.getFlushLimit() > 1)
+			return send_batch(index);
 		else
-			return WORKER_INSERT_RESULT_ERROR;
+			return send_single(index);
 	}
 
 	@Override

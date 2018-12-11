@@ -35,16 +35,10 @@ import java.io.IOException;
 public class HttpBulkMessageProcessor extends  HttpMessageProcessor {
 
 	private Bulk.Builder bulk;
-	private int flushLimit;
-	private int messageCounter;
 
 	public HttpBulkMessageProcessor(ElasticSearchOptions options, ESHttpClient client) {
 		super(options, client);
 		bulk = new Bulk.Builder();
-	}
-	@Override
-	public void init() {
-		flushLimit = options.getFlushLimit();
 	}
 
 	@Override
@@ -55,29 +49,23 @@ public class HttpBulkMessageProcessor extends  HttpMessageProcessor {
 		try {
 			jestResult = client.getClient().execute(bulkActions);
 		}
-		catch (IOException e)
-		{
+		catch (IOException e) {
 			logger.error(e.getMessage());
 			return false;
+		}
+		finally {
+			bulk = new Bulk.Builder();
 		}
 		if (! jestResult.isSucceeded()) {
 			logger.error(jestResult.getErrorMessage());
 			return false;
 		}
-		bulk = new Bulk.Builder();
-		messageCounter = 0;
 		return true;
 	}
 
 	@Override
 	public boolean send(Index index) {
-		if (messageCounter >= flushLimit)
-		{
-			if (!flush())
-				return false;
-		}
 		bulk = bulk.addAction(index);
-		messageCounter++;
 		return true;
 	}
 }

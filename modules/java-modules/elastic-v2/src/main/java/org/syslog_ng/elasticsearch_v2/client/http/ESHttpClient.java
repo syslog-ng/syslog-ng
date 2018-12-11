@@ -134,7 +134,6 @@ public class ESHttpClient implements ESClient {
 
 	@Override
 	public void close() {
-		messageProcessor.flush();
 	}
 
 	@Override
