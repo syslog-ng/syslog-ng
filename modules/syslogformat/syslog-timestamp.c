@@ -290,7 +290,9 @@ __parse_bsd_timestamp(const guchar **data, gint *length, const GTimeVal *now, st
 }
 
 gboolean
-log_msg_parse_rfc3164_date_unnormalized(LogStamp *stamp, const guchar **data, gint *length, gboolean ignore_result, glong recv_timezone_ofs)
+scan_rfc3164_timestamp(const guchar **data, gint *length,
+                       LogStamp *stamp,
+                       gboolean ignore_result, glong recv_timezone_ofs)
 {
   GTimeVal now;
   const guchar *src = *data;
@@ -333,7 +335,9 @@ log_msg_parse_rfc3164_date_unnormalized(LogStamp *stamp, const guchar **data, gi
 }
 
 gboolean
-log_msg_parse_rfc5424_date_unnormalized(LogStamp *stamp, const guchar **data, gint *length, gboolean ignore_result, glong recv_timezone_ofs)
+scan_rfc5424_timestamp(const guchar **data, gint *length,
+                       LogStamp *stamp,
+                       gboolean ignore_result, glong recv_timezone_ofs)
 {
   GTimeVal now;
   const guchar *src = *data;

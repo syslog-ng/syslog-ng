@@ -27,7 +27,9 @@
 #include "syslog-ng.h"
 #include "logstamp.h"
 
-gboolean log_msg_parse_rfc3164_date_unnormalized(LogStamp *stamp, const guchar **data, gint *length, gboolean ignore_result, glong recv_timezone_ofs);
-gboolean log_msg_parse_rfc5424_date_unnormalized(LogStamp *stamp, const guchar **data, gint *length, gboolean ignore_result, glong recv_timezone_ofs);
+gboolean scan_rfc3164_timestamp(const guchar **data, gint *length, LogStamp *stamp,
+                                gboolean ignore_result, glong default_timezone);
+gboolean scan_rfc5424_timestamp(const guchar **data, gint *length, LogStamp *stamp,
+                                gboolean ignore_result, glong default_timezone);
 
 #endif

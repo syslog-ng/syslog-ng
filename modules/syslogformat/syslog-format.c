@@ -242,9 +242,13 @@ log_msg_parse_timestamp(LogStamp *stamp, const guchar **data, gint *length, guin
   gboolean result;
 
   if ((parse_flags & LP_SYSLOG_PROTOCOL) == 0)
-    result = log_msg_parse_rfc3164_date_unnormalized(stamp, data, length, (parse_flags & LP_NO_PARSE_DATE), recv_timezone_ofs);
+    result = scan_rfc3164_timestamp(data, length, stamp,
+                                    (parse_flags & LP_NO_PARSE_DATE),
+                                    recv_timezone_ofs);
   else
-    result = log_msg_parse_rfc5424_date_unnormalized(stamp, data, length, (parse_flags & LP_NO_PARSE_DATE), recv_timezone_ofs);
+    result = scan_rfc5424_timestamp(data, length, stamp,
+                                    (parse_flags & LP_NO_PARSE_DATE),
+                                    recv_timezone_ofs);
 
   return result;
 }
