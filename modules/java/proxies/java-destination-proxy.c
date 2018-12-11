@@ -145,6 +145,12 @@ __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, c
                                                    self->dest_impl.mi_constructor, handle);
   if (!self->dest_impl.dest_object)
     {
+      jthrowable exc = CALL_JAVA_FUNCTION_VOID(java_env, ExceptionOccurred);
+      if (exc)
+        {
+          CALL_JAVA_FUNCTION_VOID(java_env, ExceptionDescribe);
+          CALL_JAVA_FUNCTION_VOID(java_env, ExceptionClear);
+        }
       msg_error("Can't create object",
                 evt_tag_str("class_name", class_name));
       return FALSE;
