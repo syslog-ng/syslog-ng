@@ -53,6 +53,7 @@ struct _XMLScanner
   gboolean pop_next_time;
   GString *key;
   GString *text;
+  GQueue *text_stack;
   gboolean (*start_element_cb) (XMLScanner *self, const gchar *element_name, const gchar **attribute_names,
                                 const gchar **attribute_values, GError **error);
   void (*end_element_cb) (XMLScanner *self, const gchar *element_name, GError **error);

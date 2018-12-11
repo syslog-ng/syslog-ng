@@ -23,6 +23,7 @@
 
 #include "xml-scanner.h"
 #include "scratch-buffers.h"
+#include "compat/glib.h"
 
 
 /*
@@ -158,6 +159,27 @@ tag_matches_patterns(const GPtrArray *patterns, const gint tag_length,
   return FALSE;
 }
 
+
+static GString *
+_pop_text_from_stack(XMLScanner *self)
+{
+  return g_queue_pop_head(self->text_stack);
+}
+
+static void
+_push_current_text_to_stack(XMLScanner *self)
+{
+  g_queue_push_tail(self->text_stack, self->text);
+}
+
+static void
+_start_new_text_buffer(XMLScanner *self)
+{
+  if (self->text)
+    _push_current_text_to_stack(self);
+  self->text = scratch_buffers_alloc();
+}
+
 static GMarkupParser skip = {};
 
 gboolean
@@ -201,6 +223,7 @@ _xml_scanner_start_element(GMarkupParseContext  *context,
 {
   XMLScanner *self = (XMLScanner *)user_data;
 
+  _start_new_text_buffer(self);
   if (self->start_element_cb(self, element_name, attribute_names, attribute_values, error))
     scanner_push_attributes(self, attribute_names, attribute_values);
 }
@@ -235,14 +258,31 @@ _xml_scanner_end_element(GMarkupParseContext *context,
                          GError              **error)
 {
   XMLScanner *self = (XMLScanner *)user_data;
-  (void)self->end_element_cb(self, element_name, error);
+  if (self->text->len)
+    xml_scanner_push_current_key_value(self, self->key->str, self->text->str, self->text->len);
+
+  self->end_element_cb(self, element_name, error);
+  self->text = _pop_text_from_stack(self);
 }
 
 static void
-xml_scanner_strip_current_text(XMLScanner *self)
+_strip_and_append_text(XMLScanner *self, const gchar *text, gsize text_len)
 {
-  g_strstrip(self->text->str);
-  g_string_set_size(self->text, strlen(self->text->str));
+  gchar *buffer = g_strndup(text, text_len);
+  g_strstrip(buffer);
+  g_string_append(self->text, buffer);
+  g_free(buffer);
+}
+
+static void
+_append_text(XMLScanner *self, const gchar *text, gsize text_len)
+{
+  if (self->options->strip_whitespaces)
+    {
+      _strip_and_append_text(self, text, text_len);
+      return;
+    }
+  g_string_append_len(self->text, text, text_len);
 }
 
 void
@@ -255,11 +295,7 @@ xml_scanner_text_method(XMLScanner *self,
   if (text_len == 0)
     return;
 
-  g_string_append_len(self->text, text, text_len);
-  if (self->options->strip_whitespaces)
-    {
-      xml_scanner_strip_current_text(self);
-    }
+  _append_text(self, text, text_len);
 }
 
 static void
@@ -272,11 +308,7 @@ _xml_scanner_text(GMarkupParseContext *context,
   XMLScanner *self = (XMLScanner *)user_data;
 
   const gchar *element_name  = g_markup_parse_context_get_element(context);
-  if(self->text_cb(self, element_name, text, text_len, error))
-    {
-      xml_scanner_push_current_key_value(self, self->key->str, self->text->str, self->text->len);
-      g_string_truncate(self->text, 0);
-    }
+  self->text_cb(self, element_name, text, text_len, error);
 }
 
 void
@@ -288,6 +320,8 @@ xml_scanner_parse(XMLScanner *self, const gchar *input, gsize input_len, GError 
                                       .end_element = _xml_scanner_end_element,
                                       .text =  _xml_scanner_text
                                     };
+  ScratchBuffersMarker marker;
+  scratch_buffers_mark(&marker);
   self->xml_ctx = g_markup_parse_context_new(&scanner_callbacks, 0, self, NULL);
   g_markup_parse_context_parse(self->xml_ctx, input, input_len, error);
   if (error && *error)
@@ -295,6 +329,7 @@ xml_scanner_parse(XMLScanner *self, const gchar *input, gsize input_len, GError 
   g_markup_parse_context_end_parse(self->xml_ctx, error);
 
 exit:
+  scratch_buffers_reclaim_marked(marker);
   g_markup_parse_context_free(self->xml_ctx);
   self->xml_ctx = NULL;
 }
@@ -315,11 +350,13 @@ xml_scanner_init(XMLScanner *self, XMLScannerOptions *options, PushCurrentKeyVal
   self->push_key_value.user_data = user_data;
   self->key = scratch_buffers_alloc();
   g_string_assign(self->key, key_prefix);
-  self->text = scratch_buffers_alloc();
+  self->text = NULL;
+  self->text_stack = g_queue_new();
 }
 
 void
 xml_scanner_deinit(XMLScanner *self)
 {
   self->options = NULL;
+  g_queue_free(self->text_stack);
 }

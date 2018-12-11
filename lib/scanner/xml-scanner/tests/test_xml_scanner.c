@@ -161,11 +161,10 @@ Test(xml_scanner, test_strip_whitespaces)
   {
     .strip_whitespaces = TRUE,
      .expected.test_push_function = _test_strip,
-               .expected.expected_pairs = &(NameValuePair [])
-      {
-        {".tag", "part1"},
-        {".tag", "part2"},
-      }
+               .expected.expected_pairs = (NameValuePair [])
+    {
+      {".tag", "part1part2"},
+    }
   });
 
   GError *error = NULL;

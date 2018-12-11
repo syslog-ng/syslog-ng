@@ -312,7 +312,7 @@ Test(xml_parser, test_strip_whitespaces)
 
   LogMessage *msg = log_msg_new_empty();
   log_msg_set_value(msg, LM_V_MESSAGE,
-                    "<tag> \n\t part1 <tag2/> part2 \n\n<tag>", -1);
+                    "<tag> \n\t part1 <tag2/> part2 \n\n</tag>", -1);
 
   const gchar *value;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
