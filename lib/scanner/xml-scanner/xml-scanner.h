@@ -60,6 +60,7 @@ struct _XMLScanner
   void (*text_cb) (XMLScanner *self, const gchar *element_name,
                    const gchar *text, gsize text_len, GError **error);
   PushCurrentKeyValue push_key_value;
+  void (*push_text) (XMLScanner *self);
 };
 
 void xml_scanner_init(XMLScanner *self, XMLScannerOptions *options, PushCurrentKeyValueCB push_function,
@@ -72,6 +73,7 @@ xml_scanner_push_current_key_value(XMLScanner *self, const gchar *name, const gc
 {
   self->push_key_value.push_function(name, value, value_length, self->push_key_value.user_data);
 }
+void xml_scanner_push_text_method(XMLScanner *self);
 
 gboolean xml_scanner_start_element_method(XMLScanner *self, const gchar *element_name, const gchar **attribute_names,
                                           const gchar **attribute_values, GError **error);

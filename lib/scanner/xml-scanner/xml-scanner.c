@@ -248,7 +248,6 @@ _xml_scanner_start_element(GMarkupParseContext  *context,
     scanner_push_attributes(self, attribute_names, attribute_values);
 }
 
-
 void
 xml_scanner_end_element_method(XMLScanner *self,
                                const gchar         *element_name,
@@ -264,15 +263,21 @@ xml_scanner_end_element_method(XMLScanner *self,
 }
 
 void
+xml_scanner_push_text_method(XMLScanner *self)
+{
+  if (self->text->len)
+    xml_scanner_push_current_key_value(self, self->key->str, self->text->str, self->text->len);
+}
+
+void
 _xml_scanner_end_element(GMarkupParseContext *context,
                          const gchar         *element_name,
                          gpointer             user_data,
                          GError              **error)
 {
   XMLScanner *self = (XMLScanner *)user_data;
-  if (self->text->len)
-    xml_scanner_push_current_key_value(self, self->key->str, self->text->str, self->text->len);
 
+  self->push_text(self);
   self->end_element_cb(self, element_name, error);
   self->text = _pop_text_from_stack(self);
 }
@@ -356,6 +361,7 @@ xml_scanner_init(XMLScanner *self, XMLScannerOptions *options, PushCurrentKeyVal
   self->start_element_cb = xml_scanner_start_element_method;
   self->end_element_cb = xml_scanner_end_element_method;
   self->text_cb = xml_scanner_text_method;
+  self->push_text = xml_scanner_push_text_method;
 
   self->options = options;
   self->push_key_value.push_function = push_function;
