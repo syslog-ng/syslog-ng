@@ -271,7 +271,7 @@ log_msg_parse_rfc3164_date_unnormalized(LogStamp *stamp, const guchar **data, gi
 }
 
 gboolean
-log_msg_parse_rfc5424_date_unnormalized(LogMessage *self, const guchar **data, gint *length, struct tm *tm)
+log_msg_parse_rfc5424_date_unnormalized(LogStamp *stamp, const guchar **data, gint *length, struct tm *tm)
 {
   GTimeVal now;
   const guchar *src = *data;
@@ -279,14 +279,7 @@ log_msg_parse_rfc5424_date_unnormalized(LogMessage *self, const guchar **data, g
 
   cached_g_current_time(&now);
 
-  /* NILVALUE */
-  if (G_UNLIKELY(left >= 1 && src[0] == '-'))
-    {
-      self->timestamps[LM_TS_STAMP] = self->timestamps[LM_TS_RECVD];
-      left--;
-      src++;
-    }
-  else if (!__parse_iso_stamp(&now, &self->timestamps[LM_TS_STAMP], tm, &src, &left))
+  if (!__parse_iso_stamp(&now, stamp, tm, &src, &left))
     return FALSE;
 
   *data = src;

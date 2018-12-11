@@ -1,6 +1,8 @@
 set(SYSLOGFORMAT_SOURCES
     syslog-format.c
     syslog-format.h
+    syslog-timestamp.c
+    syslog-timestamp.h
     syslog-format-plugin.c
     syslog-parser-parser.c
     syslog-parser-parser.h

@@ -22,6 +22,7 @@
  */
 
 #include "syslog-format.h"
+#include "syslog-timestamp.h"
 #include "logmsg/logmsg.h"
 #include "messages.h"
 #include "timeutils.h"
@@ -289,8 +290,6 @@ log_msg_extract_cisco_timestamp_attributes(LogMessage *self, const guchar **data
   return TRUE;
 }
 
-#include "syslog-timestamp.c"
-
 static gboolean
 log_msg_parse_date_unnormalized(LogMessage *self, const guchar **data, gint *length, guint parse_flags, struct tm *tm)
 {
@@ -298,8 +297,16 @@ log_msg_parse_date_unnormalized(LogMessage *self, const guchar **data, gint *len
     {
       return log_msg_parse_rfc3164_date_unnormalized(&self->timestamps[LM_TS_STAMP], data, length, tm);
     }
+  else if (G_UNLIKELY(*length >= 1 && (*data)[0] == '-'))
+    {
+      /* NILVALUE in syslog protocol */
+      self->timestamps[LM_TS_STAMP] = self->timestamps[LM_TS_RECVD];
+      (*length)--;
+      (*data)++;
+      return TRUE;
+    }
   else
-    return log_msg_parse_rfc5424_date_unnormalized(self, data, length, tm);
+    return log_msg_parse_rfc5424_date_unnormalized(&self->timestamps[LM_TS_STAMP], data, length, tm);
 }
 
 static gboolean

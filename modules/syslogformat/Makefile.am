@@ -2,6 +2,8 @@ module_LTLIBRARIES				+= modules/syslogformat/libsyslogformat.la
 modules_syslogformat_libsyslogformat_la_SOURCES	=	\
 	modules/syslogformat/syslog-format.c		\
 	modules/syslogformat/syslog-format.h		\
+	modules/syslogformat/syslog-timestamp.c		\
+	modules/syslogformat/syslog-timestamp.h		\
 	modules/syslogformat/syslog-format-plugin.c	\
 	modules/syslogformat/syslog-parser-grammar.y	\
 	modules/syslogformat/syslog-parser-parser.c	\

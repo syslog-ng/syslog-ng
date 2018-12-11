@@ -28,6 +28,6 @@
 #include "logstamp.h"
 
 gboolean log_msg_parse_rfc3164_date_unnormalized(LogStamp *stamp, const guchar **data, gint *length, struct tm *tm);
-gboolean log_msg_parse_rfc5424_date_unnormalized(LogMessage *self, const guchar **data, gint *length, struct tm *tm);
+gboolean log_msg_parse_rfc5424_date_unnormalized(LogStamp *stamp, const guchar **data, gint *length, struct tm *tm);
 
 #endif
