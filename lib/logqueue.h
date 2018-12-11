@@ -44,6 +44,7 @@ struct _LogQueue
 
   gint throttle;
   gint throttle_buckets;
+  gint logs_per_throttle_bucket;
   GTimeVal last_throttle_check;
 
   gchar *persist_name;
@@ -187,10 +188,11 @@ log_queue_unref(LogQueue *self)
 }
 
 static inline void
-log_queue_set_throttle(LogQueue *self, gint throttle)
+log_queue_set_throttle(LogQueue *self, gint throttle, gint logs_per_throttle_bucket)
 {
   self->throttle = throttle;
-  self->throttle_buckets = throttle;
+  self->throttle_buckets = throttle * logs_per_throttle_bucket;
+  self->logs_per_throttle_bucket = logs_per_throttle_bucket;
 }
 
 static inline void

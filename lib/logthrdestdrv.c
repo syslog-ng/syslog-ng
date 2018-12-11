@@ -39,6 +39,7 @@ log_threaded_dest_driver_set_batch_lines(LogDriver *s, gint batch_lines)
   LogThreadedDestDriver *self = (LogThreadedDestDriver *) s;
 
   self->batch_lines = batch_lines;
+  self->super.logs_per_throttle_bucket = batch_lines;
 }
 
 void

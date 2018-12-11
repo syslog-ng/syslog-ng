@@ -254,7 +254,7 @@ log_dest_driver_acquire_queue_method(LogDestDriver *self, const gchar *persist_n
   if (!queue)
     {
       queue = log_queue_fifo_new(self->log_fifo_size < 0 ? cfg->log_fifo_size : self->log_fifo_size, persist_name);
-      log_queue_set_throttle(queue, self->throttle);
+      log_queue_set_throttle(queue, self->throttle, self->logs_per_throttle_bucket);
     }
   return queue;
 }
@@ -365,6 +365,7 @@ log_dest_driver_init_instance(LogDestDriver *self, GlobalConfig *cfg)
   self->release_queue = log_dest_driver_release_queue_method;
   self->log_fifo_size = -1;
   self->throttle = 0;
+  self->logs_per_throttle_bucket = 1;
 }
 
 void

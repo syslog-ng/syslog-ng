@@ -190,7 +190,8 @@ log_queue_check_items(LogQueue *self, gint *timeout, LogQueuePushNotifyFunc para
            * rounded to zero when only a minimal interval passes between
            * poll iterations.
            */
-          self->throttle_buckets = MIN(self->throttle, self->throttle_buckets + new_buckets);
+          self->throttle_buckets = MIN(self->throttle, self->throttle_buckets + new_buckets)
+                                   * self->logs_per_throttle_bucket;
           self->last_throttle_check = now;
         }
       if (num_elements && self->throttle_buckets == 0)

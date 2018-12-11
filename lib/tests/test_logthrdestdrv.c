@@ -594,7 +594,7 @@ Test(logthrdestdrv,
 Test(logthrdestdrv, throttle_is_applied_to_delivery_and_causes_flush_to_be_called_more_often)
 {
   /* 3 messages per second, we need to set this explicitly on the queue as it has already been initialized */
-  log_queue_set_throttle(dd->super.worker.instance.queue, 3);
+  log_queue_set_throttle(dd->super.worker.instance.queue, 3, 1);
   dd->super.worker.insert = _insert_batched_message_success;
   dd->super.worker.flush = _flush_batched_message_success;
   dd->super.batch_lines = 5;

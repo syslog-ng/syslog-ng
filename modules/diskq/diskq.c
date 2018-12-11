@@ -70,7 +70,7 @@ _acquire_queue(LogDestDriver *dd, const gchar *persist_name)
     queue = log_queue_disk_reliable_new(&self->options, persist_name);
   else
     queue = log_queue_disk_non_reliable_new(&self->options, persist_name);
-  log_queue_set_throttle(queue, dd->throttle);
+  log_queue_set_throttle(queue, dd->throttle, dd->logs_per_throttle_bucket);
 
   qfile_name = persist_state_lookup_string(cfg->state, persist_name, NULL, NULL);
 

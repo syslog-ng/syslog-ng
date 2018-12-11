@@ -167,6 +167,7 @@ struct _LogDestDriver
 
   gint log_fifo_size;
   gint throttle;
+  gint logs_per_throttle_bucket;
   StatsCounterItem *queued_global_messages;
 };
 
