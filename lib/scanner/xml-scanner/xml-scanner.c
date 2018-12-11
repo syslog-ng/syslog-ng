@@ -180,6 +180,27 @@ _start_new_text_buffer(XMLScanner *self)
   self->text = scratch_buffers_alloc();
 }
 
+static gint
+before_last_dot(GString *str)
+{
+  const gchar *s = str->str;
+  gchar *pos = strrchr(s, '.');
+  return (pos-s);
+}
+
+static void
+_clear_current_element_from_key(XMLScanner *self)
+{
+  g_string_truncate(self->key, before_last_dot(self->key));
+}
+
+static void
+_add_current_element_to_key(XMLScanner *self, const gchar *element_name)
+{
+  g_string_append_c(self->key, '.');
+  g_string_append(self->key, element_name);
+}
+
 static GMarkupParser skip = {};
 
 gboolean
@@ -208,8 +229,7 @@ xml_scanner_start_element_method(XMLScanner *self,
     }
   g_free(reversed);
 
-  g_string_append_c(self->key, '.');
-  g_string_append(self->key, element_name);
+  _add_current_element_to_key(self, element_name);
   return TRUE;
 }
 
@@ -228,13 +248,6 @@ _xml_scanner_start_element(GMarkupParseContext  *context,
     scanner_push_attributes(self, attribute_names, attribute_values);
 }
 
-static gint
-before_last_dot(GString *str)
-{
-  const gchar *s = str->str;
-  gchar *pos = strrchr(s, '.');
-  return (pos-s);
-}
 
 void
 xml_scanner_end_element_method(XMLScanner *self,
@@ -247,9 +260,8 @@ xml_scanner_end_element_method(XMLScanner *self,
       self->pop_next_time = 0;
       return;
     }
-  g_string_truncate(self->key, before_last_dot(self->key));
+  _clear_current_element_from_key(self);
 }
-
 
 void
 _xml_scanner_end_element(GMarkupParseContext *context,
