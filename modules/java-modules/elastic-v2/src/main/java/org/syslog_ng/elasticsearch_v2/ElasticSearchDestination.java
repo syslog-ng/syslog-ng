@@ -118,7 +118,9 @@ public class ElasticSearchDestination extends ThreadedStructuredLogDestination {
 
 	@Override
 	public int flush() {
-		client.onMessageQueueEmpty();
-		return WORKER_INSERT_RESULT_SUCCESS;
+		if (client.flush())
+			return WORKER_INSERT_RESULT_SUCCESS;
+		else
+			return WORKER_INSERT_RESULT_ERROR;
 	}
 }

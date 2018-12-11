@@ -101,7 +101,7 @@ public class ESHttpClient implements ESClient {
 		/* HTTP Basic authentication requested */
 		if (options.getHttpAuthType().equals("basic")) {
 			httpClientConfigBuilder.defaultCredentials(options.getHttpAuthTypeBasicUsername(), options.getHttpAuthTypeBasicPassword());
-    } 
+    }
     setupHttpClientBuilder(httpClientConfigBuilder, this.options);
 
     return httpClientConfigBuilder.build();
@@ -166,15 +166,16 @@ public class ESHttpClient implements ESClient {
 			JestResult result = client.execute(nodesinfo);
 			if (result != null ) {
 				clusterName = result.getValue("cluster_name").toString();
-			} 
+			}
 		} catch (IOException e) {
       logger.info("Failed to get cluster name from the client, use the name set in the config file: " + clusterName);
 		}
 		return clusterName;
 	}
 
-    @Override
-    public void onMessageQueueEmpty() {
-        messageProcessor.onMessageQueueEmpty();
-    }
+	@Override
+	public boolean flush() {
+		messageProcessor.onMessageQueueEmpty();
+		return true;
+	}
 }

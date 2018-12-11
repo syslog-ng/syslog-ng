@@ -126,7 +126,7 @@ public abstract class ESNativeClient implements ESClient {
 	private void resetClient() {
 		this.client = null;
 	}
-	
+
     protected void loadConfigFile(String cfgFile, Builder settingsBuilder) {
         if (cfgFile == null || cfgFile.isEmpty()) {
             return;
@@ -144,8 +144,8 @@ public abstract class ESNativeClient implements ESClient {
 		return messageProcessor.send(index);
 	}
 
-    @Override
-    public void onMessageQueueEmpty() {
-
-    }
+	@Override
+	public boolean flush() {
+		return true;
+	}
 }
