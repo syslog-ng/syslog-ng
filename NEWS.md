@@ -1,86 +1,63 @@
-3.18.1
+3.19.1
 ======
 
 ## Features
 
- * HTTP batching (#2135)
- * HTTP multi threading (#2291)
- * HTTP framing support for batches (#2190)
- * Python source (#2308)
- * Template support for Python destination (#2196)
- * HDFS time-reap (#2257)
- * Riemann batching (#2098)
- * flush-timeout() for HTTP (#2251)
- * Base64 encoding template function (#2223)
- * url-decode() template function (#2278)
- * Allow IPv4 mapped addresses in IPv6 mode (#2312)
- * app-parser: set ${.app.name} to the application identified (#2290)
- * Value pairs improvements (#2287)
- * syslog-ng-ctl config to print pre-processed configuration (#2280)
- * Add support for whitespace in template functions (#2271)
- * verify the configuration is the same as on the disk (#2345)
+ * HTTP load balancer (#2347)
+ * Slack destination (#2451)
+ * Add Cisco Catalyst formatted triplets support to cisco-parser() (#2394)
+ * Add RFC5424 syslog support to the system() source (FreeBSD 12.0 support) (#2430)
+ * Add network `interface()` option to network sources (#2389)
+ * Add so-reuseport() to network drivers (#2379)
+ * Enable supporting HTTP redirects (#2136)
 
 ## Bugfixes
 
- * Fix queue counters race condition (#2316)
- * AMQP configurable max connection and frame size (#2343)
- * Fix wakeup in threaded sources (#2339)
- * Fix libnet memory leak in network destinations (#2331)
- * Fix unexpected flag check-hostname in syslog-parser (#2314)
- * Fix memory leak in dbparser (#2311)
- * Inline Python code comment generates syntax error (#2319)
- * Password protected SSL keys portability (MADV_DONTDUMP) (#2341)
- * Fixing compiler warnings from armv7l (#2301)
- * Riemann crashes in flush (#2296)
- * Revert sticky hook option (#2295)
- * Small stats fixes (#2294)
- * Detect filter loop (#2283, #2288)
- * Fix infinite loop in threaded destinations with ivykis prior 0.39 (#2275)
- * Fix log expr node use after free (#2269)
- * Remove gradle from the list of "BuildRequires" (RPM packaging) (#2266)
- * Fix wildcard-source memleak when directory removed (#2261, #2267)
- * Missing macros: C_AMPM, C_USEC, C_MSEC, C_HOUR12 (#2259)
- * Fix cisco timestamp parsing (#2272)
- * Undefined filter reference (#2273)
- * Fix the literal() type hint (#2286)
- * logwriter, affile, afsocket: fixing "internal overflow". (#2250)
- * lib/gsockaddr.c: modify the unix salen calculation (#2285)
- * dbld: fix dbld/rules deb failure (#2282)
- * Update data type to avoid conversion. (#2281)
- * compat/getent: add support for platforms that lack the r versions (#2244)
- * Fix memory leak caused by saving stats counter to persist config (#2279)
- * Hdfs: disable archive when append-enabled is configured (#2235)
- * scl: add linux-audit() SCL to make files (#2230)
- * DebianPackaging: Add linux-audit SCL to included dirs (#2254)
- * cap_syslog capability detection (#2227)
- * LogProto partial write (#2194)
+ * Fix frequent disconnects of syslog() with TLS (#2432)
+ * Fix possible refcount leak during reload/shutdown (#2434)
+ * Fix message storm on trace level (#2425)
+ * Fix use after free in file destinations (time-reap) (#2418)
+ * Fixing a few memleaks in the Java destination (#2417)
+ * Fix telegram dst default ca dir (#2416)
+ * Fix prefix handling in $(list-concat) and $(strip) (#2405)
+ * Fixing an eventfd leak with ivykis<=0.38 (threaded destinations) (#2404)
+ * Process flush result after worker thread exits (threaded destinations) (#2402)
+ * hdfs: do not try to write unopened file (#2391)
+ * Fix leaks in redis() destination (#2383)
+ * Block location tracking fixes (#2378)
+ * Fix $(basename) and $(dirname) in the presence of a prefix (#2371)
+ * Fixing a false positive corruption detection in non-reliable diskq (#2356)
+ * Check if /proc/kmsg can be opened in system-source (#2408)
+ * Fix include guard in systemd-journal (#2445)
+ * Remove hexadecimal and octal number parsing from templates (#2401)
 
 ## Other changes
 
- * telegram, urlencode: api changes (#2299)
- * python: include python2/3 in plugin description (#2337)
- * Stats prepare for multiple queues per destdrv (#2302)
- * Update deprecated use of tcp()/udp() to network(). This addresses #2322 (#2326)
- * Message about not supported cap_syslog only at debug level (#2333)
- * Few test leak fix (#2323)
- * warning elimination: pointer arithmetics (#2305)
- * templates: get rid off the args_lock (#2289)
- * Ack tracker small refact (#2277)
- * ElasticSearchDestination: Display deprecated warning message about us… (#2274)
- * Improve Readme.md header structure (#2258)
- * Rewrite json tests based on criterion (#2255)
- * Rewrite dbparser tests based on criterion (#2252)
- * Processed timestamp (#2243)
- * msg parameters: remove last NULL parameter from msg macros (#2242)
- * Fix threaded destination test cases (#2236)
- * dbld: missing packages, deps changes (#2232, #2332, #2327, #2260, #2256)
- * Use msg_trace() when emitting trace information (#2226)
+ * Do not load certs from default CURL ca-dir by default (http() destination) (#2410)
+ * Disable SSL compression by default (#2372)
+ * Flush lines cleanup (#2386, #2392)
+ * Refine json-parser() log messages to be less alarming (#2437)
+ * Move some messages to trace (#2358)
+ * Make include-path more discoverable (#2426)
+ * Adding build flag -Wmissing-format-attribute and -Wsuggest-attribute=noreturn (#2423)
+ * Rewrite filter unit tests based on criterion (#2422)
+ * PytestFramework in Travis (#2415)
+ * syslog-ng-mod-java debian pkg should depend on headless jre (#2388)
+ * Add contextual data error reporting improvements & csv-scanner refactor (#2373)
+ * Afsocket remove unused functions/bitfields (#2363)
+ * Afsocket minor cleanup/refactor (#2355)
+ * Riemann worker (#2313)
+ * Afsql threaded dest driver (#2097)
+ * dbld: do not mount .gitconfig if missing (#2419)
+ * dbld: Add missing docbook-xsl packages (#2398)
+ * dbld: update criterion to 2.3.3 (#2396)
+ * dbld: Remove "proposed" Ubuntu repository from enable_dbgsyms() (#2382)
+ * dbld: Add new target "list-builder-images" (#2381)
+ * dbld: Support Ubuntu Bionic and update existing images (#2318)
 
 ## Notes to the developers
 
- * Threaded source and fetcher (#2247)
- * "Examples" module (#2248)
- * Do not ship mongo-c-driver with syslog-ng (remove as submodule) (#2245)
+ * PytestFramework: Add initial test framework (#1940)
 
 ## Credits
 
@@ -93,7 +70,6 @@ of syslog-ng, contribute.
 
 We would like to thank the following people for their contribution:
 
-Andras Mitzki, Antal Nemes, Balazs Scheidler, Gabor Nagy, Gergely Tonté,
-Laszlo Budai, Laszlo Szemere, László Várady, Maurice T. Meyer, Mahmoud Salama,
-Norbert Takacs, Peter Czanik, Peter Gyorko, Peter Kokai, Robert Fekete,
-Terez Nemes, Tibor Bodnar, Zoltan Pallagi, y-l-i.
+Abder Benbachir, Andras Mitzki, Antal Nemes, Attila Szakacs, Balazs Scheidler,
+Gabor Nagy, Gergely Tonté, JP Vossen, Juhasz Viktor, Laszlo Budai,
+Laszlo Szemere, László Várady, Norbert Takacs, Peter Kokai, Zoltan Pallagi.
