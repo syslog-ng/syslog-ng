@@ -54,6 +54,7 @@
  * dbld: Remove "proposed" Ubuntu repository from enable_dbgsyms() (#2382)
  * dbld: Add new target "list-builder-images" (#2381)
  * dbld: Support Ubuntu Bionic and update existing images (#2318)
+ * dbld: release target should use the default image (#2464)
 
 ## Notes to the developers
 

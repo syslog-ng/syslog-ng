@@ -92,7 +92,7 @@ rpm-%: pkg-tarball-$(DEFAULT_IMAGE)
 
 
 release: MODE=release
-release: deb-xenial
+release: deb
 
 clean:
 	rm -rf $(BUILD_DIR)/*
