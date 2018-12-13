@@ -320,10 +320,10 @@ AC_ARG_WITH(python,
               [  --with-python=VERSION    Build with a specific version of python]
               ,,with_python="auto")
 
-AC_ARG_WITH(docbook-dir,
-            AC_HELP_STRING([--with-docbook-dir=DIR],
-                           [compiling manpages using docbook in the specified path, if not set online version will be used from http://docbook.sourceforge.net]),
-            [ XSL_STYLESHEET=$with_docbook_dir ],
+AC_ARG_WITH(docbook,
+            AC_HELP_STRING([--with-docbook=FILE],
+                           [compiling manpages using docbook in the specified path, if not set online version will be used from http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl]),
+            [ XSL_STYLESHEET=$with_docbook ],
             [ XSL_STYLESHEET=http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl ]
             )
 
