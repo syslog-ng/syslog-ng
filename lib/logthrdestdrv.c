@@ -293,6 +293,29 @@ _process_result(LogThreadedDestWorker *self, gint result)
 
 }
 
+static void
+_perform_flush(LogThreadedDestWorker *self)
+{
+  /* NOTE: earlier we had a condition on only calling flush() if batch_size
+   * is non-zero.  This was removed, as the language bindings that were done
+   * _before_ the batching support in LogThreadedDestDriver relies on
+   * flush() being called always, even if WORKER_INSERT_RESULT_SUCCESS is
+   * returned, in which case batch_size is already zero at this point.
+   */
+  if (!self->suspended)
+    {
+      msg_trace("Flushing batch",
+                evt_tag_str("driver", self->owner->super.super.id),
+                evt_tag_int("worker_index", self->worker_index),
+                evt_tag_int("batch_size", self->batch_size));
+
+      worker_insert_result_t result = log_threaded_dest_worker_flush(self);
+      _process_result(self, result);
+    }
+
+  iv_invalidate_now();
+}
+
 /* NOTE: runs in the worker thread, whenever items on our queue are
  * available. It iterates all elements on the queue, however will terminate
  * if the mainloop requests that we exit. */
@@ -329,6 +352,9 @@ _perform_inserts(LogThreadedDestWorker *self)
 
       _process_result(self, result);
 
+      if (self->enable_batching && self->batch_size >= self->owner->batch_lines)
+        _perform_flush(self);
+
       log_msg_unref(msg);
       msg_set_context(NULL);
       log_msg_refcache_stop();
@@ -343,29 +369,6 @@ _perform_inserts(LogThreadedDestWorker *self)
       iv_invalidate_now();
     }
   self->rewound_batch_size = 0;
-}
-
-static void
-_perform_flush(LogThreadedDestWorker *self)
-{
-  /* NOTE: earlier we had a condition on only calling flush() if batch_size
-   * is non-zero.  This was removed, as the language bindings that were done
-   * _before_ the batching support in LogThreadedDestDriver relies on
-   * flush() being called always, even if WORKER_INSERT_RESULT_SUCCESS is
-   * returned, in which case batch_size is already zero at this point.
-   */
-  if (!self->suspended)
-    {
-      msg_trace("Flushing batch",
-                evt_tag_str("driver", self->owner->super.super.id),
-                evt_tag_int("worker_index", self->worker_index),
-                evt_tag_int("batch_size", self->batch_size));
-
-      worker_insert_result_t result = log_threaded_dest_worker_flush(self);
-      _process_result(self, result);
-    }
-
-  iv_invalidate_now();
 }
 
 /* this callback is invoked by LogQueue and is registered using
