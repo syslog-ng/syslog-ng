@@ -84,7 +84,7 @@ __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, c
     {
       msg_error("Can't find method in class",
                 evt_tag_str("class_name", class_name),
-                evt_tag_str("method", "boolean init(SyslogNg)"));
+                evt_tag_str("method", "boolean initProxy(SyslogNg)"));
       return FALSE;
     }
 
@@ -93,7 +93,7 @@ __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, c
     {
       msg_error("Can't find method in class",
                 evt_tag_str("class_name", class_name),
-                evt_tag_str("method", "void deinit()"));
+                evt_tag_str("method", "void deinitProxy()"));
       return FALSE;
     }
 
@@ -106,7 +106,7 @@ __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, c
     {
       msg_error("Can't find any queue method in class",
                 evt_tag_str("class_name", class_name),
-                evt_tag_str("method", "int send(String) or int send(LogMessage)"));
+                evt_tag_str("method", "int sendProxy(String) or int sendProxy(LogMessage)"));
     }
 
   self->dest_impl.mi_on_message_queue_empty = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class,
@@ -115,7 +115,7 @@ __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, c
     {
       msg_error("Can't find method in class",
                 evt_tag_str("class_name", class_name),
-                evt_tag_str("method", "void onMessageQueueEmpty()"));
+                evt_tag_str("method", "void onMessageQueueEmptyProxy()"));
       return FALSE;
     }
 
@@ -125,7 +125,7 @@ __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, c
     {
       msg_error("Can't find method in class",
                 evt_tag_str("class_name", class_name),
-                evt_tag_str("method", "int flush()"));
+                evt_tag_str("method", "int flushProxy()"));
     }
 
   self->dest_impl.mi_open = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "openProxy", "()Z");
@@ -133,7 +133,7 @@ __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, c
     {
       msg_error("Can't find method in class",
                 evt_tag_str("class_name", class_name),
-                evt_tag_str("method", "boolean open()"));
+                evt_tag_str("method", "boolean openProxy()"));
     }
 
   self->dest_impl.mi_close = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "closeProxy", "()V");
@@ -141,7 +141,7 @@ __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, c
     {
       msg_error("Can't find method in class",
                 evt_tag_str("class_name", class_name),
-                evt_tag_str("method", "void close()"));
+                evt_tag_str("method", "void closeProxy()"));
     }
 
   self->dest_impl.mi_is_opened = CALL_JAVA_FUNCTION(java_env, GetMethodID, self->loaded_class, "isOpenedProxy", "()Z");
@@ -149,7 +149,7 @@ __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, c
     {
       msg_error("Can't find method in class",
                 evt_tag_str("class_name", class_name),
-                evt_tag_str("method", "boolean isOpened()"));
+                evt_tag_str("method", "boolean isOpenedProxy()"));
     }
 
   self->dest_impl.dest_object = CALL_JAVA_FUNCTION(java_env, NewObject, self->loaded_class,
