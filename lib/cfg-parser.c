@@ -334,7 +334,11 @@ report_syntax_error(CfgLexer *lexer, YYLTYPE *yylloc, const char *what, const ch
         }
       else
         {
-          fprintf(stderr, "Included from %s:\n", from->name);
+          fprintf(stderr, "Included from %s:%d:%d-%d:%d:\n", from->name,
+                  from->lloc.first_line,
+                  from->lloc.first_column,
+                  from->lloc.last_line,
+                  from->lloc.last_column);
         }
       if (from->include_type == CFGI_FILE)
         {
