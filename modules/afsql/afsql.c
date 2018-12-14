@@ -846,7 +846,7 @@ afsql_dd_should_begin_new_transaction(const AFSqlDestDriver *self)
 }
 
 static gint
-_batch_size(const AFSqlDestDriver *self)
+_batch_lines(const AFSqlDestDriver *self)
 {
   if (self->super.batch_lines <= 0)
     return DEFAULT_SQL_TX_SIZE;
@@ -857,7 +857,7 @@ _batch_size(const AFSqlDestDriver *self)
 static inline gboolean
 afsql_dd_should_commit_transaction(const AFSqlDestDriver *self)
 {
-  return afsql_dd_is_transaction_handling_enabled(self) && self->super.worker.instance.batch_size >= _batch_size(self);
+  return afsql_dd_is_transaction_handling_enabled(self) && self->super.worker.instance.batch_size >= _batch_lines(self);
 }
 
 static worker_insert_result_t
