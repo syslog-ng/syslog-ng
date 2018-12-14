@@ -105,7 +105,7 @@ _should_flush_now(LogThreadedDestWorker *self)
 
   if (self->owner->batch_timeout <= 0 ||
       self->owner->batch_lines <= 1 ||
-      !self->enable_batch_timeout)
+      !self->enable_batching)
     return TRUE;
 
   iv_validate_now();
@@ -284,7 +284,7 @@ _process_result(LogThreadedDestWorker *self, gint result)
       break;
 
     case WORKER_INSERT_RESULT_QUEUED:
-      self->enable_batch_timeout = TRUE;
+      self->enable_batching = TRUE;
       break;
 
     default:
