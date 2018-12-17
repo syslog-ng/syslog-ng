@@ -23,6 +23,7 @@ add_subdirectory(transport)
 add_subdirectory(value-pairs)
 add_subdirectory(scanner)
 add_subdirectory(str-repr)
+add_subdirectory(str-timestamp)
 add_subdirectory(eventlog)
 add_subdirectory(secret-storage)
 add_subdirectory(logthrsource)
@@ -44,6 +45,7 @@ set(LIB_SUBDIR_HEADERS
     ${LIST_SCANNER_HEADERS}
     ${KV_SCANNER_HEADERS}
     ${STR_REPR_HEADERS}
+    ${STR_TIMESTAMP_HEADERS}
     ${LOGTHRSOURCE_HEADERS}
     ${CMAKE_CURRENT_BINARY_DIR}/filter/filter-expr-grammar.h
     ${CMAKE_CURRENT_BINARY_DIR}/rewrite/rewrite-expr-grammar.h
@@ -237,6 +239,7 @@ set(LIB_SOURCES
     ${VALUE_PAIRS_SOURCES}
     ${SCANNER_SOURCES}
     ${STR_REPR_SOURCES}
+    ${STR_TIMESTAMP_SOURCES}
     ${LOGTHRSOURCE_SOURCES}
     ${PROJECT_BINARY_DIR}/lib/cfg-grammar.c
     ${PROJECT_BINARY_DIR}/lib/block-ref-grammar.c

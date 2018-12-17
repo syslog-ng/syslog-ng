@@ -1,1 +1,0 @@
-add_unit_test(LIBTEST CRITERION TARGET test_parse_timestamp DEPENDS syslogformat)

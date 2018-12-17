@@ -7,3 +7,5 @@ str_timestampinclude_HEADERS =	\
 
 str_timestamp_sources =		\
  lib/str-timestamp/decode.c
+
+include lib/str-timestamp/tests/Makefile.am

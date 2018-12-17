@@ -1,8 +1,6 @@
 set(SYSLOGFORMAT_SOURCES
     syslog-format.c
     syslog-format.h
-    syslog-timestamp.c
-    syslog-timestamp.h
     syslog-format-plugin.c
     syslog-parser-parser.c
     syslog-parser-parser.h
@@ -27,5 +25,3 @@ target_include_directories(syslogformat
 target_link_libraries(syslogformat PRIVATE syslog-ng)
 
 install(TARGETS syslogformat LIBRARY DESTINATION lib/syslog-ng/)
-
-add_test_subdirectory(tests)

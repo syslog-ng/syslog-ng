@@ -2,17 +2,18 @@
  * Copyright (c) 2018 Balabit
  * Copyright (c) 2018 Balázs Scheidler
  *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 2 as published
- * by the Free Software Foundation, or (at your option) any later version.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  * As an additional exemption you are allowed to compile & link against the
@@ -22,16 +23,25 @@
  */
 #include <criterion/criterion.h>
 #include "apphook.h"
-#include "syslog-timestamp.h"
+#include "str-timestamp/decode.h"
+#include "timeutils.h"
 
-/* Dec 13 09:10:23 CET 2017 */
-time_t current_fake_time = 1513152623;
-
-void
-cached_g_current_time(GTimeVal *now)
+static void
+fake_time(time_t now)
 {
-  now->tv_sec = current_fake_time;
-  now->tv_usec = 123 * 1e3;
+  GTimeVal tv = { now, 123 * 1e3 };
+
+  set_cached_time(&tv);
+}
+
+static void
+fake_time_add(time_t diff)
+{
+  GTimeVal tv;
+
+  cached_g_current_time(&tv);
+  tv.tv_sec += diff;
+  set_cached_time(&tv);
 }
 
 static gboolean
@@ -119,7 +129,7 @@ Test(parse_timestamp, standard_bsd_format_year_in_the_future)
 Test(parse_timestamp, standard_bsd_format_year_in_the_past)
 {
   /* Jan 03 09:32:21 CET 2018 */
-  current_fake_time = 1514968341;
+  fake_time(1514968341);
 
   /* compared to 2018-03-03, this timestamp is from the past, so in the year 2017 */
   _expect_rfc3164_timestamp_eq("Dec 31 17:46:12", "2017-12-31T17:46:12.000+01:00");
@@ -129,7 +139,7 @@ Test(parse_timestamp, standard_bsd_format_year_in_the_past)
 Test(parse_timestamp, daylight_saving_behavior_at_spring_with_explicit_timezones)
 {
   /* Mar 25 01:59:59 CET 2018 */
-  current_fake_time = 1521939599;
+  fake_time(1521939599);
 
   for (gint i = 0; i < 3; i++)
     {
@@ -149,14 +159,14 @@ Test(parse_timestamp, daylight_saving_behavior_at_spring_with_explicit_timezones
 
       /* 03:00:00 AM is already valid and DST is enabled */
       _expect_rfc3164_timestamp_eq("2018-03-25T03:00:00+02:00", "2018-03-25T03:00:00.000+02:00");
-      current_fake_time += 3600;
+      fake_time_add(3600);
     }
 }
 
 Test(parse_timestamp, daylight_saving_behavior_at_spring_without_timezones)
 {
   /* Mar 25 01:59:59 CET 2018 */
-  current_fake_time = 1521939599;
+  fake_time(1521939599);
 
   /* iterate _before_, _within_, _after_ the transition hour */
   for (gint i = 0; i < 3; i++)
@@ -183,14 +193,14 @@ Test(parse_timestamp, daylight_saving_behavior_at_spring_without_timezones)
 
       /* 03:00:00 AM is already valid and DST is enabled */
       _expect_rfc3164_timestamp_eq("Mar 25 03:00:00", "2018-03-25T03:00:00.000+02:00");
-      current_fake_time += 3600;
+      fake_time_add(3600);
     }
 }
 
 Test(parse_timestamp, daylight_saving_detection_at_autumn_with_timezones)
 {
   /* Oct 28 01:59:59 CEST 2018 */
-  current_fake_time = 1540684799;
+  fake_time(1540684799);
 
   /* iterate _before_, _within_, _after_ the transition hour */
   for (gint i = 0; i < 3; i++)
@@ -204,7 +214,7 @@ Test(parse_timestamp, daylight_saving_detection_at_autumn_with_timezones)
       _expect_rfc3164_timestamp_eq("2018-10-28T03:00:00.000+01:00", "2018-10-28T03:00:00.000+01:00");
       _expect_rfc3164_timestamp_eq("2018-10-28T03:00:00.000+02:00", "2018-10-28T03:00:00.000+02:00");
 
-      current_fake_time += 3600;
+      fake_time_add(3600);
     }
 }
 
@@ -224,7 +234,7 @@ Test(parse_timestamp, daylight_saving_detection_at_autumn_with_timezones)
 Test(parse_timestamp, daylight_saving_detection_at_autumn_without_timezones)
 {
   /* Oct 28 01:59:59 CEST 2018 */
-  current_fake_time = 1540684799;
+  fake_time(1540684799);
 
   /* iterate _before_, _within_, _after_ the transition hour */
   for (gint i = 0; i < 3; i++)
@@ -233,7 +243,7 @@ Test(parse_timestamp, daylight_saving_detection_at_autumn_without_timezones)
       _expect_rfc3164_timestamp_eq("Oct 28 02:00:00", "2018-10-28T02:00:00.000+02:00");
       _expect_rfc3164_timestamp_eq("Oct 28 03:00:00", "2018-10-28T03:00:00.000+01:00");
 
-      current_fake_time += 3600;
+      fake_time_add(3600);
     }
 }
 
@@ -278,7 +288,7 @@ Test(parse_timestamp, rfc5424_timestamps)
 {
   /* the timestamp '-' means the current time */
   _expect_rfc5424_timestamp_eq("-", "2017-12-13T09:10:23.123+01:00");
-  current_fake_time += 3600;
+  fake_time_add(3600);
   _expect_rfc5424_timestamp_eq("-", "2017-12-13T10:10:23.123+01:00");
   _expect_rfc5424_timestamp_eq("2017-06-14T23:57:27+02:00", "2017-06-14T23:57:27.000+02:00");
   _expect_rfc5424_timestamp_eq("2017-06-14T23:57:27Z", "2017-06-14T23:57:27.000+00:00");
@@ -291,6 +301,9 @@ setup(void)
   app_startup();
   setenv("TZ", "CET", TRUE);
   tzset();
+
+  /* Dec 13 09:10:23 CET 2017 */
+  fake_time(1513152623);
 }
 
 void

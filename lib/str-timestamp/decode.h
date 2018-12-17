@@ -26,10 +26,16 @@
 #define STR_TIMESTAMP_DECODE_H_INCLUDED
 
 #include "syslog-ng.h"
+#include "logstamp.h"
 
 gboolean scan_iso_timestamp(const gchar **buf, gint *left, struct tm *tm);
 gboolean scan_pix_timestamp(const gchar **buf, gint *left, struct tm *tm);
 gboolean scan_linksys_timestamp(const gchar **buf, gint *left, struct tm *tm);
 gboolean scan_bsd_timestamp(const gchar **buf, gint *left, struct tm *tm);
+
+gboolean scan_rfc3164_timestamp(const guchar **data, gint *length, LogStamp *stamp,
+                                gboolean ignore_result, glong default_timezone);
+gboolean scan_rfc5424_timestamp(const guchar **data, gint *length, LogStamp *stamp,
+                                gboolean ignore_result, glong default_timezone);
 
 #endif
