@@ -16,7 +16,8 @@ brew "openssl"
 # brew "pcre"
 
 brew "gradle"
-brew "python@2"
+brew "python", link: false
+brew "python@2", link: true, force: true
 brew "hiredis"
 brew "libdbi"
 brew "libnet"
