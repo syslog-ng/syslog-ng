@@ -243,6 +243,27 @@ _parse_hostname(SnmpTrapdHeaderParser *self)
 }
 
 static gboolean
+scan_snmptrapd_timestamp(const gchar **buf, gint *left, struct tm *tm)
+{
+  /* YYYY-MM-DD HH:MM:SS */
+  if (!scan_int(buf, left, 4, &tm->tm_year) ||
+      !scan_expect_char(buf, left, '-') ||
+      !scan_int(buf, left, 2, &tm->tm_mon) ||
+      !scan_expect_char(buf, left, '-') ||
+      !scan_int(buf, left, 2, &tm->tm_mday) ||
+      !scan_expect_char(buf, left, ' ') ||
+      !scan_int(buf, left, 2, &tm->tm_hour) ||
+      !scan_expect_char(buf, left, ':') ||
+      !scan_int(buf, left, 2, &tm->tm_min) ||
+      !scan_expect_char(buf, left, ':') ||
+      !scan_int(buf, left, 2, &tm->tm_sec))
+    return FALSE;
+  tm->tm_year -= 1900;
+  tm->tm_mon -= 1;
+  return TRUE;
+}
+
+static gboolean
 _parse_timestamp(SnmpTrapdHeaderParser *self)
 {
   GTimeVal now;
@@ -260,7 +281,7 @@ _parse_timestamp(SnmpTrapdHeaderParser *self)
 
   struct tm tm;
   cached_localtime(&now_tv_sec, &tm);
-  if (!scan_std_timestamp(self->input, (gint *)self->input_len, &tm))
+  if (!scan_snmptrapd_timestamp(self->input, (gint *)self->input_len, &tm))
     return FALSE;
 
   tm.tm_isdst = -1;

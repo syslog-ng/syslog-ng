@@ -31,6 +31,5 @@ gboolean scan_iso_timestamp(const gchar **buf, gint *left, struct tm *tm);
 gboolean scan_pix_timestamp(const gchar **buf, gint *left, struct tm *tm);
 gboolean scan_linksys_timestamp(const gchar **buf, gint *left, struct tm *tm);
 gboolean scan_bsd_timestamp(const gchar **buf, gint *left, struct tm *tm);
-gboolean scan_std_timestamp(const gchar **buf, gint *left, struct tm *tm);
 
 #endif
