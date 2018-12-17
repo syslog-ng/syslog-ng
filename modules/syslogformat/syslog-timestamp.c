@@ -23,7 +23,7 @@
 
 #include "syslog-timestamp.h"
 #include "timeutils.h"
-#include "str-format.h"
+#include "str-timestamp/decode.h"
 
 #include <ctype.h>
 
