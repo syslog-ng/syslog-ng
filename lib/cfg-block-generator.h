@@ -41,6 +41,7 @@
 typedef struct _CfgBlockGenerator CfgBlockGenerator;
 struct _CfgBlockGenerator
 {
+  gint ref_cnt;
   gint context;
   gchar *name;
   gboolean suppress_backticks;
@@ -60,7 +61,8 @@ gboolean cfg_block_generator_generate(CfgBlockGenerator *self, GlobalConfig *cfg
                                       const gchar *reference);
 void cfg_block_generator_init_instance(CfgBlockGenerator *self, gint context, const gchar *name);
 void cfg_block_generator_free_instance(CfgBlockGenerator *self);
-void cfg_block_generator_free(CfgBlockGenerator *self);
+CfgBlockGenerator *cfg_block_generator_ref(CfgBlockGenerator *self);
+void cfg_block_generator_unref(CfgBlockGenerator *self);
 
 
 #endif

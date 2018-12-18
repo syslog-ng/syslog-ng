@@ -731,7 +731,7 @@ _generator_plugin_construct(Plugin *s)
 {
   GeneratorPlugin *self = (GeneratorPlugin *) s;
 
-  return self->gen;
+  return cfg_block_generator_ref(self->gen);
 }
 
 static void
@@ -739,7 +739,7 @@ _generator_plugin_free(Plugin *s)
 {
   GeneratorPlugin *self = (GeneratorPlugin *) s;
 
-  cfg_block_generator_free(self->gen);
+  cfg_block_generator_unref(self->gen);
   g_free((gchar *) self->super.name);
   g_free(s);
 }
@@ -1023,7 +1023,9 @@ cfg_lexer_preprocess(CfgLexer *self, gint tok, YYSTYPE *yylval, YYLTYPE *yylloc)
       self->cfg &&
       (gen = cfg_lexer_find_generator(self, self->cfg, cfg_lexer_get_context_type(self), yylval->cptr)))
     {
-      if (!cfg_lexer_parse_and_run_block_generator(self, gen, yylval))
+      gboolean success = cfg_lexer_parse_and_run_block_generator(self, gen, yylval);
+      cfg_block_generator_unref(gen);
+      if (!success)
         return CLPR_ERROR;
 
       return CLPR_LEX_AGAIN;
