@@ -118,7 +118,6 @@ control_connection_new(ControlServer *server, gint sock)
   self->super.events.update_watches = control_connection_unix_update_watches;
   self->super.events.stop_watches = control_connection_unix_stop_watches;
 
-  control_connection_start_watches(&self->super);
   return &self->super;
 }
 
@@ -129,6 +128,7 @@ control_socket_accept(void *cookie)
   gint conn_socket;
   GSockAddr *peer_addr;
   GIOStatus status;
+  ControlConnection *cc;
 
   if (self->control_socket == -1)
     return;
@@ -139,8 +139,17 @@ control_socket_accept(void *cookie)
                 evt_tag_error("error"));
       goto error;
     }
-  /* NOTE: the connection will free itself if the peer terminates */
-  control_connection_new(&self->super, conn_socket);
+
+
+  cc = control_connection_new(&self->super, conn_socket);
+
+  /* NOTE: with the call below, the reference to the control connection (cc)
+   * will be taken over by the various I/O callbacks, Those will return to
+   * us (ControlServer) via the control_server_connection_closed() function,
+   * which in turn will properly dispose the ControlConnection instance.
+   */
+
+  control_connection_start_watches(cc);
   g_sockaddr_unref(peer_addr);
 error:
   ;

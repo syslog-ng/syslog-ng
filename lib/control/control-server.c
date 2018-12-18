@@ -31,9 +31,27 @@
 #include <errno.h>
 
 void
+control_server_connection_closed(ControlServer *self, ControlConnection *cc)
+{
+  control_connection_stop_watches(cc);
+  control_connection_free(cc);
+}
+
+void
 control_server_init_instance(ControlServer *self, const gchar *path)
 {
   self->control_socket_name = g_strdup(path);
+}
+
+void
+control_server_free(ControlServer *self)
+{
+  if (self->free_fn)
+    {
+      self->free_fn(self);
+    }
+  g_free(self->control_socket_name);
+  g_free(self);
 }
 
 void
@@ -78,8 +96,7 @@ control_connection_io_output(gpointer s)
         {
           msg_error("Error writing control channel",
                     evt_tag_error("error"));
-          control_connection_stop_watches(self);
-          control_connection_free(self);
+          control_server_connection_closed(self->server, self);
           return;
         }
     }
@@ -112,8 +129,7 @@ control_connection_io_input(void *s)
     {
       /* too much data in input, drop the connection */
       msg_error("Too much data in the control socket input buffer");
-      control_connection_stop_watches(self);
-      control_connection_free(self);
+      control_server_connection_closed(self->server, self);
       return;
     }
 
@@ -182,8 +198,7 @@ control_connection_io_input(void *s)
   g_string_free(command, TRUE);
   return;
 destroy_connection:
-  control_connection_stop_watches(self);
-  control_connection_free(self);
+  control_server_connection_closed(self->server, self);
 }
 
 void
@@ -197,16 +212,6 @@ control_connection_init_instance(ControlConnection *self, ControlServer *server)
   return;
 }
 
-void
-control_server_free(ControlServer *self)
-{
-  if (self->free_fn)
-    {
-      self->free_fn(self);
-    }
-  g_free(self->control_socket_name);
-  g_free(self);
-}
 
 void
 control_connection_start_watches(ControlConnection *self)

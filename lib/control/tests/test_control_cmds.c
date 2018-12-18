@@ -47,12 +47,13 @@ setup(void)
   stats_register_control_commands();
   control_server = control_server_dummy_new();
   control_connection = control_connection_dummy_new(control_server);
+  control_connection_start_watches(control_connection);
 }
 
 void
 teardown(void)
 {
-  control_connection_free(control_connection);
+  control_server_connection_closed(control_server, control_connection);
   control_server_free(control_server);
   msg_deinit();
   reset_control_command_list();

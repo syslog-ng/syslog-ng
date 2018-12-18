@@ -117,7 +117,6 @@ control_connection_dummy_new(ControlServer *server)
 
   self->input = g_string_new("");
   self->output = g_string_new("");
-  control_connection_start_watches(&self->super);
   return &self->super;
 }
 
