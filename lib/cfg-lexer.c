@@ -739,7 +739,7 @@ _generator_plugin_free(Plugin *s)
 {
   GeneratorPlugin *self = (GeneratorPlugin *) s;
 
-  cfg_block_generator_free(self->gen);
+  cfg_block_generator_unref(self->gen);
   g_free((gchar *) self->super.name);
   g_free(s);
 }
