@@ -79,7 +79,13 @@ static void
 control_connection_unix_update_watches(ControlConnection *s)
 {
   ControlConnectionUnix *self = (ControlConnectionUnix *)s;
-  if (s->output_buffer->len > s->pos)
+
+  if (s->waiting_for_output)
+    {
+      iv_fd_set_handler_out(&self->control_io, NULL);
+      iv_fd_set_handler_in(&self->control_io, NULL);
+    }
+  else if (s->output_buffer->len > s->pos)
     {
       iv_fd_set_handler_out(&self->control_io, s->handle_output);
       iv_fd_set_handler_in(&self->control_io, NULL);
@@ -112,7 +118,6 @@ control_connection_new(ControlServer *server, gint sock)
   self->super.events.update_watches = control_connection_unix_update_watches;
   self->super.events.stop_watches = control_connection_unix_stop_watches;
 
-  control_connection_start_watches(&self->super);
   return &self->super;
 }
 
@@ -123,6 +128,7 @@ control_socket_accept(void *cookie)
   gint conn_socket;
   GSockAddr *peer_addr;
   GIOStatus status;
+  ControlConnection *cc;
 
   if (self->control_socket == -1)
     return;
@@ -133,8 +139,17 @@ control_socket_accept(void *cookie)
                 evt_tag_error("error"));
       goto error;
     }
-  /* NOTE: the connection will free itself if the peer terminates */
-  control_connection_new(&self->super, conn_socket);
+
+
+  cc = control_connection_new(&self->super, conn_socket);
+
+  /* NOTE: with the call below, the reference to the control connection (cc)
+   * will be taken over by the various I/O callbacks, Those will return to
+   * us (ControlServer) via the control_server_connection_closed() function,
+   * which in turn will properly dispose the ControlConnection instance.
+   */
+
+  control_connection_start_watches(cc);
   g_sockaddr_unref(peer_addr);
 error:
   ;
@@ -201,11 +216,11 @@ control_server_unix_free(ControlServer *s)
 }
 
 ControlServer *
-control_server_new(const gchar *path, GList *commands)
+control_server_new(const gchar *path)
 {
   ControlServerUnix *self = g_new(ControlServerUnix,1);
 
-  control_server_init_instance(&self->super, path, commands);
+  control_server_init_instance(&self->super, path);
   IV_FD_INIT(&self->control_listen);
   self->super.free_fn = control_server_unix_free;
   return &self->super;

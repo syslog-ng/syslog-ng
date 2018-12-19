@@ -97,7 +97,9 @@ set (LIB_HEADERS
     memtrace.h
     messages.h
     ml-batched-timer.h
+    mainloop-control.h
     msg-format.h
+    msg-stats.h
     parse-number.h
     pathutils.h
     persist-state.h
@@ -187,7 +189,9 @@ set(LIB_SOURCES
     memtrace.c
     messages.c
     ml-batched-timer.c
+    mainloop-control.c
     msg-format.c
+    msg-stats.c
     parse-number.c
     pathutils.c
     persist-state.c

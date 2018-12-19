@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2017 Balabit
+ * Copyright (c) 2002-2013 Balabit
+ * Copyright (c) 1998-2013 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,12 +21,14 @@
  * COPYING for details.
  *
  */
+#ifndef MSG_STATS_H_INCLUDED
+#define MSG_STATS_H_INCLUDED 1
 
-#ifndef STATS_QUERY_COMMANDS_H_INCLUDED
-#define STATS_QUERY_COMMANDS_H_INCLUDED
+#include "stats/stats-registry.h"
 
-#include "control/control.h"
+void msg_stats_update_counters(const gchar *stats_id, const LogMessage *msg);
 
-void process_query_command(ControlConnection *cc, GString *cmd, gpointer user_data);
+void msg_stats_init(void);
+void msg_stats_deinit(void);
 
 #endif

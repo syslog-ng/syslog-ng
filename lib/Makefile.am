@@ -132,11 +132,13 @@ pkginclude_HEADERS			+= \
 	lib/mainloop-call.h		\
 	lib/mainloop-worker.h		\
 	lib/mainloop-io-worker.h	\
+	lib/mainloop-control.h		\
 	lib/module-config.h		\
 	lib/memtrace.h			\
 	lib/messages.h			\
 	lib/ml-batched-timer.h		\
 	lib/msg-format.h		\
+	lib/msg-stats.h			\
 	lib/parse-number.h		\
 	lib/pathutils.h         \
 	lib/persist-state.h		\
@@ -221,11 +223,13 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/mainloop-call.c		\
 	lib/mainloop-worker.c		\
 	lib/mainloop-io-worker.c	\
+	lib/mainloop-control.c		\
 	lib/module-config.c		\
 	lib/memtrace.c			\
 	lib/messages.c			\
 	lib/ml-batched-timer.c		\
 	lib/msg-format.c		\
+	lib/msg-stats.c			\
 	lib/parse-number.c		\
 	lib/pathutils.c         \
 	lib/persist-state.c		\

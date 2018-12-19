@@ -44,6 +44,7 @@
 #include "secret-storage/nondumpable-allocator.h"
 #include "secret-storage/secret-storage.h"
 #include "transport/transport-factory-id.h"
+#include "msg-stats.h"
 
 #include <iv.h>
 #include <iv_work.h>
@@ -62,7 +63,7 @@ static gint current_state = AH_STARTUP;
 gboolean
 app_is_starting_up(void)
 {
-  return current_state < AH_PRE_CONFIG_LOADED;
+  return current_state < AH_RUNNING;
 }
 
 gboolean
@@ -74,7 +75,7 @@ app_is_shutting_down(void)
 void
 register_application_hook(gint type, ApplicationHookFunc func, gpointer user_data)
 {
-  if (current_state < type)
+  if (type > __AH_STATE_MAX || current_state < type)
     {
       ApplicationHookEntry *entry = g_new0(ApplicationHookEntry, 1);
 
@@ -97,7 +98,7 @@ register_application_hook(gint type, ApplicationHookFunc func, gpointer user_dat
 static void
 _update_current_state(gint type)
 {
-  if (AH_REOPEN == type)
+  if (type > __AH_STATE_MAX)
     return;
 
   g_assert(current_state <= type);
@@ -175,14 +176,8 @@ app_startup(void)
   nondumpable_setlogger(nondumpable_allocator_msg_debug, nondumpable_allocator_msg_fatal);
   secret_storage_init();
   transport_factory_id_global_init();
-}
-
-void
-app_finish_app_startup_after_cfg_init(void)
-{
-  log_tags_reinit_stats();
-  log_msg_stats_global_init();
   scratch_buffers_global_init();
+  msg_stats_init();
 }
 
 void
@@ -192,17 +187,11 @@ app_post_daemonized(void)
 }
 
 void
-app_pre_config_loaded(void)
+app_running(void)
 {
-  current_state = AH_PRE_CONFIG_LOADED;
+  run_application_hook(AH_RUNNING);
 }
 
-void
-app_post_config_loaded(void)
-{
-  run_application_hook(AH_POST_CONFIG_LOADED);
-  res_init();
-}
 
 void
 app_pre_shutdown(void)
@@ -213,6 +202,7 @@ app_pre_shutdown(void)
 void
 app_shutdown(void)
 {
+  msg_stats_deinit();
   run_application_hook(AH_SHUTDOWN);
   main_loop_thread_resource_deinit();
   secret_storage_deinit();
@@ -250,9 +240,16 @@ app_shutdown(void)
 }
 
 void
-app_reopen(void)
+app_config_changed(void)
 {
-  run_application_hook(AH_REOPEN);
+  run_application_hook(AH_CONFIG_CHANGED);
+  res_init();
+}
+
+void
+app_reopen_files(void)
+{
+  run_application_hook(AH_REOPEN_FILES);
 }
 
 void

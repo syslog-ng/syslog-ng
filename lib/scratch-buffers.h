@@ -52,6 +52,10 @@ void scratch_buffers_allocator_deinit(void);
 void scratch_buffers_automatic_gc_init(void);
 void scratch_buffers_automatic_gc_deinit(void);
 
+void scratch_buffers_register_stats(void);
+void scratch_buffers_unregister_stats(void);
+
+
 void scratch_buffers_global_init(void);
 void scratch_buffers_global_deinit(void);
 

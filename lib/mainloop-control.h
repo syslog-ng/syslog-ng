@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2017 Balabit
+ * Copyright (c) 2002-2017 Balabit
+ * Copyright (c) 1998-2017 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,11 +22,9 @@
  *
  */
 
-#ifndef STATS_QUERY_COMMANDS_H_INCLUDED
-#define STATS_QUERY_COMMANDS_H_INCLUDED
+#ifndef MAINLOOP_CONTROL_H_INCLUDED
+#define MAINLOOP_CONTROL_H_INCLUDED
 
-#include "control/control.h"
-
-void process_query_command(ControlConnection *cc, GString *cmd, gpointer user_data);
+void main_loop_register_control_commands(MainLoop *main_loop);
 
 #endif

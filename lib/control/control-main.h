@@ -28,6 +28,7 @@
 #include "mainloop.h"
 #include "control/control-server.h"
 
-ControlServer *control_init(MainLoop *main_loop, const gchar *control_name);
+ControlServer *control_init(const gchar *control_name);
+void control_deinit(ControlServer *control_server);
 
 #endif

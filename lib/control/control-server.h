@@ -29,11 +29,9 @@
 
 #define MAX_CONTROL_LINE_LENGTH 4096
 
-typedef struct _ControlServer ControlServer;
-typedef struct _ControlConnection ControlConnection;
-
 struct _ControlConnection
 {
+  gboolean waiting_for_output;
   GString *input_buffer;
   GString *output_buffer;
   gsize pos;
@@ -55,18 +53,18 @@ struct _ControlConnection
 struct _ControlServer
 {
   gchar *control_socket_name;
-  GList *control_commands;
   void (*free_fn)(ControlServer *self);
 };
 
 
-ControlServer *control_server_new(const gchar *path, GList *control_commands);
-
+void control_server_connection_closed(ControlServer *self, ControlConnection *cc);
 void control_server_start(ControlServer *self);
 void control_server_free(ControlServer *self);
-void control_server_init_instance(ControlServer *self, const gchar *path, GList *control_commands);
+void control_server_init_instance(ControlServer *self, const gchar *path);
+ControlServer *control_server_new(const gchar *path);
 
 
+void control_connection_send_reply(ControlConnection *self, GString *reply);
 void control_connection_start_watches(ControlConnection *self);
 void control_connection_update_watches(ControlConnection *self);
 void control_connection_stop_watches(ControlConnection *self);

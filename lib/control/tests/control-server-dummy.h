@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2018 Balabit
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,12 +20,16 @@
  * COPYING for details.
  *
  */
-#ifndef STATS_SYSLOG_H_INCLUDED
-#define STATS_SYSLOG_H_INCLUDED 1
+#ifndef CONTROL_SERVER_DUMMY_H_INLCUDED
+#define CONTROL_SERVER_DUMMY_H_INLCUDED 1
 
-#include "stats/stats-registry.h"
+#include "control/control-server.h"
 
-void stats_syslog_process_message_pri(guint16 pri);
-void stats_syslog_reinit(void);
+void control_connection_dummy_set_input(ControlConnection *s, const gchar *request);
+const gchar *control_connection_dummy_get_output(ControlConnection *s);
+void control_connection_dummy_reset_output(ControlConnection *s);
+ControlConnection *control_connection_dummy_new(ControlServer *server);
+ControlServer *control_server_dummy_new(void);
+
 
 #endif

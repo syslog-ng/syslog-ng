@@ -22,6 +22,7 @@
  */
 
 #include "control-server.h"
+#include "control-commands.h"
 #include "messages.h"
 #include "str-utils.h"
 #include "secret-storage/secret-storage.h"
@@ -30,10 +31,27 @@
 #include <errno.h>
 
 void
-control_server_init_instance(ControlServer *self, const gchar *path, GList *control_commands)
+control_server_connection_closed(ControlServer *self, ControlConnection *cc)
+{
+  control_connection_stop_watches(cc);
+  control_connection_free(cc);
+}
+
+void
+control_server_init_instance(ControlServer *self, const gchar *path)
 {
   self->control_socket_name = g_strdup(path);
-  self->control_commands = control_commands;
+}
+
+void
+control_server_free(ControlServer *self)
+{
+  if (self->free_fn)
+    {
+      self->free_fn(self);
+    }
+  g_free(self->control_socket_name);
+  g_free(self);
 }
 
 void
@@ -48,14 +66,14 @@ control_connection_free(ControlConnection *self)
   g_free(self);
 }
 
-static void
+void
 control_connection_send_reply(ControlConnection *self, GString *reply)
 {
   g_string_assign(self->output_buffer, reply->str);
   g_string_free(reply, TRUE);
 
   self->pos = 0;
-
+  self->waiting_for_output = FALSE;
   if (self->output_buffer->str[self->output_buffer->len - 1] != '\n')
     {
       g_string_append_c(self->output_buffer, '\n');
@@ -78,8 +96,7 @@ control_connection_io_output(gpointer s)
         {
           msg_error("Error writing control channel",
                     evt_tag_error("error"));
-          control_connection_stop_watches(self);
-          control_connection_free(self);
+          control_server_connection_closed(self->server, self);
           return;
         }
     }
@@ -90,12 +107,19 @@ control_connection_io_output(gpointer s)
   control_connection_update_watches(self);
 }
 
+void
+control_connection_wait_for_output(ControlConnection *self)
+{
+  if (self->output_buffer->len == 0)
+    self->waiting_for_output = TRUE;
+  control_connection_update_watches(self);
+}
+
 static void
 control_connection_io_input(void *s)
 {
   ControlConnection *self = (ControlConnection *) s;
   GString *command = NULL;
-  GString *reply = NULL;
   gchar *nl;
   gint rc;
   gint orig_len;
@@ -105,8 +129,7 @@ control_connection_io_input(void *s)
     {
       /* too much data in input, drop the connection */
       msg_error("Too much data in the control socket input buffer");
-      control_connection_stop_watches(self);
-      control_connection_free(self);
+      control_server_connection_closed(self->server, self);
       return;
     }
 
@@ -157,7 +180,7 @@ control_connection_io_input(void *s)
       return;
     }
 
-  iter = g_list_find_custom(self->server->control_commands, command->str,
+  iter = g_list_find_custom(get_control_command_list(), command->str,
                             (GCompareFunc)control_command_start_with_command);
   if (iter == NULL)
     {
@@ -168,16 +191,14 @@ control_connection_io_input(void *s)
     }
   ControlCommand *cmd_desc = (ControlCommand *) iter->data;
 
-  reply = cmd_desc->func(command, cmd_desc->user_data);
-  control_connection_send_reply(self, reply);
+  cmd_desc->func(self, command, cmd_desc->user_data);
+  control_connection_wait_for_output(self);
 
-  control_connection_update_watches(self);
   secret_storage_wipe(command->str, command->len);
   g_string_free(command, TRUE);
   return;
 destroy_connection:
-  control_connection_stop_watches(self);
-  control_connection_free(self);
+  control_server_connection_closed(self->server, self);
 }
 
 void
@@ -191,16 +212,6 @@ control_connection_init_instance(ControlConnection *self, ControlServer *server)
   return;
 }
 
-void
-control_server_free(ControlServer *self)
-{
-  if (self->free_fn)
-    {
-      self->free_fn(self);
-    }
-  g_free(self->control_socket_name);
-  g_free(self);
-}
 
 void
 control_connection_start_watches(ControlConnection *self)

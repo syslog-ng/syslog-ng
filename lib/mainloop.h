@@ -59,11 +59,14 @@ main_loop_is_main_thread(void)
   return threads_equal(main_thread_handle, get_thread_id());
 }
 
+gboolean main_loop_reload_config_prepare(MainLoop *self, GError **error);
+void main_loop_reload_config_commence(MainLoop *self);
 void main_loop_reload_config(MainLoop *self);
 void main_loop_verify_config(GString *result, MainLoop *self);
 void main_loop_exit(MainLoop *self);
 
 int main_loop_read_and_init_config(MainLoop *self);
+gboolean main_loop_was_last_reload_successful(MainLoop *self);
 void main_loop_run(MainLoop *self);
 
 MainLoop *main_loop_get_instance(void);
@@ -80,5 +83,14 @@ gboolean main_loop_initialize_state(GlobalConfig *cfg, const gchar *persist_file
 void main_loop_thread_resource_init(void);
 void main_loop_thread_resource_deinit(void);
 
+#define MAIN_LOOP_ERROR main_loop_error_quark()
+
+GQuark main_loop_error_quark(void);
+
+enum MainLoopError
+{
+  MAIN_LOOP_ERROR_FAILED,
+  MAIN_LOOP_ERROR_RELOAD_FAILED,
+};
 
 #endif

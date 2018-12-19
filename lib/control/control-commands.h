@@ -28,11 +28,12 @@
 #include "control/control.h"
 #include "mainloop.h"
 
-void control_register_command(const gchar *command_name, const gchar *description, CommandFunction function,
+
+ControlCommand *control_find_command(const char *cmd);
+void control_register_command(const gchar *command_name, CommandFunction function,
                               gpointer user_data);
-void control_replace_command(const gchar *command_name, const gchar *description, CommandFunction function,
+void control_replace_command(const gchar *command_name, CommandFunction function,
                              gpointer user_data);
-GList *control_register_default_commands(MainLoop *main_loop);
 GList *get_control_command_list(void);
 void reset_control_command_list(void);
 
