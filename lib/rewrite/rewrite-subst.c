@@ -62,7 +62,26 @@ log_rewrite_subst_process(LogRewrite *s, LogMessage **pmsg, const LogPathOptions
                                   &new_length);
   if (new_value)
     {
+      msg_trace("Performing subst() rewrite",
+                evt_tag_str("rule", s->name),
+                evt_tag_str("value", log_msg_get_value_name(s->value_handle, NULL)),
+                evt_tag_printf("input", "%.*s", (gint) length, value),
+                evt_tag_str("type", self->matcher_options.type),
+                evt_tag_str("pattern", self->matcher->pattern),
+                evt_tag_str("replacement", self->replacement->template),
+                log_pipe_location_tag(&s->super));
       log_msg_set_value(*pmsg, self->super.value_handle, new_value, new_length);
+    }
+  else
+    {
+      msg_trace("Performing subst() rewrite failed, pattern did not match",
+                evt_tag_str("rule", s->name),
+                evt_tag_str("value", log_msg_get_value_name(s->value_handle, NULL)),
+                evt_tag_printf("input", "%.*s", (gint) length, value),
+                evt_tag_str("type", self->matcher_options.type),
+                evt_tag_str("pattern", self->matcher->pattern),
+                evt_tag_str("replacement", self->replacement->template),
+                log_pipe_location_tag(&s->super));
     }
   g_free(new_value);
 }
