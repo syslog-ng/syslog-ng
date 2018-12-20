@@ -1,6 +1,10 @@
 %.y: %.ym $(syslog_ng_tools)/merge-grammar.py $(syslog_ng_tools)/cfg-grammar.y
+if HAVE_PYTHON_INTERPRETER
 	$(AM_V_at) $(mkinstalldirs) $(dir $@)
 	$(AM_V_GEN) $(PYTHON) $(syslog_ng_tools)/merge-grammar.py $< > $@
+else
+	$(error "Python interpreter is required to generate grammar files, but it was not detected during configure")
+endif
 
 .l.c:
 	$(AM_V_LEX)$(am__skiplex) $(SHELL) $(YLWRAP) $< $(LEX_OUTPUT_ROOT).c $*.c $(LEX_OUTPUT_ROOT).h $*.h -- $(LEXCOMPILE) | ($(EGREP) -v "(^updating|unchanged)" || true)
