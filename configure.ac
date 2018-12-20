@@ -387,13 +387,16 @@ AC_PROG_MAKE_SET
 PKG_PROG_PKG_CONFIG
 LT_INIT([dlopen disable-static])
 if test "x$with_python" = "xauto"; then
-  AM_PATH_PYTHON()
+  AM_PATH_PYTHON(,,[:])
 else
-  AM_PATH_PYTHON([$with_python])
+  AM_PATH_PYTHON([$with_python],,[:])
 fi
+
 if test "${PYTHON}" = ":"; then
-	AC_MSG_ERROR([Python interpreter is required])
+       AC_MSG_WARN([Python interpreter is missing.])
 fi
+
+AM_CONDITIONAL([HAVE_PYTHON_INTERPRETER], [test "$PYTHON" != :])
 
 dnl ***************************************************************************
 dnl Validate yacc
