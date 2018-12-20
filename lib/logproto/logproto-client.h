@@ -64,6 +64,7 @@ struct _LogProtoClient
   /* FIXME: rename to something else */
   gboolean (*prepare)(LogProtoClient *s, gint *fd, GIOCondition *cond, gint *timeout);
   LogProtoStatus (*post)(LogProtoClient *s, LogMessage *logmsg, guchar *msg, gsize msg_len, gboolean *consumed);
+  LogProtoStatus (*process_in)(LogProtoClient *s);
   LogProtoStatus (*flush)(LogProtoClient *s);
   gboolean (*validate_options)(LogProtoClient *s);
   gboolean (*handshake_in_progess)(LogProtoClient *s);
@@ -130,6 +131,21 @@ static inline LogProtoStatus
 log_proto_client_flush(LogProtoClient *s)
 {
   if (s->flush)
+    return s->flush(s);
+  else
+    return LPS_SUCCESS;
+}
+
+static inline LogProtoStatus
+log_proto_client_process_in(LogProtoClient *s)
+{
+  if (s->process_in)
+    return s->process_in(s);
+  else if (s->flush)
+    /*
+     * In some clients, flush is used for input processing, but it should not be.
+     * Fix these clients, than remove the flush call here.
+     */
     return s->flush(s);
   else
     return LPS_SUCCESS;

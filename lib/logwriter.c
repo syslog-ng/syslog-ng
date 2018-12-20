@@ -119,7 +119,8 @@ struct _LogWriter
  *
  **/
 
-static gboolean log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode);
+static gboolean log_writer_process_out(LogWriter *self);
+static gboolean log_writer_process_in(LogWriter *self);
 static void log_writer_broken(LogWriter *self, gint notify_code);
 static void log_writer_start_watches(LogWriter *self);
 static void log_writer_stop_watches(LogWriter *self);
@@ -188,7 +189,12 @@ log_writer_work_perform(gpointer s, GIOCondition cond)
   LogWriter *self = (LogWriter *) s;
 
   g_assert((self->super.flags & PIF_INITIALIZED) != 0);
-  self->work_result = log_writer_flush(self, LW_FLUSH_NORMAL);
+  g_assert((cond == G_IO_OUT) || (cond == G_IO_IN));
+
+  if (cond == G_IO_OUT)
+    self->work_result = log_writer_process_out(self);
+  else if (cond == G_IO_IN)
+    self->work_result = log_writer_process_in(self);
 }
 
 static void
@@ -237,7 +243,7 @@ log_writer_work_finished(gpointer s)
 }
 
 static void
-log_writer_io_flush_output(gpointer s)
+log_writer_io_handler(gpointer s, GIOCondition cond)
 {
   LogWriter *self = (LogWriter *) s;
 
@@ -246,7 +252,7 @@ log_writer_io_flush_output(gpointer s)
   log_writer_stop_watches(self);
   if ((self->options->options & LWO_THREADED))
     {
-      main_loop_io_worker_job_submit(&self->io_job, G_IO_OUT);
+      main_loop_io_worker_job_submit(&self->io_job, cond);
     }
   else
     {
@@ -261,10 +267,22 @@ log_writer_io_flush_output(gpointer s)
 
       if (!main_loop_worker_job_quit())
         {
-          log_writer_work_perform(s, G_IO_OUT);
+          log_writer_work_perform(s, cond);
           log_writer_work_finished(s);
         }
     }
+}
+
+static void
+log_writer_io_handle_out(gpointer s)
+{
+  log_writer_io_handler(s, G_IO_OUT);
+}
+
+static void
+log_writer_io_handle_in(gpointer s)
+{
+  log_writer_io_handler(s, G_IO_IN);
 }
 
 static void
@@ -315,29 +333,15 @@ log_writer_update_fd_callbacks(LogWriter *self, GIOCondition cond)
   main_loop_assert_main_thread();
   if (self->pollable_state > 0)
     {
-      if (self->flags & LW_DETECT_EOF && (cond & G_IO_IN) == 0)
-        {
-          /* if output is enabled, and we're in DETECT_EOF mode, and input is
-           * not needed by the log protocol, install the eof check callback to
-           * destroy the connection if an EOF is received. */
-
-          iv_fd_set_handler_in(&self->fd_watch, log_writer_io_check_eof);
-        }
-      else if (cond & G_IO_IN)
-        {
-          /* in case the protocol requested G_IO_IN, it means that it needs to
-           * invoke read in the flush code, so just install the flush_output
-           * handler for input */
-
-          iv_fd_set_handler_in(&self->fd_watch, log_writer_io_flush_output);
-        }
+      if (cond & G_IO_IN)
+        iv_fd_set_handler_in(&self->fd_watch, log_writer_io_handle_in);
+      else if (self->flags & LW_DETECT_EOF)
+        iv_fd_set_handler_in(&self->fd_watch, log_writer_io_check_eof);
       else
-        {
-          /* otherwise we're not interested in input */
-          iv_fd_set_handler_in(&self->fd_watch, NULL);
-        }
+        iv_fd_set_handler_in(&self->fd_watch, NULL);
+
       if (cond & G_IO_OUT)
-        iv_fd_set_handler_out(&self->fd_watch, log_writer_io_flush_output);
+        iv_fd_set_handler_out(&self->fd_watch, log_writer_io_handle_out);
       else
         iv_fd_set_handler_out(&self->fd_watch, NULL);
 
@@ -1266,6 +1270,27 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
   return log_writer_flush_finalize(self);
 }
 
+gboolean
+log_writer_forced_flush(LogWriter *self)
+{
+  return log_writer_flush(self, LW_FLUSH_FORCE);
+}
+
+gboolean
+log_writer_process_in(LogWriter *self)
+{
+  if (!self->proto)
+    return FALSE;
+
+  return (log_proto_client_process_in(self->proto) == LPS_SUCCESS);
+}
+
+gboolean
+log_writer_process_out(LogWriter *self)
+{
+  return log_writer_flush(self, LW_FLUSH_NORMAL);
+}
+
 static void
 log_writer_reopen_timeout(void *cookie)
 {
@@ -1293,7 +1318,7 @@ log_writer_init_watches(LogWriter *self)
 
   IV_TASK_INIT(&self->immed_io_task);
   self->immed_io_task.cookie = self;
-  self->immed_io_task.handler = log_writer_io_flush_output;
+  self->immed_io_task.handler = log_writer_io_handle_out;
 
   IV_TIMER_INIT(&self->suspend_timer);
   self->suspend_timer.cookie = self;
@@ -1410,7 +1435,7 @@ log_writer_deinit(LogPipe *s)
   main_loop_assert_main_thread();
 
   log_queue_reset_parallel_push(self->queue);
-  log_writer_flush(self, LW_FLUSH_FORCE);
+  log_writer_forced_flush(self);
   /* FIXME: by the time we arrive here, it must be guaranteed that no
    * _queue() call is running in a different thread, otherwise we'd need
    * some kind of locking. */

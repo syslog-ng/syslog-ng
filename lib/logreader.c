@@ -192,7 +192,7 @@ log_reader_window_empty(LogSource *s)
 }
 
 static void
-log_reader_io_process_input(gpointer s)
+log_reader_io_handle_in(gpointer s)
 {
   LogReader *self = (LogReader *) s;
 
@@ -224,7 +224,7 @@ log_reader_init_watches(LogReader *self)
 {
   IV_TASK_INIT(&self->restart_task);
   self->restart_task.cookie = self;
-  self->restart_task.handler = log_reader_io_process_input;
+  self->restart_task.handler = log_reader_io_handle_in;
 
   IV_EVENT_INIT(&self->schedule_wakeup);
   self->schedule_wakeup.cookie = self;
@@ -504,7 +504,7 @@ log_reader_init(LogPipe *s)
       return FALSE;
     }
 
-  poll_events_set_callback(self->poll_events, log_reader_io_process_input, self);
+  poll_events_set_callback(self->poll_events, log_reader_io_handle_in, self);
 
   log_reader_update_watches(self);
   iv_event_register(&self->schedule_wakeup);
