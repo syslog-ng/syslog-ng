@@ -119,6 +119,7 @@ public class ESHttpClient implements ESClient {
 
 	@Override
 	public boolean open() {
+		logger.warn("SB: EHC: opening HMP");
 		if (client == null) {
       try {
 			  client = createClient();
@@ -134,6 +135,7 @@ public class ESHttpClient implements ESClient {
 
 	@Override
 	public void close() {
+		logger.warn("SB: EHC: closing HMP");
 		messageProcessor.flush();
 		messageProcessor.deinit();
 	}

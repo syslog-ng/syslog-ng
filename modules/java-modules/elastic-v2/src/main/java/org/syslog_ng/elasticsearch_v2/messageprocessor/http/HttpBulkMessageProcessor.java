@@ -54,6 +54,10 @@ public class HttpBulkMessageProcessor extends HttpMessageProcessor {
 
   private boolean isInitialized = false;
 
+  private int enqueueFailCount = 0;
+  private long enqueueStartTime = 0;
+  private final int enqueueTimeout;
+
   public HttpBulkMessageProcessor(ElasticSearchOptions options, ESHttpClient client) {
     super(options, client);
     bulk = null;
@@ -63,6 +67,7 @@ public class HttpBulkMessageProcessor extends HttpMessageProcessor {
     messageQueue = new ArrayBlockingQueue<>(concurrency * Integer.valueOf(qSzTimes));
     senders = new ArrayList<>(concurrency);
     name = options.getIdentifier().getValue();
+    enqueueTimeout = Integer.parseInt(System.getProperty("EnqueueTimeOutMS", "100"));
   }
 
   @Override
@@ -103,8 +108,8 @@ public class HttpBulkMessageProcessor extends HttpMessageProcessor {
               }
               continue;
             } finally {
-              bulkActions = null;
             }
+            bulkActions = null;
 
             // if clientRequest.isSuccessFull declares true, jestResult == null
             // indicates the request is success and here we DONOT want to completely deserialize
@@ -113,17 +118,19 @@ public class HttpBulkMessageProcessor extends HttpMessageProcessor {
               StringBuilder sb = new StringBuilder();
               jestResult.getFailedItems().forEach(action ->
                       sb.append(action.id).append("=").append(action.error).append("\n"));
-              if (httpRequestErrorCount++ < 10)
+              if (httpRequestErrorCount++ < 3)
                 logger.warn(jestResult.getErrorMessage() + ". FailedItem Details: \n" + sb.toString());
-              else if (httpRequestErrorCount < 100)
-                logger.info(jestResult.getErrorMessage() + ". FailedItem Details: \n" + sb.toString());
               else if (logger.isDebugEnabled())
                 logger.debug(jestResult.getErrorMessage() + ". FailedItem Details: \n" + sb.toString());
               //SB: TEMP failedRequests.offer(bulkActions);
               continue;
             }
 
-            httpRequestErrorCount = 0;
+            if (httpRequestErrorCount > 0) {
+              logger.warn(Thread.currentThread().getName() + " SB: " + httpRequestErrorCount + " ");
+                      httpRequestErrorCount = 0;
+            }
+
             if (logger.isDebugEnabled()) {
               logger.debug("Processed " + jestResult.getJsonString());
             }
@@ -162,32 +169,40 @@ public class HttpBulkMessageProcessor extends HttpMessageProcessor {
 
   @Override
   public void deinit() {
+    logger.warn("SB: HMP: deinit called... shutting down the threadpool");
     shutDown = true;
     senders.forEach(t -> {
       logger.info("SB: Waiting for " + t.getName() + " to terminate");
       try {
         t.join(10000);
       } catch (InterruptedException e) {
-        logger.error("SB: " + Thread.currentThread() + " " +
-                t.getName() + " interrupted while waiting for termination.");
-        Thread.currentThread().interrupt();
+        logger.error("SB: " + Thread.currentThread() + " received " +
+                t.getName() + " interrupted while waiting for termination.", e);
       }
     });
   }
 
   private void scheduleBulkAction(final ESJestBulkActions bulkActions) {
-    int waitTime = 1;
     try {
-      while (!messageQueue.offer(bulkActions, waitTime, TimeUnit.SECONDS)) {
-        logger.warn("SB: " + waitTime + " second(s) elapsed to schedule bulk request. " +
-                "Queue full with " + messageQueue.size() + " messages. " +
-                "Consider increasing concurrent_request or elastic cluster capacity.");
-        if (waitTime > 8) {
-          logger.error("SB: Giving up to schedule bulk message as messageQueue size is " + messageQueue.size());
-          break;
+      if (!messageQueue.offer(bulkActions, enqueueTimeout, TimeUnit.MILLISECONDS)) {
+        if(enqueueFailCount <= 0) {
+          logger.warn(Thread.currentThread().getName() + "SB: " + enqueueTimeout + " millis elapsed to schedule bulk request. " +
+                  "Queue full with " + messageQueue.size() + " messages. " +
+                  "Consider increasing concurrent_request or elastic cluster capacity.");
+          enqueueStartTime = System.currentTimeMillis();
         }
-        waitTime *= 2;
+
+        enqueueFailCount++;
       }
+
+      if (enqueueFailCount > 0) {
+        logger.warn(Thread.currentThread().getName() + " SB: " + enqueueFailCount +
+                " enqueue attempts failed and " + (System.currentTimeMillis() - enqueueStartTime) +
+                " millis elapsed since last success.");
+        enqueueFailCount = 0;
+        enqueueStartTime = 0;
+      }
+
     } catch (InterruptedException ie) {
       // ignore
     }

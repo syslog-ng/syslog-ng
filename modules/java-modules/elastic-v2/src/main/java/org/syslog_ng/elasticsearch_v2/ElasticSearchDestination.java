@@ -47,7 +47,7 @@ public class ElasticSearchDestination extends StructuredLogDestination {
 	public ElasticSearchDestination(long handle) {
 		super(handle);
 		logger = Logger.getRootLogger();
-		logger.error("SB: state of the logger: " + logger.isDebugEnabled());
+		logger.error("SB: ESD: state of the logger: " + logger.isDebugEnabled());
 		SyslogNgInternalLogger.register(logger);
 		options = new ElasticSearchOptions(this);
   }
@@ -144,6 +144,7 @@ public class ElasticSearchDestination extends StructuredLogDestination {
 
 	@Override
 	protected void deinit() {
+    logger.warn("SB: ESD: Deinit called ");
 		client.deinit();
 		options.deinit();
 	}
