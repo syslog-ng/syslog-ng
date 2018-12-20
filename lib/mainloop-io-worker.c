@@ -48,7 +48,7 @@ _engage(MainLoopIOWorkerJob *self)
 
 /* NOTE: runs in the main thread */
 void
-main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self)
+main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self, GIOCondition cond)
 {
   g_assert(self->working == FALSE);
   if (main_loop_workers_quit)
@@ -57,6 +57,7 @@ main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self)
   _engage(self);
   main_loop_worker_job_start();
   self->working = TRUE;
+  self->cond = cond;
   iv_work_pool_submit_work(&main_loop_io_workers, &self->work_item);
 }
 
@@ -65,7 +66,7 @@ main_loop_io_worker_job_submit(MainLoopIOWorkerJob *self)
 static void
 _work(MainLoopIOWorkerJob *self)
 {
-  self->work(self->user_data);
+  self->work(self->user_data, self->cond);
   main_loop_worker_invoke_batch_callbacks();
   main_loop_worker_run_gc();
 }

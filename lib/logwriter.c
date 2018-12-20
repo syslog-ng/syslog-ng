@@ -183,7 +183,7 @@ log_writer_set_queue(LogWriter *self, LogQueue *queue)
 }
 
 static void
-log_writer_work_perform(gpointer s)
+log_writer_work_perform(gpointer s, GIOCondition cond)
 {
   LogWriter *self = (LogWriter *) s;
 
@@ -246,7 +246,7 @@ log_writer_io_flush_output(gpointer s)
   log_writer_stop_watches(self);
   if ((self->options->options & LWO_THREADED))
     {
-      main_loop_io_worker_job_submit(&self->io_job);
+      main_loop_io_worker_job_submit(&self->io_job, G_IO_OUT);
     }
   else
     {
@@ -261,7 +261,7 @@ log_writer_io_flush_output(gpointer s)
 
       if (!main_loop_worker_job_quit())
         {
-          log_writer_work_perform(s);
+          log_writer_work_perform(s, G_IO_OUT);
           log_writer_work_finished(s);
         }
     }
@@ -1324,7 +1324,7 @@ log_writer_init_watches(LogWriter *self)
 
   main_loop_io_worker_job_init(&self->io_job);
   self->io_job.user_data = self;
-  self->io_job.work = (void (*)(void *)) log_writer_work_perform;
+  self->io_job.work = (void (*)(void *, GIOCondition)) log_writer_work_perform;
   self->io_job.completion = (void (*)(void *)) log_writer_work_finished;
   self->io_job.engage = (void (*)(void *)) log_pipe_ref;
   self->io_job.release = (void (*)(void *)) log_pipe_unref;
