@@ -26,6 +26,7 @@ set(SCL_DIRS
     syslogconf
     system
     telegram
+    websense
     windowseventlog
 )
 

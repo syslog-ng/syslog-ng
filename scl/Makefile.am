@@ -25,6 +25,7 @@ SCL_SUBDIRS	= \
 	sudo		\
 	syslogconf	\
 	system		\
+	websense	\
 	telegram	\
 	windowseventlog
 
