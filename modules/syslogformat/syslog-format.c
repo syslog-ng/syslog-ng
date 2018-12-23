@@ -180,8 +180,8 @@ log_msg_parse_column(LogMessage *self, NVHandle handle, const guchar **data, gin
   *length = left;
 }
 
-static gboolean
-log_msg_parse_seq(LogMessage *self, const guchar **data, gint *length)
+static void
+log_msg_parse_cisco_sequence_id(LogMessage *self, const guchar **data, gint *length)
 {
   const guchar *src = *data;
   gint left = *length;
@@ -190,7 +190,7 @@ log_msg_parse_seq(LogMessage *self, const guchar **data, gint *length)
   while (left && *src != ':')
     {
       if (!isdigit(*src))
-        return FALSE;
+        return;
       src++;
       left--;
     }
@@ -200,13 +200,13 @@ log_msg_parse_seq(LogMessage *self, const guchar **data, gint *length)
   /* if the next char is not space, then we may try to read a date */
 
   if (*src != ' ')
-    return FALSE;
+    return;
 
   log_msg_set_value(self, handles.cisco_seqid, (gchar *) *data, *length - left - 1);
 
   *data = src;
   *length = left;
-  return TRUE;
+  return;
 }
 
 static gboolean
@@ -752,7 +752,7 @@ log_msg_parse_legacy(const MsgFormatOptions *parse_options,
       goto error;
     }
 
-  log_msg_parse_seq(self, &src, &left);
+  log_msg_parse_cisco_sequence_id(self, &src, &left);
   log_msg_parse_skip_chars(self, &src, &left, " ", -1);
 
   if (!log_msg_extract_cisco_timestamp_attributes(self, &src, &left, parse_options->flags))
