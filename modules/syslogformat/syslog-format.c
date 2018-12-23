@@ -209,8 +209,8 @@ log_msg_parse_cisco_sequence_id(LogMessage *self, const guchar **data, gint *len
   return;
 }
 
-static gboolean
-log_msg_extract_cisco_timestamp_attributes(LogMessage *self, const guchar **data, gint *length, gint parse_flags)
+static void
+log_msg_parse_cisco_timestamp_attributes(LogMessage *self, const guchar **data, gint *length, gint parse_flags)
 {
   const guchar *src = *data;
   gint left = *length;
@@ -233,7 +233,6 @@ log_msg_extract_cisco_timestamp_attributes(LogMessage *self, const guchar **data
     }
   *data = src;
   *length = left;
-  return TRUE;
 }
 
 static gboolean
@@ -754,11 +753,7 @@ log_msg_parse_legacy(const MsgFormatOptions *parse_options,
 
   log_msg_parse_cisco_sequence_id(self, &src, &left);
   log_msg_parse_skip_chars(self, &src, &left, " ", -1);
-
-  if (!log_msg_extract_cisco_timestamp_attributes(self, &src, &left, parse_options->flags))
-    {
-      goto error;
-    }
+  log_msg_parse_cisco_timestamp_attributes(self, &src, &left, parse_options->flags);
 
   cached_g_current_time(&now);
   if (log_msg_parse_date(self, &src, &left, parse_options->flags & ~LP_SYSLOG_PROTOCOL,
