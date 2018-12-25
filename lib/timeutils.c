@@ -103,6 +103,9 @@ TLS_BLOCK_START
 }
 TLS_BLOCK_END;
 
+/* this indicates that a test program is faking the current time */
+gboolean faking_time;
+
 #define current_time_value   __tls_deref(current_time_value)
 #define invalidate_time_task __tls_deref(invalidate_time_task)
 #define local_time_cache     __tls_deref(local_time_cache)
@@ -120,6 +123,13 @@ invalidate_cached_time(void)
   current_time_value.tv_sec = 0;
 }
 
+void
+set_cached_time(GTimeVal *timeval)
+{
+  current_time_value = *timeval;
+  faking_time = TRUE;
+}
+
 /*
  * this shuld replace the g_get_current_time and the g_source_get_current_time calls in the main thread
  * (log_msg_init, afinter_postpone_mark)
@@ -133,7 +143,9 @@ cached_g_current_time(GTimeVal *result)
     }
   *result = current_time_value;
 
-  if (iv_inited())
+  if (G_UNLIKELY(faking_time))
+    return;
+  else if (iv_inited())
     {
       if (invalidate_time_task.handler == NULL)
         {
