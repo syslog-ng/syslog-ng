@@ -22,6 +22,7 @@
  *
  */
 #include "timeutils/decode.h"
+#include "timeutils/wallclocktime.h"
 #include "str-format.h"
 #include "timeutils/timeutils.h"
 #include "timeutils/cache.h"
@@ -134,80 +135,80 @@ scan_month_abbrev(const gchar **buf, gint *left, gint *mon)
 
 /* this function parses the date/time portion of an ISODATE */
 gboolean
-scan_iso_timestamp(const gchar **buf, gint *left, struct tm *tm)
+scan_iso_timestamp(const gchar **buf, gint *left, WallClockTime *wct)
 {
   /* YYYY-MM-DDTHH:MM:SS */
-  if (!scan_int(buf, left, 4, &tm->tm_year) ||
+  if (!scan_int(buf, left, 4, &wct->wct_year) ||
       !scan_expect_char(buf, left, '-') ||
-      !scan_int(buf, left, 2, &tm->tm_mon) ||
+      !scan_int(buf, left, 2, &wct->wct_mon) ||
       !scan_expect_char(buf, left, '-') ||
-      !scan_int(buf, left, 2, &tm->tm_mday) ||
+      !scan_int(buf, left, 2, &wct->wct_mday) ||
       !scan_expect_char(buf, left, 'T') ||
-      !scan_int(buf, left, 2, &tm->tm_hour) ||
+      !scan_int(buf, left, 2, &wct->wct_hour) ||
       !scan_expect_char(buf, left, ':') ||
-      !scan_int(buf, left, 2, &tm->tm_min) ||
+      !scan_int(buf, left, 2, &wct->wct_min) ||
       !scan_expect_char(buf, left, ':') ||
-      !scan_int(buf, left, 2, &tm->tm_sec))
+      !scan_int(buf, left, 2, &wct->wct_sec))
     return FALSE;
-  tm->tm_year -= 1900;
-  tm->tm_mon -= 1;
+  wct->wct_year -= 1900;
+  wct->wct_mon -= 1;
   return TRUE;
 }
 
 gboolean
-scan_pix_timestamp(const gchar **buf, gint *left, struct tm *tm)
+scan_pix_timestamp(const gchar **buf, gint *left, WallClockTime *wct)
 {
   /* PIX/ASA timestamp, expected format: MMM DD YYYY HH:MM:SS */
-  if (!scan_month_abbrev(buf, left, &tm->tm_mon) ||
+  if (!scan_month_abbrev(buf, left, &wct->wct_mon) ||
       !scan_expect_char(buf, left, ' ') ||
-      !scan_int(buf, left, 2, &tm->tm_mday) ||
+      !scan_int(buf, left, 2, &wct->wct_mday) ||
       !scan_expect_char(buf, left, ' ') ||
-      !scan_int(buf, left, 4, &tm->tm_year) ||
+      !scan_int(buf, left, 4, &wct->wct_year) ||
       !scan_expect_char(buf, left, ' ') ||
-      !scan_int(buf, left, 2, &tm->tm_hour) ||
+      !scan_int(buf, left, 2, &wct->wct_hour) ||
       !scan_expect_char(buf, left, ':') ||
-      !scan_int(buf, left, 2, &tm->tm_min) ||
+      !scan_int(buf, left, 2, &wct->wct_min) ||
       !scan_expect_char(buf, left, ':') ||
-      !scan_int(buf, left, 2, &tm->tm_sec))
+      !scan_int(buf, left, 2, &wct->wct_sec))
     return FALSE;
-  tm->tm_year -= 1900;
+  wct->wct_year -= 1900;
   return TRUE;
 }
 
 gboolean
-scan_linksys_timestamp(const gchar **buf, gint *left, struct tm *tm)
+scan_linksys_timestamp(const gchar **buf, gint *left, WallClockTime *wct)
 {
   /* LinkSys timestamp, expected format: MMM DD HH:MM:SS YYYY */
 
-  if (!scan_month_abbrev(buf, left, &tm->tm_mon) ||
+  if (!scan_month_abbrev(buf, left, &wct->wct_mon) ||
       !scan_expect_char(buf, left, ' ') ||
-      !scan_int(buf, left, 2, &tm->tm_mday) ||
+      !scan_int(buf, left, 2, &wct->wct_mday) ||
       !scan_expect_char(buf, left, ' ') ||
-      !scan_int(buf, left, 2, &tm->tm_hour) ||
+      !scan_int(buf, left, 2, &wct->wct_hour) ||
       !scan_expect_char(buf, left, ':') ||
-      !scan_int(buf, left, 2, &tm->tm_min) ||
+      !scan_int(buf, left, 2, &wct->wct_min) ||
       !scan_expect_char(buf, left, ':') ||
-      !scan_int(buf, left, 2, &tm->tm_sec) ||
+      !scan_int(buf, left, 2, &wct->wct_sec) ||
       !scan_expect_char(buf, left, ' ') ||
-      !scan_int(buf, left, 4, &tm->tm_year))
+      !scan_int(buf, left, 4, &wct->wct_year))
     return FALSE;
-  tm->tm_year -= 1900;
+  wct->wct_year -= 1900;
   return TRUE;
 }
 
 gboolean
-scan_bsd_timestamp(const gchar **buf, gint *left, struct tm *tm)
+scan_bsd_timestamp(const gchar **buf, gint *left, WallClockTime *wct)
 {
   /* RFC 3164 timestamp, expected format: MMM DD HH:MM:SS ... */
-  if (!scan_month_abbrev(buf, left, &tm->tm_mon) ||
+  if (!scan_month_abbrev(buf, left, &wct->wct_mon) ||
       !scan_expect_char(buf, left, ' ') ||
-      !scan_int(buf, left, 2, &tm->tm_mday) ||
+      !scan_int(buf, left, 2, &wct->wct_mday) ||
       !scan_expect_char(buf, left, ' ') ||
-      !scan_int(buf, left, 2, &tm->tm_hour) ||
+      !scan_int(buf, left, 2, &wct->wct_hour) ||
       !scan_expect_char(buf, left, ':') ||
-      !scan_int(buf, left, 2, &tm->tm_min) ||
+      !scan_int(buf, left, 2, &wct->wct_min) ||
       !scan_expect_char(buf, left, ':') ||
-      !scan_int(buf, left, 2, &tm->tm_sec))
+      !scan_int(buf, left, 2, &wct->wct_sec))
     return FALSE;
   return TRUE;
 }
@@ -228,17 +229,17 @@ __determine_recv_timezone_offset(LogStamp *const timestamp, glong const recv_tim
 }
 
 static void
-__fixup_hour_in_struct_tm_within_transition_periods(LogStamp *stamp, struct tm *tm, glong recv_timezone_ofs)
+__fixup_hour_in_struct_tm_within_transition_periods(LogStamp *stamp, WallClockTime *wct, glong recv_timezone_ofs)
 {
   /* save the tm_hour value as received from the client */
-  gint unnormalized_hour = tm->tm_hour;
+  gint unnormalized_hour = wct->wct_hour;
 
   /* NOTE: mktime() returns the time assuming that the timestamp we
    * received was in local time. */
 
   /* tell cached_mktime() that we have no clue whether Daylight Saving is enabled or not */
-  tm->tm_isdst = -1;
-  stamp->tv_sec = cached_mktime(tm);
+  wct->wct_isdst = -1;
+  stamp->tv_sec = cached_mktime(&wct->tm);
 
   /* We need to determine the timezone we want to assume the message was
    * received from.  This depends on the recv-time-zone() setting and the
@@ -246,7 +247,7 @@ __fixup_hour_in_struct_tm_within_transition_periods(LogStamp *stamp, struct tm *
   __determine_recv_timezone_offset(stamp, recv_timezone_ofs);
 
   /* save the tm_hour as adjusted by mktime() */
-  gint normalized_hour = tm->tm_hour;
+  gint normalized_hour = wct->wct_hour;
 
   /* fix up the tv_sec value by transposing it into the target timezone:
    *
@@ -256,7 +257,7 @@ __fixup_hour_in_struct_tm_within_transition_periods(LogStamp *stamp, struct tm *
    * used by mktime(). It is composed of these values:
    *
    *  1) get_local_timezone_ofs()
-   *  2) then in transition periods, mktime() will change tm->tm_hour
+   *  2) then in transition periods, mktime() will change wct->wct_hour
    *     according to its understanding (e.g.  sprint time, 02:01 is changed
    *     to 03:01), which is an additional factor that needs to be taken care
    *     of.  This is the (normalized_hour - unnormalized_hour) part below
@@ -349,7 +350,7 @@ __is_iso_stamp(const gchar *stamp, gint length)
 }
 
 static gboolean
-__parse_iso_stamp(const GTimeVal *now, LogStamp *stamp, struct tm *tm, const guchar **data, gint *length)
+__parse_iso_stamp(const GTimeVal *now, LogStamp *stamp, WallClockTime *wct, const guchar **data, gint *length)
 {
   /* RFC3339 timestamp, expected format: YYYY-MM-DDTHH:MM:SS[.frac]<+/->ZZ:ZZ */
   time_t now_tv_sec = (time_t) now->tv_sec;
@@ -362,8 +363,8 @@ __parse_iso_stamp(const GTimeVal *now, LogStamp *stamp, struct tm *tm, const guc
    * not exist on all platforms and 0 initializing it causes trouble on
    * time-zone barriers */
 
-  cached_localtime(&now_tv_sec, tm);
-  if (!scan_iso_timestamp((const gchar **) &src, length, tm))
+  cached_localtime(&now_tv_sec, &wct->tm);
+  if (!scan_iso_timestamp((const gchar **) &src, length, wct))
     {
       return FALSE;
     }
@@ -432,18 +433,19 @@ __is_bsd_pix_or_asa(const guchar *src, guint32 left)
 }
 
 static gboolean
-__parse_bsd_timestamp(const guchar **data, gint *length, const GTimeVal *now, struct tm *tm, glong *usec)
+__parse_bsd_timestamp(const guchar **data, gint *length, const GTimeVal *now, WallClockTime *wct, glong *usec)
 {
   gint left = *length;
   const guchar *src = *data;
   time_t now_tv_sec = (time_t) now->tv_sec;
-  struct tm local_time;
-  cached_localtime(&now_tv_sec, tm);
-  cached_localtime(&now_tv_sec, &local_time);
+  WallClockTime local_time;
+
+  cached_localtime(&now_tv_sec, &wct->tm);
+  cached_localtime(&now_tv_sec, &local_time.tm);
 
   if (__is_bsd_pix_or_asa(src, left))
     {
-      if (!scan_pix_timestamp((const gchar **) &src, &left, tm))
+      if (!scan_pix_timestamp((const gchar **) &src, &left, wct))
         return FALSE;
 
       if (*src == ':')
@@ -454,17 +456,17 @@ __parse_bsd_timestamp(const guchar **data, gint *length, const GTimeVal *now, st
     }
   else if (__is_bsd_linksys(src, left))
     {
-      if (!scan_linksys_timestamp((const gchar **) &src, &left, tm))
+      if (!scan_linksys_timestamp((const gchar **) &src, &left, wct))
         return FALSE;
     }
   else if (__is_bsd_rfc_3164(src, left))
     {
-      if (!scan_bsd_timestamp((const gchar **) &src, &left, tm))
+      if (!scan_bsd_timestamp((const gchar **) &src, &left, wct))
         return FALSE;
 
       *usec = __parse_usec(&src, &left);
 
-      tm->tm_year = determine_year_for_month(tm->tm_mon, &local_time);
+      wct->wct_year = determine_year_for_month(wct->wct_mon, &local_time.tm);
     }
   else
     {
@@ -483,20 +485,20 @@ scan_rfc3164_timestamp(const guchar **data, gint *length,
   GTimeVal now;
   const guchar *src = *data;
   gint left = *length;
-  struct tm tm;
+  WallClockTime wct;
 
   cached_g_current_time(&now);
 
   /* If the next chars look like a date, then read them as a date. */
   if (__is_iso_stamp((const gchar *)src, left))
     {
-      if (!__parse_iso_stamp(&now, stamp, &tm, &src, &left))
+      if (!__parse_iso_stamp(&now, stamp, &wct, &src, &left))
         return FALSE;
     }
   else
     {
       glong usec = 0;
-      if (!__parse_bsd_timestamp(&src, &left, &now, &tm, &usec))
+      if (!__parse_bsd_timestamp(&src, &left, &now, &wct, &usec))
         return FALSE;
 
       stamp->tv_usec = usec;
@@ -513,7 +515,7 @@ scan_rfc3164_timestamp(const guchar **data, gint *length,
     }
 
   if (!ignore_result)
-    __fixup_hour_in_struct_tm_within_transition_periods(stamp, &tm, recv_timezone_ofs);
+    __fixup_hour_in_struct_tm_within_transition_periods(stamp, &wct, recv_timezone_ofs);
 
   *data = src;
   *length = left;
@@ -528,7 +530,7 @@ scan_rfc5424_timestamp(const guchar **data, gint *length,
   GTimeVal now;
   const guchar *src = *data;
   gint left = *length;
-  struct tm tm;
+  WallClockTime wct;
 
   cached_g_current_time(&now);
 
@@ -540,10 +542,10 @@ scan_rfc5424_timestamp(const guchar **data, gint *length,
       src++;
       left--;
     }
-  else if (__parse_iso_stamp(&now, stamp, &tm, &src, &left))
+  else if (__parse_iso_stamp(&now, stamp, &wct, &src, &left))
     {
       if (!ignore_result)
-        __fixup_hour_in_struct_tm_within_transition_periods(stamp, &tm, recv_timezone_ofs);
+        __fixup_hour_in_struct_tm_within_transition_periods(stamp, &wct, recv_timezone_ofs);
     }
   else
     return FALSE;
