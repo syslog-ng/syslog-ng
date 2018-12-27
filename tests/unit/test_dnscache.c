@@ -25,7 +25,7 @@
 
 #include "dnscache.h"
 #include "apphook.h"
-#include "timeutils.h"
+#include "timeutils/timeutils.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>

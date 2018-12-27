@@ -22,7 +22,7 @@
  *
  */
 
-#include "timeutils.h"
+#include "timeutils/timeutils.h"
 #include "messages.h"
 #include "tls-support.h"
 #include "reloc.h"

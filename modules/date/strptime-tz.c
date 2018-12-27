@@ -52,7 +52,7 @@
  */
 
 #include "strptime-tz.h"
-#include "timeutils.h"
+#include "timeutils/timeutils.h"
 #include <time.h>
 #include <ctype.h>
 #include <string.h>

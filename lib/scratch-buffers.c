@@ -24,7 +24,7 @@
 #include "scratch-buffers.h"
 #include "tls-support.h"
 #include "stats/stats-registry.h"
-#include "timeutils.h"
+#include "timeutils/timeutils.h"
 #include "messages.h"
 #include "apphook.h"
 

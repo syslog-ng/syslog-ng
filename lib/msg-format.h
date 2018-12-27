@@ -26,7 +26,7 @@
 #define MSG_FORMAT_H_INCLUDED
 
 #include "syslog-ng.h"
-#include "timeutils.h"
+#include "timeutils/timeutils.h"
 #include "logproto/logproto-server.h"
 
 #include <regex.h>

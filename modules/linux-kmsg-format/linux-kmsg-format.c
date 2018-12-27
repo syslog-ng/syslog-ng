@@ -24,7 +24,7 @@
 #include "linux-kmsg-format.h"
 #include "logmsg/logmsg.h"
 #include "messages.h"
-#include "timeutils.h"
+#include "timeutils/timeutils.h"
 #include "cfg.h"
 #include "str-format.h"
 #include "scratch-buffers.h"

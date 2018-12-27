@@ -25,7 +25,7 @@
 #include <criterion/theories.h>
 #include <time.h>
 
-#include "timeutils.h"
+#include "timeutils/timeutils.h"
 
 TheoryDataPoints(msgparse, test_year_calculation_for_bsd_format_regular_months) =
 {

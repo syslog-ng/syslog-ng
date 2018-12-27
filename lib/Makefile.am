@@ -163,7 +163,6 @@ pkginclude_HEADERS			+= \
 	lib/syslog-ng.h			\
 	lib/misc.h                      \
 	lib/string-list.h		\
-	lib/timeutils.h			\
 	lib/tls-support.h		\
 	lib/thread-utils.h		\
 	lib/tlscontext.h  		\
@@ -248,7 +247,6 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/str-utils.c			\
 	lib/syslog-names.c		\
 	lib/string-list.c		\
-	lib/timeutils.c			\
 	lib/type-hinting.c		\
 	lib/ringbuffer.c		\
 	lib/late_ack_tracker.c		\

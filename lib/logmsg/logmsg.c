@@ -27,7 +27,7 @@
 #include "str-repr/encode.h"
 #include "messages.h"
 #include "logpipe.h"
-#include "timeutils.h"
+#include "timeutils/timeutils.h"
 #include "logmsg/nvtable.h"
 #include "stats/stats-registry.h"
 #include "stats/stats-cluster-single.h"

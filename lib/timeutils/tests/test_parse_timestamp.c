@@ -24,7 +24,7 @@
 #include <criterion/criterion.h>
 #include "apphook.h"
 #include "timeutils/decode.h"
-#include "timeutils.h"
+#include "timeutils/timeutils.h"
 
 static void
 fake_time(time_t now)

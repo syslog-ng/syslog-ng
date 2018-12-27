@@ -32,7 +32,7 @@
 #include "template/user-function.h"
 #include "apphook.h"
 #include "cfg.h"
-#include "timeutils.h"
+#include "timeutils/timeutils.h"
 #include "plugin.h"
 #include "scratch-buffers.h"
 

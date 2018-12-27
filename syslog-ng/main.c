@@ -33,7 +33,7 @@
 #include "logqueue.h"
 #include "gprocess.h"
 #include "control/control.h"
-#include "timeutils.h"
+#include "timeutils/timeutils.h"
 #include "logsource.h"
 #include "mainloop.h"
 #include "plugin.h"

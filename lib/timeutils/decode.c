@@ -23,7 +23,7 @@
  */
 #include "timeutils/decode.h"
 #include "str-format.h"
-#include "timeutils.h"
+#include "timeutils/timeutils.h"
 
 #include <ctype.h>
 #include <string.h>

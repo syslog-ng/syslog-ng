@@ -24,7 +24,7 @@
 
 #include "template/macros.h"
 #include "template/escaping.h"
-#include "timeutils.h"
+#include "timeutils/timeutils.h"
 #include "logstamp.h"
 #include "messages.h"
 #include "str-format.h"

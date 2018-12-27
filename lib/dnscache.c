@@ -24,7 +24,7 @@
 
 #include "dnscache.h"
 #include "messages.h"
-#include "timeutils.h"
+#include "timeutils/timeutils.h"
 #include "tls-support.h"
 
 #include <sys/types.h>
