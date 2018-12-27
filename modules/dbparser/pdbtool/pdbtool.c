@@ -45,6 +45,7 @@
 #include "compat/openssl_support.h"
 #include "scratch-buffers.h"
 #include "timeutils/timeutils.h"
+#include "timeutils/cache.h"
 
 #include <stdio.h>
 #include <string.h>

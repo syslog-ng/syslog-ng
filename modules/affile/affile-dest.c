@@ -36,6 +36,7 @@
 #include "affile-dest-internal-queue-filter.h"
 #include "file-specializations.h"
 #include "apphook.h"
+#include "timeutils/cache.h"
 
 #include <iv.h>
 #include <sys/types.h>

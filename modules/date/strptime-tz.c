@@ -53,6 +53,7 @@
 
 #include "strptime-tz.h"
 #include "timeutils/timeutils.h"
+#include "timeutils/cache.h"
 #include <time.h>
 #include <ctype.h>
 #include <string.h>

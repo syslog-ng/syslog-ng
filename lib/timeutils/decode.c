@@ -24,6 +24,7 @@
 #include "timeutils/decode.h"
 #include "str-format.h"
 #include "timeutils/timeutils.h"
+#include "timeutils/cache.h"
 
 #include <ctype.h>
 #include <string.h>

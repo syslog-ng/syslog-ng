@@ -25,6 +25,7 @@
 #include "apphook.h"
 #include "timeutils/decode.h"
 #include "timeutils/timeutils.h"
+#include "timeutils/cache.h"
 
 static void
 fake_time(time_t now)

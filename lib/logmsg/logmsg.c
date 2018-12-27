@@ -28,6 +28,7 @@
 #include "messages.h"
 #include "logpipe.h"
 #include "timeutils/timeutils.h"
+#include "timeutils/cache.h"
 #include "logmsg/nvtable.h"
 #include "stats/stats-registry.h"
 #include "stats/stats-cluster-single.h"

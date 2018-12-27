@@ -25,6 +25,7 @@
 #include "strptime-tz.h"
 #include "str-utils.h"
 #include "timeutils/timeutils.h"
+#include "timeutils/cache.h"
 
 typedef struct _DateParser
 {

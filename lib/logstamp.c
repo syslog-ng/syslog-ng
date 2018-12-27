@@ -24,6 +24,7 @@
 
 #include "logstamp.h"
 #include "messages.h"
+#include "timeutils/cache.h"
 #include "timeutils/timeutils.h"
 #include "str-format.h"
 

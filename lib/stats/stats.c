@@ -28,6 +28,7 @@
 #include "stats/stats-registry.h"
 #include "stats/stats.h"
 #include "timeutils/timeutils.h"
+#include "timeutils/cache.h"
 
 #include <string.h>
 #include <iv.h>

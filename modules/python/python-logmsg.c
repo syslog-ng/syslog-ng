@@ -25,6 +25,7 @@
 #include "python-helpers.h"
 #include "logmsg/logmsg.h"
 #include "messages.h"
+#include "timeutils/cache.h"
 #include "str-utils.h"
 #include "logstamp.h"
 
