@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-#include "str-timestamp/decode.h"
+#include "timeutils/decode.h"
 #include "str-format.h"
 #include "timeutils.h"
 

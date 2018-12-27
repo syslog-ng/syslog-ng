@@ -22,7 +22,7 @@
  */
 
 #include "syslog-format.h"
-#include "str-timestamp/decode.h"
+#include "timeutils/decode.h"
 #include "logmsg/logmsg.h"
 #include "messages.h"
 #include "timeutils.h"

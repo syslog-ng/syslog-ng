@@ -18,7 +18,7 @@ include lib/scanner/csv-scanner/Makefile.am
 include lib/scanner/list-scanner/Makefile.am
 include lib/scanner/kv-scanner/Makefile.am
 include lib/str-repr/Makefile.am
-include lib/str-timestamp/Makefile.am
+include lib/timeutils/Makefile.am
 include lib/secret-storage/Makefile.am
 include lib/logthrsource/Makefile.am
 
@@ -283,7 +283,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	$(compat_sources)     		\
 	$(logmsg_sources)		\
 	$(str_repr_sources)		\
-	$(str_timestamp_sources)	\
+	$(timeutils_sources)	\
 	$(logthrsource_sources)
 
 lib_libsyslog_ng_la_CFLAGS		= \

@@ -23,7 +23,7 @@
  */
 #include <criterion/criterion.h>
 #include "apphook.h"
-#include "str-timestamp/decode.h"
+#include "timeutils/decode.h"
 #include "timeutils.h"
 
 static void
