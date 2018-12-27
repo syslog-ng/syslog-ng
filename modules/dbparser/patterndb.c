@@ -36,6 +36,7 @@
 #include "str-utils.h"
 #include "filter/filter-expr-parser.h"
 #include "logpipe.h"
+#include "timeutils/timeutils.h"
 
 #include <string.h>
 #include <stdio.h>

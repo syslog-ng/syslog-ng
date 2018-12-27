@@ -24,6 +24,7 @@
 #include "date-parser.h"
 #include "strptime-tz.h"
 #include "str-utils.h"
+#include "timeutils/timeutils.h"
 
 typedef struct _DateParser
 {

@@ -26,6 +26,7 @@
 #include "logthrdestdrv.h"
 #include "seqnum.h"
 #include "scratch-buffers.h"
+#include "timeutils/timeutils.h"
 
 #define MAX_RETRIES_OF_FAILED_INSERT_DEFAULT 3
 

@@ -27,7 +27,7 @@
 
 #include "syslog-ng.h"
 #include "common-template-typedefs.h"
-#include "timeutils/timeutils.h"
+#include "timeutils/zoneinfo.h"
 #include "type-hinting.h"
 
 #define LTZ_LOCAL 0

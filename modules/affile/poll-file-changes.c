@@ -22,6 +22,7 @@
  */
 #include "poll-file-changes.h"
 #include "logpipe.h"
+#include "timeutils/timeutils.h"
 
 #include <sys/types.h>
 #include <sys/socket.h>
