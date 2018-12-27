@@ -95,20 +95,6 @@
         </varlistentry>
         <varlistentry>
           <term>
-            <command>--default-modules</command>
-            <indexterm type="parameter">
-              <primary>--default-modules</primary>
-            </indexterm>
-            <indexterm type="parameter">
-              <primary>default-modules</primary>
-            </indexterm>
-          </term>
-          <listitem>
-            <para>A comma-separated list of the modules that are loaded automatically. Modules not loaded automatically can be loaded by including the <parameter>@module &lt;modulename&gt;</parameter> statement in the  configuration file. The following modules are loaded by default: . Available only in  and later.</para>
-          </listitem>
-        </varlistentry>
-        <varlistentry>
-          <term>
             <command>--enable-core</command>
             <indexterm type="parameter">
               <primary>--enable-core</primary>
@@ -174,7 +160,7 @@
             </indexterm>
           </term>
           <listitem>
-            <para>Display the list and description of the available modules. Note that not all of these modules are loaded automatically, only the ones specified in the <command>--default-modules</command> option. Available only in   and later.</para>
+            <para>Display the list and description of the available modules. Available only in   and later.</para>
           </listitem>
         </varlistentry>
         <varlistentry>
@@ -284,7 +270,7 @@
                         <indexterm type="parameter"><primary>version</primary></indexterm>
                     </term>
           <listitem>
-            <para>Display version number and compilation information, and also the list and short description of the available modules. For detailed description of the available modules, see the <command>--module-registry</command> option. Note that not all of these modules are loaded automatically, only the ones specified in the <command>--default-modules</command> option.</para>
+            <para>Display version number and compilation information, and also the list and short description of the available modules. For detailed description of the available modules, see the <command>--module-registry</command> option.</para>
           </listitem>
         </varlistentry>
         <varlistentry>
