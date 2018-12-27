@@ -8,7 +8,8 @@ timeutilsinclude_HEADERS =	\
   lib/timeutils/names.h	\
   lib/timeutils/strptime-tz.h	\
   lib/timeutils/timeutils.h	\
-  lib/timeutils/zoneinfo.h
+  lib/timeutils/zoneinfo.h	\
+  lib/timeutils/wallclocktime.h
 
 timeutils_sources =		\
  lib/timeutils/decode.c		\
@@ -16,6 +17,7 @@ timeutils_sources =		\
  lib/timeutils/names.c		\
  lib/timeutils/strptime-tz.c	\
  lib/timeutils/timeutils.c	\
- lib/timeutils/zoneinfo.c
+ lib/timeutils/zoneinfo.c	\
+ lib/timeutils/wallclocktime.c
 
 include lib/timeutils/tests/Makefile.am
