@@ -26,6 +26,7 @@
 #include "messages.h"
 #include "timeutils/cache.h"
 #include "timeutils/timeutils.h"
+#include "timeutils/names.h"
 #include "str-format.h"
 
 static void

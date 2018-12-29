@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2014 Balabit
- * Copyright (c) 1998-2010 Balázs Scheidler
+ * Copyright (c) 2002-2018 Balabit
+ * Copyright (c) 1998-2018 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,21 +22,22 @@
  *
  */
 
-#ifndef TIMEUTILS_H_INCLUDED
-#define TIMEUTILS_H_INCLUDED
+const char *month_names_abbrev[] =
+{
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+};
 
-#include "syslog-ng.h"
-#include "compat/time.h"
+const char *month_names[] =
+{
+  "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"
+};
 
-long get_local_timezone_ofs(time_t when);
+const char *weekday_names_abbrev[] =
+{
+  "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
+};
 
-gboolean check_nanosleep(void);
-
-int format_zone_info(gchar *buf, size_t buflen, long gmtoff);
-glong g_time_val_diff(GTimeVal *t1, GTimeVal *t2);
-void timespec_add_msec(struct timespec *ts, glong msec);
-glong timespec_diff_msec(const struct timespec *t1, const struct timespec *t2);
-glong timespec_diff_nsec(struct timespec *t1, struct timespec *t2);
-gint determine_year_for_month(gint month, const struct tm *now);
-
-#endif
+const char *weekday_names[] =
+{
+  "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
+};
