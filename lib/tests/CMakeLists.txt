@@ -24,6 +24,9 @@ add_unit_test(CRITERION TARGET test_atomic_gssize)
 add_unit_test(CRITERION TARGET test_window_size_counter)
 add_unit_test(CRITERION TARGET test_apphook)
 
+add_unit_test(CRITERION TARGET test_directory_monitor)
+add_unit_test(CRITERION TARGET test_collection_comparator)
+
 SET_DIRECTORY_PROPERTIES(PROPERTIES
   ADDITIONAL_MAKE_CLEAN_FILES
   "test_values.persist;test_values.persist-;test_run_id.persist;test_run_id.persist-")

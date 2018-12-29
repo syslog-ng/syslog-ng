@@ -18,11 +18,19 @@ lib_tests_TESTS		= \
 	lib/tests/test_str-utils \
 	lib/tests/test_atomic_gssize \
 	lib/tests/test_window_size_counter \
-	lib/tests/test_apphook
+	lib/tests/test_apphook          \
+        lib/tests/test_directory_monitor \
+        lib/tests/test_collection_comparator
 
 EXTRA_DIST += lib/tests/CMakeLists.txt
 
 check_PROGRAMS		+= ${lib_tests_TESTS}
+
+lib_tests_test_directory_monitor_CFLAGS  = $(TEST_CFLAGS) -I$(top_srcdir)/lib
+lib_tests_test_directory_monitor_LDADD   = $(TEST_LDADD)
+
+lib_tests_test_collection_comparator_CFLAGS  = $(TEST_CFLAGS) -I$(top_srcdir)/lib
+lib_tests_test_collection_comparator_LDADD   = $(TEST_LDADD)
 
 if ENABLE_TESTING
 noinst_PROGRAMS 	= \

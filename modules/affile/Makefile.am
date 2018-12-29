@@ -14,14 +14,6 @@ modules_affile_libaffile_la_SOURCES	=			\
 	modules/affile/wildcard-file-reader.h		\
 	modules/affile/wildcard-source.h			\
 	modules/affile/wildcard-source.c			\
-	modules/affile/directory-monitor.h			\
-	modules/affile/directory-monitor.c			\
-	modules/affile/directory-monitor-factory.h			\
-	modules/affile/directory-monitor-factory.c			\
-	modules/affile/collection-comparator.h		\
-	modules/affile/collection-comparator.c		\
-	modules/affile/directory-monitor-poll.h   \
-	modules/affile/directory-monitor-poll.c   \
 	modules/affile/file-opener.c				\
 	modules/affile/file-opener.h				\
 	modules/affile/file-specializations.h			\
@@ -43,15 +35,6 @@ modules_affile_libaffile_la_SOURCES	=			\
 	modules/affile/file-list.c				\
   modules/affile/affile-dest-internal-queue-filter.h
 
-if HAVE_INOTIFY
-  modules_affile_libaffile_la_SOURCES +=      \
-  modules/affile/directory-monitor-inotify.h  \
-  modules/affile/directory-monitor-inotify.c
-else
-  EXTRA_DIST +=                               \
-  modules/affile/directory-monitor-inotify.h  \
-  modules/affile/directory-monitor-inotify.c
-endif
 
 BUILT_SOURCES				+= 			\
 	modules/affile/affile-grammar.y				\

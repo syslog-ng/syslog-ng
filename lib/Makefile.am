@@ -179,7 +179,12 @@ pkginclude_HEADERS			+= \
 	lib/host-id.h			\
 	lib/resolved-configurable-paths.h \
 	lib/pe-versioning.h \
-	lib/window-size-counter.h
+	lib/window-size-counter.h \
+        lib/directory-monitor-factory.h \
+        lib/directory-monitor-poll.h \
+        lib/collection-comparator.h \
+        lib/directory-monitor.h 
+	
 
 # this is intentionally formatted so conflicts are less likely to arise. one name in every line.
 lib_libsyslog_ng_la_SOURCES		= \
@@ -262,7 +267,10 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/host-id.c			\
 	lib/resolved-configurable-paths.c \
 	lib/window-size-counter.c \
-					\
+        lib/directory-monitor-factory.c \
+        lib/directory-monitor-poll.c \
+        lib/collection-comparator.c \
+        lib/directory-monitor.c \
 	lib/cfg-lex.l			\
 	lib/cfg-grammar.y		\
 	lib/block-ref-grammar.y		\
@@ -285,6 +293,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	$(str_repr_sources)		\
 	$(logthrsource_sources)
 
+
 lib_libsyslog_ng_la_CFLAGS		= \
 	$(AM_CFLAGS) \
 	@UUID_CFLAGS@ $(libsystemd_CFLAGS)
@@ -301,6 +310,16 @@ EXTRA_DIST += \
 	lib/pragma-grammar.ym		\
 	lib/merge-grammar.py		\
 	lib/hostname-unix.c
+
+if HAVE_INOTIFY
+lib_libsyslog_ng_la_SOURCES += \
+  lib/directory-monitor-inotify.h \
+  lib/directory-monitor-inotify.c
+else
+EXTRA_DIST += \
+  lib/directory-monitor-inotify.h \
+  lib/directory-monitor-inotify.c
+endif
 
 lib/plugin-types.h: lib/cfg-grammar.h
 

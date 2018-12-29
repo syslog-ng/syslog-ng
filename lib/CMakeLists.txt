@@ -142,6 +142,10 @@ set (LIB_HEADERS
     ${PROJECT_BINARY_DIR}/lib/block-ref-grammar.h
     ${PROJECT_BINARY_DIR}/lib/cfg-lex.h
     ${PROJECT_BINARY_DIR}/lib/pragma-grammar.h
+    collection-comparator.h
+    directory-monitor.h
+    directory-monitor-factory.h
+    directory-monitor-poll.h
     )
 
 set(LIB_SOURCES
@@ -245,7 +249,21 @@ set(LIB_SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/filter/filter-expr-grammar.c
     ${CMAKE_CURRENT_BINARY_DIR}/rewrite/rewrite-expr-grammar.c
     ${CMAKE_CURRENT_BINARY_DIR}/parser/parser-expr-grammar.c
+    collection-comparator.c
+    directory-monitor.c
+    directory-monitor-factory.c
+    directory-monitor-poll.c
     )
+
+if(SYSLOG_NG_HAVE_INOTIFY)
+    list(APPEND LIB_HEADERS
+        directory-monitor-inotify.h
+    )
+
+    list(APPEND LIB_SOURCES
+        directory-monitor-inotify.c
+    )
+endif()
 
 generate_y_from_ym (lib/block-ref-grammar)
 bison_target(BlockRefGrammar

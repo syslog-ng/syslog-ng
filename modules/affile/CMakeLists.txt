@@ -3,10 +3,6 @@ set(AFFILE_HEADERS
     "affile-dest-internal-queue-filter.h"
     "affile-parser.h"
     "affile-source.h"
-    "collection-comparator.h"
-    "directory-monitor-factory.h"
-    "directory-monitor.h"
-    "directory-monitor-poll.h"
     "file-opener.h"
     "file-reader.h"
     "file-specializations.h"
@@ -27,10 +23,6 @@ set(AFFILE_SOURCES
     "affile-parser.c"
     "affile-plugin.c"
     "affile-source.c"
-    "collection-comparator.c"
-    "directory-monitor.c"
-    "directory-monitor-factory.c"
-    "directory-monitor-poll.c"
     "file-opener.c"
     "file-reader.c"
     "linux-kmsg.c"
@@ -47,15 +39,6 @@ set(AFFILE_SOURCES
     "${CMAKE_CURRENT_BINARY_DIR}/affile-grammar.c"
 )
 
-if(SYSLOG_NG_HAVE_INOTIFY)
-    list(APPEND AFFILE_HEADERS
-        "directory-monitor-inotify.h"
-    )
-
-    list(APPEND AFFILE_SOURCES
-        "directory-monitor-inotify.c"
-    )
-endif()
 
 generate_y_from_ym(modules/affile/affile-grammar)
 
