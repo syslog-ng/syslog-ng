@@ -4,8 +4,6 @@ set(DATE_PARSER_SOURCES
     date-parser.h
     date-parser-parser.c
     date-parser-parser.h
-    strptime-tz.c
-    strptime-tz.h
     ${CMAKE_CURRENT_BINARY_DIR}/date-grammar.c
     ${CMAKE_CURRENT_BINARY_DIR}/date-grammar.h
 )
