@@ -23,7 +23,6 @@
  */
 
 #include <criterion/criterion.h>
-#include <criterion/parameterized.h>
 #include <glib/gstdio.h>
 #include <unistd.h>
 #include "collection-comparator.h"
@@ -32,6 +31,7 @@ typedef struct _TestData
 {
   GHashTable *deleted_entries;
   GHashTable *new_entries;
+  GHashTable *modified_entries;
 } TestData;
 
 static const gchar *TEST = "test";
@@ -42,6 +42,7 @@ test_data_new(void)
   TestData *self = g_new0(TestData, 1);
   self->deleted_entries = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
   self->new_entries = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
+  self->modified_entries = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, NULL);
   return self;
 }
 
@@ -49,6 +50,7 @@ void test_data_free(TestData *self)
 {
   g_hash_table_unref(self->deleted_entries);
   g_hash_table_unref(self->new_entries);
+  g_hash_table_unref(self->modified_entries);
   g_free(self);
 }
 
@@ -67,73 +69,37 @@ _handle_delete(const gchar *filename, gpointer data)
 }
 
 static void
-_assert_no_modified_entry(const gchar *filename, gpointer data)
+_handle_modify(const gchar *filename, gpointer data)
 {
-  cr_assert_fail("The modified entry cb should not be triggered.");
+  TestData *self = (TestData *)data;
+  g_hash_table_insert(self->modified_entries, g_strdup(filename), (gchar *)TEST);
 }
 
-struct TestFileList
-{
-  const gchar *initial_files[10];
-  const gchar *result_files[10];
-  const gchar *expected_deleted_files[10];
-  const gchar *expected_new_files[10];
-};
-
-struct TestFileList nothing_changed = {{"test1", "test2"}, {"test1", "test2"}, {NULL}, {NULL}};
-struct TestFileList last_file_deleted = {{"test1", "test2"}, {"test2"}, {"test1"}, {NULL}};
-struct TestFileList first_file_deleted = {{"test1", "test2"}, {"test1"}, {"test2"}, {NULL}};
-struct TestFileList delete_all = {{"test1", "test2"}, {NULL}, {"test1", "test2"}, {NULL}};
-struct TestFileList create_all = {{NULL}, {"test1", "test2"}, {NULL}, {"test1", "test2"}};
-struct TestFileList mixed = {{"test1", "test2", "test3"}, {"test1", "test4"}, {"test2", "test3"}, {"test4"}};
-
-ParameterizedTestParameters(params, multiple)
-{
-  static struct TestFileList params[6];
-  params[0] = nothing_changed;
-  params[1] = last_file_deleted;
-  params[2] = first_file_deleted;
-  params[3] = delete_all;
-  params[4] = create_all;
-  params[5] = mixed;
-
-  return cr_make_param_array(struct TestFileList, params, sizeof (params) / sizeof (struct TestFileList));
-}
-
-ParameterizedTest(struct TestFileList *tup, params, multiple)
+Test(collection_comparator, modified_entry)
 {
   TestData *data = test_data_new();
   CollectionComparator *comporator = collection_comparator_new();
   collection_comporator_set_callbacks(comporator,
                                       _handle_new,
                                       _handle_delete,
-                                      _assert_no_modified_entry,
+                                      _handle_modify,
                                       data);
-  gint i;
-  for (i = 0; tup->initial_files[i] != NULL; i++)
-    {
-      collection_comparator_add_initial_value(comporator, tup->initial_files[i], 0);
-    }
+
+  collection_comparator_add_initial_value(comporator, "foo", 1);
+  collection_comparator_add_initial_value(comporator, "bar", 2);
 
   collection_comparator_start(comporator);
 
-  for (i = 0; tup->result_files[i] != NULL; i++)
-    {
-      collection_comparator_add_value(comporator, tup->result_files[i], 0);
-    }
+  collection_comparator_add_value(comporator, "foo", 2);
+  collection_comparator_add_value(comporator, "bar", 2);
+
   collection_comparator_stop(comporator);
 
-  for (i = 0; tup->expected_deleted_files[i] != NULL; i++)
-    {
-      cr_assert_str_eq(g_hash_table_lookup(data->deleted_entries, tup->expected_deleted_files[i]), TEST);
-    }
-  cr_assert_eq(g_hash_table_size(data->deleted_entries), i);
+  cr_assert_eq(g_hash_table_size(data->deleted_entries), 0);
+  cr_assert_eq(g_hash_table_size(data->new_entries), 0);
+  cr_assert_eq(g_hash_table_size(data->modified_entries), 1);
 
-  for (i = 0; tup->expected_new_files[i] != NULL; i++)
-    {
-      cr_assert_str_eq(g_hash_table_lookup(data->new_entries, tup->expected_new_files[i]), TEST);
-    }
-  cr_assert_eq(g_hash_table_size(data->new_entries), i);
+  cr_assert_str_eq(g_hash_table_lookup(data->modified_entries, "foo"), TEST);
 
   collection_comparator_free(comporator);
   test_data_free(data);

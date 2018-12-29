@@ -26,6 +26,7 @@ add_unit_test(CRITERION TARGET test_apphook)
 
 add_unit_test(CRITERION TARGET test_directory_monitor)
 add_unit_test(CRITERION TARGET test_collection_comparator)
+add_unit_test(CRITERION TARGET test_modify_trigger)
 
 SET_DIRECTORY_PROPERTIES(PROPERTIES
   ADDITIONAL_MAKE_CLEAN_FILES
