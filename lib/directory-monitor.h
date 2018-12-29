@@ -34,6 +34,7 @@ typedef enum
   DIRECTORY_CREATED,
   FILE_DELETED,
   DIRECTORY_DELETED,
+  FILE_MODIFIED,
   UNKNOWN
 } DirectoryMonitorEventType;
 

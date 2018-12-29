@@ -32,6 +32,7 @@ typedef struct _CollectionComparatorEntry
 {
   gchar *value;
   guint8 flag;
+  time_t mtime;
 } CollectionComparatorEntry;
 
 struct _CollectionComparator
@@ -43,6 +44,7 @@ struct _CollectionComparator
   gpointer callback_data;
 
   void (*handle_new_entry)(const gchar *name, gpointer callback_data);
+  void (*handle_modified_entry)(const gchar *name, gpointer callback_data);
   void (*handle_deleted_entry)(const gchar *name, gpointer callback_data);
 };
 
@@ -81,12 +83,18 @@ collection_comparator_start(CollectionComparator *self)
 }
 
 void
-collection_comparator_add_value(CollectionComparator *self, const gchar *value)
+collection_comparator_add_value(CollectionComparator *self, const gchar *value, time_t mtime)
 {
   CollectionComparatorEntry *entry = g_hash_table_lookup(self->original_map, value);
+
   if (entry)
     {
       entry->flag = IN_BOTH;
+      if (mtime && (entry->mtime != mtime))
+        {
+          self->handle_modified_entry(entry->value, self->callback_data);
+          entry->mtime = mtime;
+        }
     }
   else
     {
@@ -96,15 +104,19 @@ collection_comparator_add_value(CollectionComparator *self, const gchar *value)
       self->original_list = g_list_append(self->original_list, entry);
       g_hash_table_insert(self->original_map, entry->value, entry);
       self->handle_new_entry(entry->value, self->callback_data);
+
+      if (mtime)
+        entry->mtime = mtime;
     }
 }
 
 void
-collection_comparator_add_initial_value(CollectionComparator *self, const gchar *value)
+collection_comparator_add_initial_value(CollectionComparator *self, const gchar *value, time_t modified)
 {
   CollectionComparatorEntry *entry = g_new0(CollectionComparatorEntry, 1);
   entry->value = g_strdup(value);
   entry->flag = IN_OLD;
+  entry->mtime = modified;
   self->original_list = g_list_append(self->original_list, entry);
   g_hash_table_insert(self->original_map, entry->value, entry);
 }
@@ -158,9 +170,10 @@ collection_comparator_stop(CollectionComparator *self)
 
 void
 collection_comporator_set_callbacks(CollectionComparator *self, cc_callback handle_new, cc_callback handle_delete,
-                                    gpointer user_data)
+                                    cc_callback handle_modify, gpointer user_data)
 {
   self->callback_data = user_data;
   self->handle_deleted_entry = handle_delete;
   self->handle_new_entry = handle_new;
+  self->handle_modified_entry = handle_modify;
 }

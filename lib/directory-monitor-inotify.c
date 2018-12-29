@@ -56,6 +56,10 @@ _get_event_type(struct inotify_event *event, gchar *filename)
     {
       return DIRECTORY_DELETED;
     }
+  else if (event->mask & IN_MODIFY)
+    {
+      return FILE_MODIFIED;
+    }
   return UNKNOWN;
 }
 
@@ -83,7 +87,7 @@ _start_watches(DirectoryMonitor *s)
   IV_INOTIFY_WATCH_INIT(&self->watcher);
   self->watcher.inotify = &self->inotify;
   self->watcher.pathname = self->super.dir;
-  self->watcher.mask = IN_CREATE | IN_DELETE | IN_MOVE | IN_DELETE_SELF | IN_MOVE_SELF;
+  self->watcher.mask = IN_CREATE | IN_DELETE | IN_MOVE | IN_DELETE_SELF | IN_MOVE_SELF | IN_MODIFY;
   self->watcher.cookie = self;
   self->watcher.handler = _handle_event;
   iv_inotify_watch_register(&self->watcher);

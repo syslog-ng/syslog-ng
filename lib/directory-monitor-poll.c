@@ -23,6 +23,9 @@
  */
 
 #include <collection-comparator.h>
+#include <sys/stat.h>
+#include <glib/gstdio.h>
+
 #include "directory-monitor-poll.h"
 #include "timeutils.h"
 #include "messages.h"
@@ -45,6 +48,21 @@ _handle_new_entry(const gchar *filename, gpointer user_data)
   event.name = filename;
   event.full_path = build_filename(self->super.real_path, event.name);
   event.event_type = g_file_test(event.full_path, G_FILE_TEST_IS_DIR) ? DIRECTORY_CREATED : FILE_CREATED;
+  if (self->super.callback)
+    {
+      self->super.callback(&event, self->super.callback_data);
+    }
+  g_free(event.full_path);
+}
+
+static void
+_handle_modified_entry(const gchar *filename, gpointer user_data)
+{
+  DirectoryMonitorPoll *self = (DirectoryMonitorPoll *)user_data;
+  DirectoryMonitorEvent event;
+  event.name = filename;
+  event.full_path = build_filename(self->super.real_path, event.name);
+  event.event_type = FILE_MODIFIED;
   if (self->super.callback)
     {
       self->super.callback(&event, self->super.callback_data);
@@ -86,14 +104,28 @@ static void
 _rescan_directory(DirectoryMonitorPoll *self)
 {
   GError *error = NULL;
+  gchar *fullpath = NULL;
+  GStatBuf stat_result;
   GDir *directory = g_dir_open(self->super.real_path, 0, &error);
   collection_comparator_start(self->comparator);
+
   if (directory)
     {
       const gchar *filename;
       while((filename = g_dir_read_name(directory)))
         {
-          collection_comparator_add_value(self->comparator, filename);
+          fullpath = build_filename(self->super.real_path, filename);
+          if (g_stat(fullpath, &stat_result))
+            {
+              msg_debug("Cannot stat file/directory",
+                        evt_tag_str("filename", fullpath));
+              collection_comparator_add_value(self->comparator, filename, 0);
+            }
+          else
+            {
+              collection_comparator_add_value(self->comparator, filename, stat_result.st_mtime);
+            }
+          g_free(fullpath);
         }
       g_dir_close(directory);
       collection_comparator_stop(self->comparator);
@@ -123,14 +155,28 @@ _start_watches(DirectoryMonitor *s)
 {
   DirectoryMonitorPoll *self = (DirectoryMonitorPoll *)s;
   GDir *directory = NULL;
+  gchar *fullpath = NULL;
+  GStatBuf stat_result;
+
   directory = g_dir_open(self->super.real_path, 0, NULL);
   if (directory)
     {
       const gchar *filename = g_dir_read_name(directory);
       while (filename)
         {
-          collection_comparator_add_initial_value(self->comparator, filename);
+          fullpath = build_filename(self->super.real_path, filename);
+          if (g_stat(fullpath, &stat_result))
+            {
+              msg_debug("Cannot stat file/directory",
+                        evt_tag_str("filename", fullpath));
+              collection_comparator_add_initial_value(self->comparator, filename, 0);
+            }
+          else
+            {
+              collection_comparator_add_initial_value(self->comparator, filename, stat_result.st_mtime);
+            }
           filename = g_dir_read_name(directory);
+          g_free(fullpath);
         }
       g_dir_close(directory);
     }
@@ -179,6 +225,7 @@ directory_monitor_poll_new(const gchar *dir, guint recheck_time)
   collection_comporator_set_callbacks(self->comparator,
                                       _handle_new_entry,
                                       _handle_deleted_entry,
+                                      _handle_modified_entry,
                                       self);
   return &self->super;
 }
