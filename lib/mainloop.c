@@ -41,6 +41,7 @@
 #include "plugin.h"
 #include "resolved-configurable-paths.h"
 #include "scratch-buffers.h"
+#include "directory-monitor-factory.h"
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -158,10 +159,10 @@ struct _MainLoop
 
   MainLoopOptions *options;
   ControlServer *control_server;
+  DirectoryMonitor *monitor;
 };
 
 static MainLoop main_loop;
-
 
 MainLoop *
 main_loop_get_instance(void)
@@ -398,6 +399,59 @@ main_loop_verify_config(GString *result, MainLoop *self)
   g_free(file_contents);
 }
 
+/* main_loop_config_monitor_init
+ * initializes configuration monitoring */
+
+/* callback */
+static void
+_on_file_modified(const DirectoryMonitorEvent *event, gpointer user_data)
+{
+  static gboolean ignore_first_time_created_event = TRUE;
+  MainLoop *self = (MainLoop *) user_data;
+
+  if (strcmp(event->full_path, resolvedConfigurablePaths.cfgfilename))
+    return;
+
+  if (ignore_first_time_created_event && (event->event_type == FILE_CREATED))
+    {
+      ignore_first_time_created_event = FALSE;
+      return;
+    }
+
+  if ((event->event_type == FILE_MODIFIED) || (event->event_type == FILE_CREATED))
+    {
+      main_loop_reload_config(self);
+    }
+}
+
+/* init */
+static void
+main_loop_config_monitor_init(MainLoop *self)
+{
+  if (self->options->auto_reload)
+    {
+      DirectoryMonitorOptions options =
+      {
+        .dir = g_path_get_dirname(resolvedConfigurablePaths.cfgfilename),
+        .follow_freq = 10,
+        .method = MM_AUTO
+      };
+
+      self->monitor = create_directory_monitor(&options);
+      directory_monitor_set_callback(self->monitor, _on_file_modified, self);
+      directory_monitor_start(self->monitor);
+    }
+}
+
+/* deinit */
+static void
+main_loop_config_monitor_deinit(MainLoop *self)
+{
+  if (self->monitor)
+    directory_monitor_schedule_destroy(self->monitor);
+}
+
+
 /************************************************************************************
  * syncronized exit
  ************************************************************************************/
@@ -590,6 +644,8 @@ main_loop_read_and_init_config(MainLoop *self)
     }
   self->control_server = control_init(resolvedConfigurablePaths.ctlfilename);
   main_loop_register_control_commands(self);
+  self->monitor = NULL;
+
   return 0;
 }
 
@@ -604,6 +660,7 @@ void
 main_loop_deinit(MainLoop *self)
 {
   main_loop_free_config(self);
+  main_loop_config_monitor_deinit(self);
 
   control_deinit(self->control_server);
 
@@ -630,7 +687,9 @@ main_loop_run(MainLoop *self)
       cfg_load_module(self->current_configuration, "mod-python");
       debugger_start(self, self->current_configuration);
     }
+  main_loop_config_monitor_init(self);
   app_running();
+
   iv_main();
   service_management_publish_status("Shutting down...");
 }
