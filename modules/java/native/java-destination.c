@@ -71,6 +71,20 @@ Java_org_syslog_1ng_LogDestination_getSeqNum(JNIEnv *env, jobject obj, jlong han
   return (jint)(self->super.worker.instance.seq_num);
 }
 
+JNIEXPORT jint JNICALL
+Java_org_syslog_1ng_LogDestination_getBatchLines(JNIEnv *env, jobject obj, jlong handle)
+{
+  JavaDestDriver *self = (JavaDestDriver *)handle;
+  return (jint)(self->super.batch_lines);
+}
+
+JNIEXPORT void JNICALL
+Java_org_syslog_1ng_LogDestination_setBatchLines(JNIEnv *env, jobject obj, jlong handle, jlong batch_size)
+{
+  JavaDestDriver *self = (JavaDestDriver *)handle;
+  self->super.batch_lines = batch_size;
+}
+
 JNIEXPORT jlong JNICALL
 Java_org_syslog_1ng_LogPipe_getConfigHandle(JNIEnv *env, jobject obj, jlong handle)
 {

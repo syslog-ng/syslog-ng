@@ -49,6 +49,14 @@ public abstract class LogDestination extends LogPipe {
  		return getSeqNum(getHandle());
         }
 
+	public int getBatchLines() {
+ 		return getBatchLines(getHandle());
+        }
+
+	public void setBatchLines(long batch_size) {
+ 		setBatchLines(getHandle(), batch_size);
+        }
+
 	protected abstract boolean open();
 
 	protected abstract void close();
@@ -62,6 +70,10 @@ public abstract class LogDestination extends LogPipe {
 	private native long getTemplateOptionsHandle(long ptr);
 
 	private native int getSeqNum(long ptr);
+
+	private native int getBatchLines(long ptr);
+
+	private native int setBatchLines(long ptr, long batch_size);
 
 	protected void onMessageQueueEmpty() {
 		return;
