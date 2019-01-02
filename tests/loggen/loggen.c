@@ -449,15 +449,23 @@ main(int argc, char *argv[])
   /* debug option defined by --debug command line option */
   set_debug_level(debug);
 
-  if (argc < 3)
+  if (argc>=3)
     {
-      ERROR("please specify target and port at least\n");
-      g_ptr_array_free(plugin_array,TRUE);
-      return 1;
+      global_plugin_option.target = g_strdup(argv[1]);
+      global_plugin_option.port = g_strdup(argv[2]);
+    }
+  else if (argc>=2)
+    {
+      global_plugin_option.target = g_strdup(argv[1]);
+      global_plugin_option.port = NULL;
+    }
+  else
+    {
+      global_plugin_option.target = NULL;
+      global_plugin_option.port = NULL;
+      DEBUG("no port and address specified");
     }
 
-  global_plugin_option.target = g_strdup(argv[1]);
-  global_plugin_option.port = g_strdup(argv[2]);
   DEBUG("target=%s port=%s\n",global_plugin_option.target,global_plugin_option.port);
 
   if (global_plugin_option.message_length > MAX_MESSAGE_LENGTH)
