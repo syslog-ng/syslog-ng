@@ -133,6 +133,20 @@ start(PluginOption *option)
       return;
     }
 
+  if (unix_socket_x)
+    {
+      if (!option->target)
+        {
+          ERROR("in case of unix domain socket please specify target parameter\n");
+          return;
+        }
+    }
+  else if (!option->target || !option->port)
+    {
+      ERROR("in case of TCP or UDP socket please specify target and port parameters\n");
+      return;
+    }
+
   DEBUG("plugin (%d,%d,%d,%d)start\n",
         option->message_length,
         option->interval,

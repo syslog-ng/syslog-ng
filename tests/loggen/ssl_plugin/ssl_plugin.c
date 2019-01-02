@@ -127,6 +127,12 @@ start(PluginOption *option)
       return;
     }
 
+  if (!option->target || !option->port)
+    {
+      ERROR("please specify target and port parameters\n");
+      return;
+    }
+
   DEBUG("plugin (%d,%d,%d,%d)start\n",
         option->message_length,
         option->interval,
@@ -243,6 +249,7 @@ idle_thread_func(gpointer user_data)
 {
   PluginOption *option = ((ThreadData *)user_data)->option;
   int thread_index = ((ThreadData *)user_data)->index;
+
   int sock_fd = connect_ip_socket(SOCK_STREAM, option->target, option->port, option->use_ipv6);;
 
   SSL *ssl = open_ssl_connection(sock_fd);
@@ -296,6 +303,7 @@ active_thread_func(gpointer user_data)
   PluginOption *option = thread_context->option;
 
   char *message = g_malloc0(MAX_MESSAGE_LENGTH+1);
+
   int sock_fd = connect_ip_socket(SOCK_STREAM, option->target, option->port, option->use_ipv6);;
 
   SSL *ssl = open_ssl_connection(sock_fd);
