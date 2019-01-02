@@ -56,6 +56,7 @@ public class ElasticSearchDestination extends ThreadedStructuredLogDestination {
 			options.init();
 
                         setBatchLines(options.getFlushLimit());
+                        setBatchTimeout(options.getFlushTimeout());
 
 			client = ESClientFactory.getESClient(options);
 			client.init();

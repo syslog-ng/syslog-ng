@@ -57,6 +57,10 @@ public abstract class LogDestination extends LogPipe {
  		setBatchLines(getHandle(), batch_size);
         }
 
+	public void setBatchTimeout(long timeout) {
+ 		setBatchTimeout(getHandle(), timeout);
+        }
+
 	protected abstract boolean open();
 
 	protected abstract void close();
@@ -74,6 +78,8 @@ public abstract class LogDestination extends LogPipe {
 	private native int getBatchLines(long ptr);
 
 	private native int setBatchLines(long ptr, long batch_size);
+
+	private native int setBatchTimeout(long ptr, long timeout);
 
 	protected void onMessageQueueEmpty() {
 		return;

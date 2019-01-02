@@ -85,6 +85,13 @@ Java_org_syslog_1ng_LogDestination_setBatchLines(JNIEnv *env, jobject obj, jlong
   self->super.batch_lines = batch_size;
 }
 
+JNIEXPORT void JNICALL
+Java_org_syslog_1ng_LogDestination_setBatchTimeout(JNIEnv *env, jobject obj, jlong handle, jlong timeout)
+{
+  JavaDestDriver *self = (JavaDestDriver *)handle;
+  self->super.batch_timeout = timeout;
+}
+
 JNIEXPORT jlong JNICALL
 Java_org_syslog_1ng_LogPipe_getConfigHandle(JNIEnv *env, jobject obj, jlong handle)
 {
