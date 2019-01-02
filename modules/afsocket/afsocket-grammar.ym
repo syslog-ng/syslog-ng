@@ -654,7 +654,11 @@ dest_afinet_tcp_option
 
 dest_afsocket_option
         : KW_KEEP_ALIVE '(' yesno ')'        { afsocket_dd_set_keep_alive(last_driver, $3); }
-        | KW_CLOSE_ON_INPUT '(' yesno ')'        { afsocket_dd_set_close_on_input(last_driver, $3); }
+        | KW_CLOSE_ON_INPUT '(' yesno ')'
+          {
+            afsocket_dd_set_close_on_input(last_driver, $3);
+            log_proto_client_options_set_drop_input(last_proto_client_options, !$3);
+          }
         ;
 
 
