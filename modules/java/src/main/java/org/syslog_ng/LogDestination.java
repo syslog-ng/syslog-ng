@@ -81,10 +81,6 @@ public abstract class LogDestination extends LogPipe {
 
 	private native int setBatchTimeout(long ptr, long timeout);
 
-	protected void onMessageQueueEmpty() {
-		return;
-	}
-
 	protected int flush() {
 		return WORKER_INSERT_RESULT_SUCCESS;
 	}
@@ -115,15 +111,6 @@ public abstract class LogDestination extends LogPipe {
 		catch (Exception e) {
 			sendExceptionMessage(e);
 			return false;
-		}
-	}
-
-	public void onMessageQueueEmptyProxy() {
-		try {
-			onMessageQueueEmpty();
-		}
-		catch (Exception e) {
-			sendExceptionMessage(e);
 		}
 	}
 

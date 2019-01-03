@@ -115,7 +115,8 @@ public class HTTPDestination extends StructuredLogDestination {
     }
 
     @Override
-    public void onMessageQueueEmpty() {
+    public int flush() {
+        return WORKER_INSERT_RESULT_SUCCESS;
     }
 
     @Override
@@ -127,4 +128,3 @@ public class HTTPDestination extends StructuredLogDestination {
     }
 
 }
-
