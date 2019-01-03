@@ -34,9 +34,7 @@ set (JAVA_SOURCES
   ${SYSLOG_NG_CORE_SRC_DIR}/LogPipe.java
   ${SYSLOG_NG_CORE_SRC_DIR}/LogDestination.java
   ${SYSLOG_NG_CORE_SRC_DIR}/TextLogDestination.java
-  ${SYSLOG_NG_CORE_SRC_DIR}/ThreadedTextLogDestination.java
   ${SYSLOG_NG_CORE_SRC_DIR}/StructuredLogDestination.java
-  ${SYSLOG_NG_CORE_SRC_DIR}/ThreadedStructuredLogDestination.java
   ${SYSLOG_NG_CORE_SRC_DIR}/DummyTextDestination.java
   ${SYSLOG_NG_CORE_SRC_DIR}/DummyStructuredDestination.java
 )

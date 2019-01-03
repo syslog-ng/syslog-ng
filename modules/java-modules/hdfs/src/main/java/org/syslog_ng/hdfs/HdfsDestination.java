@@ -235,7 +235,7 @@ public class HdfsDestination extends StructuredLogDestination {
     }
 
     @Override
-    public boolean send(LogMessage logMessage) {
+    public int send(LogMessage logMessage) {
         isOpened = false;
         String resolvedFileName = options.getFileNameTemplate().getResolvedString(logMessage);
         lock.lock();
@@ -243,7 +243,7 @@ public class HdfsDestination extends StructuredLogDestination {
         if (hdfsfile == null) {
             // Unable to open file
             closeAll(true);
-            return false;
+            return WORKER_INSERT_RESULT_ERROR;
         }
 
         try {
@@ -259,14 +259,14 @@ public class HdfsDestination extends StructuredLogDestination {
         } catch (IOException e) {
             printStackTrace(e);
             closeAll(false);
-            return false;
+            return WORKER_INSERT_RESULT_ERROR;
         } finally {
           lock.unlock();
         }
 
 
         isOpened = true;
-        return true;
+        return WORKER_INSERT_RESULT_SUCCESS;
     }
 
     private HdfsFile getHdfsFile(String resolvedFileName) {

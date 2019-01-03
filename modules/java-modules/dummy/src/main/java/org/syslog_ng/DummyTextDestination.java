@@ -63,9 +63,9 @@ public class DummyTextDestination extends TextLogDestination {
     InternalMessageSender.debug("close");
   }
 
-  public boolean send(String arg0) {
+  public int send(String arg0) {
     InternalMessageSender.debug("Incoming message: " + arg0);
-    return true;
+    return WORKER_INSERT_RESULT_SUCCESS;
   }
 
   public String getNameByUniqOptions() {

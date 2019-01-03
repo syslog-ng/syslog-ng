@@ -29,17 +29,14 @@ public abstract class TextLogDestination extends LogDestination {
 		super(handle);
 	}
 
-	protected abstract boolean send(String formattedMessage);
+	protected abstract int send(String formattedMessage);
 	public int sendProxy(String formattedMessage) {
 		try {
-			if (send(formattedMessage))
-				return WORKER_INSERT_RESULT_SUCCESS;
-			else
-				return WORKER_INSERT_RESULT_ERROR;
+			return send(formattedMessage);
 		}
 		catch (Exception e) {
 			sendExceptionMessage(e);
-			return WORKER_INSERT_RESULT_ERROR;
+			return WORKER_INSERT_RESULT_DROP;
 		}
 	}
 }

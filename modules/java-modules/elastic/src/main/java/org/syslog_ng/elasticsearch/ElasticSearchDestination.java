@@ -98,12 +98,15 @@ public class ElasticSearchDestination extends StructuredLogDestination {
     }
 
 	@Override
-	protected boolean send(LogMessage msg) {
+	protected int send(LogMessage msg) {
 		if (!client.isOpened()) {
 			close();
-			return false;
+			return WORKER_INSERT_RESULT_SUCCESS;
 		}
-		return msgProcessor.send(createIndexRequest(msg));
+		if (msgProcessor.send(createIndexRequest(msg)))
+			return WORKER_INSERT_RESULT_SUCCESS;
+		else
+			return WORKER_INSERT_RESULT_ERROR;
 	}
 
 	@Override
