@@ -26,15 +26,13 @@ import pytest
 
 from src.syslog_ng_tester import *
 
+@with_logpath(["file_source"], ["file_destination"])
 @with_file_source("file_source", "input.log")
 @with_file_destination("file_destination", "output.log")
 @with_file_destination("new_file_destination", "output.old")
 class FileReopenTest(SyslogNgTester):
     def __init__(self, testcase):
         SyslogNgTester.__init__(self, testcase)
-        source_group = self.config.create_source_group(self.file_source)
-        destination_group = self.config.create_destination_group(self.file_destination)
-        self.config.create_logpath(sources=source_group, destinations=destination_group)
 
     def send_message(self):
         self.bsd_log = self.testcase.format_as_bsd(self.testcase.create_dummy_bsd_message())

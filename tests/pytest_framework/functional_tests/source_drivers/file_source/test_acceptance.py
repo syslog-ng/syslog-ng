@@ -23,14 +23,12 @@
 
 from src.syslog_ng_tester import *
 
+@with_logpath(["file_source"], ["file_destination"])
 @with_file_source("file_source", "input.log")
 @with_file_destination("file_destination", "output.log")
 class AcceptanceTester(SyslogNgTester):
     def __init__(self, testcase):
         SyslogNgTester.__init__(self, testcase)
-        source_group = self.config.create_source_group(self.file_source)
-        destination_group = self.config.create_destination_group(self.file_destination)
-        self.config.create_logpath(sources=source_group, destinations=destination_group)
 
 def test_acceptance(tc):
     acceptance_tester = AcceptanceTester(tc)

@@ -21,6 +21,19 @@
 #
 #############################################################################
 
+def with_logpath(sources, destinations):
+    def decorator(cls):
+        def create_logpath(self, sources, destinations):
+            source_objects = [ getattr(self, src) for src in sources ]
+            destination_objects = [ getattr(self, dst) for dst in destinations ]
+            source_group = self.config.create_source_group(source_objects)
+            destination_group = self.config.create_destination_group(destination_objects)
+            self.config.create_logpath(sources=source_group, destinations=destination_group)
+
+        cls.add_init_task(cls, create_logpath, (sources, destinations))
+        return cls
+    return decorator
+
 def with_file_source(variable_name, file_name):
     def decorator(cls):
         def add_file_source(self, variable_name, file_name):
