@@ -23,15 +23,16 @@
 
 from pathlib2 import Path
 from src.syslog_ng.syslog_ng_executor import SyslogNgExecutor
-
+from src.syslog_ng.console_log_reader import ConsoleLogReader
+from src.syslog_ng_ctl.syslog_ng_ctl import SyslogNgCtl
 
 class SyslogNgCli(object):
-    def __init__(self, logger_factory, instance_paths, console_log_reader, syslog_ng_ctl):
+    def __init__(self, logger_factory, instance_paths):
         self.__instance_paths = instance_paths
-        self.__console_log_reader = console_log_reader
+        self.__console_log_reader = ConsoleLogReader(logger_factory, instance_paths)
         self.__logger = logger_factory.create_logger("SyslogNgCli")
         self.__syslog_ng_executor = SyslogNgExecutor(logger_factory, instance_paths)
-        self.__syslog_ng_ctl = syslog_ng_ctl
+        self.__syslog_ng_ctl = SyslogNgCtl(logger_factory, instance_paths)
         self.__process = None
 
     # Application commands

@@ -21,15 +21,10 @@
 #
 #############################################################################
 
-from src.syslog_ng.console_log_reader import ConsoleLogReader
-from src.syslog_ng.syslog_ng_cli import SyslogNgCli
-
 
 class SyslogNg(object):
-    def __init__(self, logger_factory, instance_paths, syslog_ng_ctl):
-        self.__syslog_ng_cli = SyslogNgCli(
-            logger_factory, instance_paths, ConsoleLogReader(logger_factory, instance_paths), syslog_ng_ctl
-        )
+    def __init__(self, syslog_ng_cli):
+        self.__syslog_ng_cli = syslog_ng_cli
 
     def start(self, config):
         self.__syslog_ng_cli.start(config)
