@@ -53,6 +53,9 @@ class SyslogNgTester(object):
     def reopen(self):
         self.syslog_ng_ctl.reopen()
 
+    def reload(self):
+        self.syslog_ng.reload(self.config)
+
     @staticmethod
     def add_init_task(cls, func, args):
         assert cls != SyslogNgTester

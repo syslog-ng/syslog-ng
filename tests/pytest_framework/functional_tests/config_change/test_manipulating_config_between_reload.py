@@ -21,47 +21,56 @@
 #
 #############################################################################
 
+from src.syslog_ng_tester import *
+
+@with_file_source("file_source2", "input2.log")
+@with_file_destination("file_destination2", "output2.log")
+@with_file_source("file_source", "input.log")
+@with_file_destination("file_destination", "output.log")
+class ManipultingConfigBetweenReloadTester(SyslogNgTester):
+    def __init__(self, testcase):
+        SyslogNgTester.__init__(self, testcase)
+        source_group = self.config.create_source_group(self.file_source)
+        self.destination_group = self.config.create_destination_group(self.file_destination)
+        self.logpath = self.config.create_logpath(sources=source_group, destinations=self.destination_group)
+
+    def first_set_of_changes(self):
+        self.__update_first_file_source_parameters()
+        self.__update_logpaths()
+
+    def second_set_of_changes(self):
+        # remove option from file source
+        self.file_source.options.pop("log_iw_size")
+
+        # remove file destination from destination group
+        self.destination_group.group_node.pop(self.file_destination2.driver_id)
+
+        # remove second source group from logpath
+        self.logpath.logpath_node["sources"].remove(self.source_group2.group_id)
+
+    def __update_first_file_source_parameters(self):
+        # update positional value of file source
+        self.file_source.options["file_name"] = "updated_input.log"
+
+        # add new option to file source
+        self.file_source.options["log_iw_size"] = "100"
+
+    def __update_logpaths(self):
+        # add new file source to a separate source group
+        self.source_group2 = self.config.create_source_group(self.file_source2)
+
+        # update first destination group with a new file destination
+        self.destination_group.update_group_node(self.file_destination2)
+
+        # update first logpath group with new source group
+        self.logpath.add_source_groups(self.source_group2)
 
 def test_manipulating_config_between_reload(tc):
-    config = tc.new_config()
 
-    file_source = config.create_file_source(file_name="input.log")
-    source_group = config.create_source_group(file_source)
+    tester = ManipultingConfigBetweenReloadTester(tc)
+    tester.start()
 
-    file_destination = config.create_file_destination(file_name="output.log")
-    destination_group = config.create_destination_group(file_destination)
-
-    logpath = config.create_logpath(sources=source_group, destinations=destination_group)
-
-    syslog_ng = tc.new_syslog_ng()
-    syslog_ng.start(config)
-
-    # update positional value of file source
-    file_source.options["file_name"] = "updated_input.log"
-
-    # add new option to file source
-    file_source.options["log_iw_size"] = "100"
-
-    # create new file source and add to separate source group
-    file_source2 = config.create_file_source(file_name="input2.log")
-    source_group2 = config.create_source_group(file_source2)
-
-    # create new file destination and update first destination group
-    file_destination2 = config.create_file_destination(file_name="output2.log")
-    destination_group.update_group_node(file_destination2)
-
-    # update first logpath group with new source group
-    logpath.add_source_groups(source_group2)
-
-    syslog_ng.reload(config)
-
-    # remove option from file source
-    file_source.options.pop("log_iw_size")
-
-    # remove file destination from destination group
-    destination_group.group_node.pop(file_destination2.driver_id)
-
-    # remove second source group from logpath
-    logpath.logpath_node["sources"].remove(source_group2.group_id)
-
-    syslog_ng.reload(config)
+    tester.first_set_of_changes()
+    tester.reload()
+    tester.second_set_of_changes()
+    tester.reload()
