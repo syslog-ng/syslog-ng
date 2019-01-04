@@ -24,7 +24,7 @@
 from src.common.random_id import RandomId
 
 
-class ConfigGroup(object):
+class StatementGroup(object):
     def __init__(self, group_type):
         self.group_id = "%sid_%s" % (group_type, RandomId(use_static_seed=False).get_unique_id())
         self.full_group_node = {self.group_id: {}}

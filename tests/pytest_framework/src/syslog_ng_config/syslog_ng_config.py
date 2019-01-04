@@ -26,7 +26,7 @@ from src.syslog_ng_config.renderer import ConfigRenderer
 from src.syslog_ng_config.statements.logpath.logpath import LogPath
 from src.syslog_ng_config.statements.sources.file_source import FileSource
 from src.syslog_ng_config.statements.destinations.file_destination import FileDestination
-from src.syslog_ng_config.config_group import ConfigGroup
+from src.syslog_ng_config.statement_group import StatementGroup
 
 
 class SyslogNgConfig(object):
@@ -54,16 +54,16 @@ class SyslogNgConfig(object):
         return FileDestination(self.__logger_factory, self.__instance_paths, **kwargs)
 
     def create_source_group(self, drivers):
-        config_group = ConfigGroup(group_type="source")
-        config_group.update_group_node(drivers)
-        self.__syslog_ng_config["sources"].update(config_group.full_group_node)
-        return config_group
+        source_group = StatementGroup(group_type="source")
+        source_group.update_group_node(drivers)
+        self.__syslog_ng_config["sources"].update(source_group.full_group_node)
+        return source_group
 
     def create_destination_group(self, drivers):
-        config_group = ConfigGroup(group_type="destination")
-        config_group.update_group_node(drivers)
-        self.__syslog_ng_config["destinations"].update(config_group.full_group_node)
-        return config_group
+        destination_group = StatementGroup(group_type="destination")
+        destination_group.update_group_node(drivers)
+        self.__syslog_ng_config["destinations"].update(destination_group.full_group_node)
+        return destination_group
 
     def create_logpath(self, sources, destinations):
         logpath = LogPath()
