@@ -40,6 +40,7 @@ struct _AFSocketDestDriver
 
   gboolean
   connections_kept_alive_across_reloads:1;
+  gboolean close_on_input;
   gint fd;
   LogWriter *writer;
   LogWriterOptions writer_options;
@@ -80,6 +81,7 @@ afsocket_dd_get_dest_name(const AFSocketDestDriver *s)
 LogWriter *afsocket_dd_construct_writer_method(AFSocketDestDriver *self);
 gboolean afsocket_dd_setup_addresses_method(AFSocketDestDriver *self);
 void afsocket_dd_set_keep_alive(LogDriver *self, gint enable);
+void afsocket_dd_set_close_on_input(LogDriver *self, gboolean close_on_input);
 void afsocket_dd_init_instance(AFSocketDestDriver *self, SocketOptions *socket_options,
                                TransportMapper *transport_mapper, GlobalConfig *cfg);
 void afsocket_dd_reconnect(AFSocketDestDriver *self);

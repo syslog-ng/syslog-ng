@@ -82,6 +82,14 @@ afsocket_dd_set_keep_alive(LogDriver *s, gboolean enable)
   self->connections_kept_alive_across_reloads = enable;
 }
 
+void
+afsocket_dd_set_close_on_input(LogDriver *s, gboolean close_on_input)
+{
+  AFSocketDestDriver *self = (AFSocketDestDriver *) s;
+
+  self->close_on_input = close_on_input;
+}
+
 static const gchar *_module_name = "afsocket_dd";
 
 static const gchar *
@@ -680,6 +688,7 @@ afsocket_dd_init_instance(AFSocketDestDriver *self,
   self->transport_mapper = transport_mapper;
   self->socket_options = socket_options;
   self->connections_kept_alive_across_reloads = TRUE;
+  self->close_on_input = TRUE;
   self->time_reopen = cfg->time_reopen;
   self->connection_initialized = FALSE;
 
