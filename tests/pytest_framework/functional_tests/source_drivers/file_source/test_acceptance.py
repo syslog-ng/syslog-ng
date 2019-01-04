@@ -21,25 +21,26 @@
 #
 #############################################################################
 
+from src.syslog_ng_tester import *
+
+@with_file_source("file_source", "input.log")
+@with_file_destination("file_destination", "output.log")
+class AcceptanceTester(SyslogNgTester):
+    def __init__(self, testcase):
+        SyslogNgTester.__init__(self, testcase)
+        source_group = self.config.create_source_group(self.file_source)
+        destination_group = self.config.create_destination_group(self.file_destination)
+        self.config.create_logpath(sources=source_group, destinations=destination_group)
 
 def test_acceptance(tc):
-    config = tc.new_config()
-
-    file_source = config.create_file_source(file_name="input.log")
-    source_group = config.create_source_group(file_source)
-
-    file_destination = config.create_file_destination(file_name="output.log")
-    destination_group = config.create_destination_group(file_destination)
-
-    config.create_logpath(sources=source_group, destinations=destination_group)
+    acceptance_tester = AcceptanceTester(tc)
 
     bsd_message = tc.create_dummy_bsd_message()
     bsd_log = tc.format_as_bsd(bsd_message)
-    file_source.write_log(bsd_log, counter=3)
+    acceptance_tester.file_source.write_log(bsd_log, counter=3)
 
-    syslog_ng = tc.new_syslog_ng()
-    syslog_ng.start(config)
+    acceptance_tester.start()
 
-    output_logs = file_destination.read_logs(counter=3)
+    output_logs = acceptance_tester.file_destination.read_logs(counter=3)
     expected_output_message = bsd_message.remove_priority()
     assert output_logs == tc.format_as_bsd_logs(expected_output_message, counter=3)
