@@ -27,8 +27,7 @@ from src.syslog_ng_tester import *
 @with_file_source("file_source", "input.log")
 @with_file_destination("file_destination", "output.log")
 class AcceptanceTester(SyslogNgTester):
-    def __init__(self, testcase):
-        SyslogNgTester.__init__(self, testcase)
+    pass
 
 def test_acceptance(tc):
     acceptance_tester = AcceptanceTester(tc)

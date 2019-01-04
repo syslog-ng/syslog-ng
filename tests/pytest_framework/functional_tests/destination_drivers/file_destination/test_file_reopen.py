@@ -31,9 +31,6 @@ from src.syslog_ng_tester import *
 @with_file_destination("file_destination", "output.log")
 @with_file_destination("new_file_destination", "output.old")
 class FileReopenTest(SyslogNgTester):
-    def __init__(self, testcase):
-        SyslogNgTester.__init__(self, testcase)
-
     def send_message(self):
         self.bsd_log = self.testcase.format_as_bsd(self.testcase.create_dummy_bsd_message())
         self.file_source.write_log(self.bsd_log)
