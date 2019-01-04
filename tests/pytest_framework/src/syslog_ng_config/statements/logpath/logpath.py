@@ -42,7 +42,7 @@ class LogPath(object):
     def update_logpath_node(target_node, config_groups):
         if isinstance(config_groups, list):
             for group in config_groups:
-                target_node.append(group.group_id)
+                target_node.append(group)
         else:
             group = config_groups
-            target_node.append(group.group_id)
+            target_node.append(group)

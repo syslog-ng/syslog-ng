@@ -27,6 +27,7 @@ from src.syslog_ng_config.statements.logpath.logpath import LogPath
 from src.syslog_ng_config.statements.sources.file_source import FileSource
 from src.syslog_ng_config.statements.destinations.file_destination import FileDestination
 from src.syslog_ng_config.statement_group import StatementGroup
+from src.common.operations import cast_to_list
 
 
 class SyslogNgConfig(object):
@@ -35,7 +36,7 @@ class SyslogNgConfig(object):
         self.__config_path = instance_paths.get_config_path()
         self.__logger_factory = logger_factory
         self.__logger = logger_factory.create_logger("SyslogNgConfig")
-        self.__syslog_ng_config = {"version": syslog_ng_version, "sources": {}, "destinations": {}, "logpaths": {}}
+        self.__syslog_ng_config = {"version": syslog_ng_version, "statement_groups": [], "logpaths": {}}
 
     def write_config_content(self):
         rendered_config = ConfigRenderer(self.__syslog_ng_config, self.__instance_paths).get_rendered_config()
@@ -47,6 +48,12 @@ class SyslogNgConfig(object):
         )
         FileIO(self.__logger_factory, self.__config_path).rewrite(rendered_config)
 
+    @staticmethod
+    def __create_statement_group(group_type, statements):
+        statement_group = StatementGroup(group_type)
+        statement_group.update_group_with_statements(cast_to_list(statements))
+        return statement_group
+
     def create_file_source(self, **kwargs):
         return FileSource(self.__logger_factory, self.__instance_paths, **kwargs)
 
@@ -54,15 +61,13 @@ class SyslogNgConfig(object):
         return FileDestination(self.__logger_factory, self.__instance_paths, **kwargs)
 
     def create_source_group(self, drivers):
-        source_group = StatementGroup(group_type="source")
-        source_group.update_group_node(drivers)
-        self.__syslog_ng_config["sources"].update(source_group.full_group_node)
+        source_group = self.__create_statement_group("source", drivers)
+        self.__syslog_ng_config["statement_groups"].append(source_group)
         return source_group
 
     def create_destination_group(self, drivers):
-        destination_group = StatementGroup(group_type="destination")
-        destination_group.update_group_node(drivers)
-        self.__syslog_ng_config["destinations"].update(destination_group.full_group_node)
+        destination_group = self.__create_statement_group("destination", drivers)
+        self.__syslog_ng_config["statement_groups"].append(destination_group)
         return destination_group
 
     def create_logpath(self, sources, destinations):

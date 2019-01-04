@@ -39,10 +39,8 @@ class ConfigRenderer(object):
             self.__syslog_ng_config_content = ""
         if self.__syslog_ng_config["version"]:
             self.__render_version()
-        if self.__syslog_ng_config["sources"]:
-            self.__render_statements(root_statement="sources", statement_name="source")
-        if self.__syslog_ng_config["destinations"]:
-            self.__render_statements(root_statement="destinations", statement_name="destination")
+        if self.__syslog_ng_config["statement_groups"]:
+            self.__render_statement_groups()
         if self.__syslog_ng_config["logpaths"]:
             self.__render_logpath()
 
@@ -62,19 +60,20 @@ class ConfigRenderer(object):
             if option_name not in positional_options:
                 self.__syslog_ng_config_content += "        {}({})\n".format(option_name, option_value)
 
-    def __render_statements(self, root_statement, statement_name):
-        for statement_id, driver in self.__syslog_ng_config[root_statement].items():
+    def __render_statement_groups(self):
+        for statement_group in self.__syslog_ng_config["statement_groups"]:
             # statement header
-            self.__syslog_ng_config_content += "\n{} {} {{\n".format(statement_name, statement_id)
-            for dummy_driver_id, driver_properties in driver.items():
-                driver_name = driver_properties["driver_name"]
-                driver_options = driver_properties["driver_options"]
+            self.__syslog_ng_config_content += "\n{} {} {{\n".format(
+                statement_group.group_type, statement_group.group_id
+            )
+
+            for statement in statement_group.statements:
                 # driver header
-                self.__syslog_ng_config_content += "    {} (\n".format(driver_name)
+                self.__syslog_ng_config_content += "    {} (\n".format(statement.driver_name)
 
                 # driver options
-                self.__render_positional_options(driver_options, driver_properties["positional_option"])
-                self.__render_driver_options(driver_options, driver_properties["positional_option"])
+                self.__render_positional_options(statement.options, statement.positional_option_name)
+                self.__render_driver_options(statement.options, statement.positional_option_name)
 
                 # driver footer
                 self.__syslog_ng_config_content += "    );\n"
@@ -86,7 +85,7 @@ class ConfigRenderer(object):
         for logpath in self.__syslog_ng_config["logpaths"]:
             self.__syslog_ng_config_content += "\nlog {\n"
             for src_driver in self.__syslog_ng_config["logpaths"][logpath]["sources"]:
-                self.__syslog_ng_config_content += "    source({});\n".format(src_driver)
+                self.__syslog_ng_config_content += "    source({});\n".format(src_driver.group_id)
             for dst_driver in self.__syslog_ng_config["logpaths"][logpath]["destinations"]:
-                self.__syslog_ng_config_content += "    destination({});\n".format(dst_driver)
+                self.__syslog_ng_config_content += "    destination({});\n".format(dst_driver.group_id)
             self.__syslog_ng_config_content += "};\n"
