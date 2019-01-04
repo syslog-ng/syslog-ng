@@ -94,7 +94,7 @@ script:
         export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$JNI_LIBDIR";
         make func-test V=1;
         make pytest-self-check;
-        make pytest-check;
+        make pytest-check-all;
       elif [ "$S" = "42" ]; then
         return $S;
       else
@@ -142,7 +142,7 @@ matrix:
         - make --keep-going -j $(nproc) ARGS="-j $(nproc)" all test install
         - make VERBOSE=1 func-test
         - make pytest-self-check
-        - make pytest-check
+        - make pytest-check-all
     - env: B=trusty-cmake
       compiler: clang
       dist: trusty
