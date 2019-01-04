@@ -36,7 +36,7 @@ class SyslogNgConfig(object):
         self.__config_path = instance_paths.get_config_path()
         self.__logger_factory = logger_factory
         self.__logger = logger_factory.create_logger("SyslogNgConfig")
-        self.__syslog_ng_config = {"version": syslog_ng_version, "statement_groups": [], "logpaths": {}}
+        self.__syslog_ng_config = {"version": syslog_ng_version, "statement_groups": [], "logpath_groups": []}
 
     def write_config_content(self):
         rendered_config = ConfigRenderer(self.__syslog_ng_config, self.__instance_paths).get_rendered_config()
@@ -54,6 +54,13 @@ class SyslogNgConfig(object):
         statement_group.update_group_with_statements(cast_to_list(statements))
         return statement_group
 
+    @staticmethod
+    def __create_logpath_group(statements=None):
+        logpath = LogPath()
+        if statements:
+            logpath.update_logpath_with_groups(cast_to_list(statements))
+        return logpath
+
     def create_file_source(self, **kwargs):
         return FileSource(self.__logger_factory, self.__instance_paths, **kwargs)
 
@@ -70,9 +77,7 @@ class SyslogNgConfig(object):
         self.__syslog_ng_config["statement_groups"].append(destination_group)
         return destination_group
 
-    def create_logpath(self, sources, destinations):
-        logpath = LogPath()
-        logpath.add_source_groups(sources)
-        logpath.add_destination_groups(destinations)
-        self.__syslog_ng_config["logpaths"].update(logpath.full_logpath_node)
+    def create_logpath(self, statements=None):
+        logpath = self.__create_logpath_group(statements)
+        self.__syslog_ng_config["logpath_groups"].append(logpath)
         return logpath

@@ -31,7 +31,7 @@ def test_acceptance(tc):
     file_destination = config.create_file_destination(file_name="output.log")
     destination_group = config.create_destination_group(file_destination)
 
-    config.create_logpath(sources=source_group, destinations=destination_group)
+    config.create_logpath(statements=[source_group, destination_group])
 
     log_message = tc.new_log_message()
     bsd_log = tc.format_as_bsd(log_message)

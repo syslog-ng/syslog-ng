@@ -21,28 +21,35 @@
 #
 #############################################################################
 
-from src.common.random_id import RandomId
-
 
 class LogPath(object):
     def __init__(self):
-        self.logpath_id = "logpath_%s" % RandomId(use_static_seed=False).get_unique_id()
-        self.full_logpath_node = {self.logpath_id: {"sources": [], "destinations": []}}
-        self.logpath_node = self.full_logpath_node[self.logpath_id]
+        self.__group_type = "log"
+        self.__logpath = []
+
+    @property
+    def group_type(self):
+        return self.__group_type
+
+    @property
+    def logpath(self):
+        return self.__logpath
+
+    def add_source_group(self, source_group):
+        self.update_logpath_with_group(source_group)
 
     def add_source_groups(self, source_groups):
-        target_node = self.logpath_node["sources"]
-        self.update_logpath_node(target_node, source_groups)
+        self.update_logpath_with_groups(source_groups)
+
+    def add_destination_group(self, destination_group):
+        self.update_logpath_with_group(destination_group)
 
     def add_destination_groups(self, destination_groups):
-        target_node = self.logpath_node["destinations"]
-        self.update_logpath_node(target_node, destination_groups)
+        self.update_logpath_with_groups(destination_groups)
 
-    @staticmethod
-    def update_logpath_node(target_node, config_groups):
-        if isinstance(config_groups, list):
-            for group in config_groups:
-                target_node.append(group)
-        else:
-            group = config_groups
-            target_node.append(group)
+    def update_logpath_with_group(self, group):
+        self.logpath.append(group)
+
+    def update_logpath_with_groups(self, groups):
+        for group in groups:
+            self.update_logpath_with_group(group)

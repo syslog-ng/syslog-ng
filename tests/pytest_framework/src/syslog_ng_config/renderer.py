@@ -41,8 +41,8 @@ class ConfigRenderer(object):
             self.__render_version()
         if self.__syslog_ng_config["statement_groups"]:
             self.__render_statement_groups()
-        if self.__syslog_ng_config["logpaths"]:
-            self.__render_logpath()
+        if self.__syslog_ng_config["logpath_groups"]:
+            self.__render_logpath_groups(self.__syslog_ng_config["logpath_groups"])
 
     def __render_version(self):
         self.__syslog_ng_config_content += "@version: {}\n".format(self.__syslog_ng_config["version"])
@@ -81,11 +81,11 @@ class ConfigRenderer(object):
             # statement footer
             self.__syslog_ng_config_content += "};\n"
 
-    def __render_logpath(self):
-        for logpath in self.__syslog_ng_config["logpaths"]:
+    def __render_logpath_groups(self, logpath_groups):
+        for logpath_group in logpath_groups:
             self.__syslog_ng_config_content += "\nlog {\n"
-            for src_driver in self.__syslog_ng_config["logpaths"][logpath]["sources"]:
-                self.__syslog_ng_config_content += "    source({});\n".format(src_driver.group_id)
-            for dst_driver in self.__syslog_ng_config["logpaths"][logpath]["destinations"]:
-                self.__syslog_ng_config_content += "    destination({});\n".format(dst_driver.group_id)
+            for statement_group in logpath_group.logpath:
+                self.__syslog_ng_config_content += "    {}({});\n".format(
+                    statement_group.group_type, statement_group.group_id
+                )
             self.__syslog_ng_config_content += "};\n"
