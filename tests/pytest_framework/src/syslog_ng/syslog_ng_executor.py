@@ -39,6 +39,27 @@ class SyslogNgExecutor(object):
             stderr_path=self.__instance_paths.get_stderr_path(),
         )
 
+    def run_process_with_valgrind(self):
+        valgrind_command_args = [
+            "valgrind",
+            "--show-leak-kinds=all",
+            "--track-origins=yes",
+            "--tool=memcheck",
+            "--leak-check=full",
+            "--keep-stacktraces=alloc-and-free",
+            "--read-var-info=yes",
+            "--error-limit=no",
+            "--num-callers=40",
+            "--verbose",
+            "--log-file={}".format(self.__instance_paths.get_valgrind_log_path()),
+        ]
+        full_command_args = valgrind_command_args + self.__construct_syslog_ng_process()
+        return self.__process_executor.start(
+            command=full_command_args,
+            stdout_path=self.__instance_paths.get_stdout_path(),
+            stderr_path=self.__instance_paths.get_stderr_path(),
+        )
+
     def run_command(self, command_short_name, command):
         return self.__command_executor.run(
             command=self.__construct_syslog_ng_command(command),

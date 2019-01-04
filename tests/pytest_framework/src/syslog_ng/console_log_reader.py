@@ -74,3 +74,10 @@ class ConsoleLogReader(object):
     def dump_stderr(self, last_n_lines=10):
         console_log_messages = self.__message_reader.peek_messages(counter=0)
         self.__logger.info("".join(console_log_messages[-last_n_lines:]))
+
+    @staticmethod
+    def handle_valgrind_log(valgrind_log_path):
+        with open(valgrind_log_path, "r") as valgrind_log:
+            valgrind_content = valgrind_log.read()
+            assert "Invalid read" not in valgrind_content
+            assert "Invalid write" not in valgrind_content

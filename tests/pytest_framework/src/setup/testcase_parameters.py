@@ -52,6 +52,7 @@ class TestcaseParameters(object):
             },
             "testcase_name": testcase_name,
             "loglevel": testcase_context.getfixturevalue("loglevel"),
+            "valgrind_usage": testcase_context.getfixturevalue("runwithvalgrind"),
         }
 
     def get_working_dir(self):
@@ -71,3 +72,6 @@ class TestcaseParameters(object):
 
     def get_loglevel(self):
         return self.testcase_parameters["loglevel"]
+
+    def get_valgrind_usage(self):
+        return self.testcase_parameters["valgrind_usage"]

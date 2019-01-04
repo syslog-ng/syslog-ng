@@ -83,7 +83,7 @@ class SetupTestCase(object):
         instance_paths = SyslogNgPaths(self.__testcase_context, self.__testcase_parameters).set_syslog_ng_paths(
             instance_name
         )
-        syslog_ng_cli = SyslogNgCli(self.__logger_factory, instance_paths)
+        syslog_ng_cli = SyslogNgCli(self.__logger_factory, instance_paths, self.__testcase_parameters)
         syslog_ng = SyslogNg(syslog_ng_cli)
         self.__teardown_actions.append(syslog_ng.stop)
         self.__instances.update({instance_name: {}})
