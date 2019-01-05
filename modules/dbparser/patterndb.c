@@ -496,8 +496,8 @@ _advance_time_based_on_message(PatternDB *self, PDBProcessParams *process_params
   cached_g_current_time(&now);
   self->last_tick = now;
 
-  if (ls->tv_sec < now.tv_sec)
-    now.tv_sec = ls->tv_sec;
+  if (ls->ut_sec < now.tv_sec)
+    now.tv_sec = ls->ut_sec;
 
   /* the expire callback uses this pointer to find the process_params it
    * needs to emit messages.  ProcessParams itself is a per-thread value,

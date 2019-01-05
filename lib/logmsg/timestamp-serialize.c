@@ -27,9 +27,9 @@
 static gboolean
 _write_log_stamp(SerializeArchive *sa, const LogStamp *stamp)
 {
-  return serialize_write_uint64(sa, stamp->tv_sec) &&
-         serialize_write_uint32(sa, stamp->tv_usec) &&
-         serialize_write_uint32(sa, stamp->zone_offset);
+  return serialize_write_uint64(sa, stamp->ut_sec) &&
+         serialize_write_uint32(sa, stamp->ut_usec) &&
+         serialize_write_uint32(sa, stamp->ut_gmtoff);
 }
 
 static gboolean
@@ -40,15 +40,15 @@ _read_log_stamp(SerializeArchive *sa, LogStamp *stamp)
 
   if (!serialize_read_uint64(sa, &val64))
     return FALSE;
-  stamp->tv_sec = (gint64) val64;
+  stamp->ut_sec = (gint64) val64;
 
   if (!serialize_read_uint32(sa, &val))
     return FALSE;
-  stamp->tv_usec = val;
+  stamp->ut_usec = val;
 
   if (!serialize_read_uint32(sa, &val))
     return FALSE;
-  stamp->zone_offset = (gint) val;
+  stamp->ut_gmtoff = (gint) val;
   return TRUE;
 }
 

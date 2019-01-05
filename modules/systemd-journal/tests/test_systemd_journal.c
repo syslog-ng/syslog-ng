@@ -413,7 +413,7 @@ _test_timezone_init(TestCase *self, TestSource *src, Journald *journal, JournalR
 void
 _test_timezone_test(TestCase *self, TestSource *src, LogMessage *msg)
 {
-  assert_gint(msg->timestamps[LM_TS_STAMP].zone_offset, 9 * 3600, ASSERTION_ERROR("Bad time zone info"));
+  assert_gint(msg->timestamps[LM_TS_STAMP].ut_gmtoff, 9 * 3600, ASSERTION_ERROR("Bad time zone info"));
   test_source_finish_tc(src);
 }
 

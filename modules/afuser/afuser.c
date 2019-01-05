@@ -103,7 +103,7 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
   UtmpEntry *ut;
   time_t now;
 
-  now = msg->timestamps[LM_TS_RECVD].tv_sec;
+  now = msg->timestamps[LM_TS_RECVD].ut_sec;
   if (self->disable_until && self->disable_until > now)
     goto finish;
 

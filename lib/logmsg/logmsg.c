@@ -1081,13 +1081,13 @@ log_msg_init(LogMessage *self, GSockAddr *saddr)
   /* ref is set to 1, ack is set to 0 */
   self->ack_and_ref_and_abort_and_suspended = LOGMSG_REFCACHE_REF_TO_VALUE(1);
   cached_g_current_time(&tv);
-  self->timestamps[LM_TS_RECVD].tv_sec = tv.tv_sec;
-  self->timestamps[LM_TS_RECVD].tv_usec = tv.tv_usec;
-  self->timestamps[LM_TS_RECVD].zone_offset = get_local_timezone_ofs(self->timestamps[LM_TS_RECVD].tv_sec);
+  self->timestamps[LM_TS_RECVD].ut_sec = tv.tv_sec;
+  self->timestamps[LM_TS_RECVD].ut_usec = tv.tv_usec;
+  self->timestamps[LM_TS_RECVD].ut_gmtoff = get_local_timezone_ofs(self->timestamps[LM_TS_RECVD].ut_sec);
   self->timestamps[LM_TS_STAMP] = self->timestamps[LM_TS_RECVD];
-  self->timestamps[LM_TS_PROCESSED].tv_sec = 0;
-  self->timestamps[LM_TS_PROCESSED].tv_usec = 0;
-  self->timestamps[LM_TS_PROCESSED].zone_offset = LOGSTAMP_ZONE_OFFSET_UNSET;
+  self->timestamps[LM_TS_PROCESSED].ut_sec = 0;
+  self->timestamps[LM_TS_PROCESSED].ut_usec = 0;
+  self->timestamps[LM_TS_PROCESSED].ut_gmtoff = LOGSTAMP_ZONE_OFFSET_UNSET;
 
   self->sdata = NULL;
   self->saddr = g_sockaddr_ref(saddr);

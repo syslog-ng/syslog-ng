@@ -25,7 +25,7 @@
 #ifndef LOGSTAMP_H_INCLUDED
 #define LOGSTAMP_H_INCLUDED
 
-#include "syslog-ng.h"
+#include "timeutils/unixtime.h"
 
 /* timestamp formats */
 #define TS_FMT_BSD   0
@@ -35,18 +35,12 @@
 
 #define LOGSTAMP_ZONE_OFFSET_UNSET G_MININT32
 
-typedef struct _LogStamp
-{
-  time_t tv_sec;
-  guint32 tv_usec;
-  /* zone offset in seconds, add this to UTC to get the time in local */
-  gint32 zone_offset;
-} LogStamp;
+typedef UnixTime LogStamp;
 
 static inline gboolean
 log_stamp_is_timezone_set(const LogStamp *self)
 {
-  return self->zone_offset != -1;
+  return self->ut_gmtoff != -1;
 }
 
 void log_stamp_format(LogStamp *stamp, GString *target, gint ts_format, glong zone_offset, gint frac_digits);

@@ -23,7 +23,7 @@
 
 #include "compat-python.h"
 #include "python-helpers.h"
-
+#include "timeutils/timeutils.h"
 #include <datetime.h>
 
 void
@@ -72,9 +72,9 @@ py_datetime_to_logstamp(PyObject *py_timestamp, LogStamp *logstamp)
   Py_XDECREF(py_delta);
   Py_XDECREF(py_epoch);
 
-  logstamp->tv_sec = (time_t) posix_timestamp;
-  logstamp->tv_usec = posix_timestamp * 10e5 - logstamp->tv_sec * 10e5;
-  logstamp->zone_offset = 0;
+  logstamp->ut_gmtoff = 0;
+  logstamp->ut_sec = (time_t) posix_timestamp;
+  logstamp->ut_usec = posix_timestamp * 10e5 - logstamp->ut_sec * 10e5;
 
   return TRUE;
 }

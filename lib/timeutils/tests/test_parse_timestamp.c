@@ -53,13 +53,13 @@ _parse_rfc3164(const gchar *ts, gchar isotimestamp[32])
   gint length = strlen(ts);
   GString *result = g_string_new("");
 
-  stamp.tv_sec = -1;
-  stamp.tv_usec = 0;
-  stamp.zone_offset = -1;
+  stamp.ut_sec = -1;
+  stamp.ut_usec = 0;
+  stamp.ut_gmtoff = -1;
 
   gboolean success = scan_rfc3164_timestamp(&data, &length, &stamp, FALSE, -1);
 
-  log_stamp_append_format(&stamp, result, TS_FMT_ISO, stamp.zone_offset, 3);
+  log_stamp_append_format(&stamp, result, TS_FMT_ISO, stamp.ut_gmtoff, 3);
   strncpy(isotimestamp, result->str, 32);
   g_string_free(result, TRUE);
   return success;
@@ -73,13 +73,13 @@ _parse_rfc5424(const gchar *ts, gchar isotimestamp[32])
   gint length = strlen(ts);
   GString *result = g_string_new("");
 
-  stamp.tv_sec = -1;
-  stamp.tv_usec = 0;
-  stamp.zone_offset = -1;
+  stamp.ut_sec = -1;
+  stamp.ut_usec = 0;
+  stamp.ut_gmtoff = -1;
 
   gboolean success = scan_rfc5424_timestamp(&data, &length, &stamp, FALSE, -1);
 
-  log_stamp_append_format(&stamp, result, TS_FMT_ISO, stamp.zone_offset, 3);
+  log_stamp_append_format(&stamp, result, TS_FMT_ISO, stamp.ut_gmtoff, 3);
   strncpy(isotimestamp, result->str, 32);
   g_string_free(result, TRUE);
   return success;

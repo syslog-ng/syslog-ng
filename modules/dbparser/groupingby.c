@@ -124,8 +124,8 @@ grouping_by_set_time(GroupingBy *self, const LogStamp *ls)
   cached_g_current_time(&now);
   self->last_tick = now;
 
-  if (ls->tv_sec < now.tv_sec)
-    now.tv_sec = ls->tv_sec;
+  if (ls->ut_sec < now.tv_sec)
+    now.tv_sec = ls->ut_sec;
 
   timer_wheel_set_time(self->timer_wheel, now.tv_sec);
   msg_debug("Advancing grouping-by() current time because of an incoming message",

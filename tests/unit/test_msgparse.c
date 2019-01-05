@@ -80,8 +80,8 @@ _get_epoch_with_bsd_year(int ts_month, int d, int h, int m, int s)
 static void
 _simulate_log_readers_effect_on_timezone_offset(LogMessage *message)
 {
-  if (message->timestamps[LM_TS_STAMP].zone_offset == -1)
-    message->timestamps[LM_TS_STAMP].zone_offset = get_local_timezone_ofs(message->timestamps[LM_TS_STAMP].tv_sec);
+  if (message->timestamps[LM_TS_STAMP].ut_gmtoff == -1)
+    message->timestamps[LM_TS_STAMP].ut_gmtoff = get_local_timezone_ofs(message->timestamps[LM_TS_STAMP].ut_sec);
 }
 
 static LogMessage *
@@ -175,19 +175,19 @@ test_log_messages_can_be_parsed(struct msgparse_params *param)
   if (param->expected_stamp_sec)
     {
       if (param->expected_stamp_sec != 1)
-        cr_assert_eq(parsed_timestamp->tv_sec, param->expected_stamp_sec,
+        cr_assert_eq(parsed_timestamp->ut_sec, param->expected_stamp_sec,
                      "Unexpected timestamp, value=%ld, expected=%ld, msg=%s",
-                     parsed_timestamp->tv_sec, param->expected_stamp_sec, param->msg);
+                     parsed_timestamp->ut_sec, param->expected_stamp_sec, param->msg);
 
-      cr_assert_eq(parsed_timestamp->tv_usec, param->expected_stamp_usec, "Unexpected microseconds");
-      cr_assert_eq(parsed_timestamp->zone_offset, param->expected_stamp_ofs, "Unexpected timezone offset");
+      cr_assert_eq(parsed_timestamp->ut_usec, param->expected_stamp_usec, "Unexpected microseconds");
+      cr_assert_eq(parsed_timestamp->ut_gmtoff, param->expected_stamp_ofs, "Unexpected timezone offset");
     }
   else
     {
       time(&now);
-      cr_assert(_absolute_value(parsed_timestamp->tv_sec - now) <= 5,
+      cr_assert(_absolute_value(parsed_timestamp->ut_sec - now) <= 5,
                 "Expected parsed message timestamp to be set to now; now='%d', timestamp->tv_sec='%d'",
-                (gint)now, (gint)parsed_timestamp->tv_sec);
+                (gint)now, (gint)parsed_timestamp->ut_sec);
     }
 
   cr_assert_eq(parsed_message->pri, param->expected_pri, "Unexpected message priority");

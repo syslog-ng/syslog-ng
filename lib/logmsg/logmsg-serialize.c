@@ -41,7 +41,7 @@ _setup_ts_processed(LogStamp *timestamps, const LogStamp *processed)
 {
   if (processed != NULL)
     timestamps[LM_TS_PROCESSED] = *processed;
-  else if (timestamps[LM_TS_PROCESSED].zone_offset == LOGSTAMP_ZONE_OFFSET_UNSET)
+  else if (timestamps[LM_TS_PROCESSED].ut_gmtoff == LOGSTAMP_ZONE_OFFSET_UNSET)
     timestamps[LM_TS_PROCESSED] = timestamps[LM_TS_RECVD];
 }
 

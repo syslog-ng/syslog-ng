@@ -183,7 +183,7 @@ log_db_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pat
   gboolean matched = FALSE;
 
   if (G_UNLIKELY(!self->db_file_reloading && (self->db_file_last_check == 0
-                                              || self->db_file_last_check < (*pmsg)->timestamps[LM_TS_RECVD].tv_sec - 5)))
+                                              || self->db_file_last_check < (*pmsg)->timestamps[LM_TS_RECVD].ut_sec - 5)))
     {
       /* first check if we need to reload without doing a lock, then grab
        * the lock, recheck the condition to rule out parallel database
@@ -192,9 +192,9 @@ log_db_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pat
       g_static_mutex_lock(&self->lock);
 
       if (!self->db_file_reloading && (self->db_file_last_check == 0
-                                       || self->db_file_last_check < (*pmsg)->timestamps[LM_TS_RECVD].tv_sec - 5))
+                                       || self->db_file_last_check < (*pmsg)->timestamps[LM_TS_RECVD].ut_sec - 5))
         {
-          self->db_file_last_check = (*pmsg)->timestamps[LM_TS_RECVD].tv_sec;
+          self->db_file_last_check = (*pmsg)->timestamps[LM_TS_RECVD].ut_sec;
           self->db_file_reloading = TRUE;
           g_static_mutex_unlock(&self->lock);
 

@@ -62,7 +62,7 @@ _construct_logmsg(const gchar *msg)
   LogMessage *logmsg;
 
   logmsg = log_msg_new_empty();
-  logmsg->timestamps[LM_TS_RECVD].tv_sec = 1451473200; /* Dec  30 2015 */
+  logmsg->timestamps[LM_TS_RECVD].ut_sec = 1451473200; /* Dec  30 2015 */
   log_msg_set_value(logmsg, LM_V_MESSAGE, msg, -1);
   return logmsg;
 }

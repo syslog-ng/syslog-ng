@@ -257,9 +257,9 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
 {
 
   LogStamp *stamp = &self->timestamps[LM_TS_STAMP];
-  stamp->tv_sec = -1;
-  stamp->tv_usec = 0;
-  stamp->zone_offset = -1;
+  stamp->ut_sec = -1;
+  stamp->ut_usec = 0;
+  stamp->ut_gmtoff = -1;
 
   if (!log_msg_parse_timestamp(stamp, data, length, parse_flags, recv_timezone_ofs))
     {

@@ -787,16 +787,16 @@ Test(zone, test_logstamp_format)
   TimestampFormatTestCase boundary_test_case = {TS_FMT_ISO, -1, 0, "1970-01-01T00:00:00+00:00"};
   gint i, nr_of_cases;
 
-  stamp.tv_sec = 1129319257;
-  stamp.tv_usec = 123456;
-  stamp.zone_offset = 0;
+  stamp.ut_sec = 1129319257;
+  stamp.ut_usec = 123456;
+  stamp.ut_gmtoff = 0;
   nr_of_cases = sizeof(test_cases) / sizeof(test_cases[0]);
   for (i = 0; i < nr_of_cases; i++)
     assert_timestamp_format(target, &stamp, test_cases[i]);
 
   // boundary testing
-  stamp.tv_sec = 0;
-  stamp.tv_usec = 0;
+  stamp.ut_sec = 0;
+  stamp.ut_usec = 0;
   assert_timestamp_format(target, &stamp, boundary_test_case);
 
   g_string_free(target, TRUE);

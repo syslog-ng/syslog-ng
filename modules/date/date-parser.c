@@ -112,10 +112,10 @@ _parse_timestamp_and_deduce_missing_parts(DateParser *self, struct tm *tm, gint3
 static void
 _adjust_tvsec_to_move_it_into_given_timezone(LogStamp *timestamp, gint normalized_hour, gint unnormalized_hour)
 {
-  timestamp->tv_sec = timestamp->tv_sec
-                      + get_local_timezone_ofs(timestamp->tv_sec)
+  timestamp->ut_sec = timestamp->ut_sec
+                      + get_local_timezone_ofs(timestamp->ut_sec)
                       - (normalized_hour - unnormalized_hour) * 3600
-                      - timestamp->zone_offset;
+                      - timestamp->ut_gmtoff;
 }
 
 static glong
@@ -134,7 +134,7 @@ _convert_struct_tm_to_logstamp(DateParser *self, time_t now, struct tm *tm, gint
 {
   gint unnormalized_hour;
 
-  target->zone_offset = _get_target_zone_offset(self, tm_zone_offset, now);
+  target->ut_gmtoff = _get_target_zone_offset(self, tm_zone_offset, now);
 
   /* NOTE: mktime changes struct tm in the call below! For instance it
    * changes the hour value. (in daylight saving changes, and when it
@@ -146,12 +146,12 @@ _convert_struct_tm_to_logstamp(DateParser *self, time_t now, struct tm *tm, gint
 
   /* FIRST: We convert the timestamp as it was in our local time zone. */
   unnormalized_hour = tm->tm_hour;
-  target->tv_sec = cached_mktime(tm);
+  target->ut_sec = cached_mktime(tm);
 
   /* we can't parse USEC value, as strptime() does not support that */
-  target->tv_usec = 0;
+  target->ut_usec = 0;
 
-  /* SECOND: adjust tv_sec as if we converted it according to our timezone. */
+  /* SECOND: adjust ut_sec as if we converted it according to our timezone. */
   _adjust_tvsec_to_move_it_into_given_timezone(target, tm->tm_hour, unnormalized_hour);
   return TRUE;
 }
@@ -196,7 +196,7 @@ date_parser_process(LogParser *s,
 
   APPEND_ZERO(input, input, input_len);
   gboolean res = _convert_timestamp_to_logstamp(self,
-                                                msg->timestamps[LM_TS_RECVD].tv_sec,
+                                                msg->timestamps[LM_TS_RECVD].ut_sec,
                                                 &msg->timestamps[self->time_stamp],
                                                 input);
 

@@ -312,8 +312,8 @@ Test(log_message, test_log_msg_get_value_with_time_related_macro)
   const char *date_value;
 
   msg = log_msg_new_empty();
-  msg->timestamps[LM_TS_STAMP].tv_sec = 1389783444;
-  msg->timestamps[LM_TS_STAMP].zone_offset = 3600;
+  msg->timestamps[LM_TS_STAMP].ut_sec = 1389783444;
+  msg->timestamps[LM_TS_STAMP].ut_gmtoff = 3600;
 
   handle = log_msg_get_value_handle("ISODATE");
   date_value = log_msg_get_value(msg, handle, &value_len);

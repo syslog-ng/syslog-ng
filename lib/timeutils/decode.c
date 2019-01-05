@@ -222,10 +222,10 @@ static inline void
 __determine_recv_timezone_offset(LogStamp *const timestamp, glong const recv_timezone_ofs)
 {
   if (!log_stamp_is_timezone_set(timestamp))
-    timestamp->zone_offset = recv_timezone_ofs;
+    timestamp->ut_gmtoff = recv_timezone_ofs;
 
   if (!log_stamp_is_timezone_set(timestamp))
-    timestamp->zone_offset = get_local_timezone_ofs(timestamp->tv_sec);
+    timestamp->ut_gmtoff = get_local_timezone_ofs(timestamp->ut_sec);
 }
 
 static void
@@ -239,7 +239,7 @@ __fixup_hour_in_struct_tm_within_transition_periods(LogStamp *stamp, WallClockTi
 
   /* tell cached_mktime() that we have no clue whether Daylight Saving is enabled or not */
   wct->wct_isdst = -1;
-  stamp->tv_sec = cached_mktime(&wct->tm);
+  stamp->ut_sec = cached_mktime(&wct->tm);
 
   /* We need to determine the timezone we want to assume the message was
    * received from.  This depends on the recv-time-zone() setting and the
@@ -263,12 +263,12 @@ __fixup_hour_in_struct_tm_within_transition_periods(LogStamp *stamp, WallClockTi
    *     of.  This is the (normalized_hour - unnormalized_hour) part below
    *
    */
-  stamp->tv_sec = stamp->tv_sec
+  stamp->ut_sec = stamp->ut_sec
                   /* these two components are the zone offset as used by mktime() */
-                  + get_local_timezone_ofs(stamp->tv_sec)
+                  + get_local_timezone_ofs(stamp->ut_sec)
                   - (normalized_hour - unnormalized_hour) * 3600
                   /* this is the zone offset value we want to be */
-                  - stamp->zone_offset;
+                  - stamp->ut_gmtoff;
 }
 
 /*******************************************************************************
@@ -356,7 +356,7 @@ __parse_iso_stamp(const GTimeVal *now, LogStamp *stamp, WallClockTime *wct, cons
   time_t now_tv_sec = (time_t) now->tv_sec;
   const guchar *src = *data;
 
-  stamp->tv_usec = 0;
+  stamp->ut_usec = 0;
 
   /* NOTE: we initialize various unportable fields in tm using a
    * localtime call, as the value of tm_gmtoff does matter but it does
@@ -369,22 +369,22 @@ __parse_iso_stamp(const GTimeVal *now, LogStamp *stamp, WallClockTime *wct, cons
       return FALSE;
     }
 
-  stamp->tv_usec = __parse_usec(&src, length);
+  stamp->ut_usec = __parse_usec(&src, length);
 
   if (*length > 0 && *src == 'Z')
     {
       /* Z is special, it means UTC */
-      stamp->zone_offset = 0;
+      stamp->ut_gmtoff = 0;
       src++;
       (*length)--;
     }
   else if (__has_iso_timezone(src, *length))
     {
-      stamp->zone_offset = __parse_iso_timezone(&src, length);
+      stamp->ut_gmtoff = __parse_iso_timezone(&src, length);
     }
   else
     {
-      stamp->zone_offset = -1;
+      stamp->ut_gmtoff = -1;
     }
 
   *data = src;
@@ -501,7 +501,7 @@ scan_rfc3164_timestamp(const guchar **data, gint *length,
       if (!__parse_bsd_timestamp(&src, &left, &now, &wct, &usec))
         return FALSE;
 
-      stamp->tv_usec = usec;
+      stamp->ut_usec = usec;
     }
 
   /* we might have a closing colon at the end of the timestamp, "Cisco" I am
@@ -536,9 +536,9 @@ scan_rfc5424_timestamp(const guchar **data, gint *length,
 
   if (G_UNLIKELY(left >= 1 && src[0] == '-'))
     {
-      stamp->tv_sec = now.tv_sec;
-      stamp->tv_usec = now.tv_usec;
-      stamp->zone_offset = get_local_timezone_ofs(now.tv_sec);
+      stamp->ut_sec = now.tv_sec;
+      stamp->ut_usec = now.tv_usec;
+      stamp->ut_gmtoff = get_local_timezone_ofs(now.tv_sec);
       src++;
       left--;
     }

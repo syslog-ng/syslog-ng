@@ -494,9 +494,9 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
 
           id -= M_CSTAMP_OFS;
           cached_g_current_time(&tv);
-          sstamp.tv_sec = tv.tv_sec;
-          sstamp.tv_usec = tv.tv_usec;
-          sstamp.zone_offset = msg->timestamps[LM_TS_RECVD].zone_offset;
+          sstamp.ut_sec = tv.tv_sec;
+          sstamp.ut_usec = tv.tv_usec;
+          sstamp.ut_gmtoff = msg->timestamps[LM_TS_RECVD].ut_gmtoff;
           stamp = &sstamp;
         }
       else if (id >= M_TIME_FIRST + M_PROCESSED_OFS && id <= M_TIME_LAST + M_PROCESSED_OFS)
@@ -516,11 +516,11 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
        *   local timezone
        */
       zone_ofs = (opts->time_zone_info[tz] != NULL ? time_zone_info_get_offset(opts->time_zone_info[tz],
-                  stamp->tv_sec) : stamp->zone_offset);
+                  stamp->ut_sec) : stamp->ut_gmtoff);
       if (zone_ofs == -1)
-        zone_ofs = stamp->zone_offset;
+        zone_ofs = stamp->ut_gmtoff;
 
-      t = stamp->tv_sec + zone_ofs;
+      t = stamp->ut_sec + zone_ofs;
 
       cached_gmtime(&t, &tm_storage);
       tm  = &tm_storage;
@@ -580,10 +580,10 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
           format_uint32_padded(result, 2, '0', 10, tm->tm_sec);
           break;
         case M_MSEC:
-          format_uint32_padded(result, 3, '0', 10, stamp->tv_usec/1000);
+          format_uint32_padded(result, 3, '0', 10, stamp->ut_usec/1000);
           break;
         case M_USEC:
-          format_uint32_padded(result, 6, '0', 10, stamp->tv_usec);
+          format_uint32_padded(result, 6, '0', 10, stamp->ut_usec);
           break;
         case M_AMPM:
           g_string_append(result, tm->tm_hour < 12 ? "AM" : "PM");

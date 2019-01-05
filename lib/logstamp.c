@@ -34,7 +34,7 @@ log_stamp_append_frac_digits(const LogStamp *stamp, GString *target, gint frac_d
 {
   glong usecs;
 
-  usecs = stamp->tv_usec % 1000000;
+  usecs = stamp->ut_usec % 1000000;
 
   if (frac_digits > 0)
     {
@@ -71,9 +71,9 @@ log_stamp_append_format(const LogStamp *stamp, GString *target, gint ts_format, 
   if (zone_offset != -1)
     target_zone_offset = zone_offset;
   else
-    target_zone_offset = stamp->zone_offset;
+    target_zone_offset = stamp->ut_gmtoff;
 
-  t = stamp->tv_sec + target_zone_offset;
+  t = stamp->ut_sec + target_zone_offset;
   cached_gmtime(&t, &tm_storage);
   tm = &tm_storage;
   switch (ts_format)
@@ -123,7 +123,7 @@ log_stamp_append_format(const LogStamp *stamp, GString *target, gint ts_format, 
       log_stamp_append_frac_digits(stamp, target, frac_digits);
       break;
     case TS_FMT_UNIX:
-      format_uint32_padded(target, 0, 0, 10, (int) stamp->tv_sec);
+      format_uint32_padded(target, 0, 0, 10, (int) stamp->ut_sec);
       log_stamp_append_frac_digits(stamp, target, frac_digits);
       break;
     default:
@@ -142,7 +142,7 @@ log_stamp_format(LogStamp *stamp, GString *target, gint ts_format, glong zone_of
 gboolean
 log_stamp_eq(const LogStamp *a, const LogStamp *b)
 {
-  return a->tv_sec == b->tv_sec &&
-         a->tv_usec == b->tv_usec &&
-         a->zone_offset == b->zone_offset;
+  return a->ut_sec == b->ut_sec &&
+         a->ut_usec == b->ut_usec &&
+         a->ut_gmtoff == b->ut_gmtoff;
 }

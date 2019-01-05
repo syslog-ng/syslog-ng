@@ -272,8 +272,8 @@ _parse_timestamp(SnmpTrapdHeaderParser *self)
   time_t now_tv_sec = (time_t) now.tv_sec;
 
   LogStamp *stamp = &self->nv_context->msg->timestamps[LM_TS_STAMP];
-  stamp->tv_usec = 0;
-  stamp->zone_offset = -1;
+  stamp->ut_usec = 0;
+  stamp->ut_gmtoff = -1;
 
   /* NOTE: we initialize various unportable fields in tm using a
    * localtime call, as the value of tm_gmtoff does matter but it does
@@ -286,8 +286,8 @@ _parse_timestamp(SnmpTrapdHeaderParser *self)
     return FALSE;
 
   tm.tm_isdst = -1;
-  stamp->tv_sec = cached_mktime(&tm);
-  stamp->zone_offset = get_local_timezone_ofs(stamp->tv_sec);
+  stamp->ut_sec = cached_mktime(&tm);
+  stamp->ut_gmtoff = get_local_timezone_ofs(stamp->ut_sec);
 
   return TRUE;
 }

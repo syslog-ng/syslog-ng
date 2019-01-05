@@ -244,13 +244,13 @@ _set_message_timestamp(JournalReader *self, LogMessage *msg)
   guint64 ts;
 
   journald_get_realtime_usec(self->journal, &ts);
-  msg->timestamps[LM_TS_STAMP].tv_sec = ts / 1000000;
-  msg->timestamps[LM_TS_STAMP].tv_usec = ts % 1000000;
-  msg->timestamps[LM_TS_STAMP].zone_offset = time_zone_info_get_offset(self->options->recv_time_zone_info,
-                                             msg->timestamps[LM_TS_STAMP].tv_sec);
-  if (msg->timestamps[LM_TS_STAMP].zone_offset == -1)
+  msg->timestamps[LM_TS_STAMP].ut_sec = ts / 1000000;
+  msg->timestamps[LM_TS_STAMP].ut_usec = ts % 1000000;
+  msg->timestamps[LM_TS_STAMP].ut_gmtoff = time_zone_info_get_offset(self->options->recv_time_zone_info,
+                                           msg->timestamps[LM_TS_STAMP].ut_sec);
+  if (msg->timestamps[LM_TS_STAMP].ut_gmtoff == -1)
     {
-      msg->timestamps[LM_TS_STAMP].zone_offset = get_local_timezone_ofs(msg->timestamps[LM_TS_STAMP].tv_sec);
+      msg->timestamps[LM_TS_STAMP].ut_gmtoff = get_local_timezone_ofs(msg->timestamps[LM_TS_STAMP].ut_sec);
     }
 }
 
