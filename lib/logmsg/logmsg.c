@@ -1087,7 +1087,7 @@ log_msg_init(LogMessage *self, GSockAddr *saddr)
   self->timestamps[LM_TS_STAMP] = self->timestamps[LM_TS_RECVD];
   self->timestamps[LM_TS_PROCESSED].ut_sec = 0;
   self->timestamps[LM_TS_PROCESSED].ut_usec = 0;
-  self->timestamps[LM_TS_PROCESSED].ut_gmtoff = LOGSTAMP_ZONE_OFFSET_UNSET;
+  self->timestamps[LM_TS_PROCESSED].ut_gmtoff = -1;
 
   self->sdata = NULL;
   self->saddr = g_sockaddr_ref(saddr);

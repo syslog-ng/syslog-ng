@@ -38,7 +38,7 @@
   input_timestamps[LM_TS_RECVD].ut_gmtoff = 6; \
   input_timestamps[LM_TS_PROCESSED].ut_sec = 255; \
   input_timestamps[LM_TS_PROCESSED].ut_usec = 255; \
-  input_timestamps[LM_TS_PROCESSED].ut_gmtoff = LOGSTAMP_ZONE_OFFSET_UNSET; \
+  input_timestamps[LM_TS_PROCESSED].ut_gmtoff = -1; \
   SerializeArchive *sa = serialize_string_archive_new(stream);
 
 #define CLEAN_TEST serialize_archive_free(sa); \
