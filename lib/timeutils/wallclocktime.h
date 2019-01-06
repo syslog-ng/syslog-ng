@@ -25,9 +25,7 @@
 #ifndef WALLCLOCKTIME_H_INCLUDED
 #define WALLCLOCKTIME_H_INCLUDED
 
-#include "syslog-ng.h"
-#include <time.h>
-
+#include "timeutils/timeutils.h"
 
 /*
  * This is a simple wrapper over "struct tm" with fields that are not
@@ -47,7 +45,7 @@
  * provide wrapper macros so that fields that are present in struct tm are
  * used from there, those that aren't will be part of the wrapper structure.
  */
-typedef struct _WallClockTime
+struct _WallClockTime
 {
 #define wct_year  tm.tm_year
 #define wct_mon   tm.tm_mon
@@ -73,7 +71,7 @@ typedef struct _WallClockTime
 #define wct_zone tm.tm_zone
 #endif
   int wct_usec;
-} WallClockTime;
+};
 
 #ifdef SYSLOG_NG_HAVE_STRUCT_TM_TM_GMTOFF
 

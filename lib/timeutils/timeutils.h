@@ -28,6 +28,9 @@
 #include "syslog-ng.h"
 #include "compat/time.h"
 
+typedef struct _UnixTime UnixTime;
+typedef struct _WallClockTime WallClockTime;
+
 long get_local_timezone_ofs(time_t when);
 
 gboolean check_nanosleep(void);

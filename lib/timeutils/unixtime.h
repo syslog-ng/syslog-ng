@@ -25,8 +25,7 @@
 #ifndef UNIXTIME_H_INCLUDED
 #define UNIXTIME_H_INCLUDED
 
-#include "syslog-ng.h"
-#include <time.h>
+#include "timeutils/timeutils.h"
 
 /*
  * This class represents a UNIX timestamp (as measured in time_t), the
@@ -42,7 +41,7 @@
  * LogMessage structure with a lot of padding (the struct would go from 16
  * to 24 bytes and we have 3 of these structs in LogMessage).
  */
-typedef struct _UnixTime
+struct _UnixTime
 {
   gint64 ut_sec;
   guint32 ut_usec;
@@ -52,7 +51,7 @@ typedef struct _UnixTime
    * squeezed in space with this struct.  32 bit is more than enough for
    * +/-24*3600 */
   gint32 ut_gmtoff;
-} UnixTime;
+};
 
 #define UNIX_TIME_INIT { -1, 0, -1 }
 
