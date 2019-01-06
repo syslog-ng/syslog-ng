@@ -25,12 +25,32 @@
 #ifndef TIMEUTILS_CACHE_H_INCLUDED
 #define TIMEUTILS_CACHE_H_INCLUDED
 
-#include "syslog-ng.h"
-#include "compat/time.h"
+#include "timeutils/timeutils.h"
+#include "timeutils/wallclocktime.h"
+#include "timeutils/unixtime.h"
 
 time_t cached_mktime(struct tm *tm);
 void cached_localtime(time_t *when, struct tm *tm);
 void cached_gmtime(time_t *when, struct tm *tm);
+
+
+static inline void
+cached_localtime_wct(time_t *when, WallClockTime *wct)
+{
+  cached_localtime(when, &wct->tm);
+}
+
+static inline time_t
+cached_mktime_wct(WallClockTime *wct)
+{
+  return cached_mktime(&wct->tm);
+}
+
+static inline void
+cached_gmtime_wct(time_t *when, WallClockTime *wct)
+{
+  cached_gmtime(when, &wct->tm);
+}
 
 void clean_time_cache(void);
 
