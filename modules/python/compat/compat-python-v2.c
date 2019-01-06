@@ -72,9 +72,9 @@ py_datetime_to_logstamp(PyObject *py_timestamp, LogStamp *logstamp)
   Py_XDECREF(py_delta);
   Py_XDECREF(py_epoch);
 
-  logstamp->ut_gmtoff = 0;
   logstamp->ut_sec = (time_t) posix_timestamp;
   logstamp->ut_usec = posix_timestamp * 10e5 - logstamp->ut_sec * 10e5;
+  logstamp->ut_gmtoff = get_local_timezone_ofs(posix_timestamp);
 
   return TRUE;
 }
