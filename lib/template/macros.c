@@ -490,19 +490,20 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
         }
       else if (id >= M_TIME_FIRST + M_CSTAMP_OFS && id <= M_TIME_LAST + M_CSTAMP_OFS)
         {
-          GTimeVal tv;
-
           id -= M_CSTAMP_OFS;
-          cached_g_current_time(&tv);
-          sstamp.ut_sec = tv.tv_sec;
-          sstamp.ut_usec = tv.tv_usec;
-          sstamp.ut_gmtoff = msg->timestamps[LM_TS_RECVD].ut_gmtoff;
+          unix_time_set_now(&sstamp);
           stamp = &sstamp;
         }
       else if (id >= M_TIME_FIRST + M_PROCESSED_OFS && id <= M_TIME_LAST + M_PROCESSED_OFS)
         {
           id -= M_PROCESSED_OFS;
           stamp = &msg->timestamps[LM_TS_PROCESSED];
+
+          if (!unix_time_is_set(stamp))
+            {
+              unix_time_set_now(&sstamp);
+              stamp = &sstamp;
+            }
         }
       else
         {
