@@ -433,15 +433,10 @@ __is_bsd_pix_or_asa(const guchar *src, guint32 left)
 }
 
 static gboolean
-__parse_bsd_timestamp(const guchar **data, gint *length, const GTimeVal *now, WallClockTime *wct, glong *usec)
+__parse_bsd_timestamp(const guchar **data, gint *length, WallClockTime *wct, glong *usec)
 {
   gint left = *length;
   const guchar *src = *data;
-  time_t now_tv_sec = (time_t) now->tv_sec;
-  WallClockTime local_time;
-
-  cached_localtime(&now_tv_sec, &wct->tm);
-  cached_localtime(&now_tv_sec, &local_time.tm);
 
   if (__is_bsd_pix_or_asa(src, left))
     {
@@ -466,7 +461,7 @@ __parse_bsd_timestamp(const guchar **data, gint *length, const GTimeVal *now, Wa
 
       *usec = __parse_usec(&src, &left);
 
-      wct->wct_year = determine_year_for_month(wct->wct_mon, &local_time.tm);
+      wall_clock_time_guess_missing_year(wct);
     }
   else
     {
@@ -485,7 +480,7 @@ scan_rfc3164_timestamp(const guchar **data, gint *length,
   GTimeVal now;
   const guchar *src = *data;
   gint left = *length;
-  WallClockTime wct;
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
 
   cached_g_current_time(&now);
 
@@ -498,7 +493,7 @@ scan_rfc3164_timestamp(const guchar **data, gint *length,
   else
     {
       glong usec = 0;
-      if (!__parse_bsd_timestamp(&src, &left, &now, &wct, &usec))
+      if (!__parse_bsd_timestamp(&src, &left, &wct, &usec))
         return FALSE;
 
       stamp->ut_usec = usec;
