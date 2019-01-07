@@ -9,3 +9,4 @@ mockito
 pathlib2
 psutil
 pytest
+six>=1.10.0
