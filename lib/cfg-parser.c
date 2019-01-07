@@ -323,14 +323,22 @@ report_syntax_error(CfgLexer *lexer, YYLTYPE *yylloc, const char *what, const ch
     {
       if (from == level)
         {
-          fprintf(stderr, "Error parsing %s, %s in %s:\n",
+          fprintf(stderr, "Error parsing %s, %s in %s:%d:%d-%d:%d:\n",
                   what,
                   msg,
-                  yylloc->level->name);
+                  from->lloc.level->name,
+                  from->lloc.first_line,
+                  from->lloc.first_column,
+                  from->lloc.last_line,
+                  from->lloc.last_column);
         }
       else
         {
-          fprintf(stderr, "Included from %s:\n", from->name);
+          fprintf(stderr, "Included from %s:%d:%d-%d:%d:\n", from->name,
+                  from->lloc.first_line,
+                  from->lloc.first_column,
+                  from->lloc.last_line,
+                  from->lloc.last_column);
         }
       if (from->include_type == CFGI_FILE)
         {
