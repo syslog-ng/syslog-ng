@@ -33,13 +33,13 @@ def test_acceptance(tc):
 
     config.create_logpath(sources=source_group, destinations=destination_group)
 
-    bsd_message = tc.create_dummy_bsd_message()
-    bsd_log = tc.format_as_bsd(bsd_message)
+    log_message = tc.new_log_message()
+    bsd_log = tc.format_as_bsd(log_message)
     file_source.write_log(bsd_log, counter=3)
 
     syslog_ng = tc.new_syslog_ng()
     syslog_ng.start(config)
 
     output_logs = file_destination.read_logs(counter=3)
-    expected_output_message = bsd_message.remove_priority()
+    expected_output_message = log_message.remove_priority()
     assert output_logs == tc.format_as_bsd_logs(expected_output_message, counter=3)

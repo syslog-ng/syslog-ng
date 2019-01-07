@@ -22,24 +22,10 @@
 #
 #############################################################################
 
-import time
 import datetime
-import socket
-from src.message_builder.log_message import LogMessage
 
 
 class BSDFormat(object):
-    @staticmethod
-    def create_dummy_message():
-        log_message = LogMessage()
-        log_message.priority_value = "38"
-        log_message.timestamp_value = time.time()
-        log_message.hostname_value = socket.gethostname()
-        log_message.program_value = "testprogram"
-        log_message.pid_value = "9999"
-        log_message.message_value = "test message"
-        return log_message
-
     @staticmethod
     def format_message(message, add_new_line=True):
         formatted_message = ""
