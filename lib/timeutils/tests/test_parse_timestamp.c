@@ -48,16 +48,17 @@ fake_time_add(time_t diff)
 static gboolean
 _parse_rfc3164(const gchar *ts, gchar isotimestamp[32])
 {
-  LogStamp stamp = {0};
+  LogStamp stamp;
   const guchar *data = (const guchar *) ts;
   gint length = strlen(ts);
   GString *result = g_string_new("");
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
 
-  stamp.ut_sec = -1;
-  stamp.ut_usec = 0;
-  stamp.ut_gmtoff = -1;
 
-  gboolean success = scan_rfc3164_timestamp(&data, &length, &stamp, FALSE, -1);
+  gboolean success = scan_rfc3164_timestamp(&data, &length, &wct);
+
+  unix_time_unset(&stamp);
+  unix_time_set_from_wall_clock_time(&stamp, &wct);
 
   log_stamp_append_format(&stamp, result, TS_FMT_ISO, stamp.ut_gmtoff, 3);
   strncpy(isotimestamp, result->str, 32);
@@ -68,16 +69,16 @@ _parse_rfc3164(const gchar *ts, gchar isotimestamp[32])
 static gboolean
 _parse_rfc5424(const gchar *ts, gchar isotimestamp[32])
 {
-  LogStamp stamp = {0};
+  LogStamp stamp;
   const guchar *data = (const guchar *) ts;
   gint length = strlen(ts);
   GString *result = g_string_new("");
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
 
-  stamp.ut_sec = -1;
-  stamp.ut_usec = 0;
-  stamp.ut_gmtoff = -1;
+  gboolean success = scan_rfc5424_timestamp(&data, &length, &wct);
 
-  gboolean success = scan_rfc5424_timestamp(&data, &length, &stamp, FALSE, -1);
+  unix_time_unset(&stamp);
+  unix_time_set_from_wall_clock_time(&stamp, &wct);
 
   log_stamp_append_format(&stamp, result, TS_FMT_ISO, stamp.ut_gmtoff, 3);
   strncpy(isotimestamp, result->str, 32);
@@ -287,10 +288,6 @@ Test(parse_timestamp, cisco_timestamps)
 
 Test(parse_timestamp, rfc5424_timestamps)
 {
-  /* the timestamp '-' means the current time */
-  _expect_rfc5424_timestamp_eq("-", "2017-12-13T09:10:23.123+01:00");
-  fake_time_add(3600);
-  _expect_rfc5424_timestamp_eq("-", "2017-12-13T10:10:23.123+01:00");
   _expect_rfc5424_timestamp_eq("2017-06-14T23:57:27+02:00", "2017-06-14T23:57:27.000+02:00");
   _expect_rfc5424_timestamp_eq("2017-06-14T23:57:27Z", "2017-06-14T23:57:27.000+00:00");
 }

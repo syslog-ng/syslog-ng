@@ -406,26 +406,20 @@ __parse_bsd_timestamp(const guchar **data, gint *length, WallClockTime *wct)
 }
 
 gboolean
-scan_rfc3164_timestamp(const guchar **data, gint *length,
-                       LogStamp *stamp,
-                       gboolean ignore_result, glong recv_timezone_ofs)
+scan_rfc3164_timestamp(const guchar **data, gint *length, WallClockTime *wct)
 {
-  GTimeVal now;
   const guchar *src = *data;
   gint left = *length;
-  WallClockTime wct = WALL_CLOCK_TIME_INIT;
-
-  cached_g_current_time(&now);
 
   /* If the next chars look like a date, then read them as a date. */
   if (__is_iso_stamp((const gchar *)src, left))
     {
-      if (!__parse_iso_stamp(&wct, &src, &left))
+      if (!__parse_iso_stamp(wct, &src, &left))
         return FALSE;
     }
   else
     {
-      if (!__parse_bsd_timestamp(&src, &left, &wct))
+      if (!__parse_bsd_timestamp(&src, &left, wct))
         return FALSE;
     }
 
@@ -439,35 +433,18 @@ scan_rfc3164_timestamp(const guchar **data, gint *length,
       --left;
     }
 
-  if (!ignore_result)
-    unix_time_set_from_wall_clock_time_with_tz_hint(stamp, &wct, recv_timezone_ofs);
-
   *data = src;
   *length = left;
   return TRUE;
 }
 
 gboolean
-scan_rfc5424_timestamp(const guchar **data, gint *length,
-                       LogStamp *stamp,
-                       gboolean ignore_result, glong recv_timezone_ofs)
+scan_rfc5424_timestamp(const guchar **data, gint *length, WallClockTime *wct)
 {
   const guchar *src = *data;
   gint left = *length;
-  WallClockTime wct = WALL_CLOCK_TIME_INIT;
 
-  if (G_UNLIKELY(left >= 1 && src[0] == '-'))
-    {
-      unix_time_set_now(stamp);
-      src++;
-      left--;
-    }
-  else if (__parse_iso_stamp(&wct, &src, &left))
-    {
-      if (!ignore_result)
-        unix_time_set_from_wall_clock_time_with_tz_hint(stamp, &wct, recv_timezone_ofs);
-    }
-  else
+  if (!__parse_iso_stamp(wct, &src, &left))
     return FALSE;
 
   *data = src;

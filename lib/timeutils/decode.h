@@ -34,9 +34,7 @@ gboolean scan_pix_timestamp(const gchar **buf, gint *left, WallClockTime *wct);
 gboolean scan_linksys_timestamp(const gchar **buf, gint *left, WallClockTime *wct);
 gboolean scan_bsd_timestamp(const gchar **buf, gint *left, WallClockTime *wct);
 
-gboolean scan_rfc3164_timestamp(const guchar **data, gint *length, LogStamp *stamp,
-                                gboolean ignore_result, glong default_timezone);
-gboolean scan_rfc5424_timestamp(const guchar **data, gint *length, LogStamp *stamp,
-                                gboolean ignore_result, glong default_timezone);
+gboolean scan_rfc3164_timestamp(const guchar **data, gint *length, WallClockTime *wct);
+gboolean scan_rfc5424_timestamp(const guchar **data, gint *length, WallClockTime *wct);
 
 #endif

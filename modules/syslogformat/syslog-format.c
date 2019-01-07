@@ -239,15 +239,24 @@ static gboolean
 log_msg_parse_timestamp(LogStamp *stamp, const guchar **data, gint *length, guint parse_flags, glong recv_timezone_ofs)
 {
   gboolean result;
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
 
   if ((parse_flags & LP_SYSLOG_PROTOCOL) == 0)
-    result = scan_rfc3164_timestamp(data, length, stamp,
-                                    (parse_flags & LP_NO_PARSE_DATE),
-                                    recv_timezone_ofs);
+    result = scan_rfc3164_timestamp(data, length, &wct);
   else
-    result = scan_rfc5424_timestamp(data, length, stamp,
-                                    (parse_flags & LP_NO_PARSE_DATE),
-                                    recv_timezone_ofs);
+    {
+      if (G_UNLIKELY(*length >= 1 && (*data)[0] == '-'))
+        {
+          unix_time_set_now(stamp);
+          (*data)++;
+          (*length)--;
+          return TRUE;
+        }
+      result = scan_rfc5424_timestamp(data, length, &wct);
+    }
+
+  if ((parse_flags & LP_NO_PARSE_DATE) == 0)
+    unix_time_set_from_normalized_wall_clock_time_with_tz_hint(stamp, &wct, recv_timezone_ofs);
 
   return result;
 }
@@ -255,12 +264,10 @@ log_msg_parse_timestamp(LogStamp *stamp, const guchar **data, gint *length, guin
 static gboolean
 log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint parse_flags, glong recv_timezone_ofs)
 {
-
   LogStamp *stamp = &self->timestamps[LM_TS_STAMP];
-  stamp->ut_sec = -1;
-  stamp->ut_usec = 0;
-  stamp->ut_gmtoff = -1;
 
+
+  unix_time_unset(stamp);
   if (!log_msg_parse_timestamp(stamp, data, length, parse_flags, recv_timezone_ofs))
     {
       *stamp = self->timestamps[LM_TS_RECVD];
