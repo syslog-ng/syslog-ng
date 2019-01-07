@@ -213,64 +213,6 @@ scan_bsd_timestamp(const gchar **buf, gint *left, WallClockTime *wct)
   return TRUE;
 }
 
-
-/*******************************************************************************
- * Timezone conversions
- *******************************************************************************/
-
-static inline void
-__determine_recv_timezone_offset(LogStamp *const timestamp, glong const recv_timezone_ofs)
-{
-  if (!log_stamp_is_timezone_set(timestamp))
-    timestamp->ut_gmtoff = recv_timezone_ofs;
-
-  if (!log_stamp_is_timezone_set(timestamp))
-    timestamp->ut_gmtoff = get_local_timezone_ofs(timestamp->ut_sec);
-}
-
-static void
-__fixup_hour_in_struct_tm_within_transition_periods(LogStamp *stamp, WallClockTime *wct, glong recv_timezone_ofs)
-{
-  /* save the tm_hour value as received from the client */
-  gint unnormalized_hour = wct->wct_hour;
-
-  /* NOTE: mktime() returns the time assuming that the timestamp we
-   * received was in local time. */
-
-  /* tell cached_mktime() that we have no clue whether Daylight Saving is enabled or not */
-  wct->wct_isdst = -1;
-  stamp->ut_sec = cached_mktime(&wct->tm);
-
-  /* We need to determine the timezone we want to assume the message was
-   * received from.  This depends on the recv-time-zone() setting and the
-   * the tv_sec value as converted by mktime() above. */
-  __determine_recv_timezone_offset(stamp, recv_timezone_ofs);
-
-  /* save the tm_hour as adjusted by mktime() */
-  gint normalized_hour = wct->wct_hour;
-
-  /* fix up the tv_sec value by transposing it into the target timezone:
-   *
-   * First we add the local time zone offset then subtract the target time
-   * zone offset.  This is not trivial however, as we have to determine
-   * exactly what the local timezone offset is at the current second, as
-   * used by mktime(). It is composed of these values:
-   *
-   *  1) get_local_timezone_ofs()
-   *  2) then in transition periods, mktime() will change wct->wct_hour
-   *     according to its understanding (e.g.  sprint time, 02:01 is changed
-   *     to 03:01), which is an additional factor that needs to be taken care
-   *     of.  This is the (normalized_hour - unnormalized_hour) part below
-   *
-   */
-  stamp->ut_sec = stamp->ut_sec
-                  /* these two components are the zone offset as used by mktime() */
-                  + get_local_timezone_ofs(stamp->ut_sec)
-                  - (normalized_hour - unnormalized_hour) * 3600
-                  /* this is the zone offset value we want to be */
-                  - stamp->ut_gmtoff;
-}
-
 /*******************************************************************************
  * Parse ISO timestamp
  *******************************************************************************/
@@ -350,34 +292,32 @@ __is_iso_stamp(const gchar *stamp, gint length)
 }
 
 static gboolean
-__parse_iso_stamp(LogStamp *stamp, WallClockTime *wct, const guchar **data, gint *length)
+__parse_iso_stamp(WallClockTime *wct, const guchar **data, gint *length)
 {
   /* RFC3339 timestamp, expected format: YYYY-MM-DDTHH:MM:SS[.frac]<+/->ZZ:ZZ */
   const guchar *src = *data;
-
-  stamp->ut_usec = 0;
 
   if (!scan_iso_timestamp((const gchar **) &src, length, wct))
     {
       return FALSE;
     }
 
-  stamp->ut_usec = __parse_usec(&src, length);
+  wct->wct_usec = __parse_usec(&src, length);
 
   if (*length > 0 && *src == 'Z')
     {
       /* Z is special, it means UTC */
-      stamp->ut_gmtoff = 0;
+      wct->wct_gmtoff = 0;
       src++;
       (*length)--;
     }
   else if (__has_iso_timezone(src, *length))
     {
-      stamp->ut_gmtoff = __parse_iso_timezone(&src, length);
+      wct->wct_gmtoff = __parse_iso_timezone(&src, length);
     }
   else
     {
-      stamp->ut_gmtoff = -1;
+      wct->wct_gmtoff = -1;
     }
 
   *data = src;
@@ -426,7 +366,7 @@ __is_bsd_pix_or_asa(const guchar *src, guint32 left)
 }
 
 static gboolean
-__parse_bsd_timestamp(const guchar **data, gint *length, WallClockTime *wct, glong *usec)
+__parse_bsd_timestamp(const guchar **data, gint *length, WallClockTime *wct)
 {
   gint left = *length;
   const guchar *src = *data;
@@ -452,7 +392,7 @@ __parse_bsd_timestamp(const guchar **data, gint *length, WallClockTime *wct, glo
       if (!scan_bsd_timestamp((const gchar **) &src, &left, wct))
         return FALSE;
 
-      *usec = __parse_usec(&src, &left);
+      wct->wct_usec = __parse_usec(&src, &left);
 
       wall_clock_time_guess_missing_year(wct);
     }
@@ -480,16 +420,13 @@ scan_rfc3164_timestamp(const guchar **data, gint *length,
   /* If the next chars look like a date, then read them as a date. */
   if (__is_iso_stamp((const gchar *)src, left))
     {
-      if (!__parse_iso_stamp(stamp, &wct, &src, &left))
+      if (!__parse_iso_stamp(&wct, &src, &left))
         return FALSE;
     }
   else
     {
-      glong usec = 0;
-      if (!__parse_bsd_timestamp(&src, &left, &wct, &usec))
+      if (!__parse_bsd_timestamp(&src, &left, &wct))
         return FALSE;
-
-      stamp->ut_usec = usec;
     }
 
   /* we might have a closing colon at the end of the timestamp, "Cisco" I am
@@ -503,7 +440,7 @@ scan_rfc3164_timestamp(const guchar **data, gint *length,
     }
 
   if (!ignore_result)
-    __fixup_hour_in_struct_tm_within_transition_periods(stamp, &wct, recv_timezone_ofs);
+    unix_time_set_from_wall_clock_time_with_tz_hint(stamp, &wct, recv_timezone_ofs);
 
   *data = src;
   *length = left;
@@ -525,10 +462,10 @@ scan_rfc5424_timestamp(const guchar **data, gint *length,
       src++;
       left--;
     }
-  else if (__parse_iso_stamp(stamp, &wct, &src, &left))
+  else if (__parse_iso_stamp(&wct, &src, &left))
     {
       if (!ignore_result)
-        __fixup_hour_in_struct_tm_within_transition_periods(stamp, &wct, recv_timezone_ofs);
+        unix_time_set_from_wall_clock_time_with_tz_hint(stamp, &wct, recv_timezone_ofs);
     }
   else
     return FALSE;
