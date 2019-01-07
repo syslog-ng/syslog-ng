@@ -64,3 +64,17 @@ wall_clock_time_set_from_unix_time_with_tz_override(WallClockTime *self, const U
   self->wct_zone = NULL;
   self->wct_usec = ut->ut_usec;
 }
+
+void
+wall_clock_time_guess_missing_year(WallClockTime *self)
+{
+  if (self->wct_year == -1)
+    {
+      time_t now;
+      struct tm tm;
+
+      now = cached_g_current_time_sec();
+      cached_localtime(&now, &tm);
+      self->wct_year = determine_year_for_month(self->wct_mon, &tm);
+    }
+}
