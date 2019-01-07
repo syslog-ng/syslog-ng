@@ -244,50 +244,35 @@ _parse_hostname(SnmpTrapdHeaderParser *self)
 }
 
 static gboolean
-scan_snmptrapd_timestamp(const gchar **buf, gint *left, struct tm *tm)
+scan_snmptrapd_timestamp(const gchar **buf, gint *left, WallClockTime *wct)
 {
   /* YYYY-MM-DD HH:MM:SS */
-  if (!scan_int(buf, left, 4, &tm->tm_year) ||
+  if (!scan_int(buf, left, 4, &wct->wct_year) ||
       !scan_expect_char(buf, left, '-') ||
-      !scan_int(buf, left, 2, &tm->tm_mon) ||
+      !scan_int(buf, left, 2, &wct->wct_mon) ||
       !scan_expect_char(buf, left, '-') ||
-      !scan_int(buf, left, 2, &tm->tm_mday) ||
+      !scan_int(buf, left, 2, &wct->wct_mday) ||
       !scan_expect_char(buf, left, ' ') ||
-      !scan_int(buf, left, 2, &tm->tm_hour) ||
+      !scan_int(buf, left, 2, &wct->wct_hour) ||
       !scan_expect_char(buf, left, ':') ||
-      !scan_int(buf, left, 2, &tm->tm_min) ||
+      !scan_int(buf, left, 2, &wct->wct_min) ||
       !scan_expect_char(buf, left, ':') ||
-      !scan_int(buf, left, 2, &tm->tm_sec))
+      !scan_int(buf, left, 2, &wct->wct_sec))
     return FALSE;
-  tm->tm_year -= 1900;
-  tm->tm_mon -= 1;
+  wct->wct_year -= 1900;
+  wct->wct_mon -= 1;
   return TRUE;
 }
 
 static gboolean
 _parse_timestamp(SnmpTrapdHeaderParser *self)
 {
-  GTimeVal now;
-  cached_g_current_time(&now);
-  time_t now_tv_sec = (time_t) now.tv_sec;
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
 
-  LogStamp *stamp = &self->nv_context->msg->timestamps[LM_TS_STAMP];
-  stamp->ut_usec = 0;
-  stamp->ut_gmtoff = -1;
-
-  /* NOTE: we initialize various unportable fields in tm using a
-   * localtime call, as the value of tm_gmtoff does matter but it does
-   * not exist on all platforms and 0 initializing it causes trouble on
-   * time-zone barriers */
-
-  struct tm tm;
-  cached_localtime(&now_tv_sec, &tm);
-  if (!scan_snmptrapd_timestamp(self->input, (gint *)self->input_len, &tm))
+  if (!scan_snmptrapd_timestamp(self->input, (gint *)self->input_len, &wct))
     return FALSE;
 
-  tm.tm_isdst = -1;
-  stamp->ut_sec = cached_mktime(&tm);
-  stamp->ut_gmtoff = get_local_timezone_ofs(stamp->ut_sec);
+  unix_time_set_from_normalized_wall_clock_time(&self->nv_context->msg->timestamps[LM_TS_STAMP], &wct);
 
   return TRUE;
 }
