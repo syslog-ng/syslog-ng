@@ -22,8 +22,8 @@
  *
  */
 
-#ifndef STR_TIMESTAMP_DECODE_H_INCLUDED
-#define STR_TIMESTAMP_DECODE_H_INCLUDED
+#ifndef TIMEUTILS_SCAN_TIMESTAMP_H_INCLUDED
+#define TIMEUTILS_SCAN_TIMESTAMP_H_INCLUDED
 
 #include "syslog-ng.h"
 #include "timeutils/wallclocktime.h"

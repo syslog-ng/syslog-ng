@@ -23,7 +23,7 @@
  */
 #include <criterion/criterion.h>
 #include "apphook.h"
-#include "timeutils/decode.h"
+#include "timeutils/scan-timestamp.h"
 #include "timeutils/timeutils.h"
 #include "timeutils/cache.h"
 

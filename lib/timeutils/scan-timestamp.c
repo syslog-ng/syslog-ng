@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-#include "timeutils/decode.h"
+#include "timeutils/scan-timestamp.h"
 #include "timeutils/wallclocktime.h"
 #include "str-format.h"
 #include "timeutils/timeutils.h"

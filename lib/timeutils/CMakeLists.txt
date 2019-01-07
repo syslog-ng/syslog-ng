@@ -1,6 +1,6 @@
 set(TIMEUTILS_HEADERS
     timeutils/cache.h
-    timeutils/decode.h
+    timeutils/scan-timestamp.h
     timeutils/names.h
     timeutils/strptime-tz.h
     timeutils/timeutils.h
@@ -11,7 +11,7 @@ set(TIMEUTILS_HEADERS
 
 set(TIMEUTILS_SOURCES
     timeutils/cache.c
-    timeutils/decode.c
+    timeutils/scan-timestamp.c
     timeutils/names.c
     timeutils/strptime-tz.c
     timeutils/timeutils.c
