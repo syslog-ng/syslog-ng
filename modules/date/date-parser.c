@@ -82,7 +82,7 @@ _parse_timestamp_and_deduce_missing_parts(DateParser *self, WallClockTime *wct, 
   const gchar *remainder;
 
   current_year = wct->wct_year;
-  wct->wct_year = 0;
+  wct->wct_year = -1;
   wct->wct_gmtoff = -1;
   remainder = wall_clock_time_strptime(wct, self->date_format, input);
   if (!remainder || remainder[0])
@@ -92,7 +92,7 @@ _parse_timestamp_and_deduce_missing_parts(DateParser *self, WallClockTime *wct, 
    * not, we are going to need the received year to find it out
    * heuristically */
 
-  if (wct->wct_year == 0)
+  if (wct->wct_year == -1)
     {
       /* no year information in the timestamp, deduce it from the current year */
       wct->wct_year = current_year;
