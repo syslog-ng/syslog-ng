@@ -102,15 +102,6 @@ _parse_timestamp_and_deduce_missing_parts(DateParser *self, WallClockTime *wct, 
   return TRUE;
 }
 
-static void
-_adjust_tvsec_to_move_it_into_given_timezone(LogStamp *timestamp, gint normalized_hour, gint unnormalized_hour)
-{
-  timestamp->ut_sec = timestamp->ut_sec
-                         + get_local_timezone_ofs(timestamp->ut_sec)
-                         - (normalized_hour - unnormalized_hour) * 3600
-                         - timestamp->ut_gmtoff;
-}
-
 static glong
 _get_target_zone_offset(DateParser *self, glong tm_zone_offset, time_t now)
 {
@@ -120,33 +111,6 @@ _get_target_zone_offset(DateParser *self, glong tm_zone_offset, time_t now)
     return time_zone_info_get_offset(self->date_tz_info, now);
   else
     return get_local_timezone_ofs(now);
-}
-
-static gboolean
-_convert_struct_tm_to_logstamp(DateParser *self, time_t now, WallClockTime *wct, LogStamp *target)
-{
-  gint unnormalized_hour;
-
-  target->ut_gmtoff = _get_target_zone_offset(self, wct->wct_gmtoff, now);
-
-  /* NOTE: mktime changes struct tm in the call below! For instance it
-   * changes the hour value. (in daylight saving changes, and when it
-   * is out of range).
-   *
-   * We save the hour prior to this conversion, as it is needed when
-   * converting the timestamp from our local timezone to the specified
-   * one. */
-
-  /* FIRST: We convert the timestamp as it was in our local time zone. */
-  unnormalized_hour = wct->wct_hour;
-  target->ut_sec = cached_mktime(&wct->tm);
-
-  /* we can't parse USEC value, as strptime() does not support that */
-  target->ut_usec = 0;
-
-  /* SECOND: adjust tv_sec as if we converted it according to our timezone. */
-  _adjust_tvsec_to_move_it_into_given_timezone(target, wct->wct_hour, unnormalized_hour);
-  return TRUE;
 }
 
 static gboolean
@@ -162,8 +126,9 @@ _convert_timestamp_to_logstamp(DateParser *self, time_t now, LogStamp *target, c
   if (!_parse_timestamp_and_deduce_missing_parts(self, &wct, input))
     return FALSE;
 
-  if (!_convert_struct_tm_to_logstamp(self, now, &wct, target))
-    return FALSE;
+  wct.wct_gmtoff = _get_target_zone_offset(self, wct.wct_gmtoff, now);
+
+  unix_time_set_from_wall_clock_time(target, &wct);
 
   return TRUE;
 }
