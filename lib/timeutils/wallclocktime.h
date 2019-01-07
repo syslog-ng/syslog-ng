@@ -124,5 +124,7 @@ wall_clock_time_is_set(WallClockTime *wct)
 
 void wall_clock_time_unset(WallClockTime *wct);
 gchar *wall_clock_time_strptime(WallClockTime *wct, const gchar *format, const gchar *input);
+void wall_clock_time_set_from_unix_time(WallClockTime *self, const UnixTime *ut);
+void wall_clock_time_set_from_unix_time_with_tz_override(WallClockTime *self, const UnixTime *ut, gint gmtoff_override);
 
 #endif
