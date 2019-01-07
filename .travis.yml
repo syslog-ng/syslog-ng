@@ -44,7 +44,9 @@ addons:
       - libmaxminddb-dev
       - libxml2-utils
       - astyle
-install: pip install --user -r requirements.txt
+install:
+      - pip install --user -r requirements.txt
+      - pip list
 before_script:
   - echo 'Europe/Budapest' | sudo tee /etc/timezone
   - sudo dpkg-reconfigure --frontend noninteractive tzdata
