@@ -350,20 +350,13 @@ __is_iso_stamp(const gchar *stamp, gint length)
 }
 
 static gboolean
-__parse_iso_stamp(const GTimeVal *now, LogStamp *stamp, WallClockTime *wct, const guchar **data, gint *length)
+__parse_iso_stamp(LogStamp *stamp, WallClockTime *wct, const guchar **data, gint *length)
 {
   /* RFC3339 timestamp, expected format: YYYY-MM-DDTHH:MM:SS[.frac]<+/->ZZ:ZZ */
-  time_t now_tv_sec = (time_t) now->tv_sec;
   const guchar *src = *data;
 
   stamp->ut_usec = 0;
 
-  /* NOTE: we initialize various unportable fields in tm using a
-   * localtime call, as the value of tm_gmtoff does matter but it does
-   * not exist on all platforms and 0 initializing it causes trouble on
-   * time-zone barriers */
-
-  cached_localtime(&now_tv_sec, &wct->tm);
   if (!scan_iso_timestamp((const gchar **) &src, length, wct))
     {
       return FALSE;
@@ -487,7 +480,7 @@ scan_rfc3164_timestamp(const guchar **data, gint *length,
   /* If the next chars look like a date, then read them as a date. */
   if (__is_iso_stamp((const gchar *)src, left))
     {
-      if (!__parse_iso_stamp(&now, stamp, &wct, &src, &left))
+      if (!__parse_iso_stamp(stamp, &wct, &src, &left))
         return FALSE;
     }
   else
@@ -522,22 +515,17 @@ scan_rfc5424_timestamp(const guchar **data, gint *length,
                        LogStamp *stamp,
                        gboolean ignore_result, glong recv_timezone_ofs)
 {
-  GTimeVal now;
   const guchar *src = *data;
   gint left = *length;
-  WallClockTime wct;
-
-  cached_g_current_time(&now);
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
 
   if (G_UNLIKELY(left >= 1 && src[0] == '-'))
     {
-      stamp->ut_sec = now.tv_sec;
-      stamp->ut_usec = now.tv_usec;
-      stamp->ut_gmtoff = get_local_timezone_ofs(now.tv_sec);
+      unix_time_set_now(stamp);
       src++;
       left--;
     }
-  else if (__parse_iso_stamp(&now, stamp, &wct, &src, &left))
+  else if (__parse_iso_stamp(stamp, &wct, &src, &left))
     {
       if (!ignore_result)
         __fixup_hour_in_struct_tm_within_transition_periods(stamp, &wct, recv_timezone_ofs);
