@@ -27,6 +27,7 @@
 
 #include "date-parser.h"
 #include "apphook.h"
+#include "timeutils/cache.h"
 
 #include <locale.h>
 #include <stdlib.h>
@@ -62,7 +63,6 @@ _construct_logmsg(const gchar *msg)
   LogMessage *logmsg;
 
   logmsg = log_msg_new_empty();
-  logmsg->timestamps[LM_TS_RECVD].ut_sec = 1451473200; /* Dec  30 2015 */
   log_msg_set_value(logmsg, LM_V_MESSAGE, msg, -1);
   return logmsg;
 }
@@ -77,6 +77,17 @@ setup(void)
   tzset();
 
   configuration = cfg_new_snippet();
+
+
+  /* year heuristics depends on the current time */
+
+  /* Dec  30 2015 */
+  GTimeVal faked_time =
+  {
+    .tv_sec = 1451473200,
+    .tv_usec = 0
+  };
+  set_cached_time(&faked_time);
 }
 
 void
@@ -148,7 +159,9 @@ ParameterizedTest(struct date_params *params, date, test_date_parser)
 
   log_stamp_append_format(&logmsg->timestamps[params->time_stamp], res, TS_FMT_ISO, -1, 0);
 
-  cr_assert_str_eq(res->str, params->expected, "incorrect date parsed msg=%s format=%s", params->msg, params->format);
+  cr_assert_str_eq(res->str, params->expected,
+                   "incorrect date parsed msg=%s format=%s, result=%s, expected=%s",
+                   params->msg, params->format, res->str, params->expected);
 
   g_string_free(res, TRUE);
   log_pipe_unref(&parser->super);

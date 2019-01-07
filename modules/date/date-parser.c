@@ -77,13 +77,8 @@ date_parser_init(LogPipe *s)
 static gboolean
 _parse_timestamp_and_deduce_missing_parts(DateParser *self, WallClockTime *wct, const gchar *input)
 {
-  gint current_year;
-  WallClockTime now_wct = *wct;
   const gchar *remainder;
 
-  current_year = wct->wct_year;
-  wct->wct_year = -1;
-  wct->wct_gmtoff = -1;
   remainder = wall_clock_time_strptime(wct, self->date_format, input);
   if (!remainder || remainder[0])
     return FALSE;
@@ -92,30 +87,20 @@ _parse_timestamp_and_deduce_missing_parts(DateParser *self, WallClockTime *wct, 
    * not, we are going to need the received year to find it out
    * heuristically */
 
-  if (wct->wct_year == -1)
-    {
-      /* no year information in the timestamp, deduce it from the current year */
-      wct->wct_year = current_year;
-      wct->wct_year = determine_year_for_month(wct->wct_mon, &now_wct.tm);
-    }
-
+  wall_clock_time_guess_missing_year(wct);
   return TRUE;
 }
 
 static gboolean
 _convert_timestamp_to_logstamp(DateParser *self, time_t now, LogStamp *target, const gchar *input)
 {
-  WallClockTime wct;
-
-  /* initialize tm with current date, this fills in dst and other
-   * fields (even non-standard ones) */
-
-  cached_localtime(&now, &wct.tm);
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
 
   if (!_parse_timestamp_and_deduce_missing_parts(self, &wct, input))
     return FALSE;
 
-  unix_time_set_from_normalized_wall_clock_time_with_tz_hint(target, &wct, time_zone_info_get_offset(self->date_tz_info, now));
+  unix_time_set_from_normalized_wall_clock_time_with_tz_hint(target, &wct,
+                                                             time_zone_info_get_offset(self->date_tz_info, now));
 
   return TRUE;
 }
