@@ -68,3 +68,14 @@ unix_time_set_from_wall_clock_time_with_tz_hint(UnixTime *self, WallClockTime *w
                          - (normalized_hour - unnormalized_hour) * 3600
                          - self->ut_gmtoff;
 }
+
+void
+unix_time_set_now(UnixTime *self)
+{
+  GTimeVal tv;
+
+  cached_g_current_time(&tv);
+  self->ut_sec = tv.tv_sec;
+  self->ut_usec = tv.tv_usec;
+  self->ut_gmtoff = get_local_timezone_ofs(self->ut_sec);
+}
