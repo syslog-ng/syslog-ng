@@ -102,17 +102,6 @@ _parse_timestamp_and_deduce_missing_parts(DateParser *self, WallClockTime *wct, 
   return TRUE;
 }
 
-static glong
-_get_target_zone_offset(DateParser *self, glong tm_zone_offset, time_t now)
-{
-  if (tm_zone_offset != -1)
-    return tm_zone_offset;
-  else if (self->date_tz_info)
-    return time_zone_info_get_offset(self->date_tz_info, now);
-  else
-    return get_local_timezone_ofs(now);
-}
-
 static gboolean
 _convert_timestamp_to_logstamp(DateParser *self, time_t now, LogStamp *target, const gchar *input)
 {
@@ -126,9 +115,7 @@ _convert_timestamp_to_logstamp(DateParser *self, time_t now, LogStamp *target, c
   if (!_parse_timestamp_and_deduce_missing_parts(self, &wct, input))
     return FALSE;
 
-  wct.wct_gmtoff = _get_target_zone_offset(self, wct.wct_gmtoff, now);
-
-  unix_time_set_from_wall_clock_time(target, &wct);
+  unix_time_set_from_normalized_wall_clock_time_with_tz_hint(target, &wct, time_zone_info_get_offset(self->date_tz_info, now));
 
   return TRUE;
 }
