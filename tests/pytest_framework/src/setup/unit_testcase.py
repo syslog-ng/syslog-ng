@@ -35,9 +35,9 @@ class SetupUnitTestcase(object):
     def __init__(self, testcase_context, get_current_date):
         self.testcase_context = testcase_context
         self.__get_current_date = get_current_date
-        self.__registerd_dirs = []
-        self.__registerd_files = []
+        self.__registered_dirs = []
         self.__registered_files = []
+        self.__registered_fds = []
 
         self.testcase_context.addfinalizer(self.__teardown)
 
@@ -46,13 +46,13 @@ class SetupUnitTestcase(object):
         testcase_subdir = "{}_{}".format(self.__get_current_date(), testcase_name)
         temp_dir = Path("/tmp", testcase_subdir)
         temp_dir.mkdir()
-        self.__registerd_dirs.append(temp_dir)
+        self.__registered_dirs.append(temp_dir)
         return temp_dir
 
     def get_temp_file(self):
         temp_dir = self.get_temp_dir()
         temp_file_path = Path(temp_dir, RandomId(use_static_seed=False).get_unique_id())
-        self.__registerd_files.append(temp_file_path)
+        self.__registered_files.append(temp_file_path)
         return temp_file_path
 
     def get_fake_testcase_parameters(self):
@@ -79,22 +79,23 @@ class SetupUnitTestcase(object):
         input_file_path = self.get_temp_file()
         writeable_file = open_file(input_file_path, "a+")
         readable_file = open_file(input_file_path, "r")
-        self.__registered_files.append(writeable_file)
-        self.__registered_files.append(readable_file)
 
+        self.__registered_fds.append(writeable_file)
+        self.__registered_fds.append(readable_file)
         writeable_file.write(input_content)
         writeable_file.flush()
         return writeable_file, readable_file
 
     def __teardown(self):
-        for registered_file in self.__registered_files:
-            registered_file.close()
+        for registered_fd in self.__registered_fds:
+            registered_fd.close()
 
-        for temp_file in self.__registerd_files:
+        for temp_file in self.__registered_files:
             if temp_file.exists():
                 temp_file.unlink()
 
-        for temp_dir in self.__registerd_dirs:
+        for temp_dir in self.__registered_dirs:
             if temp_dir.exists():
                 temp_dir.rmdir()
+
         unstub()
