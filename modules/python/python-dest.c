@@ -52,6 +52,7 @@ typedef struct
     PyObject *instance;
     PyObject *is_opened;
     PyObject *send;
+    PyObject *flush;
     PyObject *log_template_options;
     PyObject *seqnum;
     GPtrArray *_refs_to_clean;
@@ -225,6 +226,21 @@ pyobject_to_worker_insert_result(PyObject *obj)
 }
 
 static worker_insert_result_t
+_py_invoke_flush(PythonDestDriver *self)
+{
+  if (!self->py.flush)
+    return WORKER_INSERT_RESULT_SUCCESS;
+
+  PyObject *ret = _py_invoke_function(self->py.flush, NULL, self->class, self->super.super.super.id);
+  if (!ret)
+    return WORKER_INSERT_RESULT_ERROR;
+
+  worker_insert_result_t result = pyobject_to_worker_insert_result(ret);
+  Py_XDECREF(ret);
+  return result;
+}
+
+static worker_insert_result_t
 _py_invoke_send(PythonDestDriver *self, PyObject *dict)
 {
   PyObject *ret;
@@ -320,6 +336,7 @@ _py_init_bindings(PythonDestDriver *self)
 
   /* these are fast paths, store references to be faster */
   self->py.is_opened = _py_get_attr_or_null(self->py.instance, "is_opened");
+  self->py.flush = _py_get_attr_or_null(self->py.instance, "flush");
   self->py.send = _py_get_attr_or_null(self->py.instance, "send");
   if (!self->py.send)
     {
@@ -332,6 +349,7 @@ _py_init_bindings(PythonDestDriver *self)
   g_ptr_array_add(self->py._refs_to_clean, self->py.class);
   g_ptr_array_add(self->py._refs_to_clean, self->py.instance);
   g_ptr_array_add(self->py._refs_to_clean, self->py.is_opened);
+  g_ptr_array_add(self->py._refs_to_clean, self->py.flush);
   g_ptr_array_add(self->py._refs_to_clean, self->py.send);
   g_ptr_array_add(self->py._refs_to_clean, self->py.log_template_options);
   g_ptr_array_add(self->py._refs_to_clean, self->py.seqnum);
@@ -428,6 +446,18 @@ python_dd_open(PythonDestDriver *self)
 
   PyGILState_Release(gstate);
 }
+
+static worker_insert_result_t
+python_dd_flush(LogThreadedDestDriver *s)
+{
+  PythonDestDriver *self = (PythonDestDriver *)s;
+  PyGILState_STATE gstate;
+
+  gstate = PyGILState_Ensure();
+  worker_insert_result_t result = _py_invoke_flush(self);
+  PyGILState_Release(gstate);
+  return result;
+};
 
 static void
 python_dd_close(PythonDestDriver *self)
@@ -549,6 +579,7 @@ python_dd_new(GlobalConfig *cfg)
   self->super.worker.thread_init = python_dd_worker_init;
   self->super.worker.disconnect = python_dd_disconnect;
   self->super.worker.insert = python_dd_insert;
+  self->super.worker.flush = python_dd_flush;
 
   self->super.format_stats_instance = python_dd_format_stats_instance;
   self->super.stats_source = SCS_PYTHON;
