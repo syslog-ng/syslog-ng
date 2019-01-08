@@ -95,9 +95,12 @@ class ConfigRenderer(object):
         for logpath_group in logpath_groups:
             self.__syslog_ng_config_content += "\nlog {\n"
             for statement_group in logpath_group.logpath:
-                self.__syslog_ng_config_content += "    {}({});\n".format(
-                    statement_group.group_type, statement_group.group_id
-                )
+                if statement_group.group_type == "log":
+                    self.__render_logpath_groups(logpath_groups=[statement_group])
+                else:
+                    self.__syslog_ng_config_content += "    {}({});\n".format(
+                        statement_group.group_type, statement_group.group_id
+                    )
             if logpath_group.flags:
                 self.__syslog_ng_config_content += "    flags({});\n".format("".join(logpath_group.flags))
             self.__syslog_ng_config_content += "};\n"

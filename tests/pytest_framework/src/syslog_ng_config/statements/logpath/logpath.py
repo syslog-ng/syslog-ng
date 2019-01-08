@@ -58,6 +58,12 @@ class LogPath(object):
     def add_filter_groups(self, filter_groups):
         self.update_logpath_with_groups(filter_groups)
 
+    def add_logpath_group(self, logpath_group):
+        self.update_logpath_with_group(logpath_group)
+
+    def add_logpath_groups(self, logpath_groups):
+        self.update_logpath_with_groups(logpath_groups)
+
     def update_logpath_with_group(self, group):
         self.logpath.append(group)
 

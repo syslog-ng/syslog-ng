@@ -100,3 +100,7 @@ class SyslogNgConfig(object):
         logpath = self.__create_logpath_group(statements, flags)
         self.__syslog_ng_config["logpath_groups"].append(logpath)
         return logpath
+
+    def create_inner_logpath(self, statements=None, flags=None):
+        inner_logpath = self.__create_logpath_group(statements, flags)
+        return inner_logpath
