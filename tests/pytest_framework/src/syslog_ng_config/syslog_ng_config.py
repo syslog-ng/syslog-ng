@@ -37,7 +37,12 @@ class SyslogNgConfig(object):
         self.__config_path = instance_paths.get_config_path()
         self.__logger_factory = logger_factory
         self.__logger = logger_factory.create_logger("SyslogNgConfig")
-        self.__syslog_ng_config = {"version": syslog_ng_version, "statement_groups": [], "logpath_groups": []}
+        self.__syslog_ng_config = {
+            "version": syslog_ng_version,
+            "global_options": {},
+            "statement_groups": [],
+            "logpath_groups": [],
+        }
 
     def write_config_content(self):
         rendered_config = ConfigRenderer(self.__syslog_ng_config, self.__instance_paths).get_rendered_config()
@@ -63,6 +68,9 @@ class SyslogNgConfig(object):
         if flags:
             logpath.add_flags(cast_to_list(flags))
         return logpath
+
+    def create_global_options(self, **kwargs):
+        self.__syslog_ng_config["global_options"].update(kwargs)
 
     def create_file_source(self, **kwargs):
         return FileSource(self.__logger_factory, self.__instance_paths, **kwargs)

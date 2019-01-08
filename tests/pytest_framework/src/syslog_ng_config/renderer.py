@@ -39,6 +39,8 @@ class ConfigRenderer(object):
             self.__syslog_ng_config_content = ""
         if self.__syslog_ng_config["version"]:
             self.__render_version()
+        if self.__syslog_ng_config["global_options"]:
+            self.__render_global_options()
         if self.__syslog_ng_config["statement_groups"]:
             self.__render_statement_groups()
         if self.__syslog_ng_config["logpath_groups"]:
@@ -46,6 +48,14 @@ class ConfigRenderer(object):
 
     def __render_version(self):
         self.__syslog_ng_config_content += "@version: {}\n".format(self.__syslog_ng_config["version"])
+
+    def __render_global_options(self):
+        globals_options_header = "options {\n"
+        globals_options_footer = "};\n"
+        self.__syslog_ng_config_content += globals_options_header
+        for option_name, option_value in self.__syslog_ng_config["global_options"].items():
+            self.__syslog_ng_config_content += "    {}({});\n".format(option_name, option_value)
+        self.__syslog_ng_config_content += globals_options_footer
 
     def __render_positional_options(self, driver_options, positional_options):
         for option_name, option_value in driver_options.items():
