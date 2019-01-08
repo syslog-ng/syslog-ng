@@ -27,18 +27,16 @@ class SourceDriver(object):
         self.__logger_factory = logger_factory
         self.__logger = logger_factory.create_logger("SourceDriver")
         self.__native_driver_io_ref = native_driver_io_ref
-        self.__native_driver_io_collection = {}
+        self.__writer = None
 
     def initialize_native_driver_io(self, path):
-        if path not in self.__native_driver_io_collection.keys():
-            native_driver_io = self.__native_driver_io_ref(self.__logger_factory, path)
-            self.__native_driver_io_collection.update({path: native_driver_io})
+        if not self.__writer:
+            self.__writer = self.__native_driver_io_ref(self.__logger_factory, path)
 
     def sd_write_log(self, path, formatted_log, counter):
         self.initialize_native_driver_io(path)
-        native_driver_io = self.__native_driver_io_collection[path]
         for __i in range(0, counter):
-            native_driver_io.write(formatted_log)
+            self.__writer.write(formatted_log)
         self.__logger.print_io_content(
             path, formatted_log, "Content has been written to number of times: {}".format(counter)
         )
