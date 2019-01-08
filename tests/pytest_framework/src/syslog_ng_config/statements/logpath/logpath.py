@@ -26,6 +26,7 @@ class LogPath(object):
     def __init__(self):
         self.__group_type = "log"
         self.__logpath = []
+        self.__flags = []
 
     @property
     def group_type(self):
@@ -34,6 +35,10 @@ class LogPath(object):
     @property
     def logpath(self):
         return self.__logpath
+
+    @property
+    def flags(self):
+        return self.__flags
 
     def add_source_group(self, source_group):
         self.update_logpath_with_group(source_group)
@@ -53,3 +58,9 @@ class LogPath(object):
     def update_logpath_with_groups(self, groups):
         for group in groups:
             self.update_logpath_with_group(group)
+
+    def add_flag(self, flag):
+        self.flags.append(flag)
+
+    def add_flags(self, flags):
+        list(map(self.add_flag, flags))

@@ -88,4 +88,6 @@ class ConfigRenderer(object):
                 self.__syslog_ng_config_content += "    {}({});\n".format(
                     statement_group.group_type, statement_group.group_id
                 )
+            if logpath_group.flags:
+                self.__syslog_ng_config_content += "    flags({});\n".format("".join(logpath_group.flags))
             self.__syslog_ng_config_content += "};\n"

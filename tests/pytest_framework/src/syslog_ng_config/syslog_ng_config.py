@@ -55,10 +55,12 @@ class SyslogNgConfig(object):
         return statement_group
 
     @staticmethod
-    def __create_logpath_group(statements=None):
+    def __create_logpath_group(statements=None, flags=None):
         logpath = LogPath()
         if statements:
             logpath.update_logpath_with_groups(cast_to_list(statements))
+        if flags:
+            logpath.add_flags(cast_to_list(flags))
         return logpath
 
     def create_file_source(self, **kwargs):
@@ -77,7 +79,7 @@ class SyslogNgConfig(object):
         self.__syslog_ng_config["statement_groups"].append(destination_group)
         return destination_group
 
-    def create_logpath(self, statements=None):
-        logpath = self.__create_logpath_group(statements)
+    def create_logpath(self, statements=None, flags=None):
+        logpath = self.__create_logpath_group(statements, flags)
         self.__syslog_ng_config["logpath_groups"].append(logpath)
         return logpath
