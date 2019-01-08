@@ -185,10 +185,56 @@ _py_invoke_close(PythonDestDriver *self)
   _dd_py_invoke_void_method_by_name(self, "close");
 }
 
-static gboolean
+static worker_insert_result_t
+_as_int(PyObject *obj)
+{
+  int result = pyobject_as_int(obj);
+  if (result == -1 && PyErr_Occurred())
+    {
+      gchar buf[256];
+      msg_error("Error converting PyObject to int. Dropping message",
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+      _py_finish_exception_handling();
+      return WORKER_INSERT_RESULT_DROP;
+    }
+
+  if (result < 0 || result >= WORKER_INSERT_RESULT_MAX)
+    {
+      msg_error("Python: worker insert result out of range. Dropping message",
+                evt_tag_int("result", result));
+      return WORKER_INSERT_RESULT_DROP;
+    }
+
+  return result;
+}
+
+static worker_insert_result_t
+_as_bool(PyObject *obj)
+{
+  return PyObject_IsTrue(obj) ? WORKER_INSERT_RESULT_SUCCESS : WORKER_INSERT_RESULT_ERROR;
+}
+
+static worker_insert_result_t
+pyobject_to_worker_insert_result(PyObject *obj)
+{
+  if (PyBool_Check(obj))
+    return _as_bool(obj);
+  else
+    return _as_int(obj);
+}
+
+static worker_insert_result_t
 _py_invoke_send(PythonDestDriver *self, PyObject *dict)
 {
-  return _dd_py_invoke_bool_function(self, self->py.send, dict);
+  PyObject *ret;
+  ret = _py_invoke_function(self->py.send, dict, self->class, self->super.super.super.id);
+
+  if (!ret)
+    return WORKER_INSERT_RESULT_ERROR;
+
+  worker_insert_result_t result = pyobject_to_worker_insert_result(ret);
+  Py_XDECREF(ret);
+  return result;
 }
 
 static gboolean
@@ -325,17 +371,7 @@ python_dd_insert(LogThreadedDestDriver *d, LogMessage *msg)
   if (!_py_construct_message(self, msg, &msg_object))
     goto exit;
 
-  if (_py_invoke_send(self, msg_object))
-    {
-      result = WORKER_INSERT_RESULT_SUCCESS;
-    }
-  else
-    {
-      msg_error("Python send() method returned failure, suspending destination for time_reopen()",
-                evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("class", self->class),
-                evt_tag_int("time_reopen", self->super.time_reopen));
-    }
+  result =_py_invoke_send(self, msg_object);
   Py_DECREF(msg_object);
 
 exit:
