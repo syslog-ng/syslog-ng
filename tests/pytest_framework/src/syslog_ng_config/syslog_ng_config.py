@@ -28,6 +28,7 @@ from src.syslog_ng_config.statements.sources.file_source import FileSource
 from src.syslog_ng_config.statements.destinations.file_destination import FileDestination
 from src.syslog_ng_config.statement_group import StatementGroup
 from src.common.operations import cast_to_list
+from src.syslog_ng_config.statements.filters.filter import Filter
 
 
 class SyslogNgConfig(object):
@@ -69,6 +70,9 @@ class SyslogNgConfig(object):
     def create_file_destination(self, **kwargs):
         return FileDestination(self.__logger_factory, self.__instance_paths, **kwargs)
 
+    def create_filter(self, **kwargs):
+        return Filter(self.__logger_factory, **kwargs)
+
     def create_source_group(self, drivers):
         source_group = self.__create_statement_group("source", drivers)
         self.__syslog_ng_config["statement_groups"].append(source_group)
@@ -78,6 +82,11 @@ class SyslogNgConfig(object):
         destination_group = self.__create_statement_group("destination", drivers)
         self.__syslog_ng_config["statement_groups"].append(destination_group)
         return destination_group
+
+    def create_filter_group(self, filters):
+        filter_group = self.__create_statement_group("filter", filters)
+        self.__syslog_ng_config["statement_groups"].append(filter_group)
+        return filter_group
 
     def create_logpath(self, statements=None, flags=None):
         logpath = self.__create_logpath_group(statements, flags)
