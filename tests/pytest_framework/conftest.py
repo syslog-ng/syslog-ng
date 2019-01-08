@@ -30,6 +30,7 @@ from src.setup.unit_testcase import SetupUnitTestcase
 
 def pytest_addoption(parser):
     parser.addoption("--runslow", action="store_true", default=False, help="run slow tests")
+    parser.addoption("--run-with-valgrind", action="store_true", default=False, help="Run tests behind valgrind")
     parser.addoption(
         "--loglevel",
         action="store",
@@ -72,6 +73,11 @@ def pytest_collection_modifyitems(config, items):
     for item in items:
         if "slow" in item.keywords:
             item.add_marker(skip_slow)
+
+
+@pytest.fixture
+def runwithvalgrind(request):
+    return request.config.getoption("--run-with-valgrind")
 
 
 def get_relative_report_dir():

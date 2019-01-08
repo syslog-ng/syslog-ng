@@ -27,7 +27,7 @@ from src.syslog_ng.syslog_ng_paths import SyslogNgPaths
 from src.logger.logger_factory import LoggerFactory
 from src.syslog_ng_config.syslog_ng_config import SyslogNgConfig
 from src.syslog_ng.syslog_ng import SyslogNg
-from src.syslog_ng_ctl.syslog_ng_ctl import SyslogNgCtl
+from src.syslog_ng.syslog_ng_cli import SyslogNgCli
 from src.message_builder.bsd_format import BSDFormat
 from src.message_builder.log_message import LogMessage
 
@@ -83,11 +83,10 @@ class SetupTestCase(object):
         instance_paths = SyslogNgPaths(self.__testcase_context, self.__testcase_parameters).set_syslog_ng_paths(
             instance_name
         )
-        syslog_ng_ctl = SyslogNgCtl(self.__logger_factory, instance_paths)
-        syslog_ng = SyslogNg(self.__logger_factory, instance_paths, syslog_ng_ctl)
+        syslog_ng_cli = SyslogNgCli(self.__logger_factory, instance_paths, self.__testcase_parameters)
+        syslog_ng = SyslogNg(syslog_ng_cli)
         self.__teardown_actions.append(syslog_ng.stop)
         self.__instances.update({instance_name: {}})
-        self.__instances[instance_name]["ctl"] = syslog_ng_ctl
         self.__instances[instance_name]["syslog-ng"] = syslog_ng
         self.__instances[instance_name]["config"] = SyslogNgConfig(
             self.__logger_factory, instance_paths, syslog_ng.get_version()
@@ -102,11 +101,6 @@ class SetupTestCase(object):
         if not self.__is_instance_registered(instance_name):
             self.__register_instance(instance_name)
         return self.__instances[instance_name]["syslog-ng"]
-
-    def new_syslog_ng_ctl(self, instance_name="server"):
-        if not self.__is_instance_registered(instance_name):
-            self.__register_instance(instance_name)
-        return self.__instances[instance_name]["ctl"]
 
     @staticmethod
     def format_as_bsd(log_message):

@@ -21,16 +21,20 @@
 #
 #############################################################################
 
+from pathlib2 import Path
 from src.syslog_ng.syslog_ng_executor import SyslogNgExecutor
+from src.syslog_ng.console_log_reader import ConsoleLogReader
+from src.syslog_ng_ctl.syslog_ng_ctl import SyslogNgCtl
 
 
 class SyslogNgCli(object):
-    def __init__(self, logger_factory, instance_paths, console_log_reader, syslog_ng_ctl):
+    def __init__(self, logger_factory, instance_paths, testcase_parameters):
         self.__instance_paths = instance_paths
-        self.__console_log_reader = console_log_reader
+        self.__console_log_reader = ConsoleLogReader(logger_factory, instance_paths)
         self.__logger = logger_factory.create_logger("SyslogNgCli")
         self.__syslog_ng_executor = SyslogNgExecutor(logger_factory, instance_paths)
-        self.__syslog_ng_ctl = syslog_ng_ctl
+        self.__syslog_ng_ctl = SyslogNgCtl(logger_factory, instance_paths)
+        self.__valgrind_usage = testcase_parameters.get_valgrind_usage()
         self.__process = None
 
     # Application commands
@@ -62,7 +66,10 @@ class SyslogNgCli(object):
             raise Exception("syslog-ng can not started")
 
         # effective start
-        self.__process = self.__syslog_ng_executor.run_process()
+        if self.__valgrind_usage:
+            self.__process = self.__syslog_ng_executor.run_process_with_valgrind()
+        else:
+            self.__process = self.__syslog_ng_executor.run_process()
 
         # wait for start and check start result
         if not self.__syslog_ng_ctl.wait_for_control_socket_alive():
@@ -92,7 +99,6 @@ class SyslogNgCli(object):
     def stop(self, unexpected_messages=None):
         self.__logger.info("Beginning of syslog-ng stop")
         if self.__process:
-
             # effective stop
             result = self.__syslog_ng_ctl.stop()
 
@@ -106,9 +112,23 @@ class SyslogNgCli(object):
                 self.__error_handling()
                 raise Exception("Stop message not arrived")
             self.__console_log_reader.check_for_unexpected_messages(unexpected_messages)
+            if self.__valgrind_usage:
+                self.__console_log_reader.handle_valgrind_log(self.__instance_paths.get_valgrind_log_path())
             self.__process = None
             self.__logger.info("End of syslog-ng stop")
 
     # Helper functions
     def __error_handling(self):
         self.__console_log_reader.dump_stderr()
+        self.__handle_core_file()
+
+    def __handle_core_file(self):
+        if self.__process.wait(1) != 0:
+            core_file_found = False
+            for core_file in Path(".").glob("*core*"):
+                core_file_found = True
+                self.__process = None
+                self.__syslog_ng_executor.get_backtrace_from_core(core_file=str(core_file))
+                core_file.replace(Path(self.__instance_paths.get_working_dir(), core_file))
+            if core_file_found:
+                raise Exception("syslog-ng core file was found and processed")

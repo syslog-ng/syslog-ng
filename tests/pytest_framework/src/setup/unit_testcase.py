@@ -59,6 +59,7 @@ class SetupUnitTestcase(object):
         when(self.testcase_context).getfixturevalue("installdir").thenReturn(self.get_temp_dir())
         when(self.testcase_context).getfixturevalue("reports").thenReturn(self.get_temp_dir())
         when(self.testcase_context).getfixturevalue("loglevel").thenReturn("info")
+        when(self.testcase_context).getfixturevalue("runwithvalgrind").thenReturn(False)
         return TestcaseParameters(self.testcase_context)
 
     def get_fake_logger_factory(self):
