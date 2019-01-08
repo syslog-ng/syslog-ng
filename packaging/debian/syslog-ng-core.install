@@ -52,6 +52,7 @@ usr/share/syslog-ng/include/scl/osquery/*
 usr/share/syslog-ng/include/scl/ewmm/*
 usr/share/syslog-ng/include/scl/graylog2/*
 usr/share/syslog-ng/include/scl/linux-audit/*
+usr/share/syslog-ng/include/scl/websense/*
 usr/share/syslog-ng/xsd/*
 
 #Templates with json dependencies
