@@ -22,7 +22,6 @@
 #############################################################################
 
 from pathlib2 import Path
-from src.common.random_id import RandomId
 from src.driver_io.file.file_io import FileIO
 from src.syslog_ng_config.statements.sources.source_driver import SourceDriver
 
@@ -30,33 +29,32 @@ from src.syslog_ng_config.statements.sources.source_driver import SourceDriver
 class FileSource(SourceDriver):
     def __init__(self, logger_factory, instance_paths, **kwargs):
         super(FileSource, self).__init__(logger_factory, FileIO)
-        self.options = kwargs
-
-        self.driver_id = "driverid_%s" % RandomId(use_static_seed=False).get_unique_id()
-        self.__driver_content = {
-            "driver_name": "file",
-            "positional_option": "file_name",
-            "driver_options": self.options,
-        }
-        self.__driver_node = {self.driver_id: self.__driver_content}
+        self.__options = kwargs
+        self.__driver_name = "file"
+        self.__positional_option = "file_name"
         self.__construct_file_path(instance_paths)
 
-    def get_positional_option_name(self):
-        return self.__driver_node[self.driver_id]["positional_option"]
+    @property
+    def driver_name(self):
+        return self.__driver_name
 
-    def get_positional_option_value(self):
-        positional_option_name = self.get_positional_option_name()
-        return self.__driver_node[self.driver_id]["driver_options"][positional_option_name]
+    @property
+    def positional_option_name(self):
+        return self.__positional_option
 
-    def get_driver_node(self):
-        return self.__driver_node
+    @property
+    def options(self):
+        return self.__options
+
+    def get_path(self):
+        return Path(self.options[self.positional_option_name])
 
     def write_log(self, formatted_log, counter=1):
-        self.sd_write_log(self.get_positional_option_value(), formatted_log, counter=counter)
+        self.sd_write_log(self.get_path(), formatted_log, counter=counter)
 
     def __construct_file_path(self, instance_paths):
-        if self.get_positional_option_name() in self.options.keys():
-            given_positional_option_value = self.options[self.get_positional_option_name()]
-            self.options[self.get_positional_option_name()] = Path(
+        if self.positional_option_name in self.options.keys():
+            given_positional_option_value = self.options[self.positional_option_name]
+            self.options[self.positional_option_name] = Path(
                 instance_paths.get_working_dir(), given_positional_option_value
             )

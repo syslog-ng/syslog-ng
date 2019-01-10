@@ -32,3 +32,9 @@ def open_file(file_path, mode):
 def copy_file(src_file_path, dst_dir):
     # Python 2 compatibility note: shutil.copy() can work only with string representation of path
     shutil.copy(str(src_file_path), str(dst_dir))
+
+
+def cast_to_list(items):
+    if isinstance(items, list):
+        return items
+    return [items]

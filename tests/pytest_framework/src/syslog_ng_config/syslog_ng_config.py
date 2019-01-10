@@ -26,7 +26,9 @@ from src.syslog_ng_config.renderer import ConfigRenderer
 from src.syslog_ng_config.statements.logpath.logpath import LogPath
 from src.syslog_ng_config.statements.sources.file_source import FileSource
 from src.syslog_ng_config.statements.destinations.file_destination import FileDestination
-from src.syslog_ng_config.config_group import ConfigGroup
+from src.syslog_ng_config.statement_group import StatementGroup
+from src.common.operations import cast_to_list
+from src.syslog_ng_config.statements.filters.filter import Filter
 
 
 class SyslogNgConfig(object):
@@ -35,7 +37,12 @@ class SyslogNgConfig(object):
         self.__config_path = instance_paths.get_config_path()
         self.__logger_factory = logger_factory
         self.__logger = logger_factory.create_logger("SyslogNgConfig")
-        self.__syslog_ng_config = {"version": syslog_ng_version, "sources": {}, "destinations": {}, "logpaths": {}}
+        self.__syslog_ng_config = {
+            "version": syslog_ng_version,
+            "global_options": {},
+            "statement_groups": [],
+            "logpath_groups": [],
+        }
 
     def write_config_content(self):
         rendered_config = ConfigRenderer(self.__syslog_ng_config, self.__instance_paths).get_rendered_config()
@@ -47,27 +54,53 @@ class SyslogNgConfig(object):
         )
         FileIO(self.__logger_factory, self.__config_path).rewrite(rendered_config)
 
+    @staticmethod
+    def __create_statement_group(group_type, statements):
+        statement_group = StatementGroup(group_type)
+        statement_group.update_group_with_statements(cast_to_list(statements))
+        return statement_group
+
+    @staticmethod
+    def __create_logpath_group(statements=None, flags=None):
+        logpath = LogPath()
+        if statements:
+            logpath.update_logpath_with_groups(cast_to_list(statements))
+        if flags:
+            logpath.add_flags(cast_to_list(flags))
+        return logpath
+
+    def create_global_options(self, **kwargs):
+        self.__syslog_ng_config["global_options"].update(kwargs)
+
     def create_file_source(self, **kwargs):
         return FileSource(self.__logger_factory, self.__instance_paths, **kwargs)
 
     def create_file_destination(self, **kwargs):
         return FileDestination(self.__logger_factory, self.__instance_paths, **kwargs)
 
+    def create_filter(self, **kwargs):
+        return Filter(self.__logger_factory, **kwargs)
+
     def create_source_group(self, drivers):
-        config_group = ConfigGroup(group_type="source")
-        config_group.update_group_node(drivers)
-        self.__syslog_ng_config["sources"].update(config_group.full_group_node)
-        return config_group
+        source_group = self.__create_statement_group("source", drivers)
+        self.__syslog_ng_config["statement_groups"].append(source_group)
+        return source_group
 
     def create_destination_group(self, drivers):
-        config_group = ConfigGroup(group_type="destination")
-        config_group.update_group_node(drivers)
-        self.__syslog_ng_config["destinations"].update(config_group.full_group_node)
-        return config_group
+        destination_group = self.__create_statement_group("destination", drivers)
+        self.__syslog_ng_config["statement_groups"].append(destination_group)
+        return destination_group
 
-    def create_logpath(self, sources, destinations):
-        logpath = LogPath()
-        logpath.add_source_groups(sources)
-        logpath.add_destination_groups(destinations)
-        self.__syslog_ng_config["logpaths"].update(logpath.full_logpath_node)
+    def create_filter_group(self, filters):
+        filter_group = self.__create_statement_group("filter", filters)
+        self.__syslog_ng_config["statement_groups"].append(filter_group)
+        return filter_group
+
+    def create_logpath(self, statements=None, flags=None):
+        logpath = self.__create_logpath_group(statements, flags)
+        self.__syslog_ng_config["logpath_groups"].append(logpath)
         return logpath
+
+    def create_inner_logpath(self, statements=None, flags=None):
+        inner_logpath = self.__create_logpath_group(statements, flags)
+        return inner_logpath

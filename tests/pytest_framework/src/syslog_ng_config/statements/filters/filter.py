@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #############################################################################
-# Copyright (c) 2015-2018 Balabit
+# Copyright (c) 2015-2019 Balabit
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -22,24 +22,20 @@
 #############################################################################
 
 
-def test_acceptance(tc):
-    config = tc.new_config()
+class Filter(object):
+    def __init__(self, logger_factory, **kwargs):
+        self.__logger_factory = logger_factory
+        self.__options = kwargs
+        self.__driver_name = ""
 
-    file_source = config.create_file_source(file_name="input.log")
-    source_group = config.create_source_group(file_source)
+    @property
+    def driver_name(self):
+        return self.__driver_name
 
-    file_destination = config.create_file_destination(file_name="output.log")
-    destination_group = config.create_destination_group(file_destination)
+    @property
+    def options(self):
+        return self.__options
 
-    config.create_logpath(statements=[source_group, destination_group])
-
-    log_message = tc.new_log_message()
-    bsd_log = tc.format_as_bsd(log_message)
-    file_source.write_log(bsd_log, counter=3)
-
-    syslog_ng = tc.new_syslog_ng()
-    syslog_ng.start(config)
-
-    output_logs = file_destination.read_logs(counter=3)
-    expected_output_message = log_message.remove_priority()
-    assert output_logs == tc.format_as_bsd_logs(expected_output_message, counter=3)
+    @property
+    def positional_option_name(self):
+        return ""

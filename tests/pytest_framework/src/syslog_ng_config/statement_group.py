@@ -24,16 +24,30 @@
 from src.common.random_id import RandomId
 
 
-class ConfigGroup(object):
+class StatementGroup(object):
     def __init__(self, group_type):
-        self.group_id = "%sid_%s" % (group_type, RandomId(use_static_seed=False).get_unique_id())
-        self.full_group_node = {self.group_id: {}}
-        self.group_node = self.full_group_node[self.group_id]
+        self.__group_type = group_type
+        self.__group_id = "%s_%s" % (group_type, RandomId(use_static_seed=False).get_unique_id())
+        self.__statements = []
 
-    def update_group_node(self, drivers):
-        if isinstance(drivers, list):
-            for driver in drivers:
-                self.group_node.update(driver.get_driver_node())
-        else:
-            driver = drivers
-            self.group_node.update(driver.get_driver_node())
+    @property
+    def group_type(self):
+        return self.__group_type
+
+    @property
+    def group_id(self):
+        return self.__group_id
+
+    @property
+    def statements(self):
+        return self.__statements
+
+    def remove_statement(self, statement):
+        self.statements.remove(statement)
+
+    def update_group_with_statement(self, statement):
+        self.statements.append(statement)
+
+    def update_group_with_statements(self, statements):
+        for statement in statements:
+            self.update_group_with_statement(statement)

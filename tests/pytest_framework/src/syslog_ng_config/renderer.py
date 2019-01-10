@@ -39,15 +39,23 @@ class ConfigRenderer(object):
             self.__syslog_ng_config_content = ""
         if self.__syslog_ng_config["version"]:
             self.__render_version()
-        if self.__syslog_ng_config["sources"]:
-            self.__render_statements(root_statement="sources", statement_name="source")
-        if self.__syslog_ng_config["destinations"]:
-            self.__render_statements(root_statement="destinations", statement_name="destination")
-        if self.__syslog_ng_config["logpaths"]:
-            self.__render_logpath()
+        if self.__syslog_ng_config["global_options"]:
+            self.__render_global_options()
+        if self.__syslog_ng_config["statement_groups"]:
+            self.__render_statement_groups()
+        if self.__syslog_ng_config["logpath_groups"]:
+            self.__render_logpath_groups(self.__syslog_ng_config["logpath_groups"])
 
     def __render_version(self):
         self.__syslog_ng_config_content += "@version: {}\n".format(self.__syslog_ng_config["version"])
+
+    def __render_global_options(self):
+        globals_options_header = "options {\n"
+        globals_options_footer = "};\n"
+        self.__syslog_ng_config_content += globals_options_header
+        for option_name, option_value in self.__syslog_ng_config["global_options"].items():
+            self.__syslog_ng_config_content += "    {}({});\n".format(option_name, option_value)
+        self.__syslog_ng_config_content += globals_options_footer
 
     def __render_positional_options(self, driver_options, positional_options):
         for option_name, option_value in driver_options.items():
@@ -62,19 +70,20 @@ class ConfigRenderer(object):
             if option_name not in positional_options:
                 self.__syslog_ng_config_content += "        {}({})\n".format(option_name, option_value)
 
-    def __render_statements(self, root_statement, statement_name):
-        for statement_id, driver in self.__syslog_ng_config[root_statement].items():
+    def __render_statement_groups(self):
+        for statement_group in self.__syslog_ng_config["statement_groups"]:
             # statement header
-            self.__syslog_ng_config_content += "\n{} {} {{\n".format(statement_name, statement_id)
-            for dummy_driver_id, driver_properties in driver.items():
-                driver_name = driver_properties["driver_name"]
-                driver_options = driver_properties["driver_options"]
+            self.__syslog_ng_config_content += "\n{} {} {{\n".format(
+                statement_group.group_type, statement_group.group_id
+            )
+
+            for statement in statement_group.statements:
                 # driver header
-                self.__syslog_ng_config_content += "    {} (\n".format(driver_name)
+                self.__syslog_ng_config_content += "    {} (\n".format(statement.driver_name)
 
                 # driver options
-                self.__render_positional_options(driver_options, driver_properties["positional_option"])
-                self.__render_driver_options(driver_options, driver_properties["positional_option"])
+                self.__render_positional_options(statement.options, statement.positional_option_name)
+                self.__render_driver_options(statement.options, statement.positional_option_name)
 
                 # driver footer
                 self.__syslog_ng_config_content += "    );\n"
@@ -82,11 +91,16 @@ class ConfigRenderer(object):
             # statement footer
             self.__syslog_ng_config_content += "};\n"
 
-    def __render_logpath(self):
-        for logpath in self.__syslog_ng_config["logpaths"]:
+    def __render_logpath_groups(self, logpath_groups):
+        for logpath_group in logpath_groups:
             self.__syslog_ng_config_content += "\nlog {\n"
-            for src_driver in self.__syslog_ng_config["logpaths"][logpath]["sources"]:
-                self.__syslog_ng_config_content += "    source({});\n".format(src_driver)
-            for dst_driver in self.__syslog_ng_config["logpaths"][logpath]["destinations"]:
-                self.__syslog_ng_config_content += "    destination({});\n".format(dst_driver)
+            for statement_group in logpath_group.logpath:
+                if statement_group.group_type == "log":
+                    self.__render_logpath_groups(logpath_groups=[statement_group])
+                else:
+                    self.__syslog_ng_config_content += "    {}({});\n".format(
+                        statement_group.group_type, statement_group.group_id
+                    )
+            if logpath_group.flags:
+                self.__syslog_ng_config_content += "    flags({});\n".format("".join(logpath_group.flags))
             self.__syslog_ng_config_content += "};\n"
