@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2011 Balázs Scheidler
+ * Copyright (c) 2002-2019 Balabit
+ * Copyright (c) 1998-2019 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,12 +19,19 @@
  * As an additional exemption you are allowed to compile & link against the
  * OpenSSL libraries as published by the OpenSSL project. See the file
  * COPYING for details.
- *
  */
+
+/*
+ * This code has been copied from NetBSD libc implementation with a
+ * permissive license with this CVSID, from
+ *
+ *   https://github.com/NetBSD/src/blob/trunk/lib/libc/string/strcasestr.c
+ *
+ *	$NetBSD: strcasestr.c,v 1.3 2005/11/29 03:12:00 christos Exp $	*/
 
 /*-
  * Copyright (c) 1990, 1993
- *      The Regents of the University of California.  All rights reserved.
+ *	The Regents of the University of California.  All rights reserved.
  *
  * This code is derived from software contributed to Berkeley by
  * Chris Torek.
@@ -37,11 +44,7 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *      This product includes software developed by the University of
- *      California, Berkeley and its contributors.
- * 4. Neither the name of the University nor the names of its contributors
+ * 3. Neither the name of the University nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
  *
@@ -66,29 +69,28 @@
 #include <string.h>
 #include <strings.h>
 
+
+/*
+ * Find the first occurrence of find in s, ignore case.
+ */
 char *
-strcasestr(const char *haystack, const char *needle)
+strcasestr(const char *s, const char *find)
 {
-  char c;
-  size_t len;
+	char c, sc;
+	size_t len;
 
-  if ((c = *needle++) != 0)
-    {
-      c = tolower((unsigned char) c);
-      len = strlen(needle);
-
-      do
-        {
-          for (; *haystack && tolower((unsigned char) *haystack) != c; haystack++)
-            ;
-          if (!(*haystack))
-            return NULL;
-          haystack++;
-        }
-      while (strncasecmp(haystack, needle, len) != 0);
-      haystack--;
-    }
-  return (char *) haystack;
+	if ((c = *find++) != 0) {
+		c = tolower((unsigned char)c);
+		len = strlen(find);
+		do {
+			do {
+				if ((sc = *s++) == 0)
+					return (NULL);
+			} while ((char)tolower((unsigned char)sc) != c);
+		} while (strncasecmp(s, find, len) != 0);
+		s--;
+	}
+	return (char *) s;
 }
 
 #endif
