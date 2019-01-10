@@ -29,11 +29,14 @@ from colorlog import ColoredFormatter
 class Logger(logging.Logger):
     def __init__(self, logger_name, report_file, loglevel, use_console_handler=True, use_file_handler=True):
         super(Logger, self).__init__(logger_name, loglevel)
-        self.handlers = []
         if use_console_handler:
             self.__set_console_handler()
         if use_file_handler:
             self.__set_file_handler(file_path=report_file)
+
+    def __del__(self):
+        for open_handler in self.handlers:
+            open_handler.close()
 
     def __set_file_handler(self, file_path=None):
         # FileHandler can work only with string representation of file_path
