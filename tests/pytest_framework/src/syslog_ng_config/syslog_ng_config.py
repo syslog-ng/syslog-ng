@@ -56,8 +56,7 @@ class SyslogNgConfig(object):
 
     @staticmethod
     def __create_statement_group(group_type, statements):
-        statement_group = StatementGroup(group_type)
-        statement_group.update_group_with_statements(cast_to_list(statements))
+        statement_group = StatementGroup(statements)
         return statement_group
 
     @staticmethod

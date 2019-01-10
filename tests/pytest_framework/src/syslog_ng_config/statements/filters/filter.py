@@ -23,6 +23,8 @@
 
 
 class Filter(object):
+    group_type = "filter"
+
     def __init__(self, logger_factory, **kwargs):
         self.__logger_factory = logger_factory
         self.__options = kwargs
