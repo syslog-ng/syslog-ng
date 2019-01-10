@@ -21,13 +21,13 @@
 #
 #############################################################################
 
-from src.common.random_id import RandomId
+from src.common.random_id import get_unique_id
 
 
 class StatementGroup(object):
     def __init__(self, group_type):
         self.__group_type = group_type
-        self.__group_id = "%s_%s" % (group_type, RandomId(use_static_seed=False).get_unique_id())
+        self.__group_id = "%s_%s" % (group_type, get_unique_id())
         self.__statements = []
 
     @property

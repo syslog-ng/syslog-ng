@@ -25,12 +25,5 @@ import random
 
 UNIQUE_LENGTH = 5
 
-
-class RandomId(random.Random):
-    def __init__(self, use_static_seed=True):
-        super(RandomId, self).__init__()
-        if use_static_seed:
-            self.seed(0xDEADBEEF)
-
-    def get_unique_id(self, length=UNIQUE_LENGTH):
-        return str(self.getrandbits(16 * 8))[0:length]
+def get_unique_id(length=UNIQUE_LENGTH):
+    return str(random.getrandbits(16 * 8))[0:length]

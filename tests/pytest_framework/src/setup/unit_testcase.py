@@ -26,7 +26,7 @@ from mockito import when, unstub
 from pathlib2 import Path
 from src.common.operations import open_file
 from src.setup.testcase_parameters import get_testcase_name
-from src.common.random_id import RandomId
+from src.common.random_id import get_unique_id
 from src.logger.logger_factory import LoggerFactory
 from src.setup.testcase_parameters import TestcaseParameters
 
@@ -51,7 +51,7 @@ class SetupUnitTestcase(object):
 
     def get_temp_file(self):
         temp_dir = self.get_temp_dir()
-        temp_file_path = Path(temp_dir, RandomId(use_static_seed=False).get_unique_id())
+        temp_file_path = Path(temp_dir, get_unique_id())
         self.__registered_files.append(temp_file_path)
         return temp_file_path
 
