@@ -75,4 +75,5 @@ class LogPath(object):
         self.flags.append(flag)
 
     def add_flags(self, flags):
-        list(map(self.add_flag, flags))
+        for flag in flags:
+            self.add_flag(flag)
