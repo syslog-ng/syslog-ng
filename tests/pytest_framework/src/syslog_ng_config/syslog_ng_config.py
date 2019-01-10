@@ -64,7 +64,7 @@ class SyslogNgConfig(object):
     def __create_logpath_group(statements=None, flags=None):
         logpath = LogPath()
         if statements:
-            logpath.update_logpath_with_groups(cast_to_list(statements))
+            logpath.add_groups(cast_to_list(statements))
         if flags:
             logpath.add_flags(cast_to_list(flags))
         return logpath

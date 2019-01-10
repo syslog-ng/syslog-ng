@@ -51,7 +51,7 @@ def test_manipulating_config_between_reload(tc):
     destination_group.update_group_with_statement(file_destination2)
 
     # update first logpath group with new source group
-    logpath.add_source_group(source_group2)
+    logpath.add_group(source_group2)
 
     syslog_ng.reload(config)
 

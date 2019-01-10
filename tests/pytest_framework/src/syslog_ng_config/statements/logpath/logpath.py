@@ -40,36 +40,12 @@ class LogPath(object):
     def flags(self):
         return self.__flags
 
-    def add_source_group(self, source_group):
-        self.update_logpath_with_group(source_group)
-
-    def add_source_groups(self, source_groups):
-        self.update_logpath_with_groups(source_groups)
-
-    def add_destination_group(self, destination_group):
-        self.update_logpath_with_group(destination_group)
-
-    def add_destination_groups(self, destination_groups):
-        self.update_logpath_with_groups(destination_groups)
-
-    def add_filter_group(self, filter_group):
-        self.update_logpath_with_group(filter_group)
-
-    def add_filter_groups(self, filter_groups):
-        self.update_logpath_with_groups(filter_groups)
-
-    def add_logpath_group(self, logpath_group):
-        self.update_logpath_with_group(logpath_group)
-
-    def add_logpath_groups(self, logpath_groups):
-        self.update_logpath_with_groups(logpath_groups)
-
-    def update_logpath_with_group(self, group):
+    def add_group(self, group):
         self.logpath.append(group)
 
-    def update_logpath_with_groups(self, groups):
+    def add_groups(self, groups):
         for group in groups:
-            self.update_logpath_with_group(group)
+            self.add_group(group)
 
     def add_flag(self, flag):
         self.flags.append(flag)
