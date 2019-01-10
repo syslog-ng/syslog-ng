@@ -49,25 +49,25 @@ def test_multiple_flags(tc):
     config.create_global_options(keep_hostname="yes")
 
     file_source = config.create_file_source(file_name="input.log")
-    source_group = config.create_source_group(file_source)
+    source_group = config.create_statement_group(file_source)
 
     host_filter = config.create_filter(host="'host-A'")
-    filter_group1 = config.create_filter_group(host_filter)
+    filter_group1 = config.create_statement_group(host_filter)
 
     program_filter = config.create_filter(program="'app-A'")
-    filter_group2 = config.create_filter_group(program_filter)
+    filter_group2 = config.create_statement_group(program_filter)
 
     file_destination1 = config.create_file_destination(file_name="output1.log")
-    destination_group1 = config.create_destination_group(file_destination1)
+    destination_group1 = config.create_statement_group(file_destination1)
 
     file_destination2 = config.create_file_destination(file_name="output2.log")
-    destination_group2 = config.create_destination_group(file_destination2)
+    destination_group2 = config.create_statement_group(file_destination2)
 
     file_destination3 = config.create_file_destination(file_name="output3.log")
-    destination_group3 = config.create_destination_group(file_destination3)
+    destination_group3 = config.create_statement_group(file_destination3)
 
     file_destination4 = config.create_file_destination(file_name="output4.log")
-    destination_group4 = config.create_destination_group(file_destination4)
+    destination_group4 = config.create_statement_group(file_destination4)
 
     second_level_logpath1 = config.create_inner_logpath(statements=[filter_group1, destination_group1], flags="final")
 

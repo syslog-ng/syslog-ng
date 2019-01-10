@@ -42,13 +42,13 @@ def test_flags_catch_all(tc):
     config = tc.new_config()
 
     file_source = config.create_file_source(file_name="input.log")
-    source_group = config.create_source_group(file_source)
+    source_group = config.create_statement_group(file_source)
 
     file_destination1 = config.create_file_destination(file_name="output1.log")
-    destination_group = config.create_destination_group(file_destination1)
+    destination_group = config.create_statement_group(file_destination1)
 
     file_destination2 = config.create_file_destination(file_name="output2.log")
-    catch_all_destination = config.create_destination_group(file_destination2)
+    catch_all_destination = config.create_statement_group(file_destination2)
 
     inner_logpath = config.create_inner_logpath(statements=[destination_group])
 

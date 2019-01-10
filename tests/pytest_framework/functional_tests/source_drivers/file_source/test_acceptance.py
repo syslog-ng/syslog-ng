@@ -26,10 +26,10 @@ def test_acceptance(tc):
     config = tc.new_config()
 
     file_source = config.create_file_source(file_name="input.log")
-    source_group = config.create_source_group(file_source)
+    source_group = config.create_statement_group(file_source)
 
     file_destination = config.create_file_destination(file_name="output.log")
-    destination_group = config.create_destination_group(file_destination)
+    destination_group = config.create_statement_group(file_destination)
 
     config.create_logpath(statements=[source_group, destination_group])
 

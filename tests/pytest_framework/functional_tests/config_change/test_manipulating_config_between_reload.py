@@ -26,10 +26,10 @@ def test_manipulating_config_between_reload(tc):
     config = tc.new_config()
 
     file_source = config.create_file_source(file_name="input.log")
-    source_group = config.create_source_group(file_source)
+    source_group = config.create_statement_group(file_source)
 
     file_destination = config.create_file_destination(file_name="output.log")
-    destination_group = config.create_destination_group(file_destination)
+    destination_group = config.create_statement_group(file_destination)
 
     logpath = config.create_logpath(statements=[source_group, destination_group])
 
@@ -44,7 +44,7 @@ def test_manipulating_config_between_reload(tc):
 
     # create new file source and add to separate source group
     file_source2 = config.create_file_source(file_name="input2.log")
-    source_group2 = config.create_source_group(file_source2)
+    source_group2 = config.create_statement_group(file_source2)
 
     # create new file destination and update first destination group
     file_destination2 = config.create_file_destination(file_name="output2.log")

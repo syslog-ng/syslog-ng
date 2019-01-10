@@ -55,11 +55,6 @@ class SyslogNgConfig(object):
         FileIO(self.__logger_factory, self.__config_path).rewrite(rendered_config)
 
     @staticmethod
-    def __create_statement_group(group_type, statements):
-        statement_group = StatementGroup(statements)
-        return statement_group
-
-    @staticmethod
     def __create_logpath_group(statements=None, flags=None):
         logpath = LogPath()
         if statements:
@@ -80,20 +75,10 @@ class SyslogNgConfig(object):
     def create_filter(self, **kwargs):
         return Filter(self.__logger_factory, **kwargs)
 
-    def create_source_group(self, drivers):
-        source_group = self.__create_statement_group("source", drivers)
-        self.__syslog_ng_config["statement_groups"].append(source_group)
-        return source_group
-
-    def create_destination_group(self, drivers):
-        destination_group = self.__create_statement_group("destination", drivers)
-        self.__syslog_ng_config["statement_groups"].append(destination_group)
-        return destination_group
-
-    def create_filter_group(self, filters):
-        filter_group = self.__create_statement_group("filter", filters)
-        self.__syslog_ng_config["statement_groups"].append(filter_group)
-        return filter_group
+    def create_statement_group(self, statements):
+        statement_group = StatementGroup(statements)
+        self.__syslog_ng_config["statement_groups"].append(statement_group)
+        return statement_group
 
     def create_logpath(self, statements=None, flags=None):
         logpath = self.__create_logpath_group(statements, flags)
