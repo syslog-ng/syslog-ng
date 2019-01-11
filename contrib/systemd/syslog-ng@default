@@ -1,5 +1,5 @@
 CONFIG_FILE=/etc/syslog-ng.conf
 PERSIST_FILE=/var/lib/syslog-ng/syslog-ng.persist
-CONTROL_FILE=/var/lib/syslog-ng/syslog-ng.ctl
+CONTROL_FILE=/var/run/syslog-ng.ctl
 PID_FILE=/var/run/syslog-ng.pid
 OTHER_OPTIONS="--enable-core"
