@@ -23,7 +23,7 @@
 
 from src.executors.command_executor import CommandExecutor
 from src.executors.process_executor import ProcessExecutor
-from src.common.random_id import RandomId
+from src.common.random_id import get_unique_id
 
 
 class SyslogNgExecutor(object):
@@ -77,7 +77,7 @@ class SyslogNgExecutor(object):
             "--core",
             core_file,
         ]
-        core_postfix = "gdb_core_{}".format(RandomId(use_static_seed=False).get_unique_id())
+        core_postfix = "gdb_core_{}".format(get_unique_id())
         return self.__command_executor.run(
             command=gdb_command_args,
             stdout_path=self.__instance_paths.get_stdout_path_with_postfix(postfix=core_postfix),

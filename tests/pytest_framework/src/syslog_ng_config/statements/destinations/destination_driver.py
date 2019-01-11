@@ -26,21 +26,20 @@ from src.message_reader.single_line_parser import SingleLineParser
 
 
 class DestinationDriver(object):
-    def __init__(self, logger_factory, native_driver_io_ref):
+    def __init__(self, logger_factory, IOClass):
         self.__logger_factory = logger_factory
         self.__logger = logger_factory.create_logger("DestinationDriver")
-        self.__native_driver_io_ref = native_driver_io_ref
-        self.__native_driver_io_collection = {}
+        self.__IOClass = IOClass
+        self.__reader = None
 
     def dd_read_logs(self, path, counter):
-        if path not in self.__native_driver_io_collection.keys():
-            native_driver_io = self.__native_driver_io_ref(self.__logger_factory, path)
-            native_driver_io.wait_for_creation()
+        if not self.__reader:
+            io = self.__IOClass(self.__logger_factory, path)
+            io.wait_for_creation()
             message_reader = MessageReader(
-                self.__logger_factory, native_driver_io.read, SingleLineParser(self.__logger_factory)
+                self.__logger_factory, io.read, SingleLineParser(self.__logger_factory)
             )
-            self.__native_driver_io_collection.update({path: message_reader})
-        message_reader = self.__native_driver_io_collection[path]
-        messages = message_reader.pop_messages(counter)
+            self.__reader = message_reader
+        messages = self.__reader.pop_messages(counter)
         self.__logger.print_io_content(path, messages, "Content has been read from")
         return messages
