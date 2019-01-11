@@ -54,11 +54,22 @@ class SyslogNgConfig(object):
         )
         FileIO(self.__logger_factory, self.__config_path).rewrite(rendered_config)
 
+    def __maybe_convert_to_statement_group(self, item):
+        if isinstance(item, StatementGroup) or isinstance(item, LogPath):
+            return item
+        else:
+            return self.create_statement_group(item)
+
+    def __create_logpath(self, items, flags):
+        return self.__create_logpath_group(
+            map(self.__maybe_convert_to_statement_group, cast_to_list(items)),
+            flags)
+
     @staticmethod
     def __create_logpath_group(statements=None, flags=None):
         logpath = LogPath()
         if statements:
-            logpath.add_groups(cast_to_list(statements))
+            logpath.add_groups(statements)
         if flags:
             logpath.add_flags(cast_to_list(flags))
         return logpath
@@ -81,10 +92,10 @@ class SyslogNgConfig(object):
         return statement_group
 
     def create_logpath(self, statements=None, flags=None):
-        logpath = self.__create_logpath_group(statements, flags)
+        logpath = self.__create_logpath(statements, flags)
         self.__syslog_ng_config["logpath_groups"].append(logpath)
         return logpath
 
     def create_inner_logpath(self, statements=None, flags=None):
-        inner_logpath = self.__create_logpath_group(statements, flags)
+        inner_logpath = self.__create_logpath(statements, flags)
         return inner_logpath

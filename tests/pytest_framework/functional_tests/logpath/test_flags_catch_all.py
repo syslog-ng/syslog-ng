@@ -42,17 +42,12 @@ def test_flags_catch_all(tc):
     config = tc.new_config()
 
     file_source = config.create_file_source(file_name="input.log")
-    source_group = config.create_statement_group(file_source)
-
     file_destination1 = config.create_file_destination(file_name="output1.log")
-    destination_group = config.create_statement_group(file_destination1)
+    catch_all_destination = config.create_file_destination(file_name="output2.log")
 
-    file_destination2 = config.create_file_destination(file_name="output2.log")
-    catch_all_destination = config.create_statement_group(file_destination2)
+    inner_logpath = config.create_inner_logpath(statements=[file_destination1])
 
-    inner_logpath = config.create_inner_logpath(statements=[destination_group])
-
-    config.create_logpath(statements=[source_group, inner_logpath])
+    config.create_logpath(statements=[file_source, inner_logpath])
     config.create_logpath(statements=[catch_all_destination], flags="catch-all")
 
     bsd_message = write_dummy_message(tc, file_source)
@@ -66,7 +61,7 @@ def test_flags_catch_all(tc):
     # message should arrived into destination1
     assert tc.format_as_bsd(expected_bsd_message) in dest1_logs
 
-    dest2_logs = file_destination2.read_log()
+    dest2_logs = catch_all_destination.read_log()
     # message should arrived into destination2
     # there is a flags(catch-all)
     assert tc.format_as_bsd(expected_bsd_message) in dest2_logs
