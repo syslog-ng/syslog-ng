@@ -54,6 +54,7 @@ typedef struct
     PyObject *send;
     PyObject *log_template_options;
     PyObject *seqnum;
+    GPtrArray *_refs_to_clean;
   } py;
 } PythonDestDriver;
 
@@ -249,9 +250,17 @@ _py_invoke_deinit(PythonDestDriver *self)
   _dd_py_invoke_void_method_by_name(self, "deinit");
 }
 
+static void
+_py_clear(PyObject *self)
+{
+  Py_CLEAR(self);
+}
+
 static gboolean
 _py_init_bindings(PythonDestDriver *self)
 {
+  self->py._refs_to_clean = g_ptr_array_new_with_free_func((GDestroyNotify)_py_clear);
+
   self->py.class = _py_resolve_qualified_name(self->class);
   if (!self->py.class)
     {
@@ -292,19 +301,23 @@ _py_init_bindings(PythonDestDriver *self)
       msg_error("Error initializing Python destination, class does not have a send() method",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("class", self->class));
+      return FALSE;
     }
-  return self->py.send != NULL;
+
+  g_ptr_array_add(self->py._refs_to_clean, self->py.class);
+  g_ptr_array_add(self->py._refs_to_clean, self->py.instance);
+  g_ptr_array_add(self->py._refs_to_clean, self->py.is_opened);
+  g_ptr_array_add(self->py._refs_to_clean, self->py.send);
+  g_ptr_array_add(self->py._refs_to_clean, self->py.log_template_options);
+  g_ptr_array_add(self->py._refs_to_clean, self->py.seqnum);
+
+  return TRUE;
 }
 
 static void
 _py_free_bindings(PythonDestDriver *self)
 {
-  Py_CLEAR(self->py.class);
-  Py_CLEAR(self->py.instance);
-  Py_CLEAR(self->py.is_opened);
-  Py_CLEAR(self->py.send);
-  Py_CLEAR(self->py.log_template_options);
-  Py_CLEAR(self->py.seqnum);
+  g_ptr_array_free(self->py._refs_to_clean, TRUE);
 }
 
 static gboolean
