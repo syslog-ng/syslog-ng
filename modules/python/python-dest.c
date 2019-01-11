@@ -256,6 +256,29 @@ _py_clear(PyObject *self)
   Py_CLEAR(self);
 }
 
+#define _inject_worker_insert_result(self, value) \
+  _inject_const(self, #value, value)
+
+static void
+_inject_const(PythonDestDriver *self, const gchar *field_name, gint value)
+{
+  PyObject *pyint = int_as_pyobject(value);
+  PyObject_SetAttrString(self->py.class, field_name, pyint);
+  g_ptr_array_add(self->py._refs_to_clean, pyint);
+};
+
+static void
+_inject_worker_insert_result_consts(PythonDestDriver *self)
+{
+  _inject_worker_insert_result(self, WORKER_INSERT_RESULT_DROP);
+  _inject_worker_insert_result(self, WORKER_INSERT_RESULT_ERROR);
+  _inject_worker_insert_result(self, WORKER_INSERT_RESULT_EXPLICIT_ACK_MGMT);
+  _inject_worker_insert_result(self, WORKER_INSERT_RESULT_SUCCESS);
+  _inject_worker_insert_result(self, WORKER_INSERT_RESULT_QUEUED);
+  _inject_worker_insert_result(self, WORKER_INSERT_RESULT_NOT_CONNECTED);
+  _inject_worker_insert_result(self, WORKER_INSERT_RESULT_MAX);
+};
+
 static gboolean
 _py_init_bindings(PythonDestDriver *self)
 {
@@ -273,6 +296,8 @@ _py_init_bindings(PythonDestDriver *self)
       _py_finish_exception_handling();
       return FALSE;
     }
+
+  _inject_worker_insert_result_consts(self);
 
   self->py.log_template_options = py_log_template_options_new(&self->template_options);
   PyObject_SetAttrString(self->py.class, "template_options", self->py.log_template_options);
