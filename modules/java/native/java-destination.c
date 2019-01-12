@@ -173,7 +173,16 @@ java_dd_deinit(LogPipe *s)
 gint
 java_dd_send_to_object(JavaDestDriver *self, LogMessage *msg)
 {
-  return java_destination_proxy_send(self->proxy, msg);
+  gint result = java_destination_proxy_send(self->proxy, msg);
+  if (result < 0 || result >= WORKER_INSERT_RESULT_MAX)
+    {
+      msg_error("java_destination: worker insert result out of range. Retrying message later",
+                log_pipe_location_tag((LogPipe *)self),
+                evt_tag_int("result", result));
+      return WORKER_INSERT_RESULT_ERROR;
+    }
+
+  return result;
 }
 
 gboolean
