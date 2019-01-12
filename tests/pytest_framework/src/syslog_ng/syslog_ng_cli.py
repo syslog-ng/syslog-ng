@@ -54,23 +54,13 @@ class SyslogNgCli(object):
             command_short_name="syntax_only", command=["--syntax-only", "--cfgfile={}".format(config_path)]
         )
 
-    # Process commands
-    def start(self, config):
-        self.__logger.info("Beginning of syslog-ng start")
-        config.write_config_content()
-
-        # syntax check
+    def __syntax_check(self):
         result = self.__syntax_only()
         if result["exit_code"] != 0:
             self.__logger.error(result["stderr"])
             raise Exception("syslog-ng can not started")
 
-        # effective start
-        if self.__valgrind_usage:
-            self.__process = self.__syslog_ng_executor.run_process_with_valgrind()
-        else:
-            self.__process = self.__syslog_ng_executor.run_process()
-
+    def __wait_for_start(self):
         # wait for start and check start result
         if not self.__syslog_ng_ctl.wait_for_control_socket_alive():
             self.__error_handling()
@@ -78,6 +68,22 @@ class SyslogNgCli(object):
         if not self.__console_log_reader.wait_for_start_message():
             self.__error_handling()
             raise Exception("Start message not arrived")
+
+    def __start_syslog_ng(self):
+        if self.__valgrind_usage:
+            self.__process = self.__syslog_ng_executor.run_process_with_valgrind()
+        else:
+            self.__process = self.__syslog_ng_executor.run_process()
+        self.__wait_for_start()
+
+    # Process commands
+    def start(self, config):
+        self.__logger.info("Beginning of syslog-ng start")
+        config.write_config_content()
+
+        self.__syntax_check()
+        self.__start_syslog_ng()
+
         self.__logger.info("End of syslog-ng start")
 
     def reload(self, config):
