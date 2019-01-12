@@ -194,17 +194,17 @@ _as_int(PyObject *obj)
   if (result == -1 && PyErr_Occurred())
     {
       gchar buf[256];
-      msg_error("Error converting PyObject to int. Dropping message",
+      msg_error("Error converting PyObject to int. Retrying message later",
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
-      return WORKER_INSERT_RESULT_DROP;
+      return WORKER_INSERT_RESULT_ERROR;
     }
 
   if (result < 0 || result >= WORKER_INSERT_RESULT_MAX)
     {
-      msg_error("Python: worker insert result out of range. Dropping message",
+      msg_error("Python: worker insert result out of range. Retrying message later",
                 evt_tag_int("result", result));
-      return WORKER_INSERT_RESULT_DROP;
+      return WORKER_INSERT_RESULT_ERROR;
     }
 
   return result;
