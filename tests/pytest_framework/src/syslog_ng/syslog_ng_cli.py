@@ -60,8 +60,15 @@ class SyslogNgCli(object):
             self.__logger.error(result["stderr"])
             raise Exception("syslog-ng can not started")
 
+    def __is_process_running(self):
+        return self.__process.poll() == None
+
     def __wait_for_control_socket_alive(self):
-        return wait_until_true(self.__syslog_ng_ctl.is_control_socket_alive)
+        def is_alive(s):
+            if not s.__is_process_running():
+                raise Exception("syslog-ng could not start")
+            return s.__syslog_ng_ctl.is_control_socket_alive()
+        return wait_until_true(is_alive, self)
 
     def __wait_for_start(self):
         # wait for start and check start result
