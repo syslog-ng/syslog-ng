@@ -97,6 +97,20 @@ g_sockaddr_new_from_peer_name(gint fd)
   return result;
 }
 
+GSockAddr *
+g_sockaddr_new_from_local_name(gint fd)
+{
+  GSockAddr *result = NULL;
+  struct sockaddr_storage addr;
+  socklen_t len =  sizeof(addr);
+
+  if (getsockname(fd, (struct sockaddr *)&addr, &len) == 0)
+    {
+      result = g_sockaddr_new((struct sockaddr *)&addr, len);
+    }
+  return result;
+}
+
 /**
  * g_sockaddr_format:
  * @a        instance pointer of a GSockAddr

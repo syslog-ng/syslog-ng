@@ -67,6 +67,7 @@ guint8 *g_sockaddr_get_address(GSockAddr *self, guint8 *buffer, socklen_t buffer
 
 GSockAddr *g_sockaddr_new(struct sockaddr *sa, int salen);
 GSockAddr *g_sockaddr_new_from_peer_name(gint fd);
+GSockAddr *g_sockaddr_new_from_local_name(gint fd);
 GSockAddr *g_sockaddr_ref(GSockAddr *a);
 void g_sockaddr_unref(GSockAddr *a);
 
