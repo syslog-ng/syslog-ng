@@ -25,7 +25,7 @@ from pathlib2 import Path
 from src.syslog_ng.syslog_ng_executor import SyslogNgExecutor
 from src.syslog_ng.console_log_reader import ConsoleLogReader
 from src.syslog_ng_ctl.syslog_ng_ctl import SyslogNgCtl
-
+from src.common.blocking import wait_until_true
 
 class SyslogNgCli(object):
     def __init__(self, logger_factory, instance_paths, testcase_parameters):
@@ -60,9 +60,12 @@ class SyslogNgCli(object):
             self.__logger.error(result["stderr"])
             raise Exception("syslog-ng can not started")
 
+    def __wait_for_control_socket_alive(self):
+        return wait_until_true(self.__syslog_ng_ctl.is_control_socket_alive)
+
     def __wait_for_start(self):
         # wait for start and check start result
-        if not self.__syslog_ng_ctl.wait_for_control_socket_alive():
+        if not self.__wait_for_control_socket_alive():
             self.__error_handling()
             raise Exception("Control socket not alive")
         if not self.__console_log_reader.wait_for_start_message():
@@ -94,7 +97,7 @@ class SyslogNgCli(object):
         self.__syslog_ng_ctl.reload()
 
         # wait for reload and check reload result
-        if not self.__syslog_ng_ctl.wait_for_control_socket_alive():
+        if not self.__wait_for_control_socket_alive():
             self.__error_handling()
             raise Exception("Control socket not alive")
         if not self.__console_log_reader.wait_for_reload_message():
