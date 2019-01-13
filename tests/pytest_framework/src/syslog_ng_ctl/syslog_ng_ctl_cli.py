@@ -41,9 +41,3 @@ class SyslogNgCtlCli(object):
 
     def is_control_socket_alive(self):
         return self.stats(reset=False)["exit_code"] == 0
-
-    def wait_for_control_socket_alive(self):
-        return wait_until_true(self.is_control_socket_alive)
-
-    def wait_for_control_socket_stopped(self):
-        return wait_until_false(self.is_control_socket_alive)
