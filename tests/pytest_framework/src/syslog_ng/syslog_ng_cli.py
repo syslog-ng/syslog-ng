@@ -25,7 +25,7 @@ from pathlib2 import Path
 from src.syslog_ng.syslog_ng_executor import SyslogNgExecutor
 from src.syslog_ng.console_log_reader import ConsoleLogReader
 from src.syslog_ng_ctl.syslog_ng_ctl import SyslogNgCtl
-from src.common.blocking import wait_until_true
+from src.common.blocking import wait_until_true, wait_until_false
 
 class SyslogNgCli(object):
     def __init__(self, logger_factory, instance_paths, testcase_parameters):
@@ -121,9 +121,9 @@ class SyslogNgCli(object):
             # wait for stop and check stop result
             if result["exit_code"] != 0:
                 self.__error_handling()
-            if not self.__syslog_ng_ctl.wait_for_control_socket_stopped():
+            if not wait_until_false(self.__is_process_running):
                 self.__error_handling()
-                raise Exception("Control socket still alive")
+                raise Exception("syslog-ng did not stop")
             if not self.__console_log_reader.wait_for_stop_message():
                 self.__error_handling()
                 raise Exception("Stop message not arrived")
