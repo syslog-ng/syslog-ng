@@ -84,7 +84,7 @@ g_sockaddr_new(struct sockaddr *sa, int salen)
 }
 
 GSockAddr *
-g_sockaddr_new_from_peer_fd(gint fd)
+g_sockaddr_new_from_peer_name(gint fd)
 {
   GSockAddr *result = NULL;
   struct sockaddr_storage addr;
