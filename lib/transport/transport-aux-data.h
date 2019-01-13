@@ -29,6 +29,7 @@
 typedef struct _LogTransportAuxData
 {
   GSockAddr *peer_addr;
+  GSockAddr *local_addr;
   gchar data[1024];
   gsize end_ptr;
 } LogTransportAuxData;
@@ -37,6 +38,7 @@ static inline void
 log_transport_aux_data_init(LogTransportAuxData *self)
 {
   self->peer_addr = NULL;
+  self->local_addr = NULL;
   self->end_ptr = 0;
   self->data[0] = 0;
 }
@@ -45,6 +47,7 @@ static inline void
 log_transport_aux_data_destroy(LogTransportAuxData *self)
 {
   g_sockaddr_unref(self->peer_addr);
+  g_sockaddr_unref(self->local_addr);
 }
 
 static inline void
@@ -61,6 +64,7 @@ log_transport_aux_data_copy(LogTransportAuxData *dst, LogTransportAuxData *src)
 
   memcpy(dst, src, data_to_copy);
   g_sockaddr_ref(dst->peer_addr);
+  g_sockaddr_ref(dst->local_addr);
 }
 
 static inline void
@@ -69,6 +73,14 @@ log_transport_aux_data_set_peer_addr_ref(LogTransportAuxData *self, GSockAddr *p
   if (self->peer_addr)
     g_sockaddr_unref(self->peer_addr);
   self->peer_addr = peer_addr;
+}
+
+static inline void
+log_transport_aux_data_set_local_addr_ref(LogTransportAuxData *self, GSockAddr *local_addr)
+{
+  if (self->local_addr)
+    g_sockaddr_unref(self->local_addr);
+  self->local_addr = local_addr;
 }
 
 void log_transport_aux_data_add_nv_pair(LogTransportAuxData *self, const gchar *name, const gchar *value);
