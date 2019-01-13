@@ -39,11 +39,11 @@ class SyslogNgCtlCli(object):
         ctl_stats_command = self.__syslog_ng_ctl_executor.construct_ctl_stats_command(reset=reset)
         return self.__syslog_ng_ctl_executor.run_command(command_short_name="stats", command=ctl_stats_command)
 
-    def __is_control_socket_alive(self):
+    def is_control_socket_alive(self):
         return self.stats(reset=False)["exit_code"] == 0
 
     def wait_for_control_socket_alive(self):
-        return wait_until_true(self.__is_control_socket_alive)
+        return wait_until_true(self.is_control_socket_alive)
 
     def wait_for_control_socket_stopped(self):
-        return wait_until_false(self.__is_control_socket_alive)
+        return wait_until_false(self.is_control_socket_alive)

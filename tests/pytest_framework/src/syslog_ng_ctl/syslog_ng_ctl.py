@@ -39,3 +39,6 @@ class SyslogNgCtl(object):
 
     def wait_for_control_socket_stopped(self):
         return self.__syslog_ng_ctl_cli.wait_for_control_socket_stopped()
+
+    def is_control_socket_alive(self):
+        return self.__syslog_ng_ctl_cli.is_control_socket_alive()
