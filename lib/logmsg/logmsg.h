@@ -170,10 +170,15 @@ struct _LogMessage
 
   gint ack_and_ref_and_abort_and_suspended;
 
+  /* NOTE: in theory this should be a size_t (or gsize), however that takes
+   * 8 bytes, and it's highly unlikely that we'd be using more than 4GB for
+   * a LogMessage */
+
+  guint allocated_bytes;
+
   AckRecord *ack_record;
   LMAckFunc ack_func;
   LogMessage *original;
-  gsize allocated_bytes;
 
   /* message parts */
 
@@ -184,7 +189,6 @@ struct _LogMessage
    */
   /* ==== start of directly copied part ==== */
   LogStamp timestamps[LM_TS_MAX];
-  guint32 host_id;
   gulong *tags;
   NVHandle *sdata;
 
@@ -196,6 +200,8 @@ struct _LogMessage
   guint8 initial_parse:1,
          recursed:1;
   guint8 num_matches;
+  guint32 host_id;
+  guint64 rcptid;
   guint8 num_tags;
   guint8 alloc_sdata;
   guint8 num_sdata;
@@ -205,7 +211,6 @@ struct _LogMessage
   guint8 cur_node;
   guint8 protect_cnt;
 
-  guint64 rcptid;
 
   /* preallocated LogQueueNodes used to insert this message into a LogQueue */
   LogMessageQueueNode nodes[0];
