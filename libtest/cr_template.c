@@ -76,6 +76,7 @@ create_empty_message(void)
 
   msg = log_msg_new(msg_str, strlen(msg_str), &parse_options);
   log_msg_set_saddr_ref(msg, g_sockaddr_inet_new("10.11.12.13", 1010));
+  log_msg_set_daddr_ref(msg, g_sockaddr_inet_new("127.0.0.5", 6514));
   log_msg_set_match(msg, 0, "whole-match", -1);
   log_msg_set_match(msg, 1, "first-match", -1);
   log_msg_set_tag_by_name(msg, "alma");
