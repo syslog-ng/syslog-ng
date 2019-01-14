@@ -102,8 +102,10 @@ ParameterizedTest(const gchar *msg, clone_logmsg, test_cloning_with_log_message)
   parse_options.flags = LP_SYSLOG_PROTOCOL;
   parse_options.bad_hostname = &bad_hostname;
 
-  original_log_message = log_msg_new(msg, strlen(msg), addr, &parse_options);
-  log_message = log_msg_new(msg, strlen(msg), addr, &parse_options);
+  original_log_message = log_msg_new(msg, strlen(msg), &parse_options);
+  log_msg_set_saddr(original_log_message, addr);
+  log_message = log_msg_new(msg, strlen(msg), &parse_options);
+  log_msg_set_saddr(log_message, addr);
 
   log_msg_set_tag_by_name(log_message, "newtag");
   path_options.ack_needed = FALSE;
@@ -117,6 +119,7 @@ ParameterizedTest(const gchar *msg, clone_logmsg, test_cloning_with_log_message)
   assert_new_log_message_attributes(cloned_log_message);
   assert_log_message_has_tag(cloned_log_message, "newtag");
 
+  g_sockaddr_unref(addr);
   log_msg_unref(cloned_log_message);
   log_msg_unref(log_message);
   log_msg_unref(original_log_message);

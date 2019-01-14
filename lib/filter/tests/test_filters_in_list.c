@@ -52,7 +52,7 @@ evaluate_testcase(const gchar *msg,
   gboolean result;
 
   assert_not_null(filter_node, "Constructing an in-list filter");
-  log_msg = log_msg_new(msg, strlen(msg), NULL, &parse_options);
+  log_msg = log_msg_new(msg, strlen(msg), &parse_options);
   result = filter_expr_eval(filter_node, log_msg);
 
   log_msg_unref(log_msg);

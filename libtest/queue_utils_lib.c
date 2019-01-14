@@ -51,9 +51,7 @@ feed_some_messages(LogQueue *q, int n, MsgFormatOptions *po)
     {
       gchar *msg_str =
         g_strdup_printf("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép ID :%08d",i);
-      GSockAddr *test_addr = g_sockaddr_inet_new("10.10.10.10", 1010);
-      msg = log_msg_new(msg_str, strlen(msg_str), test_addr, po);
-      g_sockaddr_unref(test_addr);
+      msg = log_msg_new(msg_str, strlen(msg_str), po);
       g_free(msg_str);
 
       log_msg_add_ack(msg, &path_options);

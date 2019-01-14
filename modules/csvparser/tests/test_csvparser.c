@@ -870,7 +870,7 @@ ParameterizedTest(CsvParserTestParam *param, parser, test_csv_parser)
     }
 
   parse_options.flags = param->parse_flags;
-  logmsg = log_msg_new(param->msg, strlen(param->msg), NULL, &parse_options);
+  logmsg = log_msg_new(param->msg, strlen(param->msg), &parse_options);
 
   p = csv_parser_new(NULL);
   csv_parser_set_drop_invalid(p, param->drop_invalid);

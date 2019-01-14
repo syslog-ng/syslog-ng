@@ -73,11 +73,9 @@ create_empty_message(void)
 {
   LogMessage *msg;
   const char *msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép";
-  GSockAddr *saddr;
 
-  saddr = g_sockaddr_inet_new("10.11.12.13", 1010);
-  msg = log_msg_new(msg_str, strlen(msg_str), saddr, &parse_options);
-  g_sockaddr_unref(saddr);
+  msg = log_msg_new(msg_str, strlen(msg_str), &parse_options);
+  log_msg_set_saddr_ref(msg, g_sockaddr_inet_new("10.11.12.13", 1010));
   log_msg_set_match(msg, 0, "whole-match", -1);
   log_msg_set_match(msg, 1, "first-match", -1);
   log_msg_set_tag_by_name(msg, "alma");

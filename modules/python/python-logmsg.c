@@ -317,7 +317,7 @@ py_log_message_parse(PyObject *_none, PyObject *args, PyObject *kwrds)
       return NULL;
     }
 
-  py_msg->msg = log_msg_new(raw_msg, raw_msg_length, NULL, parse_options);
+  py_msg->msg = log_msg_new(raw_msg, raw_msg_length, parse_options);
 
   return (PyObject *) py_msg;
 }

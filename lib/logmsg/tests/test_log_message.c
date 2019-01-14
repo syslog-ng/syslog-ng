@@ -47,7 +47,7 @@ _construct_log_message(void)
   const gchar *raw_msg = "foo";
   LogMessage *msg;
 
-  msg = log_msg_new(raw_msg, strlen(raw_msg), NULL, &parse_options);
+  msg = log_msg_new(raw_msg, strlen(raw_msg), &parse_options);
   log_msg_set_value(msg, LM_V_HOST, raw_msg, -1);
   return msg;
 }

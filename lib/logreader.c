@@ -396,9 +396,9 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, LogTran
             evt_tag_printf("line", "%.*s", length, line));
   /* use the current time to get the time zone offset */
   m = log_msg_new((gchar *) line, length,
-                  aux->peer_addr ? : self->peer_addr,
                   &self->options->parse_options);
 
+  log_msg_set_saddr(m, aux->peer_addr ? : self->peer_addr);
   log_msg_refcache_start_producer(m);
 
   log_transport_aux_data_foreach(aux, _add_aux_nvpair, m);

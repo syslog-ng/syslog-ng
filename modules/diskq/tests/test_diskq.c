@@ -192,7 +192,6 @@ threaded_feed(gpointer args)
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   LogMessage *msg, *tmpl;
   GTimeVal start, end;
-  GSockAddr *sa;
   glong diff;
 
   iv_init();
@@ -200,8 +199,7 @@ threaded_feed(gpointer args)
   /* emulate main loop for LogQueue */
   main_loop_worker_thread_start(NULL);
 
-  sa = g_sockaddr_inet_new("10.10.10.10", 1010);
-  tmpl = log_msg_new(msg_str, msg_len, sa, &parse_options);
+  tmpl = log_msg_new(msg_str, msg_len, &parse_options);
   g_get_current_time(&start);
   for (i = 0; i < MESSAGES_PER_FEEDER; i++)
     {
@@ -223,7 +221,6 @@ threaded_feed(gpointer args)
   g_static_mutex_unlock(&tlock);
   main_loop_worker_thread_stop();
   log_msg_unref(tmpl);
-  g_sockaddr_unref(sa);
   return NULL;
 }
 

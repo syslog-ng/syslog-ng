@@ -33,11 +33,8 @@ static LogMessage *
 kmsg_parse_message(const gchar *raw_message_str)
 {
   LogMessage *message;
-  GSockAddr *addr = g_sockaddr_inet_new("10.10.10.10", 1010);
 
-  message = log_msg_new(raw_message_str, strlen(raw_message_str), addr, &parse_options);
-
-  g_sockaddr_unref(addr);
+  message = log_msg_new(raw_message_str, strlen(raw_message_str), &parse_options);
   return message;
 }
 

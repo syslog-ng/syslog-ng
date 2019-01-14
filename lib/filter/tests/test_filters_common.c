@@ -141,8 +141,8 @@ testcase_with_socket(const gchar *msg, const gchar *sockaddr,
   res = filter_expr_init(f, configuration);
   cr_assert(res, "Filter init failed; msg='%s'\n", msg);
 
-  logmsg = log_msg_new(msg, strlen(msg), NULL, &parse_options);
-  logmsg->saddr = _get_sockaddr(sockaddr);
+  logmsg = log_msg_new(msg, strlen(msg), &parse_options);
+  log_msg_set_saddr_ref(logmsg, _get_sockaddr(sockaddr));
 
   res = filter_expr_eval(f, logmsg);
   cr_assert_eq(res, expected_result, "Filter test failed; msg='%s'\n", msg);
@@ -180,8 +180,8 @@ testcase_with_backref_chk(const gchar *msg,
   gssize msglen;
   gchar buf[1024];
 
-  logmsg = log_msg_new(msg, strlen(msg), NULL, &parse_options);
-  logmsg->saddr = g_sockaddr_inet_new("10.10.0.1", 5000);
+  logmsg = log_msg_new(msg, strlen(msg), &parse_options);
+  log_msg_set_saddr_ref(logmsg, g_sockaddr_inet_new("10.10.0.1", 5000));
 
   /* NOTE: we test how our filters cope with non-zero terminated values. We don't change message_len, only the value */
   g_snprintf(buf, sizeof(buf), "%sAAAAAAAAAAAA", log_msg_get_value(logmsg, LM_V_MESSAGE, &msglen));

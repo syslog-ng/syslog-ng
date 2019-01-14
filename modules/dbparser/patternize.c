@@ -617,7 +617,7 @@ ptz_load_file(Patternizer *self, gchar *input_file, gboolean no_parse, GError **
       if (line[len-1] == '\n')
         line[len-1] = 0;
 
-      msg = log_msg_new(line, len, NULL, &parse_options);
+      msg = log_msg_new(line, len, &parse_options);
       g_ptr_array_add(self->logs, msg);
     }
 

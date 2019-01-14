@@ -66,7 +66,7 @@ _unregister_statistics(LogParser *p)
 static void
 _parse_msg(LogParser *self, gchar *msg)
 {
-  LogMessage *logmsg = log_msg_new(msg, strlen(msg), NULL, &parse_options);
+  LogMessage *logmsg = log_msg_new(msg, strlen(msg), &parse_options);
   log_parser_process_message(self, &logmsg, &path_options);
   log_msg_unref(logmsg);
 }

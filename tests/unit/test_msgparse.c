@@ -88,7 +88,6 @@ static LogMessage *
 _parse_log_message(gchar *raw_message_str, gint parse_flags, gchar *bad_hostname_re)
 {
   LogMessage *message;
-  GSockAddr *addr = g_sockaddr_inet_new("10.10.10.10", 1010);
   regex_t bad_hostname;
 
   parse_options.flags = parse_flags;
@@ -101,7 +100,7 @@ _parse_log_message(gchar *raw_message_str, gint parse_flags, gchar *bad_hostname
       parse_options.bad_hostname = &bad_hostname;
     }
 
-  message = log_msg_new(raw_message_str, strlen(raw_message_str), addr, &parse_options);
+  message = log_msg_new(raw_message_str, strlen(raw_message_str), &parse_options);
 
   if (bad_hostname_re)
     {

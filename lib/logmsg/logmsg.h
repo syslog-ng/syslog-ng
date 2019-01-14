@@ -320,6 +320,8 @@ void log_msg_format_sdata(const LogMessage *self, GString *result, guint32 seq_n
 void log_msg_set_tag_by_id_onoff(LogMessage *self, LogTagId id, gboolean on);
 void log_msg_set_tag_by_id(LogMessage *self, LogTagId id);
 void log_msg_set_tag_by_name(LogMessage *self, const gchar *name);
+void log_msg_set_saddr(LogMessage *self, GSockAddr *saddr);
+void log_msg_set_saddr_ref(LogMessage *self, GSockAddr *saddr);
 void log_msg_clear_tag_by_id(LogMessage *self, LogTagId id);
 void log_msg_clear_tag_by_name(LogMessage *self, const gchar *name);
 gboolean log_msg_is_tag_by_id(LogMessage *self, LogTagId id);
@@ -335,7 +337,6 @@ void log_msg_clear(LogMessage *self);
 void log_msg_merge_context(LogMessage *self, LogMessage **context, gsize context_len);
 
 LogMessage *log_msg_new(const gchar *msg, gint length,
-                        GSockAddr *saddr,
                         MsgFormatOptions *parse_options);
 LogMessage *log_msg_new_mark(void);
 LogMessage *log_msg_new_internal(gint prio, const gchar *msg);
