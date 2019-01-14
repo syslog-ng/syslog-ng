@@ -43,6 +43,7 @@ public class ElasticSearchOptions {
 	public static String MESSAGE_TEMPLATE = "message_template";
 	public static String CUSTOM_ID = "custom_id";
 	public static String FLUSH_LIMIT = "flush_limit";
+	public static String FLUSH_TIMEOUT = "flush_timeout";
 	public static String CLIENT_MODE = "client_mode";
 	public static String CONFIG_FILE = "resource";
 	public static String CONCURRENT_REQUESTS = "concurrent_requests";
@@ -52,6 +53,7 @@ public class ElasticSearchOptions {
 	private static final String PORT_DEFAULT = "0";
 	public static String MESSAGE_TEMPLATE_DEFAULT = "$(format-json --scope rfc5424 --exclude DATE --key ISODATE)";
 	public static String FLUSH_LIMIT_DEFAULT = "5000";
+	public static String FLUSH_TIMEOUT_DEFAULT = "0";
 	public static String CLIENT_MODE_TRANSPORT = "transport";
 	public static String CLIENT_MODE_NODE = "node";
 	public static String CLIENT_MODE_SEARCHGUARD = "searchguard";
@@ -145,6 +147,10 @@ public class ElasticSearchOptions {
 		return options.get(FLUSH_LIMIT).getValueAsInteger();
 	}
 
+	public int getFlushTimeout() {
+		return options.get(FLUSH_TIMEOUT).getValueAsInteger();
+	}
+
 	public String getClientMode() {
 		return options.get(CLIENT_MODE).getValue();
 	}
@@ -226,6 +232,7 @@ public class ElasticSearchOptions {
 		options.put(new PortCheckDecorator(new StringOption(owner, PORT, PORT_DEFAULT)));
 		options.put(new StringOption(owner, CLUSTER));
 		options.put(new IntegerRangeCheckOptionDecorator(new StringOption(owner, FLUSH_LIMIT, FLUSH_LIMIT_DEFAULT), -1, Integer.MAX_VALUE));
+		options.put(new IntegerRangeCheckOptionDecorator(new StringOption(owner, FLUSH_TIMEOUT, FLUSH_TIMEOUT_DEFAULT), -1, Integer.MAX_VALUE));
 		options.put(new EnumOptionDecorator(new StringOption(owner, CLIENT_MODE, CLIENT_MODE_DEFAULT), CLIENT_MODES));
 		options.put(new EnumOptionDecorator(new StringOption(owner, HTTP_AUTH_TYPE, HTTP_AUTH_TYPE_DEFAULT), HTTP_AUTH_TYPES));
 		options.put(new StringOption(owner, CONFIG_FILE));

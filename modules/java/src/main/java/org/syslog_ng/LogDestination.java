@@ -26,6 +26,13 @@ package org.syslog_ng;
 
 public abstract class LogDestination extends LogPipe {
 
+	protected static final int WORKER_INSERT_RESULT_DROP = 0;
+	protected static final int WORKER_INSERT_RESULT_ERROR = 1;
+	protected static final int WORKER_INSERT_RESULT_EXPLICIT_ACK_MGMT = 2;
+	protected static final int WORKER_INSERT_RESULT_SUCCESS = 3;
+	protected static final int WORKER_INSERT_RESULT_QUEUED = 4;
+	protected static final int WORKER_INSERT_RESULT_NOT_CONNECTED = 5;
+
 	public LogDestination(long pipeHandle) {
 		super(pipeHandle);
 	}
@@ -42,6 +49,18 @@ public abstract class LogDestination extends LogPipe {
  		return getSeqNum(getHandle());
         }
 
+	public int getBatchLines() {
+ 		return getBatchLines(getHandle());
+        }
+
+	public void setBatchLines(long batch_size) {
+ 		setBatchLines(getHandle(), batch_size);
+        }
+
+	public void setBatchTimeout(long timeout) {
+ 		setBatchTimeout(getHandle(), timeout);
+        }
+
 	protected abstract boolean open();
 
 	protected abstract void close();
@@ -56,8 +75,14 @@ public abstract class LogDestination extends LogPipe {
 
 	private native int getSeqNum(long ptr);
 
-	protected void onMessageQueueEmpty() {
-		return;
+	private native int getBatchLines(long ptr);
+
+	private native int setBatchLines(long ptr, long batch_size);
+
+	private native int setBatchTimeout(long ptr, long timeout);
+
+	protected int flush() {
+		return WORKER_INSERT_RESULT_SUCCESS;
 	}
 
 	public boolean openProxy() {
@@ -89,12 +114,13 @@ public abstract class LogDestination extends LogPipe {
 		}
 	}
 
-	public void onMessageQueueEmptyProxy() {
+	public int flushProxy() {
 		try {
-			onMessageQueueEmpty();
+			return flush();
 		}
 		catch (Exception e) {
 			sendExceptionMessage(e);
+			return WORKER_INSERT_RESULT_ERROR;
 		}
 	}
 

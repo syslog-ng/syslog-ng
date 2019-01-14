@@ -54,6 +54,10 @@ public class ElasticSearchDestination extends StructuredLogDestination {
 		boolean result = false;
 		try {
 			options.init();
+
+                        setBatchLines(options.getFlushLimit());
+                        setBatchTimeout(options.getFlushTimeout());
+
 			client = ESClientFactory.getESClient(options);
 			client.init();
 			result = true;
@@ -86,13 +90,31 @@ public class ElasticSearchDestination extends StructuredLogDestination {
 		return new ESIndex.Builder().formattedMessage(formattedMessage).index(index).id(customId).type(type).build();
     }
 
+	private int send_batch(ESIndex index) {
+		if (client.send(index))
+			return WORKER_INSERT_RESULT_QUEUED;
+		else
+			return WORKER_INSERT_RESULT_ERROR;
+	}
+
+	private int send_single(ESIndex index) {
+		if (client.send(index))
+			return WORKER_INSERT_RESULT_SUCCESS;
+		else
+			return WORKER_INSERT_RESULT_ERROR;
+	}
+
 	@Override
-	protected boolean send(LogMessage msg) {
+	protected int send(LogMessage msg) {
 		if (!client.isOpened()) {
-			close();
-			return false;
+			return WORKER_INSERT_RESULT_NOT_CONNECTED;
 		}
-		return client.send(createIndexRequest(msg));
+
+                ESIndex index = createIndexRequest(msg);
+		if (options.getFlushLimit() > 1)
+			return send_batch(index);
+		else
+			return send_single(index);
 	}
 
 	@Override
@@ -115,7 +137,10 @@ public class ElasticSearchDestination extends StructuredLogDestination {
 	}
 
 	@Override
-	public void onMessageQueueEmpty() {
-	    client.onMessageQueueEmpty();
+	public int flush() {
+		if (client.flush())
+			return WORKER_INSERT_RESULT_SUCCESS;
+		else
+			return WORKER_INSERT_RESULT_ERROR;
 	}
 }

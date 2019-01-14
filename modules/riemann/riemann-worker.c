@@ -388,10 +388,6 @@ _insert_batch(RiemannDestWorker *self, LogMessage *msg)
        */
     }
 
-  if (owner->super.batch_lines > 1 && self->super.batch_size >= owner->super.batch_lines)
-    {
-      return log_threaded_dest_worker_flush(&self->super);
-    }
   return WORKER_INSERT_RESULT_QUEUED;
 }
 

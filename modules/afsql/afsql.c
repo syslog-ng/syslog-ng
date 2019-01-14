@@ -846,7 +846,7 @@ afsql_dd_should_begin_new_transaction(const AFSqlDestDriver *self)
 }
 
 static gint
-_batch_size(const AFSqlDestDriver *self)
+_batch_lines(const AFSqlDestDriver *self)
 {
   if (self->super.batch_lines <= 0)
     return DEFAULT_SQL_TX_SIZE;
@@ -857,7 +857,7 @@ _batch_size(const AFSqlDestDriver *self)
 static inline gboolean
 afsql_dd_should_commit_transaction(const AFSqlDestDriver *self)
 {
-  return afsql_dd_is_transaction_handling_enabled(self) && self->super.worker.instance.batch_size >= _batch_size(self);
+  return afsql_dd_is_transaction_handling_enabled(self);
 }
 
 static worker_insert_result_t
@@ -948,16 +948,9 @@ afsql_dd_insert(LogThreadedDestDriver *s, LogMessage *msg)
       goto error;
     }
 
-  if (afsql_dd_should_commit_transaction(self))
-    {
-      retval = afsql_dd_flush(s);
-    }
-  else
-    {
-      retval = afsql_dd_is_transaction_handling_enabled(self)
-               ? WORKER_INSERT_RESULT_QUEUED
-               : WORKER_INSERT_RESULT_SUCCESS;
-    }
+  retval = afsql_dd_is_transaction_handling_enabled(self)
+           ? WORKER_INSERT_RESULT_QUEUED
+           : WORKER_INSERT_RESULT_SUCCESS;
 
 error:
 
@@ -1122,6 +1115,10 @@ afsql_dd_init(LogPipe *s)
     return FALSE;
 
   log_template_options_init(&self->template_options, cfg);
+
+  if (afsql_dd_is_transaction_handling_enabled(self))
+    log_threaded_dest_driver_set_batch_lines((LogDriver *)self, _batch_lines(self));
+
   return log_threaded_dest_driver_start_workers(&self->super);
 }
 

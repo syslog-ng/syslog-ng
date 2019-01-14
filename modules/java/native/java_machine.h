@@ -29,6 +29,7 @@
 #include <glib.h>
 #include "java-class-loader.h"
 
+#define CALL_JAVA_FUNCTION_VOID(env, function, ...) (*(env))->function(env)
 #define CALL_JAVA_FUNCTION(env, function, ...) (*(env))->function(env, __VA_ARGS__)
 
 typedef struct _JavaVMSingleton JavaVMSingleton;

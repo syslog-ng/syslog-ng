@@ -408,8 +408,7 @@ _should_initiate_flush(HTTPDestinationWorker *self)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
 
-  return (owner->batch_bytes && self->request_body->len + owner->body_suffix->len >= owner->batch_bytes) ||
-         (owner->super.batch_lines && self->super.batch_size >= owner->super.batch_lines);
+  return (owner->batch_bytes && self->request_body->len + owner->body_suffix->len >= owner->batch_bytes);
 
 }
 

@@ -38,7 +38,7 @@ JavaDestinationProxy *java_destination_proxy_new(const gchar *class_name, const 
 
 gboolean java_destination_proxy_init(JavaDestinationProxy *self);
 void java_destination_proxy_deinit(JavaDestinationProxy *self);
-void java_destination_proxy_on_message_queue_empty(JavaDestinationProxy *self);
+gint java_destination_proxy_flush(JavaDestinationProxy *self);
 gchar *java_destination_proxy_get_name_by_uniq_options(JavaDestinationProxy *self);
 gboolean java_destination_proxy_send(JavaDestinationProxy *self, LogMessage *msg);
 gboolean java_destination_proxy_open(JavaDestinationProxy *self);

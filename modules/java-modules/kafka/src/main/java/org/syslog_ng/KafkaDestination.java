@@ -58,7 +58,9 @@ public class KafkaDestination extends StructuredLogDestination {
     }
 
   @Override
-  public boolean send(LogMessage logMessage) {
+  public int send(LogMessage logMessage) {
+    boolean result;
+
     String formattedKey = options.getKey().getResolvedString(logMessage);
     String formattedTopic = options.getTopic().getResolvedString(logMessage);
     String formattedMessage = options.getTemplate().getResolvedString(logMessage);
@@ -67,9 +69,14 @@ public class KafkaDestination extends StructuredLogDestination {
 
     logger.debug("Outgoing message: " + producerRecord.toString());
     if (options.getSyncSend()) {
-      return sendSynchronously(producerRecord);
+      result =  sendSynchronously(producerRecord);
     } else
-      return sendAsynchronously(producerRecord);
+      result = sendAsynchronously(producerRecord);
+
+    if (result)
+        return WORKER_INSERT_RESULT_SUCCESS;
+    else
+        return WORKER_INSERT_RESULT_ERROR;
   }
 
   private boolean sendSynchronously(ProducerRecord<String, String> producerRecord) {

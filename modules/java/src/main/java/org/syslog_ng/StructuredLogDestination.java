@@ -29,14 +29,14 @@ public abstract class StructuredLogDestination extends LogDestination {
 		super(handle);
 	}
 
-	protected abstract boolean send(LogMessage msg);
-	public boolean sendProxy(LogMessage msg) {
+	protected abstract int send(LogMessage msg);
+	public int sendProxy(LogMessage msg) {
 		try {
 			return send(msg);
 		}
 		catch (Exception e) {
 			sendExceptionMessage(e);
-			return false;
+			return WORKER_INSERT_RESULT_DROP;
 		}
 		finally {
 			msg.release();

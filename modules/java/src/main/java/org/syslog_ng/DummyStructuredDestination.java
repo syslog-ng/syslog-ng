@@ -35,9 +35,9 @@ public class DummyStructuredDestination extends StructuredLogDestination {
     System.out.println("Deinit");
   }
 
-  public void onMessageQueueEmpty() {
-    System.out.println("onMessageQueueEmpty");
-    return;
+  public int flush() {
+    System.out.println("Flush");
+    return WORKER_INSERT_RESULT_SUCCESS;
   }
 
   public boolean init() {
@@ -62,9 +62,9 @@ public class DummyStructuredDestination extends StructuredLogDestination {
     System.out.println("close");
   }
 
-  public boolean send(LogMessage arg0) {
+  public int send(LogMessage arg0) {
     arg0.release();
-    return true;
+    return WORKER_INSERT_RESULT_SUCCESS;
   }
 
   @Override
