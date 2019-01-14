@@ -26,8 +26,6 @@ from src.message_reader.message_reader import MessageReader
 from src.message_reader.single_line_parser import SingleLineParser
 from src.common import blocking
 
-blocking.MONITORING_TIME = 0.1
-
 
 @pytest.mark.parametrize(
     "input_message_counter, requested_message_counter, expected_result",
@@ -105,7 +103,7 @@ def test_pop_messages(tc_unittest, input_message, requested_message_counter, pop
 
     if requested_message_counter > input_message.count("\n"):
         with pytest.raises(AssertionError):
-            message_reader.pop_messages(requested_message_counter)
+            message_reader.pop_messages(requested_message_counter, timeout=0.1)
     else:
         assert message_reader.pop_messages(requested_message_counter) == popped_message
         assert message_reader._MessageReader__parser.msg_list == remaining_message
