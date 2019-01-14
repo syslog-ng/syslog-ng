@@ -65,7 +65,6 @@ _get_logmessages(const gchar *logs)
   loglinesType *self;
   gchar **input_lines;
   gchar *logline;
-  GSockAddr *addr = g_sockaddr_inet_new("10.10.10.10", 1010);
   LogMessage *msg;
 
   self = g_new(loglinesType, 1);
@@ -81,7 +80,7 @@ _get_logmessages(const gchar *logs)
       if (logline[len-1] == '\n')
         logline[len-1] = 0;
 
-      msg = log_msg_new(logline, len, addr, &parse_options);
+      msg = log_msg_new(logline, len, &parse_options);
       g_ptr_array_add(self->logmessages, msg);
       ++(self->num_of_logs);
       g_free(logline);

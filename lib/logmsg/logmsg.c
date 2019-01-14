@@ -1093,7 +1093,20 @@ log_msg_print_tags(const LogMessage *self, GString *result)
   log_msg_tags_foreach(self, log_msg_append_tags_callback, args);
 }
 
+void
+log_msg_set_saddr(LogMessage *self, GSockAddr *saddr)
+{
+  log_msg_set_saddr_ref(self, g_sockaddr_ref(saddr));
+}
 
+void
+log_msg_set_saddr_ref(LogMessage *self, GSockAddr *saddr)
+{
+  if (log_msg_chk_flag(self, LF_STATE_OWN_SADDR))
+    g_sockaddr_unref(self->saddr);
+  self->saddr = saddr;
+  self->flags |= LF_STATE_OWN_SADDR;
+}
 
 /**
  * log_msg_init:
@@ -1104,7 +1117,7 @@ log_msg_print_tags(const LogMessage *self, GString *result)
  * first. It is used internally by the log_msg_new function.
  **/
 static void
-log_msg_init(LogMessage *self, GSockAddr *saddr)
+log_msg_init(LogMessage *self)
 {
   GTimeVal tv;
 
@@ -1118,7 +1131,7 @@ log_msg_init(LogMessage *self, GSockAddr *saddr)
   unix_time_unset(&self->timestamps[LM_TS_PROCESSED]);
 
   self->sdata = NULL;
-  self->saddr = g_sockaddr_ref(saddr);
+  self->saddr = NULL;
 
   self->original = NULL;
   self->flags |= LF_STATE_OWN_MASK;
@@ -1300,12 +1313,11 @@ _determine_payload_size(gint length, MsgFormatOptions *parse_options)
  **/
 LogMessage *
 log_msg_new(const gchar *msg, gint length,
-            GSockAddr *saddr,
             MsgFormatOptions *parse_options)
 {
   LogMessage *self = log_msg_alloc(_determine_payload_size(length, parse_options));
 
-  log_msg_init(self, saddr);
+  log_msg_init(self);
   msg_format_parse(parse_options, (guchar *) msg, length, self);
   return self;
 }
@@ -1315,7 +1327,7 @@ log_msg_new_empty(void)
 {
   LogMessage *self = log_msg_alloc(256);
 
-  log_msg_init(self, NULL);
+  log_msg_init(self);
   return self;
 }
 
