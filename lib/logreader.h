@@ -55,6 +55,7 @@ void log_reader_set_options(LogReader *s, LogPipe *control, LogReaderOptions *op
                             const gchar *stats_instance);
 void log_reader_set_follow_filename(LogReader *self, const gchar *follow_filename);
 void log_reader_set_peer_addr(LogReader *s, GSockAddr *peer_addr);
+void log_reader_set_local_addr(LogReader *s, GSockAddr *local_addr);
 void log_reader_set_immediate_check(LogReader *s);
 void log_reader_reopen(LogReader *s, LogProtoServer *proto, PollEvents *poll_events);
 void log_reader_close_proto(LogReader *s);

@@ -39,6 +39,7 @@ struct _LogReader
   LogReaderOptions *options;
   PollEvents *poll_events;
   GSockAddr *peer_addr;
+  GSockAddr *local_addr;
 
   /* NOTE: these used to be LogReaderWatch members, which were merged into
    * LogReader with the multi-thread refactorization */
@@ -399,6 +400,7 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, LogTran
                   &self->options->parse_options);
 
   log_msg_set_saddr(m, aux->peer_addr ? : self->peer_addr);
+  log_msg_set_daddr(m, aux->local_addr ? : self->local_addr);
   log_msg_refcache_start_producer(m);
 
   log_transport_aux_data_foreach(aux, _add_aux_nvpair, m);
@@ -546,6 +548,7 @@ log_reader_free(LogPipe *s)
 
   log_pipe_unref(self->control);
   g_sockaddr_unref(self->peer_addr);
+  g_sockaddr_unref(self->local_addr);
   g_static_mutex_free(&self->pending_proto_lock);
   g_cond_free(self->pending_proto_cond);
   log_source_free(s);
@@ -645,6 +648,15 @@ log_reader_set_peer_addr(LogReader *s, GSockAddr *peer_addr)
 
   g_sockaddr_unref(self->peer_addr);
   self->peer_addr = g_sockaddr_ref(peer_addr);
+}
+
+void
+log_reader_set_local_addr(LogReader *s, GSockAddr *local_addr)
+{
+  LogReader *self = (LogReader *) s;
+
+  g_sockaddr_unref(self->local_addr);
+  self->local_addr = g_sockaddr_ref(local_addr);
 }
 
 LogReader *
