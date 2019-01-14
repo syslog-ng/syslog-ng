@@ -25,13 +25,11 @@ import functools
 from src.common.random_id import get_unique_id
 from src.common.operations import cast_to_list
 
-class StatementGroup(object):
+class StatementGroup(list):
     def __init__(self, statements):
+        super(StatementGroup, self).__init__(cast_to_list(statements))
         self.__group_type = self.__calculate_group_type(cast_to_list(statements))
         self.__group_id = "%s_%s" % (self.__group_type, get_unique_id())
-        self.__statements = []
-        if statements:
-            self.update_group_with_statements(cast_to_list(statements))
 
     @staticmethod
     def __calculate_group_type(statements):
@@ -51,17 +49,3 @@ class StatementGroup(object):
     @property
     def group_id(self):
         return self.__group_id
-
-    @property
-    def statements(self):
-        return self.__statements
-
-    def remove_statement(self, statement):
-        self.statements.remove(statement)
-
-    def update_group_with_statement(self, statement):
-        self.statements.append(statement)
-
-    def update_group_with_statements(self, statements):
-        for statement in statements:
-            self.update_group_with_statement(statement)

@@ -46,7 +46,7 @@ def test_manipulating_config_between_reload(tc):
 
     # create new file destination and update first destination group
     file_destination2 = config.create_file_destination(file_name="output2.log")
-    destination_group.update_group_with_statement(file_destination2)
+    destination_group.append(file_destination2)
 
     # update first logpath group with new source group
     logpath.add_group(source_group2)
@@ -57,7 +57,7 @@ def test_manipulating_config_between_reload(tc):
     file_source.options.pop("log_iw_size")
 
     # remove file destination from destination group
-    destination_group.remove_statement(file_destination2)
+    destination_group.remove(file_destination2)
 
     # remove second source group from logpath
     logpath.logpath.remove(source_group2)
