@@ -49,14 +49,20 @@ static gboolean
 filter_re_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
   FilterRE *self = (FilterRE *) s;
+  NVTable *payload;
   const gchar *value;
   LogMessage *msg = msgs[num_msg - 1];
   gssize len = 0;
+  gboolean rc;
 
+  payload = nv_table_ref(msg->payload);
   value = log_msg_get_value(msg, self->value_handle, &len);
-
   APPEND_ZERO(value, value, len);
-  return filter_re_eval_string(s, msg, self->value_handle, value, len);
+
+  rc = filter_re_eval_string(s, msg, self->value_handle, value, len);
+
+  nv_table_unref(payload);
+  return rc;
 }
 
 static void
