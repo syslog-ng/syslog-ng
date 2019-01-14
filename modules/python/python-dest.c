@@ -52,8 +52,10 @@ typedef struct
     PyObject *instance;
     PyObject *is_opened;
     PyObject *send;
+    PyObject *flush;
     PyObject *log_template_options;
     PyObject *seqnum;
+    GPtrArray *_refs_to_clean;
   } py;
 } PythonDestDriver;
 
@@ -185,10 +187,71 @@ _py_invoke_close(PythonDestDriver *self)
   _dd_py_invoke_void_method_by_name(self, "close");
 }
 
-static gboolean
+static worker_insert_result_t
+_as_int(PyObject *obj)
+{
+  int result = pyobject_as_int(obj);
+  if (result == -1 && PyErr_Occurred())
+    {
+      gchar buf[256];
+      msg_error("Error converting PyObject to int. Retrying message later",
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+      _py_finish_exception_handling();
+      return WORKER_INSERT_RESULT_ERROR;
+    }
+
+  if (result < 0 || result >= WORKER_INSERT_RESULT_MAX)
+    {
+      msg_error("Python: worker insert result out of range. Retrying message later",
+                evt_tag_int("result", result));
+      return WORKER_INSERT_RESULT_ERROR;
+    }
+
+  return result;
+}
+
+static worker_insert_result_t
+_as_bool(PyObject *obj)
+{
+  return PyObject_IsTrue(obj) ? WORKER_INSERT_RESULT_SUCCESS : WORKER_INSERT_RESULT_ERROR;
+}
+
+static worker_insert_result_t
+pyobject_to_worker_insert_result(PyObject *obj)
+{
+  if (PyBool_Check(obj))
+    return _as_bool(obj);
+  else
+    return _as_int(obj);
+}
+
+static worker_insert_result_t
+_py_invoke_flush(PythonDestDriver *self)
+{
+  if (!self->py.flush)
+    return WORKER_INSERT_RESULT_SUCCESS;
+
+  PyObject *ret = _py_invoke_function(self->py.flush, NULL, self->class, self->super.super.super.id);
+  if (!ret)
+    return WORKER_INSERT_RESULT_ERROR;
+
+  worker_insert_result_t result = pyobject_to_worker_insert_result(ret);
+  Py_XDECREF(ret);
+  return result;
+}
+
+static worker_insert_result_t
 _py_invoke_send(PythonDestDriver *self, PyObject *dict)
 {
-  return _dd_py_invoke_bool_function(self, self->py.send, dict);
+  PyObject *ret;
+  ret = _py_invoke_function(self->py.send, dict, self->class, self->super.super.super.id);
+
+  if (!ret)
+    return WORKER_INSERT_RESULT_ERROR;
+
+  worker_insert_result_t result = pyobject_to_worker_insert_result(ret);
+  Py_XDECREF(ret);
+  return result;
 }
 
 static gboolean
@@ -203,9 +266,40 @@ _py_invoke_deinit(PythonDestDriver *self)
   _dd_py_invoke_void_method_by_name(self, "deinit");
 }
 
+static void
+_py_clear(PyObject *self)
+{
+  Py_CLEAR(self);
+}
+
+#define _inject_worker_insert_result(self, value) \
+  _inject_const(self, #value, value)
+
+static void
+_inject_const(PythonDestDriver *self, const gchar *field_name, gint value)
+{
+  PyObject *pyint = int_as_pyobject(value);
+  PyObject_SetAttrString(self->py.class, field_name, pyint);
+  g_ptr_array_add(self->py._refs_to_clean, pyint);
+};
+
+static void
+_inject_worker_insert_result_consts(PythonDestDriver *self)
+{
+  _inject_worker_insert_result(self, WORKER_INSERT_RESULT_DROP);
+  _inject_worker_insert_result(self, WORKER_INSERT_RESULT_ERROR);
+  _inject_worker_insert_result(self, WORKER_INSERT_RESULT_EXPLICIT_ACK_MGMT);
+  _inject_worker_insert_result(self, WORKER_INSERT_RESULT_SUCCESS);
+  _inject_worker_insert_result(self, WORKER_INSERT_RESULT_QUEUED);
+  _inject_worker_insert_result(self, WORKER_INSERT_RESULT_NOT_CONNECTED);
+  _inject_worker_insert_result(self, WORKER_INSERT_RESULT_MAX);
+};
+
 static gboolean
 _py_init_bindings(PythonDestDriver *self)
 {
+  self->py._refs_to_clean = g_ptr_array_new_with_free_func((GDestroyNotify)_py_clear);
+
   self->py.class = _py_resolve_qualified_name(self->class);
   if (!self->py.class)
     {
@@ -218,6 +312,8 @@ _py_init_bindings(PythonDestDriver *self)
       _py_finish_exception_handling();
       return FALSE;
     }
+
+  _inject_worker_insert_result_consts(self);
 
   self->py.log_template_options = py_log_template_options_new(&self->template_options);
   PyObject_SetAttrString(self->py.class, "template_options", self->py.log_template_options);
@@ -240,25 +336,31 @@ _py_init_bindings(PythonDestDriver *self)
 
   /* these are fast paths, store references to be faster */
   self->py.is_opened = _py_get_attr_or_null(self->py.instance, "is_opened");
+  self->py.flush = _py_get_attr_or_null(self->py.instance, "flush");
   self->py.send = _py_get_attr_or_null(self->py.instance, "send");
   if (!self->py.send)
     {
       msg_error("Error initializing Python destination, class does not have a send() method",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("class", self->class));
+      return FALSE;
     }
-  return self->py.send != NULL;
+
+  g_ptr_array_add(self->py._refs_to_clean, self->py.class);
+  g_ptr_array_add(self->py._refs_to_clean, self->py.instance);
+  g_ptr_array_add(self->py._refs_to_clean, self->py.is_opened);
+  g_ptr_array_add(self->py._refs_to_clean, self->py.flush);
+  g_ptr_array_add(self->py._refs_to_clean, self->py.send);
+  g_ptr_array_add(self->py._refs_to_clean, self->py.log_template_options);
+  g_ptr_array_add(self->py._refs_to_clean, self->py.seqnum);
+
+  return TRUE;
 }
 
 static void
 _py_free_bindings(PythonDestDriver *self)
 {
-  Py_CLEAR(self->py.class);
-  Py_CLEAR(self->py.instance);
-  Py_CLEAR(self->py.is_opened);
-  Py_CLEAR(self->py.send);
-  Py_CLEAR(self->py.log_template_options);
-  Py_CLEAR(self->py.seqnum);
+  g_ptr_array_free(self->py._refs_to_clean, TRUE);
 }
 
 static gboolean
@@ -325,17 +427,7 @@ python_dd_insert(LogThreadedDestDriver *d, LogMessage *msg)
   if (!_py_construct_message(self, msg, &msg_object))
     goto exit;
 
-  if (_py_invoke_send(self, msg_object))
-    {
-      result = WORKER_INSERT_RESULT_SUCCESS;
-    }
-  else
-    {
-      msg_error("Python send() method returned failure, suspending destination for time_reopen()",
-                evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("class", self->class),
-                evt_tag_int("time_reopen", self->super.time_reopen));
-    }
+  result =_py_invoke_send(self, msg_object);
   Py_DECREF(msg_object);
 
 exit:
@@ -354,6 +446,18 @@ python_dd_open(PythonDestDriver *self)
 
   PyGILState_Release(gstate);
 }
+
+static worker_insert_result_t
+python_dd_flush(LogThreadedDestDriver *s)
+{
+  PythonDestDriver *self = (PythonDestDriver *)s;
+  PyGILState_STATE gstate;
+
+  gstate = PyGILState_Ensure();
+  worker_insert_result_t result = _py_invoke_flush(self);
+  PyGILState_Release(gstate);
+  return result;
+};
 
 static void
 python_dd_close(PythonDestDriver *self)
@@ -475,6 +579,7 @@ python_dd_new(GlobalConfig *cfg)
   self->super.worker.thread_init = python_dd_worker_init;
   self->super.worker.disconnect = python_dd_disconnect;
   self->super.worker.insert = python_dd_insert;
+  self->super.worker.flush = python_dd_flush;
 
   self->super.format_stats_instance = python_dd_format_stats_instance;
   self->super.stats_source = SCS_PYTHON;
