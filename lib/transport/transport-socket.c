@@ -26,6 +26,12 @@
 #include <errno.h>
 #include <unistd.h>
 
+static void
+log_transport_socket_init_instance(LogTransportSocket *self, gint fd)
+{
+  log_transport_init_instance(&self->super, fd);
+}
+
 static gssize
 log_transport_dgram_socket_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
 {
@@ -81,7 +87,7 @@ log_transport_dgram_socket_write_method(LogTransport *s, const gpointer buf, gsi
 void
 log_transport_dgram_socket_init_instance(LogTransportSocket *self, gint fd)
 {
-  log_transport_init_instance(&self->super, fd);
+  log_transport_socket_init_instance(self, fd);
   self->super.read = log_transport_dgram_socket_read_method;
   self->super.write = log_transport_dgram_socket_write_method;
 }
@@ -134,7 +140,7 @@ log_transport_stream_socket_free_method(LogTransport *s)
 void
 log_transport_stream_socket_init_instance(LogTransportSocket *self, gint fd)
 {
-  log_transport_init_instance(&self->super, fd);
+  log_transport_socket_init_instance(self, fd);
   self->super.read = log_transport_stream_socket_read_method;
   self->super.write = log_transport_stream_socket_write_method;
   self->super.free_fn = log_transport_stream_socket_free_method;
