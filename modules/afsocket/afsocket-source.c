@@ -46,6 +46,7 @@ typedef struct _AFSocketSourceConnection
   LogReader *reader;
   int sock;
   GSockAddr *peer_addr;
+  GSockAddr *local_addr;
 } AFSocketSourceConnection;
 
 static void afsocket_sd_close_connection(AFSocketSourceDriver *self, AFSocketSourceConnection *sc);
@@ -104,6 +105,7 @@ afsocket_sc_init(LogPipe *s)
       self->reader = log_reader_new(s->cfg);
       log_reader_reopen(self->reader, proto, poll_fd_events_new(self->sock));
       log_reader_set_peer_addr(self->reader, self->peer_addr);
+      log_reader_set_local_addr(self->reader, self->local_addr);
     }
   log_reader_set_options(self->reader, &self->super,
                          &self->owner->reader_options,
@@ -183,11 +185,12 @@ afsocket_sc_free(LogPipe *s)
 {
   AFSocketSourceConnection *self = (AFSocketSourceConnection *) s;
   g_sockaddr_unref(self->peer_addr);
+  g_sockaddr_unref(self->local_addr);
   log_pipe_free_method(s);
 }
 
 AFSocketSourceConnection *
-afsocket_sc_new(GSockAddr *peer_addr, int fd, GlobalConfig *cfg)
+afsocket_sc_new(GSockAddr *peer_addr, GSockAddr *local_addr, int fd, GlobalConfig *cfg)
 {
   AFSocketSourceConnection *self = g_new0(AFSocketSourceConnection, 1);
 
@@ -197,6 +200,7 @@ afsocket_sc_new(GSockAddr *peer_addr, int fd, GlobalConfig *cfg)
   self->super.notify = afsocket_sc_notify;
   self->super.free_fn = afsocket_sc_free;
   self->peer_addr = g_sockaddr_ref(peer_addr);
+  self->local_addr = g_sockaddr_ref(local_addr);
   self->sock = fd;
   return self;
 }
@@ -352,7 +356,7 @@ afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *client_add
     {
       AFSocketSourceConnection *conn;
 
-      conn = afsocket_sc_new(client_addr, fd, self->super.super.super.cfg);
+      conn = afsocket_sc_new(client_addr, local_addr, fd, self->super.super.super.cfg);
       afsocket_sc_set_owner(conn, self);
       if (log_pipe_init(&conn->super))
         {
@@ -376,6 +380,7 @@ afsocket_sd_accept(gpointer s)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
   GSockAddr *peer_addr;
+  GSockAddr *local_addr;
   gchar buf1[256], buf2[256];
   gint new_fd;
   gboolean res;
@@ -401,7 +406,9 @@ afsocket_sd_accept(gpointer s)
       g_fd_set_nonblock(new_fd, TRUE);
       g_fd_set_cloexec(new_fd, TRUE);
 
-      res = afsocket_sd_process_connection(self, peer_addr, self->bind_addr, new_fd);
+      local_addr = g_sockaddr_new_from_local_name(new_fd);
+      res = afsocket_sd_process_connection(self, peer_addr, local_addr, new_fd);
+      g_sockaddr_unref(local_addr);
 
       if (res)
         {
