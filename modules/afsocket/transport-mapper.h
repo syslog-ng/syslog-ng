@@ -65,7 +65,6 @@ gboolean transport_mapper_open_socket(TransportMapper *self,
                                       int *fd);
 
 gboolean transport_mapper_apply_transport_method(TransportMapper *self, GlobalConfig *cfg);
-LogTransport *transport_mapper_construct_log_transport_method(TransportMapper *self, gint fd);
 
 void transport_mapper_init_instance(TransportMapper *self, const gchar *transport);
 void transport_mapper_free(TransportMapper *self);
