@@ -123,6 +123,8 @@ log_transport_udp_socket_read_method(LogTransport *s, gpointer buf, gsize buflen
     {
       if (msg.msg_namelen && aux)
         log_transport_aux_data_set_peer_addr_ref(aux, g_sockaddr_new((struct sockaddr *) &ss, msg.msg_namelen));
+      if (aux)
+        aux->proto = self->super.proto;
       _feed_aux_from_cmsg(self, aux, &msg);
     }
   return rc;

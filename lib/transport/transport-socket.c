@@ -29,7 +29,13 @@
 static void
 log_transport_socket_init_instance(LogTransportSocket *self, gint fd)
 {
+  gint ipproto;
+  socklen_t ipproto_len = sizeof(ipproto);
+
   log_transport_init_instance(&self->super, fd);
+  /* supported by Linux and FreeBSD */
+  if (getsockopt(fd, SOL_SOCKET, SO_PROTOCOL, &ipproto, &ipproto_len) >= 0)
+    self->proto = ipproto;
 }
 
 static gssize
@@ -47,8 +53,13 @@ log_transport_dgram_socket_read_method(LogTransport *s, gpointer buf, gsize bufl
                     (struct sockaddr *) &ss, &salen);
     }
   while (rc == -1 && errno == EINTR);
-  if (rc != -1 && salen && aux)
-    log_transport_aux_data_set_peer_addr_ref(aux, g_sockaddr_new((struct sockaddr *) &ss, salen));
+  if (rc != -1)
+    {
+      if (salen && aux)
+        log_transport_aux_data_set_peer_addr_ref(aux, g_sockaddr_new((struct sockaddr *) &ss, salen));
+      if (aux)
+        aux->proto = self->proto;
+    }
   if (rc == 0)
     {
       /* DGRAM sockets should never return EOF, they just need to be read again */
@@ -112,6 +123,8 @@ log_transport_stream_socket_read_method(LogTransport *s, gpointer buf, gsize buf
       rc = recv(self->super.fd, buf, buflen, 0);
     }
   while (rc == -1 && errno == EINTR);
+  if (aux)
+    aux->proto = self->proto;
   return rc;
 }
 
