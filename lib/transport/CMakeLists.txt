@@ -5,6 +5,7 @@ set(TRANSPORT_HEADERS
     transport/transport-file.h
     transport/transport-pipe.h
     transport/transport-socket.h
+    transport/transport-udp-socket.h
     transport/transport-factory-id.h
     transport/transport-factory.h
     transport/transport-factory-registry.h
@@ -19,6 +20,7 @@ set(TRANSPORT_SOURCES
     transport/transport-file.c
     transport/transport-pipe.c
     transport/transport-socket.c
+    transport/transport-udp-socket.c
     transport/transport-tls.c
     transport/transport-factory-id.c
     transport/transport-factory-registry.c
