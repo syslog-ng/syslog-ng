@@ -50,6 +50,7 @@ enum
   M_SOURCE_IP,
   M_DEST_IP,
   M_DEST_PORT,
+  M_PROTO,
   M_SEQNUM,
   M_CONTEXT_ID,
 
