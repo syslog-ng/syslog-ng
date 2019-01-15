@@ -200,7 +200,16 @@ struct _LogMessage
   guint32 flags;
   guint16 pri;
   guint8 initial_parse:1,
-         recursed:1;
+         recursed:1,
+
+         /* NOTE: proto is just 6 bits wide, but with that it fills a hole
+          * not taking any tolls on the structure size.  Realistically, we'd
+          * be storing IPPROTO_UDP and TCP in there, which fits the 6 bits.
+          * This is closely related to saddr/daddr and indicates the IP
+          * protocol that was used to deliver the datagram carrying this
+          * LogMessage.  */
+
+         proto:6;
   guint8 num_matches;
   guint32 host_id;
   guint64 rcptid;
