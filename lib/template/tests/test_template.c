@@ -231,6 +231,7 @@ Test(template, test_macros)
   assert_template_format("$RCPTID", "555");
   assert_template_format("$DESTIP", "127.0.0.5");
   assert_template_format("$DESTPORT", "6514");
+  assert_template_format("$PROTO", "33");
 
   assert_template_format("$SEQNUM", "999");
   assert_template_format("$CONTEXT_ID", "test-context-id");

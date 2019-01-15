@@ -86,6 +86,7 @@ create_empty_message(void)
   log_msg_set_tag_by_name(msg, "tag,containing,comma");
   msg->rcptid = 555;
   msg->host_id = 0xcafebabe;
+  msg->proto = 33;
 
   /* fix some externally or automatically defined values */
   log_msg_set_value(msg, LM_V_HOST_FROM, "kismacska", -1);
