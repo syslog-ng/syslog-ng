@@ -30,6 +30,7 @@ typedef struct _LogTransportAuxData
 {
   GSockAddr *peer_addr;
   GSockAddr *local_addr;
+  gint proto;
   gchar data[1024];
   gsize end_ptr;
 } LogTransportAuxData;

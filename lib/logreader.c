@@ -401,6 +401,7 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, LogTran
 
   log_msg_set_saddr(m, aux->peer_addr ? : self->peer_addr);
   log_msg_set_daddr(m, aux->local_addr ? : self->local_addr);
+  m->proto = aux->proto;
   log_msg_refcache_start_producer(m);
 
   log_transport_aux_data_foreach(aux, _add_aux_nvpair, m);
