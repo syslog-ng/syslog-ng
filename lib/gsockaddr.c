@@ -199,8 +199,6 @@ g_sockaddr_ref(GSockAddr *a)
   return a;
 }
 
-static gsize g_sockaddr_len(GSockAddr *);
-
 /*+
 
   Decrement the reference count of a GSockAddr instance, and free if
@@ -681,10 +679,13 @@ g_sockaddr_unix_format(GSockAddr *addr, gchar *text, gulong n, gint format)
   return text;
 }
 
-static gsize
+gsize
 g_sockaddr_len(GSockAddr *a)
 {
   gsize len;
+
+  if (!a)
+    return 0;
 
   if (a->sa_funcs == &inet_sockaddr_funcs)
     len = sizeof(GSockAddrInet);
