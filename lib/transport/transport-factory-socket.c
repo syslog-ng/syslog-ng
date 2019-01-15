@@ -24,13 +24,14 @@
 
 #include "transport/transport-factory-socket.h"
 #include "transport/transport-socket.h"
+#include "transport/transport-udp-socket.h"
 
 DEFINE_TRANSPORT_FACTORY_ID_FUN("socket", transport_factory_socket_id);
 
 static LogTransport *
 _construct_transport_dgram(const TransportFactory *s, gint fd)
 {
-  return log_transport_dgram_socket_new(fd);
+  return log_transport_udp_socket_new(fd);
 }
 
 static LogTransport *
