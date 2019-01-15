@@ -1,0 +1,134 @@
+/*
+ * Copyright (c) 2013 BalaBit IT Ltd, Budapest, Hungary
+ * Copyright (c) 2013 Tihamer Petrovics <tihameri@gmail.com>
+ * Copyright (c) 2014 Pierre-Yves Ritschard <pyr@spootnik.org>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code requires {
+
+#include "kafka-parser.h"
+
+}
+
+%code {
+
+#include "cfg-grammar.h"
+#include "plugin.h"
+
+extern GList *last_property;
+}
+
+%name-prefix "kafka_c_"
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_KAFKA_C
+%token KW_TOPIC
+%token KW_PROP
+%token KW_PAYLOAD
+%token KW_PARTITION
+%token KW_RANDOM
+%token KW_FIELD
+%token KW_FLAGS
+%token KW_SYNC
+
+%%
+
+start
+        : LL_CONTEXT_DESTINATION KW_KAFKA_C
+          {
+            last_driver = *instance = kafka_dd_new(configuration);
+            last_property = NULL;
+          }
+          '(' kafka_options ')' { YYACCEPT; }
+        ;
+
+kafka_options
+        : kafka_option kafka_options
+        |
+        ;
+
+kafka_option
+        : KW_TOPIC '(' string kafka_properties ')'
+        {
+            kafka_dd_set_topic(last_driver, $3, last_property);
+            free($3);
+            last_property = NULL;
+        }
+        | KW_PARTITION '(' KW_RANDOM ')'
+        {
+            kafka_dd_set_partition_random(last_driver);
+        }
+        | KW_PARTITION '(' template_content ')'
+        {
+          kafka_dd_set_partition_field(last_driver, $3);
+        }
+        | KW_PROP '(' kafka_properties ')'
+        {
+            kafka_dd_set_props(last_driver, last_property);
+            last_property = NULL;
+        }
+        | KW_FLAGS '(' kafka_flags ')'
+        | KW_PAYLOAD '(' template_content ')'
+        {
+            kafka_dd_set_payload(last_driver, $3);
+        }
+        | dest_driver_option
+        | { last_template_options = kafka_dd_get_template_options(last_driver); } template_option
+        ;
+
+kafka_properties
+        : kafka_property kafka_properties
+        |
+        ;
+
+kafka_property
+        : string '(' string ')'
+        {
+            struct kafka_property *prop = g_new0(struct kafka_property, 1);
+
+            prop->key = g_strdup($1);
+            prop->val = g_strdup($3);
+            last_property = g_list_append(last_property, prop);
+            free($1);
+            free($3);
+        }
+        ;
+
+kafka_flags
+        : kafka_flag kafka_flags
+        |
+        ;
+
+kafka_flag
+        : KW_SYNC
+        {
+            kafka_dd_set_flag_sync(last_driver);
+        }
+        ;
+
+/* INCLUDE_RULES */
+
+%%
