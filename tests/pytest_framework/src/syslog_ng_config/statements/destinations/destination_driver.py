@@ -26,6 +26,8 @@ from src.message_reader.single_line_parser import SingleLineParser
 
 
 class DestinationDriver(object):
+    group_type = "destination"
+
     def __init__(self, logger_factory, IOClass):
         self.__logger_factory = logger_factory
         self.__logger = logger_factory.create_logger("DestinationDriver")

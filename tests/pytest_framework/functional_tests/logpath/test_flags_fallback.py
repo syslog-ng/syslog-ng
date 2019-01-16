@@ -45,22 +45,14 @@ def test_flags_fallback(tc):
     config.create_global_options(keep_hostname="yes")
 
     file_source = config.create_file_source(file_name="input.log")
-    source_group = config.create_source_group(file_source)
-
     host_filter = config.create_filter(host="'host-A'")
-    filter_group1 = config.create_filter_group(host_filter)
-
     file_destination1 = config.create_file_destination(file_name="output1.log")
-    destination_group1 = config.create_destination_group(file_destination1)
-
     file_destination2 = config.create_file_destination(file_name="output2.log")
-    destination_group2 = config.create_destination_group(file_destination2)
 
-    inner_logpath1 = config.create_inner_logpath(statements=[filter_group1, destination_group1])
+    inner_logpath1 = config.create_inner_logpath(statements=[host_filter, file_destination1])
+    inner_logpath2 = config.create_inner_logpath(statements=[file_destination2], flags="fallback")
 
-    inner_logpath2 = config.create_inner_logpath(statements=[destination_group2], flags="fallback")
-
-    config.create_logpath(statements=[source_group, inner_logpath1, inner_logpath2])
+    config.create_logpath(statements=[file_source, inner_logpath1, inner_logpath2])
 
     bsd_message1 = write_message_with_fields(tc, file_source, hostname="host-A", message="message from host-A")
     bsd_message2 = write_message_with_fields(tc, file_source, hostname="host-B", message="message from host-B")

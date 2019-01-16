@@ -21,14 +21,26 @@
 #
 #############################################################################
 
+import functools
 from src.common.random_id import get_unique_id
+from src.common.operations import cast_to_list
 
+class StatementGroup(list):
+    def __init__(self, statements):
+        super(StatementGroup, self).__init__(cast_to_list(statements))
+        self.__group_type = self.__calculate_group_type(cast_to_list(statements))
+        self.__group_id = "%s_%s" % (self.__group_type, get_unique_id())
 
-class StatementGroup(object):
-    def __init__(self, group_type):
-        self.__group_type = group_type
-        self.__group_id = "%s_%s" % (group_type, get_unique_id())
-        self.__statements = []
+    @staticmethod
+    def __calculate_group_type(statements):
+        def check_consistency(stmt1, stmt2):
+            type1 = stmt1.group_type
+            type2 = stmt2.group_type
+            if type1 != type2:
+                raise TypeError("Conflict in statement types: {} and {}".format(type1, type2))
+            return stmt2
+
+        return functools.reduce(check_consistency, statements).group_type
 
     @property
     def group_type(self):
@@ -37,17 +49,3 @@ class StatementGroup(object):
     @property
     def group_id(self):
         return self.__group_id
-
-    @property
-    def statements(self):
-        return self.__statements
-
-    def remove_statement(self, statement):
-        self.statements.remove(statement)
-
-    def update_group_with_statement(self, statement):
-        self.statements.append(statement)
-
-    def update_group_with_statements(self, statements):
-        for statement in statements:
-            self.update_group_with_statement(statement)

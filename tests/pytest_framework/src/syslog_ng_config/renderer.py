@@ -77,7 +77,7 @@ class ConfigRenderer(object):
                 statement_group.group_type, statement_group.group_id
             )
 
-            for statement in statement_group.statements:
+            for statement in statement_group:
                 # driver header
                 self.__syslog_ng_config_content += "    {} (\n".format(statement.driver_name)
 

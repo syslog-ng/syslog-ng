@@ -23,6 +23,8 @@
 
 
 class SourceDriver(object):
+    group_type = "source"
+
     def __init__(self, logger_factory, IOClass):
         self.__logger_factory = logger_factory
         self.__logger = logger_factory.create_logger("SourceDriver")

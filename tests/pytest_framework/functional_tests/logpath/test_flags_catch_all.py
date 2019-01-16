@@ -42,17 +42,12 @@ def test_flags_catch_all(tc):
     config = tc.new_config()
 
     file_source = config.create_file_source(file_name="input.log")
-    source_group = config.create_source_group(file_source)
+    file_destination = config.create_file_destination(file_name="output.log")
+    catch_all_destination = config.create_file_destination(file_name="catchall_output.log")
 
-    file_destination1 = config.create_file_destination(file_name="output1.log")
-    destination_group = config.create_destination_group(file_destination1)
+    inner_logpath = config.create_inner_logpath(statements=[file_destination])
 
-    file_destination2 = config.create_file_destination(file_name="output2.log")
-    catch_all_destination = config.create_destination_group(file_destination2)
-
-    inner_logpath = config.create_inner_logpath(statements=[destination_group])
-
-    config.create_logpath(statements=[source_group, inner_logpath])
+    config.create_logpath(statements=[file_source, inner_logpath])
     config.create_logpath(statements=[catch_all_destination], flags="catch-all")
 
     bsd_message = write_dummy_message(tc, file_source)
@@ -62,11 +57,11 @@ def test_flags_catch_all(tc):
     syslog_ng = tc.new_syslog_ng()
     syslog_ng.start(config)
 
-    dest1_logs = file_destination1.read_log()
+    destination_logs = file_destination.read_log()
     # message should arrived into destination1
-    assert tc.format_as_bsd(expected_bsd_message) in dest1_logs
+    assert tc.format_as_bsd(expected_bsd_message) in destination_logs
 
-    dest2_logs = file_destination2.read_log()
-    # message should arrived into destination2
+    catch_all_destination_logs = catch_all_destination.read_log()
+    # message should arrived into catch_all_destination
     # there is a flags(catch-all)
-    assert tc.format_as_bsd(expected_bsd_message) in dest2_logs
+    assert tc.format_as_bsd(expected_bsd_message) in catch_all_destination_logs

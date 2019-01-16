@@ -54,17 +54,22 @@ class SyslogNgConfig(object):
         )
         FileIO(self.__logger_factory, self.__config_path).rewrite(rendered_config)
 
-    @staticmethod
-    def __create_statement_group(group_type, statements):
-        statement_group = StatementGroup(group_type)
-        statement_group.update_group_with_statements(cast_to_list(statements))
-        return statement_group
+    def create_statement_group_if_needed(self, item):
+        if isinstance(item, (StatementGroup, LogPath)):
+            return item
+        else:
+            return self.create_statement_group(item)
+
+    def __create_logpath_with_conversion(self, items, flags):
+        return self.__create_logpath_group(
+            map(self.create_statement_group_if_needed, cast_to_list(items)),
+            flags)
 
     @staticmethod
     def __create_logpath_group(statements=None, flags=None):
         logpath = LogPath()
         if statements:
-            logpath.update_logpath_with_groups(cast_to_list(statements))
+            logpath.add_groups(statements)
         if flags:
             logpath.add_flags(cast_to_list(flags))
         return logpath
@@ -81,26 +86,16 @@ class SyslogNgConfig(object):
     def create_filter(self, **kwargs):
         return Filter(self.__logger_factory, **kwargs)
 
-    def create_source_group(self, drivers):
-        source_group = self.__create_statement_group("source", drivers)
-        self.__syslog_ng_config["statement_groups"].append(source_group)
-        return source_group
-
-    def create_destination_group(self, drivers):
-        destination_group = self.__create_statement_group("destination", drivers)
-        self.__syslog_ng_config["statement_groups"].append(destination_group)
-        return destination_group
-
-    def create_filter_group(self, filters):
-        filter_group = self.__create_statement_group("filter", filters)
-        self.__syslog_ng_config["statement_groups"].append(filter_group)
-        return filter_group
+    def create_statement_group(self, statements):
+        statement_group = StatementGroup(statements)
+        self.__syslog_ng_config["statement_groups"].append(statement_group)
+        return statement_group
 
     def create_logpath(self, statements=None, flags=None):
-        logpath = self.__create_logpath_group(statements, flags)
+        logpath = self.__create_logpath_with_conversion(statements, flags)
         self.__syslog_ng_config["logpath_groups"].append(logpath)
         return logpath
 
     def create_inner_logpath(self, statements=None, flags=None):
-        inner_logpath = self.__create_logpath_group(statements, flags)
+        inner_logpath = self.__create_logpath_with_conversion(statements, flags)
         return inner_logpath
