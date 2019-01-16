@@ -27,8 +27,65 @@
 
 #include "syslog-ng.h"
 
-typedef struct _PersistState PersistState;
+typedef struct _PersistFileHeader
+{
+  union
+  {
+    struct
+    {
+      /* should contain SLP4, everything is Big-Endian */
+
+      /* 64 bytes for file header */
+      gchar magic[4];
+      /* should be zero, any non-zero value is not supported and causes the state to be dropped */
+      guint32 flags;
+      /* number of name-value keys in the file */
+      guint32 key_count;
+      /* space reserved for additional information in the header */
+      gchar __reserved1[52];
+      /* initial key store where the first couple of NV keys are stored, sized to align the header to 4k boundary */
+      gchar initial_key_store[4032];
+    };
+    gchar __padding[4096];
+  };
+} PersistFileHeader;
+
 typedef guint32 PersistEntryHandle;
+
+typedef struct
+{
+  void (*handler)(gpointer user_data);
+  gpointer cookie;
+} PersistStateErrorHandler;
+
+typedef struct _PersistEntry
+{
+  PersistEntryHandle ofs;
+} PersistEntry;
+
+struct _PersistState
+{
+  gint version;
+  gchar *committed_filename;
+  gchar *temp_filename;
+  gint fd;
+  gint mapped_counter;
+  GMutex *mapped_lock;
+  GCond *mapped_release_cond;
+  guint32 current_size;
+  guint32 current_ofs;
+  gpointer current_map;
+  PersistFileHeader *header;
+  PersistStateErrorHandler error_handler;
+
+  /* keys being used */
+  GHashTable *keys;
+  PersistEntryHandle current_key_block;
+  gint current_key_ofs;
+  gint current_key_size;
+};
+
+typedef struct _PersistState PersistState;
 
 gpointer persist_state_map_entry(PersistState *self, PersistEntryHandle handle);
 void persist_state_unmap_entry(PersistState *self, PersistEntryHandle handle);
