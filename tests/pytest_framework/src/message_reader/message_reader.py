@@ -21,7 +21,8 @@
 #
 #############################################################################
 
-from src.common.blocking import wait_until_true
+from src.common.blocking import wait_until_true_custom
+from src.common.blocking import DEFAULT_TIMEOUT
 
 
 class MessageReader(object):
@@ -47,8 +48,8 @@ class MessageReader(object):
             return len(self.__parser.msg_list)
         return counter
 
-    def pop_messages(self, counter):
-        assert wait_until_true(self.__buffer_and_parse, counter) is True
+    def pop_messages(self, counter, timeout=DEFAULT_TIMEOUT):
+        assert wait_until_true_custom(self.__buffer_and_parse, args=(counter,), timeout=timeout) is True
         counter = self.__map_counter(counter)
         required_number_of_messages = self.__parser.msg_list[0:counter]
         self.__parser.msg_list = self.__parser.msg_list[
@@ -57,7 +58,7 @@ class MessageReader(object):
         return required_number_of_messages
 
     def peek_messages(self, counter):
-        assert wait_until_true(self.__buffer_and_parse, counter) is True
+        assert wait_until_true_custom(self.__buffer_and_parse, args=(counter,)) is True
         counter = self.__map_counter(counter)
         required_number_of_messages = self.__parser.msg_list[0:counter]
         return required_number_of_messages

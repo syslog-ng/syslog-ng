@@ -21,11 +21,8 @@
 #
 #############################################################################
 
-from src.common.blocking import wait_until_true, wait_until_false
+from src.common.blocking import wait_until_true_custom, wait_until_false_custom
 from src.common import blocking
-
-blocking.MONITORING_TIME = 0.1
-
 
 def inner_function_return_true():
     return True
@@ -40,20 +37,20 @@ def inner_function_add_numbers():
 
 
 def test_wait_until_true_inner_function_returns_true():
-    assert wait_until_true(inner_function_return_true)
+    assert wait_until_true_custom(inner_function_return_true, timeout=0.1)
 
 
-def test_wait_until_true_inner_function_returns_false():
-    assert wait_until_true(inner_function_return_false) is False
+def test_wait_until_true_custom_inner_function_returns_false():
+    assert wait_until_true_custom(inner_function_return_false, timeout=0.1) is False
 
 
 def test_wait_until_false_inner_function_returns_true():
-    assert wait_until_false(inner_function_return_true) is False
+    assert wait_until_false_custom(inner_function_return_true, timeout=0.1) is False
 
 
 def test_wait_until_false_inner_function_returns_false():
-    assert wait_until_false(inner_function_return_false)
+    assert wait_until_false_custom(inner_function_return_false, timeout=0.1)
 
 
-def test_wait_until_true_returns_with_result():
-    assert wait_until_true(inner_function_add_numbers) == 5
+def test_wait_until_true_custom_returns_with_result():
+    assert wait_until_true_custom(inner_function_add_numbers, timeout=0.1) == 5
