@@ -106,6 +106,7 @@ check_symbol_exists("getrandom" "sys/random.h" SYSLOG_NG_HAVE_GETRANDOM)
 
 check_include_files(utmp.h SYSLOG_NG_HAVE_UTMP_H)
 check_include_files(utmpx.h SYSLOG_NG_HAVE_UTMPX_H)
+check_include_files(dlfcn.h SYSLOG_NG_HAVE_DLFCN_H)
 
 check_struct_has_member("struct utmpx" "ut_type" "utmpx.h" UTMPX_HAS_UT_TYPE LANGUAGE C)
 check_struct_has_member("struct utmp" "ut_type" "utmp.h" UTMP_HAS_UT_TYPE LANGUAGE C)

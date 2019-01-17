@@ -21,14 +21,15 @@
  * COPYING for details.
  *
  */
-#include "signal-handler.h"
 
 #include "syslog-ng.h"
 #include "children.h"
 
-#ifndef _WIN32
+#include <signal.h>
+
+#if SYSLOG_NG_HAVE_DLFCN_H
+
 #include <dlfcn.h>
-#endif
 
 static const struct sigaction *sgchld_handler;
 
@@ -41,7 +42,6 @@ trigger_sigchld_handler_chain(int signum)
     }
 }
 
-#ifndef _WIN32
 static int
 call_original_sigaction(int signum, const struct sigaction *act, struct sigaction *oldact)
 {
