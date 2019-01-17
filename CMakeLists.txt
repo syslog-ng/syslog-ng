@@ -130,6 +130,8 @@ if ((NOT IVYKIS_INTERNAL) AND (IVYKIS_PKGCONF_VERSION VERSION_LESS "0.39"))
   set (SYSLOG_NG_USE_CONST_IVYKIS_MOCK 0)
 endif()
 
+external_or_find_package(JSONC)
+
 find_package(OpenSSL REQUIRED)
 find_package(FLEX REQUIRED)
 find_package(LibNet REQUIRED)
@@ -254,6 +256,7 @@ add_subdirectory(syslog-ng)
 add_subdirectory(syslog-ng-ctl)
 add_test_subdirectory(libtest)
 add_subdirectory(tests)
+add_subdirectory(persist-tool)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-config.h DESTINATION include/syslog-ng)
 

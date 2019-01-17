@@ -14,8 +14,6 @@ set(JSON_SOURCES
 
 set(JSON_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
-external_or_find_package(JSONC)
-
 if(JSONC_FOUND)
     option(ENABLE_JSON "Enable JSON plugin" ON)
 else()
