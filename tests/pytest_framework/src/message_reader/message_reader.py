@@ -41,7 +41,9 @@ class MessageReader(object):
             self.__read_eof = True
         if counter != self.__read_all_messages:
             return len(self.__parser.msg_list) >= counter
-        return self.__read_eof
+        retval = self.__read_eof
+        self.__read_eof = False
+        return retval
 
     def __map_counter(self, counter):
         if counter == self.__read_all_messages:

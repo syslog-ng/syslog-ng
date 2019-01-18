@@ -163,3 +163,17 @@ def test_peek_messages(tc_unittest):
 
     assert message_reader.peek_messages(counter=2) == test_message.splitlines(True)
     assert message_reader._MessageReader__parser.msg_list == test_message.splitlines(True)
+
+def test_read_all_messages(tc_unittest):
+    def read_generator():
+        yield "" # eof
+        yield "second\n"
+        yield "third\n"
+        yield "" # eof
+
+    single_line_parser = SingleLineParser(tc_unittest.get_fake_logger_factory())
+    generator = read_generator()
+    message_reader = MessageReader(tc_unittest.get_fake_logger_factory(), lambda : next(generator), single_line_parser)
+
+    assert len(message_reader.pop_messages(counter=0)) == 0
+    assert len(message_reader.pop_messages(counter=0)) == 2
