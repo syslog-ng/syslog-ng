@@ -45,3 +45,52 @@ http_result_disconnect(gpointer user_data)
 {
   return HTTP_RESULT_DISCONNECT;
 }
+
+static void
+_free_entry(HttpResponseHandler *self)
+{
+  g_free(self);
+}
+
+HttpResponseHandlers *
+http_response_handlers_new(void)
+{
+  return g_hash_table_new_full(g_int_hash, g_int_equal, g_free, (GDestroyNotify)_free_entry);
+}
+
+void
+http_response_handlers_free(HttpResponseHandlers *self)
+{
+  g_hash_table_destroy(self);
+}
+
+static HttpResponseHandler *
+_clone(HttpResponseHandler *self)
+{
+  HttpResponseHandler *clone = g_new(HttpResponseHandler, 1);
+  *clone = *self;
+  return clone;
+}
+
+void
+http_response_handlers_insert(HttpResponseHandlers *self, HttpResponseHandler *response_handler)
+{
+  HttpResponseHandler *clone = _clone(response_handler);
+
+  /* It migth be tempting to use status code from the clone, hence we
+  neither need to allocate a gint, nor need a key free function in the
+  hashtable. The problem is, when glib overwrites the value behind the
+  same key, by default it does not replace the old key with the new,
+  only the value changes. In our case, the value will be deallocated,
+  hence the key in the hashtable becomes invalid. */
+
+  gint *status_code = g_new(gint, 1);
+  *status_code = clone->status_code;
+  g_hash_table_insert(self, status_code, clone);
+}
+
+HttpResponseHandler *
+http_response_handlers_lookup(HttpResponseHandlers *self, glong status_code)
+{
+  return g_hash_table_lookup(self, &status_code);
+}

@@ -47,4 +47,11 @@ typedef struct
   gpointer user_data;
 } HttpResponseHandler;
 
+typedef GHashTable HttpResponseHandlers;
+
+HttpResponseHandlers *http_response_handlers_new(void);
+void http_response_handlers_free(HttpResponseHandlers *self);
+void http_response_handlers_insert(HttpResponseHandlers *self, HttpResponseHandler *result_handler);
+HttpResponseHandler *http_response_handlers_lookup(HttpResponseHandlers *self, glong status_code);
+
 #endif

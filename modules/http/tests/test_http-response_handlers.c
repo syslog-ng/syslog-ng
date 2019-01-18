@@ -26,5 +26,18 @@
 
 Test(response_handlers, test_response_handlers)
 {
-  cr_assert(TRUE);
+  HttpResponseHandlers *self = http_response_handlers_new();
+
+  cr_assert_null(http_response_handlers_lookup(self, 404));
+
+  HttpResponseHandler response_handler =  { .status_code = 404 };
+  http_response_handlers_insert(self, &response_handler);
+  /* While overwriting, g_hash_table handles the key part in an interesting way:
+  it is easy to get use after free. So I add an additional
+  insert in unit test to test the overwrite. */
+  http_response_handlers_insert(self, &response_handler);
+  cr_assert(http_response_handlers_lookup(self, 404));
+
+  http_response_handlers_free(self);
+
 }
