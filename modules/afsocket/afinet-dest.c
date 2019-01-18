@@ -243,6 +243,8 @@ static gboolean
 _setup_bind_addr(AFInetDestDriver *self)
 {
   g_sockaddr_unref(self->super.bind_addr);
+  self->super.bind_addr = NULL;
+
   if (!resolve_hostname_to_sockaddr(&self->super.bind_addr, self->super.transport_mapper->address_family, self->bind_ip))
     return FALSE;
 
@@ -256,6 +258,8 @@ static gboolean
 _setup_dest_addr(AFInetDestDriver *self)
 {
   g_sockaddr_unref(self->super.dest_addr);
+  self->super.dest_addr = NULL;
+
   if (!resolve_hostname_to_sockaddr(&self->super.dest_addr, self->super.transport_mapper->address_family,
                                     _afinet_dd_get_hostname(self)))
     return FALSE;
