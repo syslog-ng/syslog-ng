@@ -27,7 +27,8 @@
 void
 http_dd_insert_response_handler(LogDriver *d, HttpResponseHandler *response_handler)
 {
-  msg_debug("response_handler", evt_tag_int("status_code", response_handler->status_code));
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+  http_response_handlers_insert(self->response_handlers, response_handler);
 }
 
 void
@@ -519,6 +520,7 @@ http_dd_free(LogPipe *s)
   http_auth_header_free(self->auth_header);
   g_mutex_free(self->workers_lock);
   http_load_balancer_free(self->load_balancer);
+  http_response_handlers_free(self->response_handlers);
 
   log_threaded_dest_driver_free(s);
 }
@@ -554,6 +556,8 @@ http_dd_new(GlobalConfig *cfg)
   if (!self->user_agent)
     self->user_agent = g_strdup_printf("syslog-ng %s/libcurl %s",
                                        SYSLOG_NG_VERSION, curl_info->version);
+
+  self->response_handlers = http_response_handlers_new();
 
   return &self->super.super.super;
 }

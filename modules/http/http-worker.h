@@ -41,7 +41,8 @@ typedef struct _HTTPDestinationWorker
   struct curl_slist *request_headers;
 } HTTPDestinationWorker;
 
-LogThreadedResult map_http_status_to_worker_status(HTTPDestinationWorker *self, const gchar *url, glong http_code);
+LogThreadedResult default_map_http_status_to_worker_status(HTTPDestinationWorker *self, const gchar *url,
+                                                           glong http_code);
 LogThreadedDestWorker *http_dw_new(LogThreadedDestDriver *owner, gint worker_index);
 
 #endif

@@ -247,7 +247,7 @@ _add_message_to_batch(HTTPDestinationWorker *self, LogMessage *msg)
 }
 
 LogThreadedResult
-map_http_status_to_worker_status(HTTPDestinationWorker *self, const gchar *url, glong http_code)
+default_map_http_status_to_worker_status(HTTPDestinationWorker *self, const gchar *url, glong http_code)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
   LogThreadedResult retval = LTR_ERROR;
@@ -345,6 +345,28 @@ _debug_response_info(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target
             log_pipe_location_tag(&owner->super.super.super.super));
 }
 
+static LogThreadedResult
+_map_http_result(HttpResult self)
+{
+  g_assert(self < HTTP_RESULT_MAX);
+
+  switch (self)
+    {
+    case HTTP_RESULT_SUCCESS:
+      return LTR_SUCCESS;
+    case HTTP_RESULT_RETRY:
+      return LTR_ERROR;
+    case HTTP_RESULT_DROP:
+      return LTR_DROP;
+    case HTTP_RESULT_DISCONNECT:
+      return LTR_NOT_CONNECTED;
+    default:
+      g_assert_not_reached();
+    };
+
+  return LTR_MAX;
+}
+
 static gboolean
 _curl_perform_request(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
 {
@@ -419,7 +441,11 @@ _flush_on_target(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
   if (http_code == 401 && owner->auth_header)
     return _renew_header(owner);
 
-  return map_http_status_to_worker_status(self, target->url, http_code);
+  HttpResponseHandler *response_handler = NULL;
+  if ((response_handler = http_response_handlers_lookup(owner->response_handlers, http_code)))
+    return _map_http_result(response_handler->action(response_handler->user_data));
+
+  return default_map_http_status_to_worker_status(self, target->url, http_code);
 }
 
 /* we flush the accumulated data if
