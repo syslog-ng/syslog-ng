@@ -32,19 +32,18 @@ class MessageReader(object):
 
         self.__read = read
         self.__parser = parser
-        self.__read_eof = False
 
     def __buffer_and_parse(self, counter):
         buffered_chunk = self.__read()
-        if buffered_chunk:
-            self.__parser.parse_buffer(buffered_chunk)
+        if counter == READ_ALL_MESSAGES:
+            if buffered_chunk:
+                self.__parser.parse_buffer(buffered_chunk)
+                return False
+            else:
+                return True # eof reached
         else:
-            self.__read_eof = True
-        if counter != READ_ALL_MESSAGES:
+            self.__parser.parse_buffer(buffered_chunk)
             return len(self.__parser.msg_list) >= counter
-        retval = self.__read_eof
-        self.__read_eof = False
-        return retval
 
     def __map_counter(self, counter):
         if counter == READ_ALL_MESSAGES:
