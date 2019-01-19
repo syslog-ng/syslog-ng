@@ -19,6 +19,8 @@ libtest_libsyslog_ng_test_a_SOURCES =   \
 	libtest/mock-cfg-parser.h	\
 	libtest/mock-transport.c	\
 	libtest/mock-transport.h	\
+	libtest/fake-time.c		\
+	libtest/fake-time.h		\
 	libtest/msg_parse_lib.c		\
 	libtest/msg_parse_lib.h		\
 	libtest/persist_lib.c		\
