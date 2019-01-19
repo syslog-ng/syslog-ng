@@ -118,12 +118,13 @@ enum
   LF_STATE_MASK        = 0xFFF0,
   LF_STATE_OWN_PAYLOAD = 0x0010,
   LF_STATE_OWN_SADDR   = 0x0020,
-  LF_STATE_OWN_TAGS    = 0x0040,
-  LF_STATE_OWN_SDATA   = 0x0080,
-  LF_STATE_OWN_MASK    = 0x00F0,
+  LF_STATE_OWN_DADDR   = 0x0040,
+  LF_STATE_OWN_TAGS    = 0x0080,
+  LF_STATE_OWN_SDATA   = 0x0100,
+  LF_STATE_OWN_MASK    = 0x01F0,
 
   /* In the log header the hostname shall be printed individually (no group name, no chain hosts)*/
-  LF_SIMPLE_HOSTNAME = 0x0100,
+  LF_SIMPLE_HOSTNAME = 0x0200,
 
   LF_CHAINED_HOSTNAME  = 0x00010000,
 
@@ -193,6 +194,7 @@ struct _LogMessage
   NVHandle *sdata;
 
   GSockAddr *saddr;
+  GSockAddr *daddr;
   NVTable *payload;
 
   guint32 flags;
@@ -322,6 +324,8 @@ void log_msg_set_tag_by_id(LogMessage *self, LogTagId id);
 void log_msg_set_tag_by_name(LogMessage *self, const gchar *name);
 void log_msg_set_saddr(LogMessage *self, GSockAddr *saddr);
 void log_msg_set_saddr_ref(LogMessage *self, GSockAddr *saddr);
+void log_msg_set_daddr(LogMessage *self, GSockAddr *daddr);
+void log_msg_set_daddr_ref(LogMessage *self, GSockAddr *daddr);
 void log_msg_clear_tag_by_id(LogMessage *self, LogTagId id);
 void log_msg_clear_tag_by_name(LogMessage *self, const gchar *name);
 gboolean log_msg_is_tag_by_id(LogMessage *self, LogTagId id);
