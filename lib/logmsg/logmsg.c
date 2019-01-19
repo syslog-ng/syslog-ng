@@ -1077,6 +1077,21 @@ log_msg_set_saddr_ref(LogMessage *self, GSockAddr *saddr)
   self->flags |= LF_STATE_OWN_SADDR;
 }
 
+void
+log_msg_set_daddr(LogMessage *self, GSockAddr *daddr)
+{
+  log_msg_set_daddr_ref(self, g_sockaddr_ref(daddr));
+}
+
+void
+log_msg_set_daddr_ref(LogMessage *self, GSockAddr *daddr)
+{
+  if (log_msg_chk_flag(self,  LF_STATE_OWN_DADDR))
+    g_sockaddr_unref(self->daddr);
+  self->daddr = daddr;
+  self->flags |= LF_STATE_OWN_DADDR;
+}
+
 /**
  * log_msg_init:
  * @self: LogMessage instance
@@ -1103,6 +1118,7 @@ log_msg_init(LogMessage *self)
 
   self->sdata = NULL;
   self->saddr = NULL;
+  self->daddr = NULL;
 
   self->original = NULL;
   self->flags |= LF_STATE_OWN_MASK;
@@ -1138,11 +1154,12 @@ log_msg_clear(LogMessage *self)
     }
   self->num_sdata = 0;
 
-  if (log_msg_chk_flag(self, LF_STATE_OWN_SADDR) && self->saddr)
-    {
-      g_sockaddr_unref(self->saddr);
-    }
+  if (log_msg_chk_flag(self, LF_STATE_OWN_SADDR))
+    g_sockaddr_unref(self->saddr);
   self->saddr = NULL;
+  if (log_msg_chk_flag(self, LF_STATE_OWN_DADDR))
+    g_sockaddr_unref(self->daddr);
+  self->daddr = NULL;
 
   self->flags |= LF_STATE_OWN_MASK;
 }
@@ -1276,7 +1293,6 @@ _determine_payload_size(gint length, MsgFormatOptions *parse_options)
  * log_msg_new:
  * @msg: message to parse
  * @length: length of @msg
- * @saddr: sender address
  * @flags: parse flags (LP_*)
  *
  * This function allocates, parses and returns a new LogMessage instance.
@@ -1384,6 +1400,8 @@ log_msg_free(LogMessage *self)
     g_free(self->sdata);
   if (log_msg_chk_flag(self, LF_STATE_OWN_SADDR))
     g_sockaddr_unref(self->saddr);
+  if (log_msg_chk_flag(self, LF_STATE_OWN_DADDR))
+    g_sockaddr_unref(self->daddr);
 
   if (self->original)
     log_msg_unref(self->original);
@@ -1879,7 +1897,7 @@ log_msg_get_size(LogMessage *self)
   return
     sizeof(LogMessage) + // msg.static fields
     + self->alloc_sdata * sizeof(self->sdata[0]) +
-    g_sockaddr_len(self->saddr) + // msg.saddr
+    g_sockaddr_len(self->saddr) + g_sockaddr_len(self->daddr) +
     ((self->num_tags) ? sizeof(self->tags[0]) * self->num_tags : 0) +
     nv_table_get_memory_consumption(self->payload); // msg.payload (nvtable)
 }
