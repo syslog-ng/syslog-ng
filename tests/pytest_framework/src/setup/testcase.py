@@ -26,6 +26,7 @@ from src.setup.testcase_parameters import TestcaseParameters
 from src.syslog_ng.syslog_ng_paths import SyslogNgPaths
 from src.logger.logger_factory import LoggerFactory
 from src.syslog_ng_config.syslog_ng_config import SyslogNgConfig
+from src.syslog_ng_ctl.syslog_ng_ctl import SyslogNgCtl
 from src.syslog_ng.syslog_ng import SyslogNg
 from src.message_builder.bsd_format import BSDFormat
 from src.message_builder.log_message import LogMessage
@@ -81,6 +82,9 @@ class SetupTestCase(object):
         syslog_ng = SyslogNg(self.__logger_factory, instance_paths, self.__testcase_parameters)
         self.__teardown_actions.append(syslog_ng.stop)
         return syslog_ng
+
+    def new_syslog_ng_ctl(self, syslog_ng):
+        return SyslogNgCtl(self.__logger_factory, syslog_ng.instance_paths)
 
     def new_config(self):
         return SyslogNgConfig(self.__logger_factory, self.__testcase_parameters.get_working_dir())
