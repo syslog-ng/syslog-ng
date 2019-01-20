@@ -32,9 +32,8 @@ from src.syslog_ng_config.statements.filters.filter import Filter
 
 
 class SyslogNgConfig(object):
-    def __init__(self, logger_factory, instance_paths):
-        self.__instance_paths = instance_paths
-        self.__config_path = instance_paths.get_config_path()
+    def __init__(self, logger_factory, working_dir):
+        self.__working_dir = working_dir
         self.__logger_factory = logger_factory
         self.__logger = logger_factory.create_logger("SyslogNgConfig")
         self.__syslog_ng_config = {
@@ -46,15 +45,15 @@ class SyslogNgConfig(object):
     def set_version(self, version):
         self.__syslog_ng_config["version"]=version
 
-    def write_config_content(self):
-        rendered_config = ConfigRenderer(self.__syslog_ng_config, self.__instance_paths).get_rendered_config()
+    def write_content(self, config_path):
+        rendered_config = ConfigRenderer(self.__syslog_ng_config, self.__working_dir).get_rendered_config()
         self.__logger.info(
             "Used config \
         \n->Content:[{}]".format(
                 rendered_config
             )
         )
-        FileIO(self.__logger_factory, self.__config_path).rewrite(rendered_config)
+        FileIO(self.__logger_factory, config_path).rewrite(rendered_config)
 
     def create_statement_group_if_needed(self, item):
         if isinstance(item, (StatementGroup, LogPath)):
@@ -80,10 +79,10 @@ class SyslogNgConfig(object):
         self.__syslog_ng_config["global_options"].update(kwargs)
 
     def create_file_source(self, **kwargs):
-        return FileSource(self.__logger_factory, self.__instance_paths, **kwargs)
+        return FileSource(self.__logger_factory, self.__working_dir, **kwargs)
 
     def create_file_destination(self, **kwargs):
-        return FileDestination(self.__logger_factory, self.__instance_paths, **kwargs)
+        return FileDestination(self.__logger_factory, self.__working_dir, **kwargs)
 
     def create_filter(self, **kwargs):
         return Filter(self.__logger_factory, **kwargs)

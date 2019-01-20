@@ -90,7 +90,7 @@ class SyslogNgCli(object):
     def start(self, config):
         self.__logger.info("Beginning of syslog-ng start")
         config.set_version(self.get_version())
-        config.write_config_content()
+        config.write_content(self.__instance_paths.get_config_path())
 
         self.__syntax_check()
         self.__start_syslog_ng()
@@ -100,7 +100,7 @@ class SyslogNgCli(object):
     def reload(self, config):
         self.__logger.info("Beginning of syslog-ng reload")
         config.set_version(self.get_version())
-        config.write_config_content()
+        config.write_content(self.__instance_paths.get_config_path())
 
         # effective reload
         self.__syslog_ng_ctl.reload()

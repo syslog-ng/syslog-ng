@@ -27,12 +27,12 @@ from src.syslog_ng_config.statements.sources.source_driver import SourceDriver
 
 
 class FileSource(SourceDriver):
-    def __init__(self, logger_factory, instance_paths, **kwargs):
+    def __init__(self, logger_factory, working_dir, **kwargs):
         super(FileSource, self).__init__(logger_factory, FileIO)
         self.__options = kwargs
         self.__driver_name = "file"
         self.__positional_option = "file_name"
-        self.__construct_file_path(instance_paths)
+        self.__construct_file_path(working_dir)
 
     @property
     def driver_name(self):
@@ -52,9 +52,9 @@ class FileSource(SourceDriver):
     def write_log(self, formatted_log, counter=1):
         self.sd_write_log(self.get_path(), formatted_log, counter=counter)
 
-    def __construct_file_path(self, instance_paths):
+    def __construct_file_path(self, working_dir):
         if self.positional_option_name in self.options.keys():
             given_positional_option_value = self.options[self.positional_option_name]
             self.options[self.positional_option_name] = Path(
-                instance_paths.get_working_dir(), given_positional_option_value
+                working_dir, given_positional_option_value
             )
