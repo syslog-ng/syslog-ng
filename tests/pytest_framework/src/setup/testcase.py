@@ -27,7 +27,6 @@ from src.syslog_ng.syslog_ng_paths import SyslogNgPaths
 from src.logger.logger_factory import LoggerFactory
 from src.syslog_ng_config.syslog_ng_config import SyslogNgConfig
 from src.syslog_ng.syslog_ng import SyslogNg
-from src.syslog_ng.syslog_ng_cli import SyslogNgCli
 from src.message_builder.bsd_format import BSDFormat
 from src.message_builder.log_message import LogMessage
 
@@ -79,8 +78,7 @@ class SetupTestCase(object):
         instance_paths = SyslogNgPaths(self.__testcase_context, self.__testcase_parameters).set_syslog_ng_paths(
             instance_name
         )
-        syslog_ng_cli = SyslogNgCli(self.__logger_factory, instance_paths, self.__testcase_parameters)
-        syslog_ng = SyslogNg(syslog_ng_cli)
+        syslog_ng = SyslogNg(self.__logger_factory, instance_paths, self.__testcase_parameters)
         self.__teardown_actions.append(syslog_ng.stop)
         return syslog_ng
 
