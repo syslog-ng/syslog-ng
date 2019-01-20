@@ -89,7 +89,7 @@ class SetupTestCase(object):
         self.__instances.update({instance_name: {}})
         self.__instances[instance_name]["syslog-ng"] = syslog_ng
         self.__instances[instance_name]["config"] = SyslogNgConfig(
-            self.__logger_factory, instance_paths, syslog_ng.get_version()
+            self.__logger_factory, instance_paths
         )
 
     def new_config(self, instance_name="server"):

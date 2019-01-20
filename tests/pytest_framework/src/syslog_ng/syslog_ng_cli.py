@@ -89,6 +89,7 @@ class SyslogNgCli(object):
     # Process commands
     def start(self, config):
         self.__logger.info("Beginning of syslog-ng start")
+        config.set_version(self.get_version())
         config.write_config_content()
 
         self.__syntax_check()
@@ -98,6 +99,7 @@ class SyslogNgCli(object):
 
     def reload(self, config):
         self.__logger.info("Beginning of syslog-ng reload")
+        config.set_version(self.get_version())
         config.write_config_content()
 
         # effective reload
