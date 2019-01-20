@@ -42,7 +42,6 @@ class SetupTestCase(object):
             report_file=self.__testcase_parameters.get_report_file(), loglevel=self.__testcase_parameters.get_loglevel()
         )
         self.__logger = self.__logger_factory.create_logger("Setup", use_console_handler=True, use_file_handler=True)
-        self.__instances = {}
 
         self.__teardown_actions = []
         testcase_context.addfinalizer(self.__teardown)
@@ -76,26 +75,17 @@ class SetupTestCase(object):
                     )
                     self.__logger.error(str(failed_report.longrepr))
 
-    def __is_instance_registered(self, instance_name):
-        return instance_name in self.__instances.keys()
-
-    def __register_instance(self, instance_name):
+    def new_syslog_ng(self, instance_name="server"):
         instance_paths = SyslogNgPaths(self.__testcase_context, self.__testcase_parameters).set_syslog_ng_paths(
             instance_name
         )
         syslog_ng_cli = SyslogNgCli(self.__logger_factory, instance_paths, self.__testcase_parameters)
         syslog_ng = SyslogNg(syslog_ng_cli)
         self.__teardown_actions.append(syslog_ng.stop)
-        self.__instances.update({instance_name: {}})
-        self.__instances[instance_name]["syslog-ng"] = syslog_ng
+        return syslog_ng
 
     def new_config(self):
         return SyslogNgConfig(self.__logger_factory, self.__testcase_parameters.get_working_dir())
-
-    def new_syslog_ng(self, instance_name="server"):
-        if not self.__is_instance_registered(instance_name):
-            self.__register_instance(instance_name)
-        return self.__instances[instance_name]["syslog-ng"]
 
     @staticmethod
     def format_as_bsd(log_message):
