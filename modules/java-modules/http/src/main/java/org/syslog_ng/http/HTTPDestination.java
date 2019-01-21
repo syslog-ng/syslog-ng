@@ -95,19 +95,19 @@ public class HTTPDestination extends StructuredLogDestination {
                 osw.close();
             } catch (IOException e) {
                 logger.error("error in writing message.");
-                return WORKER_INSERT_RESULT_ERROR;
+                return ERROR;
             }
             responseCode = connection.getResponseCode();
             if (isHTTPResponseError(responseCode)) {
                 logger.error("HTTP response code error: " + responseCode);
-                return WORKER_INSERT_RESULT_ERROR;
+                return ERROR;
             }
         } catch (IOException | SecurityException | IllegalStateException e) {
             logger.debug("error in writing message." +
                     (responseCode != 0 ? "Response code is " + responseCode : ""));
-            return WORKER_INSERT_RESULT_ERROR;
+            return ERROR;
         }
-        return WORKER_INSERT_RESULT_SUCCESS;
+        return SUCCESS;
     }
 
     private static boolean isHTTPResponseError(int responseCode) {
@@ -116,7 +116,7 @@ public class HTTPDestination extends StructuredLogDestination {
 
     @Override
     public int flush() {
-        return WORKER_INSERT_RESULT_SUCCESS;
+        return SUCCESS;
     }
 
     @Override

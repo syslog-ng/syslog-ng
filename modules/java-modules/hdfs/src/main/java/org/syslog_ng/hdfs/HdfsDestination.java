@@ -243,7 +243,7 @@ public class HdfsDestination extends StructuredLogDestination {
         if (hdfsfile == null) {
             // Unable to open file
             closeAll(true);
-            return WORKER_INSERT_RESULT_ERROR;
+            return ERROR;
         }
 
         try {
@@ -259,14 +259,14 @@ public class HdfsDestination extends StructuredLogDestination {
         } catch (IOException e) {
             printStackTrace(e);
             closeAll(false);
-            return WORKER_INSERT_RESULT_ERROR;
+            return ERROR;
         } finally {
           lock.unlock();
         }
 
 
         isOpened = true;
-        return WORKER_INSERT_RESULT_SUCCESS;
+        return SUCCESS;
     }
 
     private HdfsFile getHdfsFile(String resolvedFileName) {
@@ -342,7 +342,7 @@ public class HdfsDestination extends StructuredLogDestination {
          * that data has been flushed to persistent store on the datanode)
          */
 
-        int retval = WORKER_INSERT_RESULT_SUCCESS;
+        int retval = SUCCESS;
 
         logger.debug("Flushing hdfs");
         lock.lock();
@@ -353,7 +353,7 @@ public class HdfsDestination extends StructuredLogDestination {
                 hdfsfile.flush();
             } catch (IOException e) {
                 logger.debug(String.format("Flush failed on file %s, reason: %s", entry.getKey(), e.getMessage()));
-                retval = WORKER_INSERT_RESULT_ERROR;
+                retval = ERROR;
             }
         }
         } finally {
