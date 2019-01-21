@@ -21,7 +21,7 @@
 #
 #############################################################################
 
-import pytest
+import pytest, subprocess
 from pathlib2 import Path
 from datetime import datetime
 from src.setup.testcase import SetupTestCase
@@ -56,7 +56,7 @@ def reports(request):
     return request.config.getoption("--reports")
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def installdir(request):
     return request.config.getoption("--installdir")
 
@@ -96,3 +96,9 @@ def tc(request):
 @pytest.fixture
 def tc_unittest(request):
     return SetupUnitTestcase(request, get_current_date)
+
+@pytest.fixture(scope="session")
+def version(request, installdir):
+    binary_path = str(Path(installdir, "sbin", "syslog-ng"))
+    version_output = subprocess.check_output([binary_path, "--version"]).decode()
+    return version_output.splitlines()[1].split()[2]

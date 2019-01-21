@@ -32,11 +32,12 @@ from src.syslog_ng_config.statements.filters.filter import Filter
 
 
 class SyslogNgConfig(object):
-    def __init__(self, logger_factory, working_dir):
+    def __init__(self, logger_factory, working_dir, version):
         self.__working_dir = working_dir
         self.__logger_factory = logger_factory
         self.__logger = logger_factory.create_logger("SyslogNgConfig")
         self.__syslog_ng_config = {
+            "version": version,
             "global_options": {},
             "statement_groups": [],
             "logpath_groups": [],

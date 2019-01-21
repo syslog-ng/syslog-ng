@@ -86,8 +86,10 @@ class SetupTestCase(object):
     def new_syslog_ng_ctl(self, syslog_ng):
         return SyslogNgCtl(self.__logger_factory, syslog_ng.instance_paths)
 
-    def new_config(self):
-        return SyslogNgConfig(self.__logger_factory, self.__testcase_parameters.get_working_dir())
+    def new_config(self, version=None):
+        if not version:
+            version = self.__testcase_context.getfixturevalue("version")
+        return SyslogNgConfig(self.__logger_factory, self.__testcase_parameters.get_working_dir(), version)
 
     @staticmethod
     def format_as_bsd(log_message):
