@@ -42,9 +42,6 @@ class TestTFLang(CompleterLangTestCase):
         self._assert_token_follows("format-json --scope ", ["value_pairs_scope"])
         self._assert_token_follows("format-json --key * --pair a=$b --scope ", ["value_pairs_scope"])
 
-    def test_geoip_arguments(self):
-        self._assert_token_follows("geoip ", ["ipaddress", "ARG"])
-
     def test_echo_arguments(self):
         self._assert_token_follows("echo ", ["template", "ARG"])
         self._assert_token_follows("echo $MSG ", ["template", "ARG"])

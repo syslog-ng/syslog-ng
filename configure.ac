@@ -300,10 +300,6 @@ AC_ARG_ENABLE(systemd,
               [  --enable-systemd        Enable systemd support (default: auto)]
               ,,enable_systemd="auto")
 
-AC_ARG_ENABLE(geoip,
-              [  --enable-geoip          Enable GeoIP support (default: auto)]
-              ,,enable_geoip="auto")
-
 AC_ARG_ENABLE(geoip2,
               [  --enable-geoip2          Enable GeoIP2 support (default: auto)]
               ,,enable_geoip2="auto")
@@ -363,7 +359,7 @@ if test "x$enable_all_modules" != "xauto"; then
    state="$enable_all_modules"
 
    MODULES="spoof_source sun_streams sql pacct mongodb json amqp stomp \
-            redis systemd geoip geoip2 riemann ipv6 smtp native python java java_modules \
+            redis systemd geoip2 riemann ipv6 smtp native python java java_modules \
             http snmp_dest kafka"
    for mod in ${MODULES}; do
        modstate=$(eval echo \$enable_${mod})
@@ -944,24 +940,6 @@ fi
 
 if test "x$linking_mode" != "xdynamic" -a "x$blb_cv_static_glib" = "xno"; then
 	AC_MSG_ERROR([static GLib libraries not found (a file named libglib-2.0.a), either link GLib dynamically using the --enable-dynamic-linking or install a static GLib])
-fi
-
-dnl ***************************************************************************
-dnl geoip headers/libraries
-dnl ***************************************************************************
-if test "x$enable_geoip" = "xyes" || test "x$enable_geoip" = "xauto"; then
-        if test "x$GEOIP_LIBS" != "x"; then
-                AC_MSG_CHECKING([for GEOIP])
-                AC_MSG_RESULT([yes (GEOIP_LIBS set, will use that.)])
-                with_geoip="yes"
-        else
-                PKG_CHECK_MODULES(GEOIP, geoip, with_geoip="yes", with_geoip="no")
-        fi
-
-        if test "x$with_geoip" = "xno" && test "x$enable_geoip" = "xyes"; then
-                AC_MSG_ERROR([Could not find libgeoip, and geoip support was explicitly enabled.])
-        fi
-        enable_geoip="$with_geoip"
 fi
 
 dnl ***************************************************************************
@@ -1876,7 +1854,6 @@ AM_CONDITIONAL(ENABLE_HTTP, [test "$enable_http" = "yes"])
 AM_CONDITIONAL(ENABLE_AMQP, [test "$enable_amqp" = "yes"])
 AM_CONDITIONAL(ENABLE_STOMP, [test "$enable_stomp" = "yes"])
 AM_CONDITIONAL(ENABLE_JSON, [test "$enable_json" = "yes"])
-AM_CONDITIONAL(ENABLE_GEOIP, [test "$enable_geoip" = "yes"])
 AM_CONDITIONAL(ENABLE_GEOIP2, [test "$enable_geoip2" = "yes"])
 AM_CONDITIONAL(ENABLE_REDIS, [test "$enable_redis" = "yes"])
 AM_CONDITIONAL(ENABLE_KAFKA, [test "$enable_kafka" = "yes"])
@@ -2017,7 +1994,6 @@ echo "  SMTP support (module)       : ${enable_smtp:=no}"
 echo "  HTTP support (module)       : ${enable_http:=no}"
 echo "  AMQP destination (module)   : ${enable_amqp:=no}"
 echo "  STOMP destination (module)  : ${enable_stomp:=no}"
-echo "  GEOIP support (module)      : ${enable_geoip:=no}"
 echo "  GEOIP2 support (module)     : ${enable_geoip2:=no}"
 echo "  Redis support (module)      : ${enable_redis:=no}"
 echo "  Kafka support (module)      : ${enable_kafka:=no}"

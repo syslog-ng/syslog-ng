@@ -231,17 +231,6 @@ Copyright: Copyright (C) Péter Gyöngyösi
            Copyright (C) BalaBit IT Security Ltd.
 License: GPL-2+ with OpenSSL exception
 
-Files: modules/geoip/*
-       scl/*
-Copyright: Copyright (C) BalaBit IT Security Ltd.
-License: GPL-2+ with OpenSSL exception
-
-Files: modules/geoip/geoip-parser.*
-       modules/geoip/geoip-parser-parser.*
-       modules/geoip/geoip-plugin.c
-Copyright: Copyright (C) Gergely Nagy
-License: GPL-2+ with OpenSSL exception
-
 Files: modules/graphite/*
 Copyright: Copyright (C) BalaBit IT Ltd.
            Copyright (C) Viktor Tusa

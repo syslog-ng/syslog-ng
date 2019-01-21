@@ -31,7 +31,7 @@ class TemplateFunctionLang(CompleterLang):
     tokens_base = [
         "COMMAND", "ARG", "OPT"
     ]
-    known_commands = ("format-json", "echo", "geoip")
+    known_commands = ("format-json", "echo")
     known_options = (
         # value-pairs
         "--scope", "--exclude", "--key", "--rekey", "--pair",
@@ -40,7 +40,6 @@ class TemplateFunctionLang(CompleterLang):
     def p_template_func(self, p):
         '''template_func : tf_format_json
                          | tf_echo
-                         | tf_geoip
                          | tf_generic'''
         pass
 
@@ -81,10 +80,6 @@ class TemplateFunctionLang(CompleterLang):
 
     def p_tf_echo(self, p):
         '''tf_echo : COMMAND_ECHO templates'''
-        pass
-
-    def p_tf_geoip(self, p):
-        '''tf_geoip : COMMAND_GEOIP ipaddress'''
         pass
 
     def p_tf_generic(self, p):

@@ -45,7 +45,6 @@ def get_debugger_commands():
 
 def get_template_functions():
     return (
-        "geoip",
         "python",
         "graphite-output",
         "uuid",

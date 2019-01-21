@@ -11,7 +11,7 @@ for pkg in syslog-ng \
                 syslog-ng-mod-sql \
                 syslog-ng-mod-smtp \
                 syslog-ng-mod-amqp \
-                syslog-ng-mod-geoip \
+                syslog-ng-mod-geoip2 \
                 syslog-ng-mod-redis \
                 syslog-ng-mod-stomp \
                 syslog-ng-mod-riemann \

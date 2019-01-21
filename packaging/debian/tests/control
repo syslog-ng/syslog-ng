@@ -23,7 +23,7 @@ Tests: basic
 Depends: syslog-ng-core, syslog-ng-mod-amqp
 
 Tests: basic
-Depends: syslog-ng-core, syslog-ng-mod-geoip
+Depends: syslog-ng-core, syslog-ng-mod-geoip2
 
 Tests: basic
 Depends: syslog-ng-core, syslog-ng-mod-redis

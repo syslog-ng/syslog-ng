@@ -7,7 +7,6 @@ EXTRA_DIST		+= \
 		packaging/debian/syslog-ng-mod-java-http.install \
 		packaging/debian/syslog-ng-mod-elastic.install \
 		packaging/debian/syslog-ng-mod-mongodb.postinst \
-		packaging/debian/syslog-ng-mod-geoip.install \
 		packaging/debian/watch \
 		packaging/debian/syslog-ng-mod-sql.preinst \
 		packaging/debian/syslog-ng-core.syslog-ng.logcheck.ignore.paranoid \

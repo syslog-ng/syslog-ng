@@ -77,7 +77,6 @@ BuildRequires: openssl-devel
 BuildRequires: pcre-devel
 BuildRequires: libuuid-devel
 BuildRequires: libesmtp-devel
-BuildRequires: GeoIP-devel
 BuildRequires: libcurl-devel
 
 BuildRequires: %{python_devel}
@@ -312,7 +311,6 @@ export GEOIP_LIBS=-lGeoIP
     --enable-json \
     --enable-ssl \
     --enable-smtp \
-    --enable-geoip \
     --enable-shared \
     --disable-static \
     --enable-dynamic-linking \
@@ -535,8 +533,6 @@ fi
 %endif
 
 %files geoip
-%{_libdir}/%{name}/libgeoip-plugin.so
-
 %if %{with maxminddb}
 %{_libdir}/%{name}/libgeoip2-plugin.so
 %endif

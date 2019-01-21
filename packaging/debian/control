@@ -27,7 +27,6 @@ Build-Depends: debhelper (>= 9~),
                dh-systemd (>= 1.3),
                libsystemd-daemon-dev [linux-any] | libsystemd-dev [linux-any],
                libsystemd-journal-dev (>= 195) | libsystemd-dev [linux-any],
-               libgeoip-dev,
                libhiredis-dev,
                libriemann-client-dev (>= 1.6.0~),
                librabbitmq-dev (>= 0.5.3~),
@@ -36,7 +35,7 @@ Build-Depends: debhelper (>= 9~),
                python-setuptools,
                dh-exec,
                python-nose, python-ply,
-               libxml2-utils, geoip-database,
+               libxml2-utils,
                libcurl4-openssl-dev,
                libmaxminddb-dev,
                openjdk-7-jdk | openjdk-8-jdk,
@@ -363,31 +362,6 @@ Description: Enhanced system logging daemon (AMQP plugin)
  .
  This package provides the AMQP destination plugin, which allows one
  to publish log messages through the AMQP protocol.
-
-Package: syslog-ng-mod-geoip
-Architecture: any
-Multi-Arch: foreign
-Depends: ${shlibs:Depends}, ${misc:Depends}
-Recommends: geoip-database
-Description: Enhanced system logging daemon (GeoIP plugin)
- syslog-ng is an enhanced log daemon, supporting a wide range of input
- and output methods: syslog, unstructured text, message queues,
- databases (SQL and NoSQL alike) and more.
- .
- Key features:
- .
-  * receive and send RFC3164 and RFC5424 style syslog messages
-  * work with any kind of unstructured data
-  * receive and send JSON formatted messages
-  * classify and structure logs with builtin parsers (csv-parser(),
-    db-parser(), etc.)
-  * normalize, crunch and process logs as they flow through the system
-  * hand on messages for further processing using message queues (like
-    AMQP), files or databases (like PostgreSQL or MongoDB).
- .
- This package provides the GeoIP template function plugin, which
- allows one to do non-DNS IP-to-country resolving from syslog-ng
- templates.
 
 Package: syslog-ng-mod-redis
 Architecture: any
