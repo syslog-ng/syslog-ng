@@ -273,7 +273,7 @@ _py_clear(PyObject *self)
 }
 
 #define _inject_worker_insert_result(self, value) \
-  _inject_const(self, #value, value)
+  _inject_const(self, #value, WORKER_INSERT_RESULT_ ## value)
 
 static void
 _inject_const(PythonDestDriver *self, const gchar *field_name, gint value)
@@ -286,13 +286,12 @@ _inject_const(PythonDestDriver *self, const gchar *field_name, gint value)
 static void
 _inject_worker_insert_result_consts(PythonDestDriver *self)
 {
-  _inject_worker_insert_result(self, WORKER_INSERT_RESULT_DROP);
-  _inject_worker_insert_result(self, WORKER_INSERT_RESULT_ERROR);
-  _inject_worker_insert_result(self, WORKER_INSERT_RESULT_EXPLICIT_ACK_MGMT);
-  _inject_worker_insert_result(self, WORKER_INSERT_RESULT_SUCCESS);
-  _inject_worker_insert_result(self, WORKER_INSERT_RESULT_QUEUED);
-  _inject_worker_insert_result(self, WORKER_INSERT_RESULT_NOT_CONNECTED);
-  _inject_worker_insert_result(self, WORKER_INSERT_RESULT_MAX);
+  _inject_worker_insert_result(self, DROP);
+  _inject_worker_insert_result(self, ERROR);
+  _inject_worker_insert_result(self, SUCCESS);
+  _inject_worker_insert_result(self, QUEUED);
+  _inject_worker_insert_result(self, NOT_CONNECTED);
+  _inject_worker_insert_result(self, MAX);
 };
 
 static gboolean
