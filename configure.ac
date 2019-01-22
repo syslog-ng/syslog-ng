@@ -627,6 +627,7 @@ dnl ***************************************************************************
 
 AC_HEADER_STDC
 AC_CHECK_HEADER(dmalloc.h)
+AC_CHECK_HEADER(dlfcn.h)
 AC_CHECK_HEADERS(strings.h	\
 	getopt.h		\
 	stropts.h		\

@@ -129,7 +129,6 @@ pkginclude_HEADERS			+= \
 	lib/logthrdestdrv.h		\
 	lib/logwriter.h			\
 	lib/mainloop.h			\
-	lib/signal-handler.h		\
 	lib/mainloop-call.h		\
 	lib/mainloop-worker.h		\
 	lib/mainloop-io-worker.h	\

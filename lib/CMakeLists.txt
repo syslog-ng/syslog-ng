@@ -91,7 +91,6 @@ set (LIB_HEADERS
     logthrdestdrv.h
     logwriter.h
     mainloop.h
-    signal-handler.h
     mainloop-call.h
     mainloop-worker.h
     mainloop-io-worker.h
