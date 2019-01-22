@@ -96,6 +96,11 @@ if (NOT APPLE)
   set(SYSLOG_NG_HAVE_ENVIRON 1)
 endif()
 
+option(ENV_LD_LIBRARY_PATH "Set LD_LIBRARY_PATH during runtime to the value given" "")
+if (ENV_LD_LIBRARY_PATH)
+  set(SYSLOG_NG_ENABLE_ENV_WRAPPER 1)
+endif()
+
 check_symbol_exists(strtoll stdlib.h SYSLOG_NG_HAVE_STRTOLL)
 check_symbol_exists(strnlen string.h SYSLOG_NG_HAVE_STRNLEN)
 check_symbol_exists(strtok_r string.h SYSLOG_NG_HAVE_STRTOK_R)
