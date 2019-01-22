@@ -29,6 +29,7 @@
 #include "python-logmsg.h"
 #include "python-logtemplate.h"
 #include "python-integerpointer.h"
+#include "python-logger.h"
 #include "python-source.h"
 #include "python-fetcher.h"
 #include "python-global-code-loader.h"
@@ -89,6 +90,7 @@ _py_init_interpreter(void)
       py_log_source_init();
       py_log_fetcher_init();
       py_global_code_loader_init();
+      py_logger_init();
       PyEval_SaveThread();
 
       interpreter_initialized = TRUE;

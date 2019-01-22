@@ -45,6 +45,8 @@ set(PYTHON_SOURCES
     python-logparser.c
     python-integerpointer.h
     python-integerpointer.c
+    python-logger.h
+    python-logger.c
     python-source.h
     python-source.c
     python-fetcher.h
