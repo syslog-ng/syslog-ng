@@ -360,7 +360,7 @@ _vp_process_value(const gchar *name, const gchar *prefix, TypeHint type,
   return FALSE;
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)s;

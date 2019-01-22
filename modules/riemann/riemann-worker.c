@@ -309,7 +309,7 @@ riemann_worker_insert_one(RiemannDestWorker *self, LogMessage *msg)
   return success;
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 riemann_worker_flush(LogThreadedDestWorker *s)
 {
   RiemannDestWorker *self = (RiemannDestWorker *) s;
@@ -347,7 +347,7 @@ riemann_worker_flush(LogThreadedDestWorker *s)
     return WORKER_INSERT_RESULT_SUCCESS;
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _insert_single(RiemannDestWorker *self, LogMessage *msg)
 {
   RiemannDestDriver *owner = (RiemannDestDriver *) self->super.owner;
@@ -367,7 +367,7 @@ _insert_single(RiemannDestWorker *self, LogMessage *msg)
   return log_threaded_dest_worker_flush(&self->super);
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _insert_batch(RiemannDestWorker *self, LogMessage *msg)
 {
   RiemannDestDriver *owner = (RiemannDestDriver *) self->super.owner;
@@ -391,7 +391,7 @@ _insert_batch(RiemannDestWorker *self, LogMessage *msg)
   return WORKER_INSERT_RESULT_QUEUED;
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 riemann_worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
 {
   RiemannDestWorker *self = (RiemannDestWorker *) s;

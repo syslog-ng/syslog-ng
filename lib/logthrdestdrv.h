@@ -44,7 +44,7 @@ typedef enum
   WORKER_INSERT_RESULT_QUEUED,
   WORKER_INSERT_RESULT_NOT_CONNECTED,
   WORKER_INSERT_RESULT_MAX
-} worker_insert_result_t;
+} LogThreadedResult;
 
 typedef struct _LogThreadedDestDriver LogThreadedDestDriver;
 typedef struct _LogThreadedDestWorker LogThreadedDestWorker;
@@ -78,8 +78,8 @@ struct _LogThreadedDestWorker
   void (*thread_deinit)(LogThreadedDestWorker *s);
   gboolean (*connect)(LogThreadedDestWorker *s);
   void (*disconnect)(LogThreadedDestWorker *s);
-  worker_insert_result_t (*insert)(LogThreadedDestWorker *s, LogMessage *msg);
-  worker_insert_result_t (*flush)(LogThreadedDestWorker *s);
+  LogThreadedResult (*insert)(LogThreadedDestWorker *s, LogMessage *msg);
+  LogThreadedResult (*flush)(LogThreadedDestWorker *s);
   void (*free_fn)(LogThreadedDestWorker *s);
 };
 
@@ -111,8 +111,8 @@ struct _LogThreadedDestDriver
     void (*thread_deinit)(LogThreadedDestDriver *s);
     gboolean (*connect)(LogThreadedDestDriver *s);
     void (*disconnect)(LogThreadedDestDriver *s);
-    worker_insert_result_t (*insert)(LogThreadedDestDriver *s, LogMessage *msg);
-    worker_insert_result_t (*flush)(LogThreadedDestDriver *s);
+    LogThreadedResult (*insert)(LogThreadedDestDriver *s, LogMessage *msg);
+    LogThreadedResult (*flush)(LogThreadedDestDriver *s);
   } worker;
 
   LogThreadedDestWorker **workers;
@@ -166,7 +166,7 @@ log_threaded_dest_worker_disconnect(LogThreadedDestWorker *self)
   self->connected = FALSE;
 }
 
-static inline worker_insert_result_t
+static inline LogThreadedResult
 log_threaded_dest_worker_insert(LogThreadedDestWorker *self, LogMessage *msg)
 {
   if (self->owner->num_workers > 1)
@@ -176,10 +176,10 @@ log_threaded_dest_worker_insert(LogThreadedDestWorker *self, LogMessage *msg)
   return self->insert(self, msg);
 }
 
-static inline worker_insert_result_t
+static inline LogThreadedResult
 log_threaded_dest_worker_flush(LogThreadedDestWorker *self)
 {
-  worker_insert_result_t result = WORKER_INSERT_RESULT_SUCCESS;
+  LogThreadedResult result = WORKER_INSERT_RESULT_SUCCESS;
 
   if (self->flush)
     result = self->flush(self);
@@ -189,7 +189,7 @@ log_threaded_dest_worker_flush(LogThreadedDestWorker *self)
 }
 
 /* function for drivers that are not yet using the worker API */
-static inline worker_insert_result_t
+static inline LogThreadedResult
 log_threaded_dest_driver_flush(LogThreadedDestDriver *self)
 {
   return log_threaded_dest_worker_flush(&self->worker.instance);

@@ -482,7 +482,7 @@ __send_message(AFSMTPDriver *self, smtp_session_t session)
   return success;
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 afsmtp_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
 {
   AFSMTPDriver *self = (AFSMTPDriver *)s;

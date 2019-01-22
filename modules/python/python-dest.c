@@ -187,7 +187,7 @@ _py_invoke_close(PythonDestDriver *self)
   _dd_py_invoke_void_method_by_name(self, "close");
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _as_int(PyObject *obj)
 {
   int result = pyobject_as_int(obj);
@@ -210,13 +210,13 @@ _as_int(PyObject *obj)
   return result;
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _as_bool(PyObject *obj)
 {
   return PyObject_IsTrue(obj) ? WORKER_INSERT_RESULT_SUCCESS : WORKER_INSERT_RESULT_ERROR;
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 pyobject_to_worker_insert_result(PyObject *obj)
 {
   if (PyBool_Check(obj))
@@ -225,7 +225,7 @@ pyobject_to_worker_insert_result(PyObject *obj)
     return _as_int(obj);
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _py_invoke_flush(PythonDestDriver *self)
 {
   if (!self->py.flush)
@@ -235,12 +235,12 @@ _py_invoke_flush(PythonDestDriver *self)
   if (!ret)
     return WORKER_INSERT_RESULT_ERROR;
 
-  worker_insert_result_t result = pyobject_to_worker_insert_result(ret);
+  LogThreadedResult result = pyobject_to_worker_insert_result(ret);
   Py_XDECREF(ret);
   return result;
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _py_invoke_send(PythonDestDriver *self, PyObject *dict)
 {
   PyObject *ret;
@@ -249,7 +249,7 @@ _py_invoke_send(PythonDestDriver *self, PyObject *dict)
   if (!ret)
     return WORKER_INSERT_RESULT_ERROR;
 
-  worker_insert_result_t result = pyobject_to_worker_insert_result(ret);
+  LogThreadedResult result = pyobject_to_worker_insert_result(ret);
   Py_XDECREF(ret);
   return result;
 }
@@ -404,11 +404,11 @@ _py_construct_message(PythonDestDriver *self, LogMessage *msg, PyObject **msg_ob
 }
 
 
-static worker_insert_result_t
+static LogThreadedResult
 python_dd_insert(LogThreadedDestDriver *d, LogMessage *msg)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
-  worker_insert_result_t result = WORKER_INSERT_RESULT_ERROR;
+  LogThreadedResult result = WORKER_INSERT_RESULT_ERROR;
   PyObject *msg_object;
   PyGILState_STATE gstate;
 
@@ -446,14 +446,14 @@ python_dd_open(PythonDestDriver *self)
   PyGILState_Release(gstate);
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 python_dd_flush(LogThreadedDestDriver *s)
 {
   PythonDestDriver *self = (PythonDestDriver *)s;
   PyGILState_STATE gstate;
 
   gstate = PyGILState_Ensure();
-  worker_insert_result_t result = _py_invoke_flush(self);
+  LogThreadedResult result = _py_invoke_flush(self);
   PyGILState_Release(gstate);
   return result;
 };

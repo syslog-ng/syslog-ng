@@ -309,7 +309,7 @@ _perform_flush(LogThreadedDestWorker *self)
                 evt_tag_int("worker_index", self->worker_index),
                 evt_tag_int("batch_size", self->batch_size));
 
-      worker_insert_result_t result = log_threaded_dest_worker_flush(self);
+      LogThreadedResult result = log_threaded_dest_worker_flush(self);
       _process_result(self, result);
     }
 
@@ -323,7 +323,7 @@ static void
 _perform_inserts(LogThreadedDestWorker *self)
 {
   LogMessage *msg;
-  worker_insert_result_t result;
+  LogThreadedResult result;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
   if (self->batch_size == 0)
@@ -651,7 +651,7 @@ _worker_thread(gpointer arg)
   _schedule_restart(self);
   iv_main();
 
-  worker_insert_result_t result = log_threaded_dest_worker_flush(self);
+  LogThreadedResult result = log_threaded_dest_worker_flush(self);
   _process_result(self, result);
   log_queue_rewind_backlog_all(self->queue);
 
@@ -768,13 +768,13 @@ _compat_disconnect(LogThreadedDestWorker *self)
     self->owner->worker.disconnect(self->owner);
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _compat_insert(LogThreadedDestWorker *self, LogMessage *msg)
 {
   return self->owner->worker.insert(self->owner, msg);
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _compat_flush(LogThreadedDestWorker *self)
 {
   if (self->owner->worker.flush)

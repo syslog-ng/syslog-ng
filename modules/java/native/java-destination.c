@@ -206,7 +206,7 @@ java_dd_close(LogThreadedDestDriver *s)
     }
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 java_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
 {
   JavaDestDriver *self = (JavaDestDriver *)s;
@@ -219,7 +219,7 @@ java_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
   return java_dd_send_to_object(self, msg);
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 java_worker_flush(LogThreadedDestDriver *d)
 {
   JavaDestDriver *self = (JavaDestDriver *)d;

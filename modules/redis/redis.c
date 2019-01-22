@@ -225,7 +225,7 @@ redis_dd_disconnect(LogThreadedDestDriver *s)
  * Worker thread
  */
 
-static worker_insert_result_t
+static LogThreadedResult
 redis_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
 {
   RedisDriver *self = (RedisDriver *)s;

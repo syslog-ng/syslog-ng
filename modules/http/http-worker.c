@@ -212,11 +212,11 @@ _add_message_to_batch(HTTPDestinationWorker *self, LogMessage *msg)
     }
 }
 
-worker_insert_result_t
+LogThreadedResult
 map_http_status_to_worker_status(HTTPDestinationWorker *self, const gchar *url, glong http_code)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
-  worker_insert_result_t retval = WORKER_INSERT_RESULT_ERROR;
+  LogThreadedResult retval = WORKER_INSERT_RESULT_ERROR;
 
   switch (http_code/100)
     {
@@ -289,7 +289,7 @@ _finish_request_body(HTTPDestinationWorker *self)
     g_string_append_len(self->request_body, owner->body_suffix->str, owner->body_suffix->len);
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _flush_on_target(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
@@ -351,13 +351,13 @@ _flush_on_target(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
  *   1) we reach batch_size,
  *   2) the message queue becomes empty
  */
-static worker_insert_result_t
+static LogThreadedResult
 _flush(LogThreadedDestWorker *s)
 {
   HTTPDestinationWorker *self = (HTTPDestinationWorker *) s;
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) s->owner;
   HTTPLoadBalancerTarget *target, *alt_target = NULL;
-  worker_insert_result_t retval = WORKER_INSERT_RESULT_NOT_CONNECTED;
+  LogThreadedResult retval = WORKER_INSERT_RESULT_NOT_CONNECTED;
   gint retry_attempts = owner->load_balancer->num_targets;
 
   if (self->super.batch_size == 0)
@@ -412,7 +412,7 @@ _should_initiate_flush(HTTPDestinationWorker *self)
 
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _insert_batched(LogThreadedDestWorker *s, LogMessage *msg)
 {
   HTTPDestinationWorker *self = (HTTPDestinationWorker *) s;
@@ -429,7 +429,7 @@ _insert_batched(LogThreadedDestWorker *s, LogMessage *msg)
   return WORKER_INSERT_RESULT_QUEUED;
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _insert_single(LogThreadedDestWorker *s, LogMessage *msg)
 {
   HTTPDestinationWorker *self = (HTTPDestinationWorker *) s;

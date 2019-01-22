@@ -596,7 +596,7 @@ afamqp_worker_publish(AMQPDestDriver *self, LogMessage *msg)
   return success;
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 afamqp_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
 {
   AMQPDestDriver *self = (AMQPDestDriver *)s;

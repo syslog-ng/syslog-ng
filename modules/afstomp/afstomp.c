@@ -318,7 +318,7 @@ afstomp_worker_publish(STOMPDestDriver *self, LogMessage *msg)
   return success;
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 afstomp_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
 {
   STOMPDestDriver *self = (STOMPDestDriver *)s;

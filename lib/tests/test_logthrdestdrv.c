@@ -156,7 +156,7 @@ _teardown_dd(void)
   log_pipe_unref(&dd->super.super.super.super);
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _insert_single_message_success(LogThreadedDestDriver *s, LogMessage *msg)
 {
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
@@ -181,7 +181,7 @@ Test(logthrdestdrv, driver_can_be_instantiated_and_one_message_is_properly_proce
             "seq_num expected to be 1 larger than the amount of messages generated, found %d", dd->super.shared_seq_num);
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _insert_single_message_drop(LogThreadedDestDriver *s, LogMessage *msg)
 {
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
@@ -207,7 +207,7 @@ Test(logthrdestdrv, message_drops_are_accounted_in_the_drop_counter_and_are_repo
   assert_grabbed_log_contains("dropped while sending");
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _insert_single_message_connection_failure(LogThreadedDestDriver *s, LogMessage *msg)
 {
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
@@ -235,7 +235,7 @@ Test(logthrdestdrv, connection_failure_is_considered_an_error_and_retried_indefi
   assert_grabbed_log_contains("Server disconnected");
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _insert_single_message_error_until_drop(LogThreadedDestDriver *s, LogMessage *msg)
 {
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
@@ -264,7 +264,7 @@ Test(logthrdestdrv, error_result_retries_sending_retry_max_times_and_then_drops)
   assert_grabbed_log_contains("Multiple failures while sending");
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _insert_single_message_error_until_successful(LogThreadedDestDriver *s, LogMessage *msg)
 {
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
@@ -294,7 +294,7 @@ Test(logthrdestdrv, error_result_retries_sending_retry_max_times_and_then_accept
   assert_grabbed_log_contains("Error occurred while");
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _insert_batched_message_success(LogThreadedDestDriver *s, LogMessage *msg)
 {
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
@@ -307,7 +307,7 @@ _insert_batched_message_success(LogThreadedDestDriver *s, LogMessage *msg)
   return WORKER_INSERT_RESULT_SUCCESS;
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _flush_batched_message_success(LogThreadedDestDriver *s)
 {
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
@@ -337,7 +337,7 @@ Test(logthrdestdrv, batched_set_of_messages_are_successfully_delivered)
             "seq_num expected to be 1 larger than the number of insert attempts, found %d", dd->super.shared_seq_num);
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _insert_batched_message_drop(LogThreadedDestDriver *s, LogMessage *msg)
 {
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
@@ -350,7 +350,7 @@ _insert_batched_message_drop(LogThreadedDestDriver *s, LogMessage *msg)
   return WORKER_INSERT_RESULT_DROP;
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _flush_batched_message_drop(LogThreadedDestDriver *s)
 {
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
@@ -392,7 +392,7 @@ _expect_batch_size_remains_the_same_across_retries(TestThreadedDestDriver *self)
     self->prev_flush_size = self->super.worker.instance.batch_size;
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _insert_batched_message_error_drop(LogThreadedDestDriver *s, LogMessage *msg)
 {
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
@@ -406,7 +406,7 @@ _insert_batched_message_error_drop(LogThreadedDestDriver *s, LogMessage *msg)
   return WORKER_INSERT_RESULT_ERROR;
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _flush_batched_message_error_drop(LogThreadedDestDriver *s)
 {
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
@@ -453,7 +453,7 @@ Test(logthrdestdrv,
 
 #define FAILING_ATTEMPTS_DROP 2
 
-static inline worker_insert_result_t
+static inline LogThreadedResult
 _inject_error_a_few_times(TestThreadedDestDriver *self)
 {
   if (self->super.worker.instance.retries_counter >= FAILING_ATTEMPTS_DROP)
@@ -462,7 +462,7 @@ _inject_error_a_few_times(TestThreadedDestDriver *self)
     return WORKER_INSERT_RESULT_ERROR;
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _insert_batched_message_error_success(LogThreadedDestDriver *s, LogMessage *msg)
 {
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
@@ -476,7 +476,7 @@ _insert_batched_message_error_success(LogThreadedDestDriver *s, LogMessage *msg)
   return _inject_error_a_few_times(self);
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _flush_batched_message_error_success(LogThreadedDestDriver *s)
 {
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
@@ -524,7 +524,7 @@ Test(logthrdestdrv,
 
 #define FAILING_ATTEMPTS_NOTCONN 20
 
-static inline worker_insert_result_t
+static inline LogThreadedResult
 _inject_not_connected_a_few_times(TestThreadedDestDriver *self)
 {
   if (self->failure_counter++ >= FAILING_ATTEMPTS_NOTCONN)
@@ -536,7 +536,7 @@ _inject_not_connected_a_few_times(TestThreadedDestDriver *self)
     return WORKER_INSERT_RESULT_NOT_CONNECTED;
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _insert_batched_message_not_connected(LogThreadedDestDriver *s, LogMessage *msg)
 {
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
@@ -550,7 +550,7 @@ _insert_batched_message_not_connected(LogThreadedDestDriver *s, LogMessage *msg)
   return _inject_not_connected_a_few_times(self);
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _flush_batched_message_not_connected(LogThreadedDestDriver *s)
 {
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
@@ -727,7 +727,7 @@ Test(logthrdestdrv, test_connect_failure_kicks_in_suspend_retry_logic_which_keep
 }
 
 /* we batch 5 messages but then flush them only one-by-one */
-static worker_insert_result_t
+static LogThreadedResult
 _insert_explicit_acks_message_success(LogThreadedDestDriver *s, LogMessage *msg)
 {
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
@@ -741,7 +741,7 @@ _insert_explicit_acks_message_success(LogThreadedDestDriver *s, LogMessage *msg)
   return WORKER_INSERT_RESULT_EXPLICIT_ACK_MGMT;
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _flush_explicit_acks_message_success(LogThreadedDestDriver *s)
 {
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
