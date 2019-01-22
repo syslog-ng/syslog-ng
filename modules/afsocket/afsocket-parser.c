@@ -84,6 +84,7 @@ static CfgLexerKeyword afsocket_keywords[] =
   { "max_connections",    KW_MAX_CONNECTIONS },
   { "listen_backlog",     KW_LISTEN_BACKLOG },
   { "keep_alive",         KW_KEEP_ALIVE },
+  { "close_on_input",     KW_CLOSE_ON_INPUT },
   { "systemd_syslog",     KW_SYSTEMD_SYSLOG  },
   { "failover_servers",   KW_FAILOVER_SERVERS, KWS_OBSOLETE, "failover-servers has been deprecated, try failover() and use servers() option inside it." },
   { "failover",           KW_FAILOVER },

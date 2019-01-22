@@ -59,8 +59,15 @@ log_proto_client_init(LogProtoClient *self, LogTransport *transport, const LogPr
 }
 
 void
+log_proto_client_options_set_drop_input(LogProtoClientOptions *options, gboolean drop_input)
+{
+  options->drop_input = drop_input;
+}
+
+void
 log_proto_client_options_defaults(LogProtoClientOptions *options)
 {
+  options->drop_input = FALSE;
 }
 
 void

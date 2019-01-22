@@ -98,7 +98,7 @@ _last_msg_sent(gpointer s)
 }
 
 static void
-log_reader_work_perform(void *s)
+log_reader_work_perform(void *s, GIOCondition cond)
 {
   LogReader *self = (LogReader *) s;
 
@@ -192,14 +192,14 @@ log_reader_window_empty(LogSource *s)
 }
 
 static void
-log_reader_io_process_input(gpointer s)
+log_reader_io_handle_in(gpointer s)
 {
   LogReader *self = (LogReader *) s;
 
   log_reader_stop_watches(self);
   if ((self->options->flags & LR_THREADED))
     {
-      main_loop_io_worker_job_submit(&self->io_job);
+      main_loop_io_worker_job_submit(&self->io_job, G_IO_IN);
     }
   else
     {
@@ -213,7 +213,7 @@ log_reader_io_process_input(gpointer s)
        */
       if (!main_loop_worker_job_quit())
         {
-          log_reader_work_perform(s);
+          log_reader_work_perform(s, G_IO_IN);
           log_reader_work_finished(s);
         }
     }
@@ -224,7 +224,7 @@ log_reader_init_watches(LogReader *self)
 {
   IV_TASK_INIT(&self->restart_task);
   self->restart_task.cookie = self;
-  self->restart_task.handler = log_reader_io_process_input;
+  self->restart_task.handler = log_reader_io_handle_in;
 
   IV_EVENT_INIT(&self->schedule_wakeup);
   self->schedule_wakeup.cookie = self;
@@ -240,7 +240,7 @@ log_reader_init_watches(LogReader *self)
 
   main_loop_io_worker_job_init(&self->io_job);
   self->io_job.user_data = self;
-  self->io_job.work = (void (*)(void *)) log_reader_work_perform;
+  self->io_job.work = (void (*)(void *, GIOCondition)) log_reader_work_perform;
   self->io_job.completion = (void (*)(void *)) log_reader_work_finished;
   self->io_job.engage = (void (*)(void *)) log_pipe_ref;
   self->io_job.release = (void (*)(void *)) log_pipe_unref;
@@ -504,7 +504,7 @@ log_reader_init(LogPipe *s)
       return FALSE;
     }
 
-  poll_events_set_callback(self->poll_events, log_reader_io_process_input, self);
+  poll_events_set_callback(self->poll_events, log_reader_io_handle_in, self);
 
   log_reader_update_watches(self);
   iv_event_register(&self->schedule_wakeup);

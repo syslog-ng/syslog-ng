@@ -41,6 +41,33 @@ log_proto_text_client_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond, g
 }
 
 static LogProtoStatus
+log_proto_text_client_drop_input(LogProtoClient *s)
+{
+  LogProtoTextClient *self = (LogProtoTextClient *) s;
+  guchar buf[1024];
+  gint rc = -1;
+
+  do
+    {
+      rc = log_transport_read(self->super.transport, buf, sizeof(buf), NULL);
+    }
+  while (rc > 0);
+
+  if (rc == -1 && errno != EAGAIN)
+    {
+      msg_error("Error reading data", evt_tag_int("fd", self->super.transport->fd), evt_tag_error("error"));
+      return LPS_ERROR;
+    }
+  else if (rc == 0)
+    {
+      msg_error("EOF occurred while idle", evt_tag_int("fd", log_proto_client_get_fd(&self->super)));
+      return LPS_ERROR;
+    }
+
+  return LPS_SUCCESS;
+}
+
+static LogProtoStatus
 log_proto_text_client_flush(LogProtoClient *s)
 {
   LogProtoTextClient *self = (LogProtoTextClient *) s;
@@ -165,6 +192,8 @@ log_proto_text_client_init(LogProtoTextClient *self, LogTransport *transport, co
   log_proto_client_init(&self->super, transport, options);
   self->super.prepare = log_proto_text_client_prepare;
   self->super.flush = log_proto_text_client_flush;
+  if (options->drop_input)
+    self->super.process_in = log_proto_text_client_drop_input;
   self->super.post = log_proto_text_client_post;
   self->super.free_fn = log_proto_text_client_free;
   self->super.transport = transport;
