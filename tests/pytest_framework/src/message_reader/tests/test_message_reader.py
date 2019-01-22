@@ -22,10 +22,9 @@
 #
 #############################################################################
 import pytest
-from src.message_reader.message_reader import MessageReader
+from src.message_reader.message_reader import MessageReader, READ_ALL_MESSAGES
 from src.message_reader.single_line_parser import SingleLineParser
 from src.common import blocking
-
 
 @pytest.mark.parametrize(
     "input_message_counter, requested_message_counter, expected_result",
@@ -147,7 +146,7 @@ def test_writing_popping_in_sequence(tc_unittest):
     test_message = "test message 6\ntest message 7\ntest message 8\ntest message 9\n"
     writeable_file.write(test_message)
     writeable_file.flush()
-    assert message_reader.pop_messages(counter=0) == test_message.splitlines(True)
+    assert message_reader.pop_messages(counter=READ_ALL_MESSAGES) == test_message.splitlines(True)
 
     test_message = "test message 10\n"
     writeable_file.write(test_message)
@@ -175,5 +174,5 @@ def test_read_all_messages(tc_unittest):
     generator = read_generator()
     message_reader = MessageReader(tc_unittest.get_fake_logger_factory(), lambda : next(generator), single_line_parser)
 
-    assert len(message_reader.pop_messages(counter=0)) == 0
-    assert len(message_reader.pop_messages(counter=0)) == 2
+    assert len(message_reader.pop_messages(counter=READ_ALL_MESSAGES)) == 0
+    assert len(message_reader.pop_messages(counter=READ_ALL_MESSAGES)) == 2

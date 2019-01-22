@@ -21,7 +21,7 @@
 #
 #############################################################################
 
-from src.message_reader.message_reader import MessageReader
+from src.message_reader.message_reader import MessageReader, READ_ALL_MESSAGES
 from src.driver_io.file.file_io import FileIO
 from src.message_reader.single_line_parser import SingleLineParser
 
@@ -52,7 +52,7 @@ class ConsoleLogReader(object):
         if not self.__stderr_io.wait_for_creation():
             raise Exception
 
-        console_log_messages = self.__message_reader.pop_messages(counter=0)
+        console_log_messages = self.__message_reader.pop_messages(counter=READ_ALL_MESSAGES)
         console_log_content = "".join(console_log_messages)
 
         result = []
@@ -62,7 +62,7 @@ class ConsoleLogReader(object):
 
     def check_for_unexpected_messages(self, unexpected_messages):
         unexpected_patterns = ["Plugin module not found"]
-        console_log_messages = self.__message_reader.peek_messages(counter=0)
+        console_log_messages = self.__message_reader.peek_messages(counter=READ_ALL_MESSAGES)
         if unexpected_messages is not None:
             unexpected_patterns.append(unexpected_messages)
         for unexpected_pattern in unexpected_patterns:
@@ -72,7 +72,7 @@ class ConsoleLogReader(object):
                     assert False
 
     def dump_stderr(self, last_n_lines=10):
-        console_log_messages = self.__message_reader.peek_messages(counter=0)
+        console_log_messages = self.__message_reader.peek_messages(counter=READ_ALL_MESSAGES)
         self.__logger.info("".join(console_log_messages[-last_n_lines:]))
 
     @staticmethod
