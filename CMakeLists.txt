@@ -92,6 +92,10 @@ if (ENABLE_IPV6)
     set(SYSLOG_NG_ENABLE_IPV6 ${HAVE_IPV6})
 endif()
 
+if (NOT APPLE)
+  set(SYSLOG_NG_HAVE_ENVIRON 1)
+endif()
+
 check_symbol_exists(strtoll stdlib.h SYSLOG_NG_HAVE_STRTOLL)
 check_symbol_exists(strnlen string.h SYSLOG_NG_HAVE_STRNLEN)
 check_symbol_exists(strtok_r string.h SYSLOG_NG_HAVE_STRTOK_R)
