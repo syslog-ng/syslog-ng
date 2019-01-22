@@ -37,13 +37,13 @@
 
 typedef enum
 {
-  WORKER_INSERT_RESULT_DROP,
-  WORKER_INSERT_RESULT_ERROR,
-  WORKER_INSERT_RESULT_EXPLICIT_ACK_MGMT,
-  WORKER_INSERT_RESULT_SUCCESS,
-  WORKER_INSERT_RESULT_QUEUED,
-  WORKER_INSERT_RESULT_NOT_CONNECTED,
-  WORKER_INSERT_RESULT_MAX
+  LTR_DROP,
+  LTR_ERROR,
+  LTR_EXPLICIT_ACK_MGMT,
+  LTR_SUCCESS,
+  LTR_QUEUED,
+  LTR_NOT_CONNECTED,
+  LTR_MAX
 } LogThreadedResult;
 
 typedef struct _LogThreadedDestDriver LogThreadedDestDriver;
@@ -179,7 +179,7 @@ log_threaded_dest_worker_insert(LogThreadedDestWorker *self, LogMessage *msg)
 static inline LogThreadedResult
 log_threaded_dest_worker_flush(LogThreadedDestWorker *self)
 {
-  LogThreadedResult result = WORKER_INSERT_RESULT_SUCCESS;
+  LogThreadedResult result = LTR_SUCCESS;
 
   if (self->flush)
     result = self->flush(self);

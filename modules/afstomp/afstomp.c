@@ -324,12 +324,12 @@ afstomp_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
   STOMPDestDriver *self = (STOMPDestDriver *)s;
 
   if (!afstomp_dd_connect(self, TRUE))
-    return WORKER_INSERT_RESULT_NOT_CONNECTED;
+    return LTR_NOT_CONNECTED;
 
   if (!afstomp_worker_publish (self, msg))
-    return WORKER_INSERT_RESULT_ERROR;
+    return LTR_ERROR;
 
-  return WORKER_INSERT_RESULT_SUCCESS;
+  return LTR_SUCCESS;
 }
 
 static void

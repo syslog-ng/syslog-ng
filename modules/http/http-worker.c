@@ -216,7 +216,7 @@ LogThreadedResult
 map_http_status_to_worker_status(HTTPDestinationWorker *self, const gchar *url, glong http_code)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
-  LogThreadedResult retval = WORKER_INSERT_RESULT_ERROR;
+  LogThreadedResult retval = LTR_ERROR;
 
   switch (http_code/100)
     {
@@ -230,7 +230,7 @@ map_http_status_to_worker_status(HTTPDestinationWorker *self, const gchar *url, 
       break;
     case 2:
       /* everything is dandy */
-      retval = WORKER_INSERT_RESULT_SUCCESS;
+      retval = LTR_SUCCESS;
       break;
     case 3:
       msg_notice("Server returned with a 3XX (redirect) status code, which was not handled by curl. "
@@ -247,7 +247,7 @@ map_http_status_to_worker_status(HTTPDestinationWorker *self, const gchar *url, 
                  evt_tag_int("status_code", http_code),
                  evt_tag_str("driver", owner->super.super.super.id),
                  log_pipe_location_tag(&owner->super.super.super.super));
-      retval = WORKER_INSERT_RESULT_DROP;
+      retval = LTR_DROP;
       break;
     case 5:
       msg_notice("Server returned with a 5XX (server errors) status code, which indicates server failure. "
@@ -309,7 +309,7 @@ _flush_on_target(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
                 evt_tag_int("worker_index", self->super.worker_index),
                 evt_tag_str("driver", owner->super.super.super.id),
                 log_pipe_location_tag(&owner->super.super.super.super));
-      return WORKER_INSERT_RESULT_NOT_CONNECTED;
+      return LTR_NOT_CONNECTED;
     }
 
   glong http_code = 0;
@@ -323,7 +323,7 @@ _flush_on_target(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
                 evt_tag_int("worker_index", self->super.worker_index),
                 evt_tag_str("driver", owner->super.super.super.id),
                 log_pipe_location_tag(&owner->super.super.super.super));
-      return WORKER_INSERT_RESULT_NOT_CONNECTED;
+      return LTR_NOT_CONNECTED;
     }
 
   if (debug_flag)
@@ -357,11 +357,11 @@ _flush(LogThreadedDestWorker *s)
   HTTPDestinationWorker *self = (HTTPDestinationWorker *) s;
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) s->owner;
   HTTPLoadBalancerTarget *target, *alt_target = NULL;
-  LogThreadedResult retval = WORKER_INSERT_RESULT_NOT_CONNECTED;
+  LogThreadedResult retval = LTR_NOT_CONNECTED;
   gint retry_attempts = owner->load_balancer->num_targets;
 
   if (self->super.batch_size == 0)
-    return WORKER_INSERT_RESULT_SUCCESS;
+    return LTR_SUCCESS;
 
   _finish_request_body(self);
 
@@ -370,7 +370,7 @@ _flush(LogThreadedDestWorker *s)
   while (--retry_attempts >= 0)
     {
       retval = _flush_on_target(self, target);
-      if (retval == WORKER_INSERT_RESULT_SUCCESS)
+      if (retval == LTR_SUCCESS)
         {
           http_load_balancer_set_target_successful(owner->load_balancer, target);
           break;
@@ -426,7 +426,7 @@ _insert_batched(LogThreadedDestWorker *s, LogMessage *msg)
     {
       return log_threaded_dest_worker_flush(&self->super);
     }
-  return WORKER_INSERT_RESULT_QUEUED;
+  return LTR_QUEUED;
 }
 
 static LogThreadedResult

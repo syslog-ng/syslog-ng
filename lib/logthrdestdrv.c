@@ -49,7 +49,7 @@ log_threaded_dest_driver_set_batch_timeout(LogDriver *s, gint batch_timeout)
   self->batch_timeout = batch_timeout;
 }
 
-/* this should be used in combination with WORKER_INSERT_RESULT_EXPLICIT_ACK_MGMT to actually confirm message delivery. */
+/* this should be used in combination with LTR_EXPLICIT_ACK_MGMT to actually confirm message delivery. */
 void
 log_threaded_dest_worker_ack_messages(LogThreadedDestWorker *self, gint batch_size)
 {
@@ -228,7 +228,7 @@ _process_result(LogThreadedDestWorker *self, gint result)
 {
   switch (result)
     {
-    case WORKER_INSERT_RESULT_DROP:
+    case LTR_DROP:
       msg_error("Message(s) dropped while sending message to destination",
                 evt_tag_str("driver", self->owner->super.super.id),
                 evt_tag_int("worker_index", self->worker_index),
@@ -238,7 +238,7 @@ _process_result(LogThreadedDestWorker *self, gint result)
       _disconnect_and_suspend(self);
       break;
 
-    case WORKER_INSERT_RESULT_ERROR:
+    case LTR_ERROR:
       self->retries_counter++;
 
       if (self->retries_counter >= self->owner->retries_max)
@@ -265,7 +265,7 @@ _process_result(LogThreadedDestWorker *self, gint result)
         }
       break;
 
-    case WORKER_INSERT_RESULT_NOT_CONNECTED:
+    case LTR_NOT_CONNECTED:
       msg_info("Server disconnected while preparing messages for sending, trying again",
                evt_tag_str("driver", self->owner->super.super.id),
                log_expr_node_location_tag(self->owner->super.super.super.expr_node),
@@ -275,15 +275,15 @@ _process_result(LogThreadedDestWorker *self, gint result)
       _disconnect_and_suspend(self);
       break;
 
-    case WORKER_INSERT_RESULT_EXPLICIT_ACK_MGMT:
+    case LTR_EXPLICIT_ACK_MGMT:
       /* we require the instance to use explicit calls to ack_messages/rewind_messages */
       break;
 
-    case WORKER_INSERT_RESULT_SUCCESS:
+    case LTR_SUCCESS:
       _accept_batch(self);
       break;
 
-    case WORKER_INSERT_RESULT_QUEUED:
+    case LTR_QUEUED:
       self->enable_batching = TRUE;
       break;
 
@@ -299,7 +299,7 @@ _perform_flush(LogThreadedDestWorker *self)
   /* NOTE: earlier we had a condition on only calling flush() if batch_size
    * is non-zero.  This was removed, as the language bindings that were done
    * _before_ the batching support in LogThreadedDestDriver relies on
-   * flush() being called always, even if WORKER_INSERT_RESULT_SUCCESS is
+   * flush() being called always, even if LTR_SUCCESS is
    * returned, in which case batch_size is already zero at this point.
    */
   if (!self->suspended)
@@ -779,7 +779,7 @@ _compat_flush(LogThreadedDestWorker *self)
 {
   if (self->owner->worker.flush)
     return self->owner->worker.flush(self->owner);
-  return WORKER_INSERT_RESULT_SUCCESS;
+  return LTR_SUCCESS;
 }
 
 static void

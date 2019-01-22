@@ -368,7 +368,7 @@ _worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
   gboolean drop_silently = self->template_options.on_error & ON_ERROR_SILENT;
 
   if (!_connect(self, TRUE))
-    return WORKER_INSERT_RESULT_NOT_CONNECTED;
+    return LTR_NOT_CONNECTED;
 
   bson_reinit(self->bson);
 
@@ -390,7 +390,7 @@ _worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
                                         LTZ_SEND, &self->template_options),
                     evt_tag_str("driver", self->super.super.super.id));
         }
-      return WORKER_INSERT_RESULT_DROP;
+      return LTR_DROP;
     }
 
   msg_debug("Outgoing message to MongoDB destination",
@@ -409,7 +409,7 @@ _worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
                     evt_tag_int("time_reopen", self->super.time_reopen),
                     evt_tag_str("reason", error.message),
                     evt_tag_str("driver", self->super.super.super.id));
-          return WORKER_INSERT_RESULT_NOT_CONNECTED;
+          return LTR_NOT_CONNECTED;
         }
       else
         {
@@ -417,11 +417,11 @@ _worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
                     evt_tag_int("time_reopen", self->super.time_reopen),
                     evt_tag_str("reason", error.message),
                     evt_tag_str("driver", self->super.super.super.id));
-          return WORKER_INSERT_RESULT_ERROR;
+          return LTR_ERROR;
         }
     }
 
-  return WORKER_INSERT_RESULT_SUCCESS;
+  return LTR_SUCCESS;
 }
 
 gboolean

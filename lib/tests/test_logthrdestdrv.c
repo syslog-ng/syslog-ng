@@ -162,7 +162,7 @@ _insert_single_message_success(LogThreadedDestDriver *s, LogMessage *msg)
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
 
   self->insert_counter++;
-  return WORKER_INSERT_RESULT_SUCCESS;
+  return LTR_SUCCESS;
 }
 
 Test(logthrdestdrv, driver_can_be_instantiated_and_one_message_is_properly_processed)
@@ -187,7 +187,7 @@ _insert_single_message_drop(LogThreadedDestDriver *s, LogMessage *msg)
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
 
   self->insert_counter++;
-  return WORKER_INSERT_RESULT_DROP;
+  return LTR_DROP;
 }
 
 Test(logthrdestdrv, message_drops_are_accounted_in_the_drop_counter_and_are_reported_properly)
@@ -213,8 +213,8 @@ _insert_single_message_connection_failure(LogThreadedDestDriver *s, LogMessage *
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
 
   if (self->insert_counter++ < 10)
-    return WORKER_INSERT_RESULT_NOT_CONNECTED;
-  return WORKER_INSERT_RESULT_SUCCESS;
+    return LTR_NOT_CONNECTED;
+  return LTR_SUCCESS;
 }
 
 Test(logthrdestdrv, connection_failure_is_considered_an_error_and_retried_indefinitely)
@@ -241,7 +241,7 @@ _insert_single_message_error_until_drop(LogThreadedDestDriver *s, LogMessage *ms
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
 
   self->insert_counter++;
-  return WORKER_INSERT_RESULT_ERROR;
+  return LTR_ERROR;
 }
 
 Test(logthrdestdrv, error_result_retries_sending_retry_max_times_and_then_drops)
@@ -270,8 +270,8 @@ _insert_single_message_error_until_successful(LogThreadedDestDriver *s, LogMessa
   TestThreadedDestDriver *self = (TestThreadedDestDriver *) s;
 
   if (self->insert_counter++ < 4)
-    return WORKER_INSERT_RESULT_ERROR;
-  return WORKER_INSERT_RESULT_SUCCESS;
+    return LTR_ERROR;
+  return LTR_SUCCESS;
 }
 
 Test(logthrdestdrv, error_result_retries_sending_retry_max_times_and_then_accepts)
@@ -301,10 +301,10 @@ _insert_batched_message_success(LogThreadedDestDriver *s, LogMessage *msg)
 
   self->insert_counter++;
   if (self->super.worker.instance.batch_size < s->batch_lines)
-    return WORKER_INSERT_RESULT_QUEUED;
+    return LTR_QUEUED;
 
   self->flush_size += self->super.worker.instance.batch_size;
-  return WORKER_INSERT_RESULT_SUCCESS;
+  return LTR_SUCCESS;
 }
 
 static LogThreadedResult
@@ -314,7 +314,7 @@ _flush_batched_message_success(LogThreadedDestDriver *s)
 
   self->flush_counter++;
   self->flush_size += self->super.worker.instance.batch_size;
-  return WORKER_INSERT_RESULT_SUCCESS;
+  return LTR_SUCCESS;
 }
 
 Test(logthrdestdrv, batched_set_of_messages_are_successfully_delivered)
@@ -344,10 +344,10 @@ _insert_batched_message_drop(LogThreadedDestDriver *s, LogMessage *msg)
 
   self->insert_counter++;
   if (self->super.worker.instance.batch_size < s->batch_lines)
-    return WORKER_INSERT_RESULT_QUEUED;
+    return LTR_QUEUED;
 
   self->flush_size += self->super.worker.instance.batch_size;
-  return WORKER_INSERT_RESULT_DROP;
+  return LTR_DROP;
 }
 
 static LogThreadedResult
@@ -357,7 +357,7 @@ _flush_batched_message_drop(LogThreadedDestDriver *s)
 
   self->flush_counter++;
   self->flush_size += self->super.worker.instance.batch_size;
-  return WORKER_INSERT_RESULT_DROP;
+  return LTR_DROP;
 }
 
 Test(logthrdestdrv, batched_set_of_messages_are_dropped_as_a_whole)
@@ -399,11 +399,11 @@ _insert_batched_message_error_drop(LogThreadedDestDriver *s, LogMessage *msg)
 
   self->insert_counter++;
   if (self->super.worker.instance.batch_size < s->batch_lines)
-    return WORKER_INSERT_RESULT_QUEUED;
+    return LTR_QUEUED;
 
   self->flush_size += self->super.worker.instance.batch_size;
   _expect_batch_size_remains_the_same_across_retries(self);
-  return WORKER_INSERT_RESULT_ERROR;
+  return LTR_ERROR;
 }
 
 static LogThreadedResult
@@ -415,9 +415,9 @@ _flush_batched_message_error_drop(LogThreadedDestDriver *s)
   _expect_batch_size_remains_the_same_across_retries(self);
   /* see the note in logthrdestdrv.c:_perform_flush() */
   if (self->super.worker.instance.batch_size == 0)
-    return WORKER_INSERT_RESULT_SUCCESS;
+    return LTR_SUCCESS;
 
-  return WORKER_INSERT_RESULT_ERROR;
+  return LTR_ERROR;
 }
 
 Test(logthrdestdrv,
@@ -457,9 +457,9 @@ static inline LogThreadedResult
 _inject_error_a_few_times(TestThreadedDestDriver *self)
 {
   if (self->super.worker.instance.retries_counter >= FAILING_ATTEMPTS_DROP)
-    return WORKER_INSERT_RESULT_SUCCESS;
+    return LTR_SUCCESS;
   else
-    return WORKER_INSERT_RESULT_ERROR;
+    return LTR_ERROR;
 }
 
 static LogThreadedResult
@@ -469,7 +469,7 @@ _insert_batched_message_error_success(LogThreadedDestDriver *s, LogMessage *msg)
 
   self->insert_counter++;
   if (self->super.worker.instance.batch_size < s->batch_lines)
-    return WORKER_INSERT_RESULT_QUEUED;
+    return LTR_QUEUED;
 
   self->flush_size += self->super.worker.instance.batch_size;
   _expect_batch_size_remains_the_same_across_retries(self);
@@ -486,7 +486,7 @@ _flush_batched_message_error_success(LogThreadedDestDriver *s)
 
   /* see the note in logthrdestdrv.c:_perform_flush() */
   if (self->super.worker.instance.batch_size == 0)
-    return WORKER_INSERT_RESULT_SUCCESS;
+    return LTR_SUCCESS;
 
   return _inject_error_a_few_times(self);
 }
@@ -530,10 +530,10 @@ _inject_not_connected_a_few_times(TestThreadedDestDriver *self)
   if (self->failure_counter++ >= FAILING_ATTEMPTS_NOTCONN)
     {
       self->failure_counter = 0;
-      return WORKER_INSERT_RESULT_SUCCESS;
+      return LTR_SUCCESS;
     }
   else
-    return WORKER_INSERT_RESULT_NOT_CONNECTED;
+    return LTR_NOT_CONNECTED;
 }
 
 static LogThreadedResult
@@ -543,7 +543,7 @@ _insert_batched_message_not_connected(LogThreadedDestDriver *s, LogMessage *msg)
 
   self->insert_counter++;
   if (self->super.worker.instance.batch_size < s->batch_lines)
-    return WORKER_INSERT_RESULT_QUEUED;
+    return LTR_QUEUED;
 
   self->flush_size += self->super.worker.instance.batch_size;
   _expect_batch_size_remains_the_same_across_retries(self);
@@ -560,7 +560,7 @@ _flush_batched_message_not_connected(LogThreadedDestDriver *s)
 
   /* see the note in logthrdestdrv.c:_perform_flush() */
   if (self->super.worker.instance.batch_size == 0)
-    return WORKER_INSERT_RESULT_SUCCESS;
+    return LTR_SUCCESS;
 
   return _inject_not_connected_a_few_times(self);
 }
@@ -734,11 +734,11 @@ _insert_explicit_acks_message_success(LogThreadedDestDriver *s, LogMessage *msg)
 
   self->insert_counter++;
   if (self->super.worker.instance.batch_size < s->batch_lines)
-    return WORKER_INSERT_RESULT_QUEUED;
+    return LTR_QUEUED;
 
   self->flush_size += 1;
   log_threaded_dest_worker_ack_messages(&s->worker.instance, 1);
-  return WORKER_INSERT_RESULT_EXPLICIT_ACK_MGMT;
+  return LTR_EXPLICIT_ACK_MGMT;
 }
 
 static LogThreadedResult
@@ -748,7 +748,7 @@ _flush_explicit_acks_message_success(LogThreadedDestDriver *s)
 
   self->flush_size += 1;
   log_threaded_dest_worker_ack_messages(&s->worker.instance, 1);
-  return WORKER_INSERT_RESULT_EXPLICIT_ACK_MGMT;
+  return LTR_EXPLICIT_ACK_MGMT;
 }
 
 Test(logthrdestdrv, test_explicit_ack_accept)
