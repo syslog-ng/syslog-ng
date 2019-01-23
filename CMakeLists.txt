@@ -136,6 +136,7 @@ check_symbol_exists(memrchr "string.h" SYSLOG_NG_HAVE_MEMRCHR)
 check_symbol_exists(strcasestr "string.h" SYSLOG_NG_HAVE_STRCASESTR)
 check_symbol_exists(pread "unistd.h" SYSLOG_NG_HAVE_PREAD)
 check_symbol_exists(pwrite "unistd.h" SYSLOG_NG_HAVE_PWRITE)
+check_symbol_exists(timezone time.h SYSLOG_NG_HAVE_TIMEZONE)
 
 check_include_files(utmp.h SYSLOG_NG_HAVE_UTMP_H)
 check_include_files(utmpx.h SYSLOG_NG_HAVE_UTMPX_H)
