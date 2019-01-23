@@ -752,7 +752,6 @@ AC_CHECK_FUNCS(strdup		\
 	strtoimax		\
 	inet_aton		\
 	inet_ntoa		\
-	getopt_long		\
 	getaddrinfo		\
 	getnameinfo		\
 	getutent		\
