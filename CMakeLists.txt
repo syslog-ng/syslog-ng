@@ -136,6 +136,12 @@ set(CMAKE_C_STANDARD 99)
 find_package(BISON 2.4 REQUIRED)
 find_package(GLIB COMPONENTS gmodule gthread 2.26.1 REQUIRED)
 
+set(CMAKE_REQUIRED_INCLUDES ${GLIB_INCLUDE_DIRS})
+set(CMAKE_REQUIRED_LIBRARIES ${GLIB_LIBRARIES})
+check_symbol_exists(g_list_copy_deep "glib.h" SYSLOG_NG_HAVE_G_LIST_COPY_DEEP)
+check_symbol_exists(g_queue_free_full "glib.h" SYSLOG_NG_HAVE_G_QUEUE_FREE_FULL)
+check_symbol_exists(g_list_free_full "glib.h" SYSLOG_NG_HAVE_G_LIST_FREE_FULL)
+
 set (SYSLOG_NG_USE_CONST_IVYKIS_MOCK 1)
 external_or_find_package(IVYKIS REQUIRED)
 if ((NOT IVYKIS_INTERNAL) AND (IVYKIS_PKGCONF_VERSION VERSION_LESS "0.39"))
