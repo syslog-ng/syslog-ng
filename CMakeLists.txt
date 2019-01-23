@@ -71,6 +71,7 @@ include(CheckStructMember)
 include(CheckSymbolExists)
 include(GenerateYFromYm)
 include(CheckStructHasMember)
+include(CheckCSourceCompiles)
 
 add_definitions(-D_GNU_SOURCE=1)
 add_definitions(-D_LARGEFILE64_SOURCE=1)
@@ -108,6 +109,11 @@ check_type_size(O_LARGEFILE O_LARGEFILE)
 if (HAVE_O_LARGEFILE)
   set(SYSLOG_NG_HAVE_O_LARGEFILE 1)
 endif()
+
+check_c_source_compiles("
+#include <pthread.h>
+__thread int a; int main() { a=0; }" SYSLOG_NG_HAVE_THREAD_KEYWORD)
+
 
 check_symbol_exists(strtoll stdlib.h SYSLOG_NG_HAVE_STRTOLL)
 check_symbol_exists(strnlen string.h SYSLOG_NG_HAVE_STRNLEN)
