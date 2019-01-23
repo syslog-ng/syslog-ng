@@ -140,6 +140,8 @@ check_struct_has_member("struct utmpx" "ut_type" "utmpx.h" UTMPX_HAS_UT_TYPE LAN
 check_struct_has_member("struct utmp" "ut_type" "utmp.h" UTMP_HAS_UT_TYPE LANGUAGE C)
 check_struct_has_member("struct utmpx" "ut_user" "utmpx.h" UTMPX_HAS_UT_USER LANGUAGE C)
 check_struct_has_member("struct utmp" "ut_user" "utmp.h" UTMP_HAS_UT_USER LANGUAGE C)
+check_struct_has_member("struct tm" "tm_gmtoff" "sys/time.h;time.h" SYSLOG_NG_HAVE_STRUCT_TM_TM_GMTOFF)
+
 
 if ((UTMPX_HAS_UT_TYPE AND UTMPX_HAS_UT_USER) OR (UTMPX_HAS_UT_TYPE AND UTMP_HAS_UT_USER))
   set(SYSLOG_NG_HAVE_MODERN_UTMP 1)
