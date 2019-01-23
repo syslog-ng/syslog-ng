@@ -24,27 +24,29 @@
 from src.common.blocking import wait_until_true_custom
 from src.common.blocking import DEFAULT_TIMEOUT
 
+READ_ALL_MESSAGES = 0
 
 class MessageReader(object):
     def __init__(self, logger_factory, read, parser):
         self.__logger = logger_factory.create_logger("MessageReader")
-        self.__read_all_messages = 0
+
         self.__read = read
         self.__parser = parser
-        self.__read_eof = False
 
     def __buffer_and_parse(self, counter):
         buffered_chunk = self.__read()
-        if buffered_chunk:
-            self.__parser.parse_buffer(buffered_chunk)
+        if counter == READ_ALL_MESSAGES:
+            if buffered_chunk:
+                self.__parser.parse_buffer(buffered_chunk)
+                return False
+            else:
+                return True # eof reached
         else:
-            self.__read_eof = True
-        if counter != self.__read_all_messages:
+            self.__parser.parse_buffer(buffered_chunk)
             return len(self.__parser.msg_list) >= counter
-        return self.__read_eof
 
     def __map_counter(self, counter):
-        if counter == self.__read_all_messages:
+        if counter == READ_ALL_MESSAGES:
             return len(self.__parser.msg_list)
         return counter
 
