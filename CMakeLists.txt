@@ -112,6 +112,8 @@ check_symbol_exists(getaddrinfo "netdb.h;sys/socket.h;sys/types.h" SYSLOG_NG_HAV
 check_symbol_exists(getnameinfo "netdb.h;sys/socket.h" SYSLOG_NG_HAVE_GETNAMEINFO)
 check_symbol_exists(getprotobynumber_r "netdb.h" SYSLOG_NG_HAVE_GETPROTOBYNUMBER_R)
 check_symbol_exists(clock_gettime "time.h" SYSLOG_NG_HAVE_CLOCK_GETTIME)
+check_symbol_exists(gmtime_r "time.h" SYSLOG_NG_HAVE_GMTIME_R)
+check_symbol_exists(localtime_r "time.h" SYSLOG_NG_HAVE_LOCALTIME_R)
 check_symbol_exists("getrandom" "sys/random.h" SYSLOG_NG_HAVE_GETRANDOM)
 check_symbol_exists(fmemopen "stdio.h" SYSLOG_NG_HAVE_FMEMOPEN)
 
