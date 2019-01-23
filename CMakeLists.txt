@@ -117,6 +117,8 @@ check_symbol_exists(gmtime_r "time.h" SYSLOG_NG_HAVE_GMTIME_R)
 check_symbol_exists(localtime_r "time.h" SYSLOG_NG_HAVE_LOCALTIME_R)
 check_symbol_exists("getrandom" "sys/random.h" SYSLOG_NG_HAVE_GETRANDOM)
 check_symbol_exists(fmemopen "stdio.h" SYSLOG_NG_HAVE_FMEMOPEN)
+set(CMAKE_REQUIRED_DEFINITIONS "-D_GNU_SOURCE=1")
+check_symbol_exists(memrchr "string.h" SYSLOG_NG_HAVE_MEMRCHR)
 
 check_include_files(utmp.h SYSLOG_NG_HAVE_UTMP_H)
 check_include_files(utmpx.h SYSLOG_NG_HAVE_UTMPX_H)
