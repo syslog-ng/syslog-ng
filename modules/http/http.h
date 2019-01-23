@@ -30,6 +30,7 @@
 
 #include "logthrdestdrv.h"
 #include "http-loadbalancer.h"
+#include "http-auth/auth-header.h"
 
 typedef struct
 {
@@ -42,6 +43,7 @@ typedef struct
   gchar *user;
   gchar *password;
   GList *headers;
+  HttpAuthHeader *auth_header;
   gchar *user_agent;
   gchar *ca_dir;
   gboolean use_system_cert_store;
@@ -71,6 +73,7 @@ void http_dd_set_password(LogDriver *d, const gchar *password);
 void http_dd_set_method(LogDriver *d, const gchar *method);
 void http_dd_set_user_agent(LogDriver *d, const gchar *user_agent);
 void http_dd_set_headers(LogDriver *d, GList *headers);
+void http_dd_set_auth_header(LogDriver *d, HttpAuthHeader *auth_header);
 void http_dd_set_body(LogDriver *d, LogTemplate *body);
 void http_dd_set_accept_redirects(LogDriver *d, gboolean accept_redirects);
 void http_dd_set_ca_dir(LogDriver *d, const gchar *ca_dir);

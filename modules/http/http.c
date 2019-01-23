@@ -72,6 +72,14 @@ http_dd_set_headers(LogDriver *d, GList *headers)
 }
 
 void
+http_dd_set_auth_header(LogDriver *d, HttpAuthHeader *auth_header)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  self->auth_header = auth_header;
+}
+
+void
 http_dd_set_method(LogDriver *d, const gchar *method)
 {
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
@@ -319,6 +327,9 @@ http_dd_init(LogPipe *s)
   /* we need to set up url before we call the inherited init method, so our stats key is correct */
   self->url = self->load_balancer->targets[0].url;
 
+  if (self->auth_header && !http_auth_header_init(self->auth_header))
+    return FALSE;
+
   if (!log_threaded_dest_driver_init_method(s))
     return FALSE;
 
@@ -351,6 +362,7 @@ http_dd_free(LogPipe *s)
   g_free(self->key_file);
   g_free(self->ciphers);
   g_list_free_full(self->headers, g_free);
+  http_auth_header_free(self->auth_header);
   http_load_balancer_free(self->load_balancer);
 
   log_threaded_dest_driver_free(s);
