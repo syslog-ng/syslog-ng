@@ -72,9 +72,11 @@
 %token KW_DELIMITER
 %token KW_WORKERS
 %token KW_ACCEPT_REDIRECTS
+%token KW_AUTH_HEADER
 
 %type   <ptr> driver
 %type   <ptr> http_destination
+%type   <ptr> http_auth_header_plugin
 
 /* INCLUDE_DECLS */
 
@@ -113,6 +115,7 @@ http_option
     | KW_PASSWORD   '(' string ')'            { http_dd_set_password(last_driver, $3); free($3); }
     | KW_USER_AGENT '(' string ')'            { http_dd_set_user_agent(last_driver, $3); free($3); }
     | KW_HEADERS    '(' string_list ')'       { http_dd_set_headers(last_driver, $3); g_list_free_full($3, free); }
+    | KW_AUTH_HEADER '(' http_auth_header_plugin ')' { http_dd_set_auth_header(last_driver, $3); }
     | KW_METHOD     '(' string ')'            { http_dd_set_method(last_driver, $3); free($3); }
     | KW_BODY_PREFIX '(' string ')'           { http_dd_set_body_prefix(last_driver, $3); free($3); }
     | KW_BODY_SUFFIX '(' string ')'           { http_dd_set_body_suffix(last_driver, $3); free($3); }
@@ -142,6 +145,22 @@ http_tls_option
     | KW_USE_SYSTEM_CERT_STORE '(' yesno ')'  { http_dd_set_use_system_cert_store(last_driver, $3); }
     | KW_SSL_VERSION '(' string ')'           { http_dd_set_ssl_version(last_driver, $3); free($3); }
     | KW_PEER_VERIFY '(' yesno ')'            { http_dd_set_peer_verify(last_driver, $3); }
+    ;
+
+http_auth_header_plugin
+    : LL_IDENTIFIER
+    {
+      gint context = LL_CONTEXT_HTTP_AUTH_HEADER;
+      Plugin *p = cfg_find_plugin(configuration, context, $1);
+      CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
+      HttpAuthHeader *auth_header = (HttpAuthHeader *) cfg_parse_plugin(configuration, p, &@1, NULL);
+      free($1);
+      if (!auth_header)
+        {
+          YYERROR;
+        }
+      $$ = auth_header;
+    }
     ;
 
 /* INCLUDE_RULES */
