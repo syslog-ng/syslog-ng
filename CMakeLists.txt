@@ -73,6 +73,7 @@ include(GenerateYFromYm)
 include(CheckStructHasMember)
 
 add_definitions(-D_GNU_SOURCE=1)
+add_definitions(-D_LARGEFILE64_SOURCE=1)
 
 include(CheckSockaddrStorage)
 if (HAVE_STRUCT_SOCKADDR_STORAGE)
@@ -99,6 +100,13 @@ endif()
 option(ENV_LD_LIBRARY_PATH "Set LD_LIBRARY_PATH during runtime to the value given" "")
 if (ENV_LD_LIBRARY_PATH)
   set(SYSLOG_NG_ENABLE_ENV_WRAPPER 1)
+endif()
+
+set(CMAKE_REQUIRED_DEFINITIONS "-D_LARGEFILE64_SOURCE=1")
+set(CMAKE_EXTRA_INCLUDE_FILES "fcntl.h")
+check_type_size(O_LARGEFILE O_LARGEFILE)
+if (HAVE_O_LARGEFILE)
+  set(SYSLOG_NG_HAVE_O_LARGEFILE 1)
 endif()
 
 check_symbol_exists(strtoll stdlib.h SYSLOG_NG_HAVE_STRTOLL)
