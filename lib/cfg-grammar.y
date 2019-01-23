@@ -163,6 +163,7 @@ extern struct _StatsOptions *last_stats_options;
 %token LL_CONTEXT_CLIENT_PROTO        17
 %token LL_CONTEXT_SERVER_PROTO        18
 %token LL_CONTEXT_OPTIONS             19
+%token LL_CONTEXT_HTTP_AUTH_HEADER    20
 
 
 /* statements */
