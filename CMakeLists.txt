@@ -127,6 +127,7 @@ check_symbol_exists("getrandom" "sys/random.h" SYSLOG_NG_HAVE_GETRANDOM)
 check_symbol_exists(fmemopen "stdio.h" SYSLOG_NG_HAVE_FMEMOPEN)
 set(CMAKE_REQUIRED_DEFINITIONS "-D_GNU_SOURCE=1")
 check_symbol_exists(memrchr "string.h" SYSLOG_NG_HAVE_MEMRCHR)
+check_symbol_exists(strcasestr "string.h" SYSLOG_NG_HAVE_STRCASESTR)
 check_symbol_exists(pread "unistd.h" SYSLOG_NG_HAVE_PREAD)
 check_symbol_exists(pwrite "unistd.h" SYSLOG_NG_HAVE_PWRITE)
 
