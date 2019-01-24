@@ -860,7 +860,7 @@ log_threaded_dest_driver_set_max_retries(LogDriver *s, gint max_retries)
 LogThreadedDestWorker *
 _lookup_worker(LogThreadedDestDriver *self, LogMessage *msg)
 {
-  static gint last_worker = 0;
+  static guint last_worker = 0;
 
   gint worker_index = last_worker % self->num_workers;
   last_worker++;
