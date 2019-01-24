@@ -137,6 +137,26 @@ exit:
   return result;
 }
 
+static void
+lookup_entry(gpointer data, gpointer user_data)
+{
+
+  PersistTool *self = (PersistTool *)user_data;
+  gchar *name = (gchar *)data;
+
+  gsize value_len = 0;
+  guint8 version = 0;
+  persist_state_lookup_entry(self->state, name, &value_len, &version);
+}
+
+/* this function reads all entries in persist to update the in_use struct memeber */
+static void
+dump_all_entries(PersistTool *self)
+{
+  GList *keys = persist_state_get_key_list(self->state);
+  g_list_foreach(keys, lookup_entry, self);
+  g_list_free(keys);
+}
 
 gint
 add_main(int argc, char *argv[])
@@ -193,6 +213,9 @@ add_main(int argc, char *argv[])
         }
     }
   g_free(line);
+
+  dump_all_entries(self);
+
   persist_tool_free(self);
   if (input_file != stdin)
     {
