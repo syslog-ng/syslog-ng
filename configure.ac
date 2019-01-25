@@ -1536,8 +1536,6 @@ if test "x$enable_systemd" = "xyes"; then
         fi
 fi
 
-PKG_CHECK_MODULES(UUID, uuid, enable_libuuid="yes", enable_libuuid="no")
-
 dnl ***************************************************************************
 dnl check if we have timezone variable in <time.h>
 dnl ***************************************************************************
@@ -1698,7 +1696,6 @@ AC_DEFINE_UNQUOTED(PACKAGE_NAME, "$PACKAGE_NAME", [package name])
 AC_DEFINE_UNQUOTED(WITH_COMPILE_DATE, $wcmp_date, [Include the compile date in the binary])
 AC_DEFINE_UNQUOTED(ENABLE_FORCED_SERVER_MODE, `enable_value $enable_forced_server_mode`, [Enable forced server mode])
 AC_DEFINE_UNQUOTED(ENABLE_DEBUG, `enable_value $enable_debug`, [Enable debugging])
-AC_DEFINE_UNQUOTED(ENABLE_LIBUUID, `enable_value $enable_libuuid`, [Enable libuuid support])
 AC_DEFINE_UNQUOTED(ENABLE_GPROF, `enable_value $enable_gprof`, [Enable gcc profiling])
 AC_DEFINE_UNQUOTED(ENABLE_MEMTRACE, `enable_value $enable_memtrace`, [Enable memtrace])
 AC_DEFINE_UNQUOTED(ENABLE_SPOOF_SOURCE, `enable_value $enable_spoof_source`, [Enable spoof source support])
@@ -1792,8 +1789,6 @@ AC_SUBST(JSON_SUBDIRS)
 AC_SUBST(JSON_DEPENDENCY)
 AC_SUBST(IVYKIS_SUBDIRS)
 AC_SUBST(RESOLV_LIBS)
-AC_SUBST(UUID_CFLAGS)
-AC_SUBST(UUID_LIBS)
 
 AC_SUBST(CURRDATE)
 AC_SUBST(RELEASE_TAG)
