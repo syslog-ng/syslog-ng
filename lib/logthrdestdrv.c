@@ -224,55 +224,85 @@ _rewind_batch(LogThreadedDestWorker *self)
 }
 
 static void
+_process_result_drop(LogThreadedDestWorker *self)
+{
+  msg_error("Message(s) dropped while sending message to destination",
+            evt_tag_str("driver", self->owner->super.super.id),
+            evt_tag_int("worker_index", self->worker_index),
+            evt_tag_int("batch_size", self->batch_size));
+
+  _drop_batch(self);
+  _disconnect_and_suspend(self);
+}
+
+static void
+_process_result_error(LogThreadedDestWorker *self)
+{
+  self->retries_counter++;
+
+  if (self->retries_counter >= self->owner->retries_max)
+    {
+      msg_error("Multiple failures while sending message(s) to destination, message(s) dropped",
+                evt_tag_str("driver", self->owner->super.super.id),
+                log_expr_node_location_tag(self->owner->super.super.super.expr_node),
+                evt_tag_int("worker_index", self->worker_index),
+                evt_tag_int("retries", self->retries_counter),
+                evt_tag_int("batch_size", self->batch_size));
+
+      _drop_batch(self);
+    }
+  else
+    {
+      msg_error("Error occurred while trying to send a message, trying again",
+                evt_tag_str("driver", self->owner->super.super.id),
+                log_expr_node_location_tag(self->owner->super.super.super.expr_node),
+                evt_tag_int("worker_index", self->worker_index),
+                evt_tag_int("retries", self->retries_counter),
+                evt_tag_int("batch_size", self->batch_size));
+      _rewind_batch(self);
+      _disconnect_and_suspend(self);
+    }
+}
+
+static void
+_process_result_not_connected(LogThreadedDestWorker *self)
+{
+  msg_info("Server disconnected while preparing messages for sending, trying again",
+           evt_tag_str("driver", self->owner->super.super.id),
+           log_expr_node_location_tag(self->owner->super.super.super.expr_node),
+           evt_tag_int("worker_index", self->worker_index),
+           evt_tag_int("batch_size", self->batch_size));
+  _rewind_batch(self);
+  _disconnect_and_suspend(self);
+}
+
+static void
+_process_result_success(LogThreadedDestWorker *self)
+{
+  _accept_batch(self);
+}
+
+static void
+_process_result_queued(LogThreadedDestWorker *self)
+{
+  self->enable_batching = TRUE;
+}
+
+static void
 _process_result(LogThreadedDestWorker *self, gint result)
 {
   switch (result)
     {
     case LTR_DROP:
-      msg_error("Message(s) dropped while sending message to destination",
-                evt_tag_str("driver", self->owner->super.super.id),
-                evt_tag_int("worker_index", self->worker_index),
-                evt_tag_int("batch_size", self->batch_size));
-
-      _drop_batch(self);
-      _disconnect_and_suspend(self);
+      _process_result_drop(self);
       break;
 
     case LTR_ERROR:
-      self->retries_counter++;
-
-      if (self->retries_counter >= self->owner->retries_max)
-        {
-          msg_error("Multiple failures while sending message(s) to destination, message(s) dropped",
-                    evt_tag_str("driver", self->owner->super.super.id),
-                    log_expr_node_location_tag(self->owner->super.super.super.expr_node),
-                    evt_tag_int("worker_index", self->worker_index),
-                    evt_tag_int("retries", self->retries_counter),
-                    evt_tag_int("batch_size", self->batch_size));
-
-          _drop_batch(self);
-        }
-      else
-        {
-          msg_error("Error occurred while trying to send a message, trying again",
-                    evt_tag_str("driver", self->owner->super.super.id),
-                    log_expr_node_location_tag(self->owner->super.super.super.expr_node),
-                    evt_tag_int("worker_index", self->worker_index),
-                    evt_tag_int("retries", self->retries_counter),
-                    evt_tag_int("batch_size", self->batch_size));
-          _rewind_batch(self);
-          _disconnect_and_suspend(self);
-        }
+      _process_result_error(self);
       break;
 
     case LTR_NOT_CONNECTED:
-      msg_info("Server disconnected while preparing messages for sending, trying again",
-               evt_tag_str("driver", self->owner->super.super.id),
-               log_expr_node_location_tag(self->owner->super.super.super.expr_node),
-               evt_tag_int("worker_index", self->worker_index),
-               evt_tag_int("batch_size", self->batch_size));
-      _rewind_batch(self);
-      _disconnect_and_suspend(self);
+      _process_result_not_connected(self);
       break;
 
     case LTR_EXPLICIT_ACK_MGMT:
@@ -280,11 +310,11 @@ _process_result(LogThreadedDestWorker *self, gint result)
       break;
 
     case LTR_SUCCESS:
-      _accept_batch(self);
+      _process_result_success(self);
       break;
 
     case LTR_QUEUED:
-      self->enable_batching = TRUE;
+      _process_result_queued(self);
       break;
 
     default:
