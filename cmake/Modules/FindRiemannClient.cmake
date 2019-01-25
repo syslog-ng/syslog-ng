@@ -23,19 +23,18 @@
 
 include(LibFindMacros)
 
-# Use pkg-config to get hints about paths
-libfind_pkg_check_modules(Riemann_PKGCONF riemann-client)
-
-# Finally the library itself
-find_library(Riemann_LIBRARY
-  NAMES riemann-client
-  PATHS ${Riemann_PKGCONF_LIBRARY_DIRS}
-)
-
-# Set the include dir variables and the libraries and let libfind_process do the rest.
-# NOTE: Singular variables for this library, plural for libraries this this lib depends on.
+libfind_pkg_detect(Riemann riemann-client FIND_PATH riemann/event.h FIND_LIBRARY riemann-client)
+set(Riemann_PROCESS_INCLUDES Riemann_INCLUDE_DIR)
 set(Riemann_PROCESS_LIBS Riemann_LIBRARY)
 
 # silence warnings
-set(Riemann_FIND_QUIETLY 1)
-libfind_process(Riemann)
+libfind_process(Riemann QUIET)
+
+set(CMAKE_EXTRA_INCLUDE_FILES "event.h")
+set(CMAKE_REQUIRED_INCLUDES "${Riemann_INCLUDE_DIR}/riemann/")
+set(CMAKE_REQUIRED_LIBRARIES "${Riemann_LIBRARIES}")
+
+check_type_size(RIEMANN_EVENT_FIELD_TIME_MICROS RIEMANN_MICROSECONDS)
+if (HAVE_RIEMANN_MICROSECONDS)
+  set(SYSLOG_NG_HAVE_RIEMANN_MICROSECONDS 1)
+endif()
