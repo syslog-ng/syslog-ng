@@ -34,6 +34,7 @@ struct _HttpAuthHeader
   gboolean (*init)(HttpAuthHeader *self);
   void (*free_fn)(HttpAuthHeader *self);
 
+  gboolean (*renew)(HttpAuthHeader *self);
   const gchar *(*get_as_string)(HttpAuthHeader *self);
 };
 
@@ -61,6 +62,14 @@ http_auth_header_get_as_string(HttpAuthHeader *self)
   g_assert(self->get_as_string);
 
   return self->get_as_string(self);
+}
+
+static inline gboolean
+http_auth_header_renew(HttpAuthHeader *self)
+{
+  g_assert(self->renew);
+
+  return self->renew(self);
 }
 
 #endif
