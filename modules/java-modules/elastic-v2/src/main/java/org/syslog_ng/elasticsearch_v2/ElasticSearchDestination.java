@@ -92,22 +92,22 @@ public class ElasticSearchDestination extends StructuredLogDestination {
 
 	private int send_batch(ESIndex index) {
 		if (client.send(index))
-			return WORKER_INSERT_RESULT_QUEUED;
+			return QUEUED;
 		else
-			return WORKER_INSERT_RESULT_ERROR;
+			return ERROR;
 	}
 
 	private int send_single(ESIndex index) {
 		if (client.send(index))
-			return WORKER_INSERT_RESULT_SUCCESS;
+			return SUCCESS;
 		else
-			return WORKER_INSERT_RESULT_ERROR;
+			return ERROR;
 	}
 
 	@Override
 	protected int send(LogMessage msg) {
 		if (!client.isOpened()) {
-			return WORKER_INSERT_RESULT_NOT_CONNECTED;
+			return NOT_CONNECTED;
 		}
 
                 ESIndex index = createIndexRequest(msg);
@@ -139,8 +139,8 @@ public class ElasticSearchDestination extends StructuredLogDestination {
 	@Override
 	public int flush() {
 		if (client.flush())
-			return WORKER_INSERT_RESULT_SUCCESS;
+			return SUCCESS;
 		else
-			return WORKER_INSERT_RESULT_ERROR;
+			return ERROR;
 	}
 }

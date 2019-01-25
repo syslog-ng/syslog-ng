@@ -45,12 +45,53 @@ class LogDestination(object):
     def send(self, msg):
         """Send a message to the target service
 
-        It should return True to indicate success, False will suspend the
-        destination for a period specified by the time-reopen() option."""
+        It can return either a boolean or integer.
+        Boolean: True to indicate success, False will suspend the
+        destination for a period specified by the time-reopen() option.
+        After that the same message is retried until retries() times.
+
+        Integer:
+        self.SUCCESS: message sending was successful (same as boolean True)
+        self.ERROR: message sending was unsuccessful. Same message is retried.
+            (same as boolean False)
+        self.DROP: message cannot be sent, it should be dropped immediately.
+        self.QUEUED: message is not sent immediately, it will be sent with the flush method.
+        self.NOT_CONNECTED: message is put back to the queue, open method will be called until success."""
+
         pass
 
+    def flush(self):
+        """Flush the queued messages
 
-class DummyPythonDest(LogDestination):
+        It can return either a boolean or integer.
+        Boolean: True to indicate that the batch is successfully sent.
+        False indicates error while sending the batch. The destination is suspended
+        for time-reopen period. The messages in the batch are passed again to send, one by one.
+
+        Integer:
+        self.SUCCESS: batch sending was successful (same as boolean True)
+        self.ERROR: batch sending was unsuccessful. (same as boolean False)
+        self.DROP: batch cannot be sent, the messages should be dropped immediately.
+        self.NOT_CONNECTED: the messages in the batch is put back to the queue,
+            open method will be called until success."""
+
+        pass
+
+class DummyPythonDest(object):
     def send(self, msg):
         print('queue', msg)
+        return self.SUCCESS
+
+class DummyBatchDestination(object):
+    def init(self, options):
+        self.bulk = list()
         return True
+
+    def send(self, msg):
+         self.bulk.append(msg["MSG"].decode())
+         return self.QUEUED
+
+    def flush(self):
+        print("flushing: " + ",".join(self.bulk))
+        self.bulk = list()
+        return self.SUCCESS

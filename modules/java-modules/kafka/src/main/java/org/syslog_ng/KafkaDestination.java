@@ -74,9 +74,9 @@ public class KafkaDestination extends StructuredLogDestination {
       result = sendAsynchronously(producerRecord);
 
     if (result)
-        return WORKER_INSERT_RESULT_SUCCESS;
+        return SUCCESS;
     else
-        return WORKER_INSERT_RESULT_ERROR;
+        return ERROR;
   }
 
   private boolean sendSynchronously(ProducerRecord<String, String> producerRecord) {

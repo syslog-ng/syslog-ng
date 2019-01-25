@@ -37,7 +37,7 @@ public class DummyStructuredDestination extends StructuredLogDestination {
 
   public int flush() {
     System.out.println("Flush");
-    return WORKER_INSERT_RESULT_SUCCESS;
+    return SUCCESS;
   }
 
   public boolean init() {
@@ -64,7 +64,7 @@ public class DummyStructuredDestination extends StructuredLogDestination {
 
   public int send(LogMessage arg0) {
     arg0.release();
-    return WORKER_INSERT_RESULT_SUCCESS;
+    return SUCCESS;
   }
 
   @Override

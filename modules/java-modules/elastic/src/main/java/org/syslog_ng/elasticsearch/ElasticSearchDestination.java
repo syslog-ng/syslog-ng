@@ -101,12 +101,12 @@ public class ElasticSearchDestination extends StructuredLogDestination {
 	protected int send(LogMessage msg) {
 		if (!client.isOpened()) {
 			close();
-			return WORKER_INSERT_RESULT_SUCCESS;
+			return SUCCESS;
 		}
 		if (msgProcessor.send(createIndexRequest(msg)))
-			return WORKER_INSERT_RESULT_SUCCESS;
+			return SUCCESS;
 		else
-			return WORKER_INSERT_RESULT_ERROR;
+			return ERROR;
 	}
 
 	@Override

@@ -225,7 +225,7 @@ redis_dd_disconnect(LogThreadedDestDriver *s)
  * Worker thread
  */
 
-static worker_insert_result_t
+static LogThreadedResult
 redis_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
 {
   RedisDriver *self = (RedisDriver *)s;
@@ -235,15 +235,15 @@ redis_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
   int argc = 2;
 
   if (!redis_dd_connect(self))
-    return WORKER_INSERT_RESULT_NOT_CONNECTED;
+    return LTR_NOT_CONNECTED;
 
   if (self->c->err)
-    return WORKER_INSERT_RESULT_ERROR;
+    return LTR_ERROR;
 
   if (!check_connection_to_redis(self))
     {
       msg_error("REDIS: worker failed to connect");
-      return WORKER_INSERT_RESULT_NOT_CONNECTED;
+      return LTR_NOT_CONNECTED;
     }
 
   log_template_format(self->key, msg, &self->template_options, LTZ_SEND,
@@ -287,7 +287,7 @@ redis_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
                 evt_tag_str("param2", self->param2_str->str),
                 evt_tag_str("error", self->c->errstr),
                 evt_tag_int("time_reopen", self->super.time_reopen));
-      return WORKER_INSERT_RESULT_ERROR;
+      return LTR_ERROR;
     }
 
   msg_debug("REDIS command sent",
@@ -298,7 +298,7 @@ redis_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
             evt_tag_str("param2", self->param2_str->str));
   freeReplyObject(reply);
 
-  return WORKER_INSERT_RESULT_SUCCESS;
+  return LTR_SUCCESS;
 }
 
 static void

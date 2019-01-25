@@ -36,7 +36,7 @@ public abstract class StructuredLogDestination extends LogDestination {
 		}
 		catch (Exception e) {
 			sendExceptionMessage(e);
-			return WORKER_INSERT_RESULT_DROP;
+			return DROP;
 		}
 		finally {
 			msg.release();

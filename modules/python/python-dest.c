@@ -187,7 +187,7 @@ _py_invoke_close(PythonDestDriver *self)
   _dd_py_invoke_void_method_by_name(self, "close");
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _as_int(PyObject *obj)
 {
   int result = pyobject_as_int(obj);
@@ -197,26 +197,26 @@ _as_int(PyObject *obj)
       msg_error("Error converting PyObject to int. Retrying message later",
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
-      return WORKER_INSERT_RESULT_ERROR;
+      return LTR_ERROR;
     }
 
-  if (result < 0 || result >= WORKER_INSERT_RESULT_MAX)
+  if (result < 0 || result >= LTR_MAX)
     {
       msg_error("Python: worker insert result out of range. Retrying message later",
                 evt_tag_int("result", result));
-      return WORKER_INSERT_RESULT_ERROR;
+      return LTR_ERROR;
     }
 
   return result;
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _as_bool(PyObject *obj)
 {
-  return PyObject_IsTrue(obj) ? WORKER_INSERT_RESULT_SUCCESS : WORKER_INSERT_RESULT_ERROR;
+  return PyObject_IsTrue(obj) ? LTR_SUCCESS : LTR_ERROR;
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 pyobject_to_worker_insert_result(PyObject *obj)
 {
   if (PyBool_Check(obj))
@@ -225,31 +225,31 @@ pyobject_to_worker_insert_result(PyObject *obj)
     return _as_int(obj);
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _py_invoke_flush(PythonDestDriver *self)
 {
   if (!self->py.flush)
-    return WORKER_INSERT_RESULT_SUCCESS;
+    return LTR_SUCCESS;
 
   PyObject *ret = _py_invoke_function(self->py.flush, NULL, self->class, self->super.super.super.id);
   if (!ret)
-    return WORKER_INSERT_RESULT_ERROR;
+    return LTR_ERROR;
 
-  worker_insert_result_t result = pyobject_to_worker_insert_result(ret);
+  LogThreadedResult result = pyobject_to_worker_insert_result(ret);
   Py_XDECREF(ret);
   return result;
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 _py_invoke_send(PythonDestDriver *self, PyObject *dict)
 {
   PyObject *ret;
   ret = _py_invoke_function(self->py.send, dict, self->class, self->super.super.super.id);
 
   if (!ret)
-    return WORKER_INSERT_RESULT_ERROR;
+    return LTR_ERROR;
 
-  worker_insert_result_t result = pyobject_to_worker_insert_result(ret);
+  LogThreadedResult result = pyobject_to_worker_insert_result(ret);
   Py_XDECREF(ret);
   return result;
 }
@@ -273,7 +273,7 @@ _py_clear(PyObject *self)
 }
 
 #define _inject_worker_insert_result(self, value) \
-  _inject_const(self, #value, value)
+  _inject_const(self, #value, LTR_ ## value)
 
 static void
 _inject_const(PythonDestDriver *self, const gchar *field_name, gint value)
@@ -286,13 +286,12 @@ _inject_const(PythonDestDriver *self, const gchar *field_name, gint value)
 static void
 _inject_worker_insert_result_consts(PythonDestDriver *self)
 {
-  _inject_worker_insert_result(self, WORKER_INSERT_RESULT_DROP);
-  _inject_worker_insert_result(self, WORKER_INSERT_RESULT_ERROR);
-  _inject_worker_insert_result(self, WORKER_INSERT_RESULT_EXPLICIT_ACK_MGMT);
-  _inject_worker_insert_result(self, WORKER_INSERT_RESULT_SUCCESS);
-  _inject_worker_insert_result(self, WORKER_INSERT_RESULT_QUEUED);
-  _inject_worker_insert_result(self, WORKER_INSERT_RESULT_NOT_CONNECTED);
-  _inject_worker_insert_result(self, WORKER_INSERT_RESULT_MAX);
+  _inject_worker_insert_result(self, DROP);
+  _inject_worker_insert_result(self, ERROR);
+  _inject_worker_insert_result(self, SUCCESS);
+  _inject_worker_insert_result(self, QUEUED);
+  _inject_worker_insert_result(self, NOT_CONNECTED);
+  _inject_worker_insert_result(self, MAX);
 };
 
 static gboolean
@@ -405,11 +404,11 @@ _py_construct_message(PythonDestDriver *self, LogMessage *msg, PyObject **msg_ob
 }
 
 
-static worker_insert_result_t
+static LogThreadedResult
 python_dd_insert(LogThreadedDestDriver *d, LogMessage *msg)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
-  worker_insert_result_t result = WORKER_INSERT_RESULT_ERROR;
+  LogThreadedResult result = LTR_ERROR;
   PyObject *msg_object;
   PyGILState_STATE gstate;
 
@@ -419,7 +418,7 @@ python_dd_insert(LogThreadedDestDriver *d, LogMessage *msg)
       _py_invoke_open(self);
       if (!_py_invoke_is_opened(self))
         {
-          result = WORKER_INSERT_RESULT_NOT_CONNECTED;
+          result = LTR_NOT_CONNECTED;
           goto exit;
         }
     }
@@ -447,14 +446,14 @@ python_dd_open(PythonDestDriver *self)
   PyGILState_Release(gstate);
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 python_dd_flush(LogThreadedDestDriver *s)
 {
   PythonDestDriver *self = (PythonDestDriver *)s;
   PyGILState_STATE gstate;
 
   gstate = PyGILState_Ensure();
-  worker_insert_result_t result = _py_invoke_flush(self);
+  LogThreadedResult result = _py_invoke_flush(self);
   PyGILState_Release(gstate);
   return result;
 };

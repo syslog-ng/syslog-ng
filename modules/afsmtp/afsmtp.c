@@ -482,7 +482,7 @@ __send_message(AFSMTPDriver *self, smtp_session_t session)
   return success;
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 afsmtp_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
 {
   AFSMTPDriver *self = (AFSMTPDriver *)s;
@@ -495,7 +495,7 @@ afsmtp_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
     {
       msg_debug("Mark messages are dropped by SMTP destination",
                 evt_tag_str("driver", self->super.super.super.id));
-      return WORKER_INSERT_RESULT_SUCCESS;
+      return LTR_SUCCESS;
     }
 
   session = __build_session(self, msg);
@@ -509,12 +509,12 @@ afsmtp_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
   if (!success)
     {
       if (!message_sent)
-        return WORKER_INSERT_RESULT_NOT_CONNECTED;
+        return LTR_NOT_CONNECTED;
       else
-        return WORKER_INSERT_RESULT_ERROR;
+        return LTR_ERROR;
     }
 
-  return WORKER_INSERT_RESULT_SUCCESS;
+  return LTR_SUCCESS;
 }
 
 static void

@@ -860,14 +860,14 @@ afsql_dd_should_commit_transaction(const AFSqlDestDriver *self)
   return afsql_dd_is_transaction_handling_enabled(self);
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 afsql_dd_handle_insert_row_error_depending_on_connection_availability(AFSqlDestDriver *self)
 {
   const gchar *dbi_error, *error_message;
 
   if (dbi_conn_ping(self->dbi_ctx) == 1)
     {
-      return WORKER_INSERT_RESULT_ERROR;
+      return LTR_ERROR;
     }
 
   if (afsql_dd_is_transaction_handling_enabled(self))
@@ -889,24 +889,24 @@ afsql_dd_handle_insert_row_error_depending_on_connection_availability(AFSqlDestD
             evt_tag_str("database", self->database),
             evt_tag_str("error", dbi_error));
 
-  return WORKER_INSERT_RESULT_ERROR;
+  return LTR_ERROR;
 }
 
-static worker_insert_result_t
+static LogThreadedResult
 afsql_dd_flush(LogThreadedDestDriver *s)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
 
   if (!afsql_dd_is_transaction_handling_enabled(self))
-    return WORKER_INSERT_RESULT_SUCCESS;
+    return LTR_SUCCESS;
 
   if (!afsql_dd_commit_transaction(self))
     {
       /* Assuming that in case of error, the queue is rewound by afsql_dd_commit_transaction() */
       afsql_dd_rollback_transaction(self);
-      return WORKER_INSERT_RESULT_ERROR;
+      return LTR_ERROR;
     }
-  return WORKER_INSERT_RESULT_SUCCESS;
+  return LTR_SUCCESS;
 }
 
 static gboolean
@@ -928,12 +928,12 @@ afsql_dd_run_insert_query(AFSqlDestDriver *self, GString *table, LogMessage *msg
  * Returns: FALSE to indicate that the connection should be closed and
  * this destination suspended for time_reopen() time.
  **/
-static worker_insert_result_t
+static LogThreadedResult
 afsql_dd_insert(LogThreadedDestDriver *s, LogMessage *msg)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
   GString *table = NULL;
-  worker_insert_result_t retval = WORKER_INSERT_RESULT_ERROR;
+  LogThreadedResult retval = LTR_ERROR;
 
   table = afsql_dd_ensure_accessible_database_table(self, msg);
   if (!table)
@@ -949,8 +949,8 @@ afsql_dd_insert(LogThreadedDestDriver *s, LogMessage *msg)
     }
 
   retval = afsql_dd_is_transaction_handling_enabled(self)
-           ? WORKER_INSERT_RESULT_QUEUED
-           : WORKER_INSERT_RESULT_SUCCESS;
+           ? LTR_QUEUED
+           : LTR_SUCCESS;
 
 error:
 
