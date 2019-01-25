@@ -860,10 +860,8 @@ log_threaded_dest_driver_set_max_retries(LogDriver *s, gint max_retries)
 LogThreadedDestWorker *
 _lookup_worker(LogThreadedDestDriver *self, LogMessage *msg)
 {
-  static guint last_worker = 0;
-
-  gint worker_index = last_worker % self->num_workers;
-  last_worker++;
+  gint worker_index = self->last_worker % self->num_workers;
+  self->last_worker++;
 
   /* here would come the lookup mechanism that maps msg -> worker that doesn't exist yet. */
   return self->workers[worker_index];
@@ -1041,6 +1039,7 @@ log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalConfig
   self->batch_lines = -1;
   self->batch_timeout = -1;
   self->num_workers = 1;
+  self->last_worker = 0;
 
   self->retries_max = MAX_RETRIES_OF_FAILED_INSERT_DEFAULT;
   self->lock = g_mutex_new();

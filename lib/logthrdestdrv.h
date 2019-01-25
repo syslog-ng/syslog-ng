@@ -118,6 +118,7 @@ struct _LogThreadedDestDriver
   LogThreadedDestWorker **workers;
   gint num_workers;
   gint workers_started;
+  guint last_worker;
 
   gint stats_source;
 
