@@ -43,6 +43,7 @@ typedef enum
   LTR_SUCCESS,
   LTR_QUEUED,
   LTR_NOT_CONNECTED,
+  LTR_RETRY,
   LTR_MAX
 } LogThreadedResult;
 
