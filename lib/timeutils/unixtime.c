@@ -61,11 +61,15 @@ unix_time_set_from_normalized_wall_clock_time(UnixTime *self, WallClockTime *wct
 void
 unix_time_set_from_normalized_wall_clock_time_with_tz_hint(UnixTime *self, WallClockTime *wct, long gmtoff_hint)
 {
-  self->ut_gmtoff = wct->wct_gmtoff;
+  gint target_gmtoff = -1;
 
-  if (self->ut_gmtoff == -1)
-    self->ut_gmtoff = gmtoff_hint;
+  /* usec is just copied over, doesn't change timezone or anything */
   self->ut_usec = wct->wct_usec;
+
+  /* determine target gmtoff if it's coming from the timestamp or from the hint */
+  target_gmtoff = wct->wct_gmtoff;
+  if (target_gmtoff == -1)
+    target_gmtoff = gmtoff_hint;
 
   /* FIRST: We convert the timestamp as it was in our local time zone. */
   gint unnormalized_hour = wct->wct_hour;
@@ -73,14 +77,19 @@ unix_time_set_from_normalized_wall_clock_time_with_tz_hint(UnixTime *self, WallC
   self->ut_sec = cached_mktime_wct(wct);
   gint normalized_hour = wct->wct_hour;
 
-  if (self->ut_gmtoff == -1)
-    self->ut_gmtoff = get_local_timezone_ofs(self->ut_sec);
 
   /* SECOND: adjust ut_sec as if we converted it according to our timezone. */
+  gint local_gmtoff = get_local_timezone_ofs(self->ut_sec);
+  if (target_gmtoff == -1)
+    {
+      target_gmtoff = local_gmtoff;
+    }
   self->ut_sec = self->ut_sec
-                 + get_local_timezone_ofs(self->ut_sec)
+                 + local_gmtoff
                  - (normalized_hour - unnormalized_hour) * 3600
-                 - self->ut_gmtoff;
+                 - target_gmtoff;
+
+  self->ut_gmtoff = target_gmtoff;
 }
 
 void
