@@ -90,6 +90,8 @@ unix_time_set_from_normalized_wall_clock_time_with_tz_hint(UnixTime *self, WallC
                  - target_gmtoff;
 
   self->ut_gmtoff = target_gmtoff;
+  wct->wct_gmtoff = self->ut_gmtoff;
+  wct->wct_hour = unnormalized_hour;
 }
 
 void
