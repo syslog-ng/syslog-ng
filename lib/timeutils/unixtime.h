@@ -62,5 +62,7 @@ unix_time_is_set(const UnixTime *ut)
 }
 
 void unix_time_unset(UnixTime *ut);
+void unix_time_set_from_wall_clock_time(UnixTime *self, WallClockTime *wct);
+void unix_time_set_from_wall_clock_time_with_tz_hint(UnixTime *self, WallClockTime *wct, gint gmtoff_hint);
 
 #endif
