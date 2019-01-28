@@ -23,7 +23,7 @@
 
 #include "date-parser.h"
 #include "str-utils.h"
-#include "timeutils/strptime-tz.h"
+#include "timeutils/wallclocktime.h"
 #include "timeutils/timeutils.h"
 #include "timeutils/cache.h"
 
@@ -75,18 +75,16 @@ date_parser_init(LogPipe *s)
 
 /* NOTE: tm is initialized with the current time and date */
 static gboolean
-_parse_timestamp_and_deduce_missing_parts(DateParser *self, struct tm *tm, gint32 *tm_zone_offset, const gchar *input)
+_parse_timestamp_and_deduce_missing_parts(DateParser *self, WallClockTime *wct, const gchar *input)
 {
   gint current_year;
-  struct tm nowtm = *tm;
-  long tm_gmtoff;
-  const gchar *tm_zone = NULL;
+  WallClockTime now_wct = *wct;
   const gchar *remainder;
 
-  current_year = tm->tm_year;
-  tm->tm_year = 0;
-  tm_gmtoff = -1;
-  remainder = strptime_with_tz(input, self->date_format, tm, &tm_gmtoff, &tm_zone);
+  current_year = wct->wct_year;
+  wct->wct_year = 0;
+  wct->wct_gmtoff = -1;
+  remainder = wall_clock_time_strptime(wct, self->date_format, input);
   if (!remainder || remainder[0])
     return FALSE;
 
@@ -94,17 +92,12 @@ _parse_timestamp_and_deduce_missing_parts(DateParser *self, struct tm *tm, gint3
    * not, we are going to need the received year to find it out
    * heuristically */
 
-  if (tm->tm_year == 0)
+  if (wct->wct_year == 0)
     {
       /* no year information in the timestamp, deduce it from the current year */
-      tm->tm_year = current_year;
-      tm->tm_year = determine_year_for_month(tm->tm_mon, &nowtm);
+      wct->wct_year = current_year;
+      wct->wct_year = determine_year_for_month(wct->wct_mon, &now_wct.tm);
     }
-
-  if (tm_gmtoff != -1)
-    *tm_zone_offset = tm_gmtoff;
-  else
-    *tm_zone_offset = -1;
 
   return TRUE;
 }
@@ -113,9 +106,9 @@ static void
 _adjust_tvsec_to_move_it_into_given_timezone(LogStamp *timestamp, gint normalized_hour, gint unnormalized_hour)
 {
   timestamp->ut_sec = timestamp->ut_sec
-                      + get_local_timezone_ofs(timestamp->ut_sec)
-                      - (normalized_hour - unnormalized_hour) * 3600
-                      - timestamp->ut_gmtoff;
+                         + get_local_timezone_ofs(timestamp->ut_sec)
+                         - (normalized_hour - unnormalized_hour) * 3600
+                         - timestamp->ut_gmtoff;
 }
 
 static glong
@@ -130,11 +123,11 @@ _get_target_zone_offset(DateParser *self, glong tm_zone_offset, time_t now)
 }
 
 static gboolean
-_convert_struct_tm_to_logstamp(DateParser *self, time_t now, struct tm *tm, gint32 tm_zone_offset, LogStamp *target)
+_convert_struct_tm_to_logstamp(DateParser *self, time_t now, WallClockTime *wct, LogStamp *target)
 {
   gint unnormalized_hour;
 
-  target->ut_gmtoff = _get_target_zone_offset(self, tm_zone_offset, now);
+  target->ut_gmtoff = _get_target_zone_offset(self, wct->wct_gmtoff, now);
 
   /* NOTE: mktime changes struct tm in the call below! For instance it
    * changes the hour value. (in daylight saving changes, and when it
@@ -145,32 +138,31 @@ _convert_struct_tm_to_logstamp(DateParser *self, time_t now, struct tm *tm, gint
    * one. */
 
   /* FIRST: We convert the timestamp as it was in our local time zone. */
-  unnormalized_hour = tm->tm_hour;
-  target->ut_sec = cached_mktime(tm);
+  unnormalized_hour = wct->wct_hour;
+  target->ut_sec = cached_mktime(&wct->tm);
 
   /* we can't parse USEC value, as strptime() does not support that */
   target->ut_usec = 0;
 
-  /* SECOND: adjust ut_sec as if we converted it according to our timezone. */
-  _adjust_tvsec_to_move_it_into_given_timezone(target, tm->tm_hour, unnormalized_hour);
+  /* SECOND: adjust tv_sec as if we converted it according to our timezone. */
+  _adjust_tvsec_to_move_it_into_given_timezone(target, wct->wct_hour, unnormalized_hour);
   return TRUE;
 }
 
 static gboolean
 _convert_timestamp_to_logstamp(DateParser *self, time_t now, LogStamp *target, const gchar *input)
 {
-  struct tm tm;
-  gint32 tm_zone_offset;
+  WallClockTime wct;
 
   /* initialize tm with current date, this fills in dst and other
    * fields (even non-standard ones) */
 
-  cached_localtime(&now, &tm);
+  cached_localtime(&now, &wct.tm);
 
-  if (!_parse_timestamp_and_deduce_missing_parts(self, &tm, &tm_zone_offset, input))
+  if (!_parse_timestamp_and_deduce_missing_parts(self, &wct, input))
     return FALSE;
 
-  if (!_convert_struct_tm_to_logstamp(self, now, &tm, tm_zone_offset, target))
+  if (!_convert_struct_tm_to_logstamp(self, now, &wct, target))
     return FALSE;
 
   return TRUE;
