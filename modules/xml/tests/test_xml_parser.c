@@ -23,6 +23,7 @@
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
 #include "xml.h"
+#include "xml-scanner.h"
 #include "apphook.h"
 #include "scratch-buffers.h"
 
@@ -53,8 +54,11 @@ _construct_xml_parser(XMLParserTestOptions options)
 {
   LogParser *xml_parser = xml_parser_new(configuration);
   xml_parser_set_forward_invalid(xml_parser, options.forward_invalid);
-  xml_parser_set_strip_whitespaces(xml_parser, options.strip_whitespaces);
-  xml_parser_set_exclude_tags(xml_parser, options.exclude_tags);
+  if (options.strip_whitespaces)
+    xml_scanner_options_set_strip_whitespaces(xml_parser_get_scanner_options(xml_parser), options.strip_whitespaces);
+  if (options.exclude_tags)
+    xml_scanner_options_set_and_compile_exclude_tags(xml_parser_get_scanner_options(xml_parser), options.exclude_tags);
+
 
   LogPipe *cloned = xml_parser_clone(&xml_parser->super);
   log_pipe_init(cloned);

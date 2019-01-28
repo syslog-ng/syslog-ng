@@ -22,33 +22,47 @@
 #ifndef XML_SCANNER_H_INCLUDED
 #define XML_SCANNER_H_INCLUDED
 
-#include "xml.h"
 #include "syslog-ng.h"
+#include "messages.h"
+#include "logmsg/logmsg.h"
+
+#include <string.h>
 
 typedef struct
 {
   LogMessage *msg;
   GString *key;
-  XMLParser *parser;
 } InserterState;
 
 typedef struct
 {
-  GMarkupParseContext *xml_ctx;
-  InserterState *state;
-  gboolean pop_next_time;
+  gboolean strip_whitespaces;
+  GList *exclude_tags;
   gboolean matchstring_shouldreverse;
   GPtrArray *exclude_patterns;
+} XMLScannerOptions;
+
+typedef struct
+{
+  GMarkupParseContext *xml_ctx;
+  XMLScannerOptions *options;
+  InserterState *state;
+  gboolean pop_next_time;
 } XMLScanner;
 
 // see Inserterstate->parser elements
 // they could be become internal options initialized by parser options and defaults
-void xml_scanner_init(XMLScanner *self, InserterState *state);
+void xml_scanner_init(XMLScanner *self, InserterState *state, XMLScannerOptions *options);
 void xml_scanner_deinit(XMLScanner *self);
-
 void xml_scanner_parse(XMLScanner *self, const gchar *input, gsize input_len, GError **error);
 void xml_scanner_end_parse(XMLScanner *self, GError **error);
 
+void xml_scanner_options_set_and_compile_exclude_tags(XMLScannerOptions *self, GList *exclude_tags);
+void xml_scanner_options_set_strip_whitespaces(XMLScannerOptions *self, gboolean setting);
+void xml_scanner_options_copy(XMLScannerOptions *dest, XMLScannerOptions *source);
+
+void xml_scanner_options_destroy(XMLScannerOptions *self);
+void xml_scanner_options_defaults(XMLScannerOptions *self);
 
 gboolean joker_or_wildcard(GList *patterns);
 #endif

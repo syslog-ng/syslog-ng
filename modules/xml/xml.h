@@ -24,21 +24,20 @@
 #define XML_H_INCLUDED
 
 #include "parser/parser-expr.h"
+#include "xml-scanner.h"
 
 typedef struct
 {
   LogParser super;
   gchar *prefix;
   gboolean forward_invalid;
-  GList *exclude_tags;
-  gboolean strip_whitespaces;
+  XMLScannerOptions options;
 } XMLParser;
 
 LogParser *xml_parser_new(GlobalConfig *cfg);
 LogPipe *xml_parser_clone(LogPipe *s);
 void xml_parser_set_prefix(LogParser *s, const gchar *prefix);
 void xml_parser_set_forward_invalid(LogParser *s, gboolean setting);
-void xml_parser_set_exclude_tags(LogParser *s, GList *exclude_tags);
-void xml_parser_set_strip_whitespaces(LogParser *s, gboolean setting);
 
+XMLScannerOptions *xml_parser_get_scanner_options(LogParser *p);
 #endif

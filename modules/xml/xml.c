@@ -22,8 +22,14 @@
 
 #include "xml.h"
 #include "scratch-buffers.h"
-#include "xml-scanner.h"
 
+
+XMLScannerOptions *
+xml_parser_get_scanner_options(LogParser *p)
+{
+  XMLParser *self = (XMLParser *)p;
+  return &self->options;
+}
 
 static void
 remove_trailing_dot(gchar *str)
@@ -49,8 +55,8 @@ xml_parser_process(LogParser *s, LogMessage **pmsg,
   GString *key = scratch_buffers_alloc();
   key = g_string_append(key, self->prefix);
 
-  InserterState state = { .msg = msg, .key = key, .parser = self };
-  xml_scanner_init(&xml_scanner, &state);
+  InserterState state = { .msg = msg, .key = key};
+  xml_scanner_init(&xml_scanner, &state, &self->options);
 
   GError *error = NULL;
   xml_scanner_parse(&xml_scanner, input, input_len, &error);
@@ -74,26 +80,10 @@ err:
 }
 
 void
-xml_parser_set_exclude_tags(LogParser *s, GList *exclude_tags)
-{
-  XMLParser *self = (XMLParser *) s;
-
-  g_list_free_full(self->exclude_tags, g_free);
-  self->exclude_tags = g_list_copy_deep(exclude_tags, ((GCopyFunc)g_strdup), NULL);
-}
-
-void
 xml_parser_set_forward_invalid(LogParser *s, gboolean setting)
 {
   XMLParser *self = (XMLParser *) s;
   self->forward_invalid = setting;
-}
-
-void
-xml_parser_set_strip_whitespaces(LogParser *s, gboolean setting)
-{
-  XMLParser *self = (XMLParser *) s;
-  self->strip_whitespaces = setting;
 }
 
 void
@@ -116,8 +106,7 @@ xml_parser_clone(LogPipe *s)
   xml_parser_set_prefix(&cloned->super, self->prefix);
   log_parser_set_template(&cloned->super, log_template_ref(self->super.template));
   xml_parser_set_forward_invalid(&cloned->super, self->forward_invalid);
-  xml_parser_set_strip_whitespaces(&cloned->super, self->strip_whitespaces);
-  xml_parser_set_exclude_tags(&cloned->super, self->exclude_tags);
+  xml_scanner_options_copy(&cloned->options, &self->options);
 
   return &cloned->super.super;
 }
@@ -128,9 +117,7 @@ xml_parser_free(LogPipe *s)
   XMLParser *self = (XMLParser *) s;
   g_free(self->prefix);
   self->prefix = NULL;
-  g_list_free_full(self->exclude_tags, g_free);
-  self->exclude_tags = NULL;
-
+  xml_scanner_options_destroy(&self->options);
   log_parser_free_method(s);
 }
 
@@ -157,5 +144,6 @@ xml_parser_new(GlobalConfig *cfg)
   self->forward_invalid = TRUE;
 
   xml_parser_set_prefix(&self->super, ".xml");
+  xml_scanner_options_defaults(&self->options);
   return &self->super;
 }
