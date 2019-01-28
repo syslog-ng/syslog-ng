@@ -23,10 +23,17 @@
  */
 
 #include "timeutils/wallclocktime.h"
+#include "timeutils/strptime-tz.h"
 
 void
 wall_clock_time_unset(WallClockTime *self)
 {
   WallClockTime val = WALL_CLOCK_TIME_INIT;
   *self = val;
+}
+
+gchar *
+wall_clock_time_strptime(WallClockTime *wct, const gchar *format, const gchar *input)
+{
+  return strptime_with_tz(input, format, &wct->tm, &wct->wct_gmtoff, &wct->wct_zone);
 }

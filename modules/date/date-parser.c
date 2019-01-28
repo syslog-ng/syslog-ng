@@ -75,7 +75,7 @@ date_parser_init(LogPipe *s)
 
 /* NOTE: tm is initialized with the current time and date */
 static gboolean
-_parse_timestamp_and_deduce_missing_parts(DateParser *self, struct tm *tm, glong *tm_zone_offset, const gchar *input)
+_parse_timestamp_and_deduce_missing_parts(DateParser *self, struct tm *tm, gint32 *tm_zone_offset, const gchar *input)
 {
   gint current_year;
   struct tm nowtm = *tm;
@@ -130,7 +130,7 @@ _get_target_zone_offset(DateParser *self, glong tm_zone_offset, time_t now)
 }
 
 static gboolean
-_convert_struct_tm_to_logstamp(DateParser *self, time_t now, struct tm *tm, glong tm_zone_offset, LogStamp *target)
+_convert_struct_tm_to_logstamp(DateParser *self, time_t now, struct tm *tm, gint32 tm_zone_offset, LogStamp *target)
 {
   gint unnormalized_hour;
 
@@ -160,7 +160,7 @@ static gboolean
 _convert_timestamp_to_logstamp(DateParser *self, time_t now, LogStamp *target, const gchar *input)
 {
   struct tm tm;
-  glong tm_zone_offset;
+  gint32 tm_zone_offset;
 
   /* initialize tm with current date, this fills in dst and other
    * fields (even non-standard ones) */
