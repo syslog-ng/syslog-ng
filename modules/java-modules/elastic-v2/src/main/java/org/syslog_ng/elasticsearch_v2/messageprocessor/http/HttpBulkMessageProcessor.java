@@ -180,6 +180,7 @@ public class HttpBulkMessageProcessor extends HttpMessageProcessor {
                 t.getName() + " interrupted while waiting for termination.", e);
       }
     });
+    senders.clear();
   }
 
   private void scheduleBulkAction(final ESJestBulkActions bulkActions) {

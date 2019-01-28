@@ -168,7 +168,13 @@ public class ESHttpClient implements ESClient {
 		try {
 			JestResult result = client.execute(nodesinfo);
 			if (result != null ) {
-				clusterName = result.getValue("cluster_name").toString();
+				logger.error("SB: Node Info: " + result.getJsonString());
+				Object cname = result.getValue("cluster_name");
+				if(cname != null) {
+					clusterName = result.getValue("cluster_name").toString();
+				} else {
+					logger.info("Failed to get cluster name from the client, use the name set in the config file: " + clusterName);
+				}
 			}
 		} catch (IOException e) {
       logger.info("Failed to get cluster name from the client, use the name set in the config file: " + clusterName);
