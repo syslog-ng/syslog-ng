@@ -25,9 +25,9 @@ from pathlib2 import Path
 
 
 class ConfigRenderer(object):
-    def __init__(self, syslog_ng_config, instance_paths):
+    def __init__(self, syslog_ng_config, working_dir):
         self.__syslog_ng_config = syslog_ng_config
-        self.__instance_paths = instance_paths
+        self.__working_dir = working_dir
         self.__syslog_ng_config_content = ""
         self.__render()
 
@@ -60,8 +60,8 @@ class ConfigRenderer(object):
     def __render_positional_options(self, driver_options, positional_options):
         for option_name, option_value in driver_options.items():
             if option_name in positional_options:
-                if str(self.__instance_paths.get_working_dir()) not in str(option_value):
-                    driver_options[option_name] = Path(self.__instance_paths.get_working_dir(), option_value)
+                if str(self.__working_dir) not in str(option_value):
+                    driver_options[option_name] = Path(self.__working_dir, option_value)
                 option_value = str(driver_options[option_name])
                 self.__syslog_ng_config_content += "        {}\n".format(option_value)
 

@@ -26,8 +26,8 @@ from src.setup.testcase_parameters import TestcaseParameters
 from src.syslog_ng.syslog_ng_paths import SyslogNgPaths
 from src.logger.logger_factory import LoggerFactory
 from src.syslog_ng_config.syslog_ng_config import SyslogNgConfig
+from src.syslog_ng_ctl.syslog_ng_ctl import SyslogNgCtl
 from src.syslog_ng.syslog_ng import SyslogNg
-from src.syslog_ng.syslog_ng_cli import SyslogNgCli
 from src.message_builder.bsd_format import BSDFormat
 from src.message_builder.log_message import LogMessage
 
@@ -42,7 +42,6 @@ class SetupTestCase(object):
             report_file=self.__testcase_parameters.get_report_file(), loglevel=self.__testcase_parameters.get_loglevel()
         )
         self.__logger = self.__logger_factory.create_logger("Setup", use_console_handler=True, use_file_handler=True)
-        self.__instances = {}
 
         self.__teardown_actions = []
         testcase_context.addfinalizer(self.__teardown)
@@ -76,31 +75,21 @@ class SetupTestCase(object):
                     )
                     self.__logger.error(str(failed_report.longrepr))
 
-    def __is_instance_registered(self, instance_name):
-        return instance_name in self.__instances.keys()
-
-    def __register_instance(self, instance_name):
+    def new_syslog_ng(self, instance_name="server"):
         instance_paths = SyslogNgPaths(self.__testcase_context, self.__testcase_parameters).set_syslog_ng_paths(
             instance_name
         )
-        syslog_ng_cli = SyslogNgCli(self.__logger_factory, instance_paths, self.__testcase_parameters)
-        syslog_ng = SyslogNg(syslog_ng_cli)
+        syslog_ng = SyslogNg(self.__logger_factory, instance_paths, self.__testcase_parameters)
         self.__teardown_actions.append(syslog_ng.stop)
-        self.__instances.update({instance_name: {}})
-        self.__instances[instance_name]["syslog-ng"] = syslog_ng
-        self.__instances[instance_name]["config"] = SyslogNgConfig(
-            self.__logger_factory, instance_paths, syslog_ng.get_version()
-        )
+        return syslog_ng
 
-    def new_config(self, instance_name="server"):
-        if not self.__is_instance_registered(instance_name):
-            self.__register_instance(instance_name)
-        return self.__instances[instance_name]["config"]
+    def new_syslog_ng_ctl(self, syslog_ng):
+        return SyslogNgCtl(self.__logger_factory, syslog_ng.instance_paths)
 
-    def new_syslog_ng(self, instance_name="server"):
-        if not self.__is_instance_registered(instance_name):
-            self.__register_instance(instance_name)
-        return self.__instances[instance_name]["syslog-ng"]
+    def new_config(self, version=None):
+        if not version:
+            version = self.__testcase_context.getfixturevalue("version")
+        return SyslogNgConfig(self.__logger_factory, self.__testcase_parameters.get_working_dir(), version)
 
     @staticmethod
     def format_as_bsd(log_message):
