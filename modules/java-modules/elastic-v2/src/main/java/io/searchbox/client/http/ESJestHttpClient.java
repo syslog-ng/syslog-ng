@@ -3,38 +3,37 @@ package io.searchbox.client.http;
 import io.searchbox.action.Action;
 import io.searchbox.client.JestResult;
 import io.searchbox.client.JestResultHandler;
+import io.searchbox.cluster.NodesInfo;
 import io.searchbox.core.ESJestBulkActions;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.*;
 import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.protocol.HTTP;
 import org.apache.http.util.CharArrayBuffer;
 import org.apache.http.util.EntityUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.Logger;
+import org.elasticsearch.action.bulk.BulkAction;
 
 import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
-import java.util.Map;
-
-import static io.searchbox.core.ESJestBulkActions.BLANK;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ESJestHttpClient extends JestHttpClient {
-  private final static Logger log = LoggerFactory.getLogger(ESJestHttpClient.class);
+  private final static Logger log = org.apache.log4j.Logger.getRootLogger();
 
   @Override
   public <T extends JestResult> T execute(Action<T> clientRequest) throws IOException {
     if (log.isDebugEnabled()) {
-      log.debug("SB: [{}] About to send {}", Thread.currentThread().getName(), clientRequest.getURI());
+      log.debug("SB: ["+ Thread.currentThread().getName() + "] About to send " + clientRequest.getURI());
     }
     HttpUriRequest request = prepareRequest(clientRequest);
     HttpResponse response = getHttpClient().execute(request);
     if (log.isDebugEnabled()) {
-      log.debug("SB: [{}] Received response {}", Thread.currentThread().getName(), clientRequest.getURI());
+      log.debug("SB: ["+ Thread.currentThread().getName() + "] Received response " + clientRequest.getURI());
     }
     String firstFewLines = null;
     if (clientRequest instanceof ESJestBulkActions) {
@@ -57,8 +56,7 @@ public class ESJestHttpClient extends JestHttpClient {
             ;
           }
           if (log.isDebugEnabled()) {
-            log.debug("SB: [{}] Message successfully Processed {}", Thread.currentThread().getName(),
-                    clientRequest.getURI());
+            log.debug("SB: ["+ Thread.currentThread().getName() + "] Message successfully Processed " + clientRequest.getURI());
           }
           return null;
         }
@@ -71,12 +69,21 @@ public class ESJestHttpClient extends JestHttpClient {
     return deserializeResponse(response, request, clientRequest, firstFewLines);
   }
 
+  private Pattern getURI = Pattern.compile("(^(http[s]?:/{2})?[^/]*).*$",Pattern.CASE_INSENSITIVE);
+
   @Override
   protected <T extends JestResult> HttpUriRequest prepareRequest(final Action<T> clientRequest) {
-    String elasticSearchRestUrl = getRequestURL(getNextServer(), clientRequest.getURI());
+    String nextServerUrl = getNextServer();
+    if (!(clientRequest instanceof ESJestBulkActions)) {
+      final Matcher m = getURI.matcher(nextServerUrl);
+      if(m.matches() && m.groupCount() > 1) {
+        nextServerUrl = m.group(1);
+      }
+    }
+    String elasticSearchRestUrl = getRequestURL(nextServerUrl, clientRequest.getURI());
     HttpUriRequest request = constructHttpMethod(clientRequest.getRestMethodName(), elasticSearchRestUrl, clientRequest.getData(gson));
 
-    log.debug("Request method={} url={}", clientRequest.getRestMethodName(), elasticSearchRestUrl);
+    log.debug("Request method=" + clientRequest.getRestMethodName() + " url=" + elasticSearchRestUrl);
 
     return request;
   }

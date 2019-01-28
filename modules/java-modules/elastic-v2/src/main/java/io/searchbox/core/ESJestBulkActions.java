@@ -9,11 +9,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.Map;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ESJestBulkActions implements Action<BulkResult> {
@@ -26,6 +24,7 @@ public class ESJestBulkActions implements Action<BulkResult> {
   private final String indexName;
   private final String typeName;
   private final String pipeline;
+  private final boolean debugEnabled;
 
   private final String uri;
 
@@ -39,10 +38,12 @@ public class ESJestBulkActions implements Action<BulkResult> {
   private static final String COMMA = ",";
   public static final String BLANK = "";
 
-  public ESJestBulkActions(String defaultIndex, String defaultType, String defaultPipeline) {
+  public ESJestBulkActions(String defaultIndex, String defaultType, String defaultPipeline,
+                           boolean debugEnabled) {
 //    super(new Bulk.Builder().defaultIndex(defaultIndex).defaultType(defaultType));
     this.indexName = defaultIndex;
     this.typeName = defaultType;
+    this.debugEnabled = debugEnabled;
     if (StringUtils.isNotBlank(defaultPipeline)) {
       this.pipeline = defaultPipeline;
     } else {
@@ -119,6 +120,8 @@ public class ESJestBulkActions implements Action<BulkResult> {
     data.append(NEWLINE);
     String payload = data.toString();
     data = null;
+    if (debugEnabled)
+        log.warn("SB: Http Bulk Payload : " + payload);
     return payload;
   }
 
@@ -160,10 +163,10 @@ public class ESJestBulkActions implements Action<BulkResult> {
       {
         result.setSucceeded(false);
         result.setErrorMessage("One or more of the items in the Bulk request failed, check BulkResult.getItems() for more information.");
-        log.debug("Bulk operation failed due to one or more failed actions within the Bulk request");
+        if (debugEnabled)
+            log.info("Bulk operation failed due to one or more failed actions within the Bulk request");
       } else {
         result.setSucceeded(true);
-        log.debug("Bulk operation was successfull");
       }
     } else {
       result.setSucceeded(false);
@@ -174,7 +177,8 @@ public class ESJestBulkActions implements Action<BulkResult> {
       if (result.getErrorMessage() == null) {
         result.setErrorMessage(statusCode + " " + (reasonPhrase == null ? "null" : reasonPhrase));
       }
-      log.debug("Bulk operation failed with an HTTP error");
+      if (debugEnabled)
+          log.info("Bulk operation failed with an HTTP error");
     }
     return result;
   }

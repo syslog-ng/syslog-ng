@@ -49,6 +49,7 @@ public abstract class LogDestination extends LogPipe {
  		return getSeqNum(getHandle());
         }
 
+<<<<<<< HEAD
 	public int getBatchLines() {
  		return getBatchLines(getHandle());
         }
@@ -61,6 +62,13 @@ public abstract class LogDestination extends LogPipe {
  		setBatchTimeout(getHandle(), timeout);
         }
 
+||||||| parent of cbe091a70... Adding 'dropped' statistics
+=======
+  public void incDroppedMessages(int batch_size) {
+    incDroppedMessages(getHandle(), batch_size);
+  }
+
+>>>>>>> cbe091a70... Adding 'dropped' statistics
 	protected abstract boolean open();
 
 	protected abstract void close();
@@ -71,10 +79,11 @@ public abstract class LogDestination extends LogPipe {
 
 	private native String getOption(long ptr, String key);
 
-	private native long getTemplateOptionsHandle(long ptr);
+  private native long getTemplateOptionsHandle(long ptr);
 
 	private native int getSeqNum(long ptr);
 
+<<<<<<< HEAD
 	private native int getBatchLines(long ptr);
 
 	private native int setBatchLines(long ptr, long batch_size);
@@ -83,6 +92,15 @@ public abstract class LogDestination extends LogPipe {
 
 	protected int flush() {
 		return SUCCESS;
+||||||| parent of cbe091a70... Adding 'dropped' statistics
+	protected void onMessageQueueEmpty() {
+		return;
+=======
+  private native void incDroppedMessages(long ptr, int batch_size);
+
+	protected void onMessageQueueEmpty() {
+		return;
+>>>>>>> cbe091a70... Adding 'dropped' statistics
 	}
 
 	public boolean openProxy() {

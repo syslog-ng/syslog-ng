@@ -38,6 +38,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class HttpBulkMessageProcessor extends HttpMessageProcessor {
 
@@ -57,6 +58,7 @@ public class HttpBulkMessageProcessor extends HttpMessageProcessor {
   private int enqueueFailCount = 0;
   private long enqueueStartTime = 0;
   private final int enqueueTimeout;
+  private final boolean debugEnabled;
 
   public HttpBulkMessageProcessor(ElasticSearchOptions options, ESHttpClient client) {
     super(options, client);
@@ -68,6 +70,7 @@ public class HttpBulkMessageProcessor extends HttpMessageProcessor {
     senders = new ArrayList<>(concurrency);
     name = options.getIdentifier().getValue();
     enqueueTimeout = Integer.parseInt(System.getProperty("EnqueueTimeOutMS", "100"));
+    debugEnabled = false ; //name.indexOf("stats") > 0;
   }
 
   @Override
@@ -127,12 +130,12 @@ public class HttpBulkMessageProcessor extends HttpMessageProcessor {
             }
 
             if (httpRequestErrorCount > 0) {
-              logger.warn(Thread.currentThread().getName() + " SB: " + httpRequestErrorCount + " ");
-                      httpRequestErrorCount = 0;
+              logger.warn(name + " SB: " + httpRequestErrorCount + " ");
+              httpRequestErrorCount = 0;
             }
 
-            if (logger.isDebugEnabled()) {
-              logger.debug("Processed " + jestResult.getJsonString());
+            if (debugEnabled && jestResult != null) {
+              logmsg(() -> " SB: processed [" + jestResult.getJsonString() + "]");
             }
           }
         } catch (InterruptedException e) {
@@ -156,8 +159,8 @@ public class HttpBulkMessageProcessor extends HttpMessageProcessor {
 
   @Override
   public boolean flush() {
-    if (logger.isDebugEnabled()) {
-      logger.debug("Flushing messages for ES destination [mode=" + options.getClientMode() + "]");
+    if (debugEnabled) {
+      logmsg(() -> " Flushing messages for ES destination [mode=" + options.getClientMode() + "]");
     }
     if (bulk != null) {
       scheduleBulkAction(bulk);
@@ -169,10 +172,10 @@ public class HttpBulkMessageProcessor extends HttpMessageProcessor {
 
   @Override
   public void deinit() {
-    logger.warn("SB: HMP: deinit called... shutting down the threadpool");
+    logmsg(() -> "SB: HMP: deinit called... shutting down the threadpool");
     shutDown = true;
     senders.forEach(t -> {
-      logger.info("SB: Waiting for " + t.getName() + " to terminate");
+      logmsg(() -> "SB: Waiting for " + t.getName() + " to terminate");
       try {
         t.join(10000);
       } catch (InterruptedException e) {
@@ -186,18 +189,19 @@ public class HttpBulkMessageProcessor extends HttpMessageProcessor {
   private void scheduleBulkAction(final ESJestBulkActions bulkActions) {
     try {
       if (!messageQueue.offer(bulkActions, enqueueTimeout, TimeUnit.MILLISECONDS)) {
+        client.incDroppedBatchCounter(flushLimit);
         if(enqueueFailCount <= 0) {
-          logger.warn(Thread.currentThread().getName() + "SB: " + enqueueTimeout + " millis elapsed to schedule bulk request. " +
+/*
+          logger.warn(Thread.currentThread().getId() + "SB: " + name + " " + enqueueTimeout + " millis elapsed to schedule bulk request. " +
                   "Queue full with " + messageQueue.size() + " messages. " +
                   "Consider increasing concurrent_request or elastic cluster capacity.");
-          enqueueStartTime = System.currentTimeMillis();
+*/
+          enqueueStartTime = System.currentTimeMillis() + enqueueTimeout;
         }
 
         enqueueFailCount++;
-      }
-
-      if (enqueueFailCount > 0) {
-        logger.warn(Thread.currentThread().getName() + " SB: " + enqueueFailCount +
+      } else if (enqueueFailCount != 0) {
+        logmsg(() -> " SB: " + name + " " + enqueueFailCount +
                 " enqueue attempts failed and " + (System.currentTimeMillis() - enqueueStartTime) +
                 " millis elapsed since last success.");
         enqueueFailCount = 0;
@@ -217,7 +221,7 @@ public class HttpBulkMessageProcessor extends HttpMessageProcessor {
                                  String formattedMessage) {
 
     if (processor.bulk == null) {
-      processor.bulk = new ESJestBulkActions(index, type, pipeline);
+      processor.bulk = new ESJestBulkActions(index, type, pipeline, processor.debugEnabled);
     }
     processor.bulk.addMessage(formattedMessage, index, type, pipeline, id);
 
@@ -240,5 +244,10 @@ public class HttpBulkMessageProcessor extends HttpMessageProcessor {
   @Override
   public void onMessageQueueEmpty() {
     flush();
+  }
+
+
+  private void logmsg(Supplier<String> msg) {
+    logger.info(name + " " + msg.get());
   }
 }

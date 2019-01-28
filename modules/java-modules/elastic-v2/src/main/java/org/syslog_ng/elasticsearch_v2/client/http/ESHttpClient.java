@@ -41,6 +41,7 @@ import org.syslog_ng.elasticsearch_v2.messageprocessor.http.IndexFieldHandler;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class ESHttpClient implements ESClient {
@@ -49,6 +50,7 @@ public class ESHttpClient implements ESClient {
 	private JestClient client;
 	private HttpMessageProcessor messageProcessor;
 	protected Logger logger;
+	private Consumer<Integer> incDroppedBatchCounter;
 
   static  {
 		final String log4jPath = System.getProperty("log4j.configuration");
@@ -117,9 +119,12 @@ public class ESHttpClient implements ESClient {
 		return client;
 	}
 
+	public synchronized void incDroppedBatchCounter(int batchSize) {
+    incDroppedBatchCounter(batchSize);
+  }
+
 	@Override
 	public boolean open() {
-		logger.warn("SB: EHC: opening HMP");
 		if (client == null) {
       try {
 			  client = createClient();
@@ -135,7 +140,6 @@ public class ESHttpClient implements ESClient {
 
 	@Override
 	public void close() {
-		logger.warn("SB: EHC: closing HMP");
 		messageProcessor.flush();
 		messageProcessor.deinit();
 	}
@@ -146,8 +150,9 @@ public class ESHttpClient implements ESClient {
 	}
 
 	@Override
-	public void init() {
+	public void init(Consumer<Integer> incDroppedBatchCounter) {
 		this.client = createClient();
+		this.incDroppedBatchCounter = incDroppedBatchCounter;
 	}
 
 	@Override

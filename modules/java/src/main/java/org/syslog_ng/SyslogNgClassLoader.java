@@ -58,7 +58,6 @@ public class SyslogNgClassLoader {
 
   public Class loadClass(String className, String pathList) {
     Class result = null;
-    System.err.println("SB: pathLIST : " + pathList);
     URL[] urls = createUrls(pathList);
 
     try {
@@ -142,7 +141,6 @@ public class SyslogNgClassLoader {
       Method method = URLClassLoader.class.getDeclaredMethod("addURL", new Class[]{URL.class});
       method.setAccessible(true);
       for (URL url:urls) {
-        System.err.println("SB: pathLIST : " + url);
           method.invoke(classLoader, new Object[]{url});
       }
   }

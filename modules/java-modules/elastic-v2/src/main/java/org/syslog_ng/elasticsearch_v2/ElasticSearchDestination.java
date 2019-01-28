@@ -47,7 +47,7 @@ public class ElasticSearchDestination extends StructuredLogDestination {
 	public ElasticSearchDestination(long handle) {
 		super(handle);
 		logger = Logger.getRootLogger();
-		logger.error("SB: ESD: state of the logger: " + logger.isDebugEnabled());
+		logger.error("SB: ESD: state of the logger: isDebugEnabled=" + logger.isDebugEnabled());
 		SyslogNgInternalLogger.register(logger);
 		options = new ElasticSearchOptions(this);
   }
@@ -63,7 +63,7 @@ public class ElasticSearchDestination extends StructuredLogDestination {
                         setBatchTimeout(options.getFlushTimeout());
 
 			client = ESClientFactory.getESClient(options);
-			client.init();
+			client.init(this::incDroppedMessages);
 			result = true;
 		}
 		catch (InvalidOptionException | UnknownESClientModeException e){
@@ -97,7 +97,6 @@ public class ElasticSearchDestination extends StructuredLogDestination {
 
 		return fieldsHandler.handle(index, type, customId, pipeline, formattedMessage);
 	}
-
 
 	private int send_batch(Function<IndexFieldHandler, Object> index) {
 		if (client.send(index))
@@ -144,7 +143,6 @@ public class ElasticSearchDestination extends StructuredLogDestination {
 
 	@Override
 	protected void deinit() {
-    logger.warn("SB: ESD: Deinit called ");
 		client.deinit();
 		options.deinit();
 	}

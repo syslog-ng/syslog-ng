@@ -26,6 +26,7 @@ package org.syslog_ng.elasticsearch_v2.client.esnative;
 import java.io.File;
 import java.net.URI;
 import java.nio.file.Paths;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.apache.log4j.Logger;
@@ -115,7 +116,7 @@ public abstract class ESNativeClient implements ESClient {
 
 	public abstract void deinit();
 
-	public final void init() {
+	public final void init(Consumer<Integer> incDroppedBatchCounter) {
 		client = createClient();
 	}
 
