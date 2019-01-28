@@ -34,9 +34,23 @@ unix_time_unset(UnixTime *self)
 }
 
 void
-unix_time_set_from_wall_clock_time(UnixTime *self, WallClockTime *wct)
+unix_time_set_from_wall_clock_time(UnixTime *self, const WallClockTime *wct)
 {
-  unix_time_set_from_wall_clock_time_with_tz_hint(self, wct, -1);
+  WallClockTime work_wct = *wct;
+  unix_time_set_from_normalized_wall_clock_time(self, &work_wct);
+}
+
+void
+unix_time_set_from_wall_clock_time_with_tz_hint(UnixTime *self, const WallClockTime *wct, long gmtoff_hint)
+{
+  WallClockTime work_wct = *wct;
+  unix_time_set_from_normalized_wall_clock_time_with_tz_hint(self, &work_wct, gmtoff_hint);
+}
+
+void
+unix_time_set_from_normalized_wall_clock_time(UnixTime *self, WallClockTime *wct)
+{
+  unix_time_set_from_normalized_wall_clock_time_with_tz_hint(self, wct, -1);
 }
 
 /* hint the timezone value if it is not present in the wct struct, e.g.  the
@@ -45,7 +59,7 @@ unix_time_set_from_wall_clock_time(UnixTime *self, WallClockTime *wct)
  * time-zone() value, which is only used in case an incoming timestamp does
  * not have the timestamp value. */
 void
-unix_time_set_from_wall_clock_time_with_tz_hint(UnixTime *self, WallClockTime *wct, gint gmtoff_hint)
+unix_time_set_from_normalized_wall_clock_time_with_tz_hint(UnixTime *self, WallClockTime *wct, long gmtoff_hint)
 {
   self->ut_gmtoff = wct->wct_gmtoff;
 
@@ -64,9 +78,9 @@ unix_time_set_from_wall_clock_time_with_tz_hint(UnixTime *self, WallClockTime *w
 
   /* SECOND: adjust ut_sec as if we converted it according to our timezone. */
   self->ut_sec = self->ut_sec
-                         + get_local_timezone_ofs(self->ut_sec)
-                         - (normalized_hour - unnormalized_hour) * 3600
-                         - self->ut_gmtoff;
+                 + get_local_timezone_ofs(self->ut_sec)
+                 - (normalized_hour - unnormalized_hour) * 3600
+                 - self->ut_gmtoff;
 }
 
 void

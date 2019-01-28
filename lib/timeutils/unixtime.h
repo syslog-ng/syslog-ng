@@ -62,8 +62,24 @@ unix_time_is_set(const UnixTime *ut)
 }
 
 void unix_time_unset(UnixTime *ut);
-void unix_time_set_from_wall_clock_time(UnixTime *self, WallClockTime *wct);
-void unix_time_set_from_wall_clock_time_with_tz_hint(UnixTime *self, WallClockTime *wct, gint gmtoff_hint);
+
+/*
+ * The algorithm that takes a WallClockTime and converts it to UnixTime
+ * mutates the WallClockTime, contrary to intuitions (this behavior is
+ * inherited from mktime, which we use in the implementation).  We therefore
+ * introduce a second set of set_from() functions, so we have two sets:
+ *
+ * 1) one that takes a const WallClockTime
+ * 2) one that mutates its argument
+ *
+ * The second one is qualified with the word "normalized".
+ */
+void unix_time_set_from_wall_clock_time(UnixTime *self, const WallClockTime *wct);
+void unix_time_set_from_wall_clock_time_with_tz_hint(UnixTime *self, const WallClockTime *wct, long gmtoff_hint);
+
+/* these change the WallClockTime while setting unix time, just as mktime() would */
+void unix_time_set_from_normalized_wall_clock_time(UnixTime *self, WallClockTime *wct);
+void unix_time_set_from_normalized_wall_clock_time_with_tz_hint(UnixTime *self, WallClockTime *wct, long gmtoff_hint);
 void unix_time_set_now(UnixTime *self);
 
 #endif
