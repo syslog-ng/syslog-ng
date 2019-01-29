@@ -92,7 +92,7 @@ _parse_timestamp_and_deduce_missing_parts(DateParser *self, WallClockTime *wct, 
 }
 
 static gboolean
-_convert_timestamp_to_logstamp(DateParser *self, time_t now, LogStamp *target, const gchar *input)
+_convert_timestamp_to_logstamp(DateParser *self, time_t now, UnixTime *target, const gchar *input)
 {
   WallClockTime wct = WALL_CLOCK_TIME_INIT;
 

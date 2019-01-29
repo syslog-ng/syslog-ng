@@ -48,7 +48,7 @@ fake_time_add(time_t diff)
 static gboolean
 _parse_rfc3164(const gchar *ts, gchar isotimestamp[32])
 {
-  LogStamp stamp;
+  UnixTime stamp;
   const guchar *data = (const guchar *) ts;
   gint length = strlen(ts);
   GString *result = g_string_new("");
@@ -60,7 +60,7 @@ _parse_rfc3164(const gchar *ts, gchar isotimestamp[32])
   unix_time_unset(&stamp);
   unix_time_set_from_wall_clock_time(&stamp, &wct);
 
-  log_stamp_append_format(&stamp, result, TS_FMT_ISO, stamp.ut_gmtoff, 3);
+  unix_time_append_format(&stamp, result, TS_FMT_ISO, stamp.ut_gmtoff, 3);
   strncpy(isotimestamp, result->str, 32);
   g_string_free(result, TRUE);
   return success;
@@ -69,7 +69,7 @@ _parse_rfc3164(const gchar *ts, gchar isotimestamp[32])
 static gboolean
 _parse_rfc5424(const gchar *ts, gchar isotimestamp[32])
 {
-  LogStamp stamp;
+  UnixTime stamp;
   const guchar *data = (const guchar *) ts;
   gint length = strlen(ts);
   GString *result = g_string_new("");
@@ -80,7 +80,7 @@ _parse_rfc5424(const gchar *ts, gchar isotimestamp[32])
   unix_time_unset(&stamp);
   unix_time_set_from_wall_clock_time(&stamp, &wct);
 
-  log_stamp_append_format(&stamp, result, TS_FMT_ISO, stamp.ut_gmtoff, 3);
+  unix_time_append_format(&stamp, result, TS_FMT_ISO, stamp.ut_gmtoff, 3);
   strncpy(isotimestamp, result->str, 32);
   g_string_free(result, TRUE);
   return success;

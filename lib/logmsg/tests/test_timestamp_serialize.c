@@ -27,8 +27,8 @@
 #include "logmsg/logmsg.h"
 #include "logmsg/timestamp-serialize.h"
 
-#define PREPARE_TEST LogStamp input_timestamps[LM_TS_MAX]; \
-  LogStamp output_timestamps[LM_TS_MAX]; \
+#define PREPARE_TEST UnixTime input_timestamps[LM_TS_MAX]; \
+  UnixTime output_timestamps[LM_TS_MAX]; \
   GString *stream = g_string_new(""); \
   input_timestamps[LM_TS_STAMP].ut_sec = 1; \
   input_timestamps[LM_TS_STAMP].ut_usec = 2; \

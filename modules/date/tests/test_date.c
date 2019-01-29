@@ -157,7 +157,7 @@ ParameterizedTest(struct date_params *params, date, test_date_parser)
 
   cr_assert(success, "unable to parse format=%s msg=%s", params->format, params->msg);
 
-  log_stamp_append_format(&logmsg->timestamps[params->time_stamp], res, TS_FMT_ISO, -1, 0);
+  unix_time_append_format(&logmsg->timestamps[params->time_stamp], res, TS_FMT_ISO, -1, 0);
 
   cr_assert_str_eq(res->str, params->expected,
                    "incorrect date parsed msg=%s format=%s, result=%s, expected=%s",

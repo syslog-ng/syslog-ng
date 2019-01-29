@@ -25,7 +25,7 @@
 #include "timeutils/timeutils.h"
 #include "timeutils/cache.h"
 #include "timeutils/zoneinfo.h"
-#include "logstamp.h"
+#include "timeutils/unixtime.h"
 #include <criterion/criterion.h>
 #include <stdlib.h>
 #include <string.h>
@@ -120,9 +120,9 @@ assert_time_zone_offset(TimezoneOffsetTestCase c)
 }
 
 void
-assert_timestamp_format(GString *target, LogStamp *stamp, TimestampFormatTestCase c)
+assert_timestamp_format(GString *target, UnixTime *stamp, TimestampFormatTestCase c)
 {
-  log_stamp_format(stamp, target, c.format, c.zone_offset, c.frac_digits);
+  unix_time_format(stamp, target, c.format, c.zone_offset, c.frac_digits);
   cr_assert_str_eq(target->str, c.expected_format, "Actual: %s, Expected: %s", target->str, c.expected_format);
 }
 
@@ -770,7 +770,7 @@ Test(zone, test_time_zones)
 
 Test(zone, test_logstamp_format)
 {
-  LogStamp stamp;
+  UnixTime stamp;
   GString *target = g_string_sized_new(32);
   TimestampFormatTestCase test_cases[] =
   {

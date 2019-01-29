@@ -25,7 +25,7 @@
 #include "timestamp-serialize.h"
 
 static gboolean
-_write_log_stamp(SerializeArchive *sa, const LogStamp *stamp)
+_write_log_stamp(SerializeArchive *sa, const UnixTime *stamp)
 {
   return serialize_write_uint64(sa, stamp->ut_sec) &&
          serialize_write_uint32(sa, stamp->ut_usec) &&
@@ -33,7 +33,7 @@ _write_log_stamp(SerializeArchive *sa, const LogStamp *stamp)
 }
 
 static gboolean
-_read_log_stamp(SerializeArchive *sa, LogStamp *stamp)
+_read_log_stamp(SerializeArchive *sa, UnixTime *stamp)
 {
   guint64 val64;
   guint32 val;
@@ -54,7 +54,7 @@ _read_log_stamp(SerializeArchive *sa, LogStamp *stamp)
 
 
 gboolean
-timestamp_serialize(SerializeArchive *sa, LogStamp *timestamps)
+timestamp_serialize(SerializeArchive *sa, UnixTime *timestamps)
 {
   return _write_log_stamp(sa, &timestamps[LM_TS_STAMP]) &&
          _write_log_stamp(sa, &timestamps[LM_TS_RECVD]) &&
@@ -62,14 +62,14 @@ timestamp_serialize(SerializeArchive *sa, LogStamp *timestamps)
 }
 
 gboolean
-timestamp_deserialize_legacy(SerializeArchive *sa, LogStamp *timestamps)
+timestamp_deserialize_legacy(SerializeArchive *sa, UnixTime *timestamps)
 {
   return (_read_log_stamp(sa, &timestamps[LM_TS_STAMP]) &&
           _read_log_stamp(sa, &timestamps[LM_TS_RECVD]));
 }
 
 gboolean
-timestamp_deserialize(SerializeArchive *sa, LogStamp *timestamps)
+timestamp_deserialize(SerializeArchive *sa, UnixTime *timestamps)
 {
   return (timestamp_deserialize_legacy(sa, timestamps) &&
           _read_log_stamp(sa, &timestamps[LM_TS_PROCESSED]));

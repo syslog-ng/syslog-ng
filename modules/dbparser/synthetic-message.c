@@ -151,7 +151,7 @@ _generate_message_inheriting_properties_from_the_last_message(LogMessage *msg)
 }
 
 static LogMessage *
-_generate_new_message_with_timestamp_of_the_triggering_message(LogStamp *msgstamp)
+_generate_new_message_with_timestamp_of_the_triggering_message(UnixTime *msgstamp)
 {
   LogMessage *genmsg = log_msg_new_local();
 

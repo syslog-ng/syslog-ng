@@ -236,7 +236,7 @@ log_msg_parse_cisco_timestamp_attributes(LogMessage *self, const guchar **data, 
 }
 
 static gboolean
-log_msg_parse_timestamp(LogStamp *stamp, const guchar **data, gint *length, guint parse_flags, glong recv_timezone_ofs)
+log_msg_parse_timestamp(UnixTime *stamp, const guchar **data, gint *length, guint parse_flags, glong recv_timezone_ofs)
 {
   gboolean result;
   WallClockTime wct = WALL_CLOCK_TIME_INIT;
@@ -264,7 +264,7 @@ log_msg_parse_timestamp(LogStamp *stamp, const guchar **data, gint *length, guin
 static gboolean
 log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint parse_flags, glong recv_timezone_ofs)
 {
-  LogStamp *stamp = &self->timestamps[LM_TS_STAMP];
+  UnixTime *stamp = &self->timestamps[LM_TS_STAMP];
 
 
   unix_time_unset(stamp);

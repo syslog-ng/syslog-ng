@@ -326,7 +326,7 @@ Test(log_message, test_local_logmsg_created_with_the_right_flags_and_timestamps)
 {
   LogMessage *msg = log_msg_new_local();
 
-  gboolean are_equals = log_stamp_eq(&msg->timestamps[LM_TS_STAMP], &msg->timestamps[LM_TS_RECVD]);
+  gboolean are_equals = unix_time_eq(&msg->timestamps[LM_TS_STAMP], &msg->timestamps[LM_TS_RECVD]);
 
   cr_assert_neq((msg->flags & LF_LOCAL), 0, "LogMessage created by log_msg_new_local() should have LF_LOCAL flag set");
   cr_assert(are_equals, "The timestamps in a LogMessage created by log_msg_new_local() should be equals");

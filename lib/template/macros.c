@@ -27,7 +27,7 @@
 #include "timeutils/timeutils.h"
 #include "timeutils/cache.h"
 #include "timeutils/names.h"
-#include "logstamp.h"
+#include "timeutils/unixtime.h"
 #include "messages.h"
 #include "str-format.h"
 #include "run-id.h"
@@ -467,8 +467,8 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
       /* year, month, day */
       gchar buf[64];
       gint length;
-      const LogStamp *stamp;
-      LogStamp sstamp;
+      const UnixTime *stamp;
+      UnixTime sstamp;
       guint tmp_hour;
 
       if (id >= M_TIME_FIRST && id <= M_TIME_LAST)
@@ -594,7 +594,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
                         id == M_UNIXTIME ? TS_FMT_UNIX :
                         opts->ts_format;
 
-          log_stamp_append_format(stamp, result, format, wct.wct_gmtoff, opts->frac_digits);
+          unix_time_append_format(stamp, result, format, wct.wct_gmtoff, opts->frac_digits);
           break;
         }
         case M_TZ:

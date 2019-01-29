@@ -27,7 +27,7 @@
 #include "messages.h"
 #include "timeutils/cache.h"
 #include "str-utils.h"
-#include "logstamp.h"
+#include "timeutils/unixtime.h"
 
 int
 py_is_log_message(PyObject *obj)

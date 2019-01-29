@@ -165,7 +165,7 @@ void
 test_log_messages_can_be_parsed(struct msgparse_params *param)
 {
   LogMessage *parsed_message;
-  LogStamp *parsed_timestamp;
+  UnixTime *parsed_timestamp;
   time_t now;
   GString *sd_str;
 

@@ -484,7 +484,7 @@ pattern_db_timer_tick(PatternDB *self)
 
 /* NOTE: lock should be acquired for writing before calling this function. */
 static void
-_advance_time_based_on_message(PatternDB *self, PDBProcessParams *process_params, const LogStamp *ls)
+_advance_time_based_on_message(PatternDB *self, PDBProcessParams *process_params, const UnixTime *ls)
 {
   GTimeVal now;
 

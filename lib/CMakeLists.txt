@@ -90,7 +90,6 @@ set (LIB_HEADERS
     logqueue.h
     logreader.h
     logsource.h
-    logstamp.h
     logthrdestdrv.h
     logwriter.h
     mainloop.h
@@ -180,7 +179,6 @@ set(LIB_SOURCES
     logqueue-fifo.c
     logreader.c
     logsource.c
-    logstamp.c
     logthrdestdrv.c
     logwriter.c
     mainloop.c

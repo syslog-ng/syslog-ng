@@ -84,7 +84,7 @@ kmsg_timeval_diff(struct timeval *t1, struct timeval *t2)
 #endif
 
 static void
-kmsg_to_absolute_time(guint64 timestamp, LogStamp *dest)
+kmsg_to_absolute_time(guint64 timestamp, UnixTime *dest)
 {
   guint64 t;
 

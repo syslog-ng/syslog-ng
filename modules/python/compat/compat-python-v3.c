@@ -46,7 +46,7 @@ py_datetime_init(void)
 }
 
 gboolean
-py_datetime_to_logstamp(PyObject *py_timestamp, LogStamp *logstamp)
+py_datetime_to_logstamp(PyObject *py_timestamp, UnixTime *logstamp)
 {
   if (!PyDateTime_Check(py_timestamp))
     {

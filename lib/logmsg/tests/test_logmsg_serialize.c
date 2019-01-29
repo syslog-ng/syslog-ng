@@ -204,7 +204,7 @@ Test(logmsg_serialize, serialize)
 }
 
 static LogMessage *
-_create_message_to_be_serialized_with_ts_processed(const gchar *raw_msg, const int raw_msg_len, LogStamp *processed)
+_create_message_to_be_serialized_with_ts_processed(const gchar *raw_msg, const int raw_msg_len, UnixTime *processed)
 {
   LogMessage *msg = _create_message_to_be_serialized(RAW_MSG, strlen(RAW_MSG));
 
@@ -216,7 +216,7 @@ _create_message_to_be_serialized_with_ts_processed(const gchar *raw_msg, const i
 }
 
 static void
-_check_processed_timestamp(LogMessage *msg, LogStamp *processed)
+_check_processed_timestamp(LogMessage *msg, UnixTime *processed)
 {
   cr_assert_eq(msg->timestamps[LM_TS_PROCESSED].ut_sec, processed->ut_sec,
                "tv_sec value does not match");
@@ -239,7 +239,7 @@ Test(logmsg_serialize, simple_serialization)
 
   log_msg_deserialize(msg, sa);
 
-  LogStamp ls =
+  UnixTime ls =
   {
     .ut_sec = msg->timestamps[LM_TS_RECVD].ut_sec,
     .ut_usec = msg->timestamps[LM_TS_RECVD].ut_usec,
@@ -259,7 +259,7 @@ Test(logmsg_serialize, given_ts_processed)
   GString *stream = g_string_sized_new(512);
   SerializeArchive *sa = serialize_string_archive_new(stream);
 
-  LogStamp ls =
+  UnixTime ls =
   {
     .ut_sec = 11,
     .ut_usec = 12,
@@ -282,7 +282,7 @@ Test(logmsg_serialize, given_ts_processed)
 
 Test(logmsg_serialize, existing_ts_processed)
 {
-  LogStamp ls =
+  UnixTime ls =
   {
     .ut_sec = 1,
     .ut_usec = 2,
@@ -309,7 +309,7 @@ Test(logmsg_serialize, existing_ts_processed)
 
 Test(logmsg_serialize, existing_and_given_ts_processed)
 {
-  LogStamp ls =
+  UnixTime ls =
   {
     .ut_sec = 1,
     .ut_usec = 2,

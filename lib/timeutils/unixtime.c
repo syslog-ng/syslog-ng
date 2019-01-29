@@ -25,6 +25,8 @@
 #include "timeutils/timeutils.h"
 #include "timeutils/wallclocktime.h"
 #include "timeutils/cache.h"
+#include "timeutils/names.h"
+#include "str-format.h"
 
 void
 unix_time_unset(UnixTime *self)
@@ -103,4 +105,122 @@ unix_time_set_now(UnixTime *self)
   self->ut_sec = tv.tv_sec;
   self->ut_usec = tv.tv_usec;
   self->ut_gmtoff = get_local_timezone_ofs(self->ut_sec);
+}
+
+static void
+_append_frac_digits(const UnixTime *stamp, GString *target, gint frac_digits)
+{
+  glong usecs;
+
+  usecs = stamp->ut_usec % 1000000;
+
+  if (frac_digits > 0)
+    {
+      gulong x;
+
+      g_string_append_c(target, '.');
+      for (x = 100000; frac_digits && x; x = x / 10)
+        {
+          g_string_append_c(target, (usecs / x) + '0');
+          usecs = usecs % x;
+          frac_digits--;
+        }
+    }
+}
+
+/**
+ * unix_time_format:
+ * @stamp: Timestamp to format
+ * @target: Target storage for formatted timestamp
+ * @ts_format: Specifies basic timestamp format (TS_FMT_BSD, TS_FMT_ISO)
+ * @zone_offset: Specifies custom zone offset if @tz_convert == TZ_CNV_CUSTOM
+ *
+ * Emits the formatted version of @stamp into @target as specified by
+ * @ts_format and @tz_convert.
+ **/
+void
+unix_time_append_format(const UnixTime *stamp, GString *target, gint ts_format, glong zone_offset, gint frac_digits)
+{
+  glong target_zone_offset = 0;
+  struct tm *tm, tm_storage;
+  char buf[8];
+  time_t t;
+
+  if (zone_offset != -1)
+    target_zone_offset = zone_offset;
+  else
+    target_zone_offset = stamp->ut_gmtoff;
+
+  t = stamp->ut_sec + target_zone_offset;
+  cached_gmtime(&t, &tm_storage);
+  tm = &tm_storage;
+  switch (ts_format)
+    {
+    case TS_FMT_BSD:
+      g_string_append(target, month_names_abbrev[tm->tm_mon]);
+      g_string_append_c(target, ' ');
+      format_uint32_padded(target, 2, ' ', 10, tm->tm_mday);
+      g_string_append_c(target, ' ');
+      format_uint32_padded(target, 2, '0', 10, tm->tm_hour);
+      g_string_append_c(target, ':');
+      format_uint32_padded(target, 2, '0', 10, tm->tm_min);
+      g_string_append_c(target, ':');
+      format_uint32_padded(target, 2, '0', 10, tm->tm_sec);
+      _append_frac_digits(stamp, target, frac_digits);
+      break;
+    case TS_FMT_ISO:
+      format_uint32_padded(target, 0, 0, 10, tm->tm_year + 1900);
+      g_string_append_c(target, '-');
+      format_uint32_padded(target, 2, '0', 10, tm->tm_mon + 1);
+      g_string_append_c(target, '-');
+      format_uint32_padded(target, 2, '0', 10, tm->tm_mday);
+      g_string_append_c(target, 'T');
+      format_uint32_padded(target, 2, '0', 10, tm->tm_hour);
+      g_string_append_c(target, ':');
+      format_uint32_padded(target, 2, '0', 10, tm->tm_min);
+      g_string_append_c(target, ':');
+      format_uint32_padded(target, 2, '0', 10, tm->tm_sec);
+
+      _append_frac_digits(stamp, target, frac_digits);
+      format_zone_info(buf, sizeof(buf), target_zone_offset);
+      g_string_append(target, buf);
+      break;
+    case TS_FMT_FULL:
+      format_uint32_padded(target, 0, 0, 10, tm->tm_year + 1900);
+      g_string_append_c(target, ' ');
+      g_string_append(target, month_names_abbrev[tm->tm_mon]);
+      g_string_append_c(target, ' ');
+      format_uint32_padded(target, 2, ' ', 10, tm->tm_mday);
+      g_string_append_c(target, ' ');
+      format_uint32_padded(target, 2, '0', 10, tm->tm_hour);
+      g_string_append_c(target, ':');
+      format_uint32_padded(target, 2, '0', 10, tm->tm_min);
+      g_string_append_c(target, ':');
+      format_uint32_padded(target, 2, '0', 10, tm->tm_sec);
+
+      _append_frac_digits(stamp, target, frac_digits);
+      break;
+    case TS_FMT_UNIX:
+      format_uint32_padded(target, 0, 0, 10, (int) stamp->ut_sec);
+      _append_frac_digits(stamp, target, frac_digits);
+      break;
+    default:
+      g_assert_not_reached();
+      break;
+    }
+}
+
+void
+unix_time_format(UnixTime *stamp, GString *target, gint ts_format, glong zone_offset, gint frac_digits)
+{
+  g_string_truncate(target, 0);
+  unix_time_append_format(stamp, target, ts_format, zone_offset, frac_digits);
+}
+
+gboolean
+unix_time_eq(const UnixTime *a, const UnixTime *b)
+{
+  return a->ut_sec == b->ut_sec &&
+         a->ut_usec == b->ut_usec &&
+         a->ut_gmtoff == b->ut_gmtoff;
 }

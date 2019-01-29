@@ -111,7 +111,7 @@ grouping_by_set_synthetic_message(LogParser *s, SyntheticMessage *message)
 
 /* NOTE: lock should be acquired for writing before calling this function. */
 void
-grouping_by_set_time(GroupingBy *self, const LogStamp *ls)
+grouping_by_set_time(GroupingBy *self, const UnixTime *ls)
 {
   GTimeVal now;
   gchar buf[256];

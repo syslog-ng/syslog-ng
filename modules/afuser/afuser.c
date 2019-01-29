@@ -108,7 +108,7 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
     goto finish;
 
   timestamp = g_string_sized_new(0);
-  log_stamp_format(&msg->timestamps[LM_TS_STAMP], timestamp, TS_FMT_FULL, -1, 0);
+  unix_time_format(&msg->timestamps[LM_TS_STAMP], timestamp, TS_FMT_FULL, -1, 0);
   g_snprintf(buf, sizeof(buf), "%s %s %s\n",
              timestamp->str,
              log_msg_get_value(msg, LM_V_HOST, NULL),
