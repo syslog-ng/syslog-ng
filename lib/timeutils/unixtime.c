@@ -45,6 +45,29 @@ unix_time_set_now(UnixTime *self)
   self->ut_gmtoff = get_local_timezone_ofs(self->ut_sec);
 }
 
+/* change timezone, assuming that the original timezone value has
+ * incorrectly been used to parse the timestamp */
+void
+unix_time_fix_timezone(UnixTime *self, gint new_gmtoff)
+{
+  long implied_gmtoff = self->ut_gmtoff != -1 ? self->ut_gmtoff : 0;
+
+  if (new_gmtoff != -1)
+    {
+      self->ut_sec -= (new_gmtoff - implied_gmtoff);
+      self->ut_gmtoff = new_gmtoff;
+    }
+}
+
+/* change timezone, assuming that the original timezone was correct, but we
+ * want to change the timezone reference to a different one */
+void
+unix_time_set_timezone(UnixTime *self, gint new_gmtoff)
+{
+  if (new_gmtoff != -1)
+    self->ut_gmtoff = new_gmtoff;
+}
+
 
 gboolean
 unix_time_eq(const UnixTime *a, const UnixTime *b)
