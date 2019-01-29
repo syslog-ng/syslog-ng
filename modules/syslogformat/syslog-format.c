@@ -257,7 +257,12 @@ log_msg_parse_timestamp(UnixTime *stamp, const guchar **data, gint *length, guin
     }
 
   if ((parse_flags & LP_NO_PARSE_DATE) == 0)
-    convert_and_normalize_wall_clock_time_to_unix_time_with_tz_hint(&wct, stamp, recv_timezone_ofs);
+    {
+      convert_and_normalize_wall_clock_time_to_unix_time_with_tz_hint(&wct, stamp, recv_timezone_ofs);
+
+      if ((parse_flags & LP_GUESS_TIMEZONE) != 0)
+        unix_time_fix_timezone_assuming_the_time_matches_real_time(stamp);
+    }
 
   return result;
 }
