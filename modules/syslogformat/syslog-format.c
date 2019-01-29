@@ -826,7 +826,6 @@ log_msg_parse_legacy(const MsgFormatOptions *parse_options,
           /* Capture the program name */
           log_msg_parse_legacy_program_name(self, &src, &left, parse_options->flags);
         }
-      self->timestamps[LM_TS_STAMP] = self->timestamps[LM_TS_RECVD];
     }
 
   if (parse_options->flags & LP_SANITIZE_UTF8 && !g_utf8_validate((gchar *) src, left, NULL))
