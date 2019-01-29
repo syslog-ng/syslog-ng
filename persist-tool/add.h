@@ -33,8 +33,8 @@
 #include "persist-tool.h"
 
 gchar *persist_state_dir;
+gchar *persist_state_name;
 
 gint add_main(int argc, char *argv[]);
-
 
 #endif

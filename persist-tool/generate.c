@@ -32,9 +32,9 @@ generate_main(int argc, char *argv[])
   gchar *filename;
   PersistTool *self;
 
-  if (!generate_output_dir || !config_file_generate)
+  if (!generate_output_dir)
     {
-      fprintf(stderr,"config-file and output-dir are required options\n");
+      fprintf(stderr,"output-dir is required options\n");
       return 1;
     }
 
@@ -58,27 +58,18 @@ generate_main(int argc, char *argv[])
         }
     }
 
-  if (!g_file_test(config_file_generate, G_FILE_TEST_IS_REGULAR | G_FILE_TEST_EXISTS))
+  self = persist_tool_new(filename, persist_mode_edit);
+  if (!self)
     {
-      fprintf(stderr, "Given config file doesn't exists; filename = %s\n", config_file_generate);
+      fprintf(stderr,"Error creating persist tool\n");
       return 1;
     }
 
-  app_startup();
-  //TODO: need to map the persist tool creation to he new model
-  //generate_persist_file = TRUE;
-  self = persist_tool_new(filename, persist_mode_edit);
-  if (cfg_read_config(self->cfg, config_file_generate, FALSE, NULL))
-    {
-      self->cfg->state = self->state;
-      self->state = NULL;
-      //TODO: need to map the persist tool creation to he new model
-      //cfg_generate_persist_file(self->cfg);
-      fprintf(stderr,"New persist file generated: %s\n", filename);
-      persist_state_commit(self->cfg->state);
-    }
+  fprintf(stderr,"New persist file generated: %s\n", filename);
+  persist_state_commit(self->state);
+
   persist_tool_free(self);
   g_free(filename);
-  app_shutdown();
+
   return 0;
 }

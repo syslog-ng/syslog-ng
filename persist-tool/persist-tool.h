@@ -50,13 +50,6 @@ PersistTool *persist_tool_new(gchar *persist_filename, PersistStateMode open_mod
 
 void persist_tool_free(PersistTool *self);
 
-typedef struct _NameValueContainer NameValueContainer;
-
-struct _NameValueContainer
-{
-  struct json_object *container;
-};
-
 typedef struct _StateHandler StateHandler;
 
 struct _StateHandler
@@ -67,9 +60,6 @@ struct _StateHandler
   guint8 version;
   PersistEntryHandle persist_handle;
   PersistState *persist_state;
-  NameValueContainer *(*dump_state)(StateHandler *self);
-  PersistEntryHandle (*alloc_state)(StateHandler *self);
-  gboolean (*load_state)(StateHandler *self, NameValueContainer *new_state, GError **error);
   void (*free_fn)(StateHandler *self);
 };
 

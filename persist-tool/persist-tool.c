@@ -25,9 +25,9 @@
 #include "dump.h"
 #include "add.h"
 #include "generate.h"
-#include "state.h"
 #include "persist-tool.h"
 #include "reloc.h"
+#include "messages.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -53,7 +53,29 @@ persist_tool_start_state(PersistTool *self)
     }
   main_thread_handle = get_thread_id();
   self->state = persist_state_new(self->persist_filename);
-  if (!persist_state_start(self->state))
+
+  gboolean start_result;
+  switch (self->mode)
+    {
+    case persist_mode_normal:
+      start_result = persist_state_start(self->state);
+      break;
+
+    case persist_mode_dump:
+      start_result = persist_state_start_dump(self->state);
+      break;
+
+    case persist_mode_edit:
+      start_result = persist_state_start_edit(self->state);
+      break;
+
+    default:
+      fprintf(stderr, "Invalid perist mode: %d\n", self->mode);
+      start_result = FALSE;
+      break;
+    }
+
+  if (!start_result)
     {
       fprintf(stderr, "Invalid persist file: %s\n", self->persist_filename);
       persist_state_cancel(self->state);
@@ -87,7 +109,6 @@ persist_tool_new(gchar *persist_filename, PersistStateMode open_mode)
       persist_tool_free(self);
       return NULL;
     }
-  state_handler_register_default_constructors();
   load_state_handler_modules(self->cfg);
   return self;
 }
@@ -114,36 +135,6 @@ void persist_tool_free(PersistTool *self)
   g_free(self);
 }
 
-StateHandler *persist_tool_get_state_handler(PersistTool *self, gchar *name)
-{
-  STATE_HANDLER_CONSTRUCTOR constructor = NULL;
-  StateHandler *handler = NULL;
-  gchar *prefix;
-  gchar *p;
-
-  p = strchr(name, '(');
-  if (!p)
-    {
-      p = strchr(name, ',');
-    }
-
-  if (p)
-    {
-      prefix = g_strndup(name, p - name);
-    }
-  else
-    {
-      prefix = g_strdup(name);
-    }
-  constructor = state_handler_get_constructor_by_prefix(prefix);
-  if (!constructor)
-    {
-      return NULL;
-    }
-  handler = constructor(self->state, name);
-  return handler;
-}
-
 static GOptionEntry dump_options[] =
 {
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
@@ -151,14 +142,14 @@ static GOptionEntry dump_options[] =
 
 static GOptionEntry add_options[] =
 {
-  { "output-dir", 'o', 0, G_OPTION_ARG_STRING, &persist_state_dir,"The directory where persist file is located. The name of the persist file stored in this directory must be syslog-ng.persist", "<directory>" },
+  { "output-dir", 'o', 0, G_OPTION_ARG_STRING, &persist_state_dir,"The directory where persist file is located.", "<directory>" },
+  { "persist-name", 'p', 0, G_OPTION_ARG_STRING, &persist_state_name, "The name of the persist file to generate. If not specified it will be the default syslog-ng.persist.", "<persist_name>"},
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
 static GOptionEntry generate_options[] =
 {
-  { "force", 'f', G_OPTION_FLAG_OPTIONAL_ARG, G_OPTION_ARG_NONE, &force_generate, "Overwrite the persist file if it already exists. WARNING: Use this option with care, persist-tool will not ask for confirmation", NULL},
-  { "config-file", 'c', 0, G_OPTION_ARG_FILENAME, &config_file_generate, "The syslog-ng configuration file that will be the base of the generated persist", "<config_file>" },
+  { "force", 'f', 0, G_OPTION_ARG_NONE, &force_generate, "Overwrite the persist file if it already exists. WARNING: Use this option with care, persist-tool will not ask for confirmation", NULL},
   { "output-dir", 'o', 0, G_OPTION_ARG_FILENAME, &generate_output_dir, "The directory where persist file will be generated to. The name of the persist file will be syslog-ng.persist", "<directory>"},
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
@@ -176,7 +167,7 @@ typedef struct _PersistToolMode
 static PersistToolMode modes[] =
 {
   { "dump", dump_options, "Dump the contents of the persist file", "<persist_file>", dump_main },
-  { "generate", generate_options, "Generate a persist file from the configuration file of syslog-ng", "", generate_main },
+  { "generate", generate_options, "Generate an empty persist file", "", generate_main },
   { "add", add_options, "Add new or change entry in the persist file", "<input_file>", add_main },
   { NULL, NULL },
 };
@@ -218,10 +209,12 @@ int
 main(int argc, char *argv[])
 {
   const gchar *mode_string;
-  GOptionContext *ctx;
+  GOptionContext *ctx = NULL;
   gint mode;
   GError *error = NULL;
   int result;
+
+  msg_init(FALSE);
 
   setvbuf(stderr, NULL, _IONBF, 0);
   mode_string = get_mode(&argc, &argv);
@@ -230,8 +223,6 @@ main(int argc, char *argv[])
       usage(argv[0]);
       return 1;
     }
-
-  ctx = NULL;
 
   for (mode = 0; modes[mode].mode; mode++)
     {

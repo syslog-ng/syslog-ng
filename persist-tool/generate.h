@@ -33,7 +33,6 @@
 #include "cfg.h"
 
 gboolean force_generate;
-gchar *config_file_generate;
 gchar *generate_output_dir;
 
 gint generate_main(int argc, char *argv[]);

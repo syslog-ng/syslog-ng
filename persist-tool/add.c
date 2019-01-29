@@ -22,9 +22,6 @@
  */
 
 #include "add.h"
-#include "jsonc/json.h"
-#include "mainloop.h"
-#include "state.h"
 
 typedef struct __PersistStateEntry
 {
@@ -38,12 +35,6 @@ gboolean
 check_directory_exists(gchar *path)
 {
   return g_file_test(path, G_FILE_TEST_EXISTS | G_FILE_TEST_IS_DIR);
-}
-
-gboolean
-check_file_exists(gchar *path)
-{
-  return g_file_test(path, G_FILE_TEST_IS_REGULAR | G_FILE_TEST_EXISTS);
 }
 
 PersistStateEntry *
@@ -67,6 +58,56 @@ persist_state_parse_entry(PersistStateEntry *self, gchar *entry)
   return TRUE;
 }
 
+#define NAME_LENGTH 40
+#define MAX_LINE_LEN 4000
+#define MAX_ENTRY_VALUE_LENGTH (3*MAX_LINE_LEN)
+
+/* This function parses a JSON style string
+ * containing series of integer values.
+ * For example:
+ * { "value": "00 00 00 00 01 02 03 0A" } */
+gint
+parse_value_string(gchar *value_str, gchar *buffer, gint buffer_length)
+{
+  gchar *p = strchr(value_str, ':');
+  if (!p)
+    return -1;
+
+  p = strchr(p, '"');
+  if (!p || strlen(p)<1)
+    return -1;
+
+  p = g_strchug(p+1); // p points to the first value
+
+  gint count = 0;
+  gint token_index = 0;
+  gchar *token = NULL;
+
+  gchar **token_list = g_strsplit (p," ",-1);
+  while ((token = token_list[token_index++]))
+    {
+      int value;
+      int result = sscanf(token, "%X", &value);
+
+      if (result == EOF || result == 0)
+        continue;
+
+      if (count >= buffer_length)
+        break;
+
+      if (value > 0xFF)
+        {
+          fprintf(stderr,"invalid numeric value (%s)\n", token);
+          return -1;
+        }
+
+      buffer[count++] = (gchar)value;
+    }
+
+  g_strfreev(token_list);
+  return count;
+}
+
 void
 persist_state_entry_free(PersistStateEntry *self)
 {
@@ -75,15 +116,10 @@ persist_state_entry_free(PersistStateEntry *self)
   g_free(self);
 }
 
-#define NAME_LENGTH 40
-#define MAX_LINE_LEN 4000
-
 gint
 add_entry_to_persist_file(gchar *entry, PersistTool *self)
 {
   PersistStateEntry *persist_entry = persist_state_entry_new();
-  NameValueContainer *container = name_value_container_new();
-  StateHandler *state_handler = NULL;
   GError *error = NULL;
   gint result = 0;
 
@@ -94,45 +130,42 @@ add_entry_to_persist_file(gchar *entry, PersistTool *self)
       error = g_error_new(1, 1, "Invalid entry syntax");
       goto exit;
     }
-  fprintf(stderr, "%s", persist_entry->name);
-  if (!name_value_container_parse_json_string(container, persist_entry->value))
+
+  gchar buffer[MAX_ENTRY_VALUE_LENGTH];
+  gint value_count = parse_value_string(persist_entry->value, buffer, MAX_ENTRY_VALUE_LENGTH);
+  if (value_count < 0)
     {
       result = 1;
-      error = g_error_new(1, 1, "JSON parsing error");
-      goto exit;
-    }
-  state_handler = persist_tool_get_state_handler(self, persist_entry->name);
-  if (!state_handler)
-    {
-      result = 1;
-      error = g_error_new(1, 1, "Unknown prefix");
+      fprintf(stderr,"value string is invalid (%s)\n", entry);
+      error = g_error_new(1, 1, "Invalid value string in input");
       goto exit;
     }
 
-  if (!state_handler_load_state(state_handler, container, &error))
+  PersistEntryHandle handle = persist_state_alloc_entry(self->state, persist_entry->name, value_count);
+  if (!handle)
     {
       result = 1;
+      fprintf(stderr, "%.*s", NAME_LENGTH, entry);
+      error = g_error_new(1, 1, "Can't alloc entry");
       goto exit;
     }
+
+  gpointer block = persist_state_map_entry(self->state, handle);
+  memcpy(block, buffer, value_count);
+
+  persist_state_unmap_entry(self->state, handle);
+
 exit:
   if (result == 0)
     {
-      fprintf(stderr, "\tOK\n");
+      fprintf(stderr, "%s\t-->>OK\n", persist_entry->name);
     }
   else
     {
-      fprintf(stderr, "\tFAILED (error: %s)\n",error ? error->message : "<UNKNOWN>");
+      fprintf(stderr, "%s\t-->>FAILED (error: %s)\n", persist_entry->name, error ? error->message : "<UNKNOWN>");
     }
-  if (error)
-    {
-      g_error_free(error);
-    }
-  if (state_handler)
-    {
-      state_handler_free(state_handler);
-    }
+  g_clear_error(&error);
 
-  name_value_container_free(container);
   persist_state_entry_free(persist_entry);
   return result;
 }
@@ -149,11 +182,11 @@ lookup_entry(gpointer data, gpointer user_data)
   persist_state_lookup_entry(self->state, name, &value_len, &version);
 }
 
-/* this function reads all entries in persist to update the in_use struct memeber */
+/* this function reads all entries in persist to update the in_use struct member */
 static void
-dump_all_entries(PersistTool *self)
+ref_all_entries(PersistTool *self)
 {
-  GList *keys = persist_state_get_key_list(self->state);
+  GList *keys = g_hash_table_get_keys(self->state->keys);
   g_list_foreach(keys, lookup_entry, self);
   g_list_free(keys);
 }
@@ -177,7 +210,8 @@ add_main(int argc, char *argv[])
       fprintf(stderr, "Directory doesn't exist: %s\n", persist_state_dir);
       return 1;
     }
-  filename = g_build_path(G_DIR_SEPARATOR_S, persist_state_dir, DEFAULT_PERSIST_FILE, NULL);
+  filename = g_build_path(G_DIR_SEPARATOR_S, persist_state_dir,
+                          persist_state_name ? persist_state_name : DEFAULT_PERSIST_FILE, NULL);
 
   if (argc < 2)
     {
@@ -202,8 +236,12 @@ add_main(int argc, char *argv[])
         }
     }
 
-
   self = persist_tool_new(filename, persist_mode_edit);
+  if (!self)
+    {
+      fprintf(stderr,"Error creating persist tool\n");
+      return 1;
+    }
 
   while(fgets(line, MAX_LINE_LEN, input_file))
     {
@@ -214,7 +252,7 @@ add_main(int argc, char *argv[])
     }
   g_free(line);
 
-  dump_all_entries(self);
+  ref_all_entries(self);
 
   persist_tool_free(self);
   if (input_file != stdin)

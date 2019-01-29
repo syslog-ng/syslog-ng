@@ -22,32 +22,39 @@
  */
 
 #include "dump.h"
-#include "state.h"
 
-void
-print_struct(gpointer data, gpointer user_data)
+static void
+print_struct_json_style(gpointer data, gpointer user_data)
 {
+  PersistEntryHandle handle;
+  gsize size;
+  guint8 result_version;
+
   PersistTool *self = (PersistTool *)user_data;
   gchar *name = (gchar *)data;
-  StateHandler *handler;
-  NameValueContainer *nv_pairs;
 
-  handler = persist_tool_get_state_handler(self, name);
-  nv_pairs = handler->dump_state(handler);
+  if (!(handle = persist_state_lookup_entry(self->state, name, &size, &result_version)))
+    {
+      fprintf(stderr,"Can't lookup for entry \"%s\"\n", name);
+      return;
+    }
 
-  fprintf(stdout, "%s = %s\n\n", (char *) data, name_value_container_get_json_string(nv_pairs));
+  gpointer block = persist_state_map_entry(self->state, handle);
 
-  name_value_container_free(nv_pairs);
-  state_handler_free(handler);
+  fprintf(stdout,"\n%s = { \"value\": \"", name);
+  gchar *block_data = (gchar *) block;
+  for (gsize i=0; i<size; i++)
+    {
+      fprintf(stdout, "%.2X ", block_data[i]&0xff);
+    }
+  fprintf(stdout,"\" }\n");
+
+  persist_state_unmap_entry(self->state, handle);
 }
 
 gint
 dump_main(int argc, char *argv[])
 {
-  gint result = 0;
-  PersistTool *self;
-  GList *keys;
-
   if (argc < 2)
     {
       fprintf(stderr, "Persist file is a required parameter\n");
@@ -60,17 +67,18 @@ dump_main(int argc, char *argv[])
       return 1;
     }
 
-  self = persist_tool_new(argv[1], persist_mode_dump);
+  PersistTool *self = persist_tool_new(argv[1], persist_mode_dump);
   if (!self)
     {
+      fprintf(stderr,"Error creating persist tool\n");
       return 1;
     }
 
-  keys = persist_state_get_key_list(self->state);
+  GList *keys = g_hash_table_get_keys(self->state->keys);
 
-  g_list_foreach(keys, print_struct, self);
+  g_list_foreach(keys, print_struct_json_style, self);
   g_list_free(keys);
 
   persist_tool_free(self);
-  return result;
+  return 0;
 }
