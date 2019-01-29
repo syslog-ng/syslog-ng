@@ -56,6 +56,7 @@ enum
   /* for the date part of a message, only skip it, don't fully parse - recommended for keep_timestamp(no) */
   LP_NO_PARSE_DATE = 0x0400,
   LP_STORE_RAW_MESSAGE = 0x0800,
+  LP_GUESS_TIMEZONE = 0x1000,
 };
 
 typedef struct _MsgFormatHandler MsgFormatHandler;
