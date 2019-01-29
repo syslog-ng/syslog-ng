@@ -49,6 +49,20 @@ msg_format_inject_parse_error(LogMessage *msg, const guchar *data, gsize length,
 }
 
 void
+msg_format_parse(MsgFormatOptions *options, const guchar *data, gsize length, LogMessage *msg)
+{
+  if (G_LIKELY(options->format_handler))
+    {
+      msg_trace("Initial message parsing follows");
+      options->format_handler->parse(options, data, length, msg);
+    }
+  else
+    {
+      log_msg_set_value(msg, LM_V_MESSAGE, "Error parsing message, format module is not loaded", -1);
+    }
+}
+
+void
 msg_format_options_defaults(MsgFormatOptions *options)
 {
   options->flags = LP_EXPECT_HOSTNAME | LP_STORE_LEGACY_MSGHDR;
