@@ -89,30 +89,37 @@ riemann_option
         | KW_HOST '(' template_content ')'
           {
             riemann_dd_set_field_host(last_driver, $3);
+            log_template_unref($3);
           }
         | KW_SERVICE '(' template_content ')'
           {
             riemann_dd_set_field_service(last_driver, $3);
+            log_template_unref($3);
           }
         | KW_EVENT_TIME '(' template_content event_time_unit ')'
           {
             riemann_dd_set_field_event_time(last_driver, $3);
+            log_template_unref($3);
           }
         | KW_STATE '(' template_content ')'
           {
             riemann_dd_set_field_state(last_driver, $3);
+            log_template_unref($3);
           }
         | KW_DESCRIPTION '(' template_content ')'
           {
             riemann_dd_set_field_description(last_driver, $3);
+            log_template_unref($3);
           }
         | KW_TTL '(' template_content ')'
           {
             riemann_dd_set_field_ttl(last_driver, $3);
+            log_template_unref($3);
           }
         | KW_METRIC '(' template_content ')'
           {
             riemann_dd_set_field_metric(last_driver, $3);
+            log_template_unref($3);
           }
         | KW_TAGS '(' string_list ')'
           {
