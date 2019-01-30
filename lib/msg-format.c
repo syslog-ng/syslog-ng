@@ -55,6 +55,10 @@ msg_format_parse(MsgFormatOptions *options, const guchar *data, gsize length, Lo
     {
       msg_trace("Initial message parsing follows");
       options->format_handler->parse(options, data, length, msg);
+      if (options->flags & LP_NO_PARSE_DATE)
+        {
+          msg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_RECVD];
+        }
     }
   else
     {

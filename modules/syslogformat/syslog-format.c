@@ -275,11 +275,6 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
       return FALSE;
     }
 
-  if (parse_flags & LP_NO_PARSE_DATE)
-    {
-      *stamp = self->timestamps[LM_TS_RECVD];
-    }
-
   return TRUE;
 }
 
