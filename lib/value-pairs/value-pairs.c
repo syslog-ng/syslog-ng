@@ -64,17 +64,6 @@ typedef struct
   GArray *values;
 } VPResults;
 
-struct _ValuePairs
-{
-  GAtomicCounter ref_cnt;
-  GPtrArray *builtins;
-  GPtrArray *patterns;
-  GPtrArray *vpairs;
-  GPtrArray *transforms;
-
-  /* guint32 as CfgFlagHandler only supports 32 bit integers */
-  guint32 scopes;
-};
 
 typedef enum
 {
@@ -264,6 +253,8 @@ vp_pairs_foreach(gpointer data, gpointer user_data)
                              template_options,
                              time_zone_mode, seq_num, NULL, sb);
 
+  if (vp->omit_empty_values && sb->len == 0)
+    return;
   vp_results_insert(results, vp_transform_apply(vp, vpc->name), vpc->template->type_hint, sb);
 }
 
@@ -278,6 +269,9 @@ vp_msg_nvpairs_foreach(NVHandle handle, gchar *name,
   guint j;
   gboolean inc;
   GString *sb;
+
+  if (vp->omit_empty_values && value_len == 0)
+    return FALSE;
 
   inc = (name[0] == '.' && (vp->scopes & VPS_DOT_NV_PAIRS)) ||
   (name[0] != '.' && (vp->scopes & VPS_NV_PAIRS)) ||

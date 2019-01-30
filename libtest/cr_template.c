@@ -127,6 +127,7 @@ create_sample_message(void)
   log_msg_set_value_by_name(msg, "escaping2", "\xc3", -1);
   log_msg_set_value_by_name(msg, "null", "binary\0stuff", 12);
   log_msg_set_value_by_name(msg, "comma_value", "value,with,a,comma", -1);
+  log_msg_set_value_by_name(msg, "empty_value", "", -1);
 
   return msg;
 }
