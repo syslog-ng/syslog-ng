@@ -841,7 +841,7 @@ Package: syslog-ng-mod-examples
 Architecture: any
 Multi-Arch: foreign
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: Enhanced system logging daemon (map-value-pairs plugin)
+Description: Enhanced system logging daemon (example plugins)
  syslog-ng is an enhanced log daemon, supporting a wide range of input
  and output methods: syslog, unstructured text, message queues,
  databases (SQL and NoSQL alike) and more.
