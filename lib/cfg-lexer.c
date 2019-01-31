@@ -911,6 +911,8 @@ cfg_lexer_parse_and_run_block_generator(CfgLexer *self, Plugin *p, YYSTYPE *yylv
   CfgParser *gen_parser = p->parser;
   if (gen_parser && !cfg_parser_parse(gen_parser, self, (gpointer *) &args, NULL))
     {
+      cfg_parser_cleanup(gen_parser, args);
+
       level->lloc.first_line = saved_line;
       level->lloc.first_column = saved_column;
       free(yylval->cptr);
