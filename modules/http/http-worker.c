@@ -379,8 +379,8 @@ _flush_on_target(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
 
   if (http_code == 401 && owner->auth_header)
     {
-      if (!http_auth_header_renew(owner->auth_header))
-        return LTR_DROP;
+      if (!http_dd_auth_header_renew(&owner->super.super.super))
+        return LTR_NOT_CONNECTED;
       return LTR_RETRY;
     }
 
