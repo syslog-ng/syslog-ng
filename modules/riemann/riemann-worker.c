@@ -26,7 +26,7 @@
 #include "riemann-worker.h"
 #include "scratch-buffers.h"
 
-#include <riemann/riemann-client.h>
+#include <riemann/simple.h>
 #include <stdlib.h>
 
 static void
@@ -315,7 +315,7 @@ riemann_worker_flush(LogThreadedDestWorker *s)
   RiemannDestWorker *self = (RiemannDestWorker *) s;
   RiemannDestDriver *owner = (RiemannDestDriver *) self->super.owner;
   riemann_message_t *message;
-  int r;
+  riemann_message_t *r;
 
   if (self->event.n == 0)
     return LTR_SUCCESS;
@@ -323,15 +323,7 @@ riemann_worker_flush(LogThreadedDestWorker *s)
   message = riemann_message_new();
 
   riemann_message_set_events_n(message, self->event.n, self->event.list);
-  r = riemann_client_send_message_oneshot(self->client, message);
-
-  msg_trace("riemann: flushing messages to Riemann server",
-            evt_tag_str("server", owner->server),
-            evt_tag_int("port", owner->port),
-            evt_tag_int("batch_size", self->event.n),
-            evt_tag_int("result", r),
-            evt_tag_str("driver", owner->super.super.super.id),
-            log_pipe_location_tag(&owner->super.super.super.super));
+  r = riemann_communicate(self->client, message);
 
   /*
    * riemann_client_send_message_oneshot() will free self->event.list,
@@ -341,10 +333,30 @@ riemann_worker_flush(LogThreadedDestWorker *s)
   self->event.n = 0;
   self->event.list = (riemann_event_t **) malloc(sizeof (riemann_event_t *) *
                                                  MAX(1, owner->super.batch_lines));
-  if (r != 0)
-    return LTR_ERROR;
+  if (!r)
+    {
+      return LTR_ERROR;
+    }
+
+  msg_trace("riemann: flushing messages to Riemann server",
+            evt_tag_str("server", owner->server),
+            evt_tag_int("port", owner->port),
+            evt_tag_int("batch_size", self->event.n),
+            evt_tag_int("ok", r->ok),
+            evt_tag_str("error", r->error),
+            evt_tag_str("driver", owner->super.super.super.id),
+            log_pipe_location_tag(&owner->super.super.super.super));
+
+  if ((r->error) || (r->has_ok && !r->ok))
+    {
+      riemann_message_free(r);
+      return LTR_ERROR;
+    }
   else
-    return LTR_SUCCESS;
+    {
+      riemann_message_free(r);
+      return LTR_SUCCESS;
+    }
 }
 
 static LogThreadedResult
