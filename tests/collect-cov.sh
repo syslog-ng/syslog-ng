@@ -25,8 +25,6 @@ set -e
 
 lcov --capture --directory `pwd` --compat-libtool --output-file coverage.info
 lcov --extract coverage.info "${top_srcdir}/*" --output-file coverage.info
-lcov --remove coverage.info "${top_srcdir}/modules/afmongodb/mongo-c-driver/*" --output-file coverage.info
-lcov --remove coverage.info "${top_srcdir}/modules/afamqp/rabbitmq-c/*" --output-file coverage.info
 lcov --remove coverage.info "${top_srcdir}/lib/jsonc/*" --output-file coverage.info
 lcov --remove coverage.info "${top_srcdir}/lib/ivykis/*" --output-file coverage.info
 genhtml coverage.info --prefix "${top_srcdir}" --output-directory coverage.html
