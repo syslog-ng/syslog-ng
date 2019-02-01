@@ -25,6 +25,4 @@
 --ignore-exclude-errors
 --exclude="lib/ivykis"
 --exclude="lib/jsonc"
---exclude="modules/afamqp/rabbitmq-c"
---exclude="modules/afmongodb/mongo-c-driver"
 --exclude="lib/compat/strcasestr.c"
