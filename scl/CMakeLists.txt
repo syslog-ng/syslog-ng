@@ -2,6 +2,7 @@ set(SCL_DIRS
     apache
     cim
     cisco
+    collectd
     default-network-drivers
     elasticsearch
     ewmm
