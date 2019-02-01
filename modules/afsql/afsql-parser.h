@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef AFSOCKET_PARSER_H_INCLUDED
-#define AFSOCKET_PARSER_H_INCLUDED
+#ifndef AFSSQL_PARSER_H_INCLUDED
+#define AFSSQL_PARSER_H_INCLUDED
 
 #include "cfg-parser.h"
 #include "driver.h"
