@@ -49,8 +49,8 @@ void *memrchr(const void *s, int c, size_t n);
 #ifndef SYSLOG_NG_HAVE_STRTOK_R
 char *strtok_r(char *string, const char *delim, char **saveptr);
 #endif
-#endif
 
 #if !SYSLOG_NG_HAVE_STRNLEN
 size_t strnlen(const char *s, size_t maxlen);
+#endif
 #endif
