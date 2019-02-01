@@ -20,8 +20,8 @@
  *
  */
 
-#ifndef GEOIP_HELPER_H_INCLUDED
-#define GEOIP_HELPER_H_INCLUDED
+#ifndef MAXMINDDB_HELPER_H_INCLUDED
+#define MAXMINDDB_HELPER_H_INCLUDED
 
 #include <syslog-ng.h>
 #include <maxminddb.h>
