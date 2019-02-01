@@ -22,6 +22,9 @@
  *
  */
 
+#ifndef REWRITE_GROUPSET_H_INCLUDED
+#define REWRITE_GROUPSET_H_INCLUDED
+
 #include "rewrite/rewrite-expr.h"
 #include "value-pairs/value-pairs.h"
 
@@ -36,3 +39,5 @@ typedef struct _LogRewriteGroupSet
 LogRewrite *log_rewrite_groupset_new(LogTemplate *template, GlobalConfig *cfg);
 LogRewrite *log_rewrite_groupunset_new(GlobalConfig *cfg);
 void log_rewrite_groupset_add_fields(LogRewrite *rewrite, GList *fields);
+
+#endif
