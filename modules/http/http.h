@@ -35,6 +35,7 @@
 typedef struct
 {
   LogThreadedDestDriver super;
+  GMutex *workers_lock;
   HTTPLoadBalancer *load_balancer;
 
   /* this is the first URL in load-balanced configurations and serves as the
@@ -67,6 +68,9 @@ typedef struct
 gboolean http_dd_init(LogPipe *s);
 gboolean http_dd_deinit(LogPipe *s);
 LogDriver *http_dd_new(GlobalConfig *cfg);
+
+gboolean http_dd_auth_header_renew(LogDriver *d);
+
 void http_dd_set_urls(LogDriver *d, GList *urls);
 void http_dd_set_user(LogDriver *d, const gchar *user);
 void http_dd_set_password(LogDriver *d, const gchar *password);

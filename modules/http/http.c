@@ -281,6 +281,19 @@ http_dd_set_body_suffix(LogDriver *d, const gchar *body_suffix)
   g_string_assign(self->body_suffix, body_suffix);
 }
 
+gboolean
+http_dd_auth_header_renew(LogDriver *d)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *)d;
+  if (!g_mutex_trylock(self->workers_lock))
+    return FALSE;
+
+  gboolean ret = http_auth_header_renew(self->auth_header);
+  g_mutex_unlock(self->workers_lock);
+
+  return ret;
+}
+
 static const gchar *
 _format_persist_name(const LogPipe *s)
 {
@@ -363,6 +376,7 @@ http_dd_free(LogPipe *s)
   g_free(self->ciphers);
   g_list_free_full(self->headers, g_free);
   http_auth_header_free(self->auth_header);
+  g_mutex_free(self->workers_lock);
   http_load_balancer_free(self->load_balancer);
 
   log_threaded_dest_driver_free(s);
@@ -392,6 +406,7 @@ http_dd_new(GlobalConfig *cfg)
   self->body_prefix = g_string_new("");
   self->body_suffix = g_string_new("");
   self->delimiter = g_string_new("\n");
+  self->workers_lock = g_mutex_new();
   self->load_balancer = http_load_balancer_new();
   curl_version_info_data *curl_info = curl_version_info(CURLVERSION_NOW);
   if (!self->user_agent)
