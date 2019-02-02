@@ -54,10 +54,6 @@
  *   message template.
  */
 
-#ifndef SCS_KAFKA
-#define SCS_KAFKA 0
-#endif
-
 GList *last_property = NULL;
 
 #define KAFKA_FLAG_NONE 0
