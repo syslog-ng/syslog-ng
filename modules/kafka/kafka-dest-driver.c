@@ -48,35 +48,6 @@
  *   message template.
  */
 
-#define KAFKA_FLAG_NONE 0
-#define KAFKA_FLAG_SYNC 0x0001
-
-typedef struct
-{
-  LogThreadedDestDriver super;
-
-  gchar *topic_name;
-  gchar *key_str;
-  LogTemplate *field;
-
-  LogTemplateOptions template_options;
-
-  GString *payload_str;
-  LogTemplate *payload;
-
-  gint32 flags;
-  gint32 seq_num;
-  GList *props;
-  GList *topic_props;
-  rd_kafka_topic_t *topic;
-  rd_kafka_t *kafka;
-  enum
-  {
-    PARTITION_RANDOM = 0,
-    PARTITION_FIELD = 1
-  } partition_type;
-} KafkaDriver;
-
 void
 kafka_log(const rd_kafka_t *rkt, int level,
           const char *fac, const char *msg)
