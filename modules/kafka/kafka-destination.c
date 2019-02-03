@@ -68,6 +68,7 @@ typedef struct
   gint32 flags;
   gint32 seq_num;
   GList *props;
+  GList *topic_props;
   rd_kafka_topic_t *topic;
   rd_kafka_t *kafka;
   enum
@@ -165,34 +166,11 @@ void
 kafka_dd_set_topic(LogDriver *d, const gchar *topic, GList *props)
 {
   KafkaDriver *self = (KafkaDriver *)d;
-  GList *list;
-  KafkaProperty *kp;
-  rd_kafka_topic_conf_t *topic_conf;
-  char errbuf[1024];
 
-  if (self->kafka == NULL)
-    {
-      msg_error("kafka topic must be set after kafka properties", NULL);
-      return;
-    }
-
-  topic_conf = rd_kafka_topic_conf_new();
-
-  for (list = g_list_first(props); list != NULL; list = g_list_next(list))
-    {
-      kp = list->data;
-      msg_debug("setting kafka topic property",
-                evt_tag_str("key", kp->name),
-                evt_tag_str("val", kp->value),
-                NULL);
-      rd_kafka_topic_conf_set(topic_conf, kp->name, kp->value,
-                              errbuf, sizeof(errbuf));
-    }
-
-  rd_kafka_topic_conf_set_partitioner_cb(topic_conf, kafka_partition);
-  rd_kafka_topic_conf_set_opaque(topic_conf, self);
+  g_free(self->topic_name);
+  kafka_property_list_free(self->topic_props);
   self->topic_name = g_strdup(topic);
-  self->topic = rd_kafka_topic_new(self->kafka, topic, topic_conf);
+  self->topic_props = props;
 }
 
 void
@@ -423,6 +401,33 @@ _construct_client(KafkaDriver *self)
   return client;
 }
 
+rd_kafka_topic_t *
+_construct_topic(KafkaDriver *self)
+{
+  GList *list;
+  KafkaProperty *kp;
+  rd_kafka_topic_conf_t *topic_conf;
+  char errbuf[1024];
+
+  g_assert(self->kafka != NULL);
+
+  topic_conf = rd_kafka_topic_conf_new();
+
+  for (list = g_list_first(self->topic_props); list != NULL; list = g_list_next(list))
+    {
+      kp = list->data;
+      msg_debug("setting kafka topic property",
+                evt_tag_str("key", kp->name),
+                evt_tag_str("val", kp->value),
+                NULL);
+      rd_kafka_topic_conf_set(topic_conf, kp->name, kp->value,
+                              errbuf, sizeof(errbuf));
+    }
+
+  rd_kafka_topic_conf_set_partitioner_cb(topic_conf, kafka_partition);
+  rd_kafka_topic_conf_set_opaque(topic_conf, self);
+  return rd_kafka_topic_new(self->kafka, self->topic_name, topic_conf);
+}
 
 static gboolean
 kafka_dd_init(LogPipe *s)
@@ -445,10 +450,7 @@ kafka_dd_init(LogPipe *s)
       return FALSE;
     }
 
-  msg_verbose("Initializing Kafka destination",
-              evt_tag_str("driver", self->super.super.super.id),
-              NULL);
-
+  self->topic = _construct_topic(self);
   if (self->topic == NULL)
     {
       msg_error("Kafka producer is not set up properly, topic name is missing",
@@ -456,6 +458,11 @@ kafka_dd_init(LogPipe *s)
                 NULL);
       return FALSE;
     }
+
+  msg_verbose("Initializing Kafka destination",
+              evt_tag_str("driver", self->super.super.super.id),
+              NULL);
+
 
   if (self->payload == NULL)
     {
@@ -483,6 +490,7 @@ kafka_dd_free(LogPipe *d)
   if (self->topic_name)
     g_free(self->topic_name);
   kafka_property_list_free(self->props);
+  kafka_property_list_free(self->topic_props);
   log_threaded_dest_driver_free(d);
 }
 
