@@ -67,6 +67,7 @@ typedef struct
 
   gint32 flags;
   gint32 seq_num;
+  GList *props;
   rd_kafka_topic_t *topic;
   rd_kafka_t *kafka;
   enum
@@ -124,45 +125,11 @@ void
 kafka_dd_set_props(LogDriver *d, GList *props)
 {
   KafkaDriver *self = (KafkaDriver *)d;
-  GList *list;
-  KafkaProperty *kp;
-  rd_kafka_conf_t *conf;
-  char errbuf[1024];
 
-  bzero(errbuf, sizeof(errbuf));
-
-  conf = rd_kafka_conf_new();
-  for (list = g_list_first(props); list != NULL; list = g_list_next(list))
-    {
-      kp = list->data;
-      msg_debug("setting kafka property",
-                evt_tag_str("key", kp->name),
-                evt_tag_str("val", kp->value),
-                NULL);
-      rd_kafka_conf_set(conf, kp->name, kp->value,
-                        errbuf, sizeof(errbuf));
-    }
-#ifdef HAVE_LIBRDKAFKA_LOG_CB
-  rd_kafka_conf_set_log_cb(conf, kafka_log);
-#endif
-  if (self->flags & KAFKA_FLAG_SYNC)
-    {
-      msg_info("synchronous insertion into kafka, "
-               "lower the value of queue.buffering.max.ms to increase performance",
-               evt_tag_str("driver", self->super.super.super.id),
-               NULL);
-      rd_kafka_conf_set_dr_cb(conf, kafka_worker_sync_produce_dr_cb);
-    }
-
-  self->kafka = rd_kafka_new(RD_KAFKA_PRODUCER, conf,
-                             errbuf, sizeof(errbuf));
-#ifdef HAVE_LIBRDKAFKA_LOGGER
-  if (self->kafka != NULL)
-    {
-      rd_kafka_set_logger(self->kafka, kafka_log);
-    }
-#endif
+  kafka_property_list_free(self->props);
+  self->props = props;
 }
+
 
 void
 kafka_dd_set_partition_random(LogDriver *d)
@@ -412,6 +379,51 @@ kafka_worker_thread_deinit(LogThreadedDestDriver *d)
  * Main thread
  */
 
+static rd_kafka_t *
+_construct_client(KafkaDriver *self)
+{
+  GList *list;
+  KafkaProperty *kp;
+  rd_kafka_t *client;
+  rd_kafka_conf_t *conf;
+  char errbuf[1024];
+
+  bzero(errbuf, sizeof(errbuf));
+
+  conf = rd_kafka_conf_new();
+  for (list = g_list_first(self->props); list != NULL; list = g_list_next(list))
+    {
+      kp = list->data;
+      msg_debug("setting kafka property",
+                evt_tag_str("key", kp->name),
+                evt_tag_str("val", kp->value),
+                NULL);
+      rd_kafka_conf_set(conf, kp->name, kp->value,
+                        errbuf, sizeof(errbuf));
+    }
+#ifdef HAVE_LIBRDKAFKA_LOG_CB
+  rd_kafka_conf_set_log_cb(conf, kafka_log);
+#endif
+  if (self->flags & KAFKA_FLAG_SYNC)
+    {
+      msg_info("synchronous insertion into kafka, "
+               "lower the value of queue.buffering.max.ms to increase performance",
+               evt_tag_str("driver", self->super.super.super.id),
+               NULL);
+      rd_kafka_conf_set_dr_cb(conf, kafka_worker_sync_produce_dr_cb);
+    }
+
+  client = rd_kafka_new(RD_KAFKA_PRODUCER, conf, errbuf, sizeof(errbuf));
+#ifdef HAVE_LIBRDKAFKA_LOGGER
+  if (client != NULL)
+    {
+      rd_kafka_set_logger(client, kafka_log);
+    }
+#endif
+  return client;
+}
+
+
 static gboolean
 kafka_dd_init(LogPipe *s)
 {
@@ -423,6 +435,15 @@ kafka_dd_init(LogPipe *s)
 
   log_template_options_init(&self->template_options, cfg);
   log_template_options_init(&self->field_template_options, cfg);
+
+  self->kafka = _construct_client(self);
+  if (self->kafka == NULL)
+    {
+      msg_error("Kafka producer is not set up properly, perhaps metadata.broker.list property is missing?",
+		evt_tag_str("driver", self->super.super.super.id),
+                NULL);
+      return FALSE;
+    }
 
   msg_verbose("Initializing Kafka destination",
               evt_tag_str("driver", self->super.super.super.id),
@@ -442,13 +463,6 @@ kafka_dd_init(LogPipe *s)
       log_template_compile(self->payload, "$MESSAGE", NULL);
     }
 
-  if (self->kafka == NULL)
-    {
-      msg_error("Kafka producer is not set up properly, perhaps metadata.broker.list property is missing?",
-		evt_tag_str("driver", self->super.super.super.id),
-                NULL);
-      return FALSE;
-    }
 
   return log_threaded_dest_driver_start_workers(&self->super);
 }
@@ -468,6 +482,7 @@ kafka_dd_free(LogPipe *d)
     rd_kafka_destroy(self->kafka);
   if (self->topic_name)
     g_free(self->topic_name);
+  kafka_property_list_free(self->props);
   log_threaded_dest_driver_free(d);
 }
 
