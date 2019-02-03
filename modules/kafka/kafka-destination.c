@@ -379,9 +379,7 @@ _construct_client(KafkaDriver *self)
       rd_kafka_conf_set(conf, kp->name, kp->value,
                         errbuf, sizeof(errbuf));
     }
-#ifdef HAVE_LIBRDKAFKA_LOG_CB
   rd_kafka_conf_set_log_cb(conf, kafka_log);
-#endif
   if (self->flags & KAFKA_FLAG_SYNC)
     {
       msg_info("synchronous insertion into kafka, "
@@ -392,12 +390,6 @@ _construct_client(KafkaDriver *self)
     }
 
   client = rd_kafka_new(RD_KAFKA_PRODUCER, conf, errbuf, sizeof(errbuf));
-#ifdef HAVE_LIBRDKAFKA_LOGGER
-  if (client != NULL)
-    {
-      rd_kafka_set_logger(client, kafka_log);
-    }
-#endif
   return client;
 }
 
