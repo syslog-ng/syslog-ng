@@ -23,7 +23,7 @@
  */
 
 
-#include "kafka-destination.h"
+#include "kafka-dest-driver.h"
 #include "kafka-props.h"
 #include "logthrdest/logthrdestdrv.h"
 

@@ -34,7 +34,7 @@
 
 #include "cfg-grammar.h"
 #include "plugin.h"
-#include "kafka-destination.h"
+#include "kafka-dest-driver.h"
 #include "kafka-props.h"
 
 }

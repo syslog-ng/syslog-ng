@@ -21,7 +21,6 @@
  *
  */
 
-#include "kafka-destination.h"
 #include "cfg-parser.h"
 #include "kafka-grammar.h"
 

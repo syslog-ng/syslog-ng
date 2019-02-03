@@ -11,8 +11,8 @@ modules_kafka_libkafka_la_SOURCES = \
   modules/kafka/kafka-parser.h \
   modules/kafka/kafka-props.c \
   modules/kafka/kafka-props.h \
-  modules/kafka/kafka-destination.h \
-  modules/kafka/kafka-destination.c \
+  modules/kafka/kafka-dest-driver.h \
+  modules/kafka/kafka-dest-driver.c \
   modules/kafka/kafka-plugin.c
 
 modules_kafka_libkafka_la_CPPFLAGS  = \
