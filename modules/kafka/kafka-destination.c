@@ -60,7 +60,6 @@ typedef struct
   LogTemplate *field;
 
   LogTemplateOptions template_options;
-  LogTemplateOptions field_template_options;
 
   GString *payload_str;
   LogTemplate *payload;
@@ -226,7 +225,7 @@ kafka_calculate_partition_key(KafkaDriver *self, LogMessage *msg)
   u_int32_t key;
   GString *field = g_string_sized_new(1024);
 
-  log_template_format(self->field, msg, &self->field_template_options,
+  log_template_format(self->field, msg, &self->template_options,
 			LTZ_SEND, self->seq_num, NULL, field);
 
   msg_debug("Kafka dynamic key",
@@ -428,7 +427,6 @@ kafka_dd_init(LogPipe *s)
     return FALSE;
 
   log_template_options_init(&self->template_options, cfg);
-  log_template_options_init(&self->field_template_options, cfg);
 
   self->kafka = _construct_client(self);
   if (self->kafka == NULL)
@@ -469,7 +467,6 @@ kafka_dd_free(LogPipe *d)
   KafkaDriver *self = (KafkaDriver *)d;
 
   log_template_options_destroy(&self->template_options);
-  log_template_options_destroy(&self->field_template_options);
 
   log_template_unref(self->payload);
   if (self->topic)
@@ -508,7 +505,6 @@ kafka_dd_new(GlobalConfig *cfg)
 
   init_sequence_number(&self->seq_num);
   log_template_options_defaults(&self->template_options);
-  log_template_options_defaults(&self->field_template_options);
 
   return (LogDriver *)self;
 }
