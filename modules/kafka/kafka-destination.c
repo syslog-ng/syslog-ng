@@ -48,8 +48,6 @@
  *   message template.
  */
 
-GList *last_property = NULL;
-
 #define KAFKA_FLAG_NONE 0
 #define KAFKA_FLAG_SYNC 0x0001
 

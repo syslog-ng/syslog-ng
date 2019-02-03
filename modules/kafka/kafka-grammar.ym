@@ -37,7 +37,6 @@
 #include "kafka-destination.h"
 #include "kafka-props.h"
 
-extern GList *last_property;
 }
 
 %name-prefix "kafka_"
@@ -51,6 +50,9 @@ extern GList *last_property;
 %parse-param {gpointer arg}
 
 /* INCLUDE_DECLS */
+
+%type <ptr> kafka_properties
+%type <ptr> kafka_property
 
 %token KW_KAFKA
 %token KW_TOPIC
@@ -68,7 +70,6 @@ start
         : LL_CONTEXT_DESTINATION KW_KAFKA
           {
             last_driver = *instance = kafka_dd_new(configuration);
-            last_property = NULL;
           }
           '(' kafka_options ')' { YYACCEPT; }
         ;
@@ -81,9 +82,8 @@ kafka_options
 kafka_option
         : KW_TOPIC '(' string kafka_properties ')'
         {
-            kafka_dd_set_topic(last_driver, $3, last_property);
+            kafka_dd_set_topic(last_driver, $3, $4);
             free($3);
-            last_property = NULL;
         }
         | KW_PARTITION '(' KW_RANDOM ')'
         {
@@ -95,8 +95,7 @@ kafka_option
         }
         | KW_PROP '(' kafka_properties ')'
         {
-            kafka_dd_set_props(last_driver, last_property);
-            last_property = NULL;
+            kafka_dd_set_props(last_driver, $3);
         }
         | KW_FLAGS '(' kafka_flags ')'
         | KW_PAYLOAD '(' template_content ')'
@@ -108,17 +107,17 @@ kafka_option
         ;
 
 kafka_properties
-        : kafka_property kafka_properties
-        |
+        : kafka_property kafka_properties			{ $$ = g_list_prepend($2, $1); }
+        |							{ $$ = NULL; }
         ;
 
 kafka_property
         : string '(' string ')'
         {
             KafkaProperty *prop = kafka_property_new($1, $3);
-            last_property = g_list_append(last_property, prop);
             free($1);
             free($3);
+	    $$ = prop;
         }
         ;
 
