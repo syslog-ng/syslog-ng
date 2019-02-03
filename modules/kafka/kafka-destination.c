@@ -256,9 +256,6 @@ static LogThreadedResult
 kafka_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
 {
   KafkaDriver *self = (KafkaDriver *)s;
-  gboolean success;
-  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-  GString *field;
   u_int32_t key;
 
   log_template_format(self->payload, msg, &self->template_options, LTZ_SEND,
