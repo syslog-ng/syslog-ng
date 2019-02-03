@@ -36,7 +36,6 @@ typedef struct
 
   LogTemplateOptions template_options;
 
-  GString *payload_str;
   LogTemplate *payload;
 
   gint32 flags;

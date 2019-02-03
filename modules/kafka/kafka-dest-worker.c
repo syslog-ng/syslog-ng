@@ -31,6 +31,7 @@
 typedef struct _KafkaDestWorker
 {
   LogThreadedDestWorker super;
+  GString *payload_str;
 } KafkaDestWorker;
 
 static u_int32_t
@@ -74,7 +75,7 @@ kafka_dest_worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
   u_int32_t key;
 
   log_template_format(owner->payload, msg, &owner->template_options, LTZ_SEND,
-                      owner->seq_num, NULL, owner->payload_str);
+                      owner->seq_num, NULL, self->payload_str);
 
   switch (owner->partition_type)
     {
@@ -93,8 +94,8 @@ kafka_dest_worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
   if (rd_kafka_produce(owner->topic,
                        RD_KAFKA_PARTITION_UA,
                        RD_KAFKA_MSG_F_COPY,
-                       owner->payload_str->str,
-                       owner->payload_str->len,
+                       self->payload_str->str,
+                       self->payload_str->len,
                        &key, sizeof(key),
                        &err) == -1)
     {
@@ -138,31 +139,18 @@ kafka_dest_worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
   msg_debug("Kafka event sent",
             evt_tag_str("driver", owner->super.super.super.id),
             evt_tag_str("topic", owner->topic_name),
-            evt_tag_str("payload", owner->payload_str->str),
+            evt_tag_str("payload", self->payload_str->str),
             NULL);
 
   return LTR_SUCCESS;
 }
 
 static void
-kafka_dest_worker_thread_init(LogThreadedDestWorker *d)
+kafka_dest_worker_free(LogThreadedDestWorker *s)
 {
-  KafkaDestWorker *self = (KafkaDestWorker *)d;
-  KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
-
-  owner->payload_str = g_string_sized_new(1024);
-
+  KafkaDestWorker *self = (KafkaDestWorker *)s;
+  g_string_free(self->payload_str, TRUE);
 }
-
-static void
-kafka_dest_worker_thread_deinit(LogThreadedDestWorker *d)
-{
-  KafkaDestWorker *self = (KafkaDestWorker *)d;
-  KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
-
-  g_string_free(owner->payload_str, TRUE);
-}
-
 
 LogThreadedDestWorker *
 kafka_dest_worker_new(LogThreadedDestDriver *owner, gint worker_index)
@@ -170,9 +158,9 @@ kafka_dest_worker_new(LogThreadedDestDriver *owner, gint worker_index)
   KafkaDestWorker *self = g_new0(KafkaDestWorker, 1);
 
   log_threaded_dest_worker_init_instance(&self->super, owner, worker_index);
-  self->super.thread_init = kafka_dest_worker_thread_init;
-  self->super.thread_deinit = kafka_dest_worker_thread_deinit;
-
   self->super.insert = kafka_dest_worker_insert;
+  self->super.free_fn = kafka_dest_worker_free;
+
+  self->payload_str = g_string_sized_new(1024);
   return &self->super;
 }
