@@ -95,7 +95,7 @@ kafka_worker_sync_produce_dr_cb(rd_kafka_t *rk,
 void
 kafka_dd_set_props(LogDriver *d, GList *props)
 {
-  KafkaDriver *self = (KafkaDriver *)d;
+  KafkaDestDriver *self = (KafkaDestDriver *)d;
 
   kafka_property_list_free(self->props);
   self->props = props;
@@ -105,7 +105,7 @@ kafka_dd_set_props(LogDriver *d, GList *props)
 void
 kafka_dd_set_partition_random(LogDriver *d)
 {
-  KafkaDriver *self = (KafkaDriver *)d;
+  KafkaDestDriver *self = (KafkaDestDriver *)d;
 
   self->partition_type = PARTITION_RANDOM;
 }
@@ -113,7 +113,7 @@ kafka_dd_set_partition_random(LogDriver *d)
 void
 kafka_dd_set_partition_field(LogDriver *d, LogTemplate *field)
 {
-  KafkaDriver *self = (KafkaDriver *)d;
+  KafkaDestDriver *self = (KafkaDestDriver *)d;
 
   self->partition_type = PARTITION_FIELD;
   log_template_unref(self->field);
@@ -123,7 +123,7 @@ kafka_dd_set_partition_field(LogDriver *d, LogTemplate *field)
 void
 kafka_dd_set_flag_sync(LogDriver *d)
 {
-  KafkaDriver *self = (KafkaDriver *)d;
+  KafkaDestDriver *self = (KafkaDestDriver *)d;
   if (self->kafka != NULL)
     {
       msg_error("kafka flags must be set before kafka properties", NULL);
@@ -135,7 +135,7 @@ kafka_dd_set_flag_sync(LogDriver *d)
 void
 kafka_dd_set_topic(LogDriver *d, const gchar *topic, GList *props)
 {
-  KafkaDriver *self = (KafkaDriver *)d;
+  KafkaDestDriver *self = (KafkaDestDriver *)d;
 
   g_free(self->topic_name);
   kafka_property_list_free(self->topic_props);
@@ -146,7 +146,7 @@ kafka_dd_set_topic(LogDriver *d, const gchar *topic, GList *props)
 void
 kafka_dd_set_payload(LogDriver *d, LogTemplate *payload)
 {
-  KafkaDriver *self = (KafkaDriver *)d;
+  KafkaDestDriver *self = (KafkaDestDriver *)d;
 
   log_template_unref(self->payload);
   self->payload = log_template_ref(payload);
@@ -159,7 +159,7 @@ kafka_dd_set_payload(LogDriver *d, LogTemplate *payload)
 LogTemplateOptions *
 kafka_dd_get_template_options(LogDriver *d)
 {
-  KafkaDriver *self = (KafkaDriver *)d;
+  KafkaDestDriver *self = (KafkaDestDriver *)d;
 
   return &self->template_options;
 }
@@ -167,7 +167,7 @@ kafka_dd_get_template_options(LogDriver *d)
 static const gchar *
 kafka_dd_format_stats_instance(LogThreadedDestDriver *d)
 {
-  KafkaDriver *self = (KafkaDriver *)d;
+  KafkaDestDriver *self = (KafkaDestDriver *)d;
   static gchar persist_name[1024];
 
   if (d->super.super.super.persist_name)
@@ -180,7 +180,7 @@ kafka_dd_format_stats_instance(LogThreadedDestDriver *d)
 static const gchar *
 kafka_dd_format_persist_name(const LogPipe *d)
 {
-  const KafkaDriver *self = (const KafkaDriver *)d;
+  const KafkaDestDriver *self = (const KafkaDestDriver *)d;
   static gchar persist_name[1024];
 
   if (d->persist_name)
@@ -325,7 +325,7 @@ kafka_worker_thread_deinit(LogThreadedDestDriver *d)
  */
 
 static rd_kafka_t *
-_construct_client(KafkaDriver *self)
+_construct_client(KafkaDestDriver *self)
 {
   GList *list;
   KafkaProperty *kp;
@@ -361,7 +361,7 @@ _construct_client(KafkaDriver *self)
 }
 
 rd_kafka_topic_t *
-_construct_topic(KafkaDriver *self)
+_construct_topic(KafkaDestDriver *self)
 {
   GList *list;
   KafkaProperty *kp;
@@ -391,7 +391,7 @@ _construct_topic(KafkaDriver *self)
 static gboolean
 kafka_dd_init(LogPipe *s)
 {
-  KafkaDriver *self = (KafkaDriver *)s;
+  KafkaDestDriver *self = (KafkaDestDriver *)s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
   if (!log_threaded_dest_driver_init_method(s))
@@ -435,7 +435,7 @@ kafka_dd_init(LogPipe *s)
 static void
 kafka_dd_free(LogPipe *d)
 {
-  KafkaDriver *self = (KafkaDriver *)d;
+  KafkaDestDriver *self = (KafkaDestDriver *)d;
 
   log_template_options_destroy(&self->template_options);
 
@@ -458,7 +458,7 @@ kafka_dd_free(LogPipe *d)
 LogDriver *
 kafka_dd_new(GlobalConfig *cfg)
 {
-  KafkaDriver *self = g_new0(KafkaDriver, 1);
+  KafkaDestDriver *self = g_new0(KafkaDestDriver, 1);
 
   log_threaded_dest_driver_init_instance(&self->super, cfg);
   self->super.super.super.super.init = kafka_dd_init;

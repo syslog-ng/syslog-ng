@@ -50,7 +50,7 @@ typedef struct
     PARTITION_RANDOM = 0,
     PARTITION_FIELD = 1
   } partition_type;
-} KafkaDriver;
+} KafkaDestDriver;
 
 #define KAFKA_FLAG_NONE 0
 #define KAFKA_FLAG_SYNC 0x0001
