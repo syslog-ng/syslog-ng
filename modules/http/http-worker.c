@@ -289,19 +289,42 @@ _finish_request_body(HTTPDestinationWorker *self)
     g_string_append_len(self->request_body, owner->body_suffix->str, owner->body_suffix->len);
 }
 
-static LogThreadedResult
-_flush_on_target(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
+static void
+_debug_response_info(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target, glong http_code)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
-  CURLcode ret;
+
+  gdouble total_time = 0;
+  glong redirect_count = 0;
+
+  curl_easy_getinfo(self->curl, CURLINFO_TOTAL_TIME, &total_time);
+  curl_easy_getinfo(self->curl, CURLINFO_REDIRECT_COUNT, &redirect_count);
+  msg_debug("curl: HTTP response received",
+            evt_tag_str("url", target->url),
+            evt_tag_int("status_code", http_code),
+            evt_tag_int("body_size", self->request_body->len),
+            evt_tag_int("batch_size", self->super.batch_size),
+            evt_tag_int("redirected", redirect_count != 0),
+            evt_tag_printf("total_time", "%.3f", total_time),
+            evt_tag_int("worker_index", self->super.worker_index),
+            evt_tag_str("driver", owner->super.super.super.id),
+            log_pipe_location_tag(&owner->super.super.super.super));
+}
+
+static gboolean
+_curl_perform_request(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
+{
+  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
 
   msg_trace("Sending HTTP request",
             evt_tag_str("url", target->url));
+
   curl_easy_setopt(self->curl, CURLOPT_URL, target->url);
   curl_easy_setopt(self->curl, CURLOPT_HTTPHEADER, self->request_headers);
   curl_easy_setopt(self->curl, CURLOPT_POSTFIELDS, self->request_body->str);
 
-  if ((ret = curl_easy_perform(self->curl)) != CURLE_OK)
+  CURLcode ret = curl_easy_perform(self->curl);
+  if (ret != CURLE_OK)
     {
       msg_error("curl: error sending HTTP request",
                 evt_tag_str("url", target->url),
@@ -309,13 +332,19 @@ _flush_on_target(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
                 evt_tag_int("worker_index", self->super.worker_index),
                 evt_tag_str("driver", owner->super.super.super.id),
                 log_pipe_location_tag(&owner->super.super.super.super));
-      return LTR_NOT_CONNECTED;
+      return FALSE;
     }
 
-  glong http_code = 0;
+  return TRUE;
+}
 
-  CURLcode code = curl_easy_getinfo(self->curl, CURLINFO_RESPONSE_CODE, &http_code);
-  if (code != CURLE_OK)
+static gboolean
+_curl_get_status_code(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target, glong *http_code)
+{
+  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
+  CURLcode ret = curl_easy_getinfo(self->curl, CURLINFO_RESPONSE_CODE, http_code);
+
+  if (ret != CURLE_OK)
     {
       msg_error("curl: error querying response code",
                 evt_tag_str("url", target->url),
@@ -323,27 +352,26 @@ _flush_on_target(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
                 evt_tag_int("worker_index", self->super.worker_index),
                 evt_tag_str("driver", owner->super.super.super.id),
                 log_pipe_location_tag(&owner->super.super.super.super));
-      return LTR_NOT_CONNECTED;
+      return FALSE;
     }
+
+  return TRUE;
+}
+
+static LogThreadedResult
+_flush_on_target(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
+{
+  if (!_curl_perform_request(self, target))
+    return LTR_NOT_CONNECTED;
+
+  glong http_code = 0;
+
+  if (!_curl_get_status_code(self, target, &http_code))
+    return LTR_NOT_CONNECTED;
 
   if (debug_flag)
-    {
-      gdouble total_time = 0;
-      glong redirect_count = 0;
+    _debug_response_info(self, target, http_code);
 
-      curl_easy_getinfo(self->curl, CURLINFO_TOTAL_TIME, &total_time);
-      curl_easy_getinfo(self->curl, CURLINFO_REDIRECT_COUNT, &redirect_count);
-      msg_debug("curl: HTTP response received",
-                evt_tag_str("url", target->url),
-                evt_tag_int("status_code", http_code),
-                evt_tag_int("body_size", self->request_body->len),
-                evt_tag_int("batch_size", self->super.batch_size),
-                evt_tag_int("redirected", redirect_count != 0),
-                evt_tag_printf("total_time", "%.3f", total_time),
-                evt_tag_int("worker_index", self->super.worker_index),
-                evt_tag_str("driver", owner->super.super.super.id),
-                log_pipe_location_tag(&owner->super.super.super.super));
-    }
   return map_http_status_to_worker_status(self, target->url, http_code);
 }
 
