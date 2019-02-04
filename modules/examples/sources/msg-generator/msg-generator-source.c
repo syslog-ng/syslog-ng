@@ -55,6 +55,15 @@ _start_timer(MsgGeneratorSource *self)
   iv_timer_register(&self->timer);
 }
 
+static void
+_start_timer_immediately(MsgGeneratorSource *self)
+{
+  iv_validate_now();
+  self->timer.expires = iv_now;
+
+  iv_timer_register(&self->timer);
+}
+
 static gboolean
 _init(LogPipe *s)
 {
@@ -62,7 +71,7 @@ _init(LogPipe *s)
   if (!log_source_init(s))
     return FALSE;
 
-  _start_timer(self);
+  _start_timer_immediately(self);
 
   return TRUE;
 }
