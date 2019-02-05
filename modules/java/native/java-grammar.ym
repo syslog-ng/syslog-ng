@@ -79,7 +79,12 @@ java_dest_option
           	java_dd_set_class_name(last_driver, $3);
             free($3);
           }
-        | KW_TEMPLATE '(' string ')' { java_dd_set_template_string(last_driver, $3); free($3); }
+        | KW_TEMPLATE '(' string ')'
+          {
+            CHECK_ERROR(cfg_tree_lookup_template(&configuration->tree, $3) == NULL, @4,
+                        "named templates are not supported in java destination");
+            java_dd_set_template_string(last_driver, $3); free($3);
+          }
         | KW_OPTION '(' java_dest_custom_options ')'
         | threaded_dest_driver_option
         | { last_template_options = java_dd_get_template_options(last_driver); } template_option
