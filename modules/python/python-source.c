@@ -25,6 +25,7 @@
 #include "python-logmsg.h"
 #include "python-helpers.h"
 #include "logthrsource/logthrsourcedrv.h"
+#include "thread-utils.h"
 #include "str-utils.h"
 #include "string-list.h"
 
@@ -37,6 +38,7 @@ struct _PythonSourceDriver
   gchar *class;
   GList *loaders;
   GHashTable *options;
+  ThreadId thread_id;
 
   void (*post_message)(PythonSourceDriver *self, LogMessage *msg);
 
@@ -434,6 +436,20 @@ static PyObject *
 py_log_source_post(PyObject *s, PyObject *args, PyObject *kwrds)
 {
   PyLogSource *self = (PyLogSource *) s;
+
+  if (self->driver->thread_id != get_thread_id())
+    {
+      /*
+         Message posting must happen in a syslog-ng thread that was
+         initialized by main_loop_call_thread_init(), which is not
+         exposed to python. Hence posting from a python thread can
+         crash syslog-ng.
+      */
+
+      PyErr_Format(PyExc_RuntimeError, "post_message must be called from main thread");
+      return NULL;
+    }
+
   PythonSourceDriver *sd = self->driver;
 
   PyLogMessage *pymsg;
@@ -467,6 +483,7 @@ python_sd_run(LogThreadedSourceDriver *s)
 {
   PythonSourceDriver *self = (PythonSourceDriver *) s;
 
+  self->thread_id = get_thread_id();
   PyGILState_STATE gstate = PyGILState_Ensure();
   _py_invoke_run(self);
   PyGILState_Release(gstate);
