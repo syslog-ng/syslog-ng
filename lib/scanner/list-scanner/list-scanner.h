@@ -40,6 +40,7 @@ struct _ListScanner
 
 void list_scanner_input_va(ListScanner *self, const gchar *arg1, ...);
 void list_scanner_input_gstring_array(ListScanner *self, gint argc, GString *argv[]);
+void list_scanner_input_string(ListScanner *self, const gchar *value, gssize value_len);
 gboolean list_scanner_scan_next(ListScanner *self);
 const gchar *list_scanner_get_current_value(ListScanner *self);
 gsize list_scanner_get_current_value_len(ListScanner *self);

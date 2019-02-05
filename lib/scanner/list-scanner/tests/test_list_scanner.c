@@ -177,6 +177,21 @@ Test(list_scanner, works_with_gstring_input)
     g_string_free(argv[i], TRUE);
 }
 
+Test(list_scanner, works_with_simple_input)
+{
+  list_scanner_input_string(list_scanner, "foo,bar,baz", -1);
+  assert_next_value_is("foo");
+  assert_next_value_is("bar");
+  assert_next_value_is("baz");
+  assert_no_more_tokens();
+
+  /* nonzero terminated */
+  list_scanner_input_string(list_scanner, "foo,bar,baz", 7);
+  assert_next_value_is("foo");
+  assert_next_value_is("bar");
+  assert_no_more_tokens();
+}
+
 Test(list_scanner, handles_single_quotes)
 {
   list_scanner_input_va(list_scanner, "'foo'", NULL);
