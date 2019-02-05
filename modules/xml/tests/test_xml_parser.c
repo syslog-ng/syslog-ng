@@ -47,6 +47,7 @@ typedef struct
   gboolean forward_invalid;
   gboolean strip_whitespaces;
   GList *exclude_tags;
+  const gchar *prefix;
 } XMLParserTestOptions;
 
 static LogParser *
@@ -58,7 +59,8 @@ _construct_xml_parser(XMLParserTestOptions options)
     xml_scanner_options_set_strip_whitespaces(xml_parser_get_scanner_options(xml_parser), options.strip_whitespaces);
   if (options.exclude_tags)
     xml_scanner_options_set_and_compile_exclude_tags(xml_parser_get_scanner_options(xml_parser), options.exclude_tags);
-
+  if (options.prefix)
+    xml_parser_set_prefix(xml_parser, options.prefix);
 
   LogPipe *cloned = xml_parser_clone(&xml_parser->super);
   log_pipe_init(cloned);
@@ -326,4 +328,48 @@ Test(xml_parser, test_strip_whitespaces)
   log_msg_unref(msg);
 
   teardown();
+}
+
+typedef struct
+{
+  const gchar *input;
+  const gchar *prefix;
+  const gchar *key;
+  const gchar *value;
+} PrefixTestCase;
+
+ParameterizedTestParameters(xmlparser, test_prefix)
+{
+  static PrefixTestCase test_cases[] =
+  {
+    {"<tag>default_prefix</tag>", NULL, ".xml.tag", "default_prefix"},
+    {"<tag>foo</tag>", "", "tag", "foo"},
+    {"<tag>foobar</tag>", ".xmlparser", ".xmlparser.tag", "foobar"},
+    {"<tag>baz</tag>", ".meta.", ".meta.tag", "baz"},
+    {"<top><t1>asd</t1><t2>jkl</t2></top>", "", "top.t2", "jkl"},
+    {"<top><t1>1</t1><t2><t3>3</t3></t2></top>", "", "top.t2.t3", "3"},
+    {"<top><t1>1</t1><t2><t3>3</t3></t2><misc>value</misc></top>", "", "top.misc", "value"},
+  };
+  return cr_make_param_array(PrefixTestCase, test_cases, sizeof(test_cases)/sizeof(test_cases[0]));
+}
+
+ParameterizedTest(PrefixTestCase *test_cases, xmlparser, test_prefix)
+{
+  LogParser *xml_parser = _construct_xml_parser((XMLParserTestOptions)
+  {
+    .prefix = test_cases->prefix
+  });
+
+  LogMessage *msg = log_msg_new_empty();
+  log_msg_set_value(msg, LM_V_MESSAGE, test_cases->input, -1);
+
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  log_parser_process_message(xml_parser, &msg, &path_options);
+
+  const gchar *value = log_msg_get_value_by_name(msg, test_cases->key, NULL);
+  cr_assert_str_eq(value, test_cases->value);
+
+  log_pipe_deinit((LogPipe *)xml_parser);
+  log_pipe_unref((LogPipe *)xml_parser);
+  log_msg_unref(msg);
 }
