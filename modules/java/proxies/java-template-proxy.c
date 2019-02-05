@@ -25,6 +25,19 @@
 
 #include "java-template-proxy.h"
 #include "messages.h"
+#include "cfg.h"
+#include "cfg-tree.h"
+
+JNIEXPORT jboolean JNICALL
+Java_org_syslog_1ng_options_TemplateOption_isNamedTemplate(JNIEnv *env, jobject obj, jlong cfg_handle,
+                                                           jstring template_name)
+{
+  GlobalConfig *cfg = (GlobalConfig *)cfg_handle;
+  const char *template_cstr = (*env)->GetStringUTFChars(env, template_name, NULL);
+  jboolean result = !!cfg_tree_lookup_template(&cfg->tree, template_cstr);
+  (*env)->ReleaseStringUTFChars(env, template_name, template_cstr);
+  return result;
+}
 
 
 JNIEXPORT jlong JNICALL

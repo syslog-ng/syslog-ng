@@ -32,6 +32,8 @@ public class TemplateOption extends OptionDecorator {
 	private String strTemplate;
 	private long configHandle;
 
+	private native boolean isNamedTemplate(long configHandle, String template_name);
+
 	public TemplateOption(long configHandle, Option decoratedOption) {
 		super(decoratedOption);
 		this.configHandle = configHandle;
@@ -42,6 +44,9 @@ public class TemplateOption extends OptionDecorator {
 		decoratedOption.validate();
 		strTemplate = decoratedOption.getValue();
 		if (strTemplate != null) {
+			if (isNamedTemplate(configHandle, strTemplate))
+				throw new InvalidOptionException("Named templates not supported: '" + strTemplate + "'");
+
 			template = new LogTemplate(configHandle);
 			if(!template.compile(strTemplate)) {
 				throw new InvalidOptionException("Can't compile template: '" + strTemplate + "'");
