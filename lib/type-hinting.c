@@ -58,6 +58,8 @@ type_hint_parse(const gchar *hint, TypeHint *out_type, GError **error)
     *out_type = TYPE_HINT_DOUBLE;
   else if (strcmp(hint, "datetime") == 0)
     *out_type = TYPE_HINT_DATETIME;
+  else if (strcmp(hint, "list") == 0)
+    *out_type = TYPE_HINT_LIST;
   else if (strcmp(hint, "boolean") == 0)
     *out_type = TYPE_HINT_BOOLEAN;
   else if (strcmp(hint, "default") == 0)
