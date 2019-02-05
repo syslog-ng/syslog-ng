@@ -41,8 +41,10 @@ static void
 assert_current_value_is(const gchar *expected_key)
 {
   const gchar *key = list_scanner_get_current_value(list_scanner);
+  gint key_len = list_scanner_get_current_value_len(list_scanner);
 
   cr_assert_str_eq(key, expected_key, "current key mismatch");
+  cr_assert_eq(key_len, strlen(expected_key));
 }
 
 static void

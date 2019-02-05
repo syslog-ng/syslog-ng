@@ -165,6 +165,12 @@ list_scanner_get_current_value(ListScanner *self)
   return self->value->str;
 }
 
+gsize
+list_scanner_get_current_value_len(ListScanner *self)
+{
+  return self->value->len;
+}
+
 ListScanner *
 list_scanner_clone(ListScanner *self)
 {
