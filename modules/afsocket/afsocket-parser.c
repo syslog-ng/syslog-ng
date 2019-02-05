@@ -79,6 +79,7 @@ static CfgLexerKeyword afsocket_keywords[] =
   { "tcp_keepalive_probes", KW_TCP_KEEPALIVE_PROBES },
   { "tcp_keepalive_intvl", KW_TCP_KEEPALIVE_INTVL },
   { "spoof_source",       KW_SPOOF_SOURCE },
+  { "spoof_source_max_msglen", KW_SPOOF_SOURCE_MAX_MSGLEN },
   { "transport",          KW_TRANSPORT },
   { "ip_protocol",        KW_IP_PROTOCOL },
   { "max_connections",    KW_MAX_CONNECTIONS },
