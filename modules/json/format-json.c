@@ -92,7 +92,7 @@ typedef struct
 } json_state_t;
 
 static inline void
-tf_json_append_escaped(GString *dest, const gchar *str, gsize str_len)
+tf_json_append_escaped(GString *dest, const gchar *str, gssize str_len)
 {
   append_unsafe_utf8_as_escaped_text(dest, str, str_len, "\"");
 }
