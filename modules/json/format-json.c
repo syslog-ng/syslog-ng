@@ -30,6 +30,7 @@
 #include "value-pairs/cmdline.h"
 #include "syslog-ng.h"
 #include "utf8utils.h"
+#include "scanner/list-scanner/list-scanner.h"
 
 typedef struct _TFJsonState
 {
@@ -176,6 +177,35 @@ tf_json_append_literal(const gchar *name, const gchar *value, gsize value_len,
   g_string_append_len(state->buffer, value, value_len);
 }
 
+static void
+tf_json_append_list(const gchar *name, const gchar *value, gsize value_len,
+                    json_state_t *state)
+{
+  tf_json_append_key(name, state);
+
+  g_string_append_c(state->buffer, ':');
+  g_string_append_c(state->buffer, '[');
+
+  ListScanner scanner;
+  gboolean first = TRUE;
+
+  list_scanner_init(&scanner);
+  list_scanner_input_string(&scanner, value, value_len);
+  while (list_scanner_scan_next(&scanner))
+    {
+      if (!first)
+        g_string_append_c(state->buffer, ',');
+      else
+        first = FALSE;
+      g_string_append_c(state->buffer, '"');
+      tf_json_append_escaped(state->buffer, list_scanner_get_current_value(&scanner), -1);
+      g_string_append_c(state->buffer, '"');
+    }
+
+  list_scanner_deinit(&scanner);
+  g_string_append_c(state->buffer, ']');
+}
+
 static gboolean
 tf_json_value(const gchar *name, const gchar *prefix,
               TypeHint type, const gchar *value, gsize value_len,
@@ -193,6 +223,9 @@ tf_json_value(const gchar *name, const gchar *prefix,
       break;
     case TYPE_HINT_LITERAL:
       tf_json_append_literal(name, value, value_len, state);
+      break;
+    case TYPE_HINT_LIST:
+      tf_json_append_list(name, value, value_len, state);
       break;
     case TYPE_HINT_INT32:
     case TYPE_HINT_INT64:
