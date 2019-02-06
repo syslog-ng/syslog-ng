@@ -320,6 +320,12 @@ AC_ARG_WITH(python,
               [  --with-python=VERSION    Build with a specific version of python]
               ,,with_python="auto")
 
+AC_ARG_WITH(nosetests,
+              [  --with-nosetests=ABSOLUTE_PATH    Specify nosetests location])
+
+AC_ARG_WITH(pylint,
+              [  --with-pylint=ABSOLUTE_PATH    Specify pylint location])
+
 AC_ARG_WITH(docbook,
             AC_HELP_STRING([--with-docbook=FILE],
                            [compiling manpages using docbook in the specified path, if not set online version will be used from http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl]),
@@ -1369,6 +1375,26 @@ else
 fi
 
 dnl ***************************************************************************
+dnl nosetests, pylint
+dnl ***************************************************************************
+
+if test "x$with_nosetests" != "x"; then
+    NOSETESTS=$with_nosetests
+else
+    if test "$python_found" = "yes"; then
+      AC_CHECK_PROG(NOSETESTS, nosetests, nosetests)
+    fi
+fi
+
+if test "x$with_pylint" != "x"; then
+    PYLINT=$with_pylint
+else
+    if test "$python_found" = "yes"; then
+      AC_CHECK_PROG(PYLINT, pylint, pylint)
+    fi
+fi
+
+dnl ***************************************************************************
 dnl java headers/libraries
 dnl ***************************************************************************
 
@@ -1755,7 +1781,12 @@ AM_CONDITIONAL([HAVE_INOTIFY], [test x$ac_cv_func_inotify_init = xyes])
 AM_CONDITIONAL([HAVE_GETRANDOM], [test x$ac_cv_func_getrandom = xyes])
 AM_CONDITIONAL([HAVE_FMEMOPEN], [test x$ac_cv_func_fmemopen = xyes])
 AM_CONDITIONAL(ENABLE_IPV6, [test $enable_ipv6 = yes])
+AM_CONDITIONAL(NOSETESTS, [test "x$NOSETESTS" != "x"])
+AM_CONDITIONAL(PYLINT, [test "x$PYLINT" != "x"])
 
+
+AC_SUBST(NOSETESTS)
+AC_SUBST(PYLINT)
 AC_SUBST(timezonedir)
 AC_SUBST(pidfiledir)
 AC_SUBST(moduledir)
