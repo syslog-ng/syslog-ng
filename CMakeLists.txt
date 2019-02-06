@@ -152,6 +152,21 @@ else ()
   find_package(PythonLibs EXACT "${PYTHON_VERSION}" REQUIRED)
 endif ()
 
+set (NOSETESTS "" CACHE STRING "nosetests binary")
+set (PYLINT "" CACHE STRING "pylint binary")
+
+if (NOSETESTS)
+  set(NOSETESTS_BIN ${NOSETESTS})
+else ()
+  find_program(NOSETESTS_BIN "nosetests")
+endif()
+
+if (PYLINT)
+  set(PYLINT_BIN ${PYLINT})
+else ()
+  find_program(PYLINT_BIN "pylint")
+endif()
+
 include(openssl_functions)
 openssl_set_defines()
 
