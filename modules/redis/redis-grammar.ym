@@ -77,17 +77,17 @@ redis_option
           }
         | KW_COMMAND '(' string template_content ')'
           {
-            redis_dd_set_command(last_driver, $3, $4, NULL, NULL);
+            redis_dd_set_command_ref(last_driver, $3, $4, NULL, NULL);
             free($3);
           }
         | KW_COMMAND '(' string template_content template_content ')'
           {
-            redis_dd_set_command(last_driver, $3, $4, $5, NULL);
+            redis_dd_set_command_ref(last_driver, $3, $4, $5, NULL);
             free($3);
           }
         | KW_COMMAND '(' string template_content template_content template_content ')'
           {
-            redis_dd_set_command(last_driver, $3, $4, $5, $6);
+            redis_dd_set_command_ref(last_driver, $3, $4, $5, $6);
             free($3);
           }
         | threaded_dest_driver_option

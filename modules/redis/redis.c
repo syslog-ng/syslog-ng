@@ -86,22 +86,22 @@ redis_dd_set_auth(LogDriver *d, const gchar *auth)
 }
 
 void
-redis_dd_set_command(LogDriver *d, const gchar *command,
-                     LogTemplate *key,
-                     LogTemplate *param1, LogTemplate *param2)
+redis_dd_set_command_ref(LogDriver *d, const gchar *command,
+                         LogTemplate *key,
+                         LogTemplate *param1, LogTemplate *param2)
 {
   RedisDriver *self = (RedisDriver *)d;
 
   g_string_assign(self->command, command);
 
   log_template_unref(self->key);
-  self->key = log_template_ref(key);
+  self->key = key;
 
   log_template_unref(self->param1);
-  self->param1 = log_template_ref(param1);
+  self->param1 = param1;
 
   log_template_unref(self->param2);
-  self->param2 = log_template_ref(param2);
+  self->param2 = param2;
 }
 
 LogTemplateOptions *
