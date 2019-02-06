@@ -149,7 +149,7 @@ tf_json_append_key(const gchar *name, json_state_t *state)
 
 }
 
-static gboolean
+static void
 tf_json_append_value(const gchar *name, const gchar *value, gsize value_len,
                      json_state_t *state, gboolean quoted)
 {
@@ -164,11 +164,9 @@ tf_json_append_value(const gchar *name, const gchar *value, gsize value_len,
 
   if (quoted)
     g_string_append_c(state->buffer, '"');
-
-  return TRUE;
 }
 
-static gboolean
+static void
 tf_json_append_literal(const gchar *name, const gchar *value, gsize value_len,
                        json_state_t *state)
 {
@@ -176,8 +174,6 @@ tf_json_append_literal(const gchar *name, const gchar *value, gsize value_len,
 
   g_string_append_c(state->buffer, ':');
   g_string_append_len(state->buffer, value, value_len);
-
-  return TRUE;
 }
 
 static gboolean
