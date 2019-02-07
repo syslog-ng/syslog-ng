@@ -28,7 +28,7 @@
 #include "scratch-buffers.h"
 #include "timeutils/timeutils.h"
 
-#define MAX_RETRIES_OF_FAILED_INSERT_DEFAULT 3
+#define MAX_RETRIES_ON_ERROR_DEFAULT 3
 
 static void _init_stats_key(LogThreadedDestDriver *self, StatsClusterKey *sc_key);
 
@@ -56,7 +56,7 @@ log_threaded_dest_worker_ack_messages(LogThreadedDestWorker *self, gint batch_si
 {
   log_queue_ack_backlog(self->queue, batch_size);
   stats_counter_add(self->owner->written_messages, batch_size);
-  self->retries_counter = 0;
+  self->retries_on_error_counter = 0;
   self->batch_size -= batch_size;
 }
 
@@ -65,7 +65,7 @@ log_threaded_dest_worker_drop_messages(LogThreadedDestWorker *self, gint batch_s
 {
   log_queue_ack_backlog(self->queue, batch_size);
   stats_counter_add(self->owner->dropped_messages, batch_size);
-  self->retries_counter = 0;
+  self->retries_on_error_counter = 0;
   self->batch_size -= batch_size;
 }
 
@@ -238,15 +238,15 @@ _process_result_drop(LogThreadedDestWorker *self)
 static void
 _process_result_error(LogThreadedDestWorker *self)
 {
-  self->retries_counter++;
+  self->retries_on_error_counter++;
 
-  if (self->retries_counter >= self->owner->retries_max)
+  if (self->retries_on_error_counter >= self->owner->retries_on_error_max)
     {
       msg_error("Multiple failures while sending message(s) to destination, message(s) dropped",
                 evt_tag_str("driver", self->owner->super.super.id),
                 log_expr_node_location_tag(self->owner->super.super.super.expr_node),
                 evt_tag_int("worker_index", self->worker_index),
-                evt_tag_int("retries", self->retries_counter),
+                evt_tag_int("retries", self->retries_on_error_counter),
                 evt_tag_int("batch_size", self->batch_size));
 
       _drop_batch(self);
@@ -257,7 +257,7 @@ _process_result_error(LogThreadedDestWorker *self)
                 evt_tag_str("driver", self->owner->super.super.id),
                 log_expr_node_location_tag(self->owner->super.super.super.expr_node),
                 evt_tag_int("worker_index", self->worker_index),
-                evt_tag_int("retries", self->retries_counter),
+                evt_tag_int("retries", self->retries_on_error_counter),
                 evt_tag_int("batch_size", self->batch_size));
       _rewind_batch(self);
       _disconnect_and_suspend(self);
@@ -900,11 +900,11 @@ _start_worker_thread(LogThreadedDestDriver *self)
 }
 
 void
-log_threaded_dest_driver_set_max_retries(LogDriver *s, gint max_retries)
+log_threaded_dest_driver_set_max_retries_on_error(LogDriver *s, gint max_retries)
 {
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
 
-  self->retries_max = max_retries;
+  self->retries_on_error_max = max_retries;
 }
 
 LogThreadedDestWorker *
@@ -1091,7 +1091,7 @@ log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalConfig
   self->num_workers = 1;
   self->last_worker = 0;
 
-  self->retries_max = MAX_RETRIES_OF_FAILED_INSERT_DEFAULT;
+  self->retries_on_error_max = MAX_RETRIES_ON_ERROR_DEFAULT;
   self->lock = g_mutex_new();
   log_threaded_dest_worker_init_instance(&self->worker.instance, self, 0);
   _init_worker_compat_layer(&self->worker.instance);

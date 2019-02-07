@@ -248,7 +248,7 @@ Test(logthrdestdrv, error_result_retries_sending_retry_max_times_and_then_drops)
 {
   dd->super.worker.insert = _insert_single_message_error_until_drop;
   dd->super.time_reopen = 0;
-  dd->super.retries_max = 5;
+  dd->super.retries_on_error_max = 5;
 
   start_grabbing_messages();
   _generate_message_and_wait_for_processing(dd, dd->super.dropped_messages);
@@ -278,7 +278,7 @@ Test(logthrdestdrv, error_result_retries_sending_retry_max_times_and_then_accept
 {
   dd->super.worker.insert = _insert_single_message_error_until_successful;
   dd->super.time_reopen = 0;
-  dd->super.retries_max = 5;
+  dd->super.retries_on_error_max = 5;
 
   start_grabbing_messages();
   _generate_message_and_wait_for_processing(dd, dd->super.written_messages);
@@ -382,7 +382,7 @@ Test(logthrdestdrv, batched_set_of_messages_are_dropped_as_a_whole)
 static inline void
 _expect_batch_size_remains_the_same_across_retries(TestThreadedDestDriver *self)
 {
-  if (self->super.worker.instance.retries_counter > 0)
+  if (self->super.worker.instance.retries_on_error_counter > 0)
     {
       cr_expect(self->super.worker.instance.batch_size == self->prev_flush_size,
                 "batch_size has to remain the same across retries, batch_size=%d, prev_flush_size=%d",
@@ -426,21 +426,21 @@ Test(logthrdestdrv,
   dd->super.worker.insert = _insert_batched_message_error_drop;
   dd->super.worker.flush = _flush_batched_message_error_drop;
   dd->super.time_reopen = 0;
-  dd->super.retries_max = 5;
+  dd->super.retries_on_error_max = 5;
 
   start_grabbing_messages();
   _generate_messages_and_wait_for_processing(dd, 10, dd->super.dropped_messages);
 
-  cr_assert(dd->insert_counter == dd->super.retries_max * 10,
-            "not all messages were attempted %d times, insert_counter=%d", dd->super.retries_max, dd->insert_counter);
-  cr_assert(dd->flush_size == dd->super.retries_max * 10,
-            "not all messages were flushed %d times, flush_size=%d", dd->super.retries_max, dd->flush_size);
+  cr_assert(dd->insert_counter == dd->super.retries_on_error_max * 10,
+            "not all messages were attempted %d times, insert_counter=%d", dd->super.retries_on_error_max, dd->insert_counter);
+  cr_assert(dd->flush_size == dd->super.retries_on_error_max * 10,
+            "not all messages were flushed %d times, flush_size=%d", dd->super.retries_on_error_max, dd->flush_size);
 
   cr_assert(stats_counter_get(dd->super.processed_messages) == 10);
   cr_assert(stats_counter_get(dd->super.written_messages) == 0);
   cr_assert(stats_counter_get(dd->super.dropped_messages) == 10);
   cr_assert(stats_counter_get(dd->super.worker.instance.queue->memory_usage) == 0);
-  cr_assert(dd->super.shared_seq_num == dd->super.retries_max * 10 + 1,
+  cr_assert(dd->super.shared_seq_num == dd->super.retries_on_error_max * 10 + 1,
             "seq_num needs to be one larger than the number of insert attempts, found %d", dd->super.shared_seq_num);
   assert_grabbed_log_contains("Error occurred while");
   assert_grabbed_log_contains("Multiple failures while sending");
@@ -456,7 +456,7 @@ Test(logthrdestdrv,
 static inline LogThreadedResult
 _inject_error_a_few_times(TestThreadedDestDriver *self)
 {
-  if (self->super.worker.instance.retries_counter >= FAILING_ATTEMPTS_DROP)
+  if (self->super.worker.instance.retries_on_error_counter >= FAILING_ATTEMPTS_DROP)
     return LTR_SUCCESS;
   else
     return LTR_ERROR;
@@ -499,7 +499,7 @@ Test(logthrdestdrv,
   dd->super.worker.insert = _insert_batched_message_error_success;
   dd->super.worker.flush = _flush_batched_message_error_success;
   dd->super.time_reopen = 0;
-  dd->super.retries_max = 5;
+  dd->super.retries_on_error_max = 5;
 
   start_grabbing_messages();
   _generate_messages_and_wait_for_processing(dd, 10, dd->super.written_messages);
@@ -573,7 +573,7 @@ Test(logthrdestdrv,
   dd->super.worker.insert = _insert_batched_message_not_connected;
   dd->super.worker.flush = _flush_batched_message_not_connected;
   dd->super.time_reopen = 0;
-  dd->super.retries_max = 5;
+  dd->super.retries_on_error_max = 5;
 
   start_grabbing_messages();
   _generate_messages_and_wait_for_processing(dd, 10, dd->super.written_messages);
