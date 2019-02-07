@@ -156,6 +156,25 @@ _add_header(struct curl_slist *curl_headers, const gchar *header, const gchar *v
 }
 
 static struct curl_slist *
+_append_auth_header(struct curl_slist *list, HTTPDestinationDriver *owner)
+{
+  const gchar *auth_header_str = http_auth_header_get_as_string(owner->auth_header);
+
+  if (auth_header_str)
+    {
+      list = curl_slist_append(list, auth_header_str);
+    }
+  else
+    {
+      msg_warning("WARNING: auth-header() returned NULL-value",
+          evt_tag_str("driver", owner->super.super.super.id),
+          log_pipe_location_tag(&owner->super.super.super.super));
+    }
+
+  return list;
+}
+
+static struct curl_slist *
 _format_request_headers(HTTPDestinationWorker *self, LogMessage *msg)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
@@ -190,7 +209,7 @@ _format_request_headers(HTTPDestinationWorker *self, LogMessage *msg)
     headers = curl_slist_append(headers, l->data);
 
   if (owner->auth_header)
-    headers = curl_slist_append(headers, http_auth_header_get_as_string(owner->auth_header));
+    headers = _append_auth_header(headers, owner);
 
   return headers;
 }
