@@ -67,6 +67,7 @@ struct _LogThreadedDestWorker
   gint batch_size;
   gint rewound_batch_size;
   gint retries_on_error_counter;
+  guint retries_counter;
   gint32 seq_num;
   struct timespec last_flush_time;
   gboolean enable_batching;
@@ -98,6 +99,7 @@ struct _LogThreadedDestDriver
   gboolean under_termination;
   time_t time_reopen;
   gint retries_on_error_max;
+  guint retries_max;
 
   struct
   {

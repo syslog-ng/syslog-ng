@@ -29,6 +29,7 @@
 #include "timeutils/timeutils.h"
 
 #define MAX_RETRIES_ON_ERROR_DEFAULT 3
+#define MAX_RETRIES_BEFORE_SUSPEND_DEFAULT 3
 
 static void _init_stats_key(LogThreadedDestDriver *self, StatsClusterKey *sc_key);
 
@@ -272,6 +273,7 @@ _process_result_not_connected(LogThreadedDestWorker *self)
            log_expr_node_location_tag(self->owner->super.super.super.expr_node),
            evt_tag_int("worker_index", self->worker_index),
            evt_tag_int("batch_size", self->batch_size));
+  self->retries_counter = 0;
   _rewind_batch(self);
   _disconnect_and_suspend(self);
 }
@@ -291,7 +293,11 @@ _process_result_queued(LogThreadedDestWorker *self)
 static void
 _process_result_retry(LogThreadedDestWorker *self)
 {
-  _rewind_batch(self);
+  self->retries_counter++;
+  if (self->retries_counter >= self->owner->retries_max)
+    _process_result_not_connected(self);
+  else
+    _rewind_batch(self);
 }
 
 static void
@@ -1092,6 +1098,7 @@ log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalConfig
   self->last_worker = 0;
 
   self->retries_on_error_max = MAX_RETRIES_ON_ERROR_DEFAULT;
+  self->retries_max = MAX_RETRIES_BEFORE_SUSPEND_DEFAULT;
   self->lock = g_mutex_new();
   log_threaded_dest_worker_init_instance(&self->worker.instance, self, 0);
   _init_worker_compat_layer(&self->worker.instance);
