@@ -1190,7 +1190,7 @@ dest_driver_option
 threaded_dest_driver_option
 	: KW_RETRIES '(' positive_integer ')'
         {
-          log_threaded_dest_driver_set_max_retries(last_driver, $3);
+          log_threaded_dest_driver_set_max_retries_on_error(last_driver, $3);
         }
         | KW_BATCH_LINES '(' nonnegative_integer ')' { log_threaded_dest_driver_set_batch_lines(last_driver, $3); }
         | KW_BATCH_TIMEOUT '(' positive_integer ')' { log_threaded_dest_driver_set_batch_timeout(last_driver, $3); }
