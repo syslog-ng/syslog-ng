@@ -27,6 +27,8 @@
 #include "messages.h"
 #include "str-utils.h"
 #include "filter/filter-expr.h"
+#include "timeutils/timeutils.h"
+#include "timeutils/cache.h"
 #include <iv.h>
 
 typedef struct _GroupingBy

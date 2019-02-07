@@ -24,6 +24,7 @@
 
 #include "logqueue.h"
 #include "stats/stats-registry.h"
+#include "timeutils/timeutils.h"
 #include "messages.h"
 
 gint log_queue_max_threads = 0;

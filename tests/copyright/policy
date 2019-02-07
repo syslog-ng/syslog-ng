@@ -47,7 +47,7 @@ autogen\.sh$
 sub-configure\.sh$
 configure\.ac$
 Makefile\.am$
-lib/(compat|str-repr|str-timestamp|control|debugger|filter|logproto|parser|rewrite|stats|template|tests|transport|logmsg|value-pairs|secret-storage|logthrsource|[^/]*$)
+lib/(compat|str-repr|timeutils|control|debugger|filter|logproto|parser|rewrite|stats|template|tests|transport|logmsg|value-pairs|secret-storage|logthrsource|[^/]*$)
 lib/scanner/(csv-scanner|list-scanner|kv-scanner|[^/]*$)
 libtest
 syslog-ng(-ctl)?

@@ -22,7 +22,7 @@
 
 #include <collection-comparator.h>
 #include "directory-monitor-poll.h"
-#include "timeutils.h"
+#include "timeutils/timeutils.h"
 #include "messages.h"
 
 #include <iv.h>

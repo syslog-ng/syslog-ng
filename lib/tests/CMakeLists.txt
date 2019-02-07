@@ -18,7 +18,6 @@ add_unit_test(CRITERION TARGET test_userdb)
 
 add_unit_test(CRITERION TARGET test_cache)
 add_unit_test(CRITERION TARGET test_scratch_buffers)
-add_unit_test(CRITERION TARGET test_timeutils)
 add_unit_test(CRITERION TARGET test_messages)
 add_unit_test(CRITERION TARGET test_atomic_gssize)
 add_unit_test(CRITERION TARGET test_window_size_counter)

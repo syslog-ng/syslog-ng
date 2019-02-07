@@ -23,6 +23,7 @@
  */
 
 #include "messages.h"
+#include "timeutils/cache.h"
 #include "logmsg/logmsg.h"
 
 #include <stdio.h>

@@ -25,6 +25,7 @@
 #include "apphook.h"
 #include "logmsg/logmsg.h"
 #include "string-list.h"
+#include "timeutils/timeutils.h"
 
 LogParser *
 _construct_parser(gint max_columns, gint dialect, gchar *delimiters, gchar *quotes, gchar *null_value,

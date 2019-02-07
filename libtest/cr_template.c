@@ -23,6 +23,7 @@
  */
 
 #include "cr_template.h"
+#include "timeutils/timeutils.h"
 #include "stopwatch.h"
 #include "logmsg/logmsg.h"
 #include "gsockaddr.h"

@@ -29,7 +29,7 @@
 #include "serialize.h"
 #include "apphook.h"
 #include "gsockaddr.h"
-#include "timeutils.h"
+#include "timeutils/timeutils.h"
 #include "cfg.h"
 #include "plugin.h"
 

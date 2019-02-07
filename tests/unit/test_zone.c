@@ -22,8 +22,9 @@
  */
 
 #include "apphook.h"
-#include "timeutils.h"
-#include "timeutils.h"
+#include "timeutils/timeutils.h"
+#include "timeutils/cache.h"
+#include "timeutils/zoneinfo.h"
 #include "logstamp.h"
 #include <criterion/criterion.h>
 #include <stdlib.h>

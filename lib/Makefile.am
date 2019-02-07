@@ -18,7 +18,7 @@ include lib/scanner/csv-scanner/Makefile.am
 include lib/scanner/list-scanner/Makefile.am
 include lib/scanner/kv-scanner/Makefile.am
 include lib/str-repr/Makefile.am
-include lib/str-timestamp/Makefile.am
+include lib/timeutils/Makefile.am
 include lib/secret-storage/Makefile.am
 include lib/logthrsource/Makefile.am
 
@@ -163,7 +163,6 @@ pkginclude_HEADERS			+= \
 	lib/syslog-ng.h			\
 	lib/misc.h                      \
 	lib/string-list.h		\
-	lib/timeutils.h			\
 	lib/tls-support.h		\
 	lib/thread-utils.h		\
 	lib/tlscontext.h  		\
@@ -248,7 +247,6 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/str-utils.c			\
 	lib/syslog-names.c		\
 	lib/string-list.c		\
-	lib/timeutils.c			\
 	lib/type-hinting.c		\
 	lib/ringbuffer.c		\
 	lib/late_ack_tracker.c		\
@@ -283,7 +281,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	$(compat_sources)     		\
 	$(logmsg_sources)		\
 	$(str_repr_sources)		\
-	$(str_timestamp_sources)	\
+	$(timeutils_sources)	\
 	$(logthrsource_sources)
 
 lib_libsyslog_ng_la_CFLAGS		= \
