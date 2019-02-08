@@ -37,6 +37,7 @@
 #include "str-format.h"
 #include "scratch-buffers.h"
 #include "timeutils/format.h"
+#include "timeutils/misc.h"
 
 #include <unistd.h>
 #include <assert.h>

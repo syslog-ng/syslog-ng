@@ -22,7 +22,6 @@
 #include "snmptrapd-header-parser.h"
 
 #include "str-format.h"
-#include "timeutils/timeutils.h"
 #include "timeutils/cache.h"
 
 #include <string.h>

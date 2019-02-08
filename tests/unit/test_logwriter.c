@@ -27,9 +27,9 @@
 #include "template/templates.h"
 #include "apphook.h"
 #include "cfg.h"
-#include "timeutils/timeutils.h"
 #include "plugin.h"
 #include "logqueue-fifo.h"
+#include "timeutils/misc.h"
 
 #include <criterion/criterion.h>
 #include <time.h>

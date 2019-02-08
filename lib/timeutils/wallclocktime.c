@@ -26,6 +26,7 @@
 #include "timeutils/unixtime.h"
 #include "timeutils/strptime-tz.h"
 #include "timeutils/cache.h"
+#include "timeutils/misc.h"
 
 void
 wall_clock_time_unset(WallClockTime *self)

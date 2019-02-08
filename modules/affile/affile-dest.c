@@ -37,6 +37,7 @@
 #include "file-specializations.h"
 #include "apphook.h"
 #include "timeutils/cache.h"
+#include "timeutils/misc.h"
 
 #include <iv.h>
 #include <sys/types.h>

@@ -41,7 +41,7 @@
 #include "plugin.h"
 #include "resolved-configurable-paths.h"
 #include "scratch-buffers.h"
-#include "timeutils/timeutils.h"
+#include "timeutils/misc.h"
 
 #include <sys/types.h>
 #include <sys/wait.h>

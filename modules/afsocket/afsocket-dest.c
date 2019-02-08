@@ -27,6 +27,7 @@
 #include "gsocket.h"
 #include "stats/stats-registry.h"
 #include "mainloop.h"
+#include "timeutils/misc.h"
 
 #include <string.h>
 #include <sys/types.h>

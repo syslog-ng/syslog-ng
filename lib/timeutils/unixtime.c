@@ -22,10 +22,10 @@
  *
  */
 #include "timeutils/unixtime.h"
-#include "timeutils/timeutils.h"
 #include "timeutils/wallclocktime.h"
 #include "timeutils/cache.h"
 #include "timeutils/names.h"
+#include "timeutils/misc.h"
 
 void
 unix_time_unset(UnixTime *self)

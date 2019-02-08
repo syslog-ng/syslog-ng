@@ -31,7 +31,7 @@
 #include "mainloop-io-worker.h"
 #include "libtest/queue_utils_lib.h"
 #include "msg_parse_lib.h"
-#include "timeutils/timeutils.h"
+#include "timeutils/misc.h"
 
 #include <stdlib.h>
 #include <string.h>

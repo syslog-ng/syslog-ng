@@ -25,7 +25,7 @@
 #ifndef UNIXTIME_H_INCLUDED
 #define UNIXTIME_H_INCLUDED
 
-#include "timeutils/timeutils.h"
+#include "timeutils/timeutils-internals.h"
 
 /*
  * This class represents a UNIX timestamp (as measured in time_t), the

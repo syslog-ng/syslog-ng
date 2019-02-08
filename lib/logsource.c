@@ -25,11 +25,11 @@
 #include "logsource.h"
 #include "messages.h"
 #include "host-resolve.h"
-#include "timeutils/timeutils.h"
 #include "stats/stats-registry.h"
 #include "msg-stats.h"
 #include "logmsg/tags.h"
 #include "ack_tracker.h"
+#include "timeutils/misc.h"
 
 #include <string.h>
 

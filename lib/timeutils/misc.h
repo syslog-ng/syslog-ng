@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 Balabit
- * Copyright (c) 1998-2018 Balázs Scheidler
+ * Copyright (c) 2002-2014 Balabit
+ * Copyright (c) 1998-2010 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,41 +22,18 @@
  *
  */
 
-#ifndef TIMEUTILS_CACHE_H_INCLUDED
-#define TIMEUTILS_CACHE_H_INCLUDED
+#ifndef TIMEUTILS_MISC_H_INCLUDED
+#define TIMEUTILS_MISC_H_INCLUDED
 
 #include "timeutils/timeutils-internals.h"
-#include "timeutils/wallclocktime.h"
-#include "timeutils/unixtime.h"
 
-time_t cached_mktime(struct tm *tm);
-void cached_localtime(time_t *when, struct tm *tm);
-void cached_gmtime(time_t *when, struct tm *tm);
+long get_local_timezone_ofs(time_t when);
 
+gboolean check_nanosleep(void);
 
-static inline void
-cached_localtime_wct(time_t *when, WallClockTime *wct)
-{
-  cached_localtime(when, &wct->tm);
-}
-
-static inline time_t
-cached_mktime_wct(WallClockTime *wct)
-{
-  return cached_mktime(&wct->tm);
-}
-
-static inline void
-cached_gmtime_wct(time_t *when, WallClockTime *wct)
-{
-  cached_gmtime(when, &wct->tm);
-}
-
-void clean_time_cache(void);
-
-void invalidate_cached_time(void);
-void set_cached_time(GTimeVal *timeval);
-void cached_g_current_time(GTimeVal *result);
-time_t cached_g_current_time_sec(void);
+glong g_time_val_diff(GTimeVal *t1, GTimeVal *t2);
+void timespec_add_msec(struct timespec *ts, glong msec);
+glong timespec_diff_msec(const struct timespec *t1, const struct timespec *t2);
+glong timespec_diff_nsec(struct timespec *t1, struct timespec *t2);
 
 #endif

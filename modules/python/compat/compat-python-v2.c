@@ -23,7 +23,8 @@
 
 #include "compat-python.h"
 #include "python-helpers.h"
-#include "timeutils/timeutils.h"
+#include "timeutils/misc.h"
+
 #include <datetime.h>
 
 void

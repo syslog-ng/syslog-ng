@@ -24,7 +24,6 @@
 #include "timeutils/scan-timestamp.h"
 #include "timeutils/wallclocktime.h"
 #include "str-format.h"
-#include "timeutils/timeutils.h"
 #include "timeutils/cache.h"
 
 #include <ctype.h>

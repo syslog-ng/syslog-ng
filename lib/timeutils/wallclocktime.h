@@ -25,7 +25,7 @@
 #ifndef WALLCLOCKTIME_H_INCLUDED
 #define WALLCLOCKTIME_H_INCLUDED
 
-#include "timeutils/timeutils.h"
+#include "timeutils/timeutils-internals.h"
 
 /*
  * This is a simple wrapper over "struct tm" with fields that are not

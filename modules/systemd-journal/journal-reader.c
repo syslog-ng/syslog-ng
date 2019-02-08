@@ -31,7 +31,7 @@
 #include "ack_tracker.h"
 #include "parse-number.h"
 #include "journal-reader.h"
-#include "timeutils/timeutils.h"
+#include "timeutils/misc.h"
 
 #include <stdlib.h>
 #include <iv_event.h>

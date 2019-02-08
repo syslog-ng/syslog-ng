@@ -22,8 +22,8 @@
  */
 
 #include "apphook.h"
-#include "timeutils/timeutils.h"
 #include "timeutils/cache.h"
+#include "timeutils/misc.h"
 #include "timeutils/zoneinfo.h"
 #include "timeutils/unixtime.h"
 #include "timeutils/format.h"

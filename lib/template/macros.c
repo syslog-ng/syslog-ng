@@ -24,11 +24,11 @@
 
 #include "template/macros.h"
 #include "template/escaping.h"
-#include "timeutils/timeutils.h"
 #include "timeutils/cache.h"
 #include "timeutils/names.h"
 #include "timeutils/unixtime.h"
 #include "timeutils/format.h"
+#include "timeutils/misc.h"
 #include "messages.h"
 #include "str-format.h"
 #include "run-id.h"
