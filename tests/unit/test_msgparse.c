@@ -30,8 +30,10 @@
 #include "apphook.h"
 #include "gsockaddr.h"
 #include "timeutils/timeutils.h"
+#include "timeutils/cache.h"
 #include "cfg.h"
 #include "plugin.h"
+#include "fake-time.h"
 
 #include <time.h>
 #include <string.h>
@@ -55,27 +57,6 @@ _absolute_value(signed long diff)
   else
     return diff;
 }
-
-static time_t
-_get_epoch_with_bsd_year(int ts_month, int d, int h, int m, int s)
-{
-  struct tm *tm;
-  time_t t;
-
-  time(&t);
-  tm = localtime(&t);
-
-  tm->tm_year = determine_year_for_month(ts_month, tm);
-
-  tm->tm_hour = h;
-  tm->tm_min = m;
-  tm->tm_sec = s;
-  tm->tm_mday = d;
-  tm->tm_mon = ts_month;
-  tm->tm_isdst = -1;
-  return mktime(tm);
-}
-
 
 static void
 _simulate_log_readers_effect_on_timezone_offset(LogMessage *message)
@@ -150,6 +131,8 @@ setup(void)
   setenv("TZ", "MET-1METDST", TRUE);
   tzset();
   init_and_load_syslogformat_module();
+  /* Fri Feb  8 09:37:49 CET 2019 */
+  fake_time(1549615069);
 }
 
 void
@@ -184,7 +167,7 @@ test_log_messages_can_be_parsed(struct msgparse_params *param)
     }
   else
     {
-      time(&now);
+      now = cached_g_current_time_sec();
       cr_assert(_absolute_value(parsed_timestamp->ut_sec - now) <= 5,
                 "Expected parsed message timestamp to be set to now; now='%d', timestamp->tv_sec='%d'",
                 (gint)now, (gint)parsed_timestamp->ut_sec);
@@ -282,7 +265,7 @@ Test(msgparse, test_timestamp)
     {
       "<15>Jan  1 01:00:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
       15,             // pri
-      _get_epoch_with_bsd_year(0, 1, 1, 0, 0), 0, 3600,        // timestamp (sec/usec/zone)
+      1546300800, 0, 3600,        // timestamp (sec/usec/zone)
       "bzorp",        // host
       "openvpn",        // openvpn
       "PTHREAD support initialized", // msg
@@ -291,8 +274,7 @@ Test(msgparse, test_timestamp)
     {
       "<15>Jan 10 01:00:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_EXPECT_HOSTNAME, NULL,
       15,             // pri
-      _get_epoch_with_bsd_year(0, 10, 1, 0, 0)
-      , 0, 3600,        // timestamp (sec/usec/zone)
+      1547078400, 0, 3600,        // timestamp (sec/usec/zone)
       "bzorp",        // host
       "openvpn",        // openvpn
       "PTHREAD support initialized", // msg
@@ -301,7 +283,7 @@ Test(msgparse, test_timestamp)
     {
       "<13>Jan  1 14:40:51 alma korte: message", 0, NULL,
       13,
-      _get_epoch_with_bsd_year(0, 1, 14, 40, 51), 0, 3600,
+      1546350051, 0, 3600,
       "",
       "alma",
       "korte: message",
@@ -558,8 +540,7 @@ Test(msgparse, test_timestamp_others)
     {
       "<190>NOV 22 00:00:33 192.168.33.8-1 CMDLOGGER[165319912]: cmd_logger_api.c(83) 13518 %% CLI:192.168.32.100:root:User  logged in", LP_EXPECT_HOSTNAME, NULL,
       190,
-      _get_epoch_with_bsd_year(10, 22, 0, 0, 33)
-      , 0, 3600,
+      1574377233, 0, 3600,
       "192.168.33.8-1",
       "CMDLOGGER",
       "cmd_logger_api.c(83) 13518 %% CLI:192.168.32.100:root:User  logged in",
@@ -1069,7 +1050,7 @@ Test(msgparse, test_ip_in_host)
     {
       .msg = "<0>Jan 10 01:00:00 1.2.3.4 prg0",
       .parse_flags = LP_EXPECT_HOSTNAME,
-      .expected_stamp_sec =  _get_epoch_with_bsd_year(0, 10, 1, 0, 0),
+      .expected_stamp_sec =  1547078400,
       .expected_stamp_ofs = 3600,
       .expected_program = "prg0",
       .expected_host = "1.2.3.4"
@@ -1078,7 +1059,7 @@ Test(msgparse, test_ip_in_host)
     {
       .msg = "<0>Jan 10 01:00:00 0000:BABA:BA00:DAB:BABA:BABA:BABA:BAB0 prg0",
       .parse_flags = LP_EXPECT_HOSTNAME,
-      .expected_stamp_sec =  _get_epoch_with_bsd_year(0, 10, 1, 0, 0),
+      .expected_stamp_sec =  1547078400,
       .expected_stamp_ofs = 3600,
       .expected_program = "prg0",
       .expected_host = "0000:BABA:BA00:DAB:BABA:BABA:BABA:BAB0"
@@ -1087,7 +1068,7 @@ Test(msgparse, test_ip_in_host)
     {
       .msg = "<0>Jan 10 01:00:00 0001:BABA:BA00:DAB::BAB0 prg0",
       .parse_flags = LP_EXPECT_HOSTNAME,
-      .expected_stamp_sec =  _get_epoch_with_bsd_year(0, 10, 1, 0, 0),
+      .expected_stamp_sec = 1547078400,
       .expected_stamp_ofs = 3600,
       .expected_program = "prg0",
       .expected_host = "0001:BABA:BA00:DAB::BAB0"
@@ -1095,7 +1076,7 @@ Test(msgparse, test_ip_in_host)
     {
       .msg = "<0>Jan 10 01:00:00 0002:: prg0: msgtxt",
       .parse_flags = LP_EXPECT_HOSTNAME,
-      .expected_stamp_sec =  _get_epoch_with_bsd_year(0, 10, 1, 0, 0),
+      .expected_stamp_sec =  1547078400,
       .expected_stamp_ofs = 3600,
       .expected_program = "prg0",
       .expected_host = "0002::",
@@ -1105,7 +1086,7 @@ Test(msgparse, test_ip_in_host)
     {
       .msg = "<0>Jan 10 01:00:00 prg0", // No ip no msg
       .parse_flags = LP_EXPECT_HOSTNAME,
-      .expected_stamp_sec =  _get_epoch_with_bsd_year(0, 10, 1, 0, 0),
+      .expected_stamp_sec =  1547078400,
       .expected_stamp_ofs = 3600,
       .expected_program = "prg0",
       .expected_host = ""
@@ -1113,7 +1094,7 @@ Test(msgparse, test_ip_in_host)
     (struct msgparse_params)
     {
       .msg = "<0>Jan 10 01:00:00 prg0: msgtxt", // program name with message, no ip
-      .expected_stamp_sec =  _get_epoch_with_bsd_year(0, 10, 1, 0, 0),
+      .expected_stamp_sec =  1547078400,
       .expected_stamp_ofs = 3600,
       .expected_program = "prg0",
       .expected_msg = "msgtxt"
@@ -1122,7 +1103,7 @@ Test(msgparse, test_ip_in_host)
     {
       .msg = "<0>91: *Oct 07 03:10:04: mydevice.com %CRYPTO-4-RECVD_PKT_INV_SPI: decaps: rec'd IPSEC packet has invalid spi for destaddr=150.1.1.1, prot=50, spi=0x72662541(1919296833), srcaddr=150.3.1.3",
       .parse_flags = LP_EXPECT_HOSTNAME,
-      .expected_stamp_sec = _get_epoch_with_bsd_year(9, 7, 3, 10, 4),
+      .expected_stamp_sec = 1570410604,
       .expected_stamp_ofs = 7200,
       .expected_program = "%CRYPTO-4-RECVD_PKT_INV_SPI",
       .expected_host = "mydevice.com",
