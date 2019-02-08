@@ -67,7 +67,7 @@ class SetupTestCase(object):
 
     def __log_assertion_error(self):
         terminalreporter = self.__testcase_context.config.pluginmanager.getplugin("terminalreporter")
-        if terminalreporter.stats.get("failed"):
+        if terminalreporter and terminalreporter.stats.get("failed"):
             for failed_report in terminalreporter.stats.get("failed"):
                 if failed_report.location[2] == self.__testcase_context.node.name:
                     self.__logger = self.__logger_factory.create_logger(
