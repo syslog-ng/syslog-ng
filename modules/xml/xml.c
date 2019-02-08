@@ -22,7 +22,13 @@
 
 #include "xml.h"
 #include "scratch-buffers.h"
+#include "str-repr/encode.h"
 
+typedef struct
+{
+  LogMessage *msg;
+  gboolean create_lists;
+} PushParams;
 
 XMLScannerOptions *
 xml_parser_get_scanner_options(LogParser *p)
@@ -40,29 +46,42 @@ remove_trailing_dot(gchar *str)
     str[strlen(str)-1] = 0;
 }
 
+static void
+encode_and_append_value(GString *result, const gchar *current_value, gssize current_value_len)
+{
+  if (result->len > 0)
+    g_string_append_c(result, ',');
+  str_repr_encode_append(result, current_value, current_value_len, ",");
+}
+
 static GString *
-append_values(const gchar *previous_value, gssize previous_value_len, const gchar *value, gssize value_length)
+append_values(const gchar *previous_value, gssize previous_value_len,
+              const gchar *current_value, gssize current_value_len, gboolean create_lists)
 {
   GString *result = scratch_buffers_alloc();
   g_string_append_len(result, previous_value, previous_value_len);
-  g_string_append_len(result, value, value_length);
+  if (create_lists)
+    {
+      encode_and_append_value(result, current_value, current_value_len);
+    }
+  else
+    {
+      g_string_append_len(result, current_value, current_value_len);
+    }
   return result;
 }
 
 static void
 scanner_push_function(const gchar *name, const gchar *value, gssize value_length, gpointer user_data)
 {
-  LogMessage *msg = (LogMessage *) user_data;
+  PushParams *push_params = (PushParams *) user_data;
 
   gssize current_value_len = 0;
-  const gchar *current_value = log_msg_get_value_by_name(msg, name, &current_value_len);
-  if (current_value_len > 0)
-    {
-      GString *values_appended = append_values(current_value, current_value_len, value, value_length);
-      log_msg_set_value_by_name(msg, name, values_appended->str, values_appended->len);
-      return;
-    }
-  log_msg_set_value_by_name(msg, name, value, value_length);
+  const gchar *current_value = log_msg_get_value_by_name(push_params->msg, name, &current_value_len);
+
+  GString *values_appended = append_values(current_value, current_value_len, value, value_length,
+                                           push_params->create_lists);
+  log_msg_set_value_by_name(push_params->msg, name, values_appended->str, values_appended->len);
 }
 
 static gboolean
@@ -78,7 +97,8 @@ xml_parser_process(LogParser *s, LogMessage **pmsg,
             evt_tag_str ("prefix", self->prefix),
             evt_tag_printf("msg", "%p", *pmsg));
 
-  xml_scanner_init(&xml_scanner, &self->options, &scanner_push_function, msg, self->prefix);
+  PushParams push_params = {.msg = msg, .create_lists = self->create_lists};
+  xml_scanner_init(&xml_scanner, &self->options, &scanner_push_function, &push_params, self->prefix);
 
   GError *error = NULL;
   xml_scanner_parse(&xml_scanner, input, input_len, &error);
@@ -105,6 +125,13 @@ xml_parser_set_forward_invalid(LogParser *s, gboolean setting)
 }
 
 void
+xml_parser_allow_create_lists(LogParser *s, gboolean setting)
+{
+  XMLParser *self = (XMLParser *) s;
+  self->create_lists = setting;
+}
+
+void
 xml_parser_set_prefix(LogParser *s, const gchar *prefix)
 {
   XMLParser *self = (XMLParser *) s;
@@ -124,6 +151,7 @@ xml_parser_clone(LogPipe *s)
   xml_parser_set_prefix(&cloned->super, self->prefix);
   log_parser_set_template(&cloned->super, log_template_ref(self->super.template));
   xml_parser_set_forward_invalid(&cloned->super, self->forward_invalid);
+  xml_parser_allow_create_lists(&cloned->super, self->create_lists);
   xml_scanner_options_copy(&cloned->options, &self->options);
 
   return &cloned->super.super;
@@ -160,6 +188,7 @@ xml_parser_new(GlobalConfig *cfg)
   self->super.super.clone = xml_parser_clone;
   self->super.process = xml_parser_process;
   self->forward_invalid = TRUE;
+  self->create_lists = TRUE;
 
   xml_parser_set_prefix(&self->super, ".xml");
   xml_scanner_options_defaults(&self->options);
