@@ -25,6 +25,7 @@
 #define TIMEUTILS_FORMAT_H_INCLUDED
 
 #include "unixtime.h"
+#include "wallclocktime.h"
 
 /* timestamp formats */
 #define TS_FMT_BSD   0
@@ -36,6 +37,10 @@ void format_unix_time(const UnixTime *stamp, GString *target,
                       gint ts_format, glong zone_offset, gint frac_digits);
 void append_format_unix_time(const UnixTime *stamp, GString *target,
                              gint ts_format, glong zone_offset, gint frac_digits);
+void format_wall_clock_time(const WallClockTime *stamp, GString *target,
+                            gint ts_format, glong zone_offset, gint frac_digits);
+void append_format_wall_clock_time(const WallClockTime *stamp, GString *target,
+                                   gint ts_format, gint frac_digits);
 gint format_zone_info(gchar *buf, size_t buflen, glong gmtoff);
 
 #endif

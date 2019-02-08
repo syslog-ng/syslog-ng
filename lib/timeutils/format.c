@@ -27,11 +27,9 @@
 #include "str-format.h"
 
 static void
-_append_frac_digits(const UnixTime *stamp, GString *target, gint frac_digits)
+_append_frac_digits(glong usecs, GString *target, gint frac_digits)
 {
-  glong usecs;
-
-  usecs = stamp->ut_usec % 1000000;
+  usecs = usecs % 1000000;
 
   if (frac_digits > 0)
     {
@@ -56,7 +54,29 @@ _format_zone_info(gchar *buf, size_t buflen, glong gmtoff)
                     ((gmtoff < 0 ? -gmtoff : gmtoff) % 3600) / 60);
 }
 
+void
+append_format_unix_time(const UnixTime *ut, GString *target, gint ts_format, glong zone_offset, gint frac_digits)
+{
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
 
+  if (ts_format == TS_FMT_UNIX)
+    {
+      format_uint32_padded(target, 0, 0, 10, (int) ut->ut_sec);
+      _append_frac_digits(ut->ut_usec, target, frac_digits);
+    }
+  else
+    {
+      wall_clock_time_set_from_unix_time_with_tz_override(&wct, ut, zone_offset);
+      append_format_wall_clock_time(&wct, target, ts_format, frac_digits);
+    }
+}
+
+void
+format_unix_time(const UnixTime *stamp, GString *target, gint ts_format, glong zone_offset, gint frac_digits)
+{
+  g_string_truncate(target, 0);
+  append_format_unix_time(stamp, target, ts_format, zone_offset, frac_digits);
+}
 
 /**
  * unix_time_format:
@@ -69,70 +89,60 @@ _format_zone_info(gchar *buf, size_t buflen, glong gmtoff)
  * @ts_format and @tz_convert.
  **/
 void
-append_format_unix_time(const UnixTime *stamp, GString *target, gint ts_format, glong zone_offset, gint frac_digits)
+append_format_wall_clock_time(const WallClockTime *wct, GString *target, gint ts_format, gint frac_digits)
 {
-  glong target_zone_offset = 0;
-  struct tm *tm, tm_storage;
+  UnixTime ut = UNIX_TIME_INIT;
   char buf[8];
-  time_t t;
 
-  if (zone_offset != -1)
-    target_zone_offset = zone_offset;
-  else
-    target_zone_offset = stamp->ut_gmtoff;
-
-  t = stamp->ut_sec + target_zone_offset;
-  cached_gmtime(&t, &tm_storage);
-  tm = &tm_storage;
   switch (ts_format)
     {
     case TS_FMT_BSD:
-      g_string_append(target, month_names_abbrev[tm->tm_mon]);
+      g_string_append(target, month_names_abbrev[wct->wct_mon]);
       g_string_append_c(target, ' ');
-      format_uint32_padded(target, 2, ' ', 10, tm->tm_mday);
+      format_uint32_padded(target, 2, ' ', 10, wct->wct_mday);
       g_string_append_c(target, ' ');
-      format_uint32_padded(target, 2, '0', 10, tm->tm_hour);
+      format_uint32_padded(target, 2, '0', 10, wct->wct_hour);
       g_string_append_c(target, ':');
-      format_uint32_padded(target, 2, '0', 10, tm->tm_min);
+      format_uint32_padded(target, 2, '0', 10, wct->wct_min);
       g_string_append_c(target, ':');
-      format_uint32_padded(target, 2, '0', 10, tm->tm_sec);
-      _append_frac_digits(stamp, target, frac_digits);
+      format_uint32_padded(target, 2, '0', 10, wct->wct_sec);
+      _append_frac_digits(wct->wct_usec, target, frac_digits);
       break;
     case TS_FMT_ISO:
-      format_uint32_padded(target, 0, 0, 10, tm->tm_year + 1900);
+      format_uint32_padded(target, 0, 0, 10, wct->wct_year + 1900);
       g_string_append_c(target, '-');
-      format_uint32_padded(target, 2, '0', 10, tm->tm_mon + 1);
+      format_uint32_padded(target, 2, '0', 10, wct->wct_mon + 1);
       g_string_append_c(target, '-');
-      format_uint32_padded(target, 2, '0', 10, tm->tm_mday);
+      format_uint32_padded(target, 2, '0', 10, wct->wct_mday);
       g_string_append_c(target, 'T');
-      format_uint32_padded(target, 2, '0', 10, tm->tm_hour);
+      format_uint32_padded(target, 2, '0', 10, wct->wct_hour);
       g_string_append_c(target, ':');
-      format_uint32_padded(target, 2, '0', 10, tm->tm_min);
+      format_uint32_padded(target, 2, '0', 10, wct->wct_min);
       g_string_append_c(target, ':');
-      format_uint32_padded(target, 2, '0', 10, tm->tm_sec);
+      format_uint32_padded(target, 2, '0', 10, wct->wct_sec);
 
-      _append_frac_digits(stamp, target, frac_digits);
-      _format_zone_info(buf, sizeof(buf), target_zone_offset);
+      _append_frac_digits(wct->wct_usec, target, frac_digits);
+      _format_zone_info(buf, sizeof(buf), wct->wct_gmtoff);
       g_string_append(target, buf);
       break;
     case TS_FMT_FULL:
-      format_uint32_padded(target, 0, 0, 10, tm->tm_year + 1900);
+      format_uint32_padded(target, 0, 0, 10, wct->wct_year + 1900);
       g_string_append_c(target, ' ');
-      g_string_append(target, month_names_abbrev[tm->tm_mon]);
+      g_string_append(target, month_names_abbrev[wct->wct_mon]);
       g_string_append_c(target, ' ');
-      format_uint32_padded(target, 2, ' ', 10, tm->tm_mday);
+      format_uint32_padded(target, 2, ' ', 10, wct->wct_mday);
       g_string_append_c(target, ' ');
-      format_uint32_padded(target, 2, '0', 10, tm->tm_hour);
+      format_uint32_padded(target, 2, '0', 10, wct->wct_hour);
       g_string_append_c(target, ':');
-      format_uint32_padded(target, 2, '0', 10, tm->tm_min);
+      format_uint32_padded(target, 2, '0', 10, wct->wct_min);
       g_string_append_c(target, ':');
-      format_uint32_padded(target, 2, '0', 10, tm->tm_sec);
+      format_uint32_padded(target, 2, '0', 10, wct->wct_sec);
 
-      _append_frac_digits(stamp, target, frac_digits);
+      _append_frac_digits(wct->wct_usec, target, frac_digits);
       break;
     case TS_FMT_UNIX:
-      format_uint32_padded(target, 0, 0, 10, (int) stamp->ut_sec);
-      _append_frac_digits(stamp, target, frac_digits);
+      unix_time_set_from_wall_clock_time(&ut, wct);
+      append_format_unix_time(&ut, target, TS_FMT_UNIX, wct->wct_gmtoff, frac_digits);
       break;
     default:
       g_assert_not_reached();
@@ -140,12 +150,6 @@ append_format_unix_time(const UnixTime *stamp, GString *target, gint ts_format, 
     }
 }
 
-void
-format_unix_time(const UnixTime *stamp, GString *target, gint ts_format, glong zone_offset, gint frac_digits)
-{
-  g_string_truncate(target, 0);
-  append_format_unix_time(stamp, target, ts_format, zone_offset, frac_digits);
-}
 
 gint
 format_zone_info(gchar *buf, size_t buflen, glong gmtoff)
