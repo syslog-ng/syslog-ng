@@ -23,6 +23,7 @@
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
 #include "xml.h"
+#include "scanner/xml-scanner/xml-scanner.h"
 #include "apphook.h"
 #include "scratch-buffers.h"
 
@@ -53,8 +54,11 @@ _construct_xml_parser(XMLParserTestOptions options)
 {
   LogParser *xml_parser = xml_parser_new(configuration);
   xml_parser_set_forward_invalid(xml_parser, options.forward_invalid);
-  xml_parser_set_strip_whitespaces(xml_parser, options.strip_whitespaces);
-  xml_parser_set_exclude_tags(xml_parser, options.exclude_tags);
+  if (options.strip_whitespaces)
+    xml_scanner_options_set_strip_whitespaces(xml_parser_get_scanner_options(xml_parser), options.strip_whitespaces);
+  if (options.exclude_tags)
+    xml_scanner_options_set_and_compile_exclude_tags(xml_parser_get_scanner_options(xml_parser), options.exclude_tags);
+
 
   LogPipe *cloned = xml_parser_clone(&xml_parser->super);
   log_pipe_init(cloned);
@@ -297,33 +301,6 @@ Test(xml_parser, test_multiple_exclude_tags)
   teardown();
 }
 
-Test(xml_parser, shouldreverse)
-{
-  GList *with_wildcard;
-
-  with_wildcard = NULL;
-  with_wildcard = g_list_append(with_wildcard, "tag1");
-  with_wildcard = g_list_append(with_wildcard, "tag2");
-  with_wildcard = g_list_append(with_wildcard, "tag*");
-  cr_assert(joker_or_wildcard(with_wildcard));
-  g_list_free(with_wildcard);
-
-  GList *with_joker = NULL;
-  with_joker = g_list_append(with_joker, "tag1");
-  with_joker = g_list_append(with_joker, "t?g2");
-  with_joker = g_list_append(with_joker, "tag3");
-  cr_assert(joker_or_wildcard(with_joker));
-  g_list_free(with_joker);
-
-  GList *no_joker_or_wildcard = NULL;
-  no_joker_or_wildcard = g_list_append(no_joker_or_wildcard, "tag1");
-  no_joker_or_wildcard = g_list_append(no_joker_or_wildcard, "tag2");
-  no_joker_or_wildcard = g_list_append(no_joker_or_wildcard, "tag3");
-  cr_assert_not(joker_or_wildcard(no_joker_or_wildcard));
-  g_list_free(no_joker_or_wildcard);
-
-}
-
 Test(xml_parser, test_strip_whitespaces)
 {
   setup();
@@ -335,7 +312,7 @@ Test(xml_parser, test_strip_whitespaces)
 
   LogMessage *msg = log_msg_new_empty();
   log_msg_set_value(msg, LM_V_MESSAGE,
-                    "<tag> \n\t part1 <tag2/> part2 \n\n<tag>", -1);
+                    "<tag> \n\t part1 <tag2/> part2 \n\n</tag>", -1);
 
   const gchar *value;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;

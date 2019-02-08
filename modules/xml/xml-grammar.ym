@@ -36,6 +36,8 @@
 
 #include <string.h>
 
+XMLScannerOptions *last_xml_scanner_options;
+
 }
 
 %name-prefix "xml_"
@@ -67,6 +69,7 @@ parser_xml
   : KW_XML '('
      {
         last_parser = *instance = (LogParser *) xml_parser_new(configuration);
+        last_xml_scanner_options = xml_parser_get_scanner_options(last_parser);
      }
 
         xml_options
@@ -84,8 +87,13 @@ xml_options
 xml_opt
         : KW_PREFIX '(' string ')'      { xml_parser_set_prefix(last_parser, $3); free($3); }
         | KW_DROP_INVALID '(' yesno ')' { xml_parser_set_forward_invalid(last_parser, !$3); };
-        | KW_EXCLUDE_TAGS '(' string_list ')' { xml_parser_set_exclude_tags(last_parser, $3); g_list_free_full($3, free); }
-        | KW_STRIP_WHITESPACES '(' yesno ')' { xml_parser_set_strip_whitespaces(last_parser, $3); }
+        | KW_EXCLUDE_TAGS '(' string_list ')'
+          {
+            xml_scanner_options_set_and_compile_exclude_tags(last_xml_scanner_options, $3);
+            g_list_free_full($3, free);
+          }
+        | KW_STRIP_WHITESPACES '(' yesno ')'
+          { xml_scanner_options_set_strip_whitespaces(last_xml_scanner_options, $3); }
         | parser_opt
         ;
 
