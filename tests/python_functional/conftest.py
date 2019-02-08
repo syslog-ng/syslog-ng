@@ -81,7 +81,7 @@ def runwithvalgrind(request):
 
 
 def get_relative_report_dir():
-    return Path("reports/", get_current_date())
+    return str(Path("reports/", get_current_date()))
 
 
 def get_current_date():
