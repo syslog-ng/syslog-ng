@@ -26,6 +26,7 @@
 #include "timeutils/scan-timestamp.h"
 #include "timeutils/timeutils.h"
 #include "timeutils/cache.h"
+#include "timeutils/format.h"
 
 static void
 fake_time(time_t now)
@@ -60,7 +61,7 @@ _parse_rfc3164(const gchar *ts, gchar isotimestamp[32])
   unix_time_unset(&stamp);
   unix_time_set_from_wall_clock_time(&stamp, &wct);
 
-  unix_time_append_format(&stamp, result, TS_FMT_ISO, stamp.ut_gmtoff, 3);
+  append_format_unix_time(&stamp, result, TS_FMT_ISO, stamp.ut_gmtoff, 3);
   strncpy(isotimestamp, result->str, 32);
   g_string_free(result, TRUE);
   return success;
@@ -80,7 +81,7 @@ _parse_rfc5424(const gchar *ts, gchar isotimestamp[32])
   unix_time_unset(&stamp);
   unix_time_set_from_wall_clock_time(&stamp, &wct);
 
-  unix_time_append_format(&stamp, result, TS_FMT_ISO, stamp.ut_gmtoff, 3);
+  append_format_unix_time(&stamp, result, TS_FMT_ISO, stamp.ut_gmtoff, 3);
   strncpy(isotimestamp, result->str, 32);
   g_string_free(result, TRUE);
   return success;

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2014 Balabit
- * Copyright (c) 1998-2010 Balázs Scheidler
+ * Copyright (c) 2002-2019 Balabit
+ * Copyright (c) 1998-2019 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,23 +21,21 @@
  * COPYING for details.
  *
  */
+#ifndef TIMEUTILS_FORMAT_H_INCLUDED
+#define TIMEUTILS_FORMAT_H_INCLUDED
 
-#ifndef TIMEUTILS_H_INCLUDED
-#define TIMEUTILS_H_INCLUDED
+#include "unixtime.h"
 
-#include "syslog-ng.h"
-#include "compat/time.h"
+/* timestamp formats */
+#define TS_FMT_BSD   0
+#define TS_FMT_ISO   1
+#define TS_FMT_FULL  2
+#define TS_FMT_UNIX  3
 
-typedef struct _UnixTime UnixTime;
-typedef struct _WallClockTime WallClockTime;
-
-long get_local_timezone_ofs(time_t when);
-
-gboolean check_nanosleep(void);
-
-glong g_time_val_diff(GTimeVal *t1, GTimeVal *t2);
-void timespec_add_msec(struct timespec *ts, glong msec);
-glong timespec_diff_msec(const struct timespec *t1, const struct timespec *t2);
-glong timespec_diff_nsec(struct timespec *t1, struct timespec *t2);
+void format_unix_time(const UnixTime *stamp, GString *target,
+                      gint ts_format, glong zone_offset, gint frac_digits);
+void append_format_unix_time(const UnixTime *stamp, GString *target,
+                             gint ts_format, glong zone_offset, gint frac_digits);
+gint format_zone_info(gchar *buf, size_t buflen, glong gmtoff);
 
 #endif

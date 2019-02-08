@@ -28,6 +28,7 @@
 #include "date-parser.h"
 #include "apphook.h"
 #include "timeutils/cache.h"
+#include "timeutils/format.h"
 
 #include <locale.h>
 #include <stdlib.h>
@@ -157,7 +158,7 @@ ParameterizedTest(struct date_params *params, date, test_date_parser)
 
   cr_assert(success, "unable to parse format=%s msg=%s", params->format, params->msg);
 
-  unix_time_append_format(&logmsg->timestamps[params->time_stamp], res, TS_FMT_ISO, -1, 0);
+  append_format_unix_time(&logmsg->timestamps[params->time_stamp], res, TS_FMT_ISO, -1, 0);
 
   cr_assert_str_eq(res->str, params->expected,
                    "incorrect date parsed msg=%s format=%s, result=%s, expected=%s",

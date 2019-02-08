@@ -41,6 +41,7 @@
 #include "rcptid.h"
 #include "resolved-configurable-paths.h"
 #include "mainloop.h"
+#include "timeutils/format.h"
 
 #include <sys/types.h>
 #include <signal.h>

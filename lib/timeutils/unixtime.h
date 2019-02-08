@@ -89,15 +89,6 @@ void unix_time_set_from_normalized_wall_clock_time(UnixTime *self, WallClockTime
 void unix_time_set_from_normalized_wall_clock_time_with_tz_hint(UnixTime *self, WallClockTime *wct, long gmtoff_hint);
 void unix_time_set_now(UnixTime *self);
 
-/* timestamp formats */
-#define TS_FMT_BSD   0
-#define TS_FMT_ISO   1
-#define TS_FMT_FULL  2
-#define TS_FMT_UNIX  3
-
-void unix_time_format(UnixTime *stamp, GString *target, gint ts_format, glong zone_offset, gint frac_digits);
-void unix_time_append_format(const UnixTime *stamp, GString *target, gint ts_format, glong zone_offset,
-                             gint frac_digits);
 gboolean unix_time_eq(const UnixTime *a, const UnixTime *b);
 
 

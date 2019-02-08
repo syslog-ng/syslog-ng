@@ -66,15 +66,6 @@ get_local_timezone_ofs(time_t when)
 #endif /* SYSLOG_NG_HAVE_STRUCT_TM_TM_GMTOFF */
 }
 
-int
-format_zone_info(gchar *buf, size_t buflen, glong gmtoff)
-{
-  return g_snprintf(buf, buflen, "%c%02ld:%02ld",
-                    gmtoff < 0 ? '-' : '+',
-                    (gmtoff < 0 ? -gmtoff : gmtoff) / 3600,
-                    ((gmtoff < 0 ? -gmtoff : gmtoff) % 3600) / 60);
-}
-
 /**
  * check_nanosleep:
  *

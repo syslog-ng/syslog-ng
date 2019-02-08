@@ -28,6 +28,7 @@
 #include "timeutils/cache.h"
 #include "timeutils/names.h"
 #include "timeutils/unixtime.h"
+#include "timeutils/format.h"
 #include "messages.h"
 #include "str-format.h"
 #include "run-id.h"
@@ -594,7 +595,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
                         id == M_UNIXTIME ? TS_FMT_UNIX :
                         opts->ts_format;
 
-          unix_time_append_format(stamp, result, format, wct.wct_gmtoff, opts->frac_digits);
+          append_format_unix_time(stamp, result, format, wct.wct_gmtoff, opts->frac_digits);
           break;
         }
         case M_TZ:
