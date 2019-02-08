@@ -584,20 +584,23 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
           g_string_append(result, wct.wct_hour < 12 ? "AM" : "PM");
           break;
         case M_DATE:
-        case M_STAMP:
-        case M_ISODATE:
-        case M_FULLDATE:
-        case M_UNIXTIME:
-        {
-          gint format = id == M_DATE ? TS_FMT_BSD :
-                        id == M_ISODATE ? TS_FMT_ISO :
-                        id == M_FULLDATE ? TS_FMT_FULL :
-                        id == M_UNIXTIME ? TS_FMT_UNIX :
-                        opts->ts_format;
-
-          append_format_unix_time(stamp, result, format, wct.wct_gmtoff, opts->frac_digits);
+          append_format_wall_clock_time(&wct, result, TS_FMT_BSD, opts->frac_digits);
           break;
-        }
+        case M_STAMP:
+          if (opts->ts_format == TS_FMT_UNIX)
+            append_format_unix_time(stamp, result, TS_FMT_UNIX, wct.wct_gmtoff, opts->frac_digits);
+          else
+            append_format_wall_clock_time(&wct, result, opts->ts_format, opts->frac_digits);
+          break;
+        case M_ISODATE:
+          append_format_wall_clock_time(&wct, result, TS_FMT_ISO, opts->frac_digits);
+          break;
+        case M_FULLDATE:
+          append_format_wall_clock_time(&wct, result, TS_FMT_FULL, opts->frac_digits);
+          break;
+        case M_UNIXTIME:
+          append_format_unix_time(stamp, result, TS_FMT_UNIX, wct.wct_gmtoff, opts->frac_digits);
+          break;
         case M_TZ:
         case M_TZOFFSET:
           length = format_zone_info(buf, sizeof(buf), wct.wct_gmtoff);
