@@ -171,14 +171,6 @@ list_scanner_get_current_value_len(ListScanner *self)
   return self->value->len;
 }
 
-ListScanner *
-list_scanner_clone(ListScanner *self)
-{
-  ListScanner *cloned = list_scanner_new();
-
-  return cloned;
-}
-
 void
 list_scanner_init(ListScanner *self)
 {
