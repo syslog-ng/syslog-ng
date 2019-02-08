@@ -28,14 +28,15 @@ from src.setup.testcase_parameters import TestcaseParameters
 def test_testcase_parameters(request):
     testcase_parameters = TestcaseParameters(request).testcase_parameters
     assert set(list(testcase_parameters)) == {"testcase_name", "dirs", "file_paths", "loglevel", "valgrind_usage"}
-    assert set(list(testcase_parameters["dirs"])) == {"working_dir", "relative_working_dir"}
+    assert set(list(testcase_parameters["dirs"])) == {"working_dir", "relative_working_dir", "install_dir"}
     assert set(list(testcase_parameters["file_paths"])) == {"report_file", "testcase_file"}
 
 
 def test_testcase_parameters_parent_class_of_paths(request):
     testcase_parameters = TestcaseParameters(request).testcase_parameters
-    for __key, value in testcase_parameters["dirs"].items():
-        assert isinstance(value, PosixPath) is True
+    for key, value in testcase_parameters["dirs"].items():
+        if key != "install_dir":
+            assert isinstance(value, PosixPath) is True
 
     for __key, value in testcase_parameters["file_paths"].items():
         assert isinstance(value, PosixPath) is True

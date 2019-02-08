@@ -43,6 +43,7 @@ class TestcaseParameters(object):
             "dirs": {
                 "working_dir": Path(absolute_framework_dir, relative_report_dir, testcase_name),
                 "relative_working_dir": Path(relative_report_dir, testcase_name),
+                "install_dir": Path(testcase_context.getfixturevalue("installdir")),
             },
             "file_paths": {
                 "report_file": Path(
@@ -60,6 +61,9 @@ class TestcaseParameters(object):
 
     def get_relative_working_dir(self):
         return self.testcase_parameters["dirs"]["relative_working_dir"]
+
+    def get_install_dir(self):
+        return self.testcase_parameters["dirs"]["install_dir"]
 
     def get_report_file(self):
         return self.testcase_parameters["file_paths"]["report_file"]

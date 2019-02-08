@@ -76,7 +76,7 @@ class SetupTestCase(object):
                     self.__logger.error(str(failed_report.longrepr))
 
     def new_syslog_ng(self, instance_name="server"):
-        instance_paths = SyslogNgPaths(self.__testcase_context, self.__testcase_parameters).set_syslog_ng_paths(
+        instance_paths = SyslogNgPaths(self.__testcase_parameters).set_syslog_ng_paths(
             instance_name
         )
         syslog_ng = SyslogNg(self.__logger_factory, instance_paths, self.__testcase_parameters)

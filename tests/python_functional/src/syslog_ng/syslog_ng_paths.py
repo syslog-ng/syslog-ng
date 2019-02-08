@@ -26,8 +26,7 @@ from src.common.random_id import get_unique_id
 
 
 class SyslogNgPaths(object):
-    def __init__(self, testcase_context, testcase_parameters):
-        self.__testcase_context = testcase_context
+    def __init__(self, testcase_parameters):
         self.__testcase_parameters = testcase_parameters
         self.__instance_name = None
         self.__syslog_ng_paths = {}
@@ -38,7 +37,7 @@ class SyslogNgPaths(object):
         self.__instance_name = instance_name
         working_dir = self.__testcase_parameters.get_working_dir()
         relative_working_dir = self.__testcase_parameters.get_relative_working_dir()
-        install_dir = self.__testcase_context.getfixturevalue("installdir")
+        install_dir = self.__testcase_parameters.get_install_dir()
         if not install_dir:
             raise ValueError("Missing --installdir start parameter")
 
