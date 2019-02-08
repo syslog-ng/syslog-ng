@@ -151,18 +151,3 @@ timespec_diff_nsec(struct timespec *t1, struct timespec *t2)
 {
   return (glong)((t1->tv_sec - t2->tv_sec) * 1e9) + (t1->tv_nsec - t2->tv_nsec);
 }
-
-/* Determine (guess) the year for the month.
- *
- * It can be used for BSD logs, where year is missing.
- */
-gint
-determine_year_for_month(gint month, const struct tm *now)
-{
-  if (month == 11 && now->tm_mon == 0)
-    return now->tm_year - 1;
-  else if (month == 0 && now->tm_mon == 11)
-    return now->tm_year + 1;
-  else
-    return now->tm_year;
-}

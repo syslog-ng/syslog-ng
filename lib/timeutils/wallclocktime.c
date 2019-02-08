@@ -65,6 +65,21 @@ wall_clock_time_set_from_unix_time_with_tz_override(WallClockTime *self, const U
   self->wct_usec = ut->ut_usec;
 }
 
+/* Determine (guess) the year for the month.
+ *
+ * It can be used for BSD logs, where year is missing.
+ */
+static gint
+determine_year_for_month(gint month, const struct tm *now)
+{
+  if (month == 11 && now->tm_mon == 0)
+    return now->tm_year - 1;
+  else if (month == 0 && now->tm_mon == 11)
+    return now->tm_year + 1;
+  else
+    return now->tm_year;
+}
+
 void
 wall_clock_time_guess_missing_year(WallClockTime *self)
 {
