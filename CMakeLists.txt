@@ -254,6 +254,7 @@ add_subdirectory(syslog-ng)
 add_subdirectory(syslog-ng-ctl)
 add_test_subdirectory(libtest)
 add_subdirectory(tests)
+add_subdirectory(persist-tool)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-config.h DESTINATION include/syslog-ng)
 
