@@ -196,6 +196,22 @@ kafka_dd_format_persist_name(const LogPipe *d)
   return persist_name;
 }
 
+static void
+_conf_set_prop(rd_kafka_conf_t *conf, const gchar *name, const gchar *value)
+{
+  gchar errbuf[1024];
+
+  msg_debug("Setting librdkafka Global Config property",
+            evt_tag_str("name", name),
+            evt_tag_str("value", value));
+  if (rd_kafka_conf_set(conf, name, value, errbuf, sizeof(errbuf)) < 0)
+    {
+      msg_error("Error setting librdkafka Global Config property",
+                evt_tag_str("name", name),
+                evt_tag_str("value", value),
+                evt_tag_str("error", errbuf));
+    }
+}
 
 /*
  * Main thread
@@ -208,20 +224,13 @@ _construct_client(KafkaDestDriver *self)
   KafkaProperty *kp;
   rd_kafka_t *client;
   rd_kafka_conf_t *conf;
-  char errbuf[1024];
-
-  bzero(errbuf, sizeof(errbuf));
+  gchar errbuf[1024];
 
   conf = rd_kafka_conf_new();
   for (list = g_list_first(self->global_config); list != NULL; list = g_list_next(list))
     {
       kp = list->data;
-      msg_debug("setting kafka property",
-                evt_tag_str("key", kp->name),
-                evt_tag_str("val", kp->value),
-                NULL);
-      rd_kafka_conf_set(conf, kp->name, kp->value,
-                        errbuf, sizeof(errbuf));
+      _conf_set_prop(conf, kp->name, kp->value);
     }
   rd_kafka_conf_set_log_cb(conf, kafka_log);
   if (self->flags & KAFKA_FLAG_SYNC)
@@ -237,13 +246,30 @@ _construct_client(KafkaDestDriver *self)
   return client;
 }
 
+static void
+_topic_conf_set_prop(rd_kafka_topic_conf_t *conf, const gchar *name, const gchar *value)
+{
+  gchar errbuf[1024];
+
+  msg_debug("Setting librdkafka Topic Config property",
+            evt_tag_str("name", name),
+            evt_tag_str("value", value));
+  if (rd_kafka_topic_conf_set(conf, name, value, errbuf, sizeof(errbuf)) < 0)
+    {
+      msg_error("Error setting librdkafka Topic Config property",
+                evt_tag_str("name", name),
+                evt_tag_str("value", value),
+                evt_tag_str("error", errbuf));
+    }
+}
+
+
 rd_kafka_topic_t *
 _construct_topic(KafkaDestDriver *self)
 {
   GList *list;
   KafkaProperty *kp;
   rd_kafka_topic_conf_t *topic_conf;
-  char errbuf[1024];
 
   g_assert(self->kafka != NULL);
 
@@ -252,12 +278,7 @@ _construct_topic(KafkaDestDriver *self)
   for (list = g_list_first(self->topic_config); list != NULL; list = g_list_next(list))
     {
       kp = list->data;
-      msg_debug("setting kafka topic property",
-                evt_tag_str("key", kp->name),
-                evt_tag_str("val", kp->value),
-                NULL);
-      rd_kafka_topic_conf_set(topic_conf, kp->name, kp->value,
-                              errbuf, sizeof(errbuf));
+      _topic_conf_set_prop(topic_conf, kp->name, kp->value);
     }
 
   rd_kafka_topic_conf_set_partitioner_cb(topic_conf, kafka_partition);
