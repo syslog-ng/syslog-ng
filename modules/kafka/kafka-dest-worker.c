@@ -102,7 +102,7 @@ kafka_dest_worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
       msg_error("Failed to add message to Kafka topic!",
                 evt_tag_str("driver", owner->super.super.super.id),
                 evt_tag_str("topic", owner->topic_name),
-                evt_tag_str("error", rd_kafka_err2str(rd_kafka_errno2err(errno))),
+                evt_tag_str("error", rd_kafka_err2str(rd_kafka_last_error())),
                 NULL);
       return LTR_ERROR;
     }
