@@ -31,7 +31,6 @@ typedef struct
   LogThreadedDestDriver super;
 
   gchar *topic_name;
-  gchar *key_str;
   LogTemplate *field;
 
   LogTemplateOptions template_options;
