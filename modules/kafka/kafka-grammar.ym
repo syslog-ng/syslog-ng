@@ -56,7 +56,8 @@
 
 %token KW_KAFKA
 %token KW_TOPIC
-%token KW_PROP
+%token KW_GLOBAL_CONFIG
+%token KW_TOPIC_CONFIG
 %token KW_PAYLOAD
 %token KW_PARTITION
 %token KW_RANDOM
@@ -80,10 +81,18 @@ kafka_options
         ;
 
 kafka_option
-        : KW_TOPIC '(' string kafka_properties ')'
+        : KW_TOPIC '(' string ')'
         {
-            kafka_dd_set_topic(last_driver, $3, $4);
+            kafka_dd_set_topic(last_driver, $3);
             free($3);
+        }
+        | KW_GLOBAL_CONFIG '(' kafka_properties ')'
+        {
+            kafka_dd_set_global_config(last_driver, $3);
+        }
+        | KW_TOPIC_CONFIG '(' kafka_properties ')'
+        {
+            kafka_dd_set_topic_config(last_driver, $3);
         }
         | KW_PARTITION '(' KW_RANDOM ')'
         {
@@ -92,10 +101,6 @@ kafka_option
         | KW_PARTITION '(' template_content ')'
         {
           kafka_dd_set_partition_field(last_driver, $3);
-        }
-        | KW_PROP '(' kafka_properties ')'
-        {
-            kafka_dd_set_props(last_driver, $3);
         }
         | KW_FLAGS '(' kafka_flags ')'
         | KW_PAYLOAD '(' template_content ')'

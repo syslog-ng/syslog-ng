@@ -92,12 +92,30 @@ kafka_worker_sync_produce_dr_cb(rd_kafka_t *rk,
  */
 
 void
-kafka_dd_set_props(LogDriver *d, GList *props)
+kafka_dd_set_topic(LogDriver *d, const gchar *topic)
 {
   KafkaDestDriver *self = (KafkaDestDriver *)d;
 
-  kafka_property_list_free(self->props);
-  self->props = props;
+  g_free(self->topic_name);
+  self->topic_name = g_strdup(topic);
+}
+
+void
+kafka_dd_set_global_config(LogDriver *d, GList *props)
+{
+  KafkaDestDriver *self = (KafkaDestDriver *)d;
+
+  kafka_property_list_free(self->global_config);
+  self->global_config = props;
+}
+
+void
+kafka_dd_set_topic_config(LogDriver *d, GList *props)
+{
+  KafkaDestDriver *self = (KafkaDestDriver *)d;
+
+  kafka_property_list_free(self->topic_config);
+  self->topic_config = props;
 }
 
 void
@@ -130,16 +148,6 @@ kafka_dd_set_flag_sync(LogDriver *d)
   self->flags |= KAFKA_FLAG_SYNC;
 }
 
-void
-kafka_dd_set_topic(LogDriver *d, const gchar *topic, GList *props)
-{
-  KafkaDestDriver *self = (KafkaDestDriver *)d;
-
-  g_free(self->topic_name);
-  kafka_property_list_free(self->topic_props);
-  self->topic_name = g_strdup(topic);
-  self->topic_props = props;
-}
 
 void
 kafka_dd_set_payload(LogDriver *d, LogTemplate *payload)
@@ -205,7 +213,7 @@ _construct_client(KafkaDestDriver *self)
   bzero(errbuf, sizeof(errbuf));
 
   conf = rd_kafka_conf_new();
-  for (list = g_list_first(self->props); list != NULL; list = g_list_next(list))
+  for (list = g_list_first(self->global_config); list != NULL; list = g_list_next(list))
     {
       kp = list->data;
       msg_debug("setting kafka property",
@@ -241,7 +249,7 @@ _construct_topic(KafkaDestDriver *self)
 
   topic_conf = rd_kafka_topic_conf_new();
 
-  for (list = g_list_first(self->topic_props); list != NULL; list = g_list_next(list))
+  for (list = g_list_first(self->topic_config); list != NULL; list = g_list_next(list))
     {
       kp = list->data;
       msg_debug("setting kafka topic property",
@@ -321,8 +329,8 @@ kafka_dd_free(LogPipe *d)
     rd_kafka_destroy(self->kafka);
   if (self->topic_name)
     g_free(self->topic_name);
-  kafka_property_list_free(self->props);
-  kafka_property_list_free(self->topic_props);
+  kafka_property_list_free(self->global_config);
+  kafka_property_list_free(self->topic_config);
   log_threaded_dest_driver_free(d);
 }
 

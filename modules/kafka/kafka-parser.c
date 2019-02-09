@@ -28,14 +28,19 @@ extern int kafka_debug;
 int kafka_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
 static CfgLexerKeyword kafka_keywords[] = {
-    { "field",          KW_FIELD },
     { "kafka",          KW_KAFKA },
+
+    { "topic",          KW_TOPIC },
+
+    /* https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md */
+    { "global_config",  KW_GLOBAL_CONFIG },
+    { "topic_config",   KW_TOPIC_CONFIG },
+
+    { "field",          KW_FIELD },
     { "kafka_c",        KW_KAFKA },   /* compatibility with incubator naming */
     { "partition",      KW_PARTITION },
     { "payload",        KW_PAYLOAD },
-    { "properties",     KW_PROP },
     { "random",         KW_RANDOM },
-    { "topic",          KW_TOPIC },
     { "sync",           KW_SYNC },
     { NULL }
 };
