@@ -1,5 +1,3 @@
-option (ENABLE_JOURNALD "Enable systemd-journal" ON)
-
 set (JOURNALD_SOURCES
     systemd-journal.c
     systemd-journal.h
@@ -23,15 +21,7 @@ bison_target(SystemdJournalGrammar
   ${CMAKE_CURRENT_BINARY_DIR}/systemd-journal-grammar.c
 COMPILE_FLAGS ${BISON_FLAGS})
 
-find_package(systemd REQUIRED)
-
-if (ENABLE_JOURNALD AND Libsystemd_FOUND)
-    set(BUILD_JOURNALD TRUE)
-else()
-    set(BUILD_JOURNALD FALSE)
-endif()
-
-if (BUILD_JOURNALD)
+if (ENABLE_JOURNALD)
     add_library(sdjournal SHARED ${JOURNALD_SOURCES})
     target_include_directories(sdjournal
       PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
