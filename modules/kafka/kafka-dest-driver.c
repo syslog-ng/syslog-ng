@@ -159,12 +159,12 @@ _conf_set_prop(rd_kafka_conf_t *conf, const gchar *name, const gchar *value)
 {
   gchar errbuf[1024];
 
-  msg_debug("Setting librdkafka Global Config property",
+  msg_debug("kafka: setting librdkafka Global Config property",
             evt_tag_str("name", name),
             evt_tag_str("value", value));
   if (rd_kafka_conf_set(conf, name, value, errbuf, sizeof(errbuf)) < 0)
     {
-      msg_error("Error setting librdkafka Global Config property",
+      msg_error("kafka: error setting librdkafka Global Config property",
                 evt_tag_str("name", name),
                 evt_tag_str("value", value),
                 evt_tag_str("error", errbuf));
@@ -192,6 +192,14 @@ _construct_client(KafkaDestDriver *self)
     }
   rd_kafka_conf_set_log_cb(conf, kafka_log);
   client = rd_kafka_new(RD_KAFKA_PRODUCER, conf, errbuf, sizeof(errbuf));
+  if (!client)
+    {
+      msg_error("kafka: error constructing the kafka connection object",
+                evt_tag_str("topic", self->topic_name),
+                evt_tag_str("error", errbuf),
+                evt_tag_str("driver", self->super.super.super.id),
+                log_pipe_location_tag(&self->super.super.super.super));
+    }
   return client;
 }
 
@@ -200,18 +208,17 @@ _topic_conf_set_prop(rd_kafka_topic_conf_t *conf, const gchar *name, const gchar
 {
   gchar errbuf[1024];
 
-  msg_debug("Setting librdkafka Topic Config property",
+  msg_debug("kafka: setting librdkafka Topic Config property",
             evt_tag_str("name", name),
             evt_tag_str("value", value));
   if (rd_kafka_topic_conf_set(conf, name, value, errbuf, sizeof(errbuf)) < 0)
     {
-      msg_error("Error setting librdkafka Topic Config property",
+      msg_error("kafka: error setting librdkafka Topic Config property",
                 evt_tag_str("name", name),
                 evt_tag_str("value", value),
                 evt_tag_str("error", errbuf));
     }
 }
-
 
 rd_kafka_topic_t *
 _construct_topic(KafkaDestDriver *self)
@@ -292,30 +299,33 @@ kafka_dd_init(LogPipe *s)
   if (!log_threaded_dest_driver_init_method(s))
     return FALSE;
 
-  log_template_options_init(&self->template_options, cfg);
+  if (!self->topic_name)
+    {
+      msg_error("kafka: the topic() argument is required for kafka destinations",
+                evt_tag_str("driver", self->super.super.super.id),
+                log_pipe_location_tag(&self->super.super.super.super));
+      return FALSE;
+    }
 
   self->kafka = _construct_client(self);
   if (self->kafka == NULL)
     {
-      msg_error("Kafka producer is not set up properly, perhaps metadata.broker.list property is missing?",
-		evt_tag_str("driver", self->super.super.super.id),
-                NULL);
+      msg_error("kafka: error constructing kafka connection object, perhaps metadata.broker.list property is missing?",
+                evt_tag_str("topic", self->topic_name),
+                evt_tag_str("driver", self->super.super.super.id),
+                log_pipe_location_tag(&self->super.super.super.super));
       return FALSE;
     }
 
   self->topic = _construct_topic(self);
   if (self->topic == NULL)
     {
-      msg_error("Kafka producer is not set up properly, topic name is missing",
-		evt_tag_str("driver", self->super.super.super.id),
-                NULL);
+      msg_error("kafka: error constructing the kafka topic object",
+                evt_tag_str("topic", self->topic_name),
+                evt_tag_str("driver", self->super.super.super.id),
+                log_pipe_location_tag(&self->super.super.super.super));
       return FALSE;
     }
-
-  msg_verbose("Initializing Kafka destination",
-              evt_tag_str("driver", self->super.super.super.id),
-              NULL);
-
 
   if (self->message == NULL)
     {
@@ -323,6 +333,13 @@ kafka_dd_init(LogPipe *s)
       log_template_compile(self->message, "$ISODATE $HOST $MSGHDR$MSG", NULL);
     }
 
+  log_template_options_init(&self->template_options, cfg);
+  msg_verbose("kafka: Kafka destination initialized",
+              evt_tag_str("topic", self->topic_name),
+              evt_tag_str("key", self->key ? self->key->template : "NULL"),
+              evt_tag_str("message", self->message->template),
+              evt_tag_str("driver", self->super.super.super.id),
+              log_pipe_location_tag(&self->super.super.super.super));
 
   return log_threaded_dest_driver_start_workers(&self->super);
 }
