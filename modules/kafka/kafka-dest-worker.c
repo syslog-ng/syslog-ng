@@ -42,7 +42,7 @@ kafka_calculate_partition_key(KafkaDestWorker *self, LogMessage *msg)
   GString *field = g_string_sized_new(1024);
 
   log_template_format(owner->field, msg, &owner->template_options,
-			LTZ_SEND, owner->seq_num, NULL, field);
+			LTZ_SEND, self->super.seq_num, NULL, field);
 
   msg_debug("Kafka dynamic key",
 	    evt_tag_str("key", field->str),
@@ -75,7 +75,7 @@ kafka_dest_worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
   u_int32_t key;
 
   log_template_format(owner->payload, msg, &owner->template_options, LTZ_SEND,
-                      owner->seq_num, NULL, self->payload_str);
+                      self->super.seq_num, NULL, self->payload_str);
 
   switch (owner->partition_type)
     {

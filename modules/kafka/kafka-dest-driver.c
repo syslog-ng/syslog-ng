@@ -346,7 +346,6 @@ kafka_dd_new(GlobalConfig *cfg)
 
   self->flags = KAFKA_FLAG_NONE;
 
-  init_sequence_number(&self->seq_num);
   log_template_options_defaults(&self->template_options);
 
   return (LogDriver *)self;

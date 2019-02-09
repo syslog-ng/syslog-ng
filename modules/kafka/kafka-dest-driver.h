@@ -39,7 +39,6 @@ typedef struct
   LogTemplate *payload;
 
   gint32 flags;
-  gint32 seq_num;
   GList *props;
   GList *topic_props;
   rd_kafka_topic_t *topic;
