@@ -12,6 +12,7 @@ DOCKER_RUN_ARGS=-e USER_NAME_ON_HOST=$(shell whoami)	\
 	-v $(ROOT_DIR):/source \
 	-v $(DBLD_DIR)/build:/build \
 	-v $(DBLD_DIR)/install:/install \
+	-e CONFIGURE_OPTS="$${CONFIGURE_OPTS:-$(CONFIGURE_OPTS)}" \
 	$(if $(wildcard ${HOME}/.gitconfig),-v ${HOME}/.gitconfig:${HOME}/.gitconfig)
 ROOT_DIR=$(shell pwd)
 DBLD_DIR=$(ROOT_DIR)/dbld
@@ -61,7 +62,7 @@ help:
 
 bootstrap: bootstrap-$(DEFAULT_IMAGE)
 bootstrap-%: setup
-	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -e CONFIGURE_OPTS="$${CONFIGURE_OPTS:-$(CONFIGURE_OPTS)}" -i  balabit/syslog-ng-$* /source/dbld/bootstrap
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm  -i  balabit/syslog-ng-$* /source/dbld/bootstrap
 
 make-%: setup
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i  balabit/syslog-ng-$(DEFAULT_IMAGE) /source/dbld/make $(MAKE_ARGS) $*
