@@ -230,6 +230,7 @@ _process_result_drop(LogThreadedDestWorker *self)
   msg_error("Message(s) dropped while sending message to destination",
             evt_tag_str("driver", self->owner->super.super.id),
             evt_tag_int("worker_index", self->worker_index),
+            evt_tag_int("time_reopen", self->owner->time_reopen),
             evt_tag_int("batch_size", self->batch_size));
 
   _drop_batch(self);
@@ -259,6 +260,7 @@ _process_result_error(LogThreadedDestWorker *self)
                 log_expr_node_location_tag(self->owner->super.super.super.expr_node),
                 evt_tag_int("worker_index", self->worker_index),
                 evt_tag_int("retries", self->retries_on_error_counter),
+                evt_tag_int("time_reopen", self->owner->time_reopen),
                 evt_tag_int("batch_size", self->batch_size));
       _rewind_batch(self);
       _disconnect_and_suspend(self);
@@ -272,6 +274,7 @@ _process_result_not_connected(LogThreadedDestWorker *self)
            evt_tag_str("driver", self->owner->super.super.id),
            log_expr_node_location_tag(self->owner->super.super.super.expr_node),
            evt_tag_int("worker_index", self->worker_index),
+           evt_tag_int("time_reopen", self->owner->time_reopen),
            evt_tag_int("batch_size", self->batch_size));
   self->retries_counter = 0;
   _rewind_batch(self);
