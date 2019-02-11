@@ -81,6 +81,17 @@ list_scanner_input_gstring_array(ListScanner *self, gint argc, GString *argv[])
   _store_input(self, argc, (gchar **) self->argv_buffer->pdata, FALSE);
 }
 
+void
+list_scanner_input_string(ListScanner *self, const gchar *value, gssize value_len)
+{
+  _free_input(self);
+  if (value_len < 0)
+    value_len = strlen(value);
+  g_ptr_array_add(self->argv_buffer, g_strndup(value, value_len));
+  g_ptr_array_add(self->argv_buffer, NULL);
+  _store_input(self, 1, (gchar **) self->argv_buffer->pdata, TRUE);
+}
+
 static gboolean
 _is_finished_with_args(ListScanner *self)
 {
@@ -165,12 +176,10 @@ list_scanner_get_current_value(ListScanner *self)
   return self->value->str;
 }
 
-ListScanner *
-list_scanner_clone(ListScanner *self)
+gsize
+list_scanner_get_current_value_len(ListScanner *self)
 {
-  ListScanner *cloned = list_scanner_new();
-
-  return cloned;
+  return self->value->len;
 }
 
 void

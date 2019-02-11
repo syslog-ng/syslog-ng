@@ -124,10 +124,13 @@ Test(format_json, test_format_json_with_type_hints)
                          "{\"i\":\"ifoo(\"}");
   assert_template_format("$(format-json b=boolean(TRUE))",
                          "{\"b\":true}");
+  assert_template_format("$(format-json l=list($comma_value))",
+                         "{\"l\":[\"value\",\"with\",\"a\",\"comma\"]}");
   assert_template_format("$(format-json b=literal(whatever))",
                          "{\"b\":whatever}");
   assert_template_format("$(format-json b=literal($(format-json subkey=bar)))",
                          "{\"b\":{\"subkey\":\"bar\"}}");
+
 }
 
 Test(format_json, test_format_json_on_error)

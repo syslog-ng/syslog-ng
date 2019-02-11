@@ -41,8 +41,10 @@ static void
 assert_current_value_is(const gchar *expected_key)
 {
   const gchar *key = list_scanner_get_current_value(list_scanner);
+  gint key_len = list_scanner_get_current_value_len(list_scanner);
 
   cr_assert_str_eq(key, expected_key, "current key mismatch");
+  cr_assert_eq(key_len, strlen(expected_key));
 }
 
 static void
@@ -173,6 +175,21 @@ Test(list_scanner, works_with_gstring_input)
   assert_no_more_tokens();
   for (i = 0; i < argc; i++)
     g_string_free(argv[i], TRUE);
+}
+
+Test(list_scanner, works_with_simple_input)
+{
+  list_scanner_input_string(list_scanner, "foo,bar,baz", -1);
+  assert_next_value_is("foo");
+  assert_next_value_is("bar");
+  assert_next_value_is("baz");
+  assert_no_more_tokens();
+
+  /* nonzero terminated */
+  list_scanner_input_string(list_scanner, "foo,bar,baz", 7);
+  assert_next_value_is("foo");
+  assert_next_value_is("bar");
+  assert_no_more_tokens();
 }
 
 Test(list_scanner, handles_single_quotes)
