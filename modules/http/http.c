@@ -285,10 +285,13 @@ gboolean
 http_dd_auth_header_renew(LogDriver *d)
 {
   HTTPDestinationDriver *self = (HTTPDestinationDriver *)d;
-  if (!g_mutex_trylock(self->workers_lock))
-    return FALSE;
 
-  gboolean ret = http_auth_header_renew(self->auth_header);
+  gboolean ret = TRUE;
+  g_mutex_lock(self->workers_lock);
+    {
+      if (http_auth_header_has_expired(self->auth_header))
+        ret = http_auth_header_renew(self->auth_header);
+    }
   g_mutex_unlock(self->workers_lock);
 
   return ret;
