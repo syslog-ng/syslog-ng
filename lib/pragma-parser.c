@@ -30,7 +30,7 @@
 extern int pragma_debug;
 int pragma_parse(CfgLexer *lexer, gpointer *result, gpointer arg);
 
-gint
+guint
 process_version_string(gchar *value)
 {
   gchar *p, *end;

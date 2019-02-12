@@ -64,7 +64,7 @@ struct _GlobalConfig
 
   /* version number as parsed from the configuration file, it can be set
    * multiple times if the user uses @version multiple times */
-  gint parsed_version;
+  guint parsed_version;
   const gchar *filename;
   PluginContext plugin_context;
   gboolean use_plugin_discovery;
@@ -181,7 +181,7 @@ cfg_set_use_uniqid(gboolean flag)
 }
 
 gint cfg_get_user_version(const GlobalConfig *cfg);
-gint cfg_get_parsed_version(const GlobalConfig *cfg);
+guint cfg_get_parsed_version(const GlobalConfig *cfg);
 const gchar *cfg_get_filename(const GlobalConfig *cfg);
 
 #endif
