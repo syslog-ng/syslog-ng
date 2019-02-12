@@ -11,11 +11,12 @@ persist_tool_persist_tool_SOURCES	=	\
 	persist-tool/generate.c \
 	persist-tool/generate.h \
 	persist-tool/persist-tool.c \
-	persist-tool/persist-tool.h 
+	persist-tool/persist-tool.h
 
 persist_tool_persist_tool_LDADD	= \
-  $(TEST_LDADD) \
-	@GLIB_LIBS@ \
-	@BASE_LIBS@
+	$(MODULE_DEPS_LIBS) \
+	$(TOOL_DEPS_LIBS)
 
 EXTRA_DIST += persist-tool/CMakeLists.txt
+
+persist_tool_persist_tool_DEPENDENCIES	= lib/libsyslog-ng.la
