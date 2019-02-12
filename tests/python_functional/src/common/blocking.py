@@ -37,7 +37,7 @@ def wait_until_true_custom(func, args=(), timeout=DEFAULT_TIMEOUT):
         if result:
             return result
         time.sleep(POLL_FREQ)
-    return False
+    return result
 
 def wait_until_false(func, *args):
     return wait_until_false_custom(func, args)
