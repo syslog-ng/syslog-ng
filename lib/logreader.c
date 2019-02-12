@@ -47,7 +47,7 @@ struct _LogReader
   struct iv_event schedule_wakeup;
   struct iv_event last_msg_sent_event;
   MainLoopIOWorkerJob io_job;
-  gboolean watches_running:1, suspended:1;
+  gboolean watches_running:1, suspended:1, wakeup_events_registered:1;
   gint notify_code;
 
 
@@ -94,6 +94,9 @@ static void
 _last_msg_sent(gpointer s)
 {
   LogReader *self = (LogReader *) s;
+
+  if (!(self->super.super.flags & PIF_INITIALIZED))
+    return;
   log_pipe_notify(self->control, NC_LAST_MSG_SENT, self);
 }
 
@@ -151,6 +154,9 @@ log_reader_wakeup_triggered(gpointer s)
 {
   LogReader *self = (LogReader *) s;
 
+  if (!(self->super.super.flags & PIF_INITIALIZED))
+    return;
+
   if (!self->io_job.working && self->suspended)
     {
       /* NOTE: by the time working is set to FALSE we're over an
@@ -180,16 +186,14 @@ log_reader_wakeup(LogSource *s)
    *
    */
 
-  if (self->super.super.flags & PIF_INITIALIZED)
-    iv_event_post(&self->schedule_wakeup);
+  iv_event_post(&self->schedule_wakeup);
 }
 
 static void
 log_reader_window_empty(LogSource *s)
 {
   LogReader *self = (LogReader *) s;
-  if (self->super.super.flags & PIF_INITIALIZED)
-    iv_event_post(&self->last_msg_sent_event);
+  iv_event_post(&self->last_msg_sent_event);
 }
 
 static void
@@ -507,8 +511,13 @@ log_reader_init(LogPipe *s)
   poll_events_set_callback(self->poll_events, log_reader_io_process_input, self);
 
   log_reader_update_watches(self);
-  iv_event_register(&self->schedule_wakeup);
-  iv_event_register(&self->last_msg_sent_event);
+
+  if (!self->wakeup_events_registered)
+    {
+      self->wakeup_events_registered = TRUE;
+      iv_event_register(&self->schedule_wakeup);
+      iv_event_register(&self->last_msg_sent_event);
+    }
 
   return TRUE;
 }
@@ -520,8 +529,6 @@ log_reader_deinit(LogPipe *s)
 
   main_loop_assert_main_thread();
 
-  iv_event_unregister(&self->schedule_wakeup);
-  iv_event_unregister(&self->last_msg_sent_event);
   log_reader_stop_watches(self);
   log_reader_stop_idle_timer(self);
 
@@ -536,6 +543,8 @@ log_reader_free(LogPipe *s)
 {
   LogReader *self = (LogReader *) s;
 
+  iv_event_unregister(&self->schedule_wakeup);
+  iv_event_unregister(&self->last_msg_sent_event);
   if (self->proto)
     {
       log_proto_server_free(self->proto);
