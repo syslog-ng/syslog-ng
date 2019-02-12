@@ -36,14 +36,26 @@ process_version_string(gchar *value)
   gchar *p, *end;
   gint major, minor;
 
+  if (strlen(value) > strlen("xxx.yyy"))
+    return 0;
+
+  if (value[0] == '+' || value[0] == '-')
+    return 0;
+
   p = strchr(value, '.');
+  if (p == value)
+    return 0;
   if (p)
     {
       major = strtol(value, &end, 10);
+      if (major < 0)
+        return 0;
       if (end == p)
         {
           minor = strtol(p+1, &end, 10);
-          if (end)
+          if (minor < 0)
+            return 0;
+          if (*end == '\0')
             {
               return (major << 8) + minor;
             }
