@@ -36,6 +36,7 @@ struct _HttpAuthHeader
 
   gboolean (*renew)(HttpAuthHeader *self);
   const gchar *(*get_as_string)(HttpAuthHeader *self);
+  gboolean (*has_expired)(HttpAuthHeader *self);
 };
 
 static inline gboolean
@@ -70,6 +71,15 @@ http_auth_header_renew(HttpAuthHeader *self)
   g_assert(self->renew);
 
   return self->renew(self);
+}
+
+static inline gboolean
+http_auth_header_has_expired(HttpAuthHeader *self)
+{
+  if (!self->has_expired)
+    return FALSE;
+
+  return self->has_expired(self);
 }
 
 #endif
