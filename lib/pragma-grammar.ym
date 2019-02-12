@@ -72,6 +72,13 @@ stmt_and_eol
         ;
 
 pragma_stmt
+        : version_stmt
+        | define_stmt
+        | module_stmt
+        | requires_stmt
+        ;
+
+version_stmt
         : KW_VERSION ':' string_or_number
           {
             configuration->parsed_version = process_version_string($3);
@@ -79,10 +86,6 @@ pragma_stmt
             if (configuration->parsed_version == 0)
                 PRAGMA_ERROR();
           }
-        | define_stmt
-        | module_stmt
-        | requires_stmt
-        ;
 
 include_stmt
         : KW_INCLUDE string LL_EOL
