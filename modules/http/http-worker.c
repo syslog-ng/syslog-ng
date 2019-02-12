@@ -160,6 +160,12 @@ _append_auth_header(struct curl_slist *list, HTTPDestinationDriver *owner)
 {
   const gchar *auth_header_str = http_auth_header_get_as_string(owner->auth_header);
 
+  if (!auth_header_str)
+    {
+      http_dd_auth_header_renew(&owner->super.super.super);
+      auth_header_str = http_auth_header_get_as_string(owner->auth_header);
+    }
+
   if (auth_header_str)
     {
       list = curl_slist_append(list, auth_header_str);
