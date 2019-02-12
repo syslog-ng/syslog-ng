@@ -281,6 +281,17 @@ http_dd_set_body_suffix(LogDriver *d, const gchar *body_suffix)
   g_string_assign(self->body_suffix, body_suffix);
 }
 
+static gboolean
+_auth_header_renew(HTTPDestinationDriver *self)
+{
+  gboolean ret = TRUE;
+
+  if (http_auth_header_has_expired(self->auth_header))
+    ret = http_auth_header_renew(self->auth_header);
+
+  return ret;
+}
+
 gboolean
 http_dd_auth_header_renew(LogDriver *d)
 {
@@ -289,8 +300,7 @@ http_dd_auth_header_renew(LogDriver *d)
   gboolean ret = TRUE;
   g_mutex_lock(self->workers_lock);
     {
-      if (http_auth_header_has_expired(self->auth_header))
-        ret = http_auth_header_renew(self->auth_header);
+      ret = _auth_header_renew(self);
     }
   g_mutex_unlock(self->workers_lock);
 
@@ -345,6 +355,12 @@ http_dd_init(LogPipe *s)
 
   if (self->auth_header && !http_auth_header_init(self->auth_header))
     return FALSE;
+
+  if (!_auth_header_renew(self))
+    {
+      msg_warning("WARNING: http() driver failed to get auth header",
+          log_pipe_location_tag(s));
+    }
 
   if (!log_threaded_dest_driver_init_method(s))
     return FALSE;
