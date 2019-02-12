@@ -173,8 +173,8 @@ _append_auth_header(struct curl_slist *list, HTTPDestinationDriver *owner)
   else
     {
       msg_warning("WARNING: auth-header() returned NULL-value",
-          evt_tag_str("driver", owner->super.super.super.id),
-          log_pipe_location_tag(&owner->super.super.super.super));
+                  evt_tag_str("driver", owner->super.super.super.id),
+                  log_pipe_location_tag(&owner->super.super.super.super));
     }
 
   return list;

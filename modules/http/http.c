@@ -281,32 +281,6 @@ http_dd_set_body_suffix(LogDriver *d, const gchar *body_suffix)
   g_string_assign(self->body_suffix, body_suffix);
 }
 
-static gboolean
-_auth_header_renew(HTTPDestinationDriver *self)
-{
-  gboolean ret = TRUE;
-
-  if (http_auth_header_has_expired(self->auth_header))
-    ret = http_auth_header_renew(self->auth_header);
-
-  return ret;
-}
-
-gboolean
-http_dd_auth_header_renew(LogDriver *d)
-{
-  HTTPDestinationDriver *self = (HTTPDestinationDriver *)d;
-
-  gboolean ret = TRUE;
-  g_mutex_lock(self->workers_lock);
-    {
-      ret = _auth_header_renew(self);
-    }
-  g_mutex_unlock(self->workers_lock);
-
-  return ret;
-}
-
 static const gchar *
 _format_persist_name(const LogPipe *s)
 {
@@ -333,6 +307,94 @@ _format_stats_instance(LogThreadedDestDriver *s)
   return stats;
 }
 
+static const gchar *
+_format_auth_header_name(const LogPipe *s)
+{
+  static gchar auth_header_name[1024];
+  const gchar *persist_name = _format_persist_name(s);
+  g_snprintf(auth_header_name, sizeof(auth_header_name), "%s.auth_header", persist_name);
+
+  return auth_header_name;
+}
+
+static gboolean
+_load_auth_header_from_persist_file(LogPipe *s)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *)s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
+
+  gsize size;
+  guint8 version;
+  const gchar *persist_name = _format_auth_header_name(s);
+  gchar *auth_header_str = persist_state_lookup_string(cfg->state, persist_name, &size, &version);
+
+  if (!auth_header_str)
+    return FALSE;
+
+  gboolean ret = http_auth_header_load_from_string(self->auth_header, auth_header_str);
+  g_free(auth_header_str);
+
+  return ret;
+}
+
+static void
+_save_auth_header_to_persist_file(LogPipe *s)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *)s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
+  const gchar *persist_name = _format_auth_header_name(s);
+  const gchar *auth_header_str = http_auth_header_get_as_string(self->auth_header);
+
+  persist_state_alloc_string(cfg->state, persist_name, auth_header_str, -1);
+}
+
+static gboolean
+_auth_header_renew(HTTPDestinationDriver *self)
+{
+  gboolean ret = TRUE;
+
+  if (http_auth_header_has_expired(self->auth_header))
+    {
+      ret = http_auth_header_renew(self->auth_header);
+      if (ret)
+        {
+          _save_auth_header_to_persist_file(&self->super.super.super.super);
+        }
+    }
+
+  return ret;
+}
+
+static void
+_load_auth_header(LogPipe *s)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *)s;
+
+  if (_load_auth_header_from_persist_file(s))
+    return;
+
+  if (!_auth_header_renew(self))
+    {
+      msg_warning("WARNING: http() driver failed to get auth header",
+                  log_pipe_location_tag(s));
+    }
+}
+
+gboolean
+http_dd_auth_header_renew(LogDriver *d)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *)d;
+
+  gboolean ret = TRUE;
+  g_mutex_lock(self->workers_lock);
+  {
+    ret = _auth_header_renew(self);
+  }
+  g_mutex_unlock(self->workers_lock);
+
+  return ret;
+}
+
 gboolean
 http_dd_init(LogPipe *s)
 {
@@ -356,11 +418,7 @@ http_dd_init(LogPipe *s)
   if (self->auth_header && !http_auth_header_init(self->auth_header))
     return FALSE;
 
-  if (!_auth_header_renew(self))
-    {
-      msg_warning("WARNING: http() driver failed to get auth header",
-          log_pipe_location_tag(s));
-    }
+  _load_auth_header(s);
 
   if (!log_threaded_dest_driver_init_method(s))
     return FALSE;
