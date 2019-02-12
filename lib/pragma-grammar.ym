@@ -58,28 +58,6 @@
 
 CfgArgs *last_module_args = NULL;
 
-gint
-__process_version_string(gchar *value)
-{
-  gchar *p, *end;
-  gint major, minor;
-
-  p = strchr(value, '.');
-  if (p)
-    {
-      major = strtol(value, &end, 10);
-      if (end == p)
-        {
-          minor = strtol(p+1, &end, 10);
-          if (end)
-            {
-              return (major << 8) + minor;
-            }
-        }
-    }
-  return 0;
-}
-
 }
 
 %%
@@ -94,7 +72,7 @@ stmt_and_eol
         ;
 
 pragma_stmt
-        : KW_VERSION ':' string_or_number               { configuration->parsed_version = __process_version_string($3); free($3); }
+        : KW_VERSION ':' string_or_number               { configuration->parsed_version = process_version_string($3); free($3); }
         | define_stmt
         | module_stmt
         | requires_stmt

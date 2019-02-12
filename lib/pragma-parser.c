@@ -25,8 +25,32 @@
 #include "pragma-parser.h"
 #include "pragma-grammar.h"
 
+#include <stdlib.h>
+
 extern int pragma_debug;
 int pragma_parse(CfgLexer *lexer, gpointer *result, gpointer arg);
+
+gint
+process_version_string(gchar *value)
+{
+  gchar *p, *end;
+  gint major, minor;
+
+  p = strchr(value, '.');
+  if (p)
+    {
+      major = strtol(value, &end, 10);
+      if (end == p)
+        {
+          minor = strtol(p+1, &end, 10);
+          if (end)
+            {
+              return (major << 8) + minor;
+            }
+        }
+    }
+  return 0;
+}
 
 static CfgLexerKeyword pragma_keywords[] =
 {
