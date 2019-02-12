@@ -381,6 +381,14 @@ _curl_get_status_code(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *targe
 }
 
 static LogThreadedResult
+_renew_header(HTTPDestinationDriver *self)
+{
+  if (!http_dd_auth_header_renew(&self->super.super.super))
+    return LTR_NOT_CONNECTED;
+  return LTR_RETRY;
+}
+
+static LogThreadedResult
 _flush_on_target(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
@@ -397,11 +405,7 @@ _flush_on_target(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
     _debug_response_info(self, target, http_code);
 
   if (http_code == 401 && owner->auth_header)
-    {
-      if (!http_dd_auth_header_renew(&owner->super.super.super))
-        return LTR_NOT_CONNECTED;
-      return LTR_RETRY;
-    }
+    return _renew_header(owner);
 
   return map_http_status_to_worker_status(self, target->url, http_code);
 }
