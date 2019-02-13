@@ -39,6 +39,7 @@ libtestinclude_HEADERS		    =	\
 	libtest/msg_parse_lib.h		\
 	libtest/persist_lib.h		\
 	libtest/proto_lib.h		\
+	libtest/stopwatch.h		\
 	libtest/testutils.h
 
 pkgconfig_DATA			   +=	\
