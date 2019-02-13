@@ -929,7 +929,7 @@ cfg_lexer_parse_and_run_block_generator(CfgLexer *self, Plugin *p, YYSTYPE *yylv
                                          cfg_lexer_format_location(self, &level->lloc, buf, sizeof(buf)));
 
   free(yylval->cptr);
-  cfg_args_unref((CfgArgs *)args);
+  cfg_parser_cleanup(gen_parser, args);
 
   if (!success)
     {
