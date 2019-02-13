@@ -320,6 +320,12 @@ AC_ARG_WITH(python,
               [  --with-python=VERSION    Build with a specific version of python]
               ,,with_python="auto")
 
+AC_ARG_WITH(nosetests,
+              [  --with-nosetests=ABSOLUTE_PATH    Specify nosetests location])
+
+AC_ARG_WITH(pylint,
+              [  --with-pylint=ABSOLUTE_PATH    Specify pylint location])
+
 AC_ARG_WITH(docbook,
             AC_HELP_STRING([--with-docbook=FILE],
                            [compiling manpages using docbook in the specified path, if not set online version will be used from http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl]),
@@ -1357,8 +1363,42 @@ if test "x$enable_python" != "xno"; then
     AC_MSG_ERROR([Could not find the requested Python development libraries])
   fi
   enable_python="$python_found"
+
+  if (echo "$with_python" | grep -Eq "python-?3.*"); then
+    python_version=3
+  else
+    python_version=2
+  fi
 else
   with_python=""
+fi
+
+dnl ***************************************************************************
+dnl nosetests, pylint
+dnl ***************************************************************************
+
+if test "x$with_nosetests" != "x"; then
+    NOSETESTS=$with_nosetests
+else
+    if test "$python_found" = "yes"; then
+      if test "$python_version" = "3"; then
+          AC_CHECK_PROG(NOSETESTS, nosetests3, nosetests3)
+      else
+          AC_CHECK_PROG(NOSETESTS, nosetests, nosetests)
+      fi
+    fi
+fi
+
+if test "x$with_pylint" != "x"; then
+    PYLINT=$with_pylint
+else
+    if test "$python_found" = "yes"; then
+      if test "$python_version" = "3"; then
+          AC_CHECK_PROG(PYLINT, pylint3, pylint3)
+      else
+          AC_CHECK_PROG(PYLINT, pylint, pylint)
+      fi
+    fi
 fi
 
 dnl ***************************************************************************
@@ -1706,8 +1746,8 @@ AC_DEFINE_UNQUOTED(ENABLE_SYSTEMD, `enable_value $enable_systemd`, [Enable syste
 AC_DEFINE_UNQUOTED(SYSTEMD_JOURNAL_MODE, `journald_mode`, [Systemd-journal support mode])
 AC_DEFINE_UNQUOTED(HAVE_INOTIFY, `enable_value $ac_cv_func_inotify_init`, [Have inotify])
 AC_DEFINE_UNQUOTED(HAVE_GETRANDOM, `enable_value $ac_cv_func_getrandom`, [Have getrandom])
-AC_DEFINE_UNQUOTED(ENABLE_PYTHONv2, `(echo "$with_python" | grep -Eq "python-?2.*") && echo 1 || echo 0`, [Python2 c api])
-AC_DEFINE_UNQUOTED(ENABLE_PYTHONv3, `(echo "$with_python" | grep -Eq "python-?3.*") && echo 1 || echo 0`, [Python3 c api])
+AC_DEFINE_UNQUOTED(ENABLE_PYTHONv2, `(test "$python_version" = "2" ) && echo 1 || echo 0`, [Python2 c api])
+AC_DEFINE_UNQUOTED(ENABLE_PYTHONv3, `(test "$python_version" = "3" ) && echo 1 || echo 0`, [Python3 c api])
 AC_DEFINE_UNQUOTED(HAVE_RIEMANN_MICROSECONDS, `enable_value $riemann_micros`, [Riemann microseconds support])
 AC_DEFINE_UNQUOTED(USE_CONST_IVYKIS_MOCK, `enable_value $IVYKIS_VERSION_UPDATED`, [ivykis version is greater than $IVYKIS_UPDATED_VERSION])
 
@@ -1745,7 +1785,12 @@ AM_CONDITIONAL([HAVE_INOTIFY], [test x$ac_cv_func_inotify_init = xyes])
 AM_CONDITIONAL([HAVE_GETRANDOM], [test x$ac_cv_func_getrandom = xyes])
 AM_CONDITIONAL([HAVE_FMEMOPEN], [test x$ac_cv_func_fmemopen = xyes])
 AM_CONDITIONAL(ENABLE_IPV6, [test $enable_ipv6 = yes])
+AM_CONDITIONAL(NOSETESTS, [test "x$NOSETESTS" != "x"])
+AM_CONDITIONAL(PYLINT, [test "x$PYLINT" != "x"])
 
+
+AC_SUBST(NOSETESTS)
+AC_SUBST(PYLINT)
 AC_SUBST(timezonedir)
 AC_SUBST(pidfiledir)
 AC_SUBST(moduledir)
