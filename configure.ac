@@ -1358,6 +1358,12 @@ if test "x$enable_python" != "xno"; then
     AC_MSG_ERROR([Could not find the requested Python development libraries])
   fi
   enable_python="$python_found"
+
+  if (echo "$with_python" | grep -Eq "python-?3.*"); then
+    python_version=3
+  else
+    python_version=2
+  fi
 else
   with_python=""
 fi
@@ -1710,8 +1716,8 @@ AC_DEFINE_UNQUOTED(ENABLE_SYSTEMD, `enable_value $enable_systemd`, [Enable syste
 AC_DEFINE_UNQUOTED(SYSTEMD_JOURNAL_MODE, `journald_mode`, [Systemd-journal support mode])
 AC_DEFINE_UNQUOTED(HAVE_INOTIFY, `enable_value $ac_cv_func_inotify_init`, [Have inotify])
 AC_DEFINE_UNQUOTED(HAVE_GETRANDOM, `enable_value $ac_cv_func_getrandom`, [Have getrandom])
-AC_DEFINE_UNQUOTED(ENABLE_PYTHONv2, `(echo "$with_python" | grep -Eq "python-?2.*") && echo 1 || echo 0`, [Python2 c api])
-AC_DEFINE_UNQUOTED(ENABLE_PYTHONv3, `(echo "$with_python" | grep -Eq "python-?3.*") && echo 1 || echo 0`, [Python3 c api])
+AC_DEFINE_UNQUOTED(ENABLE_PYTHONv2, `(test "$python_version" = "2" ) && echo 1 || echo 0`, [Python2 c api])
+AC_DEFINE_UNQUOTED(ENABLE_PYTHONv3, `(test "$python_version" = "3" ) && echo 1 || echo 0`, [Python3 c api])
 AC_DEFINE_UNQUOTED(HAVE_RIEMANN_MICROSECONDS, `enable_value $riemann_micros`, [Riemann microseconds support])
 AC_DEFINE_UNQUOTED(USE_CONST_IVYKIS_MOCK, `enable_value $IVYKIS_VERSION_UPDATED`, [ivykis version is greater than $IVYKIS_UPDATED_VERSION])
 
