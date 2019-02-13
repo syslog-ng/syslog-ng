@@ -249,7 +249,7 @@ log { source(s_localhost); destination(d_tcp); };</synopsis>
           </thead>
           <tbody>
             <row>
-              <entry><link linkend="configuring-destinations-elasticsearch">elasticsearch</link> and <link linkend="configuring-destinations-elasticsearch2">elasticsearch2</link>
+              <entry><link linkend="configuring-destinations-elasticsearch2">elasticsearch2</link>
                 </entry>
               <entry>Sends messages to an Elasticsearch server. The <parameter>elasticsearch2</parameter> driver supports Elasticsearch version 2 and newer.</entry>
             </row>
