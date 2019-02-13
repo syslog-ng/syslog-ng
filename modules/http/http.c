@@ -353,7 +353,7 @@ _auth_header_renew(HTTPDestinationDriver *self)
 {
   gboolean ret = TRUE;
 
-  if (http_auth_header_has_expired(self->auth_header))
+  if (self->auth_header && http_auth_header_has_expired(self->auth_header))
     {
       ret = http_auth_header_renew(self->auth_header);
       if (ret)
@@ -415,10 +415,12 @@ http_dd_init(LogPipe *s)
   /* we need to set up url before we call the inherited init method, so our stats key is correct */
   self->url = self->load_balancer->targets[0].url;
 
-  if (self->auth_header && !http_auth_header_init(self->auth_header))
-    return FALSE;
-
-  _load_auth_header(s);
+  if (self->auth_header)
+    {
+      if (!http_auth_header_init(self->auth_header))
+        return FALSE;
+      _load_auth_header(s);
+    }
 
   if (!log_threaded_dest_driver_init_method(s))
     return FALSE;
