@@ -456,7 +456,7 @@ include \"foo.conf\";\n");
 }
 
 static gboolean
-_fake_generator_generate(CfgBlockGenerator *self, GlobalConfig *cfg, CfgArgs *args, GString *result,
+_fake_generator_generate(CfgBlockGenerator *self, GlobalConfig *cfg, gpointer args, GString *result,
                          const gchar *reference)
 {
   g_string_append(result, "fake_generator_content");

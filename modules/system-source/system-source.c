@@ -350,29 +350,30 @@ system_generate_app_parser(GlobalConfig *cfg, GString *sysblock, CfgArgs *args)
 }
 
 static gboolean
-system_source_generate(CfgBlockGenerator *self, GlobalConfig *cfg, CfgArgs *args, GString *sysblock,
+system_source_generate(CfgBlockGenerator *self, GlobalConfig *cfg, gpointer args, GString *sysblock,
                        const gchar *reference)
 {
   gboolean result = FALSE;
+  CfgArgs *cfgargs = (CfgArgs *)args;
 
   /* NOTE: we used to have an exclude-kmsg() option that was removed, still
    * we need to ignore it */
 
-  if (args)
-    cfg_args_remove(args, "exclude-kmsg");
+  if (cfgargs)
+    cfg_args_remove(cfgargs, "exclude-kmsg");
 
   g_string_append(sysblock,
                   "channel {\n"
                   "    source {\n");
 
-  if (!system_generate_system_transports(sysblock, args))
+  if (!system_generate_system_transports(sysblock, cfgargs))
     {
       goto exit;
     }
 
   g_string_append(sysblock, "    }; # source\n");
 
-  system_generate_app_parser(cfg, sysblock, args);
+  system_generate_app_parser(cfg, sysblock, cfgargs);
 
   g_string_append(sysblock, "}; # channel\n");
   result = TRUE;

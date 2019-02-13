@@ -898,7 +898,7 @@ cfg_lexer_append_preprocessed_output(CfgLexer *self, const gchar *token_text)
 static gboolean
 cfg_lexer_parse_and_run_block_generator(CfgLexer *self, Plugin *p, YYSTYPE *yylval)
 {
-  CfgArgs *args;
+  gpointer *args;
   CfgIncludeLevel *level = &self->include_stack[self->include_depth];
   CfgBlockGenerator *gen = plugin_construct(p);
   gboolean success = TRUE;
@@ -927,7 +927,7 @@ cfg_lexer_parse_and_run_block_generator(CfgLexer *self, Plugin *p, YYSTYPE *yylv
                                          cfg_lexer_format_location(self, &level->lloc, buf, sizeof(buf)));
 
   free(yylval->cptr);
-  cfg_args_unref(args);
+  cfg_args_unref((CfgArgs *)args);
 
   if (!success)
     {

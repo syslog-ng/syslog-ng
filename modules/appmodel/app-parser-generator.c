@@ -212,12 +212,13 @@ _parse_arguments(AppParserGenerator *self, CfgArgs *args, const gchar *reference
 }
 
 static gboolean
-_generate(CfgBlockGenerator *s, GlobalConfig *cfg, CfgArgs *args, GString *result, const gchar *reference)
+_generate(CfgBlockGenerator *s, GlobalConfig *cfg, gpointer args, GString *result, const gchar *reference)
 {
   AppParserGenerator *self = (AppParserGenerator *) s;
   AppModelContext *appmodel = appmodel_get_context(cfg);
+  CfgArgs *cfgargs = (CfgArgs *)args;
 
-  if (!_parse_arguments(self, args, reference))
+  if (!_parse_arguments(self, cfgargs, reference))
     return FALSE;
 
   self->block = result;
