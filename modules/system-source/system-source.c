@@ -23,6 +23,7 @@
 
 #include "cfg.h"
 #include "cfg-block-generator.h"
+#include "block-ref-parser.h"
 #include "messages.h"
 #include "plugin.h"
 #include "plugin-types.h"
@@ -403,7 +404,8 @@ Plugin system_plugins[] =
   {
     .type = LL_CONTEXT_SOURCE | LL_CONTEXT_FLAG_GENERATOR,
     .name = "system",
-    .construct = system_source_construct
+    .construct = system_source_construct,
+    .parser = &block_ref_parser
   }
 };
 

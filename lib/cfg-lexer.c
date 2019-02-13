@@ -753,6 +753,7 @@ cfg_lexer_register_generator_plugin(PluginContext *context, CfgBlockGenerator *g
   plugin->super.name = g_strdup(gen->name);
   plugin->super.free_fn = _generator_plugin_free;
   plugin->super.construct = _generator_plugin_construct;
+  plugin->super.parser = &block_ref_parser;
   plugin->gen = gen;
 
   plugin_register(context, &plugin->super, 1);
@@ -907,7 +908,8 @@ cfg_lexer_parse_and_run_block_generator(CfgLexer *self, Plugin *p, YYSTYPE *yylv
 
   gint saved_line = level->lloc.first_line;
   gint saved_column = level->lloc.first_column;
-  if (!cfg_parser_parse(&block_ref_parser, self, (gpointer *) &args, NULL))
+  CfgParser *gen_parser = p->parser;
+  if (gen_parser && !cfg_parser_parse(gen_parser, self, (gpointer *) &args, NULL))
     {
       level->lloc.first_line = saved_line;
       level->lloc.first_column = saved_column;
