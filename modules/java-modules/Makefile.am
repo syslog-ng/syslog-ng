@@ -39,7 +39,6 @@ endif
 
 EXTRA_DIST += \
 	modules/java-modules/common/build.gradle  \
-	modules/java-modules/elastic/build.gradle \
 	modules/java-modules/elastic-v2/build.gradle \
 	modules/java-modules/kafka/build.gradle \
 	modules/java-modules/hdfs/build.gradle    \
@@ -48,18 +47,6 @@ EXTRA_DIST += \
 	modules/java-modules/settings.gradle \
 	modules/java-modules/build.gradle \
 	modules/java-modules/internal_repositories.gradle \
-	modules/java-modules/elastic/src/main/java/org/syslog_ng/elasticsearch/messageprocessor/ESMessageProcessor.java \
-	modules/java-modules/elastic/src/main/java/org/syslog_ng/elasticsearch/messageprocessor/DummyProcessor.java \
-	modules/java-modules/elastic/src/main/java/org/syslog_ng/elasticsearch/messageprocessor/ESBulkMessageProcessor.java \
-	modules/java-modules/elastic/src/main/java/org/syslog_ng/elasticsearch/messageprocessor/ESMessageProcessorFactory.java \
-	modules/java-modules/elastic/src/main/java/org/syslog_ng/elasticsearch/messageprocessor/ESSingleMessageProcessor.java \
-	modules/java-modules/elastic/src/main/java/org/syslog_ng/elasticsearch/ElasticSearchDestination.java \
-	modules/java-modules/elastic/src/main/java/org/syslog_ng/elasticsearch/client/ESTransportClient.java \
-	modules/java-modules/elastic/src/main/java/org/syslog_ng/elasticsearch/client/ESClient.java \
-	modules/java-modules/elastic/src/main/java/org/syslog_ng/elasticsearch/client/ESNodeClient.java \
-	modules/java-modules/elastic/src/main/java/org/syslog_ng/elasticsearch/client/UnknownESClientModeException.java \
-	modules/java-modules/elastic/src/main/java/org/syslog_ng/elasticsearch/client/ESClientFactory.java \
-	modules/java-modules/elastic/src/main/java/org/syslog_ng/elasticsearch/ElasticSearchOptions.java \
 	modules/java-modules/kafka/src/main/java/org/syslog_ng/KafkaDestination.java \
 	modules/java-modules/kafka/src/main/java/org/syslog_ng/KafkaDestinationOptions.java \
 	modules/java-modules/kafka/src/main/java/org/syslog_ng/KafkaDestinationProperties.java \
