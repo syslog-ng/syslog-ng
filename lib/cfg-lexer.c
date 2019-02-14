@@ -948,41 +948,6 @@ cfg_lexer_parse_and_run_block_generator(CfgLexer *self, CfgBlockGenerator *gen, 
 }
 
 static gboolean
-cfg_lexer_parse_include(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
-{
-  self->preprocess_suppress_tokens++;
-  gint tok = cfg_lexer_lex(self, yylval, yylloc);
-  if (tok != LL_STRING && tok != LL_IDENTIFIER)
-    {
-      self->preprocess_suppress_tokens--;
-      return FALSE;
-    }
-
-  gchar *include_file = g_strdup(yylval->cptr);
-  free(yylval->cptr);
-
-  tok = cfg_lexer_lex(self, yylval, yylloc);
-  if (tok != ';')
-    {
-      self->preprocess_suppress_tokens--;
-      g_free(include_file);
-      return FALSE;
-    }
-
-  if (!cfg_lexer_include_file(self, include_file))
-    {
-      g_free(include_file);
-      self->preprocess_suppress_tokens--;
-      return FALSE;
-    }
-
-  self->preprocess_suppress_tokens--;
-  g_free(include_file);
-
-  return TRUE;
-}
-
-static gboolean
 cfg_lexer_parse_pragma(CfgLexer *self)
 {
   gpointer dummy;
@@ -1040,13 +1005,6 @@ cfg_lexer_preprocess(CfgLexer *self, gint tok, YYSTYPE *yylval, YYLTYPE *yylloc)
   else if (tok == LL_PRAGMA)
     {
       if (!cfg_lexer_parse_pragma(self))
-        return CLPR_ERROR;
-
-      return CLPR_LEX_AGAIN;
-    }
-  else if (tok == KW_INCLUDE && cfg_lexer_get_context_type(self) != LL_CONTEXT_PRAGMA)
-    {
-      if (!cfg_lexer_parse_include(self, yylval, yylloc))
         return CLPR_ERROR;
 
       return CLPR_LEX_AGAIN;

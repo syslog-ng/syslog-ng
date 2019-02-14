@@ -443,18 +443,6 @@ Test(lexer, include_finds_wildcards_files_in_include_path)
   assert_parser_identifier("foo");
 }
 
-Test(lexer, include_statement_without_at_sign)
-{
-  CfgLexer *lexer = parser->lexer;
-
-  cfg_lexer_push_context(parser->lexer, main_parser.context, main_parser.keywords, main_parser.name);
-  parser->lexer->ignore_pragma = FALSE;
-  _input("@define include-path \"" TESTDATA_DIR "/include-test\"\n\
-include \"foo.conf\";\n");
-  assert_parser_identifier("foo");
-  cfg_lexer_pop_context(lexer);
-}
-
 static gboolean
 _fake_generator_generate(CfgBlockGenerator *self, GlobalConfig *cfg, CfgArgs *args, GString *result,
                          const gchar *reference)
