@@ -1,4 +1,3 @@
-usr/lib/syslog-ng/*/java-modules/elastic.jar
 usr/lib/syslog-ng/*/java-modules/elastic-v2.jar
 usr/lib/syslog-ng/*/java-modules/elastic-jest-client/*.jar
 usr/share/syslog-ng/include/scl/elasticsearch/*
