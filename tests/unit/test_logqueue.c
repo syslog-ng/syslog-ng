@@ -52,13 +52,10 @@ static gpointer
 _threaded_feed(gpointer args)
 {
   LogQueue *q = args;
-  char *msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép";
-  gint msg_len = strlen(msg_str);
   gint i;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   LogMessage *msg, *tmpl;
   GTimeVal start, end;
-  GSockAddr *sa;
   glong diff;
 
   iv_init();
@@ -66,9 +63,7 @@ _threaded_feed(gpointer args)
   /* emulate main loop for LogQueue */
   main_loop_worker_thread_start(NULL);
 
-  sa = g_sockaddr_inet_new("10.10.10.10", 1010);
-  tmpl = log_msg_new(msg_str, msg_len, sa, &parse_options);
-  g_sockaddr_unref(sa);
+  tmpl = log_msg_new_empty();
 
   g_get_current_time(&start);
   for (i = 0; i < MESSAGES_PER_FEEDER; i++)
