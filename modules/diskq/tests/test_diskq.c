@@ -74,7 +74,7 @@ testcase_zero_diskbuf_and_normal_acks(void)
     feed_some_messages(q, 10);
 
   send_some_messages(q, fed_messages);
-  app_ack_some_messages(q, fed_messages);
+  log_queue_ack_backlog(q, fed_messages);
   assert_gint(fed_messages, acked_messages,
               "%s: did not receive enough acknowledgements: fed_messages=%d, acked_messages=%d\n", __FUNCTION__, fed_messages,
               acked_messages);
@@ -108,7 +108,7 @@ testcase_zero_diskbuf_alternating_send_acks(void)
     {
       feed_some_messages(q, 10);
       send_some_messages(q, 10);
-      app_ack_some_messages(q, 10);
+      log_queue_ack_backlog(q, 10);
     }
 
   assert_gint(fed_messages, acked_messages,
@@ -155,17 +155,17 @@ testcase_ack_and_rewind_messages(void)
     {
       send_some_messages(q,1);
       assert_gint(stats_counter_get(q->queued_messages), 999, "queued messages wrong number %d", __LINE__);
-      app_rewind_some_messages(q,1);
+      log_queue_rewind_backlog(q,1);
       assert_gint(stats_counter_get(q->queued_messages), 1000, "queued messages wrong number: %d", __LINE__);
     }
   send_some_messages(q,1000);
   assert_gint(stats_counter_get(q->queued_messages), 0, "queued messages: %d", __LINE__);
-  app_ack_some_messages(q,500);
-  app_rewind_some_messages(q,500);
+  log_queue_ack_backlog(q,500);
+  log_queue_rewind_backlog(q,500);
   assert_gint(stats_counter_get(q->queued_messages), 500, "queued messages: %d", __LINE__);
   send_some_messages(q,500);
   assert_gint(stats_counter_get(q->queued_messages), 0, "queued messages: %d", __LINE__);
-  app_ack_some_messages(q,500);
+  log_queue_ack_backlog(q,500);
   log_queue_unref(q);
   unlink(filename->str);
   g_string_free(filename,TRUE);

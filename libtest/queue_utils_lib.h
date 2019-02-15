@@ -36,10 +36,4 @@ void feed_some_messages(LogQueue *q, int n);
 
 void send_some_messages(LogQueue *q, gint n);
 
-void app_rewind_some_messages(LogQueue *q, guint n);
-
-void app_ack_some_messages(LogQueue *q, guint n);
-
-void rewind_messages(LogQueue *q);
-
 #endif

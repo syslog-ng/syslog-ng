@@ -212,7 +212,7 @@ Test(logqueue, test_zero_diskbuf_and_normal_acks)
   cr_assert_eq(stats_counter_get(q->memory_usage), 101*size_when_single_msg);
 
   send_some_messages(q, fed_messages);
-  app_ack_some_messages(q, fed_messages);
+  log_queue_ack_backlog(q, fed_messages);
 
   cr_assert_eq(fed_messages, acked_messages,
                "did not receive enough acknowledgements: fed_messages=%d, acked_messages=%d",
@@ -235,7 +235,7 @@ Test(logqueue, test_zero_diskbuf_alternating_send_acks)
     {
       feed_some_messages(q, 10);
       send_some_messages(q, 10);
-      app_ack_some_messages(q, 10);
+      log_queue_ack_backlog(q, 10);
     }
 
   cr_assert_eq(fed_messages, acked_messages,

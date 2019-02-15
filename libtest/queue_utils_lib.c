@@ -75,20 +75,3 @@ send_some_messages(LogQueue *q, gint n)
     }
 }
 
-void
-app_rewind_some_messages(LogQueue *q, guint n)
-{
-  log_queue_rewind_backlog(q,n);
-}
-
-void
-app_ack_some_messages(LogQueue *q, guint n)
-{
-  log_queue_ack_backlog(q, n);
-}
-
-void
-rewind_messages(LogQueue *q)
-{
-  log_queue_rewind_backlog_all(q);
-}
