@@ -38,8 +38,6 @@
 
 #define DISKQ_FILENAME "test_become_full.qf"
 
-MsgFormatOptions parse_options;
-
 
 static void msg_post_function(LogMessage *msg)
 {
@@ -96,12 +94,8 @@ main(void)
   tzset();
 
   configuration = cfg_new_snippet();
-  cfg_load_module(configuration, "syslogformat");
   cfg_load_module(configuration, "disk-buffer");
-  cfg_load_module(configuration, "builtin-serializer");
   msg_set_post_func(msg_post_function);
-  msg_format_options_defaults(&parse_options);
-  msg_format_options_init(&parse_options, configuration);
   test_diskq_become_full(TRUE);
   test_diskq_become_full(FALSE);
   return 0;

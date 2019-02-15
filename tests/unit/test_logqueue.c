@@ -171,7 +171,7 @@ setup(void)
   app_startup();
   setenv("TZ", "MET-1METDST", TRUE);
   tzset();
-  init_and_load_syslogformat_module();
+  configuration = cfg_new_snippet();
   configuration->stats_options.level = 1;
   cr_assert(cfg_init(configuration), "cfg_init failed!");
 }
@@ -179,7 +179,7 @@ setup(void)
 void
 teardown(void)
 {
-  deinit_syslogformat_module();
+  cfg_free(configuration);
   app_shutdown();
 }
 

@@ -51,9 +51,6 @@
 #endif
 #define PATH_QDISK "./"
 
-MsgFormatOptions parse_options;
-
-
 static void
 testcase_zero_diskbuf_and_normal_acks(void)
 {
@@ -187,13 +184,10 @@ static gpointer
 threaded_feed(gpointer args)
 {
   LogQueue *q = (LogQueue *)args;
-  char *msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép";
-  gint msg_len = strlen(msg_str);
   gint i;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   LogMessage *msg, *tmpl;
   GTimeVal start, end;
-  GSockAddr *sa;
   glong diff;
 
   iv_init();
@@ -201,8 +195,7 @@ threaded_feed(gpointer args)
   /* emulate main loop for LogQueue */
   main_loop_worker_thread_start(NULL);
 
-  sa = g_sockaddr_inet_new("10.10.10.10", 1010);
-  tmpl = log_msg_new(msg_str, msg_len, sa, &parse_options);
+  tmpl = log_msg_new_empty();
   g_get_current_time(&start);
   for (i = 0; i < MESSAGES_PER_FEEDER; i++)
     {
@@ -224,7 +217,6 @@ threaded_feed(gpointer args)
   g_static_mutex_unlock(&tlock);
   main_loop_worker_thread_stop();
   log_msg_unref(tmpl);
-  g_sockaddr_unref(sa);
   return NULL;
 }
 
@@ -387,8 +379,16 @@ testcase_diskbuffer_restart_corrupted(void)
 static gboolean
 is_valid_msg_size(guint32 one_msg_size)
 {
-  /* 460 as of writing on x86-64 and 384 on x86*/
-  return (one_msg_size < 500 && one_msg_size > 300);
+  static gssize empty_msg_size = 0;
+
+  if (empty_msg_size == 0)
+    {
+      LogMessage *msg = log_msg_new_empty();
+      empty_msg_size = log_msg_get_size(msg);
+      log_msg_unref(msg);
+    }
+
+  return (one_msg_size == empty_msg_size);
 }
 
 struct diskq_tester_parameters;
@@ -553,9 +553,6 @@ main(void)
   configuration = cfg_new_snippet();
   configuration->stats_options.level = 1;
   assert_true(cfg_init(configuration), "cfg_init failed!");
-  cfg_load_module(configuration, "syslogformat");
-  msg_format_options_defaults(&parse_options);
-  msg_format_options_init(&parse_options, configuration);
 
   testcase_ack_and_rewind_messages();
   testcase_with_threads();
