@@ -219,6 +219,33 @@ main_loop_was_last_reload_successful(MainLoop *self)
   return self->last_config_reload_successful;
 }
 
+static void
+main_loop_reload_config_revert(gpointer user_data)
+{
+  MainLoop *self = (MainLoop *) user_data;
+
+  cfg_persist_config_move(self->new_config, self->old_config);
+  cfg_deinit(self->new_config);
+  if (!cfg_init(self->old_config))
+    {
+      /* hmm. hmmm, error reinitializing old configuration, we're hosed.
+       * Best is to kill ourselves in the hope that the supervisor
+       * restarts us.
+       */
+      kill(getpid(), SIGQUIT);
+      g_assert_not_reached();
+    }
+  persist_config_free(self->old_config->persist);
+  self->old_config->persist = NULL;
+  cfg_free(self->new_config);
+  self->current_configuration = self->old_config;
+
+  app_config_changed();
+
+  self->new_config = NULL;
+  self->old_config = NULL;
+}
+
 /* called to apply the new configuration once all I/O worker threads have finished */
 static void
 main_loop_reload_config_apply(gpointer user_data)
@@ -255,21 +282,8 @@ main_loop_reload_config_apply(gpointer user_data)
     {
       msg_error("Error initializing new configuration, reverting to old config");
       service_management_publish_status("Error initializing new configuration, using the old config");
-      cfg_persist_config_move(self->new_config, self->old_config);
-      cfg_deinit(self->new_config);
-      if (!cfg_init(self->old_config))
-        {
-          /* hmm. hmmm, error reinitializing old configuration, we're hosed.
-           * Best is to kill ourselves in the hope that the supervisor
-           * restarts us.
-           */
-          kill(getpid(), SIGQUIT);
-          g_assert_not_reached();
-        }
-      persist_config_free(self->old_config->persist);
-      self->old_config->persist = NULL;
-      cfg_free(self->new_config);
-      self->current_configuration = self->old_config;
+      main_loop_worker_sync_call(main_loop_reload_config_revert, self);
+      return;
     }
 
   /* this is already running with the new config in place */
@@ -277,8 +291,6 @@ main_loop_reload_config_apply(gpointer user_data)
 
   self->new_config = NULL;
   self->old_config = NULL;
-
-  return;
 }
 
 
