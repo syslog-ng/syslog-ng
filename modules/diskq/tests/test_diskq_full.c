@@ -78,7 +78,7 @@ test_diskq_become_full(gboolean reliable)
   stats_unlock();
   unlink(DISKQ_FILENAME);
   log_queue_disk_load_queue(q, DISKQ_FILENAME);
-  feed_some_messages(q, 1000, &parse_options);
+  feed_some_messages(q, 1000);
 
   assert_gint(atomic_gssize_racy_get(&q->dropped_messages->value), 1000, "Bad dropped message number (reliable: %s)",
               reliable ? "TRUE" : "FALSE");

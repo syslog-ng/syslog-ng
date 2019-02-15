@@ -39,12 +39,14 @@ test_ack(LogMessage *msg, AckType ack_type)
 }
 
 void
-feed_some_messages(LogQueue *q, int n, MsgFormatOptions *po)
+feed_some_messages(LogQueue *q, int n)
 {
+  MsgFormatOptions format_options;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   LogMessage *msg;
   gint i;
 
+  format_options.format_handler = NULL;
   path_options.ack_needed = q->use_backlog;
   path_options.flow_control_requested = TRUE;
   for (i = 0; i < n; i++)
@@ -52,7 +54,7 @@ feed_some_messages(LogQueue *q, int n, MsgFormatOptions *po)
       gchar *msg_str =
         g_strdup_printf("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép ID :%08d",i);
       GSockAddr *test_addr = g_sockaddr_inet_new("10.10.10.10", 1010);
-      msg = log_msg_new(msg_str, strlen(msg_str), test_addr, po);
+      msg = log_msg_new(msg_str, strlen(msg_str), test_addr, &format_options);
       g_sockaddr_unref(test_addr);
       g_free(msg_str);
 

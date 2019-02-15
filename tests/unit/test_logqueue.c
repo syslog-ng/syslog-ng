@@ -205,13 +205,13 @@ Test(logqueue, test_zero_diskbuf_and_normal_acks)
 
   fed_messages = 0;
   acked_messages = 0;
-  feed_some_messages(q, 1, &parse_options);
+  feed_some_messages(q, 1);
   cr_assert_eq(stats_counter_get(q->queued_messages), 1);
   cr_assert_neq(stats_counter_get(q->memory_usage), 0);
   gint size_when_single_msg = stats_counter_get(q->memory_usage);
 
   for (i = 0; i < 10; i++)
-    feed_some_messages(q, 10, &parse_options);
+    feed_some_messages(q, 10);
 
   cr_assert_eq(stats_counter_get(q->queued_messages), 101);
   cr_assert_eq(stats_counter_get(q->memory_usage), 101*size_when_single_msg);
@@ -238,7 +238,7 @@ Test(logqueue, test_zero_diskbuf_alternating_send_acks)
   acked_messages = 0;
   for (i = 0; i < 10; i++)
     {
-      feed_some_messages(q, 10, &parse_options);
+      feed_some_messages(q, 10);
       send_some_messages(q, 10);
       app_ack_some_messages(q, 10);
     }
@@ -297,10 +297,10 @@ Test(logqueue, log_queue_fifo_rewind_all_and_memory_usage)
   stats_register_counter(1, &sc_key, SC_TYPE_MEMORY_USAGE, &q->memory_usage);
   stats_unlock();
 
-  feed_some_messages(q, 1, &parse_options);
+  feed_some_messages(q, 1);
   gint size_when_single_msg = stats_counter_get(q->memory_usage);
 
-  feed_some_messages(q, 9, &parse_options);
+  feed_some_messages(q, 9);
   cr_assert_eq(stats_counter_get(q->memory_usage), 10*size_when_single_msg);
 
   send_some_messages(q, 10);

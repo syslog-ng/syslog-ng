@@ -32,7 +32,7 @@ extern int acked_messages;
 extern int fed_messages;
 
 void test_ack(LogMessage *msg, AckType ack_type);
-void feed_some_messages(LogQueue *q, int n, MsgFormatOptions *po);
+void feed_some_messages(LogQueue *q, int n);
 
 void send_some_messages(LogQueue *q, gint n);
 
