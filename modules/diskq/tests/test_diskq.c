@@ -592,5 +592,8 @@ main(void)
   testcase_zero_diskbuf_and_normal_acks();
   testcase_diskbuffer_restart_corrupted();
 
+  cfg_free(configuration);
+  app_shutdown();
+
   return 0;
 }

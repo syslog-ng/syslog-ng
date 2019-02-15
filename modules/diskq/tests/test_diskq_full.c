@@ -96,7 +96,12 @@ main(void)
   configuration = cfg_new_snippet();
   cfg_load_module(configuration, "disk-buffer");
   msg_set_post_func(msg_post_function);
+
   test_diskq_become_full(TRUE);
   test_diskq_become_full(FALSE);
+
+  cfg_free(configuration);
+  app_shutdown();
+
   return 0;
 }
