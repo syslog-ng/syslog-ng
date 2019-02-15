@@ -140,6 +140,7 @@ struct _MainLoop
   struct iv_signal sigusr1_poll;
 
   struct iv_event exit_requested;
+  struct iv_task revert_config;
 
   struct iv_timer exit_timer;
 
@@ -251,6 +252,13 @@ main_loop_reload_config_revert(gpointer user_data)
   main_loop_reload_config_finished(self);
 }
 
+static void
+_revert_config(gpointer user_data)
+{
+  MainLoop *self = (MainLoop *) user_data;
+  main_loop_worker_sync_call(main_loop_reload_config_revert, self);
+}
+
 /* called to apply the new configuration once all I/O worker threads have finished */
 static void
 main_loop_reload_config_apply(gpointer user_data)
@@ -276,7 +284,7 @@ main_loop_reload_config_apply(gpointer user_data)
     {
       msg_error("Error initializing new configuration, reverting to old config");
       service_management_publish_status("Error initializing new configuration, using the old config");
-      main_loop_worker_sync_call(main_loop_reload_config_revert, self);
+      iv_task_register(&self->revert_config);
       return;
     }
 
@@ -573,6 +581,10 @@ main_loop_init(MainLoop *self, MainLoopOptions *options)
 
   main_loop_init_events(self);
   setup_signals(self);
+
+  IV_TASK_INIT(&self->revert_config);
+  self->revert_config.handler = _revert_config;
+  self->revert_config.cookie = self;
 
   self->current_configuration = cfg_new(0);
 }
