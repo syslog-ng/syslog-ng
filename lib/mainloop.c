@@ -220,6 +220,14 @@ main_loop_was_last_reload_successful(MainLoop *self)
 }
 
 static void
+main_loop_reload_config_finished(MainLoop *self)
+{
+  app_config_changed();
+  self->new_config = NULL;
+  self->old_config = NULL;
+}
+
+static void
 main_loop_reload_config_revert(gpointer user_data)
 {
   MainLoop *self = (MainLoop *) user_data;
@@ -240,10 +248,7 @@ main_loop_reload_config_revert(gpointer user_data)
   cfg_free(self->new_config);
   self->current_configuration = self->old_config;
 
-  app_config_changed();
-
-  self->new_config = NULL;
-  self->old_config = NULL;
+  main_loop_reload_config_finished(self);
 }
 
 /* called to apply the new configuration once all I/O worker threads have finished */
@@ -287,10 +292,7 @@ main_loop_reload_config_apply(gpointer user_data)
     }
 
   /* this is already running with the new config in place */
-  app_config_changed();
-
-  self->new_config = NULL;
-  self->old_config = NULL;
+  main_loop_reload_config_finished(self);
 }
 
 
