@@ -16,6 +16,7 @@ SCL_SUBDIRS	= \
 	loggly		\
 	logmatic	\
 	mbox		\
+	netskope	\
 	nodejs		\
 	osquery	\
 	pacct		\
