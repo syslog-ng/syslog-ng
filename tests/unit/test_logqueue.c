@@ -52,13 +52,10 @@ static gpointer
 _threaded_feed(gpointer args)
 {
   LogQueue *q = args;
-  char *msg_str = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép";
-  gint msg_len = strlen(msg_str);
   gint i;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   LogMessage *msg, *tmpl;
   GTimeVal start, end;
-  GSockAddr *sa;
   glong diff;
 
   iv_init();
@@ -66,9 +63,7 @@ _threaded_feed(gpointer args)
   /* emulate main loop for LogQueue */
   main_loop_worker_thread_start(NULL);
 
-  sa = g_sockaddr_inet_new("10.10.10.10", 1010);
-  tmpl = log_msg_new(msg_str, msg_len, sa, &parse_options);
-  g_sockaddr_unref(sa);
+  tmpl = log_msg_new_empty();
 
   g_get_current_time(&start);
   for (i = 0; i < MESSAGES_PER_FEEDER; i++)
@@ -171,7 +166,7 @@ setup(void)
   app_startup();
   setenv("TZ", "MET-1METDST", TRUE);
   tzset();
-  init_and_load_syslogformat_module();
+  configuration = cfg_new_snippet();
   configuration->stats_options.level = 1;
   cr_assert(cfg_init(configuration), "cfg_init failed!");
 }
@@ -179,7 +174,7 @@ setup(void)
 void
 teardown(void)
 {
-  deinit_syslogformat_module();
+  cfg_free(configuration);
   app_shutdown();
 }
 
@@ -205,19 +200,19 @@ Test(logqueue, test_zero_diskbuf_and_normal_acks)
 
   fed_messages = 0;
   acked_messages = 0;
-  feed_some_messages(q, 1, &parse_options);
+  feed_some_messages(q, 1);
   cr_assert_eq(stats_counter_get(q->queued_messages), 1);
   cr_assert_neq(stats_counter_get(q->memory_usage), 0);
   gint size_when_single_msg = stats_counter_get(q->memory_usage);
 
   for (i = 0; i < 10; i++)
-    feed_some_messages(q, 10, &parse_options);
+    feed_some_messages(q, 10);
 
   cr_assert_eq(stats_counter_get(q->queued_messages), 101);
   cr_assert_eq(stats_counter_get(q->memory_usage), 101*size_when_single_msg);
 
   send_some_messages(q, fed_messages);
-  app_ack_some_messages(q, fed_messages);
+  log_queue_ack_backlog(q, fed_messages);
 
   cr_assert_eq(fed_messages, acked_messages,
                "did not receive enough acknowledgements: fed_messages=%d, acked_messages=%d",
@@ -238,9 +233,9 @@ Test(logqueue, test_zero_diskbuf_alternating_send_acks)
   acked_messages = 0;
   for (i = 0; i < 10; i++)
     {
-      feed_some_messages(q, 10, &parse_options);
+      feed_some_messages(q, 10);
       send_some_messages(q, 10);
-      app_ack_some_messages(q, 10);
+      log_queue_ack_backlog(q, 10);
     }
 
   cr_assert_eq(fed_messages, acked_messages,
@@ -297,10 +292,10 @@ Test(logqueue, log_queue_fifo_rewind_all_and_memory_usage)
   stats_register_counter(1, &sc_key, SC_TYPE_MEMORY_USAGE, &q->memory_usage);
   stats_unlock();
 
-  feed_some_messages(q, 1, &parse_options);
+  feed_some_messages(q, 1);
   gint size_when_single_msg = stats_counter_get(q->memory_usage);
 
-  feed_some_messages(q, 9, &parse_options);
+  feed_some_messages(q, 9);
   cr_assert_eq(stats_counter_get(q->memory_usage), 10*size_when_single_msg);
 
   send_some_messages(q, 10);

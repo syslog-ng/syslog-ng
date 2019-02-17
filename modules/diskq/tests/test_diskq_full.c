@@ -38,8 +38,6 @@
 
 #define DISKQ_FILENAME "test_become_full.qf"
 
-MsgFormatOptions parse_options;
-
 
 static void msg_post_function(LogMessage *msg)
 {
@@ -78,7 +76,7 @@ test_diskq_become_full(gboolean reliable)
   stats_unlock();
   unlink(DISKQ_FILENAME);
   log_queue_disk_load_queue(q, DISKQ_FILENAME);
-  feed_some_messages(q, 1000, &parse_options);
+  feed_some_messages(q, 1000);
 
   assert_gint(atomic_gssize_racy_get(&q->dropped_messages->value), 1000, "Bad dropped message number (reliable: %s)",
               reliable ? "TRUE" : "FALSE");
@@ -96,13 +94,14 @@ main(void)
   tzset();
 
   configuration = cfg_new_snippet();
-  cfg_load_module(configuration, "syslogformat");
   cfg_load_module(configuration, "disk-buffer");
-  cfg_load_module(configuration, "builtin-serializer");
   msg_set_post_func(msg_post_function);
-  msg_format_options_defaults(&parse_options);
-  msg_format_options_init(&parse_options, configuration);
+
   test_diskq_become_full(TRUE);
   test_diskq_become_full(FALSE);
+
+  cfg_free(configuration);
+  app_shutdown();
+
   return 0;
 }
