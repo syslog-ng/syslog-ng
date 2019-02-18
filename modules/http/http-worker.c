@@ -162,7 +162,13 @@ _append_auth_header(struct curl_slist *list, HTTPDestinationDriver *owner)
 
   if (!auth_header_str)
     {
-      http_dd_auth_header_renew(&owner->super.super.super);
+      if (!http_dd_auth_header_renew(&owner->super.super.super))
+        {
+          msg_warning("WARNING: failed to renew auth header",
+                      evt_tag_str("driver", owner->super.super.super.id),
+                      log_pipe_location_tag(&owner->super.super.super.super));
+          return list;
+        }
       auth_header_str = http_auth_header_get_as_string(owner->auth_header);
     }
 
