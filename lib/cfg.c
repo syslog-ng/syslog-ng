@@ -684,7 +684,7 @@ cfg_get_user_version(const GlobalConfig *cfg)
   return cfg->user_version;
 }
 
-gint
+guint
 cfg_get_parsed_version(const GlobalConfig *cfg)
 {
   return cfg->parsed_version;

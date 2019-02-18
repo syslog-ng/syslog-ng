@@ -8,6 +8,7 @@ lib_tests_TESTS		= \
 	lib/tests/test_hostname		\
 	lib/tests/test_rcptid		\
 	lib/tests/test_lexer        	\
+	lib/tests/test_pragma        	\
 	lib/tests/test_logthrdestdrv	\
 	lib/tests/test_str_format   	\
 	lib/tests/test_string_list	\
@@ -76,6 +77,11 @@ lib_tests_test_rcptid_LDADD	= \
 lib_tests_test_lexer_CFLAGS	=	\
 	$(TEST_CFLAGS)
 lib_tests_test_lexer_LDADD	=	\
+	$(TEST_LDADD)
+
+lib_tests_test_pragma_CFLAGS	=	\
+	$(TEST_CFLAGS)
+lib_tests_test_pragma_LDADD	=	\
 	$(TEST_LDADD)
 
 lib_tests_test_logthrdestdrv_CFLAGS	=	\
