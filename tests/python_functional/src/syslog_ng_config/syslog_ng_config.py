@@ -36,6 +36,7 @@ class SyslogNgConfig(object):
         self.__working_dir = working_dir
         self.__logger_factory = logger_factory
         self.__logger = logger_factory.create_logger("SyslogNgConfig")
+        self.__raw_config = None
         self.__syslog_ng_config = {
             "version": version,
             "global_options": {},
@@ -46,8 +47,14 @@ class SyslogNgConfig(object):
     def set_version(self, version):
         self.__syslog_ng_config["version"]=version
 
+    def set_raw_config(self, raw_config):
+        self.__raw_config = raw_config
+
     def write_content(self, config_path):
-        rendered_config = ConfigRenderer(self.__syslog_ng_config, self.__working_dir).get_rendered_config()
+        if self.__raw_config:
+            rendered_config = self.__raw_config
+        else:
+            rendered_config = ConfigRenderer(self.__syslog_ng_config, self.__working_dir).get_rendered_config()
         self.__logger.info(
             "Used config \
         \n->Content:[{}]".format(
