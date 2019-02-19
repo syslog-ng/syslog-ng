@@ -339,6 +339,7 @@ http_dd_free(LogPipe *s)
   g_string_free(self->delimiter, TRUE);
   g_string_free(self->body_prefix, TRUE);
   g_string_free(self->body_suffix, TRUE);
+  log_template_unref(self->body_template);
 
   curl_global_cleanup();
 
