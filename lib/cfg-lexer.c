@@ -766,7 +766,7 @@ _is_generator_plugin(Plugin *p)
 }
 
 static Plugin *
-cfg_lexer_find_generator(CfgLexer *self, GlobalConfig *cfg, gint context, const gchar *name)
+cfg_lexer_find_generator_plugin(CfgLexer *self, GlobalConfig *cfg, gint context, const gchar *name)
 {
   Plugin *p;
 
@@ -1028,7 +1028,7 @@ cfg_lexer_preprocess(CfgLexer *self, gint tok, YYSTYPE *yylval, YYLTYPE *yylloc)
 
   if (tok == LL_IDENTIFIER &&
       self->cfg &&
-      (p = cfg_lexer_find_generator(self, self->cfg, cfg_lexer_get_context_type(self), yylval->cptr)))
+      (p = cfg_lexer_find_generator_plugin(self, self->cfg, cfg_lexer_get_context_type(self), yylval->cptr)))
     {
       if (!cfg_lexer_parse_and_run_block_generator(self, p, yylval))
         return CLPR_ERROR;
