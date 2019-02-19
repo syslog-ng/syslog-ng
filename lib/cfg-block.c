@@ -149,25 +149,26 @@ _validate_args(CfgArgs *self, CfgArgs *defs, const gchar *reference)
  * for the lexer.
  */
 gboolean
-cfg_block_generate(CfgBlockGenerator *s, GlobalConfig *cfg, CfgArgs *args, GString *result, const gchar *reference)
+cfg_block_generate(CfgBlockGenerator *s, GlobalConfig *cfg, gpointer args, GString *result, const gchar *reference)
 {
   CfgBlock *self = (CfgBlock *) s;
   gchar *value;
   gsize length;
   GError *error = NULL;
   gchar buf[256];
+  CfgArgs *cfgargs = (CfgArgs *)args;
 
-  if (!_validate_args(args, self->arg_defs, reference))
+  if (!_validate_args(cfgargs, self->arg_defs, reference))
     return FALSE;
 
   if (cfg_args_is_accepting_varargs(self->arg_defs))
     {
-      gchar *formatted_varargs = cfg_args_format_varargs(args, self->arg_defs);
-      cfg_args_set(args, "__VARARGS__", formatted_varargs);
+      gchar *formatted_varargs = cfg_args_format_varargs(cfgargs, self->arg_defs);
+      cfg_args_set(cfgargs, "__VARARGS__", formatted_varargs);
       g_free(formatted_varargs);
     }
 
-  value = cfg_lexer_subst_args_in_input(cfg->globals, self->arg_defs, args, self->content, -1, &length, &error);
+  value = cfg_lexer_subst_args_in_input(cfg->globals, self->arg_defs, cfgargs, self->content, -1, &length, &error);
   if (!value)
     {
       msg_warning("Syntax error while resolving backtick references in block",

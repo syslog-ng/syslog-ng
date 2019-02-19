@@ -444,7 +444,7 @@ Test(lexer, include_finds_wildcards_files_in_include_path)
 }
 
 static gboolean
-_fake_generator_generate(CfgBlockGenerator *self, GlobalConfig *cfg, CfgArgs *args, GString *result,
+_fake_generator_generate(CfgBlockGenerator *self, GlobalConfig *cfg, gpointer args, GString *result,
                          const gchar *reference)
 {
   g_string_append(result, "fake_generator_content");

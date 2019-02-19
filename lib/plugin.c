@@ -74,7 +74,6 @@ plugin_candidate_free(PluginCandidate *self)
 gpointer
 plugin_construct(Plugin *self)
 {
-  g_assert(self->parser == NULL);
   if (self->construct)
     {
       return self->construct(self);

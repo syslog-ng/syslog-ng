@@ -35,7 +35,7 @@ cfg_block_generator_format_name_method(CfgBlockGenerator *self, gchar *buf, gsiz
 }
 
 gboolean
-cfg_block_generator_generate(CfgBlockGenerator *self, GlobalConfig *cfg, CfgArgs *args, GString *result,
+cfg_block_generator_generate(CfgBlockGenerator *self, GlobalConfig *cfg, gpointer args, GString *result,
                              const gchar *reference)
 {
   gchar block_name[1024];

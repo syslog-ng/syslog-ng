@@ -44,6 +44,7 @@ CfgParser block_ref_parser =
   .context = LL_CONTEXT_BLOCK_REF,
   .keywords = block_ref_keywords,
   .parse = (gint (*)(CfgLexer *, gpointer *, gpointer arg)) block_ref_parse,
+  .cleanup = (void (*)(gpointer))cfg_args_unref
 };
 
 CFG_PARSER_IMPLEMENT_LEXER_BINDING(block_ref_, CfgArgs **)

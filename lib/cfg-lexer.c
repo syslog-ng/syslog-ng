@@ -753,6 +753,7 @@ cfg_lexer_register_generator_plugin(PluginContext *context, CfgBlockGenerator *g
   plugin->super.name = g_strdup(gen->name);
   plugin->super.free_fn = _generator_plugin_free;
   plugin->super.construct = _generator_plugin_construct;
+  plugin->super.parser = &block_ref_parser;
   plugin->gen = gen;
 
   plugin_register(context, &plugin->super, 1);
@@ -764,18 +765,16 @@ _is_generator_plugin(Plugin *p)
   return p->type & LL_CONTEXT_FLAG_GENERATOR;
 }
 
-static CfgBlockGenerator *
-cfg_lexer_find_generator(CfgLexer *self, GlobalConfig *cfg, gint context, const gchar *name)
+static Plugin *
+cfg_lexer_find_generator_plugin(CfgLexer *self, GlobalConfig *cfg, gint context, const gchar *name)
 {
   Plugin *p;
-  CfgBlockGenerator *gen;
 
   p = plugin_find(&cfg->plugin_context, context | LL_CONTEXT_FLAG_GENERATOR, name);
   if (!p || !_is_generator_plugin(p))
     return NULL;
 
-  gen = plugin_construct(p);
-  return gen;
+  return p;
 }
 
 static YYSTYPE
@@ -898,22 +897,29 @@ cfg_lexer_append_preprocessed_output(CfgLexer *self, const gchar *token_text)
 }
 
 static gboolean
-cfg_lexer_parse_and_run_block_generator(CfgLexer *self, CfgBlockGenerator *gen, YYSTYPE *yylval)
+cfg_lexer_parse_and_run_block_generator(CfgLexer *self, Plugin *p, YYSTYPE *yylval)
 {
-  CfgArgs *args;
+  gpointer *args;
   CfgIncludeLevel *level = &self->include_stack[self->include_depth];
+  CfgBlockGenerator *gen = plugin_construct(p);
+  gboolean success = TRUE;
 
   self->preprocess_suppress_tokens++;
 
   gint saved_line = level->lloc.first_line;
   gint saved_column = level->lloc.first_column;
-  if (!cfg_parser_parse(&block_ref_parser, self, (gpointer *) &args, NULL))
+  CfgParser *gen_parser = p->parser;
+  if (gen_parser && !cfg_parser_parse(gen_parser, self, (gpointer *) &args, NULL))
     {
+      cfg_parser_cleanup(gen_parser, args);
+
       level->lloc.first_line = saved_line;
       level->lloc.first_column = saved_column;
       free(yylval->cptr);
       self->preprocess_suppress_tokens--;
-      return FALSE;
+
+      success = FALSE;
+      goto exit;
     }
 
   GString *result = g_string_sized_new(256);
@@ -921,16 +927,18 @@ cfg_lexer_parse_and_run_block_generator(CfgLexer *self, CfgBlockGenerator *gen, 
   level->lloc.first_line = saved_line;
   level->lloc.first_column = saved_column;
   self->preprocess_suppress_tokens--;
-  gboolean success = cfg_block_generator_generate(gen, self->cfg, args, result,
-                                                  cfg_lexer_format_location(self, &level->lloc, buf, sizeof(buf)));
+  success = cfg_block_generator_generate(gen, self->cfg, args, result,
+                                         cfg_lexer_format_location(self, &level->lloc, buf, sizeof(buf)));
 
   free(yylval->cptr);
-  cfg_args_unref(args);
+  cfg_parser_cleanup(gen_parser, args);
 
   if (!success)
     {
       g_string_free(result, TRUE);
-      return FALSE;
+
+      success = FALSE;
+      goto exit;
     }
 
   cfg_block_generator_format_name(gen, buf, sizeof(buf));
@@ -941,10 +949,9 @@ cfg_lexer_parse_and_run_block_generator(CfgLexer *self, CfgBlockGenerator *gen, 
     success = cfg_lexer_include_buffer(self, buf, result->str, result->len);
   g_string_free(result, TRUE);
 
-  if (!success)
-    return FALSE;
-
-  return TRUE;
+exit:
+  cfg_block_generator_unref(gen);
+  return success;
 }
 
 static gboolean
@@ -982,15 +989,13 @@ cfg_lexer_preprocess(CfgLexer *self, gint tok, YYSTYPE *yylval, YYLTYPE *yylloc)
    *
    */
 
-  CfgBlockGenerator *gen;
+  Plugin *p;
 
   if (tok == LL_IDENTIFIER &&
       self->cfg &&
-      (gen = cfg_lexer_find_generator(self, self->cfg, cfg_lexer_get_context_type(self), yylval->cptr)))
+      (p = cfg_lexer_find_generator_plugin(self, self->cfg, cfg_lexer_get_context_type(self), yylval->cptr)))
     {
-      gboolean success = cfg_lexer_parse_and_run_block_generator(self, gen, yylval);
-      cfg_block_generator_unref(gen);
-      if (!success)
+      if (!cfg_lexer_parse_and_run_block_generator(self, p, yylval))
         return CLPR_ERROR;
 
       return CLPR_LEX_AGAIN;

@@ -26,7 +26,6 @@
 #define CFG_BLOCK_GENERATOR_H_INCLUDED 1
 
 #include "syslog-ng.h"
-#include "cfg-args.h"
 
 /**
  * CfgBlockGenerator:
@@ -46,7 +45,7 @@ struct _CfgBlockGenerator
   gchar *name;
   gboolean suppress_backticks;
   const gchar *(*format_name)(CfgBlockGenerator *self, gchar *buf, gsize buf_len);
-  gboolean (*generate)(CfgBlockGenerator *self, GlobalConfig *cfg, CfgArgs *args, GString *result,
+  gboolean (*generate)(CfgBlockGenerator *self, GlobalConfig *cfg, gpointer args, GString *result,
                        const gchar *reference);
   void (*free_fn)(CfgBlockGenerator *self);
 };
@@ -57,7 +56,7 @@ cfg_block_generator_format_name(CfgBlockGenerator *self, gchar *buf, gsize buf_l
   return self->format_name(self, buf, buf_len);
 }
 
-gboolean cfg_block_generator_generate(CfgBlockGenerator *self, GlobalConfig *cfg, CfgArgs *args, GString *result,
+gboolean cfg_block_generator_generate(CfgBlockGenerator *self, GlobalConfig *cfg, gpointer args, GString *result,
                                       const gchar *reference);
 void cfg_block_generator_init_instance(CfgBlockGenerator *self, gint context, const gchar *name);
 void cfg_block_generator_free_instance(CfgBlockGenerator *self);

@@ -23,6 +23,7 @@
 
 #include "cfg.h"
 #include "cfg-block-generator.h"
+#include "block-ref-parser.h"
 #include "messages.h"
 #include "plugin.h"
 #include "plugin-types.h"
@@ -350,29 +351,30 @@ system_generate_app_parser(GlobalConfig *cfg, GString *sysblock, CfgArgs *args)
 }
 
 static gboolean
-system_source_generate(CfgBlockGenerator *self, GlobalConfig *cfg, CfgArgs *args, GString *sysblock,
+system_source_generate(CfgBlockGenerator *self, GlobalConfig *cfg, gpointer args, GString *sysblock,
                        const gchar *reference)
 {
   gboolean result = FALSE;
+  CfgArgs *cfgargs = (CfgArgs *)args;
 
   /* NOTE: we used to have an exclude-kmsg() option that was removed, still
    * we need to ignore it */
 
-  if (args)
-    cfg_args_remove(args, "exclude-kmsg");
+  if (cfgargs)
+    cfg_args_remove(cfgargs, "exclude-kmsg");
 
   g_string_append(sysblock,
                   "channel {\n"
                   "    source {\n");
 
-  if (!system_generate_system_transports(sysblock, args))
+  if (!system_generate_system_transports(sysblock, cfgargs))
     {
       goto exit;
     }
 
   g_string_append(sysblock, "    }; # source\n");
 
-  system_generate_app_parser(cfg, sysblock, args);
+  system_generate_app_parser(cfg, sysblock, cfgargs);
 
   g_string_append(sysblock, "}; # channel\n");
   result = TRUE;
@@ -402,7 +404,8 @@ Plugin system_plugins[] =
   {
     .type = LL_CONTEXT_SOURCE | LL_CONTEXT_FLAG_GENERATOR,
     .name = "system",
-    .construct = system_source_construct
+    .construct = system_source_construct,
+    .parser = &block_ref_parser
   }
 };
 
