@@ -156,6 +156,37 @@ _add_header(struct curl_slist *curl_headers, const gchar *header, const gchar *v
 }
 
 static struct curl_slist *
+_append_auth_header(struct curl_slist *list, HTTPDestinationDriver *owner)
+{
+  const gchar *auth_header_str = http_auth_header_get_as_string(owner->auth_header);
+
+  if (!auth_header_str)
+    {
+      if (!http_dd_auth_header_renew(&owner->super.super.super))
+        {
+          msg_warning("WARNING: failed to renew auth header",
+                      evt_tag_str("driver", owner->super.super.super.id),
+                      log_pipe_location_tag(&owner->super.super.super.super));
+          return list;
+        }
+      auth_header_str = http_auth_header_get_as_string(owner->auth_header);
+    }
+
+  if (auth_header_str)
+    {
+      list = curl_slist_append(list, auth_header_str);
+    }
+  else
+    {
+      msg_warning("WARNING: auth-header() returned NULL-value",
+                  evt_tag_str("driver", owner->super.super.super.id),
+                  log_pipe_location_tag(&owner->super.super.super.super));
+    }
+
+  return list;
+}
+
+static struct curl_slist *
 _format_request_headers(HTTPDestinationWorker *self, LogMessage *msg)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
@@ -188,6 +219,9 @@ _format_request_headers(HTTPDestinationWorker *self, LogMessage *msg)
 
   for (l = owner->headers; l; l = l->next)
     headers = curl_slist_append(headers, l->data);
+
+  if (owner->auth_header)
+    headers = _append_auth_header(headers, owner);
 
   return headers;
 }
@@ -359,8 +393,18 @@ _curl_get_status_code(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *targe
 }
 
 static LogThreadedResult
+_renew_header(HTTPDestinationDriver *self)
+{
+  if (!http_dd_auth_header_renew(&self->super.super.super))
+    return LTR_NOT_CONNECTED;
+  return LTR_RETRY;
+}
+
+static LogThreadedResult
 _flush_on_target(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
 {
+  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
+
   if (!_curl_perform_request(self, target))
     return LTR_NOT_CONNECTED;
 
@@ -371,6 +415,9 @@ _flush_on_target(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
 
   if (debug_flag)
     _debug_response_info(self, target, http_code);
+
+  if (http_code == 401 && owner->auth_header)
+    return _renew_header(owner);
 
   return map_http_status_to_worker_status(self, target->url, http_code);
 }

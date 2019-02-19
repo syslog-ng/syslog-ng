@@ -72,6 +72,14 @@ http_dd_set_headers(LogDriver *d, GList *headers)
 }
 
 void
+http_dd_set_auth_header(LogDriver *d, HttpAuthHeader *auth_header)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  self->auth_header = auth_header;
+}
+
+void
 http_dd_set_method(LogDriver *d, const gchar *method)
 {
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
@@ -299,6 +307,135 @@ _format_stats_instance(LogThreadedDestDriver *s)
   return stats;
 }
 
+static const gchar *
+_format_auth_header_name(const LogPipe *s)
+{
+  static gchar auth_header_name[1024];
+  const gchar *persist_name = _format_persist_name(s);
+  g_snprintf(auth_header_name, sizeof(auth_header_name), "%s.auth_header", persist_name);
+
+  return auth_header_name;
+}
+
+static gboolean
+_load_auth_header_from_persist_file(LogPipe *s)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *)s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
+
+  gsize size;
+  guint8 version;
+  const gchar *persist_name = _format_auth_header_name(s);
+  gchar *auth_header_str = persist_state_lookup_string(cfg->state, persist_name, &size, &version);
+
+  if (!auth_header_str)
+    return FALSE;
+
+  gboolean ret = http_auth_header_load_from_string(self->auth_header, auth_header_str);
+  g_free(auth_header_str);
+
+  return ret;
+}
+
+static void
+_save_auth_header_to_persist_file(LogPipe *s)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *)s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
+  const gchar *persist_name = _format_auth_header_name(s);
+  const gchar *auth_header_str = http_auth_header_get_as_string(self->auth_header);
+
+  persist_state_alloc_string(cfg->state, persist_name, auth_header_str, -1);
+}
+
+static gboolean
+_auth_header_renew(HTTPDestinationDriver *self)
+{
+  gboolean ret = TRUE;
+
+  if (self->auth_header && http_auth_header_has_expired(self->auth_header))
+    {
+      ret = http_auth_header_renew(self->auth_header);
+      if (ret)
+        {
+          _save_auth_header_to_persist_file(&self->super.super.super.super);
+        }
+    }
+
+  return ret;
+}
+
+static void
+_load_auth_header(LogPipe *s)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *)s;
+
+  if (_load_auth_header_from_persist_file(s))
+    return;
+
+  if (!_auth_header_renew(self))
+    {
+      msg_warning("WARNING: http() driver failed to get auth header",
+                  log_pipe_location_tag(s));
+    }
+}
+
+gboolean
+http_dd_auth_header_renew(LogDriver *d)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *)d;
+
+  gboolean ret = TRUE;
+  g_mutex_lock(self->workers_lock);
+  {
+    ret = _auth_header_renew(self);
+  }
+  g_mutex_unlock(self->workers_lock);
+
+  return ret;
+}
+
+gboolean
+http_dd_deinit(LogPipe *s)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *)s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
+  cfg_persist_config_add(cfg, _format_auth_header_name(s), self->auth_header, (GDestroyNotify) http_auth_header_free,
+                         FALSE);
+  self->auth_header = NULL;
+
+  return log_threaded_dest_driver_deinit_method(s);
+}
+
+static gboolean
+_setup_auth_header(LogPipe *s)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *)s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
+
+  HttpAuthHeader *prev_auth_header = cfg_persist_config_fetch(cfg, _format_auth_header_name(s));
+
+  if (prev_auth_header)
+    {
+      http_auth_header_free(self->auth_header);
+      self->auth_header = prev_auth_header;
+      msg_debug("Auth header instance found in persist cfg",
+                log_pipe_location_tag(s));
+      return TRUE;
+    }
+
+  if (self->auth_header)
+    {
+      if (!http_auth_header_init(self->auth_header))
+        {
+          return FALSE;
+        }
+      _load_auth_header(s);
+    }
+
+  return TRUE;
+}
+
 gboolean
 http_dd_init(LogPipe *s)
 {
@@ -318,6 +455,9 @@ http_dd_init(LogPipe *s)
     }
   /* we need to set up url before we call the inherited init method, so our stats key is correct */
   self->url = self->load_balancer->targets[0].url;
+
+  if (!_setup_auth_header(s))
+    return FALSE;
 
   if (!log_threaded_dest_driver_init_method(s))
     return FALSE;
@@ -351,6 +491,8 @@ http_dd_free(LogPipe *s)
   g_free(self->key_file);
   g_free(self->ciphers);
   g_list_free_full(self->headers, g_free);
+  http_auth_header_free(self->auth_header);
+  g_mutex_free(self->workers_lock);
   http_load_balancer_free(self->load_balancer);
 
   log_threaded_dest_driver_free(s);
@@ -364,6 +506,7 @@ http_dd_new(GlobalConfig *cfg)
   log_threaded_dest_driver_init_instance(&self->super, cfg);
 
   self->super.super.super.super.init = http_dd_init;
+  self->super.super.super.super.deinit = http_dd_deinit;
   self->super.super.super.super.free_fn = http_dd_free;
   self->super.super.super.super.generate_persist_name = _format_persist_name;
   self->super.format_stats_instance = _format_stats_instance;
@@ -380,6 +523,7 @@ http_dd_new(GlobalConfig *cfg)
   self->body_prefix = g_string_new("");
   self->body_suffix = g_string_new("");
   self->delimiter = g_string_new("\n");
+  self->workers_lock = g_mutex_new();
   self->load_balancer = http_load_balancer_new();
   curl_version_info_data *curl_info = curl_version_info(CURLVERSION_NOW);
   if (!self->user_agent)

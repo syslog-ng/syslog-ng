@@ -43,6 +43,7 @@ typedef enum
   LTR_SUCCESS,
   LTR_QUEUED,
   LTR_NOT_CONNECTED,
+  LTR_RETRY,
   LTR_MAX
 } LogThreadedResult;
 
@@ -65,7 +66,8 @@ struct _LogThreadedDestWorker
   gboolean connected;
   gint batch_size;
   gint rewound_batch_size;
-  gint retries_counter;
+  gint retries_on_error_counter;
+  guint retries_counter;
   gint32 seq_num;
   struct timespec last_flush_time;
   gboolean enable_batching;
@@ -96,7 +98,8 @@ struct _LogThreadedDestDriver
   gint batch_timeout;
   gboolean under_termination;
   time_t time_reopen;
-  gint retries_max;
+  gint retries_on_error_max;
+  guint retries_max;
 
   struct
   {
@@ -214,7 +217,7 @@ gboolean log_threaded_dest_driver_start_workers(LogThreadedDestDriver *self);
 void log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalConfig *cfg);
 void log_threaded_dest_driver_free(LogPipe *s);
 
-void log_threaded_dest_driver_set_max_retries(LogDriver *s, gint max_retries);
+void log_threaded_dest_driver_set_max_retries_on_error(LogDriver *s, gint max_retries);
 void log_threaded_dest_driver_set_num_workers(LogDriver *s, gint num_workers);
 void log_threaded_dest_driver_set_batch_lines(LogDriver *s, gint batch_lines);
 void log_threaded_dest_driver_set_batch_timeout(LogDriver *s, gint batch_timeout);

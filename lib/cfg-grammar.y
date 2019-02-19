@@ -163,6 +163,7 @@ extern struct _StatsOptions *last_stats_options;
 %token LL_CONTEXT_CLIENT_PROTO        17
 %token LL_CONTEXT_SERVER_PROTO        18
 %token LL_CONTEXT_OPTIONS             19
+%token LL_CONTEXT_HTTP_AUTH_HEADER    20
 
 
 /* statements */
@@ -1189,7 +1190,7 @@ dest_driver_option
 threaded_dest_driver_option
 	: KW_RETRIES '(' positive_integer ')'
         {
-          log_threaded_dest_driver_set_max_retries(last_driver, $3);
+          log_threaded_dest_driver_set_max_retries_on_error(last_driver, $3);
         }
         | KW_BATCH_LINES '(' nonnegative_integer ')' { log_threaded_dest_driver_set_batch_lines(last_driver, $3); }
         | KW_BATCH_TIMEOUT '(' positive_integer ')' { log_threaded_dest_driver_set_batch_timeout(last_driver, $3); }
