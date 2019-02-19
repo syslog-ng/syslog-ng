@@ -6,7 +6,6 @@ ply                     [centos, debian, ubuntu]
 pylint                  [centos-7, debian, ubuntu]
 
 # pip packages for python functional tests
-colorlog                [centos, debian, ubuntu]
 mockito                 [centos, debian, ubuntu]
 pathlib2                [centos, debian, ubuntu]
 psutil                  [centos, debian, ubuntu]
