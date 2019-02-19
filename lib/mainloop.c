@@ -140,6 +140,7 @@ struct _MainLoop
   struct iv_signal sigusr1_poll;
 
   struct iv_event exit_requested;
+  struct iv_task revert_config;
 
   struct iv_timer exit_timer;
 
@@ -219,6 +220,45 @@ main_loop_was_last_reload_successful(MainLoop *self)
   return self->last_config_reload_successful;
 }
 
+static void
+main_loop_reload_config_finished(MainLoop *self)
+{
+  app_config_changed();
+  self->new_config = NULL;
+  self->old_config = NULL;
+}
+
+static void
+main_loop_reload_config_revert(gpointer user_data)
+{
+  MainLoop *self = (MainLoop *) user_data;
+
+  cfg_persist_config_move(self->new_config, self->old_config);
+  cfg_deinit(self->new_config);
+  if (!cfg_init(self->old_config))
+    {
+      /* hmm. hmmm, error reinitializing old configuration, we're hosed.
+       * Best is to kill ourselves in the hope that the supervisor
+       * restarts us.
+       */
+      kill(getpid(), SIGQUIT);
+      g_assert_not_reached();
+    }
+  persist_config_free(self->old_config->persist);
+  self->old_config->persist = NULL;
+  cfg_free(self->new_config);
+  self->current_configuration = self->old_config;
+
+  main_loop_reload_config_finished(self);
+}
+
+static void
+_revert_config(gpointer user_data)
+{
+  MainLoop *self = (MainLoop *) user_data;
+  main_loop_worker_sync_call(main_loop_reload_config_revert, self);
+}
+
 /* called to apply the new configuration once all I/O worker threads have finished */
 static void
 main_loop_reload_config_apply(gpointer user_data)
@@ -240,45 +280,24 @@ main_loop_reload_config_apply(gpointer user_data)
   cfg_persist_config_move(self->old_config, self->new_config);
 
   self->last_config_reload_successful = cfg_init(self->new_config);
-  if (self->last_config_reload_successful)
-    {
-      msg_verbose("New configuration initialized");
-      persist_config_free(self->new_config->persist);
-      self->new_config->persist = NULL;
-      cfg_free(self->old_config);
-      self->current_configuration = self->new_config;
-      service_management_clear_status();
-      msg_notice("Configuration reload request received, reloading configuration");
-
-    }
-  else
+  if (!self->last_config_reload_successful)
     {
       msg_error("Error initializing new configuration, reverting to old config");
       service_management_publish_status("Error initializing new configuration, using the old config");
-      cfg_persist_config_move(self->new_config, self->old_config);
-      cfg_deinit(self->new_config);
-      if (!cfg_init(self->old_config))
-        {
-          /* hmm. hmmm, error reinitializing old configuration, we're hosed.
-           * Best is to kill ourselves in the hope that the supervisor
-           * restarts us.
-           */
-          kill(getpid(), SIGQUIT);
-          g_assert_not_reached();
-        }
-      persist_config_free(self->old_config->persist);
-      self->old_config->persist = NULL;
-      cfg_free(self->new_config);
-      self->current_configuration = self->old_config;
+      iv_task_register(&self->revert_config);
+      return;
     }
 
+  msg_verbose("New configuration initialized");
+  persist_config_free(self->new_config->persist);
+  self->new_config->persist = NULL;
+  cfg_free(self->old_config);
+  self->current_configuration = self->new_config;
+  service_management_clear_status();
+  msg_notice("Configuration reload request received, reloading configuration");
+
   /* this is already running with the new config in place */
-  app_config_changed();
-
-  self->new_config = NULL;
-  self->old_config = NULL;
-
-  return;
+  main_loop_reload_config_finished(self);
 }
 
 
@@ -562,6 +581,10 @@ main_loop_init(MainLoop *self, MainLoopOptions *options)
 
   main_loop_init_events(self);
   setup_signals(self);
+
+  IV_TASK_INIT(&self->revert_config);
+  self->revert_config.handler = _revert_config;
+  self->revert_config.cookie = self;
 
   self->current_configuration = cfg_new(0);
 }

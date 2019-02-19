@@ -235,7 +235,7 @@ _register_sync_call_action(GQueue *q, void (*func)(gpointer user_data), gpointer
 }
 
 void
-_consume_action(SyncCallAction *action, gpointer dummy)
+_consume_action(SyncCallAction *action)
 {
   action->func(action->user_data);
   g_free(action);
@@ -244,8 +244,11 @@ _consume_action(SyncCallAction *action, gpointer dummy)
 static void
 _invoke_sync_call_actions(void)
 {
-  g_queue_foreach(&sync_call_actions, (GFunc)_consume_action, NULL);
-  g_queue_clear(&sync_call_actions);
+  while (!g_queue_is_empty(&sync_call_actions))
+    {
+      SyncCallAction *action = g_queue_pop_head(&sync_call_actions);
+      _consume_action(action);
+    }
 }
 
 /*
