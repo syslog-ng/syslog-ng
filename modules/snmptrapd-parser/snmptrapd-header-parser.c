@@ -272,7 +272,7 @@ _parse_timestamp(SnmpTrapdHeaderParser *self)
   if (!scan_snmptrapd_timestamp(self->input, (gint *)self->input_len, &wct))
     return FALSE;
 
-  unix_time_set_from_normalized_wall_clock_time(&self->nv_context->msg->timestamps[LM_TS_STAMP], &wct);
+  convert_and_normalize_wall_clock_time_to_unix_time(&wct, &self->nv_context->msg->timestamps[LM_TS_STAMP]);
 
   return TRUE;
 }

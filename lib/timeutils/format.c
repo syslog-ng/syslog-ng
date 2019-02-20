@@ -67,7 +67,7 @@ append_format_unix_time(const UnixTime *ut, GString *target, gint ts_format, glo
     }
   else
     {
-      wall_clock_time_set_from_unix_time_with_tz_override(&wct, ut, zone_offset);
+      convert_unix_time_to_wall_clock_time_with_tz_override(ut, &wct, zone_offset);
       append_format_wall_clock_time(&wct, target, ts_format, frac_digits);
     }
 }
@@ -142,7 +142,7 @@ append_format_wall_clock_time(const WallClockTime *wct, GString *target, gint ts
       _append_frac_digits(wct->wct_usec, target, frac_digits);
       break;
     case TS_FMT_UNIX:
-      unix_time_set_from_wall_clock_time(&ut, wct);
+      convert_wall_clock_time_to_unix_time(wct, &ut);
       append_format_unix_time(&ut, target, TS_FMT_UNIX, wct->wct_gmtoff, frac_digits);
       break;
     default:

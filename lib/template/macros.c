@@ -517,8 +517,8 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
        */
       WallClockTime wct;
 
-      wall_clock_time_set_from_unix_time_with_tz_override(&wct, stamp,
-                                                          time_zone_info_get_offset(opts->time_zone_info[tz], stamp->ut_sec));
+      convert_unix_time_to_wall_clock_time_with_tz_override(stamp, &wct,
+                                                            time_zone_info_get_offset(opts->time_zone_info[tz], stamp->ut_sec));
       switch (id)
         {
         case M_WEEK_DAY_ABBREV:

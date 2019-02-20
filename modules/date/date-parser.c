@@ -99,8 +99,8 @@ _convert_timestamp_to_logstamp(DateParser *self, time_t now, UnixTime *target, c
   if (!_parse_timestamp_and_deduce_missing_parts(self, &wct, input))
     return FALSE;
 
-  unix_time_set_from_normalized_wall_clock_time_with_tz_hint(target, &wct,
-                                                             time_zone_info_get_offset(self->date_tz_info, now));
+  convert_and_normalize_wall_clock_time_to_unix_time_with_tz_hint(&wct, target,
+      time_zone_info_get_offset(self->date_tz_info, now));
 
   return TRUE;
 }

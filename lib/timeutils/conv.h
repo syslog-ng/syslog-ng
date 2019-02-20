@@ -39,14 +39,16 @@
  *
  * The second one is qualified with the word "normalized".
  */
-void unix_time_set_from_wall_clock_time(UnixTime *self, const WallClockTime *wct);
-void unix_time_set_from_wall_clock_time_with_tz_hint(UnixTime *self, const WallClockTime *wct, long gmtoff_hint);
+void convert_wall_clock_time_to_unix_time(const WallClockTime *src, UnixTime *dst);
+void convert_wall_clock_time_to_unix_time_with_tz_hint(const WallClockTime *src, UnixTime *dst, long gmtoff_hint);
 
 /* these change the WallClockTime while setting unix time, just as mktime() would */
-void unix_time_set_from_normalized_wall_clock_time(UnixTime *self, WallClockTime *wct);
-void unix_time_set_from_normalized_wall_clock_time_with_tz_hint(UnixTime *self, WallClockTime *wct, long gmtoff_hint);
+void convert_and_normalize_wall_clock_time_to_unix_time(WallClockTime *src, UnixTime *dst);
+void convert_and_normalize_wall_clock_time_to_unix_time_with_tz_hint(WallClockTime *src, UnixTime *dst,
+    long gmtoff_hint);
 
-void wall_clock_time_set_from_unix_time(WallClockTime *self, const UnixTime *ut);
-void wall_clock_time_set_from_unix_time_with_tz_override(WallClockTime *self, const UnixTime *ut, gint gmtoff_override);
+void convert_unix_time_to_wall_clock_time(const UnixTime *src, WallClockTime *dst);
+void convert_unix_time_to_wall_clock_time_with_tz_override(const UnixTime *src, WallClockTime *dst,
+                                                           gint gmtoff_override);
 
 #endif

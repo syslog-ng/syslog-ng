@@ -26,23 +26,23 @@
 #include "timeutils/misc.h"
 
 void
-unix_time_set_from_wall_clock_time(UnixTime *self, const WallClockTime *wct)
+convert_wall_clock_time_to_unix_time(const WallClockTime *src, UnixTime *dst)
 {
-  WallClockTime work_wct = *wct;
-  unix_time_set_from_normalized_wall_clock_time(self, &work_wct);
+  WallClockTime work_wct = *src;
+  convert_and_normalize_wall_clock_time_to_unix_time(&work_wct, dst);
 }
 
 void
-unix_time_set_from_wall_clock_time_with_tz_hint(UnixTime *self, const WallClockTime *wct, long gmtoff_hint)
+convert_wall_clock_time_to_unix_time_with_tz_hint(const WallClockTime *src, UnixTime *dst, long gmtoff_hint)
 {
-  WallClockTime work_wct = *wct;
-  unix_time_set_from_normalized_wall_clock_time_with_tz_hint(self, &work_wct, gmtoff_hint);
+  WallClockTime work_wct = *src;
+  convert_and_normalize_wall_clock_time_to_unix_time_with_tz_hint(&work_wct, dst, gmtoff_hint);
 }
 
 void
-unix_time_set_from_normalized_wall_clock_time(UnixTime *self, WallClockTime *wct)
+convert_and_normalize_wall_clock_time_to_unix_time(WallClockTime *src, UnixTime *dst)
 {
-  unix_time_set_from_normalized_wall_clock_time_with_tz_hint(self, wct, -1);
+  convert_and_normalize_wall_clock_time_to_unix_time_with_tz_hint(src, dst, -1);
 }
 
 /* hint the timezone value if it is not present in the wct struct, e.g.  the
@@ -51,62 +51,62 @@ unix_time_set_from_normalized_wall_clock_time(UnixTime *self, WallClockTime *wct
  * time-zone() value, which is only used in case an incoming timestamp does
  * not have the timestamp value. */
 void
-unix_time_set_from_normalized_wall_clock_time_with_tz_hint(UnixTime *self, WallClockTime *wct, long gmtoff_hint)
+convert_and_normalize_wall_clock_time_to_unix_time_with_tz_hint(WallClockTime *src, UnixTime *dst, long gmtoff_hint)
 {
   gint target_gmtoff = -1;
 
   /* usec is just copied over, doesn't change timezone or anything */
-  self->ut_usec = wct->wct_usec;
+  dst->ut_usec = src->wct_usec;
 
   /* determine target gmtoff if it's coming from the timestamp or from the hint */
-  target_gmtoff = wct->wct_gmtoff;
+  target_gmtoff = src->wct_gmtoff;
   if (target_gmtoff == -1)
     target_gmtoff = gmtoff_hint;
 
   /* FIRST: We convert the timestamp as it was in our local time zone. */
-  gint unnormalized_hour = wct->wct_hour;
-  wct->wct_isdst = -1;
-  self->ut_sec = cached_mktime_wct(wct);
-  gint normalized_hour = wct->wct_hour;
+  gint unnormalized_hour = src->wct_hour;
+  src->wct_isdst = -1;
+  dst->ut_sec = cached_mktime_wct(src);
+  gint normalized_hour = src->wct_hour;
 
 
   /* SECOND: adjust ut_sec as if we converted it according to our timezone. */
-  gint local_gmtoff = get_local_timezone_ofs(self->ut_sec);
+  gint local_gmtoff = get_local_timezone_ofs(dst->ut_sec);
   if (target_gmtoff == -1)
     {
       target_gmtoff = local_gmtoff;
     }
-  self->ut_sec = self->ut_sec
-                 + local_gmtoff
-                 - (normalized_hour - unnormalized_hour) * 3600
-                 - target_gmtoff;
+  dst->ut_sec = dst->ut_sec
+                + local_gmtoff
+                - (normalized_hour - unnormalized_hour) * 3600
+                - target_gmtoff;
 
-  self->ut_gmtoff = target_gmtoff;
-  wct->wct_gmtoff = self->ut_gmtoff;
-  wct->wct_hour = unnormalized_hour;
+  dst->ut_gmtoff = target_gmtoff;
+  src->wct_gmtoff = dst->ut_gmtoff;
+  src->wct_hour = unnormalized_hour;
 }
 
 void
-wall_clock_time_set_from_unix_time(WallClockTime *self, const UnixTime *ut)
+convert_unix_time_to_wall_clock_time(const UnixTime *src, WallClockTime *dst)
 {
-  wall_clock_time_set_from_unix_time_with_tz_override(self, ut, -1);
+  convert_unix_time_to_wall_clock_time_with_tz_override(src, dst, -1);
 }
 
 /* the timezone information overrides what is present in the timestamp, e.g.
  * it will _convert_ the timestamp to a destination timezone */
 void
-wall_clock_time_set_from_unix_time_with_tz_override(WallClockTime *self, const UnixTime *ut, gint gmtoff_override)
+convert_unix_time_to_wall_clock_time_with_tz_override(const UnixTime *src, WallClockTime *dst, gint gmtoff_override)
 {
   gint gmtoff = gmtoff_override;
 
   if (gmtoff == -1)
-    gmtoff = ut->ut_gmtoff;
+    gmtoff = src->ut_gmtoff;
   if (gmtoff == -1)
-    gmtoff = get_local_timezone_ofs(ut->ut_sec);
+    gmtoff = get_local_timezone_ofs(src->ut_sec);
 
-  time_t t = ut->ut_sec + gmtoff;
-  cached_gmtime_wct(&t, self);
-  self->wct_gmtoff = gmtoff;
-  self->wct_zone = NULL;
-  self->wct_usec = ut->ut_usec;
+  time_t t = src->ut_sec + gmtoff;
+  cached_gmtime_wct(&t, dst);
+  dst->wct_gmtoff = gmtoff;
+  dst->wct_zone = NULL;
+  dst->wct_usec = src->ut_usec;
 }

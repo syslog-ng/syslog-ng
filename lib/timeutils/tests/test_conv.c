@@ -43,7 +43,7 @@ _wct_initialize_with_tz(WallClockTime *wct, const gchar *timestamp)
   cr_assert(*end == 0, "error parsing WallClockTime initialization timestamp: %s, end: %s", timestamp, end);
 }
 
-Test(conv, unix_time_set_from_wall_clock_time)
+Test(conv, convert_wall_clock_time_to_unix_time)
 {
   UnixTime ut = UNIX_TIME_INIT;
   WallClockTime wct = WALL_CLOCK_TIME_INIT;
@@ -51,12 +51,12 @@ Test(conv, unix_time_set_from_wall_clock_time)
   _wct_initialize(&wct, "Jan 19 2019 18:58:48");
   wct.wct_gmtoff = 3600;
 
-  unix_time_set_from_wall_clock_time(&ut, &wct);
+  convert_wall_clock_time_to_unix_time(&wct, &ut);
   cr_expect(ut.ut_gmtoff == 3600);
   cr_expect(ut.ut_sec == 1547920728);
 }
 
-Test(conv, unix_time_set_from_wall_clock_time_without_timezone_assumes_local_tz)
+Test(conv, convert_wall_clock_time_to_unix_time_without_timezone_assumes_local_tz)
 {
   UnixTime ut = UNIX_TIME_INIT;
   WallClockTime wct = WALL_CLOCK_TIME_INIT;
@@ -64,12 +64,12 @@ Test(conv, unix_time_set_from_wall_clock_time_without_timezone_assumes_local_tz)
   _wct_initialize(&wct, "Jan 19 2019 18:58:48");
   cr_expect(wct.wct_gmtoff == -1);
 
-  unix_time_set_from_wall_clock_time(&ut, &wct);
+  convert_wall_clock_time_to_unix_time(&wct, &ut);
   cr_expect(ut.ut_gmtoff == 3600);
   cr_expect(ut.ut_sec == 1547920728);
 }
 
-Test(conv, unix_time_set_from_normalized_wall_clock_time_changes_the_wct_to_normalize_values)
+Test(conv, convert_and_normalize_wall_clock_time_to_unix_time_changes_the_wct_to_normalize_values)
 {
   UnixTime ut = UNIX_TIME_INIT;
   WallClockTime wct = WALL_CLOCK_TIME_INIT;
@@ -80,7 +80,7 @@ Test(conv, unix_time_set_from_normalized_wall_clock_time_changes_the_wct_to_norm
   cr_expect(wct.wct_gmtoff == -1);
   cr_expect(wct.wct_hour == 2);
 
-  unix_time_set_from_normalized_wall_clock_time(&ut, &wct);
+  convert_and_normalize_wall_clock_time_to_unix_time(&wct, &ut);
 
   /* at this point normalization changes the wct as well! */
   cr_expect(wct.wct_gmtoff == 7200);
@@ -105,11 +105,11 @@ Test(conv, unix_time_set_from_a_specific_timezone_which_happens_at_the_spring_tr
   cr_expect(wct.wct_isdst == 1);
   cr_expect(wct.wct_hour == 2);
 
-  unix_time_set_from_normalized_wall_clock_time(&ut, &wct);
+  convert_and_normalize_wall_clock_time_to_unix_time(&wct, &ut);
 
   /* at this point normalization (e.g.  the stuff mktime() does) might
    * change the wct as well, but
-   * unix_time_set_from_normalized_wall_clock_time() tries to behave as if
+   * convert_and_normalize_wall_clock_time_to_unix_time() tries to behave as if
    * they didn't happen.  */
 
   cr_expect(wct.wct_gmtoff == -5*3600 + 3600);
@@ -121,7 +121,7 @@ Test(conv, unix_time_set_from_a_specific_timezone_which_happens_at_the_spring_tr
   /* going back from UnixTime to WallClockTime, we should get the same
    * gmtoff and hour values */
 
-  wall_clock_time_set_from_unix_time(&wct, &ut);
+  convert_unix_time_to_wall_clock_time(&ut, &wct);
   cr_expect(wct.wct_gmtoff == -5*3600 + 3600);
   cr_expect(wct.wct_hour == 2);
   cr_expect(wct.wct_min == 11);
@@ -142,11 +142,11 @@ Test(conv, unix_time_set_from_a_specific_timezone_which_happens_at_the_autumn_tr
   cr_expect(wct.wct_isdst == 1);
   cr_expect(wct.wct_hour == 2);
 
-  unix_time_set_from_normalized_wall_clock_time(&ut, &wct);
+  convert_and_normalize_wall_clock_time_to_unix_time(&wct, &ut);
 
   /* at this point normalization (e.g.  the stuff mktime() does) might
    * change the wct as well, but
-   * unix_time_set_from_normalized_wall_clock_time() tries to behave as if
+   * convert_and_normalize_wall_clock_time_to_unix_time() tries to behave as if
    * they didn't happen.  */
 
   cr_expect(wct.wct_gmtoff == -5*3600 + 3600);
@@ -158,13 +158,13 @@ Test(conv, unix_time_set_from_a_specific_timezone_which_happens_at_the_autumn_tr
   /* going back from UnixTime to WallClockTime, we should get the same
    * gmtoff and hour values */
 
-  wall_clock_time_set_from_unix_time(&wct, &ut);
+  convert_unix_time_to_wall_clock_time(&ut, &wct);
   cr_expect(wct.wct_gmtoff == -5*3600 + 3600);
   cr_expect(wct.wct_hour == 2);
   cr_expect(wct.wct_min == 11);
 }
 
-Test(conv, unix_time_set_from_wall_clock_time_without_timezone_and_tz_hint_uses_the_hint)
+Test(conv, convert_wall_clock_time_to_unix_time_without_timezone_and_tz_hint_uses_the_hint)
 {
   UnixTime ut = UNIX_TIME_INIT;
   WallClockTime wct = WALL_CLOCK_TIME_INIT;
@@ -172,13 +172,13 @@ Test(conv, unix_time_set_from_wall_clock_time_without_timezone_and_tz_hint_uses_
   _wct_initialize(&wct, "Jan 19 2019 18:58:48");
   cr_expect(wct.wct_gmtoff == -1);
 
-  unix_time_set_from_wall_clock_time_with_tz_hint(&ut, &wct, 7200);
+  convert_wall_clock_time_to_unix_time_with_tz_hint(&wct, &ut, 7200);
   cr_expect(wct.wct_gmtoff == -1);
   cr_expect(ut.ut_gmtoff == 7200);
   cr_expect(ut.ut_sec == 1547917128);
 
   wct.wct_gmtoff = -1;
-  unix_time_set_from_wall_clock_time_with_tz_hint(&ut, &wct, -5*3600);
+  convert_wall_clock_time_to_unix_time_with_tz_hint(&wct, &ut, -5*3600);
   cr_expect(wct.wct_gmtoff == -1);
   cr_expect(ut.ut_gmtoff == -5*3600);
   cr_expect(ut.ut_sec == 1547942328);
@@ -194,7 +194,7 @@ Test(conv, set_from_unixtime_sets_wct_fields_properly)
   ut.ut_usec = 567000;
   ut.ut_gmtoff = 3600;
 
-  wall_clock_time_set_from_unix_time(&wct, &ut);
+  convert_unix_time_to_wall_clock_time(&ut, &wct);
   cr_expect(wct.wct_year == 119);
   cr_expect(wct.wct_mon == 11);
   cr_expect(wct.wct_mday == 19);
@@ -216,7 +216,7 @@ Test(conv, set_from_unixtime_with_a_different_gmtoff_changes_hours_properly)
   ut.ut_usec = 567000;
   ut.ut_gmtoff = -5*3600;
 
-  wall_clock_time_set_from_unix_time(&wct, &ut);
+  convert_unix_time_to_wall_clock_time(&ut, &wct);
   cr_expect(wct.wct_year == 119);
   cr_expect(wct.wct_mon == 11);
   cr_expect(wct.wct_mday == 19);
@@ -238,7 +238,7 @@ Test(conv, set_from_unixtime_without_timezone_information_assumes_local_timezone
   ut.ut_usec = 567000;
   ut.ut_gmtoff = -1;
 
-  wall_clock_time_set_from_unix_time(&wct, &ut);
+  convert_unix_time_to_wall_clock_time(&ut, &wct);
   cr_expect(wct.wct_year == 119);
   cr_expect(wct.wct_mon == 11);
   cr_expect(wct.wct_mday == 19);
@@ -261,7 +261,7 @@ Test(conv, set_from_unixtime_with_tz_override_changes_the_timezone_to_the_overri
   ut.ut_gmtoff = 3600;
 
   /* +05:30 */
-  wall_clock_time_set_from_unix_time_with_tz_override(&wct, &ut, 5*3600 + 1800);
+  convert_unix_time_to_wall_clock_time_with_tz_override(&ut, &wct, 5*3600 + 1800);
   cr_expect(wct.wct_year == 119);
   cr_expect(wct.wct_mon == 11);
   cr_expect(wct.wct_mday == 20);
