@@ -291,6 +291,7 @@ _inject_worker_insert_result_consts(PythonDestDriver *self)
   _inject_worker_insert_result(self, SUCCESS);
   _inject_worker_insert_result(self, QUEUED);
   _inject_worker_insert_result(self, NOT_CONNECTED);
+  _inject_worker_insert_result(self, RETRY);
   _inject_worker_insert_result(self, MAX);
 };
 

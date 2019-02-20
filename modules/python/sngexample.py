@@ -56,7 +56,8 @@ class LogDestination(object):
             (same as boolean False)
         self.DROP: message cannot be sent, it should be dropped immediately.
         self.QUEUED: message is not sent immediately, it will be sent with the flush method.
-        self.NOT_CONNECTED: message is put back to the queue, open method will be called until success."""
+        self.NOT_CONNECTED: message is put back to the queue, open method will be called until success.
+        self.RETRY: message is put back to the queue, try to send again until 3 times, then fallback to self.NOT_CONNECTED."""
 
         pass
 
@@ -73,7 +74,8 @@ class LogDestination(object):
         self.ERROR: batch sending was unsuccessful. (same as boolean False)
         self.DROP: batch cannot be sent, the messages should be dropped immediately.
         self.NOT_CONNECTED: the messages in the batch is put back to the queue,
-            open method will be called until success."""
+            open method will be called until success.
+        self.RETRY: message is put back to the queue, try to send again until 3 times, then fallback to self.NOT_CONNECTED."""
 
         pass
 
