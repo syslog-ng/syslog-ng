@@ -327,6 +327,7 @@ fi
 %{_bindir}/pdbtool
 %{_bindir}/dqtool
 %{_bindir}/update-patterndb
+%{_bindir}/persist-tool
 %{_libdir}/lib%{name}-*.so.*
 %{_libdir}/libevtlog-*.so.*
 %{_libdir}/libsecret-storage.so.*
