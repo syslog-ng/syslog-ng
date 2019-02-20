@@ -31,6 +31,7 @@ public abstract class LogDestination extends LogPipe {
 	protected static final int SUCCESS = 3;
 	protected static final int QUEUED = 4;
 	protected static final int NOT_CONNECTED = 5;
+	protected static final int RETRY = 6;
 
 	public LogDestination(long pipeHandle) {
 		super(pipeHandle);
