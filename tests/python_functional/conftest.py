@@ -51,17 +51,14 @@ def pytest_addoption(parser):
     )
 
 
-@pytest.fixture
 def reports(request):
     return request.config.getoption("--reports")
 
 
-@pytest.fixture(scope="session")
 def installdir(request):
     return request.config.getoption("--installdir")
 
 
-@pytest.fixture
 def loglevel(request):
     return request.config.getoption("--loglevel")
 
@@ -75,7 +72,6 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(skip_slow)
 
 
-@pytest.fixture
 def runwithvalgrind(request):
     return request.config.getoption("--run-with-valgrind")
 
@@ -98,7 +94,8 @@ def tc_unittest(request):
     return SetupUnitTestcase(request, get_current_date)
 
 @pytest.fixture(scope="session")
-def version(request, installdir):
+def version(request):
+    installdir = request.config.getoption("--installdir")
     binary_path = str(Path(installdir, "sbin", "syslog-ng"))
     version_output = subprocess.check_output([binary_path, "--version"]).decode()
     return version_output.splitlines()[1].split()[2]
