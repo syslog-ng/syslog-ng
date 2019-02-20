@@ -23,6 +23,7 @@
 
 #include "str-format.h"
 #include "timeutils/cache.h"
+#include "timeutils/conv.h"
 
 #include <string.h>
 #include <ctype.h>

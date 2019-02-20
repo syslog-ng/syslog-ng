@@ -25,7 +25,6 @@
 #ifndef TIMEUTILS_CACHE_H_INCLUDED
 #define TIMEUTILS_CACHE_H_INCLUDED
 
-#include "timeutils/timeutils-internals.h"
 #include "timeutils/wallclocktime.h"
 #include "timeutils/unixtime.h"
 

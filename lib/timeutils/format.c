@@ -24,6 +24,7 @@
 #include "timeutils/format.h"
 #include "timeutils/cache.h"
 #include "timeutils/names.h"
+#include "timeutils/conv.h"
 #include "str-format.h"
 
 static void

@@ -4,12 +4,12 @@ EXTRA_DIST += lib/timeutils/CMakeLists.txt
 
 timeutilsinclude_HEADERS =	\
   lib/timeutils/cache.h	\
+  lib/timeutils/conv.h	\
   lib/timeutils/scan-timestamp.h\
   lib/timeutils/format.h	\
   lib/timeutils/misc.h	\
   lib/timeutils/names.h	\
   lib/timeutils/strptime-tz.h	\
-  lib/timeutils/timeutils-internals.h	\
   lib/timeutils/unixtime.h	\
   lib/timeutils/zoneinfo.h	\
   lib/timeutils/wallclocktime.h
@@ -17,6 +17,7 @@ timeutilsinclude_HEADERS =	\
 timeutils_sources =		\
  lib/timeutils/scan-timestamp.c	\
  lib/timeutils/cache.c		\
+ lib/timeutils/conv.c		\
  lib/timeutils/format.c		\
  lib/timeutils/misc.c		\
  lib/timeutils/names.c		\

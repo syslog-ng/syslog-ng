@@ -25,7 +25,7 @@
 #ifndef UNIXTIME_H_INCLUDED
 #define UNIXTIME_H_INCLUDED
 
-#include "timeutils/timeutils-internals.h"
+#include "syslog-ng.h"
 
 /*
  * This class represents a UNIX timestamp (as measured in time_t), the
@@ -41,6 +41,7 @@
  * LogMessage structure with a lot of padding (the struct would go from 16
  * to 24 bytes and we have 3 of these structs in LogMessage).
  */
+typedef struct _UnixTime UnixTime;
 struct _UnixTime
 {
   gint64 ut_sec;
@@ -70,23 +71,6 @@ unix_time_is_timezone_set(const UnixTime *self)
 
 void unix_time_unset(UnixTime *ut);
 
-/*
- * The algorithm that takes a WallClockTime and converts it to UnixTime
- * mutates the WallClockTime, contrary to intuitions (this behavior is
- * inherited from mktime, which we use in the implementation).  We therefore
- * introduce a second set of set_from() functions, so we have two sets:
- *
- * 1) one that takes a const WallClockTime
- * 2) one that mutates its argument
- *
- * The second one is qualified with the word "normalized".
- */
-void unix_time_set_from_wall_clock_time(UnixTime *self, const WallClockTime *wct);
-void unix_time_set_from_wall_clock_time_with_tz_hint(UnixTime *self, const WallClockTime *wct, long gmtoff_hint);
-
-/* these change the WallClockTime while setting unix time, just as mktime() would */
-void unix_time_set_from_normalized_wall_clock_time(UnixTime *self, WallClockTime *wct);
-void unix_time_set_from_normalized_wall_clock_time_with_tz_hint(UnixTime *self, WallClockTime *wct, long gmtoff_hint);
 void unix_time_set_now(UnixTime *self);
 
 gboolean unix_time_eq(const UnixTime *a, const UnixTime *b);

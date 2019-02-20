@@ -23,6 +23,7 @@
 
 #include "syslog-format.h"
 #include "timeutils/scan-timestamp.h"
+#include "timeutils/conv.h"
 #include "logmsg/logmsg.h"
 #include "messages.h"
 #include "timeutils/cache.h"

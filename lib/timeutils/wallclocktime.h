@@ -25,7 +25,7 @@
 #ifndef WALLCLOCKTIME_H_INCLUDED
 #define WALLCLOCKTIME_H_INCLUDED
 
-#include "timeutils/timeutils-internals.h"
+#include "syslog-ng.h"
 
 /*
  * This is a simple wrapper over "struct tm" with fields that are not
@@ -45,6 +45,7 @@
  * provide wrapper macros so that fields that are present in struct tm are
  * used from there, those that aren't will be part of the wrapper structure.
  */
+typedef struct _WallClockTime WallClockTime;
 struct _WallClockTime
 {
 #define wct_year  tm.tm_year
@@ -124,8 +125,6 @@ wall_clock_time_is_set(WallClockTime *wct)
 
 void wall_clock_time_unset(WallClockTime *wct);
 gchar *wall_clock_time_strptime(WallClockTime *wct, const gchar *format, const gchar *input);
-void wall_clock_time_set_from_unix_time(WallClockTime *self, const UnixTime *ut);
-void wall_clock_time_set_from_unix_time_with_tz_override(WallClockTime *self, const UnixTime *ut, gint gmtoff_override);
 void wall_clock_time_guess_missing_year(WallClockTime *self);
 
 #endif

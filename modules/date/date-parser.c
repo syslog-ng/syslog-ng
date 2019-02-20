@@ -25,6 +25,7 @@
 #include "str-utils.h"
 #include "timeutils/wallclocktime.h"
 #include "timeutils/cache.h"
+#include "timeutils/conv.h"
 
 typedef struct _DateParser
 {

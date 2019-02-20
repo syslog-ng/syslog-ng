@@ -25,7 +25,7 @@
 #ifndef TIMEUTILS_MISC_H_INCLUDED
 #define TIMEUTILS_MISC_H_INCLUDED
 
-#include "timeutils/timeutils-internals.h"
+#include "syslog-ng.h"
 
 long get_local_timezone_ofs(time_t when);
 

@@ -24,6 +24,7 @@
 #include <criterion/criterion.h>
 #include "timeutils/wallclocktime.h"
 #include "timeutils/cache.h"
+#include "timeutils/conv.h"
 #include "fake-time.h"
 
 Test(wallclocktime, test_wall_clock_time_init)
@@ -139,95 +140,6 @@ Test(wallclocktime, guess_year_returns_next_year)
 
   for (gint mon = 1; mon <= 11; mon++)
     cr_assert(_guessed_year_is_current_year(&wct, mon));
-}
-
-Test(wallclocktime, set_from_unixtime_sets_wct_fields_properly)
-{
-  WallClockTime wct = WALL_CLOCK_TIME_INIT;
-  UnixTime ut = UNIX_TIME_INIT;
-
-  /* Thu Dec 19 22:25:44 CET 2019 */
-  ut.ut_sec = 1576790744;
-  ut.ut_usec = 567000;
-  ut.ut_gmtoff = 3600;
-
-  wall_clock_time_set_from_unix_time(&wct, &ut);
-  cr_expect(wct.wct_year == 119);
-  cr_expect(wct.wct_mon == 11);
-  cr_expect(wct.wct_mday == 19);
-
-  cr_expect(wct.wct_hour == 22);
-  cr_expect(wct.wct_min == 25);
-  cr_expect(wct.wct_sec == 44);
-  cr_expect(wct.wct_usec == 567000);
-  cr_expect(wct.wct_gmtoff == 3600);
-}
-
-Test(wallclocktime, set_from_unixtime_with_a_different_gmtoff_changes_hours_properly)
-{
-  WallClockTime wct = WALL_CLOCK_TIME_INIT;
-  UnixTime ut = UNIX_TIME_INIT;
-
-  /* Thu Dec 19 16:25:44 EST 2019 */
-  ut.ut_sec = 1576790744;
-  ut.ut_usec = 567000;
-  ut.ut_gmtoff = -5*3600;
-
-  wall_clock_time_set_from_unix_time(&wct, &ut);
-  cr_expect(wct.wct_year == 119);
-  cr_expect(wct.wct_mon == 11);
-  cr_expect(wct.wct_mday == 19);
-
-  cr_expect(wct.wct_hour == 16);
-  cr_expect(wct.wct_min == 25);
-  cr_expect(wct.wct_sec == 44);
-  cr_expect(wct.wct_usec == 567000);
-  cr_expect(wct.wct_gmtoff == -5*3600);
-}
-
-Test(wallclocktime, set_from_unixtime_without_timezone_information_assumes_local_timezone)
-{
-  WallClockTime wct = WALL_CLOCK_TIME_INIT;
-  UnixTime ut = UNIX_TIME_INIT;
-
-  /* Thu Dec 19 22:25:44 CET 2019 */
-  ut.ut_sec = 1576790744;
-  ut.ut_usec = 567000;
-  ut.ut_gmtoff = -1;
-
-  wall_clock_time_set_from_unix_time(&wct, &ut);
-  cr_expect(wct.wct_year == 119);
-  cr_expect(wct.wct_mon == 11);
-  cr_expect(wct.wct_mday == 19);
-
-  cr_expect(wct.wct_hour == 22);
-  cr_expect(wct.wct_min == 25);
-  cr_expect(wct.wct_sec == 44);
-  cr_expect(wct.wct_usec == 567000);
-  cr_expect(wct.wct_gmtoff == 3600);
-}
-
-Test(wallclocktime, set_from_unixtime_with_tz_override_changes_the_timezone_to_the_overridden_value)
-{
-  WallClockTime wct = WALL_CLOCK_TIME_INIT;
-  UnixTime ut = UNIX_TIME_INIT;
-
-  /* Thu Dec 19 22:25:44 CET 2019 */
-  ut.ut_sec = 1576790744;
-  ut.ut_usec = 567000;
-  ut.ut_gmtoff = 3600;
-
-  /* +05:30 */
-  wall_clock_time_set_from_unix_time_with_tz_override(&wct, &ut, 5*3600 + 1800);
-  cr_expect(wct.wct_year == 119);
-  cr_expect(wct.wct_mon == 11);
-  cr_expect(wct.wct_mday == 20);
-
-  cr_expect(wct.wct_hour == 2);
-  cr_expect(wct.wct_min == 55);
-  cr_expect(wct.wct_sec == 44);
-  cr_expect(wct.wct_usec == 567000);
-  cr_expect(wct.wct_gmtoff == 5*3600 + 1800);
 }
 
 static void

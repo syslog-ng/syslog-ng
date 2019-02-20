@@ -29,6 +29,7 @@
 #include "timeutils/unixtime.h"
 #include "timeutils/format.h"
 #include "timeutils/misc.h"
+#include "timeutils/conv.h"
 #include "messages.h"
 #include "str-format.h"
 #include "run-id.h"
