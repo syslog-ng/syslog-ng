@@ -43,7 +43,7 @@ public class HttpSingleMessageProcessor extends  HttpMessageProcessor {
 	public boolean sendImpl(Function<IndexFieldHandler, Object> msgBuilder) {
 
 		JestIndex req = (JestIndex) msgBuilder.apply((index, type, id, pipeline, formattedMessage) ->
-						new JestIndex().setIndexName(index).setType(type).setId(id).setPipeline(pipeline)
+						new JestIndex().setIndexName(index).setType(type).setId(id)
 						.setFormattedMessage(formattedMessage));
 
 	  JestResult jestResult = null;

@@ -32,7 +32,7 @@ import io.searchbox.core.ESJestBulkActions;
 import org.syslog_ng.elasticsearch_v2.ElasticSearchOptions;
 import org.syslog_ng.elasticsearch_v2.client.http.ESHttpClient;
 
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -45,7 +45,6 @@ public class HttpBulkMessageProcessor extends HttpMessageProcessor {
   private volatile ESJestBulkActions bulk;
   private ESJestHttpClient httpClient;
   private int flushLimit;
-  private int messageCounter;
 
   private final String name;
   private final ArrayList<Thread> senders;
@@ -70,7 +69,7 @@ public class HttpBulkMessageProcessor extends HttpMessageProcessor {
     senders = new ArrayList<>(concurrency);
     name = options.getIdentifier().getValue();
     enqueueTimeout = Integer.parseInt(System.getProperty("EnqueueTimeOutMS", "100"));
-    debugEnabled = false ; //name.indexOf("stats") > 0;
+    debugEnabled = logger.isDebugEnabled() ; //name.indexOf("stats") > 0;
   }
 
   @Override
@@ -81,67 +80,87 @@ public class HttpBulkMessageProcessor extends HttpMessageProcessor {
     }
 
     flushLimit = options.getFlushLimit();
+    shutDown = false;
     assert client.getClient() != null : "Client must be initialized by this time.";
 
     for (int i = 0; i < concurrency; i++) {
       senders.add(new Thread(() -> {
         ESJestBulkActions bulkActions;
-        int ioExceptionCount = 0;
+        int exceptionCount = 0;
         int httpRequestErrorCount = 0;
 
         try {
           while (!shutDown) {
-            if ((bulkActions = messageQueue.poll(
-                    100, TimeUnit.MILLISECONDS)) == null) {
-              continue;
-            }
-
-            BulkResult jestResult;
-            try {
-              jestResult = client.getClient().execute(bulkActions);
-              ioExceptionCount = 0;
-            } catch (IOException e) {
-              if (ioExceptionCount++ < 3) {
-                logger.error("[ " + ioExceptionCount + "] IOException in bulk execution: "
-                        + e.getMessage());
-              } else if (ioExceptionCount < 20) {
-                logger.info("IOException in bulk execution: " + e.getMessage());
-              } else if (logger.isDebugEnabled()) {
-                logger.debug("IOException in bulk execution: " + e.getMessage());
+              if ((bulkActions = messageQueue.poll(
+                      100, TimeUnit.MILLISECONDS)) == null) {
+                if(logger.isDebugEnabled()) {
+                  logmsg(() -> "No events found in the message queue. " + messageQueue.size());
+                }
+                continue;
               }
-              continue;
-            } finally {
-            }
-            bulkActions = null;
 
-            // if clientRequest.isSuccessFull declares true, jestResult == null
-            // indicates the request is success and here we DONOT want to completely deserialize
-            // the http response.
-            if (jestResult != null && !jestResult.isSucceeded()) {
-              StringBuilder sb = new StringBuilder();
-              jestResult.getFailedItems().forEach(action ->
-                      sb.append(action.id).append("=").append(action.error).append("\n"));
-              if (httpRequestErrorCount++ < 3)
-                logger.warn(jestResult.getErrorMessage() + ". FailedItem Details: \n" + sb.toString());
-              else if (logger.isDebugEnabled())
-                logger.debug(jestResult.getErrorMessage() + ". FailedItem Details: \n" + sb.toString());
-              //SB: TEMP failedRequests.offer(bulkActions);
-              continue;
-            }
+              final BulkResult jestResult;
+              try {
+                jestResult = client.getClient().execute(bulkActions);
+                exceptionCount = 0;
+              } catch (Exception e) {
+                if (exceptionCount++ < 3) {
+                  logger.error("[ " + exceptionCount + "] Exception in bulk execution: "
+                          + e.getMessage(), e);
+                } else if (exceptionCount < 20) {
+                  logger.info("Exception in bulk execution: " + e.getMessage());
+                } else if (logger.isDebugEnabled()) {
+                  logger.debug("Exception in bulk execution: " + e.getMessage());
+                }
+                client.incDroppedBatchCounter(bulkActions.getRowCount());
+                continue;
+              } catch (Throwable t) {
+                StringWriter sw = new StringWriter();
+                PrintWriter printer = new PrintWriter(sw);
+                t.printStackTrace(printer);
+                logger.error(name + " Unexpected Exception : " + t.getClass().getSimpleName()
+                        + " " + t.getMessage() + "\n" + sw.toString(), t);
+                continue;
+              }
 
-            if (httpRequestErrorCount > 0) {
-              logger.warn(name + " SB: " + httpRequestErrorCount + " ");
-              httpRequestErrorCount = 0;
-            }
+              // if clientRequest.isSuccessFull declares true, jestResult == null
+              // indicates the request is success and here we DONOT want to completely deserialize
+              // the http response.
+              if (jestResult != null && !jestResult.isSucceeded()) {
+                StringBuilder sb = new StringBuilder();
+                jestResult.getFailedItems().forEach(action ->
+                        sb.append(action.id).append("=").append(action.error).append("\n"));
+                if (httpRequestErrorCount++ < 3)
+                  logger.warn(jestResult.getErrorMessage() + ". FailedItem Details: \n" + sb.toString());
+                else if (logger.isDebugEnabled())
+                  logger.debug(jestResult.getErrorMessage() + ". FailedItem Details: \n" + sb.toString());
+                //SB: TEMP failedRequests.offer(bulkActions);
+                client.incDroppedBatchCounter(bulkActions.getRowCount());
+                continue;
+              }
 
-            if (debugEnabled && jestResult != null) {
-              logmsg(() -> " SB: processed [" + jestResult.getJsonString() + "]");
-            }
-          }
+              if (httpRequestErrorCount > 0) {
+                logger.warn(name + " SB: " + httpRequestErrorCount + " ");
+                httpRequestErrorCount = 0;
+              }
+
+              if (debugEnabled && jestResult != null) {
+                logmsg(() -> " SB: processed [" + jestResult.getJsonString() + "]");
+              }
+          } // end of while
         } catch (InterruptedException e) {
           if (!shutDown) {
-            logger.error("Bulk Execution Thread interrupted without shutdown initiated", e);
+            logger.error(name + " Bulk Execution Thread interrupted without shutdown initiated", e);
           }
+        } catch (Exception e) {
+          logger.error(name + " Exception Occurred : " + e.getClass().getSimpleName()
+                  + " " + e.getMessage(), e);
+        } catch (Throwable t) {
+          StringWriter sw = new StringWriter();
+          PrintWriter printer = new PrintWriter(sw);
+          t.printStackTrace(printer);
+          logger.error(name + " Unknown Exception : " + t.getClass().getSimpleName()
+                  + " " + t.getMessage() + "\n" + sw.toString(), t);
         } finally {
           bulkActions = null;
         }
@@ -160,13 +179,17 @@ public class HttpBulkMessageProcessor extends HttpMessageProcessor {
   @Override
   public boolean flush() {
     if (debugEnabled) {
-      logmsg(() -> " Flushing messages for ES destination [mode=" + options.getClientMode() + "]");
+      logmsg(() -> "Flushing messages for ES destination [mode=" + options.getClientMode() + "] -- "
+              + (bulk != null ? bulk.getRowCount() : "bulk message NULL, flush will return false. "));
     }
-    if (bulk != null) {
-      scheduleBulkAction(bulk);
+    try {
+      if (bulk != null) {
+        return scheduleBulkAction(bulk);
+      }
+    } finally {
+      bulk = null;
     }
-    bulk = null;
-    messageCounter = 0;
+
     return true;
   }
 
@@ -179,38 +202,43 @@ public class HttpBulkMessageProcessor extends HttpMessageProcessor {
       try {
         t.join(10000);
       } catch (InterruptedException e) {
-        logger.error("SB: " + Thread.currentThread() + " received " +
+        logger.error(name + "SB: " + Thread.currentThread() + " received " +
                 t.getName() + " interrupted while waiting for termination.", e);
       }
     });
     senders.clear();
   }
 
-  private void scheduleBulkAction(final ESJestBulkActions bulkActions) {
+  private boolean scheduleBulkAction(final ESJestBulkActions bulkActions) {
     try {
       if (!messageQueue.offer(bulkActions, enqueueTimeout, TimeUnit.MILLISECONDS)) {
-        client.incDroppedBatchCounter(flushLimit);
         if(enqueueFailCount <= 0) {
-/*
-          logger.warn(Thread.currentThread().getId() + "SB: " + name + " " + enqueueTimeout + " millis elapsed to schedule bulk request. " +
-                  "Queue full with " + messageQueue.size() + " messages. " +
-                  "Consider increasing concurrent_request or elastic cluster capacity.");
-*/
+          if(logger.isDebugEnabled()) {
+            logger.debug(Thread.currentThread().getId() + "SB: " + name + " " + enqueueTimeout + " millis elapsed to schedule bulk request. " +
+                    "Queue full with " + messageQueue.size() + " messages. " +
+                    "Consider increasing concurrent_request or elastic cluster capacity.");
+          }
           enqueueStartTime = System.currentTimeMillis() + enqueueTimeout;
         }
 
         enqueueFailCount++;
+        client.incDroppedBatchCounter(bulkActions.getRowCount());
+        return true;
       } else if (enqueueFailCount != 0) {
         logmsg(() -> " SB: " + name + " " + enqueueFailCount +
                 " enqueue attempts failed and " + (System.currentTimeMillis() - enqueueStartTime) +
                 " millis elapsed since last success.");
         enqueueFailCount = 0;
         enqueueStartTime = 0;
+        return true;
       }
 
     } catch (InterruptedException ie) {
       // ignore
+      return false;
     }
+
+    return true;
   }
 
   private static Object addIndex(HttpBulkMessageProcessor processor,
@@ -230,22 +258,10 @@ public class HttpBulkMessageProcessor extends HttpMessageProcessor {
 
   @Override
   public boolean sendImpl(Function<IndexFieldHandler, Object> msgBuilder) {
-    if (messageCounter >= flushLimit) {
-      if (!flush())
-        return false;
-    }
-
     msgBuilder.apply((index, type, id, pipeline, formattedMessage) ->
             addIndex(this, index, type, id, pipeline, formattedMessage));
-    messageCounter++;
     return true;
   }
-
-  @Override
-  public void onMessageQueueEmpty() {
-    flush();
-  }
-
 
   private void logmsg(Supplier<String> msg) {
     logger.info(name + " " + msg.get());

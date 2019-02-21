@@ -59,16 +59,5 @@ public abstract class HttpMessageProcessor implements ESMessageProcessor {
 	public boolean send(Function<IndexFieldHandler, Object> messageBuilder) {
 		return sendImpl(messageBuilder);
 	}
-<<<<<<< HEAD
-||||||| parent of 2e070b73e... Base changes to the ES plugin
 
-    public void onMessageQueueEmpty() {
-
-    }
-=======
-
-	public void onMessageQueueEmpty() {
-
-    }
->>>>>>> 2e070b73e... Base changes to the ES plugin
 }

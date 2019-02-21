@@ -114,16 +114,21 @@ public class ElasticSearchDestination extends StructuredLogDestination {
 
 	@Override
 	protected int send(LogMessage msg) {
-		if (!client.isOpened()) {
-			return NOT_CONNECTED;
-		}
+		try {
+      if (!client.isOpened()) {
+        return NOT_CONNECTED;
+      }
 
-    Function<IndexFieldHandler, Object> index = f -> createIndexRequest(this, msg, f);
-		if (options.getFlushLimit() > 1) {
-      return send_batch(index);
-    }
-		else {
-      return send_single(index);
+      Function<IndexFieldHandler, Object> index = f -> createIndexRequest(this, msg, f);
+      if (options.getFlushLimit() > 1) {
+        return send_batch(index);
+      }
+      else {
+        return send_single(index);
+      }
+    } catch(Exception e) {
+		  logger.error("Exception in ES destination during send: " + e.getMessage(), e);
+		  throw e;
     }
   }
 
@@ -149,9 +154,14 @@ public class ElasticSearchDestination extends StructuredLogDestination {
 
 	@Override
 	public int flush() {
-		if (client.flush())
-			return SUCCESS;
-		else
+    try {
+      if (client.flush())
+        return SUCCESS;
+      else
+        return ERROR;
+    } catch (Exception e) {
+      logger.error("Exception in ES destination during flush: " + e.getMessage(), e);
 			return ERROR;
+    }
 	}
 }

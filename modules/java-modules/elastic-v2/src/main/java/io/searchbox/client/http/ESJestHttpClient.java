@@ -73,18 +73,23 @@ public class ESJestHttpClient extends JestHttpClient {
 
   @Override
   protected <T extends JestResult> HttpUriRequest prepareRequest(final Action<T> clientRequest) {
-    String nextServerUrl = getNextServer();
-    if (!(clientRequest instanceof ESJestBulkActions)) {
-      final Matcher m = getURI.matcher(nextServerUrl);
-      if(m.matches() && m.groupCount() > 1) {
-        nextServerUrl = m.group(1);
+    HttpUriRequest request = null;
+    try {
+      String nextServerUrl = getNextServer();
+      if (!(clientRequest instanceof ESJestBulkActions)) {
+        final Matcher m = getURI.matcher(nextServerUrl);
+        if (m.matches() && m.groupCount() > 1) {
+          nextServerUrl = m.group(1);
+        }
       }
+      String elasticSearchRestUrl = getRequestURL(nextServerUrl, clientRequest.getURI());
+      request = constructHttpMethod(clientRequest.getRestMethodName(), elasticSearchRestUrl, clientRequest.getData(gson));
+
+      log.debug("Request method=" + clientRequest.getRestMethodName() + " url=" + elasticSearchRestUrl);
+    } catch(Exception e) {
+      log.error("Error preparing request " + e.getMessage(), e);
+      throw e;
     }
-    String elasticSearchRestUrl = getRequestURL(nextServerUrl, clientRequest.getURI());
-    HttpUriRequest request = constructHttpMethod(clientRequest.getRestMethodName(), elasticSearchRestUrl, clientRequest.getData(gson));
-
-    log.debug("Request method=" + clientRequest.getRestMethodName() + " url=" + elasticSearchRestUrl);
-
     return request;
   }
 

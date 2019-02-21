@@ -20,6 +20,7 @@ public class ESJestBulkActions implements Action<BulkResult> {
   final static Logger log = LoggerFactory.getLogger(ESJestBulkActions.class);
 
   private StringBuilder data = new StringBuilder();
+  private int rowCount = 0;
 
   private final String indexName;
   private final String typeName;
@@ -98,6 +99,7 @@ public class ESJestBulkActions implements Action<BulkResult> {
       data.append(END_INDEX);
     }
     data.append(msg).append(NEWLINE);
+    rowCount++;
   }
 
   //{"took":0,"ingest_took":0,"errors":false,"items":[{
@@ -138,6 +140,10 @@ public class ESJestBulkActions implements Action<BulkResult> {
   @Override
   public BulkResult createNewElasticSearchResult(String responseBody, int statusCode, String reasonPhrase, Gson gson) {
     return createNewElasticSearchResult(new BulkResult(gson), responseBody, statusCode, reasonPhrase, gson);
+  }
+
+  public int getRowCount() {
+    return rowCount;
   }
 
   protected boolean isHttpSuccessful(int httpCode) {

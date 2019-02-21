@@ -120,7 +120,8 @@ public class ESHttpClient implements ESClient {
 	}
 
 	public synchronized void incDroppedBatchCounter(int batchSize) {
-    incDroppedBatchCounter(batchSize);
+  	if(incDroppedBatchCounter != null)
+  		this.incDroppedBatchCounter.accept(batchSize);
   }
 
 	@Override

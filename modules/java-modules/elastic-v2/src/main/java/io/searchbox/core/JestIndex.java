@@ -20,11 +20,6 @@ public final class JestIndex extends Index {
     return this;
   }
 
-  public JestIndex setPipeline(final String pipeline) {
-    super.pipeline = pipeline;
-    return this;
-  }
-
   public JestIndex setFormattedMessage(final String message) {
     super.payload = message;
     return this;
