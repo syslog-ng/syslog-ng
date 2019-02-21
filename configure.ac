@@ -1383,6 +1383,9 @@ else
     if test "$python_found" = "yes"; then
       if test "$python_version" = "3"; then
           AC_CHECK_PROG(NOSETESTS, nosetests3, nosetests3)
+          if test "x$NOSETESTS" == "x"; then
+            AC_CHECK_PROG(NOSETESTS, nosetests, nosetests)
+          fi
       else
           AC_CHECK_PROG(NOSETESTS, nosetests, nosetests)
       fi
@@ -1395,6 +1398,9 @@ else
     if test "$python_found" = "yes"; then
       if test "$python_version" = "3"; then
           AC_CHECK_PROG(PYLINT, pylint3, pylint3)
+          if test "x$PYLINT" == "x"; then
+            AC_CHECK_PROG(PYLINT, pylint, pylint)
+          fi
       else
           AC_CHECK_PROG(PYLINT, pylint, pylint)
       fi
