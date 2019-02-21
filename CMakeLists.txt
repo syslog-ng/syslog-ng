@@ -334,6 +334,17 @@ endif()
 
 add_compile_options(${IMPORTANT_WARNINGS} ${ACCEPTABLE_WARNINGS} ${EXTRA_WARNINGS})
 
+# Sanatizer configuration
+set(SANITIZER "OFF" CACHE STRING "Enable clang sanitizer")
+
+set_property(CACHE SANITIZER PROPERTY STRINGS OFF address undefined)
+
+if (SANITIZER)
+  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O1 -fsanitize=${SANITIZER} -fno-omit-frame-pointer")
+endif()
+
+
+
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/syslog-ng-config.h.in ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-config.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 

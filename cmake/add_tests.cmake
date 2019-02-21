@@ -65,6 +65,7 @@ function (add_unit_test)
   endif()
 
   add_test (${ADD_UNIT_TEST_TARGET} ${ADD_UNIT_TEST_TARGET})
+  set_tests_properties(${ADD_UNIT_TEST_TARGET} PROPERTIES ENVIRONMENT "ASAN_OPTIONS=detect_odr_violation=0")
 endfunction ()
 
 macro (add_test_subdirectory SUBDIR)
