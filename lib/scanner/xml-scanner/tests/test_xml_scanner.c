@@ -90,6 +90,8 @@ static void
 _destroy_xml_scanner(XMLScanner *scanner)
 {
   xml_scanner_options_destroy(scanner->options);
+  g_free(scanner->options);
+
   xml_scanner_deinit(scanner);
   g_free(scanner);
 }
