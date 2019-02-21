@@ -55,7 +55,10 @@ tf_simple_func_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *paren
       state->argv_templates[i] = log_template_new(parent->cfg, NULL);
       log_template_set_escape(state->argv_templates[i], parent->escape);
       if (!log_template_compile(state->argv_templates[i], argv[i + 1], error))
-        goto error;
+        {
+          state->argc = i + 1;
+          goto error;
+        }
     }
   state->argc = argc - 1;
   return TRUE;
