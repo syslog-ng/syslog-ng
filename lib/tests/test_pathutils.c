@@ -66,9 +66,15 @@ Test(test_pathutils, test_is_file_device)
 
 Test(test_pathutils, test_find_file_in_path)
 {
-  cr_assert_str_eq(find_file_in_path("/dev", "null", G_FILE_TEST_EXISTS), "/dev/null", "wrong path returned)");
-  cr_assert_str_eq(find_file_in_path("/home:/dev:/root", "null", G_FILE_TEST_EXISTS),  "/dev/null",
-                   "wrong path returned");
+  gchar *file;
+
+  file = find_file_in_path("/dev", "null", G_FILE_TEST_EXISTS);
+  cr_assert_str_eq(file, "/dev/null");
+  g_free(file);
+
+  file = find_file_in_path("/home:/dev:/root", "null", G_FILE_TEST_EXISTS);
+  cr_assert_str_eq(file, "/dev/null");
+  g_free(file);
 }
 
 Test(test_pathutils, test_get_filename_extension)
