@@ -122,6 +122,7 @@ Test(hashed_queue, delete_non_existent)
 
   g_free(f1);
   g_free(f2);
+  g_free(f3);
   pending_file_list_free(queue);
 }
 
