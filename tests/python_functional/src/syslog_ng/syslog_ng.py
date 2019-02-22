@@ -43,3 +43,6 @@ class SyslogNg(object):
 
     def get_version(self):
         return self.__syslog_ng_cli.get_version()
+
+    def is_process_running(self):
+        return self.__syslog_ng_cli.is_process_running()
