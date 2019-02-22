@@ -36,6 +36,7 @@ struct MsgGeneratorSource
   LogSource super;
   MsgGeneratorSourceOptions *options;
   struct iv_timer timer;
+  gint num;
 };
 
 static void
@@ -120,7 +121,18 @@ _timer_expired(void *cookie)
 
   _send_generated_message(self);
 
-  _start_timer(self);
+  if (self->options->max_num > 0)
+    {
+      self->num++;
+      if (self->num < self->options->max_num)
+        {
+          _start_timer(self);
+        }
+    }
+  else
+    {
+      _start_timer(self);
+    }
 }
 
 gboolean
