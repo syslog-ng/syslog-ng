@@ -31,6 +31,7 @@ typedef struct
 {
   LogSourceOptions super;
   guint freq;
+  gint max_num;
   LogTemplate *template;
 } MsgGeneratorSourceOptions;
 
@@ -58,6 +59,12 @@ static inline void
 msg_generator_source_options_set_freq(MsgGeneratorSourceOptions *self, gdouble freq)
 {
   self->freq = (guint) (freq * 1000);
+}
+
+static inline void
+msg_generator_source_options_set_num(MsgGeneratorSourceOptions *self, gint max_num)
+{
+  self->max_num = max_num;
 }
 
 static inline void

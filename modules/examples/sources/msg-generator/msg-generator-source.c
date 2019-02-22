@@ -36,6 +36,7 @@ struct MsgGeneratorSource
   LogSource super;
   MsgGeneratorSourceOptions *options;
   struct iv_timer timer;
+  gint num;
 };
 
 static void
@@ -55,6 +56,15 @@ _start_timer(MsgGeneratorSource *self)
   iv_timer_register(&self->timer);
 }
 
+static void
+_start_timer_immediately(MsgGeneratorSource *self)
+{
+  iv_validate_now();
+  self->timer.expires = iv_now;
+
+  iv_timer_register(&self->timer);
+}
+
 static gboolean
 _init(LogPipe *s)
 {
@@ -62,7 +72,7 @@ _init(LogPipe *s)
   if (!log_source_init(s))
     return FALSE;
 
-  _start_timer(self);
+  _start_timer_immediately(self);
 
   return TRUE;
 }
@@ -111,7 +121,18 @@ _timer_expired(void *cookie)
 
   _send_generated_message(self);
 
-  _start_timer(self);
+  if (self->options->max_num > 0)
+    {
+      self->num++;
+      if (self->num < self->options->max_num)
+        {
+          _start_timer(self);
+        }
+    }
+  else
+    {
+      _start_timer(self);
+    }
 }
 
 gboolean

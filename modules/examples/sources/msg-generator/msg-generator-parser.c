@@ -33,6 +33,7 @@ static CfgLexerKeyword msg_generator_keywords[] =
 {
   { "example_msg_generator", KW_MSG_GENERATOR },
   { "freq", KW_FREQ },
+  { "num", KW_NUM },
   { "template", KW_TEMPLATE },
   { NULL }
 };

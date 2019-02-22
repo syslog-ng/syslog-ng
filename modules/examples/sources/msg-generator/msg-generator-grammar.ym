@@ -58,6 +58,7 @@ MsgGeneratorSourceOptions *last_msg_generator_source_options;
 
 %token KW_MSG_GENERATOR
 %token KW_FREQ
+%token KW_NUM
 %token KW_TEMPLATE
 
 %type <ptr> source_msg_generator
@@ -91,6 +92,10 @@ source_msg_generator_option
   | KW_FREQ '(' positive_integer ')'
     {
       msg_generator_source_options_set_freq(last_msg_generator_source_options, $3);
+    }
+  | KW_NUM '(' nonnegative_integer ')'
+    {
+      msg_generator_source_options_set_num(last_msg_generator_source_options, $3);
     }
   | KW_TEMPLATE '(' template_content ')'
     {
