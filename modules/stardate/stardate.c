@@ -109,14 +109,6 @@ tf_stardate_call(LogTemplateFunction *self, gpointer s,
 {
   TFStardateState  *state = (TFStardateState *) s;
 
-  char format[7]; // "%0.xlf\0"
-  if (g_snprintf(format, sizeof(format),"%%0.%dlf", state->precision) < 0)
-    {
-      msg_error("stardate: sprintf error)",
-                evt_tag_int("precision", state->precision));
-      return;
-    }
-
   char *status;
   time_t time_to_convert = strtol(args->argv[0]->str, &status, 10);
   if (*status)
@@ -135,7 +127,7 @@ tf_stardate_call(LogTemplateFunction *self, gpointer s,
   double fraction = (double)elapsed_seconds/year_in_seconds(tm_time.tm_year);
   double truncated = (double) floor(fraction * power10[state->precision]) / power10[state->precision];
 
-  g_string_append_printf(result, format, 1900 + tm_time.tm_year + truncated);
+  g_string_append_printf(result, "%0.*lf", state->precision, 1900 + tm_time.tm_year + truncated);
 }
 
 TEMPLATE_FUNCTION(TFStardateState, tf_stardate, tf_stardate_prepare,

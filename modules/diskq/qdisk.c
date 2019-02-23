@@ -130,10 +130,10 @@ _next_filename(QDisk *self)
     {
       struct stat st;
 
-      const gchar *format = "%s/syslog-ng-%05d.qf";
       if (self->options->reliable)
-        format = "%s/syslog-ng-%05d.rqf";
-      g_snprintf(tmpfname, sizeof(tmpfname), format, qdir, i);
+        g_snprintf(tmpfname, sizeof(tmpfname), "%s/syslog-ng-%05d.rqf", qdir, i);
+      else
+        g_snprintf(tmpfname, sizeof(tmpfname), "%s/syslog-ng-%05d.qf", qdir, i);
       success = (stat(tmpfname, &st) < 0);
       i++;
     }
