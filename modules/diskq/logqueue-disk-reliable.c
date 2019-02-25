@@ -42,7 +42,7 @@ _skip_message(LogQueueDisk *self)
   GString *serialized;
   SerializeArchive *sa;
 
-  if (!qdisk_initialized(self->qdisk))
+  if (!qdisk_started(self->qdisk))
     return FALSE;
 
   serialized = g_string_sized_new(64);
@@ -315,7 +315,7 @@ static gboolean
 _save_queue (LogQueueDisk *s, gboolean *persistent)
 {
   *persistent = TRUE;
-  qdisk_deinit (s->qdisk);
+  qdisk_stop (s->qdisk);
   return TRUE;
 }
 
@@ -323,7 +323,7 @@ static void
 _restart(LogQueueDisk *s, DiskQueueOptions *options)
 {
   LogQueueDiskReliable *self = (LogQueueDiskReliable *) s;
-  qdisk_init(self->super.qdisk, options, "SLRQ");
+  qdisk_init_instance(self->super.qdisk, options, "SLRQ");
 }
 
 
@@ -348,7 +348,7 @@ log_queue_disk_reliable_new(DiskQueueOptions *options, const gchar *persist_name
   g_assert(options->reliable == TRUE);
   LogQueueDiskReliable *self = g_new0(LogQueueDiskReliable, 1);
   log_queue_disk_init_instance(&self->super, persist_name);
-  qdisk_init(self->super.qdisk, options, "SLRQ");
+  qdisk_init_instance(self->super.qdisk, options, "SLRQ");
   if (options->mem_buf_size < 0)
     {
       options->mem_buf_size = PESSIMISTIC_MEM_BUF_SIZE;

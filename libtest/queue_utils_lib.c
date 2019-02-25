@@ -23,6 +23,7 @@
  */
 
 #include "queue_utils_lib.h"
+#include "logmsg/logmsg-serialize.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -31,6 +32,22 @@
 
 int acked_messages = 0;
 int fed_messages = 0;
+
+gsize
+get_one_message_serialized_size(void)
+{
+  GString *serialized = g_string_sized_new(256);
+  SerializeArchive *sa = serialize_string_archive_new(serialized);
+  LogMessage *msg = log_msg_new_empty();
+
+  log_msg_serialize(msg, sa);
+  gsize message_length = serialized->len;
+
+  log_msg_unref(msg);
+  g_string_free(serialized, TRUE);
+  serialize_archive_free(sa);
+  return message_length;
+}
 
 void
 test_ack(LogMessage *msg, AckType ack_type)

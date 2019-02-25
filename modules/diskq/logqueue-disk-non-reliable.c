@@ -339,7 +339,7 @@ _push_tail (LogQueueDisk *s, LogMessage *msg, LogPathOptions *local_options, con
                          evt_tag_str  ("filename", qdisk_get_filename (self->super.qdisk)),
                          evt_tag_long ("queue_len", _get_length(s)),
                          evt_tag_int  ("mem_buf_length", self->qoverflow_size),
-                         evt_tag_long ("size", qdisk_get_size (self->super.qdisk)),
+                         evt_tag_long ("disk_buf_size", qdisk_get_size (self->super.qdisk)),
                          evt_tag_str  ("persist_name", self->super.super.persist_name));
               return FALSE;
             }
@@ -380,7 +380,7 @@ static gboolean
 _load_queue (LogQueueDisk *s, const gchar *filename)
 {
   /* qdisk portion is not yet started when this happens */
-  g_assert(!qdisk_initialized (s->qdisk));
+  g_assert(!qdisk_started (s->qdisk));
 
   return _start(s, filename);
 }
@@ -388,21 +388,22 @@ _load_queue (LogQueueDisk *s, const gchar *filename)
 static gboolean
 _save_queue (LogQueueDisk *s, gboolean *persistent)
 {
+  gboolean success = FALSE;
   LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *) s;
   if (qdisk_save_state (s->qdisk, self->qout, self->qbacklog, self->qoverflow))
     {
       *persistent = TRUE;
-      qdisk_deinit (s->qdisk);
-      return TRUE;
+      success = TRUE;
     }
-  return FALSE;
+  qdisk_stop (s->qdisk);
+  return success;
 }
 
 static void
 _restart(LogQueueDisk *s, DiskQueueOptions *options)
 {
   LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *) s;
-  qdisk_init(self->super.qdisk, options, "SLQF");
+  qdisk_init_instance(self->super.qdisk, options, "SLQF");
 }
 
 static void
@@ -427,7 +428,7 @@ log_queue_disk_non_reliable_new(DiskQueueOptions *options, const gchar *persist_
   g_assert(options->reliable == FALSE);
   LogQueueDiskNonReliable *self = g_new0(LogQueueDiskNonReliable, 1);
   log_queue_disk_init_instance(&self->super, persist_name);
-  qdisk_init(self->super.qdisk, options, "SLQF");
+  qdisk_init_instance(self->super.qdisk, options, "SLQF");
   self->qbacklog = g_queue_new ();
   self->qout = g_queue_new ();
   self->qoverflow = g_queue_new ();
