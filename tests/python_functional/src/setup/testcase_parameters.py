@@ -44,6 +44,7 @@ class TestcaseParameters(object):
                 "working_dir": Path(absolute_framework_dir, relative_report_dir, testcase_name),
                 "relative_working_dir": Path(relative_report_dir, testcase_name),
                 "install_dir": Path(testcase_context.config.getoption("--installdir")),
+                "shared_dir": Path(absolute_framework_dir, "shared_files")
             },
             "file_paths": {
                 "report_file": Path(
@@ -64,6 +65,9 @@ class TestcaseParameters(object):
 
     def get_install_dir(self):
         return self.testcase_parameters["dirs"]["install_dir"]
+
+    def get_shared_dir(self):
+        return self.testcase_parameters["dirs"]["shared_dir"]
 
     def get_report_file(self):
         return self.testcase_parameters["file_paths"]["report_file"]

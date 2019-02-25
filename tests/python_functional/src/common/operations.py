@@ -22,7 +22,7 @@
 #############################################################################
 
 import shutil
-
+from pathlib2 import Path
 
 def open_file(file_path, mode):
     # Python 2 compatibility note: open() can work only with string representation of path
@@ -38,3 +38,15 @@ def cast_to_list(items):
     if isinstance(items, list):
         return items
     return [items]
+
+
+def copy_shared_file(shared_file_name, syslog_ng_testcase):
+    shared_dir = syslog_ng_testcase.testcase_parameters.get_shared_dir()
+    working_dir = syslog_ng_testcase.testcase_parameters.get_working_dir()
+    copy_file(Path(shared_dir, shared_file_name), working_dir)
+
+
+def delete_session_file(shared_file_name, syslog_ng_testcase):
+    working_dir = syslog_ng_testcase.testcase_parameters.get_working_dir()
+    shared_file_name = Path(working_dir, shared_file_name)
+    shared_file_name.unlink()
