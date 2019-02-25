@@ -94,9 +94,12 @@ test_geoip_parser_basics(void)
 
   geoip_parser_set_prefix(geoip_parser, ".prefix.");
   msg = parse_geoip_into_log_message("217.20.130.99");
-
   assert_log_message_value(msg, log_msg_get_value_handle(".prefix.country.iso_code"), "HU");
+  log_msg_unref(msg);
 
+  geoip_parser_set_prefix(geoip_parser, "");
+  msg = parse_geoip_into_log_message("217.20.130.99");
+  assert_log_message_value(msg, log_msg_get_value_handle(".country.iso_code"), "HU");
   log_msg_unref(msg);
 }
 

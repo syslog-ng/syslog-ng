@@ -151,7 +151,8 @@ maxminddb_parser_free(LogPipe *s)
 static void
 remove_trailing_dot(gchar *str)
 {
-  g_assert(strlen(str));
+  if (!strlen(str))
+    return;
   if (str[strlen(str)-1] == '.')
     str[strlen(str)-1] = 0;
 }

@@ -185,6 +185,8 @@ before_last_dot(GString *str)
 {
   const gchar *s = str->str;
   gchar *pos = strrchr(s, '.');
+  if (!pos)
+    return 0;
   return (pos-s);
 }
 
@@ -197,7 +199,9 @@ _clear_current_element_from_key(XMLScanner *self)
 static void
 _add_current_element_to_key(XMLScanner *self, const gchar *element_name)
 {
-  g_string_append_c(self->key, '.');
+  if (self->key->len > 0)
+    g_string_append_c(self->key, '.');
+
   g_string_append(self->key, element_name);
 }
 

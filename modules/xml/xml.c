@@ -34,7 +34,8 @@ xml_parser_get_scanner_options(LogParser *p)
 static void
 remove_trailing_dot(gchar *str)
 {
-  g_assert(strlen(str));
+  if (!strlen(str))
+    return;
   if (str[strlen(str)-1] == '.')
     str[strlen(str)-1] = 0;
 }
