@@ -192,7 +192,11 @@ xml_parser_new(GlobalConfig *cfg)
   self->super.process = xml_parser_process;
   self->forward_invalid = TRUE;
   self->create_lists = TRUE;
-
+  if (cfg_is_config_version_older(cfg, VERSION_VALUE_3_20))
+    {
+      msg_warning_once("WARNING: xml-parser() introduced list-support in " VERSION_3_20 " version."
+                       " If you would like to use the old functionality, use create-lists(no) option");
+    }
   xml_parser_set_prefix(&self->super, ".xml");
   xml_scanner_options_defaults(&self->options);
   return &self->super;
