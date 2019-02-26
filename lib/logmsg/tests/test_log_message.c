@@ -460,7 +460,6 @@ static void
 test_with_sdata(LogMessage *msg, guint32 old_msg_size)
 {
   sizes_t sizes;
-  gchar key_format[]   = ".SDATA.%02d";
   gchar key[]          = ".SDATA.**";
   gchar value[] = "AAAAAAA";
 
@@ -471,7 +470,7 @@ test_with_sdata(LogMessage *msg, guint32 old_msg_size)
 
   for (char i = 0; i < iter_length; i++)
     {
-      g_sprintf(key, key_format, i);
+      g_sprintf(key, ".SDATA.%02d", i);
       sizes = add_key_value(msg, key, value);
 
       single_sdata_kv_size = NV_ENTRY_DIRECT_HDR + NV_TABLE_BOUND(strlen(key)+1 + strlen(value)+1);
