@@ -79,9 +79,12 @@ scanner_push_function(const gchar *name, const gchar *value, gssize value_length
   gssize current_value_len = 0;
   const gchar *current_value = log_msg_get_value_by_name(push_params->msg, name, &current_value_len);
 
+  ScratchBuffersMarker marker;
+  scratch_buffers_mark(&marker);
   GString *values_appended = append_values(current_value, current_value_len, value, value_length,
                                            push_params->create_lists);
   log_msg_set_value_by_name(push_params->msg, name, values_appended->str, values_appended->len);
+  scratch_buffers_reclaim_marked(marker);
 }
 
 static gboolean
