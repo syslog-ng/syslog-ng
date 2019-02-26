@@ -51,7 +51,7 @@ You have to set the path of the class file or the name of the jar file (with ful
 
 Example configuration for this (if you compiled the java file above, and the class file is in the /tmp directory):
 ```
-@version: 3.19
+@version: 3.20
 
 options {
   threaded(yes);
@@ -80,7 +80,7 @@ log{
 ```
 Example configuration using jar files in the class_path (the path inside the jar file has to been set using '.'):
 ```
-@version: 3.19
+@version: 3.20
 
 options {
   threaded(yes);
