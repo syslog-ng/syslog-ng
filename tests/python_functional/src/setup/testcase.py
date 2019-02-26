@@ -35,39 +35,39 @@ from src.message_builder.log_message import LogMessage
 class SetupTestCase(object):
     def __init__(self, testcase_context):
         self.__testcase_context = testcase_context
-        self.__testcase_parameters = TestcaseParameters(testcase_context)
+        self.testcase_parameters = TestcaseParameters(testcase_context)
         self.__prepare_testcase_working_dir()
 
         self.__logger_factory = LoggerFactory(
-            report_file=self.__testcase_parameters.get_report_file(), loglevel=self.__testcase_parameters.get_loglevel()
+            report_file=self.testcase_parameters.get_report_file(), loglevel=self.testcase_parameters.get_loglevel()
         )
         self.__logger = self.__logger_factory.create_logger("Setup", use_console_handler=True, use_file_handler=True)
 
         self.__teardown_actions = []
         testcase_context.addfinalizer(self.__teardown)
-        self.__logger.info("Testcase setup finish:%s", self.__testcase_parameters.get_testcase_name())
+        self.__logger.info("Testcase setup finish:%s", self.testcase_parameters.get_testcase_name())
 
     def __prepare_testcase_working_dir(self):
-        working_directory = self.__testcase_parameters.get_working_dir()
+        working_directory = self.testcase_parameters.get_working_dir()
         if not working_directory.exists():
             working_directory.mkdir(parents=True)
-        testcase_file_path = self.__testcase_parameters.get_testcase_file()
+        testcase_file_path = self.testcase_parameters.get_testcase_file()
         copy_file(testcase_file_path, working_directory)
 
     def __teardown(self):
         self.__logger = self.__logger_factory.create_logger("Teardown", use_console_handler=True, use_file_handler=True)
-        self.__logger.info("Testcase teardown start:%s", self.__testcase_parameters.get_testcase_name())
+        self.__logger.info("Testcase teardown start:%s", self.testcase_parameters.get_testcase_name())
         for inner_function in self.__teardown_actions:
             try:
                 inner_function()
             except OSError:
                 pass
         self.__log_assertion_error()
-        self.__logger.info("Testcase teardown finish:%s", self.__testcase_parameters.get_testcase_name())
+        self.__logger.info("Testcase teardown finish:%s", self.testcase_parameters.get_testcase_name())
 
     def __log_assertion_error(self):
         terminalreporter = self.__testcase_context.config.pluginmanager.getplugin("terminalreporter")
-        if terminalreporter.stats.get("failed"):
+        if terminalreporter and terminalreporter.stats.get("failed"):
             for failed_report in terminalreporter.stats.get("failed"):
                 if failed_report.location[2] == self.__testcase_context.node.name:
                     self.__logger = self.__logger_factory.create_logger(
@@ -76,10 +76,10 @@ class SetupTestCase(object):
                     self.__logger.error(str(failed_report.longrepr))
 
     def new_syslog_ng(self, instance_name="server"):
-        instance_paths = SyslogNgPaths(self.__testcase_context, self.__testcase_parameters).set_syslog_ng_paths(
+        instance_paths = SyslogNgPaths(self.testcase_parameters).set_syslog_ng_paths(
             instance_name
         )
-        syslog_ng = SyslogNg(self.__logger_factory, instance_paths, self.__testcase_parameters)
+        syslog_ng = SyslogNg(self.__logger_factory, instance_paths, self.testcase_parameters)
         self.__teardown_actions.append(syslog_ng.stop)
         return syslog_ng
 
@@ -89,7 +89,7 @@ class SetupTestCase(object):
     def new_config(self, version=None):
         if not version:
             version = self.__testcase_context.getfixturevalue("version")
-        return SyslogNgConfig(self.__logger_factory, self.__testcase_parameters.get_working_dir(), version)
+        return SyslogNgConfig(self.__logger_factory, self.testcase_parameters.get_working_dir(), version)
 
     @staticmethod
     def format_as_bsd(log_message):

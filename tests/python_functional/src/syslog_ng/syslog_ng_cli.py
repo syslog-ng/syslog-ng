@@ -60,13 +60,14 @@ class SyslogNgCli(object):
             self.__logger.error(result["stderr"])
             raise Exception("syslog-ng can not started")
 
-    def __is_process_running(self):
+    def is_process_running(self):
         return self.__process.poll() == None
 
     def __wait_for_control_socket_alive(self):
         def is_alive(s):
-            if not s.__is_process_running():
-                raise Exception("syslog-ng could not start")
+            if not s.is_process_running():
+                self.__process = None
+                raise Exception("syslog-ng is not running")
             return s.__syslog_ng_ctl.is_control_socket_alive()
         return wait_until_true(is_alive, self)
 
@@ -121,7 +122,7 @@ class SyslogNgCli(object):
             # wait for stop and check stop result
             if result["exit_code"] != 0:
                 self.__error_handling()
-            if not wait_until_false(self.__is_process_running):
+            if not wait_until_false(self.is_process_running):
                 self.__error_handling()
                 raise Exception("syslog-ng did not stop")
             if not self.__console_log_reader.wait_for_stop_message():
@@ -139,7 +140,7 @@ class SyslogNgCli(object):
         self.__handle_core_file()
 
     def __handle_core_file(self):
-        if self.__process.wait(1) != 0:
+        if not self.is_process_running():
             core_file_found = False
             for core_file in Path(".").glob("*core*"):
                 core_file_found = True

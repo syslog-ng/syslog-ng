@@ -81,3 +81,5 @@ class ConsoleLogReader(object):
             valgrind_content = valgrind_log.read()
             assert "Invalid read" not in valgrind_content
             assert "Invalid write" not in valgrind_content
+            assert "blocks are definitely lost in loss record" not in valgrind_content
+            assert "Uninitialised value was created by a heap allocation" not in valgrind_content

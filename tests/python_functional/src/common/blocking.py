@@ -23,7 +23,7 @@
 
 import time
 
-DEFAULT_TIMEOUT = 10  # 10 sec
+DEFAULT_TIMEOUT = 20  # 20 sec
 POLL_FREQ = 0.001  # 1 millisecond
 
 def wait_until_true(func, *args):
@@ -37,7 +37,7 @@ def wait_until_true_custom(func, args=(), timeout=DEFAULT_TIMEOUT):
         if result:
             return result
         time.sleep(POLL_FREQ)
-    return False
+    return result
 
 def wait_until_false(func, *args):
     return wait_until_false_custom(func, args)

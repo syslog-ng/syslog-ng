@@ -36,13 +36,15 @@ def get_testcase_name(testcase_context):
 class TestcaseParameters(object):
     def __init__(self, testcase_context):
         testcase_name = get_testcase_name(testcase_context)
-        relative_report_dir = testcase_context.getfixturevalue("reports")
+        relative_report_dir = testcase_context.config.getoption("--reports")
         absolute_framework_dir = Path.cwd()
 
         self.testcase_parameters = {
             "dirs": {
                 "working_dir": Path(absolute_framework_dir, relative_report_dir, testcase_name),
                 "relative_working_dir": Path(relative_report_dir, testcase_name),
+                "install_dir": Path(testcase_context.config.getoption("--installdir")),
+                "shared_dir": Path(absolute_framework_dir, "shared_files")
             },
             "file_paths": {
                 "report_file": Path(
@@ -51,8 +53,8 @@ class TestcaseParameters(object):
                 "testcase_file": Path(testcase_context.node.fspath),
             },
             "testcase_name": testcase_name,
-            "loglevel": testcase_context.getfixturevalue("loglevel"),
-            "valgrind_usage": testcase_context.getfixturevalue("runwithvalgrind"),
+            "loglevel": testcase_context.config.getoption("--loglevel"),
+            "valgrind_usage": testcase_context.config.getoption("--run-with-valgrind"),
         }
 
     def get_working_dir(self):
@@ -60,6 +62,12 @@ class TestcaseParameters(object):
 
     def get_relative_working_dir(self):
         return self.testcase_parameters["dirs"]["relative_working_dir"]
+
+    def get_install_dir(self):
+        return self.testcase_parameters["dirs"]["install_dir"]
+
+    def get_shared_dir(self):
+        return self.testcase_parameters["dirs"]["shared_dir"]
 
     def get_report_file(self):
         return self.testcase_parameters["file_paths"]["report_file"]

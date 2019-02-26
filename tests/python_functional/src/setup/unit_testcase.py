@@ -56,14 +56,14 @@ class SetupUnitTestcase(object):
         return temp_file_path
 
     def get_fake_testcase_parameters(self):
-        when(self.testcase_context).getfixturevalue("installdir").thenReturn(self.get_temp_dir())
-        when(self.testcase_context).getfixturevalue("reports").thenReturn(self.get_temp_dir())
-        when(self.testcase_context).getfixturevalue("loglevel").thenReturn("info")
-        when(self.testcase_context).getfixturevalue("runwithvalgrind").thenReturn(False)
+        self.testcase_context.config.option.installdir = self.get_temp_dir()
+        self.testcase_context.config.option.reports = self.get_temp_dir()
+        self.testcase_context.config.option.loglevel = "info"
+        self.testcase_context.config.option.runwithvalgrind = False
         return TestcaseParameters(self.testcase_context)
 
     def get_fake_logger_factory(self):
-        loglevel = self.testcase_context.getfixturevalue("loglevel")
+        loglevel = self.testcase_context.config.getoption("--loglevel")
         report_file_path = self.get_temp_file()
         return LoggerFactory(report_file_path, loglevel, use_console_handler=True, use_file_handler=False)
 

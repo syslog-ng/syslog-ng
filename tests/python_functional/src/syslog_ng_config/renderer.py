@@ -68,7 +68,12 @@ class ConfigRenderer(object):
     def __render_driver_options(self, driver_options, positional_options):
         for option_name, option_value in driver_options.items():
             if option_name not in positional_options:
-                self.__syslog_ng_config_content += "        {}({})\n".format(option_name, option_value)
+                if isinstance(option_value, dict):
+                    self.__syslog_ng_config_content += "        {}(\n".format(option_name)
+                    self.__render_driver_options(driver_options=option_value, positional_options=positional_options)
+                    self.__syslog_ng_config_content += "        )\n"
+                else:
+                    self.__syslog_ng_config_content += "        {}({})\n".format(option_name, option_value)
 
     def __render_statement_groups(self):
         for statement_group in self.__syslog_ng_config["statement_groups"]:

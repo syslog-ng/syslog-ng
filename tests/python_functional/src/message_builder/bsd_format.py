@@ -22,7 +22,6 @@
 #
 #############################################################################
 
-import datetime
 
 
 class BSDFormat(object):
@@ -31,9 +30,8 @@ class BSDFormat(object):
         formatted_message = ""
         if message.priority_value:
             formatted_message += "<{}>".format(message.priority_value)
-        if message.timestamp_value:
-            bsd_time = datetime.datetime.fromtimestamp(message.timestamp_value).strftime("%b %e %H:%M:%S")
-            formatted_message += "{}".format(bsd_time)
+        if message.bsd_timestamp_value:
+            formatted_message += "{}".format(message.bsd_timestamp_value)
         if message.hostname_value:
             formatted_message += " {}".format(message.hostname_value)
         if message.program_value:

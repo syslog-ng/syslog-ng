@@ -24,11 +24,12 @@
 import time
 import socket
 
-
 class LogMessage(object):
     def __init__(self):
         self.priority_value = "38"
         self.timestamp_value = time.time()
+        self.bsd_timestamp_value = "Feb 11 21:27:22"
+        self.iso_timestamp_value = "2019-02-11T21:27:22+01:00"
         self.hostname_value = socket.gethostname()
         self.program_value = "testprogram"
         self.pid_value = "9999"
