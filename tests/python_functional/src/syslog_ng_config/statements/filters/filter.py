@@ -29,4 +29,4 @@ class Filter(object):
         self.__logger_factory = logger_factory
         self.options = kwargs
         self.driver_name = ""
-        self.positional_option_name = ""
+        self.positional_parameters = []
