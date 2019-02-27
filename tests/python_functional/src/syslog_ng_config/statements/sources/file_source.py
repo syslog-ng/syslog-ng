@@ -31,11 +31,12 @@ class FileSource(SourceDriver):
         super(FileSource, self).__init__(logger_factory, FileIO)
         self.options = kwargs
         self.driver_name = "file"
+        self.path = Path(working_dir, file_name)
         self.positional_option_name = "file_name"
-        self.options[self.positional_option_name] = Path(working_dir, file_name)
+        self.options[self.positional_option_name] = self.path
 
     def get_path(self):
-        return Path(self.options[self.positional_option_name])
+        return self.path
 
     def write_log(self, formatted_log, counter=1):
         self.sd_write_log(self.get_path(), formatted_log, counter=counter)
