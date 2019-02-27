@@ -1,76 +1,90 @@
-3.19.1
+3.20.1
 ======
 
 ## Features
 
- * HTTP load balancer (#2347)
- * Slack destination (#2451)
- * Add Cisco Catalyst formatted triplets support to cisco-parser() (#2394)
- * Add RFC5424 syslog support to the system() source (FreeBSD 12.0 support) (#2430)
- * Add network `interface()` option to network sources (#2389)
- * Add so-reuseport() to network drivers (#2379)
- * Enable supporting HTTP redirects (#2136)
+ * Add persist-tool (#2511)
+ * Collectd destination (#1433)
+ * Config reload status feedback (#2367)
+ * Netskope parser (#2541)
+ * Websense parser (#2471)
+ * Json list support (#2536)
+ * Xml-parser: add list support (#2544)
 
 ## Bugfixes
 
- * Fix frequent disconnects of syslog() with TLS (#2432)
- * Fix possible refcount leak during reload/shutdown (#2434)
- * Fix message storm on trace level (#2425)
- * Fix use after free in file destinations (time-reap) (#2418)
- * Fixing a few memleaks in the Java destination (#2417)
- * Fix telegram dst default ca dir (#2416)
- * Fix prefix handling in $(list-concat) and $(strip) (#2405)
- * Fixing an eventfd leak with ivykis<=0.38 (threaded destinations) (#2404)
- * Process flush result after worker thread exits (threaded destinations) (#2402)
- * hdfs: do not try to write unopened file (#2391)
- * Fix leaks in redis() destination (#2383)
- * Block location tracking fixes (#2378)
- * Fix $(basename) and $(dirname) in the presence of a prefix (#2371)
- * Fixing a false positive corruption detection in non-reliable diskq (#2356)
- * Check if /proc/kmsg can be opened in system-source (#2408)
- * Fix include guard in systemd-journal (#2445)
- * Remove hexadecimal and octal number parsing from templates (#2401)
+ * DNS memory leak/segfault fix (#2500)
+ * Elasticsearch2: fix bulk send for client-mode("http") (#2478)
+ * Few leak fix (#2563)
+ * Filter-re: ref/unref NVTable around regex eval (#2494)
+ * Fix allowing negative version number in config (#2548)
+ * Fix app-parser() per reload memory leak (#2469)
+ * Fix non-reliable disk-queue truncating problem on load (#2406)
+ * Fix threaded source/destination crash when reverting configuration (#2555)
+ * Http: add missing free for self->body_template (#2558)
+ * Java, elasticsearch2, explicit unsupport for named templates (#2534)
+ * Loggen: parameter handling (#2477)
+ * Python-source: fix crash when posting from python thread (#2533)
+ * Read acknowledgments send by Riemann (#2523)
+ * Redis, Riemann: fix ref/unref-ing templates (#2514, #2530)
+ * Syslog-ng@default: use pid file location on control socket (#2489)
+ * Threaded-dest: Fix integer overflow (#2512)
+ * Threaded-dest: make persist_name local (#2516)
+ * Xml/geoip2: make prefix optional (#2538)
 
 ## Other changes
 
- * Do not load certs from default CURL ca-dir by default (http() destination) (#2410)
- * Disable SSL compression by default (#2372)
- * Flush lines cleanup (#2386, #2392)
- * Refine json-parser() log messages to be less alarming (#2437)
- * Move some messages to trace (#2358)
- * Make include-path more discoverable (#2426)
- * Adding build flag -Wmissing-format-attribute and -Wsuggest-attribute=noreturn (#2423)
- * Rewrite filter unit tests based on criterion (#2422)
- * PytestFramework in Travis (#2415)
- * syslog-ng-mod-java debian pkg should depend on headless jre (#2388)
- * Add contextual data error reporting improvements & csv-scanner refactor (#2373)
- * Afsocket remove unused functions/bitfields (#2363)
- * Afsocket minor cleanup/refactor (#2355)
- * Riemann worker (#2313)
- * Afsql threaded dest driver (#2097)
- * dbld: do not mount .gitconfig if missing (#2419)
- * dbld: Add missing docbook-xsl packages (#2398)
- * dbld: update criterion to 2.3.3 (#2396)
- * dbld: Remove "proposed" Ubuntu repository from enable_dbgsyms() (#2382)
- * dbld: Add new target "list-builder-images" (#2381)
- * dbld: Support Ubuntu Bionic and update existing images (#2318)
- * dbld: release target should use the default image (#2464)
+ * Autotools, cmake: add detection for pylint, nosetests (#2537,#2564)
+ * Autotools: relaxing python dependency requirement  (#2472)
+ * Cfg-parser: printing error positions in case of parse failure (#2455)
+ * Cmake: add missing detections (#2510)
+ * Collect-cov.sh: make coverage should work with lcov in bionic (#2515)
+ * Configure: fix "--with-docbook*" option usage (#2465)
+ * Custom LGTM.com query for detecting uses of gmtime that are not covered by a lock (#2413)
+ * Fix static uClibc-ng support (#2501)
+ * Format non-literal fixes (#2567)
+ * Grammar: remove the pragma less include (#2550)
+ * Http-worker: refactor & fix curl_easy_getinfo error message (#2527)
+ * Lib/compat: replace strcasestr() implementation (#2482)
+ * Libtest: Adding stopwatch.h into libtest_HEADERS list (#2553)
+ * Packaging: fix the description of mod-examples (#2522)
+ * Python-debugger: fix macro completion (#2439)
+ * Python, java destination add already introduced retry (#2559)
+ * Remove elastic v1 support (#2554)
+ * Simplify libtest queue utils (#2556)
+ * Syslog-ng.8.xml: remove unneeded default-modules section (#2475)
+ * Travis: use the latest Bison version (macOS) (#2529)
+ * Various fixes for issues reported by LGTM (#2524)
 
 ## Notes to the developers
 
- * PytestFramework: Add initial test framework (#1940)
+ * Example-msg-generator: num option (#2565)
+ * Own grammar support in generator plugin (#2552)
+ * ProtoClient: provide process_in function to logwriter (#2468)
+ * Pytest_framework: eliminating __registered_instances, exposing SyslogNgCtl to user api (#2503)
+ * Pytest_framework: MessageReader: Explain the local context around python asserts (#2507)
+ * Pytest_framework: support for implicit groups in config.create_logpath (#2490)
+ * Pytest: Renaming pytest_framework to python_functional (#2542)
+ * Python-destination: send can return worker_insert_result_t, flush support (#2487)
+ * Python: internal() source exposed via syslogng.Logger (#2505)
+ * Remove unused submodules (#2525)
+ * Simpler names for WORKER_INSERT_RESULT_T in language bindings (#2506)
+ * Split xml-parser into xml-parser and xml-scanner (#2459)
+
 
 ## Credits
 
-syslog-ng is developed as a community project, and as such it relies
-on volunteers, to do the work necessarily to produce syslog-ng.
+  syslog-ng is developed as a community project, and as such it relies
+  on volunteers, to do the work necessarily to produce syslog-ng.
 
-Reporting bugs, testing changes, writing code or simply providing
-feedback are all important contributions, so please if you are a user
-of syslog-ng, contribute.
+  Reporting bugs, testing changes, writing code or simply providing
+  feedback are all important contributions, so please if you are a user
+  of syslog-ng, contribute.
 
-We would like to thank the following people for their contribution:
+  We would like to thank the following people for their contribution:
+  Andras Mitzki, Andrej Valek, Antal Nemes, Attila Szakacs, Balazs Scheidler,
+  Bas van Schaik, Fᴀʙɪᴇɴ Wᴇʀɴʟɪ, Gabor Nagy, Laszlo Boszormenyi, Laszlo Budai,
+  Lorand Muzamel, László Várady, Mehul Prajapati, Naveen Revanna, Peter Czanik,
+  Peter Kokai, Romain Tartière, Stephen, Terez Nemes, Norbert Takács,
+  Soubhik Chakraborty, NottyRu, Chris Packham.
 
-Abder Benbachir, Andras Mitzki, Antal Nemes, Attila Szakacs, Balazs Scheidler,
-Gabor Nagy, Gergely Tonté, JP Vossen, Juhasz Viktor, Laszlo Budai,
-Laszlo Szemere, László Várady, Norbert Takacs, Peter Kokai, Zoltan Pallagi.
