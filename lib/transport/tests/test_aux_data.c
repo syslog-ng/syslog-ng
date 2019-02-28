@@ -20,64 +20,44 @@
  * OpenSSL libraries as published by the OpenSSL project. See the file
  * COPYING for details.
  */
-#include "testutils.h"
+#include <criterion/criterion.h>
+#include "apphook.h"
 #include "transport/transport-aux-data.h"
 
-#define AUX_DATA_TESTCASE(x, ...) do { aux_data_testcase_begin(#x, #__VA_ARGS__); x(__VA_ARGS__); aux_data_testcase_end(); } while(0)
-
-
-#define aux_data_testcase_begin(func, args)    \
-  do                                                                    \
-    {                                                                   \
-      testcase_begin("%s(%s)", func, args);                             \
-    }                                                                   \
-  while (0)
-
-#define aux_data_testcase_end()                                 \
-  do                                                              \
-    {                                                             \
-      testcase_end();                                             \
-    }                                                             \
-  while (0)
-
+LogTransportAuxData *aux = NULL;
 
 static LogTransportAuxData *
 construct_empty_aux(void)
 {
-  LogTransportAuxData *aux = g_new(LogTransportAuxData, 1);
+  LogTransportAuxData *self = g_new(LogTransportAuxData, 1);
 
-  log_transport_aux_data_init(aux);
-  return aux;
+  log_transport_aux_data_init(self);
+  return self;
 }
 
 static void
-free_aux(LogTransportAuxData *aux)
+free_aux(LogTransportAuxData *self)
 {
-  log_transport_aux_data_destroy(aux);
-  g_free(aux);
+  log_transport_aux_data_destroy(self);
+  g_free(self);
 }
 
 static LogTransportAuxData *
 construct_aux_with_some_data(void)
 {
-  LogTransportAuxData *aux = construct_empty_aux();
+  LogTransportAuxData *self = construct_empty_aux();
 
   /* set peer_addr twice to validate that peer_addr is correctly reference counted */
-  log_transport_aux_data_set_peer_addr_ref(aux, g_sockaddr_inet_new("1.2.3.4", 5555));
-  log_transport_aux_data_set_peer_addr_ref(aux, g_sockaddr_inet_new("1.2.3.4", 5555));
-  log_transport_aux_data_add_nv_pair(aux, "foo", "bar");
-  return aux;
+  log_transport_aux_data_set_peer_addr_ref(self, g_sockaddr_inet_new("1.2.3.4", 5555));
+  log_transport_aux_data_set_peer_addr_ref(self, g_sockaddr_inet_new("1.2.3.4", 5555));
+  log_transport_aux_data_add_nv_pair(self, "foo", "bar");
+  return self;
 }
 
-static void
-test_aux_data_reinit_returns_aux_into_initial_state_without_leaks(void)
+Test(aux_data, test_aux_data_reinit_returns_aux_into_initial_state_without_leaks)
 {
-  LogTransportAuxData *aux = construct_aux_with_some_data();
-
   log_transport_aux_data_reinit(aux);
-  assert_null(aux->peer_addr, "aux->peer_addr is not NULL after reinit");
-
-  free_aux(aux);
+  cr_assert_null(aux->peer_addr, "aux->peer_addr is not NULL after reinit");
 }
 
 static void
@@ -86,41 +66,35 @@ _concat_nvpairs_helper(const gchar *name, const gchar *value, gsize value_len, g
   GString *concatenated = (GString *) user_data;
 
   g_string_sprintfa(concatenated, "%s=%s\n", name, value);
-  assert_gint(value_len, strlen(value), "foreach() length mismatch");
+  cr_assert_eq(value_len, strlen(value), "foreach() length mismatch");
 }
 
 static gchar *
-_concat_nvpairs(LogTransportAuxData *aux)
+_concat_nvpairs(LogTransportAuxData *self)
 {
   GString *concatenated = g_string_sized_new(0);
 
-  log_transport_aux_data_foreach(aux, _concat_nvpairs_helper, concatenated);
+  log_transport_aux_data_foreach(self, _concat_nvpairs_helper, concatenated);
   return g_string_free(concatenated, FALSE);
 }
 
 static void
-assert_concatenated_nvpairs(LogTransportAuxData *aux, const gchar *expected)
+assert_concatenated_nvpairs(LogTransportAuxData *self, const gchar *expected)
 {
-  gchar *concatenated = _concat_nvpairs(aux);;
+  gchar *concatenated = _concat_nvpairs(self);
 
-  assert_string(concatenated, expected, "foreach() didn't return all-added nvpairs");
+  cr_assert_str_eq(concatenated, expected, "foreach() didn't return all-added nvpairs");
   g_free(concatenated);
 }
 
-static void
-test_aux_data_added_nvpairs_are_returned_by_foreach_in_order(void)
+Test(aux_data, test_aux_data_added_nvpairs_are_returned_by_foreach_in_order)
 {
-  LogTransportAuxData *aux = construct_aux_with_some_data();
-
   log_transport_aux_data_add_nv_pair(aux, "super", "lativus");
   assert_concatenated_nvpairs(aux, "foo=bar\nsuper=lativus\n");
-  free_aux(aux);
 }
 
-static void
-test_aux_data_copy_creates_an_identical_copy(void)
+Test(aux_data, test_aux_data_copy_creates_an_identical_copy)
 {
-  LogTransportAuxData *aux = construct_aux_with_some_data();
   LogTransportAuxData aux_copy;
   gchar *orig, *copy;
 
@@ -128,17 +102,14 @@ test_aux_data_copy_creates_an_identical_copy(void)
 
   orig = _concat_nvpairs(aux);
   copy = _concat_nvpairs(&aux_copy);
-  assert_string(orig, copy, "copy incorrectly copied aux->nvpairs");
+  cr_assert_str_eq(orig, copy, "copy incorrectly copied aux->nvpairs");
   g_free(orig);
   g_free(copy);
   log_transport_aux_data_destroy(&aux_copy);
-  free_aux(aux);
 }
 
-static void
-test_aux_data_copy_separates_the_copies(void)
+Test(aux_data, test_aux_data_copy_separates_the_copies)
 {
-  LogTransportAuxData *aux = construct_aux_with_some_data();
   LogTransportAuxData aux_copy;
   gchar *orig, *copy;
 
@@ -147,32 +118,30 @@ test_aux_data_copy_separates_the_copies(void)
 
   orig = _concat_nvpairs(aux);
   copy = _concat_nvpairs(&aux_copy);
-  assert_false(strcmp(orig, copy) == 0,
-               "copy incorrectly copied aux->nvpairs as change to one of them affected the other, orig=%s, copy=%s", orig, copy);
+  cr_assert_str_neq(orig, copy,
+                    "copy incorrectly copied aux->nvpairs as change to one of them affected the other, orig=%s, copy=%s", orig, copy);
   g_free(orig);
   g_free(copy);
   log_transport_aux_data_destroy(&aux_copy);
-  free_aux(aux);
 }
 
-static void
-test_add_nv_pair_to_a_NULL_aux_data_will_do_nothing(void)
+Test(aux_data, test_add_nv_pair_to_a_NULL_aux_data_will_do_nothing)
 {
   log_transport_aux_data_add_nv_pair(NULL, "foo", "bar");
 }
 
 static void
-test_aux_data(void)
+setup(void)
 {
-  AUX_DATA_TESTCASE(test_aux_data_reinit_returns_aux_into_initial_state_without_leaks);
-  AUX_DATA_TESTCASE(test_aux_data_added_nvpairs_are_returned_by_foreach_in_order);
-  AUX_DATA_TESTCASE(test_aux_data_copy_creates_an_identical_copy);
-  AUX_DATA_TESTCASE(test_aux_data_copy_separates_the_copies);
-  AUX_DATA_TESTCASE(test_add_nv_pair_to_a_NULL_aux_data_will_do_nothing);
+  app_startup();
+  aux = construct_aux_with_some_data();
 }
 
-int main(void)
+static void
+teardown(void)
 {
-  test_aux_data();
-  return 0;
+  free_aux(aux);
+  app_shutdown();
 }
+
+TestSuite(aux_data, .init = setup, .fini = teardown);
