@@ -1,8 +1,8 @@
-## Syslog-ng development/release environtment powered by Docker
+## Syslog-ng development/release environment powered by Docker
 With the help of the following tool you can
 - compile syslog-ng from source code
 - generate tarball
-- craete OS specific packages
+- create OS specific packages
 
 in an isolated Docker container based environment.
 
@@ -10,9 +10,9 @@ in an isolated Docker container based environment.
 ```bash
 ~/syslog-ng$ dbld/rules [help]
 ```
-dbld/rules is the general entrypoint for the tool, specifying multiple targets. For the complete list of the available targets please run the command (without parameters it will run without any sideeffect), or read the source code on [GitHub](rules).
+dbld/rules is the general entrypoint for the tool, specifying multiple targets. For the complete list of the available targets please run the command (without parameters it will run without any side effect), or read the source code on [GitHub](rules).
 
-Almost every `dbld/rules` command run in a Docker container. You can use the pre built containers from [DockerHub](https://hub.docker.com/u/balabit/) or build your own images with the `dbld/rules image-<os>` command.
+Almost every `dbld/rules` command run in a Docker container. You can use the pre-built containers from [DockerHub](https://hub.docker.com/u/balabit/) or build your own images with the `dbld/rules image-<os>` command.
 
 The source code and build products are mounted externally in the following locations:
 - **/source** -> syslog-ng/*
