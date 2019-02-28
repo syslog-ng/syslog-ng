@@ -46,6 +46,7 @@ typedef struct
 {
   gboolean forward_invalid;
   gboolean strip_whitespaces;
+  gboolean *create_lists;
   GList *exclude_tags;
   const gchar *prefix;
 } XMLParserTestOptions;
@@ -55,6 +56,8 @@ _construct_xml_parser(XMLParserTestOptions options)
 {
   LogParser *xml_parser = xml_parser_new(configuration);
   xml_parser_set_forward_invalid(xml_parser, options.forward_invalid);
+  if (options.create_lists != NULL)
+    xml_parser_allow_create_lists(xml_parser, *options.create_lists);
   if (options.strip_whitespaces)
     xml_scanner_options_set_strip_whitespaces(xml_parser_get_scanner_options(xml_parser), options.strip_whitespaces);
   if (options.exclude_tags)
@@ -129,16 +132,97 @@ ParameterizedTestParameters(xmlparser, valid_inputs)
     {"<tag1><tag11></tag11><tag12><tag121>value</tag121></tag12></tag1>", ".xml.tag1.tag12.tag121", "value"},
     {"<tag1><tag11></tag11><tag12><tag121 attr1='1' attr2='2'>value</tag121></tag12></tag1>", ".xml.tag1.tag12.tag121._attr1", "1"},
     {"<tag1><tag11></tag11><tag12><tag121 attr1='1' attr2='2'>value</tag121></tag12></tag1>", ".xml.tag1.tag12.tag121._attr2", "2"},
-    {"<tag1><tag1>t11.1</tag1><tag1>t11.2</tag1></tag1>", ".xml.tag1.tag1", "t11.1t11.2"},
+    {"<tag1><tag1>t11.1</tag1><tag1>t11.2</tag1></tag1>", ".xml.tag1.tag1", "t11.1,t11.2"},
   };
 
   return cr_make_param_array(ValidXMLTestCase, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));
 }
 
-
 ParameterizedTest(ValidXMLTestCase *test_cases, xmlparser, valid_inputs)
 {
   LogParser *xml_parser = _construct_xml_parser((XMLParserTestOptions) {});
+
+  LogMessage *msg = log_msg_new_empty();
+  log_msg_set_value(msg, LM_V_MESSAGE, test_cases->input, -1);
+
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  log_parser_process_message(xml_parser, &msg, &path_options);
+
+  const gchar *value = log_msg_get_value_by_name(msg, test_cases->key, NULL);
+
+  cr_assert_str_eq(value, test_cases->value, "key: %s | value: %s != %s (expected)", test_cases->key, value,
+                   test_cases->value);
+
+  log_pipe_deinit((LogPipe *)xml_parser);
+  log_pipe_unref((LogPipe *)xml_parser);
+  log_msg_unref(msg);
+}
+
+typedef struct
+{
+  const gchar *input;
+  gboolean create_lists;
+  const gchar *key;
+  const gchar *value;
+} ListCreateTestCase;
+
+ParameterizedTestParameters(xmlparser, list_quoting_array_elements)
+{
+  static ListCreateTestCase test_cases[] =
+  {
+    {
+      "<tag1><simple_namevalue> value,2 </simple_namevalue></tag1>", .create_lists = FALSE,
+      ".xml.tag1.simple_namevalue", " value,2 "
+    },
+    {
+      "<tag1><simple_namevalue> value,2 </simple_namevalue></tag1>", .create_lists = TRUE,
+      ".xml.tag1.simple_namevalue", "\" value,2 \""
+    },
+    {
+      "<events><data>1</data><data> 2 </data></events>", .create_lists = TRUE,
+      ".xml.events.data", "1,\" 2 \""
+    },
+    {
+      "<events><data>1</data><data> 2 </data><data>3,</data><data>4</data></events>", .create_lists = TRUE,
+      ".xml.events.data", "1,\" 2 \",\"3,\",4"
+    },
+    {
+      "<noquotes><data>one</data><data>two</data><data>three</data></noquotes>", .create_lists = TRUE,
+      ".xml.noquotes.data", "one,two,three"
+    },
+    {
+      "<array><data>,first element</data><data>second element</data><data>Third element</data></array>",
+      .create_lists = TRUE,
+      ".xml.array.data", "\",first element\",\"second element\",\"Third element\""
+    },
+    {
+      "<array><data>\"Quoted elements escaped with single-quote\"</data><data>unquoted with double-quotes</data></array>",
+      .create_lists = TRUE,
+      ".xml.array.data", "'\"Quoted elements escaped with single-quote\"',\"unquoted with double-quotes\""
+    },
+    {
+      "<array><data>\'Single quoted becomes quoted\'</data><data>simple</data></array>", .create_lists = TRUE,
+      ".xml.array.data", "\"'Single quoted becomes quoted'\",simple"
+    },
+    {
+      "<events><data>first</data><data>second</data></events>", .create_lists = FALSE,
+      ".xml.events.data", "firstsecond"
+    },
+    {
+      "<events><data>first</data><data>second, long entry</data></events>", .create_lists = FALSE,
+      ".xml.events.data", "firstsecond, long entry"
+    },
+  };
+
+  return cr_make_param_array(ListCreateTestCase, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));
+}
+
+ParameterizedTest(ListCreateTestCase *test_cases, xmlparser, list_quoting_array_elements)
+{
+  LogParser *xml_parser = _construct_xml_parser((XMLParserTestOptions)
+  {
+    .create_lists = &test_cases->create_lists
+  });
 
   LogMessage *msg = log_msg_new_empty();
   log_msg_set_value(msg, LM_V_MESSAGE, test_cases->input, -1);

@@ -57,6 +57,8 @@ XMLScannerOptions *last_xml_scanner_options;
 %token KW_DROP_INVALID
 %token KW_EXCLUDE_TAGS
 %token KW_STRIP_WHITESPACES
+%token KW_CREATE_LISTS
+
 
 %type	<ptr> parser_xml
 %%
@@ -94,6 +96,7 @@ xml_opt
           }
         | KW_STRIP_WHITESPACES '(' yesno ')'
           { xml_scanner_options_set_strip_whitespaces(last_xml_scanner_options, $3); }
+        | KW_CREATE_LISTS '(' yesno ')' { xml_parser_allow_create_lists(last_parser, $3); }
         | parser_opt
         ;
 
