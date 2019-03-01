@@ -26,13 +26,13 @@ The source code and build products are mounted externally in the following locat
 The following commands starts a container mounted with the source:
 
 ```bash
-$ dbld/rules shell-xenial
+$ dbld/rules shell-ubuntu-xenial
 ```
 
 You can also build a DEB using:
 
 ```bash
-$ dbld/rules deb-xenial
+$ dbld/rules deb-ubuntu-xenial
 ```
 
 You can find the resulting debs in `$HOME/syslog-ng/dbld/build`.
