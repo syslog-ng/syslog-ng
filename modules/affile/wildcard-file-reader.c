@@ -124,9 +124,6 @@ _notify(LogPipe *s, gint notify_code, gpointer user_data)
     case NC_FILE_EOF:
       _set_eof(self);
       break;
-    case NC_LAST_MSG_SENT:
-      _set_last_msg_sent(self);
-      break;
     default:
       file_reader_notify_method(s, notify_code, user_data);
       break;

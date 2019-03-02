@@ -44,14 +44,6 @@ log_source_wakeup(LogSource *self)
   msg_diagnostics("Source has been resumed", log_pipe_location_tag(&self->super));
 }
 
-void
-log_source_window_empty(LogSource *self)
-{
-  if (self->window_empty_cb)
-    self->window_empty_cb(self);
-  msg_diagnostics("LogSource window is empty");
-}
-
 static inline void
 _flow_control_window_size_adjust(LogSource *self, guint32 window_size_increment, gboolean last_ack_type_is_suspended)
 {
@@ -69,9 +61,6 @@ _flow_control_window_size_adjust(LogSource *self, guint32 window_size_increment,
     window_size_counter_resume(&self->window_size);
   if (old_window_size == 0 || need_to_resume_counter)
     log_source_wakeup(self);
-
-  if (old_window_size+window_size_increment == self->options->init_window_size)
-    log_source_window_empty(self);
 }
 
 static void
