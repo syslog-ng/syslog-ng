@@ -37,7 +37,6 @@ from src.syslog_ng_config.statements.filters.filter import Filter
 class SyslogNgConfig(object):
     def __init__(self, working_dir, version):
         self.__working_dir = working_dir
-        self.__logger = logging.getLogger("SyslogNgConfig")
         self.__raw_config = None
         self.__syslog_ng_config = {
             "version": version,
@@ -57,12 +56,7 @@ class SyslogNgConfig(object):
             rendered_config = self.__raw_config
         else:
             rendered_config = ConfigRenderer(self.__syslog_ng_config, self.__working_dir).get_rendered_config()
-        logger.info(
-            "Used config \
-        \n->Content:[{}]".format(
-                rendered_config
-            )
-        )
+        logger.info("Generated syslog-ng config\n{}\n".format(rendered_config))
         FileIO(config_path).rewrite(rendered_config)
 
     def create_statement_group_if_needed(self, item):

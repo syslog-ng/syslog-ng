@@ -41,9 +41,5 @@ class SourceDriver(object):
         self.__construct_writer(path)
         for __i in range(0, counter):
             self.__writer.write(formatted_log)
-        written_description = "Content has been written number of times: {}\
-        \n->Path:[{}]\
-        \n->Content:[{}]".format(
-            counter, path, formatted_log
-        )
-        logger.debug(written_description)
+        written_description = "Content has been written to\nresource: {}\nnumber of times: {}\ncontent: {}\n".format(path, counter, formatted_log)
+        logger.info(written_description)

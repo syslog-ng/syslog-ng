@@ -30,7 +30,6 @@ from src.executors.command_executor import prepare_std_outputs, prepare_printabl
 
 class ProcessExecutor(object):
     def __init__(self):
-        self.__logger = logging.getLogger("ProcessExecutor")
         self.__file_ref = File
         self.process = None
 
@@ -38,9 +37,8 @@ class ProcessExecutor(object):
         printable_command = prepare_printable_command(command)
         executable_command = prepare_executable_command(command)
         stdout, stderr = prepare_std_outputs(self.__file_ref, stdout_path, stderr_path)
-        logger.info("Following process will be started:\n{}".format(printable_command))
+        logger.info("Following process will be started:\n{}\n".format(printable_command))
         self.process = psutil.Popen(
             executable_command, stdout=stdout.open_file(mode="a"), stderr=stderr.open_file(mode="a")
         )
-        logger.info("Process started with pid [{}]".format(self.process.pid))
         return self.process

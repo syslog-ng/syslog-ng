@@ -33,7 +33,6 @@ class SyslogNgCli(object):
     def __init__(self, instance_paths, testcase_parameters):
         self.__instance_paths = instance_paths
         self.__console_log_reader = ConsoleLogReader(instance_paths)
-        self.__logger = logging.getLogger("SyslogNgCli")
         self.__syslog_ng_executor = SyslogNgExecutor(instance_paths)
         self.__syslog_ng_ctl = SyslogNgCtl(instance_paths)
         self.__valgrind_usage = testcase_parameters.get_valgrind_usage()
@@ -91,16 +90,14 @@ class SyslogNgCli(object):
 
     # Process commands
     def start(self, config):
-        logger.info("Beginning of syslog-ng start")
         config.write_content(self.__instance_paths.get_config_path())
 
         self.__syntax_check()
         self.__start_syslog_ng()
 
-        logger.info("End of syslog-ng start")
+        logger.info("syslog-ng process has been started with PID: {}\n".format(self.__process.pid))
 
     def reload(self, config):
-        logger.info("Beginning of syslog-ng reload")
         config.write_content(self.__instance_paths.get_config_path())
 
         # effective reload
@@ -113,11 +110,11 @@ class SyslogNgCli(object):
         if not self.__console_log_reader.wait_for_reload_message():
             self.__error_handling()
             raise Exception("Reload message not arrived")
-        logger.info("End of syslog-ng reload")
+        logger.info("syslog-ng process has been reloaded with PID: {}\n".format(self.__process.pid))
 
     def stop(self, unexpected_messages=None):
-        logger.info("Beginning of syslog-ng stop")
         if self.__process:
+            saved_pid = self.__process.pid
             # effective stop
             result = self.__syslog_ng_ctl.stop()
 
@@ -134,7 +131,7 @@ class SyslogNgCli(object):
             if self.__valgrind_usage:
                 self.__console_log_reader.handle_valgrind_log(self.__instance_paths.get_valgrind_log_path())
             self.__process = None
-            logger.info("End of syslog-ng stop")
+            logger.info("syslog-ng process has been stopped with PID: {}\n".format(saved_pid))
 
     # Helper functions
     def __error_handling(self):

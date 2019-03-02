@@ -30,7 +30,6 @@ from src.message_reader.single_line_parser import SingleLineParser
 
 class ConsoleLogReader(object):
     def __init__(self, instance_paths):
-        self.__logger = logging.getLogger("ConsoleLogReader")
         self.__stderr_io = FileIO(instance_paths.get_stderr_path())
         self.__message_reader = MessageReader(self.__stderr_io.read, SingleLineParser())
 
@@ -75,7 +74,7 @@ class ConsoleLogReader(object):
 
     def dump_stderr(self, last_n_lines=10):
         console_log_messages = self.__message_reader.peek_messages(counter=READ_ALL_MESSAGES)
-        logger.info("".join(console_log_messages[-last_n_lines:]))
+        logger.error("".join(console_log_messages[-last_n_lines:]))
 
     @staticmethod
     def handle_valgrind_log(valgrind_log_path):

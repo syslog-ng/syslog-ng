@@ -46,10 +46,6 @@ class DestinationDriver(object):
             )
             self.__reader = message_reader
         messages = self.__reader.pop_messages(counter)
-        read_description = "Content has been read from:\
-        \n->Path:[{}]\
-        \n->Content:[{}]".format(
-            path, messages
-        )
-        logger.debug(read_description)
+        read_description = "Content has been read from\nresource: {}\ncontent: {}\n".format(path, messages)
+        logger.info(read_description)
         return messages
