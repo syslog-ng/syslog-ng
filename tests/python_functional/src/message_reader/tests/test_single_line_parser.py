@@ -50,3 +50,9 @@ def test_single_line_parser_parsing_multiple_times(tc_unittest):
 """
     single_line_parser.parse_buffer(content_buffer=input_buffer2)
     assert single_line_parser.msg_list == ["test message 1\n", "test message 2\n"]
+
+def test_single_line_parser_chunks(tc_unittest):
+    single_line_parser = SingleLineParser(tc_unittest.get_fake_logger_factory())
+    single_line_parser.parse_buffer(content_buffer="first")
+    single_line_parser.parse_buffer(content_buffer="second\n")
+    assert single_line_parser.msg_list == ["firstsecond\n"]

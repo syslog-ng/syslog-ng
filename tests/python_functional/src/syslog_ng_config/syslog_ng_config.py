@@ -25,6 +25,7 @@ from src.driver_io.file.file_io import FileIO
 from src.syslog_ng_config.renderer import ConfigRenderer
 from src.syslog_ng_config.statements.logpath.logpath import LogPath
 from src.syslog_ng_config.statements.sources.file_source import FileSource
+from src.syslog_ng_config.statements.sources.source_driver import SourceDriver
 from src.syslog_ng_config.statements.destinations.file_destination import FileDestination
 from src.syslog_ng_config.statement_group import StatementGroup
 from src.common.operations import cast_to_list
@@ -108,3 +109,10 @@ class SyslogNgConfig(object):
     def create_inner_logpath(self, statements=None, flags=None):
         inner_logpath = self.__create_logpath_with_conversion(statements, flags)
         return inner_logpath
+
+    def create_example_msg_generator(self, **options):
+        generator_source = SourceDriver(self.__logger_factory, None)
+        generator_source.driver_name = "example_msg_generator"
+        generator_source.DEFAULT_MESSAGE = "-- Generated message. --"
+        generator_source.options = options
+        return generator_source

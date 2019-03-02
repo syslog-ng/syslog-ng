@@ -27,8 +27,12 @@ class SingleLineParser(object):
         self.__logger = logger_factory.create_logger("SingleLineParser")
         self.msg_list = []
         self.__parse_rule = "\n"
+        self.current_chunk = ""
 
     def parse_buffer(self, content_buffer):
-        for line in list(content_buffer.splitlines(True)):
+        full_content = self.current_chunk + content_buffer
+        for line in list(full_content.splitlines(True)):
             if line.endswith(self.__parse_rule):
                 self.msg_list.append(line)
+            else:
+                self.current_chunk = line

@@ -35,7 +35,7 @@ def test_manipulating_config_between_reload(tc):
     syslog_ng.start(config)
 
     # update positional value of file source
-    file_source.options["file_name"] = "updated_input.log"
+    file_source.set_path("updated_input.log")
 
     # add new option to file source
     file_source.options["log_iw_size"] = "100"

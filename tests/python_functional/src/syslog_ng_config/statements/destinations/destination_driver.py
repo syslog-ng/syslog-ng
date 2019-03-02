@@ -28,11 +28,14 @@ from src.message_reader.single_line_parser import SingleLineParser
 class DestinationDriver(object):
     group_type = "destination"
 
-    def __init__(self, logger_factory, IOClass):
+    def __init__(self, logger_factory, IOClass, positional_parameters=[], options={}):
         self.__logger_factory = logger_factory
         self.__logger = logger_factory.create_logger("DestinationDriver")
         self.__IOClass = IOClass
         self.__reader = None
+        self.positional_parameters = positional_parameters
+        self.options = options
+
 
     def dd_read_logs(self, path, counter):
         if not self.__reader:

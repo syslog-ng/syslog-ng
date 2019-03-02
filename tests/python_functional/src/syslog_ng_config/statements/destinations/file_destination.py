@@ -27,37 +27,16 @@ from src.syslog_ng_config.statements.destinations.destination_driver import Dest
 
 
 class FileDestination(DestinationDriver):
-    def __init__(self, logger_factory, working_dir, **kwargs):
-        super(FileDestination, self).__init__(logger_factory, FileIO)
-        self.__options = kwargs
-        self.__driver_name = "file"
-        self.__positional_option = "file_name"
-        self.__construct_file_path(working_dir)
-
-    @property
-    def driver_name(self):
-        return self.__driver_name
-
-    @property
-    def positional_option_name(self):
-        return self.__positional_option
-
-    @property
-    def options(self):
-        return self.__options
+    def __init__(self, logger_factory, working_dir, file_name, **options):
+        self.driver_name = "file"
+        self.path = Path(working_dir, file_name)
+        super(FileDestination, self).__init__(logger_factory, FileIO, [self.path], options)
 
     def get_path(self):
-        return Path(self.options[self.positional_option_name])
+        return self.path
 
     def read_log(self):
         return self.dd_read_logs(self.get_path(), counter=1)[0]
 
     def read_logs(self, counter):
         return self.dd_read_logs(self.get_path(), counter=counter)
-
-    def __construct_file_path(self, working_dir):
-        if self.positional_option_name in self.options.keys():
-            given_positional_option_value = self.options[self.positional_option_name]
-            self.options[self.positional_option_name] = Path(
-                working_dir, given_positional_option_value
-            )

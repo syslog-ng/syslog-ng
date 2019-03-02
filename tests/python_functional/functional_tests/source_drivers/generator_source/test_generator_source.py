@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #############################################################################
-# Copyright (c) 2015-2018 Balabit
+# Copyright (c) 2019 Balabit
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -21,23 +21,15 @@
 #
 #############################################################################
 
-from pathlib2 import Path
-from src.driver_io.file.file_io import FileIO
-from src.syslog_ng_config.statements.sources.source_driver import SourceDriver
 
+def test_generator_source(tc):
+    config = tc.new_config()
 
-class FileSource(SourceDriver):
-    def __init__(self, logger_factory, working_dir, file_name, **options):
-        self.working_dir = working_dir
-        self.driver_name = "file"
-        self.path = Path(working_dir, file_name)
-        super(FileSource, self).__init__(logger_factory, FileIO, [self.path], options)
+    generator_source = config.create_example_msg_generator(num=1)
+    file_destination = config.create_file_destination(file_name="output.log", template="'$MSG\n'")
 
-    def get_path(self):
-        return self.path
-
-    def set_path(self, pathname):
-        self.path = Path(self.working_dir, pathname)
-
-    def write_log(self, formatted_log, counter=1):
-        self.sd_write_log(self.get_path(), formatted_log, counter=counter)
+    config.create_logpath(statements=[generator_source, file_destination])
+    syslog_ng = tc.new_syslog_ng()
+    syslog_ng.start(config)
+    log = file_destination.read_log()
+    assert log == generator_source.DEFAULT_MESSAGE + "\n"

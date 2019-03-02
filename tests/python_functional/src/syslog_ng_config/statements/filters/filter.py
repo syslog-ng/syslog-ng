@@ -27,17 +27,6 @@ class Filter(object):
 
     def __init__(self, logger_factory, **kwargs):
         self.__logger_factory = logger_factory
-        self.__options = kwargs
-        self.__driver_name = ""
-
-    @property
-    def driver_name(self):
-        return self.__driver_name
-
-    @property
-    def options(self):
-        return self.__options
-
-    @property
-    def positional_option_name(self):
-        return ""
+        self.options = kwargs
+        self.driver_name = ""
+        self.positional_parameters = []
