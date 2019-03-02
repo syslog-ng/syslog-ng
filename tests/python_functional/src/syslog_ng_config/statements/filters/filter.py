@@ -25,8 +25,7 @@
 class Filter(object):
     group_type = "filter"
 
-    def __init__(self, logger_factory, **kwargs):
-        self.__logger_factory = logger_factory
+    def __init__(self, **kwargs):
         self.options = kwargs
         self.driver_name = ""
         self.positional_parameters = []

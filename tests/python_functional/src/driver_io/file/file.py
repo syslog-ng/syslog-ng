@@ -21,13 +21,14 @@
 #
 #############################################################################
 
+import logging
+logger = logging.getLogger(__name__)
 from src.common.operations import open_file
 from src.common.blocking import wait_until_true
 
 
 class File(object):
-    def __init__(self, logger_factory, file_path):
-        self.__logger = logger_factory.create_logger("File")
+    def __init__(self, file_path):
         self.__file_path = file_path
         self.__opened_file = None
 
@@ -42,9 +43,9 @@ class File(object):
     def wait_for_creation(self):
         file_created = wait_until_true(self.__is_file_exist)
         if file_created:
-            self.__logger.info("File has been created, file_path: [{}]".format(self.__file_path))
+            logger.info("File has been created, file_path: [{}]".format(self.__file_path))
         else:
-            self.__logger.debug("File not created, file_path: [{}]".format(self.__file_path))
+            logger.debug("File not created, file_path: [{}]".format(self.__file_path))
         return file_created
 
     def open_file(self, mode):

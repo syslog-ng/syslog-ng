@@ -27,11 +27,11 @@ from src.syslog_ng_config.statements.sources.source_driver import SourceDriver
 
 
 class FileSource(SourceDriver):
-    def __init__(self, logger_factory, working_dir, file_name, **options):
+    def __init__(self, working_dir, file_name, **options):
         self.working_dir = working_dir
         self.driver_name = "file"
         self.path = Path(working_dir, file_name)
-        super(FileSource, self).__init__(logger_factory, FileIO, [self.path], options)
+        super(FileSource, self).__init__(FileIO, [self.path], options)
 
     def get_path(self):
         return self.path

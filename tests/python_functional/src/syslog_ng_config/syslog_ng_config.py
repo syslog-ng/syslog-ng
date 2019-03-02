@@ -21,6 +21,8 @@
 #
 #############################################################################
 
+import logging
+logger = logging.getLogger(__name__)
 from src.driver_io.file.file_io import FileIO
 from src.syslog_ng_config.renderer import ConfigRenderer
 from src.syslog_ng_config.statements.logpath.logpath import LogPath
@@ -33,10 +35,9 @@ from src.syslog_ng_config.statements.filters.filter import Filter
 
 
 class SyslogNgConfig(object):
-    def __init__(self, logger_factory, working_dir, version):
+    def __init__(self, working_dir, version):
         self.__working_dir = working_dir
-        self.__logger_factory = logger_factory
-        self.__logger = logger_factory.create_logger("SyslogNgConfig")
+        self.__logger = logging.getLogger("SyslogNgConfig")
         self.__raw_config = None
         self.__syslog_ng_config = {
             "version": version,
@@ -56,13 +57,13 @@ class SyslogNgConfig(object):
             rendered_config = self.__raw_config
         else:
             rendered_config = ConfigRenderer(self.__syslog_ng_config, self.__working_dir).get_rendered_config()
-        self.__logger.info(
+        logger.info(
             "Used config \
         \n->Content:[{}]".format(
                 rendered_config
             )
         )
-        FileIO(self.__logger_factory, config_path).rewrite(rendered_config)
+        FileIO(config_path).rewrite(rendered_config)
 
     def create_statement_group_if_needed(self, item):
         if isinstance(item, (StatementGroup, LogPath)):
@@ -88,13 +89,13 @@ class SyslogNgConfig(object):
         self.__syslog_ng_config["global_options"].update(kwargs)
 
     def create_file_source(self, **kwargs):
-        return FileSource(self.__logger_factory, self.__working_dir, **kwargs)
+        return FileSource(self.__working_dir, **kwargs)
 
     def create_file_destination(self, **kwargs):
-        return FileDestination(self.__logger_factory, self.__working_dir, **kwargs)
+        return FileDestination(self.__working_dir, **kwargs)
 
     def create_filter(self, **kwargs):
-        return Filter(self.__logger_factory, **kwargs)
+        return Filter(**kwargs)
 
     def create_statement_group(self, statements):
         statement_group = StatementGroup(statements)
@@ -111,7 +112,7 @@ class SyslogNgConfig(object):
         return inner_logpath
 
     def create_example_msg_generator(self, **options):
-        generator_source = SourceDriver(self.__logger_factory, None)
+        generator_source = SourceDriver(None)
         generator_source.driver_name = "example_msg_generator"
         generator_source.DEFAULT_MESSAGE = "-- Generated message. --"
         generator_source.options = options

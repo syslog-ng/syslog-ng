@@ -25,7 +25,7 @@ from src.message_reader.single_line_parser import SingleLineParser
 
 
 def test_single_line_parser(tc_unittest):
-    single_line_parser = SingleLineParser(tc_unittest.get_fake_logger_factory())
+    single_line_parser = SingleLineParser()
     input_buffer = """test message 1
 test message 2
 test message 3
@@ -35,14 +35,14 @@ test message 3
 
 
 def test_single_line_parser_no_line_end(tc_unittest):
-    single_line_parser = SingleLineParser(tc_unittest.get_fake_logger_factory())
+    single_line_parser = SingleLineParser()
     input_buffer = "test message 1"
     single_line_parser.parse_buffer(content_buffer=input_buffer)
     assert single_line_parser.msg_list == []
 
 
 def test_single_line_parser_parsing_multiple_times(tc_unittest):
-    single_line_parser = SingleLineParser(tc_unittest.get_fake_logger_factory())
+    single_line_parser = SingleLineParser()
     input_buffer = """test message 1
 """
     single_line_parser.parse_buffer(content_buffer=input_buffer)
@@ -52,7 +52,7 @@ def test_single_line_parser_parsing_multiple_times(tc_unittest):
     assert single_line_parser.msg_list == ["test message 1\n", "test message 2\n"]
 
 def test_single_line_parser_chunks(tc_unittest):
-    single_line_parser = SingleLineParser(tc_unittest.get_fake_logger_factory())
+    single_line_parser = SingleLineParser()
     single_line_parser.parse_buffer(content_buffer="first")
     single_line_parser.parse_buffer(content_buffer="second\n")
     assert single_line_parser.msg_list == ["firstsecond\n"]

@@ -26,12 +26,12 @@ from src.executors.command_executor import CommandExecutor
 
 
 class SyslogNgCtlExecutor(object):
-    def __init__(self, logger_factory, instance_paths):
+    def __init__(self, instance_paths):
         self.__instance_paths = instance_paths
         self.__working_dir = instance_paths.get_working_dir()
         self.__syslog_ng_control_tool_path = instance_paths.get_syslog_ng_ctl_bin()
         self.__syslog_ng_control_socket_path = instance_paths.get_control_socket_path()
-        self.__command_executor = CommandExecutor(logger_factory)
+        self.__command_executor = CommandExecutor()
 
     def run_command(self, command_short_name, command):
         return self.__command_executor.run(

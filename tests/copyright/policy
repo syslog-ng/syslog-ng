@@ -42,6 +42,7 @@ dbld/release/.*$
 dbld/install/.*$
 dbld/images/.*$
 cmake/.*$
+tests/python_functional/pytest.ini
  LGPLv2.1+_SSL
 autogen\.sh$
 sub-configure\.sh$

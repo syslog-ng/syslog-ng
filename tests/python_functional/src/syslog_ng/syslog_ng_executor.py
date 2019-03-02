@@ -27,10 +27,10 @@ from src.common.random_id import get_unique_id
 
 
 class SyslogNgExecutor(object):
-    def __init__(self, logger_factory, instance_paths):
+    def __init__(self, instance_paths):
         self.__instance_paths = instance_paths
-        self.__process_executor = ProcessExecutor(logger_factory)
-        self.__command_executor = CommandExecutor(logger_factory)
+        self.__process_executor = ProcessExecutor()
+        self.__command_executor = CommandExecutor()
 
     def run_process(self):
         return self.__process_executor.start(

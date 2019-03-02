@@ -21,13 +21,15 @@
 #
 #############################################################################
 
+import logging
+logger = logging.getLogger(__name__)
 import psutil
 from src.driver_io.file.file import File
 
 
-def prepare_std_outputs(file_ref, logger_factory, stdout_path, stderr_path):
-    stdout = file_ref(logger_factory, stdout_path)
-    stderr = file_ref(logger_factory, stderr_path)
+def prepare_std_outputs(file_ref, stdout_path, stderr_path):
+    stdout = file_ref(stdout_path)
+    stderr = file_ref(stderr_path)
     return stdout, stderr
 
 
@@ -46,17 +48,16 @@ def prepare_executable_command(command):
 
 
 class CommandExecutor(object):
-    def __init__(self, logger_factory):
-        self.__logger = logger_factory.create_logger("CommandExecutor")
-        self.__logger_factory = logger_factory
+    def __init__(self):
+        self.__logger = logging.getLogger("CommandExecutor")
         self.__file_ref = File
         self.__start_timeout = 10
 
     def run(self, command, stdout_path, stderr_path):
         printable_command = prepare_printable_command(command)
         executable_command = prepare_executable_command(command)
-        stdout, stderr = prepare_std_outputs(self.__file_ref, self.__logger_factory, stdout_path, stderr_path)
-        self.__logger.debug(
+        stdout, stderr = prepare_std_outputs(self.__file_ref, stdout_path, stderr_path)
+        logger.debug(
             "The following command will be executed\
         \n->Command:[{}]".format(
                 printable_command
@@ -72,8 +73,8 @@ class CommandExecutor(object):
     def __process_std_outputs(self, stdout, stderr):
         stdout_content = stdout.open_file("r").read()
         stderr_content = stderr.open_file("r").read()
-        self.__logger.debug("Stdout:[{}]".format(stdout_content))
-        self.__logger.debug("Stderr:[{}]".format(stderr_content))
+        logger.debug("Stdout:[{}]".format(stdout_content))
+        logger.debug("Stderr:[{}]".format(stderr_content))
         return stdout_content, stderr_content
 
     def __process_exit_code(self, command, exit_code):
@@ -82,6 +83,6 @@ class CommandExecutor(object):
             command, exit_code
         )
         if exit_code == 0:
-            self.__logger.debug(exit_code_debug_log)
+            logger.debug(exit_code_debug_log)
         else:
-            self.__logger.error(exit_code_debug_log)
+            logger.error(exit_code_debug_log)

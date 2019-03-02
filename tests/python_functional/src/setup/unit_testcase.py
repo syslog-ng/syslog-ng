@@ -27,7 +27,6 @@ from pathlib2 import Path
 from src.common.operations import open_file
 from src.setup.testcase_parameters import get_testcase_name
 from src.common.random_id import get_unique_id
-from src.logger.logger_factory import LoggerFactory
 from src.setup.testcase_parameters import TestcaseParameters
 
 
@@ -58,14 +57,8 @@ class SetupUnitTestcase(object):
     def get_fake_testcase_parameters(self):
         self.testcase_context.config.option.installdir = self.get_temp_dir()
         self.testcase_context.config.option.reports = self.get_temp_dir()
-        self.testcase_context.config.option.loglevel = "info"
         self.testcase_context.config.option.runwithvalgrind = False
         return TestcaseParameters(self.testcase_context)
-
-    def get_fake_logger_factory(self):
-        loglevel = self.testcase_context.config.getoption("--loglevel")
-        report_file_path = self.get_temp_file()
-        return LoggerFactory(report_file_path, loglevel, use_console_handler=True, use_file_handler=False)
 
     @staticmethod
     def get_utf8_test_messages(counter):

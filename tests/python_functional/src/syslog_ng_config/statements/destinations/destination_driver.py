@@ -21,6 +21,8 @@
 #
 #############################################################################
 
+import logging
+logger = logging.getLogger(__name__)
 from src.message_reader.message_reader import MessageReader
 from src.message_reader.single_line_parser import SingleLineParser
 
@@ -28,9 +30,7 @@ from src.message_reader.single_line_parser import SingleLineParser
 class DestinationDriver(object):
     group_type = "destination"
 
-    def __init__(self, logger_factory, IOClass, positional_parameters=[], options={}):
-        self.__logger_factory = logger_factory
-        self.__logger = logger_factory.create_logger("DestinationDriver")
+    def __init__(self, IOClass, positional_parameters=[], options={}):
         self.__IOClass = IOClass
         self.__reader = None
         self.positional_parameters = positional_parameters
@@ -39,12 +39,17 @@ class DestinationDriver(object):
 
     def dd_read_logs(self, path, counter):
         if not self.__reader:
-            io = self.__IOClass(self.__logger_factory, path)
+            io = self.__IOClass(path)
             io.wait_for_creation()
             message_reader = MessageReader(
-                self.__logger_factory, io.read, SingleLineParser(self.__logger_factory)
+                io.read, SingleLineParser()
             )
             self.__reader = message_reader
         messages = self.__reader.pop_messages(counter)
-        self.__logger.print_io_content(path, messages, "Content has been read from")
+        read_description = "Content has been read from:\
+        \n->Path:[{}]\
+        \n->Content:[{}]".format(
+            path, messages
+        )
+        logger.debug(read_description)
         return messages

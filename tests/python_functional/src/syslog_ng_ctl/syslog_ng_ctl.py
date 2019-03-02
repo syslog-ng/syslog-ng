@@ -25,8 +25,8 @@ from src.syslog_ng_ctl.syslog_ng_ctl_cli import SyslogNgCtlCli
 
 
 class SyslogNgCtl(object):
-    def __init__(self, logger_factory, instance_paths):
-        self.__syslog_ng_ctl_cli = SyslogNgCtlCli(logger_factory, instance_paths)
+    def __init__(self, instance_paths):
+        self.__syslog_ng_ctl_cli = SyslogNgCtlCli(instance_paths)
 
     def reload(self):
         return self.__syslog_ng_ctl_cli.reload()

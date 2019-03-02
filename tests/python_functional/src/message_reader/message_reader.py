@@ -27,9 +27,7 @@ from src.common.blocking import DEFAULT_TIMEOUT
 READ_ALL_MESSAGES = 0
 
 class MessageReader(object):
-    def __init__(self, logger_factory, read, parser):
-        self.__logger = logger_factory.create_logger("MessageReader")
-
+    def __init__(self, read, parser):
         self.__read = read
         self.__parser = parser
 

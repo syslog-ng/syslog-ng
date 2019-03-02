@@ -24,9 +24,9 @@
 from src.syslog_ng.syslog_ng_cli import SyslogNgCli
 
 class SyslogNg(object):
-    def __init__(self, logger_factory, instance_paths, testcase_parameters):
+    def __init__(self, instance_paths, testcase_parameters):
         self.instance_paths = instance_paths
-        self.__syslog_ng_cli = SyslogNgCli(logger_factory, instance_paths, testcase_parameters)
+        self.__syslog_ng_cli = SyslogNgCli(instance_paths, testcase_parameters)
 
     def start(self, config):
         self.__syslog_ng_cli.start(config)
