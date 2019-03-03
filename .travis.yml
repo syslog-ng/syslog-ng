@@ -44,6 +44,7 @@ addons:
       - libmaxminddb-dev
       - libxml2-utils
       - astyle
+      - doxygen
 install:
       - pip install --user -r requirements.txt
       - pip list
