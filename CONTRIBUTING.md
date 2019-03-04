@@ -25,10 +25,6 @@ Some of these discussions started on the
 [`help`][ar:issues:help] are generally good targets to contribute your
 feedback - but pretty much any open issue can be a good start!
 
-We use [waffle.io][ar:waffle] as our story board, to prioritize issues
-and guide the development. Use this interface for browsing existing
-issues and pull requests.
-
 ### Reporting bugs
 
 When you report a bug, it is important to share as much relevant
@@ -75,7 +71,10 @@ guidelines are very, very simple:
  3. We are using a coding style very similar to
     [GNU Coding Standards](https://www.gnu.org/prep/standards/standards.html#Writing-C)
     for syslog-ng. Please try to follow the existing conventions.
- 4. Always add a `Signed-off-by` tag to the end of **every** commit
+ 4. Start your commit message with the following format:
+    `block-name: short description of the applied changes`.
+
+    Always add a `Signed-off-by` tag to the end of **every** commit
     message you submit.
  5. Always create a separate branch for the pull request, forked off
     from the appropriate syslog-ng branch.
@@ -124,16 +123,14 @@ To contact us, visit the [mailing list][ar:mailing-list] where you can
 ask questions, and discuss your feature requests with a wider
 audience.
 
-We also have an [IRC channel][ar:irc], where developers hang out.
+We also have a [Gitter channel][ar:gitter], where developers hang out.
 
-We are using [waffle.io][ar:waffle], built on top of
-[GitHub issues][ar:issue-tracker] to track issues, feature requests
+We use [GitHub issues][ar:issue-tracker] to track issues, feature requests
 and patches. We are also using [Travis CI][ar:travis] for automatic
 testing.
 
- [ar:irc]: irc://chat.freenode.net/#syslog-ng
+ [ar:gitter]: https://gitter.im/balabit/syslog-ng
  [ar:mailing-list]: http://lists.balabit.com/mailman/listinfo/syslog-ng
  [ar:issue-tracker]: https://github.com/balabit/syslog-ng/issues
  [ar:issues:help]: https://github.com/balabit/syslog-ng/labels/help
- [ar:waffle]: https://waffle.io/balabit/syslog-ng
- [ar:travis]: https://travis-ci.org/algernon/syslog-ng/
+ [ar:travis]: https://travis-ci.org/balabit/syslog-ng/
