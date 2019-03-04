@@ -26,7 +26,7 @@ from src.driver_io.file.file_io import FileIO
 
 def test_file_io_write_read(tc_unittest):
     temp_file = tc_unittest.get_temp_file()
-    fileio = FileIO(tc_unittest.get_fake_logger_factory(), temp_file)
+    fileio = FileIO(temp_file)
     input_content = tc_unittest.get_utf8_test_messages(counter=1)
     fileio.write(input_content)
     output = fileio.read()
@@ -35,7 +35,7 @@ def test_file_io_write_read(tc_unittest):
 
 def test_file_io_multiple_write_read(tc_unittest):
     temp_file = tc_unittest.get_temp_file()
-    fileio = FileIO(tc_unittest.get_fake_logger_factory(), temp_file)
+    fileio = FileIO(temp_file)
     input_content = tc_unittest.get_utf8_test_messages(counter=1)
     fileio.write(input_content)
     fileio.write(input_content)
@@ -45,7 +45,7 @@ def test_file_io_multiple_write_read(tc_unittest):
 
 def test_file_io_rewrite_read(tc_unittest):
     temp_file = tc_unittest.get_temp_file()
-    fileio = FileIO(tc_unittest.get_fake_logger_factory(), temp_file)
+    fileio = FileIO(temp_file)
     content1 = "message 1\n"
     fileio.write(content1)
     assert fileio.read() == content1

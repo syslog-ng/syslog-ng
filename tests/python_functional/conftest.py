@@ -21,6 +21,8 @@
 #
 #############################################################################
 
+import logging
+logger = logging.getLogger(__name__)
 import pytest, subprocess
 from pathlib2 import Path
 from datetime import datetime
@@ -31,13 +33,6 @@ from src.setup.unit_testcase import SetupUnitTestcase
 def pytest_addoption(parser):
     parser.addoption("--runslow", action="store_true", default=False, help="run slow tests")
     parser.addoption("--run-with-valgrind", action="store_true", default=False, help="Run tests behind valgrind")
-    parser.addoption(
-        "--loglevel",
-        action="store",
-        default="info",
-        help="Set loglevel for test runs. Available loglevels: ['info', 'error', 'debug']. Default loglevel: info",
-    )
-
     parser.addoption(
         "--installdir",
         action="store",
@@ -57,10 +52,6 @@ def reports(request):
 
 def installdir(request):
     return request.config.getoption("--installdir")
-
-
-def loglevel(request):
-    return request.config.getoption("--loglevel")
 
 
 def pytest_collection_modifyitems(config, items):
@@ -99,3 +90,22 @@ def version(request):
     binary_path = str(Path(installdir, "sbin", "syslog-ng"))
     version_output = subprocess.check_output([binary_path, "--version"]).decode()
     return version_output.splitlines()[1].split()[2]
+
+def pytest_runtest_logreport(report):
+    if report.outcome == "failed":
+        logger.error("\n{}".format(report.longrepr))
+
+
+def construct_report_file_path(item):
+    relative_report_dir = item._request.config.getoption("--reports")
+    testcase_name = item._request.node.name
+    file_name = "testcase_{}.log".format(testcase_name)
+    return Path(relative_report_dir, testcase_name, file_name).absolute()
+
+@pytest.hookimpl(hookwrapper=True, tryfirst=True)
+def pytest_runtest_setup(item):
+    config = item.config
+    logging_plugin = config.pluginmanager.get_plugin("logging-plugin")
+    report_file_path = construct_report_file_path(item)
+    logging_plugin.set_log_path(report_file_path)
+    yield

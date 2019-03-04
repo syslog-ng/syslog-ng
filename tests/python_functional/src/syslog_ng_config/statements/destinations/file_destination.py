@@ -27,10 +27,10 @@ from src.syslog_ng_config.statements.destinations.destination_driver import Dest
 
 
 class FileDestination(DestinationDriver):
-    def __init__(self, logger_factory, working_dir, file_name, **options):
+    def __init__(self, working_dir, file_name, **options):
         self.driver_name = "file"
         self.path = Path(working_dir, file_name)
-        super(FileDestination, self).__init__(logger_factory, FileIO, [self.path], options)
+        super(FileDestination, self).__init__(FileIO, [self.path], options)
 
     def get_path(self):
         return self.path

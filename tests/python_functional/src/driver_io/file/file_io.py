@@ -25,9 +25,8 @@ from src.driver_io.file.file import File
 
 
 class FileIO(File):
-    def __init__(self, logger_factory, file_path):
-        super(FileIO, self).__init__(logger_factory, file_path)
-        self.__logger = logger_factory.create_logger("FileIO")
+    def __init__(self, file_path):
+        super(FileIO, self).__init__(file_path)
         self.__readable_file = None
         self.__writeable_file = None
 

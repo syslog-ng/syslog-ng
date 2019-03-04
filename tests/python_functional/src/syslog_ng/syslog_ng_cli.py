@@ -21,6 +21,8 @@
 #
 #############################################################################
 
+import logging
+logger = logging.getLogger(__name__)
 from pathlib2 import Path
 from src.syslog_ng.syslog_ng_executor import SyslogNgExecutor
 from src.syslog_ng.console_log_reader import ConsoleLogReader
@@ -28,12 +30,11 @@ from src.syslog_ng_ctl.syslog_ng_ctl import SyslogNgCtl
 from src.common.blocking import wait_until_true, wait_until_false
 
 class SyslogNgCli(object):
-    def __init__(self, logger_factory, instance_paths, testcase_parameters):
+    def __init__(self, instance_paths, testcase_parameters):
         self.__instance_paths = instance_paths
-        self.__console_log_reader = ConsoleLogReader(logger_factory, instance_paths)
-        self.__logger = logger_factory.create_logger("SyslogNgCli")
-        self.__syslog_ng_executor = SyslogNgExecutor(logger_factory, instance_paths)
-        self.__syslog_ng_ctl = SyslogNgCtl(logger_factory, instance_paths)
+        self.__console_log_reader = ConsoleLogReader(instance_paths)
+        self.__syslog_ng_executor = SyslogNgExecutor(instance_paths)
+        self.__syslog_ng_ctl = SyslogNgCtl(instance_paths)
         self.__valgrind_usage = testcase_parameters.get_valgrind_usage()
         self.__process = None
 
@@ -57,7 +58,7 @@ class SyslogNgCli(object):
     def __syntax_check(self):
         result = self.__syntax_only()
         if result["exit_code"] != 0:
-            self.__logger.error(result["stderr"])
+            logger.error(result["stderr"])
             raise Exception("syslog-ng can not started")
 
     def is_process_running(self):
@@ -89,16 +90,14 @@ class SyslogNgCli(object):
 
     # Process commands
     def start(self, config):
-        self.__logger.info("Beginning of syslog-ng start")
         config.write_content(self.__instance_paths.get_config_path())
 
         self.__syntax_check()
         self.__start_syslog_ng()
 
-        self.__logger.info("End of syslog-ng start")
+        logger.info("syslog-ng process has been started with PID: {}\n".format(self.__process.pid))
 
     def reload(self, config):
-        self.__logger.info("Beginning of syslog-ng reload")
         config.write_content(self.__instance_paths.get_config_path())
 
         # effective reload
@@ -111,11 +110,11 @@ class SyslogNgCli(object):
         if not self.__console_log_reader.wait_for_reload_message():
             self.__error_handling()
             raise Exception("Reload message not arrived")
-        self.__logger.info("End of syslog-ng reload")
+        logger.info("syslog-ng process has been reloaded with PID: {}\n".format(self.__process.pid))
 
     def stop(self, unexpected_messages=None):
-        self.__logger.info("Beginning of syslog-ng stop")
         if self.__process:
+            saved_pid = self.__process.pid
             # effective stop
             result = self.__syslog_ng_ctl.stop()
 
@@ -132,7 +131,7 @@ class SyslogNgCli(object):
             if self.__valgrind_usage:
                 self.__console_log_reader.handle_valgrind_log(self.__instance_paths.get_valgrind_log_path())
             self.__process = None
-            self.__logger.info("End of syslog-ng stop")
+            logger.info("syslog-ng process has been stopped with PID: {}\n".format(saved_pid))
 
     # Helper functions
     def __error_handling(self):

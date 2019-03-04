@@ -32,7 +32,7 @@ from src.executors.command_executor import CommandExecutor
 def test_execute_command(tc_unittest, command, expected_stdout, expected_stderr, expected_exit_code):
     stdout_path = tc_unittest.get_temp_file()
     stderr_path = tc_unittest.get_temp_file()
-    command_executor = CommandExecutor(tc_unittest.get_fake_logger_factory())
+    command_executor = CommandExecutor()
     result = command_executor.run(command, stdout_path, stderr_path)
     assert result["stdout"] == expected_stdout
     assert result["stderr"] == expected_stderr

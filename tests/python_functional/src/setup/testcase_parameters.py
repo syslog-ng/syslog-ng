@@ -47,13 +47,9 @@ class TestcaseParameters(object):
                 "shared_dir": Path(absolute_framework_dir, "shared_files")
             },
             "file_paths": {
-                "report_file": Path(
-                    absolute_framework_dir, relative_report_dir, testcase_name, "testcase_{}.log".format(testcase_name)
-                ),
                 "testcase_file": Path(testcase_context.node.fspath),
             },
             "testcase_name": testcase_name,
-            "loglevel": testcase_context.config.getoption("--loglevel"),
             "valgrind_usage": testcase_context.config.getoption("--run-with-valgrind"),
         }
 
@@ -69,17 +65,11 @@ class TestcaseParameters(object):
     def get_shared_dir(self):
         return self.testcase_parameters["dirs"]["shared_dir"]
 
-    def get_report_file(self):
-        return self.testcase_parameters["file_paths"]["report_file"]
-
     def get_testcase_file(self):
         return self.testcase_parameters["file_paths"]["testcase_file"]
 
     def get_testcase_name(self):
         return self.testcase_parameters["testcase_name"]
-
-    def get_loglevel(self):
-        return self.testcase_parameters["loglevel"]
 
     def get_valgrind_usage(self):
         return self.testcase_parameters["valgrind_usage"]

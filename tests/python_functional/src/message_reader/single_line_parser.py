@@ -23,8 +23,7 @@
 
 
 class SingleLineParser(object):
-    def __init__(self, logger_factory):
-        self.__logger = logger_factory.create_logger("SingleLineParser")
+    def __init__(self):
         self.msg_list = []
         self.__parse_rule = "\n"
         self.current_chunk = ""

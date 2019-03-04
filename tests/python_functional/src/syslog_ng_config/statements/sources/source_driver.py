@@ -21,13 +21,13 @@
 #
 #############################################################################
 
+import logging
+logger = logging.getLogger(__name__)
 
 class SourceDriver(object):
     group_type = "source"
 
-    def __init__(self, logger_factory, IOClass, positional_parameters=[], options={}):
-        self.__logger_factory = logger_factory
-        self.__logger = logger_factory.create_logger("SourceDriver")
+    def __init__(self, IOClass, positional_parameters=[], options={}):
         self.__IOClass = IOClass
         self.__writer = None
         self.positional_parameters = positional_parameters
@@ -35,12 +35,11 @@ class SourceDriver(object):
 
     def __construct_writer(self, path):
         if not self.__writer:
-            self.__writer = self.__IOClass(self.__logger_factory, path)
+            self.__writer = self.__IOClass(path)
 
     def sd_write_log(self, path, formatted_log, counter):
         self.__construct_writer(path)
         for __i in range(0, counter):
             self.__writer.write(formatted_log)
-        self.__logger.print_io_content(
-            path, formatted_log, "Content has been written to number of times: {}".format(counter)
-        )
+        written_description = "Content has been written to\nresource: {}\nnumber of times: {}\ncontent: {}\n".format(path, counter, formatted_log)
+        logger.info(written_description)

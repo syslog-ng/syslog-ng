@@ -25,7 +25,7 @@ from src.executors.process_executor import ProcessExecutor
 
 
 def test_start_stop_process(tc_unittest):
-    process_executor = ProcessExecutor(tc_unittest.get_fake_logger_factory())
+    process_executor = ProcessExecutor()
     process_command = ["python", "-c", "import time; time.sleep(3)"]
     stdout_file = tc_unittest.get_temp_file()
     stderr_file = tc_unittest.get_temp_file()
