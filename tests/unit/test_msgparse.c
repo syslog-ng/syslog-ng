@@ -379,6 +379,15 @@ Test(msgparse, test_timestamp)
       "PTHREAD support initialized", // msg
       NULL, "2499", NULL, ignore_sdata_pairs
     },
+    {
+      "<7>1 - bzorp openvpn 2499 - - PTHREAD support initialized", LP_SYSLOG_PROTOCOL, NULL,
+      7,             // pri
+      1549615069, 123000, 3600,    // timestamp (sec/usec/zone)
+      "bzorp",        // host
+      "openvpn",        // openvpn
+      "PTHREAD support initialized", // msg
+      NULL, "2499", NULL, ignore_sdata_pairs
+    },
     {NULL}
   };
 
