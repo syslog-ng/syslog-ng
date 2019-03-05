@@ -1,5 +1,5 @@
 add_unit_test(CRITERION LIBTEST TARGET test_logmsg_serialize DEPENDS syslogformat)
-add_unit_test(LIBTEST TARGET test_timestamp_serialize)
+add_unit_test(CRITERION LIBTEST TARGET test_timestamp_serialize)
 add_unit_test(TARGET test_tags)
 add_unit_test(CRITERION TARGET test_nvtable)
 add_unit_test(CRITERION TARGET test_gsockaddr_serialize)
