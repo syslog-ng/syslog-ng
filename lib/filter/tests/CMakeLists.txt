@@ -40,7 +40,7 @@ add_unit_test(CRITERION TARGET test_filters_regexp SOURCES ${TEST_FILTERS_REGEXP
 add_unit_test(CRITERION TARGET test_filters_fop_cmp SOURCES ${TEST_FILTERS_FOP_CMP_SOURCE} DEPENDS syslogformat)
 add_unit_test(CRITERION TARGET test_filters_netmask SOURCES ${TEST_FILTERS_NETMASK_SOURCE} DEPENDS syslogformat)
 
-add_unit_test(LIBTEST TARGET test_filters_in_list DEPENDS syslogformat)
+add_unit_test(CRITERION TARGET test_filters_in_list DEPENDS syslogformat)
 
 add_unit_test(CRITERION TARGET test_filters_netmask6 SOURCES ${TEST_FILTERS_NETMASK6_SOURCE} DEPENDS syslogformat)
 
