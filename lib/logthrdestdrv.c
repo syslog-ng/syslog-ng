@@ -1003,6 +1003,8 @@ log_threaded_dest_driver_init_method(LogPipe *s)
   if (!log_dest_driver_init_method(&self->super.super.super))
     return FALSE;
 
+  self->under_termination = FALSE;
+
   if (cfg && self->time_reopen == -1)
     self->time_reopen = cfg->time_reopen;
 
