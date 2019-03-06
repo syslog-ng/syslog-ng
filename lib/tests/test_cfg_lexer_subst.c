@@ -21,26 +21,9 @@
  *
  */
 #include "cfg-lexer-subst.h"
-#include "testutils.h"
 #include "apphook.h"
-
+#include <criterion/criterion.h>
 #include <string.h>
-
-#define SUBST_TESTCASE(x, ...) do { subst_testcase_begin(#x, #__VA_ARGS__); x(__VA_ARGS__); subst_testcase_end(); } while(0)
-
-#define subst_testcase_begin(func, args)                    \
-  do                                                            \
-    {                                                           \
-      testcase_begin("%s(%s)", func, args);                     \
-    }                                                           \
-  while (0)
-
-#define subst_testcase_end()                                \
-  do                                                            \
-    {                                                           \
-      testcase_end();                                           \
-    }                                                           \
-  while (0)
 
 static CfgArgs *
 construct_cfg_args_for_args(const gchar *additional_values[])
@@ -53,8 +36,8 @@ construct_cfg_args_for_args(const gchar *additional_values[])
   cfg_args_set(args, "simple_qstring", "'simple_qstring_value'");
   cfg_args_set(args, "escaped_string", "\"escaped_string\\\"\\r\\n\"");
 
-  assert_true(cfg_args_contains(args, "simple-string"), "normalize: when set, must contain: simple-string");
-  assert_true(cfg_args_contains(args, "simple_string"), "normalize: when set, must contain: simple_string");
+  cr_assert(cfg_args_contains(args, "simple-string"), "normalize: when set, must contain: simple-string");
+  cr_assert(cfg_args_contains(args, "simple_string"), "normalize: when set, must contain: simple_string");
 
   for (i = 0; additional_values && additional_values[i] && additional_values[i + 1]; i += 2)
     {
@@ -117,10 +100,10 @@ _assert_invoke_result(CfgLexerSubst *subst, gchar *input_dup, gssize input_len, 
   GError *error = NULL;
 
   result = cfg_lexer_subst_invoke(subst, input_dup, input_len, &result_len, &error);
-  assert_true(error == NULL, "Error value is non-null while no error is expected");
-  assert_true(result != NULL, "value substitution returned an unexpected failure");
-  assert_string(result, expected_output, "value substitution is broken");
-  assert_guint64(result_len, strlen(expected_output), "length returned by invoke_result is invalid");
+  cr_assert_null(error, "Error value is non-null while no error is expected");
+  cr_assert_not_null(result, "value substitution returned an unexpected failure");
+  cr_assert_str_eq(result, expected_output, "value substitution is broken");
+  cr_assert_eq(result_len, strlen(expected_output), "length returned by invoke_result is invalid");
   g_free(result);
 }
 
@@ -160,38 +143,34 @@ assert_invoke_failure(CfgLexerSubst *subst, const gchar *input, const gchar *exp
   GError *error = NULL;
 
   result = cfg_lexer_subst_invoke(subst, input_dup, strlen(input), &result_len, &error);
-  assert_true(result == NULL, "expected failure for value substitution, but success was returned");
-  assert_true(error != NULL, "expected a non-NULL error object for failure");
-  assert_string(error->message, expected_error, "error message mismatch");
+  cr_assert_null(result, "expected failure for value substitution, but success was returned");
+  cr_assert_not_null(error, "expected a non-NULL error object for failure");
+  cr_assert_str_eq(error->message, expected_error, "error message mismatch");
   g_free(input_dup);
 }
 
-static void
-test_double_backtick_replaced_with_a_single_one(void)
+Test(cfg_lexer_subst, test_double_backtick_replaced_with_a_single_one)
 {
   CfgLexerSubst *subst = construct_object();
   assert_invoke_result(subst, "``", "`");
   cfg_lexer_subst_free(subst);
 }
 
-static void
-test_single_backtick_causes_an_error(void)
+Test(cfg_lexer_subst, test_single_backtick_causes_an_error)
 {
   CfgLexerSubst *subst = construct_object();
   assert_invoke_failure(subst, "foo ` bar", "missing closing backtick (`) character");
   cfg_lexer_subst_free(subst);
 }
 
-static void
-test_backtick_after_quoted_character_succeeds(void)
+Test(cfg_lexer_subst, test_backtick_after_quoted_character_succeeds)
 {
   CfgLexerSubst *subst = construct_object();
   assert_invoke_result(subst, "foo \"string \\n`arg`\" bar", "foo \"string \\narg_value\" bar");
   cfg_lexer_subst_free(subst);
 }
 
-static void
-test_backtick_as_a_quoted_character_in_a_string_results_in_failure(void)
+Test(cfg_lexer_subst, test_backtick_as_a_quoted_character_in_a_string_results_in_failure)
 {
   CfgLexerSubst *subst = construct_object();
 
@@ -200,8 +179,7 @@ test_backtick_as_a_quoted_character_in_a_string_results_in_failure(void)
   cfg_lexer_subst_free(subst);
 }
 
-static void
-test_value_in_normal_text_replaced_with_its_literal_value(void)
+Test(cfg_lexer_subst, test_value_in_normal_text_replaced_with_its_literal_value)
 {
   CfgLexerSubst *subst = construct_object();
   assert_invoke_result(subst, "foo `arg` bar", "foo arg_value bar");
@@ -211,8 +189,7 @@ test_value_in_normal_text_replaced_with_its_literal_value(void)
   cfg_lexer_subst_free(subst);
 }
 
-static void
-test_values_are_resolution_order_args_defaults_globals_env(void)
+Test(cfg_lexer_subst, test_values_are_resolution_order_args_defaults_globals_env)
 {
   CfgLexerSubst *subst = construct_object();
 
@@ -224,8 +201,7 @@ test_values_are_resolution_order_args_defaults_globals_env(void)
   cfg_lexer_subst_free(subst);
 }
 
-static void
-test_values_are_inserted_within_strings(void)
+Test(cfg_lexer_subst, test_values_are_inserted_within_strings)
 {
   CfgLexerSubst *subst = construct_object();
 
@@ -234,8 +210,7 @@ test_values_are_inserted_within_strings(void)
   cfg_lexer_subst_free(subst);
 }
 
-static void
-test_string_literals_are_inserted_into_strings_without_quotes(void)
+Test(cfg_lexer_subst, test_string_literals_are_inserted_into_strings_without_quotes)
 {
   const gchar *additional_values[] =
   {
@@ -253,8 +228,7 @@ test_string_literals_are_inserted_into_strings_without_quotes(void)
   cfg_lexer_subst_free(subst);
 }
 
-static void
-test_incorrect_strings_and_multiple_tokens_are_inserted_verbatim(void)
+Test(cfg_lexer_subst, test_incorrect_strings_and_multiple_tokens_are_inserted_verbatim)
 {
   const gchar *additional_values[] =
   {
@@ -273,8 +247,7 @@ test_incorrect_strings_and_multiple_tokens_are_inserted_verbatim(void)
   cfg_lexer_subst_free(subst);
 }
 
-static void
-test_strings_with_special_chars_are_properly_encoded_in_strings(void)
+Test(cfg_lexer_subst, test_strings_with_special_chars_are_properly_encoded_in_strings)
 {
   const gchar *additional_values[] =
   {
@@ -288,8 +261,7 @@ test_strings_with_special_chars_are_properly_encoded_in_strings(void)
   cfg_lexer_subst_free(subst);
 }
 
-static void
-test_strings_with_embedded_apostrophe_cause_an_error_when_encoding_in_qstring(void)
+Test(cfg_lexer_subst, test_strings_with_embedded_apostrophe_cause_an_error_when_encoding_in_qstring)
 {
   const gchar *additional_values[] =
   {
@@ -304,27 +276,4 @@ test_strings_with_embedded_apostrophe_cause_an_error_when_encoding_in_qstring(vo
   cfg_lexer_subst_free(subst);
 }
 
-static void
-test_cfg_lexer_subst(void)
-{
-  SUBST_TESTCASE(test_double_backtick_replaced_with_a_single_one);
-  SUBST_TESTCASE(test_single_backtick_causes_an_error);
-  SUBST_TESTCASE(test_backtick_after_quoted_character_succeeds);
-  SUBST_TESTCASE(test_backtick_as_a_quoted_character_in_a_string_results_in_failure);
-  SUBST_TESTCASE(test_value_in_normal_text_replaced_with_its_literal_value);
-  SUBST_TESTCASE(test_values_are_resolution_order_args_defaults_globals_env);
-  SUBST_TESTCASE(test_values_are_inserted_within_strings);
-  SUBST_TESTCASE(test_string_literals_are_inserted_into_strings_without_quotes);
-  SUBST_TESTCASE(test_incorrect_strings_and_multiple_tokens_are_inserted_verbatim);
-  SUBST_TESTCASE(test_strings_with_special_chars_are_properly_encoded_in_strings);
-  SUBST_TESTCASE(test_strings_with_embedded_apostrophe_cause_an_error_when_encoding_in_qstring);
-}
-
-int main(void)
-{
-  app_startup();
-
-  test_cfg_lexer_subst();
-  app_shutdown();
-  return 0;
-}
+TestSuite(cfg_lexer_subst, .init = app_startup, .fini = app_shutdown);
