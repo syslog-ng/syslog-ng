@@ -161,6 +161,7 @@ dh-exec                         [debian, ubuntu]
 dh-systemd                      [debian, ubuntu]
 dpkg-dev                        [debian, ubuntu]
 fakeroot                        [centos, debian, ubuntu]
+doxygen                         [centos, debian, ubuntu]
 rpm-build                       [centos]
 cyrus-sasl-devel                [centos-7]
 
