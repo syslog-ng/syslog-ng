@@ -77,8 +77,7 @@ yy_patch_include_statement(CfgLexer *self, gchar *buf, gsize buf_size, gsize *le
   YYLTYPE *cur_lloc = &self->include_stack[self->include_depth].lloc;
 
   gchar *p = buf;
-  while (*p != '\0' && (*p == ' ' || *p == '\t'))
-    p++;
+  p += strspn(p, " \t");
   if (strncmp(p, "include", 7) != 0)
     return TRUE;
   p += 7;
