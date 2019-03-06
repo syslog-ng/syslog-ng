@@ -33,15 +33,14 @@
 #include <string.h>
 #include <strings.h>
 
-static gint
-yy_input_run_backtick_substitution(CfgLexer *self, gchar *buf, gsize buf_size)
+static gboolean
+yy_input_run_backtick_substitution(CfgLexer *self, gchar *buf, gsize buf_size, gsize *len)
 {
   gchar *res;
-  gsize len;
   GError *error = NULL;
   YYLTYPE *cur_lloc = &self->include_stack[self->include_depth].lloc;
 
-  res = cfg_lexer_subst_args_in_input(self->cfg->globals, NULL, NULL, buf, -1, &len, &error);
+  res = cfg_lexer_subst_args_in_input(self->cfg->globals, NULL, NULL, buf, -1, len, &error);
   if (!res)
     {
       msg_error("Error performing backtick substitution in configuration file",
@@ -53,23 +52,84 @@ yy_input_run_backtick_substitution(CfgLexer *self, gchar *buf, gsize buf_size)
     }
   else
     {
-      if (len > buf_size)
+      if (*len > buf_size)
         {
-          msg_error("Error performing backtick substitution in configuration file",
-                    evt_tag_str("error", "lexer buffer is too small to hold substituted result"),
+          msg_error("Error performing backtick substitution in configuration file, the target buffer is too small",
+                    evt_tag_int("buf_size", buf_size),
                     evt_tag_str("filename", cur_lloc->level->name),
                     evt_tag_printf("line", "%d:%d", cur_lloc->first_line, cur_lloc->first_column));
           goto error;
         }
       else
         {
-          memcpy(buf, res, len);
+          memcpy(buf, res, *len);
         }
       g_free(res);
-      return len;
+      return TRUE;
     }
  error:
-  return -1;
+  return FALSE;
+}
+
+static gboolean
+yy_patch_include_statement(CfgLexer *self, gchar *buf, gsize buf_size, gsize *len)
+{
+  YYLTYPE *cur_lloc = &self->include_stack[self->include_depth].lloc;
+  const gchar *p;
+
+
+  p = buf;
+  while (*p == ' ' || *p == '\t')
+    p++;
+  if (strncmp(p, "include", 7) != 0)
+    return TRUE;
+  p += 7;
+  if (*p != ' ' && *p != '\t')
+    return TRUE;
+
+  if (!cfg_is_config_version_older(configuration, VERSION_VALUE_3_20))
+    {
+      msg_error("Error parsing old style include statement (e.g. the one without the '@' prefix), "
+                "support for it was removed in " VERSION_3_20 ", just add a '@' in front or revert to @version "
+                VERSION_3_19 " or older",
+                evt_tag_str("filename", cur_lloc->level->name),
+                evt_tag_printf("line", "%d:%d", cur_lloc->first_line, cur_lloc->first_column));
+
+      return FALSE;
+    }
+
+  if (*len + 1 > buf_size)
+    {
+      msg_error("Error performing the `include' patching to @include, the target buffer is too small",
+                evt_tag_int("buf_size", buf_size),
+                evt_tag_str("filename", cur_lloc->level->name),
+                evt_tag_printf("line", "%d:%d", cur_lloc->first_line, cur_lloc->first_column));
+      return FALSE;
+    }
+
+  memmove(buf + 1, buf, *len);
+  buf[0] = '@';
+  *len += 1;
+
+  msg_warning("WARNING: the `include' keyword based inclusion syntax (e.g. the one without a '@' "
+              "character in front) has been removed in " VERSION_3_20 ". Please prepend a '@' "
+              "character in front of your include statement while updating your configuration "
+              "to match the new version",
+              evt_tag_str("filename", cur_lloc->level->name),
+              evt_tag_printf("line", "%d:%d", cur_lloc->first_line, cur_lloc->first_column));
+  return TRUE;
+}
+
+static gint
+yy_filter_input(CfgLexer *self, gchar *buf, gsize buf_size)
+{
+  gsize len = strlen(buf);
+
+  if (!yy_input_run_backtick_substitution(self, buf, buf_size, &len))
+    return -1;
+  if (!yy_patch_include_statement(self, buf, buf_size, &len))
+    return -1;
+  return len;
 }
 
 #define YY_INPUT(buf, result, max_size)                                 \
@@ -82,10 +142,10 @@ yy_input_run_backtick_substitution(CfgLexer *self, gchar *buf, gsize buf_size)
       else                                                              \
         {                                                               \
           gint rc;                                                      \
-          rc = yy_input_run_backtick_substitution(yyextra, buf, max_size); \
+          rc = yy_filter_input(yyextra, buf, max_size); 		\
           if (rc < 0)                                                   \
             {                                                           \
-              YY_FATAL_ERROR("backtick substitution failure");          \
+              YY_FATAL_ERROR("configuration input filtering failure");  \
               result = YY_NULL;                                         \
             }                                                           \
           else                                                          \
