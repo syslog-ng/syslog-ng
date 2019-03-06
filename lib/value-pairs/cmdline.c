@@ -393,6 +393,8 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
   ValuePairs *vp;
   GOptionContext *ctx;
 
+  vp = value_pairs_new();
+
   GOptionEntry vp_options[] =
   {
     {
@@ -440,6 +442,10 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
       NULL, NULL
     },
     {
+      "omit-empty-values", 0, 0, G_OPTION_ARG_NONE, &vp->omit_empty_values,
+      NULL, NULL
+    },
+    {
       G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_CALLBACK, vp_cmdline_parse_pair_or_key,
       NULL, NULL
     },
@@ -449,7 +455,6 @@ value_pairs_new_from_cmdline (GlobalConfig *cfg,
   gpointer user_data_args[4];
   gboolean success;
 
-  vp = value_pairs_new();
   user_data_args[0] = cfg;
   user_data_args[1] = vp;
   user_data_args[2] = NULL;

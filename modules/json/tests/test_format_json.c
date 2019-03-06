@@ -116,6 +116,17 @@ Test(format_json, test_format_json_rekey)
                          "{\"_msg\":{\"text\":\"dotted\"}}");
 }
 
+Test(format_json, test_format_json_omit_empty_values)
+{
+  assert_template_format("$(format-json --omit-empty-values msg.set=value msg.unset='')",
+                         "{\"msg\":{\"set\":\"value\"}}");
+
+  assert_template_format("$(format-json --omit-empty-values msg.set=value --key empty_value)",
+                         "{\"msg\":{\"set\":\"value\"}}");
+  assert_template_format("$(format-json msg.set=value --key empty_value)",
+                         "{\"msg\":{\"set\":\"value\"},\"empty_value\":\"\"}");
+}
+
 Test(format_json, test_format_json_with_type_hints)
 {
   assert_template_format("$(format-json i32=int32(1234))",
