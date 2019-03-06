@@ -79,7 +79,7 @@ yy_patch_include_statement(CfgLexer *self, gchar *buf, gsize buf_size, gsize *le
 
 
   p = buf;
-  while (*p == ' ' || *p == '\t')
+  while (*p != '\0' && (*p == ' ' || *p == '\t'))
     p++;
   if (strncmp(p, "include", 7) != 0)
     return TRUE;
