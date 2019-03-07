@@ -26,7 +26,6 @@
 #define TIMEUTILS_CACHE_H_INCLUDED
 
 #include "timeutils/wallclocktime.h"
-#include "timeutils/unixtime.h"
 
 time_t cached_mktime(struct tm *tm);
 void cached_localtime(time_t *when, struct tm *tm);
