@@ -6,6 +6,7 @@ set(REWRITE_HEADERS
     rewrite/rewrite-expr-parser.h
     rewrite/rewrite-groupset.h
     rewrite/rewrite-unset.h
+    rewrite/rewrite-set-level.h
     PARENT_SCOPE
     )
 
@@ -17,6 +18,7 @@ set(REWRITE_SOURCES
     rewrite/rewrite-expr-parser.c
     rewrite/rewrite-groupset.c
     rewrite/rewrite-unset.c
+    rewrite/rewrite-set-level.c
     PARENT_SCOPE
     )
 

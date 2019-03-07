@@ -8,8 +8,9 @@ rewriteinclude_HEADERS = 			\
 	lib/rewrite/rewrite-set.h		\
 	lib/rewrite/rewrite-unset.h		\
 	lib/rewrite/rewrite-subst.h		\
-	lib/rewrite/rewrite-expr-parser.h   \
-	lib/rewrite/rewrite-groupset.h
+	lib/rewrite/rewrite-expr-parser.h	\
+	lib/rewrite/rewrite-groupset.h		\
+	lib/rewrite/rewrite-set-level.h
 
 
 rewrite_sources = 				\
@@ -19,8 +20,9 @@ rewrite_sources = 				\
 	lib/rewrite/rewrite-unset.c		\
 	lib/rewrite/rewrite-subst.c		\
 	lib/rewrite/rewrite-expr-parser.c	\
-	lib/rewrite/rewrite-expr-grammar.y  \
-	lib/rewrite/rewrite-groupset.c
+	lib/rewrite/rewrite-expr-grammar.y	\
+	lib/rewrite/rewrite-groupset.c		\
+	lib/rewrite/rewrite-set-level.c
 
 BUILT_SOURCES += 				\
 	lib/rewrite/rewrite-expr-grammar.y	\
