@@ -7,6 +7,7 @@ value_pairsinclude_HEADERS = \
 	lib/value-pairs/value-pairs.h		\
 	lib/value-pairs/transforms.h		\
 	lib/value-pairs/cmdline.h		\
+	lib/value-pairs/internals.h		\
 	lib/value-pairs/evttag.h
 
 value_pairs_sources = \
