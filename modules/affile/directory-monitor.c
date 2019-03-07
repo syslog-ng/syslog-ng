@@ -21,7 +21,7 @@
  */
 
 #include "directory-monitor.h"
-#include "timeutils/timeutils.h"
+#include "timeutils/misc.h"
 
 #include <stdio.h>
 #include <errno.h>

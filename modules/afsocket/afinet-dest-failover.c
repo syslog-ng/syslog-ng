@@ -22,8 +22,8 @@
 
 #include "afinet-dest-failover.h"
 #include "messages.h"
-#include "timeutils/timeutils.h"
 #include "afinet.h"
+#include "timeutils/misc.h"
 
 #include <iv.h>
 

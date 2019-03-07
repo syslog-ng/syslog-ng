@@ -37,8 +37,7 @@
 #include "queue_utils_lib.h"
 #include "test_diskq_tools.h"
 #include "testutils.h"
-#include "timeutils/timeutils.h"
-
+#include "timeutils/misc.h"
 #include <stdlib.h>
 #include <string.h>
 #include <iv.h>

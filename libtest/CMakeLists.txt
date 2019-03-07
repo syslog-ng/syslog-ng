@@ -1,5 +1,6 @@
 set(LIBTEST_HEADERS
     config_parse_lib.h
+    fake-time.h
     mock-transport.h
     mock-cfg-parser.h
     msg_parse_lib.h
@@ -14,6 +15,7 @@ set(LIBTEST_HEADERS
 
 set(LIBTEST_SOURCES
     config_parse_lib.c
+    fake-time.c
     libtest.c
     mock-transport.c
     mock-cfg-parser.c

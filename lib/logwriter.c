@@ -36,6 +36,8 @@
 #include "ml-batched-timer.h"
 #include "str-format.h"
 #include "scratch-buffers.h"
+#include "timeutils/format.h"
+#include "timeutils/misc.h"
 
 #include <unistd.h>
 #include <assert.h>
@@ -654,7 +656,7 @@ _is_message_a_repetition(LogMessage *msg, LogMessage *last)
 static gboolean
 _is_time_within_the_suppress_timeout(LogWriter *self, LogMessage *msg)
 {
-  return self->last_msg->timestamps[LM_TS_RECVD].tv_sec >= msg->timestamps[LM_TS_RECVD].tv_sec - self->options->suppress;
+  return self->last_msg->timestamps[LM_TS_RECVD].ut_sec >= msg->timestamps[LM_TS_RECVD].ut_sec - self->options->suppress;
 }
 
 /**
@@ -896,7 +898,7 @@ void
 log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
 {
   LogTemplate *template = NULL;
-  LogStamp *stamp;
+  UnixTime *stamp;
   guint32 seq_num;
   static NVHandle meta_seqid = 0;
 
@@ -936,8 +938,8 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
       g_string_append_c(result, '1');
       g_string_append_c(result, ' ');
 
-      log_stamp_append_format(stamp, result, TS_FMT_ISO,
-                              time_zone_info_get_offset(self->options->template_options.time_zone_info[LTZ_SEND], stamp->tv_sec),
+      append_format_unix_time(stamp, result, TS_FMT_ISO,
+                              time_zone_info_get_offset(self->options->template_options.time_zone_info[LTZ_SEND], stamp->ut_sec),
                               self->options->template_options.frac_digits);
       g_string_append_c(result, ' ');
 
@@ -1014,8 +1016,8 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
 
           if (self->flags & LW_FORMAT_FILE)
             {
-              log_stamp_format(stamp, result, self->options->template_options.ts_format,
-                               time_zone_info_get_offset(self->options->template_options.time_zone_info[LTZ_SEND], stamp->tv_sec),
+              format_unix_time(stamp, result, self->options->template_options.ts_format,
+                               time_zone_info_get_offset(self->options->template_options.time_zone_info[LTZ_SEND], stamp->ut_sec),
                                self->options->template_options.frac_digits);
             }
           else if (self->flags & LW_FORMAT_PROTO)
@@ -1025,8 +1027,8 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
               g_string_append_c(result, '>');
 
               /* always use BSD timestamp by default, the use can override this using a custom template */
-              log_stamp_append_format(stamp, result, TS_FMT_BSD,
-                                      time_zone_info_get_offset(self->options->template_options.time_zone_info[LTZ_SEND], stamp->tv_sec),
+              append_format_unix_time(stamp, result, TS_FMT_BSD,
+                                      time_zone_info_get_offset(self->options->template_options.time_zone_info[LTZ_SEND], stamp->ut_sec),
                                       self->options->template_options.frac_digits);
             }
           g_string_append_c(result, ' ');

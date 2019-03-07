@@ -29,7 +29,7 @@
 #include "gsockaddr.h"
 #include "atomic.h"
 #include "serialize.h"
-#include "logstamp.h"
+#include "timeutils/unixtime.h"
 #include "logmsg/nvtable.h"
 #include "msg-format.h"
 #include "logmsg/tags.h"
@@ -183,7 +183,7 @@ struct _LogMessage
    * correctly.
    */
   /* ==== start of directly copied part ==== */
-  LogStamp timestamps[LM_TS_MAX];
+  UnixTime timestamps[LM_TS_MAX];
   guint32 host_id;
   gulong *tags;
   NVHandle *sdata;

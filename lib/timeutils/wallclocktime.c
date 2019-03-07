@@ -22,40 +22,50 @@
  *
  */
 
-#ifndef TIMEUTILS_CACHE_H_INCLUDED
-#define TIMEUTILS_CACHE_H_INCLUDED
-
 #include "timeutils/wallclocktime.h"
 #include "timeutils/unixtime.h"
+#include "timeutils/strptime-tz.h"
+#include "timeutils/cache.h"
+#include "timeutils/misc.h"
 
-time_t cached_mktime(struct tm *tm);
-void cached_localtime(time_t *when, struct tm *tm);
-void cached_gmtime(time_t *when, struct tm *tm);
-
-
-static inline void
-cached_localtime_wct(time_t *when, WallClockTime *wct)
+void
+wall_clock_time_unset(WallClockTime *self)
 {
-  cached_localtime(when, &wct->tm);
+  WallClockTime val = WALL_CLOCK_TIME_INIT;
+  *self = val;
 }
 
-static inline time_t
-cached_mktime_wct(WallClockTime *wct)
+gchar *
+wall_clock_time_strptime(WallClockTime *wct, const gchar *format, const gchar *input)
 {
-  return cached_mktime(&wct->tm);
+  return strptime_with_tz(input, format, &wct->tm, &wct->wct_gmtoff, &wct->wct_zone);
 }
 
-static inline void
-cached_gmtime_wct(time_t *when, WallClockTime *wct)
+/* Determine (guess) the year for the month.
+ *
+ * It can be used for BSD logs, where year is missing.
+ */
+static gint
+determine_year_for_month(gint month, const struct tm *now)
 {
-  cached_gmtime(when, &wct->tm);
+  if (month == 11 && now->tm_mon == 0)
+    return now->tm_year - 1;
+  else if (month == 0 && now->tm_mon == 11)
+    return now->tm_year + 1;
+  else
+    return now->tm_year;
 }
 
-void clean_time_cache(void);
+void
+wall_clock_time_guess_missing_year(WallClockTime *self)
+{
+  if (self->wct_year == -1)
+    {
+      time_t now;
+      struct tm tm;
 
-void invalidate_cached_time(void);
-void set_cached_time(GTimeVal *timeval);
-void cached_g_current_time(GTimeVal *result);
-time_t cached_g_current_time_sec(void);
-
-#endif
+      now = cached_g_current_time_sec();
+      cached_localtime(&now, &tm);
+      self->wct_year = determine_year_for_month(self->wct_mon, &tm);
+    }
+}

@@ -145,7 +145,7 @@ _construct_message_with_nvpair(const gchar *program, const gchar *message, const
   log_msg_set_value(msg, LM_V_PID, MYPID, strlen(MYPID));
   if (name)
     log_msg_set_value_by_name(msg, name, value, -1);
-  msg->timestamps[LM_TS_STAMP].tv_sec = msg->timestamps[LM_TS_RECVD].tv_sec;
+  msg->timestamps[LM_TS_STAMP].ut_sec = msg->timestamps[LM_TS_RECVD].ut_sec;
 
   return msg;
 }

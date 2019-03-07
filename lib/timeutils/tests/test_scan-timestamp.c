@@ -23,9 +23,10 @@
  */
 #include <criterion/criterion.h>
 #include "apphook.h"
-#include "timeutils/decode.h"
-#include "timeutils/timeutils.h"
+#include "timeutils/scan-timestamp.h"
 #include "timeutils/cache.h"
+#include "timeutils/format.h"
+#include "timeutils/conv.h"
 
 static void
 fake_time(time_t now)
@@ -48,18 +49,19 @@ fake_time_add(time_t diff)
 static gboolean
 _parse_rfc3164(const gchar *ts, gchar isotimestamp[32])
 {
-  LogStamp stamp = {0};
+  UnixTime stamp;
   const guchar *data = (const guchar *) ts;
   gint length = strlen(ts);
   GString *result = g_string_new("");
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
 
-  stamp.tv_sec = -1;
-  stamp.tv_usec = 0;
-  stamp.zone_offset = -1;
 
-  gboolean success = scan_rfc3164_timestamp(&data, &length, &stamp, FALSE, -1);
+  gboolean success = scan_rfc3164_timestamp(&data, &length, &wct);
 
-  log_stamp_append_format(&stamp, result, TS_FMT_ISO, stamp.zone_offset, 3);
+  unix_time_unset(&stamp);
+  convert_wall_clock_time_to_unix_time(&wct, &stamp);
+
+  append_format_unix_time(&stamp, result, TS_FMT_ISO, stamp.ut_gmtoff, 3);
   strncpy(isotimestamp, result->str, 32);
   g_string_free(result, TRUE);
   return success;
@@ -68,18 +70,18 @@ _parse_rfc3164(const gchar *ts, gchar isotimestamp[32])
 static gboolean
 _parse_rfc5424(const gchar *ts, gchar isotimestamp[32])
 {
-  LogStamp stamp = {0};
+  UnixTime stamp;
   const guchar *data = (const guchar *) ts;
   gint length = strlen(ts);
   GString *result = g_string_new("");
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
 
-  stamp.tv_sec = -1;
-  stamp.tv_usec = 0;
-  stamp.zone_offset = -1;
+  gboolean success = scan_rfc5424_timestamp(&data, &length, &wct);
 
-  gboolean success = scan_rfc5424_timestamp(&data, &length, &stamp, FALSE, -1);
+  unix_time_unset(&stamp);
+  convert_wall_clock_time_to_unix_time(&wct, &stamp);
 
-  log_stamp_append_format(&stamp, result, TS_FMT_ISO, stamp.zone_offset, 3);
+  append_format_unix_time(&stamp, result, TS_FMT_ISO, stamp.ut_gmtoff, 3);
   strncpy(isotimestamp, result->str, 32);
   g_string_free(result, TRUE);
   return success;
@@ -287,10 +289,6 @@ Test(parse_timestamp, cisco_timestamps)
 
 Test(parse_timestamp, rfc5424_timestamps)
 {
-  /* the timestamp '-' means the current time */
-  _expect_rfc5424_timestamp_eq("-", "2017-12-13T09:10:23.123+01:00");
-  fake_time_add(3600);
-  _expect_rfc5424_timestamp_eq("-", "2017-12-13T10:10:23.123+01:00");
   _expect_rfc5424_timestamp_eq("2017-06-14T23:57:27+02:00", "2017-06-14T23:57:27.000+02:00");
   _expect_rfc5424_timestamp_eq("2017-06-14T23:57:27Z", "2017-06-14T23:57:27.000+00:00");
 }

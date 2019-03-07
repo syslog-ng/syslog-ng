@@ -28,7 +28,6 @@
 #include "logsource.h"
 #include "logproto/logproto-server.h"
 #include "poll-events.h"
-#include "timeutils/timeutils.h"
 
 /* flags */
 #define LR_KERNEL          0x0002

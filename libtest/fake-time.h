@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2011 Balabit
- * Copyright (c) 1998-2011 Balázs Scheidler
+ * Copyright (c) 2019 Balabit
+ * Copyright (c) 2019 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,36 +22,12 @@
  *
  */
 
-#ifndef LOGSTAMP_H_INCLUDED
-#define LOGSTAMP_H_INCLUDED
+#ifndef LIBTEST_FAKE_TIME_H_INCLUDED
+#define LIBTEST_FAKE_TIME_H_INCLUDED
 
-#include "syslog-ng.h"
+#include <time.h>
 
-/* timestamp formats */
-#define TS_FMT_BSD   0
-#define TS_FMT_ISO   1
-#define TS_FMT_FULL  2
-#define TS_FMT_UNIX  3
-
-#define LOGSTAMP_ZONE_OFFSET_UNSET G_MININT32
-
-typedef struct _LogStamp
-{
-  time_t tv_sec;
-  guint32 tv_usec;
-  /* zone offset in seconds, add this to UTC to get the time in local */
-  gint32 zone_offset;
-} LogStamp;
-
-static inline gboolean
-log_stamp_is_timezone_set(const LogStamp *self)
-{
-  return self->zone_offset != -1;
-}
-
-void log_stamp_format(LogStamp *stamp, GString *target, gint ts_format, glong zone_offset, gint frac_digits);
-void log_stamp_append_format(const LogStamp *stamp, GString *target, gint ts_format, glong zone_offset,
-                             gint frac_digits);
-gboolean log_stamp_eq(const LogStamp *a, const LogStamp *b);
+void fake_time(time_t now);
+void fake_time_add(time_t diff);
 
 #endif

@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2016 Balabit
- * Copyright (c) 2016 Balazs Scheidler <balazs.scheidler@balabit.com>
+ * Copyright (c) 2002-2018 Balabit
+ * Copyright (c) 1998-2018 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,25 +22,19 @@
  *
  */
 
+#ifndef TIMEUTILS_SCAN_TIMESTAMP_H_INCLUDED
+#define TIMEUTILS_SCAN_TIMESTAMP_H_INCLUDED
 
-#ifndef LOGMSG_SERIALIZATION_H
-#define LOGMSG_SERIALIZATION_H
-
-#include "serialize.h"
-#include "logmsg/logmsg.h"
+#include "syslog-ng.h"
+#include "timeutils/wallclocktime.h"
 #include "timeutils/unixtime.h"
 
-typedef struct _LogMessageSerializationState
-{
-  guint8 version;
-  SerializeArchive *sa;
-  LogMessage *msg;
-  NVTable *nvtable;
-  guint8 nvtable_flags;
-  guint8 handle_changed;
-  NVHandle *updated_sdata_handles;
-  NVIndexEntry *updated_index;
-  const UnixTime *processed;
-} LogMessageSerializationState;
+gboolean scan_iso_timestamp(const gchar **buf, gint *left, WallClockTime *wct);
+gboolean scan_pix_timestamp(const gchar **buf, gint *left, WallClockTime *wct);
+gboolean scan_linksys_timestamp(const gchar **buf, gint *left, WallClockTime *wct);
+gboolean scan_bsd_timestamp(const gchar **buf, gint *left, WallClockTime *wct);
+
+gboolean scan_rfc3164_timestamp(const guchar **data, gint *length, WallClockTime *wct);
+gboolean scan_rfc5424_timestamp(const guchar **data, gint *length, WallClockTime *wct);
 
 #endif

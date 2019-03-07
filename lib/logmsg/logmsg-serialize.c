@@ -37,11 +37,11 @@
 #define OLD_LMM_REF_MATCH 0x0001
 
 static void
-_setup_ts_processed(LogStamp *timestamps, const LogStamp *processed)
+_setup_ts_processed(UnixTime *timestamps, const UnixTime *processed)
 {
   if (processed != NULL)
     timestamps[LM_TS_PROCESSED] = *processed;
-  else if (timestamps[LM_TS_PROCESSED].zone_offset == LOGSTAMP_ZONE_OFFSET_UNSET)
+  else if (!unix_time_is_set(&timestamps[LM_TS_PROCESSED]))
     timestamps[LM_TS_PROCESSED] = timestamps[LM_TS_RECVD];
 }
 
@@ -50,9 +50,9 @@ _serialize_message(LogMessageSerializationState *state)
 {
   LogMessage *msg = state->msg;
   SerializeArchive *sa = state->sa;
-  LogStamp timestamps[LM_TS_MAX];
+  UnixTime timestamps[LM_TS_MAX];
 
-  memcpy(&timestamps, msg->timestamps, LM_TS_MAX*sizeof(LogStamp));
+  memcpy(&timestamps, msg->timestamps, LM_TS_MAX*sizeof(UnixTime));
   _setup_ts_processed(timestamps, state->processed);
 
   serialize_write_uint8(sa, state->version);
@@ -74,7 +74,7 @@ _serialize_message(LogMessageSerializationState *state)
 }
 
 gboolean
-log_msg_serialize_with_ts_processed(LogMessage *self, SerializeArchive *sa, const LogStamp *processed)
+log_msg_serialize_with_ts_processed(LogMessage *self, SerializeArchive *sa, const UnixTime *processed)
 {
   LogMessageSerializationState state = { 0 };
 

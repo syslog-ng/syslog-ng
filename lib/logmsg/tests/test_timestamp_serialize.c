@@ -27,18 +27,18 @@
 #include "logmsg/logmsg.h"
 #include "logmsg/timestamp-serialize.h"
 
-#define PREPARE_TEST LogStamp input_timestamps[LM_TS_MAX]; \
-  LogStamp output_timestamps[LM_TS_MAX]; \
+#define PREPARE_TEST UnixTime input_timestamps[LM_TS_MAX]; \
+  UnixTime output_timestamps[LM_TS_MAX]; \
   GString *stream = g_string_new(""); \
-  input_timestamps[LM_TS_STAMP].tv_sec = 1; \
-  input_timestamps[LM_TS_STAMP].tv_usec = 2; \
-  input_timestamps[LM_TS_STAMP].zone_offset = 3; \
-  input_timestamps[LM_TS_RECVD].tv_sec = 4; \
-  input_timestamps[LM_TS_RECVD].tv_usec = 5; \
-  input_timestamps[LM_TS_RECVD].zone_offset = 6; \
-  input_timestamps[LM_TS_PROCESSED].tv_sec = 255; \
-  input_timestamps[LM_TS_PROCESSED].tv_usec = 255; \
-  input_timestamps[LM_TS_PROCESSED].zone_offset = LOGSTAMP_ZONE_OFFSET_UNSET; \
+  input_timestamps[LM_TS_STAMP].ut_sec = 1; \
+  input_timestamps[LM_TS_STAMP].ut_usec = 2; \
+  input_timestamps[LM_TS_STAMP].ut_gmtoff = 3; \
+  input_timestamps[LM_TS_RECVD].ut_sec = 4; \
+  input_timestamps[LM_TS_RECVD].ut_usec = 5; \
+  input_timestamps[LM_TS_RECVD].ut_gmtoff = 6; \
+  input_timestamps[LM_TS_PROCESSED].ut_sec = 255; \
+  input_timestamps[LM_TS_PROCESSED].ut_usec = 255; \
+  input_timestamps[LM_TS_PROCESSED].ut_gmtoff = -1; \
   SerializeArchive *sa = serialize_string_archive_new(stream);
 
 #define CLEAN_TEST serialize_archive_free(sa); \

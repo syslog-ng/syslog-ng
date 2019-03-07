@@ -22,8 +22,8 @@
 
 #include <collection-comparator.h>
 #include "directory-monitor-poll.h"
-#include "timeutils/timeutils.h"
 #include "messages.h"
+#include "timeutils/misc.h"
 
 #include <iv.h>
 

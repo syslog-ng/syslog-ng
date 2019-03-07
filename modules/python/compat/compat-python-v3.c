@@ -46,7 +46,7 @@ py_datetime_init(void)
 }
 
 gboolean
-py_datetime_to_logstamp(PyObject *py_timestamp, LogStamp *logstamp)
+py_datetime_to_logstamp(PyObject *py_timestamp, UnixTime *logstamp)
 {
   if (!PyDateTime_Check(py_timestamp))
     {
@@ -77,9 +77,9 @@ py_datetime_to_logstamp(PyObject *py_timestamp, LogStamp *logstamp)
   Py_DECREF(py_utcoffset);
   Py_DECREF(py_posix_timestamp);
 
-  logstamp->tv_sec = (time_t) posix_timestamp;
-  logstamp->tv_usec = posix_timestamp * 10e5 - logstamp->tv_sec * 10e5;
-  logstamp->zone_offset = zone_offset;
+  logstamp->ut_sec = (time_t) posix_timestamp;
+  logstamp->ut_usec = posix_timestamp * 10e5 - logstamp->ut_sec * 10e5;
+  logstamp->ut_gmtoff = zone_offset;
 
   return TRUE;
 }

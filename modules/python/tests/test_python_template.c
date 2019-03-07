@@ -26,6 +26,7 @@
 #include "apphook.h"
 #include "logmsg/logmsg.h"
 #include "syslog-format.h"
+#include "timeutils/format.h"
 
 #include "python-integerpointer.h"
 

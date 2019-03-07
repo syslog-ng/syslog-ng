@@ -24,10 +24,12 @@
 
 #include "template/macros.h"
 #include "template/escaping.h"
-#include "timeutils/timeutils.h"
 #include "timeutils/cache.h"
 #include "timeutils/names.h"
-#include "logstamp.h"
+#include "timeutils/unixtime.h"
+#include "timeutils/format.h"
+#include "timeutils/misc.h"
+#include "timeutils/conv.h"
 #include "messages.h"
 #include "str-format.h"
 #include "run-id.h"
@@ -465,13 +467,10 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
     default:
     {
       /* year, month, day */
-      struct tm *tm, tm_storage;
       gchar buf[64];
       gint length;
-      time_t t;
-      const LogStamp *stamp;
-      LogStamp sstamp;
-      glong zone_ofs;
+      const UnixTime *stamp;
+      UnixTime sstamp;
       guint tmp_hour;
 
       if (id >= M_TIME_FIRST && id <= M_TIME_LAST)
@@ -490,19 +489,20 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
         }
       else if (id >= M_TIME_FIRST + M_CSTAMP_OFS && id <= M_TIME_LAST + M_CSTAMP_OFS)
         {
-          GTimeVal tv;
-
           id -= M_CSTAMP_OFS;
-          cached_g_current_time(&tv);
-          sstamp.tv_sec = tv.tv_sec;
-          sstamp.tv_usec = tv.tv_usec;
-          sstamp.zone_offset = msg->timestamps[LM_TS_RECVD].zone_offset;
+          unix_time_set_now(&sstamp);
           stamp = &sstamp;
         }
       else if (id >= M_TIME_FIRST + M_PROCESSED_OFS && id <= M_TIME_LAST + M_PROCESSED_OFS)
         {
           id -= M_PROCESSED_OFS;
           stamp = &msg->timestamps[LM_TS_PROCESSED];
+
+          if (!unix_time_is_set(stamp))
+            {
+              unix_time_set_now(&sstamp);
+              stamp = &sstamp;
+            }
         }
       else
         {
@@ -515,97 +515,96 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
        *   message specific timezone, if one is specified
        *   local timezone
        */
-      zone_ofs = (opts->time_zone_info[tz] != NULL ? time_zone_info_get_offset(opts->time_zone_info[tz],
-                  stamp->tv_sec) : stamp->zone_offset);
-      if (zone_ofs == -1)
-        zone_ofs = stamp->zone_offset;
+      WallClockTime wct;
 
-      t = stamp->tv_sec + zone_ofs;
-
-      cached_gmtime(&t, &tm_storage);
-      tm  = &tm_storage;
-
+      convert_unix_time_to_wall_clock_time_with_tz_override(stamp, &wct,
+                                                            time_zone_info_get_offset(opts->time_zone_info[tz], stamp->ut_sec));
       switch (id)
         {
         case M_WEEK_DAY_ABBREV:
-          g_string_append_len(result, weekday_names_abbrev[tm->tm_wday], 3);
+          g_string_append_len(result, weekday_names_abbrev[wct.wct_wday], 3);
           break;
         case M_WEEK_DAY_NAME:
-          g_string_append(result, weekday_names[tm->tm_wday]);
+          g_string_append(result, weekday_names[wct.wct_wday]);
           break;
         case M_WEEK_DAY:
-          format_uint32_padded(result, 0, 0, 10, tm->tm_wday + 1);
+          format_uint32_padded(result, 0, 0, 10, wct.wct_wday + 1);
           break;
         case M_WEEK:
-          format_uint32_padded(result, 2, '0', 10, (tm->tm_yday - (tm->tm_wday - 1 + 7) % 7 + 7) / 7);
+          format_uint32_padded(result, 2, '0', 10, (wct.wct_yday - (wct.wct_wday - 1 + 7) % 7 + 7) / 7);
           break;
         case M_YEAR:
-          format_uint32_padded(result, 4, '0', 10, tm->tm_year + 1900);
+          format_uint32_padded(result, 4, '0', 10, wct.wct_year + 1900);
           break;
         case M_YEAR_DAY:
-          format_uint32_padded(result, 3, '0', 10, tm->tm_yday + 1);
+          format_uint32_padded(result, 3, '0', 10, wct.wct_yday + 1);
           break;
         case M_MONTH:
-          format_uint32_padded(result, 2, '0', 10, tm->tm_mon + 1);
+          format_uint32_padded(result, 2, '0', 10, wct.wct_mon + 1);
           break;
         case M_MONTH_WEEK:
-          format_uint32_padded(result, 0, 0, 10, ((tm->tm_mday / 7) + ((tm->tm_wday > 0) && ((tm->tm_mday % 7) >= tm->tm_wday))));
+          format_uint32_padded(result, 0, 0, 10, ((wct.wct_mday / 7) +
+                                                  ((wct.wct_wday > 0) &&
+                                                   ((wct.wct_mday % 7) >= wct.wct_wday))));
           break;
         case M_MONTH_ABBREV:
-          g_string_append_len(result, month_names_abbrev[tm->tm_mon], 3);
+          g_string_append_len(result, month_names_abbrev[wct.wct_mon], 3);
           break;
         case M_MONTH_NAME:
-          g_string_append(result, month_names[tm->tm_mon]);
+          g_string_append(result, month_names[wct.wct_mon]);
           break;
         case M_DAY:
-          format_uint32_padded(result, 2, '0', 10, tm->tm_mday);
+          format_uint32_padded(result, 2, '0', 10, wct.wct_mday);
           break;
         case M_HOUR:
-          format_uint32_padded(result, 2, '0', 10, tm->tm_hour);
+          format_uint32_padded(result, 2, '0', 10, wct.wct_hour);
           break;
         case M_HOUR12:
-          if (tm->tm_hour < 12)
-            tmp_hour = tm->tm_hour;
+          if (wct.wct_hour < 12)
+            tmp_hour = wct.wct_hour;
           else
-            tmp_hour = tm->tm_hour - 12;
+            tmp_hour = wct.wct_hour - 12;
 
           if (tmp_hour == 0)
             tmp_hour = 12;
           format_uint32_padded(result, 2, '0', 10, tmp_hour);
           break;
         case M_MIN:
-          format_uint32_padded(result, 2, '0', 10, tm->tm_min);
+          format_uint32_padded(result, 2, '0', 10, wct.wct_min);
           break;
         case M_SEC:
-          format_uint32_padded(result, 2, '0', 10, tm->tm_sec);
+          format_uint32_padded(result, 2, '0', 10, wct.wct_sec);
           break;
         case M_MSEC:
-          format_uint32_padded(result, 3, '0', 10, stamp->tv_usec/1000);
+          format_uint32_padded(result, 3, '0', 10, stamp->ut_usec/1000);
           break;
         case M_USEC:
-          format_uint32_padded(result, 6, '0', 10, stamp->tv_usec);
+          format_uint32_padded(result, 6, '0', 10, stamp->ut_usec);
           break;
         case M_AMPM:
-          g_string_append(result, tm->tm_hour < 12 ? "AM" : "PM");
+          g_string_append(result, wct.wct_hour < 12 ? "AM" : "PM");
           break;
         case M_DATE:
-        case M_STAMP:
-        case M_ISODATE:
-        case M_FULLDATE:
-        case M_UNIXTIME:
-        {
-          gint format = id == M_DATE ? TS_FMT_BSD :
-                        id == M_ISODATE ? TS_FMT_ISO :
-                        id == M_FULLDATE ? TS_FMT_FULL :
-                        id == M_UNIXTIME ? TS_FMT_UNIX :
-                        opts->ts_format;
-
-          log_stamp_append_format(stamp, result, format, zone_ofs, opts->frac_digits);
+          append_format_wall_clock_time(&wct, result, TS_FMT_BSD, opts->frac_digits);
           break;
-        }
+        case M_STAMP:
+          if (opts->ts_format == TS_FMT_UNIX)
+            append_format_unix_time(stamp, result, TS_FMT_UNIX, wct.wct_gmtoff, opts->frac_digits);
+          else
+            append_format_wall_clock_time(&wct, result, opts->ts_format, opts->frac_digits);
+          break;
+        case M_ISODATE:
+          append_format_wall_clock_time(&wct, result, TS_FMT_ISO, opts->frac_digits);
+          break;
+        case M_FULLDATE:
+          append_format_wall_clock_time(&wct, result, TS_FMT_FULL, opts->frac_digits);
+          break;
+        case M_UNIXTIME:
+          append_format_unix_time(stamp, result, TS_FMT_UNIX, wct.wct_gmtoff, opts->frac_digits);
+          break;
         case M_TZ:
         case M_TZOFFSET:
-          length = format_zone_info(buf, sizeof(buf), zone_ofs);
+          length = format_zone_info(buf, sizeof(buf), wct.wct_gmtoff);
           g_string_append_len(result, buf, length);
           break;
         default:

@@ -36,8 +36,8 @@
 #include "str-utils.h"
 #include "filter/filter-expr-parser.h"
 #include "logpipe.h"
-#include "timeutils/timeutils.h"
 #include "timeutils/cache.h"
+#include "timeutils/misc.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -484,7 +484,7 @@ pattern_db_timer_tick(PatternDB *self)
 
 /* NOTE: lock should be acquired for writing before calling this function. */
 static void
-_advance_time_based_on_message(PatternDB *self, PDBProcessParams *process_params, const LogStamp *ls)
+_advance_time_based_on_message(PatternDB *self, PDBProcessParams *process_params, const UnixTime *ls)
 {
   GTimeVal now;
 
@@ -496,8 +496,8 @@ _advance_time_based_on_message(PatternDB *self, PDBProcessParams *process_params
   cached_g_current_time(&now);
   self->last_tick = now;
 
-  if (ls->tv_sec < now.tv_sec)
-    now.tv_sec = ls->tv_sec;
+  if (ls->ut_sec < now.tv_sec)
+    now.tv_sec = ls->ut_sec;
 
   /* the expire callback uses this pointer to find the process_params it
    * needs to emit messages.  ProcessParams itself is a per-thread value,

@@ -22,10 +22,11 @@
  */
 
 #include "apphook.h"
-#include "timeutils/timeutils.h"
 #include "timeutils/cache.h"
+#include "timeutils/misc.h"
 #include "timeutils/zoneinfo.h"
-#include "logstamp.h"
+#include "timeutils/unixtime.h"
+#include "timeutils/format.h"
 #include <criterion/criterion.h>
 #include <stdlib.h>
 #include <string.h>
@@ -120,9 +121,9 @@ assert_time_zone_offset(TimezoneOffsetTestCase c)
 }
 
 void
-assert_timestamp_format(GString *target, LogStamp *stamp, TimestampFormatTestCase c)
+assert_timestamp_format(GString *target, UnixTime *stamp, TimestampFormatTestCase c)
 {
-  log_stamp_format(stamp, target, c.format, c.zone_offset, c.frac_digits);
+  format_unix_time(stamp, target, c.format, c.zone_offset, c.frac_digits);
   cr_assert_str_eq(target->str, c.expected_format, "Actual: %s, Expected: %s", target->str, c.expected_format);
 }
 
@@ -770,7 +771,7 @@ Test(zone, test_time_zones)
 
 Test(zone, test_logstamp_format)
 {
-  LogStamp stamp;
+  UnixTime stamp;
   GString *target = g_string_sized_new(32);
   TimestampFormatTestCase test_cases[] =
   {
@@ -787,16 +788,16 @@ Test(zone, test_logstamp_format)
   TimestampFormatTestCase boundary_test_case = {TS_FMT_ISO, -1, 0, "1970-01-01T00:00:00+00:00"};
   gint i, nr_of_cases;
 
-  stamp.tv_sec = 1129319257;
-  stamp.tv_usec = 123456;
-  stamp.zone_offset = 0;
+  stamp.ut_sec = 1129319257;
+  stamp.ut_usec = 123456;
+  stamp.ut_gmtoff = 0;
   nr_of_cases = sizeof(test_cases) / sizeof(test_cases[0]);
   for (i = 0; i < nr_of_cases; i++)
     assert_timestamp_format(target, &stamp, test_cases[i]);
 
   // boundary testing
-  stamp.tv_sec = 0;
-  stamp.tv_usec = 0;
+  stamp.ut_sec = 0;
+  stamp.ut_usec = 0;
   assert_timestamp_format(target, &stamp, boundary_test_case);
 
   g_string_free(target, TRUE);

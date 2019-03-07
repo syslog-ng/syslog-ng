@@ -22,8 +22,8 @@
 #include "snmptrapd-header-parser.h"
 
 #include "str-format.h"
-#include "timeutils/timeutils.h"
 #include "timeutils/cache.h"
+#include "timeutils/conv.h"
 
 #include <string.h>
 #include <ctype.h>
@@ -244,50 +244,35 @@ _parse_hostname(SnmpTrapdHeaderParser *self)
 }
 
 static gboolean
-scan_snmptrapd_timestamp(const gchar **buf, gint *left, struct tm *tm)
+scan_snmptrapd_timestamp(const gchar **buf, gint *left, WallClockTime *wct)
 {
   /* YYYY-MM-DD HH:MM:SS */
-  if (!scan_int(buf, left, 4, &tm->tm_year) ||
+  if (!scan_int(buf, left, 4, &wct->wct_year) ||
       !scan_expect_char(buf, left, '-') ||
-      !scan_int(buf, left, 2, &tm->tm_mon) ||
+      !scan_int(buf, left, 2, &wct->wct_mon) ||
       !scan_expect_char(buf, left, '-') ||
-      !scan_int(buf, left, 2, &tm->tm_mday) ||
+      !scan_int(buf, left, 2, &wct->wct_mday) ||
       !scan_expect_char(buf, left, ' ') ||
-      !scan_int(buf, left, 2, &tm->tm_hour) ||
+      !scan_int(buf, left, 2, &wct->wct_hour) ||
       !scan_expect_char(buf, left, ':') ||
-      !scan_int(buf, left, 2, &tm->tm_min) ||
+      !scan_int(buf, left, 2, &wct->wct_min) ||
       !scan_expect_char(buf, left, ':') ||
-      !scan_int(buf, left, 2, &tm->tm_sec))
+      !scan_int(buf, left, 2, &wct->wct_sec))
     return FALSE;
-  tm->tm_year -= 1900;
-  tm->tm_mon -= 1;
+  wct->wct_year -= 1900;
+  wct->wct_mon -= 1;
   return TRUE;
 }
 
 static gboolean
 _parse_timestamp(SnmpTrapdHeaderParser *self)
 {
-  GTimeVal now;
-  cached_g_current_time(&now);
-  time_t now_tv_sec = (time_t) now.tv_sec;
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
 
-  LogStamp *stamp = &self->nv_context->msg->timestamps[LM_TS_STAMP];
-  stamp->tv_usec = 0;
-  stamp->zone_offset = -1;
-
-  /* NOTE: we initialize various unportable fields in tm using a
-   * localtime call, as the value of tm_gmtoff does matter but it does
-   * not exist on all platforms and 0 initializing it causes trouble on
-   * time-zone barriers */
-
-  struct tm tm;
-  cached_localtime(&now_tv_sec, &tm);
-  if (!scan_snmptrapd_timestamp(self->input, (gint *)self->input_len, &tm))
+  if (!scan_snmptrapd_timestamp(self->input, (gint *)self->input_len, &wct))
     return FALSE;
 
-  tm.tm_isdst = -1;
-  stamp->tv_sec = cached_mktime(&tm);
-  stamp->zone_offset = get_local_timezone_ofs(stamp->tv_sec);
+  convert_and_normalize_wall_clock_time_to_unix_time(&wct, &self->nv_context->msg->timestamps[LM_TS_STAMP]);
 
   return TRUE;
 }

@@ -61,7 +61,7 @@ create_message_with_fields(const char *field_name, ...)
   const char *arg;
   LogMessage *msg = log_msg_new_empty();
 
-  msg->timestamps[LM_TS_STAMP].tv_sec = 365 * 24 * 3600;
+  msg->timestamps[LM_TS_STAMP].ut_sec = 365 * 24 * 3600;
   arg = field_name;
   va_start(args, field_name);
   while (arg != NULL)

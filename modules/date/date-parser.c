@@ -23,9 +23,9 @@
 
 #include "date-parser.h"
 #include "str-utils.h"
-#include "timeutils/strptime-tz.h"
-#include "timeutils/timeutils.h"
+#include "timeutils/wallclocktime.h"
 #include "timeutils/cache.h"
+#include "timeutils/conv.h"
 
 typedef struct _DateParser
 {
@@ -75,18 +75,11 @@ date_parser_init(LogPipe *s)
 
 /* NOTE: tm is initialized with the current time and date */
 static gboolean
-_parse_timestamp_and_deduce_missing_parts(DateParser *self, struct tm *tm, glong *tm_zone_offset, const gchar *input)
+_parse_timestamp_and_deduce_missing_parts(DateParser *self, WallClockTime *wct, const gchar *input)
 {
-  gint current_year;
-  struct tm nowtm = *tm;
-  long tm_gmtoff;
-  const gchar *tm_zone = NULL;
   const gchar *remainder;
 
-  current_year = tm->tm_year;
-  tm->tm_year = 0;
-  tm_gmtoff = -1;
-  remainder = strptime_with_tz(input, self->date_format, tm, &tm_gmtoff, &tm_zone);
+  remainder = wall_clock_time_strptime(wct, self->date_format, input);
   if (!remainder || remainder[0])
     return FALSE;
 
@@ -94,84 +87,20 @@ _parse_timestamp_and_deduce_missing_parts(DateParser *self, struct tm *tm, glong
    * not, we are going to need the received year to find it out
    * heuristically */
 
-  if (tm->tm_year == 0)
-    {
-      /* no year information in the timestamp, deduce it from the current year */
-      tm->tm_year = current_year;
-      tm->tm_year = determine_year_for_month(tm->tm_mon, &nowtm);
-    }
-
-  if (tm_gmtoff != -1)
-    *tm_zone_offset = tm_gmtoff;
-  else
-    *tm_zone_offset = -1;
-
-  return TRUE;
-}
-
-static void
-_adjust_tvsec_to_move_it_into_given_timezone(LogStamp *timestamp, gint normalized_hour, gint unnormalized_hour)
-{
-  timestamp->tv_sec = timestamp->tv_sec
-                      + get_local_timezone_ofs(timestamp->tv_sec)
-                      - (normalized_hour - unnormalized_hour) * 3600
-                      - timestamp->zone_offset;
-}
-
-static glong
-_get_target_zone_offset(DateParser *self, glong tm_zone_offset, time_t now)
-{
-  if (tm_zone_offset != -1)
-    return tm_zone_offset;
-  else if (self->date_tz_info)
-    return time_zone_info_get_offset(self->date_tz_info, now);
-  else
-    return get_local_timezone_ofs(now);
-}
-
-static gboolean
-_convert_struct_tm_to_logstamp(DateParser *self, time_t now, struct tm *tm, glong tm_zone_offset, LogStamp *target)
-{
-  gint unnormalized_hour;
-
-  target->zone_offset = _get_target_zone_offset(self, tm_zone_offset, now);
-
-  /* NOTE: mktime changes struct tm in the call below! For instance it
-   * changes the hour value. (in daylight saving changes, and when it
-   * is out of range).
-   *
-   * We save the hour prior to this conversion, as it is needed when
-   * converting the timestamp from our local timezone to the specified
-   * one. */
-
-  /* FIRST: We convert the timestamp as it was in our local time zone. */
-  unnormalized_hour = tm->tm_hour;
-  target->tv_sec = cached_mktime(tm);
-
-  /* we can't parse USEC value, as strptime() does not support that */
-  target->tv_usec = 0;
-
-  /* SECOND: adjust tv_sec as if we converted it according to our timezone. */
-  _adjust_tvsec_to_move_it_into_given_timezone(target, tm->tm_hour, unnormalized_hour);
+  wall_clock_time_guess_missing_year(wct);
   return TRUE;
 }
 
 static gboolean
-_convert_timestamp_to_logstamp(DateParser *self, time_t now, LogStamp *target, const gchar *input)
+_convert_timestamp_to_logstamp(DateParser *self, time_t now, UnixTime *target, const gchar *input)
 {
-  struct tm tm;
-  glong tm_zone_offset;
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
 
-  /* initialize tm with current date, this fills in dst and other
-   * fields (even non-standard ones) */
-
-  cached_localtime(&now, &tm);
-
-  if (!_parse_timestamp_and_deduce_missing_parts(self, &tm, &tm_zone_offset, input))
+  if (!_parse_timestamp_and_deduce_missing_parts(self, &wct, input))
     return FALSE;
 
-  if (!_convert_struct_tm_to_logstamp(self, now, &tm, tm_zone_offset, target))
-    return FALSE;
+  convert_and_normalize_wall_clock_time_to_unix_time_with_tz_hint(&wct, target,
+      time_zone_info_get_offset(self->date_tz_info, now));
 
   return TRUE;
 }
@@ -196,7 +125,7 @@ date_parser_process(LogParser *s,
 
   APPEND_ZERO(input, input, input_len);
   gboolean res = _convert_timestamp_to_logstamp(self,
-                                                msg->timestamps[LM_TS_RECVD].tv_sec,
+                                                msg->timestamps[LM_TS_RECVD].ut_sec,
                                                 &msg->timestamps[self->time_stamp],
                                                 input);
 

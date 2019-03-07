@@ -24,10 +24,10 @@
 #include "linux-kmsg-format.h"
 #include "logmsg/logmsg.h"
 #include "messages.h"
-#include "timeutils/timeutils.h"
 #include "cfg.h"
 #include "str-format.h"
 #include "scratch-buffers.h"
+#include "timeutils/misc.h"
 
 #include <ctype.h>
 #include <string.h>
@@ -84,15 +84,15 @@ kmsg_timeval_diff(struct timeval *t1, struct timeval *t2)
 #endif
 
 static void
-kmsg_to_absolute_time(guint64 timestamp, LogStamp *dest)
+kmsg_to_absolute_time(guint64 timestamp, UnixTime *dest)
 {
   guint64 t;
 
   t = (boot_time.tv_sec + (timestamp / G_USEC_PER_SEC)) * G_USEC_PER_SEC +
       boot_time.tv_usec + (timestamp % G_USEC_PER_SEC);
 
-  dest->tv_sec = t / G_USEC_PER_SEC;
-  dest->tv_usec = t % G_USEC_PER_SEC;
+  dest->ut_sec = t / G_USEC_PER_SEC;
+  dest->ut_usec = t % G_USEC_PER_SEC;
 }
 
 static gboolean
@@ -153,8 +153,8 @@ kmsg_parse_timestamp(const guchar *data, gsize *pos, gsize length, LogMessage *m
   log_msg_set_value(msg, KMSG_LM_V_TIMESTAMP,
                     (const gchar *)data + start, *pos - start);
   kmsg_to_absolute_time(timestamp, &msg->timestamps[LM_TS_STAMP]);
-  msg->timestamps[LM_TS_STAMP].zone_offset =
-    get_local_timezone_ofs(msg->timestamps[LM_TS_STAMP].tv_sec);
+  msg->timestamps[LM_TS_STAMP].ut_gmtoff =
+    get_local_timezone_ofs(msg->timestamps[LM_TS_STAMP].ut_sec);
 
   return TRUE;
 }

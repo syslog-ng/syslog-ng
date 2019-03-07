@@ -27,8 +27,8 @@
 #include "messages.h"
 #include "str-utils.h"
 #include "filter/filter-expr.h"
-#include "timeutils/timeutils.h"
 #include "timeutils/cache.h"
+#include "timeutils/misc.h"
 #include <iv.h>
 
 typedef struct _GroupingBy
@@ -111,7 +111,7 @@ grouping_by_set_synthetic_message(LogParser *s, SyntheticMessage *message)
 
 /* NOTE: lock should be acquired for writing before calling this function. */
 void
-grouping_by_set_time(GroupingBy *self, const LogStamp *ls)
+grouping_by_set_time(GroupingBy *self, const UnixTime *ls)
 {
   GTimeVal now;
   gchar buf[256];
@@ -124,8 +124,8 @@ grouping_by_set_time(GroupingBy *self, const LogStamp *ls)
   cached_g_current_time(&now);
   self->last_tick = now;
 
-  if (ls->tv_sec < now.tv_sec)
-    now.tv_sec = ls->tv_sec;
+  if (ls->ut_sec < now.tv_sec)
+    now.tv_sec = ls->ut_sec;
 
   timer_wheel_set_time(self->timer_wheel, now.tv_sec);
   msg_debug("Advancing grouping-by() current time because of an incoming message",

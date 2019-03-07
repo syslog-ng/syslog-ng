@@ -204,25 +204,25 @@ Test(logmsg_serialize, serialize)
 }
 
 static LogMessage *
-_create_message_to_be_serialized_with_ts_processed(const gchar *raw_msg, const int raw_msg_len, LogStamp *processed)
+_create_message_to_be_serialized_with_ts_processed(const gchar *raw_msg, const int raw_msg_len, UnixTime *processed)
 {
   LogMessage *msg = _create_message_to_be_serialized(RAW_MSG, strlen(RAW_MSG));
 
-  msg->timestamps[LM_TS_PROCESSED].tv_sec = processed->tv_sec;
-  msg->timestamps[LM_TS_PROCESSED].tv_usec = processed->tv_usec;
-  msg->timestamps[LM_TS_PROCESSED].zone_offset = processed->zone_offset;
+  msg->timestamps[LM_TS_PROCESSED].ut_sec = processed->ut_sec;
+  msg->timestamps[LM_TS_PROCESSED].ut_usec = processed->ut_usec;
+  msg->timestamps[LM_TS_PROCESSED].ut_gmtoff = processed->ut_gmtoff;
 
   return msg;
 }
 
 static void
-_check_processed_timestamp(LogMessage *msg, LogStamp *processed)
+_check_processed_timestamp(LogMessage *msg, UnixTime *processed)
 {
-  cr_assert_eq(msg->timestamps[LM_TS_PROCESSED].tv_sec, processed->tv_sec,
+  cr_assert_eq(msg->timestamps[LM_TS_PROCESSED].ut_sec, processed->ut_sec,
                "tv_sec value does not match");
-  cr_assert_eq(msg->timestamps[LM_TS_PROCESSED].tv_usec, processed->tv_usec,
+  cr_assert_eq(msg->timestamps[LM_TS_PROCESSED].ut_usec, processed->ut_usec,
                "tv_usec value does not match");
-  cr_assert_eq(msg->timestamps[LM_TS_PROCESSED].zone_offset, processed->zone_offset,
+  cr_assert_eq(msg->timestamps[LM_TS_PROCESSED].ut_gmtoff, processed->ut_gmtoff,
                "zone_offset value does not match");
 }
 
@@ -239,11 +239,11 @@ Test(logmsg_serialize, simple_serialization)
 
   log_msg_deserialize(msg, sa);
 
-  LogStamp ls =
+  UnixTime ls =
   {
-    .tv_sec = msg->timestamps[LM_TS_RECVD].tv_sec,
-    .tv_usec = msg->timestamps[LM_TS_RECVD].tv_usec,
-    .zone_offset = msg->timestamps[LM_TS_RECVD].zone_offset
+    .ut_sec = msg->timestamps[LM_TS_RECVD].ut_sec,
+    .ut_usec = msg->timestamps[LM_TS_RECVD].ut_usec,
+    .ut_gmtoff = msg->timestamps[LM_TS_RECVD].ut_gmtoff
   };
 
   _check_processed_timestamp(msg, &ls);
@@ -259,11 +259,11 @@ Test(logmsg_serialize, given_ts_processed)
   GString *stream = g_string_sized_new(512);
   SerializeArchive *sa = serialize_string_archive_new(stream);
 
-  LogStamp ls =
+  UnixTime ls =
   {
-    .tv_sec = 11,
-    .tv_usec = 12,
-    .zone_offset = 13
+    .ut_sec = 11,
+    .ut_usec = 12,
+    .ut_gmtoff = 13
   };
 
   log_msg_serialize_with_ts_processed(msg, sa, &ls);
@@ -282,11 +282,11 @@ Test(logmsg_serialize, given_ts_processed)
 
 Test(logmsg_serialize, existing_ts_processed)
 {
-  LogStamp ls =
+  UnixTime ls =
   {
-    .tv_sec = 1,
-    .tv_usec = 2,
-    .zone_offset = 3
+    .ut_sec = 1,
+    .ut_usec = 2,
+    .ut_gmtoff = 3
   };
 
   LogMessage *msg = _create_message_to_be_serialized_with_ts_processed(RAW_MSG, strlen(RAW_MSG), &ls);
@@ -309,20 +309,20 @@ Test(logmsg_serialize, existing_ts_processed)
 
 Test(logmsg_serialize, existing_and_given_ts_processed)
 {
-  LogStamp ls =
+  UnixTime ls =
   {
-    .tv_sec = 1,
-    .tv_usec = 2,
-    .zone_offset = 3
+    .ut_sec = 1,
+    .ut_usec = 2,
+    .ut_gmtoff = 3
   };
 
   LogMessage *msg = _create_message_to_be_serialized_with_ts_processed(RAW_MSG, strlen(RAW_MSG), &ls);
   GString *stream = g_string_sized_new(512);
   SerializeArchive *sa = serialize_string_archive_new(stream);
 
-  ls.tv_sec = 11;
-  ls.tv_usec = 12;
-  ls.zone_offset = 13;
+  ls.ut_sec = 11;
+  ls.ut_usec = 12;
+  ls.ut_gmtoff = 13;
 
   log_msg_serialize_with_ts_processed(msg, sa, &ls);
 

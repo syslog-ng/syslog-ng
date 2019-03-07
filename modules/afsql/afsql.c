@@ -31,7 +31,6 @@
 #include "seqnum.h"
 #include "stats/stats-registry.h"
 #include "apphook.h"
-#include "timeutils/timeutils.h"
 #include "mainloop-worker.h"
 #include "str-utils.h"
 

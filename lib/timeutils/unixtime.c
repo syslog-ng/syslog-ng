@@ -21,21 +21,35 @@
  * COPYING for details.
  *
  */
+#include "timeutils/unixtime.h"
+#include "timeutils/wallclocktime.h"
+#include "timeutils/cache.h"
+#include "timeutils/names.h"
+#include "timeutils/misc.h"
 
-#ifndef STR_TIMESTAMP_DECODE_H_INCLUDED
-#define STR_TIMESTAMP_DECODE_H_INCLUDED
+void
+unix_time_unset(UnixTime *self)
+{
+  UnixTime val = UNIX_TIME_INIT;
+  *self = val;
+}
 
-#include "syslog-ng.h"
-#include "logstamp.h"
+void
+unix_time_set_now(UnixTime *self)
+{
+  GTimeVal tv;
 
-gboolean scan_iso_timestamp(const gchar **buf, gint *left, struct tm *tm);
-gboolean scan_pix_timestamp(const gchar **buf, gint *left, struct tm *tm);
-gboolean scan_linksys_timestamp(const gchar **buf, gint *left, struct tm *tm);
-gboolean scan_bsd_timestamp(const gchar **buf, gint *left, struct tm *tm);
+  cached_g_current_time(&tv);
+  self->ut_sec = tv.tv_sec;
+  self->ut_usec = tv.tv_usec;
+  self->ut_gmtoff = get_local_timezone_ofs(self->ut_sec);
+}
 
-gboolean scan_rfc3164_timestamp(const guchar **data, gint *length, LogStamp *stamp,
-                                gboolean ignore_result, glong default_timezone);
-gboolean scan_rfc5424_timestamp(const guchar **data, gint *length, LogStamp *stamp,
-                                gboolean ignore_result, glong default_timezone);
 
-#endif
+gboolean
+unix_time_eq(const UnixTime *a, const UnixTime *b)
+{
+  return a->ut_sec == b->ut_sec &&
+         a->ut_usec == b->ut_usec &&
+         a->ut_gmtoff == b->ut_gmtoff;
+}

@@ -25,11 +25,11 @@
 #include "logsource.h"
 #include "messages.h"
 #include "host-resolve.h"
-#include "timeutils/timeutils.h"
 #include "stats/stats-registry.h"
 #include "msg-stats.h"
 #include "logmsg/tags.h"
 #include "ack_tracker.h"
+#include "timeutils/misc.h"
 
 #include <string.h>
 
@@ -349,7 +349,7 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   if (!self->options->keep_timestamp)
     msg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_RECVD];
 
-  g_assert(msg->timestamps[LM_TS_STAMP].zone_offset != -1);
+  g_assert(msg->timestamps[LM_TS_STAMP].ut_gmtoff != -1);
 
   /* $HOST setup */
   log_source_mangle_hostname(self, msg);
@@ -380,7 +380,7 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
   /* message setup finished, send it out */
 
   stats_counter_inc(self->recvd_messages);
-  stats_counter_set(self->last_message_seen, msg->timestamps[LM_TS_RECVD].tv_sec);
+  stats_counter_set(self->last_message_seen, msg->timestamps[LM_TS_RECVD].ut_sec);
   log_pipe_forward_msg(s, msg, path_options);
 
   if (accurate_nanosleep && self->threaded && self->window_full_sleep_nsec > 0 && !log_source_free_to_send(self))

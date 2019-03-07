@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2016 Balabit
- * Copyright (c) 2016 Balazs Scheidler <balazs.scheidler@balabit.com>
+ * Copyright (c) 2002-2014 Balabit
+ * Copyright (c) 1998-2010 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,25 +22,18 @@
  *
  */
 
+#ifndef TIMEUTILS_MISC_H_INCLUDED
+#define TIMEUTILS_MISC_H_INCLUDED
 
-#ifndef LOGMSG_SERIALIZATION_H
-#define LOGMSG_SERIALIZATION_H
+#include "syslog-ng.h"
 
-#include "serialize.h"
-#include "logmsg/logmsg.h"
-#include "timeutils/unixtime.h"
+long get_local_timezone_ofs(time_t when);
 
-typedef struct _LogMessageSerializationState
-{
-  guint8 version;
-  SerializeArchive *sa;
-  LogMessage *msg;
-  NVTable *nvtable;
-  guint8 nvtable_flags;
-  guint8 handle_changed;
-  NVHandle *updated_sdata_handles;
-  NVIndexEntry *updated_index;
-  const UnixTime *processed;
-} LogMessageSerializationState;
+gboolean check_nanosleep(void);
+
+glong g_time_val_diff(GTimeVal *t1, GTimeVal *t2);
+void timespec_add_msec(struct timespec *ts, glong msec);
+glong timespec_diff_msec(const struct timespec *t1, const struct timespec *t2);
+glong timespec_diff_nsec(struct timespec *t1, struct timespec *t2);
 
 #endif

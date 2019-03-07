@@ -29,7 +29,6 @@
 #include "alarms.h"
 #include "stats/stats-registry.h"
 #include "logmsg/logmsg.h"
-#include "timeutils/timeutils.h"
 #include "logsource.h"
 #include "logwriter.h"
 #include "afinter.h"

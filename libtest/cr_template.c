@@ -23,7 +23,7 @@
  */
 
 #include "cr_template.h"
-#include "timeutils/timeutils.h"
+#include "timeutils/misc.h"
 #include "stopwatch.h"
 #include "logmsg/logmsg.h"
 #include "gsockaddr.h"
@@ -91,9 +91,9 @@ create_empty_message(void)
 
   /* fix some externally or automatically defined values */
   log_msg_set_value(msg, LM_V_HOST_FROM, "kismacska", -1);
-  msg->timestamps[LM_TS_RECVD].tv_sec = 1139684315;
-  msg->timestamps[LM_TS_RECVD].tv_usec = 639000;
-  msg->timestamps[LM_TS_RECVD].zone_offset = get_local_timezone_ofs(1139684315);
+  msg->timestamps[LM_TS_RECVD].ut_sec = 1139684315;
+  msg->timestamps[LM_TS_RECVD].ut_usec = 639000;
+  msg->timestamps[LM_TS_RECVD].ut_gmtoff = get_local_timezone_ofs(1139684315);
 
   return msg;
 }

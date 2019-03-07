@@ -22,7 +22,8 @@
  */
 
 #include "syslog-format.h"
-#include "timeutils/decode.h"
+#include "timeutils/scan-timestamp.h"
+#include "timeutils/conv.h"
 #include "logmsg/logmsg.h"
 #include "messages.h"
 #include "timeutils/cache.h"
@@ -236,18 +237,27 @@ log_msg_parse_cisco_timestamp_attributes(LogMessage *self, const guchar **data, 
 }
 
 static gboolean
-log_msg_parse_timestamp(LogStamp *stamp, const guchar **data, gint *length, guint parse_flags, glong recv_timezone_ofs)
+log_msg_parse_timestamp(UnixTime *stamp, const guchar **data, gint *length, guint parse_flags, glong recv_timezone_ofs)
 {
   gboolean result;
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
 
   if ((parse_flags & LP_SYSLOG_PROTOCOL) == 0)
-    result = scan_rfc3164_timestamp(data, length, stamp,
-                                    (parse_flags & LP_NO_PARSE_DATE),
-                                    recv_timezone_ofs);
+    result = scan_rfc3164_timestamp(data, length, &wct);
   else
-    result = scan_rfc5424_timestamp(data, length, stamp,
-                                    (parse_flags & LP_NO_PARSE_DATE),
-                                    recv_timezone_ofs);
+    {
+      if (G_UNLIKELY(*length >= 1 && (*data)[0] == '-'))
+        {
+          unix_time_set_now(stamp);
+          (*data)++;
+          (*length)--;
+          return TRUE;
+        }
+      result = scan_rfc5424_timestamp(data, length, &wct);
+    }
+
+  if ((parse_flags & LP_NO_PARSE_DATE) == 0)
+    convert_and_normalize_wall_clock_time_to_unix_time_with_tz_hint(&wct, stamp, recv_timezone_ofs);
 
   return result;
 }
@@ -255,12 +265,10 @@ log_msg_parse_timestamp(LogStamp *stamp, const guchar **data, gint *length, guin
 static gboolean
 log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint parse_flags, glong recv_timezone_ofs)
 {
+  UnixTime *stamp = &self->timestamps[LM_TS_STAMP];
 
-  LogStamp *stamp = &self->timestamps[LM_TS_STAMP];
-  stamp->tv_sec = -1;
-  stamp->tv_usec = 0;
-  stamp->zone_offset = -1;
 
+  unix_time_unset(stamp);
   if (!log_msg_parse_timestamp(stamp, data, length, parse_flags, recv_timezone_ofs))
     {
       *stamp = self->timestamps[LM_TS_RECVD];

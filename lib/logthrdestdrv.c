@@ -26,7 +26,7 @@
 #include "logthrdestdrv.h"
 #include "seqnum.h"
 #include "scratch-buffers.h"
-#include "timeutils/timeutils.h"
+#include "timeutils/misc.h"
 
 #define MAX_RETRIES_ON_ERROR_DEFAULT 3
 #define MAX_RETRIES_BEFORE_SUSPEND_DEFAULT 3

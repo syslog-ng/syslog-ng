@@ -27,7 +27,7 @@
 #define LOGMSG_SERIALIZE_H
 
 #include "serialize.h"
-#include "logstamp.h"
+#include "timeutils/unixtime.h"
 
 /*
  * version   info
@@ -66,7 +66,7 @@ typedef enum _LogMessageVersion
 } LogMessageVersion;
 
 gboolean log_msg_deserialize(LogMessage *self, SerializeArchive *sa);
-gboolean log_msg_serialize_with_ts_processed(LogMessage *self, SerializeArchive *sa, const LogStamp *processed);
+gboolean log_msg_serialize_with_ts_processed(LogMessage *self, SerializeArchive *sa, const UnixTime *processed);
 gboolean log_msg_serialize(LogMessage *self, SerializeArchive *sa);
 
 #endif

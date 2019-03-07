@@ -25,9 +25,9 @@
 
 #include "logsource.h"
 #include "logpipe.h"
-#include "timeutils/timeutils.h"
 #include "logmsg/logmsg.h"
 #include "template/templates.h"
+#include "timeutils/misc.h"
 
 #include <iv.h>
 

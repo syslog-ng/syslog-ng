@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2014 Balabit
- * Copyright (c) 1998-2010 Balázs Scheidler
+ * Copyright (c) 2019 Balabit
+ * Copyright (c) 2019 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,22 +21,23 @@
  * COPYING for details.
  *
  */
+#include "fake-time.h"
+#include "timeutils/cache.h"
 
-#ifndef TIMEUTILS_H_INCLUDED
-#define TIMEUTILS_H_INCLUDED
+void
+fake_time(time_t now)
+{
+  GTimeVal tv = { now, 123 * 1e3 };
 
-#include "syslog-ng.h"
-#include "compat/time.h"
+  set_cached_time(&tv);
+}
 
-long get_local_timezone_ofs(time_t when);
+void
+fake_time_add(time_t diff)
+{
+  GTimeVal tv;
 
-gboolean check_nanosleep(void);
-
-int format_zone_info(gchar *buf, size_t buflen, long gmtoff);
-glong g_time_val_diff(GTimeVal *t1, GTimeVal *t2);
-void timespec_add_msec(struct timespec *ts, glong msec);
-glong timespec_diff_msec(const struct timespec *t1, const struct timespec *t2);
-glong timespec_diff_nsec(struct timespec *t1, struct timespec *t2);
-gint determine_year_for_month(gint month, const struct tm *now);
-
-#endif
+  cached_g_current_time(&tv);
+  tv.tv_sec += diff;
+  set_cached_time(&tv);
+}

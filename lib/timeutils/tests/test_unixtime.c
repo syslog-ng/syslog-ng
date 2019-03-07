@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2016 Balabit
- * Copyright (c) 2016 Balazs Scheidler <balazs.scheidler@balabit.com>
+ * Copyright (c) 2002-2019 Balabit
+ * Copyright (c) 1998-2019 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,26 +21,39 @@
  * COPYING for details.
  *
  */
-
-
-#ifndef LOGMSG_SERIALIZATION_H
-#define LOGMSG_SERIALIZATION_H
-
-#include "serialize.h"
-#include "logmsg/logmsg.h"
 #include "timeutils/unixtime.h"
+#include <criterion/criterion.h>
+#include "fake-time.h"
 
-typedef struct _LogMessageSerializationState
+Test(unixtime, unix_time_initialization)
 {
-  guint8 version;
-  SerializeArchive *sa;
-  LogMessage *msg;
-  NVTable *nvtable;
-  guint8 nvtable_flags;
-  guint8 handle_changed;
-  NVHandle *updated_sdata_handles;
-  NVIndexEntry *updated_index;
-  const UnixTime *processed;
-} LogMessageSerializationState;
+  UnixTime ut = UNIX_TIME_INIT;
 
-#endif
+  cr_assert(!unix_time_is_set(&ut));
+
+  /* Thu Dec 19 22:25:44 CET 2019 */
+  fake_time(1576790744);
+  unix_time_set_now(&ut);
+
+  cr_assert(unix_time_is_set(&ut));
+  cr_expect(ut.ut_sec == 1576790744);
+  cr_expect(ut.ut_usec == 123000);
+  cr_expect(ut.ut_gmtoff == 3600);
+
+  unix_time_unset(&ut);
+  cr_assert(!unix_time_is_set(&ut));
+}
+
+static void
+setup(void)
+{
+  setenv("TZ", "CET", TRUE);
+  tzset();
+}
+
+static void
+teardown(void)
+{
+}
+
+TestSuite(unixtime, .init = setup, .fini = teardown);

@@ -25,36 +25,36 @@
 #include "timestamp-serialize.h"
 
 static gboolean
-_write_log_stamp(SerializeArchive *sa, const LogStamp *stamp)
+_write_log_stamp(SerializeArchive *sa, const UnixTime *stamp)
 {
-  return serialize_write_uint64(sa, stamp->tv_sec) &&
-         serialize_write_uint32(sa, stamp->tv_usec) &&
-         serialize_write_uint32(sa, stamp->zone_offset);
+  return serialize_write_uint64(sa, stamp->ut_sec) &&
+         serialize_write_uint32(sa, stamp->ut_usec) &&
+         serialize_write_uint32(sa, stamp->ut_gmtoff);
 }
 
 static gboolean
-_read_log_stamp(SerializeArchive *sa, LogStamp *stamp)
+_read_log_stamp(SerializeArchive *sa, UnixTime *stamp)
 {
   guint64 val64;
   guint32 val;
 
   if (!serialize_read_uint64(sa, &val64))
     return FALSE;
-  stamp->tv_sec = (gint64) val64;
+  stamp->ut_sec = (gint64) val64;
 
   if (!serialize_read_uint32(sa, &val))
     return FALSE;
-  stamp->tv_usec = val;
+  stamp->ut_usec = val;
 
   if (!serialize_read_uint32(sa, &val))
     return FALSE;
-  stamp->zone_offset = (gint) val;
+  stamp->ut_gmtoff = (gint) val;
   return TRUE;
 }
 
 
 gboolean
-timestamp_serialize(SerializeArchive *sa, LogStamp *timestamps)
+timestamp_serialize(SerializeArchive *sa, UnixTime *timestamps)
 {
   return _write_log_stamp(sa, &timestamps[LM_TS_STAMP]) &&
          _write_log_stamp(sa, &timestamps[LM_TS_RECVD]) &&
@@ -62,14 +62,14 @@ timestamp_serialize(SerializeArchive *sa, LogStamp *timestamps)
 }
 
 gboolean
-timestamp_deserialize_legacy(SerializeArchive *sa, LogStamp *timestamps)
+timestamp_deserialize_legacy(SerializeArchive *sa, UnixTime *timestamps)
 {
   return (_read_log_stamp(sa, &timestamps[LM_TS_STAMP]) &&
           _read_log_stamp(sa, &timestamps[LM_TS_RECVD]));
 }
 
 gboolean
-timestamp_deserialize(SerializeArchive *sa, LogStamp *timestamps)
+timestamp_deserialize(SerializeArchive *sa, UnixTime *timestamps)
 {
   return (timestamp_deserialize_legacy(sa, timestamps) &&
           _read_log_stamp(sa, &timestamps[LM_TS_PROCESSED]));

@@ -29,7 +29,6 @@
 #include "template/templates.h"
 #include "logqueue.h"
 #include "logproto/logproto-client.h"
-#include "timeutils/timeutils.h"
 
 /* writer constructor flags */
 #define LW_DETECT_EOF        0x0001
