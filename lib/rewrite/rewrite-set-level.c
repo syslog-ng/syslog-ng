@@ -25,6 +25,7 @@
 #include "rewrite-set-level.h"
 #include "template/templates.h"
 #include "syslog-names.h"
+#include "scratch-buffers.h"
 
 #include <stdlib.h>
 
@@ -82,7 +83,8 @@ _set_msg_level(LogMessage *msg, const guint16 level)
 static void
 log_rewrite_set_level_process(LogRewrite *s, LogMessage **pmsg, const LogPathOptions *path_options)
 {
-  GString *result = g_string_sized_new(64);
+  ScratchBuffersMarker marker;
+  GString *result = scratch_buffers_alloc_and_mark(&marker);
   LogRewriteSetLevel *self = (LogRewriteSetLevel *) s;
 
   log_msg_make_writable(pmsg, path_options);
@@ -99,7 +101,7 @@ log_rewrite_set_level_process(LogRewrite *s, LogMessage **pmsg, const LogPathOpt
   _set_msg_level(*pmsg, _convert_level(result));
 
 error:
-  g_string_free(result, TRUE);
+  scratch_buffers_reclaim_marked(marker);
 }
 
 static LogPipe *
