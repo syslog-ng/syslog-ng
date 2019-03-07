@@ -1274,13 +1274,13 @@ msg_format_option
 	  {
 	    if (last_msg_format_options->default_pri == 0xFFFF)
 	      last_msg_format_options->default_pri = LOG_USER;
-	    last_msg_format_options->default_pri = (last_msg_format_options->default_pri & ~7) | $3;
+	    last_msg_format_options->default_pri = (last_msg_format_options->default_pri & ~LOG_PRIMASK) | $3;
           }
 	| KW_DEFAULT_FACILITY '(' facility_string ')'
 	  {
 	    if (last_msg_format_options->default_pri == 0xFFFF)
 	      last_msg_format_options->default_pri = LOG_NOTICE;
-	    last_msg_format_options->default_pri = (last_msg_format_options->default_pri & 7) | $3;
+	    last_msg_format_options->default_pri = (last_msg_format_options->default_pri & LOG_PRIMASK) | $3;
           }
         ;
 
