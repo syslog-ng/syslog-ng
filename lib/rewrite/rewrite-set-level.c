@@ -24,6 +24,7 @@
 
 #include "rewrite-set-level.h"
 #include "template/templates.h"
+#include "syslog-names.h"
 
 #include <stdlib.h>
 
@@ -53,9 +54,19 @@ _convert_level_as_number(GString *level_text)
 }
 
 static gint
+_convert_level_as_text(GString *level_text)
+{
+  return syslog_name_lookup_level_by_name(level_text->str);
+}
+
+static gint
 _convert_level(GString *level_text)
 {
   gint level = _convert_level_as_number(level_text);
+  if (level > 0)
+    return level;
+
+  level = _convert_level_as_text(level_text);
   if (level > 0)
     return level;
 
