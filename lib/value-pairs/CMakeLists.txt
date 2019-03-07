@@ -2,6 +2,7 @@ set(VALUE_PAIRS_HEADERS
     value-pairs/value-pairs.h
     value-pairs/transforms.h
     value-pairs/cmdline.h
+    value-pairs/internals.h
     value-pairs/evttag.h
     PARENT_SCOPE)
 

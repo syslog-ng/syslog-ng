@@ -22,6 +22,7 @@
  *
  */
 #include "value-pairs/cmdline.h"
+#include "value-pairs/internals.h"
 
 #include <string.h>
 #include <stdlib.h>

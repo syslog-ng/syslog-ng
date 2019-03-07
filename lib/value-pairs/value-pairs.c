@@ -22,6 +22,7 @@
  *
  */
 
+#include "value-pairs/internals.h"
 #include "value-pairs/value-pairs.h"
 #include "logmsg/logmsg.h"
 #include "template/templates.h"

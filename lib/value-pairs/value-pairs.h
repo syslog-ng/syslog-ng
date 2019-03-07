@@ -33,19 +33,6 @@
 #include "atomic.h"
 
 typedef struct _ValuePairs ValuePairs;
-struct _ValuePairs
-{
-  GAtomicCounter ref_cnt;
-  GPtrArray *builtins;
-  GPtrArray *patterns;
-  GPtrArray *vpairs;
-  GPtrArray *transforms;
-
-  gboolean omit_empty_values;
-
-  /* guint32 as CfgFlagHandler only supports 32 bit integers */
-  guint32 scopes;
-};
 
 typedef gboolean
 (*VPForeachFunc) (const gchar *name, TypeHint type, const gchar *value,
