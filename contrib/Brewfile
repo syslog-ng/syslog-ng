@@ -14,8 +14,6 @@ brew "rabbitmq-c"
 brew "mongo-c-driver"
 brew "openssl"
 # brew "pcre"
-
-brew "gradle"
 brew "python", link: false
 brew "python@2", link: true, force: true
 brew "hiredis"
