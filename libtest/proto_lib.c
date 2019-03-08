@@ -154,8 +154,6 @@ init_proto_tests(void)
 {
   init_and_load_syslogformat_module();
   log_proto_server_options_defaults(&proto_server_options);
-  log_proto_server_options_init(&proto_server_options, configuration);
-
 }
 
 void
