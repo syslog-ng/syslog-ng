@@ -1107,7 +1107,7 @@ cfg_lexer_init(CfgLexer *self, GlobalConfig *cfg)
  * using the configuration instance.  The lexer and the configuration stuff
  * should be one-way dependent, right now it is a circular dependency. */
 CfgLexer *
-cfg_lexer_new(GlobalConfig *cfg, FILE *file, const gchar *filename, GString *preprocess_output)
+cfg_lexer_new(GlobalConfig *cfg, const gchar *filename, GString *buffer, GString *preprocess_output)
 {
   CfgLexer *self;
   CfgIncludeLevel *level;
@@ -1117,9 +1117,15 @@ cfg_lexer_new(GlobalConfig *cfg, FILE *file, const gchar *filename, GString *pre
   self->preprocess_output = preprocess_output;
 
   level = &self->include_stack[0];
-  level->include_type = CFGI_FILE;
+  level->include_type = CFGI_BUFFER;
+  level->buffer.original_content = g_strdup(buffer->str);
+  level->buffer.content = g_malloc(buffer->len+2);
+  memcpy(level->buffer.content, buffer->str, buffer->len);
+  level->buffer.content[buffer->len] = 0;
+  level->buffer.content[buffer->len + 1] = 0;
+  level->buffer.content_length = buffer->len + 2;
   level->name = g_strdup(filename);
-  level->yybuf = _cfg_lexer__create_buffer(file, YY_BUF_SIZE, self->state);
+  level->yybuf = _cfg_lexer__scan_buffer(level->buffer.content, level->buffer.content_length, self->state);
   _cfg_lexer__switch_to_buffer(level->yybuf, self->state);
 
   return self;
