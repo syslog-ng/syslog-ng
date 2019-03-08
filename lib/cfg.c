@@ -558,34 +558,28 @@ cfg_read_config(GlobalConfig *self, const gchar *fname, gchar *preprocess_into)
 
   self->filename = fname;
 
-  if ((cfg_file = fopen(fname, "r")) != NULL)
-    {
-      CfgLexer *lexer;
-      self->preprocess_config = g_string_sized_new(8192);
-      self->original_config = _load_file_into_string(fname);
-
-      lexer = cfg_lexer_new(self, cfg_file, fname, self->preprocess_config);
-      res = cfg_run_parser(self, lexer, &main_parser, (gpointer *) &self, NULL);
-      fclose(cfg_file);
-      if (preprocess_into)
-        {
-          cfg_dump_processed_config(self->preprocess_config, preprocess_into);
-        }
-
-      if (res)
-        {
-          /* successfully parsed */
-          return TRUE;
-        }
-    }
-  else
+  if ((cfg_file = fopen(fname, "r")) == NULL)
     {
       msg_error("Error opening configuration file",
                 evt_tag_str(EVT_TAG_FILENAME, fname),
                 evt_tag_error(EVT_TAG_OSERROR));
+
+      return FALSE;
     }
 
-  return FALSE;
+  CfgLexer *lexer;
+  self->preprocess_config = g_string_sized_new(8192);
+  self->original_config = _load_file_into_string(fname);
+
+  lexer = cfg_lexer_new(self, cfg_file, fname, self->preprocess_config);
+  res = cfg_run_parser(self, lexer, &main_parser, (gpointer *) &self, NULL);
+  fclose(cfg_file);
+  if (preprocess_into)
+    {
+      cfg_dump_processed_config(self->preprocess_config, preprocess_into);
+    }
+
+  return res;
 }
 
 void
