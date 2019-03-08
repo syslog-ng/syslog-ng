@@ -541,8 +541,14 @@ _load_file_into_string(const gchar *fname)
   gchar *buff;
   GString *content = g_string_new("");
 
-  if (!g_file_get_contents(fname, &buff, NULL, NULL))
+  GError *error = NULL;
+  if (!g_file_get_contents(fname, &buff, NULL, &error))
     {
+      msg_error("Error opening configuration file",
+                evt_tag_str(EVT_TAG_FILENAME, fname),
+                evt_tag_str(EVT_TAG_OSERROR, error->message));
+
+      g_error_free(error);
       return content;
     }
 
@@ -562,10 +568,6 @@ cfg_read_config(GlobalConfig *self, const gchar *fname, gchar *preprocess_into)
 
   if ((cfg_file = fopen(fname, "r")) == NULL)
     {
-      msg_error("Error opening configuration file",
-                evt_tag_str(EVT_TAG_FILENAME, fname),
-                evt_tag_error(EVT_TAG_OSERROR));
-
       return FALSE;
     }
 
