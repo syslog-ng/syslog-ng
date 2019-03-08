@@ -549,7 +549,8 @@ _load_file_into_string(const gchar *fname)
                 evt_tag_str(EVT_TAG_OSERROR, error->message));
 
       g_error_free(error);
-      return content;
+      g_string_free(content, TRUE);
+      return NULL;
     }
 
   g_string_append(content, buff);
@@ -574,6 +575,10 @@ cfg_read_config(GlobalConfig *self, const gchar *fname, gchar *preprocess_into)
   CfgLexer *lexer;
   self->preprocess_config = g_string_sized_new(8192);
   self->original_config = _load_file_into_string(fname);
+  if (!self->original_config)
+    {
+      return FALSE;
+    }
 
   lexer = cfg_lexer_new(self, fname, self->original_config, self->preprocess_config);
   res = cfg_run_parser(self, lexer, &main_parser, (gpointer *) &self, NULL);
