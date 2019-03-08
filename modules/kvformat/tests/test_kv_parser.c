@@ -22,6 +22,7 @@
 #include "kv-parser.h"
 #include "apphook.h"
 #include "msg_parse_lib.h"
+#include "scratch-buffers.h"
 
 #include <criterion/criterion.h>
 
@@ -70,6 +71,7 @@ teardown(void)
 {
   log_pipe_deinit((LogPipe *)kv_parser);
   log_pipe_unref(&kv_parser->super);
+  scratch_buffers_explicit_gc();
   app_shutdown();
 }
 
