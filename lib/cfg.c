@@ -562,17 +562,10 @@ _load_file_into_string(const gchar *fname)
 gboolean
 cfg_read_config(GlobalConfig *self, const gchar *fname, gchar *preprocess_into)
 {
-  FILE *cfg_file;
   gint res;
+  CfgLexer *lexer;
 
   self->filename = fname;
-
-  if ((cfg_file = fopen(fname, "r")) == NULL)
-    {
-      return FALSE;
-    }
-
-  CfgLexer *lexer;
   self->preprocess_config = g_string_sized_new(8192);
   self->original_config = _load_file_into_string(fname);
   if (!self->original_config)
@@ -582,7 +575,7 @@ cfg_read_config(GlobalConfig *self, const gchar *fname, gchar *preprocess_into)
 
   lexer = cfg_lexer_new(self, fname, self->original_config, self->preprocess_config);
   res = cfg_run_parser(self, lexer, &main_parser, (gpointer *) &self, NULL);
-  fclose(cfg_file);
+
   if (preprocess_into)
     {
       cfg_dump_processed_config(self->preprocess_config, preprocess_into);
