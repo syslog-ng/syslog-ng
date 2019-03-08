@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Balabit
+ * Copyright (c) 2015-2019 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -18,36 +18,12 @@
  * OpenSSL libraries as published by the OpenSSL project. See the file
  * COPYING for details.
  */
-#include "testutils.h"
+
 #include "kv-parser.h"
 #include "apphook.h"
 #include "msg_parse_lib.h"
 
-#define kv_parser_testcase_begin(func, args)             \
-  do                                                            \
-    {                                                           \
-      testcase_begin("%s(%s)", func, args);                     \
-      kv_parser =                                               \
-        kv_parser_new(NULL);        \
-      log_pipe_init((LogPipe*)kv_parser);                 \
-    }                                                           \
-  while (0)
-
-#define kv_parser_testcase_end()                           \
-  do                                                            \
-    {                                                           \
-      log_pipe_deinit((LogPipe*)kv_parser);                     \
-      log_pipe_unref(&kv_parser->super);                  \
-      testcase_end();                                           \
-    }                                                           \
-  while (0)
-
-#define KV_PARSER_TESTCASE(x, ...) \
-  do {                                                          \
-      kv_parser_testcase_begin(#x, #__VA_ARGS__);     \
-      x(__VA_ARGS__);                                           \
-      kv_parser_testcase_end();                               \
-  } while(0)
+#include <criterion/criterion.h>
 
 LogParser *kv_parser;
 
@@ -77,12 +53,28 @@ parse_kv_into_log_message(const gchar *kv)
   LogMessage *msg;
 
   msg = parse_kv_into_log_message_no_check(kv);
-  assert_not_null(msg, "expected kv-parser success and it returned failure, kv=%s", kv);
+  cr_assert_not_null(msg, "expected kv-parser success and it returned failure, kv=%s", kv);
   return msg;
 }
 
-static void
-test_kv_parser_basics(void)
+void
+setup(void)
+{
+  app_startup();
+  kv_parser = kv_parser_new(NULL);
+  log_pipe_init((LogPipe *)kv_parser);
+}
+
+void
+teardown(void)
+{
+  log_pipe_deinit((LogPipe *)kv_parser);
+  log_pipe_unref(&kv_parser->super);
+  app_shutdown();
+}
+
+
+Test(kv_parser, test_basics)
 {
   LogMessage *msg;
 
@@ -96,8 +88,7 @@ test_kv_parser_basics(void)
   log_msg_unref(msg);
 }
 
-static void
-test_kv_parser_uses_template_to_parse_input(void)
+Test(kv_parser, test_using_template_to_parse_input)
 {
   LogMessage *msg;
   LogTemplate *template;
@@ -110,8 +101,7 @@ test_kv_parser_uses_template_to_parse_input(void)
   log_msg_unref(msg);
 }
 
-static void
-test_kv_parser_audit(void)
+Test(kv_parser, test_audit)
 {
   LogMessage *msg;
 
@@ -139,8 +129,7 @@ test_kv_parser_audit(void)
   log_msg_unref(msg);
 }
 
-static void
-test_kv_parser_extract_stray_words(void)
+Test(kv_parser, test_extract_stray_words)
 {
   LogMessage *msg;
 
@@ -166,21 +155,4 @@ test_kv_parser_extract_stray_words(void)
 
 }
 
-static void
-test_kv_parser(void)
-{
-  KV_PARSER_TESTCASE(test_kv_parser_basics);
-  KV_PARSER_TESTCASE(test_kv_parser_audit);
-  KV_PARSER_TESTCASE(test_kv_parser_uses_template_to_parse_input);
-  KV_PARSER_TESTCASE(test_kv_parser_extract_stray_words);
-}
-
-int
-main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
-{
-  app_startup();
-
-  test_kv_parser();
-  app_shutdown();
-  return 0;
-}
+TestSuite(kv_parser, .init = setup, .fini = teardown);
