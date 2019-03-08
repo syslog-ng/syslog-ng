@@ -22,6 +22,7 @@
 #include "scanner/kv-scanner/kv-scanner.h"
 #include "linux-audit-parser.h"
 #include "apphook.h"
+#include "scratch-buffers.h"
 
 #include <criterion/criterion.h>
 
@@ -81,6 +82,7 @@ setup(void)
 void
 teardown(void)
 {
+  scratch_buffers_explicit_gc();
   app_shutdown();
 }
 
