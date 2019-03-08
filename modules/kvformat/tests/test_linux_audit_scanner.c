@@ -18,6 +18,7 @@
  * OpenSSL libraries as published by the OpenSSL project. See the file
  * COPYING for details.
  */
+
 #include "scanner/kv-scanner/kv-scanner.h"
 #include "linux-audit-parser.h"
 #include "apphook.h"
@@ -83,18 +84,19 @@ teardown(void)
   app_shutdown();
 }
 
-Test(linux_audit_scanner, test_audit_style_hex_dump_is_decoded)
+
+Test(linux_audit_scanner, test_audit_style_hex_dump_is_not_decoded, .description = "not decoded as no characters to be"
+     "escaped, kernel only escapes stuff below 0x21, above 0x7e and the quote character")
 {
   kv_scanner_input(&kv_scanner, "proctitle=41607E");
   assert_next_kv_is("proctitle", "41607E");
   assert_no_more_tokens();
+}
 
+Test(linux_audit_scanner, test_audit_style_hex_dump_is_decoded)
+{
   kv_scanner_input(&kv_scanner, "proctitle=412042");
   assert_next_kv_is("proctitle", "A B");
-  assert_no_more_tokens();
-
-  kv_scanner_input(&kv_scanner, "proctitle=41204");
-  assert_next_kv_is("proctitle", "41204");
   assert_no_more_tokens();
 
   kv_scanner_input(&kv_scanner, "proctitle=C3A17276C3AD7A74C5B172C59174C3BC6BC3B67266C3BA72C3B367C3A970");
@@ -107,6 +109,13 @@ Test(linux_audit_scanner, test_audit_style_hex_dump_is_decoded)
 
   kv_scanner_input(&kv_scanner, "a1=2F62696E2F7368202D6C");
   assert_next_kv_is("a1", "/bin/sh -l");
+  assert_no_more_tokens();
+}
+
+Test(linux_audit_scanner, test_audit_style_hex_dump_is_not_decoded_odd, .description = "odd number of chars")
+{
+  kv_scanner_input(&kv_scanner, "proctitle=41204");
+  assert_next_kv_is("proctitle", "41204");
   assert_no_more_tokens();
 }
 
