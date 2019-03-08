@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 Balabit
+ * Copyright (c) 2012-2019 Balabit
  * Copyright (c) 2012-2013 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -22,7 +22,6 @@
  *
  */
 
-#include "test_logproto.h"
 #include "mock-transport.h"
 #include "proto_lib.h"
 #include "msg_parse_lib.h"
@@ -30,25 +29,37 @@
 #include "logproto/logproto-framed-server.h"
 #include "logproto/logproto-dgram-server.h"
 #include "logproto/logproto-record-server.h"
-
 #include "apphook.h"
 
-static void
-test_log_proto_base(void)
-{
-  LogProtoServer *proto;
+#include <criterion/criterion.h>
 
-  assert_gint(log_proto_get_char_size_for_fixed_encoding("iso-8859-2"), 1, NULL);
-  assert_gint(log_proto_get_char_size_for_fixed_encoding("ucs-4"), 4, NULL);
+void
+setup(void)
+{
+  app_startup();
+  init_proto_tests();
+}
+
+void
+teardown(void)
+{
+  deinit_proto_tests();
+  app_shutdown();
+}
+
+Test(log_proto, test_base)
+{
+  cr_assert_eq(log_proto_get_char_size_for_fixed_encoding("iso-8859-2"), 1);
+  cr_assert_eq(log_proto_get_char_size_for_fixed_encoding("ucs-4"), 4);
 
   log_proto_server_options_set_encoding(&proto_server_options, "ucs-4");
-  proto = log_proto_binary_record_server_new(
-            log_transport_mock_records_new(
-              /* ucs4, terminated by record size */
-              "\x00\x00\x00\xe1\x00\x00\x00\x72\x00\x00\x00\x76\x00\x00\x00\xed"      /* |...á...r...v...í| */
-              "\x00\x00\x00\x7a\x00\x00\x00\x74\x00\x00\x01\x71\x00\x00\x00\x72", 32, /* |...z...t...ű...r|  */
-              LTM_EOF),
-            get_inited_proto_server_options(), 32);
+  LogProtoServer *proto = log_proto_binary_record_server_new(
+                            log_transport_mock_records_new(
+                              /* ucs4, terminated by record size */
+                              "\x00\x00\x00\xe1\x00\x00\x00\x72\x00\x00\x00\x76\x00\x00\x00\xed"      /* |...á...r...v...í| */
+                              "\x00\x00\x00\x7a\x00\x00\x00\x74\x00\x00\x01\x71\x00\x00\x00\x72", 32, /* |...z...t...ű...r|  */
+                              LTM_EOF),
+                            get_inited_proto_server_options(), 32);
 
   /* check if error state is not forgotten unless reset_error is called */
   proto->status = LPS_ERROR;
@@ -63,8 +74,7 @@ test_log_proto_base(void)
   log_proto_server_options_destroy(&proto_server_options);
 }
 
-static void
-test_log_proto(void)
+Test(log_proto, test_log_proto, .disabled = true)
 {
   /*
    * Things that are yet to be done:
@@ -87,26 +97,6 @@ test_log_proto(void)
    * log_proto_file_writer_new
    * log_proto_framed_client_new
    */
-  test_log_proto_server_options();
-  test_log_proto_base();
-  test_log_proto_record_server();
-  test_log_proto_text_server();
-  test_log_proto_indented_multiline_server();
-  test_log_proto_regexp_multiline_server();
-  test_log_proto_dgram_server();
-  test_log_proto_framed_server();
 }
 
-int
-main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
-{
-  app_startup();
-
-  init_proto_tests();
-
-  test_log_proto();
-
-  deinit_proto_tests();
-  app_shutdown();
-  return 0;
-}
+TestSuite(log_proto, .init = setup, .fini = teardown);

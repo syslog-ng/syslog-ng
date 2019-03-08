@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 Balabit
+ * Copyright (c) 2012-2019 Balabit
  * Copyright (c) 2012-2013 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -27,9 +27,8 @@
 #include "msg_parse_lib.h"
 #include "logproto/logproto-indented-multiline-server.h"
 
-/****************************************************************************************
- * LogProtoIMultiLineServer
- ****************************************************************************************/
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
 
 static void
 test_proper_multiline(gboolean input_is_stream)
@@ -56,6 +55,12 @@ test_proper_multiline(gboolean input_is_stream)
   log_proto_server_free(proto);
 }
 
+Test(log_proto, test_proper_multiline)
+{
+  test_proper_multiline(TRUE);
+  test_proper_multiline(FALSE);
+}
+
 static void
 test_line_without_continuation(gboolean input_is_stream)
 {
@@ -80,6 +85,12 @@ test_line_without_continuation(gboolean input_is_stream)
   log_proto_server_free(proto);
 }
 
+Test(log_proto, test_line_without_continuation)
+{
+  test_line_without_continuation(TRUE);
+  test_line_without_continuation(FALSE);
+}
+
 static void
 test_input_starts_with_continuation(gboolean input_is_stream)
 {
@@ -102,6 +113,12 @@ test_input_starts_with_continuation(gboolean input_is_stream)
   assert_proto_server_fetch(proto, "01234567", -1);
 
   log_proto_server_free(proto);
+}
+
+Test(log_proto, test_input_starts_with_continuation)
+{
+  test_input_starts_with_continuation(TRUE);
+  test_input_starts_with_continuation(FALSE);
 }
 
 static void
@@ -129,13 +146,8 @@ test_multiline_at_eof(gboolean input_is_stream)
   log_proto_server_free(proto);
 }
 
-void
-test_log_proto_indented_multiline_server(void)
+Test(log_proto, test_multiline_at_eof)
 {
-  PROTO_TESTCASE(test_proper_multiline, FALSE);
-  PROTO_TESTCASE(test_proper_multiline, TRUE);
-  PROTO_TESTCASE(test_line_without_continuation, FALSE);
-  PROTO_TESTCASE(test_input_starts_with_continuation, TRUE);
-  PROTO_TESTCASE(test_multiline_at_eof, FALSE);
-  PROTO_TESTCASE(test_multiline_at_eof, TRUE);
+  test_multiline_at_eof(TRUE);
+  test_multiline_at_eof(FALSE);
 }

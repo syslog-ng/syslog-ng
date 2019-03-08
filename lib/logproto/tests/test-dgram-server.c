@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 Balabit
+ * Copyright (c) 2012-2019 Balabit
  * Copyright (c) 2012-2013 Balázs Scheidler <balazs.scheidler@balabit.com>
  *
  * This library is free software; you can redistribute it and/or
@@ -27,12 +27,9 @@
 #include "msg_parse_lib.h"
 #include "logproto/logproto-dgram-server.h"
 
-/****************************************************************************************
- * LogProtoDGramServer
- ****************************************************************************************/
+#include <criterion/criterion.h>
 
-static void
-test_log_proto_dgram_server_no_encoding(void)
+Test(log_proto, test_log_proto_dgram_server_no_encoding)
 {
   LogProtoServer *proto;
 
@@ -77,8 +74,7 @@ test_log_proto_dgram_server_no_encoding(void)
 }
 
 
-static void
-test_log_proto_dgram_server_ucs4(void)
+Test(log_proto, test_log_proto_dgram_server_ucs4)
 {
   LogProtoServer *proto;
 
@@ -101,8 +97,7 @@ test_log_proto_dgram_server_ucs4(void)
   log_proto_server_free(proto);
 }
 
-static void
-test_log_proto_dgram_server_invalid_ucs4(void)
+Test(log_proto, test_log_proto_dgram_server_invalid_ucs4)
 {
   LogProtoServer *proto;
 
@@ -121,8 +116,7 @@ test_log_proto_dgram_server_invalid_ucs4(void)
   log_proto_server_free(proto);
 }
 
-static void
-test_log_proto_dgram_server_iso_8859_2(void)
+Test(log_proto, test_log_proto_dgram_server_iso_8859_2)
 {
   LogProtoServer *proto;
 
@@ -143,8 +137,7 @@ test_log_proto_dgram_server_iso_8859_2(void)
   log_proto_server_free(proto);
 }
 
-static void
-test_log_proto_dgram_server_eof_handling(void)
+Test(log_proto, test_log_proto_dgram_server_eof_handling)
 {
   LogProtoServer *proto;
 
@@ -161,14 +154,4 @@ test_log_proto_dgram_server_eof_handling(void)
   assert_proto_server_fetch_ignored_eof(proto);
   assert_proto_server_fetch_ignored_eof(proto);
   log_proto_server_free(proto);
-}
-
-void
-test_log_proto_dgram_server(void)
-{
-  PROTO_TESTCASE(test_log_proto_dgram_server_no_encoding);
-  PROTO_TESTCASE(test_log_proto_dgram_server_ucs4);
-  PROTO_TESTCASE(test_log_proto_dgram_server_invalid_ucs4);
-  PROTO_TESTCASE(test_log_proto_dgram_server_iso_8859_2);
-  PROTO_TESTCASE(test_log_proto_dgram_server_eof_handling);
 }
