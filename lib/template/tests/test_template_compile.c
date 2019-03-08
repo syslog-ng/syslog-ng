@@ -26,7 +26,9 @@
 #include "template/templates.c"
 #include "template/simple-function.h"
 #include "logmsg/logmsg.h"
-#include "testutils.h"
+#include "apphook.h"
+#include "grab-logging.h"
+#include <criterion/criterion.h>
 #include "cfg.h"
 #include "plugin.h"
 
@@ -41,16 +43,16 @@ Plugin hello_plugin = TEMPLATE_FUNCTION_PLUGIN(hello, "hello");
 
 
 #define assert_common_element(expected) \
-    assert_string(current_elem->text, expected.text, ASSERTION_ERROR("Bad compiled template text")); \
+    cr_assert_str_eq(current_elem->text, expected.text, "%s", "Bad compiled template text"); \
     if (expected.default_value) \
       { \
-        assert_string(current_elem->default_value, expected.default_value, ASSERTION_ERROR("Bad compiled template default value")); \
+        cr_assert_str_eq(current_elem->default_value, expected.default_value, "%s", "Bad compiled template default value"); \
       } \
     else \
       { \
-        assert_gpointer(current_elem->default_value, NULL, ASSERTION_ERROR("Bad compiled template default value")); \
+        cr_assert_null(current_elem->default_value, "%s", "Bad compiled template default value"); \
       } \
-    assert_gint(current_elem->msg_ref, expected.msg_ref, ASSERTION_ERROR("Bad compiled template msg_ref"));
+    cr_assert_eq(current_elem->msg_ref, expected.msg_ref, "%s", "Bad compiled template msg_ref");
 
 #define fill_expected_template_element(element, text, default_value, spec, type, msg_ref)  {\
     element.text; \
@@ -73,35 +75,14 @@ Plugin hello_plugin = TEMPLATE_FUNCTION_PLUGIN(hello, "hello");
                                                                                                                                                                 \
     fill_expected_template_element(expected_elem, text = text_mut, \
                                    default_value = default_value_mut, spec, type, msg_ref); \
-    assert_gint((current_elem->type), (expected_elem.type), ASSERTION_ERROR("Bad compiled template type"));               \
+    cr_assert_eq((current_elem->type), (expected_elem.type), "%s", "Bad compiled template type");               \
     assert_common_element(expected_elem);                               \
-    if ((expected_elem.type) == LTE_MACRO) assert_gint(current_elem->macro, expected_elem.macro, ASSERTION_ERROR("Bad compiled template macro"));     \
-    if ((expected_elem.type) == LTE_VALUE) assert_gint(current_elem->value_handle, expected_elem.value_handle, ASSERTION_ERROR("Bad compiled template macro")); \
-    if ((expected_elem.type) == LTE_FUNC) assert_gpointer(current_elem->func.ops, expected_elem.func.ops, ASSERTION_ERROR("Bad compiled template macro"));  \
+    if ((expected_elem.type) == LTE_MACRO) cr_assert_eq(current_elem->macro, expected_elem.macro, "%s", "Bad compiled template macro");     \
+    if ((expected_elem.type) == LTE_VALUE) cr_assert_eq(current_elem->value_handle, expected_elem.value_handle, "%s", "Bad compiled template macro"); \
+    if ((expected_elem.type) == LTE_FUNC) cr_assert_eq(current_elem->func.ops, expected_elem.func.ops, "%s", "Bad compiled template macro");  \
     g_free(text_mut); \
     g_free(default_value_mut); \
 } while (0)
-
-
-#define TEMPLATE_TESTCASE(x, ...) do { template_testcase_begin(#x, #__VA_ARGS__); x(__VA_ARGS__); template_testcase_end(); } while(0)
-
-#define template_testcase_begin(func, args)                    \
-  do                                                            \
-    {                                                           \
-      testcase_begin("%s(%s)", func, args);                     \
-      template = log_template_new(configuration, NULL);   \
-      start_grabbing_messages();        \
-    }                                                           \
-  while (0)
-
-#define template_testcase_end()                                \
-  do                                                            \
-    {                                                           \
-      log_template_unref(template);       \
-      template = NULL;            \
-      testcase_end();                                           \
-    }                                                           \
-  while (0)
 
 
 static LogTemplate *template;
@@ -133,8 +114,8 @@ assert_template_compile(const gchar *template_string)
 {
   GError *error = NULL;
 
-  assert_true(log_template_compile(template, template_string, &error), ASSERTION_ERROR("Can't compile template"));
-  assert_string(template->template, template_string, ASSERTION_ERROR("Bad stored template"));
+  cr_assert(log_template_compile(template, template_string, &error), "%s", "Can't compile template");
+  cr_assert_str_eq(template->template, template_string, "%s", "Bad stored template");
   select_first_element();
 }
 
@@ -143,8 +124,8 @@ assert_failed_template_compile(const gchar *template_string, const gchar *expect
 {
   GError *error = NULL;
 
-  assert_false(log_template_compile(template, template_string, &error), ASSERTION_ERROR("Can compile bad template"));
-  assert_string(error->message, expected_error_message, ASSERTION_ERROR("Bad error message"));
+  cr_assert_not(log_template_compile(template, template_string, &error), "%s", "Can compile bad template");
+  cr_assert_str_eq(error->message, expected_error_message, "%s", "Bad error message");
 
   g_clear_error(&error);
   select_first_element();
@@ -156,15 +137,14 @@ get_template_function_ops(const gchar *name)
   Plugin *plugin;
 
   plugin = cfg_find_plugin(configuration, LL_CONTEXT_TEMPLATE_FUNC, name);
-  assert_not_null(plugin, "Template function %s is not found", name);
+  cr_assert_not_null(plugin, "Template function %s is not found", name);
 
   if (plugin)
     return plugin->construct(plugin);
   return NULL;
 }
 
-static void
-test_simple_string_literal(void)
+Test(template_compile, test_simple_string_literal)
 {
   const gchar *text_ = "Test String";
 
@@ -172,15 +152,13 @@ test_simple_string_literal(void)
   assert_compiled_template(text = text_, default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
 }
 
-static void
-test_simple_macro(void)
+Test(template_compile, test_simple_macro)
 {
   assert_template_compile("${MESSAGE}");
   assert_compiled_template(text = "", default_value = NULL, macro = M_MESSAGE, type = LTE_MACRO, msg_ref = 0);
 }
 
-static void
-test_macro_and_text(void)
+Test(template_compile, test_macro_and_text)
 {
 
   assert_template_compile("${MESSAGE}test value");
@@ -190,15 +168,13 @@ test_macro_and_text(void)
   assert_compiled_template(text = "test value", default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
 }
 
-static void
-test_macro_without_braces(void)
+Test(template_compile, test_macro_without_braces)
 {
   assert_template_compile("$MESSAGE");
   assert_compiled_template(text = "", default_value = NULL, macro = M_MESSAGE, type = LTE_MACRO, msg_ref = 0);
 }
 
-static void
-test_macro_name_without_braces_are_terminated_with_non_identifier_characters(void)
+Test(template_compile, test_macro_name_without_braces_are_terminated_with_non_identifier_characters)
 {
   /* macro names consist of [A-Z0-9_] */
   assert_template_compile("$MESSAGE test value");
@@ -208,15 +184,13 @@ test_macro_name_without_braces_are_terminated_with_non_identifier_characters(voi
   assert_compiled_template(text = " test value", default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
 }
 
-static void
-test_macro_without_at_records_that_no_msgref_was_present_by_msgref_zero(void)
+Test(template_compile, test_macro_without_at_records_that_no_msgref_was_present_by_msgref_zero)
 {
   assert_template_compile("${MESSAGE}");
   assert_compiled_template(text = "", default_value = NULL, macro = M_MESSAGE, type = LTE_MACRO, msg_ref = 0);
 }
 
-static void
-test_macro_with_at_references_a_single_msg_in_the_context_stack_by_setting_msgref(void)
+Test(template_compile, test_macro_with_at_references_a_single_msg_in_the_context_stack_by_setting_msgref)
 {
   assert_template_compile("${MESSAGE}@0");
   assert_compiled_template(text = "", default_value = NULL, macro = M_MESSAGE, type = LTE_MACRO, msg_ref = 1);
@@ -226,8 +200,7 @@ test_macro_with_at_references_a_single_msg_in_the_context_stack_by_setting_msgre
 
 }
 
-static void
-test_macro_with_invalid_msgref_are_recognized_as_the_top_element_in_the_stack(void)
+Test(template_compile, test_macro_with_invalid_msgref_are_recognized_as_the_top_element_in_the_stack)
 {
   assert_template_compile("${MESSAGE}@gmail.com");
   assert_compiled_template(text = "", default_value = NULL, macro = M_MESSAGE, type = LTE_MACRO, msg_ref = 0);
@@ -236,8 +209,7 @@ test_macro_with_invalid_msgref_are_recognized_as_the_top_element_in_the_stack(vo
   assert_compiled_template(text = "@gmail.com", default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
 }
 
-static void
-test_dollar_prefixed_with_backslash_is_a_literal_dollar(void)
+Test(template_compile, test_dollar_prefixed_with_backslash_is_a_literal_dollar)
 {
   cfg_set_version(configuration, 0x304);
   assert_template_compile("Test \\$STRING");
@@ -249,8 +221,7 @@ test_dollar_prefixed_with_backslash_is_a_literal_dollar(void)
                            type = LTE_VALUE, msg_ref = 0);
 }
 
-static void
-test_colon_dash_in_braces_is_parsed_as_default_value(void)
+Test(template_compile, test_colon_dash_in_braces_is_parsed_as_default_value)
 {
   assert_template_compile("${MESSAGE:-default value}");
   assert_compiled_template(text = "", default_value = "default value", macro = M_MESSAGE, type = LTE_MACRO, msg_ref = 0);
@@ -259,8 +230,7 @@ test_colon_dash_in_braces_is_parsed_as_default_value(void)
   assert_compiled_template(text = "", default_value = "", macro = M_MESSAGE, type = LTE_MACRO, msg_ref = 0);
 }
 
-static void
-test_double_dollars_is_a_literal_dollar(void)
+Test(template_compile, test_double_dollars_is_a_literal_dollar)
 {
   assert_template_compile("$$VALUE_NAME");
   assert_compiled_template(text = "$VALUE_NAME", default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
@@ -269,8 +239,7 @@ test_double_dollars_is_a_literal_dollar(void)
   assert_compiled_template(text = "${VALUE_NAME}", default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
 }
 
-static void
-test_dollar_with_an_invalid_macro_name_without_braces_is_parsed_as_a_literal_dollar(void)
+Test(template_compile, test_dollar_with_an_invalid_macro_name_without_braces_is_parsed_as_a_literal_dollar)
 {
   assert_template_compile("$:VALUE_NAME");
   assert_compiled_template(text = "$:VALUE_NAME", default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
@@ -280,8 +249,7 @@ test_dollar_with_an_invalid_macro_name_without_braces_is_parsed_as_a_literal_dol
 
 }
 
-static void
-test_backslash_without_finishing_the_escape_sequence_is_ignored(void)
+Test(template_compile, test_backslash_without_finishing_the_escape_sequence_is_ignored)
 {
   cfg_set_version(configuration, 0x304);
   assert_template_compile("foo\\");
@@ -292,8 +260,7 @@ test_backslash_without_finishing_the_escape_sequence_is_ignored(void)
   assert_compiled_template(text = "foo\\", default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
 }
 
-static void
-test_double_at_is_a_literal_at(void)
+Test(template_compile, test_double_at_is_a_literal_at)
 {
   assert_template_compile("${MESSAGE}@@12");
   assert_compiled_template(text = "", default_value = NULL, macro = M_MESSAGE, type = LTE_MACRO, msg_ref = 0);
@@ -302,84 +269,49 @@ test_double_at_is_a_literal_at(void)
   assert_compiled_template(text = "@12", default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
 }
 
-static void
-test_template_compile_macro(void)
-{
-  TEMPLATE_TESTCASE(test_simple_string_literal);
-  TEMPLATE_TESTCASE(test_simple_macro);
-  TEMPLATE_TESTCASE(test_macro_and_text);
-  TEMPLATE_TESTCASE(test_macro_without_braces);
-  TEMPLATE_TESTCASE(test_macro_name_without_braces_are_terminated_with_non_identifier_characters);
-  TEMPLATE_TESTCASE(test_macro_without_at_records_that_no_msgref_was_present_by_msgref_zero);
-  TEMPLATE_TESTCASE(test_macro_with_at_references_a_single_msg_in_the_context_stack_by_setting_msgref);
-  TEMPLATE_TESTCASE(test_macro_with_invalid_msgref_are_recognized_as_the_top_element_in_the_stack);
-  TEMPLATE_TESTCASE(test_dollar_prefixed_with_backslash_is_a_literal_dollar);
-  TEMPLATE_TESTCASE(test_colon_dash_in_braces_is_parsed_as_default_value);
-  TEMPLATE_TESTCASE(test_double_dollars_is_a_literal_dollar);
-  TEMPLATE_TESTCASE(test_dollar_with_an_invalid_macro_name_without_braces_is_parsed_as_a_literal_dollar);
-  TEMPLATE_TESTCASE(test_backslash_without_finishing_the_escape_sequence_is_ignored);
-  TEMPLATE_TESTCASE(test_double_at_is_a_literal_at);
-}
-
-static void
-test_simple_value(void)
+Test(template_compile, test_simple_value)
 {
   assert_template_compile("${VALUE_NAME}");
   assert_compiled_template(text = "", default_value = NULL, value_handle = log_msg_get_value_handle("VALUE_NAME"),
                            type = LTE_VALUE, msg_ref = 0);
 }
 
-static void
-test_value_without_braces(void)
+Test(template_compile, test_value_without_braces)
 {
   assert_template_compile("$VALUE_NAME");
   assert_compiled_template(text = "", default_value = NULL, value_handle = log_msg_get_value_handle("VALUE_NAME"),
                            type = LTE_VALUE, msg_ref = 0);
 }
 
-static void
-test_backslash_within_braces_is_taken_literally(void)
+Test(template_compile, test_backslash_within_braces_is_taken_literally)
 {
   assert_template_compile("${VALUE\\}NAME}");
   assert_compiled_template(text = "", default_value = NULL, value_handle = log_msg_get_value_handle("VALUE\\"),
                            type = LTE_VALUE, msg_ref = 0);
 }
 
-static void
-test_value_name_can_be_the_empty_string_when_referenced_using_braces(void)
+Test(template_compile, test_value_name_can_be_the_empty_string_when_referenced_using_braces)
 {
   assert_template_compile("${}");
   assert_compiled_template(text = "", default_value = NULL, value_handle = log_msg_get_value_handle(""), type = LTE_VALUE,
                            msg_ref = 0);
 }
 
-static void
-test_template_compile_value(void)
-{
-  TEMPLATE_TESTCASE(test_simple_value);
-  TEMPLATE_TESTCASE(test_value_without_braces);
-  TEMPLATE_TESTCASE(test_backslash_within_braces_is_taken_literally);
-  TEMPLATE_TESTCASE(test_value_name_can_be_the_empty_string_when_referenced_using_braces);
-}
-
-static void
-test_simple_template_function(void)
+Test(template_compile, test_simple_template_function)
 {
   assert_template_compile("$(hello)");
   assert_compiled_template(text = "", default_value = NULL, func.ops = get_template_function_ops("hello"),
                            type = LTE_FUNC, msg_ref = 0);
 }
 
-static void
-test_complicated_template_function(void)
+Test(template_compile, test_complicated_template_function)
 {
   assert_template_compile("$( hello \\tes\t\t\t value(xyz) \"value with spaces\" 'test value with spa\"ces')@2");
   assert_compiled_template(text = "", default_value = NULL, func.ops = get_template_function_ops("hello"),
                            type = LTE_FUNC, msg_ref = 3);
 }
 
-static void
-test_simple_template_function_with_additional_text(void)
+Test(template_compile, test_simple_template_function_with_additional_text)
 {
   assert_template_compile("$(hello)test value");
   assert_compiled_template(text = "", default_value = NULL, func.ops = get_template_function_ops("hello"),
@@ -389,41 +321,28 @@ test_simple_template_function_with_additional_text(void)
   assert_compiled_template(text = "test value", default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
 }
 
-static void
-test_qouted_string_in_name_template_function(void)
+Test(template_compile, test_qouted_string_in_name_template_function)
 {
   assert_template_compile("$(he\"ll\"o)");
   assert_compiled_template(text = "", default_value = NULL, func.ops = get_template_function_ops("hello"),
                            type = LTE_FUNC, msg_ref = 0);
 }
 
-static void
-test_template_compile_func(void)
-{
-  TEMPLATE_TESTCASE(test_simple_template_function);
-  TEMPLATE_TESTCASE(test_complicated_template_function);
-  TEMPLATE_TESTCASE(test_simple_template_function_with_additional_text);
-  TEMPLATE_TESTCASE(test_qouted_string_in_name_template_function);
-}
-
-static void
-test_invalid_macro(void)
+Test(template_compile, test_invalid_macro)
 {
   assert_failed_template_compile("${MESSAGE", "Invalid macro, '}' is missing, error_pos='9'");
   assert_compiled_template(text = "error in template: ${MESSAGE", default_value = NULL, macro = M_NONE, type = LTE_MACRO,
                            msg_ref = 0);
 }
 
-static void
-test_invalid_subst(void)
+Test(template_compile, test_invalid_subst)
 {
   assert_failed_template_compile("${MESSAGE:1}", "Unknown substitution function, error_pos='10'");
   assert_compiled_template(text = "error in template: ${MESSAGE:1}", default_value = NULL, macro = M_NONE,
                            type = LTE_MACRO, msg_ref = 0);
 }
 
-static void
-test_template_function_bad1(void)
+Test(template_compile, test_template_function_bad1)
 {
   assert_failed_template_compile("$( hello \\tes\t\t\t value(xyz \"value with spaces\" 'test value with spa\"ces')",
                                  "Invalid template function reference, missing function name or imbalanced '(', error_pos='73'");
@@ -432,8 +351,7 @@ test_template_function_bad1(void)
                            default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
 }
 
-static void
-test_template_function_bad2(void)
+Test(template_compile, test_template_function_bad2)
 {
   assert_failed_template_compile("$( hello \\tes\t\t\t value xyz \"value with spaces\" 'test value with spa\"ces'",
                                  "Invalid template function reference, missing function name or imbalanced '(', error_pos='72'");
@@ -442,8 +360,7 @@ test_template_function_bad2(void)
                            default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
 }
 
-static void
-test_template_function_bad3(void)
+Test(template_compile, test_template_function_bad3)
 {
   assert_failed_template_compile("$(hello \"This is an unclosed quoted string)",
                                  "Invalid template function reference, missing function name or imbalanced '(', error_pos='8'");
@@ -451,8 +368,7 @@ test_template_function_bad3(void)
                            macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
 }
 
-static void
-test_unknown_function(void)
+Test(template_compile, test_unknown_function)
 {
   assert_failed_template_compile("$(unknown function)", "Unknown template function \"unknown\"");
   assert_compiled_template(text = "error in template: $(unknown function)", default_value = NULL, macro = M_NONE,
@@ -460,17 +376,7 @@ test_unknown_function(void)
 }
 
 static void
-test_template_compile_negativ_tests(void)
-{
-  TEMPLATE_TESTCASE(test_invalid_macro);
-  TEMPLATE_TESTCASE(test_invalid_subst);
-  TEMPLATE_TESTCASE(test_template_function_bad1);
-  TEMPLATE_TESTCASE(test_template_function_bad2);
-  TEMPLATE_TESTCASE(test_template_function_bad3);
-  TEMPLATE_TESTCASE(test_unknown_function);
-}
-
-int main(int argc, char **argv)
+setup(void)
 {
   msg_init(FALSE);
 
@@ -479,12 +385,20 @@ int main(int argc, char **argv)
   log_template_global_init();
   plugin_register(&configuration->plugin_context, &hello_plugin, 1);
 
-  test_template_compile_macro();
-  test_template_compile_value();
-  test_template_compile_func();
-  test_template_compile_negativ_tests();
+  template = log_template_new(configuration, NULL);
+  start_grabbing_messages();
+}
 
+static void
+teardown(void)
+{
   log_msg_registry_deinit();
   msg_deinit();
-  return 0;
+
+  log_template_unref(template);
+  template = NULL;
+
+  stop_grabbing_messages();
 }
+
+TestSuite(template_compile, .init = setup, .fini = teardown);
