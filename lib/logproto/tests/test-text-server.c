@@ -62,13 +62,13 @@ accumulator_delay_lines(LogProtoTextServer *self, const guchar *msg, gsize msg_l
 }
 
 static void
-test_log_proto_text_server_no_encoding(gboolean input_is_stream)
+test_log_proto_text_server_no_encoding(LogTransportMockConstructor log_transport_mock_new)
 {
   LogProtoServer *proto;
 
   proto = construct_test_proto(
             /* 32 bytes max line length */
-            (input_is_stream ? log_transport_mock_stream_new : log_transport_mock_records_new)(
+            log_transport_mock_new(
               "01234567\n"
               /* line too long */
               "0123456789ABCDEF0123456789ABCDEF01234567\n"
@@ -120,8 +120,8 @@ test_log_proto_text_server_no_encoding(gboolean input_is_stream)
 
 Test(log_proto, test_log_proto_text_server_no_encoding)
 {
-  test_log_proto_text_server_no_encoding(TRUE);
-  test_log_proto_text_server_no_encoding(FALSE);
+  test_log_proto_text_server_no_encoding(log_transport_mock_stream_new);
+  test_log_proto_text_server_no_encoding(log_transport_mock_records_new);
 }
 
 Test(log_proto, test_log_proto_text_server_no_eol_before_eof)
@@ -358,7 +358,7 @@ accumulator_assert_that_lines_are_starting_with_sequence_number(LogProtoTextServ
 }
 
 static void
-test_log_proto_text_server_accumulate_line_is_called_for_each_line(gboolean input_is_stream)
+test_log_proto_text_server_accumulate_line_is_called_for_each_line(LogTransportMockConstructor log_transport_mock_new)
 {
   LogProtoServer *proto;
 
@@ -366,7 +366,7 @@ test_log_proto_text_server_accumulate_line_is_called_for_each_line(gboolean inpu
   proto = construct_test_proto_with_accumulator(
             accumulator_assert_that_lines_are_starting_with_sequence_number,
             /* 32 bytes max line length */
-            (input_is_stream ? log_transport_mock_stream_new : log_transport_mock_records_new)(
+            log_transport_mock_new(
               "0 line\n"
               "1 line\n"
               "2 line\n"
@@ -384,8 +384,8 @@ test_log_proto_text_server_accumulate_line_is_called_for_each_line(gboolean inpu
 
 Test(log_proto, test_log_proto_text_server_accumulate_line_is_called_for_each_line)
 {
-  test_log_proto_text_server_accumulate_line_is_called_for_each_line(TRUE);
-  test_log_proto_text_server_accumulate_line_is_called_for_each_line(FALSE);
+  test_log_proto_text_server_accumulate_line_is_called_for_each_line(log_transport_mock_stream_new);
+  test_log_proto_text_server_accumulate_line_is_called_for_each_line(log_transport_mock_records_new);
 }
 
 static gint
@@ -399,14 +399,15 @@ accumulator_extract_pairs(LogProtoTextServer *self, const guchar *msg, gsize msg
 }
 
 static void
-test_log_proto_text_server_accumulate_line_can_consume_lines_without_returning_them(gboolean input_is_stream)
+test_log_proto_text_server_accumulate_line_can_consume_lines_without_returning_them(
+  LogTransportMockConstructor log_transport_mock_new)
 {
   LogProtoServer *proto;
 
   accumulate_seq = 0;
   proto = construct_test_proto_with_accumulator(
             accumulator_extract_pairs,
-            (input_is_stream ? log_transport_mock_stream_new : log_transport_mock_records_new)(
+            log_transport_mock_new(
               "0 line\n"
               "1 line\n"
               "2 line\n"
@@ -422,8 +423,8 @@ test_log_proto_text_server_accumulate_line_can_consume_lines_without_returning_t
 
 Test(log_proto, test_log_proto_text_server_accumulate_line_can_consume_lines_without_returning_them)
 {
-  test_log_proto_text_server_accumulate_line_can_consume_lines_without_returning_them(TRUE);
-  test_log_proto_text_server_accumulate_line_can_consume_lines_without_returning_them(FALSE);
+  test_log_proto_text_server_accumulate_line_can_consume_lines_without_returning_them(log_transport_mock_stream_new);
+  test_log_proto_text_server_accumulate_line_can_consume_lines_without_returning_them(log_transport_mock_records_new);
 }
 
 static gint
@@ -445,14 +446,15 @@ accumulator_join_continuation_lines(LogProtoTextServer *self, const guchar *msg,
 }
 
 static void
-test_log_proto_text_server_accumulate_line_can_rewind_lines_if_uninteresting(gboolean input_is_stream)
+test_log_proto_text_server_accumulate_line_can_rewind_lines_if_uninteresting(LogTransportMockConstructor
+    log_transport_mock_new)
 {
   LogProtoServer *proto;
 
   accumulate_seq = 0;
   proto = construct_test_proto_with_accumulator(
             accumulator_join_continuation_lines,
-            (input_is_stream ? log_transport_mock_stream_new : log_transport_mock_records_new)(
+            log_transport_mock_new(
               "0 line\n"
               " line\n"
               "2 line\n"
@@ -469,19 +471,20 @@ test_log_proto_text_server_accumulate_line_can_rewind_lines_if_uninteresting(gbo
 
 Test(log_proto, test_log_proto_text_server_accumulate_line_can_rewind_lines_if_uninteresting)
 {
-  test_log_proto_text_server_accumulate_line_can_rewind_lines_if_uninteresting(TRUE);
-  test_log_proto_text_server_accumulate_line_can_rewind_lines_if_uninteresting(FALSE);
+  test_log_proto_text_server_accumulate_line_can_rewind_lines_if_uninteresting(log_transport_mock_stream_new);
+  test_log_proto_text_server_accumulate_line_can_rewind_lines_if_uninteresting(log_transport_mock_records_new);
 }
 
 static void
-test_log_proto_text_server_accumulation_terminated_if_input_is_closed(gboolean input_is_stream)
+test_log_proto_text_server_accumulation_terminated_if_input_is_closed(LogTransportMockConstructor
+    log_transport_mock_new)
 {
   LogProtoServer *proto;
 
   accumulate_seq = 0;
   proto = construct_test_proto_with_accumulator(
             accumulator_join_continuation_lines,
-            (input_is_stream ? log_transport_mock_stream_new : log_transport_mock_records_new)(
+            log_transport_mock_new(
               "0 line\n"
               " line\n"
               "1 line\n", -1,
@@ -495,19 +498,19 @@ test_log_proto_text_server_accumulation_terminated_if_input_is_closed(gboolean i
 
 Test(log_proto, test_log_proto_text_server_accumulation_terminated_if_input_is_closed)
 {
-  test_log_proto_text_server_accumulation_terminated_if_input_is_closed(TRUE);
-  test_log_proto_text_server_accumulation_terminated_if_input_is_closed(FALSE);
+  test_log_proto_text_server_accumulation_terminated_if_input_is_closed(log_transport_mock_stream_new);
+  test_log_proto_text_server_accumulation_terminated_if_input_is_closed(log_transport_mock_records_new);
 }
 
 static void
-test_log_proto_text_server_accumulation_terminated_if_buffer_full(gboolean input_is_stream)
+test_log_proto_text_server_accumulation_terminated_if_buffer_full(LogTransportMockConstructor log_transport_mock_new)
 {
   LogProtoServer *proto;
 
   accumulate_seq = 0;
   proto = construct_test_proto_with_accumulator(
             accumulator_join_continuation_lines,
-            (input_is_stream ? log_transport_mock_stream_new : log_transport_mock_records_new)(
+            log_transport_mock_new(
               "0123456789abcdef\n"
               " 0123456789abcdef\n"
               " continuation\n", -1,
@@ -520,8 +523,8 @@ test_log_proto_text_server_accumulation_terminated_if_buffer_full(gboolean input
 
 Test(log_proto, test_log_proto_text_server_accumulation_terminated_if_buffer_full)
 {
-  test_log_proto_text_server_accumulation_terminated_if_buffer_full(TRUE);
-  test_log_proto_text_server_accumulation_terminated_if_buffer_full(FALSE);
+  test_log_proto_text_server_accumulation_terminated_if_buffer_full(log_transport_mock_stream_new);
+  test_log_proto_text_server_accumulation_terminated_if_buffer_full(log_transport_mock_records_new);
 }
 
 static gint
@@ -534,14 +537,15 @@ accumulator_rewind_initial(LogProtoTextServer *self, const guchar *msg, gsize ms
 }
 
 static void
-test_log_proto_text_server_rewinding_the_initial_line_results_in_an_empty_message(gboolean input_is_stream)
+test_log_proto_text_server_rewinding_the_initial_line_results_in_an_empty_message(LogTransportMockConstructor
+    log_transport_mock_new)
 {
   LogProtoServer *proto;
 
   accumulate_seq = 0;
   proto = construct_test_proto_with_accumulator(
             accumulator_rewind_initial,
-            (input_is_stream ? log_transport_mock_stream_new : log_transport_mock_records_new)(
+            log_transport_mock_new(
               "0 line\n"
               "1 line\n"
               "2 line\n", -1,
@@ -558,6 +562,6 @@ test_log_proto_text_server_rewinding_the_initial_line_results_in_an_empty_messag
 
 Test(log_proto, test_log_proto_text_server_rewinding_the_initial_line_results_in_an_empty_message)
 {
-  test_log_proto_text_server_rewinding_the_initial_line_results_in_an_empty_message(TRUE);
-  test_log_proto_text_server_rewinding_the_initial_line_results_in_an_empty_message(FALSE);
+  test_log_proto_text_server_rewinding_the_initial_line_results_in_an_empty_message(log_transport_mock_stream_new);
+  test_log_proto_text_server_rewinding_the_initial_line_results_in_an_empty_message(log_transport_mock_records_new);
 }

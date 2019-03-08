@@ -31,7 +31,7 @@
 #include <criterion/criterion.h>
 
 static void
-test_lines_separated_with_prefix(gboolean input_is_stream)
+test_lines_separated_with_prefix(LogTransportMockConstructor log_transport_mock_new)
 {
   LogProtoServer *proto;
   MultiLineRegexp *re;
@@ -40,7 +40,7 @@ test_lines_separated_with_prefix(gboolean input_is_stream)
             /* 32 bytes max line length, which means that the complete
              * multi-line block plus one additional line must fit into 32
              * bytes. */
-            (input_is_stream ? log_transport_mock_stream_new : log_transport_mock_records_new)(
+            log_transport_mock_new(
               "Foo First Line\n"
               "Foo Second Line\n"
               "Foo Third Line\n"
@@ -64,12 +64,12 @@ test_lines_separated_with_prefix(gboolean input_is_stream)
 
 Test(log_proto, test_lines_separated_with_prefix)
 {
-  test_lines_separated_with_prefix(TRUE);
-  test_lines_separated_with_prefix(FALSE);
+  test_lines_separated_with_prefix(log_transport_mock_stream_new);
+  test_lines_separated_with_prefix(log_transport_mock_records_new);
 }
 
 static void
-test_lines_separated_with_prefix_and_garbage(gboolean input_is_stream)
+test_lines_separated_with_prefix_and_garbage(LogTransportMockConstructor log_transport_mock_new)
 {
   LogProtoServer *proto;
   MultiLineRegexp *re1, *re2;
@@ -78,7 +78,7 @@ test_lines_separated_with_prefix_and_garbage(gboolean input_is_stream)
             /* 32 bytes max line length, which means that the complete
              * multi-line block plus one additional line must fit into 32
              * bytes. */
-            (input_is_stream ? log_transport_mock_stream_new : log_transport_mock_records_new)(
+            log_transport_mock_new(
               "Foo First Line Bar\n"
               "Foo Second Line Bar\n"
               "Foo Third Line Bar\n"
@@ -104,12 +104,12 @@ test_lines_separated_with_prefix_and_garbage(gboolean input_is_stream)
 
 Test(log_proto, test_lines_separated_with_prefix_and_garbage)
 {
-  test_lines_separated_with_prefix_and_garbage(TRUE);
-  test_lines_separated_with_prefix_and_garbage(FALSE);
+  test_lines_separated_with_prefix_and_garbage(log_transport_mock_stream_new);
+  test_lines_separated_with_prefix_and_garbage(log_transport_mock_records_new);
 }
 
 static void
-test_lines_separated_with_prefix_and_suffix(gboolean input_is_stream)
+test_lines_separated_with_prefix_and_suffix(LogTransportMockConstructor log_transport_mock_new)
 {
   LogProtoServer *proto;
   MultiLineRegexp *re1, *re2;
@@ -118,7 +118,7 @@ test_lines_separated_with_prefix_and_suffix(gboolean input_is_stream)
             /* 32 bytes max line length, which means that the complete
              * multi-line block plus one additional line must fit into 32
              * bytes. */
-            (0 && input_is_stream ? log_transport_mock_stream_new : log_transport_mock_records_new)(
+            log_transport_mock_new(
               "prefix first suffix garbage\n"
               "prefix multi\n"
               "suffix garbage\n"
@@ -140,12 +140,12 @@ test_lines_separated_with_prefix_and_suffix(gboolean input_is_stream)
 
 Test(log_proto, test_lines_separated_with_prefix_and_suffix)
 {
-  test_lines_separated_with_prefix_and_suffix(TRUE);
-  test_lines_separated_with_prefix_and_suffix(FALSE);
+  test_lines_separated_with_prefix_and_suffix(log_transport_mock_stream_new);
+  test_lines_separated_with_prefix_and_suffix(log_transport_mock_records_new);
 }
 
 static void
-test_lines_separated_with_garbage(gboolean input_is_stream)
+test_lines_separated_with_garbage(LogTransportMockConstructor log_transport_mock_new)
 {
   LogProtoServer *proto;
   MultiLineRegexp *re;
@@ -154,7 +154,7 @@ test_lines_separated_with_garbage(gboolean input_is_stream)
             /* 32 bytes max line length, which means that the complete
              * multi-line block plus one additional line must fit into 32
              * bytes. */
-            (input_is_stream ? log_transport_mock_stream_new : log_transport_mock_records_new)(
+            log_transport_mock_new(
               "Foo First Line Bar\n"
               "Foo Second Line Bar\n"
               "Foo Third Line Bar\n"
@@ -179,12 +179,12 @@ test_lines_separated_with_garbage(gboolean input_is_stream)
 
 Test(log_proto, test_lines_separated_with_garbage)
 {
-  test_lines_separated_with_garbage(TRUE);
-  test_lines_separated_with_garbage(FALSE);
+  test_lines_separated_with_garbage(log_transport_mock_stream_new);
+  test_lines_separated_with_garbage(log_transport_mock_records_new);
 }
 
 static void
-test_first_line_without_prefix(gboolean input_is_stream)
+test_first_line_without_prefix(LogTransportMockConstructor log_transport_mock_new)
 {
   LogProtoServer *proto;
   MultiLineRegexp *re;
@@ -193,7 +193,7 @@ test_first_line_without_prefix(gboolean input_is_stream)
             /* 32 bytes max line length, which means that the complete
              * multi-line block plus one additional line must fit into 32
              * bytes. */
-            (input_is_stream ? log_transport_mock_stream_new : log_transport_mock_records_new)(
+            log_transport_mock_new(
               "First Line\n"
               "Foo Second Line\n"
               "Foo Third Line\n"
@@ -218,6 +218,6 @@ test_first_line_without_prefix(gboolean input_is_stream)
 
 Test(log_proto, test_first_line_without_prefix)
 {
-  test_first_line_without_prefix(TRUE);
-  test_first_line_without_prefix(FALSE);
+  test_first_line_without_prefix(log_transport_mock_stream_new);
+  test_first_line_without_prefix(log_transport_mock_records_new);
 }
