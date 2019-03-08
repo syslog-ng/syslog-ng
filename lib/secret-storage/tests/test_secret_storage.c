@@ -257,7 +257,7 @@ Test(secretstorage, subscribe_until_success)
   cr_assert(test_variable);
 }
 
-Test(secretstorage, test_rlimit)
+Test(secretstorage, test_rlimit, .disabled = true)
 {
   struct rlimit locked_limit;
   cr_assert(!getrlimit(RLIMIT_MEMLOCK, &locked_limit));
