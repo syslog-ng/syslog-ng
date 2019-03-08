@@ -27,6 +27,7 @@
 #include "apphook.h"
 #include "plugin.h"
 #include "plugin-types.h"
+#include "scratch-buffers.h"
 
 #include <criterion/criterion.h>
 
@@ -87,6 +88,7 @@ void
 teardown(void)
 {
   deinit_kmsgformat_module();
+  scratch_buffers_explicit_gc();
   app_shutdown();
 }
 
