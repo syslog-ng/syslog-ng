@@ -50,14 +50,14 @@ nondumpable_setlogger(NonDumpableLogger _debug, NonDumpableLogger _fatal)
 
 #define logger_debug(summary, fmt, ...) \
 { \
- char reason[32] = { 0 }; \
+ char reason[256] = { 0 }; \
  snprintf(reason, sizeof(reason), fmt, __VA_ARGS__); \
  logger_debug_fn(summary, reason);   \
 }
 
 #define logger_fatal(summary, fmt, ...) \
 { \
- char reason[32] = { 0 }; \
+ char reason[256] = { 0 }; \
  snprintf(reason, sizeof(reason), fmt, __VA_ARGS__); \
  logger_fatal_fn(summary, reason);   \
 }
