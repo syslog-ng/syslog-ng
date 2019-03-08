@@ -541,11 +541,13 @@ _load_file_into_string(const gchar *fname)
   gchar *buff;
   GString *content = g_string_new("");
 
-  if (g_file_get_contents(fname, &buff, NULL, NULL))
+  if (!g_file_get_contents(fname, &buff, NULL, NULL))
     {
-      g_string_append(content, buff);
-      g_free(buff);
+      return content;
     }
+
+  g_string_append(content, buff);
+  g_free(buff);
 
   return content;
 }
