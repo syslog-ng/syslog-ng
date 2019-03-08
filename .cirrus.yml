@@ -1,0 +1,134 @@
+container:
+  image: balabit/syslog-ng-ubuntu-bionic:latest
+
+#############
+# autotools #
+test-autotools_task:
+  env-setup_script:
+    - apt-get update && apt-get install -y locales
+    - locale-gen en_US.UTF-8
+  bootstrap_script:
+    - ./autogen.sh
+  configure_script:
+    - ./configure CFLAGS=-Werror
+        --enable-extra-warnings
+        --enable-all-modules
+        --prefix=$CIRRUS_WORKING_DIR/install/syslog-ng
+        --enable-tcp-wrapper
+        --enable-linux-caps
+        --enable-pacct
+        --enable-manpages
+        --disable-sql
+        --with-jsonc=system
+        --with-docbook=/usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.xsl
+        --with-python=2
+  build_script: make -j 4
+  install_script: make install -j 4
+  test_script:
+    - make check -j 4 --keep-going ||
+      {
+        S=$?;
+        echo "Output of first test invocation:";
+        find . -name test-suite.log | xargs cat;
+        make V=1 check || true;
+        echo "Output of second test invocation:";
+        find . -name test-suite.log | xargs cat;
+        return $S;
+      }
+  func-test_script:
+    - make func-test V=1;
+    - make pytest-self-check;
+    - make pytest-check;
+  dist-tarball_script: make distcheck -j 4
+
+
+#########
+# cmake #
+test-cmake_task:
+  env-setup_script:
+    - apt-get update && apt-get install -y locales
+    - locale-gen en_US.UTF-8
+  configure_script:
+    - cmake
+        -DCMAKE_C_FLAGS=-Werror
+        -DPYTHON_VERSION=2
+        -DCMAKE_INSTALL_PREFIX=$CIRRUS_WORKING_DIR/install/syslog-ng
+        .
+  build_script: make --keep-going -j 4 ARGS="-j 4" all
+  install_script: make -j 4 install
+  test_script:
+    - make -j 4 ARGS="-j 4" test
+  func-test_script:
+    - make VERBOSE=1 func-test
+    - make pytest-self-check
+    - make pytest-check
+
+
+#########
+# macOS #
+test-macos_task:
+  osx_instance:
+    image: mojave-base
+  env:
+    PYTHONUSERBASE: $CIRRUS_WORKING_DIR/python_packages
+    PKG_CONFIG_PATH: /usr/local/opt/openssl/lib/pkgconfig:$PKG_CONFIG_PATH
+    PATH: /usr/local/opt/bison/bin:/usr/local/opt/libnet/bin:$CIRRUS_WORKING_DIR/python_packages/bin:$PATH
+  env-setup_script:
+    - brew bundle --file=contrib/Brewfile
+    - pip2 install --user -r requirements.txt
+  bootstrap_script:
+    - ./autogen.sh
+  configure_script:
+    - echo $PATH
+    - ./configure
+        --with-ivykis=system
+        --disable-sun-streams
+        --disable-systemd
+        --disable-pacct
+        --disable-smtp
+        --disable-geoip
+        --disable-java
+        --disable-java-modules
+        --enable-all-modules
+        --with-python=2
+  build_script:
+    - make --keep-going -j 4 ||
+      {
+        S=$?;
+        make V=1;
+        return $S;
+      }
+  install_script: make install -j 4
+  test_script:
+    - make --keep-going check -j 4 ||
+      {
+        S=$?;
+        echo "Output of first test invocation:";
+        find . -name test-suite.log | xargs cat;
+        make V=1 check || true;
+        echo "Output of second test invocation:";
+        find . -name test-suite.log | xargs cat;
+        return $S;
+      }
+
+
+###########
+# FreeBSD #
+
+
+#################
+# static-checks #
+static-style-check_task:
+  env-setup_script:
+    - wget -q -O- http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_18.04/Release.key | apt-key add -
+    - echo "deb http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_18.04 ./" | tee --append /etc/apt/sources.list.d/syslog-ng-obs.list
+    - apt-get update && apt-get install -y --allow-downgrades astyle=2.05.1-0ubuntu1
+    - astyle --version
+  style-check_script:
+    - scripts/style-checker.sh format
+    - git diff --exit-code
+
+static-copyright-check_task:
+  env:
+    COPYRIGHTVERBOSITY: 2
+  copyright-check_script: tests/copyright/check.sh . .
