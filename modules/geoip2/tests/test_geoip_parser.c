@@ -22,6 +22,7 @@
 #include "geoip-parser.h"
 #include "apphook.h"
 #include "msg_parse_lib.h"
+#include "scratch-buffers.h"
 
 #include <criterion/criterion.h>
 
@@ -40,6 +41,7 @@ teardown(void)
 {
   log_pipe_deinit(&geoip_parser->super);
   log_pipe_unref(&geoip_parser->super);
+  scratch_buffers_explicit_gc();
   app_shutdown();
 }
 
