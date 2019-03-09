@@ -20,16 +20,20 @@
 # COPYING for details.
 #
 #############################################################################
-
 import logging
-logger = logging.getLogger(__name__)
-import pytest, subprocess
-from pathlib2 import Path
+import subprocess
 from datetime import datetime
+
+import pytest
+from pathlib2 import Path
+
 from src.setup.testcase import SetupTestCase
 from src.setup.unit_testcase import SetupUnitTestcase
 
+logger = logging.getLogger(__name__)
 
+
+# Command line options
 def pytest_addoption(parser):
     parser.addoption("--runslow", action="store_true", default=False, help="run slow tests")
     parser.addoption("--run-with-valgrind", action="store_true", default=False, help="Run tests behind valgrind")
@@ -54,15 +58,6 @@ def installdir(request):
     return request.config.getoption("--installdir")
 
 
-def pytest_collection_modifyitems(config, items):
-    if config.getoption("--runslow"):
-        return
-    skip_slow = pytest.mark.skip(reason="need --runslow option to run")
-    for item in items:
-        if "slow" in item.keywords:
-            item.add_marker(skip_slow)
-
-
 def runwithvalgrind(request):
     return request.config.getoption("--run-with-valgrind")
 
@@ -75,6 +70,37 @@ def get_current_date():
     return datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f")
 
 
+# Pytest Hooks
+def pytest_collection_modifyitems(config, items):
+    if config.getoption("--runslow"):
+        return
+    skip_slow = pytest.mark.skip(reason="need --runslow option to run")
+    for item in items:
+        if "slow" in item.keywords:
+            item.add_marker(skip_slow)
+
+
+def pytest_runtest_logreport(report):
+    if report.outcome == "failed":
+        logger.error("\n{}".format(report.longrepr))
+
+
+@pytest.hookimpl(hookwrapper=True, tryfirst=True)
+def pytest_runtest_setup(item):
+    def construct_report_file_path(item):
+        relative_report_dir = item._request.config.getoption("--reports")
+        testcase_name = item._request.node.name
+        file_name = "testcase_{}.log".format(testcase_name)
+        return Path(relative_report_dir, testcase_name, file_name).absolute()
+
+    config = item.config
+    logging_plugin = config.pluginmanager.get_plugin("logging-plugin")
+    report_file_path = construct_report_file_path(item)
+    logging_plugin.set_log_path(report_file_path)
+    yield
+
+
+# Pytest Fixtures
 @pytest.fixture
 def tc(request):
     return SetupTestCase(request)
@@ -84,28 +110,10 @@ def tc(request):
 def tc_unittest(request):
     return SetupUnitTestcase(request, get_current_date)
 
+
 @pytest.fixture(scope="session")
 def version(request):
     installdir = request.config.getoption("--installdir")
     binary_path = str(Path(installdir, "sbin", "syslog-ng"))
     version_output = subprocess.check_output([binary_path, "--version"]).decode()
     return version_output.splitlines()[1].split()[2]
-
-def pytest_runtest_logreport(report):
-    if report.outcome == "failed":
-        logger.error("\n{}".format(report.longrepr))
-
-
-def construct_report_file_path(item):
-    relative_report_dir = item._request.config.getoption("--reports")
-    testcase_name = item._request.node.name
-    file_name = "testcase_{}.log".format(testcase_name)
-    return Path(relative_report_dir, testcase_name, file_name).absolute()
-
-@pytest.hookimpl(hookwrapper=True, tryfirst=True)
-def pytest_runtest_setup(item):
-    config = item.config
-    logging_plugin = config.pluginmanager.get_plugin("logging-plugin")
-    report_file_path = construct_report_file_path(item)
-    logging_plugin.set_log_path(report_file_path)
-    yield
