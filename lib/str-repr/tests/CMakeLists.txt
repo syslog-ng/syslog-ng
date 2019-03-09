@@ -1,2 +1,2 @@
 add_unit_test(CRITERION TARGET test_decode)
-add_unit_test(LIBTEST TARGET test_encode)
+add_unit_test(CRITERION LIBTEST TARGET test_encode)
