@@ -92,21 +92,6 @@ def pytest_runtest_logreport(report):
         logger.error("\n{}".format(report.longrepr))
 
 
-@pytest.hookimpl(hookwrapper=True, tryfirst=True)
-def pytest_runtest_setup(item):
-    def construct_report_file_path(item):
-        relative_report_dir = item._request.config.getoption("--reports")
-        testcase_name = item._request.node.name
-        file_name = "testcase_{}.log".format(testcase_name)
-        return Path(relative_report_dir, testcase_name, file_name).absolute()
-
-    config = item.config
-    logging_plugin = config.pluginmanager.get_plugin("logging-plugin")
-    report_file_path = construct_report_file_path(item)
-    logging_plugin.set_log_path(report_file_path)
-    yield
-
-
 # Pytest Fixtures
 @pytest.fixture
 def testcase_parameters(request):
