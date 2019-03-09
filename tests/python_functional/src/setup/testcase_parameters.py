@@ -22,20 +22,11 @@
 #############################################################################
 
 from pathlib2 import Path
-
-
-def get_testcase_name(pytest_request):
-    if pytest_request.node.name is not None:
-        return pytest_request.node.name.replace("[", "_").replace("]", "_")
-    elif pytest_request.node.originalname is not None:
-        return pytest_request.node.originalname.replace("[", "_").replace("]", "_")
-    else:
-        raise Exception("There is no valid testcasename")
-
+from src.common.operations import calculate_testcase_name
 
 class TestcaseParameters(object):
     def __init__(self, pytest_request):
-        testcase_name = get_testcase_name(pytest_request)
+        testcase_name = calculate_testcase_name(pytest_request)
         relative_report_dir = pytest_request.config.getoption("--reports")
         absolute_framework_dir = Path.cwd()
         self.testcase_parameters = {

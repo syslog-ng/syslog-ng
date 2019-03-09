@@ -25,9 +25,9 @@
 from mockito import when, unstub
 from pathlib2 import Path
 from src.common.operations import open_file
-from src.setup.testcase_parameters import get_testcase_name
 from src.common.random_id import get_unique_id
 from src.setup.testcase_parameters import TestcaseParameters
+from src.common.operations import calculate_testcase_name
 
 
 class SetupUnitTestcase(object):
@@ -41,7 +41,7 @@ class SetupUnitTestcase(object):
         self.testcase_context.addfinalizer(self.__teardown)
 
     def get_temp_dir(self):
-        testcase_name = get_testcase_name(self.testcase_context)
+        testcase_name = calculate_testcase_name(self.testcase_context)
         testcase_subdir = "{}_{}".format(self.__get_current_date(), testcase_name)
         temp_dir = Path("/tmp", testcase_subdir)
         temp_dir.mkdir()

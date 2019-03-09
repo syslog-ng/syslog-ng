@@ -50,3 +50,9 @@ def delete_session_file(shared_file_name, syslog_ng_testcase):
     working_dir = syslog_ng_testcase.testcase_parameters.get_working_dir()
     shared_file_name = Path(working_dir, shared_file_name)
     shared_file_name.unlink()
+
+
+def calculate_testcase_name(pytest_request):
+    # In case of parametrized tests we need to replace "[" and "]" because
+    # testcase name will appear in directory name
+    return pytest_request.node.name.replace("[", "_").replace("]", "_")
