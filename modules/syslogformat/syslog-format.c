@@ -267,11 +267,11 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
 {
   UnixTime *stamp = &self->timestamps[LM_TS_STAMP];
 
-
   unix_time_unset(stamp);
   if (!log_msg_parse_timestamp(stamp, data, length, parse_flags, recv_timezone_ofs))
     {
       *stamp = self->timestamps[LM_TS_RECVD];
+      unix_time_set_timezone(stamp, recv_timezone_ofs);
       return FALSE;
     }
 

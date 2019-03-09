@@ -58,6 +58,9 @@ msg_format_parse(MsgFormatOptions *options, const guchar *data, gsize length, Lo
       if (options->flags & LP_NO_PARSE_DATE)
         {
           msg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_RECVD];
+          unix_time_set_timezone(&msg->timestamps[LM_TS_STAMP],
+                                 time_zone_info_get_offset(options->recv_time_zone_info,
+                                                           msg->timestamps[LM_TS_RECVD].ut_sec));
         }
     }
   else
