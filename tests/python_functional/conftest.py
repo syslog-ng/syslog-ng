@@ -27,8 +27,15 @@ from datetime import datetime
 import pytest
 from pathlib2 import Path
 
+from src.message_builder.bsd_format import BSDFormat
+from src.message_builder.log_message import LogMessage
 from src.setup.testcase import SetupTestCase
+from src.setup.testcase_parameters import TestcaseParameters
 from src.setup.unit_testcase import SetupUnitTestcase
+from src.syslog_ng.syslog_ng import SyslogNg
+from src.syslog_ng.syslog_ng_paths import SyslogNgPaths
+from src.syslog_ng_config.syslog_ng_config import SyslogNgConfig
+from src.syslog_ng_ctl.syslog_ng_ctl import SyslogNgCtl
 
 logger = logging.getLogger(__name__)
 
@@ -101,6 +108,39 @@ def pytest_runtest_setup(item):
 
 
 # Pytest Fixtures
+@pytest.fixture
+def testcase_parameters(request):
+    return TestcaseParameters(request)
+
+
+@pytest.fixture
+def config(request, testcase_parameters):
+    return SyslogNgConfig(testcase_parameters.get_working_dir(), request.getfixturevalue("version"))
+
+
+@pytest.fixture
+def syslog_ng(request, testcase_parameters):
+    instance_paths = SyslogNgPaths(testcase_parameters).set_syslog_ng_paths("server")
+    syslog_ng = SyslogNg(instance_paths, testcase_parameters)
+    request.addfinalizer(lambda: syslog_ng.stop())
+    return syslog_ng
+
+
+@pytest.fixture
+def syslog_ng_ctl(syslog_ng):
+    return SyslogNgCtl(syslog_ng.instance_paths)
+
+
+@pytest.fixture
+def bsd_formatter():
+    return BSDFormat()
+
+
+@pytest.fixture
+def log_message():
+    return LogMessage()
+
+
 @pytest.fixture
 def tc(request):
     return SetupTestCase(request)
