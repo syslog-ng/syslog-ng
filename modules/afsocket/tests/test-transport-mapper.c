@@ -35,15 +35,13 @@ transport_mapper_dummy_new(void)
   return self;
 }
 
-static void
-test_set_transport_stores_value(void)
+Test(transport_mapper, test_set_transport_stores_value)
 {
   transport_mapper_set_transport(transport_mapper, "foobar");
   assert_transport_mapper_transport(transport_mapper, "foobar");
 }
 
-static void
-test_set_address_value_stores_value(void)
+Test(transport_mapper, test_set_address_value_stores_value)
 {
   transport_mapper_set_address_family(transport_mapper, AF_UNIX);
   assert_transport_mapper_address_family(transport_mapper, AF_UNIX);
@@ -51,25 +49,23 @@ test_set_address_value_stores_value(void)
   assert_transport_mapper_address_family(transport_mapper, AF_INET);
 }
 
-static void
-test_apply_transport_returns_success(void)
+Test(transport_mapper, test_apply_transport_returns_success)
 {
   assert_transport_mapper_apply(transport_mapper, "transport_mapper_apply_transport() failed");
 }
 
 static void
-test_transport_mapper(void)
+setup(void)
 {
-  TRANSPORT_MAPPER_TESTCASE(dummy, test_set_transport_stores_value);
-  TRANSPORT_MAPPER_TESTCASE(dummy, test_set_address_value_stores_value);
-  TRANSPORT_MAPPER_TESTCASE(dummy, test_apply_transport_returns_success);
+  transport_mapper = transport_mapper_dummy_new();
+  app_startup();
 }
 
-int
-main(int argc, char *argv[])
+static void
+teardown(void)
 {
-  app_startup();
-  test_transport_mapper();
+  transport_mapper_free(transport_mapper);
   app_shutdown();
-  return 0;
 }
+
+TestSuite(transport_mapper, .init = setup, .fini = teardown);
