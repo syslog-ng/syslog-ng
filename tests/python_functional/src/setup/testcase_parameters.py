@@ -38,7 +38,6 @@ class TestcaseParameters(object):
         testcase_name = get_testcase_name(pytest_request)
         relative_report_dir = pytest_request.config.getoption("--reports")
         absolute_framework_dir = Path.cwd()
-
         self.testcase_parameters = {
             "dirs": {
                 "working_dir": Path(absolute_framework_dir, relative_report_dir, testcase_name),
@@ -47,7 +46,7 @@ class TestcaseParameters(object):
                 "shared_dir": Path(absolute_framework_dir, "shared_files")
             },
             "file_paths": {
-                "testcase_file": Path(pytest_request.node.fspath),
+                "testcase_file": Path(pytest_request.fspath),
             },
             "testcase_name": testcase_name,
             "valgrind_usage": pytest_request.config.getoption("--run-with-valgrind"),
