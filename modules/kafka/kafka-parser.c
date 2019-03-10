@@ -35,6 +35,7 @@ static CfgLexerKeyword kafka_keywords[] = {
     /* https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md */
     { "global_config",  KW_GLOBAL_CONFIG },
     { "topic_config",   KW_TOPIC_CONFIG },
+    { "flush_timeout_on_shutdown", KW_FLUSH_TIMEOUT_ON_SHUTDOWN },
 
     { "key",            KW_KEY },
     { "message",        KW_MESSAGE },

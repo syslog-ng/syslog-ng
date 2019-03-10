@@ -107,6 +107,14 @@ kafka_dd_set_message_ref(LogDriver *d, LogTemplate *message)
   self->message = message;
 }
 
+void
+kafka_dd_set_flush_timeout_on_shutdown(LogDriver *d, gint flush_timeout_on_shutdown)
+{
+  KafkaDestDriver *self = (KafkaDestDriver *)d;
+
+  self->flush_timeout_on_shutdown = flush_timeout_on_shutdown;
+}
+
 
 /*
  * Utilities
@@ -233,6 +241,48 @@ _construct_worker(LogThreadedDestDriver *s, gint worker_index)
   return kafka_dest_worker_new(s, worker_index);
 }
 
+static gint
+_get_flush_timeout(KafkaDestDriver *self)
+{
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super.super);
+    return self->flush_timeout_on_shutdown;
+}
+
+static void
+_flush_inflight_messages(KafkaDestDriver *self)
+{
+  rd_kafka_resp_err_t err;
+  gint outq_len = rd_kafka_outq_len(self->kafka);
+  gint timeout = _get_flush_timeout(self);
+
+  if (outq_len > 0)
+    {
+      msg_notice("kafka: shutting down kafka producer, while messages are still in-flight, waiting for messages to flush",
+                 evt_tag_str("topic", self->topic_name),
+                 evt_tag_int("outq_len", outq_len),
+                 evt_tag_int("timeout", timeout),
+                 evt_tag_str("driver", self->super.super.super.id),
+                 log_pipe_location_tag(&self->super.super.super.super));
+    }
+  err = rd_kafka_flush(self->kafka, timeout);
+  if (err != RD_KAFKA_RESP_ERR_NO_ERROR)
+    {
+      msg_error("kafka: error flushing accumulated messages during shutdown, rd_kafka_flush() returned failure, this might indicate that some in-flight messages are lost",
+                evt_tag_str("topic", self->topic_name),
+                evt_tag_int("outq_len", rd_kafka_outq_len(self->kafka)),
+                evt_tag_str("error", rd_kafka_err2str(err)),
+                evt_tag_str("driver", self->super.super.super.id),
+                log_pipe_location_tag(&self->super.super.super.super));
+    }
+  outq_len = rd_kafka_outq_len(self->kafka);
+
+  if (outq_len != 0)
+    msg_notice("kafka: timeout while waiting for the librdkafka queue to empty, the "
+               "remaining entries will be purged and readded to the syslog-ng queue",
+               evt_tag_int("timeout", timeout),
+               evt_tag_int("outq_len", outq_len));
+}
+
 static gboolean
 kafka_dd_init(LogPipe *s)
 {
@@ -282,7 +332,7 @@ kafka_dd_deinit(LogPipe *s)
 {
   KafkaDestDriver *self = (KafkaDestDriver *)s;
 
-  rd_kafka_flush(self->kafka, 60000);
+  _flush_inflight_messages(self);
   return log_threaded_dest_driver_deinit_method(s);
 }
 
@@ -324,6 +374,8 @@ kafka_dd_new(GlobalConfig *cfg)
   self->super.format_stats_instance = kafka_dd_format_stats_instance;
   self->super.stats_source = SCS_KAFKA;
   self->super.worker.construct = _construct_worker;
+  /* one minute */
+  self->flush_timeout_on_shutdown = 60000;
 
   log_template_options_defaults(&self->template_options);
 
