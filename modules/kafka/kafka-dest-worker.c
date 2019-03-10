@@ -35,36 +35,38 @@ typedef struct _KafkaDestWorker
   GString *message;
 } KafkaDestWorker;
 
-/*
- * Worker thread
- */
-
-static LogThreadedResult
-kafka_dest_worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
+static void
+_format_message_and_key(KafkaDestWorker *self, LogMessage *msg)
 {
-  KafkaDestWorker *self = (KafkaDestWorker *)s;
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
 
-  if (owner->key)
-    log_template_format(owner->key, msg, &owner->template_options, LTZ_SEND,
-                        self->super.seq_num, NULL, self->key);
   log_template_format(owner->message, msg, &owner->template_options, LTZ_SEND,
                       self->super.seq_num, NULL, self->message);
+
+  if (self->key)
+    log_template_format(owner->key, msg, &owner->template_options, LTZ_SEND,
+                        self->super.seq_num, NULL, self->key);
+}
+
+static gboolean
+_publish_message(KafkaDestWorker *self, LogMessage *msg)
+{
+  KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
+  GString *key = self->key ? : &((GString) { .str = NULL, .len = 0});
+  GString *message = self->message;
 
   if (rd_kafka_produce(owner->topic,
                        RD_KAFKA_PARTITION_UA,
                        RD_KAFKA_MSG_F_FREE,
-                       self->message->str,
-                       self->message->len,
-                       owner->key ? self->key->str : NULL,
-                       owner->key ? self->key->len : 0,
+                       message->str, message->len,
+                       key->str, key->len,
                        msg) == -1)
     {
       msg_error("Failed to add message to Kafka topic!",
                 evt_tag_str("driver", owner->super.super.super.id),
                 evt_tag_str("topic", owner->topic_name),
                 evt_tag_str("error", rd_kafka_err2str(rd_kafka_last_error())));
-      return LTR_ERROR;
+      return FALSE;
     }
 
   msg_debug("Kafka event sent",
@@ -73,10 +75,26 @@ kafka_dest_worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
             evt_tag_str("payload", self->message->str));
 
   /* we passed the allocated buffers to rdkafka, which will eventually free them */
-  g_string_steal(self->message);
+  g_string_steal(message);
+  if (key)
+    g_string_steal(key);
+  return TRUE;
+}
 
-  if (owner->key)
-    g_string_steal(self->key);
+
+
+/*
+ * Worker thread
+ */
+
+static LogThreadedResult
+kafka_dest_worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
+{
+  KafkaDestWorker *self = (KafkaDestWorker *)s;
+
+  _format_message_and_key(self, msg);
+  if (!_publish_message(self, msg))
+    return LTR_RETRY;
 
   return LTR_SUCCESS;
 }
@@ -90,15 +108,17 @@ kafka_dest_worker_free(LogThreadedDestWorker *s)
 }
 
 LogThreadedDestWorker *
-kafka_dest_worker_new(LogThreadedDestDriver *owner, gint worker_index)
+kafka_dest_worker_new(LogThreadedDestDriver *o, gint worker_index)
 {
   KafkaDestWorker *self = g_new0(KafkaDestWorker, 1);
+  KafkaDestDriver *owner = (KafkaDestDriver *) o;
 
-  log_threaded_dest_worker_init_instance(&self->super, owner, worker_index);
+  log_threaded_dest_worker_init_instance(&self->super, o, worker_index);
   self->super.insert = kafka_dest_worker_insert;
   self->super.free_fn = kafka_dest_worker_free;
 
-  self->key = g_string_sized_new(1024);
+  if (owner->key)
+    self->key = g_string_sized_new(1024);
   self->message = g_string_sized_new(1024);
   return &self->super;
 }
