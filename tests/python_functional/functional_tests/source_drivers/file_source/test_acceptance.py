@@ -38,4 +38,4 @@ def test_acceptance(config, syslog_ng, input_log, expected_log, counter):
 
     file_source.write_log(input_log, counter)
     syslog_ng.start(config)
-    assert file_destination.read_logs(counter) == [expected_log]*counter
+    assert file_destination.read_logs(counter) == [expected_log] * counter

@@ -48,7 +48,7 @@ def prepare_input_file(input_content, temp_file):
     ],
 )
 def test_buffer_and_parse(test_message, temp_file, input_message_counter, requested_message_counter, expected_result):
-    input_content = test_message*input_message_counter
+    input_content = test_message * input_message_counter
     __writeable_file, readable_file = prepare_input_file(input_content, temp_file)
     single_line_parser = SingleLineParser()
     message_reader = MessageReader(readable_file.read, single_line_parser)
@@ -58,7 +58,7 @@ def test_buffer_and_parse(test_message, temp_file, input_message_counter, reques
 
 
 def test_multiple_buffer_and_parse(test_message, temp_file):
-    input_content = test_message*2
+    input_content = test_message * 2
     writeable_file, readable_file = prepare_input_file(input_content, temp_file)
     single_line_parser = SingleLineParser()
     message_reader = MessageReader(readable_file.read, single_line_parser)
@@ -121,7 +121,7 @@ def test_pop_messages(temp_file, input_message, requested_message_counter, poppe
 
 
 def test_popping_in_sequence(test_message, temp_file):
-    input_content = test_message*10
+    input_content = test_message * 10
     __writeable_file, readable_file = prepare_input_file(input_content, temp_file)
     single_line_parser = SingleLineParser()
 
