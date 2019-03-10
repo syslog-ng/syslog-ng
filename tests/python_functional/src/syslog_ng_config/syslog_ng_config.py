@@ -47,7 +47,7 @@ class SyslogNgConfig(object):
         }
 
     def set_version(self, version):
-        self.__syslog_ng_config["version"]=version
+        self.__syslog_ng_config["version"] = version
 
     def set_raw_config(self, raw_config):
         self.__raw_config = raw_config
