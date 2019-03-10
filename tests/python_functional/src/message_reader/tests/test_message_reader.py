@@ -185,7 +185,7 @@ def test_read_all_messages():
 
     single_line_parser = SingleLineParser()
     generator = read_generator()
-    message_reader = MessageReader(lambda : next(generator), single_line_parser)
+    message_reader = MessageReader(lambda: next(generator), single_line_parser)
 
     assert len(message_reader.pop_messages(counter=READ_ALL_MESSAGES)) == 0
     assert len(message_reader.pop_messages(counter=READ_ALL_MESSAGES)) == 2
