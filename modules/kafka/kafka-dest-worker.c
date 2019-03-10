@@ -24,44 +24,16 @@
  */
 #include "kafka-dest-worker.h"
 #include "kafka-dest-driver.h"
-
+#include "str-utils.h"
 #include <zlib.h>
 
 
 typedef struct _KafkaDestWorker
 {
   LogThreadedDestWorker super;
-  GString *payload_str;
+  GString *key;
+  GString *message;
 } KafkaDestWorker;
-
-static u_int32_t
-kafka_calculate_partition_key(KafkaDestWorker *self, LogMessage *msg)
-{
-  KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
-  u_int32_t key;
-  GString *field = g_string_sized_new(1024);
-
-  log_template_format(owner->field, msg, &owner->template_options,
-			LTZ_SEND, self->super.seq_num, NULL, field);
-
-  msg_debug("Kafka dynamic key",
-	    evt_tag_str("key", field->str),
-	    evt_tag_str("driver", owner->super.super.super.id),
-	    NULL);
-
-  key = crc32(0L, Z_NULL, 0);
-  key = crc32(key, (const u_char *)field->str, field->len);
-
-  msg_debug("Kafka field crc32",
-            evt_tag_str("payload", field->str),
-	    evt_tag_int("length", field->len),
-	    evt_tag_int("crc32", key),
-	    evt_tag_str("driver", owner->super.super.super.id),
-	    NULL);
-
-  g_string_free(field, TRUE);
-  return key;
-}
 
 /*
  * Worker thread
@@ -72,44 +44,42 @@ kafka_dest_worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
 {
   KafkaDestWorker *self = (KafkaDestWorker *)s;
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
-  u_int32_t key;
 
-  log_template_format(owner->payload, msg, &owner->template_options, LTZ_SEND,
-                      self->super.seq_num, NULL, self->payload_str);
-
-  switch (owner->partition_type)
-    {
-    case PARTITION_RANDOM:
-      key =  rand();
-      break;
-    case PARTITION_FIELD:
-      key = kafka_calculate_partition_key(self, msg);
-      break;
-    default:
-      key = 0;
-    }
+  if (owner->key)
+    log_template_format(owner->key, msg, &owner->template_options, LTZ_SEND,
+                        self->super.seq_num, NULL, self->key);
+  log_template_format(owner->message, msg, &owner->template_options, LTZ_SEND,
+                      self->super.seq_num, NULL, self->message);
 
 #define KAFKA_INITIAL_ERROR_CODE -12345
   rd_kafka_resp_err_t err = KAFKA_INITIAL_ERROR_CODE;
   if (rd_kafka_produce(owner->topic,
                        RD_KAFKA_PARTITION_UA,
-                       RD_KAFKA_MSG_F_COPY,
-                       self->payload_str->str,
-                       self->payload_str->len,
-                       &key, sizeof(key),
+                       RD_KAFKA_MSG_F_FREE,
+                       self->message->str,
+                       self->message->len,
+                       owner->key ? self->key->str : NULL,
+                       owner->key ? self->key->len : 0,
                        &err) == -1)
     {
       msg_error("Failed to add message to Kafka topic!",
                 evt_tag_str("driver", owner->super.super.super.id),
                 evt_tag_str("topic", owner->topic_name),
-                evt_tag_str("error", rd_kafka_err2str(rd_kafka_last_error())),
-                NULL);
+                evt_tag_str("error", rd_kafka_err2str(rd_kafka_last_error())));
       return LTR_ERROR;
     }
 
-  msg_debug("Kafka produce done",
+  msg_debug("Kafka event sent",
             evt_tag_str("driver", owner->super.super.super.id),
-            NULL);
+            evt_tag_str("topic", owner->topic_name),
+            evt_tag_str("payload", self->message->str));
+
+  /* we passed the allocated buffers to rdkafka, which will eventually free them */
+  g_string_steal(self->message);
+
+  if (owner->key)
+    g_string_steal(self->key);
+
 
   /* Wait for completion. */
   if (owner->flags & KAFKA_FLAG_SYNC)
@@ -136,11 +106,6 @@ kafka_dest_worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
         }
     }
 
-  msg_debug("Kafka event sent",
-            evt_tag_str("driver", owner->super.super.super.id),
-            evt_tag_str("topic", owner->topic_name),
-            evt_tag_str("payload", self->payload_str->str),
-            NULL);
 
   return LTR_SUCCESS;
 }
@@ -149,7 +114,8 @@ static void
 kafka_dest_worker_free(LogThreadedDestWorker *s)
 {
   KafkaDestWorker *self = (KafkaDestWorker *)s;
-  g_string_free(self->payload_str, TRUE);
+  g_string_free(self->key, TRUE);
+  g_string_free(self->message, TRUE);
 }
 
 LogThreadedDestWorker *
@@ -161,6 +127,7 @@ kafka_dest_worker_new(LogThreadedDestDriver *owner, gint worker_index)
   self->super.insert = kafka_dest_worker_insert;
   self->super.free_fn = kafka_dest_worker_free;
 
-  self->payload_str = g_string_sized_new(1024);
+  self->key = g_string_sized_new(1024);
+  self->message = g_string_sized_new(1024);
   return &self->super;
 }

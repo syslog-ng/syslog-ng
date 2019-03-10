@@ -58,10 +58,7 @@
 %token KW_TOPIC
 %token KW_GLOBAL_CONFIG
 %token KW_TOPIC_CONFIG
-%token KW_PAYLOAD
-%token KW_PARTITION
-%token KW_RANDOM
-%token KW_FIELD
+%token KW_WORKERS
 %token KW_FLAGS
 %token KW_SYNC
 
@@ -94,20 +91,17 @@ kafka_option
         {
             kafka_dd_set_topic_config(last_driver, $3);
         }
-        | KW_PARTITION '(' KW_RANDOM ')'
+        | KW_KEY '(' template_content ')'
         {
-            kafka_dd_set_partition_random(last_driver);
+            kafka_dd_set_key_ref(last_driver, $3);
         }
-        | KW_PARTITION '(' template_content ')'
+        | KW_MESSAGE '(' template_content ')'
         {
-          kafka_dd_set_partition_field(last_driver, $3);
+            kafka_dd_set_message_ref(last_driver, $3);
         }
+        | KW_WORKERS '(' nonnegative_integer ')'  { log_threaded_dest_driver_set_num_workers(last_driver, $3); }
         | KW_FLAGS '(' kafka_flags ')'
-        | KW_PAYLOAD '(' template_content ')'
-        {
-            kafka_dd_set_payload(last_driver, $3);
-        }
-        | threaded_dest_driver_option
+        | dest_driver_option
         | { last_template_options = kafka_dd_get_template_options(last_driver); } template_option
         ;
 

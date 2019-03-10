@@ -31,8 +31,8 @@ typedef struct
   LogThreadedDestDriver super;
 
   LogTemplateOptions template_options;
-  LogTemplate *field;
-  LogTemplate *payload;
+  LogTemplate *key;
+  LogTemplate *message;
 
   gint32 flags;
 
@@ -41,11 +41,6 @@ typedef struct
   GList *topic_config;
   rd_kafka_topic_t *topic;
   rd_kafka_t *kafka;
-  enum
-  {
-    PARTITION_RANDOM = 0,
-    PARTITION_FIELD = 1
-  } partition_type;
 } KafkaDestDriver;
 
 #define KAFKA_FLAG_NONE 0
@@ -55,9 +50,8 @@ void kafka_dd_set_topic(LogDriver *d, const gchar *topic);
 void kafka_dd_set_global_config(LogDriver *d, GList *props);
 void kafka_dd_set_topic_config(LogDriver *d, GList *props);
 
-void kafka_dd_set_partition_field(LogDriver *d, LogTemplate *key_field);
-void kafka_dd_set_partition_random(LogDriver *d);
-void kafka_dd_set_payload(LogDriver *d, LogTemplate *payload);
+void kafka_dd_set_key_ref(LogDriver *d, LogTemplate *key);
+void kafka_dd_set_message_ref(LogDriver *d, LogTemplate *message);
 void kafka_dd_set_flag_sync(LogDriver *d);
 LogTemplateOptions *kafka_dd_get_template_options(LogDriver *d);
 

@@ -58,24 +58,6 @@ kafka_log(const rd_kafka_t *rkt, int level,
                      NULL ));
 }
 
-
-int32_t kafka_partition(const rd_kafka_topic_t *rkt,
-                        const void *keydata,
-                        size_t keylen,
-                        int32_t partition_cnt,
-                        void *rktp,
-                        void *msgp)
-{
-  u_int32_t key = *((u_int32_t *)keydata);
-  u_int32_t target = key % partition_cnt;
-  int32_t i = partition_cnt;
-
-  while (--i > 0 && !rd_kafka_topic_partition_available(rkt, target)) {
-    target = (target + 1) % partition_cnt;
-  }
-  return target;
-}
-
 static void
 kafka_worker_sync_produce_dr_cb(rd_kafka_t *rk,
                                 void *payload, size_t len,
@@ -119,21 +101,21 @@ kafka_dd_set_topic_config(LogDriver *d, GList *props)
 }
 
 void
-kafka_dd_set_partition_random(LogDriver *d)
+kafka_dd_set_key_ref(LogDriver *d, LogTemplate *key)
 {
   KafkaDestDriver *self = (KafkaDestDriver *)d;
 
-  self->partition_type = PARTITION_RANDOM;
+  log_template_unref(self->key);
+  self->key = key;
 }
 
 void
-kafka_dd_set_partition_field(LogDriver *d, LogTemplate *field)
+kafka_dd_set_message_ref(LogDriver *d, LogTemplate *message)
 {
   KafkaDestDriver *self = (KafkaDestDriver *)d;
 
-  self->partition_type = PARTITION_FIELD;
-  log_template_unref(self->field);
-  self->field = log_template_ref(field);
+  log_template_unref(self->message);
+  self->message = message;
 }
 
 void
@@ -148,15 +130,6 @@ kafka_dd_set_flag_sync(LogDriver *d)
   self->flags |= KAFKA_FLAG_SYNC;
 }
 
-
-void
-kafka_dd_set_payload(LogDriver *d, LogTemplate *payload)
-{
-  KafkaDestDriver *self = (KafkaDestDriver *)d;
-
-  log_template_unref(self->payload);
-  self->payload = log_template_ref(payload);
-}
 
 /*
  * Utilities
@@ -274,6 +247,7 @@ _construct_topic(KafkaDestDriver *self)
   g_assert(self->kafka != NULL);
 
   topic_conf = rd_kafka_topic_conf_new();
+  _topic_conf_set_prop(topic_conf, "partitioner", "murmur2_random");
 
   for (list = g_list_first(self->topic_config); list != NULL; list = g_list_next(list))
     {
@@ -281,7 +255,6 @@ _construct_topic(KafkaDestDriver *self)
       _topic_conf_set_prop(topic_conf, kp->name, kp->value);
     }
 
-  rd_kafka_topic_conf_set_partitioner_cb(topic_conf, kafka_partition);
   rd_kafka_topic_conf_set_opaque(topic_conf, self);
   return rd_kafka_topic_new(self->kafka, self->topic_name, topic_conf);
 }
@@ -326,14 +299,23 @@ kafka_dd_init(LogPipe *s)
               NULL);
 
 
-  if (self->payload == NULL)
+  if (self->message == NULL)
     {
-      self->payload = log_template_new(cfg, "default_kafka_template");
-      log_template_compile(self->payload, "$MESSAGE", NULL);
+      self->message = log_template_new(cfg, NULL);
+      log_template_compile(self->message, "$ISODATE $HOST $MSGHDR$MSG", NULL);
     }
 
 
   return log_threaded_dest_driver_start_workers(&self->super);
+}
+
+static gboolean
+kafka_dd_deinit(LogPipe *s)
+{
+  KafkaDestDriver *self = (KafkaDestDriver *)s;
+
+  rd_kafka_flush(self->kafka, 60000);
+  return log_threaded_dest_driver_deinit_method(s);
 }
 
 static void
@@ -343,7 +325,8 @@ kafka_dd_free(LogPipe *d)
 
   log_template_options_destroy(&self->template_options);
 
-  log_template_unref(self->payload);
+  log_template_unref(self->key);
+  log_template_unref(self->message);
   if (self->topic)
     rd_kafka_topic_destroy(self->topic);
   if (self->kafka)
@@ -366,6 +349,7 @@ kafka_dd_new(GlobalConfig *cfg)
 
   log_threaded_dest_driver_init_instance(&self->super, cfg);
   self->super.super.super.super.init = kafka_dd_init;
+  self->super.super.super.super.deinit = kafka_dd_deinit;
   self->super.super.super.super.free_fn = kafka_dd_free;
   self->super.super.super.super.generate_persist_name = kafka_dd_format_persist_name;
 

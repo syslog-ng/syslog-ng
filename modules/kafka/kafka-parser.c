@@ -36,11 +36,10 @@ static CfgLexerKeyword kafka_keywords[] = {
     { "global_config",  KW_GLOBAL_CONFIG },
     { "topic_config",   KW_TOPIC_CONFIG },
 
-    { "field",          KW_FIELD },
+    { "key",            KW_KEY },
+    { "message",        KW_MESSAGE },
+    { "workers",        KW_WORKERS },
     { "kafka_c",        KW_KAFKA },   /* compatibility with incubator naming */
-    { "partition",      KW_PARTITION },
-    { "payload",        KW_PAYLOAD },
-    { "random",         KW_RANDOM },
     { "sync",           KW_SYNC },
     { NULL }
 };
