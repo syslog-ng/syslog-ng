@@ -29,7 +29,6 @@ from pathlib2 import Path
 
 from src.message_builder.bsd_format import BSDFormat
 from src.message_builder.log_message import LogMessage
-from src.setup.testcase import SetupTestCase
 from src.setup.testcase_parameters import TestcaseParameters
 from src.syslog_ng.syslog_ng import SyslogNg
 from src.syslog_ng.syslog_ng_paths import SyslogNgPaths
@@ -123,11 +122,6 @@ def bsd_formatter():
 @pytest.fixture
 def log_message():
     return LogMessage()
-
-
-@pytest.fixture
-def tc(request):
-    return SetupTestCase(request)
 
 
 @pytest.fixture(scope="session")

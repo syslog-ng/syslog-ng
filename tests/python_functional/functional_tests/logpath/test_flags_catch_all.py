@@ -22,14 +22,7 @@
 #############################################################################
 
 
-def write_dummy_message(tc, file_source):
-    bsd_message = tc.new_log_message()
-    bsd_log = tc.format_as_bsd(bsd_message)
-    file_source.write_log(bsd_log)
-    return bsd_message
-
-
-def test_flags_catch_all(tc):
+def test_flags_catch_all(config, syslog_ng, log_message, bsd_formatter):
     # Check the correct output if the logpath is the following
     # log {
     #     source(s_file);
@@ -38,8 +31,6 @@ def test_flags_catch_all(tc):
     # log { destination(d_file2); flags(catch-all);};
     # input logs:
     # Oct 11 22:14:15 host-A testprogram: message from host-A
-
-    config = tc.new_config()
 
     file_source = config.create_file_source(file_name="input.log")
     file_destination = config.create_file_destination(file_name="output.log")
@@ -50,18 +41,17 @@ def test_flags_catch_all(tc):
     config.create_logpath(statements=[file_source, inner_logpath])
     config.create_logpath(statements=[catch_all_destination], flags="catch-all")
 
-    bsd_message = write_dummy_message(tc, file_source)
+    input_message = bsd_formatter.format_message(log_message)
+    expected_message = bsd_formatter.format_message(log_message.remove_priority())
+    file_source.write_log(input_message)
 
-    expected_bsd_message = bsd_message.remove_priority()
-
-    syslog_ng = tc.new_syslog_ng()
     syslog_ng.start(config)
 
-    destination_logs = file_destination.read_log()
+    destination_log = file_destination.read_log()
     # message should arrived into destination1
-    assert tc.format_as_bsd(expected_bsd_message) in destination_logs
+    assert expected_message in destination_log
 
-    catch_all_destination_logs = catch_all_destination.read_log()
+    catch_all_destination_log = catch_all_destination.read_log()
     # message should arrived into catch_all_destination
     # there is a flags(catch-all)
-    assert tc.format_as_bsd(expected_bsd_message) in catch_all_destination_logs
+    assert expected_message in catch_all_destination_log
