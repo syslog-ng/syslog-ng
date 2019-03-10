@@ -44,7 +44,7 @@ def prepare_input_file(input_content, temp_file):
         (1, 1, True),
         (1, 2, False),
         (2, 1, True),
-        (5, 0, False),  ## because we are not in wait_until_true() loop, self.read_eof will not turn to True
+        (5, 0, False),  # because we are not in wait_until_true() loop, self.read_eof will not turn to True
     ],
 )
 def test_buffer_and_parse(test_message, temp_file, input_message_counter, requested_message_counter, expected_result):
