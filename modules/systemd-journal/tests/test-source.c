@@ -22,7 +22,7 @@
  */
 #include "test-source.h"
 #include "syslog-ng.h"
-#include "testutils.h"
+#include <criterion/criterion.h>
 #include "stats/stats.h"
 
 struct _TestSource
@@ -44,16 +44,18 @@ static gboolean
 __init(LogPipe *s)
 {
   TestSource *self = (TestSource *)s;
-  self->reader = journal_reader_new(configuration, self->journald_mock);
+  GlobalConfig *cfg = log_pipe_get_config(s);
+
+  self->reader = journal_reader_new(cfg, self->journald_mock);
   journal_reader_options_defaults(&self->options);
   if (self->current_test_case && self->current_test_case->init)
     {
       self->current_test_case->init(self->current_test_case, self, self->journald_mock, self->reader, &self->options);
     }
-  journal_reader_options_init(&self->options, configuration, "test");
+  journal_reader_options_init(&self->options, cfg, "test");
   journal_reader_set_options((LogPipe *)self->reader, &self->super, &self->options, "test", "1");
   log_pipe_append((LogPipe *)self->reader, &self->super);
-  assert_true(log_pipe_init((LogPipe *)self->reader), ASSERTION_ERROR("Can't initialize reader"));
+  cr_assert(log_pipe_init((LogPipe *)self->reader), "%s", "Can't initialize reader");
   return TRUE;
 }
 
