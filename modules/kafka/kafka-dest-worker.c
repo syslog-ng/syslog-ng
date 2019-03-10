@@ -62,17 +62,21 @@ _publish_message(KafkaDestWorker *self, LogMessage *msg)
                        key->str, key->len,
                        msg) == -1)
     {
-      msg_error("Failed to add message to Kafka topic!",
-                evt_tag_str("driver", owner->super.super.super.id),
+      msg_error("kafka: failed to publish message",
                 evt_tag_str("topic", owner->topic_name),
-                evt_tag_str("error", rd_kafka_err2str(rd_kafka_last_error())));
+                evt_tag_str("error", rd_kafka_err2str(rd_kafka_last_error())),
+                evt_tag_str("driver", owner->super.super.super.id),
+                log_pipe_location_tag(&owner->super.super.super.super));
+
       return FALSE;
     }
 
-  msg_debug("Kafka event sent",
-            evt_tag_str("driver", owner->super.super.super.id),
+  msg_debug("kafka: message published",
             evt_tag_str("topic", owner->topic_name),
-            evt_tag_str("payload", self->message->str));
+            evt_tag_str("key", key->str ? : "NULL"),
+            evt_tag_str("message", message->str),
+            evt_tag_str("driver", owner->super.super.super.id),
+            log_pipe_location_tag(&owner->super.super.super.super));
 
   /* we passed the allocated buffers to rdkafka, which will eventually free them */
   g_string_steal(message);
