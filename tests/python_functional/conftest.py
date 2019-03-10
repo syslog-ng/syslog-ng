@@ -31,7 +31,6 @@ from src.message_builder.bsd_format import BSDFormat
 from src.message_builder.log_message import LogMessage
 from src.setup.testcase import SetupTestCase
 from src.setup.testcase_parameters import TestcaseParameters
-from src.setup.unit_testcase import SetupUnitTestcase
 from src.syslog_ng.syslog_ng import SyslogNg
 from src.syslog_ng.syslog_ng_paths import SyslogNgPaths
 from src.syslog_ng_config.syslog_ng_config import SyslogNgConfig
@@ -129,11 +128,6 @@ def log_message():
 @pytest.fixture
 def tc(request):
     return SetupTestCase(request)
-
-
-@pytest.fixture
-def tc_unittest(request):
-    return SetupUnitTestcase(request, get_current_date)
 
 
 @pytest.fixture(scope="session")

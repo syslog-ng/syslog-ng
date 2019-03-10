@@ -24,12 +24,11 @@
 from src.executors.process_executor import ProcessExecutor
 
 
-def test_start_stop_process(tc_unittest):
+def test_start_stop_process(tmpdir):
+    stdout_file = tmpdir.join("stdout.log")
+    stderr_file = tmpdir.join("stderr.log")
     process_executor = ProcessExecutor()
-    process_command = ["python", "-c", "import time; time.sleep(3)"]
-    stdout_file = tc_unittest.get_temp_file()
-    stderr_file = tc_unittest.get_temp_file()
-
+    process_command = ["ls"]
     process_executor.start(process_command, stdout_file, stderr_file)
     assert process_executor.process is not None
     assert process_executor.process.pid is not None

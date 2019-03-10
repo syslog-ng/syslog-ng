@@ -25,6 +25,16 @@ import pytest
 from src.message_reader.message_reader import MessageReader, READ_ALL_MESSAGES
 from src.message_reader.single_line_parser import SingleLineParser
 from src.common import blocking
+from src.common.operations import open_file
+
+def prepare_input_file(input_content, temp_file):
+    writeable_file = open_file(temp_file, "a+")
+    readable_file = open_file(temp_file, "r")
+
+    writeable_file.write(input_content)
+    writeable_file.flush()
+    return writeable_file, readable_file
+
 
 @pytest.mark.parametrize(
     "input_message_counter, requested_message_counter, expected_result",
@@ -35,9 +45,9 @@ from src.common import blocking
         (5, 0, False),  ## because we are not in wait_until_true() loop, self.read_eof will not turn to True
     ],
 )
-def test_buffer_and_parse(tc_unittest, input_message_counter, requested_message_counter, expected_result):
-    input_content = tc_unittest.get_utf8_test_messages(input_message_counter)
-    __writeable_file, readable_file = tc_unittest.prepare_input_file(input_content)
+def test_buffer_and_parse(test_message, temp_file, input_message_counter, requested_message_counter, expected_result):
+    input_content = test_message*input_message_counter
+    __writeable_file, readable_file = prepare_input_file(input_content, temp_file)
     single_line_parser = SingleLineParser()
     message_reader = MessageReader(readable_file.read, single_line_parser)
 
@@ -45,9 +55,9 @@ def test_buffer_and_parse(tc_unittest, input_message_counter, requested_message_
     assert single_line_parser.msg_list == input_content.splitlines(True)
 
 
-def test_multiple_buffer_and_parse(tc_unittest):
-    input_content = tc_unittest.get_utf8_test_messages(2)
-    writeable_file, readable_file = tc_unittest.prepare_input_file(input_content)
+def test_multiple_buffer_and_parse(test_message, temp_file):
+    input_content = test_message*2
+    writeable_file, readable_file = prepare_input_file(input_content, temp_file)
     single_line_parser = SingleLineParser()
     message_reader = MessageReader(readable_file.read, single_line_parser)
 
@@ -94,8 +104,8 @@ def test_multiple_buffer_and_parse(tc_unittest):
         ),
     ],
 )
-def test_pop_messages(tc_unittest, input_message, requested_message_counter, popped_message, remaining_message):
-    __writeable_file, readable_file = tc_unittest.prepare_input_file(input_message)
+def test_pop_messages(temp_file, input_message, requested_message_counter, popped_message, remaining_message):
+    __writeable_file, readable_file = prepare_input_file(input_message, temp_file)
     single_line_parser = SingleLineParser()
 
     message_reader = MessageReader(readable_file.read, single_line_parser)
@@ -108,9 +118,9 @@ def test_pop_messages(tc_unittest, input_message, requested_message_counter, pop
         assert message_reader._MessageReader__parser.msg_list == remaining_message
 
 
-def test_popping_in_sequence(tc_unittest):
-    input_content = tc_unittest.get_utf8_test_messages(counter=10)
-    __writeable_file, readable_file = tc_unittest.prepare_input_file(input_content)
+def test_popping_in_sequence(test_message, temp_file):
+    input_content = test_message*10
+    __writeable_file, readable_file = prepare_input_file(input_content, temp_file)
     single_line_parser = SingleLineParser()
 
     message_reader = MessageReader(readable_file.read, single_line_parser)
@@ -123,9 +133,9 @@ def test_popping_in_sequence(tc_unittest):
     assert message_reader.pop_messages(counter=2) == input_content_list[8:10]
 
 
-def test_writing_popping_in_sequence(tc_unittest):
+def test_writing_popping_in_sequence(temp_file):
     test_message = "test message 1\n"
-    writeable_file, readable_file = tc_unittest.prepare_input_file(test_message)
+    writeable_file, readable_file = prepare_input_file(test_message, temp_file)
     single_line_parser = SingleLineParser()
 
     message_reader = MessageReader(readable_file.read, single_line_parser)
@@ -154,16 +164,16 @@ def test_writing_popping_in_sequence(tc_unittest):
     assert message_reader.pop_messages(counter=1) == test_message.splitlines(True)
 
 
-def test_peek_messages(tc_unittest):
+def test_peek_messages(temp_file):
     test_message = "test message 2\ntest message 3\n"
-    __writeable_file, readable_file = tc_unittest.prepare_input_file(test_message)
+    __writeable_file, readable_file = prepare_input_file(test_message, temp_file)
     single_line_parser = SingleLineParser()
     message_reader = MessageReader(readable_file.read, single_line_parser)
 
     assert message_reader.peek_messages(counter=2) == test_message.splitlines(True)
     assert message_reader._MessageReader__parser.msg_list == test_message.splitlines(True)
 
-def test_read_all_messages(tc_unittest):
+def test_read_all_messages():
     def read_generator():
         yield "" # eof
         yield "second\n"
