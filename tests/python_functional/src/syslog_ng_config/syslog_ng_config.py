@@ -46,9 +46,7 @@ class SyslogNgConfig(object):
             "logpath_groups": [],
         }
 
-    def set_version(self, version):
-        self.__syslog_ng_config["version"] = version
-
+    # Public API
     def set_raw_config(self, raw_config):
         self.__raw_config = raw_config
 
@@ -60,15 +58,51 @@ class SyslogNgConfig(object):
         logger.info("Generated syslog-ng config\n{}\n".format(rendered_config))
         FileIO(config_path).rewrite(rendered_config)
 
-    def create_statement_group_if_needed(self, item):
-        if isinstance(item, (StatementGroup, LogPath)):
-            return item
-        else:
-            return self.create_statement_group(item)
+    def create_statement_group(self, statements):
+        statement_group = StatementGroup(statements)
+        self.__syslog_ng_config["statement_groups"].append(statement_group)
+        return statement_group
 
+    # Config elements
+    def set_version(self, version):
+        self.__syslog_ng_config["version"] = version
+
+    def create_global_options(self, **kwargs):
+        self.__syslog_ng_config["global_options"].update(kwargs)
+
+    # Sources
+    def create_file_source(self, **kwargs):
+        return FileSource(self.__working_dir, **kwargs)
+
+    def create_example_msg_generator(self, **options):
+        generator_source = SourceDriver(None)
+        generator_source.driver_name = "example_msg_generator"
+        generator_source.DEFAULT_MESSAGE = "-- Generated message. --"
+        generator_source.options = options
+        return generator_source
+
+    # Destinations
+    def create_file_destination(self, **kwargs):
+        return FileDestination(self.__working_dir, **kwargs)
+
+    # Filter
+    def create_filter(self, **kwargs):
+        return Filter(**kwargs)
+
+    # Logpath
+    def create_logpath(self, statements=None, flags=None):
+        logpath = self.__create_logpath_with_conversion(statements, flags)
+        self.__syslog_ng_config["logpath_groups"].append(logpath)
+        return logpath
+
+    def create_inner_logpath(self, statements=None, flags=None):
+        inner_logpath = self.__create_logpath_with_conversion(statements, flags)
+        return inner_logpath
+
+    # Private API
     def __create_logpath_with_conversion(self, items, flags):
         return self.__create_logpath_group(
-            map(self.create_statement_group_if_needed, cast_to_list(items)),
+            map(self.__create_statement_group_if_needed, cast_to_list(items)),
             flags)
 
     @staticmethod
@@ -80,35 +114,8 @@ class SyslogNgConfig(object):
             logpath.add_flags(cast_to_list(flags))
         return logpath
 
-    def create_global_options(self, **kwargs):
-        self.__syslog_ng_config["global_options"].update(kwargs)
-
-    def create_file_source(self, **kwargs):
-        return FileSource(self.__working_dir, **kwargs)
-
-    def create_file_destination(self, **kwargs):
-        return FileDestination(self.__working_dir, **kwargs)
-
-    def create_filter(self, **kwargs):
-        return Filter(**kwargs)
-
-    def create_statement_group(self, statements):
-        statement_group = StatementGroup(statements)
-        self.__syslog_ng_config["statement_groups"].append(statement_group)
-        return statement_group
-
-    def create_logpath(self, statements=None, flags=None):
-        logpath = self.__create_logpath_with_conversion(statements, flags)
-        self.__syslog_ng_config["logpath_groups"].append(logpath)
-        return logpath
-
-    def create_inner_logpath(self, statements=None, flags=None):
-        inner_logpath = self.__create_logpath_with_conversion(statements, flags)
-        return inner_logpath
-
-    def create_example_msg_generator(self, **options):
-        generator_source = SourceDriver(None)
-        generator_source.driver_name = "example_msg_generator"
-        generator_source.DEFAULT_MESSAGE = "-- Generated message. --"
-        generator_source.options = options
-        return generator_source
+    def __create_statement_group_if_needed(self, item):
+        if isinstance(item, (StatementGroup, LogPath)):
+            return item
+        else:
+            return self.create_statement_group(item)
