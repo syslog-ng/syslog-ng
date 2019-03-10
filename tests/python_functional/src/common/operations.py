@@ -24,6 +24,7 @@ import shutil
 
 from pathlib2 import Path
 
+
 def open_file(file_path, mode):
     # Python 2 compatibility note: open() can work only with string representation of path
     return open(str(file_path), mode)

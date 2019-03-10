@@ -23,6 +23,7 @@
 import socket
 import time
 
+
 class LogMessage(object):
     def __init__(self):
         self.priority_value = "38"

@@ -34,6 +34,7 @@ from src.syslog_ng_config.statements.sources.source_driver import SourceDriver
 
 logger = logging.getLogger(__name__)
 
+
 class SyslogNgConfig(object):
     def __init__(self, working_dir, version):
         self.__working_dir = working_dir

@@ -24,6 +24,7 @@ from pathlib2 import Path
 
 from src.common.operations import calculate_testcase_name
 
+
 class TestcaseParameters(object):
     def __init__(self, pytest_request):
         testcase_name = calculate_testcase_name(pytest_request)

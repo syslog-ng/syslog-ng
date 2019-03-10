@@ -27,6 +27,7 @@ from src.common.operations import open_file
 
 logger = logging.getLogger(__name__)
 
+
 class File(object):
     def __init__(self, file_path):
         self.__file_path = file_path

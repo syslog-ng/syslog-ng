@@ -24,12 +24,14 @@
 
 from src.message_builder.log_message import LogMessage
 
+
 def write_msg_with_fields(file_source, bsd_formatter, hostname):
     log_message = LogMessage().hostname(hostname)
     input_message = bsd_formatter.format_message(log_message)
     expected_message = bsd_formatter.format_message(log_message.remove_priority())
     file_source.write_log(input_message)
     return expected_message
+
 
 def test_flags_final(config, syslog_ng, bsd_formatter):
     # Check the correct output if the logpath is the following

@@ -25,6 +25,7 @@ import functools
 from src.common.operations import cast_to_list
 from src.common.random_id import get_unique_id
 
+
 class StatementGroup(list):
     def __init__(self, statements):
         super(StatementGroup, self).__init__(cast_to_list(statements))

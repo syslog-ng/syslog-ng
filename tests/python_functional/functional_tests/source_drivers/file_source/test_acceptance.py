@@ -26,6 +26,7 @@ import socket
 input_log = "<38>Feb 11 21:27:22 {} testprogram[9999]: test message\n".format(socket.gethostname())
 expected_log = "Feb 11 21:27:22 {} testprogram[9999]: test message\n".format(socket.gethostname())
 
+
 @pytest.mark.parametrize("input_log, expected_log, counter", [
     (input_log, expected_log, 1),
     (input_log, expected_log, 10),

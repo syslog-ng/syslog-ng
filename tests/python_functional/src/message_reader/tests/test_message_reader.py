@@ -28,6 +28,7 @@ from src.message_reader.message_reader import MessageReader
 from src.message_reader.message_reader import READ_ALL_MESSAGES
 from src.message_reader.single_line_parser import SingleLineParser
 
+
 def prepare_input_file(input_content, temp_file):
     writeable_file = open_file(temp_file, "a+")
     readable_file = open_file(temp_file, "r")
@@ -173,6 +174,7 @@ def test_peek_messages(temp_file):
 
     assert message_reader.peek_messages(counter=2) == test_message.splitlines(True)
     assert message_reader._MessageReader__parser.msg_list == test_message.splitlines(True)
+
 
 def test_read_all_messages():
     def read_generator():

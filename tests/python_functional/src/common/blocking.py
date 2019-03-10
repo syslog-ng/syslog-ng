@@ -25,8 +25,10 @@ import time
 DEFAULT_TIMEOUT = 20  # 20 sec
 POLL_FREQ = 0.001  # 1 millisecond
 
+
 def wait_until_true(func, *args):
     return wait_until_true_custom(func, args)
+
 
 def wait_until_true_custom(func, args=(), timeout=DEFAULT_TIMEOUT):
     # Python 2 compatibility note: time.monotonic() is missing
@@ -38,8 +40,10 @@ def wait_until_true_custom(func, args=(), timeout=DEFAULT_TIMEOUT):
         time.sleep(POLL_FREQ)
     return result
 
+
 def wait_until_false(func, *args):
     return wait_until_false_custom(func, args)
+
 
 def wait_until_false_custom(func, args=(), timeout=DEFAULT_TIMEOUT):
     negate = lambda func, args: not func(*args)

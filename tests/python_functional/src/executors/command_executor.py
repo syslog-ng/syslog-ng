@@ -28,6 +28,7 @@ from src.driver_io.file.file import File
 
 logger = logging.getLogger(__name__)
 
+
 def prepare_std_outputs(file_ref, stdout_path, stderr_path):
     stdout = file_ref(stdout_path)
     stderr = file_ref(stderr_path)

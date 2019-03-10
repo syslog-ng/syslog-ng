@@ -29,6 +29,7 @@ from src.message_reader.single_line_parser import SingleLineParser
 
 logger = logging.getLogger(__name__)
 
+
 class ConsoleLogReader(object):
     def __init__(self, instance_paths):
         self.__stderr_io = FileIO(instance_paths.get_stderr_path())

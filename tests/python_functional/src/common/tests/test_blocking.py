@@ -23,6 +23,7 @@
 from src.common.blocking import wait_until_false_custom
 from src.common.blocking import wait_until_true_custom
 
+
 def inner_function_return_true():
     return True
 
