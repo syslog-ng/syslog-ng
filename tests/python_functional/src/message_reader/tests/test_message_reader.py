@@ -178,10 +178,10 @@ def test_peek_messages(temp_file):
 
 def test_read_all_messages():
     def read_generator():
-        yield "" # eof
+        yield ""  # eof
         yield "second\n"
         yield "third\n"
-        yield "" # eof
+        yield ""  # eof
 
     single_line_parser = SingleLineParser()
     generator = read_generator()
