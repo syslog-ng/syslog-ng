@@ -20,12 +20,12 @@
 # COPYING for details.
 #
 #############################################################################
-
 import logging
-logger = logging.getLogger(__name__)
-from src.common.operations import open_file
-from src.common.blocking import wait_until_true
 
+from src.common.blocking import wait_until_true
+from src.common.operations import open_file
+
+logger = logging.getLogger(__name__)
 
 class File(object):
     def __init__(self, file_path):

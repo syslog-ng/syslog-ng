@@ -21,8 +21,8 @@
 # COPYING for details.
 #
 #############################################################################
-
 import pytest
+
 from src.testcase_parameters.testcase_parameters import TestcaseParameters
 
 

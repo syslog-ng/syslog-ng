@@ -20,13 +20,16 @@
 # COPYING for details.
 #
 #############################################################################
-
 import logging
-logger = logging.getLogger(__name__)
-import psutil
-from src.driver_io.file.file import File
-from src.executors.command_executor import prepare_std_outputs, prepare_printable_command, prepare_executable_command
 
+import psutil
+
+from src.driver_io.file.file import File
+from src.executors.command_executor import prepare_executable_command
+from src.executors.command_executor import prepare_printable_command
+from src.executors.command_executor import prepare_std_outputs
+
+logger = logging.getLogger(__name__)
 
 class ProcessExecutor(object):
     def __init__(self):

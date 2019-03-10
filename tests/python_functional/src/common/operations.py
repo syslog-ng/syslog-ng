@@ -20,8 +20,8 @@
 # COPYING for details.
 #
 #############################################################################
-
 import shutil
+
 from pathlib2 import Path
 
 def open_file(file_path, mode):

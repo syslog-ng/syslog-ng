@@ -20,10 +20,10 @@
 # COPYING for details.
 #
 #############################################################################
-
 import functools
-from src.common.random_id import get_unique_id
+
 from src.common.operations import cast_to_list
+from src.common.random_id import get_unique_id
 
 class StatementGroup(list):
     def __init__(self, statements):

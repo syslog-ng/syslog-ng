@@ -20,7 +20,6 @@
 # COPYING for details.
 #
 #############################################################################
-
 import logging
 logger = logging.getLogger(__name__)
 

@@ -20,19 +20,19 @@
 # COPYING for details.
 #
 #############################################################################
-
 import logging
-logger = logging.getLogger(__name__)
+
+from src.common.operations import cast_to_list
 from src.driver_io.file.file_io import FileIO
 from src.syslog_ng_config.renderer import ConfigRenderer
+from src.syslog_ng_config.statement_group import StatementGroup
+from src.syslog_ng_config.statements.destinations.file_destination import FileDestination
+from src.syslog_ng_config.statements.filters.filter import Filter
 from src.syslog_ng_config.statements.logpath.logpath import LogPath
 from src.syslog_ng_config.statements.sources.file_source import FileSource
 from src.syslog_ng_config.statements.sources.source_driver import SourceDriver
-from src.syslog_ng_config.statements.destinations.file_destination import FileDestination
-from src.syslog_ng_config.statement_group import StatementGroup
-from src.common.operations import cast_to_list
-from src.syslog_ng_config.statements.filters.filter import Filter
 
+logger = logging.getLogger(__name__)
 
 class SyslogNgConfig(object):
     def __init__(self, working_dir, version):

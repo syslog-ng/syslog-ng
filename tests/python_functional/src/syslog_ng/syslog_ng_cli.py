@@ -20,14 +20,17 @@
 # COPYING for details.
 #
 #############################################################################
-
 import logging
-logger = logging.getLogger(__name__)
+
 from pathlib2 import Path
-from src.syslog_ng.syslog_ng_executor import SyslogNgExecutor
+
+from src.common.blocking import wait_until_false
+from src.common.blocking import wait_until_true
 from src.syslog_ng.console_log_reader import ConsoleLogReader
+from src.syslog_ng.syslog_ng_executor import SyslogNgExecutor
 from src.syslog_ng_ctl.syslog_ng_ctl import SyslogNgCtl
-from src.common.blocking import wait_until_true, wait_until_false
+
+logger = logging.getLogger(__name__)
 
 class SyslogNgCli(object):
     def __init__(self, instance_paths, testcase_parameters):

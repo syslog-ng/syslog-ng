@@ -20,10 +20,9 @@
 # COPYING for details.
 #
 #############################################################################
-
+from src.common.random_id import get_unique_id
 from src.executors.command_executor import CommandExecutor
 from src.executors.process_executor import ProcessExecutor
-from src.common.random_id import get_unique_id
 
 
 class SyslogNgExecutor(object):

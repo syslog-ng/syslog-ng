@@ -20,7 +20,6 @@
 # COPYING for details.
 #
 #############################################################################
-
 from src.syslog_ng_ctl.syslog_ng_ctl_cli import SyslogNgCtlCli
 
 

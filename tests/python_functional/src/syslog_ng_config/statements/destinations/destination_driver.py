@@ -20,12 +20,12 @@
 # COPYING for details.
 #
 #############################################################################
-
 import logging
-logger = logging.getLogger(__name__)
+
 from src.message_reader.message_reader import MessageReader
 from src.message_reader.single_line_parser import SingleLineParser
 
+logger = logging.getLogger(__name__)
 
 class DestinationDriver(object):
     group_type = "destination"

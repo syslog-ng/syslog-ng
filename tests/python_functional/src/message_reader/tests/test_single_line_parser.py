@@ -20,7 +20,6 @@
 # COPYING for details.
 #
 #############################################################################
-
 from src.message_reader.single_line_parser import SingleLineParser
 
 

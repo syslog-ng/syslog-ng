@@ -20,9 +20,8 @@
 # COPYING for details.
 #
 #############################################################################
-
-from src.common.blocking import wait_until_true_custom
 from src.common.blocking import DEFAULT_TIMEOUT
+from src.common.blocking import wait_until_true_custom
 
 READ_ALL_MESSAGES = 0
 

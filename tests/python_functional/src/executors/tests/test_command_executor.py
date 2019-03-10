@@ -20,8 +20,8 @@
 # COPYING for details.
 #
 #############################################################################
-
 import pytest
+
 from src.executors.command_executor import CommandExecutor
 
 

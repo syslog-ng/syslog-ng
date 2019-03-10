@@ -20,8 +20,8 @@
 # COPYING for details.
 #
 #############################################################################
-
-from src.common.blocking import wait_until_false, wait_until_true
+from src.common.blocking import wait_until_false
+from src.common.blocking import wait_until_true
 from src.syslog_ng_ctl.syslog_ng_ctl_executor import SyslogNgCtlExecutor
 
 
