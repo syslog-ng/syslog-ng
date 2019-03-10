@@ -57,7 +57,7 @@ _publish_message(KafkaDestWorker *self, LogMessage *msg)
 
   if (rd_kafka_produce(owner->topic,
                        RD_KAFKA_PARTITION_UA,
-                       RD_KAFKA_MSG_F_FREE,
+                       RD_KAFKA_MSG_F_FREE | RD_KAFKA_MSG_F_BLOCK,
                        message->str, message->len,
                        key->str, key->len,
                        msg) == -1)
@@ -81,7 +81,28 @@ _publish_message(KafkaDestWorker *self, LogMessage *msg)
   return TRUE;
 }
 
+static void
+_drain_responses(KafkaDestWorker *self)
+{
+  KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
 
+
+  /* we are only draining responses in the first worker thread, so all
+   * callbacks originate from the same thread and we don't need to
+   * synchronize between workers */
+  if (self->super.worker_index != 0)
+    return;
+
+  gint count = rd_kafka_poll(owner->kafka, 0);
+  if (count != 0)
+    {
+      msg_trace("kafka: destination side rd_kafka_poll() processed some responses",
+                evt_tag_str("topic", owner->topic_name),
+                evt_tag_int("count", count),
+                evt_tag_str("driver", owner->super.super.super.id),
+                log_pipe_location_tag(&owner->super.super.super.super));
+    }
+}
 
 /*
  * Worker thread
@@ -92,10 +113,13 @@ kafka_dest_worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
 {
   KafkaDestWorker *self = (KafkaDestWorker *)s;
 
+  _drain_responses(self);
+
   _format_message_and_key(self, msg);
   if (!_publish_message(self, msg))
     return LTR_RETRY;
 
+  _drain_responses(self);
   return LTR_SUCCESS;
 }
 
