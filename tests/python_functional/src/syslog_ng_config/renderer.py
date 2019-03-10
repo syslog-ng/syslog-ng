@@ -20,7 +20,6 @@
 # COPYING for details.
 #
 #############################################################################
-from pathlib2 import Path
 
 
 class ConfigRenderer(object):

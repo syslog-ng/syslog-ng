@@ -20,7 +20,6 @@
 # COPYING for details.
 #
 #############################################################################
-from src.common import blocking
 from src.common.blocking import wait_until_false_custom
 from src.common.blocking import wait_until_true_custom
 
