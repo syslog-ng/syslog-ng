@@ -51,8 +51,6 @@ kafka_dest_worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
   log_template_format(owner->message, msg, &owner->template_options, LTZ_SEND,
                       self->super.seq_num, NULL, self->message);
 
-#define KAFKA_INITIAL_ERROR_CODE -12345
-  rd_kafka_resp_err_t err = KAFKA_INITIAL_ERROR_CODE;
   if (rd_kafka_produce(owner->topic,
                        RD_KAFKA_PARTITION_UA,
                        RD_KAFKA_MSG_F_FREE,
@@ -60,7 +58,7 @@ kafka_dest_worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
                        self->message->len,
                        owner->key ? self->key->str : NULL,
                        owner->key ? self->key->len : 0,
-                       &err) == -1)
+                       msg) == -1)
     {
       msg_error("Failed to add message to Kafka topic!",
                 evt_tag_str("driver", owner->super.super.super.id),
@@ -79,33 +77,6 @@ kafka_dest_worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
 
   if (owner->key)
     g_string_steal(self->key);
-
-
-  /* Wait for completion. */
-  if (owner->flags & KAFKA_FLAG_SYNC)
-    {
-      while (err == KAFKA_INITIAL_ERROR_CODE)
-        {
-          rd_kafka_poll(owner->kafka, 5000);
-          if (err == KAFKA_INITIAL_ERROR_CODE)
-            {
-              msg_debug("Kafka producer is freezed",
-                        evt_tag_str("driver", owner->super.super.super.id),
-                        evt_tag_str("topic", owner->topic_name),
-                        NULL);
-            }
-        }
-      if (err != RD_KAFKA_RESP_ERR_NO_ERROR)
-        {
-          msg_error("Failed to add message to Kafka topic!",
-                    evt_tag_str("driver", owner->super.super.super.id),
-                    evt_tag_str("topic", owner->topic_name),
-                    evt_tag_str("error", rd_kafka_err2str(err)),
-                    NULL);
-          return LTR_ERROR;
-        }
-    }
-
 
   return LTR_SUCCESS;
 }

@@ -59,8 +59,6 @@
 %token KW_GLOBAL_CONFIG
 %token KW_TOPIC_CONFIG
 %token KW_WORKERS
-%token KW_FLAGS
-%token KW_SYNC
 
 %%
 
@@ -100,7 +98,6 @@ kafka_option
             kafka_dd_set_message_ref(last_driver, $3);
         }
         | KW_WORKERS '(' nonnegative_integer ')'  { log_threaded_dest_driver_set_num_workers(last_driver, $3); }
-        | KW_FLAGS '(' kafka_flags ')'
         | dest_driver_option
         | { last_template_options = kafka_dd_get_template_options(last_driver); } template_option
         ;
@@ -117,18 +114,6 @@ kafka_property
             free($1);
             free($3);
 	    $$ = prop;
-        }
-        ;
-
-kafka_flags
-        : kafka_flag kafka_flags
-        |
-        ;
-
-kafka_flag
-        : KW_SYNC
-        {
-            kafka_dd_set_flag_sync(last_driver);
         }
         ;
 

@@ -40,7 +40,6 @@ static CfgLexerKeyword kafka_keywords[] = {
     { "message",        KW_MESSAGE },
     { "workers",        KW_WORKERS },
     { "kafka_c",        KW_KAFKA },   /* compatibility with incubator naming */
-    { "sync",           KW_SYNC },
     { NULL }
 };
 

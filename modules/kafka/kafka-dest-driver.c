@@ -58,17 +58,6 @@ kafka_log(const rd_kafka_t *rkt, int level,
                      NULL ));
 }
 
-static void
-kafka_worker_sync_produce_dr_cb(rd_kafka_t *rk,
-                                void *payload, size_t len,
-                                rd_kafka_resp_err_t err,
-                                void *opaque, void *msg_opaque)
-{
-  /* When done, just copy error code */
-  rd_kafka_resp_err_t *errp = (rd_kafka_resp_err_t *)msg_opaque;
-  *errp = err;
-}
-
 /*
  * Configuration
  */
@@ -116,18 +105,6 @@ kafka_dd_set_message_ref(LogDriver *d, LogTemplate *message)
 
   log_template_unref(self->message);
   self->message = message;
-}
-
-void
-kafka_dd_set_flag_sync(LogDriver *d)
-{
-  KafkaDestDriver *self = (KafkaDestDriver *)d;
-  if (self->kafka != NULL)
-    {
-      msg_error("kafka flags must be set before kafka properties", NULL);
-      return;
-    }
-  self->flags |= KAFKA_FLAG_SYNC;
 }
 
 
@@ -206,15 +183,6 @@ _construct_client(KafkaDestDriver *self)
       _conf_set_prop(conf, kp->name, kp->value);
     }
   rd_kafka_conf_set_log_cb(conf, kafka_log);
-  if (self->flags & KAFKA_FLAG_SYNC)
-    {
-      msg_info("synchronous insertion into kafka, "
-               "lower the value of queue.buffering.max.ms to increase performance",
-               evt_tag_str("driver", self->super.super.super.id),
-               NULL);
-      rd_kafka_conf_set_dr_cb(conf, kafka_worker_sync_produce_dr_cb);
-    }
-
   client = rd_kafka_new(RD_KAFKA_PRODUCER, conf, errbuf, sizeof(errbuf));
   return client;
 }
@@ -356,8 +324,6 @@ kafka_dd_new(GlobalConfig *cfg)
   self->super.format_stats_instance = kafka_dd_format_stats_instance;
   self->super.stats_source = SCS_KAFKA;
   self->super.worker.construct = _construct_worker;
-
-  self->flags = KAFKA_FLAG_NONE;
 
   log_template_options_defaults(&self->template_options);
 
