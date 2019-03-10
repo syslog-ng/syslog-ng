@@ -37,7 +37,6 @@ class DestinationDriver(object):
         self.positional_parameters = positional_parameters
         self.options = options
 
-
     def dd_read_logs(self, path, counter):
         if not self.__reader:
             io = self.__IOClass(path)
