@@ -23,7 +23,7 @@
 #############################################################################
 
 import pytest
-from src.setup.testcase_parameters import TestcaseParameters
+from src.testcase_parameters.testcase_parameters import TestcaseParameters
 
 
 @pytest.fixture

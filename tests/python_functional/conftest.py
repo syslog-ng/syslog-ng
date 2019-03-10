@@ -29,7 +29,7 @@ from pathlib2 import Path
 
 from src.message_builder.bsd_format import BSDFormat
 from src.message_builder.log_message import LogMessage
-from src.setup.testcase_parameters import TestcaseParameters
+from src.testcase_parameters.testcase_parameters import TestcaseParameters
 from src.syslog_ng.syslog_ng import SyslogNg
 from src.syslog_ng.syslog_ng_paths import SyslogNgPaths
 from src.syslog_ng_config.syslog_ng_config import SyslogNgConfig
