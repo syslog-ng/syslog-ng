@@ -295,9 +295,13 @@ set(CORE_INCLUDE_DIRS
 add_library(syslog-ng SHARED ${LIB_SOURCES})
 
 target_include_directories(syslog-ng
-  SYSTEM PUBLIC
+  PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
+)
+
+target_include_directories(syslog-ng
+  SYSTEM PUBLIC
     ${CORE_INCLUDE_DIRS}
 )
 
