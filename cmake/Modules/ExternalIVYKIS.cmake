@@ -28,19 +28,19 @@ if (EXISTS ${PROJECT_SOURCE_DIR}/lib/ivykis/src/include/iv.h.in)
 
     ExternalProject_Add(
         ${LIB_NAME}
-        PREFIX            ${CMAKE_CURRENT_BINARY_DIR}
-        INSTALL_DIR       ${CMAKE_CURRENT_BINARY_DIR}
+        PREFIX            ${CMAKE_CURRENT_BINARY_DIR}/ivykis-install/
+        INSTALL_DIR       ${CMAKE_CURRENT_BINARY_DIR}/ivykis-install/
         SOURCE_DIR        ${PROJECT_SOURCE_DIR}/lib/ivykis/
         DOWNLOAD_COMMAND  echo
         BUILD_COMMAND     make
         INSTALL_COMMAND   make install
-        CONFIGURE_COMMAND autoreconf -i ${PROJECT_SOURCE_DIR}/lib/ivykis && ${PROJECT_SOURCE_DIR}/lib/ivykis/configure --prefix=${CMAKE_CURRENT_BINARY_DIR}
+        CONFIGURE_COMMAND autoreconf -i ${PROJECT_SOURCE_DIR}/lib/ivykis && ${PROJECT_SOURCE_DIR}/lib/ivykis/configure --prefix=${CMAKE_CURRENT_BINARY_DIR}/ivykis-install/
     )
 
     set(${LIB_NAME}_INTERNAL TRUE)
-    set(${LIB_NAME}_INTERNAL_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/include" CACHE STRING "${LIB_NAME} include path")
-    set(${LIB_NAME}_INTERNAL_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/lib/libivykis${CMAKE_SHARED_LIBRARY_SUFFIX}" CACHE STRING "${LIB_NAME} library path")
-    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib/ DESTINATION lib USE_SOURCE_PERMISSIONS FILES_MATCHING PATTERN "libivykis${CMAKE_SHARED_LIBRARY_SUFFIX}*")
+    set(${LIB_NAME}_INTERNAL_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/ivykis-install/include" CACHE STRING "${LIB_NAME} include path")
+    set(${LIB_NAME}_INTERNAL_LIBRARY "${CMAKE_CURRENT_BINARY_DIR}/ivykis-install/lib/libivykis${CMAKE_SHARED_LIBRARY_SUFFIX}" CACHE STRING "${LIB_NAME} library path")
+    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ivykis-install/lib/ DESTINATION lib USE_SOURCE_PERMISSIONS FILES_MATCHING PATTERN "libivykis${CMAKE_SHARED_LIBRARY_SUFFIX}*")
 
 else()
   set(${LIB_NAME}_INTERNAL FALSE)
