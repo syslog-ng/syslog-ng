@@ -75,17 +75,19 @@ static gboolean
 yy_patch_include_statement(CfgLexer *self, gchar *buf, gsize buf_size, gsize *len)
 {
   YYLTYPE *cur_lloc = &self->include_stack[self->include_depth].lloc;
-  const gchar *p;
 
-
-  p = buf;
-  while (*p == ' ' || *p == '\t')
-    p++;
+  gchar *p = buf;
+  p += strspn(p, " \t");
   if (strncmp(p, "include", 7) != 0)
     return TRUE;
   p += 7;
   if (*p != ' ' && *p != '\t')
     return TRUE;
+
+  p = strrchr(p, ';');
+  if (!p)
+    return TRUE;
+  *p = ' ';
 
   if (!cfg_is_config_version_older(configuration, VERSION_VALUE_3_20))
     {
