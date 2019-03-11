@@ -23,10 +23,10 @@
 
 #include "queue_utils_lib.h"
 #include "test_diskq_tools.h"
-#include "testutils.h"
 #include "qdisk.c"
 #include "logqueue-disk-reliable.h"
 #include "apphook.h"
+#include <criterion/criterion.h>
 #include "plugin.h"
 
 #include <sys/types.h>
@@ -69,9 +69,9 @@ _init_diskq_for_test(const gchar *filename, gint64 size, gint64 membuf_size)
   dq = (LogQueueDiskReliable *)q;
   lseek(dq->super.qdisk->fd, size - 1, SEEK_SET);
   ssize_t written = write(dq->super.qdisk->fd, "", 1);
-  assert_gint(written, 1, ASSERTION_ERROR("Can't write to diskq file"));
+  cr_assert_eq(written, 1, "%s", "Can't write to diskq file");
   fstat(dq->super.qdisk->fd, &st);
-  assert_gint64(st.st_size, size, ASSERTION_ERROR("INITIALIZATION FAILED"));
+  cr_assert_eq(st.st_size, size, "%s", "INITIALIZATION FAILED");
   dq->super.super.use_backlog = TRUE;
   return dq;
 }
@@ -134,10 +134,10 @@ _prepare_eof_test(LogQueueDiskReliable *dq, LogMessage **msg1, LogMessage **msg2
   log_queue_push_tail(&dq->super.super, *msg1, &local_options);
   log_queue_push_tail(&dq->super.super, *msg2, &local_options);
 
-  assert_gint(dq->qreliable->length, NUMBER_MESSAGES_IN_QUEUE(2), ASSERTION_ERROR("Messages aren't in qreliable"));
-  assert_gint64(dq->super.qdisk->hdr->write_head, QDISK_RESERVED_SPACE + mark_message_serialized_size,
-                ASSERTION_ERROR("Bad write head"));
-  assert_gint(num_of_ack, 0, ASSERTION_ERROR("Messages are acked"));
+  cr_assert_eq(dq->qreliable->length, NUMBER_MESSAGES_IN_QUEUE(2), "%s", "Messages aren't in qreliable");
+  cr_assert_eq(dq->super.qdisk->hdr->write_head, QDISK_RESERVED_SPACE + mark_message_serialized_size,
+               "%s", "Bad write head");
+  cr_assert_eq(num_of_ack, 0, "%s", "Messages are acked");
 
   dq->super.qdisk->hdr->read_head = start_pos;
   dq->super.qdisk->hdr->backlog_head = dq->super.qdisk->hdr->read_head;
@@ -152,15 +152,15 @@ test_read_over_eof(LogQueueDiskReliable *dq, LogMessage *msg1, LogMessage *msg2)
   LogMessage *read_message2;
 
   read_message1 = log_queue_pop_head(&dq->super.super, &read_options);
-  assert_true(read_message1 != NULL, ASSERTION_ERROR("Can't read message from queue"));
+  cr_assert_not_null(read_message1, "%s", "Can't read message from queue");
   read_message2 = log_queue_pop_head(&dq->super.super, &read_options);
-  assert_true(read_message2 != NULL, ASSERTION_ERROR("Can't read message from queue"));
-  assert_gint(dq->qreliable->length, 0, ASSERTION_ERROR("Queue reliable isn't empty"));
-  assert_gint(dq->qbacklog->length, NUMBER_MESSAGES_IN_QUEUE(2), ASSERTION_ERROR("Messages aren't in the qbacklog"));
-  assert_gint(dq->super.qdisk->hdr->read_head, dq->super.qdisk->hdr->write_head,
-              ASSERTION_ERROR("Read head in bad position"));
-  assert_true(msg1 == read_message1, ASSERTION_ERROR("Message 1 isn't read from qreliable"));
-  assert_true(msg2 == read_message2, ASSERTION_ERROR("Message 2 isn't read from qreliable"));
+  cr_assert_not_null(read_message2, "%s", "Can't read message from queue");
+  cr_assert_eq(dq->qreliable->length, 0, "%s", "Queue reliable isn't empty");
+  cr_assert_eq(dq->qbacklog->length, NUMBER_MESSAGES_IN_QUEUE(2), "%s", "Messages aren't in the qbacklog");
+  cr_assert_eq(dq->super.qdisk->hdr->read_head, dq->super.qdisk->hdr->write_head,
+               "%s", "Read head in bad position");
+  cr_assert_eq(msg1, read_message1, "%s", "Message 1 isn't read from qreliable");
+  cr_assert_eq(msg2, read_message2, "%s", "Message 2 isn't read from qreliable");
 }
 
 static void
@@ -175,22 +175,22 @@ test_rewind_over_eof(LogQueueDiskReliable *dq)
   log_queue_push_tail(&dq->super.super, msg3, &local_options);
   gint64 previous_read_head = dq->super.qdisk->hdr->read_head;
   read_message3 = log_queue_pop_head(&dq->super.super, &local_options);
-  assert_true(read_message3 != NULL, ASSERTION_ERROR("Can't read message from queue"));
-  assert_gint(dq->super.qdisk->hdr->read_head, dq->super.qdisk->hdr->write_head,
-              ASSERTION_ERROR("Read head in bad position"));
+  cr_assert_not_null(read_message3, "%s", "Can't read message from queue");
+  cr_assert_eq(dq->super.qdisk->hdr->read_head, dq->super.qdisk->hdr->write_head,
+               "%s", "Read head in bad position");
 
-  assert_true(msg3 == read_message3, ASSERTION_ERROR("Message 3 isn't read from qreliable"));
+  cr_assert_eq(msg3, read_message3, "%s", "Message 3 isn't read from qreliable");
   log_msg_unref(read_message3);
 
   log_queue_rewind_backlog(&dq->super.super, 1);
 
-  assert_gint(dq->super.qdisk->hdr->read_head, previous_read_head, ASSERTION_ERROR("Read head is corrupted"));
+  cr_assert_eq(dq->super.qdisk->hdr->read_head, previous_read_head, "%s", "Read head is corrupted");
 
   read_message3 = log_queue_pop_head(&dq->super.super, &local_options);
-  assert_true(read_message3 != NULL, ASSERTION_ERROR("Can't read message from queue"));
-  assert_gint(dq->super.qdisk->hdr->read_head, dq->super.qdisk->hdr->write_head,
-              ASSERTION_ERROR("Read head in bad position"));
-  assert_true(msg3 == read_message3, ASSERTION_ERROR("Message 3 isn't read from qreliable"));
+  cr_assert_not_null(read_message3, "%s", "Can't read message from queue");
+  cr_assert_eq(dq->super.qdisk->hdr->read_head, dq->super.qdisk->hdr->write_head,
+               "%s", "Read head in bad position");
+  cr_assert_eq(msg3, read_message3, "%s", "Message 3 isn't read from qreliable");
 
   log_msg_drop(msg3, &local_options, AT_PROCESSED);
 }
@@ -199,9 +199,9 @@ static void
 test_ack_over_eof(LogQueueDiskReliable *dq, LogMessage *msg1, LogMessage *msg2)
 {
   log_queue_ack_backlog(&dq->super.super, 3);
-  assert_gint(dq->qbacklog->length, 0, ASSERTION_ERROR("Messages are in the qbacklog"));
-  assert_gint(dq->super.qdisk->hdr->backlog_head, dq->super.qdisk->hdr->read_head,
-              ASSERTION_ERROR("Backlog head in bad position"));
+  cr_assert_eq(dq->qbacklog->length, 0, "%s", "Messages are in the qbacklog");
+  cr_assert_eq(dq->super.qdisk->hdr->backlog_head, dq->super.qdisk->hdr->read_head,
+               "%s", "Backlog head in bad position");
 }
 
 /* TestCase:
@@ -214,8 +214,7 @@ test_ack_over_eof(LogQueueDiskReliable *dq, LogMessage *msg1, LogMessage *msg2)
    */
 /* TODO: add 3 messages and rewind 1 instead of 0 */
 /* TODO: split this test into 3 tests (read ack rewind mechanism  (setup method) */
-static void
-test_over_EOF(void)
+Test(diskq_reliable, test_over_EOF)
 {
   LogQueueDiskReliable *dq = _init_diskq_for_test(FILENAME, TEST_DISKQ_SIZE, TEST_DISKQ_SIZE);
   LogMessage *msg1;
@@ -233,7 +232,7 @@ test_over_EOF(void)
 
   log_msg_drop(msg1, &read_options, AT_PROCESSED);
   log_msg_drop(msg2, &read_options, AT_PROCESSED);
-  assert_gint(num_of_ack, 2, ASSERTION_ERROR("Messages aren't acked"));
+  cr_assert_eq(num_of_ack, 2, "%s", "Messages aren't acked");
   _common_cleanup(dq);
 }
 
@@ -268,8 +267,8 @@ _prepare_rewind_backlog_test(LogQueueDiskReliable *dq, gint64 *start_pos)
 
   /* Ack the messages which are not in the qbacklog */
   log_queue_ack_backlog(&dq->super.super, 5);
-  assert_gint(dq->qbacklog->length, NUMBER_MESSAGES_IN_QUEUE(3),
-              ASSERTION_ERROR("Incorrect number of items in the qbacklog"));
+  cr_assert_eq(dq->qbacklog->length, NUMBER_MESSAGES_IN_QUEUE(3),
+               "%s", "Incorrect number of items in the qbacklog");
 
   *start_pos = dq->super.qdisk->hdr->read_head;
 
@@ -287,16 +286,16 @@ _prepare_rewind_backlog_test(LogQueueDiskReliable *dq, gint64 *start_pos)
       mark_message->ack_func = _dummy_ack;
       log_queue_push_tail(&dq->super.super, mark_message, &path_options);
       mark_message = log_queue_pop_head(&dq->super.super, &path_options);
-      assert_gint(dq->qreliable->length, 0,
-                  ASSERTION_ERROR("Incorrect number of items in the qreliable"));
-      assert_gint(dq->qbacklog->length, NUMBER_MESSAGES_IN_QUEUE(3),
-                  ASSERTION_ERROR("Incorrect number of items in the qbacklog"));
+      cr_assert_eq(dq->qreliable->length, 0,
+                   "%s", "Incorrect number of items in the qreliable");
+      cr_assert_eq(dq->qbacklog->length, NUMBER_MESSAGES_IN_QUEUE(3),
+                   "%s", "Incorrect number of items in the qbacklog");
       log_msg_unref(mark_message);
     }
-  assert_gint(dq->super.qdisk->hdr->backlog_len, 6,
-              ASSERTION_ERROR("Incorrect number of messages in the backlog"));
-  assert_gint(dq->super.qdisk->hdr->length, 0,
-              ASSERTION_ERROR("Reliable diskq isn't empty"));
+  cr_assert_eq(dq->super.qdisk->hdr->backlog_len, 6,
+               "%s", "Incorrect number of messages in the backlog");
+  cr_assert_eq(dq->super.qdisk->hdr->length, 0,
+               "%s", "Reliable diskq isn't empty");
 }
 
 void
@@ -308,11 +307,11 @@ test_rewind_backlog_without_using_qbacklog(LogQueueDiskReliable *dq, gint64 old_
      * - the qbacklog and qreliable should be untouched
      */
   log_queue_rewind_backlog(&dq->super.super, 2);
-  assert_gint64(dq->super.qdisk->hdr->read_head, old_read_pos + mark_message_serialized_size,
-                ASSERTION_ERROR("Bad reader position"));
-  assert_gint(dq->qreliable->length, 0, ASSERTION_ERROR("Incorrect number of items in the qreliable"));
-  assert_gint(dq->qbacklog->length, NUMBER_MESSAGES_IN_QUEUE(3),
-              ASSERTION_ERROR("Incorrect number of items in the qbacklog"));
+  cr_assert_eq(dq->super.qdisk->hdr->read_head, old_read_pos + mark_message_serialized_size,
+               "%s", "Bad reader position");
+  cr_assert_eq(dq->qreliable->length, 0, "%s", "Incorrect number of items in the qreliable");
+  cr_assert_eq(dq->qbacklog->length, NUMBER_MESSAGES_IN_QUEUE(3),
+               "%s", "Incorrect number of items in the qbacklog");
 }
 
 void
@@ -325,12 +324,12 @@ test_rewind_backlog_partially_used_qbacklog(LogQueueDiskReliable *dq, gint64 old
    * - the qbackbacklog should contain 2 items
    */
   log_queue_rewind_backlog(&dq->super.super, 2);
-  assert_gint64(dq->super.qdisk->hdr->read_head, old_read_pos - mark_message_serialized_size,
-                ASSERTION_ERROR("Bad reader position"));
-  assert_gint(dq->qreliable->length, NUMBER_MESSAGES_IN_QUEUE(1),
-              ASSERTION_ERROR("Incorrect number of items in the qreliable"));
-  assert_gint(dq->qbacklog->length, NUMBER_MESSAGES_IN_QUEUE(2),
-              ASSERTION_ERROR("Incorrect number of items in the qbacklog"));
+  cr_assert_eq(dq->super.qdisk->hdr->read_head, old_read_pos - mark_message_serialized_size,
+               "%s", "Bad reader position");
+  cr_assert_eq(dq->qreliable->length, NUMBER_MESSAGES_IN_QUEUE(1),
+               "%s", "Incorrect number of items in the qreliable");
+  cr_assert_eq(dq->qbacklog->length, NUMBER_MESSAGES_IN_QUEUE(2),
+               "%s", "Incorrect number of items in the qbacklog");
 }
 
 void
@@ -343,12 +342,12 @@ test_rewind_backlog_use_whole_qbacklog(LogQueueDiskReliable *dq)
    * - the qbackbacklog should be empty
    */
   log_queue_rewind_backlog(&dq->super.super, 2);
-  assert_gint64(dq->super.qdisk->hdr->read_head, dq->super.qdisk->hdr->backlog_head,
-                ASSERTION_ERROR("Bad reader position"));
-  assert_gint(dq->qreliable->length, NUMBER_MESSAGES_IN_QUEUE(3),
-              ASSERTION_ERROR("Incorrect number of items in the qreliable"));
-  assert_gint(dq->qbacklog->length, 0,
-              ASSERTION_ERROR("Incorrect number of items in the qbacklog"));
+  cr_assert_eq(dq->super.qdisk->hdr->read_head, dq->super.qdisk->hdr->backlog_head,
+               "%s", "Bad reader position");
+  cr_assert_eq(dq->qreliable->length, NUMBER_MESSAGES_IN_QUEUE(3),
+               "%s", "Incorrect number of items in the qreliable");
+  cr_assert_eq(dq->qbacklog->length, 0,
+               "%s", "Incorrect number of items in the qbacklog");
 
 }
 
@@ -358,8 +357,7 @@ test_rewind_backlog_use_whole_qbacklog(LogQueueDiskReliable *dq)
  * qbacklog contains messages: 1 2 3
  * qbacklog must be always in sync with backlog
  */
-void
-test_rewind_backlog(void)
+Test(diskq_reliable, test_rewind_backlog)
 {
   LogQueueDiskReliable *dq = _init_diskq_for_test(FILENAME, QDISK_RESERVED_SPACE + mark_message_serialized_size * 10,
                                                   mark_message_serialized_size * 5);
@@ -376,8 +374,8 @@ test_rewind_backlog(void)
   _common_cleanup(dq);
 }
 
-gint
-main(gint argc, gchar **argv)
+static void
+setup(void)
 {
   app_startup();
   setenv("TZ", "MET-1METDST", TRUE);
@@ -388,14 +386,15 @@ main(gint argc, gchar **argv)
   cfg_load_module(configuration, "disk-buffer");
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);
+
   set_mark_message_serialized_size();
+}
 
-  test_over_EOF();
-
-  test_rewind_backlog();
-
+static void
+teardown(void)
+{
   cfg_free(configuration);
   app_shutdown();
-
-  return 0;
 }
+
+TestSuite(diskq_reliable, .init = setup, .fini = teardown);
