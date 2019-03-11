@@ -22,15 +22,18 @@
 #############################################################################
 import logging
 
+from pathlib2 import Path
+
 from src.common.operations import cast_to_list
 from src.driver_io.file.file_io import FileIO
+from src.message_reader.single_line_parser import SingleLineParser
 from src.syslog_ng_config.renderer import ConfigRenderer
 from src.syslog_ng_config.statement_group import StatementGroup
-from src.syslog_ng_config.statements.destinations.file_destination import FileDestination
+from src.syslog_ng_config.statements.destinations.destination_driver import DestinationDriver
 from src.syslog_ng_config.statements.filters.filter import Filter
 from src.syslog_ng_config.statements.logpath.logpath import LogPath
-from src.syslog_ng_config.statements.sources.file_source import FileSource
 from src.syslog_ng_config.statements.sources.source_driver import SourceDriver
+
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +47,9 @@ class SyslogNgConfig(object):
             "global_options": {},
             "statement_groups": [],
             "logpath_groups": [],
+        }
+        self.driver_resources = {
+            "file": {"driver_io": FileIO, "parser": SingleLineParser},
         }
 
     # Public API
@@ -71,19 +77,42 @@ class SyslogNgConfig(object):
         self.__syslog_ng_config["global_options"].update(kwargs)
 
     # Sources
-    def create_file_source(self, **kwargs):
-        return FileSource(self.__working_dir, **kwargs)
+    def create_file_source(self, **options):
+        driver_name = "file"
+        self.__set_file_name_option(options, "fsinput.log")
+        file_source = SourceDriver(
+            driver_name=driver_name,
+            driver_resources=self.driver_resources[driver_name],
+            options=options,
+            positional_option="file_name",
+            connection_options="file_name")
+        return file_source
 
-    def create_example_msg_generator(self, **options):
-        generator_source = SourceDriver(None)
-        generator_source.driver_name = "example_msg_generator"
+    @staticmethod
+    def create_example_msg_generator(**options):
+        driver_name = "example_msg_generator"
+        if "num" not in options.keys():
+            options['num'] = 1
+        generator_source = SourceDriver(
+            driver_name=driver_name,
+            driver_resources=None,
+            options=options,
+            positional_option=None,
+            connection_options=None)
         generator_source.DEFAULT_MESSAGE = "-- Generated message. --"
-        generator_source.options = options
         return generator_source
 
     # Destinations
-    def create_file_destination(self, **kwargs):
-        return FileDestination(self.__working_dir, **kwargs)
+    def create_file_destination(self, **options):
+        driver_name = "file"
+        self.__set_file_name_option(options, "fdoutput.log")
+        file_destination = DestinationDriver(
+            driver_name=driver_name,
+            driver_resources=self.driver_resources[driver_name],
+            options=options,
+            positional_option="file_name",
+            connection_options="file_name")
+        return file_destination
 
     # Filter
     def create_filter(self, **kwargs):
@@ -119,3 +148,11 @@ class SyslogNgConfig(object):
             return item
         else:
             return self.create_statement_group(item)
+
+    def __set_file_name_option(self, options, default_file_name):
+        if "file_name" in options.keys():
+            # empty and custom
+            options["file_name"] = Path(self.__working_dir, options["file_name"])
+        else:
+            # default
+            options["file_name"] = Path(self.__working_dir, default_file_name)

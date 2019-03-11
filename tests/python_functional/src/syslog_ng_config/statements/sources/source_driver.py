@@ -21,25 +21,30 @@
 #
 #############################################################################
 import logging
+
+from src.syslog_ng_config.statements.global_driver import GlobalDriver
+
 logger = logging.getLogger(__name__)
 
 
-class SourceDriver(object):
+class SourceDriver(GlobalDriver):
     group_type = "source"
 
-    def __init__(self, IOClass, positional_parameters=[], options={}):
-        self.__IOClass = IOClass
-        self.__writer = None
-        self.positional_parameters = positional_parameters
-        self.options = options
+    def __init__(self, driver_name, driver_resources, options, positional_option=None, connection_options=None):
+        super(SourceDriver, self).__init__(driver_name, driver_resources, options, positional_option, connection_options)
+        self.writer = None
 
-    def __construct_writer(self, path):
-        if not self.__writer:
-            self.__writer = self.__IOClass(path)
+    def construct_writer(self):
+        assert self.driver_io
+        if not self.writer:
+            self.writer = self.driver_io(self.connection_values)
 
-    def sd_write_log(self, path, formatted_log, counter):
-        self.__construct_writer(path)
+    def write_log(self, formatted_log, counter=1):
+        self.calculate_connection_value()
+        self.construct_writer()
         for __i in range(0, counter):
-            self.__writer.write(formatted_log)
-        written_description = "Content has been written to\nresource: {}\nnumber of times: {}\ncontent: {}\n".format(path, counter, formatted_log)
+            self.writer.write(formatted_log)
+        written_description = "Content has been written to\nresource: {}\nnumber of times: {}\ncontent: {}\n".format(
+            self.connection_values, counter, formatted_log
+        )
         logger.info(written_description)

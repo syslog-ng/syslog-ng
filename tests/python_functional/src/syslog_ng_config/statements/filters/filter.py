@@ -28,4 +28,5 @@ class Filter(object):
     def __init__(self, **kwargs):
         self.options = kwargs
         self.driver_name = ""
-        self.positional_parameters = []
+        self.positional_value = None
+        self.positional_option = None

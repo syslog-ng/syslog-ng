@@ -23,29 +23,32 @@
 import logging
 
 from src.message_reader.message_reader import MessageReader
-from src.message_reader.single_line_parser import SingleLineParser
+from src.syslog_ng_config.statements.global_driver import GlobalDriver
 
 logger = logging.getLogger(__name__)
 
 
-class DestinationDriver(object):
+class DestinationDriver(GlobalDriver):
     group_type = "destination"
 
-    def __init__(self, IOClass, positional_parameters=[], options={}):
-        self.__IOClass = IOClass
-        self.__reader = None
-        self.positional_parameters = positional_parameters
-        self.options = options
+    def __init__(self, driver_name, driver_resources, options, positional_option=None, connection_options=None):
+        super(DestinationDriver, self).__init__(driver_name, driver_resources, options, positional_option, connection_options)
+        self.reader = None
 
-    def dd_read_logs(self, path, counter):
-        if not self.__reader:
-            io = self.__IOClass(path)
-            io.wait_for_creation()
-            message_reader = MessageReader(
-                io.read, SingleLineParser()
-            )
-            self.__reader = message_reader
-        messages = self.__reader.pop_messages(counter)
-        read_description = "Content has been read from\nresource: {}\ncontent: {}\n".format(path, messages)
+    def construct_reader(self):
+        assert self.driver_io
+        if not self.reader:
+            driver_io = self.driver_io(self.connection_values)
+            driver_io.wait_for_creation()
+            self.reader = MessageReader(driver_io.read, self.driver_parser())
+
+    def read_log(self):
+        return self.read_logs(counter=1)[0]
+
+    def read_logs(self, counter):
+        self.calculate_connection_value()
+        self.construct_reader()
+        messages = self.reader.pop_messages(counter)
+        read_description = "Content has been read from\nresource: {}\ncontent: {}\n".format(self.connection_values, messages)
         logger.info(read_description)
         return messages

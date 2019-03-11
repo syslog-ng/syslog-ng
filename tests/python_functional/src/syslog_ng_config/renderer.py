@@ -55,18 +55,19 @@ class ConfigRenderer(object):
             self.__syslog_ng_config_content += "    {}({});\n".format(option_name, option_value)
         self.__syslog_ng_config_content += globals_options_footer
 
-    def __render_positional_options(self, positional_parameters):
-        for parameter in positional_parameters:
-            self.__syslog_ng_config_content += "        {}\n".format(str(parameter))
+    def __render_positional_options(self, positional_value):
+        if positional_value:
+            self.__syslog_ng_config_content += "        {}\n".format(str(positional_value))
 
-    def __render_driver_options(self, driver_options):
+    def __render_driver_options(self, driver_options, positional_option):
         for option_name, option_value in driver_options.items():
-            if isinstance(option_value, dict):
-                self.__syslog_ng_config_content += "        {}(\n".format(option_name)
-                self.__render_driver_options(option_value)
-                self.__syslog_ng_config_content += "        )\n"
-            else:
-                self.__syslog_ng_config_content += "        {}({})\n".format(option_name, option_value)
+            if option_name != positional_option:
+                if isinstance(option_value, dict):
+                    self.__syslog_ng_config_content += "        {}(\n".format(option_name)
+                    self.__render_driver_options(option_value)
+                    self.__syslog_ng_config_content += "        )\n"
+                else:
+                    self.__syslog_ng_config_content += "        {}({})\n".format(option_name, option_value)
 
     def __render_statement_groups(self):
         for statement_group in self.__syslog_ng_config["statement_groups"]:
@@ -80,8 +81,8 @@ class ConfigRenderer(object):
                 self.__syslog_ng_config_content += "    {} (\n".format(statement.driver_name)
 
                 # driver options
-                self.__render_positional_options(statement.positional_parameters)
-                self.__render_driver_options(statement.options)
+                self.__render_positional_options(statement.positional_value)
+                self.__render_driver_options(statement.options, statement.positional_option)
 
                 # driver footer
                 self.__syslog_ng_config_content += "    );\n"
