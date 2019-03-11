@@ -26,6 +26,8 @@
 #include "logmsg/logmsg.h"
 #include "string-list.h"
 #include "timeutils/misc.h"
+#include <criterion/criterion.h>
+
 
 LogParser *
 _construct_parser(gint max_columns, gint dialect, gchar *delimiters, gchar *quotes, gchar *null_value,
@@ -129,8 +131,7 @@ perftest_parser(LogParser *p, const gchar *input)
   log_pipe_unref(&p->super);
 }
 
-static void
-test_escaped_parsers(void)
+Test(csvparser_perf, test_escaped_parsers)
 {
   perftest_parser(_construct_parser(3, CSV_SCANNER_ESCAPE_NONE, " ", NULL, "", NULL),
                   "foo bar baz");
@@ -143,11 +144,4 @@ test_escaped_parsers(void)
 
 }
 
-int
-main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
-{
-  app_startup();
-  test_escaped_parsers();
-  app_shutdown();
-  return 0;
-}
+TestSuite(csvparser_perf, .init = app_startup, .fini = app_shutdown);
