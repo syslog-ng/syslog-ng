@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 Balabit
+ * Copyright (c) 2012-2019 Balabit
  * Copyright (c) 2012-2013 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -27,12 +27,11 @@
 #include "msg_parse_lib.h"
 #include "logproto/logproto-indented-multiline-server.h"
 
-/****************************************************************************************
- * LogProtoIMultiLineServer
- ****************************************************************************************/
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
 
 static void
-test_proper_multiline(gboolean input_is_stream)
+test_proper_multiline(LogTransportMockConstructor log_transport_mock_new)
 {
   LogProtoServer *proto;
 
@@ -40,7 +39,7 @@ test_proper_multiline(gboolean input_is_stream)
 
   proto = log_proto_indented_multiline_server_new(
             /* 32 bytes max line length */
-            (input_is_stream ? log_transport_mock_stream_new : log_transport_mock_records_new)(
+            log_transport_mock_new(
               "0\n"
               " 1=2\n"
               " 3=4\n"
@@ -56,8 +55,14 @@ test_proper_multiline(gboolean input_is_stream)
   log_proto_server_free(proto);
 }
 
+Test(log_proto, test_proper_multiline)
+{
+  test_proper_multiline(log_transport_mock_stream_new);
+  test_proper_multiline(log_transport_mock_records_new);
+}
+
 static void
-test_line_without_continuation(gboolean input_is_stream)
+test_line_without_continuation(LogTransportMockConstructor log_transport_mock_new)
 {
   LogProtoServer *proto;
 
@@ -65,8 +70,7 @@ test_line_without_continuation(gboolean input_is_stream)
 
   proto = log_proto_indented_multiline_server_new(
             /* 32 bytes max line length */
-            (input_is_stream ? log_transport_mock_stream_new : log_transport_mock_records_new)
-            (
+            log_transport_mock_new(
               "01234567\n", -1,
               "01234567\n", -1,
               "newline\n", -1,
@@ -80,8 +84,14 @@ test_line_without_continuation(gboolean input_is_stream)
   log_proto_server_free(proto);
 }
 
+Test(log_proto, test_line_without_continuation)
+{
+  test_line_without_continuation(log_transport_mock_stream_new);
+  test_line_without_continuation(log_transport_mock_records_new);
+}
+
 static void
-test_input_starts_with_continuation(gboolean input_is_stream)
+test_input_starts_with_continuation(LogTransportMockConstructor log_transport_mock_new)
 {
   LogProtoServer *proto;
 
@@ -89,8 +99,7 @@ test_input_starts_with_continuation(gboolean input_is_stream)
 
   proto = log_proto_indented_multiline_server_new(
             /* 32 bytes max line length */
-            (input_is_stream ? log_transport_mock_stream_new : log_transport_mock_records_new)
-            (
+            log_transport_mock_new(
               " 01234567\n", -1,
               "01234567\n", -1,
               "newline\n", -1,
@@ -104,8 +113,14 @@ test_input_starts_with_continuation(gboolean input_is_stream)
   log_proto_server_free(proto);
 }
 
+Test(log_proto, test_input_starts_with_continuation)
+{
+  test_input_starts_with_continuation(log_transport_mock_stream_new);
+  test_input_starts_with_continuation(log_transport_mock_records_new);
+}
+
 static void
-test_multiline_at_eof(gboolean input_is_stream)
+test_multiline_at_eof(LogTransportMockConstructor log_transport_mock_new)
 {
   LogProtoServer *proto;
 
@@ -113,8 +128,7 @@ test_multiline_at_eof(gboolean input_is_stream)
 
   proto = log_proto_indented_multiline_server_new(
             /* 32 bytes max line length */
-            (input_is_stream ? log_transport_mock_stream_new : log_transport_mock_records_new)
-            (
+            log_transport_mock_new(
               "01234567\n", -1,
               " 01234567\n", -1,
               " end\n", -1,
@@ -129,13 +143,8 @@ test_multiline_at_eof(gboolean input_is_stream)
   log_proto_server_free(proto);
 }
 
-void
-test_log_proto_indented_multiline_server(void)
+Test(log_proto, test_multiline_at_eof)
 {
-  PROTO_TESTCASE(test_proper_multiline, FALSE);
-  PROTO_TESTCASE(test_proper_multiline, TRUE);
-  PROTO_TESTCASE(test_line_without_continuation, FALSE);
-  PROTO_TESTCASE(test_input_starts_with_continuation, TRUE);
-  PROTO_TESTCASE(test_multiline_at_eof, FALSE);
-  PROTO_TESTCASE(test_multiline_at_eof, TRUE);
+  test_multiline_at_eof(log_transport_mock_stream_new);
+  test_multiline_at_eof(log_transport_mock_records_new);
 }

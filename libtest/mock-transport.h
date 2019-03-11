@@ -27,6 +27,8 @@
 
 #include "transport/logtransport.h"
 
+typedef LogTransport *(*LogTransportMockConstructor)(const gchar *, gssize, ...);
+
 typedef struct _LogTransportMock LogTransportMock;
 
 /* macro to be used when injecting an error in the I/O stream */

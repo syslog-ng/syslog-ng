@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Balabit
+ * Copyright (c) 2012-2019 Balabit
  * Copyright (c) 2012 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -25,12 +25,15 @@
 #include "proto_lib.h"
 #include "msg_parse_lib.h"
 
+#include <string.h>
+#include <criterion/criterion.h>
+
 LogProtoServerOptions proto_server_options;
 
 void
 assert_proto_server_status(LogProtoServer *proto, LogProtoStatus status, LogProtoStatus expected_status)
 {
-  assert_gint(status, expected_status, "LogProtoServer expected status mismatch");
+  cr_assert_eq(status, expected_status, "LogProtoServer expected status mismatch");
 }
 
 LogProtoStatus
@@ -57,7 +60,7 @@ proto_server_fetch(LogProtoServer *proto, const guchar **msg, gsize *msg_len)
     }
   else
     {
-      assert_true(saddr == NULL, "returned saddr must be NULL on failure");
+      cr_assert_null(saddr, "returned saddr must be NULL on failure");
     }
   stop_grabbing_messages();
   return status;
@@ -70,7 +73,7 @@ construct_server_proto_plugin(const gchar *name, LogTransport *transport)
 
   log_proto_server_options_init(&proto_server_options, configuration);
   proto_factory = log_proto_server_get_factory(&configuration->plugin_context, name);
-  assert_true(proto_factory != NULL, "error looking up proto factory");
+  cr_assert_not_null(proto_factory, "error looking up proto factory");
   return log_proto_server_factory_construct(proto_factory, transport, &proto_server_options);
 }
 
@@ -84,8 +87,13 @@ assert_proto_server_fetch(LogProtoServer *proto, const gchar *expected_msg, gssi
   status = proto_server_fetch(proto, &msg, &msg_len);
 
   assert_proto_server_status(proto, status, LPS_SUCCESS);
-  assert_nstring((const gchar *) msg, msg_len, expected_msg, expected_msg_len,
-                 "LogProtoServer expected message mismatch");
+
+  if (expected_msg_len < 0)
+    expected_msg_len = strlen(expected_msg);
+
+  cr_assert_eq(msg_len, expected_msg_len, "LogProtoServer expected message mismatch (length)");
+  cr_assert_arr_eq((const gchar *) msg, expected_msg, expected_msg_len,
+                   "LogProtoServer expected message mismatch");
 }
 
 void
@@ -105,13 +113,17 @@ assert_proto_server_fetch_single_read(LogProtoServer *proto, const gchar *expect
 
   if (expected_msg)
     {
-      assert_nstring((const gchar *) msg, msg_len, expected_msg, expected_msg_len,
-                     "LogProtoServer expected message mismatch");
+      if (expected_msg_len < 0)
+        expected_msg_len = strlen(expected_msg);
+
+      cr_assert_eq(msg_len, expected_msg_len, "LogProtoServer expected message mismatch (length)");
+      cr_assert_arr_eq((const gchar *) msg, expected_msg, expected_msg_len,
+                       "LogProtoServer expected message mismatch");
     }
   else
     {
-      assert_true(msg == NULL, "when single-read finds an incomplete message, msg must be NULL");
-      assert_true(aux.peer_addr == NULL, "returned saddr must be NULL on success");
+      cr_assert_null(msg, "when single-read finds an incomplete message, msg must be NULL");
+      cr_assert_null(aux.peer_addr, "returned saddr must be NULL on success");
     }
   stop_grabbing_messages();
 }
@@ -144,8 +156,8 @@ assert_proto_server_fetch_ignored_eof(LogProtoServer *proto)
   log_transport_aux_data_init(&aux);
   status = log_proto_server_fetch(proto, &msg, &msg_len, &may_read, &aux, &bookmark);
   assert_proto_server_status(proto, status, LPS_SUCCESS);
-  assert_true(msg == NULL, "when an EOF is ignored msg must be NULL");
-  assert_true(aux.peer_addr == NULL, "returned saddr must be NULL on success");
+  cr_assert_null(msg, "when an EOF is ignored msg must be NULL");
+  cr_assert_null(aux.peer_addr, "returned saddr must be NULL on success");
   stop_grabbing_messages();
 }
 
@@ -154,12 +166,11 @@ init_proto_tests(void)
 {
   init_and_load_syslogformat_module();
   log_proto_server_options_defaults(&proto_server_options);
-  log_proto_server_options_init(&proto_server_options, configuration);
-
 }
 
 void
 deinit_proto_tests(void)
 {
+  log_proto_server_options_destroy(&proto_server_options);
   deinit_syslogformat_module();
 }

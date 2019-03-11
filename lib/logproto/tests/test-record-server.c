@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 Balabit
+ * Copyright (c) 2012-2019 Balabit
  * Copyright (c) 2012-2013 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -27,12 +27,9 @@
 #include "msg_parse_lib.h"
 #include "logproto/logproto-record-server.h"
 
-/****************************************************************************************
- * LogProtoRecordServer
- ****************************************************************************************/
+#include <criterion/criterion.h>
 
-static void
-test_log_proto_binary_record_server_no_encoding(void)
+Test(log_proto, test_log_proto_binary_record_server_no_encoding)
 {
   LogProtoServer *proto;
 
@@ -67,8 +64,7 @@ test_log_proto_binary_record_server_no_encoding(void)
   log_proto_server_free(proto);
 }
 
-static void
-test_log_proto_padded_record_server_no_encoding(void)
+Test(log_proto, test_log_proto_padded_record_server_no_encoding)
 {
   LogProtoServer *proto;
 
@@ -108,8 +104,7 @@ test_log_proto_padded_record_server_no_encoding(void)
 }
 
 
-static void
-test_log_proto_padded_record_server_ucs4(void)
+Test(log_proto, test_log_proto_padded_record_server_ucs4)
 {
   LogProtoServer *proto;
 
@@ -133,8 +128,7 @@ test_log_proto_padded_record_server_ucs4(void)
   log_proto_server_free(proto);
 }
 
-static void
-test_log_proto_padded_record_server_invalid_ucs4(void)
+Test(log_proto, test_log_proto_padded_record_server_invalid_ucs4)
 {
   LogProtoServer *proto;
 
@@ -152,8 +146,7 @@ test_log_proto_padded_record_server_invalid_ucs4(void)
   log_proto_server_free(proto);
 }
 
-static void
-test_log_proto_padded_record_server_iso_8859_2(void)
+Test(log_proto, test_log_proto_padded_record_server_iso_8859_2)
 {
   LogProtoServer *proto;
 
@@ -172,16 +165,4 @@ test_log_proto_padded_record_server_iso_8859_2(void)
   assert_proto_server_fetch(proto, "árvíztűrőtükörfúrógépééééééééééé", -1);
   assert_proto_server_fetch_failure(proto, LPS_EOF, NULL);
   log_proto_server_free(proto);
-}
-
-void
-test_log_proto_record_server(void)
-{
-  /* binary records are only tested in no-encoding mode, as there's only one
-   * differing code-path that is used in LPRS_BINARY mode */
-  PROTO_TESTCASE(test_log_proto_binary_record_server_no_encoding);
-  PROTO_TESTCASE(test_log_proto_padded_record_server_no_encoding);
-  PROTO_TESTCASE(test_log_proto_padded_record_server_ucs4);
-  PROTO_TESTCASE(test_log_proto_padded_record_server_invalid_ucs4);
-  PROTO_TESTCASE(test_log_proto_padded_record_server_iso_8859_2);
 }

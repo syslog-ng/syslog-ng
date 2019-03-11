@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 Balabit
+ * Copyright (c) 2012-2019 Balabit
  * Copyright (c) 2012-2013 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
@@ -28,12 +28,9 @@
 #include "logproto/logproto-framed-server.h"
 
 #include <errno.h>
+#include <criterion/criterion.h>
 
-/****************************************************************************************
- * LogProtoFramedServer
- ****************************************************************************************/
-static void
-test_log_proto_framed_server_simple_messages(void)
+Test(log_proto, test_log_proto_framed_server_simple_messages)
 {
   LogProtoServer *proto;
 
@@ -67,8 +64,7 @@ test_log_proto_framed_server_simple_messages(void)
   log_proto_server_free(proto);
 }
 
-static void
-test_log_proto_framed_server_io_error(void)
+Test(log_proto, test_log_proto_framed_server_io_error)
 {
   LogProtoServer *proto;
 
@@ -85,8 +81,7 @@ test_log_proto_framed_server_io_error(void)
 }
 
 
-static void
-test_log_proto_framed_server_invalid_header(void)
+Test(log_proto, test_log_proto_framed_server_invalid_header)
 {
   LogProtoServer *proto;
 
@@ -100,8 +95,7 @@ test_log_proto_framed_server_invalid_header(void)
   log_proto_server_free(proto);
 }
 
-static void
-test_log_proto_framed_server_too_long_line(void)
+Test(log_proto, test_log_proto_framed_server_too_long_line)
 {
   LogProtoServer *proto;
 
@@ -115,8 +109,7 @@ test_log_proto_framed_server_too_long_line(void)
   log_proto_server_free(proto);
 }
 
-static void
-test_log_proto_framed_server_message_exceeds_buffer(void)
+Test(log_proto, test_log_proto_framed_server_message_exceeds_buffer)
 {
   LogProtoServer *proto;
 
@@ -134,8 +127,7 @@ test_log_proto_framed_server_message_exceeds_buffer(void)
   log_proto_server_free(proto);
 }
 
-static void
-test_log_proto_framed_server_buffer_shift_before_fetch(void)
+Test(log_proto, test_log_proto_framed_server_buffer_shift_before_fetch)
 {
   LogProtoServer *proto;
 
@@ -155,8 +147,7 @@ test_log_proto_framed_server_buffer_shift_before_fetch(void)
   log_proto_server_free(proto);
 }
 
-static void
-test_log_proto_framed_server_buffer_shift_to_make_space_for_a_frame(void)
+Test(log_proto, test_log_proto_framed_server_buffer_shift_to_make_space_for_a_frame)
 {
   LogProtoServer *proto;
 
@@ -176,8 +167,7 @@ test_log_proto_framed_server_buffer_shift_to_make_space_for_a_frame(void)
   log_proto_server_free(proto);
 }
 
-static void
-test_log_proto_framed_server_multi_read(void)
+Test(log_proto, test_log_proto_framed_server_multi_read)
 {
   LogProtoServer *proto;
 
@@ -196,17 +186,4 @@ test_log_proto_framed_server_multi_read(void)
   log_proto_server_free(proto);
 
   /* NOTE: LPBS_NOMREAD is not implemented for framed protocol */
-}
-
-void
-test_log_proto_framed_server(void)
-{
-  PROTO_TESTCASE(test_log_proto_framed_server_simple_messages);
-  PROTO_TESTCASE(test_log_proto_framed_server_io_error);
-  PROTO_TESTCASE(test_log_proto_framed_server_invalid_header);
-  PROTO_TESTCASE(test_log_proto_framed_server_too_long_line);
-  PROTO_TESTCASE(test_log_proto_framed_server_message_exceeds_buffer);
-  PROTO_TESTCASE(test_log_proto_framed_server_buffer_shift_before_fetch);
-  PROTO_TESTCASE(test_log_proto_framed_server_buffer_shift_to_make_space_for_a_frame);
-  PROTO_TESTCASE(test_log_proto_framed_server_multi_read);
 }

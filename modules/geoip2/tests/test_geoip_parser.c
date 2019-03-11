@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Balabit
+ * Copyright (c) 2017-2019 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -18,37 +18,32 @@
  * OpenSSL libraries as published by the OpenSSL project. See the file
  * COPYING for details.
  */
-#include "testutils.h"
+
 #include "geoip-parser.h"
 #include "apphook.h"
 #include "msg_parse_lib.h"
+#include "scratch-buffers.h"
 
-#define geoip2_parser_testcase_begin(func, args)             \
-  do                                                            \
-    {                                                           \
-      testcase_begin("%s(%s)", func, args);                     \
-      geoip_parser = maxminddb_parser_new(configuration);     \
-      geoip_parser_set_database_path(geoip_parser, TOP_SRCDIR "/modules/geoip2/tests/test.mmdb"); \
-    }                                                           \
-  while (0)
-
-#define geoip2_parser_testcase_end()                           \
-  do                                                            \
-    {                                                           \
-      log_pipe_deinit(&geoip_parser->super);      \
-      log_pipe_unref(&geoip_parser->super);                     \
-      testcase_end();                                           \
-    }                                                           \
-  while (0)
-
-#define KV_PARSER_TESTCASE(x, ...) \
-  do {                                                          \
-      geoip2_parser_testcase_begin(#x, #__VA_ARGS__);      \
-      x(__VA_ARGS__);                                           \
-      geoip2_parser_testcase_end();                              \
-  } while(0)
+#include <criterion/criterion.h>
 
 LogParser *geoip_parser;
+
+void
+setup(void)
+{
+  app_startup();
+  geoip_parser = maxminddb_parser_new(configuration);
+  geoip_parser_set_database_path(geoip_parser, TOP_SRCDIR "/modules/geoip2/tests/test.mmdb");
+}
+
+void
+teardown(void)
+{
+  log_pipe_deinit(&geoip_parser->super);
+  log_pipe_unref(&geoip_parser->super);
+  scratch_buffers_explicit_gc();
+  app_shutdown();
+}
 
 static LogMessage *
 parse_geoip_into_log_message_no_check(const gchar *input)
@@ -79,12 +74,11 @@ parse_geoip_into_log_message(const gchar *input)
   LogMessage *msg;
 
   msg = parse_geoip_into_log_message_no_check(input);
-  assert_not_null(msg, "expected geoip-parser success and it returned failure, input=%s", input);
+  cr_assert_not_null(msg, "expected geoip-parser success and it returned failure, input=%s", input);
   return msg;
 }
 
-static void
-test_geoip_parser_basics(void)
+Test(geoip2, test_basics)
 {
   LogMessage *msg;
 
@@ -103,8 +97,7 @@ test_geoip_parser_basics(void)
   log_msg_unref(msg);
 }
 
-static void
-test_geoip_parser_uses_template_to_parse_input(void)
+Test(geoip2, test_using_template_to_parse_input)
 {
   LogMessage *msg;
   LogTemplate *template;
@@ -121,19 +114,4 @@ test_geoip_parser_uses_template_to_parse_input(void)
   log_msg_unref(msg);
 }
 
-static void
-test_geoip_parser(void)
-{
-  KV_PARSER_TESTCASE(test_geoip_parser_basics);
-  KV_PARSER_TESTCASE(test_geoip_parser_uses_template_to_parse_input);
-}
-
-int
-main(int argc G_GNUC_UNUSED, char *argv[] G_GNUC_UNUSED)
-{
-  app_startup();
-
-  test_geoip_parser();
-  app_shutdown();
-  return 0;
-}
+TestSuite(geoip2, .init = setup, .fini = teardown);

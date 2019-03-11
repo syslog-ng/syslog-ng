@@ -11,7 +11,6 @@ lib_logproto_tests_test_logproto_CFLAGS  = $(TEST_CFLAGS) \
 lib_logproto_tests_test_logproto_LDADD	 = $(TEST_LDADD)
 lib_logproto_tests_test_logproto_SOURCES = 			\
 	lib/logproto/tests/test_logproto.c 			\
-	lib/logproto/tests/test_logproto.h			\
 	lib/logproto/tests/test-server-options.c		\
 	lib/logproto/tests/test-record-server.c			\
 	lib/logproto/tests/test-text-server.c			\

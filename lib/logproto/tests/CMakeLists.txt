@@ -1,6 +1,5 @@
 set(TEST_LOGPROTO_SOURCES
   test_logproto.c
-  test_logproto.h
   test-server-options.c
   test-record-server.c
   test-text-server.c
@@ -9,7 +8,7 @@ set(TEST_LOGPROTO_SOURCES
   test-indented-multiline-server.c
   test-regexp-multiline-server.c)
 
-add_unit_test(LIBTEST
+add_unit_test(LIBTEST CRITERION
   TARGET test_logproto
   SOURCES "${TEST_LOGPROTO_SOURCES}")
 
