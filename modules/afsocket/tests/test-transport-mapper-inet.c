@@ -31,28 +31,10 @@
 
 #include <unistd.h>
 
-
-#define transport_mapper_inet_testcase_begin(init_name, func, args)           \
-  do                                                            \
-    {                                                           \
-      testcase_begin("%s(%s)", func, args);                     \
-      transport_mapper = transport_mapper_ ## init_name ## _new();          \
-    }                                                           \
-  while (0)
-
-#define transport_mapper_inet_testcase_end()                           \
-  do                                                            \
-    {                                                           \
-      transport_mapper_free(transport_mapper);             \
-      testcase_end();                                           \
-    }                                                           \
-  while (0)
-
-
 static inline void
 assert_transport_mapper_inet_server_port(TransportMapper *s, gint server_port)
 {
-  assert_gint(transport_mapper_inet_get_server_port(s), server_port, "TransportMapper server_port mismatch");
+  cr_assert_eq(transport_mapper_inet_get_server_port(s), server_port, "TransportMapper server_port mismatch");
 }
 
 static void
@@ -115,8 +97,8 @@ assert_create_socket_fails_with_address(GSockAddr *addr)
 {
   gint sock;
 
-  assert_false(create_socket_with_address(addr, &sock), "transport_mapper_open_socket() succeeded unexpectedly");
-  assert_gint(sock, -1, "failed create_socket returned a non-extremal value on failure");
+  cr_assert_not(create_socket_with_address(addr, &sock), "transport_mapper_open_socket() succeeded unexpectedly");
+  cr_assert_eq(sock, -1, "failed create_socket returned a non-extremal value on failure");
 }
 
 static void
@@ -124,8 +106,8 @@ assert_create_socket_fails(void)
 {
   gint sock;
 
-  assert_false(create_socket(&sock), "transport_mapper_open_socket() succeeded unexpectedly");
-  assert_gint(sock, -1, "failed create_socket returned a non-extremal value on failure");
+  cr_assert_not(create_socket(&sock), "transport_mapper_open_socket() succeeded unexpectedly");
+  cr_assert_eq(sock, -1, "failed create_socket returned a non-extremal value on failure");
 }
 
 static void
@@ -133,7 +115,7 @@ assert_create_socket_succeeds(void)
 {
   gint sock;
 
-  assert_true(create_socket(&sock), "transport_mapper_open_socket() failed unexpectedly");
+  cr_assert(create_socket(&sock), "transport_mapper_open_socket() failed unexpectedly");
   close(sock);
 }
 
@@ -150,9 +132,9 @@ create_dummy_tls_context(void)
  * Tests start here
  ******************************************************************************/
 
-static void
-test_tcp_apply_transport_sets_defaults(void)
+Test(transport_mapper_inet, test_tcp_apply_transport_sets_defaults)
 {
+  transport_mapper = transport_mapper_tcp_new();
   assert_transport_mapper_apply(transport_mapper, NULL);
   assert_transport_mapper_tcp_socket(transport_mapper);
 
@@ -162,9 +144,9 @@ test_tcp_apply_transport_sets_defaults(void)
   assert_transport_mapper_inet_server_port(transport_mapper, 514);
 }
 
-static void
-test_tcp6_apply_transport_sets_defaults(void)
+Test(transport_mapper_inet, test_tcp6_apply_transport_sets_defaults)
 {
+  transport_mapper = transport_mapper_tcp6_new();
   assert_transport_mapper_apply(transport_mapper, NULL);
   assert_transport_mapper_tcp6_socket(transport_mapper);
 
@@ -174,9 +156,9 @@ test_tcp6_apply_transport_sets_defaults(void)
   assert_transport_mapper_inet_server_port(transport_mapper, 514);
 }
 
-static void
-test_udp_apply_transport_sets_defaults(void)
+Test(transport_mapper_inet, test_udp_apply_transport_sets_defaults)
 {
+  transport_mapper = transport_mapper_udp_new();
   assert_transport_mapper_apply(transport_mapper, NULL);
   assert_transport_mapper_udp_socket(transport_mapper);
 
@@ -186,16 +168,16 @@ test_udp_apply_transport_sets_defaults(void)
   assert_transport_mapper_inet_server_port(transport_mapper, 514);
 }
 
-static void
-test_udp_apply_fails_when_tls_context_is_set(void)
+Test(transport_mapper_inet, test_udp_apply_fails_when_tls_context_is_set)
 {
+  transport_mapper = transport_mapper_udp_new();
   transport_mapper_inet_set_tls_context((TransportMapperInet *) transport_mapper, create_dummy_tls_context(), NULL);
   assert_transport_mapper_apply_fails(transport_mapper, "udp");
 }
 
-static void
-test_udp6_apply_transport_sets_defaults(void)
+Test(transport_mapper_inet, test_udp6_apply_transport_sets_defaults)
 {
+  transport_mapper = transport_mapper_udp6_new();
   assert_transport_mapper_apply(transport_mapper, NULL);
   assert_transport_mapper_udp6_socket(transport_mapper);
 
@@ -205,9 +187,9 @@ test_udp6_apply_transport_sets_defaults(void)
   assert_transport_mapper_inet_server_port(transport_mapper, 514);
 }
 
-static void
-test_network_transport_udp_apply_transport_sets_defaults(void)
+Test(transport_mapper_inet, test_network_transport_udp_apply_transport_sets_defaults)
 {
+  transport_mapper = transport_mapper_network_new();
   assert_transport_mapper_apply(transport_mapper, "udp");
   assert_transport_mapper_udp_socket(transport_mapper);
 
@@ -217,16 +199,16 @@ test_network_transport_udp_apply_transport_sets_defaults(void)
   assert_transport_mapper_inet_server_port(transport_mapper, 514);
 }
 
-static void
-test_network_transport_udp_apply_fails_when_tls_context_is_set(void)
+Test(transport_mapper_inet, test_network_transport_udp_apply_fails_when_tls_context_is_set)
 {
+  transport_mapper = transport_mapper_network_new();
   transport_mapper_inet_set_tls_context((TransportMapperInet *) transport_mapper, create_dummy_tls_context(), NULL);
   assert_transport_mapper_apply_fails(transport_mapper, "udp");
 }
 
-static void
-test_network_transport_tcp_apply_transport_sets_defaults(void)
+Test(transport_mapper_inet, test_network_transport_tcp_apply_transport_sets_defaults)
 {
+  transport_mapper = transport_mapper_network_new();
   assert_transport_mapper_apply(transport_mapper, "tcp");
   assert_transport_mapper_tcp_socket(transport_mapper);
 
@@ -236,15 +218,15 @@ test_network_transport_tcp_apply_transport_sets_defaults(void)
   assert_transport_mapper_inet_server_port(transport_mapper, 514);
 }
 
-static void
-test_network_transport_tls_apply_fails_without_tls_context(void)
+Test(transport_mapper_inet, test_network_transport_tls_apply_fails_without_tls_context)
 {
+  transport_mapper = transport_mapper_network_new();
   assert_transport_mapper_apply_fails(transport_mapper, "tls");
 }
 
-static void
-test_network_transport_tls_apply_transport_sets_defaults(void)
+Test(transport_mapper_inet, test_network_transport_tls_apply_transport_sets_defaults)
 {
+  transport_mapper = transport_mapper_network_new();
   transport_mapper_inet_set_tls_context((TransportMapperInet *) transport_mapper, create_dummy_tls_context(), NULL);
   assert_transport_mapper_apply(transport_mapper, "tls");
   assert_transport_mapper_tcp_socket(transport_mapper);
@@ -255,9 +237,9 @@ test_network_transport_tls_apply_transport_sets_defaults(void)
   assert_transport_mapper_inet_server_port(transport_mapper, 514);
 }
 
-static void
-test_network_transport_foo_apply_transport_sets_defaults(void)
+Test(transport_mapper_inet, test_network_transport_foo_apply_transport_sets_defaults)
 {
+  transport_mapper = transport_mapper_network_new();
   assert_transport_mapper_apply(transport_mapper, "foo");
   assert_transport_mapper_tcp_socket(transport_mapper);
 
@@ -267,9 +249,9 @@ test_network_transport_foo_apply_transport_sets_defaults(void)
   assert_transport_mapper_inet_server_port(transport_mapper, 514);
 }
 
-static void
-test_syslog_transport_udp_apply_transport_sets_defaults(void)
+Test(transport_mapper_inet, test_syslog_transport_udp_apply_transport_sets_defaults)
 {
+  transport_mapper = transport_mapper_syslog_new();
   assert_transport_mapper_apply(transport_mapper, "udp");
   assert_transport_mapper_udp_socket(transport_mapper);
 
@@ -279,16 +261,16 @@ test_syslog_transport_udp_apply_transport_sets_defaults(void)
   assert_transport_mapper_inet_server_port(transport_mapper, 514);
 }
 
-static void
-test_syslog_transport_udp_apply_fails_when_tls_context_is_set(void)
+Test(transport_mapper_inet, test_syslog_transport_udp_apply_fails_when_tls_context_is_set)
 {
+  transport_mapper = transport_mapper_syslog_new();
   transport_mapper_inet_set_tls_context((TransportMapperInet *) transport_mapper, create_dummy_tls_context(), NULL);
   assert_transport_mapper_apply_fails(transport_mapper, "udp");
 }
 
-static void
-test_syslog_transport_tcp_apply_transport_sets_defaults(void)
+Test(transport_mapper_inet, test_syslog_transport_tcp_apply_transport_sets_defaults)
 {
+  transport_mapper = transport_mapper_syslog_new();
   assert_transport_mapper_apply(transport_mapper, "tcp");
   assert_transport_mapper_tcp_socket(transport_mapper);
 
@@ -298,15 +280,15 @@ test_syslog_transport_tcp_apply_transport_sets_defaults(void)
   assert_transport_mapper_inet_server_port(transport_mapper, 601);
 }
 
-static void
-test_syslog_transport_tls_apply_fails_without_tls_context(void)
+Test(transport_mapper_inet, test_syslog_transport_tls_apply_fails_without_tls_context)
 {
+  transport_mapper = transport_mapper_syslog_new();
   assert_transport_mapper_apply_fails(transport_mapper, "tls");
 }
 
-static void
-test_syslog_transport_tls_apply_transport_sets_defaults(void)
+Test(transport_mapper_inet, test_syslog_transport_tls_apply_transport_sets_defaults)
 {
+  transport_mapper = transport_mapper_syslog_new();
   transport_mapper_inet_set_tls_context((TransportMapperInet *) transport_mapper, create_dummy_tls_context(), NULL);
   assert_transport_mapper_apply(transport_mapper, "tls");
   assert_transport_mapper_tcp_socket(transport_mapper);
@@ -317,9 +299,9 @@ test_syslog_transport_tls_apply_transport_sets_defaults(void)
   assert_transport_mapper_inet_server_port(transport_mapper, 6514);
 }
 
-static void
-test_syslog_transport_foo_apply_transport_sets_defaults(void)
+Test(transport_mapper_inet, test_syslog_transport_foo_apply_transport_sets_defaults)
 {
+  transport_mapper = transport_mapper_syslog_new();
   assert_transport_mapper_apply(transport_mapper, "foo");
   assert_transport_mapper_tcp_socket(transport_mapper);
 
@@ -329,22 +311,22 @@ test_syslog_transport_foo_apply_transport_sets_defaults(void)
   assert_transport_mapper_inet_server_port(transport_mapper, 514);
 }
 
-static void
-test_open_socket_opens_a_socket_and_applies_socket_options(void)
+Test(transport_mapper_inet, test_open_socket_opens_a_socket_and_applies_socket_options)
 {
+  transport_mapper = transport_mapper_tcp_new();
   assert_create_socket_succeeds();
 }
 
-static void
-test_open_socket_fails_properly_on_socket_failure(void)
+Test(transport_mapper_inet, test_open_socket_fails_properly_on_socket_failure)
 {
+  transport_mapper = transport_mapper_tcp_new();
   transport_mapper_set_address_family(transport_mapper, 0xdeadbeef);
   assert_create_socket_fails();
 }
 
-static void
-test_open_socket_fails_properly_on_bind_failure(void)
+Test(transport_mapper_inet, test_open_socket_fails_properly_on_bind_failure)
 {
+  transport_mapper = transport_mapper_tcp_new();
   GSockAddr *addr = g_sockaddr_unix_new("/foo/bar/no/such/dir");
   transport_mapper_set_address_family(transport_mapper, AF_UNIX);
   assert_create_socket_fails_with_address(addr);
@@ -352,35 +334,16 @@ test_open_socket_fails_properly_on_bind_failure(void)
 }
 
 static void
-test_transport_mapper_inet(void)
-{
-  TRANSPORT_MAPPER_TESTCASE(tcp, test_tcp_apply_transport_sets_defaults);
-  TRANSPORT_MAPPER_TESTCASE(tcp6, test_tcp6_apply_transport_sets_defaults);
-  TRANSPORT_MAPPER_TESTCASE(udp, test_udp_apply_transport_sets_defaults);
-  TRANSPORT_MAPPER_TESTCASE(udp, test_udp_apply_fails_when_tls_context_is_set);
-  TRANSPORT_MAPPER_TESTCASE(udp6, test_udp6_apply_transport_sets_defaults);
-  TRANSPORT_MAPPER_TESTCASE(network, test_network_transport_udp_apply_transport_sets_defaults);
-  TRANSPORT_MAPPER_TESTCASE(network, test_network_transport_udp_apply_fails_when_tls_context_is_set);
-  TRANSPORT_MAPPER_TESTCASE(network, test_network_transport_tcp_apply_transport_sets_defaults);
-  TRANSPORT_MAPPER_TESTCASE(network, test_network_transport_tls_apply_fails_without_tls_context);
-  TRANSPORT_MAPPER_TESTCASE(network, test_network_transport_tls_apply_transport_sets_defaults);
-  TRANSPORT_MAPPER_TESTCASE(network, test_network_transport_foo_apply_transport_sets_defaults);
-  TRANSPORT_MAPPER_TESTCASE(syslog, test_syslog_transport_udp_apply_transport_sets_defaults);
-  TRANSPORT_MAPPER_TESTCASE(syslog, test_syslog_transport_udp_apply_fails_when_tls_context_is_set);
-  TRANSPORT_MAPPER_TESTCASE(syslog, test_syslog_transport_tcp_apply_transport_sets_defaults);
-  TRANSPORT_MAPPER_TESTCASE(syslog, test_syslog_transport_tls_apply_fails_without_tls_context);
-  TRANSPORT_MAPPER_TESTCASE(syslog, test_syslog_transport_tls_apply_transport_sets_defaults);
-  TRANSPORT_MAPPER_TESTCASE(syslog, test_syslog_transport_foo_apply_transport_sets_defaults);
-  TRANSPORT_MAPPER_TESTCASE(tcp, test_open_socket_opens_a_socket_and_applies_socket_options);
-  TRANSPORT_MAPPER_TESTCASE(tcp, test_open_socket_fails_properly_on_socket_failure);
-  TRANSPORT_MAPPER_TESTCASE(tcp, test_open_socket_fails_properly_on_bind_failure);
-}
-
-int
-main(int argc, char *argv[])
+setup(void)
 {
   app_startup();
-  test_transport_mapper_inet();
-  app_shutdown();
-  return 0;
 }
+
+static void
+teardown(void)
+{
+  transport_mapper_free(transport_mapper);
+  app_shutdown();
+}
+
+TestSuite(transport_mapper_inet, .init = setup, .fini = teardown);
