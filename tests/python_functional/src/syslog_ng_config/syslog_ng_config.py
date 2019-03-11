@@ -26,6 +26,7 @@ from pathlib2 import Path
 
 from src.common.operations import cast_to_list
 from src.driver_io.file.file_io import FileIO
+from src.driver_io.file.pipe_io import PipeIO
 from src.message_reader.single_line_parser import SingleLineParser
 from src.syslog_ng_config.renderer import ConfigRenderer
 from src.syslog_ng_config.statement_group import StatementGroup
@@ -50,6 +51,7 @@ class SyslogNgConfig(object):
         }
         self.driver_resources = {
             "file": {"driver_io": FileIO, "parser": SingleLineParser},
+            "pipe": {"driver_io": PipeIO, "parser": SingleLineParser},
         }
 
     # Public API
@@ -102,6 +104,17 @@ class SyslogNgConfig(object):
         generator_source.DEFAULT_MESSAGE = "-- Generated message. --"
         return generator_source
 
+    def create_pipe_source(self, **options):
+        driver_name = "pipe"
+        self.__set_file_name_option(options, "psinput.log")
+        pipe_source = SourceDriver(
+            driver_name=driver_name,
+            driver_resources=self.driver_resources[driver_name],
+            options=options,
+            positional_option="file_name",
+            connection_options="file_name")
+        return pipe_source
+
     # Destinations
     def create_file_destination(self, **options):
         driver_name = "file"
@@ -113,6 +126,17 @@ class SyslogNgConfig(object):
             positional_option="file_name",
             connection_options="file_name")
         return file_destination
+
+    def create_pipe_destination(self, **options):
+        driver_name = "pipe"
+        self.__set_file_name_option(options, "pdoutput.log")
+        pipe_destination = DestinationDriver(
+            driver_name=driver_name,
+            driver_resources=self.driver_resources[driver_name],
+            options=options,
+            positional_option="file_name",
+            connection_options="file_name")
+        return pipe_destination
 
     # Filter
     def create_filter(self, **kwargs):

@@ -20,6 +20,7 @@
 # COPYING for details.
 #
 #############################################################################
+import os
 import shutil
 
 from pathlib2 import Path
@@ -28,6 +29,10 @@ from pathlib2 import Path
 def open_file(file_path, mode):
     # Python 2 compatibility note: open() can work only with string representation of path
     return open(str(file_path), mode)
+
+
+def open_named_pipe(file_path):
+    return os.open(str(file_path), os.O_RDONLY | os.O_NONBLOCK)
 
 
 def copy_file(src_file_path, dst_dir):

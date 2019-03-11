@@ -20,10 +20,13 @@
 # COPYING for details.
 #
 #############################################################################
+import io
+import os
 import logging
 
 from src.common.blocking import wait_until_true
 from src.common.operations import open_file
+from src.common.operations import open_named_pipe
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +38,10 @@ class File(object):
 
     def __del__(self):
         if self.__opened_file:
-            self.__opened_file.close()
+            if isinstance(self.__opened_file, io.TextIOWrapper):
+                self.__opened_file.close()
+            else:
+                os.close(self.__opened_file)
             self.__opened_file = None
 
     def __is_file_exist(self):
@@ -51,4 +57,8 @@ class File(object):
 
     def open_file(self, mode):
         self.__opened_file = open_file(self.__file_path, mode)
+        return self.__opened_file
+
+    def open_named_pipe(self):
+        self.__opened_file = open_named_pipe(self.__file_path)
         return self.__opened_file
