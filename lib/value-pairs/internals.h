@@ -28,7 +28,6 @@
 #include "syslog-ng.h"
 #include "atomic.h"
 
-typedef struct _ValuePairs ValuePairs;
 struct _ValuePairs
 {
   GAtomicCounter ref_cnt;
