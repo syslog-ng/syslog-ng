@@ -180,6 +180,9 @@ AC_ARG_ENABLE(forced_server_mode,
 AC_ARG_ENABLE(debug,
               [  --enable-debug      Enable debugging code.],, enable_debug="no")
 
+AC_ARG_ENABLE(force_gnu99,
+              [  --enable-force-gnu99      Enforce C99 with gnu extensions.],, force_gnu99="no")
+
 AC_ARG_ENABLE(extra-warnings,
               [  --enable-extra-warnings      Enable extra compiler warnings (recommended).],, enable_extra_warnings="no")
 
@@ -480,7 +483,6 @@ dnl ***************************************************************************
 dnl Set up CFLAGS
 
 
-
 dnl The rest of CFLAGS. We produce
 dnl -g/-O2/-pg/-fprofile-arcs/-ftest-coverage combinations, the rest is
 dnl supplied by Makefile.am
@@ -506,6 +508,12 @@ else
         enable_extra_warnings="no"
 fi
 CFLAGS_ADD="${CFLAGS_ADD} -pthread"
+
+dnl The current supported standard is C99 with gnu extensions
+
+if test "x$force_gnu99" = "xyes"; then
+	CFLAGS_ADD="${CFLAGS_ADD} -std=gnu99"
+fi
 
 dnl We are checking for the postive warning flag, as gcc handles the
 dnl -Wno-XXX version oddly, so if no other warnings are present, it is not
