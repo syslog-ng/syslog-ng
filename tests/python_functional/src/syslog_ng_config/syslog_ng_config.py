@@ -29,10 +29,10 @@ from src.driver_io.file.file_io import FileIO
 from src.message_reader.single_line_parser import SingleLineParser
 from src.syslog_ng_config.renderer import ConfigRenderer
 from src.syslog_ng_config.statement_group import StatementGroup
-from src.syslog_ng_config.statements.destinations.destination_driver import DestinationDriver
-from src.syslog_ng_config.statements.filters.filter import Filter
-from src.syslog_ng_config.statements.logpath.logpath import LogPath
-from src.syslog_ng_config.statements.sources.source_driver import SourceDriver
+from src.syslog_ng_config.statements.destination_driver import DestinationDriver
+from src.syslog_ng_config.statements.filter import Filter
+from src.syslog_ng_config.statements.logpath import LogPath
+from src.syslog_ng_config.statements.source_driver import SourceDriver
 
 
 logger = logging.getLogger(__name__)
