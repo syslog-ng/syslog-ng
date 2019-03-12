@@ -22,16 +22,13 @@
 #############################################################################
 
 
-def test_manipulating_config_between_reload(tc):
-    config = tc.new_config()
-
+def test_manipulating_config_between_reload(config, syslog_ng):
     file_source = config.create_file_source(file_name="input.log")
     file_destination = config.create_file_destination(file_name="output.log")
     destination_group = config.create_statement_group(file_destination)
 
     logpath = config.create_logpath(statements=[file_source, destination_group])
 
-    syslog_ng = tc.new_syslog_ng()
     syslog_ng.start(config)
 
     # update positional value of file source

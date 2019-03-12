@@ -20,23 +20,21 @@
 # COPYING for details.
 #
 #############################################################################
+import pytest
+import socket
 
+input_log = "<38>Feb 11 21:27:22 {} testprogram[9999]: test message\n".format(socket.gethostname())
+expected_log = "Feb 11 21:27:22 {} testprogram[9999]: test message\n".format(socket.gethostname())
 
-def test_acceptance(tc):
-    config = tc.new_config()
-
+@pytest.mark.parametrize("input_log, expected_log, counter", [
+    (input_log, expected_log, 1),
+    (input_log, expected_log, 10),
+], ids=["with_one_log", "with_ten_logs"])
+def test_acceptance(config, syslog_ng, input_log, expected_log, counter):
     file_source = config.create_file_source(file_name="input.log")
     file_destination = config.create_file_destination(file_name="output.log")
-
     config.create_logpath(statements=[file_source, file_destination])
 
-    log_message = tc.new_log_message()
-    bsd_log = tc.format_as_bsd(log_message)
-    file_source.write_log(bsd_log, counter=3)
-
-    syslog_ng = tc.new_syslog_ng()
+    file_source.write_log(input_log, counter)
     syslog_ng.start(config)
-
-    output_logs = file_destination.read_logs(counter=3)
-    expected_output_message = log_message.remove_priority()
-    assert output_logs == tc.format_as_bsd_logs(expected_output_message, counter=3)
+    assert file_destination.read_logs(counter) == [expected_log]*counter

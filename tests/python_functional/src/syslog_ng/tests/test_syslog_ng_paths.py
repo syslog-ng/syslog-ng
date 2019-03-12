@@ -26,8 +26,8 @@ from pathlib2 import PosixPath
 from src.syslog_ng.syslog_ng_paths import SyslogNgPaths
 
 
-def test_syslog_ng_paths(tc_unittest):
-    syslog_ng_paths = SyslogNgPaths(tc_unittest.get_fake_testcase_parameters())
+def test_syslog_ng_paths(fake_testcase_parameters):
+    syslog_ng_paths = SyslogNgPaths(fake_testcase_parameters)
     syslog_ng_paths.set_syslog_ng_paths(instance_name="server")
     assert set(list(syslog_ng_paths._SyslogNgPaths__syslog_ng_paths)) == {"dirs", "file_paths", "binary_file_paths"}
     assert set(list(syslog_ng_paths._SyslogNgPaths__syslog_ng_paths["dirs"])) == {"working_dir", "install_dir"}
@@ -46,8 +46,8 @@ def test_syslog_ng_paths(tc_unittest):
     }
 
 
-def test_syslog_ng_paths_parent_class_of_paths(tc_unittest):
-    syslog_ng_paths = SyslogNgPaths(tc_unittest.get_fake_testcase_parameters())
+def test_syslog_ng_paths_parent_class_of_paths(fake_testcase_parameters):
+    syslog_ng_paths = SyslogNgPaths(fake_testcase_parameters)
     syslog_ng_paths.set_syslog_ng_paths(instance_name="server")
     for __key, value in syslog_ng_paths._SyslogNgPaths__syslog_ng_paths["file_paths"].items():
         assert isinstance(value, PosixPath) is True
@@ -59,15 +59,15 @@ def test_syslog_ng_paths_parent_class_of_paths(tc_unittest):
         assert isinstance(value, PosixPath) is True
 
 
-def test_syslog_ng_paths_client_relay_server(tc_unittest):
+def test_syslog_ng_paths_client_relay_server(fake_testcase_parameters):
     syslog_ng_paths_server = SyslogNgPaths(
-        tc_unittest.get_fake_testcase_parameters()
+        fake_testcase_parameters
     ).set_syslog_ng_paths(instance_name="server")
     syslog_ng_paths_relay = SyslogNgPaths(
-        tc_unittest.get_fake_testcase_parameters()
+        fake_testcase_parameters
     ).set_syslog_ng_paths(instance_name="relay")
     syslog_ng_paths_client = SyslogNgPaths(
-        tc_unittest.get_fake_testcase_parameters()
+        fake_testcase_parameters
     ).set_syslog_ng_paths(instance_name="client")
 
     assert syslog_ng_paths_client.get_instance_name() == "client"
@@ -75,9 +75,9 @@ def test_syslog_ng_paths_client_relay_server(tc_unittest):
     assert syslog_ng_paths_server.get_instance_name() == "server"
 
 
-def test_instance_already_configured(tc_unittest):
+def test_instance_already_configured(fake_testcase_parameters):
     syslog_ng_paths_server = SyslogNgPaths(
-        tc_unittest.get_fake_testcase_parameters()
+        fake_testcase_parameters
     ).set_syslog_ng_paths(instance_name="server")
     with pytest.raises(Exception):
         syslog_ng_paths_server.set_syslog_ng_paths(instance_name="client")

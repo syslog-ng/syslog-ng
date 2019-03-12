@@ -22,14 +22,16 @@
 #############################################################################
 
 
-def write_message_with_fields(tc, file_source, hostname, message):
-    bsd_message = tc.new_log_message().hostname(hostname).message(message)
-    bsd_log = tc.format_as_bsd(bsd_message)
-    file_source.write_log(bsd_log)
-    return bsd_message
+from src.message_builder.log_message import LogMessage
 
+def write_msg_with_fields(file_source, bsd_formatter, hostname):
+    log_message = LogMessage().hostname(hostname)
+    input_message = bsd_formatter.format_message(log_message)
+    expected_message = bsd_formatter.format_message(log_message.remove_priority())
+    file_source.write_log(input_message)
+    return expected_message
 
-def test_flags_fallback(tc):
+def test_flags_fallback(config, syslog_ng, bsd_formatter):
     # Check the correct output if the logpath is the following
     # log {
     #     source(s_file);
@@ -39,8 +41,6 @@ def test_flags_fallback(tc):
     # input logs:
     # Oct 11 22:14:15 host-A testprogram: message from host-A
     # Oct 11 22:14:15 host-B testprogram: message from host-B
-
-    config = tc.new_config()
 
     config.create_global_options(keep_hostname="yes")
 
@@ -54,20 +54,16 @@ def test_flags_fallback(tc):
 
     config.create_logpath(statements=[file_source, inner_logpath1, inner_logpath2])
 
-    bsd_message1 = write_message_with_fields(tc, file_source, hostname="host-A", message="message from host-A")
-    bsd_message2 = write_message_with_fields(tc, file_source, hostname="host-B", message="message from host-B")
+    expected_message1 = write_msg_with_fields(file_source, bsd_formatter, "host-A")
+    expected_message2 = write_msg_with_fields(file_source, bsd_formatter, "host-B")
 
-    expected_bsd_message1 = bsd_message1.remove_priority()
-    expected_bsd_message2 = bsd_message2.remove_priority()
-
-    syslog_ng = tc.new_syslog_ng()
     syslog_ng.start(config)
 
     dest1_logs = file_destination1.read_log()
     # host("host-A") matches on first and second messages
-    assert tc.format_as_bsd(expected_bsd_message1) in dest1_logs
+    assert expected_message1 in dest1_logs
 
     dest2_logs = file_destination2.read_log()
     # only third message should arrive here, because of
     # flags(fallback), only this messages was not matched before
-    assert tc.format_as_bsd(expected_bsd_message2) in dest2_logs
+    assert expected_message2 in dest2_logs

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 #############################################################################
-# Copyright (c) 2019 Balabit
+# Copyright (c) 2015-2019 Balabit
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -21,12 +22,27 @@
 #
 #############################################################################
 
+import pytest
+from src.testcase_parameters.testcase_parameters import TestcaseParameters
 
-def test_generator_source(config, syslog_ng):
-    generator_source = config.create_example_msg_generator(num=1)
-    file_destination = config.create_file_destination(file_name="output.log", template="'$MSG\n'")
 
-    config.create_logpath(statements=[generator_source, file_destination])
-    syslog_ng.start(config)
-    log = file_destination.read_log()
-    assert log == generator_source.DEFAULT_MESSAGE + "\n"
+@pytest.fixture
+def test_message():
+    return "test message - öüóőúéáű\n"
+
+
+@pytest.fixture
+def fake_testcase_parameters(request, tmpdir):
+    orig_installdir = request.config.option.installdir
+    orig_reportdir = request.config.option.reports
+    request.config.option.installdir = tmpdir.join("installdir")
+    request.config.option.reports = tmpdir.join("reports")
+    request.config.option.runwithvalgrind = False
+    yield TestcaseParameters(request)
+    request.config.option.installdir = orig_installdir
+    request.config.option.reports = orig_reportdir
+
+
+@pytest.fixture
+def temp_file(tmpdir):
+    return tmpdir.join("test_file.log")

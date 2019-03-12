@@ -22,14 +22,17 @@
 #############################################################################
 
 
-def write_message_with_fields(tc, file_source, hostname, program, message):
-    bsd_message = tc.new_log_message().hostname(hostname).program(program).message(message)
-    bsd_log = tc.format_as_bsd(bsd_message)
-    file_source.write_log(bsd_log)
-    return bsd_message
+from src.message_builder.log_message import LogMessage
 
 
-def test_multiple_embedded_logpaths(tc):
+def write_msg_with_fields(file_source, bsd_formatter, hostname, program):
+    log_message = LogMessage().hostname(hostname).program(program)
+    input_message = bsd_formatter.format_message(log_message)
+    expected_message = bsd_formatter.format_message(log_message.remove_priority())
+    file_source.write_log(input_message)
+    return expected_message
+
+def test_multiple_embedded_logpaths(config, syslog_ng, bsd_formatter):
     # Check the correct output if the logpath is the following
     # log {
     #     source(s_file);
@@ -43,8 +46,6 @@ def test_multiple_embedded_logpaths(tc):
     # Oct 11 22:14:15 host-A app-B: message from host-A and app-B
     # Oct 11 22:14:15 host-B app-A: message from host-B and app-A
     # Oct 11 22:14:15 host-B app-B: message from host-B and app-B
-
-    config = tc.new_config()
 
     config.create_global_options(keep_hostname="yes")
 
@@ -67,44 +68,30 @@ def test_multiple_embedded_logpaths(tc):
     )
     config.create_logpath(statements=[file_destination4])
 
-    bsd_message1 = write_message_with_fields(
-        tc, file_source, hostname="host-A", program="app-A", message="message from host-A and app-A"
-    )
-    bsd_message2 = write_message_with_fields(
-        tc, file_source, hostname="host-A", program="app-B", message="message from host-A and app-B"
-    )
-    bsd_message3 = write_message_with_fields(
-        tc, file_source, hostname="host-B", program="app-A", message="message from host-B and app-A"
-    )
-    bsd_message4 = write_message_with_fields(
-        tc, file_source, hostname="host-B", program="app-B", message="message from host-B and app-B"
-    )
+    expected_message1 = write_msg_with_fields(file_source, bsd_formatter, "host-A", "app-A")
+    expected_message2 = write_msg_with_fields(file_source, bsd_formatter, "host-A", "app-B")
+    expected_message3 = write_msg_with_fields(file_source, bsd_formatter, "host-B", "app-A")
+    expected_message4 = write_msg_with_fields(file_source, bsd_formatter, "host-B", "app-B")
 
-    expected_bsd_message1 = bsd_message1.remove_priority()
-    expected_bsd_message2 = bsd_message2.remove_priority()
-    expected_bsd_message3 = bsd_message3.remove_priority()
-    expected_bsd_message4 = bsd_message4.remove_priority()
-
-    syslog_ng = tc.new_syslog_ng()
     syslog_ng.start(config)
 
     dest1_logs = file_destination1.read_logs(counter=2)
     # host("host-A") matches on first and second messages
-    assert tc.format_as_bsd(expected_bsd_message1) in dest1_logs
-    assert tc.format_as_bsd(expected_bsd_message2) in dest1_logs
+    assert expected_message1 in dest1_logs
+    assert expected_message2 in dest1_logs
 
     dest2_logs = file_destination2.read_logs(counter=2)
     # program("app-A") matches on first and third messages
-    assert tc.format_as_bsd(expected_bsd_message1) in dest2_logs
-    assert tc.format_as_bsd(expected_bsd_message3) in dest2_logs
+    assert expected_message1 in dest2_logs
+    assert expected_message3 in dest2_logs
 
     dest3_logs = file_destination3.read_logs(counter=4)
     # every message should arrived into destination3
     # there is no filter() on this logpath
-    assert tc.format_as_bsd(expected_bsd_message1) in dest3_logs
-    assert tc.format_as_bsd(expected_bsd_message2) in dest3_logs
-    assert tc.format_as_bsd(expected_bsd_message3) in dest3_logs
-    assert tc.format_as_bsd(expected_bsd_message4) in dest3_logs
+    assert expected_message1 in dest3_logs
+    assert expected_message2 in dest3_logs
+    assert expected_message3 in dest3_logs
+    assert expected_message4 in dest3_logs
 
     # no messages should arrived into destination4,
     # no source() or flags(catch-all) is added

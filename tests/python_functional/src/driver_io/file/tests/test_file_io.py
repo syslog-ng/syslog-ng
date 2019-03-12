@@ -24,27 +24,22 @@
 from src.driver_io.file.file_io import FileIO
 
 
-def test_file_io_write_read(tc_unittest):
-    temp_file = tc_unittest.get_temp_file()
+def test_file_io_write_read(temp_file, test_message):
     fileio = FileIO(temp_file)
-    input_content = tc_unittest.get_utf8_test_messages(counter=1)
-    fileio.write(input_content)
+    fileio.write(test_message)
     output = fileio.read()
-    assert input_content == output
+    assert test_message == output
 
 
-def test_file_io_multiple_write_read(tc_unittest):
-    temp_file = tc_unittest.get_temp_file()
+def test_file_io_multiple_write_read(temp_file, test_message):
     fileio = FileIO(temp_file)
-    input_content = tc_unittest.get_utf8_test_messages(counter=1)
-    fileio.write(input_content)
-    fileio.write(input_content)
+    fileio.write(test_message)
+    fileio.write(test_message)
     output = fileio.read()
-    assert input_content + input_content == output
+    assert test_message + test_message == output
 
 
-def test_file_io_rewrite_read(tc_unittest):
-    temp_file = tc_unittest.get_temp_file()
+def test_file_io_rewrite_read(temp_file):
     fileio = FileIO(temp_file)
     content1 = "message 1\n"
     fileio.write(content1)

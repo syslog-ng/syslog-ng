@@ -29,11 +29,11 @@ from src.executors.command_executor import CommandExecutor
     "command, expected_stdout, expected_stderr, expected_exit_code",
     [(["grep", "a", "a"], "", "grep: a: No such file or directory\n", 2), (["echo", "a"], "a\n", "", 0)],
 )
-def test_execute_command(tc_unittest, command, expected_stdout, expected_stderr, expected_exit_code):
-    stdout_path = tc_unittest.get_temp_file()
-    stderr_path = tc_unittest.get_temp_file()
+def test_execute_command(tmpdir, command, expected_stdout, expected_stderr, expected_exit_code):
+    stdout_file = tmpdir.join("stdout.log")
+    stderr_file = tmpdir.join("stderr.log")
     command_executor = CommandExecutor()
-    result = command_executor.run(command, stdout_path, stderr_path)
+    result = command_executor.run(command, stdout_file, stderr_file)
     assert result["stdout"] == expected_stdout
     assert result["stderr"] == expected_stderr
     assert result["exit_code"] == expected_exit_code
