@@ -20,11 +20,13 @@
 # COPYING for details.
 #
 #############################################################################
-
 import logging
-logger = logging.getLogger(__name__)
+
 import psutil
+
 from src.driver_io.file.file import File
+
+logger = logging.getLogger(__name__)
 
 
 def prepare_std_outputs(file_ref, stdout_path, stderr_path):

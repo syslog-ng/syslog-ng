@@ -20,8 +20,8 @@
 # COPYING for details.
 #
 #############################################################################
-
 from pathlib2 import Path
+
 from src.common.random_id import get_unique_id
 
 

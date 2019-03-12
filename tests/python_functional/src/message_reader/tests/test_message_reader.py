@@ -22,10 +22,12 @@
 #
 #############################################################################
 import pytest
-from src.message_reader.message_reader import MessageReader, READ_ALL_MESSAGES
-from src.message_reader.single_line_parser import SingleLineParser
-from src.common import blocking
+
 from src.common.operations import open_file
+from src.message_reader.message_reader import MessageReader
+from src.message_reader.message_reader import READ_ALL_MESSAGES
+from src.message_reader.single_line_parser import SingleLineParser
+
 
 def prepare_input_file(input_content, temp_file):
     writeable_file = open_file(temp_file, "a+")
@@ -42,11 +44,11 @@ def prepare_input_file(input_content, temp_file):
         (1, 1, True),
         (1, 2, False),
         (2, 1, True),
-        (5, 0, False),  ## because we are not in wait_until_true() loop, self.read_eof will not turn to True
+        (5, 0, False),  # because we are not in wait_until_true() loop, self.read_eof will not turn to True
     ],
 )
 def test_buffer_and_parse(test_message, temp_file, input_message_counter, requested_message_counter, expected_result):
-    input_content = test_message*input_message_counter
+    input_content = test_message * input_message_counter
     __writeable_file, readable_file = prepare_input_file(input_content, temp_file)
     single_line_parser = SingleLineParser()
     message_reader = MessageReader(readable_file.read, single_line_parser)
@@ -56,7 +58,7 @@ def test_buffer_and_parse(test_message, temp_file, input_message_counter, reques
 
 
 def test_multiple_buffer_and_parse(test_message, temp_file):
-    input_content = test_message*2
+    input_content = test_message * 2
     writeable_file, readable_file = prepare_input_file(input_content, temp_file)
     single_line_parser = SingleLineParser()
     message_reader = MessageReader(readable_file.read, single_line_parser)
@@ -119,7 +121,7 @@ def test_pop_messages(temp_file, input_message, requested_message_counter, poppe
 
 
 def test_popping_in_sequence(test_message, temp_file):
-    input_content = test_message*10
+    input_content = test_message * 10
     __writeable_file, readable_file = prepare_input_file(input_content, temp_file)
     single_line_parser = SingleLineParser()
 
@@ -173,16 +175,17 @@ def test_peek_messages(temp_file):
     assert message_reader.peek_messages(counter=2) == test_message.splitlines(True)
     assert message_reader._MessageReader__parser.msg_list == test_message.splitlines(True)
 
+
 def test_read_all_messages():
     def read_generator():
-        yield "" # eof
+        yield ""  # eof
         yield "second\n"
         yield "third\n"
-        yield "" # eof
+        yield ""  # eof
 
     single_line_parser = SingleLineParser()
     generator = read_generator()
-    message_reader = MessageReader(lambda : next(generator), single_line_parser)
+    message_reader = MessageReader(lambda: next(generator), single_line_parser)
 
     assert len(message_reader.pop_messages(counter=READ_ALL_MESSAGES)) == 0
     assert len(message_reader.pop_messages(counter=READ_ALL_MESSAGES)) == 2

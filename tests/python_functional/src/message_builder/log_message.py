@@ -20,9 +20,9 @@
 # COPYING for details.
 #
 #############################################################################
-
-import time
 import socket
+import time
+
 
 class LogMessage(object):
     def __init__(self):

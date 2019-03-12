@@ -20,12 +20,14 @@
 # COPYING for details.
 #
 #############################################################################
-
 import logging
-logger = logging.getLogger(__name__)
-from src.message_reader.message_reader import MessageReader, READ_ALL_MESSAGES
+
 from src.driver_io.file.file_io import FileIO
+from src.message_reader.message_reader import MessageReader
+from src.message_reader.message_reader import READ_ALL_MESSAGES
 from src.message_reader.single_line_parser import SingleLineParser
+
+logger = logging.getLogger(__name__)
 
 
 class ConsoleLogReader(object):

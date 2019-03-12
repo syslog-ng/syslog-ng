@@ -20,9 +20,9 @@
 # COPYING for details.
 #
 #############################################################################
+from src.common.blocking import wait_until_false_custom
+from src.common.blocking import wait_until_true_custom
 
-from src.common.blocking import wait_until_true_custom, wait_until_false_custom
-from src.common import blocking
 
 def inner_function_return_true():
     return True

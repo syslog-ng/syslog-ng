@@ -20,7 +20,6 @@
 # COPYING for details.
 #
 #############################################################################
-
 from src.executors.process_executor import ProcessExecutor
 
 

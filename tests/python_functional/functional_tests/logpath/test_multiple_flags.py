@@ -32,6 +32,7 @@ def write_msg_with_fields(file_source, bsd_formatter, hostname, program):
     file_source.write_log(input_message)
     return expected_message
 
+
 def test_multiple_flags(config, syslog_ng, bsd_formatter):
     # Check the correct output if the logpath is the following
     # log {

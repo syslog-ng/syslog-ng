@@ -23,7 +23,6 @@
 #############################################################################
 
 
-
 class BSDFormat(object):
     @staticmethod
     def format_message(message, add_new_line=True):

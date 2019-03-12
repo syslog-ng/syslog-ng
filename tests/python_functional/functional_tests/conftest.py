@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 def pytest_runtest_setup(item):
     def prepare_testcase_working_dir(pytest_request):
-        testcase_parameters = pytest_request.getfixturevalue('testcase_parameters')
+        testcase_parameters = pytest_request.getfixturevalue("testcase_parameters")
         working_directory = testcase_parameters.get_working_dir()
         if not working_directory.exists():
             working_directory.mkdir(parents=True)
@@ -51,6 +51,6 @@ def pytest_runtest_setup(item):
     logging_plugin = config.pluginmanager.get_plugin("logging-plugin")
     report_file_path = construct_report_file_path(item)
     logging_plugin.set_log_path(report_file_path)
-    item.user_properties.append(('report_file_path', report_file_path))
+    item.user_properties.append(("report_file_path", report_file_path))
     prepare_testcase_working_dir(item._request)
     item._request.addfinalizer(lambda: logger.info("Report file path\n{}\n".format(report_file_path)))

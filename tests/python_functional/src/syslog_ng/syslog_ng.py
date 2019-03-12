@@ -20,8 +20,8 @@
 # COPYING for details.
 #
 #############################################################################
-
 from src.syslog_ng.syslog_ng_cli import SyslogNgCli
+
 
 class SyslogNg(object):
     def __init__(self, instance_paths, testcase_parameters):

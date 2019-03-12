@@ -20,7 +20,6 @@
 # COPYING for details.
 #
 #############################################################################
-
 from src.driver_io.file.file import File
 
 

@@ -21,8 +21,6 @@
 #
 #############################################################################
 
-from pathlib2 import Path
-
 
 class ConfigRenderer(object):
     def __init__(self, syslog_ng_config, working_dir):

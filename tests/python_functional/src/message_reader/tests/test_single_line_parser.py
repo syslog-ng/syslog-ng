@@ -20,7 +20,6 @@
 # COPYING for details.
 #
 #############################################################################
-
 from src.message_reader.single_line_parser import SingleLineParser
 
 
@@ -50,6 +49,7 @@ def test_single_line_parser_parsing_multiple_times():
 """
     single_line_parser.parse_buffer(content_buffer=input_buffer2)
     assert single_line_parser.msg_list == ["test message 1\n", "test message 2\n"]
+
 
 def test_single_line_parser_chunks():
     single_line_parser = SingleLineParser()

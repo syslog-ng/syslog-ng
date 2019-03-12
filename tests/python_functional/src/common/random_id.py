@@ -20,10 +20,10 @@
 # COPYING for details.
 #
 #############################################################################
-
 import random
 
 UNIQUE_LENGTH = 5
+
 
 def get_unique_id(length=UNIQUE_LENGTH):
     return str(random.getrandbits(16 * 8))[0:length]

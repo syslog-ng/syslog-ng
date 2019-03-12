@@ -20,8 +20,8 @@
 # COPYING for details.
 #
 #############################################################################
-
 from pathlib2 import Path
+
 from src.driver_io.file.file_io import FileIO
 from src.syslog_ng_config.statements.sources.source_driver import SourceDriver
 

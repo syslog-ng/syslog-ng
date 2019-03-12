@@ -20,11 +20,12 @@
 # COPYING for details.
 #
 #############################################################################
-
 import logging
-logger = logging.getLogger(__name__)
+
 from src.message_reader.message_reader import MessageReader
 from src.message_reader.single_line_parser import SingleLineParser
+
+logger = logging.getLogger(__name__)
 
 
 class DestinationDriver(object):
@@ -35,7 +36,6 @@ class DestinationDriver(object):
         self.__reader = None
         self.positional_parameters = positional_parameters
         self.options = options
-
 
     def dd_read_logs(self, path, counter):
         if not self.__reader:
