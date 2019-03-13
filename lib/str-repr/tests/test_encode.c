@@ -22,32 +22,24 @@
  *
  */
 #include "str-repr/encode.h"
-#include "testutils.h"
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
 #include "stopwatch.h"
 
-#define str_repr_encode_testcase_begin(func, args)             \
-  do                                                            \
-    {                                                           \
-      testcase_begin("%s(%s)", func, args);                     \
-    }                                                           \
-  while (0)
-
-#define str_repr_encode_testcase_end()                           \
-  do                                                            \
-    {                                                           \
-      testcase_end();                                           \
-    }                                                           \
-  while (0)
-
-#define STR_REPR_ENCODE_TESTCASE(x, ...) \
-  do {                                                          \
-      str_repr_encode_testcase_begin(#x, #__VA_ARGS__);     \
-      x(__VA_ARGS__);                                           \
-      str_repr_encode_testcase_end();                                \
-  } while(0)
-
-
 GString *value;
+
+typedef struct _EncodeTestStr
+{
+  const gchar *actual;
+  const gchar *expected;
+} EncodeTestStr;
+
+typedef struct _EncodeTestForbidden
+{
+  const gchar *actual;
+  const gchar *forbidden;
+  const gchar *expected;
+} EncodeTestForbidden;
 
 static void
 assert_encode_equals(const gchar *input, const gchar *expected)
@@ -55,14 +47,17 @@ assert_encode_equals(const gchar *input, const gchar *expected)
   GString *str = g_string_new("");
 
   str_repr_encode(str, input, -1, NULL);
-  assert_string(str->str, expected, "Encoded value does not match expected");
+  cr_assert_str_eq(str->str, expected, "Encoded value does not match expected; actual: %s, expected: %s", str->str,
+                   expected);
 
   str_repr_encode(str, input, strlen(input), NULL);
-  assert_string(str->str, expected, "Encoded value does not match expected");
+  cr_assert_str_eq(str->str, expected, "Encoded value does not match expected; actual: %s, expected: %s", str->str,
+                   expected);
 
   gchar *space_ended_input = g_strdup_printf("%s ", input);
   str_repr_encode(str, space_ended_input, strlen(input), ",");
-  assert_string(str->str, expected, "Encoded value does not match expected");
+  cr_assert_str_eq(str->str, expected, "Encoded value does not match expected; actual: %s, expected: %s", str->str,
+                   expected);
 
   g_free(space_ended_input);
 
@@ -75,36 +70,52 @@ assert_encode_with_forbidden_equals(const gchar *input, const gchar *forbidden_c
   GString *str = g_string_new("");
 
   str_repr_encode(str, input, -1, forbidden_chars);
-  assert_string(str->str, expected, "Encoded value does not match expected");
+  cr_assert_str_eq(str->str, expected, "Encoded value does not match expected; actual: %s, expected: %s", str->str,
+                   expected);
   g_string_free(str, TRUE);
 }
 
-static void
-test_encode_simple_strings(void)
+ParameterizedTestParameters(encode, test_strings)
 {
-  assert_encode_equals("", "\"\"");
-  assert_encode_equals("a", "a");
-  assert_encode_equals("alma", "alma");
-  assert_encode_equals("al\nma", "\"al\\nma\"");
+  static EncodeTestStr test_cases[] =
+  {
+    {"", "\"\""},
+    {"a", "a"},
+    {"alma", "alma"},
+    {"al\nma", "\"al\\nma\""},
+
+    {"foo bar", "\"foo bar\""},
+    /* embedded quote */
+    {"\"value1", "'\"value1'"},
+    {"'value1", "\"'value1\""},
+    /* control sequences */
+    {"\b \f \n \r \t \\", "\"\\b \\f \\n \\r \\t \\\\\""}
+  };
+
+  return cr_make_param_array(EncodeTestStr, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));
 }
 
-static void
-test_encode_strings_that_need_quotation(void)
+ParameterizedTest(EncodeTestStr *test_cases, encode, test_strings)
 {
-  assert_encode_equals("foo bar", "\"foo bar\"");
-  /* embedded quote */
-  assert_encode_equals("\"value1", "'\"value1'");
-  assert_encode_equals("'value1", "\"'value1\"");
-  /* control sequences */
-  assert_encode_equals("\b \f \n \r \t \\", "\"\\b \\f \\n \\r \\t \\\\\"");
+  assert_encode_equals(test_cases->actual, test_cases->expected);
 }
 
-static void
-test_encode_strings_with_forbidden_chars(void)
+ParameterizedTestParameters(encode, test_encode_strings_that_need_quotation)
 {
-  assert_encode_with_forbidden_equals("foo,", ",", "\"foo,\"");
-  assert_encode_with_forbidden_equals("\"'foo,", ",", "\"\\\"'foo,\"");
+  static EncodeTestForbidden test_cases[] =
+  {
+    {"foo,", ",", "\"foo,\""},
+    {"\"'foo,", ",", "\"\\\"'foo,\""}
+  };
+
+  return cr_make_param_array(EncodeTestForbidden, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));
 }
+
+ParameterizedTest(EncodeTestForbidden *test_cases, encode, test_encode_strings_that_need_quotation)
+{
+  assert_encode_with_forbidden_equals(test_cases->actual, test_cases->forbidden, test_cases->expected);
+}
+
 #define ITERATION_NUMBER 100000
 
 static void
@@ -123,21 +134,10 @@ _perftest(const gchar *value_to_encode)
   g_string_free(result, TRUE);
 }
 
-static void
-test_performance(void)
+Test(encode, test_performance)
 {
   _perftest("This is a long value with spaces and control characters\n"
             "                                                         ");
   _perftest("This is 'a long' value with spaces and control characters\n");
   _perftest("This is \"a long\" value with spaces and control characters\n");
-}
-
-int
-main(int argc, char *argv[])
-{
-  STR_REPR_ENCODE_TESTCASE(test_encode_simple_strings);
-  STR_REPR_ENCODE_TESTCASE(test_encode_strings_that_need_quotation);
-  STR_REPR_ENCODE_TESTCASE(test_encode_strings_with_forbidden_chars);
-  STR_REPR_ENCODE_TESTCASE(test_performance);
-  return 0;
 }
