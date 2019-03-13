@@ -24,5 +24,11 @@
 
 BASEDIR=$(dirname "$0")
 
-cat $BASEDIR/../VERSION
+cd $BASEDIR/../
+
+if [ -d .git ]; then
+  git describe --tags --dirty --abbrev=7 | sed 's/^syslog-ng-//'
+else
+  cat VERSION
+fi
 
