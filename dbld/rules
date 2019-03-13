@@ -17,7 +17,7 @@ ROOT_DIR=$(shell pwd)
 DBLD_DIR=$(ROOT_DIR)/dbld
 BUILD_DIR=$(DBLD_DIR)/build
 RELEASE_DIR=$(DBLD_DIR)/release
-VERSION=$(shell cat VERSION)
+VERSION=$(shell scripts/version.sh)
 TARBALL=$(BUILD_DIR)/syslog-ng-$(VERSION).tar.gz
 MODE=snapshot
 CONFIGURE_OPTS=--enable-debug --enable-manpages --with-python=2 --prefix=/install --with-docbook=/usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.xsl $(CONFIGURE_ADD)

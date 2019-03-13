@@ -3,7 +3,7 @@
 set -e
 
 cd /source
-VERSION=`cat VERSION`
+VERSION=`scripts/version.sh`
 GITREF=`git describe`
 cd /build
 
