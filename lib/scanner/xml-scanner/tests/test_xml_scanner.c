@@ -162,8 +162,8 @@ Test(xml_scanner, test_strip_whitespaces)
   XMLScanner *xml_scanner = _construct_xml_scanner(&(XMLScannerTestOptions)
   {
     .strip_whitespaces = TRUE,
-     .expected.test_push_function = _test_strip,
-               .expected.expected_pairs = (NameValuePair [])
+    .expected.test_push_function = _test_strip,
+    .expected.expected_pairs = (NameValuePair [])
     {
       {"tag", "part1part2"},
     }

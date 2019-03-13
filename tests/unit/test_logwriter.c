@@ -206,7 +206,7 @@ Test(logwriter, test_logwriter)
 
   nr_of_cases = sizeof(test_cases) / sizeof(test_cases[0]);
   for (i = 0; i < nr_of_cases; i++)
-         _assert_logwriter_output(test_cases[i]);
+    _assert_logwriter_output(test_cases[i]);
 
   app_shutdown();
 }

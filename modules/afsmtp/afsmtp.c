@@ -79,9 +79,9 @@ afsmtp_wash_string (gchar *str)
   gint i;
 
   for (i = 0; i < strlen (str); i++)
-         if (str[i] == '\n' ||
-             str[i] == '\r')
-           str[i] = ' ';
+    if (str[i] == '\n' ||
+        str[i] == '\r')
+      str[i] = ' ';
 
   return str;
 }
@@ -545,8 +545,8 @@ __check_rcpt_tos(AFSMTPDriver *self)
     {
       AFSMTPRecipient *rcpt = (AFSMTPRecipient *)l->data;
       gboolean rcpt_type_accepted = rcpt->type == AFSMTP_RCPT_TYPE_BCC ||
-      rcpt->type == AFSMTP_RCPT_TYPE_CC  ||
-      rcpt->type == AFSMTP_RCPT_TYPE_TO;
+                                    rcpt->type == AFSMTP_RCPT_TYPE_CC  ||
+                                    rcpt->type == AFSMTP_RCPT_TYPE_TO;
 
       if (rcpt->template && rcpt_type_accepted)
         {

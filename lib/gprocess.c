@@ -1578,7 +1578,7 @@ g_process_process_no_caps(const gchar *option_name G_GNUC_UNUSED, const gchar *v
 static GOptionEntry g_process_option_entries[] =
 {
   { "foreground",   'F', G_OPTION_FLAG_REVERSE, G_OPTION_ARG_NONE,     &process_opts.mode,              "Do not go into the background after initialization", NULL },
-  { "process-mode",   0,                     0, G_OPTION_ARG_CALLBACK, g_process_process_mode_arg ,     "Set process running mode", "<foreground|background|safe-background>" },
+  { "process-mode",   0,                     0, G_OPTION_ARG_CALLBACK, g_process_process_mode_arg,      "Set process running mode", "<foreground|background|safe-background>" },
   { "user",         'u',                     0, G_OPTION_ARG_STRING,   &process_opts.user,              "Set the user to run as", "<user>" },
   { "uid",            0,  G_OPTION_FLAG_HIDDEN, G_OPTION_ARG_STRING,   &process_opts.user,              NULL, NULL },
   { "group",        'g',                     0, G_OPTION_ARG_STRING,   &process_opts.group,             "Set the group to run as", "<group>" },

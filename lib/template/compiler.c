@@ -238,8 +238,8 @@ is_macro_name(gchar c)
 
 #define STEP_BY_TRUE(p, x) while(x) p++;
 
-                                  static void
-                                  log_template_compiler_add_elem(LogTemplateCompiler *self, gchar *start, gint macro_len, gchar *default_value)
+static void
+log_template_compiler_add_elem(LogTemplateCompiler *self, gchar *start, gint macro_len, gchar *default_value)
 {
   gint macro = log_macro_lookup(start, macro_len);
   if (macro == M_NONE)

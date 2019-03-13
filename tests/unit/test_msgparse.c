@@ -621,7 +621,7 @@ Test(msgparse, test_expected_sd_pairs_1)
     { ".SDATA.exampleSDID@0.eventSource", "Application"},
     { ".SDATA.exampleSDID@0.eventID", "1011"},
     { ".SDATA.examplePriority@0.class", "high"},
-    {  NULL , NULL}
+    {  NULL, NULL }
   };
 
   struct msgparse_params params[] =
@@ -697,7 +697,7 @@ Test(msgparse, test_expected_sd_pairs_2)
   struct sdata_pair expected_sd_pairs_test_2[] =
   {
     { ".SDATA.exampleSDID@0.iut", "3"},
-    {  NULL , NULL}
+    {  NULL, NULL }
   };
 
   struct msgparse_params params[] =
@@ -736,7 +736,7 @@ Test(msgparse, test_expected_sd_pairs_3)
     { ".SDATA.origin.ip", "exchange.macartney.esbjerg"},
     { ".SDATA.meta.sequenceId", "191732"},
     { ".SDATA.EventData@18372.4.Data", "MSEXCHANGEOWAAPPPOOL.CONFIG\" -W \"\" -M 1 -AP \"MSEXCHANGEOWAAPPPOOL5244fileserver.macartney.esbjerg CDG 1 7 7 1 0 1 1 7 1 mail.macartney.esbjerg CDG 1 7 7 1 0 1 1 7 1 maindc.macartney.esbjerg CD- 1 6 6 0 0 1 1 6 1 " },
-    {  NULL , NULL}
+    {  NULL, NULL }
   };
 
   struct msgparse_params params[] =
@@ -765,7 +765,7 @@ Test(msgparse, test_expected_sd_pairs_4)
   struct sdata_pair expected_sd_pairs_test_4[] =
   {
     { ".SDATA.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.i", "ok_32"},
-    {  NULL , NULL}
+    {  NULL, NULL }
   };
 
   struct msgparse_params params[] =
@@ -805,13 +805,13 @@ Test(msgparse, test_expected_sd_pairs_too_long)
   struct sdata_pair expected_sd_pairs_test_5[] =
   {
     { ".SDATA.a.i", "]\"\\"},
-    {  NULL , NULL}
+    {  NULL, NULL }
   };
 
   struct sdata_pair expected_sd_pairs_test_5b[] =
   {
     { ".SDATA.a.i", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
-    {  NULL , NULL}
+    {  NULL, NULL }
   };
 
   struct msgparse_params params[] =
@@ -867,7 +867,7 @@ Test(msgparse, test_unescaped_too_long_message_parts)
   struct sdata_pair expected_sd_pairs_test_6[] =
   {
     { ".SDATA.a.i", "ok"},
-    {  NULL , NULL}
+    {  NULL, NULL }
   };
 
   struct msgparse_params params[] =
@@ -966,7 +966,7 @@ Test(msgparse, test_expected_sd_pairs_tz_known)
 {
   struct sdata_pair expected_sd_pairs_test_7a[] =
   {
-    {  NULL , NULL}
+    {  NULL, NULL }
   };
 
   struct msgparse_params params[] =
@@ -996,7 +996,7 @@ Test(msgparse, test_expected_sd_pairs_enterprise_id)
   struct sdata_pair expected_sd_pairs_test_8[] =
   {
     { ".SDATA.origin.enterpriseId", "1.3.6.1.4.1"},
-    {  NULL , NULL}
+    {  NULL, NULL }
   };
 
   struct msgparse_params params[] =
@@ -1025,7 +1025,7 @@ Test(msgparse, test_expected_sd_pairs_without_sd_param)
   struct sdata_pair expected_sd_pairs_test_9[] =
   {
     { ".SDATA.origin.enterpriseId", "1.3.6.1.4.1"},
-    {  NULL , NULL}
+    {  NULL, NULL }
   };
 
   struct msgparse_params params[] =

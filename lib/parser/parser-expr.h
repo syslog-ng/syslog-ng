@@ -62,7 +62,7 @@ log_parser_process(LogParser *self, LogMessage **pmsg, const LogPathOptions *pat
                    gssize input_len)
 {
   if (input_len < 0)
-        input_len = strlen(input);
+    input_len = strlen(input);
   return self->process(self, pmsg, path_options, input, input_len);
 }
 
