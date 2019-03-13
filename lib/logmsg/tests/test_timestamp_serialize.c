@@ -22,78 +22,71 @@
  *
  */
 
-#include "testutils.h"
+#include <criterion/criterion.h>
 #include "apphook.h"
 #include "logmsg/logmsg.h"
 #include "logmsg/timestamp-serialize.h"
 
-#define PREPARE_TEST UnixTime input_timestamps[LM_TS_MAX]; \
-  UnixTime output_timestamps[LM_TS_MAX]; \
-  GString *stream = g_string_new(""); \
-  input_timestamps[LM_TS_STAMP].ut_sec = 1; \
-  input_timestamps[LM_TS_STAMP].ut_usec = 2; \
-  input_timestamps[LM_TS_STAMP].ut_gmtoff = 3; \
-  input_timestamps[LM_TS_RECVD].ut_sec = 4; \
-  input_timestamps[LM_TS_RECVD].ut_usec = 5; \
-  input_timestamps[LM_TS_RECVD].ut_gmtoff = 6; \
-  input_timestamps[LM_TS_PROCESSED].ut_sec = 255; \
-  input_timestamps[LM_TS_PROCESSED].ut_usec = 255; \
-  input_timestamps[LM_TS_PROCESSED].ut_gmtoff = -1; \
-  SerializeArchive *sa = serialize_string_archive_new(stream);
+SerializeArchive *sa = NULL;
+GString *stream = NULL;
+UnixTime input_timestamps[LM_TS_MAX];
+UnixTime output_timestamps[LM_TS_MAX];
 
-#define CLEAN_TEST serialize_archive_free(sa); \
-  g_string_free(stream, TRUE);
-
-static void
-test_normal_working(void)
+Test(template_timestamp, test_normal_working)
 {
-  PREPARE_TEST
-  assert_true(timestamp_serialize(sa, input_timestamps), "Failed to serialize timestamps");
-  assert_true(timestamp_deserialize(sa, output_timestamps), "Failed to deserialize timestamps");
+  cr_assert(timestamp_serialize(sa, input_timestamps), "Failed to serialize timestamps");
+  cr_assert(timestamp_deserialize(sa, output_timestamps), "Failed to deserialize timestamps");
 
-  assert_nstring((const gchar *)input_timestamps, sizeof(input_timestamps),
-                 (const gchar *)output_timestamps, sizeof(output_timestamps),
-                 "The serialized and the deserialized timestamps are not equal");
-
-  CLEAN_TEST
+  cr_assert_str_eq((const gchar *)input_timestamps, (const gchar *)output_timestamps,
+                   "The serialized and the deserialized timestamps are not equal");
 }
 
-static void
-test_derializing_injured_timestamp(void)
+Test(template_timestamp, test_derializing_injured_timestamp)
 {
-  PREPARE_TEST
-
-  assert_true(timestamp_serialize(sa, input_timestamps), "Failed to serialize timestamps");
+  cr_assert(timestamp_serialize(sa, input_timestamps), "Failed to serialize timestamps");
 
   g_string_truncate(stream, 0);
-  assert_false(timestamp_deserialize(sa, output_timestamps), "Should be failed");
+  cr_assert_not(timestamp_deserialize(sa, output_timestamps), "Should be failed");
 
   serialize_archive_free(sa);
   sa = serialize_string_archive_new(stream);
-  assert_true(timestamp_serialize(sa, input_timestamps), "Failed to serialize timestamps");
+  cr_assert(timestamp_serialize(sa, input_timestamps), "Failed to serialize timestamps");
   g_string_truncate(stream, sizeof(guint64));
-  assert_false(timestamp_deserialize(sa, output_timestamps), "Should be failed");
+  cr_assert_not(timestamp_deserialize(sa, output_timestamps), "Should be failed");
 
   serialize_archive_free(sa);
   sa = serialize_string_archive_new(stream);
-  assert_true(timestamp_serialize(sa, input_timestamps), "Failed to serialize timestamps");
+  cr_assert(timestamp_serialize(sa, input_timestamps), "Failed to serialize timestamps");
   g_string_truncate(stream, sizeof(guint64) + sizeof(guint32));
-  assert_false(timestamp_deserialize(sa, output_timestamps), "Should be failed");
-
-  CLEAN_TEST
+  cr_assert_not(timestamp_deserialize(sa, output_timestamps), "Should be failed");
 }
 
-int
-main(int argc, char **argv)
+static void
+setup(void)
 {
+  stream = g_string_new("");
+
   app_startup();
+  input_timestamps[LM_TS_STAMP].ut_sec = 1;
+  input_timestamps[LM_TS_STAMP].ut_usec = 2;
+  input_timestamps[LM_TS_STAMP].ut_gmtoff = 3;
+  input_timestamps[LM_TS_RECVD].ut_sec = 4;
+  input_timestamps[LM_TS_RECVD].ut_usec = 5;
+  input_timestamps[LM_TS_RECVD].ut_gmtoff = 6;
+  input_timestamps[LM_TS_PROCESSED].ut_sec = 255;
+  input_timestamps[LM_TS_PROCESSED].ut_usec = 255;
+  input_timestamps[LM_TS_PROCESSED].ut_gmtoff = -1;
 
-  test_normal_working();
+  sa = serialize_string_archive_new(stream);
+}
 
-  start_grabbing_messages();
-  test_derializing_injured_timestamp();
-  stop_grabbing_messages();
+static void
+teardown(void)
+{
+  serialize_archive_free(sa);
+  g_string_free(stream, TRUE);
 
   app_shutdown();
-  return 0;
 }
+
+TestSuite(template_timestamp, .init = setup, .fini = teardown);
