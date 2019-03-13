@@ -4,10 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.searchbox.action.Action;
-import io.searchbox.client.JestResult;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.Logger;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -17,7 +15,7 @@ import java.util.regex.Pattern;
 public class ESJestBulkActions implements Action<BulkResult> {
 
   public static String CHARSET = "utf-8";
-  final static Logger log = LoggerFactory.getLogger(ESJestBulkActions.class);
+  final static Logger log = Logger.getRootLogger();
 
   private StringBuilder data = new StringBuilder();
   private int rowCount = 0;
@@ -70,7 +68,11 @@ public class ESJestBulkActions implements Action<BulkResult> {
       log.error("Error occurred while adding index/type to uri", e);
     }
 
-    return sb.append("/_bulk").toString();
+    if (StringUtils.isNotBlank(this.pipeline)) {
+      return sb.append("/_bulk").append("?pipeline=").append(this.pipeline).toString();
+    } else {
+      return sb.append("/_bulk").toString();
+    }
   }
 
 
@@ -123,7 +125,7 @@ public class ESJestBulkActions implements Action<BulkResult> {
     String payload = data.toString();
     data = null;
     if (debugEnabled)
-        log.warn("SB: Http Bulk Payload : " + payload);
+        log.info("SB: Http Bulk Payload : " + payload);
     return payload;
   }
 

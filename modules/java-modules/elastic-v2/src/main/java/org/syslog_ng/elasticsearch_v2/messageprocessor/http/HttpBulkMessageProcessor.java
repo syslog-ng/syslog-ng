@@ -93,7 +93,7 @@ public class HttpBulkMessageProcessor extends HttpMessageProcessor {
           while (!shutDown) {
               if ((bulkActions = messageQueue.poll(
                       100, TimeUnit.MILLISECONDS)) == null) {
-                if(logger.isDebugEnabled()) {
+                if(logger.isTraceEnabled()) {
                   logmsg(() -> "No events found in the message queue. " + messageQueue.size());
                 }
                 continue;
@@ -249,7 +249,7 @@ public class HttpBulkMessageProcessor extends HttpMessageProcessor {
                                  String formattedMessage) {
 
     if (processor.bulk == null) {
-      processor.bulk = new ESJestBulkActions(index, type, pipeline, processor.debugEnabled);
+      processor.bulk = new ESJestBulkActions(index, type, pipeline, processor.logger.isDebugEnabled());
     }
     processor.bulk.addMessage(formattedMessage, index, type, pipeline, id);
 
