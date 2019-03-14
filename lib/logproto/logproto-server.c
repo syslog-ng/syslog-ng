@@ -150,6 +150,7 @@ log_proto_server_options_defaults(LogProtoServerOptions *options)
 {
   memset(options, 0, sizeof(*options));
   options->max_msg_size = -1;
+  options->trim_large_messages = -1;
   options->init_buffer_size = -1;
   options->max_buffer_size = -1;
   options->position_tracking_enabled = FALSE;
@@ -164,6 +165,10 @@ log_proto_server_options_init(LogProtoServerOptions *options, GlobalConfig *cfg)
   if (options->max_msg_size == -1)
     {
       options->max_msg_size = cfg->log_msg_size;
+    }
+  if (options->trim_large_messages == -1)
+    {
+      options->trim_large_messages = cfg->trim_large_messages;
     }
   if (options->max_buffer_size == -1)
     {
