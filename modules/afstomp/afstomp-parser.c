@@ -39,7 +39,6 @@ static CfgLexerKeyword afstomp_keywords[] =
   { "ack",      KW_ACK },
   { "username",     KW_USERNAME },
   { "password",     KW_PASSWORD },
-  { "log_fifo_size",    KW_LOG_FIFO_SIZE  },
   { "body",     KW_BODY },
   { NULL }
 };

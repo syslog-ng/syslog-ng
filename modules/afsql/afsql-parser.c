@@ -40,7 +40,6 @@ static CfgLexerKeyword afsql_keywords[] =
   { "columns",            KW_COLUMNS },
   { "indexes",            KW_INDEXES },
   { "values",             KW_VALUES },
-  { "log_fifo_size",      KW_LOG_FIFO_SIZE },
   { "frac_digits",        KW_FRAC_DIGITS },
   { "session_statements", KW_SESSION_STATEMENTS },
   { "host",               KW_HOST },
