@@ -28,7 +28,7 @@
 #define METHOD_TYPE_POST 1
 #define METHOD_TYPE_PUT  2
 
-#include "logthrdestdrv.h"
+#include "logthrdest/logthrdestdrv.h"
 #include "http-loadbalancer.h"
 #include "http-auth/auth-header.h"
 

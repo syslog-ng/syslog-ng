@@ -25,7 +25,7 @@
 #ifndef HTTP_WORKER_H_INCLUDED
 #define HTTP_WORKER_H_INCLUDED 1
 
-#include "logthrdestdrv.h"
+#include "logthrdest/logthrdestdrv.h"
 #include "http-loadbalancer.h"
 
 #define CURL_NO_OLDIES 1

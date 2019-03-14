@@ -24,7 +24,7 @@
 #ifndef SNG_RIEMANN_H_INCLUDED
 #define SNG_RIEMANN_H_INCLUDED
 
-#include "logthrdestdrv.h"
+#include "logthrdest/logthrdestdrv.h"
 #include "value-pairs/value-pairs.h"
 
 #include <riemann/riemann-client.h>

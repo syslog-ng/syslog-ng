@@ -25,7 +25,7 @@
 #include "testutils.h"
 #include "mainloop.h"
 #include "modules/afmongodb/afmongodb-parser.h"
-#include "logthrdestdrv.h"
+#include "logthrdest/logthrdestdrv.h"
 
 static int _tests_failed = 0;
 static GlobalConfig *test_cfg;

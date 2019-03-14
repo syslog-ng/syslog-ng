@@ -24,7 +24,7 @@
 #ifndef AFSQL_H_INCLUDED
 #define AFSQL_H_INCLUDED
 
-#include "logthrdestdrv.h"
+#include "logthrdest/logthrdestdrv.h"
 #include "mainloop-worker.h"
 #include "string-list.h"
 

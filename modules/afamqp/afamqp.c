@@ -28,7 +28,7 @@
 #include "logmsg/nvtable.h"
 #include "logqueue.h"
 #include "scratch-buffers.h"
-#include "logthrdestdrv.h"
+#include "logthrdest/logthrdestdrv.h"
 
 #include <amqp.h>
 #include <amqp_framing.h>

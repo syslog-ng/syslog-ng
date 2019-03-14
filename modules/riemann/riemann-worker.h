@@ -25,7 +25,7 @@
 #ifndef SNG_RIEMANN_WORKER_H_INCLUDED
 #define SNG_RIEMANN_WORKER_H_INCLUDED
 
-#include "logthrdestdrv.h"
+#include "logthrdest/logthrdestdrv.h"
 
 typedef struct
 {

@@ -28,7 +28,7 @@
 #include "stats/stats-registry.h"
 #include "logqueue.h"
 #include "plugin-types.h"
-#include "logthrdestdrv.h"
+#include "logthrdest/logthrdestdrv.h"
 
 #include <libesmtp.h>
 #include <signal.h>
