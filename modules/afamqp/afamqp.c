@@ -52,6 +52,7 @@ typedef struct
   gchar *host;
   gint port;
 
+  gint auth_method;
   gchar *user;
   gchar *password;
 
@@ -77,6 +78,21 @@ typedef struct
 /*
  * Configuration
  */
+
+gboolean
+afamqp_dd_set_auth_method(LogDriver *d, const gchar *auth_method)
+{
+  AMQPDestDriver *self = (AMQPDestDriver *) d;
+
+  if (strcasecmp(auth_method, "plain") == 0)
+    self->auth_method = AMQP_SASL_METHOD_PLAIN;
+  else if (strcasecmp(auth_method, "external") == 0)
+    self->auth_method = AMQP_SASL_METHOD_EXTERNAL;
+  else
+    return FALSE;
+
+  return TRUE;
+}
 
 void
 afamqp_dd_set_user(LogDriver *d, const gchar *user)
@@ -427,6 +443,36 @@ afamqp_dd_socket_init(AMQPDestDriver *self)
 }
 
 static gboolean
+afamqp_dd_login(AMQPDestDriver *self)
+{
+  const gchar *identity;
+  amqp_rpc_reply_t ret;
+
+  switch (self->auth_method)
+    {
+    case AMQP_SASL_METHOD_PLAIN:
+      ret = amqp_login(self->conn, self->vhost, self->max_channel, self->frame_size, 0,
+                       self->auth_method, self->user, self->password);
+      break;
+
+    case AMQP_SASL_METHOD_EXTERNAL:
+      // The identity is generally not needed for external authentication, but must be set to
+      // something non-empty otherwise the API call will fail, so just default it to something
+      // meaningless
+      identity = (self->user && self->user[0] != '\0') ? self->user : ".";
+      ret = amqp_login(self->conn, self->vhost, self->max_channel, self->frame_size, 0,
+                       self->auth_method, identity);
+      break;
+
+    default:
+      g_assert_not_reached();
+      return FALSE;
+    }
+
+  return afamqp_is_ok(self, "Error during AMQP login", ret);
+}
+
+static gboolean
 afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
 {
   int sockfd_ret;
@@ -463,9 +509,7 @@ afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
       goto exception_amqp_dd_connect_failed_init;
     }
 
-  ret = amqp_login(self->conn, self->vhost, self->max_channel, self->frame_size, 0,
-                   AMQP_SASL_METHOD_PLAIN, self->user, self->password);
-  if (!afamqp_is_ok(self, "Error during AMQP login", ret))
+  if (!afamqp_dd_login(self))
     {
       goto exception_amqp_dd_connect_failed_init;
     }
@@ -631,7 +675,7 @@ afamqp_dd_init(LogPipe *s)
   if (!log_threaded_dest_driver_init_method(s))
     return FALSE;
 
-  if (!self->user || !self->password)
+  if (self->auth_method == AMQP_SASL_METHOD_PLAIN && (!self->user || !self->password))
     {
       msg_error("Error initializing AMQP destination: username and password MUST be set!",
                 evt_tag_str("driver", self->super.super.super.id));
@@ -707,6 +751,7 @@ afamqp_dd_new(GlobalConfig *cfg)
   self->routing_key_template = log_template_new(cfg, NULL);
 
   LogDriver *driver = &self->super.super.super;
+  afamqp_dd_set_auth_method(driver, "plain");
   afamqp_dd_set_vhost(driver, "/");
   afamqp_dd_set_host(driver, "127.0.0.1");
   afamqp_dd_set_port(driver, 5672);

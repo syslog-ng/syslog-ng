@@ -55,6 +55,7 @@
 %token KW_VHOST
 %token KW_ROUTING_KEY
 %token KW_BODY
+%token KW_AUTH_METHOD
 %token KW_PASSWORD
 %token KW_USERNAME
 %token KW_MAX_CHANNEL
@@ -90,6 +91,7 @@ afamqp_option
 	| KW_ROUTING_KEY '(' string ')'           { afamqp_dd_set_routing_key(last_driver, $3); free($3); }
 	| KW_BODY '(' string ')'                  { afamqp_dd_set_body(last_driver, $3); free($3); }
 	| KW_PERSISTENT '(' yesno ')'             { afamqp_dd_set_persistent(last_driver, $3); }
+	| KW_AUTH_METHOD '(' string ')'           { CHECK_ERROR(afamqp_dd_set_auth_method(last_driver, $3), @3, "unknown auth-method() argument"); free($3); }
 	| KW_USERNAME '(' string ')'              { afamqp_dd_set_user(last_driver, $3); free($3); }
 	| KW_PASSWORD '(' string ')'              { afamqp_dd_set_password(last_driver, $3); free($3); }
 	| KW_MAX_CHANNEL '(' positive_integer ')' { afamqp_dd_set_max_channel(last_driver, $3); }

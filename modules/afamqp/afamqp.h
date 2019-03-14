@@ -39,6 +39,7 @@ void afamqp_dd_set_vhost(LogDriver *d, const gchar *vhost);
 void afamqp_dd_set_routing_key(LogDriver *d, const gchar *routing_key);
 void afamqp_dd_set_body(LogDriver *d, const gchar *body);
 void afamqp_dd_set_persistent(LogDriver *d, gboolean persistent);
+gboolean afamqp_dd_set_auth_method(LogDriver *d, const gchar *auth_method);
 void afamqp_dd_set_user(LogDriver *d, const gchar *user);
 void afamqp_dd_set_password(LogDriver *d, const gchar *password);
 void afamqp_dd_set_max_channel(LogDriver *d, gint max_channel);

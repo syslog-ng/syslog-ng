@@ -40,6 +40,7 @@ static CfgLexerKeyword afamqp_keywords[] =
   { "exchange_type",    KW_EXCHANGE_TYPE },
   { "routing_key",    KW_ROUTING_KEY },
   { "persistent",   KW_PERSISTENT },
+  { "auth_method",  KW_AUTH_METHOD },
   { "username",     KW_USERNAME },
   { "password",     KW_PASSWORD },
   { "max_channel",     KW_MAX_CHANNEL },
