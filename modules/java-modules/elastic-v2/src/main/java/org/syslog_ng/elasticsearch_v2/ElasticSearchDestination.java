@@ -51,6 +51,7 @@ public class ElasticSearchDestination extends StructuredLogDestination {
 
 	@Override
 	protected boolean init() {
+		logger.warn("Using elasticsearch2() destination is deprecated please use elasticsearch-http() instead. The java-based elasticsearch2() works as before but it may be removed in the future");
 		boolean result = false;
 		try {
 			options.init();
