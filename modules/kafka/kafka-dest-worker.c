@@ -64,7 +64,7 @@ _publish_message(KafkaDestWorker *self, LogMessage *msg)
                        RD_KAFKA_MSG_F_FREE | RD_KAFKA_MSG_F_BLOCK,
                        message->str, message->len,
                        key->str, key->len,
-                       msg) == -1)
+                       log_msg_ref(msg)) == -1)
     {
       msg_error("kafka: failed to publish message",
                 evt_tag_str("topic", owner->topic_name),

@@ -130,7 +130,44 @@ _kafka_log_callback(const rd_kafka_t *rkt, int level, const char *fac, const cha
   g_free(buf);
 }
 
+static void
+_kafka_delivery_report_cb(rd_kafka_t *rk,
+                          void *payload, size_t len,
+                          rd_kafka_resp_err_t err,
+                          void *opaque, void *msg_opaque)
+{
+  KafkaDestDriver *self = (KafkaDestDriver *) opaque;
+  LogMessage *msg = (LogMessage *) msg_opaque;
 
+  /* we already ACKed back this message to syslog-ng, it was kept in
+   * librdkafka queues so far but successfully delivered, let's unref it */
+
+  if (err != RD_KAFKA_RESP_ERR_NO_ERROR)
+    {
+      LogThreadedDestWorker *worker = (LogThreadedDestWorker *) self->super.workers[0];
+      LogQueue *queue = worker->queue;
+      LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+
+      msg_debug("kafka: delivery report for message came back with an error, putting it back to our queue",
+                evt_tag_str("topic", self->topic_name),
+                evt_tag_printf("message", "%.*s", (int) MIN(len, 128), (char *) payload),
+                evt_tag_str("error", rd_kafka_err2str(err)),
+                evt_tag_str("driver", self->super.super.super.id),
+                log_pipe_location_tag(&self->super.super.super.super));
+      log_queue_push_head(queue, msg, &path_options);
+      return;
+    }
+  else
+    {
+      msg_debug("kafka: delivery report successful",
+                evt_tag_str("topic", self->topic_name),
+                evt_tag_printf("message", "%.*s", (int) MIN(len, 128), (char *) payload),
+                evt_tag_str("error", rd_kafka_err2str(err)),
+                evt_tag_str("driver", self->super.super.super.id),
+                log_pipe_location_tag(&self->super.super.super.super));
+      log_msg_unref(msg);
+    }
+}
 
 static void
 _conf_set_prop(rd_kafka_conf_t *conf, const gchar *name, const gchar *value)
@@ -168,7 +205,9 @@ _construct_client(KafkaDestDriver *self)
       kp = list->data;
       _conf_set_prop(conf, kp->name, kp->value);
     }
-  rd_kafka_conf_set_log_cb(conf, _kafka_log_callback,);
+  rd_kafka_conf_set_log_cb(conf, _kafka_log_callback);
+  rd_kafka_conf_set_dr_cb(conf, _kafka_delivery_report_cb);
+  rd_kafka_conf_set_opaque(conf, self);
   client = rd_kafka_new(RD_KAFKA_PRODUCER, conf, errbuf, sizeof(errbuf));
   if (!client)
     {
@@ -216,7 +255,6 @@ _construct_topic(KafkaDestDriver *self)
       _topic_conf_set_prop(topic_conf, kp->name, kp->value);
     }
 
-  rd_kafka_topic_conf_set_opaque(topic_conf, self);
   return rd_kafka_topic_new(self->kafka, self->topic_name, topic_conf);
 }
 
