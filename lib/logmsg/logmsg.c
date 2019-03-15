@@ -1275,16 +1275,7 @@ log_msg_new(const gchar *msg, gint length,
   LogMessage *self = log_msg_alloc(_determine_payload_size(length, parse_options));
 
   log_msg_init(self, saddr);
-
-  if (G_LIKELY(parse_options->format_handler))
-    {
-      msg_trace("Initial message parsing follows");
-      parse_options->format_handler->parse(parse_options, (guchar *) msg, length, self);
-    }
-  else
-    {
-      log_msg_set_value(self, LM_V_MESSAGE, "Error parsing message, format module is not loaded", -1);
-    }
+  msg_format_parse(parse_options, (guchar *) msg, length, self);
   return self;
 }
 

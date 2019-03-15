@@ -257,7 +257,12 @@ log_msg_parse_timestamp(UnixTime *stamp, const guchar **data, gint *length, guin
     }
 
   if ((parse_flags & LP_NO_PARSE_DATE) == 0)
-    convert_and_normalize_wall_clock_time_to_unix_time_with_tz_hint(&wct, stamp, recv_timezone_ofs);
+    {
+      convert_and_normalize_wall_clock_time_to_unix_time_with_tz_hint(&wct, stamp, recv_timezone_ofs);
+
+      if ((parse_flags & LP_GUESS_TIMEZONE) != 0)
+        unix_time_fix_timezone_assuming_the_time_matches_real_time(stamp);
+    }
 
   return result;
 }
@@ -267,17 +272,12 @@ log_msg_parse_date(LogMessage *self, const guchar **data, gint *length, guint pa
 {
   UnixTime *stamp = &self->timestamps[LM_TS_STAMP];
 
-
   unix_time_unset(stamp);
   if (!log_msg_parse_timestamp(stamp, data, length, parse_flags, recv_timezone_ofs))
     {
       *stamp = self->timestamps[LM_TS_RECVD];
+      unix_time_set_timezone(stamp, recv_timezone_ofs);
       return FALSE;
-    }
-
-  if (parse_flags & LP_NO_PARSE_DATE)
-    {
-      *stamp = self->timestamps[LM_TS_RECVD];
     }
 
   return TRUE;
@@ -831,7 +831,6 @@ log_msg_parse_legacy(const MsgFormatOptions *parse_options,
           /* Capture the program name */
           log_msg_parse_legacy_program_name(self, &src, &left, parse_options->flags);
         }
-      self->timestamps[LM_TS_STAMP] = self->timestamps[LM_TS_RECVD];
     }
 
   if (parse_options->flags & LP_SANITIZE_UTF8 && !g_utf8_validate((gchar *) src, left, NULL))

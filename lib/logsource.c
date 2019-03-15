@@ -346,11 +346,6 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
                   log_pipe_location_tag(s),
                   evt_tag_printf("msg", "%p", msg));
 
-  if (!self->options->keep_timestamp)
-    msg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_RECVD];
-
-  g_assert(msg->timestamps[LM_TS_STAMP].ut_gmtoff != -1);
-
   /* $HOST setup */
   log_source_mangle_hostname(self, msg);
 
