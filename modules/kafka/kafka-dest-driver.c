@@ -306,6 +306,28 @@ _flush_inflight_messages(KafkaDestDriver *self)
                evt_tag_int("outq_len", outq_len));
 }
 
+static void
+_purge_remaining_messages(KafkaDestDriver *self)
+{
+  /* we are purging all messages, those ones that are sitting in the queue
+   * and also those that were sent and not yet acknowledged.  The purged
+   * messages will generate failed delivery reports, which in turn will put
+   * them back to the head of our queue. */
+
+  /* FIXME: Need to check their order!!!! */
+
+  rd_kafka_purge(self->kafka, RD_KAFKA_PURGE_F_QUEUE | RD_KAFKA_PURGE_F_INFLIGHT);
+  rd_kafka_poll(self->kafka, 0);
+
+  gint outq_len = rd_kafka_outq_len(self->kafka);
+  if (outq_len != 0)
+    msg_notice("kafka: failed to completely empty rdkafka queues, as we still have entries in "
+                "the queue after flush() and purge(), this is probably causing a memory leak, "
+                "please contact syslog-ng authors for support",
+                evt_tag_int("outq_len", outq_len));
+
+}
+
 static gboolean
 kafka_dd_init(LogPipe *s)
 {
@@ -366,6 +388,7 @@ kafka_dd_deinit(LogPipe *s)
   KafkaDestDriver *self = (KafkaDestDriver *)s;
 
   _flush_inflight_messages(self);
+  _purge_remaining_messages(self);
   return log_threaded_dest_driver_deinit_method(s);
 }
 
