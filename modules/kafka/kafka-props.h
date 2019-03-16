@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2019 Balabit
+ * Copyright (c) 2018 Kokan <kokaipeter@gmail.com>
  * Copyright (c) 2014 Pierre-Yves Ritschard <pyr@spootnik.org>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -20,19 +22,19 @@
  *
  */
 
-#ifndef KAFKA_H_INCLUDED
-#define KAFKA_H_INCLUDED
+#ifndef KAFKA_PROPS_H_INCLUDED
+#define KAFKA_PROPS_H_INCLUDED
 
-#include "driver.h"
+#include "syslog-ng.h"
 
-LogDriver *kafka_dd_new(GlobalConfig *cfg);
+typedef struct _KafkaProperty
+{
+  gchar *name;
+  gchar *value;
+} KafkaProperty;
 
-void kafka_dd_set_partition_field(LogDriver *d, LogTemplate *key_field);
-void kafka_dd_set_partition_random(LogDriver *d);
-void kafka_dd_set_props(LogDriver *d, GList *props);
-void kafka_dd_set_topic(LogDriver *d, const gchar *topic, GList *props);
-void kafka_dd_set_payload(LogDriver *d, LogTemplate *payload);
-void kafka_dd_set_flag_sync(LogDriver *d);
-LogTemplateOptions *kafka_dd_get_template_options(LogDriver *d);
+KafkaProperty *kafka_property_new(const gchar *name, const gchar *value);
+void kafka_property_free(KafkaProperty *self);
+void kafka_property_list_free(GList *l);
 
 #endif

@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2019 Balabit
+ * Copyright (c) 2018 Kokan <kokaipeter@gmail.com>
  * Copyright (c) 2014 Pierre-Yves Ritschard <pyr@spootnik.org>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -19,20 +21,30 @@
  * COPYING for details.
  *
  */
+#include "kafka-props.h"
 
-#ifndef KAFKA_H_INCLUDED
-#define KAFKA_H_INCLUDED
+KafkaProperty *
+kafka_property_new(const gchar *name, const gchar *value)
+{
+  KafkaProperty *self = g_new0(KafkaProperty, 1);
 
-#include "driver.h"
+  self->name = g_strdup(name);
+  self->value = g_strdup(value);
+  return self;
+}
 
-LogDriver *kafka_dd_new(GlobalConfig *cfg);
+void
+kafka_property_free(KafkaProperty *self)
+{
+  g_free(self->name);
+  g_free(self->value);
+  g_free(self);
+}
 
-void kafka_dd_set_partition_field(LogDriver *d, LogTemplate *key_field);
-void kafka_dd_set_partition_random(LogDriver *d);
-void kafka_dd_set_props(LogDriver *d, GList *props);
-void kafka_dd_set_topic(LogDriver *d, const gchar *topic, GList *props);
-void kafka_dd_set_payload(LogDriver *d, LogTemplate *payload);
-void kafka_dd_set_flag_sync(LogDriver *d);
-LogTemplateOptions *kafka_dd_get_template_options(LogDriver *d);
+void
+kafka_property_list_free(GList *l)
+{
+  g_list_foreach(l, (GFunc) kafka_property_free, NULL);
 
-#endif
+  g_list_free(l);
+}

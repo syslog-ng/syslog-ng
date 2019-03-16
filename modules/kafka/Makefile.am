@@ -9,6 +9,8 @@ modules_kafka_libkafka_la_SOURCES = \
   modules/kafka/kafka-grammar.y \
   modules/kafka/kafka-parser.c \
   modules/kafka/kafka-parser.h \
+  modules/kafka/kafka-props.c \
+  modules/kafka/kafka-props.h \
   modules/kafka/kafka-destination.h \
   modules/kafka/kafka-destination.c \
   modules/kafka/kafka-plugin.c

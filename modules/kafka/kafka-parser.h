@@ -27,16 +27,9 @@
 
 #include "cfg-parser.h"
 #include "cfg-lexer.h"
-#include "kafka-destination.h"
+#include "driver.h"
 
 extern CfgParser kafka_parser;
-
-struct kafka_property {
-    gchar *key;
-    gchar *val;
-};
-
-void kafka_property_free(void *);
 
 CFG_PARSER_DECLARE_LEXER_BINDING(kafka_, LogDriver **)
 

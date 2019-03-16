@@ -34,6 +34,8 @@
 
 #include "cfg-grammar.h"
 #include "plugin.h"
+#include "kafka-destination.h"
+#include "kafka-props.h"
 
 extern GList *last_property;
 }
@@ -113,10 +115,7 @@ kafka_properties
 kafka_property
         : string '(' string ')'
         {
-            struct kafka_property *prop = g_new0(struct kafka_property, 1);
-
-            prop->key = g_strdup($1);
-            prop->val = g_strdup($3);
+            KafkaProperty *prop = kafka_property_new($1, $3);
             last_property = g_list_append(last_property, prop);
             free($1);
             free($3);

@@ -22,20 +22,14 @@
  *
  */
 
+
+#include "kafka-destination.h"
+#include "kafka-props.h"
+#include "logthrdest/logthrdestdrv.h"
+
 #include <librdkafka/rdkafka.h>
 #include <stdlib.h>
 #include <zlib.h>
-
-#include "kafka-destination.h"
-#include "kafka-parser.h"
-#include "plugin.h"
-#include "messages.h"
-#include "stats/stats.h"
-#include "logqueue.h"
-#include "driver.h"
-#include "plugin-types.h"
-#include "logthrdest/logthrdestdrv.h"
-#include "seqnum.h"
 
 /*
  * This module draws from the redis module and provides an Apache Kafka
@@ -95,15 +89,6 @@ kafka_log(const rd_kafka_t *rkt, int level,
                      NULL ));
 }
 
-void
-kafka_property_free(void *p)
-{
-  struct kafka_property *kp = p;
-
-  g_free(kp->key);
-  g_free(kp->val);
-  g_free(kp);
-}
 
 int32_t kafka_partition(const rd_kafka_topic_t *rkt,
                         const void *keydata,
@@ -142,7 +127,7 @@ kafka_dd_set_props(LogDriver *d, GList *props)
 {
   KafkaDriver *self = (KafkaDriver *)d;
   GList *list;
-  struct kafka_property *kp;
+  KafkaProperty *kp;
   rd_kafka_conf_t *conf;
   char errbuf[1024];
 
@@ -153,10 +138,10 @@ kafka_dd_set_props(LogDriver *d, GList *props)
     {
       kp = list->data;
       msg_debug("setting kafka property",
-                evt_tag_str("key", kp->key),
-                evt_tag_str("val", kp->val),
+                evt_tag_str("key", kp->name),
+                evt_tag_str("val", kp->value),
                 NULL);
-      rd_kafka_conf_set(conf, kp->key, kp->val,
+      rd_kafka_conf_set(conf, kp->name, kp->value,
                         errbuf, sizeof(errbuf));
     }
 #ifdef HAVE_LIBRDKAFKA_LOG_CB
@@ -216,7 +201,7 @@ kafka_dd_set_topic(LogDriver *d, const gchar *topic, GList *props)
 {
   KafkaDriver *self = (KafkaDriver *)d;
   GList *list;
-  struct kafka_property *kp;
+  KafkaProperty *kp;
   rd_kafka_topic_conf_t *topic_conf;
   char errbuf[1024];
 
@@ -232,10 +217,10 @@ kafka_dd_set_topic(LogDriver *d, const gchar *topic, GList *props)
     {
       kp = list->data;
       msg_debug("setting kafka topic property",
-                evt_tag_str("key", kp->key),
-                evt_tag_str("val", kp->val),
+                evt_tag_str("key", kp->name),
+                evt_tag_str("val", kp->value),
                 NULL);
-      rd_kafka_topic_conf_set(topic_conf, kp->key, kp->val,
+      rd_kafka_topic_conf_set(topic_conf, kp->name, kp->value,
                               errbuf, sizeof(errbuf));
     }
 
