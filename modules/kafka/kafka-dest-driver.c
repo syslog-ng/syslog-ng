@@ -25,11 +25,10 @@
 
 #include "kafka-dest-driver.h"
 #include "kafka-props.h"
-#include "logthrdest/logthrdestdrv.h"
+#include "kafka-dest-worker.h"
 
 #include <librdkafka/rdkafka.h>
 #include <stdlib.h>
-#include <zlib.h>
 
 /*
  * This module draws from the redis module and provides an Apache Kafka
@@ -100,7 +99,6 @@ kafka_dd_set_props(LogDriver *d, GList *props)
   kafka_property_list_free(self->props);
   self->props = props;
 }
-
 
 void
 kafka_dd_set_partition_random(LogDriver *d)
@@ -190,135 +188,6 @@ kafka_dd_format_persist_name(const LogPipe *d)
   return persist_name;
 }
 
-static u_int32_t
-kafka_calculate_partition_key(KafkaDriver *self, LogMessage *msg)
-{
-  u_int32_t key;
-  GString *field = g_string_sized_new(1024);
-
-  log_template_format(self->field, msg, &self->template_options,
-			LTZ_SEND, self->seq_num, NULL, field);
-
-  msg_debug("Kafka dynamic key",
-	    evt_tag_str("key", field->str),
-	    evt_tag_str("driver", self->super.super.super.id),
-	    NULL);
-
-  key = crc32(0L, Z_NULL, 0);
-  key = crc32(key, (const u_char *)field->str, field->len);
-
-  msg_debug("Kafka field crc32",
-            evt_tag_str("payload", field->str),
-	    evt_tag_int("length", field->len),
-	    evt_tag_int("crc32", key),
-	    evt_tag_str("driver", self->super.super.super.id),
-	    NULL);
-
-  g_string_free(field, TRUE);
-  return key;
-}
-
-/*
- * Worker thread
- */
-
-static LogThreadedResult
-kafka_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
-{
-  KafkaDriver *self = (KafkaDriver *)s;
-  u_int32_t key;
-
-  log_template_format(self->payload, msg, &self->template_options, LTZ_SEND,
-                      self->seq_num, NULL, self->payload_str);
-
-  switch (self->partition_type)
-    {
-    case PARTITION_RANDOM:
-      key =  rand();
-      break;
-    case PARTITION_FIELD:
-      key = kafka_calculate_partition_key(self, msg);
-      break;
-    default:
-      key = 0;
-    }
-
-#define KAFKA_INITIAL_ERROR_CODE -12345
-  rd_kafka_resp_err_t err = KAFKA_INITIAL_ERROR_CODE;
-  if (rd_kafka_produce(self->topic,
-                       RD_KAFKA_PARTITION_UA,
-                       RD_KAFKA_MSG_F_COPY,
-                       self->payload_str->str,
-                       self->payload_str->len,
-                       &key, sizeof(key),
-                       &err) == -1)
-    {
-      msg_error("Failed to add message to Kafka topic!",
-                evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("topic", self->topic_name),
-                evt_tag_str("error", rd_kafka_err2str(rd_kafka_errno2err(errno))),
-                NULL);
-      return LTR_ERROR;
-    }
-
-  msg_debug("Kafka produce done",
-            evt_tag_str("driver", self->super.super.super.id),
-            NULL);
-
-  /* Wait for completion. */
-  if (self->flags & KAFKA_FLAG_SYNC)
-    {
-      while (err == KAFKA_INITIAL_ERROR_CODE)
-        {
-          rd_kafka_poll(self->kafka, 5000);
-          if (err == KAFKA_INITIAL_ERROR_CODE)
-            {
-              msg_debug("Kafka producer is freezed",
-                        evt_tag_str("driver", self->super.super.super.id),
-                        evt_tag_str("topic", self->topic_name),
-                        NULL);
-            }
-        }
-      if (err != RD_KAFKA_RESP_ERR_NO_ERROR)
-        {
-          msg_error("Failed to add message to Kafka topic!",
-                    evt_tag_str("driver", self->super.super.super.id),
-                    evt_tag_str("topic", self->topic_name),
-                    evt_tag_str("error", rd_kafka_err2str(err)),
-                    NULL);
-          return LTR_ERROR;
-        }
-    }
-
-  msg_debug("Kafka event sent",
-            evt_tag_str("driver", self->super.super.super.id),
-            evt_tag_str("topic", self->topic_name),
-            evt_tag_str("payload", self->payload_str->str),
-            NULL);
-
-  return LTR_SUCCESS;
-}
-
-static void
-kafka_worker_thread_init(LogThreadedDestDriver *d)
-{
-  KafkaDriver *self = (KafkaDriver *)d;
-
-  msg_debug("Worker thread started",
-            evt_tag_str("driver", self->super.super.super.id),
-            NULL);
-
-  self->payload_str = g_string_sized_new(1024);
-
-}
-
-static void
-kafka_worker_thread_deinit(LogThreadedDestDriver *d)
-{
-  KafkaDriver *self = (KafkaDriver *)d;
-
-  g_string_free(self->payload_str, TRUE);
-}
 
 /*
  * Main thread
@@ -386,6 +255,12 @@ _construct_topic(KafkaDestDriver *self)
   rd_kafka_topic_conf_set_partitioner_cb(topic_conf, kafka_partition);
   rd_kafka_topic_conf_set_opaque(topic_conf, self);
   return rd_kafka_topic_new(self->kafka, self->topic_name, topic_conf);
+}
+
+static LogThreadedDestWorker *
+_construct_worker(LogThreadedDestDriver *s, gint worker_index)
+{
+  return kafka_dest_worker_new(s, worker_index);
 }
 
 static gboolean
@@ -465,12 +340,9 @@ kafka_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.free_fn = kafka_dd_free;
   self->super.super.super.super.generate_persist_name = kafka_dd_format_persist_name;
 
-  self->super.worker.thread_init = kafka_worker_thread_init;
-  self->super.worker.thread_deinit = kafka_worker_thread_deinit;
-  self->super.worker.insert = kafka_worker_insert;
-
   self->super.format_stats_instance = kafka_dd_format_stats_instance;
   self->super.stats_source = SCS_KAFKA;
+  self->super.worker.construct = _construct_worker;
 
   self->flags = KAFKA_FLAG_NONE;
 
