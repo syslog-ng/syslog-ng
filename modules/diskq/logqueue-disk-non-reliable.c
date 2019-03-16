@@ -297,12 +297,10 @@ _push_head (LogQueueDisk *s, LogMessage *msg, const LogPathOptions *path_options
 {
   LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *) s;
 
-  g_static_mutex_lock(&self->super.super.lock);
   g_queue_push_head (self->qout, LOG_PATH_OPTIONS_TO_POINTER (path_options));
   g_queue_push_head (self->qout, msg);
   log_queue_queued_messages_inc(&self->super.super);
   log_queue_memory_usage_add(&self->super.super, log_msg_get_size(msg));
-  g_static_mutex_unlock(&self->super.super.lock);
 }
 
 static gboolean
