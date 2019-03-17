@@ -298,6 +298,13 @@ cfg_shutdown(GlobalConfig *cfg)
 }
 
 gboolean
+cfg_is_shutting_down(GlobalConfig *cfg)
+{
+  MainLoop *main_loop = main_loop_get_instance();
+  return main_loop_is_terminating(main_loop);
+}
+
+gboolean
 cfg_init(GlobalConfig *cfg)
 {
   gint regerr;
