@@ -52,7 +52,11 @@ static gboolean
 _publish_message(KafkaDestWorker *self, LogMessage *msg)
 {
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
-  GString *key = self->key ? : &((GString) { .str = NULL, .len = 0});
+  GString *key = self->key ? : &((GString)
+  {
+    .str = NULL,
+    .len = 0
+  });
   GString *message = self->message;
 
   if (rd_kafka_produce(owner->topic,

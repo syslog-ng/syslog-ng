@@ -29,21 +29,22 @@
 extern int kafka_debug;
 int kafka_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
-static CfgLexerKeyword kafka_keywords[] = {
-    { "kafka",          KW_KAFKA },
+static CfgLexerKeyword kafka_keywords[] =
+{
+  { "kafka",          KW_KAFKA },
 
-    { "topic",          KW_TOPIC },
+  { "topic",          KW_TOPIC },
 
-    /* https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md */
-    { "global_config",  KW_GLOBAL_CONFIG },
-    { "topic_config",   KW_TOPIC_CONFIG },
-    { "flush_timeout_on_shutdown", KW_FLUSH_TIMEOUT_ON_SHUTDOWN },
+  /* https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md */
+  { "global_config",  KW_GLOBAL_CONFIG },
+  { "topic_config",   KW_TOPIC_CONFIG },
+  { "flush_timeout_on_shutdown", KW_FLUSH_TIMEOUT_ON_SHUTDOWN },
 
-    { "key",            KW_KEY },
-    { "message",        KW_MESSAGE },
-    { "workers",        KW_WORKERS },
-    { "kafka_c",        KW_KAFKA },   /* compatibility with incubator naming */
-    { NULL }
+  { "key",            KW_KEY },
+  { "message",        KW_MESSAGE },
+  { "workers",        KW_WORKERS },
+  { "kafka_c",        KW_KAFKA },   /* compatibility with incubator naming */
+  { NULL }
 };
 
 CfgParser kafka_parser =

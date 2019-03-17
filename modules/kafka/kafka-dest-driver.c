@@ -32,34 +32,6 @@
 #include <stdlib.h>
 
 /*
- * This module draws from the redis module and provides an Apache Kafka
- * output. Please refer to http://kafka.apache.org for details on the
- * kafka distributed queue.
- *
- * This module accepts the following options:
- * - _properties_, mandatory. Sets global properties, you will need at least
- *   "metadata.broker.list" set
- * - _topic_, mandatory. Expects a named topic and optional associated
- *   metadata such as the number of partitions
- * - _payload_, mandatory. A template to describe payload content
- * - _partition_, optional. Describes the partitioning method for the topic.
- *   a random partition is assigned by default. Accepts the following arguments:
- *   "random" for random partitions any other string to use the checksum of a
- *   message template.
- */
-
-void
-kafka_log(const rd_kafka_t *rkt, int level,
-          const char *fac, const char *msg)
-{
-  msg_event_suppress_recursions_and_send(
-    msg_event_create(level,
-                     "Kafka internal message",
-                     evt_tag_str("msg", msg),
-                     NULL ));
-}
-
-/*
  * Configuration
  */
 
@@ -117,10 +89,6 @@ kafka_dd_set_flush_timeout_on_shutdown(LogDriver *d, gint flush_timeout_on_shutd
 }
 
 
-/*
- * Utilities
- */
-
 LogTemplateOptions *
 kafka_dd_get_template_options(LogDriver *d)
 {
@@ -129,21 +97,20 @@ kafka_dd_get_template_options(LogDriver *d)
   return &self->template_options;
 }
 
+/* methods */
+
 static const gchar *
-kafka_dd_format_stats_instance(LogThreadedDestDriver *d)
+_format_stats_instance(LogThreadedDestDriver *d)
 {
   KafkaDestDriver *self = (KafkaDestDriver *)d;
-  static gchar persist_name[1024];
+  static gchar stats_name[1024];
 
-  if (d->super.super.super.persist_name)
-    g_snprintf(persist_name, sizeof(persist_name), "kafka,%s", d->super.super.super.persist_name);
-  else
-    g_snprintf(persist_name, sizeof(persist_name), "kafka,%s", self->topic_name);
-  return persist_name;
+  g_snprintf(stats_name, sizeof(stats_name), "kafka,%s", self->topic_name);
+  return stats_name;
 }
 
 static const gchar *
-kafka_dd_format_persist_name(const LogPipe *d)
+_format_persist_name(const LogPipe *d)
 {
   const KafkaDestDriver *self = (const KafkaDestDriver *)d;
   static gchar persist_name[1024];
@@ -154,6 +121,18 @@ kafka_dd_format_persist_name(const LogPipe *d)
     g_snprintf(persist_name, sizeof(persist_name), "kafka(%s)", self->topic_name);
   return persist_name;
 }
+
+void
+_kafka_log_callback(const rd_kafka_t *rkt, int level, const char *fac, const char *msg)
+{
+  msg_event_suppress_recursions_and_send(
+    msg_event_create(level,
+                     "Kafka internal message",
+                     evt_tag_str("msg", msg),
+                     NULL ));
+}
+
+
 
 static void
 _conf_set_prop(rd_kafka_conf_t *conf, const gchar *name, const gchar *value)
@@ -191,7 +170,7 @@ _construct_client(KafkaDestDriver *self)
       kp = list->data;
       _conf_set_prop(conf, kp->name, kp->value);
     }
-  rd_kafka_conf_set_log_cb(conf, kafka_log);
+  rd_kafka_conf_set_log_cb(conf, _kafka_log_callback,);
   client = rd_kafka_new(RD_KAFKA_PRODUCER, conf, errbuf, sizeof(errbuf));
   if (!client)
     {
@@ -387,9 +366,9 @@ kafka_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.init = kafka_dd_init;
   self->super.super.super.super.deinit = kafka_dd_deinit;
   self->super.super.super.super.free_fn = kafka_dd_free;
-  self->super.super.super.super.generate_persist_name = kafka_dd_format_persist_name;
+  self->super.super.super.super.generate_persist_name = _format_persist_name;
 
-  self->super.format_stats_instance = kafka_dd_format_stats_instance;
+  self->super.format_stats_instance = _format_stats_instance;
   self->super.stats_source = SCS_KAFKA;
   self->super.worker.construct = _construct_worker;
   /* one minute */
