@@ -20,7 +20,7 @@ RELEASE_DIR=$(DBLD_DIR)/release
 VERSION=$(shell cat VERSION)
 TARBALL=$(BUILD_DIR)/syslog-ng-$(VERSION).tar.gz
 MODE=snapshot
-CONFIGURE_OPTS=--enable-debug --enable-manpages --with-python=2 --prefix=/install --with-docbook=/usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.xsl $(CONFIGURE_ADD)
+CONFIGURE_OPTS=--enable-debug --enable-manpages --with-python=2 --prefix=/install $(CONFIGURE_ADD)
 
 -include dbld/rules.conf
 

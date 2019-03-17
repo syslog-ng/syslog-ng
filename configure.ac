@@ -333,6 +333,7 @@ AC_ARG_WITH(docbook,
             AC_HELP_STRING([--with-docbook=FILE],
                            [compiling manpages using docbook in the specified path, if not set online version will be used from http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl]),
             [ XSL_STYLESHEET=$with_docbook ],
+            [ XSL_STYLESHEET=`find /usr/share/{xml,sgml} -path '*/manpages/docbook.xsl'` ],
             [ XSL_STYLESHEET=http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl ]
             )
 
