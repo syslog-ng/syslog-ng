@@ -358,7 +358,7 @@ _perform_flush(LogThreadedDestWorker *self)
                 evt_tag_int("worker_index", self->worker_index),
                 evt_tag_int("batch_size", self->batch_size));
 
-      LogThreadedResult result = log_threaded_dest_worker_flush(self);
+      LogThreadedResult result = log_threaded_dest_worker_flush(self, LTF_FLUSH_NORMAL);
       _process_result(self, result);
     }
 
@@ -673,6 +673,21 @@ _unregister_worker_stats(LogThreadedDestWorker *self)
 }
 
 static void
+_perform_final_flush(LogThreadedDestWorker *self)
+{
+  GlobalConfig *cfg = log_pipe_get_config(&self->owner->super.super.super);
+  LogThreadedResult result;
+  LogThreadedFlushMode mode = LTF_FLUSH_NORMAL;
+
+  if (!cfg_is_shutting_down(cfg))
+    mode = LTF_FLUSH_EXPEDITE;
+
+  result = log_threaded_dest_worker_flush(self, mode);
+  _process_result(self, result);
+  log_queue_rewind_backlog_all(self->queue);
+}
+
+static void
 _worker_thread(gpointer arg)
 {
   LogThreadedDestWorker *self = (LogThreadedDestWorker *) arg;
@@ -700,9 +715,7 @@ _worker_thread(gpointer arg)
   _schedule_restart(self);
   iv_main();
 
-  LogThreadedResult result = log_threaded_dest_worker_flush(self);
-  _process_result(self, result);
-  log_queue_rewind_backlog_all(self->queue);
+  _perform_final_flush(self);
 
   _disconnect(self);
 
@@ -834,7 +847,7 @@ _compat_insert(LogThreadedDestWorker *self, LogMessage *msg)
 }
 
 static LogThreadedResult
-_compat_flush(LogThreadedDestWorker *self)
+_compat_flush(LogThreadedDestWorker *self, LogThreadedFlushMode mode)
 {
   if (self->owner->worker.flush)
     return self->owner->worker.flush(self->owner);

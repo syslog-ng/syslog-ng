@@ -37,6 +37,18 @@
 
 typedef enum
 {
+  /* flush modes */
+
+  /* flush the infligh messages */
+  LTF_FLUSH_NORMAL,
+
+  /* expedite flush, to be used at reload, when the persistency of the queue
+   * contents is ensured */
+  LTF_FLUSH_EXPEDITE,
+} LogThreadedFlushMode;
+
+typedef enum
+{
   LTR_DROP,
   LTR_ERROR,
   LTR_EXPLICIT_ACK_MGMT,
@@ -81,7 +93,7 @@ struct _LogThreadedDestWorker
   gboolean (*connect)(LogThreadedDestWorker *s);
   void (*disconnect)(LogThreadedDestWorker *s);
   LogThreadedResult (*insert)(LogThreadedDestWorker *s, LogMessage *msg);
-  LogThreadedResult (*flush)(LogThreadedDestWorker *s);
+  LogThreadedResult (*flush)(LogThreadedDestWorker *s, LogThreadedFlushMode mode);
   void (*free_fn)(LogThreadedDestWorker *s);
 };
 
@@ -181,12 +193,12 @@ log_threaded_dest_worker_insert(LogThreadedDestWorker *self, LogMessage *msg)
 }
 
 static inline LogThreadedResult
-log_threaded_dest_worker_flush(LogThreadedDestWorker *self)
+log_threaded_dest_worker_flush(LogThreadedDestWorker *self, LogThreadedFlushMode mode)
 {
   LogThreadedResult result = LTR_SUCCESS;
 
   if (self->flush)
-    result = self->flush(self);
+    result = self->flush(self, mode);
   iv_validate_now();
   self->last_flush_time = iv_now;
   return result;
@@ -196,7 +208,7 @@ log_threaded_dest_worker_flush(LogThreadedDestWorker *self)
 static inline LogThreadedResult
 log_threaded_dest_driver_flush(LogThreadedDestDriver *self)
 {
-  return log_threaded_dest_worker_flush(&self->worker.instance);
+  return log_threaded_dest_worker_flush(&self->worker.instance, LTF_FLUSH_NORMAL);
 }
 
 void log_threaded_dest_worker_ack_messages(LogThreadedDestWorker *self, gint batch_size);

@@ -427,7 +427,7 @@ _flush_on_target(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
  *   2) the message queue becomes empty
  */
 static LogThreadedResult
-_flush(LogThreadedDestWorker *s)
+_flush(LogThreadedDestWorker *s, LogThreadedFlushMode mode)
 {
   HTTPDestinationWorker *self = (HTTPDestinationWorker *) s;
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) s->owner;
@@ -499,7 +499,7 @@ _insert_batched(LogThreadedDestWorker *s, LogMessage *msg)
 
   if (_should_initiate_flush(self))
     {
-      return log_threaded_dest_worker_flush(&self->super);
+      return log_threaded_dest_worker_flush(&self->super, FALSE);
     }
   return LTR_QUEUED;
 }
@@ -511,7 +511,7 @@ _insert_single(LogThreadedDestWorker *s, LogMessage *msg)
 
   self->request_headers = _format_request_headers(self, msg);
   _add_message_to_batch(self, msg);
-  return _flush(&self->super);
+  return log_threaded_dest_worker_flush(&self->super, FALSE);
 }
 
 static gboolean

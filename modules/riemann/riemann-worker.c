@@ -310,7 +310,7 @@ riemann_worker_insert_one(RiemannDestWorker *self, LogMessage *msg)
 }
 
 static LogThreadedResult
-riemann_worker_flush(LogThreadedDestWorker *s)
+riemann_worker_flush(LogThreadedDestWorker *s, LogThreadedFlushMode mode)
 {
   RiemannDestWorker *self = (RiemannDestWorker *) s;
   RiemannDestDriver *owner = (RiemannDestDriver *) self->super.owner;
@@ -376,7 +376,7 @@ _insert_single(RiemannDestWorker *self, LogMessage *msg)
       return LTR_DROP;
     }
 
-  return log_threaded_dest_worker_flush(&self->super);
+  return log_threaded_dest_worker_flush(&self->super, FALSE);
 }
 
 static LogThreadedResult
