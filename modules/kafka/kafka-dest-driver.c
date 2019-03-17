@@ -88,6 +88,14 @@ kafka_dd_set_flush_timeout_on_shutdown(LogDriver *d, gint flush_timeout_on_shutd
   self->flush_timeout_on_shutdown = flush_timeout_on_shutdown;
 }
 
+void
+kafka_dd_set_flush_timeout_on_reload(LogDriver *d, gint flush_timeout_on_reload)
+{
+  KafkaDestDriver *self = (KafkaDestDriver *)d;
+
+  self->flush_timeout_on_reload = flush_timeout_on_reload;
+}
+
 
 LogTemplateOptions *
 kafka_dd_get_template_options(LogDriver *d)
@@ -268,7 +276,9 @@ static gint
 _get_flush_timeout(KafkaDestDriver *self)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super.super);
+  if (cfg_is_shutting_down(cfg))
     return self->flush_timeout_on_shutdown;
+  return self->flush_timeout_on_reload;
 }
 
 static void
@@ -432,6 +442,7 @@ kafka_dd_new(GlobalConfig *cfg)
   self->super.worker.construct = _construct_worker;
   /* one minute */
   self->flush_timeout_on_shutdown = 60000;
+  self->flush_timeout_on_reload = 1000;
 
   log_template_options_defaults(&self->template_options);
 

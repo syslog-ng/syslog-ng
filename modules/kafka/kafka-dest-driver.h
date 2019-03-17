@@ -42,6 +42,7 @@ typedef struct
   rd_kafka_topic_t *topic;
   rd_kafka_t *kafka;
   gint flush_timeout_on_shutdown;
+  gint flush_timeout_on_reload;
 } KafkaDestDriver;
 
 void kafka_dd_set_topic(LogDriver *d, const gchar *topic);
@@ -51,6 +52,7 @@ void kafka_dd_set_topic_config(LogDriver *d, GList *props);
 void kafka_dd_set_key_ref(LogDriver *d, LogTemplate *key);
 void kafka_dd_set_message_ref(LogDriver *d, LogTemplate *message);
 void kafka_dd_set_flush_timeout_on_shutdown(LogDriver *d, gint shutdown_timeout);
+void kafka_dd_set_flush_timeout_on_reload(LogDriver *d, gint reload_timeout);
 
 LogTemplateOptions *kafka_dd_get_template_options(LogDriver *d);
 

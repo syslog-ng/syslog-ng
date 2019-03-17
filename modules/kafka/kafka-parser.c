@@ -39,6 +39,7 @@ static CfgLexerKeyword kafka_keywords[] =
   { "global_config",  KW_GLOBAL_CONFIG },
   { "topic_config",   KW_TOPIC_CONFIG },
   { "flush_timeout_on_shutdown", KW_FLUSH_TIMEOUT_ON_SHUTDOWN },
+  { "flush_timeout_on_reload",   KW_FLUSH_TIMEOUT_ON_RELOAD },
 
   { "key",            KW_KEY },
   { "message",        KW_MESSAGE },
