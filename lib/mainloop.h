@@ -63,6 +63,7 @@ gboolean main_loop_reload_config_prepare(MainLoop *self, GError **error);
 void main_loop_reload_config_commence(MainLoop *self);
 void main_loop_reload_config(MainLoop *self);
 void main_loop_verify_config(GString *result, MainLoop *self);
+gboolean main_loop_is_terminating(MainLoop *self);
 void main_loop_exit(MainLoop *self);
 
 int main_loop_read_and_init_config(MainLoop *self);
