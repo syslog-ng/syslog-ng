@@ -72,7 +72,6 @@ before_script:
       --enable-manpages
       --enable-force-gnu99
       --with-python=2
-      --with-docbook=/usr/share/xml/docbook/stylesheet/docbook-xsl/manpages/docbook.xsl
       $EXTRA_WARN
       $DISABLE_MONGODB
       "
