@@ -212,25 +212,25 @@ ParameterizedTest(StringDoublePair *string_value_pair, type_hints, test_double_c
 
 ParameterizedTestParameters(type_hints, test_invalid_double_cast)
 {
-  static gchar *string_list[] =
+  static StringDoublePair string_list[] =
   {
-    "2.0bad",
-    "bad",
-    "",
-    "1e1000000",
-    "-1e1000000"
+    {"2.0bad", },
+    {"bad", },
+    {"", },
+    {"1e1000000", },
+    {"-1e1000000" },
   };
 
-  return cr_make_param_array(gchar *, string_list, sizeof(string_list) / sizeof(string_list[0]));
+  return cr_make_param_array(StringDoublePair, string_list, sizeof(string_list) / sizeof(string_list[0]));
 }
 
-ParameterizedTest(gchar *string, type_hints, test_invalid_double_cast)
+ParameterizedTest(StringDoublePair *string_value_pair, type_hints, test_invalid_double_cast)
 {
   gdouble value;
   GError *error = NULL;
 
-  cr_assert_eq(type_cast_to_double(string, &value, &error), FALSE,
-               "Type cast of invalid string (%s) to double should be failed",string);
+  cr_assert_not(type_cast_to_double(string_value_pair->string, &value, &error),
+                "Type cast of invalid string (%s) to double should be failed",string_value_pair->string);
   cr_assert_not_null(error);
   cr_assert_eq(error->domain, TYPE_HINTING_ERROR);
   cr_assert_eq(error->code, TYPE_HINTING_INVALID_CAST);
