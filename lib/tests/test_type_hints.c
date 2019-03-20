@@ -161,6 +161,14 @@ Test(type_hints,test_int32_cast)
   cr_assert_not_null(error);
   cr_assert_eq(error->domain, TYPE_HINTING_ERROR);
   cr_assert_eq(error->code, TYPE_HINTING_INVALID_CAST);
+  g_clear_error(&error);
+
+  /* empty string */
+  cr_assert_not(type_cast_to_int32("", &value, &error),
+                "Type cast of empty string to gint32 should be failed");
+  cr_assert_not_null(error);
+  cr_assert_eq(error->domain, TYPE_HINTING_ERROR);
+  cr_assert_eq(error->code, TYPE_HINTING_INVALID_CAST);
 
   g_clear_error(&error);
 }
@@ -180,7 +188,14 @@ Test(type_hints,test_int64_cast)
   cr_assert_not_null(error);
   cr_assert_eq(error->domain, TYPE_HINTING_ERROR);
   cr_assert_eq(error->code, TYPE_HINTING_INVALID_CAST);
+  g_clear_error(&error);
 
+  /* empty string */
+  cr_assert_not(type_cast_to_int64("", &value, &error),
+                "Type cast of empty string to gint64 should be failed");
+  cr_assert_not_null(error);
+  cr_assert_eq(error->domain, TYPE_HINTING_ERROR);
+  cr_assert_eq(error->code, TYPE_HINTING_INVALID_CAST);
   g_clear_error(&error);
 }
 
