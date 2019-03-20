@@ -188,7 +188,7 @@ _fetch(LogThreadedFetcherDriver *s)
   return (LogThreadedFetchResult)
   {
     .result = THREADED_FETCH_SUCCESS,
-     .msg = msg
+    .msg = msg
   };
 }
 

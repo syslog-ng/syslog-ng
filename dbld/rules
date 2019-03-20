@@ -97,6 +97,11 @@ release: deb
 clean:
 	rm -rf $(BUILD_DIR)/*
 
+run: run-$(DEFAULT_IMAGE)
+run: RUN_COMMAND=echo Specify RUN_COMMAND to do something sensible here
+run-%: setup
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti balabit/syslog-ng-$* bash -c "$(RUN_COMMAND)"
+
 shell: shell-$(DEFAULT_IMAGE)
 shell-%: setup
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti balabit/syslog-ng-$* /source/dbld/shell

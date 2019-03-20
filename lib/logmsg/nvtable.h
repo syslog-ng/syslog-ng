@@ -305,7 +305,7 @@ static inline gchar *
 nv_table_get_ofs_table_top(NVTable *self)
 {
   return (gchar *) &self->data[self->num_static_entries * sizeof(self->static_entries[0]) +
-                               self->index_size * sizeof(NVIndexEntry)];
+                                                        self->index_size * sizeof(NVIndexEntry)];
 }
 
 static inline gboolean

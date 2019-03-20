@@ -77,8 +77,8 @@ late_ack_tracker_set_on_all_acked(AckTracker *s, AckTrackerOnAllAckedFunc func, 
   self->on_all_acked = (AckTrackerOnAllAcked)
   {
     .func = func,
-     .user_data = user_data,
-      .user_data_free_fn = user_data_free_fn
+    .user_data = user_data,
+    .user_data_free_fn = user_data_free_fn
   };
 }
 

@@ -149,7 +149,7 @@ transformers_testcase(const gchar *scope, const gchar *transformed_keys, const g
       ValuePairsTransformSet *vpts = value_pairs_transform_set_new(transformed_keys ? : "*");
 
       for (i = 0; i < transformers->len; i++)
-             value_pairs_transform_set_add_func(vpts, g_ptr_array_index(transformers, i));
+        value_pairs_transform_set_add_func(vpts, g_ptr_array_index(transformers, i));
       value_pairs_add_transforms(vp, vpts);
     }
 

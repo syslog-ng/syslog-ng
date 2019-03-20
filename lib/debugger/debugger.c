@@ -102,7 +102,7 @@ _display_source_line(LogExprNode *expr_node)
   if (f)
     {
       while (fgets(buf, sizeof(buf), f) && lineno < expr_node->line)
-               lineno++;
+        lineno++;
       if (lineno != expr_node->line)
         buf[0] = 0;
       fclose(f);

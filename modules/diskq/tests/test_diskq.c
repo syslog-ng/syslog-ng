@@ -559,32 +559,32 @@ main(void)
   testcase_diskq_statistics((diskq_tester_parameters_t)
   {
     .disk_size = 10*1024, // small enough to trigger overflow
-     .reliable = TRUE,
-      .overflow_expected = TRUE,
-       .constructor = log_queue_disk_reliable_new,
-        .first_msg_asserter = assert_first_message_reliable,
-         .second_msg_asserter = assert_second_message_reliable
+    .reliable = TRUE,
+    .overflow_expected = TRUE,
+    .constructor = log_queue_disk_reliable_new,
+    .first_msg_asserter = assert_first_message_reliable,
+    .second_msg_asserter = assert_second_message_reliable
   });
 
   testcase_diskq_statistics((diskq_tester_parameters_t)
   {
     .disk_size = 500*1024, // no overflow
-     .reliable = TRUE,
-      .constructor = log_queue_disk_reliable_new,
-       .first_msg_asserter = assert_first_message_reliable,
-        .second_msg_asserter = assert_second_message_reliable
+    .reliable = TRUE,
+    .constructor = log_queue_disk_reliable_new,
+    .first_msg_asserter = assert_first_message_reliable,
+    .second_msg_asserter = assert_second_message_reliable
   });
 
   /* nonreliable version moves msgs from qoverflow only if there is free space in qout: qout_size must be 1 */
   testcase_diskq_statistics((diskq_tester_parameters_t)
   {
     .disk_size = 1*1024,
-     .reliable = FALSE,
-      .overflow_expected = TRUE,
-       .qout_size = 1,
-        .constructor = log_queue_disk_non_reliable_new,
-         .first_msg_asserter = assert_first_message_non_reliable,
-          .second_msg_asserter = assert_second_message_non_reliable
+    .reliable = FALSE,
+    .overflow_expected = TRUE,
+    .qout_size = 1,
+    .constructor = log_queue_disk_non_reliable_new,
+    .first_msg_asserter = assert_first_message_non_reliable,
+    .second_msg_asserter = assert_second_message_non_reliable
   });
 
   testcase_zero_diskbuf_alternating_send_acks();

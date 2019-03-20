@@ -9,6 +9,9 @@ os: linux
 cache:
   apt: true
 
+services:
+  - docker
+
 addons:
   homebrew:
     brewfile: contrib/Brewfile
@@ -43,7 +46,6 @@ addons:
       - criterion-dev
       - libmaxminddb-dev
       - libxml2-utils
-      - astyle
       - doxygen
 install:
       - pip install --user -r requirements.txt
@@ -114,10 +116,13 @@ matrix:
     - env: B=style-check
       dist: trusty
       sudo: required
+      addons:
+      before_install:
+      - docker pull balabit/syslog-ng-ubuntu-bionic
+      install:
       before_script:
-      - astyle --version
       script:
-      - scripts/style-checker.sh format
+      - ./dbld/rules run RUN_COMMAND="cd /source && astyle --version && scripts/style-checker.sh format"
       - git diff --exit-code
     - env: B=copyright-check
       sudo: false

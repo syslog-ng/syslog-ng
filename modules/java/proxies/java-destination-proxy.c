@@ -157,10 +157,10 @@ __load_destination_object(JavaDestinationProxy *self, const gchar *class_name, c
     }
 
   self->dest_impl.mi_get_name_by_uniq_options = CALL_JAVA_FUNCTION(java_env,
-      GetMethodID,
-      self->loaded_class,
-      "getNameByUniqOptionsProxy",
-      "()Ljava/lang/String;"
+                                                GetMethodID,
+                                                self->loaded_class,
+                                                "getNameByUniqOptionsProxy",
+                                                "()Ljava/lang/String;"
                                                                   );
   if (!self->dest_impl.mi_get_name_by_uniq_options)
     {

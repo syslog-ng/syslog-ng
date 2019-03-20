@@ -863,7 +863,7 @@ pdbtool_walk_tree(RNode *root, gint level, gboolean program)
   gint i;
 
   for (i = 0; i < level; i++)
-         printf(" ");
+    printf(" ");
 
   if (root->parser)
     printf("@%s:%s@ ", r_parser_type_name(root->parser->type), log_msg_get_value_name(root->parser->handle, NULL));
@@ -880,10 +880,10 @@ pdbtool_walk_tree(RNode *root, gint level, gboolean program)
   printf("\n");
 
   for (i = 0; i < root->num_children; i++)
-         pdbtool_walk_tree(root->children[i], level + 1, program);
+    pdbtool_walk_tree(root->children[i], level + 1, program);
 
   for (i = 0; i < root->num_pchildren; i++)
-         pdbtool_walk_tree(root->pchildren[i], level + 1, program);
+    pdbtool_walk_tree(root->pchildren[i], level + 1, program);
 }
 
 static gint
@@ -977,10 +977,10 @@ pdbtool_dictionary_walk(RNode *root, const gchar *progname)
     }
 
   for (i = 0; i < root->num_children; i++)
-         pdbtool_dictionary_walk(root->children[i], progname);
+    pdbtool_dictionary_walk(root->children[i], progname);
 
   for (i = 0; i < root->num_pchildren; i++)
-         pdbtool_dictionary_walk(root->pchildren[i], progname);
+    pdbtool_dictionary_walk(root->pchildren[i], progname);
 }
 
 static GOptionEntry dictionary_options[] =

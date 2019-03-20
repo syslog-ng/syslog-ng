@@ -159,9 +159,9 @@ test_diskq_truncate_with_diskbuffer_used(void)
   _test_diskq_truncate((TruncateTestParams)
   {
     .test_id = __func__,
-     .number_of_msgs_to_push = 100,
-      .number_of_msgs_to_pop = 50,
-       .should_file_be_empty_after_truncate = FALSE
+    .number_of_msgs_to_push = 100,
+    .number_of_msgs_to_pop = 50,
+    .should_file_be_empty_after_truncate = FALSE
   });
 }
 
@@ -171,9 +171,9 @@ test_diskq_truncate_without_diskbuffer_used(void)
   _test_diskq_truncate((TruncateTestParams)
   {
     .test_id = __func__,
-     .number_of_msgs_to_push = 100,
-      .number_of_msgs_to_pop = 80,
-       .should_file_be_empty_after_truncate = TRUE
+    .number_of_msgs_to_push = 100,
+    .number_of_msgs_to_pop = 80,
+    .should_file_be_empty_after_truncate = TRUE
   });
 }
 

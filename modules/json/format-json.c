@@ -241,10 +241,10 @@ tf_json_value(const gchar *name, const gchar *prefix,
       gsize v_len = value_len;
 
       if (type == TYPE_HINT_INT32 &&
-          (fail = !type_cast_to_int32(value, &i32 , NULL)) == TRUE)
+          (fail = !type_cast_to_int32(value, &i32, NULL)) == TRUE)
         r = type_cast_drop_helper(on_error, value, "int32");
       else if (type == TYPE_HINT_INT64 &&
-               (fail = !type_cast_to_int64(value, &i64 , NULL)) == TRUE)
+               (fail = !type_cast_to_int64(value, &i64, NULL)) == TRUE)
         r = type_cast_drop_helper(on_error, value, "int64");
       else if (type == TYPE_HINT_DOUBLE &&
                (fail = !type_cast_to_double(value, &d, NULL)) == TRUE)
