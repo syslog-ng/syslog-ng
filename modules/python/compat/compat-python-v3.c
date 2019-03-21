@@ -39,12 +39,6 @@ int_as_pyobject(gint num)
   return PyLong_FromLong(num);
 };
 
-void
-py_datetime_init(void)
-{
-  PyDateTime_IMPORT;
-}
-
 gboolean
 py_datetime_to_logstamp(PyObject *py_timestamp, UnixTime *logstamp)
 {

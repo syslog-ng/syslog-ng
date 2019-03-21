@@ -41,12 +41,6 @@ int_as_pyobject(gint num)
   return PyInt_FromLong(num);
 };
 
-void
-py_datetime_init(void)
-{
-  PyDateTime_IMPORT;
-}
-
 static PyObject *
 _datetime_timestamp(PyObject *py_datetime)
 {
