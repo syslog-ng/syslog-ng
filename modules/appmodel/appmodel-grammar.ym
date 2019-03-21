@@ -70,12 +70,12 @@ application_definition
         : KW_APPLICATION string '[' string ']'
           {
 	    last_application = application_new($2, $4);
-            free($2);
-            free($4);
           }
 	  '{' application_options '}'
 	  {
 	    $$ = last_application;
+            free($2);
+            free($4);
           }
         ;
 

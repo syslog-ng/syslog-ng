@@ -63,10 +63,10 @@ start
         ;
 
 dest_pseudofile
-	: KW_PSEUDOFILE 
-          '(' string						{ last_driver = pseudofile_dd_new($3, configuration); free($3); }
+	: KW_PSEUDOFILE
+          '(' string						{ last_driver = pseudofile_dd_new($3, configuration); }
 	  pseudofile_opts
-	  ')'							{ $$ = last_driver; }
+	  ')'							{ $$ = last_driver; free($3); }
 	;
 
 pseudofile_opts
