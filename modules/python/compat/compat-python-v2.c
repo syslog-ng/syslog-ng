@@ -68,6 +68,27 @@ _datetime_timestamp(PyObject *py_datetime)
   return py_posix_timestamp;
 }
 
+static gboolean
+_datetime_get_gmtoff(PyObject *py_datetime, gint *utcoffset)
+{
+  *utcoffset = -1;
+  PyObject *py_utcoffset = _py_invoke_method_by_name(py_datetime, "utcoffset", NULL, "PyDateTime",
+                                                     "py_datetime_to_logstamp");
+  if (!py_utcoffset)
+    {
+      PyErr_Format(PyExc_ValueError, "Error obtaining timezone info");
+      return FALSE;
+    }
+
+  if (py_utcoffset != Py_None)
+    {
+      *utcoffset = PyDateTime_DELTA_GET_SECONDS(py_utcoffset);
+    }
+
+  Py_XDECREF(py_utcoffset);
+  return TRUE;
+}
+
 gboolean
 py_datetime_to_logstamp(PyObject *py_timestamp, UnixTime *logstamp)
 {
