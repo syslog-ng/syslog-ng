@@ -46,6 +46,27 @@ py_datetime_init(void)
   PyDateTime_IMPORT;
 }
 
+static PyObject *
+_datetime_timestamp(PyObject *py_datetime)
+{
+  PyObject *py_epoch = PyDateTime_FromDateAndTime(1970, 1, 1, 0, 0, 0, 0);
+  PyObject *py_delta = _py_invoke_method_by_name(py_datetime, "__sub__", py_epoch,
+                                                 "PyDateTime", "py_datetime_to_logstamp");
+  if (!py_delta)
+    {
+      Py_XDECREF(py_epoch);
+      PyErr_Format(PyExc_ValueError, "Error calculating POSIX timestamp");
+      return NULL;
+    }
+
+  PyObject *py_posix_timestamp = _py_invoke_method_by_name(py_delta, "total_seconds", NULL,
+                                                           "PyDateTime", "py_datetime_to_logstamp");
+  Py_XDECREF(py_delta);
+  Py_XDECREF(py_epoch);
+
+  return py_posix_timestamp;
+}
+
 gboolean
 py_datetime_to_logstamp(PyObject *py_timestamp, UnixTime *logstamp)
 {
@@ -55,23 +76,13 @@ py_datetime_to_logstamp(PyObject *py_timestamp, UnixTime *logstamp)
       return FALSE;
     }
 
-  PyObject *py_epoch = PyDateTime_FromDateAndTime(1970, 1, 1, 0, 0, 0, 0);
-  PyObject *py_delta = _py_invoke_method_by_name(py_timestamp, "__sub__", py_epoch,
-                                                 "PyDateTime", "py_datetime_to_logstamp");
-  if (!py_delta)
-    {
-      Py_XDECREF(py_epoch);
-      PyErr_Format(PyExc_ValueError, "Error calculating POSIX timestamp");
-      return FALSE;
-    }
+  PyObject *py_posix_timestamp = _datetime_timestamp(py_timestamp);
+  if (!py_posix_timestamp)
+    return FALSE;
 
-  PyObject *py_posix_timestamp = _py_invoke_method_by_name(py_delta, "total_seconds", NULL,
-                                                           "PyDateTime", "py_datetime_to_logstamp");
   gdouble posix_timestamp = PyFloat_AsDouble(py_posix_timestamp);
 
   Py_XDECREF(py_posix_timestamp);
-  Py_XDECREF(py_delta);
-  Py_XDECREF(py_epoch);
 
   logstamp->ut_sec = (time_t) posix_timestamp;
   logstamp->ut_usec = posix_timestamp * 10e5 - logstamp->ut_sec * 10e5;
