@@ -31,8 +31,6 @@
 #define LPFSS_FRAME_READ    0
 #define LPFSS_MESSAGE_READ  1
 
-#define LPFS_FRAME_BUFFER 10
-
 typedef struct _LogProtoFramedServer
 {
   LogProtoServer super;
@@ -201,20 +199,6 @@ read_frame:
                         evt_tag_int("frame_length", self->frame_len));
               log_transport_aux_data_reinit(aux);
               return LPS_ERROR;
-            }
-          if (self->buffer_size < self->super.options->max_buffer_size &&
-              self->frame_len > self->buffer_size - self->buffer_pos)
-            {
-              /* a larger buffer would have prevented moving of data, grow
-               * the buffer up to max_buffer_size */
-
-              self->buffer_size = 16 * (self->frame_len + LPFS_FRAME_BUFFER);
-
-              if (self->buffer_size > self->super.options->max_buffer_size)
-                self->buffer_size = self->super.options->max_buffer_size;
-              self->buffer = g_realloc(self->buffer, self->buffer_size);
-              msg_debug("Resizing input buffer",
-                        evt_tag_int("new_size", self->buffer_size));
             }
           if (self->buffer_pos + self->frame_len > self->buffer_size)
             {
