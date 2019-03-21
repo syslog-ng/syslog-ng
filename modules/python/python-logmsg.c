@@ -22,12 +22,16 @@
  *
  */
 #include "python-logmsg.h"
+#include "compat/compat-python.h"
 #include "python-helpers.h"
 #include "logmsg/logmsg.h"
 #include "messages.h"
 #include "timeutils/cache.h"
 #include "str-utils.h"
 #include "timeutils/unixtime.h"
+#include "timeutils/misc.h"
+
+#include <datetime.h>
 
 int
 py_is_log_message(PyObject *obj)
@@ -268,6 +272,88 @@ py_log_message_set_pri(PyLogMessage *self, PyObject *args, PyObject *kwrds)
   self->msg->pri = pri;
 
   Py_RETURN_NONE;
+}
+
+static PyObject *
+_datetime_timestamp(PyObject *py_datetime)
+{
+  PyObject *py_tzinfo = _py_get_attr_or_null(py_datetime, "tzinfo");
+  if (!py_tzinfo)
+    {
+      PyErr_Format(PyExc_ValueError, "Error obtaining tzinfo");
+      return NULL;
+    }
+  PyObject *py_epoch = PyDateTimeAPI->DateTime_FromDateAndTime(1970, 1, 1, 0, 0, 0, 0, py_tzinfo,
+                       PyDateTimeAPI->DateTimeType);
+
+  PyObject *py_delta = _py_invoke_method_by_name(py_datetime, "__sub__", py_epoch,
+                                                 "PyDateTime", "py_datetime_to_logstamp");
+  if (!py_delta)
+    {
+      Py_XDECREF(py_tzinfo);
+      Py_XDECREF(py_epoch);
+      PyErr_Format(PyExc_ValueError, "Error calculating POSIX timestamp");
+      return NULL;
+    }
+
+  PyObject *py_posix_timestamp = _py_invoke_method_by_name(py_delta, "total_seconds", NULL,
+                                                           "PyDateTime", "py_datetime_to_logstamp");
+  Py_XDECREF(py_tzinfo);
+  Py_XDECREF(py_delta);
+  Py_XDECREF(py_epoch);
+
+  return py_posix_timestamp;
+}
+
+static gboolean
+_datetime_get_gmtoff(PyObject *py_datetime, gint *utcoffset)
+{
+  *utcoffset = -1;
+  PyObject *py_utcoffset = _py_invoke_method_by_name(py_datetime, "utcoffset", NULL, "PyDateTime",
+                                                     "py_datetime_to_logstamp");
+  if (!py_utcoffset)
+    {
+      PyErr_Format(PyExc_ValueError, "Error obtaining timezone info");
+      return FALSE;
+    }
+
+  if (py_utcoffset != Py_None)
+    {
+      *utcoffset = PyDateTime_DELTA_GET_SECONDS(py_utcoffset);
+    }
+
+  Py_XDECREF(py_utcoffset);
+  return TRUE;
+}
+
+static gboolean
+py_datetime_to_logstamp(PyObject *py_timestamp, UnixTime *logstamp)
+{
+  if (!PyDateTime_Check(py_timestamp))
+    {
+      PyErr_Format(PyExc_TypeError, "datetime expected in the first parameter");
+      return FALSE;
+    }
+
+  PyObject *py_posix_timestamp = _datetime_timestamp(py_timestamp);
+  if (!py_posix_timestamp)
+    return FALSE;
+
+  gdouble posix_timestamp = PyFloat_AsDouble(py_posix_timestamp);
+
+  Py_XDECREF(py_posix_timestamp);
+
+  gint local_gmtoff;
+  if (!_datetime_get_gmtoff(py_timestamp, &local_gmtoff))
+    return FALSE;
+  if (local_gmtoff == -1)
+    local_gmtoff = get_local_timezone_ofs(posix_timestamp);
+
+  logstamp->ut_sec = (time_t) posix_timestamp;
+  logstamp->ut_usec = posix_timestamp * 10e5 - logstamp->ut_sec * 10e5;
+  logstamp->ut_gmtoff = local_gmtoff;
+
+  return TRUE;
 }
 
 static PyObject *
