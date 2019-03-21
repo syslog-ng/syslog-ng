@@ -31,6 +31,11 @@
 #if (SYSLOG_NG_ENABLE_PYTHONv2)
 #define PYTHON_BUILTIN_MODULE_NAME "__builtin__"
 #define PYTHON_MODULE_VERSION "python2"
+
+/*
+ * Macro from python3 Include/datetime.h file
+ */
+#define PyDateTime_DELTA_GET_SECONDS(o)      (((PyDateTime_Delta*)o)->seconds)
 #endif
 
 #if (SYSLOG_NG_ENABLE_PYTHONv3)
