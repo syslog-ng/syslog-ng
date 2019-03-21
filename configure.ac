@@ -330,12 +330,8 @@ AC_ARG_WITH(pylint,
               [  --with-pylint=ABSOLUTE_PATH    Specify pylint location])
 
 AC_ARG_WITH(docbook,
-            AC_HELP_STRING([--with-docbook=FILE],
-                           [compiling manpages using docbook in the specified path, if not set online version will be used from http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl]),
-            [ XSL_STYLESHEET=$with_docbook ],
-            [ XSL_STYLESHEET=`find /usr/share/{xml,sgml} -path '*/manpages/docbook.xsl'` ],
-            [ XSL_STYLESHEET=http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl ]
-            )
+            [  --with-docbook=FILE    Compiling manpages using docbook in the specified path, if not set, it will be searched on the system, or online version will be used from http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl]
+            ,,with_docbook="auto")
 
 AC_ARG_ENABLE(manpages, AC_HELP_STRING([ --enable-manpages], [ Enable generation of manpages (default: no)]), , [enable_manpages="no"; XSL_STYLESHEET=""])
 
@@ -1419,6 +1415,21 @@ else
       else
           AC_CHECK_PROG(PYLINT, pylint, pylint)
       fi
+    fi
+fi
+
+dnl ***************************************************************************
+dnl docbook
+dnl ***************************************************************************
+
+if test "x$enable_manpages" != "xno"; then
+    if test "x$with_docbook" = "xauto"; then
+        XSL_STYLESHEET=`find /usr/share/{xml,sgml} -path '*/manpages/docbook.xsl' 2>/dev/null | head -n 1`
+        if test -z "$XSL_STYLESHEET"; then
+            XSL_STYLESHEET="http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl"
+        fi
+    else
+        XSL_STYLESHEET=$with_docbook
     fi
 fi
 
