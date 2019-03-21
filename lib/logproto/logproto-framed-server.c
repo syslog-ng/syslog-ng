@@ -156,7 +156,7 @@ log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_
 {
   LogProtoFramedServer *self = (LogProtoFramedServer *) s;
   LogProtoStatus status;
-  gboolean try_read, need_more_data;
+  gboolean need_more_data;
 
   if (G_UNLIKELY(!self->buffer))
     {
@@ -168,16 +168,13 @@ log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_
     {
     case LPFSS_FRAME_READ:
 
-      try_read = TRUE;
-
-read_frame:
       if (!log_proto_framed_server_extract_frame_length(self, &need_more_data))
         {
           /* invalid frame header */
           log_transport_aux_data_reinit(aux);
           return LPS_ERROR;
         }
-      if (need_more_data && try_read)
+      if (need_more_data)
         {
           status = log_proto_framed_server_fetch_data(self, may_read, aux);
           if (status != LPS_SUCCESS)
@@ -185,8 +182,13 @@ read_frame:
               log_transport_aux_data_reinit(aux);
               return status;
             }
-          try_read = FALSE;
-          goto read_frame;
+
+          if (!log_proto_framed_server_extract_frame_length(self, &need_more_data))
+            {
+              /* invalid frame header */
+              log_transport_aux_data_reinit(aux);
+              return LPS_ERROR;
+            }
         }
 
       if (!need_more_data)
@@ -216,7 +218,6 @@ read_frame:
       break;
     case LPFSS_MESSAGE_READ:
 
-      try_read = TRUE;
 read_message:
       /* NOTE: here we can assume that the complete message fits into
        * the buffer because of the checks/move operation in the
@@ -234,17 +235,28 @@ read_message:
           self->half_message_in_buffer = FALSE;
           return LPS_SUCCESS;
         }
-      if (try_read)
+
+      status = log_proto_framed_server_fetch_data(self, may_read, aux);
+      if (status != LPS_SUCCESS)
         {
-          status = log_proto_framed_server_fetch_data(self, may_read, aux);
-          if (status != LPS_SUCCESS)
-            {
-              log_transport_aux_data_reinit(aux);
-              return status;
-            }
-          try_read = FALSE;
-          goto read_message;
+          log_transport_aux_data_reinit(aux);
+          return status;
         }
+
+      if (self->buffer_end - self->buffer_pos >= self->frame_len)
+        {
+          /* ok, we already have the complete message */
+
+          *msg = &self->buffer[self->buffer_pos];
+          *msg_len = self->frame_len;
+          self->buffer_pos += self->frame_len;
+          self->state = LPFSS_FRAME_READ;
+
+          /* we have the full message here so reset the half message flag */
+          self->half_message_in_buffer = FALSE;
+          return LPS_SUCCESS;
+        }
+
       break;
     default:
       break;
