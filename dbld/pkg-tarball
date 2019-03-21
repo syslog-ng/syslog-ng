@@ -2,7 +2,7 @@
 
 cd /source
 
-VERSION=`cat /source/VERSION`
+VERSION=`/source/scripts/version.sh`
 MODE=$1
 SYSLOGNG_DIR=syslog-ng-${VERSION}
 SYSLOGNG_TARBALL=${SYSLOGNG_DIR}.tar.gz

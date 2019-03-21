@@ -4,6 +4,7 @@ EXTRA_DIST	+= scripts/update-patterndb.in \
 	scripts/get-libjvm-path.sh	\
 	scripts/make-and-check.sh	\
 	scripts/rm-extra-msg-sentinel.sh	\
+	scripts/version.sh	\
 	scripts/style-checker.sh
 
 install-exec-local:

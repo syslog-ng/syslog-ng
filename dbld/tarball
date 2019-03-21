@@ -3,7 +3,7 @@
 set -e
 
 cd /source
-VERSION=`cat VERSION`
+VERSION=`scripts/version.sh`
 SYSLOGNG_DIR=syslog-ng-${VERSION}
 SYSLOGNG_TARBALL=${SYSLOGNG_DIR}.tar.gz
 
