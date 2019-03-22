@@ -151,13 +151,21 @@ Test(type_hints,test_int32_cast)
   GError *error = NULL;
   gint32 value;
 
-  cr_assert_eq(type_cast_to_int32("12345", &value, &error), TRUE, "Type cast of \"12345\" to gint32 failed");
+  cr_assert(type_cast_to_int32("12345", &value, &error), "Type cast of \"12345\" to gint32 failed");
   cr_assert_eq(value,12345);
   cr_assert_null(error);
 
   /* test for invalid string */
-  cr_assert_eq(type_cast_to_int32("12345a", &value, &error), FALSE,
-               "Type cast of invalid string to gint32 should be failed");
+  cr_assert_not(type_cast_to_int32("12345a", &value, &error),
+                "Type cast of invalid string to gint32 should be failed");
+  cr_assert_not_null(error);
+  cr_assert_eq(error->domain, TYPE_HINTING_ERROR);
+  cr_assert_eq(error->code, TYPE_HINTING_INVALID_CAST);
+  g_clear_error(&error);
+
+  /* empty string */
+  cr_assert_not(type_cast_to_int32("", &value, &error),
+                "Type cast of empty string to gint32 should be failed");
   cr_assert_not_null(error);
   cr_assert_eq(error->domain, TYPE_HINTING_ERROR);
   cr_assert_eq(error->code, TYPE_HINTING_INVALID_CAST);
@@ -170,17 +178,24 @@ Test(type_hints,test_int64_cast)
   GError *error = NULL;
   gint64 value;
 
-  cr_assert_eq(type_cast_to_int64("12345", &value, &error), TRUE, "Type cast of \"12345\" to gint64 failed");
+  cr_assert(type_cast_to_int64("12345", &value, &error), "Type cast of \"12345\" to gint64 failed");
   cr_assert_eq(value,12345);
   cr_assert_null(error);
 
   /* test for invalid string */
-  cr_assert_eq(type_cast_to_int64("12345a", &value, &error), FALSE,
-               "Type cast of invalid string to gint64 should be failed");
+  cr_assert_not(type_cast_to_int64("12345a", &value, &error),
+                "Type cast of invalid string to gint64 should be failed");
   cr_assert_not_null(error);
   cr_assert_eq(error->domain, TYPE_HINTING_ERROR);
   cr_assert_eq(error->code, TYPE_HINTING_INVALID_CAST);
+  g_clear_error(&error);
 
+  /* empty string */
+  cr_assert_not(type_cast_to_int64("", &value, &error),
+                "Type cast of empty string to gint64 should be failed");
+  cr_assert_not_null(error);
+  cr_assert_eq(error->domain, TYPE_HINTING_ERROR);
+  cr_assert_eq(error->code, TYPE_HINTING_INVALID_CAST);
   g_clear_error(&error);
 }
 
@@ -204,33 +219,33 @@ ParameterizedTest(StringDoublePair *string_value_pair, type_hints, test_double_c
   gdouble value;
   GError *error = NULL;
 
-  cr_assert_eq(type_cast_to_double(string_value_pair->string, &value, &error), TRUE,
-               "Type cast of \"%s\" to double failed", string_value_pair->string);
+  cr_assert(type_cast_to_double(string_value_pair->string, &value, &error),
+            "Type cast of \"%s\" to double failed", string_value_pair->string);
   cr_assert_eq(value, string_value_pair->value);
   cr_assert_null(error);
 }
 
 ParameterizedTestParameters(type_hints, test_invalid_double_cast)
 {
-  static gchar *string_list[] =
+  static StringDoublePair string_list[] =
   {
-    "2.0bad",
-    "bad",
-    "",
-    "1e1000000",
-    "-1e1000000"
+    {"2.0bad", },
+    {"bad", },
+    {"", },
+    {"1e1000000", },
+    {"-1e1000000" },
   };
 
-  return cr_make_param_array(gchar *, string_list, sizeof(string_list) / sizeof(string_list[0]));
+  return cr_make_param_array(StringDoublePair, string_list, sizeof(string_list) / sizeof(string_list[0]));
 }
 
-ParameterizedTest(gchar *string, type_hints, test_invalid_double_cast)
+ParameterizedTest(StringDoublePair *string_value_pair, type_hints, test_invalid_double_cast)
 {
   gdouble value;
   GError *error = NULL;
 
-  cr_assert_eq(type_cast_to_double(string, &value, &error), FALSE,
-               "Type cast of invalid string (%s) to double should be failed",string);
+  cr_assert_not(type_cast_to_double(string_value_pair->string, &value, &error),
+                "Type cast of invalid string (%s) to double should be failed",string_value_pair->string);
   cr_assert_not_null(error);
   cr_assert_eq(error->domain, TYPE_HINTING_ERROR);
   cr_assert_eq(error->code, TYPE_HINTING_INVALID_CAST);

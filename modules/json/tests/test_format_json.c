@@ -149,9 +149,19 @@ Test(format_json, test_format_json_on_error)
   configuration->template_options.on_error = ON_ERROR_DROP_MESSAGE | ON_ERROR_SILENT;
   assert_template_format("$(format-json x=y bad=boolean(blah) foo=bar)",
                          "");
+  assert_template_format("$(format-json x=y bad=boolean($unsetvalue) foo=bar)",
+                         "");
   assert_template_format("$(format-json x=y bad=int32(blah) foo=bar)",
                          "");
+  assert_template_format("$(format-json x=y bad=int32($unsetvalue) foo=bar)",
+                         "");
   assert_template_format("$(format-json x=y bad=int64(blah) foo=bar)",
+                         "");
+  assert_template_format("$(format-json x=y bad=int64($unsetvalue) foo=bar)",
+                         "");
+  assert_template_format("$(format-json x=y bad=double(blah) foo=bar)",
+                         "");
+  assert_template_format("$(format-json x=y bad=double($unsetvalue) foo=bar)",
                          "");
 
   configuration->template_options.on_error = ON_ERROR_DROP_PROPERTY | ON_ERROR_SILENT;
@@ -160,6 +170,8 @@ Test(format_json, test_format_json_on_error)
   assert_template_format("$(format-json x=y bad=boolean(blah))",
                          "{\"x\":\"y\"}");
   assert_template_format("$(format-json x=y bad=int32(blah))",
+                         "{\"x\":\"y\"}");
+  assert_template_format("$(format-json x=y bad=int32($unsetvalue))",
                          "{\"x\":\"y\"}");
   assert_template_format("$(format-json x=y bad=int64(blah))",
                          "{\"x\":\"y\"}");
@@ -171,6 +183,8 @@ Test(format_json, test_format_json_on_error)
                          "{\"x\":\"y\",\"bad\":\"blah\"}");
   assert_template_format("$(format-json x=y bad=int32(blah))",
                          "{\"x\":\"y\",\"bad\":\"blah\"}");
+  assert_template_format("$(format-json x=y bad=int32($unsetvalue))",
+                         "{\"x\":\"y\",\"bad\":\"\"}");
   assert_template_format("$(format-json x=y bad=int64(blah))",
                          "{\"x\":\"y\",\"bad\":\"blah\"}");
 

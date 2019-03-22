@@ -228,44 +228,80 @@ tf_json_value(const gchar *name, const gchar *prefix,
       tf_json_append_list(name, value, value_len, state);
       break;
     case TYPE_HINT_INT32:
-    case TYPE_HINT_INT64:
-    case TYPE_HINT_DOUBLE:
-    case TYPE_HINT_BOOLEAN:
     {
       gint32 i32;
-      gint64 i64;
-      gdouble d;
-      gboolean b;
-      gboolean r = FALSE, fail = FALSE;
       const gchar *v = value;
       gsize v_len = value_len;
 
-      if (type == TYPE_HINT_INT32 &&
-          (fail = !type_cast_to_int32(value, &i32, NULL)) == TRUE)
-        r = type_cast_drop_helper(on_error, value, "int32");
-      else if (type == TYPE_HINT_INT64 &&
-               (fail = !type_cast_to_int64(value, &i64, NULL)) == TRUE)
-        r = type_cast_drop_helper(on_error, value, "int64");
-      else if (type == TYPE_HINT_DOUBLE &&
-               (fail = !type_cast_to_double(value, &d, NULL)) == TRUE)
-        r = type_cast_drop_helper(on_error, value, "double");
-      else if (type == TYPE_HINT_BOOLEAN)
+      if (!type_cast_to_int32(value, &i32, NULL))
         {
-          if ((fail = !type_cast_to_boolean(value, &b, NULL)) == TRUE)
-            {
-              r = type_cast_drop_helper(on_error, value, "boolean");
-            }
+          if ((on_error & ON_ERROR_FALLBACK_TO_STRING))
+            tf_json_append_value(name, v, v_len, state, TRUE);
           else
-            {
-              v = b ? "true" : "false";
-              v_len = -1;
-            }
+            return type_cast_drop_helper(on_error, value, "int32");
         }
-      if (fail &&
-          !(on_error & ON_ERROR_FALLBACK_TO_STRING))
-        return r;
+      else
+        {
+          tf_json_append_value(name, v, v_len, state, FALSE);
+        }
+      break;
+    }
+    case TYPE_HINT_INT64:
+    {
+      gint64 i64;
+      const gchar *v = value;
+      gsize v_len = value_len;
 
-      tf_json_append_value(name, v, v_len, state, fail);
+      if (!type_cast_to_int64(value, &i64, NULL))
+        {
+          if ((on_error & ON_ERROR_FALLBACK_TO_STRING))
+            tf_json_append_value(name, v, v_len, state, TRUE);
+          else
+            return type_cast_drop_helper(on_error, value, "int64");
+        }
+      else
+        {
+          tf_json_append_value(name, v, v_len, state, FALSE);
+        }
+      break;
+    }
+    case TYPE_HINT_DOUBLE:
+    {
+      gdouble d;
+      const gchar *v = value;
+      gsize v_len = value_len;
+
+      if (!type_cast_to_double(value, &d, NULL))
+        {
+          if ((on_error & ON_ERROR_FALLBACK_TO_STRING))
+            tf_json_append_value(name, v, v_len, state, TRUE);
+          else
+            return type_cast_drop_helper(on_error, value, "double");
+        }
+      else
+        {
+          tf_json_append_value(name, v, v_len, state, FALSE);
+        }
+      break;
+    }
+    case TYPE_HINT_BOOLEAN:
+    {
+      gboolean b;
+      const gchar *v = value;
+      gsize v_len = value_len;
+
+      if (!type_cast_to_boolean(value, &b, NULL))
+        {
+          if (!(on_error & ON_ERROR_FALLBACK_TO_STRING))
+            return type_cast_drop_helper(on_error, value, "boolean");
+          tf_json_append_value(name, v, v_len, state, TRUE);
+        }
+      else
+        {
+          v = b ? "true" : "false";
+          v_len = -1;
+          tf_json_append_value(name, v, v_len, state, FALSE);
+        }
       break;
     }
     }
