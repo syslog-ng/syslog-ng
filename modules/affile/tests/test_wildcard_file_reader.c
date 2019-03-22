@@ -121,6 +121,7 @@ _init(void)
 static void
 _teardown(void)
 {
+  log_pipe_deinit(&reader->super.super);
   log_pipe_unref(&reader->super.super);
   free(test_event);
   app_shutdown();
@@ -205,4 +206,3 @@ Test(test_wildcard_file_reader, status_finished_then_delete)
   cr_assert_eq(test_event->deleted_eof_called, TRUE);
   cr_assert_eq(test_event->finished_called, TRUE);
 }
-
