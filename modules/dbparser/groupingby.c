@@ -128,7 +128,6 @@ void
 grouping_by_set_time(GroupingBy *self, const UnixTime *ls)
 {
   GTimeVal now;
-  gchar buf[256];
 
   /* clamp the current time between the timestamp of the current message
    * (low limit) and the current system time (high limit).  This ensures
@@ -144,10 +143,7 @@ grouping_by_set_time(GroupingBy *self, const UnixTime *ls)
   timer_wheel_set_time(self->timer_wheel, now.tv_sec);
   msg_debug("Advancing grouping-by() current time because of an incoming message",
             evt_tag_long("utc", timer_wheel_get_time(self->timer_wheel)),
-            evt_tag_str("location",
-                        log_expr_node_format_location(self->super.super.super.expr_node,
-                                                      buf, sizeof(buf))));
-
+            log_pipe_location_tag(&self->super.super.super));
 }
 
 /*
@@ -163,7 +159,6 @@ _grouping_by_timer_tick(GroupingBy *self)
 {
   GTimeVal now;
   glong diff;
-  gchar buf[256];
 
   g_static_mutex_lock(&self->lock);
   cached_g_current_time(&now);
@@ -176,9 +171,7 @@ _grouping_by_timer_tick(GroupingBy *self)
       timer_wheel_set_time(self->timer_wheel, timer_wheel_get_time(self->timer_wheel) + diff_sec);
       msg_debug("Advancing grouping-by() current time because of timer tick",
                 evt_tag_long("utc", timer_wheel_get_time(self->timer_wheel)),
-                evt_tag_str("location",
-                            log_expr_node_format_location(self->super.super.super.expr_node,
-                                                          buf, sizeof(buf))));
+                log_pipe_location_tag(&self->super.super.super));
       /* update last_tick, take the fraction of the seconds not calculated into this update into account */
 
       self->last_tick = now;
@@ -249,13 +242,9 @@ grouping_by_emit_synthetic(GroupingBy *self, CorrellationContext *context)
     }
   else
     {
-      gchar buf[256];
-
       msg_debug("groupingby() dropping context, because having() is FALSE",
                 evt_tag_str("key", context->key.session_id),
-                evt_tag_str("location",
-                            log_expr_node_format_location(self->super.super.super.expr_node,
-                                                          buf, sizeof(buf))));
+                log_pipe_location_tag(&self->super.super.super));
     }
 }
 
@@ -264,14 +253,12 @@ grouping_by_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data)
 {
   CorrellationContext *context = user_data;
   GroupingBy *self = (GroupingBy *) timer_wheel_get_associated_data(wheel);
-  gchar buf[256];
 
   msg_debug("Expiring grouping-by() correllation context",
             evt_tag_long("utc", timer_wheel_get_time(wheel)),
             evt_tag_str("context-id", context->key.session_id),
-            evt_tag_str("location",
-                        log_expr_node_format_location(self->super.super.super.expr_node,
-                                                      buf, sizeof(buf))));
+            log_pipe_location_tag(&self->super.super.super));
+
   grouping_by_emit_synthetic(self, context);
   g_hash_table_remove(self->correllation->state, &context->key);
 
@@ -295,7 +282,6 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
 {
   GString *buffer = g_string_sized_new(32);
   CorrellationContext *context = NULL;
-  gchar buf[256];
 
   g_static_mutex_lock(&self->lock);
   grouping_by_set_time(self, &msg->timestamps[LM_TS_STAMP]);
@@ -314,9 +300,8 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
                     evt_tag_str("key", buffer->str),
                     evt_tag_int("timeout", self->timeout),
                     evt_tag_int("expiration", timer_wheel_get_time(self->timer_wheel) + self->timeout),
-                    evt_tag_str("location",
-                                log_expr_node_format_location(self->super.super.super.expr_node,
-                                                              buf, sizeof(buf))));
+                    log_pipe_location_tag(&self->super.super.super));
+
           context = correllation_context_new(&key);
           g_hash_table_insert(self->correllation->state, &context->key, context);
           g_string_steal(buffer);
@@ -328,9 +313,7 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
                     evt_tag_int("timeout", self->timeout),
                     evt_tag_int("expiration", timer_wheel_get_time(self->timer_wheel) + self->timeout),
                     evt_tag_int("num_messages", context->messages->len),
-                    evt_tag_str("location",
-                                log_expr_node_format_location(self->super.super.super.expr_node,
-                                                              buf, sizeof(buf))));
+                    log_pipe_location_tag(&self->super.super.super));
         }
 
       g_ptr_array_add(context->messages, log_msg_ref(msg));
@@ -341,9 +324,8 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
                       evt_tag_str("key", context->key.session_id),
                       evt_tag_int("timeout", self->timeout),
                       evt_tag_int("num_messages", context->messages->len),
-                      evt_tag_str("location",
-                                  log_expr_node_format_location(self->super.super.super.expr_node,
-                                                                buf, sizeof(buf))));
+                      log_pipe_location_tag(&self->super.super.super));
+
           /* close down state */
           if (context->timer)
             timer_wheel_del_timer(self->timer_wheel, context->timer);
