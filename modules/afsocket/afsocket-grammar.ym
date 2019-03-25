@@ -151,6 +151,7 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 %token KW_TCP_KEEPALIVE_INTVL
 %token KW_LISTEN_BACKLOG
 %token KW_SPOOF_SOURCE
+%token KW_SPOOF_SOURCE_MAX_MSGLEN
 
 %token KW_KEEP_ALIVE
 %token KW_MAX_CONNECTIONS
@@ -612,6 +613,7 @@ dest_failback_probe_option
 dest_afinet_udp_option
 	: dest_afinet_option
 	| KW_SPOOF_SOURCE '(' yesno ')'		{ afinet_dd_set_spoof_source(last_driver, $3); }
+	| KW_SPOOF_SOURCE_MAX_MSGLEN '(' positive_integer ')' { afinet_dd_set_spoof_source_max_msglen(last_driver, $3); }
 	;
 
 dest_afinet_tcp_params

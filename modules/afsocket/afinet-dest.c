@@ -98,6 +98,37 @@ afinet_dd_set_spoof_source(LogDriver *s, gboolean enable)
 #endif
 }
 
+void
+afinet_dd_set_spoof_source_max_msglen(LogDriver *s, guint max_msglen)
+{
+#if SYSLOG_NG_ENABLE_SPOOF_SOURCE
+  AFInetDestDriver *self = (AFInetDestDriver *) s;
+  gint af_max_dgram_size = 0;
+
+  /* maximum ip datagram is 65535, minus IP + UDP header */
+  switch (self->super.transport_mapper->address_family)
+    {
+    case AF_INET6:
+      af_max_dgram_size = 65535 - 40 - 8;
+      break;
+    case AF_INET:
+      af_max_dgram_size = 65535 - 20 - 8;
+      break;
+    default:
+      g_assert_not_reached();
+    }
+  if (max_msglen > af_max_dgram_size)
+    {
+      msg_warning("spoof-source-max-msglen() value is too large, limiting to the maximum value",
+                  evt_tag_int("value", max_msglen),
+                  evt_tag_int("maximum", af_max_dgram_size));
+      max_msglen = af_max_dgram_size;
+    }
+
+  self->spoof_source_max_msglen = max_msglen;
+#endif
+}
+
 static gint
 afinet_dd_verify_callback(gint ok, X509_STORE_CTX *ctx, gpointer user_data)
 {
@@ -528,12 +559,12 @@ afinet_dd_spoof_write_message(AFInetDestDriver *self, LogMessage *msg, const Log
   g_static_mutex_lock(&self->lnet_lock);
 
   if (!self->lnet_buffer)
-    self->lnet_buffer = g_string_sized_new(self->spoof_source_maxmsglen);
+    self->lnet_buffer = g_string_sized_new(self->spoof_source_max_msglen);
 
   log_writer_format_log(self->super.writer, msg, self->lnet_buffer);
 
-  if (self->lnet_buffer->len > self->spoof_source_maxmsglen)
-    g_string_truncate(self->lnet_buffer, self->spoof_source_maxmsglen);
+  if (self->lnet_buffer->len > self->spoof_source_max_msglen)
+    g_string_truncate(self->lnet_buffer, self->spoof_source_max_msglen);
 
   gboolean success = afinet_dd_construct_ip_packet(self, msg, self->lnet_buffer);
 
@@ -627,7 +658,7 @@ afinet_dd_new_instance(TransportMapper *transport_mapper, gchar *hostname, Globa
 
 #if SYSLOG_NG_ENABLE_SPOOF_SOURCE
   g_static_mutex_init(&self->lnet_lock);
-  self->spoof_source_maxmsglen = 1024;
+  self->spoof_source_max_msglen = 1024;
 #endif
   return self;
 }

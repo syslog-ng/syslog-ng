@@ -47,7 +47,7 @@ typedef struct _AFInetDestDriver
   struct libnet_context *lnet_ctx;
   GStaticMutex lnet_lock;
   GString *lnet_buffer;
-  gint spoof_source_maxmsglen;
+  guint spoof_source_max_msglen;
 #endif
   gchar *primary;
   AFInetDestDriverFailover *failover;
@@ -65,6 +65,7 @@ void afinet_dd_set_destport(LogDriver *self, gchar *service);
 void afinet_dd_set_localip(LogDriver *self, gchar *ip);
 void afinet_dd_set_sync_freq(LogDriver *self, gint sync_freq);
 void afinet_dd_set_spoof_source(LogDriver *self, gboolean enable);
+void afinet_dd_set_spoof_source_max_msglen(LogDriver *s, guint max_msglen);
 void afinet_dd_set_tls_context(LogDriver *s, TLSContext *tls_context);
 
 gint afinet_dd_determine_port(const TransportMapper *transport_mapper, const gchar *service_port);
