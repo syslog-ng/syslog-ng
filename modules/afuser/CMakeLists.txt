@@ -18,7 +18,7 @@ bison_target(AfuserGrammar
   ${CMAKE_CURRENT_BINARY_DIR}/afuser-grammar.c
 COMPILE_FLAGS ${BISON_FLAGS})
 
-option(ENABLE_AFUSER "Enable afuser module" ON)
+module_switch(ENABLE_AFUSER "Enable afuser module")
 
 if (ENABLE_AFUSER)
   add_library(afuser MODULE ${AFUSER_SOURCES})

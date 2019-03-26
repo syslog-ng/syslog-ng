@@ -14,12 +14,7 @@ generate_y_from_ym(modules/redis/redis-grammar)
 
 find_package(Hiredis)
 
-if (HIREDIS_FOUND)
-  option(ENABLE_REDIS "Enable redis module" ON)
-else()
-  option(ENABLE_REDIS "Enable redis module" OFF)
-endif()
-
+module_switch(ENABLE_REDIS "Enable redis module" HIREDIS_FOUND)
 if (ENABLE_REDIS)
   bison_target(RedisGrammar
       ${CMAKE_CURRENT_BINARY_DIR}/redis-grammar.y

@@ -24,6 +24,7 @@ include(CheckIncludeFiles)
 include(ExternalProject)
 include(external_or_find_package)
 include(add_tests)
+include(module_switch)
 
 set(MEMORYCHECK_SUPPRESSIONS_FILE "${PROJECT_SOURCE_DIR}/tests/valgrind/unit-test-leak.supp")
 set(MEMORYCHECK_COMMAND_OPTIONS "--num-callers=30 --sim-hints=no-nptl-pthread-stackcache --gen-suppressions=all --leak-check=full --freelist-vol=200000000 --freelist-big-blocks=10000000 --malloc-fill=55 --free-fill=AA")
@@ -88,7 +89,7 @@ check_struct_member ("struct msghdr" "msg_control" "sys/types.h;sys/socket.h" SY
 
 include(CheckIPv6)
 
-option(ENABLE_IPV6 "Enable IPv6" ON)
+module_switch(ENABLE_IPV6 "Enable IPv6")
 if (ENABLE_IPV6)
     set(SYSLOG_NG_ENABLE_IPV6 ${HAVE_IPV6})
 endif()
@@ -182,11 +183,7 @@ find_package(Inotify)
 find_package(LIBCAP)
 
 find_package(systemd)
-if (Libsystemd_FOUND)
-  option (ENABLE_JOURNALD "Enable systemd-journal" ON)
-else()
-  option (ENABLE_JOURNALD "Enable systemd-journal" OFF)
-endif()
+module_switch(ENABLE_JOURNALD "Enable systemd-journal" Libsystemd_FOUND)
 set(WITH_SYSTEMD_JOURNAL "system" CACHE STRING "Link against the system supplied or the wrapper library")
 set_property(CACHE WITH_SYSTEMD_JOURNAL PROPERTY STRINGS system wrapper)
 

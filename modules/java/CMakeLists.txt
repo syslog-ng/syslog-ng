@@ -66,22 +66,10 @@ bison_target(ModJavaGrammar
 
 find_package(Java 1.7)
 
-if (JAVA_FOUND AND Java_JAVAH_EXECUTABLE)
-  OPTION(ENABLE_JAVA "Enable java module" ON)
-else()
-  OPTION(ENABLE_JAVA "Enable java module" OFF)
-endif()
-
+module_switch(ENABLE_JAVA "Enable java module" JAVA_FOUND Java_JAVAH_EXECUTABLE)
 if (ENABLE_JAVA)
 
-find_package(JNI)
-
-if (Java_JAVAH_EXECUTABLE)
-  OPTION(ENABLE_JAVA "Enable java module" ON)
-else()
-  OPTION(ENABLE_JAVA "Enable java module" OFF)
-endif()
-
+  find_package(JNI)
   include(UseJava)
 
   add_jar(syslog-ng-core

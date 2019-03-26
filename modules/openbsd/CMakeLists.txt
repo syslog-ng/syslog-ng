@@ -1,8 +1,9 @@
 if (CMAKE_SYSTEM_NAME EQUAL "OpenBSD")
-    option(ENABLE_OPENBSD_SYS_DRIVER "Enable openBSD system source driver" ON)
+  set(IS_OPENBSD "ON")
 else()
-    option(ENABLE_OPENBSD_SYS_DRIVER "Enable openBSD system source driver" OFF)
+  set(IS_OPENBSD "OFF")
 endif()
+module_switch(ENABLE_OPENBSD_SYS_DRIVER "Enable openBSD system source driver" IS_OPENBSD)
 
 if (ENABLE_OPENBSD_SYS_DRIVER AND NOT CMAKE_SYSTEM_NAME EQUAL "OpenBSD")
     message(FATAL_ERROR "OpenBSD source was explicitely enabled, but OS is not OpenBSD")

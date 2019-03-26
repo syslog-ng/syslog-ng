@@ -1,4 +1,4 @@
-option(ENABLE_GETENT "Enable getent" ON)
+module_switch(ENABLE_GETENT "Enable getent")
 
 if (NOT ENABLE_GETENT)
   return ()

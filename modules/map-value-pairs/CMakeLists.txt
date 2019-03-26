@@ -1,4 +1,4 @@
-option(ENABLE_MAP_VALUE_PAIRS "Enable map-value-pairs" ON)
+module_switch(ENABLE_MAP_VALUE_PAIRS "Enable map-value-pairs")
 
 if (NOT ENABLE_MAP_VALUE_PAIRS)
   return()

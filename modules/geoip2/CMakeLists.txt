@@ -1,9 +1,6 @@
 find_package(LibMaxMindDB)
-if (LIBMAXMINDDB_FOUND)
-  option(ENABLE_GEOIP2 "Enable geoip2 parser and template function" ON)
-else()
-  option(ENABLE_GEOIP2 "Enable geoip2 parser and template function" OFF)
-endif()
+
+module_switch(ENABLE_GEOIP2 "Enable geoip2 parser and template function" LIBMAXMINDDB_FOUND)
 
 if (NOT ENABLE_GEOIP2)
   return ()

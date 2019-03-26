@@ -16,8 +16,7 @@ bison_target(@PLUGIN_NAME@Grammar
     ${CMAKE_CURRENT_BINARY_DIR}/@PLUGIN_NAME@-grammar.c
 COMPILE_FLAGS ${BISON_FLAGS})
 
-option(ENABLE_@PLUGIN_NAME_US@ "Enable @PLUGIN_NAME@" ON)
-
+module_switch(ENABLE_@PLUGIN_NAME_US@ "Enable @PLUGIN_NAME@")
 if (ENABLE_@PLUGIN_NAME_US@)
   add_library(@PLUGIN_NAME_US@ SHARED ${@PLUGIN_NAME@_SOURCES})
   target_include_directories(@PLUGIN_NAME_US@

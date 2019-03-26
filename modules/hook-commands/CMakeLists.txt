@@ -13,7 +13,7 @@ set(HOOK_COMMANDS_SOURCES
 
 generate_y_from_ym(modules/hook-commands/hook-commands-grammar)
 
-option(ENABLE_HOOK_COMMANDS "Enable hook-commands module" ON)
+module_switch(ENABLE_HOOK_COMMANDS "Enable hook-commands module")
 
 if (ENABLE_HOOK_COMMANDS)
   bison_target(HookCommandsGrammar
@@ -30,4 +30,3 @@ if (ENABLE_HOOK_COMMANDS)
 
   install(TARGETS hook-commands LIBRARY DESTINATION lib/syslog-ng/ COMPONENT hook-commands)
 endif()
-

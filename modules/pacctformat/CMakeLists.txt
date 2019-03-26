@@ -5,10 +5,11 @@ set(PACCT_FORMAT_SOURCES
 )
 
 if (CMAKE_SYSTEM_NAME STREQUAL Linux)
-    option(ENABLE_PACCT "Enable support for reading Process Accounting files (EXPERIMENTAL, Linux only)." ON)
+  set(IS_LINUX "ON")
 else()
-    option(ENABLE_PACCT "Enable support for reading Process Accounting files (EXPERIMENTAL, Linux only)." OFF)
+  set(IS_LINUX "OFF")
 endif()
+module_switch(ENABLE_PACCT "Enable support for reading Process Accounting files (EXPERIMENTAL, Linux only)." IS_LINUX)
 
 if (ENABLE_PACCT)
     include_directories(${CMAKE_CURRENT_SOURCE_DIR})

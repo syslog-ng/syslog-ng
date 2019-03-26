@@ -23,12 +23,7 @@ if (SYSLOG_NG_HAVE_RIEMANN_MICROSECONDS)
   add_definitions("-DSYSLOG_NG_HAVE_RIEMANN_MICROSECONDS=1")
 endif()
 
-if (Riemann_FOUND)
-    option(ENABLE_RIEMANN "Enable riemann destination" ON)
-else()
-    option(ENABLE_RIEMANN "Enable riemann destination" OFF)
-endif()
-
+module_switch(ENABLE_RIEMANN "Enable riemann destination" Riemann_FOUND)
 if (NOT ENABLE_RIEMANN)
   return()
 endif()

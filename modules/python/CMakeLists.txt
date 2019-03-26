@@ -1,9 +1,4 @@
-if (PYTHONLIBS_FOUND)
-  option(ENABLE_PYTHON "Enable Python module" ON)
-else()
-  option(ENABLE_PYTHON "Enable Python module" OFF)
-endif()
-
+module_switch(ENABLE_PYTHON "Enable Python module" PYTHONLIBS_FOUND)
 if (NOT ENABLE_PYTHON)
   return()
 endif ()

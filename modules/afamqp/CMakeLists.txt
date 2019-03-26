@@ -1,11 +1,6 @@
 find_package(RabbitMQ)
 
-if (RabbitMQ_FOUND)
-  option(ENABLE_AFAMQP "Enable afamqp module" ON)
-else()
-  option(ENABLE_AFAMQP "Enable afamqp module" OFF)
-endif()
-
+module_switch(ENABLE_AFAMQP "Enable afamqp module" RabbitMQ_FOUND)
 if (ENABLE_AFAMQP)
 
 set(AFAMQP_HEADERS

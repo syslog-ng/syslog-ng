@@ -11,7 +11,7 @@ set(AFSTOMP_SOURCES
 
 set(AFSTOMP_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 
-option(ENABLE_STOMP "Enable STOMP destination" ON)
+module_switch(ENABLE_STOMP "Enable STOMP destination")
 
 if (ENABLE_STOMP)
     generate_y_from_ym(modules/afstomp/afstomp-grammar)
