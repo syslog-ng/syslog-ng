@@ -438,3 +438,16 @@ stats_query_index_counter(StatsCluster *cluster, gint type)
 {
   _add_counter_to_index(cluster, type);
 }
+
+static void
+_deindex_cluster_helper(StatsCluster *cluster, gint type, StatsCounterItem *item, gpointer user_data)
+{
+  if (stats_cluster_is_indexed(cluster, type))
+    _remove_counter_from_index(cluster, type);
+}
+
+void
+stats_query_deindex_cluster(StatsCluster *cluster)
+{
+  stats_cluster_foreach_counter(cluster, _deindex_cluster_helper, NULL);
+}

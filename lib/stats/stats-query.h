@@ -43,4 +43,5 @@ void stats_query_deinit(void);
 
 void stats_register_view(gchar *name, GList *queries, const AggregatedMetricsCb aggregate);
 void stats_query_index_counter(StatsCluster *cluster, gint type);
+void stats_query_deindex_cluster(StatsCluster *cluster);
 #endif
