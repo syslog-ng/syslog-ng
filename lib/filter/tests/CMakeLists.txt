@@ -42,7 +42,9 @@ add_unit_test(CRITERION TARGET test_filters_netmask SOURCES ${TEST_FILTERS_NETMA
 
 add_unit_test(CRITERION TARGET test_filters_in_list DEPENDS syslogformat)
 
+if (ENABLE_IPV6)
 add_unit_test(CRITERION TARGET test_filters_netmask6 SOURCES ${TEST_FILTERS_NETMASK6_SOURCE} DEPENDS syslogformat)
+endif()
 
 add_unit_test(CRITERION TARGET test_filters_statistics DEPENDS syslogformat)
 
