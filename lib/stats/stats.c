@@ -126,6 +126,7 @@ stats_prune_cluster(StatsCluster *sc, StatsTimerState *st)
       if ((st->oldest_counter) == 0 || st->oldest_counter > tstamp)
         st->oldest_counter = tstamp;
       st->dropped_counters++;
+      stats_query_deindex_cluster(sc);
     }
   return expired;
 }
