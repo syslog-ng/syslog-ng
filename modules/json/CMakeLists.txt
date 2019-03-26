@@ -41,6 +41,5 @@ if (JSONC_INTERNAL)
 endif()
 
     install(TARGETS json-plugin LIBRARY DESTINATION lib/syslog-ng/ COMPONENT json)
+    add_test_subdirectory(tests)
 endif()
-
-add_test_subdirectory(tests)
