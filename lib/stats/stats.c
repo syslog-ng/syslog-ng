@@ -115,7 +115,7 @@ typedef struct _StatsTimerState
 } StatsTimerState;
 
 static gboolean
-stats_prune_counter(StatsCluster *sc, StatsTimerState *st)
+stats_prune_cluster(StatsCluster *sc, StatsTimerState *st)
 {
   gboolean expired;
 
@@ -137,7 +137,7 @@ stats_format_and_prune_cluster(StatsCluster *sc, gpointer user_data)
 
   if (st->stats_event)
     stats_log_format_cluster(sc, st->stats_event);
-  return stats_prune_counter(sc, st);
+  return stats_prune_cluster(sc, st);
 }
 
 void
