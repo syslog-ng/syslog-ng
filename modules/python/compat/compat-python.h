@@ -26,11 +26,15 @@
 
 #include <Python.h>
 #include "syslog-ng.h"
-#include "timeutils/unixtime.h"
 
 #if (SYSLOG_NG_ENABLE_PYTHONv2)
 #define PYTHON_BUILTIN_MODULE_NAME "__builtin__"
 #define PYTHON_MODULE_VERSION "python2"
+
+/*
+ * Macro from python3 Include/datetime.h file
+ */
+#define PyDateTime_DELTA_GET_SECONDS(o)      (((PyDateTime_Delta*)o)->seconds)
 #endif
 
 #if (SYSLOG_NG_ENABLE_PYTHONv3)
@@ -40,9 +44,6 @@
 
 void py_init_argv(void);
 PyObject *int_as_pyobject(gint num);
-
-void py_datetime_init(void);
-gboolean py_datetime_to_logstamp(PyObject *py_timestamp, UnixTime *logstamp);
 
 gint pyobject_as_int(PyObject *object);
 #endif
