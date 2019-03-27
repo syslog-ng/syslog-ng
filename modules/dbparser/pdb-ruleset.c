@@ -23,6 +23,7 @@
 #include "pdb-ruleset.h"
 #include "pdb-program.h"
 #include "pdb-lookup-params.h"
+#include "scratch-buffers.h"
 
 static NVHandle class_handle = 0;
 static NVHandle rule_id_handle = 0;
@@ -67,7 +68,13 @@ _add_matches_to_message(LogMessage *msg, GArray *matches, NVHandle ref_handle, c
 const gchar *
 _calculate_program(PDBLookupParams *lookup, LogMessage *msg, gssize *program_len)
 {
-  return log_msg_get_value(msg, lookup->program_handle, program_len);
+  if (lookup->program_handle)
+    return log_msg_get_value(msg, lookup->program_handle, program_len);
+
+  GString *program = scratch_buffers_alloc();
+  log_template_format(lookup->program_template, msg, NULL, LTZ_LOCAL, 0, NULL, program);
+  *program_len = program->len;
+  return program->str;
 }
 
 /*
