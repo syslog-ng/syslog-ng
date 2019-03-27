@@ -65,6 +65,7 @@ struct _PatternDB
   GStaticRWLock lock;
   PDBRuleSet *ruleset;
   CorrellationState correllation;
+  LogTemplate *program_template;
   GHashTable *rate_limits;
   TimerWheel *timer_wheel;
   GTimeVal last_tick;
@@ -560,6 +561,13 @@ pattern_db_set_emit_func(PatternDB *self, PatternDBEmitFunc emit, gpointer emit_
   self->emit_data = emit_data;
 }
 
+void
+pattern_db_set_program_template(PatternDB *self, LogTemplate *program_template)
+{
+  log_template_unref(self->program_template);
+  self->program_template = log_template_ref(program_template);
+}
+
 const gchar *
 pattern_db_get_ruleset_pub_date(PatternDB *self)
 {
@@ -786,6 +794,7 @@ pattern_db_new(void)
 void
 pattern_db_free(PatternDB *self)
 {
+  log_template_unref(self->program_template);
   if (self->ruleset)
     pdb_rule_set_free(self->ruleset);
   _destroy_state(self);
