@@ -43,4 +43,11 @@ pdb_lookup_params_init(PDBLookupParams *lookup, LogMessage *msg)
   lookup->message_len = 0;
 }
 
+static inline void
+pdb_lookup_params_override_message(PDBLookupParams *lookup, const gchar *message, gssize message_len)
+{
+  lookup->message_handle = LM_V_NONE;
+  lookup->message_string = message;
+  lookup->message_len = message_len;
+}
 #endif

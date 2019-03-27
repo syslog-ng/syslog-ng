@@ -714,9 +714,7 @@ pattern_db_process_with_custom_message(PatternDB *self, LogMessage *msg, const g
   PDBLookupParams lookup;
 
   pdb_lookup_params_init(&lookup, msg);
-  lookup.message_handle = LM_V_NONE;
-  lookup.message_string = message;
-  lookup.message_len = message_len;
+  pdb_lookup_params_override_message(&lookup, message, message_len);
   return _pattern_db_process(self, &lookup, NULL);
 }
 
