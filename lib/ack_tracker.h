@@ -35,6 +35,7 @@ struct _AckTracker
   void (*track_msg)(AckTracker *self, LogMessage *msg);
   void (*manage_msg_ack)(AckTracker *self, LogMessage *msg, AckType ack_type);
   void (*free_fn)(AckTracker *self);
+  void (*disable_bookmark_saving)(AckTracker *self);
 };
 
 struct _AckRecord
@@ -70,6 +71,15 @@ static inline void
 ack_tracker_manage_msg_ack(AckTracker *self, LogMessage *msg, AckType ack_type)
 {
   self->manage_msg_ack(self, msg, ack_type);
+}
+
+static inline void
+ack_tracker_disable_bookmark_saving(AckTracker *self)
+{
+  if (self->disable_bookmark_saving)
+    {
+      self->disable_bookmark_saving(self);
+    }
 }
 
 #endif

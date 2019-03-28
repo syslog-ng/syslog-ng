@@ -41,6 +41,7 @@ typedef struct LateAckTracker
   RingBuffer ack_record_storage;
   GStaticMutex storage_mutex;
   AckTrackerOnAllAcked on_all_acked;
+  gboolean bookmark_saving_disabled;
 } LateAckTracker;
 
 static inline void
@@ -148,6 +149,12 @@ late_ack_tracker_track_msg(AckTracker *s, LogMessage *msg)
   self->pending_ack_record = NULL;
 }
 
+static gboolean
+_is_bookmark_saving_enabled(LateAckTracker *self)
+{
+  return self->bookmark_saving_disabled == FALSE;
+}
+
 static void
 late_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type)
 {
@@ -167,7 +174,7 @@ late_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type
     if (ack_range_length > 0)
       {
         last_in_range = ring_buffer_element_at(&self->ack_record_storage, ack_range_length - 1);
-        if (ack_type != AT_ABORTED)
+        if (ack_type != AT_ABORTED && _is_bookmark_saving_enabled(self))
           {
             Bookmark *bookmark = &(last_in_range->bookmark);
             bookmark_save(bookmark);
@@ -241,11 +248,24 @@ late_ack_tracker_free(AckTracker *s)
 }
 
 static void
+late_ack_tracker_disable_bookmark_saving(AckTracker *s)
+{
+  LateAckTracker *self = (LateAckTracker *)s;
+
+  late_ack_tracker_lock(s);
+  {
+    self->bookmark_saving_disabled = TRUE;
+  }
+  late_ack_tracker_unlock(s);
+}
+
+static void
 _setup_callbacks(LateAckTracker *self)
 {
   self->super.request_bookmark = late_ack_tracker_request_bookmark;
   self->super.track_msg = late_ack_tracker_track_msg;
   self->super.manage_msg_ack = late_ack_tracker_manage_msg_ack;
+  self->super.disable_bookmark_saving = late_ack_tracker_disable_bookmark_saving;
   self->super.free_fn = late_ack_tracker_free;
 }
 
