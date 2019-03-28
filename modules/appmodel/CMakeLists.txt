@@ -1,4 +1,4 @@
-option(ENABLE_APPMODEL "Enable AppModel" ON)
+module_switch(ENABLE_APPMODEL "Enable AppModel")
 
 if (ENABLE_APPMODEL)
 

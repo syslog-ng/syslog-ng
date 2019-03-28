@@ -1,4 +1,4 @@
-option(ENABLE_NATIVE "Enable to build native bindings (for Rust, C++)" ON)
+module_switch(ENABLE_NATIVE "Enable to build native bindings (for Rust, C++)")
 
 set (NATIVE_SOURCES
     native-parser.c

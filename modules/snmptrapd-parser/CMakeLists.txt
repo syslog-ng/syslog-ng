@@ -19,7 +19,7 @@ bison_target(snmptrapd-parserGrammar
     ${CMAKE_CURRENT_BINARY_DIR}/snmptrapd-parser-grammar.c
 COMPILE_FLAGS ${BISON_FLAGS})
 
-option(ENABLE_SNMPTRAPD_PARSER "Enable snmptrapd-parser" ON)
+module_switch(ENABLE_SNMPTRAPD_PARSER "Enable snmptrapd-parser")
 
 if (ENABLE_SNMPTRAPD_PARSER)
   add_library(snmptrapd_parser SHARED ${SNMPTRAPD_PARSER_SOURCES})

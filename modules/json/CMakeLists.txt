@@ -16,12 +16,7 @@ set(JSON_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 external_or_find_package(JSONC)
 
-if(JSONC_FOUND)
-    option(ENABLE_JSON "Enable JSON plugin" ON)
-else()
-    option(ENABLE_JSON "Enable JSON plugin" OFF)
-endif()
-
+module_switch(ENABLE_JSON "Enable JSON plugin" JSONC_FOUND)
 if (ENABLE_JSON)
     generate_y_from_ym(modules/json/json-parser-grammar)
 
@@ -41,6 +36,5 @@ if (JSONC_INTERNAL)
 endif()
 
     install(TARGETS json-plugin LIBRARY DESTINATION lib/syslog-ng/ COMPONENT json)
+    add_test_subdirectory(tests)
 endif()
-
-add_test_subdirectory(tests)

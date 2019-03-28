@@ -16,12 +16,7 @@ COMPILE_FLAGS ${BISON_FLAGS})
 
 generate_y_from_ym(modules/afsmtp/afsmtp-grammar)
 
-if (ESMTP_FOUND)
-    option(ENABLE_AFSMTP "Enable SMTP destination" ON)
-else()
-    option(ENABLE_AFSMTP "Enable SMTP destination" OFF)
-endif()
-
+module_switch(ENABLE_AFSMTP "Enable SMTP destination" ESMTP_FOUND)
 if (ENABLE_AFSMTP)
     add_library(afsmtp MODULE ${AFSMTP_SOURCES})
     target_link_libraries (afsmtp PUBLIC ${ESMTP_LIBRARIES})

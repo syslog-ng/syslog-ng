@@ -1,15 +1,11 @@
-option(ENABLE_BASICFUNCS "Enable basic template functions" ON)
+set (BASICFUNCS_SOURCES
+  basic-funcs.c
+)
 
-if (ENABLE_BASICFUNCS)
-  set (BASICFUNCS_SOURCES
-    basic-funcs.c
-  )
+add_library(basicfuncs SHARED ${BASICFUNCS_SOURCES})
+target_include_directories (basicfuncs PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(basicfuncs PRIVATE syslog-ng)
 
-  add_library(basicfuncs SHARED ${BASICFUNCS_SOURCES})
-  target_include_directories (basicfuncs PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-  target_link_libraries(basicfuncs PRIVATE syslog-ng)
+install(TARGETS basicfuncs LIBRARY DESTINATION lib/syslog-ng/ COMPONENT basicfuncs)
 
-  install(TARGETS basicfuncs LIBRARY DESTINATION lib/syslog-ng/ COMPONENT basicfuncs)
-
-  add_test_subdirectory(tests)
-endif (ENABLE_BASICFUNCS)
+add_test_subdirectory(tests)

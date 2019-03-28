@@ -18,7 +18,7 @@ bison_target(xmlGrammar
     ${CMAKE_CURRENT_BINARY_DIR}/xml-grammar.c
 COMPILE_FLAGS ${BISON_FLAGS})
 
-option(ENABLE_XML "Enable xml" ON)
+module_switch(ENABLE_XML "Enable xml")
 
 if (ENABLE_XML)
   add_library(xml SHARED ${xml_SOURCES})

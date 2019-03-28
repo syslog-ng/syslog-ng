@@ -1,11 +1,6 @@
 find_package(Curl)
 
-if (Curl_FOUND)
-  option(ENABLE_CURL "Enable http destination" ON)
-else ()
-  option(ENABLE_CURL "Enable http destination" OFF)
-endif()
-
+module_switch(ENABLE_CURL "Enable http destination" Curl_FOUND)
 if (NOT ENABLE_CURL)
   return ()
 endif ()

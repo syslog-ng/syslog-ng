@@ -11,12 +11,7 @@ set(AFSQL_SOURCES
 find_package(LibDBI)
 find_package(OpenSSL)
 
-if(LIBDBI_FOUND)
-    option(ENABLE_SQL "Enable SQL plugin" ON)
-else()
-    option(ENABLE_SQL "Enable SQL plugin" OFF)
-endif()
-
+module_switch(ENABLE_SQL "Enable SQL plugin" LIBDBI_FOUND)
 if (ENABLE_SQL)
     generate_y_from_ym(modules/afsql/afsql-grammar)
 

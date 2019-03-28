@@ -1,4 +1,4 @@
-option(ENABLE_STARDATE "Enable stardate" ON)
+module_switch(ENABLE_STARDATE "Enable stardate")
 
 if (ENABLE_STARDATE)
   set(stardate_SOURCES
@@ -7,7 +7,7 @@ if (ENABLE_STARDATE)
   add_library(stardate SHARED ${stardate_SOURCES})
   target_link_libraries(stardate PRIVATE syslog-ng m)
 
-  install(TARGETS stardate LIBRARY DESTINATION lib/syslog-ng/ COMPONENT stardate) 
+  install(TARGETS stardate LIBRARY DESTINATION lib/syslog-ng/ COMPONENT stardate)
 
   add_test_subdirectory(tests)
 endif()

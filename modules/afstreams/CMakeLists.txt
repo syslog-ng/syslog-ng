@@ -12,12 +12,7 @@ include (CheckIncludeFile)
 check_include_file(sys/strlog.h HAVE_STRLOG)
 check_include_file(stropts.h HAVE_STROPTS)
 
-if(HAVE_STRLOG AND HAVE_STROPTS)
-    option(ENABLE_SUN_STREAMS "Enable Sun Streams source" ON)
-else()
-    option(ENABLE_SUN_STREAMS "Enable Sun Streams source" OFF)
-endif()
-
+module_switch(ENABLE_SUN_STREAMS "Enable Sun Streams source" HAVE_STRLOG HAVE_STROPTS)
 if (ENABLE_SUN_STREAMS)
     generate_y_from_ym(modules/afstreams/afstreams-grammar)
 
