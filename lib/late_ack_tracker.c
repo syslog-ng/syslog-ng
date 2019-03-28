@@ -170,7 +170,7 @@ late_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type
         if (ack_type != AT_ABORTED)
           {
             Bookmark *bookmark = &(last_in_range->bookmark);
-            bookmark->save(bookmark);
+            bookmark_save(bookmark);
           }
         _drop_range(self, ack_range_length);
 
