@@ -113,6 +113,12 @@ log_reader_set_options(LogReader *s, LogPipe *control, LogReaderOptions *options
   log_proto_server_set_ack_tracker(self->proto, self->super.ack_tracker);
 }
 
+void
+log_reader_disable_bookmark_saving(LogReader *s)
+{
+  log_source_disable_bookmark_saving(&s->super);
+}
+
 /****************************************************************************
  * Watches: the poll_events instance and the idle timer
  ***************************************************************************/
