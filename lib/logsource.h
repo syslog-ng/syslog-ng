@@ -109,6 +109,7 @@ void log_source_wakeup(LogSource *self);
 void log_source_flow_control_adjust(LogSource *self, guint32 window_size_increment);
 void log_source_flow_control_adjust_when_suspended(LogSource *self, guint32 window_size_increment);
 void log_source_flow_control_suspend(LogSource *self);
+void log_source_disable_bookmark_saving(LogSource *self);
 
 void log_source_global_init(void);
 

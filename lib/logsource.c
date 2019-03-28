@@ -140,6 +140,12 @@ log_source_flow_control_adjust_when_suspended(LogSource *self, guint32 window_si
   _flow_control_rate_adjust(self);
 }
 
+void
+log_source_disable_bookmark_saving(LogSource *self)
+{
+  ack_tracker_disable_bookmark_saving(self->ack_tracker);
+}
+
 /**
  * log_source_msg_ack:
  *
