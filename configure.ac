@@ -148,6 +148,11 @@ AC_ARG_WITH(libnet,
    ,
    [with_libnet=""])
 
+AC_ARG_WITH(net-snmp,
+   [  --with-net-snmp=path      use path to net-snmp-config script],
+   ,
+   [with_netsnmp=""])
+
 AC_ARG_WITH(pidfile-dir,
    [  --with-pidfile-dir=path   Use path as the directory for storing pidfiles],
    pidfiledir=$with_pidfile_dir)
@@ -351,6 +356,8 @@ AC_ARG_ENABLE(java-modules, [ --enable-java-modules  Compile all Java modules (d
 AC_ARG_ENABLE(native,
               [  --enable-native        Enable native bindings (default: auto)]
               ,,enable_native="auto")
+
+AC_ARG_ENABLE(snmp-dest, [ --enable-snmp-dest Enable snmp destination (default: auto)],, enable_snmp_dest="auto")
 
 AC_ARG_ENABLE(all-modules,
               [  --enable-all-modules    Forcibly enable all modules. (default: auto)]
@@ -1101,6 +1108,47 @@ else
 fi
 
 dnl ***************************************************************************
+dnl snmp destination & net-snmp headers/libraries
+dnl ***************************************************************************
+AC_MSG_CHECKING(whether to enable snmp destination driver)
+
+if test "x$with_netsnmp" = "x"; then
+   NETSNMP_CONFIG="`which net-snmp-config`"
+else
+   NETSNMP_CONFIG="$with_netsnmp/net-snmp-config"
+fi
+
+if test "x$enable_snmp_dest" = "xyes"; then
+   if test -n "$NETSNMP_CONFIG" -a -x "$NETSNMP_CONFIG"; then
+     enable_snmp_dest="yes"
+     AC_MSG_RESULT(yes)
+   else
+     enable_snmp_dest="no"
+     AC_MSG_RESULT(no)
+     AC_MSG_ERROR("SNMP destination is explicit enabled but no net-snmp lib found")
+   fi
+elif test "x$enable_snmp_dest" = "xauto"; then
+  if test -n "$NETSNMP_CONFIG" -a -x "$NETSNMP_CONFIG"; then
+     enable_snmp_dest="yes"
+     AC_MSG_RESULT(yes)
+  else
+     enable_snmp_dest="no"
+     AC_MSG_RESULT(no)
+  fi
+else
+  enable_snmp_dest="no"
+  AC_MSG_RESULT(no)
+fi
+
+if test "$enable_snmp_dest" = "yes"; then
+  NETSNMP_CFLAGS="`$NETSNMP_CONFIG --cflags`"
+  NETSNMP_LIBS="`$NETSNMP_CONFIG --libs`"
+else
+  NETSNMP_CFLAGS=
+  NETSNMP_LIBS=
+fi
+
+dnl ***************************************************************************
 dnl Criterion headers/libraries
 dnl ***************************************************************************
 
@@ -1839,6 +1887,7 @@ AM_CONDITIONAL(ENABLE_JOURNALD, [test "$with_systemd_journal" != "no"])
 AM_CONDITIONAL(ENABLE_PYTHON, [test "$enable_python" != "no"])
 AM_CONDITIONAL(ENABLE_JAVA, [test "$enable_java" = "yes"])
 AM_CONDITIONAL(ENABLE_JAVA_MODULES, [test "$enable_java_modules" = "yes"])
+AM_CONDITIONAL(ENABLE_SNMP_DEST, [test "$enable_snmp_dest" = "yes"])
 AM_CONDITIONAL(ENABLE_MANPAGES, [test "$enable_manpages" != "no"])
 AM_CONDITIONAL(ENABLE_NATIVE, [test "$enable_native" != "no"])
 AM_CONDITIONAL(ENABLE_EXTRA_WARNINGS, [test "$enable_extra_warnings" = "yes"])
@@ -1874,6 +1923,8 @@ AC_SUBST(BASE_LIBS)
 AC_SUBST(YFLAGS)
 AC_SUBST(LIBNET_LIBS)
 AC_SUBST(LIBNET_CFLAGS)
+AC_SUBST(NETSNMP_CFLAGS)
+AC_SUBST(NETSNMP_LIBS)
 AC_SUBST(LIBWRAP_LIBS)
 AC_SUBST(LIBWRAP_CFLAGS)
 AC_SUBST(ZLIB_LIBS)
@@ -1973,4 +2024,5 @@ echo "  Riemann destination (module): ${enable_riemann:=no}, microseconds: ${rie
 echo "  python                      : ${enable_python:=no} (pkg-config package: ${with_python:=none})"
 echo "  java                        : ${enable_java:=no}"
 echo "  java modules                : ${enable_java_modules:=no}"
+echo "  snmp destination            : ${enable_snmp_dest:=no}"
 echo "  native bindings             : ${enable_native:=no}"
