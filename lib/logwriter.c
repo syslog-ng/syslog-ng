@@ -252,6 +252,7 @@ log_writer_io_handler(gpointer s, GIOCondition cond)
   main_loop_assert_main_thread();
 
   log_writer_stop_watches(self);
+  log_writer_stop_idle_timer(self);
   if ((self->options->options & LWO_THREADED))
     {
       main_loop_io_worker_job_submit(&self->io_job, cond);
