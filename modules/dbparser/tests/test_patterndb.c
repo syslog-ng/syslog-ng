@@ -738,6 +738,20 @@ Test(test_pathutils, test_pdb_get_filenames, .init = test_pdb_get_filenames_setu
   g_ptr_array_free(filenames, TRUE);
 }
 
+Test(pattern_db, match_in_program)
+{
+  gchar *filename;
+  PatternDB *patterndb = _create_pattern_db(pdb_test_match_in_program, &filename);
+
+  LogMessage *msg = _construct_message("sshd 5", "almafa");
+  _process(patterndb, msg);
+  assert_log_message_value(msg, log_msg_get_value_handle("num"), "5");
+
+  _destroy_pattern_db(patterndb, filename);
+  log_msg_unref(msg);
+  g_free(filename);
+}
+
 void setup(void)
 {
   app_startup();

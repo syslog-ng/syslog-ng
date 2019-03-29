@@ -535,4 +535,18 @@
  </ruleset>\
 </patterndb>"
 
+
+#define pdb_test_match_in_program "<patterndb version='5' pub_date='2010-02-22'>\
+<ruleset name='sshd' id='1'>\
+<patterns>\
+  <pattern>sshd @NUMBER:num@</pattern>\
+</patterns>\
+<rules>\
+  <rule id='12347598' class='sshd' provider='batman'>\
+     <patterns><pattern>almafa</pattern></patterns>\
+  </rule>\
+</rules>\
+</ruleset>\
+</patterndb>"
+
 #endif
