@@ -39,6 +39,7 @@ typedef struct
   gchar *topic_name;
   GList *global_config;
   GList *topic_config;
+  gchar *bootstrap_servers;
   rd_kafka_topic_t *topic;
   rd_kafka_t *kafka;
   gint flush_timeout_on_shutdown;
@@ -49,6 +50,7 @@ typedef struct
 void kafka_dd_set_topic(LogDriver *d, const gchar *topic);
 void kafka_dd_set_global_config(LogDriver *d, GList *props);
 void kafka_dd_set_topic_config(LogDriver *d, GList *props);
+void kafka_dd_set_bootstrap_servers(LogDriver *d, const gchar *bootstrap_servers);
 
 void kafka_dd_set_key_ref(LogDriver *d, LogTemplate *key);
 void kafka_dd_set_message_ref(LogDriver *d, LogTemplate *message);

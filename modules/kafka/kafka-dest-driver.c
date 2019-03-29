@@ -63,6 +63,15 @@ kafka_dd_set_topic_config(LogDriver *d, GList *props)
 }
 
 void
+kafka_dd_set_bootstrap_servers(LogDriver *d, const gchar *bootstrap_servers)
+{
+  KafkaDestDriver *self = (KafkaDestDriver *)d;
+
+  g_free(self->bootstrap_servers);
+  self->bootstrap_servers = g_strdup(bootstrap_servers);
+}
+
+void
 kafka_dd_set_key_ref(LogDriver *d, LogTemplate *key)
 {
   KafkaDestDriver *self = (KafkaDestDriver *)d;
@@ -103,7 +112,6 @@ kafka_dd_set_poll_timeout(LogDriver *d, gint poll_timeout)
 
   self->poll_timeout = poll_timeout;
 }
-
 
 LogTemplateOptions *
 kafka_dd_get_template_options(LogDriver *d)
@@ -216,6 +224,7 @@ _construct_client(KafkaDestDriver *self)
   gchar errbuf[1024];
 
   conf = rd_kafka_conf_new();
+  _conf_set_prop(conf, "metadata.broker.list", self->bootstrap_servers);
   for (list = g_list_first(self->global_config); list != NULL; list = g_list_next(list))
     {
       kp = list->data;
@@ -425,6 +434,7 @@ kafka_dd_free(LogPipe *d)
     rd_kafka_destroy(self->kafka);
   if (self->topic_name)
     g_free(self->topic_name);
+  g_free(self->bootstrap_servers);
   kafka_property_list_free(self->global_config);
   kafka_property_list_free(self->topic_config);
   log_threaded_dest_driver_free(d);
