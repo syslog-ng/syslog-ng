@@ -67,6 +67,7 @@ SyntheticMessage *last_message;
 %token KW_DROP_UNMATCHED
 %token KW_FILE
 %token KW_PROGRAM_TEMPLATE
+%token KW_MESSAGE_TEMPLATE
 
 %type <num> stateful_parser_inject_mode
 %type <ptr> synthetic_message
@@ -106,6 +107,7 @@ parser_db_opt
           {
              log_db_parser_set_program_template_ref(last_parser, $3);
           }
+        | KW_MESSAGE_TEMPLATE '(' template_content ')'    { log_parser_set_template(last_parser, $3); }
 	| stateful_parser_opt
         ;
 
