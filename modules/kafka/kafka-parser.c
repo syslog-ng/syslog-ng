@@ -43,6 +43,8 @@ static CfgLexerKeyword kafka_keywords[] =
 
   { "key",            KW_KEY },
   { "message",        KW_MESSAGE },
+  { "template",       KW_TEMPLATE, KWS_OBSOLETE, "Please use message() instead" },
+  { "client_lib_dir", KW_CLIENT_LIB_DIR, KWS_OBSOLETE, "The client-lib-dir() option is ignored by the librdkafka implementation of kafka"},
   { "workers",        KW_WORKERS },
   { "kafka_c",        KW_KAFKA },   /* compatibility with incubator naming */
   { NULL }
