@@ -96,6 +96,14 @@ kafka_dd_set_flush_timeout_on_reload(LogDriver *d, gint flush_timeout_on_reload)
   self->flush_timeout_on_reload = flush_timeout_on_reload;
 }
 
+void
+kafka_dd_set_poll_timeout(LogDriver *d, gint poll_timeout)
+{
+  KafkaDestDriver *self = (KafkaDestDriver *)d;
+
+  self->poll_timeout = poll_timeout;
+}
+
 
 LogTemplateOptions *
 kafka_dd_get_template_options(LogDriver *d)
@@ -443,6 +451,7 @@ kafka_dd_new(GlobalConfig *cfg)
   /* one minute */
   self->flush_timeout_on_shutdown = 60000;
   self->flush_timeout_on_reload = 1000;
+  self->poll_timeout = 1000;
 
   log_template_options_defaults(&self->template_options);
 

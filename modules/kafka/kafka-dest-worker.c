@@ -25,12 +25,14 @@
 #include "kafka-dest-worker.h"
 #include "kafka-dest-driver.h"
 #include "str-utils.h"
+#include "timeutils/misc.h"
 #include <zlib.h>
 
 
 typedef struct _KafkaDestWorker
 {
   LogThreadedDestWorker super;
+  struct iv_timer poll_timer;
   GString *key;
   GString *message;
 } KafkaDestWorker;
@@ -90,10 +92,25 @@ _publish_message(KafkaDestWorker *self, LogMessage *msg)
 }
 
 static void
-_drain_responses(KafkaDestWorker *self)
+_update_drain_timer(KafkaDestWorker *self)
 {
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
 
+  if (self->super.worker_index != 0)
+    return;
+
+  if (iv_timer_registered(&self->poll_timer))
+    iv_timer_unregister(&self->poll_timer);
+  iv_validate_now();
+  self->poll_timer.expires = iv_now;
+  timespec_add_msec(&self->poll_timer.expires, owner->poll_timeout);
+  iv_timer_register(&self->poll_timer);
+}
+
+static void
+_drain_responses(KafkaDestWorker *self)
+{
+  KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
 
   /* we are only draining responses in the first worker thread, so all
    * callbacks originate from the same thread and we don't need to
@@ -110,6 +127,7 @@ _drain_responses(KafkaDestWorker *self)
                 evt_tag_str("driver", owner->super.super.super.id),
                 log_pipe_location_tag(&owner->super.super.super.super));
     }
+  _update_drain_timer(self);
 }
 
 /*
@@ -148,6 +166,10 @@ kafka_dest_worker_new(LogThreadedDestDriver *o, gint worker_index)
   log_threaded_dest_worker_init_instance(&self->super, o, worker_index);
   self->super.insert = kafka_dest_worker_insert;
   self->super.free_fn = kafka_dest_worker_free;
+
+  IV_TIMER_INIT(&self->poll_timer);
+  self->poll_timer.cookie = self;
+  self->poll_timer.handler = (void (*)(void *)) _drain_responses;
 
   if (owner->key)
     self->key = g_string_sized_new(1024);
