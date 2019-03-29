@@ -549,4 +549,17 @@
 </ruleset>\
 </patterndb>"
 
+#define pdb_test_program_template "<patterndb version='5' pub_date='2010-02-22'>\
+<ruleset name='sshd' id='1'>\
+<patterns>\
+  <pattern>sshd @NUMBER:num@</pattern>\
+</patterns>\
+<rules>\
+  <rule id='12347598' class='sshd' provider='batman'>\
+     <patterns><pattern>almafa @STRING:str@</pattern></patterns>\
+  </rule>\
+</rules>\
+</ruleset>\
+</patterndb>"
+
 #endif
