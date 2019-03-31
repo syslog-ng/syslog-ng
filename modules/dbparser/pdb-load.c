@@ -477,9 +477,6 @@ _pdbl_rules_start(PDBLoader *state, const gchar *element_name, const gchar **att
 
   if (strcmp(element_name, "rule") == 0)
     {
-      if (state->current_rule)
-        pdb_rule_unref(state->current_rule);
-
       state->current_rule = pdb_rule_new();
       for (i = 0; attribute_names[i]; i++)
         {
@@ -610,7 +607,7 @@ _pdbl_rule_end(PDBLoader *state, const gchar *element_name, GError **error)
       /* valid, but we don't do anything */
     }
   else if (_pop_state_for_closing_tag_with_alternatives(state, element_name, "rule",
-                                                        "</patterns>, </description>, </tags>, </urls>, </values>", error) == 0)
+                                                        "</patterns>, </description>, </tags>, </urls>, </values>", error))
     {
       if (state->current_rule)
         {
