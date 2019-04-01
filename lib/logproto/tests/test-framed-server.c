@@ -109,6 +109,96 @@ Test(log_proto, test_log_proto_framed_server_too_long_line)
   log_proto_server_free(proto);
 }
 
+Test(log_proto, test_log_proto_framed_server_too_long_line_trimmed)
+{
+  LogProtoServer *proto;
+
+  /* the simplest trimming scenario as a base test */
+
+  proto_server_options.max_msg_size = 32;
+  proto_server_options.trim_large_messages = TRUE;
+  proto = log_proto_framed_server_new(
+            log_transport_mock_stream_new(
+              "48 0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF", -1,
+              LTM_EOF),
+            get_inited_proto_server_options());
+  assert_proto_server_fetch(proto, "0123456789ABCDEF0123456789ABCDEF", 32);
+  assert_proto_server_fetch_failure(proto, LPS_EOF, NULL);
+  log_proto_server_free(proto);
+}
+
+Test(log_proto, test_log_proto_framed_server_too_long_line_trimmed_multiple_cycles)
+{
+  LogProtoServer *proto;
+
+  /* - accepting one normal sized message
+   * - trimming a "multi buffer size" message
+   * - checking with a normal message, that the buffer is still handled correctly.
+   */
+
+  proto_server_options.max_msg_size = 2;
+  proto_server_options.trim_large_messages = TRUE;
+  proto = log_proto_framed_server_new(
+            log_transport_mock_records_new(
+              "1 0", -1,
+              "7 1abcdef", -1,
+              "1 2", -1,
+              LTM_EOF),
+            get_inited_proto_server_options());
+  assert_proto_server_fetch(proto, "0",  1);
+  assert_proto_server_fetch(proto, "1a", 2);
+  assert_proto_server_fetch(proto, "2",  1);
+  assert_proto_server_fetch_failure(proto, LPS_EOF, NULL);
+}
+
+Test(log_proto, test_log_proto_framed_server_too_long_line_trimmed_frame_at_the_end)
+{
+  LogProtoServer *proto;
+
+  /* - accepting one normal sized message, which fills the buffer partially
+   * - receiving a message which has to be trimmed
+   *     -> despite we have one part of the message in the buffer,
+   *        we had to memmove it so we can read one 'max_msg_size' message
+   * - consume the end of the trimmed message, but the trimming will already read the
+   *   first character of the next 'frame length'.
+   *     -> need to memmove the partial data, so we can read the 'frame length' properly
+   * - checking with a normal message, that the buffer is still handled correctly
+   */
+
+  proto_server_options.max_msg_size = 8;
+  proto_server_options.trim_large_messages = TRUE;
+  proto = log_proto_framed_server_new(
+            log_transport_mock_records_new(
+              "3 01\n15 ", -1,
+              "1abcdefg",  -1,
+              "12345674",  -1,
+              " 2abc",     -1,
+              LTM_EOF),
+            get_inited_proto_server_options());
+  assert_proto_server_fetch(proto, "01\n",     3);
+  assert_proto_server_fetch(proto, "1abcdefg", 8);
+  // dropping: 1234567
+  assert_proto_server_fetch(proto, "2abc",  4);
+  assert_proto_server_fetch_failure(proto, LPS_EOF, NULL);
+}
+
+Test(log_proto, test_log_proto_framed_server_too_long_line_trimmed_one_big_message)
+{
+
+  /* Input is bigger than the buffer size. With a small and a bigger (expected to be trimmed) message.
+   * There is a small message and a large message.*/
+  LogProtoServer *proto;
+  proto_server_options.max_msg_size = 10;
+  proto_server_options.trim_large_messages = TRUE;
+  proto = log_proto_framed_server_new(
+            log_transport_mock_stream_new(
+              "2 ab16 0123456789ABCDEF", -1,
+              LTM_EOF),
+            get_inited_proto_server_options());
+  assert_proto_server_fetch(proto, "ab",          2);
+  assert_proto_server_fetch(proto, "0123456789", 10);
+}
+
 Test(log_proto, test_log_proto_framed_server_message_exceeds_buffer)
 {
   LogProtoServer *proto;
