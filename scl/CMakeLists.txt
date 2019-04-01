@@ -1,6 +1,7 @@
 set(SCL_DIRS
     apache
     cim
+    tele-voice
     cisco
     collectd
     default-network-drivers
