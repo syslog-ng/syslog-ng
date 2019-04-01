@@ -71,10 +71,15 @@ log_proto_framed_server_prepare(LogProtoServer *s, GIOCondition *cond, gint *tim
   return LPPA_POLL_IO;
 }
 
-static LogProtoStatus
-log_proto_framed_server_fetch_data(LogProtoFramedServer *self, gboolean *may_read, LogTransportAuxData *aux)
+/* Return value indicates if it was able to read any data from the input.
+ * In case of error, resets aux data and sets status to indicate the root cause.
+ */
+static gboolean
+log_proto_framed_server_fetch_data(LogProtoFramedServer *self, gboolean *may_read,
+                                   LogTransportAuxData *aux, LogProtoStatus *status)
 {
   gint rc;
+  *status = LPS_SUCCESS;
 
   if (self->buffer_pos == self->buffer_end)
     self->buffer_pos = self->buffer_end = 0;
@@ -91,7 +96,7 @@ log_proto_framed_server_fetch_data(LogProtoFramedServer *self, gboolean *may_rea
     }
 
   if (!(*may_read))
-    return LPS_SUCCESS;
+    return FALSE;
 
   rc = log_transport_read(self->super.transport, &self->buffer[self->buffer_end], self->buffer_size - self->buffer_end,
                           aux);
@@ -103,26 +108,28 @@ log_proto_framed_server_fetch_data(LogProtoFramedServer *self, gboolean *may_rea
           msg_error("Error reading RFC6587 style framed data",
                     evt_tag_int("fd", self->super.transport->fd),
                     evt_tag_error("error"));
-          return LPS_ERROR;
+          log_transport_aux_data_reinit(aux);
+          *status = LPS_ERROR;
         }
       else
         {
           /* we need more data to parse this message but the data is not available yet */
           self->half_message_in_buffer = TRUE;
         }
+      return FALSE;
     }
-  else if (rc == 0)
+
+  if (rc == 0)
     {
       msg_trace("EOF occurred while reading",
                 evt_tag_int(EVT_TAG_FD, self->super.transport->fd));
-      return LPS_EOF;
+      log_transport_aux_data_reinit(aux);
+      *status = LPS_EOF;
+      return FALSE;
     }
-  else
-    {
-      self->buffer_end += rc;
-    }
-  return LPS_SUCCESS;
 
+  self->buffer_end += rc;
+  return TRUE;
 }
 
 static gboolean
@@ -182,12 +189,8 @@ log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_
             }
           if (need_more_data)
             {
-              status = log_proto_framed_server_fetch_data(self, may_read, aux);
-              if (status != LPS_SUCCESS)
-                {
-                  log_transport_aux_data_reinit(aux);
-                  return status;
-                }
+              if (!log_proto_framed_server_fetch_data(self, may_read, aux, &status))
+                return status;
 
               if (!log_proto_framed_server_extract_frame_length(self, &need_more_data))
                 {
@@ -246,12 +249,8 @@ log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_
               return LPS_SUCCESS;
             }
 
-          status = log_proto_framed_server_fetch_data(self, may_read, aux);
-          if (status != LPS_SUCCESS)
-            {
-              log_transport_aux_data_reinit(aux);
-              return status;
-            }
+          if (!log_proto_framed_server_fetch_data(self, may_read, aux, &status))
+            return status;
 
           if (self->buffer_end == self->buffer_size)
             {
@@ -270,12 +269,8 @@ log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_
           /* Since trimming requires a full (buffer sized) message, the consuming
            * always starts at the beginning of the buffer, with a new read. */
           self->half_message_in_buffer = FALSE;
-          status = log_proto_framed_server_fetch_data(self, may_read, aux);
-          if (status != LPS_SUCCESS)
-            {
-              log_transport_aux_data_reinit(aux);
-              return status;
-            }
+          if (!log_proto_framed_server_fetch_data(self, may_read, aux, &status))
+            return status;
 
           // Fetch data can not report EAGAIN, this means no data in the buffer.
           if (self->buffer_pos == self->buffer_end)
@@ -337,12 +332,8 @@ log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_
               return LPS_SUCCESS;
             }
 
-          status = log_proto_framed_server_fetch_data(self, may_read, aux);
-          if (status != LPS_SUCCESS)
-            {
-              log_transport_aux_data_reinit(aux);
-              return status;
-            }
+          if (!log_proto_framed_server_fetch_data(self, may_read, aux, &status))
+            return status;
 
           if (self->buffer_end - self->buffer_pos >= self->frame_len)
             {
