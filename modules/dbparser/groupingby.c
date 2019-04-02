@@ -421,6 +421,14 @@ grouping_by_init(LogPipe *s)
   self->tick.expires.tv_sec++;
   self->tick.expires.tv_nsec = 0;
   iv_timer_register(&self->tick);
+
+  if (self->trigger_condition_expr && !filter_expr_init(self->trigger_condition_expr, cfg))
+    return FALSE;
+  if (self->where_condition_expr && !filter_expr_init(self->where_condition_expr, cfg))
+    return FALSE;
+  if (self->having_condition_expr && !filter_expr_init(self->having_condition_expr, cfg))
+    return FALSE;
+
   return stateful_parser_init_method(s);
 }
 
@@ -465,6 +473,10 @@ grouping_by_free(LogPipe *s)
     synthetic_message_free(self->synthetic_message);
   timer_wheel_free(self->timer_wheel);
   stateful_parser_free_method(s);
+
+  filter_expr_unref(self->trigger_condition_expr);
+  filter_expr_unref(self->where_condition_expr);
+  filter_expr_unref(self->having_condition_expr);
 }
 
 LogParser *
