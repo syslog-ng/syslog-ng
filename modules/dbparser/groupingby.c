@@ -48,7 +48,21 @@ typedef struct _GroupingBy
   FilterExprNode *having_condition_expr;
 } GroupingBy;
 
+typedef struct
+{
+  CorrellationState *correllation;
+  TimerWheel *timer_wheel;
+} GroupingByPersistData;
+
 static NVHandle context_id_handle = 0;
+
+static void
+_free_persist_data(GroupingByPersistData *self)
+{
+  correllation_state_free(self->correllation);
+  timer_wheel_free(self->timer_wheel);
+  g_free(self);
+}
 
 void
 grouping_by_set_key_template(LogParser *s, LogTemplate *key_template)
@@ -383,6 +397,25 @@ grouping_by_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_
   return TRUE;
 }
 
+static void
+_load_correllation_state(GroupingBy *self, GlobalConfig *cfg)
+{
+  GroupingByPersistData *persist_data = cfg_persist_config_fetch(cfg, grouping_by_format_persist_name(self));
+  if (persist_data)
+    {
+      self->correllation = persist_data->correllation;
+      self->timer_wheel = persist_data->timer_wheel;
+      timer_wheel_set_associated_data(self->timer_wheel, log_pipe_ref((LogPipe *)self), (GDestroyNotify)log_pipe_unref);
+    }
+  else
+    {
+      self->correllation = correllation_state_new();
+      self->timer_wheel = timer_wheel_new();
+      timer_wheel_set_associated_data(self->timer_wheel, log_pipe_ref((LogPipe *)self), (GDestroyNotify)log_pipe_unref);
+    }
+  g_free(persist_data);
+}
+
 static gboolean
 grouping_by_init(LogPipe *s)
 {
@@ -408,11 +441,8 @@ grouping_by_init(LogPipe *s)
       return FALSE;
     }
 
-  self->correllation = cfg_persist_config_fetch(cfg, grouping_by_format_persist_name(self));
-  if (!self->correllation)
-    {
-      self->correllation = correllation_state_new();
-    }
+  _load_correllation_state(self, cfg);
+
   iv_validate_now();
   IV_TIMER_INIT(&self->tick);
   self->tick.cookie = self;
@@ -432,6 +462,19 @@ grouping_by_init(LogPipe *s)
   return stateful_parser_init_method(s);
 }
 
+static void
+_store_data_in_persist(GroupingBy *self, GlobalConfig *cfg)
+{
+  GroupingByPersistData *persist_data = g_new0(GroupingByPersistData, 1);
+  persist_data->correllation = self->correllation;
+  persist_data->timer_wheel = self->timer_wheel;
+
+  cfg_persist_config_add(cfg, grouping_by_format_persist_name(self), persist_data,
+                         (GDestroyNotify) _free_persist_data, FALSE);
+  self->correllation = NULL;
+  self->timer_wheel = NULL;
+}
+
 static gboolean
 grouping_by_deinit(LogPipe *s)
 {
@@ -443,9 +486,8 @@ grouping_by_deinit(LogPipe *s)
       iv_timer_unregister(&self->tick);
     }
 
-  cfg_persist_config_add(cfg, grouping_by_format_persist_name(self), self->correllation,
-                         (GDestroyNotify) correllation_state_free, FALSE);
-  self->correllation = NULL;
+  _store_data_in_persist(self, cfg);
+
   return stateful_parser_deinit_method(s);
 }
 
@@ -471,7 +513,6 @@ grouping_by_free(LogPipe *s)
   log_template_unref(self->key_template);
   if (self->synthetic_message)
     synthetic_message_free(self->synthetic_message);
-  timer_wheel_free(self->timer_wheel);
   stateful_parser_free_method(s);
 
   filter_expr_unref(self->trigger_condition_expr);
@@ -492,8 +533,6 @@ grouping_by_new(GlobalConfig *cfg)
   self->super.super.process = grouping_by_process;
   g_static_mutex_init(&self->lock);
   self->scope = RCS_GLOBAL;
-  self->timer_wheel = timer_wheel_new();
-  timer_wheel_set_associated_data(self->timer_wheel, self, NULL);
   cached_g_current_time(&self->last_tick);
   self->timeout = -1;
   return &self->super.super;
