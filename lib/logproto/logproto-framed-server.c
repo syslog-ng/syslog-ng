@@ -28,11 +28,16 @@
 #include <ctype.h>
 #include <string.h>
 
+#define MAX_FRAME_LEN_DIGITS 10
+
 typedef enum
 {
   LPFSS_FRAME_READ,
+  LPFSS_FRAME_EXTRACT,
   LPFSS_MESSAGE_READ,
+  LPFSS_MESSAGE_EXTRACT,
   LPFSS_TRIM_MESSAGE,
+  LPFSS_TRIM_MESSAGE_READ,
   LPFSS_CONSUME_TRIMMED
 } LogProtoFramedServerState;
 
@@ -141,7 +146,7 @@ log_proto_framed_server_extract_frame_length(LogProtoFramedServer *self, gboolea
   self->frame_len = 0;
   for (i = self->buffer_pos; i < self->buffer_end; i++)
     {
-      if (isdigit(self->buffer[i]) && (i - self->buffer_pos < 10))
+      if (isdigit(self->buffer[i]) && (i - self->buffer_pos < MAX_FRAME_LEN_DIGITS))
         {
           self->frame_len = self->frame_len * 10 + (self->buffer[i] - '0');
         }
@@ -181,6 +186,11 @@ log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_
       switch (self->state)
         {
         case LPFSS_FRAME_READ:
+          if (!log_proto_framed_server_fetch_data(self, may_read, aux, &status))
+            return status;
+          self->state = LPFSS_FRAME_EXTRACT;
+
+        case LPFSS_FRAME_EXTRACT:
           if (!log_proto_framed_server_extract_frame_length(self, &need_more_data))
             {
               /* invalid frame header */
@@ -189,52 +199,46 @@ log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_
             }
           if (need_more_data)
             {
-              if (!log_proto_framed_server_fetch_data(self, may_read, aux, &status))
-                return status;
+              self->state = LPFSS_FRAME_READ;
+              continue;
+            }
 
-              if (!log_proto_framed_server_extract_frame_length(self, &need_more_data))
+          self->state = LPFSS_MESSAGE_EXTRACT;
+          if (self->frame_len > self->super.options->max_msg_size)
+            {
+              if (self->super.options->trim_large_messages)
                 {
-                  /* invalid frame header */
+                  msg_debug("Incoming frame larger than log_msg_size(), need to trim.",
+                            evt_tag_int("log_msg_size", self->super.options->max_msg_size),
+                            evt_tag_int("frame_length", self->frame_len));
+                  self->state = LPFSS_TRIM_MESSAGE_READ;
+                }
+              else
+                {
+                  msg_error("Incoming frame larger than log_msg_size()",
+                            evt_tag_int("log_msg_size", self->super.options->max_msg_size),
+                            evt_tag_int("frame_length", self->frame_len));
                   log_transport_aux_data_reinit(aux);
                   return LPS_ERROR;
                 }
             }
-
-          if (!need_more_data)
+          if (self->buffer_pos + self->frame_len > self->buffer_size)
             {
-              self->state = LPFSS_MESSAGE_READ;
-              if (self->frame_len > self->super.options->max_msg_size)
-                {
-                  if (self->super.options->trim_large_messages)
-                    {
-                      msg_debug("Incoming frame larger than log_msg_size(), need to trim.",
-                                evt_tag_int("log_msg_size", self->super.options->max_msg_size),
-                                evt_tag_int("frame_length", self->frame_len));
-                      self->state = LPFSS_TRIM_MESSAGE;
-                    }
-                  else
-                    {
-                      msg_error("Incoming frame larger than log_msg_size()",
-                                evt_tag_int("log_msg_size", self->super.options->max_msg_size),
-                                evt_tag_int("frame_length", self->frame_len));
-                      log_transport_aux_data_reinit(aux);
-                      return LPS_ERROR;
-                    }
-                }
-              if (self->buffer_pos + self->frame_len > self->buffer_size)
-                {
-                  /* message would be too large to fit into the buffer at
-                   * buffer_pos, we need to move data to the beginning of
-                   * the buffer to make space, and once we are at it, move
-                   * to the beginning to make space for the maximum number
-                   * of messages before the next shift */
-                  memmove(self->buffer, &self->buffer[self->buffer_pos], self->buffer_end - self->buffer_pos);
-                  self->buffer_end = self->buffer_end - self->buffer_pos;
-                  self->buffer_pos = 0;
-                }
-              continue;
+              /* message would be too large to fit into the buffer at
+               * buffer_pos, we need to move data to the beginning of
+               * the buffer to make space, and once we are at it, move
+               * to the beginning to make space for the maximum number
+               * of messages before the next shift */
+              memmove(self->buffer, &self->buffer[self->buffer_pos], self->buffer_end - self->buffer_pos);
+              self->buffer_end = self->buffer_end - self->buffer_pos;
+              self->buffer_pos = 0;
             }
-          return LPS_SUCCESS;
+          continue;
+
+        case LPFSS_TRIM_MESSAGE_READ:
+          if (!log_proto_framed_server_fetch_data(self, may_read, aux, &status))
+            return status;
+          self->state = LPFSS_TRIM_MESSAGE;
 
         case LPFSS_TRIM_MESSAGE:
           if (self->buffer_end == self->buffer_size)
@@ -243,27 +247,14 @@ log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_
               *msg = &self->buffer[self->buffer_pos];
               *msg_len = self->buffer_end - self->buffer_pos;
               self->frame_len -= *msg_len;
+
               self->state = LPFSS_CONSUME_TRIMMED;
               self->half_message_in_buffer = TRUE;
               self->buffer_pos = self->buffer_end = 0;
               return LPS_SUCCESS;
             }
-
-          if (!log_proto_framed_server_fetch_data(self, may_read, aux, &status))
-            return status;
-
-          if (self->buffer_end == self->buffer_size)
-            {
-              /* The buffer is full */
-              *msg = &self->buffer[self->buffer_pos];
-              *msg_len = self->buffer_end - self->buffer_pos;
-              self->frame_len -= *msg_len;
-              self->state = LPFSS_CONSUME_TRIMMED;
-              self->half_message_in_buffer = TRUE;
-              self->buffer_pos = self->buffer_end = 0;
-              return LPS_SUCCESS;
-            }
-          return LPS_SUCCESS;
+          self->state = LPFSS_TRIM_MESSAGE_READ;
+          continue;
 
         case LPFSS_CONSUME_TRIMMED:
           /* Since trimming requires a full (buffer sized) message, the consuming
@@ -272,10 +263,6 @@ log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_
           if (!log_proto_framed_server_fetch_data(self, may_read, aux, &status))
             return status;
 
-          // Fetch data can not report EAGAIN, this means no data in the buffer.
-          if (self->buffer_pos == self->buffer_end)
-            return LPS_SUCCESS;
-
           // We have some data, but it is not enough.
           if (self->buffer_end < self->frame_len)
             {
@@ -283,6 +270,7 @@ log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_
               buffer_was_full = self->buffer_end == self->buffer_size;
               self->buffer_end = 0;
 
+              // We might have more data, waiting for read.
               if (buffer_was_full)
                 continue;
               return LPS_SUCCESS;
@@ -290,7 +278,7 @@ log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_
 
           // We have enough data to finish consuming the message.
           self->buffer_pos += self->frame_len;
-          self->state = LPFSS_FRAME_READ;
+          self->state = LPFSS_FRAME_EXTRACT;
 
           // Prepare the buffer for the new message.
 
@@ -306,7 +294,7 @@ log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_
 
           /* We have data in the buffer. Make sure there is enough room for at least
            * one frame header. The rest of it will be solved by frame_read */
-          if ((self->buffer_size - self->buffer_pos) < 10)
+          if ((self->buffer_size - self->buffer_pos) < MAX_FRAME_LEN_DIGITS)
             {
               memmove(self->buffer, &self->buffer[self->buffer_pos], self->buffer_end - self->buffer_pos);
               self->buffer_end = self->buffer_end - self->buffer_pos;
@@ -315,41 +303,29 @@ log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_
           continue;
 
         case LPFSS_MESSAGE_READ:
+          if (!log_proto_framed_server_fetch_data(self, may_read, aux, &status))
+            return status;
+          self->state = LPFSS_MESSAGE_EXTRACT;
+
+        case LPFSS_MESSAGE_EXTRACT:
           /* NOTE: here we can assume that the complete message fits into
            * the buffer because of the checks/move operation in the
            * LPFSS_FRAME_READ state */
           if (self->buffer_end - self->buffer_pos >= self->frame_len)
             {
               /* ok, we already have the complete message */
-
               *msg = &self->buffer[self->buffer_pos];
               *msg_len = self->frame_len;
               self->buffer_pos += self->frame_len;
-              self->state = LPFSS_FRAME_READ;
+              self->state = LPFSS_FRAME_EXTRACT;
 
               /* we have the full message here so reset the half message flag */
               self->half_message_in_buffer = FALSE;
               return LPS_SUCCESS;
             }
+          self->state = LPFSS_MESSAGE_READ;
+          continue;
 
-          if (!log_proto_framed_server_fetch_data(self, may_read, aux, &status))
-            return status;
-
-          if (self->buffer_end - self->buffer_pos >= self->frame_len)
-            {
-              /* ok, we already have the complete message */
-
-              *msg = &self->buffer[self->buffer_pos];
-              *msg_len = self->frame_len;
-              self->buffer_pos += self->frame_len;
-              self->state = LPFSS_FRAME_READ;
-
-              /* we have the full message here so reset the half message flag */
-              self->half_message_in_buffer = FALSE;
-              return LPS_SUCCESS;
-            }
-
-          return LPS_SUCCESS;
         default:
           break;
         }
