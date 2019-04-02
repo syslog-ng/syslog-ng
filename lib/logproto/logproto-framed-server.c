@@ -89,17 +89,6 @@ log_proto_framed_server_fetch_data(LogProtoFramedServer *self, gboolean *may_rea
   if (self->buffer_pos == self->buffer_end)
     self->buffer_pos = self->buffer_end = 0;
 
-  if (self->buffer_size == self->buffer_end)
-    {
-      /* no more space in the buffer, we can't fetch further data. Move the
-       * things we already have to the beginning of the buffer to make
-       * space. */
-
-      memmove(self->buffer, &self->buffer[self->buffer_pos], self->buffer_end - self->buffer_pos);
-      self->buffer_end = self->buffer_end - self->buffer_pos;
-      self->buffer_pos = 0;
-    }
-
   if (!(*may_read))
     return FALSE;
 
@@ -167,6 +156,19 @@ log_proto_framed_server_extract_frame_length(LogProtoFramedServer *self, gboolea
   return TRUE;
 }
 
+static void
+_adjust_buffer_if_needed(LogProtoFramedServer *self, const gsize minimum_space_required)
+{
+  /* We need at least minimum_space_required amount of free space in the buffer.
+   * Since we already moving memory, move it to the beginning. */
+  if (self->buffer_size - self->buffer_pos < minimum_space_required)
+    {
+      memmove(self->buffer, &self->buffer[self->buffer_pos], self->buffer_end - self->buffer_pos);
+      self->buffer_end = self->buffer_end - self->buffer_pos;
+      self->buffer_pos = 0;
+    }
+}
+
 static LogProtoStatus
 log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read,
                               LogTransportAuxData *aux, Bookmark *bookmark)
@@ -200,6 +202,7 @@ log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_
           if (need_more_data)
             {
               self->state = LPFSS_FRAME_READ;
+              _adjust_buffer_if_needed(self, MAX_FRAME_LEN_DIGITS);
               continue;
             }
 
@@ -222,17 +225,7 @@ log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_
                   return LPS_ERROR;
                 }
             }
-          if (self->buffer_pos + self->frame_len > self->buffer_size)
-            {
-              /* message would be too large to fit into the buffer at
-               * buffer_pos, we need to move data to the beginning of
-               * the buffer to make space, and once we are at it, move
-               * to the beginning to make space for the maximum number
-               * of messages before the next shift */
-              memmove(self->buffer, &self->buffer[self->buffer_pos], self->buffer_end - self->buffer_pos);
-              self->buffer_end = self->buffer_end - self->buffer_pos;
-              self->buffer_pos = 0;
-            }
+          _adjust_buffer_if_needed(self, self->frame_len);
           continue;
 
         case LPFSS_TRIM_MESSAGE_READ:
@@ -280,26 +273,16 @@ log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_
           self->buffer_pos += self->frame_len;
           self->state = LPFSS_FRAME_EXTRACT;
 
-          // Prepare the buffer for the new message.
-
-          // No more data in the buffer
-          if (self->buffer_pos == self->buffer_end)
+          /* If there is no more data in the buffer return with success and wait for
+           * the trigger. (If we reached the end, there MIGHT be data in the buffer.) */
+          if ((self->buffer_pos == self->buffer_end) &&
+              (self->buffer_end != self->buffer_size))
             {
-              buffer_was_full = self->buffer_end == self->buffer_size;
-              self->buffer_pos = self->buffer_end = 0;
-              if (buffer_was_full)
-                continue;
               return LPS_SUCCESS;
             }
 
-          /* We have data in the buffer. Make sure there is enough room for at least
-           * one frame header. The rest of it will be solved by frame_read */
-          if ((self->buffer_size - self->buffer_pos) < MAX_FRAME_LEN_DIGITS)
-            {
-              memmove(self->buffer, &self->buffer[self->buffer_pos], self->buffer_end - self->buffer_pos);
-              self->buffer_end = self->buffer_end - self->buffer_pos;
-              self->buffer_pos = 0;
-            }
+          /* note: At this point we might not left enough space in the buffer
+           * for a new frame header. FRAME_EXTRACT will solve it. */
           continue;
 
         case LPFSS_MESSAGE_READ:
