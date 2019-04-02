@@ -169,13 +169,46 @@ _adjust_buffer_if_needed(LogProtoFramedServer *self, const gsize minimum_space_r
     }
 }
 
+static inline gboolean
+_is_trimmed_part_completely_fetched(LogProtoFramedServer *self)
+{
+  return self->buffer_end >= self->frame_len;
+}
+
+/* Returns TRUE if successfully finished consuming the data. Othwerwise it is not finished, but
+ * there is nothing left to read (or there was a read error) and expects to be called again. */
+static gboolean
+_consume_trimmed_part(LogProtoFramedServer *self, gboolean *may_read,
+                      LogTransportAuxData *aux, LogProtoStatus *status)
+{
+  /* Since trimming requires a full (buffer sized) message, the consuming
+   * always starts at the beginning of the buffer, with a new read. */
+  g_assert(self->buffer_pos == 0 && self->buffer_end == 0);
+  self->half_message_in_buffer = FALSE;
+
+  while (1)
+    {
+      if (!log_proto_framed_server_fetch_data(self, may_read, aux, status))
+        return FALSE;
+
+      if (_is_trimmed_part_completely_fetched(self))
+        {
+          self->buffer_pos += self->frame_len;
+          return TRUE;
+        }
+
+      self->frame_len -= self->buffer_end;
+      self->buffer_end = 0;
+    }
+}
+
 static LogProtoStatus
 log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read,
                               LogTransportAuxData *aux, Bookmark *bookmark)
 {
   LogProtoFramedServer *self = (LogProtoFramedServer *) s;
   LogProtoStatus status;
-  gboolean need_more_data, buffer_was_full;
+  gboolean need_more_data;
 
   if (G_UNLIKELY(!self->buffer))
     {
@@ -250,40 +283,18 @@ log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_
           continue;
 
         case LPFSS_CONSUME_TRIMMED:
-          /* Since trimming requires a full (buffer sized) message, the consuming
-           * always starts at the beginning of the buffer, with a new read. */
-          self->half_message_in_buffer = FALSE;
-          if (!log_proto_framed_server_fetch_data(self, may_read, aux, &status))
-            return status;
-
-          // We have some data, but it is not enough.
-          if (self->buffer_end < self->frame_len)
+          if (_consume_trimmed_part(self, may_read, aux, &status))
             {
-              self->frame_len -= self->buffer_end;
-              buffer_was_full = self->buffer_end == self->buffer_size;
-              self->buffer_end = 0;
-
-              // We might have more data, waiting for read.
-              if (buffer_was_full)
-                continue;
-              return LPS_SUCCESS;
+              self->state = LPFSS_FRAME_EXTRACT;
+              /* If there is data in the buffer, try to process it immediately.
+               * (or if we reached the end, than MIGHT be data waiting for read.) */
+              if ((self->buffer_pos != self->buffer_end) ||
+                  (self->buffer_end == self->buffer_size))
+                {
+                  continue;
+                }
             }
-
-          // We have enough data to finish consuming the message.
-          self->buffer_pos += self->frame_len;
-          self->state = LPFSS_FRAME_EXTRACT;
-
-          /* If there is no more data in the buffer return with success and wait for
-           * the trigger. (If we reached the end, there MIGHT be data in the buffer.) */
-          if ((self->buffer_pos == self->buffer_end) &&
-              (self->buffer_end != self->buffer_size))
-            {
-              return LPS_SUCCESS;
-            }
-
-          /* note: At this point we might not left enough space in the buffer
-           * for a new frame header. FRAME_EXTRACT will solve it. */
-          continue;
+          return status;
 
         case LPFSS_MESSAGE_READ:
           if (!log_proto_framed_server_fetch_data(self, may_read, aux, &status))
