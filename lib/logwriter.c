@@ -92,7 +92,7 @@ struct _LogWriter
   gboolean work_result;
   gint pollable_state;
   LogProtoClient *proto, *pending_proto;
-  gboolean watches_running:1, suspended:1, working:1, waiting_for_throttle:1;
+  gboolean watches_running:1, suspended:1, waiting_for_throttle:1;
   gboolean pending_proto_present;
   GCond *pending_proto_cond;
   GStaticMutex pending_proto_lock;
@@ -252,6 +252,7 @@ log_writer_io_handler(gpointer s, GIOCondition cond)
   main_loop_assert_main_thread();
 
   log_writer_stop_watches(self);
+  log_writer_stop_idle_timer(self);
   if ((self->options->options & LWO_THREADED))
     {
       main_loop_io_worker_job_submit(&self->io_job, cond);
@@ -1306,6 +1307,7 @@ log_writer_idle_timeout(void *cookie)
 {
   LogWriter *self = (LogWriter *) cookie;
 
+  g_assert(!self->io_job.working);
   msg_notice("Destination timeout has elapsed, closing connection",
              evt_tag_int("fd", log_proto_client_get_fd(self->proto)));
 

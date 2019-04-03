@@ -197,6 +197,7 @@ log_reader_io_handle_in(gpointer s)
   LogReader *self = (LogReader *) s;
 
   log_reader_stop_watches(self);
+  log_reader_stop_idle_timer(self);
   if ((self->options->flags & LR_THREADED))
     {
       main_loop_io_worker_job_submit(&self->io_job, G_IO_IN);
@@ -632,6 +633,7 @@ log_reader_idle_timeout(void *cookie)
 {
   LogReader *self = (LogReader *) cookie;
 
+  g_assert(!self->io_job.working);
   msg_notice("Source timeout has elapsed, closing connection",
              evt_tag_int("fd", log_proto_server_get_fd(self->proto)));
 
