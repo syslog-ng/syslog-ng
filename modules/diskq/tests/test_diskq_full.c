@@ -27,7 +27,7 @@
 #include "logqueue-disk-non-reliable.h"
 #include "apphook.h"
 #include "plugin.h"
-#include "testutils.h"
+#include <criterion/criterion.h>
 #include "queue_utils_lib.h"
 #include "test_diskq_tools.h"
 
@@ -36,7 +36,8 @@
 #include <string.h>
 #include <unistd.h>
 
-#define DISKQ_FILENAME "test_become_full.qf"
+#define DISKQ_FILENAME_NOT_RELIABLE "test_become_full_not_reliable.qf"
+#define DISKQ_FILENAME_RELIABLE "test_become_full_reliable.qf"
 
 
 static void msg_post_function(LogMessage *msg)
@@ -45,7 +46,7 @@ static void msg_post_function(LogMessage *msg)
 }
 
 void
-test_diskq_become_full(gboolean reliable)
+test_diskq_become_full(gboolean reliable, const gchar *filename)
 {
   LogQueue *q;
   acked_messages = 0;
@@ -74,20 +75,26 @@ test_diskq_become_full(gboolean reliable)
   stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &q->dropped_messages);
   stats_counter_set(q->dropped_messages, 0);
   stats_unlock();
-  unlink(DISKQ_FILENAME);
-  log_queue_disk_load_queue(q, DISKQ_FILENAME);
+  unlink(filename);
+  log_queue_disk_load_queue(q, filename);
   feed_some_messages(q, 1000);
 
-  assert_gint(atomic_gssize_racy_get(&q->dropped_messages->value), 1000, "Bad dropped message number (reliable: %s)",
-              reliable ? "TRUE" : "FALSE");
+  cr_assert_eq(atomic_gssize_racy_get(&q->dropped_messages->value), 1000, "Bad dropped message number (reliable: %s)",
+               reliable ? "TRUE" : "FALSE");
 
   log_queue_unref(q);
   disk_queue_options_destroy(&options);
-  unlink(DISKQ_FILENAME);
+  unlink(filename);
 }
 
-int
-main(void)
+Test(diskq_full, diskq_become_full)
+{
+  test_diskq_become_full(TRUE, DISKQ_FILENAME_RELIABLE);
+  test_diskq_become_full(FALSE, DISKQ_FILENAME_NOT_RELIABLE);
+}
+
+static void
+setup(void)
 {
   app_startup();
   setenv("TZ", "MET-1METDST", TRUE);
@@ -96,12 +103,13 @@ main(void)
   configuration = cfg_new_snippet();
   cfg_load_module(configuration, "disk-buffer");
   msg_set_post_func(msg_post_function);
+}
 
-  test_diskq_become_full(TRUE);
-  test_diskq_become_full(FALSE);
-
+static void
+teardown(void)
+{
   cfg_free(configuration);
   app_shutdown();
-
-  return 0;
 }
+
+TestSuite(diskq_full, .init = setup, .fini = teardown);

@@ -30,7 +30,7 @@
 
 #include "queue_utils_lib.h"
 #include "test_diskq_tools.h"
-#include "testutils.h"
+#include <criterion/criterion.h>
 
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -80,9 +80,10 @@ _assert_diskq_actual_file_size_with_stored(LogQueue *q)
   gchar *filename = qdisk->filename;
 
   struct stat diskq_file_stat;
-  assert_gint(stat(filename, &diskq_file_stat), 0, "Stat call failed, errno:%d", errno);
-  assert_gint(qdisk->file_size, diskq_file_stat.st_size, "File size does not match with stored size");
-  fprintf(stderr, "Actual file size: %ld\n", diskq_file_stat.st_size);
+  cr_assert_eq(stat(filename, &diskq_file_stat), 0, "Stat call failed, errno:%d", errno);
+  cr_assert_eq(qdisk->file_size, diskq_file_stat.st_size,
+               "File size does not match with stored size; Actual file size: %ld, Expected file size: %ld\n", diskq_file_stat.st_size,
+               qdisk->file_size);
 }
 
 static void
@@ -93,18 +94,18 @@ _assert_diskq_actual_file_size_with_expected(LogQueue *q, gboolean should_file_b
   gchar *filename = qdisk->filename;
 
   struct stat diskq_file_stat;
-  assert_gint(stat(filename, &diskq_file_stat), 0, "Stat call failed, errno:%d", errno);
+  cr_assert_eq(stat(filename, &diskq_file_stat), 0, "Stat call failed, errno:%d", errno);
 
   if (should_file_be_empty)
     {
-      assert_gint(diskq_file_stat.st_size, QDISK_RESERVED_SPACE, "Truncate after load failed: file is not empty");
+      cr_assert_eq(diskq_file_stat.st_size, QDISK_RESERVED_SPACE, "Truncate after load failed: file is not empty");
     }
   else
     {
       // diskq file is truncated on read when it becomes empty,
       // thus we have to assert to the original file size (after push finished), i.e. the max recorded size
-      assert_gint(diskq_file_stat.st_size, _calculate_expected_file_size(number_of_messages_on_disk),
-                  "Truncate after load failed: expected size differs");
+      cr_assert_eq(diskq_file_stat.st_size, _calculate_expected_file_size(number_of_messages_on_disk),
+                   "Truncate after load failed: expected size differs");
     }
 }
 
@@ -114,6 +115,7 @@ typedef struct
   gint number_of_msgs_to_push;
   gint number_of_msgs_to_pop;
   gboolean should_file_be_empty_after_truncate;
+  gchar *filename;
 } TruncateTestParams;
 
 static void
@@ -121,78 +123,75 @@ _test_diskq_truncate(TruncateTestParams params)
 {
   LogQueue *q;
   DiskQueueOptions options;
-  GString *filename = g_string_new("test_dq_truncate.qf");
   fprintf(stderr, "### Test case starts: %s\n", params.test_id);
 
-  q = _create_diskqueue(filename->str, &options);
-  assert_gint(log_queue_get_length(q), 0, "No messages should be in a newly created disk-queue file!");
+  cr_assert(cfg_init(configuration), "cfg_init failed!");
+  q = _create_diskqueue(params.filename, &options);
+  cr_assert_eq(log_queue_get_length(q), 0, "No messages should be in a newly created disk-queue file!");
 
   feed_some_messages(q, params.number_of_msgs_to_push);
-  assert_gint(log_queue_get_length(q), params.number_of_msgs_to_push, "Not all messages have been queued!");
+  cr_assert_eq(log_queue_get_length(q), params.number_of_msgs_to_push, "Not all messages have been queued!");
   gint64 messages_on_disk_after_push = qdisk_get_length(((LogQueueDisk *)q)->qdisk);
   _assert_diskq_actual_file_size_with_stored(q);
 
   send_some_messages(q, params.number_of_msgs_to_pop);
-  assert_gint(log_queue_get_length(q), params.number_of_msgs_to_push - params.number_of_msgs_to_pop,
-              "Invalid number of messages in disk-queue after messages have been popped!");
+  cr_assert_eq(log_queue_get_length(q), params.number_of_msgs_to_push - params.number_of_msgs_to_pop,
+               "Invalid number of messages in disk-queue after messages have been popped!");
 
   _save_diskqueue(q);
 
-  q = _get_diskqueue(filename->str, &options);
-  assert_gint(log_queue_get_length(q), params.number_of_msgs_to_push - params.number_of_msgs_to_pop,
-              "Invalid number of messages in disk-queue after opened existing one");
+  q = _get_diskqueue(params.filename, &options);
+  cr_assert_eq(log_queue_get_length(q), params.number_of_msgs_to_push - params.number_of_msgs_to_pop,
+               "Invalid number of messages in disk-queue after opened existing one");
   _assert_diskq_actual_file_size_with_stored(q);
   _assert_diskq_actual_file_size_with_expected(q, params.should_file_be_empty_after_truncate,
                                                messages_on_disk_after_push);
 
 
-  unlink(filename->str);
-  g_string_free(filename, TRUE);
+  unlink(params.filename);
 
   log_queue_unref(q);
   disk_queue_options_destroy(&options);
 }
 
-static void
-test_diskq_truncate_with_diskbuffer_used(void)
+// Diskbuffer is the part of disk-queue that is used only when qout is full
+Test(diskq_truncate, test_diskq_truncate_with_diskbuffer_used)
 {
   _test_diskq_truncate((TruncateTestParams)
   {
     .test_id = __func__,
     .number_of_msgs_to_push = 100,
     .number_of_msgs_to_pop = 50,
-    .should_file_be_empty_after_truncate = FALSE
+    .should_file_be_empty_after_truncate = FALSE,
+    .filename = "test_dq_truncate1.qf"
   });
 }
 
-static void
-test_diskq_truncate_without_diskbuffer_used(void)
+Test(diskq_truncate, test_diskq_truncate_without_diskbuffer_used)
 {
   _test_diskq_truncate((TruncateTestParams)
   {
     .test_id = __func__,
     .number_of_msgs_to_push = 100,
     .number_of_msgs_to_pop = 80,
-    .should_file_be_empty_after_truncate = TRUE
+    .should_file_be_empty_after_truncate = TRUE,
+    .filename = "test_dq_truncate2.qf"
   });
 }
 
-
-int
-main(void)
+static void
+setup(void)
 {
   msg_init(TRUE); // internal messages will go to stderr(), msg_init() is idempotent
   app_startup();
-
   configuration = cfg_new_snippet();
-  assert_true(cfg_init(configuration), "cfg_init failed!");
+}
 
-  // Diskbuffer is the part of disk-queue that is used only when qout is full
-  test_diskq_truncate_with_diskbuffer_used();
-  test_diskq_truncate_without_diskbuffer_used();
-
+static void
+teardown(void)
+{
   app_shutdown();
   cfg_free(configuration);
-
-  return 0;
 }
+
+TestSuite(diskq_truncate, .init = setup, .fini = teardown);
