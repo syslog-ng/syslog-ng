@@ -47,3 +47,4 @@ EXTRA_DIST += \
 
 .PHONY: modules/kafka/ mod-kafka
 
+include modules/kafka/tests/Makefile.am
