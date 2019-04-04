@@ -357,6 +357,38 @@ _on_message_extract(LogProtoFramedServer *self, const guchar **msg, gsize *msg_l
   return LPFSSCTRL_NEXT_STATE;
 }
 
+static LogProtoFramedServerStateControl
+_step_state_machine(LogProtoFramedServer *self, const guchar **msg, gsize *msg_len, gboolean *may_read,
+                    LogTransportAuxData *aux, LogProtoStatus *status)
+{
+  switch (self->state)
+    {
+    case LPFSS_FRAME_READ:
+      return _on_frame_read(self, may_read, aux, status);
+
+    case LPFSS_FRAME_EXTRACT:
+      return _on_frame_extract(self, aux, status);
+
+    case LPFSS_TRIM_MESSAGE_READ:
+      return _on_trim_message_read(self, may_read, aux, status);
+
+    case LPFSS_TRIM_MESSAGE:
+      return _on_trim_message(self, msg, msg_len, status);
+
+    case LPFSS_CONSUME_TRIMMED:
+      return _on_consume_trimmed(self, may_read, aux, status);
+
+    case LPFSS_MESSAGE_READ:
+      return _on_message_read(self, may_read, aux, status);
+
+    case LPFSS_MESSAGE_EXTRACT:
+      return _on_message_extract(self, msg, msg_len, status);
+
+    default:
+      return LPFSSCTRL_NEXT_STATE;
+    }
+}
+
 static LogProtoStatus
 log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read,
                               LogTransportAuxData *aux, Bookmark *bookmark)
@@ -366,49 +398,9 @@ log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_
 
   _ensure_buffer(self);
 
-  while (1)
-    {
-      switch (self->state)
-        {
-        case LPFSS_FRAME_READ:
-          if (_on_frame_read(self, may_read, aux, &status) == LPFSSCTRL_RETURN_WITH_STATUS)
-            return status;
-          break;
+  while (_step_state_machine(self, msg, msg_len, may_read, aux, &status) != LPFSSCTRL_RETURN_WITH_STATUS) ;
 
-        case LPFSS_FRAME_EXTRACT:
-          if (_on_frame_extract(self, aux, &status) == LPFSSCTRL_RETURN_WITH_STATUS)
-            return status;
-          break;
-
-        case LPFSS_TRIM_MESSAGE_READ:
-          if (_on_trim_message_read(self, may_read, aux, &status) == LPFSSCTRL_RETURN_WITH_STATUS)
-            return status;
-          break;
-
-        case LPFSS_TRIM_MESSAGE:
-          if (_on_trim_message(self, msg, msg_len, &status) == LPFSSCTRL_RETURN_WITH_STATUS)
-            return status;
-          break;
-
-        case LPFSS_CONSUME_TRIMMED:
-          if (_on_consume_trimmed(self, may_read, aux, &status) == LPFSSCTRL_RETURN_WITH_STATUS)
-            return status;
-          break;
-
-        case LPFSS_MESSAGE_READ:
-          if (_on_message_read(self, may_read, aux, &status) == LPFSSCTRL_RETURN_WITH_STATUS)
-            return status;
-          break;
-
-        case LPFSS_MESSAGE_EXTRACT:
-          if (_on_message_extract(self, msg, msg_len, &status) == LPFSSCTRL_RETURN_WITH_STATUS)
-            return status;
-          break;
-
-        default:
-          break;
-        }
-    }
+  return status;
 }
 
 static void
