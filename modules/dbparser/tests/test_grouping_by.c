@@ -58,6 +58,58 @@ Test(grouping_by, create_grouping_by)
   cfg_free(cfg);
 }
 
+Test(grouping_by, cfg_persist_name_not_equal)
+{
+  GlobalConfig *cfg = cfg_new_snippet();
+  LogParser *parser = grouping_by_new(cfg);
+
+  LogTemplate *template = _get_template("$TEMPLATE1", cfg);
+  grouping_by_set_key_template(parser, template);
+  log_template_unref(template);
+
+  gchar *persist_name1 = g_strdup(grouping_by_format_persist_name(parser));
+
+  template = _get_template("$TEMPLATE2", cfg);
+  grouping_by_set_key_template(parser, template);
+  log_template_unref(template);
+
+  gchar *persist_name2 = g_strdup(grouping_by_format_persist_name(parser));
+
+  cr_assert_str_neq(persist_name1, persist_name2);
+
+  g_free(persist_name1);
+  g_free(persist_name2);
+
+  log_pipe_unref(&parser->super);
+  cfg_free(cfg);
+}
+
+Test(grouping_by, cfg_persist_name_equal)
+{
+  GlobalConfig *cfg = cfg_new_snippet();
+  LogParser *parser = grouping_by_new(cfg);
+
+  LogTemplate *template = _get_template("$TEMPLATE1", cfg);
+  grouping_by_set_key_template(parser, template);
+  log_template_unref(template);
+
+  gchar *persist_name1 = g_strdup(grouping_by_format_persist_name(parser));
+
+  template = _get_template("$TEMPLATE1", cfg);
+  grouping_by_set_key_template(parser, template);
+  log_template_unref(template);
+
+  gchar *persist_name2 = g_strdup(grouping_by_format_persist_name(parser));
+
+  cr_assert_str_eq(persist_name1, persist_name2);
+
+  g_free(persist_name1);
+  g_free(persist_name2);
+
+  log_pipe_unref(&parser->super);
+  cfg_free(cfg);
+}
+
 static void
 setup(void)
 {

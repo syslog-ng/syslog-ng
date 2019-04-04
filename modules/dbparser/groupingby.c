@@ -272,8 +272,9 @@ gchar *
 grouping_by_format_persist_name(LogParser *s)
 {
   static gchar persist_name[512];
+  GroupingBy *self = (GroupingBy *)s;
 
-  g_snprintf(persist_name, sizeof(persist_name), "grouping-by()");
+  g_snprintf(persist_name, sizeof(persist_name), "grouping-by(%s)", self->key_template->template);
   return persist_name;
 }
 
