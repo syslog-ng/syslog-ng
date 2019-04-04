@@ -76,7 +76,10 @@ bison_target(DBParserGrammar
 
 add_library(dbparser SHARED ${DBPARSER_SOURCES})
 target_link_libraries(dbparser PRIVATE patterndb)
-target_include_directories(dbparser PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(dbparser
+	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+	PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+)
 target_link_libraries(dbparser PRIVATE syslog-ng)
 
 install(TARGETS dbparser
