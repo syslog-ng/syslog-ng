@@ -41,6 +41,13 @@ typedef enum
   LPFSS_CONSUME_TRIMMED
 } LogProtoFramedServerState;
 
+typedef enum
+{
+  LPFSSCTRL_RETURN_WITH_STATUS,
+  LPFSSCTRL_NEXT_STATE,
+} LogProtoFramedServerStateControl;
+
+
 typedef struct _LogProtoFramedServer
 {
   LogProtoServer super;
@@ -212,17 +219,18 @@ _ensure_buffer(LogProtoFramedServer *self)
   self->buffer = g_malloc(self->buffer_size);
 }
 
-static gboolean
+static LogProtoFramedServerStateControl
 _on_frame_read(LogProtoFramedServer *self, gboolean *may_read, LogTransportAuxData *aux, LogProtoStatus *status)
 {
   if (!log_proto_framed_server_fetch_data(self, may_read, aux, status))
-    return FALSE;
+    return LPFSSCTRL_RETURN_WITH_STATUS;
+
   self->state = LPFSS_FRAME_EXTRACT;
-  return TRUE;
+  return LPFSSCTRL_NEXT_STATE;
 }
 
-static gboolean
-_on_frame_extract(LogProtoFramedServer *self, LogTransportAuxData *aux)
+static LogProtoFramedServerStateControl
+_on_frame_extract(LogProtoFramedServer *self, LogTransportAuxData *aux, LogProtoStatus *status)
 {
   gboolean need_more_data = FALSE;
 
@@ -230,14 +238,15 @@ _on_frame_extract(LogProtoFramedServer *self, LogTransportAuxData *aux)
     {
       /* invalid frame header */
       log_transport_aux_data_reinit(aux);
-      return FALSE;
+      *status = LPS_ERROR;
+      return LPFSSCTRL_RETURN_WITH_STATUS;
     }
 
   if (need_more_data)
     {
       self->state = LPFSS_FRAME_READ;
       _adjust_buffer_if_needed(self, MAX_FRAME_LEN_DIGITS);
-      return TRUE;
+      return LPFSSCTRL_NEXT_STATE;
     }
 
   self->state = LPFSS_MESSAGE_EXTRACT;
@@ -257,25 +266,26 @@ _on_frame_extract(LogProtoFramedServer *self, LogTransportAuxData *aux)
                     evt_tag_int("log_msg_size", self->super.options->max_msg_size),
                     evt_tag_int("frame_length", self->frame_len));
           log_transport_aux_data_reinit(aux);
-          return FALSE;
+          *status = LPS_ERROR;
+          return LPFSSCTRL_RETURN_WITH_STATUS;
         }
     }
 
   _adjust_buffer_if_needed(self, self->frame_len);
-  return TRUE;
+  return LPFSSCTRL_NEXT_STATE;
 }
 
-static gboolean
+static LogProtoFramedServerStateControl
 _on_trim_message_read(LogProtoFramedServer *self, gboolean *may_read, LogTransportAuxData *aux, LogProtoStatus *status)
 {
   if (!log_proto_framed_server_fetch_data(self, may_read, aux, status))
-    return FALSE;
+    return LPFSSCTRL_RETURN_WITH_STATUS;
   self->state = LPFSS_TRIM_MESSAGE;
 
-  return TRUE;
+  return LPFSSCTRL_NEXT_STATE;
 }
 
-static gboolean
+static LogProtoFramedServerStateControl
 _on_trim_message(LogProtoFramedServer *self, const guchar **msg, gsize *msg_len, LogProtoStatus *status)
 {
   if (self->buffer_end == self->buffer_size)
@@ -289,14 +299,14 @@ _on_trim_message(LogProtoFramedServer *self, const guchar **msg, gsize *msg_len,
       self->half_message_in_buffer = TRUE;
       self->buffer_pos = self->buffer_end = 0;
       *status = LPS_SUCCESS;
-      return FALSE;
+      return LPFSSCTRL_RETURN_WITH_STATUS;
     }
 
   self->state = LPFSS_TRIM_MESSAGE_READ;
-  return TRUE;
+  return LPFSSCTRL_NEXT_STATE;
 }
 
-static gboolean
+static LogProtoFramedServerStateControl
 _on_consume_trimmed(LogProtoFramedServer *self, gboolean *may_read, LogTransportAuxData *aux, LogProtoStatus *status)
 {
   if (_consume_trimmed_part(self, may_read, aux, status))
@@ -307,24 +317,24 @@ _on_consume_trimmed(LogProtoFramedServer *self, gboolean *may_read, LogTransport
       if ((self->buffer_pos != self->buffer_end) ||
           (self->buffer_end == self->buffer_size))
         {
-          return TRUE;
+          return LPFSSCTRL_NEXT_STATE;
         }
     }
 
-  return FALSE;
+  return LPFSSCTRL_RETURN_WITH_STATUS;
 }
 
-static gboolean
+static LogProtoFramedServerStateControl
 _on_message_read(LogProtoFramedServer *self, gboolean *may_read, LogTransportAuxData *aux, LogProtoStatus *status)
 {
   if (!log_proto_framed_server_fetch_data(self, may_read, aux, status))
-    return FALSE;
+    return LPFSSCTRL_RETURN_WITH_STATUS;
 
   self->state = LPFSS_MESSAGE_EXTRACT;
-  return TRUE;
+  return LPFSSCTRL_NEXT_STATE;
 }
 
-static gboolean
+static LogProtoFramedServerStateControl
 _on_message_extract(LogProtoFramedServer *self, const guchar **msg, gsize *msg_len, LogProtoStatus *status)
 {
   /* NOTE: here we can assume that the complete message fits into
@@ -341,10 +351,10 @@ _on_message_extract(LogProtoFramedServer *self, const guchar **msg, gsize *msg_l
       /* we have the full message here so reset the half message flag */
       self->half_message_in_buffer = FALSE;
       *status = LPS_SUCCESS;
-      return FALSE;
+      return LPFSSCTRL_RETURN_WITH_STATUS;
     }
   self->state = LPFSS_MESSAGE_READ;
-  return TRUE;
+  return LPFSSCTRL_NEXT_STATE;
 }
 
 static LogProtoStatus
@@ -361,37 +371,37 @@ log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_
       switch (self->state)
         {
         case LPFSS_FRAME_READ:
-          if (!_on_frame_read(self, may_read, aux, &status))
+          if (_on_frame_read(self, may_read, aux, &status) == LPFSSCTRL_RETURN_WITH_STATUS)
             return status;
           break;
 
         case LPFSS_FRAME_EXTRACT:
-          if (!_on_frame_extract(self, aux))
-            return LPS_ERROR;
+          if (_on_frame_extract(self, aux, &status) == LPFSSCTRL_RETURN_WITH_STATUS)
+            return status;
           break;
 
         case LPFSS_TRIM_MESSAGE_READ:
-          if (!_on_trim_message_read(self, may_read, aux, &status))
+          if (_on_trim_message_read(self, may_read, aux, &status) == LPFSSCTRL_RETURN_WITH_STATUS)
             return status;
           break;
 
         case LPFSS_TRIM_MESSAGE:
-          if (!_on_trim_message(self, msg, msg_len, &status))
+          if (_on_trim_message(self, msg, msg_len, &status) == LPFSSCTRL_RETURN_WITH_STATUS)
             return status;
           break;
 
         case LPFSS_CONSUME_TRIMMED:
-          if (!_on_consume_trimmed(self, may_read, aux, &status))
+          if (_on_consume_trimmed(self, may_read, aux, &status) == LPFSSCTRL_RETURN_WITH_STATUS)
             return status;
           break;
 
         case LPFSS_MESSAGE_READ:
-          if (!_on_message_read(self, may_read, aux, &status))
+          if (_on_message_read(self, may_read, aux, &status) == LPFSSCTRL_RETURN_WITH_STATUS)
             return status;
           break;
 
         case LPFSS_MESSAGE_EXTRACT:
-          if (!_on_message_extract(self, msg, msg_len, &status))
+          if (_on_message_extract(self, msg, msg_len, &status) == LPFSSCTRL_RETURN_WITH_STATUS)
             return status;
           break;
 
