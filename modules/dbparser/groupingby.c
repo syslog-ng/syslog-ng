@@ -268,8 +268,8 @@ grouping_by_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data)
 }
 
 
-static gchar *
-grouping_by_format_persist_name(GroupingBy *self)
+gchar *
+grouping_by_format_persist_name(LogParser *s)
 {
   static gchar persist_name[512];
 
@@ -382,7 +382,8 @@ grouping_by_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_
 static void
 _load_correllation_state(GroupingBy *self, GlobalConfig *cfg)
 {
-  GroupingByPersistData *persist_data = cfg_persist_config_fetch(cfg, grouping_by_format_persist_name(self));
+  GroupingByPersistData *persist_data = cfg_persist_config_fetch(cfg,
+                                        grouping_by_format_persist_name(&self->super.super));
   if (persist_data)
     {
       self->correllation = persist_data->correllation;
@@ -451,7 +452,7 @@ _store_data_in_persist(GroupingBy *self, GlobalConfig *cfg)
   persist_data->correllation = self->correllation;
   persist_data->timer_wheel = self->timer_wheel;
 
-  cfg_persist_config_add(cfg, grouping_by_format_persist_name(self), persist_data,
+  cfg_persist_config_add(cfg, grouping_by_format_persist_name(&self->super.super), persist_data,
                          (GDestroyNotify) _free_persist_data, FALSE);
   self->correllation = NULL;
   self->timer_wheel = NULL;
