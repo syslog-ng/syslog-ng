@@ -39,6 +39,10 @@
 #include <time.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <glib/gstdio.h>
 
 #include "test_patterndb.h"
@@ -668,6 +672,70 @@ Test(pattern_db, test_tag_outside_of_rule_skeleton)
 
   _destroy_pattern_db(patterndb, filename);
   g_free(filename);
+}
+
+const gchar *dirs[] =
+{
+  "pathutils_get_filenames",
+  "pathutils_get_filenames/testdir",
+  "pathutils_get_filenames/testdir2"
+};
+const gchar *files[] =
+{
+  "pathutils_get_filenames/test.file",
+  "pathutils_get_filenames/test2.file",
+  "pathutils_get_filenames/testdir/test.file",
+  "pathutils_get_filenames/testdir2/test23.file",
+  "pathutils_get_filenames/testdir2/test22.file"
+};
+size_t dirs_len = G_N_ELEMENTS(dirs);
+size_t files_len = G_N_ELEMENTS(files);
+
+void
+test_pdb_get_filenames_setup(void)
+{
+  for (gint i = 0; i < dirs_len; ++i)
+    g_assert(mkdir(dirs[i], S_IRUSR | S_IWUSR | S_IXUSR) >= 0);
+
+  for (gint i = 0; i < files_len; ++i)
+    {
+      int fd = open(files[i], O_CREAT | O_RDWR, 0644);
+      g_assert(fd >= 0);
+      g_assert(close(fd) == 0);
+    }
+}
+
+void
+test_pdb_get_filenames_teardown(void)
+{
+  for (gint i = 0; i < files_len; ++i)
+    g_assert(g_remove(files[i]) == 0);
+  for (gint i = dirs_len - 1; i >= 0; --i)
+    g_assert(g_remove(dirs[i]) == 0);
+}
+
+Test(test_pathutils, test_pdb_get_filenames, .init = test_pdb_get_filenames_setup,
+     .fini = test_pdb_get_filenames_teardown)
+{
+  GError *error;
+  const gchar *expected[] =
+  {
+    "pathutils_get_filenames/test2.file",
+    "pathutils_get_filenames/testdir2/test22.file",
+    "pathutils_get_filenames/testdir2/test23.file"
+  };
+  guint expected_len = G_N_ELEMENTS(expected);
+  GPtrArray *filenames = pdb_get_filenames("pathutils_get_filenames", TRUE, "*test2*", &error);
+
+  cr_assert(filenames);
+  cr_assert(filenames->len == expected_len);
+
+  pdb_sort_filenames(filenames);
+
+  for (guint i = 0; i < filenames->len; ++i)
+    cr_assert_str_eq(g_ptr_array_index(filenames, i), expected[i]);
+
+  g_ptr_array_free(filenames, TRUE);
 }
 
 void setup(void)

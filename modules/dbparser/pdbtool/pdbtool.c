@@ -80,6 +80,7 @@ static const gchar **colors = empty_colors;
 
 static const gchar *patterndb_file = PATH_PATTERNDB_FILE;
 static gboolean color_out = FALSE;
+static gboolean sort = FALSE;
 
 typedef struct _PdbToolMergeState
 {
@@ -224,33 +225,27 @@ static gboolean merge_recursive = FALSE;
 static gboolean
 pdbtool_merge_dir(const gchar *dir, gboolean recursive, GString *merged)
 {
-  GDir *pdb_dir;
-  gboolean ok = TRUE;
+  GPtrArray *filenames;
   GError *error = NULL;
-  const gchar *filename;
 
-  if ((pdb_dir = g_dir_open(dir, 0, &error)) == NULL)
+  if ((filenames = pdb_get_filenames(dir, recursive, merge_glob, &error)) == NULL)
     {
-      fprintf(stderr, "Error opening directory %s, error='%s'\n", merge_dir, error ? error->message : "Unknown error");
+      fprintf(stderr, "error getting filenames: %s\n", error->message);
       g_clear_error(&error);
       return FALSE;
     }
 
-  while ((filename = g_dir_read_name(pdb_dir)) != NULL && ok)
-    {
-      gchar *full_name = g_build_filename(dir, filename, NULL);
+  if (sort)
+    pdb_sort_filenames(filenames);
 
-      if (recursive && is_file_directory(full_name))
-        {
-          ok = pdbtool_merge_dir(full_name, recursive, merged);
-        }
-      else if (is_file_regular(full_name) && (!merge_glob || g_pattern_match_simple(merge_glob, filename)))
-        {
-          ok = pdbtool_merge_file(full_name, merged);
-        }
-      g_free(full_name);
+  for (guint i = 0; i < filenames->len; ++i)
+    {
+      if (!pdbtool_merge_file(g_ptr_array_index(filenames, i), merged))
+        break;
     }
-  g_dir_close(pdb_dir);
+
+  g_ptr_array_free(filenames, TRUE);
+
   return TRUE;
 }
 
@@ -317,6 +312,10 @@ static GOptionEntry merge_options[] =
   {
     "directory", 'D', 0, G_OPTION_ARG_STRING, &merge_dir,
     "Directory from merge pattern databases", "<directory>"
+  },
+  {
+    "sort", 's', 0, G_OPTION_ARG_NONE, &sort,
+    "Sort files during merge (alphabetic order, with files first, directories after)", NULL
   },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
