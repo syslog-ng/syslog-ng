@@ -654,14 +654,6 @@ afamqp_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
   return LTR_SUCCESS;
 }
 
-static void
-afamqp_worker_thread_init(LogThreadedDestDriver *d)
-{
-  AMQPDestDriver *self = (AMQPDestDriver *)d;
-
-  afamqp_dd_connect(self, FALSE);
-}
-
 /*
  * Main thread
  */
@@ -740,7 +732,6 @@ afamqp_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.free_fn = afamqp_dd_free;
   self->super.super.super.super.generate_persist_name = afamqp_dd_format_persist_name;
 
-  self->super.worker.thread_init = afamqp_worker_thread_init;
   self->super.worker.connect = afamqp_dd_worker_connect;
   self->super.worker.disconnect = afamqp_dd_disconnect;
   self->super.worker.insert = afamqp_worker_insert;
