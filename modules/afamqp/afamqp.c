@@ -473,12 +473,12 @@ afamqp_dd_login(AMQPDestDriver *self)
 }
 
 static gboolean
-afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
+afamqp_dd_connect(AMQPDestDriver *self)
 {
   int sockfd_ret;
   amqp_rpc_reply_t ret;
 
-  if (reconnect && self->conn)
+  if (self->conn)
     {
       ret = amqp_get_rpc_reply(self->conn);
       if (ret.reply_type == AMQP_RESPONSE_NORMAL)
@@ -645,7 +645,7 @@ afamqp_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
 {
   AMQPDestDriver *self = (AMQPDestDriver *)s;
 
-  if (!afamqp_dd_connect(self, TRUE))
+  if (!afamqp_dd_connect(self))
     return LTR_NOT_CONNECTED;
 
   if (!afamqp_worker_publish (self, msg))
@@ -714,7 +714,7 @@ static gboolean
 afamqp_dd_worker_connect(LogThreadedDestDriver *s)
 {
   AMQPDestDriver *self = (AMQPDestDriver *)s;
-  return afamqp_dd_connect(self, FALSE);
+  return afamqp_dd_connect(self);
 }
 
 /*
