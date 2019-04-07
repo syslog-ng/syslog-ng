@@ -71,7 +71,6 @@ Test(log_proto, test_base)
   assert_proto_server_status(proto, proto->status, LPS_SUCCESS);
 
   log_proto_server_free(proto);
-  log_proto_server_options_destroy(&proto_server_options);
 }
 
 Test(log_proto, test_log_proto, .disabled = true)

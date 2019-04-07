@@ -67,6 +67,5 @@ Test(log_proto, test_log_proto_server_options_invalid_encoding)
 
   log_proto_server_options_init(&opts, configuration);
   cr_assert_not(success, "Successfully set a bogus encoding, which is insane");
-
   log_proto_server_options_destroy(&opts);
 }
