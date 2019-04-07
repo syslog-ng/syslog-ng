@@ -27,6 +27,8 @@
 #include "logmsg/logmsg.h"
 #include "messages.h"
 #include "filter/filter-tags.h"
+#include <criterion/criterion.h>
+#include <criterion/parameterized.h>
 
 #include <stdio.h>
 #include <sys/time.h>
@@ -34,22 +36,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-gboolean fail = FALSE;
-gboolean verbose = FALSE;
-
 #define NUM_TAGS 8159
 #define FILTER_TAGS 100
-
-#define test_fail(fmt, args...) \
-do {\
- printf(fmt, ##args); \
- fail = TRUE; \
-} while (0);
-
-#define test_msg(fmt, args...) \
-do { \
-  if (verbose) printf(fmt, ##args); \
-} while (0);
 
 gchar *
 get_tag_by_id(LogTagId id)
@@ -57,8 +45,7 @@ get_tag_by_id(LogTagId id)
   return g_strdup_printf("tags%d", id);
 }
 
-void
-test_tags(void)
+Test(tags, test_tags)
 {
   guint i, check;
   guint id;
@@ -70,9 +57,9 @@ test_tags(void)
       {
         name = get_tag_by_id(i);
         id = log_tags_get_by_name(name);
-        test_msg("%s tag %s %d\n", check ? "Checking" : "Adding", name, id);
+        cr_log_info("%s tag %s %d\n", check ? "Checking" : "Adding", name, id);
         if (id != i)
-          test_fail("Invalid tag id %d %s\n", id, name);
+          cr_assert_eq(id, i, "Invalid tag id %d %s\n", id, name);
 
         g_free(name);
       }
@@ -82,14 +69,13 @@ test_tags(void)
       name = get_tag_by_id(i);
 
       tag_name = log_tags_get_by_id(i);
-      test_msg("Looking up tag by id %d %s(%s)\n", i, tag_name, name);
+      cr_log_info("Looking up tag by id %d %s(%s)\n", i, tag_name, name);
       if (tag_name)
         {
-          if (!g_str_equal(tag_name, name))
-            test_fail("Bad tag name for id %d %s (%s)\n", i, tag_name, name);
+          cr_assert_str_eq(tag_name, name, "Bad tag name for id %d %s (%s)\n", i, tag_name, name);
         }
       else
-        test_fail("Error looking up tag by id %d %s\n", i, name);
+        cr_log_info("Error looking up tag by id %d %s\n", i, name);
 
       g_free(name);
     }
@@ -97,19 +83,18 @@ test_tags(void)
   for (i = NUM_TAGS; i < (NUM_TAGS + 3); i++)
     {
       tag_name = log_tags_get_by_id(i);
-      test_msg("Looking up tag by invalid id %d\n", i);
+      cr_log_info("Looking up tag by invalid id %d\n", i);
       if (tag_name)
-        test_fail("Found tag name for invalid id %d %s\n", i, tag_name);
+        cr_log_info("Found tag name for invalid id %d %s\n", i, tag_name);
     }
 }
 
-void
-test_msg_tags(void)
+Test(tags, test_msg_tags)
 {
   gchar *name;
   gint i, set;
 
-  test_msg("=== LogMessage tests ===\n");
+  cr_log_info("=== LogMessage tests ===\n");
 
   LogMessage *msg = log_msg_new_empty();
   for (set = 1; set != -1; set--)
@@ -122,10 +107,10 @@ test_msg_tags(void)
             log_msg_set_tag_by_name(msg, name);
           else
             log_msg_clear_tag_by_name(msg, name);
-          test_msg("%s tag %d %s\n", set ? "Setting" : "Clearing", i, name);
+          cr_log_info("%s tag %d %s\n", set ? "Setting" : "Clearing", i, name);
 
           if (set ^ log_msg_is_tag_by_id(msg, i))
-            test_fail("Tag is %sset now (by id) %d\n", set ? "not " : "", i);
+            cr_log_info("Tag is %sset now (by id) %d\n", set ? "not " : "", i);
 
           g_free(name);
         }
@@ -144,13 +129,13 @@ test_msg_tags(void)
           else
             log_msg_clear_tag_by_name(msg, name);
 
-          test_msg("%s tag %d %s\n", set ? "Setting" : "Clearing", i, name);
+          cr_log_info("%s tag %d %s\n", set ? "Setting" : "Clearing", i, name);
 
           if (set ^ log_msg_is_tag_by_id(msg, i))
-            test_fail("Tag is %sset now (by id) %d\n", set ? "not " : "", i);
+            cr_log_info("Tag is %sset now (by id) %d\n", set ? "not " : "", i);
 
           if (set && i < sizeof(gulong) * 8 && msg->num_tags != 0)
-            test_fail("Small IDs are set which should be stored in-line but num_tags is non-zero");
+            cr_log_info("Small IDs are set which should be stored in-line but num_tags is non-zero");
 
           g_free(name);
         }
@@ -167,7 +152,7 @@ test_filters(gboolean not)
   guint i;
   GList *l = NULL;
 
-  test_msg("=== filter tests %s===\n", not ? "not " : "");
+  cr_log_info("=== filter tests %s===\n", not ? "not " : "");
 
   for (i = 1; i < FILTER_TAGS; i += 3)
     l = g_list_prepend(l, get_tag_by_id(i));
@@ -177,37 +162,55 @@ test_filters(gboolean not)
 
   for (i = 0; i < FILTER_TAGS; i++)
     {
-      test_msg("Testing filter, message has tag %d\n", i);
+      cr_log_info("Testing filter, message has tag %d\n", i);
       log_msg_set_tag_by_id(msg, i);
 
       if (((i % 3 == 1) ^ filter_expr_eval(f, msg)) ^ not)
-        test_fail("Failed to match message by tag %d\n", i);
+        cr_log_info("Failed to match message by tag %d\n", i);
 
-      test_msg("Testing filter, message no tag\n");
+      cr_log_info("Testing filter, message no tag\n");
       log_msg_clear_tag_by_id(msg, i);
       if (filter_expr_eval(f, msg) ^ not)
-        test_fail("Failed to match message with no tags\n");
+        cr_log_info("Failed to match message with no tags\n");
     }
 
   filter_expr_unref(f);
   log_msg_unref(msg);
 }
 
-int
-main(int argc, char *argv[])
+
+typedef struct
+{
+  gboolean not;
+} TestFilters;
+
+ParameterizedTestParameters(tags, test_filters)
+{
+  static TestFilters test_cases[] =
+  {
+    {TRUE},
+    {FALSE}
+  };
+
+  return cr_make_param_array(TestFilters, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));
+}
+
+ParameterizedTest(TestFilters *test_cases, tags, test_filters)
+{
+  test_filters(test_cases->not);
+}
+
+static void
+setup(void)
 {
   app_startup();
-
-  if (argc > 1)
-    verbose = TRUE;
-
   msg_init(TRUE);
-
-  test_tags();
-  test_msg_tags();
-  test_filters(FALSE);
-  test_filters(TRUE);
-
-  app_shutdown();
-  return  (fail ? 1 : 0);
 }
+
+static void
+teardown(void)
+{
+  app_shutdown();
+}
+
+TestSuite(tags, .init = setup, .fini = teardown);
