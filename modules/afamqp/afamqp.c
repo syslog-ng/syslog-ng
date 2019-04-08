@@ -473,12 +473,12 @@ afamqp_dd_login(AMQPDestDriver *self)
 }
 
 static gboolean
-afamqp_dd_connect(AMQPDestDriver *self, gboolean reconnect)
+afamqp_dd_connect(AMQPDestDriver *self)
 {
   int sockfd_ret;
   amqp_rpc_reply_t ret;
 
-  if (reconnect && self->conn)
+  if (self->conn)
     {
       ret = amqp_get_rpc_reply(self->conn);
       if (ret.reply_type == AMQP_RESPONSE_NORMAL)
@@ -645,21 +645,13 @@ afamqp_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
 {
   AMQPDestDriver *self = (AMQPDestDriver *)s;
 
-  if (!afamqp_dd_connect(self, TRUE))
+  if (!afamqp_dd_connect(self))
     return LTR_NOT_CONNECTED;
 
   if (!afamqp_worker_publish (self, msg))
     return LTR_ERROR;
 
   return LTR_SUCCESS;
-}
-
-static void
-afamqp_worker_thread_init(LogThreadedDestDriver *d)
-{
-  AMQPDestDriver *self = (AMQPDestDriver *)d;
-
-  afamqp_dd_connect(self, FALSE);
 }
 
 /*
@@ -722,7 +714,7 @@ static gboolean
 afamqp_dd_worker_connect(LogThreadedDestDriver *s)
 {
   AMQPDestDriver *self = (AMQPDestDriver *)s;
-  return afamqp_dd_connect(self, FALSE);
+  return afamqp_dd_connect(self);
 }
 
 /*
@@ -740,7 +732,6 @@ afamqp_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.free_fn = afamqp_dd_free;
   self->super.super.super.super.generate_persist_name = afamqp_dd_format_persist_name;
 
-  self->super.worker.thread_init = afamqp_worker_thread_init;
   self->super.worker.connect = afamqp_dd_worker_connect;
   self->super.worker.disconnect = afamqp_dd_disconnect;
   self->super.worker.insert = afamqp_worker_insert;
