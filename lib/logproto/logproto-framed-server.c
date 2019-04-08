@@ -29,6 +29,7 @@
 #include <string.h>
 
 #define MAX_FRAME_LEN_DIGITS 10
+static const guint MAX_FETCH_COUNT = 3;
 
 typedef enum
 {
@@ -57,6 +58,7 @@ typedef struct _LogProtoFramedServer
   guint32 buffer_size, buffer_pos, buffer_end;
   guint32 frame_len;
   gboolean half_message_in_buffer;
+  guint32 fetch_counter;
 } LogProtoFramedServer;
 
 static LogProtoPrepareAction
@@ -97,6 +99,9 @@ log_proto_framed_server_fetch_data(LogProtoFramedServer *self, gboolean *may_rea
     self->buffer_pos = self->buffer_end = 0;
 
   if (!(*may_read))
+    return FALSE;
+
+  if (self->fetch_counter++ >= MAX_FETCH_COUNT)
     return FALSE;
 
   rc = log_transport_read(self->super.transport, &self->buffer[self->buffer_end], self->buffer_size - self->buffer_end,
@@ -398,6 +403,7 @@ log_proto_framed_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_
 
   _ensure_buffer(self);
 
+  self->fetch_counter = 0;
   while (_step_state_machine(self, msg, msg_len, may_read, aux, &status) != LPFSSCTRL_RETURN_WITH_STATUS) ;
 
   return status;
