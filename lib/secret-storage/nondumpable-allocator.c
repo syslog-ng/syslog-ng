@@ -94,11 +94,11 @@ static gpointer
 _mmap(gsize len)
 {
   gpointer area = mmap(NULL, len, PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE, -1, 0);
-  if (!area)
+  if (area == MAP_FAILED)
     {
       logger_fatal("secret storage: cannot mmap buffer",
                    "len: %"G_GSIZE_FORMAT", errno: %d\n", len, errno);
-      return NULL;
+      return MAP_FAILED;
     }
 
   if (!_exclude_memory_from_core_dump(area, len))
@@ -115,7 +115,7 @@ _mmap(gsize len)
   return area;
 err_munmap:
   munmap(area, len);
-  return NULL;
+  return MAP_FAILED;
 }
 
 static gsize
@@ -132,7 +132,7 @@ nondumpable_buffer_alloc(gsize len)
   gsize alloc_size = round_to_nearest(minimum_size, pagesize);
 
   Allocation *buffer = _mmap(alloc_size);
-  if (!buffer)
+  if (buffer == MAP_FAILED)
     return NULL;
 
   buffer->alloc_size = alloc_size;
