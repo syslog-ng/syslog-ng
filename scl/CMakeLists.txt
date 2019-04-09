@@ -1,6 +1,7 @@
 set(SCL_DIRS
     apache
     cim
+    checkpoint
     cisco
     collectd
     default-network-drivers
