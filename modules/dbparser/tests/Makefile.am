@@ -6,7 +6,8 @@ modules_dbparser_tests_TESTS			=	\
 	modules/dbparser/tests/test_patterndb		\
 	modules/dbparser/tests/test_parsers_e2e		\
 	modules/dbparser/tests/test_radix		\
-	modules/dbparser/tests/test_parsers
+	modules/dbparser/tests/test_parsers		\
+	modules/dbparser/tests/test_grouping_by
 
 check_PROGRAMS					+=	\
 	${modules_dbparser_tests_TESTS}
@@ -67,3 +68,13 @@ modules_dbparser_tests_test_parsers_LDADD		=	\
 	$(top_builddir)/modules/dbparser/libsyslog-ng-patterndb.la
 modules_dbparser_tests_test_parsers_LDFLAGS	=	\
 	$(PREOPEN_CORE)
+
+modules_dbparser_tests_test_grouping_by_CFLAGS	=	\
+	$(TEST_CFLAGS)					\
+	-I$(top_srcdir)/modules/dbparser
+modules_dbparser_tests_test_grouping_by_LDADD		=	\
+	$(TEST_LDADD)					\
+	$(top_builddir)/modules/dbparser/libdbparser.la
+modules_dbparser_tests_test_grouping_by_LDFLAGS	=	\
+	$(PREOPEN_CORE)					\
+	-dlpreopen $(top_builddir)/modules/dbparser/libdbparser.la

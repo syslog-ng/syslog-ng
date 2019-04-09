@@ -33,6 +33,7 @@ void grouping_by_set_synthetic_message(LogParser *s, SyntheticMessage *message);
 void grouping_by_set_trigger_condition(LogParser *s, FilterExprNode *filter_expr);
 void grouping_by_set_where_condition(LogParser *s, FilterExprNode *filter_expr);
 void grouping_by_set_having_condition(LogParser *s, FilterExprNode *filter_expr);
+gchar *grouping_by_format_persist_name(LogParser *s);
 LogParser *grouping_by_new(GlobalConfig *cfg);
 void grouping_by_global_init(void);
 
