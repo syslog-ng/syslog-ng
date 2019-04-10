@@ -177,9 +177,9 @@ extern struct _StatsOptions *last_stats_options;
 %token KW_BLOCK                       10007
 %token KW_JUNCTION                    10008
 %token KW_CHANNEL                     10009
-%token KW_IF			      10010
-%token KW_ELSE			      10011
-%token KW_ELIF			      10012
+%token KW_IF                          10010
+%token KW_ELSE                        10011
+%token KW_ELIF                        10012
 
 /* source & destination items */
 %token KW_INTERNAL                    10020
@@ -189,7 +189,7 @@ extern struct _StatsOptions *last_stats_options;
 %token KW_MARK_FREQ                   10071
 %token KW_STATS_FREQ                  10072
 %token KW_STATS_LEVEL                 10073
-%token KW_STATS_LIFETIME	      10074
+%token KW_STATS_LIFETIME              10074
 %token KW_FLUSH_LINES                 10075
 %token KW_SUPPRESS                    10076
 %token KW_FLUSH_TIMEOUT               10077
@@ -203,6 +203,7 @@ extern struct _StatsOptions *last_stats_options;
 %token KW_MIN_IW_SIZE_PER_READER      10085
 %token KW_BATCH_LINES                 10087
 %token KW_BATCH_TIMEOUT               10088
+%token KW_TRIM_LARGE_MESSAGES         10089
 
 %token KW_CHAIN_HOSTNAMES             10090
 %token KW_NORMALIZE_HOSTNAMES         10091
@@ -214,7 +215,7 @@ extern struct _StatsOptions *last_stats_options;
 
 %token KW_USE_DNS                     10110
 %token KW_USE_FQDN                    10111
-%token KW_CUSTOM_DOMAIN	              10112
+%token KW_CUSTOM_DOMAIN               10112
 
 %token KW_DNS_CACHE                   10120
 %token KW_DNS_CACHE_SIZE              10121
@@ -977,12 +978,13 @@ options_item
 	| KW_LOG_IW_SIZE '(' positive_integer ')'	{ msg_warning("WARNING: Support for the global log-iw-size() option was removed, please use a per-source log-iw-size()", cfg_lexer_format_location_tag(lexer, &@1)); }
 	| KW_LOG_FETCH_LIMIT '(' positive_integer ')'	{ msg_warning("WARNING: Support for the global log-fetch-limit() option was removed, please use a per-source log-fetch-limit()", cfg_lexer_format_location_tag(lexer, &@1)); }
 	| KW_LOG_MSG_SIZE '(' positive_integer ')'	{ configuration->log_msg_size = $3; }
+	| KW_TRIM_LARGE_MESSAGES '(' yesno ')'	{ configuration->trim_large_messages = $3; }
 	| KW_KEEP_TIMESTAMP '(' yesno ')'	{ configuration->keep_timestamp = $3; }
 	| KW_CREATE_DIRS '(' yesno ')'		{ configuration->create_dirs = $3; }
-  | KW_CUSTOM_DOMAIN '(' string ')'       { configuration->custom_domain = g_strdup($3); free($3); }
+	| KW_CUSTOM_DOMAIN '(' string ')'	{ configuration->custom_domain = g_strdup($3); free($3); }
 	| KW_FILE_TEMPLATE '(' string ')'	{ configuration->file_template_name = g_strdup($3); free($3); }
 	| KW_PROTO_TEMPLATE '(' string ')'	{ configuration->proto_template_name = g_strdup($3); free($3); }
-	| KW_RECV_TIME_ZONE '(' string ')'      { configuration->recv_time_zone = g_strdup($3); free($3); }
+	| KW_RECV_TIME_ZONE '(' string ')'	{ configuration->recv_time_zone = g_strdup($3); free($3); }
 	| KW_MIN_IW_SIZE_PER_READER '(' positive_integer ')' { configuration->min_iw_size_per_reader = $3; }
 	| { last_template_options = &configuration->template_options; } template_option
 	| { last_host_resolve_options = &configuration->host_resolve_options; } host_resolve_option
@@ -1258,7 +1260,8 @@ source_proto_option
                         "unknown encoding %s", $3);
             free($3);
           }
-	| KW_LOG_MSG_SIZE '(' positive_integer ')'	{ last_proto_server_options->max_msg_size = $3; }
+        | KW_LOG_MSG_SIZE '(' positive_integer ')'      { last_proto_server_options->max_msg_size = $3; }
+        | KW_TRIM_LARGE_MESSAGES '(' yesno ')'          { last_proto_server_options->trim_large_messages = $3; }
         ;
 
 host_resolve_option

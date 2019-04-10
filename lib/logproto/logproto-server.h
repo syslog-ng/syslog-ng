@@ -49,6 +49,7 @@ struct _LogProtoServerOptions
   gchar *encoding;
   /* maximum message length in bytes */
   gint max_msg_size;
+  gboolean trim_large_messages;
   gint max_buffer_size;
   gint init_buffer_size;
   gboolean position_tracking_enabled;
