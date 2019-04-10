@@ -36,7 +36,6 @@
 
 MsgFormatOptions parse_options;
 
-#define FILENAME "test_reliable_backlog.rqf"
 #define TEST_DISKQ_SIZE QDISK_RESERVED_SPACE + 1000 /* 4096 + 1000 */
 
 static gint num_of_ack;
@@ -77,10 +76,10 @@ _init_diskq_for_test(const gchar *filename, gint64 size, gint64 membuf_size)
 }
 
 static void
-_common_cleanup(LogQueueDiskReliable *dq)
+_common_cleanup(LogQueueDiskReliable *dq, const gchar *file_name)
 {
   log_queue_unref(&dq->super.super);
-  unlink(FILENAME);
+  unlink(file_name);
   disk_queue_options_destroy(&options);
 }
 
@@ -216,7 +215,9 @@ test_ack_over_eof(LogQueueDiskReliable *dq, LogMessage *msg1, LogMessage *msg2)
 /* TODO: split this test into 3 tests (read ack rewind mechanism  (setup method) */
 Test(diskq_reliable, test_over_EOF)
 {
-  LogQueueDiskReliable *dq = _init_diskq_for_test(FILENAME, TEST_DISKQ_SIZE, TEST_DISKQ_SIZE);
+  const gchar *file_name = "test_over_EOF.rqf";
+
+  LogQueueDiskReliable *dq = _init_diskq_for_test(file_name, TEST_DISKQ_SIZE, TEST_DISKQ_SIZE);
   LogMessage *msg1;
   LogMessage *msg2;
 
@@ -233,7 +234,7 @@ Test(diskq_reliable, test_over_EOF)
   log_msg_drop(msg1, &read_options, AT_PROCESSED);
   log_msg_drop(msg2, &read_options, AT_PROCESSED);
   cr_assert_eq(num_of_ack, 2, "%s", "Messages aren't acked");
-  _common_cleanup(dq);
+  _common_cleanup(dq, file_name);
 }
 
 /*
@@ -359,7 +360,8 @@ test_rewind_backlog_use_whole_qbacklog(LogQueueDiskReliable *dq)
  */
 Test(diskq_reliable, test_rewind_backlog)
 {
-  LogQueueDiskReliable *dq = _init_diskq_for_test(FILENAME, QDISK_RESERVED_SPACE + mark_message_serialized_size * 10,
+  const gchar *file_name = "test_rewind_backlog.rqf";
+  LogQueueDiskReliable *dq = _init_diskq_for_test(file_name, QDISK_RESERVED_SPACE + mark_message_serialized_size * 10,
                                                   mark_message_serialized_size * 5);
   gint64 old_read_pos;
 
@@ -371,7 +373,7 @@ Test(diskq_reliable, test_rewind_backlog)
 
   test_rewind_backlog_use_whole_qbacklog(dq);
 
-  _common_cleanup(dq);
+  _common_cleanup(dq, file_name);
 }
 
 static void
