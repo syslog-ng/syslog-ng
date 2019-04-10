@@ -505,7 +505,6 @@ log_reader_init(LogPipe *s)
       return FALSE;
     }
 
-  poll_events_set_callback(self->poll_events, log_reader_io_handle_in, self);
 
   log_reader_update_watches(self);
   iv_event_register(&self->schedule_wakeup);
@@ -609,6 +608,7 @@ log_reader_reopen(LogReader *self, LogProtoServer *proto, PollEvents *poll_event
 {
   gpointer args[] = { self, proto, poll_events };
 
+  poll_events_set_callback(self->poll_events, log_reader_io_handle_in, self);
   main_loop_call((MainLoopTaskFunc) log_reader_reopen_deferred, args, TRUE);
 
   if (!main_loop_is_main_thread())
