@@ -309,17 +309,25 @@ Test(diskq, testcase_with_threads)
 typedef struct restart_test_parameters
 {
   gchar *filename;
-  LogQueue *(*lqdisk_new_func)(DiskQueueOptions *options, const gchar *persist_name);
   gboolean reliable;
 } restart_test_parameters;
+
+static LogQueue *
+queue_new(gboolean reliable, DiskQueueOptions *options, const gchar *persist_name)
+{
+  if (reliable)
+    return log_queue_disk_reliable_new(options, persist_name);
+
+  return log_queue_disk_non_reliable_new(options, persist_name);
+}
 
 Test(diskq, testcase_diskbuffer_restart_corrupted)
 {
 
   restart_test_parameters parameters[] =
   {
-    {"test-diskq-restart.qf", log_queue_disk_non_reliable_new, FALSE},
-    {"test-diskq-restart.rqf", log_queue_disk_reliable_new, TRUE},
+    {"test-diskq-restart.qf", FALSE},
+    {"test-diskq-restart.rqf", TRUE},
   };
 
   guint64 const original_disk_buf_size = 1000123;
@@ -328,7 +336,7 @@ Test(diskq, testcase_diskbuffer_restart_corrupted)
     {
       DiskQueueOptions options;
       _construct_options(&options, original_disk_buf_size, 100000, parameters[i].reliable);
-      LogQueue *q = parameters[i].lqdisk_new_func(&options, NULL);
+      LogQueue *q = queue_new(parameters[i].reliable, &options, NULL);
       log_queue_set_use_backlog(q, FALSE);
 
       gchar *filename = parameters[i].filename;
