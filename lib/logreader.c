@@ -192,12 +192,20 @@ log_reader_window_empty(LogSource *s)
 }
 
 static void
+log_reader_disable_watches(LogReader *self)
+{
+  g_assert(self->watches_running);
+  if (self->poll_events)
+    poll_events_suspend_watches(self->poll_events);
+  log_reader_stop_idle_timer(self);
+}
+
+static void
 log_reader_io_handle_in(gpointer s)
 {
   LogReader *self = (LogReader *) s;
 
-  log_reader_stop_watches(self);
-  log_reader_stop_idle_timer(self);
+  log_reader_disable_watches(self);
   if ((self->options->flags & LR_THREADED))
     {
       main_loop_io_worker_job_submit(&self->io_job, G_IO_IN);
@@ -250,12 +258,12 @@ log_reader_init_watches(LogReader *self)
 static void
 log_reader_stop_watches(LogReader *self)
 {
-  if (self->watches_running)
-    {
-      poll_events_stop_watches(self->poll_events);
+  g_assert(self->watches_running);
+  if (self->poll_events)
+    poll_events_stop_watches(self->poll_events);
+  log_reader_stop_idle_timer(self);
 
-      self->watches_running = FALSE;
-    }
+  self->watches_running = FALSE;
 }
 
 static void
@@ -266,13 +274,12 @@ log_reader_stop_idle_timer(LogReader *self)
 }
 
 static void
-log_reader_start_watches_if_stopped(LogReader *self)
+log_reader_start_watches(LogReader *self)
 {
-  if (!self->watches_running)
-    {
-      poll_events_start_watches(self->poll_events);
-      self->watches_running = TRUE;
-    }
+  g_assert(!self->watches_running);
+  if (self->poll_events)
+    poll_events_start_watches(self->poll_events);
+  self->watches_running = TRUE;
 }
 
 static gboolean
@@ -285,7 +292,7 @@ static void
 log_reader_suspend_until_awoken(LogReader *self)
 {
   self->immediate_check = FALSE;
-  poll_events_suspend_watches(self->poll_events);
+  log_reader_disable_watches(self);
   self->suspended = TRUE;
 }
 
@@ -293,7 +300,7 @@ static void
 log_reader_force_check_in_next_poll(LogReader *self)
 {
   self->immediate_check = FALSE;
-  poll_events_suspend_watches(self->poll_events);
+  log_reader_disable_watches(self);
   self->suspended = FALSE;
 
   if (!iv_task_registered(&self->restart_task))
@@ -309,13 +316,12 @@ log_reader_update_watches(LogReader *self)
   gint idle_timeout = -1;
 
   main_loop_assert_main_thread();
+  g_assert(self->watches_running);
 
-  log_reader_stop_idle_timer(self);
+  log_reader_disable_watches(self);
 
   if (!log_reader_is_opened(self))
     return;
-
-  log_reader_start_watches_if_stopped(self);
 
   gboolean free_to_send = log_source_free_to_send(&self->super);
   if (!free_to_send)
@@ -503,10 +509,11 @@ log_reader_init(LogPipe *s)
       return FALSE;
     }
 
-
-  log_reader_update_watches(self);
   iv_event_register(&self->schedule_wakeup);
   iv_event_register(&self->last_msg_sent_event);
+
+  log_reader_start_watches(self);
+  log_reader_update_watches(self);
 
   return TRUE;
 }
@@ -524,7 +531,6 @@ log_reader_deinit(LogPipe *s)
     iv_task_unregister(&self->restart_task);
 
   log_reader_stop_watches(self);
-  log_reader_stop_idle_timer(self);
 
   if (!log_source_deinit(s))
     return FALSE;
@@ -599,8 +605,8 @@ log_reader_reopen_deferred(gpointer s)
     }
 
   log_reader_stop_watches(self);
-  log_reader_stop_idle_timer(self);
   log_reader_apply_proto_and_poll_events(self, proto, poll_events);
+  log_reader_start_watches(self);
   log_reader_update_watches(self);
 }
 
@@ -609,7 +615,8 @@ log_reader_reopen(LogReader *self, LogProtoServer *proto, PollEvents *poll_event
 {
   gpointer args[] = { self, proto, poll_events };
 
-  poll_events_set_callback(self->poll_events, log_reader_io_handle_in, self);
+  if (self->poll_events)
+    poll_events_set_callback(self->poll_events, log_reader_io_handle_in, self);
   main_loop_call((MainLoopTaskFunc) log_reader_reopen_deferred, args, TRUE);
 
   if (!main_loop_is_main_thread())
