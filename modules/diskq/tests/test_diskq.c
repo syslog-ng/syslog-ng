@@ -306,14 +306,15 @@ Test(diskq, testcase_with_threads)
   fprintf(stderr, "Feed speed: %.2lf\n", (double) TEST_RUNS * MESSAGES_SUM * 1000000 / sum_time);
 }
 
+typedef struct restart_test_parameters
+{
+  gchar *filename;
+  LogQueue *(*lqdisk_new_func)(DiskQueueOptions *options, const gchar *persist_name);
+  gboolean reliable;
+} restart_test_parameters;
+
 Test(diskq, testcase_diskbuffer_restart_corrupted)
 {
-  typedef struct restart_test_parameters
-  {
-    gchar *filename;
-    LogQueue *(*lqdisk_new_func)(DiskQueueOptions *options, const gchar *persist_name);
-    gboolean reliable;
-  } restart_test_parameters;
 
   restart_test_parameters parameters[] =
   {
