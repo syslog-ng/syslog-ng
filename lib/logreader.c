@@ -254,8 +254,6 @@ log_reader_stop_watches(LogReader *self)
     {
       poll_events_stop_watches(self->poll_events);
 
-      if (iv_task_registered(&self->restart_task))
-        iv_task_unregister(&self->restart_task);
       self->watches_running = FALSE;
     }
 }
@@ -522,6 +520,9 @@ log_reader_deinit(LogPipe *s)
 
   iv_event_unregister(&self->schedule_wakeup);
   iv_event_unregister(&self->last_msg_sent_event);
+  if (iv_task_registered(&self->restart_task))
+    iv_task_unregister(&self->restart_task);
+
   log_reader_stop_watches(self);
   log_reader_stop_idle_timer(self);
 
