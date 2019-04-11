@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2002-2019 One Identity
  * Copyright (c) 2019 Laszlo Budai <laszlo.budai@balabit.com>
+ * Copyright (c) 2019 László Várady <laszlo.varady@balabit.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,27 +23,31 @@
  *
  */
 
-#ifndef DYNAMIC_WINDOW_H_INCLUDED
-#define DYNAMIC_WINDOW_H_INCLUDED
+#include <syslog-ng.h>
+#include "dynamic-window.h"
 
-#include "syslog-ng.h"
-#include "dynamic-window-counter.h"
-
-typedef struct _DynamicWindow DynamicWindow;
-
-struct _DynamicWindow
+void
+dynamic_window_set_counter(DynamicWindow *self, DynamicWindowCounter *ctr)
 {
-  DynamicWindowCounter *window_ctr;
-  struct
-  {
-    gsize n;
-    gsize sum;
-  } window_stat;
-};
+  self->window_ctr = ctr;
+  dynamic_window_stat_reset(self);
+}
 
-void dynamic_window_set_counter(DynamicWindow *self, DynamicWindowCounter *ctr);
-void dynamic_window_stat_update(DynamicWindow *self, gsize window);
-void dynamic_window_stat_reset(DynamicWindow *self);
-gsize dynamic_window_stat_get_avg(DynamicWindow *self);
+void
+dynamic_window_stat_update(DynamicWindow *self, gsize window)
+{
+  self->window_stat.sum += window;
+  self->window_stat.n++;
+}
 
-#endif
+void dynamic_window_stat_reset(DynamicWindow *self)
+{
+  self->window_stat.sum = 0;
+  self->window_stat.n = 0;
+}
+
+gsize dynamic_window_stat_get_avg(DynamicWindow *self)
+{
+  return self->window_stat.sum / self->window_stat.n;
+}
+
