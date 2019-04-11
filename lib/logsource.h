@@ -28,6 +28,7 @@
 #include "logpipe.h"
 #include "stats/stats-registry.h"
 #include "window-size-counter.h"
+#include "dynamic-window.h"
 
 typedef struct _LogSourceOptions
 {
@@ -68,6 +69,7 @@ struct _LogSource
   gchar *stats_id;
   gchar *stats_instance;
   WindowSizeCounter window_size;
+  DynamicWindow *dynamic_window;
   StatsCounterItem *last_message_seen;
   StatsCounterItem *recvd_messages;
   guint32 last_ack_count;
