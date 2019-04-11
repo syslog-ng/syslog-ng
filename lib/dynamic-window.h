@@ -44,5 +44,7 @@ void dynamic_window_set_counter(DynamicWindow *self, DynamicWindowCounter *ctr);
 void dynamic_window_stat_update(DynamicWindow *self, gsize window);
 void dynamic_window_stat_reset(DynamicWindow *self);
 gsize dynamic_window_stat_get_avg(DynamicWindow *self);
+gsize dynamic_window_stat_get_number_of_samples(DynamicWindow *self);
+gsize dynamic_window_stat_get_sum(DynamicWindow *self);
 
 #endif
