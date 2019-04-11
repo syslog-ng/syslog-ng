@@ -286,6 +286,22 @@ afsocket_sd_set_dynamic_window_size(LogDriver *s, gint dynamic_window_size)
   dynamic_window_counter_set_iw_size(self->dynamic_window_ctr, dynamic_window_size);
 }
 
+void
+afsocket_sd_set_dynamic_window_stats_freq(LogDriver *s, gint stats_freq)
+{
+  AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
+
+  self->dynamic_window_stats_freq = stats_freq;
+}
+
+void
+afsocket_sd_set_dynamic_window_realloc_freq(LogDriver *s, gint realloc_freq)
+{
+  AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
+
+  self->dynamic_window_realloc_freq = realloc_freq; //TODO: validate
+}
+
 static const gchar *
 afsocket_sd_format_name(const LogPipe *s)
 {
@@ -490,7 +506,7 @@ _dynamic_window_timer_start(AFSocketSourceDriver *self)
 {
   iv_validate_now();
   self->dynamic_window_timer.expires = iv_now;
-  self->dynamic_window_timer.expires.tv_sec += DYNAMIC_WINDOW_TIMER_SECS; //TODO: set from cfg
+  self->dynamic_window_timer.expires.tv_sec += self->dynamic_window_stats_freq;
   iv_timer_register(&self->dynamic_window_timer);
 }
 
@@ -501,7 +517,7 @@ _on_dynamic_window_timer_elapsed(gpointer cookie)
   for (GList *conn_it = self->connections; conn_it; conn_it = conn_it->next) //TODO: refactor
     {
       AFSocketSourceConnection *conn = (AFSocketSourceConnection *) conn_it->data;
-      if (self->dynamic_window_timer_tick == DYNAMIC_WINDOW_REALLOC_EVERY_STATS_TICKS)
+      if (self->dynamic_window_timer_tick >= self->dynamic_window_realloc_freq)
         {
           log_source_dynamic_window_realloc(&conn->reader->super);
         }
@@ -510,7 +526,7 @@ _on_dynamic_window_timer_elapsed(gpointer cookie)
           log_source_dynamic_window_update_statistics(&conn->reader->super);
         }
     }
-  if (self->dynamic_window_timer_tick == DYNAMIC_WINDOW_REALLOC_EVERY_STATS_TICKS) //TODO: refactor
+  if (self->dynamic_window_timer_tick >= self->dynamic_window_realloc_freq) //TODO: refactor
     self->dynamic_window_timer_tick = 0;
   self->dynamic_window_timer_tick++;
 
@@ -854,6 +870,8 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self,
   self->transport_mapper = transport_mapper;
   self->max_connections = 10;
   self->listen_backlog = 255;
+  self->dynamic_window_stats_freq = DYNAMIC_WINDOW_TIMER_SECS;
+  self->dynamic_window_realloc_freq = DYNAMIC_WINDOW_REALLOC_EVERY_STATS_TICKS;
   self->connections_kept_alive_across_reloads = TRUE;
   log_reader_options_defaults(&self->reader_options);
   self->reader_options.super.stats_level = STATS_LEVEL1;
