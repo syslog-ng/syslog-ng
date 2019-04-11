@@ -281,14 +281,11 @@ log_reader_close_proto_deferred(gpointer s)
 void
 log_reader_close_proto(LogReader *self)
 {
-  log_reader_reopen(self, NULL, NULL);
-}
-
-void
-log_reader_reopen(LogReader *self, LogProtoServer *proto, PollEvents *poll_events)
-{
+  LogProtoServer *proto = NULL;
+  PollEvents *poll_events = NULL;
   gpointer args[] = { self, proto, poll_events };
 
+  g_assert(self->watches_running);
   if (poll_events)
     poll_events_set_callback(poll_events, log_reader_io_handle_in, self);
   main_loop_call((MainLoopTaskFunc) log_reader_close_proto_deferred, args, TRUE);
@@ -302,6 +299,15 @@ log_reader_reopen(LogReader *self, LogProtoServer *proto, PollEvents *poll_event
         }
       g_static_mutex_unlock(&self->pending_proto_lock);
     }
+}
+
+void
+log_reader_open(LogReader *self, LogProtoServer *proto, PollEvents *poll_events)
+{
+  g_assert(!self->watches_running);
+  poll_events_set_callback(poll_events, log_reader_io_handle_in, self);
+
+  log_reader_apply_proto_and_poll_events(self, proto, poll_events);
 }
 
 static gboolean

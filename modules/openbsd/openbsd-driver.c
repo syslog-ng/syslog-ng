@@ -121,9 +121,9 @@ _openbsd_sd_init(LogPipe *s)
     }
 
   self->reader = log_reader_new(cfg);
-  log_reader_reopen(self->reader, log_proto_dgram_server_new(log_transport_stream_socket_new(syslog_fd),
-                                                             &self->reader_options.proto_options.super),
-                    poll_fd_events_new(syslog_fd));
+  log_reader_open(self->reader, log_proto_dgram_server_new(log_transport_stream_socket_new(syslog_fd),
+                                                           &self->reader_options.proto_options.super),
+                  poll_fd_events_new(syslog_fd));
 
   log_reader_set_options(self->reader,
                          s,
