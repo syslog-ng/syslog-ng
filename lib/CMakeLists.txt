@@ -166,6 +166,7 @@ set(LIB_SOURCES
     children.c
     dnscache.c
     driver.c
+    dynamic-window.c
     dynamic-window-counter.c
     fdhelpers.c
     file-perms.c
