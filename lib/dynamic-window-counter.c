@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2002-2019 One Identity
  * Copyright (c) 2019 Laszlo Budai <laszlo.budai@balabit.com>
+ * Copyright (c) 2019 László Várady <laszlo.varady@balabit.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,21 +23,25 @@
  *
  */
 
-#ifndef DYNAMIC_WINDOW_COUNTER_H_INCLUDED
-#define DYNAMIC_WINDOW_COUNTER_H_INCLUDED
+#include <syslog-ng.h>
+#include "dynamic-window-counter.h"
 
-#include "syslog-ng.h"
-
-typedef struct _DynamicWindowCounter DynamicWindowCounter;
-
-struct _DynamicWindowCounter
+DynamicWindowCounter *
+dynamic_window_counter_new(void)
 {
-  gsize iw_size;
-  gsize window;
-};
+  DynamicWindowCounter *self = g_new0(DynamicWindowCounter, 1);
+  return self;
+}
 
-DynamicWindowCounter *dynamic_window_counter_new(void);
-void dynamic_window_counter_init(DynamicWindowCounter *self);
-void dynamic_window_counter_free(DynamicWindowCounter *self);
+void dynamic_window_counter_init(DynamicWindowCounter *self)
+{
+  self->window = self->iw_size;
+}
 
-#endif
+void dynamic_window_counter_free(DynamicWindowCounter *self)
+{
+  if (!self)
+    return;
+
+  g_free(self);
+}

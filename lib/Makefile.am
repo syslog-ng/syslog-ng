@@ -201,6 +201,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/children.c			\
 	lib/dnscache.c			\
 	lib/driver.c			\
+	lib/dynamic-window-counter.c \
 	lib/fdhelpers.c			\
 	lib/file-perms.c		\
 	lib/find-crlf.c			\
