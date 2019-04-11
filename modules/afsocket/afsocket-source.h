@@ -42,6 +42,7 @@ struct _AFSocketSourceDriver
           window_size_initialized:1;
   struct iv_fd listen_fd;
   struct iv_timer dynamic_window_timer;
+  gsize dynamic_window_timer_tick;
   gint fd;
   LogReaderOptions reader_options;
   DynamicWindowCounter *dynamic_window_ctr;
