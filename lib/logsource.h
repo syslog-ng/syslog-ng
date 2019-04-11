@@ -69,7 +69,7 @@ struct _LogSource
   gchar *stats_id;
   gchar *stats_instance;
   WindowSizeCounter window_size;
-  DynamicWindow *dynamic_window;
+  DynamicWindow dynamic_window;
   StatsCounterItem *last_message_seen;
   StatsCounterItem *recvd_messages;
   guint32 last_ack_count;
@@ -113,7 +113,7 @@ void log_source_window_empty(LogSource *self);
 void log_source_flow_control_adjust(LogSource *self, guint32 window_size_increment);
 void log_source_flow_control_adjust_when_suspended(LogSource *self, guint32 window_size_increment);
 void log_source_flow_control_suspend(LogSource *self);
-void log_source_enable_dynamic_window(LogSource *self, DynamicWindow *dynamic_window);
+void log_source_enable_dynamic_window(LogSource *self, DynamicWindowCounter *window_ctr);
 
 void log_source_global_init(void);
 
