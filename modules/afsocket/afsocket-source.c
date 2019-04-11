@@ -466,7 +466,7 @@ afsocket_sd_close_connection(AFSocketSourceDriver *self, AFSocketSourceConnectio
 }
 
 static void
-afsocket_sd_start_watches(AFSocketSourceDriver *self)
+_listen_fd_init(AFSocketSourceDriver *self)
 {
   IV_FD_INIT(&self->listen_fd);
   self->listen_fd.fd = self->fd;
@@ -476,10 +476,22 @@ afsocket_sd_start_watches(AFSocketSourceDriver *self)
 }
 
 static void
-afsocket_sd_stop_watches(AFSocketSourceDriver *self)
+_listen_fd_deinit(AFSocketSourceDriver *self)
 {
   if (iv_fd_registered (&self->listen_fd))
     iv_fd_unregister(&self->listen_fd);
+}
+
+static void
+afsocket_sd_start_watches(AFSocketSourceDriver *self)
+{
+  _listen_fd_init(self);
+}
+
+static void
+afsocket_sd_stop_watches(AFSocketSourceDriver *self)
+{
+  _listen_fd_deinit(self);
 }
 
 static gboolean
