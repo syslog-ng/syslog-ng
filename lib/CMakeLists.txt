@@ -79,6 +79,7 @@ set (LIB_HEADERS
     crypto.h
     dnscache.h
     driver.h
+    dynamic-window-counter.h
     fdhelpers.h
     file-perms.h
     find-crlf.h
