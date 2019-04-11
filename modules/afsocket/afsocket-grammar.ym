@@ -168,6 +168,7 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 %token KW_FAILBACK
 %token KW_TCP_PROBE_INTERVAL
 %token KW_SUCCESSFUL_PROBES_REQUIRED
+%token KW_DYNAMIC_WINDOW_SIZE
 
 /* SSL support */
 
@@ -386,6 +387,7 @@ source_afsocket_stream_params
 	: KW_KEEP_ALIVE '(' yesno ')'		{ afsocket_sd_set_keep_alive(last_driver, $3); }
 	| KW_MAX_CONNECTIONS '(' positive_integer ')'	 { afsocket_sd_set_max_connections(last_driver, $3); }
 	| KW_LISTEN_BACKLOG '(' positive_integer ')'	{ afsocket_sd_set_listen_backlog(last_driver, $3); }
+	| KW_DYNAMIC_WINDOW_SIZE '(' nonnegative_integer ')' { afsocket_sd_set_dynamic_window_size(last_driver, $3); }
 	;
 
 source_afsyslog

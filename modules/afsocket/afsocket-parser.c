@@ -93,6 +93,7 @@ static CfgLexerKeyword afsocket_keywords[] =
   { "servers",            KW_SERVERS },
   { "tcp_probe_interval", KW_TCP_PROBE_INTERVAL },
   { "successful_probes_required", KW_SUCCESSFUL_PROBES_REQUIRED },
+  { "dynamic_window_size", KW_DYNAMIC_WINDOW_SIZE },
   { NULL }
 };
 
