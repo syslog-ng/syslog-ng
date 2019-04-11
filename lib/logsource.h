@@ -79,6 +79,7 @@ struct _LogSource
   AckTracker *ack_tracker;
 
   void (*wakeup)(LogSource *s);
+  void (*dynamic_window_realloc)(LogSource *s);
 };
 
 static inline gboolean
@@ -91,6 +92,14 @@ static inline gint
 log_source_get_init_window_size(LogSource *self)
 {
   return self->options->init_window_size;
+}
+
+static inline void
+log_source_dynamic_window_realloc(LogSource *s)
+{
+  if (!s || !s->dynamic_window_realloc)
+    return;
+  s->dynamic_window_realloc(s);
 }
 
 gboolean log_source_init(LogPipe *s);
@@ -113,6 +122,7 @@ void log_source_flow_control_adjust_when_suspended(LogSource *self, guint32 wind
 void log_source_flow_control_suspend(LogSource *self);
 void log_source_disable_bookmark_saving(LogSource *self);
 void log_source_enable_dynamic_window(LogSource *self, DynamicWindowCounter *window_ctr);
+void log_source_dynamic_window_update_statistics(LogSource *self);
 
 void log_source_global_init(void);
 
