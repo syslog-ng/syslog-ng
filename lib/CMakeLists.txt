@@ -78,6 +78,7 @@ set (LIB_HEADERS
     dnscache.h
     driver.h
     dynamic-window-counter.h
+    dynamic-window.h
     fdhelpers.h
     file-perms.h
     find-crlf.h
