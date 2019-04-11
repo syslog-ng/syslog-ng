@@ -47,5 +47,9 @@ Test(dynamic_window, window_stat_avg)
   dynamic_window_stat_update(&win, 12);
   dynamic_window_stat_update(&win, 4);
   cr_expect_eq(dynamic_window_stat_get_avg(&win), 8);
+  cr_expect_eq(dynamic_window_stat_get_number_of_samples(&win), 2);
+  cr_expect_eq(dynamic_window_stat_get_sum(&win), 16);
+  cr_expect_eq(dynamic_window_stat_get_avg(&win),
+               dynamic_window_stat_get_sum(&win) / dynamic_window_stat_get_number_of_samples(&win));
 }
 
