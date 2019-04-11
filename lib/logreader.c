@@ -55,11 +55,9 @@ struct _LogReader
    * processing is being done, we can't replace these in self->proto and
    * self->poll_events, they get applied to the production ones as soon as
    * the previous work is finished */
-  gboolean pending_proto_present;
-  GCond *pending_proto_cond;
-  GStaticMutex pending_proto_lock;
-  LogProtoServer *pending_proto;
-  PollEvents *pending_poll_events;
+  gboolean pending_close;
+  GCond *pending_close_cond;
+  GStaticMutex pending_close_lock;
 
   struct iv_timer idle_timer;
 };
@@ -260,44 +258,33 @@ log_reader_apply_proto_and_poll_events(LogReader *self, LogProtoServer *proto, P
 void
 log_reader_close_proto_deferred(gpointer s)
 {
-  gpointer *args = (gpointer *) s;
-  LogReader *self = args[0];
-  LogProtoServer *proto = args[1];
-  PollEvents *poll_events = args[2];
+  LogReader *self = (LogReader *) s;
 
   if (self->io_job.working)
     {
-      self->pending_proto = proto;
-      self->pending_poll_events = poll_events;
-      self->pending_proto_present = TRUE;
+      self->pending_close = TRUE;
       return;
     }
 
   log_reader_stop_watches(self);
-  log_reader_apply_proto_and_poll_events(self, proto, poll_events);
+  log_reader_apply_proto_and_poll_events(self, NULL, NULL);
   log_reader_start_watches(self);
 }
 
 void
 log_reader_close_proto(LogReader *self)
 {
-  LogProtoServer *proto = NULL;
-  PollEvents *poll_events = NULL;
-  gpointer args[] = { self, proto, poll_events };
-
   g_assert(self->watches_running);
-  if (poll_events)
-    poll_events_set_callback(poll_events, log_reader_io_handle_in, self);
-  main_loop_call((MainLoopTaskFunc) log_reader_close_proto_deferred, args, TRUE);
+  main_loop_call((MainLoopTaskFunc) log_reader_close_proto_deferred, self, TRUE);
 
   if (!main_loop_is_main_thread())
     {
-      g_static_mutex_lock(&self->pending_proto_lock);
-      while (self->pending_proto_present)
+      g_static_mutex_lock(&self->pending_close_lock);
+      while (self->pending_close)
         {
-          g_cond_wait(self->pending_proto_cond, g_static_mutex_get_mutex(&self->pending_proto_lock));
+          g_cond_wait(self->pending_close_cond, g_static_mutex_get_mutex(&self->pending_close_lock));
         }
-      g_static_mutex_unlock(&self->pending_proto_lock);
+      g_static_mutex_unlock(&self->pending_close_lock);
     }
 }
 
@@ -408,22 +395,20 @@ log_reader_work_finished(void *s)
 {
   LogReader *self = (LogReader *) s;
 
-  if (self->pending_proto_present)
+  if (self->pending_close)
     {
       /* pending proto is only set in the main thread, so no need to
        * lock it before coming here. After we're syncing with the
        * log_writer_reopen() call, quite possibly coming from a
        * non-main thread. */
 
-      g_static_mutex_lock(&self->pending_proto_lock);
+      g_static_mutex_lock(&self->pending_close_lock);
 
-      log_reader_apply_proto_and_poll_events(self, self->pending_proto, self->pending_poll_events);
-      self->pending_proto = NULL;
-      self->pending_poll_events = NULL;
-      self->pending_proto_present = FALSE;
+      log_reader_apply_proto_and_poll_events(self, NULL, NULL);
+      self->pending_close = FALSE;
 
-      g_cond_signal(self->pending_proto_cond);
-      g_static_mutex_unlock(&self->pending_proto_lock);
+      g_cond_signal(self->pending_close_cond);
+      g_static_mutex_unlock(&self->pending_close_lock);
     }
 
   if (self->notify_code)
@@ -694,8 +679,8 @@ log_reader_free(LogPipe *s)
 
   log_pipe_unref(self->control);
   g_sockaddr_unref(self->peer_addr);
-  g_static_mutex_free(&self->pending_proto_lock);
-  g_cond_free(self->pending_proto_cond);
+  g_static_mutex_free(&self->pending_close_lock);
+  g_cond_free(self->pending_close_cond);
   log_source_free(s);
 }
 
@@ -712,8 +697,8 @@ log_reader_new(GlobalConfig *cfg)
   self->super.window_empty_cb = log_reader_window_empty;
   self->immediate_check = FALSE;
   log_reader_init_watches(self);
-  g_static_mutex_init(&self->pending_proto_lock);
-  self->pending_proto_cond = g_cond_new();
+  g_static_mutex_init(&self->pending_close_lock);
+  self->pending_close_cond = g_cond_new();
   return self;
 }
 
