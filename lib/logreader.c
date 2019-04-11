@@ -146,6 +146,7 @@ log_reader_start_watches(LogReader *self)
   if (self->poll_events)
     poll_events_start_watches(self->poll_events);
   self->watches_running = TRUE;
+  log_reader_update_watches(self);
 }
 
 static void
@@ -275,7 +276,6 @@ log_reader_close_proto_deferred(gpointer s)
   log_reader_stop_watches(self);
   log_reader_apply_proto_and_poll_events(self, proto, poll_events);
   log_reader_start_watches(self);
-  log_reader_update_watches(self);
 }
 
 void
@@ -627,7 +627,6 @@ log_reader_init(LogPipe *s)
   iv_event_register(&self->last_msg_sent_event);
 
   log_reader_start_watches(self);
-  log_reader_update_watches(self);
 
   return TRUE;
 }
