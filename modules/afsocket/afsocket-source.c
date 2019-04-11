@@ -105,6 +105,10 @@ afsocket_sc_init(LogPipe *s)
       log_reader_open(self->reader, proto, poll_fd_events_new(self->sock));
       log_reader_set_peer_addr(self->reader, self->peer_addr);
     }
+
+  if (self->owner->dynamic_window_ctr)
+    log_source_enable_dynamic_window((LogSource *) self->reader, self->owner->dynamic_window_ctr);
+
   log_reader_set_options(self->reader, &self->super,
                          &self->owner->reader_options,
                          self->owner->super.super.id,
@@ -266,6 +270,17 @@ afsocket_sd_set_listen_backlog(LogDriver *s, gint listen_backlog)
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
 
   self->listen_backlog = listen_backlog;
+}
+
+void
+afsocket_sd_set_dynamic_window_size(LogDriver *s, gint dynamic_window_size)
+{
+  AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
+
+  if (!self->dynamic_window_ctr)
+    self->dynamic_window_ctr = dynamic_window_counter_new();
+
+  dynamic_window_counter_set_iw_size(self->dynamic_window_ctr, dynamic_window_size);
 }
 
 static const gchar *
@@ -703,6 +718,9 @@ afsocket_sd_init_method(LogPipe *s)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
 
+  if (self->dynamic_window_ctr)
+    dynamic_window_counter_init(self->dynamic_window_ctr);
+
   return log_src_driver_init_method(s) &&
          afsocket_sd_setup_transport(self) &&
          afsocket_sd_setup_addresses(self) &&
@@ -747,6 +765,7 @@ afsocket_sd_free_method(LogPipe *s)
   socket_options_free(self->socket_options);
   g_sockaddr_unref(self->bind_addr);
   self->bind_addr = NULL;
+  dynamic_window_counter_free(self->dynamic_window_ctr);
   log_src_driver_free(s);
 }
 
