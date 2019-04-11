@@ -170,6 +170,20 @@ log_source_flow_control_suspend(LogSource *self)
 }
 
 void
+log_source_enable_dynamic_window(LogSource *self, DynamicWindow *dynamic_window)
+{
+  if (self->pos_tracked && dynamic_window)
+    {
+      msg_warning("WARNING: dynamic window size control works only with non-position tracking sources"
+                  "Falling back to static window size (dynamic won't be used).",
+                  log_pipe_location_tag(&self->super));
+      return;
+    }
+
+  self->dynamic_window = dynamic_window;
+}
+
+void
 log_source_mangle_hostname(LogSource *self, LogMessage *msg)
 {
   const gchar *resolved_name;
@@ -425,6 +439,7 @@ log_source_set_options(LogSource *self, LogSourceOptions *options,
   self->stats_instance = stats_instance ? g_strdup(stats_instance): NULL;
   self->threaded = threaded;
   self->pos_tracked = pos_tracked;
+
   log_pipe_detach_expr_node(&self->super);
   log_pipe_attach_expr_node(&self->super, expr_node);
 }
