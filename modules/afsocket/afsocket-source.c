@@ -40,6 +40,7 @@ int deny_severity = 0;
 #endif
 
 static const gsize DYNAMIC_WINDOW_TIMER_SECS = 1;
+static const gsize DYNAMIC_WINDOW_REALLOC_EVERY_STATS_TICKS = 5;
 
 typedef struct _AFSocketSourceConnection
 {
@@ -497,8 +498,23 @@ static void
 _on_dynamic_window_timer_elapsed(gpointer cookie)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *)cookie;
-  //TODO: for (conn : connections) {conn.dynamic_timer_elapsed();}
-  msg_trace("Dynamic window timer elapsed");
+  for (GList *conn_it = self->connections; conn_it; conn_it = conn_it->next) //TODO: refactor
+    {
+      AFSocketSourceConnection *conn = (AFSocketSourceConnection *) conn_it->data;
+      if (self->dynamic_window_timer_tick == DYNAMIC_WINDOW_REALLOC_EVERY_STATS_TICKS)
+        {
+          log_source_dynamic_window_realloc(&conn->reader->super);
+        }
+      else
+        {
+          log_source_dynamic_window_update_statistics(&conn->reader->super);
+        }
+    }
+  if (self->dynamic_window_timer_tick == DYNAMIC_WINDOW_REALLOC_EVERY_STATS_TICKS) //TODO: refactor
+    self->dynamic_window_timer_tick = 0;
+  self->dynamic_window_timer_tick++;
+
+  msg_trace("Dynamic window timer elapsed", evt_tag_int("tick", self->dynamic_window_timer_tick));
   _dynamic_window_timer_start(self);
 }
 
