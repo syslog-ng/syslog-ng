@@ -40,14 +40,28 @@ dynamic_window_stat_update(DynamicWindow *self, gsize window)
   self->window_stat.n++;
 }
 
-void dynamic_window_stat_reset(DynamicWindow *self)
+void
+dynamic_window_stat_reset(DynamicWindow *self)
 {
   self->window_stat.sum = 0;
   self->window_stat.n = 0;
 }
 
-gsize dynamic_window_stat_get_avg(DynamicWindow *self)
+gsize
+dynamic_window_stat_get_avg(DynamicWindow *self)
 {
   return self->window_stat.sum / self->window_stat.n;
+}
+
+gsize
+dynamic_window_stat_get_number_of_samples(DynamicWindow *self)
+{
+  return self->window_stat.n;
+}
+
+gsize
+dynamic_window_stat_get_sum(DynamicWindow *self)
+{
+  return self->window_stat.sum;
 }
 
