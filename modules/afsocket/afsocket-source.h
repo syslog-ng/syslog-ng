@@ -41,6 +41,7 @@ struct _AFSocketSourceDriver
   guint32 connections_kept_alive_across_reloads:1,
           window_size_initialized:1;
   struct iv_fd listen_fd;
+  struct iv_timer dynamic_window_timer;
   gint fd;
   LogReaderOptions reader_options;
   DynamicWindowCounter *dynamic_window_ctr;

@@ -39,6 +39,8 @@ int allow_severity = 0;
 int deny_severity = 0;
 #endif
 
+static const gsize DYNAMIC_WINDOW_TIMER_SECS = 1;
+
 typedef struct _AFSocketSourceConnection
 {
   LogPipe super;
@@ -483,15 +485,50 @@ _listen_fd_deinit(AFSocketSourceDriver *self)
 }
 
 static void
+_dynamic_window_timer_start(AFSocketSourceDriver *self)
+{
+  iv_validate_now();
+  self->dynamic_window_timer.expires = iv_now;
+  self->dynamic_window_timer.expires.tv_sec += DYNAMIC_WINDOW_TIMER_SECS; //TODO: set from cfg
+  iv_timer_register(&self->dynamic_window_timer);
+}
+
+static void
+_on_dynamic_window_timer_elapsed(gpointer cookie)
+{
+  AFSocketSourceDriver *self = (AFSocketSourceDriver *)cookie;
+  //TODO: for (conn : connections) {conn.dynamic_timer_elapsed();}
+  msg_trace("Dynamic window timer elapsed");
+  _dynamic_window_timer_start(self);
+}
+
+static void
+_dynamic_window_timer_init(AFSocketSourceDriver *self)
+{
+  IV_TIMER_INIT(&self->dynamic_window_timer);
+  self->dynamic_window_timer.cookie = self;
+  self->dynamic_window_timer.handler = _on_dynamic_window_timer_elapsed;
+}
+
+static void
+_dynamic_window_timer_deinit(AFSocketSourceDriver *self)
+{
+  if (iv_timer_registered(&self->dynamic_window_timer))
+    iv_timer_unregister(&self->dynamic_window_timer);
+}
+
+static void
 afsocket_sd_start_watches(AFSocketSourceDriver *self)
 {
   _listen_fd_init(self);
+  _dynamic_window_timer_init(self);
 }
 
 static void
 afsocket_sd_stop_watches(AFSocketSourceDriver *self)
 {
   _listen_fd_deinit(self);
+  _dynamic_window_timer_deinit(self);
 }
 
 static gboolean
@@ -593,6 +630,8 @@ _finalize_init(gpointer arg)
     }
 
   afsocket_sd_start_watches(self);
+  if (self->dynamic_window_ctr)
+    _dynamic_window_timer_start(self);
   char buf[256];
   msg_info("Accepting connections",
            evt_tag_str("addr", g_sockaddr_format(self->bind_addr, buf, sizeof(buf), GSA_FULL)));
