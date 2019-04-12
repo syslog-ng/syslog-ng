@@ -523,6 +523,12 @@ cfg_dump_processed_config(GString *preprocess_output, gchar *output_filename)
 {
   FILE *output_file;
 
+  if (strcmp(output_filename, "-")==0)
+    {
+      fprintf(stdout, "%s", preprocess_output->str);
+      return;
+    }
+
   output_file = fopen(output_filename,"w+");
   if (!output_file)
     {
