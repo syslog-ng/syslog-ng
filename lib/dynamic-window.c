@@ -67,3 +67,21 @@ dynamic_window_stat_get_sum(DynamicWindow *self)
 {
   return self->window_stat.sum;
 }
+
+gsize
+dynamic_window_request(DynamicWindow *self, gsize size)
+{
+  if (!self->window_ctr)
+    return 0;
+
+  return dynamic_window_counter_request(self->window_ctr, size);
+}
+
+void
+dynamic_window_release(DynamicWindow *self, gsize size)
+{
+  if (!self->window_ctr)
+    return;
+
+  dynamic_window_counter_release(self->window_ctr, size);
+}
