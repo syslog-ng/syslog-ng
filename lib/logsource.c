@@ -215,13 +215,13 @@ _decrease_window(LogSource *self)
             evt_tag_int("new_window", new_full_window_size), log_pipe_location_tag(&self->super));
 
   self->full_window_size = new_full_window_size;
-  dynamic_window_counter_release(self->dynamic_window.window_ctr, subtrahend);
+  dynamic_window_release(&self->dynamic_window, subtrahend);
 }
 
 static inline void
 _increase_window(LogSource *self)
 {
-  gsize offered_dynamic = dynamic_window_counter_request(self->dynamic_window.window_ctr, self->full_window_size);
+  gsize offered_dynamic = dynamic_window_request(&self->dynamic_window, self->full_window_size);
 
   msg_trace("Increasing dynamic window", evt_tag_int("previous_window", self->full_window_size),
             evt_tag_int("new_window", self->full_window_size + offered_dynamic), log_pipe_location_tag(&self->super));
@@ -243,7 +243,7 @@ _release_dynamic_window(LogSource *self)
             log_pipe_location_tag(&self->super));
   self->full_window_size -= dynamic_part;
   window_size_counter_sub(&self->window_size, dynamic_part, NULL);
-  dynamic_window_counter_release(self->dynamic_window.window_ctr, dynamic_part);
+  dynamic_window_release(&self->dynamic_window, dynamic_part);
 }
 
 void
