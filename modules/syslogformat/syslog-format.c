@@ -949,28 +949,25 @@ log_msg_parse_syslog_proto(const MsgFormatOptions *parse_options, const guchar *
     goto error;
 
   /* checking if there are remaining data in log message */
-  if (left == 0)
+  if (left != 0)
     {
-      /*  no message, this is valid */
-      return TRUE;
-    }
+      /* optional part of the log message [SP MSG] */
+      if (!log_msg_parse_skip_space(self, &src, &left))
+        {
+          goto error;
+        }
 
-  /* optional part of the log message [SP MSG] */
-  if (!log_msg_parse_skip_space(self, &src, &left))
-    {
-      goto error;
-    }
-
-  if (left >= 3 && memcmp(src, "\xEF\xBB\xBF", 3) == 0)
-    {
-      /* we have a BOM, this is UTF8 */
-      self->flags |= LF_UTF8;
-      src += 3;
-      left -= 3;
-    }
-  else if ((parse_options->flags & LP_VALIDATE_UTF8) && g_utf8_validate((gchar *) src, left, NULL))
-    {
-      self->flags |= LF_UTF8;
+      if (left >= 3 && memcmp(src, "\xEF\xBB\xBF", 3) == 0)
+        {
+          /* we have a BOM, this is UTF8 */
+          self->flags |= LF_UTF8;
+          src += 3;
+          left -= 3;
+        }
+      else if ((parse_options->flags & LP_VALIDATE_UTF8) && g_utf8_validate((gchar *) src, left, NULL))
+        {
+          self->flags |= LF_UTF8;
+        }
     }
   log_msg_set_value(self, LM_V_MESSAGE, (gchar *) src, left);
   return TRUE;
