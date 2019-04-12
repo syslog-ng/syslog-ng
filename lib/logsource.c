@@ -233,6 +233,19 @@ _increase_window(LogSource *self)
     log_source_wakeup(self);
 }
 
+static void
+_release_dynamic_window(LogSource *self)
+{
+  g_assert(self->ack_tracker == NULL);
+
+  gsize dynamic_part = self->full_window_size - self->options->init_window_size;
+  msg_trace("Releasing dynamic part of the window", evt_tag_int("dynamic_window_to_be_released", dynamic_part),
+            log_pipe_location_tag(&self->super));
+  self->full_window_size -= dynamic_part;
+  window_size_counter_sub(&self->window_size, dynamic_part, NULL);
+  dynamic_window_counter_release(self->dynamic_window.window_ctr, dynamic_part);
+}
+
 void
 log_source_dynamic_window_realloc(LogSource *self)
 {
@@ -537,6 +550,8 @@ log_source_free(LogPipe *s)
   log_pipe_free_method(s);
 
   ack_tracker_free(self->ack_tracker);
+  self->ack_tracker = NULL;
+  _release_dynamic_window(self);
 }
 
 void
