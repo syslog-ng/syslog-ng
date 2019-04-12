@@ -44,13 +44,6 @@ _eof(FileReader *reader, gpointer user_data)
   test->deleted_eof_called = TRUE;
 }
 
-static void
-_finished(FileReader *reader, gpointer user_data)
-{
-  TestFileStateEvent *test = (TestFileStateEvent *) user_data;
-  test->finished_called = TRUE;
-}
-
 TestFileStateEvent *
 test_deleted_file_state_event_new(void)
 {
@@ -113,7 +106,6 @@ _init(void)
   app_startup();
   test_event = test_deleted_file_state_event_new();
   reader = (WildcardFileReader *)wildcard_file_reader_new(TEST_FILE_NAME, NULL, NULL, NULL, NULL);
-  wildcard_file_reader_on_deleted_file_finished(reader, _finished, test_event);
   wildcard_file_reader_on_deleted_file_eof(reader, _eof, test_event);
   cr_assert_eq(log_pipe_init(&reader->super.super), TRUE);
 }
@@ -131,7 +123,6 @@ TestSuite(test_wildcard_file_reader, .init = _init, .fini = _teardown);
 
 Test(test_wildcard_file_reader, constructor)
 {
-  cr_assert_eq(reader->file_state.last_msg_sent,TRUE);
   cr_assert_eq(reader->file_state.eof, FALSE);
   cr_assert_eq(reader->file_state.deleted, FALSE);
 }
@@ -141,7 +132,6 @@ Test(test_wildcard_file_reader, msg_read)
   reader->file_state.eof = TRUE;
   log_pipe_queue(&reader->super.super, NULL, &path_options);
   cr_assert_eq(reader->file_state.eof, FALSE);
-  cr_assert_eq(reader->file_state.last_msg_sent, FALSE);
 }
 
 Test(test_wildcard_file_reader, notif_deleted)
@@ -159,50 +149,27 @@ Test(test_wildcard_file_reader, notif_eof)
   cr_assert_eq(reader->file_state.eof, TRUE);
 }
 
-Test(test_wildcard_file_reader, notif_last_msg_sent)
-{
-  log_pipe_queue(&reader->super.super, NULL, &path_options);
-  log_pipe_notify(&reader->super.super, NC_LAST_MSG_SENT, NULL);
-  cr_assert_eq(reader->file_state.last_msg_sent, TRUE);
-}
-
-Test(test_wildcard_file_reader, status_change_deleted_not_eof_not_sent)
+Test(test_wildcard_file_reader, status_change_deleted_not_eof)
 {
   log_pipe_queue(&reader->super.super, NULL, &path_options);
   log_pipe_notify(&reader->super.super, NC_FILE_DELETED, NULL);
   cr_assert_eq(test_event->deleted_eof_called, FALSE);
-  cr_assert_eq(test_event->finished_called, FALSE);
 }
 
-Test(test_wildcard_file_reader, status_change_deleted_eof_not_sent)
+Test(test_wildcard_file_reader, status_change_deleted_eof)
 {
   log_pipe_queue(&reader->super.super, NULL, &path_options);
   log_pipe_notify(&reader->super.super, NC_FILE_DELETED, NULL);
   log_pipe_notify(&reader->super.super, NC_FILE_EOF, NULL);
   cr_assert_eq(test_event->deleted_eof_called, TRUE);
-  cr_assert_eq(test_event->finished_called, FALSE);
-}
-
-Test(test_wildcard_file_reader, status_change_deleted_eof_sent)
-{
-  log_pipe_queue(&reader->super.super, NULL, &path_options);
-  log_pipe_notify(&reader->super.super, NC_FILE_DELETED, NULL);
-  log_pipe_notify(&reader->super.super, NC_FILE_EOF, NULL);
-  log_pipe_notify(&reader->super.super, NC_LAST_MSG_SENT, NULL);
-
-  cr_assert_eq(test_event->deleted_eof_called, TRUE);
-  cr_assert_eq(test_event->finished_called, TRUE);
 }
 
 Test(test_wildcard_file_reader, status_finished_then_delete)
 {
   log_pipe_queue(&reader->super.super, NULL, &path_options);
   log_pipe_notify(&reader->super.super, NC_FILE_EOF, NULL);
-  log_pipe_notify(&reader->super.super, NC_LAST_MSG_SENT, NULL);
   cr_assert_eq(test_event->deleted_eof_called, FALSE);
-  cr_assert_eq(test_event->finished_called, FALSE);
 
   log_pipe_notify(&reader->super.super, NC_FILE_DELETED, NULL);
   cr_assert_eq(test_event->deleted_eof_called, TRUE);
-  cr_assert_eq(test_event->finished_called, TRUE);
 }

@@ -33,8 +33,6 @@ typedef void (*FileStateEventCallback)(FileReader *file_reader, gpointer user_da
 
 typedef struct _FileStateEvent
 {
-  FileStateEventCallback deleted_file_finished;
-  gpointer deleted_file_finished_user_data;
   FileStateEventCallback deleted_file_eof;
   gpointer deleted_file_eof_user_data;
 } FileStateEvent;
@@ -43,7 +41,6 @@ typedef struct _FileState
 {
   gboolean deleted;
   gboolean eof;
-  gboolean last_msg_sent;
 } FileState;
 
 
@@ -60,8 +57,6 @@ wildcard_file_reader_new(const gchar *filename, FileReaderOptions *options,
                          FileOpener *opener, LogSrcDriver *owner,
                          GlobalConfig *cfg);
 
-void wildcard_file_reader_on_deleted_file_finished(WildcardFileReader *self, FileStateEventCallback cb,
-                                                   gpointer user_data);
 void wildcard_file_reader_on_deleted_file_eof(WildcardFileReader *self, FileStateEventCallback cb, gpointer user_data);
 gboolean wildcard_file_reader_is_deleted(WildcardFileReader *self);
 
