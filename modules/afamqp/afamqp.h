@@ -44,6 +44,7 @@ void afamqp_dd_set_user(LogDriver *d, const gchar *user);
 void afamqp_dd_set_password(LogDriver *d, const gchar *password);
 void afamqp_dd_set_max_channel(LogDriver *d, gint max_channel);
 void afamqp_dd_set_frame_size(LogDriver *d, gint frame_size);
+void afamqp_dd_set_offered_heartbeat(LogDriver *d, gint heartbeat);
 void afamqp_dd_set_value_pairs(LogDriver *d, ValuePairs *vp);
 void afamqp_dd_set_ca_file(LogDriver *d, const gchar *cacrt);
 void afamqp_dd_set_key_file(LogDriver *d, const gchar *key);

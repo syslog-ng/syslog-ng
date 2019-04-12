@@ -60,6 +60,7 @@
 %token KW_USERNAME
 %token KW_MAX_CHANNEL
 %token KW_FRAME_SIZE
+%token KW_HEARTBEAT
 %token KW_CA_FILE
 %token KW_KEY_FILE
 %token KW_CERT_FILE
@@ -82,21 +83,22 @@ afamqp_options
 	;
 
 afamqp_option
-	: KW_HOST '(' string ')'                  { afamqp_dd_set_host(last_driver, $3); free($3); }
-	| KW_PORT '(' positive_integer ')'        { afamqp_dd_set_port(last_driver, $3); }
-	| KW_VHOST '(' string ')'                 { afamqp_dd_set_vhost(last_driver, $3); free($3); }
-	| KW_EXCHANGE '(' string ')'              { afamqp_dd_set_exchange(last_driver, $3); free($3); }
-	| KW_EXCHANGE_DECLARE '(' yesno ')'       { afamqp_dd_set_exchange_declare(last_driver, $3); }
-	| KW_EXCHANGE_TYPE '(' string ')'         { afamqp_dd_set_exchange_type(last_driver, $3); free($3); }
-	| KW_ROUTING_KEY '(' string ')'           { afamqp_dd_set_routing_key(last_driver, $3); free($3); }
-	| KW_BODY '(' string ')'                  { afamqp_dd_set_body(last_driver, $3); free($3); }
-	| KW_PERSISTENT '(' yesno ')'             { afamqp_dd_set_persistent(last_driver, $3); }
-	| KW_AUTH_METHOD '(' string ')'           { CHECK_ERROR(afamqp_dd_set_auth_method(last_driver, $3), @3, "unknown auth-method() argument"); free($3); }
-	| KW_USERNAME '(' string ')'              { afamqp_dd_set_user(last_driver, $3); free($3); }
-	| KW_PASSWORD '(' string ')'              { afamqp_dd_set_password(last_driver, $3); free($3); }
-	| KW_MAX_CHANNEL '(' positive_integer ')' { afamqp_dd_set_max_channel(last_driver, $3); }
-	| KW_FRAME_SIZE '(' positive_integer ')'  { afamqp_dd_set_frame_size(last_driver, $3); }
-	| value_pair_option                       { afamqp_dd_set_value_pairs(last_driver, $1); }
+	: KW_HOST '(' string ')'                   { afamqp_dd_set_host(last_driver, $3); free($3); }
+	| KW_PORT '(' positive_integer ')'         { afamqp_dd_set_port(last_driver, $3); }
+	| KW_VHOST '(' string ')'                  { afamqp_dd_set_vhost(last_driver, $3); free($3); }
+	| KW_EXCHANGE '(' string ')'               { afamqp_dd_set_exchange(last_driver, $3); free($3); }
+	| KW_EXCHANGE_DECLARE '(' yesno ')'        { afamqp_dd_set_exchange_declare(last_driver, $3); }
+	| KW_EXCHANGE_TYPE '(' string ')'          { afamqp_dd_set_exchange_type(last_driver, $3); free($3); }
+	| KW_ROUTING_KEY '(' string ')'            { afamqp_dd_set_routing_key(last_driver, $3); free($3); }
+	| KW_BODY '(' string ')'                   { afamqp_dd_set_body(last_driver, $3); free($3); }
+	| KW_PERSISTENT '(' yesno ')'              { afamqp_dd_set_persistent(last_driver, $3); }
+	| KW_AUTH_METHOD '(' string ')'            { CHECK_ERROR(afamqp_dd_set_auth_method(last_driver, $3), @3, "unknown auth-method() argument"); free($3); }
+	| KW_USERNAME '(' string ')'               { afamqp_dd_set_user(last_driver, $3); free($3); }
+	| KW_PASSWORD '(' string ')'               { afamqp_dd_set_password(last_driver, $3); free($3); }
+	| KW_MAX_CHANNEL '(' positive_integer ')'  { afamqp_dd_set_max_channel(last_driver, $3); }
+	| KW_FRAME_SIZE '(' positive_integer ')'   { afamqp_dd_set_frame_size(last_driver, $3); }
+	| KW_HEARTBEAT '(' nonnegative_integer ')' { afamqp_dd_set_offered_heartbeat(last_driver, $3); }
+	| value_pair_option                        { afamqp_dd_set_value_pairs(last_driver, $1); }
 	| threaded_dest_driver_option
 	| afamqp_tls_option
 	| KW_TLS '(' afamqp_tls_options ')'

@@ -29,6 +29,7 @@
 #include "logqueue.h"
 #include "scratch-buffers.h"
 #include "logthrdest/logthrdestdrv.h"
+#include "timeutils/misc.h"
 
 #include <amqp.h>
 #include <amqp_framing.h>
@@ -58,6 +59,9 @@ typedef struct
 
   gint max_channel;
   gint frame_size;
+  gint offered_heartbeat;
+  gint heartbeat;
+  struct iv_timer heartbeat_timer;
 
   LogTemplateOptions template_options;
   ValuePairs *vp;
@@ -261,6 +265,15 @@ afamqp_dd_set_frame_size(LogDriver *d, gint frame_size)
   self->frame_size = frame_size;
 }
 
+void
+afamqp_dd_set_offered_heartbeat(LogDriver *d, gint offered_heartbeat)
+{
+  AMQPDestDriver *self = (AMQPDestDriver *) d;
+
+  self->offered_heartbeat = offered_heartbeat;
+}
+
+
 /*
  * Utilities
  */
@@ -319,6 +332,8 @@ afamqp_dd_disconnect(LogThreadedDestDriver *s)
     {
       _amqp_connection_disconnect(self);
     }
+  if (iv_timer_registered(&self->heartbeat_timer))
+    iv_timer_unregister(&self->heartbeat_timer);
 }
 
 static gboolean
@@ -451,23 +466,30 @@ afamqp_dd_login(AMQPDestDriver *self)
   switch (self->auth_method)
     {
     case AMQP_SASL_METHOD_PLAIN:
-      ret = amqp_login(self->conn, self->vhost, self->max_channel, self->frame_size, 0,
-                       self->auth_method, self->user, self->password);
+      ret = amqp_login(self->conn, self->vhost, self->max_channel, self->frame_size,
+                       self->offered_heartbeat, self->auth_method, self->user, self->password);
       break;
+
 
     case AMQP_SASL_METHOD_EXTERNAL:
       // The identity is generally not needed for external authentication, but must be set to
       // something non-empty otherwise the API call will fail, so just default it to something
       // meaningless
       identity = (self->user && self->user[0] != '\0') ? self->user : ".";
-      ret = amqp_login(self->conn, self->vhost, self->max_channel, self->frame_size, 0,
-                       self->auth_method, identity);
+      ret = amqp_login(self->conn, self->vhost, self->max_channel, self->frame_size,
+                       self->offered_heartbeat, self->auth_method, identity);
       break;
 
     default:
       g_assert_not_reached();
       return FALSE;
     }
+
+  self->heartbeat = amqp_get_heartbeat(self->conn);
+
+  msg_debug("Amqp heartbeat negotiation",
+            evt_tag_str("driver", self->super.super.super.id),
+            evt_tag_int("heartbeat", self->heartbeat));
 
   return afamqp_is_ok(self, "Error during AMQP login", ret);
 }
@@ -535,6 +557,13 @@ afamqp_dd_connect(AMQPDestDriver *self)
 
   msg_debug ("Connecting to AMQP succeeded",
              evt_tag_str("driver", self->super.super.super.id));
+
+  if (self->heartbeat)
+    {
+      iv_validate_now();
+      self->heartbeat_timer.expires = iv_now;
+      iv_timer_register(&self->heartbeat_timer);
+    }
 
   return TRUE;
 
@@ -654,6 +683,29 @@ afamqp_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
   return LTR_SUCCESS;
 }
 
+static void
+_handle_heartbeat(void *cookie)
+{
+  AMQPDestDriver *self = (AMQPDestDriver *) cookie;
+
+  amqp_frame_t frame;
+  struct timeval tv = {0, 0};
+  gint status;
+  while (AMQP_STATUS_OK == (status = amqp_simple_wait_frame_noblock(self->conn, &frame, &tv)));
+  if (AMQP_STATUS_TIMEOUT != status)
+    {
+      msg_error("Unexpected error while reading from amqp server",
+                log_pipe_location_tag((LogPipe *)self),
+                evt_tag_str("error", amqp_error_string2(status)));
+    }
+
+  iv_validate_now();
+  self->heartbeat_timer.expires = iv_now;
+  timespec_add_msec(&self->heartbeat_timer.expires, self->heartbeat*1000);
+
+  iv_timer_register(&self->heartbeat_timer);
+}
+
 /*
  * Main thread
  */
@@ -760,6 +812,9 @@ afamqp_dd_new(GlobalConfig *cfg)
   log_template_options_defaults(&self->template_options);
   afamqp_dd_set_value_pairs(&self->super.super.super, value_pairs_new_default(cfg));
   afamqp_dd_set_peer_verify((LogDriver *) self, TRUE);
+  IV_TIMER_INIT(&self->heartbeat_timer);
+  self->heartbeat_timer.cookie = self;
+  self->heartbeat_timer.handler = _handle_heartbeat;
 
   return (LogDriver *) self;
 }
