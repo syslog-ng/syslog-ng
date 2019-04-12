@@ -53,26 +53,17 @@ _check_required_options(WildcardSourceDriver *self)
 }
 
 static void
-_deleted_cb(FileReader *self, gpointer user_data)
-{
-  log_pipe_deinit(&self->super);
-  file_reader_remove_persist_state(self);
-}
-
-static void
-_stop_file_reader(FileReader *reader, gpointer user_data)
-{
-  msg_debug("Stop following file, because of deleted and eof",
-            evt_tag_str("filename", reader->filename->str));
-  file_reader_stop_follow_file(reader);
-}
-
-static void
 _remove_file_reader(FileReader *reader, gpointer user_data)
 {
   WildcardSourceDriver *self = (WildcardSourceDriver *) user_data;
 
-  _deleted_cb(reader, user_data);
+  msg_debug("Stop following file, because of deleted and eof",
+            evt_tag_str("filename", reader->filename->str));
+  file_reader_stop_follow_file(reader);
+
+  log_pipe_deinit(&reader->super);
+  file_reader_remove_persist_state(reader);
+
   log_pipe_ref(&reader->super);
   if (g_hash_table_remove(self->file_readers, reader->filename->str))
     {
@@ -83,6 +74,7 @@ _remove_file_reader(FileReader *reader, gpointer user_data)
       msg_error("Can't remove the file reader", evt_tag_str("Filename", reader->filename->str));
     }
   log_pipe_unref(&reader->super);
+
   gchar *full_path = pending_file_list_pop(self->waiting_list);
   if (full_path)
     {
@@ -113,8 +105,7 @@ _create_file_reader(WildcardSourceDriver *self, const gchar *full_path)
                                     &self->super,
                                     cfg);
 
-  wildcard_file_reader_on_deleted_file_finished(reader, _remove_file_reader, self);
-  wildcard_file_reader_on_deleted_file_eof(reader, _stop_file_reader, self);
+  wildcard_file_reader_on_deleted_file_eof(reader, _remove_file_reader, self);
 
   log_pipe_append(&reader->super.super, &self->super.super.super);
   if (!log_pipe_init(&reader->super.super))
