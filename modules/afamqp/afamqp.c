@@ -697,6 +697,8 @@ _handle_heartbeat(void *cookie)
       msg_error("Unexpected error while reading from amqp server",
                 log_pipe_location_tag((LogPipe *)self),
                 evt_tag_str("error", amqp_error_string2(status)));
+      log_threaded_dest_worker_disconnect(&self->super.worker.instance);
+      return;
     }
 
   iv_validate_now();
