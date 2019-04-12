@@ -50,6 +50,9 @@ dynamic_window_stat_reset(DynamicWindow *self)
 gsize
 dynamic_window_stat_get_avg(DynamicWindow *self)
 {
+  if (self->window_stat.n == 0)
+    return 0;
+
   return self->window_stat.sum / self->window_stat.n;
 }
 
@@ -64,4 +67,3 @@ dynamic_window_stat_get_sum(DynamicWindow *self)
 {
   return self->window_stat.sum;
 }
-
