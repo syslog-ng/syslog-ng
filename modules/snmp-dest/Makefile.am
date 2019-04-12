@@ -35,3 +35,6 @@ endif
 EXTRA_DIST					+=	\
 	modules/snmp-dest/snmpdest-grammar.ym	\
 	modules/snmp-dest/CMakeLists.txt
+
+
+include modules/snmp-dest/tests/Makefile.am
