@@ -70,7 +70,7 @@ _flow_control_window_size_adjust(LogSource *self, guint32 window_size_increment,
   if (old_window_size == 0 || need_to_resume_counter)
     log_source_wakeup(self);
 
-  if (old_window_size+window_size_increment == self->options->init_window_size)
+  if (old_window_size+window_size_increment == self->full_window_size)
     log_source_window_empty(self);
 }
 
@@ -194,6 +194,60 @@ log_source_dynamic_window_update_statistics(LogSource *self)
   dynamic_window_stat_update(&self->dynamic_window, window_size_counter_get(&self->window_size, NULL));
   msg_trace("Updating dynamic window statistic", evt_tag_int("avg window size",
                                                              dynamic_window_stat_get_avg(&self->dynamic_window)));
+}
+
+static inline void
+_decrease_window(LogSource *self)
+{
+  gsize new_full_window_size = MAX(self->options->init_window_size, self->full_window_size / 2);
+  gsize subtrahend = self->full_window_size - new_full_window_size;
+
+  gsize empty_window = window_size_counter_get(&self->window_size, NULL);
+  if (empty_window <= subtrahend)
+    {
+      subtrahend = empty_window == 0 ? 0 : empty_window - 1;
+      new_full_window_size = self->full_window_size - empty_window;
+    }
+
+  window_size_counter_sub(&self->window_size, subtrahend, NULL);
+
+  msg_trace("Decreasing dynamic window", evt_tag_int("previous_window", self->full_window_size),
+            evt_tag_int("new_window", new_full_window_size), log_pipe_location_tag(&self->super));
+
+  self->full_window_size = new_full_window_size;
+  dynamic_window_counter_release(self->dynamic_window.window_ctr, subtrahend);
+}
+
+static inline void
+_increase_window(LogSource *self)
+{
+  gsize offered_dynamic = dynamic_window_counter_request(self->dynamic_window.window_ctr, self->full_window_size);
+
+  msg_trace("Increasing dynamic window", evt_tag_int("previous_window", self->full_window_size),
+            evt_tag_int("new_window", self->full_window_size + offered_dynamic), log_pipe_location_tag(&self->super));
+
+  self->full_window_size += offered_dynamic;
+
+  gsize old_window_size = window_size_counter_add(&self->window_size, offered_dynamic, NULL);
+  if (old_window_size == 0 && offered_dynamic != 0)
+    log_source_wakeup(self);
+}
+
+void
+log_source_dynamic_window_realloc(LogSource *self)
+{
+  /* it is safe to assume that the window size is not decremented while this function runs,
+   * only incrementation is possible by destination threads */
+
+  /* TODO: add abstraction for heuristics */
+  gsize free_avg = dynamic_window_stat_get_avg(&self->dynamic_window);
+  if (free_avg >= self->full_window_size / 2)
+    _decrease_window(self);
+
+  if (free_avg < self->full_window_size * 0.05f)
+    _increase_window(self);
+
+  dynamic_window_stat_reset(&self->dynamic_window);
 }
 
 void
@@ -440,7 +494,10 @@ log_source_set_options(LogSource *self, LogSourceOptions *options,
    * connections will not have their window_size changed. */
 
   if ((gint)window_size_counter_get(&self->window_size, NULL) == -1)
-    window_size_counter_set(&self->window_size, options->init_window_size);
+    {
+      window_size_counter_set(&self->window_size, options->init_window_size);
+      self->full_window_size = options->init_window_size;
+    }
   self->options = options;
   if (self->stats_id)
     g_free(self->stats_id);
