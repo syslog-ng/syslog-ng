@@ -80,7 +80,7 @@ struct _LogSource
 
   void (*wakeup)(LogSource *s);
   void (*window_empty_cb)(LogSource *s);
-  void (*dynamic_window_realloc)(LogSource *s);
+  void (*schedule_dynamic_window_realloc)(LogSource *s);
 };
 
 static inline gboolean
@@ -96,11 +96,11 @@ log_source_get_init_window_size(LogSource *self)
 }
 
 static inline void
-log_source_dynamic_window_realloc(LogSource *s)
+log_source_schedule_dynamic_window_realloc(LogSource *s)
 {
-  if (!s || !s->dynamic_window_realloc)
+  if (!s || !s->schedule_dynamic_window_realloc)
     return;
-  s->dynamic_window_realloc(s);
+  s->schedule_dynamic_window_realloc(s);
 }
 
 gboolean log_source_init(LogPipe *s);
