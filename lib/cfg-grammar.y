@@ -1029,9 +1029,17 @@ string
 	;
 
 yesno
-	: KW_YES				{ $$ = 1; }
-	| KW_NO					{ $$ = 0; }
-	| LL_NUMBER				{ $$ = $1; }
+  : LL_IDENTIFIER
+    {
+      gboolean value;
+      gboolean success = cfg_process_yesno($1, &value);
+      CHECK_ERROR((TRUE == success), @1, "invalid yesno value: %s. Use one of the following: yes/no, on/off, true/false, enable/disable, enabled/disabled", $1);
+      $$ = value;
+    }
+  | LL_NUMBER
+    {
+      $$ = $1;
+    }
 	;
 
 dnsmode

@@ -66,7 +66,7 @@ typedef struct _CfgFlagHandler
 } CfgFlagHandler;
 
 gboolean cfg_process_flag(CfgFlagHandler *handlers, gpointer base, const gchar *flag);
-gboolean cfg_process_yesno(const gchar *yesno);
+gboolean cfg_process_yesno(const gchar *yesno, gboolean *value);
 
 
 extern CfgParser main_parser;
