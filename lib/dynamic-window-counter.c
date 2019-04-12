@@ -50,3 +50,18 @@ void dynamic_window_counter_set_iw_size(DynamicWindowCounter *self, gsize iw_siz
 {
   self->iw_size = iw_size;
 }
+
+gsize
+dynamic_window_counter_request(DynamicWindowCounter *self, gsize requested_size)
+{
+  gsize offered = MIN(self->window, requested_size);
+  self->window -= offered;
+
+  return offered;
+}
+
+void dynamic_window_counter_release(DynamicWindowCounter *self, gsize release_size)
+{
+  self->window += release_size;
+  g_assert(self->window <= self->iw_size);
+}
