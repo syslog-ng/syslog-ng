@@ -331,7 +331,8 @@ if (ENABLE_EXTRA_WARNINGS)
     -Wpointer-arith
     -Wpointer-sign
     -Wmissing-format-attribute
-    -Wsuggest-attribute=noreturn)
+    -Wsuggest-attribute=noreturn
+    -Wundef)
 endif()
 
 add_compile_options(${IMPORTANT_WARNINGS} ${ACCEPTABLE_WARNINGS} ${EXTRA_WARNINGS})

@@ -141,7 +141,7 @@ version(void)
          "Revision: " SYSLOG_NG_SOURCE_REVISION "\n",
          installer_version);
 
-#if SYSLOG_NG_WITH_COMPILE_DATE
+#if defined (SYSLOG_NG_WITH_COMPILE_DATE)
   printf("Compile-Date: " __DATE__ " " __TIME__ "\n");
 #endif
 

@@ -38,7 +38,7 @@ static CfgLexerKeyword snmptrapd_parser_keywords[] =
 
 CfgParser snmptrapd_parser_parser =
 {
-#if ENABLE_DEBUG
+#if defined (ENABLE_DEBUG)
   .debug_flag = &snmptrapd_parser_debug,
 #endif
   .name = "snmptrapd-parser",

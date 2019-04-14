@@ -566,7 +566,7 @@ ParameterizedTest(diskq_tester_parameters_t *test_cases, diskq, test_diskq_stati
 static void
 setup(void)
 {
-#if _AIX
+#if defined (_AIX)
   fprintf(stderr,
           "On AIX this testcase can't executed, because the overriding of main_loop_io_worker_register_finish_callback does not work\n");
   return 0;

@@ -41,7 +41,7 @@ static CfgLexerKeyword xml_keywords[] =
 
 CfgParser xml_parser =
 {
-#if ENABLE_DEBUG
+#if defined (ENABLE_DEBUG)
   .debug_flag = &xml_debug,
 #endif
   .name = "xml",

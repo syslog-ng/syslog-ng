@@ -40,7 +40,7 @@
 #include <iv.h>
 #include "service-management.h"
 
-#if __FreeBSD__
+#if defined (__FreeBSD__)
 #include <sys/sysctl.h>
 #include <inttypes.h>
 #endif
@@ -132,7 +132,7 @@ system_sysblock_add_pipe(GString *sysblock, const gchar *path, gint pad_size)
   g_string_append(sysblock, ");\n");
 }
 
-#if __FreeBSD__
+#if defined (__FreeBSD__)
 static gboolean
 system_freebsd_is_jailed(void)
 {

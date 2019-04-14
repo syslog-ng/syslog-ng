@@ -38,7 +38,7 @@ static CfgLexerKeyword threaded_diskq_source_keywords[] =
 
 CfgParser threaded_diskq_source_parser =
 {
-#if ENABLE_DEBUG
+#if defined (ENABLE_DEBUG)
   .debug_flag = &threaded_diskq_source_debug,
 #endif
   .name = "threaded_diskq_source",

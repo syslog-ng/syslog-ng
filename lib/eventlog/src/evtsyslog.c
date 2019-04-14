@@ -81,7 +81,7 @@ evt_syslog(int pri, const char *format, ...)
   va_end(ap);
 }
 
-#if ENABLE_DLSYM_WRAPPER
+#if defined (ENABLE_DLSYM_WRAPPER)
 
 #include <dlfcn.h>
 

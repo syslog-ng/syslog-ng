@@ -32,7 +32,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#if HAVE_GETOPT_H
+#if defined (HAVE_GETOPT_H)
 #include <getopt.h>
 #endif
 

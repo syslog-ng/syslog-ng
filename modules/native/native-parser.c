@@ -39,7 +39,7 @@ static CfgLexerKeyword native_keywords[] =
 
 __attribute__((__visibility__("hidden"))) CfgParser native_parser =
 {
-#if ENABLE_DEBUG
+#if defined (ENABLE_DEBUG)
   .debug_flag = &native_debug,
 #endif
   .context = LL_IDENTIFIER,
