@@ -306,69 +306,78 @@ Test(diskq, testcase_with_threads)
   fprintf(stderr, "Feed speed: %.2lf\n", (double) TEST_RUNS * MESSAGES_SUM * 1000000 / sum_time);
 }
 
-Test(diskq, testcase_diskbuffer_restart_corrupted)
+typedef struct restart_test_parameters
 {
-  typedef struct restart_test_parameters
-  {
-    gchar *filename;
-    LogQueue *(*lqdisk_new_func)(DiskQueueOptions *options, const gchar *persist_name);
-    gboolean reliable;
-  } restart_test_parameters;
+  gchar *filename;
+  gboolean reliable;
+} restart_test_parameters;
 
-  restart_test_parameters parameters[] =
+static LogQueue *
+queue_new(gboolean reliable, DiskQueueOptions *options, const gchar *persist_name)
+{
+  if (reliable)
+    return log_queue_disk_reliable_new(options, persist_name);
+
+  return log_queue_disk_non_reliable_new(options, persist_name);
+}
+
+ParameterizedTestParameters(diskq, testcase_diskbuffer_restart_corrupted)
+{
+  static restart_test_parameters test_cases[] =
   {
-    {"test-diskq-restart.qf", log_queue_disk_non_reliable_new, FALSE},
-    {"test-diskq-restart.rqf", log_queue_disk_reliable_new, TRUE},
+    {"test-diskq-restart.qf", FALSE},
+    {"test-diskq-restart.rqf", TRUE},
   };
 
+  return cr_make_param_array(restart_test_parameters, test_cases, sizeof(test_cases) / sizeof(test_cases[0]));
+}
+
+ParameterizedTest(restart_test_parameters *test_case, diskq, testcase_diskbuffer_restart_corrupted)
+{
   guint64 const original_disk_buf_size = 1000123;
-  gsize number_of_variants = sizeof(parameters)/sizeof(restart_test_parameters);
-  for (gsize i = 0; i < number_of_variants; i++)
-    {
-      DiskQueueOptions options;
-      _construct_options(&options, original_disk_buf_size, 100000, parameters[i].reliable);
-      LogQueue *q = parameters[i].lqdisk_new_func(&options, NULL);
-      log_queue_set_use_backlog(q, FALSE);
+  DiskQueueOptions options;
+  _construct_options(&options, original_disk_buf_size, 100000, test_case->reliable);
+  LogQueue *q = queue_new(test_case->reliable, &options, NULL);
+  log_queue_set_use_backlog(q, FALSE);
 
-      gchar *filename = parameters[i].filename;
-      gchar filename_corrupted_dq[100];
-      g_snprintf(filename_corrupted_dq, 100, "%s.corrupted", filename);
-      unlink(filename);
-      unlink(filename_corrupted_dq);
+  gchar *filename = test_case->filename;
+  gchar filename_corrupted_dq[100];
+  g_snprintf(filename_corrupted_dq, 100, "%s.corrupted", filename);
+  unlink(filename);
+  unlink(filename_corrupted_dq);
 
-      log_queue_disk_load_queue(q, filename);
-      fed_messages = 0;
-      feed_some_messages(q, 100);
-      cr_assert_eq(fed_messages, 100, "Failed to push all messages to the disk-queue!\n");
+  log_queue_disk_load_queue(q, filename);
+  fed_messages = 0;
+  feed_some_messages(q, 100);
+  cr_assert_eq(fed_messages, 100, "Failed to push all messages to the disk-queue!\n");
 
-      LogQueueDisk *disk_queue = (LogQueueDisk *)q;
-      log_queue_disk_restart_corrupted(disk_queue);
+  LogQueueDisk *disk_queue = (LogQueueDisk *)q;
+  log_queue_disk_restart_corrupted(disk_queue);
 
-      struct stat file_stat;
-      cr_assert_eq(stat(filename, &file_stat), 0,
-                   "New disk-queue file does not exists!!");
-      cr_assert_eq(S_ISREG(file_stat.st_mode), TRUE,
-                   "New disk-queue file expected to be a regular file!! st_mode value=%04o",
-                   (file_stat.st_mode & S_IFMT));
-      stat(filename_corrupted_dq, &file_stat);
-      cr_assert_eq(S_ISREG(file_stat.st_mode), TRUE,
-                   "Corrupted disk-queue file does not exists!!");
-      assert_string(qdisk_get_filename(disk_queue->qdisk), filename,
-                    "New disk-queue file's name should be the same\n");
-      cr_assert_eq(qdisk_get_size(disk_queue->qdisk), original_disk_buf_size,
-                   "Disk-queue option does not match the original configured value!\n");
-      cr_assert_eq(qdisk_get_length(disk_queue->qdisk), 0,
-                   "New disk-queue file should be empty!\n");
-      cr_assert_eq(qdisk_get_writer_head(disk_queue->qdisk), QDISK_RESERVED_SPACE,
-                   "Invalid write pointer!\n");
-      cr_assert_eq(qdisk_get_reader_head(disk_queue->qdisk), QDISK_RESERVED_SPACE,
-                   "Invalid read pointer!\n");
+  struct stat file_stat;
+  cr_assert_eq(stat(filename, &file_stat), 0,
+               "New disk-queue file does not exists!!");
+  cr_assert_eq(S_ISREG(file_stat.st_mode), TRUE,
+               "New disk-queue file expected to be a regular file!! st_mode value=%04o",
+               (file_stat.st_mode & S_IFMT));
+  stat(filename_corrupted_dq, &file_stat);
+  cr_assert_eq(S_ISREG(file_stat.st_mode), TRUE,
+               "Corrupted disk-queue file does not exists!!");
+  assert_string(qdisk_get_filename(disk_queue->qdisk), filename,
+                "New disk-queue file's name should be the same\n");
+  cr_assert_eq(qdisk_get_size(disk_queue->qdisk), original_disk_buf_size,
+               "Disk-queue option does not match the original configured value!\n");
+  cr_assert_eq(qdisk_get_length(disk_queue->qdisk), 0,
+               "New disk-queue file should be empty!\n");
+  cr_assert_eq(qdisk_get_writer_head(disk_queue->qdisk), QDISK_RESERVED_SPACE,
+               "Invalid write pointer!\n");
+  cr_assert_eq(qdisk_get_reader_head(disk_queue->qdisk), QDISK_RESERVED_SPACE,
+               "Invalid read pointer!\n");
 
-      log_queue_unref(q);
-      unlink(filename);
-      unlink(filename_corrupted_dq);
-      disk_queue_options_destroy(&options);
-    }
+  log_queue_unref(q);
+  unlink(filename);
+  unlink(filename_corrupted_dq);
+  disk_queue_options_destroy(&options);
 }
 
 static gboolean
