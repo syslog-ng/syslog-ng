@@ -254,10 +254,10 @@ log_source_dynamic_window_realloc(LogSource *self)
 
   /* TODO: add abstraction for heuristics */
   gsize free_avg = dynamic_window_stat_get_avg(&self->dynamic_window);
-  if (free_avg > self->full_window_size / 2)
+  if (free_avg > self->full_window_size * (self->options->dynamic_window_decrease_threshold / 100.0f))
     _decrease_window(self);
 
-  if (free_avg < self->full_window_size * 0.05f)
+  if (free_avg < self->full_window_size * (self->options->dynamic_window_increase_threshold / 100.0f))
     _increase_window(self);
 
   dynamic_window_stat_reset(&self->dynamic_window);
@@ -565,6 +565,8 @@ log_source_options_defaults(LogSourceOptions *options)
   options->host_override_len = -1;
   options->tags = NULL;
   options->read_old_records = TRUE;
+  options->dynamic_window_decrease_threshold = 50;
+  options->dynamic_window_increase_threshold = 5;
   host_resolve_options_defaults(&options->host_resolve_options);
 }
 

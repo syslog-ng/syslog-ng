@@ -171,6 +171,8 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 %token KW_DYNAMIC_WINDOW_SIZE
 %token KW_DYNAMIC_WINDOW_STATS_FREQ
 %token KW_DYNAMIC_WINDOW_REALLOC_TICKS
+%token KW_DYNAMIC_WINDOW_INCREASE_THRESHOLD
+%token KW_DYNAMIC_WINDOW_DECREASE_THRESHOLD
 
 /* SSL support */
 
@@ -393,6 +395,8 @@ source_afsocket_stream_params
   | KW_DYNAMIC_WINDOW_STATS_FREQ '(' nonnegative_integer ')' { afsocket_sd_set_dynamic_window_stats_freq(last_driver, $3); }
   | KW_DYNAMIC_WINDOW_STATS_FREQ '(' LL_FLOAT ')' { afsocket_sd_set_dynamic_window_stats_freq(last_driver, $3); }
   | KW_DYNAMIC_WINDOW_REALLOC_TICKS '(' nonnegative_integer ')' { afsocket_sd_set_dynamic_window_realloc_ticks(last_driver, $3); }
+  | KW_DYNAMIC_WINDOW_INCREASE_THRESHOLD '(' nonnegative_integer ')' { last_reader_options->super.dynamic_window_increase_threshold = $3; }
+  | KW_DYNAMIC_WINDOW_DECREASE_THRESHOLD '(' nonnegative_integer ')' { last_reader_options->super.dynamic_window_decrease_threshold = $3; }
 	;
 
 source_afsyslog
