@@ -95,7 +95,7 @@ static CfgLexerKeyword afsocket_keywords[] =
   { "successful_probes_required", KW_SUCCESSFUL_PROBES_REQUIRED },
   { "dynamic_window_size", KW_DYNAMIC_WINDOW_SIZE },
   { "dynamic_window_stats_freq", KW_DYNAMIC_WINDOW_STATS_FREQ },
-  { "dynamic_window_realloc_freq", KW_DYNAMIC_WINDOW_REALLOC_FREQ },
+  { "dynamic_window_realloc_ticks", KW_DYNAMIC_WINDOW_REALLOC_TICKS },
   { NULL }
 };
 
