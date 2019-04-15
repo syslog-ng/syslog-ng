@@ -491,14 +491,12 @@ _listen_fd_init(AFSocketSourceDriver *self)
   self->listen_fd.fd = self->fd;
   self->listen_fd.cookie = self;
   self->listen_fd.handler_in = afsocket_sd_accept;
-  iv_fd_register(&self->listen_fd);
 }
 
 static void
-_listen_fd_deinit(AFSocketSourceDriver *self)
+_listen_fd_start(AFSocketSourceDriver *self)
 {
-  if (iv_fd_registered (&self->listen_fd))
-    iv_fd_unregister(&self->listen_fd);
+  iv_fd_register(&self->listen_fd);
 }
 
 static void
@@ -543,24 +541,38 @@ _dynamic_window_timer_init(AFSocketSourceDriver *self)
 }
 
 static void
-_dynamic_window_timer_deinit(AFSocketSourceDriver *self)
+_dynamic_window_timer_stop(AFSocketSourceDriver *self)
 {
   if (iv_timer_registered(&self->dynamic_window_timer))
     iv_timer_unregister(&self->dynamic_window_timer);
+}
+static void
+_listen_fd_stop(AFSocketSourceDriver *self)
+{
+  if (iv_fd_registered (&self->listen_fd))
+    iv_fd_unregister(&self->listen_fd);
+}
+
+static void
+_init_watches(AFSocketSourceDriver *self)
+{
+  _dynamic_window_timer_init(self);
 }
 
 static void
 afsocket_sd_start_watches(AFSocketSourceDriver *self)
 {
-  _listen_fd_init(self);
-  _dynamic_window_timer_init(self);
+  _listen_fd_start(self);
+  
+  if (self->dynamic_window_ctr != NULL)
+    _dynamic_window_timer_start(self);
 }
 
 static void
 afsocket_sd_stop_watches(AFSocketSourceDriver *self)
 {
-  _listen_fd_deinit(self);
-  _dynamic_window_timer_deinit(self);
+  _listen_fd_stop(self);
+  _dynamic_window_timer_stop(self);
 }
 
 static gboolean
@@ -661,9 +673,8 @@ _finalize_init(gpointer arg)
       return FALSE;
     }
 
+  _listen_fd_init(self);
   afsocket_sd_start_watches(self);
-  if (self->dynamic_window_ctr)
-    _dynamic_window_timer_start(self);
   char buf[256];
   msg_info("Accepting connections",
            evt_tag_str("addr", g_sockaddr_format(self->bind_addr, buf, sizeof(buf), GSA_FULL)));
@@ -885,4 +896,6 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self,
    */
 
   self->reader_options.super.init_window_size = 1000;
+
+  _init_watches(self);
 }
