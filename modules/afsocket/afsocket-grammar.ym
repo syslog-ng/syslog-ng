@@ -391,7 +391,8 @@ source_afsocket_stream_params
 	| KW_LISTEN_BACKLOG '(' positive_integer ')'	{ afsocket_sd_set_listen_backlog(last_driver, $3); }
 	| KW_DYNAMIC_WINDOW_SIZE '(' nonnegative_integer ')' { afsocket_sd_set_dynamic_window_size(last_driver, $3); }
   | KW_DYNAMIC_WINDOW_STATS_FREQ '(' nonnegative_integer ')' { afsocket_sd_set_dynamic_window_stats_freq(last_driver, $3); }
-  | KW_DYNAMIC_WINDOW_REALLOC_FREQ '(' nonnegative_integer ')' { afsocket_sd_set_dynamic_window_realloc_freq(last_driver, $3); }
+  | KW_DYNAMIC_WINDOW_STATS_FREQ '(' LL_FLOAT ')' { afsocket_sd_set_dynamic_window_stats_freq(last_driver, $3); }
+  | KW_DYNAMIC_WINDOW_REALLOC_FREQ '(' nonnegative_integer ')' { afsocket_sd_set_dynamic_window_realloc_ticks(last_driver, $3); }
 	;
 
 source_afsyslog
