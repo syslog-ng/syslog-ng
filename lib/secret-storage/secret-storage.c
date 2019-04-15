@@ -63,7 +63,7 @@ secret_storage_free(SecretStorage *self)
 }
 
 void
-secret_storage_init()
+secret_storage_init(void)
 {
   if (g_atomic_int_dec_and_test(&secret_manager_uninitialized))
     {
@@ -76,7 +76,7 @@ secret_storage_init()
 }
 
 void
-secret_storage_deinit()
+secret_storage_deinit(void)
 {
   g_assert(!secret_manager_uninitialized);
   g_hash_table_destroy(secret_manager);

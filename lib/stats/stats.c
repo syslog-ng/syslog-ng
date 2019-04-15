@@ -279,7 +279,7 @@ stats_check_dynamic_clusters_limit(guint number_of_clusters)
 }
 
 gint
-stats_number_of_dynamic_clusters_limit()
+stats_number_of_dynamic_clusters_limit(void)
 {
   if (!stats_options)
     return -1;
