@@ -28,6 +28,7 @@
 #include "stats/stats-registry.h"
 #include "mainloop.h"
 #include "poll-fd-events.h"
+#include "timeutils/misc.h"
 
 #include <string.h>
 #include <sys/types.h>
@@ -39,8 +40,8 @@ int allow_severity = 0;
 int deny_severity = 0;
 #endif
 
-static const gsize DYNAMIC_WINDOW_TIMER_SECS = 1;
-static const gsize DYNAMIC_WINDOW_REALLOC_EVERY_STATS_TICKS = 5;
+static const gfloat DYNAMIC_WINDOW_TIMER_MSECS = 1000;
+static const gsize DYNAMIC_WINDOW_REALLOC_TICKS = 5;
 
 typedef struct _AFSocketSourceConnection
 {
@@ -287,19 +288,19 @@ afsocket_sd_set_dynamic_window_size(LogDriver *s, gint dynamic_window_size)
 }
 
 void
-afsocket_sd_set_dynamic_window_stats_freq(LogDriver *s, gint stats_freq)
+afsocket_sd_set_dynamic_window_stats_freq(LogDriver *s, gfloat stats_freq)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
 
-  self->dynamic_window_stats_freq = stats_freq;
+  self->dynamic_window_stats_freq = stats_freq * 1000.0f;
 }
 
 void
-afsocket_sd_set_dynamic_window_realloc_freq(LogDriver *s, gint realloc_freq)
+afsocket_sd_set_dynamic_window_realloc_ticks(LogDriver *s, gint realloc_ticks)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
 
-  self->dynamic_window_realloc_freq = realloc_freq; //TODO: validate
+  self->dynamic_window_realloc_ticks = realloc_ticks;
 }
 
 static const gchar *
@@ -504,7 +505,7 @@ _dynamic_window_timer_start(AFSocketSourceDriver *self)
 {
   iv_validate_now();
   self->dynamic_window_timer.expires = iv_now;
-  self->dynamic_window_timer.expires.tv_sec += self->dynamic_window_stats_freq;
+  timespec_add_msec(&self->dynamic_window_timer.expires, self->dynamic_window_stats_freq);
   iv_timer_register(&self->dynamic_window_timer);
 }
 
@@ -515,7 +516,7 @@ _on_dynamic_window_timer_elapsed(gpointer cookie)
   for (GList *conn_it = self->connections; conn_it; conn_it = conn_it->next) //TODO: refactor
     {
       AFSocketSourceConnection *conn = (AFSocketSourceConnection *) conn_it->data;
-      if (self->dynamic_window_timer_tick >= self->dynamic_window_realloc_freq)
+      if (self->dynamic_window_timer_tick >= self->dynamic_window_realloc_ticks)
         {
           log_source_schedule_dynamic_window_realloc(&conn->reader->super);
         }
@@ -524,7 +525,7 @@ _on_dynamic_window_timer_elapsed(gpointer cookie)
           log_source_dynamic_window_update_statistics(&conn->reader->super);
         }
     }
-  if (self->dynamic_window_timer_tick >= self->dynamic_window_realloc_freq) //TODO: refactor
+  if (self->dynamic_window_timer_tick >= self->dynamic_window_realloc_ticks) //TODO: refactor
     self->dynamic_window_timer_tick = 0;
   self->dynamic_window_timer_tick++;
 
@@ -563,7 +564,7 @@ static void
 afsocket_sd_start_watches(AFSocketSourceDriver *self)
 {
   _listen_fd_start(self);
-  
+
   if (self->dynamic_window_ctr != NULL)
     _dynamic_window_timer_start(self);
 }
@@ -881,8 +882,8 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self,
   self->transport_mapper = transport_mapper;
   self->max_connections = 10;
   self->listen_backlog = 255;
-  self->dynamic_window_stats_freq = DYNAMIC_WINDOW_TIMER_SECS;
-  self->dynamic_window_realloc_freq = DYNAMIC_WINDOW_REALLOC_EVERY_STATS_TICKS;
+  self->dynamic_window_stats_freq = DYNAMIC_WINDOW_TIMER_MSECS;
+  self->dynamic_window_realloc_ticks = DYNAMIC_WINDOW_REALLOC_TICKS;
   self->connections_kept_alive_across_reloads = TRUE;
   log_reader_options_defaults(&self->reader_options);
   self->reader_options.super.stats_level = STATS_LEVEL1;
