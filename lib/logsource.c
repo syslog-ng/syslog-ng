@@ -206,7 +206,7 @@ _decrease_window(LogSource *self)
   if (empty_window <= subtrahend)
     {
       subtrahend = empty_window == 0 ? 0 : empty_window - 1;
-      new_full_window_size = self->full_window_size - empty_window;
+      new_full_window_size = self->full_window_size - subtrahend;
     }
 
   window_size_counter_sub(&self->window_size, subtrahend, NULL);
@@ -254,7 +254,7 @@ log_source_dynamic_window_realloc(LogSource *self)
 
   /* TODO: add abstraction for heuristics */
   gsize free_avg = dynamic_window_stat_get_avg(&self->dynamic_window);
-  if (free_avg >= self->full_window_size / 2)
+  if (free_avg > self->full_window_size / 2)
     _decrease_window(self);
 
   if (free_avg < self->full_window_size * 0.05f)
