@@ -53,7 +53,7 @@ ParameterizedTestParameters(filter, test_filter_fop_cmp)
   static FilterParamFopCmp test_data_list[] =
   {
     {.msg = "<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", .template1 = "$LEVEL_NUM", .template2 = "7", .op = KW_NUM_EQ, .expected_result = TRUE},
-    {.msg = "<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", .template1 = "$LEVEL_NUM", .template2 = "5", .op = KW_NUM_NE, .expected_result = FALSE},
+    {.msg = "<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", .template1 = "$LEVEL_NUM", .template2 = "5", .op = KW_NUM_NE, .expected_result = TRUE},
     {.msg = "<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", .template1 = "$LEVEL_NUM", .template2 = "8", .op = KW_NUM_LT, .expected_result = TRUE},
     {.msg = "<15>Oct 15 16:17:01 host openvpn[2499]: PTHREAD support initialized", .template1 = "$LEVEL_NUM", .template2 = "10", .op = KW_NUM_LT, .expected_result = TRUE},
     /* 7 lt 10 is FALSE as 10 orders lower when interpreted as a string */

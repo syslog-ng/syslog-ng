@@ -78,11 +78,11 @@ fop_cmp_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
     }
   else if (cmp < 0)
     {
-      result = self->cmp_op & FCMP_LT || self->cmp_op == 0;
+      result = !!(self->cmp_op & FCMP_LT);
     }
   else
     {
-      result = self->cmp_op & FCMP_GT || self->cmp_op == 0;
+      result = !!(self->cmp_op & FCMP_GT);
     }
 
   msg_trace("cmp() evaluation started",
@@ -141,7 +141,7 @@ fop_cmp_new(LogTemplate *left, LogTemplate *right, gint op)
     case KW_NUM_NE:
       self->cmp_op = FCMP_NUM;
     case KW_NE:
-      self->cmp_op |= 0;
+      self->cmp_op |= FCMP_LT | FCMP_GT;
       self->super.type = "!=";
       break;
 
