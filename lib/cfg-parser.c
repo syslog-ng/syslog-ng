@@ -168,11 +168,6 @@ static CfgLexerKeyword main_keywords[] =
   { "type",               KW_TYPE },
   { "tags",               KW_TAGS },
 
-  /* on/off switches */
-  { "yes",                KW_YES },
-  { "on",                 KW_YES },
-  { "no",                 KW_NO },
-  { "off",                KW_NO },
   { NULL, 0 }
 };
 
@@ -453,9 +448,41 @@ cfg_process_flag(CfgFlagHandler *handlers, gpointer base, const gchar *flag_)
 }
 
 gboolean
-cfg_process_yesno(const gchar *yesno)
+cfg_process_yesno(const gchar *yesno, gboolean *value)
 {
-  if (strcasecmp(yesno, "yes") == 0 || atoi(yesno) > 0)
-    return TRUE;
+  gchar *yes[] =
+  {
+    "yes",
+    "on",
+    "true",
+    "enable",
+    "enabled"
+  };
+  gchar *no[] =
+  {
+    "no",
+    "off",
+    "false",
+    "disable",
+    "disabled"
+  };
+
+  for (int i = 0; i < G_N_ELEMENTS(yes); ++i)
+    if (strcasecmp(yesno, yes[i]) == 0)
+      {
+        *value = TRUE;
+        return TRUE;
+      }
+  for (int i = 0; i < G_N_ELEMENTS(no); ++i)
+    if (strcasecmp(yesno, no[i]) == 0)
+      {
+        *value = FALSE;
+        return TRUE;
+      }
+  if (atoi(yesno) > 0)
+    {
+      *value = TRUE;
+      return TRUE;
+    }
   return FALSE;
 }
