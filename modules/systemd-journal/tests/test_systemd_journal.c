@@ -25,15 +25,32 @@
 #include "test-source.h"
 #include "journald-helper.c"
 #include "journal-reader.c"
-#include "testutils.h"
 #include "apphook.h"
-
-#define JOURNALD_TESTCASE(testfunc, ...) { testcase_begin("%s(%s)", #testfunc, #__VA_ARGS__); testfunc(__VA_ARGS__); testcase_end(); }
-
-#define TEST_PERSIST_FILE_NAME "test_systemd_journal.persist"
+#include <criterion/criterion.h>
 
 static gboolean task_called;
 static gboolean poll_triggered;
+
+static GlobalConfig *cfg;
+
+static void
+_init_cfg_with_persist_file(const gchar *persist_file)
+{
+  main_thread_handle = get_thread_id();
+  cfg = cfg_new_snippet();
+  cfg->threaded = FALSE;
+  cfg->state = persist_state_new(persist_file);
+  cfg->keep_hostname = TRUE;
+  persist_state_start(cfg->state);
+}
+
+static void
+_deinit_cfg(const gchar *persist_file)
+{
+  persist_state_cancel(cfg->state);
+  unlink(persist_file);
+  cfg_free(cfg);
+}
 
 void
 add_mock_entries(gpointer user_data)
@@ -57,7 +74,7 @@ handle_new_entry(gpointer user_data)
 {
   Journald *journald = user_data;
   journald_process(journald);
-  assert_false(poll_triggered, ASSERTION_ERROR("Should called only once"));
+  cr_assert_not(poll_triggered, "%s", "Should called only once");
   poll_triggered = TRUE;
 }
 
@@ -71,9 +88,9 @@ void
 __test_seeks(Journald *journald)
 {
   gint result = journald_seek_head(journald);
-  assert_gint(result, 0, ASSERTION_ERROR("Can't seek in empty journald mock"));
+  cr_assert_eq(result, 0, "%s", "Can't seek in empty journald mock");
   result = journald_next(journald);
-  assert_gint(result, 0, ASSERTION_ERROR("Bad next step result"));
+  cr_assert_eq(result, 0, "%s", "Bad next step result");
 
   MockEntry *entry = mock_entry_new("test_data1");
   mock_entry_add_data(entry, "MESSAGE=test message");
@@ -90,18 +107,16 @@ __test_seeks(Journald *journald)
   journald_mock_add_entry(journald, entry);
 
   result = journald_seek_head(journald);
-  assert_gint(result, 0, ASSERTION_ERROR("Can't seek in journald mock"));
+  cr_assert_eq(result, 0, "%s", "Can't seek in journald mock");
   result = journald_next(journald);
-  assert_gint(result, 1, ASSERTION_ERROR("Bad next step result"));
+  cr_assert_eq(result, 1, "%s", "Bad next step result");
 
   result = journald_seek_tail(journald);
-  assert_gint(result, 0, ASSERTION_ERROR("Can't seek in journald mock"));
+  cr_assert_eq(result, 0, "%s", "Can't seek in journald mock");
   result = journald_next(journald);
-  assert_gint(result, 1, ASSERTION_ERROR("Bad next step result"));
+  cr_assert_eq(result, 1, "%s", "Bad next step result");
   result = journald_next(journald);
-  assert_gint(result, 0, ASSERTION_ERROR("Bad next step result"));
-
-
+  cr_assert_eq(result, 0, "%s", "Bad next step result");
 }
 
 void
@@ -111,33 +126,33 @@ __test_cursors(Journald *journald)
   journald_seek_head(journald);
   journald_next(journald);
   gint result = journald_get_cursor(journald, &cursor);
-  assert_string(cursor, "test_data1", ASSERTION_ERROR("Bad cursor fetched"));
+  cr_assert_str_eq(cursor, "test_data1", "%s", "Bad cursor fetched");
   \
   g_free(cursor);
 
   result = journald_next(journald);
-  assert_gint(result, 1, ASSERTION_ERROR("Bad next step result"));
+  cr_assert_eq(result, 1, "%s", "Bad next step result");
   result = journald_get_cursor(journald, &cursor);
-  assert_string(cursor, "test_data2", ASSERTION_ERROR("Bad cursor fetched"));
+  cr_assert_str_eq(cursor, "test_data2", "%s", "Bad cursor fetched");
   g_free(cursor);
 
   result = journald_next(journald);
-  assert_gint(result, 0, ASSERTION_ERROR("Should not contain more elements"));
+  cr_assert_eq(result, 0, "%s", "Should not contain more elements");
 
   result = journald_seek_cursor(journald, "test_data1");
-  assert_gint(result, 0, ASSERTION_ERROR("Should find cursor"));
+  cr_assert_eq(result, 0, "%s", "Should find cursor");
   result = journald_next(journald);
-  assert_gint(result, 1, ASSERTION_ERROR("Bad next step result"));
+  cr_assert_eq(result, 1, "%s", "Bad next step result");
   result = journald_get_cursor(journald, &cursor);
-  assert_string(cursor, "test_data1", ASSERTION_ERROR("Bad cursor fetched"));
+  cr_assert_str_eq(cursor, "test_data1", "%s", "Bad cursor fetched");
   g_free(cursor);
 
   result = journald_seek_cursor(journald, "test_data2");
-  assert_gint(result, 0, ASSERTION_ERROR("Should find cursor"));
+  cr_assert_eq(result, 0, "%s", "Should find cursor");
   result = journald_next(journald);
-  assert_gint(result, 1, ASSERTION_ERROR("Bad next step result"));
+  cr_assert_eq(result, 1, "%s", "Bad next step result");
   result = journald_get_cursor(journald, &cursor);
-  assert_string(cursor, "test_data2", ASSERTION_ERROR("Bad cursor fetched"));
+  cr_assert_str_eq(cursor, "test_data2", "%s", "Bad cursor fetched");
   g_free(cursor);
 }
 
@@ -152,28 +167,28 @@ __test_enumerate(Journald *journald)
 
   journald_restart_data(journald);
   result = journald_enumerate_data(journald, &data, &length);
-  assert_gint(result, 1, ASSERTION_ERROR("Data should exist"));
+  cr_assert_eq(result, 1, "%s", "Data should exist");
 
   prev_data = data;
   prev_len = length;
 
   result = journald_enumerate_data(journald, &data, &length);
-  assert_gint(result, 1, ASSERTION_ERROR("Data should exist"));
+  cr_assert_eq(result, 1, "%s", "Data should exist");
   result = journald_enumerate_data(journald, &data, &length);
-  assert_gint(result, 1, ASSERTION_ERROR("Data should exist"));
+  cr_assert_eq(result, 1, "%s", "Data should exist");
   result = journald_enumerate_data(journald, &data, &length);
-  assert_gint(result, 0, ASSERTION_ERROR("Data should not exist"));
+  cr_assert_eq(result, 0, "%s", "Data should not exist");
 
   journald_restart_data(journald);
 
   result = journald_enumerate_data(journald, &data, &length);
-  assert_gint(result, 1, ASSERTION_ERROR("Data should exist"));
-  assert_gpointer((gpointer )data, (gpointer )prev_data,
-                  ASSERTION_ERROR("restart data should seek the start of the data"));
-  assert_gint(length, prev_len, ASSERTION_ERROR("Bad length after restart data"));
+  cr_assert_eq(result, 1, "%s", "Data should exist");
+  cr_assert_eq((gpointer )data, (gpointer )prev_data,
+               "%s", "restart data should seek the start of the data");
+  cr_assert_eq(length, prev_len, "%s", "Bad length after restart data");
 
   result = journald_next(journald);
-  assert_gint(result, 0, ASSERTION_ERROR("Should not contain more elements"));
+  cr_assert_eq(result, 0, "%s", "Should not contain more elements");
 }
 
 void
@@ -210,16 +225,19 @@ __test_fd_handling(Journald *journald)
 
   iv_main();
 
-  assert_true(poll_triggered, ASSERTION_ERROR("Poll event isn't triggered"));
+  cr_assert(poll_triggered, "%s", "Poll event isn't triggered");
 }
 
-void
-test_journald_mock(void)
+Test(systemd_journal, test_journald_mock)
 {
+  const gchar *persist_file = "test_systemd_journal3.persist";
+
+  _init_cfg_with_persist_file(persist_file);
+
   Journald *journald = journald_mock_new();
   gint result = journald_open(journald, 0);
 
-  assert_gint(result, 0, ASSERTION_ERROR("Can't open journald mock"));
+  cr_assert_eq(result, 0, "%s", "Can't open journald mock");
 
   __test_seeks(journald);
 
@@ -229,6 +247,8 @@ test_journald_mock(void)
 
   journald_close(journald);
   journald_free(journald);
+
+  _deinit_cfg(persist_file);
 }
 
 void
@@ -240,9 +260,11 @@ __helper_test(gchar *key, gchar *value, gpointer user_data)
 }
 
 
-void
-test_journald_helper(void)
+Test(systemd_journal, test_journald_helper)
 {
+  const gchar *persist_file = "test_systemd_journal2.persist";
+
+  _init_cfg_with_persist_file(persist_file);
   Journald *journald = journald_mock_new();
   journald_open(journald, 0);
 
@@ -262,13 +284,15 @@ test_journald_helper(void)
   gchar *key = g_hash_table_lookup(result, "KEY");
   gchar *host = g_hash_table_lookup(result, "HOST");
 
-  assert_string(message, "test message", ASSERTION_ERROR("Bad item"));
-  assert_string(key, "VALUE", ASSERTION_ERROR("Bad item"));
-  assert_string(host, "testhost", ASSERTION_ERROR("Bad item"));
+  cr_assert_str_eq(message, "test message", "%s", "Bad item");
+  cr_assert_str_eq(key, "VALUE", "%s", "Bad item");
+  cr_assert_str_eq(host, "testhost", "%s", "Bad item");
 
   journald_close(journald);
   journald_free(journald);
   g_hash_table_unref(result);
+
+  _deinit_cfg(persist_file);
 }
 
 MockEntry *
@@ -320,7 +344,7 @@ _test_default_working_init(TestCase *self, TestSource *src, Journald *journal, J
 {
   MockEntry *entry = __create_dummy_entry(journal, "default_test");
   journald_mock_add_entry(journal, entry);
-  configuration->recv_time_zone = g_strdup("+06:00");
+  cfg->recv_time_zone = g_strdup("+06:00");
   self->user_data = options;
 }
 
@@ -329,12 +353,12 @@ _test_default_working_test(TestCase *self, TestSource *src, LogMessage *msg)
 {
   const gchar *message = log_msg_get_value(msg, LM_V_MESSAGE, NULL);
   JournalReaderOptions *options = self->user_data;
-  assert_string(message, "Dummy message", ASSERTION_ERROR("Bad message"));
-  assert_gint(msg->pri, options->default_pri, ASSERTION_ERROR("Bad default prio"));
-  assert_gint(options->fetch_limit, 10, ASSERTION_ERROR("Bad default fetch_limit"));
-  assert_gint(options->max_field_size, 64 * 1024, ASSERTION_ERROR("Bad max field size"));
-  assert_string(options->prefix, ".journald.", ASSERTION_ERROR("Bad default prefix value"));
-  assert_string(options->recv_time_zone, configuration->recv_time_zone, ASSERTION_ERROR("Bad default timezone"));
+  cr_assert_str_eq(message, "Dummy message", "%s", "Bad message");
+  cr_assert_eq(msg->pri, options->default_pri, "%s", "Bad default prio");
+  cr_assert_eq(options->fetch_limit, 10, "%s", "Bad default fetch_limit");
+  cr_assert_eq(options->max_field_size, 64 * 1024, "%s", "Bad max field size");
+  cr_assert_str_eq(options->prefix, ".journald.", "%s", "Bad default prefix value");
+  cr_assert_str_eq(options->recv_time_zone, cfg->recv_time_zone, "%s", "Bad default timezone");
   test_source_finish_tc(src);
 }
 
@@ -355,7 +379,7 @@ __test_other_has_prefix(TestCase *self, LogMessage *msg)
   gchar *requested_name = g_strdup_printf("%s%s", (gchar *) self->user_data, "_CMDLINE");
   gssize value_len;
   const gchar *value = log_msg_get_value_by_name(msg, requested_name, &value_len);
-  assert_string(value, "sshd: foo_user [priv]", ASSERTION_ERROR("Bad value for prefixed key"));
+  cr_assert_str_eq(value, "sshd: foo_user [priv]", "%s", "Bad value for prefixed key");
   g_free(requested_name);
 }
 
@@ -363,8 +387,8 @@ void
 _test_prefix_test(TestCase *self, TestSource *src, LogMessage *msg)
 {
   const gchar *message = log_msg_get_value(msg, LM_V_MESSAGE, NULL);
-  assert_string(message, "pam_unix(sshd:session): session opened for user foo_user by (uid=0)",
-                ASSERTION_ERROR("Bad message"));
+  cr_assert_str_eq(message, "pam_unix(sshd:session): session opened for user foo_user by (uid=0)",
+                   "%s", "Bad message");
 
   __test_other_has_prefix(self, msg);
 
@@ -387,7 +411,7 @@ __check_value_len(NVHandle handle, const gchar *name, const gchar *value, gssize
   gchar *error_message = g_strdup_printf("Bad value size; name: %s, value: %s len: %ld", name, value, value_len);
   if (strcmp(name, "HOST_FROM") != 0)
     {
-      assert_true(value_len <= GPOINTER_TO_INT(self->user_data), ASSERTION_ERROR(error_message));
+      cr_assert_leq(value_len, GPOINTER_TO_INT(self->user_data), "%s", error_message);
     }
   g_free(error_message);
   return FALSE;
@@ -413,7 +437,7 @@ _test_timezone_init(TestCase *self, TestSource *src, Journald *journal, JournalR
 void
 _test_timezone_test(TestCase *self, TestSource *src, LogMessage *msg)
 {
-  assert_gint(msg->timestamps[LM_TS_STAMP].ut_gmtoff, 9 * 3600, ASSERTION_ERROR("Bad time zone info"));
+  cr_assert_eq(msg->timestamps[LM_TS_STAMP].ut_gmtoff, 9 * 3600, "%s", "Bad time zone info");
   test_source_finish_tc(src);
 }
 
@@ -434,7 +458,7 @@ void
 _test_default_level_test(TestCase *self, TestSource *src, LogMessage *msg)
 {
   gint level = GPOINTER_TO_INT(self->user_data);
-  assert_gint(msg->pri, LOG_LOCAL0 | level, ASSERTION_ERROR("Bad default prio"));
+  cr_assert_eq(msg->pri, LOG_LOCAL0 | level, "%s", "Bad default prio");
   test_source_finish_tc(src);
 }
 
@@ -454,7 +478,7 @@ void
 _test_default_facility_test(TestCase *self, TestSource *src, LogMessage *msg)
 {
   gint facility = GPOINTER_TO_INT(self->user_data);
-  assert_gint(msg->pri, facility | LOG_NOTICE, ASSERTION_ERROR("Bad default prio"));
+  cr_assert_eq(msg->pri, facility | LOG_NOTICE, "%s", "Bad default prio");
   test_source_finish_tc(src);
 }
 
@@ -487,21 +511,24 @@ _test_program_field_test(TestCase *self, TestSource *src, LogMessage *msg)
   journald_get_cursor(journal, &cursor);
   if (strcmp(cursor, "no SYSLOG_IDENTIFIER") != 0)
     {
-      assert_string(log_msg_get_value(msg, LM_V_PROGRAM, NULL), "syslog_program", ASSERTION_ERROR("Bad program name"));
+      cr_assert_str_eq(log_msg_get_value(msg, LM_V_PROGRAM, NULL), "syslog_program", "%s", "Bad program name");
       g_free(cursor);
     }
   else
     {
-      assert_string(log_msg_get_value(msg, LM_V_PROGRAM, NULL), "comm_program", ASSERTION_ERROR("Bad program name"));
+      cr_assert_str_eq(log_msg_get_value(msg, LM_V_PROGRAM, NULL), "comm_program", "%s", "Bad program name");
       g_free(cursor);
       test_source_finish_tc(src);
     }
 }
 
-void
-test_journal_reader(void)
+Test(systemd_journal, test_journal_reader)
 {
-  TestSource *src = test_source_new(configuration);
+  const gchar *persist_file = "test_systemd_journal1.persist";
+
+  _init_cfg_with_persist_file(persist_file);
+
+  TestSource *src = test_source_new(cfg);
   TestCase tc_default_working = { _test_default_working_init, _test_default_working_test, NULL, NULL };
   TestCase tc_prefix = { _test_prefix_init, _test_prefix_test, NULL, "this.is.a.prefix." };
   TestCase tc_max_field_size = { _test_field_size_init, _test_field_size_test, NULL, GINT_TO_POINTER(10)};
@@ -520,23 +547,8 @@ test_journal_reader(void)
 
   test_source_run_tests(src);
   log_pipe_unref((LogPipe *)src);
+
+  _deinit_cfg(persist_file);
 }
 
-int
-main(int argc, char **argv)
-{
-  app_startup();
-  main_thread_handle =  get_thread_id();
-  configuration = cfg_new_snippet();
-  configuration->threaded = FALSE;
-  configuration->state = persist_state_new(TEST_PERSIST_FILE_NAME);
-  configuration->keep_hostname = TRUE;
-  persist_state_start(configuration->state);
-  JOURNALD_TESTCASE(test_journald_mock);
-  JOURNALD_TESTCASE(test_journald_helper);
-  JOURNALD_TESTCASE(test_journal_reader);
-  persist_state_cancel(configuration->state);
-  unlink(TEST_PERSIST_FILE_NAME);
-  app_shutdown();
-  return 0;
-}
+TestSuite(systemd_journal, .init = app_startup, .fini = app_shutdown);
