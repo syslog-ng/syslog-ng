@@ -10,6 +10,7 @@ SCL_SUBDIRS	= \
 	graylog2	\
 	hdfs		\
 	iptables	\
+	junos		\
 	kafka		\
 	linux-audit	\
 	loadbalancer	\
