@@ -28,6 +28,7 @@ from src.syslog_ng_config.renderer import ConfigRenderer
 from src.syslog_ng_config.statement_group import StatementGroup
 from src.syslog_ng_config.statements.destinations.file_destination import FileDestination
 from src.syslog_ng_config.statements.filters.filter import Filter
+from src.syslog_ng_config.statements.parsers.parser import Parser
 from src.syslog_ng_config.statements.logpath.logpath import LogPath
 from src.syslog_ng_config.statements.sources.file_source import FileSource
 from src.syslog_ng_config.statements.sources.source_driver import SourceDriver
@@ -41,6 +42,7 @@ class SyslogNgConfig(object):
         self.__raw_config = None
         self.__syslog_ng_config = {
             "version": version,
+            "includes": [],
             "global_options": {},
             "statement_groups": [],
             "logpath_groups": [],
@@ -48,6 +50,9 @@ class SyslogNgConfig(object):
 
     def set_version(self, version):
         self.__syslog_ng_config["version"] = version
+
+    def add_include(self, include):
+        self.__syslog_ng_config["includes"].append(include)
 
     def set_raw_config(self, raw_config):
         self.__raw_config = raw_config
@@ -112,3 +117,6 @@ class SyslogNgConfig(object):
         generator_source.DEFAULT_MESSAGE = "-- Generated message. --"
         generator_source.options = options
         return generator_source
+
+    def create_app_parser(self, **options):
+        return Parser("app-parser", **options)
