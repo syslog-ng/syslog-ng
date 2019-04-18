@@ -27,6 +27,7 @@ test_parameters_raw = [
     ("<190>30: foo: *Apr 29 13:58:46.411: %SYS-6-LOGGINGHOST_STARTSTOP: Logging to host 192.168.1.239 stopped - CLI initiated", "${.app.name}", "cisco"),
     ("<190>31: foo: *Apr 29 13:58:46.411: %SYS-6-LOGGINGHOST_STARTSTOP: Logging to host 192.168.1.239 started - CLI initiated<189>32: 0.0.0.0: *Apr 29 13:59:12.491: %SYS-5-CONFIG_I: Configured from console by console<189>33: 0.0.0.0: *Apr 29 13:59:26.415: %SYS-5-CONFIG_I: Configured from console by console<189>34: 0.0.0.0: *Apr 29 13:59:56.603: %SYS-5-CONFIG_I: Configured from console by console^[[<189>35: *Apr 29 14:00:16.059: %SYS-5-CONFIG_I: Configured from console by console", "${.app.name}", "cisco"),
     ("<190>32: foo: *Apr 29 13:58:46.411: %SYSMGR-STANDBY-3-SHUTDOWN_START: The System Manager has started the shutdown procedure.", "${.app.name}", "cisco"),
+    (r"""<134>{\"count\": 1, \"supporting_data\": {\"data_values\": [\"x.x.x.x\", \"user@domain.com\"], \"data_type\": \"user\"}, \"organization_unit\": \"domain/domain/Domain Users/Enterprise Users\", \"severity_level\": 2, \"category\": null, \"timestamp\": 1547421943, \"_insertion_epoch_timestamp\": 1547421943, \"ccl\": \"unknown\", \"user\": \"user@domain.com\", \"audit_log_event\": \"Login Successful\", \"ur_normalized\": \"user@domain.com\", \"_id\": \"936289\", \"type\": \"admin_audit_logs\", \"appcategory\": null}""", "${.app.name}", "netskope"),
 ]
 
 @pytest.mark.parametrize("input_message, template, expected_value", test_parameters_raw,
