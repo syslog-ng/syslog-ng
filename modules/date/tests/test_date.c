@@ -182,3 +182,27 @@ Test(date, test_date_with_additional_text_at_the_end)
   log_pipe_unref(&parser->super);
   log_msg_unref(logmsg);
 }
+
+Test(date, test_date_with_guess_timezone)
+{
+  const gchar *msg = "2015-12-30T12:00:00+05:00";
+  GString *res = g_string_sized_new(128);
+
+  LogParser *parser = _construct_parser(NULL, NULL, LM_TS_STAMP);
+  date_parser_process_flag(parser, "guess-timezone");
+
+  LogMessage *logmsg = _construct_logmsg(msg);
+  gboolean success = log_parser_process(parser, &logmsg, NULL, log_msg_get_value(logmsg, LM_V_MESSAGE, NULL), -1);
+
+  cr_assert(success, "failed to parse timestamp, msg=%s", msg);
+  append_format_unix_time(&logmsg->timestamps[LM_TS_STAMP], res, TS_FMT_ISO, -1, 0);
+
+  /* this should fix up the timezone */
+  cr_assert_str_eq(res->str, "2015-12-30T12:00:00+01:00",
+                   "incorrect date parsed msg=%s result=%s",
+                   msg, res->str);
+
+  log_pipe_unref(&parser->super);
+  log_msg_unref(logmsg);
+  g_string_free(res, TRUE);
+}

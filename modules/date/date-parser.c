@@ -27,6 +27,11 @@
 #include "timeutils/cache.h"
 #include "timeutils/conv.h"
 
+enum
+{
+  DPF_GUESS_TIMEZONE = 0x0001,
+};
+
 typedef struct _DateParser
 {
   LogParser super;
@@ -34,6 +39,7 @@ typedef struct _DateParser
   gchar *date_tz;
   LogMessageTimeStamp time_stamp;
   TimeZoneInfo *date_tz_info;
+  guint32 flags;
 } DateParser;
 
 void
@@ -101,6 +107,9 @@ _convert_timestamp_to_logstamp(DateParser *self, time_t now, UnixTime *target, c
 
   convert_and_normalize_wall_clock_time_to_unix_time_with_tz_hint(&wct, target,
       time_zone_info_get_offset(self->date_tz_info, now));
+
+  if ((self->flags & DPF_GUESS_TIMEZONE) != 0)
+    unix_time_fix_timezone_assuming_the_time_matches_real_time(target);
 
   return TRUE;
 }
@@ -174,4 +183,21 @@ date_parser_new(GlobalConfig *cfg)
 
   date_parser_set_format(&self->super, "%FT%T%z");
   return &self->super;
+}
+
+CfgFlagHandler date_parser_flags[] =
+{
+  /* NOTE: underscores are automatically converted to dashes */
+
+  /* LogReaderOptions */
+  { "guess-timezone",             CFH_SET, offsetof(DateParser, flags),  DPF_GUESS_TIMEZONE },
+  { NULL },
+};
+
+gboolean
+date_parser_process_flag(LogParser *s, gchar *flag)
+{
+  DateParser *self = (DateParser *) s;
+
+  return cfg_process_flag(date_parser_flags, self, flag);
 }
