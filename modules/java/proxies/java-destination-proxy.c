@@ -27,7 +27,7 @@
 #include "java-logmsg-proxy.h"
 #include "java-class-loader.h"
 #include "messages.h"
-#include "logthrdestdrv.h"
+#include "logthrdest/logthrdestdrv.h"
 #include <string.h>
 
 

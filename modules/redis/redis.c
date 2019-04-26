@@ -32,7 +32,7 @@
 #include "logqueue.h"
 #include "driver.h"
 #include "plugin-types.h"
-#include "logthrdestdrv.h"
+#include "logthrdest/logthrdestdrv.h"
 
 typedef struct
 {

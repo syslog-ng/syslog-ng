@@ -149,6 +149,7 @@ gboolean cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, 
 gboolean cfg_read_config(GlobalConfig *cfg, const gchar *fname, gboolean syntax_only, gchar *preprocess_into);
 void cfg_load_forced_modules(GlobalConfig *self);
 void cfg_shutdown(GlobalConfig *self);
+gboolean cfg_is_shutting_down(GlobalConfig *cfg);
 void cfg_free(GlobalConfig *self);
 gboolean cfg_init(GlobalConfig *cfg);
 gboolean cfg_deinit(GlobalConfig *cfg);

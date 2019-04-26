@@ -35,7 +35,7 @@
 
 #include <glib.h>
 #include <stomp.h>
-#include "logthrdestdrv.h"
+#include "logthrdest/logthrdestdrv.h"
 
 typedef struct
 {

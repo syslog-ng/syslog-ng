@@ -29,7 +29,7 @@
 #include <iv.h>
 #include <iv_event.h>
 #include "driver.h"
-#include "logthrdestdrv.h"
+#include "logthrdest/logthrdestdrv.h"
 #include "logqueue.h"
 #include "mainloop.h"
 #include "mainloop-io-worker.h"

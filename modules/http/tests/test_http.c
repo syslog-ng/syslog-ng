@@ -25,7 +25,7 @@
 #include <apphook.h>
 #include "http.h"
 #include "http-worker.h"
-#include "logthrdestdrv.h"
+#include "logthrdest/logthrdestdrv.h"
 
 #include <criterion/criterion.h>
 

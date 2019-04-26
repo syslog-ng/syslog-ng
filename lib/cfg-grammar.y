@@ -39,7 +39,7 @@
 #include "parser/parser-expr-parser.h"
 #include "rewrite/rewrite-expr-parser.h"
 #include "logmatcher.h"
-#include "logthrdestdrv.h"
+#include "logthrdest/logthrdestdrv.h"
 #include "logthrsource/logthrsourcedrv.h"
 #include "str-utils.h"
 

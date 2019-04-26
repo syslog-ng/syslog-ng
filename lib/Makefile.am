@@ -22,6 +22,7 @@ include lib/str-repr/Makefile.am
 include lib/timeutils/Makefile.am
 include lib/secret-storage/Makefile.am
 include lib/logthrsource/Makefile.am
+include lib/logthrdest/Makefile.am
 include lib/http-auth/Makefile.am
 
 LSNG_RELEASE		= $(shell echo @PACKAGE_VERSION@ | cut -d. -f1,2)
@@ -127,7 +128,6 @@ pkginclude_HEADERS			+= \
 	lib/logqueue.h			\
 	lib/logreader.h			\
 	lib/logsource.h			\
-	lib/logthrdestdrv.h		\
 	lib/logwriter.h			\
 	lib/mainloop.h			\
 	lib/mainloop-call.h		\
@@ -215,7 +215,6 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/logqueue-fifo.c		\
 	lib/logreader.c			\
 	lib/logsource.c			\
-	lib/logthrdestdrv.c		\
 	lib/logwriter.c			\
 	lib/mainloop.c			\
 	lib/signal-handler.c		\
@@ -282,8 +281,9 @@ lib_libsyslog_ng_la_SOURCES		= \
 	$(compat_sources)     		\
 	$(logmsg_sources)		\
 	$(str_repr_sources)		\
-	$(timeutils_sources)	\
-	$(logthrsource_sources)
+	$(timeutils_sources)		\
+	$(logthrsource_sources)		\
+	$(logthrdest_sources)
 
 lib_libsyslog_ng_la_CFLAGS		= \
 	$(AM_CFLAGS) \

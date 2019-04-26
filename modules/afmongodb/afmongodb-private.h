@@ -25,7 +25,7 @@
 
 #include "syslog-ng.h"
 #include "mongoc.h"
-#include "logthrdestdrv.h"
+#include "logthrdest/logthrdestdrv.h"
 #include "string-list.h"
 #include "value-pairs/value-pairs.h"
 

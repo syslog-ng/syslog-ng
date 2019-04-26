@@ -29,7 +29,7 @@
 #include "python-logtemplate-options.h"
 #include "python-integerpointer.h"
 #include "python-helpers.h"
-#include "logthrdestdrv.h"
+#include "logthrdest/logthrdestdrv.h"
 #include "stats/stats.h"
 #include "string-list.h"
 #include "str-utils.h"

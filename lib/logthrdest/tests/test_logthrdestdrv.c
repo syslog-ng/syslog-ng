@@ -21,7 +21,7 @@
  *
  */
 
-#include "logthrdestdrv.h"
+#include "logthrdest/logthrdestdrv.h"
 #include "apphook.h"
 
 #include <criterion/criterion.h>

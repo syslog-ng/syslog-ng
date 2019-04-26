@@ -208,7 +208,7 @@ main_loop_initialize_state(GlobalConfig *cfg, const gchar *persist_filename)
   return success;
 }
 
-static inline gboolean
+gboolean
 main_loop_is_terminating(MainLoop *self)
 {
   return self->_is_terminating;

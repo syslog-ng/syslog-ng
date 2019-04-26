@@ -27,6 +27,7 @@ add_subdirectory(timeutils)
 add_subdirectory(eventlog)
 add_subdirectory(secret-storage)
 add_subdirectory(logthrsource)
+add_subdirectory(logthrdest)
 add_subdirectory(http-auth)
 
 set(LIB_SUBDIR_HEADERS
@@ -48,6 +49,7 @@ set(LIB_SUBDIR_HEADERS
     ${XML_SCANNER_HEADERS}
     ${STR_REPR_HEADERS}
     ${TIMEUTILS_HEADERS}
+    ${LOGTHRDEST_HEADERS}
     ${LOGTHRSOURCE_HEADERS}
     ${HTTP_AUTH_HEADERS}
     ${CMAKE_CURRENT_BINARY_DIR}/filter/filter-expr-grammar.h
@@ -90,7 +92,6 @@ set (LIB_HEADERS
     logqueue.h
     logreader.h
     logsource.h
-    logthrdestdrv.h
     logwriter.h
     mainloop.h
     mainloop-call.h
@@ -179,7 +180,6 @@ set(LIB_SOURCES
     logqueue-fifo.c
     logreader.c
     logsource.c
-    logthrdestdrv.c
     logwriter.c
     mainloop.c
     signal-handler.c
@@ -238,6 +238,7 @@ set(LIB_SOURCES
     ${SCANNER_SOURCES}
     ${STR_REPR_SOURCES}
     ${TIMEUTILS_SOURCES}
+    ${LOGTHRDEST_SOURCES}
     ${LOGTHRSOURCE_SOURCES}
     ${PROJECT_BINARY_DIR}/lib/cfg-grammar.c
     ${PROJECT_BINARY_DIR}/lib/block-ref-grammar.c
@@ -349,6 +350,7 @@ install(FILES ${STATS_HEADERS} DESTINATION include/syslog-ng/stats)
 install(FILES ${TEMPLATE_HEADERS} DESTINATION include/syslog-ng/template)
 install(FILES ${TRANSPORT_HEADERS} DESTINATION include/syslog-ng/transport)
 install(FILES ${CSV_SCANNER_HEADERS} DESTINATION include/syslog-ng/scanner/csv-scanner)
+install(FILES ${LOGTHRDEST_HEADERS} DESTINATION include/syslog-ng/logthrdest)
 install(FILES ${LOGTHRSOURCE_HEADERS} DESTINATION include/syslog-ng/logthrsource)
 install(FILES ${HTTP_AUTH_HEADERS} DESTINATION include/syslog-ng/http-auth)
 
