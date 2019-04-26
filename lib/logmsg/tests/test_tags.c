@@ -148,15 +148,14 @@ Test(tags, test_filters_true)
   guint i;
   GList *l = NULL;
   gchar *name;
-  gboolean not = TRUE;
 
-  cr_log_info("=== filter tests %s===\n", not ? "not " : "");
+  cr_log_info("=== filter tests not===\n");
 
   for (i = 1; i < FILTER_TAGS; i += 3)
     l = g_list_prepend(l, get_tag_by_id(i));
 
   filter_tags_add(f, l);
-  f->comp = not;
+  f->comp = TRUE;
 
   for (i = 0; i < FILTER_TAGS; i++)
     {
@@ -167,13 +166,13 @@ Test(tags, test_filters_true)
 
       log_msg_set_tag_by_id(msg, id);
 
-      cr_assert_not(((i % 3 == 1) ^ filter_expr_eval(f, msg)) ^ not, "Failed to match message by tag %d\n", id);
+      cr_assert(((i % 3 == 1) ^ filter_expr_eval(f, msg)), "Failed to match message by tag %d\n", id);
 
       cr_log_info("Testing filter, message no tag\n");
 
       log_msg_clear_tag_by_id(msg, id);
 
-      cr_assert_not(filter_expr_eval(f, msg) ^ not, "Failed to match message with no tags\n");
+      cr_assert(filter_expr_eval(f, msg), "Failed to match message with no tags\n");
     }
 
   filter_expr_unref(f);
@@ -187,15 +186,14 @@ Test(tags, test_filters_false)
   guint i;
   GList *l = NULL;
   gchar *name;
-  gboolean not = FALSE;
 
-  cr_log_info("=== filter tests %s===\n", not ? "not " : "");
+  cr_log_info("=== filter tests ===\n");
 
   for (i = 1; i < FILTER_TAGS; i += 3)
     l = g_list_prepend(l, get_tag_by_id(i));
 
   filter_tags_add(f, l);
-  f->comp = not;
+  f->comp = FALSE;
 
   for (i = 0; i < FILTER_TAGS; i++)
     {
@@ -206,13 +204,13 @@ Test(tags, test_filters_false)
 
       log_msg_set_tag_by_id(msg, id);
 
-      cr_assert_not(((i % 3 == 1) ^ filter_expr_eval(f, msg)) ^ not, "Failed to match message by tag %d\n", id);
+      cr_assert_not(((i % 3 == 1) ^ filter_expr_eval(f, msg)), "Failed to match message by tag %d\n", id);
 
       cr_log_info("Testing filter, message no tag\n");
 
       log_msg_clear_tag_by_id(msg, id);
 
-      cr_assert_not(filter_expr_eval(f, msg) ^ not, "Failed to match message with no tags\n");
+      cr_assert_not(filter_expr_eval(f, msg), "Failed to match message with no tags\n");
     }
 
   filter_expr_unref(f);
