@@ -93,7 +93,7 @@ Test(test_filters_statistics, filter_stastistics)
 
   _unregister_statistics(parser);
 
-  log_parser_free_method((LogPipe *)parser);
+  log_pipe_unref(&parser->super);
   cfg_deinit(configuration);
   cfg_free(configuration);
   app_shutdown();
