@@ -283,3 +283,77 @@ kafka_read_properties_file(const char *path)
   kafka_properties_file_reader_destroy(&reader);
   return result;
 }
+
+static gboolean
+kafka_translate_and_prepend_java_property(GList **prop_list, GList *prop_elem)
+{
+  KafkaProperty *prop = (KafkaProperty *) prop_elem->data;
+
+  if (strcmp(prop->name, "ssl.endpoint.identification.algorithm") == 0)
+    {
+      if (strcmp(prop->value, "") != 0)
+        {
+          msg_error("kafka: unsupported java property, librdkafka does not validate hostname in certificate, only empty value is supported, if explicitly set",
+                    evt_tag_str("property", prop->name),
+                    evt_tag_str("value", prop->value));
+          return FALSE;
+        }
+    }
+  else if (strcmp(prop->name, "sasl.jaas.config") == 0)
+    {
+      char sasl_user[128], sasl_pass[128];
+      if (sscanf(prop->value,
+                 "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"%[^\"]\" password=\"%[^\"]\"",
+                 sasl_user, sasl_pass) == 2)
+        {
+          msg_debug("kafka: translating PlainLoginModule in saasl.jaas.config to librdkafka equivalents",
+                    evt_tag_str("property", prop->name),
+                    evt_tag_str("value", prop->value));
+
+          *prop_list = g_list_prepend(*prop_list, kafka_property_new("sasl.username", sasl_user));
+          *prop_list = g_list_prepend(*prop_list, kafka_property_new("sasl.password", sasl_pass));
+          g_list_free_1(prop_elem);
+          kafka_property_free(prop);
+          return TRUE;
+        }
+      else
+        {
+          msg_error("kafka: unsupported java property, error while translating sasl.jaas.config, currently only org.apache.kafka.common.security.plain.PlainLoginModule is supported",
+                    evt_tag_str("property", prop->name),
+                    evt_tag_str("value", prop->value));
+          return FALSE;
+        }
+    }
+  *prop_list = g_list_concat(prop_elem, *prop_list);
+  return TRUE;
+}
+
+GList *
+kafka_translate_java_properties(GList *prop_list)
+{
+  GList *result = NULL;
+  GList *p;
+  GList *p_next;
+
+  for (p = prop_list, p_next = NULL; p; p = p_next)
+    {
+      p_next = p->next;
+      prop_list = g_list_remove_link(prop_list, p);
+      if (!kafka_translate_and_prepend_java_property(&result, p))
+        {
+          /* free current element, currently off both lists */
+          kafka_property_free((KafkaProperty *) p->data);
+          g_list_free_1(p);
+
+          /* free both lists */
+          kafka_property_list_free(prop_list);
+          kafka_property_list_free(result);
+
+          /* indicate failure */
+          return NULL;
+        }
+    }
+  g_assert(prop_list == NULL);
+  return g_list_reverse(result);
+
+}

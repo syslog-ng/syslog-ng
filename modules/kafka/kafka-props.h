@@ -39,4 +39,7 @@ void kafka_property_free(KafkaProperty *self);
 void kafka_property_list_free(GList *l);
 GList *kafka_read_properties_file(const char *path);
 
+GList *kafka_translate_java_properties(GList *prop_list);
+
+
 #endif

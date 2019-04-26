@@ -46,6 +46,7 @@ static CfgLexerKeyword kafka_keywords[] =
   { "template",       KW_MESSAGE, KWS_OBSOLETE, "Please use message() instead" },
   { "client_lib_dir", KW_CLIENT_LIB_DIR, KWS_OBSOLETE, "The client-lib-dir() option is ignored by the librdkafka implementation of kafka"},
   { "sync_send",      KW_SYNC_SEND, KWS_OBSOLETE, "The sync-send() option is ignored by the librdkafka implementation of kafka"},
+  { "properties_file", KW_PROPERTIES_FILE },
   { "bootstrap_servers", KW_BOOTSTRAP_SERVERS },
   { "kafka_bootstrap_servers", KW_BOOTSTRAP_SERVERS, KWS_OBSOLETE, "Please use bootstrap-servers option" },
   { "workers",        KW_WORKERS },

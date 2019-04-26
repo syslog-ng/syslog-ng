@@ -45,12 +45,11 @@ kafka_dd_set_topic(LogDriver *d, const gchar *topic)
 }
 
 void
-kafka_dd_set_global_config(LogDriver *d, GList *props)
+kafka_dd_merge_config(LogDriver *d, GList *props)
 {
   KafkaDestDriver *self = (KafkaDestDriver *)d;
 
-  kafka_property_list_free(self->global_config);
-  self->global_config = props;
+  self->global_config = g_list_concat(self->global_config, props);
 }
 
 void
@@ -214,22 +213,30 @@ _conf_set_prop(rd_kafka_conf_t *conf, const gchar *name, const gchar *value)
  * Main thread
  */
 
+static gboolean
+_apply_config_props(rd_kafka_conf_t *conf, GList *props)
+{
+  GList *ll;
+
+  for (ll = props; ll != NULL; ll = g_list_next(ll))
+    {
+      KafkaProperty *kp = ll->data;
+      _conf_set_prop(conf, kp->name, kp->value);
+    }
+  return TRUE;
+}
+
 static rd_kafka_t *
 _construct_client(KafkaDestDriver *self)
 {
-  GList *list;
-  KafkaProperty *kp;
   rd_kafka_t *client;
   rd_kafka_conf_t *conf;
   gchar errbuf[1024];
 
   conf = rd_kafka_conf_new();
   _conf_set_prop(conf, "metadata.broker.list", self->bootstrap_servers);
-  for (list = g_list_first(self->global_config); list != NULL; list = g_list_next(list))
-    {
-      kp = list->data;
-      _conf_set_prop(conf, kp->name, kp->value);
-    }
+
+  _apply_config_props(conf, self->config);
   rd_kafka_conf_set_log_cb(conf, _kafka_log_callback);
   rd_kafka_conf_set_dr_cb(conf, _kafka_delivery_report_cb);
   rd_kafka_conf_set_opaque(conf, self);
