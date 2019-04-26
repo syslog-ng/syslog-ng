@@ -41,7 +41,7 @@
 #define NUM_TAGS 8159
 #define FILTER_TAGS 100
 
-gchar *
+static gchar *
 get_tag_by_id(LogTagId id)
 {
   return g_strdup_printf("tags%d", id);
