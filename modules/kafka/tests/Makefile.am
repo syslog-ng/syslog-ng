@@ -17,4 +17,6 @@ modules_kafka_tests_test_kafka_props_LDFLAGS	= \
 
 endif
 
-EXTRA_DIST += modules/kafka/tests/CMakeLists.txt
+EXTRA_DIST += \
+	modules/kafka/tests/CMakeLists.txt	\
+	modules/kafka/tests/sample.properties

@@ -10,6 +10,7 @@ lib/jsonc
 lib/eventlog
 modules/java/org_syslog_ng_[^./_-]+\.h$
 modules/(afmongodb|afamqp)/dummy\.c$
+modules/kafka/tests/sample\.properties
 dev-utils/plugin_skeleton_creator/plugin_template.*
 (lib|modules)/.*\.conf$
 dist\.conf$
