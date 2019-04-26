@@ -173,7 +173,7 @@ set(WITH_GETTEXT "" CACHE STRING "Set the prefix where gettext is installed (e.g
 
 set(CMAKE_C_STANDARD 99)
 
-find_package(BISON 2.4 REQUIRED)
+find_package(BISON 3.4.2 REQUIRED)
 
 set(GLIB_COMPILE_DEFINITIONS
   GLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_28

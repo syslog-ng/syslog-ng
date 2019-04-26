@@ -82,7 +82,7 @@ extern struct _LogRewrite *last_rewrite;
 
 /* START_DECLS */
 
-%require "2.4.1"
+%require "3.4.2"
 %locations
 %define api.pure
 %pure-parser
