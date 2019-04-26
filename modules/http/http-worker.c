@@ -438,6 +438,9 @@ _flush(LogThreadedDestWorker *s, LogThreadedFlushMode mode)
   if (self->super.batch_size == 0)
     return LTR_SUCCESS;
 
+  if (mode == LTF_FLUSH_EXPEDITE)
+    return LTR_RETRY;
+
   _finish_request_body(self);
 
   target = http_load_balancer_choose_target(owner->load_balancer, &self->lbc);
