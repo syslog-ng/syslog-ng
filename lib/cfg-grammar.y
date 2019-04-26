@@ -317,16 +317,17 @@ extern struct _StatsOptions *last_stats_options;
 
 %token LL_DOTDOT                      10420
 %token LL_DOTDOTDOT                   10421
+%token LL_PRAGMA                      10422
+%token LL_EOL                         10423
+%token LL_ERROR                       10424
+%token LL_ARROW                       10425
 
-%token <cptr> LL_IDENTIFIER           10422
-%token <num>  LL_NUMBER               10423
-%token <fnum> LL_FLOAT                10424
-%token <cptr> LL_STRING               10425
-%token <token> LL_TOKEN               10426
-%token <cptr> LL_BLOCK                10427
-%token LL_PRAGMA                      10428
-%token LL_EOL                         10429
-%token LL_ERROR                       10430
+%token <cptr> LL_IDENTIFIER           10430
+%token <num>  LL_NUMBER               10431
+%token <fnum> LL_FLOAT                10432
+%token <cptr> LL_STRING               10433
+%token <token> LL_TOKEN               10434
+%token <cptr> LL_BLOCK                10435
 
 %destructor { free($$); } <cptr>
 

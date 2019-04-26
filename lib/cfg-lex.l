@@ -294,6 +294,7 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 {white}+		   ;
 \.\.                       { return LL_DOTDOT; }
 \.\.\.                     { return LL_DOTDOTDOT; }
+=>                         { return LL_ARROW; }
 (-|\+)?{digit}+\.{digit}+  { yylval->fnum = strtod(yytext, NULL); return LL_FLOAT; }
 0x{xdigit}+ 		   {
                              if (!parse_number_with_suffix(yytext, &yylval->num))
