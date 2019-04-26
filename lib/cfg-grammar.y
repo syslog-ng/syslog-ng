@@ -1034,6 +1034,7 @@ yesno
       gboolean value;
       gboolean success = cfg_process_yesno($1, &value);
       CHECK_ERROR((TRUE == success), @1, "invalid yesno value: %s. Use one of the following: yes/no, on/off, true/false, enable/disable, enabled/disabled", $1);
+      free($1);
       $$ = value;
     }
   | LL_NUMBER
