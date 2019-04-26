@@ -163,6 +163,7 @@ Test(tags, test_filters_true)
 
       name = get_tag_by_id(i);
       LogTagId id = log_tags_get_by_name(name);
+      g_free(name);
 
       log_msg_set_tag_by_id(msg, id);
 
@@ -201,6 +202,7 @@ Test(tags, test_filters_false)
 
       name = get_tag_by_id(i);
       LogTagId id = log_tags_get_by_name(name);
+      g_free(name);
 
       log_msg_set_tag_by_id(msg, id);
 
