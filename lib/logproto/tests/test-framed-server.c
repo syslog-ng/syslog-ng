@@ -149,6 +149,7 @@ Test(log_proto, test_log_proto_framed_server_too_long_line_trimmed_multiple_cycl
   assert_proto_server_fetch(proto, "1a", 2);
   assert_proto_server_fetch(proto, "2",  1);
   assert_proto_server_fetch_failure(proto, LPS_EOF, NULL);
+  log_proto_server_free(proto);
 }
 
 Test(log_proto, test_log_proto_framed_server_too_long_line_trimmed_frame_at_the_end)
@@ -180,6 +181,7 @@ Test(log_proto, test_log_proto_framed_server_too_long_line_trimmed_frame_at_the_
   // dropping: 1234567
   assert_proto_server_fetch(proto, "2abc",  4);
   assert_proto_server_fetch_failure(proto, LPS_EOF, NULL);
+  log_proto_server_free(proto);
 }
 
 Test(log_proto, test_log_proto_framed_server_too_long_line_trimmed_one_big_message)
@@ -197,6 +199,7 @@ Test(log_proto, test_log_proto_framed_server_too_long_line_trimmed_one_big_messa
             get_inited_proto_server_options());
   assert_proto_server_fetch(proto, "ab",          2);
   assert_proto_server_fetch(proto, "0123456789", 10);
+  log_proto_server_free(proto);
 }
 
 Test(log_proto, test_log_proto_framed_server_message_exceeds_buffer)
