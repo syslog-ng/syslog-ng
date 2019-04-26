@@ -37,6 +37,7 @@ static CfgLexerKeyword kafka_keywords[] =
 
   /* https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md */
   { "config",         KW_CONFIG },
+  { "option",         KW_CONFIG, KWS_OBSOLETE, "The option() argument has been obsoleted in favour of config()" },
   { "flush_timeout_on_shutdown", KW_FLUSH_TIMEOUT_ON_SHUTDOWN },
   { "flush_timeout_on_reload",   KW_FLUSH_TIMEOUT_ON_RELOAD },
 
