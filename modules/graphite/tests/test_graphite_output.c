@@ -49,9 +49,13 @@ Test(graphite_output, test_graphite_plaintext_proto_simple)
   assert_template_format("$(graphite-output local.random.diceroll=4)", "local.random.diceroll 4 1139684315\n");
 }
 
-Test(graphite_output, test_graphite_output_key)
+Test(graphite_output, test_graphite_output_hard_macro)
 {
   assert_template_format("$(graphite-output --key MESSAGE)", "MESSAGE árvíztűrőtükörfúrógép 1139684315\n");
+}
+
+Test(graphite_output, test_graphite_output_key)
+{
   assert_template_format("$(graphite-output --key APP.VALUE*)",
                          "APP.VALUE value 1139684315\n"
                          "APP.VALUE2 value 1139684315\n"
@@ -60,6 +64,10 @@ Test(graphite_output, test_graphite_output_key)
                          "APP.VALUE5 value 1139684315\n"
                          "APP.VALUE6 value 1139684315\n"
                          "APP.VALUE7 value 1139684315\n");
+}
+
+Test(graphite_output, test_graphite_output_custome_key_name)
+{
   assert_template_format("$(graphite-output local.value=${APP.VALUE})", "local.value value 1139684315\n");
 }
 
