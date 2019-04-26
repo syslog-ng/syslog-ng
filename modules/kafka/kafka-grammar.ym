@@ -123,11 +123,25 @@ kafka_properties
         ;
 
 kafka_property
-        : string '(' string ')'
+        : string '(' string_or_number ')'
         {
             KafkaProperty *prop = kafka_property_new($1, $3);
             free($1);
             free($3);
+	    $$ = prop;
+        }
+        | string LL_ARROW string_or_number
+        {
+            KafkaProperty *prop = kafka_property_new($1, $3);
+            free($1);
+            free($3);
+	    $$ = prop;
+        }
+        | string string_or_number
+        {
+            KafkaProperty *prop = kafka_property_new($1, $2);
+            free($1);
+            free($2);
 	    $$ = prop;
         }
         ;
