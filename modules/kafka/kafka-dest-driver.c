@@ -125,11 +125,9 @@ _format_persist_name(const LogPipe *d)
 void
 _kafka_log_callback(const rd_kafka_t *rkt, int level, const char *fac, const char *msg)
 {
-  msg_event_suppress_recursions_and_send(
-    msg_event_create(level,
-                     "Kafka internal message",
-                     evt_tag_str("msg", msg),
-                     NULL ));
+  gchar *buf = g_strdup_printf("librdkafka: %s(%d): %s", fac, level, msg);
+  msg_event_send(msg_event_create(level, buf, NULL));
+  g_free(buf);
 }
 
 
