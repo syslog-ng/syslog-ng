@@ -27,5 +27,4 @@ modules_csvparser_tests_test_csvparser_statistics_CFLAGS	=	\
 	$(TEST_CFLAGS) -I$(top_srcdir)/modules/csvparser
 modules_csvparser_tests_test_csvparser_statistics_LDADD	=	\
 	$(TEST_LDADD)					\
-	$(PREOPEN_SYSLOGFORMAT)				\
 	-dlpreopen $(top_builddir)/modules/csvparser/libcsvparser.la
