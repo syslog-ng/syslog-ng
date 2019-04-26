@@ -376,7 +376,7 @@ _insert_single(RiemannDestWorker *self, LogMessage *msg)
       return LTR_DROP;
     }
 
-  return log_threaded_dest_worker_flush(&self->super, FALSE);
+  return log_threaded_dest_worker_flush(&self->super, LTF_FLUSH_NORMAL);
 }
 
 static LogThreadedResult
