@@ -31,8 +31,6 @@ int kafka_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
 static CfgLexerKeyword kafka_keywords[] =
 {
-  { "kafka",          KW_KAFKA },
-
   { "topic",          KW_TOPIC },
 
   /* https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md */
