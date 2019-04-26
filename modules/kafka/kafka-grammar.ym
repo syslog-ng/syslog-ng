@@ -56,8 +56,7 @@
 
 %token KW_KAFKA
 %token KW_TOPIC
-%token KW_GLOBAL_CONFIG
-%token KW_TOPIC_CONFIG
+%token KW_CONFIG
 %token KW_WORKERS
 %token KW_FLUSH_TIMEOUT_ON_SHUTDOWN
 %token KW_FLUSH_TIMEOUT_ON_RELOAD
@@ -88,13 +87,9 @@ kafka_option
             kafka_dd_set_topic(last_driver, $3);
             free($3);
         }
-        | KW_GLOBAL_CONFIG '(' kafka_properties ')'
+        | KW_CONFIG '(' kafka_properties ')'
         {
-            kafka_dd_set_global_config(last_driver, $3);
-        }
-        | KW_TOPIC_CONFIG '(' kafka_properties ')'
-        {
-            kafka_dd_set_topic_config(last_driver, $3);
+            kafka_dd_merge_config(last_driver, $3);
         }
         | KW_PROPERTIES_FILE '(' string ')'
 	  {

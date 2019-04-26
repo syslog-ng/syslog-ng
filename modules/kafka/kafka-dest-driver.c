@@ -49,16 +49,7 @@ kafka_dd_merge_config(LogDriver *d, GList *props)
 {
   KafkaDestDriver *self = (KafkaDestDriver *)d;
 
-  self->global_config = g_list_concat(self->global_config, props);
-}
-
-void
-kafka_dd_set_topic_config(LogDriver *d, GList *props)
-{
-  KafkaDestDriver *self = (KafkaDestDriver *)d;
-
-  kafka_property_list_free(self->topic_config);
-  self->topic_config = props;
+  self->config = g_list_concat(self->config, props);
 }
 
 void
@@ -197,12 +188,12 @@ _conf_set_prop(rd_kafka_conf_t *conf, const gchar *name, const gchar *value)
 {
   gchar errbuf[1024];
 
-  msg_debug("kafka: setting librdkafka Global Config property",
+  msg_debug("kafka: setting librdkafka config property",
             evt_tag_str("name", name),
             evt_tag_str("value", value));
   if (rd_kafka_conf_set(conf, name, value, errbuf, sizeof(errbuf)) < 0)
     {
-      msg_error("kafka: error setting librdkafka Global Config property",
+      msg_error("kafka: error setting librdkafka config property",
                 evt_tag_str("name", name),
                 evt_tag_str("value", value),
                 evt_tag_str("error", errbuf));
@@ -235,6 +226,7 @@ _construct_client(KafkaDestDriver *self)
 
   conf = rd_kafka_conf_new();
   _conf_set_prop(conf, "metadata.broker.list", self->bootstrap_servers);
+  _conf_set_prop(conf, "topic.partitioner", "murmur2_random");
 
   _apply_config_props(conf, self->config);
   rd_kafka_conf_set_log_cb(conf, _kafka_log_callback);
@@ -252,42 +244,12 @@ _construct_client(KafkaDestDriver *self)
   return client;
 }
 
-static void
-_topic_conf_set_prop(rd_kafka_topic_conf_t *conf, const gchar *name, const gchar *value)
-{
-  gchar errbuf[1024];
-
-  msg_debug("kafka: setting librdkafka Topic Config property",
-            evt_tag_str("name", name),
-            evt_tag_str("value", value));
-  if (rd_kafka_topic_conf_set(conf, name, value, errbuf, sizeof(errbuf)) < 0)
-    {
-      msg_error("kafka: error setting librdkafka Topic Config property",
-                evt_tag_str("name", name),
-                evt_tag_str("value", value),
-                evt_tag_str("error", errbuf));
-    }
-}
-
 rd_kafka_topic_t *
 _construct_topic(KafkaDestDriver *self)
 {
-  GList *list;
-  KafkaProperty *kp;
-  rd_kafka_topic_conf_t *topic_conf;
-
   g_assert(self->kafka != NULL);
 
-  topic_conf = rd_kafka_topic_conf_new();
-  _topic_conf_set_prop(topic_conf, "partitioner", "murmur2_random");
-
-  for (list = g_list_first(self->topic_config); list != NULL; list = g_list_next(list))
-    {
-      kp = list->data;
-      _topic_conf_set_prop(topic_conf, kp->name, kp->value);
-    }
-
-  return rd_kafka_topic_new(self->kafka, self->topic_name, topic_conf);
+  return rd_kafka_topic_new(self->kafka, self->topic_name, NULL);
 }
 
 static LogThreadedDestWorker *
@@ -442,8 +404,7 @@ kafka_dd_free(LogPipe *d)
   if (self->topic_name)
     g_free(self->topic_name);
   g_free(self->bootstrap_servers);
-  kafka_property_list_free(self->global_config);
-  kafka_property_list_free(self->topic_config);
+  kafka_property_list_free(self->config);
   log_threaded_dest_driver_free(d);
 }
 
