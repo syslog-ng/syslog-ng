@@ -502,7 +502,7 @@ _insert_batched(LogThreadedDestWorker *s, LogMessage *msg)
 
   if (_should_initiate_flush(self))
     {
-      return log_threaded_dest_worker_flush(&self->super, FALSE);
+      return log_threaded_dest_worker_flush(&self->super, LTF_FLUSH_NORMAL);
     }
   return LTR_QUEUED;
 }
@@ -514,7 +514,7 @@ _insert_single(LogThreadedDestWorker *s, LogMessage *msg)
 
   self->request_headers = _format_request_headers(self, msg);
   _add_message_to_batch(self, msg);
-  return log_threaded_dest_worker_flush(&self->super, FALSE);
+  return log_threaded_dest_worker_flush(&self->super, LTF_FLUSH_NORMAL);
 }
 
 static gboolean
