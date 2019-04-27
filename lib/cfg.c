@@ -602,6 +602,7 @@ cfg_free(GlobalConfig *self)
 
   if (self->bad_hostname_compiled)
     regfree(&self->bad_hostname);
+  g_free(self->recv_time_zone);
   if (self->source_mangle_callback_list)
     g_list_free(self->source_mangle_callback_list);
   g_free(self->bad_hostname_re);
