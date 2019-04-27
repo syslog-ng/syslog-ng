@@ -80,7 +80,8 @@ Test(kafka_props, kafka_read_properties_file_gets_keys_from_the_file)
   _assert_nth_prop_equals(pl, 0, "name1", "value1");
   _assert_nth_prop_equals(pl, 1, "name2", "value2");
   _assert_nth_prop_equals(pl, 2, "name3", "value3");
-  _assert_nth_prop_equals(pl, 3, "name4", "continuation this continues on this and this line \\and this        but not on this \\");
+  _assert_nth_prop_equals(pl, 3, "name4",
+                          "continuation this continues on this and this line \\and this        but not on this \\");
   _assert_nth_prop_equals(pl, 4, "name5", "value5");
   _assert_nth_prop_equals(pl, 5, "namethatincludesequal=sign", "value");
   _assert_nth_prop_equals(pl, 6, "namethatincludenewline\nhere", "value");
@@ -96,7 +97,7 @@ Test(kafka_props, kafka_translate_properties_returns_unknown_properties_unmodifi
   pl = g_list_append(pl, kafka_property_new("name1", "value1"));
   pl = g_list_append(pl, kafka_property_new("name2", "value2"));
   pl = g_list_append(pl, kafka_property_new("name3", "value3"));
-  
+
   pl = kafka_translate_java_properties(pl);
 
   _assert_nth_prop_equals(pl, 2, "name3", "value3");
@@ -123,7 +124,8 @@ Test(kafka_props, kafka_translate_sasl_jaas_config_extracts_username_into_sasl_u
 {
   GList *pl = NULL;
 
-  pl = g_list_append(pl, kafka_property_new("sasl.jaas.config", "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"foo\" password=\"bar\""));
+  pl = g_list_append(pl, kafka_property_new("sasl.jaas.config",
+                                            "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"foo\" password=\"bar\""));
   pl = kafka_translate_java_properties(pl);
   _assert_nth_prop_equals(pl, 0, "sasl.username", "foo");
   _assert_nth_prop_equals(pl, 1, "sasl.password", "bar");

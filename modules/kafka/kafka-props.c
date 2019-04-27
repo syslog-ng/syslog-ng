@@ -220,7 +220,7 @@ kafka_properties_file_reader_deescape(KafkaPropertyFileReader *self, gsize start
         }
     }
   while (decoded_value->len > 0 &&
-    g_ascii_isspace(decoded_value->str[decoded_value->len - 1]))
+         g_ascii_isspace(decoded_value->str[decoded_value->len - 1]))
     g_string_truncate(decoded_value, decoded_value->len - 1);
   return g_string_free(decoded_value, FALSE);
 }

@@ -318,9 +318,9 @@ _purge_remaining_messages(KafkaDestDriver *self)
   gint outq_len = rd_kafka_outq_len(self->kafka);
   if (outq_len != 0)
     msg_notice("kafka: failed to completely empty rdkafka queues, as we still have entries in "
-                "the queue after flush() and purge(), this is probably causing a memory leak, "
-                "please contact syslog-ng authors for support",
-                evt_tag_int("outq_len", outq_len));
+               "the queue after flush() and purge(), this is probably causing a memory leak, "
+               "please contact syslog-ng authors for support",
+               evt_tag_int("outq_len", outq_len));
 
 }
 
