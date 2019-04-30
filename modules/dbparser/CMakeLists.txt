@@ -24,6 +24,7 @@ set(PATTERNDB_SOURCES
     pdb-ratelimit.c
     pdb-ratelimit.h
     pdb-lookup-params.h
+    pdb-lookup-params.c
     correllation.c
     correllation.h
     correllation-key.c

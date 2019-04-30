@@ -712,7 +712,7 @@ pattern_db_process(PatternDB *self, LogMessage *msg)
 {
   PDBLookupParams lookup;
 
-  pdb_lookup_params_init(&lookup, msg);
+  pdb_lookup_params_init(&lookup, msg, self->program_template);
   return _pattern_db_process(self, &lookup, NULL);
 }
 
@@ -721,7 +721,7 @@ pattern_db_process_with_custom_message(PatternDB *self, LogMessage *msg, const g
 {
   PDBLookupParams lookup;
 
-  pdb_lookup_params_init(&lookup, msg);
+  pdb_lookup_params_init(&lookup, msg, self->program_template);
   pdb_lookup_params_override_message(&lookup, message, message_len);
   return _pattern_db_process(self, &lookup, NULL);
 }
@@ -731,7 +731,7 @@ pattern_db_debug_ruleset(PatternDB *self, LogMessage *msg, GArray *dbg_list)
 {
   PDBLookupParams lookup;
 
-  pdb_lookup_params_init(&lookup, msg);
+  pdb_lookup_params_init(&lookup, msg, NULL);
   _pattern_db_process(self, &lookup, dbg_list);
 }
 

@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2017 Balabit
- * Copyright (c) 1998-2017 Balázs Scheidler
+ * Copyright (c) 2019 Balabit
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -21,30 +20,28 @@
  *
  */
 
-#ifndef PATTERNDB_PDB_LOOKUP_PARAMS_H_INCLUDED
-#define PATTERNDB_PDB_LOOKUP_PARAMS_H_INCLUDED
+#include "pdb-lookup-params.h"
 
-#include <template/templates.h>
-#include "logmsg/logmsg.h"
-
-typedef struct _PDBLookupParams PDBLookupParams;
-struct _PDBLookupParams
+static void
+_set_program_template(PDBLookupParams *lookup, LogTemplate *program_template)
 {
-  LogMessage *msg;
-  NVHandle program_handle;
-  LogTemplate *program_template;
-  NVHandle message_handle;
-  const gchar *message_string;
-  gssize message_len;
+  if (program_template)
+    {
+      lookup->program_handle = LM_V_NONE;
+      lookup->program_template = program_template;
+    }
+  else
+    {
+      lookup->program_handle = LM_V_PROGRAM;
+    }
 };
 
-void pdb_lookup_params_init(PDBLookupParams *lookup, LogMessage *msg, LogTemplate *program_template);
-
-static inline void
-pdb_lookup_params_override_message(PDBLookupParams *lookup, const gchar *message, gssize message_len)
+void
+pdb_lookup_params_init(PDBLookupParams *lookup, LogMessage *msg, LogTemplate *program_template)
 {
-  lookup->message_handle = LM_V_NONE;
-  lookup->message_string = message;
-  lookup->message_len = message_len;
+  lookup->msg = msg;
+  lookup->message_handle = LM_V_MESSAGE;
+  lookup->message_len = 0;
+
+  _set_program_template(lookup, program_template);
 }
-#endif
