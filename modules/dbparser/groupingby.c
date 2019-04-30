@@ -40,6 +40,7 @@ typedef struct _GroupingBy
   GTimeVal last_tick;
   CorrellationState *correllation;
   LogTemplate *key_template;
+  LogTemplate *sort_key_template;
   gint timeout;
   CorrellationScope scope;
   SyntheticMessage *synthetic_message;
@@ -71,6 +72,15 @@ grouping_by_set_key_template(LogParser *s, LogTemplate *key_template)
 
   log_template_unref(self->key_template);
   self->key_template = log_template_ref(key_template);
+}
+
+void
+grouping_by_set_sort_key_template(LogParser *s, LogTemplate *sort_key)
+{
+  GroupingBy *self = (GroupingBy *) s;
+
+  log_template_unref(self->sort_key_template);
+  self->sort_key_template = log_template_ref(sort_key);
 }
 
 void
@@ -259,6 +269,8 @@ grouping_by_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data)
             evt_tag_str("context-id", context->key.session_id),
             log_pipe_location_tag(&self->super.super.super));
 
+  if (self->sort_key_template)
+    correllation_context_sort(context, self->sort_key_template);
   grouping_by_emit_synthetic(self, context);
   g_hash_table_remove(self->correllation->state, &context->key);
 
@@ -495,6 +507,7 @@ grouping_by_free(LogPipe *s)
 
   g_static_mutex_free(&self->lock);
   log_template_unref(self->key_template);
+  log_template_unref(self->sort_key_template);
   if (self->synthetic_message)
     synthetic_message_free(self->synthetic_message);
   stateful_parser_free_method(s);

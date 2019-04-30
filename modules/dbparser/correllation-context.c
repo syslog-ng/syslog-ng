@@ -22,8 +22,60 @@
  */
 #include "correllation-context.h"
 #include "logmsg/logmsg.h"
-
+#include "scratch-buffers.h"
 #include <string.h>
+
+static gint
+_compare_messages_with_trivial_template(gconstpointer a, gconstpointer b, gpointer user_data)
+{
+  LogMessage *am = *(LogMessage **) a;
+  LogMessage *bm = *(LogMessage **) b;
+  gssize av_len, bv_len;
+  LogTemplate *sort_key = (LogTemplate *) user_data;
+
+  const gchar *am_key = log_template_get_trivial_value(sort_key, am, &av_len);
+  const gchar *bm_key = log_template_get_trivial_value(sort_key, bm, &bv_len);
+
+  if (am_key == NULL && bm_key == NULL)
+    return 0;
+
+  if (am_key == NULL)
+    return -1;
+
+  if (bm_key == NULL)
+    return 1;
+
+  gssize cmp_len = MIN(av_len, bv_len);
+  return strncmp(am_key, bm_key, cmp_len);
+}
+
+static gint
+_compare_messages_with_nontrivial_template(gconstpointer a, gconstpointer b, gpointer user_data)
+{
+  LogMessage *am = *(LogMessage **) a;
+  LogMessage *bm = *(LogMessage **) b;
+  LogTemplate *sort_key = (LogTemplate *) user_data;
+
+  ScratchBuffersMarker mark;
+  GString *am_key = scratch_buffers_alloc_and_mark(&mark);
+  GString *bm_key = scratch_buffers_alloc();
+
+  log_template_format(sort_key, am, NULL, LTZ_LOCAL, 0, NULL, am_key);
+  log_template_format(sort_key, bm, NULL, LTZ_LOCAL, 0, NULL, bm_key);
+  gint result = strcmp(am_key->str, bm_key->str);
+
+  scratch_buffers_reclaim_marked(mark);
+  return result;
+}
+
+void
+correllation_context_sort(CorrellationContext *self, LogTemplate *sort_key)
+{
+  if (log_template_is_trivial(sort_key))
+    g_ptr_array_sort_with_data(self->messages, _compare_messages_with_trivial_template, sort_key);
+  else
+    g_ptr_array_sort_with_data(self->messages, _compare_messages_with_nontrivial_template, sort_key);
+}
 
 void
 correllation_context_init(CorrellationContext *self, const CorrellationKey *key)
