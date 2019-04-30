@@ -337,14 +337,12 @@ system_generate_app_parser(GlobalConfig *cfg, GString *sysblock, CfgArgs *args)
 
   g_string_append_printf(sysblock,
                          "channel {\n"
-                         "  channel {\n"
-                         "    parser {\n"
-                         "      app-parser(topic(system-unix) %s);\n"
-                         "      app-parser(topic(syslog) %s);\n"
+                         "    if {\n"
+                         "      parser { app-parser(topic(system-unix) %s); };\n"
+                         "    } elif {\n"
+                         "      parser { app-parser(topic(syslog) %s); };\n"
                          "    };\n"
                          "    flags(final);\n"
-                         "  };\n"
-                         "  channel { flags(final); };\n"
                          "};\n",
                          varargs, varargs);
   g_free(varargs);
