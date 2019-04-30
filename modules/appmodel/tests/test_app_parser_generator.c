@@ -200,6 +200,7 @@ Test(app_parser_generator, app_parser_with_no_apps_registered_generates_empty_fr
 {
   _app_parser_generate("port514");
   _assert_parser_framing_is_present();
+  _assert_snippet_is_present("tags('.app.doesnotexist')");
   _assert_config_is_valid("port514", NULL);
 }
 
@@ -248,7 +249,7 @@ Test(app_parser_generator, app_parser_is_disabled_if_auto_parse_is_set_to_no)
   _register_sample_application("bar", "port514");
 
   _app_parser_generate_with_args("port514", _build_cfg_args("auto-parse", "no", NULL));
-  cr_assert_str_eq(result->str, "\nchannel {}", "result is expected to be an empty channel, but it is %s", result->str);
+  _assert_snippet_is_present("tags('.app.doesnotexist')");
 
   _app_parser_generate_with_args("port514", _build_cfg_args("auto-parse", "yes", NULL));
   _assert_parser_framing_is_present();
