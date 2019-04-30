@@ -123,3 +123,7 @@ class SyslogNgConfig(object):
 
     def create_syslog_parser(self, **options):
         return Parser("syslog-parser", **options)
+
+    @staticmethod
+    def stringify(s):
+        return '"' + s.replace('\\', "\\\\").replace('"', '\\"').replace('\n', '\\n') + '"'
