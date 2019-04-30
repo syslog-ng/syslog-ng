@@ -400,6 +400,14 @@ Test(basicfuncs, test_list_funcs)
   assert_template_format("$(list-slice :-6 foo,bar,xxx,baz,bad)", "");
 
   assert_template_format("$(list-count foo,bar,xxx, baz bad)", "5");
+
+  assert_template_format("$(explode ' ' foo bar xxx baz bad)", "foo,bar,xxx,baz,bad");
+  assert_template_format("$(explode ' ' 'foo bar xxx baz bad')", "foo,bar,xxx,baz,bad");
+  assert_template_format("$(explode ';' foo;bar;xxx;baz;bad)", "foo,bar,xxx,baz,bad");
+  assert_template_format("$(explode ';' foo;bar xxx;baz;bad)", "foo,bar,xxx,baz,bad");
+
+  assert_template_format("$(implode ' ' foo,bar,xxx,baz,bad)", "foo bar xxx baz bad");
+  assert_template_format("$(implode ' ' $(list-slice :3 foo,bar,xxx,baz,bad))", "foo bar xxx");
 }
 
 Test(basicfuncs, test_context_funcs)

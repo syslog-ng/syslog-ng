@@ -275,3 +275,56 @@ tf_list_slice(LogMessage *msg, gint argc, GString *argv[], GString *result)
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_list_slice);
+
+static void
+tf_explode(LogMessage *msg, gint argc, GString *argv[], GString *result)
+{
+  gsize initial_len = result->len;
+  GString *separator;
+
+  if (argc < 1)
+    return;
+
+  separator = argv[0];
+
+  for (gint i = 1; i < argc; i++)
+    {
+      gchar **strv = g_strsplit(argv[i]->str, separator->str, -1);
+
+      for (gchar **str = &strv[0]; *str != NULL; str++)
+        {
+          _append_comma_between_list_elements_if_needed(result, initial_len);
+          str_repr_encode_append(result, *str, -1, ",");
+        }
+      g_strfreev(strv);
+    }
+}
+
+TEMPLATE_FUNCTION_SIMPLE(tf_explode);
+
+static void
+tf_implode(LogMessage *msg, gint argc, GString *argv[], GString *result)
+{
+  ListScanner scanner;
+  gsize initial_len = result->len;
+  GString *separator;
+
+  if (argc < 1)
+    return;
+
+  separator = argv[0];
+
+  list_scanner_init(&scanner);
+  list_scanner_input_gstring_array(&scanner, argc - 1, &argv[1]);
+  while (list_scanner_scan_next(&scanner))
+    {
+      if (result->len > initial_len)
+        g_string_append_len(result, separator->str, separator->len);
+      g_string_append_len(result,
+                          list_scanner_get_current_value(&scanner),
+                          list_scanner_get_current_value_len(&scanner));
+    }
+  list_scanner_deinit(&scanner);
+}
+
+TEMPLATE_FUNCTION_SIMPLE(tf_implode);
