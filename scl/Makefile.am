@@ -3,6 +3,7 @@ SCL_SUBDIRS	= \
 	cim		\
 	cisco		\
 	collectd \
+	checkpoint	\
 	default-network-drivers	\
 	elasticsearch	\
 	ewmm		\
