@@ -24,7 +24,7 @@
 
 include(LibFindMacros)
 
-libfind_pkg_check_modules(RDKAFKA_PKGCONF rdkafka)
+pkg_search_module(RDKAFKA_PKGCONF  rdkafka)
 
 libfind_pkg_detect(RDKAFKA rdkafka FIND_PATH librdkafka/rdkafka.h FIND_LIBRARY rdkafka)
 set(RDKAFKA_PROCESS_INCLUDES RDKAFKA_INCLUDE_DIR)
@@ -34,6 +34,11 @@ libfind_process(RDKAFKA)
 add_library(rdkafka INTERFACE)
 
 if (NOT RDKAFKA_FOUND)
+ return()
+endif()
+
+if (${rdkafka_FIND_VERSION} VERSION_GREATER ${RDKAFKA_PKGCONF_VERSION})
+ set(RDKAFKA_FOUND FALSE)
  return()
 endif()
 
