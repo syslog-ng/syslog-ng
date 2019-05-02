@@ -21,6 +21,10 @@ add_library(kafka SHARED
   kafka-parser.c
   kafka-parser.h
   kafka-plugin.c
+  kafka-dest-driver.c
+  kafka-dest-worker.c
+  kafka-plugin.c
+  kafka-props.c
   ${CMAKE_CURRENT_BINARY_DIR}/kafka-grammar.c
   ${CMAKE_CURRENT_BINARY_DIR}/kafka-grammar.h
 )
@@ -36,5 +40,8 @@ bison_target(KafkaGrammar
     ${CMAKE_CURRENT_BINARY_DIR}/kafka-grammar.y
     ${CMAKE_CURRENT_BINARY_DIR}/kafka-grammar.c
     COMPILE_FLAGS ${BISON_FLAGS})
+
+add_test_subdirectory(tests)
+
 
 install(TARGETS kafka LIBRARY DESTINATION lib/syslog-ng/ COMPONENT kafka)
