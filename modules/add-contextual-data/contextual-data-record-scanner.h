@@ -23,16 +23,9 @@
 #ifndef CONTEXTUAL_DATA_RECORD_SCANNER_H_INCLUDED
 #define CONTEXTUAL_DATA_RECORD_SCANNER_H_INCLUDED
 
-#include "syslog-ng.h"
+#include "contextual-data-record.h"
 
 typedef struct _ContextualDataRecordScanner ContextualDataRecordScanner;
-
-typedef struct _ContextualDataRecord
-{
-  GString *selector;
-  GString *name;
-  GString *value;
-} ContextualDataRecord;
 
 struct _ContextualDataRecordScanner
 {
@@ -51,9 +44,6 @@ void contextual_data_record_scanner_free(ContextualDataRecordScanner *self);
 void
 contextual_data_record_scanner_set_name_prefix(ContextualDataRecordScanner *
                                                self, const gchar *prefix);
-
-void contextual_data_record_init(ContextualDataRecord *record);
-void contextual_data_record_clean(ContextualDataRecord *record);
 
 ContextualDataRecordScanner
 *create_contextual_data_record_scanner_by_type(const gchar *filename, const gchar *type);

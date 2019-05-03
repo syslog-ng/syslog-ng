@@ -8,6 +8,8 @@ modules_add_contextual_data_libadd_contextual_data_la_SOURCES	=		\
 	modules/add-contextual-data/add-contextual-data.h			\
 	modules/add-contextual-data/csv-contextual-data-record-scanner.c	\
 	modules/add-contextual-data/csv-contextual-data-record-scanner.h	\
+	modules/add-contextual-data/contextual-data-record.h			\
+	modules/add-contextual-data/contextual-data-record.c			\
 	modules/add-contextual-data/contextual-data-record-scanner.h		\
 	modules/add-contextual-data/contextual-data-record-scanner.c		\
 	modules/add-contextual-data/add-contextual-data-grammar.y		\

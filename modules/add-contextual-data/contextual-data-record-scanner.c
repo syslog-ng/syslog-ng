@@ -39,29 +39,6 @@ contextual_data_record_scanner_set_name_prefix(ContextualDataRecordScanner *
   self->name_prefix = prefix;
 }
 
-void
-contextual_data_record_init(ContextualDataRecord *record)
-{
-  record->selector = NULL;
-  record->name = NULL;
-  record->value = NULL;
-}
-
-void
-contextual_data_record_clean(ContextualDataRecord *record)
-{
-  if (record->selector)
-    g_string_free(record->selector, TRUE);
-
-  if (record->name)
-    g_string_free(record->name, TRUE);
-
-  if (record->value)
-    g_string_free(record->value, TRUE);
-
-  contextual_data_record_init(record);
-}
-
 ContextualDataRecordScanner *
 create_contextual_data_record_scanner_by_type(const gchar *filename, const gchar *type)
 {
