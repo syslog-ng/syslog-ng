@@ -218,34 +218,6 @@ _free(ContextInfoDB *self)
     }
 }
 
-ContextInfoDB *
-context_info_db_new(void)
-{
-  ContextInfoDB *self = g_new0(ContextInfoDB, 1);
-
-  g_atomic_counter_set(&self->ref_cnt, 1);
-
-  return self;
-}
-
-ContextInfoDB *
-context_info_db_ref(ContextInfoDB *self)
-{
-  g_assert(!self || g_atomic_counter_get(&self->ref_cnt) > 0);
-  g_atomic_counter_inc(&self->ref_cnt);
-
-  return self;
-}
-
-void
-context_info_db_unref(ContextInfoDB *self)
-{
-  g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
-  if (g_atomic_counter_dec_and_test(&self->ref_cnt))
-    {
-      context_info_db_free(self);
-    }
-}
 
 static element_range *
 _get_range_of_records(ContextInfoDB *self, const gchar *selector)
@@ -262,15 +234,6 @@ context_info_db_purge(ContextInfoDB *self)
     self->data = g_array_remove_range(self->data, 0, self->data->len);
 }
 
-void
-context_info_db_free(ContextInfoDB *self)
-{
-  if (self)
-    {
-      _free(self);
-      g_free(self);
-    }
-}
 
 void
 context_info_db_insert(ContextInfoDB *self,
@@ -397,4 +360,40 @@ context_info_db_import(ContextInfoDB *self, FILE *fp,
   context_info_db_index(self);
 
   return TRUE;
+}
+
+ContextInfoDB *
+context_info_db_new(void)
+{
+  ContextInfoDB *self = g_new0(ContextInfoDB, 1);
+
+  g_atomic_counter_set(&self->ref_cnt, 1);
+
+  return self;
+}
+
+ContextInfoDB *
+context_info_db_ref(ContextInfoDB *self)
+{
+  if (self)
+    {
+      g_assert(g_atomic_counter_get(&self->ref_cnt) > 0);
+      g_atomic_counter_inc(&self->ref_cnt);
+    }
+
+  return self;
+}
+
+void
+context_info_db_unref(ContextInfoDB *self)
+{
+  if (self)
+    {
+      g_assert(g_atomic_counter_get(&self->ref_cnt));
+      if (g_atomic_counter_dec_and_test(&self->ref_cnt))
+        {
+          _free(self);
+          g_free(self);
+        }
+    }
 }

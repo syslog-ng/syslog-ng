@@ -221,7 +221,7 @@ _assert_import_csv_with_single_selector(gchar *csv_content, gchar *selector_to_c
       expected_nvpairs,
       expected_nvpairs_size);
 
-  context_info_db_free(db);
+  context_info_db_unref(db);
   contextual_data_record_scanner_free(scanner);
 }
 
@@ -292,7 +292,7 @@ Test(add_contextual_data, test_import_with_valid_csv)
       expected_nvpairs_selector3,
       ARRAY_SIZE(expected_nvpairs_selector3));
 
-  context_info_db_free(db);
+  context_info_db_unref(db);
   contextual_data_record_scanner_free(scanner);
 }
 
@@ -343,7 +343,7 @@ Test(add_contextual_data, test_import_with_invalid_csv_content)
                 "The context_info_db_is_indexed reports True after failing import&load operations.");
 
   fclose(fp);
-  context_info_db_free(db);
+  context_info_db_unref(db);
   contextual_data_record_scanner_free(scanner);
 }
 
@@ -366,7 +366,7 @@ Test(add_contextual_data, test_import_with_csv_contains_invalid_line)
                 "The context_info_db_is_indexed reports True after failing import&load operations.");
 
   fclose(fp);
-  context_info_db_free(db);
+  context_info_db_unref(db);
   contextual_data_record_scanner_free(scanner);
 }
 
@@ -461,7 +461,7 @@ Test(add_contextual_data, test_ignore_case_on)
   cr_assert(context_info_db_contains(db, "LoCaLhOsT"));
 
   fclose(fp);
-  context_info_db_free(db);
+  context_info_db_unref(db);
   contextual_data_record_scanner_free(scanner);
 }
 
@@ -486,7 +486,7 @@ Test(add_contextual_data, test_ignore_case_off)
   cr_assert(context_info_db_contains(db, "LoCaLhOsT"));
 
   fclose(fp);
-  context_info_db_free(db);
+  context_info_db_unref(db);
   contextual_data_record_scanner_free(scanner);
 }
 
@@ -535,7 +535,7 @@ Test(add_contextual_data, test_selected_nvpairs_when_ignore_case_on)
       expected_nvpairs_selector2,
       ARRAY_SIZE(expected_nvpairs_selector2));
 
-  context_info_db_free(db);
+  context_info_db_unref(db);
   contextual_data_record_scanner_free(scanner);
 }
 
