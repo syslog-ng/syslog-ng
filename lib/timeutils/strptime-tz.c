@@ -157,6 +157,7 @@ static const _u_char *find_string(const _u_char *, int *, const char *const *,
 #define S_MDAY      (1 << 3)
 #define S_WDAY      (1 << 4)
 #define S_HOUR      (1 << 5)
+#define S_USEC      (1 << 6)
 
 #define HAVE_MDAY(s)    (s & S_MDAY)
 #define HAVE_MON(s)   (s & S_MON)
@@ -164,6 +165,7 @@ static const _u_char *find_string(const _u_char *, int *, const char *const *,
 #define HAVE_YDAY(s)    (s & S_YDAY)
 #define HAVE_YEAR(s)    (s & S_YEAR)
 #define HAVE_HOUR(s)    (s & S_HOUR)
+#define HAVE_USEC(s)    (s & S_USEC)
 
 static char gmt[] = { "GMT" };
 static char utc[] = { "UTC" };
@@ -208,7 +210,7 @@ first_wday_of(int yr)
  * their struct tm. This is a slightly modified NetBSD strptime() with
  * some modifications and explicit zone related parameters. */
 char *
-strptime_with_tz(const char *buf, const char *fmt, struct tm *tm, long *tm_gmtoff, const char **tm_zone)
+strptime_with_tz(const char *buf, const char *fmt, struct tm *tm, long *tm_gmtoff, const char **tm_zone, int *tm_usec)
 {
   unsigned char c;
   const unsigned char *bp, *ep;
@@ -304,7 +306,7 @@ literal:
           state |= S_MON | S_MDAY | S_YEAR;
 recurse:
           bp = (const _u_char *)strptime_with_tz((const char *)bp,
-                                                 new_fmt, tm, tm_gmtoff, tm_zone);
+                                                 new_fmt, tm, tm_gmtoff, tm_zone, tm_usec);
           LEGAL_ALT(ALT_E);
           continue;
 
@@ -348,6 +350,35 @@ recurse:
           LEGAL_ALT(ALT_O);
           state |= S_MDAY;
           continue;
+
+        case 'f':
+        {
+          const unsigned char *end = conv_num(bp, tm_usec, 0, 999999);
+          int digits = end - bp;
+
+          /*
+           * We have read up to 6 digits, but if the message has
+           * sub-microsecond precision, eat-up the digits we cannot handle.
+           */
+          while (isdigit(*end))
+            {
+              end++;
+            }
+
+          /*
+           * If we read less than 6 digits, we need to adjust the value:
+           * "012" was parsed as 12 but is 12000 us.
+           */
+          while (digits++ < 6)
+            {
+              *tm_usec *= 10;
+            }
+
+          bp = end;
+          LEGAL_ALT(0);
+          state |= S_USEC;
+          continue;
+        }
 
         case 'k': /* The hour (24-hour clock representation). */
           LEGAL_ALT(0);
@@ -743,6 +774,11 @@ recurse:
           tm->tm_wday = week_offset;
           state |= S_WDAY;
         }
+    }
+
+  if (!HAVE_USEC(state))
+    {
+      *tm_usec = 0;
     }
 
   return __UNCONST(bp);

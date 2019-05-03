@@ -27,6 +27,7 @@
 #include <time.h>
 #include <stdint.h>
 
-char *strptime_with_tz(const char *buf, const char *fmt, struct tm *tm, long *tm_gmtoff, const char **tm_zone);
+char *strptime_with_tz(const char *buf, const char *fmt, struct tm *tm, long *tm_gmtoff, const char **tm_zone,
+                       int *tm_usec);
 
 #endif
