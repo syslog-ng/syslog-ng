@@ -21,6 +21,8 @@
 
 #include <criterion/criterion.h>
 
+#include "logmsg/logmsg.h"
+#include "timeutils/misc.h"
 #include "libtest/cr_template.h"
 #include "apphook.h"
 #include "cfg.h"
@@ -42,6 +44,14 @@ teardown(void)
   app_shutdown();
 }
 
+static void
+_log_msg_set_recvd_time(LogMessage *msg, time_t t)
+{
+  msg->timestamps[LM_TS_RECVD].ut_sec = t;
+  msg->timestamps[LM_TS_RECVD].ut_usec = 0;
+  msg->timestamps[LM_TS_RECVD].ut_gmtoff = get_local_timezone_ofs(t);
+}
+
 TestSuite(graphite_output, .init = setup, .fini = teardown);
 
 Test(graphite_output, test_graphite_plaintext_proto_simple)
@@ -49,9 +59,20 @@ Test(graphite_output, test_graphite_plaintext_proto_simple)
   assert_template_format("$(graphite-output local.random.diceroll=4)", "local.random.diceroll 4 1139684315\n");
 }
 
+Test(graphite_output, test_graphite_output_hard_macro)
+{
+  LogMessage *msg = log_msg_new_empty();
+
+  log_msg_set_value(msg, LM_V_MESSAGE, "árvíztűrőtükörfúrógép", -1);
+  _log_msg_set_recvd_time(msg, 1139684315);
+
+  assert_template_format_with_escaping_msg("$(graphite-output --key MESSAGE)", FALSE,
+                                           "MESSAGE árvíztűrőtükörfúrógép 1139684315\n", msg);
+  log_msg_unref(msg);
+}
+
 Test(graphite_output, test_graphite_output_key)
 {
-  assert_template_format("$(graphite-output --key MESSAGE)", "MESSAGE árvíztűrőtükörfúrógép 1139684315\n");
   assert_template_format("$(graphite-output --key APP.VALUE*)",
                          "APP.VALUE value 1139684315\n"
                          "APP.VALUE2 value 1139684315\n"
@@ -60,6 +81,10 @@ Test(graphite_output, test_graphite_output_key)
                          "APP.VALUE5 value 1139684315\n"
                          "APP.VALUE6 value 1139684315\n"
                          "APP.VALUE7 value 1139684315\n");
+}
+
+Test(graphite_output, test_graphite_output_custome_key_name)
+{
   assert_template_format("$(graphite-output local.value=${APP.VALUE})", "local.value value 1139684315\n");
 }
 

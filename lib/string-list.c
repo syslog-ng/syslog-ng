@@ -40,7 +40,7 @@ string_list_clone(GList *string_list)
   GList *l;
 
   for (l = string_list; l; l = l->next)
-    cloned = g_list_append(cloned, GPOINTER_TO_UINT(l->data) > 4096 ? g_strdup(l->data) : l->data);
+    cloned = g_list_append(cloned, (gulong)(l->data) > 4096 ? g_strdup(l->data) : l->data);
 
   return cloned;
 }
@@ -64,16 +64,17 @@ string_array_to_list(const gchar *strlist[])
  * values used by the application code and are not freed. Since this
  * is the NULL page, this should not cause memory leaks.
  */
+static void
+_free_valid_str_pointers(gpointer data)
+{
+  /* some of the string lists use invalid pointer values as special
+   * items, see SQL "default" item */
+  if ((gulong)data > 4096)
+    g_free(data);
+}
+
 void
 string_list_free(GList *l)
 {
-  while (l)
-    {
-      /* some of the string lists use invalid pointer values as special
-       * items, see SQL "default" item */
-
-      if (GPOINTER_TO_UINT(l->data) > 4096)
-        g_free(l->data);
-      l = g_list_delete_link(l, l);
-    }
+  g_list_free_full(l, _free_valid_str_pointers);
 }

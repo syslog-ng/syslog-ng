@@ -330,6 +330,8 @@ Test(log_message, test_local_logmsg_created_with_the_right_flags_and_timestamps)
 
   cr_assert_neq((msg->flags & LF_LOCAL), 0, "LogMessage created by log_msg_new_local() should have LF_LOCAL flag set");
   cr_assert(are_equals, "The timestamps in a LogMessage created by log_msg_new_local() should be equals");
+
+  log_msg_unref(msg);
 }
 
 Test(log_message, test_sdata_sanitization)

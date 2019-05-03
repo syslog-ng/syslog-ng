@@ -30,7 +30,6 @@
 
 #include <criterion/criterion.h>
 
-MsgFormatOptions parse_options;
 LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
 static LogParser *
@@ -66,7 +65,8 @@ _unregister_statistics(LogParser *p)
 static void
 _parse_msg(LogParser *self, gchar *msg)
 {
-  LogMessage *logmsg = log_msg_new(msg, strlen(msg), NULL, &parse_options);
+  LogMessage *logmsg = log_msg_new_empty();
+  log_msg_set_value(logmsg, LM_V_MESSAGE, msg, -1);
   log_parser_process_message(self, &logmsg, &path_options);
   log_msg_unref(logmsg);
 }
@@ -78,22 +78,18 @@ Test(test_filters_statistics, filter_stastistics)
   configuration->stats_options.level = 1;
   cr_assert(cfg_init(configuration));
 
-  cfg_load_module(configuration, "syslogformat");
-  msg_format_options_defaults(&parse_options);
-  msg_format_options_init(&parse_options, configuration);
-
   LogParser *parser = _create_parser(configuration);
   cr_assert_eq(stats_counter_get(parser->super.discarded_messages), 0);
-  _parse_msg(parser, "column1, column2, column3, column4");
-  cr_assert_eq(stats_counter_get(parser->super.discarded_messages), 1);
   _parse_msg(parser, "column1, column2, column3");
-  cr_assert_eq(stats_counter_get(parser->super.discarded_messages), 2);
+  cr_assert_eq(stats_counter_get(parser->super.discarded_messages), 1);
   _parse_msg(parser, "column1, column2");
+  cr_assert_eq(stats_counter_get(parser->super.discarded_messages), 2);
+  _parse_msg(parser, "column1");
   cr_assert_eq(stats_counter_get(parser->super.discarded_messages), 2);
 
   _unregister_statistics(parser);
 
-  log_parser_free_method((LogPipe *)parser);
+  log_pipe_unref(&parser->super);
   cfg_deinit(configuration);
   cfg_free(configuration);
   app_shutdown();

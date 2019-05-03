@@ -144,7 +144,7 @@ tf_graphite_format(GString *result, ValuePairs *vp, LogMessage *msg, const LogTe
 
   return_value = value_pairs_foreach(vp, tf_graphite_foreach_func, msg, 0, time_zone_mode, template_options, &userdata);
 
-  g_string_free(userdata.formatted_unixtime, FALSE);
+  g_string_free(userdata.formatted_unixtime, TRUE);
   return return_value;
 }
 
