@@ -193,7 +193,7 @@ pdb_get_filenames(const gchar *dir_path, gboolean recursive, gchar *pattern, GEr
             }
           for (guint i = 0; i < recursive_filenames->len; ++i)
             g_ptr_array_add(filenames, g_ptr_array_index(recursive_filenames, i));
-          g_ptr_array_free(recursive_filenames, FALSE);
+          g_free(g_ptr_array_free(recursive_filenames, FALSE));
           g_free(full_path);
         }
       else if (is_file_regular(full_path) && (!pattern || g_pattern_match_simple(pattern, full_path)))
