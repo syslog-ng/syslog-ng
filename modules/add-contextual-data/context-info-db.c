@@ -321,9 +321,9 @@ context_info_db_foreach_record(ContextInfoDB *self, const gchar *selector,
   for (gsize i = record_range->offset;
        i < record_range->offset + record_range->length; ++i)
     {
-      ContextualDataRecord record =
-        g_array_index(self->data, ContextualDataRecord, i);
-      callback(arg, &record);
+      ContextualDataRecord *record =
+        &g_array_index(self->data, ContextualDataRecord, i);
+      callback(arg, record);
     }
 }
 
