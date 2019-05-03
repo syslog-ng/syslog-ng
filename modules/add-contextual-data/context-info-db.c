@@ -103,21 +103,21 @@ context_info_db_index(ContextInfoDB *self)
     {
       g_array_sort(self->data, record_cmp);
       gsize range_start = 0;
-      ContextualDataRecord range_start_record =
-        g_array_index(self->data, ContextualDataRecord, 0);
+      ContextualDataRecord *range_start_record =
+        &g_array_index(self->data, ContextualDataRecord, 0);
 
       for (gsize i = 1; i < self->data->len; ++i)
         {
-          ContextualDataRecord current_record =
-            g_array_index(self->data, ContextualDataRecord, i);
+          ContextualDataRecord *current_record =
+            &g_array_index(self->data, ContextualDataRecord, i);
 
-          if (record_cmp(&range_start_record, &current_record))
+          if (record_cmp(range_start_record, current_record))
             {
               element_range *current_range = g_new(element_range, 1);
               current_range->offset = range_start;
               current_range->length = i - range_start;
 
-              g_hash_table_insert(self->index, range_start_record.selector->str,
+              g_hash_table_insert(self->index, range_start_record->selector->str,
                                   current_range);
 
               range_start_record = current_record;
@@ -129,7 +129,7 @@ context_info_db_index(ContextInfoDB *self)
         element_range *last_range = g_new(element_range, 1);
         last_range->offset = range_start;
         last_range->length = self->data->len - range_start;
-        g_hash_table_insert(self->index, range_start_record.selector->str,
+        g_hash_table_insert(self->index, range_start_record->selector->str,
                             last_range);
       }
       self->is_data_indexed = TRUE;
