@@ -28,6 +28,7 @@ include modules/http/Makefile.am
 include modules/java/Makefile.am
 include modules/java-modules/Makefile.am
 include modules/json/Makefile.am
+include modules/kafka/Makefile.am
 include modules/kvformat/Makefile.am
 include modules/linux-kmsg-format/Makefile.am
 include modules/map-value-pairs/Makefile.am

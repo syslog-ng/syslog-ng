@@ -44,6 +44,7 @@ GLIB_MIN_VERSION="2.26.1"
 OPENSSL_MIN_VERSION="0.9.8"
 LIBDBI_MIN_VERSION="0.9.0"
 LIBRABBITMQ_MIN_VERSION="0.5.3"
+LIBRDKAFKA_MIN_VERSION="1.0.0"
 IVYKIS_MIN_VERSION="0.36.1"
 IVYKIS_UPDATED_VERSION="0.39"
 JSON_C_MIN_VERSION="0.9"
@@ -257,6 +258,10 @@ AC_ARG_ENABLE(amqp,
           [  --enable-amqp        Enable amqp destination (default: auto)]
               ,,enable_amqp="auto")
 
+AC_ARG_ENABLE(kafka,
+          [  --enable-kafka        Enable kafka destination (default: auto)]
+              ,,enable_kafka="auto")
+
 AC_ARG_ENABLE(stomp,
           [  --enable-stomp        Enable stomp destination (default: yes)]
               ,,enable_stomp="yes")
@@ -318,6 +323,10 @@ AC_ARG_WITH(systemd-journal,
 AC_ARG_ENABLE(python,
               [  --disable-python       Disable python destination]
               ,,enable_python="auto")
+
+AC_ARG_ENABLE(kafka,
+              [  --enable-kafka         Enable rdkafka support]
+              ,,enable_kafka="yes")
 
 AC_ARG_WITH(python,
               [  --with-python=VERSION    Build with a specific version of python]
@@ -1303,6 +1312,16 @@ if test "$enable_amqp" = "yes" && test "$with_librabbitmq_client" = "no"; then
        AC_MSG_ERROR([Could not find librabbitmq-c, and AMQP support was explicitly enabled.])
 fi
 
+dnl ***************************************************************************
+dnl rdkafka headers/libraries
+dnl ***************************************************************************
+
+PKG_CHECK_MODULES(LIBRDKAFKA, rdkafka >= $LIBRDKAFKA_MIN_VERSION, with_librdkafka="yes", with_librdkafka="no")
+
+if test "$enable_kafka" = "yes" && test "$with_librdkafka" = "no"; then
+       AC_MSG_ERROR([Could not find librdkafka, and Kafka support was explicitly enabled.])
+fi
+
 
 if test "x$enable_native" = "xyes" -o "x$enable_native" = "xauto"; then
     AC_CONFIG_FILES([syslog-ng-native-connector.pc])
@@ -1556,6 +1575,15 @@ if test "x$enable_amqp" = "xauto"; then
     AC_MSG_RESULT([$enable_amqp])
 fi
 
+if test "x$enable_kafka" = "xauto"; then
+    AC_MSG_CHECKING(whether to enable kafka source support)
+    if test "x$with_librdkafka" != "xno"; then
+        enable_kafka="yes"
+    else
+        enable_kafka="no"
+    fi
+    AC_MSG_RESULT([$enable_kafka])
+fi
 
 if test "x$enable_systemd" = "xauto"; then
 	if test "$ostype" = "Linux" -a "$have_libsystemd" = "yes"; then
@@ -1775,6 +1803,7 @@ AC_DEFINE_UNQUOTED(ENABLE_TCP_WRAPPER, `enable_value $enable_tcp_wrapper`, [Enab
 AC_DEFINE_UNQUOTED(ENABLE_LINUX_CAPS, `enable_value $enable_linux_caps`, [Enable Linux capability management support])
 AC_DEFINE_UNQUOTED(ENABLE_ENV_WRAPPER, `enable_value $enable_env_wrapper`, [Enable environment wrapper support])
 AC_DEFINE_UNQUOTED(ENABLE_SYSTEMD, `enable_value $enable_systemd`, [Enable systemd support])
+AC_DEFINE_UNQUOTED(ENABLE_KAFKA, `enable_value $enable_kafka`, [Enable kafka support])
 AC_DEFINE_UNQUOTED(SYSTEMD_JOURNAL_MODE, `journald_mode`, [Systemd-journal support mode])
 AC_DEFINE_UNQUOTED(HAVE_INOTIFY, `enable_value $ac_cv_func_inotify_init`, [Have inotify])
 AC_DEFINE_UNQUOTED(HAVE_GETRANDOM, `enable_value $ac_cv_func_getrandom`, [Have getrandom])
@@ -1794,11 +1823,13 @@ AM_CONDITIONAL(ENABLE_MONGODB, [test "$enable_mongodb" = "yes"])
 AM_CONDITIONAL(ENABLE_SMTP, [test "$enable_smtp" = "yes"])
 AM_CONDITIONAL(ENABLE_HTTP, [test "$enable_http" = "yes"])
 AM_CONDITIONAL(ENABLE_AMQP, [test "$enable_amqp" = "yes"])
+AM_CONDITIONAL(ENABLE_KAFKA, [test "$enable_kafka" = "yes"])
 AM_CONDITIONAL(ENABLE_STOMP, [test "$enable_stomp" = "yes"])
 AM_CONDITIONAL(ENABLE_JSON, [test "$enable_json" = "yes"])
 AM_CONDITIONAL(ENABLE_GEOIP, [test "$enable_geoip" = "yes"])
 AM_CONDITIONAL(ENABLE_GEOIP2, [test "$enable_geoip2" = "yes"])
 AM_CONDITIONAL(ENABLE_REDIS, [test "$enable_redis" = "yes"])
+AM_CONDITIONAL(ENABLE_KAFKA, [test "$enable_kafka" = "yes"])
 AM_CONDITIONAL(IVYKIS_INTERNAL, [test "x$with_ivykis" = "xinternal"])
 AM_CONDITIONAL(JSON_INTERNAL, [test "x$with_jsonc" = "xinternal"])
 AM_CONDITIONAL(LIBMONGO_INTERNAL, [test "x$LIBMONGO_SUBDIRS" != "x"])
@@ -1932,10 +1963,12 @@ echo "  JSON support (module)       : ${enable_json:=no}"
 echo "  SMTP support (module)       : ${enable_smtp:=no}"
 echo "  HTTP support (module)       : ${enable_http:=no}"
 echo "  AMQP destination (module)   : ${enable_amqp:=no}"
+echo "  Kafka source (module)       : ${enable_kafka:=no}"
 echo "  STOMP destination (module)  : ${enable_stomp:=no}"
 echo "  GEOIP support (module)      : ${enable_geoip:=no}"
 echo "  GEOIP2 support (module)     : ${enable_geoip2:=no}"
 echo "  Redis support (module)      : ${enable_redis:=no}"
+echo "  Kafka support (module)      : ${enable_kafka:=no}"
 echo "  Riemann destination (module): ${enable_riemann:=no}, microseconds: ${riemann_micros:=no}"
 echo "  python                      : ${enable_python:=no} (pkg-config package: ${with_python:=none})"
 echo "  java                        : ${enable_java:=no}"

@@ -39,6 +39,7 @@ addons:
       - libjson0-dev
       - libnet1-dev
       - libriemann-client-dev
+      - librdkafka-dev
       - libwrap0-dev
       - pkg-config
       - sqlite3

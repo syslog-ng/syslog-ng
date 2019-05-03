@@ -124,7 +124,8 @@ _get_module_name(gint source)
     "parser",
     "monitoring",
     "stdin",
-    "openbsd"
+    "openbsd",
+    "kafka"
   };
   G_STATIC_ASSERT(sizeof(module_names)/sizeof(module_names[0])==SCS_MAX);
   return module_names[source & SCS_SOURCE_MASK];

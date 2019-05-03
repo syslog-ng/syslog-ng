@@ -8,6 +8,7 @@ ENV OS_PLATFORM ubuntu-bionic
 
 COPY helpers/* /helpers/
 
+RUN /helpers/dependencies.sh add_obs_repo
 RUN /helpers/dependencies.sh install_apt_packages
 RUN /helpers/dependencies.sh install_pip_packages
 
