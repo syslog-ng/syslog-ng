@@ -26,6 +26,7 @@
 #include "template/compiler.h"
 #include "template/macros.h"
 #include "template/escaping.h"
+#include "template/repr.h"
 #include "cfg.h"
 
 gboolean
@@ -137,6 +138,16 @@ log_template_compile(LogTemplate *self, const gchar *template, GError **error)
 
   self->trivial = _calculate_triviality(self);
   return result;
+}
+
+void
+log_template_compile_literal_string(LogTemplate *self, const gchar *literal)
+{
+  log_template_reset_compiled(self);
+  g_free(self->template);
+  self->template = g_strdup(literal);
+  self->compiled_template = g_list_append(self->compiled_template,
+                                          log_template_elem_new_macro(literal, M_NONE, NULL, 0));
 }
 
 void
