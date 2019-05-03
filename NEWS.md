@@ -1,90 +1,122 @@
-3.20.1
+3.21.1
 ======
+
+## Highlights
+
+ * Add an alternative, native, librdkafka based kafka-c() destination in
+   parallel of the existing Java implementation, that provides the same
+   configuration interface.  Eventually, we expect this to replace the Java
+   one (#2496)
+
+ * Add a native, `http()` based destination based driver for elasticsearch
+   called `elasticsearch-http()`, as an alternative of the Java one.
+   Eventually, we expect this to replace the Java implementation.  (#2509)
+
+ * Add the ability to automatically determine the timezone value for an
+   incoming log entry as long as the incoming stream is close to real time
+   and the timezone information is missing from the timestamp.  Enable this
+   function by using `flags(guess-timezone)` for sources and the
+   date-parser().  (#2517, #2673)
 
 ## Features
 
- * Add persist-tool (#2511)
- * Collectd destination (#1433)
- * Config reload status feedback (#2367)
- * Netskope parser (#2541)
- * Websense parser (#2471)
- * Json list support (#2536)
- * Xml-parser: add list support (#2544)
+ * `syslog()`: Add the ability to work with messages larger than `log-msg-size()`
+   in the source driver by using the `trim-large-messages(yes)` option.
+   The characters over the limit will be truncated.  Previously messages
+   longer than the limit caused the connection to be closed abruptly.
+   (#2644)
+
+ * `amqp()`: add support for heartbeats and the "external" authentication
+   mechanism. (#2676, #2626)
+
+ * `graylog2()`: add support for TLS and UDP. (#2657)
+
+ * `udp()`: Add `spoof-source-max-msglen()` option to allow setting the
+   maximum spoofed datagram size, which was hard-wired to 1024 previously.
+   (#2535)
+
+ * `db-parser()`: add an option `program-template()` that customizes the
+   value used for matching the PROGRAM field. (#2651)
+
+ * `pdbtool`: Add sort option to pdbtool merge (#2664)
+
+ * `$(implode)` and `$(explode)`: add template functions to split and join
+   strings based on a simple separator. The exploded array is represented as
+   a syslog-ng list that can be manipulated with the $(list-*) template
+   functions. (#2700)
+
+ * Add an `--omit-empty-values` option for value-pairs based destinations &
+   template functions. (#2519)
+
+ * `grouping-by()` parser: add sort-key() option (#2701)
+
+## Support for non-syslog or non-standard formats in SCL
+
+ * `apache-accesslog-parser()`: support for vhost:port as the first field in
+   common/combined log formats (#2688)
+ * Add application adapter for Junos classification (#2684)
+ * Add parser and adapter for CheckPoint LogExporter output (#2665)
 
 ## Bugfixes
 
- * DNS memory leak/segfault fix (#2500)
- * Elasticsearch2: fix bulk send for client-mode("http") (#2478)
- * Few leak fix (#2563)
- * Filter-re: ref/unref NVTable around regex eval (#2494)
- * Fix allowing negative version number in config (#2548)
- * Fix app-parser() per reload memory leak (#2469)
- * Fix non-reliable disk-queue truncating problem on load (#2406)
- * Fix threaded source/destination crash when reverting configuration (#2555)
- * Http: add missing free for self->body_template (#2558)
- * Java, elasticsearch2, explicit unsupport for named templates (#2534)
- * Loggen: parameter handling (#2477)
- * Python-source: fix crash when posting from python thread (#2533)
- * Read acknowledgments send by Riemann (#2523)
- * Redis, Riemann: fix ref/unref-ing templates (#2514, #2530)
- * Syslog-ng@default: use pid file location on control socket (#2489)
- * Threaded-dest: Fix integer overflow (#2512)
- * Threaded-dest: make persist_name local (#2516)
- * Xml/geoip2: make prefix optional (#2538)
+ * Fix race condition of idle timer and scheduled I/O job (#2650)
+ * Few leaks find via sanitizer (#2696)
+ * syslogformat: set $MSG even if the incoming message is empty (#2672)
+ * Fix double-free error in logproto unit tests (#2662)
+ * groupingby: identical persist name (#2659)
+ * stats: deindex pruned counters/clusters (#2648)
+ * Type hinting should not accept empty values (#2639)
+ * app-parser, pseudofile: fix crash with grammar error (#2640)
+ * python: set_timestamp normalization (#2643)
+ * db-parser: fix memory leak (#2652)
+ * grouping-by: use after free, memory leak, missing init calls of filters (#2655)
+ * amqp: fixing double connect (#2660)
+ * old style definition warning fixes (#2680)
+ * Fix "!=" filter (#2683)
+ * dbparser: fix memleak (#2706)
+ * nondumpable-allocator: fixing mmap error handling (#2666)
+ * Fix timeutils warning (#2604)
+ * Fix old style include statement compatibility (#2600)
+ * Fix config revert (threaded destinations) (#2596)
+ * Add warning on old style include statement (#2592)
 
 ## Other changes
 
- * Autotools, cmake: add detection for pylint, nosetests (#2537,#2564)
- * Autotools: relaxing python dependency requirement  (#2472)
- * Cfg-parser: printing error positions in case of parse failure (#2455)
- * Cmake: add missing detections (#2510)
- * Collect-cov.sh: make coverage should work with lcov in bionic (#2515)
- * Configure: fix "--with-docbook*" option usage (#2465)
- * Custom LGTM.com query for detecting uses of gmtime that are not covered by a lock (#2413)
- * Fix static uClibc-ng support (#2501)
- * Format non-literal fixes (#2567)
- * Grammar: remove the pragma less include (#2550)
- * Http-worker: refactor & fix curl_easy_getinfo error message (#2527)
- * Lib/compat: replace strcasestr() implementation (#2482)
- * Libtest: Adding stopwatch.h into libtest_HEADERS list (#2553)
- * Packaging: fix the description of mod-examples (#2522)
- * Python-debugger: fix macro completion (#2439)
- * Python, java destination add already introduced retry (#2559)
- * Remove elastic v1 support (#2554)
- * Simplify libtest queue utils (#2556)
- * Syslog-ng.8.xml: remove unneeded default-modules section (#2475)
- * Travis: use the latest Bison version (macOS) (#2529)
- * Various fixes for issues reported by LGTM (#2524)
+ * cfg-parser: add aliases for yesno (#2671)
+ * Include json-c in the dist tarball (#2590)
+ * cmake: disable_all_modules support (#2647)
+ * Cmake clang sanitizer (#2562)
+ * timeutils refactor (#2483)
+ * Expedite threaded flush at reload (#2656)
+ * elasticsearch2: Added deprecation warning (#2628)
+ * Astyle fixes (#2624)
+ * Force C99 with GNU (#2623)
+ * Make rewording and other small edits to README (#2608)
+ * Port tests to Criterion (#2607, #2661, #2621, #2620, #2619, #2618, #2617,
+   #2616, #2615, #2599, #2594, #2593, #2591, #2586, #2584, #2583)
+ * test_reliable_backlog: fix random failure (#2668)
+ * Fix unit test with function pointer dereference in case of ASLR, Criterion (#2669)
+ * test-stats-query: fix unit test (#2603)
 
 ## Notes to the developers
 
- * Example-msg-generator: num option (#2565)
- * Own grammar support in generator plugin (#2552)
- * ProtoClient: provide process_in function to logwriter (#2468)
- * Pytest_framework: eliminating __registered_instances, exposing SyslogNgCtl to user api (#2503)
- * Pytest_framework: MessageReader: Explain the local context around python asserts (#2507)
- * Pytest_framework: support for implicit groups in config.create_logpath (#2490)
- * Pytest: Renaming pytest_framework to python_functional (#2542)
- * Python-destination: send can return worker_insert_result_t, flush support (#2487)
- * Python: internal() source exposed via syslogng.Logger (#2505)
- * Remove unused submodules (#2525)
- * Simpler names for WORKER_INSERT_RESULT_T in language bindings (#2506)
- * Split xml-parser into xml-parser and xml-scanner (#2459)
-
+ * Version from git describe (#2627)
+ * light: example-msg-generator support (#2571)
+ * light: test app parser applications (#2686)
+ * light: Switch to native logger (#2546)
+ * light: Remove SetupTestcase() dependency  (#2587)
 
 ## Credits
 
-  syslog-ng is developed as a community project, and as such it relies
-  on volunteers, to do the work necessarily to produce syslog-ng.
+syslog-ng is developed as a community project, and as such it relies
+on volunteers, to do the work necessarily to produce syslog-ng.
 
-  Reporting bugs, testing changes, writing code or simply providing
-  feedback are all important contributions, so please if you are a user
-  of syslog-ng, contribute.
+Reporting bugs, testing changes, writing code or simply providing
+feedback are all important contributions, so please if you are a user
+of syslog-ng, contribute.
 
-  We would like to thank the following people for their contribution:
-  Andras Mitzki, Andrej Valek, Antal Nemes, Attila Szakacs, Balazs Scheidler,
-  Bas van Schaik, Fᴀʙɪᴇɴ Wᴇʀɴʟɪ, Gabor Nagy, Laszlo Boszormenyi, Laszlo Budai,
-  Lorand Muzamel, László Várady, Mehul Prajapati, Naveen Revanna, Peter Czanik,
-  Peter Kokai, Romain Tartière, Stephen, Terez Nemes, Norbert Takács,
-  Soubhik Chakraborty, NottyRu, Chris Packham.
-
+We would like to thank the following people for their contribution:
+Andras Mitzki, Antal Nemes, Attila Szakacs, Balazs Scheidler, Chris Spencer,
+David Liew, Fabien Wernli, Gabor Nagy, Laszlo Budai, Laszlo Szemere, Layne,
+László Várady, Mehul Prajapati, Nik Ambrosch, Parth Wazurkar, Péter Kókai,
+Terez Nemes, Victor Ma, Zoltan Pallagi.
