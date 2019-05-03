@@ -54,6 +54,8 @@ typedef struct _LogTemplateElem
   };
 } LogTemplateElem;
 
+
+LogTemplateElem *log_template_elem_new_macro(const gchar *text, guint macro, gchar *default_value, gint msg_ref);
 void log_template_elem_free_list(GList *el);
 
 

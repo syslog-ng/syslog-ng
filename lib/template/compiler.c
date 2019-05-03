@@ -33,13 +33,7 @@ log_template_add_macro_elem(LogTemplateCompiler *self, guint macro, gchar *defau
 {
   LogTemplateElem *e;
 
-  e = g_new0(LogTemplateElem, 1);
-  e->type = LTE_MACRO;
-  e->text_len = self->text ? self->text->len : 0;
-  e->text = self->text ? g_strndup(self->text->str, self->text->len) : NULL;
-  e->macro = macro;
-  e->default_value = default_value;
-  e->msg_ref = self->msg_ref;
+  e = log_template_elem_new_macro(self->text->str, macro, default_value, self->msg_ref);
   self->result = g_list_prepend(self->result, e);
 }
 
