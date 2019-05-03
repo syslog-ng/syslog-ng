@@ -94,12 +94,6 @@ context_info_db_set_ignore_case(ContextInfoDB *self, gboolean ignore_case)
   self->ignore_case = ignore_case;
 }
 
-gchar *
-_str_case_insensitive_dup(const gchar *str)
-{
-  return g_ascii_strup(str, -1);
-}
-
 void
 context_info_db_index(ContextInfoDB *self)
 {
