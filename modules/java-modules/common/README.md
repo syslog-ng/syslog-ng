@@ -28,7 +28,7 @@ bin/kafka-console-producer.sh --broker-list localhost:9092 --sync --topic mytopi
 Sample config:
 
 ```
-@version: 3.20
+@version: 3.21
 @include "scl.conf"
 @module "mod-java"
 
