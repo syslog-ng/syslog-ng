@@ -41,20 +41,11 @@ static void
 log_template_add_value_elem(LogTemplateCompiler *self, gchar *value_name, gsize value_name_len, gchar *default_value)
 {
   LogTemplateElem *e;
-  gchar *str;
 
-  e = g_new0(LogTemplateElem, 1);
-  e->type = LTE_VALUE;
-  e->text_len = self->text ? self->text->len : 0;
-  e->text = self->text ? g_strndup(self->text->str, self->text->len) : NULL;
+  gchar *value_name_z = g_strndup(value_name, value_name_len);
+  e = log_template_elem_new_value(self->text->str, value_name_z, default_value, self->msg_ref);
+  g_free(value_name_z);
 
-  /* value_name is not NUL terminated */
-  str = g_strndup(value_name, value_name_len);
-  e->value_handle = log_msg_get_value_handle(str);
-  g_free(str);
-
-  e->default_value = default_value;
-  e->msg_ref = self->msg_ref;
   self->result = g_list_prepend(self->result, e);
 }
 

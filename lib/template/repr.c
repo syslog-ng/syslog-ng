@@ -39,6 +39,21 @@ log_template_elem_new_macro(const gchar *text, guint macro, gchar *default_value
   return e;
 }
 
+LogTemplateElem *
+log_template_elem_new_value(const gchar *text, gchar *value_name, gchar *default_value, gint msg_ref)
+{
+  LogTemplateElem *e;
+
+  e = g_new0(LogTemplateElem, 1);
+  e->type = LTE_VALUE;
+  e->text_len = strlen(text);
+  e->text = g_strdup(text);
+  e->value_handle = log_msg_get_value_handle(value_name);
+  e->default_value = default_value;
+  e->msg_ref = msg_ref;
+  return e;
+}
+
 void
 log_template_elem_free(LogTemplateElem *e)
 {
