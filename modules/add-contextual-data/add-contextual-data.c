@@ -33,6 +33,7 @@
 #include "template/templates.h"
 #include "context-info-db.h"
 #include "pathutils.h"
+#include "scratch-buffers.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -116,7 +117,10 @@ static void
 _add_context_data_to_message(gpointer pmsg, const ContextualDataRecord *record)
 {
   LogMessage *msg = (LogMessage *) pmsg;
-  log_msg_set_value_by_name(msg, record->name->str, record->value->str, (gssize)record->value->len);
+  GString *result = scratch_buffers_alloc();
+
+  log_template_format(record->value, msg, NULL, LTZ_LOCAL, 0, NULL, result);
+  log_msg_set_value(msg, record->value_handle, result->str, result->len);
 }
 
 static gboolean
@@ -227,7 +231,7 @@ _get_scanner(AddContextualData *self)
 {
   const gchar *type = get_filename_extension(self->filename);
   ContextualDataRecordScanner *scanner =
-    create_contextual_data_record_scanner_by_type(self->filename, type);
+    create_contextual_data_record_scanner_by_type(log_pipe_get_config(&self->super.super), self->filename, type);
 
   if (!scanner)
     {

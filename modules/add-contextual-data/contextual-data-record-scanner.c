@@ -40,7 +40,7 @@ contextual_data_record_scanner_set_name_prefix(ContextualDataRecordScanner *
 }
 
 ContextualDataRecordScanner *
-create_contextual_data_record_scanner_by_type(const gchar *filename, const gchar *type)
+create_contextual_data_record_scanner_by_type(GlobalConfig *cfg, const gchar *filename, const gchar *type)
 {
   ContextualDataRecordScanner *scanner = NULL;
 
@@ -49,7 +49,7 @@ create_contextual_data_record_scanner_by_type(const gchar *filename, const gchar
 
   if (!strcmp(type, "csv"))
     {
-      scanner = csv_contextual_data_record_scanner_new(filename);
+      scanner = csv_contextual_data_record_scanner_new(cfg, filename);
     }
 
   if (!scanner)
@@ -74,4 +74,10 @@ contextual_data_record_scanner_get_next(ContextualDataRecordScanner *self, const
     }
 
   return &self->last_record;
+}
+
+void
+contextual_data_record_scanner_init(ContextualDataRecordScanner *self, GlobalConfig *cfg)
+{
+  self->cfg = cfg;
 }

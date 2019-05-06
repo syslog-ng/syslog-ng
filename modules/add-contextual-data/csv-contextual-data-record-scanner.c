@@ -24,6 +24,7 @@
 #include "scanner/csv-scanner/csv-scanner.h"
 #include "string-list.h"
 #include "messages.h"
+#include "cfg.h"
 
 #include <string.h>
 
@@ -75,25 +76,62 @@ _is_whole_record_parsed(CSVContextualDataRecordScanner *csv_record_scanner)
 static gboolean
 _get_next_record(ContextualDataRecordScanner *s, const gchar *input, ContextualDataRecord *record)
 {
-  CSVContextualDataRecordScanner *csv_record_scanner = (CSVContextualDataRecordScanner *) s;
-  csv_scanner_init(&csv_record_scanner->scanner, &csv_record_scanner->options, input);
+  CSVContextualDataRecordScanner *self = (CSVContextualDataRecordScanner *) s;
+  GString *value_template;
+  GString *name;
+  GError *error = NULL;
 
-  if (!_fetch_next_without_prefix(csv_record_scanner, &record->selector))
+  csv_scanner_init(&self->scanner, &self->options, input);
+
+  if (!_fetch_next_without_prefix(self, &record->selector))
     goto error;
 
-  if (!_fetch_next_with_prefix(csv_record_scanner, &record->name, s->name_prefix))
+  if (!_fetch_next_with_prefix(self, &name, s->name_prefix))
     goto error;
 
-  if (!_fetch_next_without_prefix(csv_record_scanner, &record->value))
+  record->value_handle = log_msg_get_value_handle(name->str);
+  g_string_free(name, TRUE);
+
+  if (!_fetch_next_without_prefix(self, &value_template))
     goto error;
 
-  if (!_is_whole_record_parsed(csv_record_scanner))
+  record->value = log_template_new(self->super.cfg, NULL);
+
+  if (cfg_is_config_version_older(self->super.cfg, VERSION_VALUE_3_21) &&
+      strchr(value_template->str, '$') != NULL)
+    {
+      msg_warning("WARNING: the value field in add-contextual-data() CSV files has been changed "
+                  "to be a template starting with " VERSION_3_21 ". You are using an older config "
+                  "version and your CSV file contains a '$' character in this field, which needs "
+                  "to be escaped as '$$' once you change your @version declaration in the "
+                  "configuration. This message means that this string is now assumed to be a "
+                  "literal (non-template) string for compatibility",
+                  evt_tag_str("selector", record->selector->str),
+                  evt_tag_str("name", log_msg_get_value_name(record->value_handle, NULL)),
+                  evt_tag_str("value", value_template->str));
+      log_template_compile_literal_string(record->value, value_template->str);
+    }
+  else
+    {
+      if (!log_template_compile(record->value, value_template->str, &error))
+        {
+          msg_error("add-contextual-data(): error compiling template",
+                   evt_tag_str("selector", record->selector->str),
+                   evt_tag_str("name", log_msg_get_value_name(record->value_handle, NULL)),
+                   evt_tag_str("value", value_template->str));
+          g_string_free(value_template, TRUE);
+          goto error;
+        }
+    }
+  g_string_free(value_template, TRUE);
+
+  if (!_is_whole_record_parsed(self))
     goto error;
 
   return TRUE;
 error:
   msg_error("add-contextual-data(): the failing line is",
-            evt_tag_str("filename", csv_record_scanner->filename),
+            evt_tag_str("filename", self->filename),
             evt_tag_str("input", input));
   return FALSE;
 }
@@ -109,10 +147,15 @@ csv_contextual_data_record_scanner_free(ContextualDataRecordScanner *s)
 }
 
 ContextualDataRecordScanner *
-csv_contextual_data_record_scanner_new(const gchar *filename)
+csv_contextual_data_record_scanner_new(GlobalConfig *cfg, const gchar *filename)
 {
   CSVContextualDataRecordScanner *self =
     g_new0(CSVContextualDataRecordScanner, 1);
+
+  contextual_data_record_scanner_init(&self->super, cfg);
+  self->super.get_next = _get_next_record;
+  self->super.free_fn = csv_contextual_data_record_scanner_free;
+
   csv_scanner_options_set_delimiters(&self->options, ",");
   csv_scanner_options_set_quote_pairs(&self->options, "\"\"''");
   const gchar *column_array[] = { "selector", "name", "value", NULL };
@@ -121,8 +164,6 @@ csv_contextual_data_record_scanner_new(const gchar *filename)
   csv_scanner_options_set_flags(&self->options, CSV_SCANNER_STRIP_WHITESPACE);
   csv_scanner_options_set_dialect(&self->options, CSV_SCANNER_ESCAPE_DOUBLE_CHAR);
   self->filename = g_strdup(filename);
-  self->super.get_next = _get_next_record;
-  self->super.free_fn = csv_contextual_data_record_scanner_free;
 
   return &self->super;
 }

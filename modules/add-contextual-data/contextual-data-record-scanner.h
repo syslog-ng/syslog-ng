@@ -30,6 +30,7 @@ typedef struct _ContextualDataRecordScanner ContextualDataRecordScanner;
 struct _ContextualDataRecordScanner
 {
   ContextualDataRecord last_record;
+  GlobalConfig *cfg;
   gpointer scanner;
   const gchar *name_prefix;
   gboolean (*get_next) (ContextualDataRecordScanner *self,
@@ -46,9 +47,11 @@ contextual_data_record_scanner_set_name_prefix(ContextualDataRecordScanner *
                                                self, const gchar *prefix);
 
 ContextualDataRecordScanner
-*create_contextual_data_record_scanner_by_type(const gchar *filename, const gchar *type);
+*create_contextual_data_record_scanner_by_type(GlobalConfig *cfg, const gchar *filename, const gchar *type);
 
 ContextualDataRecord *
 contextual_data_record_scanner_get_next(ContextualDataRecordScanner *self, const gchar *input);
+
+void contextual_data_record_scanner_init(ContextualDataRecordScanner *self, GlobalConfig *cfg);
 
 #endif

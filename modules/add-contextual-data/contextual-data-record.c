@@ -26,7 +26,7 @@ void
 contextual_data_record_init(ContextualDataRecord *record)
 {
   record->selector = NULL;
-  record->name = NULL;
+  record->value_handle = 0;
   record->value = NULL;
 }
 
@@ -35,10 +35,8 @@ contextual_data_record_clean(ContextualDataRecord *record)
 {
   if (record->selector)
     g_string_free(record->selector, TRUE);
-  if (record->name)
-    g_string_free(record->name, TRUE);
-  if (record->value)
-    g_string_free(record->value, TRUE);
+
+  log_template_unref(record->value);
 
   contextual_data_record_init(record);
 }

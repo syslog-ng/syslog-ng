@@ -30,8 +30,8 @@
 typedef struct _ContextualDataRecord
 {
   GString *selector;
-  GString *name;
-  GString *value;
+  NVHandle value_handle;
+  LogTemplate *value;
 } ContextualDataRecord;
 
 void contextual_data_record_init(ContextualDataRecord *record);
