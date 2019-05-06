@@ -60,9 +60,6 @@
 #include <string.h>
 #include <stdint.h>
 
-typedef unsigned char _u_char;
-typedef unsigned int _uint;
-
 #define __UNCONST(a)    ((void *)(unsigned long)(const void *)(a))
 
 #define TM_YEAR_BASE 1900
@@ -138,9 +135,9 @@ static const _TimeLocale _DefaultTimeLocale =
 #define _TIME_LOCALE(loc) \
   (&_DefaultTimeLocale)
 
-static const _u_char *conv_num(const unsigned char *, int *, _uint, _uint);
-static const _u_char *find_string(const _u_char *, int *, const char *const *,
-                                  const char *const *, int);
+static const unsigned char *conv_num(const unsigned char *, int *, unsigned int, unsigned int);
+static const unsigned char *find_string(const unsigned char *, int *, const char *const *,
+                                        const char *const *, int);
 
 
 /*
@@ -210,7 +207,7 @@ first_wday_of(int yr)
  * their struct tm. This is a slightly modified NetBSD strptime() with
  * some modifications and explicit zone related parameters. */
 char *
-strptime_with_tz(const char *buf, const char *fmt, struct tm *tm, long *tm_gmtoff, const char **tm_zone, int *tm_usec)
+strptime_with_tz(const char *input, const char *format, WallClockTime *wct)
 {
   unsigned char c;
   const unsigned char *bp, *ep;
@@ -218,9 +215,9 @@ strptime_with_tz(const char *buf, const char *fmt, struct tm *tm, long *tm_gmtof
                      day_offset = -1, week_offset = 0, offs;
   const char *new_fmt;
 
-  bp = (const _u_char *)buf;
+  bp = (const unsigned char *)input;
 
-  while (bp != NULL && (c = *fmt++) != '\0')
+  while (bp != NULL && (c = *format++) != '\0')
     {
       /* Clear `alternate' modifier prior to new conversion. */
       alt_format = 0;
@@ -239,7 +236,7 @@ strptime_with_tz(const char *buf, const char *fmt, struct tm *tm, long *tm_gmtof
 
 
 again:
-      switch (c = *fmt++)
+      switch (c = *format++)
         {
         case '%': /* "%%" is converted to "%". */
 literal:
@@ -305,8 +302,8 @@ literal:
           new_fmt = _TIME_LOCALE(loc)->d_fmt;
           state |= S_MON | S_MDAY | S_YEAR;
 recurse:
-          bp = (const _u_char *)strptime_with_tz((const char *)bp,
-                                                 new_fmt, tm, tm_gmtoff, tm_zone, tm_usec);
+          bp = (const unsigned char *)strptime_with_tz((const char *)bp,
+                                                       new_fmt, wct);
           LEGAL_ALT(ALT_E);
           continue;
 
@@ -315,7 +312,7 @@ recurse:
          */
         case 'A': /* The day of week, using the locale's form. */
         case 'a':
-          bp = find_string(bp, &tm->tm_wday,
+          bp = find_string(bp, &wct->tm.tm_wday,
                            _TIME_LOCALE(loc)->day, _TIME_LOCALE(loc)->abday, 7);
           LEGAL_ALT(0);
           state |= S_WDAY;
@@ -324,7 +321,7 @@ recurse:
         case 'B': /* The month, using the locale's form. */
         case 'b':
         case 'h':
-          bp = find_string(bp, &tm->tm_mon,
+          bp = find_string(bp, &wct->tm.tm_mon,
                            _TIME_LOCALE(loc)->mon, _TIME_LOCALE(loc)->abmon,
                            12);
           LEGAL_ALT(0);
@@ -337,23 +334,23 @@ recurse:
 
           i = i * 100 - TM_YEAR_BASE;
           if (split_year)
-            i += tm->tm_year % 100;
+            i += wct->tm.tm_year % 100;
           split_year = 1;
-          tm->tm_year = i;
+          wct->tm.tm_year = i;
           LEGAL_ALT(ALT_E);
           state |= S_YEAR;
           continue;
 
         case 'd': /* The day of month. */
         case 'e':
-          bp = conv_num(bp, &tm->tm_mday, 1, 31);
+          bp = conv_num(bp, &wct->tm.tm_mday, 1, 31);
           LEGAL_ALT(ALT_O);
           state |= S_MDAY;
           continue;
 
         case 'f':
         {
-          const unsigned char *end = conv_num(bp, tm_usec, 0, 999999);
+          const unsigned char *end = conv_num(bp, &wct->wct_usec, 0, 999999);
           int digits = end - bp;
 
           /*
@@ -371,7 +368,7 @@ recurse:
            */
           while (digits++ < 6)
             {
-              *tm_usec *= 10;
+              wct->wct_usec *= 10;
             }
 
           bp = end;
@@ -384,7 +381,7 @@ recurse:
           LEGAL_ALT(0);
         /* FALLTHROUGH */
         case 'H':
-          bp = conv_num(bp, &tm->tm_hour, 0, 23);
+          bp = conv_num(bp, &wct->tm.tm_hour, 0, 23);
           LEGAL_ALT(ALT_O);
           state |= S_HOUR;
           continue;
@@ -393,9 +390,9 @@ recurse:
           LEGAL_ALT(0);
         /* FALLTHROUGH */
         case 'I':
-          bp = conv_num(bp, &tm->tm_hour, 1, 12);
-          if (tm->tm_hour == 12)
-            tm->tm_hour = 0;
+          bp = conv_num(bp, &wct->tm.tm_hour, 1, 12);
+          if (wct->tm.tm_hour == 12)
+            wct->tm.tm_hour = 0;
           LEGAL_ALT(ALT_O);
           state |= S_HOUR;
           continue;
@@ -403,20 +400,20 @@ recurse:
         case 'j': /* The day of year. */
           i = 1;
           bp = conv_num(bp, &i, 1, 366);
-          tm->tm_yday = i - 1;
+          wct->tm.tm_yday = i - 1;
           LEGAL_ALT(0);
           state |= S_YDAY;
           continue;
 
         case 'M': /* The minute. */
-          bp = conv_num(bp, &tm->tm_min, 0, 59);
+          bp = conv_num(bp, &wct->tm.tm_min, 0, 59);
           LEGAL_ALT(ALT_O);
           continue;
 
         case 'm': /* The month. */
           i = 1;
           bp = conv_num(bp, &i, 1, 12);
-          tm->tm_mon = i - 1;
+          wct->tm.tm_mon = i - 1;
           LEGAL_ALT(ALT_O);
           state |= S_MON;
           continue;
@@ -424,14 +421,14 @@ recurse:
         case 'p': /* The locale's equivalent of AM/PM. */
           bp = find_string(bp, &i, _TIME_LOCALE(loc)->am_pm,
                            NULL, 2);
-          if (HAVE_HOUR(state) && tm->tm_hour > 11)
+          if (HAVE_HOUR(state) && wct->tm.tm_hour > 11)
             return NULL;
-          tm->tm_hour += i * 12;
+          wct->tm.tm_hour += i * 12;
           LEGAL_ALT(0);
           continue;
 
         case 'S': /* The seconds. */
-          bp = conv_num(bp, &tm->tm_sec, 0, 61);
+          bp = conv_num(bp, &wct->tm.tm_sec, 0, 61);
           LEGAL_ALT(ALT_O);
           continue;
 
@@ -464,7 +461,7 @@ recurse:
               continue;
             }
 
-          cached_localtime(&sse, tm);
+          cached_localtime(&sse, &wct->tm);
           state |= S_YDAY | S_WDAY |
                    S_MON | S_MDAY | S_YEAR;
         }
@@ -488,14 +485,14 @@ recurse:
           continue;
 
         case 'w': /* The day of week, beginning on sunday. */
-          bp = conv_num(bp, &tm->tm_wday, 0, 6);
+          bp = conv_num(bp, &wct->tm.tm_wday, 0, 6);
           LEGAL_ALT(ALT_O);
           state |= S_WDAY;
           continue;
 
         case 'u': /* The day of week, monday = 1. */
           bp = conv_num(bp, &i, 1, 7);
-          tm->tm_wday = i % 7;
+          wct->tm.tm_wday = i % 7;
           LEGAL_ALT(ALT_O);
           state |= S_WDAY;
           continue;
@@ -521,7 +518,7 @@ recurse:
         case 'Y': /* The year. */
           i = TM_YEAR_BASE; /* just for data sanity... */
           bp = conv_num(bp, &i, 0, 9999);
-          tm->tm_year = i - TM_YEAR_BASE;
+          wct->tm.tm_year = i - TM_YEAR_BASE;
           LEGAL_ALT(ALT_E);
           state |= S_YEAR;
           continue;
@@ -532,7 +529,7 @@ recurse:
 
           if (split_year)
             /* preserve century */
-            i += (tm->tm_year / 100) * 100;
+            i += (wct->tm.tm_year / 100) * 100;
           else
             {
               split_year = 1;
@@ -541,7 +538,7 @@ recurse:
               else
                 i = i + 1900 - TM_YEAR_BASE;
             }
-          tm->tm_year = i;
+          wct->tm.tm_year = i;
           state |= S_YEAR;
           continue;
 
@@ -550,9 +547,9 @@ recurse:
           if (strncmp((const char *)bp, gmt, 3) == 0 ||
               strncmp((const char *)bp, utc, 3) == 0)
             {
-              tm->tm_isdst = 0;
-              *tm_gmtoff = 0;
-              *tm_zone = gmt;
+              wct->tm.tm_isdst = 0;
+              wct->wct_gmtoff = 0;
+              wct->wct_zone = gmt;
               bp += 3;
             }
           else
@@ -560,11 +557,11 @@ recurse:
               ep = find_string(bp, &i, (const char *const *)tzname, NULL, 2);
               if (ep != NULL)
                 {
-                  tm->tm_isdst = i;
+                  wct->tm.tm_isdst = i;
 #ifdef SYSLOG_NG_HAVE_TIMEZONE
-                  *tm_gmtoff = -(timezone);
+                  wct->wct_gmtoff = -(timezone);
 #endif
-                  *tm_zone = tzname[i];
+                  wct->wct_zone = tzname[i];
                 }
               bp = ep;
             }
@@ -602,9 +599,9 @@ recurse:
                 return NULL;
             /*FALLTHROUGH*/
             case 'Z':
-              tm->tm_isdst = 0;
-              *tm_gmtoff = 0;
-              *tm_zone = utc;
+              wct->tm.tm_isdst = 0;
+              wct->wct_gmtoff = 0;
+              wct->wct_zone = utc;
               continue;
             case '+':
               neg = 0;
@@ -617,17 +614,17 @@ recurse:
               ep = find_string(bp, &i, nast, NULL, 4);
               if (ep != NULL)
                 {
-                  *tm_gmtoff = (-5 - i) * 3600;
-                  *tm_zone = __UNCONST(nast[i]);
+                  wct->wct_gmtoff = (-5 - i) * 3600;
+                  wct->wct_zone = __UNCONST(nast[i]);
                   bp = ep;
                   continue;
                 }
               ep = find_string(bp, &i, nadt, NULL, 4);
               if (ep != NULL)
                 {
-                  tm->tm_isdst = 1;
-                  *tm_gmtoff = (-4 - i) * 3600;
-                  *tm_zone = __UNCONST(nadt[i]);
+                  wct->tm.tm_isdst = 1;
+                  wct->wct_gmtoff = (-4 - i) * 3600;
+                  wct->wct_zone = __UNCONST(nadt[i]);
                   bp = ep;
                   continue;
                 }
@@ -637,13 +634,13 @@ recurse:
                 {
                   /* Argh! No 'J'! */
                   if (*bp >= 'A' && *bp <= 'I')
-                    *tm_gmtoff =
+                    wct->wct_gmtoff =
                       (('A' - 1) - (int)*bp) * 3600;
                   else if (*bp >= 'L' && *bp <= 'M')
-                    *tm_gmtoff = ('A' - (int)*bp) * 3600;
+                    wct->wct_gmtoff = ('A' - (int)*bp) * 3600;
                   else if (*bp >= 'N' && *bp <= 'Y')
-                    *tm_gmtoff = ((int)*bp - 'M') * 3600;
-                  *tm_zone = utc; /* XXX */
+                    wct->wct_gmtoff = ((int)*bp - 'M') * 3600;
+                  wct->wct_zone = utc; /* XXX */
                   bp++;
                   continue;
                 }
@@ -682,9 +679,9 @@ recurse:
             }
           if (neg)
             offs = -offs;
-          tm->tm_isdst = 0; /* XXX */
-          *tm_gmtoff = (offs * 3600) / 100;
-          *tm_zone = utc; /* XXX */
+          wct->tm.tm_isdst = 0; /* XXX */
+          wct->wct_gmtoff = (offs * 3600) / 100;
+          wct->wct_zone = utc; /* XXX */
           continue;
 
         /*
@@ -708,8 +705,8 @@ recurse:
       if (HAVE_MON(state) && HAVE_MDAY(state))
         {
           /* calculate day of year (ordinal date) */
-          tm->tm_yday =  start_of_month[isleap_sum(tm->tm_year,
-                                                   TM_YEAR_BASE)][tm->tm_mon] + (tm->tm_mday - 1);
+          wct->tm.tm_yday =  start_of_month[isleap_sum(wct->tm.tm_year,
+                                                       TM_YEAR_BASE)][wct->tm.tm_mon] + (wct->tm.tm_mday - 1);
           state |= S_YDAY;
         }
       else if (day_offset != -1)
@@ -720,13 +717,13 @@ recurse:
            */
           if (!HAVE_WDAY(state))
             {
-              tm->tm_wday = day_offset;
+              wct->tm.tm_wday = day_offset;
               state |= S_WDAY;
             }
-          tm->tm_yday = (7 -
-                         first_wday_of(tm->tm_year + TM_YEAR_BASE) +
-                         day_offset) % 7 + (week_offset - 1) * 7 +
-                        tm->tm_wday  - day_offset;
+          wct->tm.tm_yday = (7 -
+                             first_wday_of(wct->tm.tm_year + TM_YEAR_BASE) +
+                             day_offset) % 7 + (week_offset - 1) * 7 +
+                            wct->tm.tm_wday  - day_offset;
           state |= S_YDAY;
         }
     }
@@ -739,25 +736,25 @@ recurse:
         {
           /* calculate month of day of year */
           i = 0;
-          isleap = isleap_sum(tm->tm_year, TM_YEAR_BASE);
-          while (tm->tm_yday >= start_of_month[isleap][i])
+          isleap = isleap_sum(wct->tm.tm_year, TM_YEAR_BASE);
+          while (wct->tm.tm_yday >= start_of_month[isleap][i])
             i++;
           if (i > 12)
             {
               i = 1;
-              tm->tm_yday -= start_of_month[isleap][12];
-              tm->tm_year++;
+              wct->tm.tm_yday -= start_of_month[isleap][12];
+              wct->tm.tm_year++;
             }
-          tm->tm_mon = i - 1;
+          wct->tm.tm_mon = i - 1;
           state |= S_MON;
         }
 
       if (!HAVE_MDAY(state))
         {
           /* calculate day of month */
-          isleap = isleap_sum(tm->tm_year, TM_YEAR_BASE);
-          tm->tm_mday = tm->tm_yday -
-                        start_of_month[isleap][tm->tm_mon] + 1;
+          isleap = isleap_sum(wct->tm.tm_year, TM_YEAR_BASE);
+          wct->tm.tm_mday = wct->tm.tm_yday -
+                            start_of_month[isleap][wct->tm.tm_mon] + 1;
           state |= S_MDAY;
         }
 
@@ -765,36 +762,36 @@ recurse:
         {
           /* calculate day of week */
           i = 0;
-          week_offset = first_wday_of(tm->tm_year);
-          while (i++ <= tm->tm_yday)
+          week_offset = first_wday_of(wct->tm.tm_year);
+          while (i++ <= wct->tm.tm_yday)
             {
               if (week_offset++ >= 6)
                 week_offset = 0;
             }
-          tm->tm_wday = week_offset;
+          wct->tm.tm_wday = week_offset;
           state |= S_WDAY;
         }
     }
 
   if (!HAVE_USEC(state))
     {
-      *tm_usec = 0;
+      wct->wct_usec = 0;
     }
 
   return __UNCONST(bp);
 }
 
 
-static const _u_char *
-conv_num(const unsigned char *buf, int *dest, _uint llim, _uint ulim)
+static const unsigned char *
+conv_num(const unsigned char *input, int *dest, unsigned int llim, unsigned int ulim)
 {
-  _uint result = 0;
+  unsigned int result = 0;
   unsigned char ch;
 
   /* The limit also determines the number of valid digits. */
-  _uint rulim = ulim;
+  unsigned int rulim = ulim;
 
-  ch = *buf;
+  ch = *input;
   if (ch < '0' || ch > '9')
     return NULL;
 
@@ -803,7 +800,7 @@ conv_num(const unsigned char *buf, int *dest, _uint llim, _uint ulim)
       result *= 10;
       result += ch - '0';
       rulim /= 10;
-      ch = *++buf;
+      ch = *++input;
     }
   while ((result * 10 <= ulim) && rulim && ch >= '0' && ch <= '9');
 
@@ -811,11 +808,11 @@ conv_num(const unsigned char *buf, int *dest, _uint llim, _uint ulim)
     return NULL;
 
   *dest = result;
-  return buf;
+  return input;
 }
 
-static const _u_char *
-find_string(const _u_char *bp, int *tgt, const char *const *n1,
+static const unsigned char *
+find_string(const unsigned char *bp, int *tgt, const char *const *n1,
             const char *const *n2, int c)
 {
   int i;

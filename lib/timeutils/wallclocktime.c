@@ -38,7 +38,7 @@ wall_clock_time_unset(WallClockTime *self)
 gchar *
 wall_clock_time_strptime(WallClockTime *wct, const gchar *format, const gchar *input)
 {
-  return strptime_with_tz(input, format, &wct->tm, &wct->wct_gmtoff, (const char **) &wct->wct_zone, &wct->wct_usec);
+  return strptime_with_tz(input, format, wct);
 }
 
 /* Determine (guess) the year for the month.
