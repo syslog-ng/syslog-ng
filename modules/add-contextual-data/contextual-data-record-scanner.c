@@ -48,17 +48,17 @@ _csv_scanner_dup_current_value_with_prefix(CSVScanner *line_scanner,
 }
 
 static gboolean
-_fetch_next_with_prefix(ContextualDataRecordScanner *record_scanner,
+_fetch_next_with_prefix(ContextualDataRecordScanner *self,
                         GString **target, const gchar *prefix)
 {
-  if (!csv_scanner_scan_next(&record_scanner->scanner))
+  if (!csv_scanner_scan_next(&self->scanner))
     {
       msg_error("add-contextual-data(): error parsing CSV file, expecting an additional column which was not found. Expecting (selector, name, value) triplets",
-                evt_tag_str("filename", record_scanner->filename),
-                evt_tag_str("target", csv_scanner_get_current_name(&record_scanner->scanner)));
+                evt_tag_str("filename", self->filename),
+                evt_tag_str("target", csv_scanner_get_current_name(&self->scanner)));
       return FALSE;
     }
-  gchar *next = _csv_scanner_dup_current_value_with_prefix(&record_scanner->scanner, prefix);
+  gchar *next = _csv_scanner_dup_current_value_with_prefix(&self->scanner, prefix);
   *target = g_string_new(next);
   g_free(next);
 
@@ -66,21 +66,20 @@ _fetch_next_with_prefix(ContextualDataRecordScanner *record_scanner,
 }
 
 static gboolean
-_fetch_next_without_prefix(ContextualDataRecordScanner *
-                           record_scanner, GString **target)
+_fetch_next_without_prefix(ContextualDataRecordScanner *self, GString **target)
 {
-  return _fetch_next_with_prefix(record_scanner, target, NULL);
+  return _fetch_next_with_prefix(self, target, NULL);
 }
 
 static gboolean
-_is_whole_record_parsed(ContextualDataRecordScanner *csv_record_scanner)
+_is_whole_record_parsed(ContextualDataRecordScanner *self)
 {
-  if (!csv_scanner_scan_next(&csv_record_scanner->scanner) &&
-      csv_scanner_is_scan_complete(&csv_record_scanner->scanner))
+  if (!csv_scanner_scan_next(&self->scanner) &&
+      csv_scanner_is_scan_complete(&self->scanner))
     return TRUE;
 
   msg_error("add-contextual-data(): extra data found at the end of line, expecting (selector, name, value) triplets",
-            evt_tag_str("filename", csv_record_scanner->filename));
+            evt_tag_str("filename", self->filename));
   return FALSE;
 }
 
