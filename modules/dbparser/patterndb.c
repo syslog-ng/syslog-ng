@@ -65,6 +65,7 @@ struct _PatternDB
   GStaticRWLock lock;
   PDBRuleSet *ruleset;
   CorrellationState correllation;
+  LogTemplate *program_template;
   GHashTable *rate_limits;
   TimerWheel *timer_wheel;
   GTimeVal last_tick;
@@ -560,6 +561,13 @@ pattern_db_set_emit_func(PatternDB *self, PatternDBEmitFunc emit, gpointer emit_
   self->emit_data = emit_data;
 }
 
+void
+pattern_db_set_program_template(PatternDB *self, LogTemplate *program_template)
+{
+  log_template_unref(self->program_template);
+  self->program_template = log_template_ref(program_template);
+}
+
 const gchar *
 pattern_db_get_ruleset_pub_date(PatternDB *self)
 {
@@ -704,7 +712,7 @@ pattern_db_process(PatternDB *self, LogMessage *msg)
 {
   PDBLookupParams lookup;
 
-  pdb_lookup_params_init(&lookup, msg);
+  pdb_lookup_params_init(&lookup, msg, self->program_template);
   return _pattern_db_process(self, &lookup, NULL);
 }
 
@@ -713,10 +721,8 @@ pattern_db_process_with_custom_message(PatternDB *self, LogMessage *msg, const g
 {
   PDBLookupParams lookup;
 
-  pdb_lookup_params_init(&lookup, msg);
-  lookup.message_handle = LM_V_NONE;
-  lookup.message_string = message;
-  lookup.message_len = message_len;
+  pdb_lookup_params_init(&lookup, msg, self->program_template);
+  pdb_lookup_params_override_message(&lookup, message, message_len);
   return _pattern_db_process(self, &lookup, NULL);
 }
 
@@ -725,7 +731,7 @@ pattern_db_debug_ruleset(PatternDB *self, LogMessage *msg, GArray *dbg_list)
 {
   PDBLookupParams lookup;
 
-  pdb_lookup_params_init(&lookup, msg);
+  pdb_lookup_params_init(&lookup, msg, NULL);
   _pattern_db_process(self, &lookup, dbg_list);
 }
 
@@ -788,6 +794,7 @@ pattern_db_new(void)
 void
 pattern_db_free(PatternDB *self)
 {
+  log_template_unref(self->program_template);
   if (self->ruleset)
     pdb_rule_set_free(self->ruleset);
   _destroy_state(self);

@@ -32,6 +32,7 @@ typedef struct _PatternDB PatternDB;
 
 typedef void (*PatternDBEmitFunc)(LogMessage *msg, gboolean synthetic, gpointer user_data);
 void pattern_db_set_emit_func(PatternDB *self, PatternDBEmitFunc emit_func, gpointer emit_data);
+void pattern_db_set_program_template(PatternDB *self, LogTemplate *program_template);
 
 PDBRuleSet *pattern_db_get_ruleset(PatternDB *self);
 const gchar *pattern_db_get_ruleset_version(PatternDB *self);

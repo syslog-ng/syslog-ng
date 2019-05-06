@@ -45,6 +45,7 @@ struct _LogDBParser
   time_t db_file_mtime;
   gboolean db_file_reloading;
   gboolean drop_unmatched;
+  LogTemplate *program_template;
 };
 
 static void
@@ -145,7 +146,10 @@ log_db_parser_init(LogPipe *s)
       log_db_parser_reload_database(self);
     }
   if (self->db)
-    pattern_db_set_emit_func(self->db, log_db_parser_emit, self);
+    {
+      pattern_db_set_emit_func(self->db, log_db_parser_emit, self);
+      pattern_db_set_program_template(self->db, self->program_template);
+    }
   iv_validate_now();
   IV_TIMER_INIT(&self->tick);
   self->tick.cookie = self;
@@ -257,11 +261,20 @@ log_db_parser_clone(LogPipe *s)
   return &cloned->super.super.super;
 }
 
+void
+log_db_parser_set_program_template_ref(LogParser *s, LogTemplate *program_template)
+{
+  LogDBParser *self = (LogDBParser *) s;
+  log_template_unref(self->program_template);
+  self->program_template = program_template;
+}
+
 static void
 log_db_parser_free(LogPipe *s)
 {
   LogDBParser *self = (LogDBParser *) s;
 
+  log_template_unref(self->program_template);
   g_static_mutex_free(&self->lock);
 
   if (self->db)

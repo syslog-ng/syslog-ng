@@ -738,6 +738,40 @@ Test(test_pathutils, test_pdb_get_filenames, .init = test_pdb_get_filenames_setu
   g_ptr_array_free(filenames, TRUE);
 }
 
+Test(pattern_db, match_in_program)
+{
+  gchar *filename;
+  PatternDB *patterndb = _create_pattern_db(pdb_test_match_in_program, &filename);
+
+  LogMessage *msg = _construct_message("sshd 5", "almafa");
+  _process(patterndb, msg);
+  assert_log_message_value(msg, log_msg_get_value_handle("num"), "5");
+
+  _destroy_pattern_db(patterndb, filename);
+  log_msg_unref(msg);
+  g_free(filename);
+}
+
+Test(pattern_db, test_program_template)
+{
+  gchar *filename;
+  PatternDB *patterndb = _create_pattern_db(pdb_test_program_template, &filename);
+
+  LogTemplate *template = log_template_new(configuration, NULL);
+  cr_assert(log_template_compile(template, "sshd 5", NULL));
+  pattern_db_set_program_template(patterndb, template);
+
+  LogMessage *msg = _construct_message("somethingelsethatdoesnotmatch", "almafa kortefa");
+  _process(patterndb, msg);
+  assert_log_message_value(msg, log_msg_get_value_handle("num"), "5");
+  assert_log_message_value(msg, log_msg_get_value_handle("str"), "kortefa");
+
+  _destroy_pattern_db(patterndb, filename);
+  log_msg_unref(msg);
+  g_free(filename);
+  log_template_unref(template);
+}
+
 void setup(void)
 {
   app_startup();

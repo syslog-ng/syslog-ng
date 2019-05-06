@@ -23,6 +23,7 @@
 #include "pdb-ruleset.h"
 #include "pdb-program.h"
 #include "pdb-lookup-params.h"
+#include "scratch-buffers.h"
 
 static NVHandle class_handle = 0;
 static NVHandle rule_id_handle = 0;
@@ -64,6 +65,17 @@ _add_matches_to_message(LogMessage *msg, GArray *matches, NVHandle ref_handle, c
     }
 }
 
+const gchar *
+_calculate_program(PDBLookupParams *lookup, LogMessage *msg, gssize *program_len)
+{
+  if (lookup->program_handle)
+    return log_msg_get_value(msg, lookup->program_handle, program_len);
+
+  GString *program = scratch_buffers_alloc();
+  log_template_format(lookup->program_template, msg, NULL, LTZ_LOCAL, 0, NULL, program);
+  *program_len = program->len;
+  return program->str;
+}
 
 /*
  * Looks up a matching rule in the ruleset.
@@ -82,7 +94,7 @@ pdb_ruleset_lookup(PDBRuleSet *rule_set, PDBLookupParams *lookup, GArray *dbg_li
   if (G_UNLIKELY(!rule_set->programs))
     return FALSE;
 
-  program_value = log_msg_get_value(msg, lookup->program_handle, &program_len);
+  program_value = _calculate_program(lookup, msg, &program_len);
   prg_matches = g_array_new(FALSE, TRUE, sizeof(RParserMatch));
   node = r_find_node(rule_set->programs, (gchar *) program_value, program_len, prg_matches);
 

@@ -66,6 +66,8 @@ SyntheticMessage *last_message;
 %token KW_VALUE
 %token KW_DROP_UNMATCHED
 %token KW_FILE
+%token KW_PROGRAM_TEMPLATE
+%token KW_MESSAGE_TEMPLATE
 
 %type <num> stateful_parser_inject_mode
 %type <ptr> synthetic_message
@@ -101,6 +103,11 @@ parser_db_opts
 parser_db_opt
         : KW_FILE '(' string ')'                		{ log_db_parser_set_db_file(((LogDBParser *) last_parser), $3); free($3); }
 	| KW_DROP_UNMATCHED '(' yesno ')'			{ log_db_parser_set_drop_unmatched(((LogDBParser *) last_parser), $3); };
+        | KW_PROGRAM_TEMPLATE '(' template_content ')'
+          {
+             log_db_parser_set_program_template_ref(last_parser, $3);
+          }
+        | KW_MESSAGE_TEMPLATE '(' template_content ')'    { log_parser_set_template(last_parser, $3); }
 	| stateful_parser_opt
         ;
 
@@ -201,4 +208,3 @@ context_scope
 /* INCLUDE_RULES */
 
 %%
-
