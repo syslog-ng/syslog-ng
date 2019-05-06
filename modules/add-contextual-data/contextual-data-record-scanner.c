@@ -38,18 +38,9 @@ struct _ContextualDataRecordScanner
   const gchar *name_prefix;
 };
 
-
-static gchar *
-_csv_scanner_dup_current_value_with_prefix(CSVScanner *line_scanner,
-                                           const gchar *prefix)
-{
-  return g_strdup_printf("%s%s", prefix ? prefix : "",
-                         csv_scanner_get_current_value(line_scanner));
-}
-
 static gboolean
 _fetch_next_with_prefix(ContextualDataRecordScanner *self,
-                        GString **target, const gchar *prefix)
+                        GString *target, const gchar *prefix)
 {
   if (!csv_scanner_scan_next(&self->scanner))
     {
@@ -58,15 +49,13 @@ _fetch_next_with_prefix(ContextualDataRecordScanner *self,
                 evt_tag_str("target", csv_scanner_get_current_name(&self->scanner)));
       return FALSE;
     }
-  gchar *next = _csv_scanner_dup_current_value_with_prefix(&self->scanner, prefix);
-  *target = g_string_new(next);
-  g_free(next);
+  g_string_sprintf(target, "%s%s", prefix ? prefix : "", csv_scanner_get_current_value(&self->scanner));
 
   return TRUE;
 }
 
 static gboolean
-_fetch_next_without_prefix(ContextualDataRecordScanner *self, GString **target)
+_fetch_next(ContextualDataRecordScanner *self, GString *target)
 {
   return _fetch_next_with_prefix(self, target, NULL);
 }
@@ -86,28 +75,27 @@ _is_whole_record_parsed(ContextualDataRecordScanner *self)
 static gboolean
 _get_next_record(ContextualDataRecordScanner *self, const gchar *input, ContextualDataRecord *record)
 {
-  GString *value_template;
-  GString *name;
+  GString *buffer = g_string_sized_new(32);
   GError *error = NULL;
 
   csv_scanner_init(&self->scanner, &self->options, input);
 
-  if (!_fetch_next_without_prefix(self, &record->selector))
+  record->selector = g_string_sized_new(32);
+  if (!_fetch_next(self, record->selector))
     goto error;
 
-  if (!_fetch_next_with_prefix(self, &name, self->name_prefix))
+  if (!_fetch_next_with_prefix(self, buffer, self->name_prefix))
     goto error;
 
-  record->value_handle = log_msg_get_value_handle(name->str);
-  g_string_free(name, TRUE);
+  record->value_handle = log_msg_get_value_handle(buffer->str);
 
-  if (!_fetch_next_without_prefix(self, &value_template))
+  if (!_fetch_next(self, buffer))
     goto error;
 
   record->value = log_template_new(self->cfg, NULL);
 
   if (cfg_is_config_version_older(self->cfg, VERSION_VALUE_3_21) &&
-      strchr(value_template->str, '$') != NULL)
+      strchr(buffer->str, '$') != NULL)
     {
       msg_warning("WARNING: the value field in add-contextual-data() CSV files has been changed "
                   "to be a template starting with " VERSION_3_21 ". You are using an older config "
@@ -117,28 +105,30 @@ _get_next_record(ContextualDataRecordScanner *self, const gchar *input, Contextu
                   "literal (non-template) string for compatibility",
                   evt_tag_str("selector", record->selector->str),
                   evt_tag_str("name", log_msg_get_value_name(record->value_handle, NULL)),
-                  evt_tag_str("value", value_template->str));
-      log_template_compile_literal_string(record->value, value_template->str);
+                  evt_tag_str("value", buffer->str));
+      log_template_compile_literal_string(record->value, buffer->str);
     }
   else
     {
-      if (!log_template_compile(record->value, value_template->str, &error))
+      if (!log_template_compile(record->value, buffer->str, &error))
         {
           msg_error("add-contextual-data(): error compiling template",
                    evt_tag_str("selector", record->selector->str),
                    evt_tag_str("name", log_msg_get_value_name(record->value_handle, NULL)),
-                   evt_tag_str("value", value_template->str));
-          g_string_free(value_template, TRUE);
+                   evt_tag_str("value", buffer->str));
           goto error;
         }
     }
-  g_string_free(value_template, TRUE);
+  g_string_free(buffer, TRUE);
+  csv_scanner_deinit(&self->scanner);
 
   if (!_is_whole_record_parsed(self))
     goto error;
 
   return TRUE;
 error:
+  g_string_free(buffer, TRUE);
+  csv_scanner_deinit(&self->scanner);
   msg_error("add-contextual-data(): the failing line is",
             evt_tag_str("filename", self->filename),
             evt_tag_str("input", input));
