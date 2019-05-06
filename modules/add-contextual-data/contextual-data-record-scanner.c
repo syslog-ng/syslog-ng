@@ -76,6 +76,7 @@ static gboolean
 _get_next_record(ContextualDataRecordScanner *self, const gchar *input, ContextualDataRecord *record)
 {
   GString *buffer = g_string_sized_new(32);
+  gboolean result = FALSE;
   GError *error = NULL;
 
   csv_scanner_init(&self->scanner, &self->options, input);
@@ -119,20 +120,15 @@ _get_next_record(ContextualDataRecordScanner *self, const gchar *input, Contextu
           goto error;
         }
     }
-  g_string_free(buffer, TRUE);
-  csv_scanner_deinit(&self->scanner);
-
   if (!_is_whole_record_parsed(self))
     goto error;
 
-  return TRUE;
+  result = TRUE;
+
 error:
   g_string_free(buffer, TRUE);
   csv_scanner_deinit(&self->scanner);
-  msg_error("add-contextual-data(): the failing line is",
-            evt_tag_str("filename", self->filename),
-            evt_tag_str("input", input));
-  return FALSE;
+  return result;
 }
 
 ContextualDataRecord *
@@ -142,6 +138,9 @@ contextual_data_record_scanner_get_next(ContextualDataRecordScanner *self, const
   if (!_get_next_record(self, input, &self->last_record))
     {
       contextual_data_record_clean(&self->last_record);
+      msg_error("add-contextual-data(): the failing line is",
+                evt_tag_str("filename", self->filename),
+                evt_tag_str("input", input));
       return NULL;
     }
 
