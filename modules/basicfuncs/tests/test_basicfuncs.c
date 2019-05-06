@@ -21,9 +21,10 @@
  *
  */
 
+#include "libtest/cr_template.h"
+#include "libtest/grab-logging.h"
 #include <criterion/criterion.h>
 
-#include "libtest/cr_template.h"
 #include "apphook.h"
 #include "plugin.h"
 #include "cfg.h"
@@ -243,11 +244,13 @@ _test_macros_with_context(const gchar *id, const gchar *numbers[], const MacroAn
 {
   GPtrArray *messages = create_log_messages_with_values(id, numbers);
 
+  start_grabbing_messages();
   for (const MacroAndResult *test_case = test_cases; test_case->macro; test_case++)
     assert_template_format_with_context_msgs(
       test_case->macro, test_case->result,
       (LogMessage **)messages->pdata, messages->len);
 
+  stop_grabbing_messages();
   free_log_message_array(messages);
 }
 
@@ -397,6 +400,14 @@ Test(basicfuncs, test_list_funcs)
   assert_template_format("$(list-slice :-6 foo,bar,xxx,baz,bad)", "");
 
   assert_template_format("$(list-count foo,bar,xxx, baz bad)", "5");
+
+  assert_template_format("$(explode ' ' foo bar xxx baz bad)", "foo,bar,xxx,baz,bad");
+  assert_template_format("$(explode ' ' 'foo bar xxx baz bad')", "foo,bar,xxx,baz,bad");
+  assert_template_format("$(explode ';' foo;bar;xxx;baz;bad)", "foo,bar,xxx,baz,bad");
+  assert_template_format("$(explode ';' foo;bar xxx;baz;bad)", "foo,bar,xxx,baz,bad");
+
+  assert_template_format("$(implode ' ' foo,bar,xxx,baz,bad)", "foo bar xxx baz bad");
+  assert_template_format("$(implode ' ' $(list-slice :3 foo,bar,xxx,baz,bad))", "foo bar xxx");
 }
 
 Test(basicfuncs, test_context_funcs)
