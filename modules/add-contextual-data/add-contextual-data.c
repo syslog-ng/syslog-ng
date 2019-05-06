@@ -244,45 +244,47 @@ _get_scanner(AddContextualData *self)
 static gboolean
 _load_context_info_db(AddContextualData *self)
 {
-  ContextualDataRecordScanner *scanner = _get_scanner(self);
+  ContextualDataRecordScanner *scanner;
+  FILE *f = NULL;
+  gboolean result = FALSE;
 
-  if (!scanner)
-    return FALSE;
+  if (!(scanner = _get_scanner(self)))
+    goto error;
 
-  FILE *f = _open_data_file(self->filename);
+  f = _open_data_file(self->filename);
   if (!f)
     {
       msg_error("add-contextual-data(): Error opening database",
                 evt_tag_str("filename", self->filename),
                 evt_tag_error("error"));
-      contextual_data_record_scanner_free(scanner);
-      return FALSE;
+      goto error;
     }
 
-  gboolean tag_db_loaded =
-    context_info_db_import(self->context_info_db, f, scanner);
-  contextual_data_record_scanner_free(scanner);
-
-  fclose(f);
-  if (!tag_db_loaded)
+  if (!context_info_db_import(self->context_info_db, f, scanner))
     {
       msg_error("add-contextual-data(): Error while parsing database",
                 evt_tag_str("filename", self->filename));
-      return FALSE;
+      goto error;
     }
+  result = TRUE;
 
-  return TRUE;
+error:
+  if (scanner)
+    contextual_data_record_scanner_free(scanner);
+  if (f)
+    fclose(f);
+
+  return result;
 }
 
 static gboolean
 _init_context_info_db(AddContextualData *self)
 {
-  if (self->selector && add_contextual_data_selector_is_ordering_required(self->selector))
-    context_info_db_enable_ordering(self->context_info_db);
+  /* are we reinitializing after an unsuccessful config reload?  in that
+   * case we already have the context_info_db */
 
-  context_info_db_set_ignore_case(self->context_info_db, self->ignore_case);
-  if (!context_info_db_is_loaded(self->context_info_db))
-    context_info_db_init(self->context_info_db);
+  if (self->context_info_db)
+    return TRUE;
 
   if (self->filename == NULL)
     {
@@ -290,12 +292,12 @@ _init_context_info_db(AddContextualData *self)
       return FALSE;
     }
 
-  if (!context_info_db_is_loaded(self->context_info_db) && !_load_context_info_db(self))
-    {
-      return FALSE;
-    }
+  self->context_info_db = context_info_db_new(self->ignore_case);
 
-  return TRUE;
+  if (self->selector && add_contextual_data_selector_is_ordering_required(self->selector))
+    context_info_db_enable_ordering(self->context_info_db);
+
+  return _load_context_info_db(self);
 }
 
 static gboolean
@@ -328,7 +330,6 @@ add_contextual_data_parser_new(GlobalConfig *cfg)
 
   self->super.process = _process;
   self->selector = NULL;
-  self->context_info_db = context_info_db_new();
 
   self->super.super.clone = _clone;
   self->super.super.free_fn = _free;

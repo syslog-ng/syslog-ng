@@ -58,8 +58,7 @@ _test_empty_db(ContextInfoDB *context_info_db)
 
 Test(add_contextual_data, test_empty_db)
 {
-  ContextInfoDB *context_info_db = context_info_db_new();
-  context_info_db_init(context_info_db);
+  ContextInfoDB *context_info_db = context_info_db_new(FALSE);
 
   _test_empty_db(context_info_db);
 
@@ -68,8 +67,7 @@ Test(add_contextual_data, test_empty_db)
 
 Test(add_contextual_data, test_purge_empty_db)
 {
-  ContextInfoDB *context_info_db = context_info_db_new();
-  context_info_db_init(context_info_db);
+  ContextInfoDB *context_info_db = context_info_db_new(FALSE);
 
   context_info_db_purge(context_info_db);
   _test_empty_db(context_info_db);
@@ -79,8 +77,7 @@ Test(add_contextual_data, test_purge_empty_db)
 
 Test(add_contextual_data, test_index_empty_db)
 {
-  ContextInfoDB *context_info_db = context_info_db_new();
-  context_info_db_init(context_info_db);
+  ContextInfoDB *context_info_db = context_info_db_new(FALSE);
 
   context_info_db_index(context_info_db);
   _test_empty_db(context_info_db);
@@ -121,9 +118,8 @@ _g_strcmp(const gconstpointer a, gconstpointer b)
 
 Test(add_contextual_data, test_insert)
 {
-  ContextInfoDB *context_info_db = context_info_db_new();
+  ContextInfoDB *context_info_db = context_info_db_new(FALSE);
   context_info_db_enable_ordering(context_info_db);
-  context_info_db_init(context_info_db);
 
   _fill_context_info_db(context_info_db, "selector", "name", "value", 2, 5);
   int ctr = 0;
@@ -140,8 +136,7 @@ Test(add_contextual_data, test_insert)
 
 Test(add_contextual_data, test_get_selectors)
 {
-  ContextInfoDB *context_info_db = context_info_db_new();
-  context_info_db_init(context_info_db);
+  ContextInfoDB *context_info_db = context_info_db_new(FALSE);
 
   _fill_context_info_db(context_info_db, "selector", "name", "value", 2, 5);
 
@@ -207,8 +202,7 @@ _assert_import_csv_with_single_selector(gchar *csv_content, gchar *selector_to_c
                                         TestNVPair *expected_nvpairs, gsize expected_nvpairs_size)
 {
   FILE *fp = fmemopen(csv_content, strlen(csv_content), "r");
-  ContextInfoDB *db = context_info_db_new();
-  context_info_db_init(db);
+  ContextInfoDB *db = context_info_db_new(FALSE);
   ContextualDataRecordScanner *scanner =
     create_contextual_data_record_scanner_by_type("dummy.csv", "csv");
 
@@ -227,8 +221,7 @@ _assert_import_csv_with_single_selector(gchar *csv_content, gchar *selector_to_c
 
 Test(add_contextual_data, test_inserted_nv_pairs)
 {
-  ContextInfoDB *context_info_db = context_info_db_new();
-  context_info_db_init(context_info_db);
+  ContextInfoDB *context_info_db = context_info_db_new(FALSE);
 
   _fill_context_info_db(context_info_db, "selector", "name", "value", 1, 3);
 
@@ -250,8 +243,7 @@ Test(add_contextual_data, test_import_with_valid_csv)
                         "selector1,name1.1,value1.1\n"
                         "selector2,name2,value2\n" "selector3,name3,value3";
   FILE *fp = fmemopen(csv_content, sizeof(csv_content), "r");
-  ContextInfoDB *db = context_info_db_new();
-  context_info_db_init(db);
+  ContextInfoDB *db = context_info_db_new(FALSE);
   ContextualDataRecordScanner *scanner =
     create_contextual_data_record_scanner_by_type("dummy.csv", "csv");
 
@@ -329,8 +321,7 @@ Test(add_contextual_data, test_import_with_invalid_csv_content)
 {
   gchar csv_content[] = "xxx";
   FILE *fp = fmemopen(csv_content, strlen(csv_content), "r");
-  ContextInfoDB *db = context_info_db_new();
-  context_info_db_init(db);
+  ContextInfoDB *db = context_info_db_new(FALSE);
 
   ContextualDataRecordScanner *scanner =
     create_contextual_data_record_scanner_by_type("dummy.csv", "csv");
@@ -352,8 +343,7 @@ Test(add_contextual_data, test_import_with_csv_contains_invalid_line)
   gchar csv_content[] = "selector1,name1,value1\n"
                         ",value1.1\n";
   FILE *fp = fmemopen(csv_content, strlen(csv_content), "r");
-  ContextInfoDB *db = context_info_db_new();
-  context_info_db_init(db);
+  ContextInfoDB *db = context_info_db_new(FALSE);
 
   ContextualDataRecordScanner *scanner =
     create_contextual_data_record_scanner_by_type("dummy.csv", "csv");
@@ -444,9 +434,7 @@ Test(add_contextual_data, test_ignore_case_on)
 {
   gchar csv_content[] = "LoCaLhOsT,tag1,value1";
   FILE *fp = fmemopen(csv_content, strlen(csv_content), "r");
-  ContextInfoDB *db = context_info_db_new();
-  context_info_db_set_ignore_case(db, TRUE);
-  context_info_db_init(db);
+  ContextInfoDB *db = context_info_db_new(TRUE);
 
   ContextualDataRecordScanner *scanner =
     create_contextual_data_record_scanner_by_type("dummy.csv", "csv");
@@ -469,9 +457,7 @@ Test(add_contextual_data, test_ignore_case_off)
 {
   gchar csv_content[] = "LoCaLhOsT,tag1,value1";
   FILE *fp = fmemopen(csv_content, strlen(csv_content), "r");
-  ContextInfoDB *db = context_info_db_new();
-  context_info_db_set_ignore_case(db, FALSE);
-  context_info_db_init(db);
+  ContextInfoDB *db = context_info_db_new(FALSE);
 
   ContextualDataRecordScanner *scanner =
     create_contextual_data_record_scanner_by_type("dummy.csv", "csv");
@@ -499,9 +485,7 @@ Test(add_contextual_data, test_selected_nvpairs_when_ignore_case_on)
 
   FILE *fp = fmemopen(csv_content, sizeof(csv_content), "r");
 
-  ContextInfoDB *db = context_info_db_new();
-  context_info_db_set_ignore_case(db, TRUE);
-  context_info_db_init(db);
+  ContextInfoDB *db = context_info_db_new(TRUE);
   ContextualDataRecordScanner *scanner =
     create_contextual_data_record_scanner_by_type("dummy.csv", "csv");
 

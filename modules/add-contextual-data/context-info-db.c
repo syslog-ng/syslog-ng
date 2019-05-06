@@ -89,12 +89,6 @@ context_info_db_ordered_selectors(ContextInfoDB *self)
 }
 
 void
-context_info_db_set_ignore_case(ContextInfoDB *self, gboolean ignore_case)
-{
-  self->ignore_case = ignore_case;
-}
-
-void
 context_info_db_index(ContextInfoDB *self)
 {
   GCompareFunc record_cmp = self->ignore_case ? _contextual_data_record_case_cmp : _contextual_data_record_cmp;
@@ -172,15 +166,6 @@ static guint
 _strcase_hash(gconstpointer value)
 {
   return _str_case_insensitive_djb2_hash((const gchar *)value);
-}
-
-void
-context_info_db_init(ContextInfoDB *self)
-{
-  GEqualFunc str_eq = self->ignore_case ? _strcase_eq : g_str_equal;
-  GHashFunc str_hash = self->ignore_case ? _strcase_hash : g_str_hash;
-  self->data = g_array_new(FALSE, FALSE, sizeof(ContextualDataRecord));
-  self->index = g_hash_table_new_full(str_hash, str_eq, NULL, g_free);
 }
 
 static void
@@ -357,12 +342,17 @@ context_info_db_import(ContextInfoDB *self, FILE *fp,
 }
 
 ContextInfoDB *
-context_info_db_new(void)
+context_info_db_new(gboolean ignore_case)
 {
   ContextInfoDB *self = g_new0(ContextInfoDB, 1);
 
   g_atomic_counter_set(&self->ref_cnt, 1);
 
+  self->ignore_case = ignore_case;
+  GEqualFunc str_eq = self->ignore_case ? _strcase_eq : g_str_equal;
+  GHashFunc str_hash = self->ignore_case ? _strcase_hash : g_str_hash;
+  self->data = g_array_new(FALSE, FALSE, sizeof(ContextualDataRecord));
+  self->index = g_hash_table_new_full(str_hash, str_eq, NULL, g_free);
   return self;
 }
 
