@@ -234,7 +234,7 @@ _get_scanner(AddContextualData *self)
 
   if (strcmp(type, "csv") == 0)
     {
-      scanner = contextual_data_record_scanner_new(log_pipe_get_config(&self->super.super), self->filename);
+      scanner = contextual_data_record_scanner_new(log_pipe_get_config(&self->super.super), self->prefix);
     }
   else
     {
@@ -242,8 +242,6 @@ _get_scanner(AddContextualData *self)
                 evt_tag_str("filename", self->filename));
       return NULL;
     }
-
-  contextual_data_record_scanner_set_name_prefix(scanner, self->prefix);
 
   return scanner;
 }
@@ -267,7 +265,7 @@ _load_context_info_db(AddContextualData *self)
       goto error;
     }
 
-  if (!context_info_db_import(self->context_info_db, f, scanner))
+  if (!context_info_db_import(self->context_info_db, f, self->filename, scanner))
     {
       msg_error("add-contextual-data(): Error while parsing database",
                 evt_tag_str("filename", self->filename));

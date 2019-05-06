@@ -57,7 +57,7 @@ void context_info_db_foreach_record(ContextInfoDB *self,
 
 GList *context_info_db_get_selectors(ContextInfoDB *self);
 
-gboolean context_info_db_import(ContextInfoDB *self, FILE *fp,
+gboolean context_info_db_import(ContextInfoDB *self, FILE *fp, const gchar *filename,
                                 ContextualDataRecordScanner *scanner);
 
 

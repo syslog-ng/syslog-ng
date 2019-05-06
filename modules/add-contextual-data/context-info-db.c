@@ -310,7 +310,7 @@ _get_line_without_eol(gchar **line_buf, gsize *line_buf_len, FILE *fp)
 }
 
 gboolean
-context_info_db_import(ContextInfoDB *self, FILE *fp,
+context_info_db_import(ContextInfoDB *self, FILE *fp, const gchar *filename,
                        ContextualDataRecordScanner *scanner)
 {
   size_t line_buf_len;
@@ -321,7 +321,7 @@ context_info_db_import(ContextInfoDB *self, FILE *fp,
     {
       if (line_buf_len == 0)
         continue;
-      next_record = contextual_data_record_scanner_get_next(scanner, line_buf);
+      next_record = contextual_data_record_scanner_get_next(scanner, line_buf, filename);
       if (!next_record)
         {
           context_info_db_purge(self);
