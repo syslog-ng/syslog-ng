@@ -39,8 +39,7 @@ struct _ContextualDataRecordScanner
 };
 
 static gboolean
-_fetch_next_with_prefix(ContextualDataRecordScanner *self,
-                        GString *target, const gchar *prefix)
+_fetch_next(ContextualDataRecordScanner *self)
 {
   if (!csv_scanner_scan_next(&self->scanner))
     {
@@ -49,15 +48,8 @@ _fetch_next_with_prefix(ContextualDataRecordScanner *self,
                 evt_tag_str("target", csv_scanner_get_current_name(&self->scanner)));
       return FALSE;
     }
-  g_string_sprintf(target, "%s%s", prefix ? prefix : "", csv_scanner_get_current_value(&self->scanner));
 
   return TRUE;
-}
-
-static gboolean
-_fetch_next(ContextualDataRecordScanner *self, GString *target)
-{
-  return _fetch_next_with_prefix(self, target, NULL);
 }
 
 static gboolean
@@ -73,30 +65,39 @@ _is_whole_record_parsed(ContextualDataRecordScanner *self)
 }
 
 static gboolean
-_get_next_record(ContextualDataRecordScanner *self, const gchar *input, ContextualDataRecord *record)
+_fetch_selector(ContextualDataRecordScanner *self, ContextualDataRecord *record)
 {
-  GString *buffer = g_string_sized_new(32);
-  gboolean result = FALSE;
-  GError *error = NULL;
+  if (!_fetch_next(self))
+    return FALSE;
+  record->selector = g_string_new(csv_scanner_get_current_value(&self->scanner));
+  return TRUE;
+}
 
-  csv_scanner_init(&self->scanner, &self->options, input);
+static gboolean
+_fetch_name(ContextualDataRecordScanner *self, ContextualDataRecord *record)
+{
+  if (!_fetch_next(self))
+    return FALSE;
 
-  record->selector = g_string_sized_new(32);
-  if (!_fetch_next(self, record->selector))
-    goto error;
+  gchar *name = g_strdup_printf("%s%s", self->name_prefix ? : "", csv_scanner_get_current_value(&self->scanner));
+  record->value_handle = log_msg_get_value_handle(name);
+  g_free(name);
 
-  if (!_fetch_next_with_prefix(self, buffer, self->name_prefix))
-    goto error;
+  return TRUE;
+}
 
-  record->value_handle = log_msg_get_value_handle(buffer->str);
+static gboolean
+_fetch_value(ContextualDataRecordScanner *self, ContextualDataRecord *record)
+{
+  if (!_fetch_next(self))
+    return FALSE;
 
-  if (!_fetch_next(self, buffer))
-    goto error;
+  const gchar *value_template = csv_scanner_get_current_value(&self->scanner);
 
   record->value = log_template_new(self->cfg, NULL);
 
   if (cfg_is_config_version_older(self->cfg, VERSION_VALUE_3_21) &&
-      strchr(buffer->str, '$') != NULL)
+      strchr(value_template, '$') != NULL)
     {
       msg_warning("WARNING: the value field in add-contextual-data() CSV files has been changed "
                   "to be a template starting with " VERSION_3_21 ". You are using an older config "
@@ -106,27 +107,49 @@ _get_next_record(ContextualDataRecordScanner *self, const gchar *input, Contextu
                   "literal (non-template) string for compatibility",
                   evt_tag_str("selector", record->selector->str),
                   evt_tag_str("name", log_msg_get_value_name(record->value_handle, NULL)),
-                  evt_tag_str("value", buffer->str));
-      log_template_compile_literal_string(record->value, buffer->str);
+                  evt_tag_str("value", value_template));
+      log_template_compile_literal_string(record->value, value_template);
     }
   else
     {
-      if (!log_template_compile(record->value, buffer->str, &error))
+      GError *error = NULL;
+
+      if (!log_template_compile(record->value, value_template, &error))
         {
           msg_error("add-contextual-data(): error compiling template",
-                   evt_tag_str("selector", record->selector->str),
-                   evt_tag_str("name", log_msg_get_value_name(record->value_handle, NULL)),
-                   evt_tag_str("value", buffer->str));
-          goto error;
+                    evt_tag_str("selector", record->selector->str),
+                    evt_tag_str("name", log_msg_get_value_name(record->value_handle, NULL)),
+                    evt_tag_str("value", value_template),
+                    evt_tag_str("error", error->message));
+          g_clear_error(&error);
+          return FALSE;
         }
     }
+  return TRUE;
+}
+
+static gboolean
+_get_next_record(ContextualDataRecordScanner *self, const gchar *input, ContextualDataRecord *record)
+{
+  gboolean result = FALSE;
+
+  csv_scanner_init(&self->scanner, &self->options, input);
+
+  if (!_fetch_selector(self, record))
+    goto error;
+
+  if (!_fetch_name(self, record))
+    goto error;
+
+  if (!_fetch_value(self, record))
+    goto error;
+
   if (!_is_whole_record_parsed(self))
     goto error;
 
   result = TRUE;
 
 error:
-  g_string_free(buffer, TRUE);
   csv_scanner_deinit(&self->scanner);
   return result;
 }
