@@ -28,7 +28,10 @@
 
 typedef struct _ContextualDataRecordScanner ContextualDataRecordScanner;
 
-ContextualDataRecord *contextual_data_record_scanner_get_next(ContextualDataRecordScanner *self, const gchar *input, const gchar *filename);
+ContextualDataRecord *contextual_data_record_scanner_get_next(ContextualDataRecordScanner *self,
+    const gchar *input,
+    const gchar *filename,
+    gint lineno);
 
 ContextualDataRecordScanner *contextual_data_record_scanner_new(GlobalConfig *cfg, const gchar *name_prefix);
 void contextual_data_record_scanner_free(ContextualDataRecordScanner *self);

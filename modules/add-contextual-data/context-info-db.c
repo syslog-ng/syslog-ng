@@ -315,13 +315,15 @@ context_info_db_import(ContextInfoDB *self, FILE *fp, const gchar *filename,
 {
   size_t line_buf_len;
   gchar *line_buf = NULL;
+  gint lineno = 0;
   const ContextualDataRecord *next_record;
 
   while (_get_line_without_eol(&line_buf, &line_buf_len, fp))
     {
+      lineno++;
       if (line_buf_len == 0)
         continue;
-      next_record = contextual_data_record_scanner_get_next(scanner, line_buf, filename);
+      next_record = contextual_data_record_scanner_get_next(scanner, line_buf, filename, lineno);
       if (!next_record)
         {
           context_info_db_purge(self);

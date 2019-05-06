@@ -153,15 +153,17 @@ error:
 }
 
 ContextualDataRecord *
-contextual_data_record_scanner_get_next(ContextualDataRecordScanner *self, const gchar *input, const gchar *filename)
+contextual_data_record_scanner_get_next(ContextualDataRecordScanner *self,
+                                        const gchar *input,
+                                        const gchar *filename, gint lineno)
 {
   contextual_data_record_init(&self->last_record);
   if (!_get_next_record(self, input, &self->last_record))
     {
       contextual_data_record_clean(&self->last_record);
       msg_error("add-contextual-data(): the failing line is",
-                evt_tag_str("filename", filename),
-                evt_tag_str("input", input));
+                evt_tag_str("input", input),
+                evt_tag_printf("filename", "%s:%d", filename, lineno));
       return NULL;
     }
 
