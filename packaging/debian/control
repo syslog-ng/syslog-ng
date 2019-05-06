@@ -39,7 +39,8 @@ Build-Depends: debhelper (>= 9~),
                libcurl4-openssl-dev,
                libmaxminddb-dev,
                openjdk-7-jdk | openjdk-8-jdk,
-               gradle (>=2.2.1)
+               gradle (>=2.2.1),
+               librdkafka-dev (>=1.0.0)
 Build-Conflicts: autoconf2.13
 Standards-Version: 3.9.8
 Homepage: http://www.syslog-ng.org/
@@ -858,3 +859,26 @@ Description: Enhanced system logging daemon (example plugins)
     AMQP), files or databases (like PostgreSQL or MongoDB).
  .
  This package provides a collection of example plugins.
+
+Package: syslog-ng-mod-rdkafka
+Architecture: any
+Multi-Arch: foreign
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Enhanced system logging daemon (Kafka destination, based on librdkafka)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package provides a native Kafka destination, written entirely in the C programming
+ language, based on the librdkafka client library.
