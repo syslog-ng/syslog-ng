@@ -25,33 +25,13 @@
 
 #include "contextual-data-record.h"
 
+
 typedef struct _ContextualDataRecordScanner ContextualDataRecordScanner;
 
-struct _ContextualDataRecordScanner
-{
-  ContextualDataRecord last_record;
-  GlobalConfig *cfg;
-  gpointer scanner;
-  const gchar *name_prefix;
-  gboolean (*get_next) (ContextualDataRecordScanner *self,
-                        const gchar *input,
-                        ContextualDataRecord *record);
-  void (*free_fn) (ContextualDataRecordScanner *self);
-};
+ContextualDataRecord *contextual_data_record_scanner_get_next(ContextualDataRecordScanner *self, const gchar *input);
+void contextual_data_record_scanner_set_name_prefix(ContextualDataRecordScanner *self, const gchar *prefix);
 
-
+ContextualDataRecordScanner *contextual_data_record_scanner_new(GlobalConfig *cfg, const gchar *filename);
 void contextual_data_record_scanner_free(ContextualDataRecordScanner *self);
-
-void
-contextual_data_record_scanner_set_name_prefix(ContextualDataRecordScanner *
-                                               self, const gchar *prefix);
-
-ContextualDataRecordScanner
-*create_contextual_data_record_scanner_by_type(GlobalConfig *cfg, const gchar *filename, const gchar *type);
-
-ContextualDataRecord *
-contextual_data_record_scanner_get_next(ContextualDataRecordScanner *self, const gchar *input);
-
-void contextual_data_record_scanner_init(ContextualDataRecordScanner *self, GlobalConfig *cfg);
 
 #endif

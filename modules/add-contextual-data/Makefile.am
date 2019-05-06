@@ -6,8 +6,6 @@ EXTRA_DIST += modules/add-contextual-data/CMakeLists.txt
 modules_add_contextual_data_libadd_contextual_data_la_SOURCES	=		\
 	modules/add-contextual-data/add-contextual-data.c			\
 	modules/add-contextual-data/add-contextual-data.h			\
-	modules/add-contextual-data/csv-contextual-data-record-scanner.c	\
-	modules/add-contextual-data/csv-contextual-data-record-scanner.h	\
 	modules/add-contextual-data/contextual-data-record.h			\
 	modules/add-contextual-data/contextual-data-record.c			\
 	modules/add-contextual-data/contextual-data-record-scanner.h		\
@@ -28,7 +26,6 @@ add_contextual_data_includedir	= ${pkgincludedir}/modules/add-contextual-data
 
 add_contextual_data_include_HEADERS = 							\
 	modules/add-contextual-data/add-contextual-data.h			\
-	modules/add-contextual-data/csv-contextual-data-record-scanner.h	\
 	modules/add-contextual-data/contextual-data-record-scanner.h		\
 	modules/add-contextual-data/add-contextual-data-parser.h		\
 	modules/add-contextual-data/context-info-db.h				\

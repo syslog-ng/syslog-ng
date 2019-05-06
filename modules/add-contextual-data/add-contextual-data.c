@@ -230,10 +230,13 @@ static ContextualDataRecordScanner *
 _get_scanner(AddContextualData *self)
 {
   const gchar *type = get_filename_extension(self->filename);
-  ContextualDataRecordScanner *scanner =
-    create_contextual_data_record_scanner_by_type(log_pipe_get_config(&self->super.super), self->filename, type);
+  ContextualDataRecordScanner *scanner;
 
-  if (!scanner)
+  if (strcmp(type, "csv") == 0)
+    {
+      scanner = contextual_data_record_scanner_new(log_pipe_get_config(&self->super.super), self->filename);
+    }
+  else
     {
       msg_error("add-contextual-data(): unknown file extension, only files with a .csv extension are supported",
                 evt_tag_str("filename", self->filename));
