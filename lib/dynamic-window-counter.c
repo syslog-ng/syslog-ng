@@ -30,6 +30,8 @@ DynamicWindowCounter *
 dynamic_window_counter_new(void)
 {
   DynamicWindowCounter *self = g_new0(DynamicWindowCounter, 1);
+  g_atomic_counter_set(&self->ref_cnt, 1);
+
   return self;
 }
 
@@ -38,12 +40,25 @@ void dynamic_window_counter_init(DynamicWindowCounter *self)
   self->window = self->iw_size;
 }
 
-void dynamic_window_counter_free(DynamicWindowCounter *self)
+DynamicWindowCounter *
+dynamic_window_counter_ref(DynamicWindowCounter *self)
 {
-  if (!self)
-    return;
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt) > 0);
 
-  g_free(self);
+  if (self)
+    g_atomic_counter_inc(&self->ref_cnt);
+
+  return self;
+}
+
+void dynamic_window_counter_unref(DynamicWindowCounter *self)
+{
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
+
+  if (self && g_atomic_counter_dec_and_test(&self->ref_cnt))
+    {
+      g_free(self);
+    }
 }
 
 void dynamic_window_counter_set_iw_size(DynamicWindowCounter *self, gsize iw_size)

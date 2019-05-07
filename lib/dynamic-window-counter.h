@@ -26,18 +26,22 @@
 #define DYNAMIC_WINDOW_COUNTER_H_INCLUDED
 
 #include "syslog-ng.h"
+#include "atomic.h"
 
 typedef struct _DynamicWindowCounter DynamicWindowCounter;
 
 struct _DynamicWindowCounter
 {
+  GAtomicCounter ref_cnt;
+
   gsize iw_size;
   gsize window;
 };
 
 DynamicWindowCounter *dynamic_window_counter_new(void);
 void dynamic_window_counter_init(DynamicWindowCounter *self);
-void dynamic_window_counter_free(DynamicWindowCounter *self);
+DynamicWindowCounter *dynamic_window_counter_ref(DynamicWindowCounter *self);
+void dynamic_window_counter_unref(DynamicWindowCounter *self);
 
 void dynamic_window_counter_set_iw_size(DynamicWindowCounter *self, gsize iw_size);
 gsize dynamic_window_counter_request(DynamicWindowCounter *self, gsize requested_size);
