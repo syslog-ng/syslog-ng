@@ -147,31 +147,36 @@ filter_source_new(void)
   return &self->super;
 }
 
+typedef struct _FilterMatch
+{
+  FilterRE super;
+} FilterMatch;
+
 gboolean
 filter_match_is_usage_obsolete(FilterExprNode *s)
 {
-  FilterRE *self = (FilterRE *) s;
+  FilterMatch *self = (FilterMatch *) s;
 
-  return self->value_handle == 0;
+  return self->super.value_handle == 0;
 }
 
 void
 filter_match_set_value_handle(FilterExprNode *s, NVHandle value_handle)
 {
-  FilterRE *self = (FilterRE *) s;
+  FilterMatch *self = (FilterMatch *) s;
 
-  self->value_handle = value_handle;
+  self->super.value_handle = value_handle;
 }
 
 static gboolean
 filter_match_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
-  FilterRE *self = (FilterRE *) s;
+  FilterMatch *self = (FilterMatch *) s;
   gchar *str;
   gboolean res;
   LogMessage *msg = msgs[num_msg - 1];
 
-  if (G_UNLIKELY(!self->value_handle))
+  if (G_UNLIKELY(!self->super.value_handle))
     {
       const gchar *pid;
       gssize pid_len;
@@ -195,12 +200,21 @@ filter_match_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
   return res;
 }
 
+static void
+filter_match_free(FilterExprNode *s)
+{
+  FilterMatch *self = (FilterMatch *) s;
+
+  filter_re_free(&self->super.super);
+}
+
 FilterExprNode *
 filter_match_new(void)
 {
-  FilterRE *self = g_new0(FilterRE, 1);
+  FilterMatch *self = g_new0(FilterMatch, 1);
 
-  filter_re_init_instance(self, 0);
-  self->super.eval = filter_match_eval;
-  return &self->super;
+  filter_re_init_instance(&self->super, 0);
+  self->super.super.eval = filter_match_eval;
+  self->super.super.free_fn = filter_match_free;
+  return &self->super.super;
 }

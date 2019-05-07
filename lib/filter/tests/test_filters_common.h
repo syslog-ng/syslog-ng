@@ -44,7 +44,7 @@ testcase_with_backref_chk(const gchar *msg,
 FilterExprNode *create_pcre_regexp_filter(gint field, const gchar *regexp, gint flags);
 FilterExprNode *create_pcre_regexp_match(const gchar *regexp, gint flags);
 LogTemplate *create_template(const gchar *template);
-FilterExprNode *compile_pattern(FilterRE *f, const gchar *regexp, const gchar *type, gint flags);
+FilterExprNode *compile_pattern(FilterExprNode *f, const gchar *regexp, const gchar *type, gint flags);
 
 gint facility_bits(const gchar *fac);
 gint level_bits(const gchar *lev);
