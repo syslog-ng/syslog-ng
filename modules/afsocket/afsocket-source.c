@@ -108,10 +108,10 @@ afsocket_sc_init(LogPipe *s)
       self->reader = log_reader_new(s->cfg);
       log_reader_open(self->reader, proto, poll_fd_events_new(self->sock));
       log_reader_set_peer_addr(self->reader, self->peer_addr);
-    }
 
-  if (self->owner->dynamic_window_ctr)
-    log_source_enable_dynamic_window((LogSource *) self->reader, self->owner->dynamic_window_ctr);
+      if (self->owner->dynamic_window_ctr)
+        log_source_enable_dynamic_window(&self->reader->super, self->owner->dynamic_window_ctr);
+    }
 
   log_reader_set_options(self->reader, &self->super,
                          &self->owner->reader_options,
@@ -281,10 +281,7 @@ afsocket_sd_set_dynamic_window_size(LogDriver *s, gint dynamic_window_size)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
 
-  if (!self->dynamic_window_ctr)
-    self->dynamic_window_ctr = dynamic_window_counter_new();
-
-  dynamic_window_counter_set_iw_size(self->dynamic_window_ctr, dynamic_window_size);
+  self->dynamic_window_size = dynamic_window_size;
 }
 
 void
@@ -343,6 +340,17 @@ afsocket_sd_format_connections_name(const AFSocketSourceDriver *self)
   static gchar persist_name[1024];
 
   g_snprintf(persist_name, sizeof(persist_name), "%s.connections",
+             afsocket_sd_format_name((const LogPipe *)self));
+
+  return persist_name;
+}
+
+static const gchar *
+afsocket_sd_format_dynamic_window_counter_name(const AFSocketSourceDriver *self)
+{
+  static gchar persist_name[1024];
+
+  g_snprintf(persist_name, sizeof(persist_name), "%s.dynamic_window",
              afsocket_sd_format_name((const LogPipe *)self));
 
   return persist_name;
@@ -801,6 +809,40 @@ afsocket_sd_save_listener(AFSocketSourceDriver *self)
     }
 }
 
+static void
+afsocket_sd_save_dynamic_window_ctr(AFSocketSourceDriver *self)
+{
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
+
+  if (self->connections_kept_alive_across_reloads)
+    {
+      cfg_persist_config_add(cfg, afsocket_sd_format_dynamic_window_counter_name(self),
+                             self->dynamic_window_ctr, (GDestroyNotify) dynamic_window_counter_unref, FALSE);
+    }
+  else
+    {
+      dynamic_window_counter_unref(self->dynamic_window_ctr);
+    }
+
+  self->dynamic_window_ctr = NULL;
+}
+
+static gboolean
+afsocket_sd_restore_dynamic_window_ctr(AFSocketSourceDriver *self)
+{
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
+
+  if (!self->connections_kept_alive_across_reloads)
+    return FALSE;
+
+  DynamicWindowCounter *ctr = cfg_persist_config_fetch(cfg, afsocket_sd_format_dynamic_window_counter_name(self));
+  if (ctr == NULL)
+    return FALSE;
+
+  self->dynamic_window_ctr = ctr;
+  return TRUE;
+}
+
 
 gboolean
 afsocket_sd_setup_addresses_method(AFSocketSourceDriver *self)
@@ -813,14 +855,22 @@ afsocket_sd_init_method(LogPipe *s)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
 
-  if (self->dynamic_window_ctr)
-    dynamic_window_counter_init(self->dynamic_window_ctr);
+  if (!log_src_driver_init_method(s))
+    return FALSE;
 
-  return log_src_driver_init_method(s) &&
-         afsocket_sd_setup_transport(self) &&
-         afsocket_sd_setup_addresses(self) &&
-         afsocket_sd_restore_kept_alive_connections(self) &&
-         afsocket_sd_open_listener(self);
+  if (!afsocket_sd_setup_transport(self) || !afsocket_sd_setup_addresses(self))
+    return FALSE;
+
+  if (!afsocket_sd_restore_dynamic_window_ctr(self))
+    {
+      if (self->dynamic_window_size != 0)
+        {
+          self->dynamic_window_ctr = dynamic_window_counter_new(self->dynamic_window_size);
+          dynamic_window_counter_init(self->dynamic_window_ctr);
+        }
+    }
+
+  return afsocket_sd_restore_kept_alive_connections(self) && afsocket_sd_open_listener(self);
 }
 
 gboolean
@@ -830,6 +880,9 @@ afsocket_sd_deinit_method(LogPipe *s)
 
   afsocket_sd_save_connections(self);
   afsocket_sd_save_listener(self);
+
+  if (self->dynamic_window_ctr)
+    afsocket_sd_save_dynamic_window_ctr(self);
 
   return log_src_driver_deinit_method(s);
 }
@@ -860,7 +913,6 @@ afsocket_sd_free_method(LogPipe *s)
   socket_options_free(self->socket_options);
   g_sockaddr_unref(self->bind_addr);
   self->bind_addr = NULL;
-  dynamic_window_counter_free(self->dynamic_window_ctr);
   log_src_driver_free(s);
 }
 

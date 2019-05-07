@@ -42,6 +42,7 @@ struct _AFSocketSourceDriver
           window_size_initialized:1;
   struct iv_fd listen_fd;
   struct iv_timer dynamic_window_timer;
+  gsize dynamic_window_size;
   gsize dynamic_window_timer_tick;
   gfloat dynamic_window_stats_freq;
   gint dynamic_window_realloc_ticks;

@@ -185,7 +185,7 @@ log_source_enable_dynamic_window(LogSource *self, DynamicWindowCounter *window_c
       return;
     }
 
-  dynamic_window_set_counter(&self->dynamic_window, window_ctr);
+  dynamic_window_set_counter(&self->dynamic_window, dynamic_window_counter_ref(window_ctr));
 }
 
 void
@@ -244,6 +244,8 @@ _release_dynamic_window(LogSource *self)
   self->full_window_size -= dynamic_part;
   window_size_counter_sub(&self->window_size, dynamic_part, NULL);
   dynamic_window_release(&self->dynamic_window, dynamic_part);
+
+  dynamic_window_counter_unref(self->dynamic_window.window_ctr);
 }
 
 void
