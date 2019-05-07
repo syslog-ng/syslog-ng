@@ -169,35 +169,37 @@ filter_match_set_value_handle(FilterExprNode *s, NVHandle value_handle)
 }
 
 static gboolean
-filter_match_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
+filter_match_eval_against_program_pid_msg(FilterMatch *self, LogMessage **msgs, gint num_msg)
 {
-  FilterMatch *self = (FilterMatch *) s;
+  const gchar *pid;
+  gssize pid_len;
   gchar *str;
   gboolean res;
   LogMessage *msg = msgs[num_msg - 1];
 
-  if (G_UNLIKELY(!self->super.value_handle))
-    {
-      const gchar *pid;
-      gssize pid_len;
+  pid = log_msg_get_value(msg, LM_V_PID, &pid_len);
 
-      pid = log_msg_get_value(msg, LM_V_PID, &pid_len);
-
-      /* compatibility mode */
-      str = g_strdup_printf("%s%s%s%s: %s",
-                            log_msg_get_value(msg, LM_V_PROGRAM, NULL),
-                            pid_len > 0 ? "[" : "",
-                            pid,
-                            pid_len > 0 ? "]" : "",
-                            log_msg_get_value(msg, LM_V_MESSAGE, NULL));
-      res = filter_re_eval_string(s, msg, LM_V_NONE, str, -1);
-      g_free(str);
-    }
-  else
-    {
-      res = filter_re_eval(s, msgs, num_msg);
-    }
+  /* compatibility mode */
+  str = g_strdup_printf("%s%s%s%s: %s",
+                        log_msg_get_value(msg, LM_V_PROGRAM, NULL),
+                        pid_len > 0 ? "[" : "",
+                        pid,
+                        pid_len > 0 ? "]" : "",
+                        log_msg_get_value(msg, LM_V_MESSAGE, NULL));
+  res = filter_re_eval_string(&self->super.super, msg, LM_V_NONE, str, -1);
+  g_free(str);
   return res;
+}
+
+static gboolean
+filter_match_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
+{
+  FilterMatch *self = (FilterMatch *) s;
+
+  if (G_UNLIKELY(!self->super.value_handle))
+    return filter_match_eval_against_program_pid_msg(self, msgs, num_msg);
+  else
+    return filter_re_eval(s, msgs, num_msg);
 }
 
 static void
