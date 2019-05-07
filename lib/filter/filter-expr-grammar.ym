@@ -256,18 +256,27 @@ filter_match_opt
             const gchar *p = $3;
             if (p[0] == '$')
               {
-                msg_warning("Value references in filters should not use the '$' prefix, those are only needed in templates",
+                msg_warning("WARNING: value references in filters should not use the '$' prefix, those are only needed in templates, removing automatically",
                             evt_tag_str("value", $3),
                             cfg_lexer_format_location_tag(lexer, &@3));
                 p++;
               }
+            if (p[0] == '(' || strchr(p, '$') != NULL)
+              {
+                msg_error("value() reference for the match() filter cannot contain a full template string, use the template() option or stick to a single value",
+                          evt_tag_str("value", $3),
+                          cfg_lexer_format_location_tag(lexer, &@3));
+                free($3);
+                YYERROR;
+              }
             filter_match_set_value_handle(last_filter_expr, log_msg_get_value_handle(p));
             free($3);
           }
+	| KW_TEMPLATE '(' template_content ')'
+	  {
+            filter_match_set_template_ref(last_filter_expr, $3);
+          }
         ;
-
-
-
 
 filter_fac_list
 	: filter_fac filter_fac_list		{ $$ = $1 | $2; }

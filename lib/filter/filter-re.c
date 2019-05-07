@@ -25,7 +25,7 @@
 #include "filter-re.h"
 #include "str-utils.h"
 #include "messages.h"
-
+#include "scratch-buffers.h"
 #include <string.h>
 
 typedef struct _FilterRE
@@ -150,6 +150,7 @@ filter_source_new(void)
 typedef struct _FilterMatch
 {
   FilterRE super;
+  LogTemplate *template;
 } FilterMatch;
 
 gboolean
@@ -157,7 +158,7 @@ filter_match_is_usage_obsolete(FilterExprNode *s)
 {
   FilterMatch *self = (FilterMatch *) s;
 
-  return self->super.value_handle == 0;
+  return self->super.value_handle == 0 && self->template == NULL;
 }
 
 void
@@ -166,6 +167,15 @@ filter_match_set_value_handle(FilterExprNode *s, NVHandle value_handle)
   FilterMatch *self = (FilterMatch *) s;
 
   self->super.value_handle = value_handle;
+}
+
+void
+filter_match_set_template_ref(FilterExprNode *s, LogTemplate *template)
+{
+  FilterMatch *self = (FilterMatch *) s;
+
+  log_template_unref(self->template);
+  self->template = template;
 }
 
 static gboolean
@@ -192,14 +202,49 @@ filter_match_eval_against_program_pid_msg(FilterMatch *self, LogMessage **msgs, 
 }
 
 static gboolean
+filter_match_eval_against_template(FilterMatch *self, LogMessage **msgs, gint num_msg)
+{
+  LogMessage *msg = msgs[num_msg - 1];
+  GString *buffer;
+
+  buffer = scratch_buffers_alloc();
+
+  log_template_format(self->template, msg, NULL, LTZ_LOCAL, 0, NULL, buffer);
+  return filter_re_eval_string(&self->super.super, msg, LM_V_NONE, buffer->str, buffer->len);
+}
+
+static gboolean
+filter_match_eval_against_trivial_template(FilterMatch *self, LogMessage **msgs, gint num_msg)
+{
+  LogMessage *msg = msgs[num_msg - 1];
+  NVTable *payload;
+  const gchar *value;
+  gssize len = 0;
+  gboolean rc;
+
+  payload = nv_table_ref(msg->payload);
+  value = log_template_get_trivial_value(self->template, msg, &len);
+  APPEND_ZERO(value, value, len);
+
+  rc = filter_re_eval_string(&self->super.super, msg, LM_V_NONE, value, len);
+
+  nv_table_unref(payload);
+  return rc;
+}
+
+static gboolean
 filter_match_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
   FilterMatch *self = (FilterMatch *) s;
 
-  if (G_UNLIKELY(!self->super.value_handle))
-    return filter_match_eval_against_program_pid_msg(self, msgs, num_msg);
-  else
+  if (G_LIKELY(self->super.value_handle))
     return filter_re_eval(s, msgs, num_msg);
+  else if (self->template && log_template_is_trivial(self->template))
+    return filter_match_eval_against_trivial_template(self, msgs, num_msg);
+  else if (self->template)
+    return filter_match_eval_against_template(self, msgs, num_msg);
+  else
+    return filter_match_eval_against_program_pid_msg(self, msgs, num_msg);
 }
 
 static void
@@ -207,6 +252,7 @@ filter_match_free(FilterExprNode *s)
 {
   FilterMatch *self = (FilterMatch *) s;
 
+  log_template_unref(self->template);
   filter_re_free(&self->super.super);
 }
 

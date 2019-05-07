@@ -36,6 +36,7 @@ FilterExprNode *filter_source_new(void);
 
 gboolean filter_match_is_usage_obsolete(FilterExprNode *s);
 void filter_match_set_value_handle(FilterExprNode *s, NVHandle value_handle);
+void filter_match_set_template_ref(FilterExprNode *s, LogTemplate *template);
 FilterExprNode *filter_match_new(void);
 
 #endif

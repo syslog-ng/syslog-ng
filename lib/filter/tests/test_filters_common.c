@@ -36,6 +36,7 @@
 #include "logmsg/logmsg.h"
 #include "apphook.h"
 #include "plugin.h"
+#include "scratch-buffers.h"
 #include <criterion/criterion.h>
 
 #include <time.h>
@@ -234,6 +235,7 @@ setup(void)
 void
 teardown(void)
 {
+  scratch_buffers_explicit_gc();
   app_shutdown();
 }
 
