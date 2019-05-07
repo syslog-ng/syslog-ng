@@ -28,6 +28,15 @@
 
 #include <string.h>
 
+typedef struct _FilterRE
+{
+  FilterExprNode super;
+  NVHandle value_handle;
+  LogMatcherOptions matcher_options;
+  LogMatcher *matcher;
+} FilterRE;
+
+
 static gboolean
 filter_re_eval_string(FilterExprNode *s, LogMessage *msg, gint value_handle, const gchar *str, gssize str_len)
 {
@@ -85,9 +94,19 @@ filter_re_init(FilterExprNode *s, GlobalConfig *cfg)
   return TRUE;
 }
 
-gboolean
-filter_re_compile_pattern(FilterRE *self, GlobalConfig *cfg, const gchar *re, GError **error)
+LogMatcherOptions *
+filter_re_get_matcher_options(FilterExprNode *s)
 {
+  FilterRE *self = (FilterRE *) s;
+
+  return &self->matcher_options;
+}
+
+gboolean
+filter_re_compile_pattern(FilterExprNode *s, GlobalConfig *cfg, const gchar *re, GError **error)
+{
+  FilterRE *self = (FilterRE *) s;
+
   log_matcher_options_init(&self->matcher_options, cfg);
   self->matcher = log_matcher_new(cfg, &self->matcher_options);
   return log_matcher_compile(self->matcher, re, error);
@@ -106,26 +125,42 @@ filter_re_init_instance(FilterRE *self, NVHandle value_handle)
   self->matcher_options.flags |= LMF_MATCH_ONLY;
 }
 
-FilterRE *
+FilterExprNode *
 filter_re_new(NVHandle value_handle)
 {
   FilterRE *self = g_new0(FilterRE, 1);
 
   filter_re_init_instance(self, value_handle);
-  return self;
+  return &self->super;
 }
 
-FilterRE *
+FilterExprNode *
 filter_source_new(void)
 {
-  FilterRE *self = filter_re_new(LM_V_SOURCE);
+  FilterRE *self = (FilterRE *) filter_re_new(LM_V_SOURCE);
 
   if (!log_matcher_options_set_type(&self->matcher_options, "string"))
     {
       /* this can only happen if the plain text string matcher will cease to exist */
       g_assert_not_reached();
     }
-  return self;
+  return &self->super;
+}
+
+gboolean
+filter_match_is_usage_obsolete(FilterExprNode *s)
+{
+  FilterRE *self = (FilterRE *) s;
+
+  return self->value_handle == 0;
+}
+
+void
+filter_match_set_value_handle(FilterExprNode *s, NVHandle value_handle)
+{
+  FilterRE *self = (FilterRE *) s;
+
+  self->value_handle = value_handle;
 }
 
 static gboolean
@@ -160,12 +195,12 @@ filter_match_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
   return res;
 }
 
-FilterRE *
+FilterExprNode *
 filter_match_new(void)
 {
   FilterRE *self = g_new0(FilterRE, 1);
 
   filter_re_init_instance(self, 0);
   self->super.eval = filter_match_eval;
-  return self;
+  return &self->super;
 }

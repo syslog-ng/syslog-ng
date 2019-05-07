@@ -46,7 +46,7 @@
 #include "plugin.h"
 #include "cfg-grammar.h"
 
-FilterRE *last_re_filter;
+FilterExprNode *last_filter_expr;
 
 }
 
@@ -140,7 +140,7 @@ filter_simple_expr
             free($3);
             free($6);
           }
-	| filter_re					{ $$ = &last_re_filter->super; }
+	| filter_re					{ $$ = last_filter_expr; }
 	| filter_plugin
 	| filter_comparison
 	;
@@ -199,11 +199,11 @@ operator
 	;
 
 filter_re
-        : KW_PROGRAM { last_re_filter = filter_re_new(LM_V_PROGRAM); } filter_re_params
-	| KW_HOST    { last_re_filter = filter_re_new(LM_V_HOST); } filter_re_params
-	| KW_MESSAGE { last_re_filter = filter_re_new(LM_V_MESSAGE); } filter_re_params
-        | KW_SOURCE  { last_re_filter = filter_source_new();  } filter_re_params
-	| KW_MATCH   { last_re_filter = filter_match_new(); } filter_match_params
+        : KW_PROGRAM { last_filter_expr = filter_re_new(LM_V_PROGRAM); } filter_re_params
+	| KW_HOST    { last_filter_expr = filter_re_new(LM_V_HOST); } filter_re_params
+	| KW_MESSAGE { last_filter_expr = filter_re_new(LM_V_MESSAGE); } filter_re_params
+        | KW_SOURCE  { last_filter_expr = filter_source_new();  } filter_re_params
+	| KW_MATCH   { last_filter_expr = filter_match_new(); } filter_match_params
 	;
 
 filter_re_params
@@ -211,7 +211,7 @@ filter_re_params
           {
             GError *error = NULL;
 
-            CHECK_ERROR_GERROR(filter_re_compile_pattern(last_re_filter, configuration, $2, &error), @2, error, "error compiling search pattern");
+            CHECK_ERROR_GERROR(filter_re_compile_pattern(last_filter_expr, configuration, $2, &error), @2, error, "error compiling search pattern");
             free($2);
           }
 	;
@@ -222,7 +222,7 @@ filter_re_opts
         ;
 
 filter_re_opt
-	: { last_matcher_options = &last_re_filter->matcher_options; } matcher_option
+	: { last_matcher_options = filter_re_get_matcher_options(last_filter_expr); } matcher_option
         ;
 
 
@@ -231,22 +231,17 @@ filter_match_params
           {
             GError *error = NULL;
 
-            CHECK_ERROR_GERROR(filter_re_compile_pattern(last_re_filter, configuration, $2, &error), @2, error, "error compiling search pattern");
+            CHECK_ERROR_GERROR(filter_re_compile_pattern(last_filter_expr, configuration, $2, &error), @2, error, "error compiling search pattern");
             free($2);
 
-            if (last_re_filter->value_handle == 0)
+            if (filter_match_is_usage_obsolete(last_filter_expr))
               {
-                static gboolean warn_written = FALSE;
-
-                if (!warn_written)
-                  {
-                    msg_warning("WARNING: the match() filter without the use of the value() "
-                                "option is deprecated and hinders performance, please use a "
-                                "more specific filter like message() and/or program() instead",
-                                cfg_lexer_format_location_tag(lexer, &@0));
-                    warn_written = TRUE;
-                  }
+                msg_warning_once("WARNING: the match() filter without the use of the value() "
+                                 "option is deprecated and hinders performance, please use a "
+                                 "more specific filter like message() and/or program() instead",
+                                 cfg_lexer_format_location_tag(lexer, &@0));
               }
+
           }
 
 filter_match_opts
@@ -266,7 +261,7 @@ filter_match_opt
                             cfg_lexer_format_location_tag(lexer, &@3));
                 p++;
               }
-            last_re_filter->value_handle = log_msg_get_value_handle(p);
+            filter_match_set_value_handle(last_filter_expr, log_msg_get_value_handle(p));
             free($3);
           }
         ;

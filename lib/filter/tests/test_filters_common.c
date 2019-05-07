@@ -68,13 +68,14 @@ level_range(const gchar *from, const gchar *to)
 }
 
 FilterExprNode *
-compile_pattern(FilterRE *f, const gchar *regexp, const gchar *type, gint flags)
+compile_pattern(FilterExprNode *f, const gchar *regexp, const gchar *type, gint flags)
 {
+  FilterRE *fre = (FilterRE *) f;
   gboolean result;
 
-  log_matcher_options_defaults(&f->matcher_options);
+  log_matcher_options_defaults(&fre->matcher_options);
   f->matcher_options.flags = flags;
-  log_matcher_options_set_type(&f->matcher_options, type);
+  log_matcher_options_set_type(&fre->matcher_options, type);
 
   result = filter_re_compile_pattern(f, configuration, regexp, NULL);
 
