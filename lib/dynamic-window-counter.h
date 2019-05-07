@@ -38,12 +38,11 @@ struct _DynamicWindowCounter
   gsize window;
 };
 
-DynamicWindowCounter *dynamic_window_counter_new(void);
+DynamicWindowCounter *dynamic_window_counter_new(gsize iw_size);
 void dynamic_window_counter_init(DynamicWindowCounter *self);
 DynamicWindowCounter *dynamic_window_counter_ref(DynamicWindowCounter *self);
 void dynamic_window_counter_unref(DynamicWindowCounter *self);
 
-void dynamic_window_counter_set_iw_size(DynamicWindowCounter *self, gsize iw_size);
 gsize dynamic_window_counter_request(DynamicWindowCounter *self, gsize requested_size);
 void dynamic_window_counter_release(DynamicWindowCounter *self, gsize release_size);
 

@@ -27,10 +27,12 @@
 #include "dynamic-window-counter.h"
 
 DynamicWindowCounter *
-dynamic_window_counter_new(void)
+dynamic_window_counter_new(gsize iw_size)
 {
   DynamicWindowCounter *self = g_new0(DynamicWindowCounter, 1);
   g_atomic_counter_set(&self->ref_cnt, 1);
+
+  self->iw_size = iw_size;
 
   return self;
 }
@@ -59,11 +61,6 @@ void dynamic_window_counter_unref(DynamicWindowCounter *self)
     {
       g_free(self);
     }
-}
-
-void dynamic_window_counter_set_iw_size(DynamicWindowCounter *self, gsize iw_size)
-{
-  self->iw_size = iw_size;
 }
 
 gsize
