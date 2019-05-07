@@ -1,5 +1,8 @@
 %global ivykis_ver 0.36.1
 
+%define enable_java 1
+%define enable_dbi 1
+
 Name: syslog-ng
 Version: 3.21.1
 Release: 1%{?dist}
@@ -22,7 +25,9 @@ BuildRequires: glib2-devel >= 2.10.1
 BuildRequires: ivykis-devel >= %{ivykis_ver}
 BuildRequires: json-c-devel
 BuildRequires: libcap-devel
+%if 0%{?enable_dbi}
 BuildRequires: libdbi-devel
+%endif
 BuildRequires: libnet-devel
 BuildRequires: openssl-devel
 BuildRequires: pcre-devel >= 6.1
@@ -33,9 +38,13 @@ BuildRequires: systemd-devel
 BuildRequires: hiredis-devel
 BuildRequires: riemann-c-client-devel
 BuildRequires: python-devel
+
+%if 0%{?enable_java}
 BuildRequires: java-devel
 #BuildRequires: gradle    # Upstream version installed manually, discussed in: https://github.com/balabit/syslog-ng/issues/2262
 BuildRequires: syslog-ng-java-deps
+%endif
+
 BuildRequires: libcurl-devel
 BuildRequires: cyrus-sasl-devel
 BuildRequires: libmaxminddb-devel
@@ -77,7 +86,7 @@ Key features:
  * hand on messages for further processing using message queues (like
    AMQP), files or databases (like PostgreSQL or MongoDB).
 
-
+%if 0%{?enable_dbi}
 %package libdbi
 Summary: libdbi support for %{name}
 Group: Development/Libraries
@@ -85,6 +94,7 @@ Requires: %{name}%{?_isa} = %{version}-%{release}
 
 %description libdbi
 This module supports a large number of database systems via libdbi.
+%endif
 
 %if 0%{?rhel}
 
@@ -107,6 +117,7 @@ Requires: %{name}%{?_isa} = %{version}-%{release}
 This module supports sending e-mail alerts through an smtp server.
 
 
+%if 0%{?enable_java}
 %package java
 Summary:        Java destination support for syslog-ng
 Group:          System/Libraries
@@ -114,6 +125,7 @@ Requires:       %{name} = %{version}
 
 %description java
 This package provides java destination support for syslog-ng.
+%endif
 
 
 %package geoip
@@ -212,7 +224,11 @@ export GEOIP_LIBS=-lGeoIP
     --enable-ipv6 \
     --enable-spoof-source \
     --with-linux-caps=auto \
+%if 0%{?enable_dbi}
     --enable-sql \
+%else
+    --without-sql \
+%endif
     --enable-json \
     --enable-ssl \
     --enable-smtp \
@@ -223,7 +239,11 @@ export GEOIP_LIBS=-lGeoIP
     --enable-systemd \
     --enable-redis \
     --enable-python \
+%if 0%{?enable_java}
     --enable-java \
+%else
+    --disable-java \
+%endif
     --enable-riemann
 
 # disable broken test by setting a different target
@@ -368,8 +388,10 @@ fi
 %{_mandir}/man5/syslog-ng.conf.5*
 %{_mandir}/man8/syslog-ng.8*
 
+%if 0%{?enable_dbi}
 %files libdbi
 %{_libdir}/%{name}/libafsql.so
+%endif
 
 %if 0%{?rhel}
 %files mongodb
@@ -382,10 +404,12 @@ fi
 %files smtp
 %{_libdir}/%{name}/libafsmtp.so
 
+%if 0%{?enable_java}
 %files java
 %attr(755,root,root) %{_libdir}/syslog-ng/libmod-java.so
 %dir %{_libdir}/%{name}/java-modules/
 %{_libdir}/%{name}/java-modules/*
+%endif
 
 %files geoip
 %{_libdir}/%{name}/libgeoip-plugin.so
