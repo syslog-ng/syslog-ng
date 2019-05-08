@@ -90,7 +90,8 @@ afsocket_sc_init(LogPipe *s)
   LogTransport *transport;
   LogProtoServer *proto;
 
-  if (!self->reader)
+  gboolean restored_kept_alive_source = !!self->reader;
+  if (!restored_kept_alive_source)
     {
       transport = afsocket_sc_construct_transport(self, self->sock);
       /* transport_mapper_inet_construct_log_transport() can return NULL on TLS errors */
@@ -108,15 +109,15 @@ afsocket_sc_init(LogPipe *s)
       self->reader = log_reader_new(s->cfg);
       log_reader_open(self->reader, proto, poll_fd_events_new(self->sock));
       log_reader_set_peer_addr(self->reader, self->peer_addr);
-
-      if (self->owner->dynamic_window_ctr)
-        log_source_enable_dynamic_window(&self->reader->super, self->owner->dynamic_window_ctr);
     }
 
   log_reader_set_options(self->reader, &self->super,
                          &self->owner->reader_options,
                          self->owner->super.super.id,
                          afsocket_sc_stats_instance(self));
+
+  if (!restored_kept_alive_source && self->owner->dynamic_window_ctr)
+    log_source_enable_dynamic_window(&self->reader->super, self->owner->dynamic_window_ctr);
 
   log_pipe_append((LogPipe *) self->reader, s);
   if (log_pipe_init((LogPipe *) self->reader))
