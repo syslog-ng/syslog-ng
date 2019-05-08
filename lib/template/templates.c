@@ -308,7 +308,7 @@ log_template_new(GlobalConfig *cfg, const gchar *name)
   LogTemplate *self = g_new0(LogTemplate, 1);
 
   log_template_set_name(self, name);
-  self->ref_cnt = 1;
+  g_atomic_counter_set(&self->ref_cnt, 1);
   self->cfg = cfg;
   return self;
 }
@@ -326,22 +326,15 @@ LogTemplate *
 log_template_ref(LogTemplate *s)
 {
   if (s)
-    {
-      g_assert(s->ref_cnt > 0);
-      s->ref_cnt++;
-    }
+    g_atomic_counter_inc(&s->ref_cnt);
   return s;
 }
 
 void
 log_template_unref(LogTemplate *s)
 {
-  if (s)
-    {
-      g_assert(s->ref_cnt > 0);
-      if (--s->ref_cnt == 0)
-        log_template_free(s);
-    }
+  if (s && g_atomic_counter_dec_and_test(&s->ref_cnt))
+    log_template_free(s);
 }
 
 /* NOTE: _init needs to be idempotent when called multiple times w/o invoking _destroy */
