@@ -7,6 +7,10 @@ import io.searchbox.client.config.idle.HttpReapableConnectionManager;
 import io.searchbox.client.config.idle.IdleConnectionReaper;
 import io.searchbox.client.http.ESJestHttpClient;
 import org.apache.http.conn.HttpClientConnectionManager;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
+import org.apache.http.impl.nio.client.HttpAsyncClients;
 import org.apache.http.nio.conn.NHttpClientConnectionManager;
 
 public class ESJestClientFactory extends  JestClientFactory {
@@ -61,6 +65,28 @@ public class ESJestClientFactory extends  JestClientFactory {
     }
 
     return client;
+  }
+
+  protected CloseableHttpClient createHttpClient(HttpClientConnectionManager connectionManager) {
+    return configureHttpClient(
+            HttpClients.custom()
+                    .setConnectionManager(connectionManager)
+                    .setDefaultRequestConfig(getRequestConfig())
+                    .setProxyAuthenticationStrategy(httpClientConfig.getProxyAuthenticationStrategy())
+                    .setRoutePlanner(getRoutePlanner())
+                    .setDefaultCredentialsProvider(httpClientConfig.getCredentialsProvider())
+    ).build();
+  }
+
+  protected CloseableHttpAsyncClient createAsyncHttpClient(NHttpClientConnectionManager connectionManager) {
+    return configureHttpClient(
+            HttpAsyncClients.custom()
+                    .setConnectionManager(connectionManager)
+                    .setDefaultRequestConfig(getRequestConfig())
+                    .setProxyAuthenticationStrategy(httpClientConfig.getProxyAuthenticationStrategy())
+                    .setRoutePlanner(getRoutePlanner())
+                    .setDefaultCredentialsProvider(httpClientConfig.getCredentialsProvider())
+    ).build();
   }
 
   public void setHttpClientConfig(HttpClientConfig httpClientConfig) {
