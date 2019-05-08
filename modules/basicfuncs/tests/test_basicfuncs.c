@@ -313,8 +313,16 @@ Test(basicfuncs, test_misc_funcs)
 
 Test(basicfuncs, test_tf_template)
 {
+  /* static binding */
   assert_template_format("foo $(template dummy) bar", "foo dummy template expanded bzorp bar");
   assert_template_failure("foo $(template unknown) bar", "Unknown template function or template \"unknown\"");
+
+  /* dynamic binding */
+  assert_template_format("foo $(template ${template_name}) bar", "foo dummy template expanded bzorp bar");
+  assert_template_format("foo $(template '${unknown:-unknown}' fallback) bar", "foo fallback bar");
+  assert_template_format("foo $(template '${unknown:-unknown}' fallback more args $HOST) bar",
+                         "foo fallback more args bzorp bar");
+  assert_template_format("foo $(template '${unknown:-unknown}') bar", "foo  bar");
 }
 
 Test(basicfuncs, test_list_funcs)
