@@ -568,7 +568,7 @@ log_source_options_defaults(LogSourceOptions *options)
   options->tags = NULL;
   options->read_old_records = TRUE;
   options->dynamic_window_decrease_threshold = 50;
-  options->dynamic_window_increase_threshold = 5;
+  options->dynamic_window_increase_threshold = 20;
   host_resolve_options_defaults(&options->host_resolve_options);
 }
 

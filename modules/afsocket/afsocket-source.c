@@ -40,8 +40,8 @@ int allow_severity = 0;
 int deny_severity = 0;
 #endif
 
-static const gfloat DYNAMIC_WINDOW_TIMER_MSECS = 1000;
-static const gsize DYNAMIC_WINDOW_REALLOC_TICKS = 5;
+static const gfloat DYNAMIC_WINDOW_TIMER_MSECS = 100;
+static const gsize DYNAMIC_WINDOW_REALLOC_TICKS = 10;
 
 typedef struct _AFSocketSourceConnection
 {
