@@ -28,11 +28,94 @@
 #include "template/escaping.h"
 #include "cfg.h"
 
+gboolean
+log_template_is_trivial(LogTemplate *self)
+{
+  return self->trivial;
+}
+
+const gchar *
+log_template_get_trivial_value(LogTemplate *self, LogMessage *msg, gssize *value_len)
+{
+  g_assert(self->trivial);
+
+  LogTemplateElem *e = (LogTemplateElem *) self->compiled_template->data;
+
+  switch (e->type)
+    {
+    case LTE_MACRO:
+      if (e->text_len > 0)
+        {
+          if (value_len)
+            *value_len = e->text_len;
+          return e->text;
+        }
+      else if (e->macro == M_MESSAGE)
+        return log_msg_get_value(msg, LM_V_MESSAGE, value_len);
+      else if (e->macro == M_HOST)
+        return log_msg_get_value(msg, LM_V_HOST, value_len);
+      g_assert_not_reached();
+    case LTE_VALUE:
+      return log_msg_get_value(msg, e->value_handle, value_len);
+    default:
+      g_assert_not_reached();
+    }
+}
+
+static gboolean
+_calculate_triviality(LogTemplate *self)
+{
+  /* if we need to escape, that's not trivial */
+  if (self->escape)
+    return FALSE;
+
+  /* no compiled template */
+  if (self->compiled_template == NULL)
+    return FALSE;
+
+  /* more than one element */
+  if (self->compiled_template->next != NULL)
+    return FALSE;
+
+  LogTemplateElem *e = (LogTemplateElem *) self->compiled_template->data;
+
+  /* reference to non-last element of the context, that's not trivial */
+  if (e->msg_ref > 0)
+    return FALSE;
+
+  switch (e->type)
+    {
+    case LTE_FUNC:
+      /* functions are never trivial */
+      return FALSE;
+    case LTE_MACRO:
+      /* Macros are trivial if they only contain a text but not a real
+       * macro.  Empty strings are represented this way.  */
+      if (e->macro == M_NONE)
+        return TRUE;
+      if (e->text_len > 0)
+        return FALSE;
+
+      /* we have macros for MESSAGE and HOST for compatibility reasons, but
+       * they should be considered trivial */
+
+      if (e->macro == M_MESSAGE || e->macro == M_HOST)
+        return TRUE;
+      return FALSE;
+    case LTE_VALUE:
+      /* values are trivial if they don't contain text */
+      return e->text_len == 0;
+    default:
+      g_assert_not_reached();
+    }
+}
+
 static void
 log_template_reset_compiled(LogTemplate *self)
 {
   log_template_elem_free_list(self->compiled_template);
   self->compiled_template = NULL;
+  self->trivial = FALSE;
 }
 
 gboolean
@@ -51,6 +134,8 @@ log_template_compile(LogTemplate *self, const gchar *template, GError **error)
   log_template_compiler_init(&compiler, self);
   result = log_template_compiler_compile(&compiler, &self->compiled_template, error);
   log_template_compiler_clear(&compiler);
+
+  self->trivial = _calculate_triviality(self);
   return result;
 }
 
@@ -67,7 +152,6 @@ log_template_set_type_hint(LogTemplate *self, const gchar *type_hint, GError **e
 
   return type_hint_parse(type_hint, &self->type_hint, error);
 }
-
 
 void
 log_template_append_format_with_context(LogTemplate *self, LogMessage **messages, gint num_messages,

@@ -26,6 +26,8 @@
 #include "syslog-ng.h"
 #include "correllation-key.h"
 #include "timerwheel.h"
+#include "logmsg/logmsg.h"
+#include "template/templates.h"
 
 /* This class encapsulates a correllation context, keyed by CorrellationKey, type == PSK_RULE. */
 typedef struct _CorrellationContext CorrellationContext;
@@ -49,6 +51,7 @@ correllation_context_get_last_message(CorrellationContext *self)
 
 void correllation_context_init(CorrellationContext *self, const CorrellationKey *key);
 void correllation_context_free_method(CorrellationContext *self);
+void correllation_context_sort(CorrellationContext *self, LogTemplate *sort_key);
 CorrellationContext *correllation_context_new(CorrellationKey *key);
 CorrellationContext *correllation_context_ref(CorrellationContext *self);
 void correllation_context_unref(CorrellationContext *self);

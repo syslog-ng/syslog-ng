@@ -325,3 +325,36 @@ Test(template, test_template_function_args)
                          "33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 "
                          "49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64");
 }
+
+Test(template, test_single_values_and_literal_strings_are_considered_trivial)
+{
+  LogTemplate *template;
+  LogMessage *msg = create_sample_message();
+
+  template = compile_template("literal", FALSE);
+  cr_assert(log_template_is_trivial(template));
+  cr_assert_str_eq(log_template_get_trivial_value(template, msg, NULL), "literal");
+  log_template_unref(template);
+
+  template = compile_template("$1", FALSE);
+  cr_assert(log_template_is_trivial(template));
+  cr_assert_str_eq(log_template_get_trivial_value(template, msg, NULL), "first-match");
+  log_template_unref(template);
+
+  template = compile_template("$MSG", FALSE);
+  cr_assert(log_template_is_trivial(template));
+  cr_assert_str_eq(log_template_get_trivial_value(template, msg, NULL), "árvíztűrőtükörfúrógép");
+  log_template_unref(template);
+
+  template = compile_template("$HOST", FALSE);
+  cr_assert(log_template_is_trivial(template));
+  cr_assert_str_eq(log_template_get_trivial_value(template, msg, NULL), "bzorp");
+  log_template_unref(template);
+
+  template = compile_template("${APP.VALUE}", FALSE);
+  cr_assert(log_template_is_trivial(template));
+  cr_assert_str_eq(log_template_get_trivial_value(template, msg, NULL), "value");
+  log_template_unref(template);
+
+  log_msg_unref(msg);
+}

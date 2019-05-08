@@ -68,6 +68,7 @@ SyntheticMessage *last_message;
 %token KW_FILE
 %token KW_PROGRAM_TEMPLATE
 %token KW_MESSAGE_TEMPLATE
+%token KW_SORT_KEY
 
 %type <num> stateful_parser_inject_mode
 %type <ptr> synthetic_message
@@ -133,6 +134,7 @@ grouping_by_opts
 
 grouping_by_opt
 	: KW_KEY '(' template_content ')'                       { grouping_by_set_key_template(last_parser, $3); log_template_unref($3); }
+        | KW_SORT_KEY '(' template_content ')'			{ grouping_by_set_sort_key_template(last_parser, $3); log_template_unref($3); }
         | KW_SCOPE '(' context_scope ')'                        { grouping_by_set_scope(last_parser, $3); }
         | KW_WHERE '('
           {
