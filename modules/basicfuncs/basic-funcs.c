@@ -35,6 +35,21 @@
 #include <errno.h>
 #include <string.h>
 
+/* helper functions available for all modules */
+
+void
+_append_args_with_separator(gint argc, GString *argv[], GString *result, gchar separator)
+{
+  gint i;
+
+  for (i = 0; i < argc; i++)
+    {
+      g_string_append_len(result, argv[i]->str, argv[i]->len);
+      if (i < argc - 1)
+        g_string_append_c(result, separator);
+    }
+}
+
 /* in order to avoid having to declare all construct functions, we
  * include them all here. If it causes compilation times to increase
  * drastically, we should probably make them into separate compilation

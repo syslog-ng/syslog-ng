@@ -26,20 +26,6 @@
 #include <ctype.h>
 
 static void
-_append_args_with_separator(gint argc, GString *argv[], GString *result, gchar separator)
-{
-  gint i;
-
-  for (i = 0; i < argc; i++)
-    {
-      g_string_append_len(result, argv[i]->str, argv[i]->len);
-      if (i < argc - 1)
-        g_string_append_c(result, separator);
-    }
-}
-
-
-static void
 tf_echo(LogMessage *msg, gint argc, GString *argv[], GString *result)
 {
   _append_args_with_separator(argc, argv, result, ' ');
