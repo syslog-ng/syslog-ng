@@ -79,6 +79,10 @@ _calculate_triviality(LogTemplate *self)
 
   LogTemplateElem *e = (LogTemplateElem *) self->compiled_template->data;
 
+  /* reference to non-last element of the context, that's not trivial */
+  if (e->msg_ref > 0)
+    return FALSE;
+
   switch (e->type)
     {
     case LTE_FUNC:
