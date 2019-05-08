@@ -50,16 +50,19 @@ void
 log_rewrite_subst_process(LogRewrite *s, LogMessage **pmsg, const LogPathOptions *path_options)
 {
   LogRewriteSubst *self = (LogRewriteSubst *) s;
+  LogMessage *msg;
+  NVTable *nvtable;
   const gchar *value;
   gchar *new_value;
   gssize length;
   gssize new_length = -1;
 
-  value = log_msg_get_value(*pmsg, self->super.value_handle, &length);
-
-  log_msg_make_writable(pmsg, path_options);
-  new_value = log_matcher_replace(self->matcher, *pmsg, self->super.value_handle, value, length, self->replacement,
+  msg = log_msg_make_writable(pmsg, path_options);
+  nvtable = nv_table_ref(msg->payload);
+  value = log_msg_get_value(msg, self->super.value_handle, &length);
+  new_value = log_matcher_replace(self->matcher, msg, self->super.value_handle, value, length, self->replacement,
                                   &new_length);
+
   if (new_value)
     {
       msg_trace("Performing subst() rewrite",
@@ -70,7 +73,7 @@ log_rewrite_subst_process(LogRewrite *s, LogMessage **pmsg, const LogPathOptions
                 evt_tag_str("pattern", self->matcher->pattern),
                 evt_tag_str("replacement", self->replacement->template),
                 log_pipe_location_tag(&s->super));
-      log_msg_set_value(*pmsg, self->super.value_handle, new_value, new_length);
+      log_msg_set_value(msg, self->super.value_handle, new_value, new_length);
     }
   else
     {
@@ -83,6 +86,7 @@ log_rewrite_subst_process(LogRewrite *s, LogMessage **pmsg, const LogPathOptions
                 evt_tag_str("replacement", self->replacement->template),
                 log_pipe_location_tag(&s->super));
     }
+  nv_table_unref(nvtable);
   g_free(new_value);
 }
 
