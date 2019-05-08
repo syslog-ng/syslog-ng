@@ -547,9 +547,7 @@ recurse:
               if (ep != NULL)
                 {
                   wct->tm.tm_isdst = i;
-#ifdef SYSLOG_NG_HAVE_TIMEZONE
                   wct->wct_gmtoff = -(timezone);
-#endif
                   wct->wct_zone = tzname[i];
                 }
               bp = ep;
