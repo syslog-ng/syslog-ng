@@ -95,6 +95,7 @@ override_dh_auto_configure:
 		--enable-amqp \
 		--enable-pacct \
 		--enable-python \
+		--enable-snmp-dest \
 		\
 		--with-mongoc=system \
 		--with-ivykis=system \
