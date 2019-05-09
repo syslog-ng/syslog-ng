@@ -28,12 +28,12 @@ public class ESJestHttpClient extends JestHttpClient {
   @Override
   public <T extends JestResult> T execute(Action<T> clientRequest) throws IOException {
     if (log.isDebugEnabled()) {
-      log.debug("SB: ["+ Thread.currentThread().getName() + "] About to send " + clientRequest.getURI());
+      log.debug("["+ Thread.currentThread().getName() + "] About to send " + clientRequest.getURI());
     }
     HttpUriRequest request = prepareRequest(clientRequest);
     HttpResponse response = getHttpClient().execute(request);
     if (log.isDebugEnabled()) {
-      log.debug("SB: ["+ Thread.currentThread().getName() + "] Received response " + clientRequest.getURI());
+      log.debug("["+ Thread.currentThread().getName() + "] Received response " + clientRequest.getURI());
     }
     String firstFewLines = null;
     if (clientRequest instanceof ESJestBulkActions) {
@@ -56,12 +56,12 @@ public class ESJestHttpClient extends JestHttpClient {
             ;
           }
           if (log.isDebugEnabled()) {
-            log.debug("SB: ["+ Thread.currentThread().getName() + "] Message successfully Processed " + clientRequest.getURI());
+            log.debug("["+ Thread.currentThread().getName() + "] Message successfully Processed " + clientRequest.getURI());
           }
           return null;
         }
       } catch (IOException e) {
-        log.warn("SB: Got exception response while executing request " + e.getMessage(), e);
+        log.warn("Got exception response while executing request " + e.getMessage(), e);
         throw e;
       }
     }

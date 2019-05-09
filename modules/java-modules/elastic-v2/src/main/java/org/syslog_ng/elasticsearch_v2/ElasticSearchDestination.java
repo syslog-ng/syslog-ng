@@ -47,7 +47,6 @@ public class ElasticSearchDestination extends StructuredLogDestination {
 	public ElasticSearchDestination(long handle) {
 		super(handle);
 		logger = Logger.getRootLogger();
-		logger.error("SB: ESD: state of the logger: isDebugEnabled=" + logger.isDebugEnabled());
 		SyslogNgInternalLogger.register(logger);
 		options = new ElasticSearchOptions(this);
   }

@@ -125,7 +125,7 @@ public class ESJestBulkActions implements Action<BulkResult> {
     String payload = data.toString();
     data = null;
     if (debugEnabled)
-        log.info("SB: Http Bulk Payload : " + payload);
+        log.info("Http Bulk Payload : " + payload);
     return payload;
   }
 

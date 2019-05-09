@@ -75,10 +75,6 @@ public class HttpBulkMessageProcessor extends HttpMessageProcessor {
   @Override
   public void init() {
 
-    if (isInitialized) {
-      logger.error("SB: INITIALIZED invoked again....");
-    }
-
     flushLimit = options.getFlushLimit();
     shutDown = false;
     assert client.getClient() != null : "Client must be initialized by this time.";
@@ -140,12 +136,12 @@ public class HttpBulkMessageProcessor extends HttpMessageProcessor {
               }
 
               if (httpRequestErrorCount > 0) {
-                logger.warn(name + " SB: " + httpRequestErrorCount + " ");
+                logger.warn(name + " http error " + httpRequestErrorCount + " occurred.");
                 httpRequestErrorCount = 0;
               }
 
               if (debugEnabled && jestResult != null) {
-                logmsg(() -> " SB: processed [" + jestResult.getJsonString() + "]");
+                logmsg(() -> " processed jest result [" + jestResult.getJsonString() + "]");
               }
           } // end of while
         } catch (InterruptedException e) {
@@ -170,7 +166,7 @@ public class HttpBulkMessageProcessor extends HttpMessageProcessor {
     }
 
     senders.forEach(t -> {
-      logger.info("SB: Starting " + t.getName());
+      logger.info("Starting sender " + t.getName());
       t.start();
     });
 
@@ -195,14 +191,14 @@ public class HttpBulkMessageProcessor extends HttpMessageProcessor {
 
   @Override
   public void deinit() {
-    logmsg(() -> "SB: HMP: deinit called... shutting down the threadpool");
+    logmsg(() -> "HttpBulkMessageProcessor deinit called... shutting down the threadpool");
     shutDown = true;
     senders.forEach(t -> {
-      logmsg(() -> "SB: Waiting for " + t.getName() + " to terminate");
+      logmsg(() -> "Waiting for " + t.getName() + " to terminate");
       try {
         t.join(10000);
       } catch (InterruptedException e) {
-        logger.error(name + "SB: " + Thread.currentThread() + " received " +
+        logger.error(name + " " + Thread.currentThread() + " " +
                 t.getName() + " interrupted while waiting for termination.", e);
       }
     });
@@ -214,7 +210,7 @@ public class HttpBulkMessageProcessor extends HttpMessageProcessor {
       if (!messageQueue.offer(bulkActions, enqueueTimeout, TimeUnit.MILLISECONDS)) {
         if(enqueueFailCount <= 0) {
           if(logger.isDebugEnabled()) {
-            logger.debug(Thread.currentThread().getId() + "SB: " + name + " " + enqueueTimeout + " millis elapsed to schedule bulk request. " +
+            logger.debug(Thread.currentThread().getId() + " " + name + " " + enqueueTimeout + " millis elapsed to schedule bulk request. " +
                     "Queue full with " + messageQueue.size() + " messages. " +
                     "Consider increasing concurrent_request or elastic cluster capacity.");
           }
@@ -225,7 +221,7 @@ public class HttpBulkMessageProcessor extends HttpMessageProcessor {
         client.incDroppedBatchCounter(bulkActions.getRowCount());
         return true;
       } else if (enqueueFailCount != 0) {
-        logmsg(() -> " SB: " + name + " " + enqueueFailCount +
+        logmsg(() -> " " + name + " " + enqueueFailCount +
                 " enqueue attempts failed and " + (System.currentTimeMillis() - enqueueStartTime) +
                 " millis elapsed since last success.");
         enqueueFailCount = 0;

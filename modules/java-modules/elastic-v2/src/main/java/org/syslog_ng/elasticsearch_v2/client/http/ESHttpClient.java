@@ -88,7 +88,6 @@ public class ESHttpClient implements ESClient {
   protected void setupHttpClientBuilder(HttpClientConfig.Builder httpClientConfigBuilder, ElasticSearchOptions options) {}
 
   private HttpClientConfig buildHttpClientConfig() {
-		// SB: honor concurrent_requests in client-mode(http).
 		int concurrentRequests = options.getConcurrentRequests();
 		int totalRoutes = options.getClusterUrls().size();
 		String connPoolTimes = System.getProperty("HttpConnectionPoolTimes", "3");
@@ -174,7 +173,6 @@ public class ESHttpClient implements ESClient {
 		try {
 			JestResult result = client.execute(nodesinfo);
 			if (result != null ) {
-				logger.error("SB: Node Info: " + result.getJsonString());
 				Object cname = result.getValue("cluster_name");
 				if(cname != null) {
 					clusterName = result.getValue("cluster_name").toString();
