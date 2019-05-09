@@ -156,16 +156,9 @@ _parse_auto_parse_arg(AppParserGenerator *self, CfgArgs *args, const gchar *refe
   const gchar *v = cfg_args_get(args, "auto-parse");
 
   if (v)
-    {
-      gboolean value = FALSE;
-      gboolean success = cfg_process_yesno(v, &value);
-      self->is_parsing_enabled = value;
-      return success;
-    }
+    self->is_parsing_enabled = cfg_process_yesno(v);
   else
-    {
-      self->is_parsing_enabled = TRUE;
-    }
+    self->is_parsing_enabled = TRUE;
   return TRUE;
 }
 
