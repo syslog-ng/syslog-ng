@@ -92,8 +92,8 @@ class SyslogNgConfig(object):
             logpath.add_flags(cast_to_list(flags))
         return logpath
 
-    def create_global_options(self, **kwargs):
-        self.__syslog_ng_config["global_options"].update(kwargs)
+    def create_global_options(self, **options):
+        self.__syslog_ng_config["global_options"].update(options)
 
     def create_statement_group(self, statements):
         statement_group = StatementGroup(statements)
