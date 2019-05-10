@@ -49,6 +49,7 @@ class SyslogNgConfig(object):
         self.file_source = FileSource
         self.example_msg_generator_source = ExampleMsgGeneratorSource
         self.file_destination = FileDestination
+        self.filter = Filter
 
     def set_version(self, version):
         self.__syslog_ng_config["version"] = version
@@ -90,9 +91,6 @@ class SyslogNgConfig(object):
 
     def create_global_options(self, **kwargs):
         self.__syslog_ng_config["global_options"].update(kwargs)
-
-    def create_filter(self, **kwargs):
-        return Filter(**kwargs)
 
     def create_statement_group(self, statements):
         statement_group = StatementGroup(statements)

@@ -45,7 +45,7 @@ def test_flags_fallback(config, syslog_ng, bsd_formatter):
     config.create_global_options(keep_hostname="yes")
 
     file_source = config.file_source(file_name="input.log")
-    host_filter = config.create_filter(host="'host-A'")
+    host_filter = config.filter(host="'host-A'")
     file_destination1 = config.file_destination(file_name="output1.log")
     file_destination2 = config.file_destination(file_name="output2.log")
 
