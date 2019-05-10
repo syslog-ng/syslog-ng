@@ -551,7 +551,7 @@ _load_file_into_string(const gchar *fname)
 }
 
 gboolean
-cfg_read_config(GlobalConfig *self, const gchar *fname, gboolean syntax_only, gchar *preprocess_into)
+cfg_read_config(GlobalConfig *self, const gchar *fname, gchar *preprocess_into)
 {
   FILE *cfg_file;
   gint res;

@@ -100,7 +100,7 @@ static gboolean
 _init_filters_from_file(AddContextualDataFilterSelector *self)
 {
   self->cfg = cfg_new_snippet();
-  if (!cfg_read_config(self->cfg, self->filters_path, FALSE, NULL))
+  if (!cfg_read_config(self->cfg, self->filters_path, NULL))
     {
       cfg_free(self->cfg);
       self->cfg = NULL;
