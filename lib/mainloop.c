@@ -325,7 +325,7 @@ main_loop_reload_config_prepare(MainLoop *self, GError **error)
 
   self->old_config = self->current_configuration;
   self->new_config = cfg_new(0);
-  if (!cfg_read_config(self->new_config, resolvedConfigurablePaths.cfgfilename, FALSE, NULL))
+  if (!cfg_read_config(self->new_config, resolvedConfigurablePaths.cfgfilename, NULL))
     {
       cfg_free(self->new_config);
       self->new_config = NULL;
@@ -597,8 +597,7 @@ main_loop_read_and_init_config(MainLoop *self)
 {
   MainLoopOptions *options = self->options;
 
-  if (!cfg_read_config(self->current_configuration, resolvedConfigurablePaths.cfgfilename, options->syntax_only,
-                       options->preprocess_into))
+  if (!cfg_read_config(self->current_configuration, resolvedConfigurablePaths.cfgfilename, options->preprocess_into))
     {
       return 1;
     }

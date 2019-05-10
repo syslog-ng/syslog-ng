@@ -524,11 +524,15 @@ cfg_dump_processed_config(GString *preprocess_output, gchar *output_filename)
   FILE *output_file;
 
   output_file = fopen(output_filename,"w+");
-  if (output_file)
+  if (!output_file)
     {
-      fprintf(output_file, "%s", preprocess_output->str);
-      fclose(output_file);
+      msg_error("Error opening preprocess-into file",
+                evt_tag_str(EVT_TAG_FILENAME, output_filename),
+                evt_tag_error(EVT_TAG_OSERROR));
+      return;
     }
+  fprintf(output_file, "%s", preprocess_output->str);
+  fclose(output_file);
 }
 
 static GString *
@@ -547,7 +551,7 @@ _load_file_into_string(const gchar *fname)
 }
 
 gboolean
-cfg_read_config(GlobalConfig *self, const gchar *fname, gboolean syntax_only, gchar *preprocess_into)
+cfg_read_config(GlobalConfig *self, const gchar *fname, gchar *preprocess_into)
 {
   FILE *cfg_file;
   gint res;
