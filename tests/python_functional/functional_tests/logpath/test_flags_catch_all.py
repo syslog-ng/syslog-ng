@@ -32,9 +32,9 @@ def test_flags_catch_all(config, syslog_ng, log_message, bsd_formatter):
     # input logs:
     # Oct 11 22:14:15 host-A testprogram: message from host-A
 
-    file_source = config.create_file_source(file_name="input.log")
-    file_destination = config.create_file_destination(file_name="output.log")
-    catch_all_destination = config.create_file_destination(file_name="catchall_output.log")
+    file_source = config.file_source(file_name="input.log")
+    file_destination = config.file_destination(file_name="output.log")
+    catch_all_destination = config.file_destination(file_name="catchall_output.log")
 
     inner_logpath = config.create_inner_logpath(statements=[file_destination])
 

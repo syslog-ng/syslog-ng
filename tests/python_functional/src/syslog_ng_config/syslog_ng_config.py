@@ -46,6 +46,8 @@ class SyslogNgConfig(object):
             "statement_groups": [],
             "logpath_groups": [],
         }
+        self.file_source = FileSource
+        self.file_destination = FileDestination
 
     def set_version(self, version):
         self.__syslog_ng_config["version"] = version
@@ -87,12 +89,6 @@ class SyslogNgConfig(object):
 
     def create_global_options(self, **kwargs):
         self.__syslog_ng_config["global_options"].update(kwargs)
-
-    def create_file_source(self, **kwargs):
-        return FileSource(**kwargs)
-
-    def create_file_destination(self, **kwargs):
-        return FileDestination(**kwargs)
 
     def create_filter(self, **kwargs):
         return Filter(**kwargs)

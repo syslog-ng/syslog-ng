@@ -23,8 +23,8 @@
 
 
 def test_manipulating_config_between_reload(config, syslog_ng):
-    file_source = config.create_file_source(file_name="input.log")
-    file_destination = config.create_file_destination(file_name="output.log")
+    file_source = config.file_source(file_name="input.log")
+    file_destination = config.file_destination(file_name="output.log")
     destination_group = config.create_statement_group(file_destination)
 
     logpath = config.create_logpath(statements=[file_source, destination_group])
@@ -38,11 +38,11 @@ def test_manipulating_config_between_reload(config, syslog_ng):
     file_source.options["log_iw_size"] = "100"
 
     # create new file source and add to separate source group
-    file_source2 = config.create_file_source(file_name="input2.log")
+    file_source2 = config.file_source(file_name="input2.log")
     source_group2 = config.create_statement_group(file_source2)
 
     # create new file destination and update first destination group
-    file_destination2 = config.create_file_destination(file_name="output2.log")
+    file_destination2 = config.file_destination(file_name="output2.log")
     destination_group.append(file_destination2)
 
     # update first logpath group with new source group

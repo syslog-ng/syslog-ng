@@ -44,10 +44,10 @@ def test_flags_final(config, syslog_ng, bsd_formatter):
 
     config.create_global_options(keep_hostname="yes")
 
-    file_source = config.create_file_source(file_name="input.log")
+    file_source = config.file_source(file_name="input.log")
     host_filter = config.create_filter(host="'host-A'")
-    file_destination1 = config.create_file_destination(file_name="output1.log")
-    file_destination2 = config.create_file_destination(file_name="output2.log")
+    file_destination1 = config.file_destination(file_name="output1.log")
+    file_destination2 = config.file_destination(file_name="output2.log")
 
     inner_logpath1 = config.create_inner_logpath(statements=[host_filter, file_destination1], flags="final")
     inner_logpath2 = config.create_inner_logpath(statements=[file_destination2])

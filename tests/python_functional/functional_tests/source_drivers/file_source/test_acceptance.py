@@ -35,8 +35,8 @@ expected_log = "Feb 11 21:27:22 {} testprogram[9999]: test message\n".format(soc
     ], ids=["with_one_log", "with_ten_logs"],
 )
 def test_acceptance(config, syslog_ng, input_log, expected_log, counter):
-    file_source = config.create_file_source(file_name="input.log")
-    file_destination = config.create_file_destination(file_name="output.log")
+    file_source = config.file_source(file_name="input.log")
+    file_destination = config.file_destination(file_name="output.log")
     config.create_logpath(statements=[file_source, file_destination])
 
     file_source.write_log(input_log, counter)
