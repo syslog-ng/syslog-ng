@@ -132,6 +132,12 @@ _generate_applications(AppParserGenerator *self, AppModelContext *appmodel)
 
 
 static void
+_generate_empty_frame(AppParserGenerator *self)
+{
+  g_string_append(self->block, "\nchannel { filter { tags('.app.doesnotexist'); }; flags(final); };");
+}
+
+static void
 _generate_framing(AppParserGenerator *self, AppModelContext *appmodel)
 {
   g_string_append(self->block,
@@ -139,16 +145,11 @@ _generate_framing(AppParserGenerator *self, AppModelContext *appmodel)
                   "    junction {\n");
 
   _generate_applications(self, appmodel);
-
+  _generate_empty_frame(self);
   g_string_append(self->block, "    };\n");
   g_string_append(self->block, "}");
 }
 
-static void
-_generate_empty_frame(AppParserGenerator *self)
-{
-  g_string_append(self->block, "\nchannel {}");
-}
 
 static gboolean
 _parse_auto_parse_arg(AppParserGenerator *self, CfgArgs *args, const gchar *reference)
