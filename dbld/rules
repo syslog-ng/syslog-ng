@@ -71,12 +71,19 @@ make-%: setup
 
 tarball: tarball-$(TARBALL_IMAGE)
 tarball-%: setup
-	if [ -f $(TARBALL) ]; then \
-		count=`find $(ROOT_DIR) -newer $(TARBALL) | grep -v "^$(ROOT_DIR)/dbld/" | wc -l`; \
+	@if [ -f $(TARBALL) ]; then \
+		count=`find $(ROOT_DIR) -newer $(TARBALL) | sed -e 's,^$(ROOT_DIR),,' | grep -v -f $(DBLD_DIR)/tarball-changes.ignore | tee $(BUILD_DIR)/tarball-changed-files.txt | wc -l`; \
 	else \
+		echo "Tarball $(TARBALL) not found" > $(BUILD_DIR)/tarball-changed-files.txt; \
 		count=1; \
 	fi; \
-	[ "$${count}" -gt 0 ] && $(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i balabit/syslog-ng-$* /source/dbld/tarball || true
+	if [ "$${count}" -gt 0 ]; then \
+		echo "Rebuilding, because these contents have changed since the tarball" && \
+		cat $(BUILD_DIR)/tarball-changed-files.txt && \
+		echo "Git status follows:" && \
+		git status && \
+		$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i balabit/syslog-ng-$* /source/dbld/tarball; \
+	fi
 
 
 pkg-tarball: pkg-tarball-$(TARBALL_IMAGE)
