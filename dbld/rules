@@ -3,6 +3,7 @@
 BUILDER_IMAGES=centos-6 centos-7 debian-jessie debian-stretch debian-buster ubuntu-xenial ubuntu-trusty ubuntu-cosmic ubuntu-bionic
 IMAGES=${BUILDER_IMAGES} devshell
 DEFAULT_IMAGE ?= ubuntu-bionic
+TARBALL_IMAGE ?= ubuntu-bionic
 DEFAULT_DEB_IMAGE=$(DEFAULT_IMAGE)
 DEFAULT_RPM_IMAGE=centos-7
 DOCKER=docker
@@ -58,6 +59,7 @@ help:
 	@echo "Notable Make variables:"
 	@echo "  CONFIGURE_ADD -- add this to the configure command line in bootstrap"
 	@echo "  DEFAULT_IMAGE -- override the default image, currently $(DEFAULT_IMAGE)"
+	@echo "  TARBALL_IMAGE -- override the default image where the tarball is generated, currently $(TARBALL_IMAGE)"
 	@echo ""
 
 bootstrap: bootstrap-$(DEFAULT_IMAGE)
@@ -67,7 +69,7 @@ bootstrap-%: setup
 make-%: setup
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i  balabit/syslog-ng-$(DEFAULT_IMAGE) /source/dbld/make $(MAKE_ARGS) $*
 
-tarball: tarball-$(DEFAULT_IMAGE)
+tarball: tarball-$(TARBALL_IMAGE)
 tarball-%: setup
 	if [ -f $(TARBALL) ]; then \
 		count=`find $(ROOT_DIR) -newer $(TARBALL) | grep -v "^$(ROOT_DIR)/dbld/" | wc -l`; \
@@ -77,18 +79,17 @@ tarball-%: setup
 	[ "$${count}" -gt 0 ] && $(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i balabit/syslog-ng-$* /source/dbld/tarball || true
 
 
-pkg-tarball: pkg-tarball-$(DEFAULT_IMAGE)
+pkg-tarball: pkg-tarball-$(TARBALL_IMAGE)
 pkg-tarball-%: tarball-%
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i balabit/syslog-ng-$* /source/dbld/pkg-tarball $(MODE)
 
-
 deb: deb-$(DEFAULT_DEB_IMAGE)
-deb-%: pkg-tarball-%
+deb-%: pkg-tarball
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i  balabit/syslog-ng-$* /source/dbld/deb
 
 
 rpm: rpm-$(DEFAULT_RPM_IMAGE)
-rpm-%: pkg-tarball-$(DEFAULT_IMAGE)
+rpm-%: pkg-tarball
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i  balabit/syslog-ng-$* /source/dbld/rpm
 
 
