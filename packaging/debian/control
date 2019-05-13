@@ -101,7 +101,7 @@ Package: syslog-ng-dev
 Section: libdevel
 Architecture: any
 Depends: syslog-ng-core (= ${binary:Version}),
- ${misc:Depends}, ${perl:Depends},
+ ${misc:Depends},
  pkg-config, perl, flex, bison,
  libglib2.0-dev, libivykis-dev (>= 0.30)
 Description: Enhanced system logging daemon (development files)
@@ -842,7 +842,6 @@ Description: Enhanced system logging daemon (HTTP destination)
 Package: syslog-ng-mod-json
 Architecture: any
 Multi-Arch: foreign
-Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Enhanced system logging daemon (HTTP destination)
  syslog-ng is an enhanced log daemon, supporting a wide range of input
  and output methods: syslog, unstructured text, message queues,
