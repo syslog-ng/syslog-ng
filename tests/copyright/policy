@@ -44,6 +44,7 @@ dbld/install/.*$
 dbld/images/.*$
 cmake/.*$
 tests/python_functional/pytest.ini
+tests/python_functional/tox.ini
  LGPLv2.1+_SSL
 autogen\.sh$
 sub-configure\.sh$
