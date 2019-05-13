@@ -388,6 +388,11 @@ log_reader_work_finished(void *s)
       /* reenable polling the source assuming that we're still in
        * business (e.g. the reader hasn't been uninitialized) */
 
+      if (self->realloc_window_after_fetch)
+        {
+          self->realloc_window_after_fetch = FALSE;
+          log_source_dynamic_window_realloc(s);
+        }
       log_proto_server_reset_error(self->proto);
       log_reader_update_watches(self);
     }
@@ -653,8 +658,16 @@ static void
 _schedule_dynamic_window_realloc(LogSource *s)
 {
   LogReader *self = (LogReader *)s;
+
   msg_trace("LogReader::dynamic_window_realloc called");
-  //TODO
+
+  if (self->io_job.working)
+    {
+      self->realloc_window_after_fetch = TRUE;
+      return;
+    }
+
+  log_source_dynamic_window_realloc(s);
 }
 
 LogReader *

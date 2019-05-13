@@ -69,7 +69,7 @@ struct _LogReader
   struct iv_event schedule_wakeup;
   struct iv_event last_msg_sent_event;
   MainLoopIOWorkerJob io_job;
-  gboolean watches_running:1, suspended:1;
+  gboolean watches_running:1, suspended:1, realloc_window_after_fetch:1;
   gint notify_code;
 
 
