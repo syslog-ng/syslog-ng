@@ -23,44 +23,9 @@
  */
 
 #include "logreader.h"
-#include "mainloop-io-worker.h"
 #include "mainloop-call.h"
 #include "ack_tracker.h"
 #include "scratch-buffers.h"
-
-#include <iv_event.h>
-
-struct _LogReader
-{
-  LogSource super;
-  LogProtoServer *proto;
-  gboolean immediate_check;
-  LogPipe *control;
-  LogReaderOptions *options;
-  PollEvents *poll_events;
-  GSockAddr *peer_addr;
-
-  /* NOTE: these used to be LogReaderWatch members, which were merged into
-   * LogReader with the multi-thread refactorization */
-
-  struct iv_task restart_task;
-  struct iv_event schedule_wakeup;
-  struct iv_event last_msg_sent_event;
-  MainLoopIOWorkerJob io_job;
-  gboolean watches_running:1, suspended:1;
-  gint notify_code;
-
-
-  /* proto & poll_events pending to be applied. As long as the previous
-   * processing is being done, we can't replace these in self->proto and
-   * self->poll_events, they get applied to the production ones as soon as
-   * the previous work is finished */
-  gboolean pending_close;
-  GCond *pending_close_cond;
-  GStaticMutex pending_close_lock;
-
-  struct iv_timer idle_timer;
-};
 
 static void log_reader_io_handle_in(gpointer s);
 static gboolean log_reader_fetch_log(LogReader *self);
