@@ -45,6 +45,7 @@ dbld/images/.*$
 cmake/.*$
 tests/python_functional/pytest.ini
 tests/python_functional/tox.ini
+tests/python_functional/.pre-commit-config.yaml
  LGPLv2.1+_SSL
 autogen\.sh$
 sub-configure\.sh$

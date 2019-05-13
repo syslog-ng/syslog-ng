@@ -1,0 +1,31 @@
+exclude: '^$'
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.2.1
+    hooks:
+    -   id: trailing-whitespace
+        files: 'tests/python_functional/'
+    -   id: end-of-file-fixer
+        files: 'tests/python_functional/'
+-   repo: https://gitlab.com/pycqa/flake8
+    rev: 3.7.7
+    hooks:
+    -   id: flake8
+        args: [--ignore=E501]
+        files: 'tests/python_functional/'
+-   repo: https://github.com/asottile/reorder_python_imports
+    rev: v1.4.0
+    hooks:
+    -   id: reorder-python-imports
+        files: 'tests/python_functional/'
+-   repo: https://github.com/asottile/add-trailing-comma
+    rev: v1.0.0
+    hooks:
+    -   id: add-trailing-comma
+        args: [--py36-plus]
+        files: 'tests/python_functional/'
+-   repo: https://github.com/asottile/pyupgrade
+    rev: v1.17.0
+    hooks:
+    -   id: pyupgrade
+        files: 'tests/python_functional/'
