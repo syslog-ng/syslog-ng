@@ -636,6 +636,14 @@ log_reader_free(LogPipe *s)
   log_source_free(s);
 }
 
+static void
+_dynamic_window_realloc(LogSource *s)
+{
+  LogReader *self = (LogReader *)s;
+  msg_trace("LogReader::dynamic_window_realloc called");
+  //TODO
+}
+
 LogReader *
 log_reader_new(GlobalConfig *cfg)
 {
@@ -646,6 +654,7 @@ log_reader_new(GlobalConfig *cfg)
   self->super.super.deinit = log_reader_deinit;
   self->super.super.free_fn = log_reader_free;
   self->super.wakeup = log_reader_wakeup;
+  self->super.dynamic_window_realloc = _dynamic_window_realloc;
   self->immediate_check = FALSE;
   log_reader_init_watches(self);
   g_static_mutex_init(&self->pending_close_lock);
