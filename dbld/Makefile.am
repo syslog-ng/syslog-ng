@@ -2,6 +2,7 @@ EXTRA_DIST += \
 	dbld/functions.sh \
 	dbld/tarball \
 	dbld/pkg-tarball \
+	dbld/package \
 	dbld/rpm \
 	dbld/deb \
 	dbld/generate-rpm-specfile \
