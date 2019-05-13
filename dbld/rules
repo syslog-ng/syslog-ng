@@ -92,10 +92,13 @@ pkg-tarball: pkg-tarball-$(TARBALL_IMAGE)
 pkg-tarball-%: tarball-%
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i balabit/syslog-ng-$* /source/dbld/pkg-tarball $(MODE)
 
+package: package-$(DEFAULT_IMAGE)
+package-%: pkg-tarball
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i  balabit/syslog-ng-$* /source/dbld/package
+
 deb: deb-$(DEFAULT_DEB_IMAGE)
 deb-%: pkg-tarball
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i  balabit/syslog-ng-$* /source/dbld/deb
-
 
 rpm: rpm-$(DEFAULT_RPM_IMAGE)
 rpm-%: pkg-tarball
