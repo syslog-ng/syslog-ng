@@ -26,13 +26,22 @@
 /* HTTPDestinationDriver */
 
 void
-http_dd_set_urls(LogDriver *d, GList *urls)
+http_dd_set_urls(LogDriver *d, GList *url_strings)
 {
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
 
   http_load_balancer_drop_all_targets(self->load_balancer);
-  for (GList *l = urls; l; l = l->next)
-    http_load_balancer_add_target(self->load_balancer, l->data);
+  for (GList *l = url_strings; l; l = l->next)
+    {
+      const gchar *url_string = (const gchar *) l->data;
+      gchar **urls = g_strsplit(url_string, " ", -1);
+
+      for (gint url = 0; urls[url]; url++)
+        {
+          http_load_balancer_add_target(self->load_balancer, urls[url]);
+        }
+      g_strfreev(urls);
+    }
 }
 
 void
