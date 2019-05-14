@@ -5,7 +5,6 @@ set(TIMEUTILS_HEADERS
     timeutils/format.h
     timeutils/misc.h
     timeutils/names.h
-    timeutils/strptime-tz.h
     timeutils/unixtime.h
     timeutils/zoneinfo.h
     timeutils/wallclocktime.h
@@ -18,7 +17,6 @@ set(TIMEUTILS_SOURCES
     timeutils/format.c
     timeutils/misc.c
     timeutils/names.c
-    timeutils/strptime-tz.c
     timeutils/unixtime.c
     timeutils/zoneinfo.c
     timeutils/wallclocktime.c
