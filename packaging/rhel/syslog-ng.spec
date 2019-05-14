@@ -1,3 +1,26 @@
+
+%if 0%{?rhel} >= 7
+%bcond_without sql
+%bcond_without mongodb
+%bcond_without systemd
+%bcond_without redis
+%bcond_without riemann
+%bcond_without maxminddb
+%bcond_without amqp
+%bcond_without java
+%global        py_ver  2.7
+%else
+%bcond_with sql
+%bcond_with mongodb
+%bcond_with systemd
+%bcond_with redis
+%bcond_with riemann
+%bcond_with maxminddb
+%bcond_with amqp
+%bcond_with java
+%global        py_ver  2.6
+%endif
+
 %global ivykis_ver 0.36.1
 
 Name: syslog-ng
@@ -13,8 +36,6 @@ Source1: syslog-ng.conf
 Source2: syslog-ng.logrotate
 Source3: syslog-ng.service
 
-BuildRequires: systemd-units
-BuildRequires: systemd-devel
 BuildRequires: pkgconfig
 BuildRequires: libtool
 BuildRequires: bison, flex
@@ -30,21 +51,48 @@ BuildRequires: pcre-devel
 BuildRequires: libuuid-devel
 BuildRequires: libesmtp-devel
 BuildRequires: GeoIP-devel
-BuildRequires: hiredis-devel
-BuildRequires: riemann-c-client-devel
 BuildRequires: python-devel
 BuildRequires: libcurl-devel
-BuildRequires: cyrus-sasl-devel
-BuildRequires: libmaxminddb-devel
-BuildRequires: mongo-c-driver-devel
-BuildRequires: librabbitmq-devel
 
+%if %{with amqp}
+BuildRequires: librabbitmq-devel
+%endif
+
+%if %{with maxminddb}
+BuildRequires: libmaxminddb-devel
+%endif
+
+%if %{with riemann}
+BuildRequires: riemann-c-client-devel
+%endif
+
+%if %{with redis}
+BuildRequires: hiredis-devel
+%endif
+
+%if %{with systemd}
+BuildRequires: systemd-units
+BuildRequires: systemd-devel
+Requires(post): systemd-units
+Requires(preun): systemd-units
+Requires(postun): systemd-units
+%endif
+
+%if %{with mongodb}
+BuildRequires: mongo-c-driver-devel
+BuildRequires: cyrus-sasl-devel
+%endif
+
+%if %{with java}
 # java dependencies
 BuildRequires: java-devel
+
 %if 0%{?_dbld} != 1
 # within dbld these dependencies are already installed from upstream (e.g. not via RPMs)
 BuildRequires: gradle
 BuildRequires: syslog-ng-java-deps
+%endif
+
 %endif
 
 %if 0%{?rhel}
@@ -53,9 +101,6 @@ BuildRequires: tcp_wrappers-devel
 
 Requires: logrotate
 Requires: ivykis >= %{ivykis_ver}
-Requires(post): systemd-units
-Requires(preun): systemd-units
-Requires(postun): systemd-units
 
 Provides: syslog
 # merge separate syslog-vim package into one
@@ -83,16 +128,21 @@ Key features:
  * hand on messages for further processing using message queues (like
    AMQP), files or databases (like PostgreSQL or MongoDB).
 
-
-%package libdbi
-Summary: libdbi support for %{name}
+%package sql
+Summary: SQL support for %{name}
 Group: Development/Libraries
 Requires: %{name}%{?_isa} = %{version}-%{release}
 
-%description libdbi
-This module supports a large number of database systems via libdbi.
+%description sql
+This module supports a large number of SQL database systems via libdbi.
 
-%if 0%{?rhel}
+%package amqp
+Summary: AMQP support for %{name}
+Group: Development/Libraries
+Requires: %{name}%{?_isa} = %{version}-%{release}
+
+%description amqp
+This module supports AMQP via librabbitmq
 
 %package mongodb
 Summary: mongodb support for %{name}
@@ -101,8 +151,6 @@ Requires: %{name}%{?_isa} = %{version}-%{release}
 
 %description mongodb
 This module supports the mongodb database via libmongo-client.
-
-%endif
 
 %package smtp
 Summary: smtp support for %{name}
@@ -196,10 +244,6 @@ export GEOIP_LIBS=-lGeoIP
     --with-module-dir=/%{_libdir}/%{name} \
     --with-systemdsystemunitdir=%{_unitdir} \
     --with-ivykis=system \
-    --with-mongoc=system \
-    --enable-mongodb \
-    --enable-amqp \
-    --with-librabbitmq-client=internal \
 %if 0%{?rhel}
     --enable-tcp-wrapper \
 %else
@@ -210,7 +254,6 @@ export GEOIP_LIBS=-lGeoIP
     --enable-ipv6 \
     --enable-spoof-source \
     --with-linux-caps=auto \
-    --enable-sql \
     --enable-json \
     --enable-ssl \
     --enable-smtp \
@@ -218,11 +261,14 @@ export GEOIP_LIBS=-lGeoIP
     --enable-shared \
     --disable-static \
     --enable-dynamic-linking \
-    --enable-systemd \
-    --enable-redis \
     --enable-python \
-    --enable-java \
-    --enable-riemann
+    %{?with java:--enable-java} \
+    %{?with sql:--enable-sql} \
+    %{?with systemd:--enable-systemd} \
+    %{?with mongodb:--enable-mongodb} \
+    %{?with amqp:--enable-amqp} \
+    %{?with redis:--enable-redis} \
+    %{?with riemann:--enable-riemann}
 
 # disable broken test by setting a different target
 sed -i 's/libs build/libs assemble/' Makefile
@@ -239,7 +285,11 @@ make DESTDIR=%{buildroot} install
 %{__install} -d -m 755 %{buildroot}%{_sysconfdir}/logrotate.d
 %{__install} -p -m 644 %{SOURCE2} %{buildroot}%{_sysconfdir}/logrotate.d/syslog
 
+%if %{with systemd}
 %{__install} -p -m 644 %{SOURCE3} %{buildroot}%{_unitdir}/%{name}.service
+# remove unused service file
+rm %{buildroot}/usr/lib/systemd/system/syslog-ng@.service
+%endif
 
 
 # create the local state dir
@@ -262,8 +312,6 @@ done
 
 find %{buildroot} -name "*.la" -exec rm -f {} \;
 
-# remove unused service file
-rm %{buildroot}/usr/lib/systemd/system/syslog-ng@.service
 
 %post
 ldconfig
@@ -315,7 +363,7 @@ fi
 %config(noreplace) %{_sysconfdir}/%{name}/%{name}.conf
 %config(noreplace) %{_sysconfdir}/%{name}/scl.conf
 %config(noreplace) %{_sysconfdir}/logrotate.d/syslog
-%{_unitdir}/%{name}.service
+
 
 %dir %{_sharedstatedir}/%{name}
 %{_sbindir}/%{name}
@@ -333,9 +381,6 @@ fi
 %{_libdir}/libloggen_plugin-*.so.*
 %{_libdir}/%{name}/*.so
 %exclude %{_libdir}/%{name}/libafsql.so
-%if 0%{?rhel}
-%exclude %{_libdir}/%{name}/libafmongodb.so
-%endif
 %exclude %{_libdir}/%{name}/libredis.so
 %exclude %{_libdir}/%{name}/libafsmtp.so
 %exclude %{_libdir}/%{name}/libgeoip-plugin.so
@@ -344,6 +389,12 @@ fi
 %exclude %{_libdir}/%{name}/libhttp.so
 %exclude %{_libdir}/%{name}/libmod-python.so
 %exclude %{_libdir}/%{name}/libmod-java.so
+%exclude %{_libdir}/%{name}/libafmongodb.so
+
+%if %{with systemd}
+%{_unitdir}/%{name}.service
+%{_libdir}/%{name}/libsdjournal.so
+%endif
 
 %dir %{_libdir}/%{name}/loggen
 %{_libdir}/%{name}/loggen/libloggen*
@@ -366,38 +417,54 @@ fi
 %{_mandir}/man5/syslog-ng.conf.5*
 %{_mandir}/man8/syslog-ng.8*
 
-%files libdbi
+%if %{with sql}
+%files sql
 %{_libdir}/%{name}/libafsql.so
+%endif
 
-%if 0%{?rhel}
+%if %{with amqp}
+%files amqp
+%{_libdir}/%{name}/libafamqp.so
+%endif
+
+%if %{with mongodb}
 %files mongodb
 %{_libdir}/%{name}/libafmongodb.so
 %endif
 
+%if %{with redis}
 %files redis
 %{_libdir}/%{name}/libredis.so
+%endif
 
 %files smtp
 %{_libdir}/%{name}/libafsmtp.so
 
+%if %{with java}
 %files java
 %attr(755,root,root) %{_libdir}/syslog-ng/libmod-java.so
 %dir %{_libdir}/%{name}/java-modules/
 %{_libdir}/%{name}/java-modules/*
+%endif
 
 %files geoip
 %{_libdir}/%{name}/libgeoip-plugin.so
-%{_libdir}/%{name}/libgeoip2-plugin.so
 
+%if %{with maxminddb}
+%{_libdir}/%{name}/libgeoip2-plugin.so
+%endif
+
+%if %{with riemann}
 %files riemann
 %{_libdir}/%{name}/libriemann.so
+%endif
 
 %files http
 %{_libdir}/%{name}/libhttp.so
 
 %files python
-/usr/lib/python2.7/site-packages/syslogng-1.0-py2.7.egg-info
-/usr/lib/python2.7/site-packages/syslogng/*
+/usr/lib/python%{py_ver}/site-packages/syslogng-1.0-py%{py_ver}.egg-info
+/usr/lib/python%{py_ver}/site-packages/syslogng/*
 %{_libdir}/%{name}/libmod-python.so
 
 %files devel
