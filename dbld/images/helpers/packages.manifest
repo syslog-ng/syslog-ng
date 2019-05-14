@@ -4,6 +4,7 @@ autoconf-archive            [centos, debian, ubuntu]
 automake                    [centos, debian, ubuntu]
 ca-certificates             [centos, debian, ubuntu]
 git                         [centos, debian, ubuntu]
+ccache                      [centos, debian, ubuntu]
 libtool                     [centos, debian, ubuntu]
 
     # pkgconfig
