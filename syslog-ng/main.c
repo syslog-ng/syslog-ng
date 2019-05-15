@@ -260,11 +260,6 @@ main(int argc, char *argv[])
       debug_flag = TRUE;
     }
 
-  if (debug_flag)
-    {
-      log_stderr = TRUE;
-    }
-
   gboolean exit_before_main_loop_run = main_loop_options.syntax_only || main_loop_options.preprocess_into;
   if (debug_flag || exit_before_main_loop_run)
     {
