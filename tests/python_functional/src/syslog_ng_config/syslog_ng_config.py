@@ -74,7 +74,8 @@ class SyslogNgConfig(object):
     def __create_logpath_with_conversion(self, items, flags):
         return self.__create_logpath_group(
             map(self.create_statement_group_if_needed, cast_to_list(items)),
-            flags)
+            flags,
+        )
 
     @staticmethod
     def __create_logpath_group(statements=None, flags=None):

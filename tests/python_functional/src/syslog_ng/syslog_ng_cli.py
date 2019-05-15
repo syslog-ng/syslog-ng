@@ -55,7 +55,7 @@ class SyslogNgCli(object):
         if config_path is None:
             config_path = self.__instance_paths.get_config_path()
         return self.__syslog_ng_executor.run_command(
-            command_short_name="syntax_only", command=["--syntax-only", "--cfgfile={}".format(config_path)]
+            command_short_name="syntax_only", command=["--syntax-only", "--cfgfile={}".format(config_path)],
         )
 
     def __syntax_check(self):

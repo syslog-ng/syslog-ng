@@ -50,7 +50,7 @@ class SyslogNgPaths(object):
                 "stderr": Path(working_dir, "syslog_ng_{}_stderr".format(instance_name)),
                 "stdout": Path(working_dir, "syslog_ng_{}_stdout".format(instance_name)),
                 "valgrind": Path(
-                    working_dir, "valgrind_{}.log".format(get_unique_id())
+                    working_dir, "valgrind_{}.log".format(get_unique_id()),
                 ),
             },
             "binary_file_paths": {

@@ -34,7 +34,7 @@ class TestcaseParameters(object):
                 "working_dir": Path(absolute_framework_dir, relative_report_dir, testcase_name),
                 "relative_working_dir": Path(relative_report_dir, testcase_name),
                 "install_dir": Path(pytest_request.config.getoption("--installdir")),
-                "shared_dir": Path(absolute_framework_dir, "shared_files")
+                "shared_dir": Path(absolute_framework_dir, "shared_files"),
             },
             "file_paths": {
                 "testcase_file": Path(pytest_request.fspath),

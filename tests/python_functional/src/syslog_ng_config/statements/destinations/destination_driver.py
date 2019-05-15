@@ -42,7 +42,7 @@ class DestinationDriver(object):
             io = self.__IOClass(path)
             io.wait_for_creation()
             message_reader = MessageReader(
-                io.read, SingleLineParser()
+                io.read, SingleLineParser(),
             )
             self.__reader = message_reader
         messages = self.__reader.pop_messages(counter)
