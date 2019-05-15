@@ -72,7 +72,7 @@ class ConsoleLogReader(object):
             for console_log_message in console_log_messages:
                 if unexpected_pattern in console_log_message:
                     logger.error("Found unexpected message in console log: {}".format(console_log_message))
-                    assert False
+                    raise Exception
 
     def dump_stderr(self, last_n_lines=10):
         console_log_messages = self.__message_reader.peek_messages(counter=READ_ALL_MESSAGES)
