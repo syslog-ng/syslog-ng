@@ -212,6 +212,7 @@ main(int argc, char *argv[])
 
   z_mem_trace_init("syslog-ng.trace");
 
+  g_process_set_name("syslog-ng");
   g_process_set_argv_space(argc, (gchar **) argv);
 
   resolved_configurable_paths_init(&resolvedConfigurablePaths);
@@ -269,7 +270,6 @@ main(int argc, char *argv[])
     {
       g_process_set_mode(G_PM_FOREGROUND);
     }
-  g_process_set_name("syslog-ng");
 
   /* in this case we switch users early while retaining a limited set of
    * credentials in order to initialize/reinitialize the configuration.
