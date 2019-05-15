@@ -1,7 +1,8 @@
 #!/bin/bash
 
+. /source/dbld/functions.sh
+
 MODE=$1
-VERSION=`/source/scripts/version.sh`
 
 cp -r /source/packaging/debian .
 if [ $MODE = "snapshot" ]; then
