@@ -577,6 +577,10 @@ fi
 %{_datadir}/%{name}/tools/
 
 %changelog
+* Thu May 16 2019 Balazs Scheidler <balazs.scheidler@oneidentity.com> - 3.21.1-2
+- merge changes from Peter Czanik's copr specfile
+- make this work on all supported distros (centos-6, centos-7, latest fedora releases)
+
 * Fri May  3 2019 Laszlo Budai <laszlo.budai@balabit.com> - 3.21.1-1
 - update to 3.21.1
 
@@ -589,10 +593,10 @@ fi
 * Thu Oct 11 2018 Laszlo Budai <laszlo.budai@balabit.com> - 3.18.1-1
 - update to 3.18.1
 
-* Wed Aug 10 2018 Laszlo Budai <laszlo.budai@balabit.com> - 3.17.2-1
+* Fri Aug 10 2018 Laszlo Budai <laszlo.budai@balabit.com> - 3.17.2-1
 - update to 3.17.2
 
-* Wed Aug 9 2018 Laszlo Budai <laszlo.budai@balabit.com> - 3.17.1-1
+* Thu Aug  9 2018 Laszlo Budai <laszlo.budai@balabit.com> - 3.17.1-1
 - update to 3.17.1
 
 * Thu Jun 14 2018 Gabor Nagy <gabor.nagy@balabit.com> - 3.16.1-1
