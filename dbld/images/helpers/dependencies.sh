@@ -67,6 +67,11 @@ EOF
     apt-get update
 }
 
+function add_copr_repo {
+    yum install -y yum-plugin-copr
+    yum copr enable -y czanik/syslog-ng-githead
+}
+
 function install_apt_packages {
     apt-get update -qq -o Acquire::CompressionTypes::Order::=gz
     filter_packages_by_platform /helpers/packages.manifest | xargs -t apt-get install --no-install-recommends --yes
