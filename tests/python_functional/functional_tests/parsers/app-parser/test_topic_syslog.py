@@ -29,6 +29,8 @@ test_parameters_syslog = [
     ("""Apr 18 12:33:50 nobody sudo[25173]:   nobody : TTY=pts/13 ; PWD=/home/nobody ; USER=root ; COMMAND=/bin/ls""", "${.app.name}", "sudo"),
     ("""<0>1 2012-03-05T15:10:34+02:00 localhost kernel 1234 - - @cim: {"name1":"value1", "name2":"value2"}""", "${.app.name}", "cim"),
 ]
+
+
 @pytest.mark.parametrize(
     "input_message, template, expected_value", test_parameters_syslog,
     ids=list(map(str, range(len(test_parameters_syslog)))),
