@@ -46,5 +46,6 @@ def wait_until_false(func, *args):
 
 
 def wait_until_false_custom(func, args=(), timeout=DEFAULT_TIMEOUT):
-    negate = lambda func, args: not func(*args)
+    def negate(func, args):
+        return not func(*args)
     return wait_until_true_custom(negate, (func, args), timeout=timeout)
