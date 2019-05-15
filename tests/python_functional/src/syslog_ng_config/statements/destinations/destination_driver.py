@@ -31,10 +31,14 @@ logger = logging.getLogger(__name__)
 class DestinationDriver(object):
     group_type = "destination"
 
-    def __init__(self, IOClass, positional_parameters=[], options={}):
+    def __init__(self, IOClass, positional_parameters=None, options=None):
         self.__IOClass = IOClass
         self.__reader = None
+        if positional_parameters is None:
+            positional_parameters = []
         self.positional_parameters = positional_parameters
+        if options is None:
+            options = {}
         self.options = options
 
     def dd_read_logs(self, path, counter):

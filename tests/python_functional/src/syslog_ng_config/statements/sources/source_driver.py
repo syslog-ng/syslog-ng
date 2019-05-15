@@ -27,10 +27,14 @@ logger = logging.getLogger(__name__)
 class SourceDriver(object):
     group_type = "source"
 
-    def __init__(self, IOClass, positional_parameters=[], options={}):
+    def __init__(self, IOClass, positional_parameters=None, options=None):
         self.__IOClass = IOClass
         self.__writer = None
+        if positional_parameters is None:
+            positional_parameters = []
         self.positional_parameters = positional_parameters
+        if options is None:
+            options = {}
         self.options = options
 
     def __construct_writer(self, path):
