@@ -14,22 +14,22 @@ Source2: syslog-ng.logrotate
 Source3: syslog-ng.service
 
 BuildRequires: systemd-units
+BuildRequires: systemd-devel
 BuildRequires: pkgconfig
 BuildRequires: libtool
 BuildRequires: bison, flex
 BuildRequires: libxslt
-BuildRequires: glib2-devel >= 2.10.1
-BuildRequires: ivykis-devel >= %{ivykis_ver}
+BuildRequires: glib2-devel
+BuildRequires: ivykis-devel
 BuildRequires: json-c-devel
 BuildRequires: libcap-devel
 BuildRequires: libdbi-devel
 BuildRequires: libnet-devel
 BuildRequires: openssl-devel
-BuildRequires: pcre-devel >= 6.1
+BuildRequires: pcre-devel
 BuildRequires: libuuid-devel
 BuildRequires: libesmtp-devel
 BuildRequires: GeoIP-devel
-BuildRequires: systemd-devel
 BuildRequires: hiredis-devel
 BuildRequires: riemann-c-client-devel
 BuildRequires: python-devel
