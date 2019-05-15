@@ -260,6 +260,11 @@ main(int argc, char *argv[])
       debug_flag = TRUE;
     }
 
+  if (debug_flag && !log_stderr)
+    {
+      g_process_message("The -d/--debug option no longer implies -e/--stderr, if you want to redirect internal() source to stderr please also include -e/--stderr option");
+    }
+
   gboolean exit_before_main_loop_run = main_loop_options.syntax_only || main_loop_options.preprocess_into;
   if (debug_flag || exit_before_main_loop_run)
     {
