@@ -30,7 +30,7 @@ class StatementGroup(list):
     def __init__(self, statements):
         super(StatementGroup, self).__init__(cast_to_list(statements))
         self.__group_type = self.__calculate_group_type(cast_to_list(statements))
-        self.__group_id = "%s_%s" % (self.__group_type, get_unique_id())
+        self.__group_id = "{}_{}".format(self.__group_type, get_unique_id())
 
     @staticmethod
     def __calculate_group_type(statements):
