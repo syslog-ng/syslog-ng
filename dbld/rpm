@@ -28,5 +28,5 @@ cd /build
 
 setup_dirs
 prepare_source
-run_build_command rpmbuild -ta syslog-ng-${VERSION}.tar.gz
+run_build_command rpmbuild --define '_dbld 1' -ta syslog-ng-${VERSION}.tar.gz
 capture_rpms
