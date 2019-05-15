@@ -22,7 +22,6 @@
 #############################################################################
 import logging
 
-import pytest
 from pathlib2 import Path
 from src.common.operations import calculate_testcase_name
 from src.common.operations import copy_file
