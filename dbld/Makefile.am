@@ -1,4 +1,5 @@
 EXTRA_DIST += \
+	dbld/functions.sh \
 	dbld/tarball \
 	dbld/pkg-tarball \
 	dbld/rpm \
