@@ -39,10 +39,10 @@ BuildRequires: syslog-ng-java-deps
 BuildRequires: libcurl-devel
 BuildRequires: cyrus-sasl-devel
 BuildRequires: libmaxminddb-devel
-%if 0%{?rhel}
 BuildRequires: mongo-c-driver-devel
-BuildRequires: tcp_wrappers-devel
 BuildRequires: librabbitmq-devel
+%if 0%{?rhel}
+BuildRequires: tcp_wrappers-devel
 %endif
 
 Requires: logrotate
@@ -195,6 +195,7 @@ export GEOIP_LIBS=-lGeoIP
     --enable-mongodb \
     --enable-amqp \
     --with-librabbitmq-client=internal \
+%if 0%{?rhel}
     --enable-tcp-wrapper \
 %else
     --with-mongoc=no \
