@@ -196,7 +196,6 @@ export GEOIP_LIBS=-lGeoIP
     --with-module-dir=/%{_libdir}/%{name} \
     --with-systemdsystemunitdir=%{_unitdir} \
     --with-ivykis=system \
-%if 0%{?rhel}
     --with-mongoc=system \
     --enable-mongodb \
     --enable-amqp \
@@ -204,9 +203,6 @@ export GEOIP_LIBS=-lGeoIP
 %if 0%{?rhel}
     --enable-tcp-wrapper \
 %else
-    --with-mongoc=no \
-    --disable-mongodb \
-    --disable-amqp \
     --disable-tcp-wrapper \
 %endif
     --with-embedded-crypto \
