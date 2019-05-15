@@ -47,7 +47,7 @@ pcre-devel                      [centos]
     # libmongoc-dev
     libmongoc-dev               [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
     libmongo-client-dev         [debian-jessie]
-    libmongo-client-devel       [centos-7]
+    mongo-c-driver-devel        [centos-7]
 
     # librdkafka-dev (we are using a specific version from OBS and need to
     # list all interdependent packages as an apt preferences would prevent
