@@ -1,9 +1,7 @@
 #!/bin/bash
 
-set -e
-
+. /source/dbld/functions.sh
 cd /source
-VERSION=`scripts/version.sh`
 RPMBUILD=${HOME}/rpmbuild
 RPMBUILD_SOURCES=$RPMBUILD/SOURCES
 
