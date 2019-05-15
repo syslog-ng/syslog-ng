@@ -20,14 +20,12 @@
 # COPYING for details.
 #
 #############################################################################
-
 import logging
+
 import pytest
-
 from pathlib2 import Path
-
-from src.common.operations import copy_file
 from src.common.operations import calculate_testcase_name
+from src.common.operations import copy_file
 
 logger = logging.getLogger(__name__)
 

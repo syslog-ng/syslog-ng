@@ -23,7 +23,6 @@
 import logging
 
 import psutil
-
 from src.driver_io.file.file import File
 from src.executors.command_executor import prepare_executable_command
 from src.executors.command_executor import prepare_printable_command

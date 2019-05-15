@@ -20,8 +20,9 @@
 # COPYING for details.
 #
 #############################################################################
-import pytest
 import socket
+
+import pytest
 
 input_log = "<38>Feb 11 21:27:22 {} testprogram[9999]: test message\n".format(socket.gethostname())
 expected_log = "Feb 11 21:27:22 {} testprogram[9999]: test message\n".format(socket.gethostname())

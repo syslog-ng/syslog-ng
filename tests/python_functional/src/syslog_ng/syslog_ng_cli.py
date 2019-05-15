@@ -23,7 +23,6 @@
 import logging
 
 from pathlib2 import Path
-
 from src.common.blocking import wait_until_false
 from src.common.blocking import wait_until_true
 from src.syslog_ng.console_log_reader import ConsoleLogReader

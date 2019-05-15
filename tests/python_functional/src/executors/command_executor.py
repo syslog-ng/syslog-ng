@@ -23,7 +23,6 @@
 import logging
 
 import psutil
-
 from src.driver_io.file.file import File
 
 logger = logging.getLogger(__name__)

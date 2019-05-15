@@ -21,7 +21,6 @@
 #
 #############################################################################
 from pathlib2 import Path
-
 from src.executors.command_executor import CommandExecutor
 
 

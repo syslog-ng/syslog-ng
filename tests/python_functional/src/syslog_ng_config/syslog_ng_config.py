@@ -28,8 +28,8 @@ from src.syslog_ng_config.renderer import ConfigRenderer
 from src.syslog_ng_config.statement_group import StatementGroup
 from src.syslog_ng_config.statements.destinations.file_destination import FileDestination
 from src.syslog_ng_config.statements.filters.filter import Filter
-from src.syslog_ng_config.statements.parsers.parser import Parser
 from src.syslog_ng_config.statements.logpath.logpath import LogPath
+from src.syslog_ng_config.statements.parsers.parser import Parser
 from src.syslog_ng_config.statements.sources.file_source import FileSource
 from src.syslog_ng_config.statements.sources.source_driver import SourceDriver
 
