@@ -179,11 +179,6 @@ developing applications that use %{name}.
 # fix executable perms on contrib files
 %{__chmod} -c a-x contrib/syslog2ng
 
-# fix authors file
-/usr/bin/iconv -f iso8859-1 -t utf-8 AUTHORS > AUTHORS.conv && \
-    %{__mv} -f AUTHORS.conv AUTHORS
-
-
 %build
 
 export GEOIP_LIBS=-lGeoIP
