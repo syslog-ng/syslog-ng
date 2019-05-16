@@ -410,8 +410,10 @@ fi
 %{_libdir}/libsyslog-ng-native-connector.a
 %{_libdir}/libloggen_helper.so
 %{_libdir}/libloggen_plugin.so
+%{_libdir}/%{name}/libtest/libsyslog-ng-test.a
 %{_includedir}/%{name}/
 %{_libdir}/pkgconfig/syslog-ng.pc
+%{_libdir}/pkgconfig/syslog-ng-test.pc
 %{_libdir}/pkgconfig/syslog-ng-native-connector.pc
 %{_datadir}/%{name}/tools/
 
