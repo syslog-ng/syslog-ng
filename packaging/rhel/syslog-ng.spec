@@ -397,10 +397,7 @@ fi
 
 %files python
 /usr/lib/python2.7/site-packages/syslogng-1.0-py2.7.egg-info
-%dir /usr/lib/python2.7/site-packages/syslogng/
-%dir /usr/lib/python2.7/site-packages/syslogng/debuggercli/
 /usr/lib/python2.7/site-packages/syslogng/*
-/usr/lib/python2.7/site-packages/syslogng/debuggercli/*
 %{_libdir}/%{name}/libmod-python.so
 
 %files devel
