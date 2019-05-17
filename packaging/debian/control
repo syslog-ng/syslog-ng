@@ -321,7 +321,7 @@ Package: syslog-ng-mod-snmp
 Architecture: any
 Multi-Arch: foreign
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: Enhanced system logging daemon (SMTP plugin)
+Description: Enhanced system logging daemon (SNMP plugin)
  syslog-ng is an enhanced log daemon, supporting a wide range of input
  and output methods: syslog, unstructured text, message queues,
  databases (SQL and NoSQL alike) and more.
