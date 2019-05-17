@@ -153,10 +153,19 @@ _dd_py_invoke_void_method_by_name(PythonDestDriver *self, const gchar *method_na
 }
 
 static gboolean
-_dd_py_invoke_bool_method_by_name_with_args(PythonDestDriver *self, const gchar *method_name)
+_dd_py_invoke_bool_method_or_concede(PythonDestDriver *self, const gchar *method_name)
 {
-  return _py_invoke_bool_method_by_name_with_args(self->py.instance, method_name, self->options, self->class,
-                                                  self->super.super.super.id);
+  gboolean result = FALSE;
+  PyObject *args_obj = self->options ? _py_create_arg_dict(self->options) : NULL;
+  PyObject *ret = _py_invoke_method_by_name(self->py.instance, method_name, args_obj, self->class,
+                                            self->super.super.super.id);
+  if(ret)
+    result = ret == Py_None ? TRUE : PyObject_IsTrue(ret);
+
+  Py_XDECREF(ret);
+  Py_XDECREF(args_obj);
+
+  return result;
 }
 
 static gboolean
@@ -219,6 +228,9 @@ _as_bool(PyObject *obj)
 static LogThreadedResult
 pyobject_to_worker_insert_result(PyObject *obj)
 {
+  if (obj == Py_None)
+    return LTR_SUCCESS;
+
   if (PyBool_Check(obj))
     return _as_bool(obj);
   else
@@ -257,7 +269,7 @@ _py_invoke_send(PythonDestDriver *self, PyObject *dict)
 static gboolean
 _py_invoke_init(PythonDestDriver *self)
 {
-  return _dd_py_invoke_bool_method_by_name_with_args(self, "init");
+  return _dd_py_invoke_bool_method_or_concede(self, "init");
 }
 
 static void
