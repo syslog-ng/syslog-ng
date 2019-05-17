@@ -25,15 +25,15 @@ modules_snmp_dest_libsnmpdest_la_LDFLAGS	=	\
 modules_snmp_dest_libsnmpdest_la_DEPENDENCIES	=	\
 	$(MODULE_DEPS_LIBS)
 
-BUILT_SOURCES					+=	\
-	modules/snmp-dest/snmpdest-grammar.y \
-	modules/snmp-dest/snmpdest-grammar.c \
-	modules/snmp-dest/snmpdest-grammar.h
-
 modules/snmp-dest mod-snmp-dest: modules/snmp-dest/libsnmpdest.la
 else
 modules/snmp-dest mod-snmp-dest:
 endif
+
+BUILT_SOURCES					+=	\
+	modules/snmp-dest/snmpdest-grammar.y \
+	modules/snmp-dest/snmpdest-grammar.c \
+	modules/snmp-dest/snmpdest-grammar.h
 
 EXTRA_DIST					+=	\
 	modules/snmp-dest/snmpdest-grammar.ym	\
