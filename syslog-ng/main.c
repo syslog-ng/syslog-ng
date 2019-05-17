@@ -212,6 +212,7 @@ main(int argc, char *argv[])
 
   z_mem_trace_init("syslog-ng.trace");
 
+  g_process_set_name("syslog-ng");
   g_process_set_argv_space(argc, (gchar **) argv);
 
   resolved_configurable_paths_init(&resolvedConfigurablePaths);
@@ -259,9 +260,9 @@ main(int argc, char *argv[])
       debug_flag = TRUE;
     }
 
-  if (debug_flag)
+  if (debug_flag && !log_stderr)
     {
-      log_stderr = TRUE;
+      g_process_message("The -d/--debug option no longer implies -e/--stderr, if you want to redirect internal() source to stderr please also include -e/--stderr option");
     }
 
   gboolean exit_before_main_loop_run = main_loop_options.syntax_only || main_loop_options.preprocess_into;
@@ -269,7 +270,6 @@ main(int argc, char *argv[])
     {
       g_process_set_mode(G_PM_FOREGROUND);
     }
-  g_process_set_name("syslog-ng");
 
   /* in this case we switch users early while retaining a limited set of
    * credentials in order to initialize/reinitialize the configuration.
