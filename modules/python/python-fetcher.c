@@ -102,13 +102,6 @@ _pf_py_invoke_void_method_by_name(PythonFetcherDriver *self, const gchar *method
   _py_invoke_void_method_by_name(self->py.instance, method_name, self->class, self->super.super.super.super.id);
 }
 
-static gboolean
-_pf_py_invoke_bool_method_by_name_with_args(PythonFetcherDriver *self, const gchar *method_name)
-{
-  return _py_invoke_bool_method_by_name_with_args(self->py.instance, method_name, self->options, self->class,
-                                                  self->super.super.super.super.id);
-}
-
 static void
 _pf_py_invoke_void_function(PythonFetcherDriver *self, PyObject *func, PyObject *arg)
 {
@@ -116,15 +109,42 @@ _pf_py_invoke_void_function(PythonFetcherDriver *self, PyObject *func, PyObject 
 }
 
 static gboolean
-_pf_py_invoke_bool_function(PythonFetcherDriver *self, PyObject *func, PyObject *arg)
+_pf_py_invoke_bool_method_or_concede(PythonFetcherDriver *self, const gchar *method_name)
 {
-  return _py_invoke_bool_function(func, arg, self->class, self->super.super.super.super.id);
+  gboolean result = FALSE;
+  PyObject *args_obj = self->options ? _py_create_arg_dict(self->options) : NULL;
+  PyObject *ret = _py_invoke_method_by_name(self->py.instance, method_name, args_obj, self->class,
+                                            self->super.super.super.super.id);
+  if(ret)
+    result = ret == Py_None ? TRUE : PyObject_IsTrue(ret);
+
+  Py_XDECREF(args_obj);
+  Py_XDECREF(ret);
+
+  return result;
 }
+
+gboolean
+_pf_py_invoke_bool_function_or_concede(PythonFetcherDriver *self, PyObject *func, PyObject *arg)
+{
+  PyObject *ret;
+  gboolean result = FALSE;
+
+  ret = _py_invoke_function(func, arg, self->class, self->super.super.super.super.id);
+
+  if (ret)
+    result = ret == Py_None ? TRUE : PyObject_IsTrue(ret);
+
+  Py_XDECREF(ret);
+  return result;
+}
+
+
 
 static gboolean
 _py_invoke_init(PythonFetcherDriver *self)
 {
-  return _pf_py_invoke_bool_method_by_name_with_args(self, "init");
+  return _pf_py_invoke_bool_method_or_concede(self, "init");
 }
 
 static void
@@ -142,7 +162,7 @@ _py_invoke_request_exit(PythonFetcherDriver *self)
 static gboolean
 _py_invoke_open(PythonFetcherDriver *self)
 {
-  return _pf_py_invoke_bool_function(self, self->py.open_method, NULL);
+  return _pf_py_invoke_bool_function_or_concede(self, self->py.open_method, NULL);
 }
 
 static void
