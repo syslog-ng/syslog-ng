@@ -107,6 +107,25 @@ _ack_range_is_continuous(void *data)
 }
 
 static void
+_ack_records_track_msg(LateAckTracker *self, LogMessage *msg)
+{
+  if (self->ack_records.head == NULL)
+    {
+      self->ack_records.head = g_list_append(self->ack_records.head, self->pending_ack_record);
+      self->ack_records.tail = self->ack_records.head;
+    }
+  else
+    {
+      g_assert(g_list_append(self->ack_records.tail, self->pending_ack_record) == self->ack_records.tail);
+      self->ack_records.tail = self->ack_records.tail->next;
+    }
+  self->ack_records.size++;
+
+  msg->ack_record = (AckRecord *)self->pending_ack_record;
+  self->pending_ack_record = NULL;
+}
+
+static void
 late_ack_tracker_track_msg(AckTracker *s, LogMessage *msg)
 {
   LateAckTracker *self = (LateAckTracker *)s;
@@ -116,25 +135,76 @@ late_ack_tracker_track_msg(AckTracker *s, LogMessage *msg)
 
   log_pipe_ref((LogPipe *)source);
 
-  msg->ack_record = (AckRecord *)self->pending_ack_record;
-
   late_ack_tracker_lock(s);
   {
-    if (self->ack_records.head == NULL)
-      {
-        self->ack_records.head = g_list_append(self->ack_records.head, self->pending_ack_record);
-        self->ack_records.tail = self->ack_records.head;
-      }
-    else
-      {
-        g_assert(g_list_append(self->ack_records.tail, self->pending_ack_record) == self->ack_records.tail);
-        self->ack_records.tail = self->ack_records.tail->next;
-      }
-    self->ack_records.size++;
+    _ack_records_track_msg(self, msg);
   }
   late_ack_tracker_unlock(s);
+}
 
-  self->pending_ack_record = NULL;
+static guint32
+_ack_records_get_ack_range_length(LateAckTracker *self, GList **last_in_range)
+{
+  GList *last = NULL;
+  guint32 ack_range_length = 0;
+
+  for (GList *it = self->ack_records.head;
+       it != NULL && _ack_range_is_continuous(it->data);
+       it = it->next)
+    {
+      ++ack_range_length;
+      last = it;
+    }
+
+  if (last_in_range)
+    *last_in_range = last;
+
+  return ack_range_length;
+}
+
+static void
+_ack_records_save_bookmark(GList *ack_record_node)
+{
+  LateAckRecord *record = (LateAckRecord *) ack_record_node->data;
+
+  Bookmark *bookmark = &(record->bookmark);
+  bookmark->save(bookmark);
+}
+
+static void
+_ack_records_delete_range(LateAckTracker *self, GList *last, guint32 ack_range_length)
+{
+  GList *delete_head = self->ack_records.head;
+  self->ack_records.head = last->next;
+  self->ack_records.size -= ack_range_length;
+  last->next = NULL;
+  g_list_free_full(delete_head, g_free);
+}
+
+static guint32
+_ack_records_untrack_msg(LateAckTracker *self, LogMessage *msg, AckType ack_type)
+{
+  GList *last = NULL;
+  guint32 ack_range_length = 0;
+
+  ack_range_length = _ack_records_get_ack_range_length(self, &last);
+
+  if (ack_range_length > 0)
+    {
+      if (ack_type != AT_ABORTED)
+        {
+          _ack_records_save_bookmark(last);
+        }
+      _ack_records_delete_range(self, last, ack_range_length);
+    }
+
+  return ack_range_length;
+}
+
+static gboolean
+_ack_records_is_all_acked(LateAckTracker *self)
+{
+  return (!self->ack_records.head || self->ack_records.size == 0);
 }
 
 static void
@@ -142,8 +212,6 @@ late_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type
 {
   LateAckTracker *self = (LateAckTracker *)s;
   LateAckRecord *ack_rec = (LateAckRecord *)msg->ack_record;
-  LateAckRecord *last_in_range = NULL;
-  guint32 ack_range_length = 0;
 
   ack_rec->acked = TRUE;
 
@@ -152,37 +220,15 @@ late_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type
 
   late_ack_tracker_lock(s);
   {
-    GList *it = NULL;
-    GList *last = NULL;
-    for (it = self->ack_records.head; it != NULL && _ack_range_is_continuous(it->data); it = it->next)
-      {
-        ++ack_range_length;
-        last = it;
-      }
-    if (ack_range_length > 0 && it == NULL) //all acked...
-      it = self->ack_records.head;
-    if (ack_range_length > 0)
-      {
-        last_in_range = (LateAckRecord *)last->data;
-        if (ack_type != AT_ABORTED)
-          {
-            Bookmark *bookmark = &(last_in_range->bookmark);
-            bookmark->save(bookmark);
-          }
-        GList *delete_head = self->ack_records.head;
-        self->ack_records.head = last->next;
-        self->ack_records.size -= ack_range_length;
-        last->next = NULL;
-        g_list_free_full(delete_head, g_free);
+    guint32 ack_range_length = _ack_records_untrack_msg(self, msg, ack_type);
 
-        if (ack_type == AT_SUSPENDED)
-          log_source_flow_control_adjust_when_suspended(self->super.source, ack_range_length);
-        else
-          log_source_flow_control_adjust(self->super.source, ack_range_length);
+    if (ack_type == AT_SUSPENDED)
+      log_source_flow_control_adjust_when_suspended(self->super.source, ack_range_length);
+    else
+      log_source_flow_control_adjust(self->super.source, ack_range_length);
 
-        if (!self->ack_records.head || self->ack_records.size == 0)
-          late_ack_tracker_on_all_acked_call(s);
-      }
+    if (_ack_records_is_all_acked(self))
+      late_ack_tracker_on_all_acked_call(s);
   }
   late_ack_tracker_unlock(s);
 
