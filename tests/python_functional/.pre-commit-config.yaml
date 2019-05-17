@@ -17,6 +17,7 @@ repos:
     rev: v1.4.0
     hooks:
     -   id: reorder-python-imports
+        args: [--application-directories=tests/python_functional/]
         files: 'tests/python_functional/'
 -   repo: https://github.com/asottile/add-trailing-comma
     rev: v1.0.0
