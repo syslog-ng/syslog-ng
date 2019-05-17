@@ -34,7 +34,7 @@ target_include_directories(snmpdest
   PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-target_compile_definitions(snmpdest PRIVATE NETSNMP_CFLAGS)
+set_target_properties(snmpdest PROPERTIES COMPILE_FLAGS ${NETSNMP_CFLAGS})
 
 target_link_libraries(snmpdest PRIVATE ${NETSNMP_LIBS})
 target_link_libraries(snmpdest PRIVATE syslog-ng)
