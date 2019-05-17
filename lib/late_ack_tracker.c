@@ -38,11 +38,13 @@ typedef struct LateAckTracker
 {
   AckTracker super;
   LateAckRecord *pending_ack_record;
- // RingBuffer ack_record_storage;
-  GList *ack_record_storage;
-  GList *ack_record_storage_tail;
-  gsize ack_record_storage_size;
-  GStaticMutex storage_mutex;
+  struct
+  {
+    GList *head;
+    GList *tail;
+    gsize size;
+    GStaticMutex mutex;
+  } ack_records;
   AckTrackerOnAllAcked on_all_acked;
 } LateAckTracker;
 
@@ -57,14 +59,14 @@ void
 late_ack_tracker_lock(AckTracker *s)
 {
   LateAckTracker *self = (LateAckTracker *)s;
-  g_static_mutex_lock(&self->storage_mutex);
+  g_static_mutex_lock(&self->ack_records.mutex);
 }
 
 void
 late_ack_tracker_unlock(AckTracker *s)
 {
   LateAckTracker *self = (LateAckTracker *)s;
-  g_static_mutex_unlock(&self->storage_mutex);
+  g_static_mutex_unlock(&self->ack_records.mutex);
 }
 
 void
@@ -118,17 +120,17 @@ late_ack_tracker_track_msg(AckTracker *s, LogMessage *msg)
 
   late_ack_tracker_lock(s);
   {
-    if (self->ack_record_storage == NULL)
+    if (self->ack_records.head == NULL)
       {
-        self->ack_record_storage = g_list_append(self->ack_record_storage, self->pending_ack_record);
-        self->ack_record_storage_tail = self->ack_record_storage;
+        self->ack_records.head = g_list_append(self->ack_records.head, self->pending_ack_record);
+        self->ack_records.tail = self->ack_records.head;
       }
     else
       {
-        g_list_append(self->ack_record_storage_tail, self->pending_ack_record);
-        self->ack_record_storage_tail = self->ack_record_storage_tail->next;
+        g_assert(g_list_append(self->ack_records.tail, self->pending_ack_record) == self->ack_records.tail);
+        self->ack_records.tail = self->ack_records.tail->next;
       }
-    self->ack_record_storage_size++;
+    self->ack_records.size++;
   }
   late_ack_tracker_unlock(s);
 
@@ -152,13 +154,13 @@ late_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type
   {
     GList *it = NULL;
     GList *last = NULL;
-    for (it = self->ack_record_storage; it != NULL && _ack_range_is_continuous(it->data); it = it->next)
+    for (it = self->ack_records.head; it != NULL && _ack_range_is_continuous(it->data); it = it->next)
       {
         ++ack_range_length;
         last = it;
       }
     if (ack_range_length > 0 && it == NULL) //all acked...
-      it = self->ack_record_storage;
+      it = self->ack_records.head;
     if (ack_range_length > 0)
       {
         last_in_range = (LateAckRecord *)last->data;
@@ -167,9 +169,9 @@ late_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type
             Bookmark *bookmark = &(last_in_range->bookmark);
             bookmark->save(bookmark);
           }
-        GList *delete_head = self->ack_record_storage;
-        self->ack_record_storage = last->next;
-        self->ack_record_storage_size -= ack_range_length;
+        GList *delete_head = self->ack_records.head;
+        self->ack_records.head = last->next;
+        self->ack_records.size -= ack_range_length;
         last->next = NULL;
         g_list_free_full(delete_head, g_free);
 
@@ -178,7 +180,7 @@ late_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type
         else
           log_source_flow_control_adjust(self->super.source, ack_range_length);
 
-        if (!self->ack_record_storage || self->ack_record_storage_size == 0)
+        if (!self->ack_records.head || self->ack_records.size == 0)
           late_ack_tracker_on_all_acked_call(s);
       }
   }
@@ -192,7 +194,7 @@ gboolean
 late_ack_tracker_is_empty(AckTracker *s)
 {
   LateAckTracker *self = (LateAckTracker *)s;
-  return !self->ack_record_storage || self->ack_record_storage_size == 0;
+  return !self->ack_records.head || self->ack_records.size == 0;
 }
 
 static LateAckRecord *
@@ -234,12 +236,13 @@ late_ack_tracker_free(AckTracker *s)
       handler->user_data_free_fn(handler->user_data);
     }
 
-  g_static_mutex_free(&self->storage_mutex);
+  g_static_mutex_free(&self->ack_records.mutex);
+
   if (self->pending_ack_record)
     g_free(self->pending_ack_record);
 
-  g_list_free_full(self->ack_record_storage, g_free);
-  self->ack_record_storage = NULL;
+  g_list_free_full(self->ack_records.head, g_free);
+  self->ack_records.head = NULL;
 
   g_free(self);
 }
@@ -258,7 +261,7 @@ late_ack_tracker_init_instance(LateAckTracker *self, LogSource *source)
 {
   self->super.source = source;
   source->ack_tracker = (AckTracker *)self;
-  g_static_mutex_init(&self->storage_mutex);
+  g_static_mutex_init(&self->ack_records.mutex);
   _setup_callbacks(self);
 }
 
