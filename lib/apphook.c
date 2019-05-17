@@ -82,7 +82,7 @@ register_application_hook(gint type, ApplicationHookFunc func, gpointer user_dat
       entry->func = func;
       entry->user_data = user_data;
 
-      application_hooks = g_list_append(application_hooks, entry);
+      application_hooks = g_list_prepend(application_hooks, entry);
     }
   else
     {
