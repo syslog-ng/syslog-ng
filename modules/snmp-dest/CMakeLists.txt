@@ -30,7 +30,7 @@ bison_target(snmpdest_GRAMMAR
 add_library(snmpdest SHARED ${snmpdest_SOURCES})
 
 target_include_directories(snmpdest
-  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
   PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
 )
 
