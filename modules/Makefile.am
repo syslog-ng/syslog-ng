@@ -39,6 +39,7 @@ include modules/pseudofile/Makefile.am
 include modules/python/Makefile.am
 include modules/redis/Makefile.am
 include modules/riemann/Makefile.am
+include modules/snmp-dest/Makefile.am
 include modules/snmptrapd-parser/Makefile.am
 include modules/stardate/Makefile.am
 include modules/syslogformat/Makefile.am

@@ -210,7 +210,7 @@ python-numpy                    [debian, ubuntu]
 python-yaml                     [debian, ubuntu]
 python3-yaml                    [debian, ubuntu]
 systemd-sysv                    [debian, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
-
+libsnmp-dev                     [debian, ubuntu]
 
 
 

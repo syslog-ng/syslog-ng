@@ -48,6 +48,7 @@ addons:
       - libmaxminddb-dev
       - libxml2-utils
       - doxygen
+      - libsnmp-dev
 install:
       - pip install --user -r requirements.txt
       - pip list
