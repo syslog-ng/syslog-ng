@@ -71,9 +71,16 @@ python_parser_set_loaders(LogParser *d, GList *loaders)
 }
 
 static gboolean
-_pp_py_invoke_bool_function(PythonParser *self, PyObject *func, PyObject *arg)
+_pp_py_invoke_bool_function_or_concede(PythonParser *self, PyObject *func, PyObject *arg)
 {
-  return _py_invoke_bool_function(func, arg, self->class, self->super.name);
+  gboolean result = FALSE;
+  PyObject *ret = _py_invoke_function(func, arg, self->class, self->super.name);
+
+  if(ret)
+    result = ret == Py_None ? TRUE : PyObject_IsTrue(ret);
+
+  Py_XDECREF(ret);
+  return result;
 }
 
 static void
@@ -83,15 +90,26 @@ _pp_py_invoke_void_method_by_name(PythonParser *self, PyObject *instance, const 
 }
 
 static gboolean
-_pp_py_invoke_bool_method_by_name_with_args(PythonParser *self, PyObject *instance, const gchar *method_name)
+_pp_py_invoke_bool_method_or_concede(PythonParser *self, const gchar *method_name)
 {
-  return _py_invoke_bool_method_by_name_with_args(instance, method_name, self->options, self->class, self->super.name);
+  gboolean result = FALSE;
+  PyObject *args_obj = self->options ? _py_create_arg_dict(self->options) : NULL;
+  PyObject *ret = _py_invoke_method_by_name(self->py.instance, method_name, args_obj, self->class,
+                                            self->super.name);
+
+  if(ret)
+    result = ret == Py_None ? TRUE : PyObject_IsTrue(ret);
+
+  Py_XDECREF(args_obj);
+  Py_XDECREF(ret);
+
+  return result;
 }
 
 static gboolean
 _py_invoke_parser_process(PythonParser *self, PyObject *msg)
 {
-  return _pp_py_invoke_bool_function(self, self->py.parser_process, msg);
+  return _pp_py_invoke_bool_function_or_concede(self, self->py.parser_process, msg);
 }
 
 static gboolean
@@ -99,7 +117,7 @@ _py_invoke_init(PythonParser *self)
 {
   if (_py_get_attr_or_null(self->py.instance, "init") == NULL)
     return TRUE;
-  return _pp_py_invoke_bool_method_by_name_with_args(self, self->py.instance, "init");
+  return _pp_py_invoke_bool_method_or_concede(self, "init");
 }
 
 static void
