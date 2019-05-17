@@ -177,14 +177,6 @@ log_source_flow_control_suspend(LogSource *self)
 void
 log_source_enable_dynamic_window(LogSource *self, DynamicWindowCounter *window_ctr)
 {
-  if (self->pos_tracked && window_ctr)
-    {
-      msg_warning("WARNING: dynamic window size control works only with non-position tracking sources"
-                  "Falling back to static window size (dynamic won't be used).",
-                  log_pipe_location_tag(&self->super));
-      return;
-    }
-
   dynamic_window_set_counter(&self->dynamic_window, dynamic_window_counter_ref(window_ctr));
 }
 
