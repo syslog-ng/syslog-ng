@@ -52,4 +52,13 @@ bookmark_init(Bookmark *self)
   self->destroy = NULL;
 }
 
+static inline void
+bookmark_save(Bookmark *self)
+{
+  if (self->save)
+    {
+      self->save(self);
+    }
+}
+
 #endif

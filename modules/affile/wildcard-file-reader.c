@@ -29,7 +29,6 @@ _init(LogPipe *s)
   WildcardFileReader *self = (WildcardFileReader *)s;
   self->file_state.deleted = FALSE;
   self->file_state.eof = FALSE;
-  self->file_state.last_msg_sent = TRUE;
   return file_reader_init_method(s);
 }
 
@@ -49,17 +48,7 @@ _queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   WildcardFileReader *self = (WildcardFileReader *)s;
   self->file_state.eof = FALSE;
-  self->file_state.last_msg_sent = FALSE;
   file_reader_queue_method(s, msg, path_options);
-}
-
-static void
-_deleted_file_finished(FileStateEvent *self, FileReader *reader)
-{
-  if (self && self->deleted_file_finished)
-    {
-      self->deleted_file_finished(reader, self->deleted_file_finished_user_data);
-    }
 }
 
 static void
@@ -92,16 +81,6 @@ _set_eof(WildcardFileReader *self)
 }
 
 static void
-_set_last_msg_sent(WildcardFileReader *self)
-{
-  self->file_state.last_msg_sent = TRUE;
-  if (self->file_state.deleted)
-    {
-      _schedule_state_change_handling(self);
-    }
-}
-
-static void
 _set_deleted(WildcardFileReader *self)
 {
   /* File can be deleted only once,
@@ -124,9 +103,6 @@ _notify(LogPipe *s, gint notify_code, gpointer user_data)
     case NC_FILE_EOF:
       _set_eof(self);
       break;
-    case NC_LAST_MSG_SENT:
-      _set_last_msg_sent(self);
-      break;
     default:
       file_reader_notify_method(s, notify_code, user_data);
       break;
@@ -140,25 +116,9 @@ _handle_file_state_event(gpointer s)
   msg_debug("File status changed",
             evt_tag_int("EOF", self->file_state.eof),
             evt_tag_int("DELETED", self->file_state.deleted),
-            evt_tag_int("LAST_MSG_SENT", self->file_state.last_msg_sent),
             evt_tag_str("Filename", self->super.filename->str));
   if (self->file_state.deleted && self->file_state.eof)
-    {
-      _deleted_file_eof(&self->file_state_event, &self->super);
-      if (self->file_state.last_msg_sent)
-        {
-          _deleted_file_finished(&self->file_state_event, &self->super);
-        }
-    }
-}
-
-void
-wildcard_file_reader_on_deleted_file_finished(WildcardFileReader *self,
-                                              FileStateEventCallback cb,
-                                              gpointer user_data)
-{
-  self->file_state_event.deleted_file_finished = cb;
-  self->file_state_event.deleted_file_finished_user_data = user_data;
+    _deleted_file_eof(&self->file_state_event, &self->super);
 }
 
 void
