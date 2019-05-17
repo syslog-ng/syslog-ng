@@ -30,11 +30,15 @@ BUILT_SOURCES					+=	\
 	modules/snmp-dest/snmpdest-grammar.c \
 	modules/snmp-dest/snmpdest-grammar.h
 
+modules/snmp-dest mod-snmp-dest: modules/snmp-dest/libsnmpdest.la
+else
+modules/snmp-dest mod-snmp-dest:
 endif
 
 EXTRA_DIST					+=	\
 	modules/snmp-dest/snmpdest-grammar.ym	\
 	modules/snmp-dest/CMakeLists.txt
 
+.PHONY: modules/snmp-dest mod-snmp-dest
 
 include modules/snmp-dest/tests/Makefile.am

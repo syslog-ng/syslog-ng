@@ -60,7 +60,7 @@ SYSLOG_NG_MODULES	=	\
 	mod-python mod-java mod-java-modules mod-kvformat mod-date \
 	mod-native mod-cef mod-add-contextual-data mod-diskq mod-getent \
 	mod-map-value-pairs mod-snmptrapd-parser mod-tags-parser mod-xml \
-	mod-appmodel mod-openbsd
+	mod-appmodel mod-openbsd mod-snmp-dest
 
 modules modules/: ${SYSLOG_NG_MODULES}
 
