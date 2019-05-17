@@ -20,17 +20,20 @@
 # COPYING for details.
 #
 #############################################################################
-import pytest
 import socket
+
+import pytest
 
 input_log = "<38>Feb 11 21:27:22 {} testprogram[9999]: test message\n".format(socket.gethostname())
 expected_log = "Feb 11 21:27:22 {} testprogram[9999]: test message\n".format(socket.gethostname())
 
 
-@pytest.mark.parametrize("input_log, expected_log, counter", [
-    (input_log, expected_log, 1),
-    (input_log, expected_log, 10),
-], ids=["with_one_log", "with_ten_logs"])
+@pytest.mark.parametrize(
+    "input_log, expected_log, counter", [
+        (input_log, expected_log, 1),
+        (input_log, expected_log, 10),
+    ], ids=["with_one_log", "with_ten_logs"],
+)
 def test_acceptance(config, syslog_ng, input_log, expected_log, counter):
     file_source = config.create_file_source(file_name="input.log")
     file_destination = config.create_file_destination(file_name="output.log")

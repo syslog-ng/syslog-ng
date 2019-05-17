@@ -29,12 +29,14 @@ test_parameters_raw = [
     (r"""<190>32: foo: *Apr 29 13:58:46.411: %SYSMGR-STANDBY-3-SHUTDOWN_START: The System Manager has started the shutdown procedure.""", "${.app.name}", "cisco"),
     (r"""<134>{"count": 1, "supporting_data": {"data_values": ["x.x.x.x", "user@domain.com"], "data_type": "user"}, "organization_unit": "domain/domain/Domain Users/Enterprise Users", "severity_level": 2, "category": null, "timestamp": 1547421943, "_insertion_epoch_timestamp": 1547421943, "ccl": "unknown", "user": "user@domain.com", "audit_log_event": "Login Successful", "ur_normalized": "user@domain.com", "_id": "936289", "type": "admin_audit_logs", "appcategory": null}""", "${.app.name}", "netskope"),
     (r"""<159>Dec 19 10:48:57 EST 10.203.28.21 vendor=Websense product=Security product_version=7.7.0 action=permitted severity=1 category=153 user=- src_host=10.64.134.74 src_port=62189 dst_host=mail.google.com dst_ip=74.125.224.53 dst_port=443 bytes_out=197 bytes_in=76 http_response=200 http_method=CONNECT http_content_type=- http_user_agent=Mozilla/5.0_(Windows;_U;_Windows_NT_6.1;_enUS;_rv:1.9.2.23)_Gecko/20110920_Firefox/3.6.23 http_proxy_status_code=200 reason=- disposition=1034 policy=- role=8 duration=0 url=https://mail.google.com""", "${.app.name}", "websense"),
-    (r"""<134>1 2018-03-21 17:25:25 MDS-72 CheckPoint 13752 - [action:"Update"; flags:"150784"; ifdir:"inbound"; logid:"160571424"; loguid:"{0x5ab27965,0x0,0x5b20a8c0,0x7d5707b6}"; origin:"192.168.32.91"; originsicname:"CN=GW91,O=Domain2_Server..cuggd3"; sequencenum:"1"; time:"1521645925"; version:"5"; auth_method:"Machine Authentication (Active Directory)"; auth_status:"Successful Login"; authentication_trial:"this is a reauthentication for session 9a026bba"; client_name:"Active Directory Query"; client_version:"R80.10"; domain_name:"spec.mgmt"; endpoint_ip:"192.168.32.69"; identity_src:"AD Query"; identity_type:"machine"; product:"Identity Awareness"; snid:"9a026bba"; src:"192.168.32.69"; src_machine_group:"All Machines"; src_machine_name:"yonatanad";]""", "${.app.name}", "checkpoint")
+    (r"""<134>1 2018-03-21 17:25:25 MDS-72 CheckPoint 13752 - [action:"Update"; flags:"150784"; ifdir:"inbound"; logid:"160571424"; loguid:"{0x5ab27965,0x0,0x5b20a8c0,0x7d5707b6}"; origin:"192.168.32.91"; originsicname:"CN=GW91,O=Domain2_Server..cuggd3"; sequencenum:"1"; time:"1521645925"; version:"5"; auth_method:"Machine Authentication (Active Directory)"; auth_status:"Successful Login"; authentication_trial:"this is a reauthentication for session 9a026bba"; client_name:"Active Directory Query"; client_version:"R80.10"; domain_name:"spec.mgmt"; endpoint_ip:"192.168.32.69"; identity_src:"AD Query"; identity_type:"machine"; product:"Identity Awareness"; snid:"9a026bba"; src:"192.168.32.69"; src_machine_group:"All Machines"; src_machine_name:"yonatanad";]""", "${.app.name}", "checkpoint"),
 ]
 
 
-@pytest.mark.parametrize("input_message, template, expected_value", test_parameters_raw,
-                         ids=list(map(str, range(len(test_parameters_raw)))))
+@pytest.mark.parametrize(
+    "input_message, template, expected_value", test_parameters_raw,
+    ids=list(map(str, range(len(test_parameters_raw)))),
+)
 def test_application_raw(config, syslog_ng, input_message, template, expected_value):
     config.add_include("scl.conf")
 

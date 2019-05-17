@@ -9,4 +9,6 @@ mockito
 pathlib2
 psutil
 pytest
+pre-commit
+pre-commit-hooks
 six>=1.10.0

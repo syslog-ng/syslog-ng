@@ -79,7 +79,7 @@ class ConfigRenderer(object):
         for statement_group in self.__syslog_ng_config["statement_groups"]:
             # statement header
             self.__syslog_ng_config_content += "\n{} {} {{\n".format(
-                statement_group.group_type, statement_group.group_id
+                statement_group.group_type, statement_group.group_id,
             )
 
             for statement in statement_group:
@@ -104,7 +104,7 @@ class ConfigRenderer(object):
                     self.__render_logpath_groups(logpath_groups=[statement_group])
                 else:
                     self.__syslog_ng_config_content += "    {}({});\n".format(
-                        statement_group.group_type, statement_group.group_id
+                        statement_group.group_type, statement_group.group_id,
                     )
             if logpath_group.flags:
                 self.__syslog_ng_config_content += "    flags({});\n".format("".join(logpath_group.flags))

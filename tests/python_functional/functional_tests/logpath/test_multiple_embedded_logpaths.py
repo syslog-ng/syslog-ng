@@ -20,8 +20,6 @@
 # COPYING for details.
 #
 #############################################################################
-
-
 from src.message_builder.log_message import LogMessage
 
 
@@ -65,7 +63,7 @@ def test_multiple_embedded_logpaths(config, syslog_ng, bsd_formatter):
     second_level_logpath3 = config.create_inner_logpath(statements=[file_destination3])
 
     config.create_logpath(
-        statements=[file_source, second_level_logpath1, second_level_logpath2, second_level_logpath3]
+        statements=[file_source, second_level_logpath1, second_level_logpath2, second_level_logpath3],
     )
     config.create_logpath(statements=[file_destination4])
 

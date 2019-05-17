@@ -22,7 +22,6 @@
 #############################################################################
 import pytest
 from pathlib2 import PosixPath
-
 from src.syslog_ng.syslog_ng_paths import SyslogNgPaths
 
 
@@ -61,13 +60,13 @@ def test_syslog_ng_paths_parent_class_of_paths(fake_testcase_parameters):
 
 def test_syslog_ng_paths_client_relay_server(fake_testcase_parameters):
     syslog_ng_paths_server = SyslogNgPaths(
-        fake_testcase_parameters
+        fake_testcase_parameters,
     ).set_syslog_ng_paths(instance_name="server")
     syslog_ng_paths_relay = SyslogNgPaths(
-        fake_testcase_parameters
+        fake_testcase_parameters,
     ).set_syslog_ng_paths(instance_name="relay")
     syslog_ng_paths_client = SyslogNgPaths(
-        fake_testcase_parameters
+        fake_testcase_parameters,
     ).set_syslog_ng_paths(instance_name="client")
 
     assert syslog_ng_paths_client.get_instance_name() == "client"
@@ -77,7 +76,7 @@ def test_syslog_ng_paths_client_relay_server(fake_testcase_parameters):
 
 def test_instance_already_configured(fake_testcase_parameters):
     syslog_ng_paths_server = SyslogNgPaths(
-        fake_testcase_parameters
+        fake_testcase_parameters,
     ).set_syslog_ng_paths(instance_name="server")
     with pytest.raises(Exception):
         syslog_ng_paths_server.set_syslog_ng_paths(instance_name="client")

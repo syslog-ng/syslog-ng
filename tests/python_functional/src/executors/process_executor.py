@@ -23,7 +23,6 @@
 import logging
 
 import psutil
-
 from src.driver_io.file.file import File
 from src.executors.command_executor import prepare_executable_command
 from src.executors.command_executor import prepare_printable_command
@@ -43,6 +42,6 @@ class ProcessExecutor(object):
         stdout, stderr = prepare_std_outputs(self.__file_ref, stdout_path, stderr_path)
         logger.info("Following process will be started:\n{}\n".format(printable_command))
         self.process = psutil.Popen(
-            executable_command, stdout=stdout.open_file(mode="a"), stderr=stderr.open_file(mode="a")
+            executable_command, stdout=stdout.open_file(mode="a"), stderr=stderr.open_file(mode="a"),
         )
         return self.process

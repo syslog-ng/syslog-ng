@@ -52,7 +52,7 @@ class MessageReader(object):
         assert (
             wait_until_true_custom(self.__buffer_and_parse, args=(counter,), timeout=timeout)
         ), "\nExpected message counter: [{}]\nArrived message counter: [{}]\nArrived messages: [{}]".format(
-            counter, len(self.__parser.msg_list), self.__parser.msg_list
+            counter, len(self.__parser.msg_list), self.__parser.msg_list,
         )
         counter = self.__map_counter(counter)
         required_number_of_messages = self.__parser.msg_list[0:counter]
@@ -65,7 +65,7 @@ class MessageReader(object):
         assert (
             wait_until_true_custom(self.__buffer_and_parse, args=(counter,))
         ), "\nExpected message counter: [{}]\nArrived message counter: [{}]\nArrived messages: [{}]".format(
-            counter, len(self.__parser.msg_list), self.__parser.msg_list
+            counter, len(self.__parser.msg_list), self.__parser.msg_list,
         )
         counter = self.__map_counter(counter)
         required_number_of_messages = self.__parser.msg_list[0:counter]

@@ -20,8 +20,6 @@
 # COPYING for details.
 #
 #############################################################################
-
-
 from src.message_builder.log_message import LogMessage
 
 

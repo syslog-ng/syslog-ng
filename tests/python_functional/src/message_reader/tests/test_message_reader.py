@@ -22,7 +22,6 @@
 #
 #############################################################################
 import pytest
-
 from src.common.operations import open_file
 from src.message_reader.message_reader import MessageReader
 from src.message_reader.message_reader import READ_ALL_MESSAGES
