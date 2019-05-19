@@ -72,13 +72,16 @@ function add_copr_repo {
     yum copr enable -y czanik/syslog-ng-githead
 }
 
+function add_epel_repo {
+    yum install -y epel-release
+}
+
 function install_apt_packages {
     apt-get update -qq -o Acquire::CompressionTypes::Order::=gz
     filter_packages_by_platform /helpers/packages.manifest | xargs -t apt-get install --no-install-recommends --yes
 }
 
 function install_yum_packages {
-    yum install -y epel-release
     filter_packages_by_platform /helpers/packages.manifest | xargs yum install -y
 }
 
