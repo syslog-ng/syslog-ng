@@ -1,6 +1,16 @@
 #!/usr/bin/make -f
 
-BUILDER_IMAGES=centos-6 centos-7 debian-jessie debian-stretch debian-buster ubuntu-xenial ubuntu-trusty ubuntu-cosmic ubuntu-bionic
+BUILDER_IMAGES=		\
+	centos-6 	\
+	centos-7 	\
+	debian-jessie 	\
+	debian-stretch	\
+	debian-buster	\
+	ubuntu-xenial	\
+	ubuntu-trusty	\
+	ubuntu-cosmic	\
+	ubuntu-bionic
+
 IMAGES=${BUILDER_IMAGES} devshell
 DEFAULT_IMAGE ?= ubuntu-bionic
 TARBALL_IMAGE ?= ubuntu-bionic
