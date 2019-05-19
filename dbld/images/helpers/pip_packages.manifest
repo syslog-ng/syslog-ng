@@ -1,14 +1,17 @@
-# pip packages for successful run make check
+# pip packages for successful run unit tests
 hy                      [centos, fedora, debian, ubuntu]
 nose                    [centos, fedora, debian, ubuntu]
-pep8                    [centos, fedora, debian, ubuntu]
 ply                     [centos, fedora, debian, ubuntu]
-pylint                  [centos, fedora, debian, ubuntu]
 
 # pip packages for python functional tests
+
 mockito                 [centos, fedora, debian, ubuntu]
 pathlib2                [centos, fedora, debian, ubuntu]
 psutil                  [centos, fedora, debian, ubuntu]
 pytest                  [centos, fedora, debian, ubuntu]
-pre-commit              [centos, fedora, debian, ubuntu]
-pre-commit-hooks        [centos, fedora, debian, ubuntu]
+
+# linters and code formatting
+pep8                    [devshell]
+pylint                  [devshell]
+pre-commit              [devshell]
+pre-commit-hooks        [devshell]
