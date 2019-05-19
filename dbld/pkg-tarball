@@ -19,6 +19,8 @@ tar xfz $SYSLOGNG_TARBALL
 cp $SYSLOGNG_TARBALL ${SYSLOGNG_TARBALL}.orig
 cd $SYSLOGNG_DIR
 
+echo ${VERSION} > VERSION
+
 /source/dbld/generate-debian-directory $MODE
 /source/dbld/generate-rpm-specfile $MODE
 
