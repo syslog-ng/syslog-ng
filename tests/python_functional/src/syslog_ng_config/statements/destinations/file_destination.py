@@ -22,22 +22,26 @@
 #############################################################################
 from pathlib2 import Path
 
-from src.driver_io.file.file_io import FileIO
-from src.syslog_ng_config.statements.destinations.destination_driver import DestinationDriver
 import src.testcase_parameters.testcase_parameters as tc_parameters
+from src.driver_io.file.file_io import FileIO
+from src.message_reader.single_line_parser import SingleLineParser
+from src.syslog_ng_config.statements.destinations.destination_reader import DestinationReader
 
 
-class FileDestination(DestinationDriver):
+class FileDestination(object):
     def __init__(self, file_name, **options):
         self.driver_name = "file"
+        self.group_type = "destination"
         self.path = Path(tc_parameters.WORKING_DIR, file_name)
-        super(FileDestination, self).__init__(FileIO, [self.path], options)
+        self.destination_reader = DestinationReader(FileIO, SingleLineParser)
+        self.positional_parameters = [self.path]
+        self.options = options
 
     def get_path(self):
         return self.path
 
     def read_log(self):
-        return self.dd_read_logs(self.get_path(), counter=1)[0]
+        return self.destination_reader.read_logs(self.get_path(), counter=1)[0]
 
     def read_logs(self, counter):
-        return self.dd_read_logs(self.get_path(), counter=counter)
+        return self.destination_reader.read_logs(self.get_path(), counter)

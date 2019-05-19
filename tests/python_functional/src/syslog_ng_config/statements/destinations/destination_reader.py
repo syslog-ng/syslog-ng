@@ -23,33 +23,28 @@
 import logging
 
 from src.message_reader.message_reader import MessageReader
-from src.message_reader.single_line_parser import SingleLineParser
 
 logger = logging.getLogger(__name__)
 
 
-class DestinationDriver(object):
-    group_type = "destination"
+class DestinationReader(object):
+    def __init__(self, driver_io_cls, driver_io_parser_cls):
+        self.driver_io_cls = driver_io_cls
+        self.driver_io_parser_cls = driver_io_parser_cls
+        self.actual_driver_resource = None
+        self.driver_io = None
+        self.reader = None
 
-    def __init__(self, IOClass, positional_parameters=None, options=None):
-        self.__IOClass = IOClass
-        self.__reader = None
-        if positional_parameters is None:
-            positional_parameters = []
-        self.positional_parameters = positional_parameters
-        if options is None:
-            options = {}
-        self.options = options
+    def construct_reader(self, driver_resource):
+        if not self.driver_io or (self.actual_driver_resource != driver_resource):
+            self.actual_driver_resource = driver_resource
+            self.driver_io = self.driver_io_cls(driver_resource)
+            self.driver_io.wait_for_creation()
+            self.reader = MessageReader(self.driver_io.read, self.driver_io_parser_cls())
 
-    def dd_read_logs(self, path, counter):
-        if not self.__reader:
-            io = self.__IOClass(path)
-            io.wait_for_creation()
-            message_reader = MessageReader(
-                io.read, SingleLineParser(),
-            )
-            self.__reader = message_reader
-        messages = self.__reader.pop_messages(counter)
-        read_description = "Content has been read from\nresource: {}\ncontent: {}\n".format(path, messages)
+    def read_logs(self, driver_resource, counter=1):
+        self.construct_reader(driver_resource)
+        messages = self.reader.pop_messages(counter)
+        read_description = "Content has been read from\nresource: {}\ncontent: {}\n".format(driver_resource, messages)
         logger.info(read_description)
         return messages
