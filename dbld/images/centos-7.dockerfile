@@ -4,6 +4,7 @@ ENV OS_PLATFORM centos-7
 
 COPY helpers/* /helpers/
 
+RUN /helpers/dependencies.sh add_epel_repo
 RUN /helpers/dependencies.sh add_copr_repo
 RUN /helpers/dependencies.sh install_yum_packages
 RUN /helpers/dependencies.sh install_pip_packages
