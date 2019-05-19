@@ -20,11 +20,9 @@
 # COPYING for details.
 #
 #############################################################################
-from pathlib2 import Path
-
-import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.driver_io.file.file_io import FileIO
 from src.message_reader.single_line_parser import SingleLineParser
+from src.syslog_ng_config.file_based_option_handler import FileBasedOptionHandler
 from src.syslog_ng_config.statements.destinations.destination_reader import DestinationReader
 
 
@@ -32,16 +30,19 @@ class FileDestination(object):
     def __init__(self, file_name, **options):
         self.driver_name = "file"
         self.group_type = "destination"
-        self.path = Path(tc_parameters.WORKING_DIR, file_name)
-        self.destination_reader = DestinationReader(FileIO, SingleLineParser)
-        self.positional_parameters = [self.path]
         self.options = options
+        self.destination_reader = DestinationReader(FileIO, SingleLineParser)
 
-    def get_path(self):
-        return self.path
+        self.file_based_option_handler = FileBasedOptionHandler(self.options)
+        self.file_based_option_handler.init_file_path(file_name)
+
+        self.get_file_path = self.file_based_option_handler.get_file_path
+        self.set_file_path = self.file_based_option_handler.set_file_path
+
+        self.positional_parameters = [self.get_file_path()]
 
     def read_log(self):
-        return self.destination_reader.read_logs(self.get_path(), counter=1)[0]
+        return self.destination_reader.read_logs(self.get_file_path(), counter=1)[0]
 
     def read_logs(self, counter):
-        return self.destination_reader.read_logs(self.get_path(), counter)
+        return self.destination_reader.read_logs(self.get_file_path(), counter)

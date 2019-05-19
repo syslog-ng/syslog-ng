@@ -94,4 +94,4 @@ def test_multiple_embedded_logpaths(config, syslog_ng, bsd_formatter):
 
     # no messages should arrived into destination4,
     # no source() or flags(catch-all) is added
-    assert file_destination4.get_path().exists() is False
+    assert file_destination4.get_file_path().exists() is False

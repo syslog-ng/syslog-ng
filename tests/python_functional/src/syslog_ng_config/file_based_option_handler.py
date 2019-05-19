@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #############################################################################
-# Copyright (c) 2015-2018 Balabit
+# Copyright (c) 2015-2019 Balabit
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -20,25 +20,27 @@
 # COPYING for details.
 #
 #############################################################################
-from src.driver_io.file.file_io import FileIO
-from src.syslog_ng_config.file_based_option_handler import FileBasedOptionHandler
-from src.syslog_ng_config.statements.sources.source_writer import SourceWriter
+from pathlib2 import Path
+
+import src.testcase_parameters.testcase_parameters as tc_parameters
+from src.syslog_ng_config.option_handler import OptionHandler
 
 
-class FileSource(object):
-    def __init__(self, file_name=None, **options):
-        self.driver_name = "file"
-        self.group_type = "source"
-        self.options = options
-        self.source_writer = SourceWriter(FileIO)
+class FileBasedOptionHandler(OptionHandler):
+    def __init__(self, options):
+        super(FileBasedOptionHandler, self).__init__(options)
+        self.file_path = None
 
-        self.file_based_option_handler = FileBasedOptionHandler(self.options)
-        self.file_based_option_handler.init_file_path(file_name)
+    def init_file_path(self, file_name):
+        if file_name or file_name == "":
+            # note if file_name defined or file_name is ""
+            self.file_path = Path(tc_parameters.WORKING_DIR, file_name)
+        elif not file_name:
+            # note if not file_name defined we will provide own name
+            self.file_path = Path(tc_parameters.WORKING_DIR, "default_file_path")
 
-        self.get_file_path = self.file_based_option_handler.get_file_path
-        self.set_file_path = self.file_based_option_handler.set_file_path
+    def get_file_path(self):
+        return self.file_path
 
-        self.positional_parameters = [self.get_file_path()]
-
-    def write_log(self, formatted_log, counter=1):
-        self.source_writer.write_log(self.get_file_path(), formatted_log, counter)
+    def set_file_path(self, new_file_name):
+        self.file_path = Path(tc_parameters.WORKING_DIR, new_file_name)

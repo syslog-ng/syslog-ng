@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #############################################################################
-# Copyright (c) 2015-2018 Balabit
+# Copyright (c) 2015-2019 Balabit
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -20,25 +20,19 @@
 # COPYING for details.
 #
 #############################################################################
-from src.driver_io.file.file_io import FileIO
-from src.syslog_ng_config.file_based_option_handler import FileBasedOptionHandler
-from src.syslog_ng_config.statements.sources.source_writer import SourceWriter
+from pathlib2 import Path
+
+import src.testcase_parameters.testcase_parameters as tc_parameters
 
 
-class FileSource(object):
-    def __init__(self, file_name=None, **options):
-        self.driver_name = "file"
-        self.group_type = "source"
+class OptionHandler(object):
+    def __init__(self, options):
         self.options = options
-        self.source_writer = SourceWriter(FileIO)
 
-        self.file_based_option_handler = FileBasedOptionHandler(self.options)
-        self.file_based_option_handler.init_file_path(file_name)
+        self.path_type_options = ["file_name", "cert_file"]
+        self.set_path_for_options_if_needed()
 
-        self.get_file_path = self.file_based_option_handler.get_file_path
-        self.set_file_path = self.file_based_option_handler.set_file_path
-
-        self.positional_parameters = [self.get_file_path()]
-
-    def write_log(self, formatted_log, counter=1):
-        self.source_writer.write_log(self.get_file_path(), formatted_log, counter)
+    def set_path_for_options_if_needed(self):
+        for option in self.options:
+            if option in self.path_type_options:
+                self.options[option] = Path(tc_parameters.WORKING_DIR, self.options[option])
