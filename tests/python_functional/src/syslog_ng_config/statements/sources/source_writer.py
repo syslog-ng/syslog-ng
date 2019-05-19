@@ -20,27 +20,24 @@
 # COPYING for details.
 #
 #############################################################################
-from pathlib2 import Path
-
-import src.testcase_parameters.testcase_parameters as tc_parameters
-from src.driver_io.file.file_io import FileIO
-from src.syslog_ng_config.statements.sources.source_writer import SourceWriter
+import logging
+logger = logging.getLogger(__name__)
 
 
-class FileSource(object):
-    def __init__(self, file_name, **options):
-        self.driver_name = "file"
-        self.group_type = "source"
-        self.path = Path(tc_parameters.WORKING_DIR, file_name)
-        self.source_writer = SourceWriter(FileIO)
-        self.positional_parameters = [self.path]
-        self.options = options
+class SourceWriter(object):
+    def __init__(self, driver_io_cls):
+        self.driver_io_cls = driver_io_cls
+        self.actual_driver_resource = None
+        self.driver_io = None
 
-    def get_path(self):
-        return self.path
+    def construct_writer(self, driver_resource):
+        if not self.driver_io or (self.actual_driver_resource != driver_resource):
+            self.actual_driver_resource = driver_resource
+            self.driver_io = self.driver_io_cls(driver_resource)
 
-    def set_path(self, pathname):
-        self.path = Path(tc_parameters.WORKING_DIR, pathname)
-
-    def write_log(self, formatted_log, counter=1):
-        self.source_writer.write_log(self.get_path(), formatted_log, counter)
+    def write_log(self, driver_resource, formatted_log, counter=1):
+        self.construct_writer(driver_resource)
+        for __i in range(0, counter):
+            self.driver_io.write(formatted_log)
+        written_description = "Content has been written to\nresource: {}\nnumber of times: {}\ncontent: {}\n".format(driver_resource, counter, formatted_log)
+        logger.info(written_description)

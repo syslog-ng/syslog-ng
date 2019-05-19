@@ -29,9 +29,9 @@ from src.syslog_ng_config.statement_group import StatementGroup
 from src.syslog_ng_config.statements.destinations.file_destination import FileDestination
 from src.syslog_ng_config.statements.filters.filter import Filter
 from src.syslog_ng_config.statements.logpath.logpath import LogPath
-from src.syslog_ng_config.statements.parsers.parser import Parser
+from src.syslog_ng_config.statements.parser.parser import Parser
+from src.syslog_ng_config.statements.sources.example_msg_generator_source import ExampleMsgGeneratorSource
 from src.syslog_ng_config.statements.sources.file_source import FileSource
-from src.syslog_ng_config.statements.sources.source_driver import SourceDriver
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +47,7 @@ class SyslogNgConfig(object):
             "logpath_groups": [],
         }
         self.file_source = FileSource
+        self.example_msg_generator_source = ExampleMsgGeneratorSource
         self.file_destination = FileDestination
 
     def set_version(self, version):
@@ -106,13 +107,6 @@ class SyslogNgConfig(object):
     def create_inner_logpath(self, statements=None, flags=None):
         inner_logpath = self.__create_logpath_with_conversion(statements, flags)
         return inner_logpath
-
-    def create_example_msg_generator(self, **options):
-        generator_source = SourceDriver(None)
-        generator_source.driver_name = "example_msg_generator"
-        generator_source.DEFAULT_MESSAGE = "-- Generated message. --"
-        generator_source.options = options
-        return generator_source
 
     def create_app_parser(self, **options):
         return Parser("app-parser", **options)

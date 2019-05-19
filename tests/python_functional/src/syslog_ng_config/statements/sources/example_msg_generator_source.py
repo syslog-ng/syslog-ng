@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #############################################################################
-# Copyright (c) 2015-2018 Balabit
+# Copyright (c) 2015-2019 Balabit
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -20,30 +20,12 @@
 # COPYING for details.
 #
 #############################################################################
-import logging
-logger = logging.getLogger(__name__)
 
 
-class SourceDriver(object):
-    group_type = "source"
-
-    def __init__(self, IOClass, positional_parameters=None, options=None):
-        self.__IOClass = IOClass
-        self.__writer = None
-        if positional_parameters is None:
-            positional_parameters = []
-        self.positional_parameters = positional_parameters
-        if options is None:
-            options = {}
+class ExampleMsgGeneratorSource(object):
+    def __init__(self, **options):
+        self.group_type = "source"
+        self.driver_name = "example_msg_generator"
+        self.DEFAULT_MESSAGE = "-- Generated message. --"
         self.options = options
-
-    def __construct_writer(self, path):
-        if not self.__writer:
-            self.__writer = self.__IOClass(path)
-
-    def sd_write_log(self, path, formatted_log, counter):
-        self.__construct_writer(path)
-        for __i in range(0, counter):
-            self.__writer.write(formatted_log)
-        written_description = "Content has been written to\nresource: {}\nnumber of times: {}\ncontent: {}\n".format(path, counter, formatted_log)
-        logger.info(written_description)
+        self.positional_parameters = []

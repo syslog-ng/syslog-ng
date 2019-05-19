@@ -23,7 +23,7 @@
 
 
 def test_generator_source(config, syslog_ng):
-    generator_source = config.create_example_msg_generator(num=1)
+    generator_source = config.example_msg_generator_source(num=1)
     file_destination = config.file_destination(file_name="output.log", template="'$MSG\n'")
 
     config.create_logpath(statements=[generator_source, file_destination])
