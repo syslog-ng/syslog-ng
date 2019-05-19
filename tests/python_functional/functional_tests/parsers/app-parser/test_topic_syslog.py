@@ -39,8 +39,8 @@ def test_application_syslog(config, syslog_ng, input_message, template, expected
     config.add_include("scl.conf")
 
     generator_source = config.example_msg_generator_source(num=1, template=config.stringify(input_message))
-    syslog_parser = config.create_syslog_parser(flags="syslog-protocol")
-    app_parser = config.create_app_parser(topic="syslog")
+    syslog_parser = config.syslog_parser(flags="syslog-protocol")
+    app_parser = config.app_parser(topic="syslog")
     file_destination = config.file_destination(file_name="output.log", template=config.stringify(template + '\n'))
     config.create_logpath(statements=[generator_source, syslog_parser, app_parser, file_destination])
 

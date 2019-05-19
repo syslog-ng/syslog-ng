@@ -23,9 +23,18 @@
 
 
 class Parser(object):
-    group_type = "parser"
-
-    def __init__(self, driver_name, **kwargs):
+    def __init__(self, driver_name, **options):
         self.driver_name = driver_name
-        self.options = kwargs
+        self.options = options
         self.positional_parameters = []
+        self.group_type = "parser"
+
+
+class AppParser(Parser):
+    def __init__(self, **options):
+        super(AppParser, self).__init__("app-parser", **options)
+
+
+class SyslogParser(Parser):
+    def __init__(self, **options):
+        super(SyslogParser, self).__init__("syslog-parser", **options)

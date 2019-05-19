@@ -29,7 +29,8 @@ from src.syslog_ng_config.statement_group import StatementGroup
 from src.syslog_ng_config.statements.destinations.file_destination import FileDestination
 from src.syslog_ng_config.statements.filters.filter import Filter
 from src.syslog_ng_config.statements.logpath.logpath import LogPath
-from src.syslog_ng_config.statements.parser.parser import Parser
+from src.syslog_ng_config.statements.parsers.parser import AppParser
+from src.syslog_ng_config.statements.parsers.parser import SyslogParser
 from src.syslog_ng_config.statements.sources.example_msg_generator_source import ExampleMsgGeneratorSource
 from src.syslog_ng_config.statements.sources.file_source import FileSource
 
@@ -50,6 +51,8 @@ class SyslogNgConfig(object):
         self.example_msg_generator_source = ExampleMsgGeneratorSource
         self.file_destination = FileDestination
         self.filter = Filter
+        self.app_parser = AppParser
+        self.syslog_parser = SyslogParser
 
     def set_version(self, version):
         self.__syslog_ng_config["version"] = version
@@ -105,12 +108,6 @@ class SyslogNgConfig(object):
     def create_inner_logpath(self, statements=None, flags=None):
         inner_logpath = self.__create_logpath_with_conversion(statements, flags)
         return inner_logpath
-
-    def create_app_parser(self, **options):
-        return Parser("app-parser", **options)
-
-    def create_syslog_parser(self, **options):
-        return Parser("syslog-parser", **options)
 
     @staticmethod
     def stringify(s):
