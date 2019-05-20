@@ -246,16 +246,15 @@ grouping_by_emit_synthetic(GroupingBy *self, CorrellationContext *context)
       msg_debug("groupingby() dropping context, because having() is FALSE",
                 evt_tag_str("key", context->key.session_id),
                 log_pipe_location_tag(&self->super.super.super));
+      return;
     }
-  else
-    {
-      GString *buffer = g_string_sized_new(256);
 
-      msg = synthetic_message_generate_with_context(self->synthetic_message, context, buffer);
-      stateful_parser_emit_synthetic(&self->super, msg);
-      log_msg_unref(msg);
-      g_string_free(buffer, TRUE);
-    }
+  GString *buffer = g_string_sized_new(256);
+
+  msg = synthetic_message_generate_with_context(self->synthetic_message, context, buffer);
+  stateful_parser_emit_synthetic(&self->super, msg);
+  log_msg_unref(msg);
+  g_string_free(buffer, TRUE);
 }
 
 static void
