@@ -299,7 +299,6 @@ grouping_by_format_persist_name(LogParser *s)
 static gboolean
 _perform_groupby(GroupingBy *self, LogMessage *msg)
 {
-  GString *buffer = g_string_sized_new(32);
   CorrellationContext *context = NULL;
 
   g_static_mutex_lock(&self->lock);
@@ -307,6 +306,7 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
   if (self->key_template)
     {
       CorrellationKey key;
+      GString *buffer = g_string_sized_new(32);
 
       log_template_format(self->key_template, msg, NULL, LTZ_LOCAL, 0, NULL, buffer);
       log_msg_set_value(msg, context_id_handle, buffer->str, -1);
@@ -363,6 +363,7 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
                                                      correllation_context_ref(context), (GDestroyNotify) correllation_context_unref);
             }
         }
+      g_string_free(buffer, TRUE);
     }
   else
     {
@@ -374,7 +375,6 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
   if (context)
     log_msg_write_protect(msg);
 
-  g_string_free(buffer, TRUE);
   return TRUE;
 }
 
