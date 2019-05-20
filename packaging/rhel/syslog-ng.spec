@@ -230,6 +230,9 @@ developing applications that use %{name}.
 # fix perl path
 %{__sed} -i 's|^#!/usr/local/bin/perl|#!%{__perl}|' contrib/relogger.pl
 
+# fix Python path
+%{__sed} -i 's|^#!/usr/bin/env python|#!%{__python3}|' lib/merge-grammar.py
+
 # fix executable perms on contrib files
 %{__chmod} -c a-x contrib/syslog2ng
 
