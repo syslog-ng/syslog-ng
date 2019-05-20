@@ -241,7 +241,13 @@ grouping_by_emit_synthetic(GroupingBy *self, CorrellationContext *context)
 {
   LogMessage *msg;
 
-  if (_evaluate_having(self, context))
+  if (!_evaluate_having(self, context))
+    {
+      msg_debug("groupingby() dropping context, because having() is FALSE",
+                evt_tag_str("key", context->key.session_id),
+                log_pipe_location_tag(&self->super.super.super));
+    }
+  else
     {
       GString *buffer = g_string_sized_new(256);
 
@@ -249,12 +255,6 @@ grouping_by_emit_synthetic(GroupingBy *self, CorrellationContext *context)
       stateful_parser_emit_synthetic(&self->super, msg);
       log_msg_unref(msg);
       g_string_free(buffer, TRUE);
-    }
-  else
-    {
-      msg_debug("groupingby() dropping context, because having() is FALSE",
-                evt_tag_str("key", context->key.session_id),
-                log_pipe_location_tag(&self->super.super.super));
     }
 }
 
