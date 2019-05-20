@@ -16,9 +16,16 @@ function install_cmake() {
 
 function install_criterion() {
     CRITERION_VERSION=2.3.3
-    download_target "https://github.com/Snaipe/Criterion/releases/download/v${CRITERION_VERSION}/criterion-v${CRITERION_VERSION}-linux-x86_64.tar.bz2" /tmp/criterion.tar.bz2
-    tar xvjf /tmp/criterion.tar.bz2 --strip 1 -C /usr
-    rm -rf /tmp/criterion.tar.bz2
+
+    download_target "https://github.com/Snaipe/Criterion/releases/download/v${CRITERION_VERSION}/criterion-v${CRITERION_VERSION}.tar.bz2" /tmp/criterion.tar.bz2
+    cd /tmp/
+    tar xvf /tmp/criterion.tar.bz2
+    cd /tmp/criterion-v${CRITERION_VERSION}
+    cmake -DCMAKE_INSTALL_PREFIX=/usr .
+    make install
+    ldconfig
+    rm -rf /tmp/criterion.tar.bz2 /tmp/criterion-v${CRITERION_VERSION}
+
 }
 
 function install_gosu() {
