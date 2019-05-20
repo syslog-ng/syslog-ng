@@ -299,12 +299,12 @@ grouping_by_format_persist_name(LogParser *s)
 static gboolean
 _perform_groupby(GroupingBy *self, LogMessage *msg)
 {
-  CorrellationContext *context = NULL;
 
   g_static_mutex_lock(&self->lock);
   grouping_by_set_time(self, &msg->timestamps[LM_TS_STAMP]);
   if (self->key_template)
     {
+      CorrellationContext *context = NULL;
       CorrellationKey key;
       GString *buffer = g_string_sized_new(32);
 
@@ -363,17 +363,13 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
                                                      correllation_context_ref(context), (GDestroyNotify) correllation_context_unref);
             }
         }
+
+      log_msg_write_protect(msg);
+
       g_string_free(buffer, TRUE);
-    }
-  else
-    {
-      context = NULL;
     }
 
   g_static_mutex_unlock(&self->lock);
-
-  if (context)
-    log_msg_write_protect(msg);
 
   return TRUE;
 }
