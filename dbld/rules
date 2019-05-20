@@ -136,11 +136,6 @@ image: image-$(DEFAULT_IMAGE)
 image-%:
 	cd $(DBLD_DIR)/images/ && $(DOCKER) build --network=host -t balabit/syslog-ng-$* -f $*.dockerfile .
 
-pull-images: $(foreach image,$(BUILDER_IMAGES), pull-image-$(image))
-pull-image: pull-image-$(DEFAULT_IMAGE)
-pull-image-%:
-	$(DOCKER) pull balabit/syslog-ng-$*
-
 exec: exec-$(DEFAULT_IMAGE)
 exec: EXEC_COMMAND=echo Specify EXEC_COMMAND to do something sensible here
 exec-%: setup
