@@ -122,7 +122,7 @@ pcre-devel                      [centos]
 
 
 # packages to run successful make
-cmake                           [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
+cmake                           [centos, debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
 make                            [centos, debian, ubuntu]
 
     # libwrap-dev
@@ -138,7 +138,8 @@ make                            [centos, debian, ubuntu]
     docbook-style-xsl           [centos]
 
 
-
+# packages to compile criterion
+gcc-c++				[centos, fedora]
 
 
 # packages to run successful make check
