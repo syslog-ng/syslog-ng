@@ -236,17 +236,17 @@ _evaluate_trigger(GroupingBy *self, CorrellationContext *context)
   return _evaluate_filter(self->trigger_condition_expr, context);
 }
 
-static void
+static LogMessage *
 grouping_by_emit_synthetic(GroupingBy *self, CorrellationContext *context)
 {
-  LogMessage *msg;
+  LogMessage *msg = NULL;
 
   if (!_evaluate_having(self, context))
     {
       msg_debug("groupingby() dropping context, because having() is FALSE",
                 evt_tag_str("key", context->key.session_id),
                 log_pipe_location_tag(&self->super.super.super));
-      return;
+      return NULL;
     }
 
   GString *buffer = g_string_sized_new(256);
@@ -255,7 +255,7 @@ grouping_by_emit_synthetic(GroupingBy *self, CorrellationContext *context)
   g_string_free(buffer, TRUE);
 
   stateful_parser_emit_synthetic(&self->super, msg);
-  log_msg_unref(msg);
+  return msg;
 }
 
 static void
@@ -271,7 +271,9 @@ grouping_by_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data)
 
   if (self->sort_key_template)
     correllation_context_sort(context, self->sort_key_template);
-  grouping_by_emit_synthetic(self, context);
+  LogMessage *msg = grouping_by_emit_synthetic(self, context);
+  if (msg)
+    log_msg_unref(msg);
   g_hash_table_remove(self->correllation->state, &context->key);
 
   /* correllation_context_free is automatically called when returning from
