@@ -252,9 +252,10 @@ grouping_by_emit_synthetic(GroupingBy *self, CorrellationContext *context)
   GString *buffer = g_string_sized_new(256);
 
   msg = synthetic_message_generate_with_context(self->synthetic_message, context, buffer);
+  g_string_free(buffer, TRUE);
+
   stateful_parser_emit_synthetic(&self->super, msg);
   log_msg_unref(msg);
-  g_string_free(buffer, TRUE);
 }
 
 static void
