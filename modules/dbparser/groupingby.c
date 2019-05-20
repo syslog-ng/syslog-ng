@@ -367,11 +367,17 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
       log_msg_write_protect(msg);
 
       g_string_free(buffer, TRUE);
+
+      g_static_mutex_unlock(&self->lock);
+
+      return TRUE;
     }
+  else
+    {
+      g_static_mutex_unlock(&self->lock);
 
-  g_static_mutex_unlock(&self->lock);
-
-  return TRUE;
+      return TRUE;
+    }
 }
 
 static gboolean
