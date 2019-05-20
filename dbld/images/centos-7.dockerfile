@@ -1,6 +1,8 @@
 FROM centos:7
 LABEL maintainer="Andras Mitzki <andras.mitzki@balabit.com>, Laszlo Szemere <laszlo.szemere@balabit.com>, Balazs Scheidler <balazs.scheidler@oneidentity.com>"
-ENV OS_PLATFORM centos-7
+
+ARG OS_PLATFORM
+ENV OS_PLATFORM ${OS_PLATFORM}
 
 COPY helpers/* /helpers/
 
