@@ -34,13 +34,7 @@ typedef void (*ADD_CONTEXT_INFO_CB) (gpointer arg,
 
 void context_info_db_enable_ordering(ContextInfoDB *self);
 GList *context_info_db_ordered_selectors(ContextInfoDB *self);
-ContextInfoDB *context_info_db_new(void);
-void context_info_db_set_ignore_case(ContextInfoDB *self, gboolean ignore);
 void context_info_db_init(ContextInfoDB *self);
-void context_info_db_free(ContextInfoDB *self);
-
-ContextInfoDB *context_info_db_ref(ContextInfoDB *self);
-void context_info_db_unref(ContextInfoDB *self);
 
 void context_info_db_purge(ContextInfoDB *self);
 void context_info_db_index(ContextInfoDB *self);
@@ -63,7 +57,12 @@ void context_info_db_foreach_record(ContextInfoDB *self,
 
 GList *context_info_db_get_selectors(ContextInfoDB *self);
 
-gboolean context_info_db_import(ContextInfoDB *self, FILE *fp,
+gboolean context_info_db_import(ContextInfoDB *self, FILE *fp, const gchar *filename,
                                 ContextualDataRecordScanner *scanner);
+
+
+ContextInfoDB *context_info_db_new(gboolean ignore_case);
+ContextInfoDB *context_info_db_ref(ContextInfoDB *self);
+void context_info_db_unref(ContextInfoDB *self);
 
 #endif

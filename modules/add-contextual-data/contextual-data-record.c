@@ -20,20 +20,23 @@
  *
  */
 
-#ifndef CSV_CONTEXTUAL_DATA_RECORD_H_INCLUDED
-#define CSV_CONTEXTUAL_DATA_RECORD_H_INCLUDED
+#include "contextual-data-record.h"
 
-#include "contextual-data-record-scanner.h"
-#include "scanner/csv-scanner/csv-scanner.h"
-
-typedef struct _CSVContextualDataRecordScanner
+void
+contextual_data_record_init(ContextualDataRecord *record)
 {
-  ContextualDataRecordScanner super;
-  CSVScanner scanner;
-  CSVScannerOptions options;
-  gchar *filename;
-} CSVContextualDataRecordScanner;
+  record->selector = NULL;
+  record->value_handle = 0;
+  record->value = NULL;
+}
 
-ContextualDataRecordScanner *csv_contextual_data_record_scanner_new(const gchar *filename);
+void
+contextual_data_record_clean(ContextualDataRecord *record)
+{
+  if (record->selector)
+    g_string_free(record->selector, TRUE);
 
-#endif
+  log_template_unref(record->value);
+
+  contextual_data_record_init(record);
+}

@@ -33,13 +33,7 @@ log_template_add_macro_elem(LogTemplateCompiler *self, guint macro, gchar *defau
 {
   LogTemplateElem *e;
 
-  e = g_new0(LogTemplateElem, 1);
-  e->type = LTE_MACRO;
-  e->text_len = self->text ? self->text->len : 0;
-  e->text = self->text ? g_strndup(self->text->str, self->text->len) : NULL;
-  e->macro = macro;
-  e->default_value = default_value;
-  e->msg_ref = self->msg_ref;
+  e = log_template_elem_new_macro(self->text->str, macro, default_value, self->msg_ref);
   self->result = g_list_prepend(self->result, e);
 }
 
@@ -47,85 +41,12 @@ static void
 log_template_add_value_elem(LogTemplateCompiler *self, gchar *value_name, gsize value_name_len, gchar *default_value)
 {
   LogTemplateElem *e;
-  gchar *str;
 
-  e = g_new0(LogTemplateElem, 1);
-  e->type = LTE_VALUE;
-  e->text_len = self->text ? self->text->len : 0;
-  e->text = self->text ? g_strndup(self->text->str, self->text->len) : NULL;
+  gchar *value_name_z = g_strndup(value_name, value_name_len);
+  e = log_template_elem_new_value(self->text->str, value_name_z, default_value, self->msg_ref);
+  g_free(value_name_z);
 
-  /* value_name is not NUL terminated */
-  str = g_strndup(value_name, value_name_len);
-  e->value_handle = log_msg_get_value_handle(str);
-  g_free(str);
-
-  e->default_value = default_value;
-  e->msg_ref = self->msg_ref;
   self->result = g_list_prepend(self->result, e);
-}
-
-static gboolean
-log_template_prepare_function_call(LogTemplateCompiler *self, Plugin *p, LogTemplateElem *e, gint argc, gchar *argv[],
-                                   GError **error)
-{
-  gchar *argv_copy[argc + 1];
-
-  g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
-  e->func.ops = plugin_construct(p);
-  e->func.state = e->func.ops->size_of_state > 0 ? g_malloc0(e->func.ops->size_of_state) : NULL;
-
-  /* prepare may modify the argv array: remove and rearrange elements */
-  memcpy(argv_copy, argv, (argc + 1) * sizeof(argv[0]));
-  if (!e->func.ops->prepare(e->func.ops, e->func.state, self->template, argc, argv_copy, error))
-    {
-      if (e->func.state)
-        {
-          e->func.ops->free_state(e->func.state);
-          g_free(e->func.state);
-        }
-      if (e->func.ops->free_fn)
-        e->func.ops->free_fn(e->func.ops);
-      return FALSE;
-    }
-  g_strfreev(argv);
-  self->result = g_list_prepend(self->result, e);
-  return TRUE;
-}
-
-static gboolean
-log_template_lookup_and_setup_function_call(LogTemplateCompiler *self, LogTemplateElem *e, gint argc, gchar *argv[],
-                                            GError **error)
-{
-  Plugin *p;
-
-  g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
-
-  /* the plus one denotes the function name, which'll be removed from argc
-   * during parsing */
-
-  if (argc > TEMPLATE_INVOKE_MAX_ARGS + 1)
-    {
-      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
-                  "Too many arguments (%d) to template function \"%s\", "
-                  "maximum number of arguments is %d", argc - 1, argv[0],
-                  TEMPLATE_INVOKE_MAX_ARGS);
-      goto error;
-    }
-
-  p = cfg_find_plugin(self->template->cfg, LL_CONTEXT_TEMPLATE_FUNC, argv[0]);
-
-  if (!p)
-    {
-      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "Unknown template function \"%s\"", argv[0]);
-      goto error;
-    }
-
-  if (!log_template_prepare_function_call(self, p, e, argc, argv, error))
-    goto error;
-
-  return TRUE;
-error:
-  return FALSE;
 }
 
 
@@ -135,26 +56,14 @@ log_template_add_func_elem(LogTemplateCompiler *self, gint argc, gchar *argv[], 
 {
   LogTemplateElem *e;
 
-  g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
-
   if (argc == 0)
     return TRUE;
 
-  e = g_malloc0(sizeof(LogTemplateElem) + (argc - 1) * sizeof(LogTemplate *));
-  e->type = LTE_FUNC;
-  e->text_len = self->text ? self->text->len : 0;
-  e->text = self->text ? g_strndup(self->text->str, self->text->len) : NULL;
-  e->msg_ref = self->msg_ref;
-
-  if (!log_template_lookup_and_setup_function_call(self, e, argc, argv, error))
-    goto error;
+  e = log_template_elem_new_func(self->template, self->text->str, argc, argv, self->msg_ref, error);
+  if (!e)
+    return FALSE;
+  self->result = g_list_prepend(self->result, e);
   return TRUE;
-
-error:
-  if (e->text)
-    g_free(e->text);
-  g_free(e);
-  return FALSE;
 }
 
 static void

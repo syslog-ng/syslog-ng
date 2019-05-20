@@ -89,18 +89,6 @@ context_info_db_ordered_selectors(ContextInfoDB *self)
 }
 
 void
-context_info_db_set_ignore_case(ContextInfoDB *self, gboolean ignore_case)
-{
-  self->ignore_case = ignore_case;
-}
-
-gchar *
-_str_case_insensitive_dup(const gchar *str)
-{
-  return g_ascii_strup(str, -1);
-}
-
-void
 context_info_db_index(ContextInfoDB *self)
 {
   GCompareFunc record_cmp = self->ignore_case ? _contextual_data_record_case_cmp : _contextual_data_record_cmp;
@@ -109,21 +97,21 @@ context_info_db_index(ContextInfoDB *self)
     {
       g_array_sort(self->data, record_cmp);
       gsize range_start = 0;
-      ContextualDataRecord range_start_record =
-        g_array_index(self->data, ContextualDataRecord, 0);
+      ContextualDataRecord *range_start_record =
+        &g_array_index(self->data, ContextualDataRecord, 0);
 
       for (gsize i = 1; i < self->data->len; ++i)
         {
-          ContextualDataRecord current_record =
-            g_array_index(self->data, ContextualDataRecord, i);
+          ContextualDataRecord *current_record =
+            &g_array_index(self->data, ContextualDataRecord, i);
 
-          if (record_cmp(&range_start_record, &current_record))
+          if (record_cmp(range_start_record, current_record))
             {
               element_range *current_range = g_new(element_range, 1);
               current_range->offset = range_start;
               current_range->length = i - range_start;
 
-              g_hash_table_insert(self->index, range_start_record.selector->str,
+              g_hash_table_insert(self->index, range_start_record->selector->str,
                                   current_range);
 
               range_start_record = current_record;
@@ -135,7 +123,7 @@ context_info_db_index(ContextInfoDB *self)
         element_range *last_range = g_new(element_range, 1);
         last_range->offset = range_start;
         last_range->length = self->data->len - range_start;
-        g_hash_table_insert(self->index, range_start_record.selector->str,
+        g_hash_table_insert(self->index, range_start_record->selector->str,
                             last_range);
       }
       self->is_data_indexed = TRUE;
@@ -180,15 +168,6 @@ _strcase_hash(gconstpointer value)
   return _str_case_insensitive_djb2_hash((const gchar *)value);
 }
 
-void
-context_info_db_init(ContextInfoDB *self)
-{
-  GEqualFunc str_eq = self->ignore_case ? _strcase_eq : g_str_equal;
-  GHashFunc str_hash = self->ignore_case ? _strcase_hash : g_str_hash;
-  self->data = g_array_new(FALSE, FALSE, sizeof(ContextualDataRecord));
-  self->index = g_hash_table_new_full(str_hash, str_eq, NULL, g_free);
-}
-
 static void
 _free_array(GArray *array)
 {
@@ -218,34 +197,6 @@ _free(ContextInfoDB *self)
     }
 }
 
-ContextInfoDB *
-context_info_db_new(void)
-{
-  ContextInfoDB *self = g_new0(ContextInfoDB, 1);
-
-  g_atomic_counter_set(&self->ref_cnt, 1);
-
-  return self;
-}
-
-ContextInfoDB *
-context_info_db_ref(ContextInfoDB *self)
-{
-  g_assert(!self || g_atomic_counter_get(&self->ref_cnt) > 0);
-  g_atomic_counter_inc(&self->ref_cnt);
-
-  return self;
-}
-
-void
-context_info_db_unref(ContextInfoDB *self)
-{
-  g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
-  if (g_atomic_counter_dec_and_test(&self->ref_cnt))
-    {
-      context_info_db_free(self);
-    }
-}
 
 static element_range *
 _get_range_of_records(ContextInfoDB *self, const gchar *selector)
@@ -262,15 +213,6 @@ context_info_db_purge(ContextInfoDB *self)
     self->data = g_array_remove_range(self->data, 0, self->data->len);
 }
 
-void
-context_info_db_free(ContextInfoDB *self)
-{
-  if (self)
-    {
-      _free(self);
-      g_free(self);
-    }
-}
 
 void
 context_info_db_insert(ContextInfoDB *self,
@@ -321,9 +263,9 @@ context_info_db_foreach_record(ContextInfoDB *self, const gchar *selector,
   for (gsize i = record_range->offset;
        i < record_range->offset + record_range->length; ++i)
     {
-      ContextualDataRecord record =
-        g_array_index(self->data, ContextualDataRecord, i);
-      callback(arg, &record);
+      ContextualDataRecord *record =
+        &g_array_index(self->data, ContextualDataRecord, i);
+      callback(arg, record);
     }
 }
 
@@ -368,18 +310,20 @@ _get_line_without_eol(gchar **line_buf, gsize *line_buf_len, FILE *fp)
 }
 
 gboolean
-context_info_db_import(ContextInfoDB *self, FILE *fp,
+context_info_db_import(ContextInfoDB *self, FILE *fp, const gchar *filename,
                        ContextualDataRecordScanner *scanner)
 {
   size_t line_buf_len;
   gchar *line_buf = NULL;
+  gint lineno = 0;
   const ContextualDataRecord *next_record;
 
   while (_get_line_without_eol(&line_buf, &line_buf_len, fp))
     {
+      lineno++;
       if (line_buf_len == 0)
         continue;
-      next_record = contextual_data_record_scanner_get_next(scanner, line_buf);
+      next_record = contextual_data_record_scanner_get_next(scanner, line_buf, filename, lineno);
       if (!next_record)
         {
           context_info_db_purge(self);
@@ -388,8 +332,8 @@ context_info_db_import(ContextInfoDB *self, FILE *fp,
         }
       msg_trace("add-contextual-data(): adding database entry",
                 evt_tag_str("selector", next_record->selector->str),
-                evt_tag_str("name", next_record->name->str),
-                evt_tag_str("value", next_record->value->str));
+                evt_tag_str("name", log_msg_get_value_name(next_record->value_handle, NULL)),
+                evt_tag_str("value", next_record->value->template));
       context_info_db_insert(self, next_record);
     }
 
@@ -397,4 +341,45 @@ context_info_db_import(ContextInfoDB *self, FILE *fp,
   context_info_db_index(self);
 
   return TRUE;
+}
+
+ContextInfoDB *
+context_info_db_new(gboolean ignore_case)
+{
+  ContextInfoDB *self = g_new0(ContextInfoDB, 1);
+
+  g_atomic_counter_set(&self->ref_cnt, 1);
+
+  self->ignore_case = ignore_case;
+  GEqualFunc str_eq = self->ignore_case ? _strcase_eq : g_str_equal;
+  GHashFunc str_hash = self->ignore_case ? _strcase_hash : g_str_hash;
+  self->data = g_array_new(FALSE, FALSE, sizeof(ContextualDataRecord));
+  self->index = g_hash_table_new_full(str_hash, str_eq, NULL, g_free);
+  return self;
+}
+
+ContextInfoDB *
+context_info_db_ref(ContextInfoDB *self)
+{
+  if (self)
+    {
+      g_assert(g_atomic_counter_get(&self->ref_cnt) > 0);
+      g_atomic_counter_inc(&self->ref_cnt);
+    }
+
+  return self;
+}
+
+void
+context_info_db_unref(ContextInfoDB *self)
+{
+  if (self)
+    {
+      g_assert(g_atomic_counter_get(&self->ref_cnt));
+      if (g_atomic_counter_dec_and_test(&self->ref_cnt))
+        {
+          _free(self);
+          g_free(self);
+        }
+    }
 }

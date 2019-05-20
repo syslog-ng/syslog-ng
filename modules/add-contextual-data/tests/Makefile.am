@@ -30,5 +30,6 @@ modules_add_contextual_data_tests_test_context_info_db_CFLAGS   =       \
 modules_add_contextual_data_tests_test_context_info_db_LDADD    =       \
         $(TEST_LDADD)					\
         $(PREOPEN_SYSLOGFORMAT)                         \
+	$(PREOPEN_BASICFUNCS)				\
         -dlpreopen $(top_builddir)/modules/add-contextual-data/libadd-contextual-data.la
 endif

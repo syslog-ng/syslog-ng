@@ -20,20 +20,21 @@
  *
  */
 
-#ifndef CONTEXTUAL_DATA_RECORD_SCANNER_H_INCLUDED
-#define CONTEXTUAL_DATA_RECORD_SCANNER_H_INCLUDED
+#ifndef CONTEXTUAL_DATA_RECORD_H_INCLUDED
+#define CONTEXTUAL_DATA_RECORD_H_INCLUDED
 
-#include "contextual-data-record.h"
+#include "syslog-ng.h"
+#include "logmsg/logmsg.h"
+#include "template/templates.h"
 
+typedef struct _ContextualDataRecord
+{
+  GString *selector;
+  NVHandle value_handle;
+  LogTemplate *value;
+} ContextualDataRecord;
 
-typedef struct _ContextualDataRecordScanner ContextualDataRecordScanner;
-
-ContextualDataRecord *contextual_data_record_scanner_get_next(ContextualDataRecordScanner *self,
-    const gchar *input,
-    const gchar *filename,
-    gint lineno);
-
-ContextualDataRecordScanner *contextual_data_record_scanner_new(GlobalConfig *cfg, const gchar *name_prefix);
-void contextual_data_record_scanner_free(ContextualDataRecordScanner *self);
+void contextual_data_record_init(ContextualDataRecord *record);
+void contextual_data_record_clean(ContextualDataRecord *record);
 
 #endif

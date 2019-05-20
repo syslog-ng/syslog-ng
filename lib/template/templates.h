@@ -90,6 +90,7 @@ struct _LogTemplateOptions
 void log_template_set_escape(LogTemplate *self, gboolean enable);
 gboolean log_template_set_type_hint(LogTemplate *self, const gchar *hint, GError **error);
 gboolean log_template_compile(LogTemplate *self, const gchar *template, GError **error);
+void log_template_compile_literal_string(LogTemplate *self, const gchar *literal);
 gboolean log_template_is_trivial(LogTemplate *self);
 const gchar *log_template_get_trivial_value(LogTemplate *self, LogMessage *msg, gssize *value_len);
 void log_template_format(LogTemplate *self, LogMessage *lm, const LogTemplateOptions *opts, gint tz, gint32 seq_num,

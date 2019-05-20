@@ -6,10 +6,10 @@ set(add_contextual_data_SOURCES
     add-contextual-data-plugin.c
     context-info-db.h
     context-info-db.c
+    contextual-data-record.h
+    contextual-data-record.c
     contextual-data-record-scanner.h
     contextual-data-record-scanner.c
-    csv-contextual-data-record-scanner.h
-    csv-contextual-data-record-scanner.c
     add-contextual-data-selector.h
     add-contextual-data-template-selector.h
     add-contextual-data-template-selector.c
