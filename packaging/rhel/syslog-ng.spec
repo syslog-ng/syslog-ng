@@ -379,17 +379,36 @@ fi
 %{_libdir}/libsecret-storage.so.*
 %{_libdir}/libloggen_helper-*.so.*
 %{_libdir}/libloggen_plugin-*.so.*
-%{_libdir}/%{name}/*.so
-%exclude %{_libdir}/%{name}/libafsql.so
-%exclude %{_libdir}/%{name}/libredis.so
-%exclude %{_libdir}/%{name}/libafsmtp.so
-%exclude %{_libdir}/%{name}/libgeoip-plugin.so
-%exclude %{_libdir}/%{name}/libgeoip2-plugin.so
-%exclude %{_libdir}/%{name}/libriemann.so
-%exclude %{_libdir}/%{name}/libhttp.so
-%exclude %{_libdir}/%{name}/libmod-python.so
-%exclude %{_libdir}/%{name}/libmod-java.so
-%exclude %{_libdir}/%{name}/libafmongodb.so
+%{_libdir}/%{name}/libadd-contextual-data.so
+%{_libdir}/%{name}/libaffile.so
+%{_libdir}/%{name}/libafprog.so
+%{_libdir}/%{name}/libafsocket.so
+%{_libdir}/%{name}/libafstomp.so
+%{_libdir}/%{name}/libafuser.so
+%{_libdir}/%{name}/libappmodel.so
+%{_libdir}/%{name}/libbasicfuncs.so
+%{_libdir}/%{name}/libcef.so
+%{_libdir}/%{name}/libconfgen.so
+%{_libdir}/%{name}/libcryptofuncs.so
+%{_libdir}/%{name}/libcsvparser.so
+%{_libdir}/%{name}/libdate.so
+%{_libdir}/%{name}/libdbparser.so
+%{_libdir}/%{name}/libdisk-buffer.so
+%{_libdir}/%{name}/libexamples.so
+%{_libdir}/%{name}/libgraphite.so
+%{_libdir}/%{name}/libhook-commands.so
+%{_libdir}/%{name}/libjson-plugin.so
+%{_libdir}/%{name}/libkvformat.so
+%{_libdir}/%{name}/liblinux-kmsg-format.so
+%{_libdir}/%{name}/libmap-value-pairs.so
+%{_libdir}/%{name}/libpseudofile.so
+%{_libdir}/%{name}/libsnmptrapd-parser.so
+%{_libdir}/%{name}/libstardate.so
+%{_libdir}/%{name}/libsyslogformat.so
+%{_libdir}/%{name}/libsystem-source.so
+%{_libdir}/%{name}/libtags-parser.so
+%{_libdir}/%{name}/libtfgetent.so
+%{_libdir}/%{name}/libxml.so
 
 %if %{with systemd}
 %{_unitdir}/%{name}.service
