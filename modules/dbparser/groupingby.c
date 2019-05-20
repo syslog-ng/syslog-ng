@@ -302,7 +302,13 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
 
   g_static_mutex_lock(&self->lock);
   grouping_by_set_time(self, &msg->timestamps[LM_TS_STAMP]);
-  if (self->key_template)
+  if (!self->key_template)
+    {
+      g_static_mutex_unlock(&self->lock);
+
+      return TRUE;
+    }
+  else
     {
       CorrellationContext *context = NULL;
       CorrellationKey key;
@@ -368,12 +374,6 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
 
       g_string_free(buffer, TRUE);
 
-      g_static_mutex_unlock(&self->lock);
-
-      return TRUE;
-    }
-  else
-    {
       g_static_mutex_unlock(&self->lock);
 
       return TRUE;
