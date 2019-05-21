@@ -121,39 +121,31 @@ tf_geoip_maxminddb_call(LogTemplateFunction *self, gpointer s, const LogTemplate
 
   if (!mmdb_result.found_entry)
     {
-      if (0 != _gai_error)
-        msg_error("Error from call to getaddrinfo",
-                  evt_tag_str("gai_error", gai_strerror(_gai_error)),
-                  evt_tag_str("where", "tflookup"));
-
-      if (MMDB_SUCCESS != mmdb_error)
-        msg_error("maxminddb_error",
-                  evt_tag_str("error", MMDB_strerror(mmdb_error)),
-                  evt_tag_str("where", "tflookup"));
-      return;
+      goto error;
     }
 
   MMDB_entry_data_s entry_data;
   mmdb_error = MMDB_aget_value(&mmdb_result.entry, &entry_data, (const char *const* const)state->entry_path);
   if (mmdb_error != MMDB_SUCCESS)
     {
-      if (0 != _gai_error)
-        msg_error("Error from call to getaddrinfo",
-                  evt_tag_str("gai_error", gai_strerror(_gai_error)),
-                  evt_tag_str("where", "tfget_value"));
-
-      if (MMDB_SUCCESS != 0)
-        msg_error("maxminddb_error",
-                  evt_tag_str("error", MMDB_strerror(mmdb_error)),
-                  evt_tag_str("where", "tfget_value"));
-
-      return;
+      goto error;
     }
 
   if (entry_data.has_data)
     append_mmdb_entry_data_to_gstring(result, &entry_data);
 
   return;
+
+error:
+  if (0 != _gai_error)
+    msg_error("Error from call to getaddrinfo",
+              evt_tag_str("gai_error", gai_strerror(_gai_error)),
+              evt_tag_str("where", "tfget_value"));
+
+  if (MMDB_SUCCESS != mmdb_error)
+    msg_error("maxminddb_error",
+              evt_tag_str("error", MMDB_strerror(mmdb_error)),
+              evt_tag_str("where", "tfget_value"));
 }
 
 static void
