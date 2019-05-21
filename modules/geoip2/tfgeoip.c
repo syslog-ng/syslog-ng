@@ -139,10 +139,12 @@ tf_geoip_maxminddb_call(LogTemplateFunction *self, gpointer s, const LogTemplate
 error:
   if (0 != _gai_error)
     msg_error("$(geoip2): getaddrinfo failed",
+              evt_tag_str("ip", args->argv[0]->str),
               evt_tag_str("gai_error", gai_strerror(_gai_error)));
 
   if (MMDB_SUCCESS != mmdb_error)
     msg_error("$(geoip2): maxminddb error",
+              evt_tag_str("ip", args->argv[0]->str),
               evt_tag_str("error", MMDB_strerror(mmdb_error)));
 }
 
