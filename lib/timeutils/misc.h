@@ -36,4 +36,6 @@ void timespec_add_msec(struct timespec *ts, glong msec);
 glong timespec_diff_msec(const struct timespec *t1, const struct timespec *t2);
 glong timespec_diff_nsec(struct timespec *t1, struct timespec *t2);
 
+void timeutils_setup_timezone_hook(void);
+
 #endif

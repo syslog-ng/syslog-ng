@@ -26,6 +26,8 @@
 #include "timeutils/cache.h"
 #include "messages.h"
 
+#include <apphook.h>
+
 #include <string.h>
 
 /**
@@ -141,4 +143,23 @@ glong
 timespec_diff_nsec(struct timespec *t1, struct timespec *t2)
 {
   return (glong)((t1->tv_sec - t2->tv_sec) * 1e9) + (t1->tv_nsec - t2->tv_nsec);
+}
+
+void timeutils_setup_timezone_hook(void);
+
+static void
+timeutils_reset_timezone(gint type, gpointer context)
+{
+  tzset();
+
+  // Invalidate time cache to apply time zone as soon as possible.
+  invalidate_cached_time();
+  clean_time_cache();
+  timeutils_setup_timezone_hook();
+}
+
+void
+timeutils_setup_timezone_hook(void)
+{
+  register_application_hook(AH_CONFIG_CHANGED, timeutils_reset_timezone, NULL);
 }
