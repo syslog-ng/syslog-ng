@@ -229,6 +229,11 @@ Test(basicfuncs, test_numeric_funcs)
   assert_template_format("$(% 3.14 0.7)", "0.34000000000000030198");
 
   assert_template_format("$(+ 5e-1 0)", "0.50000000000000000000");
+
+  assert_template_format("$(round 2.0)", "2");
+  assert_template_format("$(round 0.5)", "1");
+  assert_template_format("$(floor 0.7)", "0");
+  assert_template_format("$(ceil 0.2)", "1");
 }
 
 Test(basicfuncs, test_fname_funcs)

@@ -261,6 +261,87 @@ tf_num_mod(LogMessage *msg, gint argc, GString *argv[], GString *result)
 
 TEMPLATE_FUNCTION_SIMPLE(tf_num_mod);
 
+static void
+tf_num_round(LogMessage *msg, gint argc, GString *argv[], GString *result)
+{
+  Number n;
+
+  if (argc != 1)
+    {
+      msg_debug("Template function requires one argument.",
+                evt_tag_str("function", "round"));
+      g_string_append_len(result, "NaN", 3);
+      return;
+    }
+
+  if (!parse_integer_or_float(argv[0]->str, &n))
+    {
+      msg_debug("Parsing failed, template function's first argument is not a number",
+                evt_tag_str("function", "round"),
+                evt_tag_str("arg1", argv[0]->str));
+      g_string_append_len(result, "NaN", 3);
+      return;
+    }
+
+  format_int64_padded(result, 0, ' ', 10, round(number_as_double(n)));
+}
+
+TEMPLATE_FUNCTION_SIMPLE(tf_num_round);
+
+static void
+tf_num_ceil(LogMessage *msg, gint argc, GString *argv[], GString *result)
+{
+  Number n;
+
+  if (argc != 1)
+    {
+      msg_debug("Template function requires one argument.",
+                evt_tag_str("function", "ceil"));
+      g_string_append_len(result, "NaN", 3);
+      return;
+    }
+
+  if (!parse_integer_or_float(argv[0]->str, &n))
+    {
+      msg_debug("Parsing failed, template function's first argument is not a number",
+                evt_tag_str("function", "ceil"),
+                evt_tag_str("arg1", argv[0]->str));
+      g_string_append_len(result, "NaN", 3);
+      return;
+    }
+
+  format_int64_padded(result, 0, ' ', 10, ceil(number_as_double(n)));
+}
+
+TEMPLATE_FUNCTION_SIMPLE(tf_num_ceil);
+
+static void
+tf_num_floor(LogMessage *msg, gint argc, GString *argv[], GString *result)
+{
+  Number n;
+
+  if (argc != 1)
+    {
+      msg_debug("Template function requires one argument.",
+                evt_tag_str("function", "floor"));
+      g_string_append_len(result, "NaN", 3);
+      return;
+    }
+
+  if (!parse_integer_or_float(argv[0]->str, &n))
+    {
+      msg_debug("Parsing failed, template function's first argument is not a number",
+                evt_tag_str("function", "floor"),
+                evt_tag_str("arg1", argv[0]->str));
+      g_string_append_len(result, "NaN", 3);
+      return;
+    }
+
+  format_int64_padded(result, 0, ' ', 10, floor(number_as_double(n)));
+}
+
+TEMPLATE_FUNCTION_SIMPLE(tf_num_floor);
+
 static gboolean
 _tf_num_parse_arg_with_message(const TFSimpleFuncState *state,
                                LogMessage *message,
