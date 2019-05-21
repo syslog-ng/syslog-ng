@@ -21,11 +21,84 @@
  *
  */
 
+#include <math.h>
+
 typedef gboolean (*AggregateFunc)(gpointer, gint64);
+
+typedef struct _Number
+{
+  enum
+  {
+    Integer,
+    Float
+  } value_type;
+  union
+  {
+    gint64 raw_integer;
+    gdouble raw_float;
+  } value_data;
+} Number;
+
+gdouble
+number_as_double(Number number)
+{
+  if (number.value_type == Float)
+    return number.value_data.raw_float;
+
+  return number.value_data.raw_integer;
+}
+
+gint64
+number_as_int(Number number)
+{
+  if (number.value_type == Integer)
+    return number.value_data.raw_integer;
+
+  return number.value_data.raw_float;
+}
+
+gboolean
+number_is_zero(Number number)
+{
+  if (number.value_type == Integer)
+    return number.value_data.raw_integer == 0;
+
+  return fabs(number.value_data.raw_float) < DBL_EPSILON;
+}
+
+gboolean
+parse_integer_or_float(const char *str, Number *number)
+{
+  if (parse_dec_number(str, &(number->value_data.raw_integer)))
+    {
+      number->value_type = Integer;
+      return TRUE;
+    }
+
+  if (parse_float(str, &(number->value_data.raw_float)))
+    {
+      number->value_type = Float;
+      return TRUE;
+    }
+
+  return FALSE;
+}
+
+void
+format_number(GString *result, Number n)
+{
+  if (n.value_type == Integer)
+    {
+      format_int64_padded(result, 0, ' ', 10, number_as_int(n));
+      return;
+    }
+
+  g_string_append_printf(result, "%.20f", number_as_double(n));
+}
 
 static gboolean
 tf_num_parse(gint argc, GString *argv[],
-             const gchar *func_name, gint64 *n, gint64 *m)
+             const gchar *func_name, Number *n, Number *m)
 {
   if (argc != 2)
     {
@@ -34,7 +107,7 @@ tf_num_parse(gint argc, GString *argv[],
       return FALSE;
     }
 
-  if (!parse_dec_number(argv[0]->str, n))
+  if (!parse_integer_or_float(argv[0]->str, n))
     {
       msg_debug("Parsing failed, template function's first argument is not a number",
                 evt_tag_str("function", func_name),
@@ -42,7 +115,7 @@ tf_num_parse(gint argc, GString *argv[],
       return FALSE;
     }
 
-  if (!parse_dec_number(argv[1]->str, m))
+  if (!parse_integer_or_float(argv[1]->str, m))
     {
       msg_debug("Parsing failed, template function's second argument is not a number",
                 evt_tag_str("function", func_name),
@@ -56,7 +129,7 @@ tf_num_parse(gint argc, GString *argv[],
 static void
 tf_num_plus(LogMessage *msg, gint argc, GString *argv[], GString *result)
 {
-  gint64 n, m;
+  Number n, m, res;
 
   if (!tf_num_parse(argc, argv, "+", &n, &m))
     {
@@ -64,7 +137,18 @@ tf_num_plus(LogMessage *msg, gint argc, GString *argv[], GString *result)
       return;
     }
 
-  format_int64_padded(result, 0, ' ', 10, n + m);
+  if (n.value_type == Integer && m.value_type == Integer)
+    {
+      res.value_type = Integer;
+      res.value_data.raw_integer = number_as_int(n) + number_as_int(m);
+    }
+  else
+    {
+      res.value_type = Float;
+      res.value_data.raw_float = number_as_double(n) + number_as_double(m);
+    }
+
+  format_number(result, res);
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_num_plus);
@@ -72,7 +156,7 @@ TEMPLATE_FUNCTION_SIMPLE(tf_num_plus);
 static void
 tf_num_minus(LogMessage *msg, gint argc, GString *argv[], GString *result)
 {
-  gint64 n, m;
+  Number n, m, res;
 
   if (!tf_num_parse(argc, argv, "-", &n, &m))
     {
@@ -80,7 +164,18 @@ tf_num_minus(LogMessage *msg, gint argc, GString *argv[], GString *result)
       return;
     }
 
-  format_int64_padded(result, 0, ' ', 10, n - m);
+  if (n.value_type == Integer && m.value_type == Integer)
+    {
+      res.value_type = Integer;
+      res.value_data.raw_integer = number_as_int(n) - number_as_int(m);
+    }
+  else
+    {
+      res.value_type = Float;
+      res.value_data.raw_float = number_as_double(n) - number_as_double(m);
+    }
+
+  format_number(result, res);
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_num_minus);
@@ -88,7 +183,7 @@ TEMPLATE_FUNCTION_SIMPLE(tf_num_minus);
 static void
 tf_num_multi(LogMessage *msg, gint argc, GString *argv[], GString *result)
 {
-  gint64 n, m;
+  Number n, m, res;
 
   if (!tf_num_parse(argc, argv, "*", &n, &m))
     {
@@ -96,7 +191,18 @@ tf_num_multi(LogMessage *msg, gint argc, GString *argv[], GString *result)
       return;
     }
 
-  format_int64_padded(result, 0, ' ', 10, n * m);
+  if (n.value_type == Integer && m.value_type == Integer)
+    {
+      res.value_type = Integer;
+      res.value_data.raw_integer = number_as_int(n) * number_as_int(m);
+    }
+  else
+    {
+      res.value_type = Float;
+      res.value_data.raw_float = number_as_double(n) * number_as_double(m);
+    }
+
+  format_number(result, res);
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_num_multi);
@@ -104,15 +210,26 @@ TEMPLATE_FUNCTION_SIMPLE(tf_num_multi);
 static void
 tf_num_div(LogMessage *msg, gint argc, GString *argv[], GString *result)
 {
-  gint64 n, m;
+  Number n, m, res;
 
-  if (!tf_num_parse(argc, argv, "/", &n, &m) || !m)
+  if (!tf_num_parse(argc, argv, "/", &n, &m) || number_is_zero(m))
     {
       g_string_append_len(result, "NaN", 3);
       return;
     }
 
-  format_int64_padded(result, 0, ' ', 10, n / m);
+  if (n.value_type == Integer && m.value_type == Integer)
+    {
+      res.value_type = Integer;
+      res.value_data.raw_integer = number_as_int(n) / number_as_int(m);
+    }
+  else
+    {
+      res.value_type = Float;
+      res.value_data.raw_float = number_as_double(n) / number_as_double(m);
+    }
+
+  format_number(result, res);
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_num_div);
@@ -120,15 +237,26 @@ TEMPLATE_FUNCTION_SIMPLE(tf_num_div);
 static void
 tf_num_mod(LogMessage *msg, gint argc, GString *argv[], GString *result)
 {
-  gint64 n, m;
+  Number n, m, res;
 
-  if (!tf_num_parse(argc, argv, "%", &n, &m) || !m)
+  if (!tf_num_parse(argc, argv, "%", &n, &m) || number_is_zero(m))
     {
       g_string_append_len(result, "NaN", 3);
       return;
     }
 
-  format_uint64_padded(result, 0, ' ', 10, n % m);
+  if (n.value_type == Integer && m.value_type == Integer)
+    {
+      res.value_type = Integer;
+      res.value_data.raw_integer = number_as_int(n) % number_as_int(m);
+    }
+  else
+    {
+      res.value_type = Float;
+      res.value_data.raw_float = fmod(number_as_double(n), number_as_double(m));
+    }
+
+  format_number(result, res);
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_num_mod);

@@ -219,6 +219,16 @@ Test(basicfuncs, test_numeric_funcs)
   assert_template_format("$(% 10000000000 5000000001)", "4999999999");
   assert_template_format("$(* 5000000000 2)", "10000000000");
   assert_template_format("$(- 10000000000 5000000000)", "5000000000");
+
+  assert_template_format("$(+ 1.5 .25)", "1.75000000000000000000");
+  assert_template_format("$(- -1.5 .25)", "-1.75000000000000000000");
+  assert_template_format("$(/ 3 2)", "1");
+  assert_template_format("$(/ 3.0 2)", "1.50000000000000000000");
+  assert_template_format("$(/ 3 2.0)", "1.50000000000000000000");
+  assert_template_format("$(* 1.5 2.0)", "3.00000000000000000000");
+  assert_template_format("$(% 3.14 0.7)", "0.34000000000000030198");
+
+  assert_template_format("$(+ 5e-1 0)", "0.50000000000000000000");
 }
 
 Test(basicfuncs, test_fname_funcs)
