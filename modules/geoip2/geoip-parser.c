@@ -75,7 +75,16 @@ _mmdb_load_entry_data_list(GeoIPParser *self, const gchar *input, MMDB_entry_dat
 
   if (!result.found_entry)
     {
-      mmdb_problem_to_error(_gai_error, mmdb_error, "lookup");
+      if (0 != _gai_error)
+        msg_error("Error from call to getaddrinfo",
+                  evt_tag_str("gai_error", gai_strerror(_gai_error)),
+                  evt_tag_str("where", "lookup"));
+
+      if (MMDB_SUCCESS != mmdb_error)
+        msg_error("maxminddb_error",
+                  evt_tag_str("error", MMDB_strerror(mmdb_error)),
+                  evt_tag_str("where", "lookup"));
+
       return FALSE;
     }
 
