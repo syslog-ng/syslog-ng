@@ -52,20 +52,6 @@ geoip_parser_set_database_path(LogParser *s, const gchar *database_path)
   self->database_path = g_strdup(database_path);
 }
 
-void
-mmdb_problem_to_error(const int _gai_error, const int _mmdb_error, gchar *where)
-{
-  if (0 != _gai_error)
-    msg_error("Error from call to getaddrinfo",
-              evt_tag_str("gai_error", gai_strerror(_gai_error)),
-              evt_tag_str("where", where));
-
-  if (MMDB_SUCCESS != _mmdb_error)
-    msg_error("maxminddb_error",
-              evt_tag_str("error", MMDB_strerror(_mmdb_error)),
-              evt_tag_str("where", where));
-}
-
 static gboolean
 _mmdb_load_entry_data_list(GeoIPParser *self, const gchar *input, MMDB_entry_data_list_s **entry_data_list)
 {
