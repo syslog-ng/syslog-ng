@@ -240,7 +240,6 @@ stats_init(void)
 {
   stats_registry_init();
   stats_query_init();
-  stats_register_control_commands();
 }
 
 void
@@ -285,4 +284,3 @@ stats_number_of_dynamic_clusters_limit(void)
     return -1;
   return stats_options->max_dynamic;
 }
-
