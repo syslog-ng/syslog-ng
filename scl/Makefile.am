@@ -56,5 +56,7 @@ scl-uninstall-local:
 	done
 	rm -rf $(DESTDIR)/$(scldir)
 
+scl-install: scl-install-data-local
+
 INSTALL_EXEC_HOOKS	+= scl-install-data-local
 UNINSTALL_HOOKS	+= scl-uninstall-local
