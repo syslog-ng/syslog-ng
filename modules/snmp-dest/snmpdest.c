@@ -761,7 +761,7 @@ snmpdest_dd_free(LogPipe *d)
 
   g_list_free_full(self->snmp_objs, g_free);
   g_list_free_full(self->snmp_codes, g_free);
-  g_list_free_full(self->snmp_templates, g_free);
+  g_list_free_full(self->snmp_templates, (GDestroyNotify)log_template_unref);
   g_free(self->trap_oid);
   g_free(self->trap_type);
   g_free(self->trap_value);
