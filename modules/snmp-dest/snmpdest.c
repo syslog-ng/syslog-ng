@@ -96,17 +96,12 @@ snmp_dd_find_object_type(const gchar *type, gint *type_index)
   /* check the type */
   for (index = 0; index < object_types_count; ++index)
     if (!strcasecmp(type, snmp_obj_types[index].type))
-      break;
+      {
+        *type_index = index;
+        return TRUE;
+      }
 
-  if (index == object_types_count)
-    {
-      return FALSE;
-    }
-  else
-    {
-      *type_index = index;
-      return TRUE;
-    }
+  return FALSE;
 }
 
 static gchar
