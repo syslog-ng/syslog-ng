@@ -102,6 +102,35 @@ Test(test_apphook, reopen_hook)
   cr_assert_eq(triggered_count, 1);
 }
 
+static void
+_re_registering_hook(gint type, gpointer user_data)
+{
+  _hook_counter(type, user_data);
+  register_application_hook(type, _re_registering_hook, user_data);
+}
+
+Test(test_apphook, hook_register_from_hook)
+{
+  gint triggered_count = 0;
+
+  register_application_hook(AH_REOPEN_FILES, _re_registering_hook, (gpointer)&triggered_count);
+
+  app_reopen_files();
+  cr_assert_eq(triggered_count, 1);
+}
+
+Test(test_apphook, hook_register_from_hook_and_other_not_triggered_hooks)
+{
+  gint triggered_count = 0;
+
+  register_application_hook(AH_PRE_SHUTDOWN, NULL, NULL);
+  register_application_hook(AH_REOPEN_FILES, _re_registering_hook, (gpointer)&triggered_count);
+  register_application_hook(AH_PRE_SHUTDOWN, NULL, NULL);
+
+  app_reopen_files();
+  cr_assert_eq(triggered_count, 1);
+}
+
 Test(test_apphook, trigger_all_state_hook)
 {
   gint triggered_count = 0;
