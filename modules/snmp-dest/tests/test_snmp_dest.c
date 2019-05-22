@@ -35,7 +35,7 @@ static void
 _init(void)
 {
   app_startup();
-  cfg = cfg_new(VERSION_VALUE);
+  cfg = cfg_new_snippet();
   snmp_driver = (SNMPDestDriver *)snmpdest_dd_new(cfg);
   cr_assert_eq(log_pipe_init((LogPipe *)&snmp_driver->super.super), TRUE);
 }
