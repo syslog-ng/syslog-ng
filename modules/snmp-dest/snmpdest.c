@@ -172,18 +172,15 @@ snmpdest_dd_set_snmp_obj(LogDriver *d, GlobalConfig *cfg, const gchar *oid, cons
     }
 
   /* register the string values */
-  GList *newitem = g_list_append(self->snmp_objs, g_strdup(oid));
-  if (!self->snmp_objs)
-    self->snmp_objs = newitem;
-  newitem = g_list_append(self->snmp_objs, g_strdup(type));
-  newitem = g_list_append(self->snmp_objs, g_strdup(value));
+  self->snmp_objs = g_list_append(self->snmp_objs, g_strdup(oid));
+  self->snmp_objs = g_list_append(self->snmp_objs, g_strdup(type));
+  self->snmp_objs = g_list_append(self->snmp_objs, g_strdup(value));
 
   /* register the type code, therefore we won't need to calculate it for each incoming message */
   gint *pcode = g_new(gint, 1);
   *pcode = code;
-  newitem = g_list_append(self->snmp_codes, pcode);
-  if (!self->snmp_codes)
-    self->snmp_codes = newitem;
+
+  self->snmp_codes = g_list_append(self->snmp_codes, pcode);
 
   /* register the template */
   template = log_template_new(cfg, NULL);
@@ -192,9 +189,7 @@ snmpdest_dd_set_snmp_obj(LogDriver *d, GlobalConfig *cfg, const gchar *oid, cons
       msg_error("SNMP: invalid log template");
     }
 
-  newitem = g_list_append(self->snmp_templates, template);
-  if (!self->snmp_templates)
-    self->snmp_templates = newitem;
+  self->snmp_templates = g_list_append(self->snmp_templates, template);
 
   return TRUE;
 }
