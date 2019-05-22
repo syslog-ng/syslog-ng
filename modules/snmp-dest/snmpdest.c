@@ -153,8 +153,7 @@ snmpdest_dd_set_snmp_obj(LogDriver *d, GlobalConfig *cfg, const gchar *oid, cons
   if (snmp_dd_find_object_type(type, &code) == FALSE)
     {
       msg_error("SNMP: invalid oid type",
-                evt_tag_str("oid", type),
-                NULL);
+                evt_tag_str("oid", type));
       return FALSE;
     }
 
@@ -167,7 +166,7 @@ snmpdest_dd_set_snmp_obj(LogDriver *d, GlobalConfig *cfg, const gchar *oid, cons
 
       if (item != NULL)
         {
-          msg_error("SNMP: multiple Objectid", NULL);
+          msg_error("SNMP: multiple Objectid");
           return FALSE;
         }
     }
@@ -190,7 +189,7 @@ snmpdest_dd_set_snmp_obj(LogDriver *d, GlobalConfig *cfg, const gchar *oid, cons
   template = log_template_new(cfg, NULL);
   if (log_template_compile(template, value, NULL) == FALSE)
     {
-      msg_error("SNMP: invalid log template", NULL);
+      msg_error("SNMP: invalid log template");
     }
 
   newitem = g_list_append(self->snmp_templates, template);
@@ -353,8 +352,7 @@ sanitize_fs(GString *fs, gint code)
       if (replace)
         {
           msg_warning("SNMP: invalid number replaced with '0'",
-                      evt_tag_str("value", fs->str),
-                      NULL);
+                      evt_tag_str("value", fs->str));
           g_string_assign(fs, "0");
         }
     }
@@ -373,8 +371,7 @@ snmpdest_worker_insert(SNMPDestDriver *self, LogMessage *msg, LogPathOptions *pa
         {
           msg_warning("SNMP: error in session init, message dropped",
                       evt_tag_str("host", self->host),
-                      evt_tag_int("port", self->port),
-                      NULL);
+                      evt_tag_int("port", self->port));
           log_msg_unref(msg);
           return FALSE;
         }
@@ -405,8 +402,7 @@ snmpdest_worker_insert(SNMPDestDriver *self, LogMessage *msg, LogPathOptions *pa
       if (snmp_add_var(pdu, parsed_oids, oid_cnt, type_code, fs->str) != 0)
         {
           msg_warning("SNMP: error adding variable",
-                      evt_tag_str("value", fs->str),
-                      NULL);
+                      evt_tag_str("value", fs->str));
           log_msg_unref(msg);
           return FALSE;
         }
@@ -422,8 +418,7 @@ snmpdest_worker_insert(SNMPDestDriver *self, LogMessage *msg, LogPathOptions *pa
     {
       msg_error("SNMP: send error",
                 evt_tag_int("code", snmp_errno),
-                evt_tag_str("message", snmp_api_errstring(snmp_errno)),
-                NULL);
+                evt_tag_str("message", snmp_api_errstring(snmp_errno)));
       stats_counter_inc(self->dropped_messages);
       snmp_free_pdu(pdu);
     }
@@ -458,8 +453,7 @@ snmpdest_worker_thread(gpointer arg)
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
   msg_debug ("Worker thread started",
-             evt_tag_str("driver", self->super.super.id),
-             NULL);
+             evt_tag_str("driver", self->super.super.id));
 
   gboolean popped = TRUE; /* the success of the _pop_head() */
   while (!self->writer_thread_terminate)
@@ -489,8 +483,7 @@ snmpdest_worker_thread(gpointer arg)
     }
 
   msg_debug ("Worker thread finished",
-             evt_tag_str("driver", self->super.super.id),
-             NULL);
+             evt_tag_str("driver", self->super.super.id));
 
 }
 
@@ -704,8 +697,7 @@ snmpdest_dd_init(LogPipe *s)
 
   msg_verbose("Initializing SNMP destination",
               evt_tag_str("host", self->host),
-              evt_tag_int("port", self->port),
-              NULL);
+              evt_tag_int("port", self->port));
 
   GlobalConfig *cfg = log_pipe_get_config(s);
 

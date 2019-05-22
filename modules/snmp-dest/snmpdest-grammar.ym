@@ -104,15 +104,13 @@ dest_snmpdest_option
         | KW_TRAP_OBJ '(' string string string ')' { snmpdest_dd_set_trap_obj(last_driver, configuration, $3, $4, $5); free($3); free($4); free($5); }
         | KW_COMMUNITY '(' string ')' {
           if (strcmp(snmpdest_dd_get_version(last_driver), s_v2c))
-            msg_warning("WARNING: SNMP: the 'community' is a v2c option",
-                        NULL);
+            msg_warning("WARNING: SNMP: the 'community' is a v2c option");
           snmpdest_dd_set_community(last_driver, $3); free($3);
           }
         | KW_ENGINE_ID '(' string ')' {
           if (strcmp(snmpdest_dd_get_version(last_driver), s_v3))
             {
-              msg_warning("WARNING: SNMP: the 'engine_id' is a v3 option",
-                          NULL);
+              msg_warning("WARNING: SNMP: the 'engine_id' is a v3 option");
             }
           else 
             {
@@ -127,35 +125,30 @@ dest_snmpdest_option
           }
         | KW_AUTH_USERNAME '(' string ')' {
           if (strcmp(snmpdest_dd_get_version(last_driver), s_v3))
-            msg_warning("WARNING: SNMP: the 'auth_username' is a v3 option",
-                        NULL);
+            msg_warning("WARNING: SNMP: the 'auth_username' is a v3 option");
 
           snmpdest_dd_set_auth_username(last_driver, $3); free($3);
           }
         | KW_AUTH_ALGORITHM '(' string ')' {
           if (strcmp(snmpdest_dd_get_version(last_driver), s_v3))
-            msg_warning("WARNING: SNMP: the 'auth_algorithm' is a v3 option",
-                        NULL);
+            msg_warning("WARNING: SNMP: the 'auth_algorithm' is a v3 option");
           CHECK_ERROR(snmpdest_dd_check_auth_algorithm($3), @1, "SNMP: wrong auth algorithm: %s", $3);
           snmpdest_dd_set_auth_algorithm(last_driver, $3); free($3);
           }
         | KW_AUTH_PASSWORD '(' string ')' {
           if (strcmp(snmpdest_dd_get_version(last_driver), s_v3))
-            msg_warning("WARNING: SNMP: the 'auth_password' is a v3 option",
-                        NULL);
+            msg_warning("WARNING: SNMP: the 'auth_password' is a v3 option");
           snmpdest_dd_set_auth_password(last_driver, $3); free($3);
           }
         | KW_ENC_ALGORITHM '(' string ')' {
           if (strcmp(snmpdest_dd_get_version(last_driver), s_v3))
-            msg_warning("WARNING: SNMP: the 'enc_algorithm' is a v3 option",
-                        NULL);
+            msg_warning("WARNING: SNMP: the 'enc_algorithm' is a v3 option");
           CHECK_ERROR(snmpdest_dd_check_enc_algorithm($3), @1, "SNMP: wrong enc algorithm: %s", $3);
           snmpdest_dd_set_enc_algorithm(last_driver, $3); free($3);
           }
         | KW_ENC_PASSWORD '(' string ')' {
           if (strcmp(snmpdest_dd_get_version(last_driver), s_v3))
-            msg_warning("WARNING: SNMP: the 'enc_password' is a v3 option",
-                        NULL);
+            msg_warning("WARNING: SNMP: the 'enc_password' is a v3 option");
           snmpdest_dd_set_enc_password(last_driver, $3); free($3);
           }
         | KW_LOCAL_TIME_ZONE '(' string ')'           { snmpdest_dd_set_time_zone(last_driver, $3); free($3); }
