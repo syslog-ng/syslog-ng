@@ -46,7 +46,7 @@ gsize dynamic_window_stat_get_sum(DynamicWindowStat *self);
 
 struct _DynamicWindow
 {
-  DynamicWindowCounter *window_ctr;
+  DynamicWindowCounter *ctr;
   DynamicWindowStat stat;
 };
 
