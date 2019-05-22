@@ -187,6 +187,8 @@ snmpdest_dd_set_snmp_obj(LogDriver *d, GlobalConfig *cfg, const gchar *oid, cons
   if (log_template_compile(template, value, NULL) == FALSE)
     {
       msg_error("SNMP: invalid log template");
+      log_template_unref(template);
+      return FALSE;
     }
 
   self->snmp_templates = g_list_append(self->snmp_templates, template);
