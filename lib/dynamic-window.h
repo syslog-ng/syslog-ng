@@ -30,22 +30,27 @@
 
 typedef struct _DynamicWindow DynamicWindow;
 
+typedef struct _DynamicWindowStat DynamicWindowStat;
+
+struct _DynamicWindowStat
+{
+  gsize n;
+  gsize sum;
+};
+
+void dynamic_window_stat_update(DynamicWindowStat *self, gsize value);
+void dynamic_window_stat_reset(DynamicWindowStat *self);
+gsize dynamic_window_stat_get_avg(DynamicWindowStat *self);
+gsize dynamic_window_stat_get_number_of_samples(DynamicWindowStat *self);
+gsize dynamic_window_stat_get_sum(DynamicWindowStat *self);
+
 struct _DynamicWindow
 {
   DynamicWindowCounter *window_ctr;
-  struct
-  {
-    gsize n;
-    gsize sum;
-  } window_stat;
+  DynamicWindowStat stat;
 };
 
 void dynamic_window_set_counter(DynamicWindow *self, DynamicWindowCounter *ctr);
-void dynamic_window_stat_update(DynamicWindow *self, gsize window);
-void dynamic_window_stat_reset(DynamicWindow *self);
-gsize dynamic_window_stat_get_avg(DynamicWindow *self);
-gsize dynamic_window_stat_get_number_of_samples(DynamicWindow *self);
-gsize dynamic_window_stat_get_sum(DynamicWindow *self);
 gsize dynamic_window_request(DynamicWindow *self, gsize size);
 void dynamic_window_release(DynamicWindow *self, gsize size);
 

@@ -178,9 +178,9 @@ log_source_enable_dynamic_window(LogSource *self, DynamicWindowCounter *window_c
 void
 log_source_dynamic_window_update_statistics(LogSource *self)
 {
-  dynamic_window_stat_update(&self->dynamic_window, window_size_counter_get(&self->window_size, NULL));
+  dynamic_window_stat_update(&self->dynamic_window.stat, window_size_counter_get(&self->window_size, NULL));
   msg_trace("Updating dynamic window statistic", evt_tag_int("avg window size",
-                                                             dynamic_window_stat_get_avg(&self->dynamic_window)));
+                                                             dynamic_window_stat_get_avg(&self->dynamic_window.stat)));
 }
 
 static void
@@ -201,7 +201,6 @@ _release_dynamic_window(LogSource *self)
 void
 log_source_dynamic_window_realloc(LogSource *self)
 {
-  //TODO
 }
 
 void
