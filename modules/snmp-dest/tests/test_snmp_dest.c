@@ -44,6 +44,7 @@ _teardown(void)
 {
   log_pipe_unref((LogPipe *)&snmp_driver->super.super);
   app_shutdown();
+  cfg_free(cfg);
 }
 
 TestSuite(test_snmp_dest, .init = _init, .fini = _teardown);
