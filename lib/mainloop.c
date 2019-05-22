@@ -42,6 +42,7 @@
 #include "resolved-configurable-paths.h"
 #include "scratch-buffers.h"
 #include "timeutils/misc.h"
+#include "stats/stats-control.h"
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -613,6 +614,7 @@ main_loop_read_and_init_config(MainLoop *self)
     }
   self->control_server = control_init(resolvedConfigurablePaths.ctlfilename);
   main_loop_register_control_commands(self);
+  stats_register_control_commands();
   return 0;
 }
 
