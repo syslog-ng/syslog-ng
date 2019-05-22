@@ -61,13 +61,13 @@ _mmdb_load_entry_data_list(GeoIPParser *self, const gchar *input, MMDB_entry_dat
 
   if (!result.found_entry)
     {
-      if (0 != _gai_error)
+      if (_gai_error != 0)
         msg_error("geoip2(): getaddrinfo failed",
                   evt_tag_str("gai_error", gai_strerror(_gai_error)),
                   evt_tag_str("ip", input),
                   log_pipe_location_tag(&self->super.super));
 
-      if (MMDB_SUCCESS != mmdb_error)
+      if (mmdb_error != MMDB_SUCCESS )
         msg_error("geoip2(): maxminddb error",
                   evt_tag_str("error", MMDB_strerror(mmdb_error)),
                   evt_tag_str("ip", input),
