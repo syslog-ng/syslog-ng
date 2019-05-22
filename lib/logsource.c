@@ -183,9 +183,9 @@ log_source_enable_dynamic_window(LogSource *self, DynamicWindowCounter *window_c
 void
 log_source_dynamic_window_update_statistics(LogSource *self)
 {
-  dynamic_window_stat_update(&self->dynamic_window, window_size_counter_get(&self->window_size, NULL));
+  dynamic_window_stat_update(&self->dynamic_window.stat, window_size_counter_get(&self->window_size, NULL));
   msg_trace("Updating dynamic window statistic", evt_tag_int("avg window size",
-                                                             dynamic_window_stat_get_avg(&self->dynamic_window)));
+                                                             dynamic_window_stat_get_avg(&self->dynamic_window.stat)));
 }
 
 static inline void
@@ -247,14 +247,14 @@ log_source_dynamic_window_realloc(LogSource *self)
    * only incrementation is possible by destination threads */
 
   /* TODO: add abstraction for heuristics */
-  gsize free_avg = dynamic_window_stat_get_avg(&self->dynamic_window);
+  gsize free_avg = dynamic_window_stat_get_avg(&self->dynamic_window.stat);
   if (free_avg > self->full_window_size * (self->options->dynamic_window_decrease_threshold / 100.0f))
     _decrease_window(self);
 
   if (free_avg < self->full_window_size * (self->options->dynamic_window_increase_threshold / 100.0f))
     _increase_window(self);
 
-  dynamic_window_stat_reset(&self->dynamic_window);
+  dynamic_window_stat_reset(&self->dynamic_window.stat);
 }
 
 void

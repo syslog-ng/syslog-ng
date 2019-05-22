@@ -27,45 +27,45 @@
 #include "dynamic-window.h"
 
 void
+dynamic_window_stat_update(DynamicWindowStat *self, gsize value)
+{
+  self->sum += value;
+  self->n++;
+}
+
+void
+dynamic_window_stat_reset(DynamicWindowStat *self)
+{
+  self->sum = 0;
+  self->n = 0;
+}
+
+gsize
+dynamic_window_stat_get_avg(DynamicWindowStat *self)
+{
+  if (self->n == 0)
+    return 0;
+
+  return self->sum / self->n;
+}
+
+gsize
+dynamic_window_stat_get_number_of_samples(DynamicWindowStat *self)
+{
+  return self->n;
+}
+
+gsize
+dynamic_window_stat_get_sum(DynamicWindowStat *self)
+{
+  return self->sum;
+}
+
+void
 dynamic_window_set_counter(DynamicWindow *self, DynamicWindowCounter *ctr)
 {
   self->window_ctr = ctr;
-  dynamic_window_stat_reset(self);
-}
-
-void
-dynamic_window_stat_update(DynamicWindow *self, gsize window)
-{
-  self->window_stat.sum += window;
-  self->window_stat.n++;
-}
-
-void
-dynamic_window_stat_reset(DynamicWindow *self)
-{
-  self->window_stat.sum = 0;
-  self->window_stat.n = 0;
-}
-
-gsize
-dynamic_window_stat_get_avg(DynamicWindow *self)
-{
-  if (self->window_stat.n == 0)
-    return 0;
-
-  return self->window_stat.sum / self->window_stat.n;
-}
-
-gsize
-dynamic_window_stat_get_number_of_samples(DynamicWindow *self)
-{
-  return self->window_stat.n;
-}
-
-gsize
-dynamic_window_stat_get_sum(DynamicWindow *self)
-{
-  return self->window_stat.sum;
+  dynamic_window_stat_reset(&self->stat);
 }
 
 gsize

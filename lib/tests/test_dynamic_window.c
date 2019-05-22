@@ -27,29 +27,29 @@
 Test(dynamic_window, window_stat_reset)
 {
   DynamicWindow win;
-  dynamic_window_stat_reset(&win);
-  cr_expect_eq(win.window_stat.sum, 0);
-  cr_expect_eq(win.window_stat.n, 0);
+  dynamic_window_stat_reset(&win.stat);
+  cr_expect_eq(win.stat.sum, 0);
+  cr_expect_eq(win.stat.n, 0);
 }
 
 Test(dynamic_window, window_stat_reset_when_counter_is_set)
 {
   DynamicWindow win;
   dynamic_window_set_counter(&win, NULL);
-  cr_expect_eq(win.window_stat.sum, 0);
-  cr_expect_eq(win.window_stat.n, 0);
+  cr_expect_eq(win.stat.sum, 0);
+  cr_expect_eq(win.stat.n, 0);
 }
 
 Test(dynamic_window, window_stat_avg)
 {
   DynamicWindow win;
-  dynamic_window_stat_reset(&win);
-  dynamic_window_stat_update(&win, 12);
-  dynamic_window_stat_update(&win, 4);
-  cr_expect_eq(dynamic_window_stat_get_avg(&win), 8);
-  cr_expect_eq(dynamic_window_stat_get_number_of_samples(&win), 2);
-  cr_expect_eq(dynamic_window_stat_get_sum(&win), 16);
-  cr_expect_eq(dynamic_window_stat_get_avg(&win),
-               dynamic_window_stat_get_sum(&win) / dynamic_window_stat_get_number_of_samples(&win));
+  dynamic_window_stat_reset(&win.stat);
+  dynamic_window_stat_update(&win.stat, 12);
+  dynamic_window_stat_update(&win.stat, 4);
+  cr_expect_eq(dynamic_window_stat_get_avg(&win.stat), 8);
+  cr_expect_eq(dynamic_window_stat_get_number_of_samples(&win.stat), 2);
+  cr_expect_eq(dynamic_window_stat_get_sum(&win.stat), 16);
+  cr_expect_eq(dynamic_window_stat_get_avg(&win.stat),
+               dynamic_window_stat_get_sum(&win.stat) / dynamic_window_stat_get_number_of_samples(&win.stat));
 }
 
