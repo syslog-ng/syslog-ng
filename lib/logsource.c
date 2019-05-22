@@ -193,9 +193,9 @@ _release_dynamic_window(LogSource *self)
             log_pipe_location_tag(&self->super));
   self->full_window_size -= dynamic_part;
   window_size_counter_sub(&self->window_size, dynamic_part, NULL);
-  dynamic_window_release(&self->dynamic_window, dynamic_part);
+  dynamic_window_release(&self->dynamic_window, dynamic_part); //TODO: rename release to ...
 
-  dynamic_window_counter_unref(self->dynamic_window.window_ctr);
+  dynamic_window_counter_unref(self->dynamic_window.ctr); //TODO: move to dynamic_window_release_counter()
 }
 
 void
