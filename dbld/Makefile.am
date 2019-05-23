@@ -9,6 +9,7 @@ EXTRA_DIST += \
 	dbld/shell \
 	dbld/rules \
 	dbld/bootstrap	\
+	dbld/build.manifest	\
 	dbld/images/devshell.dockerfile \
 	dbld/images/helpers/entrypoint.sh \
 	dbld/images/helpers/fake-sudo.sh \
