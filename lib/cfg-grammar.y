@@ -814,7 +814,10 @@ log_flags_items
 /* END_RULES */
 
 options_stmt
-        : KW_OPTIONS '{' options_items '}'
+        : KW_OPTIONS
+          { cfg_lexer_push_context(lexer, LL_CONTEXT_OPTIONS, NULL, "global options"); }
+          '{' options_items '}'
+          { cfg_lexer_pop_context(lexer); }
 	;
 
 template_stmt
