@@ -51,6 +51,7 @@ struct _DynamicWindow
 };
 
 void dynamic_window_set_counter(DynamicWindow *self, DynamicWindowCounter *ctr);
+gboolean dynamic_window_is_enabled(DynamicWindow *self);
 gsize dynamic_window_request(DynamicWindow *self, gsize size);
 void dynamic_window_release(DynamicWindow *self, gsize size);
 
