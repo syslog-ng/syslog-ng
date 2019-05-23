@@ -153,7 +153,7 @@ snmpdest_dd_set_snmp_obj(LogDriver *d, GlobalConfig *cfg, const gchar *objectid,
   if (snmp_dd_find_object_type(type, &code) == FALSE)
     {
       msg_error("SNMP: invalid oid type",
-                evt_tag_str("oid", type));
+                evt_tag_str("type", type));
       return FALSE;
     }
 
