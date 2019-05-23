@@ -144,7 +144,7 @@ snmp_dd_compare_object_ids(gconstpointer a, gconstpointer b)
 }
 
 gboolean
-snmpdest_dd_set_snmp_obj(LogDriver *d, GlobalConfig *cfg, const gchar *oid, const gchar *type, const gchar *value)
+snmpdest_dd_set_snmp_obj(LogDriver *d, GlobalConfig *cfg, const gchar *objectid, const gchar *type, const gchar *value)
 {
   SNMPDestDriver *self = (SNMPDestDriver *)d;
   LogTemplate *template = NULL;
@@ -172,7 +172,7 @@ snmpdest_dd_set_snmp_obj(LogDriver *d, GlobalConfig *cfg, const gchar *oid, cons
     }
 
   /* register the string values */
-  self->snmp_objs = g_list_append(self->snmp_objs, g_strdup(oid));
+  self->snmp_objs = g_list_append(self->snmp_objs, g_strdup(objectid));
   self->snmp_objs = g_list_append(self->snmp_objs, g_strdup(type));
   self->snmp_objs = g_list_append(self->snmp_objs, g_strdup(value));
 
@@ -197,7 +197,7 @@ snmpdest_dd_set_snmp_obj(LogDriver *d, GlobalConfig *cfg, const gchar *oid, cons
 }
 
 void
-snmpdest_dd_set_trap_obj(LogDriver *d, GlobalConfig *cfg,const gchar *oid, const gchar *type, const gchar *value)
+snmpdest_dd_set_trap_obj(LogDriver *d, GlobalConfig *cfg,const gchar *objectid, const gchar *type, const gchar *value)
 {
   SNMPDestDriver *self = (SNMPDestDriver *)d;
 
@@ -205,7 +205,7 @@ snmpdest_dd_set_trap_obj(LogDriver *d, GlobalConfig *cfg,const gchar *oid, const
   g_free(self->trap_type);
   g_free(self->trap_value);
 
-  self->trap_oid = g_strdup(oid);
+  self->trap_oid = g_strdup(objectid);
   self->trap_type = g_strdup(type);
   self->trap_value = g_strdup(value);
 
