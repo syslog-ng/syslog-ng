@@ -55,7 +55,7 @@ dynamic_window_stat_get_number_of_samples(DynamicWindowStat *self)
   return self->n;
 }
 
-gsize
+guint64
 dynamic_window_stat_get_sum(DynamicWindowStat *self)
 {
   return self->sum;

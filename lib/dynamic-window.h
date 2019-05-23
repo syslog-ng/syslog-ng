@@ -35,14 +35,14 @@ typedef struct _DynamicWindowStat DynamicWindowStat;
 struct _DynamicWindowStat
 {
   gsize n;
-  gsize sum;
+  guint64 sum;
 };
 
 void dynamic_window_stat_update(DynamicWindowStat *self, gsize value);
 void dynamic_window_stat_reset(DynamicWindowStat *self);
 gsize dynamic_window_stat_get_avg(DynamicWindowStat *self);
 gsize dynamic_window_stat_get_number_of_samples(DynamicWindowStat *self);
-gsize dynamic_window_stat_get_sum(DynamicWindowStat *self);
+guint64 dynamic_window_stat_get_sum(DynamicWindowStat *self);
 
 struct _DynamicWindow
 {
