@@ -33,14 +33,20 @@ BuildRequires: systemd-devel
 BuildRequires: hiredis-devel
 BuildRequires: riemann-c-client-devel
 BuildRequires: python-devel
-BuildRequires: java-devel
-#BuildRequires: gradle    # Upstream version installed manually, discussed in: https://github.com/balabit/syslog-ng/issues/2262
-BuildRequires: syslog-ng-java-deps
 BuildRequires: libcurl-devel
 BuildRequires: cyrus-sasl-devel
 BuildRequires: libmaxminddb-devel
 BuildRequires: mongo-c-driver-devel
 BuildRequires: librabbitmq-devel
+
+# java dependencies
+BuildRequires: java-devel
+%if 0%{?_dbld} != 1
+# within dbld these dependencies are already installed from upstream (e.g. not via RPMs)
+BuildRequires: gradle
+BuildRequires: syslog-ng-java-deps
+%endif
+
 %if 0%{?rhel}
 BuildRequires: tcp_wrappers-devel
 %endif
