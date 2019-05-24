@@ -43,6 +43,7 @@ typedef struct _LogThreadedSourceWorkerOptions
 {
   LogSourceOptions super;
   MsgFormatOptions parse_options;
+  gboolean position_tracked;
 } LogThreadedSourceWorkerOptions;
 
 struct _LogThreadedSourceDriver
