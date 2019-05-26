@@ -100,8 +100,9 @@ pcre-devel                      [centos]
     python-dev                  [debian, ubuntu]
     python-devel                [centos]
 
-
-
+    # snmp-dest
+    libsnmp-dev                 [debian, ubuntu]
+    net-snmp-devel              [centos]
 
 
 # optional packages to run configure
@@ -212,7 +213,6 @@ python-numpy                    [debian, ubuntu]
 python-yaml                     [debian, ubuntu]
 python3-yaml                    [debian, ubuntu]
 systemd-sysv                    [debian, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
-libsnmp-dev                     [debian, ubuntu]
 
 
 
