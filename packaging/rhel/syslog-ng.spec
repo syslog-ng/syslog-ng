@@ -9,6 +9,7 @@
 %bcond_without amqp
 %bcond_without java
 %bcond_without kafka
+%bcond_without snmpdest
 %global        py_ver  2.7
 %else
 %bcond_with sql
@@ -20,6 +21,7 @@
 %bcond_with amqp
 %bcond_with java
 %bcond_with kafka
+%bcond_with snmpdest
 %global        py_ver  2.6
 %endif
 
@@ -102,6 +104,10 @@ BuildRequires: librdkafka-devel
 BuildRequires: zlib-devel
 %endif
 
+%if %{with snmpdest}
+BuildRequires: net-snmp-devel
+%endif
+
 %if 0%{?rhel}
 BuildRequires: tcp_wrappers-devel
 %endif
@@ -175,6 +181,13 @@ Requires: %{name}%{?_isa} = %{version}-%{release}
 %description kafka
 This module supports sending logs to kafka through librdkafka.
 
+%package snmpdest
+Summary: SNMP destination support for %{name}
+Group: Development/Libraries
+Requires: %{name}%{?_isa} = %{version}-%{release}
+
+%description snmpdest
+This module supports sending SNMP traps using net-snmp.
 
 %package java
 Summary:        Java destination support for syslog-ng
@@ -281,6 +294,7 @@ export GEOIP_LIBS=-lGeoIP
     --enable-dynamic-linking \
     --enable-python \
     %{?with kafka:--enable-kafka} \
+    %{?with snmpdest:--enable-snmp-dest} \
     %{?with java:--enable-java} \
     %{?with sql:--enable-sql} \
     %{?with systemd:--enable-systemd} \
@@ -478,6 +492,11 @@ fi
 %if %{with kafka}
 %files kafka
 %{_libdir}/%{name}/libkafka.so
+%endif
+
+%if %{with snmpdest}
+%files snmpdest
+%{_libdir}/%{name}/libsnmpdest.so
 %endif
 
 %files smtp
