@@ -34,5 +34,5 @@ ubuntu-bionic
 # centos-6 is not supported, however I leave this line here as an example of
 # how to use build.manifest to cusomize a build.
 #
-centos
-centos-6		CFLAGS=-D__be16=guint16,PYTHON_LIBS=-lpython2.6,PYTHON_CFLAGS=-I/usr/include/python2.6 		--without mongodb
+centos			,											--without kafka --with python2
+centos-6		CFLAGS=-D__be16=guint16,PYTHON_LIBS=-lpython2.6,PYTHON_CFLAGS=-I/usr/include/python2.6 	--without mongodb --with python2
