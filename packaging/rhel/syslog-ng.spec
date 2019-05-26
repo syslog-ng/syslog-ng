@@ -8,6 +8,7 @@
 %bcond_without maxminddb
 %bcond_without amqp
 %bcond_without java
+%bcond_without kafka
 %global        py_ver  2.7
 %else
 %bcond_with sql
@@ -18,6 +19,7 @@
 %bcond_with maxminddb
 %bcond_with amqp
 %bcond_with java
+%bcond_with kafka
 %global        py_ver  2.6
 %endif
 
@@ -95,6 +97,11 @@ BuildRequires: syslog-ng-java-deps
 
 %endif
 
+%if %{with kafka}
+BuildRequires: librdkafka-devel
+BuildRequires: zlib-devel
+%endif
+
 %if 0%{?rhel}
 BuildRequires: tcp_wrappers-devel
 %endif
@@ -159,6 +166,14 @@ Requires: %{name}%{?_isa} = %{version}-%{release}
 
 %description smtp
 This module supports sending e-mail alerts through an smtp server.
+
+%package kafka
+Summary: kafka support for %{name}
+Group: Development/Libraries
+Requires: %{name}%{?_isa} = %{version}-%{release}
+
+%description kafka
+This module supports sending logs to kafka through librdkafka.
 
 
 %package java
@@ -265,6 +280,7 @@ export GEOIP_LIBS=-lGeoIP
     --disable-static \
     --enable-dynamic-linking \
     --enable-python \
+    %{?with kafka:--enable-kafka} \
     %{?with java:--enable-java} \
     %{?with sql:--enable-sql} \
     %{?with systemd:--enable-systemd} \
@@ -457,6 +473,11 @@ fi
 %if %{with redis}
 %files redis
 %{_libdir}/%{name}/libredis.so
+%endif
+
+%if %{with kafka}
+%files kafka
+%{_libdir}/%{name}/libkafka.so
 %endif
 
 %files smtp
