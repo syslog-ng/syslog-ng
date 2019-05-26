@@ -1,4 +1,20 @@
 
+%bcond_with python3
+%bcond_without python2
+
+%if 0%{with python3} && 0%{with python2}
+%{error:Can't build with python2 and python3 at the same type, use one of --with python2 or --with python3}
+Intentional syntax error to cause rpmbuild to abort.
+%endif
+
+%if 0%{with python3}
+%global with_python2 0
+%endif
+
+%if 0%{with python2}
+%global with_python3 0
+%endif
+
 %if 0%{?rhel} >= 7
 %bcond_without sql
 %bcond_without mongodb
@@ -10,7 +26,24 @@
 %bcond_without java
 %bcond_without kafka
 %bcond_without snmpdest
-%global        py_ver  2.7
+
+%if 0%{with python2}
+%global		python_devel python-devel
+%global         py_ver  %{python_version}
+%endif
+
+%if 0%{with python3}
+
+%if 0%{?rhel} == 7
+%global		python_devel python34-devel
+%global         py_ver  3.4
+%else
+%global		python_devel python3-devel
+%global         py_ver  %{python3_version}
+%endif
+
+%endif
+
 %else
 %bcond_with sql
 %bcond_with mongodb
@@ -55,8 +88,9 @@ BuildRequires: pcre-devel
 BuildRequires: libuuid-devel
 BuildRequires: libesmtp-devel
 BuildRequires: GeoIP-devel
-BuildRequires: python-devel
 BuildRequires: libcurl-devel
+
+BuildRequires: %{python_devel}
 
 %if %{with amqp}
 BuildRequires: librabbitmq-devel
@@ -293,6 +327,7 @@ export GEOIP_LIBS=-lGeoIP
     --disable-static \
     --enable-dynamic-linking \
     --enable-python \
+    --with-python=%{py_ver} \
     %{?with kafka:--enable-kafka} \
     %{?with snmpdest:--enable-snmp-dest} \
     %{?with java:--enable-java} \
