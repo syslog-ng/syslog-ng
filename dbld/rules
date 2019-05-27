@@ -1,7 +1,6 @@
 #!/usr/bin/make -f
 
 BUILDER_IMAGES=		\
-	centos-6 	\
 	centos-7 	\
 	fedora-30	\
 	debian-jessie 	\

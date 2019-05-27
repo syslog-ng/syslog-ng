@@ -3,7 +3,7 @@ hy                      [centos, fedora, debian, ubuntu]
 nose                    [centos, fedora, debian, ubuntu]
 pep8                    [centos, fedora, debian, ubuntu]
 ply                     [centos, fedora, debian, ubuntu]
-pylint                  [centos-7, fedora, debian, ubuntu]
+pylint                  [centos, fedora, debian, ubuntu]
 
 # pip packages for python functional tests
 mockito                 [centos, fedora, debian, ubuntu]

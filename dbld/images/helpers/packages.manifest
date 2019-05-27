@@ -38,16 +38,16 @@ pcre-devel                      [centos, fedora]
 # packages to run successful configure with module support
     # libbson-dev
     libbson-dev                 [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
-    libbson-devel               [centos-7, fedora]
+    libbson-devel               [centos, fedora]
 
     # librabbitmq-dev
     librabbitmq-dev             [debian-jessie, debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
-    librabbitmq-devel           [centos-7, fedora]
+    librabbitmq-devel           [centos, fedora]
 
     # libmongoc-dev
     libmongoc-dev               [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
     libmongo-client-dev         [debian-jessie]
-    mongo-c-driver-devel        [centos-7, fedora]
+    mongo-c-driver-devel        [centos, fedora]
 
     # librdkafka-dev (we are using a specific version from OBS and need to
     # list all interdependent packages as an apt preferences would prevent
@@ -59,7 +59,7 @@ pcre-devel                      [centos, fedora]
 
     # libmaxmindb-dev
     libmaxminddb-dev            [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
-    libmaxminddb-devel          [centos-7, fedora]
+    libmaxminddb-devel          [centos, fedora]
 
     # libcurl-dev
     libcurl4-openssl-dev        [debian, ubuntu]
@@ -87,15 +87,14 @@ pcre-devel                      [centos, fedora]
 
     # libriemann-dev
     libriemann-client-dev       [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
-    riemann-c-client-devel      [centos-7, fedora]
+    riemann-c-client-devel      [centos, fedora]
 
     # java-7
     openjdk-7-jdk               [debian-jessie, ubuntu-trusty]
-    java-1.7.0-openjdk-devel    [centos-6]
 
     # java-8
     openjdk-8-jdk               [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
-    java-1.8.0-openjdk-devel    [centos-7, fedora]
+    java-1.8.0-openjdk-devel    [centos, fedora]
 
     # python-dev
     python-dev                  [debian, ubuntu]
@@ -176,7 +175,7 @@ dpkg-dev                        [debian, ubuntu]
 fakeroot                        [centos, fedora, debian, ubuntu]
 doxygen                         [centos, fedora, debian, ubuntu]
 rpm-build                       [centos, fedora]
-cyrus-sasl-devel                [centos-7, fedora]
+cyrus-sasl-devel                [centos, fedora]
 
     #libivykis-dev
     libivykis-dev               [debian, ubuntu]
