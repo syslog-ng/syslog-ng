@@ -159,6 +159,8 @@ _ulong_to_fetch_result(unsigned long ulong, ThreadedFetchResult *result)
     case THREADED_FETCH_ERROR:
     case THREADED_FETCH_NOT_CONNECTED:
     case THREADED_FETCH_SUCCESS:
+    case THREADED_FETCH_TRY_AGAIN:
+    case THREADED_FETCH_NO_DATA:
       *result = (ThreadedFetchResult) ulong;
       return TRUE;
 
@@ -565,6 +567,10 @@ py_log_fetcher_init(void)
   PyDict_SetItemString(py_log_fetcher_type.tp_dict, "FETCH_NOT_CONNECTED",
                        PyLong_FromLong(THREADED_FETCH_NOT_CONNECTED));
   PyDict_SetItemString(py_log_fetcher_type.tp_dict, "FETCH_SUCCESS",
+                       PyLong_FromLong(THREADED_FETCH_SUCCESS));
+  PyDict_SetItemString(py_log_fetcher_type.tp_dict, "FETCH_TRY_AGAIN",
+                       PyLong_FromLong(THREADED_FETCH_SUCCESS));
+  PyDict_SetItemString(py_log_fetcher_type.tp_dict, "FETCH_NO_DATA",
                        PyLong_FromLong(THREADED_FETCH_SUCCESS));
 
   PyType_Ready(&py_log_fetcher_type);

@@ -164,6 +164,7 @@ static CfgLexerKeyword main_keywords[] =
   { "batch_timeout",      KW_BATCH_TIMEOUT },
 
   { "read_old_records",   KW_READ_OLD_RECORDS},
+  { "fetch_no_data_delay", KW_FETCH_NO_DATA_DELAY},
   /* filter items */
   { "type",               KW_TYPE },
   { "tags",               KW_TAGS },

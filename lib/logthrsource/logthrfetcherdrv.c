@@ -25,6 +25,13 @@
 #include "logthrfetcherdrv.h"
 #include "messages.h"
 
+void
+log_threaded_fetcher_driver_set_fetch_no_data_delay(LogDriver *s, time_t no_data_delay)
+{
+  LogThreadedFetcherDriver *self = (LogThreadedFetcherDriver *) s;
+  self->no_data_delay = no_data_delay;
+}
+
 static EVTTAG *
 _tag_driver(LogThreadedFetcherDriver *f)
 {
@@ -78,6 +85,15 @@ _start_reconnect_timer(LogThreadedFetcherDriver *self)
   self->reconnect_timer.expires  = iv_now;
   self->reconnect_timer.expires.tv_sec += self->time_reopen;
   iv_timer_register(&self->reconnect_timer);
+}
+
+static void
+_start_no_data_timer(LogThreadedFetcherDriver *self)
+{
+  iv_validate_now();
+  self->no_data_timer.expires  = iv_now;
+  self->no_data_timer.expires.tv_sec += self->no_data_delay;
+  iv_timer_register(&self->no_data_timer);
 }
 
 static void
@@ -156,6 +172,21 @@ _on_fetch_success(LogThreadedFetcherDriver *self, LogMessage *msg)
 }
 
 static void
+_on_fetch_try_again(LogThreadedFetcherDriver *self)
+{
+  msg_debug("Try again when fetching messages", _tag_driver(self));
+  iv_task_register(&self->fetch_task);
+}
+
+static void
+_on_fetch_no_data(LogThreadedFetcherDriver *self)
+{
+  msg_debug("No data during fetching messages", _tag_driver(self));
+  _start_no_data_timer(self);
+}
+
+
+static void
 _fetch(gpointer data)
 {
   LogThreadedFetcherDriver *self = (LogThreadedFetcherDriver *) data;
@@ -176,6 +207,14 @@ _fetch(gpointer data)
 
     case THREADED_FETCH_SUCCESS:
       _on_fetch_success(self, fetch_result.msg);
+      break;
+
+    case THREADED_FETCH_TRY_AGAIN:
+      _on_fetch_try_again(self);
+      break;
+
+    case THREADED_FETCH_NO_DATA:
+      _on_fetch_no_data(self);
       break;
 
     default:
@@ -208,6 +247,9 @@ _stop_watches(LogThreadedFetcherDriver *self)
 
   if (iv_timer_registered(&self->reconnect_timer))
     iv_timer_unregister(&self->reconnect_timer);
+
+  if (iv_timer_registered(&self->no_data_timer))
+    iv_timer_unregister(&self->no_data_timer);
 }
 
 static void
@@ -232,6 +274,14 @@ _reconnect(gpointer data)
 }
 
 static void
+_no_data(gpointer data)
+{
+  LogThreadedFetcherDriver *self = (LogThreadedFetcherDriver *) data;
+
+  iv_task_register(&self->fetch_task);
+}
+
+static void
 _init_watches(LogThreadedFetcherDriver *self)
 {
   IV_TASK_INIT(&self->fetch_task);
@@ -249,6 +299,11 @@ _init_watches(LogThreadedFetcherDriver *self)
   IV_TIMER_INIT(&self->reconnect_timer);
   self->reconnect_timer.cookie = self;
   self->reconnect_timer.handler = _reconnect;
+
+  IV_TIMER_INIT(&self->no_data_timer);
+  self->no_data_timer.cookie = self;
+  self->no_data_timer.handler = _no_data;
+
 }
 
 gboolean
@@ -264,6 +319,9 @@ log_threaded_fetcher_driver_init_method(LogPipe *s)
 
   if (cfg && self->time_reopen == -1)
     self->time_reopen = cfg->time_reopen;
+
+  if (self->no_data_delay == -1)
+    self->no_data_delay = cfg->time_reopen;
 
   return TRUE;
 }
@@ -286,6 +344,7 @@ log_threaded_fetcher_driver_init_instance(LogThreadedFetcherDriver *self, Global
   log_threaded_source_driver_init_instance(&self->super, cfg);
 
   self->time_reopen = -1;
+  self->no_data_delay = -1;
 
   _init_watches(self);
 

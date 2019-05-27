@@ -85,9 +85,9 @@ threaded_diskq_source_option
       free($3);
     }
   | threaded_source_driver_option
+  | threaded_fetcher_driver_option
   ;
 
 /* INCLUDE_RULES */
 
 %%
-
