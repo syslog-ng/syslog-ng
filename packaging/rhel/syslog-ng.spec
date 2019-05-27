@@ -45,17 +45,7 @@ Intentional syntax error to cause rpmbuild to abort.
 %endif
 
 %else
-%bcond_with sql
-%bcond_with mongodb
-%bcond_with systemd
-%bcond_with redis
-%bcond_with riemann
-%bcond_with maxminddb
-%bcond_with amqp
-%bcond_with java
-%bcond_with kafka
-%bcond_with snmpdest
-%global        py_ver  2.6
+%{error:Unsupported distro, we currently only try to build on RHEL >= 7 or Fedora >= 30}
 %endif
 
 %global ivykis_ver 0.36.1
