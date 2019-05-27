@@ -17,6 +17,7 @@ install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/install/ DESTINATION ${CMAKE_INSTA
 
 if (BUILD_TESTING)
 add_test(test_pylib_unit ${CMAKE_COMMAND} -E env ${NOSETESTS_BIN} ${CMAKE_CURRENT_SOURCE_DIR}/syslogng)
-add_test(test_pylib_pep8 ${CMAKE_COMMAND} -E env pep8 --ignore=E501 ${CMAKE_CURRENT_SOURCE_DIR}/syslogng)
-add_test(test_pylib_pylint ${CMAKE_COMMAND} -E env ${PYLINT_BIN} -r n --rcfile=${CMAKE_CURRENT_SOURCE_DIR}/pylintrc ${CMAKE_CURRENT_SOURCE_DIR}/syslogng)
 endif()
+
+add_custom_target(python-pep8 COMMAND ${CMAKE_COMMAND} -E env pep8 --ignore=E501 ${CMAKE_CURRENT_SOURCE_DIR}/syslogng)
+add_custom_target(python-pylint COMMAND ${CMAKE_COMMAND} -E env ${PYLINT_BIN} -r n --rcfile=${CMAKE_CURRENT_SOURCE_DIR}/pylintrc ${CMAKE_CURRENT_SOURCE_DIR}/syslogng)
