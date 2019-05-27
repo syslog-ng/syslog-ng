@@ -39,7 +39,9 @@ typedef enum
 {
   THREADED_FETCH_ERROR,
   THREADED_FETCH_NOT_CONNECTED,
-  THREADED_FETCH_SUCCESS
+  THREADED_FETCH_SUCCESS,
+  THREADED_FETCH_TRY_AGAIN,
+  THREADED_FETCH_NO_DATA
 } ThreadedFetchResult;
 
 typedef struct _LogThreadedFetchResult
@@ -52,10 +54,12 @@ struct _LogThreadedFetcherDriver
 {
   LogThreadedSourceDriver super;
   time_t time_reopen;
+  time_t no_data_delay;
   struct iv_task fetch_task;
   struct iv_event wakeup_event;
   struct iv_event shutdown_event;
   struct iv_timer reconnect_timer;
+  struct iv_timer no_data_timer;
   gboolean suspended;
   gboolean under_termination;
 
@@ -72,5 +76,7 @@ void log_threaded_fetcher_driver_init_instance(LogThreadedFetcherDriver *self, G
 gboolean log_threaded_fetcher_driver_init_method(LogPipe *s);
 gboolean log_threaded_fetcher_driver_deinit_method(LogPipe *s);
 void log_threaded_fetcher_driver_free_method(LogPipe *s);
+
+void log_threaded_fetcher_driver_set_fetch_no_data_delay(LogDriver *self, time_t no_data_delay);
 
 #endif
