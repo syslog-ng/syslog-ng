@@ -100,6 +100,7 @@ script:
         . scripts/get-libjvm-path.sh || return $?;
         export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$JNI_LIBDIR";
         make func-test V=1 &&
+        make python-pep8 python-pylint &&
         make pytest-linters &&
         make pytest-self-check &&
         make pytest-check;
