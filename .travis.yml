@@ -99,10 +99,11 @@ script:
         make install
         . scripts/get-libjvm-path.sh || return $?;
         export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$JNI_LIBDIR";
-        make func-test V=1 &&
+        make check &&
+        make pytest-self-check &&
         make python-pep8 python-pylint &&
         make pytest-linters &&
-        make pytest-self-check &&
+        make func-test V=1 &&
         make pytest-check;
       elif [ "$S" = "42" ]; then
         return $S;
@@ -159,9 +160,11 @@ matrix:
             -DCMAKE_INSTALL_PREFIX=$HOME/install/syslog-ng
             ..
         - make --keep-going -j $(nproc) ARGS="-j $(nproc)" all check install
-        - make VERBOSE=1 func-test
-        - make pytest-linters
         - make pytest-self-check
+        - make python-pep8
+        - make python-pylint
+        - make pytest-linters
+        - make VERBOSE=1 func-test
         - make pytest-check
     - env: B=trusty-cmake
       compiler: clang
