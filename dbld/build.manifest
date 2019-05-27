@@ -36,3 +36,4 @@ ubuntu-bionic
 #
 centos			,											--without kafka --with python2
 centos-6		CFLAGS=-D__be16=guint16,PYTHON_LIBS=-lpython2.6,PYTHON_CFLAGS=-I/usr/include/python2.6 	--without mongodb --with python2
+fedora			, 											--with python3 --without python2

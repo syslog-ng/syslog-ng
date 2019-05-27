@@ -1,13 +1,12 @@
 # pip packages for successful run make check
-hy                      [centos, debian, ubuntu]
-nose                    [centos, debian, ubuntu]
-pep8                    [centos, debian, ubuntu]
-ply                     [centos, debian, ubuntu]
-pylint                  [centos-7, debian, ubuntu]
+hy                      [centos, fedora, debian, ubuntu]
+nose                    [centos, fedora, debian, ubuntu]
+pep8                    [centos, fedora, debian, ubuntu]
+ply                     [centos, fedora, debian, ubuntu]
+pylint                  [centos-7, fedora, debian, ubuntu]
 
-# pip packages for python functional tests
-pathlib2                [centos, debian, ubuntu]
-psutil                  [centos, debian, ubuntu]
-pytest                  [centos, debian, ubuntu]
-pre-commit              [centos, debian, ubuntu]
-pre-commit-hooks        [centos, debian, ubuntu]
+pathlib2                [centos, fedora, debian, ubuntu]
+psutil                  [centos, fedora, debian, ubuntu]
+pytest                  [centos, fedora, debian, ubuntu]
+pre-commit              [centos, fedora, debian, ubuntu]
+pre-commit-hooks        [centos, fedora, debian, ubuntu]
