@@ -15,7 +15,7 @@ Intentional syntax error to cause rpmbuild to abort.
 %global with_python3 0
 %endif
 
-%if 0%{?rhel} >= 7
+%if 0%{?rhel} >= 7 || 0%{?fedora} >= 30
 %bcond_without sql
 %bcond_without mongodb
 %bcond_without systemd
