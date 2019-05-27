@@ -20,6 +20,7 @@ EXTRA_DIST += \
 	dbld/images/README.md \
 	dbld/images/centos-6.dockerfile \
 	dbld/images/centos-7.dockerfile \
+	dbld/images/fedora-30.dockerfile \
 	dbld/images/debian-jessie.dockerfile \
 	dbld/images/debian-stretch.dockerfile \
 	dbld/images/debian-buster.dockerfile \

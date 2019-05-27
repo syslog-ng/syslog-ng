@@ -75,7 +75,7 @@ EOF
 }
 
 function add_copr_repo {
-    yum install -y yum-plugin-copr
+    yum install -y yum-plugin-copr dnf-plugins-core
     yum copr enable -y czanik/syslog-ng-githead
 }
 
@@ -89,6 +89,7 @@ function install_apt_packages {
 }
 
 function install_yum_packages {
+    yum install -y findutils
     filter_packages_by_platform /helpers/packages.manifest | xargs yum install -y
 }
 
