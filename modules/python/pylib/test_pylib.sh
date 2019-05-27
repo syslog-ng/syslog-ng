@@ -21,4 +21,4 @@
 #
 #############################################################################
 
-${MAKE} MAKEFLAGS= python-checks
+${MAKE} MAKEFLAGS= python-unit
