@@ -23,5 +23,6 @@ brew "libdbi"
 brew "libnet"
 brew "libmaxminddb"
 brew "riemann-client"
+brew "librdkafka"
 
 brew "criterion"
