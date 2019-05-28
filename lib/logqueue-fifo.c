@@ -166,6 +166,47 @@ log_queue_fifo_keep_on_reload(LogQueue *s)
   return log_queue_fifo_get_length(s) > 0 || self->backlog_queue.len > 0;
 }
 
+static inline void
+log_queue_fifo_drop_messages_from_input_queue(LogQueueFifo *self, InputQueue *input_queue, gint nfc_message_count)
+{
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+
+  /* NOTE: MAX is needed here to ensure that the lost race on nfc_messages_count
+   * doesn't result in n < 0 */
+  gint num_of_messages_to_drop = input_queue->nfc_len -
+                                 MAX(0, (self->log_fifo_size - nfc_message_count));
+
+  struct iv_list_head *item = input_queue->items.next;
+  for (gint dropped = 0; dropped < num_of_messages_to_drop;)
+    {
+      LogMessageQueueNode *node = iv_list_entry(item, LogMessageQueueNode, list);
+
+      item = item->next;
+
+      path_options.ack_needed = node->ack_needed;
+      path_options.flow_control_requested = node->flow_control_requested;
+
+      if (path_options.flow_control_requested)
+        continue;
+
+      iv_list_del(&node->list);
+      input_queue->len--;
+      input_queue->nfc_len--;
+      stats_counter_inc(self->super.dropped_messages);
+      log_msg_free_queue_node(node);
+
+      LogMessage *msg = node->msg;
+      log_msg_drop(msg, &path_options, AT_PROCESSED);
+      dropped++;
+    }
+
+  msg_debug("Destination queue full, dropping messages",
+            evt_tag_int("nfc_message_count", nfc_message_count),
+            evt_tag_int("log_fifo_size", self->log_fifo_size),
+            evt_tag_int("number_of_dropped_messages", num_of_messages_to_drop),
+            evt_tag_str("persist_name", self->super.persist_name));
+}
+
 /* move items from the per-thread input queue to the lock-protected "wait" queue */
 static void
 log_queue_fifo_move_input_unlocked(LogQueueFifo *self, gint thread_id)
@@ -183,47 +224,11 @@ log_queue_fifo_move_input_unlocked(LogQueueFifo *self, gint thread_id)
    * justify proper locking in this case.
    */
 
-  gint nfc_messages_count = log_queue_fifo_get_nfc_length(self);
-  if (nfc_messages_count + self->input_queues[thread_id].nfc_len > self->log_fifo_size)
+  gint nfc_message_count = log_queue_fifo_get_nfc_length(self);
+  if (nfc_message_count + self->input_queues[thread_id].nfc_len > self->log_fifo_size)
     {
       /* slow path, the input thread's queue would overflow the queue, let's drop some messages */
-
-      LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-
-      /* NOTE: MAX is needed here to ensure that the lost race on nfc_messages_count
-       * doesn't result in n < 0 */
-      gint num_of_messages_to_drop = self->input_queues[thread_id].nfc_len -
-                                     MAX(0, (self->log_fifo_size - nfc_messages_count));
-
-      struct iv_list_head *item = self->input_queues[thread_id].items.next;
-      for (gint dropped = 0; dropped < num_of_messages_to_drop;)
-        {
-          LogMessageQueueNode *node = iv_list_entry(item, LogMessageQueueNode,
-                                                    list);
-
-          item = item->next;
-
-          path_options.ack_needed = node->ack_needed;
-          path_options.flow_control_requested = node->flow_control_requested;
-
-          if (path_options.flow_control_requested)
-            continue;
-
-          iv_list_del(&node->list);
-          self->input_queues[thread_id].len--;
-          self->input_queues[thread_id].nfc_len--;
-          stats_counter_inc(self->super.dropped_messages);
-          log_msg_free_queue_node(node);
-
-          LogMessage *msg = node->msg;
-          log_msg_drop(msg, &path_options, AT_PROCESSED);
-          dropped++;
-        }
-      msg_debug("Destination queue full, dropping messages",
-                evt_tag_int("nfc_messages_count", nfc_messages_count),
-                evt_tag_int("log_fifo_size", self->log_fifo_size),
-                evt_tag_int("number_of_dropped_messages", num_of_messages_to_drop),
-                evt_tag_str("persist_name", self->super.persist_name));
+      log_queue_fifo_drop_messages_from_input_queue(self, &self->input_queues[thread_id], nfc_message_count);
     }
 
   log_queue_queued_messages_add(&self->super, self->input_queues[thread_id].len);
