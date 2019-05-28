@@ -321,7 +321,7 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
   if (!context)
     {
       msg_debug("Correllation context lookup failure, starting a new context",
-                evt_tag_str("key", buffer->str),
+                evt_tag_str("key", key.session_id),
                 evt_tag_int("timeout", self->timeout),
                 evt_tag_int("expiration", timer_wheel_get_time(self->timer_wheel) + self->timeout),
                 log_pipe_location_tag(&self->super.super.super));
@@ -333,7 +333,7 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
   else
     {
       msg_debug("Correllation context lookup successful",
-                evt_tag_str("key", buffer->str),
+                evt_tag_str("key", key.session_id),
                 evt_tag_int("timeout", self->timeout),
                 evt_tag_int("expiration", timer_wheel_get_time(self->timer_wheel) + self->timeout),
                 evt_tag_int("num_messages", context->messages->len),
