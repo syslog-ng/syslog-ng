@@ -263,10 +263,6 @@ AC_ARG_ENABLE(amqp,
           [  --enable-amqp        Enable amqp destination (default: auto)]
               ,,enable_amqp="auto")
 
-AC_ARG_ENABLE(kafka,
-          [  --enable-kafka        Enable kafka destination (default: auto)]
-              ,,enable_kafka="auto")
-
 AC_ARG_ENABLE(stomp,
           [  --enable-stomp        Enable stomp destination (default: yes)]
               ,,enable_stomp="yes")
@@ -331,7 +327,7 @@ AC_ARG_ENABLE(python,
 
 AC_ARG_ENABLE(kafka,
               [  --enable-kafka         Enable rdkafka support]
-              ,,enable_kafka="yes")
+              ,,enable_kafka="auto")
 
 AC_ARG_WITH(python,
               [  --with-python=VERSION    Build with a specific version of python]
@@ -1624,7 +1620,7 @@ if test "x$enable_amqp" = "xauto"; then
 fi
 
 if test "x$enable_kafka" = "xauto"; then
-    AC_MSG_CHECKING(whether to enable kafka source support)
+    AC_MSG_CHECKING(whether to enable kafka support)
     if test "x$with_librdkafka" != "xno"; then
         enable_kafka="yes"
     else
@@ -1871,7 +1867,6 @@ AM_CONDITIONAL(ENABLE_MONGODB, [test "$enable_mongodb" = "yes"])
 AM_CONDITIONAL(ENABLE_SMTP, [test "$enable_smtp" = "yes"])
 AM_CONDITIONAL(ENABLE_HTTP, [test "$enable_http" = "yes"])
 AM_CONDITIONAL(ENABLE_AMQP, [test "$enable_amqp" = "yes"])
-AM_CONDITIONAL(ENABLE_KAFKA, [test "$enable_kafka" = "yes"])
 AM_CONDITIONAL(ENABLE_STOMP, [test "$enable_stomp" = "yes"])
 AM_CONDITIONAL(ENABLE_JSON, [test "$enable_json" = "yes"])
 AM_CONDITIONAL(ENABLE_GEOIP, [test "$enable_geoip" = "yes"])
@@ -2014,7 +2009,6 @@ echo "  JSON support (module)       : ${enable_json:=no}"
 echo "  SMTP support (module)       : ${enable_smtp:=no}"
 echo "  HTTP support (module)       : ${enable_http:=no}"
 echo "  AMQP destination (module)   : ${enable_amqp:=no}"
-echo "  Kafka source (module)       : ${enable_kafka:=no}"
 echo "  STOMP destination (module)  : ${enable_stomp:=no}"
 echo "  GEOIP support (module)      : ${enable_geoip:=no}"
 echo "  GEOIP2 support (module)     : ${enable_geoip2:=no}"
