@@ -15,7 +15,7 @@ Intentional syntax error to cause rpmbuild to abort.
 %global with_python3 0
 %endif
 
-%if 0%{?rhel} >= 7 || 0%{?fedora} >= 30
+%if 0%{?rhel} >= 7 || 0%{?fedora} >= 28
 %bcond_without sql
 %bcond_without mongodb
 %bcond_without systemd
@@ -561,10 +561,18 @@ fi
 %{_libdir}/libsyslog-ng-native-connector.a
 %{_libdir}/libloggen_helper.so
 %{_libdir}/libloggen_plugin.so
+
+%if 0%{?_dbld}
+
+# without criterion we don't have the test lib.  On dbld we do have it, on
+# upstream CentOS/Fedora we don't.
+
 %{_libdir}/%{name}/libtest/libsyslog-ng-test.a
+%{_libdir}/pkgconfig/syslog-ng-test.pc
+%endif
+
 %{_includedir}/%{name}/
 %{_libdir}/pkgconfig/syslog-ng.pc
-%{_libdir}/pkgconfig/syslog-ng-test.pc
 %{_libdir}/pkgconfig/syslog-ng-native-connector.pc
 %{_datadir}/%{name}/tools/
 
