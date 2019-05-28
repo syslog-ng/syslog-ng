@@ -94,7 +94,7 @@ typedef struct _LogQueueFifo
   OverflowQueue wait_queue;
   OverflowQueue backlog_queue; /* entries that were sent but not acked yet */
 
-  gint qoverflow_size; /* in number of elements */
+  gint log_fifo_size;
 
   InputQueue input_queues[0];
 } LogQueueFifo;
@@ -178,7 +178,7 @@ log_queue_fifo_move_input_unlocked(LogQueueFifo *self, gint thread_id)
    */
 
   queue_len = log_queue_fifo_get_length(&self->super);
-  if (queue_len + self->input_queues[thread_id].len > self->qoverflow_size)
+  if (queue_len + self->input_queues[thread_id].len > self->log_fifo_size)
     {
       /* slow path, the input thread's queue would overflow the queue, let's drop some messages */
 
@@ -188,7 +188,7 @@ log_queue_fifo_move_input_unlocked(LogQueueFifo *self, gint thread_id)
 
       /* NOTE: MAX is needed here to ensure that the lost race on queue_len
        * doesn't result in n < 0 */
-      n = self->input_queues[thread_id].len - MAX(0, (self->qoverflow_size - queue_len));
+      n = self->input_queues[thread_id].len - MAX(0, (self->log_fifo_size - queue_len));
 
       for (i = 0; i < n; i++)
         {
@@ -208,7 +208,7 @@ log_queue_fifo_move_input_unlocked(LogQueueFifo *self, gint thread_id)
         }
       msg_debug("Destination queue full, dropping messages",
                 evt_tag_int("queue_len", queue_len),
-                evt_tag_int("log_fifo_size", self->qoverflow_size),
+                evt_tag_int("log_fifo_size", self->log_fifo_size),
                 evt_tag_int("count", n),
                 evt_tag_str("persist_name", self->super.persist_name));
     }
@@ -308,7 +308,7 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
   if (thread_id >= 0)
     log_queue_fifo_move_input_unlocked(self, thread_id);
 
-  if (log_queue_fifo_get_length(s) < self->qoverflow_size)
+  if (log_queue_fifo_get_length(s) < self->log_fifo_size)
     {
       node = log_msg_alloc_queue_node(msg, path_options);
 
@@ -334,7 +334,7 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
 
       msg_debug("Destination queue full, dropping message",
                 evt_tag_int("queue_len", log_queue_fifo_get_length(&self->super)),
-                evt_tag_int("log_fifo_size", self->qoverflow_size),
+                evt_tag_int("log_fifo_size", self->log_fifo_size),
                 evt_tag_str("persist_name", self->super.persist_name));
     }
   return;
@@ -546,7 +546,7 @@ log_queue_fifo_free(LogQueue *s)
 }
 
 LogQueue *
-log_queue_fifo_new(gint qoverflow_size, const gchar *persist_name)
+log_queue_fifo_new(gint log_fifo_size, const gchar *persist_name)
 {
   LogQueueFifo *self;
   gint i;
@@ -579,6 +579,6 @@ log_queue_fifo_new(gint qoverflow_size, const gchar *persist_name)
   INIT_IV_LIST_HEAD(&self->output_queue.items);
   INIT_IV_LIST_HEAD(&self->backlog_queue.items);
 
-  self->qoverflow_size = qoverflow_size;
+  self->log_fifo_size = log_fifo_size;
   return &self->super;
 }
