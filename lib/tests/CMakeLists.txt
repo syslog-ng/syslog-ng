@@ -15,7 +15,7 @@ add_unit_test(LIBTEST CRITERION TARGET test_runid)
 add_unit_test(CRITERION TARGET test_pathutils)
 add_unit_test(CRITERION TARGET test_utf8utils)
 add_unit_test(CRITERION TARGET test_userdb)
-
+add_unit_test(LIBTEST CRITERION TARGET test_logqueue)
 add_unit_test(CRITERION TARGET test_cache)
 add_unit_test(CRITERION TARGET test_scratch_buffers)
 add_unit_test(CRITERION TARGET test_messages)
