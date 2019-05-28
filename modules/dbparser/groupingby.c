@@ -316,7 +316,7 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
   log_template_format(self->key_template, msg, NULL, LTZ_LOCAL, 0, NULL, buffer);
   log_msg_set_value(msg, context_id_handle, buffer->str, -1);
 
-  correllation_key_setup(&key, self->scope, msg, buffer->str);
+  correllation_key_init(&key, self->scope, msg, buffer->str);
   context = g_hash_table_lookup(self->correllation->state, &key);
   if (!context)
     {

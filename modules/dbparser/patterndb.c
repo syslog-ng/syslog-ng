@@ -215,7 +215,7 @@ _is_action_within_rate_limit(PatternDB *db, PDBProcessParams *process_params)
     return TRUE;
 
   g_string_printf(buffer, "%s:%d", rule->rule_id, action->id);
-  correllation_key_setup(&key, rule->context.scope, msg, buffer->str);
+  correllation_key_init(&key, rule->context.scope, msg, buffer->str);
 
   rl = g_hash_table_lookup(db->rate_limits, &key);
   if (!rl)
@@ -342,7 +342,7 @@ _execute_action_create_context(PatternDB *db, PDBProcessParams *process_params)
             evt_tag_int("context_timeout", syn_context->timeout),
             evt_tag_int("context_expiration", timer_wheel_get_time(db->timer_wheel) + syn_context->timeout));
 
-  correllation_key_setup(&key, syn_context->scope, context_msg, buffer->str);
+  correllation_key_init(&key, syn_context->scope, context_msg, buffer->str);
   new_context = pdb_context_new(&key);
   g_hash_table_insert(db->correllation.state, &new_context->super.key, new_context);
   g_string_steal(buffer);
@@ -609,7 +609,7 @@ _pattern_db_process_matching_rule(PatternDB *self, PDBProcessParams *process_par
       log_template_format(rule->context.id_template, msg, NULL, LTZ_LOCAL, 0, NULL, buffer);
       log_msg_set_value(msg, context_id_handle, buffer->str, -1);
 
-      correllation_key_setup(&key, rule->context.scope, msg, buffer->str);
+      correllation_key_init(&key, rule->context.scope, msg, buffer->str);
       context = g_hash_table_lookup(self->correllation.state, &key);
       if (!context)
         {

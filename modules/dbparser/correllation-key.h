@@ -58,6 +58,6 @@ typedef struct _CorrellationKey
 
 guint correllation_key_hash(gconstpointer k);
 gboolean correllation_key_equal(gconstpointer k1, gconstpointer k2);
-void correllation_key_setup(CorrellationKey *self, CorrellationScope scope, LogMessage *msg, gchar *session_id);
+void correllation_key_init(CorrellationKey *self, CorrellationScope scope, LogMessage *msg, gchar *session_id);
 
 #endif

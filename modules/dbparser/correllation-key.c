@@ -86,7 +86,7 @@ correllation_key_equal(gconstpointer k1, gconstpointer k2)
 
 /* fills a CorrellationKey structure with borrowed values */
 void
-correllation_key_setup(CorrellationKey *self, CorrellationScope scope, LogMessage *msg, gchar *session_id)
+correllation_key_init(CorrellationKey *self, CorrellationScope scope, LogMessage *msg, gchar *session_id)
 {
   memset(self, 0, sizeof(*self));
   self->scope = scope;
