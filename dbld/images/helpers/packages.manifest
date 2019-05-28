@@ -99,7 +99,7 @@ pcre-devel                      [centos]
     # python-dev
     python-dev                  [debian, ubuntu]
     python-devel                [centos]
-    python34-devel              [centos]
+    python36-devel              [centos]
 
     # snmp-dest
     libsnmp-dev                 [debian, ubuntu]
