@@ -71,6 +71,13 @@ QueueType log_queue_fifo_type = "FIFO";
  *
  */
 
+typedef struct _InputQueue
+{
+  struct iv_list_head items;
+  WorkerBatchCallback cb;
+  guint16 len;
+  guint16 finish_cb_registered;
+} InputQueue;
 
 typedef struct _LogQueueFifo
 {
@@ -86,13 +93,7 @@ typedef struct _LogQueueFifo
   struct iv_list_head qbacklog;    /* entries that were sent but not acked yet */
   gint qbacklog_len;
 
-  struct
-  {
-    struct iv_list_head items;
-    WorkerBatchCallback cb;
-    guint16 len;
-    guint16 finish_cb_registered;
-  } qoverflow_input[0];
+  InputQueue qoverflow_input[0];
 } LogQueueFifo;
 
 /* NOTE: this is inherently racy. If the LogQueue->lock is taken, then the
