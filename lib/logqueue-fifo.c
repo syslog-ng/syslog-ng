@@ -337,9 +337,6 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
 
   g_static_mutex_lock(&self->super.lock);
 
-  if (thread_id >= 0)
-    log_queue_fifo_move_input_unlocked(self, thread_id);
-
   if (_message_has_to_be_dropped(self, path_options))
     {
       stats_counter_inc(self->super.dropped_messages);
