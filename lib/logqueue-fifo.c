@@ -76,6 +76,7 @@ typedef struct _InputQueue
   struct iv_list_head items;
   WorkerBatchCallback cb;
   guint16 len;
+  guint16 nfc_len;
   guint16 finish_cb_registered;
 } InputQueue;
 
@@ -83,6 +84,7 @@ typedef struct _OverflowQueue
 {
   struct iv_list_head items;
   gint len;
+  gint nfc_len;
 } OverflowQueue;
 
 typedef struct _LogQueueFifo
@@ -128,6 +130,12 @@ log_queue_fifo_get_length(LogQueue *s)
   return self->wait_queue.len + self->output_queue.len;
 }
 
+static gint64
+log_queue_fifo_get_nfc_length(LogQueueFifo *self)
+{
+  return self->wait_queue.nfc_len + self->output_queue.nfc_len;
+}
+
 gboolean
 log_queue_fifo_is_empty_racy(LogQueue *s)
 {
@@ -162,9 +170,7 @@ log_queue_fifo_keep_on_reload(LogQueue *s)
 static void
 log_queue_fifo_move_input_unlocked(LogQueueFifo *self, gint thread_id)
 {
-  gint queue_len;
-
-  /* since we're in the input thread, queue_len will be racy. It can
+  /* since we're in the input thread, nfc_messages_count will be racy. It can
    * increase due to log_queue_fifo_push_head() and can also decrease as
    * items are removed from the output queue using log_queue_pop_head().
    *
@@ -177,47 +183,57 @@ log_queue_fifo_move_input_unlocked(LogQueueFifo *self, gint thread_id)
    * justify proper locking in this case.
    */
 
-  queue_len = log_queue_fifo_get_length(&self->super);
-  if (queue_len + self->input_queues[thread_id].len > self->log_fifo_size)
+  gint nfc_messages_count = log_queue_fifo_get_nfc_length(self);
+  if (nfc_messages_count + self->input_queues[thread_id].nfc_len > self->log_fifo_size)
     {
       /* slow path, the input thread's queue would overflow the queue, let's drop some messages */
 
       LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-      gint i;
-      gint n;
 
-      /* NOTE: MAX is needed here to ensure that the lost race on queue_len
+      /* NOTE: MAX is needed here to ensure that the lost race on nfc_messages_count
        * doesn't result in n < 0 */
-      n = self->input_queues[thread_id].len - MAX(0, (self->log_fifo_size - queue_len));
+      gint num_of_messages_to_drop = self->input_queues[thread_id].nfc_len -
+                                     MAX(0, (self->log_fifo_size - nfc_messages_count));
 
-      for (i = 0; i < n; i++)
+      struct iv_list_head *item = self->input_queues[thread_id].items.next;
+      for (gint dropped = 0; dropped < num_of_messages_to_drop;)
         {
-          LogMessageQueueNode *node = iv_list_entry(self->input_queues[thread_id].items.next, LogMessageQueueNode, list);
-          LogMessage *msg = node->msg;
+          LogMessageQueueNode *node = iv_list_entry(item, LogMessageQueueNode,
+                                                    list);
+
+          item = item->next;
+
+          path_options.ack_needed = node->ack_needed;
+          path_options.flow_control_requested = node->flow_control_requested;
+
+          if (path_options.flow_control_requested)
+            continue;
 
           iv_list_del(&node->list);
           self->input_queues[thread_id].len--;
-          path_options.ack_needed = node->ack_needed;
-          path_options.flow_control_requested = node->flow_control_requested;
+          self->input_queues[thread_id].nfc_len--;
           stats_counter_inc(self->super.dropped_messages);
           log_msg_free_queue_node(node);
-          if (path_options.flow_control_requested)
-            log_msg_drop(msg, &path_options, AT_SUSPENDED);
-          else
-            log_msg_drop(msg, &path_options, AT_PROCESSED);
+
+          LogMessage *msg = node->msg;
+          log_msg_drop(msg, &path_options, AT_PROCESSED);
+          dropped++;
         }
       msg_debug("Destination queue full, dropping messages",
-                evt_tag_int("queue_len", queue_len),
+                evt_tag_int("nfc_messages_count", nfc_messages_count),
                 evt_tag_int("log_fifo_size", self->log_fifo_size),
-                evt_tag_int("count", n),
+                evt_tag_int("number_of_dropped_messages", num_of_messages_to_drop),
                 evt_tag_str("persist_name", self->super.persist_name));
     }
+
   log_queue_queued_messages_add(&self->super, self->input_queues[thread_id].len);
   iv_list_update_msg_size(self, &self->input_queues[thread_id].items);
 
   iv_list_splice_tail_init(&self->input_queues[thread_id].items, &self->wait_queue.items);
   self->wait_queue.len += self->input_queues[thread_id].len;
+  self->wait_queue.nfc_len += self->input_queues[thread_id].nfc_len;
   self->input_queues[thread_id].len = 0;
+  self->input_queues[thread_id].nfc_len = 0;
 }
 
 /* move items from the per-thread input queue to the lock-protected
@@ -242,6 +258,13 @@ log_queue_fifo_move_input(gpointer user_data)
   self->input_queues[thread_id].finish_cb_registered = FALSE;
   log_queue_unref(&self->super);
   return NULL;
+}
+
+/* lock must be held */
+static inline gboolean
+_message_has_to_be_dropped(LogQueueFifo *self, const LogPathOptions *path_options)
+{
+  return !path_options->flow_control_requested && log_queue_fifo_get_nfc_length(self) >= self->log_fifo_size;
 }
 
 /**
@@ -297,6 +320,10 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
       node = log_msg_alloc_queue_node(msg, path_options);
       iv_list_add_tail(&node->list, &self->input_queues[thread_id].items);
       self->input_queues[thread_id].len++;
+
+      if (!path_options->flow_control_requested)
+        self->input_queues[thread_id].nfc_len++;
+
       log_msg_unref(msg);
       return;
     }
@@ -308,15 +335,12 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
   if (thread_id >= 0)
     log_queue_fifo_move_input_unlocked(self, thread_id);
 
-  if (log_queue_fifo_get_length(s) >= self->log_fifo_size)
+  if (_message_has_to_be_dropped(self, path_options))
     {
       stats_counter_inc(self->super.dropped_messages);
       g_static_mutex_unlock(&self->super.lock);
 
-      if (path_options->flow_control_requested)
-        log_msg_drop(msg, path_options, AT_SUSPENDED);
-      else
-        log_msg_drop(msg, path_options, AT_PROCESSED);
+      log_msg_drop(msg, path_options, AT_PROCESSED);
 
       msg_debug("Destination queue full, dropping message",
                 evt_tag_int("queue_len", log_queue_fifo_get_length(&self->super)),
@@ -329,6 +353,10 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
 
   iv_list_add_tail(&node->list, &self->wait_queue.items);
   self->wait_queue.len++;
+
+  if (!path_options->flow_control_requested)
+    self->wait_queue.nfc_len++;
+
   log_queue_push_notify(&self->super);
   log_queue_queued_messages_inc(&self->super);
 
@@ -358,6 +386,10 @@ log_queue_fifo_push_head(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
   node = log_msg_alloc_dynamic_queue_node(msg, path_options);
   iv_list_add(&node->list, &self->output_queue.items);
   self->output_queue.len++;
+
+  if (!path_options->flow_control_requested)
+    self->output_queue.nfc_len++;
+
   log_msg_unref(msg);
 
   log_queue_queued_messages_inc(&self->super);
@@ -382,7 +414,9 @@ log_queue_fifo_pop_head(LogQueue *s, LogPathOptions *path_options)
       g_static_mutex_lock(&self->super.lock);
       iv_list_splice_tail_init(&self->wait_queue.items, &self->output_queue.items);
       self->output_queue.len = self->wait_queue.len;
+      self->output_queue.nfc_len = self->wait_queue.nfc_len;
       self->wait_queue.len = 0;
+      self->wait_queue.nfc_len = 0;
       g_static_mutex_unlock(&self->super.lock);
     }
 
@@ -393,6 +427,10 @@ log_queue_fifo_pop_head(LogQueue *s, LogPathOptions *path_options)
       msg = node->msg;
       path_options->ack_needed = node->ack_needed;
       self->output_queue.len--;
+
+      if (!node->flow_control_requested)
+        self->output_queue.nfc_len--;
+
       if (!self->super.use_backlog)
         {
           iv_list_del(&node->list);
@@ -423,6 +461,9 @@ log_queue_fifo_pop_head(LogQueue *s, LogPathOptions *path_options)
       log_msg_ref(msg);
       iv_list_add_tail(&node->list, &self->backlog_queue.items);
       self->backlog_queue.len++;
+
+      if (!node->flow_control_requested)
+        self->backlog_queue.nfc_len++;
     }
 
   return msg;
@@ -447,6 +488,10 @@ log_queue_fifo_ack_backlog(LogQueue *s, gint rewind_count)
 
       iv_list_del(&node->list);
       self->backlog_queue.len--;
+
+      if (!node->flow_control_requested)
+        self->backlog_queue.nfc_len--;
+
       path_options.ack_needed = node->ack_needed;
       log_msg_ack(msg, &path_options, AT_PROCESSED);
       log_msg_free_queue_node(node);
@@ -474,8 +519,10 @@ log_queue_fifo_rewind_backlog_all(LogQueue *s)
   iv_list_splice_tail_init(&self->backlog_queue.items, &self->output_queue.items);
 
   self->output_queue.len += self->backlog_queue.len;
+  self->output_queue.nfc_len += self->backlog_queue.nfc_len;
   log_queue_queued_messages_add(&self->super, self->backlog_queue.len);
   self->backlog_queue.len = 0;
+  self->backlog_queue.nfc_len = 0;
 }
 
 static void
@@ -500,6 +547,13 @@ log_queue_fifo_rewind_backlog(LogQueue *s, guint rewind_count)
 
       self->backlog_queue.len--;
       self->output_queue.len++;
+
+      if (!node->flow_control_requested)
+        {
+          self->backlog_queue.nfc_len--;
+          self->output_queue.nfc_len++;
+        }
+
       log_queue_queued_messages_inc(&self->super);
       log_queue_memory_usage_add(&self->super, log_msg_get_size(node->msg));
     }
