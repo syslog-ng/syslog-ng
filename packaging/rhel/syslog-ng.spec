@@ -35,8 +35,8 @@ Intentional syntax error to cause rpmbuild to abort.
 %if 0%{with python3}
 
 %if 0%{?rhel} == 7
-%global		python_devel python34-devel
-%global         py_ver  3.4
+%global		python_devel python36-devel
+%global         py_ver  3.6
 %else
 %global		python_devel python3-devel
 %global         py_ver  %{python3_version}
