@@ -308,21 +308,7 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
   if (thread_id >= 0)
     log_queue_fifo_move_input_unlocked(self, thread_id);
 
-  if (log_queue_fifo_get_length(s) < self->log_fifo_size)
-    {
-      node = log_msg_alloc_queue_node(msg, path_options);
-
-      iv_list_add_tail(&node->list, &self->wait_queue.items);
-      self->wait_queue.len++;
-      log_queue_push_notify(&self->super);
-      log_queue_queued_messages_inc(&self->super);
-
-      log_queue_memory_usage_add(&self->super, log_msg_get_size(msg));
-      g_static_mutex_unlock(&self->super.lock);
-
-      log_msg_unref(msg);
-    }
-  else
+  if (log_queue_fifo_get_length(s) >= self->log_fifo_size)
     {
       stats_counter_inc(self->super.dropped_messages);
       g_static_mutex_unlock(&self->super.lock);
@@ -336,8 +322,20 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
                 evt_tag_int("queue_len", log_queue_fifo_get_length(&self->super)),
                 evt_tag_int("log_fifo_size", self->log_fifo_size),
                 evt_tag_str("persist_name", self->super.persist_name));
+      return;
     }
-  return;
+
+  node = log_msg_alloc_queue_node(msg, path_options);
+
+  iv_list_add_tail(&node->list, &self->wait_queue.items);
+  self->wait_queue.len++;
+  log_queue_push_notify(&self->super);
+  log_queue_queued_messages_inc(&self->super);
+
+  log_queue_memory_usage_add(&self->super, log_msg_get_size(msg));
+  g_static_mutex_unlock(&self->super.lock);
+
+  log_msg_unref(msg);
 }
 
 /*
