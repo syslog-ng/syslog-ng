@@ -366,3 +366,59 @@ Test(logqueue, log_queue_fifo_should_drop_only_non_flow_controlled_messages,
   _unregister_stats_counters(q);
   log_queue_unref(q);
 }
+
+static gpointer
+_flow_control_feed_thread(gpointer args)
+{
+  LogQueue *q = args;
+  gint fifo_size = 5;
+  LogPathOptions flow_controlled_path = LOG_PATH_OPTIONS_INIT;
+  flow_controlled_path.flow_control_requested = TRUE;
+
+  LogPathOptions non_flow_controlled_path = LOG_PATH_OPTIONS_INIT;
+  non_flow_controlled_path.flow_control_requested = FALSE;
+
+  iv_init();
+
+  main_loop_worker_thread_start(NULL);
+
+  fed_messages = 0;
+  acked_messages = 0;
+  feed_empty_messages(q, &flow_controlled_path, fifo_size);
+  feed_empty_messages(q, &non_flow_controlled_path, fifo_size);
+
+  feed_empty_messages(q, &non_flow_controlled_path, 1);
+  feed_empty_messages(q, &flow_controlled_path, fifo_size);
+  feed_empty_messages(q, &non_flow_controlled_path, 2);
+  feed_empty_messages(q, &flow_controlled_path, fifo_size);
+
+  main_loop_worker_invoke_batch_callbacks();
+  main_loop_worker_thread_stop();
+  iv_deinit();
+  return NULL;
+}
+
+Test(logqueue, log_queue_fifo_should_drop_only_non_flow_controlled_messages_threaded,
+     .description = "Flow-controlled messages should never be dropped (using input queues with threads")
+{
+  gint fifo_size = 5;
+  log_queue_set_max_threads(1);
+  LogQueue *q = log_queue_fifo_new(fifo_size, NULL);
+  log_queue_set_use_backlog(q, TRUE);
+  _register_stats_counters(q);
+
+  GThread *thread = g_thread_create(_flow_control_feed_thread, q, TRUE, NULL);
+  g_thread_join(thread);
+
+  cr_assert_eq(stats_counter_get(q->dropped_messages), 3);
+
+  send_some_messages(q, fed_messages);
+  log_queue_ack_backlog(q, fed_messages);
+
+  cr_assert_eq(fed_messages, acked_messages,
+               "did not receive enough acknowledgements: fed_messages=%d, acked_messages=%d",
+               fed_messages, acked_messages);
+
+  _unregister_stats_counters(q);
+  log_queue_unref(q);
+}
