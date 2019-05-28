@@ -307,3 +307,62 @@ Test(logqueue, log_queue_fifo_rewind_all_and_memory_usage)
 
   log_queue_unref(q);
 }
+
+static void
+_register_stats_counters(LogQueue *q)
+{
+  StatsClusterKey sc_key;
+  stats_cluster_logpipe_key_set(&sc_key, SCS_DESTINATION, q->persist_name, NULL);
+
+  stats_lock();
+  log_queue_register_stats_counters(q, 0, &sc_key);
+  stats_unlock();
+}
+
+static void
+_unregister_stats_counters(LogQueue *q)
+{
+  StatsClusterKey sc_key;
+  stats_cluster_logpipe_key_set(&sc_key, SCS_DESTINATION, q->persist_name, NULL);
+
+  stats_lock();
+  log_queue_unregister_stats_counters(q, &sc_key);
+  stats_unlock();
+}
+
+Test(logqueue, log_queue_fifo_should_drop_only_non_flow_controlled_messages,
+     .description = "Flow-controlled messages should never be dropped")
+{
+  LogPathOptions flow_controlled_path = LOG_PATH_OPTIONS_INIT;
+  flow_controlled_path.flow_control_requested = TRUE;
+
+  LogPathOptions non_flow_controlled_path = LOG_PATH_OPTIONS_INIT;
+  non_flow_controlled_path.flow_control_requested = FALSE;
+
+  gint fifo_size = 5;
+  LogQueue *q = log_queue_fifo_new(fifo_size, NULL);
+  log_queue_set_use_backlog(q, TRUE);
+  _register_stats_counters(q);
+
+  fed_messages = 0;
+  acked_messages = 0;
+  feed_empty_messages(q, &flow_controlled_path, fifo_size);
+  feed_empty_messages(q, &non_flow_controlled_path, fifo_size);
+
+  feed_empty_messages(q, &non_flow_controlled_path, 1);
+  feed_empty_messages(q, &flow_controlled_path, fifo_size);
+  feed_empty_messages(q, &non_flow_controlled_path, 2);
+  feed_empty_messages(q, &flow_controlled_path, fifo_size);
+
+  cr_assert_eq(stats_counter_get(q->dropped_messages), 3);
+
+  send_some_messages(q, fed_messages);
+  log_queue_ack_backlog(q, fed_messages);
+
+  cr_assert_eq(fed_messages, acked_messages,
+               "did not receive enough acknowledgements: fed_messages=%d, acked_messages=%d",
+               fed_messages, acked_messages);
+
+  _unregister_stats_counters(q);
+  log_queue_unref(q);
+}
