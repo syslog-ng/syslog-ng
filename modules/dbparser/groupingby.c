@@ -367,6 +367,8 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
 
       LogMessage *genmsg = grouping_by_update_context_and_generate_msg(self, context);
 
+      g_static_mutex_unlock(&self->lock);
+
       if (genmsg)
         {
           stateful_parser_emit_synthetic(&self->super, genmsg);
@@ -374,8 +376,6 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
         }
 
       log_msg_write_protect(msg);
-
-      g_static_mutex_unlock(&self->lock);
 
       return TRUE;
     }
