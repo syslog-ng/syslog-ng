@@ -27,11 +27,26 @@
 
 #include "logtransport.h"
 
+#define BATCH_SIZE 64
+#define BUFFER_LEN 65507
+
 typedef struct _LogTransportSocket LogTransportSocket;
 struct _LogTransportSocket
 {
   LogTransport super;
 };
+
+typedef struct _LogTransportDGramSocket LogTransportDGramSocket;
+struct _LogTransportDGramSocket
+{
+  LogTransportSocket super;
+  gsize  batch_size;
+  gsize  buffer_len;
+  gint   msg_idx;
+  gint   msg_cnt;
+  struct mmsghdr *msgs;
+};
+
 
 void log_transport_dgram_socket_init_instance(LogTransportSocket *self, gint fd);
 LogTransport *log_transport_dgram_socket_new(gint fd);
