@@ -257,6 +257,23 @@ grouping_by_generate_synthetic_msg(GroupingBy *self, CorrellationContext *contex
   return msg;
 }
 
+static LogMessage *
+grouping_by_update_context_and_generate_msg(GroupingBy *self, CorrellationContext *context)
+{
+  if (self->sort_key_template)
+    correllation_context_sort(context, self->sort_key_template);
+
+  LogMessage *msg = grouping_by_generate_synthetic_msg(self, context);
+
+  g_hash_table_remove(self->correllation->state, &context->key);
+
+  /* correllation_context_free is automatically called when returning from
+     this function by the timerwheel code as a destroy notify
+     callback. */
+
+  return msg;
+}
+
 static void
 grouping_by_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data)
 {
@@ -268,21 +285,12 @@ grouping_by_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data)
             evt_tag_str("context-id", context->key.session_id),
             log_pipe_location_tag(&self->super.super.super));
 
-  if (self->sort_key_template)
-    correllation_context_sort(context, self->sort_key_template);
-
-  LogMessage *msg = grouping_by_generate_synthetic_msg(self, context);
+  LogMessage *msg = grouping_by_update_context_and_generate_msg(self, context);
   if (msg)
     {
       stateful_parser_emit_synthetic(&self->super, msg);
       log_msg_unref(msg);
     }
-
-  g_hash_table_remove(self->correllation->state, &context->key);
-
-  /* correllation_context_free is automatically called when returning from
-     this function by the timerwheel code as a destroy notify
-     callback. */
 }
 
 
@@ -356,7 +364,14 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
       /* close down state */
       if (context->timer)
         timer_wheel_del_timer(self->timer_wheel, context->timer);
-      grouping_by_expire_entry(self->timer_wheel, timer_wheel_get_time(self->timer_wheel), context);
+
+      LogMessage *genmsg = grouping_by_update_context_and_generate_msg(self, context);
+
+      if (genmsg)
+        {
+          stateful_parser_emit_synthetic(&self->super, genmsg);
+          log_msg_unref(genmsg);
+        }
     }
   else
     {
