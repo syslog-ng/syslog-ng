@@ -30,7 +30,7 @@ static gssize
 log_transport_dgram_socket_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
 {
   LogTransportDGramSocket *self = (LogTransportDGramSocket *) s;
-  gint rc;
+  gint rc = 0;
   struct mmsghdr msg;
 
   if (self->msg_cnt == 0)
