@@ -25,6 +25,7 @@
 #include "template/templates.h"
 #include "logmsg/logmsg.h"
 #include "logpipe.h"
+#include "scratch-buffers.h"
 
 void
 synthetic_message_set_inherit_mode(SyntheticMessage *self, SyntheticMessageInheritMode inherit_mode)
@@ -126,7 +127,8 @@ synthetic_message_apply(SyntheticMessage *self, CorrellationContext *context, Lo
 
   if (self->values)
     {
-      GString *buffer = g_string_sized_new(256);
+      ScratchBuffersMarker marker;
+      GString *buffer = scratch_buffers_alloc_and_mark(&marker);
       for (i = 0; i < self->values->len; i++)
         {
           log_template_format_with_context(g_ptr_array_index(self->values, i),
@@ -138,7 +140,7 @@ synthetic_message_apply(SyntheticMessage *self, CorrellationContext *context, Lo
                                     buffer->str,
                                     buffer->len);
         }
-      g_string_free(buffer, TRUE);
+      scratch_buffers_reclaim_marked(marker);
     }
 
 }
