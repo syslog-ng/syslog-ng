@@ -420,6 +420,37 @@ signal_callback_handler(int signum)
   ERROR("Send error Broken pipe, results may be skewed. %d\n",signum);
 }
 
+static void
+rate_change_handler(int signum)
+{
+  switch(signum)
+    {
+    case SIGUSR1:
+      global_plugin_option.rate *= 2;
+      break;
+    case SIGUSR2:
+    {
+      int proposed_new_rate = global_plugin_option.rate / 2;
+      global_plugin_option.rate = proposed_new_rate > 0 ? proposed_new_rate: 1;
+      break;
+    }
+    default:
+      break;
+    }
+}
+
+static void
+setup_rate_change_signals(void)
+{
+  struct sigaction sa;
+  sa.sa_handler = rate_change_handler;
+  sigemptyset(&sa.sa_mask);
+  sa.sa_flags = SA_RESTART;
+
+  sigaction(SIGUSR1, &sa, NULL);
+  sigaction(SIGUSR2, &sa, NULL);
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -427,6 +458,7 @@ main(int argc, char *argv[])
   GOptionContext *ctx = g_option_context_new(" target port");
 
   signal(SIGPIPE, signal_callback_handler);
+  setup_rate_change_signals();
 
   int plugin_num = enumerate_plugins(SYSLOG_NG_PATH_LOGGEN_PLUGIN_DIR, plugin_array, ctx);
   DEBUG("%d plugin successfuly loaded\n",plugin_num);
