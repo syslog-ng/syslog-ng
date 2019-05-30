@@ -450,7 +450,9 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
 
     case M_LOGHOST:
     {
-      const gchar *hname = get_local_hostname_fqdn();
+      const gchar *hname = opts->use_fqdn
+                           ? get_local_hostname_fqdn()
+                           : get_local_hostname_short();
 
       result_append(result, hname, -1, escape);
       break;
