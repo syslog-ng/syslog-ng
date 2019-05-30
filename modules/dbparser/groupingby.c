@@ -296,14 +296,10 @@ grouping_by_format_persist_name(LogParser *s)
   return persist_name;
 }
 
-static gboolean
-_perform_groupby(GroupingBy *self, LogMessage *msg)
+static CorrellationContext *
+_lookup_or_create_context(GroupingBy *self, LogMessage *msg)
 {
-
-  g_static_mutex_lock(&self->lock);
-  grouping_by_set_time(self, &msg->timestamps[LM_TS_STAMP]);
-
-  CorrellationContext *context = NULL;
+  CorrellationContext *context;
   CorrellationKey key;
   GString *buffer = g_string_sized_new(32);
 
@@ -334,6 +330,19 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
                 log_pipe_location_tag(&self->super.super.super));
     }
 
+  g_string_free(buffer, TRUE);
+
+  return context;
+}
+
+static gboolean
+_perform_groupby(GroupingBy *self, LogMessage *msg)
+{
+
+  g_static_mutex_lock(&self->lock);
+  grouping_by_set_time(self, &msg->timestamps[LM_TS_STAMP]);
+
+  CorrellationContext *context = _lookup_or_create_context(self, msg);
   g_ptr_array_add(context->messages, log_msg_ref(msg));
 
   if (_evaluate_trigger(self, context))
@@ -364,8 +373,6 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
     }
 
   log_msg_write_protect(msg);
-
-  g_string_free(buffer, TRUE);
 
   g_static_mutex_unlock(&self->lock);
 
