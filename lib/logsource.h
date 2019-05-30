@@ -72,6 +72,8 @@ struct _LogSource
   DynamicWindow dynamic_window;
   /* full_window_size = static + dynamic */
   gsize full_window_size;
+  atomic_gssize window_size_to_be_reclaimed;
+  atomic_gssize pending_reclaimed;
   StatsCounterItem *last_message_seen;
   StatsCounterItem *recvd_messages;
   guint32 last_ack_count;
