@@ -121,22 +121,31 @@ tf_geoip_maxminddb_call(LogTemplateFunction *self, gpointer s, const LogTemplate
 
   if (!mmdb_result.found_entry)
     {
-      mmdb_problem_to_error(_gai_error, mmdb_error, "tflookup");
-      return;
+      goto error;
     }
 
   MMDB_entry_data_s entry_data;
   mmdb_error = MMDB_aget_value(&mmdb_result.entry, &entry_data, (const char *const* const)state->entry_path);
   if (mmdb_error != MMDB_SUCCESS)
     {
-      mmdb_problem_to_error(0, mmdb_error, "tfget_value");
-      return;
+      goto error;
     }
 
   if (entry_data.has_data)
     append_mmdb_entry_data_to_gstring(result, &entry_data);
 
   return;
+
+error:
+  if (_gai_error != 0)
+    msg_error("$(geoip2): getaddrinfo failed",
+              evt_tag_str("ip", args->argv[0]->str),
+              evt_tag_str("gai_error", gai_strerror(_gai_error)));
+
+  if (mmdb_error != MMDB_SUCCESS )
+    msg_error("$(geoip2): maxminddb error",
+              evt_tag_str("ip", args->argv[0]->str),
+              evt_tag_str("error", MMDB_strerror(mmdb_error)));
 }
 
 static void

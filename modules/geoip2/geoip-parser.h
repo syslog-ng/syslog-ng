@@ -29,7 +29,6 @@
 #include <maxminddb.h>
 
 LogParser *maxminddb_parser_new(GlobalConfig *cfg);
-void mmdb_problem_to_error(const int _gai_error, const int mmdb_error, gchar *where);
 void geoip_parser_set_database_path(LogParser *s, const gchar *database);
 void geoip_parser_set_prefix(LogParser *s, const gchar *prefix);
 
