@@ -36,6 +36,7 @@
 #include "logmsg/logmsg.h"
 #include "apphook.h"
 #include "plugin.h"
+#include "scratch-buffers.h"
 #include <criterion/criterion.h>
 
 #include <time.h>
@@ -68,20 +69,21 @@ level_range(const gchar *from, const gchar *to)
 }
 
 FilterExprNode *
-compile_pattern(FilterRE *f, const gchar *regexp, const gchar *type, gint flags)
+compile_pattern(FilterExprNode *f, const gchar *regexp, const gchar *type, gint flags)
 {
+  LogMatcherOptions *matcher_options = filter_re_get_matcher_options(f);
   gboolean result;
 
-  log_matcher_options_defaults(&f->matcher_options);
-  f->matcher_options.flags = flags;
-  log_matcher_options_set_type(&f->matcher_options, type);
+  log_matcher_options_defaults(matcher_options);
+  matcher_options->flags = flags;
+  log_matcher_options_set_type(matcher_options, type);
 
   result = filter_re_compile_pattern(f, configuration, regexp, NULL);
 
   if (result)
-    return &f->super;
+    return f;
 
-  filter_expr_unref(&f->super);
+  filter_expr_unref(f);
   return NULL;
 }
 
@@ -233,6 +235,7 @@ setup(void)
 void
 teardown(void)
 {
+  scratch_buffers_explicit_gc();
   app_shutdown();
 }
 

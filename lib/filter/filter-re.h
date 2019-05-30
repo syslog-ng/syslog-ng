@@ -28,20 +28,15 @@
 #include "filter-expr.h"
 #include "logmatcher.h"
 
-typedef struct _FilterRE
-{
-  FilterExprNode super;
-  NVHandle value_handle;
-  LogMatcherOptions matcher_options;
-  LogMatcher *matcher;
-} FilterRE;
+LogMatcherOptions *filter_re_get_matcher_options(FilterExprNode *s);
+gboolean filter_re_compile_pattern(FilterExprNode *s, GlobalConfig *cfg, const gchar *re, GError **error);
 
-typedef struct _FilterMatch FilterMatch;
+FilterExprNode *filter_re_new(NVHandle value_handle);
+FilterExprNode *filter_source_new(void);
 
-gboolean filter_re_compile_pattern(FilterRE *self, GlobalConfig *cfg, const gchar *re, GError **error);
-
-FilterRE *filter_re_new(NVHandle value_handle);
-FilterRE *filter_source_new(void);
-FilterRE *filter_match_new(void);
+gboolean filter_match_is_usage_obsolete(FilterExprNode *s);
+void filter_match_set_value_handle(FilterExprNode *s, NVHandle value_handle);
+void filter_match_set_template_ref(FilterExprNode *s, LogTemplate *template);
+FilterExprNode *filter_match_new(void);
 
 #endif
