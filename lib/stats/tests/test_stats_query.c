@@ -36,6 +36,10 @@
 
 #include <string.h>
 
+guint SCS_FILE;
+guint SCS_PIPE;
+guint SCS_TCP;
+
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
 typedef struct _CounterHashContent
@@ -53,6 +57,15 @@ typedef struct _QueryTestCase
 } QueryTestCase;
 
 typedef void(*ClusterKeySet)(StatsClusterKey *, guint16, const gchar *, const gchar *);
+
+static void
+setup(void)
+{
+  app_startup();
+  SCS_FILE = stats_register_type("file");
+  SCS_PIPE = stats_register_type("pipe");
+  SCS_TCP = stats_register_type("tcp");
+}
 
 static void
 _add_two_to_value(GList *counters, StatsCounterItem **result)
@@ -116,6 +129,8 @@ _register_single_counter_with_name(void)
 static void
 _initialize_counter_hash(void)
 {
+  setup();
+
   const CounterHashContent logpipe_cluster_counters[] =
   {
     {SCS_CENTER, "guba.polo", "frozen", SC_TYPE_SUPPRESSED},
@@ -131,7 +146,6 @@ _initialize_counter_hash(void)
     {SCS_GLOBAL, "", "guba", SC_TYPE_SINGLE_VALUE}
   };
 
-  app_startup();
   _register_counters(logpipe_cluster_counters, ARRAY_SIZE(logpipe_cluster_counters), stats_cluster_logpipe_key_set);
   _register_counters(single_cluster_counters, ARRAY_SIZE(single_cluster_counters), stats_cluster_single_key_set);
   _register_single_counter_with_name();
@@ -202,8 +216,7 @@ _test_format_list(StatsCounterItem *ctr, gpointer user_data)
   return TRUE;
 }
 
-
-TestSuite(cluster_query_key, .init = app_startup, .fini = app_shutdown);
+TestSuite(cluster_query_key, .init = setup, .fini = app_shutdown);
 
 Test(cluster_query_key, test_global_key)
 {

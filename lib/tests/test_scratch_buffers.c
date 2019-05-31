@@ -20,6 +20,7 @@
  * COPYING for details.
  *
  */
+#include "mainloop.h"
 #include "scratch-buffers.h"
 #include "stats/stats-registry.h"
 #include <criterion/criterion.h>
@@ -158,6 +159,7 @@ Test(scratch_buffers, stats_counters_are_updated)
 static void
 setup(void)
 {
+  main_loop_thread_resource_init();
   g_thread_init(NULL);
   stats_init();
   scratch_buffers_global_init();

@@ -27,6 +27,14 @@
 #include "stats/stats-cluster-single.h"
 #include "apphook.h"
 
+guint SCS_FILE;
+
+static void
+setup(void)
+{
+  app_startup();
+  SCS_FILE = stats_register_type("file");
+}
 
 Test(stats_cluster, test_stats_cluster_single)
 {
@@ -251,4 +259,4 @@ Test(stats_cluster, test_register_type)
   cr_assert_eq(first, same);
 }
 
-TestSuite(stats_cluster, .init=app_startup, .fini = app_shutdown);
+TestSuite(stats_cluster, .init=setup, .fini = app_shutdown);

@@ -681,6 +681,8 @@ snmpdest_dd_init(LogPipe *s)
 
   self->queue = log_dest_driver_acquire_queue(&self->super, snmpdest_dd_format_persist_name(self));
 
+  guint SCS_SNMP = stats_register_type("snmp");
+
   stats_lock();
   stats_cluster_logpipe_key_set(&self->sc_key_queued, SCS_SNMP, snmpdest_dd_format_stats_instance(self), NULL );
   stats_register_counter(1, &self->sc_key_queued, SC_TYPE_QUEUED, &self->queued_messages);

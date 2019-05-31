@@ -28,15 +28,25 @@
 #include <string.h>
 
 GPtrArray *stats_types;
-static const gchar *module_names[];
 
 void
 stats_cluster_init(void)
 {
   g_assert(!stats_types);
   stats_types = g_ptr_array_new_with_free_func(g_free);
-  for (int i = 0; i < SCS_MAX; i++)
-    g_ptr_array_add(stats_types, g_strdup(module_names[i]));
+
+  g_assert(stats_register_type("none") == 0);
+  g_assert(stats_register_type("group") == SCS_GROUP);
+  g_assert(stats_register_type("global") == SCS_GLOBAL);
+  g_assert(stats_register_type("center") == SCS_CENTER);
+  g_assert(stats_register_type("host") == SCS_HOST);
+  g_assert(stats_register_type("sender") == SCS_SENDER);
+  g_assert(stats_register_type("program") == SCS_PROGRAM);
+  g_assert(stats_register_type("severity") == SCS_SEVERITY);
+  g_assert(stats_register_type("facility") == SCS_FACILITY);
+  g_assert(stats_register_type("tag") == SCS_TAG);
+  g_assert(stats_register_type("filter") == SCS_FILTER);
+  g_assert(stats_register_type("parser") == SCS_PARSER);
 }
 
 gboolean
@@ -118,54 +128,6 @@ stats_cluster_get_type_name(StatsCluster *self, gint type)
 
   return "";
 }
-
-static const gchar *module_names[] =
-{
-  "none",
-  "file",
-  "pipe",
-  "tcp",
-  "udp",
-  "tcp6",
-  "udp6",
-  "unix-stream",
-  "unix-dgram",
-  "syslog",
-  "network",
-  "internal",
-  "logstore",
-  "program",
-  "sql",
-  "sun-streams",
-  "usertty",
-  "group",
-  "center",
-  "host",
-  "global",
-  "mongodb",
-  "class",
-  "rule_id",
-  "tag",
-  "severity",
-  "facility",
-  "sender",
-  "smtp",
-  "amqp",
-  "stomp",
-  "redis",
-  "snmp",
-  "riemann",
-  "journald",
-  "java",
-  "http",
-  "python",
-  "filter",
-  "parser",
-  "monitoring",
-  "stdin",
-  "openbsd",
-  "kafka"
-};
 
 static const gchar *
 _get_module_name(gint source)

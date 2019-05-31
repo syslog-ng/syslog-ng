@@ -31,6 +31,13 @@
 
 #include <unistd.h>
 
+guint SCS_TCP;
+guint SCS_TCP6;
+guint SCS_UDP;
+guint SCS_UDP6;
+guint SCS_NETWORK;
+guint SCS_SYSLOG;
+
 static inline void
 assert_transport_mapper_inet_server_port(TransportMapper *s, gint server_port)
 {
@@ -337,6 +344,12 @@ static void
 setup(void)
 {
   app_startup();
+  SCS_TCP = stats_register_type("tcp");
+  SCS_TCP6 = stats_register_type("tcp6");
+  SCS_UDP = stats_register_type("udp");
+  SCS_UDP6 = stats_register_type("udp6");
+  SCS_NETWORK = stats_register_type("network");
+  SCS_SYSLOG = stats_register_type("syslog");
 }
 
 static void

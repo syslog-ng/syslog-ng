@@ -424,7 +424,7 @@ kafka_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.generate_persist_name = _format_persist_name;
 
   self->super.format_stats_instance = _format_stats_instance;
-  self->super.stats_source = SCS_KAFKA;
+  self->super.stats_source = stats_register_type("kafka");
   self->super.worker.construct = _construct_worker;
   /* one minute */
   self->flush_timeout_on_shutdown = 60000;
