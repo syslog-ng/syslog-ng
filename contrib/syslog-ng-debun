@@ -846,7 +846,7 @@ acquire_syslog_all () {
 	acquire_syslog_var
 	acquire_syslog_ldinfo
 	acquire_syslog_startup_method
-
+	acquire_syslog_config_files
 }
 
 acquire_syslog_nprv () {
@@ -855,6 +855,47 @@ acquire_syslog_nprv () {
 	acquire_syslog_info
 	acquire_syslog_ldinfo
 	acquire_syslog_startup_method
+}
+
+remove_ssl_passwords_from_file () {
+	#
+	# Double quotes are used because escaping single quotes within a single quoted string is ugly.
+	# The goal is matching substrings that look like this, to replace the password string, and preserve original formatting:
+	# ssl.keystore.password='password-string' -->  ssl.keystore.password='___PASSWORD_REMOVED___'
+	# ssl.key.password='password-string' -->  ssl.key.password='___PASSWORD_REMOVED___'
+	# ssl.truststore.password='password-string' -->  ssl.truststore.password='___PASSWORD_REMOVED___'
+	###
+	
+	${sed_equivalent_cmd} "s|ssl.keystore.password=([\"']?)[^)\"']+([\"']?)|ssl.keystore.password=\1___PASSWORD_REMOVED___\2|g" <"${1}" >"${1}.bak1" 2>/dev/null
+	${sed_equivalent_cmd} "s|ssl.key.password=([\"']?)[^)\"']+([\"']?)|ssl.key.password=\1___PASSWORD_REMOVED___\2|g" <"${1}.bak1" >"${1}.bak2" 2>/dev/null
+	${sed_equivalent_cmd} "s|ssl.truststore.password=([\"']?)[^)\"']+([\"']?)|ssl.truststore.password=\1___PASSWORD_REMOVED___\2|g" <"${1}.bak2" >"${1}.bak3" 2>/dev/null
+	mv "${1}.bak3" "${1}"	
+	rm -f "${1}".bak*
+}
+
+copy_kafka_properties_file() {
+	while read FILE; do
+		if [ -f "$FILE" ]; then
+			filename=$(echo ${FILE} | ${sed_equivalent_cmd} "s|[\/]|_|g")
+			kafka_file="syslog-ng.kafka.properties_${filename}"
+			cp "${FILE}" "${tmpdir}/${kafka_file}" && remove_ssl_passwords_from_file "${tmpdir}/${kafka_file}"
+		fi
+	done
+}
+
+acquire_kafka_properties_file () {
+	if [ -f "${tmpdir}/syslog-ng.ctl.running.conf" ]; then	
+		${sed_equivalent_cmd} "s|#.*||g" ${tmpdir}/syslog-ng.ctl.running.conf | perl -pe "s|[\r\n\f\v]||" | grep -oP "kafka([ \t\r\n\v\f]*)\((.*?)\};" | grep -oP "properties-file\((.*?)\)" | ${sed_equivalent_cmd} "s|properties-file||g" | ${sed_equivalent_cmd} "s|([\t]*)([\`\"'\(\)]?)||g" | copy_kafka_properties_file
+	else
+		find ${tmpdir}/config -type f -name "*.conf*" | \
+		while read FILE; do \
+			${sed_equivalent_cmd} "s|#.*||g" $FILE | perl -pe "s|[\r\n\f\v]||" | grep -oP "kafka([ \t\r\n\v\f]*)\((.*?)\};" | grep -oP "properties-file\((.*?)\)" | ${sed_equivalent_cmd} "s|properties-file||g" | ${sed_equivalent_cmd} "s|([\t]*)([\`\"'\(\)]?)||g" | copy_kafka_properties_file
+		done
+	fi
+}
+
+acquire_syslog_config_files () {
+	acquire_kafka_properties_file
 }
 
 fhs_set_linux () {
@@ -1680,5 +1721,6 @@ if [ -n "$privacy_mode" ]; then
 else
 	acquire_syslog_all
 fi
+
 [ -n "$debug_mode" ] && run_debug
 debun_final
