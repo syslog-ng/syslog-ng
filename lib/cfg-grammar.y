@@ -479,7 +479,7 @@ start
 	;
 
 stmts
-        : stmt ';' stmts
+        : stmt semicolons stmts
 	|
 	;
 
@@ -863,7 +863,7 @@ template_fn
 	;
 
 template_items
-	: template_item ';' template_items
+	: template_item semicolons template_items
 	|
 	;
 
@@ -951,7 +951,7 @@ block_arg
         ;
 
 options_items
-	: options_item ';' options_items
+	: options_item semicolons options_items
 	|
 	;
 
