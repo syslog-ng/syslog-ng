@@ -240,4 +240,4 @@ Test(stats_cluster, test_get_counter)
   stats_cluster_free(sc);
 }
 
-TestSuite(stats_cluster);
+TestSuite(stats_cluster, .init=stats_cluster_init, .fini = stats_cluster_deinit);

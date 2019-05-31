@@ -26,6 +26,25 @@
 #include <assert.h>
 #include <string.h>
 
+GPtrArray *stats_types;
+static const gchar *module_names[];
+
+void
+stats_cluster_init(void)
+{
+  g_assert(!stats_types);
+  stats_types = g_ptr_array_new_with_free_func(g_free);
+  for (int i = 0; i < SCS_MAX; i++)
+    g_ptr_array_add(stats_types, g_strdup(module_names[i]));
+}
+
+void
+stats_cluster_deinit(void)
+{
+  g_ptr_array_free(stats_types, TRUE);
+  stats_types = NULL;
+}
+
 static StatsClusterKey *
 _clone_stats_cluster_key(StatsClusterKey *dst, const StatsClusterKey *src)
 {
@@ -77,58 +96,60 @@ stats_cluster_get_type_name(StatsCluster *self, gint type)
   return "";
 }
 
+static const gchar *module_names[] =
+{
+  "none",
+  "file",
+  "pipe",
+  "tcp",
+  "udp",
+  "tcp6",
+  "udp6",
+  "unix-stream",
+  "unix-dgram",
+  "syslog",
+  "network",
+  "internal",
+  "logstore",
+  "program",
+  "sql",
+  "sun-streams",
+  "usertty",
+  "group",
+  "center",
+  "host",
+  "global",
+  "mongodb",
+  "class",
+  "rule_id",
+  "tag",
+  "severity",
+  "facility",
+  "sender",
+  "smtp",
+  "amqp",
+  "stomp",
+  "redis",
+  "snmp",
+  "riemann",
+  "journald",
+  "java",
+  "http",
+  "python",
+  "filter",
+  "parser",
+  "monitoring",
+  "stdin",
+  "openbsd",
+  "kafka"
+};
+
 static const gchar *
 _get_module_name(gint source)
 {
-  static const gchar *module_names[] =
-  {
-    "none",
-    "file",
-    "pipe",
-    "tcp",
-    "udp",
-    "tcp6",
-    "udp6",
-    "unix-stream",
-    "unix-dgram",
-    "syslog",
-    "network",
-    "internal",
-    "logstore",
-    "program",
-    "sql",
-    "sun-streams",
-    "usertty",
-    "group",
-    "center",
-    "host",
-    "global",
-    "mongodb",
-    "class",
-    "rule_id",
-    "tag",
-    "severity",
-    "facility",
-    "sender",
-    "smtp",
-    "amqp",
-    "stomp",
-    "redis",
-    "snmp",
-    "riemann",
-    "journald",
-    "java",
-    "http",
-    "python",
-    "filter",
-    "parser",
-    "monitoring",
-    "stdin",
-    "openbsd",
-    "kafka"
-  };
-  G_STATIC_ASSERT(sizeof(module_names)/sizeof(module_names[0])==SCS_MAX);
-  return module_names[source & SCS_SOURCE_MASK];
+  gint type = source & SCS_SOURCE_MASK;
+  g_assert(type < stats_types->len);
+  return g_ptr_array_index(stats_types, type);
 }
 
 
