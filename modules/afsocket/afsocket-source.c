@@ -527,6 +527,7 @@ _on_dynamic_window_timer_elapsed(gpointer cookie)
       AFSocketSourceConnection *conn = (AFSocketSourceConnection *) conn_it->data;
       if (self->dynamic_window_timer_tick >= self->dynamic_window_realloc_ticks)
         {
+          self->dynamic_window_ctr->balanced_window = self->dynamic_window_ctr->iw_size / self->num_connections;
           log_source_schedule_dynamic_window_realloc(&conn->reader->super);
         }
       else
