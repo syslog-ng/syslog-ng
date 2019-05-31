@@ -36,6 +36,7 @@ struct _DynamicWindowCounter
 
   gsize iw_size;
   gsize window;
+  gsize balanced_window;//target
 };
 
 DynamicWindowCounter *dynamic_window_counter_new(gsize iw_size);
