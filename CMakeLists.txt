@@ -166,6 +166,7 @@ set(CMAKE_REQUIRED_LIBRARIES ${GLIB_LIBRARIES})
 check_symbol_exists(g_list_copy_deep "glib.h" SYSLOG_NG_HAVE_G_LIST_COPY_DEEP)
 check_symbol_exists(g_queue_free_full "glib.h" SYSLOG_NG_HAVE_G_QUEUE_FREE_FULL)
 check_symbol_exists(g_list_free_full "glib.h" SYSLOG_NG_HAVE_G_LIST_FREE_FULL)
+check_symbol_exists(g_ptr_array_find_with_equal_func "glib.h" SYSLOG_NG_HAVE_G_PTR_ARRAY_FIND_WITH_EQUAL_FUNC)
 
 set (SYSLOG_NG_USE_CONST_IVYKIS_MOCK 1)
 external_or_find_package(IVYKIS REQUIRED)
@@ -255,7 +256,7 @@ if (WRAP_FOUND)
   set(SYSLOG_NG_ENABLE_TCP_WRAPPER 1)
 endif()
 
-if (LIBNET_FOUND)  
+if (LIBNET_FOUND)
   set(SYSLOG_NG_ENABLE_SPOOF_SOURCE 1)
 endif()
 

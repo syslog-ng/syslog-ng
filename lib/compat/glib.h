@@ -81,4 +81,11 @@ void g_queue_free_full(GQueue *queue, GDestroyNotify free_func);
 void g_list_free_full (GList *list, GDestroyNotify free_func);
 #endif
 
+#if !SYSLOG_NG_HAVE_G_PTR_ARRAY_FIND_WITH_EQUAL_FUNC
+gboolean g_ptr_array_find_with_equal_func (GPtrArray *haystack,
+                                           gconstpointer needle,
+                                           GEqualFunc equal_func,
+                                           guint *index_);
+#endif
+
 #endif
