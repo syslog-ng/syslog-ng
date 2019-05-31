@@ -96,17 +96,12 @@ snmp_dd_find_object_type(const gchar *type, gint *type_index)
   /* check the type */
   for (index = 0; index < object_types_count; ++index)
     if (!strcasecmp(type, snmp_obj_types[index].type))
-      break;
+      {
+        *type_index = index;
+        return TRUE;
+      }
 
-  if (index == object_types_count)
-    {
-      return FALSE;
-    }
-  else
-    {
-      *type_index = index;
-      return TRUE;
-    }
+  return FALSE;
 }
 
 static gchar
@@ -149,7 +144,7 @@ snmp_dd_compare_object_ids(gconstpointer a, gconstpointer b)
 }
 
 gboolean
-snmpdest_dd_set_snmp_obj(LogDriver *d, GlobalConfig *cfg, const gchar *oid, const gchar *type, const gchar *value)
+snmpdest_dd_set_snmp_obj(LogDriver *d, GlobalConfig *cfg, const gchar *objectid, const gchar *type, const gchar *value)
 {
   SNMPDestDriver *self = (SNMPDestDriver *)d;
   LogTemplate *template = NULL;
@@ -158,8 +153,7 @@ snmpdest_dd_set_snmp_obj(LogDriver *d, GlobalConfig *cfg, const gchar *oid, cons
   if (snmp_dd_find_object_type(type, &code) == FALSE)
     {
       msg_error("SNMP: invalid oid type",
-                evt_tag_str("oid", type),
-                NULL);
+                evt_tag_str("type", type));
       return FALSE;
     }
 
@@ -172,41 +166,38 @@ snmpdest_dd_set_snmp_obj(LogDriver *d, GlobalConfig *cfg, const gchar *oid, cons
 
       if (item != NULL)
         {
-          msg_error("SNMP: multiple Objectid", NULL);
+          msg_error("SNMP: multiple Objectid");
           return FALSE;
         }
     }
 
   /* register the string values */
-  GList *newitem = g_list_append(self->snmp_objs, g_strdup(oid));
-  if (!self->snmp_objs)
-    self->snmp_objs = newitem;
-  newitem = g_list_append(self->snmp_objs, g_strdup(type));
-  newitem = g_list_append(self->snmp_objs, g_strdup(value));
+  self->snmp_objs = g_list_append(self->snmp_objs, g_strdup(objectid));
+  self->snmp_objs = g_list_append(self->snmp_objs, g_strdup(type));
+  self->snmp_objs = g_list_append(self->snmp_objs, g_strdup(value));
 
   /* register the type code, therefore we won't need to calculate it for each incoming message */
   gint *pcode = g_new(gint, 1);
   *pcode = code;
-  newitem = g_list_append(self->snmp_codes, pcode);
-  if (!self->snmp_codes)
-    self->snmp_codes = newitem;
+
+  self->snmp_codes = g_list_append(self->snmp_codes, pcode);
 
   /* register the template */
   template = log_template_new(cfg, NULL);
   if (log_template_compile(template, value, NULL) == FALSE)
     {
-      msg_error("SNMP: invalid log template", NULL);
+      msg_error("SNMP: invalid log template");
+      log_template_unref(template);
+      return FALSE;
     }
 
-  newitem = g_list_append(self->snmp_templates, template);
-  if (!self->snmp_templates)
-    self->snmp_templates = newitem;
+  self->snmp_templates = g_list_append(self->snmp_templates, template);
 
   return TRUE;
 }
 
 void
-snmpdest_dd_set_trap_obj(LogDriver *d, GlobalConfig *cfg,const gchar *oid, const gchar *type, const gchar *value)
+snmpdest_dd_set_trap_obj(LogDriver *d, GlobalConfig *cfg,const gchar *objectid, const gchar *type, const gchar *value)
 {
   SNMPDestDriver *self = (SNMPDestDriver *)d;
 
@@ -214,7 +205,7 @@ snmpdest_dd_set_trap_obj(LogDriver *d, GlobalConfig *cfg,const gchar *oid, const
   g_free(self->trap_type);
   g_free(self->trap_value);
 
-  self->trap_oid = g_strdup(oid);
+  self->trap_oid = g_strdup(objectid);
   self->trap_type = g_strdup(type);
   self->trap_value = g_strdup(value);
 
@@ -358,8 +349,7 @@ sanitize_fs(GString *fs, gint code)
       if (replace)
         {
           msg_warning("SNMP: invalid number replaced with '0'",
-                      evt_tag_str("value", fs->str),
-                      NULL);
+                      evt_tag_str("value", fs->str));
           g_string_assign(fs, "0");
         }
     }
@@ -378,8 +368,7 @@ snmpdest_worker_insert(SNMPDestDriver *self, LogMessage *msg, LogPathOptions *pa
         {
           msg_warning("SNMP: error in session init, message dropped",
                       evt_tag_str("host", self->host),
-                      evt_tag_int("port", self->port),
-                      NULL);
+                      evt_tag_int("port", self->port));
           log_msg_unref(msg);
           return FALSE;
         }
@@ -410,8 +399,7 @@ snmpdest_worker_insert(SNMPDestDriver *self, LogMessage *msg, LogPathOptions *pa
       if (snmp_add_var(pdu, parsed_oids, oid_cnt, type_code, fs->str) != 0)
         {
           msg_warning("SNMP: error adding variable",
-                      evt_tag_str("value", fs->str),
-                      NULL);
+                      evt_tag_str("value", fs->str));
           log_msg_unref(msg);
           return FALSE;
         }
@@ -427,8 +415,7 @@ snmpdest_worker_insert(SNMPDestDriver *self, LogMessage *msg, LogPathOptions *pa
     {
       msg_error("SNMP: send error",
                 evt_tag_int("code", snmp_errno),
-                evt_tag_str("message", snmp_api_errstring(snmp_errno)),
-                NULL);
+                evt_tag_str("message", snmp_api_errstring(snmp_errno)));
       stats_counter_inc(self->dropped_messages);
       snmp_free_pdu(pdu);
     }
@@ -463,8 +450,7 @@ snmpdest_worker_thread(gpointer arg)
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
 
   msg_debug ("Worker thread started",
-             evt_tag_str("driver", self->super.super.id),
-             NULL);
+             evt_tag_str("driver", self->super.super.id));
 
   gboolean popped = TRUE; /* the success of the _pop_head() */
   while (!self->writer_thread_terminate)
@@ -494,8 +480,7 @@ snmpdest_worker_thread(gpointer arg)
     }
 
   msg_debug ("Worker thread finished",
-             evt_tag_str("driver", self->super.super.id),
-             NULL);
+             evt_tag_str("driver", self->super.super.id));
 
 }
 
@@ -709,8 +694,7 @@ snmpdest_dd_init(LogPipe *s)
 
   msg_verbose("Initializing SNMP destination",
               evt_tag_str("host", self->host),
-              evt_tag_int("port", self->port),
-              NULL);
+              evt_tag_int("port", self->port));
 
   GlobalConfig *cfg = log_pipe_get_config(s);
 
@@ -779,7 +763,7 @@ snmpdest_dd_free(LogPipe *d)
 
   g_list_free_full(self->snmp_objs, g_free);
   g_list_free_full(self->snmp_codes, g_free);
-  g_list_free_full(self->snmp_templates, g_free);
+  g_list_free_full(self->snmp_templates, (GDestroyNotify)log_template_unref);
   g_free(self->trap_oid);
   g_free(self->trap_type);
   g_free(self->trap_value);

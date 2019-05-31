@@ -35,9 +35,8 @@ static void
 _init(void)
 {
   app_startup();
-  cfg = cfg_new(VERSION_VALUE);
+  cfg = cfg_new_snippet();
   snmp_driver = (SNMPDestDriver *)snmpdest_dd_new(cfg);
-  cr_assert_eq(log_pipe_init((LogPipe *)&snmp_driver->super.super), TRUE);
 }
 
 static void
@@ -45,6 +44,7 @@ _teardown(void)
 {
   log_pipe_unref((LogPipe *)&snmp_driver->super.super);
   app_shutdown();
+  cfg_free(cfg);
 }
 
 TestSuite(test_snmp_dest, .init = _init, .fini = _teardown);
@@ -176,7 +176,7 @@ Test(test_snmp_dest, check_required_params)
 
 typedef struct _snmp_obj_test_param
 {
-  const gchar *oid;
+  const gchar *objectid;
   const gchar *type;
   const gchar *value;
   gboolean  expected_result;
@@ -187,43 +187,43 @@ ParameterizedTestParameters(test_snmp_dest, test_set_snmp_obj)
   static SnmpObjTestParam parser_params[] =
   {
     {
-      .oid = ".1.3.6.1.4.1.18372.3.1.1.1.1.3.0",
+      .objectid = ".1.3.6.1.4.1.18372.3.1.1.1.1.3.0",
       .type = "integer",
       .value = "123",
       .expected_result = TRUE
     },
     {
-      .oid = ".1.3.6.1.4.1.18372.3.1.1.1.1.3.0",
+      .objectid = ".1.3.6.1.4.1.18372.3.1.1.1.1.3.0",
       .type = "timeticks",
       .value = "0",
       .expected_result = TRUE
     },
     {
-      .oid = ".1.3.6.1.4.1.18372.3.1.1.1.1.1.0",
+      .objectid = ".1.3.6.1.4.1.18372.3.1.1.1.1.1.0",
       .type = "octetstring",
       .value = "Test SNMP trap",
       .expected_result = TRUE
     },
     {
-      .oid = ".1.3.6.1.4.1.18372.3.1.1.1.1.3.0",
+      .objectid = ".1.3.6.1.4.1.18372.3.1.1.1.1.3.0",
       .type = "counter32",
       .value = "1234567",
       .expected_result = TRUE
     },
     {
-      .oid = ".1.3.6.1.4.1.18372.3.1.1.1.1.3.0",
+      .objectid = ".1.3.6.1.4.1.18372.3.1.1.1.1.3.0",
       .type = "ipaddress",
       .value = "127.0.0.1",
       .expected_result = TRUE
     },
     {
-      .oid = ".1.3.6.1.6.3.1.1.4.1.0",
+      .objectid = ".1.3.6.1.6.3.1.1.4.1.0",
       .type = "objectid",
       .value = ".1.3.6.1.4.1.18372.3.1.1.1.2.1",
       .expected_result = TRUE
     },
     {
-      .oid = "my_object_id",
+      .objectid = "my_object_id",
       .type = "pacalporkolt",
       .value = "krumpli",
       .expected_result = FALSE
@@ -236,7 +236,7 @@ ParameterizedTest(SnmpObjTestParam *param, test_snmp_dest, test_set_snmp_obj)
 {
   LogDriver *driver = (LogDriver *)snmp_driver;
 
-  gboolean result = snmpdest_dd_set_snmp_obj(driver, cfg, param->oid, param->type, param->value);
+  gboolean result = snmpdest_dd_set_snmp_obj(driver, cfg, param->objectid, param->type, param->value);
 
   cr_assert_eq(result, param->expected_result);
 }
