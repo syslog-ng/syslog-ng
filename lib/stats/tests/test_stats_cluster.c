@@ -25,6 +25,7 @@
 #include <criterion/criterion.h>
 #include "stats/stats-cluster.h"
 #include "stats/stats-cluster-single.h"
+#include "apphook.h"
 
 
 Test(stats_cluster, test_stats_cluster_single)
@@ -240,4 +241,14 @@ Test(stats_cluster, test_get_counter)
   stats_cluster_free(sc);
 }
 
-TestSuite(stats_cluster, .init=stats_cluster_init, .fini = stats_cluster_deinit);
+Test(stats_cluster, test_register_type)
+{
+  guint first = stats_register_type("HAL");
+  guint second = stats_register_type("Just what do you think you are doing, Dave?");
+  cr_assert_eq(first + 1, second);
+
+  guint same = stats_register_type("HAL");
+  cr_assert_eq(first, same);
+}
+
+TestSuite(stats_cluster, .init=app_startup, .fini = app_shutdown);

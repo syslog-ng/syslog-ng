@@ -137,6 +137,7 @@ typedef void (*StatsForeachCounterFunc)(StatsCluster *sc, gint type, StatsCounte
 void stats_cluster_init(void);
 void stats_cluster_deinit(void);
 
+guint stats_register_type(const gchar *type_name);
 const gchar *stats_cluster_get_type_name(StatsCluster *self, gint type);
 const gchar *stats_cluster_get_component_name(StatsCluster *self, gchar *buf, gsize buf_len);
 

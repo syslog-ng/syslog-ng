@@ -22,6 +22,7 @@
  *
  */
 #include "stats/stats-cluster.h"
+#include "mainloop.h"
 
 #include <assert.h>
 #include <string.h>
@@ -37,6 +38,28 @@ stats_cluster_init(void)
   for (int i = 0; i < SCS_MAX; i++)
     g_ptr_array_add(stats_types, g_strdup(module_names[i]));
 }
+
+gboolean
+_types_equal(const gchar *a, const gchar *b)
+{
+  return !strcmp(a, b);
+};
+
+guint
+stats_register_type(const gchar *type_name)
+{
+  main_loop_assert_main_thread();
+  guint index = 0;
+  gboolean result = g_ptr_array_find_with_equal_func(stats_types, type_name, (GEqualFunc)_types_equal, &index);
+  if (result)
+    return index;
+
+  g_ptr_array_add(stats_types, g_strdup(type_name));
+
+  guint registered_number = stats_types->len - 1;
+  g_assert(registered_number <= SCS_SOURCE_MASK);
+  return registered_number;
+};
 
 void
 stats_cluster_deinit(void)
