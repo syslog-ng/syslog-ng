@@ -51,9 +51,9 @@ pcre-devel                      [centos, fedora]
     # librdkafka-dev (we are using a specific version from OBS and need to
     # list all interdependent packages as an apt preferences would prevent
     # installation otherwise
-    librdkafka1=1.0.0-1         [ubuntu-bionic]
-    librdkafka++1=1.0.0-1       [ubuntu-bionic]
-    librdkafka-dev=1.0.0-1      [ubuntu-bionic]
+    librdkafka1=1.0.1-1         [ubuntu-bionic]
+    librdkafka++1=1.0.1-1       [ubuntu-bionic]
+    librdkafka-dev=1.0.1-1      [ubuntu-bionic]
     librdkafka-devel		[fedora]
 
     # libmaxmindb-dev
