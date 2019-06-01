@@ -82,25 +82,26 @@ override_dh_auto_configure:
 		--libdir=/usr/lib/syslog-ng \
 		${SILENT_MODE} \
 		\
+		--with-ivykis=system \
+		--with-jsonc=system \
 		--enable-dynamic-linking \
 		--enable-ssl \
 		--enable-spoof-source \
 		--enable-tcp-wrapper \
 		--enable-sql \
-		--enable-mongodb \
 		--enable-json \
-		--enable-riemann \
-		--enable-java \
 		--enable-manpages \
-		--enable-amqp \
 		--enable-pacct \
 		--enable-python \
 		--enable-snmp-dest \
-		\
-		--with-mongoc=system \
-		--with-ivykis=system \
-		--with-jsonc=system \
+		--enable-riemann=auto \
+		--enable-amqp=auto \
 		--with-librabbitmq-client=system \
+		--enable-mongodb=auto \
+		--with-mongoc=system \
+		--enable-kafka=auto \
+		--enable-java=auto \
+		\
 		\
 		--with-module-dir='$${exec_prefix}/lib/syslog-ng/${UMAJOR}' \
 		--with-systemdsystemunitdir="/lib/systemd/system" \
