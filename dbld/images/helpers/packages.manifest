@@ -44,9 +44,8 @@ pcre-devel                      [centos, fedora]
     librabbitmq-dev             [debian-jessie, debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
     librabbitmq-devel           [centos, fedora]
 
-    # libmongoc-dev
+    # libmongoc-dev (not available on debian-jessie)
     libmongoc-dev               [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
-    libmongo-client-dev         [debian-jessie]
     mongo-c-driver-devel        [centos, fedora]
 
     # librdkafka-dev (we are using a specific version from OBS and need to
@@ -93,8 +92,11 @@ pcre-devel                      [centos, fedora]
     openjdk-7-jdk               [debian-jessie, ubuntu-trusty]
 
     # java-8
-    openjdk-8-jdk               [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
+    openjdk-8-jdk               [debian-stretch, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
     java-1.8.0-openjdk-devel    [centos, fedora]
+
+    # no java 8 for buster, java-11 does not yet work
+    #openjdk-11-jdk               [debian-buster]
 
     # python-dev
     python-dev                  [debian, ubuntu]
@@ -125,7 +127,7 @@ pcre-devel                      [centos, fedora]
 
 
 # packages to run successful make
-cmake                           [centos, fedora, debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
+cmake                           [centos, fedora, debian, ubuntu]
 make                            [centos, fedora, debian, ubuntu]
 
     # libwrap-dev
