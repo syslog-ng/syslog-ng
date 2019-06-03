@@ -37,6 +37,7 @@ typedef struct _Number
     gint64 raw_integer;
     gdouble raw_float;
   } value_data;
+  int precision;
 } Number;
 
 gdouble
@@ -48,6 +49,14 @@ number_as_double(Number number)
   return number.value_data.raw_integer;
 }
 
+void
+number_set_double(Number *number, double value)
+{
+  number->value_type = Float;
+  number->value_data.raw_float = value;
+  number->precision = 20;
+}
+
 gint64
 number_as_int(Number number)
 {
@@ -55,6 +64,14 @@ number_as_int(Number number)
     return number.value_data.raw_integer;
 
   return number.value_data.raw_float;
+}
+
+void
+number_set_int(Number *number, gint64 value)
+{
+  number->value_type = Integer;
+  number->value_data.raw_integer = value;
+  number->precision = 0;
 }
 
 gboolean
@@ -69,15 +86,17 @@ number_is_zero(Number number)
 gboolean
 parse_integer_or_float(const char *str, Number *number)
 {
-  if (parse_dec_number(str, &(number->value_data.raw_integer)))
+  gint64 int_value;
+  if (parse_dec_number(str, &int_value))
     {
-      number->value_type = Integer;
+      number_set_int(number, int_value);
       return TRUE;
     }
 
-  if (parse_float(str, &(number->value_data.raw_float)))
+  double float_value;
+  if (parse_float(str, &float_value))
     {
-      number->value_type = Float;
+      number_set_double(number, float_value);
       return TRUE;
     }
 
@@ -93,7 +112,7 @@ format_number(GString *result, Number n)
       return;
     }
 
-  g_string_append_printf(result, "%.20f", number_as_double(n));
+  g_string_append_printf(result, "%.*f", n.precision, number_as_double(n));
 }
 
 static gboolean
@@ -139,13 +158,11 @@ tf_num_plus(LogMessage *msg, gint argc, GString *argv[], GString *result)
 
   if (n.value_type == Integer && m.value_type == Integer)
     {
-      res.value_type = Integer;
-      res.value_data.raw_integer = number_as_int(n) + number_as_int(m);
+      number_set_int(&res, number_as_int(n) + number_as_int(m));
     }
   else
     {
-      res.value_type = Float;
-      res.value_data.raw_float = number_as_double(n) + number_as_double(m);
+      number_set_double(&res, number_as_double(n) + number_as_double(m));
     }
 
   format_number(result, res);
@@ -166,13 +183,11 @@ tf_num_minus(LogMessage *msg, gint argc, GString *argv[], GString *result)
 
   if (n.value_type == Integer && m.value_type == Integer)
     {
-      res.value_type = Integer;
-      res.value_data.raw_integer = number_as_int(n) - number_as_int(m);
+      number_set_int(&res, number_as_int(n) - number_as_int(m));
     }
   else
     {
-      res.value_type = Float;
-      res.value_data.raw_float = number_as_double(n) - number_as_double(m);
+      number_set_double(&res, number_as_double(n) - number_as_double(m));
     }
 
   format_number(result, res);
@@ -193,13 +208,11 @@ tf_num_multi(LogMessage *msg, gint argc, GString *argv[], GString *result)
 
   if (n.value_type == Integer && m.value_type == Integer)
     {
-      res.value_type = Integer;
-      res.value_data.raw_integer = number_as_int(n) * number_as_int(m);
+      number_set_int(&res, number_as_int(n) * number_as_int(m));
     }
   else
     {
-      res.value_type = Float;
-      res.value_data.raw_float = number_as_double(n) * number_as_double(m);
+      number_set_double(&res, number_as_double(n) * number_as_double(m));
     }
 
   format_number(result, res);
@@ -220,13 +233,11 @@ tf_num_div(LogMessage *msg, gint argc, GString *argv[], GString *result)
 
   if (n.value_type == Integer && m.value_type == Integer)
     {
-      res.value_type = Integer;
-      res.value_data.raw_integer = number_as_int(n) / number_as_int(m);
+      number_set_int(&res, number_as_int(n) / number_as_int(m));
     }
   else
     {
-      res.value_type = Float;
-      res.value_data.raw_float = number_as_double(n) / number_as_double(m);
+      number_set_double(&res, number_as_double(n) / number_as_double(m));
     }
 
   format_number(result, res);
@@ -247,13 +258,11 @@ tf_num_mod(LogMessage *msg, gint argc, GString *argv[], GString *result)
 
   if (n.value_type == Integer && m.value_type == Integer)
     {
-      res.value_type = Integer;
-      res.value_data.raw_integer = number_as_int(n) % number_as_int(m);
+      number_set_int(&res, number_as_int(n) % number_as_int(m));
     }
   else
     {
-      res.value_type = Float;
-      res.value_data.raw_float = fmod(number_as_double(n), number_as_double(m));
+      number_set_double(&res, fmod(number_as_double(n), number_as_double(m)));
     }
 
   format_number(result, res);
@@ -265,10 +274,11 @@ static void
 tf_num_round(LogMessage *msg, gint argc, GString *argv[], GString *result)
 {
   Number n;
+  gint64 precision = 0;
 
-  if (argc != 1)
+  if (argc < 1 || argc > 2)
     {
-      msg_debug("Template function requires one argument.",
+      msg_debug("Template function requires exactly one or two arguments.",
                 evt_tag_str("function", "round"));
       g_string_append_len(result, "NaN", 3);
       return;
@@ -283,7 +293,37 @@ tf_num_round(LogMessage *msg, gint argc, GString *argv[], GString *result)
       return;
     }
 
-  format_int64_padded(result, 0, ' ', 10, round(number_as_double(n)));
+  if (argc > 1)
+    {
+      if (!parse_dec_number(argv[1]->str, &precision))
+        {
+          msg_debug("Parsing failed, template function's second argument is not a number",
+                    evt_tag_str("function", "round"),
+                    evt_tag_str("arg2", argv[1]->str));
+          g_string_append_len(result, "NaN", 3);
+          return;
+        }
+
+      if (precision < 0 || precision > 20)
+        {
+          msg_debug("Parsing failed, precision is not in the supported range (0..20)",
+                    evt_tag_str("function", "round"),
+                    evt_tag_str("arg2", argv[1]->str));
+          g_string_append_len(result, "NaN", 3);
+          return;
+        }
+    }
+
+  double multiplier = pow(10, precision);
+  double res = round(number_as_double(n) * multiplier) / multiplier;
+  number_set_double(&n, res);
+
+  /*
+   * number_set_double() resets the precision, so assign it now.
+   */
+  n.precision = precision;
+
+  format_number(result, n);
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_num_round);
