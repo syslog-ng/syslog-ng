@@ -839,6 +839,7 @@ acquire_syslog_startup_smf () {
 acquire_syslog_all () {
 	printf "\nStart Syslog-specific info collection\n"
 	acquire_syslog_config
+	acquire_running_syslog_config
 	acquire_syslog_pki_info
 	acquire_syslog_pids
 	acquire_syslog_info
@@ -868,6 +869,14 @@ fhs_set_linux () {
 
 fhs_set_unix () {
 	:
+}
+
+acquire_running_syslog_config() {
+
+	if ${syslogngctlbin} config ; then	
+		${syslogngctlbin} config -p > ${tmpdir}/syslog-ng.ctl.running.conf 2>&1
+		remove_passwords_from_file "${tmpdir}/syslog-ng.ctl.running.conf"
+	fi
 }
 
 rpm_verify () {
