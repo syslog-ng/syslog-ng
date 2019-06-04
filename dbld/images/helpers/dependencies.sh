@@ -75,8 +75,20 @@ EOF
 }
 
 function add_copr_repo {
-    yum install -y yum-plugin-copr dnf-plugins-core
-    yum copr enable -y czanik/syslog-ng-githead
+
+    # NOTE: we are removing dnf/yum plugins after enabling copr as they
+    # install a couple of Python dependencies which then conflict with our
+    # PIP installation later.
+    case "${OS_PLATFORM}" in
+        centos-*)
+            yum install -y yum-plugin-copr
+            yum copr enable -y czanik/syslog-ng-githead
+            ;;
+        fedora-*)
+            dnf install -y dnf-plugins-core
+            dnf copr enable -y czanik/syslog-ng-githead
+            ;;
+    esac
 }
 
 function add_epel_repo {
@@ -94,12 +106,15 @@ function install_yum_packages {
 }
 
 function install_pip_packages {
-    if [ "${OS_PLATFORM}" == "centos-6" ]; then
-        filter_packages_by_platform /helpers/pip_packages.manifest | xargs pip install -U
-    else
-        python -m pip install --upgrade pip
-        filter_packages_by_platform /helpers/pip_packages.manifest | xargs python -m pip install -U
-    fi
+    case "${OS_PLATFORM}" in
+        centos-7)
+            python -m pip install --upgrade pip==9.0.3
+            ;;
+        *)
+            python -m pip install --upgrade pip
+            ;;
+    esac
+    filter_packages_by_platform /helpers/pip_packages.manifest | xargs python -m pip install -U
 }
 
 function enable_dbgsyms {
