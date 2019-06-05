@@ -18,7 +18,7 @@ project(syslog-ng C)
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules ${PROJECT_SOURCE_DIR}/cmake/)
 set(CMAKE_POSITION_INDEPENDENT_CODE 1)
-set(BISON_FLAGS "-Wno-other")
+set(BISON_FLAGS "-Wno-other -Werror=conflicts-sr -Werror=conflicts-rr")
 
 include(CheckIncludeFiles)
 include(ExternalProject)
