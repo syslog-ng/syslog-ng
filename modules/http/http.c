@@ -460,7 +460,17 @@ http_dd_init(LogPipe *s)
                   "It is recommended that you set persist-name() in this case as syslog-ng will be "
                   "using the first URL in urls() to register persistent data, such as the disk queue "
                   "name, which might change",
-                  evt_tag_str("url", self->load_balancer->targets[0].url));
+                  evt_tag_str("url", self->load_balancer->targets[0].url),
+                  log_pipe_location_tag(&self->super.super.super.super));
+    }
+  if (self->load_balancer->num_targets > self->super.num_workers)
+    {
+      msg_warning("WARNING: your http() driver instance uses less workers than urls. "
+                  "It is recommended to increase the number of workers to at least the number of servers, "
+                  "otherwise not all urls will be used for load-balancing",
+                  evt_tag_int("urls", self->load_balancer->num_targets),
+                  evt_tag_int("workers", self->super.num_workers),
+                  log_pipe_location_tag(&self->super.super.super.super));
     }
   /* we need to set up url before we call the inherited init method, so our stats key is correct */
   self->url = self->load_balancer->targets[0].url;
