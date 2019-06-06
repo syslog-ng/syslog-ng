@@ -94,6 +94,9 @@ class SyslogNgCli(object):
 
     # Process commands
     def start(self, config):
+        if self.__process:
+            raise Exception("syslog-ng has been already started")
+
         config.write_content(self.__instance_paths.get_config_path())
 
         self.__syntax_check()
