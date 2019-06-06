@@ -1,0 +1,104 @@
+def jobs = []
+
+if (!params.PLATFORMS)
+    jobs = ["centos-7", "debian-stretch", "debian-buster", "ubuntu-xenial", "ubuntu-bionic", "ubuntu-cosmic", "fedora-30"]
+else
+    jobs = params.PLATFORMS.split('\n')
+
+echo "Building packages for ${params.PLATFORMS}"
+
+def parallelStagesMap = jobs.collectEntries {
+    ["${it}" : generateStage(it)]
+}
+
+def generateStage(platform) {
+    return {
+        stage("${platform} - Copying Source") {
+            sh "rm -rf ${platform}"
+            sh "cp -ar syslog-ng ${platform}"
+        }
+        stage("${platform} - Docker Image") {
+            echo "Platform: ${platform}; Step: image"
+            sh "cd ${platform}; dbld/rules image-${platform}"
+        }
+//        stage("${platform} - bootstrap") {
+//            echo "Platform: ${platform}; Step: bootstrap"
+//            sh "cd ${platform}/syslog-ng; dbld/rules bootstrap-${platform}"
+//        }
+//        stage("${platform} - build") {
+//            echo "Platform: ${platform}; Step: build"
+//            sh "cd ${platform}/syslog-ng; export DEFAULT_IMAGE=${platform}; dbld/rules make-install"
+//        }
+//        stage("${platform} - make check") {
+//            echo "Platform: ${platform}; Step: make-check"
+//            sh "cd ${platform}/syslog-ng; export DEFAULT_IMAGE=${platform}; dbld/rules make-check"
+//        }
+//        stage("${platform} - make func test") {
+//            echo "Platform: ${platform}; Step: make-func-test; conflicts on ports"
+//            sh "cd ${platform}/syslog-ng; export DEFAULT_IMAGE=${platform}; dbld/rules make-func-test"
+//        }
+        stage("${platform} - Package") {
+            echo "Platform: ${platform}; Step: packaging"
+            // if ("${platform}" ==~ /(centos-7)/) {
+            //    sh "sed -i 's/BuildRequires: syslog-ng-java-deps/#BuildRequires: syslog-ng-java-deps/g' ${platform}/syslog-ng.spec"
+            //    sh "sed -i 's/BuildRequires: mongo-c-driver-devel/#BuildRequires: mongo-c-driver-devel/g' ${platform}/syslog-ng.spec"
+            // }
+            //if ("${platform}" ==~ /(debian-jessie|ubuntu-trusty)/) {
+            //    sh "sed -i 's/--enable-mongodb/--disable-mongodb/g' ${platform}/packaging/debian/rules"
+            //    sh "echo '' > ${platform}/packaging/debian/syslog-ng-mod-mongodb.install"
+            //    sh "sed -i 's/--enable-amqp/--disable-amqp/g' ${platform}/packaging/debian/rules"
+            //    sh "echo '' > ${platform}/packaging/debian/syslog-ng-mod-amqp.install"
+            //    sh "sed -i 's/--enable-riemann/--disable-riemann/g' ${platform}packaging/debian/rules"
+            //    sh "echo '' > ${platform}/packaging/debian/syslog-ng-mod-riemann.install"
+            //    sh "echo '' > ${platform}/packaging/debian/syslog-ng-mod-geoip2.install"
+            //}
+            //if ("${platform}" ==~ /(ubuntu-trusty)/) {
+            //    sh "sed -i 's/--enable-python/--enable-python --disable-systemd/g' ${platform}/packaging/debian/rules"
+            //    sh "sed -i 's/--with-systemdsystemunitdir/# --with-systemdsystemunitdir/g' ${platform}/packaging/debian/rules"
+            //    sh "sed -i 's/\${SYSTEMD_CONFIGURE_OPTS}/# \${SYSTEMD_CONFIGURE_OPTS}/g' ${platform}/packaging/debian/rules"
+            //    sh "sed -i 's@usr\\/lib\\/syslog-ng\\/\\*\\/libsdjournal\\.so@@g' ${platform}/packaging/debian/syslog-ng-core.install"
+            //}
+            sh "cd ${platform}; dbld/rules package-${platform}"
+            archiveArtifacts artifacts: "${platform}/dbld/build/${platform}/*"
+        }
+        stage("${platform} - kira") {
+            echo "Platform: ${platform}; Step: kira"
+            // sh "cd ${platform}/syslog-ng; dbld/rules kira-detach-${platform}"
+            // sh "export KIRA_START_COMMAND='./zts.sh run -d 7 -p functions/source-drivers/file-source-driver/options/004-flags-kernel.zts -a 'local localhost' -L --variant product=ose --variant platform=${platform}_amd64 --install-version=@3.20'"
+            // sh "cd ${platform}/syslog-ng; dbld/rules kira-start-${platform}"
+        }
+    }
+}
+
+pipeline {
+    agent {
+        label "spot"
+    }
+    parameters {
+        text(name: 'PLATFORMS', defaultValue: '', description: 'The list of platforms to build packages for (a subset of BUILD_IMAGES in dbld/rules)')
+    }
+
+    stages {
+        stage('Source') {
+            steps {
+                echo "Step: source init"
+                sh "rm -rf syslog-ng ; mkdir syslog-ng ; cd syslog-ng"
+                sh "git clone https://github.com/balabit/syslog-ng.git && cd syslog-ng && git fetch origin +refs/heads/*:refs/remotes/origin/* +refs/pull/*:refs/remotes/origin/pr/* && git checkout ${sha1}"
+           }
+        }
+        stage('Tarball') {
+            steps {
+                echo "Step: tarball"
+                sh "cd syslog-ng && ./dbld/rules tarball"
+           }
+        }
+
+        stage('parallel stage') {
+            steps {
+                script {
+                    parallel parallelStagesMap
+                }
+            }
+        }
+    }
+}
