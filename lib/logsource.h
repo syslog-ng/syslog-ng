@@ -79,7 +79,6 @@ struct _LogSource
   AckTracker *ack_tracker;
 
   void (*wakeup)(LogSource *s);
-  void (*dynamic_window_realloc)(LogSource *s);
   void (*schedule_dynamic_window_realloc)(LogSource *s);
 };
 
