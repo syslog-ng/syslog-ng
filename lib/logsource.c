@@ -437,7 +437,10 @@ log_source_set_options(LogSource *self, LogSourceOptions *options,
    * connections will not have their window_size changed. */
 
   if ((gint)window_size_counter_get(&self->window_size, NULL) == -1)
-    window_size_counter_set(&self->window_size, options->init_window_size);
+    {
+      window_size_counter_set(&self->window_size, options->init_window_size);
+      self->full_window_size = options->init_window_size;
+    }
   self->options = options;
   if (self->stats_id)
     g_free(self->stats_id);

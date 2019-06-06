@@ -70,6 +70,8 @@ struct _LogSource
   gchar *stats_instance;
   WindowSizeCounter window_size;
   DynamicWindow dynamic_window;
+  /* full_window_size = static + dynamic */
+  gsize full_window_size;
   StatsCounterItem *last_message_seen;
   StatsCounterItem *recvd_messages;
   guint32 last_ack_count;
