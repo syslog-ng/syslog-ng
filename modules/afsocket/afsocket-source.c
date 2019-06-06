@@ -612,16 +612,20 @@ afsocket_sd_setup_reader_options(AFSocketSourceDriver *self)
             self->reader_options.super.init_window_size = self->max_connections * 10;
         }
 
+      guint min_iw_size_per_reader = cfg->min_iw_size_per_reader;
+      if (self->dynamic_window_size != 0)
+        min_iw_size_per_reader = 1;
+
       self->reader_options.super.init_window_size /= self->max_connections;
-      if (self->reader_options.super.init_window_size < cfg->min_iw_size_per_reader)
+      if (self->reader_options.super.init_window_size < min_iw_size_per_reader)
         {
           msg_warning("WARNING: window sizing for tcp sources were changed in " VERSION_3_3
                       ", the configuration value was divided by the value of max-connections(). The result was too small, clamping to value of min_iw_size_per_reader. Ensure you have a proper log_fifo_size setting to avoid message loss.",
                       evt_tag_int("orig_log_iw_size", self->reader_options.super.init_window_size),
-                      evt_tag_int("new_log_iw_size", cfg->min_iw_size_per_reader),
-                      evt_tag_int("min_iw_size_per_reader", cfg->min_iw_size_per_reader),
-                      evt_tag_int("min_log_fifo_size", cfg->min_iw_size_per_reader * self->max_connections));
-          self->reader_options.super.init_window_size = cfg->min_iw_size_per_reader;
+                      evt_tag_int("new_log_iw_size", min_iw_size_per_reader),
+                      evt_tag_int("min_iw_size_per_reader", min_iw_size_per_reader),
+                      evt_tag_int("min_log_fifo_size", min_iw_size_per_reader * self->max_connections));
+          self->reader_options.super.init_window_size = min_iw_size_per_reader;
         }
       self->window_size_initialized = TRUE;
     }
