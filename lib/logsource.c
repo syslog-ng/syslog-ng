@@ -606,7 +606,7 @@ log_source_free(LogPipe *s)
 void
 log_source_options_defaults(LogSourceOptions *options)
 {
-  options->init_window_size = 100;
+  options->init_window_size = -1;
   options->keep_hostname = -1;
   options->chain_hostnames = -1;
   options->keep_timestamp = -1;
@@ -625,6 +625,8 @@ log_source_options_init(LogSourceOptions *options, GlobalConfig *cfg, const gcha
 
   options->source_queue_callbacks = cfg->source_mangle_callback_list;
 
+  if (options->init_window_size == -1)
+    options->init_window_size = 100;
   if (options->keep_hostname == -1)
     options->keep_hostname = cfg->keep_hostname;
   if (options->chain_hostnames == -1)
