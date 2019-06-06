@@ -38,8 +38,8 @@ class SyslogNg(object):
         self.__syslog_ng_cli.reload(config)
 
     def restart(self, config):
-        self.__syslog_ng_cli.start(config)
         self.__syslog_ng_cli.stop()
+        self.__syslog_ng_cli.start(config)
 
     def get_version(self):
         return self.__syslog_ng_cli.get_version()
