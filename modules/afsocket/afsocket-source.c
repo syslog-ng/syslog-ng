@@ -598,6 +598,20 @@ afsocket_sd_setup_reader_options(AFSocketSourceDriver *self)
        * window sizes. Increase that but warn the user at the same time.
        */
 
+      /* NOTE: this changes the initial window size from 100 to 1000. Reasons:
+      * Starting with syslog-ng 3.3, window-size is distributed evenly between
+      * _all_ possible connections to avoid starving.  With the defaults this
+      * means that we get a window size of 10 messages log_iw_size(100) /
+      * max_connections(10), but that is incredibly slow, thus bump this value here.
+      */
+
+      if (self->reader_options.super.init_window_size == -1)
+        {
+          self->reader_options.super.init_window_size = 1000;
+          if (self->dynamic_window_size != 0)
+            self->reader_options.super.init_window_size = self->max_connections * 10;
+        }
+
       self->reader_options.super.init_window_size /= self->max_connections;
       if (self->reader_options.super.init_window_size < cfg->min_iw_size_per_reader)
         {
@@ -942,15 +956,6 @@ afsocket_sd_init_instance(AFSocketSourceDriver *self,
   log_reader_options_defaults(&self->reader_options);
   self->reader_options.super.stats_level = STATS_LEVEL1;
   self->reader_options.super.stats_source = transport_mapper->stats_source;
-
-  /* NOTE: this changes the initial window size from 100 to 1000. Reasons:
-   * Starting with syslog-ng 3.3, window-size is distributed evenly between
-   * _all_ possible connections to avoid starving.  With the defaults this
-   * means that we get a window size of 10 messages log_iw_size(100) /
-   * max_connections(10), but that is incredibly slow, thus bump this value here.
-   */
-
-  self->reader_options.super.init_window_size = 1000;
 
   _init_watches(self);
 }
