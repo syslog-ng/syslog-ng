@@ -244,6 +244,12 @@ _inc_balanced(LogSource *self, gsize inc)
 {
   gsize offered_dynamic = dynamic_window_request(&self->dynamic_window, inc);
 
+  msg_trace("Balance::increase",
+            log_pipe_location_tag(&self->super),
+            evt_tag_printf("connection", "%p", self),
+            evt_tag_int("old_full_window_size", self->full_window_size),
+            evt_tag_int("new_full_window_size", self->full_window_size + offered_dynamic));
+
   self->full_window_size += offered_dynamic;
   stats_counter_add(self->stat_full_window, offered_dynamic);
 
@@ -280,6 +286,13 @@ _dec_balanced(LogSource *self, gsize dec)
   window_size_counter_sub(&self->window_size, dec, NULL);
   stats_counter_sub(self->stat_window_size, dec);
 
+  msg_trace("Balance::decrease",
+            log_pipe_location_tag(&self->super),
+            evt_tag_printf("connection", "%p", self),
+            evt_tag_int("old_full_window_size", self->full_window_size),
+            evt_tag_int("new_full_window_size", new_full_window_size),
+            evt_tag_int("to_be_reclaimed", remaining_sub));
+
   self->full_window_size = new_full_window_size;
   stats_counter_set(self->stat_full_window, new_full_window_size);
   dynamic_window_release(&self->dynamic_window, dec);
@@ -288,21 +301,29 @@ _dec_balanced(LogSource *self, gsize dec)
 static gboolean
 _reclaim_window_instead_of_rebalance(LogSource *self)
 {
-  gboolean reclaim_in_progress = FALSE;
   //check pending_reclaimed
   gssize total_reclaim = (gssize)atomic_gssize_set_and_get(&self->pending_reclaimed, 0);
+  gssize to_be_reclaimed = (gssize)atomic_gssize_get(&self->window_size_to_be_reclaimed);
+  gboolean reclaim_in_progress = (to_be_reclaimed > 0);
 
   if (total_reclaim > 0)
     {
       self->full_window_size -= total_reclaim;
       stats_counter_sub(self->stat_full_window, total_reclaim);
       dynamic_window_release(&self->dynamic_window, total_reclaim);
-      gssize to_be_reclaimed = (gssize)atomic_gssize_get(&self->window_size_to_be_reclaimed);
-      reclaim_in_progress = to_be_reclaimed > 0;
+    }
+  else
+    {
       //to avoid underflow, we need to set a value <= 0
       if (to_be_reclaimed < 0)
         atomic_gssize_set(&self->window_size_to_be_reclaimed, 0);
     }
+
+  msg_trace("Checking if reclaim is in progress...",
+            log_pipe_location_tag(&self->super),
+            evt_tag_printf("connection", "%p", self),
+            evt_tag_printf("in progress", "%s", reclaim_in_progress ? "yes" : "no"),
+            evt_tag_long("total_reclaim", total_reclaim));
 
   return reclaim_in_progress;
 }
@@ -313,6 +334,15 @@ _dynamic_window_rebalance(LogSource *self)
   gsize current_dynamic_win = self->full_window_size - self->options->init_window_size;
   gboolean have_to_increase = current_dynamic_win < self->dynamic_window.pool->balanced_window;
   gboolean have_to_decrease = current_dynamic_win > self->dynamic_window.pool->balanced_window;
+
+  msg_trace("Rebalance dynamic window",
+            log_pipe_location_tag(&self->super),
+            evt_tag_printf("connection", "%p", self),
+            evt_tag_int("full_window", self->full_window_size),
+            evt_tag_int("dynamic_win", current_dynamic_win),
+            evt_tag_int("static_window", self->options->init_window_size),
+            evt_tag_int("balanced_window", self->dynamic_window.pool->balanced_window),
+            evt_tag_int("avg_free", dynamic_window_stat_get_avg(&self->dynamic_window.stat)));
 
   if (have_to_increase)
     _inc_balanced(self, self->dynamic_window.pool->balanced_window - current_dynamic_win);
