@@ -1705,6 +1705,8 @@ if test "x$module_path" = "x"; then
 	java_module_path="$moduledir"/java-modules
 fi
 
+python_moduledir="$moduledir"/python
+
 CPPFLAGS="$CPPFLAGS $GLIB_CFLAGS $EVTLOG_CFLAGS $PCRE_CFLAGS $OPENSSL_CFLAGS $LIBNET_CFLAGS $LIBDBI_CFLAGS $IVYKIS_CFLAGS $LIBCAP_CFLAGS -D_GNU_SOURCE -D_DEFAULT_SOURCE -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
 
 ########################################################
@@ -1829,6 +1831,7 @@ if test -n "$env_ld_library_path"; then
         AC_DEFINE_UNQUOTED(ENV_LD_LIBRARY_PATH, "$env_ld_library_path", [set LD_LIBRARY_PATH to this value])
 fi
 AC_DEFINE_UNQUOTED(PATH_MODULEDIR, "$moduledir", [module installation directory])
+AC_DEFINE_UNQUOTED(PYTHON_MODULE_DIR, "$python_moduledir", [Python module installation directory])
 AC_DEFINE_UNQUOTED(PATH_LOGGENPLUGINDIR, "$loggenplugindir", [loggenplugin installation directory])
 AC_DEFINE_UNQUOTED(MODULE_PATH, "$module_path", [module search path])
 AC_DEFINE_UNQUOTED(JAVA_MODULE_PATH, "$java_module_path", [java module search path])
@@ -1901,6 +1904,7 @@ AC_SUBST(PYLINT)
 AC_SUBST(timezonedir)
 AC_SUBST(pidfiledir)
 AC_SUBST(moduledir)
+AC_SUBST(python_moduledir)
 AC_SUBST(loggenplugindir)
 AC_SUBST(toolsdir)
 AC_SUBST(config_includedir)
