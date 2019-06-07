@@ -545,8 +545,24 @@ _dynamic_window_realloc(AFSocketSourceDriver *self)
 static void
 _dynamic_window_set_balanced_window(AFSocketSourceDriver *self)
 {
-  if (self->num_connections > 0)
-    self->dynamic_window_ctr->balanced_window = self->dynamic_window_ctr->iw_size / self->num_connections;
+  if (self->num_connections <= 0)
+    return;
+
+  gsize new_balanced_win = self->dynamic_window_ctr->iw_size / self->num_connections;
+  if (new_balanced_win == 0)
+    {
+      msg_info("Cannot allocate more dynamic window for new clients. From now, only static window is allocated."
+               "The reason of dynamic-window-pool exhaustion is that the number of clients is larger than the"
+               " dynamic-window-size",
+               evt_tag_long("total_dynamic_window_size", self->dynamic_window_size),
+               evt_tag_int("max_connections", self->max_connections),
+               evt_tag_int("active_connections", self->num_connections),
+               evt_tag_long("dynamic_window_size_for_existing_clients", self->dynamic_window_ctr->balanced_window),
+               evt_tag_long("static_window_size", self->reader_options.super.init_window_size));
+      return;
+    }
+
+  self->dynamic_window_ctr->balanced_window = new_balanced_win;
 }
 
 static gboolean
