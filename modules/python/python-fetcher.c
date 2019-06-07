@@ -568,5 +568,5 @@ py_log_fetcher_init(void)
                        PyLong_FromLong(THREADED_FETCH_SUCCESS));
 
   PyType_Ready(&py_log_fetcher_type);
-  PyModule_AddObject(PyImport_AddModule("syslogng"), "LogFetcher", (PyObject *) &py_log_fetcher_type);
+  PyModule_AddObject(PyImport_AddModule("_syslogng"), "LogFetcher", (PyObject *) &py_log_fetcher_type);
 }

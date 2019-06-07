@@ -437,5 +437,5 @@ py_log_message_init(void)
 {
   PyDateTime_IMPORT;
   PyType_Ready(&py_log_message_type);
-  PyModule_AddObject(PyImport_AddModule("syslogng"), "LogMessage", (PyObject *) &py_log_message_type);
+  PyModule_AddObject(PyImport_AddModule("_syslogng"), "LogMessage", (PyObject *) &py_log_message_type);
 }

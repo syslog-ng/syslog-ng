@@ -121,5 +121,5 @@ void
 py_logger_init(void)
 {
   PyType_Ready(&py_logger_type);
-  PyModule_AddObject(PyImport_AddModule("syslogng"), "Logger", (PyObject *) &py_logger_type);
+  PyModule_AddObject(PyImport_AddModule("_syslogng"), "Logger", (PyObject *) &py_logger_type);
 }
