@@ -519,24 +519,58 @@ _dynamic_window_timer_start(AFSocketSourceDriver *self)
 }
 
 static void
+_log_source_dynamic_window_update_statistics_cb(AFSocketSourceConnection *conn)
+{
+  log_source_dynamic_window_update_statistics(&conn->reader->super);
+}
+
+static void
+_dynamic_window_update_stats(AFSocketSourceDriver *self)
+{
+  g_list_foreach(self->connections, (GFunc) _log_source_dynamic_window_update_statistics_cb, NULL);
+}
+
+static void
+_log_source_dynamic_window_realloc_cb(AFSocketSourceConnection *conn)
+{
+  log_source_schedule_dynamic_window_realloc(&conn->reader->super);
+}
+
+static void
+_dynamic_window_realloc(AFSocketSourceDriver *self)
+{
+  g_list_foreach(self->connections, (GFunc) _log_source_dynamic_window_realloc_cb, NULL);
+}
+
+static void
+_dynamic_window_set_balanced_window(AFSocketSourceDriver *self)
+{
+  if (self->num_connections > 0)
+    self->dynamic_window_ctr->balanced_window = self->dynamic_window_ctr->iw_size / self->num_connections;
+}
+
+static gboolean
+_is_dynamic_window_realloc_needed(AFSocketSourceDriver *self)
+{
+  return self->dynamic_window_timer_tick >= self->dynamic_window_realloc_ticks;
+}
+
+static void
 _on_dynamic_window_timer_elapsed(gpointer cookie)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *)cookie;
-  for (GList *conn_it = self->connections; conn_it; conn_it = conn_it->next) //TODO: refactor
+
+  if (_is_dynamic_window_realloc_needed(self))
     {
-      AFSocketSourceConnection *conn = (AFSocketSourceConnection *) conn_it->data;
-      if (self->dynamic_window_timer_tick >= self->dynamic_window_realloc_ticks)
-        {
-          self->dynamic_window_ctr->balanced_window = self->dynamic_window_ctr->iw_size / self->num_connections;
-          log_source_schedule_dynamic_window_realloc(&conn->reader->super);
-        }
-      else
-        {
-          log_source_dynamic_window_update_statistics(&conn->reader->super);
-        }
+      _dynamic_window_set_balanced_window(self);
+      _dynamic_window_realloc(self);
+      self->dynamic_window_timer_tick = 0;
     }
-  if (self->dynamic_window_timer_tick >= self->dynamic_window_realloc_ticks) //TODO: refactor
-    self->dynamic_window_timer_tick = 0;
+  else
+    {
+      _dynamic_window_update_stats(self);
+    }
+
   self->dynamic_window_timer_tick++;
 
   msg_trace("Dynamic window timer elapsed", evt_tag_int("tick", self->dynamic_window_timer_tick));
