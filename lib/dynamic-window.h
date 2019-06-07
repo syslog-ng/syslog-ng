@@ -26,7 +26,7 @@
 #define DYNAMIC_WINDOW_H_INCLUDED
 
 #include "syslog-ng.h"
-#include "dynamic-window-counter.h"
+#include "dynamic-window-pool.h"
 
 typedef struct _DynamicWindow DynamicWindow;
 
@@ -46,11 +46,11 @@ guint64 dynamic_window_stat_get_sum(DynamicWindowStat *self);
 
 struct _DynamicWindow
 {
-  DynamicWindowCounter *ctr;
+  DynamicWindowPool *ctr;
   DynamicWindowStat stat;
 };
 
-void dynamic_window_set_counter(DynamicWindow *self, DynamicWindowCounter *ctr);
+void dynamic_window_set_counter(DynamicWindow *self, DynamicWindowPool *ctr);
 gboolean dynamic_window_is_enabled(DynamicWindow *self);
 gsize dynamic_window_request(DynamicWindow *self, gsize size);
 void dynamic_window_release(DynamicWindow *self, gsize size);

@@ -114,7 +114,7 @@ pkginclude_HEADERS			+= \
 	lib/crypto.h			\
 	lib/dnscache.h			\
 	lib/driver.h			\
-	lib/dynamic-window-counter.h \
+	lib/dynamic-window-pool.h \
 	lib/dynamic-window.h \
 	lib/fdhelpers.h			\
 	lib/file-perms.h		\
@@ -200,7 +200,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/dnscache.c			\
 	lib/driver.c			\
 	lib/dynamic-window.c \
-	lib/dynamic-window-counter.c \
+	lib/dynamic-window-pool.c \
 	lib/fdhelpers.c			\
 	lib/file-perms.c		\
 	lib/find-crlf.c			\

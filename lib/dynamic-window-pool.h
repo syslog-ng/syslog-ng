@@ -22,15 +22,15 @@
  *
  */
 
-#ifndef DYNAMIC_WINDOW_COUNTER_H_INCLUDED
-#define DYNAMIC_WINDOW_COUNTER_H_INCLUDED
+#ifndef DYNAMIC_WINDOW_POOL_H_INCLUDED
+#define DYNAMIC_WINDOW_POOL_H_INCLUDED
 
 #include "syslog-ng.h"
 #include "atomic.h"
 
-typedef struct _DynamicWindowCounter DynamicWindowCounter;
+typedef struct _DynamicWindowPool DynamicWindowPool;
 
-struct _DynamicWindowCounter
+struct _DynamicWindowPool
 {
   GAtomicCounter ref_cnt;
 
@@ -39,12 +39,12 @@ struct _DynamicWindowCounter
   gsize balanced_window;//target
 };
 
-DynamicWindowCounter *dynamic_window_counter_new(gsize iw_size);
-void dynamic_window_counter_init(DynamicWindowCounter *self);
-DynamicWindowCounter *dynamic_window_counter_ref(DynamicWindowCounter *self);
-void dynamic_window_counter_unref(DynamicWindowCounter *self);
+DynamicWindowPool *dynamic_window_pool_new(gsize iw_size);
+void dynamic_window_pool_init(DynamicWindowPool *self);
+DynamicWindowPool *dynamic_window_pool_ref(DynamicWindowPool *self);
+void dynamic_window_pool_unref(DynamicWindowPool *self);
 
-gsize dynamic_window_counter_request(DynamicWindowCounter *self, gsize requested_size);
-void dynamic_window_counter_release(DynamicWindowCounter *self, gsize release_size);
+gsize dynamic_window_pool_request(DynamicWindowPool *self, gsize requested_size);
+void dynamic_window_pool_release(DynamicWindowPool *self, gsize release_size);
 
 #endif

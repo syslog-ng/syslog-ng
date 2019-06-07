@@ -32,10 +32,10 @@ Test(dynamic_window, window_stat_reset)
   cr_expect_eq(win.stat.n, 0);
 }
 
-Test(dynamic_window, window_stat_reset_when_counter_is_set)
+Test(dynamic_window, window_stat_reset_when_pool_is_set)
 {
   DynamicWindow win;
-  dynamic_window_set_counter(&win, NULL);
+  dynamic_window_set_pool(&win, NULL);
   cr_expect_eq(win.stat.sum, 0);
   cr_expect_eq(win.stat.n, 0);
 }

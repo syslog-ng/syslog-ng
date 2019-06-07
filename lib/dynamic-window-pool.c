@@ -24,12 +24,12 @@
  */
 
 #include "syslog-ng.h"
-#include "dynamic-window-counter.h"
+#include "dynamic-window-pool.h"
 
-DynamicWindowCounter *
-dynamic_window_counter_new(gsize iw_size)
+DynamicWindowPool *
+dynamic_window_pool_new(gsize iw_size)
 {
-  DynamicWindowCounter *self = g_new0(DynamicWindowCounter, 1);
+  DynamicWindowPool *self = g_new0(DynamicWindowPool, 1);
   g_atomic_counter_set(&self->ref_cnt, 1);
 
   self->iw_size = iw_size;
@@ -37,13 +37,13 @@ dynamic_window_counter_new(gsize iw_size)
   return self;
 }
 
-void dynamic_window_counter_init(DynamicWindowCounter *self)
+void dynamic_window_pool_init(DynamicWindowPool *self)
 {
   self->window = self->iw_size;
 }
 
-DynamicWindowCounter *
-dynamic_window_counter_ref(DynamicWindowCounter *self)
+DynamicWindowPool *
+dynamic_window_pool_ref(DynamicWindowPool *self)
 {
   g_assert(!self || g_atomic_counter_get(&self->ref_cnt) > 0);
 
@@ -53,7 +53,7 @@ dynamic_window_counter_ref(DynamicWindowCounter *self)
   return self;
 }
 
-void dynamic_window_counter_unref(DynamicWindowCounter *self)
+void dynamic_window_pool_unref(DynamicWindowPool *self)
 {
   g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
 
@@ -64,7 +64,7 @@ void dynamic_window_counter_unref(DynamicWindowCounter *self)
 }
 
 gsize
-dynamic_window_counter_request(DynamicWindowCounter *self, gsize requested_size)
+dynamic_window_pool_request(DynamicWindowPool *self, gsize requested_size)
 {
   gsize offered = MIN(self->window, requested_size);
   self->window -= offered;
@@ -72,7 +72,7 @@ dynamic_window_counter_request(DynamicWindowCounter *self, gsize requested_size)
   return offered;
 }
 
-void dynamic_window_counter_release(DynamicWindowCounter *self, gsize release_size)
+void dynamic_window_pool_release(DynamicWindowPool *self, gsize release_size)
 {
   self->window += release_size;
   g_assert(self->window <= self->iw_size);

@@ -347,7 +347,7 @@ afsocket_sd_format_connections_name(const AFSocketSourceDriver *self)
 }
 
 static const gchar *
-afsocket_sd_format_dynamic_window_counter_name(const AFSocketSourceDriver *self)
+afsocket_sd_format_dynamic_window_pool_name(const AFSocketSourceDriver *self)
 {
   static gchar persist_name[1024];
 
@@ -886,12 +886,12 @@ afsocket_sd_save_dynamic_window_ctr(AFSocketSourceDriver *self)
 
   if (self->connections_kept_alive_across_reloads)
     {
-      cfg_persist_config_add(cfg, afsocket_sd_format_dynamic_window_counter_name(self),
-                             self->dynamic_window_ctr, (GDestroyNotify) dynamic_window_counter_unref, FALSE);
+      cfg_persist_config_add(cfg, afsocket_sd_format_dynamic_window_pool_name(self),
+                             self->dynamic_window_ctr, (GDestroyNotify) dynamic_window_pool_unref, FALSE);
     }
   else
     {
-      dynamic_window_counter_unref(self->dynamic_window_ctr);
+      dynamic_window_pool_unref(self->dynamic_window_ctr);
     }
 
   self->dynamic_window_ctr = NULL;
@@ -905,7 +905,7 @@ afsocket_sd_restore_dynamic_window_ctr(AFSocketSourceDriver *self)
   if (!self->connections_kept_alive_across_reloads)
     return FALSE;
 
-  DynamicWindowCounter *ctr = cfg_persist_config_fetch(cfg, afsocket_sd_format_dynamic_window_counter_name(self));
+  DynamicWindowPool *ctr = cfg_persist_config_fetch(cfg, afsocket_sd_format_dynamic_window_pool_name(self));
   if (ctr == NULL)
     return FALSE;
 
@@ -935,8 +935,8 @@ afsocket_sd_init_method(LogPipe *s)
     {
       if (self->dynamic_window_size != 0)
         {
-          self->dynamic_window_ctr = dynamic_window_counter_new(self->dynamic_window_size);
-          dynamic_window_counter_init(self->dynamic_window_ctr);
+          self->dynamic_window_ctr = dynamic_window_pool_new(self->dynamic_window_size);
+          dynamic_window_pool_init(self->dynamic_window_ctr);
         }
     }
 

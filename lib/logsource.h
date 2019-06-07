@@ -125,7 +125,7 @@ void log_source_flow_control_adjust(LogSource *self, guint32 window_size_increme
 void log_source_flow_control_adjust_when_suspended(LogSource *self, guint32 window_size_increment);
 void log_source_flow_control_suspend(LogSource *self);
 void log_source_disable_bookmark_saving(LogSource *self);
-void log_source_enable_dynamic_window(LogSource *self, DynamicWindowCounter *window_ctr);
+void log_source_enable_dynamic_window(LogSource *self, DynamicWindowPool *window_ctr);
 void log_source_dynamic_window_update_statistics(LogSource *self);
 gboolean log_source_is_dynamic_window_enabled(LogSource *self);
 

@@ -192,9 +192,9 @@ log_source_flow_control_suspend(LogSource *self)
 }
 
 void
-log_source_enable_dynamic_window(LogSource *self, DynamicWindowCounter *window_ctr)
+log_source_enable_dynamic_window(LogSource *self, DynamicWindowPool *window_ctr)
 {
-  dynamic_window_set_counter(&self->dynamic_window, dynamic_window_counter_ref(window_ctr));
+  dynamic_window_set_counter(&self->dynamic_window, dynamic_window_pool_ref(window_ctr));
 }
 
 gboolean
@@ -230,7 +230,7 @@ _release_dynamic_window(LogSource *self)
   window_size_counter_sub(&self->window_size, dynamic_part, NULL);
   dynamic_window_release(&self->dynamic_window, dynamic_part); //TODO: rename release to ...
 
-  dynamic_window_counter_unref(self->dynamic_window.ctr); //TODO: move to dynamic_window_release_counter()
+  dynamic_window_pool_unref(self->dynamic_window.ctr); //TODO: move to dynamic_window_release_counter()
 }
 
 static void

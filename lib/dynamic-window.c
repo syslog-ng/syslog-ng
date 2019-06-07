@@ -62,7 +62,7 @@ dynamic_window_stat_get_sum(DynamicWindowStat *self)
 }
 
 void
-dynamic_window_set_counter(DynamicWindow *self, DynamicWindowCounter *ctr)
+dynamic_window_set_counter(DynamicWindow *self, DynamicWindowPool *ctr)
 {
   self->ctr = ctr;
   dynamic_window_stat_reset(&self->stat);
@@ -80,7 +80,7 @@ dynamic_window_request(DynamicWindow *self, gsize size)
   if (!self->ctr)
     return 0;
 
-  return dynamic_window_counter_request(self->ctr, size);
+  return dynamic_window_pool_request(self->ctr, size);
 }
 
 void
@@ -89,5 +89,5 @@ dynamic_window_release(DynamicWindow *self, gsize size)
   if (!self->ctr)
     return;
 
-  dynamic_window_counter_release(self->ctr, size);
+  dynamic_window_pool_release(self->ctr, size);
 }

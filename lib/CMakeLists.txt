@@ -79,7 +79,7 @@ set (LIB_HEADERS
     crypto.h
     dnscache.h
     driver.h
-    dynamic-window-counter.h
+    dynamic-window-pool.h
     dynamic-window.h
     fdhelpers.h
     file-perms.h
@@ -167,7 +167,7 @@ set(LIB_SOURCES
     dnscache.c
     driver.c
     dynamic-window.c
-    dynamic-window-counter.c
+    dynamic-window-pool.c
     fdhelpers.c
     file-perms.c
     find-crlf.c
