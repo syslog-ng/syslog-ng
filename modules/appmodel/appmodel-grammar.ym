@@ -80,7 +80,7 @@ application_definition
         ;
 
 application_options
-	: application_option ';' application_options
+	: application_option semicolons application_options
 	|
 	;
 

@@ -479,7 +479,7 @@ start
 	;
 
 stmts
-        : stmt ';' stmts
+        : stmt semicolons stmts
 	|
 	;
 
@@ -814,7 +814,10 @@ log_flags_items
 /* END_RULES */
 
 options_stmt
-        : KW_OPTIONS '{' options_items '}'
+        : KW_OPTIONS
+          { cfg_lexer_push_context(lexer, LL_CONTEXT_OPTIONS, NULL, "global options"); }
+          '{' options_items '}'
+          { cfg_lexer_pop_context(lexer); }
 	;
 
 template_stmt
@@ -860,7 +863,7 @@ template_fn
 	;
 
 template_items
-	: template_item ';' template_items
+	: template_item semicolons template_items
 	|
 	;
 
@@ -948,7 +951,7 @@ block_arg
         ;
 
 options_items
-	: options_item ';' options_items
+	: options_item semicolons options_items
 	|
 	;
 
