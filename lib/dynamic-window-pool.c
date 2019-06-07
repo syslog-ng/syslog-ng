@@ -27,19 +27,19 @@
 #include "dynamic-window-pool.h"
 
 DynamicWindowPool *
-dynamic_window_pool_new(gsize iw_size)
+dynamic_window_pool_new(gsize size)
 {
   DynamicWindowPool *self = g_new0(DynamicWindowPool, 1);
   g_atomic_counter_set(&self->ref_cnt, 1);
 
-  self->iw_size = iw_size;
+  self->pool_size = size;
 
   return self;
 }
 
 void dynamic_window_pool_init(DynamicWindowPool *self)
 {
-  self->window = self->iw_size;
+  self->free_window = self->pool_size;
 }
 
 DynamicWindowPool *
@@ -66,14 +66,14 @@ void dynamic_window_pool_unref(DynamicWindowPool *self)
 gsize
 dynamic_window_pool_request(DynamicWindowPool *self, gsize requested_size)
 {
-  gsize offered = MIN(self->window, requested_size);
-  self->window -= offered;
+  gsize offered = MIN(self->free_window, requested_size);
+  self->free_window -= offered;
 
   return offered;
 }
 
 void dynamic_window_pool_release(DynamicWindowPool *self, gsize release_size)
 {
-  self->window += release_size;
-  g_assert(self->window <= self->iw_size);
+  self->free_window += release_size;
+  g_assert(self->free_window <= self->pool_size);
 }

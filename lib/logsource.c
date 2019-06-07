@@ -192,9 +192,9 @@ log_source_flow_control_suspend(LogSource *self)
 }
 
 void
-log_source_enable_dynamic_window(LogSource *self, DynamicWindowPool *window_ctr)
+log_source_enable_dynamic_window(LogSource *self, DynamicWindowPool *window_pool)
 {
-  dynamic_window_set_counter(&self->dynamic_window, dynamic_window_pool_ref(window_ctr));
+  dynamic_window_set_pool(&self->dynamic_window, dynamic_window_pool_ref(window_pool));
 }
 
 gboolean
@@ -228,9 +228,9 @@ _release_dynamic_window(LogSource *self)
             log_pipe_location_tag(&self->super));
   self->full_window_size -= dynamic_part;
   window_size_counter_sub(&self->window_size, dynamic_part, NULL);
-  dynamic_window_release(&self->dynamic_window, dynamic_part); //TODO: rename release to ...
+  dynamic_window_release(&self->dynamic_window, dynamic_part);
 
-  dynamic_window_pool_unref(self->dynamic_window.ctr); //TODO: move to dynamic_window_release_counter()
+  dynamic_window_pool_unref(self->dynamic_window.pool);
 }
 
 static void
@@ -300,13 +300,13 @@ static void
 _dynamic_window_rebalance(LogSource *self)
 {
   gsize current_dynamic_win = self->full_window_size - self->options->init_window_size;
-  gboolean have_to_increase = current_dynamic_win < self->dynamic_window.ctr->balanced_window;
-  gboolean have_to_decrease = current_dynamic_win > self->dynamic_window.ctr->balanced_window;
+  gboolean have_to_increase = current_dynamic_win < self->dynamic_window.pool->balanced_window;
+  gboolean have_to_decrease = current_dynamic_win > self->dynamic_window.pool->balanced_window;
 
   if (have_to_increase)
-    _inc_balanced(self, self->dynamic_window.ctr->balanced_window - current_dynamic_win);
+    _inc_balanced(self, self->dynamic_window.pool->balanced_window - current_dynamic_win);
   else if (have_to_decrease)
-    _dec_balanced(self, current_dynamic_win - self->dynamic_window.ctr->balanced_window);
+    _dec_balanced(self, current_dynamic_win - self->dynamic_window.pool->balanced_window);
 }
 
 void

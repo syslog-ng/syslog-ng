@@ -62,32 +62,32 @@ dynamic_window_stat_get_sum(DynamicWindowStat *self)
 }
 
 void
-dynamic_window_set_counter(DynamicWindow *self, DynamicWindowPool *ctr)
+dynamic_window_set_pool(DynamicWindow *self, DynamicWindowPool *pool)
 {
-  self->ctr = ctr;
+  self->pool = pool;
   dynamic_window_stat_reset(&self->stat);
 }
 
 gboolean
 dynamic_window_is_enabled(DynamicWindow *self)
 {
-  return !!self->ctr;
+  return !!self->pool;
 }
 
 gsize
 dynamic_window_request(DynamicWindow *self, gsize size)
 {
-  if (!self->ctr)
+  if (!self->pool)
     return 0;
 
-  return dynamic_window_pool_request(self->ctr, size);
+  return dynamic_window_pool_request(self->pool, size);
 }
 
 void
 dynamic_window_release(DynamicWindow *self, gsize size)
 {
-  if (!self->ctr)
+  if (!self->pool)
     return;
 
-  dynamic_window_pool_release(self->ctr, size);
+  dynamic_window_pool_release(self->pool, size);
 }

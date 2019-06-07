@@ -116,8 +116,8 @@ afsocket_sc_init(LogPipe *s)
                          self->owner->super.super.id,
                          afsocket_sc_stats_instance(self));
 
-  if (!restored_kept_alive_source && self->owner->dynamic_window_ctr)
-    log_source_enable_dynamic_window(&self->reader->super, self->owner->dynamic_window_ctr);
+  if (!restored_kept_alive_source && self->owner->dynamic_window_pool)
+    log_source_enable_dynamic_window(&self->reader->super, self->owner->dynamic_window_pool);
 
   log_pipe_append((LogPipe *) self->reader, s);
   if (log_pipe_init((LogPipe *) self->reader))
@@ -548,7 +548,7 @@ _dynamic_window_set_balanced_window(AFSocketSourceDriver *self)
   if (self->num_connections <= 0)
     return;
 
-  gsize new_balanced_win = self->dynamic_window_ctr->iw_size / self->num_connections;
+  gsize new_balanced_win = self->dynamic_window_pool->pool_size / self->num_connections;
   if (new_balanced_win == 0)
     {
       msg_info("Cannot allocate more dynamic window for new clients. From now, only static window is allocated."
@@ -557,12 +557,12 @@ _dynamic_window_set_balanced_window(AFSocketSourceDriver *self)
                evt_tag_long("total_dynamic_window_size", self->dynamic_window_size),
                evt_tag_int("max_connections", self->max_connections),
                evt_tag_int("active_connections", self->num_connections),
-               evt_tag_long("dynamic_window_size_for_existing_clients", self->dynamic_window_ctr->balanced_window),
+               evt_tag_long("dynamic_window_size_for_existing_clients", self->dynamic_window_pool->balanced_window),
                evt_tag_long("static_window_size", self->reader_options.super.init_window_size));
       return;
     }
 
-  self->dynamic_window_ctr->balanced_window = new_balanced_win;
+  self->dynamic_window_pool->balanced_window = new_balanced_win;
 }
 
 static gboolean
@@ -625,7 +625,7 @@ afsocket_sd_start_watches(AFSocketSourceDriver *self)
 {
   _listen_fd_start(self);
 
-  if (self->dynamic_window_ctr != NULL)
+  if (self->dynamic_window_pool != NULL)
     _dynamic_window_timer_start(self);
 }
 
@@ -880,25 +880,25 @@ afsocket_sd_save_listener(AFSocketSourceDriver *self)
 }
 
 static void
-afsocket_sd_save_dynamic_window_ctr(AFSocketSourceDriver *self)
+afsocket_sd_save_dynamic_window_pool(AFSocketSourceDriver *self)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
 
   if (self->connections_kept_alive_across_reloads)
     {
       cfg_persist_config_add(cfg, afsocket_sd_format_dynamic_window_pool_name(self),
-                             self->dynamic_window_ctr, (GDestroyNotify) dynamic_window_pool_unref, FALSE);
+                             self->dynamic_window_pool, (GDestroyNotify) dynamic_window_pool_unref, FALSE);
     }
   else
     {
-      dynamic_window_pool_unref(self->dynamic_window_ctr);
+      dynamic_window_pool_unref(self->dynamic_window_pool);
     }
 
-  self->dynamic_window_ctr = NULL;
+  self->dynamic_window_pool = NULL;
 }
 
 static gboolean
-afsocket_sd_restore_dynamic_window_ctr(AFSocketSourceDriver *self)
+afsocket_sd_restore_dynamic_window_pool(AFSocketSourceDriver *self)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
 
@@ -909,7 +909,7 @@ afsocket_sd_restore_dynamic_window_ctr(AFSocketSourceDriver *self)
   if (ctr == NULL)
     return FALSE;
 
-  self->dynamic_window_ctr = ctr;
+  self->dynamic_window_pool = ctr;
   return TRUE;
 }
 
@@ -931,12 +931,12 @@ afsocket_sd_init_method(LogPipe *s)
   if (!afsocket_sd_setup_transport(self) || !afsocket_sd_setup_addresses(self))
     return FALSE;
 
-  if (!afsocket_sd_restore_dynamic_window_ctr(self))
+  if (!afsocket_sd_restore_dynamic_window_pool(self))
     {
       if (self->dynamic_window_size != 0)
         {
-          self->dynamic_window_ctr = dynamic_window_pool_new(self->dynamic_window_size);
-          dynamic_window_pool_init(self->dynamic_window_ctr);
+          self->dynamic_window_pool = dynamic_window_pool_new(self->dynamic_window_size);
+          dynamic_window_pool_init(self->dynamic_window_pool);
         }
     }
 
@@ -951,8 +951,8 @@ afsocket_sd_deinit_method(LogPipe *s)
   afsocket_sd_save_connections(self);
   afsocket_sd_save_listener(self);
 
-  if (self->dynamic_window_ctr)
-    afsocket_sd_save_dynamic_window_ctr(self);
+  if (self->dynamic_window_pool)
+    afsocket_sd_save_dynamic_window_pool(self);
 
   return log_src_driver_deinit_method(s);
 }

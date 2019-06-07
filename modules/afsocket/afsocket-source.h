@@ -48,7 +48,7 @@ struct _AFSocketSourceDriver
   gint dynamic_window_realloc_ticks;
   gint fd;
   LogReaderOptions reader_options;
-  DynamicWindowPool *dynamic_window_ctr;
+  DynamicWindowPool *dynamic_window_pool;
   LogProtoServerFactory *proto_factory;
   GSockAddr *bind_addr;
   gint max_connections;

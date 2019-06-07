@@ -34,9 +34,9 @@ struct _DynamicWindowPool
 {
   GAtomicCounter ref_cnt;
 
-  gsize iw_size;
-  gsize window;
-  gsize balanced_window;//target
+  gsize pool_size;
+  gsize free_window;
+  gsize balanced_window;
 };
 
 DynamicWindowPool *dynamic_window_pool_new(gsize iw_size);
