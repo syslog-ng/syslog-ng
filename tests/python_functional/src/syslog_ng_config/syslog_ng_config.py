@@ -37,8 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 class SyslogNgConfig(object):
-    def __init__(self, working_dir, version):
-        self.__working_dir = working_dir
+    def __init__(self, version):
         self.__raw_config = None
         self.__syslog_ng_config = {
             "version": version,
@@ -61,7 +60,7 @@ class SyslogNgConfig(object):
         if self.__raw_config:
             rendered_config = self.__raw_config
         else:
-            rendered_config = ConfigRenderer(self.__syslog_ng_config, self.__working_dir).get_rendered_config()
+            rendered_config = ConfigRenderer(self.__syslog_ng_config).get_rendered_config()
         logger.info("Generated syslog-ng config\n{}\n".format(rendered_config))
         FileIO(config_path).rewrite(rendered_config)
 
@@ -90,10 +89,10 @@ class SyslogNgConfig(object):
         self.__syslog_ng_config["global_options"].update(kwargs)
 
     def create_file_source(self, **kwargs):
-        return FileSource(self.__working_dir, **kwargs)
+        return FileSource(**kwargs)
 
     def create_file_destination(self, **kwargs):
-        return FileDestination(self.__working_dir, **kwargs)
+        return FileDestination(**kwargs)
 
     def create_filter(self, **kwargs):
         return Filter(**kwargs)

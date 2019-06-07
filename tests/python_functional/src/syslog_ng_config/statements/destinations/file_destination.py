@@ -22,14 +22,15 @@
 #############################################################################
 from pathlib2 import Path
 
+import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.driver_io.file.file_io import FileIO
 from src.syslog_ng_config.statements.destinations.destination_driver import DestinationDriver
 
 
 class FileDestination(DestinationDriver):
-    def __init__(self, working_dir, file_name, **options):
+    def __init__(self, file_name, **options):
         self.driver_name = "file"
-        self.path = Path(working_dir, file_name)
+        self.path = Path(tc_parameters.WORKING_DIR, file_name)
         super(FileDestination, self).__init__(FileIO, [self.path], options)
 
     def get_path(self):
