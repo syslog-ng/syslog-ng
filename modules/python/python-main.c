@@ -30,7 +30,7 @@
 
 /*
  * Some information about how we embed the Python interpreter:
- *  - instead of using the __main__ module, we use a separate _syslogng
+ *  - instead of using the __main__ module, we use a separate _syslogng_main
  *    module as we want to replace it every time syslog-ng is reloaded
  *  - hanlding of our separate main module is implemented by this module
  *  - this separate __main__ module requires some magic though (most of it
@@ -38,9 +38,9 @@
  *  - the PyObject reference to the current main module is stored in the
  *    GlobalConfig instance (using the ModuleConfig mechanism)
  *  - the current main module is switched during config initialization, e.g.
- *    during runtime, _syslogng module refers to the main module of the current
+ *    during runtime, _syslogng_main module refers to the main module of the current
  *    config
- *  - since _syslogng is different for each initialized syslog-ng
+ *  - since _syslogng_main is different for each initialized syslog-ng
  *    configuration, it is not possible to use variables between reloads,
  *    _except_ by storing them in other, imported modules.
  *  - it is currently not possible to hook into the init/deinit mechanism in
@@ -56,11 +56,11 @@ _py_construct_main_module(void)
   PyObject *modules = PyImport_GetModuleDict();
 
   /* make sure the module registry doesn't contain our module */
-  if (PyDict_DelItemString(modules, "_syslogng") < 0)
+  if (PyDict_DelItemString(modules, "_syslogng_main") < 0)
     PyErr_Clear();
 
   /* create a new module */
-  module = PyImport_AddModule("_syslogng");
+  module = PyImport_AddModule("_syslogng_main");
   if (!module)
     {
       gchar buf[256];
@@ -88,7 +88,7 @@ _py_construct_main_module(void)
   return module;
 }
 
-/* switch the _syslogng main module to the one in a specific configuration */
+/* switch the _syslogng_main module to the one in a specific configuration */
 void
 _py_switch_main_module(PythonConfig *pc)
 {
@@ -97,11 +97,11 @@ _py_switch_main_module(PythonConfig *pc)
   if (pc->main_module)
     {
       Py_INCREF(pc->main_module);
-      PyDict_SetItemString(modules, "_syslogng", pc->main_module);
+      PyDict_SetItemString(modules, "_syslogng_main", pc->main_module);
     }
   else
     {
-      PyDict_DelItemString(modules, "_syslogng");
+      PyDict_DelItemString(modules, "_syslogng_main");
     }
 }
 
@@ -114,7 +114,7 @@ _py_switch_main_module(PythonConfig *pc)
 PyObject *
 _py_get_current_main_module(void)
 {
-  return PyImport_AddModule("_syslogng");
+  return PyImport_AddModule("_syslogng_main");
 }
 
 /* get the current main module as stored in the current GlobalConfig.
@@ -146,7 +146,7 @@ _py_evaluate_global_code(PythonConfig *pc, const gchar *filename, const gchar *c
    *
    * This implementation basically mimics what an import would do, compiles
    * the code as it was coming from a "virtual" file and then executes the
-   * compiled code in the context of the _syslogng module.
+   * compiled code in the context of the _syslogng_main module.
    *
    * Since we attach a __loader__ to the module, that will be called when
    * the source is needed to report backtraces.  Its implementation is in
@@ -165,7 +165,7 @@ _py_evaluate_global_code(PythonConfig *pc, const gchar *filename, const gchar *c
       _py_finish_exception_handling();
       return FALSE;
     }
-  module = PyImport_ExecCodeModuleEx("_syslogng", code_object, (char *) filename);
+  module = PyImport_ExecCodeModuleEx("_syslogng_main", code_object, (char *) filename);
   Py_DECREF(code_object);
 
   if (!module)

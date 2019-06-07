@@ -27,7 +27,7 @@
 static PyTypeObject py_global_code_loader_type;
 
 /* This class implements the Loader interface attached to the main module
- * (e.g.  _syslogng), so the details of exceptions can be properly reported.
+ * (e.g.  _syslogng_main), so the details of exceptions can be properly reported.
  */
 
 typedef struct _PyGlobalCodeLoader
