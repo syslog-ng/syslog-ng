@@ -1120,7 +1120,7 @@ log_writer_flush_finalize(LogWriter *self)
   return FALSE;
 }
 
-gboolean
+static gboolean
 log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_options, gboolean *write_error)
 {
   gboolean consumed = FALSE;
@@ -1228,7 +1228,7 @@ log_writer_process_handshake(LogWriter *self)
  * LW_FLUSH_FORCE     - flush the buffer immediately please
  *
  */
-gboolean
+static gboolean
 log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
 {
   gboolean write_error = FALSE;
@@ -1273,13 +1273,13 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
   return log_writer_flush_finalize(self);
 }
 
-gboolean
+static gboolean
 log_writer_forced_flush(LogWriter *self)
 {
   return log_writer_flush(self, LW_FLUSH_FORCE);
 }
 
-gboolean
+static gboolean
 log_writer_process_in(LogWriter *self)
 {
   if (!self->proto)
@@ -1288,7 +1288,7 @@ log_writer_process_in(LogWriter *self)
   return (log_proto_client_process_in(self->proto) == LPS_SUCCESS);
 }
 
-gboolean
+static gboolean
 log_writer_process_out(LogWriter *self)
 {
   return log_writer_flush(self, LW_FLUSH_NORMAL);
@@ -1534,7 +1534,7 @@ log_writer_set_pending_proto(LogWriter *self, LogProtoClient *proto, gboolean pr
  * the destination LogProtoClient instance. It needs to be ran in the main
  * thread as it reregisters the watches associated with the main
  * thread. */
-void
+static void
 log_writer_reopen_deferred(gpointer s)
 {
   gpointer *args = (gpointer *) s;
