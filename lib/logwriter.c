@@ -1574,6 +1574,7 @@ log_writer_reopen_deferred(gpointer s)
     }
 
   log_writer_stop_watches(self);
+  log_writer_stop_suspend_timer(self);
   log_writer_stop_idle_timer(self);
 
   if (self->partial_write)
