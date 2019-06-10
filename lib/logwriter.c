@@ -1452,6 +1452,9 @@ log_writer_deinit(LogPipe *s)
   if (iv_timer_registered(&self->reopen_timer))
     iv_timer_unregister(&self->reopen_timer);
 
+  if (iv_timer_registered(&self->suspend_timer))
+    iv_timer_unregister(&self->suspend_timer);
+
   ml_batched_timer_unregister(&self->suppress_timer);
   ml_batched_timer_unregister(&self->mark_timer);
 
