@@ -2,7 +2,9 @@ FROM fedora:30
 LABEL maintainer="Andras Mitzki <andras.mitzki@balabit.com>, Laszlo Szemere <laszlo.szemere@balabit.com>, Balazs Scheidler <balazs.scheidler@oneidentity.com>"
 
 ARG OS_PLATFORM
+ARG COMMIT
 ENV OS_PLATFORM ${OS_PLATFORM}
+LABEL COMMIT=${COMMIT}
 
 COPY helpers/* /helpers/
 
