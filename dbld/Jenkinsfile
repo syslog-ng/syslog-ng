@@ -19,7 +19,7 @@ def generateStage(platform) {
         }
         stage("${platform} - Docker Image") {
             echo "Platform: ${platform}; Step: image"
-            sh "cd ${platform}; dbld/rules image-${platform}"
+            sh "cd ${platform}; dbld/rules check-image-${platform}"
         }
 //        stage("${platform} - bootstrap") {
 //            echo "Platform: ${platform}; Step: bootstrap"
