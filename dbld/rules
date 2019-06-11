@@ -136,6 +136,18 @@ image: image-$(DEFAULT_IMAGE)
 image-%:
 	cd $(DBLD_DIR)/images/ && $(DOCKER) build --build-arg=OS_PLATFORM=$* --build-arg=COMMIT=$$(git rev-parse --short HEAD) --network=host -t balabit/syslog-ng-$* -f $*.dockerfile .
 
+check-image-%:
+	@image_commit=$$(docker inspect  --format '{{ index .Config.Labels "COMMIT"}}' balabit/syslog-ng-$*);		\
+	dbld_changed=$$(git diff $${image_commit:-NO_COMMIT_LABEL_IN_DBLD_IMAGE} -- dbld | wc -l);		\
+	if [ "$$dbld_changed" -gt 0 ]; then							\
+		echo "DBLD changed since last build, triggering rebuild" &&			\
+		git diff $$image_commit &&							\
+		$(MAKE) -f $(DBLD_DIR)/rules image-$*;						\
+	else 											\
+		echo "DBLD version in image matches, not initiating rebuild...";		\
+	fi
+
+
 exec: exec-$(DEFAULT_IMAGE)
 exec: EXEC_COMMAND=echo Specify EXEC_COMMAND to do something sensible here
 exec-%: setup
