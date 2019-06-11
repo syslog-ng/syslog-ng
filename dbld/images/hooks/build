@@ -1,0 +1,8 @@
+#!/bin/sh
+
+set +x
+set +e
+
+OS_PLATFORM=$(basename $DOCKERFILE_PATH .dockerfile)
+
+docker build --build-arg=COMMIT=$(git rev-parse --short HEAD) --build-arg=OS_PLATFORM=${OS_PLATFORM} -t $IMAGE_NAME -f $DOCKERFILE_PATH .
