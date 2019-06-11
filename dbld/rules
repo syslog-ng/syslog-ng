@@ -134,7 +134,7 @@ shell-%: setup
 images: $(foreach image,$(IMAGES), image-$(image))
 image: image-$(DEFAULT_IMAGE)
 image-%:
-	cd $(DBLD_DIR)/images/ && $(DOCKER) build --network=host -t balabit/syslog-ng-$* -f $*.dockerfile .
+	cd $(DBLD_DIR)/images/ && $(DOCKER) build --build-arg=OS_PLATFORM=$* --build-arg=COMMIT=$$(git rev-parse --short HEAD) --network=host -t balabit/syslog-ng-$* -f $*.dockerfile .
 
 exec: exec-$(DEFAULT_IMAGE)
 exec: EXEC_COMMAND=echo Specify EXEC_COMMAND to do something sensible here
