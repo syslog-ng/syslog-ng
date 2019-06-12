@@ -536,8 +536,6 @@ log_writer_stop_watches(LogWriter *self)
       if (iv_timer_registered(&self->reopen_timer))
         iv_timer_unregister(&self->reopen_timer);
 
-      log_writer_stop_suspend_timer(self);
-
       if (iv_fd_registered(&self->fd_watch))
         iv_fd_unregister(&self->fd_watch);
       if (iv_task_registered(&self->immed_io_task))
@@ -547,6 +545,8 @@ log_writer_stop_watches(LogWriter *self)
 
       self->watches_running = FALSE;
     }
+
+  log_writer_stop_suspend_timer(self);
 }
 
 static void
@@ -1460,8 +1460,6 @@ log_writer_deinit(LogPipe *s)
   if (iv_timer_registered(&self->reopen_timer))
     iv_timer_unregister(&self->reopen_timer);
 
-  log_writer_stop_suspend_timer(self);
-
   ml_batched_timer_unregister(&self->suppress_timer);
   ml_batched_timer_unregister(&self->mark_timer);
 
@@ -1574,7 +1572,6 @@ log_writer_reopen_deferred(gpointer s)
     }
 
   log_writer_stop_watches(self);
-  log_writer_stop_suspend_timer(self);
   log_writer_stop_idle_timer(self);
 
   if (self->partial_write)
