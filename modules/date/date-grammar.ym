@@ -70,7 +70,7 @@ date_parser_options
         ;
 
 date_parser_option
-        : KW_FORMAT '(' string ')'                  { date_parser_set_format(last_parser, $3); free($3); }
+        : KW_FORMAT '(' string_list ')'             { date_parser_set_formats(last_parser, $3); }
         | KW_TIME_ZONE '(' string ')'               { date_parser_set_timezone(last_parser, $3); free($3); }
 	| KW_TIME_STAMP '(' date_parser_stamp ')'   { date_parser_set_time_stamp(last_parser, $3); }
 	| KW_FLAGS '(' date_parser_flags ')'
