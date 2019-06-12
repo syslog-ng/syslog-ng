@@ -72,13 +72,13 @@ date_parser_options
 date_parser_option
         : KW_FORMAT '(' string_list ')'             { date_parser_set_formats(last_parser, $3); }
         | KW_TIME_ZONE '(' string ')'               { date_parser_set_timezone(last_parser, $3); free($3); }
-	| KW_TIME_STAMP '(' date_parser_stamp ')'   { date_parser_set_time_stamp(last_parser, $3); }
-	| KW_FLAGS '(' date_parser_flags ')'
+        | KW_TIME_STAMP '(' date_parser_stamp ')'   { date_parser_set_time_stamp(last_parser, $3); }
+        | KW_FLAGS '(' date_parser_flags ')'
         | parser_opt
         ;
 
 date_parser_stamp
-	: string
+        : string
           {
             $$ = log_msg_lookup_time_stamp_name($1);
             CHECK_ERROR($$ != -1, @1, "unknown time stamp name %s", $1);
@@ -86,7 +86,7 @@ date_parser_stamp
           }
 
 date_parser_flags
-	: string date_parser_flags         { CHECK_ERROR(date_parser_process_flag(last_parser, $1), @1, "Unknown flag %s", $1); free($1); }
+        : string date_parser_flags         { CHECK_ERROR(date_parser_process_flag(last_parser, $1), @1, "Unknown flag %s", $1); free($1); }
         |
         ;
 
