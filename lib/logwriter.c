@@ -252,7 +252,6 @@ log_writer_io_handler(gpointer s, GIOCondition cond)
   main_loop_assert_main_thread();
 
   log_writer_stop_watches(self);
-  log_writer_stop_idle_timer(self);
   if ((self->options->options & LWO_THREADED))
     {
       main_loop_io_worker_job_submit(&self->io_job, cond);
@@ -547,6 +546,7 @@ log_writer_stop_watches(LogWriter *self)
     }
 
   log_writer_stop_suspend_timer(self);
+  log_writer_stop_idle_timer(self);
 }
 
 static void
@@ -1092,7 +1092,6 @@ static void
 log_writer_broken(LogWriter *self, gint notify_code)
 {
   log_writer_stop_watches(self);
-  log_writer_stop_idle_timer(self);
   log_pipe_notify(self->control, notify_code, self);
 }
 
@@ -1453,7 +1452,6 @@ log_writer_deinit(LogPipe *s)
    * some kind of locking. */
 
   log_writer_stop_watches(self);
-  log_writer_stop_idle_timer(self);
 
   iv_event_unregister(&self->queue_filled);
 
@@ -1572,7 +1570,6 @@ log_writer_reopen_deferred(gpointer s)
     }
 
   log_writer_stop_watches(self);
-  log_writer_stop_idle_timer(self);
 
   if (self->partial_write)
     {
