@@ -176,6 +176,7 @@ python_fetcher_option
         | KW_LOADERS python_fetcher_loaders
         | KW_OPTIONS '(' python_fetcher_custom_options ')'
         | threaded_source_driver_option
+        | threaded_fetcher_driver_option
         ;
 
 python_fetcher_custom_options

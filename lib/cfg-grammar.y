@@ -41,6 +41,7 @@
 #include "logmatcher.h"
 #include "logthrdest/logthrdestdrv.h"
 #include "logthrsource/logthrsourcedrv.h"
+#include "logthrsource/logthrfetcherdrv.h"
 #include "str-utils.h"
 
 /* uses struct declarations instead of the typedefs to avoid having to
@@ -347,6 +348,7 @@ extern struct _StatsOptions *last_stats_options;
 
 %token KW_RETRIES                     10512
 
+%token KW_FETCH_NO_DATA_DELAY         10513
 /* END_DECLS */
 
 %code {
@@ -1210,6 +1212,10 @@ threaded_source_driver_option
         | { last_msg_format_options = log_threaded_source_driver_get_parse_options(last_driver); } msg_format_option
         | { last_source_options = log_threaded_source_driver_get_source_options(last_driver); } source_option
         | source_driver_option
+        ;
+
+threaded_fetcher_driver_option
+        : KW_FETCH_NO_DATA_DELAY '(' nonnegative_integer ')' { log_threaded_fetcher_driver_set_fetch_no_data_delay(last_driver, $3); }
         ;
 
 threaded_source_driver_option_flags
