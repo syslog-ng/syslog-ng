@@ -51,6 +51,9 @@ class ConsoleLogReader(object):
         ]
         return self.__wait_for_messages_in_console_log(syslog_ng_reload_messages)
 
+    def wait_for_console_log(self, message):
+        return self.__wait_for_messages_in_console_log(expected_messages=[message])
+
     def __wait_for_messages_in_console_log(self, expected_messages):
         if not self.__stderr_io.wait_for_creation():
             raise Exception

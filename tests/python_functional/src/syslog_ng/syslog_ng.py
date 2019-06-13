@@ -20,6 +20,7 @@
 # COPYING for details.
 #
 #############################################################################
+from src.syslog_ng.console_log_reader import ConsoleLogReader
 from src.syslog_ng.syslog_ng_cli import SyslogNgCli
 
 
@@ -27,6 +28,7 @@ class SyslogNg(object):
     def __init__(self, instance_paths, testcase_parameters):
         self.instance_paths = instance_paths
         self.__syslog_ng_cli = SyslogNgCli(instance_paths, testcase_parameters)
+        self.__console_log_reader = ConsoleLogReader(instance_paths)
 
     def start(self, config):
         self.__syslog_ng_cli.start(config)
@@ -46,3 +48,6 @@ class SyslogNg(object):
 
     def is_process_running(self):
         return self.__syslog_ng_cli.is_process_running()
+
+    def wait_for_console_log(self, message):
+        return self.__console_log_reader.wait_for_console_log(message)
