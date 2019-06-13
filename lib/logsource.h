@@ -74,8 +74,13 @@ struct _LogSource
   gsize full_window_size;
   atomic_gssize window_size_to_be_reclaimed;
   atomic_gssize pending_reclaimed;
+  StatsCounterItem *stat_window_size;
+  StatsCounterItem *stat_full_window;
   StatsCounterItem *last_message_seen;
   StatsCounterItem *recvd_messages;
+  StatsCluster *stat_window_size_cluster;
+  StatsCluster *stat_full_window_cluster;
+
   guint32 last_ack_count;
   guint32 ack_count;
   glong window_full_sleep_nsec;
