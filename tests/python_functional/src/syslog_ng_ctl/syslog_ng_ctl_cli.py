@@ -33,6 +33,12 @@ class SyslogNgCtlCli(object):
     def stop(self):
         return self.__syslog_ng_ctl_executor.run_command(command_short_name="stop", command=["stop"])
 
+    def reopen(self):
+        result = self.__syslog_ng_ctl_executor.run_command(command_short_name="reopen", command=["reopen"])
+        assert result['exit_code'] == 0
+        assert result['stdout'] == "Re-open of log destination files initiated\n"
+        assert result['stderr'] == ""
+
     def stats(self, reset):
         ctl_stats_command = self.__syslog_ng_ctl_executor.construct_ctl_stats_command(reset=reset)
         return self.__syslog_ng_ctl_executor.run_command(command_short_name="stats", command=ctl_stats_command)

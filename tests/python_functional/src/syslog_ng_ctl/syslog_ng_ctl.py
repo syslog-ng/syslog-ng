@@ -33,5 +33,8 @@ class SyslogNgCtl(object):
     def stop(self):
         return self.__syslog_ng_ctl_cli.stop()
 
+    def reopen(self):
+        return self.__syslog_ng_ctl_cli.reopen()
+
     def is_control_socket_alive(self):
         return self.__syslog_ng_ctl_cli.is_control_socket_alive()
