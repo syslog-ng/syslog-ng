@@ -390,11 +390,12 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
                              _cfg_lex_extend_token_location_to_next_line(yyextra);
                            }
 
-    /* continuation line within blocks: for now an incorrect behavior to not
-     * cause functional change in this patch.  Drop the continuation line
-     * from the block value while still updating the location info.  */
+    /* continuation line within blocks: in the block header we just ignore
+     * the continuation line, whereas in string/qstring we retain them
+     * literally.  */
 
-<block,block_content,block_string,block_qstring>\\\r?\n                 { _cfg_lex_extend_token_location_to_next_line(yyextra); }
+<block,block_content>\\\r?\n          { _cfg_lex_extend_token_location_to_next_line(yyextra); }
+<block_string,block_qstring>\\\r?\n   { g_string_append(yyextra->string_buffer, yytext); _cfg_lex_extend_token_location_to_next_line(yyextra); }
 
     /* rules to parse a block as a LL_BLOCK token */
 <block>{white}+            ;
@@ -454,10 +455,13 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 
                            }
 
-<block_content>[^{}()\"\'\n\r#]+   { g_string_append(yyextra->string_buffer, yytext); }
 
-<block_string>[^"\r\n]+    { g_string_append(yyextra->string_buffer, yytext); }
-<block_string>\\\"         { g_string_append(yyextra->string_buffer, yytext); }
+<block_content>[^{}()\"\'\n\r#]+   {
+                             g_string_append(yyextra->string_buffer, yytext);
+                           }
+
+<block_string>[^\\"\r\n]+  { g_string_append(yyextra->string_buffer, yytext); }
+<block_string>\\.          { g_string_append(yyextra->string_buffer, yytext); }
 <block_string>\"           {
                              g_string_append_c(yyextra->string_buffer, yytext[0]);
                              yy_pop_state(yyscanner);
