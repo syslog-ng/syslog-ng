@@ -9,7 +9,7 @@ modules_basicfuncs_libbasicfuncs_la_CPPFLAGS	=	\
 modules_basicfuncs_libbasicfuncs_la_LIBADD	=	\
 	$(MODULE_DEPS_LIBS)
 modules_basicfuncs_libbasicfuncs_la_LDFLAGS	=	\
-	$(MODULE_LDFLAGS)
+	$(MODULE_LDFLAGS) -lm
 modules_basicfuncs_libbasicfuncs_la_DEPENDENCIES=	\
 	$(MODULE_DEPS_LIBS)
 

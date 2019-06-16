@@ -164,6 +164,24 @@ _parse_number(const gchar *s, gchar **endptr, gint base, gint64 *d)
   return TRUE;
 }
 
+static gboolean
+_parse_float(const gchar *s, gchar **endptr, gdouble *d)
+{
+  gdouble val;
+
+  errno = 0;
+  val = strtod(s, endptr);
+
+  if (errno == ERANGE)
+    return FALSE;
+
+  if (*endptr == s)
+    return FALSE;
+
+  *d = val;
+  return TRUE;
+}
+
 gboolean
 parse_number(const gchar *s, gint64 *d)
 {
@@ -182,6 +200,18 @@ parse_dec_number(const gchar *s, gint64 *d)
   gchar *endptr;
 
   if (!_parse_number(s, &endptr, DECIMAL_BASE, d))
+    return FALSE;
+  if (*endptr)
+    return FALSE;
+  return TRUE;
+}
+
+gboolean
+parse_float(const gchar *s, gdouble *d)
+{
+  gchar *endptr;
+
+  if (!_parse_float(s, &endptr, d))
     return FALSE;
   if (*endptr)
     return FALSE;
