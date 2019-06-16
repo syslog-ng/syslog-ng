@@ -1,6 +1,5 @@
-#!/usr/bin/env python
 #############################################################################
-# Copyright (c) 2015-2018 Balabit
+# Copyright (c) 2019 Balabit
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -20,25 +19,16 @@
 # COPYING for details.
 #
 #############################################################################
-import pytest
-
-from src.common.network_operations import get_short_hostname
-
-input_log = "<38>Feb 11 21:27:22 {} testprogram[9999]: test message\n".format(get_short_hostname())
-expected_log = "Feb 11 21:27:22 {} testprogram[9999]: test message\n".format(get_short_hostname())
+import socket
 
 
-@pytest.mark.parametrize(
-    "input_log, expected_log, counter", [
-        (input_log, expected_log, 1),
-        (input_log, expected_log, 10),
-    ], ids=["with_one_log", "with_ten_logs"],
-)
-def test_acceptance(config, syslog_ng, input_log, expected_log, counter):
-    file_source = config.create_file_source(file_name="input.log")
-    file_destination = config.create_file_destination(file_name="output.log")
-    config.create_logpath(statements=[file_source, file_destination])
+def get_hostname():
+    return socket.gethostname()
 
-    file_source.write_log(input_log, counter)
-    syslog_ng.start(config)
-    assert file_destination.read_logs(counter) == [expected_log] * counter
+
+def get_fqdn():
+    return socket.getfqdn()
+
+
+def get_short_hostname():
+    return get_fqdn().split('.')[0]
