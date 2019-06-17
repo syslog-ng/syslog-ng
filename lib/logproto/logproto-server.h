@@ -195,6 +195,7 @@ void log_proto_server_free(LogProtoServer *s);
 static inline void
 log_proto_server_set_ack_tracker(LogProtoServer *s, AckTracker *ack_tracker)
 {
+  g_assert(ack_tracker);
   s->ack_tracker = ack_tracker;
 }
 

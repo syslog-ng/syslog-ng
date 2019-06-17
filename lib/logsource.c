@@ -225,10 +225,24 @@ log_source_mangle_hostname(LogSource *self, LogMessage *msg)
     }
 }
 
+static inline void
+_create_ack_tracker_if_not_exists(LogSource *self)
+{
+  if (!self->ack_tracker)
+    {
+      if (self->pos_tracked)
+        self->ack_tracker = late_ack_tracker_new(self);
+      else
+        self->ack_tracker = early_ack_tracker_new(self);
+    }
+}
+
 gboolean
 log_source_init(LogPipe *s)
 {
   LogSource *self = (LogSource *) s;
+
+  _create_ack_tracker_if_not_exists(self);
 
   stats_lock();
   StatsClusterKey sc_key;
@@ -391,18 +405,6 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
 
 }
 
-static inline void
-_create_ack_tracker_if_not_exists(LogSource *self, gboolean pos_tracked)
-{
-  if (!self->ack_tracker)
-    {
-      if (pos_tracked)
-        self->ack_tracker = late_ack_tracker_new(self);
-      else
-        self->ack_tracker = early_ack_tracker_new(self);
-    }
-}
-
 void
 log_source_set_options(LogSource *self, LogSourceOptions *options,
                        const gchar *stats_id, const gchar *stats_instance,
@@ -425,8 +427,6 @@ log_source_set_options(LogSource *self, LogSourceOptions *options,
   self->pos_tracked = pos_tracked;
   log_pipe_detach_expr_node(&self->super);
   log_pipe_attach_expr_node(&self->super, expr_node);
-
-  _create_ack_tracker_if_not_exists(self, pos_tracked);
 }
 
 void
