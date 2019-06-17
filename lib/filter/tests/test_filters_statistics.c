@@ -84,7 +84,7 @@ teardown(void)
 
 TestSuite(test_filters_statistics, .init = setup, .fini = teardown);
 
-Test(test_filters_statistics, filter_stastistics)
+Test(test_filters_statistics, filter_statistics)
 {
   msg_format_options_defaults(&parse_options);
   msg_format_options_init(&parse_options, configuration);

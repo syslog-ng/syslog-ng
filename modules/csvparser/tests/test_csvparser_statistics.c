@@ -71,7 +71,7 @@ _parse_msg(LogParser *self, gchar *msg)
   log_msg_unref(logmsg);
 }
 
-Test(test_filters_statistics, filter_stastistics)
+Test(test_filters_statistics, filter_statistics)
 {
   app_startup();
   configuration = cfg_new_snippet();
