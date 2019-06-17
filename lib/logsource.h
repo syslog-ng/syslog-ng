@@ -66,6 +66,7 @@ struct _LogSource
   LogSourceOptions *options;
   gboolean threaded;
   gboolean pos_tracked;
+  gchar *name;
   gchar *stats_id;
   gchar *stats_instance;
   WindowSizeCounter window_size;
@@ -118,6 +119,7 @@ void log_source_post(LogSource *self, LogMessage *msg);
 
 void log_source_set_options(LogSource *self, LogSourceOptions *options, const gchar *stats_id,
                             const gchar *stats_instance, gboolean threaded, gboolean pos_tracked, LogExprNode *expr_node);
+void log_source_set_name(LogSource *self, const gchar *name);
 void log_source_mangle_hostname(LogSource *self, LogMessage *msg);
 void log_source_init_instance(LogSource *self, GlobalConfig *cfg);
 void log_source_options_defaults(LogSourceOptions *options);

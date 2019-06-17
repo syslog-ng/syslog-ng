@@ -635,6 +635,13 @@ log_source_set_options(LogSource *self, LogSourceOptions *options,
 }
 
 void
+log_source_set_name(LogSource *self, const gchar *name)
+{
+  g_free(self->name);
+  self->name = name ? g_strdup(name) : NULL;
+}
+
+void
 log_source_init_instance(LogSource *self, GlobalConfig *cfg)
 {
   log_pipe_init_instance(&self->super, cfg);
@@ -651,6 +658,7 @@ log_source_free(LogPipe *s)
 {
   LogSource *self = (LogSource *) s;
 
+  g_free(self->name);
   g_free(self->stats_id);
   g_free(self->stats_instance);
   log_pipe_detach_expr_node(&self->super);

@@ -79,6 +79,12 @@ log_reader_set_options(LogReader *s, LogPipe *control, LogReaderOptions *options
 }
 
 void
+log_reader_set_name(LogReader *self, const gchar *name)
+{
+  log_source_set_name(&self->super, name);
+}
+
+void
 log_reader_disable_bookmark_saving(LogReader *s)
 {
   log_source_disable_bookmark_saving(&s->super);
