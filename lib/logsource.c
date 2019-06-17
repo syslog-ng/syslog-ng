@@ -391,17 +391,18 @@ _register_window_stats(LogSource *self)
   if (!stats_check_level(3))
     return;
 
-  StatsClusterKey sc_key;
+  const gchar *instance_name = self->name ? : self->stats_instance;
 
+  StatsClusterKey sc_key;
   stats_cluster_single_key_set_with_name(&sc_key, self->options->stats_source | SCS_SOURCE, self->stats_id,
-                                        self->stats_instance, "window_size");
+                                        instance_name, "free_window");
   self->stat_window_size_cluster = stats_register_dynamic_counter(3, &sc_key, SC_TYPE_SINGLE_VALUE,
                                                                   &self->stat_window_size);
   stats_counter_set(self->stat_window_size, window_size_counter_get(&self->window_size, NULL));
 
 
   stats_cluster_single_key_set_with_name(&sc_key, self->options->stats_source | SCS_SOURCE, self->stats_id,
-                                        self->stats_instance, "full_window");
+                                        instance_name, "full_window");
   self->stat_full_window_cluster = stats_register_dynamic_counter(3, &sc_key, SC_TYPE_SINGLE_VALUE,
                                                                   &self->stat_full_window);
   stats_counter_set(self->stat_full_window, self->full_window_size);
