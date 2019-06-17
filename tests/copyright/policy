@@ -1,4 +1,5 @@
  ignore
+.ctags
 scl/syslogconf/convert-syslogconf.awk$
 .*/.*\.am$
 .*\.(ql|yml|md|y|l|txt|xml|xsd|log|key|crt|files|in|conf\.example|gradle|mk|supp|sub|guess|list|pc\.cmake)$
@@ -80,3 +81,4 @@ modules/http/tests
  GPLv2+_SSL,non-balabit
 modules/http/(http|http-parser|http-plugin|)\.[ch]
 modules/http/http-grammar.ym
+
