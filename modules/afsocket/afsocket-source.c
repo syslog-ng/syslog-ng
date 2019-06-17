@@ -55,7 +55,7 @@ typedef struct _AFSocketSourceConnection
 static void afsocket_sd_close_connection(AFSocketSourceDriver *self, AFSocketSourceConnection *sc);
 
 static gchar *
-afsocket_sc_stats_instance(AFSocketSourceConnection *self)
+_format_sc_name(AFSocketSourceConnection *self, gint format_type)
 {
   static gchar buf[256];
   gchar peer_addr[MAX_SOCKADDR_STRING];
@@ -65,16 +65,28 @@ afsocket_sc_stats_instance(AFSocketSourceConnection *self)
       /* dgram connection, which means we have no peer, use the bind address */
       if (self->owner->bind_addr)
         {
-          g_sockaddr_format(self->owner->bind_addr, buf, sizeof(buf), GSA_ADDRESS_ONLY);
+          g_sockaddr_format(self->owner->bind_addr, buf, sizeof(buf), format_type);
           return buf;
         }
       else
         return NULL;
     }
 
-  g_sockaddr_format(self->peer_addr, peer_addr, sizeof(peer_addr), GSA_ADDRESS_ONLY);
+  g_sockaddr_format(self->peer_addr, peer_addr, sizeof(peer_addr), format_type);
   g_snprintf(buf, sizeof(buf), "%s,%s", self->owner->transport_mapper->transport, peer_addr);
   return buf;
+}
+
+static gchar *
+afsocket_sc_stats_instance(AFSocketSourceConnection *self)
+{
+  return _format_sc_name(self, GSA_ADDRESS_ONLY);
+}
+
+static gchar *
+afsocket_sc_format_name(AFSocketSourceConnection *self)
+{
+  return _format_sc_name(self, GSA_FULL);
 }
 
 static LogTransport *
@@ -115,6 +127,7 @@ afsocket_sc_init(LogPipe *s)
                          &self->owner->reader_options,
                          self->owner->super.super.id,
                          afsocket_sc_stats_instance(self));
+  log_reader_set_name(self->reader, afsocket_sc_format_name(self));
 
   if (!restored_kept_alive_source && self->owner->dynamic_window_pool)
     log_source_enable_dynamic_window(&self->reader->super, self->owner->dynamic_window_pool);
