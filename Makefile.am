@@ -242,3 +242,13 @@ VALGRIND_memcheck_FLAGS = \
   --freelist-big-blocks=10''000''000 \
   --malloc-fill=55 \
   --free-fill=AA
+
+
+.PHONY: ci-unit ci-codestyle ci-functional
+
+# check includes python-unit through test_pylib.sh
+ci-unit: check pytest-self-check
+
+ci-codestyle: python-pep8 python-pylint pytest-linters
+
+ci-functional: func-test pytest-check
