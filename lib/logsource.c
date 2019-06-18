@@ -388,23 +388,23 @@ log_source_mangle_hostname(LogSource *self, LogMessage *msg)
 static void
 _register_window_stats(LogSource *self)
 {
-  if (!stats_check_level(3))
+  if (!stats_check_level(4))
     return;
 
   const gchar *instance_name = self->name ? : self->stats_instance;
 
   StatsClusterKey sc_key;
   stats_cluster_single_key_set_with_name(&sc_key, self->options->stats_source | SCS_SOURCE, self->stats_id,
-                                        instance_name, "free_window");
-  self->stat_window_size_cluster = stats_register_dynamic_counter(3, &sc_key, SC_TYPE_SINGLE_VALUE,
-                                                                  &self->stat_window_size);
+                                         instance_name, "free_window");
+  self->stat_window_size_cluster = stats_register_dynamic_counter(4, &sc_key, SC_TYPE_SINGLE_VALUE,
+                                   &self->stat_window_size);
   stats_counter_set(self->stat_window_size, window_size_counter_get(&self->window_size, NULL));
 
 
   stats_cluster_single_key_set_with_name(&sc_key, self->options->stats_source | SCS_SOURCE, self->stats_id,
-                                        instance_name, "full_window");
-  self->stat_full_window_cluster = stats_register_dynamic_counter(3, &sc_key, SC_TYPE_SINGLE_VALUE,
-                                                                  &self->stat_full_window);
+                                         instance_name, "full_window");
+  self->stat_full_window_cluster = stats_register_dynamic_counter(4, &sc_key, SC_TYPE_SINGLE_VALUE,
+                                   &self->stat_full_window);
   stats_counter_set(self->stat_full_window, self->full_window_size);
 
 }
@@ -412,12 +412,11 @@ _register_window_stats(LogSource *self)
 static void
 _unregister_window_stats(LogSource *self)
 {
-  if (!stats_check_level(3))
+  if (!stats_check_level(4))
     return;
 
   stats_unregister_dynamic_counter(self->stat_window_size_cluster, SC_TYPE_SINGLE_VALUE, &self->stat_window_size);
   stats_unregister_dynamic_counter(self->stat_full_window_cluster, SC_TYPE_SINGLE_VALUE, &self->stat_full_window);
-
 }
 
 static inline void
