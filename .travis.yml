@@ -99,12 +99,9 @@ script:
         make install
         . scripts/get-libjvm-path.sh || return $?;
         export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$JNI_LIBDIR";
-        make check &&
-        make pytest-self-check &&
-        make python-pep8 python-pylint &&
-        make pytest-linters &&
-        make func-test V=1 &&
-        make pytest-check;
+        make V=1 ci-unit &&
+        make V=1 ci-codestyle &&
+        make V=1 ci-functional ;
       elif [ "$S" = "42" ]; then
         return $S;
       else
@@ -152,13 +149,10 @@ matrix:
             -DPYTHON_VERSION=2
             -DCMAKE_INSTALL_PREFIX=$HOME/install/syslog-ng
             ..
-        - make --keep-going -j $(nproc) ARGS="-j $(nproc)" all check install
-        - make pytest-self-check
-        - make python-pep8
-        - make python-pylint
-        - make pytest-linters
-        - make VERBOSE=1 func-test
-        - make pytest-check
+        - make --keep-going -j $(nproc) ARGS="-j $(nproc)" all install
+        - make V=1 ci-unit
+        - make V=1 ci-codestyle
+        - make V=1 ci-functional
     - env: B=trusty-cmake
       compiler: clang
       dist: trusty
@@ -173,7 +167,7 @@ matrix:
             -DCMAKE_INSTALL_PREFIX=$HOME/install/syslog-ng
             -DENABLE_EXTRA_WARNINGS=no
             ..
-        - make --keep-going -j $(nproc) ARGS="-j $(nproc)" all check install
+        - make --keep-going -j $(nproc) ARGS="-j $(nproc)" all check
     - env: B=check
       os: osx
       osx_image: xcode9.3
@@ -204,7 +198,7 @@ matrix:
             S=$?;
             echo "Output of first test invocation:";
             find . -name test-suite.log | xargs cat;
-            make V=1 check;
+            make V=1 ci-unit;
             echo "Output of second test invocation:";
             find . -name test-suite.log | xargs cat;
             return $S;
