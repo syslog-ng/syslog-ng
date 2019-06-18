@@ -9,6 +9,7 @@ bison_target(CfgGrammar
     COMPILE_FLAGS ${BISON_FLAGS})
 add_flex_bison_dependency(CfgLexer CfgGrammar)
 
+add_subdirectory(ack-tracker)
 add_subdirectory(compat)
 add_subdirectory(control)
 add_subdirectory(debugger)
@@ -31,6 +32,7 @@ add_subdirectory(logthrdest)
 add_subdirectory(http-auth)
 
 set(LIB_SUBDIR_HEADERS
+    ${ACK_TRACKER_HEADERS}
     ${COMPAT_HEADERS}
     ${CONTROL_HEADERS}
     ${DEBUGGER_HEADERS}
@@ -135,9 +137,7 @@ set (LIB_HEADERS
     userdb.h
     utf8utils.h
     versioning.h
-    bookmark.h
     ringbuffer.h
-    ack_tracker.h
     host-id.h
     resolved-configurable-paths.h
     window-size-counter.h
@@ -213,8 +213,6 @@ set(LIB_SOURCES
     string-list.c
     type-hinting.c
     ringbuffer.c
-    late_ack_tracker.c
-    early_ack_tracker.c
     crypto.c
     tlscontext.c
     uuid.c
@@ -223,6 +221,7 @@ set(LIB_SOURCES
     host-id.c
     resolved-configurable-paths.c
     window-size-counter.c
+    ${ACK_TRACKER_SOURCES}
     ${COMPAT_SOURCES}
     ${CONTROL_SOURCES}
     ${DEBUGGER_SOURCES}

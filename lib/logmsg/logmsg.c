@@ -38,7 +38,7 @@
 #include "rcptid.h"
 #include "template/macros.h"
 #include "host-id.h"
-#include "ack_tracker.h"
+#include "ack-tracker/ack_tracker.h"
 #include "apphook.h"
 
 #include <glib/gprintf.h>

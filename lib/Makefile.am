@@ -1,5 +1,6 @@
 DIST_SUBDIRS				+= @IVYKIS_SUBDIRS@ @JSON_SUBDIRS@
 
+include lib/ack-tracker/Makefile.am
 include lib/eventlog/src/Makefile.am
 include lib/eventlog/tests/Makefile.am
 include lib/transport/Makefile.am
@@ -172,10 +173,7 @@ pkginclude_HEADERS			+= \
 	lib/userdb.h			\
 	lib/utf8utils.h			\
 	lib/versioning.h		\
-	lib/bookmark.h			\
 	lib/ringbuffer.h		\
-	lib/ack_tracker.h		\
-	lib/late_ack_tracker.h \
 	lib/host-id.h			\
 	lib/resolved-configurable-paths.h \
 	lib/pe-versioning.h \
@@ -248,8 +246,6 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/string-list.c		\
 	lib/type-hinting.c		\
 	lib/ringbuffer.c		\
-	lib/late_ack_tracker.c		\
-	lib/early_ack_tracker.c		\
 	lib/crypto.c			\
 	lib/tlscontext.c		\
 	lib/uuid.c			\
@@ -264,6 +260,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/cfg-grammar.y		\
 	lib/block-ref-grammar.y		\
 	lib/pragma-grammar.y		\
+	$(ack_tracker_sources) \
 	$(csvscanner_sources)		\
 	$(kvscanner_sources)		\
 	$(listscanner_sources)		\
