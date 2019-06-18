@@ -596,5 +596,5 @@ void
 py_log_source_init(void)
 {
   PyType_Ready(&py_log_source_type);
-  PyModule_AddObject(PyImport_AddModule("syslogng"), "LogSource", (PyObject *) &py_log_source_type);
+  PyModule_AddObject(PyImport_AddModule("_syslogng"), "LogSource", (PyObject *) &py_log_source_type);
 }

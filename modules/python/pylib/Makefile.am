@@ -50,7 +50,7 @@ INSTALL_EXEC_HOOKS += install-pylib
 UNINSTALL_HOOKS += uninstall-pylib
 CLEAN_HOOKS += clean-pylib
 
-PYSETUP_OPTIONS ?= --root="$(PYTHON_ROOT)" --prefix="$(prefix)"
+PYSETUP_OPTIONS ?= --root="$(PYTHON_ROOT)" --install-lib="$(python_moduledir)"
 
 install-pylib:
 	(cd $(PYLIB_SRCDIR) && $(PYTHON) setup.py \

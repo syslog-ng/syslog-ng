@@ -5,7 +5,7 @@ add_custom_target(BuildPylib
 )
 
 add_custom_target(SetupPylib
-    COMMAND ${PYTHON_EXECUTABLE} setup.py install --root=/ --prefix=${CMAKE_CURRENT_BINARY_DIR}/install
+    COMMAND ${PYTHON_EXECUTABLE} setup.py install --root=/ --install-lib=${CMAKE_CURRENT_BINARY_DIR}/install/lib/syslog-ng/python
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     DEPENDS BuildPylib
     VERBATIM

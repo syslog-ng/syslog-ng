@@ -186,7 +186,7 @@ _py_resolve_qualified_name(const gchar *name)
 
   if (!_split_fully_qualified_name(name, &module_name, &attribute_name))
     {
-      module_name = g_strdup("_syslogng");
+      module_name = g_strdup("_syslogng_main");
       attribute_name = g_strdup(name);
     }
 

@@ -148,16 +148,16 @@ py_log_template_init(void)
   py_log_template_options_init();
 
   PyType_Ready(&py_log_template_type);
-  PyModule_AddObject(PyImport_AddModule("syslogng"), "LogTemplate", (PyObject *) &py_log_template_type);
+  PyModule_AddObject(PyImport_AddModule("_syslogng"), "LogTemplate", (PyObject *) &py_log_template_type);
   PyObject *PY_LTZ_LOCAL = int_as_pyobject(0);
   PyObject *PY_LTZ_SEND = int_as_pyobject(1);
 
-  PyObject_SetAttrString(PyImport_AddModule("syslogng"), "LTZ_LOCAL", PY_LTZ_LOCAL);
-  PyObject_SetAttrString(PyImport_AddModule("syslogng"), "LTZ_SEND", PY_LTZ_SEND);
+  PyObject_SetAttrString(PyImport_AddModule("_syslogng"), "LTZ_LOCAL", PY_LTZ_LOCAL);
+  PyObject_SetAttrString(PyImport_AddModule("_syslogng"), "LTZ_SEND", PY_LTZ_SEND);
 
   Py_DECREF(PY_LTZ_LOCAL);
   Py_DECREF(PY_LTZ_SEND);
 
-  PyExc_LogTemplate = PyErr_NewException("syslogng.LogTemplateException", NULL, NULL);
-  PyModule_AddObject(PyImport_AddModule("syslogng"), "LogTemplateException", (PyObject *)PyExc_LogTemplate);
+  PyExc_LogTemplate = PyErr_NewException("_syslogng.LogTemplateException", NULL, NULL);
+  PyModule_AddObject(PyImport_AddModule("_syslogng"), "LogTemplateException", (PyObject *)PyExc_LogTemplate);
 }
