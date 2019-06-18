@@ -92,7 +92,7 @@ filter_call_init(FilterExprNode *s, GlobalConfig *cfg)
 
       stats_lock();
       StatsClusterKey sc_key;
-      stats_cluster_logpipe_key_set(&sc_key, SCS_FILTER, self->rule, NULL );
+      stats_cluster_logpipe_key_set(&sc_key, SCS_FILTER, SCS_NONE, self->rule, NULL );
       stats_register_counter(1, &sc_key, SC_TYPE_MATCHED, &self->super.matched);
       stats_register_counter(1, &sc_key, SC_TYPE_NOT_MATCHED, &self->super.not_matched);
       stats_unlock();
@@ -118,7 +118,7 @@ filter_call_free(FilterExprNode *s)
 
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, SCS_FILTER, self->rule, NULL );
+  stats_cluster_logpipe_key_set(&sc_key, SCS_FILTER, SCS_NONE, self->rule, NULL );
   stats_unregister_counter(&sc_key, SC_TYPE_MATCHED, &self->super.matched);
   stats_unregister_counter(&sc_key, SC_TYPE_NOT_MATCHED, &self->super.not_matched);
   stats_unlock();

@@ -55,9 +55,14 @@ _counter_group_logpipe_init(StatsCounterGroupInit *self, StatsCounterGroup *coun
 }
 
 void
-stats_cluster_logpipe_key_set(StatsClusterKey *key, guint16 component, const gchar *id, const gchar *instance)
+stats_cluster_logpipe_key_set(StatsClusterKey *key, guint16 component, guint direction, const gchar *id,
+                              const gchar *instance)
 {
-  stats_cluster_key_set(key, component, id, instance, (StatsCounterGroupInit)
+  // Todo: delete this from the final version: just a manko during development
+  g_assert(!(component & SCS_SOURCE));
+  g_assert(!(component & SCS_DESTINATION));
+
+  stats_cluster_key_set(key, component | direction, id, instance, (StatsCounterGroupInit)
   {
     tag_names, _counter_group_logpipe_init
   });

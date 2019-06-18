@@ -34,6 +34,7 @@ enum
   SCS_DESTINATION    = 0x0200,
 
   /* drivers, this should be registered dynamically */
+  SCS_NONE           = 0,
   SCS_FILE           = 1,
   SCS_PIPE           = 2,
   SCS_TCP            = 3,

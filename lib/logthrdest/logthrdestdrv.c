@@ -964,7 +964,7 @@ log_threaded_dest_driver_queue(LogPipe *s, LogMessage *msg,
 static void
 _init_stats_key(LogThreadedDestDriver *self, StatsClusterKey *sc_key)
 {
-  stats_cluster_logpipe_key_set(sc_key, self->stats_source | SCS_DESTINATION,
+  stats_cluster_logpipe_key_set(sc_key, self->stats_source, SCS_DESTINATION,
                                 self->super.super.id,
                                 self->format_stats_instance(self));
 }

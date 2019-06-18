@@ -33,9 +33,9 @@ typedef enum
   SC_TYPE_SINGLE_MAX
 } StatsCounterGroupSingle;
 
-void stats_cluster_single_key_set(StatsClusterKey *key, guint16 component, const gchar *id, const gchar *instance);
-void stats_cluster_single_key_set_with_name(StatsClusterKey *key, guint16 component, const gchar *id,
+void stats_cluster_single_key_set(StatsClusterKey *key, guint16 component, guint direction, const gchar *id,
+                                  const gchar *instance);
+void stats_cluster_single_key_set_with_name(StatsClusterKey *key, guint16 component, guint direction, const gchar *id,
                                             const gchar *instance, const gchar *name);
 
 #endif
-

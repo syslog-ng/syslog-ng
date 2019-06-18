@@ -1365,7 +1365,7 @@ _register_counters(LogWriter *self)
   stats_lock();
   {
     StatsClusterKey sc_key;
-    stats_cluster_logpipe_key_set(&sc_key, self->options->stats_source | SCS_DESTINATION, self->stats_id,
+    stats_cluster_logpipe_key_set(&sc_key, self->options->stats_source, SCS_DESTINATION, self->stats_id,
                                   self->stats_instance);
 
     if (self->options->suppress > 0)
@@ -1418,7 +1418,7 @@ _unregister_counters(LogWriter *self)
   stats_lock();
   {
     StatsClusterKey sc_key;
-    stats_cluster_logpipe_key_set(&sc_key, self->options->stats_source | SCS_DESTINATION, self->stats_id,
+    stats_cluster_logpipe_key_set(&sc_key, self->options->stats_source, SCS_DESTINATION, self->stats_id,
                                   self->stats_instance);
 
     stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);

@@ -41,6 +41,7 @@
 typedef struct _CounterHashContent
 {
   const gint component;
+  const guint direction;
   const gchar *id;
   const gchar *instance;
   const gint type;
@@ -52,7 +53,7 @@ typedef struct _QueryTestCase
   const gchar *expected;
 } QueryTestCase;
 
-typedef void(*ClusterKeySet)(StatsClusterKey *, guint16, const gchar *, const gchar *);
+typedef void(*ClusterKeySet)(StatsClusterKey *, guint16, guint, const gchar *, const gchar *);
 
 static void
 _add_two_to_value(GList *counters, StatsCounterItem **result)
@@ -91,7 +92,7 @@ _register_counters(const CounterHashContent *counters, size_t n, ClusterKeySet k
     {
       StatsCounterItem *item = NULL;
       StatsClusterKey sc_key;
-      key_set(&sc_key, counters[i].component, counters[i].id, counters[i].instance );
+      key_set(&sc_key, counters[i].component, counters[i].direction, counters[i].id, counters[i].instance );
       stats_register_counter(0, &sc_key, counters[i].type, &item);
       gchar *name = _construct_view_name(counters[i].id);
       GList *queries = _construct_view_query_list(counters[i].instance);
@@ -107,7 +108,7 @@ _register_single_counter_with_name(void)
   {
     StatsClusterKey sc_key;
     StatsCounterItem *ctr_item;
-    stats_cluster_single_key_set_with_name(&sc_key, SCS_GLOBAL, "id", "instance", "name");
+    stats_cluster_single_key_set_with_name(&sc_key, SCS_GLOBAL, SCS_NONE, "id", "instance", "name");
     stats_register_counter(0, &sc_key, SC_TYPE_SINGLE_VALUE, &ctr_item);
   }
   stats_unlock();
@@ -118,17 +119,17 @@ _initialize_counter_hash(void)
 {
   const CounterHashContent logpipe_cluster_counters[] =
   {
-    {SCS_CENTER, "guba.polo", "frozen", SC_TYPE_SUPPRESSED},
-    {SCS_FILE | SCS_SOURCE, "guba", "processed", SC_TYPE_PROCESSED},
-    {SCS_GLOBAL, "guba.gumi.diszno", "frozen", SC_TYPE_SUPPRESSED},
-    {SCS_PIPE | SCS_SOURCE, "guba.gumi.disz", "frozen", SC_TYPE_SUPPRESSED},
-    {SCS_TCP | SCS_DESTINATION, "guba.labda", "received", SC_TYPE_DROPPED},
-    {SCS_TCP | SCS_SOURCE, "guba.frizbi", "left", SC_TYPE_QUEUED},
+    {SCS_CENTER, SCS_NONE, "guba.polo", "frozen", SC_TYPE_SUPPRESSED},
+    {SCS_FILE, SCS_SOURCE, "guba", "processed", SC_TYPE_PROCESSED},
+    {SCS_GLOBAL, SCS_NONE, "guba.gumi.diszno", "frozen", SC_TYPE_SUPPRESSED},
+    {SCS_PIPE, SCS_SOURCE, "guba.gumi.disz", "frozen", SC_TYPE_SUPPRESSED},
+    {SCS_TCP, SCS_DESTINATION, "guba.labda", "received", SC_TYPE_DROPPED},
+    {SCS_TCP, SCS_SOURCE, "guba.frizbi", "left", SC_TYPE_QUEUED},
   };
 
   const CounterHashContent single_cluster_counters[] =
   {
-    {SCS_GLOBAL, "", "guba", SC_TYPE_SINGLE_VALUE}
+    {SCS_GLOBAL, SCS_NONE, "", "guba", SC_TYPE_SINGLE_VALUE}
   };
 
   app_startup();
@@ -209,7 +210,7 @@ Test(cluster_query_key, test_global_key)
 {
   const gchar *expected_key = "dst.file.d_file.instance";
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, SCS_DESTINATION|SCS_FILE, "d_file", "instance" );
+  stats_cluster_logpipe_key_set(&sc_key, SCS_FILE, SCS_DESTINATION, "d_file", "instance" );
   StatsCluster *sc = stats_cluster_new(&sc_key);
   cr_assert_str_eq(sc->query_key, expected_key,
                    "generated query key(%s) does not match to the expected key(%s)",

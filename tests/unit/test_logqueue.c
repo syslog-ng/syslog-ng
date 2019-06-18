@@ -189,7 +189,7 @@ Test(logqueue, test_zero_diskbuf_and_normal_acks)
 
   StatsClusterKey sc_key;
   stats_lock();
-  stats_cluster_logpipe_key_set(&sc_key, SCS_DESTINATION, q->persist_name, NULL );
+  stats_cluster_logpipe_key_set(&sc_key, SCS_JAVA, SCS_DESTINATION, q->persist_name, NULL );
   stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &q->queued_messages);
   stats_register_counter(1, &sc_key, SC_TYPE_MEMORY_USAGE, &q->memory_usage);
   stats_unlock();
@@ -288,7 +288,7 @@ Test(logqueue, log_queue_fifo_rewind_all_and_memory_usage)
 
   StatsClusterKey sc_key;
   stats_lock();
-  stats_cluster_logpipe_key_set(&sc_key, SCS_DESTINATION, q->persist_name, NULL );
+  stats_cluster_logpipe_key_set(&sc_key, SCS_JAVA, SCS_DESTINATION, q->persist_name, NULL );
   stats_register_counter(1, &sc_key, SC_TYPE_MEMORY_USAGE, &q->memory_usage);
   stats_unlock();
 

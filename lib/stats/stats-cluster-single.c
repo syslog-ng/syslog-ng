@@ -46,9 +46,14 @@ _counter_group_init(StatsCounterGroupInit *self, StatsCounterGroup *counter_grou
 }
 
 void
-stats_cluster_single_key_set(StatsClusterKey *key, guint16 component, const gchar *id, const gchar *instance)
+stats_cluster_single_key_set(StatsClusterKey *key, guint16 component, guint direction, const gchar *id,
+                             const gchar *instance)
 {
-  stats_cluster_key_set(key, component, id, instance, (StatsCounterGroupInit)
+  // Todo: delete this from the final version: just a manko during development
+  g_assert(!(component & SCS_SOURCE));
+  g_assert(!(component & SCS_DESTINATION));
+
+  stats_cluster_key_set(key, component | direction, id, instance, (StatsCounterGroupInit)
   {
     tag_names,_counter_group_init
   });
@@ -78,14 +83,18 @@ _group_init_equals(const StatsCounterGroupInit *self, const StatsCounterGroupIni
 }
 
 void
-stats_cluster_single_key_set_with_name(StatsClusterKey *key, guint16 component, const gchar *id, const gchar *instance,
+stats_cluster_single_key_set_with_name(StatsClusterKey *key, guint16 component, guint direction, const gchar *id,
+                                       const gchar *instance,
                                        const gchar *name)
 {
-  stats_cluster_key_set(key, component, id, instance, (StatsCounterGroupInit)
+  // Todo: delete this from the final version: just a manko during development
+  g_assert(!(component & SCS_SOURCE));
+  g_assert(!(component & SCS_DESTINATION));
+
+  stats_cluster_key_set(key, component | direction, id, instance, (StatsCounterGroupInit)
   {
     tag_names, _counter_group_init_with_name, _group_init_equals
   });
   key->counter_group_init.counter_names = g_new0(const char *, 1);
   key->counter_group_init.counter_names[0] = name;
 }
-

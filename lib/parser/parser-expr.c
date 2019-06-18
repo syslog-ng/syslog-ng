@@ -120,7 +120,7 @@ log_parser_init_method(LogPipe *s)
 
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, SCS_PARSER, self->name, NULL );
+  stats_cluster_logpipe_key_set(&sc_key, SCS_PARSER, SCS_NONE, self->name, NULL );
   stats_register_counter(1, &sc_key, SC_TYPE_DISCARDED, &self->super.discarded_messages);
   stats_unlock();
 
@@ -134,7 +134,7 @@ log_parser_free_method(LogPipe *s)
 
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, SCS_PARSER, self->name, NULL );
+  stats_cluster_logpipe_key_set(&sc_key, SCS_PARSER, SCS_NONE, self->name, NULL );
   stats_unregister_counter(&sc_key, SC_TYPE_DISCARDED, &self->super.discarded_messages);
   stats_unlock();
 
