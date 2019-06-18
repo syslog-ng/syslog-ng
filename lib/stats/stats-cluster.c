@@ -39,10 +39,10 @@ _clone_stats_cluster_key(StatsClusterKey *dst, const StatsClusterKey *src)
 }
 
 void
-stats_cluster_key_set(StatsClusterKey *self, guint16 component, guint direction, const gchar *id,
+stats_cluster_key_set(StatsClusterKey *self, const gchar *component, guint direction, const gchar *id,
                       const gchar *instance, StatsCounterGroupInit counter_group_init)
 {
-  self->component = stats_get_module_name(component);
+  self->component = component;
   self->direction = direction;
   self->id = (id?id:"");
   self->instance = (instance?instance:"");

@@ -155,7 +155,7 @@ StatsCluster *stats_cluster_new(const StatsClusterKey *key);
 StatsCluster *stats_cluster_dynamic_new(const StatsClusterKey *key);
 void stats_cluster_free(StatsCluster *self);
 
-void stats_cluster_key_set(StatsClusterKey *self, guint16 component, guint direction, const gchar *id,
+void stats_cluster_key_set(StatsClusterKey *self, const gchar *component, guint direction, const gchar *id,
                            const gchar *instance, StatsCounterGroupInit counter_group_ctor);
 const gchar *stats_get_module_name(gint source);
 #endif
