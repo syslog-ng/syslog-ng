@@ -320,6 +320,8 @@ if (CRITERION_FOUND)
   include(CTest)
 endif()
 
+add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND})
+
 set(IMPORTANT_WARNINGS
   -Wshadow
   -fcommon)
