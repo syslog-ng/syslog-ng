@@ -42,7 +42,7 @@ typedef enum
   SC_TYPE_MAX
 } StatsCounterGroupLogPipe;
 
-void stats_cluster_logpipe_key_set(StatsClusterKey *key, const gchar *component, guint direction, const gchar *id,
+void stats_cluster_logpipe_key_set(StatsClusterKey *key, const gchar *component, guint flags, const gchar *id,
                                    const gchar *instance);
 
 #endif

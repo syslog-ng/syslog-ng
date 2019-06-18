@@ -218,8 +218,8 @@ Test(stats_cluster, test_get_component_name_translates_component_to_name_properl
   assert_stats_component_name("file", SCS_SOURCE, "src.file");
   assert_stats_component_name("file", SCS_DESTINATION, "dst.file");
   assert_stats_component_name("global", SCS_NONE, "global");
-  assert_stats_component_name("group", SCS_SOURCE, "source");
-  assert_stats_component_name("group", SCS_DESTINATION, "destination");
+  assert_stats_component_name("group", SCS_GROUP | SCS_SOURCE, "source");
+  assert_stats_component_name("group", SCS_GROUP | SCS_DESTINATION, "destination");
 }
 
 Test(stats_cluster, test_get_counter)

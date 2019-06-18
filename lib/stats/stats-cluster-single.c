@@ -46,10 +46,10 @@ _counter_group_init(StatsCounterGroupInit *self, StatsCounterGroup *counter_grou
 }
 
 void
-stats_cluster_single_key_set(StatsClusterKey *key, const gchar *component, guint direction, const gchar *id,
+stats_cluster_single_key_set(StatsClusterKey *key, const gchar *component, guint flags, const gchar *id,
                              const gchar *instance)
 {
-  stats_cluster_key_set(key, component, direction, id, instance, (StatsCounterGroupInit)
+  stats_cluster_key_set(key, component, flags, id, instance, (StatsCounterGroupInit)
   {
     tag_names,_counter_group_init
   });
@@ -79,11 +79,11 @@ _group_init_equals(const StatsCounterGroupInit *self, const StatsCounterGroupIni
 }
 
 void
-stats_cluster_single_key_set_with_name(StatsClusterKey *key, const gchar *component, guint direction, const gchar *id,
+stats_cluster_single_key_set_with_name(StatsClusterKey *key, const gchar *component, guint flags, const gchar *id,
                                        const gchar *instance,
                                        const gchar *name)
 {
-  stats_cluster_key_set(key, component, direction, id, instance, (StatsCounterGroupInit)
+  stats_cluster_key_set(key, component, flags, id, instance, (StatsCounterGroupInit)
   {
     tag_names, _counter_group_init_with_name, _group_init_equals
   });

@@ -55,10 +55,10 @@ _counter_group_logpipe_init(StatsCounterGroupInit *self, StatsCounterGroup *coun
 }
 
 void
-stats_cluster_logpipe_key_set(StatsClusterKey *key, const gchar *component, guint direction, const gchar *id,
+stats_cluster_logpipe_key_set(StatsClusterKey *key, const gchar *component, guint flags, const gchar *id,
                               const gchar *instance)
 {
-  stats_cluster_key_set(key, component, direction, id, instance, (StatsCounterGroupInit)
+  stats_cluster_key_set(key, component, flags, id, instance, (StatsCounterGroupInit)
   {
     tag_names, _counter_group_logpipe_init
   });

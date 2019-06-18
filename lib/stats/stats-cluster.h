@@ -32,7 +32,8 @@ enum
   /* direction bits, used to distinguish between source/destination drivers */
   SCS_NONE = 0,
   SCS_SOURCE = 1,
-  SCS_DESTINATION = 2
+  SCS_DESTINATION = 2,
+  SCS_GROUP = 4
 };
 
 typedef struct _StatsCounterGroup StatsCounterGroup;
@@ -61,7 +62,7 @@ struct _StatsClusterKey
 {
   /* syslog-ng component/driver/subsystem that registered this cluster */
   const gchar *component;
-  guint direction;
+  guint flags;
   const gchar *id;
   const gchar *instance;
   StatsCounterGroupInit counter_group_init;
@@ -108,6 +109,6 @@ StatsCluster *stats_cluster_new(const StatsClusterKey *key);
 StatsCluster *stats_cluster_dynamic_new(const StatsClusterKey *key);
 void stats_cluster_free(StatsCluster *self);
 
-void stats_cluster_key_set(StatsClusterKey *self, const gchar *component, guint direction, const gchar *id,
+void stats_cluster_key_set(StatsClusterKey *self, const gchar *component, guint flags, const gchar *id,
                            const gchar *instance, StatsCounterGroupInit counter_group_ctor);
 #endif

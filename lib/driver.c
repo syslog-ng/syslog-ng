@@ -176,7 +176,7 @@ log_src_driver_init_method(LogPipe *s)
 
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, "group", SCS_SOURCE, self->super.group, NULL );
+  stats_cluster_logpipe_key_set(&sc_key, "group", SCS_GROUP | SCS_SOURCE, self->super.group, NULL );
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED,
                          &self->super.processed_group_messages);
   stats_cluster_logpipe_key_set(&sc_key,  "center", SCS_NONE, NULL, "received" );
@@ -196,7 +196,7 @@ log_src_driver_deinit_method(LogPipe *s)
 
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, "group", SCS_SOURCE, self->super.group, NULL );
+  stats_cluster_logpipe_key_set(&sc_key, "group", SCS_GROUP | SCS_SOURCE, self->super.group, NULL );
   stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED,
                            &self->super.processed_group_messages);
   stats_cluster_logpipe_key_set(&sc_key, "center", SCS_NONE, NULL, "received" );
@@ -310,7 +310,7 @@ log_dest_driver_init_method(LogPipe *s)
 
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, "group", SCS_DESTINATION, self->super.group, NULL );
+  stats_cluster_logpipe_key_set(&sc_key, "group", SCS_GROUP | SCS_DESTINATION, self->super.group, NULL );
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED,
                          &self->super.processed_group_messages);
   stats_cluster_logpipe_key_set(&sc_key, "center", SCS_NONE, NULL, "queued" );
@@ -341,7 +341,7 @@ log_dest_driver_deinit_method(LogPipe *s)
 
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, "group", SCS_DESTINATION, self->super.group, NULL );
+  stats_cluster_logpipe_key_set(&sc_key, "group", SCS_GROUP | SCS_DESTINATION, self->super.group, NULL );
   stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED,
                            &self->super.processed_group_messages);
   stats_cluster_logpipe_key_set(&sc_key, "center", SCS_NONE, NULL, "queued" );
