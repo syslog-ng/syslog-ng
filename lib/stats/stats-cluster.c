@@ -30,6 +30,7 @@ static StatsClusterKey *
 _clone_stats_cluster_key(StatsClusterKey *dst, const StatsClusterKey *src)
 {
   dst->component = src->component;
+  dst->direction = src->direction;
   dst->id = g_strdup(src->id ? : "");
   dst->instance = g_strdup(src->instance ? : "");
   dst->counter_group_init = src->counter_group_init;
@@ -41,7 +42,8 @@ void
 stats_cluster_key_set(StatsClusterKey *self, guint16 component, guint direction, const gchar *id,
                       const gchar *instance, StatsCounterGroupInit counter_group_init)
 {
-  self->component = component | direction;
+  self->component = stats_get_module_name(component);
+  self->direction = direction;
   self->id = (id?id:"");
   self->instance = (instance?instance:"");
   self->counter_group_init = counter_group_init;
@@ -77,8 +79,8 @@ stats_cluster_get_type_name(StatsCluster *self, gint type)
   return "";
 }
 
-static const gchar *
-_get_module_name(gint source)
+const gchar *
+stats_get_module_name(gint source)
 {
   static const gchar *module_names[] =
   {
@@ -133,9 +135,17 @@ _get_module_name(gint source)
 
 
 static const gchar *
-_get_component_prefix(gint source)
+_get_component_prefix(gint direction)
 {
-  return (source & SCS_SOURCE ? "src." : (source & SCS_DESTINATION ? "dst." : ""));
+  switch (direction)
+    {
+    case SCS_SOURCE:
+      return "src.";
+    case SCS_DESTINATION:
+      return "dst.";
+    default:
+      return "";
+    }
 }
 
 /* buf is a scratch area which is not always used, the return value is
@@ -143,20 +153,23 @@ _get_component_prefix(gint source)
 const gchar *
 stats_cluster_get_component_name(StatsCluster *self, gchar *buf, gsize buf_len)
 {
-  if ((self->key.component & SCS_SOURCE_MASK) == SCS_GROUP)
+  if (self->key.component == stats_get_module_name(SCS_GROUP))
     {
-      if (self->key.component & SCS_SOURCE)
-        return "source";
-      else if (self->key.component & SCS_DESTINATION)
-        return "destination";
-      else
-        g_assert_not_reached();
+      switch (self->key.direction)
+        {
+        case SCS_SOURCE:
+          return "source";
+        case SCS_DESTINATION:
+          return "destination";
+        default:
+          g_assert_not_reached();
+        }
     }
   else
     {
       g_snprintf(buf, buf_len, "%s%s",
-                 _get_component_prefix(self->key.component),
-                 _get_module_name(self->key.component));
+                 _get_component_prefix(self->key.direction),
+                 self->key.component);
       return buf;
     }
 }
@@ -180,6 +193,7 @@ gboolean
 stats_cluster_key_equal(const StatsClusterKey *key1, const StatsClusterKey *key2)
 {
   return key1->component == key2->component
+         && key1->direction == key2->direction
          && strcmp(key1->id, key2->id) == 0
          && strcmp(key1->instance, key2->instance) == 0
          && stats_counter_group_init_equals(&key1->counter_group_init, &key2->counter_group_init);
@@ -194,7 +208,8 @@ stats_cluster_equal(const StatsCluster *sc1, const StatsCluster *sc2)
 guint
 stats_cluster_hash(const StatsCluster *self)
 {
-  return g_str_hash(self->key.id) + g_str_hash(self->key.instance) + self->key.component;
+  return g_str_hash(self->key.id) + g_str_hash(self->key.instance) +
+         g_direct_hash(self->key.component) + self->key.direction;
 }
 
 StatsCounterItem *

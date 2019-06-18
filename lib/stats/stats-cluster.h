@@ -107,7 +107,8 @@ void stats_counter_group_free(StatsCounterGroup *self);
 struct _StatsClusterKey
 {
   /* syslog-ng component/driver/subsystem that registered this cluster */
-  guint16 component;
+  const gchar *component;
+  guint direction;
   const gchar *id;
   const gchar *instance;
   StatsCounterGroupInit counter_group_init;
@@ -156,5 +157,5 @@ void stats_cluster_free(StatsCluster *self);
 
 void stats_cluster_key_set(StatsClusterKey *self, guint16 component, guint direction, const gchar *id,
                            const gchar *instance, StatsCounterGroupInit counter_group_ctor);
-
+const gchar *stats_get_module_name(gint source);
 #endif
