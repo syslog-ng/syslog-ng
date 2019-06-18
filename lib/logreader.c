@@ -110,7 +110,6 @@ log_reader_set_options(LogReader *s, LogPipe *control, LogReaderOptions *options
 
   self->options = options;
   log_proto_server_set_options(self->proto, &self->options->proto_options.super);
-  log_proto_server_set_ack_tracker(self->proto, self->super.ack_tracker);
 }
 
 void
@@ -587,6 +586,9 @@ log_reader_init(LogPipe *s)
 
   if (!log_source_init(s))
     return FALSE;
+
+  log_proto_server_set_ack_tracker(self->proto, self->super.ack_tracker);
+
 
   if (!log_proto_server_validate_options(self->proto))
     return FALSE;
