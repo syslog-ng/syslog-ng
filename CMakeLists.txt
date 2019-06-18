@@ -322,6 +322,15 @@ endif()
 
 add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND})
 
+# CI related targets
+
+# ci-unit: run ctest, nosetests, pytest unit tests
+add_custom_target(ci-unit DEPENDS check pytest-self-check)
+
+# ci-codestyle: run python-pep8
+add_custom_target(ci-codestyle DEPENDS python-pep8 pytest-linters)
+add_custom_target(ci-functional DEPENDS pytest-check func-test)
+
 set(IMPORTANT_WARNINGS
   -Wshadow
   -fcommon)
