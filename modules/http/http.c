@@ -530,7 +530,7 @@ http_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.free_fn = http_dd_free;
   self->super.super.super.super.generate_persist_name = _format_persist_name;
   self->super.format_stats_instance = _format_stats_instance;
-  self->super.stats_source = SCS_HTTP;
+  self->super.stats_source = "http";
   self->super.worker.construct = http_dw_new;
 
   curl_global_init(CURL_GLOBAL_ALL);

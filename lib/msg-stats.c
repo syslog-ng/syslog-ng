@@ -57,19 +57,19 @@ msg_stats_update_counters(const gchar *source_id, const LogMessage *msg)
       stats_lock();
 
       StatsClusterKey sc_key;
-      stats_cluster_logpipe_key_set(&sc_key, SCS_HOST, SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST, NULL) );
+      stats_cluster_logpipe_key_set(&sc_key, "host", SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST, NULL) );
       stats_register_and_increment_dynamic_counter(2, &sc_key, msg->timestamps[LM_TS_RECVD].ut_sec);
 
       if (stats_check_level(3))
         {
-          stats_cluster_logpipe_key_set(&sc_key, SCS_SENDER, SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST_FROM, NULL) );
+          stats_cluster_logpipe_key_set(&sc_key, "sender", SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_HOST_FROM, NULL) );
           stats_register_and_increment_dynamic_counter(3, &sc_key, msg->timestamps[LM_TS_RECVD].ut_sec);
-          stats_cluster_logpipe_key_set(&sc_key, SCS_PROGRAM, SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_PROGRAM, NULL) );
+          stats_cluster_logpipe_key_set(&sc_key, "program", SCS_SOURCE, NULL, log_msg_get_value(msg, LM_V_PROGRAM, NULL) );
           stats_register_and_increment_dynamic_counter(3, &sc_key, msg->timestamps[LM_TS_RECVD].ut_sec);
 
-          stats_cluster_logpipe_key_set(&sc_key, SCS_HOST, SCS_SOURCE, source_id, log_msg_get_value(msg, LM_V_HOST, NULL));
+          stats_cluster_logpipe_key_set(&sc_key, "host", SCS_SOURCE, source_id, log_msg_get_value(msg, LM_V_HOST, NULL));
           stats_register_and_increment_dynamic_counter(3, &sc_key, msg->timestamps[LM_TS_RECVD].ut_sec);
-          stats_cluster_logpipe_key_set(&sc_key, SCS_SENDER, SCS_SOURCE, source_id, log_msg_get_value(msg, LM_V_HOST_FROM,
+          stats_cluster_logpipe_key_set(&sc_key, "sender", SCS_SOURCE, source_id, log_msg_get_value(msg, LM_V_HOST_FROM,
                                         NULL));
           stats_register_and_increment_dynamic_counter(3, &sc_key, msg->timestamps[LM_TS_RECVD].ut_sec);
         }
@@ -93,17 +93,17 @@ stats_syslog_reinit(void)
       for (i = 0; i < SEVERITY_MAX; i++)
         {
           g_snprintf(name, sizeof(name), "%d", i);
-          stats_cluster_logpipe_key_set(&sc_key, SCS_SEVERITY, SCS_SOURCE, NULL, name );
+          stats_cluster_logpipe_key_set(&sc_key, "severity", SCS_SOURCE, NULL, name );
           stats_register_counter(3, &sc_key, SC_TYPE_PROCESSED, &severity_counters[i]);
         }
 
       for (i = 0; i < FACILITY_MAX - 1; i++)
         {
           g_snprintf(name, sizeof(name), "%d", i);
-          stats_cluster_logpipe_key_set(&sc_key, SCS_FACILITY, SCS_SOURCE, NULL, name );
+          stats_cluster_logpipe_key_set(&sc_key, "facility", SCS_SOURCE, NULL, name );
           stats_register_counter(3, &sc_key, SC_TYPE_PROCESSED, &facility_counters[i]);
         }
-      stats_cluster_logpipe_key_set(&sc_key, SCS_FACILITY, SCS_SOURCE, NULL, "other" );
+      stats_cluster_logpipe_key_set(&sc_key, "facility", SCS_SOURCE, NULL, "other" );
       stats_register_counter(3, &sc_key, SC_TYPE_PROCESSED, &facility_counters[FACILITY_MAX - 1]);
     }
   else
@@ -112,17 +112,17 @@ stats_syslog_reinit(void)
       for (i = 0; i < SEVERITY_MAX; i++)
         {
           g_snprintf(name, sizeof(name), "%d", i);
-          stats_cluster_logpipe_key_set(&sc_key, SCS_SEVERITY, SCS_SOURCE, NULL, name );
+          stats_cluster_logpipe_key_set(&sc_key, "severity", SCS_SOURCE, NULL, name );
           stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &severity_counters[i]);
         }
 
       for (i = 0; i < FACILITY_MAX - 1; i++)
         {
           g_snprintf(name, sizeof(name), "%d", i);
-          stats_cluster_logpipe_key_set(&sc_key, SCS_FACILITY, SCS_SOURCE, NULL, name );
+          stats_cluster_logpipe_key_set(&sc_key, "facility", SCS_SOURCE, NULL, name );
           stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &facility_counters[i]);
         }
-      stats_cluster_logpipe_key_set(&sc_key, SCS_FACILITY, SCS_SOURCE, NULL, "other" );
+      stats_cluster_logpipe_key_set(&sc_key, "facility", SCS_SOURCE, NULL, "other" );
       stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &facility_counters[FACILITY_MAX - 1]);
     }
   stats_unlock();

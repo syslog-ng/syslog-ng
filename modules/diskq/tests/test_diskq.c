@@ -131,7 +131,7 @@ Test(diskq, testcase_ack_and_rewind_messages)
   log_queue_set_use_backlog(q, TRUE);
 
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, SCS_JAVA, SCS_DESTINATION, "queued messages", NULL );
+  stats_cluster_logpipe_key_set(&sc_key, "java", SCS_DESTINATION, "queued messages", NULL );
   stats_lock();
   stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &q->queued_messages);
   stats_unlock();
@@ -419,9 +419,9 @@ init_statistics(LogQueue *q)
 
   StatsClusterKey sc_key1, sc_key2;
   stats_lock();
-  stats_cluster_logpipe_key_set(&sc_key1, SCS_JAVA, SCS_DESTINATION, "queued messages", NULL );
+  stats_cluster_logpipe_key_set(&sc_key1, "java", SCS_DESTINATION, "queued messages", NULL );
   stats_register_counter(0, &sc_key1, SC_TYPE_QUEUED, &q->queued_messages);
-  stats_cluster_logpipe_key_set(&sc_key2, SCS_JAVA, SCS_DESTINATION, "memory usage", NULL );
+  stats_cluster_logpipe_key_set(&sc_key2, "java", SCS_DESTINATION, "memory usage", NULL );
   stats_register_counter(1, &sc_key2, SC_TYPE_MEMORY_USAGE, &q->memory_usage);
   stats_unlock();
   stats_counter_set(q->queued_messages, 0);

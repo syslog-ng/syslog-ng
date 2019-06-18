@@ -115,7 +115,7 @@ pipe_sd_new(gchar *filename, GlobalConfig *cfg)
 {
   AFFileSourceDriver *self = affile_sd_new_instance(filename, cfg);
 
-  self->file_reader_options.reader_options.super.stats_source = SCS_PIPE;
+  self->file_reader_options.reader_options.super.stats_source = "pipe";
 
   if (cfg_is_config_version_older(cfg, 0x0302))
     {
@@ -139,7 +139,7 @@ pipe_dd_new(gchar *filename, GlobalConfig *cfg)
 {
   AFFileDestDriver *self = affile_dd_new_instance(filename, cfg);
 
-  self->writer_options.stats_source = SCS_PIPE;
+  self->writer_options.stats_source = "pipe";
   self->file_opener = file_opener_for_named_pipes_new();
   return &self->super.super;
 }

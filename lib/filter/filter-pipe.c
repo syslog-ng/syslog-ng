@@ -43,7 +43,7 @@ log_filter_pipe_init(LogPipe *s)
 
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, SCS_FILTER, SCS_NONE, self->name, NULL );
+  stats_cluster_logpipe_key_set(&sc_key, "filter", SCS_NONE, self->name, NULL );
   stats_register_counter(1, &sc_key, SC_TYPE_MATCHED, &self->matched);
   stats_register_counter(1, &sc_key, SC_TYPE_NOT_MATCHED, &self->not_matched);
   stats_unlock();
@@ -102,7 +102,7 @@ log_filter_pipe_free(LogPipe *s)
 
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, SCS_FILTER, SCS_NONE, self->name, NULL );
+  stats_cluster_logpipe_key_set(&sc_key, "filter", SCS_NONE, self->name, NULL );
   stats_unregister_counter(&sc_key, SC_TYPE_MATCHED, &self->matched);
   stats_unregister_counter(&sc_key, SC_TYPE_NOT_MATCHED, &self->not_matched);
   stats_unlock();

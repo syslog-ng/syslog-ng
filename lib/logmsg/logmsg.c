@@ -1800,16 +1800,16 @@ log_msg_register_stats(void)
 {
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, SCS_NONE, "msg_clones", NULL );
+  stats_cluster_logpipe_key_set(&sc_key, "global", SCS_NONE, "msg_clones", NULL );
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &count_msg_clones);
 
-  stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, SCS_NONE, "payload_reallocs", NULL );
+  stats_cluster_logpipe_key_set(&sc_key, "global", SCS_NONE, "payload_reallocs", NULL );
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &count_payload_reallocs);
 
-  stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, SCS_NONE, "sdata_updates", NULL );
+  stats_cluster_logpipe_key_set(&sc_key, "global", SCS_NONE, "sdata_updates", NULL );
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &count_sdata_updates);
 
-  stats_cluster_single_key_set(&sc_key, SCS_GLOBAL, SCS_NONE, "msg_allocated_bytes", NULL);
+  stats_cluster_single_key_set(&sc_key, "global", SCS_NONE, "msg_allocated_bytes", NULL);
   stats_register_counter(1, &sc_key, SC_TYPE_SINGLE_VALUE, &count_allocated_bytes);
   stats_unlock();
 }

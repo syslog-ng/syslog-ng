@@ -71,7 +71,7 @@ test_diskq_become_full(gboolean reliable, const gchar *filename)
 
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, SCS_JAVA, SCS_DESTINATION, q->persist_name, NULL );
+  stats_cluster_logpipe_key_set(&sc_key, "java", SCS_DESTINATION, q->persist_name, NULL );
   stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &q->dropped_messages);
   stats_counter_set(q->dropped_messages, 0);
   stats_unlock();

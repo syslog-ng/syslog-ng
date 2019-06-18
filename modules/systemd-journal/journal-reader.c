@@ -733,7 +733,7 @@ journal_reader_options_defaults(JournalReaderOptions *options)
 {
   log_source_options_defaults(&options->super);
   options->super.stats_level = STATS_LEVEL0;
-  options->super.stats_source = SCS_JOURNALD;
+  options->super.stats_source = "journald";
   options->fetch_limit = DEFAULT_FETCH_LIMIT;
   options->default_pri = DEFAULT_PRIO;
   options->max_field_size = DEFAULT_FIELD_SIZE;

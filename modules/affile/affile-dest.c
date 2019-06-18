@@ -798,7 +798,7 @@ affile_dd_new(gchar *filename, GlobalConfig *cfg)
   AFFileDestDriver *self = affile_dd_new_instance(filename, cfg);
 
   self->writer_flags |= LW_SOFT_FLOW_CONTROL;
-  self->writer_options.stats_source = SCS_FILE;
+  self->writer_options.stats_source = "file";
   self->file_opener = file_opener_for_regular_dest_files_new(&self->writer_options, &self->use_fsync);
   return &self->super.super;
 }

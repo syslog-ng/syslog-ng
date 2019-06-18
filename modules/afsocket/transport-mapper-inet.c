@@ -309,7 +309,7 @@ transport_mapper_tcp_new(void)
   self->super.sock_type = SOCK_STREAM;
   self->super.sock_proto = IPPROTO_TCP;
   self->super.logproto = "text";
-  self->super.stats_source = SCS_TCP;
+  self->super.stats_source = "tcp";
   self->server_port = TCP_PORT;
   self->require_tls_when_has_tls_context = TRUE;
   return &self->super;
@@ -321,7 +321,7 @@ transport_mapper_tcp6_new(void)
   TransportMapper *self = transport_mapper_tcp_new();
 
   self->address_family = AF_INET6;
-  self->stats_source = SCS_TCP6;
+  self->stats_source = "tcp6";
   return self;
 }
 
@@ -333,7 +333,7 @@ transport_mapper_udp_new(void)
   self->super.sock_type = SOCK_DGRAM;
   self->super.sock_proto = IPPROTO_UDP;
   self->super.logproto = "dgram";
-  self->super.stats_source = SCS_UDP;
+  self->super.stats_source = "udp";
   self->server_port = UDP_PORT;
   return &self->super;
 }
@@ -344,7 +344,7 @@ transport_mapper_udp6_new(void)
   TransportMapper *self = transport_mapper_udp_new();
 
   self->address_family = AF_INET6;
-  self->stats_source = SCS_UDP6;
+  self->stats_source = "udp6";
   return self;
 }
 
@@ -404,7 +404,7 @@ transport_mapper_network_new(void)
   TransportMapperInet *self = transport_mapper_inet_new_instance("tcp");
 
   self->super.apply_transport = transport_mapper_network_apply_transport;
-  self->super.stats_source = SCS_NETWORK;
+  self->super.stats_source = "network";
   return &self->super;
 }
 
@@ -479,6 +479,6 @@ transport_mapper_syslog_new(void)
   TransportMapperInet *self = transport_mapper_inet_new_instance("tcp");
 
   self->super.apply_transport = transport_mapper_syslog_apply_transport;
-  self->super.stats_source = SCS_SYSLOG;
+  self->super.stats_source = "syslog";
   return &self->super;
 }

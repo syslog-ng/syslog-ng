@@ -397,7 +397,7 @@ redis_dd_new(GlobalConfig *cfg)
   self->super.worker.insert = redis_worker_insert;
 
   self->super.format_stats_instance = redis_dd_format_stats_instance;
-  self->super.stats_source = SCS_REDIS;
+  self->super.stats_source = "redis";
 
   redis_dd_set_host((LogDriver *)self, "127.0.0.1");
   redis_dd_set_port((LogDriver *)self, 6379);

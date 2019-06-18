@@ -46,7 +46,7 @@ struct _TransportMapper
   gboolean create_multitransport;
 
   const gchar *logproto;
-  gint stats_source;
+  const gchar *stats_source;
 
   gboolean (*apply_transport)(TransportMapper *self, GlobalConfig *cfg);
   LogTransport *(*construct_log_transport)(TransportMapper *self, gint fd);

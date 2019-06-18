@@ -40,7 +40,7 @@ _create_parser(GlobalConfig *cfg)
 
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, SCS_PARSER, SCS_NONE, p->name, NULL );
+  stats_cluster_logpipe_key_set(&sc_key, "parser", SCS_NONE, p->name, NULL );
   stats_register_counter(1, &sc_key, SC_TYPE_DISCARDED, &p->super.discarded_messages);
   stats_unlock();
 
@@ -56,7 +56,7 @@ _unregister_statistics(LogParser *p)
 {
   stats_lock();
   StatsClusterKey sc_key;
-  stats_cluster_logpipe_key_set(&sc_key, SCS_PARSER, SCS_NONE, p->name, NULL );
+  stats_cluster_logpipe_key_set(&sc_key, "parser", SCS_NONE, p->name, NULL );
   stats_unregister_counter(&sc_key, SC_TYPE_DISCARDED, &p->super.discarded_messages);
   stats_unlock();
 

@@ -343,7 +343,7 @@ afinter_sd_init(LogPipe *s)
 
   log_source_options_init(&self->source_options, cfg, self->super.super.group);
   self->source_options.stats_level = STATS_LEVEL0;
-  self->source_options.stats_source = SCS_INTERNAL;
+  self->source_options.stats_source = "internal";
   self->source = afinter_source_new(self, &self->source_options);
   log_pipe_append(&self->source->super, s);
 
@@ -455,7 +455,7 @@ afinter_message_posted(LogMessage *msg)
 
       stats_lock();
       StatsClusterKey sc_key;
-      stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, SCS_NONE, "internal_queue_length", NULL );
+      stats_cluster_logpipe_key_set(&sc_key, "global", SCS_NONE, "internal_queue_length", NULL );
       stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &internal_queue_length);
       stats_unlock();
     }
@@ -488,7 +488,7 @@ afinter_global_deinit(void)
     {
       stats_lock();
       StatsClusterKey sc_key;
-      stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, SCS_NONE, "internal_queue_length", NULL );
+      stats_cluster_logpipe_key_set(&sc_key, "global", SCS_NONE, "internal_queue_length", NULL );
       stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &internal_queue_length);
       stats_unlock();
       g_queue_free_full(internal_msg_queue, (GDestroyNotify)log_msg_unref);

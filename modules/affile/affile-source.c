@@ -175,7 +175,7 @@ affile_sd_new(gchar *filename, GlobalConfig *cfg)
 {
   AFFileSourceDriver *self = affile_sd_new_instance(filename, cfg);
 
-  self->file_reader_options.reader_options.super.stats_source = SCS_FILE;
+  self->file_reader_options.reader_options.super.stats_source = "file";
 
   if (_is_device_node(filename) || _is_linux_proc_kmsg(filename))
     self->file_reader_options.follow_freq = 0;

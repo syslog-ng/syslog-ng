@@ -536,7 +536,7 @@ python_fetcher_new(GlobalConfig *cfg)
 
   self->super.super.format_stats_instance = python_fetcher_format_stats_instance;
   self->super.super.worker_options.super.stats_level = STATS_LEVEL0;
-  self->super.super.worker_options.super.stats_source = SCS_PYTHON;
+  self->super.super.worker_options.super.stats_source = "python";
 
   self->super.fetch = python_fetcher_fetch;
 

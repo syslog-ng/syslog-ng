@@ -335,7 +335,7 @@ riemann_dd_new(GlobalConfig *cfg)
   self->super.worker.construct = riemann_dw_new;
 
   self->super.format_stats_instance = riemann_dd_format_stats_instance;
-  self->super.stats_source = SCS_RIEMANN;
+  self->super.stats_source = "riemann";
 
   self->port = -1;
   self->type = RIEMANN_CLIENT_TCP;

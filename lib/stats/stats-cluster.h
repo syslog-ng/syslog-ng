@@ -30,56 +30,9 @@
 enum
 {
   /* direction bits, used to distinguish between source/destination drivers */
-  SCS_SOURCE         = 0x0100,
-  SCS_DESTINATION    = 0x0200,
-
-  /* drivers, this should be registered dynamically */
-  SCS_NONE           = 0,
-  SCS_FILE           = 1,
-  SCS_PIPE           = 2,
-  SCS_TCP            = 3,
-  SCS_UDP            = 4,
-  SCS_TCP6           = 5,
-  SCS_UDP6           = 6,
-  SCS_UNIX_STREAM    = 7,
-  SCS_UNIX_DGRAM     = 8,
-  SCS_SYSLOG         = 9,
-  SCS_NETWORK        = 10,
-  SCS_INTERNAL       = 11,
-  SCS_LOGSTORE       = 12,
-  SCS_PROGRAM        = 13,
-  SCS_SQL            = 14,
-  SCS_SUN_STREAMS    = 15,
-  SCS_USERTTY        = 16,
-  SCS_GROUP          = 17,
-  SCS_CENTER         = 18,
-  SCS_HOST           = 19,
-  SCS_GLOBAL         = 20,
-  SCS_MONGODB        = 21,
-  SCS_CLASS          = 22,
-  SCS_RULE_ID        = 23,
-  SCS_TAG            = 24,
-  SCS_SEVERITY       = 25,
-  SCS_FACILITY       = 26,
-  SCS_SENDER         = 27,
-  SCS_SMTP           = 28,
-  SCS_AMQP           = 29,
-  SCS_STOMP          = 30,
-  SCS_REDIS          = 31,
-  SCS_SNMP           = 32,
-  SCS_RIEMANN        = 33,
-  SCS_JOURNALD       = 34,
-  SCS_JAVA           = 35,
-  SCS_HTTP           = 36,
-  SCS_PYTHON         = 37,
-  SCS_FILTER         = 38,
-  SCS_PARSER         = 39,
-  SCS_MONITORING     = 40,
-  SCS_STDIN          = 41,
-  SCS_OPENBSD        = 42,
-  SCS_KAFKA          = 43,
-  SCS_MAX,
-  SCS_SOURCE_MASK    = 0xff
+  SCS_NONE = 0,
+  SCS_SOURCE = 1,
+  SCS_DESTINATION = 2
 };
 
 typedef struct _StatsCounterGroup StatsCounterGroup;
@@ -157,5 +110,4 @@ void stats_cluster_free(StatsCluster *self);
 
 void stats_cluster_key_set(StatsClusterKey *self, const gchar *component, guint direction, const gchar *id,
                            const gchar *instance, StatsCounterGroupInit counter_group_ctor);
-const gchar *stats_get_module_name(gint source);
 #endif

@@ -179,7 +179,7 @@ openbsd_sd_new(GlobalConfig *cfg)
   self->reader_options.parse_options.flags |= LP_LOCAL;
   self->reader_options.parse_options.flags &= ~LP_EXPECT_HOSTNAME;
   self->reader_options.super.stats_level = STATS_LEVEL1;
-  self->reader_options.super.stats_source = SCS_OPENBSD;
+  self->reader_options.super.stats_source = "openbsd";
 
   return &self->super.super;
 }

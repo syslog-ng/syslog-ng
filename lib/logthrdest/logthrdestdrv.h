@@ -135,7 +135,7 @@ struct _LogThreadedDestDriver
   gint workers_started;
   guint last_worker;
 
-  gint stats_source;
+  const gchar *stats_source;
 
   /* this counter is not thread safe if there are multiple worker threads,
    * in that case, one needs to use LogThreadedDestWorker->seq_num, which is

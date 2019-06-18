@@ -436,7 +436,7 @@ wildcard_sd_new(GlobalConfig *cfg)
   file_opener_options_defaults_dont_change_permissions(&self->file_opener_options);
   self->file_reader_options.follow_freq = 1000;
   self->file_reader_options.reader_options.super.init_window_size = cfg->min_iw_size_per_reader * DEFAULT_MAX_FILES;
-  self->file_reader_options.reader_options.super.stats_source = SCS_FILE;
+  self->file_reader_options.reader_options.super.stats_source = "file";
   self->file_reader_options.restore_state = TRUE;
 
   self->max_files = DEFAULT_MAX_FILES;

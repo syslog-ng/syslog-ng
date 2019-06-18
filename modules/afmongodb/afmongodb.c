@@ -574,7 +574,7 @@ afmongodb_dd_new(GlobalConfig *cfg)
   self->super.worker.disconnect = _worker_disconnect;
   self->super.worker.insert = _worker_insert;
   self->super.format_stats_instance = _format_stats_instance;
-  self->super.stats_source = SCS_MONGODB;
+  self->super.stats_source = "mongodb";
 
 #if SYSLOG_NG_ENABLE_LEGACY_MONGODB_OPTIONS
   afmongodb_dd_init_legacy(self);

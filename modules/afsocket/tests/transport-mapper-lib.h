@@ -59,9 +59,9 @@ assert_transport_mapper_logproto(TransportMapper *options, const gchar *expected
 }
 
 static inline void
-assert_transport_mapper_stats_source(TransportMapper *options, gint stats_source)
+assert_transport_mapper_stats_source(TransportMapper *options, const gchar *stats_source)
 {
-  cr_assert_eq(options->stats_source, stats_source, "TransportMapper contains a mismatching stats_source");
+  cr_assert_str_eq(options->stats_source, stats_source, "TransportMapper contains a mismatching stats_source");
 }
 
 static inline void

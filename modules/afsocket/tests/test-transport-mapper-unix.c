@@ -34,7 +34,7 @@ Test(transport_mapper_unix, test_transport_mapper_unix_stream_apply_transport_se
   assert_transport_mapper_sock_type(transport_mapper, SOCK_STREAM);
   assert_transport_mapper_sock_proto(transport_mapper, 0);
   assert_transport_mapper_logproto(transport_mapper, "text");
-  assert_transport_mapper_stats_source(transport_mapper, SCS_UNIX_STREAM);
+  assert_transport_mapper_stats_source(transport_mapper, "unix-stream");
 }
 
 Test(transport_mapper_unix, test_transport_mapper_unix_dgram_apply_transport_sets_defaults)
@@ -46,7 +46,7 @@ Test(transport_mapper_unix, test_transport_mapper_unix_dgram_apply_transport_set
   assert_transport_mapper_sock_type(transport_mapper, SOCK_DGRAM);
   assert_transport_mapper_sock_proto(transport_mapper, 0);
   assert_transport_mapper_logproto(transport_mapper, "dgram");
-  assert_transport_mapper_stats_source(transport_mapper, SCS_UNIX_DGRAM);
+  assert_transport_mapper_stats_source(transport_mapper, "unix-dgram");
 }
 
 static void

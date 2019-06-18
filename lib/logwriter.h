@@ -70,7 +70,7 @@ typedef struct _LogWriterOptions
   gint mark_mode;
   gint mark_freq;
   gint stats_level;
-  gint stats_source;
+  const gchar *stats_source;
 } LogWriterOptions;
 
 typedef struct _LogWriter LogWriter;

@@ -79,61 +79,6 @@ stats_cluster_get_type_name(StatsCluster *self, gint type)
   return "";
 }
 
-const gchar *
-stats_get_module_name(gint source)
-{
-  static const gchar *module_names[] =
-  {
-    "none",
-    "file",
-    "pipe",
-    "tcp",
-    "udp",
-    "tcp6",
-    "udp6",
-    "unix-stream",
-    "unix-dgram",
-    "syslog",
-    "network",
-    "internal",
-    "logstore",
-    "program",
-    "sql",
-    "sun-streams",
-    "usertty",
-    "group",
-    "center",
-    "host",
-    "global",
-    "mongodb",
-    "class",
-    "rule_id",
-    "tag",
-    "severity",
-    "facility",
-    "sender",
-    "smtp",
-    "amqp",
-    "stomp",
-    "redis",
-    "snmp",
-    "riemann",
-    "journald",
-    "java",
-    "http",
-    "python",
-    "filter",
-    "parser",
-    "monitoring",
-    "stdin",
-    "openbsd",
-    "kafka"
-  };
-  G_STATIC_ASSERT(sizeof(module_names)/sizeof(module_names[0])==SCS_MAX);
-  return module_names[source & SCS_SOURCE_MASK];
-}
-
-
 static const gchar *
 _get_component_prefix(gint direction)
 {
@@ -153,7 +98,7 @@ _get_component_prefix(gint direction)
 const gchar *
 stats_cluster_get_component_name(StatsCluster *self, gchar *buf, gsize buf_len)
 {
-  if (self->key.component == stats_get_module_name(SCS_GROUP))
+  if (!strcmp(self->key.component, "group")) // TODO: this is bad, but at this point component == "group" is not enough.
     {
       switch (self->key.direction)
         {
