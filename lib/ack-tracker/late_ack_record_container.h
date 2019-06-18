@@ -25,6 +25,8 @@
 #ifndef LATE_ACK_RECORD_CONTAINER_H_INCLUDED
 #define LATE_ACK_RECORD_CONTAINER_H_INCLUDED
 
+#include "ack_tracker.h"
+
 typedef struct _LateAckRecord
 {
   AckRecord super;
@@ -52,6 +54,8 @@ late_ack_record_destroy(LateAckRecord *self)
   if (self->bookmark.destroy)
     self->bookmark.destroy(&(self->bookmark));
 }
+
+LateAckRecordContainer *late_ack_record_container_static_new(gsize size);
 
 static inline gboolean
 late_ack_record_container_is_empty(LateAckRecordContainer *s)
