@@ -26,6 +26,7 @@
 #include "synthetic-message.h"
 #include "messages.h"
 #include "str-utils.h"
+#include "scratch-buffers.h"
 #include "filter/filter-expr.h"
 #include "timeutils/cache.h"
 #include "timeutils/misc.h"
@@ -306,7 +307,7 @@ _lookup_or_create_context(GroupingBy *self, LogMessage *msg)
 {
   CorrellationContext *context;
   CorrellationKey key;
-  GString *buffer = g_string_sized_new(32);
+  GString *buffer = scratch_buffers_alloc();
 
   log_template_format(self->key_template, msg, NULL, LTZ_LOCAL, 0, NULL, buffer);
   log_msg_set_value(msg, context_id_handle, buffer->str, -1);
@@ -334,8 +335,6 @@ _lookup_or_create_context(GroupingBy *self, LogMessage *msg)
                 evt_tag_int("num_messages", context->messages->len),
                 log_pipe_location_tag(&self->super.super.super));
     }
-
-  g_string_free(buffer, TRUE);
 
   return context;
 }
