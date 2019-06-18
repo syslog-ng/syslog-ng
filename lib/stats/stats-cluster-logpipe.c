@@ -62,7 +62,7 @@ stats_cluster_logpipe_key_set(StatsClusterKey *key, guint16 component, guint dir
   g_assert(!(component & SCS_SOURCE));
   g_assert(!(component & SCS_DESTINATION));
 
-  stats_cluster_key_set(key, component | direction, id, instance, (StatsCounterGroupInit)
+  stats_cluster_key_set(key, component, direction, id, instance, (StatsCounterGroupInit)
   {
     tag_names, _counter_group_logpipe_init
   });
