@@ -3,7 +3,7 @@
 set -e
 
 cd /source
-./autogen.sh
+skip_submodules=1 ./autogen.sh
 
 cd /build
 echo "Running configure with: ${CONFIGURE_OPTS}"
