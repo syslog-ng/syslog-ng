@@ -1,6 +1,7 @@
 ack_tracker_includedir			= ${pkgincludedir}/ack-tracker
 
-EXTRA_DIST += lib/ack-tracker/CMakeLists.txt
+EXTRA_DIST += lib/ack-tracker/CMakeLists.txt \
+							lib/ack-tracker/tests/CMakeLists.txt
 
 ack_tracker_include_HEADERS = \
 	lib/ack-tracker/ack_tracker.h	\
@@ -13,3 +14,4 @@ ack_tracker_sources = \
 	lib/ack-tracker/late_ack_tracker.c \
 	lib/ack-tracker/late_ack_record_container_static.c
 
+include lib/ack-tracker/tests/Makefile.am
