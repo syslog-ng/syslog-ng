@@ -56,6 +56,7 @@ late_ack_record_destroy(LateAckRecord *self)
 }
 
 LateAckRecordContainer *late_ack_record_container_static_new(gsize size);
+LateAckRecordContainer *late_ack_record_container_dynamic_new(void);
 
 static inline gboolean
 late_ack_record_container_is_empty(LateAckRecordContainer *s)
