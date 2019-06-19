@@ -68,8 +68,6 @@ _drop(LateAckRecordContainer *s, gsize n)
   int i;
   LateAckRecord *ack_rec;
 
-  g_assert(n <= ring_buffer_count(&self->ack_records));
-
   for (i = 0; i < n; i++)
     {
       ack_rec = (LateAckRecord *)ring_buffer_element_at(&self->ack_records, i);

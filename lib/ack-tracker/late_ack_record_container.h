@@ -75,9 +75,16 @@ late_ack_record_container_store_pending(LateAckRecordContainer *s)
   s->store_pending(s);
 }
 
+static inline gsize
+late_ack_record_container_size(const LateAckRecordContainer *s)
+{
+  return s->size(s);
+}
+
 static inline void
 late_ack_record_container_drop(LateAckRecordContainer *s, gsize n)
 {
+  g_assert(n <= late_ack_record_container_size(s));
   s->drop(s, n);
 }
 
@@ -91,12 +98,6 @@ static inline void
 late_ack_record_container_free(LateAckRecordContainer *s)
 {
   s->free_fn(s);
-}
-
-static inline gsize
-late_ack_record_container_size(const LateAckRecordContainer *s)
-{
-  return s->size(s);
 }
 
 static inline gsize
