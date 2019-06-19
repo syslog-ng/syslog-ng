@@ -197,6 +197,12 @@ log_source_enable_dynamic_window(LogSource *self, DynamicWindowCounter *window_c
   dynamic_window_set_counter(&self->dynamic_window, dynamic_window_counter_ref(window_ctr));
 }
 
+gboolean
+log_source_is_dynamic_window_enabled(LogSource *self)
+{
+  return dynamic_window_is_enabled(&self->dynamic_window);
+}
+
 void
 log_source_dynamic_window_update_statistics(LogSource *self)
 {
