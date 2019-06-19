@@ -28,6 +28,7 @@
 /****************************************************************
  * Filter expression nodes
  ****************************************************************/
+const gchar *SCS_FILTER = "filter";
 
 void
 filter_expr_node_init_instance(FilterExprNode *self)
