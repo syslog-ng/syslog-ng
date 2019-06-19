@@ -208,3 +208,96 @@ Test(late_ack_record_container_static, get_continual_range_length)
   }
   late_ack_record_container_free(ack_records);
 }
+
+Test(late_ack_record_container_dynamic, is_empty)
+{
+  LateAckRecordContainer *ack_records = late_ack_record_container_dynamic_new();
+  {
+    cr_expect_eq(late_ack_record_container_size(ack_records), 0);
+
+    cr_expect(late_ack_record_container_is_empty(ack_records));
+    _fill_container(ack_records, 32, 0);
+    cr_expect_not(late_ack_record_container_is_empty(ack_records));
+    cr_expect_eq(late_ack_record_container_size(ack_records), 32);
+  }
+  late_ack_record_container_free(ack_records);
+}
+
+Test(late_ack_record_container_dynamic, request_store_pending)
+{
+  LateAckRecordContainer *ack_records = late_ack_record_container_dynamic_new();
+  {
+    for (gsize i = 0; i < 32; i++)
+      {
+        LateAckRecord *rec = late_ack_record_container_request_pending(ack_records);
+        _ack_record_write_idx_to_bookmark(rec, i);
+        late_ack_record_container_store_pending(ack_records);
+        rec = late_ack_record_container_at(ack_records, i);
+        TestBookmark *bookmark = _ack_record_extract_bookmark(rec);
+        cr_expect_eq(bookmark->idx, i);
+      }
+  }
+  late_ack_record_container_free(ack_records);
+}
+
+Test(late_ack_record_container_dynamic, drop_more_than_current_size, .signal = SIGABRT)
+{
+  LateAckRecordContainer *ack_records = late_ack_record_container_dynamic_new();
+  {
+    _fill_container(ack_records, 32, 0);
+    late_ack_record_container_drop(ack_records, 16);
+    cr_expect_eq(late_ack_record_container_size(ack_records), 16);
+    // when trying to drop more than current size, remove all the elements
+    late_ack_record_container_drop(ack_records, 20);
+  }
+  late_ack_record_container_free(ack_records);
+}
+
+Test(late_ack_record_container_dynamic, drop_from_the_beginning)
+{
+  LateAckRecordContainer *ack_records = late_ack_record_container_dynamic_new();
+  {
+    _fill_container(ack_records, 32, 0);
+    late_ack_record_container_drop(ack_records, 16);
+    _assert_indexes(ack_records, 16, 16);
+    cr_expect_eq(late_ack_record_container_size(ack_records), 16);
+  }
+  late_ack_record_container_free(ack_records);
+}
+
+Test(late_ack_record_container_dynamic, get_continual_range_length)
+{
+  LateAckRecordContainer *ack_records = late_ack_record_container_dynamic_new();
+  {
+    _fill_container(ack_records, 32, 0);
+    _set_ack_range(ack_records, 1, 15);
+    _assert_ack_range(ack_records, 0, 1, FALSE);
+    _assert_ack_range(ack_records, 1, 15, TRUE);
+    _assert_ack_range(ack_records, 16, 16, FALSE);
+    cr_expect_eq(late_ack_record_container_get_continual_range_length(ack_records), 0);
+    late_ack_record_container_drop(ack_records, 1); // drop unacked...
+    cr_expect_eq(late_ack_record_container_get_continual_range_length(ack_records), 15);
+  }
+  late_ack_record_container_free(ack_records);
+}
+
+Test(late_ack_record_container_dynamic, store_pending_after_drop_all)
+{
+  LateAckRecordContainer *ack_records = late_ack_record_container_dynamic_new();
+  {
+    _fill_container(ack_records, 32, 0);
+    LateAckRecord *pending = late_ack_record_container_request_pending(ack_records);
+    cr_assert_not_null(pending);
+    TestBookmark *bookmark = _ack_record_extract_bookmark(pending);
+    bookmark->idx = 111;
+    late_ack_record_container_drop(ack_records, 32);
+    cr_expect(late_ack_record_container_is_empty(ack_records));
+    late_ack_record_container_store_pending(ack_records);
+    cr_expect_eq(late_ack_record_container_size(ack_records), 1);
+    LateAckRecord *rec = late_ack_record_container_at(ack_records, 0);
+    bookmark = _ack_record_extract_bookmark(rec);
+    cr_expect_eq(bookmark->idx, 111);
+  }
+  late_ack_record_container_free(ack_records);
+}
+
