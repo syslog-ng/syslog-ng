@@ -98,6 +98,9 @@ typedef struct _LogQueueFifo
 
   gint log_fifo_size;
 
+  /* legacy: flow-controlled messages are included in the log_fifo_size limit */
+  gboolean use_legacy_fifo_size;
+
   InputQueue input_queues[0];
 } LogQueueFifo;
 
@@ -167,15 +170,9 @@ log_queue_fifo_keep_on_reload(LogQueue *s)
 }
 
 static inline void
-log_queue_fifo_drop_messages_from_input_queue(LogQueueFifo *self, InputQueue *input_queue,
-                                              gint num_non_flow_controlled_msgs)
+log_queue_fifo_drop_messages_from_input_queue(LogQueueFifo *self, InputQueue *input_queue, gint num_of_messages_to_drop)
 {
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-
-  /* NOTE: MAX is needed here to ensure that the lost race on num_non_flow_controlled_msgs
-   * doesn't result in n < 0 */
-  gint num_of_messages_to_drop = input_queue->non_flow_controlled_len -
-                                 MAX(0, (self->log_fifo_size - num_non_flow_controlled_msgs));
 
   struct iv_list_head *item = input_queue->items.next;
   for (gint dropped = 0; dropped < num_of_messages_to_drop;)
@@ -187,32 +184,37 @@ log_queue_fifo_drop_messages_from_input_queue(LogQueueFifo *self, InputQueue *in
       path_options.ack_needed = node->ack_needed;
       path_options.flow_control_requested = node->flow_control_requested;
 
-      if (path_options.flow_control_requested)
+      if (!self->use_legacy_fifo_size && path_options.flow_control_requested)
         continue;
 
       iv_list_del(&node->list);
       input_queue->len--;
-      input_queue->non_flow_controlled_len--;
       stats_counter_inc(self->super.dropped_messages);
       log_msg_free_queue_node(node);
 
       LogMessage *msg = node->msg;
-      log_msg_drop(msg, &path_options, AT_PROCESSED);
+      if (path_options.flow_control_requested)
+        log_msg_drop(msg, &path_options, AT_SUSPENDED);
+      else
+        {
+          input_queue->non_flow_controlled_len--;
+          log_msg_drop(msg, &path_options, AT_PROCESSED);
+        }
+
       dropped++;
     }
 
   msg_debug("Destination queue full, dropping messages",
-            evt_tag_int("num_non_flow_controlled_msgs", num_non_flow_controlled_msgs),
             evt_tag_int("log_fifo_size", self->log_fifo_size),
             evt_tag_int("number_of_dropped_messages", num_of_messages_to_drop),
             evt_tag_str("persist_name", self->super.persist_name));
 }
 
-/* move items from the per-thread input queue to the lock-protected "wait" queue */
-static void
-log_queue_fifo_move_input_unlocked(LogQueueFifo *self, gint thread_id)
+static inline gboolean
+log_queue_fifo_calculate_num_of_messages_to_drop(LogQueueFifo *self, InputQueue *input_queue,
+                                                 gint *num_of_messages_to_drop)
 {
-  /* since we're in the input thread, num_non_flow_controlled_msgs will be racy.
+  /* since we're in the input thread, queue_len will be racy.
    * It can increase due to log_queue_fifo_push_head() and can also decrease as
    * items are removed from the output queue using log_queue_pop_head().
    *
@@ -225,11 +227,43 @@ log_queue_fifo_move_input_unlocked(LogQueueFifo *self, gint thread_id)
    * justify proper locking in this case.
    */
 
-  gint num_non_flow_controlled_msgs = log_queue_fifo_get_non_flow_controlled_length(self);
-  if (num_non_flow_controlled_msgs + self->input_queues[thread_id].non_flow_controlled_len > self->log_fifo_size)
+  guint16 input_queue_len;
+  gint queue_len;
+
+  if (G_UNLIKELY(self->use_legacy_fifo_size))
+    {
+      queue_len = log_queue_fifo_get_length(&self->super);
+      input_queue_len = input_queue->len;
+    }
+  else
+    {
+      queue_len = log_queue_fifo_get_non_flow_controlled_length(self);
+      input_queue_len = input_queue->non_flow_controlled_len;
+    }
+
+  gboolean drop_messages = queue_len + input_queue_len > self->log_fifo_size;
+  if (!drop_messages)
+    return FALSE;
+
+  /* NOTE: MAX is needed here to ensure that the lost race on queue_len
+   * doesn't result in n < 0 */
+  *num_of_messages_to_drop = input_queue_len - MAX(0, (self->log_fifo_size - queue_len));
+
+  return TRUE;
+}
+
+/* move items from the per-thread input queue to the lock-protected "wait" queue */
+static void
+log_queue_fifo_move_input_unlocked(LogQueueFifo *self, gint thread_id)
+{
+  gint num_of_messages_to_drop;
+  gboolean drop_messages = log_queue_fifo_calculate_num_of_messages_to_drop(self, &self->input_queues[thread_id],
+                           &num_of_messages_to_drop);
+
+  if (drop_messages)
     {
       /* slow path, the input thread's queue would overflow the queue, let's drop some messages */
-      log_queue_fifo_drop_messages_from_input_queue(self, &self->input_queues[thread_id], num_non_flow_controlled_msgs);
+      log_queue_fifo_drop_messages_from_input_queue(self, &self->input_queues[thread_id], num_of_messages_to_drop);
     }
 
   log_queue_queued_messages_add(&self->super, self->input_queues[thread_id].len);
@@ -270,8 +304,23 @@ log_queue_fifo_move_input(gpointer user_data)
 static inline gboolean
 _message_has_to_be_dropped(LogQueueFifo *self, const LogPathOptions *path_options)
 {
+  if (G_UNLIKELY(self->use_legacy_fifo_size))
+    return log_queue_fifo_get_length(&self->super) >= self->log_fifo_size;
+
   return !path_options->flow_control_requested
          && log_queue_fifo_get_non_flow_controlled_length(self) >= self->log_fifo_size;
+}
+
+static inline void
+_drop_message(LogMessage *msg, const LogPathOptions *path_options)
+{
+  if (path_options->flow_control_requested)
+    {
+      log_msg_drop(msg, path_options, AT_SUSPENDED);
+      return;
+    }
+
+  log_msg_drop(msg, path_options, AT_PROCESSED);
 }
 
 /**
@@ -344,7 +393,7 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
       stats_counter_inc(self->super.dropped_messages);
       g_static_mutex_unlock(&self->super.lock);
 
-      log_msg_drop(msg, path_options, AT_PROCESSED);
+      _drop_message(msg, path_options);
 
       msg_debug("Destination queue full, dropping message",
                 evt_tag_int("queue_len", log_queue_fifo_get_length(&self->super)),
@@ -636,5 +685,13 @@ log_queue_fifo_new(gint log_fifo_size, const gchar *persist_name)
   INIT_IV_LIST_HEAD(&self->backlog_queue.items);
 
   self->log_fifo_size = log_fifo_size;
+  return &self->super;
+}
+
+LogQueue *
+log_queue_fifo_legacy_new(gint log_fifo_size, const gchar *persist_name)
+{
+  LogQueueFifo *self = (LogQueueFifo *) log_queue_fifo_new(log_fifo_size, persist_name);
+  self->use_legacy_fifo_size = TRUE;
   return &self->super;
 }
