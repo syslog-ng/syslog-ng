@@ -561,7 +561,7 @@ python_sd_new(GlobalConfig *cfg)
 
   self->super.format_stats_instance = python_sd_format_stats_instance;
   self->super.worker_options.super.stats_level = STATS_LEVEL0;
-  self->super.worker_options.super.stats_source = SCS_PYTHON;
+  self->super.worker_options.super.stats_source = stats_register_type("python");
 
   log_threaded_source_driver_set_worker_request_exit_func(&self->super, python_sd_request_exit);
   log_threaded_source_driver_set_worker_run_func(&self->super, python_sd_run);

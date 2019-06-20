@@ -25,6 +25,9 @@
 #include "stats/stats-registry.h"
 #include "transport-mapper-lib.h"
 
+guint SCS_UNIX_STREAM;
+guint SCS_UNIX_DGRAM;
+
 Test(transport_mapper_unix, test_transport_mapper_unix_stream_apply_transport_sets_defaults)
 {
   transport_mapper = transport_mapper_unix_stream_new();
@@ -53,6 +56,8 @@ static void
 setup(void)
 {
   app_startup();
+  SCS_UNIX_STREAM = stats_register_type("unix-stream");
+  SCS_UNIX_DGRAM = stats_register_type("unix-dgram");
 }
 
 static void

@@ -42,6 +42,7 @@ ControlConnection *control_connection;
 void
 setup(void)
 {
+  main_loop_thread_resource_init();
   msg_init(FALSE);
   main_loop_register_control_commands(NULL);
   stats_register_control_commands();

@@ -45,6 +45,7 @@
 #include "compat/openssl_support.h"
 #include "scratch-buffers.h"
 #include "timeutils/cache.h"
+#include "mainloop.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -1223,6 +1224,7 @@ main(int argc, char *argv[])
 
   setlocale(LC_ALL, "");
 
+  main_loop_thread_resource_init();
   msg_init(TRUE);
   resolved_configurable_paths_init(&resolvedConfigurablePaths);
   stats_init();
@@ -1262,5 +1264,6 @@ main(int argc, char *argv[])
   configuration = NULL;
   crypto_deinit();
   msg_deinit();
+  main_loop_thread_resource_deinit();
   return ret;
 }

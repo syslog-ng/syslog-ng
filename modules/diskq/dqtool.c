@@ -32,6 +32,7 @@
 #include "logqueue-disk-non-reliable.h"
 #include "logmsg/logmsg-serialize.h"
 #include "scratch-buffers.h"
+#include "mainloop.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -299,6 +300,7 @@ main(int argc, char *argv[])
   configuration->template_options.frac_digits = 3;
   configuration->template_options.time_zone_info[LTZ_LOCAL] = time_zone_info_new(NULL);
 
+  main_loop_thread_resource_init();
   msg_init(TRUE);
   stats_init();
   scratch_buffers_global_init();
@@ -312,6 +314,7 @@ main(int argc, char *argv[])
   scratch_buffers_global_deinit();
   stats_destroy();
   msg_deinit();
+  main_loop_thread_resource_deinit();
   return 0;
 
 }

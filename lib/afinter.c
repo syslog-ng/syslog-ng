@@ -343,7 +343,7 @@ afinter_sd_init(LogPipe *s)
 
   log_source_options_init(&self->source_options, cfg, self->super.super.group);
   self->source_options.stats_level = STATS_LEVEL0;
-  self->source_options.stats_source = SCS_INTERNAL;
+  self->source_options.stats_source = stats_register_type("internal");
   self->source = afinter_source_new(self, &self->source_options);
   log_pipe_append(&self->source->super, s);
 

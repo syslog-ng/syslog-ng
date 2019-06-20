@@ -22,9 +22,61 @@
  *
  */
 #include "stats/stats-cluster.h"
+#include "mainloop.h"
 
 #include <assert.h>
 #include <string.h>
+
+GPtrArray *stats_types;
+
+void
+stats_cluster_init(void)
+{
+  g_assert(!stats_types);
+  stats_types = g_ptr_array_new_with_free_func(g_free);
+
+  g_assert(stats_register_type("none") == 0);
+  g_assert(stats_register_type("group") == SCS_GROUP);
+  g_assert(stats_register_type("global") == SCS_GLOBAL);
+  g_assert(stats_register_type("center") == SCS_CENTER);
+  g_assert(stats_register_type("host") == SCS_HOST);
+  g_assert(stats_register_type("sender") == SCS_SENDER);
+  g_assert(stats_register_type("program") == SCS_PROGRAM);
+  g_assert(stats_register_type("severity") == SCS_SEVERITY);
+  g_assert(stats_register_type("facility") == SCS_FACILITY);
+  g_assert(stats_register_type("tag") == SCS_TAG);
+  g_assert(stats_register_type("filter") == SCS_FILTER);
+  g_assert(stats_register_type("parser") == SCS_PARSER);
+}
+
+gboolean
+_types_equal(const gchar *a, const gchar *b)
+{
+  return !strcmp(a, b);
+};
+
+guint
+stats_register_type(const gchar *type_name)
+{
+  main_loop_assert_main_thread();
+  guint index = 0;
+  gboolean result = g_ptr_array_find_with_equal_func(stats_types, type_name, (GEqualFunc)_types_equal, &index);
+  if (result)
+    return index;
+
+  g_ptr_array_add(stats_types, g_strdup(type_name));
+
+  guint registered_number = stats_types->len - 1;
+  g_assert(registered_number <= SCS_SOURCE_MASK);
+  return registered_number;
+};
+
+void
+stats_cluster_deinit(void)
+{
+  g_ptr_array_free(stats_types, TRUE);
+  stats_types = NULL;
+}
 
 static StatsClusterKey *
 _clone_stats_cluster_key(StatsClusterKey *dst, const StatsClusterKey *src)
@@ -80,55 +132,9 @@ stats_cluster_get_type_name(StatsCluster *self, gint type)
 static const gchar *
 _get_module_name(gint source)
 {
-  static const gchar *module_names[] =
-  {
-    "none",
-    "file",
-    "pipe",
-    "tcp",
-    "udp",
-    "tcp6",
-    "udp6",
-    "unix-stream",
-    "unix-dgram",
-    "syslog",
-    "network",
-    "internal",
-    "logstore",
-    "program",
-    "sql",
-    "sun-streams",
-    "usertty",
-    "group",
-    "center",
-    "host",
-    "global",
-    "mongodb",
-    "class",
-    "rule_id",
-    "tag",
-    "severity",
-    "facility",
-    "sender",
-    "smtp",
-    "amqp",
-    "stomp",
-    "redis",
-    "snmp",
-    "riemann",
-    "journald",
-    "java",
-    "http",
-    "python",
-    "filter",
-    "parser",
-    "monitoring",
-    "stdin",
-    "openbsd",
-    "kafka"
-  };
-  G_STATIC_ASSERT(sizeof(module_names)/sizeof(module_names[0])==SCS_MAX);
-  return module_names[source & SCS_SOURCE_MASK];
+  gint type = source & SCS_SOURCE_MASK;
+  g_assert(type < stats_types->len);
+  return g_ptr_array_index(stats_types, type);
 }
 
 

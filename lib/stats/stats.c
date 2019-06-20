@@ -238,6 +238,7 @@ stats_reinit(StatsOptions *options)
 void
 stats_init(void)
 {
+  stats_cluster_init();
   stats_registry_init();
   stats_query_init();
 }
@@ -247,6 +248,7 @@ stats_destroy(void)
 {
   stats_query_deinit();
   stats_registry_deinit();
+  stats_cluster_deinit();
 }
 
 void

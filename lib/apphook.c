@@ -151,6 +151,7 @@ construct_nondumpable_logger(msg_fatal);
 void
 app_startup(void)
 {
+  main_loop_thread_resource_init();
   msg_init(FALSE);
   iv_set_fatal_msg_handler(app_fatal);
   iv_init();
@@ -171,7 +172,6 @@ app_startup(void)
   value_pairs_global_init();
   service_management_init();
   scratch_buffers_allocator_init();
-  main_loop_thread_resource_init();
   nondumpable_setlogger(nondumpable_allocator_msg_debug, nondumpable_allocator_msg_fatal);
   secret_storage_init();
   transport_factory_id_global_init();
