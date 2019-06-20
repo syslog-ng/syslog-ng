@@ -241,6 +241,27 @@ log_src_driver_free(LogPipe *s)
 
 /* LogDestDriver */
 
+static LogQueue *
+_create_log_queue(LogDestDriver *self, const gchar *persist_name)
+{
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super);
+
+  gint log_fifo_size = self->log_fifo_size < 0 ? cfg->log_fifo_size : self->log_fifo_size;
+
+  if (cfg_is_config_version_older(cfg, VERSION_VALUE_3_22))
+    {
+      msg_warning_once("WARNING: log-fifo-size() works differently starting with " VERSION_3_22 " to avoid dropping "
+                       "flow-controlled messages when log-fifo-size() is misconfigured. From now on, log-fifo-size() "
+                       "only affects messages that are not flow-controlled. (Flow-controlled log paths have the "
+                       "flags(flow-control) option set.) To enable the new behaviour, update the @version string in "
+                       "your configuration and consider lowering the value of log-fifo-size().");
+
+      return log_queue_fifo_legacy_new(log_fifo_size, persist_name);
+    }
+
+  return log_queue_fifo_new(log_fifo_size, persist_name);
+}
+
 /* returns a reference */
 static LogQueue *
 log_dest_driver_acquire_queue_method(LogDestDriver *self, const gchar *persist_name)
@@ -253,7 +274,7 @@ log_dest_driver_acquire_queue_method(LogDestDriver *self, const gchar *persist_n
 
   if (!queue)
     {
-      queue = log_queue_fifo_new(self->log_fifo_size < 0 ? cfg->log_fifo_size : self->log_fifo_size, persist_name);
+      queue = _create_log_queue(self, persist_name);
       log_queue_set_throttle(queue, self->throttle);
     }
   return queue;
