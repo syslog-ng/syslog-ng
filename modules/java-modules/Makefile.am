@@ -1,22 +1,29 @@
 if ENABLE_JAVA_MODULES
 
-export GRADLE_OPTS
 
 JAVA_MOD_DST_DIR=$(DESTDIR)/$(moduledir)/java-modules
 MOD_JARS=$(shell find $(abs_top_builddir)/modules/java-modules -name '*.jar' -not -path "$(abs_top_builddir)/modules/java-modules/.gradle/*")
 JAVA_MODULES_INSTALLED_JARS=$(shell find $(JAVA_MOD_DST_DIR) -name '*.jar')
-GRADLE_WORKDIR=$(abs_top_builddir)/modules/java-modules/.gradle
+GRADLE_PROJECT_DIR ?= $(abs_top_srcdir)/modules/java-modules
+GRADLE_PROJECT_CACHE_DIR ?= $(abs_top_builddir)/modules/java-modules/.gradle
+GRADLE_FLAGS ?=
+GRADLE_ARGS = $(GRADLE_FLAGS) \
+	--project-dir $(GRADLE_PROJECT_DIR) \
+	--project-cache-dir=$(GRADLE_PROJECT_CACHE_DIR) \
+	-PsyslogBuildDir=$(abs_top_builddir)/modules/java-modules \
+	-PsyslogDepsDir=$(abs_top_builddir)/modules/java/syslog-ng-core/libs
+GRADLE_COMMAND = $(AM_V_GEN) $(GRADLE) $(GRADLE_ARGS)
 
 java-modules: $(SYSLOG_NG_CORE_JAR)
-	$(AM_V_GEN) $(GRADLE) --project-cache-dir $(GRADLE_WORKDIR) -g $(GRADLE_WORKDIR) -p $(abs_top_srcdir)/modules/java-modules -PsyslogBuildDir=$(abs_top_builddir)/modules/java-modules -PsyslogDepsDir=$(abs_top_builddir)/modules/java/syslog-ng-core/libs build
+	$(GRADLE_COMMAND) build
 
 all-local: java-modules
 
 log4j-copy-jar:
-	$(AM_V_GEN) $(GRADLE) --project-cache-dir $(GRADLE_WORKDIR) -g $(GRADLE_WORKDIR) -p $(abs_top_srcdir)/modules/java-modules -PsyslogBuildDir=$(abs_top_builddir)/modules/java-modules -PsyslogDepsDir=$(abs_top_builddir)/modules/java/syslog-ng-core/libs -PjarDestDir=$(JAVA_MOD_DST_DIR) copyLog4j
+	$(GRADLE_COMMAND) -PjarDestDir=$(JAVA_MOD_DST_DIR) copyLog4j
 
 jest-copy-jar:
-	$(AM_V_GEN) $(GRADLE) --project-cache-dir $(GRADLE_WORKDIR) -g $(GRADLE_WORKDIR) -p $(abs_top_srcdir)/modules/java-modules -PsyslogBuildDir=$(abs_top_builddir)/modules/java-modules -PsyslogDepsDir=$(abs_top_builddir)/modules/java/syslog-ng-core/libs -PjarDestDir=$(JAVA_MOD_DST_DIR) copyJestRuntimeDeps
+	$(GRADLE_COMMAND) -PjarDestDir=$(JAVA_MOD_DST_DIR) copyJestRuntimeDeps
 
 java-modules-install-exec-hook: log4j-copy-jar jest-copy-jar
 	$(mkinstalldirs) $(JAVA_MOD_DST_DIR)
@@ -27,9 +34,8 @@ java-modules-uninstall-exec-hook:
 
 java-modules-clean-hook:
 	rm -rf $(abs_top_builddir)/modules/java-modules/*.log
-	$(GRADLE) --project-cache-dir $(GRADLE_WORKDIR) -q -g $(GRADLE_WORKDIR) -p $(abs_top_srcdir)/modules/java-modules -PsyslogBuildDir=$(abs_top_builddir)/modules/java-modules -PsyslogDepsDir=$(abs_top_builddir)/modules/java/syslog-ng-core/libs clean
+	$(GRADLE_COMMAND) -q clean
 	rm -rf $(GRADLE_WORKDIR)
-
 
 INSTALL_EXEC_HOOKS += java-modules-install-exec-hook
 UNINSTALL_HOOKS += java-modules-uninstall-exec-hook
