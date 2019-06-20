@@ -1,110 +1,73 @@
-3.21.1
+3.22.1
 ======
 
 ## Highlights
 
- * Add an alternative, native, librdkafka based kafka-c() destination in
-   parallel of the existing Java implementation, that provides the same
-   configuration interface.  Eventually, we expect this to replace the Java
-   one (#2496)
+ * Sending SNMP traps: Using the new `snmp()` destination, incoming log messages
+   can be converted to SNMP traps, as the fields of the SNMP messages can be
+   customized with macros. (#2693)
 
- * Add a native, `http()` based destination based driver for elasticsearch
-   called `elasticsearch-http()`, as an alternative of the Java one.
-   Eventually, we expect this to replace the Java implementation.  (#2509)
+ * `$(template)` dynamic binding: Extends the $(template) template function to
+   allow dynamic binding. For example, the name of the template to be invoked
+   can come from the message (name-value pairs). (#2716)
 
- * Add the ability to automatically determine the timezone value for an
-   incoming log entry as long as the incoming stream is close to real time
-   and the timezone information is missing from the timestamp.  Enable this
-   function by using `flags(guess-timezone)` for sources and the
-   date-parser().  (#2517, #2673)
+ * `syslog()`, `network()`: Add `dynamic-window-size()` option to enable dynamic
+   flow control that distributes the specified amount of window between active
+   connections at runtime. This can be used in low-memory environments, where
+   only a small subset of the active clients sends messages at high rate.
+   (#2772)
 
 ## Features
 
- * `syslog()`: Add the ability to work with messages larger than `log-msg-size()`
-   in the source driver by using the `trim-large-messages(yes)` option.
-   The characters over the limit will be truncated.  Previously messages
-   longer than the limit caused the connection to be closed abruptly.
-   (#2644)
-
- * `amqp()`: add support for heartbeats and the "external" authentication
-   mechanism. (#2676, #2626)
-
- * `graylog2()`: add support for TLS and UDP. (#2657)
-
- * `udp()`: Add `spoof-source-max-msglen()` option to allow setting the
-   maximum spoofed datagram size, which was hard-wired to 1024 previously.
-   (#2535)
-
- * `db-parser()`: add an option `program-template()` that customizes the
-   value used for matching the PROGRAM field. (#2651)
-
- * `pdbtool`: Add sort option to pdbtool merge (#2664)
-
- * `$(implode)` and `$(explode)`: add template functions to split and join
-   strings based on a simple separator. The exploded array is represented as
-   a syslog-ng list that can be manipulated with the $(list-*) template
-   functions. (#2700)
-
- * Add an `--omit-empty-values` option for value-pairs based destinations &
-   template functions. (#2519)
-
- * `grouping-by()` parser: add sort-key() option (#2701)
-
-## Support for non-syslog or non-standard formats in SCL
-
- * `apache-accesslog-parser()`: support for vhost:port as the first field in
-   common/combined log formats (#2688)
- * Add application adapter for Junos classification (#2684)
- * Add parser and adapter for CheckPoint LogExporter output (#2665)
+ * `match()`: Add support for the `template()` option (#2715)
+ * `add-contextual-data()`: Allow using templates in name-value pairs (#2711)
+ * Add support for floating point operations in template functions (#2742)
+ * Add support for usec precision when parsing time (#2709)
 
 ## Bugfixes
 
- * Fix race condition of idle timer and scheduled I/O job (#2650)
- * Few leaks find via sanitizer (#2696)
- * syslogformat: set $MSG even if the incoming message is empty (#2672)
- * Fix double-free error in logproto unit tests (#2662)
- * groupingby: identical persist name (#2659)
- * stats: deindex pruned counters/clusters (#2648)
- * Type hinting should not accept empty values (#2639)
- * app-parser, pseudofile: fix crash with grammar error (#2640)
- * python: set_timestamp normalization (#2643)
- * db-parser: fix memory leak (#2652)
- * grouping-by: use after free, memory leak, missing init calls of filters (#2655)
- * amqp: fixing double connect (#2660)
- * old style definition warning fixes (#2680)
- * Fix "!=" filter (#2683)
- * dbparser: fix memleak (#2706)
- * nondumpable-allocator: fixing mmap error handling (#2666)
- * Fix timeutils warning (#2604)
- * Fix old style include statement compatibility (#2600)
- * Fix config revert (threaded destinations) (#2596)
- * Add warning on old style include statement (#2592)
+ * Fix null pointer access when destinations are suspended (#2778)
+ * Fix `grouping-by()` deadlock (#2758)
+ * Fix a general source-related crash and enhance `wildcard-file()`'s bookmark
+   handling (#2589)
+ * Fix infinite loop (reload/reopen) (#2739)
+ * Fix `python()` package/module name collision (#2438)
+ * Fix escaped quote in block argument (#2781)
+ * Reintroduce test on SYSLOG_NG_HAVE_TIMEZONE (#2774)
+ * `snmp()`: Fix template leak (#2746)
 
 ## Other changes
 
- * cfg-parser: add aliases for yesno (#2671)
- * Include json-c in the dist tarball (#2590)
- * cmake: disable_all_modules support (#2647)
- * Cmake clang sanitizer (#2562)
- * timeutils refactor (#2483)
- * Expedite threaded flush at reload (#2656)
- * elasticsearch2: Added deprecation warning (#2628)
- * Astyle fixes (#2624)
- * Force C99 with GNU (#2623)
- * Make rewording and other small edits to README (#2608)
- * Port tests to Criterion (#2607, #2661, #2621, #2620, #2619, #2618, #2617,
-   #2616, #2615, #2599, #2594, #2593, #2591, #2586, #2584, #2583)
- * test_reliable_backlog: fix random failure (#2668)
- * Fix unit test with function pointer dereference in case of ASLR, Criterion (#2669)
- * test-stats-query: fix unit test (#2603)
+ * Never drop flow-controlled messages: The meaning of `log-fifo-size()` has
+   changed to avoid dropping flow-controlled messages when `log-fifo-size()` is
+   misconfigured. From now on, `log-fifo-size()` only affects messages that are
+   not flow-controlled. (#2753)
+
+ * The `-d`/`--debug` syslog-ng command line flag no longer implies
+   `-e`/`--stderr`. If you want to redirect `internal()` source to stderr,
+   use the `-e`/`--stderr` option explicitly. (#2731)
+
+ * dbld, RPM and DEB packaging improvements (#2724)
+ * Checkpoint parser improvements (#2740)
+ * Reset the timezone on config reload event (#2691)
+ * `geoip2()`: Include IP into the error message (#2743)
+ * Improve regexp error messages (#2796)
+ * `http()`: Warn if less workers used than urls (#2757)
+ * `http()`: Allow URLs to be specified by a space/comma separated string
+   (#2699)
+ * loggen: Change message rate at runtime using signals (#2756)
+ * debun: add acquire_running_syslog_config function (#2752)
+ * FreeBSD fixes for the test suite (#2783)
 
 ## Notes to the developers
 
- * Version from git describe (#2627)
- * light: example-msg-generator support (#2571)
- * light: test app parser applications (#2686)
- * light: Switch to native logger (#2546)
- * light: Remove SetupTestcase() dependency  (#2587)
+ * ivykis: update to 0.42.4 (#2736)
+ * Support generator plugins in global options (#2747)
+ * logthrfetcher: new constants (#2766)
+ * logthrsourcedrv: support position tracking (#2750)
+ * Light: Support pre-commit and tox (#2725)
+ * Enable Bison error flags: conflicts-sr/rr (#2762)
+ * Dynamic stats constant registration (#2761)
 
 ## Credits
 
@@ -116,7 +79,7 @@ feedback are all important contributions, so please if you are a user
 of syslog-ng, contribute.
 
 We would like to thank the following people for their contribution:
-Andras Mitzki, Antal Nemes, Attila Szakacs, Balazs Scheidler, Chris Spencer,
-David Liew, Fabien Wernli, Gabor Nagy, Laszlo Budai, Laszlo Szemere, Layne,
-László Várady, Mehul Prajapati, Nik Ambrosch, Parth Wazurkar, Péter Kókai,
-Terez Nemes, Victor Ma, Zoltan Pallagi.
+Andras Mitzki, Antal Nemes, Attila Szakacs, Balazs Scheidler,
+Christian Michallek, Fabien Wernli, Gabor Nagy, Kyeong Yoo, Laszlo Budai,
+Laszlo Szemere, László Várady, Mehul Prajapati, Norbert Takacs, Oleksii Hamov,
+Péter Kókai, Romain Tartière, Zoltan Pallagi.
