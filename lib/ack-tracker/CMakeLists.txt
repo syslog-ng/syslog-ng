@@ -9,6 +9,7 @@ set(ACK_TRACKER_HEADERS
     ack-tracker/early_ack_tracker.c
     ack-tracker/late_ack_tracker.c
     ack-tracker/late_ack_record_container_static.c
+    ack-tracker/late_ack_record_container_dynamic.c
     PARENT_SCOPE)
 
 add_test_subdirectory(tests)
