@@ -296,7 +296,7 @@ export GEOIP_LIBS=-lGeoIP
     --sysconfdir=%{_sysconfdir}/%{name} \
     --localstatedir=%{_sharedstatedir}/%{name} \
     --datadir=%{_datadir} \
-    --with-module-dir=/%{_libdir}/%{name} \
+    --with-module-dir=%{_libdir}/%{name} \
     --with-systemdsystemunitdir=%{_unitdir} \
     --with-ivykis=system \
 %if 0%{?rhel}
