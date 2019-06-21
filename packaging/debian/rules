@@ -114,13 +114,10 @@ override_dh_auto_configure:
 # we override libdir above to place everything useful there. We want
 # the .pc file elsewhere, though, so do that here at install time.
 #
-# Similarly, we want to install python modules to their proper place,
-# and this is a great time to tell the build system where that is.
 # Also removing .la files, these files don't needed and just confuse
 # the list-missing option
 override_dh_auto_install:
-	dh_auto_install -- pkgconfigdir=/usr/lib/pkgconfig \
-			   PYSETUP_OPTIONS="--install-layout=deb --root=$(CURDIR)/debian/tmp/"
+	dh_auto_install -- pkgconfigdir=/usr/lib/pkgconfig
 	find . -name \*.la | xargs --no-run-if-empty rm
 
 override_dh_auto_test: ;
