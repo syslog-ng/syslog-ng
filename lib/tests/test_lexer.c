@@ -214,6 +214,16 @@ Test(lexer, block_token_is_taken_literally_between_a_pair_of_enclosing_character
   cfg_lexer_start_block_state(parser->lexer, "{}");
   assert_parser_block(" \"hello\\\nworld\" ");
   assert_location_range(1, 1, 2, 9);
+
+  _input(" { \"hello \\a\\n\\r\\t\\v\\x40\\o100 world\" }");
+  cfg_lexer_start_block_state(parser->lexer, "{}");
+  assert_parser_block(" \"hello \\a\\n\\r\\t\\v\\x40\\o100 world\" ");
+  assert_location_range(1, 1, 1, 39);
+
+  _input(" { \"hello \\\" world\" }");
+  cfg_lexer_start_block_state(parser->lexer, "{}");
+  assert_parser_block(" \"hello \\\" world\" ");
+  assert_location_range(1, 1, 1, 22);
 }
 
 Test(lexer, block_new_lines_in_text_leading_to_the_opening_bracket_are_tracked_properly)
