@@ -56,23 +56,28 @@ test_ack(LogMessage *msg, AckType ack_type)
 }
 
 void
+feed_empty_messages(LogQueue *q, const LogPathOptions *path_options, gint n)
+{
+  for (gint i = 0; i < n; i++)
+    {
+      LogMessage *msg = log_msg_new_empty();
+
+      log_msg_add_ack(msg, path_options);
+      msg->ack_func = test_ack;
+      log_queue_push_tail(q, msg, path_options);
+      fed_messages++;
+    }
+}
+
+void
 feed_some_messages(LogQueue *q, int n)
 {
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-  LogMessage *msg;
-  gint i;
 
   path_options.ack_needed = q->use_backlog;
   path_options.flow_control_requested = TRUE;
-  for (i = 0; i < n; i++)
-    {
-      msg = log_msg_new_empty();
 
-      log_msg_add_ack(msg, &path_options);
-      msg->ack_func = test_ack;
-      log_queue_push_tail(q, msg, &path_options);
-      fed_messages++;
-    }
+  feed_empty_messages(q, &path_options, n);
 }
 
 void
@@ -91,4 +96,3 @@ send_some_messages(LogQueue *q, gint n)
       log_msg_unref(msg);
     }
 }
-

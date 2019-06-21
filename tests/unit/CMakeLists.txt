@@ -1,4 +1,3 @@
-add_unit_test(LIBTEST CRITERION TARGET test_logqueue)
 add_unit_test(LIBTEST CRITERION TARGET test_matcher DEPENDS syslogformat)
 add_unit_test(LIBTEST CRITERION TARGET test_clone_logmsg)
 add_unit_test(CRITERION TARGET test_serialize)

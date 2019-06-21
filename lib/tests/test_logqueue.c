@@ -1,17 +1,19 @@
 /*
  * Copyright (c) 2008-2016 Balabit
+ * Copyright (c) 2019 One Identity
  *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 2 as published
- * by the Free Software Foundation, or (at your option) any later version.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  * As an additional exemption you are allowed to compile & link against the
@@ -303,5 +305,120 @@ Test(logqueue, log_queue_fifo_rewind_all_and_memory_usage)
   log_queue_rewind_backlog_all(q);
   cr_assert_eq(stats_counter_get(q->memory_usage), 10*size_when_single_msg);
 
+  log_queue_unref(q);
+}
+
+static void
+_register_stats_counters(LogQueue *q)
+{
+  StatsClusterKey sc_key;
+  stats_cluster_logpipe_key_set(&sc_key, SCS_DESTINATION, q->persist_name, NULL);
+
+  stats_lock();
+  log_queue_register_stats_counters(q, 0, &sc_key);
+  stats_unlock();
+}
+
+static void
+_unregister_stats_counters(LogQueue *q)
+{
+  StatsClusterKey sc_key;
+  stats_cluster_logpipe_key_set(&sc_key, SCS_DESTINATION, q->persist_name, NULL);
+
+  stats_lock();
+  log_queue_unregister_stats_counters(q, &sc_key);
+  stats_unlock();
+}
+
+Test(logqueue, log_queue_fifo_should_drop_only_non_flow_controlled_messages,
+     .description = "Flow-controlled messages should never be dropped")
+{
+  LogPathOptions flow_controlled_path = LOG_PATH_OPTIONS_INIT;
+  flow_controlled_path.flow_control_requested = TRUE;
+
+  LogPathOptions non_flow_controlled_path = LOG_PATH_OPTIONS_INIT;
+  non_flow_controlled_path.flow_control_requested = FALSE;
+
+  gint fifo_size = 5;
+  LogQueue *q = log_queue_fifo_new(fifo_size, NULL);
+  log_queue_set_use_backlog(q, TRUE);
+  _register_stats_counters(q);
+
+  fed_messages = 0;
+  acked_messages = 0;
+  feed_empty_messages(q, &flow_controlled_path, fifo_size);
+  feed_empty_messages(q, &non_flow_controlled_path, fifo_size);
+
+  feed_empty_messages(q, &non_flow_controlled_path, 1);
+  feed_empty_messages(q, &flow_controlled_path, fifo_size);
+  feed_empty_messages(q, &non_flow_controlled_path, 2);
+  feed_empty_messages(q, &flow_controlled_path, fifo_size);
+
+  cr_assert_eq(stats_counter_get(q->dropped_messages), 3);
+
+  send_some_messages(q, fed_messages);
+  log_queue_ack_backlog(q, fed_messages);
+
+  cr_assert_eq(fed_messages, acked_messages,
+               "did not receive enough acknowledgements: fed_messages=%d, acked_messages=%d",
+               fed_messages, acked_messages);
+
+  _unregister_stats_counters(q);
+  log_queue_unref(q);
+}
+
+static gpointer
+_flow_control_feed_thread(gpointer args)
+{
+  LogQueue *q = args;
+  gint fifo_size = 5;
+  LogPathOptions flow_controlled_path = LOG_PATH_OPTIONS_INIT;
+  flow_controlled_path.flow_control_requested = TRUE;
+
+  LogPathOptions non_flow_controlled_path = LOG_PATH_OPTIONS_INIT;
+  non_flow_controlled_path.flow_control_requested = FALSE;
+
+  iv_init();
+
+  main_loop_worker_thread_start(NULL);
+
+  fed_messages = 0;
+  acked_messages = 0;
+  feed_empty_messages(q, &flow_controlled_path, fifo_size);
+  feed_empty_messages(q, &non_flow_controlled_path, fifo_size);
+
+  feed_empty_messages(q, &non_flow_controlled_path, 1);
+  feed_empty_messages(q, &flow_controlled_path, fifo_size);
+  feed_empty_messages(q, &non_flow_controlled_path, 2);
+  feed_empty_messages(q, &flow_controlled_path, fifo_size);
+
+  main_loop_worker_invoke_batch_callbacks();
+  main_loop_worker_thread_stop();
+  iv_deinit();
+  return NULL;
+}
+
+Test(logqueue, log_queue_fifo_should_drop_only_non_flow_controlled_messages_threaded,
+     .description = "Flow-controlled messages should never be dropped (using input queues with threads")
+{
+  gint fifo_size = 5;
+  log_queue_set_max_threads(1);
+  LogQueue *q = log_queue_fifo_new(fifo_size, NULL);
+  log_queue_set_use_backlog(q, TRUE);
+  _register_stats_counters(q);
+
+  GThread *thread = g_thread_create(_flow_control_feed_thread, q, TRUE, NULL);
+  g_thread_join(thread);
+
+  cr_assert_eq(stats_counter_get(q->dropped_messages), 3);
+
+  send_some_messages(q, fed_messages);
+  log_queue_ack_backlog(q, fed_messages);
+
+  cr_assert_eq(fed_messages, acked_messages,
+               "did not receive enough acknowledgements: fed_messages=%d, acked_messages=%d",
+               fed_messages, acked_messages);
+
+  _unregister_stats_counters(q);
   log_queue_unref(q);
 }
