@@ -28,6 +28,8 @@
 #include "logsource.h"
 #include "logproto/logproto-server.h"
 #include "poll-events.h"
+#include "mainloop-io-worker.h"
+#include <iv_event.h>
 
 /* flags */
 #define LR_KERNEL          0x0002
@@ -50,10 +52,42 @@ typedef struct _LogReaderOptions
 
 typedef struct _LogReader LogReader;
 
+struct _LogReader
+{
+  LogSource super;
+  LogProtoServer *proto;
+  gboolean immediate_check;
+  LogPipe *control;
+  LogReaderOptions *options;
+  PollEvents *poll_events;
+  GSockAddr *peer_addr;
+
+  /* NOTE: these used to be LogReaderWatch members, which were merged into
+   * LogReader with the multi-thread refactorization */
+
+  struct iv_task restart_task;
+  struct iv_event schedule_wakeup;
+  MainLoopIOWorkerJob io_job;
+  gboolean watches_running:1, suspended:1, realloc_window_after_fetch:1;
+  gint notify_code;
+
+
+  /* proto & poll_events pending to be applied. As long as the previous
+   * processing is being done, we can't replace these in self->proto and
+   * self->poll_events, they get applied to the production ones as soon as
+   * the previous work is finished */
+  gboolean pending_close;
+  GCond *pending_close_cond;
+  GStaticMutex pending_close_lock;
+
+  struct iv_timer idle_timer;
+};
+
 void log_reader_set_options(LogReader *s, LogPipe *control, LogReaderOptions *options, const gchar *stats_id,
                             const gchar *stats_instance);
 void log_reader_set_follow_filename(LogReader *self, const gchar *follow_filename);
 void log_reader_set_peer_addr(LogReader *s, GSockAddr *peer_addr);
+void log_reader_set_name(LogReader *s, const gchar *name);
 void log_reader_set_immediate_check(LogReader *s);
 void log_reader_disable_bookmark_saving(LogReader *s);
 void log_reader_open(LogReader *s, LogProtoServer *proto, PollEvents *poll_events);

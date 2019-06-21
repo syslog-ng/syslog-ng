@@ -23,43 +23,9 @@
  */
 
 #include "logreader.h"
-#include "mainloop-io-worker.h"
 #include "mainloop-call.h"
 #include "ack-tracker/ack_tracker.h"
 #include "scratch-buffers.h"
-
-#include <iv_event.h>
-
-struct _LogReader
-{
-  LogSource super;
-  LogProtoServer *proto;
-  gboolean immediate_check;
-  LogPipe *control;
-  LogReaderOptions *options;
-  PollEvents *poll_events;
-  GSockAddr *peer_addr;
-
-  /* NOTE: these used to be LogReaderWatch members, which were merged into
-   * LogReader with the multi-thread refactorization */
-
-  struct iv_task restart_task;
-  struct iv_event schedule_wakeup;
-  MainLoopIOWorkerJob io_job;
-  gboolean watches_running:1, suspended:1;
-  gint notify_code;
-
-
-  /* proto & poll_events pending to be applied. As long as the previous
-   * processing is being done, we can't replace these in self->proto and
-   * self->poll_events, they get applied to the production ones as soon as
-   * the previous work is finished */
-  gboolean pending_close;
-  GCond *pending_close_cond;
-  GStaticMutex pending_close_lock;
-
-  struct iv_timer idle_timer;
-};
 
 static void log_reader_io_handle_in(gpointer s);
 static gboolean log_reader_fetch_log(LogReader *self);
@@ -110,6 +76,12 @@ log_reader_set_options(LogReader *s, LogPipe *control, LogReaderOptions *options
 
   self->options = options;
   log_proto_server_set_options(self->proto, &self->options->proto_options.super);
+}
+
+void
+log_reader_set_name(LogReader *self, const gchar *name)
+{
+  log_source_set_name(&self->super, name);
 }
 
 void
@@ -412,6 +384,11 @@ log_reader_work_finished(void *s)
       /* reenable polling the source assuming that we're still in
        * business (e.g. the reader hasn't been uninitialized) */
 
+      if (self->realloc_window_after_fetch)
+        {
+          self->realloc_window_after_fetch = FALSE;
+          log_source_dynamic_window_realloc(s);
+        }
       log_proto_server_reset_error(self->proto);
       log_reader_update_watches(self);
     }
@@ -670,6 +647,22 @@ log_reader_free(LogPipe *s)
   log_source_free(s);
 }
 
+static void
+_schedule_dynamic_window_realloc(LogSource *s)
+{
+  LogReader *self = (LogReader *)s;
+
+  msg_trace("LogReader::dynamic_window_realloc called");
+
+  if (self->io_job.working)
+    {
+      self->realloc_window_after_fetch = TRUE;
+      return;
+    }
+
+  log_source_dynamic_window_realloc(s);
+}
+
 LogReader *
 log_reader_new(GlobalConfig *cfg)
 {
@@ -680,6 +673,7 @@ log_reader_new(GlobalConfig *cfg)
   self->super.super.deinit = log_reader_deinit;
   self->super.super.free_fn = log_reader_free;
   self->super.wakeup = log_reader_wakeup;
+  self->super.schedule_dynamic_window_realloc = _schedule_dynamic_window_realloc;
   self->immediate_check = FALSE;
   log_reader_init_watches(self);
   g_static_mutex_init(&self->pending_close_lock);

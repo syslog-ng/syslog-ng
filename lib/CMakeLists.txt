@@ -79,6 +79,8 @@ set (LIB_HEADERS
     crypto.h
     dnscache.h
     driver.h
+    dynamic-window-pool.h
+    dynamic-window.h
     fdhelpers.h
     file-perms.h
     find-crlf.h
@@ -164,6 +166,8 @@ set(LIB_SOURCES
     children.c
     dnscache.c
     driver.c
+    dynamic-window.c
+    dynamic-window-pool.c
     fdhelpers.c
     file-perms.c
     find-crlf.c

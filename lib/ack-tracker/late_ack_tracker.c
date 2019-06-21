@@ -248,11 +248,20 @@ late_ack_tracker_init_instance(LateAckTracker *self, LogSource *source, LateAckR
   _setup_callbacks(self);
 }
 
+static LateAckRecordContainer *
+_create_ack_record_container(LogSource *source)
+{
+  if (log_source_is_dynamic_window_enabled(source))
+    return late_ack_record_container_dynamic_new();
+
+  return late_ack_record_container_static_new(log_source_get_init_window_size(source));
+}
+
 AckTracker *
 late_ack_tracker_new(LogSource *source)
 {
   LateAckTracker *self = g_new0(LateAckTracker, 1);
-  LateAckRecordContainer *ack_records = late_ack_record_container_static_new(log_source_get_init_window_size(source));
+  LateAckRecordContainer *ack_records = _create_ack_record_container(source);
 
   late_ack_tracker_init_instance(self, source, ack_records);
 

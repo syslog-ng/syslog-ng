@@ -28,6 +28,7 @@
 #include "logpipe.h"
 #include "stats/stats-registry.h"
 #include "window-size-counter.h"
+#include "dynamic-window.h"
 
 typedef struct _LogSourceOptions
 {
@@ -65,11 +66,22 @@ struct _LogSource
   LogSourceOptions *options;
   gboolean threaded;
   gboolean pos_tracked;
+  gchar *name;
   gchar *stats_id;
   gchar *stats_instance;
   WindowSizeCounter window_size;
+  DynamicWindow dynamic_window;
+  /* full_window_size = static + dynamic */
+  gsize full_window_size;
+  atomic_gssize window_size_to_be_reclaimed;
+  atomic_gssize pending_reclaimed;
+  StatsCounterItem *stat_window_size;
+  StatsCounterItem *stat_full_window;
   StatsCounterItem *last_message_seen;
   StatsCounterItem *recvd_messages;
+  StatsCluster *stat_window_size_cluster;
+  StatsCluster *stat_full_window_cluster;
+
   guint32 last_ack_count;
   guint32 ack_count;
   glong window_full_sleep_nsec;
@@ -77,6 +89,7 @@ struct _LogSource
   AckTracker *ack_tracker;
 
   void (*wakeup)(LogSource *s);
+  void (*schedule_dynamic_window_realloc)(LogSource *s);
 };
 
 static inline gboolean
@@ -91,6 +104,14 @@ log_source_get_init_window_size(LogSource *self)
   return self->options->init_window_size;
 }
 
+static inline void
+log_source_schedule_dynamic_window_realloc(LogSource *s)
+{
+  if (!s || !s->schedule_dynamic_window_realloc)
+    return;
+  s->schedule_dynamic_window_realloc(s);
+}
+
 gboolean log_source_init(LogPipe *s);
 gboolean log_source_deinit(LogPipe *s);
 
@@ -98,6 +119,7 @@ void log_source_post(LogSource *self, LogMessage *msg);
 
 void log_source_set_options(LogSource *self, LogSourceOptions *options, const gchar *stats_id,
                             const gchar *stats_instance, gboolean threaded, gboolean pos_tracked, LogExprNode *expr_node);
+void log_source_set_name(LogSource *self, const gchar *name);
 void log_source_mangle_hostname(LogSource *self, LogMessage *msg);
 void log_source_init_instance(LogSource *self, GlobalConfig *cfg);
 void log_source_options_defaults(LogSourceOptions *options);
@@ -110,7 +132,13 @@ void log_source_flow_control_adjust(LogSource *self, guint32 window_size_increme
 void log_source_flow_control_adjust_when_suspended(LogSource *self, guint32 window_size_increment);
 void log_source_flow_control_suspend(LogSource *self);
 void log_source_disable_bookmark_saving(LogSource *self);
+void log_source_enable_dynamic_window(LogSource *self, DynamicWindowPool *window_ctr);
+void log_source_dynamic_window_update_statistics(LogSource *self);
+gboolean log_source_is_dynamic_window_enabled(LogSource *self);
 
 void log_source_global_init(void);
+
+/* protected */
+void log_source_dynamic_window_realloc(LogSource *self);
 
 #endif
