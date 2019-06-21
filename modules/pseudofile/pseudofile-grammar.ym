@@ -64,7 +64,7 @@ start
 
 dest_pseudofile
 	: KW_PSEUDOFILE
-          '(' string						{ last_driver = pseudofile_dd_new($3, configuration); }
+          '(' path_check					{ last_driver = pseudofile_dd_new($3, configuration); }
 	  pseudofile_opts
 	  ')'							{ $$ = last_driver; free($3); }
 	;

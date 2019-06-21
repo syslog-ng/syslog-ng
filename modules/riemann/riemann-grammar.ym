@@ -182,14 +182,14 @@ riemann_tls_options
         ;
 
 riemann_tls_option
-        : KW_CA_FILE '(' string ')' { riemann_dd_set_tls_cacert(last_driver, $3); free($3); }
-        | KW_CERT_FILE '(' string ')' { riemann_dd_set_tls_cert(last_driver, $3); free($3); }
-        | KW_KEY_FILE '(' string ')' { riemann_dd_set_tls_key(last_driver, $3); free($3); }
+        : KW_CA_FILE '(' path_check ')'    { riemann_dd_set_tls_cacert(last_driver, $3); free($3); }
+        | KW_CERT_FILE '(' path_check ')'  { riemann_dd_set_tls_cert(last_driver, $3); free($3); }
+        | KW_KEY_FILE '(' path_secret ')'  { riemann_dd_set_tls_key(last_driver, $3); free($3); }
 
 	/* for compatibility with early riemann code where key() was used
 	 * for the key file, which doesn't match the option name in tls()
 	 * options */
-        | KW_KEY '(' string ')'
+        | KW_KEY '(' path_secret ')'
           {
             msg_warning("WARNING: your riemann configuration uses the key() "
                         "option which was obsoleted in favour of key-file(), "

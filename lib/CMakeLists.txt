@@ -74,6 +74,7 @@ set (LIB_HEADERS
     cfg-block.h
     cfg-block-generator.h
     cfg-parser.h
+    cfg-path.h
     cfg-tree.h
     children.h
     crypto.h
@@ -162,6 +163,7 @@ set(LIB_SOURCES
     cfg-lexer.c
     cfg-lexer-subst.c
     cfg-parser.c
+    cfg-path.c
     cfg-tree.c
     children.c
     dnscache.c

@@ -34,17 +34,22 @@
 #include "stats/stats-cluster.h"
 #include "stats/stats-registry.h"
 #include "apphook.h"
+#include "cfg-path.h"
 
 
 ControlServer *control_server;
 ControlConnection *control_connection;
+MainLoop *main_loop;
 
 void
 setup(void)
 {
-  main_loop_thread_resource_init();
-  msg_init(FALSE);
-  main_loop_register_control_commands(NULL);
+  MainLoopOptions main_loop_options = {0};
+  app_startup();
+
+  main_loop = main_loop_get_instance();
+  main_loop_init(main_loop, &main_loop_options);
+  main_loop_register_control_commands(main_loop);
   stats_register_control_commands();
   control_server = control_server_dummy_new();
   control_connection = control_connection_dummy_new(control_server);
@@ -56,7 +61,8 @@ teardown(void)
 {
   control_server_connection_closed(control_server, control_connection);
   control_server_free(control_server);
-  msg_deinit();
+  main_loop_deinit(main_loop);
+  app_shutdown();
   reset_control_command_list();
 }
 
@@ -89,6 +95,21 @@ first_line_eq(const gchar *buf, const gchar *expected)
   const gchar *nl = strchr(buf, '\n');
 
   return strncmp(buf, expected, nl - buf) == 0;
+}
+
+Test(control_cmds, test_listfiles)
+{
+  const gchar *response;
+  const gchar *db_file = "/opt/syslog-ng/var/db/patterndb.xml";
+  GString *expected = g_string_new("");
+
+  cfg_path_track_file(main_loop_get_current_config(main_loop), db_file, "path_check");
+
+  _run_command("LISTFILES", &response);
+  g_string_printf(expected, "path_check: %s", db_file);
+  cr_assert(first_line_eq(response, expected->str), "Bad reply: [%s]", response);
+
+  g_string_free(expected, TRUE);
 }
 
 Test(control_cmds, test_log)
@@ -163,8 +184,6 @@ Test(control_cmds, test_stats)
   gchar **stats_result;
   const gchar *response;
 
-  stats_init();
-
   stats_lock();
   StatsClusterKey sc_key;
   stats_cluster_logpipe_key_set(&sc_key, SCS_CENTER, "id", "received" );
@@ -177,15 +196,12 @@ Test(control_cmds, test_stats)
   cr_assert_str_eq(stats_result[0], "SourceName;SourceId;SourceInstance;State;Type;Number",
                    "Bad reply");
   g_strfreev(stats_result);
-  stats_destroy();
 }
 
 Test(control_cmds, test_reset_stats)
 {
   StatsCounterItem *counter = NULL;
   const gchar *response;
-
-  stats_init();
 
   stats_lock();
   StatsClusterKey sc_key;
@@ -201,7 +217,6 @@ Test(control_cmds, test_reset_stats)
   cr_assert_str_eq(response,
                    "SourceName;SourceId;SourceInstance;State;Type;Number\ncenter;id;received;a;processed;0\n.\n",
                    "Bad reply");
-  stats_destroy();
 }
 
 static void
