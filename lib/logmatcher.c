@@ -341,8 +341,8 @@ log_matcher_pcre_re_compile(LogMatcher *s, const gchar *re, GError **error)
   self->pattern = pcre_compile2(re_comp, flags, &rc, &errptr, &erroffset, NULL);
   if (!self->pattern)
     {
-      g_set_error(error, LOG_TEMPLATE_ERROR, 0, "Error while compiling PCRE expression, error=%s, error_at=%d", errptr,
-                  erroffset);
+      g_set_error(error, LOG_TEMPLATE_ERROR, 0, "Failed to compile PCRE expression >>>%s<<< `%s' at character %d",
+                  re, errptr, erroffset);
       return FALSE;
     }
 
@@ -350,7 +350,8 @@ log_matcher_pcre_re_compile(LogMatcher *s, const gchar *re, GError **error)
   self->extra = pcre_study(self->pattern, PCRE_STUDY_JIT_COMPILE, &errptr);
   if (errptr != NULL)
     {
-      g_set_error(error, LOG_TEMPLATE_ERROR, 0, "Error while optimizing regular expression, error=%s", errptr);
+      g_set_error(error, LOG_TEMPLATE_ERROR, 0, "Failed to optimize regular expression >>>%s<<< `%s'",
+                  re, errptr);
       return FALSE;
     }
 
