@@ -24,6 +24,7 @@
 
 #include "userdb.h"
 #include <criterion/criterion.h>
+#include <grp.h>
 
 Test(user_db, resolve_user_root)
 {
@@ -73,11 +74,16 @@ Test(user_db, resolve_user_group)
 {
   gint uid;
   gint gid;
-  char str[] = "root:root";
+  char str[] = "root:sys";
+
+  struct group *sys_group = getgrnam("sys");
+  cr_assert(sys_group);
+
+  gint expected_gid = sys_group->gr_gid;
 
   cr_assert(resolve_user_group(str, &uid, &gid));
   cr_assert_eq(uid, 0);
-  cr_assert_eq(gid, 0);
+  cr_assert_eq(gid, expected_gid);
 }
 #endif
 
