@@ -118,6 +118,7 @@ static void affile_dd_reap_writer(AFFileDestDriver *self, AFFileDestWriter *dw);
 static void
 affile_dw_arm_reaper(AFFileDestWriter *self)
 {
+  g_assert(self->owner->time_reap > 0);
   /* not yet reaped, set up the next callback */
   iv_validate_now();
   self->reap_timer.expires = iv_now;
@@ -183,7 +184,7 @@ affile_dw_reopen(AFFileDestWriter *self)
       proto = file_opener_construct_dst_proto(self->owner->file_opener, transport,
                                               &self->owner->writer_options.proto_options.super);
 
-      if (!iv_timer_registered(&self->reap_timer))
+      if (self->owner->time_reap > 0 && !iv_timer_registered(&self->reap_timer))
         main_loop_call((void *(*)(void *)) affile_dw_arm_reaper, self, TRUE);
     }
   else
