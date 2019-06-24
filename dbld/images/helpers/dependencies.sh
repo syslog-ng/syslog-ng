@@ -16,9 +16,16 @@ function install_cmake() {
 
 function install_criterion() {
     CRITERION_VERSION=2.3.3
-    download_target "https://github.com/Snaipe/Criterion/releases/download/v${CRITERION_VERSION}/criterion-v${CRITERION_VERSION}-linux-x86_64.tar.bz2" /tmp/criterion.tar.bz2
-    tar xvjf /tmp/criterion.tar.bz2 --strip 1 -C /usr
-    rm -rf /tmp/criterion.tar.bz2
+
+    download_target "https://github.com/Snaipe/Criterion/releases/download/v${CRITERION_VERSION}/criterion-v${CRITERION_VERSION}.tar.bz2" /tmp/criterion.tar.bz2
+    cd /tmp/
+    tar xvf /tmp/criterion.tar.bz2
+    cd /tmp/criterion-v${CRITERION_VERSION}
+    cmake -DCMAKE_INSTALL_PREFIX=/usr .
+    make install
+    ldconfig
+    rm -rf /tmp/criterion.tar.bz2 /tmp/criterion-v${CRITERION_VERSION}
+
 }
 
 function install_gosu() {
@@ -41,60 +48,6 @@ function install_gradle {
     ln -s /opt/gradle/gradle-${GRADLE_VERSION}/bin/gradle /usr/bin/gradle
     find / -name 'libjvm.so' | sed 's@/libjvm.so@@g' | tee --append /etc/ld.so.conf.d/openjdk-libjvm.conf
     ldconfig
-}
-
-function install_libmaxminddb() {
-    LIBMAXMINDDB_VERSION=1.3.2
-    download_target "https://github.com/maxmind/libmaxminddb/releases/download/${LIBMAXMINDDB_VERSION}/libmaxminddb-${LIBMAXMINDDB_VERSION}.tar.gz" /tmp/libmaxminddb.tar.gz
-    cd /tmp/
-    tar xvf /tmp/libmaxminddb.tar.gz
-    cd /tmp/libmaxminddb-${LIBMAXMINDDB_VERSION}
-    ./configure
-    make
-    make install
-    ldconfig
-    rm -rf /tmp/libmaxminddb.tar.gz /tmp/libmaxminddb-${LIBMAXMINDDB_VERSION}
-}
-
-function install_mongoc() {
-    MONGOC_VERSION=1.13.0
-    download_target "https://github.com/mongodb/mongo-c-driver/releases/download/${MONGOC_VERSION}/mongo-c-driver-${MONGOC_VERSION}.tar.gz" /tmp/mongo-c-driver.tar.gz
-    cd /tmp/
-    tar xvf /tmp/mongo-c-driver.tar.gz
-    cd /tmp/mongo-c-driver-${MONGOC_VERSION}
-    mkdir cmake-build/
-    cd cmake-build/
-    cmake -DENABLE_AUTOMATIC_INIT_AND_CLEANUP=OFF ..
-    make
-    make install
-    rm -rf /tmp/mongo-c-driver.tar.gz /tmp/mongo-c-driver-${MONGOC_VERSION}
-}
-
-function install_rabbitmqc() {
-    RABBITMQC_VERSION=0.9.0
-    download_target "https://github.com/alanxz/rabbitmq-c/archive/v${RABBITMQC_VERSION}.tar.gz" /tmp/rabbitmq-c.tar.gz
-    cd /tmp/
-    tar xfz /tmp/rabbitmq-c.tar.gz
-    cd /tmp/rabbitmq-c-${RABBITMQC_VERSION}/
-    mkdir cmake-build/
-    cd cmake-build/
-    cmake ..
-    make
-    make install
-    rm -rf /tmp/rabbitmq-c.tar.gz /tmp/rabbitmq-c-${RABBITMQC_VERSION}/
-}
-
-function install_riemann() {
-    RIEMANN_VERSION=1.10.3
-    download_target "https://github.com/algernon/riemann-c-client/archive/riemann-c-client-${RIEMANN_VERSION}.tar.gz" /tmp/riemann.tar.gz
-    cd /tmp/
-    tar xfz /tmp/riemann.tar.gz
-    cd /tmp/riemann-c-client-riemann-c-client-${RIEMANN_VERSION}
-    autoreconf -i
-    ./configure
-    make
-    make install
-    rm -rf /tmp/riemann.tar.gz /tmp/riemann-c-client-riemann-c-client-${RIEMANN_VERSION}
 }
 
 function download_target() {
@@ -121,23 +74,47 @@ EOF
     apt-get update
 }
 
+function add_copr_repo {
+
+    # NOTE: we are removing dnf/yum plugins after enabling copr as they
+    # install a couple of Python dependencies which then conflict with our
+    # PIP installation later.
+    case "${OS_PLATFORM}" in
+        centos-*)
+            yum install -y yum-plugin-copr
+            yum copr enable -y czanik/syslog-ng-githead
+            ;;
+        fedora-*)
+            dnf install -y dnf-plugins-core
+            dnf copr enable -y czanik/syslog-ng-githead
+            ;;
+    esac
+}
+
+function add_epel_repo {
+    yum install -y epel-release
+}
+
 function install_apt_packages {
     apt-get update -qq -o Acquire::CompressionTypes::Order::=gz
     filter_packages_by_platform /helpers/packages.manifest | xargs -t apt-get install --no-install-recommends --yes
 }
 
 function install_yum_packages {
-    yum install -y epel-release
+    yum install -y findutils
     filter_packages_by_platform /helpers/packages.manifest | xargs yum install -y
 }
 
 function install_pip_packages {
-    if [ "${OS_PLATFORM}" == "centos-6" ]; then
-        filter_packages_by_platform /helpers/pip_packages.manifest | xargs pip install -U
-    else
-        python -m pip install --upgrade pip
-        filter_packages_by_platform /helpers/pip_packages.manifest | xargs python -m pip install -U
-    fi
+    case "${OS_PLATFORM}" in
+        centos-7)
+            python -m pip install --upgrade pip==9.0.3
+            ;;
+        *)
+            python -m pip install --upgrade pip
+            ;;
+    esac
+    filter_packages_by_platform /helpers/pip_packages.manifest | xargs python -m pip install -U
 }
 
 function enable_dbgsyms {

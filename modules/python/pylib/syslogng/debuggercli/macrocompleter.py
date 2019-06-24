@@ -143,9 +143,9 @@ class MacroCompleter(Completer):
     def _is_macro_a_numbered_match(macro):
         return macro.isdigit()
 
-    @staticmethod
-    def _is_macro_a_date_macro(macro):
-        return macro[0:2] in {'R_', 'S_', 'C_'}
+    @classmethod
+    def _is_macro_a_date_macro(cls, macro):
+        return macro[0:2] in cls._date_wildcards
 
     @classmethod
     def _is_macro_a_small_numbered_match(cls, macro):

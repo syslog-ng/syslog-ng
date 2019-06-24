@@ -1,9 +1,8 @@
 #!/bin/bash
 
-set -e
+. /source/dbld/functions.sh
 
 cd /source
-VERSION=`scripts/version.sh`
 SYSLOGNG_DIR=syslog-ng-${VERSION}
 SYSLOGNG_TARBALL=${SYSLOGNG_DIR}.tar.gz
 

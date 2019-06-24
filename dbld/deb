@@ -1,21 +1,36 @@
 #!/bin/bash
 
-set -e
+. /source/dbld/functions.sh
 
-cd /source
-VERSION=`scripts/version.sh`
-GITREF=`git describe`
+function setup_dirs() {
+    rm -rf /build/${OS_PLATFORM} && mkdir -p /build/${OS_PLATFORM}
+}
+
+function prepare_source() {
+    cd /build
+    rm -rf syslog-ng-${VERSION}
+    tar xf syslog-ng-${VERSION}.tar.gz
+
+    # save the tarball as .orig.tar.gz so that dpkg-buildpackage finds it as the original source
+    cp syslog-ng-${VERSION}.tar.gz syslog-ng_${VERSION}.orig.tar.gz
+}
+
+function capture_debs() {
+    mv /build/*.deb /build/${OS_PLATFORM}
+    echo "Your debs are in /build/${OS_PLATFORM}, also available on the host in \$(top_srcdir)/dbld/build/${OS_PLATFORM}"
+}
+
 cd /build
 
-rm -rf syslog-ng-${VERSION}
-tar xf syslog-ng-${VERSION}.tar.gz
-cp syslog-ng-${VERSION}.tar.gz syslog-ng_${VERSION}.orig.tar.gz
+setup_dirs
+prepare_source
+
 cd syslog-ng-${VERSION}
 
 if [ ! -d debian ]; then
 	echo "You have no Debian packaging in debian/, this should already by in the tarball at this point"
 	exit 1
 fi
-dpkg-buildpackage -rfakeroot -d
+run_build_command dpkg-buildpackage -rfakeroot -d
 
-echo "Your debs are in /build, also available on the host in \$(top_srcdir)/dbld/build"
+capture_debs

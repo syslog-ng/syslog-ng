@@ -1,3 +1,53 @@
+
+%bcond_with python3
+%bcond_without python2
+
+%if 0%{with python3} && 0%{with python2}
+%{error:Can't build with python2 and python3 at the same type, use one of --with python2 or --with python3}
+Intentional syntax error to cause rpmbuild to abort.
+%endif
+
+%if 0%{with python3}
+%global with_python2 0
+%endif
+
+%if 0%{with python2}
+%global with_python3 0
+%endif
+
+%if 0%{?rhel} >= 7 || 0%{?fedora} >= 28
+%bcond_without sql
+%bcond_without mongodb
+%bcond_without systemd
+%bcond_without redis
+%bcond_without riemann
+%bcond_without maxminddb
+%bcond_without amqp
+%bcond_without java
+%bcond_without kafka
+%bcond_without snmpdest
+
+%if 0%{with python2}
+%global		python_devel python-devel
+%global         py_ver  %{python_version}
+%endif
+
+%if 0%{with python3}
+
+%if 0%{?rhel} == 7
+%global		python_devel python36-devel
+%global         py_ver  3.6
+%else
+%global		python_devel python3-devel
+%global         py_ver  %{python3_version}
+%endif
+
+%endif
+
+%else
+%{error:Unsupported distro, we currently only try to build on RHEL >= 7 or Fedora >= 30}
+%endif
+
 %global ivykis_ver 0.36.1
 
 Name: syslog-ng
@@ -13,43 +63,81 @@ Source1: syslog-ng.conf
 Source2: syslog-ng.logrotate
 Source3: syslog-ng.service
 
-BuildRequires: systemd-units
 BuildRequires: pkgconfig
 BuildRequires: libtool
 BuildRequires: bison, flex
 BuildRequires: libxslt
-BuildRequires: glib2-devel >= 2.10.1
-BuildRequires: ivykis-devel >= %{ivykis_ver}
+BuildRequires: glib2-devel
+BuildRequires: ivykis-devel
 BuildRequires: json-c-devel
 BuildRequires: libcap-devel
 BuildRequires: libdbi-devel
 BuildRequires: libnet-devel
 BuildRequires: openssl-devel
-BuildRequires: pcre-devel >= 6.1
+BuildRequires: pcre-devel
 BuildRequires: libuuid-devel
 BuildRequires: libesmtp-devel
 BuildRequires: GeoIP-devel
-BuildRequires: systemd-devel
-BuildRequires: hiredis-devel
-BuildRequires: riemann-c-client-devel
-BuildRequires: python-devel
-BuildRequires: java-devel
-#BuildRequires: gradle    # Upstream version installed manually, discussed in: https://github.com/balabit/syslog-ng/issues/2262
-BuildRequires: syslog-ng-java-deps
 BuildRequires: libcurl-devel
-BuildRequires: cyrus-sasl-devel
-BuildRequires: libmaxminddb-devel
-%if 0%{?rhel}
-BuildRequires: mongo-c-driver-devel
-BuildRequires: tcp_wrappers-devel
+
+BuildRequires: %{python_devel}
+
+%if %{with amqp}
 BuildRequires: librabbitmq-devel
+%endif
+
+%if %{with maxminddb}
+BuildRequires: libmaxminddb-devel
+%endif
+
+%if %{with riemann}
+BuildRequires: riemann-c-client-devel
+%endif
+
+%if %{with redis}
+BuildRequires: hiredis-devel
+%endif
+
+%if %{with systemd}
+BuildRequires: systemd-units
+BuildRequires: systemd-devel
+Requires(post): systemd-units
+Requires(preun): systemd-units
+Requires(postun): systemd-units
+%endif
+
+%if %{with mongodb}
+BuildRequires: mongo-c-driver-devel
+BuildRequires: cyrus-sasl-devel
+%endif
+
+%if %{with java}
+# java dependencies
+BuildRequires: java-devel
+
+%if 0%{?_dbld} != 1
+# within dbld these dependencies are already installed from upstream (e.g. not via RPMs)
+BuildRequires: gradle
+BuildRequires: syslog-ng-java-deps
+%endif
+
+%endif
+
+%if %{with kafka}
+BuildRequires: librdkafka-devel
+BuildRequires: zlib-devel
+%endif
+
+%if %{with snmpdest}
+BuildRequires: net-snmp-devel
+%endif
+
+%if 0%{?rhel}
+BuildRequires: tcp_wrappers-devel
 %endif
 
 Requires: logrotate
 Requires: ivykis >= %{ivykis_ver}
-Requires(post): systemd-units
-Requires(preun): systemd-units
-Requires(postun): systemd-units
 
 Provides: syslog
 # merge separate syslog-vim package into one
@@ -77,16 +165,21 @@ Key features:
  * hand on messages for further processing using message queues (like
    AMQP), files or databases (like PostgreSQL or MongoDB).
 
-
-%package libdbi
-Summary: libdbi support for %{name}
+%package sql
+Summary: SQL support for %{name}
 Group: Development/Libraries
 Requires: %{name}%{?_isa} = %{version}-%{release}
 
-%description libdbi
-This module supports a large number of database systems via libdbi.
+%description sql
+This module supports a large number of SQL database systems via libdbi.
 
-%if 0%{?rhel}
+%package amqp
+Summary: AMQP support for %{name}
+Group: Development/Libraries
+Requires: %{name}%{?_isa} = %{version}-%{release}
+
+%description amqp
+This module supports AMQP via librabbitmq
 
 %package mongodb
 Summary: mongodb support for %{name}
@@ -96,8 +189,6 @@ Requires: %{name}%{?_isa} = %{version}-%{release}
 %description mongodb
 This module supports the mongodb database via libmongo-client.
 
-%endif
-
 %package smtp
 Summary: smtp support for %{name}
 Group: Development/Libraries
@@ -106,6 +197,21 @@ Requires: %{name}%{?_isa} = %{version}-%{release}
 %description smtp
 This module supports sending e-mail alerts through an smtp server.
 
+%package kafka
+Summary: kafka support for %{name}
+Group: Development/Libraries
+Requires: %{name}%{?_isa} = %{version}-%{release}
+
+%description kafka
+This module supports sending logs to kafka through librdkafka.
+
+%package snmpdest
+Summary: SNMP destination support for %{name}
+Group: Development/Libraries
+Requires: %{name}%{?_isa} = %{version}-%{release}
+
+%description snmpdest
+This module supports sending SNMP traps using net-snmp.
 
 %package java
 Summary:        Java destination support for syslog-ng
@@ -176,13 +282,11 @@ developing applications that use %{name}.
 # fix perl path
 %{__sed} -i 's|^#!/usr/local/bin/perl|#!%{__perl}|' contrib/relogger.pl
 
+# fix Python path
+%{__sed} -i 's|^#!/usr/bin/env python|#!%{__python3}|' lib/merge-grammar.py
+
 # fix executable perms on contrib files
 %{__chmod} -c a-x contrib/syslog2ng
-
-# fix authors file
-/usr/bin/iconv -f iso8859-1 -t utf-8 AUTHORS > AUTHORS.conv && \
-    %{__mv} -f AUTHORS.conv AUTHORS
-
 
 %build
 
@@ -196,15 +300,8 @@ export GEOIP_LIBS=-lGeoIP
     --with-systemdsystemunitdir=%{_unitdir} \
     --with-ivykis=system \
 %if 0%{?rhel}
-    --with-mongoc=system \
-    --enable-mongodb \
-    --enable-amqp \
-    --with-librabbitmq-client=internal \
     --enable-tcp-wrapper \
 %else
-    --with-mongoc=no \
-    --disable-mongodb \
-    --disable-amqp \
     --disable-tcp-wrapper \
 %endif
     --with-embedded-crypto \
@@ -212,7 +309,6 @@ export GEOIP_LIBS=-lGeoIP
     --enable-ipv6 \
     --enable-spoof-source \
     --with-linux-caps=auto \
-    --enable-sql \
     --enable-json \
     --enable-ssl \
     --enable-smtp \
@@ -220,11 +316,17 @@ export GEOIP_LIBS=-lGeoIP
     --enable-shared \
     --disable-static \
     --enable-dynamic-linking \
-    --enable-systemd \
-    --enable-redis \
     --enable-python \
-    --enable-java \
-    --enable-riemann
+    --with-python=%{py_ver} \
+    %{?with kafka:--enable-kafka} \
+    %{?with snmpdest:--enable-snmp-dest} \
+    %{?with java:--enable-java} \
+    %{?with sql:--enable-sql} \
+    %{?with systemd:--enable-systemd} \
+    %{?with mongodb:--enable-mongodb} \
+    %{?with amqp:--enable-amqp} \
+    %{?with redis:--enable-redis} \
+    %{?with riemann:--enable-riemann}
 
 # disable broken test by setting a different target
 sed -i 's/libs build/libs assemble/' Makefile
@@ -241,7 +343,11 @@ make DESTDIR=%{buildroot} install
 %{__install} -d -m 755 %{buildroot}%{_sysconfdir}/logrotate.d
 %{__install} -p -m 644 %{SOURCE2} %{buildroot}%{_sysconfdir}/logrotate.d/syslog
 
+%if %{with systemd}
 %{__install} -p -m 644 %{SOURCE3} %{buildroot}%{_unitdir}/%{name}.service
+# remove unused service file
+rm %{buildroot}/usr/lib/systemd/system/syslog-ng@.service
+%endif
 
 
 # create the local state dir
@@ -264,8 +370,6 @@ done
 
 find %{buildroot} -name "*.la" -exec rm -f {} \;
 
-# remove unused service file
-rm %{buildroot}/usr/lib/systemd/system/syslog-ng@.service
 
 %post
 ldconfig
@@ -317,7 +421,7 @@ fi
 %config(noreplace) %{_sysconfdir}/%{name}/%{name}.conf
 %config(noreplace) %{_sysconfdir}/%{name}/scl.conf
 %config(noreplace) %{_sysconfdir}/logrotate.d/syslog
-%{_unitdir}/%{name}.service
+
 
 %dir %{_sharedstatedir}/%{name}
 %{_sbindir}/%{name}
@@ -333,19 +437,41 @@ fi
 %{_libdir}/libsecret-storage.so.*
 %{_libdir}/libloggen_helper-*.so.*
 %{_libdir}/libloggen_plugin-*.so.*
-%{_libdir}/%{name}/*.so
-%exclude %{_libdir}/%{name}/libafsql.so
-%if 0%{?rhel}
-%exclude %{_libdir}/%{name}/libafmongodb.so
+%{_libdir}/%{name}/libadd-contextual-data.so
+%{_libdir}/%{name}/libaffile.so
+%{_libdir}/%{name}/libafprog.so
+%{_libdir}/%{name}/libafsocket.so
+%{_libdir}/%{name}/libafstomp.so
+%{_libdir}/%{name}/libafuser.so
+%{_libdir}/%{name}/libappmodel.so
+%{_libdir}/%{name}/libbasicfuncs.so
+%{_libdir}/%{name}/libcef.so
+%{_libdir}/%{name}/libconfgen.so
+%{_libdir}/%{name}/libcryptofuncs.so
+%{_libdir}/%{name}/libcsvparser.so
+%{_libdir}/%{name}/libdate.so
+%{_libdir}/%{name}/libdbparser.so
+%{_libdir}/%{name}/libdisk-buffer.so
+%{_libdir}/%{name}/libexamples.so
+%{_libdir}/%{name}/libgraphite.so
+%{_libdir}/%{name}/libhook-commands.so
+%{_libdir}/%{name}/libjson-plugin.so
+%{_libdir}/%{name}/libkvformat.so
+%{_libdir}/%{name}/liblinux-kmsg-format.so
+%{_libdir}/%{name}/libmap-value-pairs.so
+%{_libdir}/%{name}/libpseudofile.so
+%{_libdir}/%{name}/libsnmptrapd-parser.so
+%{_libdir}/%{name}/libstardate.so
+%{_libdir}/%{name}/libsyslogformat.so
+%{_libdir}/%{name}/libsystem-source.so
+%{_libdir}/%{name}/libtags-parser.so
+%{_libdir}/%{name}/libtfgetent.so
+%{_libdir}/%{name}/libxml.so
+
+%if %{with systemd}
+%{_unitdir}/%{name}.service
+%{_libdir}/%{name}/libsdjournal.so
 %endif
-%exclude %{_libdir}/%{name}/libredis.so
-%exclude %{_libdir}/%{name}/libafsmtp.so
-%exclude %{_libdir}/%{name}/libgeoip-plugin.so
-%exclude %{_libdir}/%{name}/libgeoip2-plugin.so
-%exclude %{_libdir}/%{name}/libriemann.so
-%exclude %{_libdir}/%{name}/libhttp.so
-%exclude %{_libdir}/%{name}/libmod-python.so
-%exclude %{_libdir}/%{name}/libmod-java.so
 
 %dir %{_libdir}/%{name}/loggen
 %{_libdir}/%{name}/loggen/libloggen*
@@ -368,41 +494,64 @@ fi
 %{_mandir}/man5/syslog-ng.conf.5*
 %{_mandir}/man8/syslog-ng.8*
 
-%files libdbi
+%if %{with sql}
+%files sql
 %{_libdir}/%{name}/libafsql.so
+%endif
 
-%if 0%{?rhel}
+%if %{with amqp}
+%files amqp
+%{_libdir}/%{name}/libafamqp.so
+%endif
+
+%if %{with mongodb}
 %files mongodb
 %{_libdir}/%{name}/libafmongodb.so
 %endif
 
+%if %{with redis}
 %files redis
 %{_libdir}/%{name}/libredis.so
+%endif
+
+%if %{with kafka}
+%files kafka
+%{_libdir}/%{name}/libkafka.so
+%endif
+
+%if %{with snmpdest}
+%files snmpdest
+%{_libdir}/%{name}/libsnmpdest.so
+%endif
 
 %files smtp
 %{_libdir}/%{name}/libafsmtp.so
 
+%if %{with java}
 %files java
 %attr(755,root,root) %{_libdir}/syslog-ng/libmod-java.so
 %dir %{_libdir}/%{name}/java-modules/
 %{_libdir}/%{name}/java-modules/*
+%endif
 
 %files geoip
 %{_libdir}/%{name}/libgeoip-plugin.so
-%{_libdir}/%{name}/libgeoip2-plugin.so
 
+%if %{with maxminddb}
+%{_libdir}/%{name}/libgeoip2-plugin.so
+%endif
+
+%if %{with riemann}
 %files riemann
 %{_libdir}/%{name}/libriemann.so
+%endif
 
 %files http
 %{_libdir}/%{name}/libhttp.so
 
 %files python
-/usr/lib/python2.7/site-packages/syslogng-1.0-py2.7.egg-info
-%dir /usr/lib/python2.7/site-packages/syslogng/
-%dir /usr/lib/python2.7/site-packages/syslogng/debuggercli/
-/usr/lib/python2.7/site-packages/syslogng/*
-/usr/lib/python2.7/site-packages/syslogng/debuggercli/*
+/usr/lib/python%{py_ver}/site-packages/syslogng-1.0-py%{py_ver}.egg-info
+/usr/lib/python%{py_ver}/site-packages/syslogng/*
 %{_libdir}/%{name}/libmod-python.so
 
 %files devel
@@ -412,14 +561,25 @@ fi
 %{_libdir}/libsyslog-ng-native-connector.a
 %{_libdir}/libloggen_helper.so
 %{_libdir}/libloggen_plugin.so
+
+%if 0%{?_dbld}
+
+# without criterion we don't have the test lib.  On dbld we do have it, on
+# upstream CentOS/Fedora we don't.
+
+%{_libdir}/%{name}/libtest/libsyslog-ng-test.a
+%{_libdir}/pkgconfig/syslog-ng-test.pc
+%endif
+
 %{_includedir}/%{name}/
 %{_libdir}/pkgconfig/syslog-ng.pc
 %{_libdir}/pkgconfig/syslog-ng-native-connector.pc
 %{_datadir}/%{name}/tools/
 
 %changelog
-* Fri Jun 26 2019 Laszlo Budai <laszlo.budai@balabit.com> - 3.22.1-1
-- update to 3.22.1
+* Sun Jun 16 2019 Balazs Scheidler <balazs.scheidler@oneidentity.com> - 3.22.1-1
+- merge changes from Peter Czanik's copr specfile
+- make this work on all supported distros (centos-6, centos-7, latest fedora releases)
 
 * Fri May  3 2019 Laszlo Budai <laszlo.budai@balabit.com> - 3.21.1-1
 - update to 3.21.1
@@ -433,10 +593,10 @@ fi
 * Thu Oct 11 2018 Laszlo Budai <laszlo.budai@balabit.com> - 3.18.1-1
 - update to 3.18.1
 
-* Wed Aug 10 2018 Laszlo Budai <laszlo.budai@balabit.com> - 3.17.2-1
+* Fri Aug 10 2018 Laszlo Budai <laszlo.budai@balabit.com> - 3.17.2-1
 - update to 3.17.2
 
-* Wed Aug 9 2018 Laszlo Budai <laszlo.budai@balabit.com> - 3.17.1-1
+* Thu Aug  9 2018 Laszlo Budai <laszlo.budai@balabit.com> - 3.17.1-1
 - update to 3.17.1
 
 * Thu Jun 14 2018 Gabor Nagy <gabor.nagy@balabit.com> - 3.16.1-1

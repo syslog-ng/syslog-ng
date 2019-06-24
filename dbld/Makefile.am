@@ -1,6 +1,8 @@
 EXTRA_DIST += \
+	dbld/functions.sh \
 	dbld/tarball \
 	dbld/pkg-tarball \
+	dbld/package \
 	dbld/rpm \
 	dbld/deb \
 	dbld/generate-rpm-specfile \
@@ -8,6 +10,7 @@ EXTRA_DIST += \
 	dbld/shell \
 	dbld/rules \
 	dbld/bootstrap	\
+	dbld/build.manifest	\
 	dbld/images/devshell.dockerfile \
 	dbld/images/helpers/entrypoint.sh \
 	dbld/images/helpers/fake-sudo.sh \
@@ -15,8 +18,8 @@ EXTRA_DIST += \
 	dbld/images/helpers/packages.manifest \
 	dbld/images/helpers/pip_packages.manifest \
 	dbld/images/README.md \
-	dbld/images/centos-6.dockerfile \
 	dbld/images/centos-7.dockerfile \
+	dbld/images/fedora-30.dockerfile \
 	dbld/images/debian-jessie.dockerfile \
 	dbld/images/debian-stretch.dockerfile \
 	dbld/images/debian-buster.dockerfile \

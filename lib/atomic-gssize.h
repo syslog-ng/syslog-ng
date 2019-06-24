@@ -67,7 +67,7 @@ atomic_gssize_get(atomic_gssize *a)
 static inline void
 atomic_gssize_set(atomic_gssize *a, gssize value)
 {
-  g_atomic_pointer_set(&a->value, value);
+  g_atomic_pointer_set(&a->value, (void *) value);
 }
 
 static inline gsize

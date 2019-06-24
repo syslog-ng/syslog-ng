@@ -1,34 +1,35 @@
 # packages to run successful autogen.sh
-autoconf                    [centos, debian, ubuntu]
-autoconf-archive            [centos, debian, ubuntu]
-automake                    [centos, debian, ubuntu]
-ca-certificates             [centos, debian, ubuntu]
-git                         [centos, debian, ubuntu]
-libtool                     [centos, debian, ubuntu]
+autoconf                    [centos, fedora, debian, ubuntu]
+autoconf-archive            [centos, fedora, debian, ubuntu]
+automake                    [centos, fedora, debian, ubuntu]
+ca-certificates             [centos, fedora, debian, ubuntu]
+git                         [centos, fedora, debian, ubuntu]
+ccache                      [centos, fedora, debian, ubuntu]
+libtool                     [centos, fedora, debian, ubuntu]
 
     # pkgconfig
     pkg-config              [debian, ubuntu]
-    pkgconfig               [centos]
+    pkgconfig               [centos, fedora]
 
 
 
 
 
 # packages to run successful configure
-bison                           [centos, debian, ubuntu]
+bison                           [centos, fedora, debian, ubuntu]
 build-essential                 [debian, ubuntu]
-byacc                           [centos]
-file                            [centos, debian, ubuntu]
-flex                            [centos, debian, ubuntu]
-pcre-devel                      [centos]
+byacc                           [centos, fedora]
+file                            [centos, fedora, debian, ubuntu]
+flex                            [centos, fedora, debian, ubuntu]
+pcre-devel                      [centos, fedora]
 
     # glib-dev
     libglib2.0-dev              [debian, ubuntu]
-    glib2-devel                 [centos]
+    glib2-devel                 [centos, fedora]
 
     # ssl-dev
     libssl-dev                  [debian, ubuntu]
-    openssl-devel               [centos]
+    openssl-devel               [centos, fedora]
 
 
 
@@ -37,92 +38,97 @@ pcre-devel                      [centos]
 # packages to run successful configure with module support
     # libbson-dev
     libbson-dev                 [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
-    libbson-devel               [centos-7]
+    libbson-devel               [centos, fedora]
 
     # librabbitmq-dev
     librabbitmq-dev             [debian-jessie, debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
-    librabbitmq-devel           [centos-7]
+    librabbitmq-devel           [centos, fedora]
 
-    # libmongoc-dev
+    # libmongoc-dev (not available on debian-jessie)
     libmongoc-dev               [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
-    libmongo-client-dev         [debian-jessie]
-    libmongo-client-devel       [centos-7]
+    mongo-c-driver-devel        [centos, fedora]
 
     # librdkafka-dev (we are using a specific version from OBS and need to
     # list all interdependent packages as an apt preferences would prevent
     # installation otherwise
-    librdkafka1=1.0.0-1         [ubuntu-bionic]
-    librdkafka++1=1.0.0-1       [ubuntu-bionic]
-    librdkafka-dev=1.0.0-1      [ubuntu-bionic]
+    librdkafka1=1.0.1-1         [ubuntu-bionic]
+    librdkafka++1=1.0.1-1       [ubuntu-bionic]
+    librdkafka-dev=1.0.1-1      [ubuntu-bionic]
+    librdkafka-devel		[fedora]
 
     # libmaxmindb-dev
     libmaxminddb-dev            [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
-    libmaxminddb-devel          [centos-7]
+    libmaxminddb-devel          [centos, fedora]
 
     # libcurl-dev
     libcurl4-openssl-dev        [debian, ubuntu]
-    libcurl-devel               [centos]
+    libcurl-devel               [centos, fedora]
 
     # libdbi-dev
     libdbi-dev                  [debian, ubuntu]
-    libdbi-devel                [centos]
+    libdbi-devel                [centos, fedora]
 
     # libesmtp-dev
     libesmtp-dev                [debian, ubuntu]
-    libesmtp-devel              [centos]
+    libesmtp-devel              [centos, fedora]
 
     # libgeoip-dev
     libgeoip-dev                [debian, ubuntu]
-    GeoIP-devel                 [centos]
+    GeoIP-devel                 [centos, fedora]
 
     # redis-dev
     libhiredis-dev              [debian, ubuntu]
-    hiredis-devel               [centos]
+    hiredis-devel               [centos, fedora]
 
     # libnet-dev
     libnet1-dev                 [debian, ubuntu]
-    libnet-devel                [centos]
+    libnet-devel                [centos, fedora]
 
     # libriemann-dev
     libriemann-client-dev       [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
-    riemann-c-client-devel      [centos-7]
+    riemann-c-client-devel      [centos, fedora]
 
     # java-7
     openjdk-7-jdk               [debian-jessie, ubuntu-trusty]
-    java-1.7.0-openjdk-devel    [centos-6]
 
     # java-8
-    openjdk-8-jdk               [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
-    java-1.8.0-openjdk-devel    [centos-7]
+    openjdk-8-jdk               [debian-stretch, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
+    java-1.8.0-openjdk-devel    [centos, fedora]
+
+    # no java 8 for buster, java-11 does not yet work
+    #openjdk-11-jdk               [debian-buster]
 
     # python-dev
     python-dev                  [debian, ubuntu]
-    python-devel                [centos]
+    python-devel                [centos, fedora]
+    python36-devel              [centos]
+    python3-devel               [fedora]
 
-
-
+    # snmp-dest
+    libsnmp-dev                 [debian, ubuntu]
+    net-snmp-devel              [centos, fedora]
 
 
 # optional packages to run configure
     # libcap-dev
     libcap-dev                  [debian, ubuntu]
-    libcap-devel                [centos]
+    libcap-devel                [centos, fedora]
 
     # systemd-dev
     libsystemd-dev              [debian, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
-    systemd-devel               [centos]
+    systemd-devel               [centos, fedora]
 
     # uuid-dev
     uuid-dev                    [debian, ubuntu]
-    libuuid-devel               [centos]
+    libuuid-devel               [centos, fedora]
 
 
 
 
 
 # packages to run successful make
-cmake                           [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
-make                            [centos, debian, ubuntu]
+cmake                           [centos, fedora, debian, ubuntu]
+make                            [centos, fedora, debian, ubuntu]
 
     # libwrap-dev
     libwrap0-dev                [debian, ubuntu]
@@ -130,32 +136,33 @@ make                            [centos, debian, ubuntu]
 
     # xsltproc
     xsltproc                    [debian, ubuntu]
-    libxslt                     [centos]
+    libxslt                     [centos, fedora]
 
     # docbook
     docbook-xsl                 [debian, ubuntu]
-    docbook-style-xsl           [centos]
+    docbook-style-xsl           [centos, fedora]
 
 
-
+# packages to compile criterion
+gcc-c++				[centos, fedora]
 
 
 # packages to run successful make check
-python-pip                      [centos, debian, ubuntu]
-python-setuptools               [centos, debian, ubuntu]
-tzdata                          [centos, debian, ubuntu]
+python-pip                      [centos, fedora, debian, ubuntu]
+python-setuptools               [centos, fedora, debian, ubuntu]
+tzdata                          [centos, fedora, debian, ubuntu]
 
     # geoip-database
     geoip-database              [debian, ubuntu]
-    GeoIP-data                  [centos]
+    GeoIP-data                  [centos, fedora]
 
     # libxml2-utils
     libxml2-utils               [debian, ubuntu]
-    libxml2                     [centos]
+    libxml2                     [centos, fedora]
 
     # sqlite
     sqlite3                     [debian, ubuntu]
-    sqlite                      [centos]
+    sqlite                      [centos, fedora]
 
 
 
@@ -167,18 +174,18 @@ dh-autoreconf                   [debian, ubuntu]
 dh-exec                         [debian, ubuntu]
 dh-systemd                      [debian, ubuntu]
 dpkg-dev                        [debian, ubuntu]
-fakeroot                        [centos, debian, ubuntu]
-doxygen                         [centos, debian, ubuntu]
-rpm-build                       [centos]
-cyrus-sasl-devel                [centos-7]
+fakeroot                        [centos, fedora, debian, ubuntu]
+doxygen                         [centos, fedora, debian, ubuntu]
+rpm-build                       [centos, fedora]
+cyrus-sasl-devel                [centos, fedora]
 
     #libivykis-dev
     libivykis-dev               [debian, ubuntu]
-    ivykis-devel                [centos]
+    ivykis-devel                [centos, fedora]
 
     #libjson-dev
     libjson-c-dev               [debian, ubuntu]
-    json-c-devel                [centos]
+    json-c-devel                [centos, fedora]
 
 
 
@@ -192,7 +199,7 @@ astyle                          [debian, ubuntu]
 
 
 # packages to run gosu installation
-gnupg                           [centos, debian, ubuntu]
+gnupg                           [centos, fedora, debian, ubuntu]
 
 
 
@@ -210,17 +217,16 @@ python-numpy                    [debian, ubuntu]
 python-yaml                     [debian, ubuntu]
 python3-yaml                    [debian, ubuntu]
 systemd-sysv                    [debian, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
-libsnmp-dev                     [debian, ubuntu]
 
 
 
 
 # common tools
-bzip2                           [centos, debian, ubuntu]
-less                            [centos, debian, ubuntu]
-unzip                           [centos, debian, ubuntu]
-vim                             [centos, debian, ubuntu]
-wget                            [centos, debian, ubuntu]
+bzip2                           [centos, fedora, debian, ubuntu]
+less                            [centos, fedora, debian, ubuntu]
+unzip                           [centos, fedora, debian, ubuntu]
+vim                             [centos, fedora, debian, ubuntu]
+wget                            [centos, fedora, debian, ubuntu]
 
 
 

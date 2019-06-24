@@ -1,21 +1,32 @@
 #!/bin/bash
 
-set -e
+. /source/dbld/functions.sh
 
-cd /source
-VERSION=`scripts/version.sh`
 RPMBUILD=${HOME}/rpmbuild
-RPMBUILD_SOURCES=$RPMBUILD/SOURCES
+RPMBUILD_SOURCES=${RPMBUILD}/SOURCES
 
-# CzP's spec file expect it in the pwd
-# where the build was initiated
-cp packaging/rhel/syslog-ng.* /build
+function setup_dirs() {
+	mkdir -p $RPMBUILD_SOURCES
+	rm -rf /build/${OS_PLATFORM} && mkdir -p /build/${OS_PLATFORM}
+}
+
+function prepare_source() {
+    # CzP's spec file expect it in the pwd
+    # where the build was initiated
+    cp /source/packaging/rhel/syslog-ng.* /build
+    cp syslog-ng-${VERSION}.tar.gz $RPMBUILD_SOURCES
+}
+
+function capture_rpms() {
+	mv $RPMBUILD/RPMS/*/*${VERSION}*.rpm /build/${OS_PLATFORM}
+	mv $RPMBUILD/SRPMS/*${VERSION}*.rpm /build/${OS_PLATFORM}
+	echo "Your rpms are in /build/${OS_PLATFORM}, also available on the host in \$(top_srcdir)/dbld/build/${OS_PLATFORM}"
+}
+
 
 cd /build
-mkdir -p $RPMBUILD_SOURCES
-cp  syslog-ng-${VERSION}.tar.gz $RPMBUILD_SOURCES
 
-rpmbuild -ta syslog-ng-${VERSION}.tar.gz
-mv $RPMBUILD/RPMS/*/*.rpm /build
-mv $RPMBUILD/SRPMS/*.rpm /build
-echo "Your rpms are in /build, also available on the host in \$(top_srcdir)/dbld/build"
+setup_dirs
+prepare_source
+run_build_command rpmbuild --define '_dbld 1' -ta syslog-ng-${VERSION}.tar.gz
+capture_rpms

@@ -43,6 +43,7 @@ dbld/build/.*$
 dbld/release/.*$
 dbld/install/.*$
 dbld/images/.*$
+dbld/(functions\.sh|build\.manifest|tarball-changes\.ignore)$
 cmake/.*$
 tests/python_functional/pytest.ini
 tests/python_functional/tox.ini

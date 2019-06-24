@@ -101,7 +101,7 @@ Package: syslog-ng-dev
 Section: libdevel
 Architecture: any
 Depends: syslog-ng-core (= ${binary:Version}),
- ${misc:Depends}, ${perl:Depends},
+ ${misc:Depends},
  pkg-config, perl, flex, bison,
  libglib2.0-dev, libivykis-dev (>= 0.30)
 Description: Enhanced system logging daemon (development files)
@@ -773,7 +773,7 @@ Description: Enhanced system logging daemon (HDFS destination)
 Package: syslog-ng-mod-kafka
 Architecture: any
 Multi-Arch: foreign
-Depends: syslog-ng-core (= ${binary:Version}), syslog-ng-mod-java-common-lib, syslog-ng-mod-java
+Depends: syslog-ng-core (= ${binary:Version}), syslog-ng-mod-java-common-lib, syslog-ng-mod-java, ${shlibs:Depends}, ${misc:Depends}
 Description: Enhanced system logging daemon (Kafka destination)
  syslog-ng is an enhanced log daemon, supporting a wide range of input
  and output methods: syslog, unstructured text, message queues,
@@ -842,7 +842,6 @@ Description: Enhanced system logging daemon (HTTP destination)
 Package: syslog-ng-mod-json
 Architecture: any
 Multi-Arch: foreign
-Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Enhanced system logging daemon (HTTP destination)
  syslog-ng is an enhanced log daemon, supporting a wide range of input
  and output methods: syslog, unstructured text, message queues,
@@ -883,26 +882,3 @@ Description: Enhanced system logging daemon (example plugins)
     AMQP), files or databases (like PostgreSQL or MongoDB).
  .
  This package provides a collection of example plugins.
-
-Package: syslog-ng-mod-rdkafka
-Architecture: any
-Multi-Arch: foreign
-Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: Enhanced system logging daemon (Kafka destination, based on librdkafka)
- syslog-ng is an enhanced log daemon, supporting a wide range of input
- and output methods: syslog, unstructured text, message queues,
- databases (SQL and NoSQL alike) and more.
- .
- Key features:
- .
-  * receive and send RFC3164 and RFC5424 style syslog messages
-  * work with any kind of unstructured data
-  * receive and send JSON formatted messages
-  * classify and structure logs with builtin parsers (csv-parser(),
-    db-parser(), etc.)
-  * normalize, crunch and process logs as they flow through the system
-  * hand on messages for further processing using message queues (like
-    AMQP), files or databases (like PostgreSQL or MongoDB).
- .
- This package provides a native Kafka destination, written entirely in the C programming
- language, based on the librdkafka client library.

@@ -1,7 +1,8 @@
 #!/bin/bash
 
+. /source/dbld/functions.sh
+
 MODE=$1
-VERSION=`/source/scripts/version.sh`
 
 cp /source/packaging/rhel/* .
 

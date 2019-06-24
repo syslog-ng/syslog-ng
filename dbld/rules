@@ -1,8 +1,19 @@
 #!/usr/bin/make -f
 
-BUILDER_IMAGES=centos-6 centos-7 debian-jessie debian-stretch debian-buster ubuntu-xenial ubuntu-trusty ubuntu-cosmic ubuntu-bionic
+BUILDER_IMAGES=		\
+	centos-7 	\
+	fedora-30	\
+	debian-jessie 	\
+	debian-stretch	\
+	debian-buster	\
+	ubuntu-xenial	\
+	ubuntu-trusty	\
+	ubuntu-cosmic	\
+	ubuntu-bionic
+
 IMAGES=${BUILDER_IMAGES} devshell
 DEFAULT_IMAGE ?= ubuntu-bionic
+TARBALL_IMAGE ?= ubuntu-bionic
 DEFAULT_DEB_IMAGE=$(DEFAULT_IMAGE)
 DEFAULT_RPM_IMAGE=centos-7
 DOCKER=docker
@@ -13,6 +24,8 @@ DOCKER_RUN_ARGS=-e USER_NAME_ON_HOST=$(shell whoami)	\
 	-v $(DBLD_DIR)/build:/build \
 	-v $(DBLD_DIR)/install:/install \
 	-e CONFIGURE_OPTS="$${CONFIGURE_OPTS:-$(CONFIGURE_OPTS)}" \
+	-e CCACHE_DIR=/build/ccache \
+	-e PATH=/usr/lib/ccache:/usr/lib64/ccache:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
 	$(if $(wildcard ${HOME}/.gitconfig),-v ${HOME}/.gitconfig:${HOME}/.gitconfig)
 ROOT_DIR=$(shell pwd)
 DBLD_DIR=$(ROOT_DIR)/dbld
@@ -58,6 +71,7 @@ help:
 	@echo "Notable Make variables:"
 	@echo "  CONFIGURE_ADD -- add this to the configure command line in bootstrap"
 	@echo "  DEFAULT_IMAGE -- override the default image, currently $(DEFAULT_IMAGE)"
+	@echo "  TARBALL_IMAGE -- override the default image where the tarball is generated, currently $(TARBALL_IMAGE)"
 	@echo ""
 
 bootstrap: bootstrap-$(DEFAULT_IMAGE)
@@ -67,28 +81,37 @@ bootstrap-%: setup
 make-%: setup
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i  balabit/syslog-ng-$(DEFAULT_IMAGE) /source/dbld/make $(MAKE_ARGS) $*
 
-tarball: tarball-$(DEFAULT_IMAGE)
+tarball: tarball-$(TARBALL_IMAGE)
 tarball-%: setup
-	if [ -f $(TARBALL) ]; then \
-		count=`find $(ROOT_DIR) -newer $(TARBALL) | grep -v "^$(ROOT_DIR)/dbld/" | wc -l`; \
+	@if [ -f $(TARBALL) ]; then \
+		count=`find $(ROOT_DIR) -newer $(TARBALL) | sed -e 's,^$(ROOT_DIR),,' | grep -v -f $(DBLD_DIR)/tarball-changes.ignore | tee $(BUILD_DIR)/tarball-changed-files.txt | wc -l`; \
 	else \
+		echo "Tarball $(TARBALL) not found" > $(BUILD_DIR)/tarball-changed-files.txt; \
 		count=1; \
 	fi; \
-	[ "$${count}" -gt 0 ] && $(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i balabit/syslog-ng-$* /source/dbld/tarball || true
+	if [ "$${count}" -gt 0 ]; then \
+		echo "Rebuilding, because these contents have changed since the tarball" && \
+		cat $(BUILD_DIR)/tarball-changed-files.txt && \
+		echo "Git status follows:" && \
+		git status && \
+		$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i balabit/syslog-ng-$* /source/dbld/tarball; \
+	fi
 
 
-pkg-tarball: pkg-tarball-$(DEFAULT_IMAGE)
+pkg-tarball: pkg-tarball-$(TARBALL_IMAGE)
 pkg-tarball-%: tarball-%
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i balabit/syslog-ng-$* /source/dbld/pkg-tarball $(MODE)
 
+package: package-$(DEFAULT_IMAGE)
+package-%: pkg-tarball
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i  balabit/syslog-ng-$* /source/dbld/package
 
 deb: deb-$(DEFAULT_DEB_IMAGE)
-deb-%: pkg-tarball-%
+deb-%: pkg-tarball
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i  balabit/syslog-ng-$* /source/dbld/deb
 
-
 rpm: rpm-$(DEFAULT_RPM_IMAGE)
-rpm-%: pkg-tarball-$(DEFAULT_IMAGE)
+rpm-%: pkg-tarball
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i  balabit/syslog-ng-$* /source/dbld/rpm
 
 
@@ -112,6 +135,11 @@ images: $(foreach image,$(IMAGES), image-$(image))
 image: image-$(DEFAULT_IMAGE)
 image-%:
 	cd $(DBLD_DIR)/images/ && $(DOCKER) build --network=host -t balabit/syslog-ng-$* -f $*.dockerfile .
+
+pull-images: $(foreach image,$(BUILDER_IMAGES), pull-image-$(image))
+pull-image: pull-image-$(DEFAULT_IMAGE)
+pull-image-%:
+	$(DOCKER) pull balabit/syslog-ng-$*
 
 exec: exec-$(DEFAULT_IMAGE)
 exec: EXEC_COMMAND=echo Specify EXEC_COMMAND to do something sensible here
