@@ -24,8 +24,9 @@ import logging
 
 from pathlib2 import Path
 
-from src.common.operations import calculate_testcase_name
+import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.common.operations import copy_file
+from src.common.pytest_operations import calculate_testcase_name
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,7 @@ logger = logging.getLogger(__name__)
 def pytest_runtest_setup(item):
     def prepare_testcase_working_dir(pytest_request):
         testcase_parameters = pytest_request.getfixturevalue("testcase_parameters")
-        working_directory = testcase_parameters.get_working_dir()
+        tc_parameters.WORKING_DIR = working_directory = testcase_parameters.get_working_dir()
         if not working_directory.exists():
             working_directory.mkdir(parents=True)
         testcase_file_path = testcase_parameters.get_testcase_file()

@@ -97,8 +97,8 @@ def testcase_parameters(request):
 
 
 @pytest.fixture
-def config(request, testcase_parameters):
-    return SyslogNgConfig(testcase_parameters.get_working_dir(), request.getfixturevalue("version"))
+def config(request):
+    return SyslogNgConfig(request.getfixturevalue("version"))
 
 
 @pytest.fixture

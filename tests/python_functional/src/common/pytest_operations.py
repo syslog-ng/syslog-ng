@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #############################################################################
-# Copyright (c) 2015-2018 Balabit
+# Copyright (c) 2015-2019 Balabit
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -20,24 +20,9 @@
 # COPYING for details.
 #
 #############################################################################
-from pathlib2 import Path
-
-import src.testcase_parameters.testcase_parameters as tc_parameters
-from src.driver_io.file.file_io import FileIO
-from src.syslog_ng_config.statements.destinations.destination_driver import DestinationDriver
 
 
-class FileDestination(DestinationDriver):
-    def __init__(self, file_name, **options):
-        self.driver_name = "file"
-        self.path = Path(tc_parameters.WORKING_DIR, file_name)
-        super(FileDestination, self).__init__(FileIO, [self.path], options)
-
-    def get_path(self):
-        return self.path
-
-    def read_log(self):
-        return self.dd_read_logs(self.get_path(), counter=1)[0]
-
-    def read_logs(self, counter):
-        return self.dd_read_logs(self.get_path(), counter=counter)
+def calculate_testcase_name(pytest_request):
+    # In case of parametrized tests we need to replace "[" and "]" because
+    # testcase name will appear in directory name
+    return pytest_request.node.name.replace("[", "_").replace("]", "_")

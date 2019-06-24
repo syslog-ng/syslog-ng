@@ -23,9 +23,8 @@
 
 
 class ConfigRenderer(object):
-    def __init__(self, syslog_ng_config, working_dir):
+    def __init__(self, syslog_ng_config):
         self.__syslog_ng_config = syslog_ng_config
-        self.__working_dir = working_dir
         self.__syslog_ng_config_content = ""
         self.__render()
 

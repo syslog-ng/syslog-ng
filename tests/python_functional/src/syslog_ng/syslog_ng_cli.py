@@ -24,6 +24,7 @@ import logging
 
 from pathlib2 import Path
 
+import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.common.blocking import wait_until_false
 from src.common.blocking import wait_until_true
 from src.syslog_ng.console_log_reader import ConsoleLogReader
@@ -152,6 +153,6 @@ class SyslogNgCli(object):
                 core_file_found = True
                 self.__process = None
                 self.__syslog_ng_executor.get_backtrace_from_core(core_file=str(core_file))
-                core_file.replace(Path(self.__instance_paths.get_working_dir(), core_file))
+                core_file.replace(Path(tc_parameters.WORKING_DIR, core_file))
             if core_file_found:
                 raise Exception("syslog-ng core file was found and processed")

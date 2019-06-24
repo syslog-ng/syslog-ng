@@ -22,7 +22,9 @@
 #############################################################################
 from pathlib2 import Path
 
-from src.common.operations import calculate_testcase_name
+from src.common.pytest_operations import calculate_testcase_name
+
+WORKING_DIR = None
 
 
 class TestcaseParameters(object):

@@ -22,22 +22,22 @@
 #############################################################################
 from pathlib2 import Path
 
+import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.driver_io.file.file_io import FileIO
 from src.syslog_ng_config.statements.sources.source_driver import SourceDriver
 
 
 class FileSource(SourceDriver):
-    def __init__(self, working_dir, file_name, **options):
-        self.working_dir = working_dir
+    def __init__(self, file_name, **options):
         self.driver_name = "file"
-        self.path = Path(working_dir, file_name)
+        self.path = Path(tc_parameters.WORKING_DIR, file_name)
         super(FileSource, self).__init__(FileIO, [self.path], options)
 
     def get_path(self):
         return self.path
 
     def set_path(self, pathname):
-        self.path = Path(self.working_dir, pathname)
+        self.path = Path(tc_parameters.WORKING_DIR, pathname)
 
     def write_log(self, formatted_log, counter=1):
         self.sd_write_log(self.get_path(), formatted_log, counter=counter)

@@ -22,6 +22,7 @@
 #############################################################################
 from pathlib2 import Path
 
+import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.common.random_id import get_unique_id
 
 
@@ -35,14 +36,14 @@ class SyslogNgPaths(object):
         if self.__instance_name is not None:
             raise Exception("Instance already configured")
         self.__instance_name = instance_name
-        working_dir = self.__testcase_parameters.get_working_dir()
+        working_dir = tc_parameters.WORKING_DIR
         relative_working_dir = self.__testcase_parameters.get_relative_working_dir()
         install_dir = self.__testcase_parameters.get_install_dir()
         if not install_dir:
             raise ValueError("Missing --installdir start parameter")
 
         self.__syslog_ng_paths = {
-            "dirs": {"working_dir": working_dir, "install_dir": Path(install_dir)},
+            "dirs": {"install_dir": Path(install_dir)},
             "file_paths": {
                 "config_path": Path(working_dir, "syslog_ng_{}.conf".format(instance_name)),
                 "persist_path": Path(working_dir, "syslog_ng_{}.persist".format(instance_name)),
@@ -63,9 +64,6 @@ class SyslogNgPaths(object):
 
     def get_instance_name(self):
         return self.__instance_name
-
-    def get_working_dir(self):
-        return self.__syslog_ng_paths["dirs"]["working_dir"]
 
     def get_install_dir(self):
         return self.__syslog_ng_paths["dirs"]["install_dir"]
