@@ -174,8 +174,8 @@ filter_comparison
 
             left = log_template_new(configuration, NULL);
             right = log_template_new(configuration, NULL);
-            CHECK_ERROR_GERROR(log_template_compile(left, $1, &error), @1, error, "error compiling left template");
-            CHECK_ERROR_GERROR(log_template_compile(right, $3, &error), @3, error, "error compiling right template");
+            CHECK_ERROR_GERROR(log_template_compile(left, $1, &error), @1, error, "compiling the left-hand-side template failed");
+            CHECK_ERROR_GERROR(log_template_compile(right, $3, &error), @3, error, "compiling the right-hand-side template failed");
 
             free($1);
             free($3);
@@ -211,7 +211,7 @@ filter_re_params
           {
             GError *error = NULL;
 
-            CHECK_ERROR_GERROR(filter_re_compile_pattern(last_filter_expr, configuration, $2, &error), @2, error, "error compiling search pattern");
+            CHECK_ERROR_GERROR(filter_re_compile_pattern(last_filter_expr, configuration, $2, &error), @2, error, "compiling the regexp failed");
             free($2);
           }
 	;
@@ -231,7 +231,7 @@ filter_match_params
           {
             GError *error = NULL;
 
-            CHECK_ERROR_GERROR(filter_re_compile_pattern(last_filter_expr, configuration, $2, &error), @2, error, "error compiling search pattern");
+            CHECK_ERROR_GERROR(filter_re_compile_pattern(last_filter_expr, configuration, $2, &error), @2, error, "compiling the regexp failed");
             free($2);
 
             if (filter_match_is_usage_obsolete(last_filter_expr))
