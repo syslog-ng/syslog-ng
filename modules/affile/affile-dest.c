@@ -408,6 +408,14 @@ affile_dd_set_fsync(LogDriver *s, gboolean use_fsync)
   self->use_fsync = use_fsync;
 }
 
+void
+affile_dd_set_time_reap(LogDriver *s, gint time_reap)
+{
+  AFFileDestDriver *self = (AFFileDestDriver *) s;
+
+  self->time_reap = time_reap;
+}
+
 static inline const gchar *
 affile_dd_format_persist_name(const LogPipe *s)
 {
