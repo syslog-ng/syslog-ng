@@ -54,7 +54,6 @@ typedef struct _PDBProcessParams
   PDBAction *action;
   PDBContext *context;
   LogMessage *msg;
-  GString *buffer;
   gpointer emitted_messages[EXPECTED_NUMBER_OF_MESSAGES_EMITTED];
   GPtrArray *emitted_messages_overflow;
   gint num_emitted_messages;
@@ -205,7 +204,7 @@ _is_action_within_rate_limit(PatternDB *db, PDBProcessParams *process_params)
   PDBRule *rule = process_params->rule;
   PDBAction *action = process_params->action;
   LogMessage *msg = process_params->msg;
-  GString *buffer = process_params->buffer;
+  GString *buffer = g_string_sized_new(256);
 
   CorrellationKey key;
   PDBRateLimit *rl;
@@ -222,8 +221,13 @@ _is_action_within_rate_limit(PatternDB *db, PDBProcessParams *process_params)
     {
       rl = pdb_rate_limit_new(&key);
       g_hash_table_insert(db->rate_limits, &rl->key, rl);
-      g_string_steal(buffer);
+      g_string_free(buffer, FALSE);
     }
+  else
+    {
+      g_string_free(buffer, TRUE);
+    }
+
   now = timer_wheel_get_time(db->timer_wheel);
   if (rl->last_check == 0)
     {
@@ -285,12 +289,11 @@ _generate_synthetic_message(PDBProcessParams *process_params)
   PDBAction *action = process_params->action;
   PDBContext *context = process_params->context;
   LogMessage *msg = process_params->msg;
-  GString *buffer = process_params->buffer;
 
   if (context)
-    return synthetic_message_generate_with_context(&action->content.message, &context->super, buffer);
+    return synthetic_message_generate_with_context(&action->content.message, &context->super);
   else
-    return synthetic_message_generate_without_context(&action->content.message, msg, buffer);
+    return synthetic_message_generate_without_context(&action->content.message, msg);
 }
 
 static void
@@ -313,7 +316,7 @@ _execute_action_create_context(PatternDB *db, PDBProcessParams *process_params)
   PDBRule *rule = process_params->rule;
   PDBContext *triggering_context = process_params->context;
   LogMessage *triggering_msg = process_params->msg;
-  GString *buffer = process_params->buffer;
+  GString *buffer = g_string_sized_new(256);
   PDBContext *new_context;
   LogMessage *context_msg;
   SyntheticContext *syn_context;
@@ -323,14 +326,14 @@ _execute_action_create_context(PatternDB *db, PDBProcessParams *process_params)
   syn_message = &action->content.create_context.message;
   if (triggering_context)
     {
-      context_msg = synthetic_message_generate_with_context(syn_message, &triggering_context->super, buffer);
+      context_msg = synthetic_message_generate_with_context(syn_message, &triggering_context->super);
       log_template_format_with_context(syn_context->id_template,
                                        (LogMessage **) triggering_context->super.messages->pdata, triggering_context->super.messages->len,
                                        NULL, LTZ_LOCAL, 0, NULL, buffer);
     }
   else
     {
-      context_msg = synthetic_message_generate_without_context(syn_message, triggering_msg, buffer);
+      context_msg = synthetic_message_generate_without_context(syn_message, triggering_msg);
       log_template_format(syn_context->id_template,
                           triggering_msg,
                           NULL, LTZ_LOCAL, 0, NULL, buffer);
@@ -345,7 +348,7 @@ _execute_action_create_context(PatternDB *db, PDBProcessParams *process_params)
   correllation_key_init(&key, syn_context->scope, context_msg, buffer->str);
   new_context = pdb_context_new(&key);
   g_hash_table_insert(db->correllation.state, &new_context->super.key, new_context);
-  g_string_steal(buffer);
+  g_string_free(buffer, FALSE);
 
   g_ptr_array_add(new_context->super.messages, context_msg);
 
@@ -417,7 +420,6 @@ pattern_db_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data)
 {
   PDBContext *context = user_data;
   PatternDB *pdb = (PatternDB *) timer_wheel_get_associated_data(wheel);
-  GString *buffer = g_string_sized_new(256);
   LogMessage *msg = correllation_context_get_last_message(&context->super);
   PDBProcessParams *process_params = pdb->timer_process_params;
 
@@ -427,10 +429,9 @@ pattern_db_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data)
   process_params->context = context;
   process_params->rule = context->rule;
   process_params->msg = msg;
-  process_params->buffer = buffer;
+
   _execute_rule_actions(pdb, process_params, RAT_TIMEOUT);
   g_hash_table_remove(pdb->correllation.state, &context->super.key);
-  g_string_free(buffer, TRUE);
 
   /* pdb_context_free is automatically called when returning from
      this function by the timerwheel code as a destroy notify
@@ -657,8 +658,8 @@ _pattern_db_process_matching_rule(PatternDB *self, PDBProcessParams *process_par
     }
 
   process_params->context = context;
-  process_params->buffer = buffer;
-  synthetic_message_apply(&rule->msg, &context->super, msg, buffer);
+
+  synthetic_message_apply(&rule->msg, &context->super, msg);
 
   _emit_message(self, process_params, FALSE, msg);
   _execute_rule_actions(self, process_params, RAT_MATCH);

@@ -249,10 +249,7 @@ grouping_by_generate_synthetic_msg(GroupingBy *self, CorrellationContext *contex
       return NULL;
     }
 
-  GString *buffer = g_string_sized_new(256);
-
-  msg = synthetic_message_generate_with_context(self->synthetic_message, context, buffer);
-  g_string_free(buffer, TRUE);
+  msg = synthetic_message_generate_with_context(self->synthetic_message, context);
 
   return msg;
 }
