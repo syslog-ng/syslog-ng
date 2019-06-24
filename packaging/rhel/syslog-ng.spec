@@ -550,8 +550,8 @@ fi
 %{_libdir}/%{name}/libhttp.so
 
 %files python
-/usr/lib/python%{py_ver}/site-packages/syslogng-1.0-py%{py_ver}.egg-info
-/usr/lib/python%{py_ver}/site-packages/syslogng/*
+%{_libdir}/%{name}/python/syslogng-1.0-py%{py_ver}.egg-info
+%{_libdir}/%{name}/python/syslogng/*
 %{_libdir}/%{name}/libmod-python.so
 
 %files devel
