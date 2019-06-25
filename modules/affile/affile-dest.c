@@ -793,7 +793,7 @@ affile_dd_new_instance(gchar *filename, GlobalConfig *cfg)
     }
   file_opener_options_defaults(&self->file_opener_options);
 
-  self->time_reap = -1;
+  self->time_reap = self->filename_is_a_template ? -1 : 0;
   g_static_mutex_init(&self->lock);
 
   affile_dest_drivers = g_list_append(affile_dest_drivers, self);
