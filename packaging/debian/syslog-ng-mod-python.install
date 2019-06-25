@@ -1,2 +1,2 @@
 usr/lib/syslog-ng/*/libmod-python.so
-usr/lib/python*
+usr/lib/syslog-ng/*/python/*
