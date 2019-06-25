@@ -69,6 +69,7 @@ EXTRA_DIST		+= \
 		packaging/debian/syslog-ng-mod-java-http.install \
 		packaging/debian/syslog-ng-mod-examples.install \
 		packaging/debian/syslog-ng.systemd \
+		packaging/debian/syslog-ng-mod-rdkafka.install \
 		packaging/debian/copyright \
 		packaging/debian/MPL \
 		packaging/debian/not-installed \
