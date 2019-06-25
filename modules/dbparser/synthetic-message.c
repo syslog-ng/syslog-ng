@@ -25,6 +25,7 @@
 #include "template/templates.h"
 #include "logmsg/logmsg.h"
 #include "logpipe.h"
+#include "scratch-buffers.h"
 
 void
 synthetic_message_set_inherit_mode(SyntheticMessage *self, SyntheticMessageInheritMode inherit_mode)
@@ -114,7 +115,7 @@ synthetic_message_add_value_template(SyntheticMessage *self, const gchar *name, 
 }
 
 void
-synthetic_message_apply(SyntheticMessage *self, CorrellationContext *context, LogMessage *msg, GString *buffer)
+synthetic_message_apply(SyntheticMessage *self, CorrellationContext *context, LogMessage *msg)
 {
   gint i;
 
@@ -126,6 +127,8 @@ synthetic_message_apply(SyntheticMessage *self, CorrellationContext *context, Lo
 
   if (self->values)
     {
+      ScratchBuffersMarker marker;
+      GString *buffer = scratch_buffers_alloc_and_mark(&marker);
       for (i = 0; i < self->values->len; i++)
         {
           log_template_format_with_context(g_ptr_array_index(self->values, i),
@@ -137,6 +140,7 @@ synthetic_message_apply(SyntheticMessage *self, CorrellationContext *context, Lo
                                     buffer->str,
                                     buffer->len);
         }
+      scratch_buffers_reclaim_marked(marker);
     }
 
 }
@@ -196,7 +200,7 @@ _generate_default_message_from_context(SyntheticMessageInheritMode inherit_mode,
 }
 
 LogMessage *
-synthetic_message_generate_with_context(SyntheticMessage *self, CorrellationContext *context, GString *buffer)
+synthetic_message_generate_with_context(SyntheticMessage *self, CorrellationContext *context)
 {
   LogMessage *genmsg;
 
@@ -216,13 +220,13 @@ synthetic_message_generate_with_context(SyntheticMessage *self, CorrellationCont
       break;
     }
   g_ptr_array_add(context->messages, genmsg);
-  synthetic_message_apply(self, context, genmsg, buffer);
+  synthetic_message_apply(self, context, genmsg);
   g_ptr_array_remove_index_fast(context->messages, context->messages->len - 1);
   return genmsg;
 }
 
 LogMessage *
-synthetic_message_generate_without_context(SyntheticMessage *self, LogMessage *msg, GString *buffer)
+synthetic_message_generate_without_context(SyntheticMessage *self, LogMessage *msg)
 {
   LogMessage *genmsg;
 
@@ -240,7 +244,7 @@ synthetic_message_generate_without_context(SyntheticMessage *self, LogMessage *m
   GPtrArray dummy_ptr_array = { .pdata = (void **) dummy_msgs, .len = 2 };
   CorrellationContext dummy_context = { .messages = &dummy_ptr_array, 0 };
 
-  synthetic_message_apply(self, &dummy_context, genmsg, buffer);
+  synthetic_message_apply(self, &dummy_context, genmsg);
   return genmsg;
 }
 

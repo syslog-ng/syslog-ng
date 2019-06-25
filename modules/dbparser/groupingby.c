@@ -26,6 +26,7 @@
 #include "synthetic-message.h"
 #include "messages.h"
 #include "str-utils.h"
+#include "scratch-buffers.h"
 #include "filter/filter-expr.h"
 #include "timeutils/cache.h"
 #include "timeutils/misc.h"
@@ -236,26 +237,39 @@ _evaluate_trigger(GroupingBy *self, CorrellationContext *context)
   return _evaluate_filter(self->trigger_condition_expr, context);
 }
 
-static void
-grouping_by_emit_synthetic(GroupingBy *self, CorrellationContext *context)
+static LogMessage *
+grouping_by_generate_synthetic_msg(GroupingBy *self, CorrellationContext *context)
 {
-  LogMessage *msg;
+  LogMessage *msg = NULL;
 
-  if (_evaluate_having(self, context))
-    {
-      GString *buffer = g_string_sized_new(256);
-
-      msg = synthetic_message_generate_with_context(self->synthetic_message, context, buffer);
-      stateful_parser_emit_synthetic(&self->super, msg);
-      log_msg_unref(msg);
-      g_string_free(buffer, TRUE);
-    }
-  else
+  if (!_evaluate_having(self, context))
     {
       msg_debug("groupingby() dropping context, because having() is FALSE",
                 evt_tag_str("key", context->key.session_id),
                 log_pipe_location_tag(&self->super.super.super));
+      return NULL;
     }
+
+  msg = synthetic_message_generate_with_context(self->synthetic_message, context);
+
+  return msg;
+}
+
+static LogMessage *
+grouping_by_update_context_and_generate_msg(GroupingBy *self, CorrellationContext *context)
+{
+  if (self->sort_key_template)
+    correllation_context_sort(context, self->sort_key_template);
+
+  LogMessage *msg = grouping_by_generate_synthetic_msg(self, context);
+
+  g_hash_table_remove(self->correllation->state, &context->key);
+
+  /* correllation_context_free is automatically called when returning from
+     this function by the timerwheel code as a destroy notify
+     callback. */
+
+  return msg;
 }
 
 static void
@@ -269,14 +283,12 @@ grouping_by_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data)
             evt_tag_str("context-id", context->key.session_id),
             log_pipe_location_tag(&self->super.super.super));
 
-  if (self->sort_key_template)
-    correllation_context_sort(context, self->sort_key_template);
-  grouping_by_emit_synthetic(self, context);
-  g_hash_table_remove(self->correllation->state, &context->key);
-
-  /* correllation_context_free is automatically called when returning from
-     this function by the timerwheel code as a destroy notify
-     callback. */
+  LogMessage *msg = grouping_by_update_context_and_generate_msg(self, context);
+  if (msg)
+    {
+      stateful_parser_emit_synthetic(&self->super, msg);
+      log_msg_unref(msg);
+    }
 }
 
 
@@ -290,85 +302,97 @@ grouping_by_format_persist_name(LogParser *s)
   return persist_name;
 }
 
-static gboolean
-_perform_groupby(GroupingBy *self, LogMessage *msg)
+static CorrellationContext *
+_lookup_or_create_context(GroupingBy *self, LogMessage *msg)
 {
-  GString *buffer = g_string_sized_new(32);
-  CorrellationContext *context = NULL;
+  CorrellationContext *context;
+  CorrellationKey key;
+  GString *buffer = scratch_buffers_alloc();
 
-  g_static_mutex_lock(&self->lock);
-  grouping_by_set_time(self, &msg->timestamps[LM_TS_STAMP]);
-  if (self->key_template)
+  log_template_format(self->key_template, msg, NULL, LTZ_LOCAL, 0, NULL, buffer);
+  log_msg_set_value(msg, context_id_handle, buffer->str, -1);
+
+  correllation_key_init(&key, self->scope, msg, buffer->str);
+  context = g_hash_table_lookup(self->correllation->state, &key);
+  if (!context)
     {
-      CorrellationKey key;
+      msg_debug("Correllation context lookup failure, starting a new context",
+                evt_tag_str("key", key.session_id),
+                evt_tag_int("timeout", self->timeout),
+                evt_tag_int("expiration", timer_wheel_get_time(self->timer_wheel) + self->timeout),
+                log_pipe_location_tag(&self->super.super.super));
 
-      log_template_format(self->key_template, msg, NULL, LTZ_LOCAL, 0, NULL, buffer);
-      log_msg_set_value(msg, context_id_handle, buffer->str, -1);
-
-      correllation_key_setup(&key, self->scope, msg, buffer->str);
-      context = g_hash_table_lookup(self->correllation->state, &key);
-      if (!context)
-        {
-          msg_debug("Correllation context lookup failure, starting a new context",
-                    evt_tag_str("key", buffer->str),
-                    evt_tag_int("timeout", self->timeout),
-                    evt_tag_int("expiration", timer_wheel_get_time(self->timer_wheel) + self->timeout),
-                    log_pipe_location_tag(&self->super.super.super));
-
-          context = correllation_context_new(&key);
-          g_hash_table_insert(self->correllation->state, &context->key, context);
-          g_string_steal(buffer);
-        }
-      else
-        {
-          msg_debug("Correllation context lookup successful",
-                    evt_tag_str("key", buffer->str),
-                    evt_tag_int("timeout", self->timeout),
-                    evt_tag_int("expiration", timer_wheel_get_time(self->timer_wheel) + self->timeout),
-                    evt_tag_int("num_messages", context->messages->len),
-                    log_pipe_location_tag(&self->super.super.super));
-        }
-
-      g_ptr_array_add(context->messages, log_msg_ref(msg));
-
-      if (_evaluate_trigger(self, context))
-        {
-          msg_verbose("Correllation trigger() met, closing state",
-                      evt_tag_str("key", context->key.session_id),
-                      evt_tag_int("timeout", self->timeout),
-                      evt_tag_int("num_messages", context->messages->len),
-                      log_pipe_location_tag(&self->super.super.super));
-
-          /* close down state */
-          if (context->timer)
-            timer_wheel_del_timer(self->timer_wheel, context->timer);
-          grouping_by_expire_entry(self->timer_wheel, timer_wheel_get_time(self->timer_wheel), context);
-        }
-      else
-        {
-
-          if (context->timer)
-            {
-              timer_wheel_mod_timer(self->timer_wheel, context->timer, self->timeout);
-            }
-          else
-            {
-              context->timer = timer_wheel_add_timer(self->timer_wheel, self->timeout, grouping_by_expire_entry,
-                                                     correllation_context_ref(context), (GDestroyNotify) correllation_context_unref);
-            }
-        }
+      context = correllation_context_new(&key);
+      g_hash_table_insert(self->correllation->state, &context->key, context);
+      g_string_steal(buffer);
     }
   else
     {
-      context = NULL;
+      msg_debug("Correllation context lookup successful",
+                evt_tag_str("key", key.session_id),
+                evt_tag_int("timeout", self->timeout),
+                evt_tag_int("expiration", timer_wheel_get_time(self->timer_wheel) + self->timeout),
+                evt_tag_int("num_messages", context->messages->len),
+                log_pipe_location_tag(&self->super.super.super));
     }
+
+  return context;
+}
+
+static gboolean
+_perform_groupby(GroupingBy *self, LogMessage *msg)
+{
+
+  g_static_mutex_lock(&self->lock);
+  grouping_by_set_time(self, &msg->timestamps[LM_TS_STAMP]);
+
+  CorrellationContext *context = _lookup_or_create_context(self, msg);
+  g_ptr_array_add(context->messages, log_msg_ref(msg));
+
+  if (_evaluate_trigger(self, context))
+    {
+      msg_verbose("Correllation trigger() met, closing state",
+                  evt_tag_str("key", context->key.session_id),
+                  evt_tag_int("timeout", self->timeout),
+                  evt_tag_int("num_messages", context->messages->len),
+                  log_pipe_location_tag(&self->super.super.super));
+
+      /* close down state */
+      if (context->timer)
+        timer_wheel_del_timer(self->timer_wheel, context->timer);
+
+      LogMessage *genmsg = grouping_by_update_context_and_generate_msg(self, context);
+
+      g_static_mutex_unlock(&self->lock);
+
+      if (genmsg)
+        {
+          stateful_parser_emit_synthetic(&self->super, genmsg);
+          log_msg_unref(genmsg);
+        }
+
+      log_msg_write_protect(msg);
+
+      return TRUE;
+    }
+  else
+    {
+
+      if (context->timer)
+        {
+          timer_wheel_mod_timer(self->timer_wheel, context->timer, self->timeout);
+        }
+      else
+        {
+          context->timer = timer_wheel_add_timer(self->timer_wheel, self->timeout, grouping_by_expire_entry,
+                                                 correllation_context_ref(context), (GDestroyNotify) correllation_context_unref);
+        }
+    }
+
+  log_msg_write_protect(msg);
 
   g_static_mutex_unlock(&self->lock);
 
-  if (context)
-    log_msg_write_protect(msg);
-
-  g_string_free(buffer, TRUE);
   return TRUE;
 }
 
