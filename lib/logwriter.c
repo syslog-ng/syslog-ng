@@ -252,7 +252,6 @@ log_writer_io_handler(gpointer s, GIOCondition cond)
   main_loop_assert_main_thread();
 
   log_writer_stop_watches(self);
-  log_writer_stop_idle_timer(self);
   if ((self->options->options & LWO_THREADED))
     {
       main_loop_io_worker_job_submit(&self->io_job, cond);
@@ -366,12 +365,19 @@ log_writer_update_fd_callbacks(LogWriter *self, GIOCondition cond)
 }
 
 static void
+log_writer_stop_suspend_timer(LogWriter *self)
+{
+  if (iv_timer_registered(&self->suspend_timer))
+    iv_timer_unregister(&self->suspend_timer);
+}
+
+static void
 log_writer_arm_suspend_timer(LogWriter *self, void (*handler)(void *), glong timeout_msec)
 {
   main_loop_assert_main_thread();
 
-  if (iv_timer_registered(&self->suspend_timer))
-    iv_timer_unregister(&self->suspend_timer);
+  log_writer_stop_suspend_timer(self);
+
   iv_validate_now();
   self->suspend_timer.handler = handler;
   self->suspend_timer.expires = iv_now;
@@ -528,8 +534,7 @@ log_writer_stop_watches(LogWriter *self)
     {
       if (iv_timer_registered(&self->reopen_timer))
         iv_timer_unregister(&self->reopen_timer);
-      if (iv_timer_registered(&self->suspend_timer))
-        iv_timer_unregister(&self->suspend_timer);
+
       if (iv_fd_registered(&self->fd_watch))
         iv_fd_unregister(&self->fd_watch);
       if (iv_task_registered(&self->immed_io_task))
@@ -539,6 +544,9 @@ log_writer_stop_watches(LogWriter *self)
 
       self->watches_running = FALSE;
     }
+
+  log_writer_stop_suspend_timer(self);
+  log_writer_stop_idle_timer(self);
 }
 
 static void
@@ -1084,7 +1092,6 @@ static void
 log_writer_broken(LogWriter *self, gint notify_code)
 {
   log_writer_stop_watches(self);
-  log_writer_stop_idle_timer(self);
   log_pipe_notify(self->control, notify_code, self);
 }
 
@@ -1120,7 +1127,7 @@ log_writer_flush_finalize(LogWriter *self)
   return FALSE;
 }
 
-gboolean
+static gboolean
 log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_options, gboolean *write_error)
 {
   gboolean consumed = FALSE;
@@ -1228,7 +1235,7 @@ log_writer_process_handshake(LogWriter *self)
  * LW_FLUSH_FORCE     - flush the buffer immediately please
  *
  */
-gboolean
+static gboolean
 log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
 {
   gboolean write_error = FALSE;
@@ -1273,13 +1280,13 @@ log_writer_flush(LogWriter *self, LogWriterFlushMode flush_mode)
   return log_writer_flush_finalize(self);
 }
 
-gboolean
+static gboolean
 log_writer_forced_flush(LogWriter *self)
 {
   return log_writer_flush(self, LW_FLUSH_FORCE);
 }
 
-gboolean
+static gboolean
 log_writer_process_in(LogWriter *self)
 {
   if (!self->proto)
@@ -1288,7 +1295,7 @@ log_writer_process_in(LogWriter *self)
   return (log_proto_client_process_in(self->proto) == LPS_SUCCESS);
 }
 
-gboolean
+static gboolean
 log_writer_process_out(LogWriter *self)
 {
   return log_writer_flush(self, LW_FLUSH_NORMAL);
@@ -1445,7 +1452,6 @@ log_writer_deinit(LogPipe *s)
    * some kind of locking. */
 
   log_writer_stop_watches(self);
-  log_writer_stop_idle_timer(self);
 
   iv_event_unregister(&self->queue_filled);
 
@@ -1534,7 +1540,7 @@ log_writer_set_pending_proto(LogWriter *self, LogProtoClient *proto, gboolean pr
  * the destination LogProtoClient instance. It needs to be ran in the main
  * thread as it reregisters the watches associated with the main
  * thread. */
-void
+static void
 log_writer_reopen_deferred(gpointer s)
 {
   gpointer *args = (gpointer *) s;
@@ -1564,7 +1570,6 @@ log_writer_reopen_deferred(gpointer s)
     }
 
   log_writer_stop_watches(self);
-  log_writer_stop_idle_timer(self);
 
   if (self->partial_write)
     {
