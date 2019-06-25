@@ -1,5 +1,6 @@
 EXTRA_DIST += \
 	tests/collect-cov.sh \
+	tests/commits/check.sh \
 	tests/copyright/check.sh \
 	tests/copyright/policy \
 	tests/copyright/license.text.GPLv2+.txt \
@@ -9,6 +10,9 @@ EXTRA_DIST += \
 	tests/valgrind/unit-test-leak.supp	\
 	tests/build-log-cflags-propagation.sh	\
 	tests/CMakeLists.txt
+
+check-commits:
+	@cd $(top_srcdir) && ./tests/commits/check.sh
 
 check-copyright:
 	@cd $(top_srcdir) && ./tests/copyright/check.sh . $(abs_builddir) policy

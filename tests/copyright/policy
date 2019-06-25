@@ -69,6 +69,7 @@ tests/unit
 tests/valgrind
 tests/build-log-cflags-propagation.sh
 tests/collect-cov.sh
+tests/commits/check.sh
 tests/copyright/check.sh
 tests/python_functional
 modules/java/(tools|[^/]*$)

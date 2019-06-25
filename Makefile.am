@@ -184,6 +184,7 @@ help:
 	@echo " modules              Builds all syslog-ng modules."
 	@echo " syslog-ng            Build syslog-ng itself, only."
 	@echo " populate-makefiles   populate build directory with stub Makefiles"
+	@echo " check-commits        check commits format"
 	@echo " check-copyright      check copyright/license statements in files"
 	@echo " style-check          check formatting of source files (astyle)"
 	@echo " style-format         reformat source files (astyle)"
