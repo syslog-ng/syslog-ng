@@ -28,7 +28,7 @@
 
 #include <stddef.h>
 
-#if !SYSLOG_NG_HAVE_STRTOLL
+#ifndef SYSLOG_NG_HAVE_STRTOLL
 # if SYSLOG_NG_HAVE_STRTOIMAX || defined(strtoimax)
 /* HP-UX has an strtoimax macro, not a function */
 #define strtoll(nptr, endptr, base) strtoimax(nptr, endptr, base)
@@ -38,11 +38,11 @@
 # endif
 #endif
 
-#if !SYSLOG_NG_HAVE_STRCASESTR
+#ifndef SYSLOG_NG_HAVE_STRCASESTR
 char *strcasestr(const char *s, const char *find);
 #endif
 
-#if !SYSLOG_NG_HAVE_MEMRCHR
+#ifndef SYSLOG_NG_HAVE_MEMRCHR
 void *memrchr(const void *s, int c, size_t n);
 #endif
 
@@ -50,7 +50,7 @@ void *memrchr(const void *s, int c, size_t n);
 char *strtok_r(char *string, const char *delim, char **saveptr);
 #endif
 
-#if !SYSLOG_NG_HAVE_STRNLEN
+#ifndef SYSLOG_NG_HAVE_STRNLEN
 size_t strnlen(const char *s, size_t maxlen);
 #endif
 #endif

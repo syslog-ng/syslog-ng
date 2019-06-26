@@ -23,7 +23,7 @@
 
 #include "glib.h"
 
-#if !SYSLOG_NG_HAVE_G_LIST_COPY_DEEP
+#ifndef SYSLOG_NG_HAVE_G_LIST_COPY_DEEP
 
 /*
   Less efficient than the original implementation in glib 2.53.2 that
@@ -58,7 +58,7 @@ g_list_copy_deep(GList     *list,
 
 #endif
 
-#if !SYSLOG_NG_HAVE_G_QUEUE_FREE_FULL
+#ifndef SYSLOG_NG_HAVE_G_QUEUE_FREE_FULL
 
 void
 g_queue_free_full(GQueue *queue, GDestroyNotify free_func)
@@ -69,7 +69,7 @@ g_queue_free_full(GQueue *queue, GDestroyNotify free_func)
 
 #endif
 
-#if !SYSLOG_NG_HAVE_G_LIST_FREE_FULL
+#ifndef SYSLOG_NG_HAVE_G_LIST_FREE_FULL
 
 void
 g_list_free_full (GList *list, GDestroyNotify free_func)
@@ -81,7 +81,7 @@ g_list_free_full (GList *list, GDestroyNotify free_func)
 #endif
 
 
-#if !SYSLOG_NG_HAVE_G_PTR_ARRAY_FIND_WITH_EQUAL_FUNC
+#ifndef SYSLOG_NG_HAVE_G_PTR_ARRAY_FIND_WITH_EQUAL_FUNC
 gboolean
 g_ptr_array_find_with_equal_func (GPtrArray     *haystack,
                                   gconstpointer  needle,
