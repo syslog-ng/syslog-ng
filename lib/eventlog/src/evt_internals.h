@@ -42,9 +42,7 @@
 
 #include "evtlog.h"
 
-#if HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include <syslog-ng-config.h>
 
 #ifdef _MSC_VER
 #include <windows.h>
