@@ -81,49 +81,6 @@ evt_syslog(int pri, const char *format, ...)
   va_end(ap);
 }
 
-#if ENABLE_DLSYM_WRAPPER
-
-#include <dlfcn.h>
-
-void
-openlog(const char *ident, int option, int facility)
-{
-  evt_openlog(ident, option, facility);
-}
-
-void
-syslog(int pri, const char *format, ...)
-{
-  va_list ap;
-
-  va_start(ap, format);
-  evt_vsyslog(pri, format, ap);
-  va_end(ap);
-}
-
-void
-closelog(void)
-{
-  evt_closelog();
-}
-
-void
-evt_syslog_wrapper_init(void)
-{
-  static int initialized = 0;
-
-  if (!initialized)
-    {
-      syslog_opts.es_openlog = dlsym(RTLD_NEXT, "openlog");
-      syslog_opts.es_closelog = dlsym(RTLD_NEXT, "closelog");
-      syslog_opts.es_syslog = dlsym(RTLD_NEXT, "syslog");
-      syslog_opts.es_options = LOG_PID | LOG_NOWAIT;
-      initialized = 1;
-    }
-}
-
-#else
-
 void
 evt_syslog_wrapper_init(void)
 {
@@ -138,6 +95,3 @@ evt_syslog_wrapper_init(void)
       initialized = 1;
     }
 }
-
-
-#endif
