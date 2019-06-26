@@ -38,7 +38,7 @@ static CfgLexerKeyword date_keywords[] =
 
 CfgParser date_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &date_debug,
 #endif
   .name = "date-parser",

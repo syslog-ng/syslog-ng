@@ -40,7 +40,7 @@ static CfgLexerKeyword msg_generator_keywords[] =
 
 CfgParser msg_generator_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &msg_generator_debug,
 #endif
   .name = "msg_generator",
@@ -50,4 +50,3 @@ CfgParser msg_generator_parser =
 };
 
 CFG_PARSER_IMPLEMENT_LEXER_BINDING(msg_generator_, LogDriver **)
-

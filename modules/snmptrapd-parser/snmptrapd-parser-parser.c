@@ -38,7 +38,7 @@ static CfgLexerKeyword snmptrapd_parser_keywords[] =
 
 CfgParser snmptrapd_parser_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &snmptrapd_parser_debug,
 #endif
   .name = "snmptrapd-parser",
@@ -48,4 +48,3 @@ CfgParser snmptrapd_parser_parser =
 };
 
 CFG_PARSER_IMPLEMENT_LEXER_BINDING(snmptrapd_parser_, LogParser **)
-
