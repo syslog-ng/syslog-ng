@@ -27,7 +27,7 @@
 #include <Python.h>
 #include "syslog-ng.h"
 
-#if (SYSLOG_NG_ENABLE_PYTHONv2)
+#if SYSLOG_NG_ENABLE_PYTHONv2
 #define PYTHON_BUILTIN_MODULE_NAME "__builtin__"
 #define PYTHON_MODULE_VERSION "python2"
 
@@ -37,7 +37,7 @@
 #define PyDateTime_DELTA_GET_SECONDS(o)      (((PyDateTime_Delta*)o)->seconds)
 #endif
 
-#if (SYSLOG_NG_ENABLE_PYTHONv3)
+#if SYSLOG_NG_ENABLE_PYTHONv3
 #define PYTHON_BUILTIN_MODULE_NAME "builtins"
 #define PYTHON_MODULE_VERSION "python3"
 #endif

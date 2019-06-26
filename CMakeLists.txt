@@ -224,6 +224,8 @@ else ()
   find_package(PythonLibs EXACT "${PYTHON_VERSION}" REQUIRED)
 endif ()
 
+MESSAGE(STATUS "Detected pythonlib version: ${PYTHONLIBS_VERSION_STRING}")
+
 set (NOSETESTS "" CACHE STRING "nosetests binary")
 set (PYLINT "" CACHE STRING "pylint binary")
 
@@ -252,6 +254,13 @@ else ()
     find_program(PYLINT_BIN "pylint")
   endif ()
 endif()
+
+if (PYTHONLIBS_VERSION_STRING VERSION_LESS 3)
+    set(SYSLOG_NG_ENABLE_PYTHONv2 1)
+else ()
+    set(SYSLOG_NG_ENABLE_PYTHONv3 1)
+endif ()
+
 
 include(openssl_functions)
 openssl_set_defines()
