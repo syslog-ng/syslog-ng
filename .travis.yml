@@ -136,6 +136,13 @@ matrix:
       script:
         - export COPYRIGHTVERBOSITY=1
         - tests/copyright/check.sh . .
+    - env: B=commits-check
+      sudo: false
+      compiler: gcc
+      install:
+      before_script:
+      script:
+        - tests/commits/check.sh
     - env: B=trusty-cmake-internal
       compiler: gcc
       dist: trusty
