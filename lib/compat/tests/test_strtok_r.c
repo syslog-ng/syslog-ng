@@ -47,7 +47,7 @@
 #undef strtok_r
 #endif
 
-#define TEST_STRTOK_R 1
+#define TEST_STRTOK_R
 #define strtok_r __test_strtok_r
 
 #include "../strtok_r.c"

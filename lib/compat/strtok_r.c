@@ -22,7 +22,7 @@
  */
 #include "compat/string.h"
 
-#if !defined(SYSLOG_NG_HAVE_STRTOK_R) || TEST_STRTOK_R
+#if !SYSLOG_NG_HAVE_STRTOK_R || defined(TEST_STRTOK_R)
 
 char *
 strtok_r(char *str, const char *delim, char **saveptr)
