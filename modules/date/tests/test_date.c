@@ -49,7 +49,7 @@ _construct_parser(gchar *timezone_, gchar *format, gint time_stamp)
 
   parser = date_parser_new (configuration);
   if (format != NULL)
-    date_parser_set_format(parser, format);
+    date_parser_set_formats(parser, g_list_append(NULL, g_strdup(format)));
   if (timezone_ != NULL)
     date_parser_set_timezone(parser, timezone_);
   date_parser_set_time_stamp(parser, time_stamp);
@@ -181,6 +181,51 @@ Test(date, test_date_with_additional_text_at_the_end)
 
   log_pipe_unref(&parser->super);
   log_msg_unref(logmsg);
+}
+
+struct date_with_multiple_formats_params
+{
+  const gchar *msg;
+  int expected_usec;
+};
+
+ParameterizedTestParameters(date, test_date_with_multiple_formats)
+{
+  static struct date_with_multiple_formats_params params[] =
+  {
+    { "2017-02-02 00:29:16",                0 },
+    { "2017-02-02 00:29:16,706",       706000 },
+    { "2019-05-04T21:55:46.989+02:00", 989000 },
+  };
+
+  return cr_make_param_array(struct date_with_multiple_formats_params, params,
+                             sizeof (params) / sizeof(struct date_with_multiple_formats_params));
+}
+
+ParameterizedTest(struct date_with_multiple_formats_params *params, date, test_date_with_multiple_formats)
+{
+  LogParser *parser;
+  GList *formats;
+  formats = g_list_prepend(NULL, g_strdup("%FT%T.%f%z"));
+  formats = g_list_prepend(formats, g_strdup("%F %T,%f"));
+  formats = g_list_prepend(formats, g_strdup("%F %T"));
+
+  parser = date_parser_new (configuration);
+  date_parser_set_formats(parser, formats);
+  date_parser_set_time_stamp(parser, LM_TS_STAMP);
+
+  LogMessage *logmsg = _construct_logmsg(params->msg);
+
+  gboolean success = log_parser_process(parser, &logmsg, NULL, log_msg_get_value(logmsg, LM_V_MESSAGE, NULL), -1);
+
+  cr_assert(success, "unable to parse msg=%s with a list of formats", params->msg);
+
+  cr_assert(logmsg->timestamps[LM_TS_STAMP].ut_usec == params->expected_usec, "expected %d us, got %d",
+            params->expected_usec,
+            logmsg->timestamps[LM_TS_STAMP].ut_usec);
+  log_msg_unref(logmsg);
+
+  log_pipe_unref(&parser->super);
 }
 
 Test(date, test_date_with_guess_timezone)
