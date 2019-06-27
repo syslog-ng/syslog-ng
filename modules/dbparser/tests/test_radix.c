@@ -1004,6 +1004,16 @@ ParameterizedTestParameters(dbparser, test_radix_search_matches)
       .key = "jjjj abcabcd foobar",
       .expected_pattern = {"regexp", "abcabc", NULL},
     },
+    {
+      .node_to_insert = {"@PCRE:regexp:(foo|bar)@", NULL},
+      .key = "foo",
+      .expected_pattern = {"regexp", "foo", NULL},
+    },
+    {
+      .node_to_insert = {"@PCRE:regexp:(?:foo|bar)@", NULL},
+      .key = "foo",
+      .expected_pattern = {"regexp", "foo", NULL},
+    },
     /* test_nlstring_matches */
     {
       .node_to_insert = {"@NLSTRING:nlstring@\n", NULL},
