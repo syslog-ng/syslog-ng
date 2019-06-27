@@ -118,6 +118,7 @@ static void affile_dd_reap_writer(AFFileDestDriver *self, AFFileDestWriter *dw);
 static void
 affile_dw_arm_reaper(AFFileDestWriter *self)
 {
+  g_assert(self->owner->time_reap > 0);
   /* not yet reaped, set up the next callback */
   iv_validate_now();
   self->reap_timer.expires = iv_now;
@@ -183,7 +184,7 @@ affile_dw_reopen(AFFileDestWriter *self)
       proto = file_opener_construct_dst_proto(self->owner->file_opener, transport,
                                               &self->owner->writer_options.proto_options.super);
 
-      if (!iv_timer_registered(&self->reap_timer))
+      if (self->owner->time_reap > 0 && !iv_timer_registered(&self->reap_timer))
         main_loop_call((void *(*)(void *)) affile_dw_arm_reaper, self, TRUE);
     }
   else
@@ -406,6 +407,14 @@ affile_dd_set_fsync(LogDriver *s, gboolean use_fsync)
   AFFileDestDriver *self = (AFFileDestDriver *) s;
 
   self->use_fsync = use_fsync;
+}
+
+void
+affile_dd_set_time_reap(LogDriver *s, gint time_reap)
+{
+  AFFileDestDriver *self = (AFFileDestDriver *) s;
+
+  self->time_reap = time_reap;
 }
 
 static inline const gchar *
@@ -784,7 +793,7 @@ affile_dd_new_instance(gchar *filename, GlobalConfig *cfg)
     }
   file_opener_options_defaults(&self->file_opener_options);
 
-  self->time_reap = -1;
+  self->time_reap = self->filename_is_a_template ? -1 : 0;
   g_static_mutex_init(&self->lock);
 
   affile_dest_drivers = g_list_append(affile_dest_drivers, self);
