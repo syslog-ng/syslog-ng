@@ -532,7 +532,6 @@ recurse:
           continue;
 
         case 'Z':
-          tzset();
           if (strncmp((const char *)bp, gmt, 3) == 0 ||
               strncmp((const char *)bp, utc, 3) == 0)
             {
