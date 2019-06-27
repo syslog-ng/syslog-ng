@@ -24,6 +24,7 @@
 #include "timeutils/zonedb.h"
 #include "pathutils.h"
 #include "reloc.h"
+#include <unistd.h>
 
 static const gchar *time_zone_path_list[] =
 {
@@ -56,4 +57,14 @@ get_time_zone_basedir(void)
         }
     }
   return time_zone_basedir;
+}
+
+gboolean
+is_time_zone_valid(const gchar *tz)
+{
+  gchar *filename = g_build_path(G_DIR_SEPARATOR_S, get_time_zone_basedir(), tz, NULL);
+
+  gboolean result = access(filename, R_OK) == 0;
+  g_free(filename);
+  return result;
 }

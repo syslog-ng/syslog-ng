@@ -27,5 +27,6 @@
 #include "syslog-ng.h"
 
 const gchar *get_time_zone_basedir(void);
+gboolean is_time_zone_valid(const gchar *tz);
 
 #endif
