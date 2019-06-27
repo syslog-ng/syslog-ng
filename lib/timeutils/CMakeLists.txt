@@ -6,6 +6,7 @@ set(TIMEUTILS_HEADERS
     timeutils/misc.h
     timeutils/names.h
     timeutils/unixtime.h
+    timeutils/zonedb.h
     timeutils/zoneinfo.h
     timeutils/wallclocktime.h
     PARENT_SCOPE)
@@ -18,6 +19,7 @@ set(TIMEUTILS_SOURCES
     timeutils/misc.c
     timeutils/names.c
     timeutils/unixtime.c
+    timeutils/zonedb.c
     timeutils/zoneinfo.c
     timeutils/wallclocktime.c
     PARENT_SCOPE)

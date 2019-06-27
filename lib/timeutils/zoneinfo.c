@@ -22,7 +22,7 @@
  *
  */
 #include "timeutils/zoneinfo.h"
-#include "pathutils.h"
+#include "timeutils/zonedb.h"
 #include "reloc.h"
 #include "messages.h"
 
@@ -34,34 +34,6 @@
 #define TZ_MAGIC "TZif"
 
 const gint64 LOWEST_TIME32    = (gint64)((gint32)0x80000000);
-static const gchar *time_zone_path_list[] =
-{
-#ifdef PATH_TIMEZONEDIR
-  PATH_TIMEZONEDIR,               /* search the user specified dir */
-#endif
-  SYSLOG_NG_PATH_PREFIX "/share/zoneinfo/", /* then local installation first */
-  "/usr/share/zoneinfo/",         /* linux */
-  "/usr/share/lib/zoneinfo/",     /* solaris, AIX */
-  NULL,
-};
-
-static const gchar *time_zone_basedir = NULL;
-
-static const gchar *
-get_time_zone_basedir(void)
-{
-  int i = 0;
-
-  if (!time_zone_basedir)
-    {
-      for (i = 0; time_zone_path_list[i] != NULL
-           && !is_file_directory(get_installation_path_for(time_zone_path_list[i])); i++)
-        ;
-      time_zone_basedir = time_zone_path_list[i];
-    }
-  return time_zone_basedir;
-}
-
 
 /** Time zone file parser code **/
 
