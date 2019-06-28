@@ -853,12 +853,6 @@ _batch_lines(const AFSqlDestDriver *self)
   return self->super.batch_lines;
 }
 
-static inline gboolean
-afsql_dd_should_commit_transaction(const AFSqlDestDriver *self)
-{
-  return afsql_dd_is_transaction_handling_enabled(self);
-}
-
 static LogThreadedResult
 afsql_dd_handle_insert_row_error_depending_on_connection_availability(AFSqlDestDriver *self)
 {
