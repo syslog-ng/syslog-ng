@@ -88,70 +88,38 @@ matrix:
       compiler: gcc
       script:
         - . tests/build-log-cflags-propagation.sh;
-          if [ "$CC" = "gcc" ]; then
-            export DISTCHECK_CONFIGURE_FLAGS="$CONFIGURE_FLAGS";
-            exec_prop_check "make distcheck -j 3 V=1 --keep-going" ||
-            {
-              S=$?;
-              make V=1 distcheck;
-              find . -name test-suite.log | xargs cat;
-              return $S;
-            };
-            find . -name test-suite.log | xargs cat;
-          else
-            make --keep-going -j $(nproc);
+          export DISTCHECK_CONFIGURE_FLAGS="$CONFIGURE_FLAGS";
+          exec_prop_check "make distcheck -j 3 V=1 --keep-going" ||
+          {
             S=$?;
-            if [ "$S" = "0" ]; then
-              make install
-              . scripts/get-libjvm-path.sh || return $?;
-              export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$JNI_LIBDIR";
-              make func-test V=1 &&
-              make python-pep8 python-pylint &&
-              make pytest-linters &&
-              make pytest-self-check &&
-              make pytest-check;
-            elif [ "$S" = "42" ]; then
-              return $S;
-            else
-              make V=1 install;
-              return $S;
-            fi;
-          fi
+            make V=1 distcheck;
+            find . -name test-suite.log | xargs cat;
+            return $S;
+          };
+          find . -name test-suite.log | xargs cat;
 
     - env: B=autotools-clang
       dist: trusty
       compiler: clang
       script:
         - . tests/build-log-cflags-propagation.sh;
-          if [ "$CC" = "gcc" ]; then
-            export DISTCHECK_CONFIGURE_FLAGS="$CONFIGURE_FLAGS";
-            exec_prop_check "make distcheck -j 3 V=1 --keep-going" ||
-            {
-              S=$?;
-              make V=1 distcheck;
-              find . -name test-suite.log | xargs cat;
-              return $S;
-            };
-            find . -name test-suite.log | xargs cat;
+          make --keep-going -j $(nproc);
+          S=$?;
+          if [ "$S" = "0" ]; then
+            make install
+            . scripts/get-libjvm-path.sh || return $?;
+            export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$JNI_LIBDIR";
+            make func-test V=1 &&
+            make python-pep8 python-pylint &&
+            make pytest-linters &&
+            make pytest-self-check &&
+            make pytest-check;
+          elif [ "$S" = "42" ]; then
+            return $S;
           else
-            make --keep-going -j $(nproc);
-            S=$?;
-            if [ "$S" = "0" ]; then
-              make install
-              . scripts/get-libjvm-path.sh || return $?;
-              export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$JNI_LIBDIR";
-              make func-test V=1 &&
-              make python-pep8 python-pylint &&
-              make pytest-linters &&
-              make pytest-self-check &&
-              make pytest-check;
-            elif [ "$S" = "42" ]; then
-              return $S;
-            else
-              make V=1 install;
-              return $S;
-            fi;
-          fi
+            make V=1 install;
+            return $S;
+          fi;
 
     - env: B=style-check
       dist: trusty
