@@ -103,21 +103,15 @@ matrix:
       dist: trusty
       compiler: clang
       script:
-        - make --keep-going -j $(nproc);
-          S=$?;
-          if [ "$S" = "0" ]; then
-            make install
-            . scripts/get-libjvm-path.sh || return $?;
-            export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$JNI_LIBDIR";
-            make func-test V=1 &&
-            make python-pep8 python-pylint &&
-            make pytest-linters &&
-            make pytest-self-check &&
-            make pytest-check;
-          else
-            make V=1 install;
-            return $S;
-          fi;
+        - make --keep-going -j $(nproc) || make V=1 install;
+        - make install
+          . scripts/get-libjvm-path.sh || return $?;
+          export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$JNI_LIBDIR";
+          make func-test V=1 &&
+          make python-pep8 python-pylint &&
+          make pytest-linters &&
+          make pytest-self-check &&
+          make pytest-check;
 
     - env: B=style-check
       dist: trusty
