@@ -334,7 +334,6 @@ if (ENABLE_EXTRA_WARNINGS)
   set(EXTRA_WARNINGS
     -Wimplicit-function-declaration
     -Wnested-externs
-    -Wold-style-declaration
     -Wstrict-prototypes
     -Wswitch-default
     -Wimplicit-int
@@ -359,6 +358,7 @@ if ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
     )
 else()
   set(EXTRA_WARNINGS
+    -Wold-style-declaration
     -Wunused-but-set-parameter
     ${EXTRA_WARNINGS}
     )
