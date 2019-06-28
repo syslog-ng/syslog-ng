@@ -45,10 +45,15 @@ get_time_zone_basedir(void)
 
   if (!time_zone_basedir)
     {
-      for (i = 0; time_zone_path_list[i] != NULL
-           && !is_file_directory(get_installation_path_for(time_zone_path_list[i])); i++)
-        ;
-      time_zone_basedir = time_zone_path_list[i];
+      for (i = 0; time_zone_path_list[i] != NULL; i++)
+        {
+          const gchar *candidate = get_installation_path_for(time_zone_path_list[i]);
+          if (is_file_directory(candidate))
+            {
+              time_zone_basedir = candidate;
+              break;
+            }
+        }
     }
   return time_zone_basedir;
 }
