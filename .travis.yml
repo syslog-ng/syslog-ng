@@ -89,13 +89,8 @@ matrix:
       script:
         - . tests/build-log-cflags-propagation.sh;
           export DISTCHECK_CONFIGURE_FLAGS="$CONFIGURE_FLAGS";
-          exec_prop_check "make distcheck -j 3 V=1 --keep-going" ||
-          {
-            # todo : check for 42 should be here
-            S=$?;
-            make V=1 distcheck;
-            return $S;
-          };
+          exec_prop_check "make distcheck -j 3 V=1 --keep-going" || make V=1 distcheck;
+          # todo : check for 42 should be here
       after_script:
         - find . -name test-suite.log | xargs cat
 
