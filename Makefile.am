@@ -82,7 +82,6 @@ AM_CFLAGS += \
 	-Wpointer-arith \
 	-Wpointer-sign \
 	-Wmissing-format-attribute \
-	-Wsuggest-attribute=noreturn \
 	-Wold-style-definition \
 	-Wundef
 endif
