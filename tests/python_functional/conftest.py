@@ -28,6 +28,7 @@ from datetime import datetime
 import pytest
 from pathlib2 import Path
 
+import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.message_builder.bsd_format import BSDFormat
 from src.message_builder.log_message import LogMessage
 from src.syslog_ng.syslog_ng import SyslogNg
@@ -106,8 +107,8 @@ def config(request):
 
 @pytest.fixture
 def syslog_ng(request, testcase_parameters):
-    instance_paths = SyslogNgPaths(testcase_parameters).set_syslog_ng_paths("server")
-    syslog_ng = SyslogNg(instance_paths, testcase_parameters)
+    tc_parameters.INSTANCE_PATH = SyslogNgPaths(testcase_parameters).set_syslog_ng_paths("server")
+    syslog_ng = SyslogNg(tc_parameters.INSTANCE_PATH, testcase_parameters)
     request.addfinalizer(lambda: syslog_ng.stop())
     return syslog_ng
 
