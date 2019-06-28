@@ -21,6 +21,7 @@
 #
 #############################################################################
 from src.syslog_ng_ctl.syslog_ng_ctl_cli import SyslogNgCtlCli
+from src.syslog_ng_ctl.syslog_ng_ctl_executor import QueryTypes
 
 
 class SyslogNgCtl(object):
@@ -32,6 +33,15 @@ class SyslogNgCtl(object):
 
     def stop(self):
         return self.__syslog_ng_ctl_cli.stop()
+
+    def reopen(self):
+        return self.__syslog_ng_ctl_cli.reopen()
+
+    def stats(self, reset=False):
+        return self.__syslog_ng_ctl_cli.stats(reset)
+
+    def query(self, pattern="*", query_type=QueryTypes.QUERY_GET):
+        return self.__syslog_ng_ctl_cli.query(pattern, query_type)
 
     def is_control_socket_alive(self):
         return self.__syslog_ng_ctl_cli.is_control_socket_alive()

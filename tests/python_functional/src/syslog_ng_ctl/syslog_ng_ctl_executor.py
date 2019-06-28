@@ -20,10 +20,19 @@
 # COPYING for details.
 #
 #############################################################################
+from enum import Enum  # noreorder
+
 from pathlib2 import Path
 
 import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.executors.command_executor import CommandExecutor
+
+
+class QueryTypes(Enum):
+    QUERY_GET = 0
+    QUERY_SUM = 1
+    QUERY_LIST = 2
+    QUERY_GET_RESET = 3
 
 
 class SyslogNgCtlExecutor(object):
@@ -56,3 +65,20 @@ class SyslogNgCtlExecutor(object):
         if reset:
             stats_command.append("--reset")
         return stats_command
+
+    @staticmethod
+    def construct_ctl_query_command(pattern, query_type):
+        query_command = ["query"]
+
+        if query_type == QueryTypes.QUERY_GET:
+            query_command += ["get"]
+        elif query_type == QueryTypes.QUERY_SUM:
+            query_command += ["get --sum"]
+        elif query_type == QueryTypes.QUERY_LIST:
+            query_command += ["list"]
+        elif query_type == QueryTypes.QUERY_GET_RESET:
+            query_command += ["get --reset"]
+
+        query_command += [pattern]
+
+        return query_command
