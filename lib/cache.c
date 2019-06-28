@@ -49,7 +49,7 @@ cache_free(Cache *self)
 void *
 cache_lookup(Cache *self, const gchar *key)
 {
-  void *result = g_hash_table_lookup(self->hash_table, key);
+  gpointer result = g_hash_table_lookup(self->hash_table, key);
 
   if (!result)
     {
