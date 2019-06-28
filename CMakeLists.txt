@@ -353,6 +353,17 @@ if (ENABLE_EXTRA_WARNINGS)
     -Wsuggest-attribute=noreturn
     -Wold-style-definition
     -Wundef)
+
+if ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+  set(EXTRA_WARNINGS
+    ${EXTRA_WARNINGS}
+    )
+else()
+  set(EXTRA_WARNINGS
+    ${EXTRA_WARNINGS}
+    )
+endif()
+
 endif()
 
 add_compile_options(${IMPORTANT_WARNINGS} ${ACCEPTABLE_WARNINGS} ${EXTRA_WARNINGS})
