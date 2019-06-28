@@ -87,6 +87,7 @@ matrix:
       dist: trusty
       compiler: gcc
       script:
+        - set -e
         - . tests/build-log-cflags-propagation.sh;
         - export DISTCHECK_CONFIGURE_FLAGS="$CONFIGURE_FLAGS";
         - exec_prop_check "make distcheck -j 3 V=1"
@@ -97,9 +98,10 @@ matrix:
       dist: trusty
       compiler: clang
       script:
+        - set -e
         - make --keep-going -j $(nproc) || make V=1 install;
         - make install
-        - . scripts/get-libjvm-path.sh || return $?;
+        - . scripts/get-libjvm-path.sh;
         - export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$JNI_LIBDIR";
         - make func-test V=1
         - make python-pep8 python-pylint
@@ -116,6 +118,7 @@ matrix:
       install:
       before_script:
       script:
+      - set -e
       - ./dbld/rules run RUN_COMMAND="cd /source && astyle --version && scripts/style-checker.sh format"
       - git diff --exit-code
 
@@ -125,6 +128,7 @@ matrix:
       install:
       before_script:
       script:
+        - set -e
         - export COPYRIGHTVERBOSITY=1
         - tests/copyright/check.sh . .
 
@@ -144,6 +148,7 @@ matrix:
       git:
         submodules: true
       script:
+        - set -e
         - mkdir build
         - cd build
         - cmake
@@ -163,6 +168,7 @@ matrix:
       sudo: required
       before_script:
       script:
+        - set -e
         - mkdir build
         - cd build
         - cmake
@@ -182,6 +188,7 @@ matrix:
         - PATH=/usr/local/opt/bison/bin:/usr/local/opt/libnet/bin:$PYTHONUSERBASE/bin:$PATH
         - PKG_CONFIG_PATH=/usr/local/opt/openssl/lib/pkgconfig:$PKG_CONFIG_PATH
       before_script:
+        - set -e
         - ./autogen.sh
         - ./configure
             --with-ivykis=system
@@ -198,6 +205,7 @@ matrix:
             return $S;
           }
       script:
+        - set -e
         - make --keep-going check -j $(sysctl -n hw.physicalcpu) ||
           {
             S=$?;
