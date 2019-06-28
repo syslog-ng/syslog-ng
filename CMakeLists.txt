@@ -339,7 +339,6 @@ if (ENABLE_EXTRA_WARNINGS)
     -Wimplicit-int
     -Wall
     -Wuninitialized
-    -Wcast-align
     -Wdeprecated
     -Wdeprecated-declarations
     -Woverflow

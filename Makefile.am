@@ -74,7 +74,6 @@ AM_CFLAGS += \
 	-Wall \
 	-Wuninitialized \
 	-Wunused-but-set-parameter \
-	-Wcast-align \
 	-Wdeprecated \
 	-Wdeprecated-declarations \
 	-Woverflow \
