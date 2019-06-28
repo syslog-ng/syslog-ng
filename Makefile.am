@@ -70,8 +70,8 @@ AM_CFLAGS += \
 	-Wold-style-declaration \
 	-Wstrict-prototypes \
 	-Wswitch-default \
+	-Wimplicit-int \
 	-Wall \
-	-Wmissing-parameter-type \
 	-Wuninitialized \
 	-Wunused-but-set-parameter \
 	-Wcast-align \

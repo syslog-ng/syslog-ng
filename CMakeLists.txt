@@ -337,8 +337,8 @@ if (ENABLE_EXTRA_WARNINGS)
     -Wold-style-declaration
     -Wstrict-prototypes
     -Wswitch-default
+    -Wimplicit-int
     -Wall
-    -Wmissing-parameter-type
     -Wuninitialized
     -Wunused-but-set-parameter
     -Wcast-align
