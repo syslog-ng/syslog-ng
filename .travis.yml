@@ -91,6 +91,7 @@ matrix:
           export DISTCHECK_CONFIGURE_FLAGS="$CONFIGURE_FLAGS";
           exec_prop_check "make distcheck -j 3 V=1 --keep-going" ||
           {
+            # todo : check for 42 should be here
             S=$?;
             make V=1 distcheck;
             find . -name test-suite.log | xargs cat;
@@ -114,8 +115,6 @@ matrix:
             make pytest-linters &&
             make pytest-self-check &&
             make pytest-check;
-          elif [ "$S" = "42" ]; then
-            return $S;
           else
             make V=1 install;
             return $S;
