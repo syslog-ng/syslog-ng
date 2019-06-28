@@ -204,7 +204,7 @@ ParameterizedTestParameters(type_hints, test_double_cast)
   static StringDoublePair string_value_pairs[] =
   {
 #ifdef INFINITY
-    {"INF",INFINITY},
+    {"INF",(gdouble)INFINITY},
 #endif
     {"1.0",1.0},
     {"1e-100000000",0.0}
