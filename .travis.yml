@@ -128,6 +128,7 @@ matrix:
       script:
       - ./dbld/rules run RUN_COMMAND="cd /source && astyle --version && scripts/style-checker.sh format"
       - git diff --exit-code
+
     - env: B=copyright-check
       sudo: false
       compiler: gcc
@@ -136,6 +137,7 @@ matrix:
       script:
         - export COPYRIGHTVERBOSITY=1
         - tests/copyright/check.sh . .
+
     - env: B=commits-check
       sudo: false
       compiler: gcc
@@ -143,6 +145,7 @@ matrix:
       before_script:
       script:
         - tests/commits/check.sh
+
     - env: B=trusty-cmake-internal
       compiler: gcc
       dist: trusty
@@ -163,6 +166,7 @@ matrix:
         - make pytest-linters
         - make pytest-self-check
         - make pytest-check
+
     - env: B=trusty-cmake
       compiler: clang
       dist: trusty
@@ -178,6 +182,7 @@ matrix:
             -DENABLE_EXTRA_WARNINGS=no
             ..
         - make --keep-going -j $(nproc) ARGS="-j $(nproc)" all test install
+
     - env: B=check
       os: osx
       osx_image: xcode9.3
