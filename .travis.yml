@@ -94,10 +94,10 @@ matrix:
             # todo : check for 42 should be here
             S=$?;
             make V=1 distcheck;
-            find . -name test-suite.log | xargs cat;
             return $S;
           };
-          find . -name test-suite.log | xargs cat;
+      after_script:
+        - find . -name test-suite.log | xargs cat
 
     - env: B=autotools-clang
       dist: trusty
