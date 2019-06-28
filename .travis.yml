@@ -83,7 +83,7 @@ before_script:
 
 matrix:
   include:
-    - env: B=autotools-gcc
+    - env: B=distcheck
       dist: trusty
       compiler: gcc
       script:
