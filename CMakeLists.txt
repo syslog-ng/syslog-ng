@@ -340,7 +340,6 @@ if (ENABLE_EXTRA_WARNINGS)
     -Wimplicit-int
     -Wall
     -Wuninitialized
-    -Wunused-but-set-parameter
     -Wcast-align
     -Wdeprecated
     -Wdeprecated-declarations
@@ -360,6 +359,7 @@ if ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
     )
 else()
   set(EXTRA_WARNINGS
+    -Wunused-but-set-parameter
     ${EXTRA_WARNINGS}
     )
 endif()
