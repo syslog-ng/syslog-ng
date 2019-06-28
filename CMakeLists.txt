@@ -351,7 +351,8 @@ if (ENABLE_EXTRA_WARNINGS)
     -Wpointer-sign
     -Wmissing-format-attribute
     -Wsuggest-attribute=noreturn
-    -Wold-style-definition)
+    -Wold-style-definition
+    -Wundef)
 endif()
 
 add_compile_options(${IMPORTANT_WARNINGS} ${ACCEPTABLE_WARNINGS} ${EXTRA_WARNINGS})
