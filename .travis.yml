@@ -88,8 +88,8 @@ matrix:
       compiler: gcc
       script:
         - . tests/build-log-cflags-propagation.sh;
-          export DISTCHECK_CONFIGURE_FLAGS="$CONFIGURE_FLAGS";
-          exec_prop_check "make distcheck -j 3 V=1"
+        - export DISTCHECK_CONFIGURE_FLAGS="$CONFIGURE_FLAGS";
+        - exec_prop_check "make distcheck -j 3 V=1"
       after_script:
         - find . -name test-suite.log | xargs cat
 
