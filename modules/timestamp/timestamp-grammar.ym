@@ -23,7 +23,7 @@
 
 %code requires {
 
-#include "date-parser-parser.h"
+#include "timestamp-parser.h"
 
 }
 
@@ -37,10 +37,10 @@
 
 }
 
-%name-prefix "date_"
+%name-prefix "timestamp_"
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
-%parse-param {LogParser **instance}
+%parse-param {gpointer *instance}
 %parse-param {gpointer arg}
 
 /* INCLUDE_DECLS */

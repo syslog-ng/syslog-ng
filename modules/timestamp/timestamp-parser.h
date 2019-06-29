@@ -21,30 +21,14 @@
  *
  */
 
-#include "date-parser.h"
+#ifndef DATE_PARSER_PARSER_H_INCLUDED
+#define DATE_PARSER_PARSER_H_INCLUDED
+
+#include "timestamp-parser.h"
 #include "cfg-parser.h"
-#include "date-grammar.h"
-#include "date-parser-parser.h"
 
-extern int date_debug;
-int date_parse(CfgLexer *lexer, LogParser **instance, gpointer arg);
+extern CfgParser timestamp_parser;
 
-static CfgLexerKeyword date_keywords[] =
-{
-  { "date_parser", KW_DATE_PARSER },
-  { "time_stamp",  KW_TIME_STAMP },
-  { NULL }
-};
+CFG_PARSER_DECLARE_LEXER_BINDING(timestamp_, gpointer *)
 
-CfgParser date_parser =
-{
-#if SYSLOG_NG_ENABLE_DEBUG
-  .debug_flag = &date_debug,
 #endif
-  .name = "date-parser",
-  .keywords = date_keywords,
-  .parse = (int (*)(CfgLexer *, gpointer *, gpointer)) date_parse,
-  .cleanup = (void (*)(gpointer)) log_pipe_unref,
-};
-
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(date_, LogParser **);

@@ -21,34 +21,33 @@
  *
  */
 
-#include "date-parser.h"
-#include "date-parser-parser.h"
+#include "timestamp-parser.h"
 
 #include "plugin.h"
 #include "plugin-types.h"
 
-extern CfgParser date_parser;
+extern CfgParser timestamp_parser;
 
-static Plugin date_plugin =
+static Plugin timestamp_plugin =
 {
   .type = LL_CONTEXT_PARSER,
   .name = "date-parser",
-  .parser = &date_parser,
+  .parser = &timestamp_parser,
 };
 
 gboolean
-date_module_init(PluginContext *context, CfgArgs *args G_GNUC_UNUSED)
+timestamp_module_init(PluginContext *context, CfgArgs *args G_GNUC_UNUSED)
 {
-  plugin_register(context, &date_plugin, 1);
+  plugin_register(context, &timestamp_plugin, 1);
   return TRUE;
 }
 
 const ModuleInfo module_info =
 {
-  .canonical_name = "date",
+  .canonical_name = "timestamp",
   .version = SYSLOG_NG_VERSION,
-  .description = "The date module provides parsing support for dates in syslog-ng.",
+  .description = "The timestamp module provides support for manipulating timestamps in syslog-ng.",
   .core_revision = VERSION_CURRENT_VER_ONLY,
-  .plugins = &date_plugin,
+  .plugins = &timestamp_plugin,
   .plugins_len = 1,
 };

@@ -21,14 +21,30 @@
  *
  */
 
-#ifndef DATE_PARSER_PARSER_H_INCLUDED
-#define DATE_PARSER_PARSER_H_INCLUDED
-
-#include "date-parser.h"
+#include "timestamp-parser.h"
+#include "timestamp-grammar.h"
+#include "timestamp-parser.h"
 #include "cfg-parser.h"
+#include "logpipe.h"
 
-extern CfgParser date_parser;
+extern int timestamp_debug;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(date_, LogParser **)
+static CfgLexerKeyword timestamp_keywords[] =
+{
+  { "date_parser", KW_DATE_PARSER },
+  { "time_stamp",  KW_TIME_STAMP },
+  { NULL }
+};
 
+CfgParser timestamp_parser =
+{
+#if SYSLOG_NG_ENABLE_DEBUG
+  .debug_flag = &timestamp_debug,
 #endif
+  .name = "timestamp",
+  .keywords = timestamp_keywords,
+  .parse = (int (*)(CfgLexer *, gpointer *, gpointer)) timestamp_parse,
+  .cleanup = (void (*)(gpointer)) log_pipe_unref,
+};
+
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(timestamp_, gpointer *);

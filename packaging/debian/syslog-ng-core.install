@@ -23,7 +23,7 @@ usr/lib/syslog-ng/*/liblinux-kmsg-format.so
 usr/lib/syslog-ng/*/libpseudofile.so
 usr/lib/syslog-ng/*/libsyslogformat.so
 usr/lib/syslog-ng/*/libsystem-source.so
-usr/lib/syslog-ng/*/libdate.so
+usr/lib/syslog-ng/*/libtimestamp.so
 usr/lib/syslog-ng/*/libcef.so
 usr/lib/syslog-ng/*/libdisk-buffer.so
 usr/lib/syslog-ng/*/libxml.so

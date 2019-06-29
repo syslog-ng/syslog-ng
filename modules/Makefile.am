@@ -15,7 +15,7 @@ include modules/cef/Makefile.am
 include modules/confgen/Makefile.am
 include modules/cryptofuncs/Makefile.am
 include modules/csvparser/Makefile.am
-include modules/date/Makefile.am
+include modules/timestamp/Makefile.am
 include modules/dbparser/Makefile.am
 include modules/diskq/Makefile.am
 include modules/examples/Makefile.am
