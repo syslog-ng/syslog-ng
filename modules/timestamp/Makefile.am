@@ -10,6 +10,8 @@ modules_timestamp_libtimestamp_la_SOURCES	 = \
 	modules/timestamp/timestamp-plugin.c	   \
 	modules/timestamp/timestamp-parser.c	   \
 	modules/timestamp/timestamp-parser.h	   \
+	modules/timestamp/rewrite-fix-timezone.c   \
+	modules/timestamp/rewrite-fix-timezone.h   \
 	modules/timestamp/date-parser.c		   \
 	modules/timestamp/date-parser.h
 

@@ -28,17 +28,24 @@
 
 extern CfgParser timestamp_parser;
 
-static Plugin timestamp_plugin =
+static Plugin timestamp_plugins[] =
 {
-  .type = LL_CONTEXT_PARSER,
-  .name = "date-parser",
-  .parser = &timestamp_parser,
+  {
+    .type = LL_CONTEXT_PARSER,
+    .name = "date-parser",
+    .parser = &timestamp_parser,
+  },
+  {
+    .type = LL_CONTEXT_REWRITE,
+    .name = "fix-time-zone",
+    .parser = &timestamp_parser,
+  },
 };
 
 gboolean
 timestamp_module_init(PluginContext *context, CfgArgs *args G_GNUC_UNUSED)
 {
-  plugin_register(context, &timestamp_plugin, 1);
+  plugin_register(context, timestamp_plugins, G_N_ELEMENTS(timestamp_plugins));
   return TRUE;
 }
 
@@ -48,6 +55,6 @@ const ModuleInfo module_info =
   .version = SYSLOG_NG_VERSION,
   .description = "The timestamp module provides support for manipulating timestamps in syslog-ng.",
   .core_revision = VERSION_CURRENT_VER_ONLY,
-  .plugins = &timestamp_plugin,
-  .plugins_len = 1,
+  .plugins = timestamp_plugins,
+  .plugins_len = G_N_ELEMENTS(timestamp_plugins),
 };

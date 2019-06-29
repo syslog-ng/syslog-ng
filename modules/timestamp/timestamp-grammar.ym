@@ -34,6 +34,7 @@
 #include "plugin.h"
 #include "parser/parser-expr.h"
 #include "date-parser.h"
+#include "rewrite-fix-timezone.h"
 
 }
 
@@ -47,6 +48,7 @@
 
 %token KW_DATE_PARSER
 %token KW_TIME_STAMP
+%token KW_FIX_TIME_ZONE
 
 %type <num> date_parser_stamp
 
@@ -54,12 +56,13 @@
 
 start
         : LL_CONTEXT_PARSER date_parser { YYACCEPT; }
+	| LL_CONTEXT_REWRITE fix_timezone { YYACCEPT; }
         ;
 
 date_parser
         : KW_DATE_PARSER '('
           {
-            last_parser = *instance = date_parser_new (configuration);
+            last_parser = *instance = date_parser_new(configuration);
           }
           date_parser_options ')'
         ;
@@ -88,6 +91,27 @@ date_parser_stamp
 date_parser_flags
         : string date_parser_flags         { CHECK_ERROR(date_parser_process_flag(last_parser, $1), @1, "Unknown flag %s", $1); free($1); }
         |
+        ;
+
+fix_timezone
+        : KW_FIX_TIME_ZONE
+          {
+            last_rewrite = *instance = rewrite_fix_time_zone_new(configuration);
+          }
+          '(' template_content fix_timezone_opts ')'
+          {
+            rewrite_fix_time_zone_set_zone_template_ref(*instance, $4);
+          }
+        ;
+
+fix_timezone_opts
+        : fix_timezone_opt fix_timezone_opts
+        |
+        ;
+
+fix_timezone_opt
+        : KW_TIME_STAMP '(' date_parser_stamp ')'  { rewrite_fix_time_zone_set_time_stamp(*instance, $3); }
+	| rewrite_condition_opt
         ;
 
 /* INCLUDE_RULES */

@@ -6,6 +6,8 @@ set(TIMESTAMP_SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/timestamp-grammar.h
     date-parser.c
     date-parser.h
+    rewrite-fix-timezone.c
+    rewrite-fix-timezone.h
 )
 
 generate_y_from_ym(modules/timestamp/timestamp-grammar)
