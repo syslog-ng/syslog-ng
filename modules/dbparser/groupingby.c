@@ -436,6 +436,15 @@ _load_correllation_state(GroupingBy *self, GlobalConfig *cfg)
   g_free(persist_data);
 }
 
+static inline gboolean
+_init_filters(FilterExprNode *self, GlobalConfig *cfg)
+{
+  if (self)
+    return filter_expr_init(self, cfg);
+
+  return TRUE;
+}
+
 static gboolean
 grouping_by_init(LogPipe *s)
 {
@@ -472,11 +481,13 @@ grouping_by_init(LogPipe *s)
   self->tick.expires.tv_nsec = 0;
   iv_timer_register(&self->tick);
 
-  if (self->trigger_condition_expr && !filter_expr_init(self->trigger_condition_expr, cfg))
+  if (!_init_filters(self->trigger_condition_expr, cfg))
     return FALSE;
-  if (self->where_condition_expr && !filter_expr_init(self->where_condition_expr, cfg))
+
+  if (!_init_filters(self->where_condition_expr, cfg))
     return FALSE;
-  if (self->having_condition_expr && !filter_expr_init(self->having_condition_expr, cfg))
+
+  if (!_init_filters(self->having_condition_expr, cfg))
     return FALSE;
 
   return stateful_parser_init_method(s);
