@@ -31,6 +31,7 @@ int filter_expr_parse(CfgLexer *lexer, FilterExprNode **node, gpointer arg);
 
 static CfgLexerKeyword filter_expr_keywords[] =
 {
+  { "filter",             KW_FILTER },
   { "or",                 KW_OR },
   { "and",                KW_AND },
   { "not",                KW_NOT },
