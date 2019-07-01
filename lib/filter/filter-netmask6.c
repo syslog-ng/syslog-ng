@@ -167,6 +167,7 @@ filter_netmask6_new(const gchar *cidr)
     self->address = in6addr_loopback;
 
   self->super.eval = _eval;
+  self->super.type = "netmask6";
   return &self->super;
 }
 #endif

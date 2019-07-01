@@ -105,5 +105,6 @@ filter_netmask_new(const gchar *cidr)
     }
   self->address.s_addr &= self->netmask.s_addr;
   self->super.eval = filter_netmask_eval;
+  self->super.type = "netmask";
   return &self->super;
 }
