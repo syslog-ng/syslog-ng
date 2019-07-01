@@ -41,10 +41,35 @@ struct _FilterExprNode
   const gchar *type;
   gboolean (*init)(FilterExprNode *self, GlobalConfig *cfg);
   gboolean (*eval)(FilterExprNode *self, LogMessage **msg, gint num_msg);
+  void (*traversal)(FilterExprNode *self, gpointer user_data);
   void (*free_fn)(FilterExprNode *self);
   StatsCounterItem *matched;
   StatsCounterItem *not_matched;
 };
+
+static inline void
+filter_expr_traversal(FilterExprNode *self, gpointer user_data)
+{
+  gint default_depth = 0;
+  if (user_data == NULL)
+    user_data = &default_depth;
+
+  gint i;
+  gchar *prefix = " |  ";
+  for (i = 1; i< *(gint *)user_data; i++)
+    {
+      printf("%s", prefix);
+    }
+  if (*(gint *)user_data == 0)
+    printf("%s\n", self->type);
+  else
+    printf(" '--%s\n", self->type);
+
+  if (self->traversal)
+    {
+      self->traversal(self, user_data);
+    }
+}
 
 static inline gboolean
 filter_expr_init(FilterExprNode *self, GlobalConfig *cfg)

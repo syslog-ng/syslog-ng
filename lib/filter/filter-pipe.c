@@ -38,6 +38,8 @@ log_filter_pipe_init(LogPipe *s)
   if (!filter_expr_init(self->expr, cfg))
     return FALSE;
 
+  filter_expr_traversal(self->expr, NULL);
+
   if (!self->name)
     self->name = cfg_tree_get_rule_name(&cfg->tree, ENC_FILTER, s->expr_node);
 

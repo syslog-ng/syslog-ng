@@ -58,11 +58,24 @@ fop_free(FilterExprNode *s)
 }
 
 static void
+_traversal(FilterExprNode *s, gpointer user_data)
+{
+  gint *indent = (gint *)user_data;
+  FilterOp *self = (FilterOp *) s;
+
+  *indent = *indent + 1;
+  filter_expr_traversal(self->left, user_data);
+  filter_expr_traversal(self->right, user_data);
+  *indent = *indent - 1;
+}
+
+static void
 fop_init_instance(FilterOp *self)
 {
   filter_expr_node_init_instance(&self->super);
   self->super.init = fop_init;
   self->super.free_fn = fop_free;
+  self->super.traversal = _traversal;
 }
 
 static gboolean

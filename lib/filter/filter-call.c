@@ -127,6 +127,16 @@ filter_call_free(FilterExprNode *s)
   g_free(self->rule);
 }
 
+static void
+_traversal(FilterExprNode *s, gpointer user_data)
+{
+  gint *indent = (gint *)user_data;
+  *indent += 1;
+  FilterCall *self = (FilterCall *)s;
+  filter_expr_traversal(self->filter_expr, user_data);
+  *indent -= 1;
+}
+
 FilterExprNode *
 filter_call_new(gchar *rule, GlobalConfig *cfg)
 {
@@ -138,6 +148,7 @@ filter_call_new(gchar *rule, GlobalConfig *cfg)
   self->super.free_fn = filter_call_free;
   self->super.type = g_strdup_printf("filter(%s)", rule);
   self->rule = g_strdup(rule);
+  self->super.traversal = _traversal;
 
   return &self->super;
 }
