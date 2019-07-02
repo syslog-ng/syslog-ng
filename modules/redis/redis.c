@@ -33,6 +33,8 @@
 #include "driver.h"
 #include "plugin-types.h"
 #include "logthrdest/logthrdestdrv.h"
+#include "scratch-buffers.h"
+#include "utf8utils.h"
 
 typedef struct
 {
@@ -45,14 +47,13 @@ typedef struct
   LogTemplateOptions template_options;
 
   GString *command;
-  LogTemplate *key;
-  GString *key_str;
-  LogTemplate *param1;
-  GString *param1_str;
-  LogTemplate *param2;
-  GString *param2_str;
+  GList *arguments;
 
+  /* Worker thread */
   redisContext *c;
+  gint argc;
+  gchar **argv;
+  size_t *argvlen;
 } RedisDriver;
 
 /*
@@ -85,23 +86,22 @@ redis_dd_set_auth(LogDriver *d, const gchar *auth)
   self->auth = g_strdup(auth);
 }
 
+static void
+_template_unref(gpointer data)
+{
+  LogTemplate *template = (LogTemplate *)data;
+  log_template_unref(template);
+}
+
 void
 redis_dd_set_command_ref(LogDriver *d, const gchar *command,
-                         LogTemplate *key,
-                         LogTemplate *param1, LogTemplate *param2)
+                         GList *arguments)
 {
   RedisDriver *self = (RedisDriver *)d;
 
   g_string_assign(self->command, command);
-
-  log_template_unref(self->key);
-  self->key = key;
-
-  log_template_unref(self->param1);
-  self->param1 = param1;
-
-  log_template_unref(self->param2);
-  self->param2 = param2;
+  g_list_free_full(self->arguments, _template_unref);
+  self->arguments = arguments;
 }
 
 LogTemplateOptions *
@@ -221,6 +221,34 @@ redis_dd_disconnect(LogThreadedDestDriver *s)
   self->c = NULL;
 }
 
+static void
+_fill_argv_from_template_list(RedisDriver *self, LogMessage *msg)
+{
+  for (gint i = 1; i < self->argc; i++)
+    {
+      GString *buffer = scratch_buffers_alloc();
+      log_template_format(g_list_nth_data(self->arguments, i-1), msg, &self->template_options, LTZ_SEND,
+                          self->super.worker.instance.seq_num, NULL, buffer);
+      self->argvlen[i] = buffer->len;
+      self->argv[i] = buffer->str;
+    }
+}
+
+static GString *
+_argv_to_string(RedisDriver *self)
+{
+  GString *full_command = scratch_buffers_alloc();
+
+  full_command = g_string_append(full_command, self->argv[0]);
+  for (gint i = 1; i < self->argc; i++)
+    {
+      g_string_append(full_command, " \"");
+      append_unsafe_utf8_as_escaped_text(full_command, self->argv[i], self->argvlen[i], "\"");
+      g_string_append(full_command, "\"");
+    }
+  return full_command;
+}
+
 /*
  * Worker thread
  */
@@ -229,10 +257,6 @@ static LogThreadedResult
 redis_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
 {
   RedisDriver *self = (RedisDriver *)s;
-  redisReply *reply;
-  const char *argv[5];
-  size_t argvlen[5];
-  int argc = 2;
 
   if (!redis_dd_connect(self))
     return LTR_NOT_CONNECTED;
@@ -246,58 +270,32 @@ redis_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
       return LTR_NOT_CONNECTED;
     }
 
-  log_template_format(self->key, msg, &self->template_options, LTZ_SEND,
-                      self->super.worker.instance.seq_num, NULL, self->key_str);
+  ScratchBuffersMarker marker;
+  scratch_buffers_mark(&marker);
 
-  if (self->param1)
-    log_template_format(self->param1, msg, &self->template_options, LTZ_SEND,
-                        self->super.worker.instance.seq_num, NULL, self->param1_str);
-  if (self->param2)
-    log_template_format(self->param2, msg, &self->template_options, LTZ_SEND,
-                        self->super.worker.instance.seq_num, NULL, self->param2_str);
+  _fill_argv_from_template_list(self, msg);
 
-  argv[0] = self->command->str;
-  argvlen[0] = self->command->len;
-  argv[1] = self->key_str->str;
-  argvlen[1] = self->key_str->len;
+  redisReply *reply = redisCommandArgv(self->c, self->argc, (const gchar **)self->argv, self->argvlen);
 
-  if (self->param1)
-    {
-      argv[2] = self->param1_str->str;
-      argvlen[2] = self->param1_str->len;
-      argc++;
-    }
-
-  if (self->param2)
-    {
-      argv[3] = self->param2_str->str;
-      argvlen[3] = self->param2_str->len;
-      argc++;
-    }
-
-  reply = redisCommandArgv(self->c, argc, argv, argvlen);
+  GString *full_command = _argv_to_string(self);
 
   if (!reply)
     {
       msg_error("REDIS server error, suspending",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("command", self->command->str),
-                evt_tag_str("key", self->key_str->str),
-                evt_tag_str("param1", self->param1_str->str),
-                evt_tag_str("param2", self->param2_str->str),
+                evt_tag_str("command", full_command->str),
                 evt_tag_str("error", self->c->errstr),
                 evt_tag_int("time_reopen", self->super.time_reopen));
+      scratch_buffers_reclaim_marked(marker);
       return LTR_ERROR;
     }
 
   msg_debug("REDIS command sent",
             evt_tag_str("driver", self->super.super.super.id),
-            evt_tag_str("command", self->command->str),
-            evt_tag_str("key", self->key_str->str),
-            evt_tag_str("param1", self->param1_str->str),
-            evt_tag_str("param2", self->param2_str->str));
-  freeReplyObject(reply);
+            evt_tag_str("command", full_command->str));
 
+  freeReplyObject(reply);
+  scratch_buffers_reclaim_marked(marker);
   return LTR_SUCCESS;
 }
 
@@ -306,12 +304,14 @@ redis_worker_thread_init(LogThreadedDestDriver *d)
 {
   RedisDriver *self = (RedisDriver *)d;
 
+  self->argc = g_list_length(self->arguments) + 1;
+  self->argv = g_malloc(self->argc * sizeof(char *));
+  self->argvlen = g_malloc(self->argc * sizeof(size_t));
+  self->argv[0] = self->command->str;
+  self->argvlen[0] = self->command->len;
+
   msg_debug("Worker thread started",
             evt_tag_str("driver", self->super.super.super.id));
-
-  self->key_str = g_string_sized_new(1024);
-  self->param1_str = g_string_sized_new(1024);
-  self->param2_str = g_string_sized_new(1024);
 
   redis_dd_connect(self);
 }
@@ -321,10 +321,8 @@ redis_worker_thread_deinit(LogThreadedDestDriver *d)
 {
   RedisDriver *self = (RedisDriver *)d;
 
-  g_string_free(self->key_str, TRUE);
-  g_string_free(self->param1_str, TRUE);
-  g_string_free(self->param2_str, TRUE);
-
+  g_free(self->argv);
+  g_free(self->argvlen);
   redis_dd_disconnect(d);
 }
 
@@ -341,7 +339,7 @@ redis_dd_init(LogPipe *s)
   if (!log_threaded_dest_driver_init_method(s))
     return FALSE;
 
-  if (!self->key && !self->param1)
+  if (g_list_length(self->arguments) == 0)
     {
       msg_error("Error initializing Redis destination, command option MUST be set",
                 log_pipe_location_tag(s));
@@ -368,9 +366,7 @@ redis_dd_free(LogPipe *d)
   g_free(self->host);
   g_free(self->auth);
   g_string_free(self->command, TRUE);
-  log_template_unref(self->key);
-  log_template_unref(self->param1);
-  log_template_unref(self->param2);
+  g_list_free_full(self->arguments, _template_unref);
   if (self->c)
     redisFree(self->c);
 
