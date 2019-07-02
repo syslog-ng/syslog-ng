@@ -50,6 +50,46 @@ struct _FilterExprNode
   StatsCounterItem *not_matched;
 };
 
+static void
+_print_filter_tree_init(gpointer *cookie)
+{
+  *cookie = g_malloc0(sizeof(gint));
+  gint *indent = (gint *)*cookie;
+  *indent = 20;
+  printf("%-*s%s\n", *indent, "parent", "child(s)");
+}
+
+static void
+_print_filter_tree_deinit(gpointer *cookie)
+{
+  g_free(*cookie);
+}
+
+static void
+_print_filter_tree_cb(FilterExprNode *current, FilterExprNode *parent, GPtrArray *childs, gpointer cookie)
+{
+  if (parent == NULL)
+    printf("%-*s", *(gint *)cookie, "root");
+  else
+    printf("%-*s", *(gint *)cookie, parent->type);
+
+  if (childs)
+    {
+      gint i;
+      for (i = 0; i < childs->len; i++)
+        {
+          FilterExprNode *child = (FilterExprNode *)g_ptr_array_index(childs, i);
+          printf("%s ", child->type);
+        }
+    }
+  else
+    {
+      printf("leaf");
+    }
+
+  printf("\n");
+}
+
 static inline void
 filter_expr_traversal(FilterExprNode *self, FilterExprNode *parent, FilterExprNodeTraversalCallbackFunction func,
                       gpointer cookie)
@@ -79,6 +119,11 @@ filter_expr_init(FilterExprNode *self, GlobalConfig *cfg)
 {
   if (!_expr_init(self, cfg))
     return FALSE;
+
+  gpointer cookie = NULL;
+  _print_filter_tree_init(&cookie);
+  filter_expr_traversal(self, NULL, _print_filter_tree_cb, cookie);
+  _print_filter_tree_deinit(&cookie);
 
   return TRUE;
 }
