@@ -29,9 +29,11 @@
 #include "logpipe.h"
 #include "stats/stats-registry.h"
 
-
 struct _GlobalConfig;
 typedef struct _FilterExprNode FilterExprNode;
+
+typedef void (*FilterExprNodeTraversalCallbackFunction)(FilterExprNode *current, FilterExprNode *parent,
+                                                        GPtrArray *childs, gpointer cookie);
 
 struct _FilterExprNode
 {
@@ -41,33 +43,25 @@ struct _FilterExprNode
   const gchar *type;
   gboolean (*init)(FilterExprNode *self, GlobalConfig *cfg);
   gboolean (*eval)(FilterExprNode *self, LogMessage **msg, gint num_msg);
-  void (*traversal)(FilterExprNode *self, gpointer user_data);
+  void (*traversal)(FilterExprNode *self, FilterExprNode *parent, FilterExprNodeTraversalCallbackFunction func,
+                    gpointer cookie);
   void (*free_fn)(FilterExprNode *self);
   StatsCounterItem *matched;
   StatsCounterItem *not_matched;
 };
 
 static inline void
-filter_expr_traversal(FilterExprNode *self, gpointer user_data)
+filter_expr_traversal(FilterExprNode *self, FilterExprNode *parent, FilterExprNodeTraversalCallbackFunction func,
+                      gpointer cookie)
 {
-  gint default_depth = 0;
-  if (user_data == NULL)
-    user_data = &default_depth;
-
-  gint i;
-  gchar *prefix = " |  ";
-  for (i = 1; i< *(gint *)user_data; i++)
-    {
-      printf("%s", prefix);
-    }
-  if (*(gint *)user_data == 0)
-    printf("%s\n", self->type);
-  else
-    printf(" '--%s\n", self->type);
-
   if (self->traversal)
     {
-      self->traversal(self, user_data);
+      self->traversal(self, parent, func, cookie);
+    }
+  else
+    {
+      // If it do not have a traversal function, than it is a "simple_expr" == leaf element
+      func(self, parent, NULL, cookie);
     }
 }
 
@@ -85,7 +79,7 @@ filter_expr_init(FilterExprNode *self, GlobalConfig *cfg)
 {
   if (!_expr_init(self, cfg))
     return FALSE;
-  filter_expr_traversal(self, NULL);
+
   return TRUE;
 }
 

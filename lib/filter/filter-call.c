@@ -128,13 +128,15 @@ filter_call_free(FilterExprNode *s)
 }
 
 static void
-_traversal(FilterExprNode *s, gpointer user_data)
+_traversal(FilterExprNode *s, FilterExprNode *parent, FilterExprNodeTraversalCallbackFunction func, gpointer cookie)
 {
-  gint *indent = (gint *)user_data;
-  *indent += 1;
   FilterCall *self = (FilterCall *)s;
-  filter_expr_traversal(self->filter_expr, user_data);
-  *indent -= 1;
+  filter_expr_traversal(self->filter_expr, s, func, cookie);
+
+  GPtrArray *childs = g_ptr_array_sized_new(1);
+  g_ptr_array_add(childs, self->filter_expr);
+  func(s, parent, childs, cookie);
+  g_ptr_array_free(childs, TRUE);
 }
 
 FilterExprNode *
