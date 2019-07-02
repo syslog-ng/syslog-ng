@@ -72,11 +72,20 @@ filter_expr_traversal(FilterExprNode *self, gpointer user_data)
 }
 
 static inline gboolean
-filter_expr_init(FilterExprNode *self, GlobalConfig *cfg)
+_expr_init(FilterExprNode *self, GlobalConfig *cfg)
 {
   if (self->init)
     return self->init(self, cfg);
 
+  return TRUE;
+}
+
+static inline gboolean
+filter_expr_init(FilterExprNode *self, GlobalConfig *cfg)
+{
+  if (!_expr_init(self, cfg))
+    return FALSE;
+  filter_expr_traversal(self, NULL);
   return TRUE;
 }
 
