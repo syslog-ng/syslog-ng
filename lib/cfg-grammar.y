@@ -67,6 +67,7 @@ extern struct _ValuePairsTransformSet *last_vp_transset;
 extern struct _LogMatcherOptions *last_matcher_options;
 extern struct _HostResolveOptions *last_host_resolve_options;
 extern struct _StatsOptions *last_stats_options;
+extern struct _LogRewrite *last_rewrite;
 
 }
 
@@ -309,6 +310,8 @@ extern struct _StatsOptions *last_stats_options;
 
 /* rewrite items */
 %token KW_REWRITE                     10370
+%token KW_CONDITION                   10371
+%token KW_VALUE                       10372
 
 /* yes/no switches */
 
@@ -401,6 +404,7 @@ LogMatcherOptions *last_matcher_options;
 HostResolveOptions *last_host_resolve_options;
 StatsOptions *last_stats_options;
 DNSCacheOptions *last_dns_cache_options;
+LogRewrite *last_rewrite;
 
 }
 
@@ -1469,6 +1473,36 @@ vp_rekey_option
 	| KW_ADD_PREFIX '(' string ')' { value_pairs_transform_set_add_func(last_vp_transset, value_pairs_new_transform_add_prefix($3)); free($3); }
 	| KW_REPLACE_PREFIX '(' string string ')' { value_pairs_transform_set_add_func(last_vp_transset, value_pairs_new_transform_replace_prefix($3, $4)); free($3); free($4); }
 	;
+
+rewrite_expr_opt
+        : KW_VALUE '(' string ')'
+          {
+            const gchar *p = $3;
+            if (p[0] == '$')
+              {
+                msg_warning("Value references in rewrite rules should not use the '$' prefix, those are only needed in templates",
+                            evt_tag_str("value", $3),
+                            cfg_lexer_format_location_tag(lexer, &@3));
+                p++;
+              }
+            last_rewrite->value_handle = log_msg_get_value_handle(p);
+            CHECK_ERROR(!log_msg_is_handle_macro(last_rewrite->value_handle), @3, "%s is read-only, it cannot be changed in rewrite rules", p);
+	    CHECK_ERROR(log_msg_is_value_name_valid(p), @3, "%s is not a valid name for a name-value pair, perhaps a misspelled .SDATA reference?", p);
+            free($3);
+          }
+        | rewrite_condition_opt
+        ;
+
+rewrite_condition_opt
+        : KW_CONDITION '('
+          {
+            FilterExprNode *filter_expr;
+
+            CHECK_ERROR_WITHOUT_MESSAGE(cfg_parser_parse(&filter_expr_parser, lexer, (gpointer *) &filter_expr, NULL), @1);
+            log_rewrite_set_condition(last_rewrite, filter_expr);
+          } ')'
+        ;
+
 
 /* END_RULES */
 

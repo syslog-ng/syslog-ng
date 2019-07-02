@@ -63,7 +63,6 @@ SyntheticMessage *last_message;
 %token KW_WHERE
 %token KW_HAVING
 %token KW_AGGREGATE
-%token KW_VALUE
 %token KW_DROP_UNMATCHED
 %token KW_FILE
 %token KW_PROGRAM_TEMPLATE

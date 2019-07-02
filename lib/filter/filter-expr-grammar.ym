@@ -60,7 +60,6 @@ FilterExprNode *last_filter_expr;
 
 %token KW_PROGRAM
 %token KW_IN_LIST
-%token KW_VALUE
 
 %left   ';'
 %left	KW_OR

@@ -174,6 +174,10 @@ static CfgLexerKeyword main_keywords[] =
   { "on",                 KW_YES },
   { "no",                 KW_NO },
   { "off",                KW_NO },
+  /* rewrite rules */
+  { "condition",          KW_CONDITION },
+  { "value",              KW_VALUE },
+
   { NULL, 0 }
 };
 
