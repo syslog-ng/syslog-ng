@@ -426,6 +426,7 @@ DNSCacheOptions *last_dns_cache_options;
 %type   <ptr> dest_plugin
 
 %type   <ptr> template_content
+%type   <ptr> template_content_list
 
 %type   <ptr> filter_content
 
@@ -894,6 +895,11 @@ template_content_inner
 template_content
         : { last_template = log_template_new(configuration, NULL); } template_content_inner	{ $$ = last_template; }
         ;
+
+template_content_list
+	: template_content template_content_list { $$ = g_list_prepend($2, $1); }
+	| { $$ = NULL; }
+	;
 
 /* END_RULES */
 
