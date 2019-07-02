@@ -8,6 +8,8 @@ set(TIMESTAMP_SOURCES
     date-parser.h
     rewrite-fix-timezone.c
     rewrite-fix-timezone.h
+    rewrite-guess-timezone.c
+    rewrite-guess-timezone.h
 )
 
 generate_y_from_ym(modules/timestamp/timestamp-grammar)
