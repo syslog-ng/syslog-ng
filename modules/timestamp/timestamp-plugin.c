@@ -42,6 +42,11 @@ static Plugin timestamp_plugins[] =
   },
   {
     .type = LL_CONTEXT_REWRITE,
+    .name = "set-time-zone",
+    .parser = &timestamp_parser,
+  },
+  {
+    .type = LL_CONTEXT_REWRITE,
     .name = "guess-time-zone",
     .parser = &timestamp_parser,
   },

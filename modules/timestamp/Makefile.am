@@ -12,6 +12,8 @@ modules_timestamp_libtimestamp_la_SOURCES	 = \
 	modules/timestamp/timestamp-parser.h	   \
 	modules/timestamp/rewrite-fix-timezone.c   \
 	modules/timestamp/rewrite-fix-timezone.h   \
+	modules/timestamp/rewrite-set-timezone.c   \
+	modules/timestamp/rewrite-set-timezone.h   \
 	modules/timestamp/rewrite-guess-timezone.c   \
 	modules/timestamp/rewrite-guess-timezone.h   \
 	modules/timestamp/date-parser.c		   \
