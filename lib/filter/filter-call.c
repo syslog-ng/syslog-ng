@@ -130,10 +130,13 @@ static void
 _traversal(FilterExprNode *s, FilterExprNode *parent, FilterExprNodeTraversalCallbackFunction func, gpointer cookie)
 {
   FilterCall *self = (FilterCall *)s;
-  filter_expr_traversal(self->filter_expr, s, func, cookie);
+
+  if (self->filter_expr)
+    filter_expr_traversal(self->filter_expr, s, func, cookie);
 
   GPtrArray *childs = g_ptr_array_sized_new(1);
-  g_ptr_array_add(childs, self->filter_expr);
+  if (self->filter_expr)
+    g_ptr_array_add(childs, self->filter_expr);
   func(s, parent, childs, cookie);
   g_ptr_array_free(childs, TRUE);
 }
