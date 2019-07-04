@@ -183,6 +183,15 @@ unix_time_set_timezone(UnixTime *self, gint new_gmtoff)
     self->ut_gmtoff = new_gmtoff;
 }
 
+/* change timezone, assuming that the original timezone was correct, but we
+ * want to change the timezone reference to a different one */
+void
+unix_time_set_timezone_with_tzinfo(UnixTime *self, TimeZoneInfo *tzinfo)
+{
+  glong new_gmtoff = time_zone_info_get_offset(tzinfo, self->ut_sec);
+  unix_time_set_timezone(self, new_gmtoff);
+}
+
 gboolean
 unix_time_fix_timezone_assuming_the_time_matches_real_time(UnixTime *self)
 {

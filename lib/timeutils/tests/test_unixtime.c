@@ -24,6 +24,7 @@
 #include "timeutils/unixtime.h"
 #include "timeutils/wallclocktime.h"
 #include "timeutils/conv.h"
+#include "timeutils/zonecache.h"
 #include <criterion/criterion.h>
 #include "fake-time.h"
 
@@ -88,6 +89,35 @@ Test(unixtime, unix_time_set_timezone_converts_the_timestamp_to_a_target_timezon
   cr_expect(wct.wct_hour == 12);
   cr_expect(wct.wct_min == 58);
   cr_expect(wct.wct_sec == 48);
+}
+
+Test(unixtime, unix_time_set_timezone_with_tzinfo_calculates_dst_automatically)
+{
+  UnixTime ut = UNIX_TIME_INIT;
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
+
+  _wct_initialize(&wct, "Mar 10 2019 01:59:59");
+  wct.wct_gmtoff = -5*3600;
+  convert_wall_clock_time_to_unix_time(&wct, &ut);
+  cr_expect(ut.ut_gmtoff == -5*3600);
+
+  unix_time_set_timezone_with_tzinfo(&ut, cached_get_time_zone_info("EST5EDT"));
+  cr_expect(ut.ut_gmtoff == -5*3600);
+  ut.ut_sec += 1;
+  unix_time_set_timezone_with_tzinfo(&ut, cached_get_time_zone_info("EST5EDT"));
+  cr_expect(ut.ut_gmtoff == -4*3600);
+
+  _wct_initialize(&wct, "Nov 3 2019 01:59:59");
+  wct.wct_gmtoff = -4*3600;
+  convert_wall_clock_time_to_unix_time(&wct, &ut);
+  cr_expect(ut.ut_gmtoff == -4*3600);
+
+  unix_time_set_timezone_with_tzinfo(&ut, cached_get_time_zone_info("EST5EDT"));
+  cr_expect(ut.ut_gmtoff == -4*3600);
+
+  ut.ut_sec += 1;
+  unix_time_set_timezone_with_tzinfo(&ut, cached_get_time_zone_info("EST5EDT"));
+  cr_expect(ut.ut_gmtoff == -5*3600);
 }
 
 Test(unixtime, unix_time_guess_timezone_for_even_hour_differences)
