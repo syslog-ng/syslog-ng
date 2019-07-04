@@ -1,3 +1,5 @@
+add_subdirectory(optimizer)
+
 set(FILTER_HEADERS
     filter/filter-expr.h
     filter/filter-op.h
@@ -11,6 +13,7 @@ set(FILTER_HEADERS
     filter/filter-pri.h
     filter/filter-pipe.h
     filter/filter-expr-parser.h
+    ${FILTER_OPTIMIZER_HEADERS}
     PARENT_SCOPE
     )
 
@@ -27,6 +30,7 @@ set(FILTER_SOURCES
     filter/filter-pri.c
     filter/filter-pipe.c
     filter/filter-expr-parser.c
+    ${FILTER_OPTIMIZER_SOURCES}
     PARENT_SCOPE
     )
 

@@ -90,6 +90,7 @@ struct _GlobalConfig
   gint time_reap;
   gint suppress;
   gint type_cast_strictness;
+  gboolean optimize_filters;
 
   gint log_fifo_size;
   gint log_msg_size;

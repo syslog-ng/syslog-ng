@@ -38,3 +38,4 @@ EXTRA_DIST += lib/filter/filter-expr-grammar.ym \
 	lib/filter/CMakeLists.txt
 
 include lib/filter/tests/Makefile.am
+include lib/filter/optimizer/Makefile.am

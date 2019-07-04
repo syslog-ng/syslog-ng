@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2019 Balabit
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,28 +21,19 @@
  *
  */
 
-#ifndef FILTER_PIPE_H_INCLUDED
-#define FILTER_PIPE_H_INCLUDED
+#ifndef FILTER_EXPR_OPTIMIZER_H_INCLUDED
+#define FILTER_EXPR_OPTIMIZER_H_INCLUDED
 
 #include "filter/filter-expr.h"
-#include "logpipe.h"
 
-/* convert a filter expression into a drop/accept LogPipe */
+typedef struct _FilterExprOptimizer FilterExprOptimizer;
 
-/*
- * This class encapsulates a LogPipe that either drops/allows a LogMessage
- * to go through.
- */
-typedef struct _LogFilterPipe
+struct _FilterExprOptimizer
 {
-  LogPipe super;
-  FilterExprNode *expr;
-  gchar *name;
-  StatsCounterItem *matched;
-  StatsCounterItem *not_matched;
-  GPtrArray *optimizers;
-} LogFilterPipe;
-
-LogPipe *log_filter_pipe_new(FilterExprNode *expr, GlobalConfig *cfg);
+  const gchar *name;
+  gpointer (*init)(FilterExprNode *root);
+  void (*deinit)(gpointer cookie);
+  FilterExprNodeTraversalCallbackFunction cb;
+};
 
 #endif

@@ -24,6 +24,8 @@
 
 #include "filter/filter-pipe.h"
 #include "stats/stats-registry.h"
+#include "filter/optimizer/filter-expr-optimizer.h"
+#include "filter/optimizer/filter-tree-printer.h"
 
 /*******************************************************************
  * LogFilterPipe
@@ -112,6 +114,39 @@ log_filter_pipe_free(LogPipe *s)
   log_pipe_free_method(s);
 }
 
+static inline void
+_register_optimizers(LogFilterPipe *self)
+{
+  g_ptr_array_add(self->optimizers, &filter_tree_printer);
+  return;
+}
+
+static inline void
+_run_optimizers(LogFilterPipe *self)
+{
+  gint i;
+  gpointer cookie;
+  FilterExprOptimizer *optimizer;
+
+  for (i =0; i < self->optimizers->len; i++)
+    {
+      optimizer = g_ptr_array_index(self->optimizers, i);
+
+      msg_debug("Initializing filter-optimizer", evt_tag_str("name", optimizer->name));
+      cookie = optimizer->init(self->expr);
+      if (cookie != NULL)
+        {
+          msg_debug("Running filter-optimizer", evt_tag_str("name", optimizer->name));
+          filter_expr_traversal(self->expr, NULL, optimizer->cb, cookie);
+          optimizer->deinit(cookie);
+        }
+      else
+        {
+          msg_debug("Skipping filter-optimizer, because init failed", evt_tag_str("name", optimizer->name));
+        }
+    }
+}
+
 LogPipe *
 log_filter_pipe_new(FilterExprNode *expr, GlobalConfig *cfg)
 {
@@ -123,5 +158,16 @@ log_filter_pipe_new(FilterExprNode *expr, GlobalConfig *cfg)
   self->super.free_fn = log_filter_pipe_free;
   self->super.clone = log_filter_pipe_clone;
   self->expr = expr;
+
+  if (cfg->optimize_filters)
+    {
+      self->optimizers = g_ptr_array_new();
+
+      _register_optimizers(self);
+      _run_optimizers(self);
+
+      g_ptr_array_free(self->optimizers, TRUE);
+    }
+
   return &self->super;
 }
