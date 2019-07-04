@@ -462,7 +462,7 @@ zone_info_get_offset(ZoneInfo *self, gint64 timestamp)
 
   if (self->last_transitions_index != -1 &&
       self->last_transitions_index < (self->timecnt - 1) &&
-      self->transitions[self->last_transitions_index].time < timestamp &&
+      self->transitions[self->last_transitions_index].time <= timestamp &&
       self->transitions[self->last_transitions_index + 1].time > timestamp)
     {
       return  self->transitions[ self->last_transitions_index ].gmtoffset;
@@ -470,7 +470,7 @@ zone_info_get_offset(ZoneInfo *self, gint64 timestamp)
   else
     {
       for (i = 0; i < (self->timecnt - 1); i++)
-        if (self->transitions[i].time < timestamp &&
+        if (self->transitions[i].time <= timestamp &&
             self->transitions[i+1].time > timestamp)
           break;
 
