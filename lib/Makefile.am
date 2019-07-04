@@ -272,6 +272,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	$(transport_sources)		\
 	$(logproto_sources)		\
 	$(filter_sources)		\
+	$(optimizer_sources)		\
 	$(parser_sources)		\
 	$(rewrite_sources)		\
 	$(template_sources)		\

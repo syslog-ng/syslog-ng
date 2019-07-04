@@ -57,13 +57,9 @@ filter_expr_traversal(FilterExprNode *self, FilterExprNode *parent, FilterExprNo
                       gpointer cookie)
 {
   if (self->traversal)
-    {
-      self->traversal(self, parent, func, cookie);
-    }
+    self->traversal(self, parent, func, cookie);
   else
-    {
-      func(self, parent, NULL, cookie);
-    }
+    func(self, parent, NULL, cookie);
 }
 
 static inline gboolean

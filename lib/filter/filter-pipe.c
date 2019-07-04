@@ -24,10 +24,23 @@
 
 #include "filter/filter-pipe.h"
 #include "stats/stats-registry.h"
+#include "filter/optimizer/filter-expr-optimizer.h"
+#include "filter/optimizer/filter-tree-printer.h"
 
 /*******************************************************************
  * LogFilterPipe
  *******************************************************************/
+
+static inline void
+_run_optimizers(LogFilterPipe *self)
+{
+  for (GList *elem = self->optimizers; elem; elem = elem->next)
+    {
+      FilterExprOptimizer *optimizer = (FilterExprOptimizer *)elem->data;
+
+      self->expr = filter_expr_optimizer_run(self->expr, optimizer);
+    }
+}
 
 static gboolean
 log_filter_pipe_init(LogPipe *s)
@@ -40,6 +53,8 @@ log_filter_pipe_init(LogPipe *s)
 
   if (!self->name)
     self->name = cfg_tree_get_rule_name(&cfg->tree, ENC_FILTER, s->expr_node);
+
+  _run_optimizers(self);
 
   stats_lock();
   StatsClusterKey sc_key;
@@ -107,9 +122,18 @@ log_filter_pipe_free(LogPipe *s)
   stats_unregister_counter(&sc_key, SC_TYPE_NOT_MATCHED, &self->not_matched);
   stats_unlock();
 
+  g_list_free(self->optimizers);
+
   g_free(self->name);
   filter_expr_unref(self->expr);
   log_pipe_free_method(s);
+}
+
+static inline void
+_register_optimizers(LogFilterPipe *self)
+{
+  self->optimizers = g_list_append(self->optimizers, &filter_tree_printer);
+  return;
 }
 
 LogPipe *
@@ -123,5 +147,11 @@ log_filter_pipe_new(FilterExprNode *expr, GlobalConfig *cfg)
   self->super.free_fn = log_filter_pipe_free;
   self->super.clone = log_filter_pipe_clone;
   self->expr = expr;
+
+  if (cfg->optimize_filters)
+    {
+      _register_optimizers(self);
+    }
+
   return &self->super;
 }
