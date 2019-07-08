@@ -26,6 +26,7 @@
 #include "filter/filter-expr-parser.h"
 #include "cfg-lexer.h"
 #include "filter/optimizer/filter-expr-optimizer.h"
+#include "filter/optimizer/concatenate-or-filters.h"
 #include "apphook.h"
 
 
@@ -194,6 +195,26 @@ Test(replace_optimizer, complex_filter)
 TestSuite(replace_optimizer, .init = app_startup, .fini = app_shutdown);
 
 
+Test(filter_optimizer, no_optimize)
+{
+  FilterExprNode *expr = _compile_standalone_filter("program('foo');");
 
+  FilterExprNode *result = filter_expr_optimizer_run(expr,  concatenate_or_filters_get_instance());
+
+  cr_assert_eq(expr, result);
+
+  filter_expr_unref(expr);
+}
+
+Test(filter_optimizer, same_filter_expr_with_and)
+{
+  FilterExprNode *expr = _compile_standalone_filter("program('foo') and program('boo');");
+
+  FilterExprNode *result = filter_expr_optimizer_run(expr,  concatenate_or_filters_get_instance());
+
+  cr_assert_eq(expr, result);
+
+  filter_expr_unref(expr);
+}
 
 

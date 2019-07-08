@@ -1,6 +1,5 @@
 /*
  * Copyright (c) 2019 Balabit
- * Copyright (c) 2019 Kokan <kokaipeter@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,18 +21,12 @@
  *
  */
 
-#include "filter/optimizer/filter-expr-optimizer-registry.h"
+#ifndef CONCATENATE_OR_FILTERS_H_INCLUDED
+#define CONCATENATE_OR_FILTERS_H_INCLUDED
 
-#include "filter/optimizer/filter-tree-printer.h"
-#include "filter/optimizer/concatenate-or-filters.h"
+#include "filter/filter-expr.h"
+#include "filter/optimizer/filter-expr-optimizer.h"
 
-GList *filter_optimizer_get_optimizers(void)
-{
-  GList *optimizers = NULL;
+FilterExprOptimizer *concatenate_or_filters_get_instance(void);
 
-  optimizers = g_list_append(optimizers, filter_tree_printer_get_instance());
-  optimizers = g_list_append(optimizers, concatenate_or_filters_get_instance());
-
-  return optimizers;
-}
-
+#endif
