@@ -26,6 +26,7 @@
 #include "stats/stats-registry.h"
 #include "filter/optimizer/filter-expr-optimizer.h"
 #include "filter/optimizer/filter-tree-printer.h"
+#include "filter/optimizer/concatenate-or-filters.h"
 
 /*******************************************************************
  * LogFilterPipe
@@ -118,6 +119,7 @@ static inline void
 _register_optimizers(LogFilterPipe *self)
 {
   g_ptr_array_add(self->optimizers, &filter_tree_printer);
+  g_ptr_array_add(self->optimizers, &concatenate_or_filters);
   return;
 }
 
