@@ -115,12 +115,17 @@ log_filter_pipe_free(LogPipe *s)
   log_pipe_free_method(s);
 }
 
+void
+log_filter_pipe_register_optimizer(LogFilterPipe *self, FilterExprOptimizer *optimizer)
+{
+  g_ptr_array_add(self->optimizers, optimizer);
+}
+
 static inline void
 _register_optimizers(LogFilterPipe *self)
 {
-  g_ptr_array_add(self->optimizers, &filter_tree_printer);
-  g_ptr_array_add(self->optimizers, &concatenate_or_filters);
-  return;
+  log_filter_pipe_register_optimizer(self, &filter_tree_printer);
+  log_filter_pipe_register_optimizer(self, &concatenate_or_filters);
 }
 
 static inline void
