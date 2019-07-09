@@ -132,25 +132,13 @@ static inline void
 _run_optimizers(LogFilterPipe *self)
 {
   gint i;
-  gpointer cookie;
   FilterExprOptimizer *optimizer;
 
   for (i =0; i < self->optimizers->len; i++)
     {
       optimizer = g_ptr_array_index(self->optimizers, i);
 
-      msg_debug("Initializing filter-optimizer", evt_tag_str("name", optimizer->name));
-      cookie = optimizer->init(self->expr);
-      if (cookie != NULL)
-        {
-          msg_debug("Running filter-optimizer", evt_tag_str("name", optimizer->name));
-          filter_expr_traversal(self->expr, NULL, optimizer->cb, cookie);
-          optimizer->deinit(cookie);
-        }
-      else
-        {
-          msg_debug("Skipping filter-optimizer, because init failed", evt_tag_str("name", optimizer->name));
-        }
+      filter_expr_optimizer_run(self->expr, optimizer);
     }
 }
 
