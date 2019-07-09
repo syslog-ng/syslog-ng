@@ -26,6 +26,7 @@
 #define FILTER_PIPE_H_INCLUDED
 
 #include "filter/filter-expr.h"
+#include "filter/optimizer/filter-expr-optimizer.h"
 #include "logpipe.h"
 
 /* convert a filter expression into a drop/accept LogPipe */
@@ -45,5 +46,7 @@ typedef struct _LogFilterPipe
 } LogFilterPipe;
 
 LogPipe *log_filter_pipe_new(FilterExprNode *expr, GlobalConfig *cfg);
+
+void log_filter_pipe_register_optimizer(LogFilterPipe *self, FilterExprOptimizer *optimizer);
 
 #endif
