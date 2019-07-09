@@ -243,6 +243,8 @@ gboolean log_msg_is_handle_macro(NVHandle handle);
 gboolean log_msg_is_handle_sdata(NVHandle handle);
 gboolean log_msg_is_handle_match(NVHandle handle);
 
+const gchar *log_msg_get_handle_name(NVHandle handle, gssize *length);
+
 static inline gboolean
 log_msg_is_handle_settable_with_an_indirect_value(NVHandle handle)
 {
