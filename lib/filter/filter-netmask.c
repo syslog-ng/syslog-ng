@@ -105,6 +105,8 @@ filter_netmask_new(const gchar *cidr)
     }
   self->address.s_addr &= self->netmask.s_addr;
   self->super.eval = filter_netmask_eval;
-  self->super.type = "netmask";
+  self->super.type = g_strdup("netmask");
+  self->super.pattern = g_strdup(cidr);
+  self->super.template = g_strdup("$SOURCEIP");
   return &self->super;
 }

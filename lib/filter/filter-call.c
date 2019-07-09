@@ -123,7 +123,6 @@ filter_call_free(FilterExprNode *s)
   stats_unregister_counter(&sc_key, SC_TYPE_NOT_MATCHED, &self->super.not_matched);
   stats_unlock();
 
-  g_free((gchar *) self->super.type);
   g_free(self->rule);
 }
 
@@ -152,6 +151,8 @@ filter_call_new(gchar *rule, GlobalConfig *cfg)
   self->super.eval = filter_call_eval;
   self->super.free_fn = filter_call_free;
   self->super.type = g_strdup_printf("filter(%s)", rule);
+  self->super.pattern = NULL;
+  self->super.template = NULL;
   self->rule = g_strdup(rule);
   self->super.traversal = _traversal;
 

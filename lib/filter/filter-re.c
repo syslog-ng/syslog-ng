@@ -26,6 +26,7 @@
 #include "str-utils.h"
 #include "messages.h"
 #include "scratch-buffers.h"
+#include "logmsg/logmsg.h"
 #include <string.h>
 
 typedef struct _FilterRE
@@ -109,6 +110,10 @@ filter_re_compile_pattern(FilterExprNode *s, const gchar *re, GError **error)
 
   log_matcher_options_init(&self->matcher_options);
   self->matcher = log_matcher_new(&self->matcher_options);
+  g_free(self->super.type);
+  self->super.type = g_strdup(self->matcher_options.type);
+  g_free(self->super.pattern);
+  self->super.pattern = g_strdup(re);
   return log_matcher_compile(self->matcher, re, error);
 }
 
@@ -120,7 +125,14 @@ filter_re_init_instance(FilterRE *self, NVHandle value_handle)
   self->super.init = filter_re_init;
   self->super.eval = filter_re_eval;
   self->super.free_fn = filter_re_free;
-  self->super.type = "regexp";
+  g_free(self->super.type);
+  self->super.type = g_strdup("pcre");
+
+  gssize length;
+  const gchar *temp = log_msg_get_handle_name(value_handle, &length);
+  g_free(self->super.template);
+  self->super.template = g_strndup(temp, length);
+
   log_matcher_options_defaults(&self->matcher_options);
   self->matcher_options.flags |= LMF_MATCH_ONLY;
 }
@@ -144,6 +156,9 @@ filter_source_new(void)
       /* this can only happen if the plain text string matcher will cease to exist */
       g_assert_not_reached();
     }
+
+  self->super.type = g_strdup("string");
+
   return &self->super;
 }
 
@@ -176,6 +191,8 @@ filter_match_set_template_ref(FilterExprNode *s, LogTemplate *template)
 
   log_template_unref(self->template);
   self->template = template;
+  g_free(s->template);
+  s->template = g_strdup(template->template);
 }
 
 static gboolean

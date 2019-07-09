@@ -40,7 +40,9 @@ struct _FilterExprNode
   guint32 ref_cnt;
   guint32 comp:1,   /* this not is negated */
           modify:1; /* this filter changes the log message */
-  const gchar *type;
+  gchar *type;
+  gchar *pattern;
+  gchar *template;
   gboolean (*init)(FilterExprNode *self, GlobalConfig *cfg);
   gboolean (*eval)(FilterExprNode *self, LogMessage **msg, gint num_msg);
   void (*traversal)(FilterExprNode *self, FilterExprNode *parent, FilterExprNodeTraversalCallbackFunction func,
@@ -49,6 +51,7 @@ struct _FilterExprNode
   StatsCounterItem *matched;
   StatsCounterItem *not_matched;
 };
+
 
 static inline void
 filter_expr_traversal(FilterExprNode *self, FilterExprNode *parent, FilterExprNodeTraversalCallbackFunction func,
