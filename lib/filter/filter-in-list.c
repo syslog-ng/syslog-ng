@@ -94,6 +94,10 @@ filter_in_list_new(const gchar *list_file, const gchar *property)
     }
   fclose(stream);
 
+  self->super.pattern = g_strdup(list_file);
+  self->super.template = g_strdup(property);
+  self->super.type = g_strdup("in-list");
+
   self->super.eval = filter_in_list_eval;
   self->super.free_fn = filter_in_list_free;
   return &self->super;

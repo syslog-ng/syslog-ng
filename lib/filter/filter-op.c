@@ -83,7 +83,9 @@ fop_or_new(FilterExprNode *e1, FilterExprNode *e2)
   self->super.eval = fop_or_eval;
   self->left = e1;
   self->right = e2;
-  self->super.type = "OR";
+  self->super.type = g_strdup("OR");
+  self->super.pattern = NULL;
+  self->super.template = NULL;
   return &self->super;
 }
 
@@ -105,6 +107,8 @@ fop_and_new(FilterExprNode *e1, FilterExprNode *e2)
   self->super.eval = fop_and_eval;
   self->left = e1;
   self->right = e2;
-  self->super.type = "AND";
+  self->super.type = g_strdup("AND");
+  self->super.pattern = NULL;
+  self->super.template = NULL;
   return &self->super;
 }

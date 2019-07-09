@@ -167,7 +167,9 @@ filter_netmask6_new(const gchar *cidr)
     self->address = in6addr_loopback;
 
   self->super.eval = _eval;
-  self->super.type = "netmask6";
+  self->super.type = g_strdup("netmask6");
+  self->super.pattern = g_strdup(cidr);
+  self->super.template = g_strdup("$SOURCEIP");
   return &self->super;
 }
 #endif

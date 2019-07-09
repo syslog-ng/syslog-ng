@@ -90,6 +90,11 @@ filter_expr_unref(FilterExprNode *self)
     {
       if (self->free_fn)
         self->free_fn(self);
+
+      g_free(self->type);
+      g_free(self->pattern);
+      g_free(self->template);
+
       g_free(self);
     }
 }
