@@ -88,7 +88,7 @@ static void
 _replace_cb(FilterExprNode *current, FilterExprNode *parent, GPtrArray *childs, gpointer cookie)
 {
   FilterExprNode *node = filter_dummy_new();
-  //TODO: filter_expr_replace_child(parent, current, node);
+  filter_expr_replace_child(parent, current, node);
 }
 
 FilterExprOptimizer always_replace_with_dummy_filter =

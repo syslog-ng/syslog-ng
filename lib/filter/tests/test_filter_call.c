@@ -22,6 +22,7 @@
  *
  */
 #include "filter/filter-call.h"
+#include "filter/filter-pri.h"
 #include "filter/filter-expr.h"
 #include "apphook.h"
 
@@ -35,6 +36,22 @@ Test(filter_call, undefined_filter_ref)
 
   cr_assert_not(filter_expr_init(filter, configuration));
 
+  filter_expr_unref(filter);
+}
+
+Test(filter_call, replace_existing_child)
+{
+  FilterExprNode *old = filter_level_new(0);
+  FilterExprNode *new = filter_level_new(0);
+
+  FilterExprNode *filter = filter_call_direct_new( old );
+
+  filter_expr_replace_child(filter, old, new);
+
+  FilterExprNode *filter_next = filter_call_next(filter);
+  cr_assert_eq(filter_next, new, "Filter call didn't replace the child element.");
+
+  filter_expr_unref(filter_next);
   filter_expr_unref(filter);
 }
 
