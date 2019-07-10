@@ -25,6 +25,7 @@
 #define FILTER_EXPR_OPTIMIZER_H_INCLUDED
 
 #include "filter/filter-expr.h"
+#include "filter/filter-call.h"
 
 typedef struct _FilterExprOptimizer FilterExprOptimizer;
 
@@ -39,19 +40,23 @@ struct _FilterExprOptimizer
 static inline FilterExprNode *
 filter_expr_optimizer_run(FilterExprNode *self, FilterExprOptimizer *optimizer)
 {
+  // This create a dummy_root, which points to the original root, so in case of root needs to be replaced it can use dummy_root as parent.
+  FilterExprNode *dummy_root = filter_call_direct_new(self);
+
   msg_debug("Initializing filter-optimizer", evt_tag_str("name", optimizer->name));
-  gpointer cookie = optimizer->init(self);
-  if (cookie != NULL)
-    {
-      msg_debug("Running filter-optimizer", evt_tag_str("name", optimizer->name));
-      filter_expr_traversal(self, NULL, optimizer->cb, cookie);
-      optimizer->deinit(cookie);
-    }
-  else
+  gpointer cookie = optimizer->init(dummy_root);
+  if (cookie == NULL)
     {
       msg_debug("Skipping filter-optimizer, because init failed", evt_tag_str("name", optimizer->name));
+      return self;
     }
-  return self;
+
+  msg_debug("Running filter-optimizer", evt_tag_str("name", optimizer->name));
+  filter_expr_traversal(dummy_root, NULL, optimizer->cb, cookie);
+  optimizer->deinit(cookie);
+  FilterExprNode *result = filter_call_next(dummy_root);
+  filter_expr_unref(dummy_root);
+  return result;
 }
 
 #endif
