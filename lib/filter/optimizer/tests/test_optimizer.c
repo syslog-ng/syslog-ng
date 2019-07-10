@@ -60,6 +60,45 @@ FilterExprOptimizer dummy =
   .cb = _dummy_cb
 };
 
+
+static FilterExprNode *
+filter_dummy_new(void)
+{
+  FilterExprNode *self = g_new0(FilterExprNode, 1);
+
+  filter_expr_node_init_instance(self);
+  self->type = g_strdup("dummy");
+
+  return self;
+}
+
+static gpointer
+_replace_init(FilterExprNode *root)
+{
+  return (gpointer)root;
+}
+
+static void
+_replace_deinit(gpointer cookie)
+{
+
+}
+
+static void
+_replace_cb(FilterExprNode *current, FilterExprNode *parent, GPtrArray *childs, gpointer cookie)
+{
+  FilterExprNode *node = filter_dummy_new();
+  //TODO: filter_expr_replace_child(parent, current, node);
+}
+
+FilterExprOptimizer always_replace_with_dummy_filter =
+{
+  .name = "replacer",
+  .init =  _replace_init,
+  .deinit = _replace_deinit,
+  .cb = _replace_cb
+};
+
 static FilterExprNode *_compile_standalone_filter(gchar *config_snippet)
 {
   GlobalConfig *cfg = cfg_new_snippet();
@@ -97,6 +136,20 @@ Test(filter_optimizer, multiple_filter_expr)
 }
 
 
+Test(replace_optimizer, simple_filter)
+{
+  app_startup();
+  FilterExprNode *expr = _compile_standalone_filter("program('foo');");
+
+  FilterExprNode *result = filter_expr_optimizer_run(expr,  &always_replace_with_dummy_filter);
+
+  cr_assert(result);
+  cr_assert_str_eq(result->type, "dummy");
+
+  filter_expr_unref(result);
+  app_shutdown();
+}
+
 
 Test(filter_optimizer, no_optimize)
 {
@@ -131,7 +184,7 @@ Test(filter_optimizer, same_filter_expr_with_or)
 
   FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
 
-  cr_assert_neq(expr, result);
+  cr_assert_eq(expr, result);
 
   filter_expr_unref(result);
   app_shutdown();
