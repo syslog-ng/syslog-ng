@@ -27,6 +27,7 @@
 #include "cfg-lexer.h"
 #include "filter/optimizer/filter-expr-optimizer.h"
 #include "filter/optimizer/concatenate-or-filters.h"
+#include "apphook.h"
 
 
 gint counter;

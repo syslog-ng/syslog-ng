@@ -29,4 +29,7 @@
 
 FilterExprNode *filter_call_new(gchar *rule, struct _GlobalConfig *cfg);
 
+FilterExprNode *filter_call_direct_new(FilterExprNode *s);
+FilterExprNode *filter_call_next(FilterExprNode *s);
+
 #endif

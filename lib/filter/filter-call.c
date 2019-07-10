@@ -109,6 +109,31 @@ filter_call_init(FilterExprNode *s, GlobalConfig *cfg)
   return TRUE;
 }
 
+static gboolean
+filter_call_direct_init(FilterExprNode *s, GlobalConfig *cfg)
+{
+  FilterCall *self = (FilterCall *) s;
+
+  if (self->visited)
+    {
+      msg_error("Loop detected in filter rule", evt_tag_str("rule", self->rule));
+      return FALSE;
+    }
+
+  /* skip initialize if filter_call_init already called. */
+  if (self->filter_expr)
+    return TRUE;
+
+  self->visited = TRUE;
+
+  if (!filter_expr_init(self->filter_expr, cfg))
+    return FALSE;
+
+  self->visited = FALSE;
+
+  return TRUE;
+}
+
 static void
 filter_call_free(FilterExprNode *s)
 {
@@ -142,6 +167,17 @@ _traversal(FilterExprNode *s, FilterExprNode *parent, FilterExprNodeTraversalCal
 }
 
 FilterExprNode *
+filter_call_next(FilterExprNode *s)
+{
+  FilterCall *self = (FilterCall *)s;
+
+  FilterExprNode *next = self->filter_expr;
+  self->filter_expr = NULL;
+
+  return next;
+}
+
+FilterExprNode *
 filter_call_new(gchar *rule, GlobalConfig *cfg)
 {
   FilterCall *self = g_new0(FilterCall, 1);
@@ -155,6 +191,25 @@ filter_call_new(gchar *rule, GlobalConfig *cfg)
   self->super.template = NULL;
   self->rule = g_strdup(rule);
   self->super.traversal = _traversal;
+
+  return &self->super;
+}
+
+FilterExprNode *
+filter_call_direct_new(FilterExprNode *callee)
+{
+  FilterCall *self = g_new0(FilterCall, 1);
+
+  filter_expr_node_init_instance(&self->super);
+  self->super.init = filter_call_direct_init;
+  self->super.eval = filter_call_eval;
+  self->super.free_fn = filter_call_free;
+  self->super.type = g_strdup_printf("filter(%s)", callee->type);
+  self->super.pattern = NULL;
+  self->super.template = NULL;
+  self->super.traversal = _traversal;
+  self->filter_expr = callee;
+  self->super.modify = callee->modify;
 
   return &self->super;
 }
