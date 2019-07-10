@@ -166,6 +166,16 @@ _traversal(FilterExprNode *s, FilterExprNode *parent, FilterExprNodeTraversalCal
   g_ptr_array_free(childs, TRUE);
 }
 
+static void
+_replace_child(FilterExprNode *s, FilterExprNode *old, FilterExprNode *new)
+{
+  FilterCall *self = (FilterCall *)s;
+
+  g_assert(old == self->filter_expr);
+  filter_expr_unref(self->filter_expr);
+  self->filter_expr = new;
+}
+
 FilterExprNode *
 filter_call_next(FilterExprNode *s)
 {
@@ -191,7 +201,7 @@ filter_call_new(gchar *rule, GlobalConfig *cfg)
   self->super.template = NULL;
   self->rule = g_strdup(rule);
   self->super.traversal = _traversal;
-
+  self->super.replace_child = _replace_child;
   return &self->super;
 }
 
@@ -210,6 +220,7 @@ filter_call_direct_new(FilterExprNode *callee)
   self->super.traversal = _traversal;
   self->filter_expr = callee;
   self->super.modify = callee->modify;
+  self->super.replace_child = _replace_child;
 
   return &self->super;
 }

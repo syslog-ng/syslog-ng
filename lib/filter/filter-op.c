@@ -72,6 +72,28 @@ _traversal(FilterExprNode *s, FilterExprNode *parent, FilterExprNodeTraversalCal
 }
 
 static void
+_replace_child(FilterExprNode *s, FilterExprNode *old, FilterExprNode *new)
+{
+  FilterOp *self = (FilterOp *) s;
+
+  if (self->left == old)
+    {
+      filter_expr_unref(self->left);
+      self->left = new;
+    }
+  else if (self->right == old)
+    {
+      filter_expr_unref(self->right);
+      self->right = new;
+    }
+  else
+    {
+      msg_error("We tried to replace a not existing child of a logical operation filter.");
+      g_assert_not_reached();
+    }
+}
+
+static void
 fop_init_instance(FilterOp *self)
 {
   filter_expr_node_init_instance(&self->super);
