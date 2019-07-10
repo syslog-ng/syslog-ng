@@ -54,7 +54,7 @@ static CfgLexerKeyword kafka_keywords[] =
 
 CfgParser kafka_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &kafka_debug,
 #endif
   .name = "kafka",

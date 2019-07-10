@@ -23,7 +23,7 @@
  */
 #include "compat/string.h"
 
-#if !SYSLOG_NG_HAVE_STRNLEN
+#ifndef SYSLOG_NG_HAVE_STRNLEN
 
 size_t
 strnlen(const char *s, size_t maxlen)

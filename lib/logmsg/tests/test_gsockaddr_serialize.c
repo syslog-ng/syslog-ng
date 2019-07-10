@@ -123,7 +123,7 @@ Test(gsockaddr_serialize, test_inet_false)
   g_sockaddr_unref(read_addr);
 }
 
-#if ENABLE_IPV6
+#if SYSLOG_NG_ENABLE_IPV6
 Test(gsockaddr_serialize, test_inet6_false)
 {
   GSockAddr *addr = g_sockaddr_inet6_new("::1", 5555);

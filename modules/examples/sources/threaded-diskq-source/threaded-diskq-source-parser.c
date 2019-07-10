@@ -38,7 +38,7 @@ static CfgLexerKeyword threaded_diskq_source_keywords[] =
 
 CfgParser threaded_diskq_source_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &threaded_diskq_source_debug,
 #endif
   .name = "threaded_diskq_source",
@@ -48,4 +48,3 @@ CfgParser threaded_diskq_source_parser =
 };
 
 CFG_PARSER_IMPLEMENT_LEXER_BINDING(threaded_diskq_source_, LogDriver **)
-

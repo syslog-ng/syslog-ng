@@ -104,6 +104,11 @@ if (ENV_LD_LIBRARY_PATH)
   set(SYSLOG_NG_ENABLE_ENV_WRAPPER 1)
 endif()
 
+option(WITH_COMPILE_DATE "Include compile date in binary" "ON")
+if (WITH_COMPILE_DATE)
+  set(SYSLOG_NG_WITH_COMPILE_DATE 1)
+endif()
+
 set(CMAKE_REQUIRED_DEFINITIONS "-D_LARGEFILE64_SOURCE=1")
 set(CMAKE_EXTRA_INCLUDE_FILES "fcntl.h")
 check_type_size(O_LARGEFILE O_LARGEFILE)
@@ -219,6 +224,8 @@ else ()
   find_package(PythonLibs EXACT "${PYTHON_VERSION}" REQUIRED)
 endif ()
 
+MESSAGE(STATUS "Detected pythonlib version: ${PYTHONLIBS_VERSION_STRING}")
+
 set (NOSETESTS "" CACHE STRING "nosetests binary")
 set (PYLINT "" CACHE STRING "pylint binary")
 
@@ -247,6 +254,13 @@ else ()
     find_program(PYLINT_BIN "pylint")
   endif ()
 endif()
+
+if (PYTHONLIBS_VERSION_STRING VERSION_LESS 3)
+    set(SYSLOG_NG_ENABLE_PYTHONv2 1)
+else ()
+    set(SYSLOG_NG_ENABLE_PYTHONv3 1)
+endif ()
+
 
 include(openssl_functions)
 openssl_set_defines()
@@ -337,7 +351,8 @@ if (ENABLE_EXTRA_WARNINGS)
     -Wpointer-sign
     -Wmissing-format-attribute
     -Wsuggest-attribute=noreturn
-    -Wold-style-definition)
+    -Wold-style-definition
+    -Wundef)
 endif()
 
 add_compile_options(${IMPORTANT_WARNINGS} ${ACCEPTABLE_WARNINGS} ${EXTRA_WARNINGS})

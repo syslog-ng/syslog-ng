@@ -31,7 +31,7 @@
 /* NOTE: bb__ prefix is used for function names that might clash with system
  * supplied symbols. */
 
-#if !SYSLOG_NG_HAVE_PREAD || SYSLOG_NG_HAVE_BROKEN_PREAD
+#if !defined(SYSLOG_NG_HAVE_PREAD) || defined(SYSLOG_NG_HAVE_BROKEN_PREAD)
 # ifdef pread
 #  undef pread
 # endif
