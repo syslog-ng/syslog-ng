@@ -63,6 +63,10 @@ _can_we_concatenate(FilterExprNode *current, FilterExprNode *left, FilterExprNod
   if (strcmp(left->type, right->type) !=0 )
     return FALSE;
 
+  //Glob is not trivial to convert to regex, nor scope
+  if (strcmp(left->type, "glob") == 0)
+    return FALSE;
+
   if (strcmp(left->template, right->template) !=0 )
     return FALSE;
 

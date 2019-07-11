@@ -285,6 +285,18 @@ Test(filter_optimizer, type_pcre_or_programs)
   app_shutdown();
 }
 
+Test(filter_optimizer, type_glob_or_programs)
+{
+  app_startup();
+  FilterExprNode *expr = _compile_standalone_filter("program('f1' type(glob)) or program('f2' type(glob));");
+
+  FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
+
+  cr_assert_eq(expr, result);
+
+  app_shutdown();
+}
+
 Test(filter_optimizer, same_filter_expr_with_or)
 {
   app_startup();
