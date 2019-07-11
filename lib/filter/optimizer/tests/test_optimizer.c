@@ -313,6 +313,18 @@ Test(filter_optimizer, same_match_filter_via_set_handler)
   app_shutdown();
 }
 
+Test(filter_optimizer, different_match_filter_via_set_handler)
+{
+  app_startup();
+  FilterExprNode *expr = _compile_standalone_filter("match('f1' value('1')) or match('f2' value('2'));");
+
+  FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
+
+  cr_assert_eq(expr, result);
+
+  app_shutdown();
+}
+
 Test(filter_optimizer, same_filter_expr_with_or)
 {
   app_startup();
