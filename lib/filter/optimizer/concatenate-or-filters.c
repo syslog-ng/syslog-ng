@@ -35,13 +35,21 @@ static FilterExprNode *_compile_standalone_filter(gchar *config_snippet)
   return tmp;
 }
 
+static gboolean
+_is_it_template(gchar *candidate)
+{
+  return (strchr(candidate, '$') != NULL);
+}
+
 static FilterExprNode *
 _concatenate(FilterExprNode *current, FilterExprNode *parent, FilterExprNode *left, FilterExprNode *right)
 {
   GString *new_filter = g_string_new("");
 
-  g_string_printf(new_filter, "%smatch(\"%s|%s\" value('%s'));", (left->comp ? "not " : ""), left->pattern,
-                  right->pattern, left->template);
+  const gboolean is_it_template = _is_it_template(left->template);
+
+  g_string_printf(new_filter, "%smatch(\"%s|%s\" %s('%s'));", (left->comp ? "not " : ""), left->pattern, right->pattern,
+                  (is_it_template ? "template" : "value"), left->template);
 
   FilterExprNode *new_opt = _compile_standalone_filter(new_filter->str);
   filter_expr_replace_child(parent, current, new_opt);

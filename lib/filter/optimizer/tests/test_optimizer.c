@@ -306,6 +306,21 @@ Test(filter_optimizer, different_match_filter_via_set_handler)
   filter_expr_unref(result);
 }
 
+Test(filter_optimizer, same_match_filter_via_set_template)
+{
+  FilterExprNode *expr = _compile_standalone_filter("match('f1' template('$1')) or match('f2' template('$1'));");
+
+  FilterExprNode *result = filter_expr_optimizer_run(expr,  concatenate_or_filters_get_instance());
+
+  cr_assert_str_eq(result->type, "pcre");
+  cr_assert_str_eq(result->template, "$1");
+  cr_assert_str_eq(result->pattern, "f2|f1");
+  cr_assert_eq(result->modify, FALSE);
+  cr_assert_eq(result->comp, FALSE);
+
+  filter_expr_unref(result);
+}
+
 Test(filter_optimizer, same_filter_expr_with_or)
 {
   FilterExprNode *expr = _compile_standalone_filter("program('foo') or program('boo');");
