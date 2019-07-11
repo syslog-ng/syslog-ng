@@ -366,5 +366,21 @@ Test(filter_optimizer, multiple_or_filter)
   filter_expr_unref(result);
 }
 
+Test(filter_optimizer, different_precedent)
+{
+  FilterExprNode *expr = _compile_standalone_filter("program('f1') or (program('f2') or program('f3'));");
+
+  FilterExprNode *result = filter_expr_optimizer_run(expr,  concatenate_or_filters_get_instance());
+
+  cr_assert_str_eq(result->type, "pcre");
+  cr_assert_str_eq(result->template, "PROGRAM");
+  cr_assert_str_eq(result->pattern, "f3|f2|f1");
+  cr_assert_eq(result->modify, FALSE);
+  cr_assert_eq(result->comp, FALSE);
+
+  filter_expr_unref(result);
+}
+
+
 
 
