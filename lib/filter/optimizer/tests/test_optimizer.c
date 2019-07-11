@@ -261,7 +261,7 @@ Test(filter_optimizer, type_string_or_programs)
   FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
 
   cr_assert_str_eq(result->type, "pcre");
-  cr_assert_str_eq(result->template, "$PROGRAM");
+  cr_assert_str_eq(result->template, "PROGRAM");
   cr_assert_str_eq(result->pattern, "f2|f1");
   cr_assert_eq(result->modify, FALSE);
   cr_assert_eq(result->comp, FALSE);
@@ -277,7 +277,7 @@ Test(filter_optimizer, type_pcre_or_programs)
   FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
 
   cr_assert_str_eq(result->type, "pcre");
-  cr_assert_str_eq(result->template, "$PROGRAM");
+  cr_assert_str_eq(result->template, "PROGRAM");
   cr_assert_str_eq(result->pattern, "f2|f1");
   cr_assert_eq(result->modify, FALSE);
   cr_assert_eq(result->comp, FALSE);
@@ -305,7 +305,7 @@ Test(filter_optimizer, same_filter_expr_with_or)
   FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
 
   cr_assert_str_eq(result->type, "pcre");
-  cr_assert_str_eq(result->template, "$PROGRAM");
+  cr_assert_str_eq(result->template, "PROGRAM");
   cr_assert_str_eq(result->pattern, "boo|foo");
   cr_assert_eq(result->modify, FALSE);
   cr_assert_eq(result->comp, FALSE);
@@ -322,7 +322,7 @@ Test(filter_optimizer, same_negated_filter_expr_with_or)
   FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
 
   cr_assert_str_eq(result->type, "pcre");
-  cr_assert_str_eq(result->template, "$PROGRAM");
+  cr_assert_str_eq(result->template, "PROGRAM");
   cr_assert_str_eq(result->pattern, "boo|foo");
   cr_assert_eq(result->modify, FALSE);
   cr_assert_eq(result->comp, TRUE);
@@ -338,7 +338,7 @@ Test(filter_optimizer, multiple_or_filter)
   FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
 
   cr_assert_str_eq(result->type, "pcre");
-  cr_assert_str_eq(result->template, "$PROGRAM");
+  cr_assert_str_eq(result->template, "PROGRAM");
   cr_assert_str_eq(result->pattern, "f3|f2|f1");
   cr_assert_eq(result->modify, FALSE);
   cr_assert_eq(result->comp, FALSE);
