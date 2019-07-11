@@ -112,26 +112,42 @@ static FilterExprNode *_compile_standalone_filter(gchar *config_snippet)
 
 Test(filter_optimizer, simple_filter)
 {
-  app_startup();
   FilterExprNode *expr = _compile_standalone_filter("program('foo');");
 
   cr_assert(filter_expr_optimizer_run(expr,  &dummy));
   cr_assert_eq(counter, 3, "%d==%d", counter, 3);
 
   filter_expr_unref(expr);
-  app_shutdown();
+}
+
+Test(filter_optimizer, simple_negated_filter)
+{
+  FilterExprNode *expr = _compile_standalone_filter("not program('foo');");
+
+  cr_assert(filter_expr_optimizer_run(expr,  &dummy));
+  cr_assert_eq(counter, 3, "%d==%d", counter, 3);
+
+  filter_expr_unref(expr);
 }
 
 Test(filter_optimizer, multiple_filter_expr)
 {
-  app_startup();
   FilterExprNode *expr = _compile_standalone_filter("program('foo') and message('blaze');");
 
   cr_assert(filter_expr_optimizer_run(expr,  &dummy));
   cr_assert_eq(counter, 5);
 
   filter_expr_unref(expr);
-  app_shutdown();
+}
+
+Test(filter_optimizer, complex_filte)
+{
+  FilterExprNode *expr = _compile_standalone_filter("level(info) or (program('foo') and not message('blaze'));");
+
+  cr_assert(filter_expr_optimizer_run(expr,  &dummy));
+  cr_assert_eq(counter, 7);
+
+  filter_expr_unref(expr);
 }
 
 
@@ -140,7 +156,6 @@ TestSuite(filter_optimizer, .init = app_startup, .fini = app_shutdown);
 
 Test(replace_optimizer, simple_filter)
 {
-  app_startup();
   FilterExprNode *expr = _compile_standalone_filter("program('foo');");
 
   FilterExprNode *result = filter_expr_optimizer_run(expr,  &always_replace_with_dummy_filter);
@@ -149,11 +164,36 @@ Test(replace_optimizer, simple_filter)
   cr_assert_str_eq(result->type, "dummy");
 
   filter_expr_unref(result);
-  app_shutdown();
 }
 
 
+Test(replace_optimizer, simple_negated_filter)
+{
+  FilterExprNode *expr = _compile_standalone_filter("not program('foo');");
+
+  FilterExprNode *result = filter_expr_optimizer_run(expr,  &always_replace_with_dummy_filter);
+
+  cr_assert(result);
+  cr_assert_str_eq(result->type, "dummy");
+
+  filter_expr_unref(result);
+}
+
+Test(replace_optimizer, complex_filter)
+{
+  FilterExprNode *expr = _compile_standalone_filter("level(info) or (program('foo') and not message('blaze'));");
+
+  FilterExprNode *result = filter_expr_optimizer_run(expr,  &always_replace_with_dummy_filter);
+
+  cr_assert(result);
+  cr_assert_str_eq(result->type, "dummy");
+
+  filter_expr_unref(result);
+}
+
 TestSuite(replace_optimizer, .init = app_startup, .fini = app_shutdown);
+
+
 
 
 

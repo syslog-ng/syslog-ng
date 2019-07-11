@@ -100,6 +100,7 @@ fop_init_instance(FilterOp *self)
   self->super.init = fop_init;
   self->super.free_fn = fop_free;
   self->super.traversal = _traversal;
+  self->super.replace_child = _replace_child;
 }
 
 static gboolean
