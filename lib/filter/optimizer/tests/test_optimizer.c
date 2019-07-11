@@ -243,5 +243,20 @@ Test(filter_optimizer, same_filter_expr_with_or)
   filter_expr_unref(result);
 }
 
+Test(filter_optimizer, same_negated_filter_expr_with_or)
+{
+  FilterExprNode *expr = _compile_standalone_filter("not program('foo') or not program('boo');");
+
+  FilterExprNode *result = filter_expr_optimizer_run(expr,  concatenate_or_filters_get_instance());
+
+  cr_assert_str_eq(result->type, "pcre");
+  cr_assert_str_eq(result->template, "$PROGRAM");
+  cr_assert_str_eq(result->pattern, "boo|foo");
+  cr_assert_eq(result->modify, FALSE);
+  cr_assert_eq(result->comp, TRUE);
+
+  filter_expr_unref(result);
+}
+
 
 

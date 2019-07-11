@@ -40,7 +40,7 @@ _concatenate(FilterExprNode *current, FilterExprNode *parent, FilterExprNode *le
 {
   GString *new_filter = g_string_new("");
 
-  g_string_printf(new_filter, "program(\"%s|%s\");", left->pattern, right->pattern);
+  g_string_printf(new_filter, "%sprogram(\"%s|%s\");", (left->comp ? "not " : ""), left->pattern, right->pattern);
 
   FilterExprNode *new_opt = _compile_standalone_filter(new_filter->str);
   filter_expr_replace_child(parent, current, new_opt);
