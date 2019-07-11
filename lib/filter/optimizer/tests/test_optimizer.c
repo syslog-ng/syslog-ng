@@ -342,6 +342,19 @@ Test(filter_optimizer, multiple_or_filter)
   cr_assert_eq(result->comp, FALSE);
 }
 
+Test(filter_optimizer, different_precedent)
+{
+  FilterExprNode *expr = _compile_standalone_filter("program('f1') or (program('f2') or program('f3'));");
+
+  FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
+
+  cr_assert_str_eq(result->type, "pcre");
+  cr_assert_str_eq(result->template, "PROGRAM");
+  cr_assert_str_eq(result->pattern, "f3|f2|f1");
+  cr_assert_eq(result->modify, FALSE);
+  cr_assert_eq(result->comp, FALSE);
+}
+
 TestSuite(filter_optimizer, .init = app_startup, .fini = app_shutdown);
 
 
