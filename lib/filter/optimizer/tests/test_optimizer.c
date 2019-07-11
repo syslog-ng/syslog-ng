@@ -241,6 +241,50 @@ Test(filter_optimizer, same_filter_expr_with_or_but_one_negated)
   app_shutdown();
 }
 
+Test(filter_optimizer, different_filter_with_or)
+{
+  app_startup();
+  FilterExprNode *expr = _compile_standalone_filter("program('foo') or message('boo');");
+
+  FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
+
+  cr_assert_eq(expr, result);
+
+  app_shutdown();
+}
+
+Test(filter_optimizer, type_string_or_programs)
+{
+  app_startup();
+  FilterExprNode *expr = _compile_standalone_filter("program('f1' type(string)) or program('f2' type(string));");
+
+  FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
+
+  cr_assert_str_eq(result->type, "pcre");
+  cr_assert_str_eq(result->template, "$PROGRAM");
+  cr_assert_str_eq(result->pattern, "f2|f1");
+  cr_assert_eq(result->modify, FALSE);
+  cr_assert_eq(result->comp, FALSE);
+
+  app_shutdown();
+}
+
+Test(filter_optimizer, type_pcre_or_programs)
+{
+  app_startup();
+  FilterExprNode *expr = _compile_standalone_filter("program('f1' type(pcre)) or program('f2' type(pcre));");
+
+  FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
+
+  cr_assert_str_eq(result->type, "pcre");
+  cr_assert_str_eq(result->template, "$PROGRAM");
+  cr_assert_str_eq(result->pattern, "f2|f1");
+  cr_assert_eq(result->modify, FALSE);
+  cr_assert_eq(result->comp, FALSE);
+
+  app_shutdown();
+}
+
 Test(filter_optimizer, same_filter_expr_with_or)
 {
   app_startup();
