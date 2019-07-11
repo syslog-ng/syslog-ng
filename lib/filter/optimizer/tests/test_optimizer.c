@@ -269,6 +269,17 @@ Test(filter_optimizer, type_pcre_or_programs)
   filter_expr_unref(result);
 }
 
+Test(filter_optimizer, type_glob_or_programs)
+{
+  FilterExprNode *expr = _compile_standalone_filter("program('f1' type(glob)) or program('f2' type(glob));");
+
+  FilterExprNode *result = filter_expr_optimizer_run(expr,  concatenate_or_filters_get_instance());
+
+  cr_assert_eq(expr, result);
+
+  filter_expr_unref(result);
+}
+
 Test(filter_optimizer, same_filter_expr_with_or)
 {
   FilterExprNode *expr = _compile_standalone_filter("program('foo') or program('boo');");
