@@ -229,6 +229,18 @@ Test(filter_optimizer, same_filter_expr_with_and)
   app_shutdown();
 }
 
+Test(filter_optimizer, same_filter_expr_with_or_but_one_negated)
+{
+  app_startup();
+  FilterExprNode *expr = _compile_standalone_filter("program('foo') or not program('boo');");
+
+  FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
+
+  cr_assert_eq(expr, result);
+
+  app_shutdown();
+}
+
 Test(filter_optimizer, same_filter_expr_with_or)
 {
   app_startup();
@@ -236,7 +248,11 @@ Test(filter_optimizer, same_filter_expr_with_or)
 
   FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
 
-  cr_assert_eq(expr, result);
+  cr_assert_str_eq(result->type, "pcre");
+  cr_assert_str_eq(result->template, "$PROGRAM");
+  cr_assert_str_eq(result->pattern, "boo|foo");
+  cr_assert_eq(result->modify, FALSE);
+  cr_assert_eq(result->comp, FALSE);
 
   filter_expr_unref(result);
   app_shutdown();

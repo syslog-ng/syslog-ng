@@ -131,7 +131,7 @@ filter_re_init_instance(FilterRE *self, NVHandle value_handle)
   gssize length;
   const gchar *temp = log_msg_get_handle_name(value_handle, &length);
   g_free(self->super.template);
-  self->super.template = g_strndup(temp, length);
+  self->super.template = g_strdup_printf("$%.*s", (gint)length, temp);
 
   log_matcher_options_defaults(&self->matcher_options);
   self->matcher_options.flags |= LMF_MATCH_ONLY;

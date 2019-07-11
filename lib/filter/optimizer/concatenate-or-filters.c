@@ -21,11 +21,29 @@
  *
  */
 #include "filter/optimizer/concatenate-or-filters.h"
+#include "filter/filter-expr-parser.h"
+
+
+static FilterExprNode *_compile_standalone_filter(gchar *config_snippet)
+{
+  GlobalConfig *cfg = cfg_new_snippet();
+  CfgLexer *lexer = cfg_lexer_new_buffer(cfg, config_snippet, strlen(config_snippet));
+  FilterExprNode *tmp;
+  g_assert(cfg_run_parser(cfg, lexer, &filter_expr_parser, (gpointer *) &tmp, NULL));
+
+  cfg_free(cfg);
+  return tmp;
+}
 
 static void
-_concatenate(FilterExprNode *current, FilterExprNode *parent, GPtrArray *childs)
+_concatenate(FilterExprNode *current, FilterExprNode *parent, FilterExprNode *left, FilterExprNode *right)
 {
-  // TODO
+  GString *new_filter = g_string_new("");
+
+  g_string_printf(new_filter, "program(\"%s|%s\");", left->pattern, right->pattern);
+
+  FilterExprNode *new_opt = _compile_standalone_filter(new_filter->str);
+  filter_expr_replace_child(parent, current, new_opt);
   return;
 }
 
@@ -33,52 +51,65 @@ _concatenate(FilterExprNode *current, FilterExprNode *parent, GPtrArray *childs)
 
 
 static gboolean
-_can_we_concatenate(FilterExprNode *current, FilterExprNode *parent, GPtrArray *childs)
+_can_we_concatenate(FilterExprNode *current, FilterExprNode *left, FilterExprNode *right)
 {
   // Is it an OR filter
   if (strcmp(current->type, "OR") != 0)
     return FALSE;
 
-  // OR filters always have two child element, left and right
-  g_assert(childs->len == 2);
-  FilterExprNode *left = (FilterExprNode *)g_ptr_array_index(childs, 0);
-  FilterExprNode *right = (FilterExprNode *)g_ptr_array_index(childs, 1);
-
-  // Currently we only concatenate if childs are not negated.
-  if (!left->comp && !right->comp)
+  if (left->comp != right->comp)
     return FALSE;
 
-  // Different filters are concatenated differently, but they always have to have the same type.
   if (strcmp(left->type, right->type) !=0 )
     return FALSE;
 
-  //.. TODO
+  if (strcmp(left->template, right->template) !=0 )
+    return FALSE;
+
   return TRUE;
 }
-
 
 
 
 static gpointer
 _concatenate_or_filters_init(FilterExprNode *root)
 {
-  // I don't need a cookie for this job. So just return the root element,
-  // as a valid not NULL pointer, and DO NOT free it up later :)
-  return root;
+  GList **stack = g_new0(GList *, 1);
+
+  return stack;
 }
 
 static void
 _concatenate_or_filters_deinit(gpointer cookie)
 {
-  return;
+  GList **stack = (GList **)cookie;
+  g_free(stack);
 }
 
 static void
 _concatenate_or_filters_cb(FilterExprNode *current, FilterExprNode *parent, GPtrArray *childs, gpointer cookie)
 {
-  if (_can_we_concatenate(current, parent, childs))
+  GList **stack = (GList **)cookie;
+
+  GList *left_link = NULL;
+  FilterExprNode *left = NULL;
+  GList *right_link = NULL;
+  FilterExprNode *right = NULL;
+  if (strcmp(current->type, "OR") == 0)
     {
-      _concatenate(current, parent, childs);
+      left_link = g_list_last(*stack);
+      right_link = g_list_last(*stack)->prev;
+      left = (FilterExprNode *)left_link->data;
+      right = (FilterExprNode *)right_link->data;
+    }
+
+  if (_can_we_concatenate(current, left, right))
+    {
+      _concatenate(current, parent, left, right);
+    }
+  else
+    {
+      *stack = g_list_append(*stack, current);
     }
 }
 
