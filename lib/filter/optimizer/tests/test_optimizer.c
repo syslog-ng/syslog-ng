@@ -295,6 +295,17 @@ Test(filter_optimizer, same_match_filter_via_set_handler)
   filter_expr_unref(result);
 }
 
+Test(filter_optimizer, different_match_filter_via_set_handler)
+{
+  FilterExprNode *expr = _compile_standalone_filter("match('f1' value('1')) or match('f2' value('2'));");
+
+  FilterExprNode *result = filter_expr_optimizer_run(expr,  concatenate_or_filters_get_instance());
+
+  cr_assert_eq(expr, result);
+
+  filter_expr_unref(result);
+}
+
 Test(filter_optimizer, same_filter_expr_with_or)
 {
   FilterExprNode *expr = _compile_standalone_filter("program('foo') or program('boo');");
