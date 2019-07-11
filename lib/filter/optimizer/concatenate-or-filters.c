@@ -35,7 +35,7 @@ static FilterExprNode *_compile_standalone_filter(gchar *config_snippet)
   return tmp;
 }
 
-static void
+static FilterExprNode *
 _concatenate(FilterExprNode *current, FilterExprNode *parent, FilterExprNode *left, FilterExprNode *right)
 {
   GString *new_filter = g_string_new("");
@@ -44,7 +44,7 @@ _concatenate(FilterExprNode *current, FilterExprNode *parent, FilterExprNode *le
 
   FilterExprNode *new_opt = _compile_standalone_filter(new_filter->str);
   filter_expr_replace_child(parent, current, new_opt);
-  return;
+  return new_opt;
 }
 
 
@@ -105,7 +105,7 @@ _concatenate_or_filters_cb(FilterExprNode *current, FilterExprNode *parent, GPtr
 
   if (_can_we_concatenate(current, left, right))
     {
-      _concatenate(current, parent, left, right);
+      *stack = g_list_append(*stack, _concatenate(current, parent, left, right));
     }
   else
     {
