@@ -113,56 +113,47 @@ static FilterExprNode *_compile_standalone_filter(gchar *config_snippet)
 
 Test(filter_optimizer, simple_filter)
 {
-  app_startup();
   FilterExprNode *expr = _compile_standalone_filter("program('foo');");
 
   cr_assert(filter_expr_optimizer_run(expr,  &dummy));
   cr_assert_eq(counter, 3, "%d==%d", counter, 3);
 
   filter_expr_unref(expr);
-  app_shutdown();
 }
 
 Test(filter_optimizer, simple_negated_filter)
 {
-  app_startup();
   FilterExprNode *expr = _compile_standalone_filter("not program('foo');");
 
   cr_assert(filter_expr_optimizer_run(expr,  &dummy));
   cr_assert_eq(counter, 3, "%d==%d", counter, 3);
 
   filter_expr_unref(expr);
-  app_shutdown();
 }
 
 Test(filter_optimizer, multiple_filter_expr)
 {
-  app_startup();
   FilterExprNode *expr = _compile_standalone_filter("program('foo') and message('blaze');");
 
   cr_assert(filter_expr_optimizer_run(expr,  &dummy));
   cr_assert_eq(counter, 5);
 
   filter_expr_unref(expr);
-  app_shutdown();
 }
 
 Test(filter_optimizer, complex_filte)
 {
-  app_startup();
   FilterExprNode *expr = _compile_standalone_filter("level(info) or (program('foo') and not message('blaze'));");
 
   cr_assert(filter_expr_optimizer_run(expr,  &dummy));
   cr_assert_eq(counter, 7);
 
   filter_expr_unref(expr);
-  app_shutdown();
 }
 
 
 Test(replace_optimizer, simple_filter)
 {
-  app_startup();
   FilterExprNode *expr = _compile_standalone_filter("program('foo');");
 
   FilterExprNode *result = filter_expr_optimizer_run(expr,  &always_replace_with_dummy_filter);
@@ -171,12 +162,10 @@ Test(replace_optimizer, simple_filter)
   cr_assert_str_eq(result->type, "dummy");
 
   filter_expr_unref(result);
-  app_shutdown();
 }
 
 Test(replace_optimizer, simple_negated_filter)
 {
-  app_startup();
   FilterExprNode *expr = _compile_standalone_filter("not program('foo');");
 
   FilterExprNode *result = filter_expr_optimizer_run(expr,  &always_replace_with_dummy_filter);
@@ -185,12 +174,10 @@ Test(replace_optimizer, simple_negated_filter)
   cr_assert_str_eq(result->type, "dummy");
 
   filter_expr_unref(result);
-  app_shutdown();
 }
 
 Test(replace_optimizer, complex_filter)
 {
-  app_startup();
   FilterExprNode *expr = _compile_standalone_filter("level(info) or (program('foo') and not message('blaze'));");
 
   FilterExprNode *result = filter_expr_optimizer_run(expr,  &always_replace_with_dummy_filter);
@@ -199,13 +186,13 @@ Test(replace_optimizer, complex_filter)
   cr_assert_str_eq(result->type, "dummy");
 
   filter_expr_unref(result);
-  app_shutdown();
 }
+
+TestSuite(replace_optimizer, .init = app_startup, .fini = app_shutdown);
 
 
 Test(filter_optimizer, no_optimize)
 {
-  app_startup();
   FilterExprNode *expr = _compile_standalone_filter("program('foo');");
 
   FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
@@ -213,12 +200,10 @@ Test(filter_optimizer, no_optimize)
   cr_assert_eq(expr, result);
 
   filter_expr_unref(expr);
-  app_shutdown();
 }
 
 Test(filter_optimizer, same_filter_expr_with_and)
 {
-  app_startup();
   FilterExprNode *expr = _compile_standalone_filter("program('foo') and program('boo');");
 
   FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
@@ -226,36 +211,28 @@ Test(filter_optimizer, same_filter_expr_with_and)
   cr_assert_eq(expr, result);
 
   filter_expr_unref(expr);
-  app_shutdown();
 }
 
 Test(filter_optimizer, same_filter_expr_with_or_but_one_negated)
 {
-  app_startup();
   FilterExprNode *expr = _compile_standalone_filter("program('foo') or not program('boo');");
 
   FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
 
   cr_assert_eq(expr, result);
-
-  app_shutdown();
 }
 
 Test(filter_optimizer, different_filter_with_or)
 {
-  app_startup();
   FilterExprNode *expr = _compile_standalone_filter("program('foo') or message('boo');");
 
   FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
 
   cr_assert_eq(expr, result);
-
-  app_shutdown();
 }
 
 Test(filter_optimizer, type_string_or_programs)
 {
-  app_startup();
   FilterExprNode *expr = _compile_standalone_filter("program('f1' type(string)) or program('f2' type(string));");
 
   FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
@@ -265,13 +242,10 @@ Test(filter_optimizer, type_string_or_programs)
   cr_assert_str_eq(result->pattern, "f2|f1");
   cr_assert_eq(result->modify, FALSE);
   cr_assert_eq(result->comp, FALSE);
-
-  app_shutdown();
 }
 
 Test(filter_optimizer, type_pcre_or_programs)
 {
-  app_startup();
   FilterExprNode *expr = _compile_standalone_filter("program('f1' type(pcre)) or program('f2' type(pcre));");
 
   FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
@@ -281,25 +255,19 @@ Test(filter_optimizer, type_pcre_or_programs)
   cr_assert_str_eq(result->pattern, "f2|f1");
   cr_assert_eq(result->modify, FALSE);
   cr_assert_eq(result->comp, FALSE);
-
-  app_shutdown();
 }
 
 Test(filter_optimizer, type_glob_or_programs)
 {
-  app_startup();
   FilterExprNode *expr = _compile_standalone_filter("program('f1' type(glob)) or program('f2' type(glob));");
 
   FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
 
   cr_assert_eq(expr, result);
-
-  app_shutdown();
 }
 
 Test(filter_optimizer, same_match_filter_via_set_handler)
 {
-  app_startup();
   FilterExprNode *expr = _compile_standalone_filter("match('f1' value('1')) or match('f2' value('1'));");
 
   FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
@@ -309,25 +277,19 @@ Test(filter_optimizer, same_match_filter_via_set_handler)
   cr_assert_str_eq(result->pattern, "f2|f1");
   cr_assert_eq(result->modify, FALSE);
   cr_assert_eq(result->comp, FALSE);
-
-  app_shutdown();
 }
 
 Test(filter_optimizer, different_match_filter_via_set_handler)
 {
-  app_startup();
   FilterExprNode *expr = _compile_standalone_filter("match('f1' value('1')) or match('f2' value('2'));");
 
   FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
 
   cr_assert_eq(expr, result);
-
-  app_shutdown();
 }
 
 Test(filter_optimizer, same_match_filter_via_set_template)
 {
-  app_startup();
   FilterExprNode *expr = _compile_standalone_filter("match('f1' template('$1')) or match('f2' template('$1'));");
 
   FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
@@ -337,13 +299,10 @@ Test(filter_optimizer, same_match_filter_via_set_template)
   cr_assert_str_eq(result->pattern, "f2|f1");
   cr_assert_eq(result->modify, FALSE);
   cr_assert_eq(result->comp, FALSE);
-
-  app_shutdown();
 }
 
 Test(filter_optimizer, same_filter_expr_with_or)
 {
-  app_startup();
   FilterExprNode *expr = _compile_standalone_filter("program('foo') or program('boo');");
 
   FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
@@ -355,12 +314,10 @@ Test(filter_optimizer, same_filter_expr_with_or)
   cr_assert_eq(result->comp, FALSE);
 
   filter_expr_unref(result);
-  app_shutdown();
 }
 
 Test(filter_optimizer, same_negated_filter_expr_with_or)
 {
-  app_startup();
   FilterExprNode *expr = _compile_standalone_filter("not program('foo') or not program('boo');");
 
   FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
@@ -370,13 +327,10 @@ Test(filter_optimizer, same_negated_filter_expr_with_or)
   cr_assert_str_eq(result->pattern, "boo|foo");
   cr_assert_eq(result->modify, FALSE);
   cr_assert_eq(result->comp, TRUE);
-
-  app_shutdown();
 }
 
 Test(filter_optimizer, multiple_or_filter)
 {
-  app_startup();
   FilterExprNode *expr = _compile_standalone_filter("program('f1') or program('f2') or program('f3');");
 
   FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
@@ -386,9 +340,9 @@ Test(filter_optimizer, multiple_or_filter)
   cr_assert_str_eq(result->pattern, "f3|f2|f1");
   cr_assert_eq(result->modify, FALSE);
   cr_assert_eq(result->comp, FALSE);
-
-  app_shutdown();
 }
+
+TestSuite(filter_optimizer, .init = app_startup, .fini = app_shutdown);
 
 
 
