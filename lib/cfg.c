@@ -462,6 +462,8 @@ cfg_new(gint version)
   self->use_plugin_discovery = TRUE;
   self->enable_forced_modules = TRUE;
 
+  self->optimize_filters = TRUE; //for now it must be default on
+
   cfg_register_builtin_plugins(self);
   return self;
 }
