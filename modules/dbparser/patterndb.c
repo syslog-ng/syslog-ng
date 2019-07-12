@@ -602,7 +602,6 @@ _pattern_db_process_matching_rule(PatternDB *self, PDBProcessParams *process_par
   GString *buffer = g_string_sized_new(32);
 
   g_static_rw_lock_writer_lock(&self->lock);
-  _advance_time_based_on_message(self, process_params, &msg->timestamps[LM_TS_STAMP]);
   if (rule->context.id_template)
     {
       CorrellationKey key;
@@ -674,12 +673,22 @@ _pattern_db_process_matching_rule(PatternDB *self, PDBProcessParams *process_par
 }
 
 static void
+_pattern_db_advance_time_and_flush_expired(PatternDB *self, LogMessage *msg)
+{
+  PDBProcessParams process_params = {0};
+
+  g_static_rw_lock_writer_lock(&self->lock);
+  _advance_time_based_on_message(self, &process_params, &msg->timestamps[LM_TS_STAMP]);
+  g_static_rw_lock_writer_unlock(&self->lock);
+  _flush_emitted_messages(self, &process_params);
+}
+
+static void
 _pattern_db_process_unmatching_rule(PatternDB *self, PDBProcessParams *process_params)
 {
   LogMessage *msg = process_params->msg;
 
   g_static_rw_lock_writer_lock(&self->lock);
-  _advance_time_based_on_message(self, process_params, &msg->timestamps[LM_TS_STAMP]);
   _emit_message(self, process_params, FALSE, msg);
   g_static_rw_lock_writer_unlock(&self->lock);
 }
@@ -700,11 +709,16 @@ _pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
   process_params->rule = pdb_ruleset_lookup(self->ruleset, lookup, dbg_list);
   process_params->msg = msg;
   g_static_rw_lock_reader_unlock(&self->lock);
+
+  _pattern_db_advance_time_and_flush_expired(self, msg);
+
   if (process_params->rule)
     _pattern_db_process_matching_rule(self, process_params);
   else
     _pattern_db_process_unmatching_rule(self, process_params);
+
   _flush_emitted_messages(self, process_params);
+
   return process_params->rule != NULL;
 }
 
