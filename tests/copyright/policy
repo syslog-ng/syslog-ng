@@ -62,6 +62,9 @@ modules/java/(native|proxies|src)
 modules/native
 tests/loggen
 persist-tool
+ GPLv2+_SSL,non-balabit
+modules/http/(http|http-parser|http-plugin|)\.[ch]
+modules/http/http-grammar.ym
  GPLv2+_SSL
 dev-utils/plugin_skeleton_creator/create_plugin.sh
 tests/functional
@@ -80,7 +83,3 @@ modules/http/(http-loadbalancer|http-worker)\.[ch]$
 scl
 scripts
 modules/http/tests
- GPLv2+_SSL,non-balabit
-modules/http/(http|http-parser|http-plugin|)\.[ch]
-modules/http/http-grammar.ym
-
