@@ -48,6 +48,8 @@ cmake/.*$
 tests/python_functional/pytest.ini
 tests/python_functional/tox.ini
 tests/python_functional/.pre-commit-config.yaml
+ LGPLv2.1+_SSL,non-balabit
+lib/timeutils/zonecache.[ch]$
  LGPLv2.1+_SSL
 autogen\.sh$
 sub-configure\.sh$
@@ -65,6 +67,7 @@ persist-tool
  GPLv2+_SSL,non-balabit
 modules/http/(http|http-parser|http-plugin|)\.[ch]
 modules/http/http-grammar.ym
+modules/timestamp/rewrite-.*$
  GPLv2+_SSL
 dev-utils/plugin_skeleton_creator/create_plugin.sh
 tests/functional
