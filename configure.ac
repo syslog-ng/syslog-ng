@@ -1389,7 +1389,9 @@ if test "$enable_riemann" != "no"; then
 
     old_CFLAGS=$CFLAGS
     CFLAGS=`pkg-config --cflags riemann-client`
-    AC_CHECK_DECLS(RIEMANN_EVENT_FIELD_TIME_MICROS, [riemann_micros="yes"], [riemann_micros="no"], [[#include <riemann/event.h>]])
+    AC_CHECK_DECLS(RIEMANN_EVENT_FIELD_TIME_MICROS,
+                  AC_DEFINE(HAVE_RIEMANN_MICROSECONDS, 1, [Riemann microseconds support]),,
+                  [[#include <riemann/event.h>]])
     CFLAGS=$old_CFLAGS
  fi
 fi
@@ -1855,7 +1857,6 @@ AC_DEFINE_UNQUOTED(SYSTEMD_JOURNAL_MODE, `journald_mode`, [Systemd-journal suppo
 AC_DEFINE_UNQUOTED(HAVE_INOTIFY, `enable_value $ac_cv_func_inotify_init`, [Have inotify])
 AC_DEFINE_UNQUOTED(ENABLE_PYTHONv2, `(test "$python_version" = "2" ) && echo 1 || echo 0`, [Python2 c api])
 AC_DEFINE_UNQUOTED(ENABLE_PYTHONv3, `(test "$python_version" = "3" ) && echo 1 || echo 0`, [Python3 c api])
-AC_DEFINE_UNQUOTED(HAVE_RIEMANN_MICROSECONDS, `enable_value $riemann_micros`, [Riemann microseconds support])
 AC_DEFINE_UNQUOTED(USE_CONST_IVYKIS_MOCK, `enable_value $IVYKIS_VERSION_UPDATED`, [ivykis version is greater than $IVYKIS_UPDATED_VERSION])
 
 AM_CONDITIONAL(ENABLE_ENV_WRAPPER, [test "$enable_env_wrapper" = "yes"])
