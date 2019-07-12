@@ -11,3 +11,5 @@ optimizer_sources = \
 
 EXTRA_DIST += \
 	lib/filter/optimizer/CMakeLists.txt
+
+include lib/filter/optimizer/tests/Makefile.am

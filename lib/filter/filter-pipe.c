@@ -138,7 +138,7 @@ _run_optimizers(LogFilterPipe *self)
     {
       optimizer = g_ptr_array_index(self->optimizers, i);
 
-      filter_expr_optimizer_run(self->expr, optimizer);
+      self->expr = filter_expr_optimizer_run(self->expr, optimizer);
     }
 }
 

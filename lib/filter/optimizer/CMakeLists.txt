@@ -10,3 +10,5 @@ set(FILTER_OPTIMIZER_SOURCES
     filter/optimizer/concatenate-or-filters.c
     PARENT_SCOPE
 )
+
+add_test_subdirectory(tests)

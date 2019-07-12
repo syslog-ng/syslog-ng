@@ -36,7 +36,7 @@ struct _FilterExprOptimizer
   FilterExprNodeTraversalCallbackFunction cb;
 };
 
-static inline gboolean
+static inline FilterExprNode *
 filter_expr_optimizer_run(FilterExprNode *self, FilterExprOptimizer *optimizer)
 {
   msg_debug("Initializing filter-optimizer", evt_tag_str("name", optimizer->name));
@@ -46,13 +46,12 @@ filter_expr_optimizer_run(FilterExprNode *self, FilterExprOptimizer *optimizer)
       msg_debug("Running filter-optimizer", evt_tag_str("name", optimizer->name));
       filter_expr_traversal(self, NULL, optimizer->cb, cookie);
       optimizer->deinit(cookie);
-      return TRUE;
     }
   else
     {
       msg_debug("Skipping filter-optimizer, because init failed", evt_tag_str("name", optimizer->name));
-      return FALSE;
     }
+  return self;
 }
 
 #endif
