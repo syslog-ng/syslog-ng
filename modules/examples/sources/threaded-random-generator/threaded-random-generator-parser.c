@@ -40,7 +40,7 @@ static CfgLexerKeyword threaded_random_generator_keywords[] =
 
 CfgParser threaded_random_generator_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &threaded_random_generator_debug,
 #endif
   .name = "threaded_random_generator",
@@ -50,4 +50,3 @@ CfgParser threaded_random_generator_parser =
 };
 
 CFG_PARSER_IMPLEMENT_LEXER_BINDING(threaded_random_generator_, LogDriver **)
-
