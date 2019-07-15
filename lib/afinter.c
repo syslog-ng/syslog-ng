@@ -40,6 +40,9 @@ static GQueue *internal_msg_queue;
 static AFInterSource *current_internal_source;
 
 static AFInterMetrics metrics;
+static StatsCounterItem *internal_queue_length;
+static StatsCounterItem *internal_queue_dropped;
+static gboolean is_live_collection = FALSE;
 
 /* the expiration timer of the next MARK message */
 static struct timespec next_mark_target = { -1, 0 };
@@ -432,6 +435,10 @@ afinter_sd_init(LogPipe *s)
   if (!log_src_driver_init_method(s))
     return FALSE;
 
+  /* If live collection of internal messages was running, and if we reload
+   * configuration having internal source, then live collection should be stopped. */
+  afinter_reset_live_collection();
+
   if (current_internal_source != NULL)
     {
       msg_error("Multiple internal() sources were detected, this is not possible");
@@ -634,4 +641,84 @@ AFInterMetrics
 afinter_get_metrics(void)
 {
   return metrics;
+}
+
+/****************************************************************************
+ * Live collection of internal log messages.
+ ****************************************************************************/
+
+AFInterLive
+afinter_start_live_collection(void)
+{
+  AFInterSource *self;
+
+  if (is_live_collection)
+    return AFINTER_LIVE_COLLECTION_RUNNING;
+
+  if (current_internal_source != NULL)
+    return AFINTER_INTERNAL_SRC_PRESENT;
+
+  self = g_new0(AFInterSource, 1);
+
+  g_mutex_lock(&internal_msg_lock);
+  current_internal_source = self;
+  g_mutex_unlock(&internal_msg_lock);
+
+  is_live_collection = TRUE;
+
+  return AFINTER_LIVE_COLLECTION_STARTED;
+}
+
+void
+afinter_reset_live_collection(void)
+{
+  afinter_stop_live_collection();
+
+  if (is_live_collection)
+    {
+      if (internal_msg_queue)
+        _release_internal_msg_queue();
+    }
+}
+
+void
+afinter_stop_live_collection(void)
+{
+  if (is_live_collection)
+    {
+      if (current_internal_source != NULL)
+        {
+          AFInterSource *self = current_internal_source;
+
+          g_mutex_lock(&internal_msg_lock);
+          current_internal_source = NULL;
+          g_mutex_unlock(&internal_msg_lock);
+
+          is_live_collection = FALSE;
+          g_free(self);
+        }
+    }
+}
+
+void
+afinter_get_collected_messages(GString *result)
+{
+  LogMessage *msg;
+  const gchar *msg_text;
+
+  g_mutex_lock(&internal_msg_lock);
+
+  while (!g_queue_is_empty(internal_msg_queue))
+    {
+      msg = g_queue_pop_head(internal_msg_queue);
+      msg_text = log_msg_get_value(msg, LM_V_MESSAGE, NULL);
+      g_string_append_printf(result, "%s\n", msg_text);
+      stats_counter_dec(internal_queue_length);
+    }
+
+  if (!strlen(result->str))
+    g_string_assign(result, "No live messages collected");
+
+  internal_msg_queue = NULL;
+  g_mutex_unlock(&internal_msg_lock);
 }
