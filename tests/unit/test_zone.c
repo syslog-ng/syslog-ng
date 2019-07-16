@@ -88,7 +88,7 @@ test_time_zone(const time_t stamp_to_test, const char *time_zone)
   info = time_zone_info_new(time_zone);
   offset = time_zone_info_get_offset(info, stamp_to_test);
   expected_offset = get_local_timezone_ofs(stamp_to_test);
-  cr_assert_eq(difftime(offset, expected_offset), 0,
+  cr_assert_eq(difftime(offset, expected_offset), 0.0,
                "unixtimestamp: %ld TimeZoneName (%s) localtime offset(%ld), timezone file offset(%ld)\n",
                (glong) stamp_to_test, time_zone, (glong) expected_offset, (glong) offset);
 

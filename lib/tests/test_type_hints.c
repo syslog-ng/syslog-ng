@@ -204,7 +204,7 @@ ParameterizedTestParameters(type_hints, test_double_cast)
   static StringDoublePair string_value_pairs[] =
   {
 #ifdef INFINITY
-    {"INF",INFINITY},
+    {"INF",(gdouble)INFINITY},
 #endif
     {"1.0",1.0},
     {"1e-100000000",0.0}
@@ -214,6 +214,22 @@ ParameterizedTestParameters(type_hints, test_double_cast)
                              sizeof(string_value_pairs) / sizeof(string_value_pairs[0]));
 }
 
+static void
+cr_assert_gdouble_eq(gdouble a, gdouble b)
+{
+  const gint is_a_inf = isinf((long double)a);
+  const gint is_b_inf = isinf((long double)a);
+
+  cr_assert_eq(is_a_inf, is_b_inf);
+  if (is_a_inf && is_b_inf)
+    {
+      cr_assert(TRUE);
+      return;
+    }
+
+  cr_assert(fabs(a-b) < G_MINDOUBLE);
+}
+
 ParameterizedTest(StringDoublePair *string_value_pair, type_hints, test_double_cast)
 {
   gdouble value;
@@ -221,7 +237,8 @@ ParameterizedTest(StringDoublePair *string_value_pair, type_hints, test_double_c
 
   cr_assert(type_cast_to_double(string_value_pair->string, &value, &error),
             "Type cast of \"%s\" to double failed", string_value_pair->string);
-  cr_assert_eq(value, string_value_pair->value);
+
+  cr_assert_gdouble_eq(value, string_value_pair->value);
   cr_assert_null(error);
 }
 

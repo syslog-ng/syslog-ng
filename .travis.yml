@@ -175,7 +175,6 @@ matrix:
             -DCMAKE_C_FLAGS=-Werror
             -DPYTHON_VERSION=2
             -DCMAKE_INSTALL_PREFIX=$HOME/install/syslog-ng
-            -DENABLE_EXTRA_WARNINGS=no
             ..
         - make --keep-going -j $(nproc) ARGS="-j $(nproc)" all test install
     - env: B=check

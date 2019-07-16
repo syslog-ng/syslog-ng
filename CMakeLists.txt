@@ -334,14 +334,11 @@ if (ENABLE_EXTRA_WARNINGS)
   set(EXTRA_WARNINGS
     -Wimplicit-function-declaration
     -Wnested-externs
-    -Wold-style-declaration
     -Wstrict-prototypes
     -Wswitch-default
+    -Wimplicit-int
     -Wall
-    -Wmissing-parameter-type
     -Wuninitialized
-    -Wunused-but-set-parameter
-    -Wcast-align
     -Wdeprecated
     -Wdeprecated-declarations
     -Woverflow
@@ -350,9 +347,21 @@ if (ENABLE_EXTRA_WARNINGS)
     -Wpointer-arith
     -Wpointer-sign
     -Wmissing-format-attribute
-    -Wsuggest-attribute=noreturn
     -Wold-style-definition
     -Wundef)
+
+if ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+  set(EXTRA_WARNINGS
+    ${EXTRA_WARNINGS}
+    )
+else()
+  set(EXTRA_WARNINGS
+    -Wold-style-declaration
+    -Wunused-but-set-parameter
+    ${EXTRA_WARNINGS}
+    )
+endif()
+
 endif()
 
 add_compile_options(${IMPORTANT_WARNINGS} ${ACCEPTABLE_WARNINGS} ${EXTRA_WARNINGS})
