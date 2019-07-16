@@ -43,6 +43,7 @@ PyObject *py_template_options;
 static void
 _py_init_interpreter(void)
 {
+  py_set_program_name();
   Py_Initialize();
   py_init_argv();
 

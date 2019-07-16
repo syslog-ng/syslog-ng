@@ -25,6 +25,12 @@
 #include "python-helpers.h"
 
 void
+py_set_program_name(void)
+{
+  Py_SetProgramName("syslog-ng");
+}
+
+void
 py_init_argv(void)
 {
   static char *argv[] = {"syslog-ng"};

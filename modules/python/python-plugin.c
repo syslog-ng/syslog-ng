@@ -96,6 +96,7 @@ _py_init_interpreter(void)
     {
       python_debugger_append_inittab();
 
+      py_set_program_name();
       _set_python_path();
       Py_Initialize();
       py_init_argv();
