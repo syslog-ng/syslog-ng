@@ -117,7 +117,7 @@ evt_str_append_escape_bs(EVTSTR *es,
           escaped_buffer[escaped_buffer_length++] = unescaped[i];
         }
 
-      if (escaped_buffer_capacity < escaped_buffer_length + escaped_char_max_len)
+      if (escaped_buffer_capacity <= escaped_buffer_length + escaped_char_max_len)
         {
           if (!evt_str_append_len(es, escaped_buffer, escaped_buffer_length))
             return 0;
