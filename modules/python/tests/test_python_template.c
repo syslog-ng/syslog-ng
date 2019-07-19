@@ -46,6 +46,12 @@ _py_init_interpreter(void)
   Py_Initialize();
   py_init_argv();
 
+  PyGILState_STATE gstate = PyGILState_Ensure();
+  {
+    py_template_options = py_log_template_options_new(&log_template_options);
+  }
+  PyGILState_Release(gstate);
+
   PyEval_InitThreads();
   py_log_message_init();
   py_log_template_init();
@@ -71,7 +77,6 @@ void setup(void)
   log_template_options.ts_format = TS_FMT_BSD;
   log_template_options.time_zone_info[LTZ_SEND]=time_zone_info_new("+05:00");
 
-  py_template_options = py_log_template_options_new(&log_template_options);
   msg_format_options_defaults(&parse_options);
   _py_init_interpreter();
   _init_python_main();
@@ -79,7 +84,11 @@ void setup(void)
 
 void teardown(void)
 {
-  Py_DECREF(py_template_options);
+  PyGILState_STATE gstate = PyGILState_Ensure();
+  {
+    Py_DECREF(py_template_options);
+  }
+  PyGILState_Release(gstate);
   app_shutdown();
 }
 
