@@ -179,8 +179,10 @@ filter_match_set_template_ref(FilterExprNode *s, LogTemplate *template)
 }
 
 static gboolean
-filter_match_eval_against_program_pid_msg(FilterMatch *self, LogMessage **msgs, gint num_msg)
+filter_match_eval_against_program_pid_msg(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
+  FilterMatch *self = (FilterMatch *) s;
+
   const gchar *pid;
   gssize pid_len;
   gchar *str;
@@ -202,8 +204,10 @@ filter_match_eval_against_program_pid_msg(FilterMatch *self, LogMessage **msgs, 
 }
 
 static gboolean
-filter_match_eval_against_template(FilterMatch *self, LogMessage **msgs, gint num_msg)
+filter_match_eval_against_template(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
+  FilterMatch *self = (FilterMatch *) s;
+
   LogMessage *msg = msgs[num_msg - 1];
   GString *buffer;
 
@@ -214,8 +218,10 @@ filter_match_eval_against_template(FilterMatch *self, LogMessage **msgs, gint nu
 }
 
 static gboolean
-filter_match_eval_against_trivial_template(FilterMatch *self, LogMessage **msgs, gint num_msg)
+filter_match_eval_against_trivial_template(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
+  FilterMatch *self = (FilterMatch *) s;
+
   LogMessage *msg = msgs[num_msg - 1];
   NVTable *payload;
   const gchar *value;
@@ -240,11 +246,11 @@ filter_match_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
   if (G_LIKELY(self->super.value_handle))
     return filter_re_eval(s, msgs, num_msg);
   else if (self->template && log_template_is_trivial(self->template))
-    return filter_match_eval_against_trivial_template(self, msgs, num_msg);
+    return filter_match_eval_against_trivial_template(s, msgs, num_msg);
   else if (self->template)
-    return filter_match_eval_against_template(self, msgs, num_msg);
+    return filter_match_eval_against_template(s, msgs, num_msg);
   else
-    return filter_match_eval_against_program_pid_msg(self, msgs, num_msg);
+    return filter_match_eval_against_program_pid_msg(s, msgs, num_msg);
 }
 
 static void
