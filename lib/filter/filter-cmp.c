@@ -45,26 +45,19 @@ typedef struct _FilterCmp
 static gint
 fop_compare(FilterCmp *self, const gchar *left, const gchar *right)
 {
-  gint cmp;
   if (self->cmp_op & FCMP_NUM)
     {
-      gint l, r;
-
-      l = atoi(left);
-      r = atoi(right);
+      gint l = atoi(left);
+      gint r = atoi(right);
       if (l == r)
-        cmp = 0;
+        return 0;
       else if (l < r)
-        cmp = -1;
-      else
-        cmp = 1;
-    }
-  else
-    {
-      cmp = strcmp(left, right);
+        return -1;
+
+      return 1;
     }
 
-  return cmp;
+  return strcmp(left, right);
 }
 
 static gboolean
