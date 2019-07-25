@@ -105,9 +105,9 @@ fop_cmp_free(FilterExprNode *s)
 }
 
 static void
-fop_map_grammar_token_to_cmp_op(FilterCmp *self, GlobalConfig *cfg, gint op)
+fop_map_grammar_token_to_cmp_op(FilterCmp *self, GlobalConfig *cfg, gint token)
 {
-  switch (op)
+  switch (token)
     {
     case KW_NUM_LT:
       self->cmp_op = FCMP_NUM;
@@ -168,13 +168,13 @@ fop_map_grammar_token_to_cmp_op(FilterCmp *self, GlobalConfig *cfg, gint op)
 }
 
 FilterExprNode *
-fop_cmp_new(LogTemplate *left, LogTemplate *right, gint op)
+fop_cmp_new(LogTemplate *left, LogTemplate *right, gint token)
 {
   FilterCmp *self = g_new0(FilterCmp, 1);
 
   filter_expr_node_init_instance(&self->super);
 
-  fop_map_grammar_token_to_cmp_op(self, left->cfg, op);
+  fop_map_grammar_token_to_cmp_op(self, left->cfg, token);
 
   self->super.eval = fop_cmp_eval;
   self->super.free_fn = fop_cmp_free;
