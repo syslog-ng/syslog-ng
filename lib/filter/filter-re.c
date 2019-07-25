@@ -243,7 +243,7 @@ filter_match_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
   FilterMatch *self = (FilterMatch *) s;
 
-  if (G_LIKELY(self->super.value_handle))
+  if (self->super.value_handle)
     self->super.super.eval = filter_re_eval;
   else if (self->template && log_template_is_trivial(self->template))
     self->super.super.eval = filter_match_eval_against_trivial_template;
