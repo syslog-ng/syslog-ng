@@ -41,6 +41,32 @@ typedef struct _FilterCmp
   gint cmp_op;
 } FilterCmp;
 
+
+static gint
+fop_compare(FilterCmp *self, const gchar *left, const gchar *right)
+{
+  gint cmp;
+  if (self->cmp_op & FCMP_NUM)
+    {
+      gint l, r;
+
+      l = atoi(left);
+      r = atoi(right);
+      if (l == r)
+        cmp = 0;
+      else if (l < r)
+        cmp = -1;
+      else
+        cmp = 1;
+    }
+  else
+    {
+      cmp = strcmp(left, right);
+    }
+
+  return cmp;
+}
+
 static gboolean
 fop_cmp_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
@@ -54,25 +80,8 @@ fop_cmp_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
   log_template_format_with_context(self->right, msgs, num_msg, NULL, LTZ_LOCAL, 0, NULL, right_buf);
 
   gboolean result = FALSE;
-  gint cmp;
 
-  if (self->cmp_op & FCMP_NUM)
-    {
-      gint l, r;
-
-      l = atoi(left_buf->str);
-      r = atoi(right_buf->str);
-      if (l == r)
-        cmp = 0;
-      else if (l < r)
-        cmp = -1;
-      else
-        cmp = 1;
-    }
-  else
-    {
-      cmp = strcmp(left_buf->str, right_buf->str);
-    }
+  gint cmp = fop_compare(self, left_buf->str, right_buf->str);
 
   if (cmp == 0)
     {
