@@ -104,17 +104,9 @@ fop_cmp_free(FilterExprNode *s)
   log_template_unref(self->right);
 }
 
-FilterExprNode *
-fop_cmp_new(LogTemplate *left, LogTemplate *right, gint op)
+static void
+fop_map_grammar_token_to_cmp_op(FilterCmp *self, GlobalConfig *cfg, gint op)
 {
-  FilterCmp *self = g_new0(FilterCmp, 1);
-
-  filter_expr_node_init_instance(&self->super);
-  self->super.eval = fop_cmp_eval;
-  self->super.free_fn = fop_cmp_free;
-  self->left = left;
-  self->right = right;
-
   switch (op)
     {
     case KW_NUM_LT:
@@ -163,7 +155,7 @@ fop_cmp_new(LogTemplate *left, LogTemplate *right, gint op)
       g_assert_not_reached();
     }
 
-  if (self->cmp_op & FCMP_NUM && cfg_is_config_version_older(left->cfg, VERSION_VALUE_3_8))
+  if (self->cmp_op & FCMP_NUM && cfg_is_config_version_older(cfg, VERSION_VALUE_3_8))
     {
       msg_warning("WARNING: due to a bug in versions before " VERSION_3_8
                   "numeric comparison operators like '!=' in filter "
@@ -173,5 +165,21 @@ fop_cmp_new(LogTemplate *left, LogTemplate *right, gint op)
                   "configuration file");
       self->cmp_op &= ~FCMP_NUM;
     }
+}
+
+FilterExprNode *
+fop_cmp_new(LogTemplate *left, LogTemplate *right, gint op)
+{
+  FilterCmp *self = g_new0(FilterCmp, 1);
+
+  filter_expr_node_init_instance(&self->super);
+
+  fop_map_grammar_token_to_cmp_op(self, left->cfg, op);
+
+  self->super.eval = fop_cmp_eval;
+  self->super.free_fn = fop_cmp_free;
+  self->left = left;
+  self->right = right;
+
   return &self->super;
 }
