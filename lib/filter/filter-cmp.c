@@ -41,7 +41,7 @@ typedef struct _FilterCmp
   gint cmp_op;
 } FilterCmp;
 
-gboolean
+static gboolean
 fop_cmp_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
   FilterCmp *self = (FilterCmp *) s;
@@ -95,7 +95,7 @@ fop_cmp_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
   return result ^ s->comp;
 }
 
-void
+static void
 fop_cmp_free(FilterExprNode *s)
 {
   FilterCmp *self = (FilterCmp *) s;
