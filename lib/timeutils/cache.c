@@ -24,6 +24,7 @@
 
 #include "timeutils/cache.h"
 #include "tls-support.h"
+#include <apphook.h>
 
 #include <iv.h>
 #include <string.h>
@@ -195,4 +196,23 @@ clean_time_cache(void)
 {
   memset(&gm_time_cache, 0, sizeof(gm_time_cache));
   memset(&local_time_cache, 0, sizeof(local_time_cache));
+}
+
+void timeutils_setup_timezone_hook(void);
+
+static void
+timeutils_reset_timezone(gint type, gpointer context)
+{
+  tzset();
+
+  // Invalidate time cache to apply time zone as soon as possible.
+  invalidate_cached_time();
+  clean_time_cache();
+  timeutils_setup_timezone_hook();
+}
+
+void
+timeutils_setup_timezone_hook(void)
+{
+  register_application_hook(AH_CONFIG_CHANGED, timeutils_reset_timezone, NULL);
 }

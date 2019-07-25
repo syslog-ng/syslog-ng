@@ -57,4 +57,6 @@ void set_cached_time(GTimeVal *timeval);
 void cached_g_current_time(GTimeVal *result);
 time_t cached_g_current_time_sec(void);
 
+void timeutils_setup_timezone_hook(void);
+
 #endif

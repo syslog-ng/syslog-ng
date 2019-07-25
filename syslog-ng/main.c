@@ -38,7 +38,7 @@
 #include "plugin.h"
 #include "reloc.h"
 #include "resolved-configurable-paths.h"
-#include "timeutils/misc.h"
+#include "timeutils/cache.h"
 
 #include <sys/types.h>
 #include <stdio.h>
