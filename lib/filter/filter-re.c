@@ -244,13 +244,15 @@ filter_match_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
   FilterMatch *self = (FilterMatch *) s;
 
   if (G_LIKELY(self->super.value_handle))
-    return filter_re_eval(s, msgs, num_msg);
+    self->super.super.eval = filter_re_eval;
   else if (self->template && log_template_is_trivial(self->template))
-    return filter_match_eval_against_trivial_template(s, msgs, num_msg);
+    self->super.super.eval = filter_match_eval_against_trivial_template;
   else if (self->template)
-    return filter_match_eval_against_template(s, msgs, num_msg);
+    self->super.super.eval = filter_match_eval_against_template;
   else
-    return filter_match_eval_against_program_pid_msg(s, msgs, num_msg);
+    self->super.super.eval = filter_match_eval_against_program_pid_msg;
+
+  return self->super.super.eval(s, msgs, num_msg);
 }
 
 static void
