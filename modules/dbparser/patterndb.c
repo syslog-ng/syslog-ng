@@ -687,10 +687,7 @@ static void
 _pattern_db_process_unmatching_rule(PatternDB *self, PDBProcessParams *process_params)
 {
   LogMessage *msg = process_params->msg;
-
-  g_static_rw_lock_writer_lock(&self->lock);
   _emit_message(self, process_params, FALSE, msg);
-  g_static_rw_lock_writer_unlock(&self->lock);
 }
 
 static gboolean
