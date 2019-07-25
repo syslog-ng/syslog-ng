@@ -45,14 +45,16 @@ static gboolean
 fop_cmp_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
   FilterCmp *self = (FilterCmp *) s;
+
   ScratchBuffersMarker marker;
   GString *left_buf = scratch_buffers_alloc_and_mark(&marker);
   GString *right_buf = scratch_buffers_alloc();
-  gboolean result = FALSE;
-  gint cmp;
 
   log_template_format_with_context(self->left, msgs, num_msg, NULL, LTZ_LOCAL, 0, NULL, left_buf);
   log_template_format_with_context(self->right, msgs, num_msg, NULL, LTZ_LOCAL, 0, NULL, right_buf);
+
+  gboolean result = FALSE;
+  gint cmp;
 
   if (self->cmp_op & FCMP_NUM)
     {
