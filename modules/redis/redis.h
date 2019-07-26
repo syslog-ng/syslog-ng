@@ -32,8 +32,7 @@ void redis_dd_set_host(LogDriver *d, const gchar *host);
 void redis_dd_set_port(LogDriver *d, gint port);
 void redis_dd_set_auth(LogDriver *d, const gchar *auth);
 void redis_dd_set_command_ref(LogDriver *d, const gchar *command,
-                              LogTemplate *key,
-                              LogTemplate *param1, LogTemplate *param2);
+                              GList *arguments);
 LogTemplateOptions *redis_dd_get_template_options(LogDriver *d);
 
 #endif
