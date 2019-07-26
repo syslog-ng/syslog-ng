@@ -40,6 +40,7 @@ def test_flags_catch_all(config, syslog_ng, log_message, bsd_formatter):
 
     config.create_logpath(statements=[file_source, inner_logpath])
     config.create_logpath(statements=[catch_all_destination], flags="catch-all")
+    config.create_global_options(keep_hostname="yes")
 
     input_message = bsd_formatter.format_message(log_message)
     expected_message = bsd_formatter.format_message(log_message.remove_priority())

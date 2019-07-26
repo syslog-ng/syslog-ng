@@ -22,8 +22,6 @@
 #############################################################################
 import time
 
-from src.common.network_operations import get_short_hostname
-
 
 class LogMessage(object):
     def __init__(self):
@@ -31,7 +29,7 @@ class LogMessage(object):
         self.timestamp_value = time.time()
         self.bsd_timestamp_value = "Feb 11 21:27:22"
         self.iso_timestamp_value = "2019-02-11T21:27:22+01:00"
-        self.hostname_value = get_short_hostname()
+        self.hostname_value = "testhost"
         self.program_value = "testprogram"
         self.pid_value = "9999"
         self.message_value = "test message"
