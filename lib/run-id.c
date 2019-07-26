@@ -38,6 +38,29 @@ typedef struct _RunIDState
   gint run_id;
 } RunIDState;
 
+static gboolean
+_validate_run_id(PersistState *state, PersistEntryHandle handle)
+{
+  RunIDState *temp_state = persist_state_map_entry(state, handle);
+  if (!temp_state)
+    {
+      msg_error("Failed to map run_id from persist file.");
+      return FALSE;
+    }
+
+  gboolean result = cached_run_id == temp_state->run_id;
+  if (!result)
+    {
+      msg_error("Failed to save run_id.",
+                evt_tag_int("cached run_id", cached_run_id),
+                evt_tag_int("saved run_id", temp_state->run_id));
+    }
+
+  persist_state_unmap_entry(state, handle);
+
+  return result;
+}
+
 gboolean
 run_id_init(PersistState *state)
 {
@@ -66,7 +89,7 @@ run_id_init(PersistState *state)
 
   persist_state_unmap_entry(state, handle);
 
-  return TRUE;
+  return _validate_run_id(state, handle);
 };
 
 int
