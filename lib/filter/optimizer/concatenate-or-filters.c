@@ -21,19 +21,8 @@
  *
  */
 #include "filter/optimizer/concatenate-or-filters.h"
-#include "filter/filter-expr-parser.h"
+#include "filter/filter-re.h"
 
-
-static FilterExprNode *_compile_standalone_filter(gchar *config_snippet)
-{
-  GlobalConfig *cfg = cfg_new_snippet();
-  CfgLexer *lexer = cfg_lexer_new_buffer(cfg, config_snippet, strlen(config_snippet));
-  FilterExprNode *tmp;
-  g_assert(cfg_run_parser(cfg, lexer, &filter_expr_parser, (gpointer *) &tmp, NULL));
-
-  cfg_free(cfg);
-  return tmp;
-}
 
 static gboolean
 _is_it_template(gchar *candidate)
@@ -44,16 +33,36 @@ _is_it_template(gchar *candidate)
 static FilterExprNode *
 _concatenate(FilterExprNode *current, FilterExprNode *parent, FilterExprNode *left, FilterExprNode *right)
 {
-  GString *new_filter = g_string_new("");
-
   const gboolean is_it_template = _is_it_template(left->template);
 
-  g_string_printf(new_filter, "%smatch(\"%s|%s\" %s('%s'));", (left->comp ? "not " : ""), left->pattern, right->pattern,
-                  (is_it_template ? "template" : "value"), left->template);
+  GString *pattern = g_string_new("");
+  g_string_printf(pattern, "%s|%s", left->pattern, right->pattern);
 
-  FilterExprNode *new_opt = _compile_standalone_filter(new_filter->str);
-  filter_expr_replace_child(parent, current, new_opt);
-  return new_opt;
+  FilterExprNode *new_filter = filter_match_new();
+
+  GError *error = NULL;
+  g_assert(filter_re_compile_pattern(new_filter, pattern->str, &error));
+
+  if (is_it_template)
+    {
+      LogTemplate *template = log_template_new(configuration, NULL);
+      log_template_compile(template, left->template, &error);
+      filter_match_set_template_ref(new_filter, template);
+    }
+  else
+    filter_match_set_value_handle(new_filter, log_msg_get_value_handle(left->template));
+
+  new_filter->comp = left->comp;
+  new_filter->modify = left->modify;
+  g_assert(!new_filter->modify);
+
+  LogMatcherOptions *options = filter_re_get_matcher_options(new_filter);
+  gboolean result = log_matcher_options_set_type(options, left->type);
+  g_assert(result);
+
+
+  filter_expr_replace_child(parent, current, new_filter);
+  return new_filter;
 }
 
 
