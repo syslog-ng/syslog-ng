@@ -32,6 +32,20 @@
  * LogFilterPipe
  *******************************************************************/
 
+static inline void
+_run_optimizers(LogFilterPipe *self)
+{
+  gint i;
+  FilterExprOptimizer *optimizer;
+
+  for (i =0; i < self->optimizers->len; i++)
+    {
+      optimizer = g_ptr_array_index(self->optimizers, i);
+
+      self->expr = filter_expr_optimizer_run(self->expr, optimizer);
+    }
+}
+
 static gboolean
 log_filter_pipe_init(LogPipe *s)
 {
@@ -43,6 +57,8 @@ log_filter_pipe_init(LogPipe *s)
 
   if (!self->name)
     self->name = cfg_tree_get_rule_name(&cfg->tree, ENC_FILTER, s->expr_node);
+
+  _run_optimizers(self);
 
   stats_lock();
   StatsClusterKey sc_key;
@@ -110,6 +126,8 @@ log_filter_pipe_free(LogPipe *s)
   stats_unregister_counter(&sc_key, SC_TYPE_NOT_MATCHED, &self->not_matched);
   stats_unlock();
 
+  g_ptr_array_free(self->optimizers, TRUE);
+
   g_free(self->name);
   filter_expr_unref(self->expr);
   log_pipe_free_method(s);
@@ -128,20 +146,6 @@ _register_optimizers(LogFilterPipe *self)
   log_filter_pipe_register_optimizer(self, &concatenate_or_filters);
 }
 
-static inline void
-_run_optimizers(LogFilterPipe *self)
-{
-  gint i;
-  FilterExprOptimizer *optimizer;
-
-  for (i =0; i < self->optimizers->len; i++)
-    {
-      optimizer = g_ptr_array_index(self->optimizers, i);
-
-      self->expr = filter_expr_optimizer_run(self->expr, optimizer);
-    }
-}
-
 LogPipe *
 log_filter_pipe_new(FilterExprNode *expr, GlobalConfig *cfg)
 {
@@ -154,14 +158,10 @@ log_filter_pipe_new(FilterExprNode *expr, GlobalConfig *cfg)
   self->super.clone = log_filter_pipe_clone;
   self->expr = expr;
 
+  self->optimizers = g_ptr_array_new();
   if (cfg->optimize_filters)
     {
-      self->optimizers = g_ptr_array_new();
-
       _register_optimizers(self);
-      _run_optimizers(self);
-
-      g_ptr_array_free(self->optimizers, TRUE);
     }
 
   return &self->super;
