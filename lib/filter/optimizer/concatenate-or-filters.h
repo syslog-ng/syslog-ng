@@ -27,6 +27,6 @@
 #include "filter/filter-expr.h"
 #include "filter/optimizer/filter-expr-optimizer.h"
 
-extern FilterExprOptimizer concatenate_or_filters;
+FilterExprOptimizer *concatenate_or_filters_get_instance(void);
 
 #endif

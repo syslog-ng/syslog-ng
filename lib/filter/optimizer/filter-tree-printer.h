@@ -27,6 +27,6 @@
 #include "filter/filter-expr.h"
 #include "filter/optimizer/filter-expr-optimizer.h"
 
-extern FilterExprOptimizer filter_tree_printer;
+FilterExprOptimizer *filter_tree_printer_get_instance(void);
 
 #endif

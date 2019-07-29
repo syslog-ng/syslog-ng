@@ -195,7 +195,7 @@ Test(filter_optimizer, no_optimize)
 {
   FilterExprNode *expr = _compile_standalone_filter("program('foo');");
 
-  FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
+  FilterExprNode *result = filter_expr_optimizer_run(expr,  concatenate_or_filters_get_instance());
 
   cr_assert_eq(expr, result);
 
@@ -206,7 +206,7 @@ Test(filter_optimizer, same_filter_expr_with_and)
 {
   FilterExprNode *expr = _compile_standalone_filter("program('foo') and program('boo');");
 
-  FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
+  FilterExprNode *result = filter_expr_optimizer_run(expr,  concatenate_or_filters_get_instance());
 
   cr_assert_eq(expr, result);
 
@@ -217,7 +217,7 @@ Test(filter_optimizer, same_filter_expr_with_or_but_one_negated)
 {
   FilterExprNode *expr = _compile_standalone_filter("program('foo') or not program('boo');");
 
-  FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
+  FilterExprNode *result = filter_expr_optimizer_run(expr,  concatenate_or_filters_get_instance());
 
   cr_assert_eq(expr, result);
 }
@@ -226,7 +226,7 @@ Test(filter_optimizer, different_filter_with_or)
 {
   FilterExprNode *expr = _compile_standalone_filter("program('foo') or message('boo');");
 
-  FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
+  FilterExprNode *result = filter_expr_optimizer_run(expr,  concatenate_or_filters_get_instance());
 
   cr_assert_eq(expr, result);
 }
@@ -235,7 +235,7 @@ Test(filter_optimizer, type_string_or_programs)
 {
   FilterExprNode *expr = _compile_standalone_filter("program('f1' type(string)) or program('f2' type(string));");
 
-  FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
+  FilterExprNode *result = filter_expr_optimizer_run(expr,  concatenate_or_filters_get_instance());
 
   cr_assert_str_eq(result->type, "pcre");
   cr_assert_str_eq(result->template, "PROGRAM");
@@ -248,7 +248,7 @@ Test(filter_optimizer, type_pcre_or_programs)
 {
   FilterExprNode *expr = _compile_standalone_filter("program('f1' type(pcre)) or program('f2' type(pcre));");
 
-  FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
+  FilterExprNode *result = filter_expr_optimizer_run(expr,  concatenate_or_filters_get_instance());
 
   cr_assert_str_eq(result->type, "pcre");
   cr_assert_str_eq(result->template, "PROGRAM");
@@ -261,7 +261,7 @@ Test(filter_optimizer, type_glob_or_programs)
 {
   FilterExprNode *expr = _compile_standalone_filter("program('f1' type(glob)) or program('f2' type(glob));");
 
-  FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
+  FilterExprNode *result = filter_expr_optimizer_run(expr,  concatenate_or_filters_get_instance());
 
   cr_assert_eq(expr, result);
 }
@@ -270,7 +270,7 @@ Test(filter_optimizer, same_match_filter_via_set_handler)
 {
   FilterExprNode *expr = _compile_standalone_filter("match('f1' value('1')) or match('f2' value('1'));");
 
-  FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
+  FilterExprNode *result = filter_expr_optimizer_run(expr,  concatenate_or_filters_get_instance());
 
   cr_assert_str_eq(result->type, "pcre");
   cr_assert_str_eq(result->template, "1");
@@ -283,7 +283,7 @@ Test(filter_optimizer, different_match_filter_via_set_handler)
 {
   FilterExprNode *expr = _compile_standalone_filter("match('f1' value('1')) or match('f2' value('2'));");
 
-  FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
+  FilterExprNode *result = filter_expr_optimizer_run(expr,  concatenate_or_filters_get_instance());
 
   cr_assert_eq(expr, result);
 }
@@ -292,7 +292,7 @@ Test(filter_optimizer, same_match_filter_via_set_template)
 {
   FilterExprNode *expr = _compile_standalone_filter("match('f1' template('$1')) or match('f2' template('$1'));");
 
-  FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
+  FilterExprNode *result = filter_expr_optimizer_run(expr,  concatenate_or_filters_get_instance());
 
   cr_assert_str_eq(result->type, "pcre");
   cr_assert_str_eq(result->template, "$1");
@@ -305,7 +305,7 @@ Test(filter_optimizer, same_filter_expr_with_or)
 {
   FilterExprNode *expr = _compile_standalone_filter("program('foo') or program('boo');");
 
-  FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
+  FilterExprNode *result = filter_expr_optimizer_run(expr,  concatenate_or_filters_get_instance());
 
   cr_assert_str_eq(result->type, "pcre");
   cr_assert_str_eq(result->template, "PROGRAM");
@@ -320,7 +320,7 @@ Test(filter_optimizer, same_negated_filter_expr_with_or)
 {
   FilterExprNode *expr = _compile_standalone_filter("not program('foo') or not program('boo');");
 
-  FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
+  FilterExprNode *result = filter_expr_optimizer_run(expr,  concatenate_or_filters_get_instance());
 
   cr_assert_str_eq(result->type, "pcre");
   cr_assert_str_eq(result->template, "PROGRAM");
@@ -333,7 +333,7 @@ Test(filter_optimizer, multiple_or_filter)
 {
   FilterExprNode *expr = _compile_standalone_filter("program('f1') or program('f2') or program('f3');");
 
-  FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
+  FilterExprNode *result = filter_expr_optimizer_run(expr,  concatenate_or_filters_get_instance());
 
   cr_assert_str_eq(result->type, "pcre");
   cr_assert_str_eq(result->template, "PROGRAM");
@@ -346,7 +346,7 @@ Test(filter_optimizer, different_precedent)
 {
   FilterExprNode *expr = _compile_standalone_filter("program('f1') or (program('f2') or program('f3'));");
 
-  FilterExprNode *result = filter_expr_optimizer_run(expr,  &concatenate_or_filters);
+  FilterExprNode *result = filter_expr_optimizer_run(expr,  concatenate_or_filters_get_instance());
 
   cr_assert_str_eq(result->type, "pcre");
   cr_assert_str_eq(result->template, "PROGRAM");

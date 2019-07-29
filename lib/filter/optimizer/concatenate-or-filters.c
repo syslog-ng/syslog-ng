@@ -139,3 +139,10 @@ FilterExprOptimizer concatenate_or_filters =
   .deinit = _concatenate_or_filters_deinit,
   .cb = _concatenate_or_filters_cb
 };
+
+FilterExprOptimizer *
+concatenate_or_filters_get_instance(void)
+{
+  return &concatenate_or_filters;
+}
+
