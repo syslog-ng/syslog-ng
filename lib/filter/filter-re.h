@@ -29,7 +29,7 @@
 #include "logmatcher.h"
 
 LogMatcherOptions *filter_re_get_matcher_options(FilterExprNode *s);
-gboolean filter_re_compile_pattern(FilterExprNode *s, GlobalConfig *cfg, const gchar *re, GError **error);
+gboolean filter_re_compile_pattern(FilterExprNode *s, const gchar *re, GError **error);
 
 FilterExprNode *filter_re_new(NVHandle value_handle);
 FilterExprNode *filter_source_new(void);

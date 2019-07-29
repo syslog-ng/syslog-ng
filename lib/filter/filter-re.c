@@ -103,12 +103,12 @@ filter_re_get_matcher_options(FilterExprNode *s)
 }
 
 gboolean
-filter_re_compile_pattern(FilterExprNode *s, GlobalConfig *cfg, const gchar *re, GError **error)
+filter_re_compile_pattern(FilterExprNode *s, const gchar *re, GError **error)
 {
   FilterRE *self = (FilterRE *) s;
 
-  log_matcher_options_init(&self->matcher_options, cfg);
-  self->matcher = log_matcher_new(cfg, &self->matcher_options);
+  log_matcher_options_init(&self->matcher_options);
+  self->matcher = log_matcher_new(&self->matcher_options);
   return log_matcher_compile(self->matcher, re, error);
 }
 

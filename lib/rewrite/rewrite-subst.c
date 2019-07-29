@@ -94,10 +94,9 @@ gboolean
 log_rewrite_subst_compile_pattern(LogRewrite *s, const gchar *regexp, GError **error)
 {
   LogRewriteSubst *self = (LogRewriteSubst *) s;
-  GlobalConfig *cfg = log_pipe_get_config(&s->super);
 
-  log_matcher_options_init(&self->matcher_options, cfg);
-  self->matcher = log_matcher_new(cfg, &self->matcher_options);
+  log_matcher_options_init(&self->matcher_options);
+  self->matcher = log_matcher_new(&self->matcher_options);
 
   if (!log_matcher_is_replace_supported(self->matcher))
     {

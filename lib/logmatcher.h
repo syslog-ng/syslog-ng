@@ -107,11 +107,11 @@ log_matcher_is_replace_supported(LogMatcher *s)
   return s->replace != NULL;
 }
 
-LogMatcher *log_matcher_pcre_re_new(GlobalConfig *cfg, const LogMatcherOptions *options);
-LogMatcher *log_matcher_string_new(GlobalConfig *cfg, const LogMatcherOptions *options);
-LogMatcher *log_matcher_glob_new(GlobalConfig *cfg, const LogMatcherOptions *options);
+LogMatcher *log_matcher_pcre_re_new(const LogMatcherOptions *options);
+LogMatcher *log_matcher_string_new(const LogMatcherOptions *options);
+LogMatcher *log_matcher_glob_new(const LogMatcherOptions *options);
 
-LogMatcher *log_matcher_new(GlobalConfig *cfg, const LogMatcherOptions *options);
+LogMatcher *log_matcher_new(const LogMatcherOptions *options);
 LogMatcher *log_matcher_ref(LogMatcher *s);
 void log_matcher_unref(LogMatcher *s);
 
@@ -119,7 +119,7 @@ void log_matcher_unref(LogMatcher *s);
 gboolean log_matcher_options_set_type(LogMatcherOptions *options, const gchar *type);
 gboolean log_matcher_options_process_flag(LogMatcherOptions *self, const gchar *flag);
 void log_matcher_options_defaults(LogMatcherOptions *options);
-void log_matcher_options_init(LogMatcherOptions *options, GlobalConfig *cfg);
+void log_matcher_options_init(LogMatcherOptions *options);
 void log_matcher_options_destroy(LogMatcherOptions *options);
 
 #endif
