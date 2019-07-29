@@ -138,11 +138,35 @@ r_parser_pcre(gchar *str, gint *len, const gchar *param, gpointer state, RParser
 {
   RParserPCREState *self = (RParserPCREState *) state;
   gint rc;
-  gint matches[2];
+  gint num_matches;
 
-  rc = pcre_exec(self->re, self->extra, str, strlen(str), 0, 0, matches, 2);
-  if (rc <= 0)
-    return FALSE;
+  if (pcre_fullinfo(self->re, self->extra, PCRE_INFO_CAPTURECOUNT, &num_matches) < 0)
+    g_assert_not_reached();
+  if (num_matches > RE_MAX_MATCHES)
+    num_matches = RE_MAX_MATCHES;
+
+  gsize matches_size = 3 * (num_matches + 1);
+  gint *matches = g_alloca(matches_size * sizeof(gint));
+
+  rc = pcre_exec(self->re, self->extra, str, strlen(str), 0, 0, matches, matches_size);
+
+  if (rc == PCRE_ERROR_NOMATCH)
+    {
+      return FALSE;
+    }
+
+  if (rc < 0)
+    {
+      msg_error("Error while matching regexp", evt_tag_int("error_code", rc));
+      return FALSE;
+    }
+
+  if (rc == 0)
+    {
+      msg_error("Error while storing matching substrings");
+      return FALSE;
+    }
+
   *len = matches[1] - matches[0];
   return TRUE;
 }
