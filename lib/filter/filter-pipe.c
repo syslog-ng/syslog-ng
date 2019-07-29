@@ -138,7 +138,7 @@ log_filter_pipe_register_optimizer(LogFilterPipe *self, FilterExprOptimizer *opt
 static inline void
 _register_optimizers(LogFilterPipe *self)
 {
-  log_filter_pipe_register_optimizer(self, &filter_tree_printer);
+  log_filter_pipe_register_optimizer(self, filter_tree_printer_get_instance());
 }
 
 LogPipe *

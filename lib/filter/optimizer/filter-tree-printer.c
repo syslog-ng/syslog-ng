@@ -69,3 +69,9 @@ FilterExprOptimizer filter_tree_printer =
   .deinit = _filter_tree_printer_deinit,
   .cb = _filter_tree_printer_cb
 };
+
+FilterExprOptimizer *
+filter_tree_printer_get_instance(void)
+{
+  return &filter_tree_printer;
+}
