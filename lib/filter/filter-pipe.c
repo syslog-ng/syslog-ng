@@ -35,12 +35,9 @@
 static inline void
 _run_optimizers(LogFilterPipe *self)
 {
-  gint i;
-  FilterExprOptimizer *optimizer;
-
-  for (i =0; i < self->optimizers->len; i++)
+  for (GList *elem = self->optimizers; elem; elem = elem->next)
     {
-      optimizer = g_ptr_array_index(self->optimizers, i);
+      FilterExprOptimizer *optimizer = (FilterExprOptimizer *)elem->data;
 
       self->expr = filter_expr_optimizer_run(self->expr, optimizer);
     }
@@ -126,7 +123,7 @@ log_filter_pipe_free(LogPipe *s)
   stats_unregister_counter(&sc_key, SC_TYPE_NOT_MATCHED, &self->not_matched);
   stats_unlock();
 
-  g_ptr_array_free(self->optimizers, TRUE);
+  g_list_free(self->optimizers);
 
   g_free(self->name);
   filter_expr_unref(self->expr);
@@ -136,7 +133,7 @@ log_filter_pipe_free(LogPipe *s)
 void
 log_filter_pipe_register_optimizer(LogFilterPipe *self, FilterExprOptimizer *optimizer)
 {
-  g_ptr_array_add(self->optimizers, optimizer);
+  self->optimizers = g_list_append(self->optimizers, optimizer);
 }
 
 static inline void
@@ -158,7 +155,6 @@ log_filter_pipe_new(FilterExprNode *expr, GlobalConfig *cfg)
   self->super.clone = log_filter_pipe_clone;
   self->expr = expr;
 
-  self->optimizers = g_ptr_array_new();
   if (cfg->optimize_filters)
     {
       _register_optimizers(self);

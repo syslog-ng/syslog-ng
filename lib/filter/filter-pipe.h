@@ -42,7 +42,7 @@ typedef struct _LogFilterPipe
   gchar *name;
   StatsCounterItem *matched;
   StatsCounterItem *not_matched;
-  GPtrArray *optimizers;
+  GList *optimizers;
 } LogFilterPipe;
 
 LogPipe *log_filter_pipe_new(FilterExprNode *expr, GlobalConfig *cfg);
