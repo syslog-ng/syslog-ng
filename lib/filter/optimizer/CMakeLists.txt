@@ -6,6 +6,7 @@ set(FILTER_OPTIMIZER_HEADERS
 
 set(FILTER_OPTIMIZER_SOURCES
     filter/optimizer/filter-tree-printer.c
+    filter/optimizer/filter-expr-optimizer-registry.c
     PARENT_SCOPE
 )
 

@@ -25,7 +25,7 @@
 #include "filter/filter-pipe.h"
 #include "stats/stats-registry.h"
 #include "filter/optimizer/filter-expr-optimizer.h"
-#include "filter/optimizer/filter-tree-printer.h"
+#include "filter/optimizer/filter-expr-optimizer-registry.h"
 
 /*******************************************************************
  * LogFilterPipe
@@ -129,16 +129,10 @@ log_filter_pipe_free(LogPipe *s)
   log_pipe_free_method(s);
 }
 
-void
-log_filter_pipe_register_optimizer(LogFilterPipe *self, FilterExprOptimizer *optimizer)
-{
-  self->optimizers = g_list_append(self->optimizers, optimizer);
-}
-
 static inline void
 _register_optimizers(LogFilterPipe *self)
 {
-  log_filter_pipe_register_optimizer(self, filter_tree_printer_get_instance());
+  self->optimizers = filter_optimizer_get_optimizers();
 }
 
 LogPipe *
