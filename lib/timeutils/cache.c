@@ -40,8 +40,6 @@ TLS_BLOCK_START
 {
   GTimeVal current_time_value;
   struct iv_task invalidate_time_task;
-  struct tm mktime_prev_tm;
-  time_t mktime_prev_time;
   struct
   {
     struct
@@ -52,6 +50,12 @@ TLS_BLOCK_START
     {
       TimeCache buckets[64];
     } gmtime;
+    struct
+    {
+      struct tm key;
+      struct tm mutated_key;
+      time_t value;
+    } mktime;
   } cache;
 }
 TLS_BLOCK_END;
@@ -61,8 +65,6 @@ static gboolean faking_time;
 
 #define current_time_value   __tls_deref(current_time_value)
 #define invalidate_time_task __tls_deref(invalidate_time_task)
-#define mktime_prev_tm       __tls_deref(mktime_prev_tm)
-#define mktime_prev_time     __tls_deref(mktime_prev_time)
 #define cache                __tls_deref(cache)
 
 #if !defined(SYSLOG_NG_HAVE_LOCALTIME_R) || !defined(SYSLOG_NG_HAVE_GMTIME_R)
@@ -125,22 +127,27 @@ cached_g_current_time_sec(void)
 time_t
 cached_mktime(struct tm *tm)
 {
-  time_t result;
-
-  if (G_LIKELY(tm->tm_sec == mktime_prev_tm.tm_sec &&
-               tm->tm_min == mktime_prev_tm.tm_min &&
-               tm->tm_hour == mktime_prev_tm.tm_hour &&
-               tm->tm_mday == mktime_prev_tm.tm_mday &&
-               tm->tm_mon == mktime_prev_tm.tm_mon &&
-               tm->tm_year == mktime_prev_tm.tm_year))
+  if (G_LIKELY(tm->tm_sec == cache.mktime.key.tm_sec &&
+               tm->tm_min == cache.mktime.key.tm_min &&
+               tm->tm_hour == cache.mktime.key.tm_hour &&
+               tm->tm_mday == cache.mktime.key.tm_mday &&
+               tm->tm_mon == cache.mktime.key.tm_mon &&
+               tm->tm_year == cache.mktime.key.tm_year &&
+               tm->tm_isdst == cache.mktime.key.tm_isdst))
     {
-      result = mktime_prev_time;
-      return result;
+      *tm = cache.mktime.mutated_key;
+      return cache.mktime.value;
     }
-  result = mktime(tm);
-  mktime_prev_tm = *tm;
-  mktime_prev_time = result;
-  return result;
+
+  /* we need to store the incoming value first, as mktime() might change the
+   * fields in *tm, for instance in the daylight saving transition hour */
+  cache.mktime.key = *tm;
+  cache.mktime.value = mktime(tm);
+
+  /* the result we yield consists of both the return value and the mutated
+   * key, so we need to save both */
+  cache.mktime.mutated_key = *tm;
+  return cache.mktime.value;
 }
 
 void
