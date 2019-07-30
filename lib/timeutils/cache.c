@@ -47,7 +47,7 @@ TLS_BLOCK_START
 TLS_BLOCK_END;
 
 /* this indicates that a test program is faking the current time */
-gboolean faking_time;
+static gboolean faking_time;
 
 #define current_time_value   __tls_deref(current_time_value)
 #define invalidate_time_task __tls_deref(invalidate_time_task)
