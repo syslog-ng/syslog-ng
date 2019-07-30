@@ -26,14 +26,6 @@
 #include "tls-support.h"
 #include "../cache.h"
 
-TLS_BLOCK_START
-{
-  Cache *tz_cache;
-}
-TLS_BLOCK_END;
-
-#define tz_cache  __tls_deref(tz_cache)
-
 typedef struct _TimeZoneResolver
 {
   CacheResolver super;
@@ -47,7 +39,7 @@ time_zone_resolver_resolve(CacheResolver *s, const gchar *tz)
   return NULL;
 }
 
-CacheResolver *
+static CacheResolver *
 time_zone_resolver_new(void)
 {
   TimeZoneResolver *self = g_new0(TimeZoneResolver, 1);
@@ -58,11 +50,8 @@ time_zone_resolver_new(void)
   return &self->super;
 }
 
-TimeZoneInfo *
-cached_get_time_zone_info(const gchar *tz)
+Cache *
+time_zone_cache_new(void)
 {
-  if (!tz_cache)
-    tz_cache = cache_new(time_zone_resolver_new());
-  TimeZoneInfo *result = cache_lookup(tz_cache, tz);
-  return result;
+  return cache_new(time_zone_resolver_new());
 }

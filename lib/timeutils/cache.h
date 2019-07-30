@@ -26,6 +26,7 @@
 #define TIMEUTILS_CACHE_H_INCLUDED
 
 #include "timeutils/wallclocktime.h"
+#include "timeutils/zoneinfo.h"
 
 time_t cached_mktime(struct tm *tm);
 void cached_localtime(time_t *when, struct tm *tm);
@@ -54,6 +55,7 @@ void invalidate_cached_time(void);
 void set_cached_time(GTimeVal *timeval);
 void cached_g_current_time(GTimeVal *result);
 time_t cached_g_current_time_sec(void);
+TimeZoneInfo *cached_get_time_zone_info(const gchar *tz);
 
 void invalidate_timeutils_cache(void);
 void timeutils_setup_timezone_hook(void);

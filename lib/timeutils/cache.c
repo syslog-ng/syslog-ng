@@ -23,6 +23,7 @@
  */
 
 #include "timeutils/cache.h"
+#include "timeutils/zonecache.h"
 #include "tls-support.h"
 #include <apphook.h>
 
@@ -43,6 +44,10 @@ TLS_BLOCK_START
   gint local_gencounter;
   struct
   {
+    struct
+    {
+      Cache *zones;
+    } tzinfo;
     struct
     {
       TimeCache buckets[64];
@@ -81,6 +86,8 @@ _clean_timeutils_cache(void)
   memset(&cache.gmtime.buckets, 0, sizeof(cache.gmtime.buckets));
   memset(&cache.localtime.buckets, 0, sizeof(cache.localtime.buckets));
   memset(&cache.mktime.key, 0, sizeof(cache.mktime.key));
+  if (cache.tzinfo.zones)
+    cache_clear(cache.tzinfo.zones);
 }
 
 static void
@@ -237,6 +244,15 @@ cached_gmtime(time_t *when, struct tm *tm)
       cache.gmtime.buckets[i].tm = *tm;
       cache.gmtime.buckets[i].when = *when;
     }
+}
+
+TimeZoneInfo *
+cached_get_time_zone_info(const gchar *tz)
+{
+  if (!cache.tzinfo.zones)
+    cache.tzinfo.zones = time_zone_cache_new();
+  TimeZoneInfo *result = cache_lookup(cache.tzinfo.zones, tz);
+  return result;
 }
 
 void timeutils_setup_timezone_hook(void);

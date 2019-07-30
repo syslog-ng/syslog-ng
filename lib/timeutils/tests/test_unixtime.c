@@ -24,7 +24,7 @@
 #include "timeutils/unixtime.h"
 #include "timeutils/wallclocktime.h"
 #include "timeutils/conv.h"
-#include "timeutils/zonecache.h"
+#include "timeutils/cache.h"
 #include "timeutils/format.h"
 
 #include <criterion/criterion.h>

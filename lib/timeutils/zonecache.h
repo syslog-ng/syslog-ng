@@ -24,7 +24,8 @@
 #define TIMEUTILS_ZONECACHE_H_INCLUDED 1
 
 #include "zoneinfo.h"
+#include "../cache.h"
 
-TimeZoneInfo *cached_get_time_zone_info(const gchar *tz);
+Cache *time_zone_cache_new(void);
 
 #endif
