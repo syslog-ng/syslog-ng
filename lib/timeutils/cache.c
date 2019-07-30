@@ -40,10 +40,19 @@ TLS_BLOCK_START
 {
   GTimeVal current_time_value;
   struct iv_task invalidate_time_task;
-  TimeCache local_time_cache[64];
-  TimeCache gm_time_cache[64];
   struct tm mktime_prev_tm;
   time_t mktime_prev_time;
+  struct
+  {
+    struct
+    {
+      TimeCache buckets[64];
+    } localtime;
+    struct
+    {
+      TimeCache buckets[64];
+    } gmtime;
+  } cache;
 }
 TLS_BLOCK_END;
 
@@ -52,10 +61,9 @@ static gboolean faking_time;
 
 #define current_time_value   __tls_deref(current_time_value)
 #define invalidate_time_task __tls_deref(invalidate_time_task)
-#define local_time_cache     __tls_deref(local_time_cache)
-#define gm_time_cache        __tls_deref(gm_time_cache)
 #define mktime_prev_tm       __tls_deref(mktime_prev_tm)
 #define mktime_prev_time     __tls_deref(mktime_prev_time)
+#define cache                __tls_deref(cache)
 
 #if !defined(SYSLOG_NG_HAVE_LOCALTIME_R) || !defined(SYSLOG_NG_HAVE_GMTIME_R)
 static GStaticMutex localtime_lock = G_STATIC_MUTEX_INIT;
@@ -141,9 +149,9 @@ cached_localtime(time_t *when, struct tm *tm)
   guchar i = 0;
 
   i = *when & 0x3F;
-  if (G_LIKELY(*when == local_time_cache[i].when))
+  if (G_LIKELY(*when == cache.localtime.buckets[i].when))
     {
-      *tm = local_time_cache[i].tm;
+      *tm = cache.localtime.buckets[i].tm;
       return;
     }
   else
@@ -158,8 +166,8 @@ cached_localtime(time_t *when, struct tm *tm)
       *tm = *ltm;
       g_static_mutex_unlock(&localtime_lock);
 #endif
-      local_time_cache[i].tm = *tm;
-      local_time_cache[i].when = *when;
+      cache.localtime.buckets[i].tm = *tm;
+      cache.localtime.buckets[i].when = *when;
     }
 }
 
@@ -169,9 +177,9 @@ cached_gmtime(time_t *when, struct tm *tm)
   guchar i = 0;
 
   i = *when & 0x3F;
-  if (G_LIKELY(*when == gm_time_cache[i].when && *when != 0))
+  if (G_LIKELY(*when == cache.gmtime.buckets[i].when && *when != 0))
     {
-      *tm = gm_time_cache[i].tm;
+      *tm = cache.gmtime.buckets[i].tm;
       return;
     }
   else
@@ -186,16 +194,16 @@ cached_gmtime(time_t *when, struct tm *tm)
       *tm = *ltm;
       g_static_mutex_unlock(&localtime_lock);
 #endif
-      gm_time_cache[i].tm = *tm;
-      gm_time_cache[i].when = *when;
+      cache.gmtime.buckets[i].tm = *tm;
+      cache.gmtime.buckets[i].when = *when;
     }
 }
 
 void
 clean_time_cache(void)
 {
-  memset(&gm_time_cache, 0, sizeof(gm_time_cache));
-  memset(&local_time_cache, 0, sizeof(local_time_cache));
+  memset(&cache.gmtime.buckets, 0, sizeof(cache.gmtime.buckets));
+  memset(&cache.localtime.buckets, 0, sizeof(cache.localtime.buckets));
 }
 
 void timeutils_setup_timezone_hook(void);
