@@ -211,7 +211,7 @@ filter_re_params
           {
             GError *error = NULL;
 
-            CHECK_ERROR_GERROR(filter_re_compile_pattern(last_filter_expr, configuration, $2, &error), @2, error, "compiling the regexp failed");
+            CHECK_ERROR_GERROR(filter_re_compile_pattern(last_filter_expr, $2, &error), @2, error, "compiling the regexp failed");
             free($2);
           }
 	;
@@ -231,7 +231,7 @@ filter_match_params
           {
             GError *error = NULL;
 
-            CHECK_ERROR_GERROR(filter_re_compile_pattern(last_filter_expr, configuration, $2, &error), @2, error, "compiling the regexp failed");
+            CHECK_ERROR_GERROR(filter_re_compile_pattern(last_filter_expr, $2, &error), @2, error, "compiling the regexp failed");
             free($2);
 
             if (filter_match_is_usage_obsolete(last_filter_expr))

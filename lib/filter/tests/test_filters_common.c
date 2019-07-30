@@ -78,7 +78,7 @@ compile_pattern(FilterExprNode *f, const gchar *regexp, const gchar *type, gint 
   matcher_options->flags = flags;
   log_matcher_options_set_type(matcher_options, type);
 
-  result = filter_re_compile_pattern(f, configuration, regexp, NULL);
+  result = filter_re_compile_pattern(f, regexp, NULL);
 
   if (result)
     return f;
