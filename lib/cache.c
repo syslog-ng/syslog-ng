@@ -44,6 +44,13 @@ cache_lookup(Cache *self, const gchar *key)
   return result;
 }
 
+void
+cache_clear(Cache *self)
+{
+  g_hash_table_unref(self->hash_table);
+  self->hash_table = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, self->resolver->free_elem);
+}
+
 Cache *
 cache_new(CacheResolver *resolver)
 {
