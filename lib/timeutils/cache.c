@@ -40,6 +40,7 @@ TLS_BLOCK_START
 {
   GTimeVal current_time_value;
   struct iv_task invalidate_time_task;
+  gint local_gencounter;
   struct
   {
     struct
@@ -65,11 +66,42 @@ static gboolean faking_time;
 
 #define current_time_value   __tls_deref(current_time_value)
 #define invalidate_time_task __tls_deref(invalidate_time_task)
+#define local_gencounter     __tls_deref(local_gencounter)
 #define cache                __tls_deref(cache)
+
+static gint timeutils_cache_gencounter = 0;
 
 #if !defined(SYSLOG_NG_HAVE_LOCALTIME_R) || !defined(SYSLOG_NG_HAVE_GMTIME_R)
 static GStaticMutex localtime_lock = G_STATIC_MUTEX_INIT;
 #endif
+
+static void
+_clean_timeutils_cache(void)
+{
+  memset(&cache.gmtime.buckets, 0, sizeof(cache.gmtime.buckets));
+  memset(&cache.localtime.buckets, 0, sizeof(cache.localtime.buckets));
+  memset(&cache.mktime.key, 0, sizeof(cache.mktime.key));
+}
+
+static void
+_validate_timeutils_cache(void)
+{
+  gint gencounter = g_atomic_int_get(&timeutils_cache_gencounter);
+
+  if (G_UNLIKELY(gencounter != local_gencounter))
+    {
+      _clean_timeutils_cache();
+      local_gencounter = gencounter;
+    }
+}
+
+void
+invalidate_timeutils_cache(void)
+{
+  tzset();
+
+  g_atomic_int_inc(&timeutils_cache_gencounter);
+}
 
 void
 invalidate_cached_time(void)
@@ -127,6 +159,7 @@ cached_g_current_time_sec(void)
 time_t
 cached_mktime(struct tm *tm)
 {
+  _validate_timeutils_cache();
   if (G_LIKELY(tm->tm_sec == cache.mktime.key.tm_sec &&
                tm->tm_min == cache.mktime.key.tm_min &&
                tm->tm_hour == cache.mktime.key.tm_hour &&
@@ -153,9 +186,9 @@ cached_mktime(struct tm *tm)
 void
 cached_localtime(time_t *when, struct tm *tm)
 {
-  guchar i = 0;
+  _validate_timeutils_cache();
 
-  i = *when & 0x3F;
+  guchar i = *when & 0x3F;
   if (G_LIKELY(*when == cache.localtime.buckets[i].when))
     {
       *tm = cache.localtime.buckets[i].tm;
@@ -181,9 +214,9 @@ cached_localtime(time_t *when, struct tm *tm)
 void
 cached_gmtime(time_t *when, struct tm *tm)
 {
-  guchar i = 0;
+  _validate_timeutils_cache();
 
-  i = *when & 0x3F;
+  guchar i = *when & 0x3F;
   if (G_LIKELY(*when == cache.gmtime.buckets[i].when && *when != 0))
     {
       *tm = cache.gmtime.buckets[i].tm;
@@ -206,23 +239,12 @@ cached_gmtime(time_t *when, struct tm *tm)
     }
 }
 
-void
-clean_time_cache(void)
-{
-  memset(&cache.gmtime.buckets, 0, sizeof(cache.gmtime.buckets));
-  memset(&cache.localtime.buckets, 0, sizeof(cache.localtime.buckets));
-}
-
 void timeutils_setup_timezone_hook(void);
 
 static void
-timeutils_reset_timezone(gint type, gpointer context)
+timeutils_reset_timezone(gint type, gpointer user_data)
 {
-  tzset();
-
-  // Invalidate time cache to apply time zone as soon as possible.
-  invalidate_cached_time();
-  clean_time_cache();
+  invalidate_timeutils_cache();
   timeutils_setup_timezone_hook();
 }
 

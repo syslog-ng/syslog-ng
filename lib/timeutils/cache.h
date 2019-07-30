@@ -50,13 +50,12 @@ cached_gmtime_wct(time_t *when, WallClockTime *wct)
   cached_gmtime(when, &wct->tm);
 }
 
-void clean_time_cache(void);
-
 void invalidate_cached_time(void);
 void set_cached_time(GTimeVal *timeval);
 void cached_g_current_time(GTimeVal *result);
 time_t cached_g_current_time_sec(void);
 
+void invalidate_timeutils_cache(void);
 void timeutils_setup_timezone_hook(void);
 
 #endif
