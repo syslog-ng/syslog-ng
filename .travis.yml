@@ -156,7 +156,8 @@ matrix:
             -DPYTHON_VERSION=2
             -DCMAKE_INSTALL_PREFIX=$HOME/install/syslog-ng
             ..
-        - make --keep-going -j $(nproc) ARGS="-j $(nproc)" all test install
+        - make --keep-going -j $(nproc) all install
+        - ctest -j $(nproc)
         - make VERBOSE=1 func-test
         - make pytest-linters
         - make pytest-self-check
@@ -176,7 +177,8 @@ matrix:
             -DPYTHON_VERSION=2
             -DCMAKE_INSTALL_PREFIX=$HOME/install/syslog-ng
             ..
-        - make --keep-going -j $(nproc) ARGS="-j $(nproc)" all test install
+        - make --keep-going -j $(nproc) all install
+        - ctest -j $(nproc)
 
     - env: B=check
       os: osx
