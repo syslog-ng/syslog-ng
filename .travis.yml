@@ -138,7 +138,7 @@ matrix:
       script:
         - tests/commits/check.sh
 
-    - env: B=trusty-cmake-internal
+    - env: B=cmake-submodules-and-pytest
       compiler: gcc
       dist: trusty
       sudo: required
@@ -161,7 +161,7 @@ matrix:
         - make pytest-self-check
         - make pytest-check
 
-    - env: B=trusty-cmake
+    - env: B=cmake
       compiler: clang
       dist: trusty
       sudo: required
