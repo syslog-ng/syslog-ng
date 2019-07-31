@@ -2,8 +2,6 @@ language: c
 git:
   submodules: false
 
-env: B=autotools
-
 os: linux
 
 cache:
