@@ -151,11 +151,9 @@ construct_nondumpable_logger(msg_fatal);
 void
 app_startup(void)
 {
-  main_loop_thread_resource_init();
   msg_init(FALSE);
   iv_set_fatal_msg_handler(app_fatal);
   iv_init();
-  g_thread_init(NULL);
   crypto_init();
   hostname_global_init();
   dns_caching_global_init();
@@ -163,6 +161,8 @@ app_startup(void)
   afinter_global_init();
   child_manager_init();
   alarm_init();
+  g_thread_init(NULL);
+  main_loop_thread_resource_init();
   stats_init();
   tzset();
   log_msg_global_init();
