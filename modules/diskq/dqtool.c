@@ -34,15 +34,19 @@
 #include "scratch-buffers.h"
 #include "mainloop.h"
 #include "pathutils.h"
+#include "persist-state.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 gchar *template_string;
 gchar *new_diskq_path;
 gchar *persist_file_path;
+gboolean relocate_all;
 gboolean display_version;
 gboolean debug_flag;
 gboolean verbose_flag;
@@ -70,6 +74,10 @@ static GOptionEntry relocate_options[] =
   {
     "persist", 'p', 0, G_OPTION_ARG_STRING, &persist_file_path,
     "syslog-ng persist file", "<persist>"
+  },
+  {
+    "all", 'a', 0, G_OPTION_ARG_NONE, &relocate_all,
+    "relocate all persist file"
   },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
@@ -242,10 +250,258 @@ _relocate_validate_options(void)
 }
 
 static gint
+_open_fd_for_reading(const gchar *fname)
+{
+  gint fd = open(fname, O_RDONLY);
+
+  if (fd == -1)
+    fprintf(stderr, "Failed to open %s, reason: %s\n", fname, strerror(errno));
+
+  return fd;
+}
+
+static gint
+_open_fd_for_writing(const gchar *fname)
+{
+  gint fd = open(fname, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+
+  if (fd == -1)
+    fprintf(stderr, "Error: failed to create %s, reason: %s\n", fname, strerror(errno));
+
+  return fd;
+}
+
+static void
+_remove_file(const gchar *fname)
+{
+  if (remove(fname) == -1)
+    fprintf(stderr, "Failed to remove %s, reason; %s\n", fname, strerror(errno));
+}
+
+static gboolean
+_copy_file(const gchar *from, const gchar *to)
+{
+  gboolean result = FALSE;
+  gint src_fd = _open_fd_for_reading(from);
+  gint dst_fd = -1;
+
+  if (src_fd == -1)
+    goto exit;
+
+  dst_fd = _open_fd_for_writing(to);
+
+  if (dst_fd == -1)
+    goto exit;
+
+
+  char buf[2048] = {0};
+  gssize read_n = 0;
+  while ((read_n = read(src_fd, buf, sizeof(buf))) > 0)
+    {
+      if (write(dst_fd, buf, read_n) != read_n)
+        {
+          fprintf(stderr, "Failed to write file %s\nReason:%s\n", to, strerror(errno));
+          goto exit;
+        }
+    }
+  if (read_n == -1)
+    {
+      fprintf(stderr, "Failed to read file %s\nReason:%s\n", from, strerror(errno));
+      goto exit;
+    }
+
+  result = TRUE;
+
+exit:
+  if (src_fd != -1)
+    close(src_fd);
+
+  if (dst_fd != -1)
+    close(dst_fd);
+
+  return result;
+}
+
+static gboolean
+_move_file_between_different_filesystems(const gchar *from, const gchar *to)
+{
+  if (!_copy_file(from, to))
+    return FALSE;
+
+  _remove_file(from);
+
+  return TRUE;
+}
+
+static gboolean
+_move_file(const gchar *from, const gchar *to)
+{
+  gint rename_res = rename(from, to);
+
+  if (rename_res == 0)
+    return TRUE;
+
+  switch (errno)
+    {
+    case 0:
+      return TRUE;
+    case EXDEV:
+      return _move_file_between_different_filesystems(from, to);
+    default:
+      fprintf(stderr, "Failed moving %s to %s, reason: %s\n", from, to, strerror(errno));
+      return FALSE;
+    }
+}
+
+static gboolean
+_file_is_diskq(const gchar *filename)
+{
+  const gchar *filename_ext = get_filename_extension(filename);
+  gboolean reliable = strcmp(filename_ext, "rqf") == 0;
+  if (!reliable && strcmp(filename_ext, "qf") != 0)
+    return FALSE;
+
+  FILE *f = fopen(filename, "rb");
+
+  if (!f)
+    {
+      fprintf(stderr, "File not found: %s\n", filename);
+      return FALSE;
+    }
+
+  gchar idbuf[5];
+  if (fread(idbuf, 1, 4, f) != 4)
+    {
+      fprintf(stderr, "File reading error(cannot read 4 bytes from the file): %s\n", filename);
+      fclose(f);
+      return FALSE;
+    }
+
+  fclose(f);
+
+  idbuf[4] = '\0';
+  if (reliable && strcmp(idbuf, "SLRQ") != 0)
+    return FALSE;
+  if (!reliable && strcmp(idbuf, "SLQF") != 0)
+    return FALSE;
+
+  return TRUE;
+}
+
+
+static gboolean
+_is_persist_entry_holds_diskq_file(PersistState *state, const gchar *key)
+{
+  gboolean result = FALSE;
+  gchar *value = persist_state_lookup_string(state, key, NULL, NULL);
+  if (!value)
+    return FALSE;
+
+  if (!is_file_regular(value))
+    goto exit;
+
+  result = _file_is_diskq(value);
+exit:
+  g_free(value);
+
+  return result;
+}
+
+static void
+_relocate_qfile(PersistState *state, const gchar *name)
+{
+  if (_is_persist_entry_holds_diskq_file(state, name))
+    {
+      gchar *qfile = persist_state_lookup_string(state, name, NULL, NULL);
+      printf("found qfile, key: %s, path: %s\n", name, qfile);
+      gchar *relocated_qfile = g_build_filename(new_diskq_path, basename(qfile), NULL);
+      if (!relocated_qfile)
+        {
+          fprintf(stderr, "Invalid path. new_diskq_dir: %s, qfile: %s\n", new_diskq_path, qfile);
+          g_free(qfile);
+        }
+
+      if (_move_file(qfile, relocated_qfile))
+        {
+          printf("new qfile_path: %s\n", relocated_qfile);
+          persist_state_alloc_string(state, name, relocated_qfile, -1);
+        }
+      else
+        {
+          fprintf(stderr, "Failed to move file to new qfile_path: %s\n", relocated_qfile);
+        }
+      g_free(qfile);
+      g_free(relocated_qfile);
+    }
+}
+
+static void
+_persist_foreach_relocate_all_qfiles(gchar *name, gint size, gpointer entry, gpointer userdata)
+{
+  PersistState *state = (PersistState *)userdata;
+  _relocate_qfile(state, name);
+}
+
+static void
+_persist_foreach_relocate_selected_qfiles(gchar *name, gint size, gpointer entry, gpointer userdata)
+{
+  gpointer *args = (gpointer *)userdata;
+  PersistState *state = (PersistState *)args[0];
+  gint argc = GPOINTER_TO_INT(args[1]);
+  const gchar **argv = (const gchar **)args[2];
+  gint argc_start = GPOINTER_TO_INT(args[3]);
+  gchar *qfile = persist_state_lookup_string(state, name, NULL, NULL);
+
+  for (gint i = argc_start; i < argc; i++)
+    {
+      if (!strcmp(qfile, argv[i]))
+        {
+          _relocate_qfile(state, name);
+          break;
+        }
+    }
+
+  g_free(qfile);
+}
+
+static gint
 dqtool_relocate(int argc, char *argv[])
 {
   if (!_relocate_validate_options())
     return 1;
+
+  if (!g_threads_got_initialized)
+    {
+      g_thread_init(NULL);
+    }
+
+  main_thread_handle = get_thread_id();
+
+  PersistState *state = persist_state_new(persist_file_path);
+  if (!state)
+    {
+      fprintf(stderr, "Failed to create PersistState from file %s\n", persist_file_path);
+      return 1;
+    }
+
+  if (!persist_state_start_edit(state))
+    {
+      fprintf(stderr, "Failed to load persist file for editing.");
+      return 1;
+    }
+
+  if (relocate_all)
+    {
+      persist_state_foreach_entry(state, _persist_foreach_relocate_all_qfiles, state);
+    }
+  else
+    {
+      gpointer args[] = { state, GINT_TO_POINTER(argc), argv, GINT_TO_POINTER(optind) };
+      persist_state_foreach_entry(state, _persist_foreach_relocate_selected_qfiles, args);
+    }
+
+  persist_state_commit(state);
+  persist_state_free(state);
 
   return 0;
 }
