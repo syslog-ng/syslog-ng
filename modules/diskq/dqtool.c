@@ -33,6 +33,7 @@
 #include "logmsg/logmsg-serialize.h"
 #include "scratch-buffers.h"
 #include "mainloop.h"
+#include "pathutils.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -64,7 +65,7 @@ static GOptionEntry relocate_options[] =
 {
   {
     "new_path", 'n', 0, G_OPTION_ARG_STRING, &new_diskq_path,
-    "New path for diskq file", "<new_path>"
+    "New path(directory) for diskq file(s)", "<new_path>"
   },
   {
     "persist", 'p', 0, G_OPTION_ARG_STRING, &persist_file_path,
@@ -193,19 +194,51 @@ dqtool_info(int argc, char *argv[])
 }
 
 static gboolean
-_relocate_validate_options(void)
+_is_read_writable(const gchar *path)
 {
-  if (!new_diskq_path)
+  return access(path, R_OK|W_OK) == F_OK;
+}
+
+static gboolean
+_validate_diskq_path(const gchar *path)
+{
+  if (!path)
     {
       fprintf(stderr, "relocate: missing mandatory option: new_path\n");
+      return FALSE;
     }
 
-  if (!persist_file_path)
+  if (!(is_file_directory(path) && _is_read_writable(path)))
+    {
+      fprintf(stderr, "relocate: new_path should be point to a readable/writable directory\n");
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
+static gboolean
+_validate_persist_file_path(const gchar *path)
+{
+  if (!path)
     {
       fprintf(stderr, "relocate: missing mandatory option: persist\n");
+      return FALSE;
     }
 
-  return (new_diskq_path != NULL) && (persist_file_path != NULL);
+  if (!(is_file_regular(path) && _is_read_writable(path)))
+    {
+      fprintf(stderr, "relocate: persist should point to a readable/writable file\n");
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
+static gboolean
+_relocate_validate_options(void)
+{
+  return _validate_diskq_path(new_diskq_path) && _validate_persist_file_path(persist_file_path);
 }
 
 static gint
