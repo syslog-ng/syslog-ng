@@ -40,6 +40,8 @@
 #include <unistd.h>
 
 gchar *template_string;
+gchar *new_diskq_path;
+gchar *persist_file_path;
 gboolean display_version;
 gboolean debug_flag;
 gboolean verbose_flag;
@@ -55,6 +57,19 @@ static GOptionEntry cat_options[] =
 
 static GOptionEntry info_options[] =
 {
+  { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
+};
+
+static GOptionEntry relocate_options[] =
+{
+  {
+    "new_path", 'n', 0, G_OPTION_ARG_STRING, &new_diskq_path,
+    "New path for diskq file", "<new_path>"
+  },
+  {
+    "persist", 'p', 0, G_OPTION_ARG_STRING, &persist_file_path,
+    "syslog-ng persist file", "<persist>"
+  },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
@@ -177,6 +192,31 @@ dqtool_info(int argc, char *argv[])
   return 0;
 }
 
+static gboolean
+_relocate_validate_options(void)
+{
+  if (!new_diskq_path)
+    {
+      fprintf(stderr, "relocate: missing mandatory option: new_path\n");
+    }
+
+  if (!persist_file_path)
+    {
+      fprintf(stderr, "relocate: missing mandatory option: persist\n");
+    }
+
+  return (new_diskq_path != NULL) && (persist_file_path != NULL);
+}
+
+static gint
+dqtool_relocate(int argc, char *argv[])
+{
+  if (!_relocate_validate_options())
+    return 1;
+
+  return 0;
+}
+
 static GOptionEntry dqtool_options[] =
 {
   {
@@ -204,6 +244,7 @@ static struct
 {
   { "cat", cat_options, "Print the contents of a disk queue file", dqtool_cat },
   { "info", info_options, "Print infos about the given disk queue file", dqtool_info },
+  { "relocate", relocate_options, "Relocate(rename) diskq file. Note that this option modifies the persist file.", dqtool_relocate },
   { NULL, NULL },
 };
 
