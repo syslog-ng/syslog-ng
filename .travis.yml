@@ -2,8 +2,6 @@ language: c
 git:
   submodules: false
 
-env: B=autotools
-
 os: linux
 
 cache:
@@ -140,7 +138,7 @@ matrix:
       script:
         - tests/commits/check.sh
 
-    - env: B=trusty-cmake-internal
+    - env: B=cmake-submodules-and-pytest
       compiler: gcc
       dist: trusty
       sudo: required
@@ -156,13 +154,14 @@ matrix:
             -DPYTHON_VERSION=2
             -DCMAKE_INSTALL_PREFIX=$HOME/install/syslog-ng
             ..
-        - make --keep-going -j $(nproc) ARGS="-j $(nproc)" all test install
+        - make --keep-going -j $(nproc) all install
+        - ctest -j $(nproc) --output-on-failure
         - make VERBOSE=1 func-test
         - make pytest-linters
         - make pytest-self-check
         - make pytest-check
 
-    - env: B=trusty-cmake
+    - env: B=cmake
       compiler: clang
       dist: trusty
       sudo: required
@@ -176,7 +175,8 @@ matrix:
             -DPYTHON_VERSION=2
             -DCMAKE_INSTALL_PREFIX=$HOME/install/syslog-ng
             ..
-        - make --keep-going -j $(nproc) ARGS="-j $(nproc)" all test install
+        - make --keep-going -j $(nproc) all install
+        - ctest -j $(nproc) --output-on-failure
 
     - env: B=check
       os: osx
