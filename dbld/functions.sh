@@ -2,6 +2,7 @@ set -e
 
 function get_version() {
 	cd /source
+	[ -n "$VERSION" ] && echo $VERSION && return
 	scripts/version.sh
 }
 

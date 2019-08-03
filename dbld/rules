@@ -18,6 +18,7 @@ TARBALL_IMAGE ?= ubuntu-bionic
 DEFAULT_DEB_IMAGE=$(DEFAULT_IMAGE)
 DEFAULT_RPM_IMAGE=centos-7
 DOCKER=docker
+VERSION=$(shell scripts/version.sh)
 DOCKER_RUN_ARGS=-e USER_NAME_ON_HOST=$(shell whoami)	\
         --network=host --privileged \
 	--ulimit nofile=1024:1024 \
@@ -26,6 +27,7 @@ DOCKER_RUN_ARGS=-e USER_NAME_ON_HOST=$(shell whoami)	\
 	-v $(DBLD_DIR)/install:/install \
 	-e CONFIGURE_OPTS="$${CONFIGURE_OPTS:-$(CONFIGURE_OPTS)}" \
 	-e CCACHE_DIR=/build/ccache \
+	-e VERSION=$(VERSION) \
 	-e PATH=/usr/lib/ccache:/usr/lib64/ccache:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
 	-e GRADLE_USER_HOME=/build/gradle-home \
 	-e GRADLE_PROJECT_CACHE_DIR=/build/gradle-cache \
@@ -35,7 +37,6 @@ ROOT_DIR=$(shell pwd)
 DBLD_DIR=$(ROOT_DIR)/dbld
 BUILD_DIR=$(DBLD_DIR)/build
 RELEASE_DIR=$(DBLD_DIR)/release
-VERSION=$(shell scripts/version.sh)
 TARBALL=$(BUILD_DIR)/syslog-ng-$(VERSION).tar.gz
 MODE=snapshot
 CONFIGURE_OPTS=--enable-debug --enable-manpages --with-python=2 --prefix=/install $(CONFIGURE_ADD)
