@@ -91,13 +91,13 @@ static gboolean
 snmp_dd_find_object_type(const gchar *type, gint *type_index)
 {
   gint object_types_count = G_N_ELEMENTS(snmp_obj_types);
-  gint index;
+  gint index_;
 
   /* check the type */
-  for (index = 0; index < object_types_count; ++index)
-    if (!strcasecmp(type, snmp_obj_types[index].type))
+  for (index_ = 0; index_ < object_types_count; ++index_)
+    if (!strcasecmp(type, snmp_obj_types[index_].type))
       {
-        *type_index = index;
+        *type_index = index_;
         return TRUE;
       }
 

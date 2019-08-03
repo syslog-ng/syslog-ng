@@ -60,10 +60,10 @@ hook_commands_plugin_set_teardown(HookCommandsPlugin *self, const gchar *teardow
 }
 
 void
-hook_commands_plugin_set_shutdown(HookCommandsPlugin *self, const gchar *shutdown)
+hook_commands_plugin_set_shutdown(HookCommandsPlugin *self, const gchar *shutdown_)
 {
   g_free(self->shutdown);
-  self->shutdown = g_strdup(shutdown);
+  self->shutdown = g_strdup(shutdown_);
 }
 
 static gboolean
