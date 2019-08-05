@@ -684,13 +684,16 @@ snmpdest_dd_init(LogPipe *s)
   guint SCS_SNMP = stats_register_type("snmp");
 
   stats_lock();
-  stats_cluster_logpipe_key_set(&self->sc_key_queued, SCS_SNMP, snmpdest_dd_format_stats_instance(self), NULL );
+  stats_cluster_logpipe_key_set(&self->sc_key_queued, SCS_SNMP | SCS_DESTINATION,
+                                self->super.super.id, snmpdest_dd_format_stats_instance(self) );
   stats_register_counter(1, &self->sc_key_queued, SC_TYPE_QUEUED, &self->queued_messages);
 
-  stats_cluster_logpipe_key_set(&self->sc_key_dropped, SCS_SNMP, snmpdest_dd_format_stats_instance(self), NULL );
+  stats_cluster_logpipe_key_set(&self->sc_key_dropped, SCS_SNMP | SCS_DESTINATION,
+                                self->super.super.id, snmpdest_dd_format_stats_instance(self));
   stats_register_counter(1, &self->sc_key_dropped, SC_TYPE_DROPPED, &self->dropped_messages);
 
-  stats_cluster_logpipe_key_set(&self->sc_key_processed, SCS_SNMP, snmpdest_dd_format_stats_instance(self), NULL );
+  stats_cluster_logpipe_key_set(&self->sc_key_processed, SCS_SNMP | SCS_DESTINATION,
+                                self->super.super.id, snmpdest_dd_format_stats_instance(self));
   stats_register_counter(1, &self->sc_key_processed, SC_TYPE_PROCESSED, &self->processed_messages);
   stats_unlock();
 
