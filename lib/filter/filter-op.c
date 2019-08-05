@@ -58,11 +58,26 @@ fop_free(FilterExprNode *s)
 }
 
 static void
+_traversal(FilterExprNode *s, FilterExprNode *parent, FilterExprNodeTraversalCallbackFunction func, gpointer cookie)
+{
+  FilterOp *self = (FilterOp *) s;
+  filter_expr_traversal(self->left, s, func, cookie);
+  filter_expr_traversal(self->right, s, func, cookie);
+
+  GPtrArray *childs = g_ptr_array_sized_new(2);
+  g_ptr_array_add(childs, self->left);
+  g_ptr_array_add(childs, self->right);
+  func(s, parent, childs, cookie);
+  g_ptr_array_free(childs, TRUE);
+}
+
+static void
 fop_init_instance(FilterOp *self)
 {
   filter_expr_node_init_instance(&self->super);
   self->super.init = fop_init;
   self->super.free_fn = fop_free;
+  self->super.traversal = _traversal;
 }
 
 static gboolean

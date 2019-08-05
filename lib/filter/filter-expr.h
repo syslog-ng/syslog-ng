@@ -29,9 +29,11 @@
 #include "logpipe.h"
 #include "stats/stats-registry.h"
 
-
 struct _GlobalConfig;
 typedef struct _FilterExprNode FilterExprNode;
+
+typedef void (*FilterExprNodeTraversalCallbackFunction)(FilterExprNode *current, FilterExprNode *parent,
+                                                        GPtrArray *childs, gpointer cookie);
 
 struct _FilterExprNode
 {
@@ -43,10 +45,26 @@ struct _FilterExprNode
   gchar *template;
   gboolean (*init)(FilterExprNode *self, GlobalConfig *cfg);
   gboolean (*eval)(FilterExprNode *self, LogMessage **msg, gint num_msg);
+  void (*traversal)(FilterExprNode *self, FilterExprNode *parent, FilterExprNodeTraversalCallbackFunction func,
+                    gpointer cookie);
   void (*free_fn)(FilterExprNode *self);
   StatsCounterItem *matched;
   StatsCounterItem *not_matched;
 };
+
+static inline void
+filter_expr_traversal(FilterExprNode *self, FilterExprNode *parent, FilterExprNodeTraversalCallbackFunction func,
+                      gpointer cookie)
+{
+  if (self->traversal)
+    {
+      self->traversal(self, parent, func, cookie);
+    }
+  else
+    {
+      func(self, parent, NULL, cookie);
+    }
+}
 
 static inline gboolean
 filter_expr_init(FilterExprNode *self, GlobalConfig *cfg)

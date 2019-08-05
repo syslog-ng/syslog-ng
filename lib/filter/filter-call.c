@@ -126,6 +126,18 @@ filter_call_free(FilterExprNode *s)
   g_free(self->rule);
 }
 
+static void
+_traversal(FilterExprNode *s, FilterExprNode *parent, FilterExprNodeTraversalCallbackFunction func, gpointer cookie)
+{
+  FilterCall *self = (FilterCall *)s;
+  filter_expr_traversal(self->filter_expr, s, func, cookie);
+
+  GPtrArray *childs = g_ptr_array_sized_new(1);
+  g_ptr_array_add(childs, self->filter_expr);
+  func(s, parent, childs, cookie);
+  g_ptr_array_free(childs, TRUE);
+}
+
 FilterExprNode *
 filter_call_new(gchar *rule, GlobalConfig *cfg)
 {
@@ -139,6 +151,7 @@ filter_call_new(gchar *rule, GlobalConfig *cfg)
   self->super.pattern = NULL;
   self->super.template = NULL;
   self->rule = g_strdup(rule);
+  self->super.traversal = _traversal;
 
   return &self->super;
 }
