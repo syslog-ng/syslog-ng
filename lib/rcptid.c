@@ -168,10 +168,16 @@ rcptid_init(PersistState *state, gboolean use_rcptid)
   rcptid_service.persist_state = state;
   rcptid_service.persist_handle = persist_state_lookup_entry(state, "next.rcptid", &size, &version);
 
-  if (rcptid_service.persist_handle)
-    return rcptid_restore_entry();
+  if (rcptid_service.persist_handle && size == sizeof(RcptidState))
+    {
+      return rcptid_restore_entry();
+    }
   else
-    return rcptid_create_new_entry();
+    {
+      if (rcptid_service.persist_handle)
+        msg_warning("rcpt-id: persist state: invalid size, allocating a new one");
+      return rcptid_create_new_entry();
+    }
 }
 
 void
