@@ -43,6 +43,25 @@ _create_host_id(void)
   return host_id.id;
 }
 
+static gboolean
+_load_host_id_from_legacy_persist_entry(PersistState *state, guint32 *host_id)
+{
+  gsize size;
+  guint8 version;
+  PersistEntryHandle handle = persist_state_lookup_entry(state, HOST_ID_LEGACY_PERSIST_KEY, &size, &version);
+
+  if (!handle)
+    return FALSE;
+
+  guint32 *mapped_hostid = persist_state_map_entry(state, handle);
+
+  *host_id = *mapped_hostid;
+
+  persist_state_unmap_entry(state, handle);
+
+  return TRUE;
+}
+
 gboolean
 host_id_init(PersistState *state)
 {
@@ -51,13 +70,18 @@ host_id_init(PersistState *state)
   PersistEntryHandle handle;
   HostIdState *host_id_state;
   gboolean new_host_id_required = FALSE;
+  gboolean use_legacy_host_id = FALSE;
+  guint32 legacy_hostid = 0;
+
 
   handle = persist_state_lookup_entry(state, HOST_ID_PERSIST_KEY, &size, &version);
 
   if (handle == 0)
     {
-      new_host_id_required = TRUE;
       handle = persist_state_alloc_entry(state, HOST_ID_PERSIST_KEY, sizeof(HostIdState));
+      use_legacy_host_id = _load_host_id_from_legacy_persist_entry(state, &legacy_hostid);
+
+      new_host_id_required = !use_legacy_host_id;
     }
 
   if (!handle)
@@ -72,6 +96,11 @@ host_id_init(PersistState *state)
       {
         global_host_id = _create_host_id();
         host_id_state->host_id = global_host_id;
+      }
+    else if (use_legacy_host_id)
+      {
+        host_id_state->host_id = legacy_hostid;
+        global_host_id = legacy_hostid;
       }
     else
       {
