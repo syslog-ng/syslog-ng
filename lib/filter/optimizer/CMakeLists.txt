@@ -8,3 +8,5 @@ set(FILTER_OPTIMIZER_SOURCES
     filter/optimizer/filter-tree-printer.c
     PARENT_SCOPE
 )
+
+add_test_subdirectory(tests)
