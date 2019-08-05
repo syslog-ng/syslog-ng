@@ -48,9 +48,11 @@ run_id_init(PersistState *state)
 
   handle = persist_state_lookup_entry(state, RUN_ID_PERSIST_KEY, &size, &version);
 
-  if (handle == 0)
+  if (handle == 0 || size != sizeof(RunIDState))
     {
-      handle = persist_state_alloc_entry(state, RUN_ID_PERSIST_KEY, sizeof(RunIDState) );
+      if (handle != 0)
+        msg_warning("run-id: persist state: invalid size, allocating a new one");
+      handle = persist_state_alloc_entry(state, RUN_ID_PERSIST_KEY, sizeof(RunIDState));
     }
 
   if (!handle)
