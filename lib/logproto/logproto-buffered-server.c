@@ -493,6 +493,7 @@ log_proto_buffered_server_restart_with_state(LogProtoServer *s, PersistState *pe
         {
           msg_error("Internal error restoring log reader state, stored data is too new",
                     evt_tag_int("version", state->header.version));
+          persist_state_unmap_entry(persist_state, old_state_handle);
           goto error;
         }
       persist_state_unmap_entry(persist_state, old_state_handle);
