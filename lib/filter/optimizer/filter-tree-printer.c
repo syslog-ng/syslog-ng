@@ -27,7 +27,7 @@ _filter_tree_printer_init(FilterExprNode *root)
 {
   gint *cookie = g_malloc0(sizeof(gint)); // indentation
   *cookie = 20;
-  printf("%-*s%s\n", *cookie, "parent", "child(s)");
+  msg_trace("filter-optimizer: ", evt_tag_printf("tree", "%-*s%s\n", *cookie, "parent", "child(s)"));
   return cookie;
 }
 
@@ -40,10 +40,11 @@ _filter_tree_printer_deinit(gpointer cookie)
 static void
 _filter_tree_printer_cb(FilterExprNode *current, FilterExprNode *parent, GPtrArray *childs, gpointer cookie)
 {
+  GString *line = g_string_new("");
   if (parent == NULL)
-    printf("%-*s", *(gint *)cookie, "root");
+    g_string_append_printf(line, "%-*s", *(gint *)cookie, "root");
   else
-    printf("%-*s", *(gint *)cookie, parent->type);
+    g_string_append_printf(line, "%-*s", *(gint *)cookie, parent->type);
 
   if (childs)
     {
@@ -51,15 +52,16 @@ _filter_tree_printer_cb(FilterExprNode *current, FilterExprNode *parent, GPtrArr
       for (i = 0; i < childs->len; i++)
         {
           FilterExprNode *child = (FilterExprNode *)g_ptr_array_index(childs, i);
-          printf("%s ", child->type);
+          g_string_append_printf(line, "%s ", child->type);
         }
     }
   else
     {
-      printf("leaf");
+      g_string_append(line, "leaf");
     }
 
-  printf("\n");
+  msg_trace("filter-optimizer: ", evt_tag_printf("tree", "%s", line->str));
+  g_string_free(line, TRUE);
 }
 
 FilterExprOptimizer filter_tree_printer =
