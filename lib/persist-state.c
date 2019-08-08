@@ -784,11 +784,12 @@ _foreach_entry_func(gpointer key, gpointer value, gpointer userdata)
 
   PersistValueHeader *header = persist_state_map_entry(data->storage, entry->ofs - sizeof(PersistValueHeader));
   gint size = GUINT32_FROM_BE(header->size);
-  persist_state_unmap_entry(data->storage, entry->ofs);
+  persist_state_unmap_entry(data->storage, entry->ofs - sizeof(PersistValueHeader));
 
-  gpointer *state = persist_state_map_entry(data->storage, entry->ofs);
+  PersistEntryHandle original_handler = entry->ofs;
+  gpointer state = persist_state_map_entry(data->storage, entry->ofs);
   data->func(name, size, state, data->userdata);
-  persist_state_unmap_entry(data->storage, entry->ofs);
+  persist_state_unmap_entry(data->storage, original_handler);
 }
 
 void
