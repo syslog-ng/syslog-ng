@@ -34,6 +34,11 @@
 GList *g_list_copy_deep (GList *list, GCopyFunc func, gpointer user_data);
 #endif
 
+#ifndef SYSLOG_NG_HAVE_G_CANONICALIZE_FILENAME
+gchar *g_canonicalize_filename (const gchar *filename,
+                                const gchar *relative_to);
+#endif
+
 #ifndef g_atomic_pointer_add
 
 /* This implementation was copied from glib 2.46, copyright Ryan Lortie

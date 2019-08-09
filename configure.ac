@@ -917,7 +917,7 @@ LDFLAGS="$LDFLAGS $GLIB_LIBS"
 
 old_LIBS=$LIBS
 LIBS="$LIBS $GLIB_LIBS"
-AC_CHECK_FUNCS(g_list_copy_deep g_queue_free_full g_list_free_full g_ptr_array_find_with_equal_func)
+AC_CHECK_FUNCS(g_list_copy_deep g_queue_free_full g_list_free_full g_ptr_array_find_with_equal_func g_canonicalize_filename)
 LIBS=$old_LIBS
 
 AC_CACHE_CHECK(sanity checking Glib headers,
