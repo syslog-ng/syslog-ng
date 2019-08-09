@@ -422,7 +422,8 @@ pdbtool_match(int argc, char *argv[])
       CfgLexer *lexer;
 
       lexer = cfg_lexer_new_buffer(configuration, filter_string, strlen(filter_string));
-      if (!cfg_run_parser(configuration, lexer, &filter_expr_parser, (gpointer *) &filter, NULL))
+      if (!cfg_run_parser_with_main_context(configuration, lexer, &filter_expr_parser, (gpointer *) &filter, NULL,
+                                            "pdbtool filter expression"))
         {
           fprintf(stderr, "Error parsing filter expression\n");
           return 1;

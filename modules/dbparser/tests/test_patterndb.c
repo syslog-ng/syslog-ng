@@ -382,6 +382,22 @@ Test(pattern_db, test_correllation_rule_with_action_condition)
   g_free(filename);
 }
 
+Test(pattern_db, test_correllation_rule_with_action_condition_filter)
+{
+  gchar *filename;
+  PatternDB *patterndb = _create_pattern_db(pdb_ruletest_skeleton, &filename);
+
+  /* tag assigned based on "class" */
+  assert_msg_matches_and_has_tag(patterndb, "correllated-message-with-action-condition", ".classifier.violation", TRUE);
+
+  assert_msg_matches_and_output_message_nvpair_equals(patterndb, "correllated-message-with-action-condition-filter", 1,
+                                                      "MESSAGE",
+                                                      "generated-message-on-condition");
+
+  _destroy_pattern_db(patterndb, filename);
+  g_free(filename);
+}
+
 Test(pattern_db, test_correllation_rule_with_rate_limited_action)
 {
   gchar *filename;
