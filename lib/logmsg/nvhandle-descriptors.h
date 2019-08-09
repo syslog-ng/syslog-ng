@@ -49,4 +49,7 @@ void nvhandle_desc_array_free(NVHandleDescArray *self);
 void nvhandle_desc_array_append(NVHandleDescArray *self, NVHandleDesc *desc);
 #define nvhandle_desc_array_index(self, i)      (((NVHandleDesc*) (self)->data) [(i)])
 
+/* Does not free *self*. */
+void nvhandle_desc_free(NVHandleDesc *self);
+
 #endif
