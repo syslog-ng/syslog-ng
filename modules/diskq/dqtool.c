@@ -46,6 +46,7 @@
 gchar *template_string;
 gchar *new_diskq_path;
 gchar *persist_file_path;
+gchar *assign_persist_name;
 gboolean relocate_all;
 gboolean display_version;
 gboolean debug_flag;
@@ -78,6 +79,19 @@ static GOptionEntry relocate_options[] =
   {
     "all", 'a', 0, G_OPTION_ARG_NONE, &relocate_all,
     "relocate all persist file"
+  },
+  { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
+};
+
+static GOptionEntry assign_options[] =
+{
+  {
+    "persist", 'p', 0, G_OPTION_ARG_STRING, &persist_file_path,
+    "syslog-ng persist file", "<persist>"
+  },
+  {
+    "persist_name", 'n', 0, G_OPTION_ARG_STRING, &assign_persist_name,
+    "persist name", "<persist name>"
   },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
@@ -509,6 +523,50 @@ dqtool_relocate(int argc, char *argv[])
   return 0;
 }
 
+static gboolean
+_assign_validate_options(void)
+{
+  return _validate_persist_file_path(persist_file_path);
+}
+
+static gint
+dqtool_assign(int argc, char *argv[])
+{
+  if (!_assign_validate_options())
+    return 1;
+
+  if (!g_threads_got_initialized)
+    {
+      g_thread_init(NULL);
+    }
+
+  main_thread_handle = get_thread_id();
+
+  PersistState *state = persist_state_new(persist_file_path);
+  if (!state)
+    {
+      fprintf(stderr, "Failed to create PersistState from file %s\n", persist_file_path);
+      return 1;
+    }
+
+  if (!persist_state_start_edit(state))
+    {
+      fprintf(stderr, "Failed to load persist file for editing.");
+      return 1;
+    }
+
+  const gchar *diskq_file = argv[optind];
+  gchar *diskq_full_path = g_canonicalize_filename(diskq_file, NULL);
+
+  persist_state_alloc_string(state, assign_persist_name, diskq_full_path, -1);
+  g_free(diskq_full_path);
+
+  persist_state_commit(state);
+  persist_state_free(state);
+
+  return 0;
+}
+
 static GOptionEntry dqtool_options[] =
 {
   {
@@ -537,6 +595,7 @@ static struct
   { "cat", cat_options, "Print the contents of a disk queue file", dqtool_cat },
   { "info", info_options, "Print infos about the given disk queue file", dqtool_info },
   { "relocate", relocate_options, "Relocate(rename) diskq file. Note that this option modifies the persist file.", dqtool_relocate },
+  { "assign", assign_options, "Assign diskq file to the given persist file with the given persist name ", dqtool_assign },
   { NULL, NULL },
 };
 
