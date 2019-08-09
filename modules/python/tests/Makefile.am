@@ -1,3 +1,6 @@
+PYTHONMALLOC=malloc_debug
+export PYTHONMALLOC
+
 check_PROGRAMS += \
   ${modules_python_tests_TESTS}
 
