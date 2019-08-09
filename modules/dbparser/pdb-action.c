@@ -38,6 +38,13 @@ pdb_action_set_condition(PDBAction *self, GlobalConfig *cfg, const gchar *filter
       self->condition = NULL;
       return;
     }
+
+  if (!filter_expr_init(self->condition, cfg))
+    {
+      g_set_error(error, PDB_ERROR, PDB_ERROR_FAILED, "Error initializing conditional expression");
+      self->condition = NULL;
+      return;
+    }
 }
 
 void

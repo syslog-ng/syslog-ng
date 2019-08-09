@@ -44,6 +44,14 @@ tf_cond_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
                   "$(%s) Error parsing conditional filter expression", argv[0]);
       return FALSE;
     }
+
+  if (!filter_expr_init(state->filter, parent->cfg))
+    {
+      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
+                  "$(%s) Error initializing conditional filter expression", argv[0]);
+      return FALSE;
+    }
+
   memmove(&argv[1], &argv[2], sizeof(argv[0]) * (argc - 2));
   if (!tf_simple_func_prepare(self, s, parent, argc - 1, argv, error))
     return FALSE;

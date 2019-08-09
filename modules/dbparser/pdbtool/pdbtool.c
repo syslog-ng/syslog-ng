@@ -427,6 +427,12 @@ pdbtool_match(int argc, char *argv[])
           fprintf(stderr, "Error parsing filter expression\n");
           return 1;
         }
+
+      if (!filter_expr_init(filter, configuration))
+        {
+          fprintf(stderr, "Error initializing filter expression\n");
+          return 1;
+        }
     }
 
 
