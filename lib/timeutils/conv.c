@@ -53,13 +53,11 @@ convert_and_normalize_wall_clock_time_to_unix_time(WallClockTime *src, UnixTime 
 void
 convert_and_normalize_wall_clock_time_to_unix_time_with_tz_hint(WallClockTime *src, UnixTime *dst, long gmtoff_hint)
 {
-  gint target_gmtoff = -1;
-
   /* usec is just copied over, doesn't change timezone or anything */
   dst->ut_usec = src->wct_usec;
 
   /* determine target gmtoff if it's coming from the timestamp or from the hint */
-  target_gmtoff = src->wct_gmtoff;
+  gint target_gmtoff = src->wct_gmtoff;
   if (target_gmtoff == -1)
     target_gmtoff = gmtoff_hint;
 
