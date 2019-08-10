@@ -482,10 +482,6 @@ static LogThreadedResult
 afsmtp_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
 {
   AFSMTPDriver *self = (AFSMTPDriver *)s;
-  gboolean success = TRUE;
-  gboolean message_sent = TRUE;
-  smtp_session_t session = NULL;
-  smtp_message_t message;
 
   if (msg->flags & LF_MARK)
     {
@@ -494,11 +490,11 @@ afsmtp_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
       return LTR_SUCCESS;
     }
 
-  session = __build_session(self, msg);
-  message = __build_message(self, msg, session);
+  smtp_session_t session = __build_session(self, msg);
+  smtp_message_t message = __build_message(self, msg, session);
 
-  message_sent = __send_message(self, session);
-  success = message_sent && __check_transfer_status(self, message);
+  gboolean message_sent = __send_message(self, session);
+  gboolean success = message_sent && __check_transfer_status(self, message);
 
   smtp_destroy_session(session);
 
