@@ -103,6 +103,9 @@ generate_message(char *buffer, int buffer_size, int thread_id, unsigned long seq
   else
     str_len = generate_log_line(buffer, buffer_size, syslog_proto, thread_id, seq);
 
+  if (str_len < 0)
+    return -1;
+
   g_mutex_lock(message_counter_lock);
   sent_messages_num++;
   raw_message_length += str_len;
