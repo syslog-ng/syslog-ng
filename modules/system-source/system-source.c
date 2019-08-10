@@ -186,33 +186,30 @@ _is_fd_pollable(gint fd)
 static gboolean
 _detect_linux_dev_kmsg(void)
 {
-  gint fd;
+  gint fd = open("/dev/kmsg", O_RDONLY);
 
-  if ((fd = open("/dev/kmsg", O_RDONLY)) != -1)
-    {
-      if ((lseek (fd, 0, SEEK_END) != -1) && _is_fd_pollable(fd))
-        {
-          return TRUE;
-        }
-      close (fd);
-    }
-  return FALSE;
+  if (fd == -1)
+    return FALSE;
+
+  gboolean seekable = lseek(fd, 0, SEEK_END) != -1;
+  gboolean pollable = _is_fd_pollable(fd);;
+
+  close(fd);
+  return seekable && pollable;
 }
 
 static gboolean
 _detect_linux_proc_kmsg(void)
 {
-  gint fd;
+  gint fd = open("/proc/kmsg", O_RDONLY);
 
-  if ((fd = open("/proc/kmsg", O_RDONLY)) != -1)
-    {
-      if (_is_fd_pollable(fd))
-        {
-          return TRUE;
-        }
-      close (fd);
-    }
-  return FALSE;
+  if (fd == -1)
+    return FALSE;
+
+  gboolean pollable = _is_fd_pollable(fd);
+
+  close(fd);
+  return pollable;
 }
 
 static void
