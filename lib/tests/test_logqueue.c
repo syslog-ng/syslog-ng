@@ -356,8 +356,9 @@ Test(logqueue, log_queue_fifo_should_drop_only_non_flow_controlled_messages,
 
   cr_assert_eq(stats_counter_get(q->dropped_messages), 3);
 
-  send_some_messages(q, fed_messages);
-  log_queue_ack_backlog(q, fed_messages);
+  gint queued_messages = stats_counter_get(q->queued_messages);
+  send_some_messages(q, queued_messages);
+  log_queue_ack_backlog(q, queued_messages);
 
   cr_assert_eq(fed_messages, acked_messages,
                "did not receive enough acknowledgements: fed_messages=%d, acked_messages=%d",
@@ -412,8 +413,9 @@ Test(logqueue, log_queue_fifo_should_drop_only_non_flow_controlled_messages_thre
 
   cr_assert_eq(stats_counter_get(q->dropped_messages), 3);
 
-  send_some_messages(q, fed_messages);
-  log_queue_ack_backlog(q, fed_messages);
+  gint queued_messages = stats_counter_get(q->queued_messages);
+  send_some_messages(q, queued_messages);
+  log_queue_ack_backlog(q, queued_messages);
 
   cr_assert_eq(fed_messages, acked_messages,
                "did not receive enough acknowledgements: fed_messages=%d, acked_messages=%d",
