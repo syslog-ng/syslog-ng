@@ -368,7 +368,7 @@ print_statistic(struct timeval *start_time)
                   (long) diff_tv.tv_sec,
                   (long) diff_tv.tv_usec,
                   msg_count_diff,
-                  thread_stat_count[j]
+                  count
                  );
         }
     }
