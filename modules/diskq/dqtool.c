@@ -357,6 +357,9 @@ static gboolean
 _file_is_diskq(const gchar *filename)
 {
   const gchar *filename_ext = get_filename_extension(filename);
+  if (!filename_ext)
+    return FALSE;
+
   gboolean reliable = strcmp(filename_ext, "rqf") == 0;
   if (!reliable && strcmp(filename_ext, "qf") != 0)
     return FALSE;
