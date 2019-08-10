@@ -232,7 +232,7 @@ _get_scanner(AddContextualData *self)
   const gchar *type = get_filename_extension(self->filename);
   ContextualDataRecordScanner *scanner;
 
-  if (strcmp(type, "csv") == 0)
+  if (type && strcmp(type, "csv") == 0)
     {
       scanner = contextual_data_record_scanner_new(log_pipe_get_config(&self->super.super), self->prefix);
     }
