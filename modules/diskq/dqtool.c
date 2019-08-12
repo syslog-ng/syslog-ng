@@ -51,6 +51,7 @@ gboolean relocate_all;
 gboolean display_version;
 gboolean debug_flag;
 gboolean verbose_flag;
+gboolean assign_help;
 
 static GOptionEntry cat_options[] =
 {
@@ -92,6 +93,10 @@ static GOptionEntry assign_options[] =
   {
     "persist_name", 'n', 0, G_OPTION_ARG_STRING, &assign_persist_name,
     "persist name", "<persist name>"
+  },
+  {
+    "example", 'e', 0, G_OPTION_ARG_NONE, &assign_help,
+    "print examples"
   },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
@@ -529,9 +534,29 @@ _assign_validate_options(void)
   return _validate_persist_file_path(persist_file_path);
 }
 
+static void
+_assign_print_help(void)
+{
+  fprintf(stderr, "example:"
+          "   bin/dqtool assign -p var/syslog-ng.persist -n \"afsocket_dd_qfile(stream,localhost:15554)\n"
+          "                    /tmp/syslog-ng-dq/syslog-ng-00000.rqf\n\n"
+          "When only a filename is given for diskq, it will be appended to the current working dir.\n"
+          "One bad thing: user need to figure out the correct persist name.\n\n");
+  fprintf(stderr, "How it works?\n"
+          "When you know what the persist name for the diskq file is and you want to assign"
+          " an existing queue file to your destination, then with this feature you can set the queue file"
+          " manually (even if you don't have an entry for the diskq file in the persist).\n");
+}
+
 static gint
 dqtool_assign(int argc, char *argv[])
 {
+  if (assign_help)
+    {
+      _assign_print_help();
+      return 0;
+    }
+
   if (!_assign_validate_options())
     return 1;
 
@@ -595,7 +620,7 @@ static struct
   { "cat", cat_options, "Print the contents of a disk queue file", dqtool_cat },
   { "info", info_options, "Print infos about the given disk queue file", dqtool_info },
   { "relocate", relocate_options, "Relocate(rename) diskq file. Note that this option modifies the persist file.", dqtool_relocate },
-  { "assign", assign_options, "Assign diskq file to the given persist file with the given persist name ", dqtool_assign },
+  { "assign", assign_options, "Assign diskq file to the given persist file with the given persist name.", dqtool_assign },
   { NULL, NULL },
 };
 
