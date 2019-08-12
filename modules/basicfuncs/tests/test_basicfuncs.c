@@ -120,6 +120,8 @@ Test(basicfuncs, test_cond_funcs)
                                       "korte");
   assert_template_format_with_context("$(if '\"$FACILITY_NUM\" >= \"19\" or \"kicsi\" eq \"nagy\"' alma korte)", "alma");
 
+  assert_template_format_with_context("$(if program(\"slog-ng\" type(pcre)) alma korte)", "alma");
+
   assert_template_format_with_context("$(grep 'facility(local3)' $PID)@0", "23323");
   assert_template_format_with_context("$(grep 'facility(local3)' $PID)@1", "23323");
   assert_template_format_with_context("$(grep 'facility(local3)' $PID)@2", "");

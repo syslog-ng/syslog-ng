@@ -172,6 +172,27 @@
        </action>\
      </actions>\
     </rule>\
+    <rule provider='test' id='10f' class='violation' context-scope='program' context-id='$PROGRAM' context-timeout='60'>\
+     <patterns>\
+      <pattern>correllated-message-with-action-condition-filter</pattern>\
+     </patterns>\
+     <actions>\
+       <action trigger='match' condition='message(\"filter-not-exists\" type(pcre))' >\
+         <message>\
+           <values>\
+             <value name='MESSAGE'>not-generated-message</value>\
+           </values>\
+         </message>\
+       </action>\
+       <action trigger='match' condition='message(\"filter\" type(pcre))' >\
+         <message>\
+           <values>\
+             <value name='MESSAGE'>generated-message-on-condition</value>\
+           </values>\
+         </message>\
+       </action>\
+     </actions>\
+    </rule>\
     <rule provider='test' id='11b' class='violation'>\
      <patterns>\
       <pattern>simple-message-with-action-on-match</pattern>\
