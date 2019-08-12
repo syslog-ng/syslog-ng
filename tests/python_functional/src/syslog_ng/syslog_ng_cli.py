@@ -64,7 +64,7 @@ class SyslogNgCli(object):
         result = self.__syntax_only()
         if result["exit_code"] != 0:
             logger.error(result["stderr"])
-            raise Exception("syslog-ng can not started exit_code={}".format(result["exit_code"]))
+            raise Exception("syslog-ng can not started due to config syntax error exit_code={}".format(result["exit_code"]))
 
     def is_process_running(self):
         return self.__process.poll() is None
@@ -73,6 +73,7 @@ class SyslogNgCli(object):
         def is_alive(s):
             if not s.is_process_running():
                 self.__process = None
+                self.__error_handling()
                 raise Exception("syslog-ng is not running")
             return s.__syslog_ng_ctl.is_control_socket_alive()
         return wait_until_true(is_alive, self)
@@ -147,7 +148,7 @@ class SyslogNgCli(object):
         self.__handle_core_file()
 
     def __handle_core_file(self):
-        if not self.is_process_running():
+        if not self.__process:
             core_file_found = False
             for core_file in Path(".").glob("*core*"):
                 core_file_found = True
