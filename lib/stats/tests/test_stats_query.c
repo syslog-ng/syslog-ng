@@ -227,6 +227,7 @@ Test(cluster_query_key, test_global_key)
   cr_assert_str_eq(sc->query_key, expected_key,
                    "generated query key(%s) does not match to the expected key(%s)",
                    sc->query_key, expected_key);
+  stats_cluster_free(sc);
 }
 
 TestSuite(stats_query, .init = _initialize_counter_hash, .fini = app_shutdown);

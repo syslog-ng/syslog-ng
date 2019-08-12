@@ -118,7 +118,13 @@ Test(stats_cluster, test_stats_cluster_key_not_equal_when_custom_tags_are_differ
   StatsClusterKey sc_key2;
   stats_cluster_single_key_set_with_name(&sc_key1, SCS_SOURCE | SCS_FILE, "id", "instance", "name1");
   stats_cluster_single_key_set_with_name(&sc_key2, SCS_SOURCE | SCS_FILE, "id", "instance", "name2");
+  StatsCluster *sc1 = stats_cluster_new(&sc_key1);
+  StatsCluster *sc2 = stats_cluster_new(&sc_key2);
+
   cr_assert_not(stats_cluster_key_equal(&sc_key1, &sc_key2), "%s", __FUNCTION__);
+
+  stats_cluster_free(sc1);
+  stats_cluster_free(sc2);
 }
 
 Test(stats_cluster, test_stats_cluster_key_equal_when_custom_tags_are_the_same)
@@ -127,7 +133,14 @@ Test(stats_cluster, test_stats_cluster_key_equal_when_custom_tags_are_the_same)
   StatsClusterKey sc_key2;
   stats_cluster_single_key_set_with_name(&sc_key1, SCS_SOURCE | SCS_FILE, "id", "instance", "name");
   stats_cluster_single_key_set_with_name(&sc_key2, SCS_SOURCE | SCS_FILE, "id", "instance", "name");
+  StatsCluster *sc1 = stats_cluster_new(&sc_key1);
+  StatsCluster *sc2 = stats_cluster_new(&sc_key2);
+
   cr_assert(stats_cluster_key_equal(&sc_key1, &sc_key2), "%s", __FUNCTION__);
+
+
+  stats_cluster_free(sc1);
+  stats_cluster_free(sc2);
 }
 
 typedef struct _ValidateCountersState
