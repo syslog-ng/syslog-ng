@@ -1,9 +1,6 @@
 if ENABLE_JAVA_MODULES
 
 
-JAVA_MOD_DST_DIR=$(DESTDIR)/$(moduledir)/java-modules
-MOD_JARS=$(shell find $(abs_top_builddir)/modules/java-modules -name '*.jar' -not -path "$(abs_top_builddir)/modules/java-modules/.gradle/*")
-JAVA_MODULES_INSTALLED_JARS=$(shell find $(JAVA_MOD_DST_DIR) -name '*.jar')
 GRADLE_PROJECT_DIR ?= $(abs_top_srcdir)/modules/java-modules
 GRADLE_PROJECT_CACHE_DIR ?= $(abs_top_builddir)/modules/java-modules/.gradle
 GRADLE_FLAGS ?=
@@ -14,23 +11,27 @@ GRADLE_ARGS = $(GRADLE_FLAGS) \
 	-PsyslogDepsDir=$(abs_top_builddir)/modules/java/syslog-ng-core/libs
 GRADLE_COMMAND = $(AM_V_GEN) $(GRADLE) $(GRADLE_ARGS)
 
+JAVA_MODULEDIR=$(DESTDIR)/$(moduledir)/java-modules
+JAVA_BUILT_JARS=$(shell find $(abs_top_builddir)/modules/java-modules -name '*.jar' -not -path "$(GRADLE_PROJECT_CACHE_DIR)/*")
+JAVA_INSTALLED_JARS=$(shell find $(JAVA_MODULEDIR) -name '*.jar')
+
 java-modules: $(SYSLOG_NG_CORE_JAR)
 	$(GRADLE_COMMAND) build
 
 all-local: java-modules
 
 log4j-copy-jar:
-	$(GRADLE_COMMAND) -PjarDestDir=$(JAVA_MOD_DST_DIR) copyLog4j
+	$(GRADLE_COMMAND) -PjarDestDir=$(JAVA_MODULEDIR) copyLog4j
 
 jest-copy-jar:
-	$(GRADLE_COMMAND) -PjarDestDir=$(JAVA_MOD_DST_DIR) copyJestRuntimeDeps
+	$(GRADLE_COMMAND) -PjarDestDir=$(JAVA_MODULEDIR) copyJestRuntimeDeps
 
 java-modules-install-exec-hook: log4j-copy-jar jest-copy-jar
-	$(mkinstalldirs) $(JAVA_MOD_DST_DIR)
-	cp $(MOD_JARS) $(JAVA_MOD_DST_DIR)
+	$(mkinstalldirs) $(JAVA_MODULEDIR)
+	cp $(JAVA_BUILT_JARS) $(JAVA_MODULEDIR)
 
 java-modules-uninstall-exec-hook:
-	rm -f $(JAVA_MODULES_INSTALLED_JARS)
+	rm -f $(JAVA_INSTALLED_JARS)
 
 java-modules-clean-hook:
 	rm -rf $(abs_top_builddir)/modules/java-modules/*.log
