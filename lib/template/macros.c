@@ -314,7 +314,7 @@ log_macro_expand_date_time(GString *result, gint id, gboolean escape, const LogT
       format_uint32_padded(result, 2, '0', 10, (wct.wct_yday - (wct.wct_wday - 1 + 7) % 7 + 7) / 7);
       break;
     case M_ISOWEEK:
-      format_uint32_padded(result, 2, '0', 10, 1+(wct.wct_yday - (wct.wct_wday - 1 + 7) % 7 + 7) / 7);
+      format_uint32_padded(result, 2, '0', 10, wall_clock_time_iso_week_number(&wct));
       break;
     case M_YEAR:
       format_uint32_padded(result, 4, '0', 10, wct.wct_year + 1900);

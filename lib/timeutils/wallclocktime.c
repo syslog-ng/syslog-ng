@@ -95,6 +95,12 @@ wall_clock_time_unset(WallClockTime *self)
 #define isleap(y) ((((y) % 4) == 0 && ((y) % 100) != 0) || ((y) % 400) == 0)
 #define isleap_sum(a, b)  isleap((a) % 400 + (b) % 400)
 
+guint32
+wall_clock_time_iso_week_number(WallClockTime *wct)
+{
+  return 1+(wct.wct_yday - (wct.wct_wday - 1 + 7) % 7 + 7) / 7
+}
+
 typedef struct
 {
   const char *abday[7];
