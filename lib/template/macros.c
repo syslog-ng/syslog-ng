@@ -341,6 +341,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
       break;
     }
     case M_SDATA:
+    {
       if (escape)
         {
           GString *sdstr = g_string_sized_new(0);
@@ -354,6 +355,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
           log_msg_append_format_sdata(msg, result, seq_num);
         }
       break;
+    }
     case M_MSGHDR:
     {
       gssize len;
@@ -382,8 +384,10 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
       break;
     }
     case M_MESSAGE:
+    {
       _result_append_value(result, msg, LM_V_MESSAGE, escape);
       break;
+    }
     case M_SOURCE_IP:
     {
       gchar *ip;
