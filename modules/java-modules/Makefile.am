@@ -2,7 +2,8 @@ if ENABLE_JAVA_MODULES
 
 
 GRADLE_PROJECT_DIR ?= $(abs_top_srcdir)/modules/java-modules
-GRADLE_PROJECT_CACHE_DIR ?= $(abs_top_builddir)/modules/java-modules/.gradle
+GRADLE_PROJECT_CACHE_DIR_DEFAULT = $(abs_top_builddir)/modules/java-modules/.gradle
+GRADLE_PROJECT_CACHE_DIR ?= $(GRADLE_PROJECT_CACHE_DIR_DEFAULT)
 GRADLE_FLAGS ?=
 GRADLE_ARGS = $(GRADLE_FLAGS) \
 	--project-dir $(GRADLE_PROJECT_DIR) \
@@ -34,9 +35,9 @@ java-modules-uninstall-exec-hook:
 	rm -f $(JAVA_INSTALLED_JARS)
 
 java-modules-clean-hook:
-	rm -rf $(abs_top_builddir)/modules/java-modules/*.log
-	$(GRADLE_COMMAND) -q clean
-	rm -rf $(GRADLE_WORKDIR)
+	$(GRADLE_COMMAND) clean
+	rm -f $(abs_top_builddir)/modules/java-modules/*.log
+	[ "$(GRADLE_PROJECT_CACHE_DIR)" = "$(GRADLE_PROJECT_CACHE_DIR_DEFAULT)" ] && rm -rf "$(GRADLE_PROJECT_CACHE_DIR)" || true
 
 INSTALL_EXEC_HOOKS += java-modules-install-exec-hook
 UNINSTALL_HOOKS += java-modules-uninstall-exec-hook
