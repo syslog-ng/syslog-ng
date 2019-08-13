@@ -85,7 +85,7 @@ nv_registry_alloc_handle(NVRegistry *self, const gchar *name)
   stored.name_len = len;
   stored.name = g_strdup(name);
   nvhandle_desc_array_append(self->names, &stored);
-  g_hash_table_insert(self->name_map, stored.name, GUINT_TO_POINTER(self->names->len));
+  g_hash_table_insert(self->name_map, g_strdup(name), GUINT_TO_POINTER(self->names->len));
   res = self->names->len;
 exit:
   g_static_mutex_unlock(&nv_registry_lock);
