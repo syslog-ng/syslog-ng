@@ -1,3 +1,2 @@
 usr/lib/syslog-ng/*/java-modules/kafka.jar
 usr/share/syslog-ng/include/scl/kafka/*
-usr/lib/syslog-ng/*/libkafka.so
