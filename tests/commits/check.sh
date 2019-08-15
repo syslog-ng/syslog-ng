@@ -23,11 +23,6 @@
 
 commit_range=origin/master..HEAD
 
-if [ -n "$TRAVIS_COMMIT" ]; then
-  git fetch -q origin master:master
-  commit_range="master..$TRAVIS_COMMIT"
-fi
-
 if [ $# -gt 0 ]; then
   commit_range=$1
 fi
