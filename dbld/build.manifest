@@ -26,11 +26,11 @@
 #
 
 # kafka support needs librdkafka >= 1.0.0, which is only available on ubuntu-bionic
-debian			DH_OPTIONS="-Nsyslog-ng-mod-kafka"
-debian-jessie		DH_OPTIONS="-Nsyslog-ng-mod-mongodb -Nsyslog-ng-mod-kafka -Nsyslog-ng-mod-amqp -Nsyslog-ng-mod-riemann -Nsyslog-ng-mod-geoip2"
-debian-buster		DH_OPTIONS="-Nsyslog-ng-mod-java -Nsyslog-ng-mod-kafka -Nsyslog-ng-mod-java-common-lib -Nsyslog-ng-mod-elastic -Nsyslog-ng-mod-java-http -Nsyslog-ng-mod-hdfs"
-ubuntu			DH_OPTIONS="-Nsyslog-ng-mod-kafka"
-ubuntu-trusty		DH_OPTIONS="-Nsyslog-ng-mod-kafka -Nsyslog-ng-mod-riemann"
+debian			DH_OPTIONS="-Nsyslog-ng-mod-rdkafka"
+debian-jessie		DH_OPTIONS="-Nsyslog-ng-mod-mongodb -Nsyslog-ng-mod-rdkafka -Nsyslog-ng-mod-amqp -Nsyslog-ng-mod-riemann -Nsyslog-ng-mod-geoip2"
+debian-buster		DH_OPTIONS="-Nsyslog-ng-mod-java -Nsyslog-ng-mod-kafka -Nsyslog-ng-mod-rdkafka -Nsyslog-ng-mod-java-common-lib -Nsyslog-ng-mod-elastic -Nsyslog-ng-mod-java-http -Nsyslog-ng-mod-hdfs"
+ubuntu			DH_OPTIONS="-Nsyslog-ng-mod-rdkafka"
+ubuntu-trusty		DH_OPTIONS="-Nsyslog-ng-mod-rdkafka -Nsyslog-ng-mod-riemann"
 ubuntu-bionic
 
 #
