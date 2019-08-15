@@ -51,7 +51,7 @@ Intentional syntax error to cause rpmbuild to abort.
 %global ivykis_ver 0.36.1
 
 Name: syslog-ng
-Version: 3.22.1
+Version: 3.23.1
 Release: 1%{?dist}
 Summary: Next-generation syslog server
 
@@ -577,6 +577,9 @@ fi
 %{_datadir}/%{name}/tools/
 
 %changelog
+* Fri Aug  15 2019 Laszlo Budai <laszlo.budai@balabit.com> - 3.23.1-1
+- update to 3.23.1
+
 * Sun Jun 16 2019 Balazs Scheidler <balazs.scheidler@oneidentity.com> - 3.22.1-1
 - merge changes from Peter Czanik's copr specfile
 - make this work on all supported distros (centos-6, centos-7, latest fedora releases)
