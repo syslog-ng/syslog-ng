@@ -294,7 +294,6 @@ set(CORE_INCLUDE_DIRS
     ${Gettext_INCLUDE_DIR}
     ${IVYKIS_INCLUDE_DIR}
     ${LIBPCRE_INCLUDE_DIRS}
-    ${LIBCAP_INCLUDE_DIR}
     ${Libsystemd_INCLUDE_DIRS}
 )
 
@@ -322,8 +321,8 @@ target_link_libraries(
     ${IVYKIS_LIBRARY}
     ${RESOLV_LIBRARIES}
     ${LIBPCRE_LIBRARIES}
-    ${LIBCAP_LIBRARY}
     ${Libsystemd_LIBRARIES}
+    libcap
     OpenSSL::SSL
     OpenSSL::Crypto
     Threads::Threads
