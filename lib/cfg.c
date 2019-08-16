@@ -545,7 +545,6 @@ static GString *
 _load_file_into_string(const gchar *fname)
 {
   gchar *buff;
-  GString *content = g_string_new("");
 
   GError *error = NULL;
   if (!g_file_get_contents(fname, &buff, NULL, &error))
@@ -555,11 +554,10 @@ _load_file_into_string(const gchar *fname)
                 evt_tag_str(EVT_TAG_OSERROR, error->message));
 
       g_error_free(error);
-      g_string_free(content, TRUE);
       return NULL;
     }
 
-  g_string_append(content, buff);
+  GString *content = g_string_new(buff);
   g_free(buff);
 
   return content;
