@@ -33,6 +33,12 @@ setup(void)
 {
   app_startup();
   geoip_parser = maxminddb_parser_new(configuration);
+  /*
+   * The origin of the database:
+   * https://github.com/maxmind/MaxMind-DB/blob/ea7cd314bb55879b8cb1a059c425d53ff3b9b6cc/test-data/GeoIP2-Precision-Enterprise-Test.mmdb
+   * The same in JSON format:
+   * https://github.com/maxmind/MaxMind-DB/blob/ea7cd314bb55879b8cb1a059c425d53ff3b9b6cc/source-data/GeoIP2-Precision-Enterprise-Test.json
+   */
   geoip_parser_set_database_path(geoip_parser, TOP_SRCDIR "/modules/geoip2/tests/test.mmdb");
 }
 
@@ -82,18 +88,18 @@ Test(geoip2, test_basics)
 {
   LogMessage *msg;
 
-  msg = parse_geoip_into_log_message("217.20.130.99");
-  assert_log_message_value(msg, log_msg_get_value_handle(".geoip2.country.iso_code"), "HU");
+  msg = parse_geoip_into_log_message("2.125.160.216");
+  assert_log_message_value(msg, log_msg_get_value_handle(".geoip2.country.iso_code"), "GB");
   log_msg_unref(msg);
 
   geoip_parser_set_prefix(geoip_parser, ".prefix.");
-  msg = parse_geoip_into_log_message("217.20.130.99");
-  assert_log_message_value(msg, log_msg_get_value_handle(".prefix.country.iso_code"), "HU");
+  msg = parse_geoip_into_log_message("2.125.160.216");
+  assert_log_message_value(msg, log_msg_get_value_handle(".prefix.country.iso_code"), "GB");
   log_msg_unref(msg);
 
   geoip_parser_set_prefix(geoip_parser, "");
-  msg = parse_geoip_into_log_message("217.20.130.99");
-  assert_log_message_value(msg, log_msg_get_value_handle(".country.iso_code"), "HU");
+  msg = parse_geoip_into_log_message("2.125.160.216");
+  assert_log_message_value(msg, log_msg_get_value_handle(".country.iso_code"), "GB");
   log_msg_unref(msg);
 }
 
@@ -103,13 +109,13 @@ Test(geoip2, test_using_template_to_parse_input)
   LogTemplate *template;
 
   template = log_template_new(NULL, NULL);
-  log_template_compile(template, "217.20.130.99", NULL);
+  log_template_compile(template, "2.125.160.216", NULL);
   log_parser_set_template(geoip_parser, template);
   msg = parse_geoip_into_log_message("8.8.8.8");
-  assert_log_message_value(msg, log_msg_get_value_handle(".geoip2.country.iso_code"), "HU");
+  assert_log_message_value(msg, log_msg_get_value_handle(".geoip2.country.iso_code"), "GB");
 
-  assert_log_message_value(msg, log_msg_get_value_handle(".geoip2.location.latitude"), "47.513900");
-  assert_log_message_value(msg, log_msg_get_value_handle(".geoip2.location.longitude"), "19.126800");
+  assert_log_message_value(msg, log_msg_get_value_handle(".geoip2.location.latitude"), "51.750000");
+  assert_log_message_value(msg, log_msg_get_value_handle(".geoip2.location.longitude"), "-1.250000");
 
   log_msg_unref(msg);
 }
