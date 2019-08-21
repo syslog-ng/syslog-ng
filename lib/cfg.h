@@ -122,6 +122,8 @@ struct _GlobalConfig
 
   GString *preprocess_config;
   GString *original_config;
+
+  GList *file_list;
 };
 
 gboolean cfg_load_module(GlobalConfig *cfg, const gchar *module_name);

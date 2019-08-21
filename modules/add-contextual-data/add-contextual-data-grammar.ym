@@ -82,7 +82,7 @@ parser_add_contextual_data_opts
         ;
 
 parser_add_contextual_data_opt
-        : KW_DATABASE '(' string ')'
+        : KW_DATABASE '(' path_no_check ')'
         {
             add_contextual_data_set_filename(last_parser, $3);
             free($3);

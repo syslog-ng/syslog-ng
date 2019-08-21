@@ -26,6 +26,7 @@
 #include "control/control-server.h"
 #include "messages.h"
 #include "cfg.h"
+#include "cfg-path.h"
 #include "apphook.h"
 #include "secret-storage/secret-storage.h"
 
@@ -257,6 +258,24 @@ process_credentials(ControlConnection *cc, GString *command, gpointer user_data)
   control_connection_send_reply(cc, result);
 }
 
+static void
+control_connection_list_files(ControlConnection *cc, GString *command, gpointer user_data)
+{
+  MainLoop *main_loop = (MainLoop *) user_data;
+  GlobalConfig *config = main_loop_get_current_config(main_loop);
+  GString *result = g_string_new("");
+
+  for (GList *v = config->file_list; v; v = v->next)
+    {
+      CfgFilePath *cfg_file_path = (CfgFilePath *) v->data;
+      g_string_append_printf(result, "%s: %s\n", cfg_file_path->path_type, cfg_file_path->file_path);
+    }
+
+  if (result->len == 0)
+    g_string_assign(result, "No files available\n");
+
+  control_connection_send_reply(cc, result);
+}
 
 ControlCommand default_commands[] =
 {
@@ -267,6 +286,7 @@ ControlCommand default_commands[] =
   { "CONFIG", control_connection_config },
   { "LICENSE", show_ose_license_info },
   { "PWD", process_credentials },
+  { "LISTFILES", control_connection_list_files },
   { NULL, NULL },
 };
 

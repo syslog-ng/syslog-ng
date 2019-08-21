@@ -250,6 +250,12 @@ slng_reopen(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
   return _dispatch_command("REOPEN");
 }
 
+static gint
+slng_listfiles(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
+{
+  return _dispatch_command("LISTFILES");
+}
+
 static const gint QUERY_COMMAND = 0;
 static gboolean query_is_get_sum = FALSE;
 static gboolean query_reset = FALSE;
@@ -603,6 +609,7 @@ static CommandDescriptor modes[] =
   { "show-license-info", license_options, "Show information about the license", slng_license, NULL },
   { "credentials", no_options, "Credentials manager", NULL, credentials_commands },
   { "config", config_options, "Print current config", slng_config, NULL },
+  { "list-files", no_options, "Print files present in config", slng_listfiles, NULL },
   { NULL, NULL },
 };
 

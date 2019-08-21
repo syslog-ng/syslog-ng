@@ -23,6 +23,7 @@
  */
 
 #include "cfg.h"
+#include "cfg-path.h"
 #include "cfg-grammar.h"
 #include "module-config.h"
 #include "cfg-tree.h"
@@ -563,6 +564,16 @@ _load_file_into_string(const gchar *fname)
   return content;
 }
 
+static void
+_cfg_file_path_free(gpointer data)
+{
+  CfgFilePath *self = (CfgFilePath *)data;
+
+  g_free(self->file_path);
+  g_free(self->path_type);
+  g_free(self);
+}
+
 gboolean
 cfg_read_config(GlobalConfig *self, const gchar *fname, gchar *preprocess_into)
 {
@@ -633,6 +644,8 @@ cfg_free(GlobalConfig *self)
     g_string_free(self->preprocess_config, TRUE);
   if (self->original_config)
     g_string_free(self->original_config, TRUE);
+
+  g_list_free_full(self->file_list, _cfg_file_path_free);
 
   g_free(self);
 }

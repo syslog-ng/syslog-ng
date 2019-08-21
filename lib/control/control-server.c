@@ -74,6 +74,9 @@ control_connection_send_reply(ControlConnection *self, GString *reply)
 
   self->pos = 0;
   self->waiting_for_output = FALSE;
+
+  g_assert(self->output_buffer->len > 0);
+
   if (self->output_buffer->str[self->output_buffer->len - 1] != '\n')
     {
       g_string_append_c(self->output_buffer, '\n');

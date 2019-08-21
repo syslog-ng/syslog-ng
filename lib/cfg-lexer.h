@@ -194,7 +194,6 @@ void cfg_token_block_free(CfgTokenBlock *self);
 
 void cfg_lexer_register_generator_plugin(PluginContext *context, CfgBlockGenerator *gen);
 
-
 #define CFG_LEXER_ERROR cfg_lexer_error_quark()
 
 GQuark cfg_lexer_error_quark(void);

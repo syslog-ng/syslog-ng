@@ -32,6 +32,7 @@
 #pragma GCC diagnostic ignored "-Wswitch-default"
 /* YYSTYPE and YYLTYPE is defined by the lexer */
 #include "cfg-lexer.h"
+#include "cfg-path.h"
 #include "afinter.h"
 #include "type-hinting.h"
 #include "filter/filter-expr-parser.h"
@@ -43,6 +44,7 @@
 #include "logthrsource/logthrsourcedrv.h"
 #include "logthrsource/logthrfetcherdrv.h"
 #include "str-utils.h"
+#include <sys/stat.h>
 
 /* uses struct declarations instead of the typedefs to avoid having to
  * include logreader/logwriter/driver.h, which defines the typedefs.  This
@@ -466,6 +468,10 @@ DNSCacheOptions *last_dns_cache_options;
 %type   <num> positive_integer64
 %type   <num> nonnegative_integer
 %type   <num> nonnegative_integer64
+%type	<cptr> path_no_check
+%type	<cptr> path_secret
+%type	<cptr> path_check
+%type	<cptr> path
 
 /* END_DECLS */
 
@@ -1085,6 +1091,28 @@ string_or_number
         | LL_FLOAT                              { $$ = strdup(lexer->token_text->str); }
         ;
 
+path
+	: string
+	  {
+            struct stat buffer;
+            int ret = stat($1, &buffer);
+            CHECK_ERROR((ret == 0), @1, "File \"%s\" not found: %s", $1, strerror(errno));
+            $$ = $1;
+	  }
+	;	
+
+path_check
+    : path { cfg_path_track_file(configuration, $1, "path_check"); }
+    ;
+	
+path_secret
+    : path { cfg_path_track_file(configuration, $1, "path_secret"); }
+    ;
+		
+path_no_check
+    : string { cfg_path_track_file(configuration, $1, "path_no_check"); }
+    ;
+	
 normalized_flag
         : string                                { $$ = normalize_flag($1); free($1); }
         ;

@@ -85,7 +85,7 @@ parser_expr_maxminddb
 parser_geoip_opt
         : KW_PREFIX '(' string ')'
           { geoip_parser_set_prefix(last_parser, $3); free($3); }
-        | KW_DATABASE '(' string ')'
+        | KW_DATABASE '(' path_check ')'
           { geoip_parser_set_database_path(last_parser, $3); free($3); }
         ;
 

@@ -102,7 +102,7 @@ parser_db_opts
 
 /* NOTE: we don't support parser_opt as we don't want the user to specify a template */
 parser_db_opt
-        : KW_FILE '(' string ')'                		{ log_db_parser_set_db_file(((LogDBParser *) last_parser), $3); free($3); }
+        : KW_FILE '(' path_no_check ')'                		{ log_db_parser_set_db_file(((LogDBParser *) last_parser), $3); free($3); }
 	| KW_DROP_UNMATCHED '(' yesno ')'			{ log_db_parser_set_drop_unmatched(((LogDBParser *) last_parser), $3); };
         | KW_PROGRAM_TEMPLATE '(' template_content ')'
           {

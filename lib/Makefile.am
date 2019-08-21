@@ -109,6 +109,7 @@ pkginclude_HEADERS			+= \
 	lib/cfg-block.h			\
 	lib/cfg-block-generator.h	\
 	lib/cfg-parser.h		\
+	lib/cfg-path.h			\
 	lib/cfg-tree.h			\
 	lib/children.h			\
 	lib/crypto.h			\
@@ -195,6 +196,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/cfg-lexer.c			\
 	lib/cfg-lexer-subst.c		\
 	lib/cfg-parser.c		\
+	lib/cfg-path.c			\
 	lib/cfg-tree.c			\
 	lib/children.c			\
 	lib/dnscache.c			\
