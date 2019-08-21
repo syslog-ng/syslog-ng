@@ -536,6 +536,12 @@ cfg_dump_processed_config(GString *preprocess_output, gchar *output_filename)
 {
   FILE *output_file;
 
+  if (strcmp(output_filename, "-")==0)
+    {
+      fprintf(stdout, "%s", preprocess_output->str);
+      return;
+    }
+
   output_file = fopen(output_filename,"w+");
   if (!output_file)
     {
@@ -552,13 +558,20 @@ static GString *
 _load_file_into_string(const gchar *fname)
 {
   gchar *buff;
-  GString *content = g_string_new("");
 
-  if (g_file_get_contents(fname, &buff, NULL, NULL))
+  GError *error = NULL;
+  if (!g_file_get_contents(fname, &buff, NULL, &error))
     {
-      g_string_append(content, buff);
-      g_free(buff);
+      msg_error("Error opening configuration file",
+                evt_tag_str(EVT_TAG_FILENAME, fname),
+                evt_tag_str(EVT_TAG_OSERROR, error->message));
+
+      g_error_free(error);
+      return NULL;
     }
+
+  GString *content = g_string_new(buff);
+  g_free(buff);
 
   return content;
 }
@@ -576,39 +589,26 @@ _cfg_file_path_free(gpointer data)
 gboolean
 cfg_read_config(GlobalConfig *self, const gchar *fname, gchar *preprocess_into)
 {
-  FILE *cfg_file;
   gint res;
+  CfgLexer *lexer;
 
   self->filename = fname;
-
-  if ((cfg_file = fopen(fname, "r")) != NULL)
+  self->preprocess_config = g_string_sized_new(8192);
+  self->original_config = _load_file_into_string(fname);
+  if (!self->original_config)
     {
-      CfgLexer *lexer;
-      self->preprocess_config = g_string_sized_new(8192);
-      self->original_config = _load_file_into_string(fname);
-
-      lexer = cfg_lexer_new(self, cfg_file, fname, self->preprocess_config);
-      res = cfg_run_parser(self, lexer, &main_parser, (gpointer *) &self, NULL);
-      fclose(cfg_file);
-      if (preprocess_into)
-        {
-          cfg_dump_processed_config(self->preprocess_config, preprocess_into);
-        }
-
-      if (res)
-        {
-          /* successfully parsed */
-          return TRUE;
-        }
-    }
-  else
-    {
-      msg_error("Error opening configuration file",
-                evt_tag_str(EVT_TAG_FILENAME, fname),
-                evt_tag_error(EVT_TAG_OSERROR));
+      return FALSE;
     }
 
-  return FALSE;
+  lexer = cfg_lexer_new(self, fname, self->original_config, self->preprocess_config);
+  res = cfg_run_parser(self, lexer, &main_parser, (gpointer *) &self, NULL);
+
+  if (preprocess_into)
+    {
+      cfg_dump_processed_config(self->preprocess_config, preprocess_into);
+    }
+
+  return res;
 }
 
 void

@@ -1102,38 +1102,14 @@ cfg_lexer_init(CfgLexer *self, GlobalConfig *cfg)
 }
 
 
-/* NOTE: cfg might be NULL in some call sites, but in those cases the lexer
- * should remain operational, obviously skipping cases where it would be
- * using the configuration instance.  The lexer and the configuration stuff
- * should be one-way dependent, right now it is a circular dependency. */
 CfgLexer *
-cfg_lexer_new(GlobalConfig *cfg, FILE *file, const gchar *filename, GString *preprocess_output)
+cfg_lexer_new_common(GlobalConfig *cfg, const gchar *buffer, gsize length)
 {
   CfgLexer *self;
   CfgIncludeLevel *level;
 
   self = g_new0(CfgLexer, 1);
   cfg_lexer_init(self, cfg);
-  self->preprocess_output = preprocess_output;
-
-  level = &self->include_stack[0];
-  level->include_type = CFGI_FILE;
-  level->name = g_strdup(filename);
-  level->yybuf = _cfg_lexer__create_buffer(file, YY_BUF_SIZE, self->state);
-  _cfg_lexer__switch_to_buffer(level->yybuf, self->state);
-
-  return self;
-}
-
-CfgLexer *
-cfg_lexer_new_buffer(GlobalConfig *cfg, const gchar *buffer, gsize length)
-{
-  CfgLexer *self;
-  CfgIncludeLevel *level;
-
-  self = g_new0(CfgLexer, 1);
-  cfg_lexer_init(self, cfg);
-  self->ignore_pragma = TRUE;
 
   level = &self->include_stack[0];
   level->include_type = CFGI_BUFFER;
@@ -1143,9 +1119,34 @@ cfg_lexer_new_buffer(GlobalConfig *cfg, const gchar *buffer, gsize length)
   level->buffer.content[length] = 0;
   level->buffer.content[length + 1] = 0;
   level->buffer.content_length = length + 2;
-  level->name = g_strdup("<string>");
   level->yybuf = _cfg_lexer__scan_buffer(level->buffer.content, level->buffer.content_length, self->state);
   _cfg_lexer__switch_to_buffer(level->yybuf, self->state);
+
+  return self;
+}
+
+/* NOTE: cfg might be NULL in some call sites, but in those cases the lexer
+ * should remain operational, obviously skipping cases where it would be
+ * using the configuration instance.  The lexer and the configuration stuff
+ * should be one-way dependent, right now it is a circular dependency. */
+CfgLexer *
+cfg_lexer_new(GlobalConfig *cfg, const gchar *filename, GString *buffer, GString *preprocess_output)
+{
+  CfgLexer *self = cfg_lexer_new_common(cfg, buffer->str, buffer->len);
+
+  self->preprocess_output = preprocess_output;
+  self->include_stack[0].name = g_strdup(filename);
+
+  return self;
+}
+
+CfgLexer *
+cfg_lexer_new_buffer(GlobalConfig *cfg, const gchar *buffer, gsize length)
+{
+  CfgLexer *self = cfg_lexer_new_common(cfg, buffer, length);
+
+  self->ignore_pragma = TRUE;
+  self->include_stack[0].name = g_strdup("<string>");
 
   return self;
 }
