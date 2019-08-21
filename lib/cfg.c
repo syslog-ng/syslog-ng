@@ -527,7 +527,6 @@ cfg_run_parser_with_main_context(GlobalConfig *self, CfgLexer *lexer, CfgParser 
 
   cfg_lexer_push_context(lexer, main_parser.context, main_parser.keywords, desc);
   ret_val = cfg_run_parser(self, lexer, parser, result, arg);
-  cfg_lexer_pop_context(lexer);
 
   return ret_val;
 }
