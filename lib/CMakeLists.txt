@@ -319,9 +319,9 @@ target_link_libraries(
     ${GLIB_LIBRARIES}
     ${Gettext_LIBRARIES}
     ${IVYKIS_LIBRARY}
-    ${RESOLV_LIBRARIES}
     ${LIBPCRE_LIBRARIES}
     ${Libsystemd_LIBRARIES}
+    resolv
     libcap
     OpenSSL::SSL
     OpenSSL::Crypto
