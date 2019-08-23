@@ -166,6 +166,21 @@ _get_module_info(GModule *mod)
   return NULL;
 }
 
+static gchar *
+_format_module_init_name(const gchar *module_name)
+{
+  gchar *module_init_func;
+  gchar *p;
+
+  module_init_func = g_strdup_printf("%s_module_init", module_name);
+  for (p = module_init_func; *p; p++)
+    {
+      if ((*p) == '-')
+        *p = '_';
+    }
+  return module_init_func;
+}
+
 void
 plugin_register(PluginContext *context, Plugin *p, gint number)
 {
@@ -222,22 +237,6 @@ plugin_find(PluginContext *context, gint plugin_type, const gchar *plugin_name)
                 evt_tag_str("name", plugin_name));
     }
   return NULL;
-}
-
-
-static gchar *
-plugin_get_module_init_name(const gchar *module_name)
-{
-  gchar *module_init_func;
-  gchar *p;
-
-  module_init_func = g_strdup_printf("%s_module_init", module_name);
-  for (p = module_init_func; *p; p++)
-    {
-      if ((*p) == '-')
-        *p = '_';
-    }
-  return module_init_func;
 }
 
 static GModule *
@@ -361,7 +360,7 @@ plugin_load_module(PluginContext *context, const gchar *module_name, CfgArgs *ar
   /* lookup in the main executable */
   if (!main_module_handle)
     main_module_handle = g_module_open(NULL, 0);
-  module_init_func = plugin_get_module_init_name(module_name);
+  module_init_func = _format_module_init_name(module_name);
 
   if (g_module_symbol(main_module_handle, module_init_func, (gpointer *) &init_func))
     {
@@ -382,7 +381,7 @@ plugin_load_module(PluginContext *context, const gchar *module_name, CfgArgs *ar
   if (module_info->canonical_name)
     {
       g_free(module_init_func);
-      module_init_func = plugin_get_module_init_name(module_info->canonical_name ? : module_name);
+      module_init_func = _format_module_init_name(module_info->canonical_name ? : module_name);
     }
 
   if (!g_module_symbol(mod, module_init_func, (gpointer *) &init_func))
