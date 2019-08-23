@@ -515,6 +515,21 @@ _free_candidate_plugins(PluginContext *context)
 }
 
 void
+plugin_context_copy_candidates(PluginContext *context, PluginContext *from)
+{
+  GList *l;
+
+  for (l = from->candidate_plugins; l; l = l->next)
+    {
+      PluginCandidate *pc = (PluginCandidate *) l->data;
+
+      context->candidate_plugins =
+        g_list_prepend(context->candidate_plugins,
+                       plugin_candidate_new(pc->super.type, pc->super.name, pc->module_name));
+    }
+}
+
+void
 plugin_context_set_module_path(PluginContext *context, const gchar *module_path)
 {
   g_free(context->module_path);

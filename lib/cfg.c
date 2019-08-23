@@ -477,6 +477,17 @@ cfg_new_snippet(void)
   return self;
 }
 
+/* This function creates a GlobalConfig instance that shares the set of
+ * available plugins as a master one.  */
+GlobalConfig *
+cfg_new_subordinate(GlobalConfig *master)
+{
+  GlobalConfig *self = cfg_new_snippet();
+
+  plugin_context_copy_candidates(&self->plugin_context, &master->plugin_context);
+  return self;
+}
+
 void
 cfg_set_global_paths(GlobalConfig *self)
 {
