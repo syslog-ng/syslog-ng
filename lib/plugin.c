@@ -125,7 +125,7 @@ plugin_construct_from_config(Plugin *self, CfgLexer *lexer, gpointer arg)
  *****************************************************************************/
 
 static Plugin *
-plugin_find_in_list(GList *head, gint plugin_type, const gchar *plugin_name)
+_find_plugin_in_list(GList *head, gint plugin_type, const gchar *plugin_name)
 {
   GList *p;
   Plugin *plugin;
@@ -165,7 +165,7 @@ plugin_register(PluginContext *context, Plugin *p, gint number)
     {
       Plugin *existing_plugin;
 
-      existing_plugin = plugin_find_in_list(context->plugins, p[i].type, p[i].name);
+      existing_plugin = _find_plugin_in_list(context->plugins, p[i].type, p[i].name);
       if (existing_plugin)
         {
           msg_debug("Attempted to register the same plugin multiple times, dropping the old one",
@@ -184,13 +184,13 @@ plugin_find(PluginContext *context, gint plugin_type, const gchar *plugin_name)
   PluginCandidate *candidate;
 
   /* try registered plugins first */
-  p = plugin_find_in_list(context->plugins, plugin_type, plugin_name);
+  p = _find_plugin_in_list(context->plugins, plugin_type, plugin_name);
   if (p)
     {
       return p;
     }
 
-  candidate = (PluginCandidate *) plugin_find_in_list(context->candidate_plugins, plugin_type, plugin_name);
+  candidate = (PluginCandidate *) _find_plugin_in_list(context->candidate_plugins, plugin_type, plugin_name);
   if (!candidate)
     return NULL;
 
@@ -198,7 +198,7 @@ plugin_find(PluginContext *context, gint plugin_type, const gchar *plugin_name)
   plugin_load_module(context, candidate->module_name, NULL);
 
   /* by this time it should've registered */
-  p = plugin_find_in_list(context->plugins, plugin_type, plugin_name);
+  p = _find_plugin_in_list(context->plugins, plugin_type, plugin_name);
   if (p)
     {
       p->failure_info.aux_data = candidate->super.failure_info.aux_data;
@@ -463,7 +463,7 @@ plugin_load_candidate_modules(PluginContext *context)
                       Plugin *plugin = &module_info->plugins[j];
                       PluginCandidate *candidate_plugin;
 
-                      candidate_plugin = (PluginCandidate *) plugin_find_in_list(context->candidate_plugins, plugin->type, plugin->name);
+                      candidate_plugin = (PluginCandidate *) _find_plugin_in_list(context->candidate_plugins, plugin->type, plugin->name);
 
                       msg_debug("Registering candidate plugin",
                                 evt_tag_str("module", module_name),
