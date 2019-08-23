@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #############################################################################
-# Copyright (c) 2015-2018 Balabit
+# Copyright (c) 2015-2019 Balabit
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -20,26 +20,28 @@
 # COPYING for details.
 #
 #############################################################################
-from pathlib2 import Path
+import logging
 
-import src.testcase_parameters.testcase_parameters as tc_parameters
-from src.driver_io.file.file_io import FileIO
-from src.syslog_ng_config.statements.destinations.destination_driver import DestinationDriver
-from src.syslog_ng_config.statements.destinations.destination_reader import DestinationReader
+from src.message_reader.message_reader import MessageReader
+from src.message_reader.single_line_parser import SingleLineParser
+
+logger = logging.getLogger(__name__)
 
 
-class FileDestination(DestinationDriver):
-    def __init__(self, file_name, **options):
-        self.driver_name = "file"
-        self.path = Path(tc_parameters.WORKING_DIR, file_name)
-        super(FileDestination, self).__init__([self.path], options)
-        self.destination_reader = DestinationReader(FileIO)
+class DestinationReader(object):
+    def __init__(self, IOClass):
+        self.__IOClass = IOClass
+        self.__reader = None
 
-    def get_path(self):
-        return self.path
-
-    def read_log(self):
-        return self.destination_reader.dd_read_logs(self.get_path(), counter=1)[0]
-
-    def read_logs(self, counter):
-        return self.destination_reader.dd_read_logs(self.get_path(), counter=counter)
+    def dd_read_logs(self, path, counter):
+        if not self.__reader:
+            io = self.__IOClass(path)
+            io.wait_for_creation()
+            message_reader = MessageReader(
+                io.read, SingleLineParser(),
+            )
+            self.__reader = message_reader
+        messages = self.__reader.pop_messages(counter)
+        read_description = "Content has been read from\nresource: {}\ncontent: {}\n".format(path, messages)
+        logger.info(read_description)
+        return messages
