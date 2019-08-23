@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #############################################################################
-# Copyright (c) 2019 Balabit
+# Copyright (c) 2015-2019 Balabit
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -20,13 +20,11 @@
 # COPYING for details.
 #
 #############################################################################
+from src.syslog_ng_config.statements.sources.source_driver import SourceDriver
 
 
-def test_generator_source(config, syslog_ng):
-    generator_source = config.create_example_msg_generator_source(num=1)
-    file_destination = config.create_file_destination(file_name="output.log", template="'$MSG\n'")
-
-    config.create_logpath(statements=[generator_source, file_destination])
-    syslog_ng.start(config)
-    log = file_destination.read_log()
-    assert log == generator_source.DEFAULT_MESSAGE + "\n"
+class ExampleMsgGeneratorSource(SourceDriver):
+    def __init__(self, **options):
+        self.driver_name = "example_msg_generator"
+        self.DEFAULT_MESSAGE = "-- Generated message. --"
+        super(ExampleMsgGeneratorSource, self).__init__(None, options)
