@@ -405,6 +405,19 @@ call_init:
   return result;
 }
 
+gboolean
+plugin_is_module_available(PluginContext *context, const gchar *module_name)
+{
+  for (GList *l = context->candidate_plugins; l; l = l->next)
+    {
+      PluginCandidate *pc = (PluginCandidate *) l->data;
+
+      if (strcmp(pc->module_name, module_name) == 0)
+        return TRUE;
+    }
+  return FALSE;
+}
+
 /************************************************************
  * Candidate modules
  ************************************************************/

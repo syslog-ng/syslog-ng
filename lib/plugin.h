@@ -106,6 +106,7 @@ void plugin_candidate_free(PluginCandidate *self);
 
 void plugin_register(PluginContext *context, Plugin *p, gint number);
 gboolean plugin_load_module(PluginContext *context, const gchar *module_name, CfgArgs *args);
+gboolean plugin_is_module_available(PluginContext *context, const gchar *module_name);
 
 void plugin_list_modules(FILE *out, gboolean verbose);
 

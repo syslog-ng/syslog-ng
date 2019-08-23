@@ -125,6 +125,7 @@ struct _GlobalConfig
 
 gboolean cfg_load_module_with_args(GlobalConfig *cfg, const gchar *module_name, CfgArgs *args);
 gboolean cfg_load_module(GlobalConfig *cfg, const gchar *module_name);
+gboolean cfg_is_module_available(GlobalConfig *self, const gchar *module_name);
 void cfg_discover_candidate_modules(GlobalConfig *self);
 
 Plugin *cfg_find_plugin(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name);
