@@ -25,13 +25,15 @@ from pathlib2 import Path
 import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.driver_io.file.file_io import FileIO
 from src.syslog_ng_config.statements.sources.source_driver import SourceDriver
+from src.syslog_ng_config.statements.sources.source_writer import SourceWriter
 
 
 class FileSource(SourceDriver):
     def __init__(self, file_name, **options):
         self.driver_name = "file"
         self.path = Path(tc_parameters.WORKING_DIR, file_name)
-        super(FileSource, self).__init__(FileIO, [self.path], options)
+        super(FileSource, self).__init__([self.path], options)
+        self.source_writer = SourceWriter(FileIO)
 
     def get_path(self):
         return self.path
@@ -40,4 +42,4 @@ class FileSource(SourceDriver):
         self.path = Path(tc_parameters.WORKING_DIR, pathname)
 
     def write_log(self, formatted_log, counter=1):
-        self.sd_write_log(self.get_path(), formatted_log, counter=counter)
+        self.source_writer.sd_write_log(self.get_path(), formatted_log, counter=counter)
