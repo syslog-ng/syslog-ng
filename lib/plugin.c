@@ -156,6 +156,16 @@ _find_plugin_in_list(GList *head, gint plugin_type, const gchar *plugin_name)
   return NULL;
 }
 
+static ModuleInfo *
+_get_module_info(GModule *mod)
+{
+  ModuleInfo *module_info = NULL;
+
+  if (mod && g_module_symbol(mod, "module_info", (gpointer *) &module_info))
+    return module_info;
+  return NULL;
+}
+
 void
 plugin_register(PluginContext *context, Plugin *p, gint number)
 {
@@ -214,15 +224,6 @@ plugin_find(PluginContext *context, gint plugin_type, const gchar *plugin_name)
   return NULL;
 }
 
-static ModuleInfo *
-plugin_get_module_info(GModule *mod)
-{
-  ModuleInfo *module_info = NULL;
-
-  if (mod && g_module_symbol(mod, "module_info", (gpointer *) &module_info))
-    return module_info;
-  return NULL;
-}
 
 static gchar *
 plugin_get_module_init_name(const gchar *module_name)
@@ -376,7 +377,7 @@ plugin_load_module(PluginContext *context, const gchar *module_name, CfgArgs *ar
       return FALSE;
     }
   g_module_make_resident(mod);
-  module_info = plugin_get_module_info(mod);
+  module_info = _get_module_info(mod);
 
   if (module_info->canonical_name)
     {
@@ -454,7 +455,7 @@ plugin_load_candidate_modules(PluginContext *context)
                         evt_tag_str("fname", fname),
                         evt_tag_str("module", module_name));
               mod = plugin_dlopen_module_as_dir_and_filename(mod_paths[i], fname, module_name);
-              module_info = plugin_get_module_info(mod);
+              module_info = _get_module_info(mod);
 
               if (module_info)
                 {
@@ -569,7 +570,7 @@ plugin_list_modules(FILE *out, gboolean verbose)
               module_name = g_strndup(so_basename, (gint) (strlen(so_basename) - strlen(G_MODULE_SUFFIX) - 1));
 
               mod = plugin_dlopen_module_as_dir_and_filename(mod_paths[i], fname, module_name);
-              module_info = plugin_get_module_info(mod);
+              module_info = _get_module_info(mod);
               if (verbose)
                 {
                   fprintf(out, "Module: %s\n", module_name);
