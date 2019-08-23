@@ -38,6 +38,7 @@ typedef struct _AddContextualDataFilterSelector
 {
   AddContextualDataSelector super;
   gchar *filters_path;
+  GlobalConfig *master_cfg;
   GlobalConfig *filters_cfg;
   FilterStore *filter_store;
 } AddContextualDataFilterSelector;
@@ -99,7 +100,7 @@ _filter_store_get_first_matching_name(FilterStore *self, LogMessage *msg)
 static gboolean
 _init_filters_from_file(AddContextualDataFilterSelector *self)
 {
-  self->filters_cfg = cfg_new_snippet();
+  self->filters_cfg = cfg_new_subordinate(self->master_cfg);
   if (!cfg_read_config(self->filters_cfg, self->filters_path, NULL))
     {
       cfg_free(self->filters_cfg);
@@ -236,6 +237,7 @@ add_contextual_data_selector_filter_clone(AddContextualDataSelector *s, GlobalCo
 
   cloned->filters_path = g_strdup(self->filters_path);
   cloned->filters_cfg = NULL;
+  cloned->master_cfg = self->master_cfg;
   cloned->filter_store  = _filter_store_clone(self->filter_store);
 
   return &cloned->super;
@@ -248,7 +250,7 @@ add_contextual_data_selector_filter_new(GlobalConfig *cfg, const gchar *filters_
   AddContextualDataFilterSelector *new_instance = _create_empty_add_contextual_data_filter_selector();
 
   new_instance->filters_path = g_strdup(filters_path);
-  new_instance->cfg = NULL;
+  new_instance->master_cfg = cfg;
   new_instance->filters_cfg = NULL;
   new_instance->filter_store = _filter_store_new();
 
