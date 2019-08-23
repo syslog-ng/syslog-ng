@@ -220,13 +220,13 @@ static AddContextualDataSelector *add_contextual_data_selector_filter_clone(AddC
 static AddContextualDataFilterSelector *
 _create_empty_add_contextual_data_filter_selector(void)
 {
-  AddContextualDataFilterSelector *new_instance = g_new0(AddContextualDataFilterSelector, 1);
-  new_instance->super.ordering_required = TRUE;
-  new_instance->super.resolve = add_contextual_data_selector_filter_resolve;
-  new_instance->super.free = add_contextual_data_selector_filter_free;
-  new_instance->super.init = add_contextual_data_selector_filter_init;
-  new_instance->super.clone = add_contextual_data_selector_filter_clone;
-  return new_instance;
+  AddContextualDataFilterSelector *self = g_new0(AddContextualDataFilterSelector, 1);
+  self->super.ordering_required = TRUE;
+  self->super.resolve = add_contextual_data_selector_filter_resolve;
+  self->super.free = add_contextual_data_selector_filter_free;
+  self->super.init = add_contextual_data_selector_filter_init;
+  self->super.clone = add_contextual_data_selector_filter_clone;
+  return self;
 }
 
 static AddContextualDataSelector *
@@ -246,13 +246,12 @@ add_contextual_data_selector_filter_clone(AddContextualDataSelector *s, GlobalCo
 AddContextualDataSelector *
 add_contextual_data_selector_filter_new(GlobalConfig *cfg, const gchar *filters_path)
 {
+  AddContextualDataFilterSelector *self = _create_empty_add_contextual_data_filter_selector();
 
-  AddContextualDataFilterSelector *new_instance = _create_empty_add_contextual_data_filter_selector();
+  self->filters_path = g_strdup(filters_path);
+  self->master_cfg = cfg;
+  self->filters_cfg = NULL;
+  self->filter_store = _filter_store_new();
 
-  new_instance->filters_path = g_strdup(filters_path);
-  new_instance->master_cfg = cfg;
-  new_instance->filters_cfg = NULL;
-  new_instance->filter_store = _filter_store_new();
-
-  return &new_instance->super;
+  return &self->super;
 }
