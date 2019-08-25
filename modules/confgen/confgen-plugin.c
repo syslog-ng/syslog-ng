@@ -36,7 +36,13 @@ static void
 confgen_set_args_as_env(gpointer k, gpointer v, gpointer user_data)
 {
   gchar buf[1024];
+
   g_snprintf(buf, sizeof(buf), "confgen_%s", (gchar *)k);
+
+  msg_debug("confgen: Passing argument to confgen script",
+            evt_tag_str("name", (gchar *) k),
+            evt_tag_str("value", (gchar *) v),
+            evt_tag_str("env_name", buf));
   setenv(buf, (gchar *)v, 1);
 }
 
