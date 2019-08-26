@@ -208,7 +208,7 @@ Test(format_json, test_format_flat_json)
   LogMessage *msg = create_empty_message();
 
   assert_template_format_msg("$(format-flat-json a.b.c1=abc a.b.d=abd a.bc=abc)",
-                             "{\"a\":{\"bc\":\"abc\",\"b\":{\"d\":\"abd\",\"c1\":\"abc\"}}}",
+                             "{\"a.bc\":\"abc\",\"a.b.d\":\"abd\",\"a.b.c1\":\"abc\"}",
                              msg);
 
   log_msg_unref(msg);

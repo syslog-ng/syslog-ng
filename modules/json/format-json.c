@@ -347,6 +347,93 @@ tf_json_call(LogTemplateFunction *self, gpointer s,
 
 }
 
+static gboolean
+tf_flat_json_obj_start(const gchar *name,
+                       const gchar *prefix, gpointer *prefix_data,
+                       const gchar *prev, gpointer *prev_data,
+                       gpointer user_data)
+{
+  json_state_t *state = (json_state_t *)user_data;
+
+  if (state->need_comma)
+    g_string_append_c(state->buffer, ',');
+
+  state->need_comma = FALSE;
+
+  return FALSE;
+}
+
+static gboolean
+tf_flat_json_obj_end(const gchar *name,
+                     const gchar *prefix, gpointer *prefix_data,
+                     const gchar *prev, gpointer *prev_data,
+                     gpointer user_data)
+{
+  json_state_t *state = (json_state_t *)user_data;
+
+  state->need_comma = TRUE;
+
+  return FALSE;
+}
+
+static gboolean
+tf_flat_json_value(const gchar *name, const gchar *prefix,
+                   TypeHint type, const gchar *value, gsize value_len,
+                   gpointer *prefix_data, gpointer user_data)
+{
+  json_state_t *state = (json_state_t *)user_data;
+
+  gchar buff[1024];
+  sprintf(buff, "%s.%s", prefix, name);
+  tf_json_append_value(buff, value, value_len, state, TRUE);
+
+  state->need_comma = TRUE;
+
+  return FALSE;
+}
+
+static gboolean
+tf_flat_json_append(GString *result, ValuePairs *vp, LogMessage *msg,
+                    const LogTemplateOptions *template_options, gint32 seq_num, gint time_zone_mode)
+{
+  json_state_t state;
+
+  state.need_comma = FALSE;
+  state.buffer = result;
+  state.template_options = template_options;
+
+  g_string_append_c(state.buffer, '{');
+
+  gboolean success = value_pairs_walk(vp,
+                                      tf_flat_json_obj_start, tf_flat_json_value, tf_flat_json_obj_end,
+                                      msg, seq_num, time_zone_mode,
+                                      template_options,
+                                      &state);
+
+  g_string_append_c(state.buffer, '}');
+
+  return success;
+}
+
+static void
+tf_flat_json_call(LogTemplateFunction *self, gpointer s,
+                  const LogTemplateInvokeArgs *args, GString *result)
+{
+  TFJsonState *state = (TFJsonState *)s;
+  gsize orig_size = result->len;
+
+  for (gint i = 0; i < args->num_messages; i++)
+    {
+      gboolean r = tf_flat_json_append(result, state->vp, args->messages[i], args->opts, args->seq_num, args->tz);
+      if (!r && (args->opts->on_error & ON_ERROR_DROP_MESSAGE))
+        {
+          g_string_set_size(result, orig_size);
+          return;
+        }
+    }
+
+}
+
 static void
 tf_json_free_state(gpointer s)
 {
@@ -359,5 +446,5 @@ tf_json_free_state(gpointer s)
 TEMPLATE_FUNCTION(TFJsonState, tf_json, tf_json_prepare, NULL, tf_json_call,
                   tf_json_free_state, NULL);
 
-TEMPLATE_FUNCTION(TFJsonState, tf_flat_json, tf_json_prepare, NULL, tf_json_call,
+TEMPLATE_FUNCTION(TFJsonState, tf_flat_json, tf_json_prepare, NULL, tf_flat_json_call,
                   tf_json_free_state, NULL);
