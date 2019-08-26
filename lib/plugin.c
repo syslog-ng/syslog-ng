@@ -125,7 +125,7 @@ plugin_construct_from_config(Plugin *self, CfgLexer *lexer, gpointer arg)
  *****************************************************************************/
 
 static Plugin *
-plugin_find_in_list(GList *head, gint plugin_type, const gchar *plugin_name)
+_find_plugin_in_list(GList *head, gint plugin_type, const gchar *plugin_name)
 {
   GList *p;
   Plugin *plugin;
@@ -156,66 +156,8 @@ plugin_find_in_list(GList *head, gint plugin_type, const gchar *plugin_name)
   return NULL;
 }
 
-void
-plugin_register(PluginContext *context, Plugin *p, gint number)
-{
-  gint i;
-
-  for (i = 0; i < number; i++)
-    {
-      Plugin *existing_plugin;
-
-      existing_plugin = plugin_find_in_list(context->plugins, p[i].type, p[i].name);
-      if (existing_plugin)
-        {
-          msg_debug("Attempted to register the same plugin multiple times, dropping the old one",
-                    evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(p[i].type)),
-                    evt_tag_str("name", p[i].name));
-          context->plugins = g_list_remove(context->plugins, existing_plugin);
-        }
-      context->plugins = g_list_prepend(context->plugins, &p[i]);
-    }
-}
-
-Plugin *
-plugin_find(PluginContext *context, gint plugin_type, const gchar *plugin_name)
-{
-  Plugin *p;
-  PluginCandidate *candidate;
-
-  /* try registered plugins first */
-  p = plugin_find_in_list(context->plugins, plugin_type, plugin_name);
-  if (p)
-    {
-      return p;
-    }
-
-  candidate = (PluginCandidate *) plugin_find_in_list(context->candidate_plugins, plugin_type, plugin_name);
-  if (!candidate)
-    return NULL;
-
-  /* try to autoload the module */
-  plugin_load_module(context, candidate->module_name, NULL);
-
-  /* by this time it should've registered */
-  p = plugin_find_in_list(context->plugins, plugin_type, plugin_name);
-  if (p)
-    {
-      p->failure_info.aux_data = candidate->super.failure_info.aux_data;
-      return p;
-    }
-  else
-    {
-      msg_error("This module claims to support a plugin, which it didn't register after loading",
-                evt_tag_str("module", candidate->module_name),
-                evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(plugin_type)),
-                evt_tag_str("name", plugin_name));
-    }
-  return NULL;
-}
-
 static ModuleInfo *
-plugin_get_module_info(GModule *mod)
+_get_module_info(GModule *mod)
 {
   ModuleInfo *module_info = NULL;
 
@@ -225,7 +167,7 @@ plugin_get_module_info(GModule *mod)
 }
 
 static gchar *
-plugin_get_module_init_name(const gchar *module_name)
+_format_module_init_name(const gchar *module_name)
 {
   gchar *module_init_func;
   gchar *p;
@@ -240,7 +182,7 @@ plugin_get_module_init_name(const gchar *module_name)
 }
 
 static GModule *
-plugin_dlopen_module_as_filename(const gchar *module_file_name, const gchar *module_name)
+_dlopen_module_as_filename(const gchar *module_file_name, const gchar *module_name)
 {
   GModule *mod = NULL;
 
@@ -260,21 +202,20 @@ plugin_dlopen_module_as_filename(const gchar *module_file_name, const gchar *mod
 }
 
 static GModule *
-plugin_dlopen_module_as_dir_and_filename(const gchar *module_dir_name, const gchar *module_file_name,
-                                         const gchar *module_name)
+_dlopen_module_as_dir_and_filename(const gchar *module_dir_name, const gchar *module_file_name,
+                                   const gchar *module_name)
 {
   gchar *path;
   GModule *mod;
 
   path = g_build_path(G_DIR_SEPARATOR_S, module_dir_name, module_file_name, NULL);
-  mod = plugin_dlopen_module_as_filename(path, module_name);
+  mod = _dlopen_module_as_filename(path, module_name);
   g_free(path);
   return mod;
 }
 
-
 static GModule *
-plugin_dlopen_module_on_path(const gchar *module_name, const gchar *module_path)
+_dlopen_module_on_path(const gchar *module_name, const gchar *module_path)
 {
   gchar *plugin_module_name = NULL;
   gchar **module_path_dirs, *p, *dot;
@@ -342,9 +283,67 @@ plugin_dlopen_module_on_path(const gchar *module_name, const gchar *module_path)
       return NULL;
     }
 
-  mod = plugin_dlopen_module_as_filename(plugin_module_name, module_name);
+  mod = _dlopen_module_as_filename(plugin_module_name, module_name);
   g_free(plugin_module_name);
   return mod;
+}
+
+void
+plugin_register(PluginContext *context, Plugin *p, gint number)
+{
+  gint i;
+
+  for (i = 0; i < number; i++)
+    {
+      Plugin *existing_plugin;
+
+      existing_plugin = _find_plugin_in_list(context->plugins, p[i].type, p[i].name);
+      if (existing_plugin)
+        {
+          msg_debug("Attempted to register the same plugin multiple times, dropping the old one",
+                    evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(p[i].type)),
+                    evt_tag_str("name", p[i].name));
+          context->plugins = g_list_remove(context->plugins, existing_plugin);
+        }
+      context->plugins = g_list_prepend(context->plugins, &p[i]);
+    }
+}
+
+Plugin *
+plugin_find(PluginContext *context, gint plugin_type, const gchar *plugin_name)
+{
+  Plugin *p;
+  PluginCandidate *candidate;
+
+  /* try registered plugins first */
+  p = _find_plugin_in_list(context->plugins, plugin_type, plugin_name);
+  if (p)
+    {
+      return p;
+    }
+
+  candidate = (PluginCandidate *) _find_plugin_in_list(context->candidate_plugins, plugin_type, plugin_name);
+  if (!candidate)
+    return NULL;
+
+  /* try to autoload the module */
+  plugin_load_module(context, candidate->module_name, NULL);
+
+  /* by this time it should've registered */
+  p = _find_plugin_in_list(context->plugins, plugin_type, plugin_name);
+  if (p)
+    {
+      p->failure_info.aux_data = candidate->super.failure_info.aux_data;
+      return p;
+    }
+  else
+    {
+      msg_error("This module claims to support a plugin, which it didn't register after loading",
+                evt_tag_str("module", candidate->module_name),
+                evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(plugin_type)),
+                evt_tag_str("name", plugin_name));
+    }
+  return NULL;
 }
 
 gboolean
@@ -360,7 +359,7 @@ plugin_load_module(PluginContext *context, const gchar *module_name, CfgArgs *ar
   /* lookup in the main executable */
   if (!main_module_handle)
     main_module_handle = g_module_open(NULL, 0);
-  module_init_func = plugin_get_module_init_name(module_name);
+  module_init_func = _format_module_init_name(module_name);
 
   if (g_module_symbol(main_module_handle, module_init_func, (gpointer *) &init_func))
     {
@@ -369,19 +368,19 @@ plugin_load_module(PluginContext *context, const gchar *module_name, CfgArgs *ar
     }
 
   /* try to load it from external .so */
-  mod = plugin_dlopen_module_on_path(module_name, context->module_path);
+  mod = _dlopen_module_on_path(module_name, context->module_path);
   if (!mod)
     {
       g_free(module_init_func);
       return FALSE;
     }
   g_module_make_resident(mod);
-  module_info = plugin_get_module_info(mod);
+  module_info = _get_module_info(mod);
 
   if (module_info->canonical_name)
     {
       g_free(module_init_func);
-      module_init_func = plugin_get_module_init_name(module_info->canonical_name ? : module_name);
+      module_init_func = _format_module_init_name(module_info->canonical_name ? : module_name);
     }
 
   if (!g_module_symbol(mod, module_init_func, (gpointer *) &init_func))
@@ -410,12 +409,6 @@ call_init:
  * Candidate modules
  ************************************************************/
 
-static void
-_free_candidate_plugin_list(GList *candidate_plugins)
-{
-  g_list_foreach(candidate_plugins, (GFunc) plugin_candidate_free, NULL);
-  g_list_free(candidate_plugins);
-}
 void
 plugin_load_candidate_modules(PluginContext *context)
 {
@@ -453,8 +446,8 @@ plugin_load_candidate_modules(PluginContext *context)
                         evt_tag_str("path", mod_paths[i]),
                         evt_tag_str("fname", fname),
                         evt_tag_str("module", module_name));
-              mod = plugin_dlopen_module_as_dir_and_filename(mod_paths[i], fname, module_name);
-              module_info = plugin_get_module_info(mod);
+              mod = _dlopen_module_as_dir_and_filename(mod_paths[i], fname, module_name);
+              module_info = _get_module_info(mod);
 
               if (module_info)
                 {
@@ -463,7 +456,7 @@ plugin_load_candidate_modules(PluginContext *context)
                       Plugin *plugin = &module_info->plugins[j];
                       PluginCandidate *candidate_plugin;
 
-                      candidate_plugin = (PluginCandidate *) plugin_find_in_list(context->candidate_plugins, plugin->type, plugin->name);
+                      candidate_plugin = (PluginCandidate *) _find_plugin_in_list(context->candidate_plugins, plugin->type, plugin->name);
 
                       msg_debug("Registering candidate plugin",
                                 evt_tag_str("module", module_name),
@@ -506,11 +499,34 @@ _free_plugin(Plugin *plugin, gpointer user_data)
 }
 
 static void
-plugin_free_plugins(PluginContext *context)
+_free_plugins(PluginContext *context)
 {
   g_list_foreach(context->plugins, (GFunc) _free_plugin, NULL);
   g_list_free(context->plugins);
   context->plugins = NULL;
+}
+
+static void
+_free_candidate_plugins(PluginContext *context)
+{
+  g_list_foreach(context->candidate_plugins, (GFunc) plugin_candidate_free, NULL);
+  g_list_free(context->candidate_plugins);
+  context->candidate_plugins = NULL;
+}
+
+void
+plugin_context_copy_candidates(PluginContext *context, PluginContext *from)
+{
+  GList *l;
+
+  for (l = from->candidate_plugins; l; l = l->next)
+    {
+      PluginCandidate *pc = (PluginCandidate *) l->data;
+
+      context->candidate_plugins =
+        g_list_prepend(context->candidate_plugins,
+                       plugin_candidate_new(pc->super.type, pc->super.name, pc->module_name));
+    }
 }
 
 void
@@ -530,9 +546,8 @@ plugin_context_init_instance(PluginContext *context)
 void
 plugin_context_deinit_instance(PluginContext *context)
 {
-  plugin_free_plugins(context);
-  _free_candidate_plugin_list(context->candidate_plugins);
-  context->candidate_plugins = NULL;
+  _free_plugins(context);
+  _free_candidate_plugins(context);
 
   g_free(context->module_path);
 }
@@ -568,8 +583,8 @@ plugin_list_modules(FILE *out, gboolean verbose)
                 so_basename = fname + 3;
               module_name = g_strndup(so_basename, (gint) (strlen(so_basename) - strlen(G_MODULE_SUFFIX) - 1));
 
-              mod = plugin_dlopen_module_as_dir_and_filename(mod_paths[i], fname, module_name);
-              module_info = plugin_get_module_info(mod);
+              mod = _dlopen_module_as_dir_and_filename(mod_paths[i], fname, module_name);
+              module_info = _get_module_info(mod);
               if (verbose)
                 {
                   fprintf(out, "Module: %s\n", module_name);

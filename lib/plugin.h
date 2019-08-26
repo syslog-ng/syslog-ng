@@ -58,8 +58,11 @@ typedef struct _PluginCandidate
 typedef struct _Plugin Plugin;
 struct _Plugin
 {
-  /* NOTE: the first two fields must match PluginCandidate struct defined in
-     the plugin.c module, please modify them both at the same time! */
+  /* NOTE: the first three fields must match PluginCandidate struct defined
+     in the plugin.c module, please modify them both at the same time!  It
+     is not referenced as "super" as it would make the using sites having to
+     use ugly braces when initializing the structure. */
+
   gint type;
   const gchar *name;
   PluginFailureInfo failure_info;
@@ -108,6 +111,7 @@ void plugin_list_modules(FILE *out, gboolean verbose);
 
 void plugin_load_candidate_modules(PluginContext *context);
 
+void plugin_context_copy_candidates(PluginContext *context, PluginContext *src_context);
 void plugin_context_set_module_path(PluginContext *context, const gchar *module_path);
 void plugin_context_init_instance(PluginContext *context);
 void plugin_context_deinit_instance(PluginContext *context);

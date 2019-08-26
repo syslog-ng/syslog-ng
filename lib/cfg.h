@@ -147,6 +147,7 @@ void cfg_set_global_paths(GlobalConfig *self);
 
 GlobalConfig *cfg_new(gint version);
 GlobalConfig *cfg_new_snippet(void);
+GlobalConfig *cfg_new_subordinate(GlobalConfig *master);
 gboolean cfg_run_parser(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer *result, gpointer arg);
 gboolean cfg_run_parser_with_main_context(GlobalConfig *self, CfgLexer *lexer, CfgParser *parser, gpointer *result,
                                           gpointer arg, const gchar *desc);
