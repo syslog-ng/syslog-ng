@@ -9,7 +9,7 @@ not set, POST will be used.
 Example config:
 
 ```
-@version: 3.22
+@version: 3.23
 @include "scl.conf"
 source      s_system { system(); internal(); };
 destination http_des {
