@@ -98,7 +98,7 @@ class SyslogNgCli(object):
         if self.__process:
             raise Exception("syslog-ng has been already started")
 
-        config.write_content(self.__instance_paths.get_config_path())
+        config.write_config(self.__instance_paths.get_config_path())
 
         self.__syntax_check()
         self.__start_syslog_ng()
@@ -106,7 +106,7 @@ class SyslogNgCli(object):
         logger.info("syslog-ng process has been started with PID: {}\n".format(self.__process.pid))
 
     def reload(self, config):
-        config.write_content(self.__instance_paths.get_config_path())
+        config.write_config(self.__instance_paths.get_config_path())
 
         # effective reload
         self.__syslog_ng_ctl.reload()
