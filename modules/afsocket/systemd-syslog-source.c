@@ -39,12 +39,9 @@ static gboolean
 systemd_syslog_sd_acquire_socket(AFSocketSourceDriver *s,
                                  gint *acquired_fd)
 {
-  gint fd, number_of_fds;
-
   *acquired_fd = -1;
-  fd = -1;
 
-  number_of_fds = sd_listen_fds(0);
+  gint number_of_fds = sd_listen_fds(0);
 
   if (number_of_fds > 1)
     {
@@ -60,7 +57,7 @@ systemd_syslog_sd_acquire_socket(AFSocketSourceDriver *s,
     }
   else
     {
-      fd = SD_LISTEN_FDS_START;
+      gint fd = SD_LISTEN_FDS_START;
       msg_debug("Systemd socket activation",
                 evt_tag_int("file-descriptor", fd));
 

@@ -54,10 +54,11 @@
 static inline int
 evt_str_grow(EVTSTR *es, size_t new_alloc)
 {
-  es->es_buf = realloc(es->es_buf, new_alloc);
-  if (!es->es_buf)
+  char *buf = realloc(es->es_buf, new_alloc);
+  if (!buf)
     return 0;
 
+  es->es_buf = buf;
   es->es_allocated = new_alloc;
   return 1;
 }
@@ -147,6 +148,13 @@ evt_str_init(size_t init_alloc)
       es->es_allocated = init_alloc;
       es->es_length = 0;
       es->es_buf = malloc(init_alloc);
+
+      if (!es->es_buf)
+        {
+          free(es);
+          return NULL;
+        }
+
       es->es_buf[0] = 0;
     }
   return es;

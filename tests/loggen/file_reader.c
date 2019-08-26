@@ -364,7 +364,8 @@ read_next_message_from_file(char *buf, int buflen, int syslog_proto, int thread_
             {
               /* Restart reading from the beginning of the file */
               rewind(source[thread_index]);
-              temp = fgets(buf, buflen, source[thread_index]);
+              if (!fgets(buf, buflen, source[thread_index]))
+                return -1;
             }
           else
             return -1;

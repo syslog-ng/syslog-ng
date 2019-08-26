@@ -68,7 +68,6 @@ log_proto_buffered_server_convert_from_raw(LogProtoBufferedServer *self, const g
   gsize avail_in = raw_buffer_len;
   gsize avail_out;
   gchar *out;
-  gint  ret = -1;
   gboolean success = FALSE;
   LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(self);
 
@@ -77,7 +76,7 @@ log_proto_buffered_server_convert_from_raw(LogProtoBufferedServer *self, const g
       avail_out = state->buffer_size - state->pending_buffer_end;
       out = (gchar *) self->buffer + state->pending_buffer_end;
 
-      ret = g_iconv(self->convert, (gchar **) &raw_buffer, &avail_in, (gchar **) &out, &avail_out);
+      gint ret = g_iconv(self->convert, (gchar **) &raw_buffer, &avail_in, (gchar **) &out, &avail_out);
       if (ret == (gsize) -1)
         {
           switch (errno)
@@ -126,9 +125,6 @@ log_proto_buffered_server_convert_from_raw(LogProtoBufferedServer *self, const g
                     state->buffer_size = self->super.options->max_buffer_size;
 
                   self->buffer = g_realloc(self->buffer, state->buffer_size);
-
-                  /* recalculate the out pointer, and add what we have now */
-                  ret = -1;
                 }
               else
                 {

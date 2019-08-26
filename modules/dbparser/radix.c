@@ -866,7 +866,7 @@ r_add_child_check(RNode *root, gchar *key, gpointer value, RNodeGetValueFunc val
 void
 r_add_pchild(RNode *parent, RNode *child)
 {
-  parent->pchildren = realloc(parent->pchildren, (sizeof(RNode *) * (parent->num_pchildren + 1)));
+  parent->pchildren = g_realloc(parent->pchildren, (sizeof(RNode *) * (parent->num_pchildren + 1)));
 
   parent->pchildren[(parent->num_pchildren)++] = child;
 }

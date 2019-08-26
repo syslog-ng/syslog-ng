@@ -29,6 +29,7 @@
 #include <string.h>
 #include <iv.h>
 #include <iv_thread.h>
+#include <criterion/criterion.h>
 
 int acked_messages = 0;
 int fed_messages = 0;
@@ -89,6 +90,7 @@ send_some_messages(LogQueue *q, gint n)
   for (i = 0; i < n; i++)
     {
       LogMessage *msg = log_queue_pop_head(q, &path_options);
+      cr_assert_not_null(msg);
       if (q->use_backlog)
         {
           log_msg_ack(msg, &path_options, AT_PROCESSED);

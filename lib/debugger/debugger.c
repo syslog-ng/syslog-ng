@@ -261,11 +261,9 @@ _fetch_command(Debugger *self)
 static gboolean
 _handle_command(Debugger *self)
 {
-  gint i;
   gint argc;
   gchar **argv;
   GError *error = NULL;
-  gboolean result = TRUE;
   DebuggerCommandFunc command = NULL;
 
   if (!g_shell_parse_argv(self->command_buffer ? : "", &argc, &argv, &error))
@@ -275,7 +273,7 @@ _handle_command(Debugger *self)
       return TRUE;
     }
 
-  for (i = 0; command_table[i].name; i++)
+  for (gint i = 0; command_table[i].name; i++)
     {
       if (strcmp(command_table[i].name, argv[0]) == 0)
         {
@@ -288,7 +286,7 @@ _handle_command(Debugger *self)
       printf("Undefined command %s, try \"help\"\n", argv[0]);
       return TRUE;
     }
-  result = command(self, argc, argv);
+  gboolean result = command(self, argc, argv);
   g_strfreev(argv);
   return result;
 }

@@ -195,9 +195,6 @@ gint
 add_main(int argc, char *argv[])
 {
   int result = 0;
-  gchar *filename;
-  PersistTool *self;
-  gchar *line = g_malloc(MAX_LINE_LEN);
 
   if (!persist_state_dir)
     {
@@ -210,13 +207,10 @@ add_main(int argc, char *argv[])
       fprintf(stderr, "Directory doesn't exist: %s\n", persist_state_dir);
       return 1;
     }
-  filename = g_build_path(G_DIR_SEPARATOR_S, persist_state_dir,
-                          persist_state_name ? persist_state_name : DEFAULT_PERSIST_FILE, NULL);
 
   if (argc < 2)
     {
       fprintf(stderr, "Input missing\n");
-      g_free(filename);
       return 1;
     }
 
@@ -231,18 +225,23 @@ add_main(int argc, char *argv[])
       if (input_file == NULL)
         {
           fprintf(stderr, "Can't open input file; file = \"%s\", error = %s\n", argv[1], strerror(errno));
-          g_free(filename);
           return 1;
         }
     }
 
-  self = persist_tool_new(filename, persist_mode_edit);
+  gchar *filename = g_build_path(G_DIR_SEPARATOR_S, persist_state_dir,
+                                 persist_state_name ? persist_state_name : DEFAULT_PERSIST_FILE, NULL);
+
+
+  PersistTool *self = persist_tool_new(filename, persist_mode_edit);
   if (!self)
     {
       fprintf(stderr,"Error creating persist tool\n");
+      g_free(filename);
       return 1;
     }
 
+  gchar *line = g_malloc(MAX_LINE_LEN);
   while(fgets(line, MAX_LINE_LEN, input_file))
     {
       if (strlen(line) > 3)
