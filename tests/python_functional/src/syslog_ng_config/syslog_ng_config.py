@@ -106,7 +106,7 @@ class SyslogNgConfig(object):
         self.__syslog_ng_config["statement_groups"].append(statement_group)
         return statement_group
 
-    def create_statement_group_if_needed(self, item):
+    def __create_statement_group_if_needed(self, item):
         if isinstance(item, (StatementGroup, LogPath)):
             return item
         else:
@@ -114,7 +114,7 @@ class SyslogNgConfig(object):
 
     def __create_logpath_with_conversion(self, items, flags):
         return self.__create_logpath_group(
-            map(self.create_statement_group_if_needed, cast_to_list(items)),
+            map(self.__create_statement_group_if_needed, cast_to_list(items)),
             flags,
         )
 
