@@ -333,15 +333,18 @@ tf_json_call(LogTemplateFunction *self, gpointer s,
              const LogTemplateInvokeArgs *args, GString *result)
 {
   TFJsonState *state = (TFJsonState *)s;
-  gint i;
-  gboolean r = TRUE;
   gsize orig_size = result->len;
 
-  for (i = 0; i < args->num_messages; i++)
-    r &= tf_json_append(result, state->vp, args->messages[i], args->opts, args->seq_num, args->tz);
+  for (gint i = 0; i < args->num_messages; i++)
+    {
+      gboolean r = tf_json_append(result, state->vp, args->messages[i], args->opts, args->seq_num, args->tz);
+      if (!r && (args->opts->on_error & ON_ERROR_DROP_MESSAGE))
+        {
+          g_string_set_size(result, orig_size);
+          return;
+        }
+    }
 
-  if (!r && (args->opts->on_error & ON_ERROR_DROP_MESSAGE))
-    g_string_set_size(result, orig_size);
 }
 
 static void
