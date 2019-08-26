@@ -54,7 +54,7 @@ class SyslogNgConfig(object):
     def set_raw_config(self, raw_config):
         self.__raw_config = raw_config
 
-    def write_content(self, config_path):
+    def write_config(self, config_path):
         if self.__raw_config:
             rendered_config = self.__raw_config
         else:
