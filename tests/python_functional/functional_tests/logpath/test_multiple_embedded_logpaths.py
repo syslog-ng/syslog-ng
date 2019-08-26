@@ -46,7 +46,7 @@ def test_multiple_embedded_logpaths(config, syslog_ng, bsd_formatter):
     # Oct 11 22:14:15 host-B app-A: message from host-B and app-A
     # Oct 11 22:14:15 host-B app-B: message from host-B and app-B
 
-    config.create_global_options(keep_hostname="yes")
+    config.update_global_options(keep_hostname="yes")
 
     file_source = config.create_file_source(file_name="input.log")
     host_filter = config.create_filter(host="'host-A'")
