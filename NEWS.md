@@ -1,73 +1,60 @@
-3.22.1
+3.23.1
 ======
 
-## Highlights
-
- * Sending SNMP traps: Using the new `snmp()` destination, incoming log messages
-   can be converted to SNMP traps, as the fields of the SNMP messages can be
-   customized with macros. (#2693)
-
- * `$(template)` dynamic binding: Extends the $(template) template function to
-   allow dynamic binding. For example, the name of the template to be invoked
-   can come from the message (name-value pairs). (#2716)
-
- * `syslog()`, `network()`: Add `dynamic-window-size()` option to enable dynamic
-   flow control that distributes the specified amount of window between active
-   connections at runtime. This can be used in low-memory environments, where
-   only a small subset of the active clients sends messages at high rate.
-   (#2772)
 
 ## Features
 
- * `match()`: Add support for the `template()` option (#2715)
- * `add-contextual-data()`: Allow using templates in name-value pairs (#2711)
- * Add support for floating point operations in template functions (#2742)
- * Add support for usec precision when parsing time (#2709)
+ * The `redis()` destination now handles any number of command parameters.
+   (#2816)
+
+ * The `format()` option of `date-parser()` supports lists. From now on, a
+   single `date-parser()` instance is able to process different date formats,
+   making it easy to catch on when some programs change the way they log
+   information. (#2779)
+
+ * Add relocation support for `disk-buffer()`. The `relocate` subcommand of
+   `dqtool` can be used to move a single or multiple queue files. (#2855)
+
+ * `file(), pipe()`: The `time-reap()` option now can be set or disabled for
+   each destination separately.
+   Use `time-reap(0)` to disable closing idle destination files. (#2798)
+
+ * `syslog-ng-ctl`: Add `list-files` subcommand to print files present in the
+   current configuration. (#2797)
 
 ## Bugfixes
 
- * Fix null pointer access when destinations are suspended (#2778)
- * Fix `grouping-by()` deadlock (#2758)
- * Fix a general source-related crash and enhance `wildcard-file()`'s bookmark
-   handling (#2589)
- * Fix infinite loop (reload/reopen) (#2739)
- * Fix `python()` package/module name collision (#2438)
- * Fix escaped quote in block argument (#2781)
- * Reintroduce test on SYSLOG_NG_HAVE_TIMEZONE (#2774)
- * `snmp()`: Fix template leak (#2746)
+ * Fix minor memory leaks (#2868)
+ * Add global context to standalone parsers (#2876)
+ * Fix heap usage after free in cfg_run_parser_with_main_context (#2884)
+ * Fix g_thread_init call order issue with older glibs (#2853)
+ * SNMP destination: fixing statistics format (#2854)
+ * eventlog: flush escaped_buffer when full (#2837)
+ * dbparser: remove unnecessary lock (#2838)
+ * dbparser: fix crash when context times out in the middle of another rule (#2832)
+ * radix: fix grouping in PCRE (#2808)
+ * add-contextual-data: make filters config plugin aware (#2886)
+ * Undefined warning regression (#2829)
 
 ## Other changes
 
- * Never drop flow-controlled messages: The meaning of `log-fifo-size()` has
-   changed to avoid dropping flow-controlled messages when `log-fifo-size()` is
-   misconfigured. From now on, `log-fifo-size()` only affects messages that are
-   not flow-controlled. (#2753)
-
- * The `-d`/`--debug` syslog-ng command line flag no longer implies
-   `-e`/`--stderr`. If you want to redirect `internal()` source to stderr,
-   use the `-e`/`--stderr` option explicitly. (#2731)
-
- * dbld, RPM and DEB packaging improvements (#2724)
- * Checkpoint parser improvements (#2740)
- * Reset the timezone on config reload event (#2691)
- * `geoip2()`: Include IP into the error message (#2743)
- * Improve regexp error messages (#2796)
- * `http()`: Warn if less workers used than urls (#2757)
- * `http()`: Allow URLs to be specified by a space/comma separated string
-   (#2699)
- * loggen: Change message rate at runtime using signals (#2756)
- * debun: add acquire_running_syslog_config function (#2752)
- * FreeBSD fixes for the test suite (#2783)
+ * Disable `time-reap()` on non-templated filenames by default (#2798)
+ * The `--preprocess-into` command line flag accepts `-`, and writes the
+   preprocessed configuration to stdout. (#2869)
+ * Add information on environment variables passed to the confgen script (#2888)
+ * Light: minor fixes (#2867, #2844)
+ * python: use malloc_debug for python unit tests (#2866)
+ * Travis: verbose unit test output (#2851)
+ * Travis cleanup (#2809)
+ * filter: add unit tests to `filter-op` (#2835)
+ * Fix clang/gcc diagnostic differences (#2810)
+ * Fix leak in stats test (#2874)
+ * cmake, autotools: -Wundef to enable-extra-warning  (#2806)
 
 ## Notes to the developers
 
- * ivykis: update to 0.42.4 (#2736)
- * Support generator plugins in global options (#2747)
- * logthrfetcher: new constants (#2766)
- * logthrsourcedrv: support position tracking (#2750)
- * Light: Support pre-commit and tox (#2725)
- * Enable Bison error flags: conflicts-sr/rr (#2762)
- * Dynamic stats constant registration (#2761)
+ * Check whether commit messages are properly formatted (#2803, #2807)
+ * gitignore: tags file and build directory (#2794)
 
 ## Credits
 
@@ -79,7 +66,7 @@ feedback are all important contributions, so please if you are a user
 of syslog-ng, contribute.
 
 We would like to thank the following people for their contribution:
-Andras Mitzki, Antal Nemes, Attila Szakacs, Balazs Scheidler,
-Christian Michallek, Fabien Wernli, Gabor Nagy, Kyeong Yoo, Laszlo Budai,
-Laszlo Szemere, László Várady, Mehul Prajapati, Norbert Takacs, Oleksii Hamov,
+
+Andras Mitzki, Antal Nemes, Attila Szakacs, Balazs Scheidler, Gabor Nagy,
+Laszlo Budai, Laszlo Szemere, László Várady, Mark Bonsack, Mehul Prajapati,
 Péter Kókai, Romain Tartière, Zoltan Pallagi.
