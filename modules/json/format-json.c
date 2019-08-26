@@ -31,6 +31,7 @@
 #include "syslog-ng.h"
 #include "utf8utils.h"
 #include "scanner/list-scanner/list-scanner.h"
+#include "scratch-buffers.h"
 
 typedef struct _TFJsonState
 {
@@ -376,6 +377,18 @@ tf_flat_json_obj_end(const gchar *name,
   return FALSE;
 }
 
+static GString *
+_join_name(const gchar *prefix, const gchar  *subfix)
+{
+  GString *full_name = scratch_buffers_alloc();
+  if (prefix)
+    g_string_append_printf(full_name, "%s.%s", prefix, subfix);
+  else
+    g_string_append(full_name, subfix);
+
+  return full_name;
+}
+
 static gboolean
 tf_flat_json_value(const gchar *name, const gchar *prefix,
                    TypeHint type, const gchar *value, gsize value_len,
@@ -383,9 +396,9 @@ tf_flat_json_value(const gchar *name, const gchar *prefix,
 {
   json_state_t *state = (json_state_t *)user_data;
 
-  gchar buff[1024];
-  sprintf(buff, "%s.%s", prefix, name);
-  tf_json_append_value(buff, value, value_len, state, TRUE);
+  GString *full_name = _join_name(prefix, name);
+
+  tf_json_append_value(full_name->str, value, value_len, state, TRUE);
 
   state->need_comma = TRUE;
 

@@ -214,6 +214,17 @@ Test(format_json, test_format_flat_json)
   log_msg_unref(msg);
 }
 
+Test(format_json, test_format_flat_json_direct)
+{
+  LogMessage *msg = create_empty_message();
+
+  assert_template_format_msg("$(format-flat-json a=b c=d)",
+                             "{\"c\":\"d\",\"a\":\"b\"}",
+                             msg);
+
+  log_msg_unref(msg);
+}
+
 Test(format_json, test_format_json_performance)
 {
   perftest_template("$(format-json APP.*)\n");
