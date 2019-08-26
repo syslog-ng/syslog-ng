@@ -225,6 +225,22 @@ Test(format_json, test_format_flat_json_direct)
   log_msg_unref(msg);
 }
 
+Test(format_json, test_format_flat_json_with_type_hints)
+{
+  assert_template_format("$(format-flat-json i32=int32(1234))",
+                         "{\"i32\":1234}");
+  assert_template_format("$(format-flat-json \"i=ifoo(\")",
+                         "{\"i\":\"ifoo(\"}");
+  assert_template_format("$(format-flat-json b=boolean(TRUE))",
+                         "{\"b\":true}");
+  assert_template_format("$(format-flat-json l=list($comma_value))",
+                         "{\"l\":[\"value\",\"with\",\"a\",\"comma\"]}");
+  assert_template_format("$(format-flat-json b=literal(whatever))",
+                         "{\"b\":whatever}");
+  assert_template_format("$(format-flat-json b=literal($(format-flat-json subkey=bar)))",
+                         "{\"b\":{\"subkey\":\"bar\"}}");
+}
+
 Test(format_json, test_format_json_performance)
 {
   perftest_template("$(format-json APP.*)\n");
