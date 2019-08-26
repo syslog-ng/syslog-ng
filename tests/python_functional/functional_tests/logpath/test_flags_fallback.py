@@ -42,7 +42,7 @@ def test_flags_fallback(config, syslog_ng, bsd_formatter):
     # Oct 11 22:14:15 host-A testprogram: message from host-A
     # Oct 11 22:14:15 host-B testprogram: message from host-B
 
-    config.create_global_options(keep_hostname="yes")
+    config.update_global_options(keep_hostname="yes")
 
     file_source = config.create_file_source(file_name="input.log")
     host_filter = config.create_filter(host="'host-A'")
