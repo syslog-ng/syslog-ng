@@ -35,6 +35,7 @@ static Plugin json_plugins[] =
     .parser = &json_parser_parser,
   },
   TEMPLATE_FUNCTION_PLUGIN(tf_json, "format_json"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_flat_json, "format_flat_json"),
 };
 
 gboolean

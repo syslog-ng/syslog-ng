@@ -355,3 +355,6 @@ tf_json_free_state(gpointer s)
 
 TEMPLATE_FUNCTION(TFJsonState, tf_json, tf_json_prepare, NULL, tf_json_call,
                   tf_json_free_state, NULL);
+
+TEMPLATE_FUNCTION(TFJsonState, tf_flat_json, tf_json_prepare, NULL, tf_json_call,
+                  tf_json_free_state, NULL);
