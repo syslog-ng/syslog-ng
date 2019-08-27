@@ -208,13 +208,9 @@ tf_json_append_list(const gchar *name, const gchar *value, gsize value_len,
 }
 
 static gboolean
-tf_json_value(const gchar *name, const gchar *prefix,
-              TypeHint type, const gchar *value, gsize value_len,
-              gpointer *prefix_data, gpointer user_data)
+tf_json_append_with_type_hint(const gchar *name, TypeHint type, json_state_t *state, const gchar *value,
+                              const gssize value_len, const gboolean on_error)
 {
-  json_state_t *state = (json_state_t *)user_data;
-  gint on_error = state->template_options->on_error;
-
   switch (type)
     {
     case TYPE_HINT_STRING:
@@ -306,10 +302,21 @@ tf_json_value(const gchar *name, const gchar *prefix,
       break;
     }
     }
+  return FALSE;
+}
+
+static gboolean
+tf_json_value(const gchar *name, const gchar *prefix,
+              TypeHint type, const gchar *value, gsize value_len,
+              gpointer *prefix_data, gpointer user_data)
+{
+  json_state_t *state = (json_state_t *)user_data;
+
+  gboolean result = tf_json_append_with_type_hint(name, type, state, value, value_len, state->template_options->on_error);
 
   state->need_comma = TRUE;
 
-  return FALSE;
+  return result;
 }
 
 static gboolean
@@ -398,103 +405,12 @@ tf_flat_json_value(const gchar *name, const gchar *prefix,
 
   GString *full_name = _join_name(prefix, name);
 
-  gint on_error = state->template_options->on_error;
-
-  switch (type)
-    {
-    case TYPE_HINT_STRING:
-    case TYPE_HINT_DATETIME:
-    default:
-      tf_json_append_value(full_name->str, value, value_len, state, TRUE);
-      break;
-    case TYPE_HINT_LITERAL:
-      tf_json_append_literal(full_name->str, value, value_len, state);
-      break;
-    case TYPE_HINT_LIST:
-      tf_json_append_list(full_name->str, value, value_len, state);
-      break;
-    case TYPE_HINT_INT32:
-    {
-      gint32 i32;
-      const gchar *v = value;
-      gsize v_len = value_len;
-
-      if (!type_cast_to_int32(value, &i32, NULL))
-        {
-          if ((on_error & ON_ERROR_FALLBACK_TO_STRING))
-            tf_json_append_value(full_name->str, v, v_len, state, TRUE);
-          else
-            return type_cast_drop_helper(on_error, value, "int32");
-        }
-      else
-        {
-          tf_json_append_value(full_name->str, v, v_len, state, FALSE);
-        }
-      break;
-    }
-    case TYPE_HINT_INT64:
-    {
-      gint64 i64;
-      const gchar *v = value;
-      gsize v_len = value_len;
-
-      if (!type_cast_to_int64(value, &i64, NULL))
-        {
-          if ((on_error & ON_ERROR_FALLBACK_TO_STRING))
-            tf_json_append_value(full_name->str, v, v_len, state, TRUE);
-          else
-            return type_cast_drop_helper(on_error, value, "int64");
-        }
-      else
-        {
-          tf_json_append_value(full_name->str, v, v_len, state, FALSE);
-        }
-      break;
-    }
-    case TYPE_HINT_DOUBLE:
-    {
-      gdouble d;
-      const gchar *v = value;
-      gsize v_len = value_len;
-
-      if (!type_cast_to_double(value, &d, NULL))
-        {
-          if ((on_error & ON_ERROR_FALLBACK_TO_STRING))
-            tf_json_append_value(full_name->str, v, v_len, state, TRUE);
-          else
-            return type_cast_drop_helper(on_error, value, "double");
-        }
-      else
-        {
-          tf_json_append_value(full_name->str, v, v_len, state, FALSE);
-        }
-      break;
-    }
-    case TYPE_HINT_BOOLEAN:
-    {
-      gboolean b;
-      const gchar *v = value;
-      gsize v_len = value_len;
-
-      if (!type_cast_to_boolean(value, &b, NULL))
-        {
-          if (!(on_error & ON_ERROR_FALLBACK_TO_STRING))
-            return type_cast_drop_helper(on_error, value, "boolean");
-          tf_json_append_value(full_name->str, v, v_len, state, TRUE);
-        }
-      else
-        {
-          v = b ? "true" : "false";
-          v_len = -1;
-          tf_json_append_value(full_name->str, v, v_len, state, FALSE);
-        }
-      break;
-    }
-    }
+  gboolean result = tf_json_append_with_type_hint(full_name->str, type, state, value, value_len,
+                                                  state->template_options->on_error);
 
   state->need_comma = TRUE;
 
-  return FALSE;
+  return result;
 }
 
 static gboolean
