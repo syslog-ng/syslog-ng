@@ -231,13 +231,13 @@ _validate_diskq_path(const gchar *path)
 {
   if (!path)
     {
-      fprintf(stderr, "relocate: missing mandatory option: new_path\n");
+      fprintf(stderr, "missing mandatory option: new_path\n");
       return FALSE;
     }
 
   if (!(is_file_directory(path) && _is_read_writable(path)))
     {
-      fprintf(stderr, "relocate: new_path should be point to a readable/writable directory\n");
+      fprintf(stderr, "new_path should be point to a readable/writable directory\n");
       return FALSE;
     }
 
@@ -249,13 +249,13 @@ _validate_persist_file_path(const gchar *path)
 {
   if (!path)
     {
-      fprintf(stderr, "relocate: missing mandatory option: persist\n");
+      fprintf(stderr, "missing mandatory option: persist\n");
       return FALSE;
     }
 
   if (!(is_file_regular(path) && _is_read_writable(path)))
     {
-      fprintf(stderr, "relocate: persist should point to a readable/writable file\n");
+      fprintf(stderr, "persist should point to a readable/writable file\n");
       return FALSE;
     }
 
