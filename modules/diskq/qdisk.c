@@ -642,7 +642,7 @@ qdisk_write_serialized_string_to_file(QDisk *self, GString const *serialized, gi
 }
 
 static gboolean
-_save_queue(QDisk *self, GQueue *q, gint64 *q_ofs, gint32 *q_len)
+_save_queue(QDisk *self, GQueue *q, QDiskQueuePosition *q_pos)
 {
   LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
@@ -655,8 +655,8 @@ _save_queue(QDisk *self, GQueue *q, gint64 *q_ofs, gint32 *q_len)
 
   if (q->length == 0)
     {
-      *q_ofs = 0;
-      *q_len = 0;
+      q_pos->ofs = 0;
+      q_pos->len = 0;
       return TRUE;
     }
 
@@ -693,8 +693,8 @@ _save_queue(QDisk *self, GQueue *q, gint64 *q_ofs, gint32 *q_len)
       written_bytes += serialized->len;
     }
 
-  *q_len = written_bytes;
-  *q_ofs = queue_start_position;
+  q_pos->len = written_bytes;
+  q_pos->ofs = queue_start_position;
   success = TRUE;
 error:
   g_string_free(serialized, TRUE);
@@ -705,41 +705,27 @@ error:
 gboolean
 qdisk_save_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 {
-  gint64 qout_ofs = 0;
-  gint32 qout_len = 0;
-  gint32 qout_count = 0;
-  gint64 qbacklog_ofs = 0;
-  gint32 qbacklog_len = 0;
-  gint32 qbacklog_count = 0;
-  gint64 qoverflow_ofs = 0;
-  gint32 qoverflow_len = 0;
-  gint32 qoverflow_count = 0;
+  QDiskQueuePosition qout_pos = { 0 };
+  QDiskQueuePosition qbacklog_pos = { 0 };
+  QDiskQueuePosition qoverflow_pos = { 0 };
 
   if (!self->options->reliable)
     {
-      qout_count = qout->length / 2;
-      qbacklog_count = qbacklog->length / 2;
-      qoverflow_count = qoverflow->length / 2;
+      qout_pos.count = qout->length / 2;
+      qbacklog_pos.count = qbacklog->length / 2;
+      qoverflow_pos.count = qoverflow->length / 2;
 
-      if (!_save_queue(self, qout, &qout_ofs, &qout_len) ||
-          !_save_queue(self, qbacklog, &qbacklog_ofs, &qbacklog_len) ||
-          !_save_queue(self, qoverflow, &qoverflow_ofs, &qoverflow_len))
+      if (!_save_queue(self, qout, &qout_pos) ||
+          !_save_queue(self, qbacklog, &qbacklog_pos) ||
+          !_save_queue(self, qoverflow, &qoverflow_pos))
         return FALSE;
     }
 
   memcpy(self->hdr->magic, self->file_id, 4);
 
-  self->hdr->qout_pos.ofs = qout_ofs;
-  self->hdr->qout_pos.len = qout_len;
-  self->hdr->qout_pos.count = qout_count;
-
-  self->hdr->qbacklog_pos.ofs = qbacklog_ofs;
-  self->hdr->qbacklog_pos.len = qbacklog_len;
-  self->hdr->qbacklog_pos.count = qbacklog_count;
-
-  self->hdr->qoverflow_pos.ofs = qoverflow_ofs;
-  self->hdr->qoverflow_pos.len = qoverflow_len;
-  self->hdr->qoverflow_pos.count = qoverflow_count;
+  self->hdr->qout_pos = qout_pos;
+  self->hdr->qbacklog_pos = qbacklog_pos;
+  self->hdr->qoverflow_pos= qoverflow_pos;
 
   if (!self->options->reliable)
     msg_info("Disk-buffer state saved",
