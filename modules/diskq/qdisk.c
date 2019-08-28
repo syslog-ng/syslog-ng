@@ -286,7 +286,6 @@ qdisk_get_empty_space(QDisk *self)
 gboolean
 qdisk_push_tail(QDisk *self, GString *record)
 {
-  guint32 n = GUINT32_TO_BE(record->len);
 
   /* write follows read (e.g. we are appending to the file) OR
    * there's enough space between write and read.
@@ -299,6 +298,7 @@ qdisk_push_tail(QDisk *self, GString *record)
   if (!qdisk_is_space_avail(self, record->len))
     return FALSE;
 
+  guint32 n = GUINT32_TO_BE(record->len);
   if (n == 0)
     {
       msg_error("Error writing empty message into the disk-queue file");
