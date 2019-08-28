@@ -191,6 +191,7 @@ qdisk_is_file_empty(QDisk *self)
 gboolean
 qdisk_is_space_avail(QDisk *self, gint at_least)
 {
+  /* sizeof(guint32): record_length is a 4 bytes long value which is stored before each serialized LogMessage */
   gint64 msg_len = at_least + sizeof(guint32);
   return (
            (_is_backlog_head_prevent_write_head(self)) &&
@@ -298,22 +299,22 @@ qdisk_push_tail(QDisk *self, GString *record)
   if (!qdisk_is_space_avail(self, record->len))
     return FALSE;
 
-  guint32 n = GUINT32_TO_BE(record->len);
-  if (n == 0)
+  guint32 record_length = GUINT32_TO_BE(record->len);
+  if (record_length == 0)
     {
       msg_error("Error writing empty message into the disk-queue file");
       return FALSE;
     }
 
-  if (!pwrite_strict(self->fd, (gchar *) &n, sizeof(n), self->hdr->write_head) ||
-      !pwrite_strict(self->fd, record->str, record->len, self->hdr->write_head + sizeof(n)))
+  if (!pwrite_strict(self->fd, (gchar *) &record_length, sizeof(record_length), self->hdr->write_head) ||
+      !pwrite_strict(self->fd, record->str, record->len, self->hdr->write_head + sizeof(record_length)))
     {
       msg_error("Error writing disk-queue file",
                 evt_tag_error("error"));
       return FALSE;
     }
 
-  self->hdr->write_head = self->hdr->write_head + record->len + sizeof(n);
+  self->hdr->write_head = self->hdr->write_head + record->len + sizeof(record_length);
 
 
   /* NOTE: we only wrap around if the read head is before the write,
@@ -373,17 +374,17 @@ qdisk_pop_head(QDisk *self, GString *record)
 {
   if (self->hdr->read_head != self->hdr->write_head)
     {
-      guint32 n;
+      guint32 record_length;
       gssize res;
-      res = pread(self->fd, (gchar *) &n, sizeof(n), self->hdr->read_head);
+      res = pread(self->fd, (gchar *) &record_length, sizeof(record_length), self->hdr->read_head);
 
       if (res == 0)
         {
           /* hmm, we are either at EOF or at hdr->qout_ofs, we need to wrap */
           self->hdr->read_head = QDISK_RESERVED_SPACE;
-          res = pread(self->fd, (gchar *) &n, sizeof(n), self->hdr->read_head);
+          res = pread(self->fd, (gchar *) &record_length, sizeof(record_length), self->hdr->read_head);
         }
-      if (res != sizeof(n))
+      if (res != sizeof(record_length))
         {
           msg_error("Error reading disk-queue file, cannot read record-length",
                     evt_tag_str("error", res < 0 ? g_strerror(errno) : "short read"),
@@ -392,37 +393,37 @@ qdisk_pop_head(QDisk *self, GString *record)
           return FALSE;
         }
 
-      n = GUINT32_FROM_BE(n);
-      if (_is_record_length_reached_hard_limit(n))
+      record_length = GUINT32_FROM_BE(record_length);
+      if (_is_record_length_reached_hard_limit(record_length))
         {
           msg_warning("Disk-queue file contains possibly invalid record-length",
-                      evt_tag_int("rec_length", n),
+                      evt_tag_int("rec_length", record_length),
                       evt_tag_str("filename", self->filename),
                       evt_tag_long("offset", self->hdr->read_head));
           return FALSE;
         }
-      else if (n == 0)
+      else if (record_length == 0)
         {
           msg_error("Disk-queue file contains empty record",
-                    evt_tag_int("rec_length", n),
+                    evt_tag_int("rec_length", record_length),
                     evt_tag_str("filename", self->filename),
                     evt_tag_long("offset", self->hdr->read_head));
           return FALSE;
         }
 
-      g_string_set_size(record, n);
-      res = pread(self->fd, record->str, n, self->hdr->read_head + sizeof(n));
-      if (res != n)
+      g_string_set_size(record, record_length);
+      res = pread(self->fd, record->str, record_length, self->hdr->read_head + sizeof(record_length));
+      if (res != record_length)
         {
           msg_error("Error reading disk-queue file",
                     evt_tag_str("filename", self->filename),
                     evt_tag_str("error", res < 0 ? g_strerror(errno) : "short read"),
-                    evt_tag_int("expected read length", n),
+                    evt_tag_int("expected read length", record_length),
                     evt_tag_int("actually read", res));
           return FALSE;
         }
 
-      self->hdr->read_head = self->hdr->read_head + record->len + sizeof(n);
+      self->hdr->read_head = self->hdr->read_head + record->len + sizeof(record_length);
 
       if (self->hdr->read_head > self->hdr->write_head)
         {
@@ -973,10 +974,10 @@ guint64
 qdisk_skip_record(QDisk *self, guint64 position)
 {
   guint64 new_position = position;
-  guint32 s;
-  qdisk_read (self, (gchar *) &s, sizeof(s), position);
-  s = GUINT32_FROM_BE(s);
-  new_position += s + sizeof(s);
+  guint32 record_length;
+  qdisk_read (self, (gchar *) &record_length, sizeof(record_length), position);
+  record_length = GUINT32_FROM_BE(record_length);
+  new_position += record_length + sizeof(record_length);
   if (new_position > self->hdr->write_head)
     {
       new_position = _correct_position_if_eof(self, (gint64 *)&new_position);
