@@ -65,7 +65,7 @@ gboolean qdisk_save_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *q
 DiskQueueOptions *qdisk_get_options(QDisk *self);
 gint64 qdisk_get_length(QDisk *self);
 void qdisk_set_length(QDisk *self, gint64 new_value);
-gint64 qdisk_get_size(QDisk *self);
+gint64 qdisk_get_maximum_size(QDisk *self);
 gint64 qdisk_get_writer_head(QDisk *self);
 gint64 qdisk_get_reader_head(QDisk *self);
 void qdisk_set_reader_head(QDisk *self, gint64 new_value);

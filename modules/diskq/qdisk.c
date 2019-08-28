@@ -276,7 +276,7 @@ qdisk_get_empty_space(QDisk *self)
 
   if (wpos > bpos)
     {
-      return (qdisk_get_size(self) - wpos) +
+      return (qdisk_get_maximum_size(self) - wpos) +
              (bpos - QDISK_RESERVED_SPACE);
     }
 
@@ -1021,7 +1021,7 @@ qdisk_set_length(QDisk *self, gint64 new_value)
 }
 
 gint64
-qdisk_get_size(QDisk *self)
+qdisk_get_maximum_size(QDisk *self)
 {
   return self->options->disk_buf_size;
 }
