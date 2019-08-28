@@ -985,12 +985,6 @@ qdisk_skip_record(QDisk *self, guint64 position)
 }
 
 void
-qdisk_set_backlog_count(QDisk *self, gint64 new_value)
-{
-  self->hdr->backlog_len = new_value;
-}
-
-void
 qdisk_reset_file_if_possible(QDisk *self)
 {
   if (qdisk_is_file_empty(self))
@@ -1072,6 +1066,12 @@ void
 qdisk_dec_backlog(QDisk *self)
 {
   self->hdr->backlog_len--;
+}
+
+void
+qdisk_set_backlog_count(QDisk *self, gint64 new_value)
+{
+  self->hdr->backlog_len = new_value;
 }
 
 gint64
