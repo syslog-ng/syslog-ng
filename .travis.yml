@@ -135,8 +135,11 @@ matrix:
       compiler: gcc
       install:
       before_script:
+      git:
+        submodules: false
+        depth: false
       script:
-        - tests/commits/check.sh
+        - tests/commits/check.sh "${TRAVIS_COMMIT_RANGE}"
 
     - env: B=cmake-submodules-and-pytest
       compiler: gcc
