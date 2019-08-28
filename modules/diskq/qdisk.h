@@ -40,8 +40,8 @@
 typedef struct
 {
   gint64 ofs;
-  gint32 len;
-  gint32 count;
+  guint32 len;
+  guint32 count;
 }
 QDiskQueuePosition;
 

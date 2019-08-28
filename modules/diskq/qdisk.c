@@ -592,9 +592,9 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 
       msg_info("Disk-buffer state loaded",
                evt_tag_str("filename", self->filename),
-               evt_tag_int("qout_length", self->hdr->qout_pos.count),
-               evt_tag_int("qbacklog_length", self->hdr->qbacklog_pos.count),
-               evt_tag_int("qoverflow_length", self->hdr->qoverflow_pos.count),
+               evt_tag_long("qout_length", self->hdr->qout_pos.count),
+               evt_tag_long("qbacklog_length", self->hdr->qbacklog_pos.count),
+               evt_tag_long("qoverflow_length", self->hdr->qoverflow_pos.count),
                evt_tag_long("qdisk_length", self->hdr->length));
 
       _reset_queue_pointers(self);
@@ -730,9 +730,9 @@ qdisk_save_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
   if (!self->options->reliable)
     msg_info("Disk-buffer state saved",
              evt_tag_str("filename", self->filename),
-             evt_tag_int("qout_length", qout_count),
-             evt_tag_int("qbacklog_length", qbacklog_count),
-             evt_tag_int("qoverflow_length", qoverflow_count),
+             evt_tag_long("qout_length", qout_pos.count),
+             evt_tag_long("qbacklog_length", qbacklog_pos.count),
+             evt_tag_long("qoverflow_length", qoverflow_pos.count),
              evt_tag_long("qdisk_length", self->hdr->length));
   else
     msg_info("Reliable disk-buffer state saved",
