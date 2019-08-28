@@ -152,6 +152,13 @@ qdisk_started(QDisk *self)
 }
 
 static inline gboolean
+_is_qdisk_overwritten(QDisk *self)
+{
+  return self->hdr->write_head > self->options->disk_buf_size;
+}
+
+
+static inline gboolean
 _is_backlog_head_prevent_write_head(QDisk *self)
 {
   return self->hdr->backlog_head <= self->hdr->write_head;
@@ -340,7 +347,7 @@ qdisk_push_tail(QDisk *self, GString *record)
         }
       self->file_size = self->hdr->write_head;
 
-      if (self->hdr->write_head > self->options->disk_buf_size && self->hdr->backlog_head  != QDISK_RESERVED_SPACE)
+      if (_is_qdisk_overwritten(self) && self->hdr->backlog_head  != QDISK_RESERVED_SPACE)
         {
           /* we were appending to the file, we are over the limit, and space
            * is available before the read head. truncate and wrap.
