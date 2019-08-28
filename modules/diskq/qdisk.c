@@ -201,11 +201,11 @@ qdisk_is_space_avail(QDisk *self, gint at_least)
 }
 
 static gboolean
-_truncate_file(QDisk *self, gint64 new_size)
+_truncate_file(QDisk *self, off_t new_size)
 {
   gboolean success = TRUE;
 
-  if (ftruncate(self->fd, (glong)new_size) < 0)
+  if (ftruncate(self->fd, new_size) < 0)
     {
       success = FALSE;
       off_t file_size = -1;
@@ -344,6 +344,8 @@ qdisk_push_tail(QDisk *self, GString *record)
     {
       if (self->file_size > self->hdr->write_head)
         {
+          msg_debug("Unused area ahead of write_head, truncate queue file",
+                    evt_tag_long("new size",  self->hdr->write_head));
           _truncate_file(self, self->hdr->write_head);
         }
       self->file_size = self->hdr->write_head;
