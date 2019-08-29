@@ -573,6 +573,9 @@ void
 log_msg_unset_value(LogMessage *self, NVHandle handle)
 {
   nv_table_unset_value(self->payload, handle);
+
+  if (handle == LM_V_PROGRAM || handle == LM_V_PID)
+    log_msg_unset_value(self, LM_V_LEGACY_MSGHDR);
 }
 
 void
