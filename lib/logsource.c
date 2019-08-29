@@ -707,7 +707,9 @@ log_source_free(LogPipe *s)
 
   ack_tracker_free(self->ack_tracker);
   self->ack_tracker = NULL;
-  _release_dynamic_window(self);
+
+  if (G_UNLIKELY(dynamic_window_is_enabled(&self->dynamic_window)))
+    _release_dynamic_window(self);
 }
 
 void
