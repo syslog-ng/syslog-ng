@@ -82,6 +82,18 @@ _calculate_expected_file_size(gint64 number_of_msgs)
   return ((one_msg_size + diskq_record_len_size) * number_of_msgs) + QDISK_RESERVED_SPACE;
 }
 
+
+static gint64
+_calculate_truncate_on_push_size(LogQueue *q)
+{
+  QDisk *qdisk = ((LogQueueDisk *)q)->qdisk;
+  // these are already sent out, but still uses disk space
+  gint64 consumed_messages_size = qdisk_get_backlog_head(qdisk) - QDISK_RESERVED_SPACE;
+  // "active", waiting to be sent out messages
+  gint64 queued_messages_size = _calculate_expected_file_size(log_queue_get_length(q));
+  return queued_messages_size + consumed_messages_size;
+}
+
 static void
 _assert_diskq_actual_file_size_with_stored(LogQueue *q)
 {
@@ -124,7 +136,6 @@ _test_diskq_truncate(TruncateTestParams params)
 {
   LogQueue *q;
   DiskQueueOptions options;
-  fprintf(stderr, "### Test case starts: %s\n", params.test_id);
 
   cr_assert(cfg_init(configuration), "cfg_init failed!");
   q = _create_diskqueue(params.filename, &options);
@@ -179,6 +190,73 @@ Test(diskq_truncate, test_diskq_truncate_without_diskbuffer_used)
     .filename = "test_dq_truncate2.qf"
   });
 }
+
+static LogQueue *
+_create_reliable_diskqueue(gchar *filename, DiskQueueOptions *options)
+{
+  LogQueue *q;
+  unlink(filename);
+
+  _construct_options(options, 1100000, 0, TRUE);
+  q = log_queue_disk_reliable_new(options, "persist-name");
+  log_queue_set_use_backlog(q, FALSE);
+  log_queue_disk_load_queue(q, filename);
+  return q;
+}
+
+
+Test(diskq_truncate, test_diskq_truncate_on_push)
+{
+  const gint full_disk_message_number = 8194; // measured for disk_buf_size 1100000
+  const gint read_is_on_end_message_number  = full_disk_message_number - 200;
+  const gint write_wraps_message_number = read_is_on_end_message_number - 200;
+  const gint read_wraps_message_number = 300;
+  const gint trigger_truncate_message_number = 1;
+  LogQueue *q;
+  GString *filename = g_string_new("test_dq_truncate_on_write.rqf");
+
+  DiskQueueOptions options;
+  q = _create_reliable_diskqueue(filename->str, &options);
+  cr_assert_eq(log_queue_get_length(q), 0, "No messages should be in a newly created disk-queue file!");
+
+  // 1. fill it until its FULL
+  feed_some_messages(q, full_disk_message_number);
+  cr_assert_eq(log_queue_get_length(q), full_disk_message_number,
+               "Not all messages have been queued!");
+  gint64 file_size_full = _get_file_size(q);
+
+  // 2. move read pointer just before write pointer
+  send_some_messages(q, read_is_on_end_message_number);
+  cr_assert_eq(_get_file_size(q), file_size_full,
+               "Unexpected disk-queue file truncate happened during pop!");
+
+  // 3. wrap around write pointer
+  feed_some_messages(q, write_wraps_message_number);
+  // file size can even grow, if not the whole disk_buf_size is filled (i.e. disk_buf_size is not an integer multiple of one message size)
+  cr_assert(_get_file_size(q) >= file_size_full,
+            "Unexpected disk-queue truncate during push! size:%ld expected:%ld", _get_file_size(q), file_size_full);
+
+  // 4. wrap around read pointer. Truncate only happens if read < write < file_size
+  send_some_messages(q, read_wraps_message_number);
+  cr_assert(_get_file_size(q) >= file_size_full,
+            "Unexpected disk-queue truncate while read wrapped! size:%ld expected:%ld", _get_file_size(q), file_size_full);
+
+  // 5. push some messages to trigger truncate after push
+  feed_some_messages(q, trigger_truncate_message_number);
+  cr_assert_eq(log_queue_get_length(q),
+               (full_disk_message_number - read_is_on_end_message_number
+                + write_wraps_message_number - read_wraps_message_number + trigger_truncate_message_number),
+               "Invalid queue length, expected number messages mismatch!");
+  _assert_diskq_actual_file_size_with_stored(q);
+  cr_assert_eq(_get_file_size(q), _calculate_truncate_on_push_size(q), "Truncated size does not match expected");
+
+
+  unlink(filename->str);
+  g_string_free(filename, TRUE);
+
+  _save_diskqueue(q);
+}
+
 
 static void
 setup(void)
