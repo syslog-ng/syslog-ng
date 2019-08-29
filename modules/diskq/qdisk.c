@@ -436,20 +436,20 @@ qdisk_pop_head(QDisk *self, GString *record)
       if (!self->options->reliable)
         {
           self->hdr->backlog_head = self->hdr->read_head;
-        }
 
-      if (!self->options->read_only && self->hdr->length == 0 && !self->options->reliable)
-        {
-          msg_debug("Queue file became empty, truncating file",
-                    evt_tag_str("filename", self->filename));
-          self->hdr->read_head = QDISK_RESERVED_SPACE;
-          self->hdr->write_head = QDISK_RESERVED_SPACE;
-          if (!self->options->reliable)
+          if (!self->options->read_only && self->hdr->length == 0 && !self->options->reliable)
             {
-              self->hdr->backlog_head = self->hdr->read_head;
+              msg_debug("Queue file became empty, truncating file",
+                        evt_tag_str("filename", self->filename));
+              self->hdr->read_head = QDISK_RESERVED_SPACE;
+              self->hdr->write_head = QDISK_RESERVED_SPACE;
+              if (!self->options->reliable)
+                {
+                  self->hdr->backlog_head = self->hdr->read_head;
+                }
+              self->hdr->length = 0;
+              _truncate_file(self, self->hdr->write_head);
             }
-          self->hdr->length = 0;
-          _truncate_file(self, self->hdr->write_head);
         }
       return TRUE;
 
