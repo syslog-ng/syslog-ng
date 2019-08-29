@@ -437,7 +437,8 @@ qdisk_pop_head(QDisk *self, GString *record)
         {
           self->hdr->backlog_head = self->hdr->read_head;
 
-          if (!self->options->read_only && self->hdr->length == 0)
+          g_assert(self->hdr->backlog_len == 0);
+          if (!self->options->read_only && qdisk_is_file_empty(self))
             {
               msg_debug("Queue file became empty, truncating file",
                         evt_tag_str("filename", self->filename));
