@@ -370,6 +370,7 @@ log_template_options_init(LogTemplateOptions *options, GlobalConfig *cfg)
     options->frac_digits = cfg->template_options.frac_digits;
   if (options->on_error == -1)
     options->on_error = cfg->template_options.on_error;
+  options->use_fqdn = cfg->host_resolve_options.use_fqdn;
   options->initialized = TRUE;
 }
 
@@ -395,6 +396,7 @@ log_template_options_defaults(LogTemplateOptions *options)
   options->frac_digits = -1;
   options->ts_format = -1;
   options->on_error = -1;
+  options->use_fqdn = FALSE;
 }
 
 GQuark

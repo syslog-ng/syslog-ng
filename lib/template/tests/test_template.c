@@ -34,6 +34,7 @@
 #include "cfg.h"
 #include "plugin.h"
 #include "scratch-buffers.h"
+#include "hostname.h"
 
 #include <time.h>
 #include <stdlib.h>
@@ -232,6 +233,19 @@ Test(template, test_macros)
   assert_template_format("$SEQNUM", "999");
   assert_template_format("$CONTEXT_ID", "test-context-id");
   assert_template_format("$UNIQID", "cafebabe@000000000000022b");
+}
+
+Test(template, test_loghost_macro)
+{
+  const gchar *fqdn = get_local_hostname_fqdn();
+  const gchar *short_name = get_local_hostname_short();
+
+  /* by default $LOGHOST is using fqdn as the template options we are using uses use_fqdn by default */
+  cr_assert_not(configuration->template_options.use_fqdn);
+  configuration->template_options.use_fqdn = TRUE;
+  assert_template_format("$LOGHOST", fqdn);
+  configuration->template_options.use_fqdn = FALSE;
+  assert_template_format("$LOGHOST", short_name);
 }
 
 Test(template, test_nvpairs)
