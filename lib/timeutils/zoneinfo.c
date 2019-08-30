@@ -294,19 +294,6 @@ zone_info_parser(unsigned char **input, gboolean is64bitData, gint *version)
   charcnt  = readcoded32(input, 0, G_MAXINT64);
 
   /*
-   * Confirm sizes that we assume to be equal.  These assumptions
-   * are drawn from a reading of the zic source (2003a), so they
-   * should hold unless the zic source changes.
-   */
-
-  if (isutcnt != typecnt ||
-      isstdcnt != typecnt)
-    {
-      msg_warning("Error in the time zone file",
-                  evt_tag_str("message", "Count mismatch between tzh_ttisutcnt, tzh_ttisstdcnt, tzh_typecnt"));
-    }
-
-  /*
    * Used temporarily to store transition times and types.  We need
    * to do this because the times and types are stored in two
    * separate arrays.
@@ -466,11 +453,11 @@ zone_info_parser(unsigned char **input, gboolean is64bitData, gint *version)
   /* We dont nead this flags to compute the wall time of the timezone*/
 
   /* Ignore isstd flags */
-  for (i=0; i<typecnt; i++)
+  for (i=0; i<isstdcnt; i++)
     readbool(input);
 
   /* Ignore isut flags */
-  for (i=0; i<typecnt; i++)
+  for (i=0; i<isutcnt; i++)
     readbool(input);
 
 error:
