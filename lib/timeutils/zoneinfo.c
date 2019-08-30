@@ -247,7 +247,7 @@ zone_info_parser(unsigned char **input, gboolean is64bitData, gint *version)
   gint64 *transition_times = NULL;
   guint8 *transition_types = NULL;
   gint32 *gmt_offsets = NULL;
-  gint64 isgmtcnt, isstdcnt, leapcnt, timecnt, typecnt, charcnt;
+  gint64 isutcnt, isstdcnt, leapcnt, timecnt, typecnt, charcnt;
   gboolean insertInitial = FALSE;
 
   buf = *input;
@@ -286,7 +286,7 @@ zone_info_parser(unsigned char **input, gboolean is64bitData, gint *version)
   *input += 15;
 
   /* Read array sizes */
-  isgmtcnt = readcoded32(input, 0, G_MAXINT64);
+  isutcnt  = readcoded32(input, 0, G_MAXINT64);
   isstdcnt = readcoded32(input, 0, G_MAXINT64);
   leapcnt  = readcoded32(input, 0, G_MAXINT64);
   timecnt  = readcoded32(input, 0, G_MAXINT64);
@@ -299,11 +299,11 @@ zone_info_parser(unsigned char **input, gboolean is64bitData, gint *version)
    * should hold unless the zic source changes.
    */
 
-  if (isgmtcnt != typecnt ||
+  if (isutcnt != typecnt ||
       isstdcnt != typecnt)
     {
       msg_warning("Error in the time zone file",
-                  evt_tag_str("message", "Count mismatch between tzh_ttisgmtcnt, tzh_ttisstdcnt, tzh_typecnt"));
+                  evt_tag_str("message", "Count mismatch between tzh_ttisutcnt, tzh_ttisstdcnt, tzh_typecnt"));
     }
 
   /*
@@ -343,7 +343,7 @@ zone_info_parser(unsigned char **input, gboolean is64bitData, gint *version)
       transition_types[i] = t;
     }
 
-  /* Read types (except for the isstd and isgmt flags, which come later (why??)) */
+  /* Read types (except for the isstd and isut flags, which come later (why??)) */
   for (i = 0; i<typecnt; ++i)
     {
       gint offs = 24;
@@ -469,7 +469,7 @@ zone_info_parser(unsigned char **input, gboolean is64bitData, gint *version)
   for (i=0; i<typecnt; i++)
     readbool(input);
 
-  /* Ignore isgmt flags */
+  /* Ignore isut flags */
   for (i=0; i<typecnt; i++)
     readbool(input);
 
