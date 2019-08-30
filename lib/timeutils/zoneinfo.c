@@ -149,7 +149,7 @@ readcoded32(unsigned char **input, gint64 minv, gint64 maxv)
   if (val < minv || val > maxv)
     {
       msg_error("Error while processing the time zone file",
-                evt_tag_str("message", "oded value out-of-range"),
+                evt_tag_str("message", "Coded value out-of-range"),
                 evt_tag_int("value", val),
                 evt_tag_printf("expected", "[%"G_GINT64_FORMAT", %"G_GINT64_FORMAT"]", minv, maxv));
       g_assert_not_reached();
@@ -247,7 +247,7 @@ zone_info_parser(unsigned char **input, gboolean is64bitData, gint *version)
   gint64 *transition_times = NULL;
   guint8 *transition_types = NULL;
   gint32 *gmt_offsets = NULL;
-  gint64 isgmtcnt, isdstcnt, leapcnt, timecnt, typecnt, charcnt;
+  gint64 isgmtcnt, isstdcnt, leapcnt, timecnt, typecnt, charcnt;
   gboolean insertInitial = FALSE;
 
   buf = *input;
@@ -287,7 +287,7 @@ zone_info_parser(unsigned char **input, gboolean is64bitData, gint *version)
 
   /* Read array sizes */
   isgmtcnt = readcoded32(input, 0, G_MAXINT64);
-  isdstcnt = readcoded32(input, 0, G_MAXINT64);
+  isstdcnt = readcoded32(input, 0, G_MAXINT64);
   leapcnt  = readcoded32(input, 0, G_MAXINT64);
   timecnt  = readcoded32(input, 0, G_MAXINT64);
   typecnt  = readcoded32(input, 0, G_MAXINT64);
@@ -300,10 +300,10 @@ zone_info_parser(unsigned char **input, gboolean is64bitData, gint *version)
    */
 
   if (isgmtcnt != typecnt ||
-      isdstcnt != typecnt)
+      isstdcnt != typecnt)
     {
       msg_warning("Error in the time zone file",
-                  evt_tag_str("message", "Count mismatch between tzh_ttisgmtcnt, tzh_ttisdstcnt, tth_typecnt"));
+                  evt_tag_str("message", "Count mismatch between tzh_ttisgmtcnt, tzh_ttisstdcnt, tzh_typecnt"));
     }
 
   /*
