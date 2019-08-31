@@ -46,6 +46,12 @@ IF (LIBNET_CONFIG)
   set (LIBNET_LIBRARIES ${_LIBNET_LIBRARIES} CACHE STRING "The libraries needed for LIBNET")
   set (LIBNET_DEFINES ${_LIBNET_DEFINES} CACHE STRING "The #defines needed for LIBNET")
   set (LIBNET_FOUND TRUE CACHE BOOL "LibNet is found")
+
+# this is due to libnet-config provides old fashined defines, which triggers warning on newer systems
+# for details see: https://github.com/libnet/libnet/pull/71
+
+  set (LIBNET_LIBRARIES "${LIBNET_LIBRARIES} -D_DEFAULT_SOURCE")
+
 ELSE(LIBNET_CONFIG)
   set (LIBNET_FOUND FALSE CACHE BOOL "LibNet is found")
 ENDIF()
