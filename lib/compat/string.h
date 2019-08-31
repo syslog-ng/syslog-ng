@@ -31,6 +31,7 @@
 #ifndef SYSLOG_NG_HAVE_STRTOLL
 # if SYSLOG_NG_HAVE_STRTOIMAX || defined(strtoimax)
 /* HP-UX has an strtoimax macro, not a function */
+#include <inttypes.h>
 #define strtoll(nptr, endptr, base) strtoimax(nptr, endptr, base)
 # else
 /* this requires Glib 2.12 */
