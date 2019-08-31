@@ -24,7 +24,7 @@ target_link_libraries(
   ${GLIB_GMODULE_LIBRARIES}
   ${GLIB_GTHREAD_LIBRARIES}
   ${GLIB_LIBRARIES}
-  ${OPENSSL_LIBRARIES}
+  OpenSSL::SSL
   )
 
 set_target_properties(loggen_ssl_plugin

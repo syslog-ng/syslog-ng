@@ -61,7 +61,8 @@ target_include_directories(afsocket
 target_link_libraries(afsocket PRIVATE
 	${WRAP_LIBRARIES}
 	${ZLIB_LIBRARIES}
-	${OPENSSL_LIBRARIES}
+	OpenSSL::SSL
+	OpenSSL::Crypto
 	libnet
 	${Libsystemd_LIBRARIES}
 )
