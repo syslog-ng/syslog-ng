@@ -10,6 +10,8 @@ timeutilsinclude_HEADERS =	\
   lib/timeutils/misc.h	\
   lib/timeutils/names.h	\
   lib/timeutils/unixtime.h	\
+  lib/timeutils/zonecache.h	\
+  lib/timeutils/zonedb.h	\
   lib/timeutils/zoneinfo.h	\
   lib/timeutils/wallclocktime.h
 
@@ -21,6 +23,8 @@ timeutils_sources =		\
  lib/timeutils/misc.c		\
  lib/timeutils/names.c		\
  lib/timeutils/unixtime.c	\
+ lib/timeutils/zonecache.c	\
+ lib/timeutils/zonedb.c		\
  lib/timeutils/zoneinfo.c	\
  lib/timeutils/wallclocktime.c
 

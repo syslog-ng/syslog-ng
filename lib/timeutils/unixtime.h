@@ -25,7 +25,7 @@
 #ifndef UNIXTIME_H_INCLUDED
 #define UNIXTIME_H_INCLUDED
 
-#include "syslog-ng.h"
+#include "timeutils/zoneinfo.h"
 
 /*
  * This class represents a UNIX timestamp (as measured in time_t), the
@@ -73,7 +73,9 @@ void unix_time_unset(UnixTime *ut);
 void unix_time_set_now(UnixTime *self);
 
 void unix_time_set_timezone(UnixTime *self, gint new_gmtoff);
+void unix_time_set_timezone_with_tzinfo(UnixTime *self, TimeZoneInfo *tzinfo);
 void unix_time_fix_timezone(UnixTime *self, gint new_gmtoff);
+void unix_time_fix_timezone_with_tzinfo(UnixTime *self, TimeZoneInfo *tzinfo);
 gboolean unix_time_fix_timezone_assuming_the_time_matches_real_time(UnixTime *self);
 
 gboolean unix_time_eq(const UnixTime *a, const UnixTime *b);

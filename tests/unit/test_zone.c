@@ -58,8 +58,7 @@ void
 set_time_zone(const gchar *time_zone)
 {
   setenv("TZ", time_zone, TRUE);
-  tzset();
-  clean_time_cache();
+  invalidate_timeutils_cache();
 }
 
 int

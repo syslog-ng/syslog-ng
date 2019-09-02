@@ -28,6 +28,29 @@ struct _Cache
   CacheResolver *resolver;
 };
 
+void *
+cache_lookup(Cache *self, const gchar *key)
+{
+  gpointer result = g_hash_table_lookup(self->hash_table, key);
+
+  if (!result)
+    {
+      result = cache_resolver_resolve_elem(self->resolver, key);
+      if (result)
+        {
+          g_hash_table_insert(self->hash_table, g_strdup(key), result);
+        }
+    }
+  return result;
+}
+
+void
+cache_clear(Cache *self)
+{
+  g_hash_table_unref(self->hash_table);
+  self->hash_table = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, self->resolver->free_elem);
+}
+
 Cache *
 cache_new(CacheResolver *resolver)
 {
@@ -44,20 +67,4 @@ cache_free(Cache *self)
   cache_resolver_free(self->resolver);
   g_hash_table_unref(self->hash_table);
   g_free(self);
-}
-
-void *
-cache_lookup(Cache *self, const gchar *key)
-{
-  void *result = g_hash_table_lookup(self->hash_table, key);
-
-  if (!result)
-    {
-      result = cache_resolver_resolve_elem(self->resolver, key);
-      if (result)
-        {
-          g_hash_table_insert(self->hash_table, g_strdup(key), result);
-        }
-    }
-  return result;
 }

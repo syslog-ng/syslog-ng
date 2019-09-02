@@ -136,7 +136,7 @@ try_match_path() {
  local PATFILE
 
  local PATHMATCH=""
- for PATFILE in "$WORKDIR"/license.path.*.txt
+ for PATFILE in "$WORKDIR"/*_license.path.*.txt
  do
   if
    echo "$FILE" |
@@ -144,16 +144,9 @@ try_match_path() {
   then
    local KIND="`\
     echo "$PATFILE" |
-    sed --regexp-extended "s~^.*/license\.path\.([^/]+)\.txt$~\1~"`"
-   if [ "$KIND" = "ignore" ]; then
-    local PATHMATCH="$KIND"
-    break
-   fi
-   if [ -z "$PATHMATCH" ]; then
-    local PATHMATCH="$KIND"
-   else
-    local PATHMATCH="$PATHMATCH,$KIND"
-   fi
+    sed --regexp-extended "s~^.*/[0-9]*_license\.path\.([^/]+)\.txt$~\1~"`"
+   local PATHMATCH="$KIND"
+   break
   fi
  done
  echo "$PATHMATCH"
@@ -404,6 +397,7 @@ parse_expected_licenses() {
  " |
  {
  local ERR=0
+ local PRI=0
  while read KIND LINE
  do
   case "$KIND" in
@@ -421,6 +415,7 @@ parse_expected_licenses() {
      echo "error: can't parse expected license in policy: '${LINE}'" >&2
      local ERR=1
     fi
+    local PRI=$[ $PRI + 1]
     ;;
    P)
     if [ -n "$LICENSE" ]; then
@@ -428,7 +423,7 @@ parse_expected_licenses() {
      sed --regexp-extended "
       s~^~^~
       s~$~(/.*)?$~
-     " >> "$WORKDIR/license.path.$LICENSE.txt"
+     " >> "$WORKDIR/${PRI}_license.path.$LICENSE.txt"
     else
      echo "error: ignored unknowned licensed path '${LINE}' in $POLICY" >&2
      local ERR=1

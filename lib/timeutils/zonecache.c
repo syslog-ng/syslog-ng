@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2018 Balabit
- * Copyright (c) 1998-2018 Balázs Scheidler
+ * Copyright (c) 2019 Balázs Scheidler <bazsi77@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,43 +20,38 @@
  * COPYING for details.
  *
  */
-
-#ifndef TIMEUTILS_CACHE_H_INCLUDED
-#define TIMEUTILS_CACHE_H_INCLUDED
-
-#include "timeutils/wallclocktime.h"
+#include "timeutils/zonecache.h"
 #include "timeutils/zoneinfo.h"
+#include "timeutils/zonedb.h"
+#include "tls-support.h"
+#include "../cache.h"
 
-time_t cached_mktime(struct tm *tm);
-void cached_localtime(time_t *when, struct tm *tm);
-void cached_gmtime(time_t *when, struct tm *tm);
-
-
-static inline void
-cached_localtime_wct(time_t *when, WallClockTime *wct)
+typedef struct _TimeZoneResolver
 {
-  cached_localtime(when, &wct->tm);
+  CacheResolver super;
+} TimeZoneResolver;
+
+static gpointer
+time_zone_resolver_resolve(CacheResolver *s, const gchar *tz)
+{
+  if (is_time_zone_valid(tz))
+    return time_zone_info_new(tz);
+  return NULL;
 }
 
-static inline time_t
-cached_mktime_wct(WallClockTime *wct)
+static CacheResolver *
+time_zone_resolver_new(void)
 {
-  return cached_mktime(&wct->tm);
+  TimeZoneResolver *self = g_new0(TimeZoneResolver, 1);
+
+  self->super.resolve_elem = time_zone_resolver_resolve;
+  self->super.free_elem = (GDestroyNotify) time_zone_info_free;
+
+  return &self->super;
 }
 
-static inline void
-cached_gmtime_wct(time_t *when, WallClockTime *wct)
+Cache *
+time_zone_cache_new(void)
 {
-  cached_gmtime(when, &wct->tm);
+  return cache_new(time_zone_resolver_new());
 }
-
-void invalidate_cached_time(void);
-void set_cached_time(GTimeVal *timeval);
-void cached_g_current_time(GTimeVal *result);
-time_t cached_g_current_time_sec(void);
-TimeZoneInfo *cached_get_time_zone_info(const gchar *tz);
-
-void invalidate_timeutils_cache(void);
-void timeutils_setup_timezone_hook(void);
-
-#endif

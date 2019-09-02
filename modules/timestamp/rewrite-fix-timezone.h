@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2015 Balabit
- * Copyright (c) 2015 Vincent Bernat <Vincent.Bernat@exoscale.ch>
+ * Copyright (c) 2019 Balazs Scheidler <bazsi77@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,15 +19,14 @@
  * COPYING for details.
  *
  */
+#ifndef REWRITE_FIX_TIMEZONE_H_INCLUDED
+#define REWRITE_FIX_TIMEZONE_H_INCLUDED
 
-#ifndef DATE_PARSER_PARSER_H_INCLUDED
-#define DATE_PARSER_PARSER_H_INCLUDED
+#include "rewrite/rewrite-expr.h"
 
-#include "date-parser.h"
-#include "cfg-parser.h"
+void rewrite_fix_time_zone_set_zone_template_ref(LogRewrite *s, LogTemplate *zone_template);
+void rewrite_fix_time_zone_set_time_stamp(LogRewrite *s, gint stamp);
 
-extern CfgParser date_parser;
-
-CFG_PARSER_DECLARE_LEXER_BINDING(date_, LogParser **)
+LogRewrite *rewrite_fix_time_zone_new(GlobalConfig *cfg);
 
 #endif

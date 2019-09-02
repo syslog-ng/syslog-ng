@@ -23,7 +23,9 @@
  */
 
 #include "timeutils/cache.h"
+#include "timeutils/zonecache.h"
 #include "tls-support.h"
+#include <apphook.h>
 
 #include <iv.h>
 #include <string.h>
@@ -39,26 +41,74 @@ TLS_BLOCK_START
 {
   GTimeVal current_time_value;
   struct iv_task invalidate_time_task;
-  TimeCache local_time_cache[64];
-  TimeCache gm_time_cache[64];
-  struct tm mktime_prev_tm;
-  time_t mktime_prev_time;
+  gint local_gencounter;
+  struct
+  {
+    struct
+    {
+      Cache *zones;
+    } tzinfo;
+    struct
+    {
+      TimeCache buckets[64];
+    } localtime;
+    struct
+    {
+      TimeCache buckets[64];
+    } gmtime;
+    struct
+    {
+      struct tm key;
+      struct tm mutated_key;
+      time_t value;
+    } mktime;
+  } cache;
 }
 TLS_BLOCK_END;
 
 /* this indicates that a test program is faking the current time */
-gboolean faking_time;
+static gboolean faking_time;
 
 #define current_time_value   __tls_deref(current_time_value)
 #define invalidate_time_task __tls_deref(invalidate_time_task)
-#define local_time_cache     __tls_deref(local_time_cache)
-#define gm_time_cache        __tls_deref(gm_time_cache)
-#define mktime_prev_tm       __tls_deref(mktime_prev_tm)
-#define mktime_prev_time     __tls_deref(mktime_prev_time)
+#define local_gencounter     __tls_deref(local_gencounter)
+#define cache                __tls_deref(cache)
+
+static gint timeutils_cache_gencounter = 0;
 
 #if !defined(SYSLOG_NG_HAVE_LOCALTIME_R) || !defined(SYSLOG_NG_HAVE_GMTIME_R)
 static GStaticMutex localtime_lock = G_STATIC_MUTEX_INIT;
 #endif
+
+static void
+_clean_timeutils_cache(void)
+{
+  memset(&cache.gmtime.buckets, 0, sizeof(cache.gmtime.buckets));
+  memset(&cache.localtime.buckets, 0, sizeof(cache.localtime.buckets));
+  memset(&cache.mktime.key, 0, sizeof(cache.mktime.key));
+  if (cache.tzinfo.zones)
+    cache_clear(cache.tzinfo.zones);
+}
+
+static void
+_validate_timeutils_cache(void)
+{
+  gint gencounter = g_atomic_int_get(&timeutils_cache_gencounter);
+
+  if (G_UNLIKELY(gencounter != local_gencounter))
+    {
+      _clean_timeutils_cache();
+      local_gencounter = gencounter;
+    }
+}
+
+void
+invalidate_timeutils_cache(void)
+{
+  tzset();
+
+  g_atomic_int_inc(&timeutils_cache_gencounter);
+}
 
 void
 invalidate_cached_time(void)
@@ -116,33 +166,39 @@ cached_g_current_time_sec(void)
 time_t
 cached_mktime(struct tm *tm)
 {
-  time_t result;
-
-  if (G_LIKELY(tm->tm_sec == mktime_prev_tm.tm_sec &&
-               tm->tm_min == mktime_prev_tm.tm_min &&
-               tm->tm_hour == mktime_prev_tm.tm_hour &&
-               tm->tm_mday == mktime_prev_tm.tm_mday &&
-               tm->tm_mon == mktime_prev_tm.tm_mon &&
-               tm->tm_year == mktime_prev_tm.tm_year))
+  _validate_timeutils_cache();
+  if (G_LIKELY(tm->tm_sec == cache.mktime.key.tm_sec &&
+               tm->tm_min == cache.mktime.key.tm_min &&
+               tm->tm_hour == cache.mktime.key.tm_hour &&
+               tm->tm_mday == cache.mktime.key.tm_mday &&
+               tm->tm_mon == cache.mktime.key.tm_mon &&
+               tm->tm_year == cache.mktime.key.tm_year &&
+               tm->tm_isdst == cache.mktime.key.tm_isdst))
     {
-      result = mktime_prev_time;
-      return result;
+      *tm = cache.mktime.mutated_key;
+      return cache.mktime.value;
     }
-  result = mktime(tm);
-  mktime_prev_tm = *tm;
-  mktime_prev_time = result;
-  return result;
+
+  /* we need to store the incoming value first, as mktime() might change the
+   * fields in *tm, for instance in the daylight saving transition hour */
+  cache.mktime.key = *tm;
+  cache.mktime.value = mktime(tm);
+
+  /* the result we yield consists of both the return value and the mutated
+   * key, so we need to save both */
+  cache.mktime.mutated_key = *tm;
+  return cache.mktime.value;
 }
 
 void
 cached_localtime(time_t *when, struct tm *tm)
 {
-  guchar i = 0;
+  _validate_timeutils_cache();
 
-  i = *when & 0x3F;
-  if (G_LIKELY(*when == local_time_cache[i].when))
+  guchar i = *when & 0x3F;
+  if (G_LIKELY(*when == cache.localtime.buckets[i].when))
     {
-      *tm = local_time_cache[i].tm;
+      *tm = cache.localtime.buckets[i].tm;
       return;
     }
   else
@@ -157,20 +213,20 @@ cached_localtime(time_t *when, struct tm *tm)
       *tm = *ltm;
       g_static_mutex_unlock(&localtime_lock);
 #endif
-      local_time_cache[i].tm = *tm;
-      local_time_cache[i].when = *when;
+      cache.localtime.buckets[i].tm = *tm;
+      cache.localtime.buckets[i].when = *when;
     }
 }
 
 void
 cached_gmtime(time_t *when, struct tm *tm)
 {
-  guchar i = 0;
+  _validate_timeutils_cache();
 
-  i = *when & 0x3F;
-  if (G_LIKELY(*when == gm_time_cache[i].when && *when != 0))
+  guchar i = *when & 0x3F;
+  if (G_LIKELY(*when == cache.gmtime.buckets[i].when && *when != 0))
     {
-      *tm = gm_time_cache[i].tm;
+      *tm = cache.gmtime.buckets[i].tm;
       return;
     }
   else
@@ -185,14 +241,31 @@ cached_gmtime(time_t *when, struct tm *tm)
       *tm = *ltm;
       g_static_mutex_unlock(&localtime_lock);
 #endif
-      gm_time_cache[i].tm = *tm;
-      gm_time_cache[i].when = *when;
+      cache.gmtime.buckets[i].tm = *tm;
+      cache.gmtime.buckets[i].when = *when;
     }
 }
 
-void
-clean_time_cache(void)
+TimeZoneInfo *
+cached_get_time_zone_info(const gchar *tz)
 {
-  memset(&gm_time_cache, 0, sizeof(gm_time_cache));
-  memset(&local_time_cache, 0, sizeof(local_time_cache));
+  if (!cache.tzinfo.zones)
+    cache.tzinfo.zones = time_zone_cache_new();
+  TimeZoneInfo *result = cache_lookup(cache.tzinfo.zones, tz);
+  return result;
+}
+
+void timeutils_setup_timezone_hook(void);
+
+static void
+timeutils_reset_timezone(gint type, gpointer user_data)
+{
+  invalidate_timeutils_cache();
+  timeutils_setup_timezone_hook();
+}
+
+void
+timeutils_setup_timezone_hook(void)
+{
+  register_application_hook(AH_CONFIG_CHANGED, timeutils_reset_timezone, NULL);
 }

@@ -30,7 +30,7 @@ typedef struct _Cache Cache;
 
 struct _CacheResolver
 {
-  void *(*resolve_elem)(CacheResolver *self, const gchar *key);
+  gpointer (*resolve_elem)(CacheResolver *self, const gchar *key);
 
   /* NOTE: free_elem lacks a self argument as we are using it as a
    * GDestroyNotify callback for hashtables.  Lacking a better solution
@@ -40,7 +40,7 @@ struct _CacheResolver
   void (*free_fn)(CacheResolver *self);
 };
 
-static inline void *
+static inline gpointer
 cache_resolver_resolve_elem(CacheResolver *self, const gchar *key)
 {
   if (self->resolve_elem)
@@ -60,8 +60,10 @@ cache_resolver_free(CacheResolver *self)
   g_free(self);
 }
 
+gpointer cache_lookup(Cache *self, const gchar *key);
+void cache_clear(Cache *self);
+
 Cache *cache_new(CacheResolver *resolver);
-void *cache_lookup(Cache *self, const gchar *key);
 void cache_free(Cache *self);
 
 #endif

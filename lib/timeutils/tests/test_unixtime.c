@@ -24,6 +24,9 @@
 #include "timeutils/unixtime.h"
 #include "timeutils/wallclocktime.h"
 #include "timeutils/conv.h"
+#include "timeutils/cache.h"
+#include "timeutils/format.h"
+
 #include <criterion/criterion.h>
 #include "fake-time.h"
 
@@ -72,6 +75,279 @@ Test(unixtime, unix_time_fix_timezone_adjusts_timestamp_as_if_was_parsed_assumin
   cr_expect(wct.wct_sec == 48);
 }
 
+static void
+_fix_timezone_with_tzinfo(UnixTime *base_ut, UnixTime *ut, gint base_ofs, const gchar *zone_name)
+{
+  *ut = *base_ut;
+  ut->ut_sec += base_ofs;
+  unix_time_fix_timezone_with_tzinfo(ut, cached_get_time_zone_info(zone_name));
+}
+
+Test(unixtime, unix_time_fix_timezone_with_tzinfo_to_a_zone_backwards_during_sprint_daylight_saving_hour)
+{
+  UnixTime ut = UNIX_TIME_INIT;
+  UnixTime base_ut;
+
+  /* We are assuming a timestamp in CET and fixing that to be US Eastern
+   * time EST5EDT, e.g.  the timezone offset is being decreased from +3600
+   * to -18000/-14400 (depending on DST).  This testcase contains a series
+   * of tests as we go through the daylight saving start hour in the spring.
+   * */
+
+  /* Base timestamp: Mar 10 2019 02:00:00 CET,
+   *
+   * e.g.  if interpreted in EST5DST this is the start of the DST transition
+   * hour in 2019.  We simulate that we assumed it was CET and then we "fix"
+   * the timezone to EST5EDT */
+
+  base_ut.ut_sec = 1552179600;
+  base_ut.ut_gmtoff = 3600;
+
+  /* TESTCASE: 1 second earlier than the DST transition hour */
+
+  /* this "fix" will cause ut->ut_sec to be changed, it will go forward, but
+   * still not be reaching the daylight saving start, short of a second */
+
+  _fix_timezone_with_tzinfo(&base_ut, &ut, -1, "EST5EDT");
+
+
+  /* still has not reached the DST start time */
+  cr_assert(ut.ut_sec == 1552201200 - 1);
+  /* thus the resulting timezone is still EST and not the daylight saving variant */
+  cr_assert(ut.ut_gmtoff == -5*3600);
+
+  /* TESTCASE: 1 second later, e.g.  Mar 10 2019 02:00:00 CET, which is
+   * exactly the daylight saving start second.  It should be converted to
+   * Mar 10 2019 03:00:00 EDT */
+
+  _fix_timezone_with_tzinfo(&base_ut, &ut, 0, "EST5EDT");
+
+  /* we are at exactly the the DST start time */
+  cr_assert(ut.ut_sec == 1552201200);
+  /* thus the resulting timezone is EDT and not EST */
+  cr_assert(ut.ut_gmtoff == -4*3600);
+
+  /* TESTCASE: 30 minutes later, e.g. 02:30:00, that is converted to 03:30:00 */
+  _fix_timezone_with_tzinfo(&base_ut, &ut, 1800, "EST5EDT");
+
+  /* we lose the hour, so the DST start time */
+  cr_assert(ut.ut_sec == 1552201200 + 1800);
+  /* thus the resulting timezone is EDT */
+  cr_assert(ut.ut_gmtoff == -4*3600);
+
+  /* TESTCASE: 1 hour second later, e.g. 03:00:00 */
+  _fix_timezone_with_tzinfo(&base_ut, &ut, 3600, "EST5EDT");
+
+  /* we lose the hour, so the DST start time */
+  cr_assert(ut.ut_sec == 1552201200);
+  /* thus the resulting timezone is still EST and not the daylight saving variant */
+  cr_assert(ut.ut_gmtoff == -4*3600);
+
+  /* TESTCASE: 2 hours second later, e.g. 04:00:00 */
+  _fix_timezone_with_tzinfo(&base_ut, &ut, 7200, "EST5EDT");
+
+  /* we lose the hour, so the DST start time */
+  cr_assert(ut.ut_sec == 1552201200 + 3600);
+  /* thus the resulting timezone is still EST and not the daylight saving variant */
+  cr_assert(ut.ut_gmtoff == -4*3600);
+}
+
+Test(unixtime, unix_time_fix_timezone_with_tzinfo_to_a_zone_forwards_during_sprint_daylight_saving_hour)
+{
+  UnixTime ut = UNIX_TIME_INIT;
+  UnixTime base_ut;
+
+  /* Base timestamp: Mar 31 2019 02:00:00 EST5EDT,
+   *
+   * e.g.  if interpreted in CET this is the start of the DST transition
+   * hour in 2019.  We simulate that we assumed it was EST5EDT and then we "fix"
+   * the timezone to CET */
+
+  base_ut.ut_sec = 1554012000;
+  base_ut.ut_gmtoff = -4*3600;
+
+  /* TESTCASE: 1 second earlier than the DST transition hour */
+  /* this "fix" will cause ut->ut_sec to be changed, it will go forward, but
+   * still not be reaching the daylight saving start, short of a second */
+  _fix_timezone_with_tzinfo(&base_ut, &ut, -1, "CET");
+
+  /* still has not reached the DST start time */
+  cr_assert(ut.ut_sec == 1553994000 - 1);
+  /* thus the resulting timezone is still EST and not the daylight saving variant */
+  cr_assert(ut.ut_gmtoff == 3600);
+
+  /* TESTCASE: 1 second later, e.g.  Mar 31 2019 02:00:00 CET, which is
+   * exactly the daylight saving start second.  It should be converted to
+   * Mar 31 2019 03:00:00 CEST */
+  _fix_timezone_with_tzinfo(&base_ut, &ut, 0, "CET");
+
+  /* we are at exactly the the DST start time */
+  cr_assert(ut.ut_sec == 1553994000);
+  /* thus the resulting timezone is EDT and not EST */
+  cr_assert(ut.ut_gmtoff == 2*3600);
+
+  /* TESTCASE: 30 minutes later, e.g. 02:30:00, that is converted to 03:30:00 */
+  _fix_timezone_with_tzinfo(&base_ut, &ut, 1800, "CET");
+
+  /* we lose the hour, so the DST start time */
+  cr_assert(ut.ut_sec == 1553994000 + 1800);
+  /* thus the resulting timezone is EDT */
+  cr_assert(ut.ut_gmtoff == 2*3600);
+
+  /* TESTCASE: 1 hour second later, e.g. 03:00:00 */
+  _fix_timezone_with_tzinfo(&base_ut, &ut, 3600, "CET");
+
+  /* we lose the hour, so the DST start time */
+  cr_assert(ut.ut_sec == 1553994000);
+  /* thus the resulting timezone is still EST and not the daylight saving variant */
+  cr_assert(ut.ut_gmtoff == 2*3600);
+
+  /* TESTCASE: 2 hours second later, e.g. 04:00:00 */
+  _fix_timezone_with_tzinfo(&base_ut, &ut, 7200, "CET");
+
+  /* we lose the hour, so the DST start time */
+  cr_assert(ut.ut_sec == 1553994000 + 3600);
+  /* thus the resulting timezone is still EST and not the daylight saving variant */
+  cr_assert(ut.ut_gmtoff == 2*3600);
+}
+
+Test(unixtime, unix_time_fix_timezone_with_tzinfo_to_a_zone_backwards_during_autumn_daylight_saving_hour)
+{
+  UnixTime ut = UNIX_TIME_INIT;
+  UnixTime base_ut;
+
+  /* Base timestamp: Nov 3 2019 02:00:00 CET,
+   *
+   * e.g.  if interpreted in EST5DST this is the end of the DST transition
+   * hour in 2019.  We simulate that we assumed it was CET and then we "fix"
+   * the timezone to EST5EDT */
+
+  base_ut.ut_sec = 1572742800;
+  base_ut.ut_gmtoff = 3600;
+
+  /* TESTCASE: 1 second earlier than the DST transition hour */
+
+  /* this "fix" will cause ut->ut_sec to be changed, it will go forward, but
+   * still not be reaching the daylight saving start, short of a second */
+  _fix_timezone_with_tzinfo(&base_ut, &ut, -1, "EST5EDT");
+
+
+  /* still has not reached the DST start time */
+  cr_assert(ut.ut_sec == 1572760800 - 1);
+  /* thus the resulting timezone is still EDT */
+  cr_assert(ut.ut_gmtoff == -4*3600);
+
+  /* TESTCASE: 1 second later, e.g.  Mar 10 2019 02:00:00 CET, which is
+   * exactly the daylight saving start second.  It should be converted to
+   * Mar 10 2019 03:00:00 EDT */
+
+  _fix_timezone_with_tzinfo(&base_ut, &ut, 0, "EST5EDT");
+
+  /* once passed the DST end threshold, we assume the 2nd 02:00:00AM, e.g.
+   * the one with -05:00 offset.  This means that an hour is skipped in this
+   * case in the seconds since 1970.01.01, while the offset decreased with
+   * the same.  This means that it is not possible to represent a time
+   * between 02:00:00 to 02:59:59 in the daylight saving period, unless the
+   * timezone is explicitly available in the timestamp.  */
+
+  cr_assert(ut.ut_sec == 1572760800 + 3600);
+  /* thus the resulting timezone is EST and not EDT */
+  cr_assert(ut.ut_gmtoff == -5*3600);
+
+  /* TESTCASE: 30 minutes later, e.g. 02:30:00, that is converted to 03:30:00 */
+  _fix_timezone_with_tzinfo(&base_ut, &ut, 1800, "EST5EDT");
+
+  /* we lose the hour in ut_sec */
+  cr_assert(ut.ut_sec == 1572760800 + 3600 + 1800);
+  /* thus the resulting timezone is EST and not EDT */
+  cr_assert(ut.ut_gmtoff == -5*3600);
+
+  /* TESTCASE: 1 hour second later, e.g. 03:00:00 */
+  _fix_timezone_with_tzinfo(&base_ut, &ut, 3600, "EST5EDT");
+
+  /* we lose the hour in ut_sec */
+  cr_assert(ut.ut_sec == 1572760800 + 3600 + 3600);
+  /* thus the resulting timezone is EST and not EDT */
+  cr_assert(ut.ut_gmtoff == -5*3600);
+
+  /* TESTCASE: 2 hours second later, e.g. 04:00:00 */
+  _fix_timezone_with_tzinfo(&base_ut, &ut, 7200, "EST5EDT");
+
+  /* we lose the hour in ut_sec */
+  cr_assert(ut.ut_sec == 1572760800 + 3600 + 7200);
+  /* thus the resulting timezone is EST and not EDT */
+  cr_assert(ut.ut_gmtoff == -5*3600);
+}
+
+Test(unixtime, unix_time_fix_timezone_with_tzinfo_to_a_zone_forwards_during_autumn_daylight_saving_hour)
+{
+  UnixTime ut = UNIX_TIME_INIT;
+  UnixTime base_ut;
+
+  /* Base timestamp: Oct 27 2019 02:00:00 EST5EDT,
+   *
+   * e.g.  if interpreted in CET this is the end of the DST transition
+   * hour in 2019.  We simulate that we assumed it was EST5EDT and then we "fix"
+   * the timezone to CET */
+
+  base_ut.ut_sec = 1572156000;
+  base_ut.ut_gmtoff = -4*3600;
+
+  /* testcase, 1 second earlier than the DST transition hour */
+
+  /* this "fix" will cause ut->ut_sec to be changed, it will go forward, but
+   * still not be reaching the daylight saving start, short of a second */
+
+  _fix_timezone_with_tzinfo(&base_ut, &ut, -1, "CET");
+
+  /* still has not reached the DST start time */
+  cr_assert(ut.ut_sec == 1572134400 - 1);
+  /* thus the resulting timezone is still CEST */
+  cr_assert(ut.ut_gmtoff == 2*3600);
+
+  /* TESTCASE: 1 second later, e.g.  Oct 27 2019 02:00:00 EDT, which is
+   * exactly the daylight saving start second if interpreted in CET.  It
+   * should be converted to Oct 27 2019 03:00:00 CET */
+
+  _fix_timezone_with_tzinfo(&base_ut, &ut, 0, "CET");
+
+  /* once passed the DST end threshold, we assume the 2nd 02:00:00AM, e.g.
+   * the one with -05:00 offset.  This means that an hour is skipped in this
+   * case in the seconds since 1970.01.01, while the offset decreased with
+   * the same.  This means that it is not possible to represent a time
+   * between 02:00:00 to 02:59:59 in the daylight saving period, unless the
+   * timezone is explicitly available in the timestamp.  */
+
+  cr_assert(ut.ut_sec == 1572134400 + 3600);
+  /* thus the resulting timezone is EST and not EDT */
+  cr_assert(ut.ut_gmtoff == 3600);
+
+
+  /* TESTCASE: 30 minutes later, e.g. 02:30:00, that is converted to 03:30:00 */
+  _fix_timezone_with_tzinfo(&base_ut, &ut, 1800, "CET");
+
+  /* we lose the hour in ut_sec */
+  cr_assert(ut.ut_sec == 1572134400 + 3600 + 1800);
+  /* thus the resulting timezone is EST and not EDT */
+  cr_assert(ut.ut_gmtoff == 3600);
+
+  /* TESTCASE: 1 hour second later, e.g. 03:00:00 */
+  _fix_timezone_with_tzinfo(&base_ut, &ut, 3600, "CET");
+
+  /* we lose the hour in ut_sec */
+  cr_assert(ut.ut_sec == 1572134400 + 3600 + 3600);
+  /* thus the resulting timezone is EST and not EDT */
+  cr_assert(ut.ut_gmtoff == 3600);
+
+  /* TESTCASE: 2 hours second later, e.g. 04:00:00 */
+  _fix_timezone_with_tzinfo(&base_ut, &ut, 7200, "CET");
+
+  /* we lose the hour in ut_sec */
+  cr_assert(ut.ut_sec == 1572134400 + 3600 + 7200);
+  /* thus the resulting timezone is EST and not EDT */
+  cr_assert(ut.ut_gmtoff == 3600);
+}
+
 Test(unixtime, unix_time_set_timezone_converts_the_timestamp_to_a_target_timezone_assuming_the_source_was_correct)
 {
   UnixTime ut = UNIX_TIME_INIT;
@@ -88,6 +364,35 @@ Test(unixtime, unix_time_set_timezone_converts_the_timestamp_to_a_target_timezon
   cr_expect(wct.wct_hour == 12);
   cr_expect(wct.wct_min == 58);
   cr_expect(wct.wct_sec == 48);
+}
+
+Test(unixtime, unix_time_set_timezone_with_tzinfo_calculates_dst_automatically)
+{
+  UnixTime ut = UNIX_TIME_INIT;
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
+
+  _wct_initialize(&wct, "Mar 10 2019 01:59:59");
+  wct.wct_gmtoff = -5*3600;
+  convert_wall_clock_time_to_unix_time(&wct, &ut);
+  cr_expect(ut.ut_gmtoff == -5*3600);
+
+  unix_time_set_timezone_with_tzinfo(&ut, cached_get_time_zone_info("EST5EDT"));
+  cr_expect(ut.ut_gmtoff == -5*3600);
+  ut.ut_sec += 1;
+  unix_time_set_timezone_with_tzinfo(&ut, cached_get_time_zone_info("EST5EDT"));
+  cr_expect(ut.ut_gmtoff == -4*3600);
+
+  _wct_initialize(&wct, "Nov 3 2019 01:59:59");
+  wct.wct_gmtoff = -4*3600;
+  convert_wall_clock_time_to_unix_time(&wct, &ut);
+  cr_expect(ut.ut_gmtoff == -4*3600);
+
+  unix_time_set_timezone_with_tzinfo(&ut, cached_get_time_zone_info("EST5EDT"));
+  cr_expect(ut.ut_gmtoff == -4*3600);
+
+  ut.ut_sec += 1;
+  unix_time_set_timezone_with_tzinfo(&ut, cached_get_time_zone_info("EST5EDT"));
+  cr_expect(ut.ut_gmtoff == -5*3600);
 }
 
 Test(unixtime, unix_time_guess_timezone_for_even_hour_differences)

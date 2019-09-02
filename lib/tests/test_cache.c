@@ -99,6 +99,26 @@ Test(cache, test_write_and_read)
   cache_free(c);
 }
 
+Test(cache, cache_clear_drops_cached_elements)
+{
+  Cache *c;
+
+  c = cache_new(dummy_cache_resolver());
+
+  assert_cache_lookup_uncached(c, "key");
+  assert_cache_lookup_cached(c, "key");
+  assert_cache_lookup_uncached(c, "key2");
+  assert_cache_lookup_cached(c, "key2");
+
+  assert_cache_lookup_cached(c, "key");
+  assert_cache_lookup_cached(c, "key2");
+
+  cache_clear(c);
+  assert_cache_lookup_uncached(c, "key");
+  assert_cache_lookup_uncached(c, "key2");
+  cache_free(c);
+}
+
 Test(cache, test_free_calls_resolver_free_fn)
 {
   Cache *c;

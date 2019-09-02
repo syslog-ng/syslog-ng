@@ -183,6 +183,15 @@ unix_time_set_timezone(UnixTime *self, gint new_gmtoff)
     self->ut_gmtoff = new_gmtoff;
 }
 
+/* change timezone, assuming that the original timezone was correct, but we
+ * want to change the timezone reference to a different one */
+void
+unix_time_set_timezone_with_tzinfo(UnixTime *self, TimeZoneInfo *tzinfo)
+{
+  glong new_gmtoff = time_zone_info_get_offset(tzinfo, self->ut_sec);
+  unix_time_set_timezone(self, new_gmtoff);
+}
+
 gboolean
 unix_time_fix_timezone_assuming_the_time_matches_real_time(UnixTime *self)
 {
@@ -190,6 +199,106 @@ unix_time_fix_timezone_assuming_the_time_matches_real_time(UnixTime *self)
 
   unix_time_fix_timezone(self, target_gmtoff);
   return target_gmtoff != -1;
+}
+
+void
+unix_time_fix_timezone_with_tzinfo(UnixTime *self, TimeZoneInfo *tzinfo)
+{
+  /*
+   * This function fixes the timezone (e.g.  gmtoff) value of the incoming
+   * timestamp in case it was incorrectly recognized at its previous
+   * parsing and converts it to the correct timezone as specified by tzinfo.
+   *
+   * The complexity of this function is that daylight saving thresholds are
+   * specified in local time (e.g.  whichever sunday in March/October) and
+   * not as an UTC timestamp.  If the current UnixTime instance in @self was
+   * incorrectly parsed, then its UTC timestamp will be off by a few hours.
+   * (more specifically off by the number of hours between the two
+   * timezones). We have to take this inaccuracy into account.
+   *
+   * The basic algorithm is as follows:
+   *   1) first, we look up the gmtoff value of the target timezone based on
+   *      the ut_sec value in the original timestamp.  This will only be
+   *      correct if we don't cross a daylight saving transition hour (of
+   *      the target timezone) in any direction.  We adjust the
+   *      ut_sec/ut_gmtoff pair based on the result of this lookup, by:
+   *
+   *            ut_sec += target_gmtoff - source_gmtoff;
+   *            ut_gmtoff = target_gmtoff;
+   *
+   *   2) It might happen that this changed ut_sec value (as pointed out
+   *      above) either moves past the DST transition hour or moves
+   *      right before it, changing the target gmtoff we've guessed at point
+   *      #1 above.  We detect this by doing another lookup of the target
+   *      timezone and then adjusting ut_sec/ut_gmtoff again.  This handles
+   *      cases properly where we don't fall INTO the transition hour at
+   *      this step.
+   *
+   *   3) If we are _within_ the transition hour, we need a final step, as
+   *      in this case the transition between the two timezones is not
+   *      linear we either need to lose or add an extra hour.  This one is
+   *      detected using a 3rd lookup, as we if we are in the transition
+   *      hour, the 2nd step will be incorrect and the final step would
+   *      return the same gmtoff as the 1st. There are two cases here:
+   *
+   *
+   *        a) 1st_gmtoff < 2nd_gmtoff: we were in DST but then the 2nd step
+   *        moved us before, so let's add an hour to ut_sec so it's again
+   *        _after_ the threshold.
+   *
+   *        b) 1st_gmtoff > 2nd_gmtoff: we were before DST and the 2nd step
+   *        moved us into ut_sec wise, but our gmtoff does not reflect that.
+   *        Add an hour to ut_gmtoff.
+   *
+   *      This will then nicely move any second between 02:00am and 03:00am
+   *      to be between 03:00am and 04:00am, just as it happens when we
+   *      convert these timestamps via mktime().
+   *
+   */
+
+  /* STEP 1:
+   *   use the ut_sec in the incorrectly parsed timestamp to find
+   *   an initial gmtoff value in target
+   */
+
+  glong fixed_gmtoff = time_zone_info_get_offset(tzinfo, self->ut_sec);
+  if (fixed_gmtoff != self->ut_gmtoff)
+    {
+      /* adjust gmtoff to the possibly inaccurate gmtoff */
+      unix_time_fix_timezone(self, fixed_gmtoff);
+
+      /* STEP 2: check if our initial idea was correct */
+      glong alt_gmtoff = time_zone_info_get_offset(tzinfo, self->ut_sec);
+
+      if (alt_gmtoff != fixed_gmtoff)
+        {
+          /* if alt_gmtoff is not equal to fixed_gmtoff then initial idea
+           * was wrong, we are crossing the daylight saving change hour.
+           * but stamp->ut_sec should be more accurate now */
+
+          unix_time_fix_timezone(self, alt_gmtoff);
+
+          /* STEP 3: check if the final fix was good, e.g. are we within the transition hour */
+          if (time_zone_info_get_offset(tzinfo, self->ut_sec) == fixed_gmtoff)
+            {
+              /* we are within the transition hour, we need to skip 1 hour in the timestamp */
+              if (alt_gmtoff > fixed_gmtoff)
+                {
+
+                  /* step 2 moved ut_sec right before the transition second,
+                   * while ut_gmtoff is already reflecting the changed
+                   * offset, move ut_sec forward */
+
+                  self->ut_sec += alt_gmtoff - fixed_gmtoff;
+                }
+              else
+                {
+                  /* step 2 changed ut_gmtoff to be an "old" offset. update gmtoff */
+                  self->ut_gmtoff += fixed_gmtoff - alt_gmtoff;
+                }
+            }
+        }
+    }
 }
 
 gboolean
