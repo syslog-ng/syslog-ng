@@ -31,6 +31,7 @@
 #include "logmsg/tags.h"
 #include "ack-tracker/ack_tracker.h"
 #include "timeutils/misc.h"
+#include "scratch-buffers.h"
 
 #include <string.h>
 
@@ -533,7 +534,11 @@ log_source_post(LogSource *self, LogMessage *msg)
    */
 
   g_assert(old_window_size > 0);
+
+  ScratchBuffersMarker mark;
+  scratch_buffers_mark(&mark);
   log_pipe_queue(&self->super, msg, &path_options);
+  scratch_buffers_reclaim_marked(mark);
 }
 
 static gboolean
