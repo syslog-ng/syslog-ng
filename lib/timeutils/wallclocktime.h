@@ -117,6 +117,8 @@ struct _WallClockTime
 
 #endif
 
+guint32 wall_clock_time_iso_week_number(WallClockTime *wct);
+
 static inline gboolean
 wall_clock_time_is_set(WallClockTime *wct)
 {

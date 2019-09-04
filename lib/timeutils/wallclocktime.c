@@ -52,6 +52,35 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+/*
+ * MIT: musl http://git.musl-libc.org/cgit/musl/tree/src/time/strftime.c?id=6ad514e4e278f0c3b18eb2db1d45638c9af1c07f#n19
+ * The license below only applies for the ISO8601 week calculation in this file.
+ *
+ */
+/*
+ *
+ *  Copyright © 2005-2019 Rich Felker, et al.
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining
+ *  a copy of this software and associated documentation files (the
+ *  "Software"), to deal in the Software without restriction, including
+ *  without limitation the rights to use, copy, modify, merge, publish,
+ *  distribute, sublicense, and/or sell copies of the Software, and to
+ *  permit persons to whom the Software is furnished to do so, subject to
+ *  the following conditions:
+ *
+ *  The above copyright notice and this permission notice shall be
+ *  included in all copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ *  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ *  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ *  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ *  CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ *  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ *  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 #include <ctype.h>
 #include <stdint.h>
 #include <string.h>
@@ -94,6 +123,50 @@ wall_clock_time_unset(WallClockTime *self)
 
 #define isleap(y) ((((y) % 4) == 0 && ((y) % 100) != 0) || ((y) % 400) == 0)
 #define isleap_sum(a, b)  isleap((a) % 400 + (b) % 400)
+
+static gboolean
+_is_jan1_3_days_past_monday(WallClockTime *wct)
+{
+  return ((wct->wct_wday + 371 - wct->wct_yday - 2) % 7 <= 2);
+}
+
+static gint
+_get_dec31_day_of_week(WallClockTime *wct)
+{
+  return (wct->wct_wday + 7 - wct->wct_yday - 1) % 7;
+}
+
+static gint
+_get_jan1_day_of_week(WallClockTime *wct)
+{
+  return (wct->wct_wday + 371 - wct->wct_yday) % 7;
+}
+
+guint32
+wall_clock_time_iso_week_number(WallClockTime *wct)
+{
+  gint week_number = (wct->wct_yday - (wct->wct_wday - 1 + 7) % 7 + 7 ) / 7;
+
+  if (_is_jan1_3_days_past_monday(wct))
+    week_number++;
+
+  if (week_number == 0)
+    {
+      gint last_dec31 = _get_dec31_day_of_week(wct);
+      if (last_dec31 == 4 || (last_dec31 == 5 && isleap(wct->wct_year-1)))
+        return 53;
+      return 52;
+    }
+
+  if (week_number == 53)
+    {
+      int jan1 = _get_jan1_day_of_week(wct);
+      if (jan1 != 4 && (jan1 != 3 || !isleap(wct->wct_year)))
+        return 1;
+    }
+
+  return week_number;
+}
 
 typedef struct
 {
