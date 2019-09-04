@@ -67,6 +67,7 @@ rcptid_restore_entry(void)
     {
       msg_error("Internal error restoring log reader state, stored data is too new",
                 evt_tag_int("version", data->header.version));
+      rcptid_unmap_state();
       return FALSE;
     }
 
