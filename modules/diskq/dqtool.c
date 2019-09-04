@@ -583,6 +583,13 @@ dqtool_assign(int argc, char *argv[])
   const gchar *diskq_file = argv[optind];
   gchar *diskq_full_path = g_canonicalize_filename(diskq_file, NULL);
 
+  gchar *old_entry = persist_state_lookup_string(state, assign_persist_name, NULL, NULL);
+  if (old_entry)
+    {
+      fprintf(stderr, "Entry overridden during the assign process. Old entry: %s\n", old_entry);
+      g_free(old_entry);
+    }
+
   persist_state_alloc_string(state, assign_persist_name, diskq_full_path, -1);
   g_free(diskq_full_path);
 
