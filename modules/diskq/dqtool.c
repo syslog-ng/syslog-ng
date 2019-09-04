@@ -46,10 +46,12 @@
 gchar *template_string;
 gchar *new_diskq_path;
 gchar *persist_file_path;
+gchar *assign_persist_name;
 gboolean relocate_all;
 gboolean display_version;
 gboolean debug_flag;
 gboolean verbose_flag;
+gboolean assign_help;
 
 static GOptionEntry cat_options[] =
 {
@@ -78,6 +80,23 @@ static GOptionEntry relocate_options[] =
   {
     "all", 'a', 0, G_OPTION_ARG_NONE, &relocate_all,
     "relocate all persist file"
+  },
+  { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
+};
+
+static GOptionEntry assign_options[] =
+{
+  {
+    "persist", 'p', 0, G_OPTION_ARG_STRING, &persist_file_path,
+    "syslog-ng persist file", "<persist>"
+  },
+  {
+    "persist_name", 'n', 0, G_OPTION_ARG_STRING, &assign_persist_name,
+    "persist name", "<persist name>"
+  },
+  {
+    "example", 'e', 0, G_OPTION_ARG_NONE, &assign_help,
+    "print examples"
   },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
@@ -212,13 +231,13 @@ _validate_diskq_path(const gchar *path)
 {
   if (!path)
     {
-      fprintf(stderr, "relocate: missing mandatory option: new_path\n");
+      fprintf(stderr, "missing mandatory option: new_path\n");
       return FALSE;
     }
 
   if (!(is_file_directory(path) && _is_read_writable(path)))
     {
-      fprintf(stderr, "relocate: new_path should be point to a readable/writable directory\n");
+      fprintf(stderr, "new_path should be point to a readable/writable directory\n");
       return FALSE;
     }
 
@@ -230,13 +249,13 @@ _validate_persist_file_path(const gchar *path)
 {
   if (!path)
     {
-      fprintf(stderr, "relocate: missing mandatory option: persist\n");
+      fprintf(stderr, "missing mandatory option: persist\n");
       return FALSE;
     }
 
   if (!(is_file_regular(path) && _is_read_writable(path)))
     {
-      fprintf(stderr, "relocate: persist should point to a readable/writable file\n");
+      fprintf(stderr, "persist should point to a readable/writable file\n");
       return FALSE;
     }
 
@@ -509,6 +528,77 @@ dqtool_relocate(int argc, char *argv[])
   return 0;
 }
 
+static gboolean
+_assign_validate_options(void)
+{
+  return _validate_persist_file_path(persist_file_path) && _file_is_diskq(persist_file_path);
+}
+
+static void
+_assign_print_help(void)
+{
+  fprintf(stderr, "example:"
+          "   bin/dqtool assign -p var/syslog-ng.persist -n \"afsocket_dd_qfile(stream,localhost:15554)\n"
+          "                    /tmp/syslog-ng-dq/syslog-ng-00000.rqf\n\n"
+          "When only a filename is given for diskq, it will be appended to the current working dir.\n"
+          "One bad thing: user need to figure out the correct persist name.\n\n");
+  fprintf(stderr, "How it works?\n"
+          "When you know what the persist name for the diskq file is and you want to assign"
+          " an existing queue file to your destination, then with this feature you can set the queue file"
+          " manually (even if you don't have an entry for the diskq file in the persist).\n");
+}
+
+static gint
+dqtool_assign(int argc, char *argv[])
+{
+  if (assign_help)
+    {
+      _assign_print_help();
+      return 0;
+    }
+
+  if (!_assign_validate_options())
+    return 1;
+
+  if (!g_threads_got_initialized)
+    {
+      g_thread_init(NULL);
+    }
+
+  main_thread_handle = get_thread_id();
+
+  PersistState *state = persist_state_new(persist_file_path);
+  if (!state)
+    {
+      fprintf(stderr, "Failed to create PersistState from file %s\n", persist_file_path);
+      return 1;
+    }
+
+  if (!persist_state_start_edit(state))
+    {
+      fprintf(stderr, "Failed to load persist file for editing.");
+      return 1;
+    }
+
+  const gchar *diskq_file = argv[optind];
+  gchar *diskq_full_path = g_canonicalize_filename(diskq_file, NULL);
+
+  gchar *old_entry = persist_state_lookup_string(state, assign_persist_name, NULL, NULL);
+  if (old_entry)
+    {
+      fprintf(stderr, "Entry overridden during the assign process. Old entry: %s\n", old_entry);
+      g_free(old_entry);
+    }
+
+  persist_state_alloc_string(state, assign_persist_name, diskq_full_path, -1);
+  g_free(diskq_full_path);
+
+  persist_state_commit(state);
+  persist_state_free(state);
+
+  return 0;
+}
+
 static GOptionEntry dqtool_options[] =
 {
   {
@@ -537,6 +627,7 @@ static struct
   { "cat", cat_options, "Print the contents of a disk queue file", dqtool_cat },
   { "info", info_options, "Print infos about the given disk queue file", dqtool_info },
   { "relocate", relocate_options, "Relocate(rename) diskq file. Note that this option modifies the persist file.", dqtool_relocate },
+  { "assign", assign_options, "Assign diskq file to the given persist file with the given persist name.", dqtool_assign },
   { NULL, NULL },
 };
 
