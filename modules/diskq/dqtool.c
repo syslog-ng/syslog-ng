@@ -531,7 +531,7 @@ dqtool_relocate(int argc, char *argv[])
 static gboolean
 _assign_validate_options(void)
 {
-  return _validate_persist_file_path(persist_file_path);
+  return _validate_persist_file_path(persist_file_path) && _file_is_diskq(persist_file_path);
 }
 
 static void
