@@ -71,6 +71,7 @@ struct _LogSource
   gchar *stats_instance;
   WindowSizeCounter window_size;
   DynamicWindow dynamic_window;
+  gboolean window_initialized;
   /* full_window_size = static + dynamic */
   gsize full_window_size;
   atomic_gssize window_size_to_be_reclaimed;
