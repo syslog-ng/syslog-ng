@@ -181,7 +181,9 @@ log_proto_buffered_server_apply_state(LogProtoBufferedServer *self, PersistEntry
 
   if (!self->buffer)
     {
-      self->buffer = g_malloc(state->buffer_size);
+      gssize buffer_size = MAX(state->buffer_size, self->super.options->init_buffer_size);
+      self->buffer = g_malloc(buffer_size);
+      state->buffer_size = buffer_size;
     }
   state->pending_buffer_end = 0;
 
