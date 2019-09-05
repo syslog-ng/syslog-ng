@@ -25,7 +25,7 @@
 class Filter(object):
     group_type = "filter"
 
-    def __init__(self, **kwargs):
-        self.options = kwargs
+    def __init__(self, **options):
+        self.options = options
         self.driver_name = ""
         self.positional_parameters = []
