@@ -71,17 +71,17 @@ class SyslogNgConfig(object):
     def add_include(self, include):
         self.__syslog_ng_config["includes"].append(include)
 
-    def update_global_options(self, **kwargs):
-        self.__syslog_ng_config["global_options"].update(kwargs)
+    def update_global_options(self, **options):
+        self.__syslog_ng_config["global_options"].update(options)
 
-    def create_file_source(self, **kwargs):
-        return FileSource(**kwargs)
+    def create_file_source(self, **options):
+        return FileSource(**options)
 
     def create_example_msg_generator_source(self, **options):
         return ExampleMsgGeneratorSource(**options)
 
-    def create_filter(self, **kwargs):
-        return Filter(**kwargs)
+    def create_filter(self, **options):
+        return Filter(**options)
 
     def create_app_parser(self, **options):
         return Parser("app-parser", **options)
@@ -89,8 +89,8 @@ class SyslogNgConfig(object):
     def create_syslog_parser(self, **options):
         return Parser("syslog-parser", **options)
 
-    def create_file_destination(self, **kwargs):
-        return FileDestination(**kwargs)
+    def create_file_destination(self, **options):
+        return FileDestination(**options)
 
     def create_logpath(self, statements=None, flags=None):
         logpath = self.__create_logpath_with_conversion(statements, flags)
