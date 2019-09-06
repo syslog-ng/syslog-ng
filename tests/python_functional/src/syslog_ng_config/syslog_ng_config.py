@@ -74,6 +74,14 @@ class SyslogNgConfig(object):
     def update_global_options(self, **options):
         self.__syslog_ng_config["global_options"].update(options)
 
+    def create_dummy_source(self):
+        options = {}
+        return FileSource(file_name=None, **options)
+
+    def create_dummy_destination(self):
+        options = {}
+        return FileDestination(file_name=None, **options)
+
     def create_file_source(self, file_name=None, **options):
         return FileSource(file_name, **options)
 

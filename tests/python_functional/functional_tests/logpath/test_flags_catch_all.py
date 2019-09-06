@@ -22,7 +22,7 @@
 #############################################################################
 
 
-def test_flags_catch_all(config, syslog_ng, log_message, bsd_formatter):
+def test_flags_catch_all(config, syslog_ng, generate_msgs_for_dummy_src_and_dst):
     # Check the correct output if the logpath is the following
     # log {
     #     source(s_file);
@@ -32,27 +32,28 @@ def test_flags_catch_all(config, syslog_ng, log_message, bsd_formatter):
     # input logs:
     # Oct 11 22:14:15 host-A testprogram: message from host-A
 
-    file_source = config.create_file_source(file_name="input.log")
-    file_destination = config.create_file_destination(file_name="output.log")
-    catch_all_destination = config.create_file_destination(file_name="catchall_output.log")
+    dummy_source = config.create_dummy_source()
+    inner_destination = config.create_dummy_destination()
 
-    inner_logpath = config.create_inner_logpath(statements=[file_destination])
+    catch_all_destination = config.create_dummy_destination()
 
-    config.create_logpath(statements=[file_source, inner_logpath])
+    inner_logpath = config.create_inner_logpath(statements=[inner_destination])
+
+    config.create_logpath(statements=[dummy_source, inner_logpath])
     config.create_logpath(statements=[catch_all_destination], flags="catch-all")
     config.update_global_options(keep_hostname="yes")
 
-    input_message = bsd_formatter.format_message(log_message)
-    expected_message = bsd_formatter.format_message(log_message.remove_priority())
-    file_source.write_log(input_message)
+    input_messages, expected_messages = generate_msgs_for_dummy_src_and_dst
+
+    dummy_source.write_log(input_messages[1])
 
     syslog_ng.start(config)
 
-    destination_log = file_destination.read_log()
+    destination_log = inner_destination.read_log()
     # message should arrived into destination1
-    assert expected_message in destination_log
+    assert expected_messages[1] in destination_log
 
     catch_all_destination_log = catch_all_destination.read_log()
     # message should arrived into catch_all_destination
     # there is a flags(catch-all)
-    assert expected_message in catch_all_destination_log
+    assert expected_messages[1] in catch_all_destination_log

@@ -23,11 +23,11 @@
 from src.message_builder.log_message import LogMessage
 
 
-def write_msg_with_fields(file_source, bsd_formatter, hostname):
+def write_msg_with_fields(dummy_source, bsd_formatter, hostname):
     log_message = LogMessage().hostname(hostname)
     input_message = bsd_formatter.format_message(log_message)
     expected_message = bsd_formatter.format_message(log_message.remove_priority())
-    file_source.write_log(input_message)
+    dummy_source.write_log(input_message)
     return expected_message
 
 
@@ -44,18 +44,18 @@ def test_flags_fallback(config, syslog_ng, bsd_formatter):
 
     config.update_global_options(keep_hostname="yes")
 
-    file_source = config.create_file_source(file_name="input.log")
+    dummy_source = config.create_dummy_source()
     host_filter = config.create_filter(host="'host-A'")
-    file_destination1 = config.create_file_destination(file_name="output1.log")
-    file_destination2 = config.create_file_destination(file_name="output2.log")
+    file_destination1 = config.create_dummy_destination()
+    file_destination2 = config.create_dummy_destination()
 
     inner_logpath1 = config.create_inner_logpath(statements=[host_filter, file_destination1])
     inner_logpath2 = config.create_inner_logpath(statements=[file_destination2], flags="fallback")
 
-    config.create_logpath(statements=[file_source, inner_logpath1, inner_logpath2])
+    config.create_logpath(statements=[dummy_source, inner_logpath1, inner_logpath2])
 
-    expected_message1 = write_msg_with_fields(file_source, bsd_formatter, "host-A")
-    expected_message2 = write_msg_with_fields(file_source, bsd_formatter, "host-B")
+    expected_message1 = write_msg_with_fields(dummy_source, bsd_formatter, "host-A")
+    expected_message2 = write_msg_with_fields(dummy_source, bsd_formatter, "host-B")
 
     syslog_ng.start(config)
 
