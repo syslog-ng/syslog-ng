@@ -69,44 +69,39 @@ host_id_init(PersistState *state)
   guint8 version;
   PersistEntryHandle handle;
   HostIdState *host_id_state;
-  gboolean new_host_id_required = FALSE;
-  gboolean use_legacy_host_id = FALSE;
+  gboolean host_id_found = TRUE;
   guint32 legacy_hostid = 0;
 
 
   handle = persist_state_lookup_entry(state, HOST_ID_PERSIST_KEY, &size, &version);
-
   if (handle == 0)
     {
+      host_id_found = FALSE;
+
       handle = persist_state_alloc_entry(state, HOST_ID_PERSIST_KEY, sizeof(HostIdState));
-      use_legacy_host_id = _load_host_id_from_legacy_persist_entry(state, &legacy_hostid);
-
-      new_host_id_required = !use_legacy_host_id;
-    }
-
-  if (!handle)
-    {
-      msg_error("host-id: could not allocate persist state");
-      return FALSE;
+      if (handle == 0)
+        {
+          msg_error("host-id: could not allocate persist state");
+          return FALSE;
+        }
     }
 
   host_id_state = persist_state_map_entry(state, handle);
-  {
-    if (new_host_id_required)
-      {
-        global_host_id = _create_host_id();
-        host_id_state->host_id = global_host_id;
-      }
-    else if (use_legacy_host_id)
-      {
-        host_id_state->host_id = legacy_hostid;
-        global_host_id = legacy_hostid;
-      }
-    else
-      {
-        global_host_id = host_id_state->host_id;
-      }
-  }
+
+  if (!host_id_found)
+    {
+      if (_load_host_id_from_legacy_persist_entry(state, &legacy_hostid))
+        {
+          host_id_state->host_id = legacy_hostid;
+        }
+      else
+        {
+          host_id_state->host_id = _create_host_id();
+        }
+    }
+
+  global_host_id = host_id_state->host_id;
+
   persist_state_unmap_entry(state, handle);
 
   return TRUE;
