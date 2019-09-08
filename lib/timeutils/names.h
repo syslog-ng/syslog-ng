@@ -25,6 +25,9 @@
 #ifndef TIMEUTILS_NAMES_H_INCLUDED
 #define TIMEUTILS_NAMES_H_INCLUDED
 
+#define MONTH_NAME_ABBREV_LEN 3
+#define WEEKDAY_NAME_ABBREV_LEN 3
+
 extern const char *month_names_abbrev[];
 extern const char *month_names[];
 extern const char *weekday_names_abbrev[];

@@ -97,7 +97,7 @@ append_format_wall_clock_time(const WallClockTime *wct, GString *target, gint ts
   switch (ts_format)
     {
     case TS_FMT_BSD:
-      g_string_append(target, month_names_abbrev[wct->wct_mon]);
+      g_string_append_len(target, month_names_abbrev[wct->wct_mon], MONTH_NAME_ABBREV_LEN);
       g_string_append_c(target, ' ');
       format_uint32_padded(target, 2, ' ', 10, wct->wct_mday);
       g_string_append_c(target, ' ');
@@ -127,7 +127,7 @@ append_format_wall_clock_time(const WallClockTime *wct, GString *target, gint ts
     case TS_FMT_FULL:
       format_uint32_padded(target, 0, 0, 10, wct->wct_year + 1900);
       g_string_append_c(target, ' ');
-      g_string_append(target, month_names_abbrev[wct->wct_mon]);
+      g_string_append_len(target, month_names_abbrev[wct->wct_mon], MONTH_NAME_ABBREV_LEN);
       g_string_append_c(target, ' ');
       format_uint32_padded(target, 2, ' ', 10, wct->wct_mday);
       g_string_append_c(target, ' ');
