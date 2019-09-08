@@ -252,8 +252,6 @@ log_macro_expand_date_time(GString *result, gint id, gboolean escape, const LogT
                            const gchar *context_id, const LogMessage *msg)
 {
   /* year, month, day */
-  gchar buf[64];
-  gint length;
   const UnixTime *stamp;
   UnixTime sstamp;
   guint tmp_hour;
@@ -392,8 +390,7 @@ log_macro_expand_date_time(GString *result, gint id, gboolean escape, const LogT
       break;
     case M_TZ:
     case M_TZOFFSET:
-      length = format_zone_info(buf, sizeof(buf), wct.wct_gmtoff);
-      g_string_append_len(result, buf, length);
+      append_format_zone_info(result, wct.wct_gmtoff);
       break;
     default:
       g_assert_not_reached();

@@ -46,13 +46,13 @@ _append_frac_digits(glong usecs, GString *target, gint frac_digits)
     }
 }
 
-static gint
-_format_zone_info(gchar *buf, size_t buflen, glong gmtoff)
+void
+append_format_zone_info(GString *target, glong gmtoff)
 {
-  return g_snprintf(buf, buflen, "%c%02ld:%02ld",
-                    gmtoff < 0 ? '-' : '+',
-                    (gmtoff < 0 ? -gmtoff : gmtoff) / 3600,
-                    ((gmtoff < 0 ? -gmtoff : gmtoff) % 3600) / 60);
+  g_string_append_c(target, gmtoff < 0 ? '-' : '+');
+  format_uint32_padded(target, 2, '0', 10, (gmtoff < 0 ? -gmtoff : gmtoff) / 3600);
+  g_string_append_c(target, ':');
+  format_uint32_padded(target, 2, '0', 10, ((gmtoff < 0 ? -gmtoff : gmtoff) % 3600) / 60);
 }
 
 void
@@ -93,7 +93,6 @@ void
 append_format_wall_clock_time(const WallClockTime *wct, GString *target, gint ts_format, gint frac_digits)
 {
   UnixTime ut = UNIX_TIME_INIT;
-  char buf[8];
 
   switch (ts_format)
     {
@@ -123,8 +122,7 @@ append_format_wall_clock_time(const WallClockTime *wct, GString *target, gint ts
       format_uint32_padded(target, 2, '0', 10, wct->wct_sec);
 
       _append_frac_digits(wct->wct_usec, target, frac_digits);
-      _format_zone_info(buf, sizeof(buf), wct->wct_gmtoff);
-      g_string_append(target, buf);
+      append_format_zone_info(target, wct->wct_gmtoff);
       break;
     case TS_FMT_FULL:
       format_uint32_padded(target, 0, 0, 10, wct->wct_year + 1900);
@@ -149,14 +147,4 @@ append_format_wall_clock_time(const WallClockTime *wct, GString *target, gint ts
       g_assert_not_reached();
       break;
     }
-}
-
-
-gint
-format_zone_info(gchar *buf, size_t buflen, glong gmtoff)
-{
-  return g_snprintf(buf, buflen, "%c%02ld:%02ld",
-                    gmtoff < 0 ? '-' : '+',
-                    (gmtoff < 0 ? -gmtoff : gmtoff) / 3600,
-                    ((gmtoff < 0 ? -gmtoff : gmtoff) % 3600) / 60);
 }
