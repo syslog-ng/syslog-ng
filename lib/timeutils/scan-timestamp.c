@@ -137,17 +137,17 @@ gboolean
 scan_iso_timestamp(const gchar **buf, gint *left, WallClockTime *wct)
 {
   /* YYYY-MM-DDTHH:MM:SS */
-  if (!scan_int(buf, left, 4, &wct->wct_year) ||
+  if (!scan_positive_int(buf, left, 4, &wct->wct_year) ||
       !scan_expect_char(buf, left, '-') ||
-      !scan_int(buf, left, 2, &wct->wct_mon) ||
+      !scan_positive_int(buf, left, 2, &wct->wct_mon) ||
       !scan_expect_char(buf, left, '-') ||
-      !scan_int(buf, left, 2, &wct->wct_mday) ||
+      !scan_positive_int(buf, left, 2, &wct->wct_mday) ||
       !scan_expect_char(buf, left, 'T') ||
-      !scan_int(buf, left, 2, &wct->wct_hour) ||
+      !scan_positive_int(buf, left, 2, &wct->wct_hour) ||
       !scan_expect_char(buf, left, ':') ||
-      !scan_int(buf, left, 2, &wct->wct_min) ||
+      !scan_positive_int(buf, left, 2, &wct->wct_min) ||
       !scan_expect_char(buf, left, ':') ||
-      !scan_int(buf, left, 2, &wct->wct_sec))
+      !scan_positive_int(buf, left, 2, &wct->wct_sec))
     return FALSE;
   wct->wct_year -= 1900;
   wct->wct_mon -= 1;
@@ -160,15 +160,15 @@ scan_pix_timestamp(const gchar **buf, gint *left, WallClockTime *wct)
   /* PIX/ASA timestamp, expected format: MMM DD YYYY HH:MM:SS */
   if (!scan_month_abbrev(buf, left, &wct->wct_mon) ||
       !scan_expect_char(buf, left, ' ') ||
-      !scan_int(buf, left, 2, &wct->wct_mday) ||
+      !scan_positive_int(buf, left, 2, &wct->wct_mday) ||
       !scan_expect_char(buf, left, ' ') ||
-      !scan_int(buf, left, 4, &wct->wct_year) ||
+      !scan_positive_int(buf, left, 4, &wct->wct_year) ||
       !scan_expect_char(buf, left, ' ') ||
-      !scan_int(buf, left, 2, &wct->wct_hour) ||
+      !scan_positive_int(buf, left, 2, &wct->wct_hour) ||
       !scan_expect_char(buf, left, ':') ||
-      !scan_int(buf, left, 2, &wct->wct_min) ||
+      !scan_positive_int(buf, left, 2, &wct->wct_min) ||
       !scan_expect_char(buf, left, ':') ||
-      !scan_int(buf, left, 2, &wct->wct_sec))
+      !scan_positive_int(buf, left, 2, &wct->wct_sec))
     return FALSE;
   wct->wct_year -= 1900;
   return TRUE;
@@ -181,15 +181,15 @@ scan_linksys_timestamp(const gchar **buf, gint *left, WallClockTime *wct)
 
   if (!scan_month_abbrev(buf, left, &wct->wct_mon) ||
       !scan_expect_char(buf, left, ' ') ||
-      !scan_int(buf, left, 2, &wct->wct_mday) ||
+      !scan_positive_int(buf, left, 2, &wct->wct_mday) ||
       !scan_expect_char(buf, left, ' ') ||
-      !scan_int(buf, left, 2, &wct->wct_hour) ||
+      !scan_positive_int(buf, left, 2, &wct->wct_hour) ||
       !scan_expect_char(buf, left, ':') ||
-      !scan_int(buf, left, 2, &wct->wct_min) ||
+      !scan_positive_int(buf, left, 2, &wct->wct_min) ||
       !scan_expect_char(buf, left, ':') ||
-      !scan_int(buf, left, 2, &wct->wct_sec) ||
+      !scan_positive_int(buf, left, 2, &wct->wct_sec) ||
       !scan_expect_char(buf, left, ' ') ||
-      !scan_int(buf, left, 4, &wct->wct_year))
+      !scan_positive_int(buf, left, 4, &wct->wct_year))
     return FALSE;
   wct->wct_year -= 1900;
   return TRUE;
@@ -201,13 +201,13 @@ scan_bsd_timestamp(const gchar **buf, gint *left, WallClockTime *wct)
   /* RFC 3164 timestamp, expected format: MMM DD HH:MM:SS ... */
   if (!scan_month_abbrev(buf, left, &wct->wct_mon) ||
       !scan_expect_char(buf, left, ' ') ||
-      !scan_int(buf, left, 2, &wct->wct_mday) ||
+      !scan_positive_int(buf, left, 2, &wct->wct_mday) ||
       !scan_expect_char(buf, left, ' ') ||
-      !scan_int(buf, left, 2, &wct->wct_hour) ||
+      !scan_positive_int(buf, left, 2, &wct->wct_hour) ||
       !scan_expect_char(buf, left, ':') ||
-      !scan_int(buf, left, 2, &wct->wct_min) ||
+      !scan_positive_int(buf, left, 2, &wct->wct_min) ||
       !scan_expect_char(buf, left, ':') ||
-      !scan_int(buf, left, 2, &wct->wct_sec))
+      !scan_positive_int(buf, left, 2, &wct->wct_sec))
     return FALSE;
   return TRUE;
 }

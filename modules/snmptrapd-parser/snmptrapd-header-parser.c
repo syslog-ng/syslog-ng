@@ -247,17 +247,17 @@ static gboolean
 scan_snmptrapd_timestamp(const gchar **buf, gint *left, WallClockTime *wct)
 {
   /* YYYY-MM-DD HH:MM:SS */
-  if (!scan_int(buf, left, 4, &wct->wct_year) ||
+  if (!scan_positive_int(buf, left, 4, &wct->wct_year) ||
       !scan_expect_char(buf, left, '-') ||
-      !scan_int(buf, left, 2, &wct->wct_mon) ||
+      !scan_positive_int(buf, left, 2, &wct->wct_mon) ||
       !scan_expect_char(buf, left, '-') ||
-      !scan_int(buf, left, 2, &wct->wct_mday) ||
+      !scan_positive_int(buf, left, 2, &wct->wct_mday) ||
       !scan_expect_char(buf, left, ' ') ||
-      !scan_int(buf, left, 2, &wct->wct_hour) ||
+      !scan_positive_int(buf, left, 2, &wct->wct_hour) ||
       !scan_expect_char(buf, left, ':') ||
-      !scan_int(buf, left, 2, &wct->wct_min) ||
+      !scan_positive_int(buf, left, 2, &wct->wct_min) ||
       !scan_expect_char(buf, left, ':') ||
-      !scan_int(buf, left, 2, &wct->wct_sec))
+      !scan_positive_int(buf, left, 2, &wct->wct_sec))
     return FALSE;
   wct->wct_year -= 1900;
   wct->wct_mon -= 1;
