@@ -577,7 +577,7 @@ fi
 %{_datadir}/%{name}/tools/
 
 %changelog
-* Fri Aug  15 2019 Laszlo Budai <laszlo.budai@balabit.com> - 3.23.1-1
+* Fri Aug 16 2019 Laszlo Budai <laszlo.budai@balabit.com> - 3.23.1-1
 - update to 3.23.1
 
 * Sun Jun 16 2019 Balazs Scheidler <balazs.scheidler@oneidentity.com> - 3.22.1-1
