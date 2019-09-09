@@ -335,6 +335,7 @@ log_pipe_forward_msg(LogPipe *self, LogMessage *msg, const LogPathOptions *path_
 static inline void
 log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
+  LogPathOptions local_path_options;
   g_assert((s->flags & PIF_INITIALIZED) != 0);
 
   if (G_UNLIKELY(pipe_single_step_hook))
@@ -348,7 +349,7 @@ log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 
   if (G_UNLIKELY(s->flags & (PIF_HARD_FLOW_CONTROL)))
     {
-      LogPathOptions local_path_options = *path_options;
+      local_path_options = *path_options;
 
       local_path_options.flow_control_requested = 1;
       path_options = &local_path_options;
