@@ -50,7 +50,6 @@ bison_target(AFSocketGrammar
     COMPILE_FLAGS ${BISON_FLAGS})
 
 find_package(ZLIB REQUIRED)
-find_package(OpenSSL REQUIRED)
 find_package(systemd)
 
 add_library(afsocket SHARED ${AFSOCKET_SOURCES})
