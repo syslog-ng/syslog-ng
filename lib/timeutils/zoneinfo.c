@@ -43,9 +43,9 @@ const gint64 LOWEST_TIME32    = (gint64)((gint32)0x80000000);
  *  struct tzhead
  *    {
  *       char    tzh_magic[4];            TZ_MAGIC "TZif"
- *       char    tzh_version[1];          '\0' or '2' as of 2005
+ *       char    tzh_version[1];          '\0' or '2' or '3' as of 2013
  *       char    tzh_reserved[15];        reserved--must be zero
- *       char    tzh_ttisgmtcnt[4];       coded number of trans. time flags
+ *       char    tzh_ttisutcnt[4];        coded number of trans. time flags
  *       char    tzh_ttisstdcnt[4];       coded number of trans. time flags
  *       char    tzh_leapcnt[4];          coded number of leap seconds
  *       char    tzh_timecnt[4];          coded number of transition times
@@ -58,17 +58,18 @@ const gint64 LOWEST_TIME32    = (gint64)((gint32)0x80000000);
  *      tzh_timecnt (char [4])s         coded transition times a la time(2)
  *      tzh_timecnt (unsigned char)s    types of local time starting at above
  *      tzh_typecnt repetitions of
- *              one (char [4])          coded UTC offset in seconds
+ *              one (char [4])          coded UT offset in seconds
  *              one (unsigned char)     used to set tm_isdst
  *              one (unsigned char)     that's an abbreviation list index
  *      tzh_charcnt (char)s             '\0'-terminated zone abbreviations
  *      tzh_leapcnt repetitions of
  *              one (char [4])          coded leap second transition times
  *              one (char [4])          total correction after above
- *      tzh_ttisstdcnt (char)s          indexed by type; if TRUE, transition time is standard time, if FALSE, transition time is wall clock time if absent,
+ *      tzh_ttisstdcnt (char)s          indexed by type; if TRUE, transition time is standard time, if FALSE, transition time is wall clock time; if absent,
  *                                      transition times are assumed to be wall clock time
- *      tzh_ttisgmtcnt (char)s          indexed by type; if TRUE, transition time is UTC, if FALSE, transition time is local time if absent,
- *                                      transition times are assumed to be local time
+ *      tzh_ttisutcnt (char)s           indexed by type; if TRUE, transition time is UT, if FALSE, transition time is local time; if absent,
+ *                                      transition times are assumed to be local time.
+ *                                      When this is TRUE, the corresponding std/wall indicator must also be 1.
  */
 
 /*
@@ -120,7 +121,7 @@ readcoded32(unsigned char **input, gint64 minv, gint64 maxv)
   if (val < minv || val > maxv)
     {
       msg_error("Error while processing the time zone file",
-                evt_tag_str("message", "oded value out-of-range"),
+                evt_tag_str("message", "Coded value out-of-range"),
                 evt_tag_int("value", val),
                 evt_tag_printf("expected", "[%"G_GINT64_FORMAT", %"G_GINT64_FORMAT"]", minv, maxv));
       g_assert_not_reached();
@@ -218,7 +219,7 @@ zone_info_parser(unsigned char **input, gboolean is64bitData, gint *version)
   gint64 *transition_times = NULL;
   guint8 *transition_types = NULL;
   gint32 *gmt_offsets = NULL;
-  gint64 isgmtcnt, isdstcnt, leapcnt, timecnt, typecnt, charcnt;
+  gint64 isutcnt, isstdcnt, leapcnt, timecnt, typecnt, charcnt;
   gboolean insertInitial = FALSE;
 
   buf = *input;
@@ -257,25 +258,12 @@ zone_info_parser(unsigned char **input, gboolean is64bitData, gint *version)
   *input += 15;
 
   /* Read array sizes */
-  isgmtcnt = readcoded32(input, 0, G_MAXINT64);
-  isdstcnt = readcoded32(input, 0, G_MAXINT64);
+  isutcnt  = readcoded32(input, 0, G_MAXINT64);
+  isstdcnt = readcoded32(input, 0, G_MAXINT64);
   leapcnt  = readcoded32(input, 0, G_MAXINT64);
   timecnt  = readcoded32(input, 0, G_MAXINT64);
   typecnt  = readcoded32(input, 0, G_MAXINT64);
   charcnt  = readcoded32(input, 0, G_MAXINT64);
-
-  /*
-   * Confirm sizes that we assume to be equal.  These assumptions
-   * are drawn from a reading of the zic source (2003a), so they
-   * should hold unless the zic source changes.
-   */
-
-  if (isgmtcnt != typecnt ||
-      isdstcnt != typecnt)
-    {
-      msg_warning("Error in the time zone file",
-                  evt_tag_str("message", "Count mismatch between tzh_ttisgmtcnt, tzh_ttisdstcnt, tth_typecnt"));
-    }
 
   /*
    * Used temporarily to store transition times and types.  We need
@@ -314,7 +302,7 @@ zone_info_parser(unsigned char **input, gboolean is64bitData, gint *version)
       transition_types[i] = t;
     }
 
-  /* Read types (except for the isstd and isgmt flags, which come later (why??)) */
+  /* Read types (except for the isstd and isut flags, which come later (why??)) */
   for (i = 0; i<typecnt; ++i)
     {
       gint offs = 24;
@@ -437,11 +425,11 @@ zone_info_parser(unsigned char **input, gboolean is64bitData, gint *version)
   /* We dont nead this flags to compute the wall time of the timezone*/
 
   /* Ignore isstd flags */
-  for (i=0; i<typecnt; i++)
+  for (i=0; i<isstdcnt; i++)
     readbool(input);
 
-  /* Ignore isgmt flags */
-  for (i=0; i<typecnt; i++)
+  /* Ignore isut flags */
+  for (i=0; i<isutcnt; i++)
     readbool(input);
 
 error:
