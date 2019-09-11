@@ -26,5 +26,6 @@
 #include "plugin.h"
 
 TEMPLATE_FUNCTION_DECLARE(tf_json);
+TEMPLATE_FUNCTION_DECLARE(tf_flat_json);
 
 #endif
