@@ -378,9 +378,10 @@ qdisk_pop_head(QDisk *self, GString *record)
         }
       if (res != sizeof(n))
         {
-          msg_error("Error reading disk-queue file",
+          msg_error("Error reading disk-queue file, cannot read record-length",
                     evt_tag_str("error", res < 0 ? g_strerror(errno) : "short read"),
-                    evt_tag_str("filename", self->filename));
+                    evt_tag_str("filename", self->filename),
+                    evt_tag_long("offset", self->hdr->read_head));
           return FALSE;
         }
 
@@ -389,14 +390,16 @@ qdisk_pop_head(QDisk *self, GString *record)
         {
           msg_warning("Disk-queue file contains possibly invalid record-length",
                       evt_tag_int("rec_length", n),
-                      evt_tag_str("filename", self->filename));
+                      evt_tag_str("filename", self->filename),
+                      evt_tag_long("offset", self->hdr->read_head));
           return FALSE;
         }
       else if (n == 0)
         {
           msg_error("Disk-queue file contains empty record",
                     evt_tag_int("rec_length", n),
-                    evt_tag_str("filename", self->filename));
+                    evt_tag_str("filename", self->filename),
+                    evt_tag_long("offset", self->hdr->read_head));
           return FALSE;
         }
 
@@ -407,7 +410,8 @@ qdisk_pop_head(QDisk *self, GString *record)
           msg_error("Error reading disk-queue file",
                     evt_tag_str("filename", self->filename),
                     evt_tag_str("error", res < 0 ? g_strerror(errno) : "short read"),
-                    evt_tag_int("read_length", n));
+                    evt_tag_int("expected read length", n),
+                    evt_tag_int("actually read", res));
           return FALSE;
         }
 
