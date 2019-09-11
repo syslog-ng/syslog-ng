@@ -1,5 +1,8 @@
 export top_srcdir
 
+EXTRA_DIST += \
+	tests/python_functional/CMakeLists.txt
+
 PYTEST_SUBDIR=
 PYTEST_VERBOSE=false
 

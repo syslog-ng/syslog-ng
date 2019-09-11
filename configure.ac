@@ -1074,6 +1074,10 @@ if test -n "$LIBNET_CONFIG" -a -x "$LIBNET_CONFIG"; then
         LIBNET_CFLAGS="`$LIBNET_CONFIG --defines`"
         LIBNET_LIBS="`$LIBNET_CONFIG --libs`"
         AC_MSG_RESULT(yes)
+dnl libnet-config does not provide the _DEFAULT_SOURCE define, that can cause warning during build
+dnl as upstream libnet-config does uses _DEFAULT_SOURCE this is just a fix till 
+        LIBNET_CFLAGS="$LIBNET_CFLAGS -D_DEFAULT_SOURCE"
+
 else
         LIBNET_LIBS=
         AC_MSG_RESULT(no)

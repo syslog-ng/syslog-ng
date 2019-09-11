@@ -50,7 +50,6 @@ bison_target(AFSocketGrammar
     COMPILE_FLAGS ${BISON_FLAGS})
 
 find_package(ZLIB REQUIRED)
-find_package(OpenSSL REQUIRED)
 find_package(systemd)
 
 add_library(afsocket SHARED ${AFSOCKET_SOURCES})
@@ -58,12 +57,18 @@ target_include_directories(afsocket
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
   PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
 )
-target_link_libraries(afsocket PRIVATE ${WRAP_LIBRARIES} ${ZLIB_LIBRARIES} ${OPENSSL_LIBRARIES} ${LIBNET_LIBRARIES} ${Libsystemd_LIBRARIES})
+target_link_libraries(afsocket PRIVATE
+	${WRAP_LIBRARIES}
+	${ZLIB_LIBRARIES}
+	OpenSSL::SSL
+	OpenSSL::Crypto
+	libnet
+	${Libsystemd_LIBRARIES}
+)
 target_link_libraries(afsocket PRIVATE syslog-ng)
 target_include_directories(afsocket PRIVATE SYSTEM ${ZLIB_INCLUDE_DIRS})
 target_include_directories(afsocket PRIVATE SYSTEM ${WRAP_INCLUDE_DIRS})
 target_include_directories(afsocket PRIVATE SYSTEM ${Libsystemd_INCLUDE_DIRS})
-target_compile_definitions(afsocket PRIVATE ${LIBNET_DEFINES})
 
 install(TARGETS afsocket LIBRARY DESTINATION lib/syslog-ng/ COMPONENT afsocket)
 

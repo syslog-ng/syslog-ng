@@ -30,5 +30,12 @@ pkg_check_modules(PC_LIBCAP libcap QUIET)
 find_path(LIBCAP_INCLUDE_DIR NAMES sys/capability.h HINTS ${PC_LIBCAP_INCLUDE_DIRS})
 find_library(LIBCAP_LIBRARY  NAMES cap              HINTS ${PC_LIBCAP_LIBRARY_DIRS})
 
-find_package_handle_standard_args(LIBCAP DEFAULT_MSG LIBCAP_LIBRARY LIBCAP_INCLUDE_DIR)
+add_library(libcap INTERFACE)
+
+if (NOT PC_LIBCAP_FOUND)
+ return()
+endif()
+
+target_include_directories(libcap INTERFACE ${LIBCAP_INCLUDE_DIR})
+target_link_libraries(libcap INTERFACE ${LIBCAP_LIBRARY})
 

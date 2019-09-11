@@ -38,14 +38,25 @@ endif (LIBNET_LIBRARIES)
 
 FIND_PROGRAM(LIBNET_CONFIG libnet-config)
 
+add_library(libnet INTERFACE)
+
 IF (LIBNET_CONFIG)
   EXEC_PROGRAM(${LIBNET_CONFIG} ARGS --libs OUTPUT_VARIABLE _LIBNET_LIBRARIES)
-  EXEC_PROGRAM(${LIBNET_CONFIG} ARGS --defines OUTPUT_VARIABLE _LIBNET_DEFINES)
+  EXEC_PROGRAM(${LIBNET_CONFIG} ARGS --defines OUTPUT_VARIABLE _LIBNET_CFLAGS)
   string(REGEX REPLACE "[\r\n]" " " _LIBNET_LIBRARIES "${_LIBNET_LIBRARIES}")
-  string(REGEX REPLACE "[\r\n]" " " _LIBNET_DEFINES "${_LIBNET_DEFINES}")
+  string(REGEX REPLACE "[\r\n]" " " _LIBNET_CFLAGS "${_LIBNET_CFLAGS}")
   set (LIBNET_LIBRARIES ${_LIBNET_LIBRARIES} CACHE STRING "The libraries needed for LIBNET")
-  set (LIBNET_DEFINES ${_LIBNET_DEFINES} CACHE STRING "The #defines needed for LIBNET")
+  set (LIBNET_CFLAGS ${_LIBNET_CFLAGS} CACHE STRING "The compiler switches needed for LIBNET")
   set (LIBNET_FOUND TRUE CACHE BOOL "LibNet is found")
+
+# this is due to libnet-config provides old fashined defines, which triggers warning on newer systems
+# for details see: https://github.com/libnet/libnet/pull/71
+
+   set (LIBNET_CFLAGS "${LIBNET_CFLAGS} -D_DEFAULT_SOURCE")
+
+   target_include_directories(libnet INTERFACE ${LIBNET_CFLAGS})
+   target_link_libraries(libnet INTERFACE ${LIBNET_LIBRARIES})
+
 ELSE(LIBNET_CONFIG)
   set (LIBNET_FOUND FALSE CACHE BOOL "LibNet is found")
 ENDIF()
@@ -53,4 +64,4 @@ ENDIF()
 include(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(LIBNET DEFAULT_MSG LIBNET_LIBRARIES LIBNET_DEFINES LIBNET_FOUND)
 
-MARK_AS_ADVANCED(LIBNET_LIBRARIES)
+MARK_AS_ADVANCED(LIBNET_LIBRARIES LIBNET_CFLAGS)

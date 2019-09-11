@@ -2,6 +2,7 @@ EXTRA_DIST +=	\
 	tests/loggen/ssl_plugin/CMakeLists.txt	\
 	tests/loggen/socket_plugin/CMakeLists.txt	\
 	tests/loggen/loggen.md	\
+	tests/loggen/tests/CMakeLists.txt	\
 	tests/loggen/CMakeLists.txt
 
 # lib loggen helper common static lib
