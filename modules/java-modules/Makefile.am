@@ -8,6 +8,7 @@ GRADLE_FLAGS ?=
 GRADLE_ARGS = $(GRADLE_FLAGS) \
 	--project-dir $(GRADLE_PROJECT_DIR) \
 	--project-cache-dir=$(GRADLE_PROJECT_CACHE_DIR) \
+	--gradle-user-home=$(GRADLE_PROJECT_CACHE_DIR) \
 	-PsyslogBuildDir=$(abs_top_builddir)/modules/java-modules \
 	-PsyslogDepsDir=$(abs_top_builddir)/modules/java/syslog-ng-core/libs
 GRADLE_COMMAND = $(AM_V_GEN) $(GRADLE) $(GRADLE_ARGS)
