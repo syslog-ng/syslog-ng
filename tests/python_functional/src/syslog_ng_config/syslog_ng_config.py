@@ -50,6 +50,9 @@ class SyslogNgConfig(object):
     def set_version(self, version):
         self.__syslog_ng_config["version"] = version
 
+    def get_version(self):
+        return self.__syslog_ng_config["version"]
+
     def add_include(self, include):
         self.__syslog_ng_config["includes"].append(include)
 
