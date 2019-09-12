@@ -314,7 +314,7 @@ _restart_diskq(LogQueueDisk *self)
     {
       msg_error("Moving corrupt disk-queue failed",
                 evt_tag_str(EVT_TAG_FILENAME, filename),
-                evt_tag_errno(EVT_TAG_OSERROR, errno));
+                evt_tag_error(EVT_TAG_OSERROR));
     }
   g_free(new_file);
 

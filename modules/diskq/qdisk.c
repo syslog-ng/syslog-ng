@@ -473,7 +473,7 @@ _load_queue(QDisk *self, GQueue *q, gint64 q_ofs, gint32 q_len, gint32 q_count)
         {
           msg_error("Error reading in-memory buffer from disk-queue file",
                     evt_tag_str("filename", self->filename),
-                    read_len < 0 ? evt_tag_errno("error", errno) : evt_tag_str("error", "short read"));
+                    read_len < 0 ? evt_tag_error("error") : evt_tag_str("error", "short read"));
           g_string_free(serialized, TRUE);
           return FALSE;
         }
