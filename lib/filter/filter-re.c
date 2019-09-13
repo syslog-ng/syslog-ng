@@ -179,8 +179,10 @@ filter_match_set_template_ref(FilterExprNode *s, LogTemplate *template)
 }
 
 static gboolean
-filter_match_eval_against_program_pid_msg(FilterMatch *self, LogMessage **msgs, gint num_msg)
+filter_match_eval_against_program_pid_msg(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
+  FilterMatch *self = (FilterMatch *) s;
+
   const gchar *pid;
   gssize pid_len;
   gchar *str;
@@ -202,8 +204,10 @@ filter_match_eval_against_program_pid_msg(FilterMatch *self, LogMessage **msgs, 
 }
 
 static gboolean
-filter_match_eval_against_template(FilterMatch *self, LogMessage **msgs, gint num_msg)
+filter_match_eval_against_template(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
+  FilterMatch *self = (FilterMatch *) s;
+
   LogMessage *msg = msgs[num_msg - 1];
   GString *buffer;
 
@@ -214,8 +218,10 @@ filter_match_eval_against_template(FilterMatch *self, LogMessage **msgs, gint nu
 }
 
 static gboolean
-filter_match_eval_against_trivial_template(FilterMatch *self, LogMessage **msgs, gint num_msg)
+filter_match_eval_against_trivial_template(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
+  FilterMatch *self = (FilterMatch *) s;
+
   LogMessage *msg = msgs[num_msg - 1];
   NVTable *payload;
   const gchar *value;
@@ -232,19 +238,30 @@ filter_match_eval_against_trivial_template(FilterMatch *self, LogMessage **msgs,
   return rc;
 }
 
+static void
+filter_match_determine_eval_function(FilterMatch *self)
+{
+  if (self->super.value_handle)
+    self->super.super.eval = filter_re_eval;
+  else if (self->template && log_template_is_trivial(self->template))
+    self->super.super.eval = filter_match_eval_against_trivial_template;
+  else if (self->template)
+    self->super.super.eval = filter_match_eval_against_template;
+  else
+    self->super.super.eval = filter_match_eval_against_program_pid_msg;
+}
+
 static gboolean
-filter_match_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
+filter_match_init(FilterExprNode *s, GlobalConfig *cfg)
 {
   FilterMatch *self = (FilterMatch *) s;
 
-  if (G_LIKELY(self->super.value_handle))
-    return filter_re_eval(s, msgs, num_msg);
-  else if (self->template && log_template_is_trivial(self->template))
-    return filter_match_eval_against_trivial_template(self, msgs, num_msg);
-  else if (self->template)
-    return filter_match_eval_against_template(self, msgs, num_msg);
-  else
-    return filter_match_eval_against_program_pid_msg(self, msgs, num_msg);
+  if (!filter_re_init(s, cfg))
+    return FALSE;
+
+  filter_match_determine_eval_function(self);
+
+  return TRUE;
 }
 
 static void
@@ -262,7 +279,7 @@ filter_match_new(void)
   FilterMatch *self = g_new0(FilterMatch, 1);
 
   filter_re_init_instance(&self->super, 0);
-  self->super.super.eval = filter_match_eval;
+  self->super.super.init = filter_match_init;
   self->super.super.free_fn = filter_match_free;
   return &self->super.super;
 }
