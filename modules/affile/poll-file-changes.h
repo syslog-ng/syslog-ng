@@ -38,6 +38,10 @@ struct _PollFileChanges
   gint follow_freq;
   struct iv_timer follow_timer;
   LogPipe *control;
+
+  void (*on_read)(PollFileChanges *);
+  void (*on_eof)(PollFileChanges *);
+  void (*on_file_moved)(PollFileChanges *);
 };
 
 PollEvents *poll_file_changes_new(gint fd, const gchar *follow_filename, gint follow_freq, LogPipe *control);

@@ -38,6 +38,27 @@
 #include <iv_work.h>
 
 
+static inline void
+poll_file_changes_on_read(PollFileChanges *self)
+{
+  if (self->on_read)
+    self->on_read(self);
+}
+
+static inline void
+poll_file_changes_on_file_moved(PollFileChanges *self)
+{
+  if (self->on_file_moved)
+    self->on_file_moved(self);
+}
+
+static inline void
+poll_file_changes_on_eof(PollFileChanges *self)
+{
+  if (self->on_eof)
+    self->on_eof(self);
+}
+
 /* follow timer callback. Check if the file has new content, or deleted or
  * moved.  Ran every follow_freq seconds.  */
 static void
@@ -66,6 +87,7 @@ poll_file_changes_check_file(gpointer s)
             {
               msg_trace("log_reader_fd_check file moved ESTALE",
                         evt_tag_str("follow_filename", self->follow_filename));
+              poll_file_changes_on_file_moved(self);
               log_pipe_notify(self->control, NC_FILE_MOVED, self);
               return;
             }
@@ -84,17 +106,20 @@ poll_file_changes_check_file(gpointer s)
       if (pos < st.st_size || !S_ISREG(st.st_mode))
         {
           /* we have data to read */
+          poll_file_changes_on_read(self);
           poll_events_invoke_callback(s);
           return;
         }
       else if (pos == st.st_size)
         {
           /* we are at EOF */
+          poll_file_changes_on_eof(self);
           log_pipe_notify(self->control, NC_FILE_EOF, self);
         }
       else if (pos > st.st_size)
         {
           /* the last known position is larger than the current size of the file. it got truncated. Restart from the beginning. */
+          poll_file_changes_on_file_moved(self);
           log_pipe_notify(self->control, NC_FILE_MOVED, self);
 
           /* we may be freed by the time the notification above returns */
@@ -113,6 +138,7 @@ poll_file_changes_check_file(gpointer s)
                         evt_tag_int("size", followed_st.st_size),
                         evt_tag_str("follow_filename", self->follow_filename));
               /* file was moved and we are at EOF, follow the new file */
+              poll_file_changes_on_file_moved(self);
               log_pipe_notify(self->control, NC_FILE_MOVED, self);
               /* we may be freed by the time the notification above returns */
               return;
