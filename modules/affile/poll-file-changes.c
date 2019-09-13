@@ -110,12 +110,6 @@ poll_file_changes_check_file(gpointer s)
           poll_events_invoke_callback(s);
           return;
         }
-      else if (pos == st.st_size)
-        {
-          /* we are at EOF */
-          poll_file_changes_on_eof(self);
-          log_pipe_notify(self->control, NC_FILE_EOF, self);
-        }
       else if (pos > st.st_size)
         {
           /* the last known position is larger than the current size of the file. it got truncated. Restart from the beginning. */
@@ -172,6 +166,27 @@ poll_file_changes_rearm_timer(PollFileChanges *self)
   iv_timer_register(&self->follow_timer);
 }
 
+static gboolean
+poll_file_changes_check_eof(PollFileChanges *self)
+{
+  gint fd = self->fd;
+  if (fd < 0)
+    return FALSE;
+
+  off_t pos = lseek(fd, 0, SEEK_CUR);
+  if (pos == (off_t) -1)
+    {
+      msg_error("Error invoking seek on followed file",
+                evt_tag_str("follow_filename", self->follow_filename),
+                evt_tag_error("error"));
+      return FALSE;
+    }
+
+  struct stat st;
+  gboolean end_of_file = fstat(fd, &st) == 0 && pos == st.st_size;
+  return end_of_file;
+}
+
 void
 poll_file_changes_update_watches(PollEvents *s, GIOCondition cond)
 {
@@ -184,6 +199,14 @@ poll_file_changes_update_watches(PollEvents *s, GIOCondition cond)
 
   if (!(cond & G_IO_IN))
     return;
+
+  if (poll_file_changes_check_eof(self))
+    {
+      msg_trace("End of file, following file",
+                evt_tag_str("follow_filename", self->follow_filename));
+      poll_file_changes_on_eof(self);
+      log_pipe_notify(self->control, NC_FILE_EOF, self);
+    }
 
   poll_file_changes_rearm_timer(self);
 }
