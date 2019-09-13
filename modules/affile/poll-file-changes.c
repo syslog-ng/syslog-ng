@@ -38,16 +38,6 @@
 #include <iv_work.h>
 
 
-typedef struct _PollFileChanges
-{
-  PollEvents super;
-  gint fd;
-  gchar *follow_filename;
-  gint follow_freq;
-  struct iv_timer follow_timer;
-  LogPipe *control;
-} PollFileChanges;
-
 /* follow timer callback. Check if the file has new content, or deleted or
  * moved.  Ran every follow_freq seconds.  */
 static void
@@ -138,7 +128,7 @@ reschedule:
   poll_events_update_watches(s, G_IO_IN);
 }
 
-static void
+void
 poll_file_changes_stop_watches(PollEvents *s)
 {
   PollFileChanges *self = (PollFileChanges *) s;
@@ -156,7 +146,7 @@ poll_file_changes_rearm_timer(PollFileChanges *self)
   iv_timer_register(&self->follow_timer);
 }
 
-static void
+void
 poll_file_changes_update_watches(PollEvents *s, GIOCondition cond)
 {
   PollFileChanges *self = (PollFileChanges *) s;
@@ -170,7 +160,7 @@ poll_file_changes_update_watches(PollEvents *s, GIOCondition cond)
     poll_file_changes_rearm_timer(self);
 }
 
-static void
+void
 poll_file_changes_free(PollEvents *s)
 {
   PollFileChanges *self = (PollFileChanges *) s;
@@ -179,11 +169,10 @@ poll_file_changes_free(PollEvents *s)
   g_free(self->follow_filename);
 }
 
-PollEvents *
-poll_file_changes_new(gint fd, const gchar *follow_filename, gint follow_freq, LogPipe *control)
+void
+poll_file_changes_init_instance(PollFileChanges *self, gint fd, const gchar *follow_filename, gint follow_freq,
+                                LogPipe *control)
 {
-  PollFileChanges *self = g_new0(PollFileChanges, 1);
-
   self->super.stop_watches = poll_file_changes_stop_watches;
   self->super.update_watches = poll_file_changes_update_watches;
   self->super.free_fn = poll_file_changes_free;
@@ -196,6 +185,13 @@ poll_file_changes_new(gint fd, const gchar *follow_filename, gint follow_freq, L
   IV_TIMER_INIT(&self->follow_timer);
   self->follow_timer.cookie = self;
   self->follow_timer.handler = poll_file_changes_check_file;
+}
+
+PollEvents *
+poll_file_changes_new(gint fd, const gchar *follow_filename, gint follow_freq, LogPipe *control)
+{
+  PollFileChanges *self = g_new0(PollFileChanges, 1);
+  poll_file_changes_init_instance(self, fd, follow_filename, follow_freq, control);
 
   return &self->super;
 }

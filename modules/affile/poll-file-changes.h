@@ -24,8 +24,28 @@
 #define POLL_FILE_CHANGES_H_INCLUDED
 
 #include "poll-events.h"
+#include "logpipe.h"
+
+#include <iv.h>
+
+typedef struct _PollFileChanges PollFileChanges;
+
+struct _PollFileChanges
+{
+  PollEvents super;
+  gint fd;
+  gchar *follow_filename;
+  gint follow_freq;
+  struct iv_timer follow_timer;
+  LogPipe *control;
+};
 
 PollEvents *poll_file_changes_new(gint fd, const gchar *follow_filename, gint follow_freq, LogPipe *control);
 
+void poll_file_changes_init_instance(PollFileChanges *self, gint fd, const gchar *follow_filename, gint follow_freq,
+                                     LogPipe *control);
+void poll_file_changes_update_watches(PollEvents *s, GIOCondition cond);
+void poll_file_changes_stop_watches(PollEvents *s);
+void poll_file_changes_free(PollEvents *s);
 
 #endif
