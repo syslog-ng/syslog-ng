@@ -247,7 +247,8 @@ _pop_disk(LogQueueDisk *self, LogMessage **msg)
       log_msg_unref(*msg);
       *msg = NULL;
       msg_error("Can't read correct message from disk-queue file",
-                evt_tag_str("filename", qdisk_get_filename(self->qdisk)));
+                evt_tag_str("filename", qdisk_get_filename(self->qdisk)),
+                evt_tag_long("read_position", qdisk_get_reader_head(self->qdisk)));
       return TRUE;
     }
 
@@ -304,13 +305,17 @@ static void
 _restart_diskq(LogQueueDisk *self)
 {
   gchar *filename = g_strdup(qdisk_get_filename(self->qdisk));
-  gchar *new_file = NULL;
   DiskQueueOptions *options = qdisk_get_options(self->qdisk);
 
   qdisk_stop(self->qdisk);
 
-  new_file = g_strdup_printf("%s.corrupted", filename);
-  rename(filename, new_file);
+  gchar *new_file = g_strdup_printf("%s.corrupted",filename);
+  if (rename(filename, new_file) < 0)
+    {
+      msg_error("Moving corrupt disk-queue failed",
+                evt_tag_str(EVT_TAG_FILENAME, filename),
+                evt_tag_error(EVT_TAG_OSERROR));
+    }
   g_free(new_file);
 
   if (self->restart)
