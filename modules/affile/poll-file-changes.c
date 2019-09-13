@@ -182,8 +182,10 @@ poll_file_changes_update_watches(PollEvents *s, GIOCondition cond)
 
   poll_file_changes_stop_watches(s);
 
-  if (cond & G_IO_IN)
-    poll_file_changes_rearm_timer(self);
+  if (!(cond & G_IO_IN))
+    return;
+
+  poll_file_changes_rearm_timer(self);
 }
 
 void
