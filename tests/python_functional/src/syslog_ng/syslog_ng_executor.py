@@ -38,6 +38,13 @@ class SyslogNgExecutor(object):
             stderr_path=self.__instance_paths.get_stderr_path(),
         )
 
+    def run_process_with_external_tool(self, external_tool):
+        self.__instance_paths.register_external_tool_output_path(external_tool)
+        if external_tool == "valgrind":
+            return self.run_process_with_valgrind()
+        else:
+            raise Exception("Unknown external tool was selected: {}".format(external_tool))
+
     def run_process_with_valgrind(self):
         valgrind_command_args = [
             "valgrind",
@@ -50,7 +57,7 @@ class SyslogNgExecutor(object):
             "--error-limit=no",
             "--num-callers=40",
             "--verbose",
-            "--log-file={}".format(self.__instance_paths.get_valgrind_log_path()),
+            "--log-file={}".format(self.__instance_paths.get_external_tool_output_path("valgrind")),
         ]
         full_command_args = valgrind_command_args + self.__construct_syslog_ng_process()
         return self.__process_executor.start(

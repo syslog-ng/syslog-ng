@@ -40,7 +40,7 @@ class SyslogNgCli(object):
         self.__console_log_reader = ConsoleLogReader(instance_paths)
         self.__syslog_ng_executor = SyslogNgExecutor(instance_paths)
         self.__syslog_ng_ctl = SyslogNgCtl(instance_paths)
-        self.__valgrind_usage = testcase_parameters.get_valgrind_usage()
+        self.__external_tool = testcase_parameters.get_external_tool()
         self.__process = None
 
     # Application commands
@@ -87,8 +87,8 @@ class SyslogNgCli(object):
             raise Exception("Start message not arrived")
 
     def __start_syslog_ng(self):
-        if self.__valgrind_usage:
-            self.__process = self.__syslog_ng_executor.run_process_with_valgrind()
+        if self.__external_tool:
+            self.__process = self.__syslog_ng_executor.run_process_with_external_tool(self.__external_tool)
         else:
             self.__process = self.__syslog_ng_executor.run_process()
         self.__wait_for_start()
@@ -136,8 +136,8 @@ class SyslogNgCli(object):
                 self.__error_handling()
                 raise Exception("Stop message not arrived")
             self.__console_log_reader.check_for_unexpected_messages(unexpected_messages)
-            if self.__valgrind_usage:
-                self.__console_log_reader.handle_valgrind_log(self.__instance_paths.get_valgrind_log_path())
+            if self.__external_tool == "valgrind":
+                self.__console_log_reader.handle_valgrind_log(self.__instance_paths.get_external_tool_output_path(self.__external_tool))
             self.__process = None
             logger.info("syslog-ng process has been stopped with PID: {}\n".format(saved_pid))
 

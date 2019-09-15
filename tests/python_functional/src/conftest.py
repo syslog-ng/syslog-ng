@@ -39,7 +39,7 @@ def fake_testcase_parameters(request, tmpdir):
     tc_parameters.WORKING_DIR = tmpdir.join("workingdir")
     request.config.option.installdir = tmpdir.join("installdir")
     request.config.option.reports = tmpdir.join("reports")
-    request.config.option.runwithvalgrind = False
+    request.config.option.runundertool = ""
     yield TestcaseParameters(request)
     request.config.option.installdir = orig_installdir
     request.config.option.reports = orig_reportdir
