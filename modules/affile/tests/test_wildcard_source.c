@@ -80,23 +80,31 @@ Test(wildcard_source, initial_test)
   cr_assert_eq(driver->monitor_method, MM_POLL);
 }
 
-Test(wildcard_source, test_option_inheritance)
+Test(wildcard_source, test_option_inheritance_multiline)
 {
   WildcardSourceDriver *driver = _create_wildcard_filesource("base-dir(/test_non_existent_dir)"
                                                              "filename-pattern(*.log)"
                                                              "recursive(yes)"
                                                              "max-files(100)"
                                                              "follow-freq(10)"
-                                                             "follow_freq(10.0)"
-                                                             "pad_size(5)"
+                                                             "follow-freq(10.0)"
                                                              "multi-line-mode(regexp)"
                                                              "multi-line-prefix(\\d+)"
                                                              "multi-line-garbage(garbage)");
   cr_assert_eq(driver->file_reader_options.follow_freq, 10000);
-  cr_assert_eq(file_reader_options_get_log_proto_options(&driver->file_reader_options)->pad_size, 5);
   cr_assert_eq(file_reader_options_get_log_proto_options(&driver->file_reader_options)->super.mode, MLM_PREFIX_GARBAGE);
   cr_assert(file_reader_options_get_log_proto_options(&driver->file_reader_options)->super.prefix != NULL);
   cr_assert(file_reader_options_get_log_proto_options(&driver->file_reader_options)->super.garbage != NULL);
+}
+
+Test(wildcard_source, test_option_inheritance_padded)
+{
+  WildcardSourceDriver *driver = _create_wildcard_filesource("base-dir(/test_non_existent_dir)"
+                                                             "filename-pattern(*.log)"
+                                                             "recursive(yes)"
+                                                             "max-files(100)"
+                                                             "pad-size(5)");
+  cr_assert_eq(file_reader_options_get_log_proto_options(&driver->file_reader_options)->pad_size, 5);
 }
 
 Test(wildcard_source, test_option_duplication)
