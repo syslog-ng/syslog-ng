@@ -323,6 +323,9 @@ _init(LogPipe *s)
     }
 
   _init_reader_options(self, cfg);
+  if (!file_reader_options_validate(&self->file_reader_options))
+    return FALSE;
+
   _init_opener_options(self, cfg);
 
   if (!_add_directory_monitor(self, self->base_dir))
