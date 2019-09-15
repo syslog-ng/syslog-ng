@@ -31,6 +31,7 @@
 #include "transport-prockmsg.h"
 #include "poll-fd-events.h"
 #include "poll-file-changes.h"
+#include "poll-multiline-file-changes.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -93,7 +94,15 @@ static PollEvents *
 _construct_poll_events(FileReader *self, gint fd)
 {
   if (self->options->follow_freq > 0)
-    return poll_file_changes_new(fd, self->filename->str, self->options->follow_freq, &self->super);
+    {
+      LogProtoFileReaderOptions *proto_opts = file_reader_options_get_log_proto_options(self->options);
+
+      if (proto_opts->super.mode == MLM_NONE)
+        return poll_file_changes_new(fd, self->filename->str, self->options->follow_freq, &self->super);
+      else
+        return poll_multiline_file_changes_new(fd, self->filename->str, self->options->follow_freq,
+                                               self->options->multi_line_timeout, &self->super);
+    }
   else if (fd >= 0 && _is_fd_pollable(fd))
     return poll_fd_events_new(fd);
   else
@@ -358,6 +367,12 @@ void
 file_reader_options_set_follow_freq(FileReaderOptions *options, gint follow_freq)
 {
   options->follow_freq = follow_freq;
+}
+
+void
+file_reader_options_set_multi_line_timeout(FileReaderOptions *options, gint multi_line_timeout)
+{
+  options->multi_line_timeout = multi_line_timeout;
 }
 
 void

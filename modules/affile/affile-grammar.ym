@@ -91,6 +91,7 @@ affile_grammar_set_wildcard_file_source_driver(WildcardSourceDriver *sd)
 %token KW_MULTI_LINE_MODE
 %token KW_MULTI_LINE_PREFIX
 %token KW_MULTI_LINE_GARBAGE
+%token KW_MULTI_LINE_TIMEOUT
 %token KW_TIME_REAP
 
 %token KW_WILDCARD_FILE
@@ -258,6 +259,10 @@ multi_line_option
 
 	    CHECK_ERROR_GERROR(log_proto_multi_line_server_options_set_garbage(&last_log_proto_options->super, $3, &error), @3, error, "error compiling multi-line regexp");
 	    free($3);
+	  }
+	| KW_MULTI_LINE_TIMEOUT '(' nonnegative_integer ')'
+	  {
+	    file_reader_options_set_multi_line_timeout(last_file_reader_options, ($3 * 1000));
 	  }
 	;
 

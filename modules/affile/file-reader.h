@@ -29,6 +29,7 @@
 typedef struct _FileReaderOptions
 {
   gint follow_freq;
+  gint multi_line_timeout;
   gboolean restore_state;
   LogReaderOptions reader_options;
   gboolean exit_on_eof;
@@ -67,6 +68,7 @@ void file_reader_remove_persist_state(FileReader *self);
 void file_reader_stop_follow_file(FileReader *self);
 
 void file_reader_options_set_follow_freq(FileReaderOptions *options, gint follow_freq);
+void file_reader_options_set_multi_line_timeout(FileReaderOptions *options, gint multi_line_timeout);
 
 void file_reader_options_defaults(FileReaderOptions *options);
 gboolean file_reader_options_init(FileReaderOptions *options, GlobalConfig *cfg, const gchar *group);
