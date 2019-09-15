@@ -86,8 +86,7 @@ class ConfigRenderer(object):
                 self.__syslog_ng_config_content += "    {} (\n".format(statement.driver_name)
 
                 # driver options
-                self.__render_positional_options(statement.positional_parameters)
-                self.__render_driver_options(statement.options)
+                self.__syslog_ng_config_content += statement.get_rendered_driver()
 
                 # driver footer
                 self.__syslog_ng_config_content += "    );\n"

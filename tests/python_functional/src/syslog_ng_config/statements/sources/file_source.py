@@ -20,26 +20,22 @@
 # COPYING for details.
 #
 #############################################################################
-from pathlib2 import Path
-
-import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.driver_io.file.file_io import FileIO
+from src.syslog_ng_config.statements.option_handlers.path_based import PathBasedOptionHandler
 from src.syslog_ng_config.statements.sources.source_driver import SourceDriver
-from src.syslog_ng_config.statements.sources.source_writer import SourceWriter
 
 
 class FileSource(SourceDriver):
     def __init__(self, file_name, **options):
         self.driver_name = "file"
-        self.path = Path(tc_parameters.WORKING_DIR, file_name)
-        super(FileSource, self).__init__([self.path], options)
-        self.source_writer = SourceWriter(FileIO)
+        self.options = options
+        self.__path_based_option_handler = PathBasedOptionHandler(file_name=file_name, direction="input", options=self.options)
+
+        super(FileSource, self).__init__(option_handler=self.__path_based_option_handler, driver_io_cls=FileIO)
 
     def get_path(self):
-        return self.path
+        return self.__path_based_option_handler.get_path()
 
-    def set_path(self, pathname):
-        self.path = Path(tc_parameters.WORKING_DIR, pathname)
-
-    def write_log(self, formatted_log, counter=1):
-        self.source_writer.sd_write_log(self.get_path(), formatted_log, counter=counter)
+    def set_path(self, new_file_name):
+        self.__path_based_option_handler.set_path(new_file_name, "input")
+        self.source_writer.construct_driver_io(self.__path_based_option_handler.get_path())

@@ -23,25 +23,31 @@
 import logging
 
 from src.message_reader.message_reader import MessageReader
-from src.message_reader.single_line_parser import SingleLineParser
 
 logger = logging.getLogger(__name__)
 
 
 class DestinationReader(object):
-    def __init__(self, IOClass):
-        self.__IOClass = IOClass
-        self.__reader = None
+    def __init__(self, driver_io_cls, line_parser_cls, driver_io_parameter):
+        self.__driver_io_cls = driver_io_cls
+        self.__line_parser_cls = line_parser_cls
+        self.__driver_io = None
+        self.__message_reader = None
+        self.__saved_driver_io_parameter = None
+        self.construct_driver_io(driver_io_parameter)
 
-    def dd_read_logs(self, path, counter):
-        if not self.__reader:
-            io = self.__IOClass(path)
-            io.wait_for_creation()
-            message_reader = MessageReader(
-                io.read, SingleLineParser(),
-            )
-            self.__reader = message_reader
-        messages = self.__reader.pop_messages(counter)
-        read_description = "Content has been read from\nresource: {}\ncontent: {}\n".format(path, messages)
+    def construct_driver_io(self, driver_io_parameter):
+        if self.__saved_driver_io_parameter != driver_io_parameter:
+            self.__saved_driver_io_parameter = driver_io_parameter
+            self.__driver_io = self.__driver_io_cls(driver_io_parameter)
+
+    def __construct_message_reader(self):
+        self.__driver_io.wait_for_creation()
+        self.__message_reader = MessageReader(self.__driver_io.read, self.__line_parser_cls())
+
+    def read_logs(self, counter):
+        self.__construct_message_reader()
+        messages = self.__message_reader.pop_messages(counter)
+        read_description = "Content has been read from\nresource: {}\ncontent: {}\n".format(self.__saved_driver_io_parameter, messages)
         logger.info(read_description)
         return messages

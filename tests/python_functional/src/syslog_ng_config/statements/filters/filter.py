@@ -20,12 +20,15 @@
 # COPYING for details.
 #
 #############################################################################
+from src.syslog_ng_config.statements.config_statement import ConfigStatement
+from src.syslog_ng_config.statements.option_handlers.basic import BasicOptionHandler
 
 
-class Filter(object):
-    group_type = "filter"
-
+class Filter(ConfigStatement):
     def __init__(self, **options):
-        self.options = options
         self.driver_name = ""
-        self.positional_parameters = []
+        self.options = options
+        self.group_type = "filter"
+
+        self.__basic_option_handler = BasicOptionHandler(options=self.options)
+        super(Filter, self).__init__(self.__basic_option_handler)

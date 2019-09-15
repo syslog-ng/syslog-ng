@@ -20,15 +20,19 @@
 # COPYING for details.
 #
 #############################################################################
-from src.syslog_ng_config.statements.config_statement import ConfigStatement
-from src.syslog_ng_config.statements.option_handlers.basic import BasicOptionHandler
 
 
-class Parser(ConfigStatement):
-    def __init__(self, driver_name, **options):
-        self.driver_name = driver_name
-        self.options = options
-        self.group_type = "parser"
+class OptionHandler(object):
+    def __init__(self, positional_option_func=None, io_option_func=None):
+        self.__positional_option_func = positional_option_func
+        self.__io_option_func = io_option_func
 
-        self.__basic_option_handler = BasicOptionHandler(options=self.options)
-        super(Parser, self).__init__(self.__basic_option_handler)
+    def get_positional_option(self):
+        if self.__positional_option_func:
+            return self.__positional_option_func()
+        return None
+
+    def get_driver_io_parameter(self):
+        if self.__io_option_func:
+            return self.__io_option_func()
+        return None
