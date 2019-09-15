@@ -68,6 +68,12 @@ log_proto_file_reader_options_validate(LogProtoFileReaderOptions *options)
       return FALSE;
     }
 
+  if (options->pad_size > 0 && options->super.mode != MLM_NONE)
+    {
+      msg_error("pad-size() and multi-line-mode() can not be used together");
+      return FALSE;
+    }
+
   return TRUE;
 }
 
