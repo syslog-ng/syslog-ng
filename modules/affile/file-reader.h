@@ -70,6 +70,7 @@ void file_reader_options_set_follow_freq(FileReaderOptions *options, gint follow
 
 void file_reader_options_defaults(FileReaderOptions *options);
 void file_reader_options_init(FileReaderOptions *options, GlobalConfig *cfg, const gchar *group);
+gboolean file_reader_options_validate(FileReaderOptions *options);
 void file_reader_options_deinit(FileReaderOptions *options);
 
 

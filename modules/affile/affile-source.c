@@ -82,19 +82,6 @@ affile_sd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 }
 
 static gboolean
-_are_multi_line_settings_invalid(AFFileSourceDriver *self)
-{
-  LogProtoMultiLineServerOptions *multi_line_options =
-    (LogProtoMultiLineServerOptions *) &self->file_reader_options.reader_options.proto_options;
-
-  gboolean is_garbage_mode = multi_line_options->mode == MLM_PREFIX_GARBAGE;
-  gboolean is_suffix_mode = multi_line_options->mode == MLM_PREFIX_SUFFIX;
-
-  return (!is_garbage_mode && !is_suffix_mode) && (multi_line_options->prefix
-                                                   || multi_line_options->garbage);
-}
-
-static gboolean
 affile_sd_init(LogPipe *s)
 {
   AFFileSourceDriver *self = (AFFileSourceDriver *) s;
@@ -104,19 +91,15 @@ affile_sd_init(LogPipe *s)
     return FALSE;
 
   file_reader_options_init(&self->file_reader_options, cfg, self->super.super.group);
+  if (!file_reader_options_validate(&self->file_reader_options))
+    return FALSE;
+
   file_opener_options_init(&self->file_opener_options, cfg);
 
   file_opener_set_options(self->file_opener, &self->file_opener_options);
   self->file_reader = file_reader_new(self->filename->str, &self->file_reader_options,
                                       self->file_opener,
                                       &self->super, cfg);
-
-  if (_are_multi_line_settings_invalid(self))
-    {
-      msg_error("multi-line-prefix() and/or multi-line-garbage() specified but multi-line-mode() is not regexp based "
-                "(prefix-garbage or prefix-suffix), please set multi-line-mode() properly");
-      return FALSE;
-    }
 
   log_pipe_append(&self->file_reader->super, &self->super.super.super);
   return log_pipe_init(&self->file_reader->super);
