@@ -276,4 +276,20 @@ Test(cfg_lexer_subst, test_strings_with_embedded_apostrophe_cause_an_error_when_
   cfg_lexer_subst_free(subst);
 }
 
+Test(cfg_lexer_subst, test_tracking_string_state)
+{
+  const gchar *additional_values[] =
+  {
+    "quoted_escaped_newline", "\"\\n\"",
+    NULL, NULL
+  };
+
+  CfgLexerSubst *subst = construct_object_with_values(additional_values);
+
+  assert_invoke_result(subst, "\"hello\\n\" `quoted_escaped_newline`", "\"hello\\n\" \"\\n\"");
+  assert_invoke_result(subst, "\"hello\\n\\n\" `quoted_escaped_newline`", "\"hello\\n\\n\" \"\\n\"");
+  assert_invoke_result(subst, "\"hello\\n\\n \" `quoted_escaped_newline`", "\"hello\\n\\n \" \"\\n\"");
+  cfg_lexer_subst_free(subst);
+}
+
 TestSuite(cfg_lexer_subst, .init = app_startup, .fini = app_shutdown);

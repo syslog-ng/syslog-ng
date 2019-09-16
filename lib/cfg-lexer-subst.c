@@ -79,6 +79,7 @@ _track_string_state(CfgLexerSubst *self, CfgLexerStringTrackState last_state, co
         return CLS_WITHIN_QSTRING;
       return CLS_NOT_STRING;
     case CLS_WITHIN_STRING:
+    case CLS_WITHIN_STRING_QUOTED_CHARACTER:
       if (*p == '\\')
         return CLS_WITHIN_STRING_QUOTE;
       else if (*p == '"')
@@ -86,8 +87,6 @@ _track_string_state(CfgLexerSubst *self, CfgLexerStringTrackState last_state, co
       return CLS_WITHIN_STRING;
     case CLS_WITHIN_STRING_QUOTE:
       return CLS_WITHIN_STRING_QUOTED_CHARACTER;
-    case CLS_WITHIN_STRING_QUOTED_CHARACTER:
-      return CLS_WITHIN_STRING;
     case CLS_WITHIN_QSTRING:
       if (*p == '\'')
         return CLS_NOT_STRING;
