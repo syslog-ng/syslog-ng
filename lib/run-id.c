@@ -38,22 +38,85 @@ typedef struct _RunIDState
   gint run_id;
 } RunIDState;
 
-gboolean
-run_id_init(PersistState *state)
+
+static void
+_run_id_set_entry(PersistState *state, PersistEntryHandle handle, guint32 value)
+{
+  RunIDState *mapped_entry;
+
+  mapped_entry = persist_state_map_entry(state, handle);
+  mapped_entry->run_id = value;
+  persist_state_unmap_entry(state, handle);
+}
+
+static guint32
+_run_id_recover_legacy_entry(PersistState *state, PersistEntryHandle handle)
+{
+  guint32 old_entry;
+  guint32 *mapped_entry;
+
+  mapped_entry = persist_state_map_entry(state, handle);
+  old_entry = *mapped_entry;
+  persist_state_unmap_entry(state, handle);
+
+  return old_entry;
+}
+
+static PersistEntryHandle
+_run_id_process_existing_entry(PersistState *state, PersistEntryHandle handle, gsize size, guint8 version)
+{
+  if ((size == sizeof(RunIDState)))
+    {
+      return handle;
+    }
+
+  if (size == sizeof(guint32))
+    {
+      // In some legacy code we only used a single guint32 value to store the run_id. (without the proper header)
+      // If the size of the entry matches exactly, we convert it. Otherwise we can not use it, and allocate a new one.
+      msg_warning("run-id: persist state: found a legacy run-id state, reinitialize it");
+
+      guint32 old_entry = _run_id_recover_legacy_entry(state, handle);
+      PersistEntryHandle new_handle = persist_state_alloc_entry(state, RUN_ID_PERSIST_KEY, sizeof(RunIDState));
+
+      if (new_handle)
+        _run_id_set_entry(state, new_handle, old_entry);
+      return new_handle;
+    }
+
+  msg_warning("run-id: persist state: invalid run-id found, allocating a new state",
+              evt_tag_int("size", size),
+              evt_tag_int("version", version));
+
+  return persist_state_alloc_entry(state, RUN_ID_PERSIST_KEY, sizeof(RunIDState));
+}
+
+static PersistEntryHandle
+_run_id_get_validated_handle(PersistState *state)
 {
   gsize size;
   guint8 version;
   PersistEntryHandle handle;
-  RunIDState *run_id_state;
 
   handle = persist_state_lookup_entry(state, RUN_ID_PERSIST_KEY, &size, &version);
 
-  if (handle == 0)
+  if (handle)
     {
-      handle = persist_state_alloc_entry(state, RUN_ID_PERSIST_KEY, sizeof(RunIDState) );
+      return _run_id_process_existing_entry(state, handle, size, version);
     }
 
-  if (!handle)
+  return persist_state_alloc_entry(state, RUN_ID_PERSIST_KEY, sizeof(RunIDState));
+}
+
+gboolean
+run_id_init(PersistState *state)
+{
+  PersistEntryHandle handle;
+  RunIDState *run_id_state;
+
+  handle = _run_id_get_validated_handle(state);
+
+  if (handle == 0)
     {
       msg_error("run-id: could not allocate persist state");
       return FALSE;

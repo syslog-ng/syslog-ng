@@ -28,6 +28,7 @@
 #include "persistable-state-header.h"
 
 #define HOST_ID_PERSIST_KEY "host_id"
+#define HOST_ID_LEGACY_PERSIST_KEY "hostid"
 
 typedef struct _HostIdState
 {
