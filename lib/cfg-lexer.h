@@ -176,7 +176,7 @@ void cfg_lexer_inject_token_block(CfgLexer *self, CfgTokenBlock *block);
 int cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc);
 void cfg_lexer_free_token(YYSTYPE *token);
 
-CfgLexer *cfg_lexer_new(GlobalConfig *cfg, const gchar *filename, GString *buffer, GString *preprocess_output);
+CfgLexer *cfg_lexer_new(GlobalConfig *cfg, FILE *file, const gchar *filename, GString *preprocess_output);
 CfgLexer *cfg_lexer_new_buffer(GlobalConfig *cfg, const gchar *buffer, gsize length);
 void  cfg_lexer_free(CfgLexer *self);
 
