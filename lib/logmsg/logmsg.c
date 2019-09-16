@@ -508,6 +508,12 @@ _log_name_value_updates(LogMessage *self)
   return (self->flags & LF_INTERNAL) == 0;
 }
 
+static inline gboolean
+_value_invalidates_legacy_header(NVHandle handle)
+{
+  return handle == LM_V_PROGRAM || handle == LM_V_PID;
+}
+
 void
 log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize value_len)
 {
@@ -565,7 +571,8 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
 
   if (new_entry)
     log_msg_update_sdata(self, handle, name, name_len);
-  if (handle == LM_V_PROGRAM || handle == LM_V_PID)
+
+  if (_value_invalidates_legacy_header(handle))
     log_msg_unset_value(self, LM_V_LEGACY_MSGHDR);
 }
 
@@ -573,6 +580,9 @@ void
 log_msg_unset_value(LogMessage *self, NVHandle handle)
 {
   nv_table_unset_value(self->payload, handle);
+
+  if (_value_invalidates_legacy_header(handle))
+    log_msg_unset_value(self, LM_V_LEGACY_MSGHDR);
 }
 
 void
