@@ -61,6 +61,7 @@ void transport_mapper_set_address_family(TransportMapper *self, gint address_fam
 gboolean transport_mapper_open_socket(TransportMapper *self,
                                       SocketOptions *socket_options,
                                       GSockAddr *bind_addr,
+                                      GSockAddr *peer_addr,
                                       AFSocketDirection dir,
                                       int *fd);
 

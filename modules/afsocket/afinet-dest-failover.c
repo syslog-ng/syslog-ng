@@ -250,6 +250,7 @@ _setup_failback_fd(AFInetDestDriverFailover *self)
   if (!transport_mapper_open_socket(self->failover_transport_mapper.transport_mapper,
                                     self->failover_transport_mapper.socket_options,
                                     self->bind_addr,
+                                    self->primary_addr,
                                     AFSOCKET_DIR_SEND,
                                     &self->fd.fd))
     {

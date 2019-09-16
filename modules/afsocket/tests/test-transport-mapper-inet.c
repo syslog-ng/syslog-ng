@@ -83,7 +83,7 @@ create_socket_with_address(GSockAddr *addr, gint *sock)
   gboolean result;
 
   sock_options = socket_options_inet_new_instance();
-  result = transport_mapper_open_socket(transport_mapper, &sock_options->super, addr, AFSOCKET_DIR_RECV, sock);
+  result = transport_mapper_open_socket(transport_mapper, &sock_options->super, addr, addr, AFSOCKET_DIR_RECV, sock);
   socket_options_free(&sock_options->super);
   return result;
 }

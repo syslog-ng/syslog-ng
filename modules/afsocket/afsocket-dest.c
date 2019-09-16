@@ -307,8 +307,8 @@ afsocket_dd_start_connect(AFSocketDestDriver *self)
   g_assert(self->transport_mapper->transport);
   g_assert(self->bind_addr);
 
-  if (!transport_mapper_open_socket(self->transport_mapper, self->socket_options, self->bind_addr, AFSOCKET_DIR_SEND,
-                                    &sock))
+  if (!transport_mapper_open_socket(self->transport_mapper, self->socket_options, self->bind_addr, self->dest_addr,
+                                    AFSOCKET_DIR_SEND, &sock))
     {
       return FALSE;
     }
