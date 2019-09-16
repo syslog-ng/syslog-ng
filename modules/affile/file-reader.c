@@ -369,17 +369,11 @@ file_reader_options_defaults(FileReaderOptions *options)
   options->restore_state = FALSE;
 }
 
-void
+gboolean
 file_reader_options_init(FileReaderOptions *options, GlobalConfig *cfg, const gchar *group)
 {
   log_reader_options_init(&options->reader_options, cfg, group);
-  log_proto_file_reader_options_init(file_reader_options_get_log_proto_options(options));
-}
-
-gboolean
-file_reader_options_validate(FileReaderOptions *options)
-{
-  return log_proto_file_reader_options_validate(file_reader_options_get_log_proto_options(options));
+  return log_proto_file_reader_options_init(file_reader_options_get_log_proto_options(options));
 }
 
 void

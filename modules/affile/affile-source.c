@@ -90,8 +90,7 @@ affile_sd_init(LogPipe *s)
   if (!log_src_driver_init_method(s))
     return FALSE;
 
-  file_reader_options_init(&self->file_reader_options, cfg, self->super.super.group);
-  if (!file_reader_options_validate(&self->file_reader_options))
+  if (!file_reader_options_init(&self->file_reader_options, cfg, self->super.super.group))
     return FALSE;
 
   file_opener_options_init(&self->file_opener_options, cfg);

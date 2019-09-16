@@ -35,8 +35,7 @@ typedef struct _LogProtoFileReaderOptions
 LogProtoServer *log_proto_file_reader_new(LogTransport *transport, const LogProtoFileReaderOptions *options);
 
 void log_proto_file_reader_options_defaults(LogProtoFileReaderOptions *options);
-void log_proto_file_reader_options_init(LogProtoFileReaderOptions *options);
-gboolean log_proto_file_reader_options_validate(LogProtoFileReaderOptions *options);
+gboolean log_proto_file_reader_options_init(LogProtoFileReaderOptions *options);
 void log_proto_file_reader_options_destroy(LogProtoFileReaderOptions *options);
 
 

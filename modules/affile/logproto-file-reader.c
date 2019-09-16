@@ -42,12 +42,6 @@ log_proto_file_reader_options_defaults(LogProtoFileReaderOptions *options)
   options->pad_size = 0;
 }
 
-void
-log_proto_file_reader_options_init(LogProtoFileReaderOptions *options)
-{
-  log_proto_multi_line_server_options_init(&options->super);
-}
-
 static gboolean
 _are_multi_line_settings_invalid(LogProtoFileReaderOptions *options)
 {
@@ -58,7 +52,7 @@ _are_multi_line_settings_invalid(LogProtoFileReaderOptions *options)
                                                    || options->super.garbage);
 }
 
-gboolean
+static gboolean
 log_proto_file_reader_options_validate(LogProtoFileReaderOptions *options)
 {
   if (_are_multi_line_settings_invalid(options))
@@ -75,6 +69,13 @@ log_proto_file_reader_options_validate(LogProtoFileReaderOptions *options)
     }
 
   return TRUE;
+}
+
+gboolean
+log_proto_file_reader_options_init(LogProtoFileReaderOptions *options)
+{
+  log_proto_multi_line_server_options_init(&options->super);
+  return log_proto_file_reader_options_validate(options);
 }
 
 void
