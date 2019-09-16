@@ -65,7 +65,7 @@ _run_id_recover_legacy_entry(PersistState *state, PersistEntryHandle handle)
 static PersistEntryHandle
 _run_id_process_existing_entry(PersistState *state, PersistEntryHandle handle, gsize size, guint8 version)
 {
-  if ((size == sizeof(RunIDState)))
+  if (size == sizeof(RunIDState))
     {
       return handle;
     }
