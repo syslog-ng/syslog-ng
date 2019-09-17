@@ -39,10 +39,15 @@ typedef struct _TestThreadedSourceDriver
   gint num_of_messages_to_generate;
   gboolean suspended;
   gboolean exit_requested;
+  gboolean blocking_post;
 } TestThreadedSourceDriver;
 
 MainLoopOptions main_loop_options = {0};
 MainLoop *main_loop;
+
+static void _request_exit(LogThreadedSourceDriver *s);
+static void _run_simple(LogThreadedSourceDriver *s);
+static void _run_using_blocking_posts(LogThreadedSourceDriver *s);
 
 static const gchar *
 _generate_persist_name(const LogPipe *s)
@@ -71,6 +76,28 @@ _get_source(TestThreadedSourceDriver *self)
   return (LogSource *) self->super.worker;
 }
 
+gboolean
+test_threaded_source_driver_init_method(LogPipe *s)
+{
+
+  TestThreadedSourceDriver *self = (TestThreadedSourceDriver *)s;
+
+  if (!log_threaded_source_driver_init_method(s))
+    return FALSE;
+
+  /* mock out the hard-coded DNS lookup calls inside log_source_queue() */
+  _get_source(self)->super.queue = _source_queue_mock;
+  log_threaded_source_driver_set_worker_request_exit_func(&self->super, _request_exit);
+
+  if (self->blocking_post)
+    log_threaded_source_driver_set_worker_run_func(&self->super, _run_using_blocking_posts);
+  else
+    log_threaded_source_driver_set_worker_run_func(&self->super, _run_simple);
+
+  return TRUE;
+}
+
+
 static TestThreadedSourceDriver *
 test_threaded_sd_new(GlobalConfig *cfg)
 {
@@ -78,11 +105,9 @@ test_threaded_sd_new(GlobalConfig *cfg)
 
   log_threaded_source_driver_init_instance(&self->super, cfg);
 
+  self->super.super.super.super.init = test_threaded_source_driver_init_method;
   self->super.format_stats_instance = _format_stats_instance;
   self->super.super.super.super.generate_persist_name = _generate_persist_name;
-
-  /* mock out the hard-coded DNS lookup calls inside log_source_queue() */
-  _get_source(self)->super.queue = _source_queue_mock;
 
   return self;
 }
@@ -177,9 +202,8 @@ Test(logthrsourcedrv, test_threaded_source_blocking_post)
 {
   TestThreadedSourceDriver *s = create_threaded_source();
 
+  s->blocking_post = TRUE;
   s->num_of_messages_to_generate = 10;
-  log_threaded_source_driver_set_worker_run_func(&s->super, _run_using_blocking_posts);
-  log_threaded_source_driver_set_worker_request_exit_func(&s->super, _request_exit);
 
   start_test_threaded_source(s);
   request_exit_and_wait_for_stop(s);
@@ -198,8 +222,6 @@ Test(logthrsourcedrv, test_threaded_source_suspend)
   s->num_of_messages_to_generate = 5;
   s->super.worker_options.super.init_window_size = 5;
   s->super.super.super.super.queue = _do_not_ack_messages;
-  log_threaded_source_driver_set_worker_run_func(&s->super, _run_simple);
-  log_threaded_source_driver_set_worker_request_exit_func(&s->super, _request_exit);
 
   start_test_threaded_source(s);
   request_exit_and_wait_for_stop(s);

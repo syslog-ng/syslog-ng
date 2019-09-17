@@ -412,12 +412,6 @@ _py_sd_init(PythonSourceDriver *self)
   if (!_py_init_bindings(self))
     goto error;
 
-  if (self->py.suspend_method && self->py.wakeup_method)
-    {
-      self->post_message = _post_message_non_blocking;
-      log_threaded_source_set_wakeup_func(&self->super, python_sd_wakeup);
-    }
-
   if (!_py_init_object(self))
     goto error;
 
@@ -518,7 +512,20 @@ python_sd_init(LogPipe *s)
               evt_tag_str("driver", self->super.super.super.id),
               evt_tag_str("class", self->class));
 
-  return log_threaded_source_driver_init_method(s);
+  gboolean retval = log_threaded_source_driver_init_method(s);
+  if (!retval)
+    return FALSE;
+
+  log_threaded_source_driver_set_worker_request_exit_func(&self->super, python_sd_request_exit);
+  log_threaded_source_driver_set_worker_run_func(&self->super, python_sd_run);
+
+  if (self->py.suspend_method && self->py.wakeup_method)
+    {
+      self->post_message = _post_message_non_blocking;
+      log_threaded_source_set_wakeup_func(&self->super, python_sd_wakeup);
+    }
+
+  return TRUE;
 }
 
 static gboolean
@@ -562,9 +569,6 @@ python_sd_new(GlobalConfig *cfg)
   self->super.format_stats_instance = python_sd_format_stats_instance;
   self->super.worker_options.super.stats_level = STATS_LEVEL0;
   self->super.worker_options.super.stats_source = stats_register_type("python");
-
-  log_threaded_source_driver_set_worker_request_exit_func(&self->super, python_sd_request_exit);
-  log_threaded_source_driver_set_worker_run_func(&self->super, python_sd_run);
 
   self->options = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
   self->post_message = _post_message_blocking;

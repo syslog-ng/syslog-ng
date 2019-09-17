@@ -87,6 +87,20 @@ test_threaded_fetcher_free(LogPipe *s)
   log_threaded_fetcher_driver_free_method(s);
 }
 
+gboolean
+test_threaded_fetcher_driver_init_method(LogPipe *s)
+{
+  TestThreadedFetcherDriver *self = (TestThreadedFetcherDriver *)s;
+
+  if (!log_threaded_fetcher_driver_init_method(s))
+    return FALSE;
+
+  /* mock out the hard-coded DNS lookup calls inside log_source_queue() */
+  _get_source(self)->super.queue = _source_queue_mock;
+
+  return TRUE;
+}
+
 static TestThreadedFetcherDriver *
 test_threaded_fetcher_new(GlobalConfig *cfg)
 {
@@ -97,12 +111,11 @@ test_threaded_fetcher_new(GlobalConfig *cfg)
   self->lock = g_mutex_new();
   self->cond = g_cond_new();
 
+  self->super.super.super.super.super.init = test_threaded_fetcher_driver_init_method;
+
   self->super.super.format_stats_instance = _format_stats_instance;
   self->super.super.super.super.super.generate_persist_name = _generate_persist_name;
   self->super.super.super.super.super.free_fn = test_threaded_fetcher_free;
-
-  /* mock out the hard-coded DNS lookup calls inside log_source_queue() */
-  _get_source(self)->super.queue = _source_queue_mock;
 
   return self;
 }
