@@ -133,6 +133,11 @@ Test(parse_timestamp, bsd_extensions)
   _expect_rfc3164_timestamp_eq("Dec  3 2019 09:10:12 ", "2019-12-03T09:10:12.000+01:00");
 }
 
+Test(parse_timestamp, bsd_timestamp_with_missing_padding_in_front_of_day)
+{
+  _expect_rfc3164_timestamp_eq("Dec 3 09:10:12", "2017-12-03T09:10:12.000+01:00");
+}
+
 Test(parse_timestamp, standard_bsd_format_year_in_the_future)
 {
   /* compared to 2017-12-13, this timestamp is from the future, so in the year 2018 */

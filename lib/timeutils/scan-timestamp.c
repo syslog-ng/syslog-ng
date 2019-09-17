@@ -138,7 +138,11 @@ scan_month_abbrev(const gchar **buf, gint *left, gint *mon)
 static gboolean
 __is_bsd_rfc_3164(const guchar *src, guint32 left)
 {
-  return left >= 15 && src[3] == ' ' && src[6] == ' ' && src[9] == ':' && src[12] == ':';
+  return
+    /* two character days (e.g. DD is padded with a space or 0 */
+    (left >= 15 && src[3] == ' ' && src[6] == ' ' && src[9] == ':' && src[12] == ':') ||
+    /* single character day (e.g. DD if less than 10 will not be padded */
+    (left >= 14 && src[3] == ' ' && src[5] == ' ' && src[8] == ':' && src[11] == ':');
 }
 
 gboolean
@@ -146,7 +150,8 @@ scan_bsd_timestamp(const gchar **buf, gint *left, WallClockTime *wct)
 {
   if (!scan_month_abbrev(buf, left, &wct->wct_mon) ||
       !scan_expect_char(buf, left, ' ') ||
-      !scan_positive_int(buf, left, 2, &wct->wct_mday) ||
+      !(scan_positive_int(buf, left, 2, &wct->wct_mday) ||
+        scan_positive_int(buf, left, 1, &wct->wct_mday)) ||
       !scan_expect_char(buf, left, ' ') ||
       !scan_positive_int(buf, left, 2, &wct->wct_hour) ||
       !scan_expect_char(buf, left, ':') ||
