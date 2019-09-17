@@ -244,7 +244,10 @@ __is_bsd_linksys(const guchar *src, guint32 left)
 {
   /* "MMM DD HH:MM:SS YYYY " */
   return (left >= 21
-          && __is_bsd_rfc_3164(src, left)
+          && src[3] == ' '
+          && src[6] == ' '
+          && src[9] == ':'
+          && src[12] == ':'
           && src[15] == ' '
           && isdigit(src[16])
           && isdigit(src[17])
