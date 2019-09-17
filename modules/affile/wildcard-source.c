@@ -245,7 +245,7 @@ _ensure_minimum_window_size(WildcardSourceDriver *self, GlobalConfig *cfg)
     }
 }
 
-static void
+static gboolean
 _init_reader_options(WildcardSourceDriver *self, GlobalConfig *cfg)
 {
   if (!self->window_size_initialized)
@@ -253,9 +253,9 @@ _init_reader_options(WildcardSourceDriver *self, GlobalConfig *cfg)
       self->file_reader_options.reader_options.super.init_window_size /= self->max_files;
       _ensure_minimum_window_size(self, cfg);
       self->window_size_initialized = TRUE;
-
     }
-  file_reader_options_init(&self->file_reader_options, cfg, self->super.super.group);
+
+  return file_reader_options_init(&self->file_reader_options, cfg, self->super.super.group);
 }
 
 static void
@@ -322,7 +322,9 @@ _init(LogPipe *s)
       return FALSE;
     }
 
-  _init_reader_options(self, cfg);
+  if (!_init_reader_options(self, cfg))
+    return FALSE;
+
   _init_opener_options(self, cfg);
 
   if (!_add_directory_monitor(self, self->base_dir))

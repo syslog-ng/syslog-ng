@@ -24,6 +24,7 @@
 #include "logproto-file-reader.h"
 #include "logproto/logproto-record-server.h"
 #include "logproto/logproto-multiline-server.h"
+#include "messages.h"
 
 LogProtoServer *
 log_proto_file_reader_new(LogTransport *transport, const LogProtoFileReaderOptions *options)
@@ -41,10 +42,40 @@ log_proto_file_reader_options_defaults(LogProtoFileReaderOptions *options)
   options->pad_size = 0;
 }
 
-void
+static gboolean
+_are_multi_line_settings_invalid(LogProtoFileReaderOptions *options)
+{
+  gboolean is_garbage_mode = options->super.mode == MLM_PREFIX_GARBAGE;
+  gboolean is_suffix_mode = options->super.mode == MLM_PREFIX_SUFFIX;
+
+  return (!is_garbage_mode && !is_suffix_mode) && (options->super.prefix
+                                                   || options->super.garbage);
+}
+
+static gboolean
+log_proto_file_reader_options_validate(LogProtoFileReaderOptions *options)
+{
+  if (_are_multi_line_settings_invalid(options))
+    {
+      msg_error("multi-line-prefix() and/or multi-line-garbage() specified but multi-line-mode() is not regexp based "
+                "(prefix-garbage or prefix-suffix), please set multi-line-mode() properly");
+      return FALSE;
+    }
+
+  if (options->pad_size > 0 && options->super.mode != MLM_NONE)
+    {
+      msg_error("pad-size() and multi-line-mode() can not be used together");
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
+gboolean
 log_proto_file_reader_options_init(LogProtoFileReaderOptions *options)
 {
   log_proto_multi_line_server_options_init(&options->super);
+  return log_proto_file_reader_options_validate(options);
 }
 
 void
