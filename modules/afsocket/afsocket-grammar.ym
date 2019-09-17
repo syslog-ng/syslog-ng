@@ -656,7 +656,7 @@ dest_afinet_tcp_option
             gchar buf[256];
 	    last_tls_context = tls_context_new(TM_CLIENT, cfg_lexer_format_location(lexer, &@1, buf, sizeof(buf)));
 	  }
-	  '(' tls_options ')'
+	  '(' dest_tls_options ')'
 	  {
 	    afinet_dd_set_tls_context(last_driver, last_tls_context);
           }
@@ -747,7 +747,7 @@ dest_afsocket_transport
 
             last_tls_context = tls_context_new(TM_CLIENT, cfg_lexer_format_location(lexer, &@1, buf, sizeof(buf)));
           }
-          '(' tls_options ')'
+          '(' dest_tls_options ')'
           {
             afinet_dd_set_tls_context(last_driver, last_tls_context);
           }
@@ -760,6 +760,19 @@ afsocket_transport
         | KW_IP_PROTOCOL '(' inet_ip_protocol_option ')' { transport_mapper_set_address_family(last_transport_mapper, $3); }
         ;
 
+dest_tls_options
+        : dest_tls_option dest_tls_options
+        |
+        ;
+
+dest_tls_option
+        : tls_option
+        | KW_SNI '(' yesno ')'
+          {
+            if ($3)
+              tls_context_set_sni(last_tls_context, ((AFInetDestDriver *)last_driver)->primary);
+          }
+        ;
 
 tls_options
 	: tls_option tls_options
@@ -838,11 +851,6 @@ tls_option
           {
              transport_mapper_inet_set_allow_compress(last_transport_mapper, $3);
           }
-    | KW_SNI '(' string ')'
-      {
-        tls_context_set_sni(last_tls_context, $3);
-        free($3);
-      }
         | KW_ENDIF {
 }
         ;
