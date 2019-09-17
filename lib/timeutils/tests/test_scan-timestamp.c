@@ -120,9 +120,17 @@ Test(parse_timestamp, standard_bsd_format)
   _expect_rfc3164_timestamp_eq("Oct  1 17:46:12", "2017-10-01T17:46:12.000+02:00");
 }
 
-Test(parse_timestamp, bsd_with_fractions_of_a_second)
+Test(parse_timestamp, bsd_extensions)
 {
-  _expect_rfc3164_timestamp_eq("Dec 13 09:10:12.987", "2017-12-13T09:10:12.987+01:00");
+  /* fractions of a second */
+  _expect_rfc3164_timestamp_eq("Dec  3 09:10:12.987", "2017-12-03T09:10:12.987+01:00");
+
+  /* year added at the end (linksys) */
+  _expect_rfc3164_timestamp_eq("Dec  3 09:10:12 2019 ", "2019-12-03T09:10:12.000+01:00");
+
+  /* year after the mon/day (cisco) */
+  _expect_rfc3164_timestamp_eq("Dec  3 2019 09:10:12:", "2019-12-03T09:10:12.000+01:00");
+  _expect_rfc3164_timestamp_eq("Dec  3 2019 09:10:12 ", "2019-12-03T09:10:12.000+01:00");
 }
 
 Test(parse_timestamp, standard_bsd_format_year_in_the_future)
