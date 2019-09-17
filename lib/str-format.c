@@ -295,24 +295,36 @@ format_hex_string(gpointer data, gsize data_len, gchar *result, gsize result_len
 gboolean
 scan_positive_int(const gchar **buf, gint *left, gint field_width, gint *num)
 {
+  const gchar *original_buf = *buf;
+  gint original_left = *left;
   guint32 result;
 
   result = 0;
 
-  while (*left > 0 && field_width > 0)
+  while (*left > 0 && field_width > 0 && **buf == ' ')
     {
-      if ((**buf) >= '0' && (**buf) <= '9')
-        result = result * 10 + ((**buf) - '0');
-      else if (!isspace((int) **buf))
-        return FALSE;
+      (*buf)++;
+      (*left)--;
+      field_width--;
+    }
+
+  while (*left > 0 && field_width > 0 &&
+         (**buf) >= '0' && (**buf) <= '9')
+    {
+      result = result * 10 + ((**buf) - '0');
       (*buf)++;
       (*left)--;
       field_width--;
     }
   if (field_width != 0)
-    return FALSE;
+    goto fail;
   *num = result;
   return TRUE;
+
+fail:
+  *buf = original_buf;
+  *left = original_left;
+  return FALSE;
 }
 
 gboolean

@@ -112,6 +112,13 @@ assert_scan_positive_int_in_field_fails(const gchar *input, gint field)
   cr_assert_not(success);
 }
 
+static void
+assert_scan_positive_int_fails(const gchar *input)
+{
+  return assert_scan_positive_int_in_field_fails(input, -1);
+}
+
+
 Test(test_str_format, scan_positive_int)
 {
   assert_scan_positive_int_value_equals("1", 1);
@@ -125,6 +132,11 @@ Test(test_str_format, scan_positive_int)
   assert_scan_positive_int_in_field_value_equals("  3", 2, 0);
   assert_scan_positive_int_in_field_value_equals("  3", 3, 3);
   assert_scan_positive_int_in_field_value_equals("  31", 3, 3);
+
+  assert_scan_positive_int_fails(" 3 ");
+  assert_scan_positive_int_fails(" 0 ");
+  assert_scan_positive_int_fails("a3");
+  assert_scan_positive_int_fails("3a");
 
   /* string too short for field_length */
   assert_scan_positive_int_in_field_fails("31", 3);
