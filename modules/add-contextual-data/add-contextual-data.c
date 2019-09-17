@@ -59,20 +59,19 @@ add_contextual_data_set_filename(LogParser *p, const gchar *filename)
 }
 
 void
-add_contextual_data_set_database_selector_template(LogParser *p, const gchar *selector)
-{
-  AddContextualData *self = (AddContextualData *) p;
-  add_contextual_data_selector_free(self->selector);
-  self->selector = add_contextual_data_template_selector_new(log_pipe_get_config(&p->super), selector);
-}
-
-void
 add_contextual_data_set_prefix(LogParser *p, const gchar *prefix)
 {
   AddContextualData *self = (AddContextualData *) p;
 
   g_free(self->prefix);
   self->prefix = g_strdup(prefix);
+}
+
+void
+add_contextual_data_set_ignore_case(LogParser *p, gboolean ignore)
+{
+  AddContextualData *self = (AddContextualData *)p;
+  self->ignore_case = ignore;
 }
 
 void
@@ -89,22 +88,24 @@ add_contextual_data_set_selector(LogParser *p, AddContextualDataSelector *select
 {
   AddContextualData *self = (AddContextualData *) p;
 
+  add_contextual_data_selector_free(self->selector);
   self->selector = selector;
+}
+
+void
+add_contextual_data_set_database_selector_template(LogParser *p, const gchar *selector)
+{
+  AddContextualData *self = (AddContextualData *) p;
+
+  add_contextual_data_set_selector(add_contextual_data_template_selector_new(log_pipe_get_config(&p->super), selector));
 }
 
 void
 add_contextual_data_set_selector_filter(LogParser *p, const gchar *filename)
 {
   AddContextualData *self = (AddContextualData *) p;
-  add_contextual_data_selector_free(self->selector);
-  self->selector = add_contextual_data_selector_filter_new(log_pipe_get_config(&p->super), filename);
-}
 
-void
-add_contextual_data_set_ignore_case(LogParser *p, gboolean ignore)
-{
-  AddContextualData *self = (AddContextualData *)p;
-  self->ignore_case = ignore;
+  add_contextual_data_set_selector(add_contextual_data_selector_filter_new(log_pipe_get_config(&p->super), filename));
 }
 
 static gboolean
