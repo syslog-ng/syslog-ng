@@ -24,34 +24,22 @@
 #define ADD_CONTEXTUAL_DATA_H_INCLUDED
 
 #include "parser/parser-expr.h"
-#include "syslog-ng.h"
-#include "template/common-template-typedefs.h"
 #include "add-contextual-data-selector.h"
 
-LogParser *add_contextual_data_parser_new(GlobalConfig *cfg);
-
-LogTemplateOptions *add_contextual_data_get_template_options(LogParser *d);
-
-void add_contextual_data_set_database_key_template(LogParser *p,
-                                                   const gchar *key);
 
 void add_contextual_data_set_filename(LogParser *p, const gchar *filename);
-
-void add_contextual_data_set_database_selector_template(LogParser *p,
-                                                        const gchar *
-                                                        selector);
-
-void add_contextual_data_set_database_default_selector(LogParser *p,
-                                                       const gchar *
-                                                       default_selector);
-
-void add_contextual_data_set_prefix(LogParser *p, const gchar *perfix);
-void add_contextual_data_set_filters_path(LogParser *p, const gchar *filename);
-
 void add_contextual_data_set_selector(LogParser *p, AddContextualDataSelector *selector);
-
+void add_contextual_data_set_selector_template(LogParser *p,
+                                               const gchar *
+                                               selector);
 void add_contextual_data_set_selector_filter(LogParser *p, const gchar *filename);
 
+void add_contextual_data_set_default_selector(LogParser *p,
+                                              const gchar *default_selector);
+
+void add_contextual_data_set_prefix(LogParser *p, const gchar *perfix);
 void add_contextual_data_set_ignore_case(LogParser *p, gboolean ignore);
+
+LogParser *add_contextual_data_parser_new(GlobalConfig *cfg);
 
 #endif

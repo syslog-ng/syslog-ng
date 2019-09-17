@@ -75,7 +75,7 @@ add_contextual_data_set_ignore_case(LogParser *p, gboolean ignore)
 }
 
 void
-add_contextual_data_set_database_default_selector(LogParser *p, const gchar *default_selector)
+add_contextual_data_set_default_selector(LogParser *p, const gchar *default_selector)
 {
   AddContextualData *self = (AddContextualData *) p;
 
@@ -93,19 +93,15 @@ add_contextual_data_set_selector(LogParser *p, AddContextualDataSelector *select
 }
 
 void
-add_contextual_data_set_database_selector_template(LogParser *p, const gchar *selector)
+add_contextual_data_set_selector_template(LogParser *p, const gchar *selector)
 {
-  AddContextualData *self = (AddContextualData *) p;
-
-  add_contextual_data_set_selector(add_contextual_data_template_selector_new(log_pipe_get_config(&p->super), selector));
+  add_contextual_data_set_selector(p, add_contextual_data_template_selector_new(log_pipe_get_config(&p->super), selector));
 }
 
 void
 add_contextual_data_set_selector_filter(LogParser *p, const gchar *filename)
 {
-  AddContextualData *self = (AddContextualData *) p;
-
-  add_contextual_data_set_selector(add_contextual_data_selector_filter_new(log_pipe_get_config(&p->super), filename));
+  add_contextual_data_set_selector(p, add_contextual_data_selector_filter_new(log_pipe_get_config(&p->super), filename));
 }
 
 static gboolean
@@ -172,8 +168,8 @@ _clone(LogPipe *s)
   _replace_context_info_db(&cloned->context_info_db, self->context_info_db);
   add_contextual_data_set_prefix(&cloned->super, self->prefix);
   add_contextual_data_set_filename(&cloned->super, self->filename);
-  add_contextual_data_set_database_default_selector(&cloned->super,
-                                                    self->default_selector);
+  add_contextual_data_set_default_selector(&cloned->super,
+                                           self->default_selector);
   add_contextual_data_set_ignore_case(&cloned->super, self->ignore_case);
   cloned->selector = add_contextual_data_selector_clone(self->selector, s->cfg);
 
