@@ -28,8 +28,6 @@
 #include "cfg.h"
 #include "contextual-data-record-scanner.h"
 #include "add-contextual-data-selector.h"
-#include "add-contextual-data-template-selector.h"
-#include "add-contextual-data-filter-selector.h"
 #include "template/templates.h"
 #include "context-info-db.h"
 #include "pathutils.h"
@@ -90,18 +88,6 @@ add_contextual_data_set_selector(LogParser *p, AddContextualDataSelector *select
 
   add_contextual_data_selector_free(self->selector);
   self->selector = selector;
-}
-
-void
-add_contextual_data_set_selector_template(LogParser *p, const gchar *selector)
-{
-  add_contextual_data_set_selector(p, add_contextual_data_template_selector_new(log_pipe_get_config(&p->super), selector));
-}
-
-void
-add_contextual_data_set_selector_filter(LogParser *p, const gchar *filename)
-{
-  add_contextual_data_set_selector(p, add_contextual_data_selector_filter_new(log_pipe_get_config(&p->super), filename));
 }
 
 static gboolean

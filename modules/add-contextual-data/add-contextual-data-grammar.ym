@@ -30,7 +30,8 @@
 
 #include "add-contextual-data.h"
 #include "cfg-grammar.h"
-#include "add-contextual-data-selector.h"
+#include "add-contextual-data-template-selector.h"
+#include "add-contextual-data-filter-selector.h"
 #include "syslog-names.h"
 #include "messages.h"
 }
@@ -104,12 +105,12 @@ parser_add_contextual_data_opt
 parser_add_contextual_data_selector_opt
         : KW_FILTERS '(' string ')'
           {
-            add_contextual_data_set_selector_filter(last_parser, $3);
+	    add_contextual_data_set_selector(last_parser, add_contextual_data_selector_filter_new(configuration, $3));
             free($3);
           }
         | LL_STRING
         {
-            add_contextual_data_set_database_selector_template(last_parser, $1);
+            add_contextual_data_set_selector(last_parser, add_contextual_data_template_selector_new(configuration, $1));
             free($1);
         };
 

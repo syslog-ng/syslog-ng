@@ -29,11 +29,6 @@
 
 void add_contextual_data_set_filename(LogParser *p, const gchar *filename);
 void add_contextual_data_set_selector(LogParser *p, AddContextualDataSelector *selector);
-void add_contextual_data_set_selector_template(LogParser *p,
-                                               const gchar *
-                                               selector);
-void add_contextual_data_set_selector_filter(LogParser *p, const gchar *filename);
-
 void add_contextual_data_set_default_selector(LogParser *p,
                                               const gchar *default_selector);
 
