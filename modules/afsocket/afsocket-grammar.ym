@@ -187,6 +187,7 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 %token KW_CIPHER_SUITE
 %token KW_ECDH_CURVE_LIST
 %token KW_SSL_OPTIONS
+%token KW_SNI
 %token KW_ALLOW_COMPRESS
 
 /* INCLUDE_DECLS */
@@ -837,6 +838,11 @@ tls_option
           {
              transport_mapper_inet_set_allow_compress(last_transport_mapper, $3);
           }
+    | KW_SNI '(' string ')'
+      {
+        tls_context_set_sni(last_tls_context, $3);
+        free($3);
+      }
         | KW_ENDIF {
 }
         ;

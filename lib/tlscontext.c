@@ -51,6 +51,7 @@ struct _TLSContext
   gchar *crl_dir;
   gchar *cipher_suite;
   gchar *ecdh_curve_list;
+  gchar *sni;
   SSL_CTX *ssl_ctx;
   GList *trusted_fingerprint_list;
   GList *trusted_dn_list;
@@ -313,6 +314,25 @@ tls_session_info_callback(const SSL *ssl, int where, int ret)
     }
 }
 
+static gboolean
+_set_sni_in_client_mode(TLSSession *self)
+{
+  if (!self->ctx->sni)
+    return TRUE;
+
+  if (self->ctx->mode != TM_CLIENT)
+    return TRUE;
+
+  if (SSL_set_tlsext_host_name(self->ssl, self->ctx->sni))
+    return TRUE;
+
+  msg_error("Failed to set SNI",
+            evt_tag_str("sni", self->ctx->sni),
+            tls_context_format_location_tag(self->ctx));
+
+  return FALSE;
+}
+
 static TLSSession *
 tls_session_new(SSL *ssl, TLSContext *ctx)
 {
@@ -325,6 +345,13 @@ tls_session_new(SSL *ssl, TLSContext *ctx)
   tls_session_set_verifier(self, NULL);
 
   SSL_set_info_callback(ssl, tls_session_info_callback);
+
+  if (!_set_sni_in_client_mode(self))
+    {
+      tls_context_unref(self->ctx);
+      g_free(self);
+      return NULL;
+    }
 
   return self;
 }
@@ -749,6 +776,12 @@ tls_context_setup_session(TLSContext *self)
     SSL_set_accept_state(ssl);
 
   TLSSession *session = tls_session_new(ssl, self);
+  if (!session)
+    {
+      SSL_free(ssl);
+      return NULL;
+    }
+
   SSL_set_app_data(ssl, session);
   return session;
 }
@@ -791,6 +824,7 @@ _tls_context_free(TLSContext *self)
   g_free(self->crl_dir);
   g_free(self->cipher_suite);
   g_free(self->ecdh_curve_list);
+  g_free(self->sni);
   g_free(self);
 }
 
@@ -997,6 +1031,13 @@ tls_context_set_dhparam_file(TLSContext *self, const gchar *dhparam_file)
 {
   g_free(self->dhparam_file);
   self->dhparam_file = g_strdup(dhparam_file);
+}
+
+void
+tls_context_set_sni(TLSContext *self, const gchar *sni)
+{
+  g_free(self->sni);
+  self->sni = g_strdup(sni);
 }
 
 void
