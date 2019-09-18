@@ -137,12 +137,35 @@ shell-%: setup
 images: $(foreach image,$(IMAGES), image-$(image))
 image: image-$(DEFAULT_IMAGE)
 image-%:
-	cd $(DBLD_DIR)/images/ && $(DOCKER) build --network=host -t balabit/syslog-ng-$* -f $*.dockerfile .
+	cd $(DBLD_DIR)/images/ && $(DOCKER) build --build-arg=OS_PLATFORM=$* --build-arg=COMMIT=$$(git rev-parse --short HEAD) --network=host -t balabit/syslog-ng-$* -f $*.dockerfile .
 
 pull-images: $(foreach image,$(BUILDER_IMAGES), pull-image-$(image))
 pull-image: pull-image-$(DEFAULT_IMAGE)
 pull-image-%:
 	$(DOCKER) pull balabit/syslog-ng-$*
+
+cache-image-%:
+	IMAGE=$$(docker images -q balabit/syslog-ng-$*:latest | head -1);						\
+	if [ "$$IMAGE" = "" ]; then 											\
+		$(MAKE) -f $(DBLD_DIR)/rules pull-image-$*;								\
+	fi;														\
+	IMAGE=$$(docker images -q balabit/syslog-ng-$*:latest | head -1);						\
+	if [ "$$IMAGE" != "" ]; then 											\
+		image_commit=$$(docker inspect  --format '{{ index .Config.Labels "COMMIT"}}' $$IMAGE);			\
+		dbld_changes=$$( 											\
+			(git cat-file -e $${image_commit:-NO_COMMIT_LABEL_IN_DBLD_IMAGE}^{commit} 			\
+				&& git diff $${image_commit} -- dbld | wc -l						\
+				|| echo 1)										\
+		);													\
+	else														\
+		dbld_changes=1; 											\
+	fi;														\
+	if [ "$${dbld_changes}" -gt 0 ]; then									\
+		echo "$IMAGE: triggering rebuild, as dbld directory changed since the build of the image, or the cached image has no COMMIT label, or couldn't fetch from dockerhub" &&	\
+		$(MAKE) -f $(DBLD_DIR)/rules image-$*;									\
+	else 														\
+		echo "DBLD version in image matches, not initiating rebuild...";					\
+	fi
 
 exec: exec-$(DEFAULT_IMAGE)
 exec: EXEC_COMMAND=echo Specify EXEC_COMMAND to do something sensible here
