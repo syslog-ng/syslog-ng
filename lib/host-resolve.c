@@ -135,7 +135,7 @@ resolve_wildcard_hostname_to_sockaddr(GSockAddr **addr, gint family, const gchar
 
 #ifdef SYSLOG_NG_HAVE_GETADDRINFO
 static gboolean
-resolve_hostname_to_sockaddr_using_getaddrinfo(GSockAddr **addr, gint family, const gchar *name)
+_getaddrinfo_to_sockaddr(GSockAddr **addr, gint family, const gchar *name, gint ai_flags, gint *result)
 {
   struct addrinfo hints;
   struct addrinfo *res;
@@ -144,9 +144,10 @@ resolve_hostname_to_sockaddr_using_getaddrinfo(GSockAddr **addr, gint family, co
   hints.ai_family = family;
   hints.ai_socktype = 0;
   hints.ai_protocol = 0;
-  hints.ai_flags = AI_V4MAPPED | AI_ADDRCONFIG;
+  hints.ai_flags = ai_flags;
 
-  if (getaddrinfo(name, NULL, &hints, &res) == 0)
+  *result = getaddrinfo(name, NULL, &hints, &res);
+  if (*result == 0)
     {
       /* we only use the first entry in the returned list */
       switch (family)
@@ -167,6 +168,24 @@ resolve_hostname_to_sockaddr_using_getaddrinfo(GSockAddr **addr, gint family, co
       return TRUE;
     }
   return FALSE;
+}
+
+static gboolean
+resolve_hostname_to_sockaddr_using_getaddrinfo(GSockAddr **addr, gint family, const gchar *name)
+{
+  gint result;
+
+  if (!_getaddrinfo_to_sockaddr(addr, family, name, AI_NUMERICHOST, &result) &&
+      !_getaddrinfo_to_sockaddr(addr, family, name, AI_V4MAPPED | AI_ADDRCONFIG, &result) &&
+      !_getaddrinfo_to_sockaddr(addr, family, name, AI_V4MAPPED, &result))
+    {
+      msg_error("Error resolving hostname with getaddrinfo()",
+                evt_tag_str("host", name),
+                evt_tag_int("error", result),
+                evt_tag_str("error_str", gai_strerror(result)));
+      return FALSE;
+    }
+  return TRUE;
 }
 
 #else
@@ -197,6 +216,11 @@ resolve_hostname_to_sockaddr_using_gethostbyname(GSockAddr **addr, gint family, 
           break;
         }
     }
+  else
+    {
+      msg_error("Error resolving hostname with gethostbyname()",
+                evt_tag_str("host", name));
+    }
   G_UNLOCK(resolv_lock);
   return he != NULL;
 }
@@ -215,11 +239,6 @@ resolve_hostname_to_sockaddr(GSockAddr **addr, gint family, const gchar *name)
 #else
   result = resolve_hostname_to_sockaddr_using_gethostbyname(addr, family, name);
 #endif
-  if (!result)
-    {
-      msg_error("Error resolving hostname",
-                evt_tag_str("host", name));
-    }
   return result;
 }
 
