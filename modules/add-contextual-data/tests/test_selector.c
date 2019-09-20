@@ -55,7 +55,10 @@ static AddContextualDataSelector *
 _create_template_selector(const gchar *template_string)
 {
   GlobalConfig *cfg = cfg_new_snippet();
-  AddContextualDataSelector *selector = add_contextual_data_template_selector_new(cfg, template_string);
+  LogTemplate *selector_template = log_template_new(cfg, NULL);
+
+  cr_assert(log_template_compile(selector_template, template_string, NULL));
+  AddContextualDataSelector *selector = add_contextual_data_template_selector_new(selector_template);
   add_contextual_data_selector_init(selector, NULL);
 
   return selector;

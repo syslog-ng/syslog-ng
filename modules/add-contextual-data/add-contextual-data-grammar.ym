@@ -108,10 +108,9 @@ parser_add_contextual_data_selector_opt
 	    add_contextual_data_set_selector(last_parser, add_contextual_data_selector_filter_new(configuration, $3));
             free($3);
           }
-        | LL_STRING
+        | template_content
         {
-            add_contextual_data_set_selector(last_parser, add_contextual_data_template_selector_new(configuration, $1));
-            free($1);
+            add_contextual_data_set_selector(last_parser, add_contextual_data_template_selector_new($1));
         };
 
 /* INCLUDE_RULES */
