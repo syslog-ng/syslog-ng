@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 # Command line options
 def pytest_addoption(parser):
     parser.addoption("--runslow", action="store_true", default=False, help="run slow tests")
-    parser.addoption("--run-under", help="Run syslog-ng under selected tool, eg: [valgrind]")
+    parser.addoption("--run-under", help="Run syslog-ng under selected tool, example tools: [valgrind, strace]")
     parser.addoption(
         "--installdir",
         action="store",

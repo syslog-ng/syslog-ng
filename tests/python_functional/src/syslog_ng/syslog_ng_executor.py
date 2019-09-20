@@ -42,6 +42,8 @@ class SyslogNgExecutor(object):
         self.__instance_paths.register_external_tool_output_path(external_tool)
         if external_tool == "valgrind":
             return self.run_process_with_valgrind()
+        elif external_tool == "strace":
+            return self.run_process_with_strace()
         else:
             raise Exception("Unknown external tool was selected: {}".format(external_tool))
 
@@ -60,6 +62,24 @@ class SyslogNgExecutor(object):
             "--log-file={}".format(self.__instance_paths.get_external_tool_output_path("valgrind")),
         ]
         full_command_args = valgrind_command_args + self.__construct_syslog_ng_process()
+        return self.__process_executor.start(
+            command=full_command_args,
+            stdout_path=self.__instance_paths.get_stdout_path(),
+            stderr_path=self.__instance_paths.get_stderr_path(),
+        )
+
+    def run_process_with_strace(self):
+        strace_command_args = [
+            "strace",
+            "-s",
+            "4096",
+            "-tt",
+            "-T",
+            "-ff",
+            "-o",
+            self.__instance_paths.get_external_tool_output_path("strace"),
+        ]
+        full_command_args = strace_command_args + self.__construct_syslog_ng_process()
         return self.__process_executor.start(
             command=full_command_args,
             stdout_path=self.__instance_paths.get_stdout_path(),
