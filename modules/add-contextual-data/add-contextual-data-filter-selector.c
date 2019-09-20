@@ -211,7 +211,6 @@ add_contextual_data_selector_filter_free(AddContextualDataSelector *s)
     cfg_free(self->filters_cfg);
   _filter_store_free(self->filter_store);
   g_free(self->filters_path);
-  g_free(self);
 }
 
 static AddContextualDataSelector *add_contextual_data_selector_filter_clone(AddContextualDataSelector *s,
