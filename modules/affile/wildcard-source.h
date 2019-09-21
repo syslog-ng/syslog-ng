@@ -61,4 +61,7 @@ void wildcard_sd_set_recursive(LogDriver *s, gboolean recursive);
 gboolean wildcard_sd_set_monitor_method(LogDriver *s, const gchar *method);
 void wildcard_sd_set_max_files(LogDriver *s, guint32 max_files);
 
+gboolean affile_is_legacy_wildcard_source(const gchar *filename);
+LogDriver *wildcard_sd_legacy_new(const gchar *filename, GlobalConfig *cfg);
+
 #endif /* MODULES_AFFILE_WILDCARD_SOURCE_H_ */

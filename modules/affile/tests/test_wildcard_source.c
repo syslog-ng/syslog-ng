@@ -26,7 +26,9 @@
 #include "cfg-grammar.h"
 #include "plugin.h"
 #include "wildcard-source.h"
+
 #include <criterion/criterion.h>
+#include <criterion/parameterized.h>
 
 static void
 _init(void)
@@ -165,4 +167,41 @@ Test(wildcard_source, test_window_size)
                                                              "max_files(10)"
                                                              "log_iw_size(10000)");
   cr_assert_eq(driver->file_reader_options.reader_options.super.init_window_size, 1000);
+}
+
+
+struct LegacyWildcardTestParams
+{
+  const gchar *path;
+  const gchar *expected_base_dir;
+  const gchar *expected_filename_pattern;
+};
+
+ParameterizedTestParameters(wildcard_source, test_legacy_wildcard)
+{
+  static struct LegacyWildcardTestParams params[] =
+  {
+    { "/a/b/c/d*", "/a/b/c", "d*" },
+    { "/a/b/c/d?", "/a/b/c", "d?" },
+    { "/*", "/", "*" },
+    { "*", ".", "*" },
+    { "/tmp/*", "/tmp", "*" },
+    { "tmp/?", "tmp", "?" },
+    { "tmp*", ".", "tmp*" },
+    { "/tmp*", "/", "tmp*" },
+    { "tmp/a*", "tmp", "a*" },
+  };
+
+
+  return cr_make_param_array(struct LegacyWildcardTestParams, params, G_N_ELEMENTS(params));
+}
+
+ParameterizedTest(struct LegacyWildcardTestParams *params, wildcard_source, test_legacy_wildcard)
+{
+  WildcardSourceDriver *driver = (WildcardSourceDriver *) wildcard_sd_legacy_new(params->path, configuration);
+
+  cr_assert_str_eq(driver->base_dir, params->expected_base_dir);
+  cr_assert_str_eq(driver->filename_pattern, params->expected_filename_pattern);
+
+  log_pipe_unref(&driver->super.super.super);
 }
