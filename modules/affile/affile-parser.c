@@ -42,6 +42,7 @@ static CfgLexerKeyword affile_keywords[] =
   { "recursive",          KW_RECURSIVE },
   { "max_files",          KW_MAX_FILES },
   { "monitor_method",     KW_MONITOR_METHOD },
+  { "force_directory_polling", KW_FORCE_DIRECTORY_POLLING, KWS_OBSOLETE, "Use wildcard-file(monitor-method())" },
 
   { "fsync",              KW_FSYNC },
   { "remove_if_older",    KW_OVERWRITE_IF_OLDER, KWS_OBSOLETE, "overwrite_if_older" },

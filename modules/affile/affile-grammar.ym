@@ -46,6 +46,7 @@
 
 FileReaderOptions *last_file_reader_options;
 LogProtoFileReaderOptions *last_log_proto_options;
+WildcardSourceDriver *last_legacy_wildcard_src_driver;
 
 static void
 affile_grammar_set_file_source_driver(AFFileSourceDriver *sd)
@@ -98,6 +99,7 @@ affile_grammar_set_wildcard_file_source_driver(WildcardSourceDriver *sd)
 %token KW_RECURSIVE
 %token KW_MAX_FILES
 %token KW_MONITOR_METHOD
+%token KW_FORCE_DIRECTORY_POLLING
 
 %token KW_STDIN
 
@@ -159,15 +161,17 @@ source_affile_params
 	    else
 	      {
 	        WildcardSourceDriver *sd = (WildcardSourceDriver *) wildcard_sd_legacy_new($1, configuration);
+	        last_legacy_wildcard_src_driver = sd;
 	        *instance = &sd->super.super;
 	        affile_grammar_set_wildcard_file_source_driver(sd);
 	      }
 	  }
-          source_affile_options                 { $$ = last_driver; free($1); }
+          source_affile_options                 { $$ = last_driver; last_legacy_wildcard_src_driver = NULL; free($1); }
         ;
 
 source_affile_options
         : source_affile_option source_affile_options
+        | source_legacy_wildcard_option source_affile_options
         |
         ;
 
@@ -192,6 +196,19 @@ source_wildcard_option
 	| KW_MAX_FILES '(' LL_NUMBER ')' { wildcard_sd_set_max_files(last_driver, $3); }
 	| KW_MONITOR_METHOD '(' string ')' { CHECK_ERROR(wildcard_sd_set_monitor_method(last_driver, $3), @3, "Invalid monitor-method"); free($3); }
 	| source_affile_option
+	;
+
+source_legacy_wildcard_option
+	: KW_FORCE_DIRECTORY_POLLING '(' yesno ')'
+	  {
+	    CHECK_ERROR(last_legacy_wildcard_src_driver, @1, "Invalid option, force-directory-polling() can only be used in legacy wildcard file sources");
+	    wildcard_sd_set_monitor_method(&last_legacy_wildcard_src_driver->super.super, $3 ? "poll" : "auto");
+	  }
+	| KW_RECURSIVE '(' yesno ')'
+	  {
+	    CHECK_ERROR(last_legacy_wildcard_src_driver, @1, "Invalid option, recursive() can only be used in legacy wildcard file sources");
+	    wildcard_sd_set_recursive(&last_legacy_wildcard_src_driver->super.super, $3);
+	  }
 	;
 
 source_afpipe_params
