@@ -46,6 +46,27 @@
 
 FileReaderOptions *last_file_reader_options;
 LogProtoFileReaderOptions *last_log_proto_options;
+
+static void
+affile_grammar_set_file_source_driver(AFFileSourceDriver *sd)
+{
+  last_driver = &sd->super.super;
+  last_file_reader_options = &sd->file_reader_options;
+  last_reader_options = &last_file_reader_options->reader_options;
+  last_file_perm_options = &sd->file_opener_options.file_perm_options;
+  last_log_proto_options = file_reader_options_get_log_proto_options(last_file_reader_options);
+}
+
+static void
+affile_grammar_set_wildcard_file_source_driver(WildcardSourceDriver *sd)
+{
+  last_driver = &sd->super.super;
+  last_file_reader_options = &sd->file_reader_options;
+  last_reader_options = &last_file_reader_options->reader_options;
+  last_file_perm_options = &sd->file_opener_options.file_perm_options;
+  last_log_proto_options = file_reader_options_get_log_proto_options(last_file_reader_options);
+}
+
 }
 
 %name-prefix "affile_"
@@ -101,11 +122,9 @@ source_affile
 	| KW_STDIN '(' source_stdin_params ')'	{ $$ = $3; }
 	| KW_WILDCARD_FILE
 	{
-		last_driver = *instance = wildcard_sd_new(configuration);
-		last_file_reader_options = &((WildcardSourceDriver *) last_driver)->file_reader_options;
-		last_reader_options = &last_file_reader_options->reader_options;
-	        last_file_perm_options = &((WildcardSourceDriver *) last_driver)->file_opener_options.file_perm_options;
-	        last_log_proto_options = file_reader_options_get_log_proto_options(last_file_reader_options);
+	  WildcardSourceDriver *sd = (WildcardSourceDriver *) wildcard_sd_new(configuration);;
+	  *instance = &sd->super.super;
+	  affile_grammar_set_wildcard_file_source_driver(sd);
 	} '(' source_wildcard_params ')' { $$ = last_driver; }
 	;
 
@@ -121,33 +140,27 @@ source_wildcard_options
 source_stdin_params
 	:
 	  {
-            last_driver = *instance = stdin_sd_new(configuration);
-	    last_file_reader_options = &((AFFileSourceDriver *) last_driver)->file_reader_options;
-	    last_reader_options = &last_file_reader_options->reader_options;
-	    last_file_perm_options = &((AFFileSourceDriver *) last_driver)->file_opener_options.file_perm_options;
-            last_log_proto_options = file_reader_options_get_log_proto_options(last_file_reader_options);
+	    AFFileSourceDriver *sd = (AFFileSourceDriver *) stdin_sd_new(configuration);
+	    *instance = &sd->super.super;
+	    affile_grammar_set_file_source_driver(sd);
 	  }
           source_affile_options                 { $$ = last_driver; }
-        ;
+	;
 
 source_affile_params
 	: string
 	  {
 	    if (!affile_is_legacy_wildcard_source($1))
 	      {
-	        last_driver = *instance = affile_sd_new($1, configuration);
-	        last_file_reader_options = &((AFFileSourceDriver *) last_driver)->file_reader_options;
-	        last_reader_options = &last_file_reader_options->reader_options;
-	        last_file_perm_options = &((AFFileSourceDriver *) last_driver)->file_opener_options.file_perm_options;
-	        last_log_proto_options = file_reader_options_get_log_proto_options(last_file_reader_options);
+	        AFFileSourceDriver *sd = (AFFileSourceDriver *) affile_sd_new($1, configuration);
+	        *instance = &sd->super.super;
+	        affile_grammar_set_file_source_driver(sd);
 	      }
 	    else
 	      {
-	        last_driver = *instance = wildcard_sd_legacy_new($1, configuration);
-	        last_file_reader_options = &((WildcardSourceDriver *) last_driver)->file_reader_options;
-	        last_reader_options = &last_file_reader_options->reader_options;
-	        last_file_perm_options = &((WildcardSourceDriver *) last_driver)->file_opener_options.file_perm_options;
-	        last_log_proto_options = file_reader_options_get_log_proto_options(last_file_reader_options);
+	        WildcardSourceDriver *sd = (WildcardSourceDriver *) wildcard_sd_legacy_new($1, configuration);
+	        *instance = &sd->super.super;
+	        affile_grammar_set_wildcard_file_source_driver(sd);
 	      }
 	  }
           source_affile_options                 { $$ = last_driver; free($1); }
@@ -184,11 +197,9 @@ source_wildcard_option
 source_afpipe_params
 	: string
 	  {
-	    last_driver = *instance = pipe_sd_new($1, configuration);
-	    last_file_reader_options = &((AFFileSourceDriver *) last_driver)->file_reader_options;
-	    last_reader_options = &last_file_reader_options->reader_options;
-	    last_file_perm_options = &((AFFileSourceDriver *) last_driver)->file_opener_options.file_perm_options;
-            last_log_proto_options = file_reader_options_get_log_proto_options(last_file_reader_options);
+	    AFFileSourceDriver *sd = (AFFileSourceDriver *) pipe_sd_new($1, configuration);
+	    *instance = &sd->super.super;
+	    affile_grammar_set_file_source_driver(sd);
 	  }
 	  source_afpipe_options				{ $$ = last_driver; free($1); }
 	;
