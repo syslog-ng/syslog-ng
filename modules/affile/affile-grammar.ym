@@ -99,7 +99,7 @@ source_affile
 	: KW_FILE '(' source_affile_params ')'	{ $$ = $3; }
 	| KW_PIPE '(' source_afpipe_params ')'	{ $$ = $3; }
 	| KW_STDIN '(' source_stdin_params ')'	{ $$ = $3; }
-	| KW_WILDCARD_FILE 
+	| KW_WILDCARD_FILE
 	{
 		last_driver = *instance = wildcard_sd_new(configuration);
 		last_file_reader_options = &((WildcardSourceDriver *) last_driver)->file_reader_options;
@@ -108,15 +108,15 @@ source_affile
 	        last_log_proto_options = file_reader_options_get_log_proto_options(last_file_reader_options);
 	} '(' source_wildcard_params ')' { $$ = last_driver; }
 	;
-	
+
 source_wildcard_params
     : source_wildcard_options
     ;
- 
+
 source_wildcard_options
     : source_wildcard_option source_wildcard_options
     |
-    ;    
+    ;
 
 source_stdin_params
 	:
