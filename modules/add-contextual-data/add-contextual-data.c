@@ -119,8 +119,8 @@ _process(LogParser *s, LogMessage **pmsg,
   if (!context_info_db_contains(self->context_info_db, selector) && _is_default_selector_set(self))
     selector = self->default_selector;
 
-  msg_trace("add-contextual-data(): message processing",
-            evt_tag_str("input", input),
+  msg_trace("add-contextual-data(): message lookup finished",
+            evt_tag_str("message", input),
             evt_tag_str("resolved_selector", resolved_selector),
             evt_tag_str("selector", selector),
             evt_tag_printf("msg", "%p", *pmsg));
