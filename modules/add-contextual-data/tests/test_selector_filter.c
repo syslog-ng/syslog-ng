@@ -58,7 +58,7 @@ _create_filter_selector(const gchar *filter_cfg, gint size, GList *ordered_filte
 {
   GlobalConfig *cfg = cfg_new_snippet();
   test_filter_conf = _setup_filter_cfg(filter_cfg, size);
-  AddContextualDataSelector *selector = add_contextual_data_selector_filter_new(cfg, test_filter_conf);
+  AddContextualDataSelector *selector = add_contextual_data_filter_selector_new(cfg, test_filter_conf);
   if (!add_contextual_data_selector_init(selector, ordered_filters))
     return NULL;
 

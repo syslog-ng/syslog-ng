@@ -25,6 +25,6 @@
 
 #include "add-contextual-data-selector.h"
 
-AddContextualDataSelector *add_contextual_data_selector_filter_new(GlobalConfig *cfg, const gchar *filters_path);
+AddContextualDataSelector *add_contextual_data_filter_selector_new(GlobalConfig *cfg, const gchar *filters_path);
 
 #endif
