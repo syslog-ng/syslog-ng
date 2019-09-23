@@ -22,6 +22,7 @@ function capture_debs() {
 
 cd /build
 
+validate_container
 setup_dirs
 prepare_source
 
