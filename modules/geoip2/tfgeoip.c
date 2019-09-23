@@ -44,7 +44,11 @@ tf_maxminddb_init(TFMaxMindDBState *state)
   state->database = g_new0(MMDB_s, 1);
 
   if (!mmdb_open_database(state->database_path, state->database))
-    return FALSE;
+    {
+      g_free(state->database);
+      state->database = NULL;
+      return FALSE;
+    }
 
   return TRUE;
 }
@@ -107,7 +111,9 @@ tf_geoip_maxminddb_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *p
 
 error:
   g_free(state->database_path);
+  state->database_path = NULL;
   g_strfreev(state->entry_path);
+  state->entry_path = NULL;
   g_free(field);
   return FALSE;
 
