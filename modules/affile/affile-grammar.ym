@@ -285,10 +285,9 @@ dest_affile_option
 	| dest_driver_option
         | file_perm_option
 	| KW_OPTIONAL '(' yesno ')'		{ last_driver->optional = $3; }
-	| KW_CREATE_DIRS '(' yesno ')'		{ affile_dd_set_create_dirs(last_driver, $3); }
 	| KW_OVERWRITE_IF_OLDER '(' nonnegative_integer ')'	{ affile_dd_set_overwrite_if_older(last_driver, $3); }
 	| KW_FSYNC '(' yesno ')'		{ affile_dd_set_fsync(last_driver, $3); }
-	| KW_TIME_REAP '(' nonnegative_integer ')'		{ affile_dd_set_time_reap(last_driver, $3); }
+        | dest_affile_common_option
 	;
 
 dest_afpipe_params
@@ -310,8 +309,13 @@ dest_afpipe_option
 	: dest_writer_option
 	| dest_driver_option
 	| file_perm_option
-	| KW_TIME_REAP '(' nonnegative_integer ')'		{ affile_dd_set_time_reap(last_driver, $3); }
+        | dest_affile_common_option
 	;
+
+dest_affile_common_option
+	: KW_TIME_REAP '(' nonnegative_integer ')'		{ affile_dd_set_time_reap(last_driver, $3); }
+	| KW_CREATE_DIRS '(' yesno ')'		{ affile_dd_set_create_dirs(last_driver, $3); }
+        ;
 
 
 /* INCLUDE_RULES */
