@@ -32,6 +32,12 @@
       return NULL;                                                     \
     }
 
+gchar *
+mmdb_default_database(void)
+{
+  return NULL;
+}
+
 gboolean
 mmdb_open_database(const gchar *path, MMDB_s *database)
 {

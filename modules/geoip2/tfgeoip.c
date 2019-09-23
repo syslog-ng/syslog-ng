@@ -74,7 +74,10 @@ tf_geoip_maxminddb_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *p
     }
   g_option_context_free(ctx);
 
-  if (!state->database_path || argc != 2)
+  if (!state->database_path)
+    state->database_path = mmdb_default_database();
+
+  if (!state->database_path || argc < 1)
     {
       g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
                   "geoip2: format must be: $(geoip2 --database <db.mmdb> [ --field path.child ] ${HOST})\n");

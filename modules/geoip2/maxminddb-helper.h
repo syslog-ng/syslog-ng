@@ -26,6 +26,7 @@
 #include <syslog-ng.h>
 #include <maxminddb.h>
 void append_mmdb_entry_data_to_gstring(GString *target, MMDB_entry_data_s *entry_data);
+gchar *mmdb_default_database(void);
 gboolean mmdb_open_database(const gchar *path, MMDB_s *database);
 MMDB_entry_data_list_s *dump_geodata_into_msg(LogMessage *msg,
                                               MMDB_entry_data_list_s *entry_data_list,

@@ -160,6 +160,9 @@ maxminddb_parser_init(LogPipe *s)
   GeoIPParser *self = (GeoIPParser *) s;
 
   if (!self->database_path)
+    self->database_path = mmdb_default_database();
+
+  if (!self->database_path)
     return FALSE;
 
   self->database = g_new0(MMDB_s, 1);
