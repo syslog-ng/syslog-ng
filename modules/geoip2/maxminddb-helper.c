@@ -35,6 +35,18 @@
 gchar *
 mmdb_default_database(void)
 {
+  const static gchar *possible_paths[] =
+  {
+    "/usr/share/GeoIP/GeoLite2-City.mmdb", //centos, arch, fedora
+    "/var/lib/GeoIP/GeoLite2-City.mmdb",   //ubuntu
+  };
+
+  for (gint i = 0; i <  G_N_ELEMENTS(possible_paths); ++i)
+    {
+      if (g_file_test(possible_paths[i], G_FILE_TEST_EXISTS))
+        return g_strdup(possible_paths[i]);
+    }
+
   return NULL;
 }
 
