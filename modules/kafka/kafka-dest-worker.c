@@ -86,7 +86,7 @@ _publish_message(KafkaDestWorker *self, LogMessage *msg)
 
   /* we passed the allocated buffers to rdkafka, which will eventually free them */
   g_string_steal(message);
-  if (key)
+  if (key->str)
     g_string_steal(key);
   return TRUE;
 }
