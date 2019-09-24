@@ -1,5 +1,5 @@
 {
-   nvtable-uninitialized: https://github.com/balabit/syslog-ng/issues/946
+   nvtable-uninitialized: https://github.com/syslog-ng/syslog-ng/issues/946
    Memcheck:Param
    pwrite64(buf)
    ...
