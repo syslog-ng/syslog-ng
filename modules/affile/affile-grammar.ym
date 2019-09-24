@@ -46,6 +46,28 @@
 
 FileReaderOptions *last_file_reader_options;
 LogProtoFileReaderOptions *last_log_proto_options;
+WildcardSourceDriver *last_legacy_wildcard_src_driver;
+
+static void
+affile_grammar_set_file_source_driver(AFFileSourceDriver *sd)
+{
+  last_driver = &sd->super.super;
+  last_file_reader_options = &sd->file_reader_options;
+  last_reader_options = &last_file_reader_options->reader_options;
+  last_file_perm_options = &sd->file_opener_options.file_perm_options;
+  last_log_proto_options = file_reader_options_get_log_proto_options(last_file_reader_options);
+}
+
+static void
+affile_grammar_set_wildcard_file_source_driver(WildcardSourceDriver *sd)
+{
+  last_driver = &sd->super.super;
+  last_file_reader_options = &sd->file_reader_options;
+  last_reader_options = &last_file_reader_options->reader_options;
+  last_file_perm_options = &sd->file_opener_options.file_perm_options;
+  last_log_proto_options = file_reader_options_get_log_proto_options(last_file_reader_options);
+}
+
 }
 
 %name-prefix "affile_"
@@ -77,6 +99,7 @@ LogProtoFileReaderOptions *last_log_proto_options;
 %token KW_RECURSIVE
 %token KW_MAX_FILES
 %token KW_MONITOR_METHOD
+%token KW_FORCE_DIRECTORY_POLLING
 
 %token KW_STDIN
 
@@ -99,51 +122,56 @@ source_affile
 	: KW_FILE '(' source_affile_params ')'	{ $$ = $3; }
 	| KW_PIPE '(' source_afpipe_params ')'	{ $$ = $3; }
 	| KW_STDIN '(' source_stdin_params ')'	{ $$ = $3; }
-	| KW_WILDCARD_FILE 
+	| KW_WILDCARD_FILE
 	{
-		last_driver = *instance = wildcard_sd_new(configuration);
-		last_file_reader_options = &((WildcardSourceDriver *) last_driver)->file_reader_options;
-		last_reader_options = &last_file_reader_options->reader_options;
-	        last_file_perm_options = &((WildcardSourceDriver *) last_driver)->file_opener_options.file_perm_options;
-	        last_log_proto_options = file_reader_options_get_log_proto_options(last_file_reader_options);
+	  WildcardSourceDriver *sd = (WildcardSourceDriver *) wildcard_sd_new(configuration);;
+	  *instance = &sd->super.super;
+	  affile_grammar_set_wildcard_file_source_driver(sd);
 	} '(' source_wildcard_params ')' { $$ = last_driver; }
 	;
-	
+
 source_wildcard_params
     : source_wildcard_options
     ;
- 
+
 source_wildcard_options
     : source_wildcard_option source_wildcard_options
     |
-    ;    
+    ;
 
 source_stdin_params
 	:
 	  {
-            last_driver = *instance = stdin_sd_new(configuration);
-	    last_file_reader_options = &((AFFileSourceDriver *) last_driver)->file_reader_options;
-	    last_reader_options = &last_file_reader_options->reader_options;
-	    last_file_perm_options = &((AFFileSourceDriver *) last_driver)->file_opener_options.file_perm_options;
-            last_log_proto_options = file_reader_options_get_log_proto_options(last_file_reader_options);
+	    AFFileSourceDriver *sd = (AFFileSourceDriver *) stdin_sd_new(configuration);
+	    *instance = &sd->super.super;
+	    affile_grammar_set_file_source_driver(sd);
 	  }
           source_affile_options                 { $$ = last_driver; }
-        ;
+	;
 
 source_affile_params
 	: string
 	  {
-            last_driver = *instance = affile_sd_new($1, configuration);
-	    last_file_reader_options = &((AFFileSourceDriver *) last_driver)->file_reader_options;
-	    last_reader_options = &last_file_reader_options->reader_options;
-	    last_file_perm_options = &((AFFileSourceDriver *) last_driver)->file_opener_options.file_perm_options;
-            last_log_proto_options = file_reader_options_get_log_proto_options(last_file_reader_options);
+	    if (!affile_is_legacy_wildcard_source($1))
+	      {
+	        AFFileSourceDriver *sd = (AFFileSourceDriver *) affile_sd_new($1, configuration);
+	        *instance = &sd->super.super;
+	        affile_grammar_set_file_source_driver(sd);
+	      }
+	    else
+	      {
+	        WildcardSourceDriver *sd = (WildcardSourceDriver *) wildcard_sd_legacy_new($1, configuration);
+	        last_legacy_wildcard_src_driver = sd;
+	        *instance = &sd->super.super;
+	        affile_grammar_set_wildcard_file_source_driver(sd);
+	      }
 	  }
-          source_affile_options                 { $$ = last_driver; free($1); }
+          source_affile_options                 { $$ = last_driver; last_legacy_wildcard_src_driver = NULL; free($1); }
         ;
 
 source_affile_options
         : source_affile_option source_affile_options
+        | source_legacy_wildcard_option source_affile_options
         |
         ;
 
@@ -170,14 +198,25 @@ source_wildcard_option
 	| source_affile_option
 	;
 
+source_legacy_wildcard_option
+	: KW_FORCE_DIRECTORY_POLLING '(' yesno ')'
+	  {
+	    CHECK_ERROR(last_legacy_wildcard_src_driver, @1, "Invalid option, force-directory-polling() can only be used in legacy wildcard file sources");
+	    wildcard_sd_set_monitor_method(&last_legacy_wildcard_src_driver->super.super, $3 ? "poll" : "auto");
+	  }
+	| KW_RECURSIVE '(' yesno ')'
+	  {
+	    CHECK_ERROR(last_legacy_wildcard_src_driver, @1, "Invalid option, recursive() can only be used in legacy wildcard file sources");
+	    wildcard_sd_set_recursive(&last_legacy_wildcard_src_driver->super.super, $3);
+	  }
+	;
+
 source_afpipe_params
 	: string
 	  {
-	    last_driver = *instance = pipe_sd_new($1, configuration);
-	    last_file_reader_options = &((AFFileSourceDriver *) last_driver)->file_reader_options;
-	    last_reader_options = &last_file_reader_options->reader_options;
-	    last_file_perm_options = &((AFFileSourceDriver *) last_driver)->file_opener_options.file_perm_options;
-            last_log_proto_options = file_reader_options_get_log_proto_options(last_file_reader_options);
+	    AFFileSourceDriver *sd = (AFFileSourceDriver *) pipe_sd_new($1, configuration);
+	    *instance = &sd->super.super;
+	    affile_grammar_set_file_source_driver(sd);
 	  }
 	  source_afpipe_options				{ $$ = last_driver; free($1); }
 	;

@@ -28,6 +28,8 @@
 
 #include <fcntl.h>
 
+#include <string.h>
+
 #define DEFAULT_SD_OPEN_FLAGS (O_RDONLY | O_NOCTTY | O_NONBLOCK | O_LARGEFILE)
 
 static DirectoryMonitor *_add_directory_monitor(WildcardSourceDriver *self, const gchar *directory);
@@ -445,6 +447,27 @@ wildcard_sd_new(GlobalConfig *cfg)
   self->file_opener = file_opener_for_regular_source_files_new();
 
   self->waiting_list = pending_file_list_new();
+
+  return &self->super.super;
+}
+
+gboolean
+affile_is_legacy_wildcard_source(const gchar *filename)
+{
+  return strchr(filename, '*') != NULL || strchr(filename, '?') != NULL;
+}
+
+LogDriver *
+wildcard_sd_legacy_new(const gchar *filename, GlobalConfig *cfg)
+{
+  msg_warning_once("WARNING: Using wildcard characters in the file() source is deprecated, use wildcard-file() instead. "
+                   "The legacy wildcard file() source can only monitor up to " G_STRINGIFY(DEFAULT_MAX_FILES) " files, "
+                   "use wildcard-file(max-files()) to change this limit");
+
+  WildcardSourceDriver *self = (WildcardSourceDriver *) wildcard_sd_new(cfg);
+
+  self->base_dir = g_path_get_dirname(filename);
+  self->filename_pattern = g_path_get_basename(filename);
 
   return &self->super.super;
 }
