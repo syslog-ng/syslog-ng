@@ -685,6 +685,7 @@ persist_state_map_entry(PersistState *self, PersistEntryHandle handle)
 {
   /* we count the number of mapped entries in order to know if we're
    * safe to remap the file region */
+  g_assert(handle);
   g_mutex_lock(self->mapped_lock);
   self->mapped_counter++;
   g_mutex_unlock(self->mapped_lock);
