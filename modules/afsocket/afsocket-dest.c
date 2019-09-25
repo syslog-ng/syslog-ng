@@ -28,6 +28,8 @@
 #include "stats/stats-registry.h"
 #include "mainloop.h"
 #include "timeutils/misc.h"
+#include "hostname.h"
+#include "persist-state.h"
 
 #include <string.h>
 #include <sys/types.h>
@@ -107,6 +109,20 @@ _get_module_identifier(const AFSocketDestDriver *self)
 }
 
 static const gchar *
+_get_legacy_module_identifier(const AFSocketDestDriver *self)
+{
+  static gchar legacy_module_identifier[128];
+  const gchar *hostname = get_local_hostname_fqdn();
+
+  g_snprintf(legacy_module_identifier, sizeof(legacy_module_identifier), "%s,%s,%s",
+             (self->transport_mapper->sock_type == SOCK_STREAM) ? "stream" : "dgram",
+             afsocket_dd_get_dest_name(self),
+             hostname);
+
+  return legacy_module_identifier;
+}
+
+static const gchar *
 afsocket_dd_format_name(const LogPipe *s)
 {
   const AFSocketDestDriver *self = (const AFSocketDestDriver *)s;
@@ -135,6 +151,16 @@ afsocket_dd_format_connections_name(const AFSocketDestDriver *self)
              _get_module_identifier(self));
 
   return persist_name;
+}
+
+static const gchar *
+afsocket_dd_format_legacy_connection_name(const AFSocketDestDriver *self)
+{
+  static gchar legacy_persist_name[1024];
+  g_snprintf(legacy_persist_name, sizeof(legacy_persist_name), "%s_connection(%s)", _module_name,
+             _get_legacy_module_identifier(self));
+
+  return legacy_persist_name;
 }
 
 static gchar *
@@ -205,6 +231,51 @@ afsocket_dd_start_reconnect_timer(AFSocketDestDriver *self)
   self->reconnect_timer.expires = iv_now;
   timespec_add_msec(&self->reconnect_timer.expires, self->time_reopen * 1000L);
   iv_timer_register(&self->reconnect_timer);
+}
+
+static inline void
+_copy_persist_entry_value(PersistState *state, PersistEntryHandle from, PersistEntryHandle to, gsize size)
+{
+  gpointer entry_from = persist_state_map_entry(state, from);
+  gpointer entry_to = persist_state_map_entry(state, to);
+
+  memcpy(entry_to, entry_from, size);
+
+  persist_state_unmap_entry(state, from);
+  persist_state_unmap_entry(state, to);
+}
+
+static gboolean
+_update_legacy_connection_persist_name(AFSocketDestDriver *self)
+{
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
+
+  const gchar *old_name, *new_name;
+  PersistEntryHandle old_handle, new_handle;
+  gsize size;
+  guint8 version;
+
+  new_name = afsocket_dd_format_connections_name(self);
+  new_handle = persist_state_lookup_entry(cfg->state, new_name, &size, &version);
+  if (new_handle)
+    return TRUE;
+
+  old_name = afsocket_dd_format_legacy_connection_name(self);
+  old_handle = persist_state_lookup_entry(cfg->state, old_name, &size, &version);
+  if (!old_handle)
+    return TRUE;
+
+  new_handle = persist_state_alloc_entry(cfg->state, new_name, size);
+  if (!new_handle)
+    return FALSE;
+
+  _copy_persist_entry_value(cfg->state, old_handle, new_handle, size);
+
+  msg_debug("Connections persist name changed",
+            evt_tag_str("old name", old_name),
+            evt_tag_str("new name", new_name));
+
+  return TRUE;
 }
 
 static LogTransport *
@@ -585,6 +656,9 @@ afsocket_dd_init(LogPipe *s)
     {
       return FALSE;
     }
+
+  if (!_update_legacy_connection_persist_name(self))
+    return FALSE;
 
   if (!_dd_init_socket(self))
     {
