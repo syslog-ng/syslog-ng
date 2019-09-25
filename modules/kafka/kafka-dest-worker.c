@@ -155,6 +155,7 @@ kafka_dest_worker_free(LogThreadedDestWorker *s)
   KafkaDestWorker *self = (KafkaDestWorker *)s;
   g_string_free(self->key, TRUE);
   g_string_free(self->message, TRUE);
+  log_threaded_dest_worker_free_method(s);
 }
 
 LogThreadedDestWorker *
