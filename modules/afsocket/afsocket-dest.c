@@ -246,28 +246,30 @@ _copy_persist_entry_value(PersistState *state, PersistEntryHandle from, PersistE
 }
 
 static gboolean
-_update_legacy_connection_persist_name(AFSocketDestDriver *self, PersistState *state)
+_update_legacy_connection_persist_name(AFSocketDestDriver *self)
 {
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
+
   const gchar *old_name, *new_name;
   PersistEntryHandle old_handle, new_handle;
   gsize size;
   guint8 version;
 
   new_name = afsocket_dd_format_connections_name(self);
-  new_handle = persist_state_lookup_entry(state, new_name, &size, &version);
+  new_handle = persist_state_lookup_entry(cfg->state, new_name, &size, &version);
   if (new_handle)
     return TRUE;
 
   old_name = afsocket_dd_format_legacy_connection_name(self);
-  old_handle = persist_state_lookup_entry(state, old_name, &size, &version);
+  old_handle = persist_state_lookup_entry(cfg->state, old_name, &size, &version);
   if (!old_handle)
     return TRUE;
 
-  new_handle = persist_state_alloc_entry(state, new_name, size);
+  new_handle = persist_state_alloc_entry(cfg->state, new_name, size);
   if (!new_handle)
     return FALSE;
 
-  _copy_persist_entry_value(state, old_handle, new_handle, size);
+  _copy_persist_entry_value(cfg->state, old_handle, new_handle, size);
 
   msg_debug("Connections persist name changed",
             evt_tag_str("old name", old_name),
@@ -302,9 +304,6 @@ afsocket_dd_connected(AFSocketDestDriver *self)
     return FALSE;
 
   proto = log_proto_client_factory_construct(self->proto_factory, transport, &self->writer_options.proto_options.super);
-
-  if (!_update_legacy_connection_persist_name(self, cfg->state))
-    return FALSE;
 
   log_proto_client_restart_with_state(proto, cfg->state, afsocket_dd_format_connections_name(self));
   log_writer_reopen(self->writer, proto);
@@ -657,6 +656,9 @@ afsocket_dd_init(LogPipe *s)
     {
       return FALSE;
     }
+
+  if (!_update_legacy_connection_persist_name(self))
+    return FALSE;
 
   if (!_dd_init_socket(self))
     {
