@@ -87,12 +87,12 @@ _format_queue_persist_name(LogThreadedDestWorker *self)
     {
       /* the first worker uses the legacy persist name, e.g.  to be able to
        * recover the queue previously used.  */
-      return g_strdup(owner->generate_persist_name(owner));
+      return g_strdup(log_pipe_get_persist_name(owner));
     }
   else
     {
       return g_strdup_printf("%s.%d.queue",
-                             owner->generate_persist_name(owner),
+                             log_pipe_get_persist_name(owner),
                              self->worker_index);
     }
 }
