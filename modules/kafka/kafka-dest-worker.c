@@ -45,7 +45,7 @@ _format_message_and_key(KafkaDestWorker *self, LogMessage *msg)
   log_template_format(owner->message, msg, &owner->template_options, LTZ_SEND,
                       self->super.seq_num, NULL, self->message);
 
-  if (self->key)
+  if (owner->key)
     log_template_format(owner->key, msg, &owner->template_options, LTZ_SEND,
                         self->super.seq_num, NULL, self->key);
 }
@@ -54,18 +54,12 @@ static gboolean
 _publish_message(KafkaDestWorker *self, LogMessage *msg)
 {
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
-  GString *key = self->key ? : &((GString)
-  {
-    .str = NULL,
-    .len = 0
-  });
-  GString *message = self->message;
 
   if (rd_kafka_produce(owner->topic,
                        RD_KAFKA_PARTITION_UA,
                        RD_KAFKA_MSG_F_FREE | RD_KAFKA_MSG_F_BLOCK,
-                       message->str, message->len,
-                       key->str, key->len,
+                       self->message->str, self->message->len,
+                       self->key->len ? self->key->str : NULL, self->key->len,
                        log_msg_ref(msg)) == -1)
     {
       msg_error("kafka: failed to publish message",
@@ -79,15 +73,13 @@ _publish_message(KafkaDestWorker *self, LogMessage *msg)
 
   msg_debug("kafka: message published",
             evt_tag_str("topic", owner->topic_name),
-            evt_tag_str("key", key->str ? : "NULL"),
-            evt_tag_str("message", message->str),
+            evt_tag_str("key", self->key->len ? self->key->str : "NULL"),
+            evt_tag_str("message", self->message->str),
             evt_tag_str("driver", owner->super.super.super.id),
             log_pipe_location_tag(&owner->super.super.super.super));
 
   /* we passed the allocated buffers to rdkafka, which will eventually free them */
-  g_string_steal(message);
-  if (key->str)
-    g_string_steal(key);
+  g_string_steal(self->message);
   return TRUE;
 }
 
@@ -155,13 +147,13 @@ kafka_dest_worker_free(LogThreadedDestWorker *s)
   KafkaDestWorker *self = (KafkaDestWorker *)s;
   g_string_free(self->key, TRUE);
   g_string_free(self->message, TRUE);
+  log_threaded_dest_worker_free_method(s);
 }
 
 LogThreadedDestWorker *
 kafka_dest_worker_new(LogThreadedDestDriver *o, gint worker_index)
 {
   KafkaDestWorker *self = g_new0(KafkaDestWorker, 1);
-  KafkaDestDriver *owner = (KafkaDestDriver *) o;
 
   log_threaded_dest_worker_init_instance(&self->super, o, worker_index);
   self->super.insert = kafka_dest_worker_insert;
@@ -171,8 +163,7 @@ kafka_dest_worker_new(LogThreadedDestDriver *o, gint worker_index)
   self->poll_timer.cookie = self;
   self->poll_timer.handler = (void (*)(void *)) _drain_responses;
 
-  if (owner->key)
-    self->key = g_string_sized_new(1024);
+  self->key = g_string_sized_new(0);
   self->message = g_string_sized_new(1024);
   return &self->super;
 }
