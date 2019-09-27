@@ -36,8 +36,7 @@ gint format_int64_padded(GString *result, gint field_len, gchar pad_char, gint b
 gchar *format_hex_string(gpointer str, gsize str_len, gchar *result, gsize result_len);
 gchar *format_hex_string_with_delimiter(gpointer str, gsize str_len, gchar *result, gsize result_len, gchar delimiter);
 
-
-gboolean scan_int(const gchar **buf, gint *left, gint field_width, gint *num);
+gboolean scan_positive_int(const gchar **buf, gint *left, gint field_width, gint *num);
 gboolean scan_expect_char(const gchar **buf, gint *left, gchar value);
 gboolean scan_expect_str(const gchar **buf, gint *left, const gchar *value);
 

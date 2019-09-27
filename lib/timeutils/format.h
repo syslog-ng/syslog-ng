@@ -41,6 +41,6 @@ void format_wall_clock_time(const WallClockTime *stamp, GString *target,
                             gint ts_format, glong zone_offset, gint frac_digits);
 void append_format_wall_clock_time(const WallClockTime *stamp, GString *target,
                                    gint ts_format, gint frac_digits);
-gint format_zone_info(gchar *buf, size_t buflen, glong gmtoff);
+void append_format_zone_info(GString *target, glong gmtoff);
 
 #endif

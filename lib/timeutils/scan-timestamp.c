@@ -131,47 +131,130 @@ scan_month_abbrev(const gchar **buf, gint *left, gint *mon)
   return TRUE;
 }
 
+/*******************************************************************************
+ * RFC 3164 timestamp, expected format: "MMM DD HH:MM:SS" ...
+ *******************************************************************************/
 
-/* this function parses the date/time portion of an ISODATE */
+static gboolean
+__is_bsd_rfc_3164(const guchar *src, guint32 left)
+{
+  return left >= 15 && src[3] == ' ' && src[6] == ' ' && src[9] == ':' && src[12] == ':';
+}
+
+gboolean
+scan_bsd_timestamp(const gchar **buf, gint *left, WallClockTime *wct)
+{
+  if (!scan_month_abbrev(buf, left, &wct->wct_mon) ||
+      !scan_expect_char(buf, left, ' ') ||
+      !scan_positive_int(buf, left, 2, &wct->wct_mday) ||
+      !scan_expect_char(buf, left, ' ') ||
+      !scan_positive_int(buf, left, 2, &wct->wct_hour) ||
+      !scan_expect_char(buf, left, ':') ||
+      !scan_positive_int(buf, left, 2, &wct->wct_min) ||
+      !scan_expect_char(buf, left, ':') ||
+      !scan_positive_int(buf, left, 2, &wct->wct_sec))
+    return FALSE;
+  return TRUE;
+}
+
+/*******************************************************************************
+ * ISO timestamp as specified in RFC5424, expected format "YYYY-MM-DDTHH:MM:SS"
+ *******************************************************************************/
+
+static gboolean
+__is_iso_stamp(const gchar *stamp, gint length)
+{
+  return (length >= 19
+          && stamp[4] == '-'
+          && stamp[7] == '-'
+          && stamp[10] == 'T'
+          && stamp[13] == ':'
+          && stamp[16] == ':'
+         );
+}
+
 gboolean
 scan_iso_timestamp(const gchar **buf, gint *left, WallClockTime *wct)
 {
-  /* YYYY-MM-DDTHH:MM:SS */
-  if (!scan_int(buf, left, 4, &wct->wct_year) ||
+  if (!scan_positive_int(buf, left, 4, &wct->wct_year) ||
       !scan_expect_char(buf, left, '-') ||
-      !scan_int(buf, left, 2, &wct->wct_mon) ||
+      !scan_positive_int(buf, left, 2, &wct->wct_mon) ||
       !scan_expect_char(buf, left, '-') ||
-      !scan_int(buf, left, 2, &wct->wct_mday) ||
+      !scan_positive_int(buf, left, 2, &wct->wct_mday) ||
       !scan_expect_char(buf, left, 'T') ||
-      !scan_int(buf, left, 2, &wct->wct_hour) ||
+      !scan_positive_int(buf, left, 2, &wct->wct_hour) ||
       !scan_expect_char(buf, left, ':') ||
-      !scan_int(buf, left, 2, &wct->wct_min) ||
+      !scan_positive_int(buf, left, 2, &wct->wct_min) ||
       !scan_expect_char(buf, left, ':') ||
-      !scan_int(buf, left, 2, &wct->wct_sec))
+      !scan_positive_int(buf, left, 2, &wct->wct_sec))
     return FALSE;
   wct->wct_year -= 1900;
   wct->wct_mon -= 1;
   return TRUE;
 }
 
+/*******************************************************************************
+ * Cisco modified RFC3164 timestamp, expected format:
+ *    "MMM DD YYYY HH:MM:SS:"
+ *    "MMM DD YYYY HH:MM:SS "
+ *******************************************************************************/
+
+static gboolean
+__is_bsd_pix_or_asa(const guchar *src, guint32 left)
+{
+  return (left >= 21
+          && src[3] == ' '
+          && src[6] == ' '
+          && src[11] == ' '
+          && src[14] == ':'
+          && src[17] == ':'
+          && (src[20] == ':' || src[20] == ' ')
+          && isdigit(src[7])
+          && isdigit(src[8])
+          && isdigit(src[9])
+          && isdigit(src[10])
+         );
+}
+
 gboolean
 scan_pix_timestamp(const gchar **buf, gint *left, WallClockTime *wct)
 {
-  /* PIX/ASA timestamp, expected format: MMM DD YYYY HH:MM:SS */
   if (!scan_month_abbrev(buf, left, &wct->wct_mon) ||
       !scan_expect_char(buf, left, ' ') ||
-      !scan_int(buf, left, 2, &wct->wct_mday) ||
+      !scan_positive_int(buf, left, 2, &wct->wct_mday) ||
       !scan_expect_char(buf, left, ' ') ||
-      !scan_int(buf, left, 4, &wct->wct_year) ||
+      !scan_positive_int(buf, left, 4, &wct->wct_year) ||
       !scan_expect_char(buf, left, ' ') ||
-      !scan_int(buf, left, 2, &wct->wct_hour) ||
+      !scan_positive_int(buf, left, 2, &wct->wct_hour) ||
       !scan_expect_char(buf, left, ':') ||
-      !scan_int(buf, left, 2, &wct->wct_min) ||
+      !scan_positive_int(buf, left, 2, &wct->wct_min) ||
       !scan_expect_char(buf, left, ':') ||
-      !scan_int(buf, left, 2, &wct->wct_sec))
+      !scan_positive_int(buf, left, 2, &wct->wct_sec))
     return FALSE;
   wct->wct_year -= 1900;
   return TRUE;
+}
+
+/*******************************************************************************
+ * LinkSys modified RFC3164 timestamp, expected format:
+ *    "MMM DD HH:MM:SS YYYY "
+ *******************************************************************************/
+static gboolean
+__is_bsd_linksys(const guchar *src, guint32 left)
+{
+  /* "MMM DD HH:MM:SS YYYY " */
+  return (left >= 21
+          && src[3] == ' '
+          && src[6] == ' '
+          && src[9] == ':'
+          && src[12] == ':'
+          && src[15] == ' '
+          && isdigit(src[16])
+          && isdigit(src[17])
+          && isdigit(src[18])
+          && isdigit(src[19])
+          && isspace(src[20])
+         );
 }
 
 gboolean
@@ -181,34 +264,17 @@ scan_linksys_timestamp(const gchar **buf, gint *left, WallClockTime *wct)
 
   if (!scan_month_abbrev(buf, left, &wct->wct_mon) ||
       !scan_expect_char(buf, left, ' ') ||
-      !scan_int(buf, left, 2, &wct->wct_mday) ||
+      !scan_positive_int(buf, left, 2, &wct->wct_mday) ||
       !scan_expect_char(buf, left, ' ') ||
-      !scan_int(buf, left, 2, &wct->wct_hour) ||
+      !scan_positive_int(buf, left, 2, &wct->wct_hour) ||
       !scan_expect_char(buf, left, ':') ||
-      !scan_int(buf, left, 2, &wct->wct_min) ||
+      !scan_positive_int(buf, left, 2, &wct->wct_min) ||
       !scan_expect_char(buf, left, ':') ||
-      !scan_int(buf, left, 2, &wct->wct_sec) ||
+      !scan_positive_int(buf, left, 2, &wct->wct_sec) ||
       !scan_expect_char(buf, left, ' ') ||
-      !scan_int(buf, left, 4, &wct->wct_year))
+      !scan_positive_int(buf, left, 4, &wct->wct_year))
     return FALSE;
   wct->wct_year -= 1900;
-  return TRUE;
-}
-
-gboolean
-scan_bsd_timestamp(const gchar **buf, gint *left, WallClockTime *wct)
-{
-  /* RFC 3164 timestamp, expected format: MMM DD HH:MM:SS ... */
-  if (!scan_month_abbrev(buf, left, &wct->wct_mon) ||
-      !scan_expect_char(buf, left, ' ') ||
-      !scan_int(buf, left, 2, &wct->wct_mday) ||
-      !scan_expect_char(buf, left, ' ') ||
-      !scan_int(buf, left, 2, &wct->wct_hour) ||
-      !scan_expect_char(buf, left, ':') ||
-      !scan_int(buf, left, 2, &wct->wct_min) ||
-      !scan_expect_char(buf, left, ':') ||
-      !scan_int(buf, left, 2, &wct->wct_sec))
-    return FALSE;
   return TRUE;
 }
 
@@ -278,17 +344,6 @@ __parse_iso_timezone(const guchar **data, gint *length)
   return tz;
 }
 
-static gboolean
-__is_iso_stamp(const gchar *stamp, gint length)
-{
-  return (length >= 19
-          && stamp[4] == '-'
-          && stamp[7] == '-'
-          && stamp[10] == 'T'
-          && stamp[13] == ':'
-          && stamp[16] == ':'
-         );
-}
 
 static gboolean
 __parse_iso_stamp(WallClockTime *wct, const guchar **data, gint *length)
@@ -326,43 +381,6 @@ __parse_iso_stamp(WallClockTime *wct, const guchar **data, gint *length)
 /*******************************************************************************
  * Parse BSD timestamp
  *******************************************************************************/
-
-static gboolean
-__is_bsd_rfc_3164(const guchar *src, guint32 left)
-{
-  return left >= 15 && src[3] == ' ' && src[6] == ' ' && src[9] == ':' && src[12] == ':';
-}
-
-static gboolean
-__is_bsd_linksys(const guchar *src, guint32 left)
-{
-  return (left >= 21
-          && __is_bsd_rfc_3164(src, left)
-          && src[15] == ' '
-          && isdigit(src[16])
-          && isdigit(src[17])
-          && isdigit(src[18])
-          && isdigit(src[19])
-          && isspace(src[20])
-         );
-}
-
-static gboolean
-__is_bsd_pix_or_asa(const guchar *src, guint32 left)
-{
-  return (left >= 21
-          && src[3] == ' '
-          && src[6] == ' '
-          && src[11] == ' '
-          && src[14] == ':'
-          && src[17] == ':'
-          && (src[20] == ':' || src[20] == ' ')
-          && isdigit(src[7])
-          && isdigit(src[8])
-          && isdigit(src[9])
-          && isdigit(src[10])
-         );
-}
 
 static gboolean
 __parse_bsd_timestamp(const guchar **data, gint *length, WallClockTime *wct)

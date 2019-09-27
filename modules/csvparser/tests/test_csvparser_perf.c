@@ -131,7 +131,7 @@ perftest_parser(LogParser *p, const gchar *input)
   log_pipe_unref(&p->super);
 }
 
-Test(csvparser_perf, test_escaped_parsers)
+Test(csvparser_perf, test_escaped_parsers_performance)
 {
   perftest_parser(_construct_parser(3, CSV_SCANNER_ESCAPE_NONE, " ", NULL, "", NULL),
                   "foo bar baz");

@@ -252,8 +252,6 @@ log_macro_expand_date_time(GString *result, gint id, gboolean escape, const LogT
                            const gchar *context_id, const LogMessage *msg)
 {
   /* year, month, day */
-  gchar buf[64];
-  gint length;
   const UnixTime *stamp;
   UnixTime sstamp;
   guint tmp_hour;
@@ -307,7 +305,7 @@ log_macro_expand_date_time(GString *result, gint id, gboolean escape, const LogT
   switch (id)
     {
     case M_WEEK_DAY_ABBREV:
-      g_string_append_len(result, weekday_names_abbrev[wct.wct_wday], 3);
+      g_string_append_len(result, weekday_names_abbrev[wct.wct_wday], WEEKDAY_NAME_ABBREV_LEN);
       break;
     case M_WEEK_DAY_NAME:
       g_string_append(result, weekday_names[wct.wct_wday]);
@@ -336,7 +334,7 @@ log_macro_expand_date_time(GString *result, gint id, gboolean escape, const LogT
                                                ((wct.wct_mday % 7) >= wct.wct_wday))));
       break;
     case M_MONTH_ABBREV:
-      g_string_append_len(result, month_names_abbrev[wct.wct_mon], 3);
+      g_string_append_len(result, month_names_abbrev[wct.wct_mon], MONTH_NAME_ABBREV_LEN);
       break;
     case M_MONTH_NAME:
       g_string_append(result, month_names[wct.wct_mon]);
@@ -392,8 +390,7 @@ log_macro_expand_date_time(GString *result, gint id, gboolean escape, const LogT
       break;
     case M_TZ:
     case M_TZOFFSET:
-      length = format_zone_info(buf, sizeof(buf), wct.wct_gmtoff);
-      g_string_append_len(result, buf, length);
+      append_format_zone_info(result, wct.wct_gmtoff);
       break;
     default:
       g_assert_not_reached();

@@ -21,12 +21,14 @@
  * COPYING for details.
  *
  */
-#include <criterion/criterion.h>
 #include "apphook.h"
 #include "timeutils/scan-timestamp.h"
 #include "timeutils/cache.h"
 #include "timeutils/format.h"
 #include "timeutils/conv.h"
+
+#include <criterion/criterion.h>
+#include "stopwatch.h"
 
 static void
 fake_time(time_t now)
@@ -118,9 +120,17 @@ Test(parse_timestamp, standard_bsd_format)
   _expect_rfc3164_timestamp_eq("Oct  1 17:46:12", "2017-10-01T17:46:12.000+02:00");
 }
 
-Test(parse_timestamp, bsd_with_fractions_of_a_second)
+Test(parse_timestamp, bsd_extensions)
 {
-  _expect_rfc3164_timestamp_eq("Dec 13 09:10:12.987", "2017-12-13T09:10:12.987+01:00");
+  /* fractions of a second */
+  _expect_rfc3164_timestamp_eq("Dec  3 09:10:12.987", "2017-12-03T09:10:12.987+01:00");
+
+  /* year added at the end (linksys) */
+  _expect_rfc3164_timestamp_eq("Dec  3 09:10:12 2019 ", "2019-12-03T09:10:12.000+01:00");
+
+  /* year after the mon/day (cisco) */
+  _expect_rfc3164_timestamp_eq("Dec  3 2019 09:10:12:", "2019-12-03T09:10:12.000+01:00");
+  _expect_rfc3164_timestamp_eq("Dec  3 2019 09:10:12 ", "2019-12-03T09:10:12.000+01:00");
 }
 
 Test(parse_timestamp, standard_bsd_format_year_in_the_future)
@@ -291,6 +301,38 @@ Test(parse_timestamp, rfc5424_timestamps)
 {
   _expect_rfc5424_timestamp_eq("2017-06-14T23:57:27+02:00", "2017-06-14T23:57:27.000+02:00");
   _expect_rfc5424_timestamp_eq("2017-06-14T23:57:27Z", "2017-06-14T23:57:27.000+00:00");
+}
+
+Test(parse_timestamp, rfc3164_performance)
+{
+  const gchar *ts = "Dec 14 05:27:22";
+  const guchar *data = (const guchar *) ts;
+  gint length = strlen(ts);
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
+  gint it = 1000000;
+
+  start_stopwatch();
+  for (gint i = 0; i < it; i++)
+    {
+      scan_rfc3164_timestamp(&data, &length, &wct);
+    }
+  stop_stopwatch_and_display_result(it, "RFC3164 timestamp parsing speed");
+}
+
+Test(parse_timestamp, rfc5424_performance)
+{
+  const gchar *ts = "2019-12-14T05:27:22";
+  const guchar *data = (const guchar *) ts;
+  gint length = strlen(ts);
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
+  gint it = 1000000;
+
+  start_stopwatch();
+  for (gint i = 0; i < it; i++)
+    {
+      scan_rfc5424_timestamp(&data, &length, &wct);
+    }
+  stop_stopwatch_and_display_result(it, "RFC5424 timestamp parsing speed");
 }
 
 
