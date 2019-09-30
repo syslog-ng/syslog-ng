@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 # Command line options
 def pytest_addoption(parser):
     parser.addoption("--runslow", action="store_true", default=False, help="run slow tests")
-    parser.addoption("--run-with-valgrind", action="store_true", default=False, help="Run tests behind valgrind")
+    parser.addoption("--run-under", help="Run syslog-ng under selected tool, example tools: [valgrind, strace]")
     parser.addoption(
         "--installdir",
         action="store",
@@ -63,8 +63,8 @@ def installdir(request):
     return request.config.getoption("--installdir")
 
 
-def runwithvalgrind(request):
-    return request.config.getoption("--run-with-valgrind")
+def runundertool(request):
+    return request.config.getoption("--run-under")
 
 
 def get_relative_report_dir():

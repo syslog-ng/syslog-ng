@@ -51,9 +51,6 @@ class SyslogNgPaths(object):
                 "control_socket_path": Path(relative_working_dir, "syslog_ng_{}.ctl".format(instance_name)),
                 "stderr": Path(working_dir, "syslog_ng_{}_stderr".format(instance_name)),
                 "stdout": Path(working_dir, "syslog_ng_{}_stdout".format(instance_name)),
-                "valgrind": Path(
-                    working_dir, "valgrind_{}.log".format(get_unique_id()),
-                ),
             },
             "binary_file_paths": {
                 "syslog_ng_binary": Path(install_dir, "sbin", "syslog-ng"),
@@ -98,5 +95,12 @@ class SyslogNgPaths(object):
     def get_syslog_ng_ctl_bin(self):
         return self.__syslog_ng_paths["binary_file_paths"]["syslog_ng_ctl"]
 
-    def get_valgrind_log_path(self):
-        return self.__syslog_ng_paths["file_paths"]["valgrind"]
+    def register_external_tool_output_path(self, external_tool):
+        self.__syslog_ng_paths['file_paths'].update(
+            {
+                external_tool: Path(tc_parameters.WORKING_DIR, "{}_{}.log".format(external_tool, get_unique_id())),
+            },
+        )
+
+    def get_external_tool_output_path(self, external_tool):
+        return self.__syslog_ng_paths['file_paths'][external_tool]

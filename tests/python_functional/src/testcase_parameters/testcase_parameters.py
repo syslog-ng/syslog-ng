@@ -43,7 +43,7 @@ class TestcaseParameters(object):
                 "testcase_file": Path(pytest_request.fspath),
             },
             "testcase_name": testcase_name,
-            "valgrind_usage": pytest_request.config.getoption("--run-with-valgrind"),
+            "external_tool": pytest_request.config.getoption("--run-under"),
         }
 
     def get_working_dir(self):
@@ -64,5 +64,5 @@ class TestcaseParameters(object):
     def get_testcase_name(self):
         return self.testcase_parameters["testcase_name"]
 
-    def get_valgrind_usage(self):
-        return self.testcase_parameters["valgrind_usage"]
+    def get_external_tool(self):
+        return self.testcase_parameters["external_tool"]
