@@ -336,6 +336,42 @@ persist_state_rename_entry(PersistState *self, const gchar *old_key, const gchar
   return FALSE;
 }
 
+
+static void
+_persist_state_copy_entry(PersistState *self, const PersistEntryHandle from, PersistEntryHandle to, gsize size)
+{
+  gpointer entry_from = persist_state_map_entry(self, from);
+  gpointer entry_to = persist_state_map_entry(self, to);
+
+  memcpy(entry_to, entry_from, size);
+
+  persist_state_unmap_entry(self, from);
+  persist_state_unmap_entry(self, to);
+}
+
+gboolean
+persist_state_move_entry(PersistState *self, const gchar *old_key, const gchar *new_key)
+{
+  gsize size;
+  guint8 version;
+  PersistEntryHandle old_handle = persist_state_lookup_entry(self, old_key, &size, &version);
+  if (!old_handle)
+    return FALSE;
+
+  PersistEntryHandle new_handle = persist_state_alloc_entry(self, new_key, size);
+  if (!new_handle)
+    return FALSE;
+
+  _persist_state_copy_entry(self, old_handle, new_handle, size);
+  _free_value(self, old_handle);
+
+  msg_debug("Persistent entry moved",
+            evt_tag_str("from", old_key),
+            evt_tag_str("to", new_key));
+
+  return TRUE;
+}
+
 /*
  * NOTE: can only be called from the main thread (e.g. log_pipe_init/deinit).
  */
