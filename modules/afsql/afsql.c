@@ -980,6 +980,31 @@ afsql_dd_format_persist_name(const LogPipe *s)
   return persist_name;
 }
 
+static const gchar *
+_afsql_dd_format_legacy_persist_name(const AFSqlDestDriver *self)
+{
+  static gchar legacy_persist_name[256];
+
+  g_snprintf(legacy_persist_name, sizeof(legacy_persist_name),
+             "afsql_dd_qfile(%s,%s,%s,%s,%s)",
+             self->type, self->host, self->port, self->database, self->table->template);
+
+  return legacy_persist_name;
+}
+
+static gboolean
+_update_legacy_persist_name_if_exists(AFSqlDestDriver *self)
+{
+  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super.super);
+  const gchar *legacy_persist_name = _afsql_dd_format_legacy_persist_name(self);
+
+  if (!persist_state_entry_exists(cfg->state, legacy_persist_name))
+    return TRUE;
+
+  const gchar *persist_name = afsql_dd_format_persist_name(&self->super.super.super.super);
+  return persist_state_move_entry(cfg->state, legacy_persist_name, persist_name);
+}
+
 static gboolean
 _init_fields_from_columns_and_values(AFSqlDestDriver *self)
 {
@@ -1087,6 +1112,8 @@ afsql_dd_init(LogPipe *s)
   GlobalConfig *cfg = log_pipe_get_config(s);
 
   if (!log_threaded_dest_driver_init_method(s))
+    return FALSE;
+  if (!_update_legacy_persist_name_if_exists(self))
     return FALSE;
   if (!_initialize_dbi())
     return FALSE;
