@@ -72,10 +72,6 @@ pcre-devel                      [centos, fedora]
     libesmtp-dev                [debian, ubuntu]
     libesmtp-devel              [centos, fedora]
 
-    # libgeoip-dev
-    libgeoip-dev                [debian, ubuntu]
-    GeoIP-devel                 [centos, fedora]
-
     # redis-dev
     libhiredis-dev              [debian, ubuntu]
     hiredis-devel               [centos, fedora]
@@ -151,10 +147,6 @@ gcc-c++				[centos, fedora]
 python-pip                      [centos, fedora, debian, ubuntu]
 python-setuptools               [centos, fedora, debian, ubuntu]
 tzdata                          [centos, fedora, debian, ubuntu]
-
-    # geoip-database
-    geoip-database              [debian, ubuntu]
-    GeoIP-data                  [centos, fedora]
 
     # libxml2-utils
     libxml2-utils               [debian, ubuntu]

@@ -20,7 +20,6 @@ EXTRA_DIST +=	\
 	cmake/Modules/FindJSONC.cmake	\
 	cmake/Modules/FindLIBCAP.cmake	\
 	cmake/Modules/FindLibDBI.cmake	\
-	cmake/Modules/FindLibGeoIP.cmake	\
 	cmake/Modules/FindLibMaxMindDB.cmake	\
 	cmake/Modules/FindLibNet.cmake	\
 	cmake/Modules/FindNetSnmp.cmake	\

@@ -20,7 +20,6 @@ include modules/dbparser/Makefile.am
 include modules/diskq/Makefile.am
 include modules/examples/Makefile.am
 include modules/geoip2/Makefile.am
-include modules/geoip/Makefile.am
 include modules/getent/Makefile.am
 include modules/graphite/Makefile.am
 include modules/hook-commands/Makefile.am
@@ -55,7 +54,7 @@ SYSLOG_NG_MODULES	=	\
 	mod-usertty mod-amqp mod-mongodb mod-smtp mod-http mod-json \
 	mod-syslogformat mod-linux-kmsg mod-pacctformat \
 	mod-confgen mod-system-source mod-csvparser mod-dbparser \
-	mod-basicfuncs mod-cryptofuncs mod-geoip mod-afstomp \
+	mod-basicfuncs mod-cryptofuncs mod-geoip2 mod-afstomp \
 	mod-redis mod-pseudofile mod-graphite mod-riemann \
 	mod-python mod-java mod-java-modules mod-kvformat mod-date \
 	mod-native mod-cef mod-add-contextual-data mod-diskq mod-getent \
@@ -71,7 +70,7 @@ modules_test_subdirs	=	\
 	modules_syslogformat modules_linux_kmsg \
 	modules_pacctformat modules_confgen modules_system_source \
 	modules_csvparser modules_dbparser modules_basicfuncs \
-	modules_cryptofuncs modules_geoip modules_afstomp \
+	modules_cryptofuncs modules_geoip2 modules_afstomp \
 	modules_graphite modules_riemann modules_python \
 	modules_systemd_journal modules_kvformat modules_date \
 	modules_cef modules_diskq modules-add-contextual-data modules_getent \
