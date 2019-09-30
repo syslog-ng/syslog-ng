@@ -35,7 +35,7 @@
 gchar *
 mmdb_default_database(void)
 {
-  const static gchar *possible_paths[] =
+  static const gchar *possible_paths[] =
   {
     "/usr/share/GeoIP/GeoLite2-City.mmdb", //centos, arch, fedora
     "/var/lib/GeoIP/GeoLite2-City.mmdb",   //ubuntu
