@@ -233,49 +233,17 @@ afsocket_dd_start_reconnect_timer(AFSocketDestDriver *self)
   iv_timer_register(&self->reconnect_timer);
 }
 
-static inline void
-_copy_persist_entry_value(PersistState *state, PersistEntryHandle from, PersistEntryHandle to, gsize size)
-{
-  gpointer entry_from = persist_state_map_entry(state, from);
-  gpointer entry_to = persist_state_map_entry(state, to);
-
-  memcpy(entry_to, entry_from, size);
-
-  persist_state_unmap_entry(state, from);
-  persist_state_unmap_entry(state, to);
-}
-
 static gboolean
 _update_legacy_connection_persist_name(AFSocketDestDriver *self)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
+  const gchar *legacy_persist_name = afsocket_dd_format_legacy_connection_name(self);
 
-  const gchar *old_name, *new_name;
-  PersistEntryHandle old_handle, new_handle;
-  gsize size;
-  guint8 version;
-
-  new_name = afsocket_dd_format_connections_name(self);
-  new_handle = persist_state_lookup_entry(cfg->state, new_name, &size, &version);
-  if (new_handle)
+  if (!persist_state_entry_exists(cfg->state, legacy_persist_name))
     return TRUE;
 
-  old_name = afsocket_dd_format_legacy_connection_name(self);
-  old_handle = persist_state_lookup_entry(cfg->state, old_name, &size, &version);
-  if (!old_handle)
-    return TRUE;
-
-  new_handle = persist_state_alloc_entry(cfg->state, new_name, size);
-  if (!new_handle)
-    return FALSE;
-
-  _copy_persist_entry_value(cfg->state, old_handle, new_handle, size);
-
-  msg_debug("Connections persist name changed",
-            evt_tag_str("old name", old_name),
-            evt_tag_str("new name", new_name));
-
-  return TRUE;
+  const gchar *persist_name = afsocket_dd_format_connections_name(self);
+  return persist_state_move_entry(cfg->state, legacy_persist_name, persist_name);
 }
 
 static LogTransport *
