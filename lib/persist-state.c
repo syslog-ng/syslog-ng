@@ -304,8 +304,8 @@ _free_value(PersistState *self, PersistEntryHandle handle)
 
 /* key management */
 
-gboolean
-persist_state_lookup_key(PersistState *self, const gchar *key, PersistEntryHandle *handle)
+static gboolean
+_persist_state_lookup_key(PersistState *self, const gchar *key, PersistEntryHandle *handle)
 {
   PersistEntry *entry;
 
@@ -711,7 +711,7 @@ persist_state_unmap_entry(PersistState *self, PersistEntryHandle handle)
 static PersistValueHeader *
 _map_header_of_entry(PersistState *self, const gchar *persist_name, PersistEntryHandle *handle)
 {
-  if (!persist_state_lookup_key(self, persist_name, handle))
+  if (!_persist_state_lookup_key(self, persist_name, handle))
     return NULL;
 
   return _map_header_of_entry_from_handle(self, *handle);
@@ -762,7 +762,7 @@ persist_state_remove_entry(PersistState *self, const gchar *key)
 {
   PersistEntryHandle handle;
 
-  if (!persist_state_lookup_key(self, key, &handle))
+  if (!_persist_state_lookup_key(self, key, &handle))
     return FALSE;
 
   _free_value(self, handle);
