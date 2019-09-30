@@ -758,6 +758,13 @@ persist_state_lookup_entry(PersistState *self, const gchar *key, gsize *size, gu
 }
 
 gboolean
+persist_state_entry_exists(PersistState *self, const gchar *persist_name)
+{
+  PersistEntryHandle handle;
+  return _persist_state_lookup_key(self, persist_name, &handle);
+}
+
+gboolean
 persist_state_remove_entry(PersistState *self, const gchar *key)
 {
   PersistEntryHandle handle;
