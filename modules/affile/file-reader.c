@@ -384,10 +384,29 @@ file_reader_options_defaults(FileReaderOptions *options)
   options->restore_state = FALSE;
 }
 
+static gboolean
+file_reader_options_validate(FileReaderOptions *options)
+{
+  if (options->multi_line_timeout && options->follow_freq >= options->multi_line_timeout)
+    {
+      msg_error("multi-line-timeout() should be set to a higher value than follow-freq(), "
+                "it is recommended to set multi-line-timeout() to a multiple of follow-freq()",
+                evt_tag_int("multi_line_timeout", options->multi_line_timeout),
+                evt_tag_int("follow_freq", options->follow_freq));
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
 gboolean
 file_reader_options_init(FileReaderOptions *options, GlobalConfig *cfg, const gchar *group)
 {
   log_reader_options_init(&options->reader_options, cfg, group);
+
+  if (!file_reader_options_validate(options))
+    return FALSE;
+
   return log_proto_file_reader_options_init(file_reader_options_get_log_proto_options(options));
 }
 
