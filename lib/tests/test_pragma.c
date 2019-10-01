@@ -28,9 +28,9 @@
 
 Test(pragma_parser, process_valid_major_minor)
 {
-  const guint version = process_version_string("3.23");
+  const guint version = process_version_string("3.24");
 
-  cr_assert_eq(0x0317, version);
+  cr_assert_eq(0x0318, version);
 }
 
 Test(pragma_parser, process_version_large_minor)
