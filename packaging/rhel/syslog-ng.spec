@@ -51,7 +51,7 @@ Intentional syntax error to cause rpmbuild to abort.
 %global ivykis_ver 0.36.1
 
 Name: syslog-ng
-Version: 3.23.1
+Version: 3.24.1
 Release: 1%{?dist}
 Summary: Next-generation syslog server
 
@@ -573,6 +573,9 @@ fi
 %{_datadir}/%{name}/tools/
 
 %changelog
+* Tue Oct 01 2019 Laszlo Budai <laszlo.budai@balabit.com> - 3.24.1-1
+- update to 3.24.1
+
 * Fri Aug 16 2019 Laszlo Budai <laszlo.budai@balabit.com> - 3.23.1-1
 - update to 3.23.1
 
