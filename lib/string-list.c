@@ -59,6 +59,29 @@ string_array_to_list(const gchar *strlist[])
   return g_list_reverse(l);
 }
 
+GList *
+string_vargs_to_list_va(const gchar *str, va_list va)
+{
+  GList *p = NULL;
+  while (str)
+    {
+      p = g_list_append(p, g_strdup(str));
+      str = va_arg(va, const gchar *);
+    }
+  return p;
+}
+
+GList *
+string_vargs_to_list(const gchar *str, ...)
+{
+  va_list va;
+
+  va_start(va, str);
+  GList *p = string_vargs_to_list_va(str, va);
+  va_end(va);
+  return p;
+}
+
 /*
  * NOTE: pointer values below 0x1000 (4096) are taken as special
  * values used by the application code and are not freed. Since this
