@@ -1,6 +1,7 @@
 modules_add_contextual_data_tests_TESTS	= \
         modules/add-contextual-data/tests/test_filter_selector \
-        modules/add-contextual-data/tests/test_template_selector
+        modules/add-contextual-data/tests/test_template_selector \
+        modules/add-contextual-data/tests/test_glob_selector
 
 EXTRA_DIST += modules/add-contextual-data/tests/CMakeLists.txt
 
@@ -13,6 +14,15 @@ modules_add_contextual_data_tests_test_template_selector_LDADD    =       \
         $(TEST_LDADD)					\
         $(PREOPEN_SYSLOGFORMAT)                         \
         -dlpreopen $(top_builddir)/modules/add-contextual-data/libadd-contextual-data.la
+
+
+modules_add_contextual_data_tests_test_glob_selector_CFLAGS   =       \
+        $(TEST_CFLAGS) -I$(top_srcdir)/modules/add-contextual-data
+modules_add_contextual_data_tests_test_glob_selector_LDADD    =       \
+        $(TEST_LDADD)					\
+        $(PREOPEN_SYSLOGFORMAT)                         \
+        -dlpreopen $(top_builddir)/modules/add-contextual-data/libadd-contextual-data.la
+
 
 modules_add_contextual_data_tests_test_filter_selector_CFLAGS   =       \
         $(TEST_CFLAGS) -I$(top_srcdir)/modules/add-contextual-data
