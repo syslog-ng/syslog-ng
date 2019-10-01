@@ -1,3 +1,9 @@
+syslog-ng (3.24.1-1) unstable; urgency=medium
+
+  * Upstream upgrade to 3.24.1
+
+ -- Laszlo Budai <laszlo.budai@balabit.com>  Tue, 01 Oct 2019 12:16:27 +0200
+
 syslog-ng (3.23.1-1) unstable; urgency=medium
 
   * Upstream upgrade to 3.23.1
