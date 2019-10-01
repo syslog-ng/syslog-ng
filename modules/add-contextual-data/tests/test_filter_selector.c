@@ -160,4 +160,3 @@ Test(add_contextual_data_filter_selector, test_invalid_filter_config)
   AddContextualDataSelector *selector = _create_filter_selector(cfg_content, strlen(cfg_content), NULL);
   cr_assert_null(selector, "Filter selector cannot be initialized.");
 }
-
