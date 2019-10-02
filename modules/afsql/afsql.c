@@ -996,13 +996,16 @@ static gboolean
 _update_legacy_persist_name_if_exists(AFSqlDestDriver *self)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super.super);
+  const gchar *current_persist_name = afsql_dd_format_persist_name(&self->super.super.super.super);
   const gchar *legacy_persist_name = _afsql_dd_format_legacy_persist_name(self);
+
+  if (persist_state_entry_exists(cfg->state, current_persist_name))
+    return TRUE;
 
   if (!persist_state_entry_exists(cfg->state, legacy_persist_name))
     return TRUE;
 
-  const gchar *persist_name = afsql_dd_format_persist_name(&self->super.super.super.super);
-  return persist_state_move_entry(cfg->state, legacy_persist_name, persist_name);
+  return persist_state_move_entry(cfg->state, legacy_persist_name, current_persist_name);
 }
 
 static gboolean

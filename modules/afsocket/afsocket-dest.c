@@ -237,13 +237,16 @@ static gboolean
 _update_legacy_connection_persist_name(AFSocketDestDriver *self)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
+  const gchar *current_persist_name = afsocket_dd_format_connections_name(self);
   const gchar *legacy_persist_name = afsocket_dd_format_legacy_connection_name(self);
+
+  if (persist_state_entry_exists(cfg->state, current_persist_name))
+    return TRUE;
 
   if (!persist_state_entry_exists(cfg->state, legacy_persist_name))
     return TRUE;
 
-  const gchar *persist_name = afsocket_dd_format_connections_name(self);
-  return persist_state_move_entry(cfg->state, legacy_persist_name, persist_name);
+  return persist_state_move_entry(cfg->state, legacy_persist_name, current_persist_name);
 }
 
 static LogTransport *
