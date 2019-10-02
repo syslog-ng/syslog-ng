@@ -61,6 +61,12 @@ log_proto_buffered_server_put_state(LogProtoBufferedServer *self)
     persist_state_unmap_entry(self->persist_state, self->persist_handle);
 }
 
+static inline gboolean
+_log_proto_buffered_server_fallback_non_persistent(LogProtoBufferedServer *self)
+{
+  return self->persist_state == NULL;
+}
+
 static gboolean
 log_proto_buffered_server_convert_from_raw(LogProtoBufferedServer *self, const guchar *raw_buffer, gsize raw_buffer_len)
 {
@@ -753,6 +759,12 @@ _buffered_server_update_pos(LogProtoServer *s)
 }
 
 static void
+_buffered_server_bookmark_save_non_persistent(Bookmark *bookmark)
+{
+  msg_trace("Last message got confirmed, but we are in non persistent mode");
+}
+
+static void
 _buffered_server_bookmark_save(Bookmark *bookmark)
 {
   BufferedServerBookmarkData *bookmark_data = (BufferedServerBookmarkData *)(&bookmark->container);
@@ -773,6 +785,12 @@ _buffered_server_bookmark_save(Bookmark *bookmark)
 static void
 _buffered_server_bookmark_fill(LogProtoBufferedServer *self, Bookmark *bookmark)
 {
+  if (G_UNLIKELY(_log_proto_buffered_server_fallback_non_persistent(self)))
+    {
+      bookmark->save = _buffered_server_bookmark_save_non_persistent;
+      return;
+    }
+
   LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(self);
   BufferedServerBookmarkData *data = (BufferedServerBookmarkData *)(&bookmark->container);
 
