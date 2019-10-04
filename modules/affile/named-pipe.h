@@ -28,6 +28,8 @@
 #include "cfg.h"
 #include "file-opener.h"
 
+void pipe_sd_set_create_dirs(LogDriver *s, gboolean create_dirs);
+
 FileOpener *file_opener_for_named_pipes_new(void);
 LogDriver *pipe_sd_new(gchar *filename, GlobalConfig *cfg);
 LogDriver *pipe_dd_new(gchar *filename, GlobalConfig *cfg);

@@ -229,6 +229,7 @@ source_afpipe_options
 source_afpipe_option
 	: KW_OPTIONAL '(' yesno ')'			{ last_driver->optional = $3; }
 	| KW_PAD_SIZE '(' nonnegative_integer ')'	{ last_log_proto_options->pad_size = $3; }
+	| KW_CREATE_DIRS '(' yesno ')'			{ pipe_sd_set_create_dirs(last_driver, $3); }
 	| multi_line_option
 	| file_perm_option
 	| source_reader_option
