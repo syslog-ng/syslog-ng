@@ -25,8 +25,9 @@
 #define POLL_MULTILINE_FILE_CHANGES_H
 
 #include "poll-file-changes.h"
+#include "file-reader.h"
 
 PollEvents *poll_multiline_file_changes_new(gint fd, const gchar *follow_filename, gint follow_freq,
-                                            gint multi_line_timeout, LogPipe *control);
+                                            gint multi_line_timeout, FileReader *reader);
 
 #endif

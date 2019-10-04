@@ -34,6 +34,7 @@
 typedef struct PollMultilineFileChanges
 {
   PollFileChanges super;
+  FileReader *file_reader;
   gint timeout;
 
   gboolean timed_out;
@@ -44,7 +45,10 @@ typedef struct PollMultilineFileChanges
 static void
 _flush_partial_message(PollMultilineFileChanges *self)
 {
-  ;
+  file_reader_cue_buffer_flush(self->file_reader);
+
+  /* invoke fetch */
+  poll_events_invoke_callback(&self->super.super);
 }
 
 static void
@@ -123,16 +127,17 @@ poll_multiline_file_changes_timeout_expired(gpointer s)
 
 PollEvents *
 poll_multiline_file_changes_new(gint fd, const gchar *follow_filename, gint follow_freq,
-                                gint multi_line_timeout, LogPipe *control)
+                                gint multi_line_timeout, FileReader *reader)
 {
   PollMultilineFileChanges *self = g_new0(PollMultilineFileChanges, 1);
-  poll_file_changes_init_instance(&self->super, fd, follow_filename, follow_freq, control);
+  poll_file_changes_init_instance(&self->super, fd, follow_filename, follow_freq, &reader->super);
 
   self->timeout = multi_line_timeout;
 
   if (!self->timeout)
     return &self->super.super;
 
+  self->file_reader = reader;
   self->super.on_read = poll_multiline_file_changes_on_read;
   self->super.on_eof = poll_multiline_file_changes_on_eof;
   self->super.on_file_moved = poll_multiline_file_changes_on_file_moved;

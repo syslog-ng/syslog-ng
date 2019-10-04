@@ -102,7 +102,7 @@ _construct_poll_events(FileReader *self, gint fd)
         return poll_file_changes_new(fd, self->filename->str, self->options->follow_freq, &self->super);
       else
         return poll_multiline_file_changes_new(fd, self->filename->str, self->options->follow_freq,
-                                               self->options->multi_line_timeout, &self->super);
+                                               self->options->multi_line_timeout, self);
     }
   else if (fd >= 0 && _is_fd_pollable(fd))
     return poll_fd_events_new(fd);
