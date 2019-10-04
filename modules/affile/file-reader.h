@@ -66,6 +66,7 @@ void file_reader_notify_method(LogPipe *s, gint notify_code, gpointer user_data)
 
 void file_reader_remove_persist_state(FileReader *self);
 void file_reader_stop_follow_file(FileReader *self);
+void file_reader_cue_buffer_flush(FileReader *self);
 
 void file_reader_options_set_follow_freq(FileReaderOptions *options, gint follow_freq);
 void file_reader_options_set_multi_line_timeout(FileReaderOptions *options, gint multi_line_timeout);

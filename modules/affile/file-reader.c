@@ -29,6 +29,7 @@
 #include "transport/transport-file.h"
 #include "transport/transport-pipe.h"
 #include "transport-prockmsg.h"
+#include "logproto/logproto-buffered-server.h"
 #include "poll-fd-events.h"
 #include "poll-file-changes.h"
 #include "poll-multiline-file-changes.h"
@@ -332,6 +333,13 @@ file_reader_stop_follow_file(FileReader *self)
 {
   log_reader_disable_bookmark_saving(self->reader);
   log_reader_close_proto(self->reader);
+}
+
+void
+file_reader_cue_buffer_flush(FileReader *self)
+{
+  LogProtoBufferedServer *proto = (LogProtoBufferedServer *) self->reader->proto;
+  log_proto_buffered_server_cue_flush(proto);
 }
 
 void
