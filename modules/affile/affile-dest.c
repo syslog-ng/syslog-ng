@@ -492,8 +492,6 @@ affile_dd_init(LogPipe *s)
   if (!log_dest_driver_init_method(s))
     return FALSE;
 
-  if (self->file_opener_options.create_dirs == -1)
-    self->file_opener_options.create_dirs = cfg->create_dirs;
   if (self->time_reap == -1)
     self->time_reap = cfg->time_reap;
 
