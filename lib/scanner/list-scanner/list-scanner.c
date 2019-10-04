@@ -170,6 +170,14 @@ list_scanner_scan_next(ListScanner *self)
   return FALSE;
 }
 
+void
+list_scanner_skip_n(ListScanner *self, gint n)
+{
+  gint count = 0;
+  while (++count <= n && list_scanner_scan_next(self))
+    ;
+}
+
 const gchar *
 list_scanner_get_current_value(ListScanner *self)
 {
