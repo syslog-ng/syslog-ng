@@ -205,6 +205,26 @@ log_proto_file_writer_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond, g
   return self->buf_count > 0 || self->partial;
 }
 
+static LogProtoStatus
+log_proto_file_writer_get_size(LogProtoClient *s, goffset *current_size)
+{
+  LogProtoFileWriter *self = (LogProtoFileWriter *)s;
+  LogProtoStatus result;
+  goffset rc;
+
+  rc = lseek(self->fd, 0, SEEK_CUR);
+  if (rc < 0)
+    {
+      msg_error("I/O error occurred while seeking",
+                      evt_tag_int("fd", self->super.transport->fd),
+                      evt_tag_error(EVT_TAG_OSERROR));
+            return LPS_ERROR;
+    }
+  *current_size = rc;
+  return LPS_SUCCESS;
+}
+
+
 LogProtoClient *
 log_proto_file_writer_new(LogTransport *transport, const LogProtoClientOptions *options, gint flush_lines, gint fsync_)
 {
@@ -228,5 +248,6 @@ log_proto_file_writer_new(LogTransport *transport, const LogProtoClientOptions *
   self->super.prepare = log_proto_file_writer_prepare;
   self->super.post = log_proto_file_writer_post;
   self->super.flush = log_proto_file_writer_flush;
+  self->super.get_size = log_proto_file_writer_get_size;
   return &self->super;
 }

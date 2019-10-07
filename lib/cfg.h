@@ -93,6 +93,7 @@ struct _GlobalConfig
 
   gint log_fifo_size;
   gint log_msg_size;
+  goffset file_size_limit;
   gboolean trim_large_messages;
 
   gboolean create_dirs;

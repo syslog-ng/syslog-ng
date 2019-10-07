@@ -102,6 +102,13 @@ struct _AFFileDestWriter
   gboolean reopen_pending, queue_pending;
 };
 
+void
+affile_dd_set_file_size_limit(LogDriver *s, goffset file_size_limit)
+{
+  AFFileDestDriver *self = (AFFileDestDriver *) s;
+  self->writer_options.size_limit = file_size_limit;
+}
+
 static gchar *
 affile_dw_format_persist_name(AFFileDestWriter *self)
 {
@@ -151,12 +158,11 @@ affile_dw_reap(gpointer s)
 }
 
 static gboolean
-affile_dw_reopen(AFFileDestWriter *self)
+affile_dw_reopen_file_opener(AFFileDestWriter *self, LogProtoClient **proto)
 {
   int fd;
   struct stat st;
   GlobalConfig *cfg;
-  LogProtoClient *proto = NULL;
 
   cfg = log_pipe_get_config(&self->super);
   if (cfg)
@@ -180,8 +186,7 @@ affile_dw_reopen(AFFileDestWriter *self)
   if (file_opener_open_fd(self->owner->file_opener, self->filename, AFFILE_DIR_WRITE, &fd))
     {
       LogTransport *transport = file_opener_construct_transport(self->owner->file_opener, fd);
-
-      proto = file_opener_construct_dst_proto(self->owner->file_opener, transport,
+      *proto = file_opener_construct_dst_proto(self->owner->file_opener, transport,
                                               &self->owner->writer_options.proto_options.super);
 
       if (self->owner->time_reap > 0 && !iv_timer_registered(&self->reap_timer))
@@ -194,9 +199,57 @@ affile_dw_reopen(AFFileDestWriter *self)
                 evt_tag_error(EVT_TAG_OSERROR));
     }
 
+  return TRUE;
+}
+
+static gboolean
+affile_dw_reopen(AFFileDestWriter *self)
+{
+  LogProtoClient *proto = NULL;
+  affile_dw_reopen_file_opener(self, &proto);
   log_writer_reopen(self->writer, proto);
 
   return TRUE;
+}
+
+static gboolean
+affile_dw_rotate(AFFileDestWriter *self)
+{
+  LogProtoClient *proto = NULL;
+  gsize extra_length = 32;
+  GTimeVal time;
+  GString *new_name, *old_name;
+  gboolean res;
+
+  g_get_current_time(&time);
+  new_name = g_string_sized_new(g_strv_length(&self->filename) + extra_length);
+  if (new_name == NULL)
+    {
+      msg_error("Error creating the new filename ",
+              evt_tag_str("filename", self->filename),
+              evt_tag_errno(EVT_TAG_OSERROR, errno),
+              NULL);
+    }
+  g_string_printf(new_name, "%s-%lu.%06lu-%010lu",
+          self->filename,
+          (gulong)time.tv_sec,
+          (gulong)time.tv_usec,
+          (gulong)g_random_int());
+
+  old_name = g_string_new(self->filename);
+
+  if (rename(self->filename, new_name->str) != 0)
+    {
+      msg_error("Error renaming file",
+              evt_tag_str("filename", self->filename),
+              evt_tag_errno(EVT_TAG_OSERROR, errno),
+              NULL);
+    }
+
+  g_string_free(old_name, TRUE);
+  g_string_free(new_name, TRUE);
+  res = affile_dw_reopen_file_opener(self, &proto);
+  return res;
 }
 
 static gboolean
@@ -329,6 +382,9 @@ affile_dw_notify(LogPipe *s, gint notify_code, gpointer user_data)
     {
     case NC_REOPEN_REQUIRED:
       affile_dw_reopen((AFFileDestWriter *)s);
+      break;
+    case NC_ROTATE_REQUIRED:
+      affile_dw_rotate((AFFileDestWriter *)s);
       break;
     default:
       break;
