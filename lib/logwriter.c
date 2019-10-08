@@ -1131,6 +1131,7 @@ static gboolean
 log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_options, gboolean *write_error)
 {
   gboolean consumed = FALSE;
+  goffset current_size = -1;
 
   *write_error = FALSE;
 
@@ -1178,6 +1179,20 @@ log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_
     {
       msg_debug("Error posting log message as template() output resulted in an empty string, skipping message");
       consumed = TRUE;
+    }
+
+  if (self)
+    {
+      LogProtoStatus status = log_proto_client_get_size(self->proto, &current_size);
+      if (status == LPS_SUCCESS)
+        {
+          if (self->options && self->options->size_limit > 0 && self->options->size_limit < current_size)
+            {
+              // Maybe here, use a new function created function log_proto_client_end();
+              close(log_proto_client_get_fd(self->proto));
+              log_pipe_notify(self->control, NC_ROTATE_REQUIRED, self);
+            }
+        }
     }
 
   if (consumed)
@@ -1680,6 +1695,7 @@ log_writer_options_defaults(LogWriterOptions *options)
   options->padding = 0;
   options->mark_mode = MM_GLOBAL;
   options->mark_freq = -1;
+  options->size_limit = -1;
   host_resolve_options_defaults(&options->host_resolve_options);
 }
 
@@ -1743,6 +1759,8 @@ log_writer_options_init(LogWriterOptions *options, GlobalConfig *cfg, guint32 op
     options->suppress = cfg->suppress;
   if (options->time_reopen == -1)
     options->time_reopen = cfg->time_reopen;
+  if (options->size_limit == -1)
+    options->size_limit = cfg->file_size_limit;
   options->file_template = log_template_ref(cfg->file_template);
   options->proto_template = log_template_ref(cfg->proto_template);
   if (cfg->threaded)

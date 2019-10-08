@@ -39,6 +39,7 @@
 #define NC_FILE_EOF    5
 #define NC_REOPEN_REQUIRED 6
 #define NC_FILE_DELETED 7
+#define NC_ROTATE_REQUIRED 8
 
 /* indicates that the LogPipe was initialized */
 #define PIF_INITIALIZED       0x0001

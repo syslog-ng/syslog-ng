@@ -92,6 +92,7 @@ affile_grammar_set_wildcard_file_source_driver(WildcardSourceDriver *sd)
 %token KW_MULTI_LINE_PREFIX
 %token KW_MULTI_LINE_GARBAGE
 %token KW_TIME_REAP
+%token KW_SIZE_LIMIT
 
 %token KW_WILDCARD_FILE
 %token KW_BASE_DIR
@@ -289,6 +290,7 @@ dest_affile_option
 	| KW_OVERWRITE_IF_OLDER '(' nonnegative_integer ')'	{ affile_dd_set_overwrite_if_older(last_driver, $3); }
 	| KW_FSYNC '(' yesno ')'		{ affile_dd_set_fsync(last_driver, $3); }
 	| KW_TIME_REAP '(' nonnegative_integer ')'		{ affile_dd_set_time_reap(last_driver, $3); }
+	| KW_SIZE_LIMIT '(' nonnegative_integer ')'	{ affile_dd_set_file_size_limit(last_driver, $3); }
 	;
 
 dest_afpipe_params

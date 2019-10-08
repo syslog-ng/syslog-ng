@@ -59,6 +59,7 @@ void affile_dd_set_fsync(LogDriver *s, gboolean enable);
 void affile_dd_set_overwrite_if_older(LogDriver *s, gint overwrite_if_older);
 void affile_dd_set_local_time_zone(LogDriver *s, const gchar *local_time_zone);
 void affile_dd_set_time_reap(LogDriver *s, gint time_reap);
+void affile_dd_set_file_size_limit(LogDriver *s, goffset file_size_limit);
 void affile_dd_global_init(void);
 
 #endif
