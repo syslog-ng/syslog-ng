@@ -1,4 +1,4 @@
-@version: 3.23
+@version: 3.24
 @include "scl.conf"
 
 source s_src { unix-dgram("/tmp/input"); };

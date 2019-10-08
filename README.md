@@ -15,7 +15,7 @@ applications or forwarded by systemd) and writes everything to a single
 file:
 
 ```
-@version: 3.23
+@version: 3.24
 @include "scl.conf"
 
 log {
@@ -27,7 +27,7 @@ log {
 This one additionally processes logs from the network (TCP/514 by default):
 
 ```
-@version: 3.23
+@version: 3.24
 @include "scl.conf"
 
 log {
@@ -41,7 +41,7 @@ log {
 This config is designed for structured/application logging, using local submission via JSON, and outputting in key=value format:
 
 ```
-@version: 3.23
+@version: 3.24
 @include "scl.conf"
 
 log {
@@ -184,7 +184,7 @@ Binaries are also available as a Docker image. To find out more, check out the b
 
 ## Documentation
 
-The documentation of the latest released version of syslog-ng Open Source Edition is available [here](https://www.syslog-ng.com/technical-documents/doc/syslog-ng-open-source-edition/3.23/administration-guide). For earlier versions, see the syslog-ng [Documentation Page](https://www.syslog-ng.com/technical-documents).
+The documentation of the latest released version of syslog-ng Open Source Edition is available [here](https://www.syslog-ng.com/technical-documents/doc/syslog-ng-open-source-edition/3.24/administration-guide). For earlier versions, see the syslog-ng [Documentation Page](https://www.syslog-ng.com/technical-documents).
 
 ## Contributing
 
