@@ -57,9 +57,9 @@ cfg_parser_mock_new(void)
   self->yylloc->first_line = 1;
   self->yylloc->last_column = 1;
   self->yylloc->last_line = 1;
+  self->lexer = cfg_lexer_new_buffer(configuration, "", 0);
   self->yylloc->level = &self->lexer->include_stack[0];
 
-  self->lexer = cfg_lexer_new_buffer(configuration, "", 0);
   return self;
 }
 
