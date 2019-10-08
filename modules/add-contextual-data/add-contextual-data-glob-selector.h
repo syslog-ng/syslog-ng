@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 Balabit
+ * Copyright (c) 2019 Balazs Scheidler <bazsi77@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,11 +20,11 @@
  *
  */
 
-#ifndef ADD_CONTEXTUAL_DATA_FILTER_SELECTOR_H_INCLUDED
-#define ADD_CONTEXTUAL_DATA_FILTER_SELECTOR_H_INCLUDED
+#ifndef ADD_CONTEXTUAL_DATA_GLOB_SELECTOR_H_INCLUDED
+#define ADD_CONTEXTUAL_DATA_GLOB_SELECTOR_H_INCLUDED
 
 #include "add-contextual-data-selector.h"
 
-AddContextualDataSelector *add_contextual_data_filter_selector_new(GlobalConfig *cfg, const gchar *filters_path);
+AddContextualDataSelector *add_contextual_data_glob_selector_new(LogTemplate *glob_template);
 
 #endif

@@ -181,7 +181,7 @@ _filter_store_order_by_selectors(FilterStore *self, GList *ordered_selectors)
 }
 
 static gboolean
-add_contextual_data_selector_filter_init(AddContextualDataSelector *s, GList *ordered_selectors)
+_init(AddContextualDataSelector *s, GList *ordered_selectors)
 {
   AddContextualDataFilterSelector *self = (AddContextualDataFilterSelector *)s;
 
@@ -197,44 +197,42 @@ add_contextual_data_selector_filter_init(AddContextualDataSelector *s, GList *or
 }
 
 static gchar *
-add_contextual_data_selector_filter_resolve(AddContextualDataSelector *s, LogMessage *msg)
+_resolve(AddContextualDataSelector *s, LogMessage *msg)
 {
   AddContextualDataFilterSelector *self = (AddContextualDataFilterSelector *)s;
   return g_strdup(_filter_store_get_first_matching_name(self->filter_store, msg));
 }
 
 static void
-add_contextual_data_selector_filter_free(AddContextualDataSelector *s)
+_free(AddContextualDataSelector *s)
 {
   AddContextualDataFilterSelector *self = (AddContextualDataFilterSelector *)s;
   if (self->filters_cfg)
     cfg_free(self->filters_cfg);
   _filter_store_free(self->filter_store);
   g_free(self->filters_path);
-  g_free(self);
 }
 
-static AddContextualDataSelector *add_contextual_data_selector_filter_clone(AddContextualDataSelector *s,
-    GlobalConfig *cfg);
+static AddContextualDataSelector *_clone(AddContextualDataSelector *s,
+                                         GlobalConfig *cfg);
 
-static AddContextualDataFilterSelector *
-_create_empty_add_contextual_data_filter_selector(void)
+static void
+add_contextual_data_filter_selector_init_instance(AddContextualDataFilterSelector *self)
 {
-  AddContextualDataFilterSelector *self = g_new0(AddContextualDataFilterSelector, 1);
   self->super.ordering_required = TRUE;
-  self->super.resolve = add_contextual_data_selector_filter_resolve;
-  self->super.free = add_contextual_data_selector_filter_free;
-  self->super.init = add_contextual_data_selector_filter_init;
-  self->super.clone = add_contextual_data_selector_filter_clone;
-  return self;
+  self->super.resolve = _resolve;
+  self->super.free = _free;
+  self->super.init = _init;
+  self->super.clone = _clone;
 }
 
 static AddContextualDataSelector *
-add_contextual_data_selector_filter_clone(AddContextualDataSelector *s, GlobalConfig *cfg)
+_clone(AddContextualDataSelector *s, GlobalConfig *cfg)
 {
   AddContextualDataFilterSelector *self = (AddContextualDataFilterSelector *)s;
-  AddContextualDataFilterSelector *cloned = _create_empty_add_contextual_data_filter_selector();
+  AddContextualDataFilterSelector *cloned = g_new0(AddContextualDataFilterSelector, 1);
 
+  add_contextual_data_filter_selector_init_instance(cloned);
   cloned->filters_path = g_strdup(self->filters_path);
   cloned->filters_cfg = NULL;
   cloned->master_cfg = self->master_cfg;
@@ -244,10 +242,11 @@ add_contextual_data_selector_filter_clone(AddContextualDataSelector *s, GlobalCo
 }
 
 AddContextualDataSelector *
-add_contextual_data_selector_filter_new(GlobalConfig *cfg, const gchar *filters_path)
+add_contextual_data_filter_selector_new(GlobalConfig *cfg, const gchar *filters_path)
 {
-  AddContextualDataFilterSelector *self = _create_empty_add_contextual_data_filter_selector();
+  AddContextualDataFilterSelector *self = g_new0(AddContextualDataFilterSelector, 1);
 
+  add_contextual_data_filter_selector_init_instance(self);
   self->filters_path = g_strdup(filters_path);
   self->master_cfg = cfg;
   self->filters_cfg = NULL;

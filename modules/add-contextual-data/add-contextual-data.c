@@ -28,8 +28,6 @@
 #include "cfg.h"
 #include "contextual-data-record-scanner.h"
 #include "add-contextual-data-selector.h"
-#include "add-contextual-data-template-selector.h"
-#include "add-contextual-data-filter-selector.h"
 #include "template/templates.h"
 #include "context-info-db.h"
 #include "pathutils.h"
@@ -59,14 +57,6 @@ add_contextual_data_set_filename(LogParser *p, const gchar *filename)
 }
 
 void
-add_contextual_data_set_database_selector_template(LogParser *p, const gchar *selector)
-{
-  AddContextualData *self = (AddContextualData *) p;
-  add_contextual_data_selector_free(self->selector);
-  self->selector = add_contextual_data_template_selector_new(log_pipe_get_config(&p->super), selector);
-}
-
-void
 add_contextual_data_set_prefix(LogParser *p, const gchar *prefix)
 {
   AddContextualData *self = (AddContextualData *) p;
@@ -76,7 +66,14 @@ add_contextual_data_set_prefix(LogParser *p, const gchar *prefix)
 }
 
 void
-add_contextual_data_set_database_default_selector(LogParser *p, const gchar *default_selector)
+add_contextual_data_set_ignore_case(LogParser *p, gboolean ignore)
+{
+  AddContextualData *self = (AddContextualData *)p;
+  self->ignore_case = ignore;
+}
+
+void
+add_contextual_data_set_default_selector(LogParser *p, const gchar *default_selector)
 {
   AddContextualData *self = (AddContextualData *) p;
 
@@ -89,22 +86,8 @@ add_contextual_data_set_selector(LogParser *p, AddContextualDataSelector *select
 {
   AddContextualData *self = (AddContextualData *) p;
 
-  self->selector = selector;
-}
-
-void
-add_contextual_data_set_selector_filter(LogParser *p, const gchar *filename)
-{
-  AddContextualData *self = (AddContextualData *) p;
   add_contextual_data_selector_free(self->selector);
-  self->selector = add_contextual_data_selector_filter_new(log_pipe_get_config(&p->super), filename);
-}
-
-void
-add_contextual_data_set_ignore_case(LogParser *p, gboolean ignore)
-{
-  AddContextualData *self = (AddContextualData *)p;
-  self->ignore_case = ignore;
+  self->selector = selector;
 }
 
 static gboolean
@@ -136,8 +119,8 @@ _process(LogParser *s, LogMessage **pmsg,
   if (!context_info_db_contains(self->context_info_db, selector) && _is_default_selector_set(self))
     selector = self->default_selector;
 
-  msg_trace("add-contextual-data(): message processing",
-            evt_tag_str("input", input),
+  msg_trace("add-contextual-data(): message lookup finished",
+            evt_tag_str("message", input),
             evt_tag_str("resolved_selector", resolved_selector),
             evt_tag_str("selector", selector),
             evt_tag_printf("msg", "%p", *pmsg));
@@ -171,8 +154,8 @@ _clone(LogPipe *s)
   _replace_context_info_db(&cloned->context_info_db, self->context_info_db);
   add_contextual_data_set_prefix(&cloned->super, self->prefix);
   add_contextual_data_set_filename(&cloned->super, self->filename);
-  add_contextual_data_set_database_default_selector(&cloned->super,
-                                                    self->default_selector);
+  add_contextual_data_set_default_selector(&cloned->super,
+                                           self->default_selector);
   add_contextual_data_set_ignore_case(&cloned->super, self->ignore_case);
   cloned->selector = add_contextual_data_selector_clone(self->selector, s->cfg);
 

@@ -30,7 +30,9 @@
 
 #include "add-contextual-data.h"
 #include "cfg-grammar.h"
-#include "add-contextual-data-selector.h"
+#include "add-contextual-data-template-selector.h"
+#include "add-contextual-data-filter-selector.h"
+#include "add-contextual-data-glob-selector.h"
 #include "syslog-names.h"
 #include "messages.h"
 }
@@ -55,6 +57,7 @@
 %token KW_PREFIX
 %token KW_FILTERS
 %token KW_IGNORE_CASE
+%token KW_GLOB
 
 %type	<ptr> parser_expr_add_contextual_data
 
@@ -90,7 +93,7 @@ parser_add_contextual_data_opt
         | KW_SELECTOR '(' parser_add_contextual_data_selector_opt ')'
         | KW_DEFAULT_SELECTOR '(' string ')'
         {
-            add_contextual_data_set_database_default_selector(last_parser, $3);
+            add_contextual_data_set_default_selector(last_parser, $3);
             free($3);
         } | KW_PREFIX '(' string ')'
         {
@@ -104,13 +107,16 @@ parser_add_contextual_data_opt
 parser_add_contextual_data_selector_opt
         : KW_FILTERS '(' string ')'
           {
-            add_contextual_data_set_selector_filter(last_parser, $3);
+	    add_contextual_data_set_selector(last_parser, add_contextual_data_filter_selector_new(configuration, $3));
             free($3);
           }
-        | LL_STRING
+        | KW_GLOB '(' template_content ')'
         {
-            add_contextual_data_set_database_selector_template(last_parser, $1);
-            free($1);
+            add_contextual_data_set_selector(last_parser, add_contextual_data_glob_selector_new($3));
+        }
+        | template_content
+        {
+            add_contextual_data_set_selector(last_parser, add_contextual_data_template_selector_new($1));
         };
 
 /* INCLUDE_RULES */

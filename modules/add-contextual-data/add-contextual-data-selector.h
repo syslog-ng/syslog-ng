@@ -55,6 +55,7 @@ add_contextual_data_selector_free(AddContextualDataSelector *self)
     {
       self->free(self);
     }
+  g_free(self);
 }
 
 static inline gboolean

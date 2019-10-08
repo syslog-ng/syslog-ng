@@ -43,6 +43,18 @@ Test(string_list,test_string_array_to_list_converts_to_an_equivalent_glist)
   string_list_free(l);
 }
 
+Test(string_list,test_string_varargs_to_list_converts_to_an_equivalent_glist)
+{
+  GList *l;
+
+  l = string_vargs_to_list("foo", "bar", "baz", NULL);
+  cr_assert_eq(g_list_length(l), 3, "converted list is not the expected length");
+  cr_assert_str_eq(l->data, "foo", "first element is expected to be foo");
+  cr_assert_str_eq(l->next->data, "bar", "second element is expected to be bar");
+  cr_assert_str_eq(l->next->next->data, "baz", "third element is expected to be baz");
+  string_list_free(l);
+}
+
 Test(string_list,test_clone_string_array_duplicates_elements_while_leaving_token_values_intact)
 {
   const gchar *arr[] =
