@@ -1182,18 +1182,18 @@ log_writer_write_message(LogWriter *self, LogMessage *msg, LogPathOptions *path_
     }
 
   if (self)
-      {
-        LogProtoStatus status = log_proto_client_get_size(self->proto, &current_size);
-        if (status == LPS_SUCCESS)
-          {
-            if (self->options && self->options->size_limit > 0 && self->options->size_limit < current_size)
-              {
-                // Maybe here, use a new function created function log_proto_client_end();
-                close(log_proto_client_get_fd(self->proto));
-                log_pipe_notify(self->control, NC_ROTATE_REQUIRED, self);
-              }
-          }
-      }
+    {
+      LogProtoStatus status = log_proto_client_get_size(self->proto, &current_size);
+      if (status == LPS_SUCCESS)
+        {
+          if (self->options && self->options->size_limit > 0 && self->options->size_limit < current_size)
+            {
+              // Maybe here, use a new function created function log_proto_client_end();
+              close(log_proto_client_get_fd(self->proto));
+              log_pipe_notify(self->control, NC_ROTATE_REQUIRED, self);
+            }
+        }
+    }
 
   if (consumed)
     {
