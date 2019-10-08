@@ -209,7 +209,6 @@ static LogProtoStatus
 log_proto_file_writer_get_size(LogProtoClient *s, goffset *current_size)
 {
   LogProtoFileWriter *self = (LogProtoFileWriter *)s;
-  LogProtoStatus result;
   goffset rc;
 
   rc = lseek(self->fd, 0, SEEK_CUR);
