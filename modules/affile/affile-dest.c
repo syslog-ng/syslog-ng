@@ -187,7 +187,7 @@ affile_dw_reopen_file_opener(AFFileDestWriter *self, LogProtoClient **proto)
     {
       LogTransport *transport = file_opener_construct_transport(self->owner->file_opener, fd);
       *proto = file_opener_construct_dst_proto(self->owner->file_opener, transport,
-                                             &self->owner->writer_options.proto_options.super);
+                                               &self->owner->writer_options.proto_options.super);
 
       if (self->owner->time_reap > 0 && !iv_timer_registered(&self->reap_timer))
         main_loop_call((void *(*)(void *)) affile_dw_arm_reaper, self, TRUE);
@@ -231,10 +231,10 @@ affile_dw_rotate(AFFileDestWriter *self)
                 NULL);
     }
   g_string_printf(new_name, "%s-%lu.%06lu-%010lu",
-          self->filename,
-          (gulong)time.tv_sec,
-          (gulong)time.tv_usec,
-          (gulong)g_random_int());
+                  self->filename,
+                  (gulong)time.tv_sec,
+                  (gulong)time.tv_usec,
+                  (gulong)g_random_int());
 
   old_name = g_string_new(self->filename);
 
