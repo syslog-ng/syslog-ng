@@ -215,9 +215,9 @@ log_proto_file_writer_get_size(LogProtoClient *s, goffset *current_size)
   if (rc < 0)
     {
       msg_error("I/O error occurred while seeking",
-                      evt_tag_int("fd", self->super.transport->fd),
-                      evt_tag_error(EVT_TAG_OSERROR));
-            return LPS_ERROR;
+                evt_tag_int("fd", self->super.transport->fd),
+                evt_tag_error(EVT_TAG_OSERROR));
+      return LPS_ERROR;
     }
   *current_size = rc;
   return LPS_SUCCESS;

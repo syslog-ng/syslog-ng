@@ -187,7 +187,7 @@ affile_dw_reopen_file_opener(AFFileDestWriter *self, LogProtoClient **proto)
     {
       LogTransport *transport = file_opener_construct_transport(self->owner->file_opener, fd);
       *proto = file_opener_construct_dst_proto(self->owner->file_opener, transport,
-                                              &self->owner->writer_options.proto_options.super);
+                                             &self->owner->writer_options.proto_options.super);
 
       if (self->owner->time_reap > 0 && !iv_timer_registered(&self->reap_timer))
         main_loop_call((void *(*)(void *)) affile_dw_arm_reaper, self, TRUE);
@@ -226,9 +226,9 @@ affile_dw_rotate(AFFileDestWriter *self)
   if (new_name == NULL)
     {
       msg_error("Error creating the new filename ",
-              evt_tag_str("filename", self->filename),
-              evt_tag_errno(EVT_TAG_OSERROR, errno),
-              NULL);
+                evt_tag_str("filename", self->filename),
+                evt_tag_errno(EVT_TAG_OSERROR, errno),
+                NULL);
     }
   g_string_printf(new_name, "%s-%lu.%06lu-%010lu",
           self->filename,
@@ -241,9 +241,9 @@ affile_dw_rotate(AFFileDestWriter *self)
   if (rename(self->filename, new_name->str) != 0)
     {
       msg_error("Error renaming file",
-              evt_tag_str("filename", self->filename),
-              evt_tag_errno(EVT_TAG_OSERROR, errno),
-              NULL);
+                evt_tag_str("filename", self->filename),
+                evt_tag_errno(EVT_TAG_OSERROR, errno),
+                NULL);
     }
 
   g_string_free(old_name, TRUE);
