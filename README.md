@@ -61,7 +61,7 @@ In which case the resulting message will be:
 ```
 name1=value1 name2=value2
 ```
-For a brief introduction to configuring the syslog-ng application, see the [quickstart guide](https://syslog-ng.com/documents/html/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/chapter-quickstart.html).
+For a brief introduction to configuring the syslog-ng application, see the [quickstart guide](https://support.oneidentity.com/technical-documents/syslog-ng-open-source-edition/administration-guide/the-syslog-ng-ose-quick-start-guide).
 
 
 ## Features
