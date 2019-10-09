@@ -181,6 +181,23 @@ matrix:
         - make --keep-going -j $(nproc) all install
         - ctest -j $(nproc) --output-on-failure
 
+    - env: B=cmake-arm
+      compiler: gcc
+      sudo: required
+      arch: arm64
+      before_script:
+      script:
+        - set -e
+        - mkdir build
+        - cd build
+        - cmake
+            -DCMAKE_C_FLAGS=-Werror
+            -DPYTHON_VERSION=2
+            -DCMAKE_INSTALL_PREFIX=$HOME/install/syslog-ng
+            ..
+        - make --keep-going -j $(nproc) all install
+        - ctest -j $(nproc) --output-on-failure
+
     - env: B=check
       os: osx
       osx_image: xcode9.3
