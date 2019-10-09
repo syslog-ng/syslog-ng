@@ -220,6 +220,13 @@ matrix:
       before_script:
       script:
         - set -e
+        - git clone https://github.com/Snaipe/Criterion.git
+        - cd Criterion
+        - git submodule update --init
+        - cmake .
+        - make all
+        - sudo make install
+        - cd ..
         - mkdir build
         - cd build
         - cmake
