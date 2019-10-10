@@ -658,7 +658,7 @@ _pattern_db_process_matching_rule(PatternDB *self, PDBProcessParams *process_par
 
   process_params->context = context;
 
-  synthetic_message_apply(&rule->msg, &context->super, msg);
+  synthetic_message_apply(&rule->msg, context ? &context->super : NULL, msg);
 
   _emit_message(self, process_params, FALSE, msg);
   _execute_rule_actions(self, process_params, RAT_MATCH);
