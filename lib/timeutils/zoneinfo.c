@@ -116,7 +116,7 @@ readcoded32(unsigned char **input, gint64 minv, gint64 maxv)
   *input += 4;
 
   for (i = 0, shift = 24; i < 4; ++i, shift -= 8)
-    val |= buf[i] << shift;
+    val |= (gint64)(buf[i]) << shift;
 
   if (val < minv || val > maxv)
     {
