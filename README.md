@@ -135,7 +135,7 @@ run `./autogen.sh` to generate it.
 Some of the functionality of syslog-ng is compiled only if the required
 development libraries are present. The configure script displays a
 summary of enabled features at the end of its run.
-For details, see the [syslog-ng compiling instructions](https://www.balabit.com/sites/default/files/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/compiling-syslog-ng.html).
+For details, see the [syslog-ng compiling instructions](https://support.oneidentity.com/technical-documents/syslog-ng-open-source-edition/administration-guide/installing-syslog-ng).
 
 
 ## Installation from binaries
