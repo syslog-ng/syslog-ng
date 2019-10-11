@@ -22,7 +22,7 @@ is to participate in the discussions about features, bugs and design.
 Some of these discussions started on the
 [mailing list][ar:mailing-list], some in the
 [issue tracker][ar:issue-tracker]. Bugs tagged
-[`help`][ar:issues:help] are generally good targets to contribute your
+[`good first issue`][ar:issues:good-first-issue] are generally good targets to contribute your
 feedback - but pretty much any open issue can be a good start!
 
 ### Reporting bugs
@@ -127,5 +127,5 @@ testing.
  [ar:gitter]: https://gitter.im/syslog-ng/syslog-ng
  [ar:mailing-list]: http://lists.balabit.com/mailman/listinfo/syslog-ng
  [ar:issue-tracker]: https://github.com/syslog-ng/syslog-ng/issues
- [ar:issues:help]: https://github.com/syslog-ng/syslog-ng/labels/help
+ [ar:issues:good-first-issue]: https://github.com/syslog-ng/syslog-ng/labels/good%20first%20issue
  [ar:travis]: https://travis-ci.org/syslog-ng/syslog-ng/
