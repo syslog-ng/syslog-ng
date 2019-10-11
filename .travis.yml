@@ -185,6 +185,36 @@ matrix:
       compiler: gcc
       sudo: required
       arch: arm64
+      addons:
+        apt:
+          packages:
+            - autoconf-archive
+            - bison
+            - docbook-xsl
+            - flex
+            - gradle
+            - libcap-dev
+            - libdbd-sqlite3
+            - libdbi0-dev
+            - libesmtp-dev
+            - libgeoip-dev
+            - libglib2.0-dev
+            - libhiredis-dev
+            - libivykis-dev
+            - librabbitmq-dev
+            - libmongoc-dev
+            - libjson-c-dev
+            - libnet1-dev
+            - libriemann-client-dev
+            - librdkafka-dev
+            - libwrap0-dev
+            - pkg-config
+            - sqlite3
+            - xsltproc
+            - libmaxminddb-dev
+            - libxml2-utils
+            - doxygen
+            - libsnmp-dev
       before_script:
       script:
         - set -e
