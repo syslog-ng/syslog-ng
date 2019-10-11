@@ -61,7 +61,7 @@ In which case the resulting message will be:
 ```
 name1=value1 name2=value2
 ```
-For a brief introduction to configuring the syslog-ng application, see the [quickstart guide](https://syslog-ng.com/documents/html/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/chapter-quickstart.html).
+For a brief introduction to configuring the syslog-ng application, see the [quickstart guide](https://support.oneidentity.com/technical-documents/syslog-ng-open-source-edition/administration-guide/the-syslog-ng-ose-quick-start-guide).
 
 
 ## Features
@@ -135,7 +135,7 @@ run `./autogen.sh` to generate it.
 Some of the functionality of syslog-ng is compiled only if the required
 development libraries are present. The configure script displays a
 summary of enabled features at the end of its run.
-For details, see the [syslog-ng compiling instructions](https://www.balabit.com/sites/default/files/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/compiling-syslog-ng.html).
+For details, see the [syslog-ng compiling instructions](https://support.oneidentity.com/technical-documents/syslog-ng-open-source-edition/administration-guide/installing-syslog-ng).
 
 
 ## Installation from binaries
