@@ -194,6 +194,7 @@ matrix:
             - flex
             - gradle
             - libcap-dev
+            - libcurl4-openssl-dev
             - libdbd-sqlite3
             - libdbi0-dev
             - libesmtp-dev
