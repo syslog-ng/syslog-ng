@@ -26,12 +26,6 @@ def generateStage(platform) {
             sh "cd ${platform}; dbld/rules package-${platform}"
             archiveArtifacts artifacts: "${platform}/dbld/build/${platform}/*"
         }
-        stage("${platform} - kira") {
-            echo "Platform: ${platform}; Step: kira"
-            // sh "cd ${platform}/syslog-ng; dbld/rules kira-detach-${platform}"
-            // sh "export KIRA_START_COMMAND='./zts.sh run -d 7 -p functions/source-drivers/file-source-driver/options/004-flags-kernel.zts -a 'local localhost' -L --variant product=ose --variant platform=${platform}_amd64 --install-version=@3.20'"
-            // sh "cd ${platform}/syslog-ng; dbld/rules kira-start-${platform}"
-        }
     }
 }
 
