@@ -48,7 +48,7 @@ pipeline {
             steps {
                 echo "Step: source init"
                 sh "rm -rf syslog-ng ; mkdir syslog-ng ; cd syslog-ng"
-                sh "git clone https://github.com/balabit/syslog-ng.git && cd syslog-ng && git fetch origin +refs/heads/*:refs/remotes/origin/* +refs/pull/*:refs/remotes/origin/pr/* && git checkout ${sha1}"
+                sh "git clone https://github.com/syslog-ng/syslog-ng.git && cd syslog-ng && git fetch origin +refs/heads/*:refs/remotes/origin/* +refs/pull/*:refs/remotes/origin/pr/* && git checkout ${sha1}"
            }
         }
         stage('Tarball') {
