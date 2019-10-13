@@ -206,6 +206,7 @@ matrix:
             - libmongoc-dev
             - libjson-c-dev
             - python-dev
+            - python-pip
             - libnet1-dev
             - libriemann-client-dev
             - librdkafka-dev
