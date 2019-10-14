@@ -22,7 +22,7 @@ is to participate in the discussions about features, bugs and design.
 Some of these discussions started on the
 [mailing list][ar:mailing-list], some in the
 [issue tracker][ar:issue-tracker]. Bugs tagged
-[`help`][ar:issues:help] are generally good targets to contribute your
+[`good first issue`][ar:issues:good-first-issue] are generally good targets to contribute your
 feedback - but pretty much any open issue can be a good start!
 
 ### Reporting bugs
@@ -45,7 +45,7 @@ around them.
 
 We use the same [issue tracker][ar:issue-tracker] to handle features
 requests (they're all tagged with the
-[`enhancement`](https://github.com/balabit/syslog-ng/labels/enhancement)
+[`enhancement`](https://github.com/syslog-ng/syslog-ng/labels/enhancement)
 label. You are welcome to share your ideas on existing requests, or to
 submit your own.
 
@@ -84,11 +84,6 @@ guidelines are very, very simple:
     branch.
  7. If possible, write tests! We love tests.
  8. A well-documented pull request is much easier to review and merge.
-
-Before submitting a separate module, please consider submitting it to
-the [Incubator](https://github.com/balabit/syslog-ng-incubator) first,
-because it is easier to have your code accepted there. The Incubator
-is the repository of new and experimental modules.
 
 ## Licensing
 
@@ -129,8 +124,8 @@ We use [GitHub issues][ar:issue-tracker] to track issues, feature requests
 and patches. We are also using [Travis CI][ar:travis] for automatic
 testing.
 
- [ar:gitter]: https://gitter.im/balabit/syslog-ng
+ [ar:gitter]: https://gitter.im/syslog-ng/syslog-ng
  [ar:mailing-list]: http://lists.balabit.com/mailman/listinfo/syslog-ng
- [ar:issue-tracker]: https://github.com/balabit/syslog-ng/issues
- [ar:issues:help]: https://github.com/balabit/syslog-ng/labels/help
- [ar:travis]: https://travis-ci.org/balabit/syslog-ng/
+ [ar:issue-tracker]: https://github.com/syslog-ng/syslog-ng/issues
+ [ar:issues:good-first-issue]: https://github.com/syslog-ng/syslog-ng/labels/good%20first%20issue
+ [ar:travis]: https://travis-ci.org/syslog-ng/syslog-ng/

@@ -60,7 +60,7 @@ str_replace_char(const gchar *str, const gchar from, const gchar to)
   investigate if the two can be aligned. Hint: as flag normalization has
   strong position in the code, aligning block normalization to flag
   normalization might prove easier. Some more info:
-  https://github.com/balabit/syslog-ng/pull/2162#discussion_r202247468
+  https://github.com/syslog-ng/syslog-ng/pull/2162#discussion_r202247468
 */
 gchar *
 __normalize_key(const gchar *buffer)

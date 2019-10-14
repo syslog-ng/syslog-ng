@@ -1,5 +1,5 @@
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/balabit/syslog-ng?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=body_badge)
-[![Build Status](https://travis-ci.org/balabit/syslog-ng.svg?branch=master)](https://travis-ci.org/balabit/syslog-ng)
+[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/syslog-ng/syslog-ng?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=body_badge)
+[![Build Status](https://travis-ci.org/syslog-ng/syslog-ng.svg?branch=master)](https://travis-ci.org/syslog-ng/syslog-ng)
 
 syslog-ng
 =========
@@ -94,8 +94,8 @@ For a brief introduction to configuring the syslog-ng application, see the [quic
 ### Community
 
   * syslog-ng is developed by a community of volunteers, the best way to
-    contact us is via our [github project page](http://github.com/balabit/syslog-ng)
-    project, our [gitter channel](https://gitter.im/balabit/syslog-ng) or
+    contact us is via our [github project page](http://github.com/syslog-ng/syslog-ng)
+    project, our [gitter channel](https://gitter.im/syslog-ng/syslog-ng) or
     our [mailing list](https://lists.balabit.hu/mailman/listinfo/syslog-ng).
   * syslog-ng is integrated into almost all Linux distributions and BSDs, it
     is also incorporated into a number of products, see our [powered by
@@ -122,7 +122,7 @@ Just send an email to feedback (at) syslog-ng.org.
 
 Releases and precompiled tarballs are available on [GitHub][github-repo].
 
- [github-repo]: https://github.com/balabit/syslog-ng/releases
+ [github-repo]: https://github.com/syslog-ng/syslog-ng/releases
 
 To compile from source, the usual drill applies (assuming you have
 the required dependencies):
