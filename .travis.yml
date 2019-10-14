@@ -207,6 +207,7 @@ matrix:
             - libjson-c-dev
             - python-dev
             - python-pip
+            - python-setuptools
             - libnet1-dev
             - libriemann-client-dev
             - librdkafka-dev
