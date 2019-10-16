@@ -170,12 +170,12 @@ authenticate_to_redis(RedisDriver *self, const gchar *password)
   return send_redis_command(self, "AUTH %s", self->auth);
 }
 
-static gboolean
+static LogThreadedResult
 redis_dd_connect(RedisDriver *self)
 {
   if (self->c && check_connection_to_redis(self))
     {
-      return TRUE;
+      return LTR_SUCCESS;
     }
 
   if (self->c)
@@ -185,30 +185,33 @@ redis_dd_connect(RedisDriver *self)
 
   if (self->c->err)
     {
-      msg_error("REDIS server error, suspending",
+      msg_error("REDIS server error during connection",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("error", self->c->errstr),
                 evt_tag_int("time_reopen", self->super.time_reopen));
-      return FALSE;
+      return LTR_NOT_CONNECTED;
     }
 
   if (self->auth)
     if (!authenticate_to_redis(self, self->auth))
       {
         msg_error("REDIS: failed to authenticate");
-        return FALSE;
+        return LTR_NOT_CONNECTED;
       }
 
   if (!check_connection_to_redis(self))
     {
       msg_error("REDIS: failed to connect");
-      return FALSE;
+      return LTR_NOT_CONNECTED;
     }
+
+  if (self->c->err)
+    return LTR_ERROR;
 
   msg_debug("Connecting to REDIS succeeded",
             evt_tag_str("driver", self->super.super.super.id));
 
-  return TRUE;
+  return LTR_SUCCESS;
 }
 
 static void
@@ -257,18 +260,10 @@ static LogThreadedResult
 redis_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
 {
   RedisDriver *self = (RedisDriver *)s;
+  LogThreadedResult connection_status = redis_dd_connect(self);
 
-  if (!redis_dd_connect(self))
-    return LTR_NOT_CONNECTED;
-
-  if (self->c->err)
-    return LTR_ERROR;
-
-  if (!check_connection_to_redis(self))
-    {
-      msg_error("REDIS: worker failed to connect");
-      return LTR_NOT_CONNECTED;
-    }
+  if (connection_status != LTR_SUCCESS)
+    return connection_status;
 
   ScratchBuffersMarker marker;
   scratch_buffers_mark(&marker);
