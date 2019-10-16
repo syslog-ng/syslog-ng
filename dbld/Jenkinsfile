@@ -1,0 +1,63 @@
+def jobs = []
+
+if (!params.PLATFORMS)
+    jobs = ["centos-7", "debian-stretch", "debian-buster", "ubuntu-xenial", "ubuntu-bionic", "ubuntu-cosmic", "fedora-30"]
+else
+    jobs = params.PLATFORMS.split('\n')
+
+echo "Building packages for ${params.PLATFORMS}"
+
+def parallelStagesMap = jobs.collectEntries {
+    ["${it}" : generateStage(it)]
+}
+
+def generateStage(platform) {
+    return {
+        stage("${platform} - Copying Source") {
+            sh "rm -rf ${platform}"
+            sh "cp -ar syslog-ng ${platform}"
+        }
+        stage("${platform} - Docker Image") {
+            echo "Platform: ${platform}; Step: image"
+            sh "cd ${platform}; dbld/rules cache-image-${platform}"
+        }
+        stage("${platform} - Package") {
+            echo "Platform: ${platform}; Step: packaging"
+            sh "cd ${platform}; dbld/rules package-${platform}"
+            archiveArtifacts artifacts: "${platform}/dbld/build/${platform}/*"
+        }
+    }
+}
+
+pipeline {
+    agent {
+        label "spot"
+    }
+    parameters {
+        text(name: 'PLATFORMS', defaultValue: '', description: 'The list of platforms to build packages for (a subset of BUILD_IMAGES in dbld/rules)')
+    }
+
+    stages {
+        stage('Source') {
+            steps {
+                echo "Step: source init"
+                sh "rm -rf syslog-ng ; mkdir syslog-ng ; cd syslog-ng"
+                sh "git clone https://github.com/syslog-ng/syslog-ng.git && cd syslog-ng && git fetch origin +refs/heads/*:refs/remotes/origin/* +refs/pull/*:refs/remotes/origin/pr/* && git checkout ${sha1}"
+           }
+        }
+        stage('Tarball') {
+            steps {
+                echo "Step: tarball"
+                sh "cd syslog-ng && ./dbld/rules tarball"
+           }
+        }
+
+        stage('parallel stage') {
+            steps {
+                script {
+                    parallel parallelStagesMap
+                }
+            }
+        }
+    }
+}
