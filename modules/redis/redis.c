@@ -224,16 +224,31 @@ redis_dd_disconnect(LogThreadedDestDriver *s)
   self->c = NULL;
 }
 
+static inline void _fill_template(RedisDriver *self, LogMessage *msg, LogTemplate *template, gchar **str, gsize *size)
+{
+  if (log_template_is_trivial(template))
+    {
+      gssize unsigned_size;
+      *str = (gchar *)log_template_get_trivial_value(template, msg, &unsigned_size);
+      *size = unsigned_size;
+    }
+  else
+    {
+      GString *buffer = scratch_buffers_alloc();
+      log_template_format(template, msg, &self->template_options, LTZ_SEND,
+                          self->super.worker.instance.seq_num, NULL, buffer);
+      *size = buffer->len;
+      *str = buffer->str;
+    }
+}
+
 static void
 _fill_argv_from_template_list(RedisDriver *self, LogMessage *msg)
 {
   for (gint i = 1; i < self->argc; i++)
     {
-      GString *buffer = scratch_buffers_alloc();
-      log_template_format(g_list_nth_data(self->arguments, i-1), msg, &self->template_options, LTZ_SEND,
-                          self->super.worker.instance.seq_num, NULL, buffer);
-      self->argvlen[i] = buffer->len;
-      self->argv[i] = buffer->str;
+      LogTemplate *redis_command = g_list_nth_data(self->arguments, i-1);
+      _fill_template(self, msg, redis_command, &self->argv[i], &self->argvlen[i]);
     }
 }
 
