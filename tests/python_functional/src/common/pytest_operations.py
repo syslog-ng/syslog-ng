@@ -22,7 +22,7 @@
 #############################################################################
 
 
-def calculate_testcase_name(pytest_request):
+def calculate_testcase_name(item_name):
     # In case of parametrized tests we need to replace "[" and "]" because
     # testcase name will appear in directory name
-    return pytest_request.node.name.replace("[", "_").replace("]", "_")
+    return item_name.replace("[", "_").replace("]", "_")
