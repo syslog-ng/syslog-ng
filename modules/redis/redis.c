@@ -237,7 +237,7 @@ _fill_argv_from_template_list(RedisDriver *self, LogMessage *msg)
     }
 }
 
-static GString *
+static const gchar *
 _argv_to_string(RedisDriver *self)
 {
   GString *full_command = scratch_buffers_alloc();
@@ -249,7 +249,7 @@ _argv_to_string(RedisDriver *self)
       append_unsafe_utf8_as_escaped_text(full_command, self->argv[i], self->argvlen[i], "\"");
       g_string_append(full_command, "\"");
     }
-  return full_command;
+  return full_command->str;
 }
 
 /*
@@ -272,13 +272,11 @@ redis_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
 
   redisReply *reply = redisCommandArgv(self->c, self->argc, (const gchar **)self->argv, self->argvlen);
 
-  GString *full_command = _argv_to_string(self);
-
   if (!reply)
     {
       msg_error("REDIS server error, suspending",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("command", full_command->str),
+                evt_tag_str("command", _argv_to_string(self)),
                 evt_tag_str("error", self->c->errstr),
                 evt_tag_int("time_reopen", self->super.time_reopen));
       scratch_buffers_reclaim_marked(marker);
@@ -287,7 +285,7 @@ redis_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
 
   msg_debug("REDIS command sent",
             evt_tag_str("driver", self->super.super.super.id),
-            evt_tag_str("command", full_command->str));
+            evt_tag_str("command", _argv_to_string(self)));
 
   freeReplyObject(reply);
   scratch_buffers_reclaim_marked(marker);
