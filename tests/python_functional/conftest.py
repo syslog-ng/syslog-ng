@@ -55,18 +55,6 @@ def pytest_addoption(parser):
     )
 
 
-def reports(request):
-    return request.config.getoption("--reports")
-
-
-def installdir(request):
-    return request.config.getoption("--installdir")
-
-
-def runundertool(request):
-    return request.config.getoption("--run-under")
-
-
 def get_relative_report_dir():
     return str(Path("reports/", get_current_date()))
 
