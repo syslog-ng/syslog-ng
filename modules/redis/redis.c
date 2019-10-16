@@ -144,6 +144,36 @@ redis_dd_format_persist_name(const LogPipe *s)
   return persist_name;
 }
 
+static inline void
+_trace_reply_message(redisReply *r)
+{
+  if (trace_flag)
+    {
+      if (r->elements > 0)
+        {
+          msg_trace(">>>>>> REDIS command reply begin",
+                    evt_tag_long("elements", r->elements));
+
+          for (gsize i = 0; i < r->elements; i++)
+            {
+              _trace_reply_message(r->element[i]);
+            }
+
+          msg_trace("<<<<<< REDIS command reply end");
+        }
+      else if (r->type == REDIS_REPLY_STRING || r->type == REDIS_REPLY_STATUS || r->type == REDIS_REPLY_ERROR)
+        {
+          msg_trace("REDIS command reply",
+                    evt_tag_str("str", r->str));
+        }
+      else
+        {
+          msg_trace("REDIS command unhandled reply",
+                    evt_tag_int("type", r->type));
+        }
+    }
+}
+
 static gboolean
 send_redis_command(RedisDriver *self, const char *format, ...)
 {
@@ -154,7 +184,10 @@ send_redis_command(RedisDriver *self, const char *format, ...)
 
   gboolean retval = reply && (reply->type != REDIS_REPLY_ERROR);
   if (reply)
-    freeReplyObject(reply);
+    {
+      _trace_reply_message(reply);
+      freeReplyObject(reply);
+    }
   return retval;
 }
 
@@ -195,13 +228,15 @@ redis_dd_connect(RedisDriver *self)
   if (self->auth)
     if (!authenticate_to_redis(self, self->auth))
       {
-        msg_error("REDIS: failed to authenticate");
+        msg_error("REDIS: failed to authenticate",
+                  evt_tag_str("driver", self->super.super.super.id));
         return LTR_NOT_CONNECTED;
       }
 
   if (!check_connection_to_redis(self))
     {
-      msg_error("REDIS: failed to connect");
+      msg_error("REDIS: failed to connect",
+                evt_tag_str("driver", self->super.super.super.id));
       return LTR_NOT_CONNECTED;
     }
 
