@@ -757,12 +757,6 @@ cfg_get_user_version(const GlobalConfig *cfg)
   return cfg->user_version;
 }
 
-guint
-cfg_get_parsed_version(const GlobalConfig *cfg)
-{
-  return cfg->parsed_version;
-}
-
 void register_source_mangle_callback(GlobalConfig *src,mangle_callback cb)
 {
   src->source_mangle_callback_list = g_list_append(src->source_mangle_callback_list,cb);

@@ -1014,16 +1014,11 @@ cfg_lexer_preprocess(CfgLexer *self, gint tok, YYSTYPE *yylval, YYLTYPE *yylloc)
 
       return CLPR_LEX_AGAIN;
     }
-  else if (self->cfg->user_version == 0 && self->cfg->parsed_version != 0)
-    {
-      if (!cfg_set_version(self->cfg, configuration->parsed_version))
-        return CLPR_ERROR;
-    }
   else if (cfg_lexer_get_context_type(self) != LL_CONTEXT_PRAGMA && !self->non_pragma_seen)
     {
       /* first non-pragma token */
 
-      if (self->cfg->user_version == 0 && self->cfg->parsed_version == 0)
+      if (self->cfg->user_version == 0)
         {
           msg_error("ERROR: configuration files without a version number has become unsupported in " VERSION_3_13
                     ", please specify a version number using @version and update your configuration accordingly");

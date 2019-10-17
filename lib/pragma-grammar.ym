@@ -81,9 +81,11 @@ pragma_stmt
 version_stmt
         : KW_VERSION ':' string_or_number
           {
-            configuration->parsed_version = process_version_string($3);
+            guint parsed_version = process_version_string($3);
             free($3);
-            if (configuration->parsed_version == 0)
+            if (parsed_version == 0)
+                PRAGMA_ERROR();
+            if (!cfg_set_version(configuration, parsed_version))
                 PRAGMA_ERROR();
           }
 

@@ -62,9 +62,6 @@ struct _GlobalConfig
   /* hex-encoded syslog-ng major/minor, e.g. 0x0201 is syslog-ng 2.1 format */
   gint user_version;
 
-  /* version number as parsed from the configuration file, it can be set
-   * multiple times if the user uses @version multiple times */
-  guint parsed_version;
   const gchar *filename;
   PluginContext plugin_context;
   gboolean use_plugin_discovery;
