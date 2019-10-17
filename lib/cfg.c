@@ -355,10 +355,16 @@ cfg_deinit(GlobalConfig *cfg)
   return cfg_tree_stop(&cfg->tree);
 }
 
+void
+cfg_set_version_without_validation(GlobalConfig *self, gint version)
+{
+  self->user_version = version;
+}
+
 gboolean
 cfg_set_version(GlobalConfig *self, gint version)
 {
-  self->user_version = version;
+  cfg_set_version_without_validation(self, version);
   if (cfg_is_config_version_older(self, 0x0300))
     {
       msg_error("ERROR: compatibility with configurations below 3.0 was dropped in " VERSION_3_13
