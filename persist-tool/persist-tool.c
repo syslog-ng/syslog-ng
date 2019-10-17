@@ -41,7 +41,7 @@ load_state_handler_modules(GlobalConfig *cfg)
 {
   plugin_context_init_instance(&cfg->plugin_context);
   plugin_context_set_module_path(&cfg->plugin_context, (const gchar *)get_installation_path_for(SYSLOG_NG_MODULE_PATH));
-  plugin_load_candidate_modules(&cfg->plugin_context);
+  plugin_discover_candidate_modules(&cfg->plugin_context);
 }
 
 static gboolean

@@ -84,11 +84,11 @@
 }
 
 {
-     suppress_syslog_ng_plugin_load_candidate_modules
+     suppress_syslog_ng_plugin_discover_candidate_modules
      Memcheck:Leak
      fun:*alloc
      ...
-     fun:plugin_load_candidate_modules
+     fun:plugin_discover_candidate_modules
 }
 
 {

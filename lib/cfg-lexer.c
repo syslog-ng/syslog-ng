@@ -1025,7 +1025,7 @@ cfg_lexer_preprocess(CfgLexer *self, gint tok, YYSTYPE *yylval, YYLTYPE *yylloc)
           return CLPR_ERROR;
         }
 
-      cfg_load_candidate_modules(self->cfg);
+      cfg_discover_candidate_modules(self->cfg);
 
       cfg_load_forced_modules(self->cfg);
 

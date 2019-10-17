@@ -188,7 +188,7 @@ cfg_load_module(GlobalConfig *cfg, const gchar *module_name)
 }
 
 void
-cfg_load_candidate_modules(GlobalConfig *self)
+cfg_discover_candidate_modules(GlobalConfig *self)
 {
   gboolean autoload_enabled = atoi(cfg_args_get(self->globals, "autoload-compiled-modules") ? : "1");
 
@@ -196,7 +196,7 @@ cfg_load_candidate_modules(GlobalConfig *self)
       autoload_enabled)
     {
       _sync_plugin_module_path_with_global_define(self);
-      plugin_load_candidate_modules(&self->plugin_context);
+      plugin_discover_candidate_modules(&self->plugin_context);
     }
 }
 

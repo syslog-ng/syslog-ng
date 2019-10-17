@@ -410,7 +410,7 @@ call_init:
  ************************************************************/
 
 void
-plugin_load_candidate_modules(PluginContext *context)
+plugin_discover_candidate_modules(PluginContext *context)
 {
   GModule *mod;
   gchar **mod_paths;

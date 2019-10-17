@@ -124,6 +124,7 @@ struct _GlobalConfig
 };
 
 gboolean cfg_load_module(GlobalConfig *cfg, const gchar *module_name);
+void cfg_discover_candidate_modules(GlobalConfig *self);
 
 Plugin *cfg_find_plugin(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name);
 gpointer cfg_parse_plugin(GlobalConfig *cfg, Plugin *plugin, YYLTYPE *yylloc, gpointer arg);
@@ -139,7 +140,6 @@ gint cfg_ts_format_value(gchar *format);
 
 void cfg_set_version_without_validation(GlobalConfig *self, gint version);
 gboolean cfg_set_version(GlobalConfig *self, gint version);
-void cfg_load_candidate_modules(GlobalConfig *self);
 
 void cfg_set_global_paths(GlobalConfig *self);
 
