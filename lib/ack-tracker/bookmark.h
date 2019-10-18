@@ -45,14 +45,6 @@ struct _Bookmark
 };
 
 static inline void
-bookmark_init(Bookmark *self)
-{
-  self->persist_state = NULL;
-  self->save = NULL;
-  self->destroy = NULL;
-}
-
-static inline void
 bookmark_save(Bookmark *self)
 {
   if (self->save)
