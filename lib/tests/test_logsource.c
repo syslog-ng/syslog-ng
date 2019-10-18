@@ -90,6 +90,58 @@ test_source_destroy(LogSource *source)
   log_pipe_unref(&source->super);
 }
 
+typedef struct TestPipe
+{
+  LogPipe super;
+  GQueue *messages;
+  gsize messages_count;
+} TestPipe;
+
+static void
+test_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
+{
+  TestPipe *pipe = (TestPipe *) s;
+
+  g_queue_push_tail(pipe->messages, msg);
+  pipe->messages_count++;
+}
+
+TestPipe *
+test_pipe_init(void)
+{
+  TestPipe *pipe = g_new0(TestPipe, 1);
+  log_pipe_init_instance(&pipe->super, cfg);
+  pipe->super.queue = test_pipe_queue;
+
+  pipe->messages = g_queue_new();
+
+  cr_assert(log_pipe_init(&pipe->super));
+  return pipe;
+}
+
+void
+test_pipe_ack_messages(TestPipe *pipe, gsize ack_count)
+{
+  for (gsize i = 0; i < ack_count; ++i)
+    {
+      LogMessage *msg = g_queue_pop_head(pipe->messages);
+      cr_assert(msg);
+      pipe->messages_count--;
+
+      LogPathOptions path_options = { .ack_needed = TRUE };
+      log_msg_drop(msg, &path_options, AT_PROCESSED);
+    }
+}
+
+void
+test_pipe_destroy(TestPipe *pipe)
+{
+  log_pipe_deinit(&pipe->super);
+
+  g_queue_free(pipe->messages);
+  log_pipe_unref(&pipe->super);
+}
+
 
 const gchar *
 resolve_sockaddr_to_hostname(gsize *result_len, GSockAddr *saddr, const HostResolveOptions *host_resolve_options)
@@ -219,6 +271,87 @@ Test(log_source, test_source_tags)
   cr_expect(log_msg_is_tag_by_name(msg, ".source." TEST_SOURCE_GROUP));
 
   log_msg_unref(msg);
+  test_source_destroy(source);
+}
+
+static void
+_post_messages(LogSource *source, gsize messages_to_send)
+{
+  for (gsize i = 0; i < messages_to_send; ++i)
+    {
+      LogMessage *msg = log_msg_new_empty();
+      log_source_post(source, msg);
+    }
+}
+
+Test(log_source, test_suspend)
+{
+  source_options.init_window_size = 3;
+
+  LogSource *source = test_source_init(&source_options);
+  TestPipe *next_pipe = test_pipe_init();
+  log_pipe_append(&source->super, &next_pipe->super);
+
+  cr_assert_eq(log_source_get_init_window_size(source), 3);
+  cr_assert(log_source_free_to_send(source));
+
+  _post_messages(source, 1);
+  cr_assert(log_source_free_to_send(source));
+
+  _post_messages(source, 2);
+  cr_assert_not(log_source_free_to_send(source));
+
+  test_pipe_ack_messages(next_pipe, 2);
+  cr_assert(log_source_free_to_send(source));
+
+  test_pipe_ack_messages(next_pipe, 1);
+  cr_assert(log_source_free_to_send(source));
+
+  test_pipe_destroy(next_pipe);
+  test_source_destroy(source);
+}
+
+Test(log_source, test_wakeup)
+{
+  source_options.init_window_size = 3;
+
+  LogSource *source = test_source_init(&source_options);
+  TestPipe *next_pipe = test_pipe_init();
+  log_pipe_append(&source->super, &next_pipe->super);
+
+  _post_messages(source, 3);
+  cr_expect_not(log_source_free_to_send(source));
+
+  test_pipe_ack_messages(next_pipe, 1);
+  cr_assert_eq(((TestSource *) source)->wakeup_count, 1);
+
+  _post_messages(source, 1);
+  cr_expect_not(log_source_free_to_send(source));
+
+  test_pipe_ack_messages(next_pipe, 3);
+  cr_assert_eq(((TestSource *) source)->wakeup_count, 2);
+
+  test_pipe_destroy(next_pipe);
+  test_source_destroy(source);
+}
+
+Test(log_source, test_forced_suspend_and_wakeup)
+{
+  LogSource *source = test_source_init(&source_options);
+
+  cr_assert(log_source_free_to_send(source));
+
+  log_source_flow_control_suspend(source);
+  cr_assert_not(log_source_free_to_send(source));
+
+  log_source_flow_control_adjust_when_suspended(source, 1);
+  cr_assert_not(log_source_free_to_send(source));
+  cr_assert_eq(((TestSource *) source)->wakeup_count, 0);
+
+  log_source_flow_control_adjust(source, 1);
+  cr_assert(log_source_free_to_send(source));
+  cr_assert_eq(((TestSource *) source)->wakeup_count, 1);
+
   test_source_destroy(source);
 }
 
