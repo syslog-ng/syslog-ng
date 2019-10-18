@@ -48,6 +48,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <syslog.h>
 
 /*
  * Reference/ACK counting for LogMessage structures
@@ -1102,6 +1103,7 @@ log_msg_init(LogMessage *self, GSockAddr *saddr)
 
   self->original = NULL;
   self->flags |= LF_STATE_OWN_MASK;
+  self->pri = LOG_USER | LOG_NOTICE;
 
   self->rcptid = rcptid_generate_id();
   log_msg_set_host_id(self);
