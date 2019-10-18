@@ -28,6 +28,7 @@
 #include "logpipe.h"
 #include "cfg.h"
 #include "apphook.h"
+#include "dynamic-window-pool.h"
 
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
@@ -276,6 +277,7 @@ Test(log_source, test_source_tags)
   test_source_destroy(source);
 }
 
+
 static void
 _post_messages(LogSource *source, gsize messages_to_send)
 {
@@ -411,6 +413,94 @@ Test(log_source, test_mangle_callback)
 
   test_pipe_ack_messages(next_pipe, 1);
 
+  test_pipe_destroy(next_pipe);
+  test_source_destroy(source);
+}
+
+
+static DynamicWindowPool *
+test_dynamic_window_pool_init(gsize pool_size)
+{
+  DynamicWindowPool *pool = dynamic_window_pool_new(pool_size);
+  pool->balanced_window = pool_size;
+  dynamic_window_pool_init(pool);
+
+  return pool;
+}
+
+Test(log_source, test_dynamic_window_is_disabled_by_default)
+{
+  LogSource *source = test_source_init(&source_options);
+
+  cr_assert_not(log_source_is_dynamic_window_enabled(source));
+
+  test_source_destroy(source);
+}
+
+Test(log_source, test_dynamic_window)
+{
+  source_options.init_window_size = 0;
+
+  LogSource *source = test_source_init(&source_options);
+  log_source_set_name(source, "test-source-name");
+
+  cr_assert_not(log_source_free_to_send(source));
+
+  const gsize pool_size = 1000;
+  DynamicWindowPool *pool = test_dynamic_window_pool_init(pool_size);
+  log_source_enable_dynamic_window(source, pool);
+  cr_assert(log_source_is_dynamic_window_enabled(source));
+
+  /* currently unused */
+  log_source_dynamic_window_update_statistics(source);
+
+  pool->balanced_window = 200;
+  log_source_dynamic_window_realloc(source);
+  cr_assert(log_source_free_to_send(source),
+            "Source should not be suspended as it should own free dynamic window slots");
+  cr_assert_eq(pool->free_window, pool->pool_size - pool->balanced_window);
+
+  dynamic_window_pool_unref(pool);
+  test_source_destroy(source);
+}
+
+static void
+_try_to_reclaim_all_dynamic_window_slots(LogSource *source, DynamicWindowPool *pool)
+{
+  pool->balanced_window = 0;
+  log_source_dynamic_window_realloc(source);
+}
+
+Test(log_source, test_dynamic_window_reclaim)
+{
+  source_options.init_window_size = 1;
+  LogSource *source = test_source_init(&source_options);
+  TestPipe *next_pipe = test_pipe_init();
+  log_pipe_append(&source->super, &next_pipe->super);
+
+  const gsize pool_size = 10;
+  DynamicWindowPool *pool = test_dynamic_window_pool_init(pool_size);
+  log_source_enable_dynamic_window(source, pool);
+  log_source_dynamic_window_realloc(source);
+
+  const gsize num_of_pending_messages = pool->pool_size + source_options.init_window_size;
+  _post_messages(source, num_of_pending_messages);
+  cr_assert_not(log_source_free_to_send(source),
+                "Source should be suspended, its window is filled with pending messages");
+
+  _try_to_reclaim_all_dynamic_window_slots(source, pool);
+  cr_assert_not(log_source_free_to_send(source));
+  cr_assert_eq(pool->free_window, 0,
+               "Incorrect free pool size; window should not be released, the source has pending messages");
+
+  test_pipe_ack_messages(next_pipe, num_of_pending_messages);
+
+  _try_to_reclaim_all_dynamic_window_slots(source, pool);
+  cr_assert(log_source_free_to_send(source), "The initial static window should be available");
+  cr_assert_eq(pool->free_window, pool->pool_size,
+               "Incorrect free pool size; window should be reclaimed");
+
+  dynamic_window_pool_unref(pool);
   test_pipe_destroy(next_pipe);
   test_source_destroy(source);
 }
