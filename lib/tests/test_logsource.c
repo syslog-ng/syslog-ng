@@ -32,6 +32,8 @@
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
 
+#include <syslog.h>
+
 #include <string.h>
 
 #define TEST_SOURCE_GROUP "test_source_group"
@@ -352,6 +354,64 @@ Test(log_source, test_forced_suspend_and_wakeup)
   cr_assert(log_source_free_to_send(source));
   cr_assert_eq(((TestSource *) source)->wakeup_count, 1);
 
+  test_source_destroy(source);
+}
+
+
+static gboolean
+test_mangle_callback_forbidden(GlobalConfig *config, LogMessage *msg, gpointer user_data)
+{
+  return strstr(log_msg_get_value(msg, LM_V_MESSAGE, NULL), "forbidden") == NULL;
+}
+
+static gboolean
+test_mangle_callback_tag(GlobalConfig *config, LogMessage *msg, gpointer user_data)
+{
+  log_msg_set_tag_by_name(msg, "tagged");
+  return TRUE;
+}
+
+static void
+expect_forbidden_message_dropped(LogSource *source)
+{
+  LogMessage *msg = log_msg_new_internal(LOG_INFO | LOG_SYSLOG, "This is a forbidden message");
+  log_msg_ref(msg);
+  log_source_post(source, msg);
+
+  cr_expect_not(log_msg_is_tag_by_name(msg, "tagged"),
+                "Message should not be tagged, the message should have been dropped in test_mangle_callback_forbidden");
+  log_msg_unref(msg);
+}
+
+static void
+expect_regular_message_forwarded(LogSource *source)
+{
+  LogMessage *msg = log_msg_new_internal(LOG_INFO | LOG_SYSLOG, "Message");
+  log_msg_ref(msg);
+  log_source_post(source, msg);
+
+  cr_expect(log_msg_is_tag_by_name(msg, "tagged"));
+  log_msg_unref(msg);
+}
+
+Test(log_source, test_mangle_callback)
+{
+  register_source_mangle_callback(cfg, test_mangle_callback_forbidden);
+  register_source_mangle_callback(cfg, test_mangle_callback_tag);
+
+  LogSource *source = test_source_init(&source_options);
+  TestPipe *next_pipe = test_pipe_init();
+  log_pipe_append(&source->super, &next_pipe->super);
+
+  expect_forbidden_message_dropped(source);
+  cr_assert_eq(next_pipe->messages_count, 0);
+
+  expect_regular_message_forwarded(source);
+  cr_assert_eq(next_pipe->messages_count, 1);
+
+  test_pipe_ack_messages(next_pipe, 1);
+
+  test_pipe_destroy(next_pipe);
   test_source_destroy(source);
 }
 
