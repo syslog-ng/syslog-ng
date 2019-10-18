@@ -179,4 +179,26 @@ Test(log_source, test_chain_hostname_truncates_long_chained_hostnames)
   test_source_destroy(source);
 }
 
+Test(log_source, test_host_and_program_override)
+{
+  source_options.host_override = g_strdup("test-host-override");
+  source_options.program_override = g_strdup("test-program-override");
+  LogSource *source = test_source_init(&source_options);
+
+  LogMessage *msg = log_msg_new_empty();
+  log_msg_set_value(msg, LM_V_HOST, "hostname-to-override", -1);
+  log_msg_set_value(msg, LM_V_PROGRAM, "program-to-override", -1);
+
+  log_msg_ref(msg);
+  log_source_post(source, msg);
+
+  const gchar *actual_hostname = log_msg_get_value(msg, LM_V_HOST, NULL);
+  cr_expect_str_eq(actual_hostname, source_options.host_override);
+  const gchar *actual_program = log_msg_get_value(msg, LM_V_PROGRAM, NULL);
+  cr_expect_str_eq(actual_program, source_options.program_override);
+
+  log_msg_unref(msg);
+  test_source_destroy(source);
+}
+
 TestSuite(log_source, .init = setup, .fini = teardown);
