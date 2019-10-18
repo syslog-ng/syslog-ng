@@ -354,6 +354,9 @@ _dynamic_window_rebalance(LogSource *self)
 void
 log_source_dynamic_window_realloc(LogSource *self)
 {
+  /* it is safe to assume that the window size is not decremented while this function runs,
+   * only incrementation is possible by destination threads */
+
   if (!_reclaim_window_instead_of_rebalance(self))
     _dynamic_window_rebalance(self);
 
