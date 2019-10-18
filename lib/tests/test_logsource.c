@@ -201,4 +201,25 @@ Test(log_source, test_host_and_program_override)
   test_source_destroy(source);
 }
 
+Test(log_source, test_source_tags)
+{
+  GList *tags = NULL;
+  tags = g_list_prepend(tags, g_strdup("tag1"));
+  tags = g_list_prepend(tags, g_strdup("tag2"));
+  log_source_options_set_tags(&source_options, tags);
+
+  LogSource *source = test_source_init(&source_options);
+
+  LogMessage *msg = log_msg_new_empty();
+  log_msg_ref(msg);
+  log_source_post(source, msg);
+
+  cr_expect(log_msg_is_tag_by_name(msg, "tag1"));
+  cr_expect(log_msg_is_tag_by_name(msg, "tag2"));
+  cr_expect(log_msg_is_tag_by_name(msg, ".source." TEST_SOURCE_GROUP));
+
+  log_msg_unref(msg);
+  test_source_destroy(source);
+}
+
 TestSuite(log_source, .init = setup, .fini = teardown);
