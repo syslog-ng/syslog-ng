@@ -106,7 +106,7 @@ define_stmt
 module_stmt
 	: KW_MODULE string { last_module_args = cfg_args_new(); } module_param module_params
           {
-            gboolean success = plugin_load_module(&configuration->plugin_context, $2, last_module_args);
+            gboolean success = cfg_load_module_with_args(configuration, $2, last_module_args);
             free($2);
 
             cfg_args_unref(last_module_args);
@@ -117,7 +117,7 @@ module_stmt
           }
 	| KW_MODULE string
           {
-            plugin_load_module(&configuration->plugin_context, $2, NULL);
+            cfg_load_module(configuration, $2);
             free($2);
           }
 	;
@@ -125,11 +125,11 @@ module_stmt
 requires_stmt
 	: KW_REQUIRES string
           {
-            if (!plugin_load_module(&configuration->plugin_context, $2, NULL))
+            if (!cfg_is_module_available(configuration, $2))
               {
                 if (0 == lexer->include_depth)
                   {
-                    msg_error("Cannot load required module ",
+                    msg_error("Cannot load required module",
                                 evt_tag_str("module", $2),
                                 cfg_lexer_format_location_tag(lexer,&@1));
                     free($2);
