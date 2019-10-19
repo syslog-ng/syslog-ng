@@ -24,18 +24,23 @@ from pathlib2 import Path
 
 from src.common.pytest_operations import calculate_testcase_name
 
+
 WORKING_DIR = None
 
 
 class TestcaseParameters(object):
     def __init__(self, pytest_request):
-        testcase_name = calculate_testcase_name(pytest_request)
-        relative_report_dir = pytest_request.config.getoption("--reports")
+        testcase_name = calculate_testcase_name(pytest_request.node.name)
+        for item in pytest_request.node.user_properties:
+            if item[0] == "working_dir":
+                self.working_dir = None
+                self.set_working_dir(item[1])
+            elif item[0] == "relative_working_dir":
+                self.relative_working_dir = None
+                self.set_relative_working_dir(item[1])
         absolute_framework_dir = Path.cwd()
         self.testcase_parameters = {
             "dirs": {
-                "working_dir": Path(absolute_framework_dir, relative_report_dir, testcase_name),
-                "relative_working_dir": Path(relative_report_dir, testcase_name),
                 "install_dir": Path(pytest_request.config.getoption("--installdir")),
                 "shared_dir": Path(absolute_framework_dir, "shared_files"),
             },
@@ -46,11 +51,17 @@ class TestcaseParameters(object):
             "external_tool": pytest_request.config.getoption("--run-under"),
         }
 
+    def set_working_dir(self, working_dir):
+        self.working_dir = working_dir
+
+    def set_relative_working_dir(self, relative_working_dir):
+        self.relative_working_dir = relative_working_dir
+
     def get_working_dir(self):
-        return self.testcase_parameters["dirs"]["working_dir"]
+        return self.working_dir
 
     def get_relative_working_dir(self):
-        return self.testcase_parameters["dirs"]["relative_working_dir"]
+        return self.relative_working_dir
 
     def get_install_dir(self):
         return self.testcase_parameters["dirs"]["install_dir"]

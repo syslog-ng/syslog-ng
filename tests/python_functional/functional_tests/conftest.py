@@ -22,6 +22,7 @@
 #############################################################################
 import logging
 
+import pytest
 from pathlib2 import Path
 
 import src.testcase_parameters.testcase_parameters as tc_parameters
@@ -31,25 +32,26 @@ from src.common.pytest_operations import calculate_testcase_name
 logger = logging.getLogger(__name__)
 
 
+def calculate_report_file_path(working_dir):
+    return Path(working_dir, "testcase.reportlog")
+
+
+def calculate_working_dir(pytest_config_object, testcase_name):
+    report_dir = Path(pytest_config_object.getoption("--reports")).absolute()
+    return Path(report_dir, calculate_testcase_name(testcase_name))
+
+
 def pytest_runtest_setup(item):
-    def prepare_testcase_working_dir(pytest_request):
-        testcase_parameters = pytest_request.getfixturevalue("testcase_parameters")
-        tc_parameters.WORKING_DIR = working_directory = testcase_parameters.get_working_dir()
-        if not working_directory.exists():
-            working_directory.mkdir(parents=True)
-        testcase_file_path = testcase_parameters.get_testcase_file()
-        copy_file(testcase_file_path, working_directory)
+    logging_plugin = item.config.pluginmanager.get_plugin("logging-plugin")
+    tc_parameters.WORKING_DIR = working_dir = calculate_working_dir(item.config, item.name)
+    logging_plugin.set_log_path(calculate_report_file_path(working_dir))
+    item.user_properties.append(("working_dir", working_dir))
+    item.user_properties.append(("relative_working_dir", working_dir.relative_to(Path.cwd())))
 
-    def construct_report_file_path(item):
-        relative_report_dir = item._request.config.getoption("--reports")
-        testcase_name = calculate_testcase_name(item._request)
-        file_name = "testcase_{}.log".format(testcase_name)
-        return str(Path(relative_report_dir, testcase_name, file_name).absolute())
 
-    config = item.config
-    logging_plugin = config.pluginmanager.get_plugin("logging-plugin")
-    report_file_path = construct_report_file_path(item)
-    logging_plugin.set_log_path(report_file_path)
-    item.user_properties.append(("report_file_path", report_file_path))
-    prepare_testcase_working_dir(item._request)
-    item._request.addfinalizer(lambda: logger.info("Report file path\n{}\n".format(report_file_path)))
+@pytest.fixture(autouse=True)
+def setup(request):
+    testcase_parameters = request.getfixturevalue("testcase_parameters")
+
+    copy_file(testcase_parameters.get_testcase_file(), testcase_parameters.get_working_dir())
+    request.addfinalizer(lambda: logger.info("Report file path\n{}\n".format(calculate_report_file_path(testcase_parameters.get_working_dir()))))
