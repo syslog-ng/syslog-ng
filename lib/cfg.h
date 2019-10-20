@@ -192,4 +192,17 @@ gint cfg_get_user_version(const GlobalConfig *cfg);
 guint cfg_get_parsed_version(const GlobalConfig *cfg);
 const gchar *cfg_get_filename(const GlobalConfig *cfg);
 
+static inline EVTTAG *
+cfg_format_version_tag(const gchar *tag_name, gint version)
+{
+  return evt_tag_printf(tag_name, "%d.%d", (version & 0xFF00) >> 8, version & 0xFF);
+}
+
+static inline EVTTAG *
+cfg_format_config_version_tag(GlobalConfig *self)
+{
+  return cfg_format_version_tag("config-version", self->user_version);
+}
+
+
 #endif

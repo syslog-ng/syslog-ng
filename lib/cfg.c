@@ -368,7 +368,8 @@ cfg_set_version(GlobalConfig *self, gint version)
   if (cfg_is_config_version_older(self, 0x0300))
     {
       msg_error("ERROR: compatibility with configurations below 3.0 was dropped in " VERSION_3_13
-                ", please update your configuration accordingly");
+                ", please update your configuration accordingly",
+                cfg_format_config_version_tag(self));
       return FALSE;
     }
 
@@ -378,20 +379,23 @@ cfg_set_version(GlobalConfig *self, gint version)
                   "Please update it to use the " VERSION_CURRENT " format at your time of convenience. "
                   "To upgrade the configuration, please review the warnings about incompatible changes printed "
                   "by syslog-ng, and once completed change the @version header at the top of the configuration "
-                  "file.");
+                  "file",
+                  cfg_format_config_version_tag(self));
     }
   else if (version_convert_from_user(self->user_version) > VERSION_VALUE)
     {
       msg_warning("WARNING: Configuration file format is newer than the current version, please specify the "
                   "current version number ("  VERSION_CURRENT_VER_ONLY ") in the @version directive. "
-                  "syslog-ng will operate at its highest supported version in this mode");
+                  "syslog-ng will operate at its highest supported version in this mode",
+                  cfg_format_config_version_tag(self));
       self->user_version = VERSION_VALUE;
     }
 
   if (cfg_is_config_version_older(self, 0x0303))
     {
       msg_warning("WARNING: global: the default value of log_fifo_size() has changed to 10000 in " VERSION_3_3
-                  " to reflect log_iw_size() changes for tcp()/udp() window size changes");
+                  " to reflect log_iw_size() changes for tcp()/udp() window size changes",
+                  cfg_format_config_version_tag(self));
     }
   return TRUE;
 }
