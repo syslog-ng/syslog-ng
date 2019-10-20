@@ -409,6 +409,14 @@ call_init:
  * Candidate modules
  ************************************************************/
 
+static void
+_free_candidate_plugins(PluginContext *context)
+{
+  g_list_foreach(context->candidate_plugins, (GFunc) plugin_candidate_free, NULL);
+  g_list_free(context->candidate_plugins);
+  context->candidate_plugins = NULL;
+}
+
 void
 plugin_discover_candidate_modules(PluginContext *context)
 {
@@ -416,8 +424,7 @@ plugin_discover_candidate_modules(PluginContext *context)
   gchar **mod_paths;
   gint i, j;
 
-  if (context->candidate_plugins)
-    return;
+  _free_candidate_plugins(context);
 
   mod_paths = g_strsplit(context->module_path ? : "", G_SEARCHPATH_SEPARATOR_S, 0);
   for (i = 0; mod_paths[i]; i++)
@@ -504,14 +511,6 @@ _free_plugins(PluginContext *context)
   g_list_foreach(context->plugins, (GFunc) _free_plugin, NULL);
   g_list_free(context->plugins);
   context->plugins = NULL;
-}
-
-static void
-_free_candidate_plugins(PluginContext *context)
-{
-  g_list_foreach(context->candidate_plugins, (GFunc) plugin_candidate_free, NULL);
-  g_list_free(context->candidate_plugins);
-  context->candidate_plugins = NULL;
 }
 
 void
