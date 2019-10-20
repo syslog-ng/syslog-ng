@@ -123,6 +123,7 @@ struct _GlobalConfig
   GList *file_list;
 };
 
+gboolean cfg_load_module_with_args(GlobalConfig *cfg, const gchar *module_name, CfgArgs *args);
 gboolean cfg_load_module(GlobalConfig *cfg, const gchar *module_name);
 void cfg_discover_candidate_modules(GlobalConfig *self);
 

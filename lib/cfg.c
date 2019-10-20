@@ -183,10 +183,16 @@ _sync_plugin_module_path_with_global_define(GlobalConfig *self)
 }
 
 gboolean
-cfg_load_module(GlobalConfig *cfg, const gchar *module_name)
+cfg_load_module_with_args(GlobalConfig *cfg, const gchar *module_name, CfgArgs *args)
 {
   _sync_plugin_module_path_with_global_define(cfg);
-  return plugin_load_module(&cfg->plugin_context, module_name, NULL);
+  return plugin_load_module(&cfg->plugin_context, module_name, args);
+}
+
+gboolean
+cfg_load_module(GlobalConfig *cfg, const gchar *module_name)
+{
+  return cfg_load_module_with_args(cfg, module_name, NULL);
 }
 
 void
