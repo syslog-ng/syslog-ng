@@ -560,6 +560,7 @@ case "$ostype" in
 		;;
 	Darwin)
 		MODULE_LDFLAGS="-avoid-version -dylib"
+		LDFLAGS="$LDFLAGS -Wl,-flat_namespace"
     ;;
 	OSF1)
 		CFLAGS="${CFLAGS} -D_XOPEN_SOURCE=500 -D_XOPEN_SOURCE_EXTENDED -D_OSF_SOURCE -D_POSIX_C_SOURCE"
@@ -1053,7 +1054,7 @@ if test -n "$LIBNET_CONFIG" -a -x "$LIBNET_CONFIG"; then
         LIBNET_LIBS="`$LIBNET_CONFIG --libs`"
         AC_MSG_RESULT(yes)
 dnl libnet-config does not provide the _DEFAULT_SOURCE define, that can cause warning during build
-dnl as upstream libnet-config does uses _DEFAULT_SOURCE this is just a fix till 
+dnl as upstream libnet-config does uses _DEFAULT_SOURCE this is just a fix till
         LIBNET_CFLAGS="$LIBNET_CFLAGS -D_DEFAULT_SOURCE"
 
 else
