@@ -33,34 +33,10 @@ usr/lib/syslog-ng/libloggen_helper-*.so.*
 usr/lib/syslog-ng/libloggen_plugin-*.so.*
 usr/lib/syslog-ng/*/loggen/libloggen_socket_plugin*.so*
 usr/lib/syslog-ng/*/loggen/libloggen_ssl_plugin*.so*
-usr/share/syslog-ng/include/scl/system/*
-usr/share/syslog-ng/include/scl/syslogconf/*
-usr/share/syslog-ng/include/scl/rewrite/*
-usr/share/syslog-ng/include/scl/mbox/*
-usr/share/syslog-ng/include/scl/apache/*
-usr/share/syslog-ng/include/scl/loggly/*
-usr/share/syslog-ng/include/scl/logmatic/*
-usr/share/syslog-ng/include/scl/solaris/*
-usr/share/syslog-ng/include/scl/cisco/*
-usr/share/syslog-ng/include/scl/collectd/*
-usr/share/syslog-ng/include/scl/windowseventlog/*
-usr/share/syslog-ng/include/scl/loadbalancer/*
-usr/share/syslog-ng/include/scl/iptables/*
-usr/share/syslog-ng/include/scl/default-network-drivers/*
-usr/share/syslog-ng/include/scl/sudo/*
-usr/share/syslog-ng/include/scl/nodejs/*
-usr/share/syslog-ng/include/scl/osquery/*
-usr/share/syslog-ng/include/scl/ewmm/*
-usr/share/syslog-ng/include/scl/graylog2/*
-usr/share/syslog-ng/include/scl/linux-audit/*
-usr/share/syslog-ng/include/scl/websense/*
-usr/share/syslog-ng/include/scl/netskope/*
-usr/share/syslog-ng/include/scl/junos/*
-usr/share/syslog-ng/include/scl/checkpoint/*
+usr/share/syslog-ng/include/scl/*
+
 usr/share/syslog-ng/xsd/*
 
-#Templates with json dependencies
-usr/share/syslog-ng/include/scl/cim/*
 [!kfreebsd-any] debian/syslog-ng.systemd =>  lib/systemd/system/syslog-ng.service
 
 debian/syslog-ng.conf                   /etc/syslog-ng/

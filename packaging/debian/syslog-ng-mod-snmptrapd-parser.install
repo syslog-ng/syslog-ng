@@ -1,2 +1,1 @@
 usr/lib/syslog-ng/*/libsnmptrapd-parser.so
-usr/share/syslog-ng/include/scl/snmptrap/snmptrapd-source.conf
