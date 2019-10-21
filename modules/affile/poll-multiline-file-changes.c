@@ -35,7 +35,7 @@ typedef struct PollMultilineFileChanges
 {
   PollFileChanges super;
   FileReader *file_reader;
-  gint timeout;
+  gint multi_line_timeout;
 
   gboolean timed_out;
   struct iv_timer multi_line_timer;
@@ -56,7 +56,7 @@ poll_multiline_file_changes_start_timer(PollMultilineFileChanges *self)
 {
   iv_validate_now();
   self->multi_line_timer.expires = iv_now;
-  timespec_add_msec(&self->multi_line_timer.expires, self->timeout);
+  timespec_add_msec(&self->multi_line_timer.expires, self->multi_line_timeout);
   iv_timer_register(&self->multi_line_timer);
 }
 
@@ -132,9 +132,9 @@ poll_multiline_file_changes_new(gint fd, const gchar *follow_filename, gint foll
   PollMultilineFileChanges *self = g_new0(PollMultilineFileChanges, 1);
   poll_file_changes_init_instance(&self->super, fd, follow_filename, follow_freq, &reader->super);
 
-  self->timeout = multi_line_timeout;
+  self->multi_line_timeout = multi_line_timeout;
 
-  if (!self->timeout)
+  if (!self->multi_line_timeout)
     return &self->super.super;
 
   self->file_reader = reader;
