@@ -131,8 +131,12 @@ run-%: setup
 
 shell: shell-$(DEFAULT_IMAGE)
 shell-%: setup
-	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti balabit/syslog-ng-$* /source/dbld/shell
-
+	$(DOCKER) inspect $* > /dev/null 2>&1; \
+	if [ $$? -eq 0 ]; then \
+		$(DOCKER) start -ia $*; \
+	else \
+		$(DOCKER) run $(DOCKER_RUN_ARGS) -ti --name $* balabit/syslog-ng-$* /source/dbld/shell; \
+	fi
 
 images: $(foreach image,$(IMAGES), image-$(image))
 image: image-$(DEFAULT_IMAGE)
