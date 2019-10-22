@@ -59,10 +59,10 @@ guint
 stats_register_type(const gchar *type_name)
 {
   main_loop_assert_main_thread();
-  guint index = 0;
-  gboolean result = g_ptr_array_find_with_equal_func(stats_types, type_name, (GEqualFunc)_types_equal, &index);
+  guint index_ = 0;
+  gboolean result = g_ptr_array_find_with_equal_func(stats_types, type_name, (GEqualFunc)_types_equal, &index_);
   if (result)
-    return index;
+    return index_;
 
   g_ptr_array_add(stats_types, g_strdup(type_name));
 

@@ -20,6 +20,7 @@
  *
  */
 #include "file-list.h"
+#include "compat/glib.h"
 
 struct _PendingFileList
 {

@@ -101,11 +101,12 @@ matrix:
         - make install
         - . scripts/get-libjvm-path.sh;
         - export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$JNI_LIBDIR";
-        - make func-test V=1
-        - make python-pep8 python-pylint
-        - make pytest-linters
         - make pytest-self-check
-        - make pytest-check;
+        - make python-pep8
+        - make python-pylint
+        - make pytest-linters
+        - make VERBOSE=1 func-test
+        - make pytest-check
 
     - env: B=style-check
       dist: trusty
@@ -157,11 +158,12 @@ matrix:
             -DPYTHON_VERSION=2
             -DCMAKE_INSTALL_PREFIX=$HOME/install/syslog-ng
             ..
-        - make --keep-going -j $(nproc) all install
-        - ctest -j $(nproc) --output-on-failure
-        - make VERBOSE=1 func-test
-        - make pytest-linters
+        - make --keep-going -j $(nproc) all check install
         - make pytest-self-check
+        - make python-pep8
+        - make python-pylint
+        - make pytest-linters
+        - make VERBOSE=1 func-test
         - make pytest-check
 
     - env: B=cmake
@@ -178,8 +180,7 @@ matrix:
             -DPYTHON_VERSION=2
             -DCMAKE_INSTALL_PREFIX=$HOME/install/syslog-ng
             ..
-        - make --keep-going -j $(nproc) all install
-        - ctest -j $(nproc) --output-on-failure
+        - make --keep-going -j $(nproc) all check install
 
     - env: B=check
       os: osx

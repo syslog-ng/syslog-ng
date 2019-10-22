@@ -28,13 +28,13 @@
 /* HTTPLoadBalancerTarget */
 
 void
-http_lb_target_init(HTTPLoadBalancerTarget *self, const gchar *url, gint index)
+http_lb_target_init(HTTPLoadBalancerTarget *self, const gchar *url, gint index_)
 {
   memset(self, 0, sizeof(*self));
 
   self->url = g_strdup(url);
   self->state = HTTP_TARGET_OPERATIONAL;
-  self->index = index;
+  self->index = index_;
 }
 
 void
