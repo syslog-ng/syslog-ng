@@ -39,6 +39,7 @@
 #include "timeutils/format.h"
 #include "timeutils/misc.h"
 
+#include <time.h>
 #include <unistd.h>
 #include <assert.h>
 #include <string.h>
@@ -777,13 +778,20 @@ log_writer_postpone_mark_timer(LogWriter *self)
     ml_batched_timer_postpone(&self->mark_timer, self->options->mark_freq);
 }
 
-/* this is the callback function that gets called when the MARK timeout
- * elapsed. It runs in the main thread.
+/* postpone the next mark with random delay in interval <1,mark_freq>. The
+ * reason to do this is to distribute MARKs more evenly in the interval, which
+ * is useful when larger number of machines have same mark_freq configured.
  */
 static void
-log_writer_mark_timeout(void *cookie)
+log_writer_postpone_mark_timer_random(LogWriter *self)
 {
-  LogWriter *self = (LogWriter *)cookie;
+  if (self->options->mark_freq > 0)
+    ml_batched_timer_postpone(&self->mark_timer, rand()%self->options->mark_freq + 1);
+}
+
+static void
+log_writer_mark(LogWriter *self)
+{
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   const gchar *hostname;
   gsize hostname_len;
@@ -807,7 +815,16 @@ log_writer_mark_timeout(void *cookie)
     {
       log_msg_drop(msg, &path_options, AT_PROCESSED);
     }
+}
 
+/* this is the callback function that gets called when the MARK timeout
+ * elapsed. It runs in the main thread.
+ */
+static void
+log_writer_mark_timeout(void *cookie)
+{
+  LogWriter *self = (LogWriter *)cookie;
+  log_writer_mark(self);
   /* we need to issue another MARK in all mark-mode cases that already
    * triggered this callback (dst-idle, host-idle, periodical).  The
    * original setup of the timer is at a different location:
@@ -1389,6 +1406,7 @@ static gboolean
 log_writer_init(LogPipe *s)
 {
   LogWriter *self = (LogWriter *) s;
+  srand(time(0));
 
   if (self->queue == NULL)
     {
@@ -1410,10 +1428,12 @@ log_writer_init(LogPipe *s)
 
   if (self->options->mark_mode == MM_PERIODICAL)
     {
-      /* periodical marks should be emitted even if no message is received,
-       * so we need a timer right from the start */
-
-      log_writer_postpone_mark_timer(self);
+      /* write first mark as soon as possible */
+      log_writer_mark(self);
+      /* write second mark with random delay. periodical marks should be
+       * emitted even if no message is received, so we need a timer right
+       * from the start */
+      log_writer_postpone_mark_timer_random(self);
     }
 
   return TRUE;
