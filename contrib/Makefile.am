@@ -84,6 +84,8 @@ EXTRA_DIST += \
 	contrib/systemd/syslog-ng@.service \
 	contrib/systemd/syslog-ng@default \
 	\
+	contrib/scripts/config-graph-json-to-dot.py \
+	\
 	contrib/valgrind/syslog-ng.supp
 
 if ENABLE_SYSTEMD_UNIT_INSTALL
