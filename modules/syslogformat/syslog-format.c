@@ -205,6 +205,9 @@ log_msg_parse_cisco_sequence_id(LogMessage *self, const guchar **data, gint *len
   if (!_process_any_char(&src, &left))
     return;
 
+  if (left == 0)
+    return;
+
   /* if the next char is not space, then we may try to read a date */
 
   if (*src != ' ')
@@ -736,8 +739,16 @@ log_msg_parse_legacy_header(LogMessage *self, const guchar **data, gint *length,
   GTimeVal now;
 
   log_msg_parse_cisco_sequence_id(self, &src, &left);
+  if (left == 0)
+    return FALSE;
+
   log_msg_parse_skip_chars(self, &src, &left, " ", -1);
+  if (left == 0)
+    return FALSE;
+
   log_msg_parse_cisco_timestamp_attributes(self, &src, &left, parse_options->flags);
+  if (left == 0)
+    return FALSE;
 
   cached_g_current_time(&now);
   if (log_msg_parse_date(self, &src, &left, parse_options->flags & ~LP_SYSLOG_PROTOCOL,
