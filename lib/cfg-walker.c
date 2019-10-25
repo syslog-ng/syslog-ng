@@ -22,6 +22,7 @@
  */
 
 #include "cfg-walker.h"
+#include "logpipe.h"
 
 Arc *
 arc_new(LogPipe *from, LogPipe *to, ArcType arc_type)
@@ -52,10 +53,40 @@ arc_equal(Arc *arc1, Arc *arc2)
   return arc1->to == arc2->to;
 }
 
+static void walk_pipe(LogPipe *self, gpointer *user_data);
+
+static void
+_add_arc_and_walk(Arc *arc, gpointer *user_data)
+{
+  GHashTable **arcs = user_data[1];
+  g_hash_table_insert(*arcs, arc, NULL);
+  walk_pipe(arc->to, user_data);
+}
+
+static void
+walk_pipe(LogPipe *self, gpointer *user_data)
+{
+
+  GHashTable **nodes = user_data[0];
+
+  if (g_hash_table_contains(*nodes, self))
+    return;
+
+  g_hash_table_insert(*nodes, self, NULL);
+
+  GList *new_arcs = log_pipe_get_arcs(self);
+  g_list_foreach(new_arcs, (GFunc)_add_arc_and_walk, user_data);
+  g_list_free(new_arcs);
+}
+
 void
 cfg_walker_get_graph(GPtrArray *start_nodes, GHashTable **nodes, GHashTable **arcs)
 {
   *nodes = g_hash_table_new(g_direct_hash, g_direct_equal);
   *arcs = g_hash_table_new_full((GHashFunc)arc_hash, (GEqualFunc)arc_equal, (GDestroyNotify)arc_free, NULL);
-  return;
+
+  g_ptr_array_foreach(start_nodes, (GFunc)walk_pipe, (gpointer [])
+  {
+    nodes, arcs
+  });
 }
