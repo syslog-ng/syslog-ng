@@ -26,6 +26,21 @@
 
 #include "syslog-ng.h"
 
+typedef enum
+{
+  ARC_TYPE_PIPE_NEXT,
+  ARC_TYPE_NEXT_HOP
+} ArcType;
+
+typedef struct
+{
+  LogPipe *from;
+  LogPipe *to;
+  ArcType arc_type;
+} Arc;
+
 void cfg_walker_get_graph(GPtrArray *start_nodes, GHashTable **nodes, GHashTable **arcs);
+Arc *arc_new(LogPipe *from, LogPipe *to, ArcType arc_type);
+void arc_free(Arc *self);
 
 #endif

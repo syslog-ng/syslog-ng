@@ -23,10 +23,39 @@
 
 #include "cfg-walker.h"
 
+Arc *
+arc_new(LogPipe *from, LogPipe *to, ArcType arc_type)
+{
+  Arc *self = g_new0(Arc, 1);
+  self->from = from;
+  self->to = to;
+  self->arc_type = arc_type;
+
+  return self;
+};
+
+void
+arc_free(Arc *self)
+{
+  g_free(self);
+}
+
+static guint
+arc_hash(Arc *arc)
+{
+  return g_direct_hash(arc->from);
+}
+
+static gboolean
+arc_equal(Arc *arc1, Arc *arc2)
+{
+  return arc1->to == arc2->to;
+}
+
 void
 cfg_walker_get_graph(GPtrArray *start_nodes, GHashTable **nodes, GHashTable **arcs)
 {
   *nodes = g_hash_table_new(g_direct_hash, g_direct_equal);
-  *arcs = g_hash_table_new(g_direct_hash, g_direct_equal);
+  *arcs = g_hash_table_new_full((GHashFunc)arc_hash, (GEqualFunc)arc_equal, (GDestroyNotify)arc_free, NULL);
   return;
 }
