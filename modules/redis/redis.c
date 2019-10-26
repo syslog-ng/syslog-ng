@@ -211,13 +211,13 @@ authenticate_to_redis(RedisDriver *self, const gchar *password)
   return send_redis_command(self, "AUTH %s", self->auth);
 }
 
-static LogThreadedResult
-redis_dd_connect(RedisDriver *self)
+static gboolean
+redis_dd_connect(LogThreadedDestDriver *s)
 {
+  RedisDriver *self = (RedisDriver *)s;
+
   if (self->c && check_connection_to_redis(self))
-    {
-      return LTR_SUCCESS;
-    }
+    return TRUE;
 
   if (self->c)
     redisFree(self->c);
@@ -237,7 +237,7 @@ redis_dd_connect(RedisDriver *self)
         {
           msg_error("REDIS server can't allocate redis context");
         }
-      return LTR_ERROR;
+      return FALSE;
     }
 
   if (self->auth)
@@ -245,23 +245,23 @@ redis_dd_connect(RedisDriver *self)
       {
         msg_error("REDIS: failed to authenticate",
                   evt_tag_str("driver", self->super.super.super.id));
-        return LTR_NOT_CONNECTED;
+        return FALSE;
       }
 
   if (!check_connection_to_redis(self))
     {
       msg_error("REDIS: failed to connect",
                 evt_tag_str("driver", self->super.super.super.id));
-      return LTR_NOT_CONNECTED;
+      return FALSE;
     }
 
   if (self->c->err)
-    return LTR_ERROR;
+    return FALSE;
 
   msg_debug("Connecting to REDIS succeeded",
             evt_tag_str("driver", self->super.super.super.id));
 
-  return LTR_SUCCESS;
+  return TRUE;
 }
 
 static void
@@ -325,10 +325,6 @@ static LogThreadedResult
 redis_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
 {
   RedisDriver *self = (RedisDriver *)s;
-  LogThreadedResult connection_status = redis_dd_connect(self);
-
-  if (connection_status != LTR_SUCCESS)
-    return connection_status;
 
   ScratchBuffersMarker marker;
   scratch_buffers_mark(&marker);
@@ -370,8 +366,6 @@ redis_worker_thread_init(LogThreadedDestDriver *d)
 
   msg_debug("Worker thread started",
             evt_tag_str("driver", self->super.super.super.id));
-
-  redis_dd_connect(self);
 }
 
 static void
@@ -447,6 +441,7 @@ redis_dd_new(GlobalConfig *cfg)
 
   self->super.worker.thread_init = redis_worker_thread_init;
   self->super.worker.thread_deinit = redis_worker_thread_deinit;
+  self->super.worker.connect = redis_dd_connect;
   self->super.worker.disconnect = redis_dd_disconnect;
   self->super.worker.insert = redis_worker_insert;
 
