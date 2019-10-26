@@ -28,6 +28,7 @@
 
 LogDriver *redis_dd_new(GlobalConfig *cfg);
 
+void redis_dd_set_timeout(LogDriver *d, const glong timeout);
 void redis_dd_set_host(LogDriver *d, const gchar *host);
 void redis_dd_set_port(LogDriver *d, gint port);
 void redis_dd_set_auth(LogDriver *d, const gchar *auth);

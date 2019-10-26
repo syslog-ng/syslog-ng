@@ -54,6 +54,7 @@ typedef struct
   gint argc;
   gchar **argv;
   size_t *argvlen;
+  struct timeval timeout;
 } RedisDriver;
 
 /*
@@ -84,6 +85,13 @@ redis_dd_set_auth(LogDriver *d, const gchar *auth)
 
   g_free(self->auth);
   self->auth = g_strdup(auth);
+}
+
+void
+redis_dd_set_timeout(LogDriver *d, const glong timeout)
+{
+  RedisDriver *self = (RedisDriver *)d;
+  self->timeout.tv_sec = timeout;
 }
 
 static void
@@ -214,15 +222,22 @@ redis_dd_connect(RedisDriver *self)
   if (self->c)
     redisFree(self->c);
 
-  self->c = redisConnect(self->host, self->port);
+  self->c = redisConnectWithTimeout(self->host, self->port, self->timeout);
 
-  if (self->c->err)
+  if (self->c == NULL || self->c->err)
     {
-      msg_error("REDIS server error during connection",
-                evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("error", self->c->errstr),
-                evt_tag_int("time_reopen", self->super.time_reopen));
-      return LTR_NOT_CONNECTED;
+      if (self->c)
+        {
+          msg_error("REDIS server error during connection",
+                    evt_tag_str("driver", self->super.super.super.id),
+                    evt_tag_str("error", self->c->errstr),
+                    evt_tag_int("time_reopen", self->super.time_reopen));
+        }
+      else
+        {
+          msg_error("REDIS server can't allocate redis context");
+        }
+      return LTR_ERROR;
     }
 
   if (self->auth)
@@ -441,6 +456,7 @@ redis_dd_new(GlobalConfig *cfg)
   redis_dd_set_host((LogDriver *)self, "127.0.0.1");
   redis_dd_set_port((LogDriver *)self, 6379);
   redis_dd_set_auth((LogDriver *)self, NULL);
+  redis_dd_set_timeout((LogDriver *)self, 10);
 
   self->command = g_string_sized_new(32);
 
