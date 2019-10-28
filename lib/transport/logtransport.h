@@ -37,6 +37,7 @@ struct _LogTransport
   const gchar *name;
   gssize (*read)(LogTransport *self, gpointer buf, gsize count, LogTransportAuxData *aux);
   gssize (*write)(LogTransport *self, const gpointer buf, gsize count);
+  gssize (*writev)(LogTransport *self, struct iovec *iov, gint iov_count);
   void (*free_fn)(LogTransport *self);
 };
 
@@ -44,6 +45,12 @@ static inline gssize
 log_transport_write(LogTransport *self, const gpointer buf, gsize count)
 {
   return self->write(self, buf, count);
+}
+
+static inline gssize
+log_transport_writev(LogTransport *self, struct iovec *iov, gint iov_count)
+{
+  return self->writev(self, iov, iov_count);
 }
 
 static inline gssize
