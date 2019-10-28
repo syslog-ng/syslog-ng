@@ -67,6 +67,23 @@ Test(mock_transport, test_mock_transport_simple_write)
   log_transport_free((LogTransport *)transport);
 }
 
+Test(mock_transport, test_mock_transport_writev)
+{
+  LogTransportMock *transport = (LogTransportMock *)log_transport_mock_records_new(LTM_EOF);
+  cr_assert(transport);
+
+  gchar buffer[100] = "chunkofdata";
+  
+  struct iovec iov = { .iov_base = buffer, .iov_len = strlen(buffer) + 1 };
+
+  log_transport_writev((LogTransport *)transport, &iov, 1);
+  memset(buffer, 0, sizeof(buffer));
+  log_transport_mock_read_from_write_buffer(transport, buffer, sizeof(buffer));
+  cr_assert_str_eq(buffer, "chunkofdata");
+
+  log_transport_free((LogTransport *)transport);
+}
+
 Test(mock_transport, test_mock_transport_read_from_write_buffer)
 {
   LogTransportMock *transport = (LogTransportMock *)log_transport_mock_records_new(LTM_EOF);

@@ -27,6 +27,9 @@
 
 #include <string.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 typedef enum data_type
 {
@@ -257,6 +260,26 @@ log_transport_mock_write_method(LogTransport *s, const gpointer buf, gsize count
   return count;
 }
 
+gssize
+log_transport_mock_writev_method(LogTransport *s, struct iovec *iov, gint iov_count)
+{
+  LogTransportMock *self = (LogTransportMock *)s;
+
+  gssize sum = 0;
+  for (gint i = 0; i < iov_count; i++)
+    {
+      data_t value;
+
+      value.type = DATA_STRING;
+      value.iov.iov_base = g_strndup(iov[i].iov_base, iov[i].iov_len);
+      value.iov.iov_len = iov[i].iov_len;
+
+      g_array_append_val(self->write_buffer, value);
+      sum += value.iov.iov_len;
+    }
+  return sum;
+}
+
 void
 log_transport_mock_free_method(LogTransport *s)
 {
@@ -309,6 +332,7 @@ log_transport_mock_init(LogTransportMock *self, const gchar *read_buffer1, gssiz
   log_transport_init_instance(&self->super, 0);
   self->super.read = log_transport_mock_read_method;
   self->super.write = log_transport_mock_write_method;
+  self->super.writev = log_transport_mock_writev_method;
   self->super.free_fn = log_transport_mock_free_method;
 
   buffer = read_buffer1;
