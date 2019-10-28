@@ -71,7 +71,7 @@ log_proto_file_writer_flush(LogProtoClient *s)
       else if (rc != len)
         {
           self->partial_pos += rc;
-          return LPS_SUCCESS;
+          return LPS_PARTIAL;
         }
       else
         {
