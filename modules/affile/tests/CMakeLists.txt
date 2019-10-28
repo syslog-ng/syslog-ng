@@ -1,6 +1,7 @@
 add_unit_test(CRITERION LIBTEST TARGET test_wildcard_source DEPENDS affile)
 add_unit_test(CRITERION TARGET test_directory_monitor DEPENDS affile)
 add_unit_test(CRITERION TARGET test_collection_comparator DEPENDS affile)
+add_unit_test(CRITERION LIBTEST TARGET test_file_writer DEPENDS affile)
 add_unit_test(CRITERION TARGET test_file_opener DEPENDS affile)
 add_unit_test(CRITERION TARGET test_wildcard_file_reader DEPENDS affile)
 add_unit_test(CRITERION TARGET test_file_list DEPENDS affile)

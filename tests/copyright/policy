@@ -71,6 +71,7 @@ modules/http/http-grammar.ym
 modules/timestamp/rewrite-.*$
 modules/add-contextual-data/add-contextual-data-glob-selector\.[ch]$
 modules/add-contextual-data/tests/test_glob_selector\.c$
+modules/affile/tests/test_file_writer\.c$
  GPLv2+_SSL
 dev-utils/plugin_skeleton_creator/create_plugin.sh
 tests/functional
