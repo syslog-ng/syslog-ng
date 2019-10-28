@@ -62,6 +62,7 @@ struct _LogTransportMock
   GArray *write_buffer;
   gint write_buffer_index;
   gint current_value_ndx;
+  gsize write_chunk_limit;
   /* position within the current I/O chunk */
   gint current_iov_pos;
   gboolean input_is_a_stream;
@@ -183,6 +184,12 @@ log_transport_mock_read_chunk_from_write_buffer(LogTransportMock *self, gchar *b
   return written_len;
 }
 
+void
+log_transport_mock_set_write_chunk_limit(LogTransportMock *self, gsize chunk_limit)
+{
+  self->write_chunk_limit = chunk_limit;
+}
+
 gssize
 log_transport_mock_read_method(LogTransport *s, gpointer buf, gsize count, LogTransportAuxData *aux)
 {
@@ -250,11 +257,13 @@ log_transport_mock_write_method(LogTransport *s, const gpointer buf, gsize count
 {
   LogTransportMock *self = (LogTransportMock *)s;
   data_t data;
+
+  if (self->write_chunk_limit && self->write_chunk_limit < count)
+    count = self->write_chunk_limit;
+
   data.type = DATA_STRING;
-  data.iov = (struct iovec_const)
-  {
-    .iov_base = g_strndup(buf, count), .iov_len = count
-  };
+  data.iov.iov_base = g_strndup(buf, count);
+  data.iov.iov_len = count;
   g_array_append_val(self->write_buffer, data);
 
   return count;
@@ -271,11 +280,18 @@ log_transport_mock_writev_method(LogTransport *s, struct iovec *iov, gint iov_co
       data_t value;
 
       value.type = DATA_STRING;
-      value.iov.iov_base = g_strndup(iov[i].iov_base, iov[i].iov_len);
       value.iov.iov_len = iov[i].iov_len;
+
+      if (self->write_chunk_limit &&
+          sum + iov[i].iov_len > self->write_chunk_limit)
+        value.iov.iov_len = self->write_chunk_limit - sum;
+
+      value.iov.iov_base = g_strndup(iov[i].iov_base, value.iov.iov_len);
 
       g_array_append_val(self->write_buffer, value);
       sum += value.iov.iov_len;
+      if (value.iov.iov_len != iov[i].iov_len)
+        break;
     }
   return sum;
 }
