@@ -112,7 +112,13 @@ _init(LogPipe *s)
       return FALSE;
     }
 
-  return log_threaded_source_driver_init_method(s);
+  if (!log_threaded_source_driver_init_method(s))
+    return FALSE;
+
+  log_threaded_source_driver_set_worker_run_func(&self->super, _run);
+  log_threaded_source_driver_set_worker_request_exit_func(&self->super, _request_exit);
+
+  return TRUE;
 }
 
 static const gchar *
@@ -167,9 +173,6 @@ threaded_random_generator_sd_new(GlobalConfig *cfg)
   self->freq = 1000;
   self->flags = GRND_RANDOM;
   g_atomic_counter_set(&self->exit_requested, FALSE);
-
-  log_threaded_source_driver_set_worker_run_func(&self->super, _run);
-  log_threaded_source_driver_set_worker_request_exit_func(&self->super, _request_exit);
 
   self->super.super.super.super.init = _init;
   self->super.format_stats_instance = _format_stats_instance;
