@@ -190,6 +190,14 @@ log_transport_mock_set_write_chunk_limit(LogTransportMock *self, gsize chunk_lim
   self->write_chunk_limit = chunk_limit;
 }
 
+void
+log_transport_mock_empty_write_buffer(LogTransportMock *self)
+{
+  g_array_set_size(self->write_buffer, 0);
+  self->write_buffer_index = 0;
+  self->current_value_ndx = 0;
+}
+
 gssize
 log_transport_mock_read_method(LogTransport *s, gpointer buf, gsize count, LogTransportAuxData *aux)
 {

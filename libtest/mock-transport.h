@@ -67,6 +67,9 @@ log_transport_mock_read_chunk_from_write_buffer(LogTransportMock *self, gchar *b
 void
 log_transport_mock_set_write_chunk_limit(LogTransportMock *self, gsize chunk_limit);
 
+void
+log_transport_mock_empty_write_buffer(LogTransportMock *self);
+
 LogTransportMock *
 log_transport_mock_clone(LogTransportMock *self);
 
