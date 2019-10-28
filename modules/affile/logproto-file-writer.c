@@ -61,7 +61,7 @@ log_proto_file_writer_flush(LogProtoClient *s)
       /* there is still some data from the previous file writing process */
       gint len = self->partial_len - self->partial_pos;
 
-      rc = write(self->fd, self->partial + self->partial_pos, len);
+      rc = log_transport_write(self->super.transport, self->partial + self->partial_pos, len);
       if (rc > 0 && self->fsync)
         fsync(self->fd);
       if (rc < 0)
@@ -84,7 +84,7 @@ log_proto_file_writer_flush(LogProtoClient *s)
   if (self->buf_count == 0)
     return LPS_SUCCESS;
 
-  rc = writev(self->fd, self->buffer, self->buf_count);
+  rc = log_transport_writev(self->super.transport, self->buffer, self->buf_count);
   if (rc > 0 && self->fsync)
     fsync(self->fd);
 
