@@ -417,6 +417,12 @@ _free_candidate_plugins(PluginContext *context)
   context->candidate_plugins = NULL;
 }
 
+gboolean
+plugin_has_discovery_run(PluginContext *context)
+{
+  return context->candidate_plugins != NULL;
+}
+
 void
 plugin_discover_candidate_modules(PluginContext *context)
 {

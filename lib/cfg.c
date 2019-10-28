@@ -161,7 +161,7 @@ _invoke_module_deinit(gchar *key, ModuleConfig *mc, gpointer user_data)
   module_config_deinit(mc, cfg);
 }
 
-static void
+static gboolean
 _sync_plugin_module_path_with_global_define(GlobalConfig *self)
 {
   const gchar *module_path;
@@ -173,11 +173,13 @@ _sync_plugin_module_path_with_global_define(GlobalConfig *self)
   if (self->lexer)
     {
       module_path = cfg_args_get(self->globals, "module-path");
-      if (module_path)
+      if (module_path && strcmp(module_path, self->plugin_context.module_path) != 0)
         {
           plugin_context_set_module_path(&self->plugin_context, module_path);
+          return TRUE;
         }
     }
+  return FALSE;
 }
 
 gboolean
@@ -185,19 +187,6 @@ cfg_load_module(GlobalConfig *cfg, const gchar *module_name)
 {
   _sync_plugin_module_path_with_global_define(cfg);
   return plugin_load_module(&cfg->plugin_context, module_name, NULL);
-}
-
-void
-cfg_discover_candidate_modules(GlobalConfig *self)
-{
-  gboolean autoload_enabled = atoi(cfg_args_get(self->globals, "autoload-compiled-modules") ? : "1");
-
-  if (self->use_plugin_discovery &&
-      autoload_enabled)
-    {
-      _sync_plugin_module_path_with_global_define(self);
-      plugin_discover_candidate_modules(&self->plugin_context);
-    }
 }
 
 void
@@ -223,6 +212,22 @@ cfg_load_forced_modules(GlobalConfig *self)
           msg_error("Error loading module, forcing exit", evt_tag_str("module", name));
           exit(1);
         }
+    }
+}
+
+static gboolean
+_is_module_autoload_enabled(GlobalConfig *self)
+{
+  return atoi(cfg_args_get(self->globals, "autoload-compiled-modules") ? : "1");
+}
+
+void
+cfg_discover_candidate_modules(GlobalConfig *self)
+{
+  if (self->use_plugin_discovery && _is_module_autoload_enabled(self))
+    {
+      if (_sync_plugin_module_path_with_global_define(self) || !plugin_has_discovery_run(&self->plugin_context))
+        plugin_discover_candidate_modules(&self->plugin_context);
     }
 }
 

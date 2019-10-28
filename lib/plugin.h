@@ -109,6 +109,7 @@ gboolean plugin_load_module(PluginContext *context, const gchar *module_name, Cf
 
 void plugin_list_modules(FILE *out, gboolean verbose);
 
+gboolean plugin_has_discovery_run(PluginContext *context);
 void plugin_discover_candidate_modules(PluginContext *context);
 
 void plugin_context_copy_candidates(PluginContext *context, PluginContext *src_context);
