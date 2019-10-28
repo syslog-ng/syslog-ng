@@ -224,8 +224,8 @@ afstomp_dd_connect(STOMPDestDriver *self, gboolean reconnect)
       return FALSE;
     }
 
-  stomp_receive_frame(self->conn, &frame);
-  if (strcmp(frame.command, "CONNECTED"))
+  gboolean frame_read = stomp_receive_frame(self->conn, &frame);
+  if (!frame_read || strcmp(frame.command, "CONNECTED") != 0)
     {
       msg_debug("Error connecting to STOMP server, stomp server did not accept CONNECT request");
       stomp_frame_deinit(&frame);

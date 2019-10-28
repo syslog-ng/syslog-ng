@@ -97,3 +97,10 @@ Test(stomp_proto, test_generate_gstring_from_frame)
   stomp_frame_deinit(&frame);
 };
 
+Test(stomp_proto, test_invalid_command)
+{
+  stomp_frame frame;
+
+  cr_assert_not(stomp_parse_frame(g_string_new("CONNECTED\n no-colon\n"), &frame));
+  stomp_frame_deinit(&frame);
+};

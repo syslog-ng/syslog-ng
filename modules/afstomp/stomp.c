@@ -227,6 +227,9 @@ stomp_parse_header(char *buffer, int buflen, stomp_frame *frame, char **out_pos)
     }
 
   pos = g_strstr_len(buffer, buflen, "\n");
+  if (!pos)
+    return STOMP_PARSE_ERROR;
+
   if (pos == buffer)
     {
       *out_pos = pos + 1;
@@ -234,6 +237,9 @@ stomp_parse_header(char *buffer, int buflen, stomp_frame *frame, char **out_pos)
     }
 
   colon = g_strstr_len(buffer, pos - buffer, ":");
+  if (!colon)
+    return STOMP_PARSE_ERROR;
+
   stomp_frame_add_header_len(frame, buffer, colon - buffer,
                              colon + 1, pos - colon - 1);
   *out_pos = pos + 1;
@@ -256,6 +262,10 @@ stomp_parse_frame(GString *data, stomp_frame *frame)
     {
       res = stomp_parse_header(pos, data->str + data->len - pos, frame, &pos);
     }
+
+  if (res == STOMP_PARSE_ERROR)
+    return FALSE;
+
   frame->body = g_strndup(pos, data->len - (pos - data->str));
   return TRUE;
 }
@@ -264,7 +274,6 @@ int
 stomp_receive_frame(stomp_connection *connection, stomp_frame *frame)
 {
   GString *data = g_string_sized_new(4096);
-  int res;
 
   if (!stomp_read_data(connection, data))
     {
@@ -272,9 +281,11 @@ stomp_receive_frame(stomp_connection *connection, stomp_frame *frame)
       return FALSE;
     }
 
-  res = stomp_parse_frame(data, frame);
-  msg_debug("Frame received",
-            evt_tag_str("command",frame->command));
+  int res = stomp_parse_frame(data, frame);
+
+  if (res)
+    msg_debug("Frame received", evt_tag_str("command", frame->command));
+
   g_string_free(data, TRUE);
   return res;
 }
