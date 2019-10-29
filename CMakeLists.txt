@@ -322,7 +322,7 @@ if (CRITERION_FOUND)
   include(CTest)
 endif()
 
-add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -j $(nproc) --output-on-failure)
+add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -j $$(nproc) --output-on-failure)
 
 set(IMPORTANT_WARNINGS
   -Wshadow
