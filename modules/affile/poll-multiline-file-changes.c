@@ -21,9 +21,9 @@
  *
  */
 
+#include "syslog-ng.h"
 #include "poll-multiline-file-changes.h"
 #include "messages.h"
-#include "timeutils/misc.h"
 
 #include <iv.h>
 
@@ -38,7 +38,7 @@ typedef struct PollMultilineFileChanges
   gint multi_line_timeout;
 
   gboolean timed_out;
-  struct iv_timer multi_line_timer;
+  gint64 last_eof;
 } PollMultilineFileChanges;
 
 
@@ -54,17 +54,40 @@ _flush_partial_message(PollMultilineFileChanges *self)
 static void
 poll_multiline_file_changes_start_timer(PollMultilineFileChanges *self)
 {
-  iv_validate_now();
-  self->multi_line_timer.expires = iv_now;
-  timespec_add_msec(&self->multi_line_timer.expires, self->multi_line_timeout);
-  iv_timer_register(&self->multi_line_timer);
+  self->last_eof = g_get_monotonic_time();
 }
 
 static void
 poll_multiline_file_changes_stop_timer(PollMultilineFileChanges *self)
 {
-  if (iv_timer_registered(&self->multi_line_timer))
-    iv_timer_unregister(&self->multi_line_timer);
+  self->last_eof = 0;
+}
+
+static void
+poll_multiline_file_changes_timeout_expired(PollMultilineFileChanges *self)
+{
+  msg_debug("Multi-line timeout has elapsed, processing partial message",
+            evt_tag_str("filename", self->super.follow_filename));
+
+  self->last_eof = 0;
+  self->timed_out = TRUE;
+  _flush_partial_message(self);
+}
+
+static gboolean
+_is_multi_line_timeout_pending(PollMultilineFileChanges *self)
+{
+  return !self->timed_out && self->last_eof != 0;
+}
+
+static gboolean
+_is_multi_line_timeout_expired(PollMultilineFileChanges *self)
+{
+  if (self->last_eof == 0)
+    return FALSE;
+
+  gint64 millisecs_since_last_eof = (g_get_monotonic_time() - self->last_eof) / 1000;
+  return millisecs_since_last_eof > self->multi_line_timeout;
 }
 
 static void
@@ -72,8 +95,14 @@ poll_multiline_file_changes_on_eof(PollFileChanges *s)
 {
   PollMultilineFileChanges *self = (PollMultilineFileChanges *) s;
 
-  if (!self->timed_out && !iv_timer_registered(&self->multi_line_timer))
-    poll_multiline_file_changes_start_timer(self);
+  if (_is_multi_line_timeout_pending(self))
+    {
+      poll_multiline_file_changes_start_timer(self);
+      return;
+    }
+
+  if (_is_multi_line_timeout_expired(self))
+    poll_multiline_file_changes_timeout_expired(self);
 }
 
 static void
@@ -113,18 +142,6 @@ poll_multiline_file_changes_stop_watches(PollEvents *s)
   poll_file_changes_stop_watches(s);
 }
 
-static void
-poll_multiline_file_changes_timeout_expired(gpointer s)
-{
-  PollMultilineFileChanges *self = (PollMultilineFileChanges *) s;
-
-  msg_debug("Multi-line timeout has elapsed, processing partial message",
-            evt_tag_str("filename", self->super.follow_filename));
-
-  self->timed_out = TRUE;
-  _flush_partial_message(self);
-}
-
 PollEvents *
 poll_multiline_file_changes_new(gint fd, const gchar *follow_filename, gint follow_freq,
                                 gint multi_line_timeout, FileReader *reader)
@@ -144,10 +161,6 @@ poll_multiline_file_changes_new(gint fd, const gchar *follow_filename, gint foll
 
   self->super.super.update_watches = poll_multiline_file_changes_update_watches;
   self->super.super.stop_watches = poll_multiline_file_changes_stop_watches;
-
-  IV_TIMER_INIT(&self->multi_line_timer);
-  self->multi_line_timer.cookie = self;
-  self->multi_line_timer.handler = poll_multiline_file_changes_timeout_expired;
 
   return &self->super.super;
 }
