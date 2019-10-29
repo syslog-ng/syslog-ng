@@ -47,6 +47,7 @@ addons:
       - libxml2-utils
       - doxygen
       - libsnmp-dev
+      - ninja-build
 install:
       - pip install --user -r requirements.txt
       - pip list
@@ -176,11 +177,12 @@ matrix:
         - mkdir build
         - cd build
         - cmake
+            -G Ninja
             -DCMAKE_C_FLAGS=-Werror
             -DPYTHON_VERSION=2
             -DCMAKE_INSTALL_PREFIX=$HOME/install/syslog-ng
             ..
-        - make --keep-going -j $(nproc) all check install
+        - ninja all check install
 
     - env: B=check
       os: osx
