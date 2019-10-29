@@ -106,10 +106,12 @@ void plugin_candidate_free(PluginCandidate *self);
 
 void plugin_register(PluginContext *context, Plugin *p, gint number);
 gboolean plugin_load_module(PluginContext *context, const gchar *module_name, CfgArgs *args);
+gboolean plugin_is_module_available(PluginContext *context, const gchar *module_name);
 
 void plugin_list_modules(FILE *out, gboolean verbose);
 
-void plugin_load_candidate_modules(PluginContext *context);
+gboolean plugin_has_discovery_run(PluginContext *context);
+void plugin_discover_candidate_modules(PluginContext *context);
 
 void plugin_context_copy_candidates(PluginContext *context, PluginContext *src_context);
 void plugin_context_set_module_path(PluginContext *context, const gchar *module_path);

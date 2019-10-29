@@ -405,19 +405,45 @@ call_init:
   return result;
 }
 
+gboolean
+plugin_is_module_available(PluginContext *context, const gchar *module_name)
+{
+  for (GList *l = context->candidate_plugins; l; l = l->next)
+    {
+      PluginCandidate *pc = (PluginCandidate *) l->data;
+
+      if (strcmp(pc->module_name, module_name) == 0)
+        return TRUE;
+    }
+  return FALSE;
+}
+
 /************************************************************
  * Candidate modules
  ************************************************************/
 
+static void
+_free_candidate_plugins(PluginContext *context)
+{
+  g_list_foreach(context->candidate_plugins, (GFunc) plugin_candidate_free, NULL);
+  g_list_free(context->candidate_plugins);
+  context->candidate_plugins = NULL;
+}
+
+gboolean
+plugin_has_discovery_run(PluginContext *context)
+{
+  return context->candidate_plugins != NULL;
+}
+
 void
-plugin_load_candidate_modules(PluginContext *context)
+plugin_discover_candidate_modules(PluginContext *context)
 {
   GModule *mod;
   gchar **mod_paths;
   gint i, j;
 
-  if (context->candidate_plugins)
-    return;
+  _free_candidate_plugins(context);
 
   mod_paths = g_strsplit(context->module_path ? : "", G_SEARCHPATH_SEPARATOR_S, 0);
   for (i = 0; mod_paths[i]; i++)
@@ -504,14 +530,6 @@ _free_plugins(PluginContext *context)
   g_list_foreach(context->plugins, (GFunc) _free_plugin, NULL);
   g_list_free(context->plugins);
   context->plugins = NULL;
-}
-
-static void
-_free_candidate_plugins(PluginContext *context)
-{
-  g_list_foreach(context->candidate_plugins, (GFunc) plugin_candidate_free, NULL);
-  g_list_free(context->candidate_plugins);
-  context->candidate_plugins = NULL;
 }
 
 void

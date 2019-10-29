@@ -211,11 +211,11 @@ Test(template_compile, test_macro_with_invalid_msgref_are_recognized_as_the_top_
 
 Test(template_compile, test_dollar_prefixed_with_backslash_is_a_literal_dollar)
 {
-  cfg_set_version(configuration, 0x304);
+  cfg_set_version_without_validation(configuration, 0x304);
   assert_template_compile("Test \\$STRING");
   assert_compiled_template(text = "Test $STRING", default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
 
-  cfg_set_version(configuration, 0x305);
+  cfg_set_version_without_validation(configuration, 0x305);
   assert_template_compile("Test \\$STRING");
   assert_compiled_template(text = "Test \\", default_value = NULL, value_handle = log_msg_get_value_handle("STRING"),
                            type = LTE_VALUE, msg_ref = 0);
@@ -251,11 +251,11 @@ Test(template_compile, test_dollar_with_an_invalid_macro_name_without_braces_is_
 
 Test(template_compile, test_backslash_without_finishing_the_escape_sequence_is_ignored)
 {
-  cfg_set_version(configuration, 0x304);
+  cfg_set_version_without_validation(configuration, 0x304);
   assert_template_compile("foo\\");
   assert_compiled_template(text = "foo", default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
 
-  cfg_set_version(configuration, 0x305);
+  cfg_set_version_without_validation(configuration, 0x305);
   assert_template_compile("foo\\");
   assert_compiled_template(text = "foo\\", default_value = NULL, macro = M_NONE, type = LTE_MACRO, msg_ref = 0);
 }

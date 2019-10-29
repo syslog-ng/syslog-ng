@@ -62,9 +62,6 @@ struct _GlobalConfig
   /* hex-encoded syslog-ng major/minor, e.g. 0x0201 is syslog-ng 2.1 format */
   gint user_version;
 
-  /* version number as parsed from the configuration file, it can be set
-   * multiple times if the user uses @version multiple times */
-  guint parsed_version;
   const gchar *filename;
   PluginContext plugin_context;
   gboolean use_plugin_discovery;
@@ -126,7 +123,10 @@ struct _GlobalConfig
   GList *file_list;
 };
 
+gboolean cfg_load_module_with_args(GlobalConfig *cfg, const gchar *module_name, CfgArgs *args);
 gboolean cfg_load_module(GlobalConfig *cfg, const gchar *module_name);
+gboolean cfg_is_module_available(GlobalConfig *self, const gchar *module_name);
+void cfg_discover_candidate_modules(GlobalConfig *self);
 
 Plugin *cfg_find_plugin(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name);
 gpointer cfg_parse_plugin(GlobalConfig *cfg, Plugin *plugin, YYLTYPE *yylloc, gpointer arg);
@@ -140,8 +140,8 @@ void cfg_set_mark_mode(GlobalConfig *self, const gchar *mark_mode);
 gint cfg_tz_convert_value(gchar *convert);
 gint cfg_ts_format_value(gchar *format);
 
+void cfg_set_version_without_validation(GlobalConfig *self, gint version);
 gboolean cfg_set_version(GlobalConfig *self, gint version);
-void cfg_load_candidate_modules(GlobalConfig *self);
 
 void cfg_set_global_paths(GlobalConfig *self);
 
@@ -190,5 +190,18 @@ cfg_set_use_uniqid(gboolean flag)
 gint cfg_get_user_version(const GlobalConfig *cfg);
 guint cfg_get_parsed_version(const GlobalConfig *cfg);
 const gchar *cfg_get_filename(const GlobalConfig *cfg);
+
+static inline EVTTAG *
+cfg_format_version_tag(const gchar *tag_name, gint version)
+{
+  return evt_tag_printf(tag_name, "%d.%d", (version & 0xFF00) >> 8, version & 0xFF);
+}
+
+static inline EVTTAG *
+cfg_format_config_version_tag(GlobalConfig *self)
+{
+  return cfg_format_version_tag("config-version", self->user_version);
+}
+
 
 #endif
