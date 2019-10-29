@@ -1049,6 +1049,31 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
       node_properties_propagated = TRUE;
     }
 
+  if (node->content == ENC_DESTINATION)
+    {
+      /* We want to leave pipe-next available to use for
+         destinations. Config graph uses pipe-next to pass messages forward
+         in a sequence layout. But pipe-next might be overridden (for
+         example network destination with LogWriter) hence disjointing
+         the config graph.
+
+         This patch links destinations in T form, instead of single link.
+
+         * (endpoint of sequence)
+         |
+         V
+         * (multiplexer) -(next-hop)-> destination -(pipe-next*)-> logwriter
+         |
+         (pipe-next)
+         |
+         V
+         * (rest of the sequence)
+         That way destinations are free to use the pipe-next*
+      */
+
+      last_pipe = first_pipe;
+    }
+
   *outer_pipe_tail = last_pipe;
   *outer_pipe_head = first_pipe;
   return TRUE;
