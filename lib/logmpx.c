@@ -175,5 +175,6 @@ log_multiplexer_new(GlobalConfig *cfg)
   self->super.free_fn = log_multiplexer_free;
   self->next_hops = g_ptr_array_new();
   self->super.arcs = _arcs;
+  log_pipe_add_info(&self->super, "multiplexer");
   return self;
 }
