@@ -255,6 +255,11 @@ debun_init () {
 }
 
 debun_finish_debug () {
+	if [ -n "$debug_mode" ]; then
+		printf 'Generating second batch of statistics\n'
+		acquire_syslog_stats
+	fi
+
 	if [ "${debugpid}" != "none" ]; then
 		if checkpid ${debugpid} ; then
 			kill -INT $debugpid
@@ -308,8 +313,10 @@ debun_final() {
 	[ -n "$service_status" ] && $service_status >${tmpdir}/svc.post
 
 	# Generating stats again for the EPS counter
-	printf 'Generating second batch of statistics\n'
-	acquire_syslog_stats
+	if [ -z "$debug_mode" ]; then
+		printf 'Generating second batch of statistics\n'
+		acquire_syslog_stats
+	fi
 
 	printf "\nGenerating hashes..."
 	debun_generate_hashes
@@ -758,7 +765,9 @@ acquire_syslog_info () {
 	$syslogbin --version > ${tmpdir}/syslog.version
 	head -1 ${tmpdir}/syslog.version
 
-	acquire_syslog_stats
+	if [ -z "$debug_mode" ]; then
+		acquire_syslog_stats
+	fi
 
 	if ${syslogngctlbin} show-license-info > ${tmpdir}/syslog.license-usage 2>&1; then
 		${syslogngctlbin} show-license-info --json > ${tmpdir}/syslog.license-usage.json 2>/dev/null
@@ -1706,6 +1715,12 @@ run_debug () {
 			debugpid=${!}
 		fi
 	fi
+
+	if [ -n "$debug_mode" ]; then
+		sleep 1
+		acquire_syslog_stats
+	fi
+
 	[ -n "${timeout}" ] || echo "When you want to stop collecting data, press ENTER" >&3
 	if [ -n "${waitforit}" ]; then
 		sleep 1
