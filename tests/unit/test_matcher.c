@@ -188,6 +188,12 @@ Test(matcher, empty_global, .description = "empty match with global flag")
                    _construct_matcher(LMF_GLOBAL, log_matcher_pcre_re_new));
 }
 
+Test(matcher, disable_jit)
+{
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "árvíz",
+                   "favíz", "favíztűrőtükörfúrógép", _construct_matcher(LMF_DISABLE_JIT, log_matcher_pcre_re_new));
+}
+
 Test(matcher, string_match)
 {
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "árvíz",

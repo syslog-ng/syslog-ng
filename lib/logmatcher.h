@@ -35,7 +35,6 @@ GQuark log_matcher_error_quark(void);
 enum
 {
   /* use global search/replace */
-  /* use global search/replace */
   LMF_GLOBAL = 0x0001,
   LMF_ICASE  = 0x0002,
   LMF_MATCH_ONLY = 0x0004,
@@ -44,12 +43,11 @@ enum
   LMF_NEWLINE= 0x0008,
   LMF_UTF8   = 0x0010,
   LMF_STORE_MATCHES = 0x0020,
-  LMF_VALID_REGEXP_FLAGS = 0x0037,
+  LMF_DISABLE_JIT = 0x0040,
 
   /* string flags */
-  LMF_SUBSTRING = 0x0040,
-  LMF_PREFIX = 0x0080,
-  LMF_VALID_STRING_FLAGS = 0x00C7,
+  LMF_SUBSTRING = 0x0080,
+  LMF_PREFIX = 0x0100,
 };
 
 typedef struct _LogMatcherOptions

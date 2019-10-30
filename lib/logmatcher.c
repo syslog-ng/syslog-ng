@@ -294,17 +294,14 @@ typedef struct _LogMatcherPcreRe
 } LogMatcherPcreRe;
 
 static gboolean
-log_matcher_pcre_re_compile(LogMatcher *s, const gchar *re, GError **error)
+_compile_pcre_regexp(LogMatcherPcreRe *self, const gchar *re, GError **error)
 {
-  LogMatcherPcreRe *self = (LogMatcherPcreRe *) s;
   gint rc;
-  const gchar *re_comp = re;
   const gchar *errptr;
   gint erroffset;
   gint flags = 0;
 
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
-  log_matcher_store_pattern(s, re);
 
   if (self->super.flags & LMF_ICASE)
     flags |= PCRE_CASELESS;
@@ -338,22 +335,49 @@ log_matcher_pcre_re_compile(LogMatcher *s, const gchar *re, GError **error)
     }
 
   /* complile the regexp */
-  self->pattern = pcre_compile2(re_comp, flags, &rc, &errptr, &erroffset, NULL);
+  self->pattern = pcre_compile2(re, flags, &rc, &errptr, &erroffset, NULL);
   if (!self->pattern)
     {
       g_set_error(error, LOG_TEMPLATE_ERROR, 0, "Failed to compile PCRE expression >>>%s<<< `%s' at character %d",
                   re, errptr, erroffset);
       return FALSE;
     }
+  return TRUE;
+}
+
+static gboolean
+_study_pcre_regexp(LogMatcherPcreRe *self, const gchar *re, GError **error)
+{
+  const gchar *errptr;
+  gint options = 0;
+
+  if ((self->super.flags & LMF_DISABLE_JIT) == 0)
+    options |= PCRE_STUDY_JIT_COMPILE;
 
   /* optimize regexp */
-  self->extra = pcre_study(self->pattern, PCRE_STUDY_JIT_COMPILE, &errptr);
+  self->extra = pcre_study(self->pattern, options, &errptr);
   if (errptr != NULL)
     {
       g_set_error(error, LOG_TEMPLATE_ERROR, 0, "Failed to optimize regular expression >>>%s<<< `%s'",
                   re, errptr);
       return FALSE;
     }
+  return TRUE;
+}
+
+static gboolean
+log_matcher_pcre_re_compile(LogMatcher *s, const gchar *re, GError **error)
+{
+  LogMatcherPcreRe *self = (LogMatcherPcreRe *) s;
+
+  g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
+  log_matcher_store_pattern(s, re);
+
+  if (!_compile_pcre_regexp(self, re, error))
+    return FALSE;
+
+  if (!_study_pcre_regexp(self, re, error))
+    return FALSE;
 
   return TRUE;
 }
@@ -718,6 +742,7 @@ CfgFlagHandler log_matcher_flag_handlers[] =
   { "store-matches",   CFH_SET, offsetof(LogMatcherOptions, flags), LMF_STORE_MATCHES },
   { "substring",       CFH_SET, offsetof(LogMatcherOptions, flags), LMF_SUBSTRING     },
   { "prefix",          CFH_SET, offsetof(LogMatcherOptions, flags), LMF_PREFIX        },
+  { "disable-jit",     CFH_SET, offsetof(LogMatcherOptions, flags), LMF_DISABLE_JIT   },
 
   { NULL },
 };
