@@ -3,7 +3,7 @@
 
 ### syslog-ng-debun: syslog debug bundle generator
 ### Written/Copyright: Gyorgy Pasztor <pasztor@linux.gyakg.u-szeged.hu>, (c) 2014-2016.
-### Further enhancements: Janos Szigetvari - jszigetvari at gmail dot com, (c) 2016-2018.
+### Further enhancements: Janos Szigetvari - jszigetvari at gmail dot com, (c) 2016-2019.
 ### This software may be used and distributed according to the terms of GNU GPLv2
 ### http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,7 +12,7 @@ LANG=en_US
 LC_ALL=C
 export LANG LC_ALL
 
-version="0.3.12.20180723"
+version="0.3.17.20191030"
 
 ### Check for "local" variable support
 if type local | grep builtin >/dev/null; then
@@ -110,6 +110,7 @@ General Options:
   -l		"light" collect: Don't get data, which may disturb your sense about
 		privacy, like process tree, fstab, etc. If you use with -d, then it
 		will also enlighten that's params: $default_ldebug_params
+  -K		Include the private keys in the /etc/syslog-ng or /opt/syslog-ng/etc directory
 
 Debug mode options:
   -d		Debug with params: $default_debug_params
@@ -124,7 +125,9 @@ Packet capture options:
   -i [iface]	Capture packets on specified interface
   -p		Create packet capture with filter: $default_pcap_params
   -P [params]	Create packet capture with custom filter
-  -t [sec]	Timeout for noninteractive debug
+  -T		Create packet capture with the tcpdump parameters specified, instead
+			of the default: $tcpdumpopts
+  -t [sec]	Timeout for noninteractive debug_
 
 Syscall tracing options:
   -s		Trace syslog
@@ -138,7 +141,7 @@ exit ${1:-0}
 ### Parsing optional parameters
 ###
 
-while getopts "rhldD:pP:w:i:W:R:t:s" opt ; do
+while getopts "rhldKD:pP:T:w:i:W:R:t:s" opt ; do
 	case $opt in
 		r)
 			engage=1
@@ -173,11 +176,18 @@ while getopts "rhldD:pP:w:i:W:R:t:s" opt ; do
 			pcap_params="$OPTARG"
 			debug_mode=1
 			;;
+		T)
+			tcpdumpopts="$OPTARG"
+			debug_mode=1
+			;;
 		R)
 			binprefix="$OPTARG"
 			;;
 		t)
 			timeout="$OPTARG"
+			;;
+		K)
+			saveprivatekeys=1
 			;;
 		w)
 			waitforit="$OPTARG"
@@ -631,27 +641,35 @@ remove_passwords_from_file () {
 	# The goal is matching substrings that look like this, to replace the password string, and preserve original formatting:
 	# password ( 'password-string' ) -->  password ( '___PASSWORD_REMOVED___' )
 	###
-	${sed_equivalent_cmd} "s|password([ \t\r\n\v\f]*)\(([ \t\r\n\v\f]*)([\"']?)[^)\"']+([\"']?)([ \t\r\n\v\f]*)\)|password\1(\2\3___PASSWORD_REMOVED___\4\5)|g" <"${1}" >"${1}.bak" 2>/dev/null
-	mv "${1}.bak" "${1}"
+	${sed_equivalent_cmd} "s|password([ \t\r\n\v\f]*)\(([ \t\r\n\v\f]*)([\"']?)[^)\"']+\3([ \t\r\n\v\f]*)\)|password\1(\2\3___PASSWORD_REMOVED___\3\4)|g" <"${1}" | \
+		${sed_equivalent_cmd} "s|token([ \t\r\n\v\f]*)\(([ \t\r\n\v\f]*)([\"']?)[^)\"']+\3([ \t\r\n\v\f]*)\)|token\1(\2\3___AUTH_TOKEN_REMOVED___\3\4)|g" | \
+		${sed_equivalent_cmd} "s|Authorization: [^\"']+|Authorization: ___AUTH_TOKEN_REMOVED___|g" >"${1}.bak"
+
+	[ -s "${1}.bak" ] && mv "${1}.bak" "${1}"
 }
 
 acquire_syslog_config () {
-	echo "Copy configs from $confdir"
+	echo "Copy configuration files from $confdir"
 	cd "${confdir}"
 	mkdir ${tmpdir}/config
 	find . > ${tmpdir}/syslog.etc.files
-	grep '\.key$' ${tmpdir}/syslog.etc.files > ${tmpdir}/syslog.etc.files.removed
-	grep '\.jks$' ${tmpdir}/syslog.etc.files > ${tmpdir}/syslog.etc.files.removed
-	grep '\.keytab$' ${tmpdir}/syslog.etc.files > ${tmpdir}/syslog.etc.files.removed
-	grep -v '\.key$' ${tmpdir}/syslog.etc.files | grep -v '\.jks$' | grep -v '\.keytab$' | \
-		while read FILE; do \
-			if pki_is_private_key "${FILE}" 2>/dev/null; then
-				echo "${FILE}" >> ${tmpdir}/syslog.etc.files.removed
-			else
-				echo "${FILE}"
-			fi
-		done | \
-		cpio -pd ${tmpdir}/config
+	touch ${tmpdir}/syslog.etc.files.removed
+
+	if [ -z "$saveprivatekeys" ]; then
+		grep '\.key$' ${tmpdir}/syslog.etc.files >> ${tmpdir}/syslog.etc.files.removed
+		grep '\.jks$' ${tmpdir}/syslog.etc.files >> ${tmpdir}/syslog.etc.files.removed
+		grep '\.keytab$' ${tmpdir}/syslog.etc.files >> ${tmpdir}/syslog.etc.files.removed
+		grep -v '\.key$' ${tmpdir}/syslog.etc.files | grep -v '\.jks$' | grep -v '\.keytab$' | \
+			while read FILE; do \
+				if pki_is_private_key "${FILE}" 2>/dev/null; then
+					echo "${FILE}" >> ${tmpdir}/syslog.etc.files.removed
+				else
+					echo "${FILE}"
+				fi
+			done > ${tmpdir}/syslog.etc.files.saved
+	else
+		cp ${tmpdir}/syslog.etc.files ${tmpdir}/syslog.etc.files.saved
+	fi
 
 	find ${tmpdir}/config -name "*.conf*" | \
 		while read FILE; do \
@@ -851,10 +869,18 @@ acquire_syslog_all () {
 
 acquire_syslog_nprv () {
 	printf "\nStart Syslog-specific info collection (light)\n"
+	acquire_running_syslog_config
 	acquire_syslog_pids
 	acquire_syslog_info
 	acquire_syslog_ldinfo
 	acquire_syslog_startup_method
+}
+
+acquire_running_syslog_config() {
+	if ${syslogngctlbin} config 2>&1 >/dev/null ; then
+		${syslogngctlbin} config -p > "${tmpdir}/syslog-ng.ctl.running.conf" 2>&1
+		[ -z "$saveprivatekeys" ] && remove_passwords_from_file "${tmpdir}/syslog-ng.ctl.running.conf"
+	fi
 }
 
 fhs_set_linux () {
@@ -869,14 +895,6 @@ fhs_set_linux () {
 
 fhs_set_unix () {
 	:
-}
-
-acquire_running_syslog_config() {
-
-	if ${syslogngctlbin} config ; then	
-		${syslogngctlbin} config -p > ${tmpdir}/syslog-ng.ctl.running.conf 2>&1
-		remove_passwords_from_file "${tmpdir}/syslog-ng.ctl.running.conf"
-	fi
 }
 
 rpm_verify () {
@@ -937,6 +955,9 @@ debun_extra_suse() {
 debun_extra_genlinux () {
 	if is_available getenforce; then
 		getenforce >"${tmpdir}/sys.selinux"
+		if ${grepq} Enforcing "${tmpdir}/sys.selinux"; then
+			echo "SELinux is in Enforcing mode! If you encounter any problems with debug bundle collection, consider temporarily switching to Permissive mode!"
+		fi
 		${pscmd}Z >"${tmpdir}/sys.ps.selinux"
 		semodule -l >"${tmpdir}/sys.selinux.modules"
 	else
@@ -1650,7 +1671,7 @@ run_debug () {
 	[ -n "${timeout}" ] || echo "When you want to stop collecting data, press ENTER" >&3
 	if [ -n "${waitforit}" ]; then
 		sleep 1
-		# Let's gave time the user, to read the message about stopping
+		# Let's give time the user, to read the message about stopping
 		tail -f ${tmpdir}/syslog.debug >&3 &
 		debugtailpid=${!}
 		#disown
