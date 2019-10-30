@@ -49,10 +49,13 @@ netstatlunp () { netstat -lunp ; }
 netstatsu="netstat -su"
 netstatpunt="netstat -punt"
 binprefix=/opt/syslog-ng
+absscldirs="/usr/share/syslog-ng/include/scl"
+relscldirs="share/include/scl share/syslog-ng/include/scl"
 workdir=/tmp
 lsof="lsof -p"
 pscmd="ps auxwwwwwf"
 pseao="ps -eao"
+cpiopdL="cpio -pdL"
 dfk="df -k"
 dfh="df -h"
 dfi="df -i"
@@ -670,11 +673,31 @@ acquire_syslog_config () {
 	else
 		cp ${tmpdir}/syslog.etc.files ${tmpdir}/syslog.etc.files.saved
 	fi
+	$cpiopdL ${tmpdir}/config < ${tmpdir}/syslog.etc.files.saved
 
 	find ${tmpdir}/config -name "*.conf*" | \
 		while read FILE; do \
 			remove_passwords_from_file "${FILE}"
 		done
+
+	echo "Copy SCL configuration files"
+	mkdir ${tmpdir}/scl
+	for dir in ${absscldirs}; do
+		if [ -d "${dir}" ]; then
+			cd "${dir}"
+			local dirname=$( echo "${dir}" | sed -e 's/\//_/g' )
+			mkdir "${tmpdir}/scl/${dirname}"
+			find . | $cpiopdL "${tmpdir}/scl/${dirname}"
+		fi
+	done
+	for dir in ${relscldirs}; do
+		if [ -d "${binprefix}/${dir}" ]; then
+			cd "${binprefix}/${dir}"
+			local dirname=$( echo "${binprefix}/${dir}" | sed -e 's/\//_/g' )
+			mkdir "${tmpdir}/scl/${dirname}"
+			find . | $cpiopdL "${tmpdir}/scl/${dirname}"
+		fi
+	done
 }
 
 acquire_syslog_pids () {
@@ -762,22 +785,22 @@ acquire_syslog_var () {
 	###
 	if [ "${freek_tmp}" -gt "${vardu}" ] ; then
 		if [ "$vardu" -lt "$varlimit" ] ; then
-			find . |grep -v run\\/syslog-ng.ctl$ | cpio -pd ${tmpdir}/var
+			find . |grep -v run\\/syslog-ng.ctl$ | $cpiopdL ${tmpdir}/var
 		else
 			printf "Size of ${vardir} is larger than $varlimit kilobytes.\n"
 			printf "Do you really want to copy all of its contents? Type 'YES' with all capitals: "
 			read ans
 			if [ "$ans" = "YES" ]; then
-				find . | grep -v "syslog-ng*\.ctl" | cpio -pd ${tmpdir}/var
+				find . | grep -v "syslog-ng*\.ctl" | $cpiopdL ${tmpdir}/var
 			else
 				printf "Only copying most important files on user request.\n"
-				find . \( -name "*.persist" -o -name "*.pid" \) | grep -v "syslog-ng.*\.ctl" | cpio -pd ${tmpdir}/var
+				find . \( -name "*.persist" -o -name "*.pid" \) | grep -v "syslog-ng.*\.ctl" | $cpiopdL ${tmpdir}/var
 			fi
 		fi
 	else
 		printf "TOO LOW free disk space on the filesystem holding ${tmpdir}\n"
 		printf "to create a full copy of ${vardir}!\nOnly copying most important files.\n"
-		find . \( -name "*.persist" -o -name "*.pid" \) | grep -v "syslog-ng.*\.ctl" | cpio -pd ${tmpdir}/var
+		find . \( -name "*.persist" -o -name "*.pid" \) | grep -v "syslog-ng.*\.ctl" | $cpiopdL ${tmpdir}/var
 	fi
 }
 
@@ -1404,6 +1427,7 @@ setup_env_hpux () {
 	service_start="${initfile} start"
 	service_status="${initfile} status"
 	sed_equivalent_cmd="perl -p -e"
+	cpiopdL="cpio -pdh"
 
 	unset -f free
 	unset -f netstatnlp
@@ -1499,6 +1523,7 @@ setup_env_aix () {
 	service_start="/usr/bin/startsrc -s syslog-ng"
 	service_status="/usr/bin/lssrc -s syslog-ng"
 	sed_equivalent_cmd="perl -p -e"
+	cpiopdL="/usr/sysv/cpio -pdL"
 
 	unset -f initfile
 	unset -f netstatnlp
