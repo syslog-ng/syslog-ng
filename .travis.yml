@@ -23,7 +23,7 @@ addons:
       - bison
       - docbook-xsl
       - flex
-      - gradle-2.2.1
+      - gradle
       - libcap-dev
       - libdbd-sqlite3
       - libdbi0-dev
@@ -183,6 +183,66 @@ matrix:
             -DCMAKE_INSTALL_PREFIX=$HOME/install/syslog-ng
             ..
         - ninja all check install
+
+    - env: B=cmake-arm
+      compiler: gcc
+      sudo: required
+      arch: arm64
+      addons:
+        apt:
+          packages:
+            - autoconf-archive
+            - bison
+            - docbook-xsl
+            - flex
+            - gradle
+            - libcap-dev
+            - libcurl4-openssl-dev
+            - libdbd-sqlite3
+            - libdbi0-dev
+            - libesmtp-dev
+            - libgeoip-dev
+            - libglib2.0-dev
+            - libhiredis-dev
+            - libivykis-dev
+            - librabbitmq-dev
+            - libmongoc-dev
+            - libjson-c-dev
+            - python-dev
+            - python-pip
+            - python-setuptools
+            - libnet1-dev
+            - libriemann-client-dev
+            - librdkafka-dev
+            - libwrap0-dev
+            - pkg-config
+            - sqlite3
+            - xsltproc
+            - libmaxminddb-dev
+            - libxml2-utils
+            - doxygen
+            - libsnmp-dev
+      git:
+        submodules: false
+      before_script:
+      script:
+        - set -e
+        - git clone https://github.com/Snaipe/Criterion.git
+        - cd Criterion
+        - git submodule update --init
+        - cmake .
+        - make all
+        - sudo make install
+        - cd ..
+        - mkdir build
+        - cd build
+        - cmake
+            -DCMAKE_C_FLAGS=-Werror
+            -DPYTHON_VERSION=2
+            -DCMAKE_INSTALL_PREFIX=$HOME/install/syslog-ng
+            ..
+        - make --keep-going -j $(nproc) all install
+        - ctest -j $(nproc) --output-on-failure
 
     - env: B=check
       os: osx
