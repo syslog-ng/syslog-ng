@@ -154,12 +154,10 @@ Test(matcher, pcre_regexp, .description = "PCRE regexp")
                    _construct_matcher(LMF_GLOBAL, log_matcher_pcre_re_new));
 }
 
-Test(matcher, back_ref, .description = "back references are not portable, they work only on Linux")
+Test(matcher, back_ref)
 {
-#if __linux__
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: wikiwiki", "(wiki)\\1", "", "",
                    _construct_matcher(LMF_STORE_MATCHES, log_matcher_pcre_re_new));
-#endif
 }
 
 Test(matcher, empty_global, .description = "empty match with global flag")
@@ -186,6 +184,12 @@ Test(matcher, empty_global, .description = "empty match with global flag")
                    _construct_matcher(LMF_GLOBAL, log_matcher_pcre_re_new));
   testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: wikiwiki", "wi", "kuku", "kukukikukuki",
                    _construct_matcher(LMF_GLOBAL, log_matcher_pcre_re_new));
+}
+
+Test(matcher, disable_jit)
+{
+  testcase_replace("<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]: árvíztűrőtükörfúrógép", "árvíz",
+                   "favíz", "favíztűrőtükörfúrógép", _construct_matcher(LMF_DISABLE_JIT, log_matcher_pcre_re_new));
 }
 
 Test(matcher, string_match)
