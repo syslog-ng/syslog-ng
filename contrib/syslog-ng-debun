@@ -12,7 +12,7 @@ LANG=en_US
 LC_ALL=C
 export LANG LC_ALL
 
-version="0.3.17.20191030"
+version="0.3.17.20191031"
 
 ### Check for "local" variable support
 if type local | grep builtin >/dev/null; then
@@ -920,7 +920,7 @@ acquire_syslog_nprv () {
 }
 
 acquire_running_syslog_config() {
-	if ${syslogngctlbin} config 2>&1 >/dev/null ; then
+	if ${syslogngctlbin} config >/dev/null 2>&1; then
 		${syslogngctlbin} config -p > "${tmpdir}/syslog-ng.ctl.running.conf" 2>&1
 		[ -z "$saveprivatekeys" ] && remove_passwords_from_file "${tmpdir}/syslog-ng.ctl.running.conf"
 	fi
@@ -1545,7 +1545,7 @@ setup_env_aix () {
 	service_start="/usr/bin/startsrc -s syslog-ng"
 	service_status="/usr/bin/lssrc -s syslog-ng"
 	sed_equivalent_cmd="perl -p -e"
-	cpiopdL="/usr/sysv/cpio -pdL"
+	cpiopdL="/usr/sysv/bin/cpio -pdL"
 
 	unset -f initfile
 	unset -f netstatnlp
