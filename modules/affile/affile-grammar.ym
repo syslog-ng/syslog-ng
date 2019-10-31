@@ -193,7 +193,7 @@ source_wildcard_option
 	    free($3);
           }
 	| KW_RECURSIVE '(' yesno ')' { wildcard_sd_set_recursive(last_driver, $3); }
-	| KW_MAX_FILES '(' LL_NUMBER ')' { wildcard_sd_set_max_files(last_driver, $3); }
+	| KW_MAX_FILES '(' positive_integer ')' { wildcard_sd_set_max_files(last_driver, $3); }
 	| KW_MONITOR_METHOD '(' string ')' { CHECK_ERROR(wildcard_sd_set_monitor_method(last_driver, $3), @3, "Invalid monitor-method"); free($3); }
 	| source_affile_option
 	;

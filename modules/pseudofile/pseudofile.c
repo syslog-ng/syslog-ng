@@ -186,6 +186,13 @@ pseudofile_dd_init(LogPipe *s)
   GlobalConfig *cfg = log_pipe_get_config(s);
 
   log_template_options_init(&self->template_options, cfg);
+
+  if (!self->template)
+    {
+      msg_error("The template() option for pseudofile() is mandatory", log_pipe_location_tag(s));
+      return FALSE;
+    }
+
   return log_dest_driver_init_method(s);
 }
 
