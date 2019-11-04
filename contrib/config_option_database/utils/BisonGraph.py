@@ -64,3 +64,6 @@ class BisonGraph():
         children = self.get_children(node)
         for child in children:
             self.graph.remove_edge(node, child)
+
+    def remove(self, node):
+        self.graph.remove_node(node)

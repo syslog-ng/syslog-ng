@@ -117,3 +117,10 @@ def test_make_terminal(graph):
     assert graph.get_children('test_opts') != []
     graph.make_terminal('test_opts')
     assert graph.get_children('test_opts') == []
+
+
+def test_remove(graph):
+    assert 'KW_TEST' in graph.get_nodes() and '2' in graph.get_nodes()
+    graph.remove('KW_TEST')
+    graph.remove('2')
+    assert 'KW_TEST' not in graph.get_nodes() and '2' not in graph.get_nodes()
