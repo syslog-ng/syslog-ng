@@ -182,7 +182,15 @@ _py_invoke_open(PythonDestDriver *self)
   if (!self->py.open)
     return TRUE;
 
-  return _dd_py_invoke_bool_function(self, self->py.open, NULL);
+  PyObject *ret;
+  gboolean result = FALSE;
+
+  ret = _py_invoke_function(self->py.open, NULL, self->class, self->super.super.super.id);
+  if (ret)
+    result = PyObject_IsTrue(ret);
+  Py_XDECREF(ret);
+
+  return result;
 }
 
 static void
