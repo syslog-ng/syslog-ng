@@ -53,6 +53,8 @@ _py_log_python_traceback_to_stderr_in_debug_mode(void)
   PyObject *exc, *value, *tb;
 
   PyErr_Fetch(&exc, &value, &tb);
+  if (!exc)
+    return;
 
   traceback_module = _py_do_import("traceback");
   if (!traceback_module)
