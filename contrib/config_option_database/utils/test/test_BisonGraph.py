@@ -110,3 +110,9 @@ def test_is_rule_node_not_in_graph(graph):
     with pytest.raises(Exception) as e:
         graph.is_rule('invalid_node')
     assert 'Node not in graph:' in str(e.value)
+
+
+def test_make_terminal(graph):
+    assert graph.get_children('test_opts') != []
+    graph.make_terminal('test_opts')
+    assert graph.get_children('test_opts') == []

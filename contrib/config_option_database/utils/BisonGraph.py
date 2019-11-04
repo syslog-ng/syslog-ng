@@ -56,3 +56,8 @@ class BisonGraph():
         except ValueError:
             return False
         return True
+
+    def make_terminal(self, node):
+        children = self.get_children(node)
+        for child in children:
+            self.graph.remove_edge(node, child)
