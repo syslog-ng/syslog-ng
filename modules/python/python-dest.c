@@ -446,7 +446,7 @@ python_dd_insert(LogThreadedDestDriver *d, LogMessage *msg)
   PyGILState_STATE gstate;
 
   gstate = PyGILState_Ensure();
-  if (!_py_invoke_is_opened(self))
+  if (self->py.is_opened && !_py_invoke_is_opened(self))
     {
       if (!_py_invoke_open(self))
         {
@@ -496,8 +496,15 @@ python_dd_close(PythonDestDriver *self)
   PyGILState_STATE gstate;
 
   gstate = PyGILState_Ensure();
-  if (_py_invoke_is_opened(self))
-    _py_invoke_close(self);
+  if (self->py.is_opened)
+    {
+      if (_py_invoke_is_opened(self))
+        _py_invoke_close(self);
+    }
+  else
+    {
+      _py_invoke_close(self);
+    }
   PyGILState_Release(gstate);
 }
 
