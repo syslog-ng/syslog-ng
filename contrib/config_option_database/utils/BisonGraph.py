@@ -67,3 +67,40 @@ class BisonGraph():
 
     def remove(self, node):
         self.graph.remove_node(node)
+
+    def _gather_tokens_from_rules(self, node, paths, stack):
+        paths = paths.copy()
+        for child in self.get_children(node):
+            if self.is_terminal(child):
+                if child == '$end':
+                    break
+                for i in range(len(paths)):
+                    paths[i] += (child,)
+            else:
+                paths = self.get_paths(child, paths, stack)
+        return paths
+
+    def _gather_tokens_from_nonterminals(self, node, paths, stack):
+        new_paths = []
+        for child in self.get_children(node):
+            new_path = self.get_paths(child, paths, stack)
+            new_paths.extend(new_path)
+        return new_paths
+
+    def get_paths(self, node='$accept', paths=None, stack=None):
+        if stack is None:
+            stack = set()
+        if paths is None:
+            paths = [()]
+
+        if node in stack:
+            return paths
+        stack.add(node)
+
+        if self.is_rule(node):
+            paths = self._gather_tokens_from_rules(node, paths, stack)
+        else:
+            paths = self._gather_tokens_from_nonterminals(node, paths, stack)
+
+        stack.remove(node)
+        return paths

@@ -124,3 +124,14 @@ def test_remove(graph):
     graph.remove('KW_TEST')
     graph.remove('2')
     assert 'KW_TEST' not in graph.get_nodes() and '2' not in graph.get_nodes()
+
+
+def test_get_paths(graph):
+    expected = [
+        ('test1', 'test1next', 'test1next'),
+        ('test2', 'test2next'),
+        ('KW_TEST', "'('", 'number', "')'"),
+        ('KW_TEST', "'('", 'string', "')'"),
+        ()
+    ]
+    assert graph.get_paths() == expected
