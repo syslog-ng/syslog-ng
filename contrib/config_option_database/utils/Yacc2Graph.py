@@ -25,6 +25,8 @@ from os import remove
 from subprocess import DEVNULL, Popen
 from tempfile import NamedTemporaryFile
 
+import networkx
+
 
 class Rule():
     def __init__(self, number, parent, symbols):
@@ -68,8 +70,62 @@ def _xml2rules(filename):
         rules.append(Rule(number, parent, symbols))
     return rules
 
+
 def _yacc2rules(yacc):
     xml = _yacc2xml(yacc)
     rules = _xml2rules(xml)
     remove(xml)
     return rules
+
+
+def _rules2graph(rules):
+    graph = networkx.MultiDiGraph()
+    for rule in rules:
+        rule_node = str(rule.number)
+        graph.add_edge(rule.parent, rule_node)
+        for index, symbol in enumerate(rule.symbols):
+            graph.add_edge(rule_node, symbol, index=index)
+    return graph
+
+
+# yacc2graph:
+# The structure of the graph is the following:
+#  * The graph is directed
+#  * A node can either be a symbol (terminal/nonterminal) or a rule number
+#  * The edges connect the parent nodes to its children nodes
+#  * Rule numbers always have symbols as children
+#  * Symbols always have rule numbers as children
+#  * Edges can be indexed
+#  * When we are traversing through the graph, if a node's edges
+#    are indexed, the edges must be traversed in ascending order,
+#    if they are not indexed, the order does not matter
+#  * Rule numbers' edges to their children are indexed
+#  * Symbols' edges to their children are not indexed
+#
+# In simple words, take the following yacc syntax:
+# %token test1
+# %token test1next
+# %token test2
+# %token test2next
+# %%
+# start
+#     : test                      # rule number 0
+#     ;
+# test
+#     : test1 test1next test1next # rule number 1
+#     | test2 test2next test      # rule number 2
+#     ;
+#
+# * 'start' and 'test' are nonterminal symbols
+# * test1, test1next, test2, test2next are terminal symbols
+# * Every line, starting with a ':' or a '|' are rules, and they are numbered
+#
+# * The child of 'start' is 'rule number 0', and it is not indexed
+# * The child of 'rule number 0' is 'test', and it is indexed
+# * The children of 'test' are 'rule number 0' and 'rule number 1', and they are not indexed
+# * The children of 'rule number 1' are 'test1', 'test1next' and 'test1next' and they are indexed
+# * The children of 'rule number 2' are 'test2', 'test2next' and 'test', and they are indexed
+#
+# (See the unit tests for more examples)
+def yacc2graph(yacc):
+    return _rules2graph(_yacc2rules(yacc))
