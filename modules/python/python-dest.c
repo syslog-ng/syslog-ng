@@ -441,8 +441,7 @@ python_dd_open(PythonDestDriver *self)
   PyGILState_STATE gstate;
 
   gstate = PyGILState_Ensure();
-  if (!_py_invoke_is_opened(self))
-    _py_invoke_open(self);
+  _py_invoke_open(self);
 
   PyGILState_Release(gstate);
   return TRUE; // Will be changed to the retval of open later
