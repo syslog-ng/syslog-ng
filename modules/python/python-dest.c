@@ -187,7 +187,17 @@ _py_invoke_open(PythonDestDriver *self)
 
   ret = _py_invoke_function(self->py.open, NULL, self->class, self->super.super.super.id);
   if (ret)
-    result = PyObject_IsTrue(ret);
+    {
+      if (ret == Py_None)
+        {
+          msg_warning_once("Since " VERSION_3_25 ", the return value of open method in python destination "
+                           "is used as success/failure indicator. Please use return True or return False explicitely",
+                           evt_tag_str("class", self->class));
+          result = TRUE;
+        }
+      else
+        result = PyObject_IsTrue(ret);
+    }
   Py_XDECREF(ret);
 
   return result;
