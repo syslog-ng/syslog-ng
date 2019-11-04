@@ -110,3 +110,25 @@ def _get_resolve_db():
                     string = _sanitize(entry[0])
                     resolve_db.setdefault(token, set()).add(string)
     return resolve_db
+
+
+def _resolve_token(token):
+    if len(token) == 0:
+        return token
+    type_template = '<{}>'
+    if token.startswith('LL_'):
+        return type_template.format(_sanitize(token[3:]))
+    try:
+        db = _get_resolve_db()
+        return '/'.join(sorted(db[token]))
+    except KeyError:
+        if token.startswith("KW_"):
+            raise Exception('Keyword without resolvation: ' + token)
+        return type_template.format(_sanitize(token))
+
+
+def _resolve_tokens(tokens):
+    resolved_tokens = tuple()
+    for token in tokens:
+        resolved_tokens += (_resolve_token(token),)
+    return resolved_tokens

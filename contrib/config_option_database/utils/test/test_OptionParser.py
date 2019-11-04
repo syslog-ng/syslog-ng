@@ -25,7 +25,8 @@ import pytest
 from utils.OptionParser import (_find_options, _find_options_with_keyword,
                                 _find_options_wo_keyword, _get_resolve_db,
                                 _parse_keyword_and_arguments, _parse_parents,
-                                _resolve_context_token, _sanitize)
+                                _resolve_context_token, _resolve_tokens,
+                                _sanitize)
 
 
 @pytest.mark.parametrize(
@@ -135,3 +136,21 @@ def test_resolve_context_token():
 
 def test_get_resolve_db():
     assert len(_get_resolve_db()) > 0
+
+
+@pytest.mark.parametrize(
+    'tokens,resolved_tokens',
+    [
+        (('KW_PEER_VERIFY',), ('peer-verify',)),
+        (('KW_MARK_FREQ', 'LL_NUMBER'), ('mark/mark-freq', '<number>')),
+        (('string', 'nonnegative_integer', 'KW_KEY', ''), ('<string>', '<nonnegative-integer>', 'key', ''))
+    ]
+)
+def test_resolve_tokens(tokens, resolved_tokens):
+    assert _resolve_tokens(tokens) == resolved_tokens
+
+
+def test_resolve_tokens_keyword_without_resolvation():
+    with pytest.raises(Exception) as e:
+        _resolve_tokens(('KW_I_HAVE_NO_RESOLVE',))
+    assert 'Keyword without resolvation:' in str(e.value)
