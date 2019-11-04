@@ -435,7 +435,7 @@ exit:
   return result;
 }
 
-static void
+static gboolean
 python_dd_open(PythonDestDriver *self)
 {
   PyGILState_STATE gstate;
@@ -445,6 +445,7 @@ python_dd_open(PythonDestDriver *self)
     _py_invoke_open(self);
 
   PyGILState_Release(gstate);
+  return TRUE; // Will be changed to the retval of open later
 }
 
 static LogThreadedResult
@@ -470,12 +471,12 @@ python_dd_close(PythonDestDriver *self)
   PyGILState_Release(gstate);
 }
 
-static void
-python_dd_worker_init(LogThreadedDestDriver *d)
+static gboolean
+python_dd_connect(LogThreadedDestDriver *d)
 {
-  PythonDestDriver *self = (PythonDestDriver *)d;
+  PythonDestDriver *self = (PythonDestDriver *) d;
 
-  python_dd_open(self);
+  return python_dd_open(self);
 }
 
 static void
@@ -576,7 +577,7 @@ python_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.free_fn = python_dd_free;
   self->super.super.super.super.generate_persist_name = python_dd_format_persist_name;
 
-  self->super.worker.thread_init = python_dd_worker_init;
+  self->super.worker.connect = python_dd_connect;
   self->super.worker.disconnect = python_dd_disconnect;
   self->super.worker.insert = python_dd_insert;
   self->super.worker.flush = python_dd_flush;
