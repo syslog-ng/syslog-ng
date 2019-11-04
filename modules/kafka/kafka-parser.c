@@ -48,6 +48,7 @@ static CfgLexerKeyword kafka_keywords[] =
   { "bootstrap_servers", KW_BOOTSTRAP_SERVERS },
   { "kafka_bootstrap_servers", KW_BOOTSTRAP_SERVERS, KWS_OBSOLETE, "Please use bootstrap-servers option" },
   { "workers",        KW_WORKERS },
+  { "poll_timeout",   KW_POLL_TIMEOUT },
   { "kafka_c",        KW_KAFKA },   /* compatibility with incubator naming */
   { NULL }
 };
