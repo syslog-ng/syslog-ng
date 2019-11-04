@@ -200,6 +200,14 @@ _py_invoke_open(PythonDestDriver *self)
     }
   Py_XDECREF(ret);
 
+  if (self->py.is_opened)
+    {
+      if (!result)
+        return FALSE;
+
+      return _py_invoke_is_opened(self);
+    }
+
   return result;
 }
 
@@ -440,8 +448,7 @@ python_dd_insert(LogThreadedDestDriver *d, LogMessage *msg)
   gstate = PyGILState_Ensure();
   if (!_py_invoke_is_opened(self))
     {
-      _py_invoke_open(self);
-      if (!_py_invoke_is_opened(self))
+      if (!_py_invoke_open(self))
         {
           result = LTR_NOT_CONNECTED;
           goto exit;
@@ -465,10 +472,10 @@ python_dd_open(PythonDestDriver *self)
   PyGILState_STATE gstate;
 
   gstate = PyGILState_Ensure();
-  _py_invoke_open(self);
+  gboolean retval = _py_invoke_open(self);
 
   PyGILState_Release(gstate);
-  return TRUE; // Will be changed to the retval of open later
+  return retval;
 }
 
 static LogThreadedResult
