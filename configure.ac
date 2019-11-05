@@ -1053,7 +1053,7 @@ if test -n "$LIBNET_CONFIG" -a -x "$LIBNET_CONFIG"; then
         LIBNET_LIBS="`$LIBNET_CONFIG --libs`"
         AC_MSG_RESULT(yes)
 dnl libnet-config does not provide the _DEFAULT_SOURCE define, that can cause warning during build
-dnl as upstream libnet-config does uses _DEFAULT_SOURCE this is just a fix till 
+dnl as upstream libnet-config does uses _DEFAULT_SOURCE this is just a fix till
         LIBNET_CFLAGS="$LIBNET_CFLAGS -D_DEFAULT_SOURCE"
 
 else
@@ -1337,6 +1337,11 @@ PKG_CHECK_MODULES(LIBRABBITMQ, librabbitmq >= $LIBRABBITMQ_MIN_VERSION, with_lib
 if test "$enable_amqp" = "yes" && test "$with_librabbitmq_client" = "no"; then
        AC_MSG_ERROR([Could not find librabbitmq-c, and AMQP support was explicitly enabled.])
 fi
+
+old_LIBS=$LIBS
+LIBS=$LIBRABBITMQ_LIBS
+AC_CHECK_FUNCS(amqp_ssl_socket_set_verify_peer)
+LIBS=$old_LIBS
 
 dnl ***************************************************************************
 dnl rdkafka headers/libraries
