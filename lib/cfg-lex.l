@@ -148,7 +148,6 @@ yy_filter_input(CfgLexer *self, gchar *buf, gsize buf_size)
           if (rc < 0)                                                   \
             {                                                           \
               YY_FATAL_ERROR("configuration input filtering failure");  \
-              result = YY_NULL;                                         \
             }                                                           \
           else                                                          \
             {                                                           \
@@ -399,7 +398,7 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 
     /* rules to parse a block as a LL_BLOCK token */
 <block>{white}+            ;
-<block>[^{( \t\r\n]+       { YY_FATAL_ERROR("Expected opening bracket as block boundary, e.g. opening brace or parenthesis"); return LL_ERROR; }
+<block>[^{( \t\r\n]+       { YY_FATAL_ERROR("Expected opening bracket as block boundary, e.g. opening brace or parenthesis"); }
 <block>\r?\n		   { _cfg_lex_move_token_location_to_new_line(yyextra); };
 <block>\({white}*\)        { yy_pop_state(yyscanner); yylval->cptr = NULL; return LL_BLOCK; }
 <block>\({white}*\"\"{white}*\) { yy_pop_state(yyscanner); yylval->cptr = g_strdup(""); return LL_BLOCK; }
