@@ -25,9 +25,5 @@
 include(LibFindMacros)
 
 # Find the include directories
-find_path(RabbitMQ_INCLUDE_DIR NAMES amqp.h)
-
-find_library(RabbitMQ_LIBRARY NAMES rabbitmq)
-
+libfind_pkg_detect(RabbitMQ librabbitmq FIND_PATH amqp.h FIND_LIBRARY rabbitmq)
 libfind_process(RabbitMQ)
-
