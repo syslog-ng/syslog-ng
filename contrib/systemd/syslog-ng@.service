@@ -2,6 +2,8 @@
 Description=System Logger Daemon "%i" instance
 Documentation=man:syslog-ng(8)
 Conflicts=emergency.service emergency.target
+Wants=network.target network-online.target
+After=network.target network-online.target
 
 [Service]
 Type=notify
