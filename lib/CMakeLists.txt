@@ -76,6 +76,7 @@ set (LIB_HEADERS
     cfg-parser.h
     cfg-path.h
     cfg-tree.h
+    cfg-walker.h
     children.h
     crypto.h
     dnscache.h
@@ -165,6 +166,7 @@ set(LIB_SOURCES
     cfg-parser.c
     cfg-path.c
     cfg-tree.c
+    cfg-walker.c
     children.c
     dnscache.c
     driver.c
