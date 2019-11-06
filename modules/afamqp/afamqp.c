@@ -30,6 +30,7 @@
 #include "scratch-buffers.h"
 #include "logthrdest/logthrdestdrv.h"
 #include "timeutils/misc.h"
+#include "compat/amqp-compat.h"
 
 #include <amqp.h>
 #include <amqp_framing.h>
@@ -448,8 +449,7 @@ afamqp_dd_socket_init(AMQPDestDriver *self)
 
             }
         }
-      amqp_ssl_socket_set_verify_peer(self->sockfd, self->peer_verify);
-      amqp_ssl_socket_set_verify_hostname(self->sockfd, self->peer_verify);
+      amqp_compat_set_verify(self->sockfd, self->peer_verify);
     }
   else
     self->sockfd = amqp_tcp_socket_new(self->conn);
