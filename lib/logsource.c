@@ -37,7 +37,7 @@
 
 gboolean accurate_nanosleep = FALSE;
 
-void
+static void
 log_source_wakeup(LogSource *self)
 {
   if (self->wakeup)
@@ -354,6 +354,9 @@ _dynamic_window_rebalance(LogSource *self)
 void
 log_source_dynamic_window_realloc(LogSource *self)
 {
+  /* it is safe to assume that the window size is not decremented while this function runs,
+   * only incrementation is possible by destination threads */
+
   if (!_reclaim_window_instead_of_rebalance(self))
     _dynamic_window_rebalance(self);
 
@@ -396,14 +399,7 @@ log_source_mangle_hostname(LogSource *self, LogMessage *msg)
           else
             {
               /* everything else, append source hostname */
-              if (orig_host && orig_host[0])
-                host_len = g_snprintf(host, sizeof(host), "%s/%s", orig_host, resolved_name);
-              else
-                {
-                  strncpy(host, resolved_name, sizeof(host));
-                  /* just in case it is not zero terminated */
-                  host[255] = 0;
-                }
+              host_len = g_snprintf(host, sizeof(host), "%s/%s", orig_host, resolved_name);
             }
           if (host_len >= sizeof(host))
             host_len = sizeof(host) - 1;

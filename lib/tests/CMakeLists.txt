@@ -23,6 +23,7 @@ add_unit_test(CRITERION TARGET test_atomic_gssize)
 add_unit_test(CRITERION TARGET test_window_size_counter)
 add_unit_test(CRITERION TARGET test_apphook)
 add_unit_test(CRITERION TARGET test_dynamic_window)
+add_unit_test(CRITERION TARGET test_logsource)
 
 SET_DIRECTORY_PROPERTIES(PROPERTIES
   ADDITIONAL_MAKE_CLEAN_FILES

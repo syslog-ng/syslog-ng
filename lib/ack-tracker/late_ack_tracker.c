@@ -117,7 +117,7 @@ _ack_record_save_bookmark(LateAckRecord *ack_record)
 {
   Bookmark *bookmark = &(ack_record->bookmark);
 
-  bookmark->save(bookmark);
+  bookmark_save(bookmark);
 }
 
 static guint32

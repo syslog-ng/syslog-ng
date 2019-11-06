@@ -20,7 +20,8 @@ lib_tests_TESTS		= \
 	lib/tests/test_window_size_counter \
 	lib/tests/test_apphook \
 	lib/tests/test_dynamic_window \
-	lib/tests/test_logqueue
+	lib/tests/test_logqueue \
+	lib/tests/test_logsource
 
 EXTRA_DIST += lib/tests/CMakeLists.txt
 
@@ -138,6 +139,9 @@ lib_tests_test_dynamic_window_LDADD	=	\
 
 lib_tests_test_logqueue_CFLAGS = $(TEST_CFLAGS)
 lib_tests_test_logqueue_LDADD = $(TEST_LDADD)
+
+lib_tests_test_logsource_CFLAGS = $(TEST_CFLAGS)
+lib_tests_test_logsource_LDADD = $(TEST_LDADD)
 
 CLEANFILES				+= \
 	test_values.persist		   \
