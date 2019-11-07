@@ -37,7 +37,7 @@
 
 gboolean accurate_nanosleep = FALSE;
 
-static void
+void
 log_source_wakeup(LogSource *self)
 {
   if (self->wakeup)
