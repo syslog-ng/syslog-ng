@@ -22,7 +22,7 @@
 
 import pytest
 
-from utils.Yacc2Graph import _yacc2xml
+from utils.Yacc2Graph import _yacc2rules, _yacc2xml
 
 test_string = r"""
 %token test1
@@ -62,3 +62,22 @@ def test_failed_yacc2xml():
     with pytest.raises(Exception) as e:
         _yacc2xml('invalid yacc string')
     assert 'Failed to convert to xml:' in str(e.value)
+
+
+def test_yacc2rules():
+    expected = [
+        (0, '$accept', ['start', '$end']),
+        (1, 'start', ['test']),
+        (2, 'test', ['test1', 'test1next', 'test1next']),
+        (3, 'test', ['test2', 'test2next', 'test']),
+        (4, 'test', ['KW_TEST', "'('", 'test_opts', "')'"]),
+        (5, 'test', []),
+        (6, 'test_opts', ['number']),
+        (7, 'test_opts', ['string'])
+    ]
+
+    rules = _yacc2rules(test_string)
+    assert len(rules) == len(expected)
+    for number, parent, symbols in expected:
+        rule = rules[number]
+        assert rule.number == number and rule.parent == parent and rule.symbols == symbols

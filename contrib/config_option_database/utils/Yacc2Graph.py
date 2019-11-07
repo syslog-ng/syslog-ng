@@ -21,6 +21,7 @@
 #############################################################################
 
 import xml.etree.ElementTree as xml_parser
+from os import remove
 from subprocess import DEVNULL, Popen
 from tempfile import NamedTemporaryFile
 
@@ -65,4 +66,10 @@ def _xml2rules(filename):
         parent = rule.find('lhs').text
         symbols = [symbol.text for symbol in rule.find('rhs') if symbol.tag != 'empty']
         rules.append(Rule(number, parent, symbols))
+    return rules
+
+def _yacc2rules(yacc):
+    xml = _yacc2xml(yacc)
+    rules = _xml2rules(xml)
+    remove(xml)
     return rules
