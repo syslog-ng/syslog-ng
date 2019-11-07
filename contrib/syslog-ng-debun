@@ -12,7 +12,7 @@ LANG=en_US
 LC_ALL=C
 export LANG LC_ALL
 
-version="0.3.17.20191031"
+version="0.3.18.20191107"
 
 ### Check for "local" variable support
 if type local | grep builtin >/dev/null; then
@@ -57,6 +57,7 @@ lsof="lsof -p"
 pscmd="ps auxwwwwwf"
 pseao="ps -eao"
 cpiopdL="cpio -pdL"
+findL () { find -L "$@" ; }
 dfk="df -k"
 dfh="df -h"
 dfi="df -i"
@@ -635,7 +636,7 @@ acquire_syslog_pki_info () {
 		read OPENSSL OPENSSLVER OPENSSLDAY OPENSSLMONTH OPENSSLYEAR REST <${tmpdir}/sys.openssl.version
 		opensslmajor=${OPENSSLVER%%.*}
 		cd "${confdir}"
-		find . -name '*.0' -o -name '*.1' -o -name '*.key' -o -name '*.crt' -o -name '*.pem' >${tmpdir}/syslog.etc.pki.files 2>/dev/null
+		findL . -name '*.0' -o -name '*.1' -o -name '*.key' -o -name '*.crt' -o -name '*.pem' >${tmpdir}/syslog.etc.pki.files 2>/dev/null
 		while read FILE; do
 			pki_process_file "${FILE}" >>${tmpdir}/syslog.etc.pki.info.csv
 		done <${tmpdir}/syslog.etc.pki.files
@@ -663,7 +664,7 @@ acquire_syslog_config () {
 	echo "Copy configuration files from $confdir"
 	cd "${confdir}"
 	mkdir ${tmpdir}/config
-	find . > ${tmpdir}/syslog.etc.files
+	findL . > ${tmpdir}/syslog.etc.files
 	touch ${tmpdir}/syslog.etc.files.removed
 
 	if [ -z "$saveprivatekeys" ]; then
@@ -683,7 +684,7 @@ acquire_syslog_config () {
 	fi
 	$cpiopdL ${tmpdir}/config < ${tmpdir}/syslog.etc.files.saved
 
-	find ${tmpdir}/config -name "*.conf*" | \
+	findL ${tmpdir}/config -name "*.conf*" | \
 		while read FILE; do \
 			remove_passwords_from_file "${FILE}"
 		done
@@ -695,7 +696,7 @@ acquire_syslog_config () {
 			cd "${dir}"
 			local dirname=$( echo "${dir}" | sed -e 's/\//_/g' )
 			mkdir "${tmpdir}/scl/${dirname}"
-			find . | $cpiopdL "${tmpdir}/scl/${dirname}"
+			findL . | $cpiopdL "${tmpdir}/scl/${dirname}"
 		fi
 	done
 	for dir in ${relscldirs}; do
@@ -703,7 +704,7 @@ acquire_syslog_config () {
 			cd "${binprefix}/${dir}"
 			local dirname=$( echo "${binprefix}/${dir}" | sed -e 's/\//_/g' )
 			mkdir "${tmpdir}/scl/${dirname}"
-			find . | $cpiopdL "${tmpdir}/scl/${dirname}"
+			findL . | $cpiopdL "${tmpdir}/scl/${dirname}"
 		fi
 	done
 }
@@ -805,22 +806,22 @@ acquire_syslog_var () {
 	###
 	if [ "${freek_tmp}" -gt "${vardu}" ] ; then
 		if [ "$vardu" -lt "$varlimit" ] ; then
-			find . |grep -v run\\/syslog-ng.ctl$ | $cpiopdL ${tmpdir}/var
+			findL . | grep -v run\\/syslog-ng.ctl$ | $cpiopdL ${tmpdir}/var
 		else
 			printf "Size of ${vardir} is larger than $varlimit kilobytes.\n"
 			printf "Do you really want to copy all of its contents? Type 'YES' with all capitals: "
 			read ans
 			if [ "$ans" = "YES" ]; then
-				find . | grep -v "syslog-ng*\.ctl" | $cpiopdL ${tmpdir}/var
+				findL . | grep -v "syslog-ng*\.ctl" | $cpiopdL ${tmpdir}/var
 			else
 				printf "Only copying most important files on user request.\n"
-				find . \( -name "*.persist" -o -name "*.pid" \) | grep -v "syslog-ng.*\.ctl" | $cpiopdL ${tmpdir}/var
+				findL . \( -name "*.persist" -o -name "*.pid" \) | grep -v "syslog-ng.*\.ctl" | $cpiopdL ${tmpdir}/var
 			fi
 		fi
 	else
 		printf "TOO LOW free disk space on the filesystem holding ${tmpdir}\n"
 		printf "to create a full copy of ${vardir}!\nOnly copying most important files.\n"
-		find . \( -name "*.persist" -o -name "*.pid" \) | grep -v "syslog-ng.*\.ctl" | $cpiopdL ${tmpdir}/var
+		findL . \( -name "*.persist" -o -name "*.pid" \) | grep -v "syslog-ng.*\.ctl" | $cpiopdL ${tmpdir}/var
 	fi
 }
 
@@ -1345,6 +1346,7 @@ setup_env_solaris () {
 	unset -f is_available
 	unset -f os_hash_helper
 	unset -f timestamp
+	unset -f findL
 
 	is_available () { which "$1" | $grepq "no $1 in" && return 1 || return 0 ; }
 	mypidof () { $pseao pid,comm | while read pid bin ; do [ "$bin" = "$1" ] && echo $pid ; done ; }
@@ -1367,6 +1369,12 @@ setup_env_solaris () {
 		pkginfo -l $1
 		echo ""
 	}
+
+	if find -L /bin >/dev/null 2>&1 ; then
+		findL() { find -L "$@" ; }
+	else
+		findL() { dir="$1"; shift; find "$dir" -follow "$@" ; }
+	fi
 
 	if is_available top; then
 		topcmd ()  { top -b -n 1 -c > "${1}" ; }
@@ -1463,6 +1471,7 @@ setup_env_hpux () {
 	unset -f distpkgoffile
 	unset -f distpkgstatus
 	unset -f distpkgoffile_cleanup
+	unset -f findL
 
 	export UNIX95=1
 
@@ -1472,6 +1481,7 @@ setup_env_hpux () {
 	netstatlunp () { netstat -na | grep -E "(Internet|Proto|udp)" ; }
 	topcmd ()  { top -d 1 -f "${1}" ; }
 	dfk_parser () { grep free | while read AVAIL REST_TEXT; do echo ${AVAIL}; done }
+	findL() { dir="$1"; shift; find "$dir" -follow "$@" ; }
 	os_hash_helper () {
 		find . '!' \( -name debun.manifest -o -name syslog-ng.debun.txt \) -type f -exec md5sum '{}' \;
 	}
