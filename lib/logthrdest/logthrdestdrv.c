@@ -33,6 +33,24 @@
 
 static void _init_stats_key(LogThreadedDestDriver *self, StatsClusterKey *sc_key);
 
+const gchar *
+log_threaded_result_to_str(LogThreadedResult self)
+{
+  g_assert(self <= LTR_MAX);
+
+  static const gchar *as_str[] = { "DROP",
+                                   "ERROR",
+                                   "EXPLICIT_ACK_MGMT",
+                                   "SUCCESS",
+                                   "QUEUED",
+                                   "NOT_CONNECTED",
+                                   "RETRY",
+                                   "MAX"
+                                 };
+
+  return as_str[self];
+}
+
 /* LogThreadedDestWorker */
 
 void

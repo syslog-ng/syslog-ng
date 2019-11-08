@@ -28,19 +28,41 @@
 #include "logthrdest/logthrdestdrv.h"
 
 #include <criterion/criterion.h>
+#include <criterion/parameterized.h>
 
 TestSuite(http, .init = app_startup, .fini = app_shutdown);
 
-Test(http, test_error_codes)
+struct http_action_test_params
+{
+  glong http_code;
+  char *explanation;
+  LogThreadedResult expected_value;
+};
+
+ParameterizedTestParameters(http, http_code_tests)
+{
+  static struct http_action_test_params params[] =
+  {
+    { 200, "filled later", LTR_SUCCESS},
+    { 301, "filled later", LTR_ERROR},
+    { 404, "filled later", LTR_DROP},
+    { 500, "filled later", LTR_ERROR}
+  };
+
+  return cr_make_param_array(struct http_action_test_params, params, sizeof(params)/sizeof(params[0]));
+}
+
+ParameterizedTest(struct http_action_test_params *param, http, http_code_tests)
 {
   HTTPDestinationDriver *driver = (HTTPDestinationDriver *) http_dd_new(configuration);
   HTTPDestinationWorker *worker = (HTTPDestinationWorker *) http_dw_new(&driver->super, 0);
   const gchar *url = "http://dummy.url";
 
-  cr_assert_eq(default_map_http_status_to_worker_status(worker, url, 200), LTR_SUCCESS);
-  cr_assert_eq(default_map_http_status_to_worker_status(worker, url, 301), LTR_ERROR);
-  cr_assert_eq(default_map_http_status_to_worker_status(worker, url, 404), LTR_DROP);
-  cr_assert_eq(default_map_http_status_to_worker_status(worker, url, 500), LTR_ERROR);
+  LogThreadedResult res =  default_map_http_status_to_worker_status(worker, url, param->http_code);
+  cr_assert_eq(res, param->expected_value,
+               "code: %ld, explanation: %s, actual: %s, expected: %s",
+               param->http_code, param->explanation, log_threaded_result_to_str(res),
+               log_threaded_result_to_str(param->expected_value));
 
   log_threaded_dest_worker_free(&worker->super);
   log_pipe_unref((LogPipe *)driver);

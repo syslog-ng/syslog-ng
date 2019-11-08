@@ -97,6 +97,8 @@ struct _LogThreadedDestWorker
   void (*free_fn)(LogThreadedDestWorker *s);
 };
 
+const gchar *log_threaded_result_to_str(LogThreadedResult self);
+
 struct _LogThreadedDestDriver
 {
   LogDestDriver super;
