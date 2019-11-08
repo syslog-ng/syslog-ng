@@ -19,6 +19,8 @@ set(HTTP_DESTINATION_SOURCES
     http-parser.c
     http-parser.h
     http-plugin.c
+    response-handler.h
+    response-handler.c
     ${CMAKE_CURRENT_BINARY_DIR}/http-grammar.c
     ${CMAKE_CURRENT_BINARY_DIR}/http-grammar.h
 )
