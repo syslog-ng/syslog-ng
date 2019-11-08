@@ -246,30 +246,46 @@ _add_message_to_batch(HTTPDestinationWorker *self, LogMessage *msg)
     }
 }
 
+static gboolean
+_find_http_code_in_list(glong http_code, glong list[])
+{
+  for (gint i = 0; list[i] != -1; i++)
+    if (list[i] == http_code)
+      return TRUE;
+  return FALSE;
+}
+
 static LogThreadedResult
 _default_1XX(HTTPDestinationWorker *self, const gchar *url, glong http_code)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
-  msg_error("Server returned with a 1XX (continuation) status code, which was not handled by curl. "
-            "Trying again",
+  msg_error("Server returned with a 1XX (continuation) status code, which was not handled by curl. ",
             evt_tag_str("url", owner->url),
             evt_tag_int("status_code", http_code),
             evt_tag_str("driver", owner->super.super.super.id),
             log_pipe_location_tag(&owner->super.super.super.super));
-  return LTR_ERROR;
+
+  static glong errors[] = {102, 103, -1};
+  if (_find_http_code_in_list(http_code, errors))
+    return LTR_ERROR;
+
+  return LTR_NOT_CONNECTED;
 }
 
 static LogThreadedResult
 _default_3XX(HTTPDestinationWorker *self, const gchar *url, glong http_code)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
-  msg_notice("Server returned with a 3XX (redirect) status code, which was not handled by curl. "
-             "Either accept-redirect() is set to no, or this status code is unknown. Trying again",
+  msg_notice("Server returned with a 3XX (redirect) status code. "
+             "Either accept-redirect() is set to no, or this status code is unknown.",
              evt_tag_str("url", url),
              evt_tag_int("status_code", http_code),
              evt_tag_str("driver", owner->super.super.super.id),
              log_pipe_location_tag(&owner->super.super.super.super));
-  return LTR_ERROR;
+  if (http_code == 304)
+    return LTR_ERROR;
+
+  return LTR_NOT_CONNECTED;
 }
 
 static LogThreadedResult
@@ -282,20 +298,35 @@ _default_4XX(HTTPDestinationWorker *self, const gchar *url, glong http_code)
              evt_tag_int("status_code", http_code),
              evt_tag_str("driver", owner->super.super.super.id),
              log_pipe_location_tag(&owner->super.super.super.super));
-  return LTR_DROP;
+
+  static glong errors[] = {409, 428, -1};
+  if (_find_http_code_in_list(http_code, errors))
+    return LTR_ERROR;
+
+  static glong drops[] = {410, 416, 422, 424, 425, 451, -1};
+  if (_find_http_code_in_list(http_code, drops))
+    return LTR_DROP;
+
+  return LTR_NOT_CONNECTED;
 }
 
 static LogThreadedResult
 _default_5XX(HTTPDestinationWorker *self, const gchar *url, glong http_code)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
-  msg_notice("Server returned with a 5XX (server errors) status code, which indicates server failure. "
-             "Trying again",
+  msg_notice("Server returned with a 5XX (server errors) status code, which indicates server failure.",
              evt_tag_str("url", owner->url),
              evt_tag_int("status_code", http_code),
              evt_tag_str("driver", owner->super.super.super.id),
              log_pipe_location_tag(&owner->super.super.super.super));
-  return LTR_ERROR;
+  if (http_code == 508)
+    return LTR_DROP;
+
+  static glong errors[] = {504, -1};
+  if (_find_http_code_in_list(http_code, errors))
+    return LTR_ERROR;
+
+  return LTR_NOT_CONNECTED;
 }
 
 LogThreadedResult
