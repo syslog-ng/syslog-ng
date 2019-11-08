@@ -246,6 +246,58 @@ _add_message_to_batch(HTTPDestinationWorker *self, LogMessage *msg)
     }
 }
 
+static LogThreadedResult
+_default_1XX(HTTPDestinationWorker *self, const gchar *url, glong http_code)
+{
+  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
+  msg_error("Server returned with a 1XX (continuation) status code, which was not handled by curl. "
+            "Trying again",
+            evt_tag_str("url", owner->url),
+            evt_tag_int("status_code", http_code),
+            evt_tag_str("driver", owner->super.super.super.id),
+            log_pipe_location_tag(&owner->super.super.super.super));
+  return LTR_ERROR;
+}
+
+static LogThreadedResult
+_default_3XX(HTTPDestinationWorker *self, const gchar *url, glong http_code)
+{
+  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
+  msg_notice("Server returned with a 3XX (redirect) status code, which was not handled by curl. "
+             "Either accept-redirect() is set to no, or this status code is unknown. Trying again",
+             evt_tag_str("url", url),
+             evt_tag_int("status_code", http_code),
+             evt_tag_str("driver", owner->super.super.super.id),
+             log_pipe_location_tag(&owner->super.super.super.super));
+  return LTR_ERROR;
+}
+
+static LogThreadedResult
+_default_4XX(HTTPDestinationWorker *self, const gchar *url, glong http_code)
+{
+  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
+  msg_notice("Server returned with a 4XX (client errors) status code, which means we are not "
+             "authorized or the URL is not found.",
+             evt_tag_str("url", url),
+             evt_tag_int("status_code", http_code),
+             evt_tag_str("driver", owner->super.super.super.id),
+             log_pipe_location_tag(&owner->super.super.super.super));
+  return LTR_DROP;
+}
+
+static LogThreadedResult
+_default_5XX(HTTPDestinationWorker *self, const gchar *url, glong http_code)
+{
+  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
+  msg_notice("Server returned with a 5XX (server errors) status code, which indicates server failure. "
+             "Trying again",
+             evt_tag_str("url", owner->url),
+             evt_tag_int("status_code", http_code),
+             evt_tag_str("driver", owner->super.super.super.id),
+             log_pipe_location_tag(&owner->super.super.super.super));
+  return LTR_ERROR;
+}
+
 LogThreadedResult
 default_map_http_status_to_worker_status(HTTPDestinationWorker *self, const gchar *url, glong http_code)
 {
@@ -255,42 +307,16 @@ default_map_http_status_to_worker_status(HTTPDestinationWorker *self, const gcha
   switch (http_code/100)
     {
     case 1:
-      msg_error("Server returned with a 1XX (continuation) status code, which was not handled by curl. "
-                "Trying again",
-                evt_tag_str("url", owner->url),
-                evt_tag_int("status_code", http_code),
-                evt_tag_str("driver", owner->super.super.super.id),
-                log_pipe_location_tag(&owner->super.super.super.super));
-      break;
+      return _default_1XX(self, url, http_code);
     case 2:
       /* everything is dandy */
-      retval = LTR_SUCCESS;
-      break;
+      return  LTR_SUCCESS;
     case 3:
-      msg_notice("Server returned with a 3XX (redirect) status code, which was not handled by curl. "
-                 "Either accept-redirect() is set to no, or this status code is unknown. Trying again",
-                 evt_tag_str("url", url),
-                 evt_tag_int("status_code", http_code),
-                 evt_tag_str("driver", owner->super.super.super.id),
-                 log_pipe_location_tag(&owner->super.super.super.super));
-      break;
+      return _default_3XX(self, url, http_code);
     case 4:
-      msg_notice("Server returned with a 4XX (client errors) status code, which means we are not "
-                 "authorized or the URL is not found.",
-                 evt_tag_str("url", url),
-                 evt_tag_int("status_code", http_code),
-                 evt_tag_str("driver", owner->super.super.super.id),
-                 log_pipe_location_tag(&owner->super.super.super.super));
-      retval = LTR_DROP;
-      break;
+      return _default_4XX(self, url, http_code);
     case 5:
-      msg_notice("Server returned with a 5XX (server errors) status code, which indicates server failure. "
-                 "Trying again",
-                 evt_tag_str("url", owner->url),
-                 evt_tag_int("status_code", http_code),
-                 evt_tag_str("driver", owner->super.super.super.id),
-                 log_pipe_location_tag(&owner->super.super.super.super));
-      break;
+      return _default_5XX(self, url, http_code);
     default:
       msg_error("Unknown HTTP response code",
                 evt_tag_str("url", url),
