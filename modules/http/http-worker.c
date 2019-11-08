@@ -346,20 +346,51 @@ _debug_response_info(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target
 }
 
 static LogThreadedResult
-_map_http_result(HttpResult self)
+_map_http_result(HTTPDestinationWorker *self, const gchar *url, HttpResponseHandler *response_handler)
 {
-  g_assert(self < HTTP_RESULT_MAX);
+  HttpResult result = response_handler->action(response_handler->user_data);
+  g_assert(result < HTTP_RESULT_MAX);
+  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
+  glong http_code = response_handler->status_code;
 
-  switch (self)
+  switch (result)
     {
     case HTTP_RESULT_SUCCESS:
+      msg_debug("http: handled by response_action",
+                evt_tag_str("action", "success"),
+                evt_tag_str("url", owner->url),
+                evt_tag_int("status_code", http_code),
+                evt_tag_str("driver", owner->super.super.super.id),
+                log_pipe_location_tag(&owner->super.super.super.super));
       return LTR_SUCCESS;
+
     case HTTP_RESULT_RETRY:
+      msg_notice("http: handled by response_action",
+                 evt_tag_str("action", "retry"),
+                 evt_tag_str("url", owner->url),
+                 evt_tag_int("status_code", http_code),
+                 evt_tag_str("driver", owner->super.super.super.id),
+                 log_pipe_location_tag(&owner->super.super.super.super));
       return LTR_ERROR;
+
     case HTTP_RESULT_DROP:
+      msg_notice("http: handled by response_action",
+                 evt_tag_str("action", "drop"),
+                 evt_tag_str("url", owner->url),
+                 evt_tag_int("status_code", http_code),
+                 evt_tag_str("driver", owner->super.super.super.id),
+                 log_pipe_location_tag(&owner->super.super.super.super));
       return LTR_DROP;
+
     case HTTP_RESULT_DISCONNECT:
+      msg_notice("http: handled by response_action",
+                 evt_tag_str("action", "disconnect"),
+                 evt_tag_str("url", owner->url),
+                 evt_tag_int("status_code", http_code),
+                 evt_tag_str("driver", owner->super.super.super.id),
+                 log_pipe_location_tag(&owner->super.super.super.super));
       return LTR_NOT_CONNECTED;
+
     default:
       g_assert_not_reached();
     };
@@ -443,7 +474,7 @@ _flush_on_target(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
 
   HttpResponseHandler *response_handler = NULL;
   if ((response_handler = http_response_handlers_lookup(owner->response_handlers, http_code)))
-    return _map_http_result(response_handler->action(response_handler->user_data));
+    return _map_http_result(self, target->url, response_handler);
 
   return default_map_http_status_to_worker_status(self, target->url, http_code);
 }
