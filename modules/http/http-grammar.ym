@@ -32,9 +32,12 @@
 #include "cfg-parser.h"
 #include "http.h"
 #include "http-grammar.h"
+#include "response-handler.h"
 #include "plugin.h"
 
 #include <string.h>
+
+HttpResponseHandler last_response_handler;
 
 }
 
@@ -73,10 +76,17 @@
 %token KW_WORKERS
 %token KW_ACCEPT_REDIRECTS
 %token KW_AUTH_HEADER
+%token KW_RESPONSE_ACTION
+%token KW_SUCCESS
+%token KW_RETRY
+%token KW_DROP
+%token KW_DISCONNECT
+
 
 %type   <ptr> driver
 %type   <ptr> http_destination
 %type   <ptr> http_auth_header_plugin
+%type   <ptr> http_response_action
 
 /* INCLUDE_DECLS */
 
@@ -109,6 +119,25 @@ http_options
     |
     ;
 
+http_response_action
+    : KW_SUCCESS { $$ = http_result_success; }
+    | KW_RETRY { $$ = http_result_retry; }
+    | KW_DROP { $$ = http_result_drop; }
+    | KW_DISCONNECT { $$ = http_result_disconnect; }
+    ;
+
+response_action_items
+    : response_action_item response_action_items
+    |
+    ;
+
+response_action_item
+    : positive_integer { last_response_handler.status_code = $1; }
+      LL_ARROW
+      http_response_action { last_response_handler.action = $4;
+                             http_dd_insert_response_handler(last_driver, &last_response_handler);}
+    ;
+
 http_option
     : KW_URL        '(' string_list ')'        { http_dd_set_urls(last_driver, $3); g_list_free_full($3, free); }
     | KW_USER       '(' string ')'            { http_dd_set_user(last_driver, $3); free($3); }
@@ -129,6 +158,7 @@ http_option
     | http_tls_option
     | KW_TLS '(' http_tls_options ')'
     | { last_template_options = http_dd_get_template_options(last_driver); } template_option
+    | KW_RESPONSE_ACTION '(' response_action_items ')'
     ;
 
 http_tls_options

@@ -24,6 +24,11 @@
 #include "http-worker.h"
 
 /* HTTPDestinationDriver */
+void
+http_dd_insert_response_handler(LogDriver *d, HttpResponseHandler *response_handler)
+{
+  msg_debug("response_handler", evt_tag_int("status_code", response_handler->status_code));
+}
 
 void
 http_dd_set_urls(LogDriver *d, GList *url_strings)
