@@ -27,6 +27,7 @@
 #include "logthrsource/logthrfetcherdrv.h"
 #include "str-utils.h"
 #include "string-list.h"
+#include "python-persist.h"
 
 typedef struct _PythonFetcherDriver
 {
@@ -86,14 +87,7 @@ static const gchar *
 python_fetcher_format_stats_instance(LogThreadedSourceDriver *s)
 {
   PythonFetcherDriver *self = (PythonFetcherDriver *) s;
-  static gchar persist_name[1024];
-
-  if (s->super.super.super.persist_name)
-    g_snprintf(persist_name, sizeof(persist_name), "python-fetcher,%s", s->super.super.super.persist_name);
-  else
-    g_snprintf(persist_name, sizeof(persist_name), "python-fetcher,%s", self->class);
-
-  return persist_name;
+  return python_format_stats_instance((LogPipe *)s, "python-fetcher", self->class);
 }
 
 static void

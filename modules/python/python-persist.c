@@ -21,3 +21,22 @@
  */
 
 #include "python-persist.h"
+
+static void
+format_default_stats_instance(gchar *buffer, gsize size, const gchar *module, const gchar *name)
+{
+  g_snprintf(buffer, size, "%s,%s", module, name);
+}
+
+const gchar *
+python_format_stats_instance(LogPipe *p, const gchar *module, const gchar *class)
+{
+  static gchar persist_name[1024];
+
+  if (p->persist_name)
+    format_default_stats_instance(persist_name, sizeof(persist_name), module, p->persist_name);
+  else
+    format_default_stats_instance(persist_name, sizeof(persist_name), module, class);
+
+  return persist_name;
+}
