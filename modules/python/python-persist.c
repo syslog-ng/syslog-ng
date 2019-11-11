@@ -21,6 +21,8 @@
  */
 
 #include "python-persist.h"
+#include "python-helpers.h"
+#include "driver.h"
 
 static void
 format_default_stats_name(gchar *buffer, gsize size, const gchar *module, const gchar *name)
@@ -28,13 +30,39 @@ format_default_stats_name(gchar *buffer, gsize size, const gchar *module, const 
   g_snprintf(buffer, size, "%s,%s", module, name);
 }
 
+static void
+copy_stats_instance(const LogPipe *self, PyObject *generate_persist_name_method, const gchar *module,
+                    const gchar *class, gchar *buffer, gsize size)
+{
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+
+  PyObject *ret;
+  ret = _py_invoke_function(generate_persist_name_method, NULL, class, ((LogDriver *)self)->id);
+  if (ret)
+    g_snprintf(buffer, size, "%s,%s", module, _py_get_string_as_string(ret));
+  else
+    {
+      msg_error("Failed while generating persist name",
+                evt_tag_str("driver", ((LogDriver *)self)->id),
+                evt_tag_str("class", class));
+      format_default_stats_name(buffer, size, module, class);
+    }
+  Py_XDECREF(ret);
+
+  PyGILState_Release(gstate);
+}
+
 const gchar *
-python_format_stats_instance(LogPipe *p, const gchar *module, const gchar *class)
+python_format_stats_instance(LogPipe *p, PyObject *generate_persist_name_method, const gchar *module,
+                             const gchar *class)
 {
   static gchar persist_name[1024];
 
   if (p->persist_name)
     format_default_stats_name(persist_name, sizeof(persist_name), module, p->persist_name);
+  else if (generate_persist_name_method)
+    copy_stats_instance(p, generate_persist_name_method, module, class, persist_name, sizeof(persist_name));
   else
     format_default_stats_name(persist_name, sizeof(persist_name), module, class);
 

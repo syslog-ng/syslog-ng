@@ -119,7 +119,7 @@ static const gchar *
 python_dd_format_stats_instance(LogThreadedDestDriver *d)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
-  return python_format_stats_instance((LogPipe *)d, "python", self->class);
+  return python_format_stats_instance((LogPipe *)d, self->py.generate_persist_name, "python", self->class);
 }
 
 static const gchar *
