@@ -12,7 +12,7 @@ LANG=en_US
 LC_ALL=C
 export LANG LC_ALL
 
-version="0.3.18.20191107"
+version="0.3.19.20191111"
 
 ### Check for "local" variable support
 if type local | grep builtin >/dev/null; then
@@ -146,23 +146,23 @@ exit ${1:-0}
 ### Parsing optional parameters
 ###
 
-while getopts "rhldKD:pP:T:w:i:W:R:t:s" opt ; do
+while getopts "rhlKdD:pP:T:w:i:W:R:t:s" opt ; do
 	case $opt in
 		r)
 			engage=1
 			;;
 		d)
-			[ -n "$debug_params" ] && debun_usage 2
+			[ -n "$debug_params" ] && debun_usage 2 "Custom debug arguments have already been set, or debugging has already been requested"
 			debug_params="$default_debug_params"
 			debug_mode=1
 			;;
 		D)
-			[ -n "$debug_params" ] && debun_usage 2
+			[ -n "$debug_params" ] && debun_usage 2 "Custom debug arguments have already been set, or debugging has already been requested"
 			debug_params="$OPTARG"
 			debug_mode=1
 			;;
 		i)
-			[ -n "$pcap_iface" ] && debun_usage 2
+			[ -n "$pcap_iface" ] && debun_usage 2 "Pcap interface has already been set"
 			pcap_iface="$OPTARG"
 			;;
 		h)
@@ -172,12 +172,12 @@ while getopts "rhldKD:pP:T:w:i:W:R:t:s" opt ; do
 			privacy_mode=1
 			;;
 		p)
-			[ -n "$pcap_params" ] && debun_usage 2
+			[ -n "$pcap_params" ] && debun_usage 2 "Pcap parameters have already been set, or packet capture has already been requested"
 			pcap_params="$default_pcap_params"
 			debug_mode=1
 			;;
 		P)
-			[ -n "$pcap_params" ] && debun_usage 2
+			[ -n "$pcap_params" ] && debun_usage 2 "Pcap parameters have already been set, or packet capture has already been requested"
 			pcap_params="$OPTARG"
 			debug_mode=1
 			;;
