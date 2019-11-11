@@ -57,6 +57,7 @@ typedef struct
     PyObject *flush;
     PyObject *log_template_options;
     PyObject *seqnum;
+    PyObject *generate_persist_name;
     GPtrArray *_refs_to_clean;
   } py;
 } PythonDestDriver;
@@ -356,6 +357,7 @@ _py_init_bindings(PythonDestDriver *self)
   self->py.open = _py_get_attr_or_null(self->py.instance, "open");
   self->py.flush = _py_get_attr_or_null(self->py.instance, "flush");
   self->py.send = _py_get_attr_or_null(self->py.instance, "send");
+  self->py.generate_persist_name = _py_get_attr_or_null(self->py.instance, "generate_persist_name");
   if (!self->py.send)
     {
       msg_error("Error initializing Python destination, class does not have a send() method",
@@ -372,6 +374,7 @@ _py_init_bindings(PythonDestDriver *self)
   g_ptr_array_add(self->py._refs_to_clean, self->py.send);
   g_ptr_array_add(self->py._refs_to_clean, self->py.log_template_options);
   g_ptr_array_add(self->py._refs_to_clean, self->py.seqnum);
+  g_ptr_array_add(self->py._refs_to_clean, self->py.generate_persist_name);
 
   return TRUE;
 }

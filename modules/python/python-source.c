@@ -51,6 +51,7 @@ struct _PythonSourceDriver
     PyObject *request_exit_method;
     PyObject *suspend_method;
     PyObject *wakeup_method;
+    PyObject *generate_persist_name;
   } py;
 };
 
@@ -167,6 +168,7 @@ _py_free_bindings(PythonSourceDriver *self)
   Py_CLEAR(self->py.request_exit_method);
   Py_CLEAR(self->py.suspend_method);
   Py_CLEAR(self->py.wakeup_method);
+  Py_CLEAR(self->py.generate_persist_name);
 }
 
 static gboolean
@@ -272,11 +274,19 @@ _py_lookup_suspend_and_wakeup_methods(PythonSourceDriver *self)
 }
 
 static gboolean
+_py_lookup_generate_persist_name_method(PythonSourceDriver *self)
+{
+  self->py.generate_persist_name = _py_get_attr_or_null(self->py.instance, "generate_persist_name");
+  return TRUE;
+}
+
+static gboolean
 _py_init_methods(PythonSourceDriver *self)
 {
   return _py_lookup_run_method(self)
          && _py_lookup_request_exit_method(self)
-         && _py_lookup_suspend_and_wakeup_methods(self);
+         && _py_lookup_suspend_and_wakeup_methods(self)
+         && _py_lookup_generate_persist_name_method(self);
 }
 
 static gboolean
