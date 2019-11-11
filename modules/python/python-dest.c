@@ -125,14 +125,7 @@ static const gchar *
 python_dd_format_persist_name(const LogPipe *s)
 {
   const PythonDestDriver *self = (const PythonDestDriver *)s;
-  static gchar persist_name[1024];
-
-  if (s->persist_name)
-    g_snprintf(persist_name, sizeof(persist_name), "python.%s", s->persist_name);
-  else
-    g_snprintf(persist_name, sizeof(persist_name), "python(%s)", self->class);
-
-  return persist_name;
+  return python_format_persist_name(s, "python", self->class);
 }
 
 static gboolean
