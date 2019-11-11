@@ -126,7 +126,7 @@ static const gchar *
 python_dd_format_persist_name(const LogPipe *s)
 {
   const PythonDestDriver *self = (const PythonDestDriver *)s;
-  return python_format_persist_name(s, "python", self->class);
+  return python_format_persist_name(s, self->py.generate_persist_name, "python", self->class);
 }
 
 static gboolean

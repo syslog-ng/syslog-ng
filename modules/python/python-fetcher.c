@@ -469,6 +469,13 @@ python_fetcher_fetch(LogThreadedFetcherDriver *s)
   return fetch_result;
 }
 
+static const gchar *
+python_fetcher_format_persist_name(const LogPipe *s)
+{
+  const PythonFetcherDriver *self = (const PythonFetcherDriver *)s;
+  return python_format_persist_name(s, self->py.generate_persist_name, "python-fetcher", self->class);
+}
+
 static gboolean
 python_fetcher_init(LogPipe *s)
 {
@@ -489,6 +496,9 @@ python_fetcher_init(LogPipe *s)
   msg_verbose("Python fetcher initialized",
               evt_tag_str("driver", self->super.super.super.super.id),
               evt_tag_str("class", self->class));
+
+  if (((LogPipe *)self)->persist_name || self->py.generate_persist_name)
+    s->generate_persist_name = python_fetcher_format_persist_name;
 
   return log_threaded_fetcher_driver_init_method(s);
 }

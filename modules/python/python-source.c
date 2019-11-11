@@ -497,6 +497,13 @@ python_sd_request_exit(LogThreadedSourceDriver *s)
   PyGILState_Release(gstate);
 }
 
+static const gchar *
+python_source_format_persist_name(const LogPipe *s)
+{
+  const PythonSourceDriver *self = (const PythonSourceDriver *)s;
+  return python_format_persist_name(s, self->py.generate_persist_name, "python-source", self->class);
+}
+
 static gboolean
 python_sd_init(LogPipe *s)
 {
@@ -528,6 +535,9 @@ python_sd_init(LogPipe *s)
       self->post_message = _post_message_non_blocking;
       log_threaded_source_set_wakeup_func(&self->super, python_sd_wakeup);
     }
+
+  if (((LogPipe *)self)->persist_name || self->py.generate_persist_name)
+    s->generate_persist_name = python_source_format_persist_name;
 
   return TRUE;
 }
