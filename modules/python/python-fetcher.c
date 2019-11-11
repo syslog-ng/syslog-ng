@@ -469,6 +469,13 @@ python_fetcher_fetch(LogThreadedFetcherDriver *s)
   return fetch_result;
 }
 
+static const gchar *
+python_fetcher_format_persist_name(const LogPipe *s)
+{
+  const PythonFetcherDriver *self = (const PythonFetcherDriver *)s;
+  return python_format_persist_name(s, self->py.generate_persist_name, "python-fetcher", self->class);
+}
+
 static gboolean
 python_fetcher_init(LogPipe *s)
 {
@@ -530,6 +537,7 @@ python_fetcher_new(GlobalConfig *cfg)
   self->super.super.super.super.super.init = python_fetcher_init;
   self->super.super.super.super.super.deinit = python_fetcher_deinit;
   self->super.super.super.super.super.free_fn = python_fetcher_free;
+  self->super.super.super.super.super.generate_persist_name = python_fetcher_format_persist_name;
 
   self->super.super.format_stats_instance = python_fetcher_format_stats_instance;
   self->super.super.worker_options.super.stats_level = STATS_LEVEL0;

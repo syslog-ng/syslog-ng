@@ -497,6 +497,13 @@ python_sd_request_exit(LogThreadedSourceDriver *s)
   PyGILState_Release(gstate);
 }
 
+static const gchar *
+python_source_format_persist_name(const LogPipe *s)
+{
+  const PythonSourceDriver *self = (const PythonSourceDriver *)s;
+  return python_format_persist_name(s, self->py.generate_persist_name, "python-source", self->class);
+}
+
 static gboolean
 python_sd_init(LogPipe *s)
 {
@@ -569,6 +576,7 @@ python_sd_new(GlobalConfig *cfg)
   self->super.super.super.super.init = python_sd_init;
   self->super.super.super.super.deinit = python_sd_deinit;
   self->super.super.super.super.free_fn = python_sd_free;
+  self->super.super.super.super.generate_persist_name = python_source_format_persist_name;
 
   self->super.format_stats_instance = python_sd_format_stats_instance;
   self->super.worker_options.super.stats_level = STATS_LEVEL0;
