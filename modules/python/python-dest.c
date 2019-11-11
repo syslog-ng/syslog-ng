@@ -34,6 +34,7 @@
 #include "string-list.h"
 #include "str-utils.h"
 #include "messages.h"
+#include "python-persist.h"
 
 typedef struct
 {
@@ -117,14 +118,7 @@ static const gchar *
 python_dd_format_stats_instance(LogThreadedDestDriver *d)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
-  static gchar persist_name[1024];
-
-  if (d->super.super.super.persist_name)
-    g_snprintf(persist_name, sizeof(persist_name), "python,%s", d->super.super.super.persist_name);
-  else
-    g_snprintf(persist_name, sizeof(persist_name), "python,%s", self->class);
-
-  return persist_name;
+  return python_format_stats_instance((LogPipe *)d, "python", self->class);
 }
 
 static const gchar *

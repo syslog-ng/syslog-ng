@@ -24,5 +24,8 @@
 #define SNG_PYTHON_PERSIST_H_INCLUDED
 
 #include "python-module.h"
+#include "logpipe.h"
+
+const gchar *python_format_stats_instance(LogPipe *p, const gchar *module, const gchar *class);
 
 #endif

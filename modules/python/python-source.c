@@ -28,6 +28,7 @@
 #include "thread-utils.h"
 #include "str-utils.h"
 #include "string-list.h"
+#include "python-persist.h"
 
 typedef struct _PythonSourceDriver PythonSourceDriver;
 
@@ -92,14 +93,8 @@ static const gchar *
 python_sd_format_stats_instance(LogThreadedSourceDriver *s)
 {
   PythonSourceDriver *self = (PythonSourceDriver *) s;
-  static gchar persist_name[1024];
+  return python_format_stats_instance((LogPipe *)s, "python", self->class);
 
-  if (s->super.super.super.persist_name)
-    g_snprintf(persist_name, sizeof(persist_name), "python,%s", s->super.super.super.persist_name);
-  else
-    g_snprintf(persist_name, sizeof(persist_name), "python,%s", self->class);
-
-  return persist_name;
 }
 
 static void
