@@ -26,6 +26,8 @@ modules_python_libmod_python_la_SOURCES		= \
 	modules/python/python-module.h		  \
 	modules/python/python-config.h		  \
 	modules/python/python-config.c		  \
+	modules/python/python-persist.h		  \
+	modules/python/python-persist.c		  \
 	modules/python/python-helpers.h		  \
 	modules/python/python-helpers.c		  \
 	modules/python/python-main.h		  \
