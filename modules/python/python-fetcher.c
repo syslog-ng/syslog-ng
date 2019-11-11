@@ -88,7 +88,7 @@ static const gchar *
 python_fetcher_format_stats_instance(LogThreadedSourceDriver *s)
 {
   PythonFetcherDriver *self = (PythonFetcherDriver *) s;
-  return python_format_stats_instance((LogPipe *)s, "python-fetcher", self->class);
+  return python_format_stats_instance((LogPipe *)s, self->py.generate_persist_name, "python-fetcher", self->class);
 }
 
 static void

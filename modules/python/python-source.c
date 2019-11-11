@@ -94,8 +94,7 @@ static const gchar *
 python_sd_format_stats_instance(LogThreadedSourceDriver *s)
 {
   PythonSourceDriver *self = (PythonSourceDriver *) s;
-  return python_format_stats_instance((LogPipe *)s, "python", self->class);
-
+  return python_format_stats_instance((LogPipe *)s, self->py.generate_persist_name, "python", self->class);
 }
 
 static void
