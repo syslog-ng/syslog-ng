@@ -45,6 +45,7 @@ typedef struct _PythonFetcherDriver
     PyObject *open_method;
     PyObject *close_method;
     PyObject *request_exit_method;
+    PyObject *generate_persist_name;
   } py;
 } PythonFetcherDriver;
 
@@ -219,6 +220,7 @@ _py_free_bindings(PythonFetcherDriver *self)
   Py_CLEAR(self->py.open_method);
   Py_CLEAR(self->py.close_method);
   Py_CLEAR(self->py.request_exit_method);
+  Py_CLEAR(self->py.generate_persist_name);
 }
 
 static gboolean
@@ -296,6 +298,7 @@ _py_init_methods(PythonFetcherDriver *self)
   self->py.request_exit_method = _py_get_attr_or_null(self->py.instance, "request_exit");
   self->py.open_method = _py_get_attr_or_null(self->py.instance, "open");
   self->py.close_method = _py_get_attr_or_null(self->py.instance, "close");
+  self->py.generate_persist_name = _py_get_attr_or_null(self->py.instance, "generate_persist_name");
 
   return TRUE;
 }
