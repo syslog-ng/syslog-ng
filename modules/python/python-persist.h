@@ -27,5 +27,6 @@
 #include "logpipe.h"
 
 const gchar *python_format_stats_instance(LogPipe *p, const gchar *module, const gchar *class);
+const gchar *python_format_persist_name(const LogPipe *p, const gchar *module, const gchar *class);
 
 #endif

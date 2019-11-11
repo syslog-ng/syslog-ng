@@ -40,3 +40,28 @@ python_format_stats_instance(LogPipe *p, const gchar *module, const gchar *class
 
   return persist_name;
 }
+
+static void
+format_default_persist_name_with_persist_name(gchar *buffer, gsize size, const gchar *module, const gchar *persist_name)
+{
+  g_snprintf(buffer, size, "%s.%s", module, persist_name);
+}
+
+static void
+format_default_persist_name_with_class(gchar *buffer, gsize size, const gchar *module, const gchar *class)
+{
+  g_snprintf(buffer, size, "%s(%s)", module, class);
+}
+
+const gchar *
+python_format_persist_name(const LogPipe *p, const gchar *module, const gchar *class)
+{
+  static gchar persist_name[1024];
+
+  if (p->persist_name)
+    format_default_persist_name_with_persist_name(persist_name, sizeof(persist_name), module, p->persist_name);
+  else
+    format_default_persist_name_with_class(persist_name, sizeof(persist_name), module, class);
+
+  return persist_name;
+}
