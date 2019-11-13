@@ -588,7 +588,7 @@ static PyTypeObject py_log_source_type =
   PyVarObject_HEAD_INIT(&PyType_Type, 0)
   .tp_name = "LogSource",
   .tp_basicsize = sizeof(PyLogSource),
-  .tp_dealloc = (destructor) PyObject_Del,
+  .tp_dealloc = py_slng_generic_dealloc,
   .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
   .tp_doc = "The LogSource class is a base class for custom Python sources.",
   .tp_new = PyType_GenericNew,

@@ -427,3 +427,9 @@ _py_string_from_string(const gchar *str, gssize len)
     return PyBytes_FromString(str);
 #endif
 }
+
+void
+py_slng_generic_dealloc(PyObject *self)
+{
+  Py_TYPE(self)->tp_free(self);
+}

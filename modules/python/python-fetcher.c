@@ -551,7 +551,7 @@ static PyTypeObject py_log_fetcher_type =
   PyVarObject_HEAD_INIT(&PyType_Type, 0)
   .tp_name = "LogFetcher",
   .tp_basicsize = sizeof(PyLogFetcher),
-  .tp_dealloc = (destructor) PyObject_Del,
+  .tp_dealloc = py_slng_generic_dealloc,
   .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
   .tp_doc = "The LogFetcher class is a base class for custom Python fetchers.",
   .tp_new = PyType_GenericNew,
