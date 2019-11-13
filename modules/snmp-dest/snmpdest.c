@@ -197,7 +197,7 @@ snmpdest_dd_set_snmp_obj(LogDriver *d, GlobalConfig *cfg, const gchar *objectid,
 }
 
 void
-snmpdest_dd_set_trap_obj(LogDriver *d, GlobalConfig *cfg,const gchar *objectid, const gchar *type, const gchar *value)
+snmpdest_dd_set_trap_obj(LogDriver *d, GlobalConfig *cfg, const gchar *objectid, const gchar *type, const gchar *value)
 {
   SNMPDestDriver *self = (SNMPDestDriver *)d;
 

@@ -340,7 +340,7 @@ qdisk_push_tail(QDisk *self, GString *record)
   /* NOTE: if these were equal, that'd mean the queue is empty, so we spoiled something */
   g_assert(self->hdr->write_head != self->hdr->backlog_head);
 
-  if (self->hdr->write_head > MAX(self->hdr->backlog_head,self->hdr->read_head))
+  if (self->hdr->write_head > MAX(self->hdr->backlog_head, self->hdr->read_head))
     {
       if (self->file_size > self->hdr->write_head)
         {
@@ -788,7 +788,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
   else
     {
       struct stat st;
-      if (stat(filename,&st) == -1)
+      if (stat(filename, &st) == -1)
         {
           new_file = TRUE;
         }

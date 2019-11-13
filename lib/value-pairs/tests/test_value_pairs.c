@@ -185,7 +185,7 @@ ParameterizedTestParameters(value_pairs, test)
     {"core", NULL, "DATE,FACILITY,HOST,MESSAGE,PID,PRIORITY,PROGRAM", NULL },
     {"base", NULL, "DATE,FACILITY,HOST,MESSAGE,PID,PRIORITY,PROGRAM", NULL },
 
-    {"rfc5424", NULL,".SDATA.EventData@18372.4.Data,.SDATA.Keywords@18372.4.Keyword,.SDATA.meta.sequenceId,.SDATA.meta.sysUpTime,.SDATA.origin.ip,DATE,FACILITY,HOST,MESSAGE,MSGID,PID,PRIORITY,PROGRAM", NULL },
+    {"rfc5424", NULL, ".SDATA.EventData@18372.4.Data,.SDATA.Keywords@18372.4.Keyword,.SDATA.meta.sequenceId,.SDATA.meta.sysUpTime,.SDATA.origin.ip,DATE,FACILITY,HOST,MESSAGE,MSGID,PID,PRIORITY,PROGRAM", NULL },
     {"syslog-proto", NULL, ".SDATA.EventData@18372.4.Data,.SDATA.Keywords@18372.4.Keyword,.SDATA.meta.sequenceId,.SDATA.meta.sysUpTime,.SDATA.origin.ip,DATE,FACILITY,HOST,MESSAGE,MSGID,PID,PRIORITY,PROGRAM", NULL },
 
     {"selected-macros", NULL, "DATE,FACILITY,HOST,MESSAGE,PID,PRIORITY,PROGRAM,SEQNUM,SOURCEIP,TAGS", NULL },

@@ -35,19 +35,19 @@ print_struct_json_style(gpointer data, gpointer user_data)
 
   if (!(handle = persist_state_lookup_entry(self->state, name, &size, &result_version)))
     {
-      fprintf(stderr,"Can't lookup for entry \"%s\"\n", name);
+      fprintf(stderr, "Can't lookup for entry \"%s\"\n", name);
       return;
     }
 
   gpointer block = persist_state_map_entry(self->state, handle);
 
-  fprintf(stdout,"\n%s = { \"value\": \"", name);
+  fprintf(stdout, "\n%s = { \"value\": \"", name);
   gchar *block_data = (gchar *) block;
   for (gsize i=0; i<size; i++)
     {
       fprintf(stdout, "%.2X ", block_data[i]&0xff);
     }
-  fprintf(stdout,"\" }\n");
+  fprintf(stdout, "\" }\n");
 
   persist_state_unmap_entry(self->state, handle);
 }
@@ -70,7 +70,7 @@ dump_main(int argc, char *argv[])
   PersistTool *self = persist_tool_new(argv[1], persist_mode_dump);
   if (!self)
     {
-      fprintf(stderr,"Error creating persist tool\n");
+      fprintf(stderr, "Error creating persist tool\n");
       return 1;
     }
 

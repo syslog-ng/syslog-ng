@@ -45,7 +45,7 @@ TransportFactoryRegistry *transport_factory_registry_new(void)
 
   instance->registry = g_hash_table_new_full((GHashFunc)transport_factory_id_hash,
                                              (GEqualFunc)transport_factory_id_equal,
-                                             NULL,_transport_factory_destroy_notify);
+                                             NULL, _transport_factory_destroy_notify);
 
   return instance;
 }

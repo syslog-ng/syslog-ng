@@ -71,5 +71,5 @@ Test(test_messages, test_errno_capture)
 {
   errno = 9;
   msg_set_post_func(test_errno_capture_asserter);
-  msg_error("test errno capture", (errno=10,evt_tag_error("error")));
+  msg_error("test errno capture", (errno=10, evt_tag_error("error")));
 }

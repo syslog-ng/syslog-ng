@@ -185,7 +185,7 @@ static const _TimeLocale _DefaultTimeLocale =
 {
   /* abbreviated day */
   {
-    "Sun","Mon","Tue","Wed","Thu","Fri","Sat",
+    "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat",
   },
   /* days */
   {

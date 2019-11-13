@@ -1094,8 +1094,8 @@ tls_wildcard_match(const gchar *host_name, const gchar *pattern)
           goto exit;
         }
 
-      lower_pattern = g_ascii_strdown(pattern_parts[i],-1);
-      lower_hostname = g_ascii_strdown(hostname_parts[i],-1);
+      lower_pattern = g_ascii_strdown(pattern_parts[i], -1);
+      lower_hostname = g_ascii_strdown(hostname_parts[i], -1);
 
       if (!g_pattern_match_simple(lower_pattern, lower_hostname))
         goto exit;

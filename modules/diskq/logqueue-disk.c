@@ -309,7 +309,7 @@ _restart_diskq(LogQueueDisk *self)
 
   qdisk_stop(self->qdisk);
 
-  gchar *new_file = g_strdup_printf("%s.corrupted",filename);
+  gchar *new_file = g_strdup_printf("%s.corrupted", filename);
   if (rename(filename, new_file) < 0)
     {
       msg_error("Moving corrupt disk-queue failed",

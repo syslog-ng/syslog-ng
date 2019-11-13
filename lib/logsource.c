@@ -547,7 +547,7 @@ _invoke_mangle_callbacks(LogPipe *s, LogMessage *msg, const LogPathOptions *path
     {
       if(next_item->data)
         {
-          if(!((mangle_callback) (next_item->data))(log_pipe_get_config(s),msg,self))
+          if(!((mangle_callback) (next_item->data))(log_pipe_get_config(s), msg, self))
             {
               log_msg_drop(msg, path_options, AT_PROCESSED);
               return FALSE;

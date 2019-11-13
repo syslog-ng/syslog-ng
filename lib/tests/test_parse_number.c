@@ -35,8 +35,8 @@ assert_parse_with_suffix(const gchar *str, gint64 expected)
 
   res = parse_number_with_suffix(str, &n);
 
-  cr_assert_eq(res,TRUE,"Parsing (w/ suffix) %s failed", str);
-  cr_assert_eq(n,expected,"Parsing (w/ suffix) %s failed", str);
+  cr_assert_eq(res, TRUE, "Parsing (w/ suffix) %s failed", str);
+  cr_assert_eq(n, expected, "Parsing (w/ suffix) %s failed", str);
 }
 
 static void
@@ -46,7 +46,7 @@ assert_parse_with_suffix_fails(const gchar *str)
   gboolean res;
 
   res = parse_number_with_suffix(str, &n);
-  cr_assert_eq(res,FALSE, "Parsing (w/ suffix) %s succeeded, while expecting failure", str);
+  cr_assert_eq(res, FALSE, "Parsing (w/ suffix) %s succeeded, while expecting failure", str);
 }
 
 static void
@@ -102,7 +102,7 @@ Test(parse_number, test_simple_numbers_are_parsed_properly)
   assert_parse("-1234", -1234);
 }
 
-Test(parse_number,test_c_like_prefixes_select_base)
+Test(parse_number, test_c_like_prefixes_select_base)
 {
   assert_parse("0x20", 32);
   assert_parse("0xFF", 255);

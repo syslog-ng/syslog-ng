@@ -75,7 +75,7 @@ LogMacroDef macros[] =
   { "AMPM",           M_AMPM },
   { "WEEKDAY",        M_WEEK_DAY_ABBREV }, /* deprecated */
   { "WEEK_DAY",       M_WEEK_DAY },
-  { "WEEK_DAY_ABBREV",M_WEEK_DAY_ABBREV },
+  { "WEEK_DAY_ABBREV", M_WEEK_DAY_ABBREV },
   { "WEEK_DAY_NAME",  M_WEEK_DAY_NAME },
   { "WEEK",           M_WEEK },
   { "ISOWEEK",        M_ISOWEEK },
@@ -104,7 +104,7 @@ LogMacroDef macros[] =
   { "R_AMPM",           M_RECVD_OFS + M_AMPM },
   { "R_WEEKDAY",        M_RECVD_OFS + M_WEEK_DAY_ABBREV }, /* deprecated */
   { "R_WEEK_DAY",       M_RECVD_OFS + M_WEEK_DAY },
-  { "R_WEEK_DAY_ABBREV",M_RECVD_OFS + M_WEEK_DAY_ABBREV },
+  { "R_WEEK_DAY_ABBREV", M_RECVD_OFS + M_WEEK_DAY_ABBREV },
   { "R_WEEK_DAY_NAME",  M_RECVD_OFS + M_WEEK_DAY_NAME },
   { "R_WEEK",           M_RECVD_OFS + M_WEEK },
   { "R_ISOWEEK",        M_RECVD_OFS + M_ISOWEEK },
@@ -132,7 +132,7 @@ LogMacroDef macros[] =
   { "S_AMPM",           M_STAMP_OFS + M_AMPM },
   { "S_WEEKDAY",        M_STAMP_OFS + M_WEEK_DAY_ABBREV }, /* deprecated */
   { "S_WEEK_DAY",       M_STAMP_OFS + M_WEEK_DAY },
-  { "S_WEEK_DAY_ABBREV",M_STAMP_OFS + M_WEEK_DAY_ABBREV },
+  { "S_WEEK_DAY_ABBREV", M_STAMP_OFS + M_WEEK_DAY_ABBREV },
   { "S_WEEK_DAY_NAME",  M_STAMP_OFS + M_WEEK_DAY_NAME },
   { "S_WEEK",           M_STAMP_OFS + M_WEEK },
   { "S_ISOWEEK",        M_STAMP_OFS + M_ISOWEEK },
@@ -160,7 +160,7 @@ LogMacroDef macros[] =
   { "C_AMPM",           M_CSTAMP_OFS + M_AMPM },
   { "C_WEEKDAY",        M_CSTAMP_OFS + M_WEEK_DAY_ABBREV }, /* deprecated */
   { "C_WEEK_DAY",       M_CSTAMP_OFS + M_WEEK_DAY },
-  { "C_WEEK_DAY_ABBREV",M_CSTAMP_OFS + M_WEEK_DAY_ABBREV },
+  { "C_WEEK_DAY_ABBREV", M_CSTAMP_OFS + M_WEEK_DAY_ABBREV },
   { "C_WEEK_DAY_NAME",  M_CSTAMP_OFS + M_WEEK_DAY_NAME },
   { "C_WEEK",           M_CSTAMP_OFS + M_WEEK },
   { "C_ISOWEEK",        M_CSTAMP_OFS + M_ISOWEEK },
@@ -188,7 +188,7 @@ LogMacroDef macros[] =
   { "P_AMPM",           M_PROCESSED_OFS + M_AMPM },
   { "P_WEEKDAY",        M_PROCESSED_OFS + M_WEEK_DAY_ABBREV }, /* deprecated */
   { "P_WEEK_DAY",       M_PROCESSED_OFS + M_WEEK_DAY },
-  { "P_WEEK_DAY_ABBREV",M_PROCESSED_OFS + M_WEEK_DAY_ABBREV },
+  { "P_WEEK_DAY_ABBREV", M_PROCESSED_OFS + M_WEEK_DAY_ABBREV },
   { "P_WEEK_DAY_NAME",  M_PROCESSED_OFS + M_WEEK_DAY_NAME },
   { "P_WEEK",           M_PROCESSED_OFS + M_WEEK },
   { "P_ISOWEEK",        M_PROCESSED_OFS + M_ISOWEEK },

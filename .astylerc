@@ -7,6 +7,9 @@
 # lines indented using 2 spaces
 --indent=spaces=2
 
+# add spaces around commas
+--pad-comma
+
 # max line lenght is 120 chars
 --max-code-length=120
 --max-instatement-indent=60

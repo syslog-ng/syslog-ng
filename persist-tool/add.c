@@ -83,7 +83,7 @@ parse_value_string(gchar *value_str, gchar *buffer, gint buffer_length)
   gint token_index = 0;
   gchar *token = NULL;
 
-  gchar **token_list = g_strsplit (p," ",-1);
+  gchar **token_list = g_strsplit (p, " ", -1);
   while ((token = token_list[token_index++]))
     {
       int value;
@@ -97,7 +97,7 @@ parse_value_string(gchar *value_str, gchar *buffer, gint buffer_length)
 
       if (value > 0xFF)
         {
-          fprintf(stderr,"invalid numeric value (%s)\n", token);
+          fprintf(stderr, "invalid numeric value (%s)\n", token);
           return -1;
         }
 
@@ -136,7 +136,7 @@ add_entry_to_persist_file(gchar *entry, PersistTool *self)
   if (value_count < 0)
     {
       result = 1;
-      fprintf(stderr,"value string is invalid (%s)\n", entry);
+      fprintf(stderr, "value string is invalid (%s)\n", entry);
       error = g_error_new(1, 1, "Invalid value string in input");
       goto exit;
     }
@@ -198,7 +198,7 @@ add_main(int argc, char *argv[])
 
   if (!persist_state_dir)
     {
-      fprintf(stderr,"Required option (output-dir) is missing\n");
+      fprintf(stderr, "Required option (output-dir) is missing\n");
       return 1;
     }
 
@@ -236,7 +236,7 @@ add_main(int argc, char *argv[])
   PersistTool *self = persist_tool_new(filename, persist_mode_edit);
   if (!self)
     {
-      fprintf(stderr,"Error creating persist tool\n");
+      fprintf(stderr, "Error creating persist tool\n");
       g_free(filename);
       return 1;
     }

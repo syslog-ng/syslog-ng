@@ -279,7 +279,7 @@ log_msg_read_matches_details(LogMessage *self, SerializeArchive *sa)
               !serialize_read_uint16(sa, &ofs) ||
               !serialize_read_uint16(sa, &len))
             return FALSE;
-          log_msg_set_match_indirect(self,i,builtin_value,type,ofs,len);
+          log_msg_set_match_indirect(self, i, builtin_value, type, ofs, len);
         }
       else
         {
@@ -305,7 +305,7 @@ log_msg_read_values(LogMessage *self, SerializeArchive *sa)
     goto error;
   while (name[0])
     {
-      log_msg_set_value(self,log_msg_get_value_handle(name),value,-1);
+      log_msg_set_value(self, log_msg_get_value_handle(name), value, -1);
       name = value = NULL;
       if (!serialize_read_cstring(sa, &name, NULL) ||
           !serialize_read_cstring(sa, &value, NULL))
@@ -333,7 +333,7 @@ log_msg_read_sd_param(SerializeArchive *sa, gchar *sd_element_name, LogMessage *
 
   if (name_len != 0 && value_len != 0)
     {
-      strncpy(sd_param_name, sd_element_name,256);
+      strncpy(sd_param_name, sd_element_name, 256);
       strncpy(sd_param_name + strlen(sd_element_name), name, name_len);
       log_msg_set_value(self, log_msg_get_value_handle(sd_param_name), value, value_len);
       *has_more = TRUE;
@@ -398,7 +398,7 @@ log_msg_read_sd_element(SerializeArchive *sa, LogMessage *self, gboolean *has_mo
       g_free(sd_id);
       return TRUE;
     }
-  strcpy(sd_element_root,logmsg_sd_prefix);
+  strcpy(sd_element_root, logmsg_sd_prefix);
   strncpy(sd_element_root + logmsg_sd_prefix_len, sd_id, sd_id_len);
   sd_element_root[logmsg_sd_prefix_len + sd_id_len]='.';
 
@@ -494,7 +494,7 @@ _deserialize_message_version_1x(LogMessageSerializationState *state)
   g_free(msgid);
   if (!serialize_read_uint8(sa, &msg->num_matches))
     return FALSE;
-  if(!log_msg_read_matches_details(msg,sa))
+  if(!log_msg_read_matches_details(msg, sa))
     return FALSE;
   if (!log_msg_read_values(msg, sa) ||
       !log_msg_read_sd_data(msg, sa))

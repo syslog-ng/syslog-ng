@@ -224,7 +224,7 @@ _write_meta_data(SerializeArchive *sa, NVTableMetaData *meta_data)
 static void
 _fill_meta_data(NVTable *self, NVTableMetaData *meta_data)
 {
-  memcpy((void *)&meta_data->magic,(const void *) NV_TABLE_MAGIC_V2, 4);
+  memcpy((void *)&meta_data->magic, (const void *) NV_TABLE_MAGIC_V2, 4);
   if (G_BYTE_ORDER == G_BIG_ENDIAN)
     meta_data->flags |= NVT_SF_BE;
   meta_data->flags |= NVT_SUPPORTS_UNSET;

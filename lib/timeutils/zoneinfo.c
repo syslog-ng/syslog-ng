@@ -538,7 +538,7 @@ time_zone_info_get_offset(const TimeZoneInfo *self, time_t stamp)
 TimeZoneInfo *
 time_zone_info_new(const gchar *tz)
 {
-  TimeZoneInfo *self = g_new0(TimeZoneInfo,1);
+  TimeZoneInfo *self = g_new0(TimeZoneInfo, 1);
   self->zone_offset = -1;
 
   /* if no time zone was specified return with an empty TimeZoneInfo pointer */

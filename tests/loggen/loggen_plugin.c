@@ -37,7 +37,7 @@ thread_check_exit_criteria(ThreadData *thread_context)
   if (thread_context->option->number_of_messages != 0
       && thread_context->sent_messages >= thread_context->option->number_of_messages)
     {
-      DEBUG("(thread %d) number of sent messages reached the defined limit (%d)\n",thread_context->index,
+      DEBUG("(thread %d) number of sent messages reached the defined limit (%d)\n", thread_context->index,
             thread_context->option->number_of_messages);
       return TRUE;
     }
@@ -48,7 +48,7 @@ thread_check_exit_criteria(ThreadData *thread_context)
   if ( !thread_context->option->permanent &&
        time_val_diff_in_sec(&now, &thread_context->start_time) > thread_context->option->interval )
     {
-      DEBUG("(thread %d) defined time (%d sec) ellapsed\n",thread_context->index, thread_context->option->interval);
+      DEBUG("(thread %d) defined time (%d sec) ellapsed\n", thread_context->index, thread_context->option->interval);
       return TRUE;
     }
 

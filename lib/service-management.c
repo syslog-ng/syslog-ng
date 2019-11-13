@@ -143,9 +143,9 @@ ServiceManagement service_managements[] =
     .clear_status = service_management_dummy_clear_status,
     .indicate_readiness = service_management_dummy_indicate_readiness,
     .is_active = service_management_dummy_is_active
-  }
+  },
 #if SYSLOG_NG_ENABLE_SYSTEMD
-  ,{
+  {
     .type = SMT_SYSTEMD,
     .publish_status = service_management_systemd_publish_status,
     .clear_status = service_management_systemd_clear_status,

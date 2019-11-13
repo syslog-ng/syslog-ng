@@ -1003,13 +1003,13 @@ log_msg_append_format_sdata(const LogMessage *self, GString *result,  guint32 se
         }
       /* if message hasn't sequenceId and the cur_elem is the meta block Append the sequenceId for the result
          if seq_num isn't 0 */
-      if (!has_seq_num && seq_num!=0 && strncmp(sdata_elem,"meta.",5) == 0)
+      if (!has_seq_num && seq_num!=0 && strncmp(sdata_elem, "meta.", 5) == 0)
         {
           gchar sequence_id[16];
           g_snprintf(sequence_id, sizeof(sequence_id), "%d", seq_num);
           g_string_append_c(result, ' ');
-          g_string_append_len(result,"sequenceId=\"",12);
-          g_string_append_len(result,sequence_id,strlen(sequence_id));
+          g_string_append_len(result, "sequenceId=\"", 12);
+          g_string_append_len(result, sequence_id, strlen(sequence_id));
           g_string_append_c(result, '"');
           has_seq_num = TRUE;
         }
@@ -1038,9 +1038,9 @@ log_msg_append_format_sdata(const LogMessage *self, GString *result,  guint32 se
       gchar sequence_id[16];
       g_snprintf(sequence_id, sizeof(sequence_id), "%d", seq_num);
       g_string_append_c(result, '[');
-      g_string_append_len(result,"meta sequenceId=\"",17);
-      g_string_append_len(result,sequence_id,strlen(sequence_id));
-      g_string_append_len(result, "\"]",2);
+      g_string_append_len(result, "meta sequenceId=\"", 17);
+      g_string_append_len(result, sequence_id, strlen(sequence_id));
+      g_string_append_len(result, "\"]", 2);
     }
 }
 

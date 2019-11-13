@@ -229,7 +229,7 @@ stop(PluginOption *option)
   /* wait all threads to finish */
   for (int j =0 ; j<active_thread_count+idle_thread_count; j++)
     {
-      GThread *thread_id = g_ptr_array_index(thread_array,j);
+      GThread *thread_id = g_ptr_array_index(thread_array, j);
       if (!thread_id)
         continue;
 
@@ -265,11 +265,11 @@ idle_thread_func(gpointer user_data)
 
   if (fd<0)
     {
-      ERROR("can not connect to %s:%s (%p)\n",option->target, option->port,g_thread_self());
+      ERROR("can not connect to %s:%s (%p)\n", option->target, option->port, g_thread_self());
     }
   else
     {
-      DEBUG("(%d) connected to server on socket %d (%p)\n",thread_index,fd,g_thread_self());
+      DEBUG("(%d) connected to server on socket %d (%p)\n", thread_index, fd, g_thread_self());
     }
 
   g_mutex_lock(thread_lock);
@@ -280,15 +280,15 @@ idle_thread_func(gpointer user_data)
 
   g_mutex_unlock(thread_lock);
 
-  DEBUG("thread (%s,%p) created. wait for start ...\n",loggen_plugin_info.name,g_thread_self());
+  DEBUG("thread (%s,%p) created. wait for start ...\n", loggen_plugin_info.name, g_thread_self());
   g_mutex_lock(thread_lock);
   while (!thread_run)
     {
-      g_cond_wait(thread_start,thread_lock);
+      g_cond_wait(thread_start, thread_lock);
     }
   g_mutex_unlock(thread_lock);
 
-  DEBUG("thread (%s,%p) started. (r=%d,c=%d)\n",loggen_plugin_info.name,g_thread_self(),option->rate,
+  DEBUG("thread (%s,%p) started. (r=%d,c=%d)\n", loggen_plugin_info.name, g_thread_self(), option->rate,
         option->number_of_messages);
 
   while (fd > 0 && thread_run && active_thread_count>0)
@@ -328,11 +328,11 @@ active_thread_func(gpointer user_data)
 
   if (fd<0)
     {
-      ERROR("can not connect to %s:%s (%p)\n",option->target, option->port,g_thread_self());
+      ERROR("can not connect to %s:%s (%p)\n", option->target, option->port, g_thread_self());
     }
   else
     {
-      DEBUG("(%d) connected to server on socket %d (%p)\n",thread_context->index,fd,g_thread_self());
+      DEBUG("(%d) connected to server on socket %d (%p)\n", thread_context->index, fd, g_thread_self());
     }
 
   g_mutex_lock(thread_lock);
@@ -343,15 +343,15 @@ active_thread_func(gpointer user_data)
 
   g_mutex_unlock(thread_lock);
 
-  DEBUG("thread (%s,%p) created. wait for start ...\n",loggen_plugin_info.name,g_thread_self());
+  DEBUG("thread (%s,%p) created. wait for start ...\n", loggen_plugin_info.name, g_thread_self());
   g_mutex_lock(thread_lock);
   while (!thread_run)
     {
-      g_cond_wait(thread_start,thread_lock);
+      g_cond_wait(thread_start, thread_lock);
     }
   g_mutex_unlock(thread_lock);
 
-  DEBUG("thread (%s,%p) started. (r=%d,c=%d)\n",loggen_plugin_info.name,g_thread_self(),option->rate,
+  DEBUG("thread (%s,%p) started. (r=%d,c=%d)\n", loggen_plugin_info.name, g_thread_self(), option->rate,
         option->number_of_messages);
 
   unsigned long count = 0;
@@ -372,7 +372,7 @@ active_thread_func(gpointer user_data)
 
       if (!generate_message)
         {
-          ERROR("generate_message not yet set up(%p)\n",g_thread_self());
+          ERROR("generate_message not yet set up(%p)\n", g_thread_self());
           break;
         }
 
@@ -390,7 +390,7 @@ active_thread_func(gpointer user_data)
           ssize_t rc = send_plain(fd, message + sent, strlen(message) - sent);
           if (rc < 0)
             {
-              ERROR("error sending buffer on %d (rc=%zd)\n",fd,rc);
+              ERROR("error sending buffer on %d (rc=%zd)\n", fd, rc);
               errno = ECONNABORTED;
               connection_error = TRUE;
               break;
@@ -401,7 +401,7 @@ active_thread_func(gpointer user_data)
       thread_context->sent_messages++;
       thread_context->buckets--;
     }
-  DEBUG("thread (%s,%p) finished\n",loggen_plugin_info.name,g_thread_self());
+  DEBUG("thread (%s,%p) finished\n", loggen_plugin_info.name, g_thread_self());
 
   g_free((gpointer)message);
   g_mutex_lock(thread_lock);

@@ -592,7 +592,7 @@ cfg_dump_processed_config(GString *preprocess_output, gchar *output_filename)
       return;
     }
 
-  output_file = fopen(output_filename,"w+");
+  output_file = fopen(output_filename, "w+");
   if (!output_file)
     {
       msg_error("Error opening preprocess-into file",
@@ -778,14 +778,14 @@ cfg_get_user_version(const GlobalConfig *cfg)
   return cfg->user_version;
 }
 
-void register_source_mangle_callback(GlobalConfig *src,mangle_callback cb)
+void register_source_mangle_callback(GlobalConfig *src, mangle_callback cb)
 {
-  src->source_mangle_callback_list = g_list_append(src->source_mangle_callback_list,cb);
+  src->source_mangle_callback_list = g_list_append(src->source_mangle_callback_list, cb);
 }
 
-void uregister_source_mangle_callback(GlobalConfig *src,mangle_callback cb)
+void uregister_source_mangle_callback(GlobalConfig *src, mangle_callback cb)
 {
-  src->source_mangle_callback_list = g_list_remove(src->source_mangle_callback_list,cb);
+  src->source_mangle_callback_list = g_list_remove(src->source_mangle_callback_list, cb);
 }
 
 const gchar *
