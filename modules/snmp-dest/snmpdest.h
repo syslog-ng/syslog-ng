@@ -86,7 +86,7 @@ LogDriver *snmpdest_dd_new(GlobalConfig *cfg);
 void snmpdest_dd_set_version(LogDriver *d, const gchar *version);
 void snmpdest_dd_set_host(LogDriver *d, const gchar *host);
 void snmpdest_dd_set_port(LogDriver *d, gint port);
-gboolean snmpdest_dd_set_snmp_obj(LogDriver *d, GlobalConfig *cfg,const gchar *objectid, const gchar *type,
+gboolean snmpdest_dd_set_snmp_obj(LogDriver *d, GlobalConfig *cfg, const gchar *objectid, const gchar *type,
                                   const gchar *value);
 void snmpdest_dd_set_trap_obj(LogDriver *d, GlobalConfig *cfg, const gchar *objectid, const gchar *type,
                               const gchar *value);

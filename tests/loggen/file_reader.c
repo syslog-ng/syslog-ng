@@ -80,12 +80,12 @@ int init_file_reader(int nr_threads)
           source[i] = fopen(read_file_name, "r");
           if (!source[i])
             {
-              ERROR("unable to open file (%s)\n",read_file_name);
+              ERROR("unable to open file (%s)\n", read_file_name);
               return -1;
             }
         }
 
-      DEBUG("file (%s) opened for reading\n",read_file_name);
+      DEBUG("file (%s) opened for reading\n", read_file_name);
     }
   return 1;
 }

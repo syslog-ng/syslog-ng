@@ -366,7 +366,7 @@ ParameterizedTestParameters(dbparser, test_find_clusters_slct)
 
 ParameterizedTest(PatternizeParams *param, dbparser, test_find_clusters_slct, .init = setup, .fini = teardown)
 {
-  int i,j;
+  int i, j;
   gchar **expecteds;
   loglinesType *logmessages;
   clusterfindData *find_data;

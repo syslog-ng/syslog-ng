@@ -42,10 +42,10 @@ ParameterizedTestParameters(str_utils, test_str_utils_is_null)
 {
   static StrChrTestData test_data_list[] =
   {
-    {"",'x',0},
-    {"\0x",'x',0},
-    {"a",'x',0},
-    {"abc",'x',0}
+    {"", 'x', 0},
+    {"\0x", 'x', 0},
+    {"a", 'x', 0},
+    {"abc", 'x', 0}
   };
 
   return cr_make_param_array(StrChrTestData, test_data_list, sizeof(test_data_list) / sizeof(test_data_list[0]));

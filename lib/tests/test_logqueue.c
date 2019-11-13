@@ -257,13 +257,13 @@ Test(logqueue, test_with_threads)
   log_queue_set_max_threads(FEEDERS);
   for (i = 0; i < TEST_RUNS; i++)
     {
-      fprintf(stderr,"starting testrun: %d\n",i);
+      fprintf(stderr, "starting testrun: %d\n", i);
       q = log_queue_fifo_new(MESSAGES_SUM, NULL);
       log_queue_set_use_backlog(q, TRUE);
 
       for (j = 0; j < FEEDERS; j++)
         {
-          fprintf(stderr,"starting feed thread %d\n",j);
+          fprintf(stderr, "starting feed thread %d\n", j);
           other_threads[j] = g_thread_create(_output_thread, NULL, TRUE, NULL);
           thread_feed[j] = g_thread_create(_threaded_feed, q, TRUE, NULL);
         }
@@ -272,7 +272,7 @@ Test(logqueue, test_with_threads)
 
       for (j = 0; j < FEEDERS; j++)
         {
-          fprintf(stderr,"waiting for feed thread %d\n",j);
+          fprintf(stderr, "waiting for feed thread %d\n", j);
           g_thread_join(thread_feed[j]);
           g_thread_join(other_threads[j]);
         }

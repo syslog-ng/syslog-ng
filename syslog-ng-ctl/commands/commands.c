@@ -64,7 +64,7 @@ slng_send_cmd(const gchar *cmd)
       return FALSE;
     }
 
-  if (control_client_send_command(control_client,cmd) < 0)
+  if (control_client_send_command(control_client, cmd) < 0)
     {
       return FALSE;
     }

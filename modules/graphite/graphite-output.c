@@ -122,11 +122,11 @@ tf_graphite_foreach_func(const gchar *name, TypeHint type, const gchar *value,
   TFGraphiteForeachUserData *data = (TFGraphiteForeachUserData *) user_data;
 
   g_string_append(data->result, name);
-  g_string_append_c(data->result,' ');
+  g_string_append_c(data->result, ' ');
   g_string_append(data->result, value);
-  g_string_append_c(data->result,' ');
+  g_string_append_c(data->result, ' ');
   g_string_append(data->result, data->formatted_unixtime->str);
-  g_string_append_c(data->result,'\n');
+  g_string_append_c(data->result, '\n');
 
   return FALSE;
 }

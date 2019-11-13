@@ -142,6 +142,6 @@ ParameterizedTest(ParserQStringTestParam *param, parser, test_qstring_parser)
                           &result_string);
   cr_assert(result, "Mismatching parser result");
   cr_assert_str_eq(result_string, param->expected_string, "Mismatching parser result (exp:%s, res:%s)",
-                   param->expected_string,result_string);
+                   param->expected_string, result_string);
   g_free(result_string);
 }

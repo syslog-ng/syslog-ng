@@ -123,11 +123,11 @@ gboolean is_plugin_already_loaded(GPtrArray *plugin_array, const gchar *name)
 {
   for (int i=0; i < plugin_array->len; i++)
     {
-      PluginInfo *loaded_plugin = g_ptr_array_index(plugin_array,i);
+      PluginInfo *loaded_plugin = g_ptr_array_index(plugin_array, i);
       if (!loaded_plugin)
         continue;
 
-      if (strcmp(name,loaded_plugin->name) == 0)
+      if (strcmp(name, loaded_plugin->name) == 0)
         {
           return TRUE;
         }
@@ -157,10 +157,10 @@ enumerate_plugins(const gchar *plugin_path, GPtrArray *plugin_array, GOptionCont
   GModule *module = NULL;
   while ((fname = g_dir_read_name(dir)))
     {
-      if (!g_str_has_suffix(fname,G_MODULE_SUFFIX))
+      if (!g_str_has_suffix(fname, G_MODULE_SUFFIX))
         continue;
 
-      gchar *full_lib_path = g_build_filename(plugin_path,fname,NULL);
+      gchar *full_lib_path = g_build_filename(plugin_path, fname, NULL);
       module = g_module_open(full_lib_path, G_MODULE_BIND_LAZY);
       if (!module)
         {
@@ -186,7 +186,7 @@ enumerate_plugins(const gchar *plugin_path, GPtrArray *plugin_array, GOptionCont
       if (plugin->set_generate_message)
         plugin->set_generate_message(generate_message);
       else
-        ERROR("plugin (%s) doesn't have set_generate_message function\n",plugin->name);
+        ERROR("plugin (%s) doesn't have set_generate_message function\n", plugin->name);
 
       g_ptr_array_add(plugin_array, (gpointer) plugin);
 
@@ -214,7 +214,7 @@ stop_plugins(GPtrArray *plugin_array)
 
   for (int i=0; i < plugin_array->len; i++)
     {
-      PluginInfo *plugin = g_ptr_array_index(plugin_array,i);
+      PluginInfo *plugin = g_ptr_array_index(plugin_array, i);
       if (!plugin)
         continue;
 
@@ -235,7 +235,7 @@ init_logline_generator(GPtrArray *plugin_array)
   gboolean require_framing = FALSE;
   for (int i=0; i < plugin_array->len; i++)
     {
-      PluginInfo *plugin = g_ptr_array_index(plugin_array,i);
+      PluginInfo *plugin = g_ptr_array_index(plugin_array, i);
       if (!plugin)
         continue;
 
@@ -274,7 +274,7 @@ init_csv_statistics(void)
       printf("ThreadId;Time;Rate;Count\n");
       for (int j=0; j < global_plugin_option.active_connections; j++)
         {
-          fprintf(stderr,"%d;%lu.%06lu;%.2lf;%lu\n",j,(long) 0,(long) 0,(double) 0, (long)0);
+          fprintf(stderr, "%d;%lu.%06lu;%.2lf;%lu\n", j, (long) 0, (long) 0, (double) 0, (long)0);
         }
     }
 }
@@ -292,7 +292,7 @@ start_plugins(GPtrArray *plugin_array)
   int number_of_active_plugins = 0;
   for (int i=0; i < plugin_array->len; i++)
     {
-      PluginInfo *plugin = g_ptr_array_index(plugin_array,i);
+      PluginInfo *plugin = g_ptr_array_index(plugin_array, i);
       if (!plugin)
         continue;
 
@@ -309,7 +309,7 @@ start_plugins(GPtrArray *plugin_array)
 
   for (int i=0; i < plugin_array->len; i++)
     {
-      PluginInfo *plugin = g_ptr_array_index(plugin_array,i);
+      PluginInfo *plugin = g_ptr_array_index(plugin_array, i);
       if (!plugin)
         continue;
 
@@ -366,7 +366,7 @@ print_statistic(struct timeval *start_time)
           count = thread_stat_count[j];
           g_mutex_unlock(message_counter_lock);
 
-          fprintf(stderr,"%d;%lu.%06lu;%.2lf;%"G_GINT64_FORMAT"\n",
+          fprintf(stderr, "%d;%lu.%06lu;%.2lf;%"G_GINT64_FORMAT"\n",
                   j,
                   (long) diff_tv.tv_sec,
                   (long) diff_tv.tv_usec,
@@ -388,7 +388,7 @@ void wait_all_plugin_to_finish(GPtrArray *plugin_array)
 
   for (int i=0; i < plugin_array->len; i++)
     {
-      PluginInfo *plugin = g_ptr_array_index(plugin_array,i);
+      PluginInfo *plugin = g_ptr_array_index(plugin_array, i);
       if (!plugin)
         continue;
 
@@ -414,13 +414,13 @@ void wait_all_plugin_to_finish(GPtrArray *plugin_array)
             (gint64)raw_message_length/count,
             (double)raw_message_length/(total_runtime_sec*1024) );
   else
-    fprintf(stderr, "Total runtime = %g, count = %ld\n",total_runtime_sec, count);
+    fprintf(stderr, "Total runtime = %g, count = %ld\n", total_runtime_sec, count);
 }
 
 static void
 signal_callback_handler(int signum)
 {
-  ERROR("Send error Broken pipe, results may be skewed. %d\n",signum);
+  ERROR("Send error Broken pipe, results may be skewed. %d\n", signum);
 }
 
 static void
@@ -464,7 +464,7 @@ main(int argc, char *argv[])
   setup_rate_change_signals();
 
   int plugin_num = enumerate_plugins(SYSLOG_NG_PATH_LOGGEN_PLUGIN_DIR, plugin_array, ctx);
-  DEBUG("%d plugin successfuly loaded\n",plugin_num);
+  DEBUG("%d plugin successfuly loaded\n", plugin_num);
 
   /* create sub group for file reader functions */
   GOptionGroup *group = g_option_group_new("file-reader", "file-reader", "Show options", NULL, NULL);
@@ -475,7 +475,7 @@ main(int argc, char *argv[])
   if (!g_option_context_parse(ctx, &argc, &argv, &error))
     {
       ERROR("option parsing failed: %s\n", error->message);
-      g_ptr_array_free(plugin_array,TRUE);
+      g_ptr_array_free(plugin_array, TRUE);
       if (error)
         g_error_free(error);
       return 1;
@@ -501,11 +501,11 @@ main(int argc, char *argv[])
       DEBUG("no port and address specified");
     }
 
-  DEBUG("target=%s port=%s\n",global_plugin_option.target,global_plugin_option.port);
+  DEBUG("target=%s port=%s\n", global_plugin_option.target, global_plugin_option.port);
 
   if (global_plugin_option.message_length > MAX_MESSAGE_LENGTH)
     {
-      ERROR("warning: defined message length (%d) is too big. truncated to (%d)\n",global_plugin_option.message_length,
+      ERROR("warning: defined message length (%d) is too big. truncated to (%d)\n", global_plugin_option.message_length,
             MAX_MESSAGE_LENGTH);
       global_plugin_option.message_length = MAX_MESSAGE_LENGTH;
     }
@@ -534,7 +534,7 @@ main(int argc, char *argv[])
     g_mutex_free(message_counter_lock);
   g_free((gpointer)global_plugin_option.target);
   g_free((gpointer)global_plugin_option.port);
-  g_ptr_array_free(plugin_array,TRUE);
+  g_ptr_array_free(plugin_array, TRUE);
   g_free(thread_stat_count_last);
   g_free(thread_stat_count);
   return 0;

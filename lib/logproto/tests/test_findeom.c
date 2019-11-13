@@ -77,7 +77,7 @@ ParameterizedTest(struct testcase_tuple *tup, findeom, test_success)
   const guchar *eom;
   const guchar *msg = (const guchar *) tup->msg;
 
-  eom = find_eom((guchar *) msg,tup-> msg_len);
+  eom = find_eom((guchar *) msg, tup-> msg_len);
 
   cr_assert(eom - msg == tup->eom_ofs,
             "EOM is at wrong location. msg=%s, eom_ofs=%d, eom=%s\n",
@@ -123,7 +123,7 @@ ParameterizedTest(struct testcase_tuple *tup, findeom, test_failed)
   const guchar *eom;
   const guchar *msg = (const guchar *) tup->msg;
 
-  eom = find_eom((guchar *) msg,tup-> msg_len);
+  eom = find_eom((guchar *) msg, tup-> msg_len);
 
   cr_assert_null(eom,
                  "EOM returned is not NULL, which was expected. eom_ofs=%d, eom=%s\n",

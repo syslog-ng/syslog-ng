@@ -64,9 +64,9 @@ Test(diskq, testcase_zero_diskbuf_and_normal_acks)
   log_queue_set_use_backlog(q, TRUE);
 
   filename = g_string_sized_new(32);
-  g_string_sprintf(filename,"test-normal_acks.qf");
+  g_string_sprintf(filename, "test-normal_acks.qf");
   unlink(filename->str);
-  log_queue_disk_load_queue(q,filename->str);
+  log_queue_disk_load_queue(q, filename->str);
   fed_messages = 0;
   acked_messages = 0;
   for (i = 0; i < 10; i++)
@@ -80,7 +80,7 @@ Test(diskq, testcase_zero_diskbuf_and_normal_acks)
 
   log_queue_unref(q);
   unlink(filename->str);
-  g_string_free(filename,TRUE);
+  g_string_free(filename, TRUE);
   disk_queue_options_destroy(&options);
 }
 
@@ -97,9 +97,9 @@ Test(diskq, testcase_zero_diskbuf_alternating_send_acks)
   log_queue_set_use_backlog(q, TRUE);
 
   filename = g_string_sized_new(32);
-  g_string_sprintf(filename,"test-send_acks.qf");
+  g_string_sprintf(filename, "test-send_acks.qf");
   unlink(filename->str);
-  log_queue_disk_load_queue(q,filename->str);
+  log_queue_disk_load_queue(q, filename->str);
   fed_messages = 0;
   acked_messages = 0;
   for (i = 0; i < 10; i++)
@@ -114,7 +114,7 @@ Test(diskq, testcase_zero_diskbuf_alternating_send_acks)
                acked_messages);
   log_queue_unref(q);
   unlink(filename->str);
-  g_string_free(filename,TRUE);
+  g_string_free(filename, TRUE);
   disk_queue_options_destroy(&options);
 }
 
@@ -139,9 +139,9 @@ Test(diskq, testcase_ack_and_rewind_messages)
   cr_assert_eq(stats_counter_get(q->queued_messages), 0, "queued messages: %d", __LINE__);
 
   filename = g_string_sized_new(32);
-  g_string_sprintf(filename,"test-rewind_and_acks.qf");
+  g_string_sprintf(filename, "test-rewind_and_acks.qf");
   unlink(filename->str);
-  log_queue_disk_load_queue(q,filename->str);
+  log_queue_disk_load_queue(q, filename->str);
 
   fed_messages = 0;
   acked_messages = 0;
@@ -150,22 +150,22 @@ Test(diskq, testcase_ack_and_rewind_messages)
 
   for(i = 0; i < 10; i++)
     {
-      send_some_messages(q,1);
+      send_some_messages(q, 1);
       cr_assert_eq(stats_counter_get(q->queued_messages), 999, "queued messages wrong number %d", __LINE__);
-      log_queue_rewind_backlog(q,1);
+      log_queue_rewind_backlog(q, 1);
       cr_assert_eq(stats_counter_get(q->queued_messages), 1000, "queued messages wrong number: %d", __LINE__);
     }
-  send_some_messages(q,1000);
+  send_some_messages(q, 1000);
   cr_assert_eq(stats_counter_get(q->queued_messages), 0, "queued messages: %d", __LINE__);
-  log_queue_ack_backlog(q,500);
-  log_queue_rewind_backlog(q,500);
+  log_queue_ack_backlog(q, 500);
+  log_queue_rewind_backlog(q, 500);
   cr_assert_eq(stats_counter_get(q->queued_messages), 500, "queued messages: %d", __LINE__);
-  send_some_messages(q,500);
+  send_some_messages(q, 500);
   cr_assert_eq(stats_counter_get(q->queued_messages), 0, "queued messages: %d", __LINE__);
-  log_queue_ack_backlog(q,500);
+  log_queue_ack_backlog(q, 500);
   log_queue_unref(q);
   unlink(filename->str);
-  g_string_free(filename,TRUE);
+  g_string_free(filename, TRUE);
   disk_queue_options_destroy(&options);
 }
 
@@ -280,9 +280,9 @@ Test(diskq, testcase_with_threads)
 
       q = log_queue_disk_reliable_new(&options, NULL);
       filename = g_string_sized_new(32);
-      g_string_sprintf(filename,"test-%04d.qf",i);
+      g_string_sprintf(filename, "test-%04d.qf", i);
       unlink(filename->str);
-      log_queue_disk_load_queue(q,filename->str);
+      log_queue_disk_load_queue(q, filename->str);
 
       for (j = 0; j < FEEDERS; j++)
         {
@@ -299,7 +299,7 @@ Test(diskq, testcase_with_threads)
 
       log_queue_unref(q);
       unlink(filename->str);
-      g_string_free(filename,TRUE);
+      g_string_free(filename, TRUE);
       disk_queue_options_destroy(&options);
 
     }
@@ -431,11 +431,11 @@ init_statistics(LogQueue *q)
 static void
 assert_general_message_flow(LogQueue *q, gssize one_msg_size)
 {
-  send_some_messages(q,1);
+  send_some_messages(q, 1);
   cr_assert_eq(stats_counter_get(q->queued_messages), 1, "queued messages: line: %d", __LINE__);
   cr_assert_eq(stats_counter_get(q->memory_usage), one_msg_size, "memory_usage: line: %d", __LINE__);
 
-  send_some_messages(q,1);
+  send_some_messages(q, 1);
   cr_assert_eq(stats_counter_get(q->queued_messages), 0, "queued messages: line: %d", __LINE__);
   cr_assert_eq(stats_counter_get(q->memory_usage), 0, "memory_usage: line: %d", __LINE__);
 
@@ -443,7 +443,7 @@ assert_general_message_flow(LogQueue *q, gssize one_msg_size)
   cr_assert_eq(stats_counter_get(q->queued_messages), 10, "queued messages: line: %d", __LINE__);
   cr_assert_eq(stats_counter_get(q->memory_usage), one_msg_size*10, "memory_usage: line: %d", __LINE__);
 
-  send_some_messages(q,5);
+  send_some_messages(q, 5);
   cr_assert_eq(stats_counter_get(q->queued_messages), 5, "queued messages: line: %d", __LINE__);
   cr_assert_eq(stats_counter_get(q->memory_usage), one_msg_size*5, "memory_usage: line: %d", __LINE__);
 }
@@ -463,7 +463,7 @@ testcase_diskq_prepare(DiskQueueOptions *options, diskq_tester_parameters_t *par
   cr_assert_eq(stats_counter_get(q->memory_usage), 0, "memory_usage: line: %d", __LINE__);
 
   unlink(parameters->filename);
-  log_queue_disk_load_queue(q,parameters->filename);
+  log_queue_disk_load_queue(q, parameters->filename);
 
   return q;
 }

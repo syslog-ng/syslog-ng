@@ -34,7 +34,7 @@ generate_main(int argc, char *argv[])
 
   if (!generate_output_dir)
     {
-      fprintf(stderr,"output-dir is required options\n");
+      fprintf(stderr, "output-dir is required options\n");
       return 1;
     }
 
@@ -46,7 +46,7 @@ generate_main(int argc, char *argv[])
   filename = g_build_path(G_DIR_SEPARATOR_S, generate_output_dir, DEFAULT_PERSIST_FILE, NULL);
   if (g_file_test(filename, G_FILE_TEST_IS_REGULAR | G_FILE_TEST_EXISTS) && !force_generate)
     {
-      fprintf(stderr, "Persist file exists; filename = %s\n",filename);
+      fprintf(stderr, "Persist file exists; filename = %s\n", filename);
       return 1;
     }
   else if (g_file_test(filename, G_FILE_TEST_IS_REGULAR | G_FILE_TEST_EXISTS))
@@ -61,11 +61,11 @@ generate_main(int argc, char *argv[])
   self = persist_tool_new(filename, persist_mode_edit);
   if (!self)
     {
-      fprintf(stderr,"Error creating persist tool\n");
+      fprintf(stderr, "Error creating persist tool\n");
       return 1;
     }
 
-  fprintf(stderr,"New persist file generated: %s\n", filename);
+  fprintf(stderr, "New persist file generated: %s\n", filename);
   persist_state_commit(self->state);
 
   persist_tool_free(self);

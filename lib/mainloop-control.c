@@ -42,7 +42,7 @@ control_connection_message_log(ControlConnection *cc, GString *command, gpointer
 
   if (!cmds[1])
     {
-      g_string_assign(result,"Invalid arguments received, expected at least one argument");
+      g_string_assign(result, "Invalid arguments received, expected at least one argument");
       goto exit;
     }
 

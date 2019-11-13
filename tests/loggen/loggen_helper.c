@@ -72,7 +72,7 @@ connect_to_server(struct sockaddr *dest_addr, int dest_addr_len, int sock_type)
       close(sock);
       return -1;
     }
-  DEBUG("server connection established (%d)\n",sock);
+  DEBUG("server connection established (%d)\n", sock);
   return sock;
 }
 
@@ -88,7 +88,7 @@ connect_ip_socket(int sock_type, const char *target, const char *port, int use_i
       return -1;
     }
 
-  DEBUG("server IP = %s:%s\n",target,port);
+  DEBUG("server IP = %s:%s\n", target, port);
 #if SYSLOG_NG_HAVE_GETADDRINFO
   struct addrinfo hints;
   struct addrinfo *res;
@@ -101,7 +101,7 @@ connect_ip_socket(int sock_type, const char *target, const char *port, int use_i
   hints.ai_protocol = 0;
   if (getaddrinfo(target, port, &hints, &res) != 0)
     {
-      ERROR("name lookup error (%s:%s)\n",target, port);
+      ERROR("name lookup error (%s:%s)\n", target, port);
       return -1;
     }
 
@@ -115,7 +115,7 @@ connect_ip_socket(int sock_type, const char *target, const char *port, int use_i
   he = gethostbyname(target);
   if (!he)
     {
-      ERROR("name lookup error (%s)\n",target);
+      ERROR("name lookup error (%s)\n", target);
       return -1;
     }
   s_in.sin_family = AF_INET;
@@ -146,7 +146,7 @@ int connect_unix_domain_socket(int sock_type, const char *path)
       return -1;
     }
 
-  DEBUG("unix domain socket: %s\n",path);
+  DEBUG("unix domain socket: %s\n", path);
   saun.sun_family = AF_UNIX;
 
   gsize max_target_path_size = sizeof(saun.sun_path);
@@ -186,7 +186,7 @@ double
 time_val_diff_in_sec(struct timeval *t1, struct timeval *t2)
 {
   struct timeval res;
-  time_val_diff_in_timeval(&res,t1,t2);
+  time_val_diff_in_timeval(&res, t1, t2);
   return (double)res.tv_sec + (double)res.tv_usec/USEC_PER_SEC;
 }
 

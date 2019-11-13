@@ -39,7 +39,7 @@ struct _ControlClient
 ControlClient *
 control_client_new(const gchar *name)
 {
-  ControlClient *self = g_new(ControlClient,1);
+  ControlClient *self = g_new(ControlClient, 1);
 
   self->path = g_strdup(name);
   self->control_socket = -1;

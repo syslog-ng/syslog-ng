@@ -147,7 +147,7 @@ _record_free(gpointer p)
 static gboolean
 _strcase_eq(gconstpointer a, gconstpointer b)
 {
-  return _g_strcasecmp(a,b) == 0;
+  return _g_strcasecmp(a, b) == 0;
 }
 
 static guint

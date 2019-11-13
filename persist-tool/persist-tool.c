@@ -142,7 +142,7 @@ static GOptionEntry dump_options[] =
 
 static GOptionEntry add_options[] =
 {
-  { "output-dir", 'o', 0, G_OPTION_ARG_STRING, &persist_state_dir,"The directory where persist file is located.", "<directory>" },
+  { "output-dir", 'o', 0, G_OPTION_ARG_STRING, &persist_state_dir, "The directory where persist file is located.", "<directory>" },
   { "persist-name", 'p', 0, G_OPTION_ARG_STRING, &persist_state_name, "The name of the persist file to generate. If not specified it will be the default syslog-ng.persist.", "<persist_name>"},
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };

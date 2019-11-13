@@ -311,7 +311,7 @@ ParameterizedTest(FileReaderTestParam *param, loggen, test_filereader)
   cr_expect_str_eq(elements.ver, param->expected_ver, "Error: ver doesn't match (val=\"%s\", expected=\"%s\")\n",
                    elements.ver, param->expected_ver);
   cr_expect_str_eq(elements.time_stamp, param->expected_time_stamp,
-                   "Error: time_stamp doesn't match (val=\"%s\", expected=\"%s\")\n",elements.time_stamp, param->expected_time_stamp);
+                   "Error: time_stamp doesn't match (val=\"%s\", expected=\"%s\")\n", elements.time_stamp, param->expected_time_stamp);
   cr_expect_str_eq(elements.host, param->expected_host, "Error: host doesn't match (val=\"%s\", expected=\"%s\")\n",
                    elements.host, param->expected_host);
   cr_expect_str_eq(elements.app, param->expected_app, "Error: app doesn't match (val=\"%s\", expected=\"%s\")\n",
@@ -323,6 +323,6 @@ ParameterizedTest(FileReaderTestParam *param, loggen, test_filereader)
   cr_expect_str_eq(elements.sdata, param->expected_sdata, "Error: sdata doesn't match (val=\"%s\", expected=\"%s\")\n",
                    elements.sdata, param->expected_sdata);
   cr_expect_str_eq(elements.message, param->expected_message,
-                   "Error: message doesn't match (val=\"%s\", expected=\"%s\")\n",elements.message, param->expected_message);
+                   "Error: message doesn't match (val=\"%s\", expected=\"%s\")\n", elements.message, param->expected_message);
 }
 

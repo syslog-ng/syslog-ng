@@ -143,7 +143,7 @@ Test(rewrite, set_field_not_exist_and_set_literal_string)
 Test(rewrite, set_field_exist_and_set_template_string)
 {
   LogRewrite *test_rewrite = create_rewrite_rule("set(\"$field2\" value(\"field1\") );");
-  LogMessage *msg = create_message_with_fields("field1", "oldvalue", "field2","newvalue", NULL);
+  LogMessage *msg = create_message_with_fields("field1", "oldvalue", "field2", "newvalue", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
   cr_assert_msg_field_equals(msg, "field1", "newvalue", -1);
   rewrite_teardown(msg);
@@ -175,7 +175,7 @@ Test(rewrite, subst_pcre_unused_subpattern)
 Test(rewrite, subst_field_exist_and_substring_substituted_with_template)
 {
   LogRewrite *test_rewrite = create_rewrite_rule("subst(\"substring\" \"$field2\" value(\"field1\") );");
-  LogMessage *msg = create_message_with_fields("field1", "asubstringb", "field2","substitute", NULL);
+  LogMessage *msg = create_message_with_fields("field1", "asubstringb", "field2", "substitute", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
   cr_assert_msg_field_equals(msg, "field1", "asubstituteb", -1);
   rewrite_teardown(msg);
@@ -229,7 +229,7 @@ Test(rewrite, set_field_honors_time_zone)
 Test(rewrite, set_field_exist_and_group_set_multiple_fields_with_glob_pattern_literal_string)
 {
   LogRewrite *test_rewrite = create_rewrite_rule("groupset(\"value\" values(\"field.*\") );");
-  LogMessage *msg = create_message_with_fields("field.name1", "oldvalue","field.name2", "oldvalue", NULL);
+  LogMessage *msg = create_message_with_fields("field.name1", "oldvalue", "field.name2", "oldvalue", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
   cr_assert_msg_field_equals(msg, "field.name1", "value", -1);
   cr_assert_msg_field_equals(msg, "field.name2", "value", -1);
@@ -239,7 +239,7 @@ Test(rewrite, set_field_exist_and_group_set_multiple_fields_with_glob_pattern_li
 Test(rewrite, set_field_exist_and_group_set_multiple_fields_with_glob_question_mark_pattern_literal_string)
 {
   LogRewrite *test_rewrite = create_rewrite_rule("groupset(\"value\" values(\"field?\") );");
-  LogMessage *msg = create_message_with_fields("field1", "oldvalue","field2", "oldvalue", NULL);
+  LogMessage *msg = create_message_with_fields("field1", "oldvalue", "field2", "oldvalue", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
   cr_assert_msg_field_equals(msg, "field1", "value", -1);
   cr_assert_msg_field_equals(msg, "field2", "value", -1);
@@ -249,7 +249,7 @@ Test(rewrite, set_field_exist_and_group_set_multiple_fields_with_glob_question_m
 Test(rewrite, set_field_exist_and_group_set_multiple_fields_with_multiple_glob_pattern_literal_string)
 {
   LogRewrite *test_rewrite = create_rewrite_rule("groupset(\"value\" values(\"field1\" \"field2\") );");
-  LogMessage *msg = create_message_with_fields("field1", "oldvalue","field2", "oldvalue", NULL);
+  LogMessage *msg = create_message_with_fields("field1", "oldvalue", "field2", "oldvalue", NULL);
   invoke_rewrite_rule(test_rewrite, msg);
   cr_assert_msg_field_equals(msg, "field1", "value", -1);
   cr_assert_msg_field_equals(msg, "field2", "value", -1);

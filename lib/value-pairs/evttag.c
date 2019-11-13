@@ -27,7 +27,7 @@ static gboolean
 _append_pair_to_debug_string(const gchar *name, TypeHint type, const gchar *value, gsize value_len, gpointer user_data)
 {
   GString *text = (GString *) user_data;
-  g_string_append_printf(text, "%s=%s ",name, value);
+  g_string_append_printf(text, "%s=%s ", name, value);
   return FALSE;
 }
 

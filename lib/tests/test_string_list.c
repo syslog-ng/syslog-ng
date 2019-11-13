@@ -24,7 +24,7 @@
 #include "string-list.h"
 #include <criterion/criterion.h>
 
-Test(string_list,test_string_array_to_list_converts_to_an_equivalent_glist)
+Test(string_list, test_string_array_to_list_converts_to_an_equivalent_glist)
 {
   const gchar *arr[] =
   {
@@ -43,7 +43,7 @@ Test(string_list,test_string_array_to_list_converts_to_an_equivalent_glist)
   string_list_free(l);
 }
 
-Test(string_list,test_string_varargs_to_list_converts_to_an_equivalent_glist)
+Test(string_list, test_string_varargs_to_list_converts_to_an_equivalent_glist)
 {
   GList *l;
 
@@ -55,7 +55,7 @@ Test(string_list,test_string_varargs_to_list_converts_to_an_equivalent_glist)
   string_list_free(l);
 }
 
-Test(string_list,test_clone_string_array_duplicates_elements_while_leaving_token_values_intact)
+Test(string_list, test_clone_string_array_duplicates_elements_while_leaving_token_values_intact)
 {
   const gchar *arr[] =
   {
