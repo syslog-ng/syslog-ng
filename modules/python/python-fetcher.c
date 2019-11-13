@@ -569,9 +569,9 @@ py_log_fetcher_init(void)
   PyDict_SetItemString(py_log_fetcher_type.tp_dict, "FETCH_SUCCESS",
                        PyLong_FromLong(THREADED_FETCH_SUCCESS));
   PyDict_SetItemString(py_log_fetcher_type.tp_dict, "FETCH_TRY_AGAIN",
-                       PyLong_FromLong(THREADED_FETCH_SUCCESS));
+                       PyLong_FromLong(THREADED_FETCH_TRY_AGAIN));
   PyDict_SetItemString(py_log_fetcher_type.tp_dict, "FETCH_NO_DATA",
-                       PyLong_FromLong(THREADED_FETCH_SUCCESS));
+                       PyLong_FromLong(THREADED_FETCH_NO_DATA));
 
   PyType_Ready(&py_log_fetcher_type);
   PyModule_AddObject(PyImport_AddModule("_syslogng"), "LogFetcher", (PyObject *) &py_log_fetcher_type);
