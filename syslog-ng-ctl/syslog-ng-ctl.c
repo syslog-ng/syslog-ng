@@ -28,528 +28,49 @@
 #include "cfg.h"
 #include "reloc.h"
 #include "secret-storage/secret-storage.h"
+#include "commands/commands.h"
+#include "commands/config.h"
+#include "commands/credentials.h"
+#include "commands/verbose.h"
+#include "commands/ctl-stats.h"
+#include "commands/query.h"
+#include "commands/license.h"
 
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
 #include <locale.h>
-#include <termios.h>
-#include <unistd.h>
+#include <stdlib.h>
 #include <errno.h>
 
 #if SYSLOG_NG_HAVE_GETOPT_H
 #include <getopt.h>
 #endif
 
-typedef struct _CommandDescriptor
-{
-  const gchar *mode;
-  const GOptionEntry *options;
-  const gchar *description;
-  gint (*main)(gint argc, gchar *argv[], const gchar *mode, GOptionContext *ctx);
-  struct _CommandDescriptor *subcommands;
-} CommandDescriptor;
-
 static const gchar *control_name;
-static ControlClient *control_client;
-static gchar *credentials_key;
-static gchar *credentials_secret;
-static gchar **credentials_remaining;
 static void print_usage(const gchar *bin_name, CommandDescriptor *descriptors);
-
-static gboolean
-slng_send_cmd(const gchar *cmd)
-{
-  if (!control_client_connect(control_client))
-    {
-      return FALSE;
-    }
-
-  if (control_client_send_command(control_client,cmd) < 0)
-    {
-      return FALSE;
-    }
-
-  return TRUE;
-}
-
-static GString *
-slng_run_command(const gchar *command)
-{
-  if (!slng_send_cmd(command))
-    return NULL;
-
-  return control_client_read_reply(control_client);
-}
-
-static gboolean
-_is_response_empty(GString *response)
-{
-  return (response == NULL || g_str_equal(response->str, ""));
-}
-
-static void
-clear_and_free(GString *str)
-{
-  if (str)
-    {
-      memset(str->str, 0, str->len);
-      g_string_free(str, TRUE);
-    }
-}
-
-static gint
-_process_response_status(GString *response)
-{
-  if (strncmp(response->str, "FAIL ", 5) == 0)
-    {
-      g_string_erase(response, 0, 5);
-      return 1;
-    }
-  else if (strncmp(response->str, "OK ", 3) == 0)
-    {
-      g_string_erase(response, 0, 3);
-      return 0;
-    }
-  return 0;
-}
-
-static gint
-_dispatch_command(const gchar *cmd)
-{
-  gint retval = 0;
-  gchar *dispatchable_command = g_strdup_printf("%s\n", cmd);
-  GString *rsp = slng_run_command(dispatchable_command);
-
-  if (_is_response_empty(rsp))
-    {
-      retval = 1;
-    }
-  else
-    {
-      retval = _process_response_status(rsp);
-      printf("%s\n", rsp->str);
-    }
-
-  clear_and_free(rsp);
-
-  secret_storage_wipe(dispatchable_command, strlen(dispatchable_command));
-  g_free(dispatchable_command);
-
-  return retval;
-}
-
-static gchar *verbose_set = NULL;
-
-static GOptionEntry verbose_options[] =
-{
-  {
-    "set", 's', 0, G_OPTION_ARG_STRING, &verbose_set,
-    "enable/disable messages", "<on|off|0|1>"
-  },
-  { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
-};
-
-static gint
-slng_verbose(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
-{
-  gint ret = 0;
-  GString *rsp = NULL;
-  gchar buff[256];
-
-  if (!verbose_set)
-    g_snprintf(buff, 255, "LOG %s\n", mode);
-  else
-    g_snprintf(buff, 255, "LOG %s %s\n", mode,
-               strncasecmp(verbose_set, "on", 2) == 0 || verbose_set[0] == '1' ? "ON" : "OFF");
-
-  g_strup(buff);
-
-  rsp = slng_run_command(buff);
-  if (rsp == NULL)
-    return 1;
-
-  ret = _process_response_status(rsp);
-  printf("%s\n", rsp->str);
-
-  g_string_free(rsp, TRUE);
-
-  return ret;
-}
-
-static gboolean stats_options_reset_is_set = FALSE;
-
-static GOptionEntry stats_options[] =
-{
-  { "reset", 'r', 0, G_OPTION_ARG_NONE, &stats_options_reset_is_set, "reset counters", NULL },
-  { NULL,    0,   0, G_OPTION_ARG_NONE, NULL,                        NULL,             NULL }
-};
-
-static const gchar *
-_stats_command_builder(void)
-{
-  return stats_options_reset_is_set ? "RESET_STATS" : "STATS";
-}
-
-static gint
-slng_stats(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
-{
-  return _dispatch_command(_stats_command_builder());
-}
 
 static gint
 slng_stop(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 {
-  return _dispatch_command("STOP");
+  return dispatch_command("STOP");
 }
 
 static gint
 slng_reload(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 {
-  return _dispatch_command("RELOAD");
+  return dispatch_command("RELOAD");
 }
-
-static gboolean config_options_preprocessed = FALSE;
-static gboolean config_options_verify = FALSE;
-
-static GOptionEntry config_options[] =
-{
-  { "preprocessed", 'p', 0, G_OPTION_ARG_NONE, &config_options_preprocessed, "preprocessed", NULL },
-  { "verify", 'v', 0, G_OPTION_ARG_NONE, &config_options_verify, "verify", NULL },
-  { NULL,           0,   0, G_OPTION_ARG_NONE, NULL,                         NULL,           NULL }
-};
-
-
-static gint
-slng_config(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
-{
-  GString *cmd = g_string_new("CONFIG ");
-
-  if (config_options_verify)
-    g_string_append(cmd, "VERIFY ");
-  else
-    {
-      g_string_append(cmd, "GET ");
-
-      if(config_options_preprocessed)
-        g_string_append(cmd, "PREPROCESSED");
-      else
-        g_string_append(cmd, "ORIGINAL");
-    }
-
-  gint res = _dispatch_command(cmd->str);
-  g_string_free(cmd, TRUE);
-
-  return res;
-}
-
 
 static gint
 slng_reopen(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 {
-  return _dispatch_command("REOPEN");
+  return dispatch_command("REOPEN");
 }
 
 static gint
 slng_listfiles(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 {
-  return _dispatch_command("LISTFILES");
-}
-
-static const gint QUERY_COMMAND = 0;
-static gboolean query_is_get_sum = FALSE;
-static gboolean query_reset = FALSE;
-static gchar **raw_query_params = NULL;
-
-static GOptionEntry query_options[] =
-{
-  { "sum", 0, 0, G_OPTION_ARG_NONE, &query_is_get_sum, "aggregate sum", NULL },
-  { "reset", 0, 0, G_OPTION_ARG_NONE, &query_reset, "reset counters after query", NULL },
-  { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY, &raw_query_params, NULL, NULL },
-  { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL, NULL }
-};
-
-enum
-{
-  QUERY_CMD_LIST,
-  QUERY_CMD_LIST_RESET,
-  QUERY_CMD_GET,
-  QUERY_CMD_GET_RESET,
-  QUERY_CMD_GET_SUM,
-  QUERY_CMD_GET_SUM_RESET
-};
-
-static const gchar *QUERY_COMMANDS[] = {"LIST", "LIST_RESET", "GET", "GET_RESET", "GET_SUM", "GET_SUM_RESET"};
-
-
-static gboolean license_json = FALSE;
-
-static GOptionEntry license_options[] =
-{
-  { "json", 'J', 0, G_OPTION_ARG_NONE, &license_json, "enable json output", NULL },
-  { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
-};
-
-static gint
-slng_license(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
-{
-  gchar buff[256];
-
-  if (license_json)
-    g_snprintf(buff, 255, "LICENSE JSON\n");
-  else
-    g_snprintf(buff, 255, "LICENSE\n");
-
-  return _dispatch_command(buff);
-}
-
-static gint
-_get_query_list_cmd(void)
-{
-  if (query_is_get_sum)
-    return -1;
-
-  if (query_reset)
-    return QUERY_CMD_LIST_RESET;
-
-  return QUERY_CMD_LIST;
-}
-
-static gint
-_get_query_get_cmd(void)
-{
-  if (query_is_get_sum)
-    {
-      if (query_reset)
-        return QUERY_CMD_GET_SUM_RESET;
-
-      return QUERY_CMD_GET_SUM;
-    }
-
-  if (query_reset)
-    return QUERY_CMD_GET_RESET;
-
-  return QUERY_CMD_GET;
-
-}
-
-static gint
-_get_query_cmd(gchar *cmd)
-{
-  if (g_str_equal(cmd, "list"))
-    return _get_query_list_cmd();
-
-  if (g_str_equal(cmd, "get"))
-    return _get_query_get_cmd();
-
-  return -1;
-}
-
-static gboolean
-_is_query_params_empty(void)
-{
-  return raw_query_params == NULL;
-}
-
-static void
-_shift_query_command_out_of_params(void)
-{
-  if (raw_query_params[QUERY_COMMAND] != NULL)
-    ++raw_query_params;
-}
-
-static gboolean
-_validate_get_params(gint query_cmd)
-{
-  if(query_cmd == QUERY_CMD_GET || query_cmd == QUERY_CMD_GET_SUM)
-    if (*raw_query_params == NULL)
-      {
-        fprintf(stderr, "error: need a path argument\n");
-        return TRUE;
-      }
-  return FALSE;
-}
-
-static gchar *
-_get_query_command_string(gint query_cmd)
-{
-  gchar *query_params_to_pass, *command_to_dispatch;
-  query_params_to_pass = g_strjoinv(" ", raw_query_params);
-  if (query_params_to_pass)
-    {
-      command_to_dispatch = g_strdup_printf("QUERY %s %s", QUERY_COMMANDS[query_cmd], query_params_to_pass);
-    }
-  else
-    {
-      command_to_dispatch = g_strdup_printf("QUERY %s", QUERY_COMMANDS[query_cmd]);
-    }
-  g_free(query_params_to_pass);
-
-  return command_to_dispatch;
-}
-
-static gchar *
-_get_dispatchable_query_command(void)
-{
-  gint query_cmd;
-
-  if (_is_query_params_empty())
-    return NULL;
-
-  query_cmd = _get_query_cmd(raw_query_params[QUERY_COMMAND]);
-  if (query_cmd < 0)
-    return NULL;
-
-  _shift_query_command_out_of_params();
-  if(_validate_get_params(query_cmd))
-    return NULL;
-
-  return _get_query_command_string(query_cmd);
-}
-
-static gint
-slng_query(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
-{
-  gint result;
-
-  gchar *cmd = _get_dispatchable_query_command();
-  if (cmd == NULL)
-    return 1;
-
-  result = _dispatch_command(cmd);
-
-  g_free(cmd);
-
-  return result;
-}
-
-static GOptionEntry no_options[] =
-{
-  { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
-};
-
-static void
-set_console_echo(gboolean new_state)
-{
-  if (!isatty(STDIN_FILENO))
-    return;
-
-  struct termios t;
-
-  if (tcgetattr(STDIN_FILENO, &t))
-    {
-      fprintf(stderr, "syslog-ng-ctl: error while tcgetattr: %s\n", strerror(errno));
-      return;
-    }
-
-  if (new_state)
-    t.c_lflag |= ECHO;
-  else
-    t.c_lflag &= ~((tcflag_t) ECHO);
-
-  if (tcsetattr(STDIN_FILENO, TCSANOW, &t))
-    fprintf(stderr, "syslog-ng-ctl: error while tcsetattr: %s\n", strerror(errno));
-}
-
-static void
-read_password_from_stdin(gchar *buffer, gsize *length)
-{
-  printf("enter password:");
-  set_console_echo(FALSE);
-  if (-1 == getline(&buffer, length, stdin))
-    {
-      set_console_echo(TRUE);
-      fprintf(stderr, "error while reading password from terminal: %s", strerror(errno));
-      g_assert_not_reached();
-    }
-  set_console_echo(TRUE);
-  printf("\n");
-}
-
-static gboolean
-is_syslog_ng_running(void)
-{
-  return control_client_connect(control_client);
-}
-
-static gchar *
-consume_next_from_remaining(gchar **remaining, gint *available_index)
-{
-  if (!remaining)
-    return NULL;
-
-  return remaining[(*available_index)++];
-}
-
-static gint
-slng_passwd_add(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
-{
-  gchar *answer;
-  gint remaining_unused_index = 0;
-
-
-  if (!credentials_key)
-    credentials_key = consume_next_from_remaining(credentials_remaining, &remaining_unused_index);
-
-  if (!credentials_key)
-    {
-      gchar *usage = g_option_context_get_help(ctx, TRUE, NULL);
-      fprintf(stderr, "Error: missing arguments!\n%s\n", usage);
-      g_free(usage);
-      return 1;
-    }
-
-  if (!is_syslog_ng_running())
-    return 1;
-
-  if (!credentials_secret)
-    credentials_secret = consume_next_from_remaining(credentials_remaining, &remaining_unused_index);
-
-  gchar *secret_to_store;
-  if (credentials_secret)
-    {
-      secret_to_store = g_strdup(credentials_secret);
-      if (!secret_to_store)
-        g_assert_not_reached();
-    }
-  else
-    {
-      gsize buff_size = 256;
-      secret_to_store = g_malloc0(buff_size);
-      if (!secret_to_store)
-        g_assert_not_reached();
-
-      read_password_from_stdin(secret_to_store, &buff_size);
-    }
-
-  gint retval = asprintf(&answer, "PWD %s %s %s", "add", credentials_key, secret_to_store);
-  if (retval == -1)
-    g_assert_not_reached();
-
-  secret_storage_wipe(secret_to_store, strlen(secret_to_store));
-  g_free(secret_to_store);
-
-  if (credentials_secret)
-    secret_storage_wipe(credentials_secret, strlen(credentials_secret));
-
-  gint result = _dispatch_command(answer);
-
-  secret_storage_wipe(answer, strlen(answer));
-  g_free(answer);
-
-  return result;
-}
-
-static gint
-slng_passwd_status(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
-{
-  gchar *answer;
-
-  gint retval = asprintf(&answer, "PWD %s", "status");
-  if (retval == -1)
-    g_assert_not_reached();
-
-  return _dispatch_command(answer);
+  return dispatch_command("LISTFILES");
 }
 
 const gchar *
@@ -578,22 +99,6 @@ static GOptionEntry slng_options[] =
     "syslog-ng control socket", "<socket>"
   },
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
-};
-
-static GOptionEntry credentials_options_add[] =
-{
-  { "id", 'i', 0, G_OPTION_ARG_STRING, &credentials_key, "ID of the credential", "<id>" },
-  { "secret", 's', 0, G_OPTION_ARG_STRING, &credentials_secret, "Secret part of the credential", "<secret>" },
-  { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY, &credentials_remaining, NULL, NULL },
-  { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
-};
-
-
-static CommandDescriptor credentials_commands[] =
-{
-  { "add", credentials_options_add, "Add credentials to credential store", slng_passwd_add },
-  { "status", no_options, "Query stored credential status", slng_passwd_status },
-  { NULL }
 };
 
 static CommandDescriptor modes[] =
@@ -707,9 +212,7 @@ main(int argc, char *argv[])
       return 1;
     }
 
-  control_client = control_client_new(control_name);
-  result = active_mode->main(argc, argv, active_mode->mode, ctx);
+  result = run(control_name, argc, argv, active_mode, ctx);
   g_option_context_free(ctx);
-  control_client_free(control_client);
   return result;
 }
