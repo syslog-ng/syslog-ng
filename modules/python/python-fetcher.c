@@ -88,7 +88,8 @@ static const gchar *
 python_fetcher_format_stats_instance(LogThreadedSourceDriver *s)
 {
   PythonFetcherDriver *self = (PythonFetcherDriver *) s;
-  return python_format_stats_instance((LogPipe *)s, self->py.generate_persist_name, "python-fetcher", self->class);
+  return python_format_stats_instance((LogPipe *)s, self->py.generate_persist_name, self->options,
+                                      "python-fetcher", self->class);
 }
 
 static void
@@ -473,7 +474,7 @@ static const gchar *
 python_fetcher_format_persist_name(const LogPipe *s)
 {
   const PythonFetcherDriver *self = (const PythonFetcherDriver *)s;
-  return python_format_persist_name(s, self->py.generate_persist_name, "python-fetcher", self->class);
+  return python_format_persist_name(s, self->py.generate_persist_name, self->options, "python-fetcher", self->class);
 }
 
 static gboolean
