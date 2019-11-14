@@ -30,11 +30,13 @@ from argparse import ArgumentParser
 
 def parse_args():
     parser = ArgumentParser()
-    parser.add_argument('context', type=str, help='source/destination')
-    parser.add_argument('driver', type=str, help='driver')
-    parser.add_argument('--rebuild', '-r', action='store_true')
+    parser.add_argument('--context', '-c', type=str, help='e.g.: destination')
+    parser.add_argument('--driver', '-d', type=str, help='e.g.: http')
+    parser.add_argument('--rebuild', '-r', action='store_true',
+                        help='Use this flag, if there is a modification in either '
+                             'the DB generating script, or the grammar files')
     args = parser.parse_args()
-    return (args.context, args.driver, args.rebuild)
+    return args
 
 
 def build_db():
@@ -76,15 +78,47 @@ def print_options_helper(block, depth):
 
 
 def print_options(db, context, driver):
-    print('{} {}('.format(context, driver))
-    print_options_helper(db[context][driver], 1)
-    print(')')
+    if context not in db:
+        print('The context "{}" is not in the database.'.format(context))
+        print_contexts(db)
+    elif driver not in db[context]:
+        print('The driver "{}" is not in the drivers of context "{}".'.format(driver, context))
+        print_drivers(db, context)
+    else:
+        print('{} {}('.format(context, driver))
+        print_options_helper(db[context][driver], 1)
+        print(')')
+
+
+def print_drivers(db, context):
+    if context in db:
+        print('Drivers of context "{}":'.format(context))
+        for driver in sorted(db[context]):
+            print('  {}'.format(driver))
+        print('Print the options of DRIVER with `--context {} --driver DRIVER`.'.format(context))
+    else:
+        print('The context "{}" is not in the database.'.format(context))
+        print_contexts(db)
+
+
+def print_contexts(db):
+    print('Valid contexts:')
+    for context in sorted(db):
+        print('  {}'.format(context))
+    print('Print the drivers of CONTEXT with `--context CONTEXT`.')
 
 
 def main():
-    context, driver, rebuild = parse_args()
-    db = get_db(rebuild)
-    print_options(db, context, driver)
+    args = parse_args()
+    db = get_db(args.rebuild)
+    if args.context and args.driver:
+        print_options(db, args.context, args.driver)
+    elif args.context:
+        print_drivers(db, args.context)
+    elif args.driver:
+        print('Please define the context of "{}" with `--context CONTEXT`.'.format(args.driver))
+    elif not args.rebuild:
+        print_contexts(db)
 
 
 if __name__ == '__main__':
