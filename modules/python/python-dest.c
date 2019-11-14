@@ -313,6 +313,14 @@ _inject_worker_insert_result_consts(PythonDestDriver *self)
   _inject_worker_insert_result(self, MAX);
 };
 
+static PyObject *
+py_get_persist_name(PythonDestDriver *self)
+{
+  const gchar *persist_name = python_format_persist_name((LogPipe *)self, self->py.generate_persist_name,
+                                                         self->options, "python", self->class);
+  return _py_string_from_string(persist_name, -1);
+}
+
 static gboolean
 _py_init_bindings(PythonDestDriver *self)
 {
@@ -365,6 +373,10 @@ _py_init_bindings(PythonDestDriver *self)
                 evt_tag_str("class", self->class));
       return FALSE;
     }
+
+  PyObject *py_persist_name = py_get_persist_name(self);
+  PyObject_SetAttrString(self->py.class, "persist_name", py_persist_name);
+  Py_DECREF(py_persist_name);
 
   g_ptr_array_add(self->py._refs_to_clean, self->py.class);
   g_ptr_array_add(self->py._refs_to_clean, self->py.instance);
