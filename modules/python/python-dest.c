@@ -65,12 +65,12 @@ typedef struct
 /** Setters & config glue **/
 
 void
-python_dd_set_class(LogDriver *d, gchar *filename)
+python_dd_set_class(LogDriver *d, gchar *class_name)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
 
   g_free(self->class);
-  self->class = g_strdup(filename);
+  self->class = g_strdup(class_name);
 }
 
 void
