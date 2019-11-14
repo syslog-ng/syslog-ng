@@ -1,2 +1,2 @@
-add_unit_test(CRITERION TARGET test_varbindlist_scanner DEPENDS snmptrapd_parser)
-add_unit_test(LIBTEST CRITERION TARGET test_snmptrapd_parser DEPENDS snmptrapd_parser)
+add_unit_test(CRITERION TARGET test_varbindlist_scanner DEPENDS snmptrapd-parser)
+add_unit_test(LIBTEST CRITERION TARGET test_snmptrapd_parser DEPENDS snmptrapd-parser)
