@@ -29,6 +29,8 @@
 #include "string-list.h"
 #include "python-persist.h"
 
+#include <structmember.h>
+
 typedef struct _PythonFetcherDriver
 {
   LogThreadedFetcherDriver super;
@@ -53,6 +55,7 @@ typedef struct _PyLogFetcher
 {
   PyObject_HEAD
   PythonFetcherDriver *driver;
+  gchar *persist_name;
 } PyLogFetcher;
 
 static PyTypeObject py_log_fetcher_type;
@@ -215,6 +218,10 @@ _py_is_log_fetcher(PyObject *obj)
 static void
 _py_free_bindings(PythonFetcherDriver *self)
 {
+  PyLogFetcher *py_instance = (PyLogFetcher *) self->py.instance;
+  if (py_instance)
+    g_free(py_instance->persist_name);
+
   Py_CLEAR(self->py.class);
   Py_CLEAR(self->py.instance);
   Py_CLEAR(self->py.fetch_method);
@@ -290,6 +297,18 @@ _py_lookup_fetch_method(PythonFetcherDriver *self)
   return TRUE;
 }
 
+static const gchar *python_fetcher_format_persist_name(const LogPipe *s);
+static void
+_py_set_persist_name(PythonFetcherDriver *self)
+{
+  if (((LogPipe *)self)->persist_name || self->py.generate_persist_name)
+    {
+      const gchar *persist_name = python_fetcher_format_persist_name((LogPipe *)self);
+      PyLogFetcher *py_instance = (PyLogFetcher *) self->py.instance;
+      py_instance->persist_name = g_strdup(persist_name);
+    }
+}
+
 static gboolean
 _py_init_methods(PythonFetcherDriver *self)
 {
@@ -300,6 +319,8 @@ _py_init_methods(PythonFetcherDriver *self)
   self->py.open_method = _py_get_attr_or_null(self->py.instance, "open");
   self->py.close_method = _py_get_attr_or_null(self->py.instance, "close");
   self->py.generate_persist_name = _py_get_attr_or_null(self->py.instance, "generate_persist_name");
+
+  _py_set_persist_name(self);
 
   return TRUE;
 }
@@ -553,6 +574,11 @@ python_fetcher_new(GlobalConfig *cfg)
   return &self->super.super.super.super;
 }
 
+static PyMemberDef py_log_fetcher_members[] =
+{
+  { "persist_name", T_STRING, offsetof(PyLogFetcher, persist_name), READONLY },
+  {NULL}
+};
 
 static PyTypeObject py_log_fetcher_type =
 {
@@ -563,6 +589,7 @@ static PyTypeObject py_log_fetcher_type =
   .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
   .tp_doc = "The LogFetcher class is a base class for custom Python fetchers.",
   .tp_new = PyType_GenericNew,
+  .tp_members = py_log_fetcher_members,
   0,
 };
 

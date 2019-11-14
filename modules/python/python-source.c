@@ -30,6 +30,8 @@
 #include "string-list.h"
 #include "python-persist.h"
 
+#include <structmember.h>
+
 typedef struct _PythonSourceDriver PythonSourceDriver;
 
 struct _PythonSourceDriver
@@ -59,6 +61,7 @@ typedef struct _PyLogSource
 {
   PyObject_HEAD
   PythonSourceDriver *driver;
+  gchar *persist_name;
 } PyLogSource;
 
 static PyTypeObject py_log_source_type;
@@ -161,6 +164,10 @@ _py_is_log_source(PyObject *obj)
 static void
 _py_free_bindings(PythonSourceDriver *self)
 {
+  PyLogSource *py_instance = (PyLogSource *) self->py.instance;
+  if (py_instance)
+    g_free(py_instance->persist_name);
+
   Py_CLEAR(self->py.class);
   Py_CLEAR(self->py.instance);
   Py_CLEAR(self->py.run_method);
@@ -280,12 +287,26 @@ _py_lookup_generate_persist_name_method(PythonSourceDriver *self)
 }
 
 static gboolean
+_py_set_persist_name(PythonSourceDriver *self)
+{
+  if (((LogPipe *)self)->persist_name || self->py.generate_persist_name)
+    {
+      const gchar *persist_name = python_format_persist_name((LogPipe *)self, self->py.generate_persist_name,
+                                                             self->options, "python-source", self->class);
+      PyLogSource *py_instance = (PyLogSource *) self->py.instance;
+      py_instance->persist_name = g_strdup(persist_name);
+    }
+  return TRUE;
+}
+
+static gboolean
 _py_init_methods(PythonSourceDriver *self)
 {
   return _py_lookup_run_method(self)
          && _py_lookup_request_exit_method(self)
          && _py_lookup_suspend_and_wakeup_methods(self)
-         && _py_lookup_generate_persist_name_method(self);
+         && _py_lookup_generate_persist_name_method(self)
+         && _py_set_persist_name(self);
 }
 
 static gboolean
@@ -597,6 +618,12 @@ static PyMethodDef py_log_source_methods[] =
   {NULL}
 };
 
+static PyMemberDef py_log_source_members[] =
+{
+  { "persist_name", T_STRING, offsetof(PyLogSource, persist_name), READONLY },
+  {NULL}
+};
+
 static PyTypeObject py_log_source_type =
 {
   PyVarObject_HEAD_INIT(&PyType_Type, 0)
@@ -607,6 +634,7 @@ static PyTypeObject py_log_source_type =
   .tp_doc = "The LogSource class is a base class for custom Python sources.",
   .tp_new = PyType_GenericNew,
   .tp_methods = py_log_source_methods,
+  .tp_members = py_log_source_members,
   0,
 };
 
