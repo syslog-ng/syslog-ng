@@ -119,14 +119,14 @@ static const gchar *
 python_dd_format_stats_instance(LogThreadedDestDriver *d)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
-  return python_format_stats_instance((LogPipe *)d, self->py.generate_persist_name, "python", self->class);
+  return python_format_stats_instance((LogPipe *)d, self->py.generate_persist_name, self->options, "python", self->class);
 }
 
 static const gchar *
 python_dd_format_persist_name(const LogPipe *s)
 {
   const PythonDestDriver *self = (const PythonDestDriver *)s;
-  return python_format_persist_name(s, self->py.generate_persist_name, "python", self->class);
+  return python_format_persist_name(s, self->py.generate_persist_name, self->options, "python", self->class);
 }
 
 static gboolean

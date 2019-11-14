@@ -94,7 +94,7 @@ static const gchar *
 python_sd_format_stats_instance(LogThreadedSourceDriver *s)
 {
   PythonSourceDriver *self = (PythonSourceDriver *) s;
-  return python_format_stats_instance((LogPipe *)s, self->py.generate_persist_name, "python", self->class);
+  return python_format_stats_instance((LogPipe *)s, self->py.generate_persist_name, self->options, "python", self->class);
 }
 
 static void
@@ -501,7 +501,7 @@ static const gchar *
 python_source_format_persist_name(const LogPipe *s)
 {
   const PythonSourceDriver *self = (const PythonSourceDriver *)s;
-  return python_format_persist_name(s, self->py.generate_persist_name, "python-source", self->class);
+  return python_format_persist_name(s, self->py.generate_persist_name, self->options, "python-source", self->class);
 }
 
 static gboolean
