@@ -60,7 +60,10 @@ CfgArgs *last_module_args = NULL;
 
 }
 
+%type   <cptr> requires_message
+
 %%
+
 
 start
         : { PRAGMA_BEGIN(); }
@@ -138,15 +141,16 @@ include_stmt
         ;
 
 requires_stmt
-	: KW_REQUIRES string LL_EOL
+	: KW_REQUIRES string requires_message LL_EOL
           {
             if (!cfg_is_module_available(configuration, $2))
               {
-                if (0 == lexer->include_depth)
+                if (0 == lexer->include_depth || $3)
                   {
                     msg_error("Cannot load required module",
-                                evt_tag_str("module", $2),
-                                cfg_lexer_format_location_tag(lexer,&@1));
+                              evt_tag_str("module", $2),
+                              evt_tag_str("details", $3 ? : "none"),
+                              cfg_lexer_format_location_tag(lexer,&@1));
                     free($2);
                     PRAGMA_ERROR();
                   }
@@ -162,6 +166,10 @@ requires_stmt
           }
 	;
 
+requires_message
+	: string		{ $$ = $1; }
+	| 			{ $$ = NULL; }
+	;
 
 /* INCLUDE_RULES */
 
