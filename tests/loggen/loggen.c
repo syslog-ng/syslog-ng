@@ -27,6 +27,7 @@
 #include "loggen_helper.h"
 #include "file_reader.h"
 #include "logline_generator.h"
+#include "reloc.h"
 
 #include <stdio.h>
 #include <sys/time.h>
@@ -146,6 +147,7 @@ enumerate_plugins(const gchar *plugin_path, GPtrArray *plugin_array, GOptionCont
   if (!dir)
     {
       ERROR("unable to open plugin directory %s (err=%s)\n", plugin_path, strerror(errno));
+      ERROR("hint: you can use the %s environmental variable to specify plugin path\n", "SYSLOGNG_PREFIX");
       return 0;
     }
 
@@ -201,8 +203,10 @@ enumerate_plugins(const gchar *plugin_path, GPtrArray *plugin_array, GOptionCont
   if (plugin_array->len == 0)
     {
       ERROR("no loggen plugin found in %s\n", plugin_path);
+      ERROR("hint: you can use the %s environmental variable to specify plugin path\n", "SYSLOGNG_PREFIX");
     }
 
+  DEBUG("%d plugin successfuly loaded\n", plugin_array->len);
   return plugin_array->len;
 }
 
@@ -463,8 +467,9 @@ main(int argc, char *argv[])
   signal(SIGPIPE, signal_callback_handler);
   setup_rate_change_signals();
 
-  int plugin_num = enumerate_plugins(SYSLOG_NG_PATH_LOGGEN_PLUGIN_DIR, plugin_array, ctx);
-  DEBUG("%d plugin successfuly loaded\n", plugin_num);
+  const gchar *plugin_path = get_installation_path_for(SYSLOG_NG_PATH_LOGGENPLUGINDIR);
+  enumerate_plugins(plugin_path, plugin_array, ctx);
+  reloc_deinit();
 
   /* create sub group for file reader functions */
   GOptionGroup *group = g_option_group_new("file-reader", "file-reader", "Show options", NULL, NULL);

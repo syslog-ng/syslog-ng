@@ -49,8 +49,7 @@ pkginclude_HEADERS			+= \
 # binary program loggen
 bin_PROGRAMS			+= tests/loggen/loggen
 tests_loggen_loggen_CPPFLAGS	= \
-	-I$(top_srcdir)/lib \
-	-DSYSLOG_NG_PATH_LOGGEN_PLUGIN_DIR='"${loggenplugindir}"'
+	-I$(top_srcdir)/lib
 
 tests_loggen_loggen_SOURCES	=	\
 	tests/loggen/loggen.c	\
@@ -59,7 +58,9 @@ tests_loggen_loggen_SOURCES	=	\
 	tests/loggen/file_reader.c \
 	tests/loggen/file_reader.h \
 	tests/loggen/logline_generator.c \
-	tests/loggen/logline_generator.h
+	tests/loggen/logline_generator.h \
+	lib/reloc.c \
+	lib/cache.c
 
 tests_loggen_loggen_LDADD	= \
 	@GLIB_LIBS@ \
