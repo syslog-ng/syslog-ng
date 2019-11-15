@@ -45,6 +45,9 @@ class BisonGraph():
         else:
             return sorted(self.graph.successors(node))
 
+    def get_parents(self, node):
+        return sorted(self.graph.predecessors(node))
+
     def is_terminal(self, node):
         return len(list(self.graph.successors(node))) == 0
 

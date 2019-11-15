@@ -74,34 +74,35 @@ def test_get_node(graph):
 
 
 @pytest.mark.parametrize(
-    'node,children,is_rule,is_terminal',
+    'node,children,parents,is_rule,is_terminal',
     [
-        ('$accept', ['0'], False, False),
-        ('0', ['start', '$end'], True, False),
-        ('start', ['1'], False, False),
-        ('1', ['test'], True, False),
-        ('test', ['2', '3', '4', '5'], False, False),
-        ('2', ['test1', 'test1next', 'test1next'], True, False),
-        ('3', ['test2', 'test2next', 'test'], True, False),
-        ('4', ['KW_TEST', "'('", 'test_opts', "')'"], True, False),
-        ('test_opts', ['6', '7'], False, False),
-        ('6', ['number'], True, False),
-        ('7', ['string'], True, False),
-        ('$end', [], False, True),
-        ('test1', [], False, True),
-        ('test1next', [], False, True),
-        ('test2', [], False, True),
-        ('test2next', [], False, True),
-        ('KW_TEST', [], False, True),
-        ("'('", [], False, True),
-        ("')'", [], False, True),
-        ('number', [], False, True),
-        ('string', [], False, True),
-        ('5', [], True, True),
+        ('$accept', ['0'], [], False, False),
+        ('0', ['start', '$end'], ['$accept'], True, False),
+        ('start', ['1'], ['0'], False, False),
+        ('1', ['test'], ['start'], True, False),
+        ('test', ['2', '3', '4', '5'], ['1', '3'], False, False),
+        ('2', ['test1', 'test1next', 'test1next'], ['test'], True, False),
+        ('3', ['test2', 'test2next', 'test'], ['test'], True, False),
+        ('4', ['KW_TEST', "'('", 'test_opts', "')'"], ['test'], True, False),
+        ('test_opts', ['6', '7'], ['4'], False, False),
+        ('6', ['number'], ['test_opts'], True, False),
+        ('7', ['string'], ['test_opts'], True, False),
+        ('$end', [], ['0'], False, True),
+        ('test1', [], ['2'], False, True),
+        ('test1next', [], ['2'], False, True),
+        ('test2', [], ['3'], False, True),
+        ('test2next', [], ['3'], False, True),
+        ('KW_TEST', [], ['4'], False, True),
+        ("'('", [], ['4'], False, True),
+        ("')'", [], ['4'], False, True),
+        ('number', [], ['6'], False, True),
+        ('string', [], ['7'], False, True),
+        ('5', [], ['test'], True, True),
     ]
 )
-def test_children_junction_terminal(node, children, is_rule, is_terminal, graph):
+def test_children_junction_terminal(node, children, parents, is_rule, is_terminal, graph):
     assert graph.get_children(node) == children
+    assert graph.get_parents(node) == parents
     assert graph.is_rule(node) == is_rule
     assert graph.is_terminal(node) == is_terminal
 
