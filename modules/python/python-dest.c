@@ -51,6 +51,7 @@ typedef struct
     PyObject *class;
     PyObject *instance;
     PyObject *is_opened;
+    PyObject *open;
     PyObject *send;
     PyObject *flush;
     PyObject *log_template_options;
@@ -159,7 +160,7 @@ _dd_py_invoke_bool_method_by_name_with_args(PythonDestDriver *self, const gchar 
                                                   self->super.super.super.id);
 }
 
-static gboolean
+static gboolean G_GNUC_UNUSED
 _dd_py_invoke_bool_method_by_name(PythonDestDriver *self, const gchar *method_name)
 {
   return _py_invoke_bool_method_by_name_with_args(self->py.instance, method_name, NULL, self->class,
@@ -178,7 +179,36 @@ _py_invoke_is_opened(PythonDestDriver *self)
 static gboolean
 _py_invoke_open(PythonDestDriver *self)
 {
-  return _dd_py_invoke_bool_method_by_name(self, "open");
+  if (!self->py.open)
+    return TRUE;
+
+  PyObject *ret;
+  gboolean result = FALSE;
+
+  ret = _py_invoke_function(self->py.open, NULL, self->class, self->super.super.super.id);
+  if (ret)
+    {
+      if (ret == Py_None)
+        {
+          msg_warning_once("Since " VERSION_3_25 ", the return value of open method in python destination "
+                           "is used as success/failure indicator. Please use return True or return False explicitely",
+                           evt_tag_str("class", self->class));
+          result = TRUE;
+        }
+      else
+        result = PyObject_IsTrue(ret);
+    }
+  Py_XDECREF(ret);
+
+  if (self->py.is_opened)
+    {
+      if (!result)
+        return FALSE;
+
+      return _py_invoke_is_opened(self);
+    }
+
+  return result;
 }
 
 static void
@@ -336,6 +366,7 @@ _py_init_bindings(PythonDestDriver *self)
 
   /* these are fast paths, store references to be faster */
   self->py.is_opened = _py_get_attr_or_null(self->py.instance, "is_opened");
+  self->py.open = _py_get_attr_or_null(self->py.instance, "open");
   self->py.flush = _py_get_attr_or_null(self->py.instance, "flush");
   self->py.send = _py_get_attr_or_null(self->py.instance, "send");
   if (!self->py.send)
@@ -349,6 +380,7 @@ _py_init_bindings(PythonDestDriver *self)
   g_ptr_array_add(self->py._refs_to_clean, self->py.class);
   g_ptr_array_add(self->py._refs_to_clean, self->py.instance);
   g_ptr_array_add(self->py._refs_to_clean, self->py.is_opened);
+  g_ptr_array_add(self->py._refs_to_clean, self->py.open);
   g_ptr_array_add(self->py._refs_to_clean, self->py.flush);
   g_ptr_array_add(self->py._refs_to_clean, self->py.send);
   g_ptr_array_add(self->py._refs_to_clean, self->py.log_template_options);
@@ -414,10 +446,9 @@ python_dd_insert(LogThreadedDestDriver *d, LogMessage *msg)
   PyGILState_STATE gstate;
 
   gstate = PyGILState_Ensure();
-  if (!_py_invoke_is_opened(self))
+  if (self->py.is_opened && !_py_invoke_is_opened(self))
     {
-      _py_invoke_open(self);
-      if (!_py_invoke_is_opened(self))
+      if (!_py_invoke_open(self))
         {
           result = LTR_NOT_CONNECTED;
           goto exit;
@@ -435,16 +466,16 @@ exit:
   return result;
 }
 
-static void
+static gboolean
 python_dd_open(PythonDestDriver *self)
 {
   PyGILState_STATE gstate;
 
   gstate = PyGILState_Ensure();
-  if (!_py_invoke_is_opened(self))
-    _py_invoke_open(self);
+  gboolean retval = _py_invoke_open(self);
 
   PyGILState_Release(gstate);
+  return retval;
 }
 
 static LogThreadedResult
@@ -465,17 +496,24 @@ python_dd_close(PythonDestDriver *self)
   PyGILState_STATE gstate;
 
   gstate = PyGILState_Ensure();
-  if (_py_invoke_is_opened(self))
-    _py_invoke_close(self);
+  if (self->py.is_opened)
+    {
+      if (_py_invoke_is_opened(self))
+        _py_invoke_close(self);
+    }
+  else
+    {
+      _py_invoke_close(self);
+    }
   PyGILState_Release(gstate);
 }
 
-static void
-python_dd_worker_init(LogThreadedDestDriver *d)
+static gboolean
+python_dd_connect(LogThreadedDestDriver *d)
 {
-  PythonDestDriver *self = (PythonDestDriver *)d;
+  PythonDestDriver *self = (PythonDestDriver *) d;
 
-  python_dd_open(self);
+  return python_dd_open(self);
 }
 
 static void
@@ -576,7 +614,7 @@ python_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.free_fn = python_dd_free;
   self->super.super.super.super.generate_persist_name = python_dd_format_persist_name;
 
-  self->super.worker.thread_init = python_dd_worker_init;
+  self->super.worker.connect = python_dd_connect;
   self->super.worker.disconnect = python_dd_disconnect;
   self->super.worker.insert = python_dd_insert;
   self->super.worker.flush = python_dd_flush;
