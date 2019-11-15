@@ -23,8 +23,9 @@
 import pytest
 
 from utils.OptionParser import (_find_options, _find_options_with_keyword,
-                                _find_options_wo_keyword,
-                                _parse_keyword_and_arguments)
+                                _find_options_wo_keyword, _get_resolve_db,
+                                _parse_keyword_and_arguments, _parse_parents,
+                                _resolve_context_token, _sanitize)
 
 
 @pytest.mark.parametrize(
@@ -91,3 +92,46 @@ def test_find_options(path, options):
 )
 def test_parse_keyword_and_arguments(path, option_interval, option):
     assert _parse_keyword_and_arguments(path.split(), option_interval) == option
+
+
+@pytest.mark.parametrize(
+    'path,option_interval,parents',
+    [
+        (
+            "LL_CONTEXT_DESTINATION KW_DRIVER '(' KW_OPTION '(' argument1 argument2 ')' ')'",
+            (3, 7),
+            ()
+        ),
+        (
+            "LL_CONTEXT_SOURCE KW_DRIVER '(' string KW_PARENT_BLOCK '(' KW_OPTION '(' argument ')' ')' ')'",
+            (6, 9),
+            ('KW_PARENT_BLOCK',)
+        ),
+        (
+            "LL_CONTEXT_DESTINATION KW_NETWORK '(' string KW_FAILOVER '(' KW_SERVERS '(' string_list ')' KW_FAILBACK '(' KW_TCP_PROBE_INTERVAL '(' positive_integer ')' ')' ')' ')'",
+            (12, 15),
+            ('KW_FAILOVER', 'KW_FAILBACK')
+        )
+    ]
+)
+def test_parse_parents(path, option_interval, parents):
+    assert _parse_parents(path.split(), option_interval) == parents
+
+
+@pytest.mark.parametrize(
+    'token,sanitized',
+    [
+        ('"peer_verify"', 'peer-verify'),
+        ("':'", ':')
+    ]
+)
+def test_sanitize(token, sanitized):
+    assert _sanitize(token) == sanitized
+
+
+def test_resolve_context_token():
+    assert _resolve_context_token('LL_CONTEXT_INNER_SRC') == 'inner-src'
+
+
+def test_get_resolve_db():
+    assert len(_get_resolve_db()) > 0

@@ -20,6 +20,11 @@
 #
 #############################################################################
 
+import re
+from pathlib import Path
+
+resolve_db = None
+
 
 def _find_options_with_keyword(path):
     options = set()
@@ -65,3 +70,43 @@ def _parse_keyword_and_arguments(path, option):
         keyword = ''
         arguments = tokens
     return keyword, arguments
+
+
+def _parse_parents(path, option):
+    parents = []
+    skip = 0
+    for index, token in reversed(list(enumerate(path[:option[0]]))):
+        if token == "'('":
+            if skip:
+                skip -= 1
+            else:
+                parents.append(path[index - 1])
+        elif token == "')'":
+            skip += 1
+    return tuple(reversed(parents[:-1]))
+
+
+def _sanitize(string):
+    return string.replace('"', '').replace("'", '').replace('_', '-').lower()
+
+
+def _resolve_context_token(context):
+    return _sanitize(context.replace('LL_CONTEXT_', ''))
+
+
+def _get_resolve_db():
+    # TODO: Fix reuse of a keyword in different drivers
+    global resolve_db
+    root_dir = Path(__file__).parents[3]
+    if not resolve_db:
+        resolve_db = {}
+        struct_regex = re.compile(r'CfgLexerKeyword[^;]*')
+        entry_regex = re.compile(r'{[^{}]+,[^{}]+}')
+        for f in root_dir.rglob('*-parser.c'):
+            for struct_match in struct_regex.finditer(f.read_text().replace('\n', '')):
+                for entry_match in entry_regex.finditer(struct_match.group(0)):
+                    entry = entry_match.group(0)[1:-1].replace(' ', '').split(',')
+                    token = entry[1]
+                    string = _sanitize(entry[0])
+                    resolve_db.setdefault(token, set()).add(string)
+    return resolve_db
