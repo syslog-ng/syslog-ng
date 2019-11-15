@@ -141,3 +141,14 @@ def _resolve_option(context, driver, keyword, arguments, parents):
     arguments = _resolve_tokens(arguments)
     parents = _resolve_tokens(parents)
     return (context, driver, keyword, arguments, parents)
+
+
+def path_to_options(path):
+    context, driver = path[0], path[1]
+    assert context.startswith('LL_CONTEXT_') and driver.startswith('KW_') and path[2] == "'('" and path[-1] == "')'", path
+    options = set()
+    for option in _find_options(path):
+        keyword, arguments = _parse_keyword_and_arguments(path, option)
+        parents = _parse_parents(path, option)
+        options.add(_resolve_option(context, driver, keyword, arguments, parents))
+    return options

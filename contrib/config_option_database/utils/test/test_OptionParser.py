@@ -26,7 +26,7 @@ from utils.OptionParser import (_find_options, _find_options_with_keyword,
                                 _find_options_wo_keyword, _get_resolve_db,
                                 _parse_keyword_and_arguments, _parse_parents,
                                 _resolve_context_token, _resolve_option,
-                                _resolve_tokens, _sanitize)
+                                _resolve_tokens, _sanitize, path_to_options)
 
 
 @pytest.mark.parametrize(
@@ -211,3 +211,28 @@ def test_resolve_tokens_keyword_without_resolvation():
 )
 def test_resolve_option(option, resolved_option):
     assert _resolve_option(*option) == resolved_option
+
+
+@pytest.mark.parametrize(
+    'path,options',
+    [
+        (
+            "LL_CONTEXT_DESTINATION KW_UDP '(' string KW_FAILOVER '(' KW_SERVERS '(' string_list ')' KW_FAILBACK "
+            "'(' KW_TCP_PROBE_INTERVAL '(' positive_integer ')' ')' ')' ')'",
+            {
+                ('destination', 'udp', 'servers', ('<string-list>',), ('failover',)),
+                ('destination', 'udp', 'tcp-probe-interval', ('<positive-integer>',), ('failover', 'failback')),
+                ('destination', 'udp', '', ('<string>',), ())
+            }
+        ),
+        (
+            "LL_CONTEXT_DESTINATION KW_RIEMANN '(' KW_ATTRIBUTES '(' KW_KEY string KW_REKEY '(' ')' ')' ')'",
+            {
+                ('destination', 'riemann', '', ('key', '<string>'), ('attributes',)),
+                ('destination', 'riemann', 'rekey', (), ('attributes',))
+            }
+        )
+    ]
+)
+def test_path_to_options(path, options):
+    assert path_to_options(path.split()) == options
