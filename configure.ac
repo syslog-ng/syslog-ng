@@ -1396,7 +1396,9 @@ dnl python checks
 dnl ***************************************************************************
 if test "x$enable_python" != "xno"; then
   if test "x$with_python" = "xauto"; then
-    PKG_CHECK_MODULES(PYTHON, python3, python_found="yes", python_found="no")
+    PKG_CHECK_MODULES(PYTHON, python3-embed, python_found="yes", [
+      PKG_CHECK_MODULES(PYTHON, python3, python_found="yes", python_found="no")
+    ])
     if test "$python_found" = "no"; then
       PKG_CHECK_MODULES(PYTHON, python2, python_found="yes", python_found="no")
       if test "$python_found" = "no"; then
@@ -1413,7 +1415,9 @@ if test "x$enable_python" != "xno"; then
           ;;
     esac
 
-    PKG_CHECK_MODULES(PYTHON, $with_python, python_found="yes", python_found="no")
+    PKG_CHECK_MODULES(PYTHON, $with_python-embed, python_found="yes", [
+      PKG_CHECK_MODULES(PYTHON, $with_python, python_found="yes", python_found="no")
+    ])
   fi
 
   if test "x$python_found" = "xyes"; then
