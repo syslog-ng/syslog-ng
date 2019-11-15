@@ -53,3 +53,15 @@ def _find_options_wo_keyword(path):
 
 def _find_options(path):
     return _find_options_wo_keyword(path) | _find_options_with_keyword(path)
+
+
+def _parse_keyword_and_arguments(path, option):
+    tokens = tuple(path[option[0]:option[1] + 1])
+    if "'('" in tokens and "')'" in tokens:
+        assert tokens[1] == "'('" and tokens[-1] == "')'", tokens
+        keyword = tokens[0]
+        arguments = tokens[2:-1]
+    else:
+        keyword = ''
+        arguments = tokens
+    return keyword, arguments

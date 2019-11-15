@@ -23,7 +23,8 @@
 import pytest
 
 from utils.OptionParser import (_find_options, _find_options_with_keyword,
-                                _find_options_wo_keyword)
+                                _find_options_wo_keyword,
+                                _parse_keyword_and_arguments)
 
 
 @pytest.mark.parametrize(
@@ -65,3 +66,28 @@ def test_find_options_wo_keyword(path, options):
 )
 def test_find_options(path, options):
     assert _find_options(path.split()) == options
+
+
+@pytest.mark.parametrize(
+    'path,option_interval,option',
+    [
+        (
+            "LL_CONTEXT_DESTINATION KW_DRIVER '(' KW_OPTION '(' argument1 argument2 ')' ')'",
+            (3, 7),
+            ('KW_OPTION', ('argument1', 'argument2'))
+        ),
+        (
+            "LL_CONTEXT_DESTINATION KW_DRIVER '(' string LL_IDENTIFIER '(' argument ')' ')'",
+            (3, 3),
+            ('', ('string',))
+        ),
+        (
+            "LL_CONTEXT_DESTINATION KW_NETWORK '(' string KW_FAILOVER '(' KW_SERVERS '(' string_list ')' "
+            "KW_FAILBACK '(' KW_TCP_PROBE_INTERVAL '(' positive_integer ')' ')' ')' ')'",
+            (12, 15),
+            ('KW_TCP_PROBE_INTERVAL', ('positive_integer',))
+        )
+    ]
+)
+def test_parse_keyword_and_arguments(path, option_interval, option):
+    assert _parse_keyword_and_arguments(path.split(), option_interval) == option
