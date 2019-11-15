@@ -27,6 +27,8 @@
 #include "python-source.h"
 #include "mainloop-worker.h"
 #include "mainloop.h"
+#include "python-persist.h"
+#include "grab-logging.h"
 
 #include <criterion/criterion.h>
 
@@ -170,4 +172,36 @@ Test(python_persist_name, test_python_source)
   main_loop_sync_worker_startup_and_teardown();
   log_pipe_deinit((LogPipe *)d);
   log_pipe_unref((LogPipe *)d);
+}
+
+const gchar *python_persist_generator_code = "\n\
+def persist_generator_stats():\n\
+    raise Exception('exception for testing stats')\n\
+def persist_generator_persist():\n\
+    raise Exception('exception for testing persist')";
+
+
+Test(python_persist_name, test_python_exception_in_generate_persist_name)
+{
+  _load_code(python_persist_generator_code);
+
+  LogPipe *p = (LogPipe *)python_sd_new(empty_cfg);
+  PyObject *persist_generator_stats = PyObject_GetAttrString(_py_get_main_module(python_config_get(empty_cfg)),
+                                                             "persist_generator_stats");
+  PyObject *persist_generator_persist = PyObject_GetAttrString(_py_get_main_module(python_config_get(empty_cfg)),
+                                        "persist_generator_persist");
+
+  start_grabbing_messages();
+  cr_assert_str_eq(python_format_stats_instance(p, persist_generator_stats,
+                                                NULL, "module", "class"), "module,class");
+  cr_assert_str_eq(python_format_persist_name(p, persist_generator_persist,
+                                              NULL, "module", "class"), "module(class)");
+  stop_grabbing_messages();
+
+  assert_grabbed_log_contains("Exception: exception for testing stats");
+  assert_grabbed_log_contains("Exception: exception for testing persist");
+
+  Py_DECREF(persist_generator_stats);
+  Py_DECREF(persist_generator_persist);
+  log_pipe_unref((LogPipe *)p);
 }
