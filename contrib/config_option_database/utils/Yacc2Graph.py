@@ -20,8 +20,16 @@
 #
 #############################################################################
 
+import xml.etree.ElementTree as xml_parser
 from subprocess import DEVNULL, Popen
 from tempfile import NamedTemporaryFile
+
+
+class Rule():
+    def __init__(self, number, parent, symbols):
+        self.number = number
+        self.parent = parent
+        self.symbols = symbols
 
 
 def _run_in_shell(command):
@@ -47,3 +55,14 @@ def _yacc2xml(yacc_content):
         except FileNotFoundError:
             raise Exception('bison executable not found')
         return xml_filepath
+
+
+def _xml2rules(filename):
+    rules = []
+    root = xml_parser.parse(filename).getroot()
+    for rule in root.iter('rule'):
+        number = int(rule.get('number'))
+        parent = rule.find('lhs').text
+        symbols = [symbol.text for symbol in rule.find('rhs') if symbol.tag != 'empty']
+        rules.append(Rule(number, parent, symbols))
+    return rules
