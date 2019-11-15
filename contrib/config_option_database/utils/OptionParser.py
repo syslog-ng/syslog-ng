@@ -31,3 +31,25 @@ def _find_options_with_keyword(path):
             options.add((option_start, index))
             option_start = None
     return options
+
+
+def _find_options_wo_keyword(path):
+    options = set()
+    left_brace = None
+    for index, token in enumerate(path):
+        if token == "'('":
+            if left_brace is None:
+                left_brace = index
+                continue
+            option_start = left_brace + 1
+            option_end = index - 2
+            if option_start <= option_end:
+                options.add((option_start, option_end))
+            left_brace = index
+        elif token == "')'":
+            left_brace = None
+    return options
+
+
+def _find_options(path):
+    return _find_options_wo_keyword(path) | _find_options_with_keyword(path)

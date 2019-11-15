@@ -22,7 +22,8 @@
 
 import pytest
 
-from utils.OptionParser import _find_options_with_keyword
+from utils.OptionParser import (_find_options, _find_options_with_keyword,
+                                _find_options_wo_keyword)
 
 
 @pytest.mark.parametrize(
@@ -38,3 +39,29 @@ from utils.OptionParser import _find_options_with_keyword
 )
 def test_find_options_with_keyword(path, options):
     assert _find_options_with_keyword(path.split()) == options
+
+
+@pytest.mark.parametrize(
+    'path,options',
+    [
+        ("LL_CONTEXT_DESTINATION KW_DRIVER '(' ')'", set()),
+        ("LL_CONTEXT_DESTINATION KW_DRIVER '(' KW_OPTION '(' argument1 argument2 ')' ')'", set()),
+        ("LL_CONTEXT_DESTINATION KW_DRIVER '(' string LL_IDENTIFIER '(' argument ')' ')'", {(3, 3)}),
+        ("LL_CONTEXT_SOURCE KW_DRIVER '(' string KW_PARENT_BLOCK '(' string number KW_OPTION '(' argument ')' ')' ')'",
+         {(3, 3), (6, 7)}),
+    ]
+)
+def test_find_options_wo_keyword(path, options):
+    assert _find_options_wo_keyword(path.split()) == options
+
+
+@pytest.mark.parametrize(
+    'path,options',
+    [
+        ("LL_CONTEXT_DESTINATION KW_DRIVER '(' ')'", set()),
+        ("LL_CONTEXT_SOURCE KW_DRIVER '(' string KW_OPTION1 '(' argument argument ')' KW_PARENT_BLOCK '(' "
+         "string number KW_OPTION '(' argument ')' ')' ')'", {(3, 3), (4, 8), (11, 12), (13, 16)}),
+    ]
+)
+def test_find_options(path, options):
+    assert _find_options(path.split()) == options
