@@ -24,6 +24,7 @@
 
 #include "logpipe.h"
 #include "cfg-tree.h"
+#include "cfg-walker.h"
 
 gboolean (*pipe_single_step_hook)(LogPipe *pipe, LogMessage *msg, const LogPathOptions *path_options);
 
@@ -47,6 +48,15 @@ void log_pipe_detach_expr_node(LogPipe *self)
   self->expr_node = NULL;
 }
 
+static GList *
+_arcs(LogPipe *self)
+{
+  if (self->pipe_next)
+    return g_list_append(NULL, arc_new(self, self->pipe_next, ARC_TYPE_PIPE_NEXT));
+  else
+    return NULL;
+}
+
 void
 log_pipe_init_instance(LogPipe *self, GlobalConfig *cfg)
 {
@@ -63,6 +73,7 @@ log_pipe_init_instance(LogPipe *self, GlobalConfig *cfg)
 
   self->queue = NULL;
   self->free_fn = log_pipe_free_method;
+  self->arcs = _arcs;
 }
 
 LogPipe *
