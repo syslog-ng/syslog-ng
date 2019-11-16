@@ -29,6 +29,7 @@
 #include "cfg-path.h"
 #include "apphook.h"
 #include "secret-storage/secret-storage.h"
+#include "cfg-walker.h"
 
 #include <string.h>
 
@@ -277,10 +278,45 @@ control_connection_list_files(ControlConnection *cc, GString *command, gpointer 
   control_connection_send_reply(cc, result);
 }
 
+static gchar *
+arcs_as_json(GHashTable *arcs)
+{
+  return g_strdup("[]");
+}
+
+static gchar *
+nodes_as_json(GHashTable *nodes)
+{
+  return g_strdup("[]");
+}
+
+static GString *
+generate_json(GHashTable *nodes, GHashTable *arcs)
+{
+  gchar *nodes_part = nodes_as_json(nodes);
+  gchar *arcs_part = arcs_as_json(arcs);
+  gchar *json = g_strdup_printf("{\"nodes\" : %s, \"arcs\" : %s}", nodes_part, arcs_part);
+  GString *result = g_string_new(json);
+  g_free(json);
+  g_free(nodes_part);
+  g_free(arcs_part);
+
+  return result;
+}
+
 static void
 export_config_graph(ControlConnection *cc, GString *command, gpointer user_data)
 {
-  GString *result = g_string_new("{}");
+  GHashTable *nodes;
+  GHashTable *arcs;
+
+  MainLoop *main_loop = (MainLoop *) user_data;
+  GlobalConfig *cfg = main_loop_get_current_config(main_loop);
+  cfg_walker_get_graph(cfg->tree.initialized_pipes, &nodes, &arcs);
+  GString *result = generate_json(nodes, arcs);
+  g_hash_table_destroy(nodes);
+  g_hash_table_destroy(arcs);
+
   control_connection_send_reply(cc, result);
 }
 
