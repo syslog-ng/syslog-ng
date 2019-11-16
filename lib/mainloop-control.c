@@ -278,10 +278,28 @@ control_connection_list_files(ControlConnection *cc, GString *command, gpointer 
   control_connection_send_reply(cc, result);
 }
 
+static void
+_append_arc(Arc *self, gpointer dummy, GPtrArray *arcs)
+{
+  g_ptr_array_add(arcs, g_strdup_printf("{\"from\" : \"%p\", \"to\" : \"%p\", \"type\" : \"%s\"}",
+                                        self->from, self->to,
+                                        self->arc_type == ARC_TYPE_NEXT_HOP ? "next_hop" : "pipe_next"));
+};
+
 static gchar *
 arcs_as_json(GHashTable *arcs)
 {
-  return g_strdup("[]");
+  GPtrArray *arcs_list = g_ptr_array_new_with_free_func(g_free);
+  g_hash_table_foreach(arcs, (GHFunc)_append_arc, arcs_list);
+  g_ptr_array_add(arcs_list, NULL);
+
+  gchar *arcs_joined = g_strjoinv(", ", (gchar **)arcs_list->pdata);
+  g_ptr_array_free(arcs_list, TRUE);
+
+  gchar *json = g_strdup_printf("[%s]", arcs_joined);
+  g_free(arcs_joined);
+
+  return json;
 }
 
 static gchar *
