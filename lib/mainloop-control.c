@@ -30,6 +30,7 @@
 #include "apphook.h"
 #include "secret-storage/secret-storage.h"
 #include "cfg-walker.h"
+#include "logpipe.h"
 
 #include <string.h>
 
@@ -302,10 +303,80 @@ arcs_as_json(GHashTable *arcs)
   return json;
 }
 
+static GList *
+_collect_info(LogPipe *self)
+{
+  GList *info = g_list_copy_deep(self->info, (GCopyFunc)g_strdup, NULL);
+
+  if (self->plugin_name)
+    info = g_list_append(info, g_strdup(self->plugin_name));
+
+  if (self->expr_node)
+    {
+      gchar buf[128];
+      log_expr_node_format_location(self->expr_node, buf, sizeof(buf));
+      info = g_list_append(info, g_strdup(buf));
+    }
+
+  if (log_pipe_get_persist_name(self))
+    info = g_list_append(info, g_strdup(log_pipe_get_persist_name(self)));
+
+  return info;
+}
+
+static gchar *
+g_str_join_list(GList *self, gchar *separator)
+{
+  if (!self)
+    return g_strdup("");
+
+  if (g_list_length(self) == 1)
+    return g_strdup(self->data);
+
+  GString *joined = g_string_new(self->data);
+  GList *rest = self->next;
+
+  for (GList *e = rest; e; e = e->next)
+    {
+      g_string_append(joined, separator);
+      g_string_append(joined, e->data);
+    }
+
+  return g_string_free(joined, FALSE);
+}
+
+static gchar *
+_add_quotes(gchar *self)
+{
+  return g_strdup_printf("\"%s\"", self);
+}
+
+static void
+_append_node(LogPipe *self, gpointer dummy, GPtrArray *nodes)
+{
+  GList *raw_info = _collect_info(self);
+  GList *info_with_quotes = g_list_copy_deep(raw_info, (GCopyFunc)_add_quotes, NULL);
+  g_list_free_full(raw_info, g_free);
+  gchar *info = g_str_join_list(info_with_quotes, ", ");
+  g_list_free_full(info_with_quotes, g_free);
+
+  g_ptr_array_add(nodes, g_strdup_printf("{\"node\" : \"%p\", \"info\" : [%s]}", self, info));
+  g_free(info);
+};
+
 static gchar *
 nodes_as_json(GHashTable *nodes)
 {
-  return g_strdup("[]");
+  GPtrArray *nodes_list = g_ptr_array_new_with_free_func(g_free);
+  g_hash_table_foreach(nodes, (GHFunc)_append_node, nodes_list);
+  g_ptr_array_add(nodes_list, NULL);
+
+  gchar *nodes_joined = g_strjoinv(", ", (gchar **)nodes_list->pdata);
+  g_ptr_array_free(nodes_list, TRUE);
+
+  gchar *json = g_strdup_printf("[%s]", nodes_joined);
+  g_free(nodes_joined);
+  return json;
 }
 
 static GString *
