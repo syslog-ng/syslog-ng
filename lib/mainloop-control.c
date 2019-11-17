@@ -277,6 +277,13 @@ control_connection_list_files(ControlConnection *cc, GString *command, gpointer 
   control_connection_send_reply(cc, result);
 }
 
+static void
+export_config_graph(ControlConnection *cc, GString *command, gpointer user_data)
+{
+  GString *result = g_string_new("{}");
+  control_connection_send_reply(cc, result);
+}
+
 ControlCommand default_commands[] =
 {
   { "LOG", control_connection_message_log },
@@ -287,6 +294,7 @@ ControlCommand default_commands[] =
   { "LICENSE", show_ose_license_info },
   { "PWD", process_credentials },
   { "LISTFILES", control_connection_list_files },
+  { "EXPORT_CONFIG_GRAPH", export_config_graph },
   { NULL, NULL },
 };
 
