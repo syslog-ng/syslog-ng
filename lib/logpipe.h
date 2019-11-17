@@ -241,6 +241,7 @@ struct _LogPipe
 
   void (*free_fn)(LogPipe *self);
   void (*notify)(LogPipe *self, gint notify_code, gpointer user_data);
+  GList *info;
 };
 
 /*
@@ -406,4 +407,6 @@ log_pipe_get_arcs(LogPipe *s)
 {
   return s->arcs(s);
 }
+
+void log_pipe_add_info(LogPipe *self, const gchar *info);
 #endif

@@ -110,6 +110,7 @@ _free(LogPipe *self)
     self->free_fn(self);
   g_free((gpointer)self->persist_name);
   g_free(self->plugin_name);
+  g_list_free_full(self->info, g_free);
   g_free(self);
 }
 
@@ -142,6 +143,12 @@ log_pipe_get_persist_name(const LogPipe *self)
 {
   return (self->generate_persist_name != NULL) ? self->generate_persist_name(self)
          : self->persist_name;
+}
+
+void
+log_pipe_add_info(LogPipe *self, const gchar *info)
+{
+  self->info = g_list_append(self->info, g_strdup(info));
 }
 
 #ifdef __linux__
