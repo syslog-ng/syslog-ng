@@ -403,7 +403,7 @@ _debug_response_info(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target
 }
 
 static LogThreadedResult
-_map_http_result(HTTPDestinationWorker *self, const gchar *url, HttpResponseHandler *response_handler)
+_custom_map_http_result(HTTPDestinationWorker *self, const gchar *url, HttpResponseHandler *response_handler)
 {
   HttpResult result = response_handler->action(response_handler->user_data);
   g_assert(result < HTTP_RESULT_MAX);
@@ -511,6 +511,29 @@ _renew_header(HTTPDestinationDriver *self)
 }
 
 static LogThreadedResult
+_try_to_custom_map_http_status_to_worker_status(HTTPDestinationWorker *self, const gchar *url, glong http_code)
+{
+  HttpResponseHandler *response_handler = NULL;
+
+  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
+  if ((response_handler = http_response_handlers_lookup(owner->response_handlers, http_code)))
+    return _custom_map_http_result(self, url, response_handler);
+
+  return LTR_MAX;
+}
+
+static LogThreadedResult
+_map_http_status_code(HTTPDestinationWorker *self, const gchar *url, glong http_code)
+{
+  LogThreadedResult result = _try_to_custom_map_http_status_to_worker_status(self, url, http_code);
+
+  if (result != LTR_MAX)
+    return result;
+
+  return default_map_http_status_to_worker_status(self, url, http_code);
+}
+
+static LogThreadedResult
 _flush_on_target(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
@@ -529,11 +552,7 @@ _flush_on_target(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
   if (http_code == 401 && owner->auth_header)
     return _renew_header(owner);
 
-  HttpResponseHandler *response_handler = NULL;
-  if ((response_handler = http_response_handlers_lookup(owner->response_handlers, http_code)))
-    return _map_http_result(self, target->url, response_handler);
-
-  return default_map_http_status_to_worker_status(self, target->url, http_code);
+  return _map_http_status_code(self, target->url, http_code);
 }
 
 /* we flush the accumulated data if
