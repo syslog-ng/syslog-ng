@@ -132,3 +132,12 @@ def _resolve_tokens(tokens):
     for token in tokens:
         resolved_tokens += (_resolve_token(token),)
     return resolved_tokens
+
+
+def _resolve_option(context, driver, keyword, arguments, parents):
+    context = _resolve_context_token(context)
+    driver = _resolve_token(driver)
+    keyword = _resolve_token(keyword)
+    arguments = _resolve_tokens(arguments)
+    parents = _resolve_tokens(parents)
+    return (context, driver, keyword, arguments, parents)

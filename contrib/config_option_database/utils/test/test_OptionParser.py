@@ -25,8 +25,8 @@ import pytest
 from utils.OptionParser import (_find_options, _find_options_with_keyword,
                                 _find_options_wo_keyword, _get_resolve_db,
                                 _parse_keyword_and_arguments, _parse_parents,
-                                _resolve_context_token, _resolve_tokens,
-                                _sanitize)
+                                _resolve_context_token, _resolve_option,
+                                _resolve_tokens, _sanitize)
 
 
 @pytest.mark.parametrize(
@@ -154,3 +154,60 @@ def test_resolve_tokens_keyword_without_resolvation():
     with pytest.raises(Exception) as e:
         _resolve_tokens(('KW_I_HAVE_NO_RESOLVE',))
     assert 'Keyword without resolvation:' in str(e.value)
+
+
+@pytest.mark.parametrize(
+    'option,resolved_option',
+    [
+        (
+            (
+                'LL_CONTEXT_SOURCE',
+                'KW_WILDCARD_FILE',
+                'KW_PAD_SIZE',
+                ('nonnegative_integer',),
+                ()
+            ),
+            (
+                'source',
+                'wildcard-file',
+                'pad-size',
+                ('<nonnegative-integer>',),
+                ()
+            ),
+        ),
+        (
+            (
+                'LL_CONTEXT_DESTINATION',
+                'KW_RIEMANN',
+                'LL_IDENTIFIER',
+                ('template_content',),
+                ('KW_ATTRIBUTES',)
+            ),
+            (
+                'destination',
+                'riemann',
+                '<identifier>',
+                ('<template-content>',),
+                ('attributes',)
+            )
+        ),
+        (
+            (
+                'LL_CONTEXT_DESTINATION',
+                'KW_RIEMANN',
+                '',
+                ('KW_KEY', 'string'),
+                ('KW_ATTRIBUTES',)
+            ),
+            (
+                'destination',
+                'riemann',
+                '',
+                ('key', '<string>'),
+                ('attributes',)
+            )
+        )
+    ]
+)
+def test_resolve_option(option, resolved_option):
+    assert _resolve_option(*option) == resolved_option
