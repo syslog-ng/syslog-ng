@@ -42,8 +42,11 @@ def parse_args():
 def build_db():
     db = {'source': {}, 'destination': {}}
     for context, driver, keyword, arguments, parents in get_driver_options():
-        db[context].setdefault(driver, {'options': [], 'blocks': {}})
-        add_to = db[context][driver]
+        db.setdefault(context, {})
+        driver_options = {'options': [], 'blocks': {}}
+        for driver_alias in driver.split('/'):
+            db[context].setdefault(driver_alias, driver_options)
+        add_to = db[context][driver_alias]
         for parent in parents:
             add_to['blocks'].setdefault(parent, {'options': [], 'blocks': {}})
             add_to = add_to['blocks'][parent]
