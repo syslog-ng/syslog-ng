@@ -27,7 +27,7 @@ from sys import argv
 
 def get_grammar_files():
     root_dir = Path(__file__).resolve().parents[3]
-    exclude = ['rewrite-expr-grammar.ym']
+    exclude = ['rewrite-expr-grammar.ym', 'native-grammar.ym']
     files = []
     files.extend(list((root_dir / 'modules').rglob('*.ym')))
     files.extend(list((root_dir / 'lib').rglob('*.ym')))

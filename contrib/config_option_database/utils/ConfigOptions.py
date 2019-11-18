@@ -67,7 +67,7 @@ def get_driver_options():
     _remove_code_blocks(graph)
     _remove_ifdef(graph)
     not_empty = filter(lambda path: len(path) > 0, graph.get_paths())
-    paths = filter(lambda path: path[0] in ['LL_CONTEXT_SOURCE', 'LL_CONTEXT_DESTINATION'], not_empty)
+    paths = filter(lambda path: path[0] in ['LL_CONTEXT_SOURCE', 'LL_CONTEXT_DESTINATION', 'LL_CONTEXT_PARSER'], not_empty)
     options = set()
     for path in paths:
         options |= path_to_options(path)
