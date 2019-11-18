@@ -1174,8 +1174,7 @@ driver_option
         : KW_PERSIST_NAME '(' string ')' { log_pipe_set_persist_name(&last_driver->super, $3); free($3); }
         ;
 
-/* All source drivers should incorporate this rule, implies driver_option */
-source_driver_option
+inner_source
         : LL_IDENTIFIER
           {
             Plugin *p;
@@ -1198,16 +1197,16 @@ source_driver_option
                 CHECK_ERROR(TRUE, @1, "Error while registering the plugin %s in this destination", $1);
               }
           }
+        ;
+
+/* All source drivers should incorporate this rule, implies driver_option */
+source_driver_option
+        : inner_source
         | driver_option
         ;
 
-/* implies driver_option */
-dest_driver_option
-        /* NOTE: plugins need to set "last_driver" in order to incorporate this rule in their grammar */
-
-	: KW_LOG_FIFO_SIZE '(' positive_integer ')'	{ ((LogDestDriver *) last_driver)->log_fifo_size = $3; }
-	| KW_THROTTLE '(' nonnegative_integer ')'         { ((LogDestDriver *) last_driver)->throttle = $3; }
-        | LL_IDENTIFIER
+inner_dest
+        : LL_IDENTIFIER
           {
             Plugin *p;
             gint context = LL_CONTEXT_INNER_DEST;
@@ -1229,6 +1228,15 @@ dest_driver_option
                 CHECK_ERROR(TRUE, @1, "Error while registering the plugin %s in this destination", $1);
               }
           }
+        ;
+
+/* implies driver_option */
+dest_driver_option
+        /* NOTE: plugins need to set "last_driver" in order to incorporate this rule in their grammar */
+
+	: KW_LOG_FIFO_SIZE '(' positive_integer ')'	{ ((LogDestDriver *) last_driver)->log_fifo_size = $3; }
+	| KW_THROTTLE '(' nonnegative_integer ')'         { ((LogDestDriver *) last_driver)->throttle = $3; }
+        | inner_dest
         | driver_option
         ;
 

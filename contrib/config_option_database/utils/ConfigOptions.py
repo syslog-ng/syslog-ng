@@ -38,13 +38,29 @@ def _make_types_terminal(graph):
         'template_content',
         'yesno'
     ]
+
+    for node in types:
+        graph.make_terminal(node)
+
+
+def _process_helpers(graph):
     helpers = [
+        'inner_dest',
+        'inner_source',
         'filter_content',
         'parser_content'
     ]
+    connections = [
+        ('inner_dest', 'LL_CONTEXT_INNER_DEST'),
+        ('inner_source', 'LL_CONTEXT_INNER_SRC'),
+    ]
 
-    for node in types + helpers:
+    for node in helpers:
         graph.make_terminal(node)
+    for from_node, to_node in connections:
+        for parent in graph.get_parents(to_node):
+            graph.add_arc(from_node, parent)
+        graph.remove(to_node)
 
 
 def _remove_code_blocks(graph):
@@ -64,6 +80,7 @@ def get_driver_options():
         merge_grammars(yaccfile.name)
         graph = BisonGraph(yaccfile.name)
     _make_types_terminal(graph)
+    _process_helpers(graph)
     _remove_code_blocks(graph)
     _remove_ifdef(graph)
     not_empty = filter(lambda path: len(path) > 0, graph.get_paths())
