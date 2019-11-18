@@ -524,6 +524,7 @@ http_dd_new(GlobalConfig *cfg)
   HTTPDestinationDriver *self = g_new0(HTTPDestinationDriver, 1);
 
   log_threaded_dest_driver_init_instance(&self->super, cfg);
+  log_template_options_defaults(&self->template_options);
 
   self->super.super.super.super.init = http_dd_init;
   self->super.super.super.super.deinit = http_dd_deinit;
