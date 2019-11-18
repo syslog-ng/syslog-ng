@@ -3,7 +3,7 @@
 
 ### syslog-ng-debun: syslog debug bundle generator
 ### Written/Copyright: Gyorgy Pasztor <pasztor@linux.gyakg.u-szeged.hu>, (c) 2014-2016.
-### Further enhancements: Janos Szigetvari - jszigetvari at gmail dot com, (c) 2016-2018.
+### Further enhancements: Janos Szigetvari - jszigetvari at gmail dot com, (c) 2016-2019.
 ### This software may be used and distributed according to the terms of GNU GPLv2
 ### http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,7 +12,7 @@ LANG=en_US
 LC_ALL=C
 export LANG LC_ALL
 
-version="0.3.12.20180723"
+version="0.3.19.20191111"
 
 ### Check for "local" variable support
 if type local | grep builtin >/dev/null; then
@@ -38,6 +38,7 @@ default_ldebug_params="-Fev"
 default_pcap_params="port 514 or port 601 or port 53"
 extras=""
 sngallpids=""
+wecpid=""
 debugpid=none
 debugtailpid=none
 pcappid=none
@@ -49,10 +50,14 @@ netstatlunp () { netstat -lunp ; }
 netstatsu="netstat -su"
 netstatpunt="netstat -punt"
 binprefix=/opt/syslog-ng
+absscldirs="/usr/share/syslog-ng/include/scl"
+relscldirs="share/include/scl share/syslog-ng/include/scl"
 workdir=/tmp
 lsof="lsof -p"
 pscmd="ps auxwwwwwf"
 pseao="ps -eao"
+cpiopdL="cpio -pdL"
+findL () { find -L "$@" ; }
 dfk="df -k"
 dfh="df -h"
 dfi="df -i"
@@ -110,6 +115,7 @@ General Options:
   -l		"light" collect: Don't get data, which may disturb your sense about
 		privacy, like process tree, fstab, etc. If you use with -d, then it
 		will also enlighten that's params: $default_ldebug_params
+  -K		Include the private keys in the /etc/syslog-ng or /opt/syslog-ng/etc directory
 
 Debug mode options:
   -d		Debug with params: $default_debug_params
@@ -124,7 +130,9 @@ Packet capture options:
   -i [iface]	Capture packets on specified interface
   -p		Create packet capture with filter: $default_pcap_params
   -P [params]	Create packet capture with custom filter
-  -t [sec]	Timeout for noninteractive debug
+  -T		Create packet capture with the tcpdump parameters specified, instead
+			of the default: $tcpdumpopts
+  -t [sec]	Timeout for noninteractive debug_
 
 Syscall tracing options:
   -s		Trace syslog
@@ -138,23 +146,23 @@ exit ${1:-0}
 ### Parsing optional parameters
 ###
 
-while getopts "rhldD:pP:w:i:W:R:t:s" opt ; do
+while getopts "rhlKdD:pP:T:w:i:W:R:t:s" opt ; do
 	case $opt in
 		r)
 			engage=1
 			;;
 		d)
-			[ -n "$debug_params" ] && debun_usage 2
+			[ -n "$debug_params" ] && debun_usage 2 "Custom debug arguments have already been set, or debugging has already been requested"
 			debug_params="$default_debug_params"
 			debug_mode=1
 			;;
 		D)
-			[ -n "$debug_params" ] && debun_usage 2
+			[ -n "$debug_params" ] && debun_usage 2 "Custom debug arguments have already been set, or debugging has already been requested"
 			debug_params="$OPTARG"
 			debug_mode=1
 			;;
 		i)
-			[ -n "$pcap_iface" ] && debun_usage 2
+			[ -n "$pcap_iface" ] && debun_usage 2 "Pcap interface has already been set"
 			pcap_iface="$OPTARG"
 			;;
 		h)
@@ -164,13 +172,17 @@ while getopts "rhldD:pP:w:i:W:R:t:s" opt ; do
 			privacy_mode=1
 			;;
 		p)
-			[ -n "$pcap_params" ] && debun_usage 2
+			[ -n "$pcap_params" ] && debun_usage 2 "Pcap parameters have already been set, or packet capture has already been requested"
 			pcap_params="$default_pcap_params"
 			debug_mode=1
 			;;
 		P)
-			[ -n "$pcap_params" ] && debun_usage 2
+			[ -n "$pcap_params" ] && debun_usage 2 "Pcap parameters have already been set, or packet capture has already been requested"
 			pcap_params="$OPTARG"
+			debug_mode=1
+			;;
+		T)
+			tcpdumpopts="$OPTARG"
 			debug_mode=1
 			;;
 		R)
@@ -178,6 +190,9 @@ while getopts "rhldD:pP:w:i:W:R:t:s" opt ; do
 			;;
 		t)
 			timeout="$OPTARG"
+			;;
+		K)
+			saveprivatekeys=1
 			;;
 		w)
 			waitforit="$OPTARG"
@@ -241,6 +256,11 @@ debun_init () {
 }
 
 debun_finish_debug () {
+	if [ -n "$debug_mode" ]; then
+		printf 'Generating second batch of statistics\n'
+		acquire_syslog_stats
+	fi
+
 	if [ "${debugpid}" != "none" ]; then
 		if checkpid ${debugpid} ; then
 			kill -INT $debugpid
@@ -294,8 +314,10 @@ debun_final() {
 	[ -n "$service_status" ] && $service_status >${tmpdir}/svc.post
 
 	# Generating stats again for the EPS counter
-	printf 'Generating second batch of statistics\n'
-	acquire_syslog_stats
+	if [ -z "$debug_mode" ]; then
+		printf 'Generating second batch of statistics\n'
+		acquire_syslog_stats
+	fi
 
 	printf "\nGenerating hashes..."
 	debun_generate_hashes
@@ -614,7 +636,7 @@ acquire_syslog_pki_info () {
 		read OPENSSL OPENSSLVER OPENSSLDAY OPENSSLMONTH OPENSSLYEAR REST <${tmpdir}/sys.openssl.version
 		opensslmajor=${OPENSSLVER%%.*}
 		cd "${confdir}"
-		find . -name '*.0' -o -name '*.1' -o -name '*.key' -o -name '*.crt' -o -name '*.pem' >${tmpdir}/syslog.etc.pki.files 2>/dev/null
+		findL . -name '*.0' -o -name '*.1' -o -name '*.key' -o -name '*.crt' -o -name '*.pem' >${tmpdir}/syslog.etc.pki.files 2>/dev/null
 		while read FILE; do
 			pki_process_file "${FILE}" >>${tmpdir}/syslog.etc.pki.info.csv
 		done <${tmpdir}/syslog.etc.pki.files
@@ -631,32 +653,60 @@ remove_passwords_from_file () {
 	# The goal is matching substrings that look like this, to replace the password string, and preserve original formatting:
 	# password ( 'password-string' ) -->  password ( '___PASSWORD_REMOVED___' )
 	###
-	${sed_equivalent_cmd} "s|password([ \t\r\n\v\f]*)\(([ \t\r\n\v\f]*)([\"']?)[^)\"']+([\"']?)([ \t\r\n\v\f]*)\)|password\1(\2\3___PASSWORD_REMOVED___\4\5)|g" <"${1}" >"${1}.bak" 2>/dev/null
-	mv "${1}.bak" "${1}"
+	${sed_equivalent_cmd} "s|password([ \t\r\n\v\f]*)\(([ \t\r\n\v\f]*)([\"']?)[^)\"']+\3([ \t\r\n\v\f]*)\)|password\1(\2\3___PASSWORD_REMOVED___\3\4)|g" <"${1}" | \
+		${sed_equivalent_cmd} "s|token([ \t\r\n\v\f]*)\(([ \t\r\n\v\f]*)([\"']?)[^)\"']+\3([ \t\r\n\v\f]*)\)|token\1(\2\3___AUTH_TOKEN_REMOVED___\3\4)|g" | \
+		${sed_equivalent_cmd} "s|Authorization: [^\"']+|Authorization: ___AUTH_TOKEN_REMOVED___|g" >"${1}.bak"
+
+	[ -s "${1}.bak" ] && mv "${1}.bak" "${1}"
 }
 
 acquire_syslog_config () {
-	echo "Copy configs from $confdir"
+	echo "Copy configuration files from $confdir"
 	cd "${confdir}"
 	mkdir ${tmpdir}/config
-	find . > ${tmpdir}/syslog.etc.files
-	grep '\.key$' ${tmpdir}/syslog.etc.files > ${tmpdir}/syslog.etc.files.removed
-	grep '\.jks$' ${tmpdir}/syslog.etc.files > ${tmpdir}/syslog.etc.files.removed
-	grep '\.keytab$' ${tmpdir}/syslog.etc.files > ${tmpdir}/syslog.etc.files.removed
-	grep -v '\.key$' ${tmpdir}/syslog.etc.files | grep -v '\.jks$' | grep -v '\.keytab$' | \
-		while read FILE; do \
-			if pki_is_private_key "${FILE}" 2>/dev/null; then
-				echo "${FILE}" >> ${tmpdir}/syslog.etc.files.removed
-			else
-				echo "${FILE}"
-			fi
-		done | \
-		cpio -pd ${tmpdir}/config
+	findL . > ${tmpdir}/syslog.etc.files
+	touch ${tmpdir}/syslog.etc.files.removed
 
-	find ${tmpdir}/config -name "*.conf*" | \
+	if [ -z "$saveprivatekeys" ]; then
+		grep '\.key$' ${tmpdir}/syslog.etc.files >> ${tmpdir}/syslog.etc.files.removed
+		grep '\.jks$' ${tmpdir}/syslog.etc.files >> ${tmpdir}/syslog.etc.files.removed
+		grep '\.keytab$' ${tmpdir}/syslog.etc.files >> ${tmpdir}/syslog.etc.files.removed
+		grep -v '\.key$' ${tmpdir}/syslog.etc.files | grep -v '\.jks$' | grep -v '\.keytab$' | \
+			while read FILE; do \
+				if pki_is_private_key "${FILE}" 2>/dev/null; then
+					echo "${FILE}" >> ${tmpdir}/syslog.etc.files.removed
+				else
+					echo "${FILE}"
+				fi
+			done > ${tmpdir}/syslog.etc.files.saved
+	else
+		cp ${tmpdir}/syslog.etc.files ${tmpdir}/syslog.etc.files.saved
+	fi
+	$cpiopdL ${tmpdir}/config < ${tmpdir}/syslog.etc.files.saved
+
+	findL ${tmpdir}/config -name "*.conf*" | \
 		while read FILE; do \
 			remove_passwords_from_file "${FILE}"
 		done
+
+	echo "Copy SCL configuration files"
+	mkdir ${tmpdir}/scl
+	for dir in ${absscldirs}; do
+		if [ -d "${dir}" ]; then
+			cd "${dir}"
+			local dirname=$( echo "${dir}" | sed -e 's/\//_/g' )
+			mkdir "${tmpdir}/scl/${dirname}"
+			findL . | $cpiopdL "${tmpdir}/scl/${dirname}"
+		fi
+	done
+	for dir in ${relscldirs}; do
+		if [ -d "${binprefix}/${dir}" ]; then
+			cd "${binprefix}/${dir}"
+			local dirname=$( echo "${binprefix}/${dir}" | sed -e 's/\//_/g' )
+			mkdir "${tmpdir}/scl/${dirname}"
+			findL . | $cpiopdL "${tmpdir}/scl/${dirname}"
+		fi
+	done
 }
 
 acquire_syslog_pids () {
@@ -666,7 +716,7 @@ acquire_syslog_pids () {
 		sngpid=$( cat ${piddir}/syslog-ng.pid )
 	else
 		# Handle when fhs is "linux"-like
-		sngpid=$( cat ${piddir}/syslog-ng.pid )
+		sngpid=$( $pseao pid,args | grep "[s]yslog-ng " | head -1 | while read PID CMD; do echo $PID; done )
 	fi
 	ppid=$( getparent $sngpid )
 	sngallpids="$( getallchilds $sngpid )"
@@ -683,6 +733,10 @@ acquire_syslog_pids () {
 		printf 'ps -l -f -p "%s"\n' "${sngallpids}" >>${tmpdir}/syslog.pids
 		ps -l -f -p "${sngallpids}" >>${tmpdir}/syslog.pids
 	fi
+
+	wecpid=$( $pseao pid,args | grep "[w]ec " | while read PID CMD; do echo $PID; done )
+	[ -n "$wecpid" ] && echo $wecpid >${tmpdir}/wec.pid || echo "No wec was found running." >${tmpdir}/wec.pid
+
 	[ -n "$service_status" ] && $service_status >${tmpdir}/svc.pre
 }
 
@@ -712,7 +766,9 @@ acquire_syslog_info () {
 	$syslogbin --version > ${tmpdir}/syslog.version
 	head -1 ${tmpdir}/syslog.version
 
-	acquire_syslog_stats
+	if [ -z "$debug_mode" ]; then
+		acquire_syslog_stats
+	fi
 
 	if ${syslogngctlbin} show-license-info > ${tmpdir}/syslog.license-usage 2>&1; then
 		${syslogngctlbin} show-license-info --json > ${tmpdir}/syslog.license-usage.json 2>/dev/null
@@ -725,6 +781,12 @@ acquire_syslog_info () {
 		is_available ${lsof%% *} && $lsof $i >${tmpdir}/syslog.$i.lsof 2>/dev/null || echo "No lsof in path." >${tmpdir}/syslog.$i.lsof
 		myplimit $i >${tmpdir}/syslog.$i.limits
 	done
+
+	if [ -n "$wecpid" ]; then
+		while read i; do
+			is_available ${lsof%% *} && $lsof $i >${tmpdir}/wec.$i.lsof || echo "No lsof in path." >${tmpdir}/wec.$i.lsof
+		done < ${tmpdir}/wec.pid
+	fi
 
 	$syslogbin -s --preprocess-into "${tmpdir}/syslog.pp.conf"
 	[ -f "${tmpdir}/syslog.pp.conf" ] && remove_passwords_from_file "${tmpdir}/syslog.pp.conf"
@@ -744,22 +806,22 @@ acquire_syslog_var () {
 	###
 	if [ "${freek_tmp}" -gt "${vardu}" ] ; then
 		if [ "$vardu" -lt "$varlimit" ] ; then
-			find . |grep -v run\\/syslog-ng.ctl$ | cpio -pd ${tmpdir}/var
+			findL . | grep -v run\\/syslog-ng.ctl$ | $cpiopdL ${tmpdir}/var
 		else
 			printf "Size of ${vardir} is larger than $varlimit kilobytes.\n"
 			printf "Do you really want to copy all of its contents? Type 'YES' with all capitals: "
 			read ans
 			if [ "$ans" = "YES" ]; then
-				find . | grep -v "syslog-ng*\.ctl" | cpio -pd ${tmpdir}/var
+				findL . | grep -v "syslog-ng*\.ctl" | $cpiopdL ${tmpdir}/var
 			else
 				printf "Only copying most important files on user request.\n"
-				find . \( -name "*.persist" -o -name "*.pid" \) | grep -v "syslog-ng.*\.ctl" | cpio -pd ${tmpdir}/var
+				findL . \( -name "*.persist" -o -name "*.pid" \) | grep -v "syslog-ng.*\.ctl" | $cpiopdL ${tmpdir}/var
 			fi
 		fi
 	else
 		printf "TOO LOW free disk space on the filesystem holding ${tmpdir}\n"
 		printf "to create a full copy of ${vardir}!\nOnly copying most important files.\n"
-		find . \( -name "*.persist" -o -name "*.pid" \) | grep -v "syslog-ng.*\.ctl" | cpio -pd ${tmpdir}/var
+		findL . \( -name "*.persist" -o -name "*.pid" \) | grep -v "syslog-ng.*\.ctl" | $cpiopdL ${tmpdir}/var
 	fi
 }
 
@@ -851,10 +913,18 @@ acquire_syslog_all () {
 
 acquire_syslog_nprv () {
 	printf "\nStart Syslog-specific info collection (light)\n"
+	acquire_running_syslog_config
 	acquire_syslog_pids
 	acquire_syslog_info
 	acquire_syslog_ldinfo
 	acquire_syslog_startup_method
+}
+
+acquire_running_syslog_config() {
+	if ${syslogngctlbin} config >/dev/null 2>&1; then
+		${syslogngctlbin} config -p > "${tmpdir}/syslog-ng.ctl.running.conf" 2>&1
+		[ -z "$saveprivatekeys" ] && remove_passwords_from_file "${tmpdir}/syslog-ng.ctl.running.conf"
+	fi
 }
 
 fhs_set_linux () {
@@ -869,14 +939,6 @@ fhs_set_linux () {
 
 fhs_set_unix () {
 	:
-}
-
-acquire_running_syslog_config() {
-
-	if ${syslogngctlbin} config ; then	
-		${syslogngctlbin} config -p > ${tmpdir}/syslog-ng.ctl.running.conf 2>&1
-		remove_passwords_from_file "${tmpdir}/syslog-ng.ctl.running.conf"
-	fi
 }
 
 rpm_verify () {
@@ -937,6 +999,9 @@ debun_extra_suse() {
 debun_extra_genlinux () {
 	if is_available getenforce; then
 		getenforce >"${tmpdir}/sys.selinux"
+		if ${grepq} Enforcing "${tmpdir}/sys.selinux"; then
+			echo "SELinux is in Enforcing mode! If you encounter any problems with debug bundle collection, consider temporarily switching to Permissive mode!"
+		fi
 		${pscmd}Z >"${tmpdir}/sys.ps.selinux"
 		semodule -l >"${tmpdir}/sys.selinux.modules"
 	else
@@ -1281,6 +1346,7 @@ setup_env_solaris () {
 	unset -f is_available
 	unset -f os_hash_helper
 	unset -f timestamp
+	unset -f findL
 
 	is_available () { which "$1" | $grepq "no $1 in" && return 1 || return 0 ; }
 	mypidof () { $pseao pid,comm | while read pid bin ; do [ "$bin" = "$1" ] && echo $pid ; done ; }
@@ -1303,6 +1369,12 @@ setup_env_solaris () {
 		pkginfo -l $1
 		echo ""
 	}
+
+	if find -L /bin >/dev/null 2>&1 ; then
+		findL() { find -L "$@" ; }
+	else
+		findL() { dir="$1"; shift; find "$dir" -follow "$@" ; }
+	fi
 
 	if is_available top; then
 		topcmd ()  { top -b -n 1 -c > "${1}" ; }
@@ -1383,6 +1455,7 @@ setup_env_hpux () {
 	service_start="${initfile} start"
 	service_status="${initfile} status"
 	sed_equivalent_cmd="perl -p -e"
+	cpiopdL="cpio -pdh"
 
 	unset -f free
 	unset -f netstatnlp
@@ -1398,6 +1471,9 @@ setup_env_hpux () {
 	unset -f distpkgoffile
 	unset -f distpkgstatus
 	unset -f distpkgoffile_cleanup
+	unset -f findL
+
+	export UNIX95=1
 
 	is_available () { which "$1" | $grepq "no $1 in" && return 1 || return 0 ; }
 	free () { swapinfo -tam ; }
@@ -1405,6 +1481,7 @@ setup_env_hpux () {
 	netstatlunp () { netstat -na | grep -E "(Internet|Proto|udp)" ; }
 	topcmd ()  { top -d 1 -f "${1}" ; }
 	dfk_parser () { grep free | while read AVAIL REST_TEXT; do echo ${AVAIL}; done }
+	findL() { dir="$1"; shift; find "$dir" -follow "$@" ; }
 	os_hash_helper () {
 		find . '!' \( -name debun.manifest -o -name syslog-ng.debun.txt \) -type f -exec md5sum '{}' \;
 	}
@@ -1478,6 +1555,7 @@ setup_env_aix () {
 	service_start="/usr/bin/startsrc -s syslog-ng"
 	service_status="/usr/bin/lssrc -s syslog-ng"
 	sed_equivalent_cmd="perl -p -e"
+	cpiopdL="/usr/sysv/bin/cpio -pdL"
 
 	unset -f initfile
 	unset -f netstatnlp
@@ -1647,10 +1725,16 @@ run_debug () {
 			debugpid=${!}
 		fi
 	fi
+
+	if [ -n "$debug_mode" ]; then
+		sleep 1
+		acquire_syslog_stats
+	fi
+
 	[ -n "${timeout}" ] || echo "When you want to stop collecting data, press ENTER" >&3
 	if [ -n "${waitforit}" ]; then
 		sleep 1
-		# Let's gave time the user, to read the message about stopping
+		# Let's give time the user, to read the message about stopping
 		tail -f ${tmpdir}/syslog.debug >&3 &
 		debugtailpid=${!}
 		#disown
