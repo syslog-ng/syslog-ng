@@ -108,7 +108,7 @@ PyTypeObject py_logger_type =
 {
   PyVarObject_HEAD_INIT(&PyType_Type, 0)
   .tp_basicsize = sizeof(PyObject),
-  .tp_dealloc = (destructor) PyObject_Del,
+  .tp_dealloc = py_slng_generic_dealloc,
   .tp_doc = "Those messages can be captured by internal() source.",
   .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
   .tp_methods = py_logger_methods,
