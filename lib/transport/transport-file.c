@@ -25,6 +25,7 @@
 
 #include <errno.h>
 #include <unistd.h>
+#include <sys/uio.h>
 
 gssize
 log_transport_file_read_method(LogTransport *self, gpointer buf, gsize buflen, LogTransportAuxData *aux)
@@ -66,12 +67,26 @@ log_transport_file_write_method(LogTransport *self, const gpointer buf, gsize bu
   return rc;
 }
 
+gssize
+log_transport_file_writev_method(LogTransport *self, struct iovec *iov, gint iov_count)
+{
+  gint rc;
+
+  do
+    {
+      rc = writev(self->fd, iov, iov_count);
+    }
+  while (rc == -1 && errno == EINTR);
+  return rc;
+}
+
 void
 log_transport_file_init_instance(LogTransportFile *self, gint fd)
 {
   log_transport_init_instance(&self->super, fd);
   self->super.read = log_transport_file_read_method;
   self->super.write = log_transport_file_write_method;
+  self->super.writev = log_transport_file_writev_method;
   self->super.free_fn = log_transport_free_method;
 }
 

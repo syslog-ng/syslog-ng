@@ -34,6 +34,7 @@ typedef struct _LogProtoFileWriter
   LogProtoClient super;
   guchar *partial;
   gsize partial_len, partial_pos;
+  gint partial_messages;
   gint buf_size;
   gint buf_count;
   gint fd;
@@ -61,7 +62,7 @@ log_proto_file_writer_flush(LogProtoClient *s)
       /* there is still some data from the previous file writing process */
       gint len = self->partial_len - self->partial_pos;
 
-      rc = write(self->fd, self->partial + self->partial_pos, len);
+      rc = log_transport_write(self->super.transport, self->partial + self->partial_pos, len);
       if (rc > 0 && self->fsync)
         fsync(self->fd);
       if (rc < 0)
@@ -71,10 +72,11 @@ log_proto_file_writer_flush(LogProtoClient *s)
       else if (rc != len)
         {
           self->partial_pos += rc;
-          return LPS_SUCCESS;
+          return LPS_PARTIAL;
         }
       else
         {
+          log_proto_client_msg_ack(&self->super, self->partial_messages);
           g_free(self->partial);
           self->partial = NULL;
         }
@@ -84,7 +86,7 @@ log_proto_file_writer_flush(LogProtoClient *s)
   if (self->buf_count == 0)
     return LPS_SUCCESS;
 
-  rc = writev(self->fd, self->buffer, self->buf_count);
+  rc = log_transport_writev(self->super.transport, self->buffer, self->buf_count);
   if (rc > 0 && self->fsync)
     fsync(self->fd);
 
@@ -119,6 +121,11 @@ log_proto_file_writer_flush(LogProtoClient *s)
           ++i;
         }
       self->partial_pos = 0;
+      self->partial_messages = self->buf_count - i0;
+    }
+  else
+    {
+      log_proto_client_msg_ack(&self->super, self->buf_count);
     }
 
   /* free the previous message strings (the remaning part has been copied to the partial buffer) */
@@ -132,6 +139,7 @@ log_proto_file_writer_flush(LogProtoClient *s)
 write_error:
   if (errno != EINTR && errno != EAGAIN)
     {
+      log_proto_client_msg_rewind(&self->super);
       msg_error("I/O error occurred while writing",
                 evt_tag_int("fd", self->super.transport->fd),
                 evt_tag_error(EVT_TAG_OSERROR));
@@ -180,7 +188,6 @@ log_proto_file_writer_post(LogProtoClient *s, LogMessage *logmsg, guchar *msg, g
   self->sum_len += msg_len;
 
   *consumed = TRUE;
-  log_proto_client_msg_ack(&self->super, 1);
 
   if (self->buf_count == self->buf_size)
     {
