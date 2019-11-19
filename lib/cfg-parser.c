@@ -75,6 +75,7 @@ static CfgLexerKeyword main_keywords[] =
   { "scope",              KW_SCOPE },
   { "rekey",              KW_REKEY },
   { "shift",              KW_SHIFT },
+  { "shift_levels",       KW_SHIFT_LEVELS },
   { "add_prefix",         KW_ADD_PREFIX },
   { "replace",            KW_REPLACE_PREFIX, KWS_OBSOLETE, "replace_prefix" },
   { "replace_prefix",     KW_REPLACE_PREFIX },
