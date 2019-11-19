@@ -1416,6 +1416,8 @@ log_writer_init(LogPipe *s)
       log_writer_postpone_mark_timer(self);
     }
 
+  log_pipe_add_info(s, "writer");
+
   return TRUE;
 }
 

@@ -231,6 +231,7 @@ struct _LogPipe
   void (*post_deinit)(LogPipe *self);
 
   const gchar *(*generate_persist_name)(const LogPipe *self);
+  GList *(*arcs)(LogPipe *self);
 
   /* clone this pipe when used in multiple locations in the processing
    * pipe-line. If it contains state, it should behave as if it was
@@ -240,6 +241,7 @@ struct _LogPipe
 
   void (*free_fn)(LogPipe *self);
   void (*notify)(LogPipe *self, gint notify_code, gpointer user_data);
+  GList *info;
 };
 
 /*
@@ -400,4 +402,11 @@ log_pipe_get_persist_name(const LogPipe *self);
 
 void log_pipe_free_method(LogPipe *s);
 
+static inline GList *
+log_pipe_get_arcs(LogPipe *s)
+{
+  return s->arcs(s);
+}
+
+void log_pipe_add_info(LogPipe *self, const gchar *info);
 #endif

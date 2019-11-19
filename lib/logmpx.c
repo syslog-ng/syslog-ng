@@ -23,6 +23,7 @@
  */
 
 #include "logmpx.h"
+#include "cfg-walker.h"
 
 
 void
@@ -138,6 +139,30 @@ log_multiplexer_free(LogPipe *s)
   log_pipe_free_method(s);
 }
 
+static void
+_append(LogPipe *to, gpointer *user_data)
+{
+  LogPipe *from = user_data[0];
+  GList **list = user_data[1];
+
+  Arc *arc = arc_new(from, to, ARC_TYPE_NEXT_HOP);
+  *list = g_list_append(*list, arc);
+}
+
+static GList *
+_arcs(LogPipe *s)
+{
+  LogMultiplexer *self = (LogMultiplexer *)s;
+  GList *list = NULL;
+  g_ptr_array_foreach(self->next_hops, (GFunc)_append, (gpointer[2])
+  {
+    self, &list
+  });
+  if (s->pipe_next)
+    list = g_list_append(list, arc_new((LogPipe *)self, s->pipe_next, ARC_TYPE_PIPE_NEXT));
+  return list;
+};
+
 LogMultiplexer *
 log_multiplexer_new(GlobalConfig *cfg)
 {
@@ -149,5 +174,7 @@ log_multiplexer_new(GlobalConfig *cfg)
   self->super.queue = log_multiplexer_queue;
   self->super.free_fn = log_multiplexer_free;
   self->next_hops = g_ptr_array_new();
+  self->super.arcs = _arcs;
+  log_pipe_add_info(&self->super, "multiplexer");
   return self;
 }

@@ -29,6 +29,8 @@
 #include "cfg-path.h"
 #include "apphook.h"
 #include "secret-storage/secret-storage.h"
+#include "cfg-walker.h"
+#include "logpipe.h"
 
 #include <string.h>
 
@@ -277,6 +279,136 @@ control_connection_list_files(ControlConnection *cc, GString *command, gpointer 
   control_connection_send_reply(cc, result);
 }
 
+static void
+_append_arc(Arc *self, gpointer dummy, GPtrArray *arcs)
+{
+  g_ptr_array_add(arcs, g_strdup_printf("{\"from\" : \"%p\", \"to\" : \"%p\", \"type\" : \"%s\"}",
+                                        self->from, self->to,
+                                        self->arc_type == ARC_TYPE_NEXT_HOP ? "next_hop" : "pipe_next"));
+};
+
+static gchar *
+arcs_as_json(GHashTable *arcs)
+{
+  GPtrArray *arcs_list = g_ptr_array_new_with_free_func(g_free);
+  g_hash_table_foreach(arcs, (GHFunc)_append_arc, arcs_list);
+  g_ptr_array_add(arcs_list, NULL);
+
+  gchar *arcs_joined = g_strjoinv(", ", (gchar **)arcs_list->pdata);
+  g_ptr_array_free(arcs_list, TRUE);
+
+  gchar *json = g_strdup_printf("[%s]", arcs_joined);
+  g_free(arcs_joined);
+
+  return json;
+}
+
+static GList *
+_collect_info(LogPipe *self)
+{
+  GList *info = g_list_copy_deep(self->info, (GCopyFunc)g_strdup, NULL);
+
+  if (self->plugin_name)
+    info = g_list_append(info, g_strdup(self->plugin_name));
+
+  if (self->expr_node)
+    {
+      gchar buf[128];
+      log_expr_node_format_location(self->expr_node, buf, sizeof(buf));
+      info = g_list_append(info, g_strdup(buf));
+    }
+
+  if (log_pipe_get_persist_name(self))
+    info = g_list_append(info, g_strdup(log_pipe_get_persist_name(self)));
+
+  return info;
+}
+
+static gchar *
+g_str_join_list(GList *self, gchar *separator)
+{
+  if (!self)
+    return g_strdup("");
+
+  if (g_list_length(self) == 1)
+    return g_strdup(self->data);
+
+  GString *joined = g_string_new(self->data);
+  GList *rest = self->next;
+
+  for (GList *e = rest; e; e = e->next)
+    {
+      g_string_append(joined, separator);
+      g_string_append(joined, e->data);
+    }
+
+  return g_string_free(joined, FALSE);
+}
+
+static gchar *
+_add_quotes(gchar *self)
+{
+  return g_strdup_printf("\"%s\"", self);
+}
+
+static void
+_append_node(LogPipe *self, gpointer dummy, GPtrArray *nodes)
+{
+  GList *raw_info = _collect_info(self);
+  GList *info_with_quotes = g_list_copy_deep(raw_info, (GCopyFunc)_add_quotes, NULL);
+  g_list_free_full(raw_info, g_free);
+  gchar *info = g_str_join_list(info_with_quotes, ", ");
+  g_list_free_full(info_with_quotes, g_free);
+
+  g_ptr_array_add(nodes, g_strdup_printf("{\"node\" : \"%p\", \"info\" : [%s]}", self, info));
+  g_free(info);
+};
+
+static gchar *
+nodes_as_json(GHashTable *nodes)
+{
+  GPtrArray *nodes_list = g_ptr_array_new_with_free_func(g_free);
+  g_hash_table_foreach(nodes, (GHFunc)_append_node, nodes_list);
+  g_ptr_array_add(nodes_list, NULL);
+
+  gchar *nodes_joined = g_strjoinv(", ", (gchar **)nodes_list->pdata);
+  g_ptr_array_free(nodes_list, TRUE);
+
+  gchar *json = g_strdup_printf("[%s]", nodes_joined);
+  g_free(nodes_joined);
+  return json;
+}
+
+static GString *
+generate_json(GHashTable *nodes, GHashTable *arcs)
+{
+  gchar *nodes_part = nodes_as_json(nodes);
+  gchar *arcs_part = arcs_as_json(arcs);
+  gchar *json = g_strdup_printf("{\"nodes\" : %s, \"arcs\" : %s}", nodes_part, arcs_part);
+  GString *result = g_string_new(json);
+  g_free(json);
+  g_free(nodes_part);
+  g_free(arcs_part);
+
+  return result;
+}
+
+static void
+export_config_graph(ControlConnection *cc, GString *command, gpointer user_data)
+{
+  GHashTable *nodes;
+  GHashTable *arcs;
+
+  MainLoop *main_loop = (MainLoop *) user_data;
+  GlobalConfig *cfg = main_loop_get_current_config(main_loop);
+  cfg_walker_get_graph(cfg->tree.initialized_pipes, &nodes, &arcs);
+  GString *result = generate_json(nodes, arcs);
+  g_hash_table_destroy(nodes);
+  g_hash_table_destroy(arcs);
+
+  control_connection_send_reply(cc, result);
+}
+
 ControlCommand default_commands[] =
 {
   { "LOG", control_connection_message_log },
@@ -287,6 +419,7 @@ ControlCommand default_commands[] =
   { "LICENSE", show_ose_license_info },
   { "PWD", process_credentials },
   { "LISTFILES", control_connection_list_files },
+  { "EXPORT_CONFIG_GRAPH", export_config_graph },
   { NULL, NULL },
 };
 

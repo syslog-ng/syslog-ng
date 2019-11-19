@@ -101,6 +101,12 @@ static GOptionEntry slng_options[] =
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
 
+gint
+slng_export_config_graph(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
+{
+  return dispatch_command("EXPORT_CONFIG_GRAPH");
+}
+
 static CommandDescriptor modes[] =
 {
   { "stats", stats_options, "Get syslog-ng statistics in CSV format", slng_stats, NULL },
@@ -115,6 +121,7 @@ static CommandDescriptor modes[] =
   { "credentials", no_options, "Credentials manager", NULL, credentials_commands },
   { "config", config_options, "Print current config", slng_config, NULL },
   { "list-files", no_options, "Print files present in config", slng_listfiles, NULL },
+  { "export-config-graph", no_options, "export configuration graph", slng_export_config_graph, NULL },
   { NULL, NULL },
 };
 
