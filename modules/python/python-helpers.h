@@ -50,4 +50,5 @@ gboolean _py_is_string(PyObject *object);
 const gchar *_py_get_string_as_string(PyObject *object);
 PyObject *_py_string_from_string(const gchar *str, gssize len);
 
+void py_slng_generic_dealloc(PyObject *self);
 #endif

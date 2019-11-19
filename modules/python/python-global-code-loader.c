@@ -67,7 +67,7 @@ static void
 _free(PyGlobalCodeLoader *self)
 {
   g_free(self->source);
-  PyObject_Del(self);
+  py_slng_generic_dealloc((PyObject *)self);
 }
 
 static PyMethodDef _methods[] =
