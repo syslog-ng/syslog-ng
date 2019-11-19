@@ -72,11 +72,13 @@ start
         | LL_CONTEXT_SOURCE KW_PYTHON
           {
             last_driver = *instance = python_sd_new(configuration);
+            g_assert(!((LogPipe *)last_driver)->generate_persist_name);
           }
           '(' python_sd_options ')'         { YYACCEPT; }
         | LL_CONTEXT_SOURCE KW_PYTHON_FETCHER
           {
             last_driver = *instance = python_fetcher_new(configuration);
+            g_assert(!((LogPipe *)last_driver)->generate_persist_name);
           }
           '(' python_fetcher_options ')'         { YYACCEPT; }
 	| LL_CONTEXT_ROOT KW_PYTHON
