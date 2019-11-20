@@ -25,6 +25,8 @@
 #include "driver.h"
 #include "mainloop.h"
 
+#include <structmember.h>
+
 static PyObject *
 _call_generate_persist_name_method(PythonPersistMembers *options)
 {
@@ -168,6 +170,13 @@ py_persist_dealloc(PyObject *s)
   py_slng_generic_dealloc(s);
 }
 
+static PyMemberDef
+py_persist_type_members[] =
+{
+  {"persist_name", T_STRING, offsetof(PyPersist, persist_name), READONLY},
+  {NULL}
+};
+
 PyTypeObject py_persist_type =
 {
   PyVarObject_HEAD_INIT(&PyType_Type, 0)
@@ -178,6 +187,7 @@ PyTypeObject py_persist_type =
   .tp_doc = "Persist class encapsulates persist handling",
   .tp_new = _persist_type_new,
   .tp_init = _persist_type_init,
+  .tp_members = py_persist_type_members,
   0,
 };
 
