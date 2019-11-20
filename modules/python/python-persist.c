@@ -24,8 +24,20 @@
 #include "python-helpers.h"
 #include "driver.h"
 #include "mainloop.h"
+#include "persistable-state-header.h"
 
 #include <structmember.h>
+
+#define DEFAULT_PERSIST_DATA_SIZE 256
+#define PERSIST_HEADER_SIZE offsetof(Persist, data)
+#define PERSIST_VERSION 0
+
+typedef struct
+{
+  PersistableStateHeader header;
+  gsize max_size;
+  guchar data[];
+} Persist;
 
 static PyObject *
 _call_generate_persist_name_method(PythonPersistMembers *options)
@@ -142,6 +154,22 @@ _persist_type_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
   return (PyObject *)self;
 }
 
+static PersistEntryHandle
+_allocate_persist_entry(PersistState *state, const gchar *persist_name, guint8 version)
+{
+  PersistEntryHandle handle = persist_state_alloc_entry(state, persist_name,
+                                                        PERSIST_HEADER_SIZE + DEFAULT_PERSIST_DATA_SIZE);
+  if (!handle)
+    return 0;
+
+  Persist *persist = persist_state_map_entry(state, handle);
+  persist->header.version = version;
+  persist->max_size = DEFAULT_PERSIST_DATA_SIZE;
+  persist_state_unmap_entry(state, handle);
+
+  return handle;
+}
+
 static int
 _persist_type_init(PyObject *s, PyObject *args, PyObject *kwds)
 {
@@ -155,6 +183,25 @@ _persist_type_init(PyObject *s, PyObject *args, PyObject *kwds)
 
   if (!self->persist_name)
     self->persist_name = g_strdup(persist_name);
+
+  gsize size = 0;
+  guint8 ignore;
+  PersistEntryHandle handle = persist_state_lookup_entry(self->persist_state,
+                                                         self->persist_name, &size, &ignore);
+
+  if (handle)
+    {
+      self->persist_handle = handle;
+    }
+  else
+    {
+      PersistEntryHandle allocated_handle = _allocate_persist_entry(self->persist_state,
+                                            self->persist_name, PERSIST_VERSION);
+      if (!allocated_handle)
+        return -1;
+
+      self->persist_handle = allocated_handle;
+    }
 
   return 0;
 }
