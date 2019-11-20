@@ -127,3 +127,21 @@ python_format_persist_name(const LogPipe *p, const gchar *module, PythonPersistM
 
   return persist_name;
 }
+
+PyTypeObject py_persist_type =
+{
+  PyVarObject_HEAD_INIT(&PyType_Type, 0)
+  .tp_name = "Persist",
+  .tp_basicsize = sizeof(PyPersist),
+  .tp_dealloc = py_slng_generic_dealloc,
+  .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+  .tp_doc = "Persist class encapsulates persist handling",
+  .tp_new = PyType_GenericNew,
+  0,
+};
+
+void
+py_persist_init(void)
+{
+  PyType_Ready(&py_persist_type);
+}
