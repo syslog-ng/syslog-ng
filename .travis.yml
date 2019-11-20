@@ -11,9 +11,6 @@ services:
   - docker
 
 addons:
-  homebrew:
-    brewfile: contrib/Brewfile
-    update: true
   apt:
     sources:
       - sourceline: 'deb http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_14.04 ./'
@@ -245,44 +242,6 @@ matrix:
             ..
         - make --keep-going -j $(nproc) all install
         - ctest -j $(nproc) --output-on-failure
-
-    - env: B=check
-      os: osx
-      osx_image: xcode9.3
-      compiler: clang
-      env:
-        - PYTHONUSERBASE=$HOME/python_packages
-        - PATH=/usr/local/opt/bison/bin:/usr/local/opt/libnet/bin:$PYTHONUSERBASE/bin:$PATH
-        - PKG_CONFIG_PATH=/usr/local/opt/openssl/lib/pkgconfig:$PKG_CONFIG_PATH
-      before_script:
-        - set -e
-        - ./autogen.sh
-        - ./configure
-            --with-ivykis=system
-            --disable-sun-streams
-            --disable-systemd
-            --disable-pacct
-            --disable-smtp
-            --disable-geoip
-            --enable-all-modules
-        - make --keep-going -j $(sysctl -n hw.physicalcpu) ||
-          {
-            S=$?;
-            make V=1;
-            return $S;
-          }
-      script:
-        - set -e
-        - make --keep-going check -j $(sysctl -n hw.physicalcpu) ||
-          {
-            S=$?;
-            echo "Output of first test invocation:";
-            find . -name test-suite.log | xargs cat;
-            make V=1 check;
-            echo "Output of second test invocation:";
-            find . -name test-suite.log | xargs cat;
-            return $S;
-          }
 
 branches:
   except:
