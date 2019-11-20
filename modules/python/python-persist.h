@@ -28,12 +28,20 @@
 
 typedef struct
 {
+  PyObject_HEAD
+} PyPersist;
+
+extern PyTypeObject py_persist_type;
+
+typedef struct
+{
   PyObject *generate_persist_name_method;
   GHashTable *options;
   const gchar *class;
   const gchar *id;
 } PythonPersistMembers;
 
+void py_persist_init(void);
 const gchar *python_format_stats_instance(LogPipe *p, const gchar *module, PythonPersistMembers *options);
 const gchar *python_format_persist_name(const LogPipe *p, const gchar *module, PythonPersistMembers *options);
 
