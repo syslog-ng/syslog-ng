@@ -23,6 +23,7 @@
 #include "python-persist.h"
 #include "python-helpers.h"
 #include "driver.h"
+#include "mainloop.h"
 
 static PyObject *
 _call_generate_persist_name_method(PythonPersistMembers *options)
@@ -128,15 +129,55 @@ python_format_persist_name(const LogPipe *p, const gchar *module, PythonPersistM
   return persist_name;
 }
 
+static PyObject *
+_persist_type_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+{
+  PyPersist *self =(PyPersist *)type->tp_alloc(type, 0);
+
+  GlobalConfig *cfg = main_loop_get_current_config(main_loop_get_instance());
+  self->persist_state = cfg->state;
+
+  return (PyObject *)self;
+}
+
+static int
+_persist_type_init(PyObject *s, PyObject *args, PyObject *kwds)
+{
+  PyPersist *self =(PyPersist *)s;
+  const gchar *persist_name=NULL;
+
+  static char *kwlist[] = {"persist_name", NULL};
+
+  if (! PyArg_ParseTupleAndKeywords(args, kwds, "s", kwlist, &persist_name))
+    return -1;
+
+  if (!self->persist_name)
+    self->persist_name = g_strdup(persist_name);
+
+  return 0;
+}
+
+static void
+py_persist_dealloc(PyObject *s)
+{
+  PyPersist *self =(PyPersist *)s;
+
+  g_free(self->persist_name);
+  self->persist_name = NULL;
+
+  py_slng_generic_dealloc(s);
+}
+
 PyTypeObject py_persist_type =
 {
   PyVarObject_HEAD_INIT(&PyType_Type, 0)
   .tp_name = "Persist",
   .tp_basicsize = sizeof(PyPersist),
-  .tp_dealloc = py_slng_generic_dealloc,
+  .tp_dealloc = py_persist_dealloc,
   .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
   .tp_doc = "Persist class encapsulates persist handling",
-  .tp_new = PyType_GenericNew,
+  .tp_new = _persist_type_new,
+  .tp_init = _persist_type_init,
   0,
 };
 
@@ -144,4 +185,5 @@ void
 py_persist_init(void)
 {
   PyType_Ready(&py_persist_type);
+  PyModule_AddObject(PyImport_AddModule("_syslogng"), "Persist", (PyObject *) &py_persist_type);
 }

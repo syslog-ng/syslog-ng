@@ -27,5 +27,6 @@ try:
     from _syslogng import LogSource, LogFetcher
     from _syslogng import LogTemplate, LogTemplateException, LTZ_LOCAL, LTZ_SEND
     from _syslogng import Logger
+    from _syslogng import Persist
 except ImportError:
     print("The syslogng package can only be used in syslog-ng.")
