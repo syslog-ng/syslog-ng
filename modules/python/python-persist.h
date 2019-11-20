@@ -29,6 +29,8 @@
 typedef struct
 {
   PyObject_HEAD
+  PersistState *persist_state;
+  gchar *persist_name;
 } PyPersist;
 
 extern PyTypeObject py_persist_type;
