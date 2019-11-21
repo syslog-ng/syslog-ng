@@ -318,15 +318,6 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
                              return LL_NUMBER;
                            }
 ({word}+(\.)?)*{word}+ 	   { return cfg_lexer_lookup_keyword(yyextra, yylval, yylloc, yytext); }
-\(	      		   |
-\)			   |
-\;			   |
-\{			   |
-\}			   |
-\[			   |
-\]			   |
-\:			   |
-\|			   { return yytext[0]; }
 \,			   ;
 
 \"                         {
@@ -337,7 +328,7 @@ word	[^ \#'"\(\)\{\}\[\]\\;\r\n\t,|\.@:]
 			     g_string_truncate(yyextra->string_buffer, 0);
 			     yy_push_state(qstring, yyscanner);
 			   }
-
+.                          { return (unsigned char) yytext[0]; }
 
     /* continuation line within a string: just move the location and skip the newline character as if it was never there */
 <string,qstring>\\\r?\n    { _cfg_lex_extend_token_location_to_next_line(yyextra); }
