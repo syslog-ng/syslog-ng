@@ -253,3 +253,60 @@ Test(python_persist_name, test_python_source_no_generate_persist_name)
   log_pipe_deinit((LogPipe *)d);
   log_pipe_unref((LogPipe *)d);
 }
+
+const gchar *python_source_code_no_persist = "\n\
+from _syslogng import LogSource\n\
+class Source(LogSource):\n\
+    def init(self, options):\n\
+        self.persist_name\n\
+        return True\n\
+    def run(self):\n\
+        pass\n\
+    def request_exit(self):\n\
+        pass";
+
+Test(python_persist_name, test_python_source_no_persist)
+{
+  _load_code(python_source_code_no_persist);
+
+  LogDriver *d = python_sd_new(empty_cfg);
+  python_sd_set_class(d, "Source");
+  start_grabbing_messages();
+  cr_assert_eq(log_pipe_init((LogPipe *)d), 0);
+  stop_grabbing_messages();
+  display_grabbed_messages();
+
+  assert_grabbed_log_contains("exceptions.AttributeError");
+
+  main_loop_sync_worker_startup_and_teardown();
+  log_pipe_deinit((LogPipe *)d);
+  log_pipe_unref((LogPipe *)d);
+}
+
+const gchar *python_fetcher_code_no_persist = "\n\
+from _syslogng import LogFetcher\n\
+class Fetcher(LogFetcher):\n\
+    def init(self, options):\n\
+        self.persist_name\n\
+        return True\n\
+    def fetch(self):\n\
+        return LogFetcher.FETCH_NO_DATA, None";
+
+Test(python_persist_name, test_python_fetcher_no_persist)
+{
+  _load_code(python_fetcher_code_no_persist);
+
+  LogDriver *d = python_fetcher_new(empty_cfg);
+  python_fetcher_set_class(d, "Fetcher");
+
+  start_grabbing_messages();
+  cr_assert_eq(log_pipe_init((LogPipe *)d), 0);
+  stop_grabbing_messages();
+  display_grabbed_messages();
+
+  assert_grabbed_log_contains("exceptions.AttributeError");
+
+  main_loop_sync_worker_startup_and_teardown();
+  log_pipe_deinit((LogPipe *)d);
+  log_pipe_unref((LogPipe *)d);
+}

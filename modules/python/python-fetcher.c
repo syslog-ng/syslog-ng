@@ -55,7 +55,7 @@ typedef struct _PyLogFetcher
 {
   PyObject_HEAD
   PythonFetcherDriver *driver;
-  gchar *persist_name;
+  PyObject *persist_name;
 } PyLogFetcher;
 
 static PyTypeObject py_log_fetcher_type;
@@ -220,7 +220,7 @@ _py_free_bindings(PythonFetcherDriver *self)
 {
   PyLogFetcher *py_instance = (PyLogFetcher *) self->py.instance;
   if (py_instance)
-    g_free(py_instance->persist_name);
+    Py_CLEAR(py_instance->persist_name);
 
   Py_CLEAR(self->py.class);
   Py_CLEAR(self->py.instance);
@@ -305,7 +305,7 @@ _py_set_persist_name(PythonFetcherDriver *self)
     {
       const gchar *persist_name = python_fetcher_format_persist_name((LogPipe *)self);
       PyLogFetcher *py_instance = (PyLogFetcher *) self->py.instance;
-      py_instance->persist_name = g_strdup(persist_name);
+      py_instance->persist_name = _py_string_from_string(persist_name, -1);
     }
 }
 
@@ -576,7 +576,7 @@ python_fetcher_new(GlobalConfig *cfg)
 
 static PyMemberDef py_log_fetcher_members[] =
 {
-  { "persist_name", T_STRING, offsetof(PyLogFetcher, persist_name), READONLY },
+  { "persist_name", T_OBJECT_EX, offsetof(PyLogFetcher, persist_name), READONLY },
   {NULL}
 };
 

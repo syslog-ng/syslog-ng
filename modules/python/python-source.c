@@ -61,7 +61,7 @@ typedef struct _PyLogSource
 {
   PyObject_HEAD
   PythonSourceDriver *driver;
-  gchar *persist_name;
+  PyObject *persist_name;
 } PyLogSource;
 
 static PyTypeObject py_log_source_type;
@@ -166,7 +166,7 @@ _py_free_bindings(PythonSourceDriver *self)
 {
   PyLogSource *py_instance = (PyLogSource *) self->py.instance;
   if (py_instance)
-    g_free(py_instance->persist_name);
+    Py_CLEAR(py_instance->persist_name);
 
   Py_CLEAR(self->py.class);
   Py_CLEAR(self->py.instance);
@@ -294,7 +294,7 @@ _py_set_persist_name(PythonSourceDriver *self)
       const gchar *persist_name = python_format_persist_name((LogPipe *)self, self->py.generate_persist_name,
                                                              self->options, "python-source", self->class);
       PyLogSource *py_instance = (PyLogSource *) self->py.instance;
-      py_instance->persist_name = g_strdup(persist_name);
+      py_instance->persist_name = _py_string_from_string(persist_name, -1);
     }
   return TRUE;
 }
@@ -620,7 +620,7 @@ static PyMethodDef py_log_source_methods[] =
 
 static PyMemberDef py_log_source_members[] =
 {
-  { "persist_name", T_STRING, offsetof(PyLogSource, persist_name), READONLY },
+  { "persist_name", T_OBJECT_EX, offsetof(PyLogSource, persist_name), READONLY },
   {NULL}
 };
 
