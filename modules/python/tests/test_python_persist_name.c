@@ -205,3 +205,51 @@ Test(python_persist_name, test_python_exception_in_generate_persist_name)
   Py_DECREF(persist_generator_persist);
   log_pipe_unref((LogPipe *)p);
 }
+
+const gchar *python_fetcher_code_no_generate_persist_name = "\n\
+from _syslogng import LogFetcher\n\
+class Fetcher(LogFetcher):\n\
+    def fetch(self):\n\
+        return LogFetcher.FETCH_NO_DATA, None";
+
+Test(python_persist_name, test_python_fetcher_no_generate_persist_name)
+{
+  _load_code(python_fetcher_code_no_generate_persist_name);
+
+  LogDriver *d = python_fetcher_new(empty_cfg);
+  python_fetcher_set_class(d, "Fetcher");
+  python_fetcher_set_option(d, "key", "value");
+  log_pipe_set_persist_name((LogPipe *)d, "test_persist_name");
+  cr_assert(log_pipe_init((LogPipe *)d));
+
+  cr_assert_str_eq(log_pipe_get_persist_name((LogPipe *)d), "python-fetcher.test_persist_name");
+
+  main_loop_sync_worker_startup_and_teardown();
+  log_pipe_deinit((LogPipe *)d);
+  log_pipe_unref((LogPipe *)d);
+}
+
+const gchar *python_source_code_no_generate_persist_name = "\n\
+from _syslogng import LogSource\n\
+class Source(LogSource):\n\
+    def run(self):\n\
+        pass\n\
+    def request_exit(self):\n\
+        pass";
+
+Test(python_persist_name, test_python_source_no_generate_persist_name)
+{
+  _load_code(python_source_code_no_generate_persist_name);
+
+  LogDriver *d = python_sd_new(empty_cfg);
+  python_sd_set_class(d, "Source");
+  python_sd_set_option(d, "key", "value");
+  log_pipe_set_persist_name((LogPipe *)d, "test_persist_name");
+  cr_assert(log_pipe_init((LogPipe *)d));
+
+  cr_assert_str_eq(log_pipe_get_persist_name((LogPipe *)d), "python-source.test_persist_name");
+
+  main_loop_sync_worker_startup_and_teardown();
+  log_pipe_deinit((LogPipe *)d);
+  log_pipe_unref((LogPipe *)d);
+}
