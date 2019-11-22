@@ -29,8 +29,12 @@
 #include "str-utils.h"
 #include "string-list.h"
 #include "python-persist.h"
+#include "apphook.h"
 
 #include <structmember.h>
+
+static GHashTable *persist_collision_candidates;
+static gboolean is_collision_detection_scheduled;
 
 typedef struct _PythonSourceDriver PythonSourceDriver;
 
@@ -525,6 +529,50 @@ python_source_format_persist_name(const LogPipe *s)
   return python_format_persist_name(s, self->py.generate_persist_name, self->options, "python-source", self->class);
 }
 
+static void
+_clear_collision_detection(gint type, gpointer user_data)
+{
+  is_collision_detection_scheduled = FALSE;
+  g_hash_table_remove_all(persist_collision_candidates);
+}
+
+static void
+_detect_persist_collision(PythonSourceDriver *self)
+{
+  if (((LogPipe *)self)->persist_name || self->py.generate_persist_name)
+    return;
+
+  if (__once())
+    {
+      persist_collision_candidates = g_hash_table_new(g_str_hash, g_str_equal);
+      register_application_hook(AH_RUNNING, (ApplicationHookFunc) _clear_collision_detection, NULL);
+    }
+
+  if (!is_collision_detection_scheduled)
+    {
+      is_collision_detection_scheduled = TRUE;
+      register_application_hook(AH_CONFIG_CHANGED, (ApplicationHookFunc) _clear_collision_detection, NULL);
+    }
+
+  if (g_hash_table_contains(persist_collision_candidates, self->class))
+    {
+      PythonSourceDriver *collider = g_hash_table_lookup(persist_collision_candidates, self->class);
+      msg_warning("Persist name collision detected. Please update "
+                  "your configuration either by adding persist-name in "
+                  "configuration, or specify a "
+                  "@staticmethod generate_persist_name(options) method "
+                  "in the python class. Syslog-ng will not start with "
+                  "this configuration in the next release.",
+                  evt_tag_str("class", self->class),
+                  log_pipe_location_tag((LogPipe *)collider),
+                  log_pipe_location_tag((LogPipe *)self));
+    }
+  else
+    {
+      g_hash_table_insert(persist_collision_candidates, self->class, self);
+    }
+};
+
 static gboolean
 python_sd_init(LogPipe *s)
 {
@@ -559,6 +607,8 @@ python_sd_init(LogPipe *s)
 
   if (((LogPipe *)self)->persist_name || self->py.generate_persist_name)
     s->generate_persist_name = python_source_format_persist_name;
+
+  _detect_persist_collision(self);
 
   return TRUE;
 }
