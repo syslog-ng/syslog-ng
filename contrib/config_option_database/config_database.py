@@ -39,6 +39,30 @@ def parse_args():
     return args
 
 
+def merge_block_stored_as_an_option(keyword, arguments, options, blocks):
+    options.remove([keyword, arguments])
+    if ('', arguments) not in blocks[keyword]['options']:
+        blocks[keyword]['options'].append(['', arguments])
+
+
+def merge_blocks_stored_as_options_helper(db_node):
+    options = db_node['options']
+    blocks = db_node['blocks']
+
+    for keyword, arguments in options.copy():
+        if keyword in blocks:
+            merge_block_stored_as_an_option(keyword, arguments, options, blocks)
+
+    for block in blocks.values():
+        merge_blocks_stored_as_options_helper(block)
+
+
+def merge_blocks_stored_as_options(db):
+    for context in db:
+        for driver in db[context]:
+            merge_blocks_stored_as_options_helper(db[context][driver])
+
+
 def build_db():
     db = {'source': {}, 'destination': {}}
     for context, driver, keyword, arguments, parents in get_driver_options():
@@ -52,6 +76,7 @@ def build_db():
             db_node['blocks'].setdefault(parent, {'options': [], 'blocks': {}})
             db_node = db_node['blocks'][parent]
         db_node['options'].append([keyword, arguments])
+    merge_blocks_stored_as_options(db)
     return db
 
 
