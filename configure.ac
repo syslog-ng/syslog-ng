@@ -130,7 +130,7 @@ if test "x$exec_prefix" = "xNONE"; then
 fi
 pidfiledir='${localstatedir}'
 moduledir='${exec_prefix}/lib/syslog-ng'
-loggenplugindir='${exec_prefix}/lib/syslog-ng/loggen'
+loggenplugindir='${moduledir}/loggen'
 toolsdir='${datadir}/syslog-ng/tools'
 xsddir='${datadir}/syslog-ng/xsd'
 
@@ -160,6 +160,10 @@ AC_ARG_WITH(pidfile-dir,
 AC_ARG_WITH(module-dir,
    [  --with-module-dir=path   Use path as the directory to install modules into],
    moduledir=$with_module_dir)
+
+AC_ARG_WITH(loggen-plugin-dir,
+   [  --with-loggen-plugin-dir=path   Use path as the directory to install loggen plugins into],
+   loggenplugindir=$with_loggen_plugin_dir)
 
 AC_ARG_WITH(module-path,
    [  --with-module-path=path   Use path as the list of ':' separated directories looked up when searching for modules],
