@@ -42,6 +42,7 @@ def parse_args():
 def build_db():
     db = {'source': {}, 'destination': {}}
     for context, driver, keyword, arguments, parents in get_driver_options():
+        arguments = list(arguments)
         db.setdefault(context, {})
         driver_options = {'options': [], 'blocks': {}}
         for driver_alias in driver.split('/'):
@@ -50,7 +51,7 @@ def build_db():
         for parent in parents:
             db_node['blocks'].setdefault(parent, {'options': [], 'blocks': {}})
             db_node = db_node['blocks'][parent]
-        db_node['options'].append((keyword, arguments))
+        db_node['options'].append([keyword, arguments])
     return db
 
 
