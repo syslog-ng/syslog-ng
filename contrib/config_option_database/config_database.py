@@ -93,16 +93,57 @@ def get_db(rebuild):
     return db
 
 
+def is_option_with_multiple_signature(option):
+    _, arguments_list = option
+    return len(arguments_list) > 1
+
+
+def merge_mergeable_options(mergeable_options, options):
+    for keyword, arguments_list in mergeable_options:
+        merged_arguments = []
+        for arguments in sorted(arguments_list):
+            if merged_arguments:
+                merged_arguments.append('|')
+            merged_arguments.extend(arguments)
+
+        for arguments in arguments_list:
+            options.remove([keyword, arguments])
+
+        options.append([keyword, merged_arguments])
+
+
+def normalize_options(options):
+    normalized_options = options.copy()
+    options_groupped = {}
+
+    for keyword, arguments in options:
+        if keyword:
+            options_groupped.setdefault(keyword, []).append(arguments)
+    mergeable_options = filter(is_option_with_multiple_signature, options_groupped.items())
+    merge_mergeable_options(mergeable_options, normalized_options)
+    return sorted(normalized_options)
+
+
+def normalize_arguments(arguments):
+    if not arguments:
+        arguments = ['']
+    arguments = map(lambda arg: arg if arg else '<empty>', arguments)
+    return arguments
+
+
 def print_options_helper(block, depth):
+    options = block['options']
+    blocks = block['blocks']
     indent = '  ' * depth
-    for keyword, arguments in sorted(block['options']):
+    for keyword, arguments in normalize_options(options):
+        arguments = normalize_arguments(arguments)
         if keyword:
             print(indent + '{}({})'.format(keyword, ' '.join(arguments)))
         else:
             print(indent + '{}'.format(' '.join(arguments)))
-    for key in sorted(block['blocks'].keys()):
+    for key in sorted(blocks.keys()):
         print(indent + '{}('.format(key))
-        print_options_helper(block['blocks'][key], depth + 1)
+        print_options_helper(blocks[key], depth + 1)
         print(indent + ')')
 
 
