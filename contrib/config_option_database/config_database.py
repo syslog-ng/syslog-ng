@@ -46,11 +46,11 @@ def build_db():
         driver_options = {'options': [], 'blocks': {}}
         for driver_alias in driver.split('/'):
             db[context].setdefault(driver_alias, driver_options)
-        add_to = db[context][driver_alias]
+        db_node = db[context][driver_alias]
         for parent in parents:
-            add_to['blocks'].setdefault(parent, {'options': [], 'blocks': {}})
-            add_to = add_to['blocks'][parent]
-        add_to['options'].append((keyword, arguments))
+            db_node['blocks'].setdefault(parent, {'options': [], 'blocks': {}})
+            db_node = db_node['blocks'][parent]
+        db_node['options'].append((keyword, arguments))
     return db
 
 
