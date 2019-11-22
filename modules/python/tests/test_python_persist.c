@@ -20,20 +20,100 @@
  */
 
 #include "python-persist.h"
+#include "python-main.h"
+#include "apphook.h"
+#include "mainloop.h"
+#include "persist_lib.h"
 
 #include <criterion/criterion.h>
 
+MainLoop *main_loop;
+MainLoopOptions main_loop_options = {0};
+
+static PyObject *_python_main;
+static PyObject *_python_main_dict;
+
+static GlobalConfig *cfg;
+
+YYLTYPE yyltype;
+GlobalConfig *empty_cfg;
+
+static void
+_init_python_main(void)
+{
+  PyGILState_STATE gstate = PyGILState_Ensure();
+  {
+    _python_main = PyImport_AddModule("__main__");
+    _python_main_dict = PyModule_GetDict(_python_main);
+  }
+  PyGILState_Release(gstate);
+}
+
+static void
+_py_init_interpreter(void)
+{
+  Py_Initialize();
+  py_init_argv();
+
+  PyEval_InitThreads();
+  py_persist_init();
+  PyEval_SaveThread();
+}
+
+static void
+_load_code(const gchar *code)
+{
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
+  cr_assert(python_evaluate_global_code(cfg, code, &yyltype));
+  PyGILState_Release(gstate);
+}
+
 void setup(void)
 {
+  app_startup();
+
+  main_loop = main_loop_get_instance();
+  main_loop_init(main_loop, &main_loop_options);
+
+  cfg = main_loop_get_current_config(main_loop_get_instance());
+
+  _py_init_interpreter();
+  _init_python_main();
 }
 
 void teardown(void)
 {
+  main_loop_deinit(main_loop);
+  app_shutdown();
 }
 
 TestSuite(python_persist, .init = setup, .fini = teardown);
 
-Test(python_persist, test_python_persist)
+const gchar *simple_persist = "\n\
+from _syslogng import Persist\n\
+class SubPersist(Persist):\n\
+    def __init__(self, persist_name):\n\
+        super(SubPersist, self).__init__(persist_name = persist_name)\n\
+\n\
+persist = SubPersist('foo')\n\
+assert persist.persist_name == 'foo', 'wrong persist name'";
+
+void
+persist_state_stop(PersistState *state)
 {
-  cr_assert(TRUE);
+  gchar *filename = g_strdup(persist_state_get_filename(state));
+
+  persist_state_cancel(state);
+
+  unlink(filename);
+  g_free(filename);
+};
+
+Test(python_persist, test_python_persist_name)
+{
+  PersistState *state = clean_and_create_persist_state_for_test("test-python-persist-name.persist");
+  cfg->state = state;
+  _load_code(simple_persist);
+  persist_state_stop(state);
 }
