@@ -25,7 +25,7 @@
 class Parser(object):
     group_type = "parser"
 
-    def __init__(self, driver_name, **kwargs):
+    def __init__(self, driver_name, **options):
         self.driver_name = driver_name
-        self.options = kwargs
+        self.options = options
         self.positional_parameters = []

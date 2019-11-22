@@ -36,7 +36,7 @@ def test_acceptance(config, syslog_ng, input_log, expected_log, counter):
     file_source = config.create_file_source(file_name="input.log")
     file_destination = config.create_file_destination(file_name="output.log")
     config.create_logpath(statements=[file_source, file_destination])
-    config.create_global_options(keep_hostname="yes")
+    config.update_global_options(keep_hostname="yes")
 
     file_source.write_log(input_log, counter)
     syslog_ng.start(config)

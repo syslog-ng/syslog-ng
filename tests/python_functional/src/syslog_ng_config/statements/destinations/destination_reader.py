@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #############################################################################
-# Copyright (c) 2015-2018 Balabit
+# Copyright (c) 2015-2019 Balabit
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -20,15 +20,28 @@
 # COPYING for details.
 #
 #############################################################################
+import logging
+
+from src.message_reader.message_reader import MessageReader
+from src.message_reader.single_line_parser import SingleLineParser
+
+logger = logging.getLogger(__name__)
 
 
-class SourceDriver(object):
-    group_type = "source"
+class DestinationReader(object):
+    def __init__(self, IOClass):
+        self.__IOClass = IOClass
+        self.__reader = None
 
-    def __init__(self, positional_parameters=None, options=None):
-        if positional_parameters is None:
-            positional_parameters = []
-        self.positional_parameters = positional_parameters
-        if options is None:
-            options = {}
-        self.options = options
+    def read_logs(self, path, counter):
+        if not self.__reader:
+            io = self.__IOClass(path)
+            io.wait_for_creation()
+            message_reader = MessageReader(
+                io.read, SingleLineParser(),
+            )
+            self.__reader = message_reader
+        messages = self.__reader.pop_messages(counter)
+        read_description = "Content has been read from\nresource: {}\ncontent: {}\n".format(path, messages)
+        logger.info(read_description)
+        return messages

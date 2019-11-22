@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #############################################################################
-# Copyright (c) 2015-2018 Balabit
+# Copyright (c) 2015-2019 Balabit
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -20,15 +20,11 @@
 # COPYING for details.
 #
 #############################################################################
+from src.syslog_ng_config.statements.sources.source_driver import SourceDriver
 
 
-class SourceDriver(object):
-    group_type = "source"
-
-    def __init__(self, positional_parameters=None, options=None):
-        if positional_parameters is None:
-            positional_parameters = []
-        self.positional_parameters = positional_parameters
-        if options is None:
-            options = {}
-        self.options = options
+class ExampleMsgGeneratorSource(SourceDriver):
+    def __init__(self, **options):
+        self.driver_name = "example_msg_generator"
+        self.DEFAULT_MESSAGE = "-- Generated message. --"
+        super(ExampleMsgGeneratorSource, self).__init__(None, options)
