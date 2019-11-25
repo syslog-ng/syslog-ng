@@ -29,12 +29,14 @@ class SourceWriter(object):
         self.__IOClass = IOClass
         self.__writer = None
 
-    def __construct_writer(self, path):
-        if not self.__writer:
-            self.__writer = self.__IOClass(path)
+        self.__saved_driver_io_parameter = None
+
+    def init_driver_io(self, driver_io_parameter):
+        if self.__saved_driver_io_parameter != driver_io_parameter:
+            self.__saved_driver_io_parameter = driver_io_parameter
+            self.__writer = self.__IOClass(driver_io_parameter)
 
     def write_log(self, path, formatted_log, counter):
-        self.__construct_writer(path)
         for __i in range(0, counter):
             self.__writer.write(formatted_log)
         written_description = "Content has been written to\nresource: {}\nnumber of times: {}\ncontent: {}\n".format(path, counter, formatted_log)

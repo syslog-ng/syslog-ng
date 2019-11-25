@@ -20,15 +20,28 @@
 # COPYING for details.
 #
 #############################################################################
+from src.syslog_ng_config.statements.sources.source_writer import SourceWriter
 
 
 class SourceDriver(object):
     group_type = "source"
 
-    def __init__(self, positional_parameters=None, options=None):
+    def __init__(self, positional_parameters=None, options=None, driver_io_cls=None):
         if positional_parameters is None:
             positional_parameters = []
         self.positional_parameters = positional_parameters
         if options is None:
             options = {}
         self.options = options
+
+        self.driver_io_cls = driver_io_cls
+        self.source_writer = None
+        self.init_source_writer()
+
+    def init_source_writer(self):
+        if self.driver_io_cls and self.positional_parameters:
+            self.source_writer = SourceWriter(self.driver_io_cls)
+            self.source_writer.init_driver_io(self.positional_parameters[0])
+
+    def write_log(self, formatted_log, counter=1):
+        self.source_writer.write_log(self.positional_parameters[0], formatted_log, counter=counter)
