@@ -45,9 +45,9 @@ class DestinationReader(object):
         self.__driver_io.wait_for_creation()
         self.__message_reader = MessageReader(self.__driver_io.read, SingleLineParser())
 
-    def read_logs(self, path, counter):
+    def read_logs(self, counter):
         self.__construct_message_reader()
         messages = self.__message_reader.pop_messages(counter)
-        read_description = "Content has been read from\nresource: {}\ncontent: {}\n".format(path, messages)
+        read_description = "Content has been read from\nresource: {}\ncontent: {}\n".format(self.__saved_driver_io_parameter, messages)
         logger.info(read_description)
         return messages

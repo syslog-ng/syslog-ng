@@ -44,7 +44,13 @@ class DestinationDriver(object):
             self.destination_reader.init_driver_io(self.positional_parameters[0])
 
     def read_log(self):
-        return self.destination_reader.read_logs(self.positional_parameters[0], counter=1)[0]
+        if self.destination_reader:
+            return self.destination_reader.read_logs(counter=1)[0]
+        else:
+            raise ValueError("DestinationReader was not initialized")
 
     def read_logs(self, counter):
-        return self.destination_reader.read_logs(self.positional_parameters[0], counter=counter)
+        if self.destination_reader:
+            return self.destination_reader.read_logs(counter=counter)
+        else:
+            raise ValueError("DestinationReader was not initialized")
