@@ -29,25 +29,25 @@ logger = logging.getLogger(__name__)
 
 
 class DestinationReader(object):
-    def __init__(self, IOClass):
-        self.__IOClass = IOClass
-        self.__reader = None
+    def __init__(self, driver_io_cls):
+        self.__driver_io_cls = driver_io_cls
 
+        self.__message_reader = None
         self.__saved_driver_io_parameter = None
         self.__driver_io = None
 
     def init_driver_io(self, driver_io_parameter):
         if self.__saved_driver_io_parameter != driver_io_parameter:
             self.__saved_driver_io_parameter = driver_io_parameter
-            self.__driver_io = self.__IOClass(driver_io_parameter)
+            self.__driver_io = self.__driver_io_cls(driver_io_parameter)
 
     def __construct_message_reader(self):
         self.__driver_io.wait_for_creation()
-        self.__reader = MessageReader(self.__driver_io.read, SingleLineParser())
+        self.__message_reader = MessageReader(self.__driver_io.read, SingleLineParser())
 
     def read_logs(self, path, counter):
         self.__construct_message_reader()
-        messages = self.__reader.pop_messages(counter)
+        messages = self.__message_reader.pop_messages(counter)
         read_description = "Content has been read from\nresource: {}\ncontent: {}\n".format(path, messages)
         logger.info(read_description)
         return messages
