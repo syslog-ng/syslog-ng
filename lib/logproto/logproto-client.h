@@ -148,6 +148,8 @@ log_proto_client_process_in(LogProtoClient *s)
     /*
      * In some clients, flush is used for input processing, but it should not be.
      * Fix these clients, than remove the flush call here.
+     *
+     * SSL_ERROR_WANT_READ in the TLS transport is also built upon this.
      */
     return s->flush(s);
   else

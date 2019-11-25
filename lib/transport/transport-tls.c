@@ -161,7 +161,7 @@ log_transport_tls_new(TLSSession *tls_session, gint fd)
   LogTransportTLS *self = g_new0(LogTransportTLS, 1);
 
   log_transport_init_instance(&self->super, fd);
-  self->super.cond = G_IO_IN | G_IO_OUT;
+  self->super.cond = 0;
   self->super.read = log_transport_tls_read_method;
   self->super.write = log_transport_tls_write_method;
   self->super.free_fn = log_transport_tls_free_method;
@@ -179,4 +179,3 @@ log_transport_tls_free_method(LogTransport *s)
   tls_session_free(self->tls_session);
   log_transport_free_method(s);
 }
-
