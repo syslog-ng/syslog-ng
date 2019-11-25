@@ -93,4 +93,10 @@ gboolean g_ptr_array_find_with_equal_func (GPtrArray *haystack,
                                            guint *index_);
 #endif
 
+#ifndef SYSLOG_NG_HAVE_G_HASH_TABLE_CONTAINS
+gboolean
+g_hash_table_contains (GHashTable    *hash_table,
+                       gconstpointer  key);
+#endif
+
 #endif
