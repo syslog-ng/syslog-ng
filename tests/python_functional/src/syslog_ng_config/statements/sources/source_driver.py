@@ -44,4 +44,7 @@ class SourceDriver(object):
             self.source_writer.init_driver_io(self.positional_parameters[0])
 
     def write_log(self, formatted_log, counter=1):
-        self.source_writer.write_log(self.positional_parameters[0], formatted_log, counter=counter)
+        if self.source_writer:
+            self.source_writer.write_log(formatted_log, counter=counter)
+        else:
+            raise ValueError("SourceWriter was not initialized")

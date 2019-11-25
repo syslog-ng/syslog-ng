@@ -36,8 +36,8 @@ class SourceWriter(object):
             self.__saved_driver_io_parameter = driver_io_parameter
             self.__driver_io = self.__driver_io_cls(driver_io_parameter)
 
-    def write_log(self, path, formatted_log, counter):
+    def write_log(self, formatted_log, counter):
         for __i in range(0, counter):
             self.__driver_io.write(formatted_log)
-        written_description = "Content has been written to\nresource: {}\nnumber of times: {}\ncontent: {}\n".format(path, counter, formatted_log)
+        written_description = "Content has been written to\nresource: {}\nnumber of times: {}\ncontent: {}\n".format(self.__saved_driver_io_parameter, counter, formatted_log)
         logger.info(written_description)
