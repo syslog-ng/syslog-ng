@@ -23,14 +23,14 @@
 import logging
 
 from src.message_reader.message_reader import MessageReader
-from src.message_reader.single_line_parser import SingleLineParser
 
 logger = logging.getLogger(__name__)
 
 
 class DestinationReader(object):
-    def __init__(self, driver_io_cls):
+    def __init__(self, driver_io_cls, line_parser_cls):
         self.__driver_io_cls = driver_io_cls
+        self.__line_parser_cls = line_parser_cls
 
         self.__message_reader = None
         self.__saved_driver_io_parameter = None
@@ -43,7 +43,7 @@ class DestinationReader(object):
 
     def __construct_message_reader(self):
         self.__driver_io.wait_for_creation()
-        self.__message_reader = MessageReader(self.__driver_io.read, SingleLineParser())
+        self.__message_reader = MessageReader(self.__driver_io.read, self.__line_parser_cls())
 
     def read_logs(self, counter):
         self.__construct_message_reader()
