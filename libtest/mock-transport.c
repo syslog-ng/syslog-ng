@@ -83,7 +83,6 @@ static GArray *
 clone_write_buffer(GArray *orig_write_buffer)
 {
   GArray *write_buffer = g_array_new(TRUE, TRUE, sizeof(data_t));
-  g_array_set_clear_func(write_buffer, destroy_write_buffer_element);
   g_array_append_vals(write_buffer, orig_write_buffer->data, orig_write_buffer->len);
   for (int i = 0; i < write_buffer->len; i++)
     {
@@ -308,6 +307,12 @@ void
 log_transport_mock_free_method(LogTransport *s)
 {
   LogTransportMock *self = (LogTransportMock *)s;
+
+  for (int i = 0; i < self->write_buffer->len; i++)
+    {
+      data_t *data = &g_array_index(self->write_buffer, data_t, i);
+      destroy_write_buffer_element(data);
+    }
   g_array_free(self->write_buffer, TRUE);
   g_array_free(self->value, TRUE);
   log_transport_free_method(s);
@@ -377,7 +382,6 @@ log_transport_mock_new(void)
 {
   LogTransportMock *self = g_new0(LogTransportMock, 1);
   self->write_buffer = g_array_new(TRUE, TRUE, sizeof(data_t));
-  g_array_set_clear_func(self->write_buffer, destroy_write_buffer_element);
   self->value = g_array_new(TRUE, TRUE, sizeof(data_t));
   return self;
 }
