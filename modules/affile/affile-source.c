@@ -178,5 +178,6 @@ affile_sd_new(gchar *filename, GlobalConfig *cfg)
 
   self->file_reader_options.restore_state = self->file_reader_options.follow_freq > 0;
   file_opener_options_defaults_dont_change_permissions(&self->file_opener_options);
+  self->file_opener_options.create_dirs = FALSE;
   return &self->super.super;
 }

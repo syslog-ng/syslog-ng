@@ -226,6 +226,8 @@ void
 file_opener_options_init(FileOpenerOptions *options, GlobalConfig *cfg)
 {
   file_perm_options_inherit_from(&options->file_perm_options, &cfg->file_perm_options);
+  if (options->create_dirs == -1)
+    options->create_dirs = cfg->create_dirs;
 }
 
 void
