@@ -25,19 +25,19 @@ logger = logging.getLogger(__name__)
 
 
 class SourceWriter(object):
-    def __init__(self, IOClass):
-        self.__IOClass = IOClass
-        self.__writer = None
+    def __init__(self, driver_io_cls):
+        self.__driver_io_cls = driver_io_cls
 
+        self.__driver_io = None
         self.__saved_driver_io_parameter = None
 
     def init_driver_io(self, driver_io_parameter):
         if self.__saved_driver_io_parameter != driver_io_parameter:
             self.__saved_driver_io_parameter = driver_io_parameter
-            self.__writer = self.__IOClass(driver_io_parameter)
+            self.__driver_io = self.__driver_io_cls(driver_io_parameter)
 
     def write_log(self, path, formatted_log, counter):
         for __i in range(0, counter):
-            self.__writer.write(formatted_log)
+            self.__driver_io.write(formatted_log)
         written_description = "Content has been written to\nresource: {}\nnumber of times: {}\ncontent: {}\n".format(path, counter, formatted_log)
         logger.info(written_description)
