@@ -20,12 +20,15 @@
 # COPYING for details.
 #
 #############################################################################
+from src.syslog_ng_config.statements.config_statement import ConfigStatement
 
 
-class Parser(object):
+class Parser(ConfigStatement):
     group_type = "parser"
 
     def __init__(self, driver_name, **options):
         self.driver_name = driver_name
         self.options = options
         self.positional_parameters = []
+
+        super(Parser, self).__init__()

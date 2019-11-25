@@ -20,10 +20,11 @@
 # COPYING for details.
 #
 #############################################################################
+from src.syslog_ng_config.statements.config_statement import ConfigStatement
 from src.syslog_ng_config.statements.sources.source_writer import SourceWriter
 
 
-class SourceDriver(object):
+class SourceDriver(ConfigStatement):
     group_type = "source"
 
     def __init__(self, positional_parameters=None, options=None, driver_io_cls=None):
@@ -37,6 +38,7 @@ class SourceDriver(object):
         self.driver_io_cls = driver_io_cls
         self.source_writer = None
         self.init_source_writer()
+        super(SourceDriver, self).__init__()
 
     def init_source_writer(self):
         if self.driver_io_cls and self.positional_parameters:

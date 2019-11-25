@@ -20,10 +20,11 @@
 # COPYING for details.
 #
 #############################################################################
+from src.syslog_ng_config.statements.config_statement import ConfigStatement
 from src.syslog_ng_config.statements.destinations.destination_reader import DestinationReader
 
 
-class DestinationDriver(object):
+class DestinationDriver(ConfigStatement):
     group_type = "destination"
 
     def __init__(self, positional_parameters=None, options=None, driver_io_cls=None):
@@ -37,6 +38,7 @@ class DestinationDriver(object):
         self.driver_io_cls = driver_io_cls
         self.destination_reader = None
         self.init_destination_reader()
+        super(DestinationDriver, self).__init__()
 
     def init_destination_reader(self):
         if self.driver_io_cls and self.positional_parameters:
