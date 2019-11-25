@@ -33,14 +33,20 @@ class DestinationReader(object):
         self.__IOClass = IOClass
         self.__reader = None
 
+        self.__saved_driver_io_parameter = None
+        self.__driver_io = None
+
+    def init_driver_io(self, driver_io_parameter):
+        if self.__saved_driver_io_parameter != driver_io_parameter:
+            self.__saved_driver_io_parameter = driver_io_parameter
+            self.__driver_io = self.__IOClass(driver_io_parameter)
+
+    def __construct_message_reader(self):
+        self.__driver_io.wait_for_creation()
+        self.__reader = MessageReader(self.__driver_io.read, SingleLineParser())
+
     def read_logs(self, path, counter):
-        if not self.__reader:
-            io = self.__IOClass(path)
-            io.wait_for_creation()
-            message_reader = MessageReader(
-                io.read, SingleLineParser(),
-            )
-            self.__reader = message_reader
+        self.__construct_message_reader()
         messages = self.__reader.pop_messages(counter)
         read_description = "Content has been read from\nresource: {}\ncontent: {}\n".format(path, messages)
         logger.info(read_description)

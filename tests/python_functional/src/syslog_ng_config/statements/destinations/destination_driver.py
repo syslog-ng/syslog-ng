@@ -20,15 +20,31 @@
 # COPYING for details.
 #
 #############################################################################
+from src.syslog_ng_config.statements.destinations.destination_reader import DestinationReader
 
 
 class DestinationDriver(object):
     group_type = "destination"
 
-    def __init__(self, positional_parameters=None, options=None):
+    def __init__(self, positional_parameters=None, options=None, driver_io_cls=None):
         if positional_parameters is None:
             positional_parameters = []
         self.positional_parameters = positional_parameters
         if options is None:
             options = {}
         self.options = options
+
+        self.driver_io_cls = driver_io_cls
+        self.destination_reader = None
+        self.init_destination_reader()
+
+    def init_destination_reader(self):
+        if self.driver_io_cls and self.positional_parameters:
+            self.destination_reader = DestinationReader(self.driver_io_cls)
+            self.destination_reader.init_driver_io(self.positional_parameters[0])
+
+    def read_log(self):
+        return self.destination_reader.read_logs(self.positional_parameters[0], counter=1)[0]
+
+    def read_logs(self, counter):
+        return self.destination_reader.read_logs(self.positional_parameters[0], counter=counter)
