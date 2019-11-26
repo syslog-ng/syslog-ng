@@ -20,6 +20,7 @@
  */
 
 #include "serial-list.h"
+#include "string.h"
 #include <criterion/criterion.h>
 
 void setup(void)
@@ -32,9 +33,52 @@ void teardown(void)
 
 TestSuite(serial_list, .init = setup, .fini = teardown);
 
+static gboolean
+is_same_string(guchar *data, gsize data_len, gpointer user_data)
+{
+  gchar *string_to_find = user_data;
+
+  return strncmp((gchar *)data, string_to_find, data_len) == 0;
+}
+
 Test(serial_list, test_serial_list)
 {
-  guchar buffer[100];
+  guchar buffer[200];
   SerialList *self = serial_list_new(buffer, sizeof(buffer));
+
+  cr_assert_eq(serial_list_find(self, is_same_string, "foo"), 0);
+  SerialListHandle handle = serial_list_insert(self, (guchar *)"foo", strlen("foo"));
+  cr_assert(handle);
+
+  const guchar *data;
+  gsize data_len;
+  serial_list_get_data(self, handle, &data, &data_len);
+  cr_assert_eq(data_len, strlen("foo"));
+  cr_assert_eq(strncmp((gchar *)data, "foo", strlen("foo")), 0);
+
+  serial_list_free(self);
+}
+
+Test(serial_list, test_no_free_space)
+{
+  guchar buffer[90];
+  SerialList *self = serial_list_new(buffer, sizeof(buffer));
+  cr_assert_eq(serial_list_insert(self, (guchar *)"123456789ABCDEFGH", sizeof("123456789ABCDEFGH")), 0);
+  serial_list_free(self);
+}
+
+Test(serial_list, test_two_data)
+{
+  guchar buffer[400];
+  SerialList *self = serial_list_new(buffer, sizeof(buffer));
+
+  SerialListHandle handle1 = serial_list_insert(self, (guchar *)"foo1", sizeof("foo1"));
+  cr_assert(handle1);
+  SerialListHandle handle2 = serial_list_insert(self, (guchar *)"foo2", sizeof("foo2"));
+  cr_assert(handle2);
+
+  cr_assert_str_eq((gchar *)serial_list_get_data(self, handle1, NULL, NULL), "foo1");
+  cr_assert_str_eq((gchar *)serial_list_get_data(self, handle2, NULL, NULL), "foo2");
+
   serial_list_free(self);
 }
