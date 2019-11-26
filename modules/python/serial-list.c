@@ -22,10 +22,18 @@
 
 #include "serial-list.h"
 
+typedef enum
+{
+  HEAD,
+  FREE_SPACE,
+  DATA
+} NodeType;
+
 typedef struct
 {
   Offset prev;
   Offset next;
+  NodeType type;
   gsize data_len;
   guchar data[];
 } Node;
@@ -38,25 +46,58 @@ get_node_at_offset(SerialList *self, Offset offset)
   return (Node *)&self->base[offset];
 }
 
+static Node *
+get_head(SerialList *self)
+{
+  return get_node_at_offset(self, 0);
+}
+
+static gsize
+align(gsize size)
+{
+  if (size % sizeof(guint64) == 0)
+    return size;
+
+  return size + (sizeof(guint64) - size % sizeof(guint64));
+}
+
 static void
 initialize_head(SerialList *self)
 {
   Node *head = get_node_at_offset(self, 0);
   head->prev = 0;
   head->next = 0;
+  head->type = HEAD;
   head->data_len = 0;
+}
+
+static void
+initialize_free_space(SerialList *self)
+{
+  Offset free_space_offset = align(sizeof(Node));
+  Node *free_space = get_node_at_offset(self, free_space_offset);
+  Node *head = get_head(self);
+
+  free_space->prev = 0;
+  free_space->next = 0;
+  free_space->type = FREE_SPACE;
+  free_space->data_len = self->max_size - 2 * sizeof(Node);
+
+  head->prev = free_space_offset;
+  head->next = free_space_offset;
 }
 
 SerialList *
 serial_list_new(guchar *base, gsize size)
 {
-  g_assert(size > sizeof(Node));
+  g_assert(size > 2 * sizeof(Node));
 
   SerialList *self = g_new0(SerialList, 1);
   self->base = base;
   self->max_size = size;
 
   initialize_head(self);
+  initialize_free_space(self);
 
   return self;
 }
