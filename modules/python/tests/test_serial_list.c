@@ -82,3 +82,57 @@ Test(serial_list, test_two_data)
 
   serial_list_free(self);
 }
+
+Test(serial_list, test_simple_remove)
+{
+  guchar buffer[400];
+  SerialList *self = serial_list_new(buffer, sizeof(buffer));
+
+  SerialListHandle handle = serial_list_insert(self, (guchar *)"foo", sizeof("foo"));
+  cr_assert(handle);
+  cr_assert(serial_list_find(self, is_same_string, "foo"));
+
+  serial_list_remove(self, handle);
+  cr_assert_eq(serial_list_find(self, is_same_string, "foo"), 0);
+
+  handle = serial_list_insert(self, (guchar *)"foo", sizeof("foo"));
+  cr_assert(handle);
+  cr_assert(serial_list_find(self, is_same_string, "foo"));
+
+  serial_list_free(self);
+}
+
+Test(serial_list, test_simple_update)
+{
+  guchar buffer[400];
+  SerialList *self = serial_list_new(buffer, sizeof(buffer));
+
+  SerialListHandle handle1 = serial_list_insert(self, (guchar *)"foobar", strlen("foobar"));
+  cr_assert(handle1);
+  SerialListHandle same_length = serial_list_update(self, handle1, (guchar *)"barfoo", strlen("barfoo"));
+  cr_assert(same_length);
+  cr_assert_eq(handle1, same_length);
+
+  SerialListHandle handle2 = serial_list_update(self, handle1, (guchar *)"foo", strlen("foo"));
+  cr_assert(handle2);
+  cr_assert_eq(handle1, handle2);
+  SerialListHandle handle3 = serial_list_update(self, handle1, (guchar *)"foobar", strlen("foobar"));
+  cr_assert(handle3);
+  cr_assert_eq(handle2, handle3);
+
+  serial_list_free(self);
+}
+
+Test(serial_list, test_remove_then_reuse_free_space)
+{
+  guchar buffer[400];
+  SerialList *self = serial_list_new(buffer, sizeof(buffer));
+
+  SerialListHandle handle1 = serial_list_insert(self, (guchar *)"foobar", strlen("foobar"));
+  cr_assert(handle1);
+  serial_list_remove(self, handle1);
+  SerialListHandle handle2 = serial_list_insert(self, (guchar *)"foobar", strlen("foobar"));
+  cr_assert_eq(handle1, handle2);
+
+  serial_list_free(self);
+}

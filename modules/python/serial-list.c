@@ -225,3 +225,35 @@ serial_list_get_data(SerialList *self, SerialListHandle handle, const guchar **d
 
   return node->data;
 }
+
+void
+serial_list_remove(SerialList *self, SerialListHandle handle)
+{
+  Node *node = get_node_at_offset(self, handle);
+  gsize new_free_space = get_available_space(self, node);
+
+  node->type = FREE_SPACE;
+  node->data_len = new_free_space;
+}
+
+SerialListHandle
+serial_list_update(SerialList *self, SerialListHandle handle, guchar *data, gsize data_len)
+{
+  Node *node = get_node_at_offset(self, handle);
+  gsize free_space = get_available_space(self, node);
+  if (free_space >= data_len)
+    {
+      memcpy(node->data, data, data_len);
+      node->data_len = data_len;
+      return node->offset;
+    }
+  else
+    {
+      SerialListHandle new_handle = serial_list_insert(self, data, data_len);
+      if (!new_handle)
+        return 0;
+
+      serial_list_remove(self, handle);
+      return new_handle;
+    }
+}
