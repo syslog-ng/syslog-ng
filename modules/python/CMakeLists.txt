@@ -11,6 +11,11 @@ set(PYTHON_SOURCES
     python-module.h
     python-config.h
     python-config.c
+    serial-hash.h
+    serial-hash-internal.h
+    serial-hash.c
+    serial-list.h
+    serial-list.c
     python-persist.h
     python-persist.c
     python-helpers.h
