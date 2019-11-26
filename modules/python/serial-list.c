@@ -213,3 +213,15 @@ serial_list_find(SerialList *self, SerialListFindFunc func, gpointer user_data)
       node = get_node_at_offset(self, node->next);
     }
 }
+
+const guchar *
+serial_list_get_data(SerialList *self, SerialListHandle handle, const guchar **data, gsize *data_len)
+{
+  Node *node = get_node_at_offset(self, handle);
+  if (data)
+    *data = node->data;
+  if (data_len)
+    *data_len = node->data_len;
+
+  return node->data;
+}

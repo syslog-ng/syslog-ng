@@ -40,5 +40,6 @@ SerialList *serial_list_new(guchar *base, gsize size);
 void serial_list_free(SerialList *self);
 SerialListHandle serial_list_insert(SerialList *self, guchar *data, gsize data_len);
 SerialListHandle serial_list_find(SerialList *self, SerialListFindFunc func, gpointer user_data);
+const guchar *serial_list_get_data(SerialList *self, SerialListHandle handle, const guchar **data, gsize *data_len);
 
 #endif
