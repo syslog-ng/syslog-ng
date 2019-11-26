@@ -21,3 +21,18 @@
  */
 
 #include "serial-list.h"
+
+SerialList *
+serial_list_new(guchar *base, gsize size)
+{
+  SerialList *self = g_new0(SerialList, 1);
+  self->base = base;
+  self->max_size = size;
+  return self;
+}
+
+void
+serial_list_free(SerialList *self)
+{
+  g_free(self);
+}

@@ -34,5 +34,7 @@ TestSuite(serial_list, .init = setup, .fini = teardown);
 
 Test(serial_list, test_serial_list)
 {
-  cr_assert(TRUE);
+  guchar buffer[100];
+  SerialList *self = serial_list_new(buffer, sizeof(buffer));
+  serial_list_free(self);
 }

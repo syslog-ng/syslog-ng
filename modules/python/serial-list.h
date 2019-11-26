@@ -25,4 +25,13 @@
 
 #include "syslog-ng.h"
 
+typedef struct
+{
+  guchar *base;
+  gsize max_size;
+} SerialList;
+
+SerialList *serial_list_new(guchar *base, gsize size);
+void serial_list_free(SerialList *self);
+
 #endif
