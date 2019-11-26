@@ -33,6 +33,7 @@ typedef struct
 {
   Offset prev;
   Offset next;
+  Offset offset;
   NodeType type;
   gsize data_len;
   guchar data[];
@@ -67,6 +68,7 @@ initialize_head(SerialList *self)
   Node *head = get_node_at_offset(self, 0);
   head->prev = 0;
   head->next = 0;
+  head->offset = 0;
   head->type = HEAD;
   head->data_len = 0;
 }
@@ -80,6 +82,7 @@ initialize_free_space(SerialList *self)
 
   free_space->prev = 0;
   free_space->next = 0;
+  free_space->offset = free_space_offset;
   free_space->type = FREE_SPACE;
   free_space->data_len = self->max_size - 2 * sizeof(Node);
 
