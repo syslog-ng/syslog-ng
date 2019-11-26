@@ -32,8 +32,10 @@ typedef struct
 } SerialList;
 
 typedef gsize Offset;
+typedef gsize SerialListHandle;
 
 SerialList *serial_list_new(guchar *base, gsize size);
 void serial_list_free(SerialList *self);
+SerialListHandle serial_list_insert(SerialList *self, guchar *data, gsize data_len);
 
 #endif

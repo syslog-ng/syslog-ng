@@ -22,6 +22,8 @@
 
 #include "serial-list.h"
 
+#include <string.h>
+
 typedef enum
 {
   HEAD,
@@ -109,4 +111,75 @@ void
 serial_list_free(SerialList *self)
 {
   g_free(self);
+}
+
+static Node *
+find_free_space(SerialList *self, gsize data_size)
+{
+  Node *node = get_node_at_offset(self, get_head(self)->next);
+
+  while (TRUE)
+    {
+      if (node->type == HEAD)
+        return NULL;
+
+      if (node->type == FREE_SPACE && node->data_len >= align(data_size))
+        return node;
+
+      node = get_node_at_offset(self, node->next);
+    }
+}
+
+static SerialListHandle
+split_free_space_and_insert(SerialList *self, Node *free_space, guchar *data, gsize data_len)
+{
+  gsize node_alloc_size = sizeof(Node) + align(data_len);
+  Node free_space_copy = *free_space;
+  Node *prev_node = get_node_at_offset(self, free_space_copy.prev);
+  Node *next_node = get_node_at_offset(self, free_space_copy.next);
+
+  Node *new_node = get_node_at_offset(self, free_space_copy.offset);
+  new_node->offset = free_space_copy.offset;
+  Node *new_free_space = get_node_at_offset(self, free_space_copy.offset + node_alloc_size);
+  new_free_space->offset = free_space_copy.offset + node_alloc_size;
+
+  new_node->prev = prev_node->offset;
+  new_node->next = new_free_space->offset;
+  new_node->type = DATA;
+  new_node->data_len = data_len;
+  memcpy(new_node->data, data, data_len);
+
+  new_free_space->prev = new_node->offset;
+  new_free_space->next = next_node->offset;
+  new_free_space->type = FREE_SPACE;
+  new_free_space->data_len = free_space_copy.data_len - (sizeof(Node) + node_alloc_size);
+
+  prev_node->next = new_node->offset;
+  next_node->prev = new_free_space->offset;
+
+  return new_node->offset;
+}
+
+static SerialListHandle
+convert_free_space(SerialList *self, Node *node, guchar *data, gsize data_len)
+{
+  node->type = DATA;
+  memcpy(node->data, data, data_len);
+  node->data_len = data_len;
+  return node->offset;
+}
+
+SerialListHandle
+serial_list_insert(SerialList *self, guchar *data, gsize data_len)
+{
+  Node *free_space = find_free_space(self, data_len);
+  if (!free_space)
+    return 0;
+
+  if (free_space->data_len >= sizeof(Node) + align(data_len) + sizeof(Node))
+    return split_free_space_and_insert(self, free_space, data, data_len);
+  else
+    {
+      return convert_free_space(self, free_space, data, data_len);
+    }
 }
