@@ -22,6 +22,7 @@
 
 #include "serial-list.h"
 
+#include <stdio.h>
 #include <string.h>
 
 typedef enum
@@ -256,4 +257,23 @@ serial_list_update(SerialList *self, SerialListHandle handle, guchar *data, gsiz
       serial_list_remove(self, handle);
       return new_handle;
     }
+}
+
+void
+serial_list_print(SerialList *self)
+{
+  Node *node = get_node_at_offset(self, get_head(self)->next);
+
+  while (TRUE)
+    {
+      fprintf(stderr, "Node: offset: %lu, prev: %lu, next: %lu, type: %d, data_len: %lu, data: %.*s\n",
+              node->offset, node->prev, node->next, node->type, node->data_len,
+              node->type != FREE_SPACE ? (int)node->data_len : 0, node->data);
+
+      if (node->type == HEAD)
+        return;
+
+      node = get_node_at_offset(self, node->next);
+    }
+
 }

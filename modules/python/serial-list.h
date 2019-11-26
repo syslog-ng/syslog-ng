@@ -43,5 +43,6 @@ SerialListHandle serial_list_find(SerialList *self, SerialListFindFunc func, gpo
 const guchar *serial_list_get_data(SerialList *self, SerialListHandle handle, const guchar **data, gsize *data_len);
 void serial_list_remove(SerialList *self, SerialListHandle handle);
 SerialListHandle serial_list_update(SerialList *self, SerialListHandle handle, guchar *data, gsize data_len);
+void serial_list_print(SerialList *self);
 
 #endif
