@@ -22,12 +22,42 @@
 
 #include "serial-list.h"
 
+typedef struct
+{
+  Offset prev;
+  Offset next;
+  gsize data_len;
+  guchar data[];
+} Node;
+
+static Node *
+get_node_at_offset(SerialList *self, Offset offset)
+{
+  g_assert((offset & 3) == 0);
+
+  return (Node *)&self->base[offset];
+}
+
+static void
+initialize_head(SerialList *self)
+{
+  Node *head = get_node_at_offset(self, 0);
+  head->prev = 0;
+  head->next = 0;
+  head->data_len = 0;
+}
+
 SerialList *
 serial_list_new(guchar *base, gsize size)
 {
+  g_assert(size > sizeof(Node));
+
   SerialList *self = g_new0(SerialList, 1);
   self->base = base;
   self->max_size = size;
+
+  initialize_head(self);
+
   return self;
 }
 
