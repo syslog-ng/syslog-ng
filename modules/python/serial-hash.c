@@ -21,3 +21,31 @@
  */
 
 #include "serial-hash.h"
+#include "serial-list.h"
+
+struct _SerialHash
+{
+  GHashTable *index;
+  SerialList *storage;
+};
+
+SerialHash *
+serial_hash_new(guchar *base, gsize max_size)
+{
+  SerialHash *self = g_new0(SerialHash, 1);
+  self->index = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
+  self->storage = serial_list_new(base, max_size);
+  return self;
+}
+
+void
+serial_hash_free(SerialHash *self)
+{
+  if (!self)
+    return;
+
+  g_hash_table_destroy(self->index);
+  self->index = NULL;
+  serial_list_free(self->storage);
+  self->storage = NULL;
+}

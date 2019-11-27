@@ -34,5 +34,8 @@ TestSuite(serial_hash, .init = setup, .fini = teardown);
 
 Test(serial_hash, test_serial_hash)
 {
-  cr_assert(TRUE);
+  gchar buffer[400];
+
+  SerialHash *self = serial_hash_new((guchar *)buffer, sizeof(buffer));
+  serial_hash_free(self);
 }
