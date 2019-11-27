@@ -227,6 +227,13 @@ serial_list_get_data(SerialList *self, SerialListHandle handle, const guchar **d
   return node->data;
 }
 
+static void
+join_free_spaces(SerialList *self, Node *first, Node *second)
+{
+  first->next = second->next;
+  first->data_len = get_available_space(self, first);
+}
+
 void
 serial_list_remove(SerialList *self, SerialListHandle handle)
 {
@@ -235,6 +242,15 @@ serial_list_remove(SerialList *self, SerialListHandle handle)
 
   node->type = FREE_SPACE;
   node->data_len = new_free_space;
+
+  Node *next = get_node_at_offset(self, node->next);
+  if (next->type == FREE_SPACE)
+    join_free_spaces(self, node, next);
+
+  Node *prev = get_node_at_offset(self, node->prev);
+
+  if (prev->type == FREE_SPACE)
+    join_free_spaces(self, prev, node);
 }
 
 SerialListHandle

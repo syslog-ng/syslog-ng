@@ -136,3 +136,50 @@ Test(serial_list, test_remove_then_reuse_free_space)
 
   serial_list_free(self);
 }
+
+/* Filling storage with small data. Delete every other data, which leads
+   to fragmentation. Delete the rest of the data. Then we should have
+   free space to store larger data. */
+Test(serial_list, test_defragmentation)
+{
+  guchar buffer[400];
+  SerialList *self = serial_list_new(buffer, sizeof(buffer));
+
+  GArray *even = g_array_new(FALSE, FALSE, sizeof(SerialListHandle));
+  GArray *odd = g_array_new(FALSE, FALSE, sizeof(SerialListHandle));
+
+  GString *total = g_string_new("");
+
+  while (TRUE)
+    {
+      static gchar *first_string = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+      SerialListHandle first = serial_list_insert(self, (guchar *)first_string, strlen(first_string)+1);
+      if (!first)
+        break;
+      g_array_append_val(even, first);
+      g_string_append(total, first_string);
+
+      static gchar *second_string = "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB";
+      SerialListHandle second = serial_list_insert(self, (guchar *)second_string, strlen(second_string)+1);
+      if (!second)
+        break;
+
+      g_array_append_val(odd, second);
+      g_string_append(total, second_string);
+    }
+
+  for (int i = 0; i < odd->len; i++)
+    serial_list_remove(self, g_array_index(odd, SerialListHandle, i));
+
+  cr_assert_eq(serial_list_insert(self, (guchar *)total->str, total->len), 0);
+
+  for (int i = 0; i < even->len; i++)
+    serial_list_remove(self, g_array_index(even, SerialListHandle, i));
+
+  cr_assert(serial_list_insert(self, (guchar *)total->str, total->len));
+
+  g_array_free(odd, TRUE);
+  g_array_free(odd, TRUE);
+  g_string_free(total, TRUE);
+  serial_list_free(self);
+}
