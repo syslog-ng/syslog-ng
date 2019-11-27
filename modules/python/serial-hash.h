@@ -29,5 +29,6 @@ typedef struct _SerialHash SerialHash;
 
 SerialHash *serial_hash_new(guchar *base, gsize max_size);
 void serial_hash_free(SerialHash *self);
+gboolean serial_hash_insert(SerialHash *self, gchar *key, guchar *value, gsize value_len);
 
 #endif

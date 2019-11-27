@@ -49,3 +49,24 @@ serial_hash_free(SerialHash *self)
   serial_list_free(self->storage);
   self->storage = NULL;
 }
+
+static gboolean
+_update(SerialHash *self, gchar *key, guchar *value, gsize value_len)
+{
+  return TRUE;
+};
+
+static gboolean
+_insert(SerialHash *self, gchar *key, guchar *value, gsize value_len)
+{
+  return TRUE;
+};
+
+gboolean
+serial_hash_insert(SerialHash *self, gchar *key, guchar *value, gsize value_len)
+{
+  if (g_hash_table_contains(self->index, key))
+    return _update(self, key, value, value_len);
+  else
+    return _insert(self, key, value, value_len);
+};
