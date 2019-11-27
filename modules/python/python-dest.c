@@ -119,14 +119,32 @@ static const gchar *
 python_dd_format_stats_instance(LogThreadedDestDriver *d)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
-  return python_format_stats_instance((LogPipe *)d, self->py.generate_persist_name, self->options, "python", self->class);
+
+  PythonPersistMembers options =
+  {
+    .generate_persist_name_method = self->py.generate_persist_name,
+    .options = self->options,
+    .class = self->class,
+    .id = self->super.super.super.id
+  };
+
+  return python_format_stats_instance((LogPipe *)d, "python", &options);
 }
 
 static const gchar *
 python_dd_format_persist_name(const LogPipe *s)
 {
   const PythonDestDriver *self = (const PythonDestDriver *)s;
-  return python_format_persist_name(s, self->py.generate_persist_name, self->options, "python", self->class);
+
+  PythonPersistMembers options =
+  {
+    .generate_persist_name_method = self->py.generate_persist_name,
+    .options = self->options,
+    .class = self->class,
+    .id = self->super.super.super.id
+  };
+
+  return python_format_persist_name(s, "python", &options);
 }
 
 static gboolean
@@ -316,8 +334,15 @@ _inject_worker_insert_result_consts(PythonDestDriver *self)
 static PyObject *
 py_get_persist_name(PythonDestDriver *self)
 {
-  const gchar *persist_name = python_format_persist_name((LogPipe *)self, self->py.generate_persist_name,
-                                                         self->options, "python", self->class);
+  PythonPersistMembers options =
+  {
+    .generate_persist_name_method = self->py.generate_persist_name,
+    .options = self->options,
+    .class = self->class,
+    .id = self->super.super.super.id
+  };
+
+  const gchar *persist_name = python_format_persist_name((LogPipe *)self, "python", &options);
   return _py_string_from_string(persist_name, -1);
 }
 

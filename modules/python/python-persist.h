@@ -26,10 +26,15 @@
 #include "python-module.h"
 #include "logpipe.h"
 
-const gchar *python_format_stats_instance(LogPipe *p, PyObject *generate_persist_name_method,
-                                          GHashTable *options, const gchar *module, const gchar *class);
-const gchar *python_format_persist_name(const LogPipe *p, PyObject *generate_persist_name_method,
-                                        GHashTable *options, const gchar *module, const gchar *class);
+typedef struct
+{
+  PyObject *generate_persist_name_method;
+  GHashTable *options;
+  const gchar *class;
+  const gchar *id;
+} PythonPersistMembers;
 
+const gchar *python_format_stats_instance(LogPipe *p, const gchar *module, PythonPersistMembers *options);
+const gchar *python_format_persist_name(const LogPipe *p, const gchar *module, PythonPersistMembers *options);
 
 #endif

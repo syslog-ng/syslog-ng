@@ -97,7 +97,16 @@ static const gchar *
 python_sd_format_stats_instance(LogThreadedSourceDriver *s)
 {
   PythonSourceDriver *self = (PythonSourceDriver *) s;
-  return python_format_stats_instance((LogPipe *)s, self->py.generate_persist_name, self->options, "python", self->class);
+
+  PythonPersistMembers options =
+  {
+    .generate_persist_name_method = self->py.generate_persist_name,
+    .options = self->options,
+    .class = self->class,
+    .id = self->super.super.super.id
+  };
+
+  return python_format_stats_instance((LogPipe *)s, "python", &options);
 }
 
 static void
@@ -289,8 +298,15 @@ _py_lookup_generate_persist_name_method(PythonSourceDriver *self)
 static gboolean
 _py_set_persist_name(PythonSourceDriver *self)
 {
-  const gchar *persist_name = python_format_persist_name((LogPipe *)self, self->py.generate_persist_name,
-                                                         self->options, "python-source", self->class);
+  PythonPersistMembers options =
+  {
+    .generate_persist_name_method = self->py.generate_persist_name,
+    .options = self->options,
+    .class = self->class,
+    .id = self->super.super.super.id
+  };
+
+  const gchar *persist_name = python_format_persist_name((LogPipe *)self, "python-source", &options);
   PyLogSource *py_instance = (PyLogSource *) self->py.instance;
   py_instance->persist_name = g_strdup(persist_name);
 
@@ -520,7 +536,16 @@ static const gchar *
 python_source_format_persist_name(const LogPipe *s)
 {
   const PythonSourceDriver *self = (const PythonSourceDriver *)s;
-  return python_format_persist_name(s, self->py.generate_persist_name, self->options, "python-source", self->class);
+
+  PythonPersistMembers options =
+  {
+    .generate_persist_name_method = self->py.generate_persist_name,
+    .options = self->options,
+    .class = self->class,
+    .id = self->super.super.super.id
+  };
+
+  return python_format_persist_name(s, "python-source", &options);
 }
 
 static gboolean

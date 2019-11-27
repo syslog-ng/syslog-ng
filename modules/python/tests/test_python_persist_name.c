@@ -192,10 +192,21 @@ Test(python_persist_name, test_python_exception_in_generate_persist_name)
                                         "persist_generator_persist");
 
   start_grabbing_messages();
-  cr_assert_str_eq(python_format_stats_instance(p, persist_generator_stats,
-                                                NULL, "module", "class"), "module,class");
-  cr_assert_str_eq(python_format_persist_name(p, persist_generator_persist,
-                                              NULL, "module", "class"), "module(class)");
+
+  PythonPersistMembers options_stats =
+  {
+    .generate_persist_name_method = persist_generator_stats,
+    .class = "class",
+  };
+  cr_assert_str_eq(python_format_stats_instance(p, "module", &options_stats), "module,class");
+
+  PythonPersistMembers options_persist =
+  {
+    .generate_persist_name_method = persist_generator_persist,
+    .class = "class",
+  };
+  cr_assert_str_eq(python_format_persist_name(p, "module", &options_persist), "module(class)");
+
   stop_grabbing_messages();
 
   assert_grabbed_log_contains("Exception: exception for testing stats");
