@@ -46,5 +46,7 @@ void serial_list_remove(SerialList *self, SerialListHandle handle);
 SerialListHandle serial_list_update(SerialList *self, SerialListHandle handle, guchar *data, gsize data_len);
 void serial_list_foreach(SerialList *self, SerialListFunc func, gpointer user_data);
 void serial_list_print(SerialList *self);
+void serial_list_rebase(SerialList *self, guchar *new_base, gsize orig_new_size);
+
 
 #endif

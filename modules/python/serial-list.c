@@ -310,3 +310,35 @@ serial_list_print(SerialList *self)
     }
 
 }
+
+void
+serial_list_rebase(SerialList *self, guchar *new_base, gsize orig_new_size)
+{
+  gsize new_size = orig_new_size & ~3;
+  gsize orig_max_size = self->max_size;
+
+  g_assert(self->max_size <= new_size);
+
+  self->base = new_base;
+  self->max_size = new_size;
+
+  if (new_size - orig_max_size >= sizeof(Node))
+    {
+      Node *prev = get_node_at_offset(self, get_head(self)->prev);
+      Node *head = get_head(self);
+
+      Node *new_free_space = get_node_at_offset(self, orig_max_size);
+      new_free_space->offset = orig_max_size;
+      new_free_space->next = 0;
+      new_free_space->prev = prev->offset;
+      new_free_space->type = FREE_SPACE;
+
+      prev->next = new_free_space->offset;
+      head->prev = new_free_space->offset;
+
+      new_free_space->data_len = get_available_space(self, new_free_space);
+
+      if (prev->type == FREE_SPACE)
+        join_free_spaces(self, prev, new_free_space);
+    }
+}

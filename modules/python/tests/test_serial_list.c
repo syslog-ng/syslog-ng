@@ -183,3 +183,41 @@ Test(serial_list, test_defragmentation)
   g_string_free(total, TRUE);
   serial_list_free(self);
 }
+
+static void
+concatenate(guchar *data, gsize data_len, gpointer user_data)
+{
+  GString *concatenated = user_data;
+  g_string_append(concatenated, (gchar *)data);
+}
+
+Test(serial_list, test_rebase)
+{
+  guchar buffer[400];
+  guchar buffer_larger[500];
+  SerialList *self = serial_list_new(buffer, sizeof(buffer));
+  GString *total = g_string_new("");
+  static gchar *str = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+
+  while (TRUE)
+    {
+      SerialListHandle handle = serial_list_insert(self, (guchar *)str, strlen(str)+1);
+      if (!handle)
+        break;
+
+      g_string_append(total, str);
+    }
+
+  memcpy(buffer_larger, buffer, sizeof(buffer));
+  serial_list_rebase(self, buffer_larger, sizeof(buffer_larger));
+
+  cr_assert(serial_list_insert(self, (guchar *)str, strlen(str)+1));
+  g_string_append(total, str);
+
+  GString *concatenated = g_string_new("");
+  serial_list_foreach(self, concatenate, concatenated);
+
+  cr_assert_str_eq(total->str, concatenated->str);
+
+  serial_list_free(self);
+}
