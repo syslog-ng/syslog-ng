@@ -45,9 +45,25 @@ Intentional syntax error to cause rpmbuild to abort.
 %endif
 
 %else
+
+%if 0%{rhel} == 6
+%bcond_with sql
+%bcond_with mongodb
+%bcond_with systemd
+%bcond_with redis
+%bcond_with riemann
+%bcond_with maxminddb
+%bcond_with amqp
+%bcond_without java
+%bcond_with kafka
+%bcond_without snmpdest
+%global        python_devel python-devel
+%global        py_ver  2.6
+%else
 %{error:Unsupported distro, we currently only try to build on RHEL >= 7 or Fedora >= 30}
 %endif
 
+%endif
 %global ivykis_ver 0.36.1
 
 Name: syslog-ng
@@ -316,15 +332,15 @@ export GEOIP_LIBS=-lGeoIP
     --enable-dynamic-linking \
     --enable-python \
     --with-python=%{py_ver} \
-    %{?with kafka:--enable-kafka} \
-    %{?with snmpdest:--enable-snmp-dest} \
-    %{?with java:--enable-java} \
-    %{?with sql:--enable-sql} \
-    %{?with systemd:--enable-systemd} \
-    %{?with mongodb:--enable-mongodb} \
-    %{?with amqp:--enable-amqp} \
-    %{?with redis:--enable-redis} \
-    %{?with riemann:--enable-riemann}
+    %{?with_kafka:--enable-kafka} \
+    %{?with_snmpdest:--enable-snmp-dest} %{!?with_snmpdest:--disable-snmp-dest} \
+    %{?with_java:--enable-java} %{!?with_java:--disable-java} \
+    %{?with_sql:--enable-sql} \
+    %{?with_systemd:--enable-systemd} \
+    %{?with_mongodb:--enable-mongodb} \
+    %{?with_amqp:--enable-amqp} \
+    %{?with_redis:--enable-redis} \
+    %{?with_riemann:--enable-riemann}
 
 # disable broken test by setting a different target
 sed -i 's/libs build/libs assemble/' Makefile
