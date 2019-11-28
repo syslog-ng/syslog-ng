@@ -247,6 +247,96 @@ py_persist_type_members[] =
   {NULL}
 };
 
+static gchar *
+_lookup_entry(PyPersist *self, const gchar *key)
+{
+  Persist *persist = persist_state_map_entry(self->persist_state, self->persist_handle);
+  serial_hash_rebase(self->entries, persist->data, persist->max_size);
+
+  const guchar *data = NULL;
+  gsize data_len = 0;
+  serial_hash_lookup(self->entries, (gchar *)key, &data, &data_len);
+
+  // outside the map the entry might be relocated
+  gchar *copy = g_strdup((gchar *)data);
+  persist_state_unmap_entry(self->persist_state, self->persist_handle);
+
+  return copy;
+};
+
+static gboolean
+_store_entry(PyPersist *self, const gchar *key, const gchar *value)
+{
+  Persist *persist = persist_state_map_entry(self->persist_state, self->persist_handle);
+  serial_hash_rebase(self->entries, persist->data, persist->max_size);
+  gboolean retval = serial_hash_insert(self->entries, (gchar *)key, (guchar *)value, strlen(value)+1);
+  persist_state_unmap_entry(self->persist_state, self->persist_handle);
+
+  return retval;
+}
+
+static PyObject *
+_py_persist_type_get(PyObject *o, PyObject *key)
+{
+  PyPersist *self = (PyPersist *)o;
+
+  if (!_py_is_string(key))
+    {
+      PyErr_SetString(PyExc_TypeError, "key is not a string object");
+      return NULL;
+    }
+
+  const gchar *name = _py_get_string_as_string(key);
+  gchar *value = _lookup_entry(self, name);
+
+  if (!value)
+    {
+      PyErr_Format(PyExc_KeyError, "No such name-value pair %s", name);
+      return NULL;
+    }
+
+  PyObject *py_value =  _py_string_from_string(value, -1);
+  g_free(value);
+  return py_value;
+}
+
+static int
+_py_persist_type_set(PyObject *o, PyObject *k, PyObject *v)
+{
+  PyPersist *self = (PyPersist *)o;
+
+  if (!_py_is_string(k))
+    {
+      PyErr_SetString(PyExc_TypeError, "key is not a string object");
+      return -1;
+    }
+
+  if (!_py_is_string(v))
+    {
+      PyErr_SetString(PyExc_TypeError, "value is not a string object");
+      return -1;
+    }
+
+  const gchar *key = _py_get_string_as_string(k);
+  const gchar *value = _py_get_string_as_string(v);
+
+  if (!_store_entry(self, key, value))
+    {
+      PyErr_SetString(PyExc_RuntimeError, "not enough space in storage");
+      return -1;
+    }
+
+  return 0;
+}
+
+static PyMappingMethods py_persist_type_mapping =
+{
+  .mp_length = NULL,
+  .mp_subscript = (binaryfunc) _py_persist_type_get,
+  .mp_ass_subscript = (objobjargproc) _py_persist_type_set
+};
+
+
 PyTypeObject py_persist_type =
 {
   PyVarObject_HEAD_INIT(&PyType_Type, 0)
@@ -258,6 +348,7 @@ PyTypeObject py_persist_type =
   .tp_new = _persist_type_new,
   .tp_init = _persist_type_init,
   .tp_members = py_persist_type_members,
+  .tp_as_mapping = &py_persist_type_mapping,
   0,
 };
 
