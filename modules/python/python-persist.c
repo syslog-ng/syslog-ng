@@ -28,6 +28,8 @@
 
 #include <structmember.h>
 
+#define SUBKEY_DELIMITER "##"
+
 static PyObject *
 _call_generate_persist_name_method(PythonPersistMembers *options)
 {
@@ -146,10 +148,10 @@ _persist_type_init(PyObject *s, PyObject *args, PyObject *kwds)
   if (! PyArg_ParseTupleAndKeywords(args, kwds, "s", kwlist, &persist_name))
     return -1;
 
-  if (g_strstr_len(persist_name, -1, "##"))
+  if (g_strstr_len(persist_name, -1, SUBKEY_DELIMITER))
     {
       // Internally, we will store subkeys as persist_name##subkey
-      PyErr_Format(PyExc_ValueError, "persist name cannot contain ##");
+      PyErr_Format(PyExc_ValueError, "persist name cannot contain " SUBKEY_DELIMITER);
       return -1;
     }
 
@@ -180,7 +182,7 @@ py_persist_type_members[] =
 static gchar *
 _build_key(PyPersist *self, const gchar *key)
 {
-  return g_strdup_printf("%s##%s", self->persist_name, key);
+  return g_strdup_printf("%s" SUBKEY_DELIMITER "%s", self->persist_name, key);
 }
 
 static gchar *
@@ -302,6 +304,39 @@ static PyMappingMethods py_persist_type_mapping =
   .mp_ass_subscript = (objobjargproc) _py_persist_type_set
 };
 
+static void
+_insert_to_dict(gchar *key, gint entry_size, gchar *value, gpointer *user_data)
+{
+  const gchar *persist_name = user_data[0];
+  PyObject *entries = user_data[1];
+
+  if (!g_str_has_prefix(key, persist_name))
+    return;
+
+  gchar *start = g_strstr_len(key, -1, SUBKEY_DELIMITER);
+  if (!start)
+    return;
+
+  PyObject *key_object = _py_string_from_string(start + strlen(SUBKEY_DELIMITER), -1);
+  PyObject *value_object = _py_string_from_string(value, -1);
+  PyDict_SetItem(entries, key_object, value_object);
+}
+
+PyObject *py_persist_type_iter(PyObject *o)
+{
+  PyPersist *self = (PyPersist *)o;
+
+  PyObject *entries = PyDict_New();
+  persist_state_foreach_entry(self->persist_state, (PersistStateForeachFunc)_insert_to_dict,
+                              (gpointer [])
+  {
+    self->persist_name, entries
+  });
+
+  PyObject *iter = PyObject_GetIter(entries);
+  Py_DECREF(entries);
+  return iter;
+}
 
 PyTypeObject py_persist_type =
 {
@@ -315,6 +350,7 @@ PyTypeObject py_persist_type =
   .tp_init = _persist_type_init,
   .tp_members = py_persist_type_members,
   .tp_as_mapping = &py_persist_type_mapping,
+  .tp_iter = &py_persist_type_iter,
   0,
 };
 
