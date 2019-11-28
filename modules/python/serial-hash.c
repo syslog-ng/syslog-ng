@@ -101,15 +101,51 @@ payload_free(guchar *payload)
   g_free(payload);
 }
 
+static void
+update_handle(SerialHash *self, gchar *key, SerialListHandle handle)
+{
+  SerialListHandle *handle_pointer = g_new(SerialListHandle, 1);
+  *handle_pointer = handle;
+  g_hash_table_insert(self->index, g_strdup(key), handle_pointer);
+}
+
 static gboolean
 _update(SerialHash *self, gchar *key, guchar *value, gsize value_len)
 {
+  SerialListHandle *handle = g_hash_table_lookup(self->index, key);
+
+  guchar *payload = NULL;
+  gsize payload_len = 0;
+  payload_new(key, value, value_len, &payload, &payload_len);
+
+  SerialListHandle new_handle = serial_list_update(self->storage, *handle, payload, payload_len);
+  if (!new_handle)
+    {
+      g_free(payload);
+      return FALSE;
+    }
+  update_handle(self, key, new_handle);
+  g_free(payload);
+
   return TRUE;
 };
 
 static gboolean
 _insert(SerialHash *self, gchar *key, guchar *value, gsize value_len)
 {
+  guchar *payload = NULL;
+  gsize payload_len = 0;
+  payload_new(key, value, value_len, &payload, &payload_len);
+
+  SerialListHandle handle = serial_list_insert(self->storage, payload, payload_len);
+  if (!handle)
+    {
+      payload_free(payload);
+      return FALSE;
+    }
+
+  update_handle(self, key, handle);
+  g_free(payload);
   return TRUE;
 };
 

@@ -38,6 +38,9 @@ Test(serial_hash, test_serial_hash)
   gchar buffer[400];
 
   SerialHash *self = serial_hash_new((guchar *)buffer, sizeof(buffer));
+
+  serial_hash_insert(self, "key", (guchar *)"value", sizeof("value"));
+
   serial_hash_free(self);
 }
 
