@@ -20,6 +20,7 @@
  */
 
 #include "serial-hash.h"
+#include "serial-hash-internal.h"
 #include <criterion/criterion.h>
 
 void setup(void)
@@ -38,4 +39,23 @@ Test(serial_hash, test_serial_hash)
 
   SerialHash *self = serial_hash_new((guchar *)buffer, sizeof(buffer));
   serial_hash_free(self);
+}
+
+Test(serial_hash, test_payload)
+{
+  guchar *payload = NULL;
+  gsize payload_len = 0;
+
+  payload_new("key", (guchar *)"value", sizeof("value"), &payload, &payload_len);
+  cr_assert(payload);
+  cr_assert(payload_len);
+
+  cr_assert_str_eq(payload_get_key(payload), "key");
+
+  guchar *value = NULL;
+  gsize value_len = 0;
+  payload_get_value(payload, &value, &value_len);
+  cr_assert_eq(value_len, sizeof("value"));
+  cr_assert_str_eq((gchar *)value, "value");
+  payload_free(payload);
 }

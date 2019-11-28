@@ -22,12 +22,22 @@
 
 #include "serial-hash.h"
 #include "serial-list.h"
+#include "string.h"
 
 struct _SerialHash
 {
   GHashTable *index;
   SerialList *storage;
 };
+
+static gsize
+align(gsize size)
+{
+  if (size % sizeof(guint64) == 0)
+    return size;
+
+  return size + (sizeof(guint64) - size % sizeof(guint64));
+}
 
 SerialHash *
 serial_hash_new(guchar *base, gsize max_size)
@@ -48,6 +58,47 @@ serial_hash_free(SerialHash *self)
   self->index = NULL;
   serial_list_free(self->storage);
   self->storage = NULL;
+}
+
+/* Cannot be expressed with struct, because it has two embedded variable length data: key and value
+   The structure is the following:
+
+|gsize: key-block| key (and possible alignment)|gsize: value-len| value   (and possible alignment|
+                 \-------length: key-block-----|                \-----length: payload-len--------|
+*/
+void
+payload_new(gchar *key, guchar *value, gsize value_len, guchar **payload, gsize *payload_len)
+{
+  gsize key_block_length = align(strlen(key) + 1);
+  gsize total_length = sizeof(gsize) + key_block_length + sizeof(gsize) + value_len;
+  guchar *data = g_new(guchar, total_length);
+  *payload = data;
+  *payload_len = total_length;
+
+  *((gsize *)data) = key_block_length;
+  strcpy((gchar *)(data + sizeof(gsize)), key);
+  *((gsize *)(data + sizeof(gsize) + key_block_length)) = value_len;
+  memcpy(data + sizeof(gsize) + key_block_length + sizeof(gsize), value, value_len);
+}
+
+gchar *
+payload_get_key(guchar *payload)
+{
+  return (gchar *)(payload + sizeof(gsize));
+}
+
+void
+payload_get_value(guchar *payload, guchar **value, gsize *value_len)
+{
+  gsize key_block_length = *((gsize *)payload);
+  *value_len = *((gsize *)(payload + sizeof(gsize) + key_block_length));
+  *value = (guchar *)(payload + sizeof(gsize) +  key_block_length + sizeof(gsize));
+}
+
+void
+payload_free(guchar *payload)
+{
+  g_free(payload);
 }
 
 static gboolean
