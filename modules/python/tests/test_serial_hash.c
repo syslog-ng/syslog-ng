@@ -114,3 +114,30 @@ Test(serial_hash, test_serial_update)
 
   serial_hash_free(self);
 }
+
+Test(serial_hash, test_serial_multi_insert)
+{
+  gchar buffer[400];
+
+  SerialHash *self = serial_hash_new((guchar *)buffer, sizeof(buffer));
+
+  const guchar *data = NULL;
+  gsize data_len = 0;
+  serial_hash_insert(self, "key1", (guchar *)"value1", sizeof("value1"));
+  serial_hash_insert(self, "key2", (guchar *)"value2", sizeof("value2"));
+  serial_hash_insert(self, "key3", (guchar *)"value3", sizeof("value3"));
+
+  serial_hash_lookup(self, "key1", &data, &data_len);
+  cr_assert_str_eq((gchar *)data, "value1");
+  cr_assert_eq(data_len, sizeof("value1"));
+
+  serial_hash_lookup(self, "key2", &data, &data_len);
+  cr_assert_str_eq((gchar *)data, "value2");
+  cr_assert_eq(data_len, sizeof("value2"));
+
+  serial_hash_lookup(self, "key3", &data, &data_len);
+  cr_assert_str_eq((gchar *)data, "value3");
+  cr_assert_eq(data_len, sizeof("value3"));
+
+  serial_hash_free(self);
+}
