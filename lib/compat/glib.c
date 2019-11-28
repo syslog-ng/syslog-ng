@@ -248,3 +248,13 @@ g_canonicalize_filename (const gchar *filename,
 
 #endif
 
+#ifndef SYSLOG_NG_HAVE_G_HASH_TABLE_CONTAINS
+gboolean
+g_hash_table_contains (GHashTable    *hash_table,
+                       gconstpointer  key)
+{
+  gpointer orig_key;
+  gpointer value;
+  return g_hash_table_lookup_extended(hash_table, key, &orig_key, &value);
+}
+#endif

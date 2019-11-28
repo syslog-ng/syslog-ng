@@ -174,6 +174,7 @@ check_symbol_exists(g_queue_free_full "glib.h" SYSLOG_NG_HAVE_G_QUEUE_FREE_FULL)
 check_symbol_exists(g_list_free_full "glib.h" SYSLOG_NG_HAVE_G_LIST_FREE_FULL)
 check_symbol_exists(g_ptr_array_find_with_equal_func "glib.h" SYSLOG_NG_HAVE_G_PTR_ARRAY_FIND_WITH_EQUAL_FUNC)
 check_symbol_exists(g_canonicalize_filename "glib.h" SYSLOG_NG_HAVE_G_CANONICALIZE_FILENAME)
+check_symbol_exists(g_hash_table_contains "glib.h" SYSLOG_NG_HAVE_G_HASH_TABLE_CONTAINS)
 
 find_package(RabbitMQ)
 set(CMAKE_REQUIRED_INCLUDES ${RabbitMQ_INCLUDE_DIR})

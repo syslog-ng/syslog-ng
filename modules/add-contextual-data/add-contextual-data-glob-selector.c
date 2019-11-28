@@ -55,7 +55,6 @@ static GArray *
 _create_globs_array(void)
 {
   GArray *array = g_array_new(FALSE, TRUE, sizeof(GlobExpression));
-  g_array_set_clear_func(array, (void (*)(void *)) glob_expression_clear);
   return array;
 }
 
@@ -138,6 +137,11 @@ _free(AddContextualDataSelector *s)
   AddContextualDataGlobSelector *self = (AddContextualDataGlobSelector *)s;
 
   log_template_unref(self->glob_template);
+  for (int i = 0; i < self->globs->len; i++)
+    {
+      GlobExpression *gs = &g_array_index(self->globs, GlobExpression, i);
+      glob_expression_clear(gs);
+    }
   g_array_free(self->globs, TRUE);
 }
 
