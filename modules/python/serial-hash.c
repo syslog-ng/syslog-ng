@@ -222,3 +222,9 @@ serial_hash_rebase(SerialHash *self, guchar *base, gsize max_size)
 {
   serial_list_rebase(self->storage, base, max_size);
 }
+
+GHashTable *
+serial_hash_get_index(SerialHash *self)
+{
+  return self->index;
+}

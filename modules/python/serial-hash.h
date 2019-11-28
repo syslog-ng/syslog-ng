@@ -34,5 +34,6 @@ void serial_hash_lookup(SerialHash *self, gchar *key, const guchar **value, gsiz
 void serial_hash_remove(SerialHash *self, gchar *key);
 SerialHash *serial_hash_load(guchar *base, gsize max_size);
 void serial_hash_rebase(SerialHash *self, guchar *base, gsize max_size);
+GHashTable *serial_hash_get_index(SerialHash *self);
 
 #endif

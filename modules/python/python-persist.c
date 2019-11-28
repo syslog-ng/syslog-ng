@@ -336,6 +336,16 @@ static PyMappingMethods py_persist_type_mapping =
   .mp_ass_subscript = (objobjargproc) _py_persist_type_set
 };
 
+PyObject *py_persist_type_iter(PyObject *o)
+{
+  PyPersist *self = (PyPersist *)o;
+
+  GHashTable *index = serial_hash_get_index(self->entries);
+  PyObject *index_dict = _py_create_arg_dict(index);
+  PyObject *iter = PyObject_GetIter(index_dict);
+  Py_DECREF(index_dict);
+  return iter;
+}
 
 PyTypeObject py_persist_type =
 {
@@ -349,6 +359,7 @@ PyTypeObject py_persist_type =
   .tp_init = _persist_type_init,
   .tp_members = py_persist_type_members,
   .tp_as_mapping = &py_persist_type_mapping,
+  .tp_iter = &py_persist_type_iter,
   0,
 };
 
