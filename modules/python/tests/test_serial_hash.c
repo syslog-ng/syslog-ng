@@ -68,3 +68,23 @@ Test(serial_hash, test_payload)
   cr_assert_str_eq((gchar *)value, "value");
   payload_free(payload);
 }
+
+Test(serial_hash, test_serial_remove)
+{
+  gchar buffer[400];
+
+  SerialHash *self = serial_hash_new((guchar *)buffer, sizeof(buffer));
+
+  const guchar *data = NULL;
+  gsize data_len = 0;
+  serial_hash_lookup(self, "key", &data, &data_len);
+  cr_assert_null(data);
+  cr_assert_eq(data_len, 0);
+
+  serial_hash_insert(self, "key", (guchar *)"value", sizeof("value"));
+  serial_hash_lookup(self, "key", &data, &data_len);
+  cr_assert_str_eq((gchar *)data, "value");
+  cr_assert_eq(data_len, sizeof("value"));
+
+  serial_hash_free(self);
+}

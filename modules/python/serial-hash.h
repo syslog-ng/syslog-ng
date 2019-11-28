@@ -31,5 +31,6 @@ SerialHash *serial_hash_new(guchar *base, gsize max_size);
 void serial_hash_free(SerialHash *self);
 gboolean serial_hash_insert(SerialHash *self, gchar *key, guchar *value, gsize value_len);
 void serial_hash_lookup(SerialHash *self, gchar *key, const guchar **value, gsize *value_len);
+void serial_hash_remove(SerialHash *self, gchar *key);
 
 #endif

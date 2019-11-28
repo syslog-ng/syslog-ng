@@ -175,3 +175,14 @@ serial_hash_lookup(SerialHash *self, gchar *key, const guchar **value, gsize *va
 
   payload_get_value((guchar *)payload, (guchar **)value, value_len);
 };
+
+void
+serial_hash_remove(SerialHash *self, gchar *key)
+{
+  if (!g_hash_table_contains(self->index, key))
+    return;
+
+  SerialListHandle *handle = g_hash_table_lookup(self->index, key);
+  serial_list_remove(self->storage, *handle);
+  g_hash_table_remove(self->index, key);
+}
