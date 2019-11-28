@@ -36,6 +36,7 @@ typedef gsize SerialListHandle;
 
 typedef gboolean (SerialListFindFunc)(guchar *data, gsize data_len, gpointer user_data);
 typedef void (SerialListFunc)(guchar *data, gsize data_len, gpointer user_data);
+typedef void (SerialListHandleFunc)(SerialList *self, SerialListHandle hande, gpointer user_data);
 
 SerialList *serial_list_new(guchar *base, gsize size);
 void serial_list_free(SerialList *self);
@@ -48,5 +49,6 @@ void serial_list_foreach(SerialList *self, SerialListFunc func, gpointer user_da
 void serial_list_print(SerialList *self);
 void serial_list_rebase(SerialList *self, guchar *new_base, gsize orig_new_size);
 SerialList *serial_list_load(guchar *base, gsize size);
+void serial_list_handle_foreach(SerialList *self, SerialListHandleFunc func, gpointer user_data);
 
 #endif

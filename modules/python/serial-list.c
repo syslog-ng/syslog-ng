@@ -352,3 +352,20 @@ serial_list_load(guchar *base, gsize size)
 
   return self;
 }
+
+void
+serial_list_handle_foreach(SerialList *self, SerialListHandleFunc func, gpointer user_data)
+{
+  Node *node = get_node_at_offset(self, get_head(self)->next);
+
+  while (TRUE)
+    {
+      if (node->type == DATA)
+        func(self, node->offset, user_data);
+
+      if (node->type == HEAD)
+        return;
+
+      node = get_node_at_offset(self, node->next);
+    }
+}
