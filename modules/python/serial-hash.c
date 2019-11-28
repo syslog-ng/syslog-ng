@@ -216,3 +216,9 @@ serial_hash_load(guchar *base, gsize max_size)
 
   return self;
 }
+
+void
+serial_hash_rebase(SerialHash *self, guchar *base, gsize max_size)
+{
+  serial_list_rebase(self->storage, base, max_size);
+}
