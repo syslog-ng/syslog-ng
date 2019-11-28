@@ -157,3 +157,21 @@ serial_hash_insert(SerialHash *self, gchar *key, guchar *value, gsize value_len)
   else
     return _insert(self, key, value, value_len);
 };
+
+void
+serial_hash_lookup(SerialHash *self, gchar *key, const guchar **value, gsize *value_len)
+{
+  SerialListHandle *handle = g_hash_table_lookup(self->index, key);
+  if (!handle)
+    {
+      *value = NULL;
+      *value_len = 0;
+      return;
+    }
+
+  const guchar *payload = NULL;
+  gsize payload_len = 0;
+  serial_list_get_data(self->storage, *handle, &payload, &payload_len);
+
+  payload_get_value((guchar *)payload, (guchar **)value, value_len);
+};

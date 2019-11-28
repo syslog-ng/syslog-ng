@@ -41,6 +41,12 @@ Test(serial_hash, test_serial_hash)
 
   serial_hash_insert(self, "key", (guchar *)"value", sizeof("value"));
 
+  const guchar *data = NULL;
+  gsize data_len = 0;
+  serial_hash_lookup(self, "key", &data, &data_len);
+  cr_assert_str_eq((gchar *)data, "value");
+  cr_assert_eq(data_len, sizeof("value"));
+
   serial_hash_free(self);
 }
 
