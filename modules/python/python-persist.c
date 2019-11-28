@@ -170,6 +170,22 @@ _allocate_persist_entry(PersistState *state, const gchar *persist_name, guint8 v
   return handle;
 }
 
+static void
+_load_entries(PyPersist *self)
+{
+  Persist *persist = persist_state_map_entry(self->persist_state, self->persist_handle);
+  self->entries = serial_hash_load(persist->data, persist->max_size);
+  persist_state_unmap_entry(self->persist_state, self->persist_handle);
+}
+
+static void
+_create_entries(PyPersist *self)
+{
+  Persist *persist = persist_state_map_entry(self->persist_state, self->persist_handle);
+  self->entries = serial_hash_new(persist->data, persist->max_size);
+  persist_state_unmap_entry(self->persist_state, self->persist_handle);
+}
+
 static int
 _persist_type_init(PyObject *s, PyObject *args, PyObject *kwds)
 {
@@ -192,6 +208,8 @@ _persist_type_init(PyObject *s, PyObject *args, PyObject *kwds)
   if (handle)
     {
       self->persist_handle = handle;
+      if (!self->entries)
+        _load_entries(self);
     }
   else
     {
@@ -201,6 +219,8 @@ _persist_type_init(PyObject *s, PyObject *args, PyObject *kwds)
         return -1;
 
       self->persist_handle = allocated_handle;
+      if (!self->entries)
+        _create_entries(self);
     }
 
   return 0;
@@ -213,6 +233,9 @@ py_persist_dealloc(PyObject *s)
 
   g_free(self->persist_name);
   self->persist_name = NULL;
+
+  serial_hash_free(self->entries);
+  self->entries = NULL;
 
   py_slng_generic_dealloc(s);
 }

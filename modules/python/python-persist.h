@@ -25,6 +25,7 @@
 
 #include "python-module.h"
 #include "logpipe.h"
+#include "serial-hash.h"
 
 typedef struct
 {
@@ -32,6 +33,7 @@ typedef struct
   PersistState *persist_state;
   PersistEntryHandle persist_handle;
   gchar *persist_name;
+  SerialHash *entries;
 } PyPersist;
 
 extern PyTypeObject py_persist_type;
