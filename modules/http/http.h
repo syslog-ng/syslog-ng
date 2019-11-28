@@ -31,6 +31,7 @@
 #include "logthrdest/logthrdestdrv.h"
 #include "http-loadbalancer.h"
 #include "http-auth/auth-header.h"
+#include "response-handler.h"
 
 typedef struct
 {
@@ -63,6 +64,7 @@ typedef struct
   glong batch_bytes;
   LogTemplate *body_template;
   LogTemplateOptions template_options;
+  HttpResponseHandlers *response_handlers;
 } HTTPDestinationDriver;
 
 gboolean http_dd_init(LogPipe *s);
@@ -93,6 +95,7 @@ void http_dd_set_batch_bytes(LogDriver *d, glong batch_bytes);
 void http_dd_set_body_prefix(LogDriver *d, const gchar *body_prefix);
 void http_dd_set_body_suffix(LogDriver *d, const gchar *body_suffix);
 void http_dd_set_delimiter(LogDriver *d, const gchar *delimiter);
+void http_dd_insert_response_handler(LogDriver *d, HttpResponseHandler *response_handler);
 LogTemplateOptions *http_dd_get_template_options(LogDriver *d);
 
 #endif
