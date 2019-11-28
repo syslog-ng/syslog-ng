@@ -221,3 +221,29 @@ Test(serial_list, test_rebase)
 
   serial_list_free(self);
 }
+
+Test(serial_list, test_load)
+{
+  guchar buffer[400];
+  guchar other_buffer[400];
+
+  SerialList *self = serial_list_new(buffer, sizeof(buffer));
+  static gchar *str = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+  SerialListHandle handle = serial_list_insert(self, (guchar *)str, strlen(str)+1);
+
+  memcpy(other_buffer, buffer, sizeof(buffer));
+  memset(buffer, 0, sizeof(buffer));
+  serial_list_free(self);
+
+  SerialList *loaded = serial_list_load(other_buffer, sizeof(other_buffer));
+  SerialListHandle same_handle = serial_list_find(loaded, is_same_string, str);
+  cr_assert_eq(handle, same_handle);
+
+  const guchar *data;
+  gsize data_len;
+  serial_list_get_data(loaded, same_handle, &data, &data_len);
+  cr_assert_eq(data_len, strlen(str)+1);
+  cr_assert_eq(strncmp((gchar *)data, str, strlen(str)+1), 0);
+
+  serial_list_free(loaded);
+}

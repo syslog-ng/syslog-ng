@@ -342,3 +342,13 @@ serial_list_rebase(SerialList *self, guchar *new_base, gsize orig_new_size)
         join_free_spaces(self, prev, new_free_space);
     }
 }
+
+SerialList *
+serial_list_load(guchar *base, gsize size)
+{
+  SerialList *self = g_new0(SerialList, 1);
+  self->base = base;
+  self->max_size = size;
+
+  return self;
+}

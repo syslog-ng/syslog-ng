@@ -47,6 +47,6 @@ SerialListHandle serial_list_update(SerialList *self, SerialListHandle handle, g
 void serial_list_foreach(SerialList *self, SerialListFunc func, gpointer user_data);
 void serial_list_print(SerialList *self);
 void serial_list_rebase(SerialList *self, guchar *new_base, gsize orig_new_size);
-
+SerialList *serial_list_load(guchar *base, gsize size);
 
 #endif
