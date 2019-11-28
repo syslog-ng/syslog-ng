@@ -23,6 +23,7 @@
 
 #include "scanner/list-scanner/list-scanner.h"
 #include "str-repr/encode.h"
+#include "compat/pcre.h"
 
 static void
 _append_comma_between_list_elements_if_needed(GString *result, gsize initial_len)
@@ -334,7 +335,8 @@ typedef enum _StringMatchMode
   SMM_LITERAL = 0,
   SMM_PREFIX,
   SMM_SUBSTRING,
-  SMM_GLOB
+  SMM_GLOB,
+  SMM_PCRE
 } StringMatchMode;
 
 typedef struct _StringMatcher
@@ -342,6 +344,8 @@ typedef struct _StringMatcher
   StringMatchMode mode;
   gchar *pattern;
   GPatternSpec *glob;
+  pcre *pcre;
+  pcre_extra *pcre_extra;
 } StringMatcher;
 
 static gboolean
@@ -353,15 +357,66 @@ string_matcher_prepare_glob(StringMatcher *self)
 }
 
 static gboolean
+string_matcher_prepare_pcre(StringMatcher *self)
+{
+  const gchar *errptr;
+  gint erroffset;
+  gint rc;
+
+  self->pcre = pcre_compile2(self->pattern, PCRE_ANCHORED, &rc, &errptr, &erroffset, NULL);
+  if (!self->pcre)
+    {
+      msg_error("Error while compiling regular expression",
+                evt_tag_str("regular_expression", self->pattern),
+                evt_tag_str("error_at", &self->pattern[erroffset]),
+                evt_tag_int("error_offset", erroffset),
+                evt_tag_str("error_message", errptr),
+                evt_tag_int("error_code", rc));
+      return FALSE;
+    }
+  self->pcre_extra = pcre_study(self->pcre, PCRE_STUDY_JIT_COMPILE, &errptr);
+  if (errptr)
+    {
+      msg_error("Error while optimizing regular expression",
+                evt_tag_str("regular_expression", self->pattern),
+                evt_tag_str("error_message", errptr));
+      pcre_free(self->pcre);
+      if (self->pcre_extra)
+        pcre_free_study(self->pcre_extra);
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
+static gboolean
 string_matcher_prepare(StringMatcher *self)
 {
   switch (self->mode)
     {
     case SMM_GLOB:
       return string_matcher_prepare_glob(self);
+    case SMM_PCRE:
+      return string_matcher_prepare_pcre(self);
     default:
       return TRUE;
     }
+}
+
+static gboolean
+string_matcher_match_pcre(StringMatcher *self, const char *string, gsize string_len)
+{
+  gint rc = pcre_exec(self->pcre, self->pcre_extra, string, string_len, 0, 0, NULL, 0);
+  if (rc == PCRE_ERROR_NOMATCH)
+    {
+      return FALSE;
+    }
+  if (rc < 0)
+    {
+      msg_error("Error while matching pcre", evt_tag_int("error_code", rc));
+      return FALSE;
+    }
+  return TRUE;
 }
 
 static gboolean
@@ -377,6 +432,8 @@ string_matcher_match(StringMatcher *self, const char *string, gsize string_len)
       return (strstr(string, self->pattern) != NULL);
     case SMM_GLOB:
       return (g_pattern_match_string(self->glob, string));
+    case SMM_PCRE:
+      return (string_matcher_match_pcre(self, string, string_len));
     default:
       g_assert_not_reached();
     }
@@ -400,6 +457,10 @@ string_matcher_free(StringMatcher *self)
     g_free(self->pattern);
   if (self->glob)
     g_pattern_spec_free(self->glob);
+  if (self->pcre)
+    pcre_free(self->pcre);
+  if (self->pcre_extra)
+    pcre_free_study(self->pcre_extra);
   g_free(self);
 }
 
@@ -433,6 +494,8 @@ _list_search_mode_str_to_string_match_mode(const gchar *mode_str, StringMatchMod
     *string_match_mode = SMM_SUBSTRING;
   else if (strcmp(mode_str, "glob") == 0)
     *string_match_mode = SMM_GLOB;
+  else if (strcmp(mode_str, "pcre") == 0)
+    *string_match_mode = SMM_PCRE;
   else
     result = FALSE;
 
@@ -464,7 +527,7 @@ _list_search_parse_options(StringMatchMode *mode, gint *start_index, gint *argc,
     {
       g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
                   "$(list-search) Invalid list-search mode: %s. "
-                  "Valid modes are: literal, prefix, substring, glob", mode_str);
+                  "Valid modes are: literal, prefix, substring, glob, pcre", mode_str);
       goto exit;
     }
 
