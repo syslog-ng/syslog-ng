@@ -69,7 +69,7 @@ list_scanner_input_va(ListScanner *self, const gchar *arg1, ...)
 }
 
 void
-list_scanner_input_gstring_array(ListScanner *self, gint argc, GString *argv[])
+list_scanner_input_gstring_array(ListScanner *self, gint argc, GString *const *argv)
 {
   gint i;
 

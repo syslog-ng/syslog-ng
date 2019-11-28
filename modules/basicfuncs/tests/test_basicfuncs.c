@@ -440,7 +440,14 @@ Test(basicfuncs, test_list_funcs)
   assert_template_format("$(implode ' ' foo,bar,xxx,baz,bad)", "foo bar xxx baz bad");
   assert_template_format("$(implode ' ' $(list-slice :3 foo,bar,xxx,baz,bad))", "foo bar xxx");
 
-  assert_template_format("$(list-search)", "");
+  assert_template_format("$(list-search almafa '')", "");
+  assert_template_format("$(list-search 'foo,' '\"foo,\",\"bar\",\"baz\",\"bar\"')", "0");
+  assert_template_format("$(list-search --start-index 0 --mode literal bar '\"foo,\",\"bar\",\"baz\",\"bar\"')", "1");
+  assert_template_format("$(list-search --start-index 2 bar '\"foo,\",\"bar\",\"baz\",\"bar\"')", "3");
+  assert_template_format("$(list-search --mode literal --start-index 1 baz '\"foo,\",\"bar\",\"baz\",\"bar\"')", "2");
+  assert_template_format("$(list-search --start-index 5 baz '\"foo,\",\"bar\",\"baz\",\"bar\"' '\"foo,\",\"bar\",\"baz\",\"bar\"')",
+                         "6");
+  assert_template_format("$(list-search almafa --mode literal '\"foo,\",\"bar\",\"baz\",\"bar\"')", "");
 }
 
 Test(basicfuncs, test_context_funcs)
