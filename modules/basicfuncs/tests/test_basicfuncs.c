@@ -462,6 +462,13 @@ Test(basicfuncs, test_list_funcs)
   assert_template_format("$(list-search --mode substring ar '\"foo,\",\"bar\",\"baz\"')", "1");
   assert_template_format("$(list-search --start-index 1 --mode substring ar '\"foo,\",\"bar\",\"baz\"')", "1");
   assert_template_format("$(list-search --mode substring almafa '\"foo,\",\"bar\",\"baz\"')", "");
+
+  assert_template_format("$(list-search --mode glob al*fa '')", "");
+  assert_template_format("$(list-search --start-index 0 --mode glob f*, '\"foo,\",\"bar\",\"baz\"')", "0");
+  assert_template_format("$(list-search --mode glob --start-index 1 *az '\"foo,\",\"bar\",\"baz\"')", "2");
+  assert_template_format("$(list-search --mode glob ar '\"foo,\",\"bar\",\"baz\"')", "");
+  assert_template_format("$(list-search --mode glob ba* '\"foo,\",\"bar\",\"baz\"')", "1");
+  assert_template_format("$(list-search --mode glob al*fa '\"foo,\",\"bar\",\"baz\"')", "");
 }
 
 Test(basicfuncs, test_context_funcs)

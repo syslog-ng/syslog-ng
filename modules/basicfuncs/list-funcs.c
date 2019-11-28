@@ -333,20 +333,32 @@ typedef enum _StringMatchMode
 {
   SMM_LITERAL = 0,
   SMM_PREFIX,
-  SMM_SUBSTRING
+  SMM_SUBSTRING,
+  SMM_GLOB
 } StringMatchMode;
 
 typedef struct _StringMatcher
 {
   StringMatchMode mode;
   gchar *pattern;
+  GPatternSpec *glob;
 } StringMatcher;
+
+static gboolean
+string_matcher_prepare_glob(StringMatcher *self)
+{
+  self->glob = g_pattern_spec_new(self->pattern);
+
+  return TRUE;
+}
 
 static gboolean
 string_matcher_prepare(StringMatcher *self)
 {
   switch (self->mode)
     {
+    case SMM_GLOB:
+      return string_matcher_prepare_glob(self);
     default:
       return TRUE;
     }
@@ -363,6 +375,8 @@ string_matcher_match(StringMatcher *self, const char *string, gsize string_len)
       return (strncmp(string, self->pattern, strlen(self->pattern)) == 0);
     case SMM_SUBSTRING:
       return (strstr(string, self->pattern) != NULL);
+    case SMM_GLOB:
+      return (g_pattern_match_string(self->glob, string));
     default:
       g_assert_not_reached();
     }
@@ -384,6 +398,8 @@ string_matcher_free(StringMatcher *self)
 {
   if (self->pattern)
     g_free(self->pattern);
+  if (self->glob)
+    g_pattern_spec_free(self->glob);
   g_free(self);
 }
 
@@ -415,6 +431,8 @@ _list_search_mode_str_to_string_match_mode(const gchar *mode_str, StringMatchMod
     *string_match_mode = SMM_PREFIX;
   else if (strcmp(mode_str, "substring") == 0)
     *string_match_mode = SMM_SUBSTRING;
+  else if (strcmp(mode_str, "glob") == 0)
+    *string_match_mode = SMM_GLOB;
   else
     result = FALSE;
 
@@ -446,7 +464,7 @@ _list_search_parse_options(StringMatchMode *mode, gint *start_index, gint *argc,
     {
       g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
                   "$(list-search) Invalid list-search mode: %s. "
-                  "Valid modes are: literal, prefix, substring", mode_str);
+                  "Valid modes are: literal, prefix, substring, glob", mode_str);
       goto exit;
     }
 
