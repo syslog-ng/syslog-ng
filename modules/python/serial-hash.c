@@ -186,3 +186,33 @@ serial_hash_remove(SerialHash *self, gchar *key)
   serial_list_remove(self->storage, *handle);
   g_hash_table_remove(self->index, key);
 }
+
+static void
+add_handle(SerialList *storage, SerialListHandle handle, gpointer user_data)
+{
+  SerialHash *self = user_data;
+
+  const guchar *payload = NULL;
+  gsize payload_len = 0;
+  serial_list_get_data(storage, handle, &payload, &payload_len);
+
+  update_handle(self, g_strdup(payload_get_key((guchar *)payload)), handle);
+}
+
+static void
+rebuild_index(SerialHash *self)
+{
+  serial_list_handle_foreach(self->storage, add_handle, self);
+}
+
+SerialHash *
+serial_hash_load(guchar *base, gsize max_size)
+{
+  SerialHash *self = g_new0(SerialHash, 1);
+  self->index = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
+  self->storage = serial_list_load(base, max_size);
+
+  rebuild_index(self);
+
+  return self;
+}
