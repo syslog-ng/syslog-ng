@@ -103,6 +103,7 @@ static Plugin basicfuncs_plugins[] =
   TEMPLATE_FUNCTION_PLUGIN(tf_list_slice, "list-slice"),
   TEMPLATE_FUNCTION_PLUGIN(tf_list_count, "list-count"),
   TEMPLATE_FUNCTION_PLUGIN(tf_list_append, "list-append"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_list_search, "list-search"),
 
   /* numeric-funcs */
   TEMPLATE_FUNCTION_PLUGIN(tf_num_plus, "+"),

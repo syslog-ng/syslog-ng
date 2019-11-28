@@ -328,3 +328,27 @@ tf_implode(LogMessage *msg, gint argc, GString *argv[], GString *result)
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_implode);
+
+typedef struct _ListSearchState
+{
+} ListSearchState;
+
+static void
+list_search_state_free(gpointer s)
+{
+}
+
+static gboolean
+tf_list_search_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint argc, gchar *argv[],
+                       GError **error)
+{
+  return TRUE;
+}
+
+static void
+tf_list_search_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
+{
+}
+
+TEMPLATE_FUNCTION(ListSearchState, tf_list_search, tf_list_search_prepare, NULL,
+                  tf_list_search_call, list_search_state_free, NULL);
