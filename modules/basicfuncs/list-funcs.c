@@ -331,7 +331,8 @@ TEMPLATE_FUNCTION_SIMPLE(tf_implode);
 
 typedef enum _StringMatchMode
 {
-  SMM_LITERAL = 0
+  SMM_LITERAL = 0,
+  SMM_PREFIX
 } StringMatchMode;
 
 typedef struct _StringMatcher
@@ -357,6 +358,8 @@ string_matcher_match(StringMatcher *self, const char *string, gsize string_len)
     {
     case SMM_LITERAL:
       return (strcmp(string, self->pattern) == 0);
+    case SMM_PREFIX:
+      return (strncmp(string, self->pattern, strlen(self->pattern)) == 0);
     default:
       g_assert_not_reached();
     }
@@ -405,6 +408,8 @@ _list_search_mode_str_to_string_match_mode(const gchar *mode_str, StringMatchMod
 
   if (mode_str == NULL || strcmp(mode_str, "literal") == 0)
     *string_match_mode = SMM_LITERAL;
+  else if (strcmp(mode_str, "prefix") == 0)
+    *string_match_mode = SMM_PREFIX;
   else
     result = FALSE;
 
@@ -436,7 +441,7 @@ _list_search_parse_options(StringMatchMode *mode, gint *start_index, gint *argc,
     {
       g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
                   "$(list-search) Invalid list-search mode: %s. "
-                  "Valid modes are: literal", mode_str);
+                  "Valid modes are: literal, prefix", mode_str);
       goto exit;
     }
 
