@@ -335,6 +335,68 @@ Test(parse_timestamp, rfc5424_performance)
   stop_stopwatch_and_display_result(it, "RFC5424 timestamp parsing speed");
 }
 
+static void
+_parse_valid_month(const gchar *month, const gint expected_month)
+{
+  gint left = strlen(month);
+  gint mon = -1;
+
+  cr_assert(scan_month_abbrev(&month, &left, &mon));
+
+  cr_assert_eq(mon, expected_month);
+  cr_assert_eq(left, 0);
+}
+
+Test(scan_month_abbrev, valid_months)
+{
+  _parse_valid_month("Jan", 0);
+  _parse_valid_month("Feb", 1);
+  _parse_valid_month("Mar", 2);
+  _parse_valid_month("Apr", 3);
+  _parse_valid_month("May", 4);
+  _parse_valid_month("Jun", 5);
+  _parse_valid_month("Jul", 6);
+  _parse_valid_month("Aug", 7);
+  _parse_valid_month("Sep", 8);
+  _parse_valid_month("Oct", 9);
+  _parse_valid_month("Nov", 10);
+  _parse_valid_month("Dec", 11);
+}
+
+static void
+_parse_invalid_month(const gchar *month)
+{
+  gint left = strlen(month);
+  gint original_left = left;
+  gint mon = -1;
+
+  cr_assert_not(scan_month_abbrev(&month, &left, &mon));
+
+  cr_assert_eq(mon, -1);
+  cr_assert_eq(left, original_left);
+}
+
+Test(scan_month_abbrev, invalid_month_names)
+{
+  _parse_invalid_month("");
+  _parse_invalid_month("Set");
+  _parse_invalid_month("Jit");
+  _parse_invalid_month("abcdefg");
+
+  _parse_invalid_month("JaX");
+  _parse_invalid_month("FeX");
+  _parse_invalid_month("MaX");
+  _parse_invalid_month("ApX");
+  _parse_invalid_month("MaX");
+  _parse_invalid_month("JuX");
+  _parse_invalid_month("JuX");
+  _parse_invalid_month("AuX");
+  _parse_invalid_month("SeX");
+  _parse_invalid_month("OcX");
+  _parse_invalid_month("NoX");
+  _parse_invalid_month("DeX");
+}
+
 
 void
 setup(void)

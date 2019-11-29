@@ -37,4 +37,6 @@ gboolean scan_bsd_timestamp(const gchar **buf, gint *left, WallClockTime *wct);
 gboolean scan_rfc3164_timestamp(const guchar **data, gint *length, WallClockTime *wct);
 gboolean scan_rfc5424_timestamp(const guchar **data, gint *length, WallClockTime *wct);
 
+gboolean scan_month_abbrev(const gchar **buf, gint *left, gint *mon);
+
 #endif
