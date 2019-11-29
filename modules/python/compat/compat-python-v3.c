@@ -66,3 +66,9 @@ pyobject_as_int(PyObject *object)
 {
   return PyLong_AsLong(object);
 };
+
+gboolean
+py_object_is_integer(PyObject *object)
+{
+  return PyLong_Check(object);
+}
