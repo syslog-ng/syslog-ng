@@ -113,6 +113,19 @@ serial_list_free(SerialList *self)
   g_free(self);
 }
 
+/* The data length might be smaller than the available space.
+   This function calculates the available space. This can be useful
+   for example when we want to update a data node with larger data.
+   The longer data might fit into the same space. */
+static gsize
+get_available_space(SerialList *self, Node *node)
+{
+  if (node->next)
+    return node->next - offsetof(Node, data) - node->offset;
+  else
+    return self->max_size - offsetof(Node, data) - node->offset;
+}
+
 static Node *
 find_free_space(SerialList *self, gsize data_size)
 {
@@ -123,7 +136,7 @@ find_free_space(SerialList *self, gsize data_size)
       if (node->type == HEAD)
         return NULL;
 
-      if (node->type == FREE_SPACE && node->data_len >= align(data_size))
+      if (node->type == FREE_SPACE && get_available_space(self, node) >= align(data_size))
         return node;
 
       node = get_node_at_offset(self, node->next);
@@ -176,7 +189,7 @@ serial_list_insert(SerialList *self, guchar *data, gsize data_len)
   if (!free_space)
     return 0;
 
-  if (free_space->data_len >= sizeof(Node) + align(data_len) + sizeof(Node))
+  if (get_available_space(self, free_space) >= sizeof(Node) + align(data_len) + sizeof(Node))
     return split_free_space_and_insert(self, free_space, data, data_len);
   else
     {
