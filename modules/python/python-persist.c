@@ -39,6 +39,19 @@ typedef struct
   guchar data[];
 } Persist;
 
+typedef enum
+{
+  ENTRY_TYPE_STRING,
+  ENTRY_TYPE_LONG,
+  ENTRY_TYPE_MAX
+} EntryType;
+
+typedef struct
+{
+  guint8 type;
+  gchar data[];
+} Entry;
+
 static PyObject *
 _call_generate_persist_name_method(PythonPersistMembers *options)
 {
@@ -248,31 +261,50 @@ py_persist_type_members[] =
 };
 
 static gchar *
-_lookup_entry(PyPersist *self, const gchar *key)
+_lookup_entry(PyPersist *self, guint8 *type, const gchar *key)
 {
   Persist *persist = persist_state_map_entry(self->persist_state, self->persist_handle);
   serial_hash_rebase(self->entries, persist->data, persist->max_size);
 
-  const guchar *data = NULL;
-  gsize data_len = 0;
-  serial_hash_lookup(self->entries, (gchar *)key, &data, &data_len);
+  Entry *entry = NULL;
+  gsize entry_len = 0;
+  serial_hash_lookup(self->entries, (gchar *)key, (const guchar **)&entry, &entry_len);
 
   // outside the map the entry might be relocated
-  gchar *copy = g_strdup((gchar *)data);
+  if (!entry)
+    {
+      persist_state_unmap_entry(self->persist_state, self->persist_handle);
+      return NULL;
+    }
+
+  *type = entry->type;
+  gchar *copy = g_strdup(entry->data);
   persist_state_unmap_entry(self->persist_state, self->persist_handle);
 
   return copy;
 };
 
 static gboolean
-_store_entry(PyPersist *self, const gchar *key, const gchar *value)
+_store_entry(PyPersist *self, const gchar *key, Entry *entry, gsize entry_size)
 {
   Persist *persist = persist_state_map_entry(self->persist_state, self->persist_handle);
   serial_hash_rebase(self->entries, persist->data, persist->max_size);
-  gboolean retval = serial_hash_insert(self->entries, (gchar *)key, (guchar *)value, strlen(value)+1);
+  gboolean retval = serial_hash_insert(self->entries, (gchar *)key, (guchar *)entry, entry_size);
   persist_state_unmap_entry(self->persist_state, self->persist_handle);
 
   return retval;
+}
+
+static PyObject *
+entry_to_pyobject(guint8 type, gchar *value)
+{
+  switch (type)
+    {
+    case ENTRY_TYPE_STRING:
+      return _py_string_from_string(value, -1);
+    default:
+      g_assert_not_reached();
+    }
 }
 
 static PyObject *
@@ -287,7 +319,8 @@ _py_persist_type_get(PyObject *o, PyObject *key)
     }
 
   const gchar *name = _py_get_string_as_string(key);
-  gchar *value = _lookup_entry(self, name);
+  guint8 type;
+  gchar *value = _lookup_entry(self, &type, name);
 
   if (!value)
     {
@@ -295,7 +328,13 @@ _py_persist_type_get(PyObject *o, PyObject *key)
       return NULL;
     }
 
-  PyObject *py_value =  _py_string_from_string(value, -1);
+  if (type >= ENTRY_TYPE_MAX)
+    {
+      PyErr_Format(PyExc_KeyError, "Unknown format in persist file");
+      return NULL;
+    }
+
+  PyObject *py_value =  entry_to_pyobject(type, value);
   g_free(value);
   return py_value;
 }
@@ -334,6 +373,26 @@ _try_to_increase_storage(PyPersist *self)
   return TRUE;
 }
 
+static Entry *
+value_to_entry(PyObject *o, gsize *entry_size)
+{
+  if (_py_is_string(o))
+    {
+      const gchar *value = _py_get_string_as_string(o);
+      *entry_size = sizeof(Entry) + strlen(value) + 1;
+      Entry *entry = g_malloc(*entry_size);
+      entry->type = ENTRY_TYPE_STRING;
+      strcpy(entry->data, value);
+      return entry;
+    }
+  else if (PyLong_Check(o))
+    {
+      return NULL;
+    }
+  else
+    return NULL;
+}
+
 static int
 _py_persist_type_set(PyObject *o, PyObject *k, PyObject *v)
 {
@@ -345,30 +404,36 @@ _py_persist_type_set(PyObject *o, PyObject *k, PyObject *v)
       return -1;
     }
 
-  if (!_py_is_string(v))
+  const gchar *key = _py_get_string_as_string(k);
+  gsize entry_size;
+  Entry *entry = value_to_entry(v, &entry_size);
+  if (!entry)
     {
-      PyErr_SetString(PyExc_TypeError, "value is not a string object");
+      PyErr_SetString(PyExc_TypeError, "value must be string or number");
       return -1;
     }
 
-  const gchar *key = _py_get_string_as_string(k);
-  const gchar *value = _py_get_string_as_string(v);
-
-  if (!_store_entry(self, key, value))
+  if (!_store_entry(self, key, entry, entry_size))
     {
       if (!_try_to_increase_storage(self))
         {
           PyErr_SetString(PyExc_RuntimeError, "could not extend persist storage");
+          g_free(entry);
           return -1;
         }
 
-      if (_store_entry(self, key, value))
-        return 0;
+      if (_store_entry(self, key, entry, entry_size))
+        {
+          g_free(entry);
+          return 0;
+        }
 
       PyErr_SetString(PyExc_RuntimeError, "not enough space in storage, entry too large");
+      g_free(entry);
       return -1;
     }
 
+  g_free(entry);
   return 0;
 }
 
