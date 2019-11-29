@@ -196,3 +196,20 @@ serial_list_insert(SerialList *self, guchar *data, gsize data_len)
       return convert_free_space(self, free_space, data, data_len);
     }
 }
+
+SerialListHandle
+serial_list_find(SerialList *self, SerialListFindFunc func, gpointer user_data)
+{
+  Node *node = get_node_at_offset(self, get_head(self)->next);
+
+  while (TRUE)
+    {
+      if (node->type == HEAD)
+        return 0;
+
+      if (node->type == DATA && func(node->data, node->data_len, user_data))
+        return node->offset;
+
+      node = get_node_at_offset(self, node->next);
+    }
+}
