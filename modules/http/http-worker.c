@@ -299,7 +299,7 @@ _default_4XX(HTTPDestinationWorker *self, const gchar *url, glong http_code)
              evt_tag_str("driver", owner->super.super.super.id),
              log_pipe_location_tag(&owner->super.super.super.super));
 
-  static glong errors[] = {409, 428, -1};
+  static glong errors[] = {428, -1};
   if (_find_http_code_in_list(http_code, errors))
     return LTR_ERROR;
 

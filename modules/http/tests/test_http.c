@@ -73,7 +73,7 @@ ParameterizedTestParameters(http, http_code_tests)
     { 406, "Not Acceptable", LTR_NOT_CONNECTED},
     { 407, "Proxy Authentication Required", LTR_NOT_CONNECTED},
     { 408, "Request Timeout", LTR_NOT_CONNECTED},
-    { 409, "Conflict", LTR_ERROR},
+    { 409, "Conflict", LTR_NOT_CONNECTED},
     { 410, "Gone", LTR_DROP},
     { 411, "Length Required", LTR_NOT_CONNECTED},
     { 412, "Precondition Failed", LTR_NOT_CONNECTED},
