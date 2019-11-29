@@ -44,24 +44,34 @@ scan_day_abbrev(const gchar **buf, gint *left, gint *wday)
         *wday = 0;
       else if (strncasecmp(*buf, "Sat", 3) == 0)
         *wday = 6;
+      else
+        return FALSE;
       break;
     case 'M':
       if (strncasecmp(*buf, "Mon", 3) == 0)
         *wday = 1;
+      else
+        return FALSE;
       break;
     case 'T':
       if (strncasecmp(*buf, "Tue", 3) == 0)
         *wday = 2;
       else if (strncasecmp(*buf, "Thu", 3) == 0)
         *wday = 4;
+      else
+        return FALSE;
       break;
     case 'W':
       if (strncasecmp(*buf, "Wed", 3) == 0)
         *wday = 3;
+      else
+        return FALSE;
       break;
     case 'F':
       if (strncasecmp(*buf, "Fri", 3) == 0)
         *wday = 5;
+      else
+        return FALSE;
       break;
     default:
       return FALSE;

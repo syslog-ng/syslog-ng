@@ -397,6 +397,57 @@ Test(scan_month_abbrev, invalid_month_names)
   _parse_invalid_month("DeX");
 }
 
+static void
+_parse_valid_day(const gchar *day, const gint expected_day)
+{
+  gint left = strlen(day);
+  gint daynum = -1;
+
+  cr_assert(scan_day_abbrev(&day, &left, &daynum));
+
+  cr_assert_eq(daynum, expected_day);
+  cr_assert_eq(left, 0);
+}
+
+Test(scan_day_abbrev, valid_days)
+{
+  _parse_valid_day("Sun", 0);
+  _parse_valid_day("Mon", 1);
+  _parse_valid_day("Tue", 2);
+  _parse_valid_day("Wed", 3);
+  _parse_valid_day("Thu", 4);
+  _parse_valid_day("Fri", 5);
+  _parse_valid_day("Sat", 6);
+}
+
+static void
+_parse_invalid_day(const gchar *day)
+{
+  gint left = strlen(day);
+  gint original_left = left;
+  gint daynum = -1;
+
+  cr_assert_not(scan_day_abbrev(&day, &left, &daynum));
+
+  cr_assert_eq(daynum, -1);
+  cr_assert_eq(left, original_left);
+}
+
+Test(scan_day_abbrev, invalid_day_names)
+{
+  _parse_invalid_day("");
+  _parse_invalid_day("Set");
+  _parse_invalid_day("abcdefg");
+
+  _parse_invalid_day("SuX");
+  _parse_invalid_day("MoX");
+  _parse_invalid_day("TuX");
+  _parse_invalid_day("WeX");
+  _parse_invalid_day("ThX");
+  _parse_invalid_day("FrX");
+  _parse_invalid_day("SaX");
+}
+
 
 void
 setup(void)
