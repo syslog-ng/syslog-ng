@@ -134,3 +134,15 @@ Test(python_persist, test_python_persist_basic)
   _load_code("assert persist['key'] == 'value'");
   persist_state_stop(cfg->state);
 }
+
+Test(python_persist, test_python_persist_iterator)
+{
+  PersistState *state = clean_and_create_persist_state_for_test("test-python-iterator.persist");
+  cfg->state = state;
+  _load_code("persist = Persist('persist_name')");
+  _load_code("persist['key1'] = 'value1'");
+  _load_code("persist['key2'] = 'value2'");
+  _load_code("persist['key3'] = 'value3'");
+  _load_code("assert sorted(persist) == ['key1', 'key2', 'key3']");
+  persist_state_stop(state);
+}
