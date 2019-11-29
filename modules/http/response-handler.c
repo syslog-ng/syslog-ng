@@ -55,7 +55,7 @@ _free_entry(HttpResponseHandler *self)
 HttpResponseHandlers *
 http_response_handlers_new(void)
 {
-  return g_hash_table_new_full(g_int_hash, g_int_equal, g_free, (GDestroyNotify)_free_entry);
+  return g_hash_table_new_full(g_int_hash, g_int_equal, NULL, (GDestroyNotify)_free_entry);
 }
 
 void
@@ -76,17 +76,7 @@ void
 http_response_handlers_insert(HttpResponseHandlers *self, HttpResponseHandler *response_handler)
 {
   HttpResponseHandler *clone = _clone(response_handler);
-
-  /* It migth be tempting to use status code from the clone, hence we
-  neither need to allocate a gint, nor need a key free function in the
-  hashtable. The problem is, when glib overwrites the value behind the
-  same key, by default it does not replace the old key with the new,
-  only the value changes. In our case, the value will be deallocated,
-  hence the key in the hashtable becomes invalid. */
-
-  gint *status_code = g_new(gint, 1);
-  *status_code = clone->status_code;
-  g_hash_table_insert(self, status_code, clone);
+  g_hash_table_replace(self, &clone->status_code, clone);
 }
 
 HttpResponseHandler *
