@@ -302,6 +302,8 @@ entry_to_pyobject(guint8 type, gchar *value)
     {
     case ENTRY_TYPE_STRING:
       return _py_string_from_string(value, -1);
+    case ENTRY_TYPE_LONG:
+      return PyLong_FromString(value, NULL, 10);
     default:
       g_assert_not_reached();
     }
@@ -374,20 +376,31 @@ _try_to_increase_storage(PyPersist *self)
 }
 
 static Entry *
+put_string_into_entry(PyObject *o, gsize *entry_size)
+{
+  const gchar *value = _py_get_string_as_string(o);
+  *entry_size = sizeof(Entry) + strlen(value) + 1;
+  Entry *entry = g_malloc(*entry_size);
+  strcpy(entry->data, value);
+  return entry;
+}
+
+static Entry *
 value_to_entry(PyObject *o, gsize *entry_size)
 {
   if (_py_is_string(o))
     {
-      const gchar *value = _py_get_string_as_string(o);
-      *entry_size = sizeof(Entry) + strlen(value) + 1;
-      Entry *entry = g_malloc(*entry_size);
+      Entry *entry = put_string_into_entry(o, entry_size);
       entry->type = ENTRY_TYPE_STRING;
-      strcpy(entry->data, value);
       return entry;
     }
-  else if (PyLong_Check(o))
+  else if (py_object_is_integer(o))
     {
-      return NULL;
+      PyObject *as_str = PyObject_Str(o);
+      Entry *entry = put_string_into_entry(as_str, entry_size);
+      entry->type = ENTRY_TYPE_LONG;
+      Py_DECREF(as_str);
+      return entry;
     }
   else
     return NULL;
