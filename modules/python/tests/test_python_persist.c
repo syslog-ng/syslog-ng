@@ -158,3 +158,20 @@ Test(python_persist, test_python_persist_proper_types)
   _load_code("assert persist['number'] == 5");
   persist_state_stop(state);
 }
+
+const gchar *should_throw_exception = "\
+exception_happened = False\n\
+try:\n\
+    persist['missing']\n\
+except KeyError:\n\
+    exception_happened = True\n\
+assert exception_happened";
+
+Test(python_persist, test_python_persist_lookup_missing_key)
+{
+  PersistState *state = clean_and_create_persist_state_for_test("test-python-lookup-missing-key.persist");
+  cfg->state = state;
+  _load_code("persist = Persist('persist_name')");
+  _load_code(should_throw_exception);
+  persist_state_stop(state);
+};
