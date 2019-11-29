@@ -300,6 +300,40 @@ _py_persist_type_get(PyObject *o, PyObject *key)
   return py_value;
 }
 
+static gboolean
+_try_to_increase_storage(PyPersist *self)
+{
+  Persist *persist = persist_state_map_entry(self->persist_state, self->persist_handle);
+  serial_hash_rebase(self->entries, persist->data, persist->max_size);
+
+  gsize orig_size = persist->max_size;
+  guchar *save = g_malloc(orig_size);
+  memcpy(save, persist, orig_size);
+  persist_state_unmap_entry(self->persist_state, self->persist_handle);
+
+  // Later this can be fixed if needed. Persist file can be expanded by pagesize at a time, minus some constant.
+  // Using half page to be safe now.
+  gsize new_size = MIN(2*orig_size, orig_size + getpagesize()/2);
+
+  PersistEntryHandle handle = persist_state_alloc_entry(self->persist_state, self->persist_name, new_size);
+  if (!handle)
+    {
+      g_free(save);
+      return FALSE;
+    }
+
+  persist = persist_state_map_entry(self->persist_state, handle);
+  memcpy(persist, save, orig_size);
+  persist->max_size = new_size;
+  serial_hash_rebase(self->entries, persist->data, new_size);
+  persist_state_unmap_entry(self->persist_state, handle);
+
+  self->persist_handle = handle;
+
+  g_free(save);
+  return TRUE;
+}
+
 static int
 _py_persist_type_set(PyObject *o, PyObject *k, PyObject *v)
 {
@@ -322,7 +356,16 @@ _py_persist_type_set(PyObject *o, PyObject *k, PyObject *v)
 
   if (!_store_entry(self, key, value))
     {
-      PyErr_SetString(PyExc_RuntimeError, "not enough space in storage");
+      if (!_try_to_increase_storage(self))
+        {
+          PyErr_SetString(PyExc_RuntimeError, "could not extend persist storage");
+          return -1;
+        }
+
+      if (_store_entry(self, key, value))
+        return 0;
+
+      PyErr_SetString(PyExc_RuntimeError, "not enough space in storage, entry too large");
       return -1;
     }
 
