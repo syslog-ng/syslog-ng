@@ -80,6 +80,8 @@ void setup(void)
 
   _py_init_interpreter();
   _init_python_main();
+
+  _load_code("from _syslogng import Persist");
 }
 
 void teardown(void)
@@ -91,7 +93,6 @@ void teardown(void)
 TestSuite(python_persist, .init = setup, .fini = teardown);
 
 const gchar *simple_persist = "\n\
-from _syslogng import Persist\n\
 class SubPersist(Persist):\n\
     def __init__(self, persist_name):\n\
         super(SubPersist, self).__init__(persist_name = persist_name)\n\
@@ -116,4 +117,20 @@ Test(python_persist, test_python_persist_name)
   cfg->state = state;
   _load_code(simple_persist);
   persist_state_stop(state);
+}
+
+Test(python_persist, test_python_persist_basic)
+{
+  PersistState *state = clean_and_create_persist_state_for_test("test-python.persist");
+  cfg->state = state;
+  _load_code("persist = Persist('persist_name')");
+  _load_code("assert 'key' not in persist");
+  _load_code("persist['key'] = 'value'");
+  _load_code("assert 'key' in persist");
+  cfg->state = restart_persist_state(state);
+  _load_code("persist = Persist('persist_name')");
+  _load_code("persist['key'] = 'value'");
+  _load_code("assert 'key' in persist");
+  _load_code("assert persist['key'] == 'value'");
+  persist_state_stop(cfg->state);
 }
