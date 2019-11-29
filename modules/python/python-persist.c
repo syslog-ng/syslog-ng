@@ -52,6 +52,20 @@ typedef struct
   gchar data[];
 } Entry;
 
+static Persist *
+_map_persist(PyPersist *self)
+{
+  Persist *persist = persist_state_map_entry(self->persist_state, self->persist_handle);
+  self->entries = serial_hash_load(persist->data, persist->max_size);
+  return persist;
+}
+
+static void
+_unmap_persist(PyPersist *self)
+{
+  persist_state_unmap_entry(self->persist_state, self->persist_handle);
+}
+
 static PyObject *
 _call_generate_persist_name_method(PythonPersistMembers *options)
 {
@@ -263,8 +277,7 @@ py_persist_type_members[] =
 static gchar *
 _lookup_entry(PyPersist *self, guint8 *type, const gchar *key)
 {
-  Persist *persist = persist_state_map_entry(self->persist_state, self->persist_handle);
-  serial_hash_rebase(self->entries, persist->data, persist->max_size);
+  _map_persist(self);
 
   Entry *entry = NULL;
   gsize entry_len = 0;
@@ -273,13 +286,14 @@ _lookup_entry(PyPersist *self, guint8 *type, const gchar *key)
   // outside the map the entry might be relocated
   if (!entry)
     {
-      persist_state_unmap_entry(self->persist_state, self->persist_handle);
+      _unmap_persist(self);
       return NULL;
     }
 
   *type = entry->type;
   gchar *copy = g_strdup(entry->data);
-  persist_state_unmap_entry(self->persist_state, self->persist_handle);
+
+  _unmap_persist(self);
 
   return copy;
 };
@@ -287,10 +301,9 @@ _lookup_entry(PyPersist *self, guint8 *type, const gchar *key)
 static gboolean
 _store_entry(PyPersist *self, const gchar *key, Entry *entry, gsize entry_size)
 {
-  Persist *persist = persist_state_map_entry(self->persist_state, self->persist_handle);
-  serial_hash_rebase(self->entries, persist->data, persist->max_size);
+  _map_persist(self);
   gboolean retval = serial_hash_insert(self->entries, (gchar *)key, (guchar *)entry, entry_size);
-  persist_state_unmap_entry(self->persist_state, self->persist_handle);
+  _unmap_persist(self);
 
   return retval;
 }
@@ -344,13 +357,12 @@ _py_persist_type_get(PyObject *o, PyObject *key)
 static gboolean
 _try_to_increase_storage(PyPersist *self)
 {
-  Persist *persist = persist_state_map_entry(self->persist_state, self->persist_handle);
-  serial_hash_rebase(self->entries, persist->data, persist->max_size);
+  Persist *persist = _map_persist(self);
 
   gsize orig_size = persist->max_size;
   guchar *save = g_malloc(orig_size);
   memcpy(save, persist, orig_size);
-  persist_state_unmap_entry(self->persist_state, self->persist_handle);
+  _unmap_persist(self);
 
   // Later this can be fixed if needed. Persist file can be expanded by pagesize at a time, minus some constant.
   // Using half page to be safe now.
