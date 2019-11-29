@@ -260,7 +260,7 @@ _default_1XX(HTTPDestinationWorker *self, const gchar *url, glong http_code)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
   msg_error("Server returned with a 1XX (continuation) status code, which was not handled by curl. ",
-            evt_tag_str("url", owner->url),
+            evt_tag_str("url", url),
             evt_tag_int("status_code", http_code),
             evt_tag_str("driver", owner->super.super.super.id),
             log_pipe_location_tag(&owner->super.super.super.super));
@@ -299,7 +299,7 @@ _default_4XX(HTTPDestinationWorker *self, const gchar *url, glong http_code)
              evt_tag_str("driver", owner->super.super.super.id),
              log_pipe_location_tag(&owner->super.super.super.super));
 
-  static glong errors[] = {409, 428, -1};
+  static glong errors[] = {428, -1};
   if (_find_http_code_in_list(http_code, errors))
     return LTR_ERROR;
 
@@ -315,7 +315,7 @@ _default_5XX(HTTPDestinationWorker *self, const gchar *url, glong http_code)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
   msg_notice("Server returned with a 5XX (server errors) status code, which indicates server failure.",
-             evt_tag_str("url", owner->url),
+             evt_tag_str("url", url),
              evt_tag_int("status_code", http_code),
              evt_tag_str("driver", owner->super.super.super.id),
              log_pipe_location_tag(&owner->super.super.super.super));
@@ -415,7 +415,7 @@ _custom_map_http_result(HTTPDestinationWorker *self, const gchar *url, HttpRespo
     case HTTP_RESULT_SUCCESS:
       msg_debug("http: handled by response_action",
                 evt_tag_str("action", "success"),
-                evt_tag_str("url", owner->url),
+                evt_tag_str("url", url),
                 evt_tag_int("status_code", http_code),
                 evt_tag_str("driver", owner->super.super.super.id),
                 log_pipe_location_tag(&owner->super.super.super.super));
@@ -424,7 +424,7 @@ _custom_map_http_result(HTTPDestinationWorker *self, const gchar *url, HttpRespo
     case HTTP_RESULT_RETRY:
       msg_notice("http: handled by response_action",
                  evt_tag_str("action", "retry"),
-                 evt_tag_str("url", owner->url),
+                 evt_tag_str("url", url),
                  evt_tag_int("status_code", http_code),
                  evt_tag_str("driver", owner->super.super.super.id),
                  log_pipe_location_tag(&owner->super.super.super.super));
@@ -433,7 +433,7 @@ _custom_map_http_result(HTTPDestinationWorker *self, const gchar *url, HttpRespo
     case HTTP_RESULT_DROP:
       msg_notice("http: handled by response_action",
                  evt_tag_str("action", "drop"),
-                 evt_tag_str("url", owner->url),
+                 evt_tag_str("url", url),
                  evt_tag_int("status_code", http_code),
                  evt_tag_str("driver", owner->super.super.super.id),
                  log_pipe_location_tag(&owner->super.super.super.super));
@@ -442,7 +442,7 @@ _custom_map_http_result(HTTPDestinationWorker *self, const gchar *url, HttpRespo
     case HTTP_RESULT_DISCONNECT:
       msg_notice("http: handled by response_action",
                  evt_tag_str("action", "disconnect"),
-                 evt_tag_str("url", owner->url),
+                 evt_tag_str("url", url),
                  evt_tag_int("status_code", http_code),
                  evt_tag_str("driver", owner->super.super.super.id),
                  log_pipe_location_tag(&owner->super.super.super.super));
