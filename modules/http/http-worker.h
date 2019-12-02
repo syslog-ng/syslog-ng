@@ -27,10 +27,7 @@
 
 #include "logthrdest/logthrdestdrv.h"
 #include "http-loadbalancer.h"
-
-#define CURL_NO_OLDIES 1
-#include <curl/curl.h>
-
+#include "http-curl-header-list.h"
 
 typedef struct _HTTPDestinationWorker
 {
@@ -38,7 +35,7 @@ typedef struct _HTTPDestinationWorker
   HTTPLoadBalancerClient lbc;
   CURL *curl;
   GString *request_body;
-  struct curl_slist *request_headers;
+  List *request_headers;
 } HTTPDestinationWorker;
 
 LogThreadedResult default_map_http_status_to_worker_status(HTTPDestinationWorker *self, const gchar *url,

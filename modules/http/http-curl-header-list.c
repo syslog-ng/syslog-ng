@@ -71,7 +71,6 @@ _remove_all(List *s)
 static void
 _free_fn(List *s)
 {
-  HttpCurlHeaderList *self = (HttpCurlHeaderList *)s;
   _remove_all(s);
 }
 
