@@ -16,6 +16,8 @@ set(HTTP_DESTINATION_SOURCES
     http-worker.c
     http-loadbalancer.h
     http-loadbalancer.c
+    http-curl-header-list.h
+    http-curl-header-list.c
     http-parser.c
     http-parser.h
     http-plugin.c
