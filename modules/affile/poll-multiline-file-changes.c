@@ -77,7 +77,7 @@ poll_multiline_file_changes_timeout_expired(PollMultilineFileChanges *self)
 static gboolean
 _is_multi_line_timeout_pending(PollMultilineFileChanges *self)
 {
-  return !self->timed_out && self->last_eof != 0;
+  return self->last_eof != 0;
 }
 
 static gboolean
@@ -95,7 +95,10 @@ poll_multiline_file_changes_on_eof(PollFileChanges *s)
 {
   PollMultilineFileChanges *self = (PollMultilineFileChanges *) s;
 
-  if (_is_multi_line_timeout_pending(self))
+  if (self->timed_out)
+    return;
+
+  if (!_is_multi_line_timeout_pending(self))
     {
       poll_multiline_file_changes_start_timer(self);
       return;
