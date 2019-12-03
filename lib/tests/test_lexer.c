@@ -160,6 +160,19 @@ Test(lexer, test_string)
   assert_parser_string("test\n\r\a\t\vc");
 }
 
+Test(lexer, test_unquoted_string)
+{
+  _input("test");
+  assert_parser_identifier("test");
+
+  _input("..test");
+  assert_parser_token(LL_DOTDOT);
+
+  _input(".test");
+  assert_parser_token('.');
+  assert_parser_identifier("test");
+}
+
 Test(lexer, test_qstring)
 {
   _input("'test'");
