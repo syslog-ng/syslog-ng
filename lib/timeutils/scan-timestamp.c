@@ -44,24 +44,34 @@ scan_day_abbrev(const gchar **buf, gint *left, gint *wday)
         *wday = 0;
       else if (strncasecmp(*buf, "Sat", 3) == 0)
         *wday = 6;
+      else
+        return FALSE;
       break;
     case 'M':
       if (strncasecmp(*buf, "Mon", 3) == 0)
         *wday = 1;
+      else
+        return FALSE;
       break;
     case 'T':
       if (strncasecmp(*buf, "Tue", 3) == 0)
         *wday = 2;
       else if (strncasecmp(*buf, "Thu", 3) == 0)
         *wday = 4;
+      else
+        return FALSE;
       break;
     case 'W':
       if (strncasecmp(*buf, "Wed", 3) == 0)
         *wday = 3;
+      else
+        return FALSE;
       break;
     case 'F':
       if (strncasecmp(*buf, "Fri", 3) == 0)
         *wday = 5;
+      else
+        return FALSE;
       break;
     default:
       return FALSE;
@@ -89,38 +99,54 @@ scan_month_abbrev(const gchar **buf, gint *left, gint *mon)
         *mon = 5;
       else if (strncasecmp(*buf, "Jul", 3) == 0)
         *mon = 6;
+      else
+        return FALSE;
       break;
     case 'F':
       if (strncasecmp(*buf, "Feb", 3) == 0)
         *mon = 1;
+      else
+        return FALSE;
       break;
     case 'M':
       if (strncasecmp(*buf, "Mar", 3) == 0)
         *mon = 2;
       else if (strncasecmp(*buf, "May", 3) == 0)
         *mon = 4;
+      else
+        return FALSE;
       break;
     case 'A':
       if (strncasecmp(*buf, "Apr", 3) == 0)
         *mon = 3;
       else if (strncasecmp(*buf, "Aug", 3) == 0)
         *mon = 7;
+      else
+        return FALSE;
       break;
     case 'S':
       if (strncasecmp(*buf, "Sep", 3) == 0)
         *mon = 8;
+      else
+        return FALSE;
       break;
     case 'O':
       if (strncasecmp(*buf, "Oct", 3) == 0)
         *mon = 9;
+      else
+        return FALSE;
       break;
     case 'N':
       if (strncasecmp(*buf, "Nov", 3) == 0)
         *mon = 10;
+      else
+        return FALSE;
       break;
     case 'D':
       if (strncasecmp(*buf, "Dec", 3) == 0)
         *mon = 11;
+      else
+        return FALSE;
       break;
     default:
       return FALSE;
