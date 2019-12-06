@@ -26,9 +26,9 @@
 
 struct _SignalSlotConnector
 {
-  //TODO: multithread support
   // map<Signal, set<SlotObject>> connections;
   GHashTable *connections;
+  GMutex *lock; // connect/disconnect guarded by lock, emit is not
 };
 
 GList *
@@ -61,6 +61,8 @@ signal_slot_connect(SignalSlotConnector *self, Signal signal, Slot slot)
   g_assert(signal != NULL);
   g_assert(slot != NULL);
 
+  g_mutex_lock(self->lock);
+
   GList *slots = g_hash_table_lookup(self->connections, signal);
 
   gboolean signal_registered = (slots != NULL);
@@ -71,7 +73,7 @@ signal_slot_connect(SignalSlotConnector *self, Signal signal, Slot slot)
                 evt_tag_printf("already_connected",
                                "connect(connector=%p,signal=%p,slot=%p)",
                                self, signal, slot));
-      return;
+      goto exit_;
     }
 
   GList *new_slots = g_list_append(slots, slot);
@@ -85,6 +87,8 @@ signal_slot_connect(SignalSlotConnector *self, Signal signal, Slot slot)
             evt_tag_printf("new connection registered",
                            "connect(connector=%p,signal=%p,slot=%p)",
                            self, signal, slot));
+exit_:
+  g_mutex_unlock(self->lock);
 }
 
 static void
@@ -101,10 +105,12 @@ signal_slot_disconnect(SignalSlotConnector *self, Signal signal, Slot slot)
   g_assert(signal != NULL);
   g_assert(slot != NULL);
 
+  g_mutex_lock(self->lock);
+
   GList *slots = g_hash_table_lookup(self->connections, signal);
 
   if (!slots)
-    return;
+    goto exit_;
 
   GList *new_slots = g_list_remove(slots, slot);
 
@@ -115,6 +121,9 @@ signal_slot_disconnect(SignalSlotConnector *self, Signal signal, Slot slot)
     {
       g_hash_table_remove(self->connections, signal);
     }
+
+exit_:
+  g_mutex_unlock(self->lock);
 }
 
 static void
@@ -163,12 +172,15 @@ signal_slot_connector_new(void)
                                             NULL,
                                             _destroy_list_of_slots);
 
+  self->lock = g_mutex_new();
+
   return self;
 }
 
 void
 signal_slot_connector_free(SignalSlotConnector *self)
 {
+  g_mutex_free(self->lock);
   g_hash_table_unref(self->connections);
   g_free(self);
 }
