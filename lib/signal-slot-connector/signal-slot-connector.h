@@ -30,6 +30,16 @@
 
 typedef struct _SignalSlotConnector SignalSlotConnector;
 
+
+#define SIGNAL_DECL(signal_func, data_type) \
+  void signal_func(data_type user_data);
+
+#define SIGNAL_IMPL(signal_func, data_type)\
+  void signal_func(data_type user_data) \
+    { \
+      msg_debug("SIGNAL called\n", evt_tag_str("signal", __FUNCTION__)); \
+    }
+
 #define SIGNAL(signal_func, data_type) \
   static inline void signal_func(data_type user_data) \
     { \
