@@ -54,6 +54,7 @@ typedef struct
   gint argc;
   gchar **argv;
   size_t *argvlen;
+  struct timeval timeout;
 } RedisDriver;
 
 /*
@@ -84,6 +85,13 @@ redis_dd_set_auth(LogDriver *d, const gchar *auth)
 
   g_free(self->auth);
   self->auth = g_strdup(auth);
+}
+
+void
+redis_dd_set_timeout(LogDriver *d, const glong timeout)
+{
+  RedisDriver *self = (RedisDriver *)d;
+  self->timeout.tv_sec = timeout;
 }
 
 static void
@@ -144,6 +152,36 @@ redis_dd_format_persist_name(const LogPipe *s)
   return persist_name;
 }
 
+static inline void
+_trace_reply_message(redisReply *r)
+{
+  if (trace_flag)
+    {
+      if (r->elements > 0)
+        {
+          msg_trace(">>>>>> REDIS command reply begin",
+                    evt_tag_long("elements", r->elements));
+
+          for (gsize i = 0; i < r->elements; i++)
+            {
+              _trace_reply_message(r->element[i]);
+            }
+
+          msg_trace("<<<<<< REDIS command reply end");
+        }
+      else if (r->type == REDIS_REPLY_STRING || r->type == REDIS_REPLY_STATUS || r->type == REDIS_REPLY_ERROR)
+        {
+          msg_trace("REDIS command reply",
+                    evt_tag_str("str", r->str));
+        }
+      else
+        {
+          msg_trace("REDIS command unhandled reply",
+                    evt_tag_int("type", r->type));
+        }
+    }
+}
+
 static gboolean
 send_redis_command(RedisDriver *self, const char *format, ...)
 {
@@ -154,7 +192,10 @@ send_redis_command(RedisDriver *self, const char *format, ...)
 
   gboolean retval = reply && (reply->type != REDIS_REPLY_ERROR);
   if (reply)
-    freeReplyObject(reply);
+    {
+      _trace_reply_message(reply);
+      freeReplyObject(reply);
+    }
   return retval;
 }
 
@@ -171,39 +212,51 @@ authenticate_to_redis(RedisDriver *self, const gchar *password)
 }
 
 static gboolean
-redis_dd_connect(RedisDriver *self)
+redis_dd_connect(LogThreadedDestDriver *s)
 {
+  RedisDriver *self = (RedisDriver *)s;
+
   if (self->c && check_connection_to_redis(self))
-    {
-      return TRUE;
-    }
+    return TRUE;
 
   if (self->c)
     redisFree(self->c);
 
-  self->c = redisConnect(self->host, self->port);
+  self->c = redisConnectWithTimeout(self->host, self->port, self->timeout);
 
-  if (self->c->err)
+  if (self->c == NULL || self->c->err)
     {
-      msg_error("REDIS server error, suspending",
-                evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("error", self->c->errstr),
-                evt_tag_int("time_reopen", self->super.time_reopen));
+      if (self->c)
+        {
+          msg_error("REDIS server error during connection",
+                    evt_tag_str("driver", self->super.super.super.id),
+                    evt_tag_str("error", self->c->errstr),
+                    evt_tag_int("time_reopen", self->super.time_reopen));
+        }
+      else
+        {
+          msg_error("REDIS server can't allocate redis context");
+        }
       return FALSE;
     }
 
   if (self->auth)
     if (!authenticate_to_redis(self, self->auth))
       {
-        msg_error("REDIS: failed to authenticate");
+        msg_error("REDIS: failed to authenticate",
+                  evt_tag_str("driver", self->super.super.super.id));
         return FALSE;
       }
 
   if (!check_connection_to_redis(self))
     {
-      msg_error("REDIS: failed to connect");
+      msg_error("REDIS: failed to connect",
+                evt_tag_str("driver", self->super.super.super.id));
       return FALSE;
     }
+
+  if (self->c->err)
+    return FALSE;
 
   msg_debug("Connecting to REDIS succeeded",
             evt_tag_str("driver", self->super.super.super.id));
@@ -221,20 +274,35 @@ redis_dd_disconnect(LogThreadedDestDriver *s)
   self->c = NULL;
 }
 
+static inline void _fill_template(RedisDriver *self, LogMessage *msg, LogTemplate *template, gchar **str, gsize *size)
+{
+  if (log_template_is_trivial(template))
+    {
+      gssize unsigned_size;
+      *str = (gchar *)log_template_get_trivial_value(template, msg, &unsigned_size);
+      *size = unsigned_size;
+    }
+  else
+    {
+      GString *buffer = scratch_buffers_alloc();
+      log_template_format(template, msg, &self->template_options, LTZ_SEND,
+                          self->super.worker.instance.seq_num, NULL, buffer);
+      *size = buffer->len;
+      *str = buffer->str;
+    }
+}
+
 static void
 _fill_argv_from_template_list(RedisDriver *self, LogMessage *msg)
 {
   for (gint i = 1; i < self->argc; i++)
     {
-      GString *buffer = scratch_buffers_alloc();
-      log_template_format(g_list_nth_data(self->arguments, i-1), msg, &self->template_options, LTZ_SEND,
-                          self->super.worker.instance.seq_num, NULL, buffer);
-      self->argvlen[i] = buffer->len;
-      self->argv[i] = buffer->str;
+      LogTemplate *redis_command = g_list_nth_data(self->arguments, i-1);
+      _fill_template(self, msg, redis_command, &self->argv[i], &self->argvlen[i]);
     }
 }
 
-static GString *
+static const gchar *
 _argv_to_string(RedisDriver *self)
 {
   GString *full_command = scratch_buffers_alloc();
@@ -246,7 +314,7 @@ _argv_to_string(RedisDriver *self)
       append_unsafe_utf8_as_escaped_text(full_command, self->argv[i], self->argvlen[i], "\"");
       g_string_append(full_command, "\"");
     }
-  return full_command;
+  return full_command->str;
 }
 
 /*
@@ -258,18 +326,6 @@ redis_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
 {
   RedisDriver *self = (RedisDriver *)s;
 
-  if (!redis_dd_connect(self))
-    return LTR_NOT_CONNECTED;
-
-  if (self->c->err)
-    return LTR_ERROR;
-
-  if (!check_connection_to_redis(self))
-    {
-      msg_error("REDIS: worker failed to connect");
-      return LTR_NOT_CONNECTED;
-    }
-
   ScratchBuffersMarker marker;
   scratch_buffers_mark(&marker);
 
@@ -277,13 +333,11 @@ redis_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
 
   redisReply *reply = redisCommandArgv(self->c, self->argc, (const gchar **)self->argv, self->argvlen);
 
-  GString *full_command = _argv_to_string(self);
-
   if (!reply)
     {
       msg_error("REDIS server error, suspending",
                 evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("command", full_command->str),
+                evt_tag_str("command", _argv_to_string(self)),
                 evt_tag_str("error", self->c->errstr),
                 evt_tag_int("time_reopen", self->super.time_reopen));
       scratch_buffers_reclaim_marked(marker);
@@ -292,7 +346,7 @@ redis_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
 
   msg_debug("REDIS command sent",
             evt_tag_str("driver", self->super.super.super.id),
-            evt_tag_str("command", full_command->str));
+            evt_tag_str("command", _argv_to_string(self)));
 
   freeReplyObject(reply);
   scratch_buffers_reclaim_marked(marker);
@@ -312,8 +366,6 @@ redis_worker_thread_init(LogThreadedDestDriver *d)
 
   msg_debug("Worker thread started",
             evt_tag_str("driver", self->super.super.super.id));
-
-  redis_dd_connect(self);
 }
 
 static void
@@ -389,6 +441,7 @@ redis_dd_new(GlobalConfig *cfg)
 
   self->super.worker.thread_init = redis_worker_thread_init;
   self->super.worker.thread_deinit = redis_worker_thread_deinit;
+  self->super.worker.connect = redis_dd_connect;
   self->super.worker.disconnect = redis_dd_disconnect;
   self->super.worker.insert = redis_worker_insert;
 
@@ -398,6 +451,7 @@ redis_dd_new(GlobalConfig *cfg)
   redis_dd_set_host((LogDriver *)self, "127.0.0.1");
   redis_dd_set_port((LogDriver *)self, 6379);
   redis_dd_set_auth((LogDriver *)self, NULL);
+  redis_dd_set_timeout((LogDriver *)self, 10);
 
   self->command = g_string_sized_new(32);
 
