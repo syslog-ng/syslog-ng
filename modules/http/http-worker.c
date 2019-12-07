@@ -26,6 +26,7 @@
 
 #include "syslog-names.h"
 #include "scratch-buffers.h"
+#include "http-signals.h"
 
 
 /* HTTPDestinationWorker */
@@ -169,7 +170,7 @@ _append_auth_header(List *list, HTTPDestinationDriver *owner)
                       log_pipe_location_tag(&owner->super.super.super.super));
           return;
         }
-      auth_header_str = http_auth_header_get_str(owner->auth_header);
+      auth_header_str = http_auth_header_get_as_string(owner->auth_header);
     }
 
   if (auth_header_str)
@@ -219,6 +220,14 @@ _format_request_headers(HTTPDestinationWorker *self, LogMessage *msg)
 
   if (owner->auth_header)
     _append_auth_header(self->request_headers, owner);
+
+  HttpHeaderRequestSignalData signal_data =
+  {
+    .request_headers = self->request_headers,
+    .request_body = self->request_body
+  };
+
+  EMIT(owner->super.super.super.super.signal_slot_connector, signal_http_header_request, &signal_data);
 }
 
 static void
