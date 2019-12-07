@@ -117,9 +117,18 @@ signal_slot_disconnect(SignalSlotConnector *self, Signal signal, Slot slot)
   if (new_slots != slots)
     _hash_table_replace(self->connections, signal, new_slots);
 
+  msg_debug("SignalSlotConnector::disconnect",
+            evt_tag_printf("connector", "%p", self),
+            evt_tag_printf("signal", "%p", signal),
+            evt_tag_printf("slot", "%p", slot));
+
   if (!new_slots)
     {
       g_hash_table_remove(self->connections, signal);
+      msg_debug("SignalSlotConnector::disconnect last slot is disconnected, unregister signal",
+                evt_tag_printf("connector", "%p", self),
+                evt_tag_printf("signal", "%p", signal),
+                evt_tag_printf("slot", "%p", slot));
     }
 
 exit_:
@@ -144,6 +153,9 @@ signal_slot_emit(SignalSlotConnector *self, Signal signal, gpointer user_data)
 
   if (!slots)
     {
+      msg_debug("SignalSlotConnector: unregistered signal emitted",
+                evt_tag_printf("connector", "%p", self),
+                evt_tag_printf("signal", "%p", signal));
       return;
     }
 
