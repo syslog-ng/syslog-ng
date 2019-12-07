@@ -1,0 +1,59 @@
+%code top {
+#include "driver.h"
+#include "cfg-lexer.h"
+#include "http-test-slots-parser.h"
+}
+
+%code {
+
+#include "http-test-slots.h"
+
+HttpTestSlotsPlugin *last_http_test_slots;
+
+}
+
+%name-prefix "http_test_slots_"
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriverPlugin **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_HTTP_TEST_SLOTS
+%token KW_HEADER
+
+%%
+
+start
+  : LL_CONTEXT_INNER_DEST http_test_slots_start { YYACCEPT; }
+  ;
+
+http_test_slots_start
+  : KW_HTTP_TEST_SLOTS '('
+  {
+    last_http_test_slots = http_test_slots_plugin_new();
+    *instance = (LogDriverPlugin *) last_http_test_slots;
+    }
+    http_test_slots_options
+  ')'
+  ;
+
+http_test_slots_options
+	: http_test_slots_option http_test_slots_options
+	|
+	;
+
+
+http_test_slots_option
+  : KW_HEADER '(' string ')'		{ http_test_slots_plugin_set_header(last_http_test_slots, $3); free($3); }
+
+  ;
+
+/* INCLUDE_RULES */
+
+%%

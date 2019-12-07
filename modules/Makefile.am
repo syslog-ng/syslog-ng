@@ -46,6 +46,7 @@ include modules/systemd-journal/Makefile.am
 include modules/system-source/Makefile.am
 include modules/tagsparser/Makefile.am
 include modules/xml/Makefile.am
+include modules/http-test-slots/Makefile.am
 
 SYSLOG_NG_CORE_JAR=$(top_builddir)/modules/java/syslog-ng-core/libs/syslog-ng-core.jar
 
@@ -59,7 +60,7 @@ SYSLOG_NG_MODULES	=	\
 	mod-python mod-java mod-java-modules mod-kvformat mod-date \
 	mod-native mod-cef mod-add-contextual-data mod-diskq mod-getent \
 	mod-map-value-pairs mod-snmptrapd-parser mod-tags-parser mod-xml \
-	mod-appmodel mod-openbsd mod-snmp-dest
+	mod-appmodel mod-openbsd mod-snmp-dest mod-http-test-slots
 
 modules modules/: ${SYSLOG_NG_MODULES}
 
