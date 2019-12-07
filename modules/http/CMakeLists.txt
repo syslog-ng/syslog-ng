@@ -21,6 +21,7 @@ set(HTTP_DESTINATION_SOURCES
     http-plugin.c
     response-handler.h
     response-handler.c
+    http-signals.h
     ${CMAKE_CURRENT_BINARY_DIR}/http-grammar.c
     ${CMAKE_CURRENT_BINARY_DIR}/http-grammar.h
 )

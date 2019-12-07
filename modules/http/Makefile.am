@@ -13,7 +13,8 @@ modules_http_libhttp_la_SOURCES = \
   modules/http/http-grammar.y       \
   modules/http/http-parser.c        \
   modules/http/http-parser.h        \
-  modules/http/http-plugin.c
+  modules/http/http-plugin.c        \
+  modules/http/http-signals.h
 
 modules_http_libhttp_la_CPPFLAGS  =     \
   $(AM_CPPFLAGS)            \
