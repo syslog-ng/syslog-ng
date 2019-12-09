@@ -88,7 +88,7 @@ EXTRA_DIST += \
 	\
 	contrib/valgrind/syslog-ng.supp \
 	\
-	contrib/config_option_database/config_database.py \
+	contrib/config_option_database/syslog-ng-cfg-db.py \
 	contrib/config_option_database/requirements.txt \
 	contrib/config_option_database/__init__.py \
 	contrib/config_option_database/utils/BisonGraph.py \
