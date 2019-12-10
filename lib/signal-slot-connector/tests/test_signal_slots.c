@@ -40,7 +40,8 @@ test_data_init(TestData *data)
   data->slot_ctr = 0;
 }
 
-SIGNAL(test1_default_signal, TestData *);
+SIGNAL_DECL(test1_default_signal, TestData *);
+SIGNAL_IMPL(test1_default_signal, TestData *);
 
 void test1_custom_signal(TestData *user_data)
 {
