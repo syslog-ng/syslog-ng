@@ -150,9 +150,9 @@
 
 
 /* config version code, in the same format as GlobalConfig->version */
-#define VERSION_VALUE   0x0318
-#define VERSION_CURRENT VERSION_3_24
-#define VERSION_CURRENT_VER_ONLY "3.24"
+#define VERSION_VALUE   0x0319
+#define VERSION_CURRENT VERSION_3_25
+#define VERSION_CURRENT_VER_ONLY "3.25"
 
 #define version_convert_from_user(v)  (v)
 
