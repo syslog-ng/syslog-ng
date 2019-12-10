@@ -1,59 +1,64 @@
-3.24.1
+3.25.1
 ======
 
 ## Highlights
 
- * Add a new template function called `$(format-flat-json)`, which generates
-   flattened json output. This is useful for destinations, where the json
-   parsing does not handle nested json format. (#2890)
- * Add ISO 8601 compliant week numbering. Use it with the `${ISOWEEK}` macro
-   and and all its variants: `S_ISOWEEK`, `R_ISOWEEK` and `C_ISOWEEK`. (#2878)
- * Add `add-contextual-data()` glob selector. It matches the message with shell
-   style globbing. Enable it by setting `selector(glob("$my_template")` in the
-   `add-contextual-data()` block. (#2936)
- * Add new rewrite operations to manipulate the timezone portion of timestamps have
-   been added. `set-timezone()` to set the timezone value to a specific value,
-   `fix-timezone()` to fix up an incorrectly recognized timezone and `guess-timezone()`
-   to automatically deduce the timezone value on the assumption that the message
-   is received in near real time. (#2818)
- * Send Server Name Identification (SNI) information with `transport(tls)`.
-   Enable it by setting the `sni(yes)` option in the `tls` block in your
-   `destination`. (#2930)
+ * `http-destination`: Users now can specify the action for any HTTP result code.
+   Use with `response-action(response_code => action)` in your http block.
+   Available actions are: `success`, `retry`, `drop` and `disconnect`. (#3007)
+ * `syslog-ng-cfg-db`: Added a new script, which can provide the options of
+   sources and destinations queried by the user. This tool can make the configuration
+   of syslog-ng a lot easier. Use with `./syslog-ng-cfg-db.py` from the
+   `contrib/config_database` dir.(#2997)
+ * `redis-destination`: Improved the performance by 2 orders of magnitude.
+   In our labor environment, now it operates at 25k EPS. (#2972)
 
 ## Features
 
- * `templates`: change the `$LOGHOST` macro to honour `use-fqdn()` (#2894)
- * Define `syslog-ng-sysconfdir` (#2932)
- * `dqtool`: add assign dqfile to persist file feature (#2872)
+ * `create-dirs()`: Added to `pipe()` source/destination, and standardize the behavior.
+   (#3018, #2635)
+ * `default-network-drivers`: Added `max-connections()` option, to change the limit
+    from 10. (#2961)
+ * `checkpoint`: Added support for timezone value at the end of timestamps. (#3033)
+ * `filter/rewrite`: Added `disable-jit` flag to disable JIT PCRE compilation. (#2992, #2986)
+ * `syslog-ng-ctl`: Added `export-config-graph` option to visualize config graph. (#2990)
+ * `build/travis`: Added ARM64 arch support. (#2967) 
+ * `build/dbld`: Readded CentOS 6 support. (#2860, #2971, #3028)
+ * `python`: Added Python 3.8 support. (#3017)
 
 ## Bugfixes
 
- * Fix backtick subsitution of defines/environment variables in the main configuration file. (#2906, #2909)
- * Fix SCL block parameter substitution of quoted escaped newline (#2901)
- * `python, diskq, random-generator source`: crash after failed reload (#2907)
- * Fix crash at shutdown on 32bit systems (#2893, #2895)
- * Invalidate the value of the `LEGACY_MSGHDR` macro in case either the `PID` or the `PROGRAM`
-   macros are `unset()` using a `rewrite` rule. Previously `LEGACY_MSGHDR` would retain the old values. (#2896)
- * on 32bit platform `diskq` ftruncate could fail due to size 32/64 interface (#2892)
- * Support new tzdata format, starting from version 2009.XXX, in tzinfo parser. (#2898)
- * `udp, udp6, tcp, tcp6, syslog, network destination`: Correctly detect and set `IP_MULTICAST_TTL`
-   in case of multicast ip address (#2905)
- * Fix hostname resolve on systems with only the loopback network interface configured (#2933)
- * `wildcard-file()`: Add `multi-line()`, `pad_size()` and `multi-line-mode()` option validation. (#2922)
- * `kafka-c`: Fix multiple memleaks (#2944)
+ * `tls`: Fixed an infinite loop which occured, when a `TLS` connection broke. (#3026, #3009)
+ * `log-block`: Fixed an issue, where inline `network` destinations disjointed
+   the rest of the config. (#2989, #2820)
+ * `kafka/network-load-balancer`: Fixed a crash when an argument was set to empty. (#3002)
+ * `python-source`: Fixed a memory corruption during reload. (#3014)
+ * `python-destination`: Actually use return value of `open` method. (#2998, #2513)
+ * `python-fetcher`: Fixed `FETCH_NO_DATA` and `FETCH_TRY_AGAIN` constants. (#3012)
+ * `python`: Fixed python `Exception` reporting when no `Exception` happened. (#2995)
+ * `telegram`: Fixed the syntax error of the `use-system-cert-store()` option. (#2977)
+ * `config`: Throw error to single dots, which were ignored before. (#3000)
+ * `file-destination`: Delay ACKs until messages are written to disk. This fixes message
+   drop on I/O error and message lost in the LogProtoFileWriter in case of a crash, by
+   retrying to send the message. (#2985)
+ * `http-destination`: Handle global template options values. (#3020)
+ * `timeutils`: Fixed month and day name parsing, when only the first 2 characters
+    matched. (#3035)
+ * `logmsg`: Added default `PRI` value (`LOG_USER | LOG_NOTICE`) to log messages
+   created without initial parsing. (#2974)
+ * `packaging`: Added ordering dependencies `network.target` and `network-online.target`
+   to the service files. (#2994, #2667)
+ * `amqp`: Support older (0.7.1) version (#2999)
+ * `loggen`: Set plugin path in installation time. (#3019)
+ * `timeutils/patterndb`: Fixed some undefined behaviours. (#2969)
+ * `stomp`: Fixed a buffer over-read on connection. (#2988)
+ * `pseudofile`: Fixed a crash, when `template()` option is not set. (#2988)
+ * `wildcard-source`: Fixed a crash, when `max-files()` was set to 0. (#2988)
 
 ## Other changes
 
- * `geoip`: remove deprecated module, `geoip2` database location detection (#2780)
- * various refactor, build issue fixes (#2902)
-
-## Notes to the developers
-
- * `LightRunWithStrace`: Run syslog-ng behind strace (#2921)
- * `LightVerboseLogOnError`: Increase default pytest verbosity on error (#2919)
- * Dbld image caching (#2858)
- * Dbld gradle caching (#2857)
- * `logreader,logsource`: move `scratch-buffer` mark and reclaim into `LogSource` (#2903)
+ * `syslog-ng-debun`: Various maintenance updates and small fixes. (#2993)
+ * `scl`: Avoid `@requires` loading the plugins themselves. (#2887)
 
 ## Credits
 
@@ -66,6 +71,7 @@ of syslog-ng, contribute.
 
 We would like to thank the following people for their contribution:
 
-Andras Mitzki, Antal Nemes, Attila Szakacs, Balazs Scheidler, Bertrand Jacquin,
-Gabor Nagy, Henrik Grindal Bakken, Kerin Millar, kjhee43, Laszlo Budai,
-Laszlo Szemere, László Várady, Péter Kókai, Raghunath Adhyapak, Zoltan Pallagi.
+Andras Mitzki, Antal Nemes, Attila Szakacs, Balazs Scheidler, Clément Besnier,
+Gabor Nagy, jadhavsumit98, Janos Szigetvari, Laszlo Budai, Laszlo Szemere,
+László Várady, MikeLim, Nikita Uvarov, Norbert Takacs, pabloli, Péter Kókai,
+Zoltan Pallagi.
