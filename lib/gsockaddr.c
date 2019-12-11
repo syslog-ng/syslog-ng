@@ -459,15 +459,21 @@ g_sockaddr_inet6_check(GSockAddr *a)
 GSockAddr *
 g_sockaddr_inet6_new(const gchar *ip, guint16 port)
 {
-  GSockAddrInet6 *addr = g_slice_new0(GSockAddrInet6);
+  GSockAddrInet6 *addr = NULL;
+  struct in6_addr sin6_addr;
 
-  g_atomic_counter_set(&addr->refcnt, 1);
-  addr->flags = 0;
-  addr->salen = sizeof(struct sockaddr_in6);
-  addr->sin6.sin6_family = AF_INET6;
-  inet_pton(AF_INET6, ip, &addr->sin6.sin6_addr);
-  addr->sin6.sin6_port = htons(port);
-  addr->sa_funcs = &inet6_sockaddr_funcs;
+  if (inet_pton(AF_INET6, ip, &sin6_addr))
+    {
+      addr = g_slice_new0(GSockAddrInet6);
+
+      g_atomic_counter_set(&addr->refcnt, 1);
+      addr->flags = 0;
+      addr->salen = sizeof(struct sockaddr_in6);
+      addr->sin6.sin6_family = AF_INET6;
+      addr->sin6.sin6_addr = sin6_addr;
+      addr->sin6.sin6_port = htons(port);
+      addr->sa_funcs = &inet6_sockaddr_funcs;
+    }
 
   return (GSockAddr *) addr;
 }
