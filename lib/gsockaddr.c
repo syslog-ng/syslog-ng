@@ -507,6 +507,17 @@ g_sockaddr_inet6_new2(struct sockaddr_in6 *sin6)
 
 #endif
 
+GSockAddr *
+g_sockaddr_inet_or_inet6_new(const gchar *name, guint16 port)
+{
+  GSockAddr *addr = g_sockaddr_inet_new(name, port);
+#if SYSLOG_NG_ENABLE_IPV6
+  if (!addr)
+    addr = g_sockaddr_inet6_new(name, port);
+#endif
+  return addr;
+}
+
 /* AF_UNIX socket address */
 
 /*+
