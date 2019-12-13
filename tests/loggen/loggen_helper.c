@@ -76,6 +76,35 @@ connect_to_server(struct sockaddr *dest_addr, int dest_addr_len, int sock_type)
   return sock;
 }
 
+struct addrinfo *
+resolve_address_using_getaddrinfo(int sock_type, const char *target, const char *port, int use_ipv6)
+{
+  struct addrinfo hints;
+  memset(&hints, 0, sizeof(hints));
+  hints.ai_family = use_ipv6 ? AF_INET6 : AF_INET;
+  hints.ai_socktype = sock_type;
+  hints.ai_flags = AI_V4MAPPED | AI_ADDRCONFIG;
+  hints.ai_protocol = 0;
+
+  struct addrinfo *res;
+  int addrinfo_err = getaddrinfo(target, port, &hints, &res);
+
+  if (addrinfo_err == 0)
+    return res;
+
+  DEBUG("name lookup failed (%s:%s): %s (AI_ADDRCONFIG)\n", target, port, gai_strerror(addrinfo_err));
+
+  hints.ai_flags &= ~AI_ADDRCONFIG;
+  addrinfo_err = getaddrinfo(target, port, &hints, &res);
+  if (addrinfo_err != 0)
+    {
+      ERROR("name lookup error (%s:%s): %s\n", target, port, gai_strerror(addrinfo_err));
+      return NULL;
+    }
+
+  return res;
+}
+
 int
 connect_ip_socket(int sock_type, const char *target, const char *port, int use_ipv6)
 {
@@ -90,30 +119,13 @@ connect_ip_socket(int sock_type, const char *target, const char *port, int use_i
 
   DEBUG("server IP = %s:%s\n", target, port);
 #if SYSLOG_NG_HAVE_GETADDRINFO
-  struct addrinfo hints;
-  memset(&hints, 0, sizeof(hints));
-  hints.ai_family = use_ipv6 ? AF_INET6 : AF_INET;
-  hints.ai_socktype = sock_type;
-  hints.ai_flags = AI_V4MAPPED | AI_ADDRCONFIG;
-  hints.ai_protocol = 0;
+  struct addrinfo *addr_info = resolve_address_using_getaddrinfo(sock_type, target, port, use_ipv6);
 
-  struct addrinfo *res;
-  int addrinfo_err = getaddrinfo(target, port, &hints, &res);
-  if (addrinfo_err != 0)
-    {
-      DEBUG("name lookup failed (%s:%s): %s\n", target, port, gai_strerror(addrinfo_err));
+  if (!addr_info)
+    return -1;
 
-      hints.ai_flags = AI_V4MAPPED;
-      addrinfo_err = getaddrinfo(target, port, &hints, &res);
-      if (addrinfo_err != 0)
-        {
-          ERROR("name lookup failed (%s:%s): %s\n", target, port, gai_strerror(addrinfo_err));
-          return -1;
-        }
-    }
-
-  dest_addr = res->ai_addr;
-  dest_addr_len = res->ai_addrlen;
+  dest_addr = addr_info->ai_addr;
+  dest_addr_len = addr_info->ai_addrlen;
 #else
   struct hostent *he;
   struct servent *se;
@@ -141,7 +153,7 @@ connect_ip_socket(int sock_type, const char *target, const char *port, int use_i
   int socket = connect_to_server(dest_addr, dest_addr_len, sock_type);
 
 #if SYSLOG_NG_HAVE_GETADDRINFO
-  freeaddrinfo(res);
+  freeaddrinfo(addr_info);
 #endif
 
   return socket;
