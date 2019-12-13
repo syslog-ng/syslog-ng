@@ -91,16 +91,25 @@ connect_ip_socket(int sock_type, const char *target, const char *port, int use_i
   DEBUG("server IP = %s:%s\n", target, port);
 #if SYSLOG_NG_HAVE_GETADDRINFO
   struct addrinfo hints;
-  struct addrinfo *res;
   memset(&hints, 0, sizeof(hints));
   hints.ai_family = use_ipv6 ? AF_INET6 : AF_INET;
   hints.ai_socktype = sock_type;
-  hints.ai_flags = AI_ADDRCONFIG;
+  hints.ai_flags = AI_V4MAPPED | AI_ADDRCONFIG;
   hints.ai_protocol = 0;
-  if (getaddrinfo(target, port, &hints, &res) != 0)
+
+  struct addrinfo *res;
+  int addrinfo_err = getaddrinfo(target, port, &hints, &res);
+  if (addrinfo_err != 0)
     {
-      ERROR("name lookup error (%s:%s)\n", target, port);
-      return -1;
+      DEBUG("name lookup failed (%s:%s): %s\n", target, port, gai_strerror(addrinfo_err));
+
+      hints.ai_flags = AI_V4MAPPED;
+      addrinfo_err = getaddrinfo(target, port, &hints, &res);
+      if (addrinfo_err != 0)
+        {
+          ERROR("name lookup failed (%s:%s): %s\n", target, port, gai_strerror(addrinfo_err));
+          return -1;
+        }
     }
 
   dest_addr = res->ai_addr;
