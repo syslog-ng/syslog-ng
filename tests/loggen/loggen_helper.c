@@ -95,9 +95,7 @@ connect_ip_socket(int sock_type, const char *target, const char *port, int use_i
   memset(&hints, 0, sizeof(hints));
   hints.ai_family = use_ipv6 ? AF_INET6 : AF_INET;
   hints.ai_socktype = sock_type;
-#ifdef AI_ADDRCONFIG
   hints.ai_flags = AI_ADDRCONFIG;
-#endif
   hints.ai_protocol = 0;
   if (getaddrinfo(target, port, &hints, &res) != 0)
     {
