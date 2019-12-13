@@ -138,7 +138,13 @@ connect_ip_socket(int sock_type, const char *target, const char *port, int use_i
   dest_addr_len = sizeof(s_in);
 #endif
 
-  return connect_to_server(dest_addr, dest_addr_len, sock_type);
+  int socket = connect_to_server(dest_addr, dest_addr_len, sock_type);
+
+#if SYSLOG_NG_HAVE_GETADDRINFO
+  freeaddrinfo(res);
+#endif
+
+  return socket;
 }
 
 int connect_unix_domain_socket(int sock_type, const char *path)
