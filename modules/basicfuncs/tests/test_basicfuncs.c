@@ -439,6 +439,43 @@ Test(basicfuncs, test_list_funcs)
 
   assert_template_format("$(implode ' ' foo,bar,xxx,baz,bad)", "foo bar xxx baz bad");
   assert_template_format("$(implode ' ' $(list-slice :3 foo,bar,xxx,baz,bad))", "foo bar xxx");
+
+  assert_template_format("$(list-search almafa '')", "");
+  assert_template_format("$(list-search 'foo,' '\"foo,\",\"bar\",\"baz\",\"bar\"')", "0");
+  assert_template_format("$(list-search --start-index 0 --mode literal bar '\"foo,\",\"bar\",\"baz\",\"bar\"')", "1");
+  assert_template_format("$(list-search --start-index 2 bar '\"foo,\",\"bar\",\"baz\",\"bar\"')", "3");
+  assert_template_format("$(list-search --mode literal --start-index 1 baz '\"foo,\",\"bar\",\"baz\",\"bar\"')", "2");
+  assert_template_format("$(list-search --start-index 5 baz '\"foo,\",\"bar\",\"baz\",\"bar\"' '\"foo,\",\"bar\",\"baz\",\"bar\"')",
+                         "6");
+  assert_template_format("$(list-search almafa --mode literal '\"foo,\",\"bar\",\"baz\",\"bar\"')", "");
+
+  assert_template_format("$(list-search --mode prefix --start-index 0 almafa '')", "");
+  assert_template_format("$(list-search --start-index 0 --mode prefix fo '\"foo,\",\"bar\",\"baz\"')", "0");
+  assert_template_format("$(list-search --mode prefix ba '\"foo,\",\"bar\",\"baz\"')", "1");
+  assert_template_format("$(list-search --mode prefix --start-index 1 ba '\"foo,\",\"bar\",\"baz\"')", "1");
+  assert_template_format("$(list-search --start-index 2 --mode prefix ba '\"foo,\",\"bar\",\"baz\"')", "2");
+  assert_template_format("$(list-search --mode prefix --start-index 0 almafa '\"foo,\",\"bar\",\"baz\"')", "");
+
+  assert_template_format("$(list-search --mode substring almafa '')", "");
+  assert_template_format("$(list-search --start-index 0 --mode substring oo '\"foo,\",\"bar\",\"baz\"')", "0");
+  assert_template_format("$(list-search --mode substring --start-index 2 a '\"foo,\",\"bar\",\"baz\"')", "2");
+  assert_template_format("$(list-search --mode substring ar '\"foo,\",\"bar\",\"baz\"')", "1");
+  assert_template_format("$(list-search --start-index 1 --mode substring ar '\"foo,\",\"bar\",\"baz\"')", "1");
+  assert_template_format("$(list-search --mode substring almafa '\"foo,\",\"bar\",\"baz\"')", "");
+
+  assert_template_format("$(list-search --mode glob al*fa '')", "");
+  assert_template_format("$(list-search --start-index 0 --mode glob f*, '\"foo,\",\"bar\",\"baz\"')", "0");
+  assert_template_format("$(list-search --mode glob --start-index 1 *az '\"foo,\",\"bar\",\"baz\"')", "2");
+  assert_template_format("$(list-search --mode glob ar '\"foo,\",\"bar\",\"baz\"')", "");
+  assert_template_format("$(list-search --mode glob ba* '\"foo,\",\"bar\",\"baz\"')", "1");
+  assert_template_format("$(list-search --mode glob al*fa '\"foo,\",\"bar\",\"baz\"')", "");
+
+  assert_template_format("$(list-search --mode pcre al.*fa '')", "");
+  assert_template_format("$(list-search --mode pcre --start-index 0 f.*, '\"foo,\",\"bar\",\"baz\"')", "0");
+  assert_template_format("$(list-search --start-index 1 --mode pcre .az '\"foo,\",\"bar\",\"baz\"')", "2");
+  assert_template_format("$(list-search --mode pcre ^bar$ '\"foo,\",\"bar\",\"baz\"')", "1");
+  assert_template_format("$(list-search --mode pcre ba. '\"foo,\",\"bar\",\"baz\"')", "1");
+  assert_template_format("$(list-search --mode pcre a...fa '\"foo,\",\"bar\",\"baz\"')", "");
 }
 
 Test(basicfuncs, test_context_funcs)

@@ -69,7 +69,7 @@ list_scanner_input_va(ListScanner *self, const gchar *arg1, ...)
 }
 
 void
-list_scanner_input_gstring_array(ListScanner *self, gint argc, GString *argv[])
+list_scanner_input_gstring_array(ListScanner *self, gint argc, GString *const *argv)
 {
   gint i;
 
@@ -168,6 +168,14 @@ list_scanner_scan_next(ListScanner *self)
     return TRUE;
 
   return FALSE;
+}
+
+void
+list_scanner_skip_n(ListScanner *self, gint n)
+{
+  gint count = 0;
+  while (++count <= n && list_scanner_scan_next(self))
+    ;
 }
 
 const gchar *
