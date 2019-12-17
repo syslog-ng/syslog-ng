@@ -70,7 +70,7 @@ parser_expr_maxminddb
         ;
 
 optional_direct_template
-	: string
+	: LL_STRING
           {
             LogTemplate *template;
             GError *error = NULL;

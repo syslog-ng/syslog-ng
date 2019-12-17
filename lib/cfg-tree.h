@@ -176,7 +176,7 @@ GList *cfg_tree_get_objects(CfgTree *self);
 
 gboolean cfg_tree_add_template(CfgTree *self, LogTemplate *template);
 LogTemplate *cfg_tree_lookup_template(CfgTree *self, const gchar *name);
-LogTemplate *cfg_tree_check_inline_template(CfgTree *self, const gchar *template_or_name, GError **error);
+LogTemplate *cfg_tree_check_inline_template(CfgTree *self, const gchar *template_format, GError **error);
 
 gchar *cfg_tree_get_rule_name(CfgTree *self, gint content, LogExprNode *node);
 gchar *cfg_tree_get_child_id(CfgTree *self, gint content, LogExprNode *node);

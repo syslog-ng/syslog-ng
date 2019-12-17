@@ -883,7 +883,7 @@ template_items
 /* START_RULES */
 
 template_content_inner
-        : string
+        : LL_STRING
         {
           GError *error = NULL;
 
@@ -1159,11 +1159,17 @@ facility_string
         ;
 
 parser_opt
-        : KW_TEMPLATE '(' string ')'		{
+        : KW_TEMPLATE '(' LL_STRING ')'		{
                                                   GError *error = NULL;
 
                                                   LogTemplate *template = cfg_tree_check_inline_template(&configuration->tree, $3, &error);
                                                   CHECK_ERROR_GERROR(template != NULL, @3, error, "Error compiling template");
+                                                  log_parser_set_template(last_parser, template);
+                                                  free($3);
+                                                }
+        | KW_TEMPLATE '(' LL_IDENTIFIER ')'	{
+                                                  LogTemplate *template = cfg_tree_lookup_template(&configuration->tree, $3);
+                                                  CHECK_ERROR(template != NULL, @3, "Error compiling template");
                                                   log_parser_set_template(last_parser, template);
                                                   free($3);
                                                 }
@@ -1354,12 +1360,18 @@ dest_writer_option
 	| KW_FLUSH_LINES '(' nonnegative_integer ')'		{ last_writer_options->flush_lines = $3; }
 	| KW_FLUSH_TIMEOUT '(' positive_integer ')'	{ }
         | KW_SUPPRESS '(' nonnegative_integer ')'            { last_writer_options->suppress = $3; }
-	| KW_TEMPLATE '(' string ')'
+	| KW_TEMPLATE '(' LL_STRING ')'
 	  {
 		GError *error = NULL;
 
 		last_writer_options->template = cfg_tree_check_inline_template(&configuration->tree, $3, &error);
 		CHECK_ERROR_GERROR(last_writer_options->template != NULL, @3, error, "Error compiling template");
+		free($3);
+	  }
+	| KW_TEMPLATE '(' LL_IDENTIFIER ')'
+	  {
+		last_writer_options->template = cfg_tree_lookup_template(&configuration->tree, $3);
+		CHECK_ERROR(last_writer_options->template != NULL, @3, "Error missing template definition");
 		free($3);
 	  }
 	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_writer_options_set_template_escape(last_writer_options, $3); }

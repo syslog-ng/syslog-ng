@@ -1316,20 +1316,17 @@ cfg_tree_lookup_template(CfgTree *self, const gchar *name)
 }
 
 LogTemplate *
-cfg_tree_check_inline_template(CfgTree *self, const gchar *template_or_name, GError **error)
+cfg_tree_check_inline_template(CfgTree *self, const gchar *template_format, GError **error)
 {
-  LogTemplate *template = cfg_tree_lookup_template(self, template_or_name);
+  LogTemplate *template = log_template_new(self->cfg, NULL);
 
-  if (template == NULL)
+  if (!log_template_compile(template, template_format, error))
     {
-      template = log_template_new(self->cfg, NULL);
-      if (!log_template_compile(template, template_or_name, error))
-        {
-          log_template_unref(template);
-          return NULL;
-        }
-      template->def_inline = TRUE;
+      log_template_unref(template);
+      return NULL;
     }
+  template->def_inline = TRUE;
+
   return template;
 }
 
