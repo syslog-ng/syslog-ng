@@ -54,7 +54,6 @@
 
 %type   <ptr> rewrite_expr
 %type   <ptr> rewrite_expr_list
-%type   <ptr> rewrite_template_content
 
 /* INCLUDE_DECLS */
 
@@ -79,22 +78,8 @@ rewrite_expr_list
         |                                           { $$ = NULL; }
         ;
 
-rewrite_template_content
-	: string
-	  {
-	    GError *error = NULL;
-
-	    $$ = log_template_new(configuration, $1);
-	    gboolean ok = log_template_compile($$, $1, &error);
-        free($1);
-	    if (!ok)
-	      log_template_unref($$);
-	    CHECK_ERROR_GERROR(ok, @1, error, "error compiling replacement");
-	  }
-	;
-
 rewrite_expr
-        : KW_SUBST '(' string rewrite_template_content
+        : KW_SUBST '(' string template_content
           {
             last_rewrite = log_rewrite_subst_new($4, configuration);
             log_template_unref($4);
@@ -106,7 +91,7 @@ rewrite_expr
             free($3);
             $$ = last_rewrite;
           }
-        | KW_SET '(' rewrite_template_content
+        | KW_SET '(' template_content
           {
             last_rewrite = log_rewrite_set_new($3, configuration);
             last_template_options = log_rewrite_set_get_template_options(last_rewrite);
@@ -120,7 +105,7 @@ rewrite_expr
           '(' rewrite_set_opts ')'              { $$ = last_rewrite; }
 	| KW_SET_TAG '(' string ')'             { $$ = log_rewrite_set_tag_new($3, TRUE, configuration); free($3); }
 	| KW_CLEAR_TAG '(' string ')'           { $$ = log_rewrite_set_tag_new($3, FALSE, configuration); free($3); }
-        | KW_GROUP_SET '(' rewrite_template_content
+        | KW_GROUP_SET '(' template_content
         {
             last_rewrite = log_rewrite_groupset_new($3, configuration);
             log_template_unref($3);
