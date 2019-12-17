@@ -41,6 +41,8 @@ TARBALL=$(BUILD_DIR)/syslog-ng-$(VERSION).tar.gz
 MODE=snapshot
 CONFIGURE_OPTS=--enable-debug --enable-manpages --with-python=2 --prefix=/install $(CONFIGURE_ADD)
 
+DOCKER_SHELL=$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti balabit/syslog-ng-$* /source/dbld/shell
+
 -include dbld/rules.conf
 
 help:
@@ -133,7 +135,7 @@ run-%: setup
 
 shell: shell-$(DEFAULT_IMAGE)
 shell-%: setup
-	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti balabit/syslog-ng-$* /source/dbld/shell
+	$(DOCKER_SHELL)
 
 
 images: $(foreach image,$(IMAGES), image-$(image))
