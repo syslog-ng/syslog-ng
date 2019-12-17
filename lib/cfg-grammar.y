@@ -1159,11 +1159,10 @@ facility_string
         ;
 
 parser_opt
-        : KW_TEMPLATE '(' string ')'            {
-                                                  LogTemplate *template;
+        : KW_TEMPLATE '(' string ')'		{
                                                   GError *error = NULL;
 
-                                                  template = cfg_tree_check_inline_template(&configuration->tree, $3, &error);
+                                                  LogTemplate *template = cfg_tree_check_inline_template(&configuration->tree, $3, &error);
                                                   CHECK_ERROR_GERROR(template != NULL, @3, error, "Error compiling template");
                                                   log_parser_set_template(last_parser, template);
                                                   free($3);
@@ -1355,13 +1354,14 @@ dest_writer_option
 	| KW_FLUSH_LINES '(' nonnegative_integer ')'		{ last_writer_options->flush_lines = $3; }
 	| KW_FLUSH_TIMEOUT '(' positive_integer ')'	{ }
         | KW_SUPPRESS '(' nonnegative_integer ')'            { last_writer_options->suppress = $3; }
-	| KW_TEMPLATE '(' string ')'       	{
-                                                  GError *error = NULL;
+	| KW_TEMPLATE '(' string ')'
+	  {
+		GError *error = NULL;
 
-                                                  last_writer_options->template = cfg_tree_check_inline_template(&configuration->tree, $3, &error);
-                                                  CHECK_ERROR_GERROR(last_writer_options->template != NULL, @3, error, "Error compiling template");
-	                                          free($3);
-	                                        }
+		last_writer_options->template = cfg_tree_check_inline_template(&configuration->tree, $3, &error);
+		CHECK_ERROR_GERROR(last_writer_options->template != NULL, @3, error, "Error compiling template");
+		free($3);
+	  }
 	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_writer_options_set_template_escape(last_writer_options, $3); }
 	| KW_PAD_SIZE '(' nonnegative_integer ')'         { last_writer_options->padding = $3; }
 	| KW_MARK_FREQ '(' nonnegative_integer ')'        { last_writer_options->mark_freq = $3; }
