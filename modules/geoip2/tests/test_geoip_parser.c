@@ -52,7 +52,7 @@ teardown(void)
 }
 
 static LogMessage *
-parse_geoip_into_log_message_no_check(const gchar *input)
+parse_geoip_into_log_message_no_check(const gchar *template_format)
 {
   LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
@@ -60,9 +60,14 @@ parse_geoip_into_log_message_no_check(const gchar *input)
   gboolean success;
 
   cloned_parser = (LogParser *) log_pipe_clone(&geoip_parser->super);
+
+  LogTemplate *template = log_template_new(NULL, NULL);
+  log_template_compile(template, template_format, NULL);
+  log_parser_set_template(cloned_parser, template);
+
   log_pipe_init(&cloned_parser->super);
   msg = log_msg_new_empty();
-  log_msg_set_value(msg, LM_V_MESSAGE, input, -1);
+
   success = log_parser_process_message(cloned_parser, &msg, &path_options);
   if (!success)
     {
@@ -75,12 +80,12 @@ parse_geoip_into_log_message_no_check(const gchar *input)
 }
 
 static LogMessage *
-parse_geoip_into_log_message(const gchar *input)
+parse_geoip_into_log_message(const gchar *template_format)
 {
   LogMessage *msg;
 
-  msg = parse_geoip_into_log_message_no_check(input);
-  cr_assert_not_null(msg, "expected geoip-parser success and it returned failure, input=%s", input);
+  msg = parse_geoip_into_log_message_no_check(template_format);
+  cr_assert_not_null(msg, "expected geoip-parser success and it returned failure, template_format=%s", template_format);
   return msg;
 }
 
@@ -106,12 +111,8 @@ Test(geoip2, test_basics)
 Test(geoip2, test_using_template_to_parse_input)
 {
   LogMessage *msg;
-  LogTemplate *template;
 
-  template = log_template_new(NULL, NULL);
-  log_template_compile(template, "2.125.160.216", NULL);
-  log_parser_set_template(geoip_parser, template);
-  msg = parse_geoip_into_log_message("8.8.8.8");
+  msg = parse_geoip_into_log_message("2.125.160.216");
   assert_log_message_value(msg, log_msg_get_value_handle(".geoip2.country.iso_code"), "GB");
 
   assert_log_message_value(msg, log_msg_get_value_handle(".geoip2.location.latitude"), "51.750000");
