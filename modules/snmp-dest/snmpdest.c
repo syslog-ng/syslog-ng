@@ -220,12 +220,49 @@ void snmpdest_dd_set_community(LogDriver *d, const gchar *community)
   self->community = g_strdup(community);
 }
 
-void snmpdest_dd_set_engine_id(LogDriver *d, const gchar *eid)
+static gboolean
+_has_hexadecimal_prefix(const gchar *s)
+{
+  return (s[0] == '0') && (s[1] == 'x');
+}
+
+static gboolean
+_is_hexadecimal(const gchar *s, gint length)
+{
+  gint i;
+  for (i = 0; i < length; ++i)
+    {
+      if (!g_ascii_isxdigit(s[i]))
+        {
+          return FALSE;
+        }
+    }
+  return TRUE;
+}
+
+gboolean snmpdest_dd_set_engine_id(LogDriver *d, const gchar *eid)
 {
   SNMPDestDriver *self = (SNMPDestDriver *)d;
+  gsize eidlength = strlen(eid);
+
+  if (eidlength < ENGINE_ID_MIN_LENGTH)
+    return FALSE;
+
+  if (_has_hexadecimal_prefix(eid))
+    {
+      eidlength = eidlength -2;
+      eid = eid + 2;
+    }
+
+  if (eidlength < ENGINE_ID_MIN_LENGTH || eidlength > ENGINE_ID_MAX_LENGTH)
+    return FALSE;
+
+  if (!_is_hexadecimal(eid, eidlength))
+    return FALSE;
 
   g_free(self->engine_id);
   self->engine_id = g_strdup(eid);
+  return TRUE;
 }
 
 void snmpdest_dd_set_auth_username(LogDriver *d, const gchar *auth_username)

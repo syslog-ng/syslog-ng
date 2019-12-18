@@ -85,8 +85,15 @@ Test(test_snmp_dest, set_engine_id)
 {
   LogDriver *driver = (LogDriver *)snmp_driver;
 
-  snmpdest_dd_set_engine_id(driver, "engine_id");
-  cr_assert_str_eq(snmp_driver->engine_id, "engine_id");
+  cr_assert_not(snmpdest_dd_set_engine_id(driver, "bar"));    // not number
+  cr_assert_not(snmpdest_dd_set_engine_id(driver, "0x42"));   // too short
+  cr_assert_not(snmpdest_dd_set_engine_id(driver, "0x0123456789abcdef0123456789abcdef0")); // too long
+
+  cr_assert(snmpdest_dd_set_engine_id(driver, "123abc")); // missing prefix
+  cr_assert_str_eq(snmp_driver->engine_id, "123abc");
+
+  cr_assert(snmpdest_dd_set_engine_id(driver, "0x12345"));
+  cr_assert_str_eq(snmp_driver->engine_id, "12345");
 }
 
 Test(test_snmp_dest, set_auth_username)
@@ -170,7 +177,7 @@ Test(test_snmp_dest, check_required_params)
 
   /* for v3 version the engine_id shall be set as well*/
   snmpdest_dd_set_version(driver, "v3");
-  snmpdest_dd_set_engine_id(driver, "engine_id");
+  snmpdest_dd_set_engine_id(driver, "0x12345");
   cr_assert(snmpdest_check_required_params(driver, err_msg));
 }
 

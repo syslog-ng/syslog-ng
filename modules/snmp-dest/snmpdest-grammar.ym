@@ -112,14 +112,10 @@ dest_snmpdest_option
             {
               msg_warning("WARNING: SNMP: the 'engine_id' is a v3 option");
             }
-          else 
+          else
             {
-              gchar *s = $3;
-              gchar *end_ptr;
-              CHECK_ERROR(strlen(s) == 10 || (strlen(s) == 12 && s[0] == '0' && s[1] == 'x'), @1, "SNMP: engine id (%s) shall be 10 char length", $3);
-              CHECK_ERROR((strtol(s, &end_ptr, 16) > 0) && (end_ptr[0] == '\0'), @1, "SNMP: engine id (%s) shall be a valid hex number", $3);
-
-              snmpdest_dd_set_engine_id(last_driver, $3); 
+              CHECK_ERROR(snmpdest_dd_set_engine_id(last_driver, $3), @1,
+                "SNMP: engine id (%s) shall be a hexadecimal number with a length between 5 and 32 (plus the 0x prefix), see RFC5343 for further details", $3);
               free($3);
             }
           }
