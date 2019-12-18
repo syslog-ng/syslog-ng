@@ -64,17 +64,23 @@ parser_expr_maxminddb
           {
             last_parser = *instance = (LogParser *) maxminddb_parser_new(configuration);
           }
-          string
+          optional_direct_template
+          parser_geoip_opts
+          ')'					{ $$ = last_parser; }
+        ;
+
+optional_direct_template
+	: string
           {
             LogTemplate *template;
             GError *error = NULL;
 
-            template = cfg_tree_check_inline_template(&configuration->tree, $4, &error);
-            CHECK_ERROR_GERROR(template != NULL, @4, error, "Error compiling template");
+            template = cfg_tree_check_inline_template(&configuration->tree, $1, &error);
+            CHECK_ERROR_GERROR(template != NULL, @1, error, "Error compiling template");
             log_parser_set_template(last_parser, template);
+            free($1);
           }
-          parser_geoip_opts
-          ')'					{ $$ = last_parser; free($4); }
+	|
 	;
 
 parser_geoip_opts
