@@ -98,18 +98,19 @@ Test(geoip2, template_is_mandatory)
   log_pipe_unref(&geoip2_parser->super);
 }
 
-Test(geoip2, test_basics)
+Test(geoip2, set_prefix)
 {
   LogMessage *msg;
-
-  msg = parse_geoip_into_log_message("2.125.160.216");
-  assert_log_message_value(msg, log_msg_get_value_handle(".geoip2.country.iso_code"), "GB");
-  log_msg_unref(msg);
 
   geoip_parser_set_prefix(geoip_parser, ".prefix.");
   msg = parse_geoip_into_log_message("2.125.160.216");
   assert_log_message_value(msg, log_msg_get_value_handle(".prefix.country.iso_code"), "GB");
   log_msg_unref(msg);
+}
+
+Test(geoip2, empty_prefix)
+{
+  LogMessage *msg;
 
   geoip_parser_set_prefix(geoip_parser, "");
   msg = parse_geoip_into_log_message("2.125.160.216");
@@ -117,7 +118,7 @@ Test(geoip2, test_basics)
   log_msg_unref(msg);
 }
 
-Test(geoip2, test_using_template_to_parse_input)
+Test(geoip2, test_basic)
 {
   LogMessage *msg;
 
