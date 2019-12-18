@@ -89,6 +89,15 @@ parse_geoip_into_log_message(const gchar *template_format)
   return msg;
 }
 
+Test(geoip2, template_is_mandatory)
+{
+  LogParser *geoip2_parser = maxminddb_parser_new(configuration);
+
+  cr_assert_not(log_pipe_init(&geoip2_parser->super));
+
+  log_pipe_unref(&geoip2_parser->super);
+}
+
 Test(geoip2, test_basics)
 {
   LogMessage *msg;
