@@ -49,7 +49,6 @@ const gchar *s_v3 = "v3";
 const gchar *s_sha = "SHA";
 const gchar *s_aes = "AES";
 const gchar *s_snmp_name = "syslog-ng";
-const gchar *s_err_engine_id = "Wrong SNMP engine id (must be a 10 char hex value)";
 
 static gboolean snmpdest_dd_session_init(SNMPDestDriver *);
 

@@ -31,8 +31,7 @@
 #include "mainloop-worker.h"
 
 extern const gchar *s_v2c,
-       *s_v3,
-       *s_err_engine_id;
+       *s_v3;
 
 typedef struct
 {
