@@ -147,7 +147,7 @@ BuildRequires: zlib-devel
 BuildRequires: net-snmp-devel
 %endif
 
-%if 0%{?rhel}
+%if 0%{?rhel} == 7 || 0%{?rhel} == 6
 BuildRequires: tcp_wrappers-devel
 %endif
 
@@ -314,7 +314,7 @@ export GEOIP_LIBS=-lGeoIP
     --with-module-dir=%{_libdir}/%{name} \
     --with-systemdsystemunitdir=%{_unitdir} \
     --with-ivykis=system \
-%if 0%{?rhel}
+%if 0%{?rhel} == 7 || 0%{?rhel} == 6
     --enable-tcp-wrapper \
 %else
     --disable-tcp-wrapper \
