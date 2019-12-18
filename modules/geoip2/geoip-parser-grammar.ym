@@ -59,11 +59,6 @@ start
         : LL_CONTEXT_PARSER parser_expr_maxminddb                  { YYACCEPT; }
         ;
 
-parser_geoip_opts
-        : parser_geoip_opt parser_geoip_opts
-        |
-        ;
-
 parser_expr_maxminddb
         : KW_GEOIP2 '('
           {
@@ -80,13 +75,16 @@ parser_expr_maxminddb
           }
           parser_geoip_opts
           ')'					{ $$ = last_parser; free($4); }
+	;
+
+parser_geoip_opts
+        : parser_geoip_opt parser_geoip_opts
+        |
         ;
 
 parser_geoip_opt
-        : KW_PREFIX '(' string ')'
-          { geoip_parser_set_prefix(last_parser, $3); free($3); }
-        | KW_DATABASE '(' path_check ')'
-          { geoip_parser_set_database_path(last_parser, $3); free($3); }
+        : KW_PREFIX '(' string ')' { geoip_parser_set_prefix(last_parser, $3); free($3); }
+        | KW_DATABASE '(' path_check ')' { geoip_parser_set_database_path(last_parser, $3); free($3); }
         ;
 
 /* INCLUDE_RULES */
