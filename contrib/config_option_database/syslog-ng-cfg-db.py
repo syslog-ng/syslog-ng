@@ -64,7 +64,7 @@ def merge_blocks_stored_as_options(db):
 
 
 def build_db():
-    db = {'source': {}, 'destination': {}}
+    db = {}
     for context, driver, keyword, arguments, parents in get_driver_options():
         arguments = list(arguments)
         db.setdefault(context, {})

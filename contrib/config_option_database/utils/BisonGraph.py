@@ -60,6 +60,15 @@ class BisonGraph():
             return False
         return True
 
+    def add_arc(self, from_node, to_node):
+        if self.is_rule(from_node) and not self.is_rule(to_node):
+            index = len(self.get_children(from_node))
+            self.graph.add_edge(from_node, to_node, index=index)
+        elif not self.is_rule(from_node) and self.is_rule(to_node):
+            self.graph.add_edge(from_node, to_node)
+        else:
+            raise Exception('Arc must be added from non-rule to rule or rule to non-rule: ' + from_node + '->' + to_node)
+
     def make_terminal(self, node):
         children = self.get_children(node)
         for child in children:

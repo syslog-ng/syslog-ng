@@ -135,3 +135,28 @@ def test_get_paths(graph):
         ()
     ]
     assert graph.get_paths() == expected
+
+
+@pytest.mark.parametrize(
+    'from_node,to_node',
+    [
+        ('3', 'test1'),
+        ('test2', '4')
+    ]
+)
+def test_add_arc(graph, from_node, to_node):
+    graph.add_arc(from_node, to_node)
+    assert to_node in graph.get_children(from_node)
+
+
+@pytest.mark.parametrize(
+    'from_node,to_node',
+    [
+        ('3', '4'),
+        ('test1', 'test2')
+    ]
+)
+def test_invalid_add_arc(graph, from_node, to_node):
+    with pytest.raises(Exception) as e:
+        graph.add_arc('3', '4')
+    assert 'Arc must be added from non-rule to rule or rule to non-rule:' in str(e.value)
