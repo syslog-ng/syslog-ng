@@ -59,34 +59,39 @@ start
         : LL_CONTEXT_PARSER parser_expr_maxminddb                  { YYACCEPT; }
         ;
 
-parser_geoip_opts
-        : parser_geoip_opt parser_geoip_opts
-        |
-        ;
-
 parser_expr_maxminddb
         : KW_GEOIP2 '('
           {
             last_parser = *instance = (LogParser *) maxminddb_parser_new(configuration);
           }
-          string
+          optional_direct_template
+          parser_geoip_opts
+          ')'					{ $$ = last_parser; }
+        ;
+
+optional_direct_template
+	: string
           {
             LogTemplate *template;
             GError *error = NULL;
 
-            template = cfg_tree_check_inline_template(&configuration->tree, $4, &error);
-            CHECK_ERROR_GERROR(template != NULL, @4, error, "Error compiling template");
+            template = cfg_tree_check_inline_template(&configuration->tree, $1, &error);
+            CHECK_ERROR_GERROR(template != NULL, @1, error, "Error compiling template");
             log_parser_set_template(last_parser, template);
+            free($1);
           }
-          parser_geoip_opts
-          ')'					{ $$ = last_parser; free($4); }
+	|
+	;
+
+parser_geoip_opts
+        : parser_geoip_opt parser_geoip_opts
+        |
         ;
 
 parser_geoip_opt
-        : KW_PREFIX '(' string ')'
-          { geoip_parser_set_prefix(last_parser, $3); free($3); }
-        | KW_DATABASE '(' path_check ')'
-          { geoip_parser_set_database_path(last_parser, $3); free($3); }
+        : KW_PREFIX '(' string ')' { geoip_parser_set_prefix(last_parser, $3); free($3); }
+        | KW_DATABASE '(' path_check ')' { geoip_parser_set_database_path(last_parser, $3); free($3); }
+        | parser_opt
         ;
 
 /* INCLUDE_RULES */
