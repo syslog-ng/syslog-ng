@@ -22,6 +22,7 @@
  */
 
 #include "loggen_helper.h"
+#include "compat/openssl_support.h"
 
 #include <syslog-ng-config.h>
 #include <string.h>
