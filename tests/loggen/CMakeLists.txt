@@ -13,6 +13,7 @@ include_directories(loggen_helper PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${GLIB_INCLUDE_DIRS}
   ${PROJECT_SOURCE_DIR}/lib
+  ${OPENSSL_INCLUDE_DIR}
   )
 
 set_target_properties(loggen_helper
@@ -67,6 +68,7 @@ include_directories(loggen
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${GLIB_INCLUDE_DIRS}
   ${PROJECT_SOURCE_DIR}/lib
+  ${OPENSSL_INCLUDE_DIR}
   )
 
 target_link_libraries(

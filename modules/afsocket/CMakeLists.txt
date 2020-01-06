@@ -55,7 +55,7 @@ find_package(systemd)
 add_library(afsocket SHARED ${AFSOCKET_SOURCES})
 target_include_directories(afsocket
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-  PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+  PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${OPENSSL_INCLUDE_DIR}
 )
 target_link_libraries(afsocket PRIVATE
 	${WRAP_LIBRARIES}

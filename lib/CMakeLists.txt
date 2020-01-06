@@ -310,6 +310,8 @@ target_include_directories(syslog-ng
 target_include_directories(syslog-ng
   SYSTEM PUBLIC
     ${CORE_INCLUDE_DIRS}
+  PRIVATE
+    ${OPENSSL_INCLUDE_DIR}
 )
 
 target_link_libraries(

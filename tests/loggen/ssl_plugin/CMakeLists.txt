@@ -2,6 +2,7 @@ include_directories(loggen_ssl_plugin
   ${CORE_INCLUDE_DIRS}
   ${GLIB_INCLUDE_DIRS}
   ${LOGGEN_INCLUDE_DIR}
+  ${OPENSSL_INCLUDE_DIR}
   )
 
 set (LOGGEN_SSL_PLUGIN_SOURCE

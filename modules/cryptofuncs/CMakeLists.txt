@@ -4,7 +4,7 @@ set (CRYPTOFUNCS_SOURCES
 
 
 add_library(cryptofuncs SHARED ${CRYPTOFUNCS_SOURCES})
-target_include_directories (cryptofuncs PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories (cryptofuncs PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${OPENSSL_INCLUDE_DIR})
 target_link_libraries(cryptofuncs
     PRIVATE
     syslog-ng
