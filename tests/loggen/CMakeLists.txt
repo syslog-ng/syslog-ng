@@ -53,8 +53,6 @@ install(TARGETS loggen_plugin ARCHIVE DESTINATION ${LOGGEN_PLUGIN_INSTALL_DIR})
 # ########### loggen binary #################
 set(LOGGEN_SOURCE
     loggen.c
-    loggen_helper.c
-    loggen_helper.h
     loggen_plugin.h
     file_reader.c
     file_reader.h
@@ -79,10 +77,10 @@ include_directories(loggen
 
 target_link_libraries(
   loggen
+  loggen_helper
   ${GLIB_GMODULE_LIBRARIES}
   ${GLIB_GTHREAD_LIBRARIES}
   ${GLIB_LIBRARIES}
-  OpenSSL::SSL
   )
 
 install(TARGETS loggen RUNTIME DESTINATION bin)
