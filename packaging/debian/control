@@ -123,10 +123,10 @@ Multi-Arch: foreign
 Depends: ${shlibs:Depends}, ${misc:Depends}, util-linux (>= 2.12-10), lsb-base (>= 3.0-6)
 Recommends: logrotate
 Suggests: ${sng:CoreModules}, ${sng:Modules}
-Provides: system-log-daemon, linux-kernel-log-daemon, libsyslog-ng-dev, syslog-ng-mod-journal, syslog-ng-mod-pacctformat [linux-any], syslog-ng-mod-tag-parser
+Provides: system-log-daemon, linux-kernel-log-daemon, libsyslog-ng-dev, syslog-ng-mod-journal, syslog-ng-mod-pacctformat, syslog-ng-mod-tag-parser, syslog-ng-mod-extra
 Conflicts: system-log-daemon, linux-kernel-log-daemon
-Replaces: syslog-ng (<< 3.3.0~), libsyslog-ng-dev, syslog-ng-mod-json (<< 3.19.1~), syslog-ng-mod-journal (<< 3.25.1~), syslog-ng-mod-pacctformat (<< 3.26.1~), syslog-ng-mod-tag-parser (<< 3.26.1~)
-Breaks: syslog-ng (<< 3.3.0~), libsyslog-ng-dev, syslog-ng-mod-json (<< 3.19.1~), syslog-ng-mod-journal (<< 3.25.1~), syslog-ng-mod-pacctformat (<< 3.26.1~), syslog-ng-mod-tag-parser (<< 3.26.1~)
+Replaces: syslog-ng (<< 3.3.0~), libsyslog-ng-dev, syslog-ng-mod-json (<< 3.19.1~), syslog-ng-mod-journal (<< 3.25.1~), syslog-ng-mod-pacctformat (<< 3.26.1~), syslog-ng-mod-tag-parser (<< 3.26.1~), syslog-ng-mod-extra (<< 3.26.1-2~)
+Breaks: syslog-ng (<< 3.3.0~), libsyslog-ng-dev, syslog-ng-mod-json (<< 3.19.1~), syslog-ng-mod-journal (<< 3.25.1~), syslog-ng-mod-pacctformat (<< 3.26.1~), syslog-ng-mod-tag-parser (<< 3.26.1~), syslog-ng-mod-extra (<< 3.26.1-2~)
 Description: Enhanced system logging daemon (core)
  syslog-ng is an enhanced log daemon, supporting a wide range of input
  and output methods: syslog, unstructured text, message queues,
@@ -604,37 +604,6 @@ Description: Enhanced system logging daemon (Kafka destination, based on librdka
  .
  This package provides a native Kafka destination, written entirely in the
  C programming language, based on the librdkafka client library.
-
-Package: syslog-ng-mod-extra
-Architecture: all
-Multi-Arch: foreign
-Depends: ${shlibs:Depends}, ${misc:Depends}, syslog-ng-core (>= ${source:Version}), syslog-ng-core (<< ${source:Version}.1~)
-Description: Enhanced system logging daemon (extra plugins)
- syslog-ng is an enhanced log daemon, supporting a wide range of input
- and output methods: syslog, unstructured text, message queues,
- databases (SQL and NoSQL alike) and more.
- .
- Key features:
- .
-  * receive and send RFC3164 and RFC5424 style syslog messages
-  * work with any kind of unstructured data
-  * receive and send JSON formatted messages
-  * classify and structure logs with builtin parsers (csv-parser(),
-    db-parser(), etc.)
-  * normalize, crunch and process logs as they flow through the system
-  * hand on messages for further processing using message queues (like
-    AMQP), files or databases (like PostgreSQL or MongoDB).
- .
- This package collects all the small plugins, which does not worth to have
- a whole package. This package contains:
- .
-  * windows event log parser
-  * tag parser
-  * Graylog2 destination
-  * default Network source driver
-  * Load balancer destination
-  * osquery destination
-  * ewmm (Enterprise wide messaging model) destination and parser
 
 Package: syslog-ng-mod-examples
 Architecture: any

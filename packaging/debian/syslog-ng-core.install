@@ -33,22 +33,7 @@ usr/lib/syslog-ng/libloggen_helper.so
 usr/lib/syslog-ng/libloggen_plugin.so
 usr/lib/syslog-ng/libloggen_helper-*.so.*
 usr/lib/syslog-ng/libloggen_plugin-*.so.*
-usr/share/syslog-ng/include/scl/system/*
-usr/share/syslog-ng/include/scl/syslogconf/*
-usr/share/syslog-ng/include/scl/rewrite/*
-usr/share/syslog-ng/include/scl/mbox/*
-usr/share/syslog-ng/include/scl/nodejs/*
-usr/share/syslog-ng/include/scl/apache/*
-usr/share/syslog-ng/include/scl/cim/*
-usr/share/syslog-ng/include/scl/loggly/*
-usr/share/syslog-ng/include/scl/logmatic/*
-usr/share/syslog-ng/include/scl/solaris/*
-usr/share/syslog-ng/include/scl/cisco/*
-usr/share/syslog-ng/include/scl/iptables/*
-usr/share/syslog-ng/include/scl/sudo/*
-usr/share/syslog-ng/include/scl/linux-audit/*
-usr/share/syslog-ng/include/scl/slack/*
-usr/share/syslog-ng/include/scl/telegram/*
+usr/share/syslog-ng/include/scl/*
 usr/share/syslog-ng/xsd/*
 [linux-any] usr/lib/syslog-ng/*/libsdjournal.so
 [linux-any] usr/lib/syslog-ng/*/libpacctformat.so

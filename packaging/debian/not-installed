@@ -1,12 +1,4 @@
 lib/systemd/system/syslog-ng@.service
-usr/share/syslog-ng/include/scl/default-network-drivers/plugin.conf
 usr/share/syslog-ng/include/scl/elasticsearch/plugin.conf
-usr/share/syslog-ng/include/scl/ewmm/ewmm.conf
-usr/share/syslog-ng/include/scl/graylog2/plugin.conf
 usr/share/syslog-ng/include/scl/hdfs/plugin.conf
 usr/share/syslog-ng/include/scl/kafka/plugin.conf
-usr/share/syslog-ng/include/scl/loadbalancer/gen-loadbalancer.sh
-usr/share/syslog-ng/include/scl/loadbalancer/plugin.conf
-usr/share/syslog-ng/include/scl/osquery/plugin.conf
-usr/share/syslog-ng/include/scl/windowseventlog/plugin.conf
-usr/share/syslog-ng/include/scl/windowseventlog/windowseventlog.xml
