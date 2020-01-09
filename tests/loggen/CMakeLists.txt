@@ -15,6 +15,14 @@ include_directories(loggen_helper PUBLIC
   ${PROJECT_SOURCE_DIR}/lib
   )
 
+target_link_libraries(
+  loggen_helper
+  ${GLIB_GMODULE_LIBRARIES}
+  ${GLIB_GTHREAD_LIBRARIES}
+  ${GLIB_LIBRARIES}
+  OpenSSL::SSL
+  )
+
 set_target_properties(loggen_helper
     PROPERTIES VERSION ${SYSLOG_NG_VERSION}
     SOVERSION ${SYSLOG_NG_VERSION})
