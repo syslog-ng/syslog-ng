@@ -259,6 +259,8 @@ open_ssl_connection(int sock_fd)
       return NULL;
     }
 
+  SSL_CTX_set_mode(ctx, SSL_MODE_AUTO_RETRY);
+
   SSL *ssl = NULL;
   if (NULL == (ssl = SSL_new(ctx)))
     {
