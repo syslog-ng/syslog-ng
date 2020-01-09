@@ -75,13 +75,13 @@ stmt_without_eol
         : version_stmt
         | define_stmt
         | module_stmt
-        | requires_stmt
         ;
 
 	/* LL_EOL as a token needs to be consumed by the rules below, as they can
 	 * change the lexer buffer by the time they return to the grammar. */
 stmt_with_eol
         : include_stmt
+        | requires_stmt
         ;
 
 version_stmt
@@ -133,7 +133,7 @@ module_param
 	;
 
 requires_stmt
-	: KW_REQUIRES string
+	: KW_REQUIRES string LL_EOL
           {
             if (!cfg_is_module_available(configuration, $2))
               {
