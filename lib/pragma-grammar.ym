@@ -95,19 +95,16 @@ version_stmt
                 PRAGMA_ERROR();
           }
 
-include_stmt
-        : KW_INCLUDE string LL_EOL
-          {
-            CHECK_ERROR(cfg_lexer_include_file(lexer, $2), @2, "Error including %s", $2);
-            free($2);
-          }
-        ;
-
 define_stmt
-	: KW_DEFINE LL_IDENTIFIER string_or_number		{ msg_debug("Global value changed",
-                                                                            evt_tag_str("define", $2),
-                                                                            evt_tag_str("value", $3));
-								  cfg_args_set(configuration->globals, $2, $3); free($2); free($3); }
+	: KW_DEFINE LL_IDENTIFIER string_or_number
+          {
+            msg_debug("Global value changed",
+                      evt_tag_str("define", $2),
+                      evt_tag_str("value", $3));
+	    cfg_args_set(configuration->globals, $2, $3);
+            free($2);
+            free($3);
+          }
 
 module_stmt
 	: KW_MODULE string { last_module_args = cfg_args_new(); } module_params
@@ -131,6 +128,14 @@ module_params
 module_param
 	: LL_IDENTIFIER '(' string_or_number ')'		{ cfg_args_set(last_module_args, $1, $3); free($1); free($3); }
 	;
+
+include_stmt
+        : KW_INCLUDE string LL_EOL
+          {
+            CHECK_ERROR(cfg_lexer_include_file(lexer, $2), @2, "Error including %s", $2);
+            free($2);
+          }
+        ;
 
 requires_stmt
 	: KW_REQUIRES string LL_EOL
