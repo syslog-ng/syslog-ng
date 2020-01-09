@@ -64,18 +64,24 @@ CfgArgs *last_module_args = NULL;
 
 start
         : { PRAGMA_BEGIN(); }
-          stmt_and_eol                                  { if (yychar != YYEMPTY) { cfg_lexer_unput_token(lexer, &yylval); } PRAGMA_END(); YYACCEPT; }
+          stmt                                  { if (yychar != YYEMPTY) { cfg_lexer_unput_token(lexer, &yylval); } PRAGMA_END(); YYACCEPT; }
 
-stmt_and_eol
-        : pragma_stmt LL_EOL
-        | include_stmt
-        ;
+stmt
+	: stmt_without_eol LL_EOL
+	| stmt_with_eol
+	;
 
-pragma_stmt
+stmt_without_eol
         : version_stmt
         | define_stmt
         | module_stmt
         | requires_stmt
+        ;
+
+	/* LL_EOL as a token needs to be consumed by the rules below, as they can
+	 * change the lexer buffer by the time they return to the grammar. */
+stmt_with_eol
+        : include_stmt
         ;
 
 version_stmt
