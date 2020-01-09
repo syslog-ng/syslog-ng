@@ -298,6 +298,7 @@ idle_thread_func(gpointer user_data)
   idle_thread_count--;
   g_mutex_unlock(thread_lock);
 
+  shutdown(fd, SHUT_RDWR);
   close(fd);
 
   g_free(thread_context);
@@ -408,6 +409,7 @@ active_thread_func(gpointer user_data)
   active_thread_count--;
   g_mutex_unlock(thread_lock);
 
+  shutdown(fd, SHUT_RDWR);
   close(fd);
 
   g_free(thread_context);

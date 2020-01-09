@@ -286,6 +286,7 @@ idle_thread_func(gpointer user_data)
   g_mutex_unlock(thread_lock);
 
   close_ssl_connection(ssl);
+  shutdown(sock_fd, SHUT_RDWR);
   close(sock_fd);
 
   g_free(thread_context);
@@ -388,6 +389,7 @@ active_thread_func(gpointer user_data)
 
   g_free((gpointer)message);
   close_ssl_connection(ssl);
+  shutdown(sock_fd, SHUT_RDWR);
   close(sock_fd);
 
   g_free(thread_context);
