@@ -133,6 +133,9 @@ start(PluginOption *option)
       return;
     }
 
+  if (!is_plugin_activated())
+    return;
+
   if (unix_socket_x)
     {
       if (!option->target)
@@ -160,17 +163,8 @@ start(PluginOption *option)
   thread_start = g_cond_new();
   thread_connected = g_cond_new();
 
-  if (!is_plugin_activated())
-    {
-      active_thread_count  = 0;
-      idle_thread_count  = 0;
-      return;
-    }
-  else
-    {
-      active_thread_count  = option->active_connections;
-      idle_thread_count = option->idle_connections;
-    }
+  active_thread_count  = option->active_connections;
+  idle_thread_count = option->idle_connections;
 
   connect_finished = 0;
 
@@ -222,6 +216,9 @@ stop(PluginOption *option)
       ERROR("invalid option reference\n");
       return;
     }
+
+  if (!is_plugin_activated())
+    return;
 
   DEBUG("plugin stop\n");
   thread_run = FALSE;

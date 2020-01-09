@@ -127,6 +127,9 @@ start(PluginOption *option)
       return;
     }
 
+  if (!is_plugin_activated())
+    return;
+
   if (!option->target || !option->port)
     {
       ERROR("please specify target and port parameters\n");
@@ -146,19 +149,9 @@ start(PluginOption *option)
   thread_start = g_cond_new();
   thread_connected = g_cond_new();
 
-  if (!is_plugin_activated())
-    {
-      active_thread_count  = 0;
-      idle_thread_count  = 0;
-      return;
-    }
-  else
-    {
-      active_thread_count  = option->active_connections;
-      idle_thread_count  = option->idle_connections;
-      /* call syslog-ng's crypto init */
-      crypto_init();
-    }
+  active_thread_count = option->active_connections;
+  idle_thread_count = option->idle_connections;
+  crypto_init();
 
   connect_finished = 0;
 
@@ -213,6 +206,9 @@ stop(PluginOption *option)
       return;
     }
 
+  if (!is_plugin_activated())
+    return;
+
   DEBUG("plugin stop\n");
   thread_run = FALSE;
 
@@ -226,9 +222,7 @@ stop(PluginOption *option)
       g_thread_join(thread_id);
     }
 
-  /* call syslog-ng's crypto deinit */
-  if (active_thread_count+idle_thread_count>0)
-    crypto_deinit();
+  crypto_deinit();
 
   if (thread_lock)
     g_mutex_free(thread_lock);
