@@ -34,6 +34,24 @@ bison_target(HttpParserGrammar
 
 add_library(http SHARED ${HTTP_DESTINATION_SOURCES})
 
+function (curl_detect_compile_option NAME)
+  set(CMAKE_REQUIRED_INCLUDES "${Curl_INCLUDE_DIR}")
+  set(CMAKE_EXTRA_INCLUDE_FILES "curl/curl.h")
+  string(TOUPPER ${NAME} NAME_CAPITAL)
+
+  check_type_size(${NAME} SYSLOG_NG_HAVE_DECL_${NAME_CAPITAL})
+  if (SYSLOG_NG_HAVE_DECL_${NAME_CAPITAL})
+    target_compile_definitions(http PRIVATE "-DSYSLOG_NG_HAVE_DECL_${NAME_CAPITAL}=1")
+  else()
+    target_compile_definitions(http PRIVATE "-DSYSLOG_NG_HAVE_DECL_${NAME_CAPITAL}=0")
+  endif()
+endfunction ()
+
+curl_detect_compile_option(CURL_SSLVERSION_TLSv1_0)
+curl_detect_compile_option(CURL_SSLVERSION_TLSv1_1)
+curl_detect_compile_option(CURL_SSLVERSION_TLSv1_2)
+curl_detect_compile_option(CURL_SSLVERSION_TLSv1_3)
+
 target_include_directories (http PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories (http PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_include_directories (http PRIVATE ${Curl_INCLUDE_DIR})

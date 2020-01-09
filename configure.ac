@@ -1306,6 +1306,15 @@ if test "x$enable_http" != "xno" && test "x$with_libcurl" != "xno"; then
 		AC_MSG_ERROR(libcurl not found)
 	fi
 	enable_http=$libcurl
+
+        if test "$enable_http" = "yes"; then
+           old_CFLAGS=$CFLAGS
+           CFLAGS=$LIBCURL_CFLAGS
+           AC_CHECK_DECLS([CURL_SSLVERSION_TLSv1_0, CURL_SSLVERSION_TLSv1_1, CURL_SSLVERSION_TLSv1_2, CURL_SSLVERSION_TLSv1_3],
+                          [], [],
+                          [[#include <curl/curl.h>]])
+           CFLAGS=$old_CFLAGS
+        fi
 fi
 
 dnl ***************************************************************************
