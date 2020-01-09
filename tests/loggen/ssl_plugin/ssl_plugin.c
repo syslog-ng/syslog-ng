@@ -247,8 +247,9 @@ stop(PluginOption *option)
 gpointer
 idle_thread_func(gpointer user_data)
 {
-  PluginOption *option = ((ThreadData *)user_data)->option;
-  int thread_index = ((ThreadData *)user_data)->index;
+  ThreadData *thread_context = (ThreadData *)user_data;
+  PluginOption *option = thread_context->option;
+  int thread_index = thread_context->index;
 
   int sock_fd = connect_ip_socket(SOCK_STREAM, option->target, option->port, option->use_ipv6);;
 
@@ -292,6 +293,8 @@ idle_thread_func(gpointer user_data)
 
   close_ssl_connection(ssl);
   close(sock_fd);
+
+  g_free(thread_context);
   g_thread_exit(NULL);
   return NULL;
 }
@@ -393,6 +396,7 @@ active_thread_func(gpointer user_data)
   close_ssl_connection(ssl);
   close(sock_fd);
 
+  g_free(thread_context);
   g_thread_exit(NULL);
   return NULL;
 }

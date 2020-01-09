@@ -247,8 +247,9 @@ stop(PluginOption *option)
 gpointer
 idle_thread_func(gpointer user_data)
 {
-  PluginOption *option = ((ThreadData *)user_data)->option;
-  int thread_index = ((ThreadData *)user_data)->index;
+  ThreadData *thread_context = (ThreadData *)user_data;
+  PluginOption *option = thread_context->option;
+  int thread_index = thread_context->index;
 
   int sock_type = SOCK_STREAM;
 
@@ -301,6 +302,8 @@ idle_thread_func(gpointer user_data)
   g_mutex_unlock(thread_lock);
 
   close(fd);
+
+  g_free(thread_context);
   g_thread_exit(NULL);
   return NULL;
 }
@@ -409,6 +412,8 @@ active_thread_func(gpointer user_data)
   g_mutex_unlock(thread_lock);
 
   close(fd);
+
+  g_free(thread_context);
   g_thread_exit(NULL);
   return NULL;
 }
