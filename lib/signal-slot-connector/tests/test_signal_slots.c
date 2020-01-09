@@ -25,27 +25,20 @@
 #include <criterion/criterion.h>
 #include "signal-slot-connector/signal-slot-connector.h"
 
+#define signal_test1 SIGNAL(test, 1, TestData *)
+#define signal_test2 SIGNAL(test, 2, TestData *)
+
 typedef struct _TestData TestData;
 
 struct _TestData
 {
-  gint custom_signal_ctr;
   gint slot_ctr;
 };
 
 void
 test_data_init(TestData *data)
 {
-  data->custom_signal_ctr = 0;
   data->slot_ctr = 0;
-}
-
-SIGNAL_DECL(test1_default_signal, TestData *);
-SIGNAL_IMPL(test1_default_signal, TestData *);
-
-void test1_custom_signal(TestData *user_data)
-{
-  user_data->custom_signal_ctr++;
 }
 
 void test1_slot(TestData *user_data)
@@ -64,16 +57,14 @@ Test(basic_signal_slots, when_the_signal_is_emitted_then_the_connected_slot_is_e
   TestData test_data;
   test_data_init(&test_data);
 
-  CONNECT(ssc, test1_default_signal, test1_slot);
-  CONNECT(ssc, test1_custom_signal, test1_slot);
-  EMIT(ssc, test1_default_signal, &test_data);
+  CONNECT(ssc, signal_test1, test1_slot);
+  CONNECT(ssc, signal_test2, test1_slot);
+  EMIT(ssc, signal_test1, &test_data);
 
-  cr_expect_eq(test_data.custom_signal_ctr, 0);
   cr_expect_eq(test_data.slot_ctr, 1);
 
-  EMIT(ssc, test1_custom_signal, &test_data);
+  EMIT(ssc, signal_test2, &test_data);
 
-  cr_expect_eq(test_data.custom_signal_ctr, 1);
   cr_expect_eq(test_data.slot_ctr, 2);
 
   signal_slot_connector_free(ssc);
@@ -86,11 +77,10 @@ Test(basic_signal_slots, when_trying_to_connect_multiple_times_the_same_connecti
   test_data_init(&test_data);
 
   for (gint i = 0; i < 5; i++)
-    CONNECT(ssc, test1_custom_signal, test1_slot);
+    CONNECT(ssc, signal_test1, test1_slot);
 
-  EMIT(ssc, test1_custom_signal, &test_data);
+  EMIT(ssc, signal_test1, &test_data);
 
-  cr_expect_eq(test_data.custom_signal_ctr, 1);
   cr_expect_eq(test_data.slot_ctr, 1);
 
   signal_slot_connector_free(ssc);
@@ -102,15 +92,14 @@ Test(basic_signal_slots, when_trying_to_disconnect_multiple_times_the_same_conne
   TestData test_data;
   test_data_init(&test_data);
 
-  CONNECT(ssc, test1_custom_signal, test1_slot);
-  CONNECT(ssc, test1_custom_signal, test2_slot);
+  CONNECT(ssc, signal_test1, test1_slot);
+  CONNECT(ssc, signal_test1, test2_slot);
 
   for (gint i = 0; i < 5; i++)
-    DISCONNECT(ssc, test1_custom_signal, test1_slot);
+    DISCONNECT(ssc, signal_test1, test1_slot);
 
-  EMIT(ssc, test1_custom_signal, &test_data);
+  EMIT(ssc, signal_test1, &test_data);
 
-  cr_expect_eq(test_data.custom_signal_ctr, 1);
   cr_expect_eq(test_data.slot_ctr, 1);
 
   signal_slot_connector_free(ssc);
@@ -123,37 +112,22 @@ Test(basic_signal_slots,
   TestData test_data;
   test_data_init(&test_data);
 
-  CONNECT(ssc, test1_default_signal, test1_slot);
-  CONNECT(ssc, test1_custom_signal, test1_slot);
+  CONNECT(ssc, signal_test1, test1_slot);
+  CONNECT(ssc, signal_test2, test1_slot);
 
-  DISCONNECT(ssc, test1_default_signal, test1_slot);
-  EMIT(ssc, test1_default_signal, &test_data);
+  DISCONNECT(ssc, signal_test1, test1_slot);
+  EMIT(ssc, signal_test1, &test_data);
 
-  cr_expect_eq(test_data.custom_signal_ctr, 0);
   cr_expect_eq(test_data.slot_ctr, 0);
 
-  EMIT(ssc, test1_custom_signal, &test_data);
+  EMIT(ssc, signal_test2, &test_data);
 
-  cr_expect_eq(test_data.custom_signal_ctr, 1);
   cr_expect_eq(test_data.slot_ctr, 1);
 
-  DISCONNECT(ssc, test1_custom_signal, test1_slot);
-  EMIT(ssc, test1_custom_signal, &test_data);
+  DISCONNECT(ssc, signal_test2, test1_slot);
+  EMIT(ssc, signal_test2, &test_data);
 
-  cr_expect_eq(test_data.custom_signal_ctr, 1);
   cr_expect_eq(test_data.slot_ctr, 1);
-
-  signal_slot_connector_free(ssc);
-}
-
-Test(basic_signal_slots, when_an_unregistered_signal_is_emitted_then_do_not_execute_the_signal)
-{
-  SignalSlotConnector *ssc = signal_slot_connector_new();
-  TestData test_data;
-  test_data_init(&test_data);
-
-  EMIT(ssc, test1_custom_signal, &test_data);
-  cr_expect_eq(test_data.custom_signal_ctr, 0);
 
   signal_slot_connector_free(ssc);
 }
@@ -164,39 +138,36 @@ Test(basic_signal_slots, when_disconnect_the_connected_slot_from_a_signal_then_t
   TestData test_data;
   test_data_init(&test_data);
 
-  CONNECT(ssc, test1_custom_signal, test1_slot);
-  DISCONNECT(ssc, test1_custom_signal, test1_slot);
-  EMIT(ssc, test1_custom_signal, &test_data);
-  cr_expect_eq(test_data.custom_signal_ctr, 0);
+  CONNECT(ssc, signal_test1, test1_slot);
+  DISCONNECT(ssc, signal_test1, test1_slot);
+  EMIT(ssc, signal_test1, &test_data);
+
+  cr_expect_eq(test_data.slot_ctr, 0);
 
   signal_slot_connector_free(ssc);
 }
 
-#define CONCAT_STR_3(s1, s2, s3) s1##s2##s3
-
-#define DEFINE_TEST_SIGNAL_WITH_SLOT(func_name, idx) \
-  void CONCAT_STR_3(func_name, _signal_, idx)(TestData *user_data) \
-  { \
-    user_data->custom_signal_ctr++; \
-  } \
-  void CONCAT_STR_3(func_name, _slot_, idx)(TestData *user_data) \
+#define DEFINE_TEST_SLOT(func_name) \
+  void func_name(TestData *user_data) \
   { \
     user_data->slot_ctr++; \
   }
 
-DEFINE_TEST_SIGNAL_WITH_SLOT(test, 0)
-DEFINE_TEST_SIGNAL_WITH_SLOT(test, 1)
-DEFINE_TEST_SIGNAL_WITH_SLOT(test, 2)
-DEFINE_TEST_SIGNAL_WITH_SLOT(test, 3)
+DEFINE_TEST_SLOT(test_slot_0)
+DEFINE_TEST_SLOT(test_slot_1)
+DEFINE_TEST_SLOT(test_slot_2)
+DEFINE_TEST_SLOT(test_slot_3)
+
+#define test_signal_0 SIGNAL(test, func_0, TestData *)
+#define test_signal_1 SIGNAL(test, func_1, TestData *)
+#define test_signal_2 SIGNAL(test, func_2, TestData *)
+#define test_signal_3 SIGNAL(test, func_3, TestData *)
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 
 Signal signals[4] =
 {
-  (Signal) test_signal_0,
-  (Signal) test_signal_1,
-  (Signal) test_signal_2,
-  (Signal) test_signal_3
+  test_signal_0
 };
 
 Slot slots[4] =
@@ -231,7 +202,6 @@ Test(multiple_signals_slots,
   _connect_a_signal_with_all_test_slots(ssc, signals[0]);
 
   EMIT(ssc, signals[0], &test_data);
-  cr_expect_eq(test_data.custom_signal_ctr, 1);
   cr_expect_eq(test_data.slot_ctr, ARRAY_SIZE(slots));
 
   _disconnect_all_test_slots_from_a_signal(ssc, signals[0]);
@@ -251,17 +221,14 @@ Test(multiple_signals_slots,
 
   DISCONNECT(ssc, signals[0], slots[0]);
   EMIT(ssc, signals[0], &test_data);
-  cr_expect_eq(test_data.custom_signal_ctr, 1);
   cr_expect_eq(test_data.slot_ctr, 2);
 
   DISCONNECT(ssc, signals[0], slots[1]);
   EMIT(ssc, signals[0], &test_data);
-  cr_expect_eq(test_data.custom_signal_ctr, 2);
   cr_expect_eq(test_data.slot_ctr, 3);
 
   DISCONNECT(ssc, signals[0], slots[2]);
   EMIT(ssc, signals[0], &test_data);
-  cr_expect_eq(test_data.custom_signal_ctr, 2);
   cr_expect_eq(test_data.slot_ctr, 3);
 
   signal_slot_connector_free(ssc);

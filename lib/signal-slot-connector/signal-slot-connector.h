@@ -30,26 +30,21 @@
 
 typedef struct _SignalSlotConnector SignalSlotConnector;
 
+typedef const gchar *Signal;
 
-#define SIGNAL_DECL(signal_func, data_type) \
-  void signal_func(data_type user_data);
-
-#define SIGNAL_IMPL(signal_func, data_type)\
-  void signal_func(data_type user_data) \
-    { \
-      msg_debug("SIGNAL called\n", evt_tag_str("signal", __FUNCTION__)); \
-    }
+#define STR(x) #x
+#define SIGNAL(modul, signal, signal_param_type) \
+  STR(modul) "::signal_" STR(signal) "(" STR(signal_param_type) ")"
 
 #define CONNECT(connector, signal, slot) \
-  signal_slot_connect(connector, (Signal) signal, (Slot) slot);
+  signal_slot_connect(connector, signal, (Slot) slot);
 
 #define DISCONNECT(connector, signal, slot) \
-  signal_slot_disconnect(connector, (Signal) signal, (Slot) slot);
+  signal_slot_disconnect(connector, signal, (Slot) slot);
 
 #define EMIT(connector, signal, user_data) \
-  signal_slot_emit(connector, (Signal) signal, (gpointer) user_data);
+  signal_slot_emit(connector, signal, (gpointer) user_data);
 
-typedef void (*Signal)(gpointer user_data);
 typedef void (*Slot)(gpointer user_data);
 
 void signal_slot_connect(SignalSlotConnector *self, Signal signal, Slot slot);
