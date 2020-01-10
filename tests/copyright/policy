@@ -75,6 +75,7 @@ modules/add-contextual-data/tests/test_glob_selector\.c$
 modules/affile/tests/test_file_writer\.c$
  GPLv2+_SSL
 contib/config_option_database
+news/create-newsfile.py
 dev-utils/plugin_skeleton_creator/create_plugin.sh
 tests/functional
 tests/unit
