@@ -127,6 +127,7 @@ pkginclude_HEADERS			+= \
 	lib/gsocket.h			\
 	lib/hostname.h			\
 	lib/host-resolve.h		\
+	lib/list-adt.h \
 	lib/logmatcher.h		\
 	lib/logmpx.h			\
 	lib/logpipe.h			\
