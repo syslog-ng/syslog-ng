@@ -93,18 +93,18 @@ override_dh_auto_configure:
 		--enable-spoof-source \
 		--enable-tcp-wrapper \
 		--enable-sql \
-		--enable-mongodb \
 		--enable-json \
-		--enable-riemann \
 		--disable-java \
 		--enable-manpages \
-		--enable-amqp \
 		$(PACCT_CONFIGURE_OPTS) \
 		--enable-python \
 		--with-python=3 \
 		--enable-snmp-dest \
 		--enable-http \
-		--enable-kafka \
+		--enable-mongodb=auto \
+		--enable-amqp=auto \
+		--enable-kafka=auto \
+		--enable-riemann=auto \
 		\
 		--with-mongoc=system \
 		--with-ivykis=system \
