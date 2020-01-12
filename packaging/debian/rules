@@ -56,6 +56,10 @@ SYSTEMD_CONFIGURE_OPTS = --disable-systemd
 PACCT_CONFIGURE_OPTS   = --disable-pacct
 endif
 
+ifneq ($(filter nojava,$(DEB_BUILD_PROFILES)),)
+DH_OPTIONS += -Nsyslog-ng-mod-java -Nsyslog-ng-mod-kafka -Nsyslog-ng-mod-java-common-lib -Nsyslog-ng-mod-elastic -Nsyslog-ng-mod-java-http -Nsyslog-ng-mod-hdfs
+endif
+
 # If DH_QUIET is set, then we want silent mode.
 # If DH_VERBOSE is set, we do not want silent mode.
 # If neither is set, we want the default: verbose mode.
@@ -94,7 +98,6 @@ override_dh_auto_configure:
 		--enable-tcp-wrapper \
 		--enable-sql \
 		--enable-json \
-		--disable-java \
 		--enable-manpages \
 		$(PACCT_CONFIGURE_OPTS) \
 		--enable-python \
@@ -105,6 +108,7 @@ override_dh_auto_configure:
 		--enable-amqp=auto \
 		--enable-kafka=auto \
 		--enable-riemann=auto \
+		--enable-java=auto \
 		\
 		--with-mongoc=system \
 		--with-ivykis=system \
