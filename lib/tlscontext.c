@@ -457,6 +457,10 @@ tls_context_setup_ssl_options(TLSContext *self)
       if(self->ssl_options & TSO_NOTLSv12)
         ssl_options |= SSL_OP_NO_TLSv1_2;
 #endif
+#ifdef SSL_OP_NO_TLSv1_3
+      if(self->ssl_options & TSO_NOTLSv13)
+        ssl_options |= SSL_OP_NO_TLSv1_3;
+#endif
 #ifdef SSL_OP_CIPHER_SERVER_PREFERENCE
       if (self->mode == TM_SERVER)
         ssl_options |= SSL_OP_CIPHER_SERVER_PREFERENCE;
@@ -931,6 +935,10 @@ tls_context_set_ssl_options_by_name(TLSContext *self, GList *options)
         self->ssl_options |= TSO_NOTLSv11;
       else if (strcasecmp(l->data, "no-tlsv12") == 0 || strcasecmp(l->data, "no_tlsv12") == 0)
         self->ssl_options |= TSO_NOTLSv12;
+#endif
+#ifdef SSL_OP_NO_TLSv1_3
+      else if (strcasecmp(l->data, "no-tlsv13") == 0 || strcasecmp(l->data, "no_tlsv13") == 0)
+        self->ssl_options |= TSO_NOTLSv13;
 #endif
       else
         return FALSE;

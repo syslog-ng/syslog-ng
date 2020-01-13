@@ -53,6 +53,7 @@ typedef enum
   TSO_NOTLSv1=0x0004,
   TSO_NOTLSv11=0x0008,
   TSO_NOTLSv12=0x0010,
+  TSO_NOTLSv13=0x0020,
 } TLSSslOptions;
 
 typedef enum

@@ -241,6 +241,13 @@ http_dd_set_ssl_version(LogDriver *d, const gchar *value)
       self->ssl_version = CURL_SSLVERSION_TLSv1_2;
     }
 #endif
+#ifdef CURL_SSLVERSION_TLSv1_3
+  else if (strcmp(value, "tlsv1_3") == 0)
+    {
+      /* TLS 1.3 only */
+      self->ssl_version = CURL_SSLVERSION_TLSv1_3;
+    }
+#endif
   else
     {
       msg_warning("curl: unsupported SSL version",
