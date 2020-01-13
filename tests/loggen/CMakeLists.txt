@@ -85,6 +85,15 @@ target_link_libraries(
 
 install(TARGETS loggen RUNTIME DESTINATION bin)
 
+# ################# install dev headers ############
+
+set(INTERFACE_HEADERS
+    loggen_plugin.h
+    loggen_helper.h
+)
+
+install(FILES ${INTERFACE_HEADERS} DESTINATION include/syslog-ng)
+
 # ################# build plugins ############
 set(LOGGEN_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 add_subdirectory(socket_plugin)
