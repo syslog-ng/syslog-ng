@@ -189,7 +189,7 @@ http_dd_set_cipher_suite(LogDriver *d, const gchar *ciphers)
   self->ciphers = g_strdup(ciphers);
 }
 
-void
+gboolean
 http_dd_set_ssl_version(LogDriver *d, const gchar *value)
 {
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
@@ -249,10 +249,9 @@ http_dd_set_ssl_version(LogDriver *d, const gchar *value)
     }
 #endif
   else
-    {
-      msg_warning("curl: unsupported SSL version",
-                  evt_tag_str("ssl_version", value));
-    }
+    return FALSE;
+
+  return TRUE;
 }
 
 void
