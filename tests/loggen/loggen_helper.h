@@ -54,16 +54,20 @@ SSL *open_ssl_connection(int sock_fd);
 void close_ssl_connection(SSL *ssl);
 
 #define ERROR(format,...) do {\
-  fprintf(stderr, "error [%s:%s:%d] ", basename(__FILE__), __func__, __LINE__);\
+  gchar *base = g_path_get_basename(__FILE__);\
+  fprintf(stderr, "error [%s:%s:%d] ", base, __func__, __LINE__);\
   fprintf(stderr, format, ##__VA_ARGS__);\
+  g_free(base);\
 } while (0)
 
 /* debug messages can be turned on by "--debug" command line option */
 #define DEBUG(format,...) do {\
   if (!get_debug_level()) \
     break; \
-  fprintf(stdout, "debug [%s:%s:%d] ", basename(__FILE__), __func__, __LINE__); \
+  gchar *base = g_path_get_basename(__FILE__);\
+  fprintf(stdout, "debug [%s:%s:%d] ", base, __func__, __LINE__); \
   fprintf(stdout, format, ##__VA_ARGS__);\
+  g_free(base);\
 } while(0)
 
 #endif
