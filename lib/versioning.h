@@ -156,6 +156,13 @@
 #define VERSION_STR_CURRENT     "3.25"
 #define VERSION_PRODUCT_CURRENT VERSION_3_25
 
+/* this value points to the last syslog-ng version where we changed the
+ * meaning of any setting in the configuration file.  Basically, it is the
+ * highest value passed to any cfg_is_config_version_older() call.
+ */
+#define VERSION_VALUE_LAST_SEMANTIC_CHANGE  VERSION_VALUE_3_22
+#define VERSION_STR_LAST_SEMANTIC_CHANGE    "3.22"
+
 #define version_convert_from_user(v)  (v)
 
 #include "pe-versioning.h"
