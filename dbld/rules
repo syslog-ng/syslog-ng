@@ -6,6 +6,7 @@ BUILDER_IMAGES=		\
 	fedora-30	\
 	debian-stretch	\
 	debian-buster	\
+	debian-sid	\
 	ubuntu-xenial	\
 	ubuntu-bionic \
 	ubuntu-eoan \
