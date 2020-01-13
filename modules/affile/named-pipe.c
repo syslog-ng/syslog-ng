@@ -125,7 +125,7 @@ pipe_sd_new(gchar *filename, GlobalConfig *cfg)
 
   self->file_reader_options.reader_options.super.stats_source = stats_register_type("pipe");
 
-  if (cfg_is_config_version_older(cfg, 0x0302))
+  if (cfg_is_config_version_older(cfg, VERSION_VALUE_3_2))
     {
       msg_warning_once("WARNING: the expected message format is being changed for pipe() to improve "
                        "syslogd compatibity with " VERSION_3_2 ". If you are using custom "

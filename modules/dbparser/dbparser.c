@@ -298,7 +298,7 @@ log_db_parser_new(GlobalConfig *cfg)
   self->super.super.process = log_db_parser_process;
   self->db_file = g_strdup(get_installation_path_for(PATH_PATTERNDB_FILE));
   g_static_mutex_init(&self->lock);
-  if (cfg_is_config_version_older(cfg, 0x0303))
+  if (cfg_is_config_version_older(cfg, VERSION_VALUE_3_3))
     {
       msg_warning_once("WARNING: The default behaviour for injecting messages in db-parser() has changed in " VERSION_3_3
                        " from internal to pass-through, use an explicit inject-mode(internal) option for old behaviour");

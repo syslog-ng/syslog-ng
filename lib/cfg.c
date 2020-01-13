@@ -393,7 +393,7 @@ cfg_set_version(GlobalConfig *self, gint version)
       return TRUE;
     }
   cfg_set_version_without_validation(self, version);
-  if (cfg_is_config_version_older(self, 0x0300))
+  if (cfg_is_config_version_older(self, VERSION_VALUE_3_0))
     {
       msg_error("ERROR: compatibility with configurations below 3.0 was dropped in " VERSION_3_13
                 ", please update your configuration accordingly",
@@ -419,7 +419,7 @@ cfg_set_version(GlobalConfig *self, gint version)
       self->user_version = VERSION_VALUE;
     }
 
-  if (cfg_is_config_version_older(self, 0x0303))
+  if (cfg_is_config_version_older(self, VERSION_VALUE_3_3))
     {
       msg_warning("WARNING: global: the default value of log_fifo_size() has changed to 10000 in " VERSION_3_3
                   " to reflect log_iw_size() changes for tcp()/udp() window size changes",
@@ -433,7 +433,7 @@ cfg_allow_config_dups(GlobalConfig *self)
 {
   const gchar *s;
 
-  if (cfg_is_config_version_older(self, 0x0303))
+  if (cfg_is_config_version_older(self, VERSION_VALUE_3_3))
     return TRUE;
 
   s = cfg_args_get(self->globals, "allow-config-dups");
