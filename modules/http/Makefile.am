@@ -18,6 +18,11 @@ modules_http_libhttp_la_SOURCES = \
   modules/http/http-plugin.c        \
   modules/http/http-signals.h
 
+modules_http_libhttp_ladir = ${pkgincludedir}/modules/http
+
+modules_http_libhttp_la_HEADERS = \
+	modules/http/http-signals.h
+
 modules_http_libhttp_la_CPPFLAGS  =     \
   $(AM_CPPFLAGS)            \
   $(LIBCURL_CFLAGS)          \
