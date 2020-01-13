@@ -43,14 +43,13 @@
 
 #include "snmpdest.h"
 #include "snmpdest-parser.h"
+#include "logthrdest/logthrdestdrv.h"
 
 const gchar *s_v2c = "v2c";
 const gchar *s_v3 = "v3";
 const gchar *s_sha = "SHA";
 const gchar *s_aes = "AES";
 const gchar *s_snmp_name = "syslog-ng";
-
-static gboolean snmpdest_dd_session_init(SNMPDestDriver *);
 
 typedef struct _snmp_obj_type_list
 {
@@ -209,7 +208,7 @@ snmpdest_dd_set_trap_obj(LogDriver *d, GlobalConfig *cfg, const gchar *objectid,
   self->trap_value = g_strdup(value);
 
   /* register the snmp trap as a simple snmp_obj */
-  snmpdest_dd_set_snmp_obj(&self->super.super, cfg, self->trap_oid, self->trap_type, self->trap_value);
+  snmpdest_dd_set_snmp_obj(&self->super.super.super, cfg, self->trap_oid, self->trap_type, self->trap_value);
 }
 
 void snmpdest_dd_set_community(LogDriver *d, const gchar *community)
@@ -393,26 +392,15 @@ sanitize_fs(GString *fs, gint code)
 
 #define MAX_OIDS 128
 
-static gboolean
-snmpdest_worker_insert(SNMPDestDriver *self, LogMessage *msg, LogPathOptions *path_options)
+static LogThreadedResult
+snmpdest_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
 {
+  SNMPDestDriver *self = (SNMPDestDriver *) s;
   netsnmp_pdu *pdu;
-
-  if (!self->session_initialized)
-    {
-      if (!snmpdest_dd_session_init(self))
-        {
-          msg_warning("SNMP: error in session init, message dropped",
-                      evt_tag_str("host", self->host),
-                      evt_tag_int("port", self->port));
-          log_msg_unref(msg);
-          return FALSE;
-        }
-    }
 
   pdu = snmp_pdu_create(SNMP_MSG_TRAP2);
   if (!pdu)
-    return FALSE;
+    return LTR_ERROR;
 
   oid parsed_oids[MAX_OIDS];
   guint oid_cnt;
@@ -437,7 +425,9 @@ snmpdest_worker_insert(SNMPDestDriver *self, LogMessage *msg, LogPathOptions *pa
           msg_warning("SNMP: error adding variable",
                       evt_tag_str("value", fs->str));
           log_msg_unref(msg);
-          return FALSE;
+          g_string_free(fs, TRUE);
+          snmp_free_pdu(pdu);
+          return LTR_ERROR;
         }
 
       snmp_obj = snmp_obj->next->next->next; /* go to the next triplet and the corresponding items */
@@ -452,102 +442,28 @@ snmpdest_worker_insert(SNMPDestDriver *self, LogMessage *msg, LogPathOptions *pa
       msg_error("SNMP: send error",
                 evt_tag_int("code", snmp_errno),
                 evt_tag_str("message", snmp_api_errstring(snmp_errno)));
-      stats_counter_inc(self->dropped_messages);
       snmp_free_pdu(pdu);
+      return LTR_NOT_CONNECTED;
     }
 
-  log_msg_ack(msg, path_options, AT_PROCESSED);
-  log_msg_unref(msg);
-
-  return TRUE;
+  return LTR_SUCCESS;
 }
 
-static gboolean
-snmpdest_worker_thread_pop_and_insert(SNMPDestDriver *self, GMutex *queue_mutex, LogPathOptions *path_options)
+static const gchar *
+snmpdest_dd_format_persist_name(const LogPipe *s)
 {
-  LogMessage *msg = log_queue_pop_head_ignore_throttle(self->queue, path_options);
-  g_mutex_unlock(queue_mutex);
-
-  if (!msg)
-    return FALSE;
-
-  if (!snmpdest_worker_insert(self, msg, path_options))
-    {
-      /* error */
-    }
-
-  return TRUE;
-}
-
-static void
-snmpdest_worker_thread(gpointer arg)
-{
-  SNMPDestDriver *self = (SNMPDestDriver *)arg;
-  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-
-  msg_debug ("Worker thread started",
-             evt_tag_str("driver", self->super.super.id));
-
-  gboolean popped = TRUE; /* the success of the _pop_head() */
-  while (!self->writer_thread_terminate)
-    {
-      g_mutex_lock(self->queue_mutex);
-      int n = log_queue_get_length(self->queue);
-      if (n > 0 || !popped)
-        {
-          /* there are items in the queue or the previous pop was unsuccesful (the msg is not yet present in the queue) */
-          popped = snmpdest_worker_thread_pop_and_insert(self, self->queue_mutex, &path_options);
-          if (!popped)
-            usleep(0);
-
-          continue;
-        }
-
-      /* wait for the signal after the message has been pushed */
-      if (!self->writer_thread_terminate)
-        g_cond_wait(self->writer_thread_wakeup_cond, self->queue_mutex);
-      if (self->writer_thread_terminate)
-        {
-          g_mutex_unlock(self->queue_mutex);
-          break;
-        }
-
-      popped = snmpdest_worker_thread_pop_and_insert(self, self->queue_mutex, &path_options);
-    }
-
-  msg_debug ("Worker thread finished",
-             evt_tag_str("driver", self->super.super.id));
-
-}
-
-static void
-snmpdest_dd_stop_thread(gpointer arg)
-{
-  SNMPDestDriver *self = (SNMPDestDriver *)arg;
-  self->writer_thread_terminate = TRUE;
-  g_mutex_lock(self->queue_mutex);
-  g_cond_signal(self->writer_thread_wakeup_cond);
-  g_mutex_unlock(self->queue_mutex);
-}
-
-static void
-snmpdest_dd_start_thread(SNMPDestDriver *self)
-{
-  main_loop_create_worker_thread(snmpdest_worker_thread, snmpdest_dd_stop_thread, self, &self->worker_options);
-}
-
-static gchar *
-snmpdest_dd_format_persist_name(SNMPDestDriver *self)
-{
+  SNMPDestDriver *self = (SNMPDestDriver *) s;
   static gchar persist_name[1024];
 
   g_snprintf(persist_name, sizeof(persist_name), "snmpdest(%s,%u)", self->host, self->port);
   return persist_name;
 }
 
-static gchar *
-snmpdest_dd_format_stats_instance(SNMPDestDriver *self)
+static const gchar *
+snmpdest_dd_format_stats_instance(LogThreadedDestDriver *s)
 {
+  SNMPDestDriver *self = (SNMPDestDriver *)s;
+
   static gchar persist_name[1024];
 
   g_snprintf(persist_name, sizeof(persist_name), "snmpdest,%s,%u", self->host, self->port);
@@ -705,60 +621,31 @@ static gboolean
 snmpdest_dd_init(LogPipe *s)
 {
   SNMPDestDriver *self = (SNMPDestDriver *)s;
+  GlobalConfig *cfg = log_pipe_get_config(s);
 
-  if (!log_dest_driver_init_method(s))
+  if (!log_threaded_dest_driver_init_method(s))
     return FALSE;
 
-  /* prepare the host:port format - the session.remote_port doesn't work */
-  self->host_port = g_string_sized_new(64);
-  if (self->transport)
-    g_string_append_printf(self->host_port, "%s:", self->transport);
-  g_string_append_printf(self->host_port, "%s:%d", self->host, self->port);
-
-  self->queue = log_dest_driver_acquire_queue(&self->super, snmpdest_dd_format_persist_name(self));
-
-  guint SCS_SNMP = stats_register_type("snmp");
-
-  stats_lock();
-  stats_cluster_logpipe_key_set(&self->sc_key_queued, SCS_SNMP | SCS_DESTINATION,
-                                self->super.super.id, snmpdest_dd_format_stats_instance(self) );
-  stats_register_counter(1, &self->sc_key_queued, SC_TYPE_QUEUED, &self->queued_messages);
-
-  stats_cluster_logpipe_key_set(&self->sc_key_dropped, SCS_SNMP | SCS_DESTINATION,
-                                self->super.super.id, snmpdest_dd_format_stats_instance(self));
-  stats_register_counter(1, &self->sc_key_dropped, SC_TYPE_DROPPED, &self->dropped_messages);
-
-  stats_cluster_logpipe_key_set(&self->sc_key_processed, SCS_SNMP | SCS_DESTINATION,
-                                self->super.super.id, snmpdest_dd_format_stats_instance(self));
-  stats_register_counter(1, &self->sc_key_processed, SC_TYPE_PROCESSED, &self->processed_messages);
-  stats_unlock();
-
   msg_verbose("Initializing SNMP destination",
+              evt_tag_str("driver", self->super.super.super.id),
               evt_tag_str("host", self->host),
               evt_tag_int("port", self->port));
 
-  GlobalConfig *cfg = log_pipe_get_config(s);
-
-  gchar *tz = self->template_options.time_zone[LTZ_LOCAL];
-  gchar *time_zone = cfg->template_options.time_zone[LTZ_SEND];
-  if (!tz && time_zone)
-    /* inherit the global set_time_zone if the local one hasn't been set */
-    snmpdest_dd_set_time_zone((LogDriver *)self, time_zone);
+  gchar err_msg[128];
+  if (!snmpdest_check_required_params(&self->super.super.super, err_msg))
+    {
+      msg_error(err_msg);
+      return FALSE;
+    }
 
   log_template_options_init(&self->template_options, cfg);
-
-  snmpdest_dd_session_init(self);
-
-  snmpdest_dd_start_thread(self);
-  return TRUE;
+  return log_threaded_dest_driver_start_workers(&self->super);
 }
 
-static gboolean
-snmpdest_dd_deinit(LogPipe *s)
+static void
+snmpdest_worker_thread_deinit(LogThreadedDestDriver *d)
 {
-  SNMPDestDriver *self = (SNMPDestDriver *)s;
-
-  snmpdest_dd_stop_thread(self);
+  SNMPDestDriver *self = (SNMPDestDriver *)d;
 
   /* SNMP deinit */
   if (self->session_initialized)
@@ -766,17 +653,6 @@ snmpdest_dd_deinit(LogPipe *s)
       snmp_close(self->ss);
       free_session(&self->session);
     }
-
-  stats_lock();
-  stats_unregister_counter(&self->sc_key_queued, SC_TYPE_QUEUED, &self->queued_messages);
-  stats_unregister_counter(&self->sc_key_processed, SC_TYPE_PROCESSED, &self->processed_messages);
-  stats_unregister_counter(&self->sc_key_dropped, SC_TYPE_DROPPED, &self->dropped_messages);
-  stats_unlock();
-
-  if (!log_dest_driver_deinit_method(s))
-    return FALSE;
-
-  return TRUE;
 }
 
 static gint snmp_dest_counter = 0;
@@ -793,9 +669,6 @@ snmpdest_dd_free(LogPipe *d)
       snmp_shutdown(s_snmp_name);
     }
   --snmp_dest_counter;
-
-  g_mutex_free(self->queue_mutex);
-  g_cond_free(self->writer_thread_wakeup_cond);
 
   g_free(self->version);
   g_free(self->host);
@@ -819,22 +692,36 @@ snmpdest_dd_free(LogPipe *d)
 
   log_template_options_destroy(&self->template_options);
 
-  log_dest_driver_free(d);
+  log_threaded_dest_driver_free(d);
 }
 
 static void
-snmpdest_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
+snmpdest_worker_thread_init(LogThreadedDestDriver *d)
 {
-  SNMPDestDriver *self = (SNMPDestDriver *)s;
+  SNMPDestDriver *self = (SNMPDestDriver *)d;
 
-  g_mutex_lock(self->queue_mutex);
+  GlobalConfig *cfg = log_pipe_get_config((LogPipe *)d);
 
-  stats_counter_inc(self->processed_messages);
-  log_queue_push_tail(self->queue, msg, path_options);
+  if (!self->host_port)
+    {
+      /* prepare the host:port format - the session.remote_port doesn't work */
+      self->host_port = g_string_sized_new(64);
 
-  g_mutex_unlock(self->queue_mutex);
+      if (self->transport)
+        g_string_append_printf(self->host_port, "%s:", self->transport);
+      g_string_append_printf(self->host_port, "%s:%d", self->host, self->port);
+    }
 
-  g_cond_signal(self->writer_thread_wakeup_cond);
+  gchar *tz = self->template_options.time_zone[LTZ_LOCAL];
+  gchar *time_zone = cfg->template_options.time_zone[LTZ_SEND];
+
+  /* inherit the global set_time_zone if the local one hasn't been set */
+  if (!tz && time_zone)
+    snmpdest_dd_set_time_zone((LogDriver *)self, time_zone);
+
+  log_template_options_init(&self->template_options, cfg);
+
+  snmpdest_dd_session_init(self);
 }
 
 LogDriver *
@@ -842,14 +729,17 @@ snmpdest_dd_new(GlobalConfig *cfg)
 {
   SNMPDestDriver *self = g_new0(SNMPDestDriver, 1);
 
-  log_dest_driver_init_instance(&self->super, cfg);
-  self->super.super.super.init = snmpdest_dd_init;
-  self->super.super.super.deinit = snmpdest_dd_deinit;
-  self->super.super.super.queue = snmpdest_dd_queue;
-  self->super.super.super.free_fn = snmpdest_dd_free;
+  log_threaded_dest_driver_init_instance(&self->super, cfg);
+  self->super.super.super.super.init = snmpdest_dd_init;
+  self->super.super.super.super.free_fn = snmpdest_dd_free;
+  self->super.super.super.super.generate_persist_name = snmpdest_dd_format_persist_name;
 
-  self->writer_thread_wakeup_cond = g_cond_new();
-  self->queue_mutex = g_mutex_new();
+  self->super.worker.thread_init = snmpdest_worker_thread_init;
+  self->super.worker.thread_deinit = snmpdest_worker_thread_deinit;
+  self->super.worker.insert = snmpdest_worker_insert;
+
+  self->super.format_stats_instance = snmpdest_dd_format_stats_instance;
+  self->super.stats_source = stats_register_type("snmp");
 
   if (snmp_dest_counter == 0)
     {
