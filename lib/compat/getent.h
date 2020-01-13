@@ -28,21 +28,21 @@
 
 #ifndef SYSLOG_NG_HAVE_GETPROTOBYNUMBER_R
 
+#include "getent-generic.h"
+
 #define getprotobynumber_r _compat_generic__getprotobynumber_r
 #define getprotobyname_r _compat_generic__getprotobyname_r
 #define getservbyport_r _compat_generic__getservbyport_r
 #define getservbyname_r _compat_generic__getservbyname_r
 
-#include "getent-generic.h"
-
 #elif defined(sun) || defined(__sun)
+
+#include "getent-sun.h"
 
 #define getprotobynumber_r _compat_sun__getprotobynumber_r
 #define getprotobyname_r _compat_sun__getprotobyname_r
 #define getservbyport_r _compat_sun__getservbyport_r
 #define getservbyname_r _compat_sun__getservbyname_r
-
-#include "getent-sun.h"
 
 #endif
 #endif
