@@ -128,9 +128,7 @@ override_dh_auto_configure:
 # the list-missing option
 override_dh_auto_install:
 	dh_auto_install -- \
-		pkgconfigdir=/usr/lib/$(MULTIARCH_PATH)/pkgconfig \
-		PYSETUP_OPTIONS="--install-layout=deb \
-		--root=$(CURDIR)/debian/tmp/"
+		pkgconfigdir=/usr/lib/$(MULTIARCH_PATH)/pkgconfig
 	find . -name \*.la | xargs --no-run-if-empty rm
 	[ ! -f $(CURDIR)/debian/tmp/usr/share/syslog-ng/tools/merge-grammar.py ] || \
 		sed -i 's/ python$$/ python3/' \
