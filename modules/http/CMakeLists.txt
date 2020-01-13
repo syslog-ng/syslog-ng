@@ -28,6 +28,10 @@ set(HTTP_DESTINATION_SOURCES
     ${CMAKE_CURRENT_BINARY_DIR}/http-grammar.h
 )
 
+set(HTTP_MODULE_DEV_HEADERS
+  http-signals.h
+)
+
 generate_y_from_ym(modules/http/http-grammar)
 
 bison_target(HttpParserGrammar
@@ -61,5 +65,6 @@ target_include_directories (http PRIVATE ${Curl_INCLUDE_DIR})
 target_link_libraries(http PRIVATE syslog-ng ${Curl_LIBRARIES})
 
 install(TARGETS http LIBRARY DESTINATION lib/syslog-ng/)
+install(FILES ${HTTP_MODULE_DEV_HEADERS} DESTINATION include/syslog-ng/modules/http/)
 
 add_test_subdirectory(tests)
