@@ -436,7 +436,8 @@ _relocate_qfile(PersistState *state, const gchar *name)
     {
       gchar *qfile = persist_state_lookup_string(state, name, NULL, NULL);
       printf("found qfile, key: %s, path: %s\n", name, qfile);
-      gchar *relocated_qfile = g_build_filename(new_diskq_path, basename(qfile), NULL);
+      gchar *base = g_path_get_basename(qfile);
+      gchar *relocated_qfile = g_build_filename(new_diskq_path, base, NULL);
       if (!relocated_qfile)
         {
           fprintf(stderr, "Invalid path. new_diskq_dir: %s, qfile: %s\n", new_diskq_path, qfile);
@@ -452,6 +453,7 @@ _relocate_qfile(PersistState *state, const gchar *name)
         {
           fprintf(stderr, "Failed to move file to new qfile_path: %s\n", relocated_qfile);
         }
+      g_free(base);
       g_free(qfile);
       g_free(relocated_qfile);
     }
