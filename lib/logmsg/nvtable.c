@@ -430,7 +430,7 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
 
   ofs = nv_table_get_ofs_for_an_entry(self, entry);
   entry->vdirect.value_len = value_len;
-  if (handle >= self->num_static_entries)
+  if (!nv_table_is_handle_static(self, handle))
     {
       /* we only store the name for non-builtin values */
       entry->name_len = name_len;
@@ -485,7 +485,7 @@ nv_table_set_indirect_entry(NVTable *self, NVHandle handle, NVEntry *entry, cons
   /* previously a non-indirect entry, convert it */
   entry->indirect = 1;
 
-  if (handle >= self->num_static_entries)
+  if (!nv_table_is_handle_static(self, handle))
     {
       entry->name_len = name_len;
       memmove(entry->vindirect.name, name, name_len + 1);

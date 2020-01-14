@@ -199,6 +199,7 @@ const gchar *builtin_value_names[] =
   "MSGID",
   "SOURCE",
   "LEGACY_MSGHDR",
+  "__RESERVED_LM_V_MAX",
   NULL,
 };
 
