@@ -274,6 +274,12 @@ NVTable *nv_table_clone(NVTable *self, gint additional_space);
 NVTable *nv_table_ref(NVTable *self);
 void nv_table_unref(NVTable *self);
 
+static inline gboolean
+nv_table_is_handle_static(NVTable *self, NVHandle handle)
+{
+  return (handle <= self->num_static_entries);
+}
+
 static inline gsize
 nv_table_get_alloc_size(gint num_static_entries, gint index_size_hint, gint init_length)
 {
@@ -332,7 +338,7 @@ __nv_table_get_entry(NVTable *self, NVHandle handle, guint16 num_static_entries,
       return NULL;
     }
 
-  if (G_LIKELY(handle <= num_static_entries))
+  if (G_LIKELY(nv_table_is_handle_static(self, handle)))
     {
       ofs = self->static_entries[handle - 1];
       *index_entry = NULL;

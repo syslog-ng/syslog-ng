@@ -147,7 +147,6 @@ nv_registry_free(NVRegistry *self)
   g_free(self);
 }
 
-
 /* return the offset to a newly allocated payload string */
 static inline NVEntry *
 nv_table_alloc_value(NVTable *self, gsize alloc_size)
@@ -269,7 +268,7 @@ nv_table_get_entry_slow(NVTable *self, NVHandle handle, NVIndexEntry **index_ent
 static gboolean
 nv_table_reserve_table_entry(NVTable *self, NVHandle handle, NVIndexEntry **index_entry)
 {
-  if (G_UNLIKELY(!(*index_entry) && handle > self->num_static_entries))
+  if (G_UNLIKELY(!(*index_entry) && !nv_table_is_handle_static(self, handle)))
     {
       /* this is a dynamic value */
       NVIndexEntry *index_table = nv_table_get_index(self);;
@@ -329,7 +328,7 @@ nv_table_reserve_table_entry(NVTable *self, NVHandle handle, NVIndexEntry **inde
 static inline void
 nv_table_set_table_entry(NVTable *self, NVHandle handle, guint32 ofs, NVIndexEntry *index_entry)
 {
-  if (G_LIKELY(handle <= self->num_static_entries))
+  if (G_LIKELY(nv_table_is_handle_static(self, handle)))
     {
       /* this is a statically allocated value, simply store the offset */
       self->static_entries[handle-1] = ofs;
