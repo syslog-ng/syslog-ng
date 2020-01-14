@@ -36,19 +36,19 @@ typedef const gchar *Signal;
 #define SIGNAL(modul, signal, signal_param_type) \
   STR(modul) "::signal_" STR(signal) "(" STR(signal_param_type) ")"
 
-#define CONNECT(connector, signal, slot) \
-  signal_slot_connect(connector, signal, (Slot) slot);
+#define CONNECT(connector, signal, slot, slot_obj) \
+  signal_slot_connect(connector, signal, (Slot) slot, (gpointer) slot_obj);
 
-#define DISCONNECT(connector, signal, slot) \
-  signal_slot_disconnect(connector, signal, (Slot) slot);
+#define DISCONNECT(connector, signal, slot, slot_obj) \
+  signal_slot_disconnect(connector, signal, (Slot) slot, (gpointer) slot_obj);
 
 #define EMIT(connector, signal, user_data) \
   signal_slot_emit(connector, signal, (gpointer) user_data);
 
-typedef void (*Slot)(gpointer user_data);
+typedef void (*Slot)(gpointer object, gpointer user_data);
 
-void signal_slot_connect(SignalSlotConnector *self, Signal signal, Slot slot);
-void signal_slot_disconnect(SignalSlotConnector *self, Signal signal, Slot slot);
+void signal_slot_connect(SignalSlotConnector *self, Signal signal, Slot slot, gpointer object);
+void signal_slot_disconnect(SignalSlotConnector *self, Signal signal, Slot slot, gpointer object);
 
 void signal_slot_emit(SignalSlotConnector *self, Signal signal, gpointer user_data);
 

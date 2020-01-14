@@ -24,39 +24,83 @@
 
 #include "signal-slot-connector.h"
 
+typedef struct _SlotFunctor SlotFunctor;
+
+struct _SlotFunctor
+{
+  Slot slot;
+  gpointer object;
+};
+
+static SlotFunctor *
+_slot_functor_new(Slot slot, gpointer object)
+{
+  SlotFunctor *self = g_new0(SlotFunctor, 1);
+
+  self->slot = slot;
+  self->object = object;
+
+  return self;
+}
+
+static void
+_slot_functor_free(gpointer data)
+{
+  SlotFunctor *self = (SlotFunctor *) data;
+  g_free(self);
+}
+
+static gboolean
+_slot_functor_eq(const SlotFunctor *a, const SlotFunctor *b)
+{
+  return ((a->slot == b->slot) && (a->object == b->object));
+}
+
+static gint
+_slot_functor_cmp(gconstpointer a, gconstpointer b)
+{
+  const SlotFunctor *slot_obj_a = (const SlotFunctor *)a;
+  const SlotFunctor *slot_obj_b = (const SlotFunctor *)b;
+
+  if (_slot_functor_eq(slot_obj_a, slot_obj_b))
+    return 0;
+
+  return -1;
+}
+
 struct _SignalSlotConnector
 {
-  // map<Signal, set<SlotObject>> connections;
+  // map<Signal, set<SlotFunctor>> connections;
   GHashTable *connections;
   GMutex *lock; // connect/disconnect guarded by lock, emit is not
 };
 
-GList *
-_slot_lookup_node(GList *slot_objects, Slot slot)
+static GList *
+_slot_lookup_node(GList *slot_functors, Slot slot, gpointer object)
 {
-  for (GList *it = slot_objects; it != NULL; it = it->next)
+  for (GList *it = slot_functors; it != NULL; it = it->next)
     {
-      Slot s = (Slot) it->data;
+      SlotFunctor *s = (SlotFunctor *) it->data;
 
-      if (s == slot)
+      if (s->slot == slot && s->object == object)
         return it;
     }
 
   return NULL;
 }
 
-Slot
-_slot_lookup(GList *slot_objects, Slot slot)
+static SlotFunctor *
+_slot_lookup(GList *slot_functors, Slot slot, gpointer object)
 {
-  GList *slot_node = _slot_lookup_node(slot_objects, slot);
+  GList *slot_node = _slot_lookup_node(slot_functors, slot, object);
   if (!slot_node)
     return NULL;
 
-  return (Slot) slot_node->data;
+  return (SlotFunctor *) slot_node->data;
 }
 
 void
-signal_slot_connect(SignalSlotConnector *self, Signal signal, Slot slot)
+signal_slot_connect(SignalSlotConnector *self, Signal signal, Slot slot, gpointer object)
 {
   g_assert(signal != NULL);
   g_assert(slot != NULL);
@@ -67,16 +111,16 @@ signal_slot_connect(SignalSlotConnector *self, Signal signal, Slot slot)
 
   gboolean signal_registered = (slots != NULL);
 
-  if (_slot_lookup(slots, slot))
+  if (_slot_lookup(slots, slot, object))
     {
       msg_debug("SignalSlotConnector::connect",
                 evt_tag_printf("already_connected",
-                               "connect(connector=%p,signal=%s,slot=%p)",
-                               self, signal, slot));
+                               "connect(connector=%p,signal=%s,slot=%p, object=%p)",
+                               self, signal, slot, object));
       goto exit_;
     }
 
-  GList *new_slots = g_list_append(slots, slot);
+  GList *new_slots = g_list_append(slots, _slot_functor_new(slot, object));
 
   if (!signal_registered)
     {
@@ -85,8 +129,8 @@ signal_slot_connect(SignalSlotConnector *self, Signal signal, Slot slot)
 
   msg_debug("SignalSlotConnector::connect",
             evt_tag_printf("new connection registered",
-                           "connect(connector=%p,signal=%s,slot=%p)",
-                           self, signal, slot));
+                           "connect(connector=%p,signal=%s,slot=%p,object=%p)",
+                           self, signal, slot, object));
 exit_:
   g_mutex_unlock(self->lock);
 }
@@ -100,7 +144,7 @@ _hash_table_replace(GHashTable *hash_table, gpointer key, gpointer new_value)
 }
 
 void
-signal_slot_disconnect(SignalSlotConnector *self, Signal signal, Slot slot)
+signal_slot_disconnect(SignalSlotConnector *self, Signal signal, Slot slot, gpointer object)
 {
   g_assert(signal != NULL);
   g_assert(slot != NULL);
@@ -115,12 +159,27 @@ signal_slot_disconnect(SignalSlotConnector *self, Signal signal, Slot slot)
   msg_debug("SignalSlotConnector::disconnect",
             evt_tag_printf("connector", "%p", self),
             evt_tag_str("signal", signal),
-            evt_tag_printf("slot", "%p", slot));
+            evt_tag_printf("slot", "%p", slot),
+            evt_tag_printf("object", "%p", object));
 
-  GList *new_slots = g_list_remove(slots, slot);
+  SlotFunctor slotfunctor =
+  {
+    .slot = slot,
+    .object = object
+  };
 
-  if (new_slots != slots)
-    _hash_table_replace(self->connections, (gpointer)signal, new_slots);
+  GList *slotfunctor_node = g_list_find_custom(slots, &slotfunctor, _slot_functor_cmp);
+  if (!slotfunctor_node)
+    {
+      msg_debug("SignalSlotConnector::disconnect slot object not found",
+                evt_tag_printf("connector", "%p", self),
+                evt_tag_str("signal", signal),
+                evt_tag_printf("slot", "%p", slot),
+                evt_tag_printf("object", "%p", object));
+      goto exit_;
+    }
+
+  GList *new_slots = g_list_remove_link(slots, slotfunctor_node);
 
   if (!new_slots)
     {
@@ -128,8 +187,17 @@ signal_slot_disconnect(SignalSlotConnector *self, Signal signal, Slot slot)
       msg_debug("SignalSlotConnector::disconnect last slot is disconnected, unregister signal",
                 evt_tag_printf("connector", "%p", self),
                 evt_tag_str("signal", signal),
-                evt_tag_printf("slot", "%p", slot));
+                evt_tag_printf("slot", "%p", slot),
+                evt_tag_printf("object", "%p", object));
+      goto exit_;
     }
+
+  if (new_slots != slots)
+    {
+      _hash_table_replace(self->connections, (gpointer)signal, new_slots);
+    }
+
+  g_list_free_full(slotfunctor_node, _slot_functor_free);
 
 exit_:
   g_mutex_unlock(self->lock);
@@ -140,8 +208,8 @@ _run_slot(gpointer data, gpointer user_data)
 {
   g_assert(data);
 
-  Slot slot = (Slot)data;
-  slot(user_data);
+  SlotFunctor *slotfunctor = (SlotFunctor *)data;
+  slotfunctor->slot(slotfunctor->object, user_data);
 }
 
 void
@@ -174,7 +242,7 @@ _destroy_list_of_slots(gpointer data)
     return;
 
   GList *list = (GList *)data;
-  g_list_free(list);
+  g_list_free_full(list, _slot_functor_free);
 }
 
 SignalSlotConnector *
