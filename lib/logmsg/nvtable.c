@@ -178,6 +178,8 @@ nv_table_resolve_indirect(NVTable *self, NVEntry *entry, gssize *length)
   const gchar *referenced_value;
   gssize referenced_length;
 
+  g_assert(entry->indirect);
+
   referenced_value = nv_table_get_value(self, entry->vindirect.handle, &referenced_length);
   if (entry->vindirect.ofs > referenced_length)
     {
@@ -197,6 +199,16 @@ nv_table_resolve_indirect(NVTable *self, NVEntry *entry, gssize *length)
 }
 
 static inline const gchar *
+nv_table_resolve_direct(NVTable *self, NVEntry *entry, gssize *length)
+{
+  g_assert(!entry->indirect);
+
+  if (length)
+    *length = entry->vdirect.value_len;
+  return entry->vdirect.data + entry->name_len + 1;
+}
+
+static inline const gchar *
 nv_table_resolve_entry(NVTable *self, NVEntry *entry, gssize *length)
 {
   if (entry->unset)
@@ -205,14 +217,10 @@ nv_table_resolve_entry(NVTable *self, NVEntry *entry, gssize *length)
         *length = 0;
       return null_string;
     }
-  else if (!entry->indirect)
-    {
-      if (length)
-        *length = entry->vdirect.value_len;
-      return entry->vdirect.data + entry->name_len + 1;
-    }
-  else
+  else if (entry->indirect)
     return nv_table_resolve_indirect(self, entry, length);
+  else
+    return nv_table_resolve_direct(self, entry, length);
 }
 
 NVEntry *
