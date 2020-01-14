@@ -433,6 +433,10 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
    * size needed for a dynamic table slot */
   if (!nv_table_reserve_table_entry(self, handle, &index_entry))
     return FALSE;
+
+  if (nv_table_is_handle_static(self, handle))
+    name_len = 0;
+
   entry = nv_table_alloc_value(self, NV_ENTRY_DIRECT_HDR + name_len + value_len + 2);
   if (G_UNLIKELY(!entry))
     {
@@ -441,14 +445,12 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
 
   ofs = nv_table_get_ofs_for_an_entry(self, entry);
   entry->vdirect.value_len = value_len;
-  if (!nv_table_is_handle_static(self, handle))
+  entry->name_len = name_len;
+  if (entry->name_len != 0)
     {
-      /* we only store the name for non-builtin values */
-      entry->name_len = name_len;
+      /* we only store the name for dynamic values */
       memmove(entry->vdirect.data, name, name_len + 1);
     }
-  else
-    entry->name_len = 0;
   memmove(entry->vdirect.data + entry->name_len + 1, value, value_len);
   entry->vdirect.data[entry->name_len + 1 + value_len] = 0;
 
