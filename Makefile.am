@@ -215,7 +215,7 @@ include tests/Makefile.am
 include doc/Makefile.am
 include contrib/Makefile.am
 include scl/Makefile.am
-include packaging/debian/Makefile.am
+include packaging/Makefile.am
 include dbld/Makefile.am
 include cmake/Makefile.am
 include dev-utils/plugin_skeleton_creator/Makefile.am
