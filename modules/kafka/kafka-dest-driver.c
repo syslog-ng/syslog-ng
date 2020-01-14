@@ -27,6 +27,7 @@
 #include "kafka-dest-driver.h"
 #include "kafka-props.h"
 #include "kafka-dest-worker.h"
+#include "timeutils/misc.h"
 
 #include <librdkafka/rdkafka.h>
 #include <stdlib.h>
@@ -324,6 +325,33 @@ _purge_remaining_messages(KafkaDestDriver *self)
 
 }
 
+static void
+_update_drain_timer(KafkaDestDriver *self)
+{
+  if (iv_timer_registered(&self->poll_timer))
+    iv_timer_unregister(&self->poll_timer);
+  iv_validate_now();
+  self->poll_timer.expires = iv_now;
+  timespec_add_msec(&self->poll_timer.expires, self->poll_timeout);
+  iv_timer_register(&self->poll_timer);
+}
+
+static void
+_drain_responses(KafkaDestDriver *self)
+{
+  _update_drain_timer(self);
+  gint count = rd_kafka_poll(self->kafka, 0);
+  if (count != 0)
+    {
+      msg_trace("kafka: destination side rd_kafka_poll() processed some responses",
+                evt_tag_str("topic", self->topic_name),
+                evt_tag_int("count", count),
+                evt_tag_str("driver", self->super.super.super.id),
+                log_pipe_location_tag(&self->super.super.super.super));
+    }
+}
+
+
 static gboolean
 kafka_dd_init(LogPipe *s)
 {
@@ -375,6 +403,14 @@ kafka_dd_init(LogPipe *s)
               evt_tag_str("driver", self->super.super.super.id),
               log_pipe_location_tag(&self->super.super.super.super));
 
+  IV_TIMER_INIT(&self->poll_timer);
+  self->poll_timer.cookie = self;
+  self->poll_timer.handler = (void (*)(void *)) _drain_responses;
+  self->poll_timer.expires = iv_now;
+  self->poll_timer.expires.tv_sec++;
+  self->poll_timer.expires.tv_nsec = 0;
+  iv_timer_register(&self->poll_timer);
+
   return log_threaded_dest_driver_start_workers(&self->super);
 }
 
@@ -403,6 +439,8 @@ kafka_dd_free(LogPipe *d)
     rd_kafka_destroy(self->kafka);
   if (self->topic_name)
     g_free(self->topic_name);
+  if (iv_timer_registered(&self->poll_timer))
+    iv_timer_unregister(&self->poll_timer);
   g_free(self->bootstrap_servers);
   kafka_property_list_free(self->config);
   log_threaded_dest_driver_free(d);
