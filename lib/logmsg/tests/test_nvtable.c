@@ -1052,3 +1052,83 @@ Test(nvtable, test_nvtable_unset_copies_indirect_references)
 
   nv_table_unref(tab);
 }
+
+Test(nvtable, test_nvtable_compact_copies_name_value_pairs)
+{
+  NVTable *tab1, *tab2;
+  gssize size = 9999;
+  const gchar *value;
+  const gchar *indirect_nv_name = "indirect-name";
+
+  tab1 = nv_table_new(STATIC_VALUES, STATIC_VALUES, 1024);
+  nv_table_add_value(tab1, STATIC_HANDLE, STATIC_NAME, strlen(DYN_NAME), "static-foo", 10, NULL);
+  nv_table_add_value(tab1, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), "dyn-foo", 7, NULL);
+  nv_table_add_value_indirect(tab1, DYN_HANDLE+1, indirect_nv_name, strlen(indirect_nv_name),
+                              &(NVReferencedSlice)
+  {
+    STATIC_HANDLE, 1, 5, 0
+  },
+  NULL);
+
+  tab2 = nv_table_compact(tab1);
+  nv_table_unref(tab1);
+
+  value = nv_table_get_value(tab2, DYN_HANDLE, &size);
+  cr_assert_not_null(value);
+  cr_assert_str_eq(value, "dyn-foo");
+  cr_assert_eq(size, 7);
+
+  value = nv_table_get_value(tab2, STATIC_HANDLE, &size);
+  cr_assert_not_null(value);
+  cr_assert_str_eq(value, "static-foo");
+  cr_assert_eq(size, 10);
+
+  value = nv_table_get_value(tab2, DYN_HANDLE+1, &size);
+  cr_assert_not_null(value);
+  cr_assert(strncmp(value, "tatic", size) == 0);
+  cr_assert_eq(size, 5);
+
+  nv_table_unref(tab2);
+}
+
+Test(nvtable, test_nvtable_compact_skips_unset_values)
+{
+  NVTable *tab1, *tab2;
+  gssize size = 9999;
+  const gchar *value;
+  const gchar *indirect_nv_name = "indirect-name";
+
+  tab1 = nv_table_new(STATIC_VALUES, STATIC_VALUES, 1024);
+  nv_table_add_value(tab1, STATIC_HANDLE, STATIC_NAME, strlen(DYN_NAME), "static-foo", 10, NULL);
+  nv_table_add_value(tab1, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), "dyn-foo", 7, NULL);
+  nv_table_add_value_indirect(tab1, DYN_HANDLE+1, indirect_nv_name, strlen(indirect_nv_name),
+                              &(NVReferencedSlice)
+  {
+    STATIC_HANDLE, 1, 5, 0
+  },
+  NULL);
+  nv_table_unset_value(tab1, DYN_HANDLE);
+
+  /* this should get rid off the unset value, thus used should be smaller */
+  tab2 = nv_table_compact(tab1);
+  cr_assert(tab2->used < tab1->used);
+
+  nv_table_unref(tab1);
+
+  value = nv_table_get_value(tab2, DYN_HANDLE, &size);
+  cr_assert_not_null(value);
+  cr_assert_str_eq(value, "");
+  cr_assert_eq(size, 0);
+
+  value = nv_table_get_value(tab2, STATIC_HANDLE, &size);
+  cr_assert_not_null(value);
+  cr_assert_str_eq(value, "static-foo");
+  cr_assert_eq(size, 10);
+
+  value = nv_table_get_value(tab2, DYN_HANDLE+1, &size);
+  cr_assert_not_null(value);
+  cr_assert(strncmp(value, "tatic", size) == 0);
+  cr_assert_eq(size, 5);
+
+  nv_table_unref(tab2);
+}

@@ -802,3 +802,60 @@ nv_table_clone(NVTable *self, gint additional_space)
 
   return new;
 }
+
+
+static gboolean
+_compact_foreach_entry(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entry, gpointer user_data)
+{
+  gpointer *args = (gpointer *) user_data;
+  NVTable *old = (NVTable *) args[0];
+  NVTable *new = (NVTable *) args[1];
+  const gchar *value, *name;
+  gssize value_len, name_len;
+
+  /* unused entries are skipped */
+  if (entry->unset)
+    return FALSE;
+
+  if (entry->name_len)
+    {
+      /* non-builtin entries have their name stored in the origin NVTable, use that */
+      name = nv_entry_get_name(entry);
+      name_len = entry->name_len;
+    }
+  else
+    {
+      /* builtin entries don't have their name stored, but we won't store
+       * them either, so just set them to NULL/0 */
+      name = NULL;
+      name_len = 0;
+    }
+
+  if (!entry->indirect)
+    {
+      value = nv_table_resolve_direct(old, entry, &value_len);
+
+      gboolean value_successfully_added = nv_table_add_value(new, handle, name, name_len, value, value_len, NULL);
+      g_assert(value_successfully_added);
+    }
+  else
+    {
+      gboolean value_successfully_added = nv_table_add_value_indirect(new, handle, name, name_len, &entry->vindirect, NULL);
+      g_assert(value_successfully_added);
+    }
+
+  return FALSE;
+}
+
+NVTable *
+nv_table_compact(NVTable *self)
+{
+  gint new_size = self->size;
+  NVTable *new = g_malloc(new_size);
+  gpointer args[2] = { self, new };
+
+  nv_table_init(new, new_size, self->num_static_entries);
+
+  nv_table_foreach_entry(self, _compact_foreach_entry, args);
+  return new;
+}
