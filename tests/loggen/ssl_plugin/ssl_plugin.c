@@ -106,7 +106,7 @@ get_thread_count(void)
 
   int num;
   g_mutex_lock(thread_lock);
-  num = active_thread_count+idle_thread_count;
+  num = active_thread_count + idle_thread_count;
   g_mutex_unlock(thread_lock);
 
   return num;
@@ -127,6 +127,9 @@ start(PluginOption *option)
       return;
     }
 
+  if (!is_plugin_activated())
+    return;
+
   if (!option->target || !option->port)
     {
       ERROR("please specify target and port parameters\n");
@@ -146,23 +149,13 @@ start(PluginOption *option)
   thread_start = g_cond_new();
   thread_connected = g_cond_new();
 
-  if (!is_plugin_activated())
-    {
-      active_thread_count  = 0;
-      idle_thread_count  = 0;
-      return;
-    }
-  else
-    {
-      active_thread_count  = option->active_connections;
-      idle_thread_count  = option->idle_connections;
-      /* call syslog-ng's crypto init */
-      crypto_init();
-    }
+  active_thread_count = option->active_connections;
+  idle_thread_count = option->idle_connections;
+  crypto_init();
 
   connect_finished = 0;
 
-  for (int j =0 ; j<active_thread_count; j++)
+  for (int j =0; j < option->active_connections; j++)
     {
       ThreadData *data = (ThreadData *)g_malloc0(sizeof(ThreadData));
       data->option = option;
@@ -172,7 +165,7 @@ start(PluginOption *option)
       g_ptr_array_add(thread_array, (gpointer) thread_id);
     }
 
-  for (int j=0; j<idle_thread_count; j++)
+  for (int j=0; j < option->idle_connections; j++)
     {
       ThreadData *data = (ThreadData *)g_malloc0(sizeof(ThreadData));
       data->option = option;
@@ -188,7 +181,7 @@ start(PluginOption *option)
   end_time = g_get_monotonic_time () + CONNECTION_TIMEOUT_SEC * G_TIME_SPAN_SECOND;
 
   g_mutex_lock(thread_lock);
-  while (connect_finished != active_thread_count+idle_thread_count)
+  while (connect_finished != option->active_connections + option->idle_connections)
     {
       if (! g_cond_wait_until(thread_connected, thread_lock, end_time))
         {
@@ -213,11 +206,14 @@ stop(PluginOption *option)
       return;
     }
 
+  if (!is_plugin_activated())
+    return;
+
   DEBUG("plugin stop\n");
   thread_run = FALSE;
 
   /* wait all threads to finish */
-  for (int j =0 ; j<active_thread_count+idle_thread_count; j++)
+  for (int j = 0; j < option->active_connections + option->idle_connections; j++)
     {
       GThread *thread_id = g_ptr_array_index(thread_array, j);
       if (!thread_id)
@@ -226,9 +222,7 @@ stop(PluginOption *option)
       g_thread_join(thread_id);
     }
 
-  /* call syslog-ng's crypto deinit */
-  if (active_thread_count+idle_thread_count>0)
-    crypto_deinit();
+  crypto_deinit();
 
   if (thread_lock)
     g_mutex_free(thread_lock);
@@ -240,15 +234,16 @@ stop(PluginOption *option)
     g_cond_free(thread_connected);
 
   DEBUG("all %d+%d threads have been stoped\n",
-        active_thread_count,
-        idle_thread_count);
+        option->active_connections,
+        option->idle_connections);
 }
 
 gpointer
 idle_thread_func(gpointer user_data)
 {
-  PluginOption *option = ((ThreadData *)user_data)->option;
-  int thread_index = ((ThreadData *)user_data)->index;
+  ThreadData *thread_context = (ThreadData *)user_data;
+  PluginOption *option = thread_context->option;
+  int thread_index = thread_context->index;
 
   int sock_fd = connect_ip_socket(SOCK_STREAM, option->target, option->port, option->use_ipv6);;
 
@@ -265,7 +260,7 @@ idle_thread_func(gpointer user_data)
   g_mutex_lock(thread_lock);
   connect_finished++;
 
-  if (connect_finished == active_thread_count + idle_thread_count)
+  if (connect_finished == option->active_connections + option->idle_connections)
     g_cond_broadcast(thread_connected);
 
   g_mutex_unlock(thread_lock);
@@ -291,7 +286,10 @@ idle_thread_func(gpointer user_data)
   g_mutex_unlock(thread_lock);
 
   close_ssl_connection(ssl);
+  shutdown(sock_fd, SHUT_RDWR);
   close(sock_fd);
+
+  g_free(thread_context);
   g_thread_exit(NULL);
   return NULL;
 }
@@ -320,7 +318,7 @@ active_thread_func(gpointer user_data)
   g_mutex_lock(thread_lock);
   connect_finished++;
 
-  if (connect_finished == active_thread_count + idle_thread_count)
+  if (connect_finished == option->active_connections + option->idle_connections)
     g_cond_broadcast(thread_connected);
 
   g_mutex_unlock(thread_lock);
@@ -391,8 +389,10 @@ active_thread_func(gpointer user_data)
 
   g_free((gpointer)message);
   close_ssl_connection(ssl);
+  shutdown(sock_fd, SHUT_RDWR);
   close(sock_fd);
 
+  g_free(thread_context);
   g_thread_exit(NULL);
   return NULL;
 }

@@ -259,6 +259,8 @@ open_ssl_connection(int sock_fd)
       return NULL;
     }
 
+  SSL_CTX_set_mode(ctx, SSL_MODE_AUTO_RETRY);
+
   SSL *ssl = NULL;
   if (NULL == (ssl = SSL_new(ctx)))
     {
@@ -267,7 +269,7 @@ open_ssl_connection(int sock_fd)
     }
 
   SSL_set_fd (ssl, sock_fd);
-  if (-1 == SSL_connect(ssl))
+  if (SSL_connect(ssl) <= 0)
     {
       ERROR("SSL connect failed\n");
       ERR_print_errors_fp(stderr);

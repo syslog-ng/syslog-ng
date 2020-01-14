@@ -140,10 +140,9 @@ gboolean is_plugin_already_loaded(GPtrArray *plugin_array, const gchar *name)
 static int
 enumerate_plugins(const gchar *plugin_path, GPtrArray *plugin_array, GOptionContext *ctx)
 {
-  GDir *dir;
   const gchar *fname;
 
-  dir = g_dir_open(plugin_path, 0, NULL);
+  GDir *dir = g_dir_open(plugin_path, 0, NULL);
   if (!dir)
     {
       ERROR("unable to open plugin directory %s (err=%s)\n", plugin_path, strerror(errno));
@@ -164,6 +163,8 @@ enumerate_plugins(const gchar *plugin_path, GPtrArray *plugin_array, GOptionCont
 
       gchar *full_lib_path = g_build_filename(plugin_path, fname, NULL);
       module = g_module_open(full_lib_path, G_MODULE_BIND_LAZY);
+      g_free(full_lib_path);
+
       if (!module)
         {
           ERROR("error opening plugin module %s (%s)\n", fname, g_module_error());
@@ -199,6 +200,8 @@ enumerate_plugins(const gchar *plugin_path, GPtrArray *plugin_array, GOptionCont
 
       DEBUG("%s in %s is a loggen plugin\n", plugin->name, fname);
     }
+
+  g_dir_close(dir);
 
   if (plugin_array->len == 0)
     {
@@ -539,6 +542,7 @@ main(int argc, char *argv[])
     g_mutex_free(message_counter_lock);
   g_free((gpointer)global_plugin_option.target);
   g_free((gpointer)global_plugin_option.port);
+  g_option_context_free(ctx);
   g_ptr_array_free(plugin_array, TRUE);
   g_free(thread_stat_count_last);
   g_free(thread_stat_count);
