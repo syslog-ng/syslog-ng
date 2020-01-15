@@ -260,7 +260,7 @@ struct _NVTable
 
 gboolean nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, const gchar *value,
                             gsize value_len, gboolean *new_entry);
-void nv_table_unset_value(NVTable *self, NVHandle handle);
+gboolean nv_table_unset_value(NVTable *self, NVHandle handle);
 gboolean nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, gsize name_len,
                                      NVReferencedSlice *referenced_slice, gboolean *new_entry);
 

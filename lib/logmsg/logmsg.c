@@ -561,6 +561,7 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
         {
           /* can't grow the payload, it has reached the maximum size */
           msg_info("Cannot store value for this log message, maximum size has been reached",
+                   evt_tag_int("maximum_payload", NV_TABLE_MAX_BYTES),
                    evt_tag_str("name", name),
                    evt_tag_printf("value", "%.32s%s", value, value_len > 32 ? "..." : ""));
           break;
@@ -581,7 +582,24 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
 void
 log_msg_unset_value(LogMessage *self, NVHandle handle)
 {
-  nv_table_unset_value(self->payload, handle);
+  while (!nv_table_unset_value(self->payload, handle))
+    {
+      /* error allocating string in payload, reallocate */
+      guint32 old_size = self->payload->size;
+      if (!nv_table_realloc(self->payload, &self->payload))
+        {
+          /* can't grow the payload, it has reached the maximum size */
+          const gchar *name = log_msg_get_value_name(handle, NULL);
+          msg_info("Cannot unset value for this log message, maximum size has been reached",
+                   evt_tag_int("maximum_payload", NV_TABLE_MAX_BYTES),
+                   evt_tag_str("name", name));
+          break;
+        }
+      guint32 new_size = self->payload->size;
+      self->allocated_bytes += (new_size - old_size);
+      stats_counter_add(count_allocated_bytes, new_size-old_size);
+      stats_counter_inc(count_payload_reallocs);
+    }
 
   if (_value_invalidates_legacy_header(handle))
     log_msg_unset_value(self, LM_V_LEGACY_MSGHDR);

@@ -458,7 +458,7 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
   return TRUE;
 }
 
-void
+gboolean
 nv_table_unset_value(NVTable *self, NVHandle handle)
 {
   NVIndexEntry *index_entry;
@@ -466,6 +466,20 @@ nv_table_unset_value(NVTable *self, NVHandle handle)
 
   if (!entry)
     return;
+
+  if (G_UNLIKELY(!entry->indirect && entry->referenced))
+    {
+      gpointer data[2] = { self, GUINT_TO_POINTER((glong) handle) };
+
+      if (nv_table_foreach_entry(self, nv_table_make_direct, data))
+        {
+          /* we had to stop iteration, which means that we were unable
+           * to allocate enough space for making indirect entries
+           * direct */
+          return FALSE;
+        }
+    }
+
   entry->unset = TRUE;
 
   /* make sure the actual value is also set to the null_string just in case
@@ -481,6 +495,7 @@ nv_table_unset_value(NVTable *self, NVHandle handle)
       entry->vdirect.value_len = 0;
       entry->vdirect.data[entry->name_len + 1] = 0;
     }
+  return TRUE;
 }
 
 static void
