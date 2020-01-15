@@ -484,7 +484,7 @@ nv_table_unset_value(NVTable *self, NVHandle handle)
   NVEntry *entry = nv_table_get_entry(self, handle, &index_entry);
 
   if (!entry)
-    return;
+    return TRUE;
 
   if (G_UNLIKELY(!entry->indirect && entry->referenced))
     {

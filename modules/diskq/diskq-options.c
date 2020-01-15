@@ -61,6 +61,12 @@ disk_queue_options_reliable_set(DiskQueueOptions *self, gboolean reliable)
 }
 
 void
+disk_queue_options_compaction_set(DiskQueueOptions *self, gboolean compaction)
+{
+  self->compaction = compaction;
+}
+
+void
 disk_queue_options_mem_buf_size_set(DiskQueueOptions *self, gint mem_buf_size)
 {
   self->mem_buf_size = mem_buf_size;

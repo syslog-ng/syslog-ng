@@ -35,6 +35,7 @@ typedef struct _DiskQueueOptions
   gint qout_size;
   gboolean read_only;
   gboolean reliable;
+  gboolean compaction;
   gint mem_buf_size;
   gint mem_buf_length;
   gchar *dir;
@@ -43,6 +44,7 @@ typedef struct _DiskQueueOptions
 void disk_queue_options_qout_size_set(DiskQueueOptions *self, gint qout_size);
 void disk_queue_options_disk_buf_size_set(DiskQueueOptions *self, gint64 disk_buf_size);
 void disk_queue_options_reliable_set(DiskQueueOptions *self, gboolean reliable);
+void disk_queue_options_compaction_set(DiskQueueOptions *self, gboolean compaction);
 void disk_queue_options_mem_buf_size_set(DiskQueueOptions *self, gint mem_buf_size);
 void disk_queue_options_mem_buf_length_set(DiskQueueOptions *self, gint mem_buf_length);
 void disk_queue_options_check_plugin_settings(DiskQueueOptions *self);
