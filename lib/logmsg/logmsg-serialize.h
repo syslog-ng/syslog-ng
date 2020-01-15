@@ -50,7 +50,7 @@
  *   26      use 32 bit values nvtable
  */
 
-typedef enum _LogMessageVersion
+enum _LogMessageVersion
 {
   LGM_V01 = 1,
   LGM_V10 = 10,
@@ -63,7 +63,7 @@ typedef enum _LogMessageVersion
   LGM_V24 = 24,
   LGM_V25 = 25,
   LGM_V26 = 26
-} LogMessageVersion;
+};
 
 gboolean log_msg_deserialize(LogMessage *self, SerializeArchive *sa);
 gboolean log_msg_serialize_with_ts_processed(LogMessage *self, SerializeArchive *sa, const UnixTime *processed);
