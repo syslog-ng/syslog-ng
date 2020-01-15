@@ -65,6 +65,11 @@ enum _LogMessageVersion
   LGM_V26 = 26
 };
 
+enum _LogMessageSerializationFlags
+{
+  LMSF_COMPACTION = 0x0001,
+};
+
 gboolean log_msg_deserialize(LogMessage *self, SerializeArchive *sa);
 gboolean log_msg_serialize_with_ts_processed(LogMessage *self, SerializeArchive *sa, const UnixTime *processed,
                                              guint32 flags);

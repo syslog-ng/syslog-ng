@@ -69,7 +69,16 @@ _serialize_message(LogMessageSerializationState *state)
   serialize_write_uint8(sa, msg->num_sdata);
   serialize_write_uint8(sa, msg->alloc_sdata);
   serialize_write_uint32_array(sa, (guint32 *) msg->sdata, msg->num_sdata);
-  nv_table_serialize(state, msg->payload);
+
+  NVTable *payload;
+
+  if (state->flags & LMSF_COMPACTION)
+    payload = nv_table_compact(msg->payload);
+  else
+    payload = nv_table_ref(msg->payload);
+
+  nv_table_serialize(state, payload);
+  nv_table_unref(payload);
   return TRUE;
 }
 
