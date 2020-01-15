@@ -41,7 +41,7 @@ get_one_message_serialized_size(void)
   SerializeArchive *sa = serialize_string_archive_new(serialized);
   LogMessage *msg = log_msg_new_empty();
 
-  log_msg_serialize(msg, sa);
+  log_msg_serialize(msg, sa, 0);
   gsize message_length = serialized->len;
 
   log_msg_unref(msg);

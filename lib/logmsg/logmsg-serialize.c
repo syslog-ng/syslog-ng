@@ -74,7 +74,7 @@ _serialize_message(LogMessageSerializationState *state)
 }
 
 gboolean
-log_msg_serialize_with_ts_processed(LogMessage *self, SerializeArchive *sa, const UnixTime *processed)
+log_msg_serialize_with_ts_processed(LogMessage *self, SerializeArchive *sa, const UnixTime *processed, guint32 flags)
 {
   LogMessageSerializationState state = { 0 };
 
@@ -82,13 +82,14 @@ log_msg_serialize_with_ts_processed(LogMessage *self, SerializeArchive *sa, cons
   state.msg = self;
   state.sa = sa;
   state.processed = processed;
+  state.flags = flags;
   return _serialize_message(&state);
 }
 
 gboolean
-log_msg_serialize(LogMessage *self, SerializeArchive *sa)
+log_msg_serialize(LogMessage *self, SerializeArchive *sa, guint32 flags)
 {
-  return log_msg_serialize_with_ts_processed(self, sa, NULL);
+  return log_msg_serialize_with_ts_processed(self, sa, NULL, flags);
 }
 
 static gboolean

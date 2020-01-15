@@ -66,7 +66,8 @@ enum _LogMessageVersion
 };
 
 gboolean log_msg_deserialize(LogMessage *self, SerializeArchive *sa);
-gboolean log_msg_serialize_with_ts_processed(LogMessage *self, SerializeArchive *sa, const UnixTime *processed);
-gboolean log_msg_serialize(LogMessage *self, SerializeArchive *sa);
+gboolean log_msg_serialize_with_ts_processed(LogMessage *self, SerializeArchive *sa, const UnixTime *processed,
+                                             guint32 flags);
+gboolean log_msg_serialize(LogMessage *self, SerializeArchive *sa, guint32 flags);
 
 #endif

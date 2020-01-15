@@ -167,7 +167,7 @@ _serialize_message_for_test(GString *stream, const gchar *raw_msg)
   SerializeArchive *sa = serialize_string_archive_new(stream);
 
   LogMessage *msg = _create_message_to_be_serialized(raw_msg, strlen(raw_msg));
-  log_msg_serialize(msg, sa);
+  log_msg_serialize(msg, sa, 0);
   log_msg_unref(msg);
   return sa;
 }
@@ -232,7 +232,7 @@ Test(logmsg_serialize, simple_serialization)
   GString *stream = g_string_sized_new(512);
   SerializeArchive *sa = serialize_string_archive_new(stream);
 
-  log_msg_serialize(msg, sa);
+  log_msg_serialize(msg, sa, 0);
 
   log_msg_unref(msg);
   msg = log_msg_new_empty();
@@ -266,7 +266,7 @@ Test(logmsg_serialize, given_ts_processed)
     .ut_gmtoff = 13
   };
 
-  log_msg_serialize_with_ts_processed(msg, sa, &ls);
+  log_msg_serialize_with_ts_processed(msg, sa, &ls, 0);
 
   log_msg_unref(msg);
   msg = log_msg_new_empty();
@@ -293,7 +293,7 @@ Test(logmsg_serialize, existing_ts_processed)
   GString *stream = g_string_sized_new(512);
   SerializeArchive *sa = serialize_string_archive_new(stream);
 
-  log_msg_serialize(msg, sa);
+  log_msg_serialize(msg, sa, 0);
 
   log_msg_unref(msg);
   msg = log_msg_new_empty();
@@ -324,7 +324,7 @@ Test(logmsg_serialize, existing_and_given_ts_processed)
   ls.ut_usec = 12;
   ls.ut_gmtoff = 13;
 
-  log_msg_serialize_with_ts_processed(msg, sa, &ls);
+  log_msg_serialize_with_ts_processed(msg, sa, &ls, 0);
 
   log_msg_unref(msg);
   msg = log_msg_new_empty();
@@ -368,7 +368,7 @@ Test(logmsg_serialize, serialization_performance)
   for (int i = 0; i < iterations; i++)
     {
       g_string_truncate(stream, 0);
-      log_msg_serialize(msg, sa);
+      log_msg_serialize(msg, sa, 0);
     }
   stop_stopwatch_and_display_result(iterations, "serializing %d times took", iterations);
   serialize_archive_free(sa);
