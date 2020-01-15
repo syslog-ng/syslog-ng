@@ -1,0 +1,97 @@
+/*
+ * Copyright (c) 2020 One Identity
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#include "driver.h"
+#include "cfg-lexer.h"
+#include "azure-auth-header-parser.h"
+}
+
+%code {
+
+#include "azure-auth-header.h"
+
+AzureAuthHeaderPlugin *last_header;
+
+}
+
+%name-prefix "azure_auth_header_"
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriverPlugin **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token  KW_AZURE_AUTH
+%token  KW_WORKSPACE_ID
+%token  KW_SECRET
+%token  KW_METHOD
+%token  KW_PATH
+%token  KW_CONTENT_TYPE
+
+%%
+
+start
+  : LL_CONTEXT_INNER_DEST azure_auth_header_start { YYACCEPT; }
+  ;
+
+azure_auth_header_start
+  : KW_AZURE_AUTH '('
+    {
+      last_header = azure_auth_header_plugin_new();
+      *instance = (LogDriverPlugin *) last_header;
+    }
+     azure_auth_opts 
+    ')'
+  ;
+
+azure_auth_opts
+  : azure_auth_opt azure_auth_opts
+  |
+  ;
+
+azure_auth_opt
+  : KW_WORKSPACE_ID '(' string ')' { 
+      azure_auth_header_workspace_id_set(last_header, $3); free($3); 
+    }
+  | KW_SECRET       '(' string ')' { 
+      azure_auth_header_secret_set_from_b64str(last_header, $3); free($3);
+    }
+  | KW_METHOD         '(' string ')' {
+      azure_auth_header_method_set(last_header, $3); free($3);
+    }
+  | KW_PATH         '(' string ')' {
+      azure_auth_header_path_set(last_header, $3); free($3);
+    }
+  | KW_CONTENT_TYPE '(' string ')' {
+      azure_auth_header_content_type_set(last_header, $3); free($3);
+    }
+  ;
+
+/* INCLUDE_RULES */
+
+%%
