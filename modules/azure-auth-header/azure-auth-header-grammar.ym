@@ -28,6 +28,8 @@
 
 %code {
 
+#pragma GCC diagnostic ignored "-Wswitch-default"
+
 #include "azure-auth-header.h"
 
 AzureAuthHeaderPlugin *last_header;
