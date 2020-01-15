@@ -86,6 +86,9 @@ class SyslogNgConfig(object):
     def create_app_parser(self, **options):
         return Parser("app-parser", **options)
 
+    def create_checkpoint_parser(self, **options):
+        return Parser("checkpoint-parser", **options)
+
     def create_syslog_parser(self, **options):
         return Parser("syslog-parser", **options)
 
