@@ -91,6 +91,7 @@ kafka_dest_worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
   KafkaDestWorker *self = (KafkaDestWorker *)s;
 
   _format_message_and_key(self, msg);
+  // rdkafka buffer is full
   if (!_publish_message(self, msg))
     return LTR_RETRY;
 

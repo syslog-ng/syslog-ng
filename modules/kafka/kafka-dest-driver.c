@@ -28,6 +28,7 @@
 #include "kafka-props.h"
 #include "kafka-dest-worker.h"
 #include "timeutils/misc.h"
+#include "stats/stats-registry.h"
 
 #include <librdkafka/rdkafka.h>
 #include <stdlib.h>
@@ -153,35 +154,14 @@ _kafka_delivery_report_cb(rd_kafka_t *rk,
 {
   KafkaDestDriver *self = (KafkaDestDriver *) opaque;
   LogMessage *msg = (LogMessage *) msg_opaque;
-
-  /* we already ACKed back this message to syslog-ng, it was kept in
-   * librdkafka queues so far but successfully delivered, let's unref it */
+  log_msg_unref(msg);
 
   if (err != RD_KAFKA_RESP_ERR_NO_ERROR)
-    {
-      LogThreadedDestWorker *worker = (LogThreadedDestWorker *) self->super.workers[0];
-      LogQueue *queue = worker->queue;
-      LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-
-      msg_debug("kafka: delivery report for message came back with an error, putting it back to our queue",
-                evt_tag_str("topic", self->topic_name),
-                evt_tag_printf("message", "%.*s", (int) MIN(len, 128), (char *) payload),
-                evt_tag_str("error", rd_kafka_err2str(err)),
-                evt_tag_str("driver", self->super.super.super.id),
-                log_pipe_location_tag(&self->super.super.super.super));
-      log_queue_push_head(queue, msg, &path_options);
-      return;
-    }
+    // message.send.max.retries exceeded the message was dropped because kafka
+    // isn't available.
+    stats_counter_inc(self->super.dropped_messages);
   else
-    {
-      msg_debug("kafka: delivery report successful",
-                evt_tag_str("topic", self->topic_name),
-                evt_tag_printf("message", "%.*s", (int) MIN(len, 128), (char *) payload),
-                evt_tag_str("error", rd_kafka_err2str(err)),
-                evt_tag_str("driver", self->super.super.super.id),
-                log_pipe_location_tag(&self->super.super.super.super));
-      log_msg_unref(msg);
-    }
+    stats_counter_inc(self->super.written_messages);
 }
 
 static void
