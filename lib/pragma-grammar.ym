@@ -60,21 +60,30 @@ CfgArgs *last_module_args = NULL;
 
 }
 
+%type   <cptr> requires_message
+
 %%
+
 
 start
         : { PRAGMA_BEGIN(); }
-          stmt_and_eol                                  { if (yychar != YYEMPTY) { cfg_lexer_unput_token(lexer, &yylval); } PRAGMA_END(); YYACCEPT; }
+          stmt                                  { if (yychar != YYEMPTY) { cfg_lexer_unput_token(lexer, &yylval); } PRAGMA_END(); YYACCEPT; }
 
-stmt_and_eol
-        : pragma_stmt LL_EOL
-        | include_stmt
-        ;
+stmt
+	: stmt_without_eol LL_EOL
+	| stmt_with_eol
+	;
 
-pragma_stmt
+stmt_without_eol
         : version_stmt
         | define_stmt
         | module_stmt
+        ;
+
+	/* LL_EOL as a token needs to be consumed by the rules below, as they can
+	 * change the lexer buffer by the time they return to the grammar. */
+stmt_with_eol
+        : include_stmt
         | requires_stmt
         ;
 
@@ -89,22 +98,19 @@ version_stmt
                 PRAGMA_ERROR();
           }
 
-include_stmt
-        : KW_INCLUDE string LL_EOL
-          {
-            CHECK_ERROR(cfg_lexer_include_file(lexer, $2), @2, "Error including %s", $2);
-            free($2);
-          }
-        ;
-
 define_stmt
-	: KW_DEFINE LL_IDENTIFIER string_or_number		{ msg_debug("Global value changed",
-                                                                            evt_tag_str("define", $2),
-                                                                            evt_tag_str("value", $3));
-								  cfg_args_set(configuration->globals, $2, $3); free($2); free($3); }
+	: KW_DEFINE LL_IDENTIFIER string_or_number
+          {
+            msg_debug("Global value changed",
+                      evt_tag_str("define", $2),
+                      evt_tag_str("value", $3));
+	    cfg_args_set(configuration->globals, $2, $3);
+            free($2);
+            free($3);
+          }
 
 module_stmt
-	: KW_MODULE string { last_module_args = cfg_args_new(); } module_param module_params
+	: KW_MODULE string { last_module_args = cfg_args_new(); } module_params
           {
             gboolean success = cfg_load_module_with_args(configuration, $2, last_module_args);
             free($2);
@@ -115,23 +121,36 @@ module_stmt
             if (!success)
               PRAGMA_ERROR();
           }
-	| KW_MODULE string
-          {
-            cfg_load_module(configuration, $2);
-            free($2);
-          }
 	;
 
+module_params
+	: module_param module_params
+	|
+	;
+
+module_param
+	: LL_IDENTIFIER '(' string_or_number ')'		{ cfg_args_set(last_module_args, $1, $3); free($1); free($3); }
+	;
+
+include_stmt
+        : KW_INCLUDE string LL_EOL
+          {
+            CHECK_ERROR(cfg_lexer_include_file(lexer, $2), @2, "Error including %s", $2);
+            free($2);
+          }
+        ;
+
 requires_stmt
-	: KW_REQUIRES string
+	: KW_REQUIRES string requires_message LL_EOL
           {
             if (!cfg_is_module_available(configuration, $2))
               {
-                if (0 == lexer->include_depth)
+                if (0 == lexer->include_depth || $3)
                   {
                     msg_error("Cannot load required module",
-                                evt_tag_str("module", $2),
-                                cfg_lexer_format_location_tag(lexer,&@1));
+                              evt_tag_str("module", $2),
+                              evt_tag_str("details", $3 ? : "none"),
+                              cfg_lexer_format_location_tag(lexer,&@1));
                     free($2);
                     PRAGMA_ERROR();
                   }
@@ -147,13 +166,9 @@ requires_stmt
           }
 	;
 
-module_params
-	: module_param module_params
-	|
-	;
-
-module_param
-	: LL_IDENTIFIER '(' string_or_number ')'		{ cfg_args_set(last_module_args, $1, $3); free($1); free($3); }
+requires_message
+	: string		{ $$ = $1; }
+	| 			{ $$ = NULL; }
 	;
 
 /* INCLUDE_RULES */
