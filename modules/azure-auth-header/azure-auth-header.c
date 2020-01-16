@@ -24,6 +24,7 @@
 #include "driver.h"
 #include "modules/http/http-signals.h"
 #include "messages.h"
+#include "compat/openssl_support.h"
 
 #define AZURE_AUTH_HEADER_PLUGIN "azure-auth-header"
 
@@ -75,24 +76,22 @@ _azure_auth_header_get_str_to_hash(AzureAuthHeaderPlugin *self, glong content_le
   return str;
 }
 
-static gsize
-_azure_auth_header_get_digest(AzureAuthHeaderPlugin *self, const GString *input, guint8 *digest)
+static guint
+_azure_auth_header_get_digest(AzureAuthHeaderPlugin *self, GString *input, guchar *digest)
 {
-  gsize digest_len = g_checksum_type_get_length(G_CHECKSUM_SHA256);
+  guint md_len = 0;
 
-  GHmac *hmac = g_hmac_new(G_CHECKSUM_SHA256, self->secret, self->secret_len);
-  g_hmac_update(hmac, (const guchar *)input->str, -1);
-  g_hmac_get_digest(hmac, digest, &digest_len);
+  if (!HMAC(EVP_sha256(),
+            self->secret, self->secret_len,
+            (const guchar *)input->str, input->len,
+            digest, &md_len))
+    {
+      msg_error("Failed to generate Azure Auth Header HMAC",
+                evt_tag_str("str", input->str),
+                evt_tag_int("len", input->len));
+    }
 
-  g_hmac_unref(hmac);
-  hmac = NULL;
-
-  msg_debug("Azure HTTP signature generated",
-            evt_tag_str("str", input->str),
-            evt_tag_int("len", input->len),
-            evt_tag_int("key_len", self->secret_len));
-
-  return digest_len;
+  return md_len;
 }
 
 static void
@@ -114,7 +113,6 @@ _azure_auth_header_format_headers(AzureAuthHeaderPlugin *self, List *headers, co
 static gboolean
 _append_headers(AzureAuthHeaderPlugin *self, List *headers, GString *body)
 {
-  gboolean ret = FALSE;
   g_return_val_if_fail(self->secret, FALSE);
 
   gchar date[MAX_DATE_LEN] = {0};
@@ -122,28 +120,21 @@ _append_headers(AzureAuthHeaderPlugin *self, List *headers, GString *body)
 
   GString *rawstr = _azure_auth_header_get_str_to_hash(self, body->len, date);
 
-  gsize digest_expected_len = g_checksum_type_get_length(G_CHECKSUM_SHA256);
-  guint8 *digest = (guint8 *) g_malloc(sizeof(*digest) * digest_expected_len);
-
+  guchar digest[EVP_MAX_MD_SIZE] = {0};
   gsize digest_len = _azure_auth_header_get_digest(self, rawstr, digest);
-  if (digest_len != digest_expected_len)
+  if (digest_len == 0)
     {
-      ret = FALSE;
-      goto exit;
+      g_string_free(rawstr, TRUE);
+      return FALSE;
     }
 
   gchar *digest_str = g_base64_encode(digest, digest_len);
-
   _azure_auth_header_format_headers(self, headers, digest_str, date);
-
-  ret = TRUE;
-
-exit:
-  g_string_free(rawstr, TRUE);
-  g_free(digest);
   g_free(digest_str);
 
-  return ret;
+  g_string_free(rawstr, TRUE);
+
+  return TRUE;
 }
 
 
