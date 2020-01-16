@@ -228,12 +228,11 @@ _find_index_entry(NVIndexEntry *index_table, gint index_size, NVHandle handle, N
   gint l, h, m;
   NVHandle mv;
 
-  if (index_size == 0)
-    {
-      *index_slot = &index_table[0];
-      return NULL;
-    }
-  if (index_table[index_size - 1].handle < handle)
+  /* short-cut, check if "handle" is larger than the last - sorted -
+   * element.  If it is, we won't be finding it in this table.  The loop
+   * below would conclude the same, but only after a log2(N) iterations */
+
+  if (index_size > 0 && index_table[index_size - 1].handle < handle)
     {
       *index_slot = &index_table[index_size];
       return NULL;
