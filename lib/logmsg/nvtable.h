@@ -156,7 +156,9 @@ struct _NVEntry
 };
 
 #define NV_ENTRY_DIRECT_HDR ((gsize) (&((NVEntry *) NULL)->vdirect.data))
+#define NV_ENTRY_DIRECT_SIZE(name_len, value_len) ((value_len) + NV_ENTRY_DIRECT_HDR + (name_len) + 2)
 #define NV_ENTRY_INDIRECT_HDR (sizeof(NVEntry))
+#define NV_ENTRY_INDIRECT_SIZE(name_len) (NV_ENTRY_INDIRECT_HDR + name_len + 1)
 
 static inline const gchar *
 nv_entry_get_name(NVEntry *self)
