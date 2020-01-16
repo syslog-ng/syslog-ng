@@ -391,7 +391,7 @@ Test(logmsg_serialize, deserialization_performance)
       log_msg_deserialize(msg, sa);
       log_msg_unref(msg);
     }
-  stop_stopwatch_and_display_result(iterations, "serializing %d times took", iterations);
+  stop_stopwatch_and_display_result(iterations, "deserializing %d times took", iterations);
   serialize_archive_free(sa);
   g_string_free(stream, TRUE);
 }
