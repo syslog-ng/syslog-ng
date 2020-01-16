@@ -27,6 +27,8 @@
 
 #define AZURE_AUTH_HEADER_PLUGIN "azure-auth-header"
 
+#define MAX_DATE_LEN 64
+
 struct _AzureAuthHeaderPlugin
 {
   LogDriverPlugin super;
@@ -54,6 +56,14 @@ _get_rfc1123date(gchar *buf, gsize buf_len)
   return len;
 }
 
+static void
+_get_rfc1123data_or_assert(gchar *date)
+{
+  gsize date_len = 0;
+  date_len = _get_rfc1123date(date, MAX_DATE_LEN);
+  g_assert(date_len);
+}
+
 static GString *
 _azure_auth_header_get_str_to_hash(AzureAuthHeaderPlugin *self, glong content_len, const gchar *date)
 {
@@ -66,14 +76,13 @@ _azure_auth_header_get_str_to_hash(AzureAuthHeaderPlugin *self, glong content_le
 }
 
 static gsize
-_azure_auth_header_get_digest(AzureAuthHeaderPlugin *self, guint8 **digest, const GString *input)
+_azure_auth_header_get_digest(AzureAuthHeaderPlugin *self, const GString *input, guint8 *digest)
 {
   gsize digest_len = g_checksum_type_get_length(G_CHECKSUM_SHA256);
-  *digest = (guint8 *) g_malloc(sizeof(*digest) * digest_len);
 
   GHmac *hmac = g_hmac_new(G_CHECKSUM_SHA256, self->secret, self->secret_len);
   g_hmac_update(hmac, (const guchar *)input->str, -1);
-  g_hmac_get_digest(hmac, *digest, &digest_len);
+  g_hmac_get_digest(hmac, digest, &digest_len);
 
   g_hmac_unref(hmac);
   hmac = NULL;
@@ -105,33 +114,38 @@ _azure_auth_header_format_headers(AzureAuthHeaderPlugin *self, List *headers, co
 static gboolean
 _append_headers(AzureAuthHeaderPlugin *self, List *headers, GString *body)
 {
+  gboolean ret = FALSE;
   g_return_val_if_fail(self->secret, FALSE);
 
-  GString *rawstr = NULL;
+  gchar date[MAX_DATE_LEN] = {0};
+  _get_rfc1123data_or_assert(date);
 
-  gsize date_max_len = 64;
-  gchar date[date_max_len];
-  gsize date_len = 0;
+  GString *rawstr = _azure_auth_header_get_str_to_hash(self, body->len, date);
 
-  gsize   digest_len = 0;
-  guint8 *digest = NULL;
-  gchar  *digest_str = NULL;
+  gsize digest_expected_len = g_checksum_type_get_length(G_CHECKSUM_SHA256);
+  guint8 *digest = (guint8 *) g_malloc(sizeof(*digest) * digest_expected_len);
 
-  date_len = _get_rfc1123date(date, date_max_len);
-  g_assert(date_len);
+  gsize digest_len = _azure_auth_header_get_digest(self, rawstr, digest);
+  if (digest_len != digest_expected_len)
+    {
+      ret = FALSE;
+      goto exit;
+    }
 
-  rawstr = _azure_auth_header_get_str_to_hash(self, body->len, date);
-  digest_len = _azure_auth_header_get_digest(self, &digest, rawstr);
-  digest_str = g_base64_encode(digest, digest_len);
+  gchar *digest_str = g_base64_encode(digest, digest_len);
 
   _azure_auth_header_format_headers(self, headers, digest_str, date);
 
+  ret = TRUE;
+
+exit:
   g_string_free(rawstr, TRUE);
   g_free(digest);
   g_free(digest_str);
 
-  return TRUE;
+  return ret;
 }
+
 
 void
 azure_auth_header_secret_set_from_b64str(AzureAuthHeaderPlugin *self, const gchar *b64secret)
