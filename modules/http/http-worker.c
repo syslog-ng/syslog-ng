@@ -186,6 +186,20 @@ _append_auth_header(List *list, HTTPDestinationDriver *owner)
 }
 
 static void
+_collect_rest_headers(HTTPDestinationWorker *self)
+{
+  HttpHeaderRequestSignalData signal_data =
+  {
+    .request_headers = self->request_headers,
+    .request_body = self->request_body
+  };
+
+  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
+
+  EMIT(owner->super.super.super.super.signal_slot_connector, signal_http_header_request, &signal_data);
+}
+
+static void
 _format_request_headers(HTTPDestinationWorker *self, LogMessage *msg)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
@@ -221,13 +235,7 @@ _format_request_headers(HTTPDestinationWorker *self, LogMessage *msg)
   if (owner->auth_header)
     _append_auth_header(self->request_headers, owner);
 
-  HttpHeaderRequestSignalData signal_data =
-  {
-    .request_headers = self->request_headers,
-    .request_body = self->request_body
-  };
-
-  EMIT(owner->super.super.super.super.signal_slot_connector, signal_http_header_request, &signal_data);
+  _collect_rest_headers(self);
 }
 
 static void
