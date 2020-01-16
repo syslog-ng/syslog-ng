@@ -413,7 +413,7 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
           return FALSE;
         }
     }
-  if (G_UNLIKELY(entry && (((guint) entry->alloc_len)) >= NV_ENTRY_DIRECT_SIZE(entry->name_len, value_len)))
+  if (entry && entry->alloc_len >= NV_ENTRY_DIRECT_SIZE(entry->name_len, value_len))
     {
       _overwrite_with_a_direct_entry(self, handle, entry, name, name_len, value, value_len);
       return TRUE;
@@ -576,7 +576,7 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
         return FALSE;
     }
 
-  if (entry && (((guint) entry->alloc_len) >= NV_ENTRY_INDIRECT_SIZE(name_len)))
+  if (entry && (entry->alloc_len >= NV_ENTRY_INDIRECT_SIZE(name_len)))
     {
       /* this value already exists and the new reference fits in the old space */
       nv_table_set_indirect_entry(self, handle, entry, name, name_len, referenced_slice);
