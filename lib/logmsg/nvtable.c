@@ -222,43 +222,34 @@ nv_table_resolve_entry(NVTable *self, NVEntry *entry, gssize *length)
     return nv_table_resolve_direct(self, entry, length);
 }
 
-NVEntry *
-nv_table_get_entry_slow(NVTable *self, NVHandle handle, NVIndexEntry **index_entry)
+static inline NVIndexEntry *
+_find_index_entry(NVIndexEntry *index_table, gint index_size, NVHandle handle, NVIndexEntry **index_slot)
 {
-  guint32 ofs;
   gint l, h, m;
-  NVIndexEntry *index_table = nv_table_get_index(self);
-  guint32 mv;
+  NVHandle mv;
 
-  if (!self->index_size)
+  if (index_size == 0)
     {
-      *index_entry = NULL;
+      *index_slot = &index_table[0];
       return NULL;
     }
-
-  /* index_table is sorted, so if the last entry is smaller then handle, we
-   * will not have a match */
-
-  if (index_table[self->index_size - 1].handle < handle)
+  if (index_table[index_size - 1].handle < handle)
     {
-      *index_entry = NULL;
+      *index_slot = &index_table[index_size];
       return NULL;
     }
 
   /* open-coded binary search */
-  *index_entry = NULL;
   l = 0;
-  h = self->index_size - 1;
-  ofs = 0;
+  h = index_size - 1;
   while (l <= h)
     {
       m = (l+h) >> 1;
       mv = index_table[m].handle;
       if (mv == handle)
         {
-          *index_entry = &index_table[m];
-          ofs = index_table[m].ofs;
-          break;
+          *index_slot = &index_table[m];
+          return &index_table[m];
         }
       else if (mv > handle)
         {
@@ -269,9 +260,20 @@ nv_table_get_entry_slow(NVTable *self, NVHandle handle, NVIndexEntry **index_ent
           l = m + 1;
         }
     }
+  *index_slot = &index_table[l];
+  g_assert(l <= index_size);
+  return NULL;
+}
 
-  NVEntry *entry = nv_table_get_entry_at_ofs(self, ofs);
-  return entry;
+NVEntry *
+nv_table_get_entry_slow(NVTable *self, NVHandle handle, NVIndexEntry **index_entry)
+{
+  NVIndexEntry *index_slot;
+
+  *index_entry = _find_index_entry(nv_table_get_index(self), self->index_size, handle, &index_slot);
+  if (*index_entry)
+    return nv_table_get_entry_at_ofs(self, (*index_entry)->ofs);
+  return NULL;
 }
 
 static gboolean
@@ -280,59 +282,23 @@ nv_table_reserve_table_entry(NVTable *self, NVHandle handle, NVIndexEntry **inde
   if (G_UNLIKELY(!(*index_entry) && !nv_table_is_handle_static(self, handle)))
     {
       /* this is a dynamic value */
-      NVIndexEntry *index_table = nv_table_get_index(self);;
-      gint l, h, m, ndx;
+      NVIndexEntry *index_table = nv_table_get_index(self);
+      NVIndexEntry *index_slot;
       gboolean found = FALSE;
 
       if (!nv_table_alloc_check(self, sizeof(index_table[0])))
         return FALSE;
 
-      if (index_table[self->index_size - 1].handle < handle)
-        {
-          /* short cut, handle is larger than the last element of the sorted
-           * list, gave me 15% increase in performance if handles are
-           * reserved in a sorted order */
-          ndx = self->index_size;
-        }
-      else
-        {
-          l = 0;
-          h = self->index_size - 1;
-          ndx = -1;
-          while (l <= h)
-            {
-              guint16 mv;
+      found = _find_index_entry(index_table, self->index_size, handle, &index_slot) != NULL;
 
-              m = (l+h) >> 1;
-              mv = index_table[m].handle;
-
-              if (mv == handle)
-                {
-                  ndx = m;
-                  found = TRUE;
-                  break;
-                }
-              else if (mv > handle)
-                {
-                  h = m - 1;
-                }
-              else
-                {
-                  l = m + 1;
-                }
-            }
-          /* if we find the proper slot we set that, if we don't, we insert a new entry */
-          if (!found)
-            ndx = l;
+      NVIndexEntry *index_top = index_table + self->index_size;
+      if (index_slot != index_top)
+        {
+          /* move index entries up */
+          memmove(index_slot + 1, index_slot, (index_top - index_slot) * sizeof(index_table[0]));
         }
 
-      g_assert(ndx >= 0 && ndx <= self->index_size);
-      if (ndx < self->index_size)
-        {
-          memmove(&index_table[ndx + 1], &index_table[ndx], (self->index_size - ndx) * sizeof(index_table[0]));
-        }
-
-      *index_entry = &index_table[ndx];
+      *index_entry = index_slot;
 
       /* we set ofs to zero here, which means that the NVEntry won't
          be found even if the slot is present in index */
