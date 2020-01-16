@@ -264,31 +264,43 @@ _find_index_entry(NVIndexEntry *index_table, gint index_size, NVHandle handle, N
   return NULL;
 }
 
-NVEntry *
-nv_table_get_entry_slow(NVTable *self, NVHandle handle, NVIndexEntry **index_entry)
-{
-  NVIndexEntry *index_slot;
+/* slow path for nv_table_get_entry(), i.e.  we need to perform the lookup
+ * for handle in the sorted index_table by implementing a binary search.
+ *
+ * The two output arguments `index_entry` and `index_slot` deserve further
+ * explanation:
+ *    index_entry: points to the NVIndexEntry that referenced this NVEntry
+ *
+ *    index_slot: points to the NVIndexEntry where a new element of this
+ *                handle _should_ be inserted.
+ *
+ * This means that index_entry will be NULL if the handle is not present in
+ * this NVTable, whereas index_slot would point to the index_table element
+ * where we need to insert the new index_entry.
+ *
+ * In case the handle is present in NVTable, both index_entry and index_slot
+ * will point to the same location.
+ */
 
-  *index_entry = _find_index_entry(nv_table_get_index(self), self->index_size, handle, &index_slot);
+NVEntry *
+nv_table_get_entry_slow(NVTable *self, NVHandle handle, NVIndexEntry **index_entry, NVIndexEntry **index_slot)
+{
+  *index_entry = _find_index_entry(nv_table_get_index(self), self->index_size, handle, index_slot);
   if (*index_entry)
     return nv_table_get_entry_at_ofs(self, (*index_entry)->ofs);
   return NULL;
 }
 
 static gboolean
-nv_table_reserve_table_entry(NVTable *self, NVHandle handle, NVIndexEntry **index_entry)
+nv_table_reserve_table_entry(NVTable *self, NVHandle handle, NVIndexEntry **index_entry, NVIndexEntry *index_slot)
 {
   if (G_UNLIKELY(!(*index_entry) && !nv_table_is_handle_static(self, handle)))
     {
       /* this is a dynamic value */
       NVIndexEntry *index_table = nv_table_get_index(self);
-      NVIndexEntry *index_slot;
-      gboolean found = FALSE;
 
       if (!nv_table_alloc_check(self, sizeof(index_table[0])))
         return FALSE;
-
-      found = _find_index_entry(index_table, self->index_size, handle, &index_slot) != NULL;
 
       NVIndexEntry *index_top = index_table + self->index_size;
       if (index_slot != index_top)
@@ -301,10 +313,9 @@ nv_table_reserve_table_entry(NVTable *self, NVHandle handle, NVIndexEntry **inde
 
       /* we set ofs to zero here, which means that the NVEntry won't
          be found even if the slot is present in index */
-      (**index_entry).handle = handle;
-      (**index_entry).ofs    = 0;
-      if (!found)
-        self->index_size++;
+      (*index_entry)->handle = handle;
+      (*index_entry)->ofs    = 0;
+      self->index_size++;
     }
   return TRUE;
 }
@@ -412,13 +423,13 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
 {
   NVEntry *entry;
   guint32 ofs;
-  NVIndexEntry *index_entry;
+  NVIndexEntry *index_entry, *index_slot;
 
   if (value_len > NV_TABLE_MAX_BYTES)
     value_len = NV_TABLE_MAX_BYTES;
   if (new_entry)
     *new_entry = FALSE;
-  entry = nv_table_get_entry(self, handle, &index_entry);
+  entry = nv_table_get_entry(self, handle, &index_entry, &index_slot);
   if (!nv_table_break_references_to_entry(self, handle, entry))
     return FALSE;
 
@@ -432,7 +443,7 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
 
   /* check if there's enough free space: size of the struct plus the
    * size needed for a dynamic table slot */
-  if (!nv_table_reserve_table_entry(self, handle, &index_entry))
+  if (!nv_table_reserve_table_entry(self, handle, &index_entry, index_slot))
     return FALSE;
 
   if (nv_table_is_handle_static(self, handle))
@@ -463,7 +474,7 @@ gboolean
 nv_table_unset_value(NVTable *self, NVHandle handle)
 {
   NVIndexEntry *index_entry;
-  NVEntry *entry = nv_table_get_entry(self, handle, &index_entry);
+  NVEntry *entry = nv_table_get_entry(self, handle, &index_entry, NULL);
 
   if (!entry)
     return TRUE;
@@ -541,12 +552,12 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
                             NVReferencedSlice *referenced_slice, gboolean *new_entry)
 {
   NVEntry *entry, *ref_entry;
-  NVIndexEntry *index_entry;
+  NVIndexEntry *index_entry, *index_slot;
   guint32 ofs;
 
   if (new_entry)
     *new_entry = FALSE;
-  ref_entry = nv_table_get_entry(self, referenced_slice->handle, &index_entry);
+  ref_entry = nv_table_get_entry(self, referenced_slice->handle, NULL, NULL);
 
   if ((ref_entry && ref_entry->indirect) || handle == referenced_slice->handle)
     {
@@ -555,7 +566,7 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
       return nv_table_copy_referenced_value(self, ref_entry, handle, name, name_len, referenced_slice, new_entry);
     }
 
-  entry = nv_table_get_entry(self, handle, &index_entry);
+  entry = nv_table_get_entry(self, handle, &index_entry, &index_slot);
   if ((!entry && !new_entry && referenced_slice->len == 0) || !ref_entry)
     {
       /* we don't store zero length matches unless the caller is
@@ -581,7 +592,7 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
       *new_entry = TRUE;
     }
 
-  if (!nv_table_reserve_table_entry(self, handle, &index_entry))
+  if (!nv_table_reserve_table_entry(self, handle, &index_entry, index_slot))
     return FALSE;
   entry = nv_table_alloc_value(self, NV_ENTRY_INDIRECT_SIZE(name_len));
   if (!entry)

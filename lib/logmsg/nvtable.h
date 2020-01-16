@@ -326,18 +326,26 @@ nv_table_alloc_check(NVTable *self, gsize alloc_size)
 }
 
 /* private declarations for inline functions */
-NVEntry *nv_table_get_entry_slow(NVTable *self, NVHandle handle, NVIndexEntry **index_entry);
+NVEntry *nv_table_get_entry_slow(NVTable *self, NVHandle handle, NVIndexEntry **index_entry, NVIndexEntry **index_slot);
 const gchar *nv_table_resolve_indirect(NVTable *self, NVEntry *entry, gssize *len);
 
 
 static inline NVEntry *
-__nv_table_get_entry(NVTable *self, NVHandle handle, guint16 num_static_entries, NVIndexEntry **index_entry)
+__nv_table_get_entry(NVTable *self, NVHandle handle, guint16 num_static_entries, NVIndexEntry **index_entry,
+                     NVIndexEntry **index_slot)
 {
   guint32 ofs;
+  NVIndexEntry *t1, *t2;
+
+  if (!index_entry)
+    index_entry = &t1;
+  if (!index_slot)
+    index_slot = &t2;
 
   if (G_UNLIKELY(!handle))
     {
       *index_entry = NULL;
+      *index_slot = NULL;
       return NULL;
     }
 
@@ -345,37 +353,35 @@ __nv_table_get_entry(NVTable *self, NVHandle handle, guint16 num_static_entries,
     {
       ofs = self->static_entries[handle - 1];
       *index_entry = NULL;
+      *index_slot = NULL;
       if (G_UNLIKELY(!ofs))
         return NULL;
       return (NVEntry *) (nv_table_get_top(self) - ofs);
     }
   else
     {
-      return nv_table_get_entry_slow(self, handle, index_entry);
+      return nv_table_get_entry_slow(self, handle, index_entry, index_slot);
     }
 }
 
 static inline NVEntry *
-nv_table_get_entry(NVTable *self, NVHandle handle, NVIndexEntry **index_entry)
+nv_table_get_entry(NVTable *self, NVHandle handle, NVIndexEntry **index_entry, NVIndexEntry **index_slot)
 {
-  return __nv_table_get_entry(self, handle, self->num_static_entries, index_entry);
+  return __nv_table_get_entry(self, handle, self->num_static_entries, index_entry, index_slot);
 }
 
 static inline gboolean
 nv_table_is_value_set(NVTable *self, NVHandle handle)
 {
-  NVIndexEntry *index_entry;
-
-  return nv_table_get_entry(self, handle, &index_entry) != NULL;
+  return nv_table_get_entry(self, handle, NULL, NULL) != NULL;
 }
 
 static inline const gchar *
 nv_table_get_value_if_set(NVTable *self, NVHandle handle, gssize *length)
 {
   NVEntry *entry;
-  NVIndexEntry *index_entry;
 
-  entry = nv_table_get_entry(self, handle, &index_entry);
+  entry = nv_table_get_entry(self, handle, NULL, NULL);
   if (!entry || entry->unset)
     {
       if (length)
