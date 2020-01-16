@@ -349,6 +349,45 @@ nv_table_make_direct(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entry,
   return FALSE;
 }
 
+static inline void
+_overwrite_with_a_direct_entry(NVTable *self, NVHandle handle, NVEntry *entry, const gchar *name, gsize name_len,
+                               const gchar *value, gsize value_len)
+{
+  gchar *dst;
+
+  /* this value already exists and the new value fits in the old space */
+  if (!entry->indirect)
+    {
+      dst = entry->vdirect.data + entry->name_len + 1;
+
+      entry->vdirect.value_len = value_len;
+      memmove(dst, value, value_len);
+      dst[value_len] = 0;
+    }
+  else
+    {
+      /* this was an indirect entry, convert it */
+      entry->indirect = 0;
+      entry->vdirect.value_len = value_len;
+
+      if (!nv_table_is_handle_static(self, handle))
+        {
+          /* we pick up the name_len from the entry as it may be static in which case name is not stored */
+          g_assert(entry->name_len == name_len);
+          memmove(entry->vdirect.data, name, name_len + 1);
+        }
+      else
+        {
+          /* the old entry didn't have a name, we won't add it either */
+          name_len = 0;
+          entry->vdirect.data[0] = 0;
+        }
+      memmove(entry->vdirect.data + name_len + 1, value, value_len);
+      entry->vdirect.data[entry->name_len + 1 + value_len] = 0;
+    }
+  entry->unset = FALSE;
+}
+
 gboolean
 nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, const gchar *value,
                    gsize value_len, gboolean *new_entry)
@@ -376,38 +415,7 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
     }
   if (G_UNLIKELY(entry && (((guint) entry->alloc_len)) >= value_len + NV_ENTRY_DIRECT_HDR + entry->name_len + 2))
     {
-      gchar *dst;
-      /* this value already exists and the new value fits in the old space */
-      if (!entry->indirect)
-        {
-          dst = entry->vdirect.data + entry->name_len + 1;
-
-          entry->vdirect.value_len = value_len;
-          memmove(dst, value, value_len);
-          dst[value_len] = 0;
-        }
-      else
-        {
-          /* this was an indirect entry, convert it */
-          entry->indirect = 0;
-          entry->vdirect.value_len = value_len;
-
-          if (!nv_table_is_handle_static(self, handle))
-            {
-              /* we pick up the name_len from the entry as it may be static in which case name is not stored */
-              g_assert(entry->name_len == name_len);
-              memmove(entry->vdirect.data, name, name_len + 1);
-            }
-          else
-            {
-              /* the old entry didn't have a name, we won't add it either */
-              name_len = 0;
-              entry->vdirect.data[0] = 0;
-            }
-          memmove(entry->vdirect.data + name_len + 1, value, value_len);
-          entry->vdirect.data[entry->name_len + 1 + value_len] = 0;
-        }
-      entry->unset = FALSE;
+      _overwrite_with_a_direct_entry(self, handle, entry, name, name_len, value, value_len);
       return TRUE;
     }
   else if (!entry && new_entry)
