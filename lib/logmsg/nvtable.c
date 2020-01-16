@@ -326,7 +326,7 @@ nv_table_set_table_entry(NVTable *self, NVHandle handle, guint32 ofs, NVIndexEnt
 }
 
 static gboolean
-nv_table_make_direct(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entry, gpointer user_data)
+_make_entry_direct(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entry, gpointer user_data)
 {
   NVTable *self = (NVTable *) (((gpointer *) user_data)[0]);
   NVHandle ref_handle = GPOINTER_TO_UINT(((gpointer *) user_data)[1]);
@@ -347,6 +347,24 @@ nv_table_make_direct(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entry,
         }
     }
   return FALSE;
+}
+
+static inline gboolean
+nv_table_break_references_to_entry(NVTable *self, NVHandle handle, NVEntry *entry)
+{
+  if (G_UNLIKELY(entry && !entry->indirect && entry->referenced))
+    {
+      gpointer data[2] = { self, GUINT_TO_POINTER((glong) handle) };
+
+      if (nv_table_foreach_entry(self, _make_entry_direct, data))
+        {
+          /* we had to stop iteration, which means that we were unable
+           * to allocate enough space for making indirect entries
+           * direct */
+          return FALSE;
+        }
+    }
+  return TRUE;
 }
 
 static inline void
@@ -401,18 +419,9 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
   if (new_entry)
     *new_entry = FALSE;
   entry = nv_table_get_entry(self, handle, &index_entry);
-  if (G_UNLIKELY(entry && !entry->indirect && entry->referenced))
-    {
-      gpointer data[2] = { self, GUINT_TO_POINTER((glong) handle) };
+  if (!nv_table_break_references_to_entry(self, handle, entry))
+    return FALSE;
 
-      if (nv_table_foreach_entry(self, nv_table_make_direct, data))
-        {
-          /* we had to stop iteration, which means that we were unable
-           * to allocate enough space for making indirect entries
-           * direct */
-          return FALSE;
-        }
-    }
   if (entry && entry->alloc_len >= NV_ENTRY_DIRECT_SIZE(entry->name_len, value_len))
     {
       _overwrite_with_a_direct_entry(self, handle, entry, name, name_len, value, value_len);
@@ -459,18 +468,8 @@ nv_table_unset_value(NVTable *self, NVHandle handle)
   if (!entry)
     return TRUE;
 
-  if (G_UNLIKELY(!entry->indirect && entry->referenced))
-    {
-      gpointer data[2] = { self, GUINT_TO_POINTER((glong) handle) };
-
-      if (nv_table_foreach_entry(self, nv_table_make_direct, data))
-        {
-          /* we had to stop iteration, which means that we were unable
-           * to allocate enough space for making indirect entries
-           * direct */
-          return FALSE;
-        }
-    }
+  if (!nv_table_break_references_to_entry(self, handle, entry))
+    return FALSE;
 
   entry->unset = TRUE;
 
@@ -556,7 +555,6 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
       return nv_table_copy_referenced_value(self, ref_entry, handle, name, name_len, referenced_slice, new_entry);
     }
 
-
   entry = nv_table_get_entry(self, handle, &index_entry);
   if ((!entry && !new_entry && referenced_slice->len == 0) || !ref_entry)
     {
@@ -568,13 +566,8 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
       return TRUE;
     }
 
-  if (entry && !entry->indirect && entry->referenced)
-    {
-      gpointer data[2] = { self, GUINT_TO_POINTER((glong) handle) };
-
-      if (!nv_table_foreach_entry(self, nv_table_make_direct, data))
-        return FALSE;
-    }
+  if (!nv_table_break_references_to_entry(self, handle, entry))
+    return FALSE;
 
   if (entry && (entry->alloc_len >= NV_ENTRY_INDIRECT_SIZE(name_len)))
     {
