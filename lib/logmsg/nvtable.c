@@ -291,8 +291,8 @@ nv_table_get_entry_slow(NVTable *self, NVHandle handle, NVIndexEntry **index_ent
   return NULL;
 }
 
-static gboolean
-nv_table_reserve_table_entry(NVTable *self, NVHandle handle, NVIndexEntry **index_entry, NVIndexEntry *index_slot)
+static inline gboolean
+_alloc_index_entry(NVTable *self, NVHandle handle, NVIndexEntry **index_entry, NVIndexEntry *index_slot)
 {
   if (G_UNLIKELY(!(*index_entry) && !nv_table_is_handle_static(self, handle)))
     {
@@ -443,7 +443,7 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
 
   /* check if there's enough free space: size of the struct plus the
    * size needed for a dynamic table slot */
-  if (!nv_table_reserve_table_entry(self, handle, &index_entry, index_slot))
+  if (!_alloc_index_entry(self, handle, &index_entry, index_slot))
     return FALSE;
 
   if (nv_table_is_handle_static(self, handle))
@@ -592,7 +592,7 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
       *new_entry = TRUE;
     }
 
-  if (!nv_table_reserve_table_entry(self, handle, &index_entry, index_slot))
+  if (!_alloc_index_entry(self, handle, &index_entry, index_slot))
     return FALSE;
   entry = nv_table_alloc_value(self, NV_ENTRY_INDIRECT_SIZE(name_len));
   if (!entry)
