@@ -236,6 +236,15 @@ nv_table_get_entry_slow(NVTable *self, NVHandle handle, NVIndexEntry **index_ent
       return NULL;
     }
 
+  /* index_table is sorted, so if the last entry is smaller then handle, we
+   * will not have a match */
+
+  if (index_table[self->index_size - 1].handle < handle)
+    {
+      *index_entry = NULL;
+      return NULL;
+    }
+
   /* open-coded binary search */
   *index_entry = NULL;
   l = 0;
@@ -278,34 +287,44 @@ nv_table_reserve_table_entry(NVTable *self, NVHandle handle, NVIndexEntry **inde
       if (!nv_table_alloc_check(self, sizeof(index_table[0])))
         return FALSE;
 
-      l = 0;
-      h = self->index_size - 1;
-      ndx = -1;
-      while (l <= h)
+      if (index_table[self->index_size - 1].handle < handle)
         {
-          guint16 mv;
-
-          m = (l+h) >> 1;
-          mv = index_table[m].handle;
-
-          if (mv == handle)
-            {
-              ndx = m;
-              found = TRUE;
-              break;
-            }
-          else if (mv > handle)
-            {
-              h = m - 1;
-            }
-          else
-            {
-              l = m + 1;
-            }
+          /* short cut, handle is larger than the last element of the sorted
+           * list, gave me 15% increase in performance if handles are
+           * reserved in a sorted order */
+          ndx = self->index_size;
         }
-      /* if we find the proper slot we set that, if we don't, we insert a new entry */
-      if (!found)
-        ndx = l;
+      else
+        {
+          l = 0;
+          h = self->index_size - 1;
+          ndx = -1;
+          while (l <= h)
+            {
+              guint16 mv;
+
+              m = (l+h) >> 1;
+              mv = index_table[m].handle;
+
+              if (mv == handle)
+                {
+                  ndx = m;
+                  found = TRUE;
+                  break;
+                }
+              else if (mv > handle)
+                {
+                  h = m - 1;
+                }
+              else
+                {
+                  l = m + 1;
+                }
+            }
+          /* if we find the proper slot we set that, if we don't, we insert a new entry */
+          if (!found)
+            ndx = l;
+        }
 
       g_assert(ndx >= 0 && ndx <= self->index_size);
       if (ndx < self->index_size)
