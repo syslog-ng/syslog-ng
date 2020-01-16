@@ -33,7 +33,6 @@ struct _AzureAuthHeaderPlugin
 
   gsize   secret_len;
   guchar *secret;
-  GChecksumType alg;
 
   gchar   *workspace_id;
   gchar   *method;
@@ -69,7 +68,7 @@ _azure_auth_header_get_str_to_hash(AzureAuthHeaderPlugin *self, glong content_le
 static gsize
 _azure_auth_header_get_digest(AzureAuthHeaderPlugin *self, guint8 **digest, const GString *input)
 {
-  gsize digest_len = g_checksum_type_get_length(self->alg);
+  gsize digest_len = g_checksum_type_get_length(G_CHECKSUM_SHA256);
   *digest = (guint8 *) g_malloc(sizeof(*digest) * digest_len);
 
   GHmac *hmac = g_hmac_new(G_CHECKSUM_SHA256, self->secret, self->secret_len);
@@ -215,8 +214,6 @@ azure_auth_header_plugin_new(void)
 
   self->super.attach = _attach;
   self->super.free_fn = _free;
-
-  self->alg = G_CHECKSUM_SHA256; //TODO
 
   return self;
 }
