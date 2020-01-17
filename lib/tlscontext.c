@@ -411,6 +411,12 @@ _print_and_clear_tls_session_error(TLSContext *self)
 }
 
 static void
+tls_context_setup_session_tickets(TLSContext *self)
+{
+  openssl_ctx_setup_session_tickets(self->ssl_ctx);
+}
+
+static void
 tls_context_setup_verify_mode(TLSContext *self)
 {
   gint verify_mode = 0;
@@ -732,6 +738,9 @@ tls_context_setup_context(TLSContext *self)
     verify_flags |= X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL;
 
   X509_VERIFY_PARAM_set_flags(SSL_CTX_get0_param(self->ssl_ctx), verify_flags);
+
+  if (self->mode == TM_SERVER)
+    tls_context_setup_session_tickets(self);
 
   tls_context_setup_verify_mode(self);
   tls_context_setup_ssl_options(self);

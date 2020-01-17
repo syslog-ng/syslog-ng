@@ -40,7 +40,8 @@ function (openssl_set_defines)
     X509_STORE_CTX_get0_cert
     X509_get_extension_flags
     DH_set0_pqg
-    BN_get_rfc3526_prime_2048)
+    BN_get_rfc3526_prime_2048
+    SSL_CTX_set_num_tickets)
 
   foreach (symbol ${symbol_list})
     string(TOUPPER ${symbol} SYMBOL_UPPERCASE)
