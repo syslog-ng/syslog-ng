@@ -35,7 +35,7 @@ git log --no-merges --pretty="%H" $commit_range -- | (
 
     subject=$(git show -s --format='%s' $commit)
 
-    if ! echo "$subject" | egrep -q '^Revert |^[a-zA-Z0-9/(){}$,._-]+:'; then
+    if ! echo "$subject" | egrep -q '^Revert |^([a-zA-Z0-9/(){}$,._-]{1,}\s*){1,}:'; then
       commit_has_valid_subject=0
     fi
 
