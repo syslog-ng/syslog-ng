@@ -13,15 +13,13 @@ version 2.1 of the License, or (at your option) any later version
 lib/
 libtest/
 syslog-ng/
-modules/java-common/
-modules/java/(native|proxies|src)/
-modules/native/
 
-The syslog-ng modules (modules/ subdirectory except the ones mentioned above)
-is free software; you can redistribute it and/or modify it
-under the terms of the GNU General Public License version 2 as published
-by the Free Software Foundation, or (at your option) any later version
-(please refer to the file LGPL.txt for more details).
+The syslog-ng modules (modules/ subdirectory except the ones that declare
+LGPL-2.1-or-later in their license notices) is free software; you can
+redistribute it and/or modify it under the terms of the GNU General Public
+License version 2 as published by the Free Software Foundation,
+or (at your option) any later version
+(please refer to the file GPL.txt for more details).
 
 FAQ:
 ====
