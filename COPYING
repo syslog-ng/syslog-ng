@@ -13,6 +13,9 @@ version 2.1 of the License, or (at your option) any later version
 lib/
 libtest/
 syslog-ng/
+syslog-ng-ctl/
+persist-tool/
+tests/loggen/
 
 The syslog-ng modules (modules/ subdirectory except the ones that declare
 LGPL-2.1-or-later in their license notices) is free software; you can
