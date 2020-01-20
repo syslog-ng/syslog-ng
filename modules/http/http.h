@@ -88,7 +88,7 @@ void http_dd_set_ca_file(LogDriver *d, const gchar *ca_file);
 void http_dd_set_cert_file(LogDriver *d, const gchar *cert_file);
 void http_dd_set_key_file(LogDriver *d, const gchar *key_file);
 void http_dd_set_cipher_suite(LogDriver *d, const gchar *ciphers);
-void http_dd_set_ssl_version(LogDriver *d, const gchar *value);
+gboolean http_dd_set_ssl_version(LogDriver *d, const gchar *value);
 void http_dd_set_peer_verify(LogDriver *d, gboolean verify);
 void http_dd_set_timeout(LogDriver *d, glong timeout);
 void http_dd_set_batch_bytes(LogDriver *d, glong batch_bytes);
