@@ -30,6 +30,7 @@
 #include "cfg.h"
 #include "atomic.h"
 #include "messages.h"
+#include "signal-slot-connector/signal-slot-connector.h"
 
 /* notify code values */
 #define NC_CLOSE       1
@@ -224,6 +225,7 @@ struct _LogPipe
   StatsCounterItem *discarded_messages;
   const gchar *persist_name;
   gchar *plugin_name;
+  SignalSlotConnector *signal_slot_connector;
 
   gboolean (*pre_init)(LogPipe *self);
   gboolean (*init)(LogPipe *self);
