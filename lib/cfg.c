@@ -241,7 +241,7 @@ gboolean
 cfg_is_module_available(GlobalConfig *self, const gchar *module_name)
 {
   cfg_discover_candidate_modules(self);
-  if (!_is_module_autoload_enabled(self))
+  if (_is_module_autoload_enabled(self))
     return cfg_load_module(self, module_name);
 
   return plugin_is_module_available(&self->plugin_context, module_name);
