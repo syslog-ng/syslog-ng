@@ -221,3 +221,20 @@ BN_get_rfc3526_prime_2048(BIGNUM *bn)
   return get_rfc3526_prime_2048(bn);
 }
 #endif
+
+void
+openssl_ctx_setup_session_tickets(SSL_CTX *ctx)
+{
+  /* This is a workaround for an OpenSSL TLS 1.3 bug that results in data loss
+   * when one-way protocols are used and a connection is closed by the client
+   * right after sending data.
+   *
+   * Remove this call, or make it version-dependent after the bug has been fixed:
+   * - https://github.com/openssl/openssl/issues/10880
+   * - https://github.com/openssl/openssl/issues/7948
+   */
+
+#if SYSLOG_NG_HAVE_DECL_SSL_CTX_SET_NUM_TICKETS
+  SSL_CTX_set_num_tickets(ctx, 0);
+#endif
+}
