@@ -115,9 +115,8 @@ affile_dw_format_persist_name(AFFileDestWriter *self)
 static void affile_dd_reap_writer(AFFileDestDriver *self, AFFileDestWriter *dw);
 
 static void
-affile_dw_reap(gpointer s)
+affile_dw_reap(AFFileDestWriter *self)
 {
-  AFFileDestWriter *self = (AFFileDestWriter *) s;
   AFFileDestDriver *owner = self->owner;
 
   main_loop_assert_main_thread();
@@ -303,10 +302,14 @@ affile_dw_free(LogPipe *s)
 static void
 affile_dw_notify(LogPipe *s, gint notify_code, gpointer user_data)
 {
+  AFFileDestWriter *self = (AFFileDestWriter *)s;
   switch(notify_code)
     {
     case NC_REOPEN_REQUIRED:
-      affile_dw_reopen((AFFileDestWriter *)s);
+      affile_dw_reopen(self);
+      break;
+    case NC_CLOSE:
+      affile_dw_reap(self);
       break;
     default:
       break;
