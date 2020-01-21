@@ -92,6 +92,7 @@ modules/(add-contextual-data|tagsparser|map-value-pairs|hook-commands|appmodel|[
 modules/http/(http-loadbalancer|http-worker)\.[ch]$
 modules/http/response-handler\.[ch]$
 modules/http/http-curl-header-list\.[ch]$
+modules/http/autodetect-ca-location\.[ch]$
 scl
 scripts
 modules/http/tests
