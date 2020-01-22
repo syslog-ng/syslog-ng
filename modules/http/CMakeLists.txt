@@ -16,13 +16,20 @@ set(HTTP_DESTINATION_SOURCES
     http-worker.c
     http-loadbalancer.h
     http-loadbalancer.c
+    http-curl-header-list.h
+    http-curl-header-list.c
     http-parser.c
     http-parser.h
     http-plugin.c
     response-handler.h
     response-handler.c
+    http-signals.h
     ${CMAKE_CURRENT_BINARY_DIR}/http-grammar.c
     ${CMAKE_CURRENT_BINARY_DIR}/http-grammar.h
+)
+
+set(HTTP_MODULE_DEV_HEADERS
+  http-signals.h
 )
 
 generate_y_from_ym(modules/http/http-grammar)
@@ -58,5 +65,6 @@ target_include_directories (http PRIVATE ${Curl_INCLUDE_DIR})
 target_link_libraries(http PRIVATE syslog-ng ${Curl_LIBRARIES})
 
 install(TARGETS http LIBRARY DESTINATION lib/syslog-ng/)
+install(FILES ${HTTP_MODULE_DEV_HEADERS} DESTINATION include/syslog-ng/modules/http/)
 
 add_test_subdirectory(tests)

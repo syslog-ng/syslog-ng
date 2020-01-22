@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2018 One Identity
- * Copyright (c) 2018 Balazs Scheidler
- * Copyright (c) 2016 Marc Falzon
+ * Copyright (c) 2002-2019 Balabit
+ * Copyright (c) 2019 Laszlo Budai <laszlo.budai@balabit.com>
+ *
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -22,24 +22,15 @@
  *
  */
 
-#ifndef HTTP_WORKER_H_INCLUDED
-#define HTTP_WORKER_H_INCLUDED 1
+#ifndef HTTP_CURL_HEADER_LIST_H_INCLUDED
+#define HTTP_CURL_HEADER_LIST_H_INCLUDED
 
-#include "logthrdest/logthrdestdrv.h"
-#include "http-loadbalancer.h"
-#include "http-curl-header-list.h"
+#include "list-adt.h"
 
-typedef struct _HTTPDestinationWorker
-{
-  LogThreadedDestWorker super;
-  HTTPLoadBalancerClient lbc;
-  CURL *curl;
-  GString *request_body;
-  List *request_headers;
-} HTTPDestinationWorker;
+#define CURL_NO_OLDIES 1
+#include <curl/curl.h>
 
-LogThreadedResult default_map_http_status_to_worker_status(HTTPDestinationWorker *self, const gchar *url,
-                                                           glong http_code);
-LogThreadedDestWorker *http_dw_new(LogThreadedDestDriver *owner, gint worker_index);
+List *http_curl_header_list_new(void);
+struct curl_slist *http_curl_header_list_as_slist(List *list);
 
 #endif

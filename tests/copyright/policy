@@ -64,6 +64,7 @@ syslog-ng(-ctl)?
 modules/java-modules/common
 modules/java/(native|proxies|src)
 modules/native
+modules/http/http-signals.h
 tests/loggen
 persist-tool
  GPLv2+_SSL,non-balabit
@@ -90,6 +91,7 @@ modules/(afamqp|affile|afmongodb|afprog|afsmtp|afsocket|afsql|afstomp|afstreams|
 modules/(add-contextual-data|tagsparser|map-value-pairs|hook-commands|appmodel|[^/]*$)
 modules/http/(http-loadbalancer|http-worker)\.[ch]$
 modules/http/response-handler\.[ch]$
+modules/http/http-curl-header-list\.[ch]$
 scl
 scripts
 modules/http/tests
