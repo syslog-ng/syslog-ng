@@ -647,10 +647,11 @@ _insert_batched(LogThreadedDestWorker *s, LogMessage *msg)
 {
   HTTPDestinationWorker *self = (HTTPDestinationWorker *) s;
 
+  _add_message_to_batch(self, msg);
+
   if (list_is_empty(self->request_headers))
     _format_request_headers(self, NULL);
 
-  _add_message_to_batch(self, msg);
 
   if (_should_initiate_flush(self))
     {
@@ -664,8 +665,9 @@ _insert_single(LogThreadedDestWorker *s, LogMessage *msg)
 {
   HTTPDestinationWorker *self = (HTTPDestinationWorker *) s;
 
-  _format_request_headers(self, msg);
   _add_message_to_batch(self, msg);
+  _format_request_headers(self, msg);
+
   return log_threaded_dest_worker_flush(&self->super, LTF_FLUSH_NORMAL);
 }
 
