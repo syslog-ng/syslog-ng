@@ -54,25 +54,18 @@ _get_rfc1123date(gchar *buf, gsize buf_len)
 
   gchar format[] = "%a, %d %b %Y %H:%M:%S GMT";
   gsize len = strftime(buf, buf_len, format, &gmt);
+  g_assert(len);
 
   return len;
-}
-
-static void
-_get_rfc1123data_or_assert(gchar *date)
-{
-  gsize date_len = 0;
-  date_len = _get_rfc1123date(date, MAX_DATE_LEN);
-  g_assert(date_len);
 }
 
 static GString *
 _azure_auth_header_get_str_to_hash(AzureAuthHeaderPlugin *self, glong content_len, const gchar *date)
 {
-  gchar *fmt = "%s\n%ld\n%s\nx-ms-date:%s\n%s";
+#define X_MS_DATE_FORMAT "%s\n%ld\n%s\nx-ms-date:%s\n%s"
   GString *str = g_string_new(NULL);
 
-  g_string_append_printf(str, fmt, self->method, content_len, self->content_type, date, self->path);
+  g_string_append_printf(str, X_MS_DATE_FORMAT, self->method, content_len, self->content_type, date, self->path);
 
   return str;
 }
@@ -117,7 +110,7 @@ _append_headers(AzureAuthHeaderPlugin *self, List *headers, GString *body)
   g_return_val_if_fail(self->secret, FALSE);
 
   gchar date[MAX_DATE_LEN] = {0};
-  _get_rfc1123data_or_assert(date);
+  _get_rfc1123date(date, MAX_DATE_LEN);
 
   GString *rawstr = _azure_auth_header_get_str_to_hash(self, body->len, date);
 
