@@ -93,6 +93,7 @@ set (LIB_HEADERS
     gsocket.h
     hostname.h
     host-resolve.h
+    list-adt.h
     logmatcher.h
     logmpx.h
     logpipe.h
