@@ -83,6 +83,7 @@ _azure_auth_header_get_digest(AzureAuthHeaderPlugin *self, GString *input, gucha
       msg_error("Failed to generate Azure Auth Header HMAC",
                 evt_tag_str("str", input->str),
                 evt_tag_int("len", input->len));
+      return 0;
     }
 
   return md_len;
