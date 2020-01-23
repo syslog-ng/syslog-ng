@@ -25,6 +25,7 @@
 #include "modules/http/http-signals.h"
 #include "messages.h"
 #include "compat/openssl_support.h"
+#include "compat/glib.h"
 
 #define AZURE_AUTH_HEADER_PLUGIN "azure-auth-header"
 
