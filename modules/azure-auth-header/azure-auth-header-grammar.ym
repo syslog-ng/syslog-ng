@@ -77,11 +77,13 @@ azure_auth_opts
   ;
 
 azure_auth_opt
-  : KW_WORKSPACE_ID '(' string ')' { 
+  : KW_WORKSPACE_ID '(' string ')' {
       azure_auth_header_workspace_id_set(last_header, $3); free($3); 
     }
-  | KW_SECRET       '(' string ')' { 
-      azure_auth_header_secret_set_from_b64str(last_header, $3); free($3);
+  | KW_SECRET       '(' string ')' {
+      CHECK_ERROR(azure_auth_header_secret_set_from_b64str(last_header, $3), @3,
+      "Failed to set secret from string: %s. Secret should be a valid base64 string.", $3);
+      free($3);
     }
   | KW_METHOD         '(' string ')' {
       azure_auth_header_method_set(last_header, $3); free($3);

@@ -138,14 +138,13 @@ _append_headers(AzureAuthHeaderPlugin *self, List *headers, GString *body)
 }
 
 
-void
+gboolean
 azure_auth_header_secret_set_from_b64str(AzureAuthHeaderPlugin *self, const gchar *b64secret)
 {
   g_free(self->secret);
   self->secret = g_base64_decode(b64secret, &self->secret_len);
 
-  if (!self->secret)
-    msg_error("Failed to base64 decode Azure secret key");
+  return (self->secret != NULL) && (self->secret_len > 0);
 }
 
 void

@@ -29,7 +29,7 @@ typedef struct _AzureAuthHeaderPlugin AzureAuthHeaderPlugin;
 
 AzureAuthHeaderPlugin *azure_auth_header_plugin_new(void);
 
-void azure_auth_header_secret_set_from_b64str(AzureAuthHeaderPlugin *self, const gchar *b64secret);
+gboolean azure_auth_header_secret_set_from_b64str(AzureAuthHeaderPlugin *self, const gchar *b64secret);
 void azure_auth_header_workspace_id_set(AzureAuthHeaderPlugin *self, const gchar *workspace_id);
 void azure_auth_header_method_set(AzureAuthHeaderPlugin *self, const gchar *method);
 void azure_auth_header_path_set(AzureAuthHeaderPlugin *self, const gchar *path);
