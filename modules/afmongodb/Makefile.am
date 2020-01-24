@@ -38,6 +38,8 @@ BUILT_SOURCES					+=	\
 	modules/afmongodb/afmongodb-grammar.h
 
 EXTRA_DIST					+=	\
-	modules/afmongodb/afmongodb-grammar.ym
+	modules/afmongodb/afmongodb-grammar.ym \
+	modules/afmongodb/CMakeLists.txt
+
 
 .PHONY: modules/afmongodb/ mod-afmongodb mod-mongodb
