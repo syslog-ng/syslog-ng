@@ -187,108 +187,6 @@ _test_uri_error(void)
                        " uri='mongodb://127.0.0.1:27017/'");
 }
 
-#if SYSLOG_NG_ENABLE_LEGACY_MONGODB_OPTIONS
-#define UNSAFEOPTS "?w=0&safe=false&socketTimeoutMS=60000&connectTimeoutMS=60000"
-
-static void
-_test_legacy_correct(void)
-{
-  GList *servers = g_list_append(NULL, g_strdup("127.0.0.2:27018"));
-  servers = g_list_append(servers, g_strdup("localhost:1234"));
-  afmongodb_dd_set_servers(mongodb, servers);
-  _expect_uri_in_log("servers_multi", "127.0.0.2:27018,localhost:1234/syslog" SAFEOPTS,
-                     "syslog", "messages");
-
-  servers = g_list_append(NULL, g_strdup("127.0.0.2"));
-  afmongodb_dd_set_servers(mongodb, servers);
-  _expect_uri_in_log("servers_single", "127.0.0.2:27017/syslog" SAFEOPTS, "syslog", "messages");
-
-  afmongodb_dd_set_host(mongodb, "localhost");
-  _expect_uri_in_log("host", "localhost:27017/syslog" SAFEOPTS, "syslog", "messages");
-
-  afmongodb_dd_set_host(mongodb, "localhost");
-  afmongodb_dd_set_port(mongodb, 1234);
-  _expect_uri_in_log("host_port", "localhost:1234/syslog" SAFEOPTS, "syslog", "messages");
-
-  afmongodb_dd_set_port(mongodb, 27017);
-  _expect_uri_in_log("port_default", "127.0.0.1:27017/syslog" SAFEOPTS, "syslog", "messages");
-
-  afmongodb_dd_set_port(mongodb, 1234);
-  _expect_uri_in_log("port", "127.0.0.1:1234/syslog" SAFEOPTS, "syslog", "messages");
-
-  afmongodb_dd_set_database(mongodb, "syslog-ng");
-  _expect_uri_in_log("database", "127.0.0.1:27017/syslog-ng" SAFEOPTS, "syslog-ng", "messages");
-
-  afmongodb_dd_set_safe_mode(mongodb, TRUE);
-  _expect_uri_in_log("safe_mode_true", "127.0.0.1:27017/syslog" SAFEOPTS, "syslog", "messages");
-
-  afmongodb_dd_set_safe_mode(mongodb, FALSE);
-  _expect_uri_in_log("safe_mode_false", "127.0.0.1:27017/syslog" UNSAFEOPTS, "syslog", "messages");
-
-  afmongodb_dd_set_user(mongodb, "user");
-  afmongodb_dd_set_password(mongodb, "password");
-  _expect_uri_in_log("user_password", "user:password@127.0.0.1:27017/syslog" SAFEOPTS,
-                     "syslog", "messages");
-
-  afmongodb_dd_set_collection(mongodb, "messages2");
-  afmongodb_dd_set_safe_mode(mongodb, FALSE);
-  _expect_uri_in_log("collection_safe_mode", "127.0.0.1:27017/syslog" UNSAFEOPTS,
-                     "syslog", "messages2");
-
-  afmongodb_dd_set_user(mongodb, "");
-  afmongodb_dd_set_password(mongodb, "password");
-  _expect_uri_in_log("empty_user", ":password@127.0.0.1:27017/syslog" SAFEOPTS,
-                     "syslog", "messages");
-
-  afmongodb_dd_set_user(mongodb, "user");
-  afmongodb_dd_set_password(mongodb, "");
-  _expect_uri_in_log("empty_password", "user:@127.0.0.1:27017/syslog" SAFEOPTS,
-                     "syslog", "messages");
-
-  afmongodb_dd_set_user(mongodb, "");
-  afmongodb_dd_set_password(mongodb, "");
-  _expect_uri_in_log("empty_user_password", ":@127.0.0.1:27017/syslog" SAFEOPTS,
-                     "syslog", "messages");
-
-  afmongodb_dd_set_user(mongodb, "127.0.0.1:27017/syslog?dont-care=");
-  afmongodb_dd_set_password(mongodb, "");
-  _expect_uri_in_log("hijacked_user", "127.0.0.1:27017/syslog?dont-care=:@127.0.0.1:27017/syslog"
-                     SAFEOPTS, "syslog", "messages");
-}
-
-static void
-_test_legacy_error(void)
-{
-  afmongodb_dd_set_safe_mode(mongodb, FALSE);
-  afmongodb_dd_set_uri(mongodb, "mongodb://127.0.0.1:27017/syslog");
-  _expect_error_in_log("uri_safe_mode", "Error: either specify a MongoDB URI "
-                       "(and optional collection) or only legacy options;");
-
-  afmongodb_dd_set_host(mongodb, "?");
-  _expect_error_in_log("host_invalid", "Cannot parse MongoDB URI; uri=");
-
-  afmongodb_dd_set_host(mongodb, "");
-  _expect_error_in_log("host_none", "Cannot parse the primary host; primary=\'\'");
-
-  afmongodb_dd_set_host(mongodb, "localhost,127.0.0.1");
-  _expect_error_in_log("host_multi", "Multiple hosts found in MongoDB URI; uri=");
-
-  GList *servers = g_list_append(NULL, g_strdup("localhost,127.0.0.1"));
-  afmongodb_dd_set_servers(mongodb, servers);
-  _expect_error_in_log("servers_multi", "Multiple hosts found in MongoDB URI; uri=");
-
-  servers = g_list_append(NULL, g_strdup(""));
-  afmongodb_dd_set_servers(mongodb, servers);
-  _expect_error_in_log("servers_none", "Cannot parse MongoDB URI; uri=");
-
-  afmongodb_dd_set_password(mongodb, "password");
-  _expect_error_in_log("missing_user", "Neither the username, nor the password can be empty;");
-
-  afmongodb_dd_set_user(mongodb, "user");
-  _expect_error_in_log("missing_password", "Neither the username, nor the password can be empty;");
-}
-#endif
-
 static void
 _setup(void)
 {
@@ -338,11 +236,6 @@ main(int argc, char **argv)
   _test_stats_name();
   _test_uri_correct();
   _test_uri_error();
-
-#if SYSLOG_NG_ENABLE_LEGACY_MONGODB_OPTIONS
-  _test_legacy_correct();
-  _test_legacy_error();
-#endif
 
   _teardown();
   return _tests_failed;

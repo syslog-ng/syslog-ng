@@ -47,12 +47,6 @@
 %token KW_MONGODB
 %token KW_URI
 %token KW_COLLECTION
-%token KW_SERVERS
-%token KW_SAFE_MODE
-%token KW_PATH
-%token KW_PASSWORD
-%token KW_USERNAME
-%token KW_DATABASE
 
 %%
 
@@ -78,7 +72,6 @@ afmongodb_option
         {
             afmongodb_dd_set_collection(last_driver, $3); free($3);
         }
-    | afmongodb_legacy_option
     | value_pair_option
         {
             afmongodb_dd_set_value_pairs(last_driver, $1);
@@ -87,58 +80,6 @@ afmongodb_option
     | { last_template_options = afmongodb_dd_get_template_options(last_driver); } template_option
     ;
 
-afmongodb_legacy_option
-    : KW_IFDEF
-        {
-#if SYSLOG_NG_ENABLE_LEGACY_MONGODB_OPTIONS
-        }
-    | KW_SERVERS '(' string_list ')'
-        {
-            CHECK_ERROR(afmongodb_dd_validate_network_combination(last_driver), @3,
-                         "Can't mix path() & servers()");
-            afmongodb_dd_set_servers(last_driver, $3);
-        }
-    | KW_HOST '(' string ')'
-        {
-            CHECK_ERROR(afmongodb_dd_validate_network_combination(last_driver), @3,
-                         "Can't mix path() & host()");
-            afmongodb_dd_set_host(last_driver, $3);
-            free($3);
-        }
-    | KW_PORT '(' positive_integer ')'
-        {
-            CHECK_ERROR(afmongodb_dd_validate_network_combination(last_driver), @3,
-                         "Can't mix path() & port()");
-            afmongodb_dd_set_port(last_driver, $3);
-        }
-    | KW_PATH '(' string ')'
-        {
-            CHECK_ERROR(afmongodb_dd_validate_socket_combination(last_driver), @3,
-                          "Can't mix path() with host() or server()");
-            afmongodb_dd_set_path(last_driver, $3);
-            free($3);
-        }
-    | KW_DATABASE '(' string ')'
-        {
-            afmongodb_dd_set_database(last_driver, $3); free($3);
-        }
-    | KW_USERNAME '(' string ')'
-        {
-            afmongodb_dd_set_user(last_driver, $3); free($3);
-        }
-    | KW_PASSWORD '(' string ')'
-        {
-            afmongodb_dd_set_password(last_driver, $3); free($3);
-        }
-    | KW_SAFE_MODE '(' yesno ')'
-        {
-	        afmongodb_dd_set_safe_mode(last_driver, !!$3);
-        }
-    | KW_ENDIF
-        {
-#endif /* SYSLOG_NG_ENABLE_LEGACY_MONGODB_OPTIONS */
-        }
-    ;
 
 /* INCLUDE_RULES */
 

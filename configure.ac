@@ -249,11 +249,6 @@ AC_ARG_ENABLE(mongodb,
 	      [  --enable-mongodb        Enable mongodb destination (default: auto)]
               ,,enable_mongodb="auto")
 
-AC_ARG_ENABLE(legacy-mongodb-options,
-              [  --enable-legacy-mongodb-options=[yes/no]
-                                         Support libmongo-client non-URI MongoDB options. (default: yes)]
-              ,,enable_legacy_mongodb_options="yes")
-
 AC_ARG_WITH(jsonc,
               [  --with-jsonc=[system/internal/auto/no]
                                          Link against the system supplied or the built-in jsonc library or explicitly disable it. (default:auto)]
@@ -1234,13 +1229,6 @@ dnl ***************************************************************************
 dnl mongo-c-driver headers/libraries
 dnl ***************************************************************************
 
-if test x"$enable_legacy_mongodb_options" = x"no"; then
-	enable_legacy_mongodb_options_bit=0
-else
-	enable_legacy_mongodb_options_bit=1
-fi
-AC_DEFINE_UNQUOTED(ENABLE_LEGACY_MONGODB_OPTIONS, [$enable_legacy_mongodb_options_bit], [Support libmongo-client non-URI MongoDB options])
-
 PKG_CHECK_MODULES(LIBMONGO, libmongoc-1.0 >= $LMC_MIN_VERSION, with_mongoc="yes", with_mongoc="no")
 
 if test "x$with_mongoc" = "xno" && test "x$enable_mongodb" = "xyes"; then
@@ -1899,7 +1887,6 @@ AM_CONDITIONAL(ENABLE_SNMP_DEST, [test "$enable_snmp_dest" = "yes"])
 AM_CONDITIONAL(ENABLE_MANPAGES, [test "$enable_manpages" != "no"])
 AM_CONDITIONAL(ENABLE_NATIVE, [test "$enable_native" != "no"])
 AM_CONDITIONAL(ENABLE_EXTRA_WARNINGS, [test "$enable_extra_warnings" = "yes"])
-AM_CONDITIONAL(ENABLE_LEGACY_MONGODB_OPTIONS, [test x"$enable_legacy_mongodb_options" != x"no"])
 AM_CONDITIONAL(ENABLE_TESTING, [test "$enable_tests" != "no"])
 AM_CONDITIONAL([HAVE_INOTIFY], [test x$ac_cv_func_inotify_init = xyes])
 AM_CONDITIONAL([HAVE_GETRANDOM], [test x$ac_cv_func_getrandom = xyes])
@@ -2010,7 +1997,6 @@ echo "  Linux capability support    : ${has_linux_caps:=no}"
 echo "  Env wrapper support         : ${enable_env_wrapper:=no}"
 echo "  systemd support             : ${enable_systemd:=no} (unit dir: ${systemdsystemunitdir:=none})"
 echo "  systemd-journal support     : ${with_systemd_journal:=no}"
-echo "  libmongo-client options     : ${enable_legacy_mongodb_options}"
 echo " Modules:"
 echo "  Module search path          : ${module_path}"
 echo "  Sun STREAMS support (module): ${enable_sun_streams:=no}"

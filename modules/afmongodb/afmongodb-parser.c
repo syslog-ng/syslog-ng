@@ -33,22 +33,6 @@ static CfgLexerKeyword afmongodb_keywords[] =
   { "mongodb", KW_MONGODB },
   { "uri", KW_URI },
   { "collection", KW_COLLECTION },
-#if SYSLOG_NG_ENABLE_LEGACY_MONGODB_OPTIONS
-  { "servers", KW_SERVERS, KWS_OBSOLETE, "Use the uri() option instead of servers()" },
-  { "database", KW_DATABASE, KWS_OBSOLETE, "Use the uri() option instead of database()" },
-  {
-    "username", KW_USERNAME, KWS_OBSOLETE,
-    "Use the uri() option instead of username() and password()"
-  },
-  {
-    "password", KW_PASSWORD, KWS_OBSOLETE,
-    "Use the uri() option instead of username() and password()"
-  },
-  { "safe_mode", KW_SAFE_MODE, KWS_OBSOLETE, "Use the uri() option instead of safe_mode()" },
-  { "host", KW_HOST, KWS_OBSOLETE, "Use the uri() option instead of host() and port()" },
-  { "port", KW_PORT, KWS_OBSOLETE, "Use the uri() option instead of host() and port()" },
-  { "path", KW_PATH, KWS_OBSOLETE, "Use the uri() option instead of path()" },
-#endif
   { }
 };
 
