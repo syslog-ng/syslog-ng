@@ -25,8 +25,8 @@ bison_target(AFMongoDBGrammar
   ${CMAKE_CURRENT_BINARY_DIR}/afmongodb-grammar.c
   COMPILE_FLAGS ${BISON_FLAGS})
 
-include_directories (afmongodb SYSTEM PRIVATE ${MONGOC_INCLUDE_DIRS})
 add_library(afmongodb SHARED ${AFMONGODB_SOURCES})
+include_directories (${MONGOC_INCLUDE_DIRS})
 target_include_directories (afmongodb PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(afmongodb PRIVATE syslog-ng ${MONGOC_LIBRARY})
 
