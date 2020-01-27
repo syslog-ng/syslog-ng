@@ -96,10 +96,11 @@ pcre-devel                      [centos, fedora]
     #openjdk-11-jdk               [debian-buster]
 
     # python-dev
-    python-dev                  [debian, ubuntu]
+    python-dev                  [debian, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic, ubuntu-eoan]
     python-devel                [centos, fedora]
     python36-devel              [centos]
     python3-devel               [fedora]
+    python3-dev                 [ubuntu-focal]
 
     # snmp-dest
     libsnmp-dev                 [debian, ubuntu]
@@ -145,8 +146,10 @@ gcc-c++				[centos, fedora]
 
 
 # packages to run successful make check
-python-pip                      [centos, fedora, debian, ubuntu]
-python-setuptools               [centos, fedora, debian, ubuntu]
+python-pip                      [centos, fedora, debian, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic, ubuntu-eoan ]
+python3-pip                     [ubuntu-focal]
+python-setuptools               [centos, fedora, debian, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic, ubuntu-eoan]
+python3-setuptools              [ubuntu-focal]
 tzdata                          [centos, fedora, debian, ubuntu]
 
     # libxml2-utils
@@ -206,9 +209,10 @@ lsof                            [debian, ubuntu]
 netbase                         [debian, ubuntu]
 netcat                          [debian, ubuntu]
 openssh-client                  [debian, ubuntu]
-python-numpy                    [debian, ubuntu]
-python-yaml                     [debian, ubuntu]
-python3-yaml                    [debian, ubuntu]
+python-numpy                    [debian, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic, ubuntu-eoan]
+python3-numpy                   [debian, ubuntu-focal]
+python-yaml                     [debian, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic, ubuntu-eoan]
+python3-yaml                    [debian, ubuntu-focal]
 systemd-sysv                    [debian, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
 
 
