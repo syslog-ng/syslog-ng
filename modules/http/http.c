@@ -146,14 +146,6 @@ http_dd_set_ca_dir(LogDriver *d, const gchar *ca_dir)
 }
 
 void
-http_dd_set_use_system_cert_store(LogDriver *d, gboolean enable)
-{
-  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
-
-  self->use_system_cert_store = enable;
-}
-
-void
 http_dd_set_ca_file(LogDriver *d, const gchar *ca_file)
 {
   HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;

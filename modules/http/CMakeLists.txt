@@ -24,6 +24,8 @@ set(HTTP_DESTINATION_SOURCES
     response-handler.h
     response-handler.c
     http-signals.h
+    autodetect-ca-location.h
+    autodetect-ca-location.c
     ${CMAKE_CURRENT_BINARY_DIR}/http-grammar.c
     ${CMAKE_CURRENT_BINARY_DIR}/http-grammar.h
 )

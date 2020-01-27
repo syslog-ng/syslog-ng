@@ -33,6 +33,7 @@
 #include "http.h"
 #include "http-grammar.h"
 #include "response-handler.h"
+#include "autodetect-ca-location.h"
 #include "plugin.h"
 
 #include <string.h>
@@ -172,10 +173,20 @@ http_tls_option
     | KW_CERT_FILE  '(' path_check ')'        { http_dd_set_cert_file(last_driver, $3); free($3); }
     | KW_KEY_FILE   '(' path_secret ')'       { http_dd_set_key_file(last_driver, $3); free($3); }
     | KW_CIPHER_SUITE '(' string ')'          { http_dd_set_cipher_suite(last_driver, $3); free($3); }
-    | KW_USE_SYSTEM_CERT_STORE '(' yesno ')'  { http_dd_set_use_system_cert_store(last_driver, $3); }
     | KW_SSL_VERSION '(' string ')'           { CHECK_ERROR(http_dd_set_ssl_version(last_driver, $3), @3,
                                                             "curl: unsupported SSL version: %s", $3);
                                                 free($3); }
+    | KW_USE_SYSTEM_CERT_STORE '(' yesno ')'  {
+        if ($3)
+          {
+            const gchar *ca_dir = auto_detect_ca_dir();
+            const gchar *ca_file = auto_detect_ca_file();
+            CHECK_ERROR(!ca_dir && !ca_file, @3,
+                        "Failed to autodect system cert store");
+            http_dd_set_ca_file(last_driver, ca_file);
+            http_dd_set_ca_dir(last_driver, ca_dir);
+          }
+      }
     | KW_PEER_VERIFY '(' yesno ')'            { http_dd_set_peer_verify(last_driver, $3); }
     ;
 
