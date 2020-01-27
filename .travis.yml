@@ -46,8 +46,8 @@ addons:
       - libsnmp-dev
       - ninja-build
 install:
-      - pip install --user -r requirements.txt
-      - pip list
+      - python2 -m pip install --user --cache-dir=$PWD/pip-cache -r requirements.txt
+      - python2 -m pip list
 before_script:
   - echo 'Europe/Budapest' | sudo tee /etc/timezone
   - sudo dpkg-reconfigure --frontend noninteractive tzdata
@@ -95,7 +95,7 @@ matrix:
       compiler: clang
       script:
         - set -e
-        - pip install --user pre-commit-hooks
+        - python2 -m pip install --user --cache-dir=$PWD/pip-cache pre-commit-hooks
         - make --keep-going -j $(nproc) || make V=1 install;
         - make install
         - . scripts/get-libjvm-path.sh;
@@ -150,7 +150,7 @@ matrix:
         submodules: true
       script:
         - set -e
-        - pip install --user pre-commit-hooks
+        - python2 -m pip install --user --cache-dir=$PWD/pip-cache pre-commit-hooks
         - mkdir build
         - cd build
         - cmake
