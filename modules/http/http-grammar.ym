@@ -181,7 +181,7 @@ http_tls_option
           {
             const gchar *ca_dir = auto_detect_ca_dir();
             const gchar *ca_file = auto_detect_ca_file();
-            CHECK_ERROR(!ca_dir && !ca_file, @3,
+            CHECK_ERROR(ca_dir || ca_file, @3,
                         "Failed to autodect system cert store");
             http_dd_set_ca_file(last_driver, ca_file);
             http_dd_set_ca_dir(last_driver, ca_dir);
