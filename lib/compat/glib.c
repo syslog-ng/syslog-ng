@@ -258,3 +258,49 @@ g_hash_table_contains (GHashTable    *hash_table,
   return g_hash_table_lookup_extended(hash_table, key, &orig_key, &value);
 }
 #endif
+
+#if !GLIB_CHECK_VERSION(2, 54, 0)
+/**
+ * g_base64_encode:
+ * @data: (array length=len) (element-type guint8): the binary data to encode
+ * @len: the length of @data
+ *
+ * Encode a sequence of binary data into its Base-64 stringified
+ * representation.
+ *
+ * Returns: (transfer full): a newly allocated, zero-terminated Base-64
+ *               encoded string representing @data. The returned string must
+ *               be freed with g_free().
+ *
+ * Since: 2.12
+ */
+gchar *
+g_base64_encode_fixed(const guchar *data, gsize len)
+{
+  gchar *out;
+  gint state = 0, outlen;
+  gint save = 0;
+
+  g_return_val_if_fail (data != NULL || len == 0, NULL);
+
+  /* We can use a smaller limit here, since we know the saved state is 0,
+     +1 is needed for trailing \0, also check for unlikely integer overflow */
+  if (len >= ((G_MAXSIZE - 1) / 4 - 1) * 3)
+    g_error("%s: input too large for Base64 encoding (%"G_GSIZE_FORMAT" chars)",
+            G_STRLOC, len);
+
+  out = g_malloc ((len / 3 + 1) * 4 + 1);
+
+  outlen = g_base64_encode_step (data, len, FALSE, out, &state, &save);
+
+  /*FIX BEGINS; copied from tf_base64encode*/
+  if (((unsigned char *) &save)[0] == 1)
+    ((unsigned char *) &save)[2] = 0;
+  /*FIX ENDS*/
+
+  outlen += g_base64_encode_close (FALSE, out + outlen, &state, &save);
+  out[outlen] = '\0';
+
+  return (gchar *) out;
+}
+#endif

@@ -10,6 +10,7 @@ include modules/afstomp/Makefile.am
 include modules/afstreams/Makefile.am
 include modules/afuser/Makefile.am
 include modules/appmodel/Makefile.am
+include modules/azure-auth-header/Makefile.am
 include modules/basicfuncs/Makefile.am
 include modules/cef/Makefile.am
 include modules/confgen/Makefile.am
