@@ -1,6 +1,7 @@
 add_subdirectory(add-contextual-data)
 add_subdirectory(afamqp)
 add_subdirectory(affile)
+add_subdirectory(afmongodb)
 add_subdirectory(afprog)
 add_subdirectory(afsmtp)
 add_subdirectory(afsocket)

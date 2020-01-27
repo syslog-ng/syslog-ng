@@ -29,10 +29,6 @@
 #include "string-list.h"
 #include "value-pairs/value-pairs.h"
 
-#if SYSLOG_NG_ENABLE_LEGACY_MONGODB_OPTIONS
-#include "host-list.h"
-#endif
-
 typedef struct _MongoDBDestDriver
 {
   LogThreadedDestDriver super;
@@ -42,27 +38,11 @@ typedef struct _MongoDBDestDriver
   gchar *coll;
   GString *uri_str;
 
-#if SYSLOG_NG_ENABLE_LEGACY_MONGODB_OPTIONS
-  GList *servers;
-  gchar *address;
-  gint port;
-
-  gboolean safe_mode;
-  gchar *user;
-  gchar *password;
-#endif
-
   LogTemplateOptions template_options;
 
   ValuePairs *vp;
 
   /* Writer-only stuff */
-#if SYSLOG_NG_ENABLE_LEGACY_MONGODB_OPTIONS
-  HostList *recovery_cache;
-  gboolean is_legacy;
-  gchar *db;
-#endif
-
   const gchar *const_db;
   mongoc_uri_t *uri_obj;
   mongoc_client_t *client;
