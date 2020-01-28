@@ -90,22 +90,27 @@ _is_multi_line_timeout_expired(PollMultilineFileChanges *self)
   return millisecs_since_last_eof > self->multi_line_timeout;
 }
 
-static void
+static gboolean
 poll_multiline_file_changes_on_eof(PollFileChanges *s)
 {
   PollMultilineFileChanges *self = (PollMultilineFileChanges *) s;
 
   if (self->timed_out)
-    return;
+    return TRUE;
 
   if (!_is_multi_line_timeout_pending(self))
     {
       poll_multiline_file_changes_start_timer(self);
-      return;
+      return TRUE;
     }
 
   if (_is_multi_line_timeout_expired(self))
-    poll_multiline_file_changes_timeout_expired(self);
+    {
+      poll_multiline_file_changes_timeout_expired(self);
+      return FALSE;
+    }
+
+  return TRUE;
 }
 
 static void

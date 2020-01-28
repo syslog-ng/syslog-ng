@@ -40,7 +40,7 @@ struct _PollFileChanges
   LogPipe *control;
 
   void (*on_read)(PollFileChanges *);
-  void (*on_eof)(PollFileChanges *);
+  gboolean (*on_eof)(PollFileChanges *);
   void (*on_file_moved)(PollFileChanges *);
 };
 

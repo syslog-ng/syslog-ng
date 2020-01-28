@@ -54,12 +54,14 @@ poll_file_changes_on_file_moved(PollFileChanges *self)
   log_pipe_notify(self->control, NC_FILE_MOVED, self);
 }
 
-static inline void
+static inline gboolean
 poll_file_changes_on_eof(PollFileChanges *self)
 {
+  gboolean result = TRUE;
   if (self->on_eof)
-    self->on_eof(self);
+    result = self->on_eof(self);
   log_pipe_notify(self->control, NC_FILE_EOF, self);
+  return result;
 }
 
 /* follow timer callback. Check if the file has new content, or deleted or
@@ -189,6 +191,7 @@ void
 poll_file_changes_update_watches(PollEvents *s, GIOCondition cond)
 {
   PollFileChanges *self = (PollFileChanges *) s;
+  gboolean check_again = TRUE;
 
   /* we can only provide input events */
   g_assert((cond & ~G_IO_IN) == 0);
@@ -202,10 +205,11 @@ poll_file_changes_update_watches(PollEvents *s, GIOCondition cond)
     {
       msg_trace("End of file, following file",
                 evt_tag_str("follow_filename", self->follow_filename));
-      poll_file_changes_on_eof(self);
+      check_again = poll_file_changes_on_eof(self);
     }
 
-  poll_file_changes_rearm_timer(self);
+  if (check_again)
+    poll_file_changes_rearm_timer(self);
 }
 
 void
