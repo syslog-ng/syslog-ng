@@ -327,3 +327,39 @@ Test(python_persist_name, test_python_fetcher_readonly)
   log_pipe_deinit((LogPipe *)d);
   log_pipe_unref((LogPipe *)d);
 }
+
+/* persist-name takes precedence over generate_persist_name */
+Test(python_persist_name, test_python_fetcher_persist_preference)
+{
+  _load_code(python_fetcher_code);
+
+  LogDriver *d = python_fetcher_new(empty_cfg);
+  log_pipe_set_persist_name(&d->super, "test_persist_name");
+  python_fetcher_set_class(d, "Fetcher");
+  python_fetcher_set_option(d, "key", "value");
+  cr_assert(log_pipe_init((LogPipe *)d));
+
+  cr_assert_str_eq(log_pipe_get_persist_name((LogPipe *)d), "python-fetcher.test_persist_name");
+
+  main_loop_sync_worker_startup_and_teardown();
+  log_pipe_deinit((LogPipe *)d);
+  log_pipe_unref((LogPipe *)d);
+}
+
+/* persist-name takes precedence over generate_persist_name */
+Test(python_persist_name, test_python_source_persist_preference)
+{
+  _load_code(python_source_code);
+
+  LogDriver *d = python_sd_new(empty_cfg);
+  log_pipe_set_persist_name(&d->super, "test_persist_name");
+  python_sd_set_class(d, "Source");
+  python_sd_set_option(d, "key", "value");
+  cr_assert(log_pipe_init((LogPipe *)d));
+
+  cr_assert_str_eq(log_pipe_get_persist_name((LogPipe *)d), "python-source.test_persist_name");
+
+  main_loop_sync_worker_startup_and_teardown();
+  log_pipe_deinit((LogPipe *)d);
+  log_pipe_unref((LogPipe *)d);
+}
