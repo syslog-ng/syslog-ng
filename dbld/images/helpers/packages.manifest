@@ -37,7 +37,9 @@ pcre-devel                      [centos, fedora]
 
 # packages to run successful configure with module support
     # libbson-dev
-    libbson-dev                 [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
+    libbson-dev                 [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-cosmic]
+    libbson-1.0.0=1.15.0-1      [ubuntu-bionic]
+    libbson-dev=1.15.0-1        [ubuntu-bionic]
     libbson-devel               [centos-7, fedora]
 
     # librabbitmq-dev
@@ -45,7 +47,10 @@ pcre-devel                      [centos, fedora]
     librabbitmq-devel           [centos-7, fedora]
 
     # libmongoc-dev (not available on debian-jessie)
-    libmongoc-dev               [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
+    libmongoc-dev               [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-cosmic]
+    # default libmongoc-dev shipped by bionic has a bug in cmake file (findpackage: wrong paths are set)
+    libmongoc-1.0.0=1.15.0-1    [ubuntu-bionic]
+    libmongoc-dev=1.15.0-1      [ubuntu-bionic]
     mongo-c-driver-devel        [centos, fedora]
 
     # librdkafka-dev (we are using a specific version from OBS and need to
