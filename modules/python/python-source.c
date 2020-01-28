@@ -66,6 +66,7 @@ typedef struct _PyLogSource
 
 static PyTypeObject py_log_source_type;
 
+static const gchar *python_source_format_persist_name(const LogPipe *s);
 
 void
 python_sd_set_class(LogDriver *s, gchar *filename)
@@ -298,15 +299,7 @@ _py_lookup_generate_persist_name_method(PythonSourceDriver *self)
 static gboolean
 _py_set_persist_name(PythonSourceDriver *self)
 {
-  PythonPersistMembers options =
-  {
-    .generate_persist_name_method = self->py.generate_persist_name,
-    .options = self->options,
-    .class = self->class,
-    .id = self->super.super.super.id
-  };
-
-  const gchar *persist_name = python_format_persist_name((LogPipe *)self, "python-source", &options);
+  const gchar *persist_name = python_source_format_persist_name(&self->super.super.super.super);
   PyLogSource *py_instance = (PyLogSource *) self->py.instance;
   py_instance->persist_name = g_strdup(persist_name);
 

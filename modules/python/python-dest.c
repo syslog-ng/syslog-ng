@@ -334,16 +334,7 @@ _inject_worker_insert_result_consts(PythonDestDriver *self)
 static PyObject *
 py_get_persist_name(PythonDestDriver *self)
 {
-  PythonPersistMembers options =
-  {
-    .generate_persist_name_method = self->py.generate_persist_name,
-    .options = self->options,
-    .class = self->class,
-    .id = self->super.super.super.id
-  };
-
-  const gchar *persist_name = python_format_persist_name((LogPipe *)self, "python", &options);
-  return _py_string_from_string(persist_name, -1);
+  return _py_string_from_string(python_dd_format_persist_name(&self->super.super.super.super), -1);
 }
 
 static gboolean
