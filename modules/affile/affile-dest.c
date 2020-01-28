@@ -391,6 +391,13 @@ affile_dd_set_time_reap(LogDriver *s, gint time_reap)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
 
+  log_proto_client_options_set_timeout(&self->writer_options.proto_options.super, time_reap);
+}
+
+static gint
+affile_dd_get_time_reap(AFFileDestDriver *self)
+{
+  return log_proto_client_options_get_timeout(&self->writer_options.proto_options.super);
 }
 
 static inline const gchar *
@@ -471,6 +478,9 @@ affile_dd_init(LogPipe *s)
   file_opener_options_init(&self->file_opener_options, cfg);
   file_opener_set_options(self->file_opener, &self->file_opener_options);
   log_writer_options_init(&self->writer_options, cfg, 0);
+
+  if (affile_dd_get_time_reap(self) == -1)
+    affile_dd_set_time_reap(&self->super.super, cfg->time_reap);
 
   if (self->filename_is_a_template)
     {
@@ -764,6 +774,7 @@ affile_dd_new_instance(gchar *filename, GlobalConfig *cfg)
     }
   file_opener_options_defaults(&self->file_opener_options);
 
+  affile_dd_set_time_reap(&self->super.super, self->filename_is_a_template ? -1 : 0);
   g_static_mutex_init(&self->lock);
 
   affile_dest_drivers = g_list_append(affile_dest_drivers, self);
