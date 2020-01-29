@@ -90,7 +90,7 @@ poll_file_changes_check_file(gpointer s)
         {
           if (errno == ESTALE)
             {
-              msg_trace("log_reader_fd_check file moved ESTALE",
+              msg_trace("poll-file-changes: file moved ESTALE",
                         evt_tag_str("follow_filename", self->follow_filename));
               poll_file_changes_on_file_moved(self);
               return;
@@ -103,19 +103,24 @@ poll_file_changes_check_file(gpointer s)
             }
         }
 
-      msg_trace("log_reader_fd_check",
+      msg_trace("poll-file-changes",
                 evt_tag_int("pos", pos),
-                evt_tag_int("size", st.st_size));
+                evt_tag_int("size", st.st_size),
+                evt_tag_int("fd", fd));
 
       if (pos < st.st_size || !S_ISREG(st.st_mode))
         {
-          /* we have data to read */
+          msg_trace("poll-file-changes: file has new content: initiate reading");
           poll_file_changes_on_read(self);
           return;
         }
       else if (pos > st.st_size)
         {
           /* the last known position is larger than the current size of the file. it got truncated. Restart from the beginning. */
+          msg_trace("poll-file-changes: file got truncated, restart from beginning",
+                    evt_tag_int("pos", pos),
+                    evt_tag_int("size", st.st_size),
+                    evt_tag_int("fd", fd));
           poll_file_changes_on_file_moved(self);
           /* we may be freed by the time the notification above returns */
           return;
@@ -128,7 +133,7 @@ poll_file_changes_check_file(gpointer s)
         {
           if (fd < 0 || (st.st_ino != followed_st.st_ino && followed_st.st_size > 0))
             {
-              msg_trace("log_reader_fd_check file moved eof",
+              msg_trace("poll-file-changes: file moved eof",
                         evt_tag_int("pos", pos),
                         evt_tag_int("size", followed_st.st_size),
                         evt_tag_str("follow_filename", self->follow_filename));
