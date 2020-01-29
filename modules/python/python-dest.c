@@ -34,6 +34,7 @@
 #include "string-list.h"
 #include "str-utils.h"
 #include "messages.h"
+#include "python-persist.h"
 
 typedef struct
 {
@@ -56,6 +57,7 @@ typedef struct
     PyObject *flush;
     PyObject *log_template_options;
     PyObject *seqnum;
+    PyObject *generate_persist_name;
     GPtrArray *_refs_to_clean;
   } py;
 } PythonDestDriver;
@@ -63,12 +65,12 @@ typedef struct
 /** Setters & config glue **/
 
 void
-python_dd_set_class(LogDriver *d, gchar *filename)
+python_dd_set_class(LogDriver *d, gchar *class_name)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
 
   g_free(self->class);
-  self->class = g_strdup(filename);
+  self->class = g_strdup(class_name);
 }
 
 void
@@ -117,28 +119,32 @@ static const gchar *
 python_dd_format_stats_instance(LogThreadedDestDriver *d)
 {
   PythonDestDriver *self = (PythonDestDriver *)d;
-  static gchar persist_name[1024];
 
-  if (d->super.super.super.persist_name)
-    g_snprintf(persist_name, sizeof(persist_name), "python,%s", d->super.super.super.persist_name);
-  else
-    g_snprintf(persist_name, sizeof(persist_name), "python,%s", self->class);
+  PythonPersistMembers options =
+  {
+    .generate_persist_name_method = self->py.generate_persist_name,
+    .options = self->options,
+    .class = self->class,
+    .id = self->super.super.super.id
+  };
 
-  return persist_name;
+  return python_format_stats_instance((LogPipe *)d, "python", &options);
 }
 
 static const gchar *
 python_dd_format_persist_name(const LogPipe *s)
 {
   const PythonDestDriver *self = (const PythonDestDriver *)s;
-  static gchar persist_name[1024];
 
-  if (s->persist_name)
-    g_snprintf(persist_name, sizeof(persist_name), "python.%s", s->persist_name);
-  else
-    g_snprintf(persist_name, sizeof(persist_name), "python(%s)", self->class);
+  PythonPersistMembers options =
+  {
+    .generate_persist_name_method = self->py.generate_persist_name,
+    .options = self->options,
+    .class = self->class,
+    .id = self->super.super.super.id
+  };
 
-  return persist_name;
+  return python_format_persist_name(s, "python", &options);
 }
 
 static gboolean
@@ -325,6 +331,12 @@ _inject_worker_insert_result_consts(PythonDestDriver *self)
   _inject_worker_insert_result(self, MAX);
 };
 
+static PyObject *
+py_get_persist_name(PythonDestDriver *self)
+{
+  return _py_string_from_string(python_dd_format_persist_name(&self->super.super.super.super), -1);
+}
+
 static gboolean
 _py_init_bindings(PythonDestDriver *self)
 {
@@ -347,9 +359,10 @@ _py_init_bindings(PythonDestDriver *self)
 
   self->py.log_template_options = py_log_template_options_new(&self->template_options);
   PyObject_SetAttrString(self->py.class, "template_options", self->py.log_template_options);
+  Py_DECREF(self->py.log_template_options);
   self->py.seqnum = py_integer_pointer_new(&self->super.worker.instance.seq_num);
   PyObject_SetAttrString(self->py.class, "seqnum", self->py.seqnum);
-  Py_DECREF(self->py.log_template_options);
+  Py_DECREF(self->py.seqnum);
 
   self->py.instance = _py_invoke_function(self->py.class, NULL, self->class, self->super.super.super.id);
   if (!self->py.instance)
@@ -369,6 +382,7 @@ _py_init_bindings(PythonDestDriver *self)
   self->py.open = _py_get_attr_or_null(self->py.instance, "open");
   self->py.flush = _py_get_attr_or_null(self->py.instance, "flush");
   self->py.send = _py_get_attr_or_null(self->py.instance, "send");
+  self->py.generate_persist_name = _py_get_attr_or_null(self->py.instance, "generate_persist_name");
   if (!self->py.send)
     {
       msg_error("Error initializing Python destination, class does not have a send() method",
@@ -376,6 +390,10 @@ _py_init_bindings(PythonDestDriver *self)
                 evt_tag_str("class", self->class));
       return FALSE;
     }
+
+  PyObject *py_persist_name = py_get_persist_name(self);
+  PyObject_SetAttrString(self->py.class, "persist_name", py_persist_name);
+  Py_DECREF(py_persist_name);
 
   g_ptr_array_add(self->py._refs_to_clean, self->py.class);
   g_ptr_array_add(self->py._refs_to_clean, self->py.instance);
@@ -385,6 +403,7 @@ _py_init_bindings(PythonDestDriver *self)
   g_ptr_array_add(self->py._refs_to_clean, self->py.send);
   g_ptr_array_add(self->py._refs_to_clean, self->py.log_template_options);
   g_ptr_array_add(self->py._refs_to_clean, self->py.seqnum);
+  g_ptr_array_add(self->py._refs_to_clean, self->py.generate_persist_name);
 
   return TRUE;
 }

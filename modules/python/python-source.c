@@ -28,6 +28,9 @@
 #include "thread-utils.h"
 #include "str-utils.h"
 #include "string-list.h"
+#include "python-persist.h"
+
+#include <structmember.h>
 
 typedef struct _PythonSourceDriver PythonSourceDriver;
 
@@ -50,6 +53,7 @@ struct _PythonSourceDriver
     PyObject *request_exit_method;
     PyObject *suspend_method;
     PyObject *wakeup_method;
+    PyObject *generate_persist_name;
   } py;
 };
 
@@ -57,10 +61,12 @@ typedef struct _PyLogSource
 {
   PyObject_HEAD
   PythonSourceDriver *driver;
+  gchar *persist_name;
 } PyLogSource;
 
 static PyTypeObject py_log_source_type;
 
+static const gchar *python_source_format_persist_name(const LogPipe *s);
 
 void
 python_sd_set_class(LogDriver *s, gchar *filename)
@@ -92,14 +98,16 @@ static const gchar *
 python_sd_format_stats_instance(LogThreadedSourceDriver *s)
 {
   PythonSourceDriver *self = (PythonSourceDriver *) s;
-  static gchar persist_name[1024];
 
-  if (s->super.super.super.persist_name)
-    g_snprintf(persist_name, sizeof(persist_name), "python,%s", s->super.super.super.persist_name);
-  else
-    g_snprintf(persist_name, sizeof(persist_name), "python,%s", self->class);
+  PythonPersistMembers options =
+  {
+    .generate_persist_name_method = self->py.generate_persist_name,
+    .options = self->options,
+    .class = self->class,
+    .id = self->super.super.super.id
+  };
 
-  return persist_name;
+  return python_format_stats_instance((LogPipe *)s, "python", &options);
 }
 
 static void
@@ -166,12 +174,17 @@ _py_is_log_source(PyObject *obj)
 static void
 _py_free_bindings(PythonSourceDriver *self)
 {
+  PyLogSource *py_instance = (PyLogSource *) self->py.instance;
+  if (py_instance)
+    g_free(py_instance->persist_name);
+
   Py_CLEAR(self->py.class);
   Py_CLEAR(self->py.instance);
   Py_CLEAR(self->py.run_method);
   Py_CLEAR(self->py.request_exit_method);
   Py_CLEAR(self->py.suspend_method);
   Py_CLEAR(self->py.wakeup_method);
+  Py_CLEAR(self->py.generate_persist_name);
 }
 
 static gboolean
@@ -277,11 +290,30 @@ _py_lookup_suspend_and_wakeup_methods(PythonSourceDriver *self)
 }
 
 static gboolean
+_py_lookup_generate_persist_name_method(PythonSourceDriver *self)
+{
+  self->py.generate_persist_name = _py_get_attr_or_null(self->py.instance, "generate_persist_name");
+  return TRUE;
+}
+
+static gboolean
+_py_set_persist_name(PythonSourceDriver *self)
+{
+  const gchar *persist_name = python_source_format_persist_name(&self->super.super.super.super);
+  PyLogSource *py_instance = (PyLogSource *) self->py.instance;
+  py_instance->persist_name = g_strdup(persist_name);
+
+  return TRUE;
+}
+
+static gboolean
 _py_init_methods(PythonSourceDriver *self)
 {
   return _py_lookup_run_method(self)
          && _py_lookup_request_exit_method(self)
-         && _py_lookup_suspend_and_wakeup_methods(self);
+         && _py_lookup_suspend_and_wakeup_methods(self)
+         && _py_lookup_generate_persist_name_method(self)
+         && _py_set_persist_name(self);
 }
 
 static gboolean
@@ -493,6 +525,22 @@ python_sd_request_exit(LogThreadedSourceDriver *s)
   PyGILState_Release(gstate);
 }
 
+static const gchar *
+python_source_format_persist_name(const LogPipe *s)
+{
+  const PythonSourceDriver *self = (const PythonSourceDriver *)s;
+
+  PythonPersistMembers options =
+  {
+    .generate_persist_name_method = self->py.generate_persist_name,
+    .options = self->options,
+    .class = self->class,
+    .id = self->super.super.super.id
+  };
+
+  return python_format_persist_name(s, "python-source", &options);
+}
+
 static gboolean
 python_sd_init(LogPipe *s)
 {
@@ -565,6 +613,7 @@ python_sd_new(GlobalConfig *cfg)
   self->super.super.super.super.init = python_sd_init;
   self->super.super.super.super.deinit = python_sd_deinit;
   self->super.super.super.super.free_fn = python_sd_free;
+  self->super.super.super.super.generate_persist_name = python_source_format_persist_name;
 
   self->super.format_stats_instance = python_sd_format_stats_instance;
   self->super.worker_options.super.stats_level = STATS_LEVEL0;
@@ -583,6 +632,12 @@ static PyMethodDef py_log_source_methods[] =
   {NULL}
 };
 
+static PyMemberDef py_log_source_members[] =
+{
+  { "persist_name", T_STRING, offsetof(PyLogSource, persist_name), READONLY },
+  {NULL}
+};
+
 static PyTypeObject py_log_source_type =
 {
   PyVarObject_HEAD_INIT(&PyType_Type, 0)
@@ -593,6 +648,7 @@ static PyTypeObject py_log_source_type =
   .tp_doc = "The LogSource class is a base class for custom Python sources.",
   .tp_new = PyType_GenericNew,
   .tp_methods = py_log_source_methods,
+  .tp_members = py_log_source_members,
   0,
 };
 

@@ -11,6 +11,8 @@ set(PYTHON_SOURCES
     python-module.h
     python-config.h
     python-config.c
+    python-persist.h
+    python-persist.c
     python-helpers.h
     python-helpers.c
     python-main.h
