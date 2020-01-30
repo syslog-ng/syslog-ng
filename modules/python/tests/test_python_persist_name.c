@@ -83,8 +83,11 @@ void teardown(void)
   cfg_free(empty_cfg);
   main_loop_deinit(main_loop);
   app_shutdown();
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
   Py_DECREF(_python_main);
   Py_DECREF(_python_main_dict);
+  PyGILState_Release(gstate);
 }
 
 static void
@@ -186,10 +189,13 @@ Test(python_persist_name, test_python_exception_in_generate_persist_name)
   _load_code(python_persist_generator_code);
 
   LogPipe *p = (LogPipe *)python_sd_new(empty_cfg);
+  PyGILState_STATE gstate;
+  gstate = PyGILState_Ensure();
   PyObject *persist_generator_stats = PyObject_GetAttrString(_py_get_main_module(python_config_get(empty_cfg)),
                                                              "persist_generator_stats");
   PyObject *persist_generator_persist = PyObject_GetAttrString(_py_get_main_module(python_config_get(empty_cfg)),
                                         "persist_generator_persist");
+  PyGILState_Release(gstate);
 
   start_grabbing_messages();
 
