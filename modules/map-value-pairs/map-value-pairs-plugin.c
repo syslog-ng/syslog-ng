@@ -47,7 +47,7 @@ const ModuleInfo module_info =
   .canonical_name = "map-value-pairs",
   .version = SYSLOG_NG_VERSION,
   .description = "The map-names module provides the map-names() parser for syslog-ng.",
-  .core_revision = VERSION_CURRENT_VER_ONLY,
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = map_value_pairs_plugins,
   .plugins_len = G_N_ELEMENTS(map_value_pairs_plugins),
 };

@@ -425,6 +425,7 @@ cfg_set_version(GlobalConfig *self, gint version)
                   " to reflect log_iw_size() changes for tcp()/udp() window size changes",
                   cfg_format_config_version_tag(self));
     }
+
   return TRUE;
 }
 

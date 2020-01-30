@@ -383,7 +383,10 @@ log_template_compiler_process_token(LogTemplateCompiler *self, GError **error)
     {
       if (cfg_is_config_version_older(self->template->cfg, VERSION_VALUE_3_5))
         {
-          msg_warning("Template escaping changed in version " VERSION_3_5 ". Use '$$' to specify a literal dollar sign instead of '\\$' and remove the escaping of the backslash character when you upgrade your configuration",
+          msg_warning("Template escaping changed in version " VERSION_3_5 ". "
+                      "Use '$$' to specify a literal dollar sign instead of '\\$' and "
+                      "remove the escaping of the backslash character when you upgrade "
+                      "your configuration",
                       evt_tag_str("Template", self->template->template));
           self->cursor++;
         }

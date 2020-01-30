@@ -64,7 +64,7 @@ const ModuleInfo module_info =
   .canonical_name = "timestamp",
   .version = SYSLOG_NG_VERSION,
   .description = "The timestamp module provides support for manipulating timestamps in syslog-ng.",
-  .core_revision = VERSION_CURRENT_VER_ONLY,
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = timestamp_plugins,
   .plugins_len = G_N_ELEMENTS(timestamp_plugins),
 };
