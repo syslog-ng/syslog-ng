@@ -5,7 +5,6 @@ queries:
 
 extraction:
   cpp:
-    after_prepare:
-      - echo 'deb http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_18.10 ./' | tee  /etc/apt/sources.list.d/syslog-ng-obs.list
-      - apt-get update -qq
+    prepare:
+      packages: autoconf-archive
 
