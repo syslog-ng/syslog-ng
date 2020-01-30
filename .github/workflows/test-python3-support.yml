@@ -1,0 +1,135 @@
+name: test-python3-support
+
+on: [pull_request, push]
+
+jobs:
+  test-python3-support:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: prepare-environment
+        run: |
+          set -e
+          export PYTHONUSERBASE=$HOME/python_packages
+          export PKG_CONFIG_PATH=/usr/local/opt/openssl/lib/pkgconfig:$PKG_CONFIG_PATH
+          export PATH=/usr/local/opt/bison/bin:/usr/local/opt/libnet/bin:$PYTHONUSERBASE/bin:$PATH
+
+          wget -qO - http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_18.04/Release.key | sudo apt-key add -
+          echo 'deb http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_18.04 ./' | sudo tee /etc/apt/sources.list.d/syslog-ng-obs.list
+
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            autoconf-archive \
+            bison \
+            docbook-xsl \
+            flex \
+            gradle \
+            libcap-dev \
+            libcurl4-openssl-dev \
+            libdbd-sqlite3 \
+            libdbi0-dev \
+            libesmtp-dev \
+            libgeoip-dev \
+            libglib2.0-dev \
+            libhiredis-dev \
+            libivykis-dev \
+            librabbitmq-dev \
+            libmongoc-dev \
+            libnet1-dev \
+            libriemann-client-dev \
+            librdkafka-dev \
+            libwrap0-dev \
+            pkg-config \
+            sqlite3 \
+            xsltproc \
+            criterion-dev \
+            libmaxminddb-dev \
+            libxml2-utils \
+            doxygen \
+            libsnmp-dev \
+            python3-pip \
+            python3-setuptools
+
+          python3 -m pip install --user -r requirements.txt
+
+          javac -version
+
+      - name: autogen
+        run:
+          set -e
+          export PYTHONUSERBASE=$HOME/python_packages
+          export PKG_CONFIG_PATH=/usr/local/opt/openssl/lib/pkgconfig:$PKG_CONFIG_PATH
+          export PATH=/usr/local/opt/bison/bin:/usr/local/opt/libnet/bin:$PYTHONUSERBASE/bin:$PATH
+
+          ./autogen.sh
+
+      - name: configure
+        run: |
+          set -e
+          export PYTHONUSERBASE=$HOME/python_packages
+          export PKG_CONFIG_PATH=/usr/local/opt/openssl/lib/pkgconfig:$PKG_CONFIG_PATH
+          export PATH=/usr/local/opt/bison/bin:/usr/local/opt/libnet/bin:$PYTHONUSERBASE/bin:$PATH
+
+          ./configure \
+            --with-python=3 \
+            --with-ivykis=system \
+            --disable-sun-streams \
+            --disable-systemd \
+            --disable-pacct \
+            --disable-smtp \
+            --disable-geoip \
+            --enable-all-modules \
+            |& tee -i configure.log
+
+      - name: "artifact: configure.log"
+        uses: actions/upload-artifact@v1
+        if: failure()
+        with:
+          name: configure.log
+          path: configure.log
+
+      - name: build
+        run: |
+          set -e
+          export PYTHONUSERBASE=$HOME/python_packages
+          export PKG_CONFIG_PATH=/usr/local/opt/openssl/lib/pkgconfig:$PKG_CONFIG_PATH
+          export PATH=/usr/local/opt/bison/bin:/usr/local/opt/libnet/bin:$PYTHONUSERBASE/bin:$PATH
+
+          make --keep-going -j $(nproc) || \
+            { \
+              S=$?; \
+              make V=1 |& tee -i build.log; \
+              exit $S; \
+            }
+
+      - name: "artifact: build.log"
+        uses: actions/upload-artifact@v1
+        if: failure()
+        with:
+          name: build.log
+          path: build.log
+
+      - name: unit-test
+        run: |
+          set -e
+          export PYTHONUSERBASE=$HOME/python_packages
+          export PKG_CONFIG_PATH=/usr/local/opt/openssl/lib/pkgconfig:$PKG_CONFIG_PATH
+          export PATH=/usr/local/opt/bison/bin:/usr/local/opt/libnet/bin:$PYTHONUSERBASE/bin:$PATH
+
+          make --keep-going check -j $(nproc) || \
+            { \
+              S=$?; \
+              echo "Output of first test invocation:"; \
+              find . -name test-suite.log | xargs cat; \
+              make V=1 check; \
+              echo "Output of second test invocation:"; \
+              find . -name test-suite.log | xargs cat; \
+              exit $S; \
+            }
+
+      - name: "artifact: test-suite.log"
+        uses: actions/upload-artifact@v1
+        if: failure()
+        with:
+          name: test-suite.log
+          path: test-suite.log
