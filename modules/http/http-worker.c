@@ -594,6 +594,9 @@ _flush(LogThreadedDestWorker *s, LogThreadedFlushMode mode)
 
   _finish_request_body(self);
 
+  if (list_is_empty(self->request_headers))
+    _format_request_headers(self, NULL);
+
   target = http_load_balancer_choose_target(owner->load_balancer, &self->lbc);
 
   while (--retry_attempts >= 0)
@@ -648,10 +651,6 @@ _insert_batched(LogThreadedDestWorker *s, LogMessage *msg)
   HTTPDestinationWorker *self = (HTTPDestinationWorker *) s;
 
   _add_message_to_batch(self, msg);
-
-  if (list_is_empty(self->request_headers))
-    _format_request_headers(self, NULL);
-
 
   if (_should_initiate_flush(self))
     {
