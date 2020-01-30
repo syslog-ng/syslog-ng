@@ -290,7 +290,9 @@ Test(python_persist_name, test_python_source_readonly)
   stop_grabbing_messages();
   display_grabbed_messages();
 
-  assert_grabbed_log_contains("TypeError: readonly attribute");
+  // Python2: TypeError: readonly attribute
+  // Python3: AttributeError: readonly attribute
+  assert_grabbed_log_contains("readonly attribute");
 
   main_loop_sync_worker_startup_and_teardown();
   log_pipe_deinit((LogPipe *)d);
@@ -321,7 +323,9 @@ Test(python_persist_name, test_python_fetcher_readonly)
   stop_grabbing_messages();
   display_grabbed_messages();
 
-  assert_grabbed_log_contains("TypeError: readonly attribute");
+  // Python2: TypeError: readonly attribute
+  // Python3: AttributeError: readonly attribute
+  assert_grabbed_log_contains("readonly attribute");
 
   main_loop_sync_worker_startup_and_teardown();
   log_pipe_deinit((LogPipe *)d);
