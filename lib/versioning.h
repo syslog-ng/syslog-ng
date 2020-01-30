@@ -121,6 +121,9 @@
 #define VERSION_3_24 "syslog-ng 3.24"
 #define VERSION_3_25 "syslog-ng 3.25"
 
+/* VERSION_VALUE_* references versions as integers to be compared against stuff like cfg->user_version */
+/* VERSION_STR_* references versions as strings to be shown to the user */
+
 #define VERSION_VALUE_3_0  0x0300
 #define VERSION_VALUE_3_1  0x0301
 #define VERSION_VALUE_3_2  0x0302
@@ -148,11 +151,10 @@
 #define VERSION_VALUE_3_24 0x0318
 #define VERSION_VALUE_3_25 0x0319
 
-
 /* config version code, in the same format as GlobalConfig->version */
-#define VERSION_VALUE   0x0319
-#define VERSION_CURRENT VERSION_3_25
-#define VERSION_CURRENT_VER_ONLY "3.25"
+#define VERSION_VALUE_CURRENT   0x0319
+#define VERSION_STR_CURRENT     "3.25"
+#define VERSION_PRODUCT_CURRENT VERSION_3_25
 
 #define version_convert_from_user(v)  (v)
 
