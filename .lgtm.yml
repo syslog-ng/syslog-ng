@@ -6,5 +6,11 @@ queries:
 extraction:
   cpp:
     prepare:
-      packages: autoconf-archive
+      packages:
+        - autoconf-archive
+    configure:
+      command:
+        - ./autogen.sh
+        - ./configure --disable-java
+
 
