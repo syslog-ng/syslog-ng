@@ -4,34 +4,22 @@ module_switch(ENABLE_MONGODB "Enable mongodb destination driver" libmongoc-1.0_F
 
 if (libmongoc-1.0_FOUND)
 
-  set(AFMONGODB_HEADERS
-    "afmongodb.h"
-    "afmongodb-parser.h"
-    "afmongodb-private.h"
-    "${CMAKE_CURRENT_BINARY_DIR}/afmongodb-grammar.h"
-  )
-
   set(AFMONGODB_SOURCES
+    "afmongodb.h"
     "afmongodb.c"
+    "afmongodb-parser.h"
     "afmongodb-parser.c"
-    "${CMAKE_CURRENT_BINARY_DIR}/afmongodb-grammar.c"
+    "afmongodb-private.h"
   )
 
-set(AFMONGODB_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+  add_module(
+    TARGET afmongodb
+    GRAMMAR afmongodb-grammar
+    INCLUDES ${MONGOC_INCLUDE_DIRS}
+    DEPENDS ${MONGOC_LIBRARY}
+    SOURCES ${AFMONGODB_SOURCES}
+  )
 
-generate_y_from_ym(modules/afmongodb/afmongodb-grammar)
-bison_target(AFMongoDBGrammar
-  ${CMAKE_CURRENT_BINARY_DIR}/afmongodb-grammar.y
-  ${CMAKE_CURRENT_BINARY_DIR}/afmongodb-grammar.c
-  COMPILE_FLAGS ${BISON_FLAGS})
-
-add_library(afmongodb SHARED ${AFMONGODB_SOURCES})
-include_directories (${MONGOC_INCLUDE_DIRS})
-target_include_directories (afmongodb PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(afmongodb PRIVATE syslog-ng ${MONGOC_LIBRARY})
-
-install(TARGETS afmongodb LIBRARY DESTINATION lib/syslog-ng/ COMPONENT afmongodb)
-
-add_test_subdirectory(tests)
+  add_test_subdirectory(tests)
 
 endif()
