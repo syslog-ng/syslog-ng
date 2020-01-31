@@ -7,8 +7,14 @@ extraction:
   cpp:
     prepare:
       packages:
+        - autoconf
         - autoconf-archive
+        - automake
+        - libtool
+        - make
+        - openjdk-8-jdk-headless
+    after_prepare:
+      - export PATH=/usr/lib/jvm/java-8-openjdk-amd64/bin/:$PATH
+      - export LD_LIBRARY_PATH=/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server
+      - export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
 
-  java:
-    index:
-      java_version: "8"
