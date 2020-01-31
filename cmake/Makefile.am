@@ -1,4 +1,5 @@
 EXTRA_DIST +=	\
+	cmake/add_module.cmake \
 	cmake/add_tests.cmake	\
 	cmake/external_or_find_package.cmake	\
 	cmake/Modules/CheckCreds.cmake	\

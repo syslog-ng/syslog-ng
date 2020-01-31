@@ -23,6 +23,7 @@ set(BISON_FLAGS "-Wno-other -Werror=conflicts-sr -Werror=conflicts-rr")
 include(CheckIncludeFiles)
 include(ExternalProject)
 include(external_or_find_package)
+include(add_module)
 include(add_tests)
 include(module_switch)
 
