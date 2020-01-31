@@ -7,14 +7,44 @@ extraction:
   cpp:
     prepare:
       packages:
-        - autoconf
         - autoconf-archive
-        - automake
-        - libtool
-        - make
+        - bison
+        - docbook-xsl
+        - flex
+        - gradle
+        - libcap-dev
+        - libcurl4-openssl-dev
+        - libdbd-sqlite3
+        - libdbi0-dev
+        - libesmtp-dev
+        - libgeoip-dev
+        - libglib2.0-dev
+        - libhiredis-dev
+        - libivykis-dev
+        - librabbitmq-dev
+        - libmongoc-dev
+        - libjson-c-dev
+        - python-dev
+        - python-pip
+        - python-setuptools
+        - libnet1-dev
+        - libriemann-client-dev
+        - librdkafka-dev
+        - libwrap0-dev
+        - pkg-config
+        - sqlite3
+        - xsltproc
+        - libmaxminddb-dev
+        - libxml2-utils
+        - doxygen
+        - libsnmp-dev
         - openjdk-8-jdk-headless
+        - gradle
     after_prepare:
       - export PATH=/usr/lib/jvm/java-8-openjdk-amd64/bin/:$PATH
       - export LD_LIBRARY_PATH=/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server
       - export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
-
+    configure:
+      command:
+        - ./autogen.sh
+        - ./configure
