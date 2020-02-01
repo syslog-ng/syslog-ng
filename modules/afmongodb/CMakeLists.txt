@@ -1,3 +1,7 @@
+if (ENABLE_MONGODB STREQUAL DISABLE)
+  return()
+endif()
+
 find_package(libmongoc-1.0)
 
 module_switch(ENABLE_MONGODB "Enable mongodb destination driver" libmongoc-1.0_FOUND)
