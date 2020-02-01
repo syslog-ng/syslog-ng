@@ -5,38 +5,6 @@ queries:
 
 extraction:
   cpp:
-    prepare:
-      packages:
-        - bison
-        - cmake
-        - docbook-xsl
-        - doxygen
-        - flex
-        - libcap-dev
-        - libcurl4-openssl-dev
-        - libdbd-sqlite3
-        - libdbi0-dev
-        - libesmtp-dev
-        - libgeoip-dev
-        - libglib2.0-dev
-        - libhiredis-dev
-        - libivykis-dev
-        - libjson-c-dev
-        - libmaxminddb-dev
-        - libnet1-dev
-        - librabbitmq-dev
-        - librdkafka-dev
-        - libriemann-client-dev
-        - libsnmp-dev
-        - libwrap0-dev
-        - libxml2-utils
-        - make
-        - python-dev
-        - python-pip
-        - python-setuptools
-        - pkg-config
-        - sqlite3
-        - xsltproc
     configure:
       command:
         - mkdir build
