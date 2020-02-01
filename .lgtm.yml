@@ -2,3 +2,15 @@
 # custom query to check for that
 queries:
   - exclude: cpp/potentially-dangerous-function
+
+extraction:
+  cpp:
+    configure:
+      command:
+        - mkdir build
+        - cd build
+        - cmake ../ -DIVYKIS_SOURCE=system -DJSONC_SOURCE=system -DSYSLOG_NG_ENABLE_DEBUG=ON -DENABLE_JAVA=OFF
+    index:
+      build_command:
+        - cd build
+        - make
