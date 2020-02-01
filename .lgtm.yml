@@ -7,11 +7,11 @@ extraction:
   cpp:
     prepare:
       packages:
-        - autoconf-archive
         - bison
+        - cmake
         - docbook-xsl
+        - doxygen
         - flex
-        - gradle
         - libcap-dev
         - libcurl4-openssl-dev
         - libdbd-sqlite3
@@ -21,30 +21,21 @@ extraction:
         - libglib2.0-dev
         - libhiredis-dev
         - libivykis-dev
-        - librabbitmq-dev
-        - libmongoc-dev
         - libjson-c-dev
+        - libmaxminddb-dev
+        - libnet1-dev
+        - librabbitmq-dev
+        - librdkafka-dev
+        - libriemann-client-dev
+        - libsnmp-dev
+        - libwrap0-dev
+        - libxml2-utils
         - python-dev
         - python-pip
         - python-setuptools
-        - libnet1-dev
-        - libriemann-client-dev
-        - librdkafka-dev
-        - libwrap0-dev
         - pkg-config
         - sqlite3
         - xsltproc
-        - libmaxminddb-dev
-        - libxml2-utils
-        - doxygen
-        - libsnmp-dev
-        - openjdk-8-jdk-headless
-        - gradle
-    after_prepare:
-      - export PATH=/usr/lib/jvm/java-8-openjdk-amd64/bin/:$PATH
-      - export LD_LIBRARY_PATH=/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server
-      - export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
     configure:
       command:
-        - ./autogen.sh
-        - ./configure
+        - cmake . -Bbuild -DIVYKIS_SOURCE=system -DJSONC_SOURCE=system -DSYSLOG_NG_ENABLE_DEBUG=ON -DENABLE_JAVA=OFF -DENABLE_MONGODB=OFF
