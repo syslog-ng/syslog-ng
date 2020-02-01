@@ -30,6 +30,7 @@ extraction:
         - libsnmp-dev
         - libwrap0-dev
         - libxml2-utils
+        - make
         - python-dev
         - python-pip
         - python-setuptools
@@ -38,4 +39,10 @@ extraction:
         - xsltproc
     configure:
       command:
-        - cmake . -Bbuild -DIVYKIS_SOURCE=system -DJSONC_SOURCE=system -DSYSLOG_NG_ENABLE_DEBUG=ON -DENABLE_JAVA=OFF -DENABLE_MONGODB=OFF
+        - mkdir build
+        - cd build
+        - cmake ../ -DIVYKIS_SOURCE=system -DJSONC_SOURCE=system -DSYSLOG_NG_ENABLE_DEBUG=ON -DENABLE_JAVA=OFF -DENABLE_MONGODB=DISABLE
+    index:
+      build_command:
+        - cd build
+        - make
