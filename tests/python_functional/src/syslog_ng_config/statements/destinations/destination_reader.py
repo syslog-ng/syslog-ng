@@ -23,6 +23,7 @@
 import logging
 
 from src.message_reader.message_reader import MessageReader
+from src.message_reader.message_reader import READ_ALL_MESSAGES
 from src.message_reader.single_line_parser import SingleLineParser
 
 logger = logging.getLogger(__name__)
@@ -45,3 +46,6 @@ class DestinationReader(object):
         read_description = "Content has been read from\nresource: {}\ncontent: {}\n".format(path, messages)
         logger.info(read_description)
         return messages
+
+    def read_all_logs(self, path):
+        return self.read_logs(path, READ_ALL_MESSAGES)
