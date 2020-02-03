@@ -2,3 +2,14 @@
 # custom query to check for that
 queries:
   - exclude: cpp/potentially-dangerous-function
+
+extraction:
+  cpp:
+    prepare:
+      packages:
+        - autoconf-archive
+        - openjdk-8-jdk-headless
+    after_prepare:
+      - export PATH=/usr/lib/jvm/java-8-openjdk-amd64/bin/:$PATH
+      - export LD_LIBRARY_PATH=/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server:$LD_LIBRARY_PATH
+      - export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
