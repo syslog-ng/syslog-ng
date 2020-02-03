@@ -135,10 +135,16 @@ void persist_tool_free(PersistTool *self)
   g_free(self);
 }
 
+gchar *persist_state_dir;
+gchar *persist_state_name;
+gboolean force_generate;
+gchar *generate_output_dir;
+
 static GOptionEntry dump_options[] =
 {
   { NULL, 0, 0, G_OPTION_ARG_NONE, NULL, NULL }
 };
+
 
 static GOptionEntry add_options[] =
 {
