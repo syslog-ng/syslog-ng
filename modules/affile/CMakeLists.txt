@@ -1,4 +1,4 @@
-set(AFFILE_HEADERS
+set(AFFILE_SOURCES
     "affile-dest.h"
     "affile-dest-internal-queue-filter.h"
     "affile-parser.h"
@@ -19,10 +19,6 @@ set(AFFILE_HEADERS
     "wildcard-source.h"
     "wildcard-file-reader.h"
     "file-list.h"
-    "${CMAKE_CURRENT_BINARY_DIR}/affile-grammar.h"
-)
-
-set(AFFILE_SOURCES
     "affile-dest.c"
     "affile-parser.c"
     "affile-plugin.c"
@@ -44,35 +40,19 @@ set(AFFILE_SOURCES
     "wildcard-source.c"
     "wildcard-file-reader.c"
     "file-list.c"
-    "${CMAKE_CURRENT_BINARY_DIR}/affile-grammar.c"
 )
 
 if(SYSLOG_NG_HAVE_INOTIFY)
-    list(APPEND AFFILE_HEADERS
+  list(APPEND AFFILE_SOURCES
         "directory-monitor-inotify.h"
-    )
-
-    list(APPEND AFFILE_SOURCES
         "directory-monitor-inotify.c"
     )
 endif()
 
-generate_y_from_ym(modules/affile/affile-grammar)
-
-bison_target(AffileGrammar
-    ${CMAKE_CURRENT_BINARY_DIR}/affile-grammar.y
-    ${CMAKE_CURRENT_BINARY_DIR}/affile-grammar.c
-    COMPILE_FLAGS ${BISON_FLAGS})
-
-add_library(affile SHARED ${AFFILE_SOURCES})
-target_include_directories(affile
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-  PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+add_module(
+  TARGET affile
+  GRAMMAR affile-grammar
+  SOURCES ${AFFILE_SOURCES}
 )
-target_link_libraries(affile PRIVATE syslog-ng)
-
-install(TARGETS affile
-    LIBRARY DESTINATION lib/syslog-ng/
-    COMPONENT affile)
 
 add_test_subdirectory(tests)
