@@ -3,7 +3,8 @@ nose                    [centos, fedora, debian, ubuntu]
 ply                     [centos, fedora, debian, ubuntu]
 
 # pip packages for kira tests
-hy			[devshell, ubuntu-xenial]
+# 0.17: Last version that suppports python2
+hy==0.17                [devshell, ubuntu-xenial]
 
 # pip packages for python functional tests
 pathlib2                [centos, fedora, debian, ubuntu]
