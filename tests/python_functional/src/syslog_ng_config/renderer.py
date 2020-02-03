@@ -71,6 +71,9 @@ class ConfigRenderer(object):
                 self.__syslog_ng_config_content += "        {}(\n".format(option_name)
                 self.__render_driver_options(option_value)
                 self.__syslog_ng_config_content += "        )\n"
+            elif (isinstance(option_value, tuple) or isinstance(option_value, list)):
+                for element in option_value:
+                    self.__syslog_ng_config_content += "        {}({})\n".format(option_name, element)
             else:
                 self.__syslog_ng_config_content += "        {}({})\n".format(option_name, option_value)
 
