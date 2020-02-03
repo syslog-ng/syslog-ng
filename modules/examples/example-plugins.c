@@ -33,6 +33,8 @@ extern CfgParser threaded_random_generator_parser;
 
 extern CfgParser threaded_diskq_source_parser;
 
+extern CfgParser http_test_slots_parser;
+
 static Plugin example_plugins[] =
 {
   {
@@ -52,6 +54,11 @@ static Plugin example_plugins[] =
     .name = "example_diskq_source",
     .parser = &threaded_diskq_source_parser,
   },
+  {
+    .type = LL_CONTEXT_INNER_DEST,
+    .name = "http_test_slots",
+    .parser = &http_test_slots_parser
+  }
 };
 
 gboolean
