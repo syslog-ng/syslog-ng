@@ -158,6 +158,8 @@ g_sockaddr_inet6_set_address(GSockAddr *s, struct in6_addr *addr)
 }
 #endif
 
+GSockAddr *g_sockaddr_inet_or_inet6_new(const gchar *name, guint16 port);
+
 GSockAddr *g_sockaddr_unix_new(const gchar *name);
 GSockAddr *g_sockaddr_unix_new2(struct sockaddr_un *s_un, int sunlen);
 

@@ -23,6 +23,7 @@
 
 #include "libtest/cr_template.h"
 #include "libtest/grab-logging.h"
+#include "libtest/testutils.h"
 #include <criterion/criterion.h>
 
 #include "apphook.h"
@@ -68,6 +69,42 @@ free_log_message_array(GPtrArray *messages)
 {
   g_ptr_array_foreach(messages, _log_msg_free, NULL);
   g_ptr_array_free(messages, TRUE);
+}
+
+const gchar *
+resolve_sockaddr_to_hostname(gsize *result_len, GSockAddr *saddr, const HostResolveOptions *host_resolve_options)
+{
+  static const gchar *test_hostname = "resolved-TEST-host";
+  static const gchar *test_hostname_normalized = "resolved-test-host";
+  static const gchar *test_hostname_fqdn = "resolved-TEST-host.syslog.ng";
+  static const gchar *test_hostname_fqdn_normalized = "resolved-test-host.syslog.ng";
+  static const gchar *test_ip = "123.123.123.123";
+
+  const gchar *hostname;
+  if (host_resolve_options->use_dns)
+    {
+      if (host_resolve_options->use_fqdn)
+        {
+          if (host_resolve_options->normalize_hostnames)
+            hostname = test_hostname_fqdn_normalized;
+          else
+            hostname = test_hostname_fqdn;
+        }
+      else
+        {
+          if (host_resolve_options->normalize_hostnames)
+            hostname = test_hostname_normalized;
+          else
+            hostname = test_hostname;
+        }
+    }
+  else
+    {
+      hostname = test_ip;
+    }
+
+  *result_len = strlen(hostname);
+  return hostname;
 }
 
 void
@@ -135,6 +172,25 @@ Test(basicfuncs, test_cond_funcs)
 Test(basicfuncs, test_str_funcs)
 {
   assert_template_format("$(ipv4-to-int $SOURCEIP)", "168496141");
+
+  assert_template_format("$(dns-resolve-ip --use-dns=no --dns-cache=no 123.123.123.123)", "123.123.123.123");
+  assert_template_format("$(dns-resolve-ip --use-dns=yes --dns-cache=yes 123.123.123.123)", "resolved-TEST-host");
+  assert_template_format("$(dns-resolve-ip --use-dns=yes --dns-cache=yes "
+                         "--normalize-hostnames=yes 123.123.123.123)", "resolved-test-host");
+  assert_template_format("$(dns-resolve-ip --use-dns=yes --dns-cache=yes "
+                         "--use-fqdn=yes 123.123.123.123)", "resolved-TEST-host.syslog.ng");
+  assert_template_format("$(dns-resolve-ip --use-dns=yes --dns-cache=yes "
+                         "--use-fqdn=yes --normalize-hostnames=yes 123.123.123.123)", "resolved-test-host.syslog.ng");
+  assert_template_format("$(dns-resolve-ip \"123.123.123.123\")", "resolved-TEST-host");
+  assert_template_format("$(dns-resolve-ip '123.123.123.123')", "resolved-TEST-host");
+  assert_template_format("$(dns-resolve-ip !!!invalid-ip-address!!!)", "");
+#if SYSLOG_NG_ENABLE_IPV6
+  assert_template_format("$(dns-resolve-ip 1996::04:30)", "resolved-TEST-host");
+#endif
+  start_grabbing_messages();
+  assert_template_format("$(dns-resolve-ip --use-dns=no --dns-cache=yes 123.123.123.123)", "123.123.123.123");
+  assert_grabbed_messages_contain("WARNING: With use-dns(no), dns-cache() will be forced to 'no' too!", NULL);
+  stop_grabbing_messages();
 
   assert_template_format("$(length $HOST $PID)", "5 5");
   assert_template_format("$(length $HOST)", "5");
