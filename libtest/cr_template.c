@@ -34,10 +34,12 @@
 
 #include "msg_parse_lib.h"
 
+static MsgFormatOptions parse_options;
+
 void
 init_template_tests(void)
 {
-  init_and_load_syslogformat_module();
+  init_and_load_syslogformat_module(&parse_options);
 }
 
 void

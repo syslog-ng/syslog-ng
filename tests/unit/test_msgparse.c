@@ -49,6 +49,8 @@ struct sdata_pair
 struct sdata_pair ignore_sdata_pairs[] = { { NULL, NULL } };
 struct sdata_pair empty_sdata_pairs[] = { { NULL, NULL } };
 
+MsgFormatOptions parse_options;
+
 static unsigned long
 _absolute_value(signed long diff)
 {
@@ -130,7 +132,7 @@ setup(void)
   app_startup();
   setenv("TZ", "MET-1METDST", TRUE);
   tzset();
-  init_and_load_syslogformat_module();
+  init_and_load_syslogformat_module(&parse_options);
   /* Fri Feb  8 09:37:49 CET 2019 */
   fake_time(1549615069);
 }

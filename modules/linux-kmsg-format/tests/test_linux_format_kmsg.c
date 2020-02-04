@@ -31,6 +31,8 @@
 
 #include <criterion/criterion.h>
 
+MsgFormatOptions parse_options;
+
 static LogMessage *
 kmsg_parse_message(const gchar *raw_message_str)
 {

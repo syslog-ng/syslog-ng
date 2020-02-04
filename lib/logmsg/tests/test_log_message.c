@@ -32,6 +32,8 @@
 #include <stdlib.h>
 #include <glib/gprintf.h>
 
+MsgFormatOptions parse_options;
+
 typedef struct _LogMessageTestParams
 {
   LogMessage *message;
@@ -151,7 +153,7 @@ void
 setup(void)
 {
   app_startup();
-  init_and_load_syslogformat_module();
+  init_and_load_syslogformat_module(&parse_options);
 }
 
 void
