@@ -97,7 +97,7 @@ void setup(void)
 {
   app_startup();
 
-  init_and_load_syslogformat_module(&parse_options);
+  init_parse_options_and_load_syslogformat(&parse_options);
 
   _py_init_interpreter();
   _init_python_main();

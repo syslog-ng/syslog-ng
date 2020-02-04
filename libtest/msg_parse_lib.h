@@ -30,7 +30,7 @@
 #include "cfg.h"
 #include "logmsg/logmsg.h"
 
-void init_and_load_syslogformat_module(MsgFormatOptions *parse_options);
+void init_parse_options_and_load_syslogformat(MsgFormatOptions *parse_options);
 void deinit_syslogformat_module(void);
 
 void assert_log_messages_equal(LogMessage *log_message_a, LogMessage *log_message_b);

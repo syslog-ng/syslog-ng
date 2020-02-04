@@ -28,7 +28,7 @@
 #include <criterion/criterion.h>
 
 void
-init_and_load_syslogformat_module(MsgFormatOptions *parse_options)
+init_parse_options_and_load_syslogformat(MsgFormatOptions *parse_options)
 {
   configuration = cfg_new_snippet();
   cfg_load_module(configuration, "syslogformat");

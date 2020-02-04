@@ -132,7 +132,7 @@ setup(void)
   app_startup();
   setenv("TZ", "MET-1METDST", TRUE);
   tzset();
-  init_and_load_syslogformat_module(&parse_options);
+  init_parse_options_and_load_syslogformat(&parse_options);
   /* Fri Feb  8 09:37:49 CET 2019 */
   fake_time(1549615069);
 }

@@ -39,7 +39,7 @@ static MsgFormatOptions parse_options;
 void
 init_template_tests(void)
 {
-  init_and_load_syslogformat_module(&parse_options);
+  init_parse_options_and_load_syslogformat(&parse_options);
 }
 
 void
