@@ -117,7 +117,7 @@ rewrite_expr
         {
             last_rewrite = log_rewrite_groupunset_new(configuration);
         } rewrite_groupset_opts ')' { $$ = last_rewrite; }
-        | KW_SET_LEVEL '(' rewrite_template_content ')' { $$ = log_rewrite_set_level_new($3, configuration);  }
+        | KW_SET_LEVEL '(' template_content ')' { $$ = log_rewrite_set_level_new($3, configuration);  }
         | LL_IDENTIFIER
           {
             Plugin *p;
