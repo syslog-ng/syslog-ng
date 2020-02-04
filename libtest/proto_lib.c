@@ -23,7 +23,7 @@
  */
 
 #include "proto_lib.h"
-#include "msg_parse_lib.h"
+#include "cfg.h"
 
 #include <string.h>
 #include <criterion/criterion.h>
@@ -164,7 +164,8 @@ assert_proto_server_fetch_ignored_eof(LogProtoServer *proto)
 void
 init_proto_tests(void)
 {
-  init_and_load_syslogformat_module();
+  configuration = cfg_new_snippet();
+  cfg_load_module(configuration, "syslogformat");
   log_proto_server_options_defaults(&proto_server_options);
 }
 
@@ -172,5 +173,7 @@ void
 deinit_proto_tests(void)
 {
   log_proto_server_options_destroy(&proto_server_options);
-  deinit_syslogformat_module();
+
+  if (configuration)
+    cfg_free(configuration);
 }
