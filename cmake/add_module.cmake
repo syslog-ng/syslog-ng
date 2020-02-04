@@ -28,14 +28,15 @@ function (add_module)
 
   cmake_parse_arguments(ADD_MODULE "" "TARGET" "GRAMMAR;SOURCES;DEPENDS;INCLUDES" ${ARGN})
 
-  generate_y_from_ym("modules/${ADD_MODULE_TARGET}/${ADD_MODULE_GRAMMAR}")
-  bison_target(${ADD_MODULE_TARGET}Grammar}
-    ${CMAKE_CURRENT_BINARY_DIR}/${ADD_MODULE_GRAMMAR}.y
-    ${CMAKE_CURRENT_BINARY_DIR}/${ADD_MODULE_GRAMMAR}.c
-    COMPILE_FLAGS ${BISON_FLAGS}
-    )
+  if (ADD_MODULE_GRAMMAR)
+    generate_y_from_ym("modules/${ADD_MODULE_TARGET}/${ADD_MODULE_GRAMMAR}")
+    bison_target(${ADD_MODULE_TARGET}Grammar}
+      ${CMAKE_CURRENT_BINARY_DIR}/${ADD_MODULE_GRAMMAR}.y
+      ${CMAKE_CURRENT_BINARY_DIR}/${ADD_MODULE_GRAMMAR}.c
+      COMPILE_FLAGS ${BISON_FLAGS}
+      )
+  endif()
 
-  include_directories(${ADD_MODULE_INCLUDES})
   add_library(${ADD_MODULE_TARGET} SHARED ${ADD_MODULE_SOURCES})
   target_include_directories(${ADD_MODULE_TARGET}
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
