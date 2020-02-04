@@ -154,7 +154,7 @@ http_option
     | KW_ACCEPT_REDIRECTS '(' yesno ')'       { http_dd_set_accept_redirects(last_driver, $3); }
     | KW_TIMEOUT '(' nonnegative_integer ')'  { http_dd_set_timeout(last_driver, $3); }
     | KW_BATCH_BYTES '(' nonnegative_integer ')' { http_dd_set_batch_bytes(last_driver, $3); }
-    | KW_WORKERS '(' nonnegative_integer ')'  { log_threaded_dest_driver_set_num_workers(last_driver, $3); }
+    | KW_WORKERS '(' positive_integer ')'  { log_threaded_dest_driver_set_num_workers(last_driver, $3); }
     | threaded_dest_driver_option
     | http_tls_option
     | KW_TLS '(' http_tls_options ')'
