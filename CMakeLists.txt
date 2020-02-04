@@ -331,8 +331,7 @@ endif()
 add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -j $$(nproc) --output-on-failure)
 
 set(IMPORTANT_WARNINGS
-  -Wshadow
-  -fcommon)
+  -Wshadow)
 
 set(ACCEPTABLE_WARNINGS
   -Wno-stack-protector
