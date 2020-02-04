@@ -10,7 +10,7 @@ rewriteinclude_HEADERS = 			\
 	lib/rewrite/rewrite-subst.h		\
 	lib/rewrite/rewrite-expr-parser.h	\
 	lib/rewrite/rewrite-groupset.h		\
-	lib/rewrite/rewrite-set-level.h
+	lib/rewrite/rewrite-set-severity.h
 
 
 rewrite_sources = 				\
@@ -22,7 +22,7 @@ rewrite_sources = 				\
 	lib/rewrite/rewrite-expr-parser.c	\
 	lib/rewrite/rewrite-expr-grammar.y	\
 	lib/rewrite/rewrite-groupset.c		\
-	lib/rewrite/rewrite-set-level.c
+	lib/rewrite/rewrite-set-severity.c
 
 BUILT_SOURCES += 				\
 	lib/rewrite/rewrite-expr-grammar.y	\

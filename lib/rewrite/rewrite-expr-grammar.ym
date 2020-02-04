@@ -36,7 +36,7 @@
 #include "rewrite/rewrite-unset.h"
 #include "rewrite/rewrite-subst.h"
 #include "rewrite/rewrite-groupset.h"
-#include "rewrite/rewrite-set-level.h"
+#include "rewrite/rewrite-set-severity.h"
 #include "filter/filter-expr.h"
 #include "filter/filter-expr-parser.h"
 #include "cfg-grammar.h"
@@ -66,7 +66,7 @@
 %token KW_UNSET
 %token KW_SUBST
 %token KW_VALUES
-%token KW_SET_LEVEL
+%token KW_SET_SEVERITY
 
 %%
 
@@ -117,7 +117,7 @@ rewrite_expr
         {
             last_rewrite = log_rewrite_groupunset_new(configuration);
         } rewrite_groupset_opts ')' { $$ = last_rewrite; }
-        | KW_SET_LEVEL '(' template_content ')' { $$ = log_rewrite_set_level_new($3, configuration);  }
+        | KW_SET_SEVERITY '(' template_content ')' { $$ = log_rewrite_set_severity_new($3, configuration);  }
         | LL_IDENTIFIER
           {
             Plugin *p;

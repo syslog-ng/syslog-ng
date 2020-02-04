@@ -22,11 +22,11 @@
  *
  */
 
-#ifndef REWRITE_SET_LEVEL_H_INCLUDED
-#define REWRITE_SET_LEVEL_H_INCLUDED
+#ifndef REWRITE_SET_SEVERITY_H_INCLUDED
+#define REWRITE_SET_SEVERITY_H_INCLUDED
 
 #include "rewrite-expr.h"
 
-LogRewrite *log_rewrite_set_level_new(LogTemplate *level, GlobalConfig *cfg);
+LogRewrite *log_rewrite_set_severity_new(LogTemplate *severity, GlobalConfig *cfg);
 
 #endif
