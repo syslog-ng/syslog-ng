@@ -38,38 +38,24 @@ set(AFSOCKET_SOURCES
     systemd-syslog-source.h
     systemd-syslog-source.c
     afsocket-systemd-override.h
-    ${CMAKE_CURRENT_BINARY_DIR}/afsocket-grammar.c
-    ${CMAKE_CURRENT_BINARY_DIR}/afsocket-grammar.h
 )
-
-generate_y_from_ym(modules/afsocket/afsocket-grammar)
-
-bison_target(AFSocketGrammar
-    ${CMAKE_CURRENT_BINARY_DIR}/afsocket-grammar.y
-    ${CMAKE_CURRENT_BINARY_DIR}/afsocket-grammar.c
-    COMPILE_FLAGS ${BISON_FLAGS})
 
 find_package(ZLIB REQUIRED)
 find_package(systemd)
 
-add_library(afsocket SHARED ${AFSOCKET_SOURCES})
-target_include_directories(afsocket
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-  PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+add_module(
+  TARGET afsocket
+  GRAMMAR afsocket-grammar
+  INCLUDES ${ZLIB_INCLUDE_DIRS}
+           ${WRAP_INCLUDE_DIRS}
+           ${Libsystemd_INCLUDE_DIRS}
+  DEPENDS ${WRAP_LIBRARIES}
+          ${ZLIB_LIBRARIES}
+          OpenSSL::SSL
+          OpenSSL::Crypto
+          libnet
+          ${Libsystemd_LIBRARIES}
+  SOURCES ${AFSOCKET_SOURCES}
 )
-target_link_libraries(afsocket PRIVATE
-	${WRAP_LIBRARIES}
-	${ZLIB_LIBRARIES}
-	OpenSSL::SSL
-	OpenSSL::Crypto
-	libnet
-	${Libsystemd_LIBRARIES}
-)
-target_link_libraries(afsocket PRIVATE syslog-ng)
-target_include_directories(afsocket PRIVATE SYSTEM ${ZLIB_INCLUDE_DIRS})
-target_include_directories(afsocket PRIVATE SYSTEM ${WRAP_INCLUDE_DIRS})
-target_include_directories(afsocket PRIVATE SYSTEM ${Libsystemd_INCLUDE_DIRS})
-
-install(TARGETS afsocket LIBRARY DESTINATION lib/syslog-ng/ COMPONENT afsocket)
 
 add_test_subdirectory(tests)
