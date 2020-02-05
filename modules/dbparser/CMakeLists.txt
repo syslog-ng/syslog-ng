@@ -64,27 +64,15 @@ set(DBPARSER_SOURCES
     dbparser-plugin.c
     groupingby.c
     groupingby.h
-    ${CMAKE_CURRENT_BINARY_DIR}/dbparser-grammar.c
-    ${CMAKE_CURRENT_BINARY_DIR}/dbparser-grammar.h
 )
 
-generate_y_from_ym(modules/dbparser/dbparser-grammar)
-
-bison_target(DBParserGrammar
-    ${CMAKE_CURRENT_BINARY_DIR}/dbparser-grammar.y
-    ${CMAKE_CURRENT_BINARY_DIR}/dbparser-grammar.c
-    COMPILE_FLAGS ${BISON_FLAGS})
-
-add_library(dbparser SHARED ${DBPARSER_SOURCES})
-target_link_libraries(dbparser PRIVATE patterndb)
-target_include_directories(dbparser
-	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-	PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+add_module(
+  TARGET dbparser
+  GRAMMAR dbparser-grammar
+  INCLUDES ${CMAKE_CURRENT_SOURCE_DIR} ${PATTERNDB_INCLUDE_DIR}
+  DEPENDS patterndb
+  SOURCES ${DBPARSER_SOURCES}
 )
-target_link_libraries(dbparser PRIVATE syslog-ng)
 
-install(TARGETS dbparser
-        LIBRARY DESTINATION lib/syslog-ng/
-        COMPONENT dbparser)
 add_subdirectory(pdbtool)
 add_test_subdirectory(tests)
