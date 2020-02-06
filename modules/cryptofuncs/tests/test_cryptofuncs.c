@@ -1,8 +1,7 @@
 /*
  * Copyright (c) 2012-2018 Balabit
  * Copyright (c) 2012-2015 Balázs Scheidler <balazs.scheidler@balabit.com>
- * Copyright (c) 2020 Erik-Oliver Blass  <erik-oliver.blass@bairbus.com>
- * Copyright (c) 2020 Stephan Marwedel <stephan.marwede@bairbus.com>
+ * Copyright (c) 2019-2020 Airbus Commercial Aircraft <secure-logging@airbus.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
