@@ -81,6 +81,8 @@ Test(set_severity, numeric)
 
 Test(set_severity, large_number)
 {
+  debug_flag = 1;
+
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   LogMessage *msg = log_msg_new_empty();
 
@@ -97,6 +99,8 @@ Test(set_severity, large_number)
 
 Test(set_severity, invalid)
 {
+  debug_flag = 1;
+
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   LogMessage *msg = log_msg_new_empty();
 

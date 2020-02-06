@@ -94,7 +94,7 @@ log_rewrite_set_severity_process(LogRewrite *s, LogMessage **pmsg, const LogPath
   const gint severity = _convert_severity(result);
   if (severity < 0)
     {
-      msg_warning("Warning: invalid severity to set", evt_tag_str("severity", result->str), log_pipe_location_tag(&s->super));
+      msg_debug("Warning: invalid severity to set", evt_tag_str("severity", result->str), log_pipe_location_tag(&s->super));
       goto error;
     }
 
