@@ -1,0 +1,116 @@
+<?xml version="1.0"?>
+<reference xmlns="http://docbook.org/ns/docbook" version="5.0">
+  <info>
+    <productname/>
+    <title>The slogverify utility manual page</title>
+  </info>
+  <refentry xml:id="slogverify.1">
+    <refmeta>
+      <refentrytitle>slogverify</refentrytitle>
+      <manvolnum>1</manvolnum>
+      <refmiscinfo class="version">3.22</refmiscinfo>
+      <refmiscinfo class="source"/>
+    </refmeta>
+    <refnamediv>
+      <refname>slogverify</refname>
+      <refpurpose>Verify cryptographically secured logs</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+      <cmdsynopsis>
+        <command>slogverify</command>
+        <arg>arguments</arg>
+      </cmdsynopsis>
+    </refsynopsisdiv>
+    <refsection version="5.0">
+      <title>Description</title>
+      <para>The <command>slogverify</command> utility is used to verify the integrity of cryptographically secured logs and to decrypt log entries from with a secure encrypted destination.</para>
+    </refsection>
+<!--
+To verify a log file, given initial key key0, and MAC file:
+slogverify <host key file> <input file> <input MAC file> <output file> [bufferSize]
+
+To iteratively verify a log file, given previous MAC file, previous key, and log archive:
+slogverify -i <PREVIOUS MAC file file> <PREVIOUS key file>  <input file> <CURRENT MAC file> <output file> [bufferSize]
+
+-->
+    <refsection>
+      <title>Options</title>
+      <variablelist>
+        <?dbfo term-width="1.25in"?>
+        <varlistentry>
+          <term>
+            <command>slogverify &lt;host key file&gt; &lt;input file&gt; &lt;input MAC file&gt; &lt;output file&gt; [bufferSize]
+</command>
+          </term>
+          <listitem>
+            <para>&lt;host key file&gt; The name of the file containing the initial host key (key0).</para>
+	    <para>&lt;input file&gt; The cryptographically secured log file.
+	    </para>
+	    <para>
+	      &lt;input MAC file&gt; The file containing the current message authenfication code (MAC) for the input file.
+	    </para>
+	    <para> &lt;output file&gt;
+	    The file receiving the plaintext log entries after successful verification and decryption.	    </para>
+	    <para>[bufferSize] Optional buffer size. The buffer size can be used for performance adjustments in case the
+	    log file to be verified is very large and cannot be processed at once. It is a positive number of log
+	    entries that can be held in memory during verification. The default is 1000.
+	    </para>
+         </listitem>
+        </varlistentry>
+	<varlistentry>
+	  <term>
+	    <command>-i &lt;previous MAC file file&gt; &lt;previous key file&gt;  &lt;input file&gt; &lt;current MAC file&gt; &lt;output file&gt; [bufferSize]
+	  </command>
+	  </term>
+	  <listitem>
+	    <para>&lt;previous MAC file file&gt; This is the file containing the MAC from the previous log file.
+	    </para>
+	    <para>&lt;previous key file&gt; This is the file containing the key from the previous log file. In theory, this can be host key key0, but using key key0 might generates warnings, as the gap between the first log entry ever (log entry 0) and the first log entry of the current log file might be large.
+	    </para>
+	    <para>
+	      &lt;input file&gt; This is the file containing the current log data.
+	    </para>
+	    <para>
+	      &lt;current MAC file&gt; This is the file containing the MAC of the current log input file.
+	    </para>
+	    <para>
+	      &lt;output file&gt; Decrypted log data will be written into this file.
+	    </para>
+	    <para> 
+	      [bufferSize] Optional buffer size. The buffer size can be used for performance adjustments in case the
+	    log file to be verified is very large and cannot be processed at once. It is a positive number of log
+	    entries that can be held in memory during verification. The default is 1000.
+	    </para>
+	  </listitem>
+	</varlistentry>
+       </variablelist>
+    </refsection>
+    <refsection>
+      <title>Files</title>
+      <para>
+        <filename>/usr/bin/slogverify</filename>
+      </para>
+      <para>
+        <filename>/etc/syslog-ng.conf</filename>
+      </para>
+    </refsection>
+    <refsection>
+      <title>See also</title>
+      <para>
+        <link linkend="syslog-ng.conf.5"><command>syslog-ng.conf</command>(5)</link>
+      </para>
+      <note version="5.0">
+        <para>For the detailed documentation of  see <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/index.html"><command>The  3.22 Administrator Guide</command></link></para>
+        <para>If you experience any problems or need help with syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://lists.balabit.hu/mailman/listinfo/syslog-ng"><command>syslog-ng mailing list</command></link>.</para>
+        <para>For news and notifications about of syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://syslog-ng.org/blogs/"><command>syslog-ng blogs</command></link>.</para>
+      </note>
+    </refsection>
+    <refsection version="5.0">
+      <title>Author</title>
+      <para>This manual page was written by the Airbus Secure Logging Team &lt;secure-logging@airbus.com&gt;.</para>
+    </refsection>
+    <refsection version="5.0">
+      <title>Copyright</title>
+    </refsection>
+  </refentry>
+</reference>
