@@ -235,12 +235,9 @@ _add_common_headers(HTTPDestinationWorker *self)
 }
 
 static void
-_format_request_headers(HTTPDestinationWorker *self, LogMessage *msg)
+_format_request_headers(HTTPDestinationWorker *self)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
-
-  if (msg)
-    _add_msg_specific_headers(self, msg);
 
   _add_common_headers(self);
 
@@ -605,9 +602,7 @@ _flush(LogThreadedDestWorker *s, LogThreadedFlushMode mode)
     return LTR_RETRY;
 
   _finish_request_body(self);
-
-  if (list_is_empty(self->request_headers))
-    _format_request_headers(self, NULL);
+  _format_request_headers(self);
 
   target = http_load_balancer_choose_target(owner->load_balancer, &self->lbc);
 
@@ -677,7 +672,7 @@ _insert_single(LogThreadedDestWorker *s, LogMessage *msg)
   HTTPDestinationWorker *self = (HTTPDestinationWorker *) s;
 
   _add_message_to_batch(self, msg);
-  _format_request_headers(self, msg);
+  _add_msg_specific_headers(self, msg);
 
   return log_threaded_dest_worker_flush(&self->super, LTF_FLUSH_NORMAL);
 }
