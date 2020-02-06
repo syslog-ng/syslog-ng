@@ -9,4 +9,5 @@ modules_cryptofuncs_tests_test_cryptofuncs_CFLAGS	=	\
 	$(TEST_CFLAGS)
 modules_cryptofuncs_tests_test_cryptofuncs_LDADD	=	\
 	$(TEST_LDADD)						\
-	-dlpreopen ${top_builddir}/modules/cryptofuncs/libcryptofuncs.la
+	-dlpreopen ${top_builddir}/modules/cryptofuncs/libcryptofuncs.la \
+	-dlpreopen ${top_builddir}/modules/syslogformat/libsyslogformat.la	
