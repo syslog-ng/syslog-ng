@@ -38,6 +38,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+MsgFormatOptions parse_options;
+
 void
 assert_new_log_message_attributes(LogMessage *log_message)
 {
@@ -69,7 +71,7 @@ void
 setup(void)
 {
   app_startup();
-  init_and_load_syslogformat_module();
+  init_parse_options_and_load_syslogformat(&parse_options);
 }
 
 void

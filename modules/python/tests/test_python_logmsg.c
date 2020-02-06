@@ -30,6 +30,8 @@
 static PyObject *_python_main;
 static PyObject *_python_main_dict;
 
+MsgFormatOptions parse_options;
+
 static void
 _py_init_interpreter(void)
 {
@@ -95,7 +97,7 @@ void setup(void)
 {
   app_startup();
 
-  init_and_load_syslogformat_module();
+  init_parse_options_and_load_syslogformat(&parse_options);
 
   _py_init_interpreter();
   _init_python_main();

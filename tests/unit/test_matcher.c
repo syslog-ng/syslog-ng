@@ -31,6 +31,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+MsgFormatOptions parse_options;
+
 static LogMessage *
 _create_log_message(const gchar *log)
 {
@@ -128,7 +130,7 @@ void
 setup(void)
 {
   app_startup();
-  init_and_load_syslogformat_module();
+  init_parse_options_and_load_syslogformat(&parse_options);
 }
 
 void
