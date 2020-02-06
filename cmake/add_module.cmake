@@ -42,10 +42,11 @@ function (add_module)
   endif()
 
   add_library(${ADD_MODULE_TARGET} SHARED ${ADD_MODULE_SOURCES})
+  target_include_directories(${ADD_MODULE_TARGET} SYSTEM PRIVATE ${ADD_MODULE_INCLUDES})
   target_include_directories(${ADD_MODULE_TARGET}
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
     PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
-    PRIVATE ${ADD_MODULE_INCLUDES})
+  )
   target_link_libraries(${ADD_MODULE_TARGET} PRIVATE ${ADD_MODULE_DEPENDS} syslog-ng)
   install(TARGETS ${ADD_MODULE_TARGET} LIBRARY DESTINATION lib/syslog-ng COMPONENT ${ADD_MODULE_TARGET})
 
