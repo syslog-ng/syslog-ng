@@ -74,7 +74,8 @@ modules/timestamp/rewrite-.*$
 modules/add-contextual-data/add-contextual-data-glob-selector\.[ch]$
 modules/add-contextual-data/tests/test_glob_selector\.c$
 modules/affile/tests/test_file_writer\.c$
-lib/slog\.[ch]$
+lib/slog\.h$
+lib/slog\.c$
 modules/cryptofuncs/slogkey/slogimport\.c$
 modules/cryptofuncs/slogkey/slogkey\.c$
 modules/cryptofuncs/slogkey/slogverify\.c$
