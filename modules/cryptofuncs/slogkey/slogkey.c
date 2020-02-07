@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Airbus Commercial Aircraft <secure-logging@airbus.com> 
+ * Copyright (c) 2019-2020 Airbus Commercial Aircraft <secure-logging@airbus.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,49 +37,58 @@
 
 #include "slog.h"
 
-int main(int argc, char **argv) {
-  if (argc<2) {
-    printf("SYNTAX\n======\n\nTo generate new master key:\n%s -m <master key filename>\n\nTo derive a host key:\n%s -d <master key filename> <host MAC address> <host serial number> <host key filename>\n\nTo show the counter value of a key:\n%s -s <key file name>\n\n",argv[0],argv[0],argv[0]);
-    return -1;
-  }
-  
+int main(int argc, char **argv)
+{
+  if (argc<2)
+    {
+      printf("SYNTAX\n======\n\nTo generate new master key:\n%s -m <master key filename>\n\nTo derive a host key:\n%s -d <master key filename> <host MAC address> <host serial number> <host key filename>\n\nTo show the counter value of a key:\n%s -s <key file name>\n\n",
+             argv[0], argv[0], argv[0]);
+      return -1;
+    }
+
   int ret = 0;
 
   // Initialize internal messaging
   msg_init(TRUE);
 
   argc--;
-  if (strcmp(argv[1],"-m")==0) {
-    guchar masterkey[KEY_LENGTH];
-    char* keyfile = argv[2];
-    
-    ret = generateMasterKey(masterkey);
-    if(!ret) {
-      msg_error("Unable to create master key");
-      return -1;
-    }
+  if (strcmp(argv[1], "-m")==0)
+    {
+      guchar masterkey[KEY_LENGTH];
+      char *keyfile = argv[2];
 
-    GError *error = NULL;
-    ret = writeKey(masterkey, 0, keyfile);
-    if(!ret) {
-      msg_error("Unable to write master key to file", evt_tag_str("file", keyfile));
-      return -1;
+      ret = generateMasterKey(masterkey);
+      if(!ret)
+        {
+          msg_error("Unable to create master key");
+          return -1;
+        }
+
+      GError *error = NULL;
+      ret = writeKey(masterkey, 0, keyfile);
+      if(!ret)
+        {
+          msg_error("Unable to write master key to file", evt_tag_str("file", keyfile));
+          return -1;
+        }
+      return ret;
     }
-    return ret;
-  } else if (strcmp(argv[1],"-s")==0) {
-    //Display key counter
-    char key[KEY_LENGTH];
-    char* keyfile = argv[2];
-    size_t counter;
-    ret = readKey(key, &counter, keyfile);
-    if(!ret) {
-      msg_error("Unable to read key file", evt_tag_str("file", keyfile));
-      return -1;
+  else if (strcmp(argv[1], "-s")==0)
+    {
+      //Display key counter
+      char key[KEY_LENGTH];
+      char *keyfile = argv[2];
+      size_t counter;
+      ret = readKey(key, &counter, keyfile);
+      if(!ret)
+        {
+          msg_error("Unable to read key file", evt_tag_str("file", keyfile));
+          return -1;
+        }
+      printf("This key's counter value is: %zu\n", counter);
     }
-    printf("This key's counter value is: %zu\n", counter);
-  }
-  else 
-    if (strcmp(argv[1],"-d")==0) {
+  else if (strcmp(argv[1], "-d")==0)
+    {
       // Arguments
       gchar *masterKeyFileName = argv[2];
       gchar *macAddr = argv[3];
@@ -91,27 +100,31 @@ int main(int argc, char **argv) {
       guint64 counter;
 
       GError *error = NULL;
-      ret = readKey(masterKey, &counter, masterKeyFileName); 
-      if (ret == 0) {
-	msg_error("Unable to read master key");
-	return -1;
-      }
+      ret = readKey(masterKey, &counter, masterKeyFileName);
+      if (ret == 0)
+        {
+          msg_error("Unable to read master key");
+          return -1;
+        }
 
       guchar hostKey[KEY_LENGTH];
 
       ret = deriveHostKey(masterKey, macAddr, serial, hostKey);
-      if(!ret) {
-	msg_error("Unable to derive a host key");
-	return -1;
-      }
+      if(!ret)
+        {
+          msg_error("Unable to derive a host key");
+          return -1;
+        }
 
       ret = writeKey(hostKey, 0, hostKeyFileName);
-      if(ret == 0) {
-	msg_error("Unable to write host key to file", evt_tag_str("file", hostKeyFileName));
-	return -1;
-      }
-    } 
-    else {
+      if(ret == 0)
+        {
+          msg_error("Unable to write host key to file", evt_tag_str("file", hostKeyFileName));
+          return -1;
+        }
+    }
+  else
+    {
       msg_error("Unknown option.");
       ret = -1;
     }

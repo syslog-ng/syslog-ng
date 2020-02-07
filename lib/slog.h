@@ -53,7 +53,7 @@ unsigned char GAMMA[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE-1) ] =  EPAD};
 
 
 /*
-  Dump contents of an array on STDOUT, byte by byte, converting to hex. 
+  Dump contents of an array on STDOUT, byte by byte, converting to hex.
 */
 void outputByteBuffer(unsigned char *buf, int length);
 
@@ -62,9 +62,9 @@ void evolveKey(unsigned char *key);
 
 /*
   AES256-GCM encryption
-  
-  Encrypts plaintext 
-  
+
+  Encrypts plaintext
+
   1. Parameter: pointer to plaintext (input)
   2. Parameter: length of plaintext (input)
   3. Parameter: pointer to key (input)
@@ -72,15 +72,15 @@ void evolveKey(unsigned char *key);
   5. Parameter: pointer to ciphertext (output)
   6. Parameter: pointer to tag (output)
 
-  Note: caller must take care of memory management.  
+  Note: caller must take care of memory management.
 
-  Return: 
+  Return:
   Length of ciphertext (>0)
   0 on error
-*/ 
+*/
 int sLogEncrypt(unsigned char *plaintext, int plaintext_len,
-		unsigned char *key, unsigned char *iv,
-		unsigned char *ciphertext, unsigned char *tag);
+                unsigned char *key, unsigned char *iv,
+                unsigned char *ciphertext, unsigned char *tag);
 
 /*
   Decrypt ciphertext and verify integrity
@@ -98,19 +98,20 @@ int sLogEncrypt(unsigned char *plaintext, int plaintext_len,
   -1 in case verification fails
   0 on error
 */
-int sLogDecrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *tag, unsigned char *key, unsigned char *iv,
-		unsigned char *plaintext);
+int sLogDecrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *tag, unsigned char *key,
+                unsigned char *iv,
+                unsigned char *plaintext);
 
 /*
   Compute AES256 CMAC of input
-  
+
   1. Parameter: Pointer to key (input)
-  2. Parameter: Pointer to input (input) 
+  2. Parameter: Pointer to input (input)
   3. Parameter: Input length (input)
   4. Parameter: Pointer to output (output)
   5. Parameter: Length of output (output)
 
-  Note: caller must take care of memory management.  
+  Note: caller must take care of memory management.
 
   If Parameter 5 == 0, there was an error.
 
@@ -128,7 +129,7 @@ guchar *convertToBin(char *input, guint64 *outLen);
   2. Parameter: Number of times current key should be evolved (input)
   3. Parameter: Pointer to current key (input)
 
-  Note: caller must take care of memory management.  
+  Note: caller must take care of memory management.
 
 */
 void deriveKey(unsigned char *dst, guint64 index, guint64 currentKey);
@@ -139,25 +140,26 @@ void deriveKey(unsigned char *dst, guint64 index, guint64 currentKey);
   This function creates a new encrypted log entry updates the corresponding MAC accordingly
 
   1. Parameter: Number of log entries (for enumerating the entries in the log file)
-  2. Parameter: The original log message 
+  2. Parameter: The original log message
   3. Parameter: The current encryption key
   4. Parameter: The current MAC
   5. Parameter: The resulting encrypted log entry
   6. Parameter: The newly updated MAC
-  
+
 */
-void sLogEntry(guint64 numberOfLogEntries, GString *text, unsigned char *key, unsigned char *inputBigMac, GString *output, unsigned char *outputBigMac);
+void sLogEntry(guint64 numberOfLogEntries, GString *text, unsigned char *key, unsigned char *inputBigMac,
+               GString *output, unsigned char *outputBigMac);
 
 /*
   Generate a master key
 
-  This unique master key requires 32 bytes of storage. 
+  This unique master key requires 32 bytes of storage.
   The caller has to allocate this memory.
- 
-  Return: 
+
+  Return:
   1 on success
   0 on error
-*/ 
+*/
 int generateMasterKey(guchar *masterkey);
 
 /*
@@ -170,12 +172,12 @@ int generateMasterKey(guchar *masterkey);
   The specific unique host key k_0 is k_0 = H(master key|| MAC address || S/N)
   and requires 48 bytes of storage. Additional 8 bytes need to be allocated to store
   the serial number of the host key. The caller has to allocate this memory.
-  
-  Return: 
+
+  Return:
   1 on success
   0 on error
-*/ 
-int deriveHostKey(guchar *masterkey, gchar *macAddr, gchar* serial, guchar* hostkey);
+*/
+int deriveHostKey(guchar *masterkey, gchar *macAddr, gchar *serial, guchar *hostkey);
 
 
 int readBigMAC(gchar *filename, char *outputBuffer);
@@ -184,7 +186,7 @@ int writeBigMAC(gchar *filename, char *outputBuffer);
 /*
   Read key from file
 
-  Return: 
+  Return:
   1 on success
   0 on error
 */
@@ -192,7 +194,7 @@ int readKey(char *destKey, guint64 *destCounter, gchar *keypath);
 /*
   Write key to file
 
-  Return: 
+  Return:
   1 on success
   0 on error
 */
@@ -201,21 +203,28 @@ int writeKey(char *key, guint64 counter, gchar *keypath);
 /*
   Verify the integrity of an existing log file
 
-  Return: 
+  Return:
   1 on success
   0 on error
 */
 
-int fileVerify(unsigned char *key, char *inputFileName, char *outputFileName, unsigned char *bigMac, guint64 entriesInFile, int chunkLength);
+int fileVerify(unsigned char *key, char *inputFileName, char *outputFileName, unsigned char *bigMac,
+               guint64 entriesInFile, int chunkLength);
 
-int initVerify(guint64 entriesInFile, unsigned char *key, guint64 *nextLogEntry, guint64 *startingEntry, GString **input, struct hsearch_data *tab);
+int initVerify(guint64 entriesInFile, unsigned char *key, guint64 *nextLogEntry, guint64 *startingEntry,
+               GString **input, struct hsearch_data *tab);
 
-int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntry, unsigned char *key, unsigned char *keyZero, guint keyNumber, GString **output, guint64 *numberOfLogEntries, unsigned char *cmac_tag, struct hsearch_data *tab);
+int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntry, unsigned char *key,
+                  unsigned char *keyZero, guint keyNumber, GString **output, guint64 *numberOfLogEntries, unsigned char *cmac_tag,
+                  struct hsearch_data *tab);
 
-int finalizeVerify(guint64 startingEntry, guint64 entriesInFile, unsigned char *bigMac, unsigned char *cmac_tag, struct hsearch_data *tab);
+int finalizeVerify(guint64 startingEntry, guint64 entriesInFile, unsigned char *bigMac, unsigned char *cmac_tag,
+                   struct hsearch_data *tab);
 
-int iterativeFileVerify(unsigned char *previousMAC, unsigned char *previousKey, char *inputFileName, unsigned char *currentMAC, char *outputFileName, guint64 entriesInFile, int chunkLength, guint64 keyNumber);
+int iterativeFileVerify(unsigned char *previousMAC, unsigned char *previousKey, char *inputFileName,
+                        unsigned char *currentMAC, char *outputFileName, guint64 entriesInFile, int chunkLength, guint64 keyNumber);
 
 void deriveEncSubKey(unsigned char *mainKey, unsigned char *encKey);
 void deriveMACSubKey(unsigned char *mainKey, unsigned char *MACKey);
-void PRF(unsigned char *key, unsigned char *originalInput, guint64 inputLength, unsigned char *output, guint64 outputLength);
+void PRF(unsigned char *key, unsigned char *originalInput, guint64 inputLength, unsigned char *output,
+         guint64 outputLength);

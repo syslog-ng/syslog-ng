@@ -45,13 +45,16 @@
   1. Parameter: error variable (input)
   2. Parameter: main error string to output (input)
 */
-void cond_msg_error(GError *myError, char *errorMsg) {
+void cond_msg_error(GError *myError, char *errorMsg)
+{
 
-    if (myError==NULL) {
-        msg_error(errorMsg);
+  if (myError==NULL)
+    {
+      msg_error(errorMsg);
     }
-    else {
-        msg_error(errorMsg, evt_tag_str("error", myError->message));
+  else
+    {
+      msg_error(errorMsg, evt_tag_str("error", myError->message));
     }
 
 }
@@ -66,18 +69,21 @@ void cond_msg_error(GError *myError, char *errorMsg) {
   Note: encKey and MACKey must have space to hold KEY_LENGTH many bytes.
 */
 
-void deriveSubKeys(unsigned char *mainKey, unsigned char *encKey, unsigned char*MACKey) {
-    deriveEncSubKey(mainKey, encKey);
-    deriveMACSubKey(mainKey, MACKey);
+void deriveSubKeys(unsigned char *mainKey, unsigned char *encKey, unsigned char *MACKey)
+{
+  deriveEncSubKey(mainKey, encKey);
+  deriveMACSubKey(mainKey, MACKey);
 }
 
 
-void deriveEncSubKey(unsigned char *mainKey, unsigned char *encKey) {
-    PRF(mainKey, KEYPATTERN, sizeof(KEYPATTERN), encKey, KEY_LENGTH);
+void deriveEncSubKey(unsigned char *mainKey, unsigned char *encKey)
+{
+  PRF(mainKey, KEYPATTERN, sizeof(KEYPATTERN), encKey, KEY_LENGTH);
 }
 
-void deriveMACSubKey(unsigned char *mainKey, unsigned char *MACKey) {
-    PRF(mainKey, MACPATTERN, sizeof(MACPATTERN), MACKey, KEY_LENGTH);
+void deriveMACSubKey(unsigned char *mainKey, unsigned char *MACKey)
+{
+  PRF(mainKey, MACPATTERN, sizeof(MACPATTERN), MACKey, KEY_LENGTH);
 }
 
 
@@ -103,74 +109,82 @@ int sLogEncrypt(unsigned char *plaintext, int plaintext_len,
                 unsigned char *key, unsigned char *iv,
                 unsigned char *ciphertext, unsigned char *tag)
 {
-    /*
-    This function is largely borrowed from:
+  /*
+  This function is largely borrowed from:
 
-    https://wiki.openssl.org/index.php/EVP_Authenticated_Encryption_and_Decryption#Authenticated_Encryption_using_GCM_mode
+  https://wiki.openssl.org/index.php/EVP_Authenticated_Encryption_and_Decryption#Authenticated_Encryption_using_GCM_mode
 
-    */
+  */
 
-    EVP_CIPHER_CTX *ctx;
+  EVP_CIPHER_CTX *ctx;
 
-    int len;
-    int ciphertext_len;
+  int len;
+  int ciphertext_len;
 
-    /* Create and initialise the context */
-    if(!(ctx = EVP_CIPHER_CTX_new())) {
-        msg_error("[SLOG] ERROR: Unable to initialize OpenSSL context");
-        return 0;
+  /* Create and initialise the context */
+  if(!(ctx = EVP_CIPHER_CTX_new()))
+    {
+      msg_error("[SLOG] ERROR: Unable to initialize OpenSSL context");
+      return 0;
     }
 
-    /* Initialise the encryption operation. */
-    if(1 != EVP_EncryptInit_ex(ctx, EVP_aes_256_gcm(), NULL, NULL, NULL)) {
-        msg_error("[SLOG] ERROR: Unable to initialize OpenSSL context");
-        return 0;
+  /* Initialise the encryption operation. */
+  if(1 != EVP_EncryptInit_ex(ctx, EVP_aes_256_gcm(), NULL, NULL, NULL))
+    {
+      msg_error("[SLOG] ERROR: Unable to initialize OpenSSL context");
+      return 0;
     }
 
-    if (IV_LENGTH!=12) {
-        /* Set IV length if default 12 bytes (96 bits) is not appropriate */
-        if(1 != EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, IV_LENGTH, NULL)) {
-            msg_error("[SLOG] ERROR: Unable to set IV length");
-            return 0;
+  if (IV_LENGTH!=12)
+    {
+      /* Set IV length if default 12 bytes (96 bits) is not appropriate */
+      if(1 != EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, IV_LENGTH, NULL))
+        {
+          msg_error("[SLOG] ERROR: Unable to set IV length");
+          return 0;
         }
     }
 
-    /* Initialise key and IV */
-    if(1 != EVP_EncryptInit_ex(ctx, NULL, NULL, key, iv)) {
-        msg_error("[SLOG] ERROR: Unable to initialize encryption key and IV");
-        return 0;
+  /* Initialise key and IV */
+  if(1 != EVP_EncryptInit_ex(ctx, NULL, NULL, key, iv))
+    {
+      msg_error("[SLOG] ERROR: Unable to initialize encryption key and IV");
+      return 0;
     }
 
-    /* Provide the message to be encrypted, and obtain the encrypted output.
-     * EVP_EncryptUpdate can be called multiple times if necessary
-     */
-    if(1 != EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintext_len)) {
-        msg_error("[SLOG] ERROR: Unable to encrypt data");
-        return 0;
+  /* Provide the message to be encrypted, and obtain the encrypted output.
+   * EVP_EncryptUpdate can be called multiple times if necessary
+   */
+  if(1 != EVP_EncryptUpdate(ctx, ciphertext, &len, plaintext, plaintext_len))
+    {
+      msg_error("[SLOG] ERROR: Unable to encrypt data");
+      return 0;
     }
 
-    ciphertext_len = len;
+  ciphertext_len = len;
 
-    /* Finalise the encryption. Normally ciphertext bytes may be written at
-     * this stage, but this does not occur in GCM mode
-     */
-    if(1 != EVP_EncryptFinal_ex(ctx, ciphertext + len, &len)) {
-        msg_error("[SLOG] ERROR: Unable to complete encryption of data");
-        return 0;
+  /* Finalise the encryption. Normally ciphertext bytes may be written at
+   * this stage, but this does not occur in GCM mode
+   */
+  if(1 != EVP_EncryptFinal_ex(ctx, ciphertext + len, &len))
+    {
+      msg_error("[SLOG] ERROR: Unable to complete encryption of data");
+      return 0;
     }
 
-    ciphertext_len += len;
+  ciphertext_len += len;
 
-    /* Get the tag */
-    if(1 != EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_GET_TAG, AES_BLOCKSIZE, tag)) {
-        msg_error("[SLOG] ERROR: Unable to acquire encryption tag");
-        return 0;
+  /* Get the tag */
+  if(1 != EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_GET_TAG, AES_BLOCKSIZE, tag))
+    {
+      msg_error("[SLOG] ERROR: Unable to acquire encryption tag");
+      return 0;
     }
 
-    /* Clean up */
-    EVP_CIPHER_CTX_free(ctx);
+  /* Clean up */
+  EVP_CIPHER_CTX_free(ctx);
 
-    return ciphertext_len;
+  return ciphertext_len;
 }
 
 /*
@@ -189,71 +203,81 @@ int sLogEncrypt(unsigned char *plaintext, int plaintext_len,
   -1 in case verification fails
   0 on error
 */
-int sLogDecrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *tag, unsigned char *key, unsigned char *iv,
+int sLogDecrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *tag, unsigned char *key,
+                unsigned char *iv,
                 unsigned char *plaintext)
 {
-    EVP_CIPHER_CTX *ctx;
-    int len;
-    int plaintext_len;
-    int ret;
+  EVP_CIPHER_CTX *ctx;
+  int len;
+  int plaintext_len;
+  int ret;
 
-    /* Create and initialise the context */
-    if(!(ctx = EVP_CIPHER_CTX_new())) {
-        msg_error("[SLOG] ERROR: Unable to initialize OpenSSL context");
-        return 0;
+  /* Create and initialise the context */
+  if(!(ctx = EVP_CIPHER_CTX_new()))
+    {
+      msg_error("[SLOG] ERROR: Unable to initialize OpenSSL context");
+      return 0;
     }
 
-    /* Initialise the decryption operation. */
-    if(!EVP_DecryptInit_ex(ctx, EVP_aes_256_gcm(), NULL, NULL, NULL)) {
-        msg_error("[SLOG] ERROR: Unable initiate decryption operation");
-        return 0;
+  /* Initialise the decryption operation. */
+  if(!EVP_DecryptInit_ex(ctx, EVP_aes_256_gcm(), NULL, NULL, NULL))
+    {
+      msg_error("[SLOG] ERROR: Unable initiate decryption operation");
+      return 0;
     }
 
-    if(IV_LENGTH!=12) {
-        /* Set IV length. Not necessary if this is 12 bytes (96 bits) */
-        if(!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, IV_LENGTH, NULL)) {
-            msg_error("[SLOG] ERROR: Unable set IV length");
-            return 0;
+  if(IV_LENGTH!=12)
+    {
+      /* Set IV length. Not necessary if this is 12 bytes (96 bits) */
+      if(!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, IV_LENGTH, NULL))
+        {
+          msg_error("[SLOG] ERROR: Unable set IV length");
+          return 0;
         }
     }
 
-    /* Initialise key and IV */
-    if(!EVP_DecryptInit_ex(ctx, NULL, NULL, key, iv)) {
-        msg_error("[SLOG] ERROR: Unable to initialize key and IV");
-        return 0;
+  /* Initialise key and IV */
+  if(!EVP_DecryptInit_ex(ctx, NULL, NULL, key, iv))
+    {
+      msg_error("[SLOG] ERROR: Unable to initialize key and IV");
+      return 0;
     }
 
-    /* Provide the message to be decrypted, and obtain the plaintext output.
-     * EVP_DecryptUpdate can be called multiple times if necessary
-     */
-    if(!EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len)) {
-        msg_error("Unable to decrypt");
-        return 0;
+  /* Provide the message to be decrypted, and obtain the plaintext output.
+   * EVP_DecryptUpdate can be called multiple times if necessary
+   */
+  if(!EVP_DecryptUpdate(ctx, plaintext, &len, ciphertext, ciphertext_len))
+    {
+      msg_error("Unable to decrypt");
+      return 0;
     }
 
-    plaintext_len = len;
+  plaintext_len = len;
 
-    /* Set expected tag value. Works in OpenSSL 1.0.1d and later */
-    if(!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_TAG, AES_BLOCKSIZE, tag)) {
-        msg_error("[SLOG] ERROR: Unable set tag value");
-        return 0;
+  /* Set expected tag value. Works in OpenSSL 1.0.1d and later */
+  if(!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_TAG, AES_BLOCKSIZE, tag))
+    {
+      msg_error("[SLOG] ERROR: Unable set tag value");
+      return 0;
     }
 
-    /* Finalise the decryption. A positive return value indicates success,
-     * anything else is a failure - the plaintext is not trustworthy.
-     */
-    ret = EVP_DecryptFinal_ex(ctx, plaintext + len, &len);
+  /* Finalise the decryption. A positive return value indicates success,
+   * anything else is a failure - the plaintext is not trustworthy.
+   */
+  ret = EVP_DecryptFinal_ex(ctx, plaintext + len, &len);
 
-    /* Clean up */
-    EVP_CIPHER_CTX_free(ctx);
-    if(ret > 0) {
-        /* Success */
-        plaintext_len += len;
-        return plaintext_len;
+  /* Clean up */
+  EVP_CIPHER_CTX_free(ctx);
+  if(ret > 0)
+    {
+      /* Success */
+      plaintext_len += len;
+      return plaintext_len;
     }
-    else {
-        /* Verify failed */
-        return -1;
+  else
+    {
+      /* Verify failed */
+      return -1;
     }
 }
 
@@ -271,86 +295,98 @@ int sLogDecrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *ta
   6. Parameter: The newly updated MAC
 
 */
-void sLogEntry(guint64 numberOfLogEntries, GString *text, unsigned char *mainKey, unsigned char *inputBigMac, GString *output, unsigned char *outputBigMac) {
+void sLogEntry(guint64 numberOfLogEntries, GString *text, unsigned char *mainKey, unsigned char *inputBigMac,
+               GString *output, unsigned char *outputBigMac)
+{
 
-    unsigned char encKey[KEY_LENGTH];
-    unsigned char MACKey[KEY_LENGTH];
-    deriveSubKeys(mainKey, encKey, MACKey);
+  unsigned char encKey[KEY_LENGTH];
+  unsigned char MACKey[KEY_LENGTH];
+  deriveSubKeys(mainKey, encKey, MACKey);
 
-    //Compute current log entry number
-    gchar *counterString = convertToBase64((unsigned char*)&numberOfLogEntries, sizeof(numberOfLogEntries));
+  //Compute current log entry number
+  gchar *counterString = convertToBase64((unsigned char *)&numberOfLogEntries, sizeof(numberOfLogEntries));
 
-    int slen = 0;
+  int slen = 0;
 
-    //Max msg length is 1500 bytes (RFC5424)
-    if ((text->len)>MAX_RFC_LEN) {
+  //Max msg length is 1500 bytes (RFC5424)
+  if ((text->len)>MAX_RFC_LEN)
+    {
 
-        slen = MAX_RFC_LEN;
-        g_string_overwrite(text, MAX_RFC_LEN-strlen(CUTSTRING), CUTSTRING);
+      slen = MAX_RFC_LEN;
+      g_string_overwrite(text, MAX_RFC_LEN-strlen(CUTSTRING), CUTSTRING);
 
-    } else {
+    }
+  else
+    {
 
-        slen = (int) text->len;
+      slen = (int) text->len;
 
     }
 
-    //This buffer holds everything: AggregatedMAC, IV, Tag, and CText
-    //Binary data cannot be larger than its base64 encoding
-    unsigned char bigBuf[AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+slen];
+  //This buffer holds everything: AggregatedMAC, IV, Tag, and CText
+  //Binary data cannot be larger than its base64 encoding
+  unsigned char bigBuf[AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+slen];
 
-    //This is where are ciphertext related data starts
-    unsigned char *ctBuf = &bigBuf[AES_BLOCKSIZE];
-    unsigned char *iv = ctBuf;
-    unsigned char *tag = &bigBuf[AES_BLOCKSIZE+IV_LENGTH];
-    unsigned char *ciphertext = &bigBuf[AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE];
+  //This is where are ciphertext related data starts
+  unsigned char *ctBuf = &bigBuf[AES_BLOCKSIZE];
+  unsigned char *iv = ctBuf;
+  unsigned char *tag = &bigBuf[AES_BLOCKSIZE+IV_LENGTH];
+  unsigned char *ciphertext = &bigBuf[AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE];
 
-    //Generate random nonce
-    if (RAND_bytes(iv, IV_LENGTH)==1) {
+  //Generate random nonce
+  if (RAND_bytes(iv, IV_LENGTH)==1)
+    {
 
-        //Encrypt log data
-        int ct_length = sLogEncrypt((guchar*)text->str, slen, encKey, iv, ciphertext, tag);
+      //Encrypt log data
+      int ct_length = sLogEncrypt((guchar *)text->str, slen, encKey, iv, ciphertext, tag);
 
-        if(ct_length <= 0) {
-            msg_error("[SLOG] ERROR: Unable to correctly encrypt log message");
+      if(ct_length <= 0)
+        {
+          msg_error("[SLOG] ERROR: Unable to correctly encrypt log message");
 
-            g_string_printf(output, "%*.*s:%s: %s", COUNTER_LENGTH, COUNTER_LENGTH, counterString, "[SLOG] ERROR: Unable to correctly encrypt the following log message:", text->str);
-            g_free(counterString);
+          g_string_printf(output, "%*.*s:%s: %s", COUNTER_LENGTH, COUNTER_LENGTH, counterString,
+                          "[SLOG] ERROR: Unable to correctly encrypt the following log message:", text->str);
+          g_free(counterString);
 
-            return;
+          return;
         }
 
-        //Write current log entry number
-        g_string_printf (output, "%*.*s:", COUNTER_LENGTH, COUNTER_LENGTH, counterString);
-        g_free(counterString);
+      //Write current log entry number
+      g_string_printf (output, "%*.*s:", COUNTER_LENGTH, COUNTER_LENGTH, counterString);
+      g_free(counterString);
 
 
-        //Write IV, tag, and ciphertext at once
-        gchar *encodedCtBuf = convertToBase64(ctBuf, IV_LENGTH+AES_BLOCKSIZE+ct_length);
-        g_string_append(output, encodedCtBuf);
-        g_free(encodedCtBuf);
+      //Write IV, tag, and ciphertext at once
+      gchar *encodedCtBuf = convertToBase64(ctBuf, IV_LENGTH+AES_BLOCKSIZE+ct_length);
+      g_string_append(output, encodedCtBuf);
+      g_free(encodedCtBuf);
 
-        //Compute aggregated MAC
-        //Not the first aggregated MAC
-        if (numberOfLogEntries>0) {
-            memcpy(bigBuf, inputBigMac, AES_BLOCKSIZE);
+      //Compute aggregated MAC
+      //Not the first aggregated MAC
+      if (numberOfLogEntries>0)
+        {
+          memcpy(bigBuf, inputBigMac, AES_BLOCKSIZE);
 
-            guint64 outlen;
-            cmac(MACKey, bigBuf, AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+ct_length, outputBigMac, &outlen );
+          guint64 outlen;
+          cmac(MACKey, bigBuf, AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+ct_length, outputBigMac, &outlen );
         }
-        else { //First aggregated MAC
-            guint64 outlen = 0;
+      else   //First aggregated MAC
+        {
+          guint64 outlen = 0;
 
-            cmac(MACKey, &bigBuf[AES_BLOCKSIZE], IV_LENGTH+AES_BLOCKSIZE+ct_length, outputBigMac, &outlen);
+          cmac(MACKey, &bigBuf[AES_BLOCKSIZE], IV_LENGTH+AES_BLOCKSIZE+ct_length, outputBigMac, &outlen);
         }
     }
-    else {
-        // We did not get enough random bytes
-        msg_error("[SLOG] ERROR: Could not obtain enough random bytes");
+  else
+    {
+      // We did not get enough random bytes
+      msg_error("[SLOG] ERROR: Could not obtain enough random bytes");
 
-        g_string_printf(output, "%*.*s:%s: %s", COUNTER_LENGTH, COUNTER_LENGTH, counterString, "[SLOG] ERROR: Could not obtain enough random bytes for the following log message:", text->str);
-        g_free(counterString);
+      g_string_printf(output, "%*.*s:%s: %s", COUNTER_LENGTH, COUNTER_LENGTH, counterString,
+                      "[SLOG] ERROR: Could not obtain enough random bytes for the following log message:", text->str);
+      g_free(counterString);
 
-        return;
+      return;
     }
 }
 
@@ -364,18 +400,22 @@ void sLogEntry(guint64 numberOfLogEntries, GString *text, unsigned char *mainKey
   Note: caller must take care of memory management.
 
 */
-void deriveKey(unsigned char *dst, guint64 index, guint64 currentKey) {
-    for (guint64 i = currentKey; i<index; i++) {
-        evolveKey(dst);
+void deriveKey(unsigned char *dst, guint64 index, guint64 currentKey)
+{
+  for (guint64 i = currentKey; i<index; i++)
+    {
+      evolveKey(dst);
     }
 }
 
-guchar *convertToBin(char *input, guint64 *outLen) {
-    return g_base64_decode ((const gchar *) input, outLen);
+guchar *convertToBin(char *input, guint64 *outLen)
+{
+  return g_base64_decode ((const gchar *) input, outLen);
 }
 
-gchar* convertToBase64(unsigned char *input, guint64 len) {
-    return  g_base64_encode ((const guchar *) input, (gsize) len);
+gchar *convertToBase64(unsigned char *input, guint64 len)
+{
+  return  g_base64_encode ((const guchar *) input, (gsize) len);
 }
 
 /*
@@ -392,14 +432,15 @@ gchar* convertToBase64(unsigned char *input, guint64 len) {
   If Parameter 5 == 0, there was an error.
 
 */
-void cmac(unsigned char *key, const void *input, guint64 length, unsigned char *out, guint64 *outlen) {
-    CMAC_CTX *ctx = CMAC_CTX_new();
+void cmac(unsigned char *key, const void *input, guint64 length, unsigned char *out, guint64 *outlen)
+{
+  CMAC_CTX *ctx = CMAC_CTX_new();
 
-    CMAC_Init(ctx, key, KEY_LENGTH, EVP_aes_256_cbc(), NULL);
-    CMAC_Update(ctx, input, length);
+  CMAC_Init(ctx, key, KEY_LENGTH, EVP_aes_256_cbc(), NULL);
+  CMAC_Update(ctx, input, length);
 
-    CMAC_Final(ctx, out, outlen);
-    CMAC_CTX_free(ctx);
+  CMAC_Final(ctx, out, outlen);
+  CMAC_CTX_free(ctx);
 }
 
 
@@ -410,11 +451,12 @@ void cmac(unsigned char *key, const void *input, guint64 length, unsigned char *
 
 */
 
-void evolveKey(unsigned char *key) {
+void evolveKey(unsigned char *key)
+{
 
-    unsigned char buf[KEY_LENGTH];
-    PRF(key, GAMMA, sizeof(GAMMA), buf, KEY_LENGTH);
-    memcpy(key, buf, KEY_LENGTH);
+  unsigned char buf[KEY_LENGTH];
+  PRF(key, GAMMA, sizeof(GAMMA), buf, KEY_LENGTH);
+  memcpy(key, buf, KEY_LENGTH);
 
 }
 
@@ -430,27 +472,31 @@ void evolveKey(unsigned char *key) {
   Note: For security, outputLength must be less than 255 * AES_BLOCKSIZE.
 
 */
-void PRF(unsigned char *key, unsigned char *originalInput, guint64 inputLength, unsigned char *output, guint64 outputLength) {
+void PRF(unsigned char *key, unsigned char *originalInput, guint64 inputLength, unsigned char *output,
+         guint64 outputLength)
+{
 
-    unsigned char input[inputLength];
-    memcpy(input, originalInput, inputLength);
+  unsigned char input[inputLength];
+  memcpy(input, originalInput, inputLength);
 
-    // Make sure that temporary buffer can hold at least outputLength bytes, rounded up to a multiple of AES_BLOCKSIZE
-    unsigned char buf[outputLength+AES_BLOCKSIZE];
-    //Prepare plaintext
-    for (int i=0; i<outputLength/AES_BLOCKSIZE; i++) {
-        guint64 outlen;
-        cmac(key, input, AES_BLOCKSIZE,&buf[i*AES_BLOCKSIZE],&outlen);
-        input[inputLength-1]++;
+  // Make sure that temporary buffer can hold at least outputLength bytes, rounded up to a multiple of AES_BLOCKSIZE
+  unsigned char buf[outputLength+AES_BLOCKSIZE];
+  //Prepare plaintext
+  for (int i=0; i<outputLength/AES_BLOCKSIZE; i++)
+    {
+      guint64 outlen;
+      cmac(key, input, AES_BLOCKSIZE, &buf[i*AES_BLOCKSIZE], &outlen);
+      input[inputLength-1]++;
     }
 
-    if (outputLength % AES_BLOCKSIZE!=0) {
-        int index = outputLength/AES_BLOCKSIZE;
-        guint64 outlen;
-        cmac(key, input, AES_BLOCKSIZE,&buf[(index)*AES_BLOCKSIZE],&outlen);
+  if (outputLength % AES_BLOCKSIZE!=0)
+    {
+      int index = outputLength/AES_BLOCKSIZE;
+      guint64 outlen;
+      cmac(key, input, AES_BLOCKSIZE, &buf[(index)*AES_BLOCKSIZE], &outlen);
     }
 
-    memcpy(output, buf, outputLength);
+  memcpy(output, buf, outputLength);
 
 }
 
@@ -465,8 +511,9 @@ void PRF(unsigned char *key, unsigned char *originalInput, guint64 inputLength, 
   1 on success
   0 on error
 */
-int generateMasterKey(guchar *masterkey) {
-    return RAND_bytes(masterkey, KEY_LENGTH);
+int generateMasterKey(guchar *masterkey)
+{
+  return RAND_bytes(masterkey, KEY_LENGTH);
 }
 
 /*
@@ -484,38 +531,40 @@ int generateMasterKey(guchar *masterkey) {
   1 on success
   0 on error
 */
-int deriveHostKey(guchar *masterkey, gchar *macAddr, gchar* serial, guchar* hostkey) {
-    EVP_MD_CTX *ctx;
+int deriveHostKey(guchar *masterkey, gchar *macAddr, gchar *serial, guchar *hostkey)
+{
+  EVP_MD_CTX *ctx;
 
-    if((ctx = EVP_MD_CTX_create()) == NULL)
-        return 0;
+  if((ctx = EVP_MD_CTX_create()) == NULL)
+    return 0;
 
-    if(1 != EVP_DigestInit_ex(ctx, EVP_sha256(), NULL))
-        return 0;
+  if(1 != EVP_DigestInit_ex(ctx, EVP_sha256(), NULL))
+    return 0;
 
-    if(1 != EVP_DigestUpdate(ctx, masterkey, KEY_LENGTH))
-        return 0;
+  if(1 != EVP_DigestUpdate(ctx, masterkey, KEY_LENGTH))
+    return 0;
 
-    if(1 != EVP_DigestUpdate(ctx, macAddr, strlen(macAddr)))
-        return 0;
+  if(1 != EVP_DigestUpdate(ctx, macAddr, strlen(macAddr)))
+    return 0;
 
-    if(1 != EVP_DigestUpdate(ctx, serial, strlen(serial)))
-        return 0;
+  if(1 != EVP_DigestUpdate(ctx, serial, strlen(serial)))
+    return 0;
 
-    if(KEY_LENGTH != SHA256_DIGEST_LENGTH) {
-        msg_error("[SLOG] ERROR: Error in updating digest");
-        g_assert_not_reached();
-        return 0;
+  if(KEY_LENGTH != SHA256_DIGEST_LENGTH)
+    {
+      msg_error("[SLOG] ERROR: Error in updating digest");
+      g_assert_not_reached();
+      return 0;
     }
 
-    guint digest_len = KEY_LENGTH;
+  guint digest_len = KEY_LENGTH;
 
-    if(1 != EVP_DigestFinal_ex(ctx, hostkey, &digest_len))
-        return 0;
+  if(1 != EVP_DigestFinal_ex(ctx, hostkey, &digest_len))
+    return 0;
 
-    EVP_MD_CTX_destroy(ctx);
+  EVP_MD_CTX_destroy(ctx);
 
-    return 1;
+  return 1;
 }
 
 
@@ -528,90 +577,96 @@ int deriveHostKey(guchar *masterkey, gchar *macAddr, gchar* serial, guchar* host
   0 on error
 */
 
-int writeBigMAC(gchar *filename, char *outputBuffer) {
-    GError *error = NULL;
+int writeBigMAC(gchar *filename, char *outputBuffer)
+{
+  GError *error = NULL;
 
-    GIOChannel* macfile = g_io_channel_new_file(filename, "w+", &error);
-    if(!macfile) {
-        msg_error("[SLOG] ERROR: Unable open MAC file",
-                  evt_tag_str("base_dir", filename));
-        cond_msg_error(error, "Additional Information");
+  GIOChannel *macfile = g_io_channel_new_file(filename, "w+", &error);
+  if(!macfile)
+    {
+      msg_error("[SLOG] ERROR: Unable open MAC file",
+                evt_tag_str("base_dir", filename));
+      cond_msg_error(error, "Additional Information");
 
-        g_clear_error(&error);
+      g_clear_error(&error);
 
-        return 0;
+      return 0;
     }
 
-    GIOStatus status = g_io_channel_set_encoding(macfile, NULL, &error);
-    if(status != G_IO_STATUS_NORMAL) {
-        msg_error("[SLOG] ERROR: Unable to set encoding for MAC data",
-                  evt_tag_str("File", filename));
-        cond_msg_error(error, "Addtional information");
+  GIOStatus status = g_io_channel_set_encoding(macfile, NULL, &error);
+  if(status != G_IO_STATUS_NORMAL)
+    {
+      msg_error("[SLOG] ERROR: Unable to set encoding for MAC data",
+                evt_tag_str("File", filename));
+      cond_msg_error(error, "Addtional information");
 
-        g_clear_error(&error);
+      g_clear_error(&error);
 
-        g_io_channel_shutdown(macfile, TRUE, &error);
-        g_io_channel_unref(macfile);
+      g_io_channel_shutdown(macfile, TRUE, &error);
+      g_io_channel_unref(macfile);
 
-        g_clear_error(&error);
+      g_clear_error(&error);
 
-        return 0;
+      return 0;
     }
 
-    guint64 outlen = 0;
-    status = g_io_channel_write_chars(macfile, outputBuffer, CMAC_LENGTH, &outlen, &error);
-    if(status != G_IO_STATUS_NORMAL) {
-        msg_error("[SLOG] ERROR: Unable to write big MAC data",
-                  evt_tag_str("File", filename));
-        cond_msg_error(error, "Additional information");
+  guint64 outlen = 0;
+  status = g_io_channel_write_chars(macfile, outputBuffer, CMAC_LENGTH, &outlen, &error);
+  if(status != G_IO_STATUS_NORMAL)
+    {
+      msg_error("[SLOG] ERROR: Unable to write big MAC data",
+                evt_tag_str("File", filename));
+      cond_msg_error(error, "Additional information");
 
-        g_clear_error(&error);
+      g_clear_error(&error);
 
-        g_io_channel_shutdown(macfile, TRUE, &error);
-        g_io_channel_unref(macfile);
+      g_io_channel_shutdown(macfile, TRUE, &error);
+      g_io_channel_unref(macfile);
 
-        g_clear_error(&error);
+      g_clear_error(&error);
 
-        return 0;
+      return 0;
     }
 
-    // Compute aggregated MAC
-    gchar outputmacdata[CMAC_LENGTH];
-    unsigned char keyBuffer[KEY_LENGTH];
-    bzero(keyBuffer, KEY_LENGTH);
-    unsigned char zeroBuffer[CMAC_LENGTH];
-    bzero(zeroBuffer, CMAC_LENGTH);
-    memcpy(keyBuffer, outputBuffer, MIN(CMAC_LENGTH, KEY_LENGTH));
-    cmac(keyBuffer, zeroBuffer, CMAC_LENGTH, (guchar*)outputmacdata, &outlen);
+  // Compute aggregated MAC
+  gchar outputmacdata[CMAC_LENGTH];
+  unsigned char keyBuffer[KEY_LENGTH];
+  bzero(keyBuffer, KEY_LENGTH);
+  unsigned char zeroBuffer[CMAC_LENGTH];
+  bzero(zeroBuffer, CMAC_LENGTH);
+  memcpy(keyBuffer, outputBuffer, MIN(CMAC_LENGTH, KEY_LENGTH));
+  cmac(keyBuffer, zeroBuffer, CMAC_LENGTH, (guchar *)outputmacdata, &outlen);
 
-    status = g_io_channel_write_chars(macfile, outputmacdata, CMAC_LENGTH, &outlen, &error);
+  status = g_io_channel_write_chars(macfile, outputmacdata, CMAC_LENGTH, &outlen, &error);
 
-    if(status != G_IO_STATUS_NORMAL) {
-        msg_error("[SLOG] ERROR: Unable to write aggregated MAC",
-                  evt_tag_str("File", filename));
-        cond_msg_error(error, "Additional information");
+  if(status != G_IO_STATUS_NORMAL)
+    {
+      msg_error("[SLOG] ERROR: Unable to write aggregated MAC",
+                evt_tag_str("File", filename));
+      cond_msg_error(error, "Additional information");
 
-        g_clear_error(&error);
+      g_clear_error(&error);
 
-        g_io_channel_shutdown(macfile, TRUE, &error);
-        g_io_channel_unref(macfile);
+      g_io_channel_shutdown(macfile, TRUE, &error);
+      g_io_channel_unref(macfile);
 
-        g_clear_error(&error);
+      g_clear_error(&error);
 
-        return 0;
+      return 0;
     }
-    status = g_io_channel_shutdown(macfile, TRUE, &error);
-    g_io_channel_unref(macfile);
+  status = g_io_channel_shutdown(macfile, TRUE, &error);
+  g_io_channel_unref(macfile);
 
-    if(status != G_IO_STATUS_NORMAL) {
-        cond_msg_error(error, "[SLOG] ERROR: Cannot close aggregated MAC");
+  if(status != G_IO_STATUS_NORMAL)
+    {
+      cond_msg_error(error, "[SLOG] ERROR: Cannot close aggregated MAC");
 
-        g_clear_error(&error);
+      g_clear_error(&error);
 
     }
 
 
-    return 1;
+  return 1;
 }
 
 /*
@@ -622,86 +677,94 @@ int writeBigMAC(gchar *filename, char *outputBuffer) {
   0 on error
 */
 
-int readBigMAC(gchar *filename, char *outputBuffer) {
-    GError *myError = NULL;
+int readBigMAC(gchar *filename, char *outputBuffer)
+{
+  GError *myError = NULL;
 
-    GIOChannel* macfile = g_io_channel_new_file(filename, "r", &myError);
+  GIOChannel *macfile = g_io_channel_new_file(filename, "r", &myError);
 
-    if(!macfile) {
-        // MAC file does not exist -> New MAC file will be created
-        msg_warning("[SLOG] WARNING: MAC file not found", evt_tag_str("File", filename));
-        g_clear_error(&myError);
+  if(!macfile)
+    {
+      // MAC file does not exist -> New MAC file will be created
+      msg_warning("[SLOG] WARNING: MAC file not found", evt_tag_str("File", filename));
+      g_clear_error(&myError);
 
-        return 0;
+      return 0;
     }
 
-    GIOStatus status = g_io_channel_set_encoding(macfile, NULL, &myError);
-    if (status != G_IO_STATUS_NORMAL) {
-        cond_msg_error(myError, "[SLOG] ERROR: Cannot set encoding of MAC file");
-        g_clear_error(&myError);
+  GIOStatus status = g_io_channel_set_encoding(macfile, NULL, &myError);
+  if (status != G_IO_STATUS_NORMAL)
+    {
+      cond_msg_error(myError, "[SLOG] ERROR: Cannot set encoding of MAC file");
+      g_clear_error(&myError);
 
-        g_io_channel_shutdown(macfile, TRUE, &myError);
-        g_io_channel_unref(macfile);
+      g_io_channel_shutdown(macfile, TRUE, &myError);
+      g_io_channel_unref(macfile);
 
-        g_clear_error(&myError);
+      g_clear_error(&myError);
 
-        return 0;
+      return 0;
     }
 
-    gchar macdata[2*CMAC_LENGTH];
-    gsize mac_bytes_read = 0;
+  gchar macdata[2*CMAC_LENGTH];
+  gsize mac_bytes_read = 0;
 
-    status = g_io_channel_read_chars(macfile, macdata, 2*CMAC_LENGTH, &mac_bytes_read, &myError);
-    if(status != G_IO_STATUS_NORMAL) {
-        cond_msg_error(myError, "[SLOG] ERROR: Cannot read MAC file");
+  status = g_io_channel_read_chars(macfile, macdata, 2*CMAC_LENGTH, &mac_bytes_read, &myError);
+  if(status != G_IO_STATUS_NORMAL)
+    {
+      cond_msg_error(myError, "[SLOG] ERROR: Cannot read MAC file");
 
-        g_clear_error(&myError);
+      g_clear_error(&myError);
 
-        g_io_channel_shutdown(macfile, TRUE, &myError);
-        g_io_channel_unref(macfile);
+      g_io_channel_shutdown(macfile, TRUE, &myError);
+      g_io_channel_unref(macfile);
 
-        g_clear_error(&myError);
+      g_clear_error(&myError);
 
-        return 0;
+      return 0;
     }
 
-    status = g_io_channel_shutdown(macfile, TRUE, &myError);
-    g_io_channel_unref(macfile);
+  status = g_io_channel_shutdown(macfile, TRUE, &myError);
+  g_io_channel_unref(macfile);
 
-    if(status != G_IO_STATUS_NORMAL) {
-        msg_error("[SLOG] ERROR: Cannot close MAC file");
+  if(status != G_IO_STATUS_NORMAL)
+    {
+      msg_error("[SLOG] ERROR: Cannot close MAC file");
 
-        g_clear_error(&myError);
+      g_clear_error(&myError);
 
-        return 0;
+      return 0;
     }
 
-    if (mac_bytes_read!=2*CMAC_LENGTH) {
-        msg_error("[SLOG] ERROR: $(slog) parsing failed, invalid size of MAC file");
-        return 0;
+  if (mac_bytes_read!=2*CMAC_LENGTH)
+    {
+      msg_error("[SLOG] ERROR: $(slog) parsing failed, invalid size of MAC file");
+      return 0;
     }
 
-    guint64 outlen = 0;
-    unsigned char keyBuffer[KEY_LENGTH];
-    bzero(keyBuffer, KEY_LENGTH);
-    unsigned char zeroBuffer[CMAC_LENGTH];
-    bzero(zeroBuffer, CMAC_LENGTH);
-    memcpy(keyBuffer, macdata, MIN(CMAC_LENGTH, KEY_LENGTH));
+  guint64 outlen = 0;
+  unsigned char keyBuffer[KEY_LENGTH];
+  bzero(keyBuffer, KEY_LENGTH);
+  unsigned char zeroBuffer[CMAC_LENGTH];
+  bzero(zeroBuffer, CMAC_LENGTH);
+  memcpy(keyBuffer, macdata, MIN(CMAC_LENGTH, KEY_LENGTH));
 
-    unsigned char testOutput[CMAC_LENGTH];
-    cmac(keyBuffer, zeroBuffer, CMAC_LENGTH, testOutput, &outlen);
+  unsigned char testOutput[CMAC_LENGTH];
+  cmac(keyBuffer, zeroBuffer, CMAC_LENGTH, testOutput, &outlen);
 
-    if (0!=memcmp(testOutput, &macdata[CMAC_LENGTH], CMAC_LENGTH)) {
-        msg_warning("[SLOG] ERROR: MAC computation invalid");
-        return 0;
+  if (0!=memcmp(testOutput, &macdata[CMAC_LENGTH], CMAC_LENGTH))
+    {
+      msg_warning("[SLOG] ERROR: MAC computation invalid");
+      return 0;
     }
-    else {
-        msg_info("[SLOG] INFO: MAC successfully loaded");
+  else
+    {
+      msg_info("[SLOG] INFO: MAC successfully loaded");
     }
 
-    memcpy(outputBuffer, macdata, CMAC_LENGTH);
+  memcpy(outputBuffer, macdata, CMAC_LENGTH);
 
-    return 1;
+  return 1;
 }
 
 /*
@@ -712,109 +775,118 @@ int readBigMAC(gchar *filename, char *outputBuffer) {
   0 on error
 */
 
-int readKey(char *destKey, guint64 *destCounter, gchar *keypath) {
+int readKey(char *destKey, guint64 *destCounter, gchar *keypath)
+{
 
-    GError *myError = NULL;
+  GError *myError = NULL;
 
-    GIOChannel* keyfile = g_io_channel_new_file(keypath, "r", &myError);
+  GIOChannel *keyfile = g_io_channel_new_file(keypath, "r", &myError);
 
-    if (!keyfile) {
-        cond_msg_error(myError, "[SLOG] ERROR: Key file not found");
-        g_clear_error(&myError);
+  if (!keyfile)
+    {
+      cond_msg_error(myError, "[SLOG] ERROR: Key file not found");
+      g_clear_error(&myError);
 
-        return 0;
+      return 0;
     }
 
-    GIOStatus status = g_io_channel_set_encoding(keyfile, NULL, &myError);
+  GIOStatus status = g_io_channel_set_encoding(keyfile, NULL, &myError);
 
-    if(status != G_IO_STATUS_NORMAL) {
-        cond_msg_error(myError, "[SLOG] ERROR: Unable to set encoding for key file");
-        g_clear_error(&myError);
+  if(status != G_IO_STATUS_NORMAL)
+    {
+      cond_msg_error(myError, "[SLOG] ERROR: Unable to set encoding for key file");
+      g_clear_error(&myError);
 
-        g_io_channel_shutdown(keyfile, TRUE, &myError);
-        g_io_channel_unref(keyfile);
+      g_io_channel_shutdown(keyfile, TRUE, &myError);
+      g_io_channel_unref(keyfile);
 
-        g_clear_error(&myError);
+      g_clear_error(&myError);
 
 
-        return 0;
+      return 0;
     }
 
-    // Key file contains
-    // 1. the number of log entries already logged (and therewith the index of the key); this is at the end of the key file
-    // 2. the actual 32 byte key, this is at the beginning of the key file
-    // 3. a 16 byte CMAC of the two previous data, this is stored after the key
+  // Key file contains
+  // 1. the number of log entries already logged (and therewith the index of the key); this is at the end of the key file
+  // 2. the actual 32 byte key, this is at the beginning of the key file
+  // 3. a 16 byte CMAC of the two previous data, this is stored after the key
 
-    gchar keydata[KEY_LENGTH + CMAC_LENGTH];
-    gsize key_bytes_read = 0;
+  gchar keydata[KEY_LENGTH + CMAC_LENGTH];
+  gsize key_bytes_read = 0;
 
-    status = g_io_channel_read_chars(keyfile, keydata, KEY_LENGTH + CMAC_LENGTH, &key_bytes_read, &myError);
+  status = g_io_channel_read_chars(keyfile, keydata, KEY_LENGTH + CMAC_LENGTH, &key_bytes_read, &myError);
 
-    if (status != G_IO_STATUS_NORMAL) {
-        cond_msg_error(myError, "[SLOG] ERROR: Cannot read from key file");
+  if (status != G_IO_STATUS_NORMAL)
+    {
+      cond_msg_error(myError, "[SLOG] ERROR: Cannot read from key file");
 
-        g_clear_error(&myError);
+      g_clear_error(&myError);
 
-        g_io_channel_shutdown(keyfile, TRUE, &myError);
-        g_io_channel_unref(keyfile);
+      g_io_channel_shutdown(keyfile, TRUE, &myError);
+      g_io_channel_unref(keyfile);
 
-        g_clear_error(&myError);
+      g_clear_error(&myError);
 
-        return 0;
+      return 0;
 
     }
 
-    if (key_bytes_read!=KEY_LENGTH+CMAC_LENGTH) {
-        msg_error("[SLOG] ERROR: $(slog) parsing failed, key file invalid while reading key and CMAC");
+  if (key_bytes_read!=KEY_LENGTH+CMAC_LENGTH)
+    {
+      msg_error("[SLOG] ERROR: $(slog) parsing failed, key file invalid while reading key and CMAC");
 
-        status = g_io_channel_shutdown(keyfile, TRUE, &myError);
-        g_io_channel_unref(keyfile);
+      status = g_io_channel_shutdown(keyfile, TRUE, &myError);
+      g_io_channel_unref(keyfile);
 
-        g_clear_error(&myError);
+      g_clear_error(&myError);
 
-        return 0;
+      return 0;
     }
 
-    guint64 littleEndianCounter;
+  guint64 littleEndianCounter;
 
-    status = g_io_channel_read_chars(keyfile, (gchar *) &littleEndianCounter, sizeof(littleEndianCounter), &key_bytes_read, &myError);
-    if (status != G_IO_STATUS_NORMAL) {
-        cond_msg_error(myError, "[SLOG] ERROR: Cannot read from key file");
+  status = g_io_channel_read_chars(keyfile, (gchar *) &littleEndianCounter, sizeof(littleEndianCounter), &key_bytes_read,
+                                   &myError);
+  if (status != G_IO_STATUS_NORMAL)
+    {
+      cond_msg_error(myError, "[SLOG] ERROR: Cannot read from key file");
 
-        g_clear_error(&myError);
+      g_clear_error(&myError);
 
-        g_io_channel_shutdown(keyfile, TRUE, &myError);
-        g_io_channel_unref(keyfile);
+      g_io_channel_shutdown(keyfile, TRUE, &myError);
+      g_io_channel_unref(keyfile);
 
-        g_clear_error(&myError);
+      g_clear_error(&myError);
 
-        return 0;
+      return 0;
     }
 
-    status = g_io_channel_shutdown(keyfile, TRUE, &myError);
-    g_io_channel_unref(keyfile);
+  status = g_io_channel_shutdown(keyfile, TRUE, &myError);
+  g_io_channel_unref(keyfile);
 
-    g_clear_error(&myError);
+  g_clear_error(&myError);
 
-    if (key_bytes_read!=sizeof(littleEndianCounter)) {
-        msg_error("[SLOG] ERROR: $(slog) parsing failed, key file invalid while reading counter");
-        return 0;
+  if (key_bytes_read!=sizeof(littleEndianCounter))
+    {
+      msg_error("[SLOG] ERROR: $(slog) parsing failed, key file invalid while reading counter");
+      return 0;
     }
 
-    guint64 outlen=0;
-    unsigned char testOutput[CMAC_LENGTH];
+  guint64 outlen=0;
+  unsigned char testOutput[CMAC_LENGTH];
 
-    cmac((guchar*)keydata, &(littleEndianCounter), sizeof(littleEndianCounter), testOutput, &outlen);
+  cmac((guchar *)keydata, &(littleEndianCounter), sizeof(littleEndianCounter), testOutput, &outlen);
 
-    if (0!=memcmp(testOutput, &keydata[KEY_LENGTH], CMAC_LENGTH)) {
-        msg_warning("[SLOG] ERROR: $(slog) parsing failed, CMAC in key file invalid");
-        return 0;
+  if (0!=memcmp(testOutput, &keydata[KEY_LENGTH], CMAC_LENGTH))
+    {
+      msg_warning("[SLOG] ERROR: $(slog) parsing failed, CMAC in key file invalid");
+      return 0;
     }
 
-    memcpy(destKey, keydata, KEY_LENGTH);
-    *destCounter = le64toh(littleEndianCounter);
+  memcpy(destKey, keydata, KEY_LENGTH);
+  *destCounter = le64toh(littleEndianCounter);
 
-    return 1;
+  return 1;
 }
 
 
@@ -826,331 +898,388 @@ int readKey(char *destKey, guint64 *destCounter, gchar *keypath) {
   1 on success
   0 on error
 */
-int writeKey(char *key, guint64 counter, gchar *keypath) {
+int writeKey(char *key, guint64 counter, gchar *keypath)
+{
 
-    GError *error = NULL;
-    GIOChannel* keyfile = g_io_channel_new_file(keypath, "w+", &error);
+  GError *error = NULL;
+  GIOChannel *keyfile = g_io_channel_new_file(keypath, "w+", &error);
 
-    if(!keyfile) {
-        cond_msg_error(error, "[SLOG] ERROR: Cannot open key file");
+  if(!keyfile)
+    {
+      cond_msg_error(error, "[SLOG] ERROR: Cannot open key file");
 
-        g_clear_error(&error);
+      g_clear_error(&error);
 
-        return 0;
+      return 0;
     }
 
 
-    GIOStatus status = g_io_channel_set_encoding(keyfile, NULL, &error);
-    if(status != G_IO_STATUS_NORMAL) {
-        cond_msg_error(error, "[SLOG] ERROR: Unable to set encoding for key file");
+  GIOStatus status = g_io_channel_set_encoding(keyfile, NULL, &error);
+  if(status != G_IO_STATUS_NORMAL)
+    {
+      cond_msg_error(error, "[SLOG] ERROR: Unable to set encoding for key file");
 
-        g_clear_error(&error);
+      g_clear_error(&error);
 
-        g_io_channel_shutdown(keyfile, TRUE, &error);
-        g_io_channel_unref(keyfile);
+      g_io_channel_shutdown(keyfile, TRUE, &error);
+      g_io_channel_unref(keyfile);
 
-        g_clear_error(&error);
+      g_clear_error(&error);
 
-        return 0;
+      return 0;
     }
 
-    guint64 outlen = 0;
-    // Write key
-    status = g_io_channel_write_chars(keyfile, key, KEY_LENGTH, &outlen, &error);
-    if(status != G_IO_STATUS_NORMAL) {
-        cond_msg_error(error, "[SLOG] ERROR: Unable to write updated key");
+  guint64 outlen = 0;
+  // Write key
+  status = g_io_channel_write_chars(keyfile, key, KEY_LENGTH, &outlen, &error);
+  if(status != G_IO_STATUS_NORMAL)
+    {
+      cond_msg_error(error, "[SLOG] ERROR: Unable to write updated key");
 
-        g_clear_error(&error);
+      g_clear_error(&error);
 
-        g_io_channel_shutdown(keyfile, TRUE, &error);
-        g_io_channel_unref(keyfile);
+      g_io_channel_shutdown(keyfile, TRUE, &error);
+      g_io_channel_unref(keyfile);
 
-        g_clear_error(&error);
+      g_clear_error(&error);
 
-        return 0;
+      return 0;
     }
 
-    guint64 littleEndianCounter = htole64(counter);
-    gchar outputmacdata[CMAC_LENGTH];
-    cmac((guchar*)key, &littleEndianCounter, sizeof(littleEndianCounter), (guchar*)outputmacdata, &outlen);
+  guint64 littleEndianCounter = htole64(counter);
+  gchar outputmacdata[CMAC_LENGTH];
+  cmac((guchar *)key, &littleEndianCounter, sizeof(littleEndianCounter), (guchar *)outputmacdata, &outlen);
 
-    // Write CMAC
-    status = g_io_channel_write_chars(keyfile, outputmacdata, CMAC_LENGTH, &outlen, &error);
-    if(status != G_IO_STATUS_NORMAL) {
-        cond_msg_error(error, "[SLOG] ERROR: Unable to write key CMAC");
+  // Write CMAC
+  status = g_io_channel_write_chars(keyfile, outputmacdata, CMAC_LENGTH, &outlen, &error);
+  if(status != G_IO_STATUS_NORMAL)
+    {
+      cond_msg_error(error, "[SLOG] ERROR: Unable to write key CMAC");
 
-        g_clear_error(&error);
+      g_clear_error(&error);
 
-        g_io_channel_shutdown(keyfile, TRUE, &error);
-        g_io_channel_unref(keyfile);
+      g_io_channel_shutdown(keyfile, TRUE, &error);
+      g_io_channel_unref(keyfile);
 
-        g_clear_error(&error);
+      g_clear_error(&error);
 
-        return 0;
+      return 0;
     }
 
-    // Write counter
-    status = g_io_channel_write_chars(keyfile, (gchar*) &littleEndianCounter, sizeof(littleEndianCounter), &outlen, &error);
-    if(status != G_IO_STATUS_NORMAL) {
-        cond_msg_error(error, "[SLOG] ERROR: Unable to write key counter");
+  // Write counter
+  status = g_io_channel_write_chars(keyfile, (gchar *) &littleEndianCounter, sizeof(littleEndianCounter), &outlen,
+                                    &error);
+  if(status != G_IO_STATUS_NORMAL)
+    {
+      cond_msg_error(error, "[SLOG] ERROR: Unable to write key counter");
 
-        g_clear_error(&error);
+      g_clear_error(&error);
 
-        g_io_channel_shutdown(keyfile, TRUE, &error);
-        g_io_channel_unref(keyfile);
+      g_io_channel_shutdown(keyfile, TRUE, &error);
+      g_io_channel_unref(keyfile);
 
-        g_clear_error(&error);
+      g_clear_error(&error);
 
-        return 0;
+      return 0;
     }
 
-    status = g_io_channel_shutdown(keyfile, TRUE, &error);
-    g_io_channel_unref(keyfile);
+  status = g_io_channel_shutdown(keyfile, TRUE, &error);
+  g_io_channel_unref(keyfile);
 
-    if (status != G_IO_STATUS_NORMAL) {
-        cond_msg_error(error, "[SLOG] ERROR: Cannot close key file");
+  if (status != G_IO_STATUS_NORMAL)
+    {
+      cond_msg_error(error, "[SLOG] ERROR: Cannot close key file");
 
-        g_clear_error(&error);
+      g_clear_error(&error);
 
-        return 0;
+      return 0;
     }
 
-    return 1;
+  return 1;
 
 }
 
-int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntry, unsigned char *mainKey, unsigned char *keyZero, guint keyNumber, GString **output, guint64 *numberOfLogEntries, unsigned char *cmac_tag, struct hsearch_data *tab) {
+int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntry, unsigned char *mainKey,
+                  unsigned char *keyZero, guint keyNumber, GString **output, guint64 *numberOfLogEntries, unsigned char *cmac_tag,
+                  struct hsearch_data *tab)
+{
 
-    int ret = 1;
-    for (guint64 i=0; i<entriesInBuffer; i++) {
+  int ret = 1;
+  for (guint64 i=0; i<entriesInBuffer; i++)
+    {
 
-        output[i] = g_string_new(NULL);
+      output[i] = g_string_new(NULL);
 
-        guint64 len = input[i]->len;
-        if (len>(COUNTER_LENGTH+1)) {
-            //INTERPRET FIRST COUNTER_LENGTH+1 characters
-            char ctrbuf[COUNTER_LENGTH+1];
-            memcpy(ctrbuf, input[i]->str, COUNTER_LENGTH);
-            ctrbuf[COUNTER_LENGTH] = 0;
+      guint64 len = input[i]->len;
+      if (len>(COUNTER_LENGTH+1))
+        {
+          //INTERPRET FIRST COUNTER_LENGTH+1 characters
+          char ctrbuf[COUNTER_LENGTH+1];
+          memcpy(ctrbuf, input[i]->str, COUNTER_LENGTH);
+          ctrbuf[COUNTER_LENGTH] = 0;
 
-            gsize outLen;
-            guchar *tmp = convertToBin(ctrbuf, &outLen);
+          gsize outLen;
+          guchar *tmp = convertToBin(ctrbuf, &outLen);
 
-            guint64 logEntryOnDisk;
-            if (outLen!=sizeof(guint64)) {
-                msg_error("[SLOG] ERROR: Cannot derive integer value from counter field",evt_tag_long("Log entry number", *nextLogEntry));
-                logEntryOnDisk = *nextLogEntry;
-                g_free(tmp);
-            } else {
-                memcpy(&logEntryOnDisk, tmp, sizeof(logEntryOnDisk));
-                g_free(tmp);
+          guint64 logEntryOnDisk;
+          if (outLen!=sizeof(guint64))
+            {
+              msg_error("[SLOG] ERROR: Cannot derive integer value from counter field", evt_tag_long("Log entry number",
+                        *nextLogEntry));
+              logEntryOnDisk = *nextLogEntry;
+              g_free(tmp);
+            }
+          else
+            {
+              memcpy(&logEntryOnDisk, tmp, sizeof(logEntryOnDisk));
+              g_free(tmp);
             }
 
-            len = len - (COUNTER_LENGTH+1);
+          len = len - (COUNTER_LENGTH+1);
 
-            if (logEntryOnDisk != *nextLogEntry) {
-                if (tab->table!=NULL) {
-                    ENTRY e, *retVal;
-                    char buf[CTR_LEN_SIMPLE+1];
-                    snprintf(buf, CTR_LEN_SIMPLE+1, "%lu",logEntryOnDisk);
-                    e.key = buf;
-                    if(hsearch_r(e, FIND, &retVal, tab)!=0) {
-                        msg_error("[SLOG] ERROR: Duplicate entry detected", evt_tag_long("entry", logEntryOnDisk));
-                        ret = 0;
+          if (logEntryOnDisk != *nextLogEntry)
+            {
+              if (tab->table!=NULL)
+                {
+                  ENTRY e, *retVal;
+                  char buf[CTR_LEN_SIMPLE+1];
+                  snprintf(buf, CTR_LEN_SIMPLE+1, "%lu", logEntryOnDisk);
+                  e.key = buf;
+                  if(hsearch_r(e, FIND, &retVal, tab)!=0)
+                    {
+                      msg_error("[SLOG] ERROR: Duplicate entry detected", evt_tag_long("entry", logEntryOnDisk));
+                      ret = 0;
                     }
                 }
-                if (logEntryOnDisk<(*nextLogEntry)) {
-                    if (logEntryOnDisk<keyNumber) {
-                        msg_error("[SLOG] ERROR: Log claims to be past entry from past archive. We cannot rewind back to this key without key0. This is going to fail.", evt_tag_long("entry", logEntryOnDisk));
-                        ret = 0;
+              if (logEntryOnDisk<(*nextLogEntry))
+                {
+                  if (logEntryOnDisk<keyNumber)
+                    {
+                      msg_error("[SLOG] ERROR: Log claims to be past entry from past archive. We cannot rewind back to this key without key0. This is going to fail.",
+                                evt_tag_long("entry", logEntryOnDisk));
+                      ret = 0;
                     }
-                    else {
-                        msg_error("[SLOG] ERROR: Log claims to be past entry. We rewind from first known key, this might take some time", evt_tag_long("entry", logEntryOnDisk));
-                        //Rewind key to keyZero
-                        memcpy(mainKey, keyZero, KEY_LENGTH);
-                        deriveKey(mainKey, logEntryOnDisk, keyNumber);
-                        *nextLogEntry = logEntryOnDisk;
-                        ret = 0;
+                  else
+                    {
+                      msg_error("[SLOG] ERROR: Log claims to be past entry. We rewind from first known key, this might take some time",
+                                evt_tag_long("entry", logEntryOnDisk));
+                      //Rewind key to keyZero
+                      memcpy(mainKey, keyZero, KEY_LENGTH);
+                      deriveKey(mainKey, logEntryOnDisk, keyNumber);
+                      *nextLogEntry = logEntryOnDisk;
+                      ret = 0;
                     }
                 }
-                if (logEntryOnDisk-(*nextLogEntry)>1000000) {
-                    msg_info("[SLOG] INFO: Derving key for distant future. This might take some time.",evt_tag_long("next log entry should be", *nextLogEntry),evt_tag_long("key to derive to", logEntryOnDisk),evt_tag_long("number of log entries", *numberOfLogEntries));
+              if (logEntryOnDisk-(*nextLogEntry)>1000000)
+                {
+                  msg_info("[SLOG] INFO: Derving key for distant future. This might take some time.",
+                           evt_tag_long("next log entry should be", *nextLogEntry), evt_tag_long("key to derive to", logEntryOnDisk),
+                           evt_tag_long("number of log entries", *numberOfLogEntries));
                 }
-                deriveKey(mainKey, logEntryOnDisk, *nextLogEntry);
-                *nextLogEntry = logEntryOnDisk;
+              deriveKey(mainKey, logEntryOnDisk, *nextLogEntry);
+              *nextLogEntry = logEntryOnDisk;
             }
 
-            GString *line = input[i];
+          GString *line = input[i];
 
-            char *ct = &(line->str)[COUNTER_LENGTH+1];
-            guint64 outputLength;
+          char *ct = &(line->str)[COUNTER_LENGTH+1];
+          guint64 outputLength;
 
-            // binBuf = IV + TAG + CT
-            guchar *binBuf = convertToBin(ct, &outputLength);
-            int pt_length = 0;
+          // binBuf = IV + TAG + CT
+          guchar *binBuf = convertToBin(ct, &outputLength);
+          int pt_length = 0;
 
-            //Catch wether something weird happened during conversion
-            if (outputLength>IV_LENGTH+AES_BLOCKSIZE) {
-                unsigned char pt[outputLength - IV_LENGTH - AES_BLOCKSIZE];
+          //Catch wether something weird happened during conversion
+          if (outputLength>IV_LENGTH+AES_BLOCKSIZE)
+            {
+              unsigned char pt[outputLength - IV_LENGTH - AES_BLOCKSIZE];
 
-                unsigned char encKey[KEY_LENGTH];
-                deriveEncSubKey(mainKey, encKey);
+              unsigned char encKey[KEY_LENGTH];
+              deriveEncSubKey(mainKey, encKey);
 
-                pt_length = sLogDecrypt(&binBuf[IV_LENGTH+AES_BLOCKSIZE], outputLength - IV_LENGTH - AES_BLOCKSIZE, &binBuf[IV_LENGTH], encKey, binBuf, pt);
+              pt_length = sLogDecrypt(&binBuf[IV_LENGTH+AES_BLOCKSIZE], outputLength - IV_LENGTH - AES_BLOCKSIZE, &binBuf[IV_LENGTH],
+                                      encKey, binBuf, pt);
 
-                if (pt_length>0) {
-                    // Include colon, whitespace, and \0
-                    g_string_append_printf(output[i], "%0*lx: %.*s",CTR_LEN_SIMPLE,logEntryOnDisk,pt_length,pt);
+              if (pt_length>0)
+                {
+                  // Include colon, whitespace, and \0
+                  g_string_append_printf(output[i], "%0*lx: %.*s", CTR_LEN_SIMPLE, logEntryOnDisk, pt_length, pt);
 
-                    if (tab->table!=NULL) {
-                        ENTRY e, *retVal;
-                        char * buf;
-                        buf = malloc(CTR_LEN_SIMPLE+1);
-                        snprintf(buf, CTR_LEN_SIMPLE+1, "%lu",logEntryOnDisk);
-                        e.key = buf;
-                        e.data = (void *) logEntryOnDisk;
-                        if (hsearch_r(e, ENTER, &retVal, tab)==0) {
-                            msg_warning("[SLOG] WARNING: Unable to process hash table while entering decrypted log entry", evt_tag_long("entry",logEntryOnDisk));
-                            ret = 0;
+                  if (tab->table!=NULL)
+                    {
+                      ENTRY e, *retVal;
+                      char *buf;
+                      buf = malloc(CTR_LEN_SIMPLE+1);
+                      snprintf(buf, CTR_LEN_SIMPLE+1, "%lu", logEntryOnDisk);
+                      e.key = buf;
+                      e.data = (void *) logEntryOnDisk;
+                      if (hsearch_r(e, ENTER, &retVal, tab)==0)
+                        {
+                          msg_warning("[SLOG] WARNING: Unable to process hash table while entering decrypted log entry", evt_tag_long("entry",
+                                      logEntryOnDisk));
+                          ret = 0;
                         }
                     }
 
-                    // Update BigHMAC
-                    if ((*numberOfLogEntries) == 0UL) { //First aggregated MAC
-                        guint64 outlen = 0;
+                  // Update BigHMAC
+                  if ((*numberOfLogEntries) == 0UL)   //First aggregated MAC
+                    {
+                      guint64 outlen = 0;
 
-                        unsigned char MACKey[KEY_LENGTH];
-                        deriveMACSubKey(mainKey, MACKey);
+                      unsigned char MACKey[KEY_LENGTH];
+                      deriveMACSubKey(mainKey, MACKey);
 
-                        cmac(MACKey, binBuf, IV_LENGTH+AES_BLOCKSIZE+pt_length, cmac_tag, &outlen );
+                      cmac(MACKey, binBuf, IV_LENGTH+AES_BLOCKSIZE+pt_length, cmac_tag, &outlen );
 
                     }
-                    else {
-                        // numberOfEntries > 0
-                        guint64 outlen;
-                        unsigned char bigBuf[AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+pt_length];
-                        memcpy(bigBuf, cmac_tag, AES_BLOCKSIZE);
-                        memcpy(&bigBuf[AES_BLOCKSIZE], binBuf, IV_LENGTH+AES_BLOCKSIZE+pt_length);
+                  else
+                    {
+                      // numberOfEntries > 0
+                      guint64 outlen;
+                      unsigned char bigBuf[AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+pt_length];
+                      memcpy(bigBuf, cmac_tag, AES_BLOCKSIZE);
+                      memcpy(&bigBuf[AES_BLOCKSIZE], binBuf, IV_LENGTH+AES_BLOCKSIZE+pt_length);
 
-                        unsigned char MACKey[KEY_LENGTH];
-                        deriveMACSubKey(mainKey, MACKey);
+                      unsigned char MACKey[KEY_LENGTH];
+                      deriveMACSubKey(mainKey, MACKey);
 
-                        cmac(MACKey, bigBuf, AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+pt_length, cmac_tag, &outlen );
+                      cmac(MACKey, bigBuf, AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+pt_length, cmac_tag, &outlen );
 
                     }
                 }
             }
-            if (pt_length<=0) {
-                msg_warning("[SLOG] WARNING: Decryption not successful",
-                            evt_tag_long("entry", logEntryOnDisk));
-                ret = 0;
+          if (pt_length<=0)
+            {
+              msg_warning("[SLOG] WARNING: Decryption not successful",
+                          evt_tag_long("entry", logEntryOnDisk));
+              ret = 0;
             }
 
-            g_free(binBuf);
+          g_free(binBuf);
 
-            evolveKey(mainKey);
-            (*numberOfLogEntries)++;
-            (*nextLogEntry)++;
+          evolveKey(mainKey);
+          (*numberOfLogEntries)++;
+          (*nextLogEntry)++;
 
         }
-        else {
-            msg_error("[SLOG] ERROR: Cannot read log entry", evt_tag_long("",*nextLogEntry));
-            ret = 0;
+      else
+        {
+          msg_error("[SLOG] ERROR: Cannot read log entry", evt_tag_long("", *nextLogEntry));
+          ret = 0;
         }
 
     } // for
 
-    return ret;
+  return ret;
 
 }
 
 
-int finalizeVerify(guint64 startingEntry, guint64 entriesInFile, unsigned char *bigMac, unsigned char *cmac_tag, struct hsearch_data *tab) {
+int finalizeVerify(guint64 startingEntry, guint64 entriesInFile, unsigned char *bigMac, unsigned char *cmac_tag,
+                   struct hsearch_data *tab)
+{
 
-    int ret = 1;
+  int ret = 1;
 
-    // Check which entries are missing
-    guint64 notRecovered = 0;
-    for (guint64 i = startingEntry; i<startingEntry+entriesInFile; i++) {
+  // Check which entries are missing
+  guint64 notRecovered = 0;
+  for (guint64 i = startingEntry; i<startingEntry+entriesInFile; i++)
+    {
 
-        if (tab->table !=NULL) {
-            ENTRY e, *ep;
-            char buf[CTR_LEN_SIMPLE+1];
-            snprintf(buf, CTR_LEN_SIMPLE+1, "%lu",i);
-            e.key = buf;
-            e.data = (void *) i;
-            int searchRes = hsearch_r(e, FIND, &ep, tab);
+      if (tab->table !=NULL)
+        {
+          ENTRY e, *ep;
+          char buf[CTR_LEN_SIMPLE+1];
+          snprintf(buf, CTR_LEN_SIMPLE+1, "%lu", i);
+          e.key = buf;
+          e.data = (void *) i;
+          int searchRes = hsearch_r(e, FIND, &ep, tab);
 
-            if(searchRes == 0) {
-                notRecovered++;
-                msg_warning("[SLOG] WARNING: Unable to recover", evt_tag_long("entry", i));
-                ret = 0;
-            } else {
-                free(ep->key);
+          if(searchRes == 0)
+            {
+              notRecovered++;
+              msg_warning("[SLOG] WARNING: Unable to recover", evt_tag_long("entry", i));
+              ret = 0;
+            }
+          else
+            {
+              free(ep->key);
             }
         }
 
     }
-    if ((notRecovered==0)&&(tab->table!=NULL)) {
-        msg_info("[SLOG] INFO: All entries recovered successfully");
+  if ((notRecovered==0)&&(tab->table!=NULL))
+    {
+      msg_info("[SLOG] INFO: All entries recovered successfully");
     }
 
-    int equal = memcmp(bigMac, cmac_tag, CMAC_LENGTH);
+  int equal = memcmp(bigMac, cmac_tag, CMAC_LENGTH);
 
-    if (equal != 0) {
-        msg_warning("[SLOG] WARNING: Aggregated MAC mismatch. Log might be incomplete");
-        ret = 0;
+  if (equal != 0)
+    {
+      msg_warning("[SLOG] WARNING: Aggregated MAC mismatch. Log might be incomplete");
+      ret = 0;
     }
-    else {
-        msg_info("[SLOG] Aggregated MAC matches. Log contains all expected log messages.");
+  else
+    {
+      msg_info("[SLOG] Aggregated MAC matches. Log contains all expected log messages.");
     }
 
-    hdestroy_r(tab);
+  hdestroy_r(tab);
 
-    return ret;
+  return ret;
 }
 
-int initVerify(guint64 entriesInFile, unsigned char *mainKey, uint64_t *nextLogEntry, guint64 *startingEntry, GString **input, struct hsearch_data *tab) {
+int initVerify(guint64 entriesInFile, unsigned char *mainKey, uint64_t *nextLogEntry, guint64 *startingEntry,
+               GString **input, struct hsearch_data *tab)
+{
 
-    memset(tab, 0, sizeof(struct hsearch_data));
+  memset(tab, 0, sizeof(struct hsearch_data));
 
-    //2 times for low load
-    if (hcreate_r(2*entriesInFile, tab)==0) {
-        msg_error("[SLOG] ERROR: Cannot create hash table");
-        tab->table = NULL;
-        return 0;
+  //2 times for low load
+  if (hcreate_r(2*entriesInFile, tab)==0)
+    {
+      msg_error("[SLOG] ERROR: Cannot create hash table");
+      tab->table = NULL;
+      return 0;
     }
 
-    if (input[0]->len>(COUNTER_LENGTH+1)) {
-        gsize outLen;
-        char buf[COUNTER_LENGTH+1];
-        memcpy(buf, input[0]->str, COUNTER_LENGTH);
-        buf[COUNTER_LENGTH] = 0;
-        guchar *tempInt = convertToBin(buf, &outLen);
-        if (outLen!=sizeof(guint64)) {
-            msg_warning("[SLOG] WARNING: Cannot derive integer value from first input line counter");
-            (*startingEntry) = 0UL;
-            g_free(tempInt);
-            return 0;
-        } else {
-            memcpy(startingEntry, tempInt, sizeof(guint64));
-            g_free(tempInt);
+  if (input[0]->len>(COUNTER_LENGTH+1))
+    {
+      gsize outLen;
+      char buf[COUNTER_LENGTH+1];
+      memcpy(buf, input[0]->str, COUNTER_LENGTH);
+      buf[COUNTER_LENGTH] = 0;
+      guchar *tempInt = convertToBin(buf, &outLen);
+      if (outLen!=sizeof(guint64))
+        {
+          msg_warning("[SLOG] WARNING: Cannot derive integer value from first input line counter");
+          (*startingEntry) = 0UL;
+          g_free(tempInt);
+          return 0;
+        }
+      else
+        {
+          memcpy(startingEntry, tempInt, sizeof(guint64));
+          g_free(tempInt);
         }
 
-        if((*startingEntry) > 0) {
-            msg_warning("[SLOG] WARNING: Log does not start with index 0",
-                        evt_tag_long("index", (*startingEntry)));
-            (*nextLogEntry) = (*startingEntry);
-            deriveKey(mainKey, (*nextLogEntry), 0);
-            return 0;
+      if((*startingEntry) > 0)
+        {
+          msg_warning("[SLOG] WARNING: Log does not start with index 0",
+                      evt_tag_long("index", (*startingEntry)));
+          (*nextLogEntry) = (*startingEntry);
+          deriveKey(mainKey, (*nextLogEntry), 0);
+          return 0;
         }
     }
-    else {
-        msg_warning("[SLOG] WARNING: Problems reading log entry at first line.");
-        return 0;
+  else
+    {
+      msg_warning("[SLOG] WARNING: Problems reading log entry at first line.");
+      return 0;
     }
 
-    return 1;
+  return 1;
 
 }
 
@@ -1162,282 +1291,311 @@ int initVerify(guint64 entriesInFile, unsigned char *mainKey, uint64_t *nextLogE
   1 on success
   0 on error
 */
-int iterativeFileVerify(unsigned char *previousMAC, unsigned char *mainKey, char *inputFileName, unsigned char *bigMAC, char *outputFileName, guint64 entriesInFile, int chunkLength, guint64 keyNumber) {
+int iterativeFileVerify(unsigned char *previousMAC, unsigned char *mainKey, char *inputFileName, unsigned char *bigMAC,
+                        char *outputFileName, guint64 entriesInFile, int chunkLength, guint64 keyNumber)
+{
 
-    if(entriesInFile==0) {
-        msg_error("[SLOG] ERROR: Nothing to verify");
-        return 0;
+  if(entriesInFile==0)
+    {
+      msg_error("[SLOG] ERROR: Nothing to verify");
+      return 0;
     }
 
-    unsigned char keyZero[KEY_LENGTH];
-    memcpy(keyZero, mainKey, KEY_LENGTH);
-    int startedWithZero = 0;
+  unsigned char keyZero[KEY_LENGTH];
+  memcpy(keyZero, mainKey, KEY_LENGTH);
+  int startedWithZero = 0;
 
-    if (keyNumber!=0) {
-        msg_info("[SLOG] INFO: We are verifying with a key different from key0", evt_tag_long("key number", keyNumber));
-    } else {
-        msg_info("[SLOG] INFO: We are verifying starting with key0. Is this really what you want?");
-        startedWithZero = 1;
+  if (keyNumber!=0)
+    {
+      msg_info("[SLOG] INFO: We are verifying with a key different from key0", evt_tag_long("key number", keyNumber));
     }
-    int ret = 1;
-
-    GError *myError = NULL;
-    GIOChannel* input = g_io_channel_new_file(inputFileName, "r", &myError);
-    if (!input) {
-        cond_msg_error (myError, "[SLOG] ERROR: Cannot open input file");
-
-        g_clear_error(&myError);
-
-        return 0;
+  else
+    {
+      msg_info("[SLOG] INFO: We are verifying starting with key0. Is this really what you want?");
+      startedWithZero = 1;
     }
+  int ret = 1;
 
-    GIOStatus status = g_io_channel_set_encoding(input, NULL, &myError);
-    if(status != G_IO_STATUS_NORMAL) {
-        cond_msg_error (myError, "[SLOG] ERROR: set encoding for input file");
+  GError *myError = NULL;
+  GIOChannel *input = g_io_channel_new_file(inputFileName, "r", &myError);
+  if (!input)
+    {
+      cond_msg_error (myError, "[SLOG] ERROR: Cannot open input file");
 
-        g_clear_error(&myError);
+      g_clear_error(&myError);
 
-        g_io_channel_shutdown(input, TRUE, &myError);
-        g_io_channel_unref(input);
-
-        g_clear_error(&myError);
-
-        return 0;
+      return 0;
     }
 
-    GIOChannel* output = g_io_channel_new_file(outputFileName, "w+", &myError);
+  GIOStatus status = g_io_channel_set_encoding(input, NULL, &myError);
+  if(status != G_IO_STATUS_NORMAL)
+    {
+      cond_msg_error (myError, "[SLOG] ERROR: set encoding for input file");
 
-    if (!output) {
-        cond_msg_error(myError, "[SLOG] ERROR: Cannot open output file");
+      g_clear_error(&myError);
 
-        g_clear_error(&myError);
+      g_io_channel_shutdown(input, TRUE, &myError);
+      g_io_channel_unref(input);
 
-        g_io_channel_shutdown(input, TRUE, &myError);
-        g_io_channel_unref(input);
+      g_clear_error(&myError);
 
-        g_clear_error(&myError);
-
-        return 0;
-    }
-    status = g_io_channel_set_encoding(output, NULL, &myError);
-    if (status != G_IO_STATUS_NORMAL) {
-        cond_msg_error(myError, "[SLOG] ERROR: Cannot set output file encoding");
-        g_clear_error(&myError);
-
-        g_io_channel_shutdown(input, TRUE, &myError);
-        g_io_channel_unref(input);
-
-        g_clear_error(&myError);
-
-        g_io_channel_shutdown(output, TRUE, &myError);
-        g_io_channel_unref(output);
-
-        g_clear_error(&myError);
-
-        return  0;
+      return 0;
     }
 
+  GIOChannel *output = g_io_channel_new_file(outputFileName, "w+", &myError);
 
-    GString **inputBuffer = (GString **) malloc(sizeof(GString *) * chunkLength);
-    GString **outputBuffer = (GString **) malloc(sizeof(GString *) * chunkLength);
+  if (!output)
+    {
+      cond_msg_error(myError, "[SLOG] ERROR: Cannot open output file");
 
-    if ((outputBuffer==NULL)||(inputBuffer == NULL)) {
-        msg_error("[SLOG] ERROR: fileVerify cannot allocate memory");
+      g_clear_error(&myError);
 
-        g_io_channel_shutdown(input, TRUE, &myError);
-        g_io_channel_unref(input);
-        g_clear_error(&myError);
+      g_io_channel_shutdown(input, TRUE, &myError);
+      g_io_channel_unref(input);
 
-        g_io_channel_shutdown(output, TRUE, &myError);
-        g_io_channel_unref(output);
-        g_clear_error(&myError);
+      g_clear_error(&myError);
 
-        free(inputBuffer);
-        free(outputBuffer);
+      return 0;
+    }
+  status = g_io_channel_set_encoding(output, NULL, &myError);
+  if (status != G_IO_STATUS_NORMAL)
+    {
+      cond_msg_error(myError, "[SLOG] ERROR: Cannot set output file encoding");
+      g_clear_error(&myError);
 
-        return 0;
+      g_io_channel_shutdown(input, TRUE, &myError);
+      g_io_channel_unref(input);
+
+      g_clear_error(&myError);
+
+      g_io_channel_shutdown(output, TRUE, &myError);
+      g_io_channel_unref(output);
+
+      g_clear_error(&myError);
+
+      return  0;
     }
 
-    unsigned char cmac_tag[CMAC_LENGTH];
-    memcpy(cmac_tag, previousMAC, CMAC_LENGTH);
 
-    guint64 nextLogEntry = keyNumber;
-    guint64 startingEntry = keyNumber;
-    guint64 numberOfLogEntries = keyNumber;
+  GString **inputBuffer = (GString **) malloc(sizeof(GString *) * chunkLength);
+  GString **outputBuffer = (GString **) malloc(sizeof(GString *) * chunkLength);
 
-    //This is only to avoid updating BigMAC during the first iteration
-    if (keyNumber == 0) {
-        numberOfLogEntries = 1;
+  if ((outputBuffer==NULL)||(inputBuffer == NULL))
+    {
+      msg_error("[SLOG] ERROR: fileVerify cannot allocate memory");
+
+      g_io_channel_shutdown(input, TRUE, &myError);
+      g_io_channel_unref(input);
+      g_clear_error(&myError);
+
+      g_io_channel_shutdown(output, TRUE, &myError);
+      g_io_channel_unref(output);
+      g_clear_error(&myError);
+
+      free(inputBuffer);
+      free(outputBuffer);
+
+      return 0;
     }
 
-    if (chunkLength>entriesInFile) {
-        chunkLength = entriesInFile;
+  unsigned char cmac_tag[CMAC_LENGTH];
+  memcpy(cmac_tag, previousMAC, CMAC_LENGTH);
+
+  guint64 nextLogEntry = keyNumber;
+  guint64 startingEntry = keyNumber;
+  guint64 numberOfLogEntries = keyNumber;
+
+  //This is only to avoid updating BigMAC during the first iteration
+  if (keyNumber == 0)
+    {
+      numberOfLogEntries = 1;
     }
 
-    struct hsearch_data tab;
-    memset(&tab, 0, sizeof(struct hsearch_data));
-    //2 times for low load
-    if (hcreate_r(2*entriesInFile, &tab)==0) {
-        msg_error("[SLOG] ERROR: Cannot create hash table");
-        tab.table = NULL;
-        return 0;
+  if (chunkLength>entriesInFile)
+    {
+      chunkLength = entriesInFile;
     }
 
-    // process file in chunks
-    for (int j = 0; j<(entriesInFile/chunkLength); j++) {
-        for (guint64 i = 0; i < chunkLength; i++) {
-            inputBuffer[i] = g_string_new(NULL);
-            status = g_io_channel_read_line_string(input, inputBuffer[i], NULL, &myError);
-            if (status != G_IO_STATUS_NORMAL) {
-                cond_msg_error(myError, "[SLOG] ERROR: reading from input file");
+  struct hsearch_data tab;
+  memset(&tab, 0, sizeof(struct hsearch_data));
+  //2 times for low load
+  if (hcreate_r(2*entriesInFile, &tab)==0)
+    {
+      msg_error("[SLOG] ERROR: Cannot create hash table");
+      tab.table = NULL;
+      return 0;
+    }
 
-                g_clear_error(&myError);
+  // process file in chunks
+  for (int j = 0; j<(entriesInFile/chunkLength); j++)
+    {
+      for (guint64 i = 0; i < chunkLength; i++)
+        {
+          inputBuffer[i] = g_string_new(NULL);
+          status = g_io_channel_read_line_string(input, inputBuffer[i], NULL, &myError);
+          if (status != G_IO_STATUS_NORMAL)
+            {
+              cond_msg_error(myError, "[SLOG] ERROR: reading from input file");
 
-                g_io_channel_shutdown(input, TRUE, &myError);
-                g_io_channel_unref(input);
+              g_clear_error(&myError);
 
-                g_clear_error(&myError);
+              g_io_channel_shutdown(input, TRUE, &myError);
+              g_io_channel_unref(input);
 
-                g_io_channel_shutdown(output, TRUE, &myError);
-                g_io_channel_unref(output);
+              g_clear_error(&myError);
 
-                g_clear_error(&myError);
+              g_io_channel_shutdown(output, TRUE, &myError);
+              g_io_channel_unref(output);
 
-                free(inputBuffer);
-                free(outputBuffer);
+              g_clear_error(&myError);
 
-                return  0;
+              free(inputBuffer);
+              free(outputBuffer);
+
+              return  0;
             }
 
-            // Cut last character to remove the trailing new line
-            g_string_truncate(inputBuffer[i], (inputBuffer[i]->len) - 1);
+          // Cut last character to remove the trailing new line
+          g_string_truncate(inputBuffer[i], (inputBuffer[i]->len) - 1);
         }
-        ret = ret * iterateBuffer(chunkLength, inputBuffer, &nextLogEntry, mainKey, keyZero, keyNumber, outputBuffer, &numberOfLogEntries, cmac_tag, &tab);
+      ret = ret * iterateBuffer(chunkLength, inputBuffer, &nextLogEntry, mainKey, keyZero, keyNumber, outputBuffer,
+                                &numberOfLogEntries, cmac_tag, &tab);
 
-        //...and write to file
-        for (guint64 i = 0; i < chunkLength; i++) {
-            if (outputBuffer[i]->len!=0) {
-                gsize size;
-                //Add newline
-                g_string_append(outputBuffer[i], "\n");
-                status = g_io_channel_write_chars(output, (outputBuffer[i])->str, (outputBuffer[i])->len, &size, &myError);
+      //...and write to file
+      for (guint64 i = 0; i < chunkLength; i++)
+        {
+          if (outputBuffer[i]->len!=0)
+            {
+              gsize size;
+              //Add newline
+              g_string_append(outputBuffer[i], "\n");
+              status = g_io_channel_write_chars(output, (outputBuffer[i])->str, (outputBuffer[i])->len, &size, &myError);
 
-                if (status != G_IO_STATUS_NORMAL) {
-                    cond_msg_error(myError, "[SLOG] ERROR: writing to output file");
+              if (status != G_IO_STATUS_NORMAL)
+                {
+                  cond_msg_error(myError, "[SLOG] ERROR: writing to output file");
 
-                    g_clear_error(&myError);
+                  g_clear_error(&myError);
 
-                    g_io_channel_shutdown(input, TRUE, &myError);
-                    g_io_channel_unref(input);
+                  g_io_channel_shutdown(input, TRUE, &myError);
+                  g_io_channel_unref(input);
 
-                    g_clear_error(&myError);
+                  g_clear_error(&myError);
 
-                    g_io_channel_shutdown(output, TRUE, &myError);
-                    g_io_channel_unref(output);
+                  g_io_channel_shutdown(output, TRUE, &myError);
+                  g_io_channel_unref(output);
 
-                    g_clear_error(&myError);
+                  g_clear_error(&myError);
 
-                    free(inputBuffer);
-                    free(outputBuffer);
+                  free(inputBuffer);
+                  free(outputBuffer);
 
-                    return  0;
+                  return  0;
                 }
 
 
             }
-            g_string_free(outputBuffer[i], TRUE);
-            g_string_free(inputBuffer[i], TRUE);
+          g_string_free(outputBuffer[i], TRUE);
+          g_string_free(inputBuffer[i], TRUE);
         }
 
     }
 
-    if ((entriesInFile % chunkLength) > 0) {
-        for (guint64 i = 0; i < (entriesInFile % chunkLength); i++) {
-            inputBuffer[i] = g_string_new(NULL);
-            status = g_io_channel_read_line_string(input, inputBuffer[i], NULL, &myError);
-            if (status != G_IO_STATUS_NORMAL) {
-                cond_msg_error(myError, "[SLOG] ERROR: reading from input file");
+  if ((entriesInFile % chunkLength) > 0)
+    {
+      for (guint64 i = 0; i < (entriesInFile % chunkLength); i++)
+        {
+          inputBuffer[i] = g_string_new(NULL);
+          status = g_io_channel_read_line_string(input, inputBuffer[i], NULL, &myError);
+          if (status != G_IO_STATUS_NORMAL)
+            {
+              cond_msg_error(myError, "[SLOG] ERROR: reading from input file");
 
-                g_clear_error(&myError);
+              g_clear_error(&myError);
 
-                g_io_channel_shutdown(input, TRUE, &myError);
-                g_io_channel_unref(input);
+              g_io_channel_shutdown(input, TRUE, &myError);
+              g_io_channel_unref(input);
 
-                g_clear_error(&myError);
+              g_clear_error(&myError);
 
-                g_io_channel_shutdown(output, TRUE, &myError);
-                g_io_channel_unref(output);
+              g_io_channel_shutdown(output, TRUE, &myError);
+              g_io_channel_unref(output);
 
-                g_clear_error(&myError);
+              g_clear_error(&myError);
 
-                free(inputBuffer);
-                free(outputBuffer);
+              free(inputBuffer);
+              free(outputBuffer);
 
 
-                return  0;
+              return  0;
             }
 
-            // Cut last character to remove the trailing new line
-            g_string_truncate(inputBuffer[i], (inputBuffer[i]->len) - 1);
+          // Cut last character to remove the trailing new line
+          g_string_truncate(inputBuffer[i], (inputBuffer[i]->len) - 1);
         }
-        ret = ret * iterateBuffer((entriesInFile % chunkLength), inputBuffer, &nextLogEntry, mainKey, keyZero, keyNumber, outputBuffer, &numberOfLogEntries, cmac_tag, &tab);
+      ret = ret * iterateBuffer((entriesInFile % chunkLength), inputBuffer, &nextLogEntry, mainKey, keyZero, keyNumber,
+                                outputBuffer, &numberOfLogEntries, cmac_tag, &tab);
 
-        for (guint64 i = 0; i < (entriesInFile % chunkLength); i++) {
-            if (outputBuffer[i]->len!=0) {
+      for (guint64 i = 0; i < (entriesInFile % chunkLength); i++)
+        {
+          if (outputBuffer[i]->len!=0)
+            {
 
-                gsize size;
-                //Add newline
-                g_string_append(outputBuffer[i], "\n");
-                status = g_io_channel_write_chars(output, (outputBuffer[i])->str, (outputBuffer[i])->len, &size, &myError);
-                if (status != G_IO_STATUS_NORMAL) {
-                    cond_msg_error(myError, "[SLOG] ERROR: writing to output file");
+              gsize size;
+              //Add newline
+              g_string_append(outputBuffer[i], "\n");
+              status = g_io_channel_write_chars(output, (outputBuffer[i])->str, (outputBuffer[i])->len, &size, &myError);
+              if (status != G_IO_STATUS_NORMAL)
+                {
+                  cond_msg_error(myError, "[SLOG] ERROR: writing to output file");
 
-                    g_clear_error(&myError);
+                  g_clear_error(&myError);
 
-                    g_io_channel_shutdown(input, TRUE, &myError);
-                    g_io_channel_unref(input);
+                  g_io_channel_shutdown(input, TRUE, &myError);
+                  g_io_channel_unref(input);
 
-                    g_clear_error(&myError);
+                  g_clear_error(&myError);
 
-                    g_io_channel_shutdown(output, TRUE, &myError);
-                    g_io_channel_unref(output);
+                  g_io_channel_shutdown(output, TRUE, &myError);
+                  g_io_channel_unref(output);
 
-                    g_clear_error(&myError);
+                  g_clear_error(&myError);
 
-                    free(inputBuffer);
-                    free(outputBuffer);
+                  free(inputBuffer);
+                  free(outputBuffer);
 
-                    return  0;
+                  return  0;
                 }
 
             }
-            g_string_free(outputBuffer[i], TRUE);
-            g_string_free(inputBuffer[i], TRUE);
+          g_string_free(outputBuffer[i], TRUE);
+          g_string_free(inputBuffer[i], TRUE);
 
         }
 
     }
 
-    if (startedWithZero==1) {
-        msg_info("[SLOG] INFO: We started with key key0. There might be a lot of warnings about missing log entries.");
+  if (startedWithZero==1)
+    {
+      msg_info("[SLOG] INFO: We started with key key0. There might be a lot of warnings about missing log entries.");
     }
 
-    ret = ret * finalizeVerify(startingEntry, entriesInFile, bigMAC, cmac_tag, &tab);
+  ret = ret * finalizeVerify(startingEntry, entriesInFile, bigMAC, cmac_tag, &tab);
 
-    free(inputBuffer);
-    free(outputBuffer);
+  free(inputBuffer);
+  free(outputBuffer);
 
-    g_io_channel_shutdown(input, TRUE, &myError);
-    g_io_channel_unref(input);
+  g_io_channel_shutdown(input, TRUE, &myError);
+  g_io_channel_unref(input);
 
-    g_clear_error(&myError);
+  g_clear_error(&myError);
 
-    g_io_channel_shutdown(output, TRUE, &myError);
-    g_io_channel_unref(output);
+  g_io_channel_shutdown(output, TRUE, &myError);
+  g_io_channel_unref(output);
 
-    g_clear_error(&myError);
+  g_clear_error(&myError);
 
-    return ret;
+  return ret;
 
 }
 
@@ -1450,314 +1608,343 @@ int iterativeFileVerify(unsigned char *previousMAC, unsigned char *mainKey, char
   1 on success
   0 on error
 */
-int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName, unsigned char *bigMac, guint64 entriesInFile, int chunkLength) {
+int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName, unsigned char *bigMac,
+               guint64 entriesInFile, int chunkLength)
+{
 
-    unsigned char keyZero[KEY_LENGTH];
-    memcpy(keyZero, mainKey, KEY_LENGTH);
+  unsigned char keyZero[KEY_LENGTH];
+  memcpy(keyZero, mainKey, KEY_LENGTH);
 
-    struct hsearch_data tab;
+  struct hsearch_data tab;
 
-    int ret = 1;
+  int ret = 1;
 
-    if(entriesInFile==0) {
-        msg_error("[SLOG] ERROR: Nothing to verify");
-        return 0;
+  if(entriesInFile==0)
+    {
+      msg_error("[SLOG] ERROR: Nothing to verify");
+      return 0;
     }
 
-    GError *myError = NULL;
-    GIOChannel* input = g_io_channel_new_file(inputFileName, "r", &myError);
-    if (!input) {
-        cond_msg_error (myError, "[SLOG] ERROR: Cannot open input file");
+  GError *myError = NULL;
+  GIOChannel *input = g_io_channel_new_file(inputFileName, "r", &myError);
+  if (!input)
+    {
+      cond_msg_error (myError, "[SLOG] ERROR: Cannot open input file");
 
-        g_clear_error(&myError);
+      g_clear_error(&myError);
 
-        return 0;
+      return 0;
     }
 
-    GIOStatus status =  g_io_channel_set_encoding(input, NULL, &myError);
-    if (status != G_IO_STATUS_NORMAL) {
-        cond_msg_error (myError, "[SLOG] ERROR: setting input file encoding");
+  GIOStatus status =  g_io_channel_set_encoding(input, NULL, &myError);
+  if (status != G_IO_STATUS_NORMAL)
+    {
+      cond_msg_error (myError, "[SLOG] ERROR: setting input file encoding");
 
-        g_clear_error(&myError);
+      g_clear_error(&myError);
 
-        g_io_channel_shutdown(input, TRUE, &myError);
-        g_io_channel_unref(input);
+      g_io_channel_shutdown(input, TRUE, &myError);
+      g_io_channel_unref(input);
 
-        g_clear_error(&myError);
+      g_clear_error(&myError);
 
-        return 0;
+      return 0;
     }
 
-    GIOChannel* output = g_io_channel_new_file(outputFileName, "w+", &myError);
+  GIOChannel *output = g_io_channel_new_file(outputFileName, "w+", &myError);
 
-    if (!output) {
-        cond_msg_error (myError,"[SLOG] ERROR: Cannot open output file");
+  if (!output)
+    {
+      cond_msg_error (myError, "[SLOG] ERROR: Cannot open output file");
 
-        g_clear_error(&myError);
+      g_clear_error(&myError);
 
-        g_io_channel_shutdown(input, TRUE, &myError);
-        g_io_channel_unref(input);
+      g_io_channel_shutdown(input, TRUE, &myError);
+      g_io_channel_unref(input);
 
-        g_clear_error(&myError);
+      g_clear_error(&myError);
 
 
-        return 0;
+      return 0;
     }
 
-    status = g_io_channel_set_encoding(output, NULL, &myError);
+  status = g_io_channel_set_encoding(output, NULL, &myError);
 
-    if (status != G_IO_STATUS_NORMAL) {
-        cond_msg_error (myError, "[SLOG] ERROR: setting output file encoding");
+  if (status != G_IO_STATUS_NORMAL)
+    {
+      cond_msg_error (myError, "[SLOG] ERROR: setting output file encoding");
 
-        g_clear_error(&myError);
+      g_clear_error(&myError);
 
-        g_io_channel_shutdown(input, TRUE, &myError);
-        g_io_channel_unref(input);
+      g_io_channel_shutdown(input, TRUE, &myError);
+      g_io_channel_unref(input);
 
-        g_clear_error(&myError);
+      g_clear_error(&myError);
 
-        g_io_channel_shutdown(output, TRUE, &myError);
-        g_io_channel_unref(output);
+      g_io_channel_shutdown(output, TRUE, &myError);
+      g_io_channel_unref(output);
 
-        g_clear_error(&myError);
+      g_clear_error(&myError);
 
-        return 0;
+      return 0;
     }
 
 
 
-    GString **inputBuffer = (GString **) malloc(sizeof(GString *) * chunkLength);
-    GString **outputBuffer = (GString **) malloc(sizeof(GString *) * chunkLength);
+  GString **inputBuffer = (GString **) malloc(sizeof(GString *) * chunkLength);
+  GString **outputBuffer = (GString **) malloc(sizeof(GString *) * chunkLength);
 
-    if ((outputBuffer==NULL)||(inputBuffer == NULL)) {
-        msg_error("[SLOG] ERROR: fileVerify cannot allocate memory");
+  if ((outputBuffer==NULL)||(inputBuffer == NULL))
+    {
+      msg_error("[SLOG] ERROR: fileVerify cannot allocate memory");
 
-        g_io_channel_shutdown(input, TRUE, &myError);
-        g_io_channel_unref(input);
+      g_io_channel_shutdown(input, TRUE, &myError);
+      g_io_channel_unref(input);
 
-        g_clear_error(&myError);
+      g_clear_error(&myError);
 
-        g_io_channel_shutdown(output, TRUE, &myError);
-        g_io_channel_unref(output);
+      g_io_channel_shutdown(output, TRUE, &myError);
+      g_io_channel_unref(output);
 
-        g_clear_error(&myError);
+      g_clear_error(&myError);
 
-        return 0;
+      return 0;
     }
 
-    guint64 nextLogEntry = 0UL;
-    guint64 startingEntry = 0UL;
-    unsigned char cmac_tag[CMAC_LENGTH];
-    guint64 numberOfLogEntries = 0UL;
+  guint64 nextLogEntry = 0UL;
+  guint64 startingEntry = 0UL;
+  unsigned char cmac_tag[CMAC_LENGTH];
+  guint64 numberOfLogEntries = 0UL;
 
-    if (chunkLength>entriesInFile) {
-        chunkLength = entriesInFile;
+  if (chunkLength>entriesInFile)
+    {
+      chunkLength = entriesInFile;
     }
 
-    for (guint64 i = 0; i < chunkLength; i++) {
-        inputBuffer[i] = g_string_new(NULL);
-        status = g_io_channel_read_line_string(input, inputBuffer[i], NULL, &myError);
-        if (status != G_IO_STATUS_NORMAL) {
-            cond_msg_error (myError, "[SLOG] ERROR: reading from input file");
+  for (guint64 i = 0; i < chunkLength; i++)
+    {
+      inputBuffer[i] = g_string_new(NULL);
+      status = g_io_channel_read_line_string(input, inputBuffer[i], NULL, &myError);
+      if (status != G_IO_STATUS_NORMAL)
+        {
+          cond_msg_error (myError, "[SLOG] ERROR: reading from input file");
 
-            g_clear_error(&myError);
+          g_clear_error(&myError);
 
-            g_io_channel_shutdown(input, TRUE, &myError);
-            g_io_channel_unref(input);
+          g_io_channel_shutdown(input, TRUE, &myError);
+          g_io_channel_unref(input);
 
-            g_clear_error(&myError);
+          g_clear_error(&myError);
 
-            g_io_channel_shutdown(output, TRUE, &myError);
-            g_io_channel_unref(output);
+          g_io_channel_shutdown(output, TRUE, &myError);
+          g_io_channel_unref(output);
 
-            g_clear_error(&myError);
+          g_clear_error(&myError);
 
-            free(inputBuffer);
-            free(outputBuffer);
+          free(inputBuffer);
+          free(outputBuffer);
 
-            return 0;
+          return 0;
         }
 
-        // Cut last character to remove the trailing new line
-        g_string_truncate(inputBuffer[i], (inputBuffer[i]->len) - 1);
+      // Cut last character to remove the trailing new line
+      g_string_truncate(inputBuffer[i], (inputBuffer[i]->len) - 1);
     }
-    ret = ret * initVerify(entriesInFile, mainKey, &nextLogEntry, &startingEntry, inputBuffer, &tab);
-    ret = ret * iterateBuffer(chunkLength, inputBuffer, &nextLogEntry, mainKey, keyZero, 0, outputBuffer, &numberOfLogEntries, cmac_tag, &tab);
+  ret = ret * initVerify(entriesInFile, mainKey, &nextLogEntry, &startingEntry, inputBuffer, &tab);
+  ret = ret * iterateBuffer(chunkLength, inputBuffer, &nextLogEntry, mainKey, keyZero, 0, outputBuffer,
+                            &numberOfLogEntries, cmac_tag, &tab);
 
-    //write to file
-    for (guint64 i = 0; i < chunkLength; i++) {
-        if (outputBuffer[i]->len!=0) {
-            gsize size;
-            //Add newline
-            g_string_append(outputBuffer[i], "\n");
-            status = g_io_channel_write_chars(output, (outputBuffer[i])->str, (outputBuffer[i])->len, &size, &myError);
-            if (status != G_IO_STATUS_NORMAL) {
-                cond_msg_error (myError, "[SLOG] ERROR: writing to output file");
-                g_clear_error(&myError);
+  //write to file
+  for (guint64 i = 0; i < chunkLength; i++)
+    {
+      if (outputBuffer[i]->len!=0)
+        {
+          gsize size;
+          //Add newline
+          g_string_append(outputBuffer[i], "\n");
+          status = g_io_channel_write_chars(output, (outputBuffer[i])->str, (outputBuffer[i])->len, &size, &myError);
+          if (status != G_IO_STATUS_NORMAL)
+            {
+              cond_msg_error (myError, "[SLOG] ERROR: writing to output file");
+              g_clear_error(&myError);
 
-                g_io_channel_shutdown(input, TRUE, &myError);
-                g_io_channel_unref(input);
+              g_io_channel_shutdown(input, TRUE, &myError);
+              g_io_channel_unref(input);
 
-                g_clear_error(&myError);
+              g_clear_error(&myError);
 
-                g_io_channel_shutdown(output, TRUE, &myError);
-                g_io_channel_unref(output);
+              g_io_channel_shutdown(output, TRUE, &myError);
+              g_io_channel_unref(output);
 
-                g_clear_error(&myError);
+              g_clear_error(&myError);
 
-                free(inputBuffer);
-                free(outputBuffer);
+              free(inputBuffer);
+              free(outputBuffer);
 
-                return 0;
+              return 0;
             }
 
 
         }
-        g_string_free(outputBuffer[i], TRUE);
-        g_string_free(inputBuffer[i], TRUE);
+      g_string_free(outputBuffer[i], TRUE);
+      g_string_free(inputBuffer[i], TRUE);
 
     }
 
-    // process file in chunks
-    for (int j = 0; j<(entriesInFile/chunkLength)-1; j++) {
-        for (guint64 i = 0; i < chunkLength; i++) {
-            inputBuffer[i] = g_string_new(NULL);
-            status = g_io_channel_read_line_string(input, inputBuffer[i], NULL, &myError);
-            if (status != G_IO_STATUS_NORMAL) {
-                cond_msg_error (myError, "[SLOG] ERROR: reading from input file");
-                g_clear_error(&myError);
+  // process file in chunks
+  for (int j = 0; j<(entriesInFile/chunkLength)-1; j++)
+    {
+      for (guint64 i = 0; i < chunkLength; i++)
+        {
+          inputBuffer[i] = g_string_new(NULL);
+          status = g_io_channel_read_line_string(input, inputBuffer[i], NULL, &myError);
+          if (status != G_IO_STATUS_NORMAL)
+            {
+              cond_msg_error (myError, "[SLOG] ERROR: reading from input file");
+              g_clear_error(&myError);
 
-                g_io_channel_shutdown(input, TRUE, &myError);
-                g_io_channel_unref(input);
+              g_io_channel_shutdown(input, TRUE, &myError);
+              g_io_channel_unref(input);
 
-                g_clear_error(&myError);
+              g_clear_error(&myError);
 
-                g_io_channel_shutdown(output, TRUE, &myError);
-                g_io_channel_unref(output);
+              g_io_channel_shutdown(output, TRUE, &myError);
+              g_io_channel_unref(output);
 
-                g_clear_error(&myError);
+              g_clear_error(&myError);
 
-                free(inputBuffer);
-                free(outputBuffer);
+              free(inputBuffer);
+              free(outputBuffer);
 
-                return 0;
+              return 0;
             }
-            // Cut last character to remove the trailing new line
-            g_string_truncate(inputBuffer[i], (inputBuffer[i]->len) - 1);
+          // Cut last character to remove the trailing new line
+          g_string_truncate(inputBuffer[i], (inputBuffer[i]->len) - 1);
         }
-        ret = ret * iterateBuffer(chunkLength, inputBuffer, &nextLogEntry, mainKey, keyZero, 0, outputBuffer, &numberOfLogEntries, cmac_tag, &tab);
+      ret = ret * iterateBuffer(chunkLength, inputBuffer, &nextLogEntry, mainKey, keyZero, 0, outputBuffer,
+                                &numberOfLogEntries, cmac_tag, &tab);
 
-        //...and write to file
-        for (guint64 i = 0; i < chunkLength; i++) {
-            if (outputBuffer[i]->len!=0) {
-                gsize size;
-                //Add newline
-                g_string_append(outputBuffer[i], "\n");
-                status = g_io_channel_write_chars(output, (outputBuffer[i])->str, (outputBuffer[i])->len, &size, &myError);
-                if (status != G_IO_STATUS_NORMAL) {
-                    cond_msg_error (myError, "[SLOG] ERROR: writing to output file");
+      //...and write to file
+      for (guint64 i = 0; i < chunkLength; i++)
+        {
+          if (outputBuffer[i]->len!=0)
+            {
+              gsize size;
+              //Add newline
+              g_string_append(outputBuffer[i], "\n");
+              status = g_io_channel_write_chars(output, (outputBuffer[i])->str, (outputBuffer[i])->len, &size, &myError);
+              if (status != G_IO_STATUS_NORMAL)
+                {
+                  cond_msg_error (myError, "[SLOG] ERROR: writing to output file");
 
-                    g_clear_error(&myError);
+                  g_clear_error(&myError);
 
-                    g_io_channel_shutdown(input, TRUE, &myError);
-                    g_io_channel_unref(input);
+                  g_io_channel_shutdown(input, TRUE, &myError);
+                  g_io_channel_unref(input);
 
-                    g_clear_error(&myError);
+                  g_clear_error(&myError);
 
-                    g_io_channel_shutdown(output, TRUE, &myError);
-                    g_io_channel_unref(output);
+                  g_io_channel_shutdown(output, TRUE, &myError);
+                  g_io_channel_unref(output);
 
-                    g_clear_error(&myError);
+                  g_clear_error(&myError);
 
-                    free(inputBuffer);
-                    free(outputBuffer);
+                  free(inputBuffer);
+                  free(outputBuffer);
 
-                    return 0;
+                  return 0;
                 }
 
             }
-            g_string_free(outputBuffer[i], TRUE);
-            g_string_free(inputBuffer[i], TRUE);
+          g_string_free(outputBuffer[i], TRUE);
+          g_string_free(inputBuffer[i], TRUE);
         }
 
     }
 
-    if ((entriesInFile % chunkLength) > 0) {
-        for (guint64 i = 0; i < (entriesInFile % chunkLength); i++) {
-            inputBuffer[i] = g_string_new(NULL);
-            status = g_io_channel_read_line_string(input, inputBuffer[i], NULL, &myError);
-            if (status != G_IO_STATUS_NORMAL) {
-                cond_msg_error (myError, "[SLOG] ERROR: reading from input file");
-                g_clear_error(&myError);
+  if ((entriesInFile % chunkLength) > 0)
+    {
+      for (guint64 i = 0; i < (entriesInFile % chunkLength); i++)
+        {
+          inputBuffer[i] = g_string_new(NULL);
+          status = g_io_channel_read_line_string(input, inputBuffer[i], NULL, &myError);
+          if (status != G_IO_STATUS_NORMAL)
+            {
+              cond_msg_error (myError, "[SLOG] ERROR: reading from input file");
+              g_clear_error(&myError);
 
-                g_io_channel_shutdown(input, TRUE, &myError);
-                g_io_channel_unref(input);
+              g_io_channel_shutdown(input, TRUE, &myError);
+              g_io_channel_unref(input);
 
-                g_clear_error(&myError);
+              g_clear_error(&myError);
 
-                g_io_channel_shutdown(output, TRUE, &myError);
-                g_io_channel_unref(output);
+              g_io_channel_shutdown(output, TRUE, &myError);
+              g_io_channel_unref(output);
 
-                g_clear_error(&myError);
+              g_clear_error(&myError);
 
-                free(inputBuffer);
-                free(outputBuffer);
+              free(inputBuffer);
+              free(outputBuffer);
 
-                return 0;
+              return 0;
             }
-            // Cut last character to remove the trailing new line
-            g_string_truncate(inputBuffer[i], (inputBuffer[i]->len) - 1);
+          // Cut last character to remove the trailing new line
+          g_string_truncate(inputBuffer[i], (inputBuffer[i]->len) - 1);
         }
-        ret = ret * iterateBuffer((entriesInFile % chunkLength), inputBuffer, &nextLogEntry, mainKey, keyZero, 0, outputBuffer, &numberOfLogEntries, cmac_tag, &tab);
+      ret = ret * iterateBuffer((entriesInFile % chunkLength), inputBuffer, &nextLogEntry, mainKey, keyZero, 0, outputBuffer,
+                                &numberOfLogEntries, cmac_tag, &tab);
 
-        for (guint64 i = 0; i < (entriesInFile % chunkLength); i++) {
-            if (outputBuffer[i]->len!=0) {
+      for (guint64 i = 0; i < (entriesInFile % chunkLength); i++)
+        {
+          if (outputBuffer[i]->len!=0)
+            {
 
-                gsize size;
-                //Add newline
-                g_string_append(outputBuffer[i], "\n");
-                status = g_io_channel_write_chars(output, (outputBuffer[i])->str, (outputBuffer[i])->len, &size, &myError);
-                if (status != G_IO_STATUS_NORMAL) {
-                    cond_msg_error (myError, "[SLOG] ERROR: writing to output file");
-                    g_clear_error(&myError);
+              gsize size;
+              //Add newline
+              g_string_append(outputBuffer[i], "\n");
+              status = g_io_channel_write_chars(output, (outputBuffer[i])->str, (outputBuffer[i])->len, &size, &myError);
+              if (status != G_IO_STATUS_NORMAL)
+                {
+                  cond_msg_error (myError, "[SLOG] ERROR: writing to output file");
+                  g_clear_error(&myError);
 
-                    g_io_channel_shutdown(input, TRUE, &myError);
-                    g_io_channel_unref(input);
+                  g_io_channel_shutdown(input, TRUE, &myError);
+                  g_io_channel_unref(input);
 
-                    g_clear_error(&myError);
+                  g_clear_error(&myError);
 
-                    g_io_channel_shutdown(output, TRUE, &myError);
-                    g_io_channel_unref(output);
+                  g_io_channel_shutdown(output, TRUE, &myError);
+                  g_io_channel_unref(output);
 
-                    g_clear_error(&myError);
+                  g_clear_error(&myError);
 
-                    free(inputBuffer);
-                    free(outputBuffer);
+                  free(inputBuffer);
+                  free(outputBuffer);
 
-                    return 0;
+                  return 0;
                 }
             }
-            g_string_free(outputBuffer[i], TRUE);
-            g_string_free(inputBuffer[i], TRUE);
+          g_string_free(outputBuffer[i], TRUE);
+          g_string_free(inputBuffer[i], TRUE);
 
         }
 
     }
-    ret = ret * finalizeVerify(startingEntry, entriesInFile, bigMac, cmac_tag, &tab);
+  ret = ret * finalizeVerify(startingEntry, entriesInFile, bigMac, cmac_tag, &tab);
 
-    free(inputBuffer);
-    free(outputBuffer);
+  free(inputBuffer);
+  free(outputBuffer);
 
-    g_io_channel_shutdown(input, TRUE, &myError);
-    g_io_channel_unref(input);
+  g_io_channel_shutdown(input, TRUE, &myError);
+  g_io_channel_unref(input);
 
-    g_clear_error(&myError);
+  g_clear_error(&myError);
 
-    g_io_channel_shutdown(output, TRUE, &myError);
-    g_io_channel_unref(output);
+  g_io_channel_shutdown(output, TRUE, &myError);
+  g_io_channel_unref(output);
 
-    g_clear_error(&myError);
+  g_clear_error(&myError);
 
-    return ret;
+  return ret;
 
 }

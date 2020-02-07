@@ -43,10 +43,10 @@
 static void
 tf_uuid(LogMessage *msg, gint argc, GString *argv[], GString *result)
 {
-    char uuid_str[37];
+  char uuid_str[37];
 
-    uuid_gen_random(uuid_str, sizeof(uuid_str));
-    g_string_append (result, uuid_str);
+  uuid_gen_random(uuid_str, sizeof(uuid_str));
+  g_string_append (result, uuid_str);
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_uuid);
@@ -63,9 +63,9 @@ TEMPLATE_FUNCTION_SIMPLE(tf_uuid);
  */
 typedef struct _TFHashState
 {
-    TFSimpleFuncState super;
-    gint length;
-    const EVP_MD *md;
+  TFSimpleFuncState super;
+  gint length;
+  const EVP_MD *md;
 } TFHashState;
 
 /*
@@ -86,15 +86,15 @@ typedef struct _TFHashState
  */
 typedef struct _TFSlogState
 {
-    TFSimpleFuncState super;
+  TFSimpleFuncState super;
 
-    gchar *keypath;
-    gchar *macpath;
-    guint64 numberOfLogEntries;
+  gchar *keypath;
+  gchar *macpath;
+  guint64 numberOfLogEntries;
 
-    gboolean badKey;
-    guchar key[KEY_LENGTH];
-    guchar bigMAC[CMAC_LENGTH];
+  gboolean badKey;
+  guchar key[KEY_LENGTH];
+  guchar bigMAC[CMAC_LENGTH];
 
 } TFSlogState;
 
@@ -102,93 +102,93 @@ typedef struct _TFSlogState
 static gboolean
 tf_hash_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint argc, gchar *argv[], GError **error)
 {
-    TFHashState *state = (TFHashState *) s;
-    GOptionContext *ctx;
-    gint length = 0;
-    const EVP_MD *md;
-    GOptionEntry hash_options[] =
-    {
-        { "length", 'l', 0, G_OPTION_ARG_INT, &length, NULL, NULL },
-        { NULL }
-    };
+  TFHashState *state = (TFHashState *) s;
+  GOptionContext *ctx;
+  gint length = 0;
+  const EVP_MD *md;
+  GOptionEntry hash_options[] =
+  {
+    { "length", 'l', 0, G_OPTION_ARG_INT, &length, NULL, NULL },
+    { NULL }
+  };
 
-    ctx = g_option_context_new("hash");
-    g_option_context_add_main_entries(ctx, hash_options, NULL);
+  ctx = g_option_context_new("hash");
+  g_option_context_add_main_entries(ctx, hash_options, NULL);
 
-    if (!g_option_context_parse(ctx, &argc, &argv, error))
+  if (!g_option_context_parse(ctx, &argc, &argv, error))
     {
-        g_option_context_free(ctx);
-        return FALSE;
+      g_option_context_free(ctx);
+      return FALSE;
     }
-    g_option_context_free(ctx);
+  g_option_context_free(ctx);
 
-    if (argc < 2)
+  if (argc < 2)
     {
-        g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
-                    "$(hash) parsing failed, invalid number of arguments");
-        return FALSE;
+      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
+                  "$(hash) parsing failed, invalid number of arguments");
+      return FALSE;
     }
 
-    if (!tf_simple_func_prepare(self, state, parent, argc, argv, error))
+  if (!tf_simple_func_prepare(self, state, parent, argc, argv, error))
     {
-        return FALSE;
+      return FALSE;
     }
-    state->length = length;
-    md = EVP_get_digestbyname(strcmp(argv[0], "hash") == 0 ? "sha256" : argv[0]);
-    if (!md)
+  state->length = length;
+  md = EVP_get_digestbyname(strcmp(argv[0], "hash") == 0 ? "sha256" : argv[0]);
+  if (!md)
     {
-        g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "$(hash) parsing failed, unknown digest type");
-        return FALSE;
+      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE, "$(hash) parsing failed, unknown digest type");
+      return FALSE;
     }
-    state->md = md;
-    gint md_size = EVP_MD_size(md);
-    if ((state->length == 0) || (state->length > md_size * 2))
-        state->length = md_size * 2;
-    return TRUE;
+  state->md = md;
+  gint md_size = EVP_MD_size(md);
+  if ((state->length == 0) || (state->length > md_size * 2))
+    state->length = md_size * 2;
+  return TRUE;
 }
 
 static guint
 _hash(const EVP_MD *md, GString *const *argv, gint argc, guchar *hash, guint hash_size)
 {
-    gint i;
-    guint md_len;
-    DECLARE_EVP_MD_CTX(mdctx);
-    EVP_MD_CTX_init(mdctx);
-    EVP_DigestInit_ex(mdctx, md, NULL);
+  gint i;
+  guint md_len;
+  DECLARE_EVP_MD_CTX(mdctx);
+  EVP_MD_CTX_init(mdctx);
+  EVP_DigestInit_ex(mdctx, md, NULL);
 
-    for (i = 0; i < argc; i++)
+  for (i = 0; i < argc; i++)
     {
-        EVP_DigestUpdate(mdctx, argv[i]->str, argv[i]->len);
+      EVP_DigestUpdate(mdctx, argv[i]->str, argv[i]->len);
     }
 
-    EVP_DigestFinal_ex(mdctx, hash, &md_len);
-    EVP_MD_CTX_cleanup(mdctx);
-    EVP_MD_CTX_destroy(mdctx);
+  EVP_DigestFinal_ex(mdctx, hash, &md_len);
+  EVP_MD_CTX_cleanup(mdctx);
+  EVP_MD_CTX_destroy(mdctx);
 
-    return md_len;
+  return md_len;
 }
 
 static void
 tf_hash_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
 {
-    TFHashState *state = (TFHashState *) s;
-    gint argc;
-    guchar hash[EVP_MAX_MD_SIZE];
-    gchar hash_str[EVP_MAX_MD_SIZE * 2 + 1];
-    guint md_len;
+  TFHashState *state = (TFHashState *) s;
+  gint argc;
+  guchar hash[EVP_MAX_MD_SIZE];
+  gchar hash_str[EVP_MAX_MD_SIZE * 2 + 1];
+  guint md_len;
 
-    argc = state->super.argc;
-    md_len = _hash(state->md, args->argv, argc, hash, sizeof(hash));
-    // we fetch the entire hash in a hex format otherwise we cannot truncate at
-    // odd character numbers
-    format_hex_string(hash, md_len, hash_str, sizeof(hash_str));
-    if (state->length == 0)
+  argc = state->super.argc;
+  md_len = _hash(state->md, args->argv, argc, hash, sizeof(hash));
+  // we fetch the entire hash in a hex format otherwise we cannot truncate at
+  // odd character numbers
+  format_hex_string(hash, md_len, hash_str, sizeof(hash_str));
+  if (state->length == 0)
     {
-        g_string_append(result, hash_str);
+      g_string_append(result, hash_str);
     }
-    else
+  else
     {
-        g_string_append_len(result, hash_str, MIN(sizeof(hash_str), state->length));
+      g_string_append_len(result, hash_str, MIN(sizeof(hash_str), state->length));
     }
 }
 
@@ -199,169 +199,183 @@ TEMPLATE_FUNCTION(TFHashState, tf_hash, tf_hash_prepare, tf_simple_func_eval, tf
  * Initialize the secure logging template
  */
 static gboolean
-tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint argc, gchar *argv[], GError **error) {
-    // Get key filename and store in internal state
-    // generate initial BigMAC file
+tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint argc, gchar *argv[], GError **error)
+{
+  // Get key filename and store in internal state
+  // generate initial BigMAC file
 
-    TFSlogState *state = (TFSlogState *) s;
+  TFSlogState *state = (TFSlogState *) s;
 
-    gchar *keypathbuffer, *macpathbuffer;
-    GOptionContext *ctx;
+  gchar *keypathbuffer, *macpathbuffer;
+  GOptionContext *ctx;
 
-    if ((mlock(state->key, KEY_LENGTH)!=0)||(mlock(state->bigMAC, CMAC_LENGTH)!=0)) {
-        msg_warning("[SLOG] WARNING: Cannot mlock memory.");
-    }
-
-    state->badKey = FALSE;
-
-    GOptionEntry slog_options[] =
+  if ((mlock(state->key, KEY_LENGTH)!=0)||(mlock(state->bigMAC, CMAC_LENGTH)!=0))
     {
-        { "keyfile", 'k', 0, G_OPTION_ARG_FILENAME, &keypathbuffer, NULL, NULL },
-        { "macfile", 'm', 0, G_OPTION_ARG_FILENAME, &macpathbuffer, NULL, NULL },
-        { NULL }
-    };
+      msg_warning("[SLOG] WARNING: Cannot mlock memory.");
+    }
 
-    ctx = g_option_context_new("slog");
-    g_option_context_add_main_entries(ctx, slog_options, NULL);
+  state->badKey = FALSE;
 
-    if (!g_option_context_parse(ctx, &argc, &argv, error))
+  GOptionEntry slog_options[] =
+  {
+    { "keyfile", 'k', 0, G_OPTION_ARG_FILENAME, &keypathbuffer, NULL, NULL },
+    { "macfile", 'm', 0, G_OPTION_ARG_FILENAME, &macpathbuffer, NULL, NULL },
+    { NULL }
+  };
+
+  ctx = g_option_context_new("slog");
+  g_option_context_add_main_entries(ctx, slog_options, NULL);
+
+  if (!g_option_context_parse(ctx, &argc, &argv, error))
     {
-        state->badKey = TRUE;
-        g_option_context_free(ctx);
-        return FALSE;
+      state->badKey = TRUE;
+      g_option_context_free(ctx);
+      return FALSE;
     }
-    g_option_context_free(ctx);
+  g_option_context_free(ctx);
 
 
-    if (argc < 2) {
-        state->badKey = TRUE;
-        g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
-                    "[SLOG] ERROR: $(slog) parsing failed, invalid number of arguments");
-        return FALSE;
-    }
-
-    if (!tf_simple_func_prepare(self, state, parent, argc, argv, error)) {
-        state->badKey = TRUE;
-        return FALSE;
+  if (argc < 2)
+    {
+      state->badKey = TRUE;
+      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
+                  "[SLOG] ERROR: $(slog) parsing failed, invalid number of arguments");
+      return FALSE;
     }
 
-    state->numberOfLogEntries = 0;
-    state->keypath = keypathbuffer;
-    state->macpath = macpathbuffer;
-
-    int res = readKey((char*)state->key, (guint64*)&(state->numberOfLogEntries), state->keypath);
-
-    if (res == 0) {
-        state->badKey = TRUE;
-        msg_warning("[SLOG] WARNING: $(slog) parsing failed, key file not found or invalid. Reverting to cleartext logging.");
-        return TRUE;
+  if (!tf_simple_func_prepare(self, state, parent, argc, argv, error))
+    {
+      state->badKey = TRUE;
+      return FALSE;
     }
 
-    msg_info("SLOG: Key successfully loaded");
+  state->numberOfLogEntries = 0;
+  state->keypath = keypathbuffer;
+  state->macpath = macpathbuffer;
 
-    res = readBigMAC(state->macpath, (char*)state->bigMAC);
+  int res = readKey((char *)state->key, (guint64 *)&(state->numberOfLogEntries), state->keypath);
 
-    if (res == 0) {
-        msg_warning("[SLOG] WARNING: Aggregated MAC not found or invalid", evt_tag_str("File", state->macpath));
-        return TRUE;
+  if (res == 0)
+    {
+      state->badKey = TRUE;
+      msg_warning("[SLOG] WARNING: $(slog) parsing failed, key file not found or invalid. Reverting to cleartext logging.");
+      return TRUE;
     }
 
-    msg_info("[SLOG] $(slog) template with key and MAC file successfully initialized.");
+  msg_info("SLOG: Key successfully loaded");
 
-    return TRUE;
+  res = readBigMAC(state->macpath, (char *)state->bigMAC);
+
+  if (res == 0)
+    {
+      msg_warning("[SLOG] WARNING: Aggregated MAC not found or invalid", evt_tag_str("File", state->macpath));
+      return TRUE;
+    }
+
+  msg_info("[SLOG] $(slog) template with key and MAC file successfully initialized.");
+
+  return TRUE;
 }
 
 /*
  * Create a new encrypted log entry
  */
 static void
-tf_slog_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result) {
+tf_slog_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *args, GString *result)
+{
 
-    TFSlogState *state = (TFSlogState *) s;
+  TFSlogState *state = (TFSlogState *) s;
 
-    // If we do not have a good key, just forward input
-    if (state->badKey == TRUE) {
-        g_string_assign (result, args->argv[0]->str);
-        return;
+  // If we do not have a good key, just forward input
+  if (state->badKey == TRUE)
+    {
+      g_string_assign (result, args->argv[0]->str);
+      return;
     }
 
-    // Compute authenticated encryption of input
-    guchar outputmacdata[CMAC_LENGTH];
+  // Compute authenticated encryption of input
+  guchar outputmacdata[CMAC_LENGTH];
 
-    // Empty string received? Parsing error?
-    if(args->argv[0]->len==0) {
-        msg_error("[SLOG] ERROR: String of length 0 received");
-        GString *errorString = g_string_new("[SLOG] ERROR: String of length 0 received");
-        sLogEntry(state->numberOfLogEntries, errorString, state->key, state->bigMAC, result, outputmacdata);
-        g_string_free(errorString, TRUE);
+  // Empty string received? Parsing error?
+  if(args->argv[0]->len==0)
+    {
+      msg_error("[SLOG] ERROR: String of length 0 received");
+      GString *errorString = g_string_new("[SLOG] ERROR: String of length 0 received");
+      sLogEntry(state->numberOfLogEntries, errorString, state->key, state->bigMAC, result, outputmacdata);
+      g_string_free(errorString, TRUE);
     }
-    else {
-        sLogEntry(state->numberOfLogEntries, args->argv[0], state->key, state->bigMAC, result, outputmacdata);
-    }
-
-    memcpy(state->bigMAC, outputmacdata, CMAC_LENGTH);
-    evolveKey(state->key);
-    state->numberOfLogEntries++;
-
-    int res = writeKey((char*)state->key, state->numberOfLogEntries, state->keypath);
-
-    if (res == 0) {
-        msg_error("[SLOG] ERROR: Cannot write key to file");
-        return;
+  else
+    {
+      sLogEntry(state->numberOfLogEntries, args->argv[0], state->key, state->bigMAC, result, outputmacdata);
     }
 
-    res = writeBigMAC(state->macpath, (char*)state->bigMAC);
+  memcpy(state->bigMAC, outputmacdata, CMAC_LENGTH);
+  evolveKey(state->key);
+  state->numberOfLogEntries++;
 
-    if (res == 0) {
-        msg_error("[SLOG] ERROR: Unable to write aggregated MAC", evt_tag_str("File", state->macpath));
-        return;
+  int res = writeKey((char *)state->key, state->numberOfLogEntries, state->keypath);
+
+  if (res == 0)
+    {
+      msg_error("[SLOG] ERROR: Cannot write key to file");
+      return;
+    }
+
+  res = writeBigMAC(state->macpath, (char *)state->bigMAC);
+
+  if (res == 0)
+    {
+      msg_error("[SLOG] ERROR: Unable to write aggregated MAC", evt_tag_str("File", state->macpath));
+      return;
     }
 }
 
 // Secure logging free state function
 void
-tf_slog_func_free_state(gpointer s) {
-    TFSlogState *state = (TFSlogState *) s;
+tf_slog_func_free_state(gpointer s)
+{
+  TFSlogState *state = (TFSlogState *) s;
 
-    free(state->keypath);
-    free(state->macpath);
+  free(state->keypath);
+  free(state->macpath);
 
-    tf_simple_func_free_state((gpointer)&state->super);
+  tf_simple_func_free_state((gpointer)&state->super);
 }
 
 
 /*
  * Declare the template function for secure logging
  */
-TEMPLATE_FUNCTION(TFSlogState, tf_slog, tf_slog_prepare, tf_simple_func_eval, tf_slog_call, tf_slog_func_free_state, NULL);
+TEMPLATE_FUNCTION(TFSlogState, tf_slog, tf_slog_prepare, tf_simple_func_eval, tf_slog_call, tf_slog_func_free_state,
+                  NULL);
 
 static Plugin cryptofuncs_plugins[] =
 {
-    TEMPLATE_FUNCTION_PLUGIN(tf_uuid, "uuid"),
-    TEMPLATE_FUNCTION_PLUGIN(tf_hash, "hash"),
-    TEMPLATE_FUNCTION_PLUGIN(tf_hash, "sha1"),
-    TEMPLATE_FUNCTION_PLUGIN(tf_hash, "sha256"),
-    TEMPLATE_FUNCTION_PLUGIN(tf_hash, "sha512"),
-    TEMPLATE_FUNCTION_PLUGIN(tf_hash, "md4"),
-    TEMPLATE_FUNCTION_PLUGIN(tf_hash, "md5"),
-    TEMPLATE_FUNCTION_PLUGIN(tf_slog, "slog"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_uuid, "uuid"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_hash, "hash"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_hash, "sha1"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_hash, "sha256"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_hash, "sha512"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_hash, "md4"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_hash, "md5"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_slog, "slog"),
 };
 
 gboolean
 cryptofuncs_module_init(PluginContext *context, CfgArgs *args)
 {
-    plugin_register(context, cryptofuncs_plugins, G_N_ELEMENTS(cryptofuncs_plugins));
-    return TRUE;
+  plugin_register(context, cryptofuncs_plugins, G_N_ELEMENTS(cryptofuncs_plugins));
+  return TRUE;
 }
 
 const ModuleInfo module_info =
 {
-    .canonical_name = "cryptofuncs",
-    .version = SYSLOG_NG_VERSION,
-    .description = "The cryptofuncs module provides cryptographic template functions.",
-    .core_revision = SYSLOG_NG_SOURCE_REVISION,
-    .plugins = cryptofuncs_plugins,
-    .plugins_len = G_N_ELEMENTS(cryptofuncs_plugins),
+  .canonical_name = "cryptofuncs",
+  .version = SYSLOG_NG_VERSION,
+  .description = "The cryptofuncs module provides cryptographic template functions.",
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
+  .plugins = cryptofuncs_plugins,
+  .plugins_len = G_N_ELEMENTS(cryptofuncs_plugins),
 };
 
 
