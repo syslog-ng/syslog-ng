@@ -74,7 +74,12 @@ modules/timestamp/rewrite-.*$
 modules/add-contextual-data/add-contextual-data-glob-selector\.[ch]$
 modules/add-contextual-data/tests/test_glob_selector\.c$
 modules/affile/tests/test_file_writer\.c$
- GPLv2+_SSL
+lib/slog\.h$
+lib/slog\.c$
+modules/cryptofuncs/slogkey/slogimport\.c$
+modules/cryptofuncs/slogkey/slogkey\.c$
+modules/cryptofuncs/slogkey/slogverify\.c$
+GPLv2+_SSL
 contib/config_option_database
 news/create-newsfile.py
 dev-utils/plugin_skeleton_creator/create_plugin.sh
