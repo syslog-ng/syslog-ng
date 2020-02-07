@@ -36,7 +36,7 @@ main() {
  BUILDDIR="$2"
  DATADIR="`dirname "$0"`"
  POLICY="$DATADIR/${3-policy}"
- local WORKDIR="`tempfile -p "cpy-" -s ".check_copyright.tmp"`"
+ local WORKDIR="`mktemp -t "cpy-XXXXXXX.check_copyright.tmp"`"
  rm "$WORKDIR" &&
  mkdir "$WORKDIR" ||
   { echo "error: can't create $WORKDIR"; return 1 ; }
