@@ -2,7 +2,7 @@
  * Copyright (c) 2012 Balabit
  * Copyright (c) 2012 Gergely Nagy <algernon@balabit.hu>
  * Copyright (c) 2012 Peter Gyongyosi <gyp@balabit.hu>
- * Copyright (c) 2020 Airbus Commercial Aircraft <secure-logging@airbus.com>
+ * Copyright (c) 2019 Airbus Commercial Aircraft <secure-logging@airbus.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
