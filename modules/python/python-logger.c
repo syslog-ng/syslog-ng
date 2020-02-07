@@ -67,7 +67,10 @@ PyObject *
 py_msg_debug(PyObject *obj, PyObject *args)
 {
   if (!debug_flag)
+  {
+    Py_INCREF(Py_None);
     return Py_None;
+  }
 
   char *message = NULL;
   if (!PyArg_ParseTuple(args, "s", &message))

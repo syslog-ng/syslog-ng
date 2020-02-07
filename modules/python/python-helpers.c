@@ -242,6 +242,27 @@ _py_invoke_function(PyObject *func, PyObject *arg, const gchar *class, const gch
   return ret;
 }
 
+PyObject *
+_py_invoke_function_with_args(PyObject *func, PyObject *args, const gchar *class, const gchar *caller_context)
+{
+  PyObject *ret;
+
+  ret = PyObject_CallObject(func, args);
+  if (!ret)
+    {
+      gchar buf1[256], buf2[256];
+
+      msg_error("Exception while calling a Python function",
+                evt_tag_str("caller", caller_context),
+                evt_tag_str("class", class),
+                evt_tag_str("function", _py_get_callable_name(func, buf1, sizeof(buf1))),
+                evt_tag_str("exception", _py_format_exception_text(buf2, sizeof(buf2))));
+      _py_finish_exception_handling();
+      return NULL;
+    }
+  return ret;
+}
+
 void
 _py_invoke_void_function(PyObject *func, PyObject *arg, const gchar *class, const gchar *caller_context)
 {

@@ -61,7 +61,10 @@ modules_python_libmod_python_la_SOURCES		= \
 	modules/python/python-source.h	  \
 	modules/python/python-source.c	  \
 	modules/python/python-fetcher.h	  \
-	modules/python/python-fetcher.c
+	modules/python/python-fetcher.c   \
+	modules/python/python-http-header.h   \
+	modules/python/python-http-header.c
+
 
 modules_python_libmod_python_la_LDFLAGS		 = \
 	$(MODULE_LDFLAGS) \
