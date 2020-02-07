@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
   char key[KEY_LENGTH];
   char mac[CMAC_LENGTH];
 
-  //Read key and counter
+  // Read key and counter
   size_t counter;
   int ret = readKey(key, &counter, argv[1]);
   if (ret!=1)
@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
       sscanf(argv[7], "%zu", &counter);
     }
 
-  //Open input file
+  // Open input file
   FILE *inputFile = fopen(argv[3], "r");
   if (inputFile == NULL)
     {
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
       return -1;
     }
 
-  //Open output file
+  // Open output file
   FILE *outputFile = fopen(argv[4], "w");
   if (outputFile == NULL)
     {
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
       return -1;
     }
 
-  //Read MAC (if possible)
+  // Read MAC (if possible)
   if (readBigMAC(argv[5], mac)==0)
     {
       msg_warning("Problem with input MAC file");
@@ -89,21 +89,21 @@ int main(int argc, char *argv[])
 
   msg_info("Importing data");
 
-//Parse data
+  // Parse data
   while(getline(&line, &readLen, inputFile)!=-1)
     {
       char outputmacdata[CMAC_LENGTH];
 
       GString *result = g_string_new(NULL);
       GString *inputGString = g_string_new(line);
-      //Remove trailing '\n' from string
+      // Remove trailing '\n' from string
       g_string_truncate(inputGString, (inputGString->len)-1);
 
       sLogEntry(counter, inputGString, key, mac, result, outputmacdata);
 
       fprintf(outputFile, "%s\n", result->str);
 
-      //Update keys, MAC, etc
+      // Update keys, MAC, etc
       memcpy(mac, outputmacdata, CMAC_LENGTH);
       evolveKey(key);
       counter++;
@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
     }
 
 
-//Write whole log MAC
+  // Write whole log MAC
   if (writeBigMAC(argv[6], mac)==0)
     {
       msg_error("Problem with output MAC file");

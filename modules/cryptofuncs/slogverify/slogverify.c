@@ -33,7 +33,7 @@
 #include "messages.h"
 #include "slog.h"
 
-//Return 1 on success, 0 on error
+// Return 1 on success, 0 on error
 int standardMode(int argc, char **argv)
 {
   if (argc<5)
