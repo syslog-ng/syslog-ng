@@ -29,7 +29,7 @@ function (add_module)
   cmake_parse_arguments(ADD_MODULE "" "TARGET" "GRAMMAR;SOURCES;DEPENDS;INCLUDES" ${ARGN})
 
   if (ADD_MODULE_GRAMMAR)
-    generate_y_from_ym("modules/${ADD_MODULE_TARGET}/${ADD_MODULE_GRAMMAR}")
+    module_generate_y_from_ym(${CMAKE_CURRENT_SOURCE_DIR}/${ADD_MODULE_GRAMMAR} ${CMAKE_CURRENT_BINARY_DIR}/${ADD_MODULE_GRAMMAR})
     bison_target(${ADD_MODULE_TARGET}Grammar}
       ${CMAKE_CURRENT_BINARY_DIR}/${ADD_MODULE_GRAMMAR}.y
       ${CMAKE_CURRENT_BINARY_DIR}/${ADD_MODULE_GRAMMAR}.c
