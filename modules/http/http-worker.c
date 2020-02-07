@@ -199,38 +199,47 @@ _collect_rest_headers(HTTPDestinationWorker *self)
   EMIT(owner->super.super.super.super.signal_slot_connector, signal_http_header_request, &signal_data);
 }
 
+
 static void
-_format_request_headers(HTTPDestinationWorker *self, LogMessage *msg)
+_add_msg_specific_headers(HTTPDestinationWorker *self, LogMessage *msg)
+{
+  /* NOTE: I have my doubts that these headers make sense at all.  None of
+   * the HTTP collectors I know of, extract this information from the
+   * headers and it makes batching several messages into the same request a
+   * bit more complicated than it needs to be.  I didn't want to break
+   * backward compatibility when batching was introduced, however I think
+   * this should eventually be removed */
+
+  _add_header(self->request_headers,
+              "X-Syslog-Host",
+              log_msg_get_value(msg, LM_V_HOST, NULL));
+  _add_header(self->request_headers,
+              "X-Syslog-Program",
+              log_msg_get_value(msg, LM_V_PROGRAM, NULL));
+  _add_header(self->request_headers,
+              "X-Syslog-Facility",
+              syslog_name_lookup_name_by_value(msg->pri & LOG_FACMASK, sl_facilities));
+  _add_header(self->request_headers,
+              "X-Syslog-Level",
+              syslog_name_lookup_name_by_value(msg->pri & LOG_PRIMASK, sl_levels));
+}
+
+static void
+_add_common_headers(HTTPDestinationWorker *self)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
-  GList *l;
 
   _add_header(self->request_headers, "Expect", "");
-  if (msg)
-    {
-      /* NOTE: I have my doubts that these headers make sense at all.  None of
-       * the HTTP collectors I know of, extract this information from the
-       * headers and it makes batching several messages into the same request a
-       * bit more complicated than it needs to be.  I didn't want to break
-       * backward compatibility when batching was introduced, however I think
-       * this should eventually be removed */
-
-      _add_header(self->request_headers,
-                  "X-Syslog-Host",
-                  log_msg_get_value(msg, LM_V_HOST, NULL));
-      _add_header(self->request_headers,
-                  "X-Syslog-Program",
-                  log_msg_get_value(msg, LM_V_PROGRAM, NULL));
-      _add_header(self->request_headers,
-                  "X-Syslog-Facility",
-                  syslog_name_lookup_name_by_value(msg->pri & LOG_FACMASK, sl_facilities));
-      _add_header(self->request_headers,
-                  "X-Syslog-Level",
-                  syslog_name_lookup_name_by_value(msg->pri & LOG_PRIMASK, sl_levels));
-    }
-
-  for (l = owner->headers; l; l = l->next)
+  for (GList *l = owner->headers; l; l = l->next)
     list_append(self->request_headers, l->data);
+}
+
+static void
+_format_request_headers(HTTPDestinationWorker *self)
+{
+  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
+
+  _add_common_headers(self);
 
   if (owner->auth_header)
     _append_auth_header(self->request_headers, owner);
@@ -593,9 +602,7 @@ _flush(LogThreadedDestWorker *s, LogThreadedFlushMode mode)
     return LTR_RETRY;
 
   _finish_request_body(self);
-
-  if (list_is_empty(self->request_headers))
-    _format_request_headers(self, NULL);
+  _format_request_headers(self);
 
   target = http_load_balancer_choose_target(owner->load_balancer, &self->lbc);
 
@@ -665,7 +672,7 @@ _insert_single(LogThreadedDestWorker *s, LogMessage *msg)
   HTTPDestinationWorker *self = (HTTPDestinationWorker *) s;
 
   _add_message_to_batch(self, msg);
-  _format_request_headers(self, msg);
+  _add_msg_specific_headers(self, msg);
 
   return log_threaded_dest_worker_flush(&self->super, LTF_FLUSH_NORMAL);
 }
