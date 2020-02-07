@@ -13,7 +13,8 @@
 
 #define PYTHON_HTTP_HEADER_PLUGIN "python-http-header"
 
-struct _PythonHttpHeaderPlugin {
+struct _PythonHttpHeaderPlugin
+{
   LogDriverPlugin super;
 
   gchar *class;
@@ -22,10 +23,11 @@ struct _PythonHttpHeaderPlugin {
   List *last_headers;
   time_t last_run;
   int timeout;
-  
+
   GHashTable *options;
 
-  struct {
+  struct
+  {
     PyObject *class;
     PyObject *instance;
     PyObject *get_headers;
@@ -43,16 +45,16 @@ _py_append_pylist_to_list(PyObject *py_list, List *list)
 
   Py_ssize_t len = PyList_Size(py_list);
   for (int i = 0; i < len; i++)
-  {
-    py_str = PyList_GetItem(py_list, i); // Borrowed reference
-    if (!py_str || !PyUnicode_Check(py_str))
-      goto exit;
+    {
+      py_str = PyList_GetItem(py_list, i); // Borrowed reference
+      if (!py_str || !PyUnicode_Check(py_str))
+        goto exit;
 
-    if (!(str = PyUnicode_AsUTF8(py_str)))
-      goto exit;
+      if (!(str = PyUnicode_AsUTF8(py_str)))
+        goto exit;
 
-    list_append(list, g_strdup(str));
-  }
+      list_append(list, g_strdup(str));
+    }
 
   return TRUE;
 
@@ -65,44 +67,44 @@ _py_append_str_to_pylist(gconstpointer data, gpointer user_data)
 {
   PyObject *py_str = PyUnicode_FromString((gchar *) data);
   if (!py_str || !PyUnicode_Check(py_str))
-  {
-    gchar buf[256];
+    {
+      gchar buf[256];
 
-    msg_error("Error creating Python String object from C string",
-              evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
-    _py_finish_exception_handling();
+      msg_error("Error creating Python String object from C string",
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+      _py_finish_exception_handling();
 
-    goto exit;
-  }
+      goto exit;
+    }
 
   PyObject *py_list = (PyObject *) user_data;
   if (PyList_Append(py_list, py_str) != 0)
-  {
-    gchar buf[256];
+    {
+      gchar buf[256];
 
-    msg_error("Error adding new item to Python List",
-              evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
-    _py_finish_exception_handling();
-  }
+      msg_error("Error adding new item to Python List",
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+      _py_finish_exception_handling();
+    }
 
 exit:
   Py_XDECREF(py_str); // Even if append() succeeds, it doesn't steal the reference to py_str.
 }
 
-static PyObject*
+static PyObject *
 _py_convert_list_to_pylist(List *list)
 {
   PyObject *py_list = PyList_New(0);
   if (!py_list)
-  {
-    gchar buf[256];
+    {
+      gchar buf[256];
 
-    msg_error("Error creating new Python List object",
-              evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
-    _py_finish_exception_handling();
+      msg_error("Error creating new Python List object",
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+      _py_finish_exception_handling();
 
-    return NULL;
-  }
+      return NULL;
+    }
 
   if (list)
     list_foreach(list, _py_append_str_to_pylist, py_list);
@@ -117,50 +119,50 @@ _py_attach_bindings(PythonHttpHeaderPlugin *self)
 
   self->py.class = _py_resolve_qualified_name(self->class);
   if (!self->py.class)
-  {
-    gchar buf[256];
+    {
+      gchar buf[256];
 
-    msg_error("Error looking up Python class",
-              evt_tag_str("class", self->class),
-              evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
-    _py_finish_exception_handling();
+      msg_error("Error looking up Python class",
+                evt_tag_str("class", self->class),
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+      _py_finish_exception_handling();
 
-    goto exit;
-  }
+      goto exit;
+    }
 
   py_args = _py_create_arg_dict(self->options);
   if (!py_args)
-  {
-    gchar buf[256];
+    {
+      gchar buf[256];
 
-    msg_error("Error creating argument dictionary",
-              evt_tag_str("class", self->class),
-              evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
-    _py_finish_exception_handling();
+      msg_error("Error creating argument dictionary",
+                evt_tag_str("class", self->class),
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+      _py_finish_exception_handling();
 
-    goto exit;
-  }
+      goto exit;
+    }
 
   self->py.instance = _py_invoke_function(self->py.class, py_args, self->class, self->super.name);
   if (!self->py.instance)
-  {   
-    gchar buf[256];
+    {
+      gchar buf[256];
 
-    msg_error("Error instantiating Python class",
-              evt_tag_str("class", self->class),
-              evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
-    _py_finish_exception_handling();
+      msg_error("Error instantiating Python class",
+                evt_tag_str("class", self->class),
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+      _py_finish_exception_handling();
 
-    goto exit;
-  }
+      goto exit;
+    }
 
   self->py.get_headers = _py_get_attr_or_null(self->py.instance, "get_headers");
   if (!self->py.get_headers)
-  {   
-    msg_error("Error initializing plugin, required method not found",
-              evt_tag_str("class", self->class),
-              evt_tag_str("method", "get_headers"));
-  }
+    {
+      msg_error("Error initializing plugin, required method not found",
+                evt_tag_str("class", self->class),
+                evt_tag_str("method", "get_headers"));
+    }
 
 exit:
   Py_XDECREF(py_args);
@@ -203,30 +205,30 @@ _append_headers(PythonHttpHeaderPlugin *self, HttpHeaderRequestSignalData *data)
 
   py_args = Py_BuildValue("(sO)", data->request_body->str, py_list);
   if (!py_args)
-  {
-    gchar buf[256];
+    {
+      gchar buf[256];
 
-    msg_error("Error creating Python arguments",
-              evt_tag_str("class", self->class),
-              evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
-    _py_finish_exception_handling();
+      msg_error("Error creating Python arguments",
+                evt_tag_str("class", self->class),
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+      _py_finish_exception_handling();
 
-    goto cleanup;
-  }
+      goto cleanup;
+    }
 
   py_ret = _py_invoke_function_with_args(self->py.get_headers, py_args, self->class, "_append_headers");
   if (!py_ret || !PyArg_ParseTuple(py_ret, "iO", &self->timeout, &py_ret_list))
-  {
-    gchar buf[256];
+    {
+      gchar buf[256];
 
-    msg_error("Invalid response returned by Python call",
-              evt_tag_str("class", self->class),
-              evt_tag_str("method", "get_headers"),
-              evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
-    _py_finish_exception_handling();
+      msg_error("Invalid response returned by Python call",
+                evt_tag_str("class", self->class),
+                evt_tag_str("method", "get_headers"),
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+      _py_finish_exception_handling();
 
-    goto cleanup;
-  }
+      goto cleanup;
+    }
 
   msg_debug("Python call returned valid response",
             evt_tag_str("class", self->class),
@@ -235,15 +237,15 @@ _append_headers(PythonHttpHeaderPlugin *self, HttpHeaderRequestSignalData *data)
             evt_tag_int("len", PyTuple_Size(py_ret)));
 
   if (!_py_append_pylist_to_list(py_ret_list, self->last_headers))
-  {
-    gchar buf[256];
+    {
+      gchar buf[256];
 
-    msg_error("Converting Python List failed",
-              evt_tag_str("class", self->class),
-              evt_tag_str("method", "get_headers"),
-              evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
-    _py_finish_exception_handling();
-  }
+      msg_error("Converting Python List failed",
+                evt_tag_str("class", self->class),
+                evt_tag_str("method", "get_headers"),
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+      _py_finish_exception_handling();
+    }
 
 cleanup:
   Py_XDECREF(py_args);
@@ -283,21 +285,21 @@ _attach(LogDriverPlugin *s, LogDriver *driver)
   PythonHttpHeaderPlugin *self = (PythonHttpHeaderPlugin *) s;
 
   if (!_init(self))
-  {
-    msg_error("Plugin initialization failed",
-              evt_tag_str("plugin", PYTHON_HTTP_HEADER_PLUGIN));
+    {
+      msg_error("Plugin initialization failed",
+                evt_tag_str("plugin", PYTHON_HTTP_HEADER_PLUGIN));
 
-    return FALSE;
-  }
+      return FALSE;
+    }
 
   SignalSlotConnector *ssc = driver->super.signal_slot_connector;
 
   CONNECT(ssc, signal_http_header_request, _append_headers, self);
 
   msg_debug("SignalSlotConnector slot registered",
-      evt_tag_printf("signal", "%p", ssc),
-      evt_tag_printf("plugin_name", "%s", PYTHON_HTTP_HEADER_PLUGIN),
-      evt_tag_printf("plugin_instance", "%p", s));
+            evt_tag_printf("signal", "%p", ssc),
+            evt_tag_printf("plugin_name", "%s", PYTHON_HTTP_HEADER_PLUGIN),
+            evt_tag_printf("plugin_instance", "%p", s));
 
   return TRUE;
 }
@@ -308,7 +310,7 @@ _free(LogDriverPlugin *s)
   PythonHttpHeaderPlugin *self = (PythonHttpHeaderPlugin *) s;
 
   g_free(self->class);
-  
+
   if (self->options)
     g_hash_table_unref(self->options);
 
@@ -337,7 +339,7 @@ python_http_header_new(void)
   self->timeout = 0;
   self->options = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
   self->py.class = self->py.instance = self->py.get_headers = NULL;
-  
+
   self->super.attach = _attach;
   self->super.free_fn = _free;
 
