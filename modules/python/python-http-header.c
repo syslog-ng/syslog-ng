@@ -5,7 +5,6 @@
 #include "lib/str-utils.h"
 #include "lib/list-adt.h"
 #include "modules/http/http-signals.h"
-#include "modules/http/http-curl-header-list.h"
 
 #include "python-http-header.h"
 
@@ -20,7 +19,7 @@ struct _PythonHttpHeaderPlugin
   gchar *class;
   GList *loaders;
 
-  List *last_headers;
+  GList *last_headers;
   time_t last_run;
   int timeout;
 
@@ -35,9 +34,9 @@ struct _PythonHttpHeaderPlugin
 };
 
 static gboolean
-_py_append_pylist_to_list(PyObject *py_list, List *list)
+_py_append_pylist_to_list(PyObject *py_list, GList **list)
 {
-  gchar *str;
+  const gchar *str;
   PyObject *py_str;
 
   if (!py_list || !PyList_Check(py_list))
@@ -53,7 +52,7 @@ _py_append_pylist_to_list(PyObject *py_list, List *list)
       if (!(str = PyUnicode_AsUTF8(py_str)))
         goto exit;
 
-      list_append(list, g_strdup(str));
+      *list = g_list_append(*list, g_strdup(str));
     }
 
   return TRUE;
@@ -178,7 +177,7 @@ _py_detach_bindings(PythonHttpHeaderPlugin *self)
 }
 
 static void
-_append_str_to_list(gconstpointer data, gpointer user_data)
+_append_str_to_list(gpointer data, gpointer user_data)
 {
   List *list = (List *) user_data;
   list_append(list, data);
@@ -197,7 +196,8 @@ _append_headers(PythonHttpHeaderPlugin *self, HttpHeaderRequestSignalData *data)
   PyGILState_STATE gstate = PyGILState_Ensure();
 
   self->timeout = 0;
-  list_remove_all(self->last_headers);
+  g_list_free_full(self->last_headers, g_free);
+  self->last_headers = NULL;
 
   py_list = _py_convert_list_to_pylist(data->request_headers);
   if (!py_list)
@@ -236,7 +236,7 @@ _append_headers(PythonHttpHeaderPlugin *self, HttpHeaderRequestSignalData *data)
             evt_tag_str("return_type", "Tuple"),
             evt_tag_int("len", PyTuple_Size(py_ret)));
 
-  if (!_py_append_pylist_to_list(py_ret_list, self->last_headers))
+  if (!_py_append_pylist_to_list(py_ret_list, &self->last_headers))
     {
       gchar buf[256];
 
@@ -259,7 +259,7 @@ cleanup:
 
 exit:
   g_assert(self->last_headers);
-  list_foreach(self->last_headers, _append_str_to_list, data->request_headers);
+  g_list_foreach(self->last_headers, _append_str_to_list, data->request_headers);
 }
 
 static gboolean
@@ -318,7 +318,7 @@ _free(LogDriverPlugin *s)
     g_list_free_full(self->loaders, g_free);
 
   if (self->last_headers)
-    list_free(self->last_headers);
+    g_list_free_full(self->last_headers, g_free);
 
   PyGILState_STATE gstate = PyGILState_Ensure();
   _py_detach_bindings(self);
@@ -334,7 +334,7 @@ python_http_header_new(void)
 
   log_driver_plugin_init_instance(&(self->super), PYTHON_HTTP_HEADER_PLUGIN);
 
-  self->last_headers = http_curl_header_list_new();
+  self->last_headers = NULL;
   self->last_run = 0;
   self->timeout = 0;
   self->options = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
