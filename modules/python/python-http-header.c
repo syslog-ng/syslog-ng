@@ -20,15 +20,14 @@
  *
  */
 
-#include "python-module.h"
+#include "python-http-header.h"
 #include "python-helpers.h"
 
-#include "lib/driver.h"
-#include "lib/str-utils.h"
-#include "lib/list-adt.h"
-#include "modules/http/http-signals.h"
+#include "driver.h"
+#include "str-utils.h"
+#include "list-adt.h"
 
-#include "python-http-header.h"
+#include "modules/http/http-signals.h"
 
 #include <time.h>
 

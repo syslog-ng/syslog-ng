@@ -23,6 +23,8 @@
 #ifndef _SNG_PYTHON_AUTH_HEADERS_H
 #define _SNG_PYTHON_AUTH_HEADERS_H
 
+#include "python-module.h"
+
 typedef struct _PythonHttpHeaderPlugin PythonHttpHeaderPlugin;
 
 PythonHttpHeaderPlugin *python_http_header_new(void);
