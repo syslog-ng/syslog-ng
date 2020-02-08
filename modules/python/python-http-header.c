@@ -70,7 +70,7 @@ _py_append_pylist_to_list(PyObject *py_list, GList **list)
       if (!py_str || !PyUnicode_Check(py_str))
         goto exit;
 
-      if (!(str = PyUnicode_AsUTF8(py_str)))
+      if (!(str = _py_get_string_as_string(py_str)))
         goto exit;
 
       *list = g_list_append(*list, g_strdup(str));
@@ -86,7 +86,7 @@ static void
 _py_append_str_to_pylist(gconstpointer data, gpointer user_data)
 {
   PyObject *py_str = PyUnicode_FromString((gchar *) data);
-  if (!py_str || !PyUnicode_Check(py_str))
+  if (!py_str)
     {
       gchar buf[256];
 
