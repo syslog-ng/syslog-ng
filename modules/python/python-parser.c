@@ -33,7 +33,7 @@ static CfgLexerKeyword python_keywords[] =
 {
   { "python",                   KW_PYTHON  },
   { "python_fetcher",           KW_PYTHON_FETCHER },
-  { "python_header",            KW_PYTHON_HEADER },
+  { "python_http_header",       KW_PYTHON_HTTP_HEADER },
   { "class",                    KW_CLASS   },
   {
     "imports",                  KW_IMPORTS, KWS_OBSOLETE,

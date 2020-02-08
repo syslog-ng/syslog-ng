@@ -50,7 +50,7 @@ source s_network {
 
 destination d_http {
     http(
-        python_header(
+        python_http_header(
             class("TestCounter")
             options("header", "X-Test-Python-Counter")
             options("counter", 11)

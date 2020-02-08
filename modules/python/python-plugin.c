@@ -55,7 +55,7 @@ static Plugin python_plugins[] =
   },
   {
     .type = LL_CONTEXT_INNER_DEST,
-    .name = "python_header",
+    .name = "python_http_header",
     .parser = &python_parser,
   },
   {
