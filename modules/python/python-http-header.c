@@ -126,7 +126,7 @@ _py_convert_list_to_pylist(List *list)
 static gboolean
 _py_attach_bindings(PythonHttpHeaderPlugin *self)
 {
-  PyObject *py_args;
+  PyObject *py_args = NULL;
 
   self->py.class = _py_resolve_qualified_name(self->class);
   if (!self->py.class)
@@ -198,7 +198,10 @@ _append_str_to_list(gpointer data, gpointer user_data)
 static void
 _append_headers(PythonHttpHeaderPlugin *self, HttpHeaderRequestSignalData *data)
 {
-  PyObject *py_ret, *py_list, *py_args, *py_ret_list;
+  PyObject *py_ret = NULL,
+            *py_list = NULL,
+             *py_args = NULL,
+              *py_ret_list = NULL;
 
   time_t now = time(NULL);
   if ((now - self->last_run) < self->timeout)
