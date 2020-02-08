@@ -115,16 +115,7 @@ static PyObject *
 _py_convert_list_to_pylist(List *list)
 {
   PyObject *py_list = PyList_New(0);
-  if (!py_list)
-    {
-      gchar buf[256];
-
-      msg_error("Error creating new Python List object",
-                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
-      _py_finish_exception_handling();
-
-      return NULL;
-    }
+  g_assert(py_list);
 
   if (list)
     list_foreach(list, _py_append_str_to_pylist, py_list);
