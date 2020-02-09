@@ -33,12 +33,11 @@
 #include "apphook.h"
 #include "cfg.h"
 #include "logmatcher.h"
-
 #include "timeutils/misc.h"
-
 
 #include "slog.h"
 
+MsgFormatOptions parse_options;
 
 #define MAX_TEST_MESSAGES 1000
 #define MIN_TEST_MESSAGES 10
