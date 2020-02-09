@@ -111,7 +111,7 @@ int sLogEncrypt(unsigned char *plaintext, int plaintext_len,
    * This function is largely borrowed from
    *
    * https://wiki.openssl.org/index.php/EVP_Authenticated_Encryption_and_Decryption#Authenticated_Encryption_using_GCM_mode
-   * 
+   *
    */
   EVP_CIPHER_CTX *ctx;
 
@@ -285,11 +285,11 @@ int sLogDecrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *ta
  * This function creates a new encrypted log entry updates the corresponding MAC accordingly
  *
  * 1. Parameter: Number of log entries (for enumerating the entries in the log file)
- * 2. Parameter: The original log message 
- * 3. Parameter: The current key 
- * 4. Parameter: The current MAC 
+ * 2. Parameter: The original log message
+ * 3. Parameter: The current key
+ * 4. Parameter: The current MAC
  * 5. Parameter: The resulting encrypted log entry
- * 6. Parameter: The newly updated MAC 
+ * 6. Parameter: The newly updated MAC
 */
 void sLogEntry(guint64 numberOfLogEntries, GString *text, unsigned char *mainKey, unsigned char *inputBigMac,
                GString *output, unsigned char *outputBigMac)
@@ -654,7 +654,7 @@ int writeBigMAC(gchar *filename, char *outputBuffer)
 
       g_clear_error(&error);
     }
-  
+
   return 1;
 }
 

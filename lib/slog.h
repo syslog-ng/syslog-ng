@@ -111,8 +111,9 @@ int sLogDecrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *ta
  *
  * Note: Caller must take care of memory management.
  */
-int sLogDecrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *tag, unsigned char *key, unsigned char *iv,
-		unsigned char *plaintext);
+int sLogDecrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *tag, unsigned char *key,
+                unsigned char *iv,
+                unsigned char *plaintext);
 
 void cmac(unsigned char *key, const void *input, guint64 length, unsigned char *out, guint64 *outlen);
 
@@ -138,7 +139,7 @@ void deriveKey(unsigned char *dst, guint64 index, guint64 currentKey);
  * This function creates a new encrypted log entry updates the corresponding MAC accordingly
  *
  * 1. Parameter: Number of log entries (for enumerating the entries in the log file)
- * 2. Parameter: The original log message 
+ * 2. Parameter: The original log message
  * 3. Parameter: The current encryption key
  * 4. Parameter: The current MAC
  * 5. Parameter: The resulting encrypted log entry
@@ -200,7 +201,7 @@ int writeKey(char *key, guint64 counter, gchar *keypath);
 /*
  * Verify the integrity of an existing log file
  *
- * Return: 
+ * Return:
  * 1 on success
  * 0 on error
  */
@@ -222,4 +223,5 @@ int iterativeFileVerify(unsigned char *previousMAC, unsigned char *previousKey, 
 
 void deriveEncSubKey(unsigned char *mainKey, unsigned char *encKey);
 void deriveMACSubKey(unsigned char *mainKey, unsigned char *MACKey);
-void PRF(unsigned char *key, unsigned char *originalInput, guint64 inputLength, unsigned char *output, guint64 outputLength);
+void PRF(unsigned char *key, unsigned char *originalInput, guint64 inputLength, unsigned char *output,
+         guint64 outputLength);
