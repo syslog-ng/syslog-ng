@@ -41,7 +41,7 @@ def merge_grammars(output_filepath):
     blocks = r'%%' + '\n'
 
     for filepath in files[1:]:
-        with filepath.open() as f:
+        with filepath.open(encoding='UTF-8') as f:
             in_block = False
             for line in f:
                 if line.startswith('%token') or line.startswith(r'%left') or line.startswith('%type'):
