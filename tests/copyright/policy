@@ -52,6 +52,10 @@ tests/python_functional/tox.ini
 tests/python_functional/.pre-commit-config.yaml
  LGPLv2.1+_SSL,non-balabit
 lib/timeutils/zonecache.[ch]$
+lib/slog\.[ch]$
+modules/cryptofuncs/slogimport/slogimport\.c$
+modules/cryptofuncs/slogverify/slogverify\.c$
+modules/cryptofuncs/slogkey/slogkey\.c$
  LGPLv2.1+_SSL
 autogen\.sh$
 sub-configure\.sh$
@@ -74,10 +78,6 @@ modules/timestamp/rewrite-.*$
 modules/add-contextual-data/add-contextual-data-glob-selector\.[ch]$
 modules/add-contextual-data/tests/test_glob_selector\.c$
 modules/affile/tests/test_file_writer\.c$
-lib/slog\.[ch]$
-modules/cryptofuncs/slogkey/slogimport\.c$
-modules/cryptofuncs/slogkey/slogkey\.c$
-modules/cryptofuncs/slogkey/slogverify\.c$
  GPLv2+_SSL
 contib/config_option_database
 news/create-newsfile.py
@@ -94,6 +94,8 @@ modules/java/(tools|[^/]*$)
 modules/java-modules/(dummy|elastic-v2|hdfs|http|kafka|[^/]*$)
 modules/(afamqp|affile|afmongodb|afprog|afsmtp|afsocket|afsql|afstomp|afstreams|afuser|azure-auth-header|basicfuncs|cef|confgen|cryptofuncs|csvparser|timestamp|diskq|dbparser|geoip2|graphite|json|kvformat|linux-kmsg-format|pacctformat|pseudofile|python|redis|riemann|syslogformat|systemd-journal|getent|system-source|stardate|snmptrapd-parser|xml|openbsd|examples|kafka|afsnmp|[^/]*$)
 modules/(add-contextual-data|tagsparser|map-value-pairs|hook-commands|appmodel|[^/]*$)
+modules/cryptofuncs/cryptofuncs\.c$
+modules/cryptofuncs/tests/test_cryptofuncs\.c$
 modules/http/(http-loadbalancer|http-worker)\.[ch]$
 modules/http/response-handler\.[ch]$
 modules/http/http-curl-header-list\.[ch]$
