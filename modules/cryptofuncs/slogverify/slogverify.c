@@ -53,7 +53,6 @@ int standardMode(int argc, char **argv)
 
   char key[KEY_LENGTH];
   guint64 counter;
-  guint64 outlen=0;
 
   msg_info("[SLOG] INFO: Reading key file", evt_tag_str("name", argv[1]));
   int ret = readKey(key, &counter, argv[1]);
@@ -105,11 +104,11 @@ int standardMode(int argc, char **argv)
 
   msg_info("[SLOG] INFO: Number of lines in file", evt_tag_long("number", entries));
   msg_info("[SLOG] INFO: Restoring and verifying log entries", evt_tag_int("buffer size", bufferSize));
-  ret = fileVerify((unsigned char *))key, argv[2], argv[4], MAC, entries, bufferSize);
+  ret = fileVerify((unsigned char *)key, argv[2], argv[4], MAC, entries, bufferSize);
 
   if (ret == 0)
-  {
-    msg_error("[SLOG] ERROR: There is a problem with log verification. Please check log manually");
+    {
+      msg_error("[SLOG] ERROR: There is a problem with log verification. Please check log manually");
     }
   return ret;
 }

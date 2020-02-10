@@ -64,7 +64,6 @@ int main(int argc, char **argv)
           return -1;
         }
 
-      GError *error = NULL;
       ret = writeKey((gchar *)masterkey, 0, keyfile);
       if(!ret)
         {
@@ -95,12 +94,12 @@ int main(int argc, char **argv)
       gchar *serial = argv[4];
       gchar *hostKeyFileName = argv[5];
 
-      guchar masterKey[KEY_LENGTH] = { 0 };
+      gchar masterKey[KEY_LENGTH] = { 0 };
 
       guint64 counter;
 
       GError *error = NULL;
-      ret = readKey(masterKey, &counter, masterKeyFileName);
+      ret = readKey((char *)masterKey, &counter, masterKeyFileName);
       if (ret == 0)
         {
           msg_error("Unable to read master key");
@@ -116,7 +115,7 @@ int main(int argc, char **argv)
           return -1;
         }
 
-      ret = writeKey(hostKey, 0, hostKeyFileName);
+      ret = writeKey((char *)hostKey, 0, hostKeyFileName);
       if(ret == 0)
         {
           msg_error("Unable to write host key to file", evt_tag_str("file", hostKeyFileName));
