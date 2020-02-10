@@ -44,15 +44,12 @@ MsgFormatOptions parse_options;
 
 static guchar masterkey[KEY_LENGTH];
 static guchar hostkey[KEY_LENGTH];
-static guchar mac[CMAC_LENGTH];
-static guint64 seq;
+static gchar mac[CMAC_LENGTH];
 
 // Test data for secure logging
 static gchar *masterKeyFileName = "/tmp/master.key";
 static gchar *hostKeyFileName = "/tmp/host.key";
 static gchar *macFileName = "/tmp/mac.dat";
-static gchar *slogFileName = "/tmp/slog.log";
-static gchar *hostLogFileName = "/tmp/host.log";
 static gchar *macAddr = "a08cefa7b520";
 static gchar *serial = "CAC7119N43";
 static gchar *prefix = "slog/";
@@ -118,8 +115,6 @@ LogTemplate *createTemplate()
 
   const gboolean escaping = FALSE;
 
-  gint prefix_len = strlen(prefix);
-
   LogTemplate *slog_templ = compile_template(slog_templ_str->str, escaping);
   if (!slog_templ)
     {
@@ -154,8 +149,6 @@ void createLogMessages(gint num, LogMessage **log)
 // Apply the template to a single log message
 GString *applyTemplate(LogTemplate *templ, LogMessage *msg)
 {
-  gint prefix_len = strlen(prefix);
-
   GString *output = g_string_new(prefix);
 
   // Execute secure logging template
@@ -203,7 +196,7 @@ GString **verifyMaliciousMessages(GString **templateOutput, size_t totalNumberOf
   int ret = readBigMAC(macFileName, mac);
   cr_assert(ret == 1, "Unable to read aggregated MAC from file %s", macFileName);
   int problemsFound = 0;
-  char cmac_tag[CMAC_LENGTH];
+  unsigned char cmac_tag[CMAC_LENGTH];
   initVerify(totalNumberOfMessages, hostkey, &next, &start, templateOutput, &tab);
 
   for (int i = 0; i<totalNumberOfMessages; i++)
@@ -216,7 +209,7 @@ GString **verifyMaliciousMessages(GString **templateOutput, size_t totalNumberOf
           problemsFound++;
         }
     }
-  ret = finalizeVerify(start, totalNumberOfMessages, mac, cmac_tag, &tab);
+  ret = finalizeVerify(start, totalNumberOfMessages, (guchar*)mac, cmac_tag, &tab);
 
   cr_assert(ret == 0, "Aggregated MAC is correct.");
 
@@ -241,7 +234,7 @@ void verifyMessages(GString **templateOutput, LogMessage **original, size_t tota
   int ret =  readBigMAC(macFileName, mac);
   cr_assert(ret == 1, "Unable to read aggregated MAC from file %s", macFileName);
 
-  char cmac_tag[CMAC_LENGTH];
+  unsigned char cmac_tag[CMAC_LENGTH];
   ret = initVerify(totalNumberOfMessages, hostkey, &next, &start, templateOutput, &tab);
   cr_assert(ret == 1, "initVerify failed");
 
@@ -249,7 +242,7 @@ void verifyMessages(GString **templateOutput, LogMessage **original, size_t tota
                       &numberOfLogEntries, cmac_tag, &tab);
   cr_assert(ret == 1, "iterateBuffer failed");
 
-  ret = finalizeVerify(start, totalNumberOfMessages, mac, cmac_tag, &tab);
+  ret = finalizeVerify(start, totalNumberOfMessages, (guchar*)mac, cmac_tag, &tab);
   cr_assert(ret == 1, "finalizeVerify failed");
 
 
@@ -275,13 +268,13 @@ void generateKeys()
   int ret = generateMasterKey(masterkey);
   cr_assert(ret == 1, "Unable to generate master key");
 
-  ret = writeKey(masterkey, 0, masterKeyFileName);
+  ret = writeKey((gchar*)masterkey, 0, masterKeyFileName);
   cr_assert(ret == 1, "Unable to write master key to file %s", masterKeyFileName);
 
   ret = deriveHostKey(masterkey, macAddr, serial, hostkey);
   cr_assert(ret == 1, "Unable to derive host key from master key for addr %s and serial number %s", macAddr, serial);
 
-  ret = writeKey(hostkey, 0, hostKeyFileName);
+  ret = writeKey((gchar*)hostkey, 0, hostKeyFileName);
   cr_assert(ret == 1, "Unable to write host key to file %s", hostKeyFileName);
 
   cr_log_info("*** REQUIREMENT VERIFICATION SUCCESSFUL %s", "SRD_CINS_SERVICES-03501");
