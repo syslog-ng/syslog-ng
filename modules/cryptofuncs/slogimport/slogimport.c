@@ -99,13 +99,13 @@ int main(int argc, char *argv[])
       // Remove trailing '\n' from string
       g_string_truncate(inputGString, (inputGString->len)-1);
 
-      sLogEntry(counter, inputGString, (unsigned char*)key, (unsigned char*)mac, result, (unsigned char*)outputmacdata);
+      sLogEntry(counter, inputGString, (unsigned char *)key, (unsigned char *)mac, result, (unsigned char *)outputmacdata);
 
       fprintf(outputFile, "%s\n", result->str);
 
       // Update keys, MAC, etc
       memcpy(mac, outputmacdata, CMAC_LENGTH);
-      evolveKey((unsigned char*)key);
+      evolveKey((unsigned char *)key);
       counter++;
 
 

@@ -209,7 +209,7 @@ GString **verifyMaliciousMessages(GString **templateOutput, size_t totalNumberOf
           problemsFound++;
         }
     }
-  ret = finalizeVerify(start, totalNumberOfMessages, (guchar*)mac, cmac_tag, &tab);
+  ret = finalizeVerify(start, totalNumberOfMessages, (guchar *)mac, cmac_tag, &tab);
 
   cr_assert(ret == 0, "Aggregated MAC is correct.");
 
@@ -242,7 +242,7 @@ void verifyMessages(GString **templateOutput, LogMessage **original, size_t tota
                       &numberOfLogEntries, cmac_tag, &tab);
   cr_assert(ret == 1, "iterateBuffer failed");
 
-  ret = finalizeVerify(start, totalNumberOfMessages, (guchar*)mac, cmac_tag, &tab);
+  ret = finalizeVerify(start, totalNumberOfMessages, (guchar *)mac, cmac_tag, &tab);
   cr_assert(ret == 1, "finalizeVerify failed");
 
 
@@ -268,13 +268,13 @@ void generateKeys()
   int ret = generateMasterKey(masterkey);
   cr_assert(ret == 1, "Unable to generate master key");
 
-  ret = writeKey((gchar*)masterkey, 0, masterKeyFileName);
+  ret = writeKey((gchar *)masterkey, 0, masterKeyFileName);
   cr_assert(ret == 1, "Unable to write master key to file %s", masterKeyFileName);
 
   ret = deriveHostKey(masterkey, macAddr, serial, hostkey);
   cr_assert(ret == 1, "Unable to derive host key from master key for addr %s and serial number %s", macAddr, serial);
 
-  ret = writeKey((gchar*)hostkey, 0, hostKeyFileName);
+  ret = writeKey((gchar *)hostkey, 0, hostKeyFileName);
   cr_assert(ret == 1, "Unable to write host key to file %s", hostKeyFileName);
 
   cr_log_info("*** REQUIREMENT VERIFICATION SUCCESSFUL %s", "SRD_CINS_SERVICES-03501");

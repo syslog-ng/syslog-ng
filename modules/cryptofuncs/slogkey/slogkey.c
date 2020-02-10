@@ -65,7 +65,7 @@ int main(int argc, char **argv)
         }
 
       GError *error = NULL;
-      ret = writeKey((gchar*)masterkey, 0, keyfile);
+      ret = writeKey((gchar *)masterkey, 0, keyfile);
       if(!ret)
         {
           msg_error("Unable to write master key to file", evt_tag_str("file", keyfile));
