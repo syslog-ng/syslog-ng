@@ -69,11 +69,11 @@ create_random_sample_message(void)
 
   GString *msg_str = g_string_new("<155>2019-07-11T10:34:56+01:00 aicorp syslog-ng[23323]:");
 
-  //Append a random string
+  // Append a random string
   int num = randomNumber(10, 500);
   for (int i = 0; i<num; i++)
     {
-      //65 to 90 are upper case letters
+      // 65 to 90 are upper case letters
       g_string_append_c(msg_str, randomNumber(65, 90));
     }
 
@@ -92,7 +92,7 @@ create_random_sample_message(void)
   msg->rcptid = 555;
   msg->host_id = 0xcafebabe;
 
-  /* fix some externally or automatically defined values */
+  // Fix some externally or automatically defined values
   log_msg_set_value(msg, LM_V_HOST_FROM, "kismacska", -1);
   msg->timestamps[LM_TS_RECVD].ut_sec = 1139684315;
   msg->timestamps[LM_TS_RECVD].ut_usec = 639000;
@@ -106,7 +106,7 @@ create_random_sample_message(void)
 
 
 // Create a slog template instance
-LogTemplate *createTemplate()
+LogTemplate *createTemplate(void)
 {
   GString *slog_templ_str = g_string_new("slog");
 
@@ -262,7 +262,7 @@ void verifyMessages(GString **templateOutput, LogMessage **original, size_t tota
 
 
 // Generate keys to be used for the tests
-void generateKeys()
+void generateKeys(void)
 {
   // Create keys for the test
   int ret = generateMasterKey(masterkey);
@@ -353,7 +353,7 @@ Test(cryptofuncs, test_hash)
   assert_template_format("$(md5 $(sha1 foo) bar)", "196894290a831b2d2755c8de22619a97");
 }
 
-void test_slog_template_format()
+void test_slog_template_format(void)
 {
   cr_log_info("test_slog_template_format");
 
@@ -363,7 +363,7 @@ void test_slog_template_format()
   cr_log_info("Template format tests performed successfully");
 }
 
-void test_slog_verification()
+void test_slog_verification(void)
 {
   cr_log_info("test_slog_verification");
 
@@ -389,7 +389,7 @@ void test_slog_verification()
   cr_log_info("*** REQUIREMENT VERIFICATION SUCCESSFUL %s", "SRD_CINS_SERVICES-03506");
 }
 
-void test_slog_verification_bulk()
+void test_slog_verification_bulk(void)
 {
   cr_log_info("test_slog_verification_bulk");
 
@@ -433,7 +433,7 @@ void test_slog_verification_bulk()
 }
 
 
-void test_slog_corrupted_key()
+void test_slog_corrupted_key(void)
 {
   cr_log_info("test_slog_corrupted_key");
 
@@ -513,7 +513,7 @@ void test_slog_corrupted_key()
   cr_log_info("*** REQUIREMENT VERIFICATION SUCCESSFUL %s", "SRD_CINS_SERVICES-03512");
 }
 
-void test_slog_malicious_modifications()
+void test_slog_malicious_modifications(void)
 {
 
   cr_log_info("test_slog_malicious_modifications");
@@ -590,7 +590,7 @@ void test_slog_malicious_modifications()
 }
 
 
-void test_slog_performance()
+void test_slog_performance(void)
 {
 
   cr_log_info("test_slog_performance");
