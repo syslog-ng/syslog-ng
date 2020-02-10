@@ -78,7 +78,7 @@ int standardMode(int argc, char **argv)
     }
 
   unsigned char MAC[CMAC_LENGTH];
-  if (readBigMAC(argv[3], MAC)==0)
+  if (readBigMAC(argv[3], (char*)MAC)==0)
     {
       msg_warning("[SLOG] WARNING: Cannot properly read MAC file.");
     }
@@ -105,7 +105,7 @@ int standardMode(int argc, char **argv)
 
   msg_info("[SLOG] INFO: Number of lines in file", evt_tag_long("number", entries));
   msg_info("[SLOG] INFO: Restoring and verifying log entries", evt_tag_int("buffer size", bufferSize));
-  ret = fileVerify(key, argv[2], argv[4], MAC, entries, bufferSize);
+  ret = fileVerify((unsigned char*))key, argv[2], argv[4], MAC, entries, bufferSize);
 
   if (ret == 0)
     {
@@ -155,7 +155,7 @@ int iterativeMode(int argc, char **argv)
     }
 
   unsigned char previousMAC[CMAC_LENGTH];
-  if (readBigMAC(argv[2], previousMAC)==0)
+  if (readBigMAC(argv[2], (char*)previousMAC)==0)
     {
       msg_warning("[SLOG] WARNING: Cannot properly read MAC file.");
     }
@@ -169,7 +169,7 @@ int iterativeMode(int argc, char **argv)
     }
 
   unsigned char currentMAC[CMAC_LENGTH];
-  if (readBigMAC(argv[5], currentMAC)==0)
+  if (readBigMAC(argv[5], (char*)currentMAC)==0)
     {
       msg_warning("[SLOG] WARNING: Cannot properly read MAC file.");
     }
@@ -196,7 +196,7 @@ int iterativeMode(int argc, char **argv)
 
   msg_info("[SLOG] INFO: Number of lines in file", evt_tag_long("number", entries));
   msg_info("[SLOG] INFO: Restoring and verifying log entries", evt_tag_int("buffer size", bufferSize));
-  ret = iterativeFileVerify(previousMAC, previousKey, argv[4], currentMAC, argv[6], entries, bufferSize,
+  ret = iterativeFileVerify(previousMAC, (unsigned char*)previousKey, argv[4], currentMAC, argv[6], entries, bufferSize,
                             previousKeyCounter);
 
   if (ret == 0)
