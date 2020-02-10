@@ -21,6 +21,9 @@
  *
  */
 
+#ifndef SLOG_H_INCLUDED
+#define SLOG_H_INCLUDED 1
+
 #include <search.h>
 
 #define AES_BLOCKSIZE 16
@@ -225,3 +228,5 @@ void deriveEncSubKey(unsigned char *mainKey, unsigned char *encKey);
 void deriveMACSubKey(unsigned char *mainKey, unsigned char *MACKey);
 void PRF(unsigned char *key, unsigned char *originalInput, guint64 inputLength, unsigned char *output,
          guint64 outputLength);
+
+#endif
