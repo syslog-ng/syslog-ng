@@ -1,8 +1,0 @@
-[user]
-	name = Airbus Commercial Aircraft
-	email = secure-logging@airbus.com
-[push]
-	default = simple
-[http]
-	sslCAInfo = /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
-
