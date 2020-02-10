@@ -98,7 +98,6 @@ int main(int argc, char **argv)
 
       guint64 counter;
 
-      GError *error = NULL;
       ret = readKey((char *)masterKey, &counter, masterKeyFileName);
       if (ret == 0)
         {
@@ -108,7 +107,7 @@ int main(int argc, char **argv)
 
       guchar hostKey[KEY_LENGTH];
 
-      ret = deriveHostKey(masterKey, macAddr, serial, hostKey);
+      ret = deriveHostKey((guchar*)masterKey, macAddr, serial, hostKey);
       if(!ret)
         {
           msg_error("Unable to derive a host key");
