@@ -25,8 +25,6 @@
 #include "python-main.h"
 #include "cfg.h"
 
-#define MODULE_CONFIG_KEY "python"
-
 static gboolean
 python_config_init(ModuleConfig *s, GlobalConfig *cfg)
 {
@@ -65,11 +63,11 @@ python_config_new(void)
 PythonConfig *
 python_config_get(GlobalConfig *cfg)
 {
-  PythonConfig *pc = g_hash_table_lookup(cfg->module_config, MODULE_CONFIG_KEY);
+  PythonConfig *pc = g_hash_table_lookup(cfg->module_config, PYTHON_MODULE_CONFIG_KEY);
   if (!pc)
     {
       pc = python_config_new();
-      g_hash_table_insert(cfg->module_config, g_strdup(MODULE_CONFIG_KEY), pc);
+      g_hash_table_insert(cfg->module_config, g_strdup(PYTHON_MODULE_CONFIG_KEY), pc);
     }
   return pc;
 }

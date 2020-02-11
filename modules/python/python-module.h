@@ -63,4 +63,14 @@
 #endif
 
 #include "compat/compat-python.h"
+#include "syslog-ng.h"
+
+#if SYSLOG_NG_ENABLE_PYTHONv3
+#define PYTHON_MODULE_CONFIG_KEY "python3"
+#endif
+
+#if SYSLOG_NG_ENABLE_PYTHONv2
+#define PYTHON_MODULE_CONFIG_KEY "python2"
+#endif
+
 #endif
