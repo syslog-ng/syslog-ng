@@ -100,7 +100,7 @@ python_fetcher_format_stats_instance(LogThreadedSourceDriver *s)
     .id = self->super.super.super.super.id
   };
 
-  return python_format_stats_instance((LogPipe *)s, "python-fetcher", &options);
+  return python_format_stats_instance((LogPipe *)s, PYTHON_MODULE_PERSIST_KEY "-fetcher", &options);
 }
 
 static void
@@ -509,7 +509,7 @@ python_fetcher_format_persist_name(const LogPipe *s)
     .id = self->super.super.super.super.id
   };
 
-  return python_format_persist_name(s, "python-fetcher", &options);
+  return python_format_persist_name(s, PYTHON_MODULE_PERSIST_KEY "-fetcher", &options);
 }
 
 static gboolean
@@ -577,7 +577,7 @@ python_fetcher_new(GlobalConfig *cfg)
 
   self->super.super.format_stats_instance = python_fetcher_format_stats_instance;
   self->super.super.worker_options.super.stats_level = STATS_LEVEL0;
-  self->super.super.worker_options.super.stats_source = stats_register_type("python");
+  self->super.super.worker_options.super.stats_source = stats_register_type(PYTHON_MODULE_PERSIST_KEY);
 
   self->super.fetch = python_fetcher_fetch;
 

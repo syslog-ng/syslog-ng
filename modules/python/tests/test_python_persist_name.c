@@ -118,7 +118,7 @@ Test(python_persist_name, test_python_dest)
   python_dd_set_option(d, "key", "value");
   cr_assert(log_pipe_init((LogPipe *)d));
 
-  cr_assert_str_eq(log_pipe_get_persist_name((LogPipe *)d), "python.value");
+  cr_assert_str_eq(log_pipe_get_persist_name((LogPipe *)d), PYTHON_MODULE_PERSIST_KEY ".value");
 
   main_loop_sync_worker_startup_and_teardown();
   log_pipe_deinit((LogPipe *)d);
@@ -143,7 +143,7 @@ Test(python_persist_name, test_python_fetcher)
   python_fetcher_set_option(d, "key", "value");
   cr_assert(log_pipe_init((LogPipe *)d));
 
-  cr_assert_str_eq(log_pipe_get_persist_name((LogPipe *)d), "python-fetcher.value");
+  cr_assert_str_eq(log_pipe_get_persist_name((LogPipe *)d), PYTHON_MODULE_PERSIST_KEY "-fetcher.value");
 
   main_loop_sync_worker_startup_and_teardown();
   log_pipe_deinit((LogPipe *)d);
@@ -170,7 +170,7 @@ Test(python_persist_name, test_python_source)
   python_sd_set_option(d, "key", "value");
   cr_assert(log_pipe_init((LogPipe *)d));
 
-  cr_assert_str_eq(log_pipe_get_persist_name((LogPipe *)d), "python-source.value");
+  cr_assert_str_eq(log_pipe_get_persist_name((LogPipe *)d), PYTHON_MODULE_PERSIST_KEY "-source.value");
 
   main_loop_sync_worker_startup_and_teardown();
   log_pipe_deinit((LogPipe *)d);
@@ -239,7 +239,7 @@ Test(python_persist_name, test_python_fetcher_no_generate_persist_name)
   log_pipe_set_persist_name((LogPipe *)d, "test_persist_name");
   cr_assert(log_pipe_init((LogPipe *)d));
 
-  cr_assert_str_eq(log_pipe_get_persist_name((LogPipe *)d), "python-fetcher.test_persist_name");
+  cr_assert_str_eq(log_pipe_get_persist_name((LogPipe *)d), PYTHON_MODULE_PERSIST_KEY "-fetcher.test_persist_name");
 
   main_loop_sync_worker_startup_and_teardown();
   log_pipe_deinit((LogPipe *)d);
@@ -264,7 +264,7 @@ Test(python_persist_name, test_python_source_no_generate_persist_name)
   log_pipe_set_persist_name((LogPipe *)d, "test_persist_name");
   cr_assert(log_pipe_init((LogPipe *)d));
 
-  cr_assert_str_eq(log_pipe_get_persist_name((LogPipe *)d), "python-source.test_persist_name");
+  cr_assert_str_eq(log_pipe_get_persist_name((LogPipe *)d), PYTHON_MODULE_PERSIST_KEY "-source.test_persist_name");
 
   main_loop_sync_worker_startup_and_teardown();
   log_pipe_deinit((LogPipe *)d);
@@ -349,7 +349,7 @@ Test(python_persist_name, test_python_fetcher_persist_preference)
   python_fetcher_set_option(d, "key", "value");
   cr_assert(log_pipe_init((LogPipe *)d));
 
-  cr_assert_str_eq(log_pipe_get_persist_name((LogPipe *)d), "python-fetcher.test_persist_name");
+  cr_assert_str_eq(log_pipe_get_persist_name((LogPipe *)d), PYTHON_MODULE_PERSIST_KEY "-fetcher.test_persist_name");
 
   main_loop_sync_worker_startup_and_teardown();
   log_pipe_deinit((LogPipe *)d);
@@ -367,7 +367,7 @@ Test(python_persist_name, test_python_source_persist_preference)
   python_sd_set_option(d, "key", "value");
   cr_assert(log_pipe_init((LogPipe *)d));
 
-  cr_assert_str_eq(log_pipe_get_persist_name((LogPipe *)d), "python-source.test_persist_name");
+  cr_assert_str_eq(log_pipe_get_persist_name((LogPipe *)d), PYTHON_MODULE_PERSIST_KEY "-source.test_persist_name");
 
   main_loop_sync_worker_startup_and_teardown();
   log_pipe_deinit((LogPipe *)d);

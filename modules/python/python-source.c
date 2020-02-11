@@ -107,7 +107,7 @@ python_sd_format_stats_instance(LogThreadedSourceDriver *s)
     .id = self->super.super.super.id
   };
 
-  return python_format_stats_instance((LogPipe *)s, "python", &options);
+  return python_format_stats_instance((LogPipe *)s, PYTHON_MODULE_PERSIST_KEY "-source", &options);
 }
 
 static void
@@ -538,7 +538,7 @@ python_source_format_persist_name(const LogPipe *s)
     .id = self->super.super.super.id
   };
 
-  return python_format_persist_name(s, "python-source", &options);
+  return python_format_persist_name(s, PYTHON_MODULE_PERSIST_KEY "-source", &options);
 }
 
 static gboolean
@@ -617,7 +617,7 @@ python_sd_new(GlobalConfig *cfg)
 
   self->super.format_stats_instance = python_sd_format_stats_instance;
   self->super.worker_options.super.stats_level = STATS_LEVEL0;
-  self->super.worker_options.super.stats_source = stats_register_type("python");
+  self->super.worker_options.super.stats_source = stats_register_type(PYTHON_MODULE_PERSIST_KEY);
 
   self->options = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
   self->post_message = _post_message_blocking;

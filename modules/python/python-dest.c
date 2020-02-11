@@ -128,7 +128,7 @@ python_dd_format_stats_instance(LogThreadedDestDriver *d)
     .id = self->super.super.super.id
   };
 
-  return python_format_stats_instance((LogPipe *)d, "python", &options);
+  return python_format_stats_instance((LogPipe *)d, PYTHON_MODULE_PERSIST_KEY, &options);
 }
 
 static const gchar *
@@ -144,7 +144,7 @@ python_dd_format_persist_name(const LogPipe *s)
     .id = self->super.super.super.id
   };
 
-  return python_format_persist_name(s, "python", &options);
+  return python_format_persist_name(s, PYTHON_MODULE_PERSIST_KEY, &options);
 }
 
 static gboolean
@@ -639,7 +639,7 @@ python_dd_new(GlobalConfig *cfg)
   self->super.worker.flush = python_dd_flush;
 
   self->super.format_stats_instance = python_dd_format_stats_instance;
-  self->super.stats_source = stats_register_type("python");
+  self->super.stats_source = stats_register_type(PYTHON_MODULE_PERSIST_KEY);
 
   self->options = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
 
