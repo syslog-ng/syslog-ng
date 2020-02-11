@@ -23,6 +23,30 @@
 
 #include "compat-python.h"
 #include "python-helpers.h"
+#include "syslog-ng.h"
+#include "reloc.h"
+
+void
+_set_python_home(const gchar *python_home)
+{
+  Py_SetPythonHome(Py_DecodeLocale(python_home, NULL));
+}
+
+void
+_force_python_home(const gchar *python_home)
+{
+  const gchar *resolved_python_home = get_installation_path_for(python_home);
+  _set_python_home(resolved_python_home);
+}
+
+void
+py_setup_python_home(void)
+{
+#ifdef SYSLOG_NG_PYTHON3_HOME_DIR
+  if (strlen(SYSLOG_NG_PYTHON3_HOME_DIR) > 0)
+    _force_python_home(SYSLOG_NG_PYTHON3_HOME_DIR);
+#endif
+}
 
 void
 py_init_argv(void)

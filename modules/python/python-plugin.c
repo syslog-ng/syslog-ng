@@ -40,6 +40,7 @@
 #include "reloc.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 extern CfgParser python_parser;
 extern CfgParser python_parser_parser;
@@ -96,6 +97,7 @@ _py_init_interpreter(void)
     {
       python_debugger_append_inittab();
 
+      py_setup_python_home();
       _set_python_path();
       Py_Initialize();
       py_init_argv();

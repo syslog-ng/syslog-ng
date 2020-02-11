@@ -328,6 +328,14 @@ AC_ARG_WITH(python,
               [  --with-python=VERSION    Build with a specific version of python]
               ,,with_python="auto")
 
+AC_ARG_WITH(python3-home,
+              [  --with-python3-home=path Use path as a hard-coded Python home directory that can not be overwritten by the PYTHONHOME environment variable],
+              python3_home_dir=$with_python3_home)
+
+AC_ARG_WITH(python2-home,
+              [  --with-python2-home=path Use path as a hard-coded Python home directory that can not be overwritten by the PYTHONHOME environment variable],
+              python2_home_dir=$with_python2_home)
+
 AC_ARG_WITH(nosetests,
               [  --with-nosetests=ABSOLUTE_PATH    Specify nosetests location])
 
@@ -1833,6 +1841,8 @@ if test -n "$env_ld_library_path"; then
 fi
 AC_DEFINE_UNQUOTED(PATH_MODULEDIR, "$moduledir", [module installation directory])
 AC_DEFINE_UNQUOTED(PYTHON_MODULE_DIR, "$python_moduledir", [Python module installation directory])
+AC_DEFINE_UNQUOTED(PYTHON3_HOME_DIR, "$python3_home_dir", [Hard-coded Python 3 home directory])
+AC_DEFINE_UNQUOTED(PYTHON2_HOME_DIR, "$python2_home_dir", [Hard-coded Python 2 home directory])
 AC_DEFINE_UNQUOTED(PATH_LOGGENPLUGINDIR, "$loggenplugindir", [loggenplugin installation directory])
 AC_DEFINE_UNQUOTED(MODULE_PATH, "$module_path", [module search path])
 AC_DEFINE_UNQUOTED(JAVA_MODULE_PATH, "$java_module_path", [java module search path])
