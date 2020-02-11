@@ -1,4 +1,15 @@
 module_switch(ENABLE_PYTHON "Enable Python module" PYTHONLIBS_FOUND)
+
+option(ENABLE_PYTHON2_AND_3 "Enable both Python 2 and Python 3 support" OFF)
+
+if (ENABLE_PYTHON2_AND_3)
+  find_package(PkgConfig)
+
+  pkg_check_modules(PYTHON2 REQUIRED python2)
+  find_package(PythonInterp EXACT "${PYTHON_VERSION}" REQUIRED)
+  find_package(PythonLibs EXACT "${PYTHON_VERSION}" REQUIRED)
+endif()
+
 if (NOT ENABLE_PYTHON)
   return()
 endif ()
