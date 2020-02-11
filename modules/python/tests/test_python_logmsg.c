@@ -35,6 +35,7 @@ MsgFormatOptions parse_options;
 static void
 _py_init_interpreter(void)
 {
+  py_setup_python_home();
   Py_Initialize();
   py_init_argv();
 
