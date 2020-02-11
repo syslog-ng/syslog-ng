@@ -79,6 +79,28 @@ static Plugin python_plugins[] =
 
 static gboolean interpreter_initialized = FALSE;
 
+static gboolean
+_check_conflicting_python_module(PluginContext *context)
+{
+  Plugin *conflicting_plugins = NULL;
+
+#if SYSLOG_NG_ENABLE_PYTHONv2
+  conflicting_plugins = (Plugin[])
+  {
+    PYTHON_PLUGINS(3)
+  };
+#elif SYSLOG_NG_ENABLE_PYTHONv3
+  conflicting_plugins = (Plugin[])
+  {
+    PYTHON_PLUGINS(2)
+  };
+#else
+  g_assert_not_reached();
+#endif
+
+  return plugin_is_registered(context, conflicting_plugins[0].type, conflicting_plugins[0].name);
+}
+
 static void
 _set_python_path(void)
 {
@@ -122,6 +144,12 @@ _py_init_interpreter(void)
 gboolean
 python_module_init(PluginContext *context, CfgArgs *args G_GNUC_UNUSED)
 {
+  if (_check_conflicting_python_module(context))
+    {
+      msg_error("Conflicting Python modules, Python 2 and Python 3 cannot be used in the same syslog-ng instance");
+      return FALSE;
+    }
+
   _py_init_interpreter();
   python_debugger_init();
   plugin_register(context, python_plugins, G_N_ELEMENTS(python_plugins));
