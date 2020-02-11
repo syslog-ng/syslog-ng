@@ -1441,8 +1441,10 @@ if test "x$enable_python" != "xno"; then
 
   if (echo "$with_python" | grep -Eq "python-?3.*"); then
     python_version=3
+    enable_python3="yes"
   else
     python_version=2
+    enable_python2="yes"
   fi
 else
   with_python=""
@@ -1854,8 +1856,8 @@ AC_DEFINE_UNQUOTED(ENABLE_SYSTEMD, `enable_value $enable_systemd`, [Enable syste
 AC_DEFINE_UNQUOTED(ENABLE_KAFKA, `enable_value $enable_kafka`, [Enable kafka support])
 AC_DEFINE_UNQUOTED(SYSTEMD_JOURNAL_MODE, `journald_mode`, [Systemd-journal support mode])
 AC_DEFINE_UNQUOTED(HAVE_INOTIFY, `enable_value $ac_cv_func_inotify_init`, [Have inotify])
-AC_DEFINE_UNQUOTED(ENABLE_PYTHONv2, `(test "$python_version" = "2" ) && echo 1 || echo 0`, [Python2 c api])
-AC_DEFINE_UNQUOTED(ENABLE_PYTHONv3, `(test "$python_version" = "3" ) && echo 1 || echo 0`, [Python3 c api])
+AC_DEFINE_UNQUOTED(ENABLE_PYTHONv2, `enable_value $enable_python2`, [Enable Python 2 support])
+AC_DEFINE_UNQUOTED(ENABLE_PYTHONv3, `enable_value $enable_python3`, [Enable Python 3 support])
 AC_DEFINE_UNQUOTED(USE_CONST_IVYKIS_MOCK, `enable_value $IVYKIS_VERSION_UPDATED`, [ivykis version is greater than $IVYKIS_UPDATED_VERSION])
 
 AM_CONDITIONAL(ENABLE_ENV_WRAPPER, [test "$enable_env_wrapper" = "yes"])
