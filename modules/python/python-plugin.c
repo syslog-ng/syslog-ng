@@ -23,6 +23,7 @@
  */
 
 #include "python-module.h"
+#include "syslog-ng.h"
 #include "python-parser.h"
 #include "python-dest.h"
 #include "python-tf.h"
@@ -44,35 +45,37 @@
 extern CfgParser python_parser;
 extern CfgParser python_parser_parser;
 
+#define PYTHON_PLUGIN(_name, _type) \
+  { \
+    .type = _type, \
+    .name = _name, \
+    .parser = &python_parser, \
+  }
+
+#define PYTHON_PLUGINS(version) \
+  PYTHON_PLUGIN("python" #version, LL_CONTEXT_DESTINATION), \
+  PYTHON_PLUGIN("python" #version, LL_CONTEXT_SOURCE), \
+  PYTHON_PLUGIN("python" #version, LL_CONTEXT_ROOT), \
+  PYTHON_PLUGIN("python" #version, LL_CONTEXT_PARSER), \
+  PYTHON_PLUGIN("python" #version "_fetcher", LL_CONTEXT_SOURCE), \
+  TEMPLATE_FUNCTION_PLUGIN(tf_python, "python" #version)
+
+
 static Plugin python_plugins[] =
 {
-  {
-    .type = LL_CONTEXT_DESTINATION,
-    .name = "python",
-    .parser = &python_parser,
-  },
-  {
-    .type = LL_CONTEXT_SOURCE,
-    .name = "python",
-    .parser = &python_parser,
-  },
-  {
-    .type = LL_CONTEXT_SOURCE,
-    .name = "python_fetcher",
-    .parser = &python_parser,
-  },
-  {
-    .type = LL_CONTEXT_ROOT,
-    .name = "python",
-    .parser = &python_parser,
-  },
-  {
-    .type = LL_CONTEXT_PARSER,
-    .name = "python",
-    .parser = &python_parser,
-  },
-  TEMPLATE_FUNCTION_PLUGIN(tf_python, "python"),
+#if SYSLOG_NG_ENABLE_PYTHONv2
+  PYTHON_PLUGINS(),
+  PYTHON_PLUGINS(2),
+#elif SYSLOG_NG_ENABLE_PYTHONv3
+  PYTHON_PLUGINS(3),
+#endif
+
+#if SYSLOG_NG_ENABLE_PYTHONv3 && !SYSLOG_NG_ENABLE_PYTHONv2_AND_v3
+  /* python() keyword compat for Python 3 */
+  PYTHON_PLUGINS(),
+#endif
 };
+
 static gboolean interpreter_initialized = FALSE;
 
 static void

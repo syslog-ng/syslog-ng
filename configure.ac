@@ -320,6 +320,10 @@ AC_ARG_ENABLE(python,
               [  --disable-python       Disable Python module]
               ,,enable_python="auto")
 
+AC_ARG_ENABLE(python2-and-3,
+              [  --enable-python2-and-3 Enable both Python 2 and Python 3 support (default: no)]
+              ,,enable_python2_and_3="no")
+
 AC_ARG_ENABLE(kafka,
               [  --enable-kafka         Enable rdkafka support]
               ,,enable_kafka="auto")
@@ -1401,7 +1405,20 @@ PKG_CHECK_MODULES(libsystemd, libsystemd >= ${LIBSYSTEMD_MIN_VERSION},
 dnl ***************************************************************************
 dnl python checks
 dnl ***************************************************************************
-if test "x$enable_python" != "xno"; then
+
+if test "x$enable_python2_and_3" = "xyes"; then
+  PKG_CHECK_MODULES(PYTHON3, python3-embed,, [
+    PKG_CHECK_MODULES(PYTHON3, python3,, AC_MSG_ERROR([Could not find Python 3 development libraries]))
+  ])
+  PKG_CHECK_MODULES(PYTHON2, python2,, [
+    PKG_CHECK_MODULES(PYTHON2, python,, AC_MSG_ERROR([Could not find Python 2 development libraries]))
+  ])
+
+  enable_python="yes"
+  python_found="yes"
+  with_python="python2 and python3"
+  python_version=3
+elif test "x$enable_python" != "xno"; then
   if test "x$with_python" = "xauto"; then
     PKG_CHECK_MODULES(PYTHON, python3-embed, python_found="yes", [
       PKG_CHECK_MODULES(PYTHON, python3, python_found="yes", python_found="no")
@@ -1858,6 +1875,8 @@ AC_DEFINE_UNQUOTED(SYSTEMD_JOURNAL_MODE, `journald_mode`, [Systemd-journal suppo
 AC_DEFINE_UNQUOTED(HAVE_INOTIFY, `enable_value $ac_cv_func_inotify_init`, [Have inotify])
 AC_DEFINE_UNQUOTED(ENABLE_PYTHONv2, `enable_value $enable_python2`, [Enable Python 2 support])
 AC_DEFINE_UNQUOTED(ENABLE_PYTHONv3, `enable_value $enable_python3`, [Enable Python 3 support])
+AC_DEFINE_UNQUOTED(ENABLE_PYTHONv2_AND_v3, `enable_value $enable_python2_and_3`, [Enable both Python 2 and Python 3 support])
+
 AC_DEFINE_UNQUOTED(USE_CONST_IVYKIS_MOCK, `enable_value $IVYKIS_VERSION_UPDATED`, [ivykis version is greater than $IVYKIS_UPDATED_VERSION])
 
 AM_CONDITIONAL(ENABLE_ENV_WRAPPER, [test "$enable_env_wrapper" = "yes"])
@@ -1883,6 +1902,7 @@ AM_CONDITIONAL(LIBRABBITMQ_INTERNAL, [test "x$with_librabbitmq_client" = "xinter
 AM_CONDITIONAL(ENABLE_RIEMANN, [test "$enable_riemann" != "no"])
 AM_CONDITIONAL(ENABLE_JOURNALD, [test "$with_systemd_journal" != "no"])
 AM_CONDITIONAL(ENABLE_PYTHON, [test "$enable_python" != "no"])
+AM_CONDITIONAL(ENABLE_PYTHONv2_AND_v3, [test "x$enable_python2_and_3" = "xyes"])
 AM_CONDITIONAL(ENABLE_JAVA, [test "$enable_java" = "yes"])
 AM_CONDITIONAL(ENABLE_JAVA_MODULES, [test "$enable_java_modules" = "yes"])
 AM_CONDITIONAL(ENABLE_SNMP_DEST, [test "$enable_snmp_dest" = "yes"])
