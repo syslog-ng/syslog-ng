@@ -317,7 +317,7 @@ AC_ARG_WITH(systemd-journal,
               ,,with_systemd_journal="auto")
 
 AC_ARG_ENABLE(python,
-              [  --disable-python       Disable python destination]
+              [  --disable-python       Disable Python module]
               ,,enable_python="auto")
 
 AC_ARG_ENABLE(kafka,
