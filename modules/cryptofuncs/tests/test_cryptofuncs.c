@@ -28,20 +28,25 @@
 #include <search.h>
 #include <criterion/criterion.h>
 
-#include "libtest/cr_template.h"
-#include "libtest/msg_parse_lib.h"
 #include "apphook.h"
 #include "cfg.h"
 #include "logmatcher.h"
+#include "libtest/cr_template.h"
+#include "libtest/msg_parse_lib.h"
+#include "libtest/stopwatch.h"
 #include "timeutils/misc.h"
 
+// Secure logging functions
 #include "slog.h"
-
-MsgFormatOptions parse_options;
 
 #define MAX_TEST_MESSAGES 1000
 #define MIN_TEST_MESSAGES 10
+#define PERFORMANCE_COUNTER 100000
 
+// Local parse options
+static MsgFormatOptions test_parse_options;
+
+// Key and MAC for secure logging
 static guchar masterkey[KEY_LENGTH];
 static guchar hostkey[KEY_LENGTH];
 static gchar mac[CMAC_LENGTH];
@@ -55,15 +60,18 @@ static gchar *serial = "CAC7119N43";
 static gchar *prefix = "slog/";
 static gchar *context_id = "test-context-id";
 
-//Generate random number between low and high
+/*************************************************************************/
+/* Utility functions needed for testing the secure logging functionality */
+/*************************************************************************/
+
+// Generate random number between low and high
 int randomNumber(int low, int high)
 {
   return rand()%((high+1)-low)+low;
 }
 
-
-LogMessage *
-create_random_sample_message(void)
+// Generate a sample message with a fixed and a random part
+LogMessage *create_random_sample_message(void)
 {
   LogMessage *msg;
 
@@ -80,7 +88,7 @@ create_random_sample_message(void)
   GSockAddr *saddr;
 
   saddr = g_sockaddr_inet_new("10.11.12.13", 1010);
-  msg = log_msg_new(msg_str->str, msg_str->len, saddr, &parse_options);
+  msg = log_msg_new(msg_str->str, msg_str->len, saddr, &test_parse_options);
   g_sockaddr_unref(saddr);
   log_msg_set_match(msg, 0, "whole-match", -1);
   log_msg_set_match(msg, 1, "first-match", -1);
@@ -98,12 +106,9 @@ create_random_sample_message(void)
   msg->timestamps[LM_TS_RECVD].ut_usec = 639000;
   msg->timestamps[LM_TS_RECVD].ut_gmtoff = get_local_timezone_ofs(1139684315);
 
-
   g_string_free(msg_str, TRUE);
   return msg;
-
 }
-
 
 // Create a slog template instance
 LogTemplate *createTemplate(void)
@@ -116,18 +121,13 @@ LogTemplate *createTemplate(void)
   const gboolean escaping = FALSE;
 
   LogTemplate *slog_templ = compile_template(slog_templ_str->str, escaping);
-  if (!slog_templ)
-    {
-      cr_log_error("Template '%s' does not compile correctly", slog_templ_str->str);
-      return NULL;
-    }
+
+  cr_assert(slog_templ != NULL, "Template '%s' does not compile correctly", slog_templ_str->str);
 
   g_string_free(slog_templ_str, TRUE);
 
   return slog_templ;
 }
-
-
 
 // Create a collection of random log messages for testing purposes
 void createLogMessages(gint num, LogMessage **log)
@@ -144,8 +144,6 @@ void createLogMessages(gint num, LogMessage **log)
     }
 }
 
-
-
 // Apply the template to a single log message
 GString *applyTemplate(LogTemplate *templ, LogMessage *msg)
 {
@@ -159,13 +157,13 @@ GString *applyTemplate(LogTemplate *templ, LogMessage *msg)
     NULL,        // Template options (no options in this case)
     LTZ_LOCAL,   // Timezone
     999,         // Sequence number for recursive template invocations
-    context_id,  // Context identifier
+    context_id,  // Context identifiertc.logtc.log
     output);     // Output string after applying the template
 
   return output;
 }
 
-//Find an integer in an array of integers
+// Find an integer in an array of integers
 int findInArray(int index, int *buffer, int size)
 {
   for (int i = 0; i<size; i++)
@@ -178,10 +176,9 @@ int findInArray(int index, int *buffer, int size)
   return 0;
 }
 
-//Verify messages with malicious modification, detect which entry is corrupted
+// Verify messages with malicious modification and detect which entry is corrupted
 GString **verifyMaliciousMessages(GString **templateOutput, size_t totalNumberOfMessages, int *brokenEntries)
 {
-
   unsigned char keyZero[KEY_LENGTH];
   memcpy(keyZero, hostkey, KEY_LENGTH);
 
@@ -219,7 +216,6 @@ GString **verifyMaliciousMessages(GString **templateOutput, size_t totalNumberOf
 // Verify log messages and compare them with the original
 void verifyMessages(GString **templateOutput, LogMessage **original, size_t totalNumberOfMessages)
 {
-
   unsigned char keyZero[KEY_LENGTH];
   memcpy(keyZero, hostkey, KEY_LENGTH);
 
@@ -249,17 +245,14 @@ void verifyMessages(GString **templateOutput, LogMessage **original, size_t tota
   for (int i=0; i<totalNumberOfMessages; i++)
     {
       char *plaintextMessage = (outputBuffer[i]->str) + CTR_LEN_SIMPLE + COLON + BLANK;
-
-      LogMessage *result = log_msg_new(plaintextMessage, strlen(plaintextMessage), original[i]->saddr, &parse_options);
+      LogMessage *result = log_msg_new(plaintextMessage, strlen(plaintextMessage), original[i]->saddr, &test_parse_options);
       assert_log_messages_equal(original[i], result);
       g_string_free(outputBuffer[i], TRUE);
       log_msg_unref(result);
     }
 
   free(outputBuffer);
-
 }
-
 
 // Generate keys to be used for the tests
 void generateKeys(void)
@@ -276,8 +269,6 @@ void generateKeys(void)
 
   ret = writeKey((gchar *)hostkey, 0, hostKeyFileName);
   cr_assert(ret == 1, "Unable to write host key to file %s", hostKeyFileName);
-
-  cr_log_info("*** REQUIREMENT VERIFICATION SUCCESSFUL %s", "SRD_CINS_SERVICES-03501");
 }
 
 // Delete any keys from a previous test
@@ -304,20 +295,22 @@ void removeKeys(gboolean force)
     }
 }
 
-void
-setup(void)
+/*************************************************************************/
+/* Unit test setup and teardown                                          */
+/*************************************************************************/
+
+void setup(void)
 {
   srand(time(NULL));
   app_startup();
-  init_template_tests();
+  init_parse_options_and_load_syslogformat(&test_parse_options);
 
   // This flag is required in order to pass the unaltered message to the slog template
   // It is required to be set after the initialization of the template tests above,
   // as this sets the parse options to the defaults
-  parse_options.flags |= LP_STORE_RAW_MESSAGE;
+  test_parse_options.flags |= LP_STORE_RAW_MESSAGE;
 
   cfg_load_module(configuration, "cryptofuncs");
-
 }
 
 void
@@ -328,6 +321,10 @@ teardown(void)
 }
 
 TestSuite(cryptofuncs, .init = setup, .fini = teardown);
+
+/*************************************************************************/
+/* Test suite                                                            */
+/*************************************************************************/
 
 Test(cryptofuncs, test_hash)
 {
@@ -355,17 +352,17 @@ Test(cryptofuncs, test_hash)
 
 void test_slog_template_format(void)
 {
-  cr_log_info("test_slog_template_format");
+  cr_log_info("[test_slog_template_format] Start");
 
   assert_template_failure("$(slog -k keyfile)", "$(slog) parsing failed, invalid number of arguments");
   assert_template_failure("$(slog -k keyfile -m)", "Missing argument for -m");
   assert_template_failure("$(slog -k keyfile -m macfile)", "$(slog) parsing failed, invalid number of arguments");
-  cr_log_info("Template format tests performed successfully");
+  cr_log_info("[test_slog_template_format] Successfully completed");
 }
 
 void test_slog_verification(void)
 {
-  cr_log_info("test_slog_verification");
+  cr_log_info("[test_slog_verification] Start");
 
   // Get rid of any existing key and MAC files before starting the test
   removeKeys(TRUE);
@@ -373,7 +370,7 @@ void test_slog_verification(void)
   // Generate a fresh set of keys for the tests
   generateKeys();
 
-  LogMessage *msg = create_sample_message();
+  LogMessage *msg = create_random_sample_message();
   LogTemplate *slog_templ = createTemplate();
 
   GString *output = applyTemplate(slog_templ, msg);
@@ -384,14 +381,12 @@ void test_slog_verification(void)
   log_template_unref(slog_templ);
   g_string_free(output, TRUE);
 
-  cr_log_info("*** REQUIREMENT VERIFICATION SUCCESSFUL %s", "SRD_CINS_SERVICES-03503");
-  cr_log_info("*** REQUIREMENT VERIFICATION SUCCESSFUL %s", "SRD_CINS_SERVICES-03504");
-  cr_log_info("*** REQUIREMENT VERIFICATION SUCCESSFUL %s", "SRD_CINS_SERVICES-03506");
+  cr_log_info("[test_slog_verification] Completed successfully");
 }
 
 void test_slog_verification_bulk(void)
 {
-  cr_log_info("test_slog_verification_bulk");
+  cr_log_info("[test_slog_verification_bulk] Start");
 
   // Get rid of any existing key and MAC files before starting the test
   removeKeys(TRUE);
@@ -417,7 +412,6 @@ void test_slog_verification_bulk(void)
     }
 
   // Verify the previously created log
-  //cr_log_info("[SLOG] DEBUG Starting verification");
   verifyMessages(output, logs, num);
 
   // Release message resources
@@ -430,12 +424,12 @@ void test_slog_verification_bulk(void)
   log_template_unref(slog_templ);
   free(output);
   free(logs);
+  cr_log_info("[test_slog_verification_bulk] Successfully completed");
 }
-
 
 void test_slog_corrupted_key(void)
 {
-  cr_log_info("test_slog_corrupted_key");
+  cr_log_info("[test_slog_corrupted_key] Start");
 
   // Log several messages -> They must be encrypted
   // Delete the key
@@ -463,7 +457,7 @@ void test_slog_corrupted_key(void)
       output[i] = applyTemplate(slog_templ, logs[i]);
     }
 
-  //Verify messages
+  // Verify messages
   verifyMessages(output, logs, num);
 
   // Release message resources
@@ -478,7 +472,7 @@ void test_slog_corrupted_key(void)
   free(output);
 
 
-  //Part 2: delete the key file
+  // Part 2: delete the key file
   int ret = unlink(hostKeyFileName);
   if(ret != 0)
     {
@@ -497,7 +491,7 @@ void test_slog_corrupted_key(void)
   for(size_t i = 0; i < num; i++)
     {
       output[i] = applyTemplate(slog_templ, logs[i]);
-      LogMessage *myOut = log_msg_new(output[i]->str, output[i]->len, logs[i]->saddr, &parse_options);
+      LogMessage *myOut = log_msg_new(output[i]->str, output[i]->len, logs[i]->saddr, &test_parse_options);
       assert_log_messages_equal(myOut, logs[i]);
 
       // Release message resources
@@ -510,13 +504,12 @@ void test_slog_corrupted_key(void)
   free(output);
   free(logs);
 
-  cr_log_info("*** REQUIREMENT VERIFICATION SUCCESSFUL %s", "SRD_CINS_SERVICES-03512");
+  cr_log_info("[test_slog_corrupted_key] Completed successfully");
 }
 
 void test_slog_malicious_modifications(void)
 {
-
-  cr_log_info("test_slog_malicious_modifications");
+  cr_log_info("[test_slog_malicious_modifications] Start");
 
   // Get rid of any existing key and MAC files before starting the test
   removeKeys(TRUE);
@@ -543,9 +536,9 @@ void test_slog_malicious_modifications(void)
     }
 
   int mods = randomNumber(1, num-1);
-
   int entriesToModify[mods];
-  //We might modify the same entry twice
+
+  // We might modify the same entry twice
   for (int i = 0; i < mods; i++)
     {
       entriesToModify[i] = randomNumber(0, num-1);
@@ -575,7 +568,6 @@ void test_slog_malicious_modifications(void)
         }
     }
 
-
   // Release message resources
   for(size_t i = 0; i < num; i++)
     {
@@ -587,38 +579,49 @@ void test_slog_malicious_modifications(void)
   free(output);
   free(logs);
   free(ob);
-}
 
+  cr_log_info("[test_slog_malicious_modifications] Completed successfully");
+}
 
 void test_slog_performance(void)
 {
-
-  cr_log_info("test_slog_performance");
+  cr_log_info("[test_slog_performance] Start");
 
   // Get rid of any existing key and MAC files before starting the test
   removeKeys(TRUE);
+
   // Generate a fresh set of keys for the tests
   generateKeys();
 
-  GString *slog_templ_str = g_string_new("slog");
+  LogTemplate *slog_templ = createTemplate();
 
-  // Initialize the template
-  g_string_printf(slog_templ_str, "$(slog -k %s -m %s $RAWMSG)", hostKeyFileName, macFileName);
+  GString *res = g_string_sized_new(1024);
+  gint i;
 
+  LogMessage *msg = create_random_sample_message();
 
-  perftest_template(slog_templ_str->str);
+  start_stopwatch();
+  for (i = 0; i < PERFORMANCE_COUNTER; i++)
+    {
+      log_template_format(slog_templ, msg, NULL, LTZ_LOCAL, 0, NULL, res);
+    }
+  stop_stopwatch_and_display_result(PERFORMANCE_COUNTER, "%-90.*s", (int)strlen(slog_templ->template) - 1,
+                                    slog_templ->template);
 
-  g_string_free(slog_templ_str, TRUE);
+  // Free resources
+  log_template_unref(slog_templ);
+  g_string_free(res, TRUE);
+  log_msg_unref(msg);
 
+  cr_log_info("[test_slog_performance] Completed successfully");
 }
 
 Test(cryptofuncs, test_slog_functionality)
 {
-
-  test_slog_performance();
-  test_slog_malicious_modifications();
-  test_slog_corrupted_key();
-  test_slog_verification_bulk();
-  test_slog_verification();
   test_slog_template_format();
+  test_slog_performance();
+  test_slog_verification();
+  test_slog_verification_bulk();
+  test_slog_corrupted_key();
+  test_slog_malicious_modifications();
 }
