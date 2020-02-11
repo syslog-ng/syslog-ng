@@ -347,6 +347,12 @@ plugin_find(PluginContext *context, gint plugin_type, const gchar *plugin_name)
 }
 
 gboolean
+plugin_is_registered(PluginContext *context, gint plugin_type, const gchar *plugin_name)
+{
+  return _find_plugin_in_list(context->plugins, plugin_type, plugin_name) != NULL;
+}
+
+gboolean
 plugin_load_module(PluginContext *context, const gchar *module_name, CfgArgs *args)
 {
   GModule *mod;

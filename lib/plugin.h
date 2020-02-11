@@ -105,6 +105,7 @@ PluginCandidate *plugin_candidate_new(gint plugin_type, const gchar *name, const
 void plugin_candidate_free(PluginCandidate *self);
 
 void plugin_register(PluginContext *context, Plugin *p, gint number);
+gboolean plugin_is_registered(PluginContext *context, gint plugin_type, const gchar *plugin_name);
 gboolean plugin_load_module(PluginContext *context, const gchar *module_name, CfgArgs *args);
 gboolean plugin_is_module_available(PluginContext *context, const gchar *module_name);
 
