@@ -103,7 +103,7 @@ def _get_resolve_db():
         struct_regex = re.compile(r'CfgLexerKeyword[^;]*')
         entry_regex = re.compile(r'{[^{}]+,[^{}]+}')
         for f in root_dir.rglob('*-parser.c'):
-            for struct_match in struct_regex.finditer(f.read_text().replace('\n', '')):
+            for struct_match in struct_regex.finditer(f.read_text(encoding='UTF-8').replace('\n', '')):
                 for entry_match in entry_regex.finditer(struct_match.group(0)):
                     entry = entry_match.group(0)[1:-1].replace(' ', '').split(',')
                     token = entry[1]
