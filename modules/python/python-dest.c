@@ -639,7 +639,7 @@ python_dd_new(GlobalConfig *cfg)
   self->super.worker.flush = python_dd_flush;
 
   self->super.format_stats_instance = python_dd_format_stats_instance;
-  self->super.stats_source = stats_register_type(PYTHON_MODULE_PERSIST_KEY);
+  self->super.stats_source = stats_register_type(PYTHON_MODULE_STATS_KEY);
 
   self->options = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
 
