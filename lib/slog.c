@@ -1219,7 +1219,7 @@ int finalizeVerify(guint64 startingEntry, guint64 entriesInFile, unsigned char *
   return ret;
 }
 
-int initVerify(guint64 entriesInFile, unsigned char *mainKey, uint64_t *nextLogEntry, guint64 *startingEntry,
+int initVerify(guint64 entriesInFile, unsigned char *mainKey, guint64 *nextLogEntry, guint64 *startingEntry,
                GString **input, struct hsearch_data *tab)
 {
 

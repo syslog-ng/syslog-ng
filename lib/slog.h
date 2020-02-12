@@ -25,6 +25,7 @@
 #define SLOG_H_INCLUDED 1
 
 #ifdef __APPLE__
+#include "compat/search_hsearch_r.h"
 #include <libkern/OSByteOrder.h>
 
 #define htobe16(x) OSSwapHostToBigInt16(x)
