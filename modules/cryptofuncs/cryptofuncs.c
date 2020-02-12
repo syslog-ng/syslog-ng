@@ -36,12 +36,6 @@
 #include <openssl/rand.h>
 #include <sys/mman.h>
 
-#ifdef __APPLE__
-#include <machine/endian.h>
-#else
-#include <endian.h>
-#endif
-
 // Secure logging declarations
 #include "slog.h"
 

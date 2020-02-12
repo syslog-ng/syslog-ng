@@ -24,13 +24,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-#include <search.h>
-
-#ifdef __APPLE__
-#include <machine/endian.h>
-#else
-#include <endian.h>
-#endif
 
 #include <glib.h>
 
@@ -991,7 +984,7 @@ int writeKey(char *key, guint64 counter, gchar *keypath)
 
 int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntry, unsigned char *mainKey,
                   unsigned char *keyZero, guint keyNumber, GString **output, guint64 *numberOfLogEntries, unsigned char *cmac_tag,
-                  struct hsearch_data *tab)
+                  GHashTable *tab)
 {
 
   int ret = 1;
@@ -1001,9 +994,9 @@ int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntr
       output[i] = g_string_new(NULL);
 
       guint64 len = input[i]->len;
-      if (len>(COUNTER_LENGTH+1))
+      if (len > (COUNTER_LENGTH + 1))
         {
-          //INTERPRET FIRST COUNTER_LENGTH+1 characters
+          // Interpret the first COUNTER_LENGTH+1 characters
           char ctrbuf[COUNTER_LENGTH+1];
           memcpy(ctrbuf, input[i]->str, COUNTER_LENGTH);
           ctrbuf[COUNTER_LENGTH] = 0;
@@ -1029,13 +1022,11 @@ int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntr
 
           if (logEntryOnDisk != *nextLogEntry)
             {
-              if (tab->table!=NULL)
+              if (tab != NULL)
                 {
-                  ENTRY e, *retVal;
-                  char buf[CTR_LEN_SIMPLE+1];
-                  snprintf(buf, CTR_LEN_SIMPLE+1, "%lu", logEntryOnDisk);
-                  e.key = buf;
-                  if(hsearch_r(e, FIND, &retVal, tab)!=0)
+                  char key[CTR_LEN_SIMPLE+1];
+                  snprintf(key, CTR_LEN_SIMPLE+1, "%lu", logEntryOnDisk);
+                  if(g_hash_table_contains(tab, key) == TRUE)
                     {
                       msg_error("[SLOG] ERROR: Duplicate entry detected", evt_tag_long("entry", logEntryOnDisk));
                       ret = 0;
@@ -1053,7 +1044,7 @@ int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntr
                     {
                       msg_error("[SLOG] ERROR: Log claims to be past entry. We rewind from first known key, this might take some time",
                                 evt_tag_long("entry", logEntryOnDisk));
-                      //Rewind key to keyZero
+                      // Rewind key to k0
                       memcpy(mainKey, keyZero, KEY_LENGTH);
                       deriveKey(mainKey, logEntryOnDisk, keyNumber);
                       *nextLogEntry = logEntryOnDisk;
@@ -1079,7 +1070,7 @@ int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntr
           guchar *binBuf = convertToBin(ct, &outputLength);
           int pt_length = 0;
 
-          // Catch wether something weird happened during conversion
+          // Check whether something weird has happened during conversion
           if (outputLength>IV_LENGTH+AES_BLOCKSIZE)
             {
               unsigned char pt[outputLength - IV_LENGTH - AES_BLOCKSIZE];
@@ -1095,15 +1086,12 @@ int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntr
                   // Include colon, whitespace, and \0
                   g_string_append_printf(output[i], "%0*lx: %.*s", CTR_LEN_SIMPLE, logEntryOnDisk, pt_length, pt);
 
-                  if (tab->table!=NULL)
+                  if (tab != NULL)
                     {
-                      ENTRY e, *retVal;
-                      char *buf;
-                      buf = malloc(CTR_LEN_SIMPLE+1);
-                      snprintf(buf, CTR_LEN_SIMPLE+1, "%lu", logEntryOnDisk);
-                      e.key = buf;
-                      e.data = (void *) logEntryOnDisk;
-                      if (hsearch_r(e, ENTER, &retVal, tab)==0)
+                      char *key = malloc(CTR_LEN_SIMPLE+1);
+                      snprintf(key, CTR_LEN_SIMPLE+1, "%lu", logEntryOnDisk);
+
+                      if (g_hash_table_insert(tab, key, (gpointer)logEntryOnDisk) == FALSE)
                         {
                           msg_warning("[SLOG] WARNING: Unable to process hash table while entering decrypted log entry", evt_tag_long("entry",
                                       logEntryOnDisk));
@@ -1120,7 +1108,6 @@ int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntr
                       deriveMACSubKey(mainKey, MACKey);
 
                       cmac(MACKey, binBuf, IV_LENGTH+AES_BLOCKSIZE+pt_length, cmac_tag, &outlen );
-
                     }
                   else
                     {
@@ -1163,41 +1150,33 @@ int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntr
   return ret;
 }
 
-
+// Perform the final verification step
 int finalizeVerify(guint64 startingEntry, guint64 entriesInFile, unsigned char *bigMac, unsigned char *cmac_tag,
-                   struct hsearch_data *tab)
+                   GHashTable *tab)
 {
 
   int ret = 1;
 
   // Check which entries are missing
   guint64 notRecovered = 0;
-  for (guint64 i = startingEntry; i<startingEntry+entriesInFile; i++)
+  for (guint64 i = startingEntry; i < startingEntry + entriesInFile; i++)
     {
-
-      if (tab->table !=NULL)
+      if (tab != NULL)
         {
-          ENTRY e, *ep;
-          char buf[CTR_LEN_SIMPLE+1];
-          snprintf(buf, CTR_LEN_SIMPLE+1, "%lu", i);
-          e.key = buf;
-          e.data = (void *) i;
-          int searchRes = hsearch_r(e, FIND, &ep, tab);
+          // Hashtable key
+          char key[CTR_LEN_SIMPLE+1];
+          snprintf(key, CTR_LEN_SIMPLE+1, "%lu", i);
 
-          if(searchRes == 0)
+          if(g_hash_table_contains(tab, key) == FALSE)
             {
               notRecovered++;
               msg_warning("[SLOG] WARNING: Unable to recover", evt_tag_long("entry", i));
               ret = 0;
             }
-          else
-            {
-              free(ep->key);
-            }
         }
     }
 
-  if ((notRecovered==0)&&(tab->table!=NULL))
+  if ((notRecovered == 0) && (tab != NULL))
     {
       msg_info("[SLOG] INFO: All entries recovered successfully");
     }
@@ -1214,22 +1193,20 @@ int finalizeVerify(guint64 startingEntry, guint64 entriesInFile, unsigned char *
       msg_info("[SLOG] Aggregated MAC matches. Log contains all expected log messages.");
     }
 
-  hdestroy_r(tab);
+  g_hash_table_unref(tab);
 
   return ret;
 }
 
+// Initialize log verification
 int initVerify(guint64 entriesInFile, unsigned char *mainKey, guint64 *nextLogEntry, guint64 *startingEntry,
-               GString **input, struct hsearch_data *tab)
+               GString **input, GHashTable **tab)
 {
-
-  memset(tab, 0, sizeof(struct hsearch_data));
-
-  // 2 times for low load
-  if (hcreate_r(2*entriesInFile, tab)==0)
+  // Create hash table
+  *tab = g_hash_table_new(g_str_hash, g_str_equal);
+  if (*tab == NULL)
     {
       msg_error("[SLOG] ERROR: Cannot create hash table");
-      tab->table = NULL;
       return 0;
     }
 
@@ -1370,7 +1347,7 @@ int iterativeFileVerify(unsigned char *previousMAC, unsigned char *mainKey, char
 
   if ((outputBuffer==NULL)||(inputBuffer == NULL))
     {
-      msg_error("[SLOG] ERROR: fileVerify cannot allocate memory");
+      msg_error("[SLOG] ERROR: [iterativeFileVerify] cannot allocate memory");
 
       g_io_channel_shutdown(input, TRUE, &myError);
       g_io_channel_unref(input);
@@ -1404,18 +1381,16 @@ int iterativeFileVerify(unsigned char *previousMAC, unsigned char *mainKey, char
       chunkLength = entriesInFile;
     }
 
-  struct hsearch_data tab;
-  memset(&tab, 0, sizeof(struct hsearch_data));
-  // 2 times for low load
-  if (hcreate_r(2*entriesInFile, &tab)==0)
+  // Create the hash table
+  GHashTable *tab = g_hash_table_new(g_str_hash, g_str_equal);
+  if (tab == NULL)
     {
       msg_error("[SLOG] ERROR: Cannot create hash table");
-      tab.table = NULL;
       return 0;
     }
 
-  // process file in chunks
-  for (int j = 0; j<(entriesInFile/chunkLength); j++)
+  // Process file in chunks
+  for (int j = 0; j < (entriesInFile / chunkLength); j++)
     {
       for (guint64 i = 0; i < chunkLength; i++)
         {
@@ -1447,7 +1422,7 @@ int iterativeFileVerify(unsigned char *previousMAC, unsigned char *mainKey, char
           g_string_truncate(inputBuffer[i], (inputBuffer[i]->len) - 1);
         }
       ret = ret * iterateBuffer(chunkLength, inputBuffer, &nextLogEntry, mainKey, keyZero, keyNumber, outputBuffer,
-                                &numberOfLogEntries, cmac_tag, &tab);
+                                &numberOfLogEntries, cmac_tag, tab);
 
       // ...and write to file
       for (guint64 i = 0; i < chunkLength; i++)
@@ -1519,7 +1494,7 @@ int iterativeFileVerify(unsigned char *previousMAC, unsigned char *mainKey, char
           g_string_truncate(inputBuffer[i], (inputBuffer[i]->len) - 1);
         }
       ret = ret * iterateBuffer((entriesInFile % chunkLength), inputBuffer, &nextLogEntry, mainKey, keyZero, keyNumber,
-                                outputBuffer, &numberOfLogEntries, cmac_tag, &tab);
+                                outputBuffer, &numberOfLogEntries, cmac_tag, tab);
 
       for (guint64 i = 0; i < (entriesInFile % chunkLength); i++)
         {
@@ -1527,6 +1502,7 @@ int iterativeFileVerify(unsigned char *previousMAC, unsigned char *mainKey, char
             {
 
               gsize size;
+
               //Add newline
               g_string_append(outputBuffer[i], "\n");
               status = g_io_channel_write_chars(output, (outputBuffer[i])->str, (outputBuffer[i])->len, &size, &myError);
@@ -1556,7 +1532,6 @@ int iterativeFileVerify(unsigned char *previousMAC, unsigned char *mainKey, char
           g_string_free(outputBuffer[i], TRUE);
           g_string_free(inputBuffer[i], TRUE);
         }
-
     }
 
   if (startedWithZero==1)
@@ -1564,7 +1539,7 @@ int iterativeFileVerify(unsigned char *previousMAC, unsigned char *mainKey, char
       msg_info("[SLOG] INFO: We started with key key0. There might be a lot of warnings about missing log entries.");
     }
 
-  ret = ret * finalizeVerify(startingEntry, entriesInFile, bigMAC, cmac_tag, &tab);
+  ret = ret * finalizeVerify(startingEntry, entriesInFile, bigMAC, cmac_tag, tab);
 
   free(inputBuffer);
   free(outputBuffer);
@@ -1597,7 +1572,7 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
   unsigned char keyZero[KEY_LENGTH];
   memcpy(keyZero, mainKey, KEY_LENGTH);
 
-  struct hsearch_data tab;
+  GHashTable *tab = NULL;
 
   int ret = 1;
 
@@ -1621,7 +1596,7 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
   GIOStatus status =  g_io_channel_set_encoding(input, NULL, &myError);
   if (status != G_IO_STATUS_NORMAL)
     {
-      cond_msg_error (myError, "[SLOG] ERROR: setting input file encoding");
+      cond_msg_error (myError, "[SLOG] ERROR: Cannot set input file encoding");
 
       g_clear_error(&myError);
 
@@ -1654,7 +1629,7 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
 
   if (status != G_IO_STATUS_NORMAL)
     {
-      cond_msg_error (myError, "[SLOG] ERROR: setting output file encoding");
+      cond_msg_error (myError, "[SLOG] ERROR: Cannot set output file encoding");
 
       g_clear_error(&myError);
 
@@ -1676,7 +1651,7 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
 
   if ((outputBuffer==NULL)||(inputBuffer == NULL))
     {
-      msg_error("[SLOG] ERROR: fileVerify cannot allocate memory");
+      msg_error("[SLOG] ERROR: [fileVerify] cannot allocate memory");
 
       g_io_channel_shutdown(input, TRUE, &myError);
       g_io_channel_unref(input);
@@ -1707,7 +1682,7 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
       status = g_io_channel_read_line_string(input, inputBuffer[i], NULL, &myError);
       if (status != G_IO_STATUS_NORMAL)
         {
-          cond_msg_error (myError, "[SLOG] ERROR: reading from input file");
+          cond_msg_error (myError, "[SLOG] ERROR: Cannot read from input file");
 
           g_clear_error(&myError);
 
@@ -1730,9 +1705,10 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
       // Cut last character to remove the trailing new line
       g_string_truncate(inputBuffer[i], (inputBuffer[i]->len) - 1);
     }
+
   ret = ret * initVerify(entriesInFile, mainKey, &nextLogEntry, &startingEntry, inputBuffer, &tab);
   ret = ret * iterateBuffer(chunkLength, inputBuffer, &nextLogEntry, mainKey, keyZero, 0, outputBuffer,
-                            &numberOfLogEntries, cmac_tag, &tab);
+                            &numberOfLogEntries, cmac_tag, tab);
 
   // Write to file
   for (guint64 i = 0; i < chunkLength; i++)
@@ -1770,7 +1746,7 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
 
     }
 
-  // process file in chunks
+  // Process file in chunks
   for (int j = 0; j<(entriesInFile/chunkLength)-1; j++)
     {
       for (guint64 i = 0; i < chunkLength; i++)
@@ -1779,7 +1755,7 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
           status = g_io_channel_read_line_string(input, inputBuffer[i], NULL, &myError);
           if (status != G_IO_STATUS_NORMAL)
             {
-              cond_msg_error (myError, "[SLOG] ERROR: reading from input file");
+              cond_msg_error (myError, "[SLOG] ERROR: Cannot read from input file");
               g_clear_error(&myError);
 
               g_io_channel_shutdown(input, TRUE, &myError);
@@ -1801,7 +1777,7 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
           g_string_truncate(inputBuffer[i], (inputBuffer[i]->len) - 1);
         }
       ret = ret * iterateBuffer(chunkLength, inputBuffer, &nextLogEntry, mainKey, keyZero, 0, outputBuffer,
-                                &numberOfLogEntries, cmac_tag, &tab);
+                                &numberOfLogEntries, cmac_tag, tab);
 
       // ...and write to file
       for (guint64 i = 0; i < chunkLength; i++)
@@ -1848,7 +1824,7 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
           status = g_io_channel_read_line_string(input, inputBuffer[i], NULL, &myError);
           if (status != G_IO_STATUS_NORMAL)
             {
-              cond_msg_error (myError, "[SLOG] ERROR: reading from input file");
+              cond_msg_error (myError, "[SLOG] ERROR: Cannot read from input file");
               g_clear_error(&myError);
 
               g_io_channel_shutdown(input, TRUE, &myError);
@@ -1870,7 +1846,7 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
           g_string_truncate(inputBuffer[i], (inputBuffer[i]->len) - 1);
         }
       ret = ret * iterateBuffer((entriesInFile % chunkLength), inputBuffer, &nextLogEntry, mainKey, keyZero, 0, outputBuffer,
-                                &numberOfLogEntries, cmac_tag, &tab);
+                                &numberOfLogEntries, cmac_tag, tab);
 
       for (guint64 i = 0; i < (entriesInFile % chunkLength); i++)
         {
@@ -1883,7 +1859,7 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
               status = g_io_channel_write_chars(output, (outputBuffer[i])->str, (outputBuffer[i])->len, &size, &myError);
               if (status != G_IO_STATUS_NORMAL)
                 {
-                  cond_msg_error (myError, "[SLOG] ERROR: writing to output file");
+                  cond_msg_error (myError, "[SLOG] ERROR: Cannot write to output file");
                   g_clear_error(&myError);
 
                   g_io_channel_shutdown(input, TRUE, &myError);
@@ -1908,7 +1884,7 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
 
     }
 
-  ret = ret * finalizeVerify(startingEntry, entriesInFile, bigMac, cmac_tag, &tab);
+  ret = ret * finalizeVerify(startingEntry, entriesInFile, bigMac, cmac_tag, tab);
 
   free(inputBuffer);
   free(outputBuffer);

@@ -24,14 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <search.h>
 #include <errno.h>
-
-#ifdef __APPLE__
-#include <machine/endian.h>
-#else
-#include <endian.h>
-#endif
 
 #include <glib.h>
 
@@ -69,7 +62,7 @@ int standardMode(int argc, char **argv)
 
   if (counter!=0UL)
     {
-      msg_error("HESU key read has counter different from 0.", evt_tag_long("Counter", counter));
+      msg_error("Host key read has counter different from 0.", evt_tag_long("Counter", counter));
       return 0;
     }
 

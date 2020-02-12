@@ -14,7 +14,6 @@ set(COMPAT_HEADERS
     compat/getent-generic.h
     compat/un.h
     compat/un.h
-    compat/search_hsearch_r.h
     PARENT_SCOPE)
 
 set(COMPAT_SOURCES
@@ -30,7 +29,6 @@ set(COMPAT_SOURCES
     compat/openssl_support.c
     compat/getent-sun.c
     compat/getent-generic.c
-    compat/search_hsearch_r.c
     PARENT_SCOPE)
 
 add_test_subdirectory(tests)

@@ -24,28 +24,6 @@
 #ifndef SLOG_H_INCLUDED
 #define SLOG_H_INCLUDED 1
 
-#ifdef __APPLE__
-#include "compat/search_hsearch_r.h"
-#include <libkern/OSByteOrder.h>
-
-#define htobe16(x) OSSwapHostToBigInt16(x)
-#define htole16(x) OSSwapHostToLittleInt16(x)
-#define be16toh(x) OSSwapBigToHostInt16(x)
-#define le16toh(x) OSSwapLittleToHostInt16(x)
-
-#define htobe32(x) OSSwapHostToBigInt32(x)
-#define htole32(x) OSSwapHostToLittleInt32(x)
-#define be32toh(x) OSSwapBigToHostInt32(x)
-#define le32toh(x) OSSwapLittleToHostInt32(x)
-
-#define htobe64(x) OSSwapHostToBigInt64(x)
-#define htole64(x) OSSwapHostToLittleInt64(x)
-#define be64toh(x) OSSwapBigToHostInt64(x)
-#define le64toh(x) OSSwapLittleToHostInt64(x)
-#endif
-
-#include <search.h>
-
 #define AES_BLOCKSIZE 16
 #define IV_LENGTH 12
 #define KEY_LENGTH 32
@@ -232,14 +210,14 @@ int fileVerify(unsigned char *key, char *inputFileName, char *outputFileName, un
                guint64 entriesInFile, int chunkLength);
 
 int initVerify(guint64 entriesInFile, unsigned char *key, guint64 *nextLogEntry, guint64 *startingEntry,
-               GString **input, struct hsearch_data *tab);
+               GString **input, GHashTable **tab);
 
 int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntry, unsigned char *key,
                   unsigned char *keyZero, guint keyNumber, GString **output, guint64 *numberOfLogEntries, unsigned char *cmac_tag,
-                  struct hsearch_data *tab);
+                  GHashTable *tab);
 
 int finalizeVerify(guint64 startingEntry, guint64 entriesInFile, unsigned char *bigMac, unsigned char *cmac_tag,
-                   struct hsearch_data *tab);
+                   GHashTable *tab);
 
 int iterativeFileVerify(unsigned char *previousMAC, unsigned char *previousKey, char *inputFileName,
                         unsigned char *currentMAC, char *outputFileName, guint64 entriesInFile, int chunkLength, guint64 keyNumber);

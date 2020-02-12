@@ -25,7 +25,6 @@
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
-#include <search.h>
 #include <criterion/criterion.h>
 
 #include "apphook.h"
@@ -182,7 +181,7 @@ GString **verifyMaliciousMessages(GString **templateOutput, size_t totalNumberOf
   unsigned char keyZero[KEY_LENGTH];
   memcpy(keyZero, hostkey, KEY_LENGTH);
 
-  struct hsearch_data tab;
+  GHashTable *tab = NULL;
 
   size_t next = 0;
   size_t start = 0;
@@ -199,14 +198,14 @@ GString **verifyMaliciousMessages(GString **templateOutput, size_t totalNumberOf
   for (int i = 0; i<totalNumberOfMessages; i++)
     {
       ret = iterateBuffer(1, &templateOutput[i], &next, hostkey, keyZero, 0, &outputBuffer[i], &numberOfLogEntries, cmac_tag,
-                          &tab);
+                          tab);
       if (ret == 0)
         {
           brokenEntries[problemsFound] = i;
           problemsFound++;
         }
     }
-  ret = finalizeVerify(start, totalNumberOfMessages, (guchar *)mac, cmac_tag, &tab);
+  ret = finalizeVerify(start, totalNumberOfMessages, (guchar *)mac, cmac_tag, tab);
 
   cr_assert(ret == 0, "Aggregated MAC is correct.");
 
@@ -219,7 +218,7 @@ void verifyMessages(GString **templateOutput, LogMessage **original, size_t tota
   unsigned char keyZero[KEY_LENGTH];
   memcpy(keyZero, hostkey, KEY_LENGTH);
 
-  struct hsearch_data tab;
+  GHashTable *tab = NULL;
 
   size_t next = 0;
   size_t start = 0;
@@ -235,10 +234,10 @@ void verifyMessages(GString **templateOutput, LogMessage **original, size_t tota
   cr_assert(ret == 1, "initVerify failed");
 
   ret = iterateBuffer(totalNumberOfMessages, templateOutput, &next, hostkey, keyZero, 0, outputBuffer,
-                      &numberOfLogEntries, cmac_tag, &tab);
+                      &numberOfLogEntries, cmac_tag, tab);
   cr_assert(ret == 1, "iterateBuffer failed");
 
-  ret = finalizeVerify(start, totalNumberOfMessages, (guchar *)mac, cmac_tag, &tab);
+  ret = finalizeVerify(start, totalNumberOfMessages, (guchar *)mac, cmac_tag, tab);
   cr_assert(ret == 1, "finalizeVerify failed");
 
 
