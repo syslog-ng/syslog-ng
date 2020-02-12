@@ -51,24 +51,31 @@ poll_fd_events_stop_watches(PollEvents *s)
 }
 
 static void
+poll_fd_events_suspend_watches(PollEvents *s)
+{
+  PollFdEvents *self = (PollFdEvents *) s;
+
+  iv_fd_set_handler_in(&self->fd_watch, NULL);
+  iv_fd_set_handler_out(&self->fd_watch, NULL);
+  iv_fd_set_handler_err(&self->fd_watch, NULL);
+}
+
+
+static void
 poll_fd_events_update_watches(PollEvents *s, GIOCondition cond)
 {
   PollFdEvents *self = (PollFdEvents *) s;
 
+  poll_events_suspend_watches(s);
+
   if (cond & G_IO_IN)
     iv_fd_set_handler_in(&self->fd_watch, IV_FD_CALLBACK(poll_events_invoke_callback));
-  else
-    iv_fd_set_handler_in(&self->fd_watch, NULL);
 
   if (cond & G_IO_OUT)
     iv_fd_set_handler_out(&self->fd_watch, IV_FD_CALLBACK(poll_events_invoke_callback));
-  else
-    iv_fd_set_handler_out(&self->fd_watch, NULL);
 
   if (cond & (G_IO_IN + G_IO_OUT))
     iv_fd_set_handler_err(&self->fd_watch, IV_FD_CALLBACK(poll_events_invoke_callback));
-  else
-    iv_fd_set_handler_err(&self->fd_watch, NULL);
 }
 
 PollEvents *
@@ -81,6 +88,7 @@ poll_fd_events_new(gint fd)
   self->super.start_watches = poll_fd_events_start_watches;
   self->super.stop_watches = poll_fd_events_stop_watches;
   self->super.update_watches = poll_fd_events_update_watches;
+  self->super.suspend_watches = poll_fd_events_suspend_watches;
 
   IV_FD_INIT(&self->fd_watch);
   self->fd_watch.fd = fd;

@@ -131,17 +131,6 @@ poll_multiline_file_changes_on_read(PollFileChanges *s)
 }
 
 static void
-poll_multiline_file_changes_update_watches(PollEvents *s, GIOCondition cond)
-{
-  PollMultilineFileChanges *self = (PollMultilineFileChanges *) s;
-
-  if (!cond)
-    poll_multiline_file_changes_stop_timer(self);
-
-  poll_file_changes_update_watches(s, cond);
-}
-
-static void
 poll_multiline_file_changes_stop_watches(PollEvents *s)
 {
   PollMultilineFileChanges *self = (PollMultilineFileChanges *) s;
@@ -167,7 +156,7 @@ poll_multiline_file_changes_new(gint fd, const gchar *follow_filename, gint foll
   self->super.on_eof = poll_multiline_file_changes_on_eof;
   self->super.on_file_moved = poll_multiline_file_changes_on_file_moved;
 
-  self->super.super.update_watches = poll_multiline_file_changes_update_watches;
+  self->super.super.update_watches = poll_file_changes_update_watches;
   self->super.super.stop_watches = poll_multiline_file_changes_stop_watches;
 
   return &self->super.super;
