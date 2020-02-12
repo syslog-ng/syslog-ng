@@ -869,7 +869,7 @@ int readKey(char *destKey, guint64 *destCounter, gchar *keypath)
     }
 
   memcpy(destKey, keydata, KEY_LENGTH);
-  *destCounter = le64toh(littleEndianCounter);
+  *destCounter = GUINT64_FROM_LE(littleEndianCounter);
 
   return 1;
 }
@@ -929,7 +929,7 @@ int writeKey(char *key, guint64 counter, gchar *keypath)
       return 0;
     }
 
-  guint64 littleEndianCounter = htole64(counter);
+  guint64 littleEndianCounter = GINT64_TO_LE(counter);
   gchar outputmacdata[CMAC_LENGTH];
   cmac((guchar *)key, &littleEndianCounter, sizeof(littleEndianCounter), (guchar *)outputmacdata, &outlen);
 
