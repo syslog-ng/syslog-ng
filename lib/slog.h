@@ -24,6 +24,25 @@
 #ifndef SLOG_H_INCLUDED
 #define SLOG_H_INCLUDED 1
 
+#ifdef __APPLE__
+#include <libkern/OSByteOrder.h>
+
+#define htobe16(x) OSSwapHostToBigInt16(x)
+#define htole16(x) OSSwapHostToLittleInt16(x)
+#define be16toh(x) OSSwapBigToHostInt16(x)
+#define le16toh(x) OSSwapLittleToHostInt16(x)
+
+#define htobe32(x) OSSwapHostToBigInt32(x)
+#define htole32(x) OSSwapHostToLittleInt32(x)
+#define be32toh(x) OSSwapBigToHostInt32(x)
+#define le32toh(x) OSSwapLittleToHostInt32(x)
+
+#define htobe64(x) OSSwapHostToBigInt64(x)
+#define htole64(x) OSSwapHostToLittleInt64(x)
+#define be64toh(x) OSSwapBigToHostInt64(x)
+#define le64toh(x) OSSwapLittleToHostInt64(x)
+#endif
+
 #include <search.h>
 
 #define AES_BLOCKSIZE 16
@@ -36,8 +55,8 @@
 #define KEY_WRITE_ERROR 0x22
 #define COLON 1
 #define BLANK 1
-#define COUNTER_LENGTH 12 //We use 8 Byte counter, resulting in 12 Byte base64 encoding
-#define CTR_LEN_SIMPLE 16 //This is for 8 Byte (=2^64) counters; simple encoding by doubling
+#define COUNTER_LENGTH 12 // We use an 8 byte counter resulting in 12 byte BASE64 encoding
+#define CTR_LEN_SIMPLE 16 // This is for 8 byte (=2^64) counters; simple encoding by doubling
 
 // These are arbitrary constants (with mean) Hamming distance.
 #define IPAD 0x36
@@ -49,7 +68,7 @@
 
 #define CUTSTRING "###CUT###"
 
-//This initialization only works with GCC.
+// This initialization only works with GCC.
 unsigned char KEYPATTERN[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE-1) ] = IPAD };
 unsigned char MACPATTERN[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE-1) ] = OPAD };
 unsigned char GAMMA[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE-1) ] =  EPAD};

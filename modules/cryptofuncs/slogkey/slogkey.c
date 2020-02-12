@@ -25,7 +25,12 @@
 #include <sys/types.h>
 #include <string.h>
 #include <stdlib.h>
+
+#ifdef __APPLE__
+#include <machine/endian.h>
+#else
 #include <endian.h>
+#endif
 
 #include <glib.h>
 
