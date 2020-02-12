@@ -65,20 +65,16 @@
 #include "compat/compat-python.h"
 #include "syslog-ng.h"
 
-#if SYSLOG_NG_ENABLE_PYTHONv3 && SYSLOG_NG_ENABLE_PYTHONv2_AND_v3
-#define PYTHON_MODULE_PERSIST_KEY "python3"
-#define PYTHON_MODULE_STATS_KEY "python3"
-#else
-#define PYTHON_MODULE_PERSIST_KEY "python"
-#define PYTHON_MODULE_STATS_KEY "python"
-#endif
-
 #if SYSLOG_NG_ENABLE_PYTHONv3
 #define PYTHON_MODULE_CONFIG_KEY "python3"
+#define PYTHON_MODULE_PERSIST_KEY "python3"
+#define PYTHON_MODULE_STATS_KEY "python3"
 #endif
 
 #if SYSLOG_NG_ENABLE_PYTHONv2
 #define PYTHON_MODULE_CONFIG_KEY "python2"
+#define PYTHON_MODULE_PERSIST_KEY "python2"
+#define PYTHON_MODULE_STATS_KEY "python2"
 #endif
 
 #endif

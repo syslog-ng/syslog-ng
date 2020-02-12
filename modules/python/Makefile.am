@@ -1,5 +1,3 @@
-if ENABLE_PYTHON
-
 python_sources = \
 	modules/python/compat/compat-python.h \
 	modules/python/compat/compat-python.c \
@@ -60,45 +58,44 @@ python_common_cppflags = \
 	-I$(top_srcdir)/modules/python \
 	-I$(top_builddir)/modules/python
 
-if !ENABLE_PYTHONv2_AND_v3
 
-module_LTLIBRARIES += modules/python/libmod-python.la
-modules_python_libmod_python_la_CFLAGS = $(python_common_cflags) $(PYTHON_CFLAGS)
-modules_python_libmod_python_la_CPPFLAGS = $(python_common_cppflags)
-modules_python_libmod_python_la_LIBADD = $(python_common_libadd) $(PYTHON_LIBS)
-modules_python_libmod_python_la_SOURCES = $(python_sources)
-modules_python_libmod_python_la_LDFLAGS = $(MODULE_LDFLAGS) $(PYTHON_LDADD)
-modules_python_libmod_python_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)
+python_ltlibraries =
 
-modules/python mod-python: modules/python/libmod-python.la
+if ENABLE_PYTHON2
+PYTHON2_CPPFLAGS = -DSYSLOG_NG_ENABLE_PYTHONv2=1 -DSYSLOG_NG_ENABLE_PYTHONv3=0
 
-else
-
-module_LTLIBRARIES += modules/python/libmod-python2.la
+python_ltlibraries += modules/python/libmod-python2.la
 modules_python_libmod_python2_la_CFLAGS = $(python_common_cflags) $(PYTHON2_CFLAGS)
-modules_python_libmod_python2_la_CPPFLAGS = -DSYSLOG_NG_ENABLE_PYTHONv2=1 $(python_common_cppflags)
+modules_python_libmod_python2_la_CPPFLAGS = $(PYTHON2_CPPFLAGS) $(python_common_cppflags)
 modules_python_libmod_python2_la_LIBADD = $(python_common_libadd) $(PYTHON2_LIBS)
 modules_python_libmod_python2_la_SOURCES = $(python_sources)
 modules_python_libmod_python2_la_LDFLAGS = $(MODULE_LDFLAGS) $(PYTHON2_LDADD)
 modules_python_libmod_python2_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)
+endif
 
-module_LTLIBRARIES += modules/python/libmod-python3.la
+if ENABLE_PYTHON3
+PYTHON3_CPPFLAGS = -DSYSLOG_NG_ENABLE_PYTHONv3=1 -DSYSLOG_NG_ENABLE_PYTHONv2=0
+
+python_ltlibraries += modules/python/libmod-python3.la
 modules_python_libmod_python3_la_CFLAGS = $(python_common_cflags) $(PYTHON3_CFLAGS)
-modules_python_libmod_python3_la_CPPFLAGS = -DSYSLOG_NG_ENABLE_PYTHONv3=1 $(python_common_cppflags)
+modules_python_libmod_python3_la_CPPFLAGS = $(PYTHON3_CPPFLAGS) $(python_common_cppflags)
 modules_python_libmod_python3_la_LIBADD = $(python_common_libadd) $(PYTHON3_LIBS)
 modules_python_libmod_python3_la_SOURCES = $(python_sources)
 modules_python_libmod_python3_la_LDFLAGS = $(MODULE_LDFLAGS) $(PYTHON3_LDADD)
 modules_python_libmod_python3_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)
-
-modules/python mod-python: modules/python/libmod-python2.la modules/python/libmod-python3.la
-
 endif
+
+if ENABLE_PYTHON
+uninstall-legacy-python-module:
+	( cd $(DESTDIR)$(moduledir) && rm -f libmod-python.* )
+
+UNINSTALL_HOOKS += uninstall-legacy-python-module
+endif
+
+module_LTLIBRARIES += $(python_ltlibraries)
+modules/python mod-python: $(python_ltlibraries)
 
 include modules/python/tests/Makefile.am
-else
-modules/python mod-python:
-endif
-
 include modules/python/pylib/Makefile.am
 
 BUILT_SOURCES					+= \

@@ -1412,67 +1412,82 @@ dnl ***************************************************************************
 dnl python checks
 dnl ***************************************************************************
 
-if test "x$enable_python" != "xno" -a "x$with_python" = "x2,3"; then
-  PKG_CHECK_MODULES(PYTHON3, python3-embed,, [
-    PKG_CHECK_MODULES(PYTHON3, python3,, AC_MSG_ERROR([Could not find Python 3 development libraries]))
+check_python3()
+{
+  PKG_CHECK_MODULES(PYTHON3, python3-embed, python3_enabled="yes", [
+    PKG_CHECK_MODULES(PYTHON3, python3, python3_enabled="yes", python3_enabled="no")
   ])
-  PKG_CHECK_MODULES(PYTHON2, python2,, [
-    PKG_CHECK_MODULES(PYTHON2, python,, AC_MSG_ERROR([Could not find Python 2 development libraries]))
-  ])
+}
 
-  enable_python2_and_3="yes"
-  enable_python="yes"
-  python_found="yes"
+check_python2()
+{
+  PKG_CHECK_MODULES(PYTHON2, python2, python2_enabled="yes", [
+    PKG_CHECK_MODULES(PYTHON2, python, python2_enabled="yes", python2_enabled="no")
+  ])
+}
+
+if test "x$enable_python" != "xno" -a "x$with_python" = "x2,3"; then
+  check_python3
+  if test "$python3_enabled" = "no"; then
+    AC_MSG_ERROR([Could not find Python 3 development libraries])
+  fi
+
+  check_python2
+  if test "$python2_enabled" = "no"; then
+    AC_MSG_ERROR([Could not find Python 2 development libraries])
+  fi
+
   with_python="python2 and python3"
-  python_version=3
+  python2_and_3_enabled="yes"
+  python_found="yes"
+
 elif test "x$enable_python" != "xno"; then
   if test "x$with_python" = "xauto"; then
-    PKG_CHECK_MODULES(PYTHON, python3-embed, python_found="yes", [
-      PKG_CHECK_MODULES(PYTHON, python3, python_found="yes", python_found="no")
-    ])
-    if test "$python_found" = "no"; then
-      PKG_CHECK_MODULES(PYTHON, python2, python_found="yes", python_found="no")
-      if test "$python_found" = "no"; then
-        PKG_CHECK_MODULES(PYTHON, python, python_found="yes", python_found="no")
-      fi
+    check_python3
+    if test "$python3_enabled" = "no"; then
+      check_python2
     fi
   else
     case "$with_python" in
       [[0-9]])
+          requested_python_version=${with_python}
           with_python="python${with_python}"
           ;;
       [[0-9]].[[0-9]])
+          requested_python_version=`echo ${with_python} | cut -d. -f1`
           with_python="python-${with_python}"
+          ;;
+      *)
+          AC_MSG_ERROR([Invalid value for --with-python. Examples: --with-python=3 --with-python=3.8])
           ;;
     esac
 
-    PKG_CHECK_MODULES(PYTHON, $with_python-embed, python_found="yes", [
-      PKG_CHECK_MODULES(PYTHON, $with_python, python_found="yes", python_found="no")
-    ])
+    if test "$requested_python_version" = "3"; then
+      PKG_CHECK_MODULES(PYTHON3, $with_python-embed, python3_enabled="yes", [
+        PKG_CHECK_MODULES(PYTHON3, $with_python, python3_enabled="yes", python3_enabled="no")
+      ])
+    else
+        PKG_CHECK_MODULES(PYTHON2, $with_python, python2_enabled="yes", python2_enabled="no")
+    fi
   fi
 
-  if test "x$python_found" = "xyes"; then
-    old_LIBS=$LIBS
-    LIBS="$LIBS $PYTHON_LIBS"
-    AC_CHECK_FUNCS(PyUnicode_AsUTF8, with_python=python3, with_python=python2)
-    LIBS=$old_LIBS
+  if test "$python3_enabled" = "yes"; then
+    with_python="python3"
+    python_found="yes"
+  elif test "$python2_enabled" = "yes"; then
+    with_python="python2"
+    python_found="yes"
   fi
 
-  if test "x$enable_python" = "xyes" -a "x$python_found" = "xno"; then
+
+  if test "x$enable_python" = "xyes" -a "x$python_found" != "xyes"; then
     AC_MSG_ERROR([Could not find the requested Python development libraries])
-  fi
-  enable_python="$python_found"
-
-  if (echo "$with_python" | grep -Eq "python-?3.*"); then
-    python_version=3
-    enable_python3="yes"
-  else
-    python_version=2
-    enable_python2="yes"
   fi
 else
   with_python=""
 fi
+
+enable_python="$python_found"
 
 dnl ***************************************************************************
 dnl nosetests, pylint
@@ -1481,8 +1496,8 @@ dnl ***************************************************************************
 if test "x$with_nosetests" != "x"; then
     NOSETESTS=$with_nosetests
 else
-    if test "$python_found" = "yes"; then
-      if test "$python_version" = "3"; then
+    if test "x$python_found" = "xyes"; then
+      if test "x$python3_enabled" = "xyes"; then
           AC_CHECK_PROG(NOSETESTS, nosetests3, nosetests3)
           if test "x$NOSETESTS" == "x"; then
             AC_CHECK_PROG(NOSETESTS, nosetests, nosetests)
@@ -1496,8 +1511,8 @@ fi
 if test "x$with_pylint" != "x"; then
     PYLINT=$with_pylint
 else
-    if test "$python_found" = "yes"; then
-      if test "$python_version" = "3"; then
+    if test "x$python_found" = "xyes"; then
+      if test "x$python3_enabled" = "xyes"; then
           AC_CHECK_PROG(PYLINT, pylint3, pylint3)
           if test "x$PYLINT" == "x"; then
             AC_CHECK_PROG(PYLINT, pylint, pylint)
@@ -1882,9 +1897,7 @@ AC_DEFINE_UNQUOTED(ENABLE_SYSTEMD, `enable_value $enable_systemd`, [Enable syste
 AC_DEFINE_UNQUOTED(ENABLE_KAFKA, `enable_value $enable_kafka`, [Enable kafka support])
 AC_DEFINE_UNQUOTED(SYSTEMD_JOURNAL_MODE, `journald_mode`, [Systemd-journal support mode])
 AC_DEFINE_UNQUOTED(HAVE_INOTIFY, `enable_value $ac_cv_func_inotify_init`, [Have inotify])
-AC_DEFINE_UNQUOTED(ENABLE_PYTHONv2, `enable_value $enable_python2`, [Enable Python 2 support])
-AC_DEFINE_UNQUOTED(ENABLE_PYTHONv3, `enable_value $enable_python3`, [Enable Python 3 support])
-AC_DEFINE_UNQUOTED(ENABLE_PYTHONv2_AND_v3, `enable_value $enable_python2_and_3`, [Enable both Python 2 and Python 3 support])
+AC_DEFINE_UNQUOTED(ENABLE_PYTHONv2_AND_v3, `enable_value $python2_and_3_enabled`, [Enable both Python 2 and Python 3 support])
 
 AC_DEFINE_UNQUOTED(USE_CONST_IVYKIS_MOCK, `enable_value $IVYKIS_VERSION_UPDATED`, [ivykis version is greater than $IVYKIS_UPDATED_VERSION])
 
@@ -1910,8 +1923,9 @@ AM_CONDITIONAL(LIBMONGO_INTERNAL, [test "x$LIBMONGO_SUBDIRS" != "x"])
 AM_CONDITIONAL(LIBRABBITMQ_INTERNAL, [test "x$with_librabbitmq_client" = "xinternal"])
 AM_CONDITIONAL(ENABLE_RIEMANN, [test "$enable_riemann" != "no"])
 AM_CONDITIONAL(ENABLE_JOURNALD, [test "$with_systemd_journal" != "no"])
-AM_CONDITIONAL(ENABLE_PYTHON, [test "$enable_python" != "no"])
-AM_CONDITIONAL(ENABLE_PYTHONv2_AND_v3, [test "x$enable_python2_and_3" = "xyes"])
+AM_CONDITIONAL(ENABLE_PYTHON2, [test "x$python2_enabled" = "xyes"])
+AM_CONDITIONAL(ENABLE_PYTHON3, [test "x$python3_enabled" = "xyes"])
+AM_CONDITIONAL(ENABLE_PYTHON, [test "x$python2_enabled" = "xyes" -o "x$python3_enabled" = "xyes"])
 AM_CONDITIONAL(ENABLE_JAVA, [test "$enable_java" = "yes"])
 AM_CONDITIONAL(ENABLE_JAVA_MODULES, [test "$enable_java_modules" = "yes"])
 AM_CONDITIONAL(ENABLE_SNMP_DEST, [test "$enable_snmp_dest" = "yes"])
