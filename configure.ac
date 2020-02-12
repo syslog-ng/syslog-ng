@@ -320,16 +320,12 @@ AC_ARG_ENABLE(python,
               [  --disable-python       Disable Python module]
               ,,enable_python="auto")
 
-AC_ARG_ENABLE(python2-and-3,
-              [  --enable-python2-and-3 Enable both Python 2 and Python 3 support (default: no)]
-              ,,enable_python2_and_3="no")
-
 AC_ARG_ENABLE(kafka,
               [  --enable-kafka         Enable rdkafka support]
               ,,enable_kafka="auto")
 
 AC_ARG_WITH(python,
-              [  --with-python=VERSION    Build with a specific version of python]
+              [  --with-python=VERSION    Build with a specific version of python, use --with-python='2,3' to build both]
               ,,with_python="auto")
 
 AC_ARG_WITH(python3-home,
@@ -413,6 +409,8 @@ PKG_PROG_PKG_CONFIG
 LT_INIT([dlopen disable-static])
 if test "x$with_python" = "xauto"; then
   AM_PATH_PYTHON(,,[:])
+elif test "x$with_python" = "x2,3"; then
+  AM_PATH_PYTHON([3],,[:])
 else
   AM_PATH_PYTHON([$with_python],,[:])
 fi
@@ -1414,7 +1412,7 @@ dnl ***************************************************************************
 dnl python checks
 dnl ***************************************************************************
 
-if test "x$enable_python2_and_3" = "xyes"; then
+if test "x$enable_python" != "xno" -a "x$with_python" = "x2,3"; then
   PKG_CHECK_MODULES(PYTHON3, python3-embed,, [
     PKG_CHECK_MODULES(PYTHON3, python3,, AC_MSG_ERROR([Could not find Python 3 development libraries]))
   ])
@@ -1422,6 +1420,7 @@ if test "x$enable_python2_and_3" = "xyes"; then
     PKG_CHECK_MODULES(PYTHON2, python,, AC_MSG_ERROR([Could not find Python 2 development libraries]))
   ])
 
+  enable_python2_and_3="yes"
   enable_python="yes"
   python_found="yes"
   with_python="python2 and python3"
