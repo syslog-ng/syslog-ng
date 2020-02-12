@@ -28,15 +28,17 @@
 
 #include <search.h>
 
-typedef struct _ENTRY {
+typedef struct _ENTRY
+{
   unsigned int used;
   ENTRY entry;
 } _ENTRY;
 
-struct hsearch_data {
-	struct _ENTRY *table;
-	unsigned int size;
-	unsigned int filled;
+struct hsearch_data
+{
+  struct _ENTRY *table;
+  unsigned int size;
+  unsigned int filled;
 };
 
 /* For the used double hash method the table size has to be a prime. To
@@ -84,12 +86,12 @@ hcreate_r (size_t nel, struct hsearch_data *htab)
   for (nel |= 1; ; nel += 2)
     {
       if (UINT_MAX - 2 < nel)
-	{
-	  errno = ENOMEM;
-	  return 0;
-	}
+        {
+          errno = ENOMEM;
+          return 0;
+        }
       if (isprime (nel))
-	break;
+        break;
     }
 
   htab->size = nel;
@@ -140,7 +142,7 @@ hdestroy_r (struct hsearch_data *htab)
    unnecessary expensive calls of strcmp.  */
 int
 hsearch_r (ENTRY item, ACTION action, ENTRY **retval,
-	     struct hsearch_data *htab)
+           struct hsearch_data *htab)
 {
   unsigned int hval;
   unsigned int count;
@@ -165,57 +167,57 @@ hsearch_r (ENTRY item, ACTION action, ENTRY **retval,
     {
       /* Further action might be required according to the action value. */
       if (htab->table[idx].used == hval
-	  && strcmp (item.key, htab->table[idx].entry.key) == 0)
-	{
-		if (retval == NULL)
-			{
-				/* Set errno to EINVAL, because 'retval' is a NULL pointer 
-				(invalid pointer for returning a hash table ENTRY). */
-				errno = EINVAL;
-				return 0;
-			}
-		else
-			{
-	  		*retval = &htab->table[idx].entry;
-	  		return 1;
-	  	}
-	}
+          && strcmp (item.key, htab->table[idx].entry.key) == 0)
+        {
+          if (retval == NULL)
+            {
+              /* Set errno to EINVAL, because 'retval' is a NULL pointer
+              (invalid pointer for returning a hash table ENTRY). */
+              errno = EINVAL;
+              return 0;
+            }
+          else
+            {
+              *retval = &htab->table[idx].entry;
+              return 1;
+            }
+        }
 
       /* Second hash function, as suggested in [Knuth] */
       unsigned int hval2 = 1 + hval % (htab->size - 2);
       unsigned int first_idx = idx;
 
       do
-	{
-	  /* Because SIZE is prime this guarantees to step through all
-             available indeces.  */
+        {
+          /* Because SIZE is prime this guarantees to step through all
+                   available indeces.  */
           if (idx <= hval2)
-	    idx = htab->size + idx - hval2;
-	  else
-	    idx -= hval2;
+            idx = htab->size + idx - hval2;
+          else
+            idx -= hval2;
 
-	  /* If we visited all entries leave the loop unsuccessfully.  */
-	  if (idx == first_idx)
-	    break;
+          /* If we visited all entries leave the loop unsuccessfully.  */
+          if (idx == first_idx)
+            break;
 
-            /* If entry is found use it. */
+          /* If entry is found use it. */
           if (htab->table[idx].used == hval
-	      && strcmp (item.key, htab->table[idx].entry.key) == 0)
-	    {
-				if (retval == NULL)
-					{
-						/* Set errno to EINVAL, because 'retval' is a NULL pointer 
-						(invalid pointer for returning a hash table ENTRY). */
-						errno = EINVAL;
-						return 0;
-					}
-				else
-					{
-	      		*retval = &htab->table[idx].entry;
-	      		return 1;
-	    		}
-	    }
-	}
+              && strcmp (item.key, htab->table[idx].entry.key) == 0)
+            {
+              if (retval == NULL)
+                {
+                  /* Set errno to EINVAL, because 'retval' is a NULL pointer
+                  (invalid pointer for returning a hash table ENTRY). */
+                  errno = EINVAL;
+                  return 0;
+                }
+              else
+                {
+                  *retval = &htab->table[idx].entry;
+                  return 1;
+                }
+            }
+        }
       while (htab->table[idx].used);
     }
 
@@ -223,17 +225,17 @@ hsearch_r (ENTRY item, ACTION action, ENTRY **retval,
   if (action == ENTER)
     {
       /* If table is full and another entry should be entered return
-	 with error.  */
+      with error.  */
       if (htab->filled == htab->size)
-	{
-	  errno = ENOMEM;
-		/* Prevent the dereferencing of a NULL pointer. */
-  	if (retval != NULL)
-			{
-  			*retval = NULL;
-  		}
-	  return 0;
-	}
+        {
+          errno = ENOMEM;
+          /* Prevent the dereferencing of a NULL pointer. */
+          if (retval != NULL)
+            {
+              *retval = NULL;
+            }
+          return 0;
+        }
 
       htab->table[idx].used  = hval;
       htab->table[idx].entry = item;
@@ -241,20 +243,20 @@ hsearch_r (ENTRY item, ACTION action, ENTRY **retval,
       ++htab->filled;
 
       /* Ignore 'retval' if 'action' is 'ENTER' and 'retval' is a
-      		NULL pointer. */
+          NULL pointer. */
       if (retval != NULL)
-				{
-					/* Prevent the dereferencing of a NULL pointer. */
-      		*retval = &htab->table[idx].entry;
-				}
+        {
+          /* Prevent the dereferencing of a NULL pointer. */
+          *retval = &htab->table[idx].entry;
+        }
       return 1;
     }
 
   errno = ESRCH;
-	/* Prevent the dereferencing of a NULL pointer. */
+  /* Prevent the dereferencing of a NULL pointer. */
   if (retval != NULL)
-		{
-  		*retval = NULL;
-  	}
+    {
+      *retval = NULL;
+    }
   return 0;
 }

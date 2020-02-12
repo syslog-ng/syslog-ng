@@ -35,10 +35,11 @@ extern "C" {
 struct _ENTRY;
 #endif
 
-struct hsearch_data {
-	struct _ENTRY *table;
-	unsigned int size;
-	unsigned int filled;
+struct hsearch_data
+{
+  struct _ENTRY *table;
+  unsigned int size;
+  unsigned int filled;
 };
 
 int hcreate_r (size_t nel, struct hsearch_data *htab);
