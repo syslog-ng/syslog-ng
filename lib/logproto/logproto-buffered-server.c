@@ -805,6 +805,32 @@ _buffered_server_bookmark_fill(LogProtoBufferedServer *self, Bookmark *bookmark)
   log_proto_buffered_server_put_state(self);
 }
 
+static void
+log_proto_buffered_server_flush(LogProtoBufferedServer *self, const guchar **msg, gsize *msg_len)
+{
+  LogProtoBufferedServerState *state = log_proto_buffered_server_get_state(self);
+
+  const guchar *buffer_start = self->buffer + state->pending_buffer_pos;
+  gsize buffer_bytes = state->pending_buffer_end - state->pending_buffer_pos;
+
+  if (buffer_bytes == 0)
+    {
+      *msg = NULL;
+      *msg_len = 0;
+      log_proto_buffered_server_put_state(self);
+      return;
+    }
+
+  *msg = buffer_start;
+  *msg_len = buffer_bytes;
+  state->pending_buffer_pos = state->pending_buffer_end;
+
+  log_proto_buffered_server_put_state(self);
+
+  if (self->flush)
+    self->flush(self);
+}
+
 /**
  * Returns: TRUE to indicate success, FALSE otherwise. The returned
  * msg can be NULL even if no failure occurred.
@@ -815,6 +841,13 @@ log_proto_buffered_server_fetch(LogProtoServer *s, const guchar **msg, gsize *ms
 {
   LogProtoBufferedServer *self = (LogProtoBufferedServer *) s;
   LogProtoStatus result = LPS_SUCCESS;
+
+  if (G_UNLIKELY(self->flush_partial_message))
+    {
+      log_proto_buffered_server_flush(self, msg, msg_len);
+      self->flush_partial_message = FALSE;
+      goto exit;
+    }
 
   while (1)
     {

@@ -6,6 +6,8 @@ modules_affile_libaffile_la_SOURCES	=			\
 	modules/affile/logproto-file-reader.h			\
 	modules/affile/poll-file-changes.c			\
 	modules/affile/poll-file-changes.h			\
+	modules/affile/poll-multiline-file-changes.c	\
+	modules/affile/poll-multiline-file-changes.h	\
 	modules/affile/transport-prockmsg.c			\
 	modules/affile/transport-prockmsg.h			\
 	modules/affile/file-reader.c				\

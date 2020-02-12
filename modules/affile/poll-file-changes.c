@@ -38,15 +38,31 @@
 #include <iv_work.h>
 
 
-typedef struct _PollFileChanges
+static inline void
+poll_file_changes_on_read(PollFileChanges *self)
 {
-  PollEvents super;
-  gint fd;
-  gchar *follow_filename;
-  gint follow_freq;
-  struct iv_timer follow_timer;
-  LogPipe *control;
-} PollFileChanges;
+  if (self->on_read)
+    self->on_read(self);
+  poll_events_invoke_callback(&self->super);
+}
+
+static inline void
+poll_file_changes_on_file_moved(PollFileChanges *self)
+{
+  if (self->on_file_moved)
+    self->on_file_moved(self);
+  log_pipe_notify(self->control, NC_FILE_MOVED, self);
+}
+
+static inline gboolean
+poll_file_changes_on_eof(PollFileChanges *self)
+{
+  gboolean result = TRUE;
+  if (self->on_eof)
+    result = self->on_eof(self);
+  log_pipe_notify(self->control, NC_FILE_EOF, self);
+  return result;
+}
 
 /* follow timer callback. Check if the file has new content, or deleted or
  * moved.  Ran every follow_freq seconds.  */
@@ -74,9 +90,9 @@ poll_file_changes_check_file(gpointer s)
         {
           if (errno == ESTALE)
             {
-              msg_trace("log_reader_fd_check file moved ESTALE",
+              msg_trace("poll-file-changes: file moved ESTALE",
                         evt_tag_str("follow_filename", self->follow_filename));
-              log_pipe_notify(self->control, NC_FILE_MOVED, self);
+              poll_file_changes_on_file_moved(self);
               return;
             }
           else
@@ -87,26 +103,25 @@ poll_file_changes_check_file(gpointer s)
             }
         }
 
-      msg_trace("log_reader_fd_check",
+      msg_trace("poll-file-changes",
                 evt_tag_int("pos", pos),
-                evt_tag_int("size", st.st_size));
+                evt_tag_int("size", st.st_size),
+                evt_tag_int("fd", fd));
 
       if (pos < st.st_size || !S_ISREG(st.st_mode))
         {
-          /* we have data to read */
-          poll_events_invoke_callback(s);
+          msg_trace("poll-file-changes: file has new content: initiate reading");
+          poll_file_changes_on_read(self);
           return;
-        }
-      else if (pos == st.st_size)
-        {
-          /* we are at EOF */
-          log_pipe_notify(self->control, NC_FILE_EOF, self);
         }
       else if (pos > st.st_size)
         {
           /* the last known position is larger than the current size of the file. it got truncated. Restart from the beginning. */
-          log_pipe_notify(self->control, NC_FILE_MOVED, self);
-
+          msg_trace("poll-file-changes: file got truncated, restart from beginning",
+                    evt_tag_int("pos", pos),
+                    evt_tag_int("size", st.st_size),
+                    evt_tag_int("fd", fd));
+          poll_file_changes_on_file_moved(self);
           /* we may be freed by the time the notification above returns */
           return;
         }
@@ -118,12 +133,12 @@ poll_file_changes_check_file(gpointer s)
         {
           if (fd < 0 || (st.st_ino != followed_st.st_ino && followed_st.st_size > 0))
             {
-              msg_trace("log_reader_fd_check file moved eof",
+              msg_trace("poll-file-changes: file moved eof",
                         evt_tag_int("pos", pos),
                         evt_tag_int("size", followed_st.st_size),
                         evt_tag_str("follow_filename", self->follow_filename));
               /* file was moved and we are at EOF, follow the new file */
-              log_pipe_notify(self->control, NC_FILE_MOVED, self);
+              poll_file_changes_on_file_moved(self);
               /* we may be freed by the time the notification above returns */
               return;
             }
@@ -138,7 +153,7 @@ reschedule:
   poll_events_update_watches(s, G_IO_IN);
 }
 
-static void
+void
 poll_file_changes_stop_watches(PollEvents *s)
 {
   PollFileChanges *self = (PollFileChanges *) s;
@@ -156,21 +171,53 @@ poll_file_changes_rearm_timer(PollFileChanges *self)
   iv_timer_register(&self->follow_timer);
 }
 
-static void
+static gboolean
+poll_file_changes_check_eof(PollFileChanges *self)
+{
+  gint fd = self->fd;
+  if (fd < 0)
+    return FALSE;
+
+  off_t pos = lseek(fd, 0, SEEK_CUR);
+  if (pos == (off_t) -1)
+    {
+      msg_error("Error invoking seek on followed file",
+                evt_tag_str("follow_filename", self->follow_filename),
+                evt_tag_error("error"));
+      return FALSE;
+    }
+
+  struct stat st;
+  gboolean end_of_file = fstat(fd, &st) == 0 && pos == st.st_size;
+  return end_of_file;
+}
+
+void
 poll_file_changes_update_watches(PollEvents *s, GIOCondition cond)
 {
   PollFileChanges *self = (PollFileChanges *) s;
+  gboolean check_again = TRUE;
 
   /* we can only provide input events */
   g_assert((cond & ~G_IO_IN) == 0);
 
   poll_file_changes_stop_watches(s);
 
-  if (cond & G_IO_IN)
+  if (!(cond & G_IO_IN))
+    return;
+
+  if (poll_file_changes_check_eof(self))
+    {
+      msg_trace("End of file, following file",
+                evt_tag_str("follow_filename", self->follow_filename));
+      check_again = poll_file_changes_on_eof(self);
+    }
+
+  if (check_again)
     poll_file_changes_rearm_timer(self);
 }
 
-static void
+void
 poll_file_changes_free(PollEvents *s)
 {
   PollFileChanges *self = (PollFileChanges *) s;
@@ -179,11 +226,10 @@ poll_file_changes_free(PollEvents *s)
   g_free(self->follow_filename);
 }
 
-PollEvents *
-poll_file_changes_new(gint fd, const gchar *follow_filename, gint follow_freq, LogPipe *control)
+void
+poll_file_changes_init_instance(PollFileChanges *self, gint fd, const gchar *follow_filename, gint follow_freq,
+                                LogPipe *control)
 {
-  PollFileChanges *self = g_new0(PollFileChanges, 1);
-
   self->super.stop_watches = poll_file_changes_stop_watches;
   self->super.update_watches = poll_file_changes_update_watches;
   self->super.free_fn = poll_file_changes_free;
@@ -196,6 +242,13 @@ poll_file_changes_new(gint fd, const gchar *follow_filename, gint follow_freq, L
   IV_TIMER_INIT(&self->follow_timer);
   self->follow_timer.cookie = self;
   self->follow_timer.handler = poll_file_changes_check_file;
+}
+
+PollEvents *
+poll_file_changes_new(gint fd, const gchar *follow_filename, gint follow_freq, LogPipe *control)
+{
+  PollFileChanges *self = g_new0(PollFileChanges, 1);
+  poll_file_changes_init_instance(self, fd, follow_filename, follow_freq, control);
 
   return &self->super;
 }

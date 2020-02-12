@@ -52,6 +52,7 @@ static CfgLexerKeyword affile_keywords[] =
   { "multi_line_prefix",  KW_MULTI_LINE_PREFIX },
   { "multi_line_garbage", KW_MULTI_LINE_GARBAGE },
   { "multi_line_suffix",  KW_MULTI_LINE_GARBAGE },
+  { "multi_line_timeout", KW_MULTI_LINE_TIMEOUT },
   { "time_reap",          KW_TIME_REAP },
   { NULL }
 };

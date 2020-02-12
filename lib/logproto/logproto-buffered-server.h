@@ -67,6 +67,7 @@ struct _LogProtoBufferedServer
   gboolean (*fetch_from_buffer)(LogProtoBufferedServer *self, const guchar *buffer_start, gsize buffer_bytes,
                                 const guchar **msg, gsize *msg_len);
   gint (*read_data)(LogProtoBufferedServer *self, guchar *buf, gsize len, LogTransportAuxData *aux);
+  void (*flush)(LogProtoBufferedServer *self);
 
   gboolean
   /* track & record the position in the input, to be used for file
@@ -81,7 +82,8 @@ struct _LogProtoBufferedServer
                 * or fixed-size records read from a file.  */
                stream_based:1,
 
-               no_multi_read:1;
+               no_multi_read:1,
+               flush_partial_message:1;
   gint fetch_state;
   GIOStatus io_status;
   LogProtoBufferedServerState *state1;
@@ -99,6 +101,12 @@ static inline gboolean
 log_proto_buffered_server_is_input_closed(LogProtoBufferedServer *self)
 {
   return self->io_status != G_IO_STATUS_NORMAL;
+}
+
+static inline void
+log_proto_buffered_server_cue_flush(LogProtoBufferedServer *self)
+{
+  self->flush_partial_message = TRUE;
 }
 
 LogProtoPrepareAction log_proto_buffered_server_prepare(LogProtoServer *s, GIOCondition *cond,

@@ -410,6 +410,14 @@ exit:
 }
 
 static void
+log_proto_text_server_flush(LogProtoBufferedServer *s)
+{
+  LogProtoTextServer *self = (LogProtoTextServer *) s;
+  self->consumed_len = -1;
+  self->cached_eol_pos = 0;
+}
+
+static void
 log_proto_text_server_free(LogProtoServer *s)
 {
   LogProtoTextServer *self = (LogProtoTextServer *) s;
@@ -427,6 +435,7 @@ log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport, co
   self->super.super.prepare = log_proto_text_server_prepare;
   self->super.super.free_fn = log_proto_text_server_free;
   self->super.fetch_from_buffer = log_proto_text_server_fetch_from_buffer;
+  self->super.flush = log_proto_text_server_flush;
   self->accumulate_line = log_proto_text_server_accumulate_line_method;
   self->super.stream_based = TRUE;
   self->reverse_convert = (GIConv) -1;
