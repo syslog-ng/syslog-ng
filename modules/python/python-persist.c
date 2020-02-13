@@ -114,16 +114,22 @@ copy_persist_name(const LogPipe *self, const gchar *module, PythonPersistMembers
 }
 
 const gchar *
+_format_persist_name(const LogPipe *p, const gchar *module, PythonPersistMembers *options,
+                     gchar *output_buffer, gsize output_buffer_size)
+{
+  if (p->persist_name)
+    format_default_persist_name_with_persist_name(output_buffer, output_buffer_size, module, p->persist_name);
+  else if (options->generate_persist_name_method)
+    copy_persist_name(p, module, options, output_buffer, output_buffer_size);
+  else
+    format_default_persist_name_with_class(output_buffer, output_buffer_size, module, options->class);
+
+  return output_buffer;
+}
+
+const gchar *
 python_format_persist_name(const LogPipe *p, const gchar *module, PythonPersistMembers *options)
 {
   static gchar persist_name[1024];
-
-  if (p->persist_name)
-    format_default_persist_name_with_persist_name(persist_name, sizeof(persist_name), module, p->persist_name);
-  else if (options->generate_persist_name_method)
-    copy_persist_name(p, module, options, persist_name, sizeof(persist_name));
-  else
-    format_default_persist_name_with_class(persist_name, sizeof(persist_name), module, options->class);
-
-  return persist_name;
+  return _format_persist_name(p, module, options, persist_name, sizeof(persist_name));
 }
