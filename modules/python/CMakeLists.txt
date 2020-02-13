@@ -47,27 +47,19 @@ set(PYTHON_SOURCES
     python-fetcher.h
     python-fetcher.c
     compat/compat-python.c
-    ${CMAKE_CURRENT_BINARY_DIR}/python-grammar.c
-    ${CMAKE_CURRENT_BINARY_DIR}/python-grammar.h
 )
 
-set (PYTHON_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
-
-generate_y_from_ym(modules/python/python-grammar)
-
-bison_target(PythonGrammar
-    ${CMAKE_CURRENT_BINARY_DIR}/python-grammar.y
-    ${CMAKE_CURRENT_BINARY_DIR}/python-grammar.c
-    COMPILE_FLAGS ${BISON_FLAGS})
+add_module(
+  TARGET mod-python
+  GRAMMAR python-grammar
+  INCLUDES ${PYTHON_INCLUDE_DIRS}
+  DEPENDS ${PYTHON_LIBRARIES}
+          ${Eventlog_LIBRARIES}
+          ${IVYKIS_LIBRARIES}
+  SOURCES ${PYTHON_SOURCES}
+)
 
 add_subdirectory(pylib)
-add_library(mod-python SHARED ${PYTHON_SOURCES})
-target_include_directories (mod-python PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-target_include_directories (mod-python PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories (mod-python PRIVATE ${PYTHON_INCLUDE_DIRS})
-target_link_libraries(mod-python PRIVATE syslog-ng ${PYTHON_LIBRARIES} ${Eventlog_LIBRARIES} ${IVYKIS_LIBRARIES})
-
 add_dependencies(mod-python SetupPylib)
-install(TARGETS mod-python DESTINATION lib/syslog-ng/)
 
 add_test_subdirectory(tests)
