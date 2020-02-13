@@ -70,7 +70,7 @@ filter_facility_new(guint32 facilities)
 }
 
 static gboolean
-filter_level_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
+filter_severity_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 {
   FilterPri *self = (FilterPri *) s;
   LogMessage *msg = msgs[num_msg - 1];
@@ -79,7 +79,7 @@ filter_level_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 
   res = !!((1 << pri) & self->valid);
 
-  msg_trace("level() evaluation started",
+  msg_trace("severity() evaluation started",
             evt_tag_int("pri", pri),
             evt_tag_printf("valid_pri", "%08x", self->valid),
             evt_tag_printf("msg", "%p", msg));
@@ -88,13 +88,13 @@ filter_level_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
 }
 
 FilterExprNode *
-filter_level_new(guint32 levels)
+filter_severity_new(guint32 levels)
 {
   FilterPri *self = g_new0(FilterPri, 1);
 
   filter_expr_node_init_instance(&self->super);
-  self->super.eval = filter_level_eval;
+  self->super.eval = filter_severity_eval;
   self->valid = levels;
-  self->super.type = "level";
+  self->super.type = "severity";
   return &self->super;
 }

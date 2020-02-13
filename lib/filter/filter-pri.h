@@ -28,6 +28,6 @@
 #include "filter-expr.h"
 
 FilterExprNode *filter_facility_new(guint32 facilities);
-FilterExprNode *filter_level_new(guint32 levels);
+FilterExprNode *filter_severity_new(guint32 levels);
 
 #endif
