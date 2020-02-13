@@ -51,15 +51,15 @@ static CfgLexerKeyword filter_expr_keywords[] =
   { "level",              KW_SEVERITY },
   { "priority",           KW_SEVERITY },
   { "facility",           KW_FACILITY },
-  { "program",      KW_PROGRAM },
+  { "program",            KW_PROGRAM },
   { "host",               KW_HOST },
   { "message",            KW_MESSAGE },
-  { "match",      KW_MATCH },
-  { "netmask",      KW_NETMASK },
-  { "tags",     KW_TAGS },
+  { "match",              KW_MATCH },
+  { "netmask",            KW_NETMASK },
+  { "tags",               KW_TAGS },
   { "in_list",            KW_IN_LIST },
 #if SYSLOG_NG_ENABLE_IPV6
-  { "netmask6",     KW_NETMASK6 },
+  { "netmask6",           KW_NETMASK6 },
 #endif
 
   { "value",              KW_VALUE },
