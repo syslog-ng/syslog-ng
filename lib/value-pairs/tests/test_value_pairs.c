@@ -90,19 +90,34 @@ create_template(const gchar *type_hint_string, const gchar *template_string)
   return template;
 }
 
+static void
+assert_keys_match_expected(const gchar *scope, GList *vp_keys_list, const gchar *expected)
+{
+  gchar **expected_list = g_strsplit(expected, ",", -1);
+  GList *l = vp_keys_list;
+  gint i = 0;
+
+  for (i = 0; l && expected_list[i]; l = l->next, i++)
+    {
+      cr_assert_str_eq((const gchar *) l->data, expected_list[i],
+                       "Expected element at index %d mismatch %s <> %s, scope=%s",
+                       i, (const gchar *) l->data, expected_list[i], scope);
+    }
+
+  cr_assert(l == NULL && expected_list[i] == NULL);
+  g_strfreev(expected_list);
+
+}
 
 void
 testcase(const gchar *scope, const gchar *exclude, const gchar *expected)
 {
   ValuePairs *vp;
   GList *vp_keys_list = NULL;
-  GString *vp_keys;
   LogMessage *msg = create_message();
   gpointer args[2];
   gboolean test_key_found = FALSE;
   LogTemplate *template;
-
-  vp_keys = g_string_sized_new(0);
 
   vp = value_pairs_new();
   value_pairs_add_scope(vp, scope);
@@ -115,15 +130,13 @@ testcase(const gchar *scope, const gchar *exclude, const gchar *expected)
   args[0] = &vp_keys_list;
   args[1] = &test_key_found;
   value_pairs_foreach(vp, vp_keys_foreach, msg, 11, LTZ_LOCAL, &template_options, args);
-  g_list_foreach(vp_keys_list, (GFunc) cat_keys_foreach, vp_keys);
 
-  cr_expect_str_eq(vp_keys->str, expected, "Scope keys mismatch, scope=[%s], exclude=[%s], value=[%s], expected=[%s]",
-                   scope, exclude ? exclude : "(none)", vp_keys->str, expected);
   cr_expect(test_key_found, "test.key is not found in the result set");
+
+  assert_keys_match_expected(scope, vp_keys_list, expected);
 
   g_list_foreach(vp_keys_list, (GFunc) g_free, NULL);
   g_list_free(vp_keys_list);
-  g_string_free(vp_keys, TRUE);
   log_msg_unref(msg);
   value_pairs_unref(vp);
 }
@@ -133,12 +146,9 @@ transformers_testcase(const gchar *scope, const gchar *transformed_keys, const g
 {
   ValuePairs *vp;
   GList *vp_keys_list = NULL;
-  GString *vp_keys;
   LogMessage *msg = create_message();
   gpointer args[2];
   gboolean test_key_found = FALSE;
-
-  vp_keys = g_string_sized_new(0);
 
   vp = value_pairs_new();
   value_pairs_add_scope(vp, scope);
@@ -156,14 +166,11 @@ transformers_testcase(const gchar *scope, const gchar *transformed_keys, const g
   args[0] = &vp_keys_list;
   args[1] = &test_key_found;
   value_pairs_foreach(vp, vp_keys_foreach, msg, 11, LTZ_LOCAL, &template_options, args);
-  g_list_foreach(vp_keys_list, (GFunc) cat_keys_foreach, vp_keys);
 
-  cr_expect_str_eq(vp_keys->str, expected, "Scope keys mismatch, scope=[%s], keys=[%s], value=[%s], expected=[%s]",
-                   scope, transformed_keys ? : "*", vp_keys->str, expected);
+  assert_keys_match_expected(scope, vp_keys_list, expected);
 
   g_list_foreach(vp_keys_list, (GFunc) g_free, NULL);
   g_list_free(vp_keys_list);
-  g_string_free(vp_keys, TRUE);
   log_msg_unref(msg);
   value_pairs_unref(vp);
 }
