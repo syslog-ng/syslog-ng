@@ -414,7 +414,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
       /* facility */
       const char *n;
 
-      n = syslog_name_lookup_name_by_value(msg->pri & LOG_FACMASK, sl_facilities);
+      n = syslog_name_lookup_facility_by_value(msg->pri & LOG_FACMASK);
       if (n)
         {
           g_string_append(result, n);
@@ -435,7 +435,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
       /* level */
       const char *n;
 
-      n = syslog_name_lookup_name_by_value(msg->pri & LOG_PRIMASK, sl_severities);
+      n = syslog_name_lookup_severity_by_value(msg->pri & LOG_PRIMASK);
       if (n)
         {
           g_string_append(result, n);

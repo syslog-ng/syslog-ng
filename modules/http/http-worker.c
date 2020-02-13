@@ -218,10 +218,10 @@ _add_msg_specific_headers(HTTPDestinationWorker *self, LogMessage *msg)
               log_msg_get_value(msg, LM_V_PROGRAM, NULL));
   _add_header(self->request_headers,
               "X-Syslog-Facility",
-              syslog_name_lookup_name_by_value(msg->pri & LOG_FACMASK, sl_facilities));
+              syslog_name_lookup_facility_by_value(msg->pri & LOG_FACMASK));
   _add_header(self->request_headers,
               "X-Syslog-Level",
-              syslog_name_lookup_name_by_value(msg->pri & LOG_PRIMASK, sl_severities));
+              syslog_name_lookup_severity_by_value(msg->pri & LOG_PRIMASK));
 }
 
 static void
