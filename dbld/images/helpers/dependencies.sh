@@ -113,6 +113,9 @@ function install_pip_packages {
         centos-7)
             python -m pip install --upgrade pip==9.0.3
             ;;
+        ubuntu-focal)
+            pip3 install --upgrade pip
+            ;;
         *)
             python -m pip install --upgrade pip
             ;;

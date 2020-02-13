@@ -10,7 +10,9 @@ BUILDER_IMAGES=		\
 	ubuntu-xenial	\
 	ubuntu-trusty	\
 	ubuntu-cosmic	\
-	ubuntu-bionic
+	ubuntu-bionic \
+	ubuntu-eoan \
+	ubuntu-focal
 
 IMAGES=${BUILDER_IMAGES} devshell
 DEFAULT_IMAGE ?= ubuntu-bionic
