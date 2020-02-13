@@ -131,18 +131,24 @@ python_dd_format_stats_instance(LogThreadedDestDriver *d)
   return python_format_stats_instance((LogPipe *)d, PYTHON_MODULE_PERSIST_KEY, &options);
 }
 
-static const gchar *
-python_dd_format_persist_name(const LogPipe *s)
+static PythonPersistMembers
+_get_persist_members(const LogPipe *s)
 {
   const PythonDestDriver *self = (const PythonDestDriver *)s;
 
-  PythonPersistMembers options =
+  return (PythonPersistMembers)
   {
     .generate_persist_name_method = self->py.generate_persist_name,
     .options = self->options,
     .class = self->class,
     .id = self->super.super.super.id
   };
+}
+
+static const gchar *
+python_dd_format_persist_name(const LogPipe *s)
+{
+  PythonPersistMembers options = _get_persist_members(s);
 
   return python_format_persist_name(s, PYTHON_MODULE_PERSIST_KEY, &options);
 }
