@@ -133,3 +133,27 @@ python_format_persist_name(const LogPipe *p, const gchar *module, PythonPersistM
   static gchar persist_name[1024];
   return _format_persist_name(p, module, options, persist_name, sizeof(persist_name));
 }
+
+static const gchar *
+_format_legacy_persist_name(const LogPipe *p, const gchar *module, PythonPersistMembers *options)
+{
+  static gchar persist_name[1024];
+  return _format_persist_name(p, module, options, persist_name, sizeof(persist_name));
+}
+
+gboolean
+python_update_legacy_persist_name_if_exists(LogPipe *p, const gchar *legacy_module_name, const gchar *module,
+                                            PythonPersistMembers *options)
+{
+  GlobalConfig *cfg = log_pipe_get_config(p);
+  const gchar *current_persist_name = python_format_persist_name(p, module, options);
+  const gchar *legacy_persist_name = _format_legacy_persist_name(p, legacy_module_name, options);
+
+  if (persist_state_entry_exists(cfg->state, current_persist_name))
+    return TRUE;
+
+  if (!persist_state_entry_exists(cfg->state, legacy_persist_name))
+    return TRUE;
+
+  return persist_state_move_entry(cfg->state, legacy_persist_name, current_persist_name);
+}

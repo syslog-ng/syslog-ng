@@ -570,12 +570,18 @@ python_dd_init(LogPipe *d)
   self->super.time_reopen = 1;
 
   gstate = PyGILState_Ensure();
-
   _py_perform_imports(self->loaders);
-  if (!_py_init_bindings(self) ||
-      !_py_init_object(self))
+  if (!_py_init_bindings(self))
     goto fail;
+  PyGILState_Release(gstate);
 
+  PythonPersistMembers persist_options = _get_persist_members(d);
+  if (!python_update_legacy_persist_name_if_exists(d, "python", PYTHON_MODULE_PERSIST_KEY, &persist_options))
+    return FALSE;
+
+  gstate = PyGILState_Ensure();
+  if (!_py_init_object(self))
+    goto fail;
   PyGILState_Release(gstate);
 
   msg_verbose("Python destination initialized",

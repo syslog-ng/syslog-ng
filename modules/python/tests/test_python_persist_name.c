@@ -29,6 +29,7 @@
 #include "mainloop.h"
 #include "python-persist.h"
 #include "grab-logging.h"
+#include "libtest/persist_lib.h"
 
 #include <criterion/criterion.h>
 
@@ -113,7 +114,11 @@ Test(python_persist_name, test_python_dest)
 {
   _load_code(python_destination_code);
 
+  const gchar *persist_file_name = "test_python_dest.persist";
+  empty_cfg->state = clean_and_create_persist_state_for_test(persist_file_name);
+
   LogDriver *d = python_dd_new(empty_cfg);
+
   python_dd_set_class(d, "Dest");
   python_dd_set_option(d, "key", "value");
   cr_assert(log_pipe_init((LogPipe *)d));
@@ -123,6 +128,8 @@ Test(python_persist_name, test_python_dest)
   main_loop_sync_worker_startup_and_teardown();
   log_pipe_deinit((LogPipe *)d);
   log_pipe_unref((LogPipe *)d);
+
+  unlink(persist_file_name);
 }
 
 const gchar *python_fetcher_code = "\n\

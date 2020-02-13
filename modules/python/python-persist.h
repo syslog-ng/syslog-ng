@@ -36,5 +36,7 @@ typedef struct
 
 const gchar *python_format_stats_instance(LogPipe *p, const gchar *module, PythonPersistMembers *options);
 const gchar *python_format_persist_name(const LogPipe *p, const gchar *module, PythonPersistMembers *options);
+gboolean python_update_legacy_persist_name_if_exists(LogPipe *p, const gchar *legacy_module_name,
+                                                     const gchar *module, PythonPersistMembers *options);
 
 #endif
