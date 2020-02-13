@@ -26,26 +26,26 @@
 #include "syslog-ng.h"
 #include <string.h>
 
-#define LEVEL_CODE(n)    ((n) & 7)
+#define SEVERITY_CODE(n)    ((n) & 7)
 #define FACILITY_CODE(n) ((n) << 3)
 
 
-struct sl_name sl_levels[] =
+struct sl_name sl_severities[] =
 {
-  {"emerg",     LEVEL_CODE(0) },
-  {"emergency", LEVEL_CODE(0) },
-  {"panic",     LEVEL_CODE(0) },
-  {"alert",     LEVEL_CODE(1) },
-  {"crit",      LEVEL_CODE(2) },
-  {"critical",  LEVEL_CODE(2) },
-  {"err",       LEVEL_CODE(3) },
-  {"error",     LEVEL_CODE(3) },
-  {"warning",   LEVEL_CODE(4) },
-  {"warn",      LEVEL_CODE(4) },
-  {"notice",    LEVEL_CODE(5) },
-  {"info",      LEVEL_CODE(6) },
-  {"informational", LEVEL_CODE(6) },
-  {"debug",     LEVEL_CODE(7) },
+  {"emerg",     SEVERITY_CODE(0) },
+  {"emergency", SEVERITY_CODE(0) },
+  {"panic",     SEVERITY_CODE(0) },
+  {"alert",     SEVERITY_CODE(1) },
+  {"crit",      SEVERITY_CODE(2) },
+  {"critical",  SEVERITY_CODE(2) },
+  {"err",       SEVERITY_CODE(3) },
+  {"error",     SEVERITY_CODE(3) },
+  {"warning",   SEVERITY_CODE(4) },
+  {"warn",      SEVERITY_CODE(4) },
+  {"notice",    SEVERITY_CODE(5) },
+  {"info",      SEVERITY_CODE(6) },
+  {"informational", SEVERITY_CODE(6) },
+  {"debug",     SEVERITY_CODE(7) },
   {NULL, -1}
 };
 

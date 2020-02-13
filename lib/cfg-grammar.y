@@ -1139,7 +1139,7 @@ severity_string
         : string
 	  {
 	    /* return the numeric value of the "level" */
-	    int n = syslog_name_lookup_level_by_name($1);
+	    int n = syslog_name_lookup_severity_by_name($1);
 	    CHECK_ERROR((n != -1), @1, "Unknown priority level\"%s\"", $1);
 	    free($1);
             $$ = n;

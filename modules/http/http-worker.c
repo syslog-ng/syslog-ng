@@ -221,7 +221,7 @@ _add_msg_specific_headers(HTTPDestinationWorker *self, LogMessage *msg)
               syslog_name_lookup_name_by_value(msg->pri & LOG_FACMASK, sl_facilities));
   _add_header(self->request_headers,
               "X-Syslog-Level",
-              syslog_name_lookup_name_by_value(msg->pri & LOG_PRIMASK, sl_levels));
+              syslog_name_lookup_name_by_value(msg->pri & LOG_PRIMASK, sl_severities));
 }
 
 static void

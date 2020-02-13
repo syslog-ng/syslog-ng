@@ -435,7 +435,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
       /* level */
       const char *n;
 
-      n = syslog_name_lookup_name_by_value(msg->pri & LOG_PRIMASK, sl_levels);
+      n = syslog_name_lookup_name_by_value(msg->pri & LOG_PRIMASK, sl_severities);
       if (n)
         {
           g_string_append(result, n);
