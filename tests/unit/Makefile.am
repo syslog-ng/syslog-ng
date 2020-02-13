@@ -7,7 +7,6 @@ tests_unit_TESTS			= \
 	tests/unit/test_msgparse	   \
 	tests/unit/test_dnscache	   \
 	tests/unit/test_findcrlf	   \
-	tests/unit/test_persist_state  \
 	tests/unit/test_ringbuffer	   \
 	tests/unit/test_hostid		   \
 	tests/unit/test_zone		   \
@@ -47,10 +46,6 @@ tests_unit_test_dnscache_LDADD		= \
 
 tests_unit_test_findcrlf_CFLAGS		= $(TEST_CFLAGS)
 tests_unit_test_findcrlf_LDADD		= \
-	$(TEST_LDADD) $(unit_test_extra_modules)
-
-tests_unit_test_persist_state_CFLAGS	= $(TEST_CFLAGS)
-tests_unit_test_persist_state_LDADD	= \
 	$(TEST_LDADD) $(unit_test_extra_modules)
 
 tests_unit_test_ringbuffer_CFLAGS	= $(TEST_CFLAGS)

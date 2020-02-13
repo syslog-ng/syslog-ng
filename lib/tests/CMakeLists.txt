@@ -24,6 +24,7 @@ add_unit_test(CRITERION TARGET test_window_size_counter)
 add_unit_test(CRITERION TARGET test_apphook)
 add_unit_test(CRITERION TARGET test_dynamic_window)
 add_unit_test(CRITERION TARGET test_logsource)
+add_unit_test(CRITERION LIBTEST TARGET test_persist_state)
 
 SET_DIRECTORY_PROPERTIES(PROPERTIES
   ADDITIONAL_MAKE_CLEAN_FILES
