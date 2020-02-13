@@ -329,4 +329,44 @@ Test(persist_state, test_persist_state_temp_file_cleanup_on_commit_destroy)
             "backup persist file is removed on destroy(), even after commit");
 }
 
+void
+_write_test_state_value(PersistState *state, PersistEntryHandle handle, guint32 value)
+{
+  TestState *test_state = (TestState *) persist_state_map_entry(state, handle);
+  test_state->value = value;
+  persist_state_unmap_entry(state, handle);
+}
+
+void
+assert_test_state_value(PersistState *state, PersistEntryHandle handle, guint32 expected_value)
+{
+  TestState *test_state = (TestState *) persist_state_map_entry(state, handle);
+  cr_assert_eq(test_state->value, expected_value);
+  persist_state_unmap_entry(state, handle);
+}
+
+Test(persist_state, test_persist_state_move_entry)
+{
+  PersistState *state = clean_and_create_persist_state_for_test("test_persist_state_move_entry.persist");
+  PersistEntryHandle handle = persist_state_alloc_entry(state, "to_be_moved", sizeof(TestState));
+  _write_test_state_value(state, handle, 0xDEC0DE);
+
+  state = restart_persist_state(state);
+
+  cr_assert(persist_state_move_entry(state, "to_be_moved", "new_name"));
+
+  guint8 version;
+  gsize size;
+  PersistEntryHandle new_handle = persist_state_lookup_entry(state, "new_name", &size, &version);
+  cr_assert_neq(new_handle, 0, "moved entry does not exist in the new location");
+  assert_test_state_value(state, new_handle, 0xDEC0DE);
+
+  state = restart_persist_state(state);
+
+  cr_assert_eq(persist_state_lookup_entry(state, "to_be_moved", &size, &version), 0,
+               "moved persist entry has not been removed");
+
+  cancel_and_destroy_persist_state(state);
+}
+
 #endif
