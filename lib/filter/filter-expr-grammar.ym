@@ -75,8 +75,8 @@ FilterExprNode *last_filter_expr;
 
 %type   <num> filter_fac_list
 %type   <num> filter_fac
-%type	<num> filter_level_list
-%type	<num> filter_level
+%type	<num> filter_severity_list
+%type	<num> filter_severity
 
 %type   <token> operator
 
@@ -99,7 +99,7 @@ filter_expr
 filter_simple_expr
 	: KW_FACILITY '(' filter_fac_list ')'	{ $$ = filter_facility_new($3);  }
 	| KW_FACILITY '(' LL_NUMBER ')'		{ $$ = filter_facility_new(0x80000000 | $3); }
-	| KW_LEVEL '(' filter_level_list ')' 	{ $$ = filter_level_new($3); }
+	| KW_SEVERITY '(' filter_severity_list ')' { $$ = filter_level_new($3); }
 	| KW_FILTER '(' string ')'		{ $$ = filter_call_new($3, configuration); free($3); }
 	| KW_NETMASK '(' string ')'    { $$ = filter_netmask_new($3); free($3); }
   | KW_NETMASK6 '(' string ')'   {
@@ -290,17 +290,17 @@ filter_fac
         | facility_string			{ $$ = 1 << ($1 >> 3); }
 	;
 
-filter_level_list
-	: filter_level filter_level_list	{ $$ = $1 | $2; }
-	| filter_level				{ $$ = $1; }
+filter_severity_list
+	: filter_severity filter_severity_list	{ $$ = $1 | $2; }
+	| filter_severity				{ $$ = $1; }
 	;
 
-filter_level
-	: level_string LL_DOTDOT level_string
+filter_severity
+	: severity_string LL_DOTDOT severity_string
 	  {
 	    $$ = syslog_make_range($1, $3);
 	  }
-	| level_string
+	| severity_string
 	  {
 	    $$ = 1 << $1;
 	  }
