@@ -320,7 +320,7 @@ teardown(void)
 /*************************************************************************/
 /* Test suite                                                            */
 /*************************************************************************/
-TestSuite(secure-logging, .init = setup, .fini = teardown);
+TestSuite(secure_logging, .init = setup, .fini = teardown);
 
 void test_slog_template_format(void)
 {
@@ -588,7 +588,7 @@ void test_slog_performance(void)
   cr_log_info("[test_slog_performance] Completed successfully");
 }
 
-Test(secure-logging, test_slog_functionality)
+Test(secure_logging, test_slog_functionality)
 {
   test_slog_template_format();
   test_slog_performance();

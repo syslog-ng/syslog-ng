@@ -1,5 +1,5 @@
 modules_secure_logging_tests_TESTS				=	\
-	modules/secure-logging/tests/test_secure-logging
+	modules/secure-logging/tests/test_secure_logging
 check_PROGRAMS						+=	\
 	${modules_secure_logging_tests_TESTS}
 
