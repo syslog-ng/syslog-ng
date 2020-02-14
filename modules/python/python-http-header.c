@@ -273,7 +273,6 @@ cleanup:
   PyGILState_Release(gstate);
 
 exit:
-  g_assert(self->last_headers);
   g_list_foreach(self->last_headers, _append_str_to_list, data->request_headers);
 }
 
