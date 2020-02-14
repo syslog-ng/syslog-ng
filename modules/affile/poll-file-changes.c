@@ -203,9 +203,6 @@ poll_file_changes_update_watches(PollEvents *s, GIOCondition cond)
 
   poll_file_changes_stop_watches(s);
 
-  if (!(cond & G_IO_IN))
-    return;
-
   if (poll_file_changes_check_eof(self))
     {
       msg_trace("End of file, following file",

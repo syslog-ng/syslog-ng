@@ -37,6 +37,7 @@ struct _PollEvents
   void (*start_watches)(PollEvents *self);
   void (*stop_watches)(PollEvents *self);
   void (*update_watches)(PollEvents *self, GIOCondition cond);
+  void (*suspend_watches)(PollEvents *self);
   void (*free_fn)(PollEvents *self);
 };
 
@@ -62,7 +63,9 @@ poll_events_update_watches(PollEvents *self, GIOCondition cond)
 static inline void
 poll_events_suspend_watches(PollEvents *self)
 {
-  poll_events_update_watches(self, 0);
+  if (self->suspend_watches)
+    return self->suspend_watches(self);
+  poll_events_stop_watches(self);
 }
 
 void poll_events_invoke_callback(PollEvents *self);
