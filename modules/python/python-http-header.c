@@ -67,7 +67,7 @@ _py_append_pylist_to_list(PyObject *py_list, GList **list)
   for (int i = 0; i < len; i++)
     {
       py_str = PyList_GetItem(py_list, i); // Borrowed reference
-      if (!py_str || !PyUnicode_Check(py_str))
+      if (!_py_is_string(py_str))
         goto exit;
 
       if (!(str = _py_get_string_as_string(py_str)))
