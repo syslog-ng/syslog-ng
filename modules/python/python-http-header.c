@@ -60,18 +60,33 @@ _py_append_pylist_to_list(PyObject *py_list, GList **list)
   const gchar *str;
   PyObject *py_str;
 
-  if (!py_list || !PyList_Check(py_list))
-    goto exit;
+  if (!py_list)
+    {
+      msg_debug("Trying to append a NULL-valued PyList to GList");
+      goto exit;
+    }
+
+  if (PyList_Check(py_list))
+    {
+      msg_debug("PyList_Check failed when trying to append PyList to GList.");
+      goto exit;
+    }
 
   Py_ssize_t len = PyList_Size(py_list);
   for (int i = 0; i < len; i++)
     {
       py_str = PyList_GetItem(py_list, i); // Borrowed reference
       if (!_py_is_string(py_str))
-        goto exit;
+        {
+          msg_debug("PyList contained a non-string object when trying to append to GList");
+          goto exit;
+        }
 
       if (!(str = _py_get_string_as_string(py_str)))
-        goto exit;
+        {
+          msg_debug("_py_get_string_as_string failed when trying to append PyList to GList");
+          goto exit;
+        }
 
       *list = g_list_append(*list, g_strdup(str));
     }
