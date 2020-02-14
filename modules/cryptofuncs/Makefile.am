@@ -12,14 +12,7 @@ modules_cryptofuncs_libcryptofuncs_la_LDFLAGS		=	\
 modules_cryptofuncs_libcryptofuncs_la_DEPENDENCIES	=	\
 	$(MODULE_DEPS_LIBS)
 
-modules/cryptofuncs modules/cryptofuncs/ mod-cryptofuncs: modules/cryptofuncs/libcryptofuncs.la \
-							  modules/cryptofuncs/slogkey/slogkey \
-							  modules/cryptofuncs/slogimport/slogimport \
-							  modules/cryptofuncs/slogverify/slogverify
-
+modules/cryptofuncs modules/cryptofuncs/ mod-cryptofuncs: modules/cryptofuncs/libcryptofuncs.la
 .PHONY: modules/cryptofuncs/ mod-cryptofuncs
 
-include modules/cryptofuncs/slogkey/Makefile.am
-include modules/cryptofuncs/slogverify/Makefile.am
 include modules/cryptofuncs/tests/Makefile.am
-include modules/cryptofuncs/slogimport/Makefile.am

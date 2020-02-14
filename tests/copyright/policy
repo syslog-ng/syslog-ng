@@ -53,9 +53,9 @@ tests/python_functional/.pre-commit-config.yaml
  LGPLv2.1+_SSL,non-balabit
 lib/timeutils/zonecache.[ch]$
 lib/slog\.[ch]$
-modules/cryptofuncs/slogimport/slogimport\.c$
-modules/cryptofuncs/slogverify/slogverify\.c$
-modules/cryptofuncs/slogkey/slogkey\.c$
+modules/secure-logging/slogimport
+modules/secure-logging/slogverify
+modules/secure-logging/slogkey
  LGPLv2.1+_SSL
 autogen\.sh$
 sub-configure\.sh$
@@ -78,6 +78,8 @@ modules/timestamp/rewrite-.*$
 modules/add-contextual-data/add-contextual-data-glob-selector\.[ch]$
 modules/add-contextual-data/tests/test_glob_selector\.c$
 modules/affile/tests/test_file_writer\.c$
+modules/secure-logging
+modules/secure-logging/tests
  GPLv2+_SSL
 contib/config_option_database
 news/create-newsfile.py
