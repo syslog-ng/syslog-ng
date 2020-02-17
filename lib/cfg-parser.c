@@ -359,8 +359,8 @@ report_syntax_error(CfgLexer *lexer, YYLTYPE *yylloc, const char *what, const ch
     }
 
   if (in_main_grammar)
-    fprintf(stderr, "\nsyslog-ng documentation: https://www.balabit.com/support/documentation?product=%s\n"
-            "contact: %s\n", PRODUCT_NAME, PRODUCT_CONTACT);
+    fprintf(stderr, "\nsyslog-ng documentation: %s\n"
+            "contact: %s\n", PRODUCT_DOCUMENTATION, PRODUCT_CONTACT);
 
 }
 
