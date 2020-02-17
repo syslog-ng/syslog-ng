@@ -202,18 +202,18 @@ gnupg                           [centos, fedora, debian, ubuntu]
 
 
 # packages to run Kira
-faketime                        [debian, ubuntu]
-libdbd-mysql                    [debian, ubuntu]
-lsb-release                     [debian, ubuntu]
-lsof                            [debian, ubuntu]
-netbase                         [debian, ubuntu]
-netcat                          [debian, ubuntu]
-openssh-client                  [debian, ubuntu]
-python-numpy                    [debian, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic, ubuntu-eoan]
-python3-numpy                   [debian, ubuntu-focal]
-python-yaml                     [debian, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic, ubuntu-eoan]
-python3-yaml                    [debian, ubuntu-focal]
-systemd-sysv                    [debian, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
+faketime                        [kira]
+libdbd-mysql                    [kira]
+lsb-release                     [kira]
+lsof                            [kira]
+netbase                         [kira]
+netcat                          [kira]
+openssh-client                  [kira]
+python-numpy                    [kira]
+python3-numpy                   [kira]
+python-yaml                     [kira]
+python3-yaml                    [kira]
+systemd-sysv                    [kira]
 
 
 
