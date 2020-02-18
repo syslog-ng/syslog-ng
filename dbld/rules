@@ -12,7 +12,8 @@ BUILDER_IMAGES=		\
 	ubuntu-cosmic	\
 	ubuntu-bionic \
 	ubuntu-eoan \
-	ubuntu-focal
+	ubuntu-focal \
+	kira
 
 IMAGES=${BUILDER_IMAGES} devshell
 DEFAULT_IMAGE ?= ubuntu-bionic
