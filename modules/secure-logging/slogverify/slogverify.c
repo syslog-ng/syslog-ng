@@ -48,13 +48,16 @@ int standardMode(int argc, char **argv)
     {
       int size = atoi(argv[5]);
 
-      if(size <= MIN_BUF_SIZE || size > MAX_BUF_SIZE) {
-	msg_error("[SLOG] ERROR: Invalid buffer size.", evt_tag_int("Size", size), evt_tag_int("Minimum buffer size", MIN_BUF_SIZE), evt_tag_int("Maximum buffer size", MAX_BUF_SIZE));
-	return 0;
-      }
-      else {
-	bufferSize = size;
-      }	
+      if(size <= MIN_BUF_SIZE || size > MAX_BUF_SIZE)
+        {
+          msg_error("[SLOG] ERROR: Invalid buffer size.", evt_tag_int("Size", size), evt_tag_int("Minimum buffer size",
+                    MIN_BUF_SIZE), evt_tag_int("Maximum buffer size", MAX_BUF_SIZE));
+          return 0;
+        }
+      else
+        {
+          bufferSize = size;
+        }
     }
 
   char key[KEY_LENGTH];
@@ -135,13 +138,16 @@ int iterativeMode(int argc, char **argv)
     {
       int size = atoi(argv[7]);
 
-      if(size <= MIN_BUF_SIZE || size > MAX_BUF_SIZE) {
-	msg_error("[SLOG] ERROR: Invalid buffer size.", evt_tag_int("Size", size), evt_tag_int("Minimum buffer size", MIN_BUF_SIZE), evt_tag_int("Maximum buffer size", MAX_BUF_SIZE));
-	return 0;
-      }
-      else {
-	bufferSize = size;
-      }
+      if(size <= MIN_BUF_SIZE || size > MAX_BUF_SIZE)
+        {
+          msg_error("[SLOG] ERROR: Invalid buffer size.", evt_tag_int("Size", size), evt_tag_int("Minimum buffer size",
+                    MIN_BUF_SIZE), evt_tag_int("Maximum buffer size", MAX_BUF_SIZE));
+          return 0;
+        }
+      else
+        {
+          bufferSize = size;
+        }
     }
 
   char previousKey[KEY_LENGTH];
@@ -234,7 +240,7 @@ int main(int argc, char *argv[])
   msg_init(TRUE);
 
   int ret = 0;
-  
+
   if (strcmp(argv[1], "-i")==0)
     {
       ret = 1-iterativeMode(argc, argv);
