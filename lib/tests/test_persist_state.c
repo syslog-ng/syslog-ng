@@ -2,18 +2,20 @@
  * Copyright (c) 2010-2016 Balabit
  * Copyright (c) 2010-2014 Balázs Scheidler
  * Copyright (c) 2014 Viktor Tusa
+ * Copyright (c) 2020 One Identity
  *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 2 as published
- * by the Free Software Foundation, or (at your option) any later version.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
  * As an additional exemption you are allowed to compile & link against the
@@ -327,6 +329,46 @@ Test(persist_state, test_persist_state_temp_file_cleanup_on_commit_destroy)
             "persist file is removed on destroy(), even after commit");
   cr_assert(access("test_persist_state_temp_file_cleanup_on_commit_destroy.persist-", F_OK) != 0,
             "backup persist file is removed on destroy(), even after commit");
+}
+
+void
+_write_test_state_value(PersistState *state, PersistEntryHandle handle, guint32 value)
+{
+  TestState *test_state = (TestState *) persist_state_map_entry(state, handle);
+  test_state->value = value;
+  persist_state_unmap_entry(state, handle);
+}
+
+void
+assert_test_state_value(PersistState *state, PersistEntryHandle handle, guint32 expected_value)
+{
+  TestState *test_state = (TestState *) persist_state_map_entry(state, handle);
+  cr_assert_eq(test_state->value, expected_value);
+  persist_state_unmap_entry(state, handle);
+}
+
+Test(persist_state, test_persist_state_move_entry)
+{
+  PersistState *state = clean_and_create_persist_state_for_test("test_persist_state_move_entry.persist");
+  PersistEntryHandle handle = persist_state_alloc_entry(state, "to_be_moved", sizeof(TestState));
+  _write_test_state_value(state, handle, 0xDEC0DE);
+
+  state = restart_persist_state(state);
+
+  cr_assert(persist_state_move_entry(state, "to_be_moved", "new_name"));
+
+  guint8 version;
+  gsize size;
+  PersistEntryHandle new_handle = persist_state_lookup_entry(state, "new_name", &size, &version);
+  cr_assert_neq(new_handle, 0, "moved entry does not exist in the new location");
+  assert_test_state_value(state, new_handle, 0xDEC0DE);
+
+  state = restart_persist_state(state);
+
+  cr_assert_eq(persist_state_lookup_entry(state, "to_be_moved", &size, &version), 0,
+               "moved persist entry has not been removed");
+
+  cancel_and_destroy_persist_state(state);
 }
 
 #endif
