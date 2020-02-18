@@ -98,7 +98,7 @@ log_rewrite_set_severity_process(LogRewrite *s, LogMessage **pmsg, const LogPath
       goto error;
     }
 
-  _set_msg_severity(*pmsg, _convert_severity(result));
+  _set_msg_severity(*pmsg, severity);
 
 error:
   scratch_buffers_reclaim_marked(marker);
