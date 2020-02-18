@@ -29,7 +29,7 @@
 #include <glib.h>
 
 #include "messages.h"
-#include "modules/secure-logging/slog.h"
+#include "slog.h"
 
 #define MIN_BUF_SIZE 10
 #define MAX_BUF_SIZE 100000

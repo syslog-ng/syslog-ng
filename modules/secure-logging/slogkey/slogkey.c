@@ -34,7 +34,7 @@
 
 #include "messages.h"
 
-#include "modules/secure-logging/slog.h"
+#include "slog.h"
 
 int main(int argc, char **argv)
 {
