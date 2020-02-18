@@ -47,12 +47,6 @@
 
 #define CUTSTRING "###CUT###"
 
-// This initialization only works with GCC.
-static unsigned char KEYPATTERN[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE-1) ] = IPAD };
-static unsigned char MACPATTERN[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE-1) ] = OPAD };
-static unsigned char GAMMA[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE-1) ] =  EPAD};
-
-
 // Dump contents of an array on STDOUT, byte by byte, converting to hex.
 void outputByteBuffer(unsigned char *buf, int length);
 

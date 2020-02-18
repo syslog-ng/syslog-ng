@@ -3,6 +3,10 @@ module_LTLIBRARIES					+=	\
 
 EXTRA_DIST += modules/secure-logging/CMakeLists.txt
 
+modules_secure_logging_libsecure_logging_la_CFLAGS	=	\
+	-I$(top_srcdir)/modules/secure-logging	                \
+	-I$(top_builddir)/modules/secure-logging
+
 modules_secure_logging_libsecure_logging_la_SOURCES		=	\
 	modules/secure-logging/secure-logging.c                         \
 	modules/secure-logging/slog.c
