@@ -86,11 +86,14 @@ Test(set_severity, large_number)
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   LogMessage *msg = log_msg_new_empty();
 
+  int default_severity = msg->pri & LOG_PRIMASK;
+
   LogRewrite *set_severity = log_rewrite_set_severity_new(_create_template("8"), cfg);
 
   log_pipe_init(&set_severity->super);
   log_pipe_queue(&set_severity->super, msg, &path_options);
 
+  cr_assert_eq(msg->pri & LOG_PRIMASK, default_severity);
   assert_grabbed_log_contains("invalid severity to set");
 
   log_pipe_deinit(&set_severity->super);
