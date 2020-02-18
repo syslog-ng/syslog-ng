@@ -40,10 +40,6 @@ struct _PythonHttpHeaderPlugin
   gchar *class;
   GList *loaders;
 
-  GList *last_headers;
-  time_t last_run;
-  int timeout;
-
   GHashTable *options;
 
   struct
@@ -66,7 +62,7 @@ _py_append_pylist_to_list(PyObject *py_list, GList **list)
       goto exit;
     }
 
-  if (PyList_Check(py_list))
+  if (!PyList_Check(py_list))
     {
       msg_debug("PyList_Check failed when trying to append PyList to GList.");
       goto exit;
@@ -213,21 +209,13 @@ _append_str_to_list(gpointer data, gpointer user_data)
 static void
 _append_headers(PythonHttpHeaderPlugin *self, HttpHeaderRequestSignalData *data)
 {
-  PyObject *py_ret = NULL,
-            *py_list = NULL,
-             *py_args = NULL,
-              *py_ret_list = NULL;
-
-  time_t now = time(NULL);
-  if ((now - self->last_run) < self->timeout)
-    goto exit;
+  PyObject *py_list = NULL,
+            *py_args = NULL,
+             *py_ret_list = NULL;
+  GList *headers = NULL;
 
   // The GIL also guards non-Python plugin struct members from concurrent changes below.
   PyGILState_STATE gstate = PyGILState_Ensure();
-
-  self->timeout = 0;
-  g_list_free_full(self->last_headers, g_free);
-  self->last_headers = NULL;
 
   py_list = _py_convert_list_to_pylist(data->request_headers);
   if (!py_list)
@@ -246,8 +234,8 @@ _append_headers(PythonHttpHeaderPlugin *self, HttpHeaderRequestSignalData *data)
       goto cleanup;
     }
 
-  py_ret = _py_invoke_function_with_args(self->py.get_headers, py_args, self->class, "_append_headers");
-  if (!py_ret || !PyArg_ParseTuple(py_ret, "iO", &self->timeout, &py_ret_list))
+  py_ret_list = _py_invoke_function_with_args(self->py.get_headers, py_args, self->class, "_append_headers");
+  if (!py_ret_list)
     {
       gchar buf[256];
 
@@ -263,10 +251,9 @@ _append_headers(PythonHttpHeaderPlugin *self, HttpHeaderRequestSignalData *data)
   msg_debug("Python call returned valid response",
             evt_tag_str("class", self->class),
             evt_tag_str("method", "get_headers"),
-            evt_tag_str("return_type", "Tuple"),
-            evt_tag_int("len", PyTuple_Size(py_ret)));
+            evt_tag_str("return_type", py_ret_list->ob_type->tp_name));
 
-  if (!_py_append_pylist_to_list(py_ret_list, &self->last_headers))
+  if (!_py_append_pylist_to_list(py_ret_list, &headers))
     {
       gchar buf[256];
 
@@ -279,16 +266,16 @@ _append_headers(PythonHttpHeaderPlugin *self, HttpHeaderRequestSignalData *data)
 
 cleanup:
   Py_XDECREF(py_args);
-  Py_XDECREF(py_ret);
   Py_XDECREF(py_list);
   Py_XDECREF(py_ret_list);
 
-  self->last_run = now;
-
   PyGILState_Release(gstate);
 
-exit:
-  g_list_foreach(self->last_headers, _append_str_to_list, data->request_headers);
+  if (headers)
+    {
+      g_list_foreach(headers, _append_str_to_list, data->request_headers);
+      g_list_free_full(headers, g_free);
+    }
 }
 
 static gboolean
@@ -346,9 +333,6 @@ _free(LogDriverPlugin *s)
   if (self->loaders)
     g_list_free_full(self->loaders, g_free);
 
-  if (self->last_headers)
-    g_list_free_full(self->last_headers, g_free);
-
   PyGILState_STATE gstate = PyGILState_Ensure();
   _py_detach_bindings(self);
   PyGILState_Release(gstate);
@@ -363,9 +347,6 @@ python_http_header_new(void)
 
   log_driver_plugin_init_instance(&(self->super), PYTHON_HTTP_HEADER_PLUGIN);
 
-  self->last_headers = NULL;
-  self->last_run = 0;
-  self->timeout = 0;
   self->options = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
   self->py.class = self->py.instance = self->py.get_headers = NULL;
 

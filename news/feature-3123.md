@@ -6,12 +6,8 @@ The Python interface is :
 def get_headers(self, body, headers):
 ```
 
-It should return a tuple that has two elements:
- * a timeout (when the signal is emitted again within `timeout`,  a cached list is returned - this can be used for caching Authorization header tokens that has an expiration time and as the check of the value of the timeout is done at C site, it can improve the performance: Python code runs only when it is required) 
- * a string list (the headers that will be appended to the request's header)
-
-Code, or naming is not final, but it's working. Just wanted to open the PR and get some feedback (...and run CI tests).
-
+It should return string List. The headers that will be appended to the request's header.
+ 
 Original code was written by Ferenc Sipos.
 
 <details>
@@ -30,13 +26,12 @@ class TestCounter():
     def __init__(self, options):
         self.header = options["header"]
         self.counter = int(options["counter"])
-        self.timeout = 0
         logger.debug(f"TestCounter class instantiated; options={options}")
 
     def get_headers(self, body, headers):
         logger.debug(f"get_headers() called, received body={body}, headers={headers}")
        
-        response = (self.timeout, [f"{self.header}: {self.counter}"])
+        response = ["{}: {}".format(self.header, self.counter)]
         self.counter += 1
         return response
 
