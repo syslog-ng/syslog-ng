@@ -10,4 +10,5 @@ modules_secure_logging_slogverify_slogverify_CPPFLAGS=	\
 	-I$(top_builddir)/modules/secure-logging
 modules_secure_logging_slogverify_slogverify_LDADD	=	\
 	$(top_builddir)/lib/libsyslog-ng.la	\
+	$(top_builddir)/modules/secure-logging/libsecure-logging.la	\
 	@TOOL_DEPS_LIBS@

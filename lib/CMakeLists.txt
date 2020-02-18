@@ -102,7 +102,6 @@ set (LIB_HEADERS
     logreader.h
     logsource.h
     logwriter.h
-    slog.h
     mainloop.h
     mainloop-call.h
     mainloop-worker.h
@@ -195,7 +194,6 @@ set(LIB_SOURCES
     logwriter.c
     mainloop.c
     signal-handler.c
-    slog.c
     mainloop-call.c
     mainloop-worker.c
     mainloop-io-worker.c

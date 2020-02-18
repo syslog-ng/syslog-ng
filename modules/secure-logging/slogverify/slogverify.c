@@ -29,7 +29,10 @@
 #include <glib.h>
 
 #include "messages.h"
-#include "slog.h"
+#include "modules/secure-logging/slog.h"
+
+#define MIN_BUF_SIZE 10
+#define MAX_BUF_SIZE 100000
 
 // Return 1 on success, 0 on error
 int standardMode(int argc, char **argv)
@@ -43,11 +46,16 @@ int standardMode(int argc, char **argv)
   int bufferSize = 1000;
   if (argc>5)
     {
-      bufferSize = atoi(argv[5]);
-    }
+      int size = atoi(argv[5]);
 
-  // Initialize internal messaging
-  msg_init(TRUE);
+      if(size <= MIN_BUF_SIZE || size > MAX_BUF_SIZE) {
+	msg_error("[SLOG] ERROR: Invalid buffer size.", evt_tag_int("Size", size), evt_tag_int("Minimum buffer size", MIN_BUF_SIZE), evt_tag_int("Maximum buffer size", MAX_BUF_SIZE));
+	return 0;
+      }
+      else {
+	bufferSize = size;
+      }	
+    }
 
   char key[KEY_LENGTH];
   guint64 counter;
@@ -117,7 +125,7 @@ int iterativeMode(int argc, char **argv)
 {
   if (argc<7)
     {
-      printf("Usage:\n%s -i <PREVIOUS MAC file file> <PREVIOUS key file>  <input file> <CURRENT MAC file> <output file> [bufferSize]\n",
+      printf("Usage:\n%s -i <PREVIOUS MAC file file> <PREVIOUS key file> <input file> <CURRENT MAC file> <output file> [bufferSize]\n",
              argv[0]);
       return 0;
     }
@@ -125,11 +133,16 @@ int iterativeMode(int argc, char **argv)
   int bufferSize = 1000;
   if (argc>7)
     {
-      bufferSize = atoi(argv[7]);
-    }
+      int size = atoi(argv[7]);
 
-  // Initialize internal messaging
-  msg_init(TRUE);
+      if(size <= MIN_BUF_SIZE || size > MAX_BUF_SIZE) {
+	msg_error("[SLOG] ERROR: Invalid buffer size.", evt_tag_int("Size", size), evt_tag_int("Minimum buffer size", MIN_BUF_SIZE), evt_tag_int("Maximum buffer size", MAX_BUF_SIZE));
+	return 0;
+      }
+      else {
+	bufferSize = size;
+      }
+    }
 
   char previousKey[KEY_LENGTH];
   guint64 previousKeyCounter = 0;
@@ -216,13 +229,23 @@ int main(int argc, char *argv[])
              argv[0], argv[0]);
       return 1;
     }
+
+  // Initialize internal messaging
+  msg_init(TRUE);
+
+  int ret = 0;
+  
   if (strcmp(argv[1], "-i")==0)
     {
-      return 1-iterativeMode(argc, argv);
+      ret = 1-iterativeMode(argc, argv);
     }
   else
     {
-      return 1-standardMode(argc, argv);
+      ret = 1-standardMode(argc, argv);
     }
 
+  // Release messaging resources
+  msg_deinit();
+
+  return ret;
 }

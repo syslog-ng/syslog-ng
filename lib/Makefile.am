@@ -183,8 +183,7 @@ pkginclude_HEADERS			+= \
 	lib/host-id.h			\
 	lib/resolved-configurable-paths.h \
 	lib/pe-versioning.h \
-	lib/window-size-counter.h \
-	lib/slog.h
+	lib/window-size-counter.h
 
 # this is intentionally formatted so conflicts are less likely to arise. one name in every line.
 lib_libsyslog_ng_la_SOURCES		= \
@@ -265,9 +264,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	$(transport_crypto_sources)	\
 	lib/host-id.c			\
 	lib/resolved-configurable-paths.c \
-	lib/window-size-counter.c \
-	lib/slog.c \
-					\
+	lib/window-size-counter.c       \
 	lib/cfg-lex.l			\
 	lib/cfg-grammar.y		\
 	lib/block-ref-grammar.y		\
