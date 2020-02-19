@@ -182,6 +182,7 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 %token KW_PKCS12_FILE
 %token KW_CA_DIR
 %token KW_CRL_DIR
+%token KW_CA_FILE
 %token KW_TRUSTED_KEYS
 %token KW_TRUSTED_DN
 %token KW_CIPHER_SUITE
@@ -822,6 +823,11 @@ tls_option
 	| KW_CRL_DIR '(' string ')'
 	  {
 	    tls_context_set_crl_dir(last_tls_context, $3);
+            free($3);
+          }
+        | KW_CA_FILE '(' path_check ')'
+          {
+            tls_context_set_ca_file(last_tls_context, $3);
             free($3);
           }
         | KW_TRUSTED_KEYS '(' string_list ')'

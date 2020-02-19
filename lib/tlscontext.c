@@ -49,6 +49,7 @@ struct _TLSContext
   gchar *pkcs12_file;
   gchar *ca_dir;
   gchar *crl_dir;
+  gchar *ca_file;
   gchar *cipher_suite;
   gchar *ecdh_curve_list;
   gchar *sni;
@@ -731,6 +732,9 @@ tls_context_setup_context(TLSContext *self)
   if (_is_file_accessible(self, self->ca_dir) && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->ca_dir))
     goto error;
 
+  if (_is_file_accessible(self, self->ca_file) && !SSL_CTX_load_verify_locations(self->ssl_ctx, self->ca_file, NULL))
+    goto error;
+
   if (_is_file_accessible(self, self->crl_dir) && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->crl_dir))
     goto error;
 
@@ -835,6 +839,7 @@ _tls_context_free(TLSContext *self)
   g_free(self->dhparam_file);
   g_free(self->ca_dir);
   g_free(self->crl_dir);
+  g_free(self->ca_file);
   g_free(self->cipher_suite);
   g_free(self->ecdh_curve_list);
   g_free(self->sni);
@@ -1027,6 +1032,13 @@ tls_context_set_crl_dir(TLSContext *self, const gchar *crl_dir)
 {
   g_free(self->crl_dir);
   self->crl_dir = g_strdup(crl_dir);
+}
+
+void
+tls_context_set_ca_file(TLSContext *self, const gchar *ca_file)
+{
+  g_free(self->ca_file);
+  self->ca_file = g_strdup(ca_file);
 }
 
 void
