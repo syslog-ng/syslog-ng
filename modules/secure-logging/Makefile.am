@@ -9,7 +9,8 @@ modules_secure_logging_libsecure_logging_la_CFLAGS	=	\
 
 modules_secure_logging_libsecure_logging_la_SOURCES		=	\
 	modules/secure-logging/secure-logging.c                         \
-	modules/secure-logging/slog.c
+	modules/secure-logging/slog.c                                   \
+	modules/secure-logging/slog.h
 modules_secure_logging_libsecure_logging_la_LIBADD		=	\
 	$(MODULE_DEPS_LIBS) $(OPENSSL_LIBS)
 modules_secure_logging_libsecure_logging_la_LDFLAGS		=	\
