@@ -42,6 +42,7 @@
 #define PYTHON_MODULE_VERSION "python3"
 #endif
 
+void py_setup_python_home(void);
 void py_init_argv(void);
 PyObject *int_as_pyobject(gint num);
 
