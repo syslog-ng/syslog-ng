@@ -64,11 +64,11 @@ static gint
 _convert_severity(GString *severity_text)
 {
   gint severity = _convert_severity_as_number(severity_text);
-  if (severity > 0)
+  if (severity >= 0)
     return severity;
 
   severity = _convert_severity_as_text(severity_text);
-  if (severity > 0)
+  if (severity >= 0)
     return severity;
 
   return -1;
