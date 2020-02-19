@@ -57,6 +57,8 @@ modules/secure-logging/tests
 modules/secure-logging/slogimport
 modules/secure-logging/slogverify
 modules/secure-logging/slogkey
+lib/rewrite/rewrite-set-facility\.h
+lib/rewrite/tests/test_set_facility\.c
  LGPLv2.1+_SSL
 autogen\.sh$
 sub-configure\.sh$
