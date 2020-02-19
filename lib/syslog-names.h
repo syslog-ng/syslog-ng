@@ -36,6 +36,9 @@
 /* extract priority */
 #define LOG_PRI(p)  ((p) & LOG_PRIMASK)
 
+#define SEVERITY_CODE(n)    ((n) & 7)
+#define FACILITY_CODE(n) ((n) << 3)
+
 struct sl_name
 {
   const char *name;

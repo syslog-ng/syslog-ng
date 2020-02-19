@@ -26,10 +26,6 @@
 #include "syslog-ng.h"
 #include <string.h>
 
-#define SEVERITY_CODE(n)    ((n) & 7)
-#define FACILITY_CODE(n) ((n) << 3)
-
-
 struct sl_name sl_severities[] =
 {
   {"emerg",     SEVERITY_CODE(0) },
