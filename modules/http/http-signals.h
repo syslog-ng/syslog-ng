@@ -30,8 +30,16 @@
 
 typedef struct _HttpHeaderRequestSignalData HttpHeaderRequestSignalData;
 
+typedef enum
+{
+  HTTP_HEADER_REQUEST_SLOT_SUCCESS,
+  HTTP_HEADER_REQUEST_SLOT_CRITICAL_ERROR,
+  HTTP_HEADER_REQUEST_SLOT_PLUGIN_ERROR
+} HttpHeaderRequestSlotResultType;
+
 struct _HttpHeaderRequestSignalData
 {
+  HttpHeaderRequestSlotResultType result;
   List *request_headers;
   GString *request_body;
 };
