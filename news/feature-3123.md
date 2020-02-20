@@ -7,6 +7,8 @@ def get_headers(self, body, headers):
 ```
 
 It should return string List. The headers that will be appended to the request's header.
+When the plugin fails, http module won't0 try to send the http request without the header items by default.
+If you want http module to trying to send the request without these headers, just disble `mark-errors-as-critical` function.
  
 Original code was written by Ferenc Sipos.
 
@@ -49,6 +51,8 @@ destination d_http {
             class("TestCounter")
             options("header", "X-Test-Python-Counter")
             options("counter", 11)
+            # this means that syslog-ng will trying to send the http request even when this module fails
+            mark-errors-as-critical(no)
         )
         url("http://127.0.0.1:8888")
     );
