@@ -37,6 +37,7 @@ struct _PythonHttpHeaderPlugin
 {
   LogDriverPlugin super;
 
+  gboolean mark_errors_as_critical;
   gchar *class;
   GList *loaders;
 
@@ -206,6 +207,15 @@ _append_str_to_list(gpointer data, gpointer user_data)
   list_append(list, data);
 }
 
+static HttpHeaderRequestSlotResultType
+_get_default_error_code(PythonHttpHeaderPlugin *self)
+{
+  if (self->mark_errors_as_critical)
+    return HTTP_HEADER_REQUEST_SLOT_CRITICAL_ERROR;
+
+  return HTTP_HEADER_REQUEST_SLOT_PLUGIN_ERROR;
+}
+
 static void
 _append_headers(PythonHttpHeaderPlugin *self, HttpHeaderRequestSignalData *data)
 {
@@ -214,7 +224,7 @@ _append_headers(PythonHttpHeaderPlugin *self, HttpHeaderRequestSignalData *data)
              *py_ret_list = NULL;
   GList *headers = NULL;
 
-  data->result = HTTP_HEADER_REQUEST_SLOT_PLUGIN_ERROR;
+  data->result = _get_default_error_code(self);
 
   // The GIL also guards non-Python plugin struct members from concurrent changes below.
   PyGILState_STATE gstate = PyGILState_Ensure();
@@ -352,6 +362,7 @@ python_http_header_new(void)
 
   log_driver_plugin_init_instance(&(self->super), PYTHON_HTTP_HEADER_PLUGIN);
 
+  self->mark_errors_as_critical = TRUE;
   self->options = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
   self->py.class = self->py.instance = self->py.get_headers = NULL;
 
@@ -380,4 +391,10 @@ python_http_header_set_option(PythonHttpHeaderPlugin *self, gchar *key, gchar *v
 {
   gchar *normalized_key = __normalize_key(key);
   g_hash_table_insert(self->options, normalized_key, g_strdup(value));
+}
+
+void
+python_http_header_set_mark_errors_as_critical(PythonHttpHeaderPlugin *self, gboolean enable)
+{
+  self->mark_errors_as_critical = enable;
 }

@@ -60,6 +60,7 @@ PythonHttpHeaderPlugin *last_header;
 %token KW_CLASS
 %token KW_IMPORTS
 %token KW_LOADERS
+%token KW_MARK_ERRORS_AS_CRITICAL
 
 %%
 
@@ -248,6 +249,10 @@ python_http_header_option
           }
         | KW_LOADERS python_http_header_loaders
         | KW_OPTIONS '(' python_http_header_custom_options ')'
+        | KW_MARK_ERRORS_AS_CRITICAL '(' yesno ')'
+          {
+            python_http_header_set_mark_errors_as_critical(last_header, $3);
+          }
         ;
 
 python_http_header_custom_options

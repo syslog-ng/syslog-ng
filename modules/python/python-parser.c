@@ -40,6 +40,7 @@ static CfgLexerKeyword python_keywords[] =
     "imports() has been deprecated, please use loaders()"
   },
   { "loaders",                    KW_LOADERS   },
+  { "mark_errors_as_critical",  KW_MARK_ERRORS_AS_CRITICAL },
   { NULL }
 };
 
