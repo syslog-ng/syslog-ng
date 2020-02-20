@@ -28,6 +28,18 @@
 #include "scratch-buffers.h"
 #include "http-signals.h"
 
+#define HTTP_HEADER_FORMAT_ERROR http_header_format_error_quark()
+
+static GQuark http_header_format_error_quark(void)
+{
+  return g_quark_from_static_string("http_header_format_error_quark");
+}
+
+enum HttpHeaderFormatError
+{
+  HTTP_HEADER_FORMAT_SLOT_CRITICAL_ERROR,
+  HTTP_HEADER_FORMAT_SLOT_NON_CRITICAL_ERROR
+};
 
 /* HTTPDestinationWorker */
 
@@ -186,10 +198,37 @@ _append_auth_header(List *list, HTTPDestinationDriver *owner)
 }
 
 static void
-_collect_rest_headers(HTTPDestinationWorker *self)
+_set_error_from_slot_result(const gchar *signal,
+                            HttpHeaderRequestSlotResultType result,
+                            GError **error)
+{
+  switch (result)
+    {
+    case HTTP_HEADER_REQUEST_SLOT_SUCCESS:
+      g_assert(*error == NULL);
+      break;
+    case HTTP_HEADER_REQUEST_SLOT_CRITICAL_ERROR:
+      g_set_error(error, HTTP_HEADER_FORMAT_ERROR,
+                  HTTP_HEADER_FORMAT_SLOT_CRITICAL_ERROR,
+                  "Critical error during slot execution, signal:%s",
+                  signal_http_header_request);
+      break;
+    case HTTP_HEADER_REQUEST_SLOT_PLUGIN_ERROR:
+    default:
+      g_set_error(error, HTTP_HEADER_FORMAT_ERROR,
+                  HTTP_HEADER_FORMAT_SLOT_NON_CRITICAL_ERROR,
+                  "Non-critical error during slot execution, signal:%s",
+                  signal_http_header_request);
+      break;
+    }
+}
+
+static void
+_collect_rest_headers(HTTPDestinationWorker *self, GError **error)
 {
   HttpHeaderRequestSignalData signal_data =
   {
+    .result = HTTP_HEADER_REQUEST_SLOT_SUCCESS,
     .request_headers = self->request_headers,
     .request_body = self->request_body
   };
@@ -197,8 +236,9 @@ _collect_rest_headers(HTTPDestinationWorker *self)
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
 
   EMIT(owner->super.super.super.super.signal_slot_connector, signal_http_header_request, &signal_data);
-}
 
+  _set_error_from_slot_result(signal_http_header_request, signal_data.result, error);
+}
 
 static void
 _add_msg_specific_headers(HTTPDestinationWorker *self, LogMessage *msg)
@@ -234,8 +274,8 @@ _add_common_headers(HTTPDestinationWorker *self)
     list_append(self->request_headers, l->data);
 }
 
-static void
-_format_request_headers(HTTPDestinationWorker *self)
+static gboolean
+_try_format_request_headers(HTTPDestinationWorker *self, GError **error)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
 
@@ -244,7 +284,9 @@ _format_request_headers(HTTPDestinationWorker *self)
   if (owner->auth_header)
     _append_auth_header(self->request_headers, owner);
 
-  _collect_rest_headers(self);
+  _collect_rest_headers(self, error);
+
+  return (*error == NULL);
 }
 
 static void
@@ -582,6 +624,41 @@ _flush_on_target(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
   return _map_http_status_code(self, target->url, http_code);
 }
 
+static gboolean
+_format_request_headers_error_is_critical(GError *error)
+{
+  return (error->code == HTTP_HEADER_FORMAT_SLOT_CRITICAL_ERROR);
+}
+
+static void
+_format_request_headers_report_error(GError *error)
+{
+  if (error->code == HTTP_HEADER_FORMAT_SLOT_CRITICAL_ERROR)
+    {
+      msg_error("Failed to format HTTP request headers.",
+                evt_tag_str("reason", error->message),
+                evt_tag_printf("action", "request disconnect"));
+    }
+  else
+    {
+      msg_warning("Failed to format HTTP request headers",
+                  evt_tag_str("reason", error->message),
+                  evt_tag_printf("action", "trying to send the request"));
+    }
+}
+
+static gboolean
+_format_request_headers_catch_error(GError **error)
+{
+  g_assert((*error)->domain == HTTP_HEADER_FORMAT_ERROR);
+
+  _format_request_headers_report_error(*error);
+  gboolean unhandled = _format_request_headers_error_is_critical(*error);
+  g_clear_error(error);
+
+  return !unhandled;
+}
+
 /* we flush the accumulated data if
  *   1) we reach batch_size,
  *   2) the message queue becomes empty
@@ -594,6 +671,7 @@ _flush(LogThreadedDestWorker *s, LogThreadedFlushMode mode)
   HTTPLoadBalancerTarget *target, *alt_target = NULL;
   LogThreadedResult retval = LTR_NOT_CONNECTED;
   gint retry_attempts = owner->load_balancer->num_targets;
+  GError *error = NULL;
 
   if (self->super.batch_size == 0)
     return LTR_SUCCESS;
@@ -602,7 +680,12 @@ _flush(LogThreadedDestWorker *s, LogThreadedFlushMode mode)
     return LTR_RETRY;
 
   _finish_request_body(self);
-  _format_request_headers(self);
+
+  if (!_try_format_request_headers(self, &error))
+    {
+      if (!_format_request_headers_catch_error(&error))
+        return LTR_NOT_CONNECTED;
+    }
 
   target = http_load_balancer_choose_target(owner->load_balancer, &self->lbc);
 
