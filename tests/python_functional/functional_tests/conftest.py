@@ -55,3 +55,13 @@ def setup(request):
 
     copy_file(testcase_parameters.get_testcase_file(), testcase_parameters.get_working_dir())
     request.addfinalizer(lambda: logger.info("Report file path\n{}\n".format(calculate_report_file_path(testcase_parameters.get_working_dir()))))
+
+
+class PortAllocator():
+    CURRENT_DYNAMIC_PORT = 30000
+
+
+@pytest.fixture(scope="module")
+def some_port():
+    PortAllocator.CURRENT_DYNAMIC_PORT += 1
+    return PortAllocator.CURRENT_DYNAMIC_PORT
