@@ -214,6 +214,8 @@ _append_headers(PythonHttpHeaderPlugin *self, HttpHeaderRequestSignalData *data)
              *py_ret_list = NULL;
   GList *headers = NULL;
 
+  data->result = HTTP_HEADER_REQUEST_SLOT_PLUGIN_ERROR;
+
   // The GIL also guards non-Python plugin struct members from concurrent changes below.
   PyGILState_STATE gstate = PyGILState_Ensure();
 
@@ -262,7 +264,10 @@ _append_headers(PythonHttpHeaderPlugin *self, HttpHeaderRequestSignalData *data)
                 evt_tag_str("method", "get_headers"),
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
+      goto cleanup;
     }
+
+  data->result = HTTP_HEADER_REQUEST_SLOT_SUCCESS;
 
 cleanup:
   Py_XDECREF(py_args);
