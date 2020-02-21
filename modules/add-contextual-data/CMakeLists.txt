@@ -17,24 +17,12 @@ set(add_contextual_data_SOURCES
     add-contextual-data-filter-selector.c
     add-contextual-data-glob-selector.h
     add-contextual-data-glob-selector.c
-    ${CMAKE_CURRENT_BINARY_DIR}/add-contextual-data-grammar.h
-    ${CMAKE_CURRENT_BINARY_DIR}/add-contextual-data-grammar.c
 )
 
-generate_y_from_ym(modules/add-contextual-data/add-contextual-data-grammar)
-
-bison_target(add_contextual_dataGrammar
-    ${CMAKE_CURRENT_BINARY_DIR}/add-contextual-data-grammar.y
-    ${CMAKE_CURRENT_BINARY_DIR}/add-contextual-data-grammar.c
-    COMPILE_FLAGS ${BISON_FLAGS})
-
-add_library(add_contextual_data SHARED ${add_contextual_data_SOURCES})
-target_include_directories(add_contextual_data
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-  PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+add_module(
+  TARGET add_contextual_data
+  GRAMMAR add-contextual-data-grammar
+  SOURCES ${add_contextual_data_SOURCES}
 )
-target_link_libraries(add_contextual_data PRIVATE syslog-ng)
-
-install(TARGETS add_contextual_data LIBRARY DESTINATION lib/syslog-ng/ COMPONENT add_contextual_data)
 
 add_test_subdirectory(tests)

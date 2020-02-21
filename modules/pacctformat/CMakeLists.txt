@@ -12,9 +12,8 @@ endif()
 module_switch(ENABLE_PACCT "Enable support for reading Process Accounting files (EXPERIMENTAL, Linux only)." IS_LINUX)
 
 if (ENABLE_PACCT)
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-    add_library(pacctformat MODULE ${PACCT_FORMAT_SOURCES})
-    target_link_libraries(pacctformat PRIVATE syslog-ng)
-
-    install(TARGETS pacctformat LIBRARY DESTINATION lib/syslog-ng/ COMPONENT pacctformat)
+    add_module(
+      TARGET pacctformat
+      SOURCES ${PACCT_FORMAT_SOURCES}
+    )
 endif()

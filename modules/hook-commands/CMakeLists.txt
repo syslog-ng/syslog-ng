@@ -1,32 +1,20 @@
-set(HOOK_COMMANDS_HEADERS
-    "${CMAKE_CURRENT_BINARY_DIR}/hook-commands-grammar.h"
-    "hook-commands-parser.h"
-    "hook-commands.h"
-)
+module_switch(ENABLE_HOOK_COMMANDS "Enable hook-commands module")
+
+if (NOT ENABLE_HOOK_COMMANDS)
+  return()
+endif()
 
 set(HOOK_COMMANDS_SOURCES
-    "${CMAKE_CURRENT_BINARY_DIR}/hook-commands-grammar.c"
+    "hook-commands-parser.h"
+    "hook-commands.h"
     "hook-commands-plugin.c"
     "hook-commands-parser.c"
     "hook-commands.c"
 )
 
-generate_y_from_ym(modules/hook-commands/hook-commands-grammar)
+add_module(
+  TARGET hook-commands
+  GRAMMAR hook-commands-grammar
+  SOURCES ${HOOK_COMMANDS_SOURCES}
+)
 
-module_switch(ENABLE_HOOK_COMMANDS "Enable hook-commands module")
-
-if (ENABLE_HOOK_COMMANDS)
-  bison_target(HookCommandsGrammar
-      ${CMAKE_CURRENT_BINARY_DIR}/hook-commands-grammar.y
-      ${CMAKE_CURRENT_BINARY_DIR}/hook-commands-grammar.c
-      COMPILE_FLAGS ${BISON_FLAGS})
-
-  add_library(hook-commands MODULE ${HOOK_COMMANDS_SOURCES})
-  target_include_directories(hook-commands
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-    PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
-  )
-  target_link_libraries(hook-commands PRIVATE syslog-ng)
-
-  install(TARGETS hook-commands LIBRARY DESTINATION lib/syslog-ng/ COMPONENT hook-commands)
-endif()

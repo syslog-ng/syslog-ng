@@ -26,22 +26,19 @@ set(HTTP_DESTINATION_SOURCES
     http-signals.h
     autodetect-ca-location.h
     autodetect-ca-location.c
-    ${CMAKE_CURRENT_BINARY_DIR}/http-grammar.c
-    ${CMAKE_CURRENT_BINARY_DIR}/http-grammar.h
 )
 
 set(HTTP_MODULE_DEV_HEADERS
   http-signals.h
 )
 
-generate_y_from_ym(modules/http/http-grammar)
-
-bison_target(HttpParserGrammar
-    ${CMAKE_CURRENT_BINARY_DIR}/http-grammar.y
-    ${CMAKE_CURRENT_BINARY_DIR}/http-grammar.c
-    COMPILE_FLAGS ${BISON_FLAGS})
-
-add_library(http SHARED ${HTTP_DESTINATION_SOURCES})
+add_module(
+  TARGET http
+  GRAMMAR http-grammar
+  INCLUDES ${Curl_INCLUDE_DIR}
+  DEPENDS ${Curl_LIBRARIES}
+  SOURCES ${HTTP_DESTINATION_SOURCES}
+)
 
 function (curl_detect_compile_option NAME)
   set(CMAKE_REQUIRED_INCLUDES "${Curl_INCLUDE_DIR}")
@@ -61,12 +58,6 @@ curl_detect_compile_option(CURL_SSLVERSION_TLSv1_1)
 curl_detect_compile_option(CURL_SSLVERSION_TLSv1_2)
 curl_detect_compile_option(CURL_SSLVERSION_TLSv1_3)
 
-target_include_directories (http PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories (http PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-target_include_directories (http PRIVATE ${Curl_INCLUDE_DIR})
-target_link_libraries(http PRIVATE syslog-ng ${Curl_LIBRARIES})
-
-install(TARGETS http LIBRARY DESTINATION lib/syslog-ng/)
 install(FILES ${HTTP_MODULE_DEV_HEADERS} DESTINATION include/syslog-ng/modules/http/)
 
 add_test_subdirectory(tests)

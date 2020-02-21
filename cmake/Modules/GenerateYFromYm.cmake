@@ -39,3 +39,15 @@ function(generate_y_from_ym FileWoExt)
     endif()
 endfunction()
 
+# This function is used by add_module
+function(module_generate_y_from_ym FileWoExtSrc FileWoExtDst)
+    if (${ARGC} EQUAL 2)
+      add_custom_command (OUTPUT ${FileWoExtDst}.y
+        COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/lib/merge-grammar.py ${FileWoExtSrc}.ym > ${FileWoExtDst}.y
+            DEPENDS ${PROJECT_SOURCE_DIR}/lib/cfg-grammar.y
+            ${FileWoExtSrc}.ym)
+    else()
+        message(SEND_ERROR "Wrong usage of module_generate_y_from_ym() function")
+    endif()
+endfunction()
+

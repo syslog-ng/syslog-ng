@@ -4,10 +4,9 @@ set (GRAPHITE_SOURCES
     graphite-output.c
 )
 
-add_library(graphite SHARED ${GRAPHITE_SOURCES})
-target_include_directories (graphite PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(graphite PRIVATE syslog-ng)
-
-install(TARGETS graphite LIBRARY DESTINATION lib/syslog-ng/ COMPONENT graphite)
+add_module(
+  TARGET graphite
+  SOURCES ${GRAPHITE_SOURCES}
+)
 
 add_test_subdirectory(tests)
