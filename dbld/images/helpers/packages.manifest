@@ -102,7 +102,7 @@ pcre-devel                      [centos, fedora]
     python3-devel               [fedora]
     python3-dev                 [ubuntu-focal]
 
-    # snmp-dest
+    # afsnmp
     libsnmp-dev                 [debian, ubuntu]
     net-snmp-devel              [centos, fedora]
 
