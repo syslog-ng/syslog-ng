@@ -85,7 +85,7 @@ exit:
 static void
 _py_append_str_to_pylist(gconstpointer data, gpointer user_data)
 {
-  PyObject *py_str = PyUnicode_FromString((gchar *) data);
+  PyObject *py_str = _py_string_from_string((gchar *) data, -1);
   if (!py_str)
     {
       gchar buf[256];
