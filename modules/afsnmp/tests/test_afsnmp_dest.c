@@ -25,7 +25,7 @@
 #include <glib/gstdio.h>
 #include <unistd.h>
 #include "apphook.h"
-#include "snmpdest.h"
+#include "afsnmpdest.h"
 #include "logpipe.h"
 
 static SNMPDestDriver *snmp_driver;

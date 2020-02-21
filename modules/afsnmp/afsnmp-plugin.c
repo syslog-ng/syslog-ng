@@ -25,21 +25,21 @@
 #include "plugin.h"
 #include "plugin-types.h"
 
-extern CfgParser snmpdest_parser;
+extern CfgParser snmp_parser;
 
-static Plugin snmpdest_plugins[] =
+static Plugin snmp_plugins[] =
 {
   {
     .type = LL_CONTEXT_DESTINATION,
     .name = "snmp",
-    .parser = &snmpdest_parser,
+    .parser = &snmp_parser,
   },
 };
 
 gboolean
 snmp_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(context, snmpdest_plugins, G_N_ELEMENTS(snmpdest_plugins));
+  plugin_register(context, snmp_plugins, G_N_ELEMENTS(snmp_plugins));
   return TRUE;
 }
 
@@ -49,7 +49,7 @@ const ModuleInfo module_info =
   .version = SYSLOG_NG_VERSION,
   .description = "The snmp module provides SNMP destination support for syslog-ng.",
   .core_revision = SYSLOG_NG_SOURCE_REVISION,
-  .plugins = snmpdest_plugins,
+  .plugins = snmp_plugins,
   .plugins_len = 1,
 };
 

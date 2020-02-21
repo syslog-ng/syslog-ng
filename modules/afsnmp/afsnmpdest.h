@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef SNMPDEST_H_INCLUDED
-#define SNMPDEST_H_INCLUDED
+#ifndef AFSNMPDEST_H_INCLUDED
+#define AFSNMPDEST_H_INCLUDED
 
 #include <net-snmp/net-snmp-config.h>
 #include <net-snmp/net-snmp-includes.h>

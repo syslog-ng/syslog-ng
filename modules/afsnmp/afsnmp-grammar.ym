@@ -22,7 +22,7 @@
 
 %code top {
 
-#include "snmpdest-parser.h"
+#include "afsnmp-parser.h"
 
 }
 
@@ -35,16 +35,16 @@
 
 #include "messages.h"
 #include "plugin.h"
-#include "snmpdest-grammar.h"
-#include "snmpdest.h"
+#include "afsnmp-grammar.h"
+#include "afsnmpdest.h"
 
 
 }
 
-%name-prefix "snmpdest_"
+%name-prefix "afsnmp_"
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
-%parse-param {LogDriver **instance}
+%parse-param {void **instance}
 %parse-param {gpointer arg}
 
 

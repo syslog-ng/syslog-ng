@@ -21,14 +21,14 @@
  *
  */
 
-#include "snmpdest.h"
+#include "afsnmpdest.h"
 #include "cfg-parser.h"
-#include "snmpdest-grammar.h"
-#include "snmpdest-parser.h"
+#include "afsnmp-grammar.h"
+#include "afsnmp-parser.h"
 
-int snmpdest_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
+int afsnmp_parse(CfgLexer *lexer, void **instance, gpointer arg);
 
-static CfgLexerKeyword snmpdest_keywords[] =
+static CfgLexerKeyword afsnmp_keywords[] =
 {
   { "snmp",           KW_SNMPDEST },
   { "version",        KW_VERSION },
@@ -48,12 +48,12 @@ static CfgLexerKeyword snmpdest_keywords[] =
   { NULL }
 };
 
-CfgParser snmpdest_parser =
+CfgParser snmp_parser =
 {
-  .name = "snmpdest",
-  .keywords = snmpdest_keywords,
-  .parse = (int (*)(CfgLexer *lexer, gpointer *instance, gpointer)) snmpdest_parse,
+  .name = "afsnmp",
+  .keywords = afsnmp_keywords,
+  .parse = (int (*)(CfgLexer *lexer, gpointer *instance, gpointer)) afsnmp_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(snmpdest_, LogDriver **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(afsnmp_, void **)

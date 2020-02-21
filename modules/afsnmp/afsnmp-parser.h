@@ -21,15 +21,15 @@
  *
  */
 
-#ifndef SNMPDEST_PARSER_H_INCLUDED
-#define SNMPDEST_PARSER_H_INCLUDED
+#ifndef AFSNMP_PARSER_H_INCLUDED
+#define AFSNMP_PARSER_H_INCLUDED
 
 #include "cfg-parser.h"
 #include "cfg-lexer.h"
-#include "snmpdest.h"
+#include "afsnmpdest.h"
 
-extern CfgParser snmpdest_parser;
+extern CfgParser afsnmp_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(snmpdest_, LogDriver **)
+CFG_PARSER_DECLARE_LEXER_BINDING(afsnmp_, void **)
 
 #endif

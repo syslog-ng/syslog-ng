@@ -41,8 +41,8 @@
 #include "logmsg/nvtable.h"
 #include "logqueue.h"
 
-#include "snmpdest.h"
-#include "snmpdest-parser.h"
+#include "afsnmpdest.h"
+#include "afsnmp-parser.h"
 #include "logthrdest/logthrdestdrv.h"
 
 const gchar *s_v2c = "v2c";
