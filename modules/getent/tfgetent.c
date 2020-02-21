@@ -200,7 +200,7 @@ const ModuleInfo module_info =
   .canonical_name = "getent-plugin",
   .version = SYSLOG_NG_VERSION,
   .description = "The getent module provides getent template functions for syslog-ng.",
-  .core_revision = VERSION_CURRENT_VER_ONLY,
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = getent_plugins,
   .plugins_len = G_N_ELEMENTS(getent_plugins),
 };

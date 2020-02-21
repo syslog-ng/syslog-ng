@@ -393,7 +393,7 @@ cfg_set_version(GlobalConfig *self, gint version)
       return TRUE;
     }
   cfg_set_version_without_validation(self, version);
-  if (cfg_is_config_version_older(self, 0x0300))
+  if (cfg_is_config_version_older(self, VERSION_VALUE_3_0))
     {
       msg_error("ERROR: compatibility with configurations below 3.0 was dropped in " VERSION_3_13
                 ", please update your configuration accordingly",
@@ -401,30 +401,31 @@ cfg_set_version(GlobalConfig *self, gint version)
       return FALSE;
     }
 
-  if (cfg_is_config_version_older(self, VERSION_VALUE))
+  if (cfg_is_config_version_older(self, VERSION_VALUE_LAST_SEMANTIC_CHANGE))
     {
       msg_warning("WARNING: Configuration file format is too old, syslog-ng is running in compatibility mode. "
-                  "Please update it to use the " VERSION_CURRENT " format at your time of convenience. "
+                  "Please update it to use the " VERSION_PRODUCT_CURRENT " format at your time of convenience. "
                   "To upgrade the configuration, please review the warnings about incompatible changes printed "
                   "by syslog-ng, and once completed change the @version header at the top of the configuration "
                   "file",
                   cfg_format_config_version_tag(self));
     }
-  else if (version_convert_from_user(self->user_version) > VERSION_VALUE)
+  else if (version_convert_from_user(self->user_version) > VERSION_VALUE_CURRENT)
     {
       msg_warning("WARNING: Configuration file format is newer than the current version, please specify the "
-                  "current version number ("  VERSION_CURRENT_VER_ONLY ") in the @version directive. "
+                  "current version number ("  VERSION_STR_CURRENT ") in the @version directive. "
                   "syslog-ng will operate at its highest supported version in this mode",
                   cfg_format_config_version_tag(self));
-      self->user_version = VERSION_VALUE;
+      self->user_version = VERSION_VALUE_CURRENT;
     }
 
-  if (cfg_is_config_version_older(self, 0x0303))
+  if (cfg_is_config_version_older(self, VERSION_VALUE_3_3))
     {
       msg_warning("WARNING: global: the default value of log_fifo_size() has changed to 10000 in " VERSION_3_3
                   " to reflect log_iw_size() changes for tcp()/udp() window size changes",
                   cfg_format_config_version_tag(self));
     }
+
   return TRUE;
 }
 
@@ -433,7 +434,7 @@ cfg_allow_config_dups(GlobalConfig *self)
 {
   const gchar *s;
 
-  if (cfg_is_config_version_older(self, 0x0303))
+  if (cfg_is_config_version_older(self, VERSION_VALUE_3_3))
     return TRUE;
 
   s = cfg_args_get(self->globals, "allow-config-dups");
@@ -508,7 +509,7 @@ cfg_new(gint version)
 GlobalConfig *
 cfg_new_snippet(void)
 {
-  GlobalConfig *self = cfg_new(VERSION_VALUE);
+  GlobalConfig *self = cfg_new(VERSION_VALUE_CURRENT);
 
   self->use_plugin_discovery = FALSE;
   self->enable_forced_modules = FALSE;

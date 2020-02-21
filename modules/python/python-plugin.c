@@ -130,7 +130,7 @@ const ModuleInfo module_info =
   .canonical_name = "python",
   .version = SYSLOG_NG_VERSION,
   .description = "The python ("PYTHON_MODULE_VERSION") module provides Python scripting support for syslog-ng.",
-  .core_revision = VERSION_CURRENT_VER_ONLY,
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = python_plugins,
   .plugins_len = G_N_ELEMENTS(python_plugins),
 };

@@ -172,7 +172,7 @@ void register_source_mangle_callback(GlobalConfig *src, mangle_callback cb);
 void uregister_source_mangle_callback(GlobalConfig *src, mangle_callback cb);
 
 static inline gboolean
-cfg_is_config_version_older(GlobalConfig *cfg, gint req)
+__cfg_is_config_version_older(GlobalConfig *cfg, gint req)
 {
   if (!cfg)
     return FALSE;
@@ -180,6 +180,16 @@ cfg_is_config_version_older(GlobalConfig *cfg, gint req)
     return FALSE;
   return TRUE;
 }
+
+/* VERSION_VALUE_LAST_SEMANTIC_CHANGE needs to be bumped in versioning.h whenever
+ * we add a conditional on the config version anywhere in the codebase.  The
+ * G_STATIC_ASSERT checks that we indeed did that */
+
+#define cfg_is_config_version_older(__cfg, __req) \
+  ({ \
+    /* check that VERSION_VALUE_LAST_SEMANTIC_CHANGE is set correctly */ G_STATIC_ASSERT((__req) <= VERSION_VALUE_LAST_SEMANTIC_CHANGE); \
+    __cfg_is_config_version_older(__cfg, __req); \
+  })
 
 static inline void
 cfg_set_use_uniqid(gboolean flag)

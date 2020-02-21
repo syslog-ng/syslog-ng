@@ -421,7 +421,7 @@ transport_mapper_syslog_apply_transport(TransportMapper *s, GlobalConfig *cfg)
 
   if (strcasecmp(transport, "udp") == 0)
     {
-      if (cfg_is_config_version_older(cfg, 0x0303))
+      if (cfg_is_config_version_older(cfg, VERSION_VALUE_3_3))
         {
           self->server_port_change_warning = "WARNING: Default port for syslog(transport(udp)) has changed from 601 to 514 in "
                                              VERSION_3_3 ", please update your configuration";
@@ -443,7 +443,7 @@ transport_mapper_syslog_apply_transport(TransportMapper *s, GlobalConfig *cfg)
     }
   else if (strcasecmp(transport, "tls") == 0)
     {
-      if (cfg_is_config_version_older(cfg, 0x0303))
+      if (cfg_is_config_version_older(cfg, VERSION_VALUE_3_3))
         {
           self->server_port_change_warning = "WARNING: Default port for syslog(transport(tls))  has changed from 601 to 6514 in "
                                              VERSION_3_3 ", please update your configuration";

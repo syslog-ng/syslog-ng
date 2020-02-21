@@ -58,7 +58,7 @@ static gboolean
 afunix_sd_adjust_reader_options(AFUnixSourceDriver *self, GlobalConfig *cfg)
 {
   self->super.reader_options.parse_options.flags |= LP_LOCAL;
-  if (cfg_is_config_version_older(cfg, 0x0302))
+  if (cfg_is_config_version_older(cfg, VERSION_VALUE_3_2))
     {
       msg_warning_once("WARNING: the expected message format is being changed for unix-domain transports to improve "
                        "syslogd compatibity with " VERSION_3_2 ". If you are using custom "
