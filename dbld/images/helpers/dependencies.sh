@@ -123,7 +123,12 @@ function install_pip_packages {
     filter_packages_by_platform /helpers/pip_packages.manifest | xargs pip install -U
 }
 
-function enable_dbgsyms {
+function install_lsb_release {
+    apt-get update && apt-get install --no-install-recommends --yes lsb-release
+}
+
+function enable_dbgsyms_on_ubuntu {
+    install_lsb_release
     echo "deb http://ddebs.ubuntu.com $(lsb_release -cs) main restricted universe multiverse" | tee -a /etc/apt/sources.list.d/ddebs.list
     echo "deb http://ddebs.ubuntu.com $(lsb_release -cs)-updates main restricted universe multiverse" | tee -a /etc/apt/sources.list.d/ddebs.list
     apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 428D7C01 C8CAB6595FDFF622
