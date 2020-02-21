@@ -244,6 +244,91 @@ matrix:
         - make --keep-going -j $(nproc) all install
         - ctest -j $(nproc) --output-on-failure
 
+    - env: B=bionic-python3
+      compiler: gcc
+      dist: bionic
+      sudo: required
+      addons:
+        apt:
+          sources:
+            - sourceline: 'deb http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_18.04 ./'
+              key_url: 'http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_18.04/Release.key'
+          packages:
+            - autoconf-archive
+            - bison
+            - docbook-xsl
+            - flex
+            - gradle
+            - libcap-dev
+            - libdbd-sqlite3
+            - libdbi0-dev
+            - libesmtp-dev
+            - libgeoip-dev
+            - libglib2.0-dev
+            - libhiredis-dev
+            - librabbitmq-dev
+            - libmongoc-dev
+            - libjson-c-dev
+            - libnet1-dev
+            - libriemann-client-dev
+            - librdkafka-dev
+            - libwrap0-dev
+            - pkg-config
+            - sqlite3
+            - xsltproc
+            - criterion-dev
+            - libmaxminddb-dev
+            - libxml2-utils
+            - doxygen
+            - libsnmp-dev
+            - snmptrapd
+            - python3
+            - python3-pip
+            - python3-setuptools
+            - openjdk-8-jdk
+            - openjdk-8-jre
+      install:
+        - python3 -m pip install --user -r requirements.txt
+        - export PATH=`echo $PATH | sed -r 's|:/usr/local/lib/jvm/openjdk11/bin||'`
+        - sudo update-java-alternatives --set java-1.8.0-openjdk-amd64
+      git:
+        submodules: true
+      before_script:
+        - echo 'Europe/Budapest' | sudo tee /etc/timezone
+        - sudo dpkg-reconfigure --frontend noninteractive tzdata
+        - ./autogen.sh
+        - unset PYTHON_CFLAGS # HACK
+        - CONFIGURE_FLAGS="
+            CFLAGS=-Werror
+            --prefix=$HOME/install/syslog-ng
+            --with-ivykis=internal
+            --with-jsonc=system
+            --disable-env-wrapper
+            --disable-memtrace
+            --enable-tcp-wrapper
+            --enable-linux-caps
+            --disable-sun-streams
+            --enable-all-modules
+            --disable-mongodb
+            --disable-sql
+            --enable-pacct
+            --enable-manpages
+            --enable-force-gnu99
+            --with-python=3
+            "
+        - ./configure $CONFIGURE_FLAGS
+      script:
+        - set -e
+        - make V=1 -j $(nproc)
+        - make V=1 check
+        - make install
+        - make pytest-self-check
+        - make python-pep8
+        - make python-pylint
+        - make pytest-linters
+        - make VERBOSE=1 func-test
+        - make pytest-check
+
 branches:
   except:
     - /wip/
