@@ -102,7 +102,7 @@ class SocketSender(MessageSender):
                         self.sock.write(c)
                     else:
                         self.sock.send(c)
-                except error, e:
+                except error as e:
                     if e[0] == errno.ENOBUFS:
                         print_user('got ENOBUFS, sleeping...')
                         time.sleep(0.5)
@@ -124,7 +124,7 @@ class SocketSender(MessageSender):
 
                     if self.dgram:
                         time.sleep(0.01)
-                except error, e:
+                except error as e:
                     if e[0] == errno.ENOBUFS:
                         print_user('got ENOBUFS, sleeping...')
                         time.sleep(0.5)

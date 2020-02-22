@@ -41,7 +41,7 @@ def init_env():
         os.mkfifo(pipe)
     try:
         os.mkdir("wildcard")
-    except OSError, e:
+    except OSError as e:
         if e.errno != errno.EEXIST:
             raise
 

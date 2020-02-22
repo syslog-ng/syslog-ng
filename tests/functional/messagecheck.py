@@ -28,20 +28,20 @@ from messagegen import syslog_prefix
 def logstore_reader(fname):
     try:
         return os.popen("../../src/logcat %s.lgs" % fname, "r")
-    except OSError, e:
+    except OSError as e:
         print_user("Error opening file: %s, %s" % (fname, str(e)))
 
 def file_reader(fname):
     try:
         return open(fname + ".log", "r")
-    except IOError, e:
+    except IOError as e:
         print_user("Error opening file: %s, %s" % (fname, str(e)))
 
 def sql_reader(name):
     (db, table) = name
     try:
         return os.popen("""echo "select * from %s order by msg;" | sqlite3 -separator " "  %s """ % (table, db), "r")
-    except OSError, e:
+    except OSError as e:
         print_user("Error opening file: %s, %s" % (fname, str(e)))
 
 
