@@ -22,7 +22,7 @@
 
 import struct, stat, re
 from socket import *
-from socket import ssl
+import ssl
 import os, sys, errno
 
 from log import *
@@ -90,7 +90,7 @@ class SocketSender(MessageSender):
         if sys.platform == 'linux2':
                 self.sock.setsockopt(SOL_SOCKET, SO_SNDTIMEO, struct.pack('ll', 3, 0))
         if not self.dgram and self.ssl:
-                self.sock = ssl(self.sock)
+                self.sock = ssl.wrap_socket(self.sock)
 
 
     def sendMessage(self, msg):
