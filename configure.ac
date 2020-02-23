@@ -769,7 +769,7 @@ dnl Checks for libraries
 AC_CHECK_LIB(door, door_create, BASE_LIBS="$BASE_LIBS -ldoor")
 AC_CHECK_LIB(socket, socket, BASE_LIBS="$BASE_LIBS -lsocket")
 AC_CHECK_LIB(rt, nanosleep, BASE_LIBS="$BASE_LIBS -lrt")
-AC_CHECK_LIB(nsl, gethostbyname, BASE_LIBS="$BASE_LIBS -lnsl")
+AC_CHECK_FUNC(gethostbyname, [], AC_CHECK_LIB(nsl, gethostbyname, BASE_LIBS="$BASE_LIBS -lnsl"))
 AC_CHECK_LIB(regex, regexec, REGEX_LIBS="-lregex")
 AC_CHECK_LIB(resolv, res_init, RESOLV_LIBS="-lresolv")
 
