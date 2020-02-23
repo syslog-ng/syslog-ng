@@ -91,11 +91,13 @@ Test(set_severity, large_number)
   LogRewrite *set_severity = log_rewrite_set_severity_new(_create_template("8"), cfg);
 
   log_pipe_init(&set_severity->super);
+  log_msg_ref(msg);
   log_pipe_queue(&set_severity->super, msg, &path_options);
 
   cr_assert_eq(msg->pri & LOG_PRIMASK, default_severity);
   assert_grabbed_log_contains("invalid severity to set");
 
+  log_msg_unref(msg);
   log_pipe_deinit(&set_severity->super);
   log_pipe_unref(&set_severity->super);
 }
