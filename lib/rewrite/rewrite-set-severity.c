@@ -45,7 +45,7 @@ _convert_severity_as_number(GString *severity_text)
   if (0 == endptr)
     return -1;
 
-  if (endptr[0] != '\0')
+  if (endptr[0] != '\0' || severity_text->str == endptr)
     return -1;
 
   if (severity > 7)
