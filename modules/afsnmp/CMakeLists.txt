@@ -16,29 +16,16 @@ set(afsnmp_SOURCES
     "afsnmp-parser.h"
     "afsnmp-parser.c"
     "afsnmp-plugin.c"
-    "afsnmp-grammar.y"
-    "${CMAKE_CURRENT_BINARY_DIR}/afsnmp-grammar.c"
 )
 
-generate_y_from_ym(modules/afsnmp/afsnmp-grammar)
-
-bison_target(afsnmp_GRAMMAR
-    ${CMAKE_CURRENT_BINARY_DIR}/afsnmp-grammar.y
-    ${CMAKE_CURRENT_BINARY_DIR}/afsnmp-grammar.c
-    COMPILE_FLAGS ${BISON_FLAGS})
-
-add_library(afsnmp SHARED ${afsnmp_SOURCES})
-
-target_include_directories(afsnmp
-  PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-  PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
+add_module(
+  TARGET afsnmp
+  GRAMMAR afsnmp-grammar
+  DEPENDS ${NETSNMP_LIBS}
+  SOURCES ${afsnmp_SOURCES}
 )
 
 set_target_properties(afsnmp PROPERTIES COMPILE_FLAGS ${NETSNMP_CFLAGS})
 
-target_link_libraries(afsnmp PRIVATE ${NETSNMP_LIBS})
-target_link_libraries(afsnmp PRIVATE syslog-ng)
-
 add_test_subdirectory(tests)
 
-install(TARGETS afsnmp LIBRARY DESTINATION lib/syslog-ng/ COMPONENT afsnmp)
