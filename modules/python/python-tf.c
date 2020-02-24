@@ -38,7 +38,7 @@ _py_construct_args_tuple(LogMessage *msg, gint argc, GString *argv[])
   PyTuple_SetItem(args, 0, py_log_message_new(msg));
   for (i = 1; i < argc; i++)
     {
-      PyTuple_SetItem(args, i, PyBytes_FromString(argv[i]->str));
+      PyTuple_SetItem(args, i, _py_string_from_string(argv[i]->str, -1));
     }
   return args;
 }
