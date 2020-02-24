@@ -6,6 +6,9 @@ OS_PLATFORM=$1
 OS_GROUP=$(echo ${OS_PLATFORM} | cut -d"-" -f1)
 
 DBLD_DIR=dbld
+EXTRA_FILES_DIR=${DBLD_DIR}/extra-files
+
+mkdir -p ${EXTRA_FILES_DIR} || true
 
 [ -f ${DBLD_DIR}/images/${OS_GROUP}.prepare.sh ] && . ${DBLD_DIR}/images/${OS_GROUP}.prepare.sh || true
 [ -f ${DBLD_DIR}/images/${OS_PLATFORM}.prepare.sh ] && . ${DBLD_DIR}/images/${OS_PLATFORM}.prepare.sh || true
