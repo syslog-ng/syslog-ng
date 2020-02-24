@@ -52,9 +52,6 @@ Depends: syslog-ng-core, syslog-ng-mod-stardate
 Tests: basic
 Depends: syslog-ng-core, syslog-ng-mod-map-value-pairs
 
-Tests: basic
-Depends: syslog-ng-core, syslog-ng-mod-snmptrapd-parser
-
 Tests: upgrade
 Restrictions: needs-root
 Depends: apt-utils
