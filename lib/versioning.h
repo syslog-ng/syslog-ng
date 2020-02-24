@@ -91,7 +91,7 @@
  * should reference the syslog-ng version number through these macros, in order
  * to make it relatively simple to explain PE/OSE version numbers to users. */
 
-#define PRODUCT_NAME "syslog-ng-ose"
+#define PRODUCT_DOCUMENTATION "https://www.syslog-ng.com/technical-documents/list/syslog-ng-open-source-edition"
 #define PRODUCT_CONTACT "https://lists.balabit.hu/mailman/listinfo/syslog-ng"
 
 #define VERSION_3_0 "syslog-ng 3.0"
