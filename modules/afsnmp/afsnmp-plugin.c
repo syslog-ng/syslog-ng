@@ -34,6 +34,11 @@ static Plugin snmp_plugins[] =
     .name = "snmp",
     .parser = &snmp_parser,
   },
+  {
+    .type = LL_CONTEXT_PARSER,
+    .name = "snmptrapd-parser",
+    .parser = &snmp_parser,
+  },
 };
 
 gboolean
@@ -47,7 +52,7 @@ const ModuleInfo module_info =
 {
   .canonical_name = "snmp",
   .version = SYSLOG_NG_VERSION,
-  .description = "The snmp module provides SNMP destination support for syslog-ng.",
+  .description = "The snmp module provides SNMP support for syslog-ng.",
   .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = snmp_plugins,
   .plugins_len = 1,

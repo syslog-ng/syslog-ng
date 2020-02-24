@@ -7,7 +7,15 @@ modules_afsnmp_libafsnmp_la_SOURCES	=	\
 	modules/afsnmp/afsnmp-plugin.c \
 	modules/afsnmp/afsnmpdest.h \
 	modules/afsnmp/afsnmp-parser.c \
-	modules/afsnmp/afsnmp-parser.h
+	modules/afsnmp/afsnmp-parser.h \
+	modules/afsnmp/snmptrapd-header-parser.h \
+	modules/afsnmp/snmptrapd-header-parser.c \
+	modules/afsnmp/snmptrapd-nv-context.h \
+	modules/afsnmp/snmptrapd-parser.h \
+	modules/afsnmp/snmptrapd-parser.c \
+	modules/afsnmp/varbindlist-scanner.h \
+	modules/afsnmp/varbindlist-scanner.c
+
 
 modules_afsnmp_libafsnmp_la_CPPFLAGS	=	\
 	$(AM_CPPFLAGS)					\

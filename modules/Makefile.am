@@ -40,7 +40,6 @@ include modules/python/Makefile.am
 include modules/redis/Makefile.am
 include modules/riemann/Makefile.am
 include modules/afsnmp/Makefile.am
-include modules/snmptrapd-parser/Makefile.am
 include modules/stardate/Makefile.am
 include modules/syslogformat/Makefile.am
 include modules/systemd-journal/Makefile.am
@@ -59,7 +58,7 @@ SYSLOG_NG_MODULES	=	\
 	mod-redis mod-pseudofile mod-graphite mod-riemann \
 	mod-python mod-java mod-java-modules mod-kvformat mod-date \
 	mod-native mod-cef mod-add-contextual-data mod-diskq mod-getent \
-	mod-map-value-pairs mod-snmptrapd-parser mod-tags-parser mod-xml \
+	mod-map-value-pairs mod-tags-parser mod-xml \
 	mod-appmodel mod-openbsd mod-snmp
 
 modules modules/: ${SYSLOG_NG_MODULES}

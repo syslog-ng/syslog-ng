@@ -16,6 +16,13 @@ set(afsnmp_SOURCES
     "afsnmp-parser.h"
     "afsnmp-parser.c"
     "afsnmp-plugin.c"
+    "snmptrapd-header-parser.h"
+    "snmptrapd-header-parser.c"
+    "snmptrapd-nv-context.h"
+    "snmptrapd-parser.h"
+    "snmptrapd-parser.c"
+    "varbindlist-scanner.h"
+    "varbindlist-scanner.c"
 )
 
 add_module(
