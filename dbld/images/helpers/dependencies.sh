@@ -100,6 +100,15 @@ function install_apt_packages {
     filter_packages_by_platform /helpers/packages.manifest | xargs -t apt-get install --no-install-recommends --yes
 }
 
+function install_debian_build_deps {
+    DEBIAN_CONTROL_FILE=/helpers/extra-files/packaging-debian-control
+    if ! [ -f ${DEBIAN_CONTROL_FILE} ]; then
+        echo "install_debian_build_deps() called from dockerfile but without a Debian control file, make sure that control file is copied over to ${DEBIAN_CONTROL_FILE}"
+        exit 1
+    fi
+    mk-build-deps -i ${DEBIAN_CONTROL_FILE} -t "apt-get -y --no-install-recommends"
+}
+
 function install_yum_packages {
     yum install -y findutils
     filter_packages_by_platform /helpers/packages.manifest | xargs yum install -y
