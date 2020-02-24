@@ -238,7 +238,7 @@ stop(PluginOption *option)
   if (thread_lock)
     g_mutex_free(thread_lock);
 
-  DEBUG("all %d+%d threads have been stoped\n",
+  DEBUG("all %d+%d threads have been stopped\n",
         option->active_connections,
         option->idle_connections);
 }

@@ -230,7 +230,7 @@ stop_plugins(GPtrArray *plugin_array)
         plugin->stop_plugin((gpointer)&global_plugin_option);
     }
 
-  DEBUG("all plugins have been stoped\n");
+  DEBUG("all plugins have been stopped\n");
 }
 
 static void

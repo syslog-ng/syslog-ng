@@ -235,7 +235,7 @@ stop(PluginOption *option)
   if (thread_connected)
     g_cond_free(thread_connected);
 
-  DEBUG("all %d+%d threads have been stoped\n",
+  DEBUG("all %d+%d threads have been stopped\n",
         option->active_connections,
         option->idle_connections);
 }
