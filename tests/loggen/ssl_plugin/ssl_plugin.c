@@ -42,7 +42,7 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
-static void           start(PluginOption *option);
+static gboolean       start(PluginOption *option);
 static void           stop(PluginOption *option);
 static gpointer       active_thread_func(gpointer user_data);
 static gpointer       idle_thread_func(gpointer user_data);
@@ -118,22 +118,22 @@ get_options(void)
   return loggen_options;
 }
 
-static void
+static gboolean
 start(PluginOption *option)
 {
   if (!option)
     {
       ERROR("invalid option refernce\n");
-      return;
+      return FALSE;
     }
 
   if (!is_plugin_activated())
-    return;
+    return TRUE;
 
   if (!option->target || !option->port)
     {
       ERROR("please specify target and port parameters\n");
-      return;
+      return FALSE;
     }
 
   DEBUG("plugin (%d,%d,%d,%d)start\n",
@@ -195,6 +195,8 @@ start(PluginOption *option)
   thread_run = TRUE;
 
   g_mutex_unlock(thread_lock);
+
+  return TRUE;
 }
 
 static void

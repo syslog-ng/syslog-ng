@@ -55,7 +55,7 @@ typedef struct _thread_data
 } ThreadData;
 
 typedef GOptionEntry *(*get_option_func)(void);
-typedef void (*start_plugin_func)(PluginOption *option);
+typedef gboolean (*start_plugin_func)(PluginOption *option);
 typedef void (*stop_plugin_func)(PluginOption *option);
 typedef int (*generate_message_func)(char *buffer, int buffer_size, int thread_id, unsigned long seq);
 typedef void (*set_generate_message_func)(generate_message_func gen_message);

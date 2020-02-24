@@ -322,7 +322,9 @@ start_plugins(GPtrArray *plugin_array)
 
       if (plugin->start_plugin && plugin->is_plugin_activated())
         {
-          plugin->start_plugin((gpointer)&global_plugin_option);
+          if (!plugin->start_plugin((gpointer)&global_plugin_option))
+            return 0;
+
           break;
         }
     }
