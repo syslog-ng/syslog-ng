@@ -33,15 +33,18 @@
 struct sl_name sl_levels[] =
 {
   {"emerg",     LEVEL_CODE(0) },
+  {"emergency", LEVEL_CODE(0) },
   {"panic",     LEVEL_CODE(0) },
   {"alert",     LEVEL_CODE(1) },
   {"crit",      LEVEL_CODE(2) },
+  {"critical",  LEVEL_CODE(2) },
   {"err",       LEVEL_CODE(3) },
   {"error",     LEVEL_CODE(3) },
   {"warning",   LEVEL_CODE(4) },
   {"warn",      LEVEL_CODE(4) },
   {"notice",    LEVEL_CODE(5) },
   {"info",      LEVEL_CODE(6) },
+  {"informational", LEVEL_CODE(6) },
   {"debug",     LEVEL_CODE(7) },
   {NULL, -1}
 };

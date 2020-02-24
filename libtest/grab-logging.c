@@ -93,7 +93,7 @@ format_grabbed_messages(GString *log_buffer)
     }
   else
     {
-      g_string_append(log_buffer, "  # No internal messeges grabbed!\n");
+      g_string_append(log_buffer, "  # No internal messages grabbed!\n");
     }
 }
 
