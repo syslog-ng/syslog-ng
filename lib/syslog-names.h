@@ -42,7 +42,7 @@ struct sl_name
   int value;
 };
 
-extern struct sl_name sl_levels[];
+extern struct sl_name sl_severities[];
 extern struct sl_name sl_facilities[];
 
 /* returns an index where this name is found */
@@ -53,15 +53,27 @@ const char *syslog_name_lookup_name_by_value(int value, struct sl_name names[]);
 guint32 syslog_make_range(guint32 r1, guint32 r2);
 
 static inline guint32
-syslog_name_lookup_level_by_name(const gchar *name)
+syslog_name_lookup_severity_by_name(const gchar *name)
 {
-  return syslog_name_lookup_value_by_name(name, sl_levels);
+  return syslog_name_lookup_value_by_name(name, sl_severities);
 }
 
 static inline guint32
 syslog_name_lookup_facility_by_name(const gchar *name)
 {
   return syslog_name_lookup_value_by_name(name, sl_facilities);
+}
+
+static inline const gchar *
+syslog_name_lookup_severity_by_value(int value)
+{
+  return syslog_name_lookup_name_by_value(value, sl_severities);
+}
+
+static inline const gchar *
+syslog_name_lookup_facility_by_value(int value)
+{
+  return syslog_name_lookup_name_by_value(value, sl_facilities);
 }
 
 #endif

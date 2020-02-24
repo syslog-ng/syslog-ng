@@ -34,7 +34,7 @@
 static gint
 level_bits(gchar *lev)
 {
-  return 1 << syslog_name_lookup_level_by_name(lev);
+  return 1 << syslog_name_lookup_severity_by_name(lev);
 }
 
 MsgFormatOptions parse_options;
@@ -42,7 +42,7 @@ MsgFormatOptions parse_options;
 static LogFilterPipe *
 create_log_filter_pipe(void)
 {
-  FilterExprNode *filter = filter_level_new(level_bits("debug"));
+  FilterExprNode *filter = filter_severity_new(level_bits("debug"));
   filter_expr_init(filter, configuration);
 
   LogFilterPipe *p = (LogFilterPipe *)log_filter_pipe_new(filter, configuration);

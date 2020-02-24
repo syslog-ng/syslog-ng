@@ -43,7 +43,7 @@ typedef struct _FilterParamRange
   gboolean    expected_result;
 } FilterParamRange;
 
-ParameterizedTestParameters(filter, test_filter_level_range)
+ParameterizedTestParameters(filter, test_filter_severity_range)
 {
   static FilterParamRange test_data_list[] =
   {
@@ -69,9 +69,9 @@ ParameterizedTestParameters(filter, test_filter_level_range)
   return cr_make_param_array(FilterParamRange, test_data_list, G_N_ELEMENTS(test_data_list));
 }
 
-ParameterizedTest(FilterParamRange *param, filter, test_filter_level_range)
+ParameterizedTest(FilterParamRange *param, filter, test_filter_severity_range)
 {
-  FilterExprNode *filter = filter_level_new(level_range(param->from, param->to));
+  FilterExprNode *filter = filter_severity_new(level_range(param->from, param->to));
   testcase(param->msg, filter, param->expected_result);
 }
 
@@ -83,7 +83,7 @@ typedef struct _FilterParamBits
   gboolean    expected_result;
 } FilterParamBits;
 
-ParameterizedTestParameters(filter, test_filter_level_bits)
+ParameterizedTestParameters(filter, test_filter_severity_bits)
 {
   static FilterParamBits test_data_list[] =
   {
@@ -101,8 +101,8 @@ ParameterizedTestParameters(filter, test_filter_level_bits)
   return cr_make_param_array(FilterParamBits, test_data_list, G_N_ELEMENTS(test_data_list));
 }
 
-ParameterizedTest(FilterParamBits *param, filter, test_filter_level_bits)
+ParameterizedTest(FilterParamBits *param, filter, test_filter_severity_bits)
 {
-  FilterExprNode *filter = filter_level_new(level_bits(param->lev));
+  FilterExprNode *filter = filter_severity_new(level_bits(param->lev));
   testcase(param->msg, filter, param->expected_result);
 }

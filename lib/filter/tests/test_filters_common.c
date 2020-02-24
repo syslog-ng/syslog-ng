@@ -55,7 +55,7 @@ facility_bits(const gchar *fac)
 gint
 level_bits(const gchar *lev)
 {
-  return 1 << syslog_name_lookup_level_by_name(lev);
+  return 1 << syslog_name_lookup_severity_by_name(lev);
 }
 
 gint
@@ -63,8 +63,8 @@ level_range(const gchar *from, const gchar *to)
 {
   int r1, r2;
 
-  r1 = syslog_name_lookup_level_by_name(from);
-  r2 = syslog_name_lookup_level_by_name(to);
+  r1 = syslog_name_lookup_severity_by_name(from);
+  r2 = syslog_name_lookup_severity_by_name(to);
   return syslog_make_range(r1, r2);
 }
 

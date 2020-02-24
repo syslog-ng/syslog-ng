@@ -87,7 +87,7 @@ source_systemd_journal_options
 	;
 
 source_systemd_journal_option
-        : KW_DEFAULT_LEVEL '(' level_string ')'
+        : KW_DEFAULT_SEVERITY '(' severity_string ')'
           {
             if (last_journal_reader_options->default_pri == 0xFFFF)
               last_journal_reader_options->default_pri = LOG_USER;

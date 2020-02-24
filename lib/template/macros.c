@@ -47,9 +47,14 @@ LogMacroDef macros[] =
 {
   { "FACILITY", M_FACILITY },
   { "FACILITY_NUM", M_FACILITY_NUM },
-  { "PRIORITY", M_LEVEL },
-  { "LEVEL", M_LEVEL },
-  { "LEVEL_NUM", M_LEVEL_NUM },
+  { "SEVERITY", M_SEVERITY },
+  { "SEVERITY_NUM", M_SEVERITY_NUM },
+
+  /* these are obsolete aliases of $SEVERITY that we support for compatibility only */
+  { "PRIORITY", M_SEVERITY },         /* deprecated */
+  { "LEVEL", M_SEVERITY },            /* deprecated */
+  { "LEVEL_NUM", M_SEVERITY_NUM },    /* deprecated */
+
   { "TAG", M_TAG },
   { "TAGS", M_TAGS },
   { "BSDTAG", M_BSDTAG },
@@ -409,7 +414,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
       /* facility */
       const char *n;
 
-      n = syslog_name_lookup_name_by_value(msg->pri & LOG_FACMASK, sl_facilities);
+      n = syslog_name_lookup_facility_by_value(msg->pri & LOG_FACMASK);
       if (n)
         {
           g_string_append(result, n);
@@ -425,12 +430,12 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
       format_uint32_padded(result, 0, 0, 10, (msg->pri & LOG_FACMASK) >> 3);
       break;
     }
-    case M_LEVEL:
+    case M_SEVERITY:
     {
       /* level */
       const char *n;
 
-      n = syslog_name_lookup_name_by_value(msg->pri & LOG_PRIMASK, sl_levels);
+      n = syslog_name_lookup_severity_by_value(msg->pri & LOG_PRIMASK);
       if (n)
         {
           g_string_append(result, n);
@@ -442,7 +447,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
 
       break;
     }
-    case M_LEVEL_NUM:
+    case M_SEVERITY_NUM:
     {
       format_uint32_padded(result, 0, 0, 10, msg->pri & LOG_PRIMASK);
       break;
