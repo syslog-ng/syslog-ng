@@ -474,7 +474,6 @@ fi
 %{_libdir}/%{name}/liblinux-kmsg-format.so
 %{_libdir}/%{name}/libmap-value-pairs.so
 %{_libdir}/%{name}/libpseudofile.so
-%{_libdir}/%{name}/libsnmptrapd-parser.so
 %{_libdir}/%{name}/libstardate.so
 %{_libdir}/%{name}/libsyslogformat.so
 %{_libdir}/%{name}/libsystem-source.so
