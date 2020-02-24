@@ -144,6 +144,7 @@ shell-%: setup
 images: $(foreach image,$(IMAGES), image-$(image))
 image: image-$(DEFAULT_IMAGE)
 image-%:
+	$(DBLD_DIR)/prepare-image-build $* && \
 	cd $(DBLD_DIR)/images/ && $(DOCKER) build --build-arg=OS_PLATFORM=$* --build-arg=COMMIT=$$(git rev-parse --short HEAD) --network=host -t balabit/syslog-ng-$* -f $*.dockerfile .
 
 pull-images: $(foreach image,$(BUILDER_IMAGES), pull-image-$(image))
