@@ -675,15 +675,15 @@ _are_key_and_cert_files_accessible(TLSContext *self)
 }
 
 static gboolean
-_key_and_cert_files_are_not_specified(TLSContext *self)
+_key_or_cert_file_is_not_specified(TLSContext *self)
 {
-  return (!self->key_file && !self->cert_file);
+  return (!self->key_file || !self->cert_file);
 }
 
 static TLSContextLoadResult
 tls_context_load_key_and_cert(TLSContext *self)
 {
-  if (_key_and_cert_files_are_not_specified(self))
+  if (_key_or_cert_file_is_not_specified(self))
     {
       if (self->mode == TM_SERVER)
         msg_warning("You have a TLS enabled source without a X.509 keypair. Make sure you have tls(key-file() and cert-file()) options, TLS handshake to this source will fail",
