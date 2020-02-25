@@ -51,7 +51,7 @@ static CfgLexerKeyword afsnmp_keywords[] =
   { NULL }
 };
 
-CfgParser snmp_parser =
+CfgParser afsnmp_parser =
 {
   .name = "afsnmp",
   .keywords = afsnmp_keywords,

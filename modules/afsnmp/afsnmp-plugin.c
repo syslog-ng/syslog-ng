@@ -25,36 +25,36 @@
 #include "plugin.h"
 #include "plugin-types.h"
 
-extern CfgParser snmp_parser;
+extern CfgParser afsnmp_parser;
 
-static Plugin snmp_plugins[] =
+static Plugin afsnmp_plugins[] =
 {
   {
     .type = LL_CONTEXT_DESTINATION,
     .name = "snmp",
-    .parser = &snmp_parser,
+    .parser = &afsnmp_parser,
   },
   {
     .type = LL_CONTEXT_PARSER,
     .name = "snmptrapd-parser",
-    .parser = &snmp_parser,
+    .parser = &afsnmp_parser,
   },
 };
 
 gboolean
-snmp_module_init(PluginContext *context, CfgArgs *args)
+afsnmp_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(context, snmp_plugins, G_N_ELEMENTS(snmp_plugins));
+  plugin_register(context, afsnmp_plugins, G_N_ELEMENTS(afsnmp_plugins));
   return TRUE;
 }
 
 const ModuleInfo module_info =
 {
-  .canonical_name = "snmp",
+  .canonical_name = "afsnmp",
   .version = SYSLOG_NG_VERSION,
   .description = "The snmp module provides SNMP support for syslog-ng.",
   .core_revision = SYSLOG_NG_SOURCE_REVISION,
-  .plugins = snmp_plugins,
-  .plugins_len = 1,
+  .plugins = afsnmp_plugins,
+  .plugins_len = G_N_ELEMENTS(afsnmp_plugins)
 };
 
