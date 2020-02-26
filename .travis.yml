@@ -45,6 +45,7 @@ addons:
       - doxygen
       - libsnmp-dev
       - ninja-build
+      - snmptt
 install:
       - python2 -m pip install --user --cache-dir=$PWD/pip-cache -r requirements.txt
       - python2 -m pip list

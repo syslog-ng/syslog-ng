@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #############################################################################
-# Copyright (c) 2015-2019 Balabit
+# Copyright (c) 2015-2020 Balabit
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -20,32 +20,10 @@
 # COPYING for details.
 #
 #############################################################################
-import logging
-
-from src.message_reader.message_reader import MessageReader
-from src.message_reader.message_reader import READ_ALL_MESSAGES
-from src.message_reader.single_line_parser import SingleLineParser
-
-logger = logging.getLogger(__name__)
+from src.syslog_ng_config.statements.destinations.destination_driver import DestinationDriver
 
 
-class DestinationReader(object):
-    def __init__(self, IOClass):
-        self.__IOClass = IOClass
-        self.__reader = None
-
-    def read_logs(self, path, counter):
-        if not self.__reader:
-            io = self.__IOClass(path)
-            io.wait_for_creation()
-            message_reader = MessageReader(
-                io.read, SingleLineParser(),
-            )
-            self.__reader = message_reader
-        messages = self.__reader.pop_messages(counter)
-        read_description = "Content has been read from\nresource: {}\ncontent: {}\n".format(path, messages)
-        logger.info(read_description)
-        return messages
-
-    def read_all_logs(self, path):
-        return self.read_logs(path, READ_ALL_MESSAGES)
+class SnmpDestination(DestinationDriver):
+    def __init__(self, **options):
+        self.driver_name = "snmp"
+        super(SnmpDestination, self).__init__(None, options)
