@@ -69,6 +69,8 @@ else:
     logstore_store_supported = False
     wildcard_file_source_supported = True
 
+syslog_ng_version = "3.26"
+
 port_number = os.getpid() % 30000 + 33000
 ssl_port_number = port_number + 1
 port_number_syslog = port_number + 2

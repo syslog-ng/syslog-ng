@@ -11,7 +11,7 @@ When the signal is emitted by the http module, the slot is executed and append t
   <summary>Example config, click to expand!</summary>
 
 ```
-version:3.25
+@version:3.26
 
 @include "scl.conf"
 

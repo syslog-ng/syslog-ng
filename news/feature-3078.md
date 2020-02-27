@@ -7,7 +7,7 @@ Implemented as a `signal-slot` plugin.
   <summary>Example config, click to expand!</summary>
 
 ```
-@version:3.25
+@version: 3.26
 @include "scl.conf"
 destination d_http {
   http(

@@ -17,7 +17,7 @@ Original code was written by Ferenc Sipos.
 
 ```
 
-@version: 3.25
+@version: 3.26
 
 python {
 from syslogng import Logger

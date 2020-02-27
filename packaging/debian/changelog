@@ -1,3 +1,9 @@
+syslog-ng (3.26.1-1) unstable; urgency=medium
+
+  * Upstream upgrade to 3.26.1
+
+ -- Attila Szakacs <attila.szakacs@balabit.com>  Thu, 27 Feb 2020 13:06:17 +0100
+
 syslog-ng (3.25.1-1) unstable; urgency=medium
 
   * Upstream upgrade to 3.25.1
