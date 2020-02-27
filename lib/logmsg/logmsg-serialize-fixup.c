@@ -148,8 +148,7 @@ _allocate_handle_for_entry_name(NVHandle old_handle, NVEntry *entry)
 static NVHandle
 _allocate_handle_of_referenced_entry(NVTable *self, NVHandle ref_handle)
 {
-  NVIndexEntry *index_entry;
-  NVEntry *ref_entry = nv_table_get_entry(self, ref_handle, &index_entry);
+  NVEntry *ref_entry = nv_table_get_entry(self, ref_handle, NULL, NULL);
 
   return _allocate_handle_for_entry_name(ref_handle, ref_entry);
 }

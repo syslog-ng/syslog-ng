@@ -69,12 +69,21 @@ _serialize_message(LogMessageSerializationState *state)
   serialize_write_uint8(sa, msg->num_sdata);
   serialize_write_uint8(sa, msg->alloc_sdata);
   serialize_write_uint32_array(sa, (guint32 *) msg->sdata, msg->num_sdata);
-  nv_table_serialize(state, msg->payload);
+
+  NVTable *payload;
+
+  if (state->flags & LMSF_COMPACTION)
+    payload = nv_table_compact(msg->payload);
+  else
+    payload = nv_table_ref(msg->payload);
+
+  nv_table_serialize(state, payload);
+  nv_table_unref(payload);
   return TRUE;
 }
 
 gboolean
-log_msg_serialize_with_ts_processed(LogMessage *self, SerializeArchive *sa, const UnixTime *processed)
+log_msg_serialize_with_ts_processed(LogMessage *self, SerializeArchive *sa, const UnixTime *processed, guint32 flags)
 {
   LogMessageSerializationState state = { 0 };
 
@@ -82,13 +91,14 @@ log_msg_serialize_with_ts_processed(LogMessage *self, SerializeArchive *sa, cons
   state.msg = self;
   state.sa = sa;
   state.processed = processed;
+  state.flags = flags;
   return _serialize_message(&state);
 }
 
 gboolean
-log_msg_serialize(LogMessage *self, SerializeArchive *sa)
+log_msg_serialize(LogMessage *self, SerializeArchive *sa, guint32 flags)
 {
-  return log_msg_serialize_with_ts_processed(self, sa, NULL);
+  return log_msg_serialize_with_ts_processed(self, sa, NULL, flags);
 }
 
 static gboolean

@@ -288,12 +288,13 @@ _write_message(LogQueueDisk *self, LogMessage *msg)
 {
   GString *serialized;
   SerializeArchive *sa;
+  DiskQueueOptions *options = qdisk_get_options(self->qdisk);
   gboolean consumed = FALSE;
   if (qdisk_started(self->qdisk) && qdisk_is_space_avail(self->qdisk, 64))
     {
       serialized = g_string_sized_new(64);
       sa = serialize_string_archive_new(serialized);
-      log_msg_serialize(msg, sa);
+      log_msg_serialize(msg, sa, options->compaction ? LMSF_COMPACTION : 0);
       consumed = qdisk_push_tail(self->qdisk, serialized);
       serialize_archive_free(sa);
       g_string_free(serialized, TRUE);

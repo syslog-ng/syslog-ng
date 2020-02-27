@@ -156,7 +156,9 @@ struct _NVEntry
 };
 
 #define NV_ENTRY_DIRECT_HDR ((gsize) (&((NVEntry *) NULL)->vdirect.data))
+#define NV_ENTRY_DIRECT_SIZE(name_len, value_len) ((value_len) + NV_ENTRY_DIRECT_HDR + (name_len) + 2)
 #define NV_ENTRY_INDIRECT_HDR (sizeof(NVEntry))
+#define NV_ENTRY_INDIRECT_SIZE(name_len) (NV_ENTRY_INDIRECT_HDR + name_len + 1)
 
 static inline const gchar *
 nv_entry_get_name(NVEntry *self)
@@ -260,7 +262,7 @@ struct _NVTable
 
 gboolean nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, const gchar *value,
                             gsize value_len, gboolean *new_entry);
-void nv_table_unset_value(NVTable *self, NVHandle handle);
+gboolean nv_table_unset_value(NVTable *self, NVHandle handle);
 gboolean nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, gsize name_len,
                                      NVReferencedSlice *referenced_slice, gboolean *new_entry);
 
@@ -270,9 +272,16 @@ gboolean nv_table_foreach_entry(NVTable *self, NVTableForeachEntryFunc func, gpo
 NVTable *nv_table_new(gint num_static_values, gint index_size_hint, gint init_length);
 NVTable *nv_table_init_borrowed(gpointer space, gsize space_len, gint num_static_entries);
 gboolean nv_table_realloc(NVTable *self, NVTable **new);
+NVTable *nv_table_compact(NVTable *self);
 NVTable *nv_table_clone(NVTable *self, gint additional_space);
 NVTable *nv_table_ref(NVTable *self);
 void nv_table_unref(NVTable *self);
+
+static inline gboolean
+nv_table_is_handle_static(NVTable *self, NVHandle handle)
+{
+  return (handle <= self->num_static_entries);
+}
 
 static inline gsize
 nv_table_get_alloc_size(gint num_static_entries, gint index_size_hint, gint init_length)
@@ -317,56 +326,62 @@ nv_table_alloc_check(NVTable *self, gsize alloc_size)
 }
 
 /* private declarations for inline functions */
-NVEntry *nv_table_get_entry_slow(NVTable *self, NVHandle handle, NVIndexEntry **index_entry);
+NVEntry *nv_table_get_entry_slow(NVTable *self, NVHandle handle, NVIndexEntry **index_entry, NVIndexEntry **index_slot);
 const gchar *nv_table_resolve_indirect(NVTable *self, NVEntry *entry, gssize *len);
 
 
 static inline NVEntry *
-__nv_table_get_entry(NVTable *self, NVHandle handle, guint16 num_static_entries, NVIndexEntry **index_entry)
+__nv_table_get_entry(NVTable *self, NVHandle handle, guint16 num_static_entries, NVIndexEntry **index_entry,
+                     NVIndexEntry **index_slot)
 {
   guint32 ofs;
+  NVIndexEntry *t1, *t2;
+
+  if (!index_entry)
+    index_entry = &t1;
+  if (!index_slot)
+    index_slot = &t2;
 
   if (G_UNLIKELY(!handle))
     {
       *index_entry = NULL;
+      *index_slot = NULL;
       return NULL;
     }
 
-  if (G_LIKELY(handle <= num_static_entries))
+  if (G_LIKELY(nv_table_is_handle_static(self, handle)))
     {
       ofs = self->static_entries[handle - 1];
       *index_entry = NULL;
+      *index_slot = NULL;
       if (G_UNLIKELY(!ofs))
         return NULL;
       return (NVEntry *) (nv_table_get_top(self) - ofs);
     }
   else
     {
-      return nv_table_get_entry_slow(self, handle, index_entry);
+      return nv_table_get_entry_slow(self, handle, index_entry, index_slot);
     }
 }
 
 static inline NVEntry *
-nv_table_get_entry(NVTable *self, NVHandle handle, NVIndexEntry **index_entry)
+nv_table_get_entry(NVTable *self, NVHandle handle, NVIndexEntry **index_entry, NVIndexEntry **index_slot)
 {
-  return __nv_table_get_entry(self, handle, self->num_static_entries, index_entry);
+  return __nv_table_get_entry(self, handle, self->num_static_entries, index_entry, index_slot);
 }
 
 static inline gboolean
 nv_table_is_value_set(NVTable *self, NVHandle handle)
 {
-  NVIndexEntry *index_entry;
-
-  return nv_table_get_entry(self, handle, &index_entry) != NULL;
+  return nv_table_get_entry(self, handle, NULL, NULL) != NULL;
 }
 
 static inline const gchar *
 nv_table_get_value_if_set(NVTable *self, NVHandle handle, gssize *length)
 {
   NVEntry *entry;
-  NVIndexEntry *index_entry;
 
-  entry = nv_table_get_entry(self, handle, &index_entry);
+  entry = nv_table_get_entry(self, handle, NULL, NULL);
   if (!entry || entry->unset)
     {
       if (length)

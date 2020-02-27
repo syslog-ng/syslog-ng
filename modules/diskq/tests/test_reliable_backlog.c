@@ -93,7 +93,7 @@ get_serialized_message_size(LogMessage *msg)
   serialized = g_string_sized_new(64);
   sa = serialize_string_archive_new(serialized);
 
-  assert_true(log_msg_serialize(msg, sa), NULL);
+  assert_true(log_msg_serialize(msg, sa, 0), NULL);
 
   result = serialized->len;
 

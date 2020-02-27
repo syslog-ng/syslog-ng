@@ -679,7 +679,7 @@ _save_queue(QDisk *self, GQueue *q, QDiskQueuePosition *q_pos)
        * disk anyway. */
 
       POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(q), &path_options);
-      log_msg_serialize(msg, sa);
+      log_msg_serialize(msg, sa, self->options->compaction ? LMSF_COMPACTION : 0);
       log_msg_ack(msg, &path_options, AT_PROCESSED);
       log_msg_unref(msg);
       if (string_reached_memory_limit(serialized))
