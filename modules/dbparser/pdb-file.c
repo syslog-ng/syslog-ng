@@ -127,7 +127,8 @@ _pdb_file_validate(const gchar *filename, GError **error, PdbGetXsdDirFunc get_x
       return FALSE;
     }
 
-  xmllint_cmdline = g_strdup_printf("xmllint --noout --nonet --schema '%s' '%s'", xsd_file, filename);
+  const gchar *path_xmllint = get_installation_path_for("${path_xmllint}");
+  xmllint_cmdline = g_strdup_printf("%sxmllint --noout --nonet --schema '%s' '%s'", path_xmllint, xsd_file, filename);
   g_free(xsd_file);
 
   if (!g_spawn_command_line_sync(xmllint_cmdline, NULL, &stderr_content, &exit_status, error))
@@ -149,6 +150,7 @@ _pdb_file_validate(const gchar *filename, GError **error, PdbGetXsdDirFunc get_x
       g_free(xmllint_cmdline);
       return FALSE;
     }
+  g_free((gchar *)path_xmllint);
   g_free(xmllint_cmdline);
   g_free(stderr_content);
   return TRUE;

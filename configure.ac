@@ -1823,6 +1823,7 @@ AC_DEFINE_UNQUOTED(LICENSE_VERSION, "$LICENSE_VERSION", [Required license versio
 
 AC_DEFINE_UNQUOTED(PATH_PREFIX, "$prefix", [prefix directory])
 AC_DEFINE_UNQUOTED(PATH_EXECPREFIX, "$exec_prefix", [execprefix directory])
+AC_DEFINE_UNQUOTED(PATH_XMLLINT, "", [default xmllint path])
 
 AC_DEFINE_UNQUOTED(PATH_SYSCONFDIR, "$sysconfdir", [sysconfdir])
 AC_DEFINE_UNQUOTED(PATH_LOCALSTATEDIR, "$localstatedir", [local state directory])

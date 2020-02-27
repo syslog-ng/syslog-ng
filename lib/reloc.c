@@ -59,6 +59,7 @@ path_resolver_populate_configure_variables(PathResolver *self, const gchar *sysp
   path_resolver_add_configure_variable(&self->super, "${datadir}", SYSLOG_NG_PATH_DATADIR);
   path_resolver_add_configure_variable(&self->super, "${localstatedir}", SYSLOG_NG_PATH_LOCALSTATEDIR);
   path_resolver_add_configure_variable(&self->super, "${moduledir}", SYSLOG_NG_PATH_MODULEDIR);
+  path_resolver_add_configure_variable(&self->super, "${path_xmllint}", SYSLOG_NG_PATH_XMLLINT);
 }
 
 
