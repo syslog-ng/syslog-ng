@@ -100,7 +100,7 @@ _py_log_message_subscript(PyObject *o, PyObject *key)
 
   APPEND_ZERO(value, value, value_len);
 
-  return PyBytes_FromString(value);
+  return _py_string_from_string(value, -1);
 }
 
 static int
@@ -200,7 +200,7 @@ _collect_nvpair_names_from_logmsg(NVHandle handle, const gchar *name, const gcha
 {
   PyObject *list = (PyObject *)user_data;
 
-  PyObject *py_name = PyBytes_FromString(name);
+  PyObject *py_name = _py_string_from_string(name, -1);
   PyList_Append(list, py_name);
   Py_XDECREF(py_name);
 
@@ -241,7 +241,7 @@ _collect_macro_names(gpointer key, gpointer value, gpointer user_data)
 
   if (_is_macro_name_visible_to_user(logmsg, name))
     {
-      PyObject *py_name = PyBytes_FromString(name);
+      PyObject *py_name = _py_string_from_string(name, -1);
       PyList_Append(list, py_name);
       Py_XDECREF(py_name);
     }
