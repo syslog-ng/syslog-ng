@@ -28,6 +28,7 @@
 #include "python-source.h"
 #include "python-fetcher.h"
 #include "python-logparser.h"
+#include "python-http-header.h"
 #include "python-main.h"
 #include "value-pairs/value-pairs.h"
 #include "logthrsource/logthrsourcedrv.h"
@@ -40,6 +41,9 @@
 #include "cfg-parser.h"
 #include "plugin.h"
 #include "syslog-names.h"
+
+PythonHttpHeaderPlugin *last_header;
+
 }
 
 %name-prefix "python_"
@@ -52,9 +56,11 @@
 
 %token KW_PYTHON
 %token KW_PYTHON_FETCHER
+%token KW_PYTHON_HTTP_HEADER
 %token KW_CLASS
 %token KW_IMPORTS
 %token KW_LOADERS
+%token KW_MARK_ERRORS_AS_CRITICAL
 
 %%
 
@@ -65,8 +71,8 @@ start
           }
           '(' python_dd_options ')'         { YYACCEPT; }
         | LL_CONTEXT_PARSER KW_PYTHON
-	  {
-	    last_parser = *instance = python_parser_new(configuration);
+	      {
+	        last_parser = *instance = python_parser_new(configuration);
           }
           '(' python_parser_options ')' { YYACCEPT; }
         | LL_CONTEXT_SOURCE KW_PYTHON
@@ -79,15 +85,20 @@ start
             last_driver = *instance = python_fetcher_new(configuration);
           }
           '(' python_fetcher_options ')'         { YYACCEPT; }
-	| LL_CONTEXT_ROOT KW_PYTHON
+        | LL_CONTEXT_INNER_DEST KW_PYTHON_HTTP_HEADER
+          {
+            last_header = *instance = python_http_header_new();
+          }
+          '(' python_http_header_options ')'    { YYACCEPT; }
+        | LL_CONTEXT_ROOT KW_PYTHON
           { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_CONTENT, NULL, "Python code"); }
           LL_BLOCK
           { cfg_lexer_pop_context(lexer); }
           {
             gboolean result;
 
-	    result = python_evaluate_global_code(configuration, $4, &@2);
-	    free($4);
+            result = python_evaluate_global_code(configuration, $4, &@2);
+            free($4);
             CHECK_ERROR(result, @1, "Error processing global python block");
             *instance = (void *) 1;
             YYACCEPT;
@@ -222,6 +233,41 @@ python_parser_custom_option
           free($1);
           free($2);
         }
+        ;
+
+
+python_http_header_options
+        : python_http_header_option python_http_header_options
+        |
+        ;
+
+python_http_header_option
+        : KW_CLASS '(' string ')'
+          {
+            python_http_header_set_class(last_header, $3);
+            free($3);
+          }
+        | KW_LOADERS python_http_header_loaders
+        | KW_OPTIONS '(' python_http_header_custom_options ')'
+        | KW_MARK_ERRORS_AS_CRITICAL '(' yesno ')'
+          {
+            python_http_header_set_mark_errors_as_critical(last_header, $3);
+          }
+        ;
+
+python_http_header_custom_options
+        : python_http_header_custom_option python_http_header_custom_options
+        |
+        ;
+
+python_http_header_custom_option
+        : string string_or_number
+        {
+          python_http_header_set_option(last_header, $1, $2);
+          free($1);
+          free($2);
+        }
+        ;
 
 
 python_dd_loaders
@@ -242,11 +288,18 @@ python_fetcher_loaders
             python_fetcher_set_loaders(last_driver, $2);
           }
 
+python_http_header_loaders
+          : '(' string_list ')'
+          {
+            python_http_header_set_loaders(last_header, $2);
+          }
+
 python_parser_loaders
           : '(' string_list ')'
           {
             python_parser_set_loaders(last_parser, $2);
           }
+
 
 /* INCLUDE_RULES */
 

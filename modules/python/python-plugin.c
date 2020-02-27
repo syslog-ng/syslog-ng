@@ -34,6 +34,7 @@
 #include "python-fetcher.h"
 #include "python-global-code-loader.h"
 #include "python-debugger.h"
+#include "python-http-header.h"
 
 #include "plugin.h"
 #include "plugin-types.h"
@@ -50,6 +51,11 @@ static Plugin python_plugins[] =
   {
     .type = LL_CONTEXT_DESTINATION,
     .name = "python",
+    .parser = &python_parser,
+  },
+  {
+    .type = LL_CONTEXT_INNER_DEST,
+    .name = "python_http_header",
     .parser = &python_parser,
   },
   {

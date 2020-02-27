@@ -15,6 +15,8 @@ set(PYTHON_SOURCES
     python-persist.c
     python-helpers.h
     python-helpers.c
+    python-http-header.h
+    python-http-header.c
     python-main.h
     python-main.c
     python-plugin.c
@@ -53,6 +55,7 @@ add_module(
   TARGET mod-python
   GRAMMAR python-grammar
   INCLUDES ${PYTHON_INCLUDE_DIRS}
+           ${PROJECT_SOURCE_DIR}
   DEPENDS ${PYTHON_LIBRARIES}
           ${Eventlog_LIBRARIES}
           ${IVYKIS_LIBRARIES}
