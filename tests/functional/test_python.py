@@ -73,15 +73,15 @@ def get_source_dir():
 def check_env():
 
     if not has_module('mod-python'):
-        print 'Python module is not available, skipping Python test'
+        print('Python module is not available, skipping Python test')
         return False
 
     src_dir = get_source_dir()
-    print src_dir
+    print(src_dir)
     if 'PYTHONPATH' not in os.environ or src_dir not in os.environ['PYTHONPATH']:
         os.environ['PYTHONPATH'] = os.environ.get('PYTHONPATH', '') + ':' + src_dir
 
-    print 'Python module found, proceeding to Python tests'
+    print('Python module found, proceeding to Python tests')
     return True
 
 

@@ -49,7 +49,7 @@ def test_performance():
     rate = float(re.sub('^.*rate = ([0-9.]+).*$', '\\1', out))
 
     hostname = os.uname()[1]
-    if expected_rate.has_key(hostname):
+    if hostname in expected_rate:
         return rate > expected_rate[hostname]
 
     # we expect to be able to process at least 1000 msgs/sec even on our venerable HP-UX

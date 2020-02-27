@@ -41,7 +41,7 @@ def init_env():
         os.mkfifo(pipe)
     try:
         os.mkdir("wildcard")
-    except OSError, e:
+    except OSError as e:
         if e.errno != errno.EEXIST:
             raise
 
@@ -52,6 +52,7 @@ def seed_rnd():
     try:
         import base64
         import socket
+        import ssl
         rnd = base64.decodestring("""k/zFvqjGWdhStmhfOeTNtTs89P8soknF1J9kSQrz8hKdrjIutqTXMfIqCNUb7DXrMykMW+wKd1Pg
 DwaUwxKmlaU1ItOek+jNUWVw9ZOSI1EmsXVgu+Hu7URgmeyY0A3WsDmMzR0Z2wTcRFSuINgBP8LC
 8SG27gJZVOoVv09pfY9WyjvUYwg1jBdTfEM+qcDQKOACx4DH+SzO0bOOJMfMbR2iFaq18b/TCeQN
@@ -70,9 +71,9 @@ VW5iRZrvI0sdxt5Ud0TjNqXRGxuVczSuwpQwwxBn0ogr9DoRnp375PwGGh1/yqimW/+OStwP3cRR
 yXEg6Zq1CvuYF/E6el4h9GylxkU7wEM2Ti9QJY4n3YsHyesalERqdd9xx5t7ADRodpMpZXoZGbrS
 vccp3zMzS/aEZRuxky1/qjrAEh8OVA58e82jQqTdY8OQ/kKOu/gUgKBnHAvLkB/020p0CNbq6HjY
 l625DLckaYmOPTh0ECFKzhaPF+/LNmzD36ToOAeuNjfbUjiUVGfntr2mc4E8mUFyo+TskrkSfw==
-""")
-        socket._ssl.RAND_add(rnd, 1024)
-        if not socket._ssl.RAND_status():
+""".encode())
+        ssl.RAND_add(rnd, 1024)
+        if not ssl.RAND_status():
             raise "PRNG not seeded"
     except ImportError:
         return

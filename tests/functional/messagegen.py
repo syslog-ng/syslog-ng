@@ -22,7 +22,7 @@
 
 import struct, stat, re
 from socket import *
-from socket import ssl
+import ssl
 import os, sys, errno
 
 from log import *
@@ -86,11 +86,11 @@ class SocketSender(MessageSender):
 
         self.sock.connect(self.sock_name)
         if self.dgram:
-                self.sock.send('')
+                self.sock.send(''.encode())
         if sys.platform == 'linux2':
                 self.sock.setsockopt(SOL_SOCKET, SO_SNDTIMEO, struct.pack('ll', 3, 0))
         if not self.dgram and self.ssl:
-                self.sock = ssl(self.sock)
+                self.sock = ssl.wrap_socket(self.sock)
 
 
     def sendMessage(self, msg):
@@ -99,10 +99,10 @@ class SocketSender(MessageSender):
             for c in line:
                 try:
                     if self.ssl:
-                        self.sock.write(c)
+                        self.sock.write(c.encode())
                     else:
-                        self.sock.send(c)
-                except error, e:
+                        self.sock.send(c.encode())
+                except error as e:
                     if e[0] == errno.ENOBUFS:
                         print_user('got ENOBUFS, sleeping...')
                         time.sleep(0.5)
@@ -118,13 +118,13 @@ class SocketSender(MessageSender):
 
                     # WTF? SSLObject only has write, whereas sockets only have send methods
                     if self.ssl:
-                        self.sock.write(line)
+                        self.sock.write(line.encode())
                     else:
-                        self.sock.send(line)
+                        self.sock.send(line.encode())
 
                     if self.dgram:
                         time.sleep(0.01)
-                except error, e:
+                except error as e:
                     if e[0] == errno.ENOBUFS:
                         print_user('got ENOBUFS, sleeping...')
                         time.sleep(0.5)
