@@ -338,6 +338,12 @@ cleanup:
     }
 }
 
+static void
+_on_http_response_received(PythonHttpHeaderPlugin *self, HttpResponseReceivedSignalData *data)
+{
+  //TODO
+}
+
 static gboolean
 _init(PythonHttpHeaderPlugin *self)
 {
@@ -367,6 +373,19 @@ _connect_http_header_request_slot(LogDriverPlugin *s, SignalSlotConnector *ssc)
             evt_tag_printf("plugin_instance", "%p", s));
 }
 
+static void
+_connect_http_response_received_slot(LogDriverPlugin *s, SignalSlotConnector *ssc)
+{
+  PythonHttpHeaderPlugin *self = (PythonHttpHeaderPlugin *) s;
+  CONNECT(ssc, signal_http_response_received, _on_http_response_received, self);
+
+  msg_debug("SignalSlotConnector slot registered",
+            evt_tag_printf("connector", "%p", ssc),
+            evt_tag_printf("signal", "%s", signal_http_response_received),
+            evt_tag_printf("plugin_name", "%s", PYTHON_HTTP_HEADER_PLUGIN),
+            evt_tag_printf("plugin_instance", "%p", s));
+}
+
 static gboolean
 _attach(LogDriverPlugin *s, LogDriver *driver)
 {
@@ -382,6 +401,7 @@ _attach(LogDriverPlugin *s, LogDriver *driver)
 
   SignalSlotConnector *ssc = driver->super.signal_slot_connector;
   _connect_http_header_request_slot(s, ssc);
+  _connect_http_response_received_slot(s, ssc);
 
   return TRUE;
 }
