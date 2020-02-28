@@ -48,6 +48,7 @@ struct _PythonHttpHeaderPlugin
     PyObject *class;
     PyObject *instance;
     PyObject *get_headers;
+    PyObject *on_http_response_received;
   } py;
 };
 
@@ -216,11 +217,23 @@ _py_attach_get_headers(PythonHttpHeaderPlugin *self)
 }
 
 static gboolean
+_py_attach_on_http_response_received(PythonHttpHeaderPlugin *self)
+{
+  self->py.on_http_response_received = _py_get_attr_or_null(self->py.instance, "on_http_response_received");
+
+  /*
+   * on_http_response_received is an optional method
+   * */
+  return TRUE;
+}
+
+static gboolean
 _py_attach_bindings(PythonHttpHeaderPlugin *self)
 {
   return _py_attach_class(self) &&
          _py_instantiate_class(self) &&
-         _py_attach_get_headers(self);
+         _py_attach_get_headers(self) &&
+         _py_attach_on_http_response_received(self);
 }
 
 static void
@@ -229,6 +242,7 @@ _py_detach_bindings(PythonHttpHeaderPlugin *self)
   Py_CLEAR(self->py.class);
   Py_CLEAR(self->py.instance);
   Py_CLEAR(self->py.get_headers);
+  Py_CLEAR(self->py.on_http_response_received);
 }
 
 static void
