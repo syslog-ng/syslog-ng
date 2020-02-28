@@ -37,15 +37,15 @@ pcre-devel                      [centos, fedora]
 
 # packages to run successful configure with module support
     # libbson-dev
-    libbson-dev                 [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
+    libbson-dev                 [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic]
     libbson-devel               [centos-7, fedora]
 
     # librabbitmq-dev
-    librabbitmq-dev             [debian-jessie, debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
+    librabbitmq-dev             [debian-jessie, debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic]
     librabbitmq-devel           [centos-7, fedora]
 
     # libmongoc-dev (not available on debian-jessie)
-    libmongoc-dev               [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
+    libmongoc-dev               [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic]
     mongo-c-driver-devel        [centos, fedora]
 
     # librdkafka-dev (we are using a specific version from OBS and need to
@@ -57,7 +57,7 @@ pcre-devel                      [centos, fedora]
     librdkafka-devel		[fedora]
 
     # libmaxmindb-dev
-    libmaxminddb-dev            [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
+    libmaxminddb-dev            [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic]
     libmaxminddb-devel          [centos-7, fedora]
 
     # libcurl-dev
@@ -81,7 +81,7 @@ pcre-devel                      [centos, fedora]
     libnet-devel                [centos, fedora]
 
     # libriemann-dev
-    libriemann-client-dev       [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
+    libriemann-client-dev       [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic]
     riemann-c-client-devel      [centos-7, fedora]
 
     # java-7
@@ -89,14 +89,14 @@ pcre-devel                      [centos, fedora]
     java-1.7.0-openjdk-devel    [centos-6]
 
     # java-8
-    openjdk-8-jdk               [debian-stretch, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
+    openjdk-8-jdk               [debian-stretch, ubuntu-xenial, ubuntu-bionic]
     java-1.8.0-openjdk-devel    [centos-7, fedora]
 
     # no java 8 for buster, java-11 does not yet work
     #openjdk-11-jdk               [debian-buster]
 
     # python-dev
-    python-dev                  [debian, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic, ubuntu-eoan]
+    python-dev                  [debian, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan]
     python-devel                [centos, fedora]
     python36-devel              [centos]
     python3-devel               [fedora]
@@ -113,7 +113,7 @@ pcre-devel                      [centos, fedora]
     libcap-devel                [centos, fedora]
 
     # systemd-dev
-    libsystemd-dev              [debian, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic]
+    libsystemd-dev              [debian, ubuntu-xenial, ubuntu-bionic]
     systemd-devel               [centos, fedora]
 
     # uuid-dev
@@ -146,9 +146,9 @@ gcc-c++				[centos, fedora]
 
 
 # packages to run successful make check
-python-pip                      [centos, fedora, debian, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic, ubuntu-eoan ]
+python-pip                      [centos, fedora, debian, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan ]
 python3-pip                     [ubuntu-focal]
-python-setuptools               [centos, fedora, debian, ubuntu-xenial, ubuntu-bionic, ubuntu-cosmic, ubuntu-eoan]
+python-setuptools               [centos, fedora, debian, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan]
 python3-setuptools              [ubuntu-focal]
 tzdata                          [centos, fedora, debian, ubuntu]
 
