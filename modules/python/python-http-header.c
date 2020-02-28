@@ -341,7 +341,29 @@ cleanup:
 static void
 _on_http_response_received(PythonHttpHeaderPlugin *self, HttpResponseReceivedSignalData *data)
 {
-  //TODO
+  if (!self->py.on_http_response_received)
+    return;
+
+  PyGILState_STATE gstate = PyGILState_Ensure();
+  {
+
+    PyObject *py_arg = Py_BuildValue("i", data->http_code);
+    if (!py_arg)
+      {
+        gchar buf[256];
+
+        msg_error("Error creating Python argument",
+                  evt_tag_str("class", self->class),
+                  evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+        _py_finish_exception_handling();
+        return;
+      }
+
+    _py_invoke_void_function(self->py.on_http_response_received, py_arg, self->class, "_on_http_response_received");
+
+    Py_XDECREF(py_arg);
+  }
+  PyGILState_Release(gstate);
 }
 
 static gboolean
