@@ -136,10 +136,8 @@ _py_convert_list_to_pylist(List *list)
 }
 
 static gboolean
-_py_attach_bindings(PythonHttpHeaderPlugin *self)
+_py_attach_class(PythonHttpHeaderPlugin *self)
 {
-  PyObject *py_args = NULL;
-
   self->py.class = _py_resolve_qualified_name(self->class);
   if (!self->py.class)
     {
@@ -150,10 +148,16 @@ _py_attach_bindings(PythonHttpHeaderPlugin *self)
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
 
-      goto exit;
+      return FALSE;
     }
+  return TRUE;
+}
 
-  py_args = _py_create_arg_dict(self->options);
+static PyObject *
+_create_arg_dict_from_options(PythonHttpHeaderPlugin *self)
+{
+  PyObject *py_args = _py_create_arg_dict(self->options);
+
   if (!py_args)
     {
       gchar buf[256];
@@ -163,9 +167,20 @@ _py_attach_bindings(PythonHttpHeaderPlugin *self)
                 evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
       _py_finish_exception_handling();
 
-      goto exit;
+      return NULL;
     }
 
+  return py_args;
+}
+
+static gboolean
+_py_instantiate_class(PythonHttpHeaderPlugin *self)
+{
+  PyObject *py_args = _create_arg_dict_from_options(self);
+  if (!py_args)
+    return FALSE;
+
+  gboolean result = FALSE;
   self->py.instance = _py_invoke_function(self->py.class, py_args, self->class, self->super.name);
   if (!self->py.instance)
     {
@@ -178,18 +193,34 @@ _py_attach_bindings(PythonHttpHeaderPlugin *self)
 
       goto exit;
     }
+  result = TRUE;
 
+exit:
+  Py_XDECREF(py_args);
+  return result;
+}
+
+static gboolean
+_py_attach_get_headers(PythonHttpHeaderPlugin *self)
+{
   self->py.get_headers = _py_get_attr_or_null(self->py.instance, "get_headers");
   if (!self->py.get_headers)
     {
       msg_error("Error initializing plugin, required method not found",
                 evt_tag_str("class", self->class),
                 evt_tag_str("method", "get_headers"));
+      return FALSE;
     }
 
-exit:
-  Py_XDECREF(py_args);
-  return self->py.get_headers != NULL;
+  return TRUE;
+}
+
+static gboolean
+_py_attach_bindings(PythonHttpHeaderPlugin *self)
+{
+  return _py_attach_class(self) &&
+         _py_instantiate_class(self) &&
+         _py_attach_get_headers(self);
 }
 
 static void
