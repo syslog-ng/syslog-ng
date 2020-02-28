@@ -368,7 +368,8 @@ _connect_http_header_request_slot(LogDriverPlugin *s, SignalSlotConnector *ssc)
   CONNECT(ssc, signal_http_header_request, _append_headers, self);
 
   msg_debug("SignalSlotConnector slot registered",
-            evt_tag_printf("signal", "%p", ssc),
+            evt_tag_printf("connector", "%p", ssc),
+            evt_tag_printf("signal", "%s", signal_http_header_request),
             evt_tag_printf("plugin_name", "%s", PYTHON_HTTP_HEADER_PLUGIN),
             evt_tag_printf("plugin_instance", "%p", s));
 }
