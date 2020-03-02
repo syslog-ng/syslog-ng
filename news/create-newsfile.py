@@ -82,6 +82,7 @@ def create_standard_blocks():
     blocks = [
         ('Features', 'feature-*.md'),
         ('Bugfixes', 'bugfix-*.md'),
+        ('Packaging', 'packaging-*.md'),
         ('Notes to developers', 'developer-note-*.md'),
         ('Other changes', 'other-*.md'),
     ]
