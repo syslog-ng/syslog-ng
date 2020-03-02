@@ -1,1 +1,0 @@
-`geoip2`: Added `template()` option as an alias for the positional argument string, to match the grammar convention.
