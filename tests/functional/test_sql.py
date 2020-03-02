@@ -26,7 +26,7 @@ from messagegen import *
 from messagecheck import *
 from control import flush_files, stop_syslogng
 
-config = """@version: 3.26
+config = """@version: %(syslog_ng_version)s
 
 options { ts_format(iso); chain_hostnames(no); keep_hostname(yes); threaded(yes); };
 

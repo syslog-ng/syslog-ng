@@ -27,7 +27,7 @@ from messagecheck import *
 from control import flush_files, stop_syslogng
 import os
 
-config = """@version: 3.26
+config = """@version: %(syslog_ng_version)s
 
 options { keep-hostname(yes); };
 
