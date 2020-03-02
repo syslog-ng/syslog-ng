@@ -503,6 +503,7 @@ fi
 %{_mandir}/man1/loggen.1*
 %{_mandir}/man1/pdbtool.1*
 %{_mandir}/man1/dqtool.1*
+%{_mandir}/man1/persist-tool.1*
 %{_mandir}/man1/syslog-ng-debun.1*
 %{_mandir}/man1/syslog-ng-ctl.1*
 %{_mandir}/man5/syslog-ng.conf.5*
