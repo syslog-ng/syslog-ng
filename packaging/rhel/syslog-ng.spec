@@ -270,6 +270,15 @@ Requires: %{name}%{?_isa} = %{version}-%{release}
 %description http
 This module supports the HTTP destination.
 
+%package azure-auth-header
+Summary: Azure auth header support for %{name}
+Group: Development/Libraries
+Requires: %{name}%{?_isa} = %{version}-%{release}
+Requires: %{name}-http%{?_isa} = %{version}-%{release}
+
+%description azure-auth-header
+This module generates authorization header for applications connecting to Azure.
+
 %package python
 Summary:        Python destination support for syslog-ng
 Group:          System/Libraries
@@ -561,6 +570,9 @@ fi
 
 %files http
 %{_libdir}/%{name}/libhttp.so
+
+%files azure-auth-header
+%{_libdir}/%{name}/libazure-auth-header.so
 
 %files python
 %{_libdir}/%{name}/python/syslogng-1.0-py%{py_ver}.egg-info
