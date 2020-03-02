@@ -28,7 +28,7 @@
    
    ```
    
-   @version: 3.25
+   @version: 3.26
    
    python {
    from syslogng import Logger
@@ -85,7 +85,7 @@
      <summary>Example config, click to expand!</summary>
    
    ```
-   @version:3.25
+   @version:3.26
    @include "scl.conf"
    destination d_http {
      http(
@@ -158,9 +158,9 @@
  * `config-option-database`: Added support for `parser`, `diskq` and `hook-commands` blocks. (#3029)
  * `config version`: make the config version check of the configuration more
    liberal by accepting version numbers that had no changes relative to the
-   current version.  This means that if you are running 3.25 and the last
+   current version.  This means that if you are running 3.26 and the last
    semantic change in the configuration was 3.22, then anything between 3.22
-   and 3.25 (inclusive) is accepted by syslog-ng without a warning at startup. (#3074)
+   and 3.26 (inclusive) is accepted by syslog-ng without a warning at startup. (#3074)
  * `loggly`: Added `transport()` option, so users can now use it with `tls` (or any `network()` supported transport). (#3149)
  * `$SEVERITY instead of $LEVEL`: syslog-ng historically choose the term
    `level` to refer to the severity of the message that was used in the
@@ -335,7 +335,7 @@
      <summary>Example config, click to expand!</summary>
    
    ```
-   version:3.25
+   version:3.26
    
    @include "scl.conf"
    
