@@ -60,6 +60,7 @@ set(LOGGEN_SOURCE
     logline_generator.h
     ${PROJECT_SOURCE_DIR}/lib/reloc.c
     ${PROJECT_SOURCE_DIR}/lib/cache.c
+    ${PROJECT_SOURCE_DIR}/lib/compat/glib.c
     )
 
 add_executable(loggen ${LOGGEN_SOURCE})

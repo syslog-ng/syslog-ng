@@ -303,4 +303,15 @@ g_base64_encode_fixed(const guchar *data, gsize len)
 
   return (gchar *) out;
 }
+
+#endif
+
+#if !GLIB_CHECK_VERSION(2, 40, 0)
+gboolean
+slng_g_hash_table_insert(GHashTable *hash_table, gpointer key, gpointer value)
+{
+  gboolean exists = g_hash_table_contains(hash_table, key);
+  g_hash_table_insert(hash_table, key, value);
+  return exists;
+}
 #endif

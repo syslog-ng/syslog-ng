@@ -60,7 +60,8 @@ tests_loggen_loggen_SOURCES	=	\
 	tests/loggen/logline_generator.c \
 	tests/loggen/logline_generator.h \
 	lib/reloc.c \
-	lib/cache.c
+	lib/cache.c \
+	lib/compat/glib.c
 
 tests_loggen_loggen_LDADD	= \
 	@GLIB_LIBS@ \

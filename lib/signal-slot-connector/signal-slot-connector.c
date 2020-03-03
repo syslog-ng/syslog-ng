@@ -267,4 +267,3 @@ signal_slot_connector_free(SignalSlotConnector *self)
   g_hash_table_unref(self->connections);
   g_free(self);
 }
-
