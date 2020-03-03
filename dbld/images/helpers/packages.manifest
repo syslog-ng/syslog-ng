@@ -37,15 +37,15 @@ pcre-devel                      [centos, fedora]
 
 # packages to run successful configure with module support
     # libbson-dev
-    libbson-dev                 [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic]
+    libbson-dev                 [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
     libbson-devel               [centos-7, fedora]
 
     # librabbitmq-dev
-    librabbitmq-dev             [debian-jessie, debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic]
+    librabbitmq-dev             [debian-jessie, debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
     librabbitmq-devel           [centos-7, fedora]
 
     # libmongoc-dev (not available on debian-jessie)
-    libmongoc-dev               [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic]
+    libmongoc-dev               [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
     mongo-c-driver-devel        [centos, fedora]
 
     # librdkafka-dev (we are using a specific version from OBS and need to
@@ -57,7 +57,7 @@ pcre-devel                      [centos, fedora]
     librdkafka-devel		[fedora]
 
     # libmaxmindb-dev
-    libmaxminddb-dev            [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic]
+    libmaxminddb-dev            [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
     libmaxminddb-devel          [centos-7, fedora]
 
     # libcurl-dev
@@ -81,7 +81,7 @@ pcre-devel                      [centos, fedora]
     libnet-devel                [centos, fedora]
 
     # libriemann-dev
-    libriemann-client-dev       [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic]
+    libriemann-client-dev       [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
     riemann-c-client-devel      [centos-7, fedora]
 
     # java-7
@@ -89,7 +89,7 @@ pcre-devel                      [centos, fedora]
     java-1.7.0-openjdk-devel    [centos-6]
 
     # java-8
-    openjdk-8-jdk               [debian-stretch, ubuntu-xenial, ubuntu-bionic]
+    openjdk-8-jdk               [debian-stretch, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
     java-1.8.0-openjdk-devel    [centos-7, fedora]
 
     # no java 8 for buster, java-11 does not yet work
@@ -113,7 +113,7 @@ pcre-devel                      [centos, fedora]
     libcap-devel                [centos, fedora]
 
     # systemd-dev
-    libsystemd-dev              [debian, ubuntu-xenial, ubuntu-bionic]
+    libsystemd-dev              [debian, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
     systemd-devel               [centos, fedora]
 
     # uuid-dev
