@@ -312,11 +312,11 @@ Test(lexer, at_version_stores_config_version_in_parsed_version_in_hex_form)
   parser->lexer->ignore_pragma = FALSE;
 
   cfg_set_version_without_validation(configuration, 0);
-  _input("@version: 3.25\n\
+  _input("@version: 3.26\n\
 foo\n");
   assert_parser_identifier("foo");
-  cr_assert_eq(configuration->user_version, 0x0319,
-               "@version parsing mismatch, value %04x expected %04x", configuration->user_version, 0x0319);
+  cr_assert_eq(configuration->user_version, 0x031a,
+               "@version parsing mismatch, value %04x expected %04x", configuration->user_version, 0x031a);
 
   cfg_set_version_without_validation(configuration, 0);
   _input("@version: 3.1\n\
