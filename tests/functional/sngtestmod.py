@@ -39,6 +39,7 @@ class DestTest(object):
 
     def send(self, msg):
         with open('test-python.log', 'a') as f:
+            msg = dict(map(lambda entry: (entry[0], entry[1].decode()), msg.items()))
             f.write('{DATE} {HOST} {MSGHDR}{MSG}\n'.format(**msg))
 
         return True
