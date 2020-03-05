@@ -35,6 +35,7 @@ typedef struct _LogProtoClient LogProtoClient;
 typedef struct _LogProtoClientOptions
 {
   gboolean drop_input;
+  gint timeout;
 } LogProtoClientOptions;
 
 typedef union _LogProtoClientOptionsStorage
@@ -54,6 +55,8 @@ typedef struct
 } LogProtoClientFlowControlFuncs;
 
 void log_proto_client_options_set_drop_input(LogProtoClientOptions *options, gboolean drop_input);
+void log_proto_client_options_set_timeout(LogProtoClientOptions *options, gint timeout);
+gint log_proto_client_options_get_timeout(LogProtoClientOptions *options);
 
 void log_proto_client_options_defaults(LogProtoClientOptions *options);
 void log_proto_client_options_init(LogProtoClientOptions *options, GlobalConfig *cfg);

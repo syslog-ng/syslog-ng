@@ -48,7 +48,6 @@ typedef struct _AFFileDestDriver
 
   gint overwrite_if_older;
   gboolean use_time_recvd;
-  gint time_reap;
 } AFFileDestDriver;
 
 AFFileDestDriver *affile_dd_new_instance(gchar *filename, GlobalConfig *cfg);

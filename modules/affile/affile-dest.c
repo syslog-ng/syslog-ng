@@ -98,7 +98,6 @@ struct _AFFileDestWriter
   time_t last_msg_stamp;
   time_t last_open_stamp;
   time_t time_reopen;
-  struct iv_timer reap_timer;
   gboolean reopen_pending, queue_pending;
 };
 
@@ -116,20 +115,8 @@ affile_dw_format_persist_name(AFFileDestWriter *self)
 static void affile_dd_reap_writer(AFFileDestDriver *self, AFFileDestWriter *dw);
 
 static void
-affile_dw_arm_reaper(AFFileDestWriter *self)
+affile_dw_reap(AFFileDestWriter *self)
 {
-  g_assert(self->owner->time_reap > 0);
-  /* not yet reaped, set up the next callback */
-  iv_validate_now();
-  self->reap_timer.expires = iv_now;
-  timespec_add_msec(&self->reap_timer.expires, self->owner->time_reap * 1000L);
-  iv_timer_register(&self->reap_timer);
-}
-
-static void
-affile_dw_reap(gpointer s)
-{
-  AFFileDestWriter *self = (AFFileDestWriter *) s;
   AFFileDestDriver *owner = self->owner;
 
   main_loop_assert_main_thread();
@@ -141,13 +128,8 @@ affile_dw_reap(gpointer s)
                   evt_tag_str("template", self->owner->filename_template->template),
                   evt_tag_str("filename", self->filename));
       affile_dd_reap_writer(self->owner, self);
-      g_static_mutex_unlock(&owner->lock);
     }
-  else
-    {
-      g_static_mutex_unlock(&owner->lock);
-      affile_dw_arm_reaper(self);
-    }
+  g_static_mutex_unlock(&owner->lock);
 }
 
 static gboolean
@@ -183,9 +165,6 @@ affile_dw_reopen(AFFileDestWriter *self)
 
       proto = file_opener_construct_dst_proto(self->owner->file_opener, transport,
                                               &self->owner->writer_options.proto_options.super);
-
-      if (self->owner->time_reap > 0 && !iv_timer_registered(&self->reap_timer))
-        main_loop_call((void *(*)(void *)) affile_dw_arm_reaper, self, TRUE);
     }
   else
     {
@@ -243,8 +222,6 @@ affile_dw_deinit(LogPipe *s)
 
   log_writer_set_queue(self->writer, NULL);
 
-  if (iv_timer_registered(&self->reap_timer))
-    iv_timer_unregister(&self->reap_timer);
   return TRUE;
 }
 
@@ -325,10 +302,14 @@ affile_dw_free(LogPipe *s)
 static void
 affile_dw_notify(LogPipe *s, gint notify_code, gpointer user_data)
 {
+  AFFileDestWriter *self = (AFFileDestWriter *)s;
   switch(notify_code)
     {
     case NC_REOPEN_REQUIRED:
-      affile_dw_reopen((AFFileDestWriter *)s);
+      affile_dw_reopen(self);
+      break;
+    case NC_CLOSE:
+      affile_dw_reap(self);
       break;
     default:
       break;
@@ -348,10 +329,6 @@ affile_dw_new(const gchar *filename, GlobalConfig *cfg)
   self->super.queue = affile_dw_queue;
   self->super.notify = affile_dw_notify;
   self->time_reopen = 60;
-
-  IV_TIMER_INIT(&self->reap_timer);
-  self->reap_timer.cookie = self;
-  self->reap_timer.handler = affile_dw_reap;
 
   /* we have to take care about freeing filename later.
      This avoids a move of the filename. */
@@ -414,7 +391,13 @@ affile_dd_set_time_reap(LogDriver *s, gint time_reap)
 {
   AFFileDestDriver *self = (AFFileDestDriver *) s;
 
-  self->time_reap = time_reap;
+  log_proto_client_options_set_timeout(&self->writer_options.proto_options.super, time_reap);
+}
+
+static gint
+affile_dd_get_time_reap(AFFileDestDriver *self)
+{
+  return log_proto_client_options_get_timeout(&self->writer_options.proto_options.super);
 }
 
 static inline const gchar *
@@ -492,12 +475,12 @@ affile_dd_init(LogPipe *s)
   if (!log_dest_driver_init_method(s))
     return FALSE;
 
-  if (self->time_reap == -1)
-    self->time_reap = cfg->time_reap;
-
   file_opener_options_init(&self->file_opener_options, cfg);
   file_opener_set_options(self->file_opener, &self->file_opener_options);
   log_writer_options_init(&self->writer_options, cfg, 0);
+
+  if (affile_dd_get_time_reap(self) == -1)
+    affile_dd_set_time_reap(&self->super.super, cfg->time_reap);
 
   if (self->filename_is_a_template)
     {
@@ -791,7 +774,7 @@ affile_dd_new_instance(gchar *filename, GlobalConfig *cfg)
     }
   file_opener_options_defaults(&self->file_opener_options);
 
-  self->time_reap = self->filename_is_a_template ? -1 : 0;
+  affile_dd_set_time_reap(&self->super.super, self->filename_is_a_template ? -1 : 0);
   g_static_mutex_init(&self->lock);
 
   affile_dest_drivers = g_list_append(affile_dest_drivers, self);

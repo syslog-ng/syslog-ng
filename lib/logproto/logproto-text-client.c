@@ -37,7 +37,13 @@ log_proto_text_client_prepare(LogProtoClient *s, gint *fd, GIOCondition *cond, g
   /* if there's no pending I/O in the transport layer, then we want to do a write */
   if (*cond == 0)
     *cond = G_IO_OUT;
-  return self->partial != NULL;
+
+  const gboolean pending_write = self->partial != NULL;
+
+  if (!pending_write && s->options->timeout > 0)
+    *timeout = s->options->timeout;
+
+  return pending_write;
 }
 
 static LogProtoStatus
