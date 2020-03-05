@@ -49,6 +49,7 @@ struct _TLSContext
   gchar *pkcs12_file;
   gchar *ca_dir;
   gchar *crl_dir;
+  gchar *ca_file;
   gchar *cipher_suite;
   gchar *ecdh_curve_list;
   gchar *sni;
@@ -674,15 +675,15 @@ _are_key_and_cert_files_accessible(TLSContext *self)
 }
 
 static gboolean
-_key_and_cert_files_are_not_specified(TLSContext *self)
+_key_or_cert_file_is_not_specified(TLSContext *self)
 {
-  return (!self->key_file && !self->cert_file);
+  return (!self->key_file || !self->cert_file);
 }
 
 static TLSContextLoadResult
 tls_context_load_key_and_cert(TLSContext *self)
 {
-  if (_key_and_cert_files_are_not_specified(self))
+  if (_key_or_cert_file_is_not_specified(self))
     {
       if (self->mode == TM_SERVER)
         msg_warning("You have a TLS enabled source without a X.509 keypair. Make sure you have tls(key-file() and cert-file()) options, TLS handshake to this source will fail",
@@ -729,6 +730,9 @@ tls_context_setup_context(TLSContext *self)
     }
 
   if (_is_file_accessible(self, self->ca_dir) && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->ca_dir))
+    goto error;
+
+  if (_is_file_accessible(self, self->ca_file) && !SSL_CTX_load_verify_locations(self->ssl_ctx, self->ca_file, NULL))
     goto error;
 
   if (_is_file_accessible(self, self->crl_dir) && !SSL_CTX_load_verify_locations(self->ssl_ctx, NULL, self->crl_dir))
@@ -835,6 +839,7 @@ _tls_context_free(TLSContext *self)
   g_free(self->dhparam_file);
   g_free(self->ca_dir);
   g_free(self->crl_dir);
+  g_free(self->ca_file);
   g_free(self->cipher_suite);
   g_free(self->ecdh_curve_list);
   g_free(self->sni);
@@ -1027,6 +1032,13 @@ tls_context_set_crl_dir(TLSContext *self, const gchar *crl_dir)
 {
   g_free(self->crl_dir);
   self->crl_dir = g_strdup(crl_dir);
+}
+
+void
+tls_context_set_ca_file(TLSContext *self, const gchar *ca_file)
+{
+  g_free(self->ca_file);
+  self->ca_file = g_strdup(ca_file);
 }
 
 void
