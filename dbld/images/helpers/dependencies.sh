@@ -63,14 +63,15 @@ function filter_packages_by_platform {
 }
 
 function add_obs_repo {
+    PLATFORM=$1
     apt-get update && apt-get install --no-install-recommends --yes wget gnupg2
-    echo 'deb http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_18.04 ./' | tee /etc/apt/sources.list.d/lbudai.list
+    echo "deb http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/x${PLATFORM} ./" | tee /etc/apt/sources.list.d/lbudai.list
     cat | tee /etc/apt/preferences.d/lbudai <<EOF
 Package: *
 Pin: origin "download.opensuse.org"
 Pin-Priority: 1
 EOF
-    wget -qO - http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_18.04/Release.key | apt-key add -
+    wget -qO - http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/x${PLATFORM}/Release.key | apt-key add -
     apt-get update
 }
 
