@@ -121,7 +121,7 @@ function install_pip_packages {
             python -m pip install --upgrade pip
             ;;
     esac
-    filter_packages_by_platform /helpers/pip_packages.manifest | xargs pip install -U
+    filter_packages_by_platform /helpers/pip_packages.manifest | xargs pip install --ignore-installed -U
 }
 
 function install_lsb_release {
