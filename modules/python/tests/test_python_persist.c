@@ -146,3 +146,15 @@ Test(python_persist, test_python_persist_iterator)
   _load_code("assert sorted(persist) == ['key1', 'key2', 'key3']");
   persist_state_stop(state);
 }
+
+Test(python_persist, test_python_persist_proper_types)
+{
+  PersistState *state = clean_and_create_persist_state_for_test("test-python-proper_types.persist");
+  cfg->state = state;
+  _load_code("persist = Persist('persist_name')");
+  _load_code("persist['str'] = 'value'");
+  _load_code("persist['number'] = 5");
+  _load_code("assert persist['str'] == 'value'");
+  _load_code("assert persist['number'] == 5");
+  persist_state_stop(state);
+}

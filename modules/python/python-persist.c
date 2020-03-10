@@ -25,6 +25,7 @@
 #include "syslog-ng.h"
 #include "driver.h"
 #include "mainloop.h"
+#include "compat/compat-python.h"
 
 #include <structmember.h>
 
@@ -42,6 +43,20 @@ typedef struct
   guint8 type;
   gchar data[];
 } Entry;
+
+static PyObject *
+entry_to_pyobject(guint8 type, gchar *value)
+{
+  switch (type)
+    {
+    case ENTRY_TYPE_STRING:
+      return _py_string_from_string(value, -1);
+    case ENTRY_TYPE_LONG:
+      return PyLong_FromString(value, NULL, 10);
+    default:
+      g_assert_not_reached();
+    }
+}
 
 static PyObject *
 _call_generate_persist_name_method(PythonPersistMembers *options)
@@ -235,26 +250,46 @@ _allocate_persist_entry(PersistState *persist_state, const gchar *key, const gch
   return persist_state_alloc_entry(persist_state, key, value_len);
 }
 
+static gchar *
+_serialize(guint8 type, PyObject *v)
+{
+  if (type == ENTRY_TYPE_STRING)
+    {
+      return g_strdup(_py_get_string_as_string(v));
+    }
+  else if (type == ENTRY_TYPE_LONG)
+    {
+      PyObject *as_str = PyObject_Str(v);
+      g_assert(as_str);
+      gchar *result = g_strdup(_py_get_string_as_string(as_str));
+      Py_DECREF(as_str);
+      return result;
+    }
+  else
+    g_assert_not_reached();
+}
+
 static gboolean
-_store_entry(PyPersist *self, const gchar *key, guint8 type, const gchar *value)
+_store_entry(PyPersist *self, const gchar *key, guint8 type, PyObject *v)
 {
   gchar *query_key = _build_key(self, key);
+  gchar *value = _serialize(type, v);
   gsize value_len = strlen(value) + sizeof(type);
 
   PersistEntryHandle handle = _allocate_persist_entry(self->persist_state, query_key, value, value_len);
   if (!handle)
     {
+      g_free(value);
       g_free(query_key);
       return FALSE;
     }
 
   Entry *entry = persist_state_map_entry(self->persist_state, handle);
-
   entry->type = type;
-  memcpy(entry->data, value, value_len);
-
+  strcpy(entry->data, value);
   persist_state_unmap_entry(self->persist_state, handle);
 
+  g_free(value);
   g_free(query_key);
 
   return TRUE;
@@ -281,14 +316,14 @@ _py_persist_type_get(PyObject *o, PyObject *key)
       return NULL;
     }
 
-  if (type != ENTRY_TYPE_STRING)
+  if (type >= ENTRY_TYPE_MAX)
     {
       PyErr_Format(PyExc_RuntimeError, "Unknown data type: %d", (gint)type);
       g_free(value);
       return NULL;
     }
 
-  PyObject *py_value =  _py_string_from_string(value, -1);
+  PyObject *py_value = entry_to_pyobject(type, value);
   g_free(value);
   return py_value;
 }
@@ -297,6 +332,7 @@ static int
 _py_persist_type_set(PyObject *o, PyObject *k, PyObject *v)
 {
   PyPersist *self = (PyPersist *)o;
+  guint8 type;
 
   if (!_py_is_string(k))
     {
@@ -304,16 +340,19 @@ _py_persist_type_set(PyObject *o, PyObject *k, PyObject *v)
       return -1;
     }
 
-  if (!_py_is_string(v))
+  if (_py_is_string(v))
+    type = ENTRY_TYPE_STRING;
+  else if (py_object_is_integer(v))
+    type = ENTRY_TYPE_LONG;
+  else
     {
-      PyErr_SetString(PyExc_TypeError, "value is not a string object");
+      PyErr_SetString(PyExc_TypeError, "Value must be either string or integer");
       return -1;
     }
 
   const gchar *key = _py_get_string_as_string(k);
-  const gchar *value = _py_get_string_as_string(v);
 
-  if (!_store_entry(self, key, ENTRY_TYPE_STRING, value))
+  if (!_store_entry(self, key, type, v))
     {
       PyErr_SetString(PyExc_IOError, "value could not be stored");
       return -1;
@@ -342,11 +381,11 @@ _insert_to_dict(gchar *key, gint entry_size, Entry *entry, gpointer *user_data)
   if (!start)
     return;
 
-  if (!entry->type == ENTRY_TYPE_STRING)
+  if (entry->type >= ENTRY_TYPE_MAX)
     return;
 
   PyObject *key_object = _py_string_from_string(start + strlen(SUBKEY_DELIMITER), -1);
-  PyObject *value_object = _py_string_from_string(entry->data, -1);
+  PyObject *value_object = entry_to_pyobject(entry->type, entry->data);
   PyDict_SetItem(entries, key_object, value_object);
 }
 
