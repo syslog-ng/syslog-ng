@@ -41,7 +41,7 @@
 #include <stdlib.h>
 #include <errno.h>
 
-static void           start(PluginOption *option);
+static gboolean       start(PluginOption *option);
 static void           stop(PluginOption *option);
 static gpointer       active_thread_func(gpointer user_data);
 static gpointer       idle_thread_func(gpointer user_data);
@@ -124,30 +124,30 @@ get_options(void)
   return loggen_options;
 }
 
-static void
+static gboolean
 start(PluginOption *option)
 {
   if (!option)
     {
       ERROR("invalid option refernce\n");
-      return;
+      return FALSE;
     }
 
   if (!is_plugin_activated())
-    return;
+    return TRUE;
 
   if (unix_socket_x)
     {
       if (!option->target)
         {
           ERROR("in case of unix domain socket please specify target parameter\n");
-          return;
+          return FALSE;
         }
     }
   else if (!option->target || !option->port)
     {
       ERROR("in case of TCP or UDP socket please specify target and port parameters\n");
-      return;
+      return FALSE;
     }
 
   DEBUG("plugin (%d,%d,%d,%d)start\n",
@@ -206,6 +206,8 @@ start(PluginOption *option)
   g_cond_broadcast(thread_start);
   thread_run = TRUE;
   g_mutex_unlock(thread_lock);
+
+  return TRUE;
 }
 
 static void
@@ -236,7 +238,7 @@ stop(PluginOption *option)
   if (thread_lock)
     g_mutex_free(thread_lock);
 
-  DEBUG("all %d+%d threads have been stoped\n",
+  DEBUG("all %d+%d threads have been stopped\n",
         option->active_connections,
         option->idle_connections);
 }
