@@ -30,6 +30,19 @@
 
 #define SUBKEY_DELIMITER "##"
 
+typedef enum
+{
+  ENTRY_TYPE_STRING,
+  ENTRY_TYPE_LONG,
+  ENTRY_TYPE_MAX
+} EntryType;
+
+typedef struct
+{
+  guint8 type;
+  gchar data[];
+} Entry;
+
 static PyObject *
 _call_generate_persist_name_method(PythonPersistMembers *options)
 {
@@ -186,7 +199,7 @@ _build_key(PyPersist *self, const gchar *key)
 }
 
 static gchar *
-_lookup_entry(PyPersist *self, const gchar *key)
+_lookup_entry(PyPersist *self, const gchar *key, guint8 *type)
 {
   gchar *query_key = _build_key(self, key);
 
@@ -200,8 +213,9 @@ _lookup_entry(PyPersist *self, const gchar *key)
       return NULL;
     }
 
-  const gchar *data = persist_state_map_entry(self->persist_state, handle);
-  gchar *copy = g_strdup((gchar *)data);
+  Entry *entry = persist_state_map_entry(self->persist_state, handle);
+  *type = entry->type;
+  gchar *copy = g_strdup(entry->data);
   persist_state_unmap_entry(self->persist_state, handle);
 
   g_free(query_key);
@@ -222,10 +236,10 @@ _allocate_persist_entry(PersistState *persist_state, const gchar *key, const gch
 }
 
 static gboolean
-_store_entry(PyPersist *self, const gchar *key, const gchar *value)
+_store_entry(PyPersist *self, const gchar *key, guint8 type, const gchar *value)
 {
   gchar *query_key = _build_key(self, key);
-  gsize value_len = strlen(value);
+  gsize value_len = strlen(value) + sizeof(type);
 
   PersistEntryHandle handle = _allocate_persist_entry(self->persist_state, query_key, value, value_len);
   if (!handle)
@@ -234,8 +248,11 @@ _store_entry(PyPersist *self, const gchar *key, const gchar *value)
       return FALSE;
     }
 
-  gchar *data = persist_state_map_entry(self->persist_state, handle);
-  memcpy(data, value, value_len);
+  Entry *entry = persist_state_map_entry(self->persist_state, handle);
+
+  entry->type = type;
+  memcpy(entry->data, value, value_len);
+
   persist_state_unmap_entry(self->persist_state, handle);
 
   g_free(query_key);
@@ -255,11 +272,19 @@ _py_persist_type_get(PyObject *o, PyObject *key)
     }
 
   const gchar *name = _py_get_string_as_string(key);
-  gchar *value = _lookup_entry(self, name);
+  guint8 type;
+  gchar *value = _lookup_entry(self, name, &type);
 
   if (!value)
     {
       PyErr_Format(PyExc_KeyError, "No such name-value pair %s", name);
+      return NULL;
+    }
+
+  if (type != ENTRY_TYPE_STRING)
+    {
+      PyErr_Format(PyExc_RuntimeError, "Unknown data type: %d", (gint)type);
+      g_free(value);
       return NULL;
     }
 
@@ -288,7 +313,7 @@ _py_persist_type_set(PyObject *o, PyObject *k, PyObject *v)
   const gchar *key = _py_get_string_as_string(k);
   const gchar *value = _py_get_string_as_string(v);
 
-  if (!_store_entry(self, key, value))
+  if (!_store_entry(self, key, ENTRY_TYPE_STRING, value))
     {
       PyErr_SetString(PyExc_IOError, "value could not be stored");
       return -1;
@@ -305,7 +330,7 @@ static PyMappingMethods py_persist_type_mapping =
 };
 
 static void
-_insert_to_dict(gchar *key, gint entry_size, gchar *value, gpointer *user_data)
+_insert_to_dict(gchar *key, gint entry_size, Entry *entry, gpointer *user_data)
 {
   const gchar *persist_name = user_data[0];
   PyObject *entries = user_data[1];
@@ -317,8 +342,11 @@ _insert_to_dict(gchar *key, gint entry_size, gchar *value, gpointer *user_data)
   if (!start)
     return;
 
+  if (!entry->type == ENTRY_TYPE_STRING)
+    return;
+
   PyObject *key_object = _py_string_from_string(start + strlen(SUBKEY_DELIMITER), -1);
-  PyObject *value_object = _py_string_from_string(value, -1);
+  PyObject *value_object = _py_string_from_string(entry->data, -1);
   PyDict_SetItem(entries, key_object, value_object);
 }
 
