@@ -22,6 +22,7 @@
 
 #include "python-persist.h"
 #include "python-helpers.h"
+#include "syslog-ng.h"
 #include "driver.h"
 #include "mainloop.h"
 
@@ -142,6 +143,13 @@ _persist_type_init(PyObject *s, PyObject *args, PyObject *kwds)
 
   if (! PyArg_ParseTupleAndKeywords(args, kwds, "s", kwlist, &persist_name))
     return -1;
+
+  if (g_strstr_len(persist_name, -1, "##"))
+    {
+      // Internally, we will store subkeys as persist_name##subkey
+      PyErr_Format(PyExc_ValueError, "persist name cannot contain ##");
+      return -1;
+    }
 
   if (!self->persist_name)
     self->persist_name = g_strdup(persist_name);
