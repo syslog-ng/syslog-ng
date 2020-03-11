@@ -175,3 +175,17 @@ Test(python_persist, test_python_persist_lookup_missing_key)
   _load_code(should_throw_exception);
   persist_state_stop(state);
 };
+
+const gchar *iter_returns_proper_types = "\n\
+persist = Persist('persist_name')\n\
+persist['integer'] = 1\n\
+persist['str'] = 'str'\n\
+assert sorted([1, 'str']) == sorted([persist[k] for k in persist])";
+
+Test(python_persist, test_python_persist_iter_returns_proper_types)
+{
+  PersistState *state = clean_and_create_persist_state_for_test("test-python-iter-returns-proper-types.persist");
+  cfg->state = state;
+  _load_code(iter_returns_proper_types);
+  persist_state_stop(state);
+};
