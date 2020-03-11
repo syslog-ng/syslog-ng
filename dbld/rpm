@@ -10,10 +10,14 @@ function setup_dirs() {
 	rm -rf /build/${OS_PLATFORM} && mkdir -p /build/${OS_PLATFORM}
 }
 
-function prepare_source() {
-    # CzP's spec file expect it in the pwd
+function copy_rpm_packaging_src_files_to_build_folder() {
+    # CzP's spec file expect these files in the pwd
     # where the build was initiated
-    cp /source/packaging/rhel/syslog-ng.* /build
+    find /build/syslog-ng-${VERSION}/packaging/rhel/ -type f | grep --invert-match '\.spec$' | xargs -i cp {} /build/
+}
+
+function prepare_source() {
+    copy_rpm_packaging_src_files_to_build_folder
     cp syslog-ng-${VERSION}.tar.gz $RPMBUILD_SOURCES
 }
 

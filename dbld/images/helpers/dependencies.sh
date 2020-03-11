@@ -63,14 +63,15 @@ function filter_packages_by_platform {
 }
 
 function add_obs_repo {
+    PLATFORM=$1
     apt-get update && apt-get install --no-install-recommends --yes wget gnupg2
-    echo 'deb http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_18.04 ./' | tee /etc/apt/sources.list.d/lbudai.list
+    echo "deb http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/x${PLATFORM} ./" | tee /etc/apt/sources.list.d/lbudai.list
     cat | tee /etc/apt/preferences.d/lbudai <<EOF
 Package: *
 Pin: origin "download.opensuse.org"
 Pin-Priority: 1
 EOF
-    wget -qO - http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/xUbuntu_18.04/Release.key | apt-key add -
+    wget -qO - http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/x${PLATFORM}/Release.key | apt-key add -
     apt-get update
 }
 
@@ -120,10 +121,15 @@ function install_pip_packages {
             python -m pip install --upgrade pip
             ;;
     esac
-    filter_packages_by_platform /helpers/pip_packages.manifest | xargs pip install -U
+    filter_packages_by_platform /helpers/pip_packages.manifest | xargs pip install --ignore-installed -U
 }
 
-function enable_dbgsyms {
+function install_lsb_release {
+    apt-get update && apt-get install --no-install-recommends --yes lsb-release
+}
+
+function enable_dbgsyms_on_ubuntu {
+    install_lsb_release
     echo "deb http://ddebs.ubuntu.com $(lsb_release -cs) main restricted universe multiverse" | tee -a /etc/apt/sources.list.d/ddebs.list
     echo "deb http://ddebs.ubuntu.com $(lsb_release -cs)-updates main restricted universe multiverse" | tee -a /etc/apt/sources.list.d/ddebs.list
     apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 428D7C01 C8CAB6595FDFF622

@@ -9,7 +9,6 @@ BUILDER_IMAGES=		\
 	debian-buster	\
 	ubuntu-xenial	\
 	ubuntu-trusty	\
-	ubuntu-cosmic	\
 	ubuntu-bionic \
 	ubuntu-eoan \
 	ubuntu-focal \
