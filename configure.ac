@@ -356,7 +356,7 @@ AC_ARG_ENABLE(native,
               [  --enable-native        Enable native bindings (default: auto)]
               ,,enable_native="auto")
 
-AC_ARG_ENABLE(snmp-dest, [ --enable-snmp-dest Enable snmp destination (default: auto)],, enable_snmp_dest="auto")
+AC_ARG_ENABLE(afsnmp, [ --enable-afsnmp Enable afsnmp module (default: auto)],, enable_afsnmp="auto")
 
 AC_ARG_ENABLE(all-modules,
               [  --enable-all-modules    Forcibly enable all modules. (default: auto)]
@@ -367,7 +367,7 @@ if test "x$enable_all_modules" != "xauto"; then
 
    MODULES="spoof_source sun_streams sql pacct mongodb json amqp stomp \
             redis systemd geoip2 riemann ipv6 smtp native python java java_modules \
-            http snmp_dest kafka"
+            http afsnmp kafka"
    for mod in ${MODULES}; do
        modstate=$(eval echo \$enable_${mod})
        if test "x$modstate" = "xauto"; then
@@ -1100,7 +1100,7 @@ else
 fi
 
 dnl ***************************************************************************
-dnl snmp destination & net-snmp headers/libraries
+dnl afsnmp module & net-snmp headers/libraries
 dnl ***************************************************************************
 AC_MSG_CHECKING(whether to enable snmp destination driver)
 
@@ -1110,29 +1110,29 @@ else
    NETSNMP_CONFIG="$with_netsnmp/net-snmp-config"
 fi
 
-if test "x$enable_snmp_dest" = "xyes"; then
+if test "x$enable_afsnmp" = "xyes"; then
    if test -n "$NETSNMP_CONFIG" -a -x "$NETSNMP_CONFIG"; then
-     enable_snmp_dest="yes"
+     enable_afsnmp="yes"
      AC_MSG_RESULT(yes)
    else
-     enable_snmp_dest="no"
+     enable_afsnmp_dest="no"
      AC_MSG_RESULT(no)
-     AC_MSG_ERROR("SNMP destination is explicit enabled but no net-snmp lib found")
+     AC_MSG_ERROR("AFSNMP module is explicit enabled but no net-snmp lib found")
    fi
-elif test "x$enable_snmp_dest" = "xauto"; then
+elif test "x$enable_afsnmp" = "xauto"; then
   if test -n "$NETSNMP_CONFIG" -a -x "$NETSNMP_CONFIG"; then
-     enable_snmp_dest="yes"
+     enable_afsnmp="yes"
      AC_MSG_RESULT(yes)
   else
-     enable_snmp_dest="no"
+     enable_afsnmp="no"
      AC_MSG_RESULT(no)
   fi
 else
-  enable_snmp_dest="no"
+  enable_afsnmp="no"
   AC_MSG_RESULT(no)
 fi
 
-if test "$enable_snmp_dest" = "yes"; then
+if test "$enable_afsnmp" = "yes"; then
   NETSNMP_CFLAGS="`$NETSNMP_CONFIG --cflags`"
   NETSNMP_LIBS="`$NETSNMP_CONFIG --libs`"
 else
@@ -1893,7 +1893,7 @@ AM_CONDITIONAL(ENABLE_JOURNALD, [test "$with_systemd_journal" != "no"])
 AM_CONDITIONAL(ENABLE_PYTHON, [test "$enable_python" != "no"])
 AM_CONDITIONAL(ENABLE_JAVA, [test "$enable_java" = "yes"])
 AM_CONDITIONAL(ENABLE_JAVA_MODULES, [test "$enable_java_modules" = "yes"])
-AM_CONDITIONAL(ENABLE_SNMP_DEST, [test "$enable_snmp_dest" = "yes"])
+AM_CONDITIONAL(ENABLE_AFSNMP, [test "$enable_afsnmp" = "yes"])
 AM_CONDITIONAL(ENABLE_MANPAGES, [test "$enable_manpages" != "no"])
 AM_CONDITIONAL(ENABLE_NATIVE, [test "$enable_native" != "no"])
 AM_CONDITIONAL(ENABLE_EXTRA_WARNINGS, [test "$enable_extra_warnings" = "yes"])
@@ -2026,5 +2026,5 @@ echo "  Riemann destination (module): ${enable_riemann:=no}, microseconds: ${rie
 echo "  python                      : ${enable_python:=no} (pkg-config package: ${with_python:=none})"
 echo "  java                        : ${enable_java:=no}"
 echo "  java modules                : ${enable_java_modules:=no}"
-echo "  snmp destination            : ${enable_snmp_dest:=no}"
+echo "  afsnmp module               : ${enable_afsnmp:=no}"
 echo "  native bindings             : ${enable_native:=no}"

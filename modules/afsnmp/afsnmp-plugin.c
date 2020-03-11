@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2017 Balabit
+ * Copyright (c) 2019 Balabit
+ * Copyright (c) 2002-2011 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -24,31 +25,36 @@
 #include "plugin.h"
 #include "plugin-types.h"
 
-extern CfgParser snmptrapd_parser_parser;
+extern CfgParser afsnmp_parser;
 
-static Plugin snmptrapd_parser_plugins[] =
+static Plugin afsnmp_plugins[] =
 {
+  {
+    .type = LL_CONTEXT_DESTINATION,
+    .name = "snmp",
+    .parser = &afsnmp_parser,
+  },
   {
     .type = LL_CONTEXT_PARSER,
     .name = "snmptrapd-parser",
-    .parser = &snmptrapd_parser_parser,
+    .parser = &afsnmp_parser,
   },
 };
 
 gboolean
-snmptrapd_parser_module_init(PluginContext *context, CfgArgs *args)
+afsnmp_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(context, snmptrapd_parser_plugins, G_N_ELEMENTS(snmptrapd_parser_plugins));
+  plugin_register(context, afsnmp_plugins, G_N_ELEMENTS(afsnmp_plugins));
   return TRUE;
 }
 
 const ModuleInfo module_info =
 {
-  .canonical_name = "snmptrapd_parser",
+  .canonical_name = "afsnmp",
   .version = SYSLOG_NG_VERSION,
-  .description = "The snmptrapd module provides parsing support for snmptrapd output in syslog-ng",
+  .description = "The snmp module provides SNMP support for syslog-ng.",
   .core_revision = SYSLOG_NG_SOURCE_REVISION,
-  .plugins = snmptrapd_parser_plugins,
-  .plugins_len = G_N_ELEMENTS(snmptrapd_parser_plugins),
+  .plugins = afsnmp_plugins,
+  .plugins_len = G_N_ELEMENTS(afsnmp_plugins)
 };
 

@@ -93,7 +93,7 @@ override_dh_auto_configure:
 		--enable-manpages \
 		--enable-pacct \
 		--enable-python \
-		--enable-snmp-dest \
+		--enable-afsnmp \
 		--enable-riemann=auto \
 		--enable-amqp=auto \
 		--with-librabbitmq-client=system \

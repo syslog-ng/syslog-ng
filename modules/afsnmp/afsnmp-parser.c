@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2017 Balabit
+ * Copyright (c) 2002-2011 BalaBit IT Ltd, Budapest, Hungary
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,31 +21,42 @@
  *
  */
 
-#include "snmptrapd-parser.h"
+#include "afsnmpdest.h"
 #include "cfg-parser.h"
-#include "snmptrapd-parser-grammar.h"
+#include "afsnmp-grammar.h"
+#include "afsnmp-parser.h"
 
-extern int snmptrapd_parser_debug;
+int afsnmp_parse(CfgLexer *lexer, void **instance, gpointer arg);
 
-int snmptrapd_parser_parse(CfgLexer *lexer, LogParser **instance, gpointer arg);
-
-static CfgLexerKeyword snmptrapd_parser_keywords[] =
+static CfgLexerKeyword afsnmp_keywords[] =
 {
+  { "snmp",              KW_SNMPDEST },
+  { "version",           KW_VERSION },
+  { "host",              KW_HOST },
+  { "port",              KW_PORT },
+  { "snmp_obj",          KW_SNMP_OBJ },
+  { "trap_obj",          KW_TRAP_OBJ },
+  { "community",         KW_COMMUNITY },
+  { "engine_id",         KW_ENGINE_ID },
+  { "auth_username",     KW_AUTH_USERNAME },
+  { "auth_algorithm",    KW_AUTH_ALGORITHM },
+  { "auth_password",     KW_AUTH_PASSWORD },
+  { "enc_algorithm",     KW_ENC_ALGORITHM },
+  { "enc_password",      KW_ENC_PASSWORD },
+  { "transport",         KW_TRANSPORT },
+  { "time_zone",         KW_LOCAL_TIME_ZONE },
   { "snmptrapd_parser",  KW_SNMPTRAPD_PARSER },
   { "prefix",            KW_PREFIX },
   { "set_message_macro", KW_SET_MESSAGE_MACRO },
   { NULL }
 };
 
-CfgParser snmptrapd_parser_parser =
+CfgParser afsnmp_parser =
 {
-#if SYSLOG_NG_ENABLE_DEBUG
-  .debug_flag = &snmptrapd_parser_debug,
-#endif
-  .name = "snmptrapd-parser",
-  .keywords = snmptrapd_parser_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) snmptrapd_parser_parse,
+  .name = "afsnmp",
+  .keywords = afsnmp_keywords,
+  .parse = (int (*)(CfgLexer *lexer, gpointer *instance, gpointer)) afsnmp_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(snmptrapd_parser_, LogParser **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(afsnmp_, void **)

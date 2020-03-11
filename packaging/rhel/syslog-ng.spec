@@ -25,7 +25,7 @@ Intentional syntax error to cause rpmbuild to abort.
 %bcond_without amqp
 %bcond_without java
 %bcond_without kafka
-%bcond_without snmpdest
+%bcond_without afsnmp
 
 %if 0%{with python2}
 %global		python_devel python-devel
@@ -56,7 +56,7 @@ Intentional syntax error to cause rpmbuild to abort.
 %bcond_with amqp
 %bcond_without java
 %bcond_with kafka
-%bcond_without snmpdest
+%bcond_without afsnmp
 %global        python_devel python-devel
 %global        py_ver  2.6
 %else
@@ -143,7 +143,7 @@ BuildRequires: librdkafka-devel
 BuildRequires: zlib-devel
 %endif
 
-%if %{with snmpdest}
+%if %{with afsnmp}
 BuildRequires: net-snmp-devel
 %endif
 
@@ -220,12 +220,12 @@ Requires: %{name}%{?_isa} = %{version}-%{release}
 %description kafka
 This module supports sending logs to kafka through librdkafka.
 
-%package snmpdest
-Summary: SNMP destination support for %{name}
+%package afsnmp
+Summary: SNMP support for %{name}
 Group: Development/Libraries
 Requires: %{name}%{?_isa} = %{version}-%{release}
 
-%description snmpdest
+%description afsnmp
 This module supports sending SNMP traps using net-snmp.
 
 %package java
@@ -333,7 +333,7 @@ export GEOIP_LIBS=-lGeoIP
     --enable-python \
     --with-python=%{py_ver} \
     %{?with_kafka:--enable-kafka} \
-    %{?with_snmpdest:--enable-snmp-dest} %{!?with_snmpdest:--disable-snmp-dest} \
+    %{?with_afsnmp:--enable-afsnmp} %{!?with_afsnmp:--disable-afsnmp} \
     %{?with_java:--enable-java} %{!?with_java:--disable-java} \
     %{?with_sql:--enable-sql} \
     %{?with_systemd:--enable-systemd} \
@@ -474,7 +474,6 @@ fi
 %{_libdir}/%{name}/liblinux-kmsg-format.so
 %{_libdir}/%{name}/libmap-value-pairs.so
 %{_libdir}/%{name}/libpseudofile.so
-%{_libdir}/%{name}/libsnmptrapd-parser.so
 %{_libdir}/%{name}/libstardate.so
 %{_libdir}/%{name}/libsyslogformat.so
 %{_libdir}/%{name}/libsystem-source.so
@@ -533,9 +532,9 @@ fi
 %{_libdir}/%{name}/libkafka.so
 %endif
 
-%if %{with snmpdest}
-%files snmpdest
-%{_libdir}/%{name}/libsnmpdest.so
+%if %{with afsnmp}
+%files afsnmp
+%{_libdir}/%{name}/libafsnmp.so
 %endif
 
 %files smtp
