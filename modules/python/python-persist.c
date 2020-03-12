@@ -35,6 +35,7 @@ typedef enum
 {
   ENTRY_TYPE_STRING,
   ENTRY_TYPE_LONG,
+  ENTRY_TYPE_BYTES,
   ENTRY_TYPE_MAX
 } EntryType;
 
@@ -53,6 +54,8 @@ entry_to_pyobject(guint8 type, gchar *value)
       return _py_string_from_string(value, -1);
     case ENTRY_TYPE_LONG:
       return PyLong_FromString(value, NULL, 10);
+    case ENTRY_TYPE_BYTES:
+      return PyBytes_FromString(value);
     default:
       g_assert_not_reached();
     }
@@ -253,11 +256,11 @@ _allocate_persist_entry(PersistState *persist_state, const gchar *key, const gch
 static gchar *
 _serialize(guint8 type, PyObject *v)
 {
-  if (type == ENTRY_TYPE_STRING)
+  switch (type)
     {
+    case ENTRY_TYPE_STRING:
       return g_strdup(_py_get_string_as_string(v));
-    }
-  else if (type == ENTRY_TYPE_LONG)
+    case ENTRY_TYPE_LONG:
     {
       PyObject *as_str = PyObject_Str(v);
       g_assert(as_str);
@@ -265,8 +268,11 @@ _serialize(guint8 type, PyObject *v)
       Py_DECREF(as_str);
       return result;
     }
-  else
-    g_assert_not_reached();
+    case ENTRY_TYPE_BYTES:
+      return g_strdup(PyBytes_AsString(v));
+    default:
+      g_assert_not_reached();
+    }
 }
 
 static gboolean
@@ -344,9 +350,11 @@ _py_persist_type_set(PyObject *o, PyObject *k, PyObject *v)
     type = ENTRY_TYPE_STRING;
   else if (py_object_is_integer(v))
     type = ENTRY_TYPE_LONG;
+  else if (PyBytes_Check(v))
+    type = ENTRY_TYPE_BYTES;
   else
     {
-      PyErr_SetString(PyExc_TypeError, "Value must be either string or integer");
+      PyErr_SetString(PyExc_TypeError, "Value must be either string, integer or bytes");
       return -1;
     }
 
