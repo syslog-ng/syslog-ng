@@ -109,4 +109,9 @@ gchar *g_base64_encode_fixed(const guchar *data, gsize len);
 gboolean slng_g_hash_table_insert (GHashTable *hash_table, gpointer key, gpointer value);
 #endif
 
+#if !GLIB_CHECK_VERSION(2, 64, 0)
+#define g_utf8_get_char_validated g_utf8_get_char_validated_fixed
+gunichar g_utf8_get_char_validated_fixed (const gchar *p, gssize max_len);
+#endif
+
 #endif
