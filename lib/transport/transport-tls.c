@@ -59,21 +59,27 @@ log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTr
     {
       rc = SSL_read(self->tls_session->ssl, buf, buflen);
 
-      if (rc < 0)
+      if (rc <= 0)
         {
           ssl_error = SSL_get_error(self->tls_session->ssl, rc);
           switch (ssl_error)
             {
             case SSL_ERROR_WANT_READ:
+              rc = -1;
               errno = EAGAIN;
               break;
             case SSL_ERROR_WANT_WRITE:
               /* although we are reading this fd, libssl wants to write. This
                * happens during renegotiation for example */
               self->super.super.cond = G_IO_OUT;
+              rc = -1;
               errno = EAGAIN;
               break;
+            case SSL_ERROR_ZERO_RETURN:
+              rc = 0;
+              break;
             case SSL_ERROR_SYSCALL:
+              rc = -1;
               /* errno is set accordingly */
               break;
             default:
