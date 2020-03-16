@@ -198,7 +198,7 @@ log_transport_stream_socket_write_method(LogTransport *s, const gpointer buf, gs
   return rc;
 }
 
-static void
+void
 log_transport_stream_socket_free_method(LogTransport *s)
 {
   if (s->fd != -1)
