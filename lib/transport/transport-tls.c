@@ -22,6 +22,7 @@
  */
 
 #include "transport/transport-tls.h"
+#include "transport/transport-socket.h"
 
 #include "messages.h"
 
@@ -31,7 +32,7 @@
 
 typedef struct _LogTransportTLS
 {
-  LogTransport super;
+  LogTransportSocket super;
   TLSSession *tls_session;
 } LogTransportTLS;
 
@@ -44,7 +45,7 @@ log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTr
 
   /* assume that we need to poll our input for reading unless
    * SSL_ERROR_WANT_WRITE is specified by libssl */
-  self->super.cond = G_IO_IN;
+  self->super.super.cond = G_IO_IN;
 
   /* if we have found the peer has a certificate */
   if( self->tls_session->peer_info.found )
@@ -69,7 +70,7 @@ log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTr
             case SSL_ERROR_WANT_WRITE:
               /* although we are reading this fd, libssl wants to write. This
                * happens during renegotiation for example */
-              self->super.cond = G_IO_OUT;
+              self->super.super.cond = G_IO_OUT;
               errno = EAGAIN;
               break;
             case SSL_ERROR_SYSCALL:
@@ -83,7 +84,7 @@ log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTr
   while (rc == -1 && errno == EINTR);
   if (rc != -1)
     {
-      self->super.cond = 0;
+      self->super.super.cond = 0;
     }
 
   return rc;
@@ -109,7 +110,7 @@ log_transport_tls_write_method(LogTransport *s, const gpointer buf, gsize buflen
   /* assume that we need to poll our output for writing unless
    * SSL_ERROR_WANT_READ is specified by libssl */
 
-  self->super.cond = G_IO_OUT;
+  self->super.super.cond = G_IO_OUT;
 
   rc = SSL_write(self->tls_session->ssl, buf, buflen);
 
@@ -121,7 +122,7 @@ log_transport_tls_write_method(LogTransport *s, const gpointer buf, gsize buflen
         case SSL_ERROR_WANT_READ:
           /* although we are writing this fd, libssl wants to read. This
            * happens during renegotiation for example */
-          self->super.cond = G_IO_IN;
+          self->super.super.cond = G_IO_IN;
           errno = EAGAIN;
           break;
         case SSL_ERROR_WANT_WRITE:
@@ -136,7 +137,7 @@ log_transport_tls_write_method(LogTransport *s, const gpointer buf, gsize buflen
     }
   else
     {
-      self->super.cond = 0;
+      self->super.super.cond = 0;
     }
 
   return rc;
@@ -160,15 +161,15 @@ log_transport_tls_new(TLSSession *tls_session, gint fd)
 {
   LogTransportTLS *self = g_new0(LogTransportTLS, 1);
 
-  log_transport_init_instance(&self->super, fd);
-  self->super.cond = 0;
-  self->super.read = log_transport_tls_read_method;
-  self->super.write = log_transport_tls_write_method;
-  self->super.free_fn = log_transport_tls_free_method;
+  log_transport_stream_socket_init_instance(&self->super, fd);
+  self->super.super.cond = 0;
+  self->super.super.read = log_transport_tls_read_method;
+  self->super.super.write = log_transport_tls_write_method;
+  self->super.super.free_fn = log_transport_tls_free_method;
   self->tls_session = tls_session;
 
   SSL_set_fd(self->tls_session->ssl, fd);
-  return &self->super;
+  return &self->super.super;
 }
 
 static void
@@ -177,5 +178,5 @@ log_transport_tls_free_method(LogTransport *s)
   LogTransportTLS *self = (LogTransportTLS *) s;
 
   tls_session_free(self->tls_session);
-  log_transport_free_method(s);
+  log_transport_stream_socket_free_method(s);
 }
