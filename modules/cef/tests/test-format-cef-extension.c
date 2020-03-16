@@ -104,7 +104,7 @@ Test(format_cef, test_null_in_value)
 
   configuration->template_options.on_error = ON_ERROR_DROP_MESSAGE | ON_ERROR_SILENT;
   log_msg_set_value_by_name(msg, ".cef.k", "a\0b", 3);
-  assert_template_format_msg("$(format-cef-extension --subkeys .cef.)", "k=a\\u0000b", msg);
+  assert_template_format_msg("$(format-cef-extension --subkeys .cef.)", "k=a\\x00b", msg);
   log_msg_unref(msg);
 }
 

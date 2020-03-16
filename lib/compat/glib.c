@@ -315,3 +315,18 @@ slng_g_hash_table_insert(GHashTable *hash_table, gpointer key, gpointer value)
   return exists;
 }
 #endif
+
+
+#if !GLIB_CHECK_VERSION(2, 64, 0)
+gunichar
+g_utf8_get_char_validated_fixed(const gchar *p, gssize max_len)
+{
+  // https://github.com/GNOME/glib/commit/1963821a57584b4674c20895e8a5adccd2d9effd
+
+#undef g_utf8_get_char_validated
+  if (*p == '\0' && max_len > 0)
+    return (gunichar)-2;
+
+  return g_utf8_get_char_validated(p, max_len);
+}
+#endif

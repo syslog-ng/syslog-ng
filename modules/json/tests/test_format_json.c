@@ -55,7 +55,7 @@ Test(format_json, test_format_json)
   assert_template_format("$(format-json MSG=$escaping)",
                          "{\"MSG\":\"binary stuff follows \\\"\\\\xad árvíztűrőtükörfúrógép\"}");
   assert_template_format("$(format-json MSG=$escaping2)", "{\"MSG\":\"\\\\xc3\"}");
-  assert_template_format("$(format-json MSG=$null)", "{\"MSG\":\"binary\\u0000stuff\"}");
+  assert_template_format("$(format-json MSG=$null)", "{\"MSG\":\"binary\\\\x00stuff\"}");
   assert_template_format_with_context("$(format-json MSG=$MSG)",
                                       "{\"MSG\":\"árvíztűrőtükörfúrógép\"}{\"MSG\":\"árvíztűrőtükörfúrógép\"}");
   assert_template_format("$(format-json --scope rfc3164)",
