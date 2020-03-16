@@ -34,7 +34,55 @@ typedef struct _LogTransportTLS
 {
   LogTransportSocket super;
   TLSSession *tls_session;
+  gboolean sending_shutdown;
 } LogTransportTLS;
+
+static inline gboolean
+_is_shutdown_sent(gint shutdown_rc)
+{
+  return shutdown_rc >= 0;
+}
+
+static gint
+log_transport_tls_send_shutdown(LogTransportTLS *self)
+{
+  self->sending_shutdown = TRUE;
+  gint shutdown_rc = SSL_shutdown(self->tls_session->ssl);
+
+  if (_is_shutdown_sent(shutdown_rc))
+    {
+      self->sending_shutdown = FALSE;
+      return shutdown_rc;
+    }
+
+  gint ssl_error = SSL_get_error(self->tls_session->ssl, shutdown_rc);
+
+  switch (ssl_error)
+    {
+    case SSL_ERROR_WANT_READ:
+      self->super.super.cond = G_IO_IN;
+      errno = EAGAIN;
+      break;
+    case SSL_ERROR_WANT_WRITE:
+      self->super.super.cond = G_IO_OUT;
+      errno = EAGAIN;
+      break;
+    case SSL_ERROR_SYSCALL:
+      /* errno is set accordingly */
+      self->sending_shutdown = FALSE;
+      break;
+    default:
+      msg_error("SSL error while shutting down stream",
+                tls_context_format_tls_error_tag(self->tls_session->ctx),
+                tls_context_format_location_tag(self->tls_session->ctx));
+      ERR_clear_error();
+      errno = ECONNRESET;
+      self->sending_shutdown = FALSE;
+      break;
+    }
+
+  return shutdown_rc;
+}
 
 static gssize
 log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
@@ -42,6 +90,9 @@ log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTr
   LogTransportTLS *self = (LogTransportTLS *) s;
   gint ssl_error;
   gint rc;
+
+  if (G_UNLIKELY(self->sending_shutdown))
+    return (log_transport_tls_send_shutdown(self) >= 0) ? 0 : -1;
 
   /* assume that we need to poll our input for reading unless
    * SSL_ERROR_WANT_WRITE is specified by libssl */
@@ -76,7 +127,7 @@ log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTr
               errno = EAGAIN;
               break;
             case SSL_ERROR_ZERO_RETURN:
-              rc = 0;
+              rc = (log_transport_tls_send_shutdown(self) >= 0) ? 0 : -1;
               break;
             case SSL_ERROR_SYSCALL:
               rc = -1;
