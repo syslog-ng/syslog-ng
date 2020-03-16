@@ -82,10 +82,9 @@ log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTr
         }
     }
   while (rc == -1 && errno == EINTR);
-  if (rc != -1)
-    {
-      self->super.super.cond = 0;
-    }
+
+  if (rc > 0)
+    self->super.super.cond = 0;
 
   return rc;
 tls_error:
