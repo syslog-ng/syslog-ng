@@ -21,6 +21,7 @@
 #
 #############################################################################
 import os
+import re
 
 import pytest
 from pathlib2 import Path
@@ -34,6 +35,8 @@ from src.syslog_ng_config.statements.destinations.destination_reader import Dest
 
 
 class SNMPtrapd(object):
+    TRAP_LOG_PREFIX = 'LIGHT_TEST_SNMP_TRAP_RECEIVED:'
+
     def __init__(self, port):
         self.snmptrapd_proc = None
         self.port = port
@@ -59,8 +62,11 @@ class SNMPtrapd(object):
                 "-C",
                 "-On",
                 "--doNotLogTraps=no",
+                "--authCommunity=log public",
                 self.port,
-                "-LF", "6-6", os.path.relpath(str(self.snmptrapd_log)),
+                "-d",
+                "-Lf", os.path.relpath(str(self.snmptrapd_log)),
+                "-F", "{}%v\n".format(self.TRAP_LOG_PREFIX),
             ],
             self.snmptrapd_stdout_path,
             self.snmptrapd_stderr_path,
@@ -84,9 +90,16 @@ class SNMPtrapd(object):
     def get_port(self):
         return self.port
 
-    def get_logs(self):
+    def get_traps(self):
         file_reader = DestinationReader(FileIO)
-        return file_reader.read_all_logs(self.snmptrapd_log)
+        logs = file_reader.read_all_logs(self.snmptrapd_log)
+        trap_list = []
+        for log_line in logs:
+            res = re.match('({})(.*)'.format(self.TRAP_LOG_PREFIX), log_line)
+            if (res):
+                for trap in res.group(2).rstrip().split("\t"):
+                    trap_list.append(trap)
+        return trap_list
 
 
 @pytest.fixture(scope="module")
