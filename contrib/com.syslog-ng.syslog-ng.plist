@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!--
+  launchd job for macOS that runs in the background upon system start.
+  
+  Tested environment: 
+    - macOS Catalina 10.15.3 
+    - syslog-ng 3.25
+    
+  Location to be stored: /Library/LaunchDaemons
+  Permissions: 644 root:wheel
+  If you need to manually start/stop the job:
+    - Start command: sudo launchctl load /Library/LaunchDaemons/com.syslog-ng.syslog-ng.plist
+    - Stop command: sudo launchctl unload /Library/LaunchDaemons/com.syslog-ng.syslog-ng.plist
+  
+  Author: Roberto Meléndez <@rcmelendez on LinkedIn & Medium>
+  Created: March 11, 2020
+  Modified: March 16, 2020
+-->
+<dict>
+	<key>Label</key>
+	<string>com.syslog-ng.syslog-ng</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/local/sbin/syslog-ng</string>
+		<string>-F</string>
+		<string>-p</string>
+    		<string>/var/run/syslog-ng.pid</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<true/>
+</dict>
+</plist>
