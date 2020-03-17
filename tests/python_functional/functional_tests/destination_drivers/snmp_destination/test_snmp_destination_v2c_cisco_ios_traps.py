@@ -80,7 +80,6 @@ def test_snmp_dest_v2_cisco_ios_trap(config, syslog_ng, snmptrapd):
 
     syslog_ng.start(config)
 
-    snmptrap_logs = snmptrapd.get_logs()[2].rstrip().split("\t")
-
+    received_traps = snmptrapd.get_traps()
     for exp_log in expected_logs:
-        assert exp_log in snmptrap_logs
+        assert exp_log in received_traps
