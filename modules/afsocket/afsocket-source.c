@@ -402,6 +402,8 @@ afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *client_add
       msg_error("Number of allowed concurrent connections reached, rejecting connection",
                 evt_tag_str("client", g_sockaddr_format(client_addr, buf, sizeof(buf), GSA_FULL)),
                 evt_tag_str("local", g_sockaddr_format(local_addr, buf2, sizeof(buf2), GSA_FULL)),
+                evt_tag_str("group_name", self->super.super.group),
+                log_pipe_location_tag(&self->super.super.super),
                 evt_tag_int("max", self->max_connections));
       return FALSE;
     }
