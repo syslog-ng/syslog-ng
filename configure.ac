@@ -151,7 +151,7 @@ AC_ARG_WITH(libnet,
 AC_ARG_WITH(net-snmp,
    [  --with-net-snmp=path      use path to net-snmp-config script],
    ,
-   [with_netsnmp=""])
+   [with_net_snmp=""])
 
 AC_ARG_WITH(pidfile-dir,
    [  --with-pidfile-dir=path   Use path as the directory for storing pidfiles],
@@ -1104,10 +1104,10 @@ dnl afsnmp module & net-snmp headers/libraries
 dnl ***************************************************************************
 AC_MSG_CHECKING(whether to enable snmp destination driver)
 
-if test "x$with_netsnmp" = "x"; then
+if test "x$with_net_snmp" = "x"; then
    NETSNMP_CONFIG="`which net-snmp-config`"
 else
-   NETSNMP_CONFIG="$with_netsnmp/net-snmp-config"
+   NETSNMP_CONFIG="$with_net_snmp/net-snmp-config"
 fi
 
 if test "x$enable_afsnmp" = "xyes"; then
