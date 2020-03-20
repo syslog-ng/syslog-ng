@@ -618,6 +618,13 @@ _flush_on_target(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
   if (debug_flag)
     _debug_response_info(self, target, http_code);
 
+  HttpResponseReceivedSignalData signal_data =
+  {
+    .http_code = http_code
+  };
+
+  EMIT(owner->super.super.super.super.signal_slot_connector, signal_http_response_received, &signal_data);
+
   if (http_code == 401 && owner->auth_header)
     return _renew_header(owner);
 

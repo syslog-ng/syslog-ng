@@ -29,6 +29,7 @@
 #include "list-adt.h"
 
 typedef struct _HttpHeaderRequestSignalData HttpHeaderRequestSignalData;
+typedef struct _HttpResponseReceivedSignalData HttpResponseReceivedSignalData;
 
 typedef enum
 {
@@ -44,6 +45,13 @@ struct _HttpHeaderRequestSignalData
   GString *request_body;
 };
 
+struct _HttpResponseReceivedSignalData
+{
+  glong http_code;
+};
+
 #define signal_http_header_request SIGNAL(http, header_request, HttpHeaderRequestSignalData *)
+
+#define signal_http_response_received SIGNAL(http, response_received, HttpResponseReceivedSignalData *)
 
 #endif
