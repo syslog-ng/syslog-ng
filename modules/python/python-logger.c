@@ -38,7 +38,7 @@ py_msg_error(PyObject *obj, PyObject *args)
     return NULL;
 
   msg_error(message);
-  return Py_None;
+  Py_RETURN_NONE;
 }
 
 PyObject *
@@ -49,7 +49,7 @@ py_msg_warning(PyObject *obj, PyObject *args)
     return NULL;
 
   msg_warning(message);
-  return Py_None;
+  Py_RETURN_NONE;
 }
 
 PyObject *
@@ -60,38 +60,35 @@ py_msg_info(PyObject *obj, PyObject *args)
     return NULL;
 
   msg_info(message);
-  return Py_None;
+  Py_RETURN_NONE;
 }
 
 PyObject *
 py_msg_debug(PyObject *obj, PyObject *args)
 {
   if (!debug_flag)
-    {
-      Py_INCREF(Py_None);
-      return Py_None;
-    }
+    Py_RETURN_NONE;
 
   char *message = NULL;
   if (!PyArg_ParseTuple(args, "s", &message))
     return NULL;
 
   msg_debug(message);
-  return Py_None;
+  Py_RETURN_NONE;
 }
 
 PyObject *
 py_msg_trace(PyObject *obj, PyObject *args)
 {
   if (!trace_flag)
-    return Py_None;
+    Py_RETURN_NONE;
 
   char *message = NULL;
   if (!PyArg_ParseTuple(args, "s", &message))
     return NULL;
 
   msg_trace(message);
-  return Py_None;
+  Py_RETURN_NONE;
 }
 
 
