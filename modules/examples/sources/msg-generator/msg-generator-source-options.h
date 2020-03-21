@@ -26,6 +26,8 @@
 
 #include "logsource.h"
 #include "template/templates.h"
+#include "logmsg/logmsg.h"
+#include <compat/glib.h>
 
 typedef struct
 {
@@ -33,6 +35,7 @@ typedef struct
   guint freq;
   gint max_num;
   LogTemplate *template;
+  GHashTable *name_value;
 } MsgGeneratorSourceOptions;
 
 static inline void
@@ -73,5 +76,9 @@ msg_generator_source_options_set_template(MsgGeneratorSourceOptions *self, LogTe
   log_template_unref(self->template);
   self->template = log_template_ref(template);
 }
-
+static inline void
+msg_generator_source_options_set_value_pair(MsgGeneratorSourceOptions *self, const gchar *name, LogTemplate *value)
+{
+  g_hash_table_insert(self->name_value, g_strdup(name), log_template_ref(value));
+}
 #endif
