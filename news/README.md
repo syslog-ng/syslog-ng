@@ -15,7 +15,7 @@ How to create a newsfile entry
      * Please make sure, that there are no lines longer than 120 characters.
      * Make it 2-3 sentences at most.
      * Start the entry with the affected modules then a colon. For example: "`network-dest`: Added..."
- 3. Commit it with the message: "news: <type>-<pr-num>", for example: "news: bugfix-1234"
+ 3. Commit it with the message: `news: <type>-<pr-num>`, for example: "news: bugfix-1234"
 
 
 How to create the `NEWS.md` file for the release
