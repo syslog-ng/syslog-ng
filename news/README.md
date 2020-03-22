@@ -4,6 +4,7 @@ How to create a newsfile entry
  1. Create a file in the `news/` directory called `<type>-<pr-num>.md`, where `<type>` is either:
      * `feature`: New functionality.
      * `bugfix`: Fix to a reported bug.
+     * `packaging`: Packaging related change.
      * `developer-note`: Changes, that are only interesting to developers. (internal API change, etc...)
      * `other`: Other important, but not categorized change.
     You can calculate your PR number, by checking the most recent Issue or PR on github,
