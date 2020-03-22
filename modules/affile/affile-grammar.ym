@@ -257,12 +257,12 @@ multi_line_option
 	  {
             GError *error = NULL;
 
-	    CHECK_ERROR_GERROR(log_proto_multi_line_server_options_set_garbage(&last_log_proto_options->super, $3, &error), @3, error, "error compiling multi-line regexp");
-	    free($3);
+	    	CHECK_ERROR_GERROR(log_proto_multi_line_server_options_set_garbage(&last_log_proto_options->super, $3, &error), @3, error, "error compiling multi-line regexp");
+	    	free($3);
 	  }
 	| KW_MULTI_LINE_TIMEOUT '(' nonnegative_integer ')'
 	  {
-	    file_reader_options_set_multi_line_timeout(last_file_reader_options, ($3 * 1000));
+	    	file_reader_options_set_multi_line_timeout(last_file_reader_options, ($3 * 1000));
 	  }
 	;
 
@@ -283,8 +283,8 @@ multi_line_options
 	  {
             GError *error = NULL;
 
-	    CHECK_ERROR_GERROR(log_proto_multi_line_server_options_set_garbage(&last_log_proto_options->super, $3, &error), @3, error, "error compiling multi-line regexp");
-	    free($3);
+	    	CHECK_ERROR_GERROR(log_proto_multi_line_server_options_set_garbage(&last_log_proto_options->super, $3, &error), @3, error, "error compiling multi-line regexp");
+	    	free($3);
 	  }
 	;
 
