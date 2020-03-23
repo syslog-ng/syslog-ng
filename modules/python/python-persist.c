@@ -220,8 +220,16 @@ _persist_type_init(PyObject *s, PyObject *args, PyObject *kwds)
   PyPersist *self =(PyPersist *)s;
   const gchar *persist_name=NULL;
 
-  GlobalConfig *cfg = main_loop_get_current_config(main_loop_get_instance());
-  self->persist_state = cfg->state;
+  self->persist_state = PyCapsule_Import("_syslogng.persist_state", FALSE);
+  if (!self->persist_state)
+    {
+      gchar buf[256];
+      msg_error("Error importing persist_state",
+                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+      _py_finish_exception_handling();
+
+      g_assert_not_reached();
+    }
 
   static char *kwlist[] = {"persist_name", NULL};
 

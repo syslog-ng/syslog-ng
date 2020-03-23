@@ -32,8 +32,9 @@ python_config_init(ModuleConfig *s, GlobalConfig *cfg)
 {
   PythonConfig *self = (PythonConfig *) s;
 
-  PyGILState_STATE gstate;
+  propagate_persist_state(cfg);
 
+  PyGILState_STATE gstate;
   gstate = PyGILState_Ensure();
   _py_switch_main_module(self);
   PyGILState_Release(gstate);

@@ -22,13 +22,9 @@
 #include "python-persist.h"
 #include "python-main.h"
 #include "apphook.h"
-#include "mainloop.h"
 #include "persist_lib.h"
 
 #include <criterion/criterion.h>
-
-MainLoop *main_loop;
-MainLoopOptions main_loop_options = {0};
 
 static PyObject *_python_main;
 static PyObject *_python_main_dict;
@@ -63,6 +59,8 @@ _py_init_interpreter(void)
 static void
 _load_code(const gchar *code)
 {
+  propagate_persist_state(cfg);
+
   PyGILState_STATE gstate;
   gstate = PyGILState_Ensure();
   cr_assert(python_evaluate_global_code(cfg, code, &yyltype));
@@ -73,26 +71,22 @@ void setup(void)
 {
   app_startup();
 
-  main_loop = main_loop_get_instance();
-  main_loop_init(main_loop, &main_loop_options);
-
-  cfg = main_loop_get_current_config(main_loop_get_instance());
-
   _py_init_interpreter();
   _init_python_main();
 
-  _load_code("from _syslogng import Persist");
+  cfg = cfg_new_snippet();
 }
 
 void teardown(void)
 {
-  main_loop_deinit(main_loop);
+  cfg_free(cfg);
   app_shutdown();
 }
 
 TestSuite(python_persist, .init = setup, .fini = teardown);
 
 const gchar *simple_persist = "\n\
+from _syslogng import Persist\n\
 class SubPersist(Persist):\n\
     def __init__(self, persist_name):\n\
         super(SubPersist, self).__init__(persist_name = persist_name)\n\
@@ -123,6 +117,7 @@ Test(python_persist, test_python_persist_basic)
 {
   PersistState *state = clean_and_create_persist_state_for_test("test-python.persist");
   cfg->state = state;
+  _load_code("from _syslogng import Persist");
   _load_code("persist = Persist('persist_name')");
   _load_code("assert 'key' not in persist");
   _load_code("persist['key'] = 'value'");
@@ -139,6 +134,7 @@ Test(python_persist, test_python_persist_iterator)
 {
   PersistState *state = clean_and_create_persist_state_for_test("test-python-iterator.persist");
   cfg->state = state;
+  _load_code("from _syslogng import Persist");
   _load_code("persist = Persist('persist_name')");
   _load_code("persist['key1'] = 'value1'");
   _load_code("persist['key2'] = 'value2'");
@@ -151,6 +147,7 @@ Test(python_persist, test_python_persist_proper_types)
 {
   PersistState *state = clean_and_create_persist_state_for_test("test-python-proper_types.persist");
   cfg->state = state;
+  _load_code("from _syslogng import Persist");
   _load_code("persist = Persist('persist_name')");
   _load_code("persist['str'] = 'value'");
   _load_code("persist['number'] = 5");
@@ -160,6 +157,7 @@ Test(python_persist, test_python_persist_proper_types)
 }
 
 const gchar *should_throw_exception = "\
+from _syslogng import Persist\n\
 persist = Persist('persist_name')\n\
 exception_happened = False\n\
 try:\n\
@@ -177,6 +175,7 @@ Test(python_persist, test_python_persist_lookup_missing_key)
 };
 
 const gchar *iter_returns_proper_types = "\n\
+from _syslogng import Persist\n\
 persist = Persist('persist_name')\n\
 persist['integer'] = 1\n\
 persist['str'] = 'str'\n\
