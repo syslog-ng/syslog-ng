@@ -21,6 +21,7 @@
  */
 
 #include "python-persist.h"
+#include "persistable-state-header.h"
 #include "python-helpers.h"
 #include "syslog-ng.h"
 #include "driver.h"
@@ -30,6 +31,9 @@
 #include <structmember.h>
 
 #define SUBKEY_DELIMITER "##"
+#define MASTER_ENTRY_VERSION 1
+
+typedef PersistableStateHeader PythonPersistMasterEntry;
 
 typedef enum
 {
@@ -165,6 +169,51 @@ python_format_persist_name(const LogPipe *p, const gchar *module, PythonPersistM
   return persist_name;
 }
 
+static gboolean
+load_persist_entry(PersistState *persist_state, PersistEntryHandle handle)
+{
+  PythonPersistMasterEntry *entry = persist_state_map_entry(persist_state, handle);
+  guint8 version = entry->version;
+  persist_state_unmap_entry(persist_state, handle);
+
+  if (version != MASTER_ENTRY_VERSION)
+    {
+      PyErr_Format(PyExc_RuntimeError, "Invalid persist version: %d\nPossible persist file corruption", (gint)version);
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
+static gboolean
+allocate_persist_entry(PersistState *persist_state, const gchar *persist_name)
+{
+  PersistEntryHandle handle = persist_state_alloc_entry(persist_state, persist_name, sizeof(PythonPersistMasterEntry));
+  if (!handle)
+    {
+      PyErr_Format(PyExc_RuntimeError, "Could not allocate persist entry");
+      return FALSE;
+    }
+
+  PythonPersistMasterEntry *entry = persist_state_map_entry(persist_state, handle);
+  entry->version = MASTER_ENTRY_VERSION;
+  persist_state_unmap_entry(persist_state, handle);
+
+  return TRUE;
+}
+
+static gboolean
+prepare_master_entry(PersistState *persist_state, const gchar *persist_name)
+{
+  gsize size;
+  guint8 version;
+  PersistEntryHandle handle = persist_state_lookup_entry(persist_state, persist_name, &size, &version);
+  if (handle)
+    return load_persist_entry(persist_state, handle);
+  else
+    return allocate_persist_entry(persist_state, persist_name);
+}
+
 static int
 _persist_type_init(PyObject *s, PyObject *args, PyObject *kwds)
 {
@@ -185,6 +234,9 @@ _persist_type_init(PyObject *s, PyObject *args, PyObject *kwds)
       PyErr_Format(PyExc_ValueError, "persist name cannot contain " SUBKEY_DELIMITER);
       return -1;
     }
+
+  if (!prepare_master_entry(self->persist_state, persist_name))
+    return -1;
 
   if (!self->persist_name)
     self->persist_name = g_strdup(persist_name);
