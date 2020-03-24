@@ -32,8 +32,8 @@ static CfgLexerKeyword java_keywords[] =
   { "java",        KW_JAVA },
   { "class_path",  KW_CLASS_PATH},
   { "class_name",  KW_CLASS_NAME},
-  { "option",      KW_OPTION},
-
+  { "option",      KW_OPTIONS, KWS_OBSOLETE, "The option() argument has been obsoleted in favour of options()" },
+  { "options",     KW_OPTIONS},
   { "jvm_options", KW_JVM_OPTIONS},
   { NULL }
 };
