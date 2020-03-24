@@ -446,6 +446,9 @@ fi
 %{_bindir}/dqtool
 %{_bindir}/update-patterndb
 %{_bindir}/persist-tool
+%{_bindir}/slogkey
+%{_bindir}/slogimport
+%{_bindir}/slogverify
 %{_libdir}/lib%{name}-*.so.*
 %{_libdir}/libevtlog-*.so.*
 %{_libdir}/libsecret-storage.so.*
@@ -474,6 +477,7 @@ fi
 %{_libdir}/%{name}/liblinux-kmsg-format.so
 %{_libdir}/%{name}/libmap-value-pairs.so
 %{_libdir}/%{name}/libpseudofile.so
+%{_libdir}/%{name}/libsecure-logging.so
 %{_libdir}/%{name}/libstardate.so
 %{_libdir}/%{name}/libsyslogformat.so
 %{_libdir}/%{name}/libsystem-source.so
@@ -502,6 +506,9 @@ fi
 %{_mandir}/man1/loggen.1*
 %{_mandir}/man1/pdbtool.1*
 %{_mandir}/man1/dqtool.1*
+%{_mandir}/man1/slogkey.1*
+%{_mandir}/man1/slogimport.1*
+%{_mandir}/man1/slogverify.1*
 %{_mandir}/man1/persist-tool.1*
 %{_mandir}/man1/syslog-ng-debun.1*
 %{_mandir}/man1/syslog-ng-ctl.1*
