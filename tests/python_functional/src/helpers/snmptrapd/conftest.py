@@ -27,6 +27,7 @@ from pathlib2 import Path
 from psutil import TimeoutExpired
 
 import src.testcase_parameters.testcase_parameters as tc_parameters
+from src.common.blocking import wait_until_true
 from src.driver_io.file.file_io import FileIO
 from src.executors.process_executor import ProcessExecutor
 from src.syslog_ng_config.statements.destinations.destination_reader import DestinationReader
@@ -40,6 +41,12 @@ class SNMPtrapd(object):
         self.snmptrapd_log = Path(tc_parameters.WORKING_DIR, "snmptrapd_log")
         self.snmptrapd_stdout_path = Path(tc_parameters.WORKING_DIR, "snmptrapd_stdout")
         self.snmptrapd_stderr_path = Path(tc_parameters.WORKING_DIR, "snmptrapd_stderr")
+
+    def wait_for_snmptrapd_log_creation(self):
+        return self.snmptrapd_log.exists()
+
+    def wait_for_snmptrapd_startup(self):
+        return "NET-SNMP version" in self.snmptrapd_log.read_text()
 
     def start(self):
         if self.snmptrapd_proc is not None:
@@ -58,6 +65,8 @@ class SNMPtrapd(object):
             self.snmptrapd_stdout_path,
             self.snmptrapd_stderr_path,
         )
+        wait_until_true(self.wait_for_snmptrapd_log_creation)
+        wait_until_true(self.wait_for_snmptrapd_startup)
         return self.snmptrapd_proc.is_running()
 
     def stop(self):
