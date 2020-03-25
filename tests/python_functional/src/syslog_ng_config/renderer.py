@@ -32,8 +32,6 @@ class ConfigRenderer(object):
         return self.__syslog_ng_config_content
 
     def __render(self, re_create_config=None):
-        if re_create_config:
-            self.__syslog_ng_config_content = ""
 
         version = self.__syslog_ng_config["version"]
         includes = self.__syslog_ng_config["includes"]
@@ -41,79 +39,104 @@ class ConfigRenderer(object):
         statement_groups = self.__syslog_ng_config["statement_groups"]
         logpath_groups = self.__syslog_ng_config["logpath_groups"]
 
+        config = ""
+
         if version:
-            self.__render_version(version)
+            config += self.__render_version(version)
         if includes:
-            self.__render_includes(includes)
+            config += self.__render_includes(includes)
         if global_options:
-            self.__render_global_options(global_options)
+            config += self.__render_global_options(global_options)
         if statement_groups:
-            self.__render_statement_groups(statement_groups)
+            config += self.__render_statement_groups(statement_groups)
         if logpath_groups:
-            self.__render_logpath_groups(logpath_groups)
+            config += self.__render_logpath_groups(logpath_groups)
+
+        if re_create_config:
+            self.__syslog_ng_config_content = config
+        else:
+            self.__syslog_ng_config_content += config
 
     def __render_version(self, version):
-        self.__syslog_ng_config_content += "@version: {}\n".format(version)
+        return "@version: {}\n".format(version)
 
     def __render_includes(self, includes):
-        for include in includes:
-            self.__syslog_ng_config_content += '@include "{}"\n'.format(include)
+        include_lines = ['@include "{}"'.format(include) for include in includes]
+        return "\n".join(include_lines)
 
     def __render_global_options(self, global_options):
         globals_options_header = "options {\n"
         globals_options_footer = "};\n"
-        self.__syslog_ng_config_content += globals_options_header
+
+        config_snippet = globals_options_header
         for option_name, option_value in global_options.items():
-            self.__syslog_ng_config_content += "    {}({});\n".format(option_name, option_value)
-        self.__syslog_ng_config_content += globals_options_footer
+            config_snippet += "    {}({});\n".format(option_name, option_value)
+        config_snippet += globals_options_footer
+
+        return config_snippet
 
     def __render_positional_options(self, positional_parameters):
+        config_snippet = ""
         for parameter in positional_parameters:
-            self.__syslog_ng_config_content += "        {}\n".format(str(parameter))
+            config_snippet += "        {}\n".format(str(parameter))
+        return config_snippet
 
     def __render_driver_options(self, driver_options):
+
+        config_snippet = ""
+
         for option_name, option_value in driver_options.items():
             if isinstance(option_value, dict):
-                self.__syslog_ng_config_content += "        {}(\n".format(option_name)
-                self.__render_driver_options(option_value)
-                self.__syslog_ng_config_content += "        )\n"
+                config_snippet += "        {}(\n".format(option_name)
+                config_snippet += self.__render_driver_options(option_value)
+                config_snippet += "        )\n"
             elif (isinstance(option_value, tuple) or isinstance(option_value, list)):
                 for element in option_value:
-                    self.__syslog_ng_config_content += "        {}({})\n".format(option_name, element)
+                    config_snippet += "        {}({})\n".format(option_name, element)
             else:
-                self.__syslog_ng_config_content += "        {}({})\n".format(option_name, option_value)
+                config_snippet += "        {}({})\n".format(option_name, option_value)
+
+        return config_snippet
 
     def __render_statement_groups(self, statement_groups):
+        config_snippet = ""
+
         for statement_group in statement_groups:
             # statement header
-            self.__syslog_ng_config_content += "\n{} {} {{\n".format(
+            config_snippet += "\n{} {} {{\n".format(
                 statement_group.group_type, statement_group.group_id,
             )
 
             for statement in statement_group:
                 # driver header
-                self.__syslog_ng_config_content += "    {} (\n".format(statement.driver_name)
+                config_snippet += "    {} (\n".format(statement.driver_name)
 
                 # driver options
-                self.__render_positional_options(statement.positional_parameters)
-                self.__render_driver_options(statement.options)
+                config_snippet += self.__render_positional_options(statement.positional_parameters)
+                config_snippet += self.__render_driver_options(statement.options)
 
                 # driver footer
-                self.__syslog_ng_config_content += "    );\n"
+                config_snippet += "    );\n"
 
             # statement footer
-            self.__syslog_ng_config_content += "};\n"
+            config_snippet += "};\n"
+
+        return config_snippet
 
     def __render_logpath_groups(self, logpath_groups):
+        config_snippet = ""
+
         for logpath_group in logpath_groups:
-            self.__syslog_ng_config_content += "\nlog {\n"
+            config_snippet += "\nlog {\n"
             for statement_group in logpath_group.logpath:
                 if statement_group.group_type == "log":
-                    self.__render_logpath_groups(logpath_groups=[statement_group])
+                    config_snippet += self.__render_logpath_groups(logpath_groups=[statement_group])
                 else:
-                    self.__syslog_ng_config_content += "    {}({});\n".format(
+                    config_snippet += "    {}({});\n".format(
                         statement_group.group_type, statement_group.group_id,
                     )
             if logpath_group.flags:
-                self.__syslog_ng_config_content += "    flags({});\n".format("".join(logpath_group.flags))
-            self.__syslog_ng_config_content += "};\n"
+                config_snippet += "    flags({});\n".format("".join(logpath_group.flags))
+            config_snippet += "};\n"
+
+        return config_snippet
