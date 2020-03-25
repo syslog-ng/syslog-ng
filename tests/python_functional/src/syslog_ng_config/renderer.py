@@ -50,19 +50,39 @@ def render_positional_options(positional_parameters):
     return config_snippet
 
 
+def render_options(name, options):
+
+    config_snippet = ""
+    config_snippet += "        {}(\n".format(name)
+    config_snippet += render_driver_options(options)
+    config_snippet += "        )\n"
+
+    return config_snippet
+
+
+def render_list(name, options):
+    config_snippet = ""
+
+    for element in options:
+        config_snippet += "        {}({})\n".format(name, element)
+
+    return config_snippet
+
+
+def render_name_value(name, value):
+    return "        {}({})\n".format(name, value)
+
+
 def render_driver_options(driver_options):
     config_snippet = ""
 
     for option_name, option_value in driver_options.items():
         if isinstance(option_value, dict):
-            config_snippet += "        {}(\n".format(option_name)
-            config_snippet += render_driver_options(option_value)
-            config_snippet += "        )\n"
+            config_snippet += render_options(option_name, option_value)
         elif (isinstance(option_value, tuple) or isinstance(option_value, list)):
-            for element in option_value:
-                config_snippet += "        {}({})\n".format(option_name, element)
+            config_snippet += render_list(option_name, option_value)
         else:
-            config_snippet += "        {}({})\n".format(option_name, option_value)
+            config_snippet += render_name_value(option_name, option_value)
 
     return config_snippet
 
