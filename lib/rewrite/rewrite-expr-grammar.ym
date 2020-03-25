@@ -105,7 +105,11 @@ rewrite_expr
             last_rewrite = log_rewrite_unset_new(configuration);
           }
           '(' rewrite_set_opts ')'              { $$ = last_rewrite; }
-	| KW_SET_TAG '(' string ')'             { $$ = log_rewrite_set_tag_new($3, TRUE, configuration); free($3); }
+	| KW_SET_TAG '(' string 
+	  { 
+	    last_rewrite = log_rewrite_set_tag_new($3, TRUE, configuration);
+          }
+	  rewrite_settag_opts ')'             	{ $$ = last_rewrite; free($3); }
 	| KW_CLEAR_TAG '(' string ')'           { $$ = log_rewrite_set_tag_new($3, FALSE, configuration); free($3); }
         | KW_GROUP_SET '(' template_content
         {
@@ -134,6 +138,15 @@ rewrite_expr
               }
             $$ = last_rewrite;
           }
+        ;
+
+rewrite_settag_opts
+        : rewrite_settag_opt rewrite_settag_opts
+        |
+        ;
+
+rewrite_settag_opt
+        : rewrite_condition_opt
         ;
 
 rewrite_groupset_opts
