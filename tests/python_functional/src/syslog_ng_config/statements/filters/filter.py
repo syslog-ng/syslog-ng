@@ -25,7 +25,13 @@
 class Filter(object):
     group_type = "filter"
 
-    def __init__(self, **options):
+    def __init__(self, positional_parameters, **options):
         self.options = options
         self.driver_name = ""
-        self.positional_parameters = []
+        self.positional_parameters = positional_parameters
+
+
+class Match(Filter):
+    def __init__(self, match_string, **options):
+        super(Match, self).__init__([match_string], **options)
+        self.driver_name = "match"
