@@ -24,6 +24,7 @@
 #include "msg-generator-source.h"
 
 #include "logsource.h"
+#include "apphook.h"
 #include "logpipe.h"
 #include "logmsg/logmsg.h"
 #include "template/templates.h"
@@ -65,6 +66,13 @@ _start_timer_immediately(MsgGeneratorSource *self)
   iv_timer_register(&self->timer);
 }
 
+void
+_start_timer_hook(gint hook, gpointer user_data)
+{
+  MsgGeneratorSource *self = (MsgGeneratorSource *)user_data;
+  _start_timer_immediately(self);
+}
+
 static gboolean
 _init(LogPipe *s)
 {
@@ -72,7 +80,7 @@ _init(LogPipe *s)
   if (!log_source_init(s))
     return FALSE;
 
-  _start_timer_immediately(self);
+  register_application_hook(AH_CONFIG_CHANGED, _start_timer_hook, self);
 
   return TRUE;
 }
@@ -82,6 +90,7 @@ _deinit(LogPipe *s)
 {
   MsgGeneratorSource *self = (MsgGeneratorSource *) s;
 
+  unregister_application_hook(AH_CONFIG_CHANGED, _start_timer_hook, self);
   _stop_timer(self);
 
   return log_source_deinit(s);
