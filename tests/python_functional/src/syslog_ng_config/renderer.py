@@ -42,29 +42,28 @@ class ConfigRenderer(object):
         logpath_groups = self.__syslog_ng_config["logpath_groups"]
 
         if version:
-            self.__render_version()
+            self.__render_version(version)
         if includes:
-            self.__render_includes()
+            self.__render_includes(includes)
         if global_options:
-            self.__render_global_options()
+            self.__render_global_options(global_options)
         if statement_groups:
-            self.__render_statement_groups()
+            self.__render_statement_groups(statement_groups)
         if logpath_groups:
             self.__render_logpath_groups(logpath_groups)
 
-    def __render_version(self):
-        self.__syslog_ng_config_content += "@version: {}\n".format(self.__syslog_ng_config["version"])
+    def __render_version(self, version):
+        self.__syslog_ng_config_content += "@version: {}\n".format(version)
 
-    def __render_includes(self):
-        includes = self.__syslog_ng_config["includes"]
+    def __render_includes(self, includes):
         for include in includes:
             self.__syslog_ng_config_content += '@include "{}"\n'.format(include)
 
-    def __render_global_options(self):
+    def __render_global_options(self, global_options):
         globals_options_header = "options {\n"
         globals_options_footer = "};\n"
         self.__syslog_ng_config_content += globals_options_header
-        for option_name, option_value in self.__syslog_ng_config["global_options"].items():
+        for option_name, option_value in global_options.items():
             self.__syslog_ng_config_content += "    {}({});\n".format(option_name, option_value)
         self.__syslog_ng_config_content += globals_options_footer
 
@@ -84,8 +83,8 @@ class ConfigRenderer(object):
             else:
                 self.__syslog_ng_config_content += "        {}({})\n".format(option_name, option_value)
 
-    def __render_statement_groups(self):
-        for statement_group in self.__syslog_ng_config["statement_groups"]:
+    def __render_statement_groups(self, statement_groups):
+        for statement_group in statement_groups:
             # statement header
             self.__syslog_ng_config_content += "\n{} {} {{\n".format(
                 statement_group.group_type, statement_group.group_id,
