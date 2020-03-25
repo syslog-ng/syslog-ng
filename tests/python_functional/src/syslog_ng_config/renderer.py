@@ -87,6 +87,13 @@ def render_driver_options(driver_options):
     return config_snippet
 
 
+def render_statement(statement):
+    config_snippet = ""
+    config_snippet += render_positional_options(statement.positional_parameters)
+    config_snippet += render_driver_options(statement.options)
+    return config_snippet
+
+
 def render_statement_groups(statement_groups):
     config_snippet = ""
 
@@ -100,9 +107,7 @@ def render_statement_groups(statement_groups):
             # driver header
             config_snippet += "    {} (\n".format(statement.driver_name)
 
-            # driver options
-            config_snippet += render_positional_options(statement.positional_parameters)
-            config_snippet += render_driver_options(statement.options)
+            config_snippet += render_statement(statement)
 
             # driver footer
             config_snippet += "    );\n"
