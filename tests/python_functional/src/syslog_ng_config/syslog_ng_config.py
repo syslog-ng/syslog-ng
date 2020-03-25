@@ -31,6 +31,7 @@ from src.syslog_ng_config.statements.destinations.snmp_destination import SnmpDe
 from src.syslog_ng_config.statements.filters.filter import Filter
 from src.syslog_ng_config.statements.logpath.logpath import LogPath
 from src.syslog_ng_config.statements.parsers.parser import Parser
+from src.syslog_ng_config.statements.rewrite.rewrite import SetTag
 from src.syslog_ng_config.statements.sources.example_msg_generator_source import ExampleMsgGeneratorSource
 from src.syslog_ng_config.statements.sources.file_source import FileSource
 
@@ -80,6 +81,9 @@ class SyslogNgConfig(object):
 
     def create_example_msg_generator_source(self, **options):
         return ExampleMsgGeneratorSource(**options)
+
+    def create_rewrite_set_tag(self, tag, **options):
+        return SetTag(tag, **options)
 
     def create_filter(self, **options):
         return Filter(**options)
