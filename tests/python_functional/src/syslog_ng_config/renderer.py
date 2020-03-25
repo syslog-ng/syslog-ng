@@ -20,6 +20,7 @@
 # COPYING for details.
 #
 #############################################################################
+from src.syslog_ng_config.statements.filters.filter import Filter
 
 
 def render_version(version):
@@ -73,6 +74,10 @@ def render_name_value(name, value):
     return "        {}({})\n".format(name, value)
 
 
+def render_driver(name, driver):
+    return "        {}({})\n".format(name, render_statement(driver))
+
+
 def render_driver_options(driver_options):
     config_snippet = ""
 
@@ -81,6 +86,8 @@ def render_driver_options(driver_options):
             config_snippet += render_options(option_name, option_value)
         elif (isinstance(option_value, tuple) or isinstance(option_value, list)):
             config_snippet += render_list(option_name, option_value)
+        elif isinstance(option_value, Filter):
+            config_snippet += render_driver(option_name, option_value)
         else:
             config_snippet += render_name_value(option_name, option_value)
 
@@ -89,8 +96,11 @@ def render_driver_options(driver_options):
 
 def render_statement(statement):
     config_snippet = ""
+    config_snippet += "    {} (\n".format(statement.driver_name)
     config_snippet += render_positional_options(statement.positional_parameters)
     config_snippet += render_driver_options(statement.options)
+    config_snippet += "    )"
+
     return config_snippet
 
 
@@ -105,12 +115,10 @@ def render_statement_groups(statement_groups):
 
         for statement in statement_group:
             # driver header
-            config_snippet += "    {} (\n".format(statement.driver_name)
-
             config_snippet += render_statement(statement)
 
             # driver footer
-            config_snippet += "    );\n"
+            config_snippet += ";\n"
 
             # statement footer
         config_snippet += "};\n"

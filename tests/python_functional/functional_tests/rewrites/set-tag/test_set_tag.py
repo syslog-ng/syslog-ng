@@ -20,12 +20,16 @@
 # COPYING for details.
 #
 #############################################################################
+from src.syslog_ng_config.statements.filters.filter import Match
 
 
 def test_set_tag(config, syslog_ng):
+    match = Match(config.stringify("MATCHSTRING"), value=config.stringify("MSG"))
+    notmatch = Match(config.stringify("NONE"), value=config.stringify("MSG"))
+
     generator_source = config.create_example_msg_generator_source(num=1, template=config.stringify("input with MATCHSTRING in it"))
-    set_tag_with_matching = config.create_rewrite_set_tag("SHOULDMATCH", condition='match("MATCHSTRING" value("MSG"))')
-    set_tag_without_matching = config.create_rewrite_set_tag("DONOTMATCH", condition='match("NONE" value("MSG"))')
+    set_tag_with_matching = config.create_rewrite_set_tag("SHOULDMATCH", condition=match)
+    set_tag_without_matching = config.create_rewrite_set_tag("DONOTMATCH", condition=notmatch)
     file_destination = config.create_file_destination(file_name="output.log", template=config.stringify('${TAGS}\n'))
     config.create_logpath(statements=[generator_source, set_tag_with_matching, set_tag_without_matching, file_destination])
 
