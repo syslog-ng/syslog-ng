@@ -1,8 +1,12 @@
+if (ENABLE_MONGODB STREQUAL OFF)
+  return()
+endif()
+
 find_package(libmongoc-1.0)
 
 module_switch(ENABLE_MONGODB "Enable mongodb destination driver" libmongoc-1.0_FOUND)
 
-if (libmongoc-1.0_FOUND)
+if (ENABLE_MONGODB)
 
   set(AFMONGODB_SOURCES
     "afmongodb.h"
