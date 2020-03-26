@@ -17,7 +17,7 @@ compatinclude_HEADERS		= 	\
 	lib/compat/getent.h		\
 	lib/compat/getent-sun.h		\
 	lib/compat/getent-generic.h	\
-	lib/compat/un.h
+	lib/compat/un.h			
 
 compat_sources			= 	\
 	lib/compat/getutent.c		\
@@ -31,6 +31,6 @@ compat_sources			= 	\
 	lib/compat/time.c		\
 	lib/compat/openssl_support.c	\
 	lib/compat/getent-sun.c		\
-	lib/compat/getent-generic.c
+	lib/compat/getent-generic.c	
 
 include lib/compat/tests/Makefile.am

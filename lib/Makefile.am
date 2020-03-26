@@ -264,8 +264,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	$(transport_crypto_sources)	\
 	lib/host-id.c			\
 	lib/resolved-configurable-paths.c \
-	lib/window-size-counter.c \
-					\
+	lib/window-size-counter.c       \
 	lib/cfg-lex.l			\
 	lib/cfg-grammar.y		\
 	lib/block-ref-grammar.y		\

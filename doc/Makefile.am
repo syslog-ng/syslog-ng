@@ -14,6 +14,9 @@ EXTRA_DIST	+=  \
 		doc/man/syslog-ng-ctl.1.xml \
 		doc/man/syslog-ng.8.xml \
 		doc/man/syslog-ng.conf.5.xml \
+		doc/man/slogimport.1.xml \
+		doc/man/slogkey.1.xml \
+		doc/man/slogverify.1.xml \
 		doc/man/update-manpages.sh \
 		doc/security/bof-2002-09-27.txt \
 		doc/security/dos-2000-11-22.txt \
@@ -29,7 +32,10 @@ man_MANS	+= \
 		doc/man/syslog-ng-debun.1 \
 		doc/man/syslog-ng-ctl.1 \
 		doc/man/syslog-ng.8 \
-		doc/man/syslog-ng.conf.5
+		doc/man/syslog-ng.conf.5 \
+		doc/man/slogimport.1 \
+		doc/man/slogkey.1 \
+		doc/man/slogverify.1
 
 EXTRA_DIST	+= $(man_MANS)
 

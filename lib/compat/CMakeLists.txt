@@ -13,6 +13,7 @@ set(COMPAT_HEADERS
     compat/getent-sun.h
     compat/getent-generic.h
     compat/un.h
+    compat/un.h
     PARENT_SCOPE)
 
 set(COMPAT_SOURCES
