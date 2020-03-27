@@ -100,9 +100,9 @@ ignore_submodule_gcc_ivykis() {
 gcc -DHAVE_CONFIG_H -I\. -I\.\./\.\. +-D_GNU_SOURCE -I\.\./\.\./src/include -I\.\./\.\./src/include |\
 gcc -DHAVE_CONFIG_H -I\. -I\.\./\.\.  -I\.\./\.\./src/include -I\.\./\.\./src/include |\
 gcc -DHAVE_CONFIG_H -I\. -I\.\. +-D_GNU_SOURCE -I\.\./src/include -I\.\./src/include |\
-gcc( -std=gnu99)? -DHAVE_CONFIG_H -I\. -I\.\./\.\./\.\./\.\./lib/ivykis/src |\
-gcc( -std=gnu99)? -DHAVE_CONFIG_H -I\. -I\.\./\.\./\.\./\.\./lib/ivykis/test(.mt)? |\
-gcc( -std=gnu99)? -DHAVE_CONFIG_H -I\. -I\.\./\.\./\.\./\.\./\.\./lib/ivykis/contrib/iv_getaddrinfo |\
-gcc -std=gnu99 -DHAVE_CONFIG_H -I\. -I\.\./\.\./\.\./\.\./\.\./lib/ivykis/contrib/kojines \
+gcc( -std=gnu99)? -DHAVE_CONFIG_H -I\. -I(\.\./)+lib/ivykis/src |\
+gcc( -std=gnu99)? -DHAVE_CONFIG_H -I\. -I(\.\./)+lib/ivykis/test(.mt)? |\
+gcc( -std=gnu99)? -DHAVE_CONFIG_H -I\. -I(\.\./)+lib/ivykis/contrib/iv_getaddrinfo |\
+gcc( -std=gnu99)? -DHAVE_CONFIG_H -I\. -I(\.\./)+lib/ivykis/contrib/kojines \
 )" "$@"
 }
