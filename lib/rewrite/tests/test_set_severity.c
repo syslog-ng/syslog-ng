@@ -93,22 +93,22 @@ Test(set_severity, test_set_severity_with_various_invalid_values)
 
   int default_severity = msg->pri & LOG_PRIMASK;
   _perform_set_severity(_create_template("${nonexistentvalue}"), msg);
-  assert_grabbed_log_contains("invalid severity to set");
+  assert_grabbed_log_contains("invalid value passed to set-severity()");
   cr_assert(_msg_severity_equals(msg, default_severity), "empty templates should not change the original severity");
 
   reset_grabbed_messages();
   _perform_set_severity(_create_template("8"), msg);
-  assert_grabbed_log_contains("invalid severity to set");
-
+  assert_grabbed_log_contains("invalid value passed to set-severity()");
   cr_assert(_msg_severity_equals(msg, default_severity), "too large numeric values should not change the original severity");
+
   reset_grabbed_messages();
   _perform_set_severity(_create_template("-1"), msg);
-  assert_grabbed_log_contains("invalid severity to set");
+  assert_grabbed_log_contains("invalid value passed to set-severity()");
   cr_assert(_msg_severity_equals(msg, default_severity), "negative values should not change the original severity");
 
   reset_grabbed_messages();
   _perform_set_severity(_create_template("random-text"), msg);
-  assert_grabbed_log_contains("invalid severity to set");
+  assert_grabbed_log_contains("invalid value passed to set-severity()");
   cr_assert(_msg_severity_equals(msg, default_severity), "non-numeric data should not change the original severity");
 }
 
