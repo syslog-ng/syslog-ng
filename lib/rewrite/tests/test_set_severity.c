@@ -30,6 +30,7 @@
 #include "grab-logging.h"
 
 GlobalConfig *cfg = NULL;
+LogMessage *msg;
 
 static LogTemplate *
 _create_template(const gchar *str)
@@ -43,104 +44,72 @@ _create_template(const gchar *str)
   return template;
 }
 
-Test(set_severity, text)
+static void
+_perform_rewrite(LogRewrite *rewrite, LogMessage *msg_)
 {
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-  LogMessage *msg = log_msg_new_empty();
 
-  LogRewrite *set_severity = log_rewrite_set_severity_new(_create_template("error"), cfg);
+  log_pipe_init(&rewrite->super);
+  log_pipe_queue(&rewrite->super, log_msg_ref(msg_), &path_options);
+  log_pipe_deinit(&rewrite->super);
+  log_pipe_unref(&rewrite->super);
+}
 
-  log_pipe_init(&set_severity->super);
-  log_msg_ref(msg);
-  log_pipe_queue(&set_severity->super, msg, &path_options);
+static void
+_perform_set_severity(LogTemplate *template, LogMessage *msg_)
+{
+  LogRewrite *rewrite = log_rewrite_set_severity_new(template, cfg);
 
-  cr_assert_eq(msg->pri & LOG_PRIMASK, 3);
+  _perform_rewrite(rewrite, msg_);
+}
 
-  log_msg_unref(msg);
-  log_pipe_deinit(&set_severity->super);
-  log_pipe_unref(&set_severity->super);
+static gboolean
+_msg_severity_equals(LogMessage *msg_, gint sev)
+{
+  return (msg_->pri & LOG_PRIMASK) == sev;
+}
+
+Test(set_severity, text)
+{
+  _perform_set_severity(_create_template("error"), msg);
+  cr_assert(_msg_severity_equals(msg, LOG_ERR));
+
+  _perform_set_severity(_create_template("crit"), msg);
+  cr_assert(_msg_severity_equals(msg, LOG_CRIT));
+
+  _perform_set_severity(_create_template("debug"), msg);
+  cr_assert(_msg_severity_equals(msg, LOG_DEBUG));
 }
 
 Test(set_severity, numeric)
 {
-  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-  LogMessage *msg = log_msg_new_empty();
-
-  LogRewrite *set_severity = log_rewrite_set_severity_new(_create_template("1"), cfg);
-
-  log_pipe_init(&set_severity->super);
-  log_msg_ref(msg);
-  log_pipe_queue(&set_severity->super, msg, &path_options);
-
-  cr_assert_eq(msg->pri & LOG_PRIMASK, 1);
-
-  log_msg_unref(msg);
-  log_pipe_deinit(&set_severity->super);
-  log_pipe_unref(&set_severity->super);
+  _perform_set_severity(_create_template("1"), msg);
+  cr_assert(_msg_severity_equals(msg, 1));
 }
 
-Test(set_severity, test_set_severity_with_template_evaluating_to_empty_string)
+Test(set_severity, test_set_severity_with_various_invalid_values)
 {
   debug_flag = 1;
-
-  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-  LogMessage *msg = log_msg_new_empty();
 
   int default_severity = msg->pri & LOG_PRIMASK;
+  _perform_set_severity(_create_template("${nonexistentvalue}"), msg);
+  assert_grabbed_log_contains("invalid severity to set");
+  cr_assert(_msg_severity_equals(msg, default_severity), "empty templates should not change the original severity");
 
-  LogRewrite *set_severity = log_rewrite_set_severity_new(_create_template("${nonexistentvalue}"), cfg);
-
-  log_pipe_init(&set_severity->super);
-  log_msg_ref(msg);
-  log_pipe_queue(&set_severity->super, msg, &path_options);
-
-  cr_assert_eq(msg->pri & LOG_PRIMASK, default_severity, "empty templates should not change the original severity");
+  reset_grabbed_messages();
+  _perform_set_severity(_create_template("8"), msg);
   assert_grabbed_log_contains("invalid severity to set");
 
-  log_msg_unref(msg);
-  log_pipe_deinit(&set_severity->super);
-  log_pipe_unref(&set_severity->super);
-}
-
-Test(set_severity, large_number)
-{
-  debug_flag = 1;
-
-  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-  LogMessage *msg = log_msg_new_empty();
-
-  int default_severity = msg->pri & LOG_PRIMASK;
-
-  LogRewrite *set_severity = log_rewrite_set_severity_new(_create_template("8"), cfg);
-
-  log_pipe_init(&set_severity->super);
-  log_msg_ref(msg);
-  log_pipe_queue(&set_severity->super, msg, &path_options);
-
-  cr_assert_eq(msg->pri & LOG_PRIMASK, default_severity);
+  cr_assert(_msg_severity_equals(msg, default_severity), "too large numeric values should not change the original severity");
+  reset_grabbed_messages();
+  _perform_set_severity(_create_template("-1"), msg);
   assert_grabbed_log_contains("invalid severity to set");
+  cr_assert(_msg_severity_equals(msg, default_severity), "negative values should not change the original severity");
 
-  log_msg_unref(msg);
-  log_pipe_deinit(&set_severity->super);
-  log_pipe_unref(&set_severity->super);
-}
-
-Test(set_severity, invalid)
-{
-  debug_flag = 1;
-
-  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-  LogMessage *msg = log_msg_new_empty();
-
-  LogRewrite *set_severity = log_rewrite_set_severity_new(_create_template("random-text"), cfg);
-
-  log_pipe_init(&set_severity->super);
-  log_pipe_queue(&set_severity->super, msg, &path_options);
-
+  reset_grabbed_messages();
+  _perform_set_severity(_create_template("random-text"), msg);
   assert_grabbed_log_contains("invalid severity to set");
-
-  log_pipe_deinit(&set_severity->super);
-  log_pipe_unref(&set_severity->super);
+  cr_assert(_msg_severity_equals(msg, default_severity), "non-numeric data should not change the original severity");
 }
 
 static void
@@ -149,16 +118,16 @@ setup(void)
   app_startup();
   cfg = cfg_new_snippet();
   start_grabbing_messages();
+  msg = log_msg_new_empty();
 }
 
 static void
 teardown(void)
 {
-  app_shutdown();
+  log_msg_unref(msg);
   stop_grabbing_messages();
   cfg_free(cfg);
+  app_shutdown();
 }
 
 TestSuite(set_severity, .init = setup, .fini = teardown);
-
-
