@@ -67,7 +67,7 @@ def check_env():
         soext='.sl'
 
     found = False
-    paths = (os.environ.get('dbd_dir', None), '/usr/local/lib/dbd', '/usr/lib/dbd',
+    paths = (os.environ.get('dbd_dir', ''), '/usr/local/lib/dbd', '/usr/lib/dbd',
         '/usr/lib64/dbd/', '/opt/syslog-ng/lib/dbd', '/usr/lib/x86_64-linux-gnu/dbd')
     for pth in paths:
         if pth and os.path.isfile('%s/libdbdsqlite3%s' % (pth, soext)):
