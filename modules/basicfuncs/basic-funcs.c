@@ -64,6 +64,7 @@ _append_args_with_separator(gint argc, GString *argv[], GString *result, gchar s
 #include "tf-template.c"
 #include "context-funcs.c"
 #include "fname-funcs.c"
+#include "tf-iterate.c"
 
 static Plugin basicfuncs_plugins[] =
 {
@@ -129,7 +130,11 @@ static Plugin basicfuncs_plugins[] =
   TEMPLATE_FUNCTION_PLUGIN(tf_template, "template"),
   TEMPLATE_FUNCTION_PLUGIN(tf_urlencode, "url-encode"),
   TEMPLATE_FUNCTION_PLUGIN(tf_urldecode, "url-decode"),
-  TEMPLATE_FUNCTION_PLUGIN(tf_base64encode, "base64-encode")
+  TEMPLATE_FUNCTION_PLUGIN(tf_base64encode, "base64-encode"),
+
+  /* functional */
+  TEMPLATE_FUNCTION_PLUGIN(tf_iterate, "iterate"),
+
 };
 
 gboolean
