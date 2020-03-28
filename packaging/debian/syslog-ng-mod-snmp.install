@@ -1,1 +1,1 @@
-usr/lib/syslog-ng/*/libafsnmp.so
+usr/lib/syslog-ng/*/libsnmpdest.so

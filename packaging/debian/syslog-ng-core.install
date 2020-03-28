@@ -5,8 +5,7 @@ usr/bin/*
 usr/sbin/*
 usr/lib/syslog-ng/libsyslog-ng-*.so.*
 usr/lib/syslog-ng/libevtlog-*.so.*
-usr/lib/syslog-ng/libsecret-storage.so.*
-usr/lib/syslog-ng/*/libsdjournal.so
+usr/lib/syslog-ng/libsecret-storage.so*
 usr/lib/syslog-ng/*/libaffile.so
 usr/lib/syslog-ng/*/libafprog.so
 usr/lib/syslog-ng/*/libafsocket.so
@@ -16,6 +15,7 @@ usr/lib/syslog-ng/*/libconfgen.so
 usr/lib/syslog-ng/*/libcryptofuncs.so
 usr/lib/syslog-ng/*/libcsvparser.so
 usr/lib/syslog-ng/*/libdbparser.so
+usr/lib/syslog-ng/*/libjson-plugin.so
 usr/lib/syslog-ng/*/libhook-commands.so
 usr/lib/syslog-ng/*/libkvformat.so
 usr/lib/syslog-ng/*/libtags-parser.so
@@ -26,17 +26,35 @@ usr/lib/syslog-ng/*/libsystem-source.so
 usr/lib/syslog-ng/*/libtimestamp.so
 usr/lib/syslog-ng/*/libcef.so
 usr/lib/syslog-ng/*/libdisk-buffer.so
-usr/lib/syslog-ng/*/libxml.so
 usr/lib/syslog-ng/*/libappmodel.so
-usr/lib/syslog-ng/*/libjson-plugin.so
+usr/lib/syslog-ng/*/loggen/libloggen_socket_plugin*.so
+usr/lib/syslog-ng/*/loggen/libloggen_ssl_plugin*.so
+usr/lib/syslog-ng/libloggen_helper.so
+usr/lib/syslog-ng/libloggen_plugin.so
 usr/lib/syslog-ng/libloggen_helper-*.so.*
 usr/lib/syslog-ng/libloggen_plugin-*.so.*
-usr/lib/syslog-ng/*/loggen/libloggen_socket_plugin*.so*
-usr/lib/syslog-ng/*/loggen/libloggen_ssl_plugin*.so*
-usr/share/syslog-ng/include/scl/*
-
+usr/share/syslog-ng/include/scl/system/*
+usr/share/syslog-ng/include/scl/syslogconf/*
+usr/share/syslog-ng/include/scl/rewrite/*
+usr/share/syslog-ng/include/scl/mbox/*
+usr/share/syslog-ng/include/scl/nodejs/*
+usr/share/syslog-ng/include/scl/apache/*
+usr/share/syslog-ng/include/scl/cim/*
+usr/share/syslog-ng/include/scl/loggly/*
+usr/share/syslog-ng/include/scl/logmatic/*
+usr/share/syslog-ng/include/scl/solaris/*
+usr/share/syslog-ng/include/scl/cisco/*
+usr/share/syslog-ng/include/scl/iptables/*
+usr/share/syslog-ng/include/scl/sudo/*
+usr/share/syslog-ng/include/scl/linux-audit/*
+usr/share/syslog-ng/include/scl/slack/*
+usr/share/syslog-ng/include/scl/telegram/*
 usr/share/syslog-ng/xsd/*
+[linux-any] usr/lib/syslog-ng/*/libsdjournal.so
+[linux-any] usr/lib/syslog-ng/*/libpacctformat.so
+[linux-any] usr/share/syslog-ng/include/scl/pacct/*
 
+#[!kfreebsd-any] lib/systemd/system/*
 [!kfreebsd-any] debian/syslog-ng.systemd =>  lib/systemd/system/syslog-ng.service
 
 debian/syslog-ng.conf                   /etc/syslog-ng/

@@ -1,98 +1,232 @@
-syslog-ng (3.26.1-1) unstable; urgency=medium
+syslog-ng (3.26.1-1) UNRELEASED; urgency=medium
 
-  * Upstream upgrade to 3.26.1
+  * New upstream release.
+  * Remove merged in patches.
+  * Update configuration version.
 
- -- Laszlo Budai <laszlo.budai@outlook.com>  Mon, 02 Mar 2020 15:36:13 +0100
+  [ Balazs Scheidler <bazsi77@gmail.com> ]
+  * Add support for the snmp() destination (syslog-ng-mod-snmp package).
+  * Move the http() destination into a separate package (syslog-ng-mod-http).
+  * Move BSD process accounting (pacct) support into the core package.
+  * Move tags-parser() to the core package.
+  * Add support for librdkafka based kafka destination (in mod-rdkafka
+    package).
+  * Use upstream scl.conf .
+
+ -- Laszlo Boszormenyi (GCS) <gcs@debian.org>  Sun, 08 Mar 2020 14:18:20 +0000
+
+syslog-ng (3.25.1-3) unstable; urgency=medium
+
+  * Remove outdated pep8 build dependency.
+
+ -- Laszlo Boszormenyi (GCS) <gcs@debian.org>  Tue, 03 Mar 2020 19:39:43 +0000
+
+syslog-ng (3.25.1-2) unstable; urgency=medium
+
+  * Update upstream bison update (closes: #949847).
+
+  [ Balazs Scheidler <bazsi77@gmail.com> ]
+  * Remove unneeded/empty Makefile.am file.
+  * Remove obsoleted sections from README.source .
+  * Update github URL in copyright.
+  * Change github url in the watch file.
+  * Add wants/after lines into syslog-ng.systemd unit file.
+  * Remove libgeoip-dev as build dependency.
+
+ -- Laszlo Boszormenyi (GCS) <gcs@debian.org>  Sun, 01 Mar 2020 11:38:57 +0000
 
 syslog-ng (3.25.1-1) unstable; urgency=medium
 
-  * Upstream upgrade to 3.25.1
+  * New upstream release.
+  * Merge in syslog-ng-mod-journal (closes: #924264).
+  * Remove syslog-ng-mod-geoip module.
+  * Python3ify syslog-ng-mod-python (closes: #938618).
+  * Add upstream persist-tool manpage.
+  * Backport upstream bison update.
+  * Install all SCL files.
+  * Update configuration version.
+  * Update self-tests.
+  * Update Standards-Version to 4.4.1 .
 
- -- Attila Szakacs <attila.szakacs@balabit.com>  Tue, 10 Dec 2019 12:28:03 +0100
+ -- Laszlo Boszormenyi (GCS) <gcs@debian.org>  Sat, 21 Dec 2019 08:42:10 +0000
 
-syslog-ng (3.24.1-1) unstable; urgency=medium
+syslog-ng (3.19.1-6) unstable; urgency=medium
 
-  * Upstream upgrade to 3.24.1
+  * Sync with Ubuntu.
 
- -- Laszlo Budai <laszlo.budai@balabit.com>  Tue, 01 Oct 2019 12:16:27 +0200
+  [ Dimitri John Ledkov <xnox@ubuntu.com> ]
+  * Fix FTBFS with bison 3.4.1 (closes: #931302).
 
-syslog-ng (3.23.1-1) unstable; urgency=medium
+ -- Laszlo Boszormenyi (GCS) <gcs@debian.org>  Tue, 09 Jul 2019 16:37:13 +0000
 
-  * Upstream upgrade to 3.23.1
+syslog-ng (3.19.1-5) unstable; urgency=high
 
- -- Laszlo Budai <laszlo.budai@balabit.com>  Mon, 26 Aug 2019 08:59:04 +0200
+  * Backport security fixes:
+    - fix app-parser() per reload memory leak,
+    - logger: fix leaking file handlers,
+    - DNS memory leak/segfault fix,
+    - cmake: add missing detection for O_LARGEFILE,
+    - threaded-dest: fix integer overflow,
+    - threaded-dest: move last_worker to DestDriver,
+    - cmake: fix typo in HAVE_STRNLEN,
+    - http: add missing free for self->body_template,
+    - test_pathutils: fix leak,
+    - test_file_list: fix leak,
+    - template: tf_simple_func_prepare leak fix,
+    - gorupingby: fix memory leak,
+    - groupingby: fix invalid memory access.
 
-syslog-ng (3.22.1-1) unstable; urgency=medium
+ -- Laszlo Boszormenyi (GCS) <gcs@debian.org>  Sun, 19 May 2019 11:03:30 +0000
 
-  * Upstream upgrade to 3.22.1
+syslog-ng (3.19.1-4) unstable; urgency=medium
 
- -- Laszlo Budai <laszlo.budai@balabit.com>  Fri, 21 Jun 2019 09:32:54 +0200
+  * Add dns_cache(no) to options (closes: #922524).
 
-syslog-ng (3.21.1-1) unstable; urgency=medium
+ -- Laszlo Boszormenyi (GCS) <gcs@debian.org>  Mon, 22 Apr 2019 11:02:19 +0000
 
-  * Upstream upgrade to 3.21.1
+syslog-ng (3.19.1-3) unstable; urgency=medium
 
- -- Laszlo Budai <laszlo.budai@balabit.com>  Fri, 03 May 2019 11:11:19 +0200
+  * Correct syslog-ng-mod-examples description (closes: #920846).
+  * Disable pacctformat building on non-Linux systems.
+  * Disable buggy upgrade self-test.
 
-syslog-ng (3.20.1-1) unstable; urgency=medium
+ -- Laszlo Boszormenyi (GCS) <gcs@debian.org>  Mon, 04 Feb 2019 18:47:26 +0000
 
-  * Upstream upgrade to 3.20.1
+syslog-ng (3.19.1-2) unstable; urgency=medium
 
- -- Gabor Nagy <gabor.nagy@balabit.com>  Tue, 26 Feb 2019 16:16:58 +0100
+  * Install SCL files from source (closes: #920512).
+  * Make syslog-ng-mod-pacctformat linux-any.
 
-syslog-ng (3.19.1-1) unstable; urgency=medium
+ -- Laszlo Boszormenyi (GCS) <gcs@debian.org>  Sat, 26 Jan 2019 13:57:58 +0000
 
-  * Upstream upgrade to 3.19.1
+syslog-ng (3.19.1-1) experimental; urgency=medium
 
- -- Laszlo Varady <laszlo.varady@balabit.com>  Tue, 04 Dec 2018 21:29:49 +0100
+  * New upstream release.
+  * Remove merged in patches.
+  * Don't try to run self-tests until its Criterion dependency packaged.
+  * Merge syslog-ng-mod-json into syslog-ng-core.
+  * Add syslog-ng-mod-geoip2 module.
+  * Add syslog-ng-mod-pacctformat module.
+  * Add syslog-ng-mod-examples module.
+  * Update syslog-ng-mod-extra install.
+  * Install all SCL files.
+  * Update configuration version.
+  * Update self-tests.
+  * Remove own compression option.
+  * Prepare for Python 3 module.
+  * Build with libcurl4-openssl-dev.
+  * Patch to remove outdated documentation.
+  * Remove own ABI virtual package.
+  * Add http destination module to -core.
+  * Add hook commands module to -core.
+  * Add loggen modules to -core.
+  * Add secret storage module to -core.
+  * Install pkg-config files to MultiArch directory.
+  * Update Standards-Version to 4.3.0 .
 
-syslog-ng (3.18.1-1) unstable; urgency=medium
+ -- Laszlo Boszormenyi (GCS) <gcs@debian.org>  Tue, 25 Dec 2018 09:40:28 +0000
 
-  * Upstream upgrade to 3.18.1
+syslog-ng (3.13.2-5) unstable; urgency=medium
 
- -- Laszlo Budai <laszlo.budai@balabit.com>  Thu, 11 Oct 2018 20:06:25 +0200
+  * Update maintainer email address.
+  * Add libcurl4-openssl-dev to Build-Conflicts.
+  * Correct wording of patch short description.
+  * Don't specify parallel to debhelper.
+  * Update Standards-Version to 4.2.1 .
 
-syslog-ng (3.17.2-1) unstable; urgency=medium
+ -- Laszlo Boszormenyi (GCS) <gcs@debian.org>  Mon, 15 Oct 2018 21:32:24 +0000
 
-  * Upstream upgrade to 3.17.2
+syslog-ng (3.13.2-4.2) unstable; urgency=medium
 
- -- Laszlo Budai <laszlo.budai@balabit.com>  Wed, 09 Aug 2018 14:54:37 +0200
+  * Non-maintainer upload.
+  * [ebb81d1] Ignore PEP8 W504 warning (Closes: #910896)
 
-syslog-ng (3.17.1-1) unstable; urgency=medium
+ -- Vincent Bernat <bernat@debian.org>  Mon, 15 Oct 2018 08:22:59 +0200
 
-  * Upstream upgrade to 3.17.1
+syslog-ng (3.13.2-4.1) unstable; urgency=medium
 
- -- Laszlo Budai <laszlo.budai@balabit.com>  Wed, 08 Aug 2018 15:43:38 +0200
+  * Non-maintainer upload.
+  * [a611875] Change maintainer address to @tracker.debian.org (Closes: #899867)
+  * [fcd4051] Fix installation step of syslog-ng-mod-extra when building with -A
+    (Closes: #901117)
 
-syslog-ng (3.16.1-1) unstable; urgency=medium
+ -- Vincent Bernat <bernat@debian.org>  Fri, 10 Aug 2018 09:15:56 +0200
 
-  * Upstream upgrade to 3.16.1
+syslog-ng (3.13.2-4) unstable; urgency=medium
 
- -- Laszlo Varady <laszlo.varady@balabit.com>  Wed, 13 Jun 2018 23:42:55 +0200
+  * [a514e12] Fix testcase issue in GNU Hurd
 
-syslog-ng (3.15.1-1) unstable; urgency=medium
+ -- SZALAY Attila <sasa@debian.org>  Sun, 04 Mar 2018 13:52:53 +0100
 
-  * Upstream upgrade to 3.15.1
+syslog-ng (3.13.2-3) unstable; urgency=medium
 
- -- Gergely Nagy <algernon@balabit.com>  Thu, 19 Apr 2018 10:29:20 +0200
+  * [afa41f8] Fixed pylint reported new issues.
+    The new version of pylint has an added
+    check which triggered by some of the
+    python code within the project. (Closes: #889303)
 
-syslog-ng (3.14.1-1) unstable; urgency=medium
+ -- SZALAY Attila <sasa@debian.org>  Sun, 11 Feb 2018 17:06:23 +0100
 
-  * upstream upgrade to 3.14.1
+syslog-ng (3.13.2-2) unstable; urgency=medium
 
- -- Laszlo Budai <laszlo.budai@balabit.com>  Mon, 26 Feb 2018 13:19:38 +0100
+  * [776dd44] Removed two typo from the get_path_max code.
+    Thanks to Aaron M. Ucko for the investigation of this bug (Closes: #885248)
+  * [e4bb74a] Added the new packages to the test suit
+  * [f8de833] Added required dependency of modules extra
 
-syslog-ng (3.13.1-1) unstable; urgency=medium
+ -- SZALAY Attila <sasa@debian.org>  Thu, 28 Dec 2017 19:15:55 +0100
 
-  * upstream upgrade to 3.13.1
+syslog-ng (3.13.2-1) unstable; urgency=medium
 
- -- Balazs Scheidler <balazs.scheidler@balabit.com>  Thu, 30 Nov 2017 21:17:14 -0800
+  * [a088324] New upstream version 3.12.1
+  * [029bb36] Removed unneeded dh-systemd (build) dependency
+  * [aadc721] Temporally add libsnappy-dev dependency until libmongoc-dev fix it
+  * [aa6e18e] Updated config version to 3.12
+  * [eb5e839] Fixed filter expression of gbp import-orig
+  * [dea804c] New upstream version 3.13.2
+  * [abeab4a] Adapt patches to the new version
+  * [8a82a05] Fixed new pylint issues
+  * [4355398] Changed package priority to optional
+  * [831da62] Enable fail-missing option of dh_missing
+  * [251a0bc] Added new plugins
+  * [cf80b16] Update the config version
+  * [cff2c3e] Added a (disabled) test to compile incubator
+  * [a8f4557] Remove obsoleted eventlog dependency (Closes: #881705)
+  * [5e715ce] Upgrade ABI version because of incompatible changes
+
+ -- SZALAY Attila <sasa@debian.org>  Wed, 20 Dec 2017 09:52:22 +0100
+
+syslog-ng (3.11.1-2) unstable; urgency=medium
+
+  * [eb1ad8a] Remove dh-autoreconf dependency.
+    This not needed any more with debhelper version >= 10
+  * [90a2d31] Removed upstart init file.
+    It does not needed any more
+  * [621acc1] Added try-restart option to the init script
+  * [0e76829] Testing SystemV init script too
+  * [c4156ea] Add libevtlog.so to the -dev package
+  * [6e4bde9] Adapt mongodb test code to the new version
+    libmongoc version 1.7.0 changed the syntax of the unix domain socket type of
+    connection. This change is to adapt the test case to the new situation.
+
+ -- SZALAY Attila <sasa@debian.org>  Fri, 01 Sep 2017 22:46:28 +0200
 
 syslog-ng (3.11.1-1) unstable; urgency=medium
 
-  * test release
+  * [1601fce] New upstream version 3.11.1
+  * [e33d51d] Refreshed debian/patches.
+    Removed patches merged upstream and fixed
+    a conflict caused by upstream changes.
+  * [2c0ec3c] Added python dependency for syslog-ng-dev
+  * [5584829] Re-added the old system control file.
+    The new upstream version contains an enhanced systemd control file which
+    allow one to start more than one instance.  Unfortunately this change would
+    cause issues with already installed systems.  Until that situation can be
+    enhanced, the old systemd file will be used.
+  * [4f4c274] Added the new man pages
+  * [3e5e19f] Upgrade configs version 3.11
 
- -- Laszlo Budai <laszlo.budai@balabit.com>  Tue, 08 Aug 2017 11:37:22 +0200
+ -- SZALAY Attila <sasa@debian.org>  Mon, 07 Aug 2017 10:15:09 -0400
 
 syslog-ng (3.10.1-3) unstable; urgency=medium
 
