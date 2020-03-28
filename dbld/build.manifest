@@ -29,6 +29,7 @@
 # on Debian we don't build java and use Python3 _after_ buster
 debian-stretch		python2,nojava,nokafka
 debian-buster		python2,nojava,nokafka
+debian-testing		python3,nojava
 debian-sid		python3,nojava
 
 # on ubuntu, we fetch java from OBS and start using Python3 at focal onwards.
