@@ -17,6 +17,7 @@ EXTRA_DIST += \
 	dbld/images/entrypoint.sh \
 	dbld/images/fake-sudo.sh \
 	dbld/images/gosu.pubkey \
+	dbld/images/debian.prepare.sh \
 	dbld/images/devshell.dockerfile \
 	dbld/images/centos-6.dockerfile \
 	dbld/images/centos-7.dockerfile \
