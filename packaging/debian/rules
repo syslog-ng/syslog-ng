@@ -60,6 +60,12 @@ ifneq ($(filter nojava,$(DEB_BUILD_PROFILES)),)
 DH_OPTIONS += -Nsyslog-ng-mod-java -Nsyslog-ng-mod-kafka -Nsyslog-ng-mod-java-common-lib -Nsyslog-ng-mod-elastic -Nsyslog-ng-mod-java-http -Nsyslog-ng-mod-hdfs
 endif
 
+ifneq ($(filter sng-python2,$(DEB_BUILD_PROFILES)),)
+PYTHON_VERSION = 2
+else
+PYTHON_VERSION = 3
+endif
+
 # If DH_QUIET is set, then we want silent mode.
 # If DH_VERBOSE is set, we do not want silent mode.
 # If neither is set, we want the default: verbose mode.
@@ -101,7 +107,7 @@ override_dh_auto_configure:
 		--enable-manpages \
 		$(PACCT_CONFIGURE_OPTS) \
 		--enable-python \
-		--with-python=3 \
+		--with-python=$(PYTHON_VERSION) \
 		--enable-snmp-dest \
 		--enable-http \
 		--enable-mongodb=auto \
@@ -135,7 +141,7 @@ override_dh_auto_install:
 		pkgconfigdir=/usr/lib/$(MULTIARCH_PATH)/pkgconfig
 	find . -name \*.la | xargs --no-run-if-empty rm
 	[ ! -f $(CURDIR)/debian/tmp/usr/share/syslog-ng/tools/merge-grammar.py ] || \
-		sed -i 's/ python$$/ python3/' \
+		sed -i 's/ python$$/ python$(PYTHON_VERSION)/' \
 		$(CURDIR)/debian/tmp/usr/share/syslog-ng/tools/merge-grammar.py
 
 # To get better test results, and actually see failing tests, we need
@@ -216,4 +222,4 @@ build-indep: ;
 
 # And for the rest, there is debhelper!
 %:
-	dh $@ --with autoreconf,systemd,python3
+	dh $@ --with autoreconf,systemd,python$(PYTHON_VERSION)
