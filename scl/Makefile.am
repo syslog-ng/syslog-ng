@@ -27,6 +27,7 @@ SCL_SUBDIRS	= \
 	snmptrap	\
 	solaris	\
 	sudo		\
+	sumologic	\
 	syslogconf	\
 	system		\
 	websense	\
