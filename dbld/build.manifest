@@ -26,12 +26,17 @@
 #
 
 # kafka support needs librdkafka >= 1.0.0, which is only available on ubuntu-bionic
-debian			DH_OPTIONS="-Nsyslog-ng-mod-rdkafka"
-debian-jessie		DH_OPTIONS="-Nsyslog-ng-mod-mongodb -Nsyslog-ng-mod-rdkafka -Nsyslog-ng-mod-amqp -Nsyslog-ng-mod-riemann -Nsyslog-ng-mod-geoip2"
-debian-buster		DH_OPTIONS="-Nsyslog-ng-mod-java -Nsyslog-ng-mod-kafka -Nsyslog-ng-mod-rdkafka -Nsyslog-ng-mod-java-common-lib -Nsyslog-ng-mod-elastic -Nsyslog-ng-mod-java-http -Nsyslog-ng-mod-hdfs"
-ubuntu			DH_OPTIONS="-Nsyslog-ng-mod-rdkafka"
-ubuntu-trusty		DH_OPTIONS="-Nsyslog-ng-mod-rdkafka -Nsyslog-ng-mod-riemann"
-ubuntu-bionic
+# on Debian we don't build java and use Python3 _after_ buster
+debian-jessie		DEB_BUILD_PROFILES="sng-python2 nojava",DH_OPTIONS="-Nsyslog-ng-mod-mongodb -Nsyslog-ng-mod-rdkafka -Nsyslog-ng-mod-amqp -Nsyslog-ng-mod-riemann -Nsyslog-ng-mod-geoip2"
+debian-stretch		DEB_BUILD_PROFILES="sng-python2 nojava",DH_OPTIONS="-Nsyslog-ng-mod-rdkafka"
+debian-buster		DEB_BUILD_PROFILES="sng-python2 nojava",DH_OPTIONS="-Nsyslog-ng-mod-rdkafka"
+
+# on ubuntu, we fetch java from OBS and start using Python3 at focal onwards.
+ubuntu-trusty		DEB_BUILD_PROFILES="sng-python2",DH_OPTIONS="-Nsyslog-ng-mod-rdkafka"
+ubuntu-xenial		DEB_BUILD_PROFILES="sng-python2",DH_OPTIONS="-Nsyslog-ng-mod-rdkafka"
+ubuntu-bionic		DEB_BUILD_PROFILES="sng-python2"
+ubuntu-eoan		DEB_BUILD_PROFILES="sng-python2"
+ubuntu-focal		DEB_BUILD_PROFILES="sng-python3"
 
 #
 # centos-6 is not supported, however I leave this line here as an example of
