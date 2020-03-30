@@ -20,12 +20,17 @@
 # COPYING for details.
 #
 #############################################################################
+import os
+
+import pytest
+
 from src.helpers.secure_logging.conftest import *  # noqa:F403, F401
 
 example_message = "example-message"
 num_of_messages = 3
 
 
+@pytest.mark.skipif("cmake_build" in os.environ, reason="only autotools is supported for now")
 def test_secure_logging(config, syslog_ng, slog):
     output_file_name = "output.log"
     generator_source = config.create_example_msg_generator_source(num=num_of_messages, template=config.stringify(example_message), freq="0.001")
