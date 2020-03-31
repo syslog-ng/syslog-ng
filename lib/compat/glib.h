@@ -114,4 +114,8 @@ gboolean slng_g_hash_table_insert (GHashTable *hash_table, gpointer key, gpointe
 gunichar g_utf8_get_char_validated_fixed (const gchar *p, gssize max_len);
 #endif
 
+#if !GLIB_CHECK_VERSION(2, 32, 0)
+GThread *g_thread_new(const gchar *name, GThreadFunc func, gpointer data);
+#endif
+
 #endif
