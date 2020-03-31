@@ -1,5 +1,7 @@
 #!/bin/bash
 
+DBLD_DIR=/dbld
+
 set -e
 set -x
 
@@ -31,7 +33,7 @@ function install_criterion() {
 function install_gosu() {
     GOSU_VERSION=1.10
     ARCHITECTURE=$1
-    cat /helpers/gosu.pubkey | gpg --import
+    cat $DBLD_DIR/images/gosu.pubkey | gpg --import
     download_target "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-${ARCHITECTURE}" /usr/local/bin/gosu
     download_target "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-${ARCHITECTURE}.asc" /usr/local/bin/gosu.asc
     gpg --verify /usr/local/bin/gosu.asc
@@ -98,12 +100,12 @@ function add_epel_repo {
 
 function install_apt_packages {
     apt-get update -qq -o Acquire::CompressionTypes::Order::=gz
-    filter_packages_by_platform /helpers/packages.manifest | xargs -t apt-get install --no-install-recommends --yes
+    filter_packages_by_platform $DBLD_DIR/packages.manifest | xargs -t apt-get install --no-install-recommends --yes
 }
 
 function install_yum_packages {
     yum install -y findutils
-    filter_packages_by_platform /helpers/packages.manifest | xargs yum install -y
+    filter_packages_by_platform $DBLD_DIR/packages.manifest | xargs yum install -y
 }
 
 function install_pip_packages {
@@ -121,7 +123,7 @@ function install_pip_packages {
             python -m pip install --upgrade pip
             ;;
     esac
-    filter_packages_by_platform /helpers/pip_packages.manifest | xargs pip install --ignore-installed -U
+    filter_packages_by_platform $DBLD_DIR/pip_packages.manifest | xargs pip install --ignore-installed -U
 }
 
 function install_lsb_release {

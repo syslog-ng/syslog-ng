@@ -1,6 +1,6 @@
 #!/bin/bash
 
-. /source/dbld/functions.sh
+. /dbld/functions.sh
 
 cd /source
 
@@ -22,8 +22,8 @@ cd $SYSLOGNG_DIR
 
 echo ${VERSION} > VERSION
 
-/source/dbld/generate-debian-directory $MODE
-/source/dbld/generate-rpm-specfile $MODE
+/dbld/generate-debian-directory $MODE
+/dbld/generate-rpm-specfile $MODE
 
 cd ..
 tar cfz $SYSLOGNG_TARBALL $SYSLOGNG_DIR

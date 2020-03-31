@@ -10,19 +10,19 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV DEBCONF_NONINTERACTIVE_SEEN=true
 ENV LANG C.UTF-8
 
+COPY images/fake-sudo.sh /usr/bin/sudo
+COPY images/entrypoint.sh /
+COPY . /dbld/
 
-COPY helpers/* /helpers/
+RUN /dbld/builddeps add_obs_repo Ubuntu_18.04
+RUN /dbld/builddeps install_apt_packages
+RUN /dbld/builddeps install_pip_packages
 
-RUN /helpers/dependencies.sh add_obs_repo Ubuntu_18.04
-RUN /helpers/dependencies.sh install_apt_packages
-RUN /helpers/dependencies.sh install_pip_packages
-
-RUN /helpers/dependencies.sh install_criterion
-RUN /helpers/dependencies.sh install_gradle
-RUN /helpers/dependencies.sh install_gosu amd64
-RUN mv /helpers/fake-sudo.sh /usr/bin/sudo
+RUN /dbld/builddeps install_criterion
+RUN /dbld/builddeps install_gradle
+RUN /dbld/builddeps install_gosu amd64
 
 VOLUME /source
 VOLUME /build
 
-ENTRYPOINT ["/helpers/entrypoint.sh"]
+ENTRYPOINT ["/entrypoint.sh"]
