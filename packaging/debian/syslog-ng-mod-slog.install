@@ -1,0 +1,2 @@
+usr/lib/syslog-ng/*/libsecure-logging.so
+usr/bin/slog*
