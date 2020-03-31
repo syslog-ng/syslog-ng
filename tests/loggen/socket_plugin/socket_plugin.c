@@ -197,7 +197,7 @@ start(PluginOption *option)
     {
       if (! g_cond_wait_until(thread_connected, thread_lock, end_time))
         {
-          ERROR("timeout ocured while waiting for connections\n");
+          ERROR("timeout occured while waiting for connections\n");
           break;
         }
     }
