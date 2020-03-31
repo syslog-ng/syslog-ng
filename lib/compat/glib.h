@@ -118,4 +118,8 @@ gunichar g_utf8_get_char_validated_fixed (const gchar *p, gssize max_len);
 GThread *g_thread_new(const gchar *name, GThreadFunc func, gpointer data);
 #endif
 
+#if !GLIB_CHECK_VERSION(2, 32, 0)
+gboolean g_cond_wait_until (GCond *cond, GMutex *mutex, gint64 end_time);
+#endif
+
 #endif

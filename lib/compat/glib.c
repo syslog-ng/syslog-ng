@@ -339,3 +339,13 @@ g_thread_new(const gchar *name, GThreadFunc func, gpointer data)
   return g_thread_create(func, data, TRUE, NULL);
 }
 #endif
+
+#if !GLIB_CHECK_VERSION(2, 32, 0)
+gboolean
+g_cond_wait_until (GCond *cond, GMutex *mutex, gint64 end_time)
+{
+  glong diff_in_sec = (end_time - g_get_monotonic_time())/G_TIME_SPAN_SECOND;
+  GTimeVal tv = {.tv_sec = g_get_monotonic_time() + diff_in_sec, .tv_usec = 0};
+  return g_cond_timed_wait(cond, mutex, &tv);
+}
+#endif
