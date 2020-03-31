@@ -159,12 +159,17 @@ affile_dw_reopen(AFFileDestWriter *self)
       unlink(self->filename);
     }
 
-  if (file_opener_open_fd(self->owner->file_opener, self->filename, AFFILE_DIR_WRITE, &fd))
+  FileOpenerResult open_result = file_opener_open_fd(self->owner->file_opener, self->filename, AFFILE_DIR_WRITE, &fd);
+  if (open_result == FILE_OPENER_RESULT_SUCCESS)
     {
       LogTransport *transport = file_opener_construct_transport(self->owner->file_opener, fd);
 
       proto = file_opener_construct_dst_proto(self->owner->file_opener, transport,
                                               &self->owner->writer_options.proto_options.super);
+    }
+  else if (open_result == FILE_OPENER_RESULT_ERROR_PERMANENT)
+    {
+      return FALSE;
     }
   else
     {
@@ -200,13 +205,24 @@ affile_dw_init(LogPipe *s)
   if (!log_pipe_init((LogPipe *) self->writer))
     {
       msg_error("Error initializing log writer");
-      log_pipe_unref((LogPipe *) self->writer);
-      self->writer = NULL;
-      return FALSE;
+      goto error;
     }
+
   log_pipe_append(&self->super, (LogPipe *) self->writer);
 
-  return affile_dw_reopen(self);
+  if (!affile_dw_reopen(self))
+    {
+      log_pipe_deinit((LogPipe *) self->writer);
+      log_writer_set_queue(self->writer, NULL);
+      goto error;
+    }
+
+  return TRUE;
+
+error:
+  log_pipe_unref((LogPipe *) self->writer);
+  self->writer = NULL;
+  return FALSE;
 }
 
 static gboolean

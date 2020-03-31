@@ -189,9 +189,11 @@ _reader_open_file(LogPipe *s, gboolean recover_state)
   FileReader *self = (FileReader *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
   gint fd;
-  gboolean file_opened, open_deferred = FALSE;
+  gboolean open_deferred = FALSE;
 
-  file_opened = file_opener_open_fd(self->opener, self->filename->str, AFFILE_DIR_READ, &fd);
+  FileOpenerResult res = file_opener_open_fd(self->opener, self->filename->str, AFFILE_DIR_READ, &fd);
+  gboolean file_opened =  res == FILE_OPENER_RESULT_SUCCESS;
+
   if (!file_opened && self->options->follow_freq > 0)
     {
       msg_info("Follow-mode file source not found, deferring open",

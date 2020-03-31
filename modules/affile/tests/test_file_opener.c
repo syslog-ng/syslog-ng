@@ -68,7 +68,7 @@ open_fd(FileOpener *file_opener, gchar *fname, gint extra_flags, gint *fd)
 
   file_opener_set_options(file_opener, &open_opts);
 
-  gboolean success = file_opener_open_fd(file_opener, fname, dir, fd);
+  gboolean success = file_opener_open_fd(file_opener, fname, dir, fd) == FILE_OPENER_RESULT_SUCCESS;
   file_opener_free(file_opener);
   return success;
 }

@@ -47,6 +47,13 @@ typedef struct _FileOpenerOptions
   gint create_dirs;
 } FileOpenerOptions;
 
+typedef enum
+{
+  FILE_OPENER_RESULT_SUCCESS,
+  FILE_OPENER_RESULT_ERROR_TRANSIENT,
+  FILE_OPENER_RESULT_ERROR_PERMANENT
+} FileOpenerResult;
+
 typedef struct _FileOpener FileOpener;
 struct _FileOpener
 {
@@ -78,7 +85,7 @@ file_opener_construct_dst_proto(FileOpener *self, LogTransport *transport, LogPr
   return self->construct_dst_proto(self, transport, proto_options);
 }
 
-gboolean file_opener_open_fd(FileOpener *self, const gchar *name, FileDirection dir, gint *fd);
+FileOpenerResult file_opener_open_fd(FileOpener *self, const gchar *name, FileDirection dir, gint *fd);
 
 void file_opener_set_options(FileOpener *self, FileOpenerOptions *options);
 void file_opener_init_instance(FileOpener *self);

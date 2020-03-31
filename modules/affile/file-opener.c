@@ -142,7 +142,7 @@ _open(FileOpener *self, const gchar *name, gint open_flags)
   return fd;
 }
 
-gboolean
+FileOpenerResult
 file_opener_open_fd(FileOpener *self, const gchar *name, FileDirection dir, gint *fd)
 {
   cap_t saved_caps;
@@ -151,7 +151,7 @@ file_opener_open_fd(FileOpener *self, const gchar *name, FileDirection dir, gint
     {
       msg_error("Spurious path, logfile not created",
                 evt_tag_str("path", name));
-      return FALSE;
+      return FILE_OPENER_RESULT_ERROR_PERMANENT;
     }
 
   saved_caps = g_process_cap_save();
@@ -159,11 +159,11 @@ file_opener_open_fd(FileOpener *self, const gchar *name, FileDirection dir, gint
   if (!_obtain_capabilities(self, name, &saved_caps))
     {
       g_process_cap_restore(saved_caps);
-      return FALSE;
+      return FILE_OPENER_RESULT_ERROR_TRANSIENT;
     }
 
   if (!file_opener_prepare_open(self, name))
-    return FALSE;
+    return FILE_OPENER_RESULT_ERROR_TRANSIENT;
 
   *fd = file_opener_open(self, name, file_opener_get_open_flags(self, dir));
 
@@ -176,7 +176,10 @@ file_opener_open_fd(FileOpener *self, const gchar *name, FileDirection dir, gint
             evt_tag_str("path", name),
             evt_tag_int("fd", *fd));
 
-  return (*fd != -1);
+  if (*fd == -1)
+    return FILE_OPENER_RESULT_ERROR_TRANSIENT;
+
+  return FILE_OPENER_RESULT_SUCCESS;
 }
 
 void
