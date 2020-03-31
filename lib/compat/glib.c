@@ -313,7 +313,7 @@ slng_g_hash_table_insert(GHashTable *hash_table, gpointer key, gpointer value)
   gboolean exists = g_hash_table_contains(hash_table, key);
 #undef g_hash_table_insert
   g_hash_table_insert(hash_table, key, value);
-  return exists;
+  return !exists;
 }
 #endif
 
