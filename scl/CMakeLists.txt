@@ -22,6 +22,7 @@ set(SCL_DIRS
     nodejs
     osquery
     pacct
+    pastebin
     rewrite
     slack
     snmptrap

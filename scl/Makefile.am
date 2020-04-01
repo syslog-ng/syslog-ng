@@ -22,6 +22,7 @@ SCL_SUBDIRS	= \
 	nodejs		\
 	osquery	\
 	pacct		\
+	pastebin	\
 	rewrite	\
 	slack \
 	snmptrap	\
