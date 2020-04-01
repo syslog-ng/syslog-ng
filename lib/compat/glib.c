@@ -349,3 +349,7 @@ g_cond_wait_until (GCond *cond, GMutex *mutex, gint64 end_time)
   return g_cond_timed_wait(cond, mutex, &tv);
 }
 #endif
+
+#if !GLIB_CHECK_VERSION(2, 30, 0)
+#include "glib-g_mkdtemp.c"
+#endif

@@ -122,4 +122,9 @@ GThread *g_thread_new(const gchar *name, GThreadFunc func, gpointer data);
 gboolean g_cond_wait_until (GCond *cond, GMutex *mutex, gint64 end_time);
 #endif
 
+#if !GLIB_CHECK_VERSION(2, 30, 0)
+gchar *g_mkdtemp_full (gchar *tmpl, gint mode);
+gchar *g_mkdtemp (gchar *tmpl);
+#endif
+
 #endif
