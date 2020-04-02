@@ -667,10 +667,9 @@ affile_dd_open_writer(gpointer args[])
   return NULL;
 }
 
-static void
-affile_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
+static AFFileDestWriter *
+_affile_dd_create_writer(AFFileDestDriver *self, LogMessage *msg)
 {
-  AFFileDestDriver *self = (AFFileDestDriver *) s;
   AFFileDestWriter *next;
   gpointer args[2] = { self, NULL };
 
@@ -721,12 +720,22 @@ affile_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
         }
       g_string_free(filename, TRUE);
     }
-  if (next)
+
+  return next;
+}
+
+static void
+affile_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
+{
+  AFFileDestDriver *self = (AFFileDestDriver *) s;
+
+  AFFileDestWriter *writer = _affile_dd_create_writer(self, msg);
+  if (writer)
     {
       log_msg_add_ack(msg, path_options);
-      log_pipe_queue(&next->super, log_msg_ref(msg), path_options);
-      next->queue_pending = FALSE;
-      log_pipe_unref(&next->super);
+      log_pipe_queue(&writer->super, log_msg_ref(msg), path_options);
+      writer->queue_pending = FALSE;
+      log_pipe_unref(&writer->super);
     }
 
   log_dest_driver_queue_method(s, msg, path_options);
