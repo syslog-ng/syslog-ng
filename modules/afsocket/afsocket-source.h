@@ -53,6 +53,7 @@ struct _AFSocketSourceDriver
   GSockAddr *bind_addr;
   gint max_connections;
   gint num_connections;
+  StatsCounterItem *num_connections_stats;
   gint listen_backlog;
   GList *connections;
   SocketOptions *socket_options;

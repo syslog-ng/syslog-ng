@@ -26,6 +26,7 @@
 #include "fdhelpers.h"
 #include "gsocket.h"
 #include "stats/stats-registry.h"
+#include "stats/stats-cluster-single.h"
 #include "mainloop.h"
 #include "poll-fd-events.h"
 #include "timeutils/misc.h"
@@ -53,6 +54,33 @@ typedef struct _AFSocketSourceConnection
 } AFSocketSourceConnection;
 
 static void afsocket_sd_close_connection(AFSocketSourceDriver *self, AFSocketSourceConnection *sc);
+
+static void
+_connections_count_set(AFSocketSourceDriver *self, gint value)
+{
+  self->num_connections = value;
+  stats_counter_set(self->num_connections_stats, value);
+}
+
+static gint
+_connections_count_get(AFSocketSourceDriver *self)
+{
+  return self->num_connections;
+}
+
+static void
+_connections_count_inc(AFSocketSourceDriver *self)
+{
+  self->num_connections++;
+  stats_counter_inc(self->num_connections_stats);
+}
+
+static void
+_connections_count_dec(AFSocketSourceDriver *self)
+{
+  self->num_connections--;
+  stats_counter_dec(self->num_connections_stats);
+}
 
 static gchar *
 _format_sc_name(AFSocketSourceConnection *self, gint format_type)
@@ -397,11 +425,13 @@ afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *client_add
 
 #endif
 
-  if (self->num_connections >= self->max_connections)
+  if (_connections_count_get(self) >= self->max_connections)
     {
       msg_error("Number of allowed concurrent connections reached, rejecting connection",
                 evt_tag_str("client", g_sockaddr_format(client_addr, buf, sizeof(buf), GSA_FULL)),
                 evt_tag_str("local", g_sockaddr_format(local_addr, buf2, sizeof(buf2), GSA_FULL)),
+                evt_tag_str("group_name", self->super.super.group),
+                log_pipe_location_tag(&self->super.super.super),
                 evt_tag_int("max", self->max_connections));
       return FALSE;
     }
@@ -414,7 +444,7 @@ afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *client_add
       if (log_pipe_init(&conn->super))
         {
           afsocket_sd_add_connection(self, conn);
-          self->num_connections++;
+          _connections_count_inc(self);
           log_pipe_append(&conn->super, &self->super.super.super);
         }
       else
@@ -504,7 +534,7 @@ afsocket_sd_close_connection(AFSocketSourceDriver *self, AFSocketSourceConnectio
   log_pipe_deinit(&sc->super);
   self->connections = g_list_remove(self->connections, sc);
   afsocket_sd_kill_connection(sc);
-  self->num_connections--;
+  _connections_count_dec(self);
 }
 
 static void
@@ -558,10 +588,12 @@ _dynamic_window_realloc(AFSocketSourceDriver *self)
 static void
 _dynamic_window_set_balanced_window(AFSocketSourceDriver *self)
 {
-  if (self->num_connections <= 0)
+  gint number_of_connections= _connections_count_get(self);
+
+  if (number_of_connections <= 0)
     return;
 
-  gsize new_balanced_win = self->dynamic_window_pool->pool_size / self->num_connections;
+  gsize new_balanced_win = self->dynamic_window_pool->pool_size / number_of_connections;
   if (new_balanced_win == 0)
     {
       msg_info("Cannot allocate more dynamic window for new clients. From now, only static window is allocated."
@@ -569,7 +601,7 @@ _dynamic_window_set_balanced_window(AFSocketSourceDriver *self)
                " dynamic-window-size",
                evt_tag_long("total_dynamic_window_size", self->dynamic_window_size),
                evt_tag_int("max_connections", self->max_connections),
-               evt_tag_int("active_connections", self->num_connections),
+               evt_tag_int("active_connections", number_of_connections),
                evt_tag_long("dynamic_window_size_for_existing_clients", self->dynamic_window_pool->balanced_window),
                evt_tag_long("static_window_size", self->reader_options.super.init_window_size));
       return;
@@ -758,13 +790,13 @@ afsocket_sd_restore_kept_alive_connections(AFSocketSourceDriver *self)
       GList *p = NULL;
       self->connections = cfg_persist_config_fetch(cfg, afsocket_sd_format_connections_name(self));
 
-      self->num_connections = 0;
+      _connections_count_set(self, 0);
       for (p = self->connections; p; p = p->next)
         {
           afsocket_sc_set_owner((AFSocketSourceConnection *) p->data, self);
           if (log_pipe_init((LogPipe *) p->data))
             {
-              self->num_connections++;
+              _connections_count_inc(self);
             }
           else
             {
@@ -960,6 +992,38 @@ afsocket_sd_setup_addresses_method(AFSocketSourceDriver *self)
   return TRUE;
 }
 
+static void
+_afsocket_sd_register_connection_counter(AFSocketSourceDriver *self)
+{
+  if (self->transport_mapper->sock_type == SOCK_STREAM)
+    {
+      stats_lock();
+
+      StatsClusterKey sc_key;
+      stats_cluster_single_key_set_with_name(&sc_key, self->transport_mapper->stats_source | SCS_SOURCE,
+                                             self->super.super.group, afsocket_sd_format_name(&self->super.super.super), "connections");
+      stats_register_counter(0, &sc_key, SC_TYPE_SINGLE_VALUE, &self->num_connections_stats);
+      _connections_count_set(self, 0);
+
+      stats_unlock();
+    }
+}
+
+static void
+_afsocket_sd_unregister_connection_counter(AFSocketSourceDriver *self)
+{
+  if (self->transport_mapper->sock_type == SOCK_STREAM)
+    {
+      stats_lock();
+
+      StatsClusterKey sc_key;
+      stats_cluster_single_key_set_with_name(&sc_key, self->transport_mapper->stats_source | SCS_SOURCE,
+                                             self->super.super.group, afsocket_sd_format_name(&self->super.super.super), "connections");
+      stats_unregister_counter(&sc_key, SC_TYPE_SINGLE_VALUE, &self->num_connections_stats);
+      stats_unlock();
+    }
+}
+
 gboolean
 afsocket_sd_init_method(LogPipe *s)
 {
@@ -970,6 +1034,8 @@ afsocket_sd_init_method(LogPipe *s)
 
   if (!afsocket_sd_setup_transport(self) || !afsocket_sd_setup_addresses(self))
     return FALSE;
+
+  _afsocket_sd_register_connection_counter(self);
 
   if (!afsocket_sd_restore_dynamic_window_pool(self))
     {
@@ -990,6 +1056,8 @@ afsocket_sd_deinit_method(LogPipe *s)
 
   afsocket_sd_save_connections(self);
   afsocket_sd_save_listener(self);
+
+  _afsocket_sd_unregister_connection_counter(self);
 
   if (self->dynamic_window_pool)
     afsocket_sd_save_dynamic_window_pool(self);
