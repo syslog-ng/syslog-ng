@@ -7,11 +7,7 @@ include_directories(loggen_ssl_plugin
 set (LOGGEN_SSL_PLUGIN_SOURCE
   ssl_plugin.c
   ${LOGGEN_INCLUDE_DIR}/loggen_plugin.h
-  ${LOGGEN_INCLUDE_DIR}/loggen_helper.h
   ${LOGGEN_INCLUDE_DIR}/loggen_plugin.c
-  ${LOGGEN_INCLUDE_DIR}/loggen_helper.c
-	${CMAKE_SOURCE_DIR}/lib/crypto.c
-	${CMAKE_SOURCE_DIR}/lib/compat/openssl_support.c
   )
 
 add_library(loggen_ssl_plugin
@@ -21,6 +17,7 @@ add_library(loggen_ssl_plugin
 
 target_link_libraries(
   loggen_ssl_plugin
+  loggen_helper
   ${GLIB_GMODULE_LIBRARIES}
   ${GLIB_GTHREAD_LIBRARIES}
   ${GLIB_LIBRARIES}

@@ -190,10 +190,10 @@ _test_uri_error(void)
 static void
 _setup(void)
 {
+  g_thread_init(NULL);
   main_loop_thread_resource_init();
   stats_cluster_init();
   msg_init(FALSE);
-  g_thread_init(NULL);
 
   debug_flag = TRUE;
   verbose_flag = TRUE;

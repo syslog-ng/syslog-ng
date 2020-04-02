@@ -1,28 +1,12 @@
-include_directories(loggen_socket_plugin
-  ${CORE_INCLUDE_DIRS}
-  ${GLIB_INCLUDE_DIRS}
-  ${LOGGEN_INCLUDE_DIR}
-  )
-
 set (LOGGEN_SOCKET_PLUGIN_SOURCE
-  socket_plugin.c
-  ${LOGGEN_INCLUDE_DIR}/loggen_plugin.h
-  ${LOGGEN_INCLUDE_DIR}/loggen_helper.h
-  ${LOGGEN_INCLUDE_DIR}/loggen_plugin.c
-  ${LOGGEN_INCLUDE_DIR}/loggen_helper.c
-  )
+  socket_plugin.c)
 
 add_library(loggen_socket_plugin
   SHARED
   ${LOGGEN_SOCKET_PLUGIN_SOURCE}
   )
 
-target_link_libraries(
-  loggen_socket_plugin
-  ${GLIB_GMODULE_LIBRARIES}
-  ${GLIB_GTHREAD_LIBRARIES}
-  ${GLIB_LIBRARIES}
-  )
+target_link_libraries(loggen_socket_plugin loggen_plugin)
 
 set_target_properties(loggen_socket_plugin
     PROPERTIES VERSION ${SYSLOG_NG_VERSION}
