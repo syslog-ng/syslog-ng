@@ -25,7 +25,6 @@ addons:
       - libdbd-sqlite3
       - libdbi0-dev
       - libesmtp-dev
-      - libgeoip-dev
       - libglib2.0-dev
       - libhiredis-dev
       - libivykis-dev
@@ -201,7 +200,6 @@ matrix:
             - libdbd-sqlite3
             - libdbi0-dev
             - libesmtp-dev
-            - libgeoip-dev
             - libglib2.0-dev
             - libhiredis-dev
             - libivykis-dev
@@ -263,7 +261,6 @@ matrix:
             - libdbd-sqlite3
             - libdbi0-dev
             - libesmtp-dev
-            - libgeoip-dev
             - libglib2.0-dev
             - libhiredis-dev
             - librabbitmq-dev

@@ -313,7 +313,6 @@ developing applications that use %{name}.
 
 %build
 
-export GEOIP_LIBS=-lGeoIP
 %configure \
     --prefix=%{_prefix} \
     --sysconfdir=%{_sysconfdir}/%{name} \
@@ -343,6 +342,7 @@ export GEOIP_LIBS=-lGeoIP
     %{?with_kafka:--enable-kafka} \
     %{?with_afsnmp:--enable-afsnmp} %{!?with_afsnmp:--disable-afsnmp} \
     %{?with_java:--enable-java} %{!?with_java:--disable-java} \
+    %{?with_maxminddb:--enable-geoip2} %{!?with_maxminddb:--disable-geoip2} \
     %{?with_sql:--enable-sql} \
     %{?with_systemd:--enable-systemd} \
     %{?with_mongodb:--enable-mongodb} \
@@ -556,8 +556,8 @@ fi
 %{_libdir}/%{name}/java-modules/*
 %endif
 
-%files geoip
 %if %{with maxminddb}
+%files geoip
 %{_libdir}/%{name}/libgeoip2-plugin.so
 %endif
 
