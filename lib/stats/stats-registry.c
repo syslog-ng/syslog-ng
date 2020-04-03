@@ -140,8 +140,12 @@ _register_counter(gint stats_level, const StatsClusterKey *sc_key, gint type,
   sc = _grab_cluster(stats_level, sc_key, dynamic);
   if (sc)
     {
+      StatsCounterItem *ctr = stats_cluster_get_counter(sc, type);
       *counter = stats_cluster_track_counter(sc, type);
+      if (ctr && ctr->external)
+        return sc;
       (*counter)->type = type;
+      (*counter)->external = FALSE;
     }
   else
     {
@@ -149,6 +153,39 @@ _register_counter(gint stats_level, const StatsClusterKey *sc_key, gint type,
     }
   return sc;
 }
+
+static void
+_assert_when_internal_or_stores_different_ref(StatsCluster *sc, gint type, atomic_gssize *external_counter)
+{
+  StatsCounterItem *counter = stats_cluster_get_counter(sc, type);
+  if (counter)
+    {
+      g_assert(counter->external && counter->value_ref == external_counter);
+    }
+}
+
+static StatsCluster *
+_register_external_counter(gint stats_level, const StatsClusterKey *sc_key, gint type,
+                           gboolean dynamic, atomic_gssize *external_counter)
+{
+  StatsCluster *sc;
+
+  g_assert(stats_locked);
+
+  sc = _grab_cluster(stats_level, sc_key, dynamic);
+  if (sc)
+    {
+      _assert_when_internal_or_stores_different_ref(sc, type, external_counter);
+      StatsCounterItem *ctr = stats_cluster_track_counter(sc, type);
+      ctr->external = TRUE;
+      ctr->value_ref = external_counter;
+      ctr->type = type;
+    }
+
+  return sc;
+}
+
+
 
 /**
  * stats_register_counter:
@@ -171,6 +208,13 @@ stats_register_counter(gint stats_level, const StatsClusterKey *sc_key, gint typ
                        StatsCounterItem **counter)
 {
   return _register_counter(stats_level, sc_key, type, FALSE, counter);
+}
+
+StatsCluster *
+stats_register_external_counter(gint stats_level, const StatsClusterKey *sc_key, gint type,
+                                atomic_gssize *external_counter)
+{
+  return _register_external_counter(stats_level, sc_key, type, FALSE, external_counter);
 }
 
 StatsCluster *
@@ -255,6 +299,22 @@ stats_unregister_counter(const StatsClusterKey *sc_key, gint type,
 
   stats_cluster_untrack_counter(sc, type, counter);
 }
+
+void
+stats_unregister_external_counter(const StatsClusterKey *sc_key, gint type,
+                                  atomic_gssize *external_counter)
+{
+  StatsCluster *sc;
+
+  g_assert(stats_locked);
+
+  sc = g_hash_table_lookup(stats_cluster_container.static_clusters, sc_key);
+  StatsCounterItem *ctr = stats_cluster_get_counter(sc, type);
+  g_assert(ctr->value_ref == external_counter);
+
+  stats_cluster_untrack_counter(sc, type, &ctr);
+}
+
 
 void
 stats_unregister_dynamic_counter(StatsCluster *sc, gint type, StatsCounterItem **counter)

@@ -34,6 +34,10 @@ void stats_lock(void);
 void stats_unlock(void);
 gboolean stats_check_level(gint level);
 StatsCluster *stats_register_counter(gint level, const StatsClusterKey *sc_key, gint type, StatsCounterItem **counter);
+
+StatsCluster *stats_register_external_counter(gint level, const StatsClusterKey *sc_key, gint type,
+                                              atomic_gssize *external_counter);
+
 StatsCluster *stats_register_counter_and_index(gint level, const StatsClusterKey *sc_key, gint type,
                                                StatsCounterItem **counter);
 StatsCluster *stats_register_dynamic_counter(gint stats_level, const StatsClusterKey *sc_key, gint type,
@@ -41,6 +45,8 @@ StatsCluster *stats_register_dynamic_counter(gint stats_level, const StatsCluste
 void stats_register_and_increment_dynamic_counter(gint stats_level, const StatsClusterKey *sc_key, time_t timestamp);
 void stats_register_associated_counter(StatsCluster *handle, gint type, StatsCounterItem **counter);
 void stats_unregister_counter(const StatsClusterKey *sc_key, gint type, StatsCounterItem **counter);
+void stats_unregister_external_counter(const StatsClusterKey *sc_key, gint type,
+                                       atomic_gssize *external_counter);
 void stats_unregister_dynamic_counter(StatsCluster *handle, gint type, StatsCounterItem **counter);
 
 gboolean stats_contains_counter(const StatsClusterKey *sc_key, gint type);
