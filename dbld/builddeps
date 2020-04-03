@@ -1,5 +1,6 @@
 #!/bin/bash
 
+. /dbld/functions.sh
 DBLD_DIR=/dbld
 
 set -e
@@ -101,6 +102,38 @@ function add_epel_repo {
 function install_apt_packages {
     apt-get update -qq -o Acquire::CompressionTypes::Order::=gz
     filter_packages_by_platform $DBLD_DIR/packages.manifest | xargs -t apt-get install --no-install-recommends --yes
+}
+
+function install_debian_build_deps {
+    DEBIAN_CONTROL_FILE=$DBLD_DIR/extra-files/packaging-debian-control
+    if ! [ -f ${DEBIAN_CONTROL_FILE} ]; then
+        echo "install_debian_build_deps() called from dockerfile but without a Debian control file, make sure that control file is copied over to ${DEBIAN_CONTROL_FILE} by the prepare step"
+        exit 1
+    fi
+    deb_run_build_command mk-build-deps -i ${DEBIAN_CONTROL_FILE} -t "apt-get -y -o Debug::pkgProblemResolver=yes --no-install-recommends"
+}
+
+function install_rpm_build_deps {
+    case "${OS_PLATFORM}" in
+        centos-6)
+            # we install a newer yum-utils for a newer yum-builddep.
+            # Fortunately it works on centos-6 as well.
+
+            yum install -y wget
+            wget -O /usr/bin/yum-builddep https://raw.githubusercontent.com/rpm-software-management/yum-utils/master/yum-builddep.py
+            chmod +x /usr/bin/yum-builddep
+            ;;
+        *)
+            yum install -y yum-utils
+
+            ;;
+    esac
+    RPM_SPEC_FILE=$DBLD_DIR/extra-files/syslog-ng.spec
+    if ! [ -f ${RPM_SPEC_FILE} ]; then
+        echo "install_rpm_build_deps() called from dockerfile but without a syslog-ng.spec file, make sure that control file is copied over to ${RPM_SPEC_FILE} by the prepare step"
+        exit 1
+    fi
+    rpm_run_build_command yum-builddep -y ${RPM_SPEC_FILE}
 }
 
 function install_yum_packages {
