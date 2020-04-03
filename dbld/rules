@@ -36,6 +36,7 @@ DOCKER_RUN_ARGS=-e USER_NAME_ON_HOST=$(shell whoami)	\
 	-e GRADLE_PROJECT_CACHE_DIR=/build/gradle-cache \
 	-e GRADLE_FLAGS=--build-cache \
 	$(if $(wildcard ${HOME}/.gitconfig),-v ${HOME}/.gitconfig:${HOME}/.gitconfig)
+DOCKER_BUILD_ARGS=
 ROOT_DIR=$(shell pwd)
 DBLD_DIR=$(ROOT_DIR)/dbld
 BUILD_DIR=$(DBLD_DIR)/build
@@ -145,7 +146,7 @@ images: $(foreach image,$(IMAGES), image-$(image))
 image: image-$(DEFAULT_IMAGE)
 image-%:
 	$(DBLD_DIR)/prepare-image-build $* && \
-        $(DOCKER) build --build-arg=OS_PLATFORM=$* --build-arg=COMMIT=$$(git rev-parse --short HEAD) --network=host -t balabit/syslog-ng-$* -f $(DBLD_DIR)/images/$*.dockerfile $(DBLD_DIR)
+        $(DOCKER) build $(DOCKER_BUILD_ARGS) --build-arg=OS_PLATFORM=$* --build-arg=COMMIT=$$(git rev-parse --short HEAD) --network=host -t balabit/syslog-ng-$* -f $(DBLD_DIR)/images/$*.dockerfile $(DBLD_DIR)
 
 pull-images: $(foreach image,$(BUILDER_IMAGES), pull-image-$(image))
 pull-image: pull-image-$(DEFAULT_IMAGE)
