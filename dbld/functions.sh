@@ -1,9 +1,8 @@
 set -e
 
 function get_version() {
-	cd /source
 	[ -n "$VERSION" ] && echo $VERSION && return
-	scripts/version.sh
+	[ -d /source/scripts ] && cd /source && scripts/version.sh || echo "unknown-version"
 }
 
 function run_build_command() {
@@ -15,7 +14,7 @@ function run_build_command() {
 	TMPDIR=$(mktemp -d)
 
 	IFS=$'\t'
-	egrep -e "^${OS}([^-]|$)" -e "^${OS_PLATFORM}" /source/dbld/build.manifest | sort -r | head -1 | while read os env cmdline; do
+	egrep -e "^${OS}([^-]|$)" -e "^${OS_PLATFORM}" /dbld/build.manifest | sort -r | head -1 | while read os env cmdline; do
 		unset IFS
 		declare -a env_values
 		if [ "${env}" != "-" -a "${env}" != "" ]; then
