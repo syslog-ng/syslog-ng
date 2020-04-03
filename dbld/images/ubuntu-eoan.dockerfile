@@ -12,6 +12,7 @@ ENV LANG C.UTF-8
 
 COPY helpers/* /helpers/
 
+RUN /helpers/dependencies.sh add_obs_repo Ubuntu_19.10
 RUN /helpers/dependencies.sh install_apt_packages
 RUN /helpers/dependencies.sh install_pip_packages
 
