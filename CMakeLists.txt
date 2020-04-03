@@ -225,6 +225,8 @@ set(SYSLOG_NG_HAVE_INOTIFY "${Inotify_FOUND}")
 
 set (PYTHON_VERSION "AUTO" CACHE STRING "Version of the installed development library" )
 
+string(REGEX REPLACE "^(python|PYTHON)" "" PYTHON_VERSION ${PYTHON_VERSION})
+
 if ("${PYTHON_VERSION}" STREQUAL "AUTO")
   find_package(PythonInterp)
   find_package(PythonLibs)
