@@ -41,11 +41,9 @@ pcre-devel                      [centos, fedora]
     libbson-devel               [centos-7, fedora]
 
     # librabbitmq-dev
-    librabbitmq-dev             [debian-jessie, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
     librabbitmq-dev             [ubuntu]
     librabbitmq-devel           [centos-7, fedora]
 
-    # libmongoc-dev (not available on debian-jessie)
     libmongoc-dev               [ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
     mongo-c-driver-devel        [centos, fedora]
 
@@ -86,7 +84,6 @@ pcre-devel                      [centos, fedora]
     riemann-c-client-devel      [centos-7, fedora]
 
     # java-7
-    openjdk-7-jdk               [debian-jessie]
     java-1.7.0-openjdk-devel    [centos-6]
 
     # java-8
@@ -112,7 +109,6 @@ pcre-devel                      [centos, fedora]
 
     # systemd-dev
     libsystemd-dev              [ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
-    libsystemd-journal-dev      [debian-jessie]
     systemd-devel               [centos, fedora]
 
     # uuid-dev
@@ -145,9 +141,9 @@ gcc-c++				[centos, fedora]
 
 
 # packages to run successful make check
-python-pip                      [centos, fedora, debian-jessie, debian-stretch, debian-buster, ubuntu-trusty, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan]
+python-pip                      [centos, fedora, debian-stretch, debian-buster, ubuntu-trusty, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan]
 python3-pip                     [debian, ubuntu]
-python-setuptools               [centos, fedora, debian-jessie, debian-stretch, debian-buster, ubuntu-trusty, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan]
+python-setuptools               [centos, fedora, debian-stretch, debian-buster, ubuntu-trusty, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan]
 python3-setuptools              [debian, ubuntu]
 tzdata                          [centos, fedora, ubuntu]
 

@@ -27,7 +27,6 @@
 
 # kafka support needs librdkafka >= 1.0.0, which is only available on ubuntu-bionic
 # on Debian we don't build java and use Python3 _after_ buster
-debian-jessie		python2,nojava,nokafka			DH_OPTIONS="-Nsyslog-ng-mod-mongodb -Nsyslog-ng-mod-amqp -Nsyslog-ng-mod-riemann -Nsyslog-ng-mod-geoip2"
 debian-stretch		python2,nojava,nokafka
 debian-buster		python2,nojava,nokafka
 
