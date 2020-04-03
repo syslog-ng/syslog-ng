@@ -48,6 +48,8 @@ typedef struct _CounterHashContent
   const gchar *id;
   const gchar *instance;
   const gint type;
+  atomic_gssize *external_counter;
+  gssize initial_value;
 } CounterHashContent;
 
 typedef struct _QueryTestCase
@@ -104,8 +106,16 @@ _register_counters(const CounterHashContent *counters, size_t n, ClusterKeySet k
     {
       StatsCounterItem *item = NULL;
       StatsClusterKey sc_key;
-      key_set(&sc_key, counters[i].component, counters[i].id, counters[i].instance );
-      stats_register_counter(0, &sc_key, counters[i].type, &item);
+      key_set(&sc_key, counters[i].component, counters[i].id, counters[i].instance);
+      if (counters[i].external_counter)
+        {
+          atomic_gssize_set(counters[i].external_counter, counters[i].initial_value);
+          stats_register_external_counter(0, &sc_key, counters[i].type, &item, counters[i].external_counter);
+        }
+      else
+        {
+          stats_register_counter(0, &sc_key, counters[i].type, &item);
+        }
       gchar *name = _construct_view_name(counters[i].id);
       GList *queries = _construct_view_query_list(counters[i].instance);
       stats_register_view(name, queries, _add_two_to_value);
@@ -130,20 +140,21 @@ static void
 _initialize_counter_hash(void)
 {
   setup();
+  static atomic_gssize external_frozen_ctr;
 
   const CounterHashContent logpipe_cluster_counters[] =
   {
-    {SCS_CENTER, "guba.polo", "frozen", SC_TYPE_SUPPRESSED},
-    {SCS_FILE | SCS_SOURCE, "guba", "processed", SC_TYPE_PROCESSED},
-    {SCS_GLOBAL, "guba.gumi.diszno", "frozen", SC_TYPE_SUPPRESSED},
-    {SCS_PIPE | SCS_SOURCE, "guba.gumi.disz", "frozen", SC_TYPE_SUPPRESSED},
-    {SCS_TCP | SCS_DESTINATION, "guba.labda", "received", SC_TYPE_DROPPED},
-    {SCS_TCP | SCS_SOURCE, "guba.frizbi", "left", SC_TYPE_QUEUED},
+    {SCS_CENTER, "guba.polo", "frozen", SC_TYPE_SUPPRESSED, &external_frozen_ctr, 12},
+    {SCS_FILE | SCS_SOURCE, "guba", "processed", SC_TYPE_PROCESSED, NULL, 0},
+    {SCS_GLOBAL, "guba.gumi.diszno", "frozen", SC_TYPE_SUPPRESSED, NULL, 0},
+    {SCS_PIPE | SCS_SOURCE, "guba.gumi.disz", "frozen", SC_TYPE_SUPPRESSED, NULL, 0},
+    {SCS_TCP | SCS_DESTINATION, "guba.labda", "received", SC_TYPE_DROPPED, NULL, 0},
+    {SCS_TCP | SCS_SOURCE, "guba.frizbi", "left", SC_TYPE_QUEUED, NULL, 0},
   };
 
   const CounterHashContent single_cluster_counters[] =
   {
-    {SCS_GLOBAL, "", "guba", SC_TYPE_SINGLE_VALUE}
+    {SCS_GLOBAL, "", "guba", SC_TYPE_SINGLE_VALUE, NULL, 0}
   };
 
   _register_counters(logpipe_cluster_counters, ARRAY_SIZE(logpipe_cluster_counters), stats_cluster_logpipe_key_set);
@@ -260,8 +271,8 @@ ParameterizedTestParameters(stats_query, test_stats_query_get_str_out)
 {
   static QueryTestCase test_cases[] =
   {
-    {"center.*.*", "center.guba.polo.frozen.suppressed: 0\n"},
-    {"cent*", "center.guba.polo.frozen.suppressed: 0\n"},
+    {"center.*.*", "center.guba.polo.frozen.suppressed: 12\n"},
+    {"cent*", "center.guba.polo.frozen.suppressed: 12\n"},
     {"src.pipe.guba.gumi.disz.*.*", "src.pipe.guba.gumi.disz.frozen.suppressed: 0\n"},
     {"src.pipe.guba.gumi.*.*", "src.pipe.guba.gumi.disz.frozen.suppressed: 0\n"},
     {"src.pipe.guba.*.*", "src.pipe.guba.gumi.disz.frozen.suppressed: 0\n"},
@@ -298,11 +309,11 @@ Test(stats_query, test_stats_query_get_str_out_with_multiple_matching_counters)
   const gchar *expected_results[] =
   {
     ".aliased: 2\n",
-    "guba.frizbi.aliased: 2\n",
-    "guba.gumi.diszno.aliased: 2\n",
-    "guba.polo.aliased: 2\n",
+    "guba.frizbi.aliased: 2\n", // instance = frozen, see view queries
+    "guba.gumi.diszno.aliased: 14\n", // instance = frozen
+    "guba.polo.aliased: 14\n",
     "guba.aliased: 2\n",
-    "guba.gumi.disz.aliased: 2\n",
+    "guba.gumi.disz.aliased: 14\n", // instance = frozen
     "guba.labda.aliased: 2\n"
   };
 
@@ -343,9 +354,9 @@ ParameterizedTestParameters(stats_query, test_stats_query_get_sum_str_out)
 {
   static QueryTestCase test_cases[] =
   {
-    {"*", "14"},
-    {"center.*.*", "0"},
-    {"cent*", "0"},
+    {"*", "62"}, // 3*14 (aliases) + 12 (external) + 4 * 2 (aliases)
+    {"center.*.*", "12"},
+    {"cent*", "12"},
     {"src.pipe.guba.gumi.disz.*.*", "0"},
     {"*.tcp.guba.*.*", "0"},
     {"*.guba.*i.*.*", "0"},
