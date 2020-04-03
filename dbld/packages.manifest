@@ -37,17 +37,16 @@ pcre-devel                      [centos, fedora]
 
 # packages to run successful configure with module support
     # libbson-dev
-    libbson-dev                 [ubuntu-trusty, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
+    libbson-dev                 [ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
     libbson-devel               [centos-7, fedora]
 
     # librabbitmq-dev
     librabbitmq-dev             [debian-jessie, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
-    # Ubuntu-trusy has an outdated version of rabbitmq = 0.4, while OBS has 0.8
-    librabbitmq-dev=0.8.0-1     [ubuntu-trusty]
+    librabbitmq-dev             [ubuntu]
     librabbitmq-devel           [centos-7, fedora]
 
     # libmongoc-dev (not available on debian-jessie)
-    libmongoc-dev               [ubuntu-trusty, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
+    libmongoc-dev               [ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
     mongo-c-driver-devel        [centos, fedora]
 
     # librdkafka-dev (we are using a specific version from OBS and need to
@@ -59,7 +58,7 @@ pcre-devel                      [centos, fedora]
     librdkafka-devel		[fedora]
 
     # libmaxmindb-dev
-    libmaxminddb-dev            [ubuntu-trusty, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
+    libmaxminddb-dev            [ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
     libmaxminddb-devel          [centos-7, fedora]
 
     # libcurl-dev
@@ -83,11 +82,11 @@ pcre-devel                      [centos, fedora]
     libnet-devel                [centos, fedora]
 
     # libriemann-dev
-    libriemann-client-dev       [ubuntu-trusty, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
+    libriemann-client-dev       [ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
     riemann-c-client-devel      [centos-7, fedora]
 
     # java-7
-    openjdk-7-jdk               [debian-jessie, ubuntu-trusty]
+    openjdk-7-jdk               [debian-jessie]
     java-1.7.0-openjdk-devel    [centos-6]
 
     # java-8
@@ -95,7 +94,7 @@ pcre-devel                      [centos, fedora]
     java-1.8.0-openjdk-devel    [centos-7, fedora]
 
     # python-dev
-    python-dev                  [debian, ubuntu-trusty, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan]
+    python-dev                  [debian, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan]
     python-devel                [centos, fedora]
     python36-devel              [centos]
     python3-devel               [fedora]
@@ -113,7 +112,7 @@ pcre-devel                      [centos, fedora]
 
     # systemd-dev
     libsystemd-dev              [ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
-    libsystemd-journal-dev      [debian-jessie, ubuntu-trusty]
+    libsystemd-journal-dev      [debian-jessie]
     systemd-devel               [centos, fedora]
 
     # uuid-dev

@@ -8,7 +8,6 @@ BUILDER_IMAGES=		\
 	debian-stretch	\
 	debian-buster	\
 	ubuntu-xenial	\
-	ubuntu-trusty	\
 	ubuntu-bionic \
 	ubuntu-eoan \
 	ubuntu-focal \

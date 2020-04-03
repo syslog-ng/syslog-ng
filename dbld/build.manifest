@@ -32,7 +32,6 @@ debian-stretch		python2,nojava,nokafka
 debian-buster		python2,nojava,nokafka
 
 # on ubuntu, we fetch java from OBS and start using Python3 at focal onwards.
-ubuntu-trusty		python2,nokafka
 ubuntu-xenial		python2,nokafka
 ubuntu-bionic		python2
 ubuntu-eoan		python2
