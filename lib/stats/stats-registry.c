@@ -140,7 +140,50 @@ _register_counter(gint stats_level, const StatsClusterKey *sc_key, gint type,
   sc = _grab_cluster(stats_level, sc_key, dynamic);
   if (sc)
     {
+      StatsCounterItem *ctr = stats_cluster_get_counter(sc, type);
       *counter = stats_cluster_track_counter(sc, type);
+      if (ctr && ctr->external)
+        return sc;
+      (*counter)->type = type;
+      (*counter)->external = FALSE;
+    }
+  else
+    {
+      *counter = NULL;
+    }
+  return sc;
+}
+
+static StatsCluster *
+_register_external_counter(gint stats_level, const StatsClusterKey *sc_key, gint type,
+                           gboolean dynamic, StatsCounterItem **counter,
+                           atomic_gssize *external_counter)
+{
+  StatsCluster *sc;
+
+  g_assert(stats_locked);
+
+  sc = _grab_cluster(stats_level, sc_key, dynamic);
+  if (sc)
+    {
+      *counter = stats_cluster_get_counter(sc, type);
+      if (*counter && (*counter)->external && (*counter)->value_ref != external_counter)
+        {
+          msg_error("Failed to register stats counter as it is already registered as an external counter",
+                    evt_tag_str("instance", sc_key->instance),
+                    evt_tag_str("id", sc_key->id));
+          *counter = NULL;
+          return NULL; //todo: g_assert_not_reached(); programming error
+        }
+      if (*counter && !(*counter)->external)
+        {
+          *counter = NULL;
+          return NULL;
+        }
+
+      *counter = stats_cluster_track_counter(sc, type);
+      (*counter)->external = TRUE;
+      (*counter)->value_ref = external_counter;
       (*counter)->type = type;
     }
   else
@@ -149,6 +192,8 @@ _register_counter(gint stats_level, const StatsClusterKey *sc_key, gint type,
     }
   return sc;
 }
+
+
 
 /**
  * stats_register_counter:
@@ -171,6 +216,13 @@ stats_register_counter(gint stats_level, const StatsClusterKey *sc_key, gint typ
                        StatsCounterItem **counter)
 {
   return _register_counter(stats_level, sc_key, type, FALSE, counter);
+}
+
+StatsCluster *
+stats_register_external_counter(gint stats_level, const StatsClusterKey *sc_key, gint type,
+                                StatsCounterItem **counter, atomic_gssize *external_counter)
+{
+  return _register_external_counter(stats_level, sc_key, type, FALSE, counter, external_counter);
 }
 
 StatsCluster *
@@ -255,6 +307,25 @@ stats_unregister_counter(const StatsClusterKey *sc_key, gint type,
 
   stats_cluster_untrack_counter(sc, type, counter);
 }
+
+void
+stats_unregister_external_counter(const StatsClusterKey *sc_key, gint type,
+                                  StatsCounterItem **counter, atomic_gssize *external_counter)
+{
+  StatsCluster *sc;
+
+  g_assert(stats_locked);
+
+  if (*counter == NULL)
+    return;
+
+  g_assert((*counter)->value_ref == external_counter);
+
+  sc = g_hash_table_lookup(stats_cluster_container.static_clusters, sc_key);
+
+  stats_cluster_untrack_counter(sc, type, counter);
+}
+
 
 void
 stats_unregister_dynamic_counter(StatsCluster *sc, gint type, StatsCounterItem **counter)
