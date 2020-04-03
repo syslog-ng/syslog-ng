@@ -5,8 +5,6 @@ orig_version=$(apt-cache policy syslog-ng | grep "500$" | awk '{print $1}')
 apt_line=""
 for pkg in syslog-ng \
                 syslog-ng-core \
-                syslog-ng-mod-journal \
-                syslog-ng-mod-json \
                 syslog-ng-mod-mongodb \
                 syslog-ng-mod-sql \
                 syslog-ng-mod-smtp \
@@ -22,5 +20,5 @@ do
     apt_line="$apt_line $pkg=$orig_version"
 done
 
-apt-get install -y $apt_line 2>/dev/null
+apt-get install -y --allow-downgrades $apt_line 2>/dev/null
 apt-get -u -y dist-upgrade

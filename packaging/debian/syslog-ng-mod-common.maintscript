@@ -11,9 +11,6 @@
 set -e
 
 case "${DPKG_MAINTSCRIPT_PACKAGE}" in
-        syslog-ng-mod-json)
-                modname="tfjson"
-                ;;
         syslog-ng-mod-sql|syslog-ng-mod-mongodb)
                 modname="${DPKG_MAINTSCRIPT_PACKAGE#syslog-ng-mod-}"
                 ;;

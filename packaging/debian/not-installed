@@ -1,4 +1,2 @@
-usr/share/syslog-ng/include/scl/pacct/plugin.conf
-usr/share/syslog-ng/include/scl/elasticsearch/plugin.conf
-usr/share/syslog-ng/include/scl/kafka/plugin.conf
-usr/share/syslog-ng/include/scl/hdfs/plugin.conf
+lib/systemd/system/syslog-ng@.service
+usr/lib/syslog-ng/*/java-modules/dummy.jar
