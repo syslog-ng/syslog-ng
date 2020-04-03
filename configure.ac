@@ -410,6 +410,9 @@ LT_INIT([dlopen disable-static])
 if test "x$with_python" = "xauto"; then
   AM_PATH_PYTHON(,,[:])
 else
+  if [[[ "$with_python" == python* ]]] || [[[ "$with_python" == PYTHON* ]]]; then
+    with_python=`echo $with_python | cut -c7-`
+  fi
   AM_PATH_PYTHON([$with_python],,[:])
 fi
 
