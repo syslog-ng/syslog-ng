@@ -28,7 +28,8 @@
 static void
 _reset_counter(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data)
 {
-  stats_counter_set(counter, 0);
+  if (!counter->external)
+    stats_counter_set(counter, 0);
 }
 
 static inline void
