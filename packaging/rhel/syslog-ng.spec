@@ -2,11 +2,6 @@
 %bcond_with python3
 %bcond_without python2
 
-%if 0%{with python3} && 0%{with python2}
-%{error:Can't build with python2 and python3 at the same type, use one of --with python2 or --with python3}
-Intentional syntax error to cause rpmbuild to abort.
-%endif
-
 %if 0%{with python3}
 %global with_python2 0
 %endif
