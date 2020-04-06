@@ -1093,7 +1093,35 @@ log_msg_print_tags(const LogMessage *self, GString *result)
   log_msg_tags_foreach(self, log_msg_append_tags_callback, args);
 }
 
+void
+log_msg_set_saddr(LogMessage *self, GSockAddr *saddr)
+{
+  log_msg_set_saddr_ref(self, g_sockaddr_ref(saddr));
+}
 
+void
+log_msg_set_saddr_ref(LogMessage *self, GSockAddr *saddr)
+{
+  if (log_msg_chk_flag(self, LF_STATE_OWN_SADDR))
+    g_sockaddr_unref(self->saddr);
+  self->saddr = saddr;
+  self->flags |= LF_STATE_OWN_SADDR;
+}
+
+void
+log_msg_set_daddr(LogMessage *self, GSockAddr *daddr)
+{
+  log_msg_set_daddr_ref(self, g_sockaddr_ref(daddr));
+}
+
+void
+log_msg_set_daddr_ref(LogMessage *self, GSockAddr *daddr)
+{
+  if (log_msg_chk_flag(self,  LF_STATE_OWN_DADDR))
+    g_sockaddr_unref(self->daddr);
+  self->daddr = daddr;
+  self->flags |= LF_STATE_OWN_DADDR;
+}
 
 /**
  * log_msg_init:
@@ -1104,7 +1132,7 @@ log_msg_print_tags(const LogMessage *self, GString *result)
  * first. It is used internally by the log_msg_new function.
  **/
 static void
-log_msg_init(LogMessage *self, GSockAddr *saddr)
+log_msg_init(LogMessage *self)
 {
   GTimeVal tv;
 
@@ -1118,7 +1146,8 @@ log_msg_init(LogMessage *self, GSockAddr *saddr)
   unix_time_unset(&self->timestamps[LM_TS_PROCESSED]);
 
   self->sdata = NULL;
-  self->saddr = g_sockaddr_ref(saddr);
+  self->saddr = NULL;
+  self->daddr = NULL;
 
   self->original = NULL;
   self->flags |= LF_STATE_OWN_MASK;
@@ -1155,11 +1184,12 @@ log_msg_clear(LogMessage *self)
     }
   self->num_sdata = 0;
 
-  if (log_msg_chk_flag(self, LF_STATE_OWN_SADDR) && self->saddr)
-    {
-      g_sockaddr_unref(self->saddr);
-    }
+  if (log_msg_chk_flag(self, LF_STATE_OWN_SADDR))
+    g_sockaddr_unref(self->saddr);
   self->saddr = NULL;
+  if (log_msg_chk_flag(self, LF_STATE_OWN_DADDR))
+    g_sockaddr_unref(self->daddr);
+  self->daddr = NULL;
 
   self->flags |= LF_STATE_OWN_MASK;
 }
@@ -1293,19 +1323,17 @@ _determine_payload_size(gint length, MsgFormatOptions *parse_options)
  * log_msg_new:
  * @msg: message to parse
  * @length: length of @msg
- * @saddr: sender address
  * @flags: parse flags (LP_*)
  *
  * This function allocates, parses and returns a new LogMessage instance.
  **/
 LogMessage *
 log_msg_new(const gchar *msg, gint length,
-            GSockAddr *saddr,
             MsgFormatOptions *parse_options)
 {
   LogMessage *self = log_msg_alloc(_determine_payload_size(length, parse_options));
 
-  log_msg_init(self, saddr);
+  log_msg_init(self);
   msg_format_parse(parse_options, (guchar *) msg, length, self);
   return self;
 }
@@ -1315,7 +1343,7 @@ log_msg_new_empty(void)
 {
   LogMessage *self = log_msg_alloc(256);
 
-  log_msg_init(self, NULL);
+  log_msg_init(self);
   return self;
 }
 
@@ -1393,6 +1421,8 @@ log_msg_free(LogMessage *self)
     g_free(self->sdata);
   if (log_msg_chk_flag(self, LF_STATE_OWN_SADDR))
     g_sockaddr_unref(self->saddr);
+  if (log_msg_chk_flag(self, LF_STATE_OWN_DADDR))
+    g_sockaddr_unref(self->daddr);
 
   if (self->original)
     log_msg_unref(self->original);
@@ -1879,14 +1909,16 @@ log_msg_lookup_time_stamp_name(const gchar *name)
   return -1;
 }
 
-gssize log_msg_get_size(LogMessage *self)
+gssize
+log_msg_get_size(LogMessage *self)
 {
-  if(!self) return 0;
+  if (!self)
+    return 0;
 
   return
     sizeof(LogMessage) + // msg.static fields
     + self->alloc_sdata * sizeof(self->sdata[0]) +
-    sizeof(GSockAddr) + sizeof (GSockAddrFuncs) + // msg.saddr + msg.saddr.sa_func
+    g_sockaddr_len(self->saddr) + g_sockaddr_len(self->daddr) +
     ((self->num_tags) ? sizeof(self->tags[0]) * self->num_tags : 0) +
     nv_table_get_memory_consumption(self->payload); // msg.payload (nvtable)
 }

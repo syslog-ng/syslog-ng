@@ -29,6 +29,7 @@
 #include "transport/multitransport.h"
 #include "transport/transport-factory-tls.h"
 #include "transport/transport-factory-socket.h"
+#include "transport/transport-udp-socket.h"
 #include "secret-storage/secret-storage.h"
 
 #include <sys/types.h>
@@ -132,7 +133,10 @@ _construct_plain_tcp_transport(TransportMapperInet *self, gint fd)
   if (self->super.create_multitransport)
     return _construct_multitransport_with_plain_tcp_factory(self, fd);
 
-  return transport_mapper_construct_log_transport_method(&self->super, fd);
+  if (self->super.sock_type == SOCK_DGRAM)
+    return log_transport_udp_socket_new(fd);
+  else
+    return log_transport_stream_socket_new(fd);
 }
 
 static LogTransport *

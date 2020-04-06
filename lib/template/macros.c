@@ -204,6 +204,9 @@ LogMacroDef macros[] =
   { "SDATA", M_SDATA },
   { "MSGHDR", M_MSGHDR },
   { "SOURCEIP", M_SOURCE_IP },
+  { "DESTIP", M_DEST_IP },
+  { "DESTPORT", M_DEST_PORT },
+  { "PROTO", M_PROTO },
   { "SEQNUM", M_SEQNUM },
   { "CONTEXT_ID", M_CONTEXT_ID },
   { "_", M_CONTEXT_ID },
@@ -246,6 +249,20 @@ _is_message_source_an_ip_address(const LogMessage *msg)
     return TRUE;
 #if SYSLOG_NG_ENABLE_IPV6
   if (g_sockaddr_inet6_check(msg->saddr))
+    return TRUE;
+#endif
+  return FALSE;
+}
+
+static gboolean
+_is_message_dest_an_ip_address(const LogMessage *msg)
+{
+  if (!msg->daddr)
+    return FALSE;
+  if (g_sockaddr_inet_check(msg->daddr))
+    return TRUE;
+#if SYSLOG_NG_ENABLE_IPV6
+  if (g_sockaddr_inet6_check(msg->daddr))
     return TRUE;
 #endif
   return FALSE;
@@ -565,6 +582,43 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
           ip = "127.0.0.1";
         }
       result_append(result, ip, strlen(ip), escape);
+      break;
+    }
+    case M_DEST_IP:
+    {
+      gchar *ip;
+      gchar buf[MAX_SOCKADDR_STRING];
+
+      if (_is_message_dest_an_ip_address(msg))
+        {
+          g_sockaddr_format(msg->daddr, buf, sizeof(buf), GSA_ADDRESS_ONLY);
+          ip = buf;
+        }
+      else
+        {
+          ip = "127.0.0.1";
+        }
+      result_append(result, ip, strlen(ip), escape);
+      break;
+    }
+    case M_DEST_PORT:
+    {
+      gint port;
+
+      if (_is_message_dest_an_ip_address(msg))
+        {
+          port = g_sockaddr_get_port(msg->daddr);
+        }
+      else
+        {
+          port = 0;
+        }
+      format_uint32_padded(result, 0, 0, 10, port);
+      break;
+    }
+    case M_PROTO:
+    {
+      format_uint32_padded(result, 0, 0, 10, msg->proto);
       break;
     }
     case M_SEQNUM:

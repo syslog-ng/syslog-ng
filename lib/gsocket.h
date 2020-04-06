@@ -33,5 +33,7 @@ GIOStatus g_accept(int fd, int *newfd, GSockAddr **addr);
 GIOStatus g_connect(int fd, GSockAddr *remote);
 gchar *g_inet_ntoa(char *buf, size_t bufsize, struct in_addr a);
 gint g_inet_aton(const char *buf, struct in_addr *a);
+GSockAddr *g_socket_get_peer_name(gint fd);
+GSockAddr *g_socket_get_local_name(gint fd);
 
 #endif

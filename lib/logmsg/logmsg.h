@@ -118,12 +118,13 @@ enum
   LF_STATE_MASK        = 0xFFF0,
   LF_STATE_OWN_PAYLOAD = 0x0010,
   LF_STATE_OWN_SADDR   = 0x0020,
-  LF_STATE_OWN_TAGS    = 0x0040,
-  LF_STATE_OWN_SDATA   = 0x0080,
-  LF_STATE_OWN_MASK    = 0x00F0,
+  LF_STATE_OWN_DADDR   = 0x0040,
+  LF_STATE_OWN_TAGS    = 0x0080,
+  LF_STATE_OWN_SDATA   = 0x0100,
+  LF_STATE_OWN_MASK    = 0x01F0,
 
   /* In the log header the hostname shall be printed individually (no group name, no chain hosts)*/
-  LF_SIMPLE_HOSTNAME = 0x0100,
+  LF_SIMPLE_HOSTNAME = 0x0200,
 
   LF_CHAINED_HOSTNAME  = 0x00010000,
 
@@ -170,10 +171,15 @@ struct _LogMessage
 
   gint ack_and_ref_and_abort_and_suspended;
 
+  /* NOTE: in theory this should be a size_t (or gsize), however that takes
+   * 8 bytes, and it's highly unlikely that we'd be using more than 4GB for
+   * a LogMessage */
+
+  guint allocated_bytes;
+
   AckRecord *ack_record;
   LMAckFunc ack_func;
   LogMessage *original;
-  gsize allocated_bytes;
 
   /* message parts */
 
@@ -184,18 +190,29 @@ struct _LogMessage
    */
   /* ==== start of directly copied part ==== */
   UnixTime timestamps[LM_TS_MAX];
-  guint32 host_id;
   gulong *tags;
   NVHandle *sdata;
 
   GSockAddr *saddr;
+  GSockAddr *daddr;
   NVTable *payload;
 
   guint32 flags;
   guint16 pri;
   guint8 initial_parse:1,
-         recursed:1;
+         recursed:1,
+
+         /* NOTE: proto is just 6 bits wide, but with that it fills a hole
+          * not taking any tolls on the structure size.  Realistically, we'd
+          * be storing IPPROTO_UDP and TCP in there, which fits the 6 bits.
+          * This is closely related to saddr/daddr and indicates the IP
+          * protocol that was used to deliver the datagram carrying this
+          * LogMessage.  */
+
+         proto:6;
   guint8 num_matches;
+  guint32 host_id;
+  guint64 rcptid;
   guint8 num_tags;
   guint8 alloc_sdata;
   guint8 num_sdata;
@@ -205,7 +222,6 @@ struct _LogMessage
   guint8 cur_node;
   guint8 protect_cnt;
 
-  guint64 rcptid;
 
   /* preallocated LogQueueNodes used to insert this message into a LogQueue */
   LogMessageQueueNode nodes[0];
@@ -315,6 +331,10 @@ void log_msg_format_sdata(const LogMessage *self, GString *result, guint32 seq_n
 void log_msg_set_tag_by_id_onoff(LogMessage *self, LogTagId id, gboolean on);
 void log_msg_set_tag_by_id(LogMessage *self, LogTagId id);
 void log_msg_set_tag_by_name(LogMessage *self, const gchar *name);
+void log_msg_set_saddr(LogMessage *self, GSockAddr *saddr);
+void log_msg_set_saddr_ref(LogMessage *self, GSockAddr *saddr);
+void log_msg_set_daddr(LogMessage *self, GSockAddr *daddr);
+void log_msg_set_daddr_ref(LogMessage *self, GSockAddr *daddr);
 void log_msg_clear_tag_by_id(LogMessage *self, LogTagId id);
 void log_msg_clear_tag_by_name(LogMessage *self, const gchar *name);
 gboolean log_msg_is_tag_by_id(LogMessage *self, LogTagId id);
@@ -330,7 +350,6 @@ void log_msg_clear(LogMessage *self);
 void log_msg_merge_context(LogMessage *self, LogMessage **context, gsize context_len);
 
 LogMessage *log_msg_new(const gchar *msg, gint length,
-                        GSockAddr *saddr,
                         MsgFormatOptions *parse_options);
 LogMessage *log_msg_new_mark(void);
 LogMessage *log_msg_new_internal(gint prio, const gchar *msg);

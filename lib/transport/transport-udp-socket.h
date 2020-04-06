@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2002-2019 Balabit
+ * Copyright (c) 1998-2019 Balázs Scheidler
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,24 +21,12 @@
  * COPYING for details.
  *
  */
+#ifndef TRANSPORT_UDP_SOCKET_H_INCLUDED
+#define TRANSPORT_UDP_SOCKET_H_INCLUDED
 
-#ifndef TRANSPORT_TRANSPORT_SOCKET_H_INCLUDED
-#define TRANSPORT_TRANSPORT_SOCKET_H_INCLUDED 1
+#include "transport/logtransport.h"
 
-#include "logtransport.h"
+LogTransport *log_transport_udp_socket_new(gint fd);
 
-typedef struct _LogTransportSocket LogTransportSocket;
-struct _LogTransportSocket
-{
-  LogTransport super;
-  gint address_family;
-  gint proto;
-};
-
-void log_transport_dgram_socket_init_instance(LogTransportSocket *self, gint fd);
-LogTransport *log_transport_dgram_socket_new(gint fd);
-
-void log_transport_stream_socket_init_instance(LogTransportSocket *self, gint fd);
-LogTransport *log_transport_stream_socket_new(gint fd);
 
 #endif

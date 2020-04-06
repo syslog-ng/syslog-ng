@@ -26,6 +26,74 @@
 #include <errno.h>
 #include <unistd.h>
 
+static gint
+_determine_address_family(gint fd)
+{
+  struct sockaddr_storage sas;
+  socklen_t len = sizeof(sas);
+
+  if (getsockname(fd, (struct sockaddr *) &sas, &len) < 0)
+    return 0;
+  return sas.ss_family;
+}
+
+static gint
+_determine_proto_value_based_on_so_protocol(gint fd)
+{
+#if defined(SO_PROTOCOL)
+  gint ipproto;
+  socklen_t ipproto_len = sizeof(ipproto);
+
+  /* supported by Linux and FreeBSD */
+  if (getsockopt(fd, SOL_SOCKET, SO_PROTOCOL, &ipproto, &ipproto_len) >= 0)
+    return ipproto;
+#endif
+  return 0;
+}
+
+static gint
+_determine_proto_value_based_on_so_domain_and_type(gint fd, gint address_family)
+{
+  gint type;
+  socklen_t len = sizeof(type);
+
+  if (getsockopt(fd, SOL_SOCKET, SO_TYPE, &type, &len) < 0)
+    return 0;
+
+  switch (address_family)
+    {
+    case AF_INET:
+    case AF_INET6:
+      if (type == SOCK_DGRAM)
+        return IPPROTO_UDP;
+      else if (type == SOCK_STREAM)
+        return IPPROTO_TCP;
+      break;
+    case AF_UNIX:
+      break;
+    default:
+      g_assert_not_reached();
+    }
+  return 0;
+}
+
+static gint
+_determine_proto(gint fd, gint address_family)
+{
+  gint result = _determine_proto_value_based_on_so_protocol(fd);
+  if (!result)
+    result = _determine_proto_value_based_on_so_domain_and_type(fd, address_family);
+  return result;
+}
+
+static void
+log_transport_socket_init_instance(LogTransportSocket *self, gint fd)
+{
+  log_transport_init_instance(&self->super, fd);
+  self->address_family = _determine_address_family(fd);
+  self->proto = _determine_proto(fd, self->address_family);
+}
+
 static gssize
 log_transport_dgram_socket_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTransportAuxData *aux)
 {
@@ -41,8 +109,13 @@ log_transport_dgram_socket_read_method(LogTransport *s, gpointer buf, gsize bufl
                     (struct sockaddr *) &ss, &salen);
     }
   while (rc == -1 && errno == EINTR);
-  if (rc != -1 && salen && aux)
-    log_transport_aux_data_set_peer_addr_ref(aux, g_sockaddr_new((struct sockaddr *) &ss, salen));
+  if (rc != -1)
+    {
+      if (salen && aux)
+        log_transport_aux_data_set_peer_addr_ref(aux, g_sockaddr_new((struct sockaddr *) &ss, salen));
+      if (aux)
+        aux->proto = self->proto;
+    }
   if (rc == 0)
     {
       /* DGRAM sockets should never return EOF, they just need to be read again */
@@ -81,7 +154,7 @@ log_transport_dgram_socket_write_method(LogTransport *s, const gpointer buf, gsi
 void
 log_transport_dgram_socket_init_instance(LogTransportSocket *self, gint fd)
 {
-  log_transport_init_instance(&self->super, fd);
+  log_transport_socket_init_instance(self, fd);
   self->super.read = log_transport_dgram_socket_read_method;
   self->super.write = log_transport_dgram_socket_write_method;
 }
@@ -106,6 +179,8 @@ log_transport_stream_socket_read_method(LogTransport *s, gpointer buf, gsize buf
       rc = recv(self->super.fd, buf, buflen, 0);
     }
   while (rc == -1 && errno == EINTR);
+  if (aux)
+    aux->proto = self->proto;
   return rc;
 }
 
@@ -134,7 +209,7 @@ log_transport_stream_socket_free_method(LogTransport *s)
 void
 log_transport_stream_socket_init_instance(LogTransportSocket *self, gint fd)
 {
-  log_transport_init_instance(&self->super, fd);
+  log_transport_socket_init_instance(self, fd);
   self->super.read = log_transport_stream_socket_read_method;
   self->super.write = log_transport_stream_socket_write_method;
   self->super.free_fn = log_transport_stream_socket_free_method;

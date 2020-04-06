@@ -61,6 +61,7 @@ struct _LogReader
   LogReaderOptions *options;
   PollEvents *poll_events;
   GSockAddr *peer_addr;
+  GSockAddr *local_addr;
 
   /* NOTE: these used to be LogReaderWatch members, which were merged into
    * LogReader with the multi-thread refactorization */
@@ -86,8 +87,9 @@ struct _LogReader
 void log_reader_set_options(LogReader *s, LogPipe *control, LogReaderOptions *options, const gchar *stats_id,
                             const gchar *stats_instance);
 void log_reader_set_follow_filename(LogReader *self, const gchar *follow_filename);
-void log_reader_set_peer_addr(LogReader *s, GSockAddr *peer_addr);
 void log_reader_set_name(LogReader *s, const gchar *name);
+void log_reader_set_peer_addr(LogReader *s, GSockAddr *peer_addr);
+void log_reader_set_local_addr(LogReader *s, GSockAddr *local_addr);
 void log_reader_set_immediate_check(LogReader *s);
 void log_reader_disable_bookmark_saving(LogReader *s);
 void log_reader_open(LogReader *s, LogProtoServer *proto, PollEvents *poll_events);
