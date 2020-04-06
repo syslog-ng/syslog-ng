@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #############################################################################
-# Copyright (c) 2015-2019 Balabit
+# Copyright (c) 2020 Balabit
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -22,16 +22,15 @@
 #############################################################################
 
 
-class Filter(object):
-    group_type = "filter"
+class Rewrite(object):
+    group_type = "rewrite"
 
-    def __init__(self, positional_parameters, **options):
+    def __init__(self, driver_name, positional_parameters, **options):
+        self.driver_name = driver_name
         self.options = options
-        self.driver_name = ""
         self.positional_parameters = positional_parameters
 
 
-class Match(Filter):
-    def __init__(self, match_string, **options):
-        super(Match, self).__init__([match_string], **options)
-        self.driver_name = "match"
+class SetTag(Rewrite):
+    def __init__(self, tag, **options):
+        super(SetTag, self).__init__("set_tag", [tag], **options)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #############################################################################
-# Copyright (c) 2015-2019 Balabit
+# Copyright (c) 2020 Balabit
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -20,18 +20,20 @@
 # COPYING for details.
 #
 #############################################################################
+from src.syslog_ng_config.statements.filters.filter import Match
 
 
-class Filter(object):
-    group_type = "filter"
+def test_set_tag(config, syslog_ng):
+    match = Match(config.stringify("MATCHSTRING"), value=config.stringify("MSG"))
+    notmatch = Match(config.stringify("NONE"), value=config.stringify("MSG"))
 
-    def __init__(self, positional_parameters, **options):
-        self.options = options
-        self.driver_name = ""
-        self.positional_parameters = positional_parameters
+    generator_source = config.create_example_msg_generator_source(num=1, template=config.stringify("input with MATCHSTRING in it"))
+    set_tag_with_matching = config.create_rewrite_set_tag("SHOULDMATCH", condition=match)
+    set_tag_without_matching = config.create_rewrite_set_tag("DONOTMATCH", condition=notmatch)
+    file_destination = config.create_file_destination(file_name="output.log", template=config.stringify('${TAGS}\n'))
+    config.create_logpath(statements=[generator_source, set_tag_with_matching, set_tag_without_matching, file_destination])
 
-
-class Match(Filter):
-    def __init__(self, match_string, **options):
-        super(Match, self).__init__([match_string], **options)
-        self.driver_name = "match"
+    syslog_ng.start(config)
+    log_line = file_destination.read_log().strip()
+    assert "SHOULDMATCH" in log_line
+    assert "DONOTMATCH" not in log_line
