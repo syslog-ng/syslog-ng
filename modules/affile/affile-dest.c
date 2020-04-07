@@ -598,27 +598,19 @@ affile_dd_open_writer(gpointer args[])
   main_loop_assert_main_thread();
   if (!self->filename_is_a_template)
     {
-      if (!self->single_writer)
+      next = affile_dw_new(self->filename_template->template, log_pipe_get_config(&self->super.super.super));
+      affile_dw_set_owner(next, self);
+      if (next && log_pipe_init(&next->super))
         {
-          next = affile_dw_new(self->filename_template->template, log_pipe_get_config(&self->super.super.super));
-          affile_dw_set_owner(next, self);
-          if (next && log_pipe_init(&next->super))
-            {
-              log_pipe_ref(&next->super);
-              g_static_mutex_lock(&self->lock);
-              self->single_writer = next;
-              g_static_mutex_unlock(&self->lock);
-            }
-          else
-            {
-              log_pipe_unref(&next->super);
-              next = NULL;
-            }
+          log_pipe_ref(&next->super);
+          g_static_mutex_lock(&self->lock);
+          self->single_writer = next;
+          g_static_mutex_unlock(&self->lock);
         }
       else
         {
-          next = self->single_writer;
-          log_pipe_ref(&next->super);
+          log_pipe_unref(&next->super);
+          next = NULL;
         }
     }
   else
