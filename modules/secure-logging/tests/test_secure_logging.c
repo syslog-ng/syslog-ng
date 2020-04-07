@@ -83,11 +83,8 @@ LogMessage *create_random_sample_message(void)
       g_string_append_c(msg_str, randomNumber(65, 90));
     }
 
-  GSockAddr *saddr;
-
-  saddr = g_sockaddr_inet_new("10.11.12.13", 1010);
-  msg = log_msg_new(msg_str->str, msg_str->len, saddr, &test_parse_options);
-  g_sockaddr_unref(saddr);
+  msg = log_msg_new(msg_str->str, msg_str->len, &test_parse_options);
+  log_msg_set_saddr_ref(msg, g_sockaddr_inet_new("10.11.12.13", 1010));
   log_msg_set_match(msg, 0, "whole-match", -1);
   log_msg_set_match(msg, 1, "first-match", -1);
   log_msg_set_tag_by_name(msg, "alma");
@@ -243,7 +240,8 @@ void verifyMessages(GString **templateOutput, LogMessage **original, size_t tota
   for (int i=0; i<totalNumberOfMessages; i++)
     {
       char *plaintextMessage = (outputBuffer[i]->str) + CTR_LEN_SIMPLE + COLON + BLANK;
-      LogMessage *result = log_msg_new(plaintextMessage, strlen(plaintextMessage), original[i]->saddr, &test_parse_options);
+      LogMessage *result = log_msg_new(plaintextMessage, strlen(plaintextMessage), &test_parse_options);
+      log_msg_set_saddr(result, original[i]->saddr);
       assert_log_messages_equal(original[i], result);
       g_string_free(outputBuffer[i], TRUE);
       log_msg_unref(result);
@@ -464,7 +462,8 @@ void test_slog_corrupted_key(void)
   for(size_t i = 0; i < num; i++)
     {
       output[i] = applyTemplate(slog_templ, logs[i]);
-      LogMessage *myOut = log_msg_new(output[i]->str, output[i]->len, logs[i]->saddr, &test_parse_options);
+      LogMessage *myOut = log_msg_new(output[i]->str, output[i]->len, &test_parse_options);
+      log_msg_set_saddr(myOut, logs[i]->saddr);
       assert_log_messages_equal(myOut, logs[i]);
 
       // Release message resources
