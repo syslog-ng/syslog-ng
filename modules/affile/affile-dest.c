@@ -626,27 +626,19 @@ affile_dd_open_writer(gpointer args[])
        * other threads must be locked. writers must be locked even in
        * this thread to exclude lookups in other threads.  */
 
-      next = g_hash_table_lookup(self->writer_hash, filename->str);
-      if (!next)
+      next = affile_dw_new(filename->str, log_pipe_get_config(&self->super.super.super));
+      affile_dw_set_owner(next, self);
+      if (!log_pipe_init(&next->super))
         {
-          next = affile_dw_new(filename->str, log_pipe_get_config(&self->super.super.super));
-          affile_dw_set_owner(next, self);
-          if (!log_pipe_init(&next->super))
-            {
-              log_pipe_unref(&next->super);
-              next = NULL;
-            }
-          else
-            {
-              log_pipe_ref(&next->super);
-              g_static_mutex_lock(&self->lock);
-              g_hash_table_insert(self->writer_hash, next->filename, next);
-              g_static_mutex_unlock(&self->lock);
-            }
+          log_pipe_unref(&next->super);
+          next = NULL;
         }
       else
         {
           log_pipe_ref(&next->super);
+          g_static_mutex_lock(&self->lock);
+          g_hash_table_insert(self->writer_hash, next->filename, next);
+          g_static_mutex_unlock(&self->lock);
         }
     }
 
