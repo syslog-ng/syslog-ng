@@ -454,8 +454,8 @@ afinter_message_posted(LogMessage *msg)
 
       stats_lock();
       StatsClusterKey sc_key;
-      stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "internal_queue_length", NULL );
-      stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &internal_queue_length);
+      stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "internal_source", NULL );
+      stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &internal_queue_length);
       stats_unlock();
     }
 
@@ -487,8 +487,8 @@ afinter_global_deinit(void)
     {
       stats_lock();
       StatsClusterKey sc_key;
-      stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "internal_queue_length", NULL );
-      stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &internal_queue_length);
+      stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "internal_source", NULL );
+      stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &internal_queue_length);
       stats_unlock();
       g_queue_free_full(internal_msg_queue, (GDestroyNotify)log_msg_unref);
       internal_msg_queue = NULL;
