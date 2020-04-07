@@ -73,11 +73,11 @@ static GStaticMutex internal_mark_target_lock = G_STATIC_MUTEX_INIT;
  *
  * If the window is depleted (e.g. flow control is enabled and the
  * destination is unable to process any more messages),
- * current_internal_source will be set to NULL, which means that messages
+ * free_to_send will be set to FALSE, which means that messages
  * will be added to the queue, but the wakeup will not be done.
  *
  * When the window becomes free, log_source_wakeup() is called, which
- * restores the current_internal_source pointer (e.g.  further messages will
+ * restores the free_to_send flag (e.g.  further messages will
  * wake up the source) and also starts emptying the messages accumulated in the queue.
  *
  * Possible races:
@@ -210,9 +210,8 @@ afinter_source_update_watches(AFInterSource *self)
 {
   if (!log_source_free_to_send(&self->super))
     {
-      /* ok, we go to sleep now. let's disable the post event by setting
-       * current_internal_source to NULL.  Messages get accumulated into
-       * internal_msg_queue.  */
+      /* ok, we go to sleep now. let's disable the post event.
+       * Messages get accumulated into internal_msg_queue.  */
       g_static_mutex_lock(&internal_msg_lock);
       self->free_to_send = FALSE;
       g_static_mutex_unlock(&internal_msg_lock);
@@ -244,14 +243,14 @@ afinter_source_update_watches(AFInterSource *self)
 
       /* Possible race:
        *
-       * Our current_internal_source pointer is set to NULL here (in case
+       * The free_to_send flag is set to FALSE here (in case
        * we're just waking up).  In case the sender submits a message, it'll
-       * not trigger the self->post (since the pointer is NULL).  This is
+       * not trigger the self->post (since free_to_send is FALSE).  This is
        * taken care of by the queue-length check in the locked region below.
        * If the queue has elements, we need to wake up, because we may have
        * lost a wakeup call.  If it happens after the locked region, that
-       * doesn't matter, in that case we already pointed
-       * current_internal_source to ourselves, thus the post event will also
+       * doesn't matter, in that case we already set
+       * free_to_send = TRUE to ourselves, thus the post event will also
        * be triggered.
        */
 
