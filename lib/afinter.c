@@ -31,12 +31,15 @@
 
 #include <iv_event.h>
 
+#define INTERNAL_MSG_QUEUE_CAPACITY 10000
+
 typedef struct _AFInterSource AFInterSource;
 
 static GStaticMutex internal_msg_lock = G_STATIC_MUTEX_INIT;
 static GQueue *internal_msg_queue;
 static AFInterSource *current_internal_source;
 static StatsCounterItem *internal_queue_length;
+static StatsCounterItem *internal_queue_dropped;
 
 /* the expiration timer of the next MARK message */
 static struct timespec next_mark_target = { -1, 0 };
@@ -456,7 +459,15 @@ afinter_message_posted(LogMessage *msg)
       StatsClusterKey sc_key;
       stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "internal_source", NULL );
       stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &internal_queue_length);
+      stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &internal_queue_dropped);
       stats_unlock();
+    }
+
+  if (g_queue_get_length(internal_msg_queue) >= INTERNAL_MSG_QUEUE_CAPACITY)
+    {
+      stats_counter_inc(internal_queue_dropped);
+      log_msg_unref(msg);
+      goto exit;
     }
 
   g_queue_push_tail(internal_msg_queue, msg);
@@ -489,6 +500,7 @@ afinter_global_deinit(void)
       StatsClusterKey sc_key;
       stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "internal_source", NULL );
       stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &internal_queue_length);
+      stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &internal_queue_dropped);
       stats_unlock();
       g_queue_free_full(internal_msg_queue, (GDestroyNotify)log_msg_unref);
       internal_msg_queue = NULL;
