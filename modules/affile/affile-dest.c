@@ -590,56 +590,74 @@ affile_dd_deinit(LogPipe *s)
  * instance where the caller needs to forward its message.
  */
 static LogPipe *
-affile_dd_open_writer(gpointer args[])
+affile_dd_open_writer_from_template(gpointer args[])
 {
   AFFileDestDriver *self = args[0];
   AFFileDestWriter *next;
 
   main_loop_assert_main_thread();
-  if (!self->filename_is_a_template)
+
+  GString *filename = args[1];
+
+  /* hash table construction is serialized, as we only do that in the main thread. */
+  if (!self->writer_hash)
+    self->writer_hash = g_hash_table_new(g_str_hash, g_str_equal);
+
+  /* we don't need to lock the hashtable as it is only written in
+    * the main thread, which we're running right now.  lookups in
+    * other threads must be locked. writers must be locked even in
+    * this thread to exclude lookups in other threads.  */
+
+  next = affile_dw_new(filename->str, log_pipe_get_config(&self->super.super.super));
+  affile_dw_set_owner(next, self);
+  if (!log_pipe_init(&next->super))
     {
-      next = affile_dw_new(self->filename_template->template, log_pipe_get_config(&self->super.super.super));
-      affile_dw_set_owner(next, self);
-      if (next && log_pipe_init(&next->super))
-        {
-          log_pipe_ref(&next->super);
-          g_static_mutex_lock(&self->lock);
-          self->single_writer = next;
-          g_static_mutex_unlock(&self->lock);
-        }
-      else
-        {
-          log_pipe_unref(&next->super);
-          next = NULL;
-        }
+      log_pipe_unref(&next->super);
+      next = NULL;
     }
   else
     {
-      GString *filename = args[1];
+      log_pipe_ref(&next->super);
+      g_static_mutex_lock(&self->lock);
+      g_hash_table_insert(self->writer_hash, next->filename, next);
+      g_static_mutex_unlock(&self->lock);
+    }
 
-      /* hash table construction is serialized, as we only do that in the main thread. */
-      if (!self->writer_hash)
-        self->writer_hash = g_hash_table_new(g_str_hash, g_str_equal);
+  if (next)
+    {
+      next->queue_pending = TRUE;
+      /* we're returning a reference */
+      return &next->super;
+    }
+  return NULL;
+}
 
-      /* we don't need to lock the hashtable as it is only written in
-       * the main thread, which we're running right now.  lookups in
-       * other threads must be locked. writers must be locked even in
-       * this thread to exclude lookups in other threads.  */
+/*
+ * This function is ran in the main thread whenever a writer is not yet
+ * instantiated.  Returns a reference to the newly constructed LogPipe
+ * instance where the caller needs to forward its message.
+ */
+static LogPipe *
+affile_dd_open_single_writer(gpointer args[])
+{
+  AFFileDestDriver *self = args[0];
+  AFFileDestWriter *next;
 
-      next = affile_dw_new(filename->str, log_pipe_get_config(&self->super.super.super));
-      affile_dw_set_owner(next, self);
-      if (!log_pipe_init(&next->super))
-        {
-          log_pipe_unref(&next->super);
-          next = NULL;
-        }
-      else
-        {
-          log_pipe_ref(&next->super);
-          g_static_mutex_lock(&self->lock);
-          g_hash_table_insert(self->writer_hash, next->filename, next);
-          g_static_mutex_unlock(&self->lock);
-        }
+  main_loop_assert_main_thread();
+
+  next = affile_dw_new(self->filename_template->template, log_pipe_get_config(&self->super.super.super));
+  affile_dw_set_owner(next, self);
+  if (next && log_pipe_init(&next->super))
+    {
+      log_pipe_ref(&next->super);
+      g_static_mutex_lock(&self->lock);
+      self->single_writer = next;
+      g_static_mutex_unlock(&self->lock);
+    }
+  else
+    {
+      log_pipe_unref(&next->super);
+      next = NULL;
     }
 
   if (next)
@@ -664,7 +682,7 @@ _affile_dd_create_single_writer(AFFileDestDriver *self)
   if (!self->single_writer)
     {
       g_static_mutex_unlock(&self->lock);
-      next = main_loop_call((void *(*)(void *)) affile_dd_open_writer, args, TRUE);
+      next = main_loop_call((void *(*)(void *)) affile_dd_open_single_writer, args, TRUE);
     }
   else
     {
@@ -704,7 +722,7 @@ _affile_dd_create_writer_from_template(AFFileDestDriver *self, LogMessage *msg)
     {
       g_static_mutex_unlock(&self->lock);
       args[1] = filename;
-      next = main_loop_call((void *(*)(void *)) affile_dd_open_writer, args, TRUE);
+      next = main_loop_call((void *(*)(void *)) affile_dd_open_writer_from_template, args, TRUE);
     }
   g_string_free(filename, TRUE);
 
