@@ -593,11 +593,10 @@ static LogPipe *
 affile_dd_open_writer_from_template(gpointer args[])
 {
   AFFileDestDriver *self = args[0];
-  AFFileDestWriter *next;
+  GString *filename = args[1];
+  AFFileDestWriter *writer;
 
   main_loop_assert_main_thread();
-
-  GString *filename = args[1];
 
   /* hash table construction is serialized, as we only do that in the main thread. */
   if (!self->writer_hash)
@@ -608,27 +607,19 @@ affile_dd_open_writer_from_template(gpointer args[])
     * other threads must be locked. writers must be locked even in
     * this thread to exclude lookups in other threads.  */
 
-  next = affile_dw_new(filename->str, log_pipe_get_config(&self->super.super.super));
-  affile_dw_set_owner(next, self);
-  if (!log_pipe_init(&next->super))
+  writer = affile_dw_new(filename->str, log_pipe_get_config(&self->super.super.super));
+  affile_dw_set_owner(writer, self);
+  if (writer && log_pipe_init(&writer->super))
     {
-      log_pipe_unref(&next->super);
-      next = NULL;
-    }
-  else
-    {
-      log_pipe_ref(&next->super);
+      log_pipe_ref(&writer->super);
       g_static_mutex_lock(&self->lock);
-      g_hash_table_insert(self->writer_hash, next->filename, next);
+      g_hash_table_insert(self->writer_hash, writer->filename, writer);
       g_static_mutex_unlock(&self->lock);
+      writer->queue_pending = TRUE;
+      return &writer->super;
     }
 
-  if (next)
-    {
-      next->queue_pending = TRUE;
-      /* we're returning a reference */
-      return &next->super;
-    }
+  log_pipe_unref(&writer->super);
   return NULL;
 }
 
@@ -641,31 +632,25 @@ static LogPipe *
 affile_dd_open_single_writer(gpointer args[])
 {
   AFFileDestDriver *self = args[0];
-  AFFileDestWriter *next;
+  AFFileDestWriter *writer;
 
   main_loop_assert_main_thread();
 
-  next = affile_dw_new(self->filename_template->template, log_pipe_get_config(&self->super.super.super));
-  affile_dw_set_owner(next, self);
-  if (next && log_pipe_init(&next->super))
+  writer = affile_dw_new(self->filename_template->template, log_pipe_get_config(&self->super.super.super));
+  affile_dw_set_owner(writer, self);
+  if (writer && log_pipe_init(&writer->super))
     {
-      log_pipe_ref(&next->super);
+      log_pipe_ref(&writer->super);
+
       g_static_mutex_lock(&self->lock);
-      self->single_writer = next;
+      self->single_writer = writer;
       g_static_mutex_unlock(&self->lock);
-    }
-  else
-    {
-      log_pipe_unref(&next->super);
-      next = NULL;
+
+      writer->queue_pending = TRUE;
+      return &writer->super;
     }
 
-  if (next)
-    {
-      next->queue_pending = TRUE;
-      /* we're returning a reference */
-      return &next->super;
-    }
+  log_pipe_unref(&writer->super);
   return NULL;
 }
 
