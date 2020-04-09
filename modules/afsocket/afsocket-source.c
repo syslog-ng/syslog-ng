@@ -56,30 +56,27 @@ typedef struct _AFSocketSourceConnection
 static void afsocket_sd_close_connection(AFSocketSourceDriver *self, AFSocketSourceConnection *sc);
 
 static void
-_connections_count_set(AFSocketSourceDriver *self, gint value)
+_connections_count_set(AFSocketSourceDriver *self, gssize value)
 {
-  self->num_connections = value;
-  stats_counter_set(self->num_connections_stats, value);
+  atomic_gssize_set(&self->num_connections, value);
 }
 
-static gint
+static gssize
 _connections_count_get(AFSocketSourceDriver *self)
 {
-  return self->num_connections;
+  return atomic_gssize_get(&self->num_connections);
 }
 
 static void
 _connections_count_inc(AFSocketSourceDriver *self)
 {
-  self->num_connections++;
-  stats_counter_inc(self->num_connections_stats);
+  atomic_gssize_inc(&self->num_connections);
 }
 
 static void
 _connections_count_dec(AFSocketSourceDriver *self)
 {
-  self->num_connections--;
-  stats_counter_dec(self->num_connections_stats);
+  atomic_gssize_dec(&self->num_connections);
 }
 
 static gchar *
@@ -993,33 +990,40 @@ afsocket_sd_setup_addresses_method(AFSocketSourceDriver *self)
 }
 
 static void
-_afsocket_sd_register_connection_counter(AFSocketSourceDriver *self)
+_make_connection_conter_stats_queryable(AFSocketSourceDriver *self)
 {
   if (self->transport_mapper->sock_type == SOCK_STREAM)
     {
       stats_lock();
-
-      StatsClusterKey sc_key;
-      stats_cluster_single_key_set_with_name(&sc_key, self->transport_mapper->stats_source | SCS_SOURCE,
-                                             self->super.super.group, afsocket_sd_format_name(&self->super.super.super), "connections");
-      stats_register_counter(0, &sc_key, SC_TYPE_SINGLE_VALUE, &self->num_connections_stats);
-      _connections_count_set(self, 0);
-
+      {
+        StatsClusterKey sc_key;
+        stats_cluster_single_key_set_with_name(&sc_key,
+                                               self->transport_mapper->stats_source | SCS_SOURCE,
+                                               self->super.super.group,
+                                               afsocket_sd_format_name(&self->super.super.super),
+                                               "connections");
+        stats_register_external_counter(0, &sc_key, SC_TYPE_SINGLE_VALUE, &self->num_connections);
+        _connections_count_set(self, 0);
+      }
       stats_unlock();
     }
 }
 
 static void
-_afsocket_sd_unregister_connection_counter(AFSocketSourceDriver *self)
+_stop_connection_counter_stats_queryable(AFSocketSourceDriver *self)
 {
   if (self->transport_mapper->sock_type == SOCK_STREAM)
     {
       stats_lock();
-
-      StatsClusterKey sc_key;
-      stats_cluster_single_key_set_with_name(&sc_key, self->transport_mapper->stats_source | SCS_SOURCE,
-                                             self->super.super.group, afsocket_sd_format_name(&self->super.super.super), "connections");
-      stats_unregister_counter(&sc_key, SC_TYPE_SINGLE_VALUE, &self->num_connections_stats);
+      {
+        StatsClusterKey sc_key;
+        stats_cluster_single_key_set_with_name(&sc_key,
+                                               self->transport_mapper->stats_source | SCS_SOURCE,
+                                               self->super.super.group,
+                                               afsocket_sd_format_name(&self->super.super.super),
+                                               "connections");
+        stats_unregister_external_counter(&sc_key, SC_TYPE_SINGLE_VALUE, &self->num_connections);
+      }
       stats_unlock();
     }
 }
@@ -1035,8 +1039,6 @@ afsocket_sd_init_method(LogPipe *s)
   if (!afsocket_sd_setup_transport(self) || !afsocket_sd_setup_addresses(self))
     return FALSE;
 
-  _afsocket_sd_register_connection_counter(self);
-
   if (!afsocket_sd_restore_dynamic_window_pool(self))
     {
       if (self->dynamic_window_size != 0)
@@ -1046,7 +1048,11 @@ afsocket_sd_init_method(LogPipe *s)
         }
     }
 
-  return afsocket_sd_restore_kept_alive_connections(self) && afsocket_sd_open_listener(self);
+  gboolean success = afsocket_sd_restore_kept_alive_connections(self) && afsocket_sd_open_listener(self);
+  if (success)
+    _make_connection_conter_stats_queryable(self);
+
+  return success;
 }
 
 gboolean
@@ -1057,7 +1063,7 @@ afsocket_sd_deinit_method(LogPipe *s)
   afsocket_sd_save_connections(self);
   afsocket_sd_save_listener(self);
 
-  _afsocket_sd_unregister_connection_counter(self);
+  _stop_connection_counter_stats_queryable(self);
 
   if (self->dynamic_window_pool)
     afsocket_sd_save_dynamic_window_pool(self);
