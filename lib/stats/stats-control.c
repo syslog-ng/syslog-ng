@@ -33,13 +33,15 @@
 static void
 _reset_counter(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data)
 {
-  if (!stats_counter_read_only(counter))
-    stats_counter_set(counter, 0);
+  stats_counter_set(counter, 0);
 }
 
 static inline void
 _reset_counter_if_needed(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data)
 {
+  if (stats_counter_read_only(counter))
+    return;
+
   switch (type)
     {
     case SC_TYPE_QUEUED:
