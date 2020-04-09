@@ -607,7 +607,7 @@ affile_dd_open_writer_from_template(gpointer args[])
 
   writer = affile_dw_new(filename->str, log_pipe_get_config(&self->super.super.super));
   affile_dw_set_owner(writer, self);
-  if (writer && log_pipe_init(&writer->super))
+  if (log_pipe_init(&writer->super))
     {
       log_pipe_ref(&writer->super);
       g_static_mutex_lock(&self->lock);
@@ -636,7 +636,7 @@ affile_dd_open_single_writer(gpointer args[])
 
   writer = affile_dw_new(self->filename_template->template, log_pipe_get_config(&self->super.super.super));
   affile_dw_set_owner(writer, self);
-  if (writer && log_pipe_init(&writer->super))
+  if (log_pipe_init(&writer->super))
     {
       log_pipe_ref(&writer->super);
 
@@ -655,58 +655,46 @@ affile_dd_open_single_writer(gpointer args[])
 static AFFileDestWriter *
 _affile_dd_create_single_writer(AFFileDestDriver *self)
 {
-  AFFileDestWriter *next;
-  gpointer args[2] = { self, NULL };
-
   /* we need to lock single_writer in order to get a reference and
     * make sure it is not a stale pointer by the time we ref it */
-
   g_static_mutex_lock(&self->lock);
-  if (!self->single_writer)
+  if (self->single_writer)
     {
+      self->single_writer->queue_pending = TRUE;
+      log_pipe_ref(&self->single_writer->super);
       g_static_mutex_unlock(&self->lock);
-      next = main_loop_call((void *(*)(void *)) affile_dd_open_single_writer, args, TRUE);
+      return self->single_writer;
     }
-  else
-    {
-      next = self->single_writer;
-      next->queue_pending = TRUE;
-      log_pipe_ref(&next->super);
-      g_static_mutex_unlock(&self->lock);
-    }
+  g_static_mutex_unlock(&self->lock);
 
-  return next;
+  gpointer args[2] = { self, NULL };
+  return main_loop_call((void *(*)(void *)) affile_dd_open_single_writer, args, TRUE);
 }
 
 static AFFileDestWriter *
 _affile_dd_create_writer_from_template(AFFileDestDriver *self, LogMessage *msg)
 {
-  AFFileDestWriter *next;
-  gpointer args[2] = { self, NULL };
-
-  GString *filename;
-
-  filename = g_string_sized_new(32);
+  GString *filename = g_string_sized_new(32);
   log_template_format(self->filename_template, msg, &self->writer_options.template_options, LTZ_LOCAL, 0, NULL, filename);
 
   g_static_mutex_lock(&self->lock);
-  next = g_hash_table_lookup(self->writer_hash, filename->str);
+  AFFileDestWriter *writer = g_hash_table_lookup(self->writer_hash, filename->str);
 
-  if (next)
+  if (writer)
     {
-      log_pipe_ref(&next->super);
-      next->queue_pending = TRUE;
+      log_pipe_ref(&writer->super);
+      writer->queue_pending = TRUE;
       g_static_mutex_unlock(&self->lock);
     }
   else
     {
       g_static_mutex_unlock(&self->lock);
-      args[1] = filename;
-      next = main_loop_call((void *(*)(void *)) affile_dd_open_writer_from_template, args, TRUE);
+      gpointer args[2] = { self, filename };
+      writer = main_loop_call((void *(*)(void *)) affile_dd_open_writer_from_template, args, TRUE);
     }
   g_string_free(filename, TRUE);
 
-  return next;
+  return writer;
 }
 
 static AFFileDestWriter *
