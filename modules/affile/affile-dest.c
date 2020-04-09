@@ -487,6 +487,8 @@ affile_dd_init(LogPipe *s)
       self->writer_hash = cfg_persist_config_fetch(cfg, affile_dd_format_persist_name(s));
       if (self->writer_hash)
         g_hash_table_foreach(self->writer_hash, affile_dd_reuse_writer, self);
+      else
+        self->writer_hash = g_hash_table_new(g_str_hash, g_str_equal);
     }
   else
     {
@@ -598,10 +600,6 @@ affile_dd_open_writer_from_template(gpointer args[])
 
   main_loop_assert_main_thread();
 
-  /* hash table construction is serialized, as we only do that in the main thread. */
-  if (!self->writer_hash)
-    self->writer_hash = g_hash_table_new(g_str_hash, g_str_equal);
-
   /* we don't need to lock the hashtable as it is only written in
     * the main thread, which we're running right now.  lookups in
     * other threads must be locked. writers must be locked even in
@@ -692,10 +690,7 @@ _affile_dd_create_writer_from_template(AFFileDestDriver *self, LogMessage *msg)
   log_template_format(self->filename_template, msg, &self->writer_options.template_options, LTZ_LOCAL, 0, NULL, filename);
 
   g_static_mutex_lock(&self->lock);
-  if (self->writer_hash)
-    next = g_hash_table_lookup(self->writer_hash, filename->str);
-  else
-    next = NULL;
+  next = g_hash_table_lookup(self->writer_hash, filename->str);
 
   if (next)
     {
