@@ -60,45 +60,59 @@ Test(stats_external_counter, register_logpipe_cluster_ctr)
   cr_expect_eq(stats_counter_get(counter), 11);
 }
 
-Test(stats_external_counter, external_ctr_is_read_only_for_stats)
+static StatsCounterItem *
+_register_external_stats_counter(atomic_gssize *ctr, gssize initial_value)
 {
-  atomic_gssize test_ctr;
-  atomic_gssize_set(&test_ctr, 11);
   StatsCounterItem *counter = NULL;
+  atomic_gssize_set(ctr, initial_value);
 
   stats_lock();
   {
     StatsClusterKey sc_key;
     stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "test_ctr", NULL);
-    StatsCluster *sc = stats_register_external_counter(0, &sc_key, SC_TYPE_PROCESSED, &test_ctr);
+    StatsCluster *sc = stats_register_external_counter(0, &sc_key, SC_TYPE_PROCESSED, ctr);
     counter = stats_cluster_get_counter(sc, SC_TYPE_PROCESSED);
     cr_assert_not_null(sc);
   }
   stats_unlock();
 
-  stats_counter_set(counter, 1);
-  cr_expect_eq(stats_counter_get(counter), 11);
-  cr_expect_eq(atomic_gssize_get(&test_ctr), 11);
-
-  stats_counter_dec(counter);
-  cr_expect_eq(stats_counter_get(counter), 11);
-  cr_expect_eq(atomic_gssize_get(&test_ctr), 11);
-
-  stats_counter_inc(counter);
-  cr_expect_eq(stats_counter_get(counter), 11);
-  cr_expect_eq(atomic_gssize_get(&test_ctr), 11);
-
-  stats_counter_add(counter, 1);
-  cr_expect_eq(stats_counter_get(counter), 11);
-  cr_expect_eq(atomic_gssize_get(&test_ctr), 11);
-
-  stats_counter_sub(counter, 1);
-  cr_expect_eq(stats_counter_get(counter), 11);
-  cr_expect_eq(atomic_gssize_get(&test_ctr), 11);
-
-  atomic_gssize_inc(&test_ctr);
-  cr_expect_eq(stats_counter_get(counter), 12);
+  return counter;
 }
+
+Test(stats_external_counter, external_ctr_is_read_only_for_stats_set, .signal=SIGABRT)
+{
+  atomic_gssize test_ctr;
+  StatsCounterItem *stats_ctr = _register_external_stats_counter(&test_ctr, 11);
+  stats_counter_set(stats_ctr, 1);
+};
+
+Test(stats_external_counter, external_ctr_is_read_only_for_stats_inc, .signal=SIGABRT)
+{
+  atomic_gssize test_ctr;
+  StatsCounterItem *stats_ctr = _register_external_stats_counter(&test_ctr, 11);
+  stats_counter_inc(stats_ctr);
+};
+
+Test(stats_external_counter, external_ctr_is_read_only_for_stats_dec, .signal=SIGABRT)
+{
+  atomic_gssize test_ctr;
+  StatsCounterItem *stats_ctr = _register_external_stats_counter(&test_ctr, 11);
+  stats_counter_dec(stats_ctr);
+};
+
+Test(stats_external_counter, external_ctr_is_read_only_for_stats_add, .signal=SIGABRT)
+{
+  atomic_gssize test_ctr;
+  StatsCounterItem *stats_ctr = _register_external_stats_counter(&test_ctr, 11);
+  stats_counter_add(stats_ctr, 1);
+};
+
+Test(stats_external_counter, external_ctr_is_read_only_for_stats_sub, .signal=SIGABRT)
+{
+  atomic_gssize test_ctr;
+  StatsCounterItem *stats_ctr = _register_external_stats_counter(&test_ctr, 11);
+  stats_counter_sub(stats_ctr, 1);
+};
 
 Test(stats_external_counter, reset_counter_is_disabled_for_external_counters)
 {
@@ -211,14 +225,10 @@ Test(stats_external_counter, re_register_external_ctr_as_internal)
     tmp_counter = external_counter = stats_get_counter(&sc_key, SC_TYPE_PROCESSED);
     stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &internal_counter);
     cr_expect_eq(internal_counter, external_counter);
-    stats_counter_inc(internal_counter);
-    cr_expect_eq(stats_counter_get(internal_counter), 11);
     stats_unregister_external_counter(&sc_key, SC_TYPE_PROCESSED, &test_ctr);
     external_counter = stats_get_counter(&sc_key, SC_TYPE_PROCESSED);
     cr_expect_not_null(external_counter);
     stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &internal_counter);
-    stats_counter_inc(internal_counter);
-    cr_expect_eq(stats_counter_get(internal_counter), 11);
     stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &internal_counter);
     stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &tmp_counter);
     stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &internal_counter);
@@ -245,12 +255,6 @@ Test(stats_external_counter, re_register_external_ctr)
     counter2 = stats_get_counter(&sc_key, SC_TYPE_PROCESSED);
     cr_expect_eq(counter1, counter2);
     cr_expect_eq(counter1->value_ref, &test_ctr);
-    stats_counter_inc(counter1);
-    cr_expect_eq(stats_counter_get(counter1), 11);
-    cr_expect_eq(stats_counter_get(counter2), 11);
-    atomic_gssize_inc(&test_ctr);
-    cr_expect_eq(stats_counter_get(counter1), 12);
-    cr_expect_eq(stats_counter_get(counter2), 12);
   }
   stats_unlock();
 }
