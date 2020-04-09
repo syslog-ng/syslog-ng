@@ -15,7 +15,6 @@ set(STATS_HEADERS
 set(STATS_SOURCES
     stats/stats.c
     stats/stats-control.c
-    stats/stats-counter.c
     stats/stats-cluster.c
     stats/stats-csv.c
     stats/stats-log.c

@@ -18,7 +18,6 @@ statsinclude_HEADERS = \
 stats_sources = \
 	lib/stats/stats.c			\
 	lib/stats/stats-control.c		\
-	lib/stats/stats-counter.c		\
 	lib/stats/stats-cluster.c		\
 	lib/stats/stats-csv.c			\
 	lib/stats/stats-log.c			\

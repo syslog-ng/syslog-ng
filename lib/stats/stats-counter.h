@@ -121,7 +121,10 @@ stats_counter_get_name(StatsCounterItem *counter)
   return NULL;
 }
 
-void stats_reset_counters(void);
-void stats_counter_free(StatsCounterItem *counter);
+static inline void
+stats_counter_free(StatsCounterItem *counter)
+{
+  g_free(counter->name);
+}
 
 #endif
