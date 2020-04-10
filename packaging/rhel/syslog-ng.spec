@@ -89,6 +89,7 @@ BuildRequires: pcre-devel
 BuildRequires: libuuid-devel
 BuildRequires: libesmtp-devel
 BuildRequires: libcurl-devel
+BuildRequires: tzdata
 
 BuildRequires: %{python_devel}
 
