@@ -38,10 +38,6 @@ ubuntu-bionic		python2
 ubuntu-eoan		python2
 ubuntu-focal		python3
 
-#
-# centos-6 is not supported, however I leave this line here as an example of
-# how to use build.manifest to cusomize a build.
-#
-centos			python2,nokafka
 centos-6		python2,nokafka,nomongodb		CFLAGS=-D__be16=guint16,PYTHON_LIBS=-lpython2.6,PYTHON_CFLAGS=-I/usr/include/python2.6
+centos-7		python2,nokafka
 fedora			python3

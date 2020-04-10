@@ -5,31 +5,31 @@ automake                    [centos, fedora, ubuntu]
 ca-certificates             [centos, fedora, debian, ubuntu]
 git                         [centos, fedora, debian, ubuntu]
 ccache                      [centos, fedora, debian, ubuntu]
-libtool                     [centos, fedora, debian, ubuntu]
+libtool                     [fedora, ubuntu]
 
     # pkgconfig
     pkg-config              [ubuntu]
-    pkgconfig               [centos, fedora]
+    pkgconfig               [fedora]
 
 
 
 
 
 # packages to run successful configure
-bison                           [centos, fedora, ubuntu]
+bison                           [fedora, ubuntu]
 build-essential                 [debian, ubuntu]
-byacc                           [centos, fedora]
-file                            [centos, fedora, ubuntu]
-flex                            [centos, fedora, ubuntu]
-pcre-devel                      [centos, fedora]
+byacc                           [fedora]
+file                            [fedora, ubuntu]
+flex                            [fedora, ubuntu]
+pcre-devel                      [fedora]
 
     # glib-dev
     libglib2.0-dev              [ubuntu]
-    glib2-devel                 [centos, fedora]
+    glib2-devel                 [fedora]
 
     # ssl-dev
     libssl-dev                  [ubuntu]
-    openssl-devel               [centos, fedora]
+    openssl-devel               [fedora]
 
 
 
@@ -38,14 +38,14 @@ pcre-devel                      [centos, fedora]
 # packages to run successful configure with module support
     # libbson-dev
     libbson-dev                 [ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
-    libbson-devel               [centos-7, fedora]
+    libbson-devel               [fedora]
 
     # librabbitmq-dev
     librabbitmq-dev             [ubuntu]
-    librabbitmq-devel           [centos-7, fedora]
+    librabbitmq-devel           [fedora]
 
     libmongoc-dev               [ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
-    mongo-c-driver-devel        [centos, fedora]
+    mongo-c-driver-devel        [fedora]
 
     # librdkafka-dev (we are using a specific version from OBS and need to
     # list all interdependent packages as an apt preferences would prevent
@@ -57,63 +57,59 @@ pcre-devel                      [centos, fedora]
 
     # libmaxmindb-dev
     libmaxminddb-dev            [ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
-    libmaxminddb-devel          [centos-7, fedora]
+    libmaxminddb-devel          [fedora]
 
     # libcurl-dev
     libcurl4-openssl-dev        [ubuntu]
-    libcurl-devel               [centos, fedora]
+    libcurl-devel               [fedora]
 
     # libdbi-dev
     libdbi-dev                  [ubuntu]
-    libdbi-devel                [centos, fedora]
+    libdbi-devel                [fedora]
 
     # libesmtp-dev
     libesmtp-dev                [ubuntu]
-    libesmtp-devel              [centos, fedora]
+    libesmtp-devel              [fedora]
 
     # redis-dev
     libhiredis-dev              [ubuntu]
-    hiredis-devel               [centos, fedora]
+    hiredis-devel               [fedora]
 
     # libnet-dev
     libnet1-dev                 [ubuntu]
-    libnet-devel                [centos, fedora]
+    libnet-devel                [fedora]
 
     # libriemann-dev
     libriemann-client-dev       [ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
-    riemann-c-client-devel      [centos-7, fedora]
-
-    # java-7
-    java-1.7.0-openjdk-devel    [centos-6]
+    riemann-c-client-devel      [fedora]
 
     # java-8
     openjdk-8-jdk               [debian-stretch, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
-    java-1.8.0-openjdk-devel    [centos-7, fedora]
+    java-1.8.0-openjdk-devel    [fedora]
 
     # python-dev
     python-dev                  [debian, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan]
     python-devel                [centos, fedora]
-    python36-devel              [centos]
     python3-devel               [fedora]
     python3-dev                 [ubuntu-focal]
 
     # afsnmp
     libsnmp-dev                 [ubuntu]
-    net-snmp-devel              [centos, fedora]
+    net-snmp-devel              [fedora]
 
 
 # optional packages to run configure
     # libcap-dev
     libcap-dev                  [ubuntu]
-    libcap-devel                [centos, fedora]
+    libcap-devel                [fedora]
 
     # systemd-dev
     libsystemd-dev              [ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
-    systemd-devel               [centos, fedora]
+    systemd-devel               [fedora]
 
     # uuid-dev
     uuid-dev                    [ubuntu]
-    libuuid-devel               [centos, fedora]
+    libuuid-devel               [fedora]
 
 
 
@@ -125,15 +121,14 @@ make                            [centos, fedora, ubuntu]
 
     # libwrap-dev
     libwrap0-dev                [ubuntu]
-    tcp_wrappers-devel          [centos]
 
     # xsltproc
     xsltproc                    [ubuntu]
-    libxslt                     [centos, fedora]
+    libxslt                     [fedora]
 
     # docbook
     docbook-xsl                 [ubuntu]
-    docbook-style-xsl           [centos, fedora]
+    docbook-style-xsl           [fedora]
 
 
 # packages to compile criterion
@@ -142,18 +137,18 @@ gcc-c++				[centos, fedora]
 
 # packages to run successful make check
 python-pip                      [centos, fedora, debian-stretch, debian-buster, ubuntu-trusty, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan]
-python3-pip                     [debian, ubuntu]
+python3-pip                     [centos, debian, ubuntu]
 python-setuptools               [centos, fedora, debian-stretch, debian-buster, ubuntu-trusty, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan]
-python3-setuptools              [debian, ubuntu]
-tzdata                          [centos, fedora, ubuntu]
+python3-setuptools              [centos, debian, ubuntu]
+tzdata                          [fedora, ubuntu]
 
     # libxml2-utils
     libxml2-utils               [ubuntu]
-    libxml2                     [centos, fedora]
+    libxml2                     [fedora]
 
     # sqlite
     sqlite3                     [ubuntu]
-    sqlite                      [centos, fedora]
+    sqlite                      [fedora]
 
 
 
@@ -166,18 +161,18 @@ dh-exec                         [debian, ubuntu]
 dh-systemd                      [debian, ubuntu]
 dpkg-dev                        [debian, ubuntu]
 equivs                          [debian, ubuntu]
-fakeroot                        [centos, fedora, ubuntu]
-doxygen                         [centos, fedora, ubuntu]
+fakeroot                        [fedora, ubuntu]
+doxygen                         [fedora, ubuntu]
 rpm-build                       [centos, fedora]
-cyrus-sasl-devel                [centos-7, fedora]
+cyrus-sasl-devel                [fedora]
 
     #libivykis-dev
     libivykis-dev               [ubuntu]
-    ivykis-devel                [centos, fedora]
+    ivykis-devel                [fedora]
 
     #libjson-dev
     libjson-c-dev               [ubuntu]
-    json-c-devel                [centos, fedora]
+    json-c-devel                [fedora]
 
 
 
@@ -220,7 +215,6 @@ less                            [centos, fedora, debian, ubuntu]
 unzip                           [centos, fedora, debian, ubuntu]
 vim                             [centos, fedora, debian, ubuntu]
 wget                            [centos, fedora, debian, ubuntu]
-
 
 
 
