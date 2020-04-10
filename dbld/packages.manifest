@@ -5,31 +5,26 @@ automake                    [centos, fedora, ubuntu]
 ca-certificates             [centos, fedora, debian, ubuntu]
 git                         [centos, fedora, debian, ubuntu]
 ccache                      [centos, fedora, debian, ubuntu]
-libtool                     [fedora, ubuntu]
+libtool                     [ubuntu]
 
     # pkgconfig
     pkg-config              [ubuntu]
-    pkgconfig               [fedora]
 
 
 
 
 
 # packages to run successful configure
-bison                           [fedora, ubuntu]
+bison                           [ubuntu]
 build-essential                 [debian, ubuntu]
-byacc                           [fedora]
-file                            [fedora, ubuntu]
-flex                            [fedora, ubuntu]
-pcre-devel                      [fedora]
+file                            [ubuntu]
+flex                            [ubuntu]
 
     # glib-dev
     libglib2.0-dev              [ubuntu]
-    glib2-devel                 [fedora]
 
     # ssl-dev
     libssl-dev                  [ubuntu]
-    openssl-devel               [fedora]
 
 
 
@@ -38,14 +33,11 @@ pcre-devel                      [fedora]
 # packages to run successful configure with module support
     # libbson-dev
     libbson-dev                 [ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
-    libbson-devel               [fedora]
 
     # librabbitmq-dev
     librabbitmq-dev             [ubuntu]
-    librabbitmq-devel           [fedora]
 
     libmongoc-dev               [ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
-    mongo-c-driver-devel        [fedora]
 
     # librdkafka-dev (we are using a specific version from OBS and need to
     # list all interdependent packages as an apt preferences would prevent
@@ -53,39 +45,30 @@ pcre-devel                      [fedora]
     librdkafka1=1.0.1-1         [ubuntu-bionic,ubuntu-eoan]
     librdkafka++1=1.0.1-1       [ubuntu-bionic,ubuntu-eoan]
     librdkafka-dev=1.0.1-1      [ubuntu-bionic,ubuntu-eoan]
-    librdkafka-devel		[fedora]
 
     # libmaxmindb-dev
     libmaxminddb-dev            [ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
-    libmaxminddb-devel          [fedora]
 
     # libcurl-dev
     libcurl4-openssl-dev        [ubuntu]
-    libcurl-devel               [fedora]
 
     # libdbi-dev
     libdbi-dev                  [ubuntu]
-    libdbi-devel                [fedora]
 
     # libesmtp-dev
     libesmtp-dev                [ubuntu]
-    libesmtp-devel              [fedora]
 
     # redis-dev
     libhiredis-dev              [ubuntu]
-    hiredis-devel               [fedora]
 
     # libnet-dev
     libnet1-dev                 [ubuntu]
-    libnet-devel                [fedora]
 
     # libriemann-dev
     libriemann-client-dev       [ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
-    riemann-c-client-devel      [fedora]
 
     # java-8
     openjdk-8-jdk               [debian-stretch, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
-    java-1.8.0-openjdk-devel    [fedora]
 
     # python-dev
     python-dev                  [debian, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan]
@@ -95,21 +78,17 @@ pcre-devel                      [fedora]
 
     # afsnmp
     libsnmp-dev                 [ubuntu]
-    net-snmp-devel              [fedora]
 
 
 # optional packages to run configure
     # libcap-dev
     libcap-dev                  [ubuntu]
-    libcap-devel                [fedora]
 
     # systemd-dev
     libsystemd-dev              [ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
-    systemd-devel               [fedora]
 
     # uuid-dev
     uuid-dev                    [ubuntu]
-    libuuid-devel               [fedora]
 
 
 
@@ -124,7 +103,6 @@ make                            [centos, fedora, ubuntu]
 
     # xsltproc
     xsltproc                    [ubuntu]
-    libxslt                     [fedora]
 
     # docbook
     docbook-xsl                 [ubuntu]
@@ -140,15 +118,13 @@ python-pip                      [centos, fedora, debian-stretch, debian-buster, 
 python3-pip                     [centos, debian, ubuntu]
 python-setuptools               [centos, fedora, debian-stretch, debian-buster, ubuntu-trusty, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan]
 python3-setuptools              [centos, debian, ubuntu]
-tzdata                          [fedora, ubuntu]
+tzdata                          [ubuntu]
 
     # libxml2-utils
     libxml2-utils               [ubuntu]
-    libxml2                     [fedora]
 
     # sqlite
     sqlite3                     [ubuntu]
-    sqlite                      [fedora]
 
 
 
@@ -161,18 +137,15 @@ dh-exec                         [debian, ubuntu]
 dh-systemd                      [debian, ubuntu]
 dpkg-dev                        [debian, ubuntu]
 equivs                          [debian, ubuntu]
-fakeroot                        [fedora, ubuntu]
-doxygen                         [fedora, ubuntu]
+fakeroot                        [ubuntu]
+doxygen                         [ubuntu]
 rpm-build                       [centos, fedora]
-cyrus-sasl-devel                [fedora]
 
     #libivykis-dev
     libivykis-dev               [ubuntu]
-    ivykis-devel                [fedora]
 
     #libjson-dev
     libjson-c-dev               [ubuntu]
-    json-c-devel                [fedora]
 
 
 

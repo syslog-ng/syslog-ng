@@ -114,6 +114,12 @@ function install_debian_build_deps {
 }
 
 function install_rpm_build_deps {
+    RPM_SPEC_FILE=$DBLD_DIR/extra-files/syslog-ng.spec
+    if ! [ -f ${RPM_SPEC_FILE} ]; then
+        echo "install_rpm_build_deps() called from dockerfile but without a syslog-ng.spec file, make sure that control file is copied over to ${RPM_SPEC_FILE} by the prepare step"
+        exit 1
+    fi
+
     case "${OS_PLATFORM}" in
         centos-6)
             # we install a newer yum-utils for a newer yum-builddep.
@@ -122,18 +128,16 @@ function install_rpm_build_deps {
             yum install -y wget
             wget -O /usr/bin/yum-builddep https://raw.githubusercontent.com/rpm-software-management/yum-utils/master/yum-builddep.py
             chmod +x /usr/bin/yum-builddep
+            rpm_run_build_command yum-builddep -y ${RPM_SPEC_FILE}
             ;;
-        *)
+        centos-*)
             yum install -y yum-utils
-
+            rpm_run_build_command yum-builddep -y ${RPM_SPEC_FILE}
+            ;;
+        fedora-*)
+            rpm_run_build_command dnf builddep -y ${RPM_SPEC_FILE}
             ;;
     esac
-    RPM_SPEC_FILE=$DBLD_DIR/extra-files/syslog-ng.spec
-    if ! [ -f ${RPM_SPEC_FILE} ]; then
-        echo "install_rpm_build_deps() called from dockerfile but without a syslog-ng.spec file, make sure that control file is copied over to ${RPM_SPEC_FILE} by the prepare step"
-        exit 1
-    fi
-    rpm_run_build_command yum-builddep -y ${RPM_SPEC_FILE}
 }
 
 function install_yum_packages {
