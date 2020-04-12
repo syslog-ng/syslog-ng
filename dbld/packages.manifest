@@ -1,44 +1,16 @@
 # packages to run successful autogen.sh
-autoconf                    [centos, fedora, ubuntu]
-autoconf-archive            [centos, fedora, ubuntu]
-automake                    [centos, fedora, ubuntu]
+autoconf                    [centos, fedora]
+autoconf-archive            [centos, fedora]
+automake                    [centos, fedora]
 ca-certificates             [centos, fedora, debian, ubuntu]
 git                         [centos, fedora, debian, ubuntu]
 ccache                      [centos, fedora, debian, ubuntu]
-libtool                     [ubuntu]
-
-    # pkgconfig
-    pkg-config              [ubuntu]
-
-
-
 
 
 # packages to run successful configure
-bison                           [ubuntu]
 build-essential                 [debian, ubuntu]
-file                            [ubuntu]
-flex                            [ubuntu]
-
-    # glib-dev
-    libglib2.0-dev              [ubuntu]
-
-    # ssl-dev
-    libssl-dev                  [ubuntu]
-
-
-
-
 
 # packages to run successful configure with module support
-    # libbson-dev
-    libbson-dev                 [ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
-
-    # librabbitmq-dev
-    librabbitmq-dev             [ubuntu]
-
-    libmongoc-dev               [ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
-
     # librdkafka-dev (we are using a specific version from OBS and need to
     # list all interdependent packages as an apt preferences would prevent
     # installation otherwise
@@ -46,66 +18,19 @@ flex                            [ubuntu]
     librdkafka++1=1.0.1-1       [ubuntu-bionic,ubuntu-eoan]
     librdkafka-dev=1.0.1-1      [ubuntu-bionic,ubuntu-eoan]
 
-    # libmaxmindb-dev
-    libmaxminddb-dev            [ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
-
-    # libcurl-dev
-    libcurl4-openssl-dev        [ubuntu]
-
-    # libdbi-dev
-    libdbi-dev                  [ubuntu]
-
-    # libesmtp-dev
-    libesmtp-dev                [ubuntu]
-
-    # redis-dev
-    libhiredis-dev              [ubuntu]
-
-    # libnet-dev
-    libnet1-dev                 [ubuntu]
-
-    # libriemann-dev
-    libriemann-client-dev       [ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
-
-    # java-8
-    openjdk-8-jdk               [debian-stretch, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
-
     # python-dev
     python-dev                  [debian, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan]
     python-devel                [centos, fedora]
     python3-devel               [fedora]
     python3-dev                 [ubuntu-focal]
 
-    # afsnmp
-    libsnmp-dev                 [ubuntu]
-
-
-# optional packages to run configure
-    # libcap-dev
-    libcap-dev                  [ubuntu]
-
-    # systemd-dev
-    libsystemd-dev              [ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
-
-    # uuid-dev
-    uuid-dev                    [ubuntu]
-
-
-
-
 
 # packages to run successful make
 cmake                           [centos, fedora, debian, ubuntu]
-make                            [centos, fedora, ubuntu]
-
-    # libwrap-dev
-    libwrap0-dev                [ubuntu]
-
-    # xsltproc
-    xsltproc                    [ubuntu]
+make                            [centos, fedora]
 
     # docbook
-    docbook-xsl                 [ubuntu]
+    docbook-xsl                 [xxx]
     docbook-style-xsl           [fedora]
 
 
@@ -118,15 +43,6 @@ python-pip                      [centos, fedora, debian-stretch, debian-buster, 
 python3-pip                     [centos, debian, ubuntu]
 python-setuptools               [centos, fedora, debian-stretch, debian-buster, ubuntu-trusty, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan]
 python3-setuptools              [centos, debian, ubuntu]
-tzdata                          [ubuntu]
-
-    # libxml2-utils
-    libxml2-utils               [ubuntu]
-
-    # sqlite
-    sqlite3                     [ubuntu]
-
-
 
 
 # packages to run successful packaging
@@ -137,22 +53,11 @@ dh-exec                         [debian, ubuntu]
 dh-systemd                      [debian, ubuntu]
 dpkg-dev                        [debian, ubuntu]
 equivs                          [debian, ubuntu]
-fakeroot                        [ubuntu]
-doxygen                         [ubuntu]
 rpm-build                       [centos, fedora]
-
-    #libivykis-dev
-    libivykis-dev               [ubuntu]
-
-    #libjson-dev
-    libjson-c-dev               [ubuntu]
-
-
-
-
+doxygen                         [ubuntu]
 
 # packages to run successful stylecheck
-astyle                          [ubuntu]
+astyle                          [devshell]
 
 
 
