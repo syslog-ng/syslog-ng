@@ -59,6 +59,7 @@ static void
 _perform_set_facility(LogTemplate *template, LogMessage *msg_)
 {
   LogRewrite *rewrite = log_rewrite_set_facility_new(template, cfg);
+  log_template_unref(template);
 
   _perform_rewrite(rewrite, msg_);
 }

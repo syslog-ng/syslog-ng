@@ -110,21 +110,36 @@ rewrite_expr
 	| KW_SET_TAG '(' string 
 	  { 
 	    last_rewrite = log_rewrite_set_tag_new($3, TRUE, configuration);
+            free($3);
           }
-	  rewrite_settag_opts ')'             	{ $$ = last_rewrite; free($3); }
-	| KW_CLEAR_TAG '(' string ')'           { $$ = log_rewrite_set_tag_new($3, FALSE, configuration); free($3); }
+	  rewrite_settag_opts ')'             	{ $$ = last_rewrite; }
+	| KW_CLEAR_TAG '(' string
+          {
+            last_rewrite = log_rewrite_set_tag_new($3, FALSE, configuration);
+            free($3);
+          }
+          ')'                                   { $$ = last_rewrite; }
         | KW_GROUP_SET '(' template_content
-        {
+          {
             last_rewrite = log_rewrite_groupset_new($3, configuration);
             log_template_unref($3);
-            }
-        rewrite_groupset_opts ')' { $$ = last_rewrite; }
+          }
+          rewrite_groupset_opts ')'             { $$ = last_rewrite; }
         | KW_GROUP_UNSET '('
-        {
+          {
             last_rewrite = log_rewrite_groupunset_new(configuration);
-        } rewrite_groupset_opts ')' { $$ = last_rewrite; }
-        | KW_SET_SEVERITY '(' template_content ')' { $$ = log_rewrite_set_severity_new($3, configuration);  }
-        | KW_SET_FACILITY '(' template_content ')' { $$ = log_rewrite_set_facility_new($3, configuration);  }
+          }
+          rewrite_groupset_opts ')'             { $$ = last_rewrite; }
+        | KW_SET_SEVERITY '(' template_content
+          {
+            last_rewrite = log_rewrite_set_severity_new($3, configuration);
+            log_template_unref($3);
+          } ')'					{ $$ = last_rewrite; };
+        | KW_SET_FACILITY '(' template_content
+          {
+            last_rewrite = log_rewrite_set_facility_new($3, configuration);
+            log_template_unref($3);
+          } ')'                                 { $$ = last_rewrite; };
         | LL_IDENTIFIER
           {
             Plugin *p;

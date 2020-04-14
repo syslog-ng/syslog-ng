@@ -140,6 +140,6 @@ log_rewrite_set_severity_new(LogTemplate *severity, GlobalConfig *cfg)
   self->super.super.free_fn = log_rewrite_set_severity_free;
   self->super.super.clone = log_rewrite_set_severity_clone;
   self->super.process = log_rewrite_set_severity_process;
-  self->severity = severity;
+  self->severity = log_template_ref(severity);
   return &self->super;
 }
