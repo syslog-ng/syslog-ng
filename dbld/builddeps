@@ -6,6 +6,32 @@ DBLD_DIR=/dbld
 set -e
 set -x
 
+# this function is run first and is responsible for installing stuff that is
+# needed by this script _before_ installing packages from packages.manifest.
+#
+# NOTE: If at all possible don't put anything here.
+function install_dbld_dependencies()
+{
+    case "${OS_PLATFORM}" in
+        centos-6)
+            yum install -y wget
+            wget -O /usr/bin/yum-builddep https://raw.githubusercontent.com/rpm-software-management/yum-utils/master/yum-builddep.py
+            chmod +x /usr/bin/yum-builddep
+            ;;
+        centos-*)
+            yum install -y wget yum-utils
+            ;;
+        debian-*|ubuntu-*)
+            apt-get update && apt-get install --no-install-recommends --yes wget gnupg2
+            if [ "${OS_PLATFORM}" = "ubuntu-xenial" ]; then
+                apt-get install -y --no-install-recommends -t xenial-backports debhelper dh-systemd
+            fi
+            ;;
+        fedora-*)
+            ;;
+    esac
+}
+
 function install_cmake() {
     CMAKE_VERSION=3.12.2
     CMAKE_SHORT_VERSION=$(echo ${CMAKE_VERSION} | cut -d"." -f1-2)
@@ -67,7 +93,6 @@ function filter_packages_by_platform {
 
 function add_obs_repo {
     PLATFORM=$1
-    apt-get update && apt-get install --no-install-recommends --yes wget gnupg2
     echo "deb http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/x${PLATFORM} ./" | tee /etc/apt/sources.list.d/lbudai.list
     cat | tee /etc/apt/preferences.d/lbudai <<EOF
 Package: *
@@ -121,17 +146,7 @@ function install_rpm_build_deps {
     fi
 
     case "${OS_PLATFORM}" in
-        centos-6)
-            # we install a newer yum-utils for a newer yum-builddep.
-            # Fortunately it works on centos-6 as well.
-
-            yum install -y wget
-            wget -O /usr/bin/yum-builddep https://raw.githubusercontent.com/rpm-software-management/yum-utils/master/yum-builddep.py
-            chmod +x /usr/bin/yum-builddep
-            rpm_run_build_command yum-builddep -y ${RPM_SPEC_FILE}
-            ;;
         centos-*)
-            yum install -y yum-utils
             rpm_run_build_command yum-builddep -y ${RPM_SPEC_FILE}
             ;;
         fedora-*)

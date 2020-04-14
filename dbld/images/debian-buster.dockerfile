@@ -14,6 +14,7 @@ COPY images/fake-sudo.sh /usr/bin/sudo
 COPY images/entrypoint.sh /
 COPY . /dbld/
 
+RUN /dbld/builddeps install_dbld_dependencies
 RUN /dbld/builddeps install_apt_packages
 RUN /dbld/builddeps install_debian_build_deps
 RUN /dbld/builddeps install_pip_packages

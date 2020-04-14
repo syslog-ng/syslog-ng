@@ -10,6 +10,7 @@ COPY images/fake-sudo.sh /usr/bin/sudo
 COPY images/entrypoint.sh /
 COPY . /dbld/
 
+RUN /dbld/builddeps install_dbld_dependencies
 RUN /dbld/builddeps add_epel_repo
 RUN /dbld/builddeps install_yum_packages
 RUN /dbld/builddeps install_rpm_build_deps
