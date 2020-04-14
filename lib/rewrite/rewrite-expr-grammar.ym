@@ -134,12 +134,12 @@ rewrite_expr
           {
             last_rewrite = log_rewrite_set_severity_new($3, configuration);
             log_template_unref($3);
-          } ')'					{ $$ = last_rewrite; };
+          } rewrite_set_severity_opts ')'	{ $$ = last_rewrite; };
         | KW_SET_FACILITY '(' template_content
           {
             last_rewrite = log_rewrite_set_facility_new($3, configuration);
             log_template_unref($3);
-          } ')'                                 { $$ = last_rewrite; };
+          } rewrite_set_facility_opts ')'       { $$ = last_rewrite; };
         | LL_IDENTIFIER
           {
             Plugin *p;
@@ -204,6 +204,25 @@ rewrite_expr_opts
         : rewrite_expr_opt rewrite_expr_opts
         |
         ;
+
+rewrite_set_severity_opts
+        : rewrite_set_severity_opt rewrite_set_severity_opts
+        |
+        ;
+
+rewrite_set_severity_opt
+        : rewrite_condition_opt
+        ;
+
+rewrite_set_facility_opts
+        : rewrite_set_facility_opt rewrite_set_facility_opts
+        |
+        ;
+
+rewrite_set_facility_opt
+        : rewrite_condition_opt
+        ;
+
 
 /* INCLUDE_RULES */
 
