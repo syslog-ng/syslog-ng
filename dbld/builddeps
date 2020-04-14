@@ -17,6 +17,7 @@ function install_dbld_dependencies()
             yum install -y wget
             wget -O /usr/bin/yum-builddep https://raw.githubusercontent.com/rpm-software-management/yum-utils/master/yum-builddep.py
             chmod +x /usr/bin/yum-builddep
+            sha1sum -c /dbld/images/yum-builddep.sha1
             ;;
         centos-*)
             yum install -y wget yum-utils
