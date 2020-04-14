@@ -3,6 +3,10 @@
 . /dbld/functions.sh
 DBLD_DIR=/dbld
 
+YUM_INSTALL="yum install -y"
+DNF_INSTALL="dnf install -y"
+APT_INSTALL="apt-get install -y --no-install-recommends"
+
 set -e
 set -x
 
@@ -14,18 +18,19 @@ function install_dbld_dependencies()
 {
     case "${OS_PLATFORM}" in
         centos-6)
-            yum install -y wget
+            $YUM_INSTALL wget
             wget -O /usr/bin/yum-builddep https://raw.githubusercontent.com/rpm-software-management/yum-utils/master/yum-builddep.py
             chmod +x /usr/bin/yum-builddep
             sha1sum -c /dbld/images/yum-builddep.sha1
             ;;
         centos-*)
-            yum install -y wget yum-utils
+            $YUM_INSTALL wget yum-utils
             ;;
         debian-*|ubuntu-*)
-            apt-get update && apt-get install --no-install-recommends --yes wget gnupg2
+            apt-get update
+            $APT_INSTALL wget gnupg2
             if [ "${OS_PLATFORM}" = "ubuntu-xenial" ]; then
-                apt-get install -y --no-install-recommends -t xenial-backports debhelper dh-systemd
+                $APT_INSTALL -t xenial-backports debhelper dh-systemd
             fi
             ;;
         fedora-*)
@@ -111,23 +116,23 @@ function add_copr_repo {
     # PIP installation later.
     case "${OS_PLATFORM}" in
         centos-*)
-            yum install -y yum-plugin-copr
+            $YUM_INSTALL yum-plugin-copr
             yum copr enable -y czanik/syslog-ng-githead
             ;;
         fedora-*)
-            dnf install -y dnf-plugins-core
+            $DNF_INSTALL -y dnf-plugins-core
             dnf copr enable -y czanik/syslog-ng-githead
             ;;
     esac
 }
 
 function add_epel_repo {
-    yum install -y epel-release
+    $YUM_INSTALL epel-release
 }
 
 function install_apt_packages {
     apt-get update -qq -o Acquire::CompressionTypes::Order::=gz
-    filter_packages_by_platform $DBLD_DIR/packages.manifest | xargs -t apt-get install --no-install-recommends --yes
+    filter_packages_by_platform $DBLD_DIR/packages.manifest | xargs -t $APT_INSTALL --yes
 }
 
 function install_debian_build_deps {
@@ -157,8 +162,8 @@ function install_rpm_build_deps {
 }
 
 function install_yum_packages {
-    yum install -y findutils
-    filter_packages_by_platform $DBLD_DIR/packages.manifest | xargs yum install -y
+    $YUM_INSTALL findutils
+    filter_packages_by_platform $DBLD_DIR/packages.manifest | xargs $YUM_INSTALL
 }
 
 function install_pip_packages {
@@ -180,7 +185,7 @@ function install_pip_packages {
 }
 
 function install_lsb_release {
-    apt-get update && apt-get install --no-install-recommends --yes lsb-release
+    apt-get update && $APT_INSTALL lsb-release
 }
 
 function enable_dbgsyms_on_ubuntu {
@@ -191,7 +196,7 @@ function enable_dbgsyms_on_ubuntu {
 }
 
 function install_perf {
-    apt-cache search linux-tools | grep 'linux-tools-.*-generic' | cut -d" " -f1 | tail -n1 | cut -d"-" -f1-4 | xargs apt-get install --no-install-recommends -y
+    apt-cache search linux-tools | grep 'linux-tools-.*-generic' | cut -d" " -f1 | tail -n1 | cut -d"-" -f1-4 | xargs $APT_INSTALL
 }
 
 
