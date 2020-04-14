@@ -118,7 +118,7 @@ rewrite_expr
             last_rewrite = log_rewrite_set_tag_new($3, FALSE, configuration);
             free($3);
           }
-          ')'                                   { $$ = last_rewrite; }
+          rewrite_settag_opts ')'               { $$ = last_rewrite; }
         | KW_GROUP_SET '(' template_content
           {
             last_rewrite = log_rewrite_groupset_new($3, configuration);
