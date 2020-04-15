@@ -203,6 +203,14 @@ log_transport_udp_setup_fd(LogTransportUDP *self, gint fd)
 
 }
 
+static void
+log_transport_udp_socket_free(LogTransport *s)
+{
+  LogTransportUDP *self = (LogTransportUDP *)s;
+  g_sockaddr_unref(self->bind_addr);
+  log_transport_free_method(s);
+}
+
 LogTransport *
 log_transport_udp_socket_new(gint fd)
 {
@@ -210,6 +218,7 @@ log_transport_udp_socket_new(gint fd)
 
   log_transport_dgram_socket_init_instance(&self->super, fd);
   self->super.super.read = log_transport_udp_socket_read_method;
+  self->super.super.free_fn = log_transport_udp_socket_free;
 
   log_transport_udp_setup_fd(self, fd);
   return &self->super.super;
