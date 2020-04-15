@@ -101,6 +101,12 @@ log_proto_client_msg_rewind(LogProtoClient *self)
     self->flow_control_funcs.rewind_callback(self->flow_control_funcs.user_data);
 }
 
+static inline void
+log_proto_client_set_options(LogProtoClient *self, const LogProtoClientOptions *options)
+{
+  self->options = options;
+}
+
 static inline gboolean
 log_proto_client_validate_options(LogProtoClient *self)
 {
