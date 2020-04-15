@@ -29,38 +29,61 @@
 
 typedef struct _StatsCounterItem
 {
-  atomic_gssize value;
+  union
+  {
+    atomic_gssize value;
+    atomic_gssize *value_ref;
+  };
   gchar *name;
   gint type;
+  gboolean external;
 } StatsCounterItem;
 
+
+static gboolean
+stats_counter_read_only(StatsCounterItem *counter)
+{
+  return counter->external;
+}
 
 static inline void
 stats_counter_add(StatsCounterItem *counter, gssize add)
 {
   if (counter)
-    atomic_gssize_add(&counter->value, add);
+    {
+      g_assert(!stats_counter_read_only(counter));
+      atomic_gssize_add(&counter->value, add);
+    }
 }
 
 static inline void
 stats_counter_sub(StatsCounterItem *counter, gssize sub)
 {
   if (counter)
-    atomic_gssize_sub(&counter->value, sub);
+    {
+      g_assert(!stats_counter_read_only(counter));
+      atomic_gssize_sub(&counter->value, sub);
+    }
 }
 
 static inline void
 stats_counter_inc(StatsCounterItem *counter)
 {
   if (counter)
-    atomic_gssize_inc(&counter->value);
+    {
+      g_assert(!stats_counter_read_only(counter));
+      atomic_gssize_inc(&counter->value);
+    }
 }
 
 static inline void
 stats_counter_dec(StatsCounterItem *counter)
 {
   if (counter)
-    atomic_gssize_dec(&counter->value);
+    {
+      g_assert(!stats_counter_read_only(counter));
+      atomic_gssize_dec(&counter->value);
+    }
 }
 
 /* NOTE: this is _not_ atomic and doesn't have to be as sets would race anyway */
@@ -68,7 +91,10 @@ static inline void
 stats_counter_set(StatsCounterItem *counter, gsize value)
 {
   if (counter)
-    atomic_gssize_racy_set(&counter->value, value);
+    {
+      g_assert(!stats_counter_read_only(counter));
+      atomic_gssize_racy_set(&counter->value, value);
+    }
 }
 
 /* NOTE: this is _not_ atomic and doesn't have to be as sets would race anyway */
@@ -78,7 +104,12 @@ stats_counter_get(StatsCounterItem *counter)
   gsize result = 0;
 
   if (counter)
-    result = atomic_gssize_get_unsigned(&counter->value);
+    {
+      if (!counter->external)
+        result = atomic_gssize_get_unsigned(&counter->value);
+      else
+        result = atomic_gssize_get_unsigned(counter->value_ref);
+    }
   return result;
 }
 
@@ -90,7 +121,10 @@ stats_counter_get_name(StatsCounterItem *counter)
   return NULL;
 }
 
-void stats_reset_counters(void);
-void stats_counter_free(StatsCounterItem *counter);
+static inline void
+stats_counter_free(StatsCounterItem *counter)
+{
+  g_free(counter->name);
+}
 
 #endif
