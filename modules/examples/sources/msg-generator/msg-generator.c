@@ -74,7 +74,7 @@ static void
 msg_generator_sd_free(LogPipe *s)
 {
   MsgGeneratorSourceDriver *self = (MsgGeneratorSourceDriver *) s;
-
+  g_hash_table_unref(self->source_options.name_value);
   msg_generator_source_options_destroy(&self->source_options);
   log_src_driver_free(s);
 }
@@ -92,9 +92,9 @@ msg_generator_sd_new(GlobalConfig *cfg)
 {
   MsgGeneratorSourceDriver *self = g_new0(MsgGeneratorSourceDriver, 1);
   log_src_driver_init_instance(&self->super, cfg);
-
   msg_generator_source_options_defaults(&self->source_options);
-
+  self->source_options.name_value = g_hash_table_new_full(g_str_hash, g_str_equal, g_free,
+                                                          (GDestroyNotify) log_template_unref);
   self->super.super.super.init = msg_generator_sd_init;
   self->super.super.super.deinit = msg_generator_sd_deinit;
   self->super.super.super.free_fn = msg_generator_sd_free;
