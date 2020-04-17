@@ -22,7 +22,7 @@ SCL_SUBDIRS	= \
 	nodejs		\
 	osquery	\
 	pacct		\
-  paloalto \
+	paloalto 	\
 	rewrite	\
 	slack \
 	snmptrap	\
