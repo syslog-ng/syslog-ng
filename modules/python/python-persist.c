@@ -46,8 +46,11 @@ typedef enum
 typedef struct
 {
   guint8 type;
-  gchar data[];
+  gchar data[0];
 } Entry;
+
+/* Ensure there is no padding between type and data */
+G_STATIC_ASSERT(offsetof(Entry, data) == sizeof(guint8) + offsetof(Entry, type));
 
 static PyObject *
 entry_to_pyobject(guint8 type, gchar *value)
