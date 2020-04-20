@@ -795,6 +795,12 @@ Test(msgparse, test_expected_sd_pairs_long)
     {  NULL, NULL }
   };
 
+  struct sdata_pair expected_sd_pairs_test_5e[] =
+  {
+    { ".SDATA.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "long_33"},
+    {  NULL, NULL }
+  };
+
   struct msgparse_params params[] =
   {
     {
@@ -837,6 +843,35 @@ Test(msgparse, test_expected_sd_pairs_long)
       0,//msgid
       expected_sd_pairs_test_5d
     },
+
+    // parse longer than 32 sd id and name together
+    {
+      "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa=\"long_33\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+      132,             // pri
+      1162083599, 156000, 3600,    // timestamp (sec/usec/zone)
+      "mymachine",        // host
+      "evntslog", //app
+      "An application event log entry...", // msg
+      "[aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa=\"long_33\"]", //sd_str
+      0,//processid
+      0,//msgid
+      expected_sd_pairs_test_5e
+    },
+
+    // parse longer than 255 sd id
+    {
+      "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa i=\"long\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+      43,                         // pri
+      0, 0, 0,    // timestamp (sec/usec/zone)
+      "",         // host
+      "syslog-ng", //app
+      "Error processing log message: <132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa>@<aaaaaaaa i=\"long\"] An application event log entry...", // msg
+      "", //sd_str      0,//processid
+      0,//processid
+      0,//msgid
+      empty_sdata_pairs
+    },
+
 
     // too long sdata value gets truncated
     {
