@@ -33,7 +33,7 @@ num_of_messages = 3
 @pytest.mark.skipif("cmake_build" in os.environ, reason="only autotools is supported for now")
 def test_secure_logging(config, syslog_ng, slog):
     output_file_name = "output.log"
-    generator_source = config.create_example_msg_generator_source(num=num_of_messages, template=config.stringify(example_message), freq="0.001")
+    generator_source = config.create_example_msg_generator_source(num=num_of_messages, template=config.stringify(example_message), freq="0")
     secure_log_template = "$(slog -k {} -m {} $MSG)".format(slog.derived_key, slog.cmac)
     file_destination = config.create_file_destination(file_name=output_file_name, template=config.stringify(secure_log_template + '\n'))
 

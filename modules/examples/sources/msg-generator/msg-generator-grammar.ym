@@ -90,7 +90,7 @@ source_msg_generator_option
     {
       msg_generator_source_options_set_freq(last_msg_generator_source_options, $3);
     }
-  | KW_FREQ '(' positive_integer ')'
+  | KW_FREQ '(' nonnegative_integer ')'
     {
       msg_generator_source_options_set_freq(last_msg_generator_source_options, $3);
     }
