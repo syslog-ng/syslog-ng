@@ -1,0 +1,29 @@
+<patterndb version='1' pub_date='2009-04-16'>
+    <program name='test' id="10f7f979-6f14-4f2d-9db2-eee647e55a51">
+        <pattern>p-p</pattern>
+        <description>p-desc</description>
+        <url>p-url</url>
+        <rules>
+            <rule id='74c6a3dc-c2b6-4bf8-9e8b-fb4a815c45de' class='system' provider="balabit">
+                <pattern>p1</pattern>
+            </rule>
+            <rule id='2bcc5444-2015-41cd-b8cb-76cd5c2de930' class='system' provider="balabit">
+                <pattern>p2</pattern>
+                <url>url2</url>
+                <description>d2</description>
+            </rule>
+        </rules>
+    </program>
+    <program name='test2' id="b4caeb69-e098-42b6-be79-01adfe5746d5">
+        <pattern>p-p2</pattern>
+        <rules/>
+    </program>
+    <program name='test3' id="5b3510ba-5902-4370-bad7-611af2226e34">
+        <pattern>p-p</pattern>
+        <rules>
+            <rule id='d7a327c2-27b6-4adc-a9f2-9d23bcfab678' class='system' provider="balabit">
+                <pattern>3p1</pattern>
+            </rule>
+        </rules>
+    </program>
+</patterndb>

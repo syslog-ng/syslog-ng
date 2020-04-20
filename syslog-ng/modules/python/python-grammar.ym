@@ -1,0 +1,311 @@
+/*
+ * Copyright (c) 2014 Balabit
+ * Copyright (c) 2014 Gergely Nagy <algernon@balabit.hu>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code requires {
+
+#include "python-parser.h"
+#include "python-dest.h"
+#include "python-source.h"
+#include "python-fetcher.h"
+#include "python-logparser.h"
+#include "python-http-header.h"
+#include "python-main.h"
+#include "value-pairs/value-pairs.h"
+#include "logthrsource/logthrsourcedrv.h"
+
+}
+
+%code {
+
+#include "cfg-grammar.h"
+#include "cfg-parser.h"
+#include "plugin.h"
+#include "syslog-names.h"
+
+PythonHttpHeaderPlugin *last_header;
+
+}
+
+%name-prefix "python_"
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {void **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_PYTHON
+%token KW_PYTHON_FETCHER
+%token KW_PYTHON_HTTP_HEADER
+%token KW_CLASS
+%token KW_IMPORTS
+%token KW_LOADERS
+%token KW_MARK_ERRORS_AS_CRITICAL
+
+%%
+
+start
+        : LL_CONTEXT_DESTINATION KW_PYTHON
+          {
+            last_driver = *instance = python_dd_new(configuration);
+          }
+          '(' python_dd_options ')'         { YYACCEPT; }
+        | LL_CONTEXT_PARSER KW_PYTHON
+	      {
+	        last_parser = *instance = python_parser_new(configuration);
+          }
+          '(' python_parser_options ')' { YYACCEPT; }
+        | LL_CONTEXT_SOURCE KW_PYTHON
+          {
+            last_driver = *instance = python_sd_new(configuration);
+          }
+          '(' python_sd_options ')'         { YYACCEPT; }
+        | LL_CONTEXT_SOURCE KW_PYTHON_FETCHER
+          {
+            last_driver = *instance = python_fetcher_new(configuration);
+          }
+          '(' python_fetcher_options ')'         { YYACCEPT; }
+        | LL_CONTEXT_INNER_DEST KW_PYTHON_HTTP_HEADER
+          {
+            last_header = *instance = python_http_header_new();
+          }
+          '(' python_http_header_options ')'    { YYACCEPT; }
+        | LL_CONTEXT_ROOT KW_PYTHON
+          { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_CONTENT, NULL, "Python code"); }
+          LL_BLOCK
+          { cfg_lexer_pop_context(lexer); }
+          {
+            gboolean result;
+
+            result = python_evaluate_global_code(configuration, $4, &@2);
+            free($4);
+            CHECK_ERROR(result, @1, "Error processing global python block");
+            *instance = (void *) 1;
+            YYACCEPT;
+          }
+        ;
+
+python_dd_options
+        : python_dd_option python_dd_options
+        |
+        ;
+
+python_dd_option
+        : KW_CLASS '(' string ')'
+          {
+            python_dd_set_class(last_driver, $3);
+            free($3);
+          }
+        | KW_LOADERS python_dd_loaders
+        | KW_IMPORTS python_dd_loaders
+        | KW_OPTIONS '(' python_dd_custom_options ')'
+        | threaded_dest_driver_option
+        | value_pair_option
+          {
+            python_dd_set_value_pairs(last_driver, $1);
+          }
+        | { last_template_options = python_dd_get_template_options(last_driver); } template_option
+        ;
+
+python_dd_custom_options
+        : python_dd_custom_option python_dd_custom_options
+        |
+        ;
+
+python_dd_custom_option
+        : string string_or_number
+        {
+          python_dd_set_option(last_driver, $1, $2);
+          free($1);
+          free($2);
+        }
+	| string LL_ARROW string_or_number
+        {
+          python_dd_set_option(last_driver, $1, $3);
+          free($1);
+          free($3);
+        }
+        ;
+
+python_sd_options
+        : python_sd_option python_sd_options
+        |
+        ;
+
+python_sd_option
+        : KW_CLASS '(' string ')'
+          {
+            python_sd_set_class(last_driver, $3);
+            free($3);
+          }
+        | KW_LOADERS python_sd_loaders
+        | KW_OPTIONS '(' python_sd_custom_options ')'
+        | threaded_source_driver_option
+        ;
+
+python_sd_custom_options
+        : python_sd_custom_option python_sd_custom_options
+        |
+        ;
+
+python_sd_custom_option
+        : string string_or_number
+        {
+          python_sd_set_option(last_driver, $1, $2);
+          free($1);
+          free($2);
+        }
+        ;
+
+
+python_fetcher_options
+        : python_fetcher_option python_fetcher_options
+        |
+        ;
+
+python_fetcher_option
+        : KW_CLASS '(' string ')'
+          {
+            python_fetcher_set_class(last_driver, $3);
+            free($3);
+          }
+        | KW_LOADERS python_fetcher_loaders
+        | KW_OPTIONS '(' python_fetcher_custom_options ')'
+        | threaded_source_driver_option
+        | threaded_fetcher_driver_option
+        ;
+
+python_fetcher_custom_options
+        : python_fetcher_custom_option python_fetcher_custom_options
+        |
+        ;
+
+python_fetcher_custom_option
+        : string string_or_number
+        {
+          python_fetcher_set_option(last_driver, $1, $2);
+          free($1);
+          free($2);
+        }
+        ;
+
+
+python_parser_options
+        : python_parser_option python_parser_options
+        |
+        ;
+
+python_parser_option
+        : KW_CLASS '(' string ')'
+          {
+            python_parser_set_class(last_parser, $3);
+            free($3);
+          }
+        | KW_LOADERS python_parser_loaders
+        | KW_IMPORTS python_parser_loaders
+        | KW_OPTIONS '(' python_parser_custom_options ')'
+        ;
+
+python_parser_custom_options
+        : python_parser_custom_option python_parser_custom_options
+        |
+        ;
+
+python_parser_custom_option
+        : string string_or_number
+        {
+          python_parser_set_option(last_parser, $1, $2);
+          free($1);
+          free($2);
+        }
+        ;
+
+
+python_http_header_options
+        : python_http_header_option python_http_header_options
+        |
+        ;
+
+python_http_header_option
+        : KW_CLASS '(' string ')'
+          {
+            python_http_header_set_class(last_header, $3);
+            free($3);
+          }
+        | KW_LOADERS python_http_header_loaders
+        | KW_OPTIONS '(' python_http_header_custom_options ')'
+        | KW_MARK_ERRORS_AS_CRITICAL '(' yesno ')'
+          {
+            python_http_header_set_mark_errors_as_critical(last_header, $3);
+          }
+        ;
+
+python_http_header_custom_options
+        : python_http_header_custom_option python_http_header_custom_options
+        |
+        ;
+
+python_http_header_custom_option
+        : string string_or_number
+        {
+          python_http_header_set_option(last_header, $1, $2);
+          free($1);
+          free($2);
+        }
+        ;
+
+
+python_dd_loaders
+          : '(' string_list ')'
+          {
+            python_dd_set_loaders(last_driver, $2);
+          }
+
+python_sd_loaders
+          : '(' string_list ')'
+          {
+            python_sd_set_loaders(last_driver, $2);
+          }
+
+python_fetcher_loaders
+          : '(' string_list ')'
+          {
+            python_fetcher_set_loaders(last_driver, $2);
+          }
+
+python_http_header_loaders
+          : '(' string_list ')'
+          {
+            python_http_header_set_loaders(last_header, $2);
+          }
+
+python_parser_loaders
+          : '(' string_list ')'
+          {
+            python_parser_set_loaders(last_parser, $2);
+          }
+
+
+/* INCLUDE_RULES */
+
+%%

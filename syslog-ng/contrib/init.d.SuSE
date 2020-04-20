@@ -1,0 +1,99 @@
+#! /bin/sh
+#
+# original Authors of /etc/init.d/syslog: 
+#	  Florian La Roche <florian@suse.de>, 1996
+#	  Werner Fink <werner@suse.de>, 1998
+#
+# hacked for syslog-ng from above dudes' syslog script
+#         Darth Elmo <mick@visi.com>, 13 Sept 2001
+#
+# updated for OpenSuse 10 by
+#         Tamas Pal <folti@balabit.hu>, 3, Nov 2006
+# NOTES: 
+#
+# Add the new variable SYSLOGNG_PARAMS to /etc/rc.config. Set it equal to 
+#   any syslog-ng startup flags/options you need (for most users it may be
+#   left empty, but it's good to have it there anyhow. :-)
+#
+# Also, if you haven't already, copy the sample syslog-ng.config
+#   files from $syslog-ng-source-dir/contrib and $syslog-ng-src-dir/doc
+#   to /etc/syslog-ng/ (you'll need to "mkdir /etc/syslog-ng" first). Editing
+#   one of these to meet your needs is less work than starting from scratch.
+#   Just make sure that one is named "syslog-ng.conf", or that you point a
+#   symbolic link called "syslog-ng.conf" to the one you want to use.
+#
+# Finally, add symbolic links to this script in /etc/rc.2, /etc/rc.3,
+#   and /etc/rc.5. Rename init.d/syslog to something like init.d/syslog.use-ng
+#   (easier than removing *its* symlinks from rc.2 et al, and easier to reenable
+#   should you foolishly abandon syslog-ng later on).
+#
+# Have a whole butt-load o' fun,
+#   Darth Elmo
+#
+# /sbin/init.d/syslog-ng
+#
+### BEGIN INIT INFO
+# Provides: syslog-ng
+# Required-Start: $network
+# Required-Stop:  $network
+# Default-Start:  2 3 5
+# Default-Stop: 0 1 6
+# Description:    Start the system logging daemons
+### END INIT INFO
+
+. /etc/rc.status || exit 1
+
+NGBINDIR=/sbin
+BINDIR=/sbin
+
+test -x ${NGBINDIR}/syslog-ng || exit 0
+test -x ${BINDIR}/klogd   || exit 0
+
+return=$rc_done
+case "$1" in
+    start)
+        checkproc    ${BINDIR}/klogd   && \
+            killproc ${BINDIR}/klogd   2> /dev/null
+	checkproc    ${NGBINDIR}/syslog-ng && {
+	    killproc ${NGBINDIR}/syslog-ng 2> /dev/null
+	    echo -n "Re-"
+	}
+	echo -n "Starting syslog-ng services"
+	test -z "$KERNEL_LOGLEVEL" && KERNEL_LOGLEVEL=1
+	startproc ${NGBINDIR}/syslog-ng  $SYSLOGNG_PARAMS  || return=$rc_failed
+	sleep 1
+	startproc ${BINDIR}/klogd -c $KERNEL_LOGLEVEL || return=$rc_failed
+	echo -e "$return"
+	;;
+    stop)
+	echo -n "Shutting down syslog-ng services"
+	killproc -TERM ${BINDIR}/klogd   || return=$rc_failed
+	killproc -TERM ${NGBINDIR}/syslog-ng || return=$rc_failed
+	echo -e "$return"
+	;;
+    restart)
+	$0 stop && $0 start || return=$rc_failed
+	;;
+    reload)
+	echo -n "Reload syslog service"
+	killproc -TSTP ${BINDIR}/klogd    || return=$rc_failed
+	killproc -HUP  ${NGBINDIR}/syslog-ng  || return=$rc_failed
+	killproc -CONT ${BINDIR}/klogd    || return=$rc_failed
+	killproc -USR2 ${BINDIR}/klogd    || return=$rc_failed
+	echo -e "$return"
+	;;
+    status)
+	echo -n "Checking for service syslog-ng:"
+	checkproc ${NGBINDIR}/syslog-ng && echo OK || echo No process
+	;;
+    probe)
+	test /etc/syslog-ng/syslog-ng.conf -nt /var/run/syslog-ng.pid && echo reload
+	;;
+    *)
+	echo "Usage: $0 {start|stop|restart|reload|probe}"
+		exit 1
+	;;
+esac
+
+test "$return" = "$rc_done" || exit 1
+exit 0

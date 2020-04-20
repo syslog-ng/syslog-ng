@@ -1,0 +1,320 @@
+<?xml version="1.0"?>
+<reference xmlns="http://docbook.org/ns/docbook" version="5.0">
+  <info>
+    <productname/>
+    <title>The syslog-ng manual page</title>
+  </info>
+  <refentry xml:id="syslog-ng.8">
+    <refmeta>
+      <refentrytitle>syslog-ng</refentrytitle>
+      <manvolnum>8</manvolnum>
+      <refmiscinfo class="version">3.26</refmiscinfo>
+      <refmiscinfo class="source"/>
+    </refmeta>
+    <refnamediv>
+      <refname>syslog-ng</refname>
+      <refpurpose>syslog-ng system logger application</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+      <cmdsynopsis>
+        <command>syslog-ng</command>
+        <arg>options</arg>
+      </cmdsynopsis>
+    </refsynopsisdiv>
+    <refsection version="5.0">
+      <title>Description</title>
+      <para>This manual page is only an abstract, for the complete documentation of syslog-ng, see <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/support/documentation/"><command>The  Administrator Guide</command></link> or <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/log-management">the official syslog-ng website</link>.</para>
+      <para>The  application is a flexible and highly scalable system logging application. Typically, syslog-ng is used to manage log messages and implement centralized logging, where the aim is to collect the log messages of several devices on a single, central log server. The different devices - called syslog-ng clients - all run syslog-ng, and collect the log messages from the various applications, files, and other <emphasis>sources</emphasis>. The clients send all important log messages to the remote syslog-ng server, where the server sorts and stores them.</para>
+    </refsection>
+    <refsection>
+      <title>Options</title>
+      <variablelist>
+        <?dbfo term-width="1.25in"?>
+        <varlistentry>
+          <term>
+            <command>--caps</command>
+            <indexterm type="parameter">
+              <primary>--caps</primary>
+            </indexterm>
+            <indexterm type="parameter">
+              <primary>caps</primary>
+            </indexterm>
+          </term>
+          <listitem>
+            <para>Run  process with the specified POSIX capability flags.</para>
+            <itemizedlist>
+              <listitem>
+                <para>If the <parameter>--no-caps</parameter> option is not set, and the host supports CAP_SYSLOG,  uses the following capabilities: "cap_net_bind_service, cap_net_broadcast, cap_net_raw, cap_dac_read_search, cap_dac_override, cap_chown, cap_fowner=p cap_syslog=ep"</para>
+              </listitem>
+              <listitem>
+                <para>If the <parameter>--no-caps</parameter> option is not set, and the host does not support CAP_SYSLOG,  uses the following capabilities: "cap_net_bind_service, cap_net_broadcast, cap_net_raw,cap_dac_read_search, cap_dac_override, cap_chown, cap_fowner=p cap_sys_admin=ep"</para>
+              </listitem>
+            </itemizedlist>
+            <para>For example:</para>
+            <synopsis>/opt/syslog-ng/sbin/syslog-ng -Fv --caps cap_sys_admin,cap_chown,cap_dac_override,cap_net_bind_service,cap_fowner=pi</synopsis>
+            <para>Note that the capabilities are not case sensitive, the following command is also good: <command>
+/opt/syslog-ng/sbin/syslog-ng -Fv --caps CAP_SYS_ADMIN,CAP_CHOWN,CAP_DAC_OVERRIDE,CAP_NET_BIND_SERVICE,CAP_FOWNER=pi</command></para>
+            <para>For details on the capability flags, see the following man pages: <filename>cap_from_text(3)</filename> and <filename>capabilities(7)</filename></para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--cfgfile &lt;file&gt;</command> or <command>-f
+            &lt;file&gt;</command>
+                        <indexterm type="parameter"><primary>--cfgfile</primary></indexterm>
+                        <indexterm type="parameter"><primary>cfgfile</primary></indexterm>
+                    </term>
+          <listitem>
+            <para>Use the specified configuration file.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--chroot &lt;dir&gt;</command> or <command>-C
+            &lt;dir&gt;</command>
+                        <indexterm type="parameter"><primary>--chroot</primary></indexterm>
+                        <indexterm type="parameter"><primary>chroot</primary></indexterm>
+                    </term>
+          <listitem>
+            <para>Change root to the specified directory. The configuration file is read after chrooting so, the configuration file must be available within the chroot. That way it is also possible to reload the syslog-ng configuration after chrooting. However, note that the <parameter>--user</parameter> and <parameter>--group</parameter> options are resolved before chrooting.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--control &lt;file&gt; </command> or <command>-c &lt;file&gt;</command>
+                    </term>
+          <listitem>
+            <para>Set the location of the syslog-ng control socket. Default value: <filename>/var/run/syslog-ng.ctl</filename></para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--debug</command> or <command>-d</command>
+                        <indexterm type="parameter"><primary>--debug</primary></indexterm>
+                        <indexterm type="parameter"><primary>debug</primary></indexterm>
+                    </term>
+          <listitem>
+            <para>Start syslog-ng in debug mode.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command>--enable-core</command>
+            <indexterm type="parameter">
+              <primary>--enable-core</primary>
+            </indexterm>
+            <indexterm type="parameter">
+              <primary>enable-core</primary>
+            </indexterm>
+          </term>
+          <listitem>
+            <para>Enable syslog-ng to write core files in case of a crash to help support and debugging.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command>--fd-limit &lt;number&gt;</command>
+            <indexterm type="parameter">
+              <primary>--fd-limit</primary>
+            </indexterm>
+            <indexterm type="parameter">
+              <primary>fd-limit</primary>
+            </indexterm>
+          </term>
+          <listitem>
+            <para>Set the minimal number of required file descriptors (fd-s). This sets how many files syslog-ng can keep open simultaneously. Default value: <parameter>4096</parameter>. Note that this does not override the global ulimit setting of the host.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--foreground</command> or <command>-F</command>
+                        <indexterm type="parameter"><primary>--foreground</primary></indexterm>
+                        <indexterm type="parameter"><primary>foreground</primary></indexterm>
+                    </term>
+          <listitem>
+            <para>Do not daemonize, run in the foreground. When running in the foreground,  starts from the current directory (<userinput>$CWD</userinput>) so it can create core files (normally,  starts from <filename>$PREFIX/var</filename>).</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--group &lt;group&gt;</command> or <command>-g
+            &lt;group&gt;</command>
+                        <indexterm type="parameter"><primary>--group</primary></indexterm>
+                        <indexterm type="parameter"><primary>group</primary></indexterm>
+                    </term>
+          <listitem>
+            <para>Switch to the specified group after initializing the configuration file.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--help</command> or <command>-h</command>
+                        <indexterm type="parameter"><primary>--help</primary></indexterm>
+                        <indexterm type="parameter"><primary>help</primary></indexterm>
+                    </term>
+          <listitem>
+            <para>Display a brief help message.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command>--module-registry</command>
+            <indexterm type="parameter">
+              <primary>--module-registry</primary>
+            </indexterm>
+            <indexterm type="parameter">
+              <primary>module-registry</primary>
+            </indexterm>
+          </term>
+          <listitem>
+            <para>Display the list and description of the available modules. Available only in   and later.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command>--no-caps</command>
+            <indexterm type="parameter">
+              <primary>--no-caps</primary>
+            </indexterm>
+            <indexterm type="parameter">
+              <primary>no-caps</primary>
+            </indexterm>
+          </term>
+          <listitem>
+            <para>Run syslog-ng as root, without capability-support. This is the default behavior. On Linux, it is possible to run syslog-ng as non-root with capability-support if syslog-ng was compiled with the <parameter>--enable-linux-caps</parameter> option enabled. (Execute <command>syslog-ng --version</command> to display the list of enabled build parameters.)</para>
+            <para>To run  with specific capabilities, use the <parameter>--caps</parameter> option.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--persist-file &lt;persist-file&gt;</command> or <command>-R
+              &lt;persist-file&gt;</command>
+                        <indexterm type="parameter"><primary>--persist-file</primary></indexterm>
+                        <indexterm type="parameter"><primary>persist-file</primary></indexterm>
+                    </term>
+          <listitem>
+            <para>Set the path and name of the <filename>syslog-ng.persist</filename> file where the persistent options and data are stored.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--pidfile &lt;pidfile&gt;</command> or <command>-p
+              &lt;pidfile&gt;</command>
+                        <indexterm type="parameter"><primary>--pidfile</primary></indexterm>
+                        <indexterm type="parameter"><primary>pidfile</primary></indexterm>
+                    </term>
+          <listitem>
+            <para>Set path to the PID file where the pid of the main process is stored.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command>--preprocess-into &lt;output-file&gt;</command>
+            <indexterm type="parameter">
+              <primary>--preprocess-into</primary>
+            </indexterm>
+            <indexterm type="parameter">
+              <primary>preprocess-into</primary>
+            </indexterm>
+          </term>
+          <listitem>
+            <para>After processing the configuration file and resolving included files and variables, write the resulting configuration into the specified output file. Available only in   and later.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command>--process-mode &lt;mode&gt;</command>
+            <indexterm type="parameter">
+              <primary>--process-mode</primary>
+            </indexterm>
+            <indexterm type="parameter">
+              <primary>process-mode</primary>
+            </indexterm>
+          </term>
+          <listitem>
+            <para>Sets how to run syslog-ng: in the <parameter>foreground</parameter> (mainly used for debugging), in the <parameter>background</parameter> as a daemon, or in <parameter>safe-background</parameter> mode. By default, syslog-ng runs in <parameter>safe-background</parameter> mode. This mode creates a supervisor process called <parameter>supervising syslog-ng</parameter> , that restarts syslog-ng if it crashes.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--stderr</command> or <command>-e</command>
+                        <indexterm type="parameter"><primary>--stderr</primary></indexterm>
+                        <indexterm type="parameter"><primary>stderr</primary></indexterm>
+                    </term>
+          <listitem>
+            <para>Log internal messages of syslog-ng to stderr. Mainly used for debugging purposes in conjunction with the <parameter>--foreground</parameter> option. If not specified, syslog-ng will log such messages to its internal source.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--syntax-only</command> or <command>-s</command>
+                        <indexterm type="parameter"><primary>--syntax-only</primary></indexterm>
+                        <indexterm type="parameter"><primary>syntax-only</primary></indexterm>
+                    </term>
+          <listitem>
+            <para>Verify that the configuration file is syntactically correct and exit.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--user &lt;user&gt;</command> or <command>-u
+            &lt;user&gt;</command>
+                        <indexterm type="parameter"><primary>--user</primary></indexterm>
+                        <indexterm type="parameter"><primary>user</primary></indexterm>
+                    </term>
+          <listitem>
+            <para>Switch to the specified user after initializing the configuration file (and optionally chrooting). Note that it is not possible to reload the syslog-ng configuration if the specified user has no privilege to create the <filename>/dev/log</filename> file.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--verbose</command> or <command>-v</command>
+                        <indexterm type="parameter"><primary>--verbose</primary></indexterm>
+                        <indexterm type="parameter"><primary>verbose</primary></indexterm>
+                    </term>
+          <listitem>
+            <!-- FIXME does not have any arguments, what does it exactly do? -->
+            <para>Enable verbose logging used to troubleshoot syslog-ng.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--version</command> or <command>-V</command>
+                        <indexterm type="parameter"><primary>--version</primary></indexterm>
+                        <indexterm type="parameter"><primary>version</primary></indexterm>
+                    </term>
+          <listitem>
+            <para>Display version number and compilation information, and also the list and short description of the available modules. For detailed description of the available modules, see the <command>--module-registry</command> option.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command>--worker-threads</command>
+            <indexterm type="parameter">
+              <primary>--worker-threads</primary>
+            </indexterm>
+            <indexterm type="parameter">
+              <primary>worker-threads</primary>
+            </indexterm>
+          </term>
+          <listitem>
+            <para>Sets the number of worker threads  can use, including the main  thread. Note that certain operations in  can use threads that are not limited by this option. This setting has effect only when  is running in multithreaded mode. Available only in   and later. See <command>The  3.26 Administrator Guide</command> for details.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </refsection>
+    <refsection>
+      <title>Files</title>
+      <para>
+        <filename>/opt/syslog-ng/</filename>
+      </para>
+      <para>
+        <filename>/opt/syslog-ng/etc/syslog-ng.conf</filename>
+      </para>
+    </refsection>
+    <refsection>
+      <title>See also</title>
+      <para>
+        <link linkend="syslog-ng.conf.5"><command>syslog-ng.conf</command>(5)</link>
+      </para>
+      <note version="5.0">
+        <para>For the detailed documentation of  see <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/index.html"><command>The  3.26 Administrator Guide</command></link></para>
+        <para>If you experience any problems or need help with syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://lists.balabit.hu/mailman/listinfo/syslog-ng"><command>syslog-ng mailing list</command></link>.</para>
+        <para>For news and notifications about of syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://syslog-ng.org/blogs/"><command>syslog-ng blogs</command></link>.</para>
+      </note>
+    </refsection>
+    <refsection version="5.0">
+      <title>Author</title>
+      <para>This manual page was written by the Balabit Documentation Team &lt;documentation@balabit.com&gt;.</para>
+    </refsection>
+    <refsection version="5.0">
+      <title>Copyright</title>
+    </refsection>
+  </refentry>
+</reference>

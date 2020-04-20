@@ -1,0 +1,461 @@
+<?xml version="1.0"?>
+<reference xmlns="http://docbook.org/ns/docbook" xml:id="pdbtool-man-page" version="5.0">
+  <info>
+    <productname/>
+    <title>The pdbtool manual page</title>
+  </info>
+  <refentry xml:id="pdbtool.1">
+    <refmeta>
+      <refentrytitle>pdbtool</refentrytitle>
+      <manvolnum>1</manvolnum>
+      <refmiscinfo class="version">3.26</refmiscinfo>
+      <refmiscinfo class="source"/>
+    </refmeta>
+    <refnamediv>
+      <refname>pdbtool</refname>
+      <refpurpose>An application to test and convert syslog-ng pattern database rules</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+      <cmdsynopsis>
+        <command>pdbtool</command>
+        <arg>command</arg>
+        <arg>options</arg>
+      </cmdsynopsis>
+    </refsynopsisdiv>
+    <refsection xml:id="pdbtool-mandescription">
+      <title>Description</title>
+      <para>This manual page is only an abstract, for the complete documentation of syslog-ng and pdbtool, see <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/support/documentation/"><command>The syslog-ng Administrator Guide</command></link>.</para>
+      <para>The syslog-ng application can match the contents of the log messages to a database of predefined message patterns (also called patterndb). By comparing the messages to the known patterns, syslog-ng is able to identify the exact type of the messages, tag the messages, and sort them into message classes. The message classes can be used to classify the type of the event described in the log message. The functionality of the pattern database is similar to that of the logcheck project, but the syslog-ng approach is faster, scales better, and is much easier to maintain compared to the regular expressions of logcheck.</para>
+      <para>The <command>pdbtool</command> application is a utility that can be used to:</para>
+      <itemizedlist>
+        <listitem>
+          <para><link linkend="pdbtool-match">test messages</link>, or <link linkend="pdbtool-test">specific rules</link></para>
+        </listitem>
+        <listitem>
+          <para>convert an older pattern database to the latest database format</para>
+        </listitem>
+        <listitem>
+          <para><link linkend="pdbtool-merge">merge pattern databases</link> into a single file</para>
+        </listitem>
+        <listitem>
+          <para><link linkend="pdbtool-patternize">automatically create pattern databases</link> from a large amount of log messages</para>
+        </listitem>
+        <listitem>
+          <para><link linkend="pdbtool-dump">dump the RADIX tree</link> built from the pattern database (or a part of it) to explore how the pattern matching works.</para>
+        </listitem>
+      </itemizedlist>
+    </refsection>
+    <refsection xml:id="pdbtool-dictionary">
+      <title>The dictionary command</title>
+      <cmdsynopsis>
+        <command>dictionary</command>
+        <arg>options</arg>
+      </cmdsynopsis>
+      <para>Lists every name-value pair that can be set by the rules of the pattern database.</para>
+      <variablelist>
+        <varlistentry>
+          <term><command>--dump-tags</command> or <command>-T</command>
+                    </term>
+          <listitem>
+            <para>List the tags instead of the names of the name-value pairs.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--pdb &lt;path-to-file&gt;</command> or <command>-p &lt;path-to-file&gt;</command>
+                    </term>
+          <listitem>
+            <para>Name of the pattern database file to use.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--program &lt;programname&gt;</command> or <command>-P &lt;programname&gt;</command>
+                    </term>
+          <listitem>
+            <para>List only the name-value pairs that can be set for the messages of the specified <parameter>$PROGRAM</parameter> application.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </refsection>
+    <refsection xml:id="pdbtool-dump">
+      <title>The dump command</title>
+      <cmdsynopsis>
+        <command>dump</command>
+        <arg>options</arg>
+      </cmdsynopsis>
+      <para>Display the RADIX tree built from the patterns. This shows how are the patterns represented in syslog-ng and it might also help to track down pattern-matching problems. The dump utility can dump the tree used for matching the PROGRAM or the MESSAGE parts.</para>
+      <variablelist>
+        <varlistentry version="5.0">
+          <term><command>--debug</command> or <command>-d</command>
+    </term>
+          <listitem>
+            <para>Enable debug/diagnostic messages on stderr.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--pdb</command> or <command>-p</command>
+                    </term>
+          <listitem>
+            <para>Name of the pattern database file to use.<!--  By default, syslog-ng and the pdbtool uses the
+                    <filename>/var/lib/syslog-ng/patterndb.xml</filename> file.--></para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--program</command> or <command>-P</command>
+                    </term>
+          <listitem>
+            <para>Displays the RADIX tree built from the patterns belonging to the <parameter>${PROGRAM}</parameter> application.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--program-tree</command> or <command>-T</command>
+                    </term>
+          <listitem>
+            <para>Display the <parameter>${PROGRAM}</parameter> tree.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry version="5.0">
+          <term><command>--verbose</command> or <command>-v</command>
+    </term>
+          <listitem>
+            <para>Enable verbose messages on stderr.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+      <para>Example and sample output:<synopsis>pdbtool dump -p patterndb.xml  -P 'sshd'</synopsis><synopsis>'p'
+   'assword for'
+     @QSTRING:@
+       'from'
+        @QSTRING:@
+          'port '
+            @NUMBER:@ rule_id='fc49054e-75fd-11dd-9bba-001e6806451b'
+              ' ssh' rule_id='fc55cf86-75fd-11dd-9bba-001e6806451b'
+                 '2' rule_id='fc4b7982-75fd-11dd-9bba-001e6806451b'
+    'ublickey for'
+      @QSTRING:@
+        'from'
+         @QSTRING:@
+           'port '
+             @NUMBER:@ rule_id='fc4d377c-75fd-11dd-9bba-001e6806451b'
+               ' ssh' rule_id='fc5441ac-75fd-11dd-9bba-001e6806451b'
+                  '2' rule_id='fc44a9fe-75fd-11dd-9bba-001e6806451b'
+              </synopsis></para>
+    </refsection>
+    <refsection xml:id="pdbtool-match">
+      <title>The match command</title>
+      <cmdsynopsis>
+        <command>match</command>
+        <arg>options</arg>
+      </cmdsynopsis>
+      <para>Use the <command>match</command> command to test the rules in a pattern database. The command tries to match the specified message against the patterns of the database, evaluates the parsers of the pattern, and also displays which part of the message was parsed successfully. The command returns with a <parameter>0</parameter> (success) or <parameter>1</parameter> (no match) return code and displays the following information:</para>
+      <itemizedlist>
+        <listitem>
+          <para>the class assigned to the message (that is, system, violation, and so on),</para>
+        </listitem>
+        <listitem>
+          <para>the ID of the rule that matched the message, and</para>
+        </listitem>
+        <listitem>
+          <para>the values of the parsers (if there were parsers in the matching pattern).</para>
+        </listitem>
+      </itemizedlist>
+      <para>The <command>match</command> command has the following options:</para>
+      <variablelist>
+        <varlistentry>
+          <term><command>--color-out </command> or <command>-c</command>
+                    </term>
+          <listitem>
+            <para>Color the terminal output to highlight the part of the message that was successfully parsed.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry version="5.0">
+          <term><command>--debug</command> or <command>-d</command>
+    </term>
+          <listitem>
+            <para>Enable debug/diagnostic messages on stderr.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--debug-csv</command> or <command>-C</command>
+                    </term>
+          <listitem>
+            <para>Print the debugging information returned by the <parameter>--debug-pattern</parameter> option as comma-separated values.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--debug-pattern</command> or <command>-D</command>
+                    </term>
+          <listitem>
+            <para>Print debugging information about the pattern matching. See also the <parameter>--debug-csv</parameter> option.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--file=&lt;filename-with-path&gt;</command> or <command>-f</command>
+                    </term>
+          <listitem>
+            <para>Process the messages of the specified log file with the pattern database. This option allows to classify messages offline, and to apply the pattern database to already existing logfiles. To read the messages from the standard input (stdin), specify a hyphen (<parameter>-</parameter>) character instead of a filename.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--filter=&lt;filter-expression&gt;</command> or <command>-F</command>
+                    </term>
+          <listitem>
+            <para>Print only messages matching the specified syslog-ng filter expression.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--message</command> or <command>-M</command>
+                    </term>
+          <listitem>
+            <para>The text of the log message to match (only the <parameter>${MESSAGE}</parameter> part without the syslog headers).</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--pdb</command> or <command>-p</command>
+                    </term>
+          <listitem>
+            <para>Name of the pattern database file to use.<!--By default, syslog-ng and the pdbtool uses the
+                    <filename>/var/lib/syslog-ng/patterndb.xml</filename> file.--></para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--program</command> or <command>-P</command>
+                    </term>
+          <listitem>
+            <para>Name of the program to use, as contained in the <parameter>${PROGRAM}</parameter> part of the syslog message.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--template=&lt;template-expression&gt;</command> or <command>-T</command>
+                    </term>
+          <listitem>
+            <para>A syslog-ng template expression that is used to format the output messages.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry version="5.0">
+          <term><command>--verbose</command> or <command>-v</command>
+    </term>
+          <listitem>
+            <para>Enable verbose messages on stderr.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+      <para>Example: The following command checks if the <filename>patterndb.xml</filename> file recognizes the <parameter>Accepted publickey for myuser from 127.0.0.1 port 59357 ssh2</parameter> message:</para>
+      <synopsis>pdbtool match -p patterndb.xml -P sshd -M "Accepted publickey for myuser from 127.0.0.1 port 59357 ssh2"</synopsis>
+      <para>The following example applies the <filename>sshd.pdb</filename> pattern database file to the log messages stored in the <filename>/var/log/messages</filename> file, and displays only the messages that received a <parameter>useracct</parameter> tag.</para>
+      <synopsis>pdbtool match -p sshd.pdb \
+  &#x2013;file /var/log/messages \
+  &#x2013;filter &#x2018;tags(&#x201C;usracct&#x201D;);&#x2019; </synopsis>
+    </refsection>
+    <refsection xml:id="pdbtool-merge">
+      <title>The merge command</title>
+      <cmdsynopsis>
+        <command>merge</command>
+        <arg>options</arg>
+      </cmdsynopsis>
+      <para>Use the <command>merge</command> command to combine separate pattern database files into a single file (pattern databases are usually stored in separate files per applications to simplify maintenance). If a file uses an older database format, it is automatically updated to the latest format (V3). See the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/support/documentation/"><command>The syslog-ng Administrator Guide</command></link> for details on the different pattern database versions.</para>
+      <variablelist>
+        <varlistentry version="5.0">
+          <term><command>--debug</command> or <command>-d</command>
+    </term>
+          <listitem>
+            <para>Enable debug/diagnostic messages on stderr.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--directory</command> or <command>-D</command>
+                    </term>
+          <listitem>
+            <para>The directory that contains the pattern database XML files to be merged.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--glob</command> or <command>-G</command>
+                    </term>
+          <listitem>
+            <para>Specify filenames to be merged using a glob pattern, for example, using wildcards. For details on glob patterns, see <command>man glob</command>. This pattern is applied only to the filenames, and not on directory names.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--pdb</command> or <command>-p</command>
+                    </term>
+          <listitem>
+            <para>Name of the output pattern database file.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--recursive</command> or <command>-r</command>
+                    </term>
+          <listitem>
+            <para>Merge files from subdirectories as well.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry version="5.0">
+          <term><command>--verbose</command> or <command>-v</command>
+    </term>
+          <listitem>
+            <para>Enable verbose messages on stderr.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+      <para>Example:<synopsis>pdbtool merge --recursive --directory /home/me/mypatterns/  --pdb /var/lib/syslog-ng/patterndb.xml</synopsis>Currently it is not possible to convert a file without merging, so if you only want to convert an older pattern database file to the latest format, you have to copy it into an empty directory.</para>
+    </refsection>
+    <refsection xml:id="pdbtool-patternize">
+      <title>The patternize command</title>
+      <cmdsynopsis>
+        <command>patternize</command>
+        <arg>options</arg>
+      </cmdsynopsis>
+      <para>Automatically create a pattern database from a log file containing a large number of log messages. The resulting pattern database is printed to the standard output (stdout). The <command>pdbtool patternize</command> command uses a data clustering technique to find similar log messages and replacing the differing parts with <parameter>@ESTRING:: @</parameter> parsers. For details on pattern databases and message parsers, see the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/support/documentation/"><command>The syslog-ng Administrator Guide</command></link>. The <command>patternize</command> command is available only in  version 3.2 and later.</para>
+      <variablelist>
+        <varlistentry version="5.0">
+          <term><command>--debug</command> or <command>-d</command>
+    </term>
+          <listitem>
+            <para>Enable debug/diagnostic messages on stderr.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--file=&lt;path&gt;</command> or <command>-f</command>
+                    </term>
+          <listitem>
+            <para>The logfile containing the log messages to create patterns from. To receive the log messages from the standard input (stdin), use <parameter>-</parameter>.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--iterate-outliers</command> or <command>-o</command>
+                    </term>
+          <listitem>
+            <para>Recursively iterate on the log lines to cover as many log messages with patterns as possible.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--named-parsers</command> or <command>-n</command>
+                    </term>
+          <listitem>
+            <para>The number of example log messages to include in the pattern database for every pattern. Default value: <parameter>1</parameter></para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--no-parse</command> or <command>-p</command>
+                    </term>
+          <listitem>
+            <para>Do not parse the input file, treat every line as the message part of a log message.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command>--samples=&lt;number-of-samples&gt;</command>
+          </term>
+          <listitem>
+            <para>Include a generated name in the parsers, for example, <parameter>.dict.string1</parameter>, <parameter>.dict.string2</parameter>, and so on.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--support=&lt;number&gt;</command> or <command>-S</command>
+                    </term>
+          <listitem>
+            <para>A pattern is added to the output pattern database if at least the specified percentage of log messages from the input logfile match the pattern. For example, if the input logfile contains 1000 log messages and the <parameter>--support=3.0</parameter> option is used, a pattern is created only if the pattern matches at least 3 percent of the log messages (that is, 30 log messages). If patternize does not create enough patterns, try to decrease the support value.</para>
+            <para>Default value: <parameter>4.0</parameter></para>
+          </listitem>
+        </varlistentry>
+        <varlistentry version="5.0">
+          <term><command>--verbose</command> or <command>-v</command>
+    </term>
+          <listitem>
+            <para>Enable verbose messages on stderr.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+      <para>Example:<synopsis>pdbtool patternize --support=2.5 --file=/var/log/messages</synopsis></para>
+    </refsection>
+    <refsection xml:id="pdbtool-test">
+      <title>The test command</title>
+      <cmdsynopsis>
+        <command>test</command>
+        <arg>options</arg>
+      </cmdsynopsis>
+      <para>Use the <command>test</command> command to validate a pattern database XML file. Note that you must have the <command>xmllint</command> application installed. The <command>test</command> command is available only in  version 3.2 and later.</para>
+      <variablelist>
+        <varlistentry>
+          <term><command>--color-out</command> or <command>-c</command>
+                    </term>
+          <listitem>
+            <para>Enable coloring in terminal output.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry version="5.0">
+          <term><command>--debug</command> or <command>-d</command>
+    </term>
+          <listitem>
+            <para>Enable debug/diagnostic messages on stderr.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--debug</command> or <command>-D</command>
+                    </term>
+          <listitem>
+            <para>Print debugging information on non-matching patterns.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--rule-id</command> or <command>-r</command>
+                    </term>
+          <listitem>
+            <para>Test only the patterndb rule (specified by its rule id) against its example.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command>--validate</command>
+          </term>
+          <listitem>
+            <para>Validate a pattern database XML file.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry version="5.0">
+          <term><command>--verbose</command> or <command>-v</command>
+    </term>
+          <listitem>
+            <para>Enable verbose messages on stderr.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+      <para>Example:<synopsis>pdbtool test --validate /home/me/mypatterndb.pdb</synopsis></para>
+    </refsection>
+    <refsection>
+      <title>Files</title>
+      <para>
+        <filename>/opt/syslog-ng/</filename>
+      </para>
+      <para>
+        <filename>/opt/syslog-ng/etc/syslog-ng.conf</filename>
+      </para>
+    </refsection>
+    <refsection>
+      <title>See also</title>
+      <para>
+        <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/support/documentation/">
+          <command>The syslog-ng Administrator Guide</command>
+        </link>
+      </para>
+      <para>
+        <link linkend="syslog-ng.conf.5"><command>syslog-ng.conf</command>(5)</link>
+      </para>
+      <para>
+        <link linkend="syslog-ng.8"><command>syslog-ng</command>(8)</link>
+      </para>
+      <note version="5.0">
+        <para>For the detailed documentation of  see <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/index.html"><command>The  3.26 Administrator Guide</command></link></para>
+        <para>If you experience any problems or need help with syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://lists.balabit.hu/mailman/listinfo/syslog-ng"><command>syslog-ng mailing list</command></link>.</para>
+        <para>For news and notifications about of syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://syslog-ng.org/blogs/"><command>syslog-ng blogs</command></link>.</para>
+      </note>
+    </refsection>
+    <refsection version="5.0">
+      <title>Author</title>
+      <para>This manual page was written by the Balabit Documentation Team &lt;documentation@balabit.com&gt;.</para>
+    </refsection>
+    <refsection version="5.0">
+      <title>Copyright</title>
+    </refsection>
+  </refentry>
+</reference>

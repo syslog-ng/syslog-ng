@@ -1,0 +1,47 @@
+#
+# build.manifest
+#
+#   This file controls package building on various distros when using dbld.
+#
+#   Syntax:
+#
+#       OS  env-list  cmdline-options
+#
+#   OS              -- either Linux distribution name (e.g.  ubuntu, centos
+#                      etc), or a distro + version combination separated by
+#                      a dash (e.g.  ubuntu-bionic, centos-7, etc). If used
+#                      without version number, it denotes a wildcard (e.g.
+#                      applied to any versions of the distro).
+#
+#   env-list        -- comma separated list of environment variables
+#
+#   cmdline-options -- extra command line options to supply to the build
+#                      command.
+#
+#   The build command depends on the packaging system that specific Linux
+#   distribution uses, e.g. rpmbuild for Fedora/CentOS, dpkg-buildpackage
+#   for Debian based distros). env-list and cmdline-options can be used to
+#   customize a build in cases where an optional feature is not available
+#   there.
+#
+
+# kafka support needs librdkafka >= 1.0.0, which is only available on ubuntu-bionic
+# on Debian we don't build java and use Python3 _after_ buster
+debian-jessie		DEB_BUILD_PROFILES="sng-python2 nojava",DH_OPTIONS="-Nsyslog-ng-mod-mongodb -Nsyslog-ng-mod-rdkafka -Nsyslog-ng-mod-amqp -Nsyslog-ng-mod-riemann -Nsyslog-ng-mod-geoip2"
+debian-stretch		DEB_BUILD_PROFILES="sng-python2 nojava",DH_OPTIONS="-Nsyslog-ng-mod-rdkafka"
+debian-buster		DEB_BUILD_PROFILES="sng-python2 nojava",DH_OPTIONS="-Nsyslog-ng-mod-rdkafka"
+
+# on ubuntu, we fetch java from OBS and start using Python3 at focal onwards.
+ubuntu-trusty		DEB_BUILD_PROFILES="sng-python2",DH_OPTIONS="-Nsyslog-ng-mod-rdkafka"
+ubuntu-xenial		DEB_BUILD_PROFILES="sng-python2",DH_OPTIONS="-Nsyslog-ng-mod-rdkafka"
+ubuntu-bionic		DEB_BUILD_PROFILES="sng-python2"
+ubuntu-eoan		DEB_BUILD_PROFILES="sng-python2"
+ubuntu-focal		DEB_BUILD_PROFILES="sng-python3"
+
+#
+# centos-6 is not supported, however I leave this line here as an example of
+# how to use build.manifest to cusomize a build.
+#
+centos			-											--without kafka --with python2
+centos-6		CFLAGS=-D__be16=guint16,PYTHON_LIBS=-lpython2.6,PYTHON_CFLAGS=-I/usr/include/python2.6 	--without mongodb --with python2
+fedora			-											--with python3 --without python2

@@ -1,0 +1,67 @@
+#!/bin/bash
+if [ -z "$1" ]
+then
+  echo "Usage: $0 DESTDIR"
+  exit 1
+fi
+DESTDIR="$1"
+if [ ! -d "contrib/cygwin-packaging" ]
+then
+  echo "Please run 'contrib/cygwin-packaging/cygwin-postinstall' from the top-level source directory."
+  exit 1
+fi
+if [ ! -f "${DESTDIR}/usr/sbin/syslog-ng.exe" ]
+then
+  echo "Please run 'make install-strip' first."
+  exit 2
+fi
+if [ ! -f "config.log" ]
+then
+  echo "Please run './configure' first."
+  echo "Have a look into 'contrib/cygwin-packaging/cygwin-postinstall' how to do it."
+  exit 3
+fi
+pushd "${DESTDIR}" || exit 4
+mkdir -p etc/defaults/etc etc/postinstall
+mv etc/syslog-ng etc/defaults/etc
+cd usr/lib
+rm *.a *.la
+if [ -d bin ]
+then
+  mv bin/* syslog-ng
+  rmdir bin
+fi
+cd syslog-ng
+rm *.a *.la *.so
+ln -s cygafsocket-tls.dll cygafsocket.dll
+popd
+cp contrib/cygwin-packaging/syslog-ng-config "${DESTDIR}/usr/bin/"
+cp contrib/cygwin-packaging/syslog-ng.sh "${DESTDIR}/etc/postinstall/"
+mkdir -p "${DESTDIR}/usr/share/doc/Cygwin"
+cat > "${DESTDIR}/usr/share/doc/Cygwin/syslog-ng.README" <<'EOF'
+If you want to use syslog-ng, just run the /usr/bin/syslog-ng-config
+script.  This script will create a default configuration file
+/etc/syslog-ng.conf and it will install syslog-ng as a service on NT
+systems on request.
+
+Please note that you cannot use syslogd from the inetutils package
+and syslog-ng together.  Only one syslog daemon should run at a time.
+The syslog-ng-config script, as well as the latest version of the
+syslogd-config script are taking care of this when requested to install
+as service.
+
+The syslog-ng package has been created using the following command
+sequence from the top level source dir:
+
+./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc/syslog-ng \
+        --libexecdir='${prefix}/lib' \
+        --localstatedir=/var/lib/syslog-ng \
+        --datadir='${prefix}/share/syslog-ng'
+make
+mkdir /tmp/syslog-ng
+make install-strip DESTDIR=/tmp/syslog-ng
+contrib/cygwin-packaging/cygwin-postinstall /tmp/syslog-ng
+tar -cjf syslog-ng-VERSION.tar.bz2 -C /tmp/syslog-ng etc usr
+EOF

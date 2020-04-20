@@ -1,0 +1,195 @@
+#!/sbin/sh
+#
+# $Id: syslog-ng.init.d,v 1.1.2.2 2006/03/02 18:35:45 folti Exp $
+#
+# adapted to syslog-ng by BJ, Aug, 7th 2000
+# cleaned up by Bazsi, Oct, 12th 2000
+# minor fix by Bojan Zdrnja, Apr, 11th 2003
+#   added nicer options field
+# Modified for BalaBit Ltd's syslog-ng package by Tamas Pal Mar, 1st 2006
+# Modified for BalaBit's syslog-ng package to make it multi-instance-able by György Pásztor Mar, 21th 2016
+# Minor modifications for Syslog-ng OSE by Janos Szigetvari Aug, 15th 2017
+
+. /lib/svc/share/smf_include.sh
+
+result=${SMF_EXIT_OK}
+
+# Read command line arguments
+method="$1"		# %m
+instance="$2"		# %i
+
+# Set defaults; SMF_FMRI should have been set, but just in case.
+if [ -z "$SMF_FMRI" ]; then
+    SMF_FMRI="svc:/system/syslog-ng:${instance}"
+fi
+
+SYSLOGPID_FILE=/var/run/syslog.pid
+OTHER_OPTIONS="--enable-core"
+MAXWAIT=30
+
+DEFAULTFILE=/etc/default/syslog-ng
+[ -f ${DEFAULTFILE} ] && . ${DEFAULTFILE}
+
+[ -f ${DEFAULTFILE}@${instance} ] && . ${DEFAULTFILE}@${instance}
+
+SYSLOGNG_PREFIX=${SYSLOGNG_PREFIX:-/usr/local}
+SYSLOGNG="${SYSLOGNG_PREFIX}/sbin/syslog-ng"
+
+if [ "$instance" = "default" ];
+then
+        CONFIG_FILE=${CONFIG_FILE:-${SYSLOGNG_PREFIX}/etc/syslog-ng.conf}
+        VAR_DIR=${VAR_DIR:-${SYSLOGNG_PREFIX}/var/lib/syslog-ng}
+        PID_FILE=${PID_FILE:-${SYSLOGPID_FILE}}
+else
+        CONFIG_FILE=${CONFIG_FILE:-${SYSLOGNG_PREFIX}/etc/syslog-ng@${instance}.conf}
+        VAR_DIR=${VAR_DIR:-${SYSLOGNG_PREFIX}/var/lib/syslog-ng@${instance}}
+
+        [ -d "${VAR_DIR}" ] || mkdir "${VAR_DIR}"
+        [ -d "${VAR_DIR}/run" ] || mkdir "${VAR_DIR}/run"
+fi
+
+PID_FILE=${PID_FILE:-${VAR_DIR}/run/syslog-ng.pid}
+PERSIST_FILE=${PERSIST_FILE:-${VAR_DIR}/syslog-ng.persist}
+CONTROL_FILE=${CONTROL_FILE:-${VAR_DIR}/run/syslog-ng.ctl}
+
+METHOD_OPTIONS="--cfgfile=${CONFIG_FILE} --pidfile=${PID_FILE} --persist-file=${PERSIST_FILE} --control=${CONTROL_FILE}"
+
+export SYSLOGNG_PREFIX
+
+test -x ${SYSLOGNG} || exit $SMF_EXIT_ERR_FATAL
+test -r ${CONFIG_FILE} || exit $SMF_EXIT_ERR_CONFIG
+
+check_syntax() {
+        ${SYSLOGNG} --syntax-only --cfgfile=${CONFIG_FILE}
+        _rval=$?
+        [ $_rval -eq 0 ] || exit $SMF_EXIT_ERR_CONFIG
+}
+
+slng_waitforpid() {
+        _cnt=$MAXWAIT
+        _process=$1
+        _pid=$2
+        while [ $_cnt -gt 0 ]; do
+                pgrep $_process | grep $_pid > /dev/null 2>&1
+                [ $? -ne 0 ] && break
+                _cnt=`expr $_cnt - 1`
+                sleep 1
+        done
+        return $_cnt
+}
+
+slng_clean_pidfile() {
+        if [ -h $SYSLOGPID_FILE ];then
+                rm -f $SYSLOGPID_FILE
+        fi
+        rm -f $PID_FILE
+}
+
+slng_stop() {
+        # if we have a contract, we should simply use smf_kill_contract to terminate the process
+        contract=`/usr/bin/svcprop -p restarter/contract ${SMF_FMRI}`
+        if [ -n "${contract}" ]; then
+                smf_kill_contract ${contract} TERM 1 $MAXWAIT
+                [ $? -ne 0 ] && exit $SMF_EXIT_ERR_FATAL
+                slng_clean_pidfile
+                return $SMF_EXIT_OK
+        fi
+
+        [ -f $PID_FILE ] || return $SMF_EXIT_ERR_FATAL
+
+        syspid=`head -1 $PID_FILE`
+
+        [ -z "$syspid" ] && return $SMF_EXIT_OK
+        kill -0 $syspid >/dev/null 2>&1
+        if [ $? -ne 0 ];then
+                return $SMF_EXIT_OK
+        fi
+
+        kill -TERM $syspid
+
+        _process=`basename $SYSLOGNG`
+        slng_waitforpid "$_process" $syspid
+        _ret=$?
+        if [ $_ret -eq 0 ]; then
+                kill -KILL $syspid
+                $_ret=$?
+        fi
+
+        if [ $_ret -eq 0 ] ;then
+                slng_clean_pidfile
+                return $SMF_EXIT_OK
+        fi
+        return $SMF_EXIT_ERR_FATAL
+}
+
+
+slng_start () {
+        if [ -f $PID_FILE ];then
+            _process=`basename $SYSLOGNG`
+            _pid=`head -1 $PID_FILE`
+            pgrep $_process | grep $_pid > /dev/null 2>&1
+            if [ $? -eq 0 ]; then
+                echo "syslog-ng already running."
+                exit 1
+            fi
+            echo "syslog-ng is not running, removing $PID_FILE."
+            /usr/bin/rm -f $PID_FILE
+        fi
+        if [ -f $CONFIG_FILE -a -x $SYSLOGNG ]; then
+                echo 'syslog-ng service starting.'
+                #
+                # Before syslog-ng starts, save any messages from previous
+                # crash dumps so that messages appear in chronological order.
+                #
+                if [ -r /dev/dump ]; then
+                    /usr/bin/savecore -m
+                fi
+                if [ -r /etc/dumpadm.conf ]; then
+                    . /etc/dumpadm.conf
+                    if [ -n "$DUMPADM_DEVICE" ] && [ -r "$DUMPADM_DEVICE" ] && \
+                       [ "x$DUMPADM_DEVICE" != xswap ]; then
+                        /usr/bin/savecore -m -f $DUMPADM_DEVICE
+                    fi
+                fi
+                check_syntax
+                $SYSLOGNG $OTHER_OPTIONS $METHOD_OPTIONS
+                # remove symlinks
+                if [ -h $SYSLOGPID_FILE ];then
+                        rm -f $SYSLOGPID_FILE
+                fi
+                if [ ! -f $SYSLOGPID_FILE ];then
+                        ln -s $PID_FILE $SYSLOGPID_FILE
+                fi
+                return $SMF_EXIT_OK
+        fi
+        return $SMF_EXIT_ERR_FATAL
+}
+
+case "$method" in
+        start)
+                slng_start
+                ;;
+
+        stop)
+                slng_stop
+                ;;
+        refresh)
+                if [ -f $PID_FILE ]; then
+                        syspid=`head -1 $PID_FILE`
+                        [ "$syspid" -gt 0 ] && kill -1 $syspid && echo "syslog-ng service reloaded"
+                fi
+                ;;
+        restart)
+                slng_stop
+                retval=$?
+                [ $retval -ne 0 ] && exit $retval
+                slng_start
+                ;;
+        *)
+                echo "Usage: $0 { start | stop | restart | refresh }"
+                exit 1
+                ;;
+esac
+exit $?
+
+# vim: expandtab ts=8

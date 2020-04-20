@@ -1,0 +1,19 @@
+# Package Information for pkg-config
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+datarootdir=@datarootdir@
+datadir=@datadir@
+libdir=@libdir@
+includedir=@includedir@
+toolsdir=@toolsdir@
+moduledir=@moduledir@
+config_includedir=@config_includedir@
+scldir=@scldir@
+ivykis=@with_ivykis@
+
+Name: syslog-ng-dev
+Description: Dev package for syslog-ng module
+Version: @PACKAGE_VERSION@
+Requires: glib-2.0
+Libs: -L${libdir} @GLIB_LIBS@ -lsyslog-ng -levtlog
+Cflags: -I${includedir}/syslog-ng @INTERNAL_IVYKIS_CFLAGS@

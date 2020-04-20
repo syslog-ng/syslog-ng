@@ -1,0 +1,87 @@
+/*
+ * Copyright (c) 2002-2012 Balabit
+ * Copyright (c) 1998-2012 Balázs Scheidler
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code requires {
+
+#include "parser/parser-expr-parser.h"
+#include "cfg-tree.h"
+
+}
+
+%code {
+
+#include "syslog-names.h"
+#include "parser/parser-expr-grammar.h"
+#include "plugin.h"
+#include "cfg-grammar.h"
+
+}
+
+%name-prefix "parser_expr_"
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogExprNode **result}
+%parse-param {gpointer arg}
+
+%type	<ptr> parser_expr
+%type   <ptr> parser_expr_list
+
+/* INCLUDE_DECLS */
+
+%%
+
+start
+        : parser_expr_list                       { *result = $1; if (yychar != YYEMPTY) { cfg_lexer_unput_token(lexer, &yylval); } YYACCEPT; }
+	;
+
+parser_expr_list
+        : parser_expr semicolons parser_expr_list    { $$ = log_expr_node_append_tail(log_expr_node_new_pipe($1, &@1), $3); }
+        | log_fork semicolons parser_expr_list       { $$ = log_expr_node_append_tail($1,  $3); }
+        |                                            { $$ = NULL; }
+        ;
+
+
+parser_expr
+        : LL_IDENTIFIER
+          {
+            Plugin *p;
+            gint context = LL_CONTEXT_PARSER;
+
+            p = cfg_find_plugin(configuration, context, $1);
+            CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
+
+            last_parser = (LogParser *) cfg_parse_plugin(configuration, p, &@1, NULL);
+            free($1);
+            if (!last_parser)
+              {
+                YYERROR;
+              }
+            $$ = last_parser;
+          }
+
+        ;
+
+/* INCLUDE_RULES */
+
+%%

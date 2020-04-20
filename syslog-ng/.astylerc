@@ -1,0 +1,32 @@
+# GNU style
+--style=gnu
+
+# convert tabs into spaces
+--convert-tabs
+
+# lines indented using 2 spaces
+--indent=spaces=2
+
+# add spaces around commas
+--pad-comma
+
+# max line lenght is 120 chars
+--max-code-length=120
+--max-instatement-indent=60
+
+# pointer is aligned to the name of the variable
+--align-pointer=name
+
+# check files recursively in folder
+--recursive
+
+# do not create backups of formatted files
+--suffix=none
+
+# exclude folders && files
+# on Travis these submodules are not checked out when cheking the style
+--ignore-exclude-errors
+--exclude="lib/ivykis"
+--exclude="lib/jsonc"
+--exclude="lib/compat/strcasestr.c"
+--exclude="dbld"

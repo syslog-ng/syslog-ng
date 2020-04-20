@@ -1,0 +1,42 @@
+
+syslog-ng was written by Balázs Scheidler <bazsi@balabit.hu>
+
+Contributions under the contrib/ directory were contributed by a number of
+different people.
+
+Code contributions:
+-------------------
+Anthony Lineham - bugfixes
+Chris Packham - suppressing duplicate messages
+Jung Christian - BSDTAG macro
+Roger J. Meier - initgroups bugfix
+Corinna Vinschen - cygwin packaging files and portability fixes
+Charles G. Waldman - file source driver fixes
+Philip Bellino - IPv6 bugfixes
+Vijay Ramasubramanian - extending time related macros
+The Regents of the University of California & Chris Torek - strcasestr()
+
+Suggestions, good bugreports, helping newbies on the mailing list:
+------------------------------------------------------------------
+Evan Rempel
+Roberto Nibali
+Nate Campi
+Sandor Geller
+Valdis Kletnieks
+Alexander Clouter
+Hari Sekhon
+Dave Johnson
+Brian A. Seklecki
+John Morrissey
+Joe Fegan
+Joe Shaw
+
+and probably a lot more.
+
+Please note that this list is only updated from time to time, and my
+memories may not serve me the best, so it is probably inaccurate. If you
+miss your name from this list, just let me know :)
+
+Balazs Scheidler
+2008-11-06
+

@@ -1,0 +1,236 @@
+<?xml version="1.0"?>
+<reference xmlns="http://docbook.org/ns/docbook" version="5.0">
+  <info>
+    <productname/>
+    <title>The syslog-ng-debun manual page</title>
+  </info>
+  <refentry xml:id="syslog-ng-debun.1">
+    <refmeta>
+      <refentrytitle>syslog-ng-debun</refentrytitle>
+      <manvolnum>1</manvolnum>
+      <refmiscinfo class="version">3.26</refmiscinfo>
+      <refmiscinfo class="source"/>
+    </refmeta>
+    <refnamediv>
+      <refname>syslog-ng-debun</refname>
+      <refpurpose>syslog-ng DEBUg buNdle generator</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+      <cmdsynopsis>
+        <command>syslog-ng-debun</command>
+        <arg>options</arg>
+      </cmdsynopsis>
+    </refsynopsisdiv>
+    <refsection xml:id="syslog-ng-debun-mandescription">
+      <title>Description</title>
+      <para>NOTE: The <command>syslog-ng-debun</command> application is distributed with the  system logging application, and is usually part of the  package. The latest version of the  application is available at .</para>
+      <para>This manual page is only an abstract, for the complete documentation of syslog-ng, see <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/support/documentation/">The syslog-ng Administrator Guide</link>.</para>
+      <para>The <command>syslog-ng-debun</command> tool collects and saves information about your  installation, making troubleshooting easier, especially if you ask help about your  related problem.</para>
+    </refsection>
+    <refsection>
+      <title>General Options</title>
+      <variablelist>
+        <varlistentry>
+          <term>
+            <command>-r</command>
+          </term>
+          <listitem>
+            <para>Run <command>syslog-ng-debun</command>. Using this option is required to actually execute the data collection with <command>syslog-ng-debun</command>. It is needed to prevent accidentally running <command>syslog-ng-debun</command>.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command>-h</command>
+          </term>
+          <listitem>
+            <para>Display the help page.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command>-l</command>
+          </term>
+          <listitem>
+            <para>Do not collect privacy-sensitive data, for example, process tree, fstab, and so on. If you use with <userinput>-d</userinput>, then the following parameters will be used for debug mode:<userinput>-Fev</userinput></para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command>-R &lt;directory&gt;</command>
+          </term>
+          <listitem>
+            <para>The directory where  is installed instead of <filename>/opt/syslog-ng</filename>.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command>-W &lt;directory&gt;</command>
+          </term>
+          <listitem>
+            <para>Set the working directory, where the debug bundle will be saved. Default value: <filename>/tmp</filename>. The name of the created file is <userinput>syslog.debun.${host}.${date}.${3-random-characters-or-pid}.tgz</userinput></para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </refsection>
+    <refsection>
+      <title>Debug mode options</title>
+      <variablelist>
+        <varlistentry>
+          <term>
+            <command>-d</command>
+          </term>
+          <listitem>
+            <para>Start  in debug mode, using the <userinput>-Fedv --enable-core</userinput> options.</para>
+            <para>Warning! Using this option under high message load may increase disk I/O during the debug, and the resulting debug bundle can be huge. To exit debug mode, press Enter.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command>-D &lt;options&gt;</command>
+          </term>
+          <listitem>
+            <para>Start  in debug mode, using the specified command-line options. To exit debug mode, press Enter. For details on the available options, see <xref linkend="syslog-ng.8"/>.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command>-t &lt;seconds&gt;</command>
+          </term>
+          <listitem>
+            <para>Run  in noninteractive debug mode for &lt;seconds&gt;, and automatically exit debug mode after the specified number of seconds.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command>-w &lt;seconds&gt;</command>
+          </term>
+          <listitem>
+            <para>Wait &lt;seconds&gt; seconds before starting debug mode.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </refsection>
+    <refsection>
+      <title>System call tracing</title>
+      <variablelist>
+        <varlistentry>
+          <term>
+            <command>-s</command>
+          </term>
+          <listitem>
+            <para>Enable syscall tracing (<command>strace -f</command> or <command>truss -f</command>). Note that using <userinput>-s</userinput> itself does not enable debug mode, only traces the system calls of an already running  process. To trace system calls in debug mode, use both the <userinput>-s</userinput> and <userinput>-d</userinput> options.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </refsection>
+    <refsection>
+      <title>Packet capture options</title>
+      <para>Capturing packets requires a packet capture tool on the host. The <command>syslog-ng-debun</command> tool attempts to use <command>tcpdump</command> on most platforms, except for Solaris, where it uses <command>snoop</command>.</para>
+      <variablelist>
+        <varlistentry>
+          <term>
+            <command>-i &lt;interface&gt;</command>
+          </term>
+          <listitem>
+            <para>Capture packets only on the specified interface, for example, <userinput>eth0</userinput>.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command>-p</command>
+          </term>
+          <listitem>
+            <para>Capture incoming packets using the following filter: <userinput>port 514 or port 601 or port 53</userinput></para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command>-P &lt;options&gt;</command>
+          </term>
+          <listitem>
+            <para>Capture incoming packets using the specified filter.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command>-t &lt;seconds&gt;</command>
+          </term>
+          <listitem>
+            <para>Run  in noninteractive debug mode for &lt;seconds&gt;, and automatically exit debug mode after the specified number of seconds.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </refsection>
+    <refsection>
+      <title>Examples</title>
+      <synopsis>syslog-ng-debun -r</synopsis>
+      <para>Create a simple debug bundle, collecting information about your environment, for example, list packages containing the word: syslog, ldd of your syslog-binary, and so on.</para>
+      <synopsis>syslog-ng-debun -r -l</synopsis>
+      <para>Similar to <command>syslog-ng-debun -r</command>, but without privacy-sensitive information. For example, the following is NOT collected: fstab, df output, mount info, ip / network interface configuration, DNS resolv info, and process tree.</para>
+      <synopsis>syslog-ng-debun -r -d</synopsis>
+      <para>Similar to <command>syslog-ng-debun -r</command>, but it also stops syslog-ng, then restarts it in debug mode (<userinput>-Fedv --enable-core</userinput>). To stop debug mode, press Enter. The output of the debug mode collected into a separate file, and also added to the debug bundle.</para>
+      <synopsis>syslog-ng-debun -r -s</synopsis>
+      <para>Trace the system calls (using <command>strace</command> or <command>truss</command>) of an already running  process.</para>
+      <synopsis>syslog-ng-debun -r -d -s</synopsis>
+      <para>Restart  in debug mode, and also trace the system calls (using <command>strace</command> or <command>truss</command>) of the  process.</para>
+      <synopsis>syslog-ng-debun -r -p</synopsis>
+      <para>Run packet capture (pcap) with the filter: <userinput>port 514 or port 601 or port 53</userinput> Also waits for pressing Enter, like debug mode.</para>
+      <synopsis>syslog-ng-debun -r -p -t 10</synopsis>
+      <para>Noninteractive debug mode: Similar to <command>syslog-ng-debun -r -p</command>, but automatically exit after 10 seconds.</para>
+      <synopsis>syslog-ng-debun -r -P "host 1.2.3.4"  -D "-Fev --enable-core"</synopsis>
+      <para>Change the packet-capturing filter from the default to <userinput>host 1.2.3.4</userinput>. Also change debugging parameters from the default to <userinput>-Fev --enable-core</userinput>. Since a timeout (<userinput>-t</userinput>) is not given, waits for pressing Enter.</para>
+      <synopsis>syslog-ng-debun -r -p -d -w 5 -t 10</synopsis>
+      <para>Collect pcap and debug mode output following this scenario:</para>
+      <itemizedlist>
+        <listitem>
+          <para>Start packet capture with default parameters (<userinput>-p</userinput>)</para>
+        </listitem>
+        <listitem>
+          <para>Wait 5 seconds (<userinput>-w 5</userinput>)</para>
+        </listitem>
+        <listitem>
+          <para>Stop syslog-ng</para>
+        </listitem>
+        <listitem>
+          <para>Start syslog-ng in debug mode with default parameters (<userinput>-d</userinput>)</para>
+        </listitem>
+        <listitem>
+          <para>Wait 10 seconds (<userinput>-t 10</userinput>)</para>
+        </listitem>
+        <listitem>
+          <para>Stop syslog-ng debuging</para>
+        </listitem>
+        <listitem>
+          <para>Start syslog-ng</para>
+        </listitem>
+        <listitem>
+          <para>Stop packet capturing</para>
+        </listitem>
+      </itemizedlist>
+    </refsection>
+    <refsection>
+      <title>Files</title>
+      <para>
+        <filename>/opt/syslog-ng/bin/loggen</filename>
+      </para>
+    </refsection>
+    <refsection>
+      <title>See also</title>
+      <para>
+        <link linkend="syslog-ng.conf.5"><command>syslog-ng.conf</command>(5)</link>
+      </para>
+      <note version="5.0">
+        <para>For the detailed documentation of  see <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/index.html"><command>The  3.26 Administrator Guide</command></link></para>
+        <para>If you experience any problems or need help with syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://lists.balabit.hu/mailman/listinfo/syslog-ng"><command>syslog-ng mailing list</command></link>.</para>
+        <para>For news and notifications about of syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://syslog-ng.org/blogs/"><command>syslog-ng blogs</command></link>.</para>
+      </note>
+    </refsection>
+    <refsection version="5.0">
+      <title>Author</title>
+      <para>This manual page was written by the Balabit Documentation Team &lt;documentation@balabit.com&gt;.</para>
+    </refsection>
+    <refsection version="5.0">
+      <title>Copyright</title>
+    </refsection>
+  </refentry>
+</reference>

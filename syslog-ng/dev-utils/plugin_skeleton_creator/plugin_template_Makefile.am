@@ -1,0 +1,26 @@
+module_LTLIBRARIES      += modules/@PLUGIN_NAME@/lib@PLUGIN_NAME@.la
+modules_@PLUGIN_NAME_US@_lib@PLUGIN_NAME_US@_la_SOURCES = \
+  modules/@PLUGIN_NAME@/@PLUGIN_NAME@-grammar.y       \
+  modules/@PLUGIN_NAME@/@PLUGIN_NAME@-parser.c        \
+  modules/@PLUGIN_NAME@/@PLUGIN_NAME@-parser.h        \
+  modules/@PLUGIN_NAME@/@PLUGIN_NAME@-plugin.c
+
+BUILT_SOURCES       +=      \
+  modules/@PLUGIN_NAME@/@PLUGIN_NAME@-grammar.y       \
+  modules/@PLUGIN_NAME@/@PLUGIN_NAME@-grammar.c       \
+  modules/@PLUGIN_NAME@/@PLUGIN_NAME@-grammar.h
+
+EXTRA_DIST        +=      \
+  modules/@PLUGIN_NAME@/@PLUGIN_NAME@-grammar.ym \
+  modules/@PLUGIN_NAME@/CMakeLists.txt
+
+modules_@PLUGIN_NAME_US@_lib@PLUGIN_NAME_US@_la_CPPFLAGS  =     \
+  $(AM_CPPFLAGS)            \
+  -I$(top_srcdir)/modules/@PLUGIN_NAME@        \
+  -I$(top_builddir)/modules/@PLUGIN_NAME@
+modules_@PLUGIN_NAME_US@_lib@PLUGIN_NAME_US@_la_LIBADD  = $(MODULE_DEPS_LIBS)
+modules_@PLUGIN_NAME_US@_lib@PLUGIN_NAME_US@_la_LDFLAGS = $(MODULE_LDFLAGS)
+modules_@PLUGIN_NAME_US@_lib@PLUGIN_NAME_US@_la_DEPENDENCIES= $(MODULE_DEPS_LIBS)
+
+modules/@PLUGIN_NAME@ modules/@PLUGIN_NAME@/ mod-@PLUGIN_NAME@: modules/@PLUGIN_NAME@/lib@PLUGIN_NAME@.la
+.PHONY: modules/@PLUGIN_NAME@/ mod-@PLUGIN_NAME@

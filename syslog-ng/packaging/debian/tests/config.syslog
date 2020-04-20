@@ -1,0 +1,8 @@
+@version: 3.25
+@include "scl.conf"
+
+source s_src { unix-dgram("/tmp/input"); };
+
+destination d_output { file("/tmp/output.log"); };
+
+log { source(s_src); destination(d_output); };

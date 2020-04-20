@@ -1,0 +1,7 @@
+SYSLOGNG_PREFIX=/usr/local
+CONFIG_FILE=/usr/local/etc/syslog-ng.conf
+VAR_DIR=/usr/local/var/lib/syslog-ng
+PERSIST_FILE=/usr/local/var/lib/syslog-ng/syslog-ng.persist
+CONTROL_FILE=/usr/local/var/lib/syslog-ng/run/syslog-ng.ctl
+PID_FILE=/var/run/syslog.pid
+OTHER_OPTIONS="--enable-core"

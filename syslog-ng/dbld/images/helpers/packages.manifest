@@ -1,0 +1,256 @@
+# packages to run successful autogen.sh
+autoconf                    [centos, fedora, debian, ubuntu]
+autoconf-archive            [centos, fedora, debian, ubuntu]
+automake                    [centos, fedora, debian, ubuntu]
+ca-certificates             [centos, fedora, debian, ubuntu]
+git                         [centos, fedora, debian, ubuntu]
+ccache                      [centos, fedora, debian, ubuntu]
+libtool                     [centos, fedora, debian, ubuntu]
+
+    # pkgconfig
+    pkg-config              [debian, ubuntu]
+    pkgconfig               [centos, fedora]
+
+
+
+
+
+# packages to run successful configure
+bison                           [centos, fedora, debian, ubuntu]
+build-essential                 [debian, ubuntu]
+byacc                           [centos, fedora]
+file                            [centos, fedora, debian, ubuntu]
+flex                            [centos, fedora, debian, ubuntu]
+pcre-devel                      [centos, fedora]
+
+    # glib-dev
+    libglib2.0-dev              [debian, ubuntu]
+    glib2-devel                 [centos, fedora]
+
+    # ssl-dev
+    libssl-dev                  [debian, ubuntu]
+    openssl-devel               [centos, fedora]
+
+
+
+
+
+# packages to run successful configure with module support
+    # libbson-dev
+    libbson-dev                 [debian-stretch, debian-buster, ubuntu-trusty, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
+    libbson-devel               [centos-7, fedora]
+
+    # librabbitmq-dev
+    librabbitmq-dev             [debian-jessie, debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
+    # Ubuntu-trusy has an outdated version of rabbitmq = 0.4, while OBS has 0.8
+    librabbitmq-dev=0.8.0-1     [ubuntu-trusty]
+    librabbitmq-devel           [centos-7, fedora]
+
+    # libmongoc-dev (not available on debian-jessie)
+    libmongoc-dev               [debian-stretch, debian-buster, ubuntu-trusty, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
+    mongo-c-driver-devel        [centos, fedora]
+
+    # librdkafka-dev (we are using a specific version from OBS and need to
+    # list all interdependent packages as an apt preferences would prevent
+    # installation otherwise
+    librdkafka1=1.0.1-1         [ubuntu-bionic,ubuntu-eoan]
+    librdkafka++1=1.0.1-1       [ubuntu-bionic,ubuntu-eoan]
+    librdkafka-dev=1.0.1-1      [ubuntu-bionic,ubuntu-eoan]
+    librdkafka-devel		[fedora]
+
+    # libmaxmindb-dev
+    libmaxminddb-dev            [debian-stretch, debian-buster, ubuntu-trusty, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
+    libmaxminddb-devel          [centos-7, fedora]
+
+    # libcurl-dev
+    libcurl4-openssl-dev        [debian, ubuntu]
+    libcurl-devel               [centos, fedora]
+
+    # libdbi-dev
+    libdbi-dev                  [debian, ubuntu]
+    libdbi-devel                [centos, fedora]
+
+    # libesmtp-dev
+    libesmtp-dev                [debian, ubuntu]
+    libesmtp-devel              [centos, fedora]
+
+    # redis-dev
+    libhiredis-dev              [debian, ubuntu]
+    hiredis-devel               [centos, fedora]
+
+    # libnet-dev
+    libnet1-dev                 [debian, ubuntu]
+    libnet-devel                [centos, fedora]
+
+    # libriemann-dev
+    libriemann-client-dev       [debian-stretch, debian-buster, ubuntu-trusty, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
+    riemann-c-client-devel      [centos-7, fedora]
+
+    # java-7
+    openjdk-7-jdk               [debian-jessie, ubuntu-trusty]
+    java-1.7.0-openjdk-devel    [centos-6]
+
+    # java-8
+    openjdk-8-jdk               [debian-stretch, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
+    java-1.8.0-openjdk-devel    [centos-7, fedora]
+
+    # no java 8 for buster, java-11 does not yet work
+    #openjdk-11-jdk               [debian-buster]
+
+    # python-dev
+    python-dev                  [debian, ubuntu-trusty, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan]
+    python-devel                [centos, fedora]
+    python36-devel              [centos]
+    python3-devel               [fedora]
+    python3-dev                 [ubuntu-focal]
+
+    # afsnmp
+    libsnmp-dev                 [debian, ubuntu]
+    net-snmp-devel              [centos, fedora]
+
+
+# optional packages to run configure
+    # libcap-dev
+    libcap-dev                  [debian, ubuntu]
+    libcap-devel                [centos, fedora]
+
+    # systemd-dev
+    libsystemd-dev              [debian, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan, ubuntu-focal]
+    libsystemd-journal-dev      [debian-jessie, ubuntu-trusty]
+    systemd-devel               [centos, fedora]
+
+    # uuid-dev
+    uuid-dev                    [debian, ubuntu]
+    libuuid-devel               [centos, fedora]
+
+
+
+
+
+# packages to run successful make
+cmake                           [centos, fedora, debian, ubuntu]
+make                            [centos, fedora, debian, ubuntu]
+
+    # libwrap-dev
+    libwrap0-dev                [debian, ubuntu]
+    tcp_wrappers-devel          [centos]
+
+    # xsltproc
+    xsltproc                    [debian, ubuntu]
+    libxslt                     [centos, fedora]
+
+    # docbook
+    docbook-xsl                 [debian, ubuntu]
+    docbook-style-xsl           [centos, fedora]
+
+
+# packages to compile criterion
+gcc-c++				[centos, fedora]
+
+
+# packages to run successful make check
+python-pip                      [centos, fedora, debian, ubuntu-trusty, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan ]
+python3-pip                     [ubuntu-focal]
+python-setuptools               [centos, fedora, debian, ubuntu-trusty, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan]
+python3-setuptools              [ubuntu-focal]
+tzdata                          [centos, fedora, debian, ubuntu]
+
+    # libxml2-utils
+    libxml2-utils               [debian, ubuntu]
+    libxml2                     [centos, fedora]
+
+    # sqlite
+    sqlite3                     [debian, ubuntu]
+    sqlite                      [centos, fedora]
+
+
+
+
+# packages to run successful packaging
+debhelper                       [debian, ubuntu]
+devscripts                      [debian, ubuntu]
+dh-autoreconf                   [debian, ubuntu]
+dh-exec                         [debian, ubuntu]
+dh-systemd                      [debian, ubuntu]
+dpkg-dev                        [debian, ubuntu]
+fakeroot                        [centos, fedora, debian, ubuntu]
+doxygen                         [centos, fedora, debian, ubuntu]
+rpm-build                       [centos, fedora]
+cyrus-sasl-devel                [centos-7, fedora]
+
+    #libivykis-dev
+    libivykis-dev               [debian, ubuntu]
+    ivykis-devel                [centos, fedora]
+
+    #libjson-dev
+    libjson-c-dev               [debian, ubuntu]
+    json-c-devel                [centos, fedora]
+
+
+
+
+
+# packages to run successful stylecheck
+astyle                          [debian, ubuntu]
+
+
+
+
+
+# packages to run gosu installation
+gnupg                           [centos, fedora, debian, ubuntu]
+
+
+
+
+
+# packages to run Kira
+faketime                        [kira]
+libdbd-mysql                    [kira]
+lsb-release                     [kira]
+lsof                            [kira]
+netbase                         [kira]
+netcat                          [kira]
+openssh-client                  [kira]
+python-numpy                    [kira]
+python3-numpy                   [kira]
+python-yaml                     [kira]
+python3-yaml                    [kira]
+systemd-sysv                    [kira]
+
+
+
+
+# common tools
+bzip2                           [centos, fedora, debian, ubuntu]
+less                            [centos, fedora, debian, ubuntu]
+unzip                           [centos, fedora, debian, ubuntu]
+vim                             [centos, fedora, debian, ubuntu]
+wget                            [centos, fedora, debian, ubuntu]
+
+
+
+
+# devtools
+clang                           [devshell]
+dirmngr                         [devshell]
+gdb                             [devshell]
+gdbserver                       [devshell]
+joe                             [devshell]
+lcov                            [devshell]
+libc6-dbg                       [devshell]
+libglib2.0-0-dbgsym             [devshell]
+libjemalloc-dev                 [devshell]
+libjemalloc1-dbgsym             [devshell]
+libpcre2-dbg                    [devshell]
+libssl1.0.0-dbg                 [devshell]
+linux-tools-generic             [devshell]
+locales                         [devshell]
+lsof                            [devshell]
+netcat                          [devshell]
+python-dbg                      [devshell]
+python3-dbg                     [devshell]
+strace                          [devshell]
+valgrind                        [devshell]
+virtualenv                      [devshell]
+openssh-client                  [devshell]

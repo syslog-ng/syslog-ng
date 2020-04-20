@@ -1,0 +1,1768 @@
+#!/bin/sh
+#!/bin/bash
+
+### syslog-ng-debun: syslog debug bundle generator
+### Written/Copyright: Gyorgy Pasztor <pasztor@linux.gyakg.u-szeged.hu>, (c) 2014-2016.
+### Further enhancements: Janos Szigetvari - jszigetvari at gmail dot com, (c) 2016-2019.
+### This software may be used and distributed according to the terms of GNU GPLv2
+### http://www.gnu.org/licenses/gpl-2.0.html
+
+unalias -a
+LANG=en_US
+LC_ALL=C
+export LANG LC_ALL
+
+version="0.3.19.20191111"
+
+### Check for "local" variable support
+if type local | grep builtin >/dev/null; then
+	:
+elif type bash >/dev/null; then
+	exec bash $0 "$@"
+else
+	printf "No local variable support on this system\n" >&2
+	exit 1
+fi
+
+###
+### Global defaults
+### Do not overwrite them, parameters or distro / OS specific detections will do that if neccessary
+###
+
+argv_backup="${@}"
+engage=0
+os="none"
+dist="none"
+default_debug_params="-Fedv --enable-core"
+default_ldebug_params="-Fev"
+default_pcap_params="port 514 or port 601 or port 53"
+extras=""
+sngallpids=""
+wecpid=""
+debugpid=none
+debugtailpid=none
+pcappid=none
+tracepids=""
+ipconfig="ip addr"
+routeconfig () { netstat -nr ; }
+netstatnlp () { netstat -nlp ; }
+netstatlunp () { netstat -lunp ; }
+netstatsu="netstat -su"
+netstatpunt="netstat -punt"
+binprefix=/opt/syslog-ng
+absscldirs="/usr/share/syslog-ng/include/scl"
+relscldirs="share/include/scl share/syslog-ng/include/scl"
+workdir=/tmp
+lsof="lsof -p"
+pscmd="ps auxwwwwwf"
+pseao="ps -eao"
+cpiopdL="cpio -pdL"
+findL () { find -L "$@" ; }
+dfk="df -k"
+dfh="df -h"
+dfi="df -i"
+duks="du -ks"
+grepq="fgrep -q"
+lddcmd="ldd"
+topcmd () { top -b -n 1 -c >"${1}"; }
+opensslcmd="openssl"
+sed_equivalent_cmd="sed -E"
+mount=mount
+varlimit=1000
+myplimit () { echo "Plimit query is not supported on this platform" >&3 ; }
+distpkgoffile () { echo "Package file search is not supported (yet) on this platform" >&3 ; }
+distpkgstatus () { echo "Package status query is not (yet) supported on this platform" >&3 ; }
+selftar="tar cf - ."
+gzipcmd="gzip -9"
+showdep="dpkg -S"
+pcapifparm=-i
+w=w
+vmstat=vmstat
+dmesg=dmesg
+timestamp () { date +%s ; }
+tcpdumpcmd="tcpdump"
+tcpdumpopts="-p -s 1500 -w"
+opensslmajor=0
+getsyslogpids () { pidof syslog-ng ; }
+os_hash_helper () { find . '!' \( -name debun.manifest -o -name syslog-ng.debun.txt \) -type f -print0 | xargs -0 md5sum ; }
+dfk_parser () { tail -1 | while read FS ALL USED AVAIL UPERC MP; do if echo ${AVAIL} | ${grepq} '%'; then echo ${USED} ; else echo ${AVAIL} ; fi done ; }
+trace="strace -s256 -ff -ttT -f"
+initfile="/etc/init.d/syslog-ng"
+service_stop="${initfile} stop"
+service_start="${initfile} start"
+service_status="${initfile} status"
+#checkpid () { [ -d /proc/"$1" ]; }
+#some old Unix versions did not have procfs, and kill -0 allows to check whether a PID exists
+#for reference: http://pubs.opengroup.org/onlinepubs/009695399/functions/kill.html
+checkpid () { [ -n "$1" ] && kill -0 "$1" 2>/dev/null ; }
+#mywait () { jobs -p >${tmpdir}/sdn.jobs ; for i in `grep -v "\<$tailpid\>" ${tmpdir}/sdn.jobs` ; do wait $i ; done ; }
+mywait () { jobs -p >${tmpdir}/sdn.jobs ; for i in $( grep -v "^$tailpid\$" ${tmpdir}/sdn.jobs ) ; do wait $i ; done ; }
+is_available () { which "$1" >/dev/null 2>&1; }
+distpkgoffile_cleanup () { : ; }
+
+###
+### Show Usage
+###
+debun_usage () {
+cat <<END
+Usage: syslog-ng-debun [OPTIONS]
+
+General Options:
+  -r		Run actual information gathering
+  -h		Show this help page
+  -R [dir]	Syslog-ng-PE's alternate install dir, instead of /opt/syslog-ng
+  -W [dir]	Work dir, where debug bundle will be placed
+  -l		"light" collect: Don't get data, which may disturb your sense about
+		privacy, like process tree, fstab, etc. If you use with -d, then it
+		will also enlighten that's params: $default_ldebug_params
+  -K		Include the private keys in the /etc/syslog-ng or /opt/syslog-ng/etc directory
+
+Debug mode options:
+  -d		Debug with params: $default_debug_params
+		Warning! May increase disk io during the debug,
+		and dumps huge amount of data!
+  -D [params]	Debug with custom params
+  -w [sec]	Wait [sec] seconds before start syslog's debug mode, and
+		start realtime watching of it
+  -t [sec]	Timeout for noninteractive debug
+
+Packet capture options:
+  -i [iface]	Capture packets on specified interface
+  -p		Create packet capture with filter: $default_pcap_params
+  -P [params]	Create packet capture with custom filter
+  -T		Create packet capture with the tcpdump parameters specified, instead
+			of the default: $tcpdumpopts
+  -t [sec]	Timeout for noninteractive debug_
+
+Syscall tracing options:
+  -s		Trace syslog
+  -t [sec]	Timeout for noninteractive debug
+END
+[ -n "$2" ] && printf "\nError: %s\n\n" "$2"
+exit ${1:-0}
+}
+
+###
+### Parsing optional parameters
+###
+
+while getopts "rhlKdD:pP:T:w:i:W:R:t:s" opt ; do
+	case $opt in
+		r)
+			engage=1
+			;;
+		d)
+			[ -n "$debug_params" ] && debun_usage 2 "Custom debug arguments have already been set, or debugging has already been requested"
+			debug_params="$default_debug_params"
+			debug_mode=1
+			;;
+		D)
+			[ -n "$debug_params" ] && debun_usage 2 "Custom debug arguments have already been set, or debugging has already been requested"
+			debug_params="$OPTARG"
+			debug_mode=1
+			;;
+		i)
+			[ -n "$pcap_iface" ] && debun_usage 2 "Pcap interface has already been set"
+			pcap_iface="$OPTARG"
+			;;
+		h)
+			debun_usage
+			;;
+		l)
+			privacy_mode=1
+			;;
+		p)
+			[ -n "$pcap_params" ] && debun_usage 2 "Pcap parameters have already been set, or packet capture has already been requested"
+			pcap_params="$default_pcap_params"
+			debug_mode=1
+			;;
+		P)
+			[ -n "$pcap_params" ] && debun_usage 2 "Pcap parameters have already been set, or packet capture has already been requested"
+			pcap_params="$OPTARG"
+			debug_mode=1
+			;;
+		T)
+			tcpdumpopts="$OPTARG"
+			debug_mode=1
+			;;
+		R)
+			binprefix="$OPTARG"
+			;;
+		t)
+			timeout="$OPTARG"
+			;;
+		K)
+			saveprivatekeys=1
+			;;
+		w)
+			waitforit="$OPTARG"
+			;;
+		W)
+			workdir="$OPTARG"
+			;;
+		s)
+			tracing=1
+			debug_mode=1
+			;;
+		*)
+			debun_usage 2
+			;;
+	esac
+done
+
+if [ "${engage}" -eq 0 ]; then
+	debun_usage
+	exit 0
+fi
+
+# Parameter consistency checks
+[ -n "$pcap_iface" ] && [ -z "$pcap_params" ] && debun_usage 2 "Pcap interface without packet caputre params (-p|-P args)"
+[ -n "$waitforit" ] && [ -z "$debug_params" ] && debun_usage 2 "Waiting without debug mode run (-d|-D args)"
+[ -n "$timeout" ] && [ -z "$debug_mode" ] && debun_usage 2 "Timeout without debug mode or packet capture"
+[ -n "$privacy_mode" ] && [ "x$debug_params" = "x$default_debug_params" ] && debug_params="$default_ldebug_params"
+
+syslogbin=${binprefix}/sbin/syslog-ng
+syslogngctlbin=${binprefix}/sbin/syslog-ng-ctl
+syslogngquerybin=${binprefix}/sbin/syslog-ng-query
+vardir=${binprefix}/var
+piddir=${vardir}/run
+confdir=${binprefix}/etc
+if [ -x "${binprefix}/libexec/syslog-ng" ]; then
+	syslogrealbin=${binprefix}/libexec/syslog-ng
+else
+	syslogrealbin=${binprefix}/sbin/syslog-ng
+fi
+
+debun_init () {
+	#Create temp dir, to place files into
+	host=$( uname -n )
+	date=$( date '+%Y-%m-%d_%H-%M' )
+	tmpdir=${workdir}/syslog.debun.${host}.${date}.$$
+	( umask 077 ; mkdir ${tmpdir} )
+	[ -d "$tmpdir" ] || { printf "Could not create a temp directory\n" >&2 ; exit 1 ; }
+	[ -z "$tmpdir" ] && { printf "Could not create a temp directory\n" >&2 ; exit 1 ; }
+
+	# Start redirections
+
+	#exec 3>&1 >${tmpdir}/syslog-ng.debun.txt 2>${tmpdir}/syslog-ng.debun.txt
+	exec 3>&1 >${tmpdir}/syslog-ng.debun.txt 2>&1
+	echo "Syslog-NG DEBUg buNdle generator"
+	sync
+	while [ ! -f ${tmpdir}/syslog-ng.debun.txt ] ; do sleep 1 ; done
+	#nohup tail -f ${tmpdir}/syslog-ng.debun.txt >&3 &
+	tail -f ${tmpdir}/syslog-ng.debun.txt >&3 &
+	tailpid=$!
+	#disown
+}
+
+debun_finish_debug () {
+	if [ -n "$debug_mode" ]; then
+		printf 'Generating second batch of statistics\n'
+		acquire_syslog_stats
+	fi
+
+	if [ "${debugpid}" != "none" ]; then
+		if checkpid ${debugpid} ; then
+			kill -INT $debugpid
+			checkpid ${debugpid} && sleep 1
+			checkpid ${debugpid} && kill -9 $debugpid
+			checkpid ${debugpid} && sleep 1
+			checkpid ${debugpid} && echo "I gave up... debugger pid doesn't die"
+		fi
+		printf 'Debugpid: "%s"\n' "${debugpid}"
+		( exec 3>&- ; $service_start ; )
+	fi
+	if checkpid ${debugtailpid} ; then
+		kill $debugtailpid
+	fi
+	if checkpid ${pcappid} ; then
+		kill -INT $pcappid
+	fi
+	if [ -n "$tracing" ]; then
+		for i in ${tracepids} ; do
+			checkpid $i && kill -INT $i
+		done
+		sleep 2
+		for i in ${tracepids} ; do
+			checkpid $i && kill -9 $i 2>/dev/null
+		done
+	fi
+	mywait
+}
+
+debun_do_tarball () {
+	cd ${tmpdir}
+	touch ${tmpdir}.tgz
+	chmod 600 ${tmpdir}.tgz
+	${selftar} | ${gzipcmd} >${tmpdir}.tgz
+	cd ..
+	rm -r "${tmpdir}"
+	printf "Terminating live message watcher: "
+	sync
+	kill ${tailpid}
+	sync
+	sleep 1
+}
+
+debun_generate_hashes () {
+	cd ${tmpdir}
+	os_hash_helper > debun.manifest
+}
+
+debun_final() {
+	debun_finish_debug
+	[ -n "$service_status" ] && $service_status >${tmpdir}/svc.post
+
+	# Generating stats again for the EPS counter
+	if [ -z "$debug_mode" ]; then
+		printf 'Generating second batch of statistics\n'
+		acquire_syslog_stats
+	fi
+
+	printf "\nGenerating hashes..."
+	debun_generate_hashes
+	printf " done.\nDebug Bundle generation: Done.\n"
+	exec >&3 2>&1
+	debun_do_tarball
+	printf "\n\nYour debug bundle will be stored at %s.tgz\n" "$tmpdir"
+}
+
+add_extra () {
+	extras="${extras}${extras:+ }$@"
+}
+
+###
+###PROCESS HANDLING FUNCTIONS
+###
+getparent () {
+	local self
+	local parent
+	local ret
+	local tmpfile=${tmpdir}/getparent.$$.txt
+	$pseao pid,ppid >$tmpfile
+	# Default value, learned after getchilds()'s forkbomb case
+	unset ret
+	while read self parent ; do
+		[ "$1" = "$self" ] || continue
+		ret=$parent
+	done < $tmpfile
+	rm $tmpfile
+	echo $ret
+}
+
+getchilds () {
+	local childs
+	local dummy
+	local child
+	local tmpfile=${tmpdir}/getchilds.$$.txt
+	$pseao ppid,pid >$tmpfile
+	# Need to initialize it with a default value, since dash allows to inherit the caller's value, even if it's a local variable
+	unset childs
+	while read dummy child ; do
+		[ "$1" = "$dummy" ] || continue
+		childs="${childs}${childs:+ }$child"
+	done < $tmpfile
+	rm $tmpfile
+	echo ${childs}
+}
+
+getallchilds () {
+	local childs
+	local subchilds
+	childs=$( getchilds ${1} )
+	local i
+	# Default value, learned after getchilds()'s forkbomb case
+	unset subchilds
+	for i in ${childs} ; do
+		subchilds="${subchilds}${subchilds:+ }$(getallchilds $i)"
+	done
+	echo ${childs} ${subchilds}
+}
+
+acquire_debun_info () {
+	pwd > ${tmpdir}/debun.pwd
+	echo "${0} ${argv_backup}" > ${tmpdir}/debun.argv
+	echo "${version}" > ${tmpdir}/debun.version
+	id > ${tmpdir}/debun.runas
+	echo $PATH > ${tmpdir}/debun.path
+}
+
+acquire_system_info () {
+	printf "System's full uname: "
+	uname -a | tee "${tmpdir}/sys.uname"
+	free >${tmpdir}/sys.free
+	vmstat >${tmpdir}/sys.vmstat
+	topcmd "${tmpdir}/sys.top"
+	if is_available ${opensslcmd}; then
+		${opensslcmd} version >${tmpdir}/sys.openssl.version
+	fi
+	if is_available java; then
+		java -version >${tmpdir}/sys.java.version 2>&1
+	fi
+}
+
+acquire_network_info () {
+	printf "Getting network-interface information: "
+	if $ipconfig >${tmpdir}/net.ip ; then
+		printf "Success\n"
+	else
+		printf "Failed\n"
+	fi
+	printf "Getting network routes: "
+	if routeconfig >${tmpdir}/net.route ; then
+		printf "Success\n"
+	else
+		printf "Failed\n"
+	fi
+	printf "Getting DNS resolution-related information: "
+	[ -f /etc/nsswitch.conf ] && cp /etc/nsswitch.conf ${tmpdir}/sys.nsswitch.conf
+	[ -f /etc/resolv.conf ] && cp /etc/resolv.conf ${tmpdir}/sys.resolv.conf
+	[ -f /etc/hosts ] && cp /etc/hosts ${tmpdir}/sys.hosts
+	printf "Done\n"
+}
+
+acquire_system_process_info () {
+	echo "List all processes"
+	$pscmd >${tmpdir}/sys.ps
+}
+
+acquire_filesystem_info () {
+	echo "Mount and disk free info collection"
+	$dfk >${tmpdir}/sys.df_k
+	$dfh >${tmpdir}/sys.df_h
+	$dfi >${tmpdir}/sys.df_i 2>/dev/null
+	$mount >${tmpdir}/sys.mount
+}
+
+acquire_system_other_info () {
+	$w >${tmpdir}/sys.w
+	$dmesg >${tmpdir}/sys.dmesg
+	netstatnlp >${tmpdir}/sys.netstat.ltn
+	$netstatpunt >${tmpdir}/sys.netstat.est
+	netstatlunp >${tmpdir}/sys.netstat.lunp
+	$netstatsu >${tmpdir}/sys.netstat.su
+	[ -f /proc/net/udp ] && cp /proc/net/udp ${tmpdir}/sys.proc.net.udp
+}
+
+### Here comes the general info acquiring parts
+acquire_general_info () {
+	printf "\nStart general info collection\n"
+	acquire_debun_info
+	acquire_system_info
+	[ -n "$privacy_mode" ] && return
+	acquire_network_info
+	acquire_system_process_info
+	acquire_filesystem_info
+	acquire_system_other_info
+}
+
+pki_is_certificate () {
+	grep "BEGIN CERTIFICATE" "${1}" 2>/dev/null | ${grepq} -v "REQUEST"
+}
+
+pki_count_certificates () {
+	grep -c "BEGIN CERTIFICATE"	"${1}" 2>/dev/null
+}
+
+pki_is_private_key () {
+	${grepq} "PRIVATE KEY" "${1}" 2>/dev/null
+}
+
+pki_is_public_key () {
+	${grepq} "PUBLIC KEY" "${1}" 2>/dev/null
+}
+
+pki_is_rsa () {
+	${grepq} "RSA " "${1}" 2>/dev/null
+}
+
+pki_is_dsa () {
+	${grepq} "DSA " "${1}" 2>/dev/null
+}
+
+pki_is_ecdsa () {
+	${grepq} " EC " "${1}" 2>/dev/null
+}
+
+pki_is_encrypted () {
+	if ${grepq} "ENCRYPTED" "${1}"; then
+		return 0
+	else
+		local buffer_error
+		buffer_error=$( ${opensslcmd} rsa -in "${1}" -noout -text 2>&1 >/dev/null )
+		if echo "${buffer_error}" | ${grepq} "problems getting password"; then
+			return 0
+		else
+			return 1
+		fi
+	fi
+}
+
+pki_parse_public_key () {
+	oneline_cert=$( tr -d '\n' | tr -d ' ' )
+	[ -z "${oneline_cert}" ] && printf "NO_PUBLIC_KEY_COULD_BE_EXTRACTED;" && return
+
+	if echo "${oneline_cert}" | $grepq "UnabletoloadPublicKey"; then
+		printf "OPENSSL_TOO_OLD|NO_ECDSA_SUPPORT_IN_OPENSSL;"
+	else
+		if echo "${oneline_cert}" | $grepq "PublicKey:X509v3extensions"; then
+			printf "NO_PUBLIC_KEY_COULD_BE_EXTRACTED;"
+		else
+			echo "${oneline_cert}" | ${sed_equivalent_cmd} 's/^.*(Modulus|modulus|pub)(\([0-9]+bit\))?:([a-f0-9:]+).*$/Public Key=\3;/'
+		fi
+	fi
+}
+
+pki_guess_certificate () {
+	local header fsize buffer_pubkey buffer_rest hashopts hashnum
+	fsize=$( wc -c "${1}" | ${sed_equivalent_cmd} 's:^ *([0-9]+) .*$:\1:' )
+
+	if [ ${opensslmajor} -gt 0 ]; then
+			hashopts="-subject_hash -subject_hash_old"
+			hashnum="2;"
+	else
+			hashopts="-hash"
+			hashnum="1;"
+	fi
+
+	certcount=$( pki_count_certificates "${1}" )
+	[ "${certcount}" -gt 1 ] && header="STACKED_CERTIFICATE(${certcount});${1};" || header="CERTIFICATE;${1};"
+	buffer_pubkey=$( ${opensslcmd} x509 -in "${1}" -text -noout  2>/dev/null | pki_parse_public_key )
+	buffer_rest=$( ${opensslcmd} x509 -in "${1}" -noout ${hashopts} -serial -dates -fingerprint -subject -issuer | tr '\n' ';' )
+	printf "${header}${fsize};${buffer_pubkey}${hashnum}${buffer_rest}"
+}
+
+pki_guess_private_key () {
+	local header fsize buffer_pubkey buffer_error
+	fsize=$( wc -c "${1}" | ${sed_equivalent_cmd} 's:^ *([0-9]+) .*$:\1:' )
+
+	if pki_is_encrypted "${1}"; then
+		header="PRIVATE_ENCRYPTED;${1};"
+	else
+		if pki_is_rsa "${1}"; then
+			header="PRIVATE_RSA;${1};"
+			buffer_pubkey=$( ${opensslcmd} rsa -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
+		elif pki_is_dsa "${1}"; then
+			header="PRIVATE_DSA;${1};"
+			buffer_pubkey=$( ${opensslcmd} dsa -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
+		elif pki_is_ecdsa "${1}"; then
+			header="PRIVATE_EC;${1};"
+			buffer_error=$( ${opensslcmd} ec -in "${1}" -noout -text 2>&1 >/dev/null )
+			if echo "${buffer_error}" | ${grepq} "'ec' is an invalid command"; then
+				buffer_pubkey="NO_ECDSA_SUPPORT_IN_OPENSSL;"
+			elif echo "${buffer_error}" | $grepq "unable to load"; then
+				buffer_pubkey="OPENSSL_TOO_OLD;"
+			else
+				buffer_pubkey=$( ${opensslcmd} ec -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
+			fi
+		else
+			header="UNKNOWN_PRIVATE;${1};"
+			buffer_pubkey=";"
+		fi
+	fi
+	printf "${header}${fsize};${buffer_pubkey}"
+}
+
+pki_guess_public_key () {
+	# Public keys do not have their type in the PEM header/footer
+
+	local header fsize buffer_pubkey buffer_error
+	header="PUBLIC;${1};"
+	fsize=$( wc -c "${1}" | ${sed_equivalent_cmd} 's:^ *([0-9]+) .*$:\1:' )
+
+	if [ ${opensslmajor} -gt 0 ]; then
+		buffer_error=$( ${opensslcmd} pkey -pubin -in "${1}" -noout -text 2>&1 >/dev/null )
+		if echo "${buffer_error}" | ${grepq} "unable to load"; then
+			header="UNKNOWN_PUBLIC;${1};"
+			buffer_pubkey="OPENSSL_TOO_OLD|NO_ECDSA_SUPPORT_IN_OPENSSL;"
+		else
+			buffer_pubkey=$( ${opensslcmd} pkey -pubin -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
+		fi
+	else
+		buffer_error=$( ${opensslcmd} rsa -pubin -in "${1}" -noout -text 2>&1 >/dev/null )
+		if echo "${buffer_error}" | ${grepq} "expecting an rsa key"; then
+			buffer_error=$( ${opensslcmd} dsa -pubin -in "${1}" -noout -text 2>&1 >/dev/null )
+			if echo "${buffer_error}" | ${grepq} "expecting a dsa key"; then
+				buffer_error=$( ${opensslcmd} ec -pubin -in "${1}" -noout -text 2>&1 >/dev/null )
+				if echo "${buffer_error}" | ${grepq} "expecting a ec key"; then
+					header="UNKNOWN_PUBLIC;${1};"
+					buffer_pubkey=";"
+				elif echo "${buffer_error}" | ${grepq} "'ec' is an invalid command"; then
+					header="UNKNOWN_PUBLIC;${1};"
+					buffer_pubkey="NO_ECDSA_SUPPORT_IN_OPENSSL;"
+				else
+					buffer_pubkey=$( ${opensslcmd} ec -pubin -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
+				fi
+			else
+				buffer_pubkey=$( ${opensslcmd} dsa -pubin -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
+			fi
+		elif echo "${buffer_error}" | ${grepq} "unable to load"; then
+			header="UNKNOWN_PUBLIC;${1};"
+			buffer_pubkey="OPENSSL_TOO_OLD|NO_ECDSA_SUPPORT_IN_OPENSSL;"
+		else
+			buffer_pubkey=$( ${opensslcmd} rsa -pubin -in "${1}" -noout -text 2>/dev/null | pki_parse_public_key )
+		fi
+	fi
+	printf "${header}${fsize};${buffer_pubkey}"
+}
+
+pki_other_file () {
+	local fsize
+	fsize=$( wc -c "${1}" | ${sed_equivalent_cmd} 's:^ *([0-9]+) .*$:\1:' )
+	printf "OTHER_FILE;${1};${fsize};"
+}
+
+pki_process_file () {
+	local output_buffer
+
+	if pki_is_certificate "${1}"; then
+		output_buffer=$( pki_guess_certificate "${1}" )
+	else
+		if pki_is_private_key "${1}"; then
+			output_buffer=$( pki_guess_private_key "${1}"  )
+		elif pki_is_public_key "${1}"; then
+			output_buffer=$( pki_guess_public_key "${1}" )
+		else
+			output_buffer=$( pki_other_file "${1}" )
+		fi
+	fi
+	echo "${output_buffer}"
+}
+
+acquire_syslog_pki_info () {
+	printf "Gathering PKI information... "
+	if is_available ${opensslcmd}; then
+		local OPENSSL OPENSSLVER OPENSSLDAY OPENSSLMONTH OPENSSLYEAR REST
+		read OPENSSL OPENSSLVER OPENSSLDAY OPENSSLMONTH OPENSSLYEAR REST <${tmpdir}/sys.openssl.version
+		opensslmajor=${OPENSSLVER%%.*}
+		cd "${confdir}"
+		findL . -name '*.0' -o -name '*.1' -o -name '*.key' -o -name '*.crt' -o -name '*.pem' >${tmpdir}/syslog.etc.pki.files 2>/dev/null
+		while read FILE; do
+			pki_process_file "${FILE}" >>${tmpdir}/syslog.etc.pki.info.csv
+		done <${tmpdir}/syslog.etc.pki.files
+		printf "done.\n"
+	else
+		printf "no openssl found in PATH.\n"
+	fi
+}
+
+remove_passwords_from_file () {
+	#
+	# Double quotes are used because escaping single quotes within a single quoted string is ugly.
+	# [ \t\r\n\v\f] class is used for matching whitespaces, because \s is unavailable.
+	# The goal is matching substrings that look like this, to replace the password string, and preserve original formatting:
+	# password ( 'password-string' ) -->  password ( '___PASSWORD_REMOVED___' )
+	###
+	${sed_equivalent_cmd} "s|password([ \t\r\n\v\f]*)\(([ \t\r\n\v\f]*)([\"']?)[^)\"']+\3([ \t\r\n\v\f]*)\)|password\1(\2\3___PASSWORD_REMOVED___\3\4)|g" <"${1}" | \
+		${sed_equivalent_cmd} "s|token([ \t\r\n\v\f]*)\(([ \t\r\n\v\f]*)([\"']?)[^)\"']+\3([ \t\r\n\v\f]*)\)|token\1(\2\3___AUTH_TOKEN_REMOVED___\3\4)|g" | \
+		${sed_equivalent_cmd} "s|Authorization: [^\"']+|Authorization: ___AUTH_TOKEN_REMOVED___|g" >"${1}.bak"
+
+	[ -s "${1}.bak" ] && mv "${1}.bak" "${1}"
+}
+
+acquire_syslog_config () {
+	echo "Copy configuration files from $confdir"
+	cd "${confdir}"
+	mkdir ${tmpdir}/config
+	findL . > ${tmpdir}/syslog.etc.files
+	touch ${tmpdir}/syslog.etc.files.removed
+
+	if [ -z "$saveprivatekeys" ]; then
+		grep '\.key$' ${tmpdir}/syslog.etc.files >> ${tmpdir}/syslog.etc.files.removed
+		grep '\.jks$' ${tmpdir}/syslog.etc.files >> ${tmpdir}/syslog.etc.files.removed
+		grep '\.keytab$' ${tmpdir}/syslog.etc.files >> ${tmpdir}/syslog.etc.files.removed
+		grep -v '\.key$' ${tmpdir}/syslog.etc.files | grep -v '\.jks$' | grep -v '\.keytab$' | \
+			while read FILE; do \
+				if pki_is_private_key "${FILE}" 2>/dev/null; then
+					echo "${FILE}" >> ${tmpdir}/syslog.etc.files.removed
+				else
+					echo "${FILE}"
+				fi
+			done > ${tmpdir}/syslog.etc.files.saved
+	else
+		cp ${tmpdir}/syslog.etc.files ${tmpdir}/syslog.etc.files.saved
+	fi
+	$cpiopdL ${tmpdir}/config < ${tmpdir}/syslog.etc.files.saved
+
+	findL ${tmpdir}/config -name "*.conf*" | \
+		while read FILE; do \
+			remove_passwords_from_file "${FILE}"
+		done
+
+	echo "Copy SCL configuration files"
+	mkdir ${tmpdir}/scl
+	for dir in ${absscldirs}; do
+		if [ -d "${dir}" ]; then
+			cd "${dir}"
+			local dirname=$( echo "${dir}" | sed -e 's/\//_/g' )
+			mkdir "${tmpdir}/scl/${dirname}"
+			findL . | $cpiopdL "${tmpdir}/scl/${dirname}"
+		fi
+	done
+	for dir in ${relscldirs}; do
+		if [ -d "${binprefix}/${dir}" ]; then
+			cd "${binprefix}/${dir}"
+			local dirname=$( echo "${binprefix}/${dir}" | sed -e 's/\//_/g' )
+			mkdir "${tmpdir}/scl/${dirname}"
+			findL . | $cpiopdL "${tmpdir}/scl/${dirname}"
+		fi
+	done
+}
+
+acquire_syslog_pids () {
+	echo 'Old "getsyslogpids":' >${tmpdir}/syslog.pids
+	getsyslogpids >>${tmpdir}/syslog.pids
+	if [ -r "${piddir}/syslog-ng.pid" ]; then
+		sngpid=$( cat ${piddir}/syslog-ng.pid )
+	else
+		# Handle when fhs is "linux"-like
+		sngpid=$( $pseao pid,args | grep "[s]yslog-ng " | head -1 | while read PID CMD; do echo $PID; done )
+	fi
+	ppid=$( getparent $sngpid )
+	sngallpids="$( getallchilds $sngpid )"
+	echo "SVpid: $ppid SNGpid: $sngpid Chpids: ${sngallpids}" >>${tmpdir}/syslog.pids
+	tail -1 ${tmpdir}/syslog.pids
+	if [ -n "$ppid" ]; then
+		sngallpids="$ppid $sngpid ${sngallpids}"
+	else
+		sngallpids="$( getsyslogpids )"
+	fi
+	# drop out the unneeded white spaces, since that disturb the ps command
+	sngallpids=$( echo ${sngallpids} )
+	if [ -n "${sngallpids}" ]; then
+		printf 'ps -l -f -p "%s"\n' "${sngallpids}" >>${tmpdir}/syslog.pids
+		ps -l -f -p "${sngallpids}" >>${tmpdir}/syslog.pids
+	fi
+
+	wecpid=$( $pseao pid,args | grep "[w]ec " | while read PID CMD; do echo $PID; done )
+	[ -n "$wecpid" ] && echo $wecpid >${tmpdir}/wec.pid || echo "No wec was found running." >${tmpdir}/wec.pid
+
+	[ -n "$service_status" ] && $service_status >${tmpdir}/svc.pre
+}
+
+acquire_syslog_stats () {
+	local tsdata
+	tsdata=$( timestamp )
+	#handy-dandy delay magic, triggered when we'd step on our own foot
+	[ -f ${tmpdir}/syslog.stats.${tsdata} ] && sleep 5 && tsdata=$( timestamp )
+
+	${syslogngctlbin} stats > ${tmpdir}/syslog.stats.${tsdata} 2>&1
+	echo ${syslogngctlbin} stats
+	tsdata=$( timestamp )
+	${syslogngctlbin} query get "*" > ${tmpdir}/syslog.query.all.${tsdata} 2>/dev/null
+	echo ${syslogngctlbin} query get "*"
+	if [ -x ${syslogngquerybin} ]; then
+		#if we reach this brach, then syslog.query.all - as generated above - will not contain any meaningful data
+		rm ${tmpdir}/syslog.query.all.${tsdata}
+		tsdata=$( timestamp )
+		${syslogngquerybin} sum "*" > ${tmpdir}/syslog.query.all.${tsdata} 2>/dev/null
+		echo ${syslogngquerybin} sum "*"
+	fi
+}
+
+acquire_syslog_info () {
+	ls -la "${binprefix}" > ${tmpdir}/syslog.lsl.install_dir 2>&1
+	printf "Syslog-ng's exact version: "
+	$syslogbin --version > ${tmpdir}/syslog.version
+	head -1 ${tmpdir}/syslog.version
+
+	if [ -z "$debug_mode" ]; then
+		acquire_syslog_stats
+	fi
+
+	if ${syslogngctlbin} show-license-info > ${tmpdir}/syslog.license-usage 2>&1; then
+		${syslogngctlbin} show-license-info --json > ${tmpdir}/syslog.license-usage.json 2>/dev/null
+	fi
+	echo ${syslogngctlbin} show-license-info
+	${syslogngctlbin} credentials status > ${tmpdir}/syslog.credentials.status 2>&1
+	echo ${syslogngctlbin} credentials status
+
+	for i in ${sngallpids} ; do
+		is_available ${lsof%% *} && $lsof $i >${tmpdir}/syslog.$i.lsof 2>/dev/null || echo "No lsof in path." >${tmpdir}/syslog.$i.lsof
+		myplimit $i >${tmpdir}/syslog.$i.limits
+	done
+
+	if [ -n "$wecpid" ]; then
+		while read i; do
+			is_available ${lsof%% *} && $lsof $i >${tmpdir}/wec.$i.lsof || echo "No lsof in path." >${tmpdir}/wec.$i.lsof
+		done < ${tmpdir}/wec.pid
+	fi
+
+	$syslogbin -s --preprocess-into "${tmpdir}/syslog.pp.conf"
+	[ -f "${tmpdir}/syslog.pp.conf" ] && remove_passwords_from_file "${tmpdir}/syslog.pp.conf"
+}
+
+acquire_syslog_var () {
+	ls -laR "${vardir}" >${tmpdir}/syslog.lslR.var 2>&1
+
+	$duks "${vardir}/" >${tmpdir}/syslog.duks.var
+	read vardu dir <${tmpdir}/syslog.duks.var
+	mkdir ${tmpdir}/var
+	cd "${vardir}"
+
+	freek_tmp=$( ${dfk} ${tmpdir} | dfk_parser )
+	#
+	# low disk-space => only copy the persist file and the pid file
+	###
+	if [ "${freek_tmp}" -gt "${vardu}" ] ; then
+		if [ "$vardu" -lt "$varlimit" ] ; then
+			findL . | grep -v run\\/syslog-ng.ctl$ | $cpiopdL ${tmpdir}/var
+		else
+			printf "Size of ${vardir} is larger than $varlimit kilobytes.\n"
+			printf "Do you really want to copy all of its contents? Type 'YES' with all capitals: "
+			read ans
+			if [ "$ans" = "YES" ]; then
+				findL . | grep -v "syslog-ng*\.ctl" | $cpiopdL ${tmpdir}/var
+			else
+				printf "Only copying most important files on user request.\n"
+				findL . \( -name "*.persist" -o -name "*.pid" \) | grep -v "syslog-ng.*\.ctl" | $cpiopdL ${tmpdir}/var
+			fi
+		fi
+	else
+		printf "TOO LOW free disk space on the filesystem holding ${tmpdir}\n"
+		printf "to create a full copy of ${vardir}!\nOnly copying most important files.\n"
+		findL . \( -name "*.persist" -o -name "*.pid" \) | grep -v "syslog-ng.*\.ctl" | $cpiopdL ${tmpdir}/var
+	fi
+}
+
+format_ldd_output () {
+	while read x ; do
+		#	libsyslog-ng-5.0.5.so => /opt/syslog-ng/lib/libsyslog-ng-5.0.5.so (0x00007f9b42990000)
+		#/opt/syslog-ng/lib/libsyslog-ng-5.0.5.so (0x00007f9b42990000)
+		x="/${x#*/}"
+		#/opt/syslog-ng/lib/libsyslog-ng-6.0.2.so (0x00007f034c8c0000)
+		#/opt/syslog-ng/lib/libsyslog-ng-6.0.2.so
+		x="${x%% (*}"
+		#AIX:
+		#/opt/syslog-ng/lib/libsyslog-ng.a(libsyslog-ng-5.0.14.so)
+		#/opt/syslog-ng/lib/libsyslog-ng.a
+		x="${x%%(*}"
+		[ "${x}" != "/ " ] && [ -f "${x}" ] && echo "$x"
+	done
+}
+
+
+acquire_syslog_ldinfo () {
+	$lddcmd $syslogrealbin |grep -v needs >${tmpdir}/syslog.ldd
+	format_ldd_output <${tmpdir}/syslog.ldd >${tmpdir}/syslog.ldfiles
+	for i in $( cat ${tmpdir}/syslog.ldfiles ) ; do
+		distpkgoffile $i >>${tmpdir}/syslog.ldpkg
+	done
+	distpkgoffile_cleanup
+	sort <${tmpdir}/syslog.ldpkg | uniq >${tmpdir}/syslog.ldpkg.u
+	mv ${tmpdir}/syslog.ldpkg.u ${tmpdir}/syslog.ldpkg
+	for i in $( cat ${tmpdir}/syslog.ldpkg ) ; do
+		distpkgstatus $i >>${tmpdir}/syslog.ldinfos
+	done
+}
+
+acquire_syslog_startup_method () {
+	printf "Detecting init system: "
+	if [ -d "/run/systemd/system" ]; then
+		acquire_syslog_startup_systemdunit
+	elif [ -d "/lib/svc/method" ]; then
+		acquire_syslog_startup_smf
+	else
+		acquire_syslog_startup_initscript
+	fi
+	for i in /etc/default/syslog-ng* ; do
+		[ -f "${i}" ] && cp "${i}" "${tmpdir}/sys.startup.default.${i##*/}"
+	done
+	for i in /etc/sysconfig/syslog-ng* ; do
+		[ -f "${i}" ] && cp "${i}" "${tmpdir}/sys.startup.sysconfig.${i##*/}"
+	done
+}
+
+acquire_syslog_startup_initscript () {
+	if [ -n "${initfile}" ]; then
+		printf "falling back to SystemV init style...\n"
+		cp "${initfile}" "${tmpdir}/sys.startup.init.syslog-ng"
+		chmod 0660 "${tmpdir}/sys.startup.init.syslog-ng"
+	else
+		printf "none.\n"
+	fi
+}
+
+acquire_syslog_startup_systemdunit () {
+	printf "systemd detected...\n"
+	systemctl list-units --type=service --plain --no-legend --no-pager --all | grep syslog | grep -vE '(not-found|masked)' | tee "${tmpdir}/sys.startup.systemd-instances" | \
+		while read SERVICE LOAD ACTIVE SUB DESCRIPTION ; do output_buffer=$( systemctl show -p FragmentPath ${SERVICE} ) ; echo "${output_buffer##FragmentPath=}" ; done | \
+		while read UNITFILE; do SUFFIX=$( echo "${UNITFILE}" | tr / . ); cp "${UNITFILE}" "${tmpdir}/sys.startup.systemd-service${SUFFIX}" ; done
+}
+
+acquire_syslog_startup_smf () {
+	printf "Solaris SMF detected...\n"
+	cp "/lib/svc/method/syslog-ng" "${tmpdir}/sys.startup.svc-method.syslog-ng"
+	chmod 0660 "${tmpdir}/sys.startup.svc-method.syslog-ng"
+	cp "/var/svc/manifest/system/syslog-ng.xml" "${tmpdir}/sys.startup.svc-manifest.syslog-ng.xml"
+	svcs -H system/syslog* >"${tmpdir}/sys.startup.svc-instances"
+}
+
+acquire_syslog_all () {
+	printf "\nStart Syslog-specific info collection\n"
+	acquire_syslog_config
+	acquire_running_syslog_config
+	acquire_syslog_pki_info
+	acquire_syslog_pids
+	acquire_syslog_info
+	acquire_syslog_var
+	acquire_syslog_ldinfo
+	acquire_syslog_startup_method
+
+}
+
+acquire_syslog_nprv () {
+	printf "\nStart Syslog-specific info collection (light)\n"
+	acquire_running_syslog_config
+	acquire_syslog_pids
+	acquire_syslog_info
+	acquire_syslog_ldinfo
+	acquire_syslog_startup_method
+}
+
+acquire_running_syslog_config() {
+	if ${syslogngctlbin} config >/dev/null 2>&1; then
+		${syslogngctlbin} config -p > "${tmpdir}/syslog-ng.ctl.running.conf" 2>&1
+		[ -z "$saveprivatekeys" ] && remove_passwords_from_file "${tmpdir}/syslog-ng.ctl.running.conf"
+	fi
+}
+
+fhs_set_linux () {
+	confdir=/etc/syslog-ng
+	vardir=/var/lib/syslog-ng
+	piddir=/var/lib/syslog-ng
+	syslogbin=/usr/sbin/syslog-ng
+	syslogngctlbin=/usr/sbin/syslog-ng-ctl
+	syslogngquerybin=/usr/sbin/syslog-ng-query
+	syslogrealbin=/usr/sbin/syslog-ng
+}
+
+fhs_set_unix () {
+	:
+}
+
+rpm_verify () {
+	local found=0
+	for pkg in "${@}"; do
+		if rpm -q "${pkg}" ; then
+			rpm -V "${pkg}" && echo "${pkg}: Package files are intact"
+			((found+=1))
+		fi
+	done
+	[ ${found} -eq 0 ] && return 1 || return 0
+}
+
+### Here comes the linux & distro specific parts
+
+debun_extra_debian () {
+	printf "\nDebian specific checks\n"
+	printf "Check package files integrity\n"
+	cd /
+	md5sum --quiet -c /var/lib/dpkg/info/syslog-ng*.md5sums && printf "Package files are intact\n"
+	printf "list syslog-related packages\n"
+	dpkg -l |grep syslog > ${tmpdir}/deb.packages
+}
+
+debun_extra_redhat () {
+	printf "\nRedhat specific checks\n"
+	printf "Check package files integrity\n"
+	rpm_verify syslog-ng-premium-edition syslog-ng-premium-edition-client syslog-ng-premium-edition-compact || \
+		printf "No syslog-ng RPM packages have been found!\n"
+	printf "list syslog-related packages\n"
+	rpm -qa |grep syslog > ${tmpdir}/rpm.packages
+}
+
+debun_extra_slackware () {
+	printf "\nSlackware Linux specific checks\n"
+	printf "list syslog-related packages\n"
+	find /var/log/packages -name "*sys*log*" | while read -r FILE; do echo "${FILE##*/}"; done > ${tmpdir}/pkg.packages
+}
+
+debun_extra_suse() {
+	printf "\nSuSE specific checks\n"
+	printf "Check package files integrity\n"
+	rpm_verify syslog-ng-premium-edition syslog-ng-premium-edition-client syslog-ng-premium-edition-compact || \
+		printf "No syslog-ng RPM packages have been found!\n"
+	printf "list syslog-related packages\n"
+	rpm -qa | grep syslog > ${tmpdir}/rpm.packages
+	#on opensuse "ss utility, iproute2-ss071016" crashes when run with the -punt CLI options
+	if is_available netstat; then
+		#this info should only be collected if the user has not requested privacy mode
+		#we value our customer's sense of privacy
+		if [ -z "$privacy_mode" ]; then
+			netstat -punt >${tmpdir}/sys.netstat.est.noss
+		fi
+	fi
+
+}
+
+debun_extra_genlinux () {
+	if is_available getenforce; then
+		getenforce >"${tmpdir}/sys.selinux"
+		if ${grepq} Enforcing "${tmpdir}/sys.selinux"; then
+			echo "SELinux is in Enforcing mode! If you encounter any problems with debug bundle collection, consider temporarily switching to Permissive mode!"
+		fi
+		${pscmd}Z >"${tmpdir}/sys.ps.selinux"
+		semodule -l >"${tmpdir}/sys.selinux.modules"
+	else
+		echo "No getenforce in path." >"${tmpdir}/sys.selinux"
+	fi
+
+	if is_available sysstat ; then
+		sysstat -P ALL 1 5 >${tmpdir}/sys.sar.cpu
+		sysstat -d 1 5 >${tmpdir}/sys.sar.disk
+	elif is_available sar ; then
+		sar -P ALL 1 5 >${tmpdir}/sys.sar.cpu
+		sar -d 1 5 >${tmpdir}/sys.sar.disk
+	fi
+	if is_available top; then
+		top -b -H -n 1 -c >${tmpdir}/sys.top.threads
+	fi
+
+	[ -n "$privacy_mode" ] && return
+	if is_available dmidecode; then
+		dmidecode >"${tmpdir}/sys.dmidecode"
+	fi
+
+	if is_available lspci; then
+		lspci >"${tmpdir}/sys.lspci"
+	else
+		echo "No lspci in path." >"${tmpdir}/sys.lspci"
+	fi
+	sysctl -a >"${tmpdir}/sys.sysctl.all" 2>/dev/null
+	cp /proc/cpuinfo "${tmpdir}/sys.cpuinfo"
+}
+
+debun_linux () {
+	case "${dist}" in
+		"Debian"|"Ubuntu")
+			add_extra debun_extra_debian
+			;;
+		"CentOS"|"RedHatEnterpriseServer"|"RHEL"|"OracleServer"|"EnterpriseEnterpriseServer")
+			add_extra debun_extra_redhat
+			;;
+		"SUSE LINUX")
+			add_extra debun_extra_suse
+			;;
+		"Slackware")
+			add_extra debun_extra_slackware
+			;;
+		*)
+			echo "Unknown Distro, perhaps unsupported"
+			;;
+	esac
+
+	add_extra debun_extra_genlinux
+}
+
+debun_extra_gensolaris () {
+	sysdef >${tmpdir}/sys.sysdef
+	kstat >${tmpdir}/sys.kstat
+	cp /etc/release ${tmpdir}/sys.release
+	if is_available showrev ; then
+		showrev >${tmpdir}/sys.showrev
+	fi
+	if is_available sar ; then
+		sar -u 1 5 >${tmpdir}/sys.sar.cpu
+		sar -d 1 5 >${tmpdir}/sys.sar.disk
+	fi
+	if is_available top; then
+		top -b -t -n 1 -c >${tmpdir}/sys.top.threads
+	fi
+	[ -x "/usr/platform/$( uname -i )/sbin/prtdiag" ] && /usr/platform/$(uname -i)/sbin/prtdiag -v &>${tmpdir}/sys.prtdiag
+}
+
+### Here comes solaris specific parts
+debun_solaris () {
+	add_extra debun_extra_gensolaris
+
+	pkginfo | grep -i syslog > ${tmpdir}/pkg.packages
+}
+
+debun_extra_freebsd() {
+	if is_available top; then
+		top -b -d1 -H >${tmpdir}/sys.top.threads
+	fi
+}
+
+debun_freebsd() {
+	add_extra debun_extra_freebsd
+}
+
+debun_extra_hpux () {
+	sysdef >${tmpdir}/sys.sysdef
+	swlist >${tmpdir}/sys.swlist
+
+	if is_available sar ; then
+		sar -u 1 5 >${tmpdir}/sys.sar.cpu
+		sar -d 1 5 >${tmpdir}/sys.sar.disk
+	fi
+}
+
+debun_hpux () {
+	add_extra debun_extra_hpux
+}
+
+debun_extra_aix () {
+	alog -o -t console >${tmpdir}/sys.console-log
+	oslevel -s >${tmpdir}/sys.aix.oslevel-s
+	oslevel -sq >${tmpdir}/sys.aix.oslevel-sq
+
+	if is_available sar ; then
+		sar -u 1 5 >${tmpdir}/sys.sar.cpu 2>/dev/null
+		sar -b 1 5 >${tmpdir}/sys.sar.disk 2>/dev/null1
+	fi
+}
+
+debun_aix () {
+	add_extra debun_extra_aix
+
+	echo "Check package files integrity"
+	rpm_verify syslog-ng-premium-edition syslog-ng-premium-edition-client syslog-ng-premium-edition-compact || \
+		echo "No syslog-ng RPM packages have been found!"
+	echo "list syslog-related packages"
+	rpm -qa |grep syslog > ${tmpdir}/rpm.packages
+}
+
+detect_env_linux () {
+	if is_available lsb_release ; then
+		lsb_release -a | tee ${tmpdir}/sys.linux.lsb-all
+		dist=$( lsb_release -si )
+	fi
+	if [ -r /etc/debian_version ]; then
+		cat /etc/debian_version >${tmpdir}/sys.linux.os-release
+		dist="Debian"
+	elif [ -r /etc/redhat-release ]; then
+		cat /etc/redhat-release >${tmpdir}/sys.linux.os-release
+		dist="RHEL"
+	elif [ -r /etc/slackware-version ]; then
+		cat /etc/slackware-version >${tmpdir}/sys.linux.os-release
+		dist="Slackware"
+	elif [ -r /etc/SuSE-release ]; then
+		cat /etc/SuSE-release >${tmpdir}/sys.linux.os-release
+		dist="SUSE LINUX"
+	else
+		echo "Unknown or unsupported Linux distribution!"
+		cat /etc/*release /etc/*version >${tmpdir}/sys.linux.os-release 2>/dev/null
+	fi
+}
+
+detect_env () {
+	###
+	### Detecting syslog-ng ver: ose or pe
+	###
+
+	echo "Start environment detection"
+	if [ -x /opt/syslog-ng/bin/loggen ] ; then
+		syslogfhs=unix
+		echo "Unix-like FHS detected"
+	elif [ -d /etc/syslog-ng/ ]; then
+		syslogfhs=linux
+		echo "Linux-type FHS detected"
+	else
+		syslogfhs=unknown
+		confdir=/nonexistent
+		echo "No syslog-ng detected"
+	fi
+
+	os=$( uname -s )
+	if [ "$os" = "Linux" ]; then
+		detect_env_linux
+	fi
+}
+
+setup_env_debian () {
+	unset distpkgoffile
+	unset distpkgstatus
+	distpkgoffile () {
+		local tmpfile=${tmpdir}/distpkgoffile.$$.tmp
+		dpkg -S $1 >$tmpfile
+		read x < $tmpfile
+		rm $tmpfile
+		echo "${x%: /*}"
+	}
+	distpkgstatus () {
+		echo "@@@Package info for: ${1}"
+		dpkg -s ${1}
+		echo ""
+	}
+}
+
+setup_env_redhat () {
+	unset distpkgoffile
+	unset distpkgstatus
+	distpkgoffile () {
+		local tmpfile=${tmpdir}/distpkgoffile.$$.tmp
+		rpm -qf $1 >$tmpfile
+		read x < $tmpfile
+		rm $tmpfile
+		echo "$x"
+	}
+	distpkgstatus () {
+		echo "@@@Package info for: ${1}"
+		rpm -qi ${1}
+		echo ""
+	}
+}
+
+setup_env_suse  () {
+	unset distpkgoffile
+	unset distpkgstatus
+	distpkgoffile () {
+		local tmpfile=${tmpdir}/distpkgoffile.$$.tmp
+		rpm -qf $1 >$tmpfile
+		read x < $tmpfile
+		rm $tmpfile
+		echo "$x"
+	}
+	distpkgstatus () {
+		echo "@@@Package info for: ${1}"
+		rpm -qi $1
+		echo ""
+	}
+}
+
+setup_env_slackware  () {
+	initfile="/etc/rc.d/rc.syslog"
+	service_start="${initfile} start"
+	service_stop="${initfile} stop"
+
+	if [ -f "/var/run/syslog-ng.pid" ]; then
+		piddir="/var/run"
+	fi
+
+	unset service_status
+	unset distpkgoffile
+	unset distpkgstatus
+
+	distpkgoffile () {
+		local LINKTARGET
+		local PKGLOGFILENAMES
+		local SEARCHSTRING
+		PKGLOGFILE=
+		LINKTARGET=$( readlink -f "${1}" 2>/dev/null )
+		SEARCHSTRING="${LINKTARGET##/}"
+		PKGLOGFILENAMES=$( \
+			( grep -r -m 1 -E "^${SEARCHSTRING}\$" /var/log/packages ; \
+				[ "${SEARCHSTRING%%/*}" = "lib" ] && grep -r -m 1 -E "^lib/incoming/${SEARCHSTRING#*/}\$" /var/log/packages ; \
+				[ "${SEARCHSTRING%%/*}" = "lib64" ] && grep -r -m 1 -E "^lib64/incoming/${SEARCHSTRING#*/}\$" /var/log/packages ) | \
+			while read -r RESULT; do
+				RESULT="${RESULT%%:*}"
+				echo "${RESULT##*/}"
+			done )
+		if [ -n "${PKGLOGFILENAMES}" ]; then
+			echo "${PKGLOGFILENAMES}"
+		else
+			echo "No installed package for '$1' found!" >&2
+		fi
+	}
+	distpkgstatus () {
+		local PIVOT
+		local LASTLINE
+		local PKGINFO
+		echo "@@@Package info for: ${1}"
+		PKGINFO=$( \
+			( find /var/log/packages/ -name "${1}*" ) | \
+			while read -r PKGLOGFILE; do
+				PIVOT=$( fgrep -n "FILE LIST:" "${PKGLOGFILE}" )
+				LASTLINE=$(( ${PIVOT%%:*} - 1 )) 2>/dev/null
+				head -n ${LASTLINE:-16} "${PKGLOGFILE}"
+				echo ""
+			done )
+		if [ -n "${PKGINFO}" ]; then
+			echo "${PKGINFO}"
+		else
+			echo "The package '${1}' is not installed, or does not exist!" >&2
+		fi
+	}
+}
+
+setup_env_genlinux () {
+	unset myplimit
+	myplimit () { [ -f "/proc/$1/limits" ] && cat /proc/$1/limits ; }
+
+	if is_available systemctl ; then
+		service_stop="systemctl stop syslog-ng"
+		service_start="systemctl start syslog-ng"
+		service_status="systemctl status syslog-ng"
+	fi
+
+	# sed -E uses extended regexes, and normally works on Linux and BSD, where perl is not present by default.
+	# -e and -E patterns use different syntax, but the great thing is that the -E format also works with perl.
+	# However older GNU sed versions do not support the -E option, so we have no other choice but perl in
+	# these cases.
+	if echo "eee" | sed -E 's/eee/fff/g' >/dev/null 2>/dev/null ; then
+		:
+	else
+		sed_equivalent_cmd="perl -p -e"
+	fi
+}
+
+setup_env_linux () {
+	case "${dist}" in
+		"Debian"|"Ubuntu")
+			setup_env_debian
+			;;
+		"CentOS"|"RedHatEnterpriseServer"|"RHEL"|"OracleServer"|"EnterpriseEnterpriseServer")
+			setup_env_redhat
+			;;
+		"SUSE LINUX")
+			setup_env_suse
+			;;
+		"Slackware")
+			setup_env_slackware
+			;;
+		*)
+			echo "Unknown Distro, perhaps unsupported"
+			;;
+	esac
+
+	setup_env_genlinux
+}
+
+setup_env_solaris () {
+	dfi="df -o i"
+	lsof=pfiles
+	ipconfig="ifconfig -a"
+	pscmd="ps -eaf"
+	tcpdumpcmd="snoop"
+	tcpdumpopts="-P -q -o"
+	pcapifparm="-d"
+	trace="truss -r all -w all -u libc:: -f"
+	netstatpunt="netstat -n"
+	netstatsu="netstat -s"
+	grepq="/usr/xpg4/bin/grep -q"
+	sed_equivalent_cmd="perl -p -e"
+
+	unset -f mypidof
+	unset -f getsyslogpids
+	unset -f netstatlunp
+	unset -f netstatnlp
+	unset -f myplimit
+	unset -f topcmd
+	unset -f free
+	unset -f distpkgoffile
+	unset -f distpkgstatus
+	unset -f is_available
+	unset -f os_hash_helper
+	unset -f timestamp
+	unset -f findL
+
+	is_available () { which "$1" | $grepq "no $1 in" && return 1 || return 0 ; }
+	mypidof () { $pseao pid,comm | while read pid bin ; do [ "$bin" = "$1" ] && echo $pid ; done ; }
+	getsyslogpids () { mypidof "${syslogrealbin}" ; }
+	netstatnlp () { netstat -na ; }
+	netstatlunp () { netstat -P udp -na ; }
+	myplimit () { plimit $1 ; }
+	free () { prtconf | grep Mem ; printf Pagesize:\  ; pagesize -a ; }
+	timestamp () { perl -e 'print time, "\n";' ; }
+	distpkgoffile () {
+		FILE="$1"
+		if [ -L "/lib/64" ]; then
+			FILE=$( perl -sae '$libarch=readlink("/lib/64"); $filename =~ s/lib\/64/lib\/$libarch/; print "$filename\n";' -- -filename="$1" )
+		fi
+		pkgchk -l -p $FILE | \
+		perl -ne 'if ( /^Referenced by the/ ) { $p=1; } elsif (/:/ or /^$/ ) { $p=0; } elsif ($p) { s/^\s+//; print ; } else { print "FAIL:".$_; }'
+	}
+	distpkgstatus () {
+		echo "@@@Package info for: ${1}"
+		pkginfo -l $1
+		echo ""
+	}
+
+	if find -L /bin >/dev/null 2>&1 ; then
+		findL() { find -L "$@" ; }
+	else
+		findL() { dir="$1"; shift; find "$dir" -follow "$@" ; }
+	fi
+
+	if is_available top; then
+		topcmd ()  { top -b -n 1 -c > "${1}" ; }
+	else
+		topcmd () { ( uptime ; echo ; echo "::memstat" | mdb -k ; sar -u 1 1 ; echo ; ps -eao user,pid,ppid,pcpu,pmem,vsz,rss,tty,s,stime,args | head -n 1; ps -eao user,pid,ppid,pcpu,pmem,vsz,rss,tty,s,stime,args | grep -v COMMAND | sort -rn +3 ) >"${1}" 2>/dev/null ; }
+	fi
+
+	if is_available md5sum; then
+		os_hash_helper () {
+			find . '!' \( -name debun.manifest -o -name syslog-ng.debun.txt \) -type f -print0 | xargs -0 md5sum ;
+		}
+	elif is_available digest; then
+		os_hash_helper () {
+			find . '!' \( -name debun.manifest -o -name syslog-ng.debun.txt \) -type f -exec digest -a md5 -v '{}' \; | sed -e 's:^md5 (\(.*\)) = \([a-z0-9]\{32\}\)$:\2  \1:'
+		}
+	else
+		os_hash_helper () { : ; }
+	fi
+
+	if is_available svcadm ; then
+		service_stop="svcadm disable system/syslog-ng:default"
+		service_start="svcadm enable system/syslog-ng:default"
+		service_status="svcs system/syslog-ng:default"
+	fi
+
+	if is_available ${opensslcmd}; then
+		:
+	else
+		[ -x /usr/sfw/bin/openssl ] && opensslcmd="/usr/sfw/bin/openssl"
+	fi
+}
+
+setup_env_freebsd () {
+	netstatpunt="netstat -n"
+	netstatsu="netstat -s"
+	ipconfig="ifconfig -a"
+	pseao="ps xao"
+	trace="truss -a -d -f -s 256"
+	initfile="/etc/rc.d/syslog-ng"
+	service_stop="${initfile} stop"
+	service_start="${initfile} start"
+	service_status="${initfile} status"
+
+	unset -f free
+	unset -f netstatnlp
+	unset -f netstatlunp
+	unset -f mypidof
+	unset -f topcmd
+	unset -f getsyslogpids
+	unset -f distpkgoffile
+	unset -f distpkgstatus
+	unset -f os_hash_helper
+
+	free () { top -bt 0 ; }
+	netstatnlp () { sockstat ; }
+	netstatlunp () { netstat -na | grep -E "(Internet|Proto|udp)" ; }
+	topcmd ()  { top -b -d1 > "${1}" ; }
+	mypidof () { $pseao pid,comm | while read pid bin ; do [ "$bin" = "$1" ] && echo $pid ; done; }
+	getsyslogpids () { mypidof syslog-ng ; }
+	distpkgoffile () { : ; }
+	distpkgstatus () { : ; }
+	os_hash_helper () {
+		find . '!' \( -name debun.manifest -o -name syslog-ng.debun.txt \) -type f -exec md5 '{}' \; | sed -e 's:^MD5 (\(.*\)) = \([a-z0-9]\{32\}\)$:\2  \1:'
+	}
+}
+
+setup_env_hpux () {
+	gzipcmd="/usr/contrib/bin/gzip -9"
+	lddcmd="/usr/ccs/bin/ldd"
+	trace="/usr/local/bin/tusc -p -l -u -f"
+	netstatsu="netstat -s"
+	netstatpunt="netstat -n"
+	ipconfig="netstat -ni"
+	pscmd="ps -eaf"
+	dfh="df"
+	initfile="/sbin/init.d/syslog-ng"
+	service_stop="${initfile} stop"
+	service_start="${initfile} start"
+	service_status="${initfile} status"
+	sed_equivalent_cmd="perl -p -e"
+	cpiopdL="cpio -pdh"
+
+	unset -f free
+	unset -f netstatnlp
+	unset -f netstatlunp
+	unset -f mypidof
+	unset -f topcmd
+	unset -f os_hash_helper
+	unset -f getsyslogpids
+	unset -f getparent
+	unset -f getchilds
+	unset -f is_available
+	unset -f dfk_parser
+	unset -f distpkgoffile
+	unset -f distpkgstatus
+	unset -f distpkgoffile_cleanup
+	unset -f findL
+
+	export UNIX95=1
+
+	is_available () { which "$1" | $grepq "no $1 in" && return 1 || return 0 ; }
+	free () { swapinfo -tam ; }
+	netstatnlp () { netstat -na | grep -E "(Internet|Proto|LISTEN)" ; }
+	netstatlunp () { netstat -na | grep -E "(Internet|Proto|udp)" ; }
+	topcmd ()  { top -d 1 -f "${1}" ; }
+	dfk_parser () { grep free | while read AVAIL REST_TEXT; do echo ${AVAIL}; done }
+	findL() { dir="$1"; shift; find "$dir" -follow "$@" ; }
+	os_hash_helper () {
+		find . '!' \( -name debun.manifest -o -name syslog-ng.debun.txt \) -type f -exec md5sum '{}' \;
+	}
+	mypidof () { ps -e -f | while read uid pid ppid c stime tty time command extra ; do
+		if [ "${stime%%:*}" = "${stime}" ]
+		then
+			[ "${extra%% *}" = "$1" ] && echo $pid
+		else
+			[ "${command%% *}" = "$1" ] && echo $pid
+		fi ; done ; }
+	getsyslogpids () { mypidof "${syslogrealbin}" ; }
+	getparent () {
+		local self
+		local parent
+		local ret
+		local tmpfile=${tmpdir}/getparent.$$.txt
+		ps -ef  >$tmpfile
+		while read user pid ppid dummy ; do
+			[ "$1" = "$pid" ] || continue
+			ret=$ppid
+		done < $tmpfile
+		rm $tmpfile
+		echo $ret
+	}
+	getchilds () {
+		local childs
+		local dummy
+		local child
+		local tmpfile=${tmpdir}/getchilds.$$.txt
+		ps -ef >$tmpfile
+		while read user pid ppid dummy ; do
+			[ "$1" = "$ppid" ] || continue
+			childs="${childs}${childs:+ }$pid"
+		done < $tmpfile
+		rm $tmpfile
+		echo ${childs}
+	}
+
+	distpkgoffile () {
+		local tmpfile=${tmpdir}/distpkgoffile.tmp
+		if [ ! -f $tmpfile ]; then
+			swlist -l file > "$tmpfile"
+		fi
+		grep $1 $tmpfile | cut -d : -f 1 | while read x; do
+			echo "$x"
+		done
+	}
+	distpkgstatus () {
+		printf "@@@Package info for fileset/patch: %s\n" "$1"
+		swlist -l fileset -a title -a description $1 | grep -v "^#" | grep -v "^\""
+		printf "\n"
+	}
+	distpkgoffile_cleanup () {
+		if [ -f "${tmpdir}/distpkgoffile.tmp" ]; then
+			echo "Removing package list cache"
+			rm "${tmpdir}/distpkgoffile.tmp"
+		fi
+	}
+}
+
+setup_env_aix () {
+	ipconfig="ifconfig -a"
+	pscmd="ps -eaf"
+	dfh="df -k"
+	netstatsu="netstat -s"
+	netstatpunt="netstat -n"
+	dmesg="alog -o -t boot"
+	trace="truss -r all -w all -u libc:: -f"
+	initfile=
+	service_stop="/usr/bin/stopsrc -s syslog-ng"
+	service_start="/usr/bin/startsrc -s syslog-ng"
+	service_status="/usr/bin/lssrc -s syslog-ng"
+	sed_equivalent_cmd="perl -p -e"
+	cpiopdL="/usr/sysv/bin/cpio -pdL"
+
+	unset -f initfile
+	unset -f netstatnlp
+	unset -f netstatlunp
+	unset -f routeconfig
+	unset -f free
+	unset -f dfk_parser
+	unset -f getsyslogpids
+	unset -f mypidof
+	unset -f topcmd
+	unset -f format_ldd_output
+	unset -f os_hash_helper
+
+	format_ldd_output () { sed -e 's:^[^/]*\(.*\)$:\1:' -e 's:^\(.*\)(.*)$:\1:'; }
+	netstatnlp () { netstat -na | grep -E "(Active|Proto|LISTEN)" ; }
+	netstatlunp () { netstat -na | grep -E "(Internet|Proto|udp)" ; }
+	dfk_parser () { tail -1 | while read FS ALL AVAIL UPERC IUPERC MP; do echo ${AVAIL}; done }
+	routeconfig () { if netstat -nr 2>&1 | $grepq 'Permission error' ; then echo 'WPAR without its own routing table.' ; else netstat -nr ; fi ; }
+	free () { svmon -G -O unit=KB ; }
+	topcmd () { ( uptime ; svmon -G | head -n 3 ; sar -u 1 1 ; echo ; ps auxwww | head -n 1; ps auxwww | grep -v COMMAND | sort -rn +2 ) >"${1}" 2>/dev/null ; }
+	mypidof () { ps -eaf | while read user pid ppid c stime tty time cmd extra; do
+		if [ "${stime%%:*}" = "${stime}" ]
+		then
+			[ "${extra%% *}" = "$1" ] && echo $pid
+		else
+			[ "${cmd%% *}" = "$1" ] && echo $pid
+		fi ; done ; }
+	getsyslogpids () { mypidof "${syslogrealbin}" ; }
+
+	unset distpkgoffile
+	unset distpkgstatus
+	distpkgoffile () {
+		local tmpfile=${tmpdir}/distpkgoffile.$$.tmp
+		rpm -qf $1 >$tmpfile
+		read x < $tmpfile
+		rm $tmpfile
+		echo "$x"
+	}
+	distpkgstatus () {
+		printf "@@@Package info for: %s\n" "$1"
+		rpm -qi $1
+		printf "\n"
+	}
+	os_hash_helper () {
+		find . '!' \( -name debun.manifest -o -name syslog-ng.debun.txt \) -type f -exec csum -h MD5 '{}' \;
+	}
+}
+
+setup_env_generic_pre () {
+	:
+}
+
+setup_env_generic_post () {
+	### Check if ss is available (should only be present on Linux)
+	if is_available ss ; then
+		unset -f routeconfig
+		unset -f netstatnlp
+		unset -f netstatlunp
+
+		routeconfig () { ip route show ; }
+		netstatnlp () { ss -nlp ; }
+		netstatlunp () { ss -lunp ; }
+		netstatpunt="ss -punt"
+	fi
+	if is_available netstat; then
+		:
+	else
+		is_available nstat && netstatsu="nstat"
+	fi
+}
+
+setup_env() {
+	setup_env_generic_pre
+
+	###
+	### Decide OS (switch-like)
+	###
+	printf "\nOperating System Name: %s\n" "$os"
+	if [ "$os" = "Linux" ]; then
+		setup_env_linux
+	elif [ "$os" = "SunOS" ]; then
+		setup_env_solaris
+	elif [ "$os" = "FreeBSD" ]; then
+		setup_env_freebsd
+	elif [ "$os" = "HP-UX" ]; then
+		setup_env_hpux
+	elif [ "$os" = "AIX" ]; then
+		setup_env_aix
+	else
+		printf "Unkonwn or (yet) unhandled system\n"
+	fi
+
+	setup_env_generic_post
+}
+
+debun_run () {
+	if [ "$os" = "Linux" ]; then
+		debun_linux
+	elif [ "$os" = "SunOS" ]; then
+		debun_solaris
+	elif [ "$os" = "FreeBSD" ]; then
+		debun_freebsd
+	elif [ "$os" = "HP-UX" ]; then
+		debun_hpux
+	elif [ "$os" = "AIX" ]; then
+		debun_aix
+	fi
+}
+
+run_specific_extras () {
+	for i in ${extras}; do
+		$i
+	done
+}
+
+run_debug () {
+	printf "\nStart Debug collection\n"
+	if [ -n "${pcap_params}" ]; then
+		if is_available $tcpdumpcmd ; then
+			echo "Start packet dump in background with filters: ${pcap_params}"
+			${tcpdumpcmd} ${tcpdumpopts} ${tmpdir}/debug.pcap ${pcap_iface:+$pcapifparm} ${pcap_iface} ${pcap_params} &
+			pcappid=${!}
+		else
+			echo "tcpdump/snoop is not available" >&2
+		fi
+	fi
+	if [ -n "${tracing}" ] && [ -z "${debug_params}" ]; then
+		if is_available "${trace%% *}"; then
+			for i in ${sngallpids}; do
+				${trace} -o ${tmpdir}/trace.${i}.txt -p ${i} &
+				tracepids="${tracepids}${tracepids:+ }${!}"
+			done
+		else
+			echo "Tracing was requested but ${trace%% *} was not available!"
+		fi
+	fi
+	if [ -n "${waitforit}" ]; then
+		[ -n "${pcap_params}" ] && sleep 1
+		echo "Waiting ${waitforit} secs before stop system's syslog-ng, and restart in debug mode."
+		pad=''
+		bs=''
+		for i in $( seq 1 ${#waitforit} ); do pad="${pad} " ; bs="\b${bs}" ; done
+		printf "Start countdown: ${pad}" >&3
+		for i in $( seq ${waitforit} -1 1 ); do printf "${bs}${pad:${#i}}$i" >&3 ; sleep 1 ; done
+		print "0\n">&3
+		touch ${tmpdir}/syslog.debug
+	fi
+	if [ -n "${debug_params}" ]; then
+		${service_stop}
+		# We should implement a better waiting for the system service's shutdown, sleep 1 works for now
+		sleep 1
+		echo "Start syslog-ng debug with params: ${debug_params}"
+		if [ -n "$tracing" ]; then
+			if is_available "${trace%% *}"; then
+				${trace} -o ${tmpdir}/trace.dbg.txt ${syslogbin} ${debug_params} >>${tmpdir}/syslog.debug 2>&1 &
+				i=${!}
+				tracepids="${i}"
+				debugpid="$( getchilds ${i} )"
+				echo "Trace: ${i} Debug: ${debugpid}"
+			else
+				echo "Tracing was requested but ${trace%% *} was not available!"
+				${syslogbin} ${debug_params} >>${tmpdir}/syslog.debug 2>&1 &
+				debugpid=${!}
+			fi
+		else
+			${syslogbin} ${debug_params} >>${tmpdir}/syslog.debug 2>&1 &
+			debugpid=${!}
+		fi
+	fi
+
+	if [ -n "$debug_mode" ]; then
+		sleep 1
+		acquire_syslog_stats
+	fi
+
+	[ -n "${timeout}" ] || echo "When you want to stop collecting data, press ENTER" >&3
+	if [ -n "${waitforit}" ]; then
+		sleep 1
+		# Let's give time the user, to read the message about stopping
+		tail -f ${tmpdir}/syslog.debug >&3 &
+		debugtailpid=${!}
+		#disown
+	fi
+	if [ -n "${timeout}" ];
+	then
+		sleep "${timeout}"
+	else
+		read line
+	fi
+	}
+
+###
+### Main program tasks
+###
+
+debun_init
+detect_env
+setup_env
+debun_run
+[ "$syslogfhs" = "linux" ] && fhs_set_linux
+[ "$syslogfhs" = "unix" ] && fhs_set_unix
+run_specific_extras
+acquire_general_info
+if [ -n "$privacy_mode" ]; then
+	acquire_syslog_nprv
+else
+	acquire_syslog_all
+fi
+[ -n "$debug_mode" ] && run_debug
+debun_final

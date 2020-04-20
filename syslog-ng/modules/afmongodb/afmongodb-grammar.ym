@@ -1,0 +1,86 @@
+/*
+ * Copyright (c) 2010-2015 Balabit
+ * Copyright (c) 2010-2014 Gergely Nagy <algernon@balabit.hu>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code requires {
+
+#include "afmongodb-parser.h"
+
+}
+
+%code {
+
+#include "cfg-grammar.h"
+#include "plugin.h"
+#include "value-pairs/value-pairs.h"
+
+}
+
+%name-prefix "afmongodb_"
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **instance}
+%parse-param {gpointer arg}
+
+
+/* INCLUDE_DECLS */
+
+%token KW_MONGODB
+%token KW_URI
+%token KW_COLLECTION
+
+%%
+
+start
+    : LL_CONTEXT_DESTINATION KW_MONGODB
+        {
+            last_driver = *instance = afmongodb_dd_new(configuration);
+        }
+        '(' afmongodb_options ')'         { YYACCEPT; }
+    ;
+
+afmongodb_options
+    : afmongodb_option afmongodb_options
+    |
+    ;
+
+afmongodb_option
+    : KW_URI '(' string ')'
+        {
+            afmongodb_dd_set_uri(last_driver, $3); free($3);
+        }
+    | KW_COLLECTION '(' string ')'
+        {
+            afmongodb_dd_set_collection(last_driver, $3); free($3);
+        }
+    | value_pair_option
+        {
+            afmongodb_dd_set_value_pairs(last_driver, $1);
+        }
+    | threaded_dest_driver_option
+    | { last_template_options = afmongodb_dd_get_template_options(last_driver); } template_option
+    ;
+
+
+/* INCLUDE_RULES */
+
+%%

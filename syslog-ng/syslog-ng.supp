@@ -1,0 +1,6 @@
+{
+   json_hashlittle
+   Memcheck:Addr4
+   fun:hashlittle
+   fun:lh_char_hash
+}

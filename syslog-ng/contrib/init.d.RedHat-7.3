@@ -1,0 +1,156 @@
+################################################################################
+#
+# Program: syslog-ng init script for Red Hat
+#
+################################################################################
+# the following information is for use by chkconfig
+# if you are want to manage this through chkconfig (as you should), you must
+# first must add syslog-ng to chkconfig's list of startup scripts it
+# manages by typing:  
+#
+#		chkconfig --add syslog-ng
+#
+# DO NOT CHANGE THESE LINES (unless you know what you are doing) 
+# chkconfig: 2345 12 88
+# description: syslog-ng is the next generation of the syslog daemon. \
+# syslog-ng gives you the flexibility of logging not only by facility and \
+# severity, but also by host, message content, date, etc. it can also replace \
+# klogd's function of logging kernel messages
+#
+# This following block of lines is correct, do not change! (for more info, see 
+# http://www.linuxbase.org/spec/refspecs/LSB_1.1.0/gLSB/facilname.html)
+### BEGIN INIT INFO 
+# Provides: $syslog
+### END INIT INFO
+################################################################################
+#
+#  This is an init script for syslog-ng on the Linux platform.
+#
+#  It totally relies on the Redhat function library and works the same
+#  way as other typical Redhat init scripts.
+#
+#
+# Platforms (tested): Linux (Redhat 7.3)
+#
+#
+# Author: Gregor Binder <gbinder@sysfive.com>
+# Changed: October 10, 2000
+#
+# Last Changed: September 27, 2002
+# Updated by: Diane Davidowicz
+#	changes: Brought the start script up to snuff as far as compliance
+#		 with managing the startup script through chkconfig; 
+#		 added PATH variable ability to hook in path to syslog-ng (if 
+#		 its necessary); converted init script format to the 
+#		 standard init script format in Red Hat (7.3 to be exact)
+#		 including using the /etc/sysconfig/syslog-ng file to
+#		 managed the arguments to syslog-ng without changing this
+#		 script, and disabled klogd but noted where and under what
+#		 conditions it should be enabled. HAPPY LOGGING.
+#
+#     Copyright (c) 2000 by sysfive.com GmbH, All rights reserved.
+#
+#
+################################################################################
+#
+# configuration
+#
+
+INIT_PROG=syslog-ng
+
+#
+# Source Redhat function library.
+#
+. /etc/rc.d/init.d/functions
+
+# Tack on path to syslog-ng if not already in PATH
+SYSLOGNG_PATH=":/usr/local/sbin"
+
+PATH=$PATH$SYSLOGNG_PATH
+export PATH
+
+# /etc/sysconfig/ is the standard way to pull in options for a daemon to use.
+# Source config
+if [ -f /etc/sysconfig/syslog-ng ] ; then
+	. /etc/sysconfig/syslog-ng
+else
+	SYSLOGNG_OPTIONS=
+fi
+
+RETVAL=0
+
+umask 077
+ulimit -c 0
+
+# See how we were called.
+start() {
+	echo -n "Starting $INIT_PROG: "
+	daemon $INIT_PROG $SYSLOGNG_OPTIONS
+	RETVAL=$?
+	echo
+
+	# syslog-ng can handle kernel messages. If you do this, don't
+	# run klogd. Consult the following FAQ question to find out why.
+	#
+	# http://www.campin.net/syslog-ng/faq.html#klogd
+	#
+	# If you still prefer to run klogd without syslog-ng handling
+	# kernel messages, uncomment the following block of lines
+
+        #echo -n $"Starting kernel logger: "
+        #daemon klogd $KLOGD_OPTIONS
+        #echo
+
+	[ $RETVAL -eq 0 ] && touch "/var/lock/subsys/${INIT_PROG}"
+	return $RETVAL
+}
+
+stop() {
+	# Same here concerning klogd. Uncomment the following block of 
+	# code if you are needing to run it
+
+	#echo -n $"Shutting down kernel logger: "
+        #killproc klogd
+        #echo
+
+	echo -n "Stopping $INIT_PROG: "
+	killproc $INIT_PROG
+	RETVAL=$?
+	echo
+
+	[ $RETVAL -eq 0 ] && rm -f "/var/lock/subsys/${INIT_PROG}"
+	return $RETVAL
+
+}
+
+rhstatus() {
+	status $INIT_PROG
+}
+
+restart() {
+	stop
+	start
+}
+
+case "$1" in
+  start)
+	start
+	;;
+  stop)
+	stop
+	;;
+  status)
+	rhstatus
+	;;
+  restart|reload)
+	restart
+	;;
+  condrestart)
+	[ -f /var/lock/subsys/syslog-ng ] && restart || :
+	;;
+  *)
+	echo $"Usage: $0 {start|stop|status|restart|reload}"
+	exit 1
+esac
+
+exit $?

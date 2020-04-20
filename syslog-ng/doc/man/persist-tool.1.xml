@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<reference xmlns="http://docbook.org/ns/docbook" version="5.0">
+    <info>
+        <productname/>
+        <title>The persist-tool tool manual page</title>
+    </info>
+    <refentry xml:id="persist-tool.1">
+        <refmeta>
+            <refentrytitle>persist-tool</refentrytitle>
+            <manvolnum>1</manvolnum>
+            <refmiscinfo class="version">3.24</refmiscinfo>
+            <refmiscinfo class="source"/>
+        </refmeta>
+        <refnamediv>
+            <refname>persist-tool</refname>
+            <refpurpose>Display the content of the persist file</refpurpose>
+        </refnamediv>
+        <refsynopsisdiv>
+            <cmdsynopsis><command>persist-tool</command>
+                <arg>command</arg>
+                <arg>options</arg>
+            </cmdsynopsis>
+        </refsynopsisdiv>
+        <refsection xml:id="persist-tool-mandescription">
+            <title>Description</title>
+            <para>NOTE: The persist-tool application is distributed with the syslog-ng system logging application, and is usually part of the syslog-ng package. The latest version of the syslog-ng application is available at the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/log-management">official syslog-ng website</link>.</para>
+            <para>This manual page is only an abstract, for the complete documentation of syslog-ng, see the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/support/documentation/"><command>The syslog-ng Administrator Guide</command></link>.</para>
+            <para>The <command>persist-tool</command> application is a utility that can be used to dump the content of the persist file, and manipulate its content.</para>
+            <warning>
+                <para>Persist-tool is a special tool for syslog-ng experts. Do use the tool unless you know exactly what you are doing. Misconfiguring it will result in irrecoverable damage to the persist file, without any warning.</para>
+            </warning>
+            <note>
+                <para>Limitations:</para>
+                <itemizedlist>
+                    <listitem>
+                        <para>The persist-state functions can be used only with syslog-ng PE 5 LTS style persist file (SLP4). Older persist files are not supported.</para>
+                    </listitem>
+                    <listitem>
+                        <para>Wildcard characters are not supported in file/directory names.</para>
+                    </listitem>
+                </itemizedlist>
+            </note>
+        </refsection>
+        <refsection xml:id="persist-tool-dump">
+            <title>The dump command</title>
+            <cmdsynopsis><command>dump</command>
+                <arg>options</arg>
+                <arg>persist_file</arg>
+            </cmdsynopsis>
+            <para>Use the <command>dump</command> command to print the current content of the persist file in JSON format to the console.</para>
+            <para>The <command>dump</command> command has the following options:</para>
+            <variablelist>
+                <varlistentry>
+                    <term><command>--help</command> or <command>-?</command>
+                    </term>
+                    <listitem>
+                        <para>Display a brief help message.</para>
+                    </listitem>
+                </varlistentry>
+            </variablelist>
+            <para>Example: <synopsis>persist-tool dump /opt/syslog-ng/var/syslog-ng.persist</synopsis></para>
+            <para>The output looks like:</para>
+            <synopsis>
+run_id = { "value": "00 00 00 00 0C 00 00 00 " }
+host_id = { "value": "00 00 00 00 5F 49 2F 01 " }</synopsis>
+        </refsection>
+        <refsection xml:id="persist-tool-add">
+            <title>The add command</title>
+            <cmdsynopsis><command>add</command>
+                <arg>options</arg>
+                <arg>input_file</arg>
+            </cmdsynopsis>
+            <para>Use the <command>add</command> command to add or modify a specified state-entry in the persist file. The state-entry should be in the same format as the <command>dump</command> command displays it. If the given state-entry already exists, it will be updated. Otherwise, a new value will be added. If the given persist state is invalid, it will be skipped.</para>
+            <para>To use the <command>add</command> command: use <command>persist-tool dump</command> to print the content of the current persist file, and redirect it to a file. Edit the content of this file. Use <command>persist-tool add</command> with this file to modify the persist.</para>
+            <para>The <command>add</command> command has the following options:</para>
+            <variablelist>
+                <varlistentry>
+                    <term><command>--help</command> or <command>-?</command>
+                    </term>
+                    <listitem>
+                        <para>Display a brief help message.</para>
+                    </listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term><command>--output-dir=&lt;directory&gt;</command> or <command>-o</command>
+                    </term>
+                    <listitem>
+                        <para>Required parameter. The directory where the persist file is located at. The name of the persist file stored in this directory must be <filename>syslog-ng.persist</filename>.</para>
+                    </listitem>
+                </varlistentry>
+            </variablelist>
+            <para>Example:<synopsis>/opt/syslog-ng/bin/persist-tool add dump_persist -o .</synopsis></para>
+            <para>The valid output looks like:</para>
+            <synopsis>log_reader_curpos(Application)      OK
+affile_sd_curpos(/var/aaa.txt)        OK</synopsis>
+            <para>The invalid output looks like:</para>
+            <synopsis>log_reader_curpos(Application)      OK
+wrong
+        FAILED (error: Invalid entry syntax)
+affile_sd_curpos(/var/aaa.txt)        OK</synopsis>
+        </refsection>
+        <refsection>
+            <title>Files</title>
+            <para><filename>/opt/syslog-ng/bin/persist-tool</filename></para>
+        </refsection>
+        <refsection>
+            <title>See also</title>
+            <para><link linkend="syslog-ng.conf.5"> <command>syslog-ng.conf</command>(5)</link></para>
+            <para><link linkend="syslog-ng.8"> <command>syslog-ng</command>(8)</link></para>
+            <note version="5.0">
+                <para>For the detailed documentation of  see <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/index.html"><command>The  3.24 Administrator Guide</command></link></para>
+                <para>If you experience any problems or need help with syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://lists.balabit.hu/mailman/listinfo/syslog-ng"><command>syslog-ng mailing list</command></link>.</para>
+                <para>For news and notifications about of syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://syslog-ng.org/blogs/"><command>syslog-ng blogs</command></link>.</para>
+            </note>
+        </refsection>
+        <refsection version="5.0">
+            <title>Author</title>
+            <para>This manual page was written by the Balabit Documentation Team &lt;documentation@balabit.com&gt;.</para>
+        </refsection>
+        <refsection version="5.0">
+            <title>Copyright</title>
+        </refsection>
+    </refentry>
+</reference>

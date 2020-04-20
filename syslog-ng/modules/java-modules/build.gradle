@@ -1,0 +1,29 @@
+apply from: 'internal_repositories.gradle'
+project.buildDir = syslogBuildDir
+
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'eclipse'
+    apply plugin: 'idea'
+
+    repositories {
+        maven {
+          url "/usr/lib/syslog-ng-java-compile-deps-mvn-repo"
+        }
+        flatDir {
+            dirs syslogDepsDir
+            dirs syslogBuildDir + '/common/gradle/libs'
+        }
+      mavenCentral()
+    }
+
+    compileJava {
+        sourceCompatibility "1.7"
+        targetCompatibility "1.7"
+    }
+}
+
+task copyJars(type: Copy, dependsOn: subprojects.jar) {
+  from(subprojects.jar)
+  into syslogBuildDir + '/built-jars'
+}

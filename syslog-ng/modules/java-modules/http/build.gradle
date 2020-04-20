@@ -1,0 +1,8 @@
+project.buildDir = syslogBuildDir+'/http/gradle'
+
+dependencies {
+    compile name: 'syslog-ng-common'
+    compile name: 'syslog-ng-core'
+    compile 'junit:junit:4.12'
+    compile 'log4j:log4j:1.2.17'
+}

@@ -358,7 +358,8 @@ if (ENABLE_EXTRA_WARNINGS)
     -Wpointer-sign
     -Wmissing-format-attribute
     -Wold-style-definition
-    -Wundef)
+    -Wundef
+	-Wignored-qualifiers)
 
 if ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
   set(EXTRA_WARNINGS

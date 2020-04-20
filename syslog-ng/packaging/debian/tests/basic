@@ -1,0 +1,35 @@
+#!/bin/sh -e
+
+rm -f /tmp/input
+rm -f /tmp/output.log
+
+echo "Starting syslog-ng"
+/usr/sbin/syslog-ng --no-caps --process-mode=background --cfgfile /$(pwd)/debian/tests/config.syslog --persist-file=/tmp/persist_file --pidfile=/tmp/syslog-ng.pid --control=/tmp/syslog-ng.control
+
+sleep 2
+
+PID=$(cat /tmp/syslog-ng.pid)
+
+echo "Syslog-ng pid is $PID"
+
+if [ ! -L /proc/$PID/exe ]
+then
+  echo "syslog-ng could not start"
+  exit 1
+fi
+
+echo "Sending a log message"
+logger -u /tmp/input almafa
+
+sleep 1
+
+kill $PID
+
+grep -q almafa /tmp/output.log
+if [ $? -eq 1 ]
+then
+  echo "Logged message could not found"
+  exit 1
+fi
+
+echo "Sent message has been found in the log. Good"

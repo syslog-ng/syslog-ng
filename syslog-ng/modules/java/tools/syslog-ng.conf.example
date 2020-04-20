@@ -1,0 +1,26 @@
+@version: 3.26
+@module java
+
+options {
+  threaded(yes);
+};
+
+source s_tcp{
+  tcp(
+    port(5555)
+  );
+};
+
+destination d_java{
+  java(
+    class_name("org.syslog_ng.DummyTextDestination")
+    option("name", "d_java")
+  );
+};
+
+log{
+  source(s_tcp);
+  destination(d_java);
+  flags(flow-control);
+};
+

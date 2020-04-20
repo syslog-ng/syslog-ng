@@ -1,0 +1,19 @@
+[Unit]
+Description=System Logger Daemon "%i" instance
+Documentation=man:syslog-ng(8)
+Conflicts=emergency.service emergency.target
+Wants=network.target network-online.target
+After=network.target network-online.target
+
+[Service]
+Type=notify
+EnvironmentFile=-/etc/default/syslog-ng@%i
+EnvironmentFile=-/etc/sysconfig/syslog-ng@%i
+ExecStart=/usr/sbin/syslog-ng -F $OTHER_OPTIONS --cfgfile $CONFIG_FILE --control $CONTROL_FILE --persist-file $PERSIST_FILE --pidfile $PID_FILE
+ExecReload=/bin/kill -HUP $MAINPID
+StandardOutput=journal
+StandardError=journal
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,188 @@
+#!/bin/sh
+#
+# syslog-ng-config, Copyright 2005, 2006, 2010 Corinna Vinschen
+#
+# This file is part of the Cygwin port of syslog-ng.
+
+# set -x
+
+# Subdirectory where the new package is being installed
+PREFIX="/usr"
+
+# Directory where the config files are stored
+SYSCONFDIR="/etc/syslog-ng"
+
+# Paths of the config files starting with 3.2.1.
+SYSCONFFILE="${SYSCONFDIR}/syslog-ng.conf"
+SCLFILE="${SYSCONFDIR}/scl.conf"
+MODULESFILE="${SYSCONFDIR}/modules.conf"
+
+# Directory in which the templates are stored.
+DEFAULTDIR="/etc/defaults"
+
+progname=$0
+auto_answer=""
+
+request()
+{
+  if [ "${auto_answer}" = "yes" ]
+  then
+    return 0
+  elif [ "${auto_answer}" = "no" ]
+  then
+    return 1
+  fi
+
+  answer=""
+  while [ "X${answer}" != "Xyes" -a "X${answer}" != "Xno" ]
+  do
+    echo -n "$1 (yes/no) "
+    read answer
+  done
+  if [ "X${answer}" = "Xyes" ]
+  then
+    return 0
+  else
+    return 1
+  fi
+}
+
+# Check options
+
+while :
+do
+  case $# in
+  0)
+    break
+    ;;
+  esac
+
+  option=$1
+  shift
+
+  case "$option" in
+  -d | --debug )
+    set -x
+    ;;
+
+  -y | --yes )
+    auto_answer=yes
+    ;;
+
+  -n | --no )
+    auto_answer=no
+    ;;
+  *)
+    echo "usage: ${progname} [OPTION]..."
+    echo
+    echo "This script creates a basic syslog-ng configuration."
+    echo
+    echo "Options:"
+    echo "    --debug  -d     Enable shell's debug output."
+    echo "    --yes    -y     Answer all questions with \"yes\" automatically."
+    echo "    --no     -n     Answer all questions with \"no\" automatically."
+    echo
+    exit 1
+    ;;
+
+  esac
+done
+
+# Check for ${SYSCONFDIR} directory
+
+if [ -e "${SYSCONFDIR}" -a ! -d "${SYSCONFDIR}" ]
+then
+  echo
+  echo "${SYSCONFDIR} is existant but not a directory."
+  echo "Cannot create global configuration files."
+  echo
+  exit 1
+fi
+
+# Create it if necessary
+
+[ ! -e "${SYSCONFDIR}" ] && mkdir -p "${SYSCONFDIR}"
+if [ ! -e "${SYSCONFDIR}" ]
+then
+  echo
+  echo "Creating ${SYSCONFDIR} directory failed."
+  echo
+  exit 1
+fi
+setfacl -m u:system:rwx "${SYSCONFDIR}"
+
+# Only offer to overwrite if template files exist.
+
+if [ -f "${DEFAULTDIR}${SYSCONFFILE}" ]
+then
+
+  # Check if syslog-ng.conf exists. If yes, ask for overwriting
+
+  if [ -f "${SYSCONFFILE}" ]
+  then
+    if request "Overwrite existing ${SYSCONFFILE} file?"
+    then
+      mv -f "${SYSCONFFILE}" "${SYSCONFFILE}.old"
+      if [ -f "${SYSCONFFILE}" ]
+      then
+	echo "Can't overwrite. ${SYSCONFFILE} is write protected."
+      else
+	echo "${SYSCONFFILE} has been renamed to ${SYSCONFFILE}.old."
+      fi
+    fi
+  fi
+
+  if [ ! -f "${SYSCONFFILE}" ]
+  then
+    echo "Creating default syslog-ng configuration files in ${SYSCONFDIR}"
+    cp "${DEFAULTDIR}${SYSCONFFILE}" "${SYSCONFFILE}"
+    setfacl -m u:system:rw- "${SYSCONFFILE}"
+    if [ -f "${DEFAULTDIR}${SCLFILE}" ]
+    then
+      cp "${DEFAULTDIR}${SCLFILE}" "${SCLFILE}"
+      setfacl -m u:system:rw- "${SCLFILE}"
+    fi
+    if [ -f "${DEFAULTDIR}${MODULESFILE}" ]
+    then
+      cp "${DEFAULTDIR}${MODULESFILE}" "${MODULESFILE}"
+      setfacl -m u:system:rw- "${MODULESFILE}"
+    fi
+  fi
+
+fi
+
+# Check if syslogd is installed and remove on user request.
+if cygrunsrv -Q syslogd > /dev/null 2>&1
+then
+  echo "Warning: The syslogd service is already installed.  You can not"
+  echo "run both, syslogd and syslog-ng in parallel."
+  echo
+  if request "Do you want to deinstall the syslogd service in favor of syslog-ng?"
+  then
+    cygrunsrv -E syslogd
+    cygrunsrv -R syslogd
+  fi
+fi
+# Install syslog-ng service if it is not already installed
+if ! cygrunsrv -Q syslog-ng > /dev/null 2>&1
+then
+  echo
+  echo
+  echo "Warning: The following function requires administrator privileges!"
+  echo
+  echo "Do you want to install syslog-ng as service?"
+  if request "(Say \"no\" if it's already installed as service)"
+  then
+    if cygrunsrv -I syslog-ng -d "CYGWIN syslog-ng" -p /usr/sbin/syslog-ng -a "-F"
+    then
+     echo
+     echo "The service has been installed under LocalSystem account."
+     echo "To start the service, call \`net start syslog-ng' or \`cygrunsrv -S syslog-ng'."
+     echo
+     echo "Check ${SYSCONFDIR}/syslog-ng.conf first, if it suits your needs."
+    fi
+  fi
+fi
+
+echo
+echo "Configuration finished. Have fun!"

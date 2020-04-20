@@ -1,0 +1,139 @@
+/*
+ * Copyright (c) 2002-2015 Balabit
+ * Copyright (c) 1998-2015 Balázs Scheidler
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#include "csvparser-parser.h"
+
+}
+
+
+%code {
+
+#include "csvparser.h"
+#include "cfg-parser.h"
+#include "cfg-grammar.h"
+#include "csvparser-grammar.h"
+#include "syslog-names.h"
+#include "messages.h"
+
+}
+
+%name-prefix "csvparser_"
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogParser **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_CSV_PARSER
+%token KW_DIALECT
+%token KW_PREFIX
+%token KW_COLUMNS
+%token KW_DELIMITERS
+%token KW_QUOTES
+%token KW_QUOTE_PAIRS
+%token KW_NULL
+%token KW_CHARS
+%token KW_STRINGS
+
+%type	<ptr> parser_expr_csv
+%type   <num> parser_csv_flags
+%type   <num> parser_csv_dialect
+
+%%
+
+start
+        : LL_CONTEXT_PARSER parser_expr_csv                  { YYACCEPT; }
+        ;
+
+
+parser_expr_csv
+        : KW_CSV_PARSER '('
+          {
+            last_parser = *instance = csv_parser_new(configuration);
+          }
+          parser_csv_opts
+          ')'					{ $$ = last_parser; }
+        ;
+
+
+parser_csv_opts
+        : parser_csv_opt parser_csv_opts
+        |
+        ;
+
+parser_csv_opt
+        /* CSVParser related options */
+        : KW_FLAGS '(' parser_csv_flags ')'     { CHECK_ERROR(csv_parser_set_flags(last_parser, $3), @3, "only one escape style can be used in the flags argument"); }
+        | KW_PREFIX '(' string ')'              { csv_parser_set_prefix(last_parser, $3); free($3); }
+        /* CSVScanner related options */
+        | KW_DIALECT '(' parser_csv_dialect ')' { csv_scanner_options_set_dialect(csv_parser_get_scanner_options(last_parser), $3); }
+        | KW_DELIMITERS '(' parser_csv_delimiters ')'
+        | KW_QUOTES '(' string ')'              { csv_scanner_options_set_quotes(csv_parser_get_scanner_options(last_parser), $3); free($3); }
+        | KW_QUOTE_PAIRS '(' string ')'         { csv_scanner_options_set_quote_pairs(csv_parser_get_scanner_options(last_parser), $3); free($3); }
+        | KW_NULL '(' string ')'                { csv_scanner_options_set_null_value(csv_parser_get_scanner_options(last_parser), $3); free($3); }
+        | KW_COLUMNS '(' string_list ')'        { csv_scanner_options_set_columns(csv_parser_get_scanner_options(last_parser), $3); }
+        | parser_opt
+        ;
+
+parser_csv_delimiters
+        : string                                {  csv_scanner_options_set_delimiters(csv_parser_get_scanner_options(last_parser), $1); free($1);  }
+        | parser_csv_delimiters_opts
+        ;
+
+parser_csv_delimiters_opts
+        : parser_csv_delimiters_opt parser_csv_delimiters_opts
+        |
+        ;
+
+parser_csv_delimiters_opt
+        : KW_CHARS '(' string ')'               { csv_scanner_options_set_delimiters(csv_parser_get_scanner_options(last_parser), $3); free($3); }
+        | KW_STRINGS '('  string_list  ')'	{ csv_scanner_options_set_string_delimiters(csv_parser_get_scanner_options(last_parser), $3); }
+        ;
+
+parser_csv_flags
+        : normalized_flag parser_csv_flags
+          {
+            guint32 flag = csv_parser_lookup_flag($1);
+            CHECK_ERROR(flag != 0, @1, "unknown csv-parser() flag %s", $1);
+            $$ = flag | $2;
+            free($1);
+          }
+        |					{ $$ = 0; }
+        ;
+
+parser_csv_dialect
+        : normalized_flag                       {
+                                                  gint mode = csv_parser_lookup_dialect($1);
+                                                  CHECK_ERROR(mode >= 0, @1, "unknown dialect() argument for csv-parser()");
+                                                  free($1);
+                                                }
+
+/* INCLUDE_RULES */
+
+%%

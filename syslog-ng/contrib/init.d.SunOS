@@ -1,0 +1,110 @@
+:
+
+################################################################################
+#
+# Program: syslog-ng init script
+#
+# Description:
+#
+#  This is an init script for syslog-ng on the Solaris platform.
+#
+#  To start the service, we check if the config file exists and the daemon
+#  program is executable. Accordingly, the preferred way to disable the
+#  service PERMANENTLY is to rename the binary and/or configuration file
+#  to filename.OFF. This avoids accidental execution.
+#
+#  The lowest PID of a running instance of the executable is logged to a
+#  file. This PID is used for killing the daemon. This is a best guess of
+#  course, it is much better to use built-in shutdown functions if the
+#  daemon has those.
+#
+#
+# Platforms (tested): SunOS (Solaris 2.6)
+#
+#
+# Author: Gregor Binder <gbinder@sysfive.com>
+#
+# Last Changed: October 10, 2000
+#
+#     Copyright (c) 2000 by sysfive.com GmbH, All rights reserved.
+#
+################################################################################
+
+################################################################################
+# configuration
+#
+INIT_CONF="/etc/syslog-ng/syslog-ng.conf" # this file has to exist
+INIT_PROG="/path_to/syslog-ng"            # FULL path to daemon required (fuser)
+INIT_OPTS=""                              # options passed to daemon
+
+INIT_NAME=`basename "$0"`
+
+INIT_RDIR="/var/run"
+INIT_RPID="${INIT_RDIR}/${INIT_NAME}.pid"
+
+PATH=/bin:/sbin:/usr/bin:/usr/sbin:/opt//bin:/opt//sbin
+
+################################################################################
+# init
+#
+INIT_RETURN=0
+
+umask 077
+ulimit -c 0
+
+[ -d "$INIT_RDIR" ] || mkdir -p "$INIT_RDIR" || \
+  echo "Cannot make directory: $INIT_RDIR"
+
+INIT_RETURN=$?
+
+################################################################################
+# arguments processing
+#
+case "$1" in
+
+  start)
+
+    test -f "$INIT_CONF" -a -x "$INIT_PROG" || exit 0
+
+    "$INIT_PROG" "$INIT_OPTS"
+    INIT_RETURN=$?
+
+    ;;
+
+  stop)
+
+    [ -r "$INIT_RPID" ] && INIT_CPID=`cat "$INIT_RPID"`
+    [ -z "$INIT_CPID" ] || \
+      INIT_CPRG="`ps -ef | awk '$2 == '"$INIT_CPID"' { print $9 }'`"
+      INIT_RETURN=$?
+
+    set ${INIT_CPRG:="unknown"}
+
+    [ "$INIT_CPRG" = "$INIT_PROG" ] || { \
+      echo "process ID mismatch: [$INIT_CPID] is $INIT_CPRG"
+      INIT_RETURN=1
+    }
+
+    [ $INIT_RETURN -eq 0 ] && kill ${INIT_SIG:="-TERM"} $INIT_CPID
+    INIT_RETURN=$?
+
+    [ $INIT_RETURN -eq 0 ] && rm -f "$INIT_RPID"
+    INIT_RETURN=$?
+    ;;
+
+  restart)
+
+    INIT_SIG="-HUP"
+    $0 stop
+    $0 start
+    INIT_RETURN=$?
+    ;;
+
+  *)
+
+    echo "Usage: $0 {start|stop|restart}"
+    exit 1
+
+esac
+
+exit $INIT_RETURN

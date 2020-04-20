@@ -1,0 +1,192 @@
+/*
+ * Copyright (c) 2002-2012 Balabit
+ * Copyright (c) 1998-2012 Balázs Scheidler
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code requires {
+
+#include "rewrite/rewrite-expr-parser.h"
+
+}
+
+%code {
+
+#include "rewrite/rewrite-expr-grammar.h"
+#include "rewrite/rewrite-set-tag.h"
+#include "rewrite/rewrite-set.h"
+#include "rewrite/rewrite-unset.h"
+#include "rewrite/rewrite-subst.h"
+#include "rewrite/rewrite-groupset.h"
+#include "rewrite/rewrite-set-severity.h"
+#include "filter/filter-expr.h"
+#include "filter/filter-expr-parser.h"
+#include "cfg-grammar.h"
+#include "syslog-names.h"
+#include "plugin.h"
+
+#include <string.h>
+
+}
+
+%name-prefix "rewrite_expr_"
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogExprNode **result}
+%parse-param {gpointer arg}
+
+%type   <ptr> rewrite_expr
+%type   <ptr> rewrite_expr_list
+
+/* INCLUDE_DECLS */
+
+%token KW_SET_TAG
+%token KW_CLEAR_TAG
+%token KW_GROUP_SET
+%token KW_GROUP_UNSET
+%token KW_SET
+%token KW_UNSET
+%token KW_SUBST
+%token KW_VALUES
+%token KW_SET_SEVERITY
+
+%%
+
+start
+        : rewrite_expr_list log_last_junction        { *result = log_expr_node_append_tail($1, $2); if (yychar != YYEMPTY) { cfg_lexer_unput_token(lexer, &yylval); } YYACCEPT; }
+	;
+
+rewrite_expr_list
+        : rewrite_expr semicolons rewrite_expr_list  { $$ = log_expr_node_append_tail(log_expr_node_new_pipe($1, &@1), $3); }
+        | log_junction semicolons rewrite_expr_list      { $$ = log_expr_node_append_tail($1,  $3); }
+        |                                           { $$ = NULL; }
+        ;
+
+rewrite_expr
+        : KW_SUBST '(' string template_content
+          {
+            last_rewrite = log_rewrite_subst_new($4, configuration);
+            log_template_unref($4);
+          }
+          rewrite_subst_opts ')'
+          {
+            GError *error = NULL;
+            CHECK_ERROR_GERROR(log_rewrite_subst_compile_pattern(last_rewrite, $3, &error), @3, error, "error compiling search pattern");
+            free($3);
+            $$ = last_rewrite;
+          }
+        | KW_SET '(' template_content
+          {
+            last_rewrite = log_rewrite_set_new($3, configuration);
+            last_template_options = log_rewrite_set_get_template_options(last_rewrite);
+            log_template_unref($3);
+          }
+          rewrite_set_opts ')'                 { $$ = last_rewrite; }
+        | KW_UNSET
+          {
+            last_rewrite = log_rewrite_unset_new(configuration);
+          }
+          '(' rewrite_set_opts ')'              { $$ = last_rewrite; }
+	| KW_SET_TAG '(' string 
+	  { 
+	    last_rewrite = log_rewrite_set_tag_new($3, TRUE, configuration);
+          }
+	  rewrite_settag_opts ')'             	{ $$ = last_rewrite; free($3); }
+	| KW_CLEAR_TAG '(' string ')'           { $$ = log_rewrite_set_tag_new($3, FALSE, configuration); free($3); }
+        | KW_GROUP_SET '(' template_content
+        {
+            last_rewrite = log_rewrite_groupset_new($3, configuration);
+            log_template_unref($3);
+            }
+        rewrite_groupset_opts ')' { $$ = last_rewrite; }
+        | KW_GROUP_UNSET '('
+        {
+            last_rewrite = log_rewrite_groupunset_new(configuration);
+        } rewrite_groupset_opts ')' { $$ = last_rewrite; }
+        | KW_SET_SEVERITY '(' template_content ')' { $$ = log_rewrite_set_severity_new($3, configuration);  }
+        | LL_IDENTIFIER
+          {
+            Plugin *p;
+            gint context = LL_CONTEXT_REWRITE;
+
+            p = cfg_find_plugin(configuration, context, $1);
+            CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
+
+            last_rewrite = (LogRewrite *) cfg_parse_plugin(configuration, p, &@1, NULL);
+            free($1);
+            if (!last_rewrite)
+              {
+                YYERROR;
+              }
+            $$ = last_rewrite;
+          }
+        ;
+
+rewrite_settag_opts
+        : rewrite_settag_opt rewrite_settag_opts
+        |
+        ;
+
+rewrite_settag_opt
+        : rewrite_condition_opt
+        ;
+
+rewrite_groupset_opts
+        : rewrite_groupset_opt rewrite_groupset_opts
+        |
+        ;
+
+rewrite_groupset_opt
+        : KW_VALUES '(' string_list ')'
+          {
+            log_rewrite_groupset_add_fields(last_rewrite, $3);
+          }
+        | rewrite_condition_opt
+        ;
+
+rewrite_subst_opts
+        : rewrite_subst_opt rewrite_subst_opts
+        |
+        ;
+
+rewrite_subst_opt
+	: { last_matcher_options = log_rewrite_subst_get_matcher_options(last_rewrite); } matcher_option
+	| rewrite_expr_opt
+        ;
+
+rewrite_set_opts
+        : rewrite_set_opt rewrite_set_opts
+        |
+        ;
+
+rewrite_set_opt
+        : rewrite_expr_opt
+        | template_option
+        ;
+
+rewrite_expr_opts
+        : rewrite_expr_opt rewrite_expr_opts
+        |
+        ;
+
+/* INCLUDE_RULES */
+
+%%

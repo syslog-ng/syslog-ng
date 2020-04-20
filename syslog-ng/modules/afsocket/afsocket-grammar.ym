@@ -1,0 +1,910 @@
+/*
+ * Copyright (c) 2002-2012 Balabit
+ * Copyright (c) 1998-2012 Balázs Scheidler
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#include "afsocket-parser.h"
+
+}
+
+
+%code {
+
+#include "afsocket.h"
+#include "cfg-parser.h"
+#include "afsocket-grammar.h"
+#include "afunix-source.h"
+#include "afunix-dest.h"
+#include "afinet-source.h"
+#include "afinet-dest.h"
+#include "messages.h"
+#include "syslog-names.h"
+#include "plugin.h"
+#include "cfg-grammar.h"
+#include "socket-options-inet.h"
+#include "transport-mapper-inet.h"
+#include "service-management.h"
+
+#include "systemd-syslog-source.h"
+#include "afsocket-systemd-override.h"
+
+#include "tlscontext.h"
+
+
+static SocketOptions *last_sock_options;
+static TransportMapper *last_transport_mapper;
+
+TLSContext *last_tls_context;
+
+
+#if ! SYSLOG_NG_ENABLE_IPV6
+#undef AF_INET6
+#define AF_INET6 0; g_assert_not_reached()
+
+#endif
+
+static void
+afsocket_grammar_set_source_driver(AFSocketSourceDriver *sd)
+{
+  last_driver = &sd->super.super;
+
+  last_reader_options = &((AFSocketSourceDriver *) last_driver)->reader_options;
+  last_sock_options = ((AFSocketSourceDriver *) last_driver)->socket_options;
+  last_transport_mapper = ((AFSocketSourceDriver *) last_driver)->transport_mapper;
+  last_proto_server_options = &last_reader_options->proto_options.super;
+}
+
+static void
+afsocket_grammar_set_dest_driver(AFSocketDestDriver *dd)
+{
+  last_driver = &dd->super.super;
+
+  last_writer_options = &((AFSocketDestDriver *) last_driver)->writer_options;
+  last_sock_options = ((AFSocketDestDriver *) last_driver)->socket_options;
+  last_transport_mapper = ((AFSocketDestDriver *) last_driver)->transport_mapper;
+  last_proto_client_options = &last_writer_options->proto_options.super;
+}
+
+void
+afunix_grammar_set_source_driver(AFUnixSourceDriver *sd)
+{
+  afsocket_grammar_set_source_driver(&sd->super);
+  last_file_perm_options = &sd->file_perm_options;
+}
+
+static void
+afinet_grammar_set_source_driver(AFInetSourceDriver *sd)
+{
+  afsocket_grammar_set_source_driver(&sd->super);
+}
+
+static void
+afunix_grammar_set_dest_driver(AFUnixDestDriver *dd)
+{
+  afsocket_grammar_set_dest_driver(&dd->super);
+}
+
+static void
+afinet_grammar_set_dest_driver(AFInetDestDriver *dd)
+{
+  afsocket_grammar_set_dest_driver(&dd->super);
+}
+
+void
+systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
+{
+  afsocket_grammar_set_source_driver(&sd->super);
+}
+
+}
+
+%name-prefix "afsocket_"
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **instance}
+%parse-param {gpointer arg}
+
+%token KW_UNIX_STREAM 20000
+%token KW_UNIX_DGRAM
+%token KW_TCP
+%token KW_UDP
+%token KW_TCP6
+%token KW_UDP6
+%token KW_NETWORK
+%token KW_TRANSPORT
+%token KW_IP_PROTOCOL
+%token KW_SYSTEMD_SYSLOG
+
+%token KW_IP_TTL
+%token KW_SO_BROADCAST
+%token KW_IP_TOS
+%token KW_IP_FREEBIND
+%token KW_SO_SNDBUF
+%token KW_SO_RCVBUF
+%token KW_SO_KEEPALIVE
+%token KW_SO_REUSEPORT
+%token KW_TCP_KEEPALIVE_TIME
+%token KW_TCP_KEEPALIVE_PROBES
+%token KW_TCP_KEEPALIVE_INTVL
+%token KW_LISTEN_BACKLOG
+%token KW_SPOOF_SOURCE
+%token KW_SPOOF_SOURCE_MAX_MSGLEN
+
+%token KW_KEEP_ALIVE
+%token KW_MAX_CONNECTIONS
+%token KW_CLOSE_ON_INPUT
+
+%token KW_LOCALIP
+%token KW_IP
+%token KW_INTERFACE
+%token KW_LOCALPORT
+%token KW_DESTPORT
+%token KW_FAILOVER_SERVERS
+%token KW_FAILOVER
+%token KW_SERVERS
+%token KW_FAILBACK
+%token KW_TCP_PROBE_INTERVAL
+%token KW_SUCCESSFUL_PROBES_REQUIRED
+%token KW_DYNAMIC_WINDOW_SIZE
+%token KW_DYNAMIC_WINDOW_STATS_FREQ
+%token KW_DYNAMIC_WINDOW_REALLOC_TICKS
+
+/* SSL support */
+
+%token KW_TLS
+%token KW_PEER_VERIFY
+%token KW_KEY_FILE
+%token KW_CERT_FILE
+%token KW_DHPARAM_FILE
+%token KW_PKCS12_FILE
+%token KW_CA_DIR
+%token KW_CRL_DIR
+%token KW_CA_FILE
+%token KW_TRUSTED_KEYS
+%token KW_TRUSTED_DN
+%token KW_CIPHER_SUITE
+%token KW_ECDH_CURVE_LIST
+%token KW_SSL_OPTIONS
+%token KW_SNI
+%token KW_ALLOW_COMPRESS
+
+/* INCLUDE_DECLS */
+
+%type   <ptr> driver
+%type	<ptr> source_afunix
+%type	<ptr> source_afunix_dgram_params
+%type	<ptr> source_afunix_stream_params
+%type	<ptr> source_afinet
+%type	<ptr> source_afinet_udp_params
+%type	<ptr> source_afinet_tcp_params
+%type	<ptr> source_afinet_udp6_params
+%type	<ptr> source_afinet_tcp6_params
+%type   <ptr> source_afsyslog
+%type   <ptr> source_afsyslog_params
+%type	<ptr> source_afnetwork
+%type	<ptr> source_afnetwork_params
+%type   <ptr> source_afsocket_stream_params
+%type	<ptr> source_systemd_syslog
+%type	<ptr> source_systemd_syslog_params
+
+%type	<ptr> dest_afunix
+%type	<ptr> dest_afunix_dgram_params
+%type	<ptr> dest_afunix_stream_params
+%type	<ptr> dest_afinet
+%type	<ptr> dest_afinet_udp_params
+%type	<ptr> dest_afinet_tcp_params
+%type	<ptr> dest_afinet_udp6_params
+%type	<ptr> dest_afinet_tcp6_params
+%type   <ptr> dest_afsyslog
+%type   <ptr> dest_afsyslog_params
+%type   <ptr> dest_afnetwork
+%type   <ptr> dest_afnetwork_params
+
+%type   <num> inet_ip_protocol_option
+
+%type <ptr> dest_afinet_option
+
+%type <ptr> dest_failover_options
+%type <ptr> dest_failover_modes_options
+
+%%
+
+start
+        : driver
+          {
+            *instance = $1;
+            if (yychar != YYEMPTY)
+              cfg_lexer_unput_token(lexer, &yylval);
+            YYACCEPT;
+          }
+        ;
+
+driver
+        : LL_CONTEXT_SOURCE source_afunix                     { $$ = $2; }
+        | LL_CONTEXT_SOURCE source_afinet                     { $$ = $2; }
+        | LL_CONTEXT_SOURCE source_afsyslog                   { $$ = $2; }
+        | LL_CONTEXT_SOURCE source_afnetwork                  { $$ = $2; }
+        | LL_CONTEXT_SOURCE source_systemd_syslog             { $$ = $2; }
+        | LL_CONTEXT_DESTINATION dest_afunix                  { $$ = $2; }
+        | LL_CONTEXT_DESTINATION dest_afinet                  { $$ = $2; }
+        | LL_CONTEXT_DESTINATION dest_afsyslog                { $$ = $2; }
+        | LL_CONTEXT_DESTINATION dest_afnetwork               { $$ = $2; }
+        ;
+
+
+source_afunix
+        : KW_UNIX_DGRAM '(' source_afunix_dgram_params ')'	                                { $$ = $3; }
+	| KW_UNIX_STREAM '(' source_afunix_stream_params ')' 	                                { $$ = $3; }
+	;
+
+source_afunix_dgram_params
+	: string
+	  {
+            create_and_set_unix_dgram_or_systemd_syslog_source($1, configuration);
+	  }
+	  source_afunix_options			{ $$ = last_driver; free($1); }
+	;
+
+source_afunix_stream_params
+	: string
+	  {
+            create_and_set_unix_stream_or_systemd_syslog_source($1, configuration);
+	  }
+	  source_afunix_options			{ $$ = last_driver; free($1); }
+	;
+
+/* options are common between dgram & stream */
+source_afunix_options
+	: source_afunix_option source_afunix_options
+	|
+	;
+
+source_afunix_option
+        : file_perm_option
+	| source_afsocket_stream_params		{}
+	| source_reader_option			{}
+	| source_driver_option
+	| socket_option				{}
+	| KW_OPTIONAL '(' yesno ')'		{ last_driver->optional = $3; }
+	| KW_PASS_UNIX_CREDENTIALS '(' yesno ')'
+	  {
+	    AFUnixSourceDriver *self = (AFUnixSourceDriver*) last_driver;
+	    afunix_sd_set_pass_unix_credentials(self, $3);
+	  }
+	| KW_CREATE_DIRS '(' yesno ')'
+	  {
+	    AFUnixSourceDriver *self = (AFUnixSourceDriver*) last_driver;
+	    afunix_sd_set_create_dirs(self, $3);
+	  }
+	;
+
+source_afinet
+	: KW_UDP '(' source_afinet_udp_params ')'		{ $$ = $3; }
+	| KW_TCP '(' source_afinet_tcp_params ')'		{ $$ = $3; }
+	| KW_UDP6 '(' source_afinet_udp6_params ')'		{ $$ = $3; }
+	| KW_TCP6 '(' source_afinet_tcp6_params ')'		{ $$ = $3; }
+        ;
+
+source_afinet_udp_params
+        :
+          {
+            AFInetSourceDriver *d = afinet_sd_new_udp(configuration);
+
+            afinet_grammar_set_source_driver(d);
+	  }
+	  source_afinet_udp_options		{ $$ = last_driver; }
+	;
+
+source_afinet_udp6_params
+        :
+          {
+            AFInetSourceDriver *d = afinet_sd_new_udp6(configuration);
+
+            afinet_grammar_set_source_driver(d);
+          }
+          source_afinet_udp_options		{ $$ = last_driver; }
+        ;
+
+source_afinet_udp_options
+	: source_afinet_udp_option source_afinet_udp_options
+	|
+	;
+
+source_afinet_udp_option
+	: source_afinet_option
+	;
+
+source_afinet_option
+	: KW_LOCALIP '(' string ')'		{ afinet_sd_set_localip(last_driver, $3); free($3); }
+	| KW_IP '(' string ')'			{ afinet_sd_set_localip(last_driver, $3); free($3); }
+	| KW_LOCALPORT '(' string_or_number ')'	{ afinet_sd_set_localport(last_driver, $3); free($3); }
+	| KW_PORT '(' string_or_number ')'	{ afinet_sd_set_localport(last_driver, $3); free($3); }
+	| source_reader_option
+	| source_driver_option
+	| inet_socket_option
+	;
+
+source_afinet_tcp_params
+	:
+	  {
+	    AFInetSourceDriver *d = afinet_sd_new_tcp(configuration);
+
+	    afinet_grammar_set_source_driver(d);
+	  }
+	  source_afinet_tcp_options	{ $$ = last_driver; }
+	;
+
+source_afinet_tcp6_params
+	:
+	  {
+	    AFInetSourceDriver *d = afinet_sd_new_tcp6(configuration);
+
+	    afinet_grammar_set_source_driver(d);
+	  }
+	  source_afinet_tcp_options	{ $$ = last_driver; }
+	;
+
+source_afinet_tcp_options
+	: source_afinet_tcp_option source_afinet_tcp_options
+	|
+	;
+
+source_afinet_tcp_option
+        : source_afinet_option
+	| KW_TLS
+	  {
+            gchar buf[256];
+
+	    last_tls_context = tls_context_new(TM_SERVER, cfg_lexer_format_location(lexer, &@1, buf, sizeof(buf)));
+	  }
+	  '(' tls_options ')'
+	  {
+	    afinet_sd_set_tls_context(last_driver, last_tls_context);
+          }
+	| source_afsocket_stream_params		{}
+	;
+
+source_afsocket_stream_params
+	: KW_KEEP_ALIVE '(' yesno ')'		{ afsocket_sd_set_keep_alive(last_driver, $3); }
+	| KW_MAX_CONNECTIONS '(' positive_integer ')'	 { afsocket_sd_set_max_connections(last_driver, $3); }
+	| KW_LISTEN_BACKLOG '(' positive_integer ')'	{ afsocket_sd_set_listen_backlog(last_driver, $3); }
+	| KW_DYNAMIC_WINDOW_SIZE '(' nonnegative_integer ')' { afsocket_sd_set_dynamic_window_size(last_driver, $3); }
+  | KW_DYNAMIC_WINDOW_STATS_FREQ '(' nonnegative_integer ')' { afsocket_sd_set_dynamic_window_stats_freq(last_driver, $3); }
+  | KW_DYNAMIC_WINDOW_STATS_FREQ '(' LL_FLOAT ')' { afsocket_sd_set_dynamic_window_stats_freq(last_driver, $3); }
+  | KW_DYNAMIC_WINDOW_REALLOC_TICKS '(' nonnegative_integer ')' { afsocket_sd_set_dynamic_window_realloc_ticks(last_driver, $3); }
+	;
+
+source_afsyslog
+	: KW_SYSLOG '(' source_afsyslog_params ')'		{ $$ = $3; }
+	;
+
+source_afsyslog_params
+	:
+	  {
+            /* we use transport(tcp) transport by default */
+            AFInetSourceDriver *d = afinet_sd_new_syslog(configuration);
+
+            afinet_grammar_set_source_driver(d);
+	  }
+	  source_afsyslog_options	{ $$ = last_driver; }
+	;
+
+source_afsyslog_options
+	: source_afsyslog_option source_afsyslog_options
+	|
+	;
+
+source_afsyslog_option
+        : source_afinet_option
+        | source_afsocket_transport
+	| source_afsocket_stream_params		{}
+	;
+
+source_afnetwork
+	: KW_NETWORK '(' source_afnetwork_params ')'    { $$ = $3; }
+	;
+
+source_afnetwork_params
+	:
+	  {
+            /* we use transport(tcp) transport by default */
+            AFInetSourceDriver *d = afinet_sd_new_network(configuration);
+
+            afinet_grammar_set_source_driver(d);
+	  }
+	  source_afnetwork_options	{ $$ = last_driver; }
+        ;
+
+source_afnetwork_options
+	: source_afnetwork_option source_afnetwork_options
+	|
+	;
+
+source_afnetwork_option
+        : source_afinet_option
+        | source_afsocket_transport
+	| source_afsocket_stream_params		{}
+	;
+
+source_afsocket_transport
+	: afsocket_transport
+        | KW_TRANSPORT '(' string
+          {
+            Plugin *p;
+            gint context = LL_CONTEXT_SERVER_PROTO;
+
+            p = cfg_find_plugin(configuration, context, $3);
+            if (p)
+              {
+                /* for transports with grammar */
+                if (p->parser)
+                  {
+                    LogProtoServerFactory *sf = cfg_parse_plugin(configuration, p, &@3, last_proto_server_options);
+                    ((AFSocketSourceDriver *) last_driver)->proto_factory = sf;
+                  }
+              }
+            transport_mapper_set_transport(last_transport_mapper, $3);
+          }
+        ')'	{ free($3); }
+	| KW_TLS
+	  {
+            gchar buf[256];
+
+	    last_tls_context = tls_context_new(TM_SERVER, cfg_lexer_format_location(lexer, &@1, buf, sizeof(buf)));
+	  }
+	  '(' tls_options ')'
+	  {
+	    afinet_sd_set_tls_context(last_driver, last_tls_context);
+          }
+        ;
+
+source_systemd_syslog
+	: KW_SYSTEMD_SYSLOG '(' source_systemd_syslog_params ')'  { $$ = $3; }
+	;
+
+source_systemd_syslog_params
+	: {
+#if ! SYSLOG_NG_ENABLE_SYSTEMD
+            msg_error("systemd-syslog() source cannot be enabled and it is not"
+                      " functioning. Please compile your syslog-ng with --enable-systemd"
+                      " flag", cfg_lexer_format_location_tag(lexer, &@0));
+            YYERROR;
+#else
+            SystemDSyslogSourceDriver *d = systemd_syslog_sd_new(configuration, FALSE);
+            systemd_syslog_grammar_set_source_driver(d);
+#endif
+          }
+          source_systemd_syslog_options { $$ = last_driver; }
+        ;
+
+source_systemd_syslog_options
+        : source_systemd_syslog_option source_systemd_syslog_options
+        |
+        ;
+
+source_systemd_syslog_option
+        : source_reader_option
+        | socket_option
+	| source_driver_option
+        ;
+
+dest_afunix
+	: KW_UNIX_DGRAM '(' dest_afunix_dgram_params ')'	{ $$ = $3; }
+	| KW_UNIX_STREAM '(' dest_afunix_stream_params ')'	{ $$ = $3; }
+	;
+
+dest_afunix_dgram_params
+	: string
+	  {
+	    AFUnixDestDriver *d = afunix_dd_new_dgram($1, configuration);
+
+      afunix_grammar_set_dest_driver(d);
+	  }
+	  dest_afunix_options			{ $$ = last_driver; free($1); }
+	;
+
+dest_afunix_stream_params
+	: string
+	  {
+	    AFUnixDestDriver *d = afunix_dd_new_stream($1, configuration);
+
+      afunix_grammar_set_dest_driver(d);
+	  }
+	  dest_afunix_options			{ $$ = last_driver; free($1); }
+	;
+
+dest_afunix_options
+	: dest_afunix_options dest_afunix_option
+	|
+	;
+
+dest_afunix_option
+	: dest_writer_option
+	| dest_afsocket_option
+	| socket_option
+	| dest_driver_option
+	;
+
+dest_afinet
+	: KW_UDP '(' dest_afinet_udp_params ')'			{ $$ = $3; }
+	| KW_TCP '(' dest_afinet_tcp_params ')'			{ $$ = $3; }
+	| KW_UDP6 '(' dest_afinet_udp6_params ')'		{ $$ = $3; }
+	| KW_TCP6 '(' dest_afinet_tcp6_params ')'		{ $$ = $3; }
+	;
+
+dest_afinet_udp_params
+	: string
+	  {
+	    AFInetDestDriver *d = afinet_dd_new_udp($1, configuration);
+
+      afinet_grammar_set_dest_driver(d);
+	  }
+	  dest_afinet_udp_options		{ $$ = last_driver; free($1); }
+	;
+
+dest_afinet_udp6_params
+	: string
+	  {
+	    AFInetDestDriver *d = afinet_dd_new_udp6($1, configuration);
+
+	    afinet_grammar_set_dest_driver(d);
+	  }
+	  dest_afinet_udp_options		{ $$ = last_driver; free($1); }
+	;
+
+
+dest_afinet_udp_options
+        : dest_afinet_udp_options dest_afinet_udp_option
+	|
+	;
+
+
+dest_afinet_option
+	: KW_LOCALIP '(' string ')'		{ afinet_dd_set_localip(last_driver, $3); free($3); }
+	| KW_LOCALPORT '(' string_or_number ')'	{ afinet_dd_set_localport(last_driver, $3); free($3); }
+	| KW_PORT '(' string_or_number ')'	{ afinet_dd_set_destport(last_driver, $3); free($3); }
+	| KW_DESTPORT '(' string_or_number ')'	{ afinet_dd_set_destport(last_driver, $3); free($3); }
+	| KW_FAILOVER_SERVERS { afinet_dd_enable_failover(last_driver); } '(' string_list ')'	{ afinet_dd_add_failovers(last_driver, $4); }
+	| KW_FAILOVER { afinet_dd_enable_failover(last_driver); } '(' dest_failover_options ')'	{ $$ = $4; }
+	| inet_socket_option
+	| dest_writer_option
+	| dest_afsocket_option
+	| dest_driver_option
+	;
+
+dest_failover_options
+	: KW_SERVERS '(' string_list ')' { afinet_dd_add_failovers(last_driver, $3); } dest_failover_modes_options
+	;
+
+dest_failover_modes_options
+  : dest_failback_options
+	|
+	;
+
+dest_failback_options
+  : KW_FAILBACK { afinet_dd_enable_failback(last_driver); } '(' dest_failback_probe_options ')'
+	;
+
+dest_failback_probe_options
+	: dest_failback_probe_options dest_failback_probe_option
+	|
+	;
+
+dest_failback_probe_option
+	: KW_TCP_PROBE_INTERVAL '(' positive_integer ')' { afinet_dd_set_failback_tcp_probe_interval(last_driver, $3); }
+	| KW_SUCCESSFUL_PROBES_REQUIRED '(' positive_integer ')' { afinet_dd_set_failback_successful_probes_required(last_driver, $3); }
+	;
+
+
+dest_afinet_udp_option
+	: dest_afinet_option
+	| KW_SPOOF_SOURCE '(' yesno ')'		{ afinet_dd_set_spoof_source(last_driver, $3); }
+	| KW_SPOOF_SOURCE_MAX_MSGLEN '(' positive_integer ')' { afinet_dd_set_spoof_source_max_msglen(last_driver, $3); }
+	;
+
+dest_afinet_tcp_params
+	: string
+	  {
+	    AFInetDestDriver *d = afinet_dd_new_tcp($1, configuration);
+
+      afinet_grammar_set_dest_driver(d);
+	  }
+	  dest_afinet_tcp_options		{ $$ = last_driver; free($1); }
+	;
+
+dest_afinet_tcp6_params
+	: string
+	  {
+	    AFInetDestDriver *d = afinet_dd_new_tcp6($1, configuration);
+
+	    afinet_grammar_set_dest_driver(d);
+	  }
+	  dest_afinet_tcp_options		{ $$ = last_driver; free($1); }
+	;
+
+dest_afinet_tcp_options
+	: dest_afinet_tcp_options dest_afinet_tcp_option
+	|
+	;
+
+dest_afinet_tcp_option
+	: dest_afinet_option
+	| KW_TLS
+	  {
+            gchar buf[256];
+	    last_tls_context = tls_context_new(TM_CLIENT, cfg_lexer_format_location(lexer, &@1, buf, sizeof(buf)));
+	  }
+	  '(' dest_tls_options ')'
+	  {
+	    afinet_dd_set_tls_context(last_driver, last_tls_context);
+          }
+	;
+
+dest_afsocket_option
+        : KW_KEEP_ALIVE '(' yesno ')'        { afsocket_dd_set_keep_alive(last_driver, $3); }
+        | KW_CLOSE_ON_INPUT '(' yesno ')'
+          {
+            afsocket_dd_set_close_on_input(last_driver, $3);
+            log_proto_client_options_set_drop_input(last_proto_client_options, !$3);
+          }
+        ;
+
+
+dest_afsyslog
+        : KW_SYSLOG '(' dest_afsyslog_params ')'   { $$ = $3; }
+
+dest_afsyslog_params
+        : string
+          {
+            AFInetDestDriver *d = afinet_dd_new_syslog($1, configuration);
+
+            afinet_grammar_set_dest_driver(d);
+	  }
+	  dest_afsyslog_options			{ $$ = last_driver; free($1); }
+        ;
+
+
+dest_afsyslog_options
+	: dest_afsyslog_options dest_afsyslog_option
+	|
+	;
+
+dest_afsyslog_option
+	: dest_afinet_option
+	| dest_afsocket_transport
+	;
+
+dest_afnetwork
+	: KW_NETWORK '(' dest_afnetwork_params ')'	{ $$ = $3; }
+	;
+
+dest_afnetwork_params
+        : string
+          {
+            AFInetDestDriver *d = afinet_dd_new_network($1, configuration);
+
+            afinet_grammar_set_dest_driver(d);
+	  }
+	  dest_afnetwork_options			{ $$ = last_driver; free($1); }
+        ;
+
+dest_afnetwork_options
+	: dest_afnetwork_options dest_afnetwork_option
+	|
+	;
+
+dest_afnetwork_option
+	: dest_afinet_option
+	| dest_afsocket_transport
+	;
+
+dest_afsocket_transport
+	: afsocket_transport
+        | KW_TRANSPORT '(' string
+          {
+            Plugin *p;
+            gint context = LL_CONTEXT_CLIENT_PROTO;
+
+            p = cfg_find_plugin(configuration, context, $3);
+            if (p)
+              {
+                /* for transports with grammar */
+                if (p->parser)
+                  {
+                    LogProtoClientFactory *cf = cfg_parse_plugin(configuration, p, &@3, last_proto_client_options);
+                    ((AFSocketDestDriver *) last_driver)->proto_factory = cf;
+                  }
+              }
+            transport_mapper_set_transport(last_transport_mapper, $3);
+          }
+        ')'	{ free($3); }
+	| KW_SPOOF_SOURCE '(' yesno ')'		         { afinet_dd_set_spoof_source(last_driver, $3); }
+	| KW_TLS
+	  {
+            gchar buf[256];
+
+            last_tls_context = tls_context_new(TM_CLIENT, cfg_lexer_format_location(lexer, &@1, buf, sizeof(buf)));
+          }
+          '(' dest_tls_options ')'
+          {
+            afinet_dd_set_tls_context(last_driver, last_tls_context);
+          }
+        ;
+
+afsocket_transport
+        : KW_TRANSPORT '(' KW_TCP ')'                    { transport_mapper_set_transport(last_transport_mapper, "tcp"); }
+        | KW_TRANSPORT '(' KW_UDP ')'                    { transport_mapper_set_transport(last_transport_mapper, "udp"); }
+        | KW_TRANSPORT '(' KW_TLS ')'                    { transport_mapper_set_transport(last_transport_mapper, "tls"); }
+        | KW_IP_PROTOCOL '(' inet_ip_protocol_option ')' { transport_mapper_set_address_family(last_transport_mapper, $3); }
+        ;
+
+dest_tls_options
+        : dest_tls_option dest_tls_options
+        |
+        ;
+
+dest_tls_option
+        : tls_option
+        | KW_SNI '(' yesno ')'
+          {
+            if ($3)
+              tls_context_set_sni(last_tls_context, ((AFInetDestDriver *)last_driver)->primary);
+          }
+        ;
+
+tls_options
+	: tls_option tls_options
+	|
+	;
+
+tls_option
+        : KW_IFDEF {
+}
+
+	| KW_PEER_VERIFY '(' yesno ')'
+	  {
+	    gint verify_mode = $3 ? (TVM_REQUIRED | TVM_TRUSTED) : (TVM_OPTIONAL | TVM_UNTRUSTED);
+	    tls_context_set_verify_mode(last_tls_context, verify_mode);
+          }
+	| KW_PEER_VERIFY '(' string ')'
+	  {
+	    CHECK_ERROR(tls_context_set_verify_mode_by_name(last_tls_context, $3), @3,
+	                "unknown peer-verify() argument");
+            free($3);
+          }
+	| KW_KEY_FILE '(' path_secret ')'
+	  {
+	    tls_context_set_key_file(last_tls_context, $3);
+            free($3);
+          }
+	| KW_CERT_FILE '(' path_check ')'
+	  {
+	    tls_context_set_cert_file(last_tls_context, $3);
+            free($3);
+          }
+        | KW_DHPARAM_FILE '(' path_check ')'
+          {
+            tls_context_set_dhparam_file(last_tls_context, $3);
+            free($3);
+          }
+        | KW_PKCS12_FILE '(' path_check ')'
+          {
+            tls_context_set_pkcs12_file(last_tls_context, $3);
+            free($3);
+          }
+	| KW_CA_DIR '(' string ')'
+	  {
+	    tls_context_set_ca_dir(last_tls_context, $3);
+            free($3);
+          }
+	| KW_CRL_DIR '(' string ')'
+	  {
+	    tls_context_set_crl_dir(last_tls_context, $3);
+            free($3);
+          }
+        | KW_CA_FILE '(' path_check ')'
+          {
+            tls_context_set_ca_file(last_tls_context, $3);
+            free($3);
+          }
+        | KW_TRUSTED_KEYS '(' string_list ')'
+          {
+            tls_session_set_trusted_fingerprints(last_tls_context, $3);
+          }
+        | KW_TRUSTED_DN '(' string_list ')'
+          {
+            tls_session_set_trusted_dn(last_tls_context, $3);
+          }
+	| KW_CIPHER_SUITE '(' string ')'
+	  {
+            tls_context_set_cipher_suite(last_tls_context, $3);
+            free($3);
+	  }
+        | KW_ECDH_CURVE_LIST '(' string ')'
+          {
+            tls_context_set_ecdh_curve_list(last_tls_context, $3);
+            free($3);
+          }
+	| KW_SSL_OPTIONS '(' string_list ')'
+	  {
+            CHECK_ERROR(tls_context_set_ssl_options_by_name(last_tls_context, $3), @3,
+                        "unknown ssl-options() argument");
+	  }
+        | KW_ALLOW_COMPRESS '(' yesno ')'
+          {
+             transport_mapper_inet_set_allow_compress(last_transport_mapper, $3);
+          }
+        | KW_ENDIF {
+}
+        ;
+
+
+socket_option
+	: KW_SO_SNDBUF '(' nonnegative_integer ')'
+	{
+		CHECK_ERROR($3 <= G_MAXINT, @3, "Invalid so_sndbuf, it has to be less than %d", G_MAXINT);
+		last_sock_options->so_sndbuf = $3;
+	}
+	| KW_SO_RCVBUF '(' nonnegative_integer ')'
+	{
+		CHECK_ERROR($3 <= G_MAXINT, @3, "Invalid so_rcvbuf, it has to be less than %d", G_MAXINT);
+		last_sock_options->so_rcvbuf = $3;
+	}
+	| KW_SO_BROADCAST '(' yesno ')'             { last_sock_options->so_broadcast = $3; }
+	| KW_SO_KEEPALIVE '(' yesno ')'             { last_sock_options->so_keepalive = $3; }
+	| KW_SO_REUSEPORT '(' yesno ')'             { last_sock_options->so_reuseport = $3; }
+	;
+
+inet_socket_option
+	: socket_option
+	| KW_IP_TTL '(' nonnegative_integer ')'               { ((SocketOptionsInet *) last_sock_options)->ip_ttl = $3; }
+	| KW_IP_TOS '(' nonnegative_integer ')'               { ((SocketOptionsInet *) last_sock_options)->ip_tos = $3; }
+	| KW_IP_FREEBIND '(' yesno ')'              { ((SocketOptionsInet *) last_sock_options)->ip_freebind = $3; }
+	| KW_INTERFACE '(' string ')'		    { socket_options_inet_set_interface_name((SocketOptionsInet *) last_sock_options, $3); free($3); }
+	| KW_TCP_KEEPALIVE_TIME '(' nonnegative_integer ')'   { ((SocketOptionsInet *) last_sock_options)->tcp_keepalive_time = $3; }
+	| KW_TCP_KEEPALIVE_INTVL '(' nonnegative_integer ')'  { ((SocketOptionsInet *) last_sock_options)->tcp_keepalive_intvl = $3; }
+	| KW_TCP_KEEPALIVE_PROBES '(' nonnegative_integer ')' { ((SocketOptionsInet *) last_sock_options)->tcp_keepalive_probes = $3; }
+	;
+
+inet_ip_protocol_option
+        : LL_NUMBER
+        {
+          CHECK_ERROR($1 == 4 || $1 == 6, @1, "ip-protocol option can only be 4 or 6!");
+          if ($1 == 4)
+            {
+              $$ = AF_INET;
+            }
+          else
+            {
+              $$ = AF_INET6;
+            }
+        }
+        ;
+
+
+/* INCLUDE_RULES */
+
+%%

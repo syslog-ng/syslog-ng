@@ -1,0 +1,115 @@
+<?xml version="1.0"?>
+<!DOCTYPE service_bundle
+  SYSTEM "/usr/share/lib/xml/dtd/service_bundle.dtd.1">
+
+<service_bundle type='manifest' name='SyslogNg:Metadata'>
+  <service
+    name='system/syslog-ng'
+    type='service'
+    version='1'>
+    <create_default_instance enabled='false' />
+    <dependency
+            name='milestone'
+            grouping='require_all'
+            restart_on='none'
+            type='service'>
+            <service_fmri value='svc:/milestone/sysconfig' />
+    </dependency>
+
+    <dependency
+            name='filesystem'
+            grouping='require_all'
+            restart_on='none'
+            type='service'>
+            <service_fmri value='svc:/system/filesystem/local' />
+    </dependency>
+
+    <!--
+      syslogd(1M) can log to automounted files.
+    -->
+    <dependency
+            name='autofs'
+            grouping='optional_all'
+            restart_on='none'
+            type='service'>
+            <service_fmri value='svc:/system/filesystem/autofs' />
+    </dependency>
+
+    <dependency
+            name='name-services'
+            grouping='require_all'
+            restart_on='none'
+            type='service'>
+            <service_fmri value='svc:/milestone/name-services' />
+    </dependency>
+
+    <dependent
+            name='syslog-ng_single-user'
+            grouping='optional_all'
+            restart_on='none'>
+            <service_fmri value='svc:/milestone/multi-user' />
+    </dependent>
+
+    <exec_method
+      type='method'
+      name='start'
+      exec='/lib/svc/method/syslog-ng %m %i'
+      timeout_seconds='60'>
+      <method_context>
+        <method_credential user='root' />
+      </method_context>
+    </exec_method>
+
+    <exec_method
+      type='method'
+      name='restart'
+      exec='/lib/svc/method/syslog-ng %m %i'
+      timeout_seconds='60'>
+      <method_context>
+        <method_credential user='root' />
+      </method_context>
+    </exec_method>
+
+    <exec_method
+      type='method'
+      name='stop'
+      exec='/lib/svc/method/syslog-ng %m %i'
+      timeout_seconds='60' >
+      <method_context>
+        <method_credential user='root' />
+      </method_context>
+    </exec_method>
+
+    <exec_method
+      type='method'
+      name='refresh'
+      exec='/lib/svc/method/syslog-ng %m %i'
+      timeout_seconds='60' >
+      <method_context>
+        <method_credential user='root' />
+      </method_context>
+    </exec_method>
+
+    <property_group name='general' type='framework'>
+            <!-- to start stop syslog daemon -->
+            <propval name='action_authorization' type='astring'
+                    value='solaris.smf.manage.system-log' />
+    </property_group>
+
+    <property_group name='config' type='application'>
+            <!-- default property settings for syslogd(1m) -->
+
+            <!-- authorization to modify the configuration properties -->
+            <propval name='value_authorization' type='astring'
+                    value='solaris.smf.value.system-log' />
+    </property_group>
+
+    <template>
+      <common_name>
+        <loctext xml:lang='C'>
+          syslog-ng logging daemon
+        </loctext>
+      </common_name>
+    </template>
+  </service>
+</service_bundle>

@@ -1,0 +1,101 @@
+Tests: basic
+Depends: syslog-ng-core
+Restrictions: allow-stderr
+
+Tests: basic
+Depends: syslog-ng
+Restrictions: allow-stderr
+
+Tests: basic
+Depends: @
+Restrictions: allow-stderr
+
+Tests: basic
+Depends: syslog-ng-core
+Restrictions: allow-stderr
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-mongodb
+Restrictions: allow-stderr
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-sql
+Restrictions: allow-stderr
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-smtp
+Restrictions: allow-stderr
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-amqp
+Restrictions: allow-stderr
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-geoip2
+Restrictions: allow-stderr
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-redis
+Restrictions: allow-stderr
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-stomp
+Restrictions: allow-stderr
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-riemann
+Restrictions: allow-stderr
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-graphite
+Restrictions: allow-stderr
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-python
+Restrictions: allow-stderr
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-add-contextual-data
+Restrictions: allow-stderr
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-getent
+Restrictions: allow-stderr
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-stardate
+Restrictions: allow-stderr
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-map-value-pairs
+Restrictions: allow-stderr
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-snmptrapd-parser
+Restrictions: allow-stderr
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-xml-parser
+Restrictions: allow-stderr
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-extra
+Restrictions: allow-stderr
+
+Tests: basic
+Depends: syslog-ng-core, syslog-ng-mod-tag-parser
+Restrictions: allow-stderr
+
+#Tests: upgrade
+#Restrictions: needs-root, allow-stderr
+#Depends: apt-utils
+
+Tests: baseconfig
+Restrictions: needs-root, allow-stderr
+
+Tests: testinitscript
+Depends: @, sysvinit-core
+Restrictions: needs-root, allow-stderr
+
+#Tests: compile-incubator
+#Depends: build-essential, syslog-ng-dev, fakeroot, debhelper, dh-autoreconf, automake, liblua5.2-dev, libperl-dev, python-dev, libgrok-dev, libtokyocabinet-dev, librdkafka-dev, libzmq3-dev, libmongo-client-dev

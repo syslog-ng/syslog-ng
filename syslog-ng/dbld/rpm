@@ -1,0 +1,36 @@
+#!/bin/bash
+
+. /source/dbld/functions.sh
+
+RPMBUILD=${HOME}/rpmbuild
+RPMBUILD_SOURCES=${RPMBUILD}/SOURCES
+
+function setup_dirs() {
+	mkdir -p $RPMBUILD_SOURCES
+	rm -rf /build/${OS_PLATFORM} && mkdir -p /build/${OS_PLATFORM}
+}
+
+function copy_rpm_packaging_src_files_to_build_folder() {
+    # CzP's spec file expect these files in the pwd
+    # where the build was initiated
+    find /build/syslog-ng-${VERSION}/packaging/rhel/ -type f | grep --invert-match '\.spec$' | xargs -i cp {} /build/
+}
+
+function prepare_source() {
+    copy_rpm_packaging_src_files_to_build_folder
+    cp syslog-ng-${VERSION}.tar.gz $RPMBUILD_SOURCES
+}
+
+function capture_rpms() {
+	mv $RPMBUILD/RPMS/*/*${VERSION}*.rpm /build/${OS_PLATFORM}
+	mv $RPMBUILD/SRPMS/*${VERSION}*.rpm /build/${OS_PLATFORM}
+	echo "Your rpms are in /build/${OS_PLATFORM}, also available on the host in \$(top_srcdir)/dbld/build/${OS_PLATFORM}"
+}
+
+
+cd /build
+
+setup_dirs
+prepare_source
+run_build_command rpmbuild --define '_dbld 1' -ta syslog-ng-${VERSION}.tar.gz
+capture_rpms

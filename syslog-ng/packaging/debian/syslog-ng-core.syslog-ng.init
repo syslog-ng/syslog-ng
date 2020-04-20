@@ -1,0 +1,161 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          syslog-ng
+# Required-Start:    $local_fs $network $time $remote_fs
+# Required-Stop:     $local_fs $network $time $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Starting system logging daemon
+# Description:       Starting syslog-NG, the next generation
+#  syslog daemon.
+### END INIT INFO#
+
+set -e
+
+SYSLOGNG_OPTS=""
+
+#we source /etc/default/syslog-ng if exists
+[ -r /etc/default/syslog-ng ] && . /etc/default/syslog-ng
+
+# stop syslog-ng before changing its PID file!
+PIDFILE="/var/run/syslog-ng.pid"
+
+SYSLOGNG="/usr/sbin/syslog-ng"
+NAME="syslog-ng"
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+test -f $SYSLOGNG || exit 0
+
+# Define LSB log_* functions.
+# Depend on lsb-base (>= 3.0-6) to ensure that this file is present.
+. /lib/lsb/init-functions
+
+case "x$CONSOLE_LOG_LEVEL" in
+  x[1-8])
+    dmesg -n $CONSOLE_LOG_LEVEL
+    ;;
+  x)
+    ;;
+  *)
+    log_warning_msg "CONSOLE_LOG_LEVEL is of unaccepted value."
+    ;;
+esac
+
+create_xconsole() {
+    XCONSOLE=/dev/xconsole
+    if [ "$(uname -s)" = "GNU/kFreeBSD" ]; then
+        XCONSOLE=/var/run/xconsole
+        ln -sf $XCONSOLE /dev/xconsole
+    fi
+    if [ ! -e $XCONSOLE ]; then
+        mknod -m 640 $XCONSOLE p
+        chown root:adm $XCONSOLE
+        [ -x /sbin/restorecon ] && /sbin/restorecon $XCONSOLE
+    fi
+}
+
+create_pidfiledir() {
+    if [ ! -d /var/run/syslog-ng ]
+    then
+        mkdir -p /var/run/syslog-ng
+    fi
+}
+
+syslogng_wait() {
+    if [ "$2" -ne 0 ]; then
+        return 1
+    fi
+
+    if [ -n "$DPKG_MAINTSCRIPT_PACKAGE" ]; then
+        return 0
+    fi
+
+    RET=1
+    for i in $(seq 1 30); do
+        status=0
+        syslog-ng-ctl stats >/dev/null 2>&1 || status=$?
+        if [ "$status" != "$1" ]; then
+            RET=0
+            break
+        fi
+        sleep 1s
+    done
+    return $RET
+}
+
+syslogng_start() {
+    log_daemon_msg "Starting system logging" "$NAME"
+    create_pidfiledir
+    create_xconsole
+    start-stop-daemon --start --oknodo --quiet --exec "$SYSLOGNG" \
+                      --pidfile "$PIDFILE" -- -p "$PIDFILE" $SYSLOGNG_OPTS
+    syslogng_wait 1 $?
+    RET="$?"
+    log_end_msg $RET
+    return $RET
+}
+
+syslogng_stop() {
+    log_daemon_msg "Stopping system logging" "$NAME"
+    start-stop-daemon --stop --oknodo --quiet --name "$NAME" --retry 3 \
+                      --pidfile "$PIDFILE"
+    syslogng_wait 0 $?
+    RET="$?"
+    log_end_msg $RET
+    return $RET
+}
+
+syslogng_reload() {
+    log_daemon_msg "Reload system logging" "$NAME"
+    if $SYSLOGNG -s $SYSLOGNG_OPTS
+    then
+      start-stop-daemon --stop --signal 1 --quiet --exec "$SYSLOGNG" \
+                        --pidfile "$PIDFILE"
+      syslogng_wait 1 $?
+      RET="$?"
+      log_end_msg $RET
+      return $RET
+    else
+      log_end_msg 1
+      return 1
+    fi
+}
+
+
+case "$1" in
+  start)
+    syslogng_start || exit 1
+    ;;
+  stop)
+    syslogng_stop || exit 1
+    ;;
+  reload|force-reload)
+    syslogng_reload || exit 1
+    ;;
+  restart)
+    syslogng_stop
+    syslogng_start || exit 1
+    ;;
+  try-restart)
+    set +e
+    killproc -p "$PIDFILE" "$SYSLOGNG" 0
+    ISRUNNING=$?
+    set -e
+    if [ $ISRUNNING -eq 0 ]
+    then
+      # The syslog is currently running, so we restart it
+      syslogng_stop
+      syslogng_start || exit 1
+    fi
+    ;;
+  status)
+    status_of_proc "$SYSLOGNG" "$NAME" && exit 0 || exit $?
+    ;;
+  *)
+    echo "Usage: /etc/init.d/$NAME {start|stop|restart|reload|force-reload|status}" >&2
+    exit 1
+    ;;
+esac
+
+exit 0
+

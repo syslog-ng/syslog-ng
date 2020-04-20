@@ -1,0 +1,32 @@
+#! /bin/sh
+## Common preinst, postinst and postrm script for syslog-ng-mod-*
+## packages. Some of the modules in syslog-ng-3.3 came with a
+## 00load-$mod config file, which are being removed in 3.4. This file
+## does the necessary dpkg-maintscript-helper voodoo to get rid of
+## them.
+##
+## To avoid duplication, only one file is written, the rest are
+## symlinked to it.
+
+set -e
+
+case "${DPKG_MAINTSCRIPT_PACKAGE}" in
+        syslog-ng-mod-sql|syslog-ng-mod-mongodb)
+                modname="${DPKG_MAINTSCRIPT_PACKAGE#syslog-ng-mod-}"
+                ;;
+        *)
+                echo "rm_conffile voodoo unsupported for package ${DPKG_MAINTSCRIPT_PACKAGE}!" >&2
+                exit 1
+                ;;
+esac
+
+if [ -x "/usr/bin/dpkg-maintscript-helper" ]; then
+        if dpkg-maintscript-helper supports rm_conffile; then
+                dpkg-maintscript-helper rm_conffile \
+                        /etc/syslog-ng/conf.d/00load-${modname}.conf 3.4.0~ -- "$@"
+        fi
+fi
+
+#DEBHELPER#
+
+exit 0

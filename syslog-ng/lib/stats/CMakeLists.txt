@@ -1,0 +1,28 @@
+set(STATS_HEADERS
+    stats/stats.h
+    stats/stats-control.h
+    stats/stats-counter.h
+    stats/stats-cluster.h
+    stats/stats-csv.h
+    stats/stats-log.h
+    stats/stats-registry.h
+    stats/stats-query.h
+    stats/stats-query-commands.h
+    stats/stats-cluster-logpipe.h
+    stats/stats-cluster-single.h
+    PARENT_SCOPE)
+
+set(STATS_SOURCES
+    stats/stats.c
+    stats/stats-control.c
+    stats/stats-cluster.c
+    stats/stats-csv.c
+    stats/stats-log.c
+    stats/stats-registry.c
+    stats/stats-query.c
+    stats/stats-query-commands.c
+    stats/stats-cluster-logpipe.c
+    stats/stats-cluster-single.c
+    PARENT_SCOPE)
+
+add_test_subdirectory(tests)

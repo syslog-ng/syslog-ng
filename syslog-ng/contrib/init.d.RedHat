@@ -1,0 +1,88 @@
+:
+
+################################################################################
+#
+# Program: syslog-ng init script
+#
+# Description:
+#
+#  This is an init script for syslog-ng on the Linux platform.
+#
+#  It totally relies on the Redhat function library and works the same
+#  way as other typical Redhat init scripts.
+#
+#
+# Platforms (tested): Linux (Redhat 6.1)
+#
+#
+# Author: Gregor Binder <gbinder@sysfive.com>
+#
+# Last Changed: October 10, 2000
+#
+#     Copyright (c) 2000 by sysfive.com GmbH, All rights reserved.
+#
+################################################################################
+
+################################################################################
+# configuration
+#
+INIT_PROG="/path_to/syslog-ng"    # Full path to daemon
+INIT_OPTS=""                      # options passed to daemon
+
+PATH=/bin:/sbin:/usr/bin:/usr/sbin
+
+INIT_NAME=`basename "$INIT_PROG"`
+
+# Source Redhat function library.
+#
+. /etc/rc.d/init.d/functions
+
+# Uncomment this if you are on Redhat and think this is useful
+#
+#. /etc/sysconfig/network
+#
+#if [ ${NETWORKING} = "no" ]
+#then
+#	exit 0
+#fi
+
+RETVAL=0
+
+umask 077
+ulimit -c 0
+
+# See how we were called.
+case "$1" in
+  start)
+	echo -n "Starting $INIT_NAME: "
+	daemon --check $INIT_PROG "$INIT_PROG $INIT_OPTS"
+	RETVAL=$?
+	echo -n "Starting Kernel Logger: "
+	[ -x "/sbin/klogd" ] && daemon klogd
+	echo
+	[ $RETVAL -eq 0 ] && touch "/var/lock/subsys/${INIT_NAME}"
+	;;
+  stop)
+	echo -n "Stopping $INIT_NAME: "
+	killproc $INIT_PROG
+	RETVAL=$?
+	echo -n "Stopping Kernel Logger: "
+	[ -x "/sbin/klogd" ] && killproc klogd
+	echo
+	[ $RETVAL -eq 0 ] && rm -f "/var/lock/subsys/${INIT_NAME}"
+	;;
+  status)
+	status $INIT_PROG
+	RETVAL=$?
+	;;
+  restart|reload)
+	$0 stop
+	$0 start
+	RETVAL=$?
+	;;
+  *)
+	echo "Usage: $0 {start|stop|status|restart|reload}"
+	exit 1
+esac
+
+exit $RETVAL

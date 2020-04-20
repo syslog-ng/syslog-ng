@@ -1,0 +1,6 @@
+--exclude=tags
+--exclude=.git
+--exclude=dbld/build
+--exclude=dbld/install
+--exclude=dbld/release
+

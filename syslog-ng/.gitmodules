@@ -1,0 +1,8 @@
+[submodule "lib/ivykis"]
+        path = lib/ivykis
+        url = https://github.com/buytenh/ivykis.git
+        ignore = dirty
+[submodule "lib/jsonc"]
+        path = lib/jsonc
+        url = https://github.com/json-c/json-c.git
+        ignore = dirty

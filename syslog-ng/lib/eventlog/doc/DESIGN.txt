@@ -1,0 +1,33 @@
+Overview
+--------
+
+This library was designed to support several event formats and multiple
+means of delivering messages.
+
+Therefore the process of sending a message to a log is separated to three
+independent parts:
+
+* Building the event record
+
+  This is done by the application program using the library. It is a
+  sequence of calling the following functions:
+
+    evt_rec_init(...)
+    evt_tag_str(...) / evt_tag_int(...) / evt_tag_printf(...)
+    evt_log(...) /* consumes the log record, no need to free it */
+
+  The event record itself consists of the following properties:
+
+    - a simple, constant human readable description of the event
+    - an unordered set of tag/value pairs
+    - a syslog compatible priority value (debug .. emerg)
+
+  The record initialized by evt_rec_init() may contain a couple of tags by
+  default (like pid, timestamp etc.)
+
+* Logging the event record
+
+  The way an event record is sent to the log might also be customized by the
+  administrator. Currently a single output method is implemented named
+  'local' which sends the message off by using syslog().
+

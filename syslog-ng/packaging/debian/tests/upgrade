@@ -1,0 +1,24 @@
+#!/bin/sh -e
+
+orig_version=$(apt-cache policy syslog-ng | grep "500$" | awk '{print $1}')
+
+apt_line=""
+for pkg in syslog-ng \
+                syslog-ng-core \
+                syslog-ng-mod-mongodb \
+                syslog-ng-mod-sql \
+                syslog-ng-mod-smtp \
+                syslog-ng-mod-amqp \
+                syslog-ng-mod-geoip2 \
+                syslog-ng-mod-redis \
+                syslog-ng-mod-stomp \
+                syslog-ng-mod-riemann \
+                syslog-ng-mod-graphite \
+                syslog-ng-mod-python \
+                syslog-ng-mod-add-contextual-data
+do
+    apt_line="$apt_line $pkg=$orig_version"
+done
+
+apt-get install -y --allow-downgrades $apt_line 2>/dev/null
+apt-get -u -y dist-upgrade

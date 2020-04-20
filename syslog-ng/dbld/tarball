@@ -1,0 +1,18 @@
+#!/bin/bash
+
+. /source/dbld/functions.sh
+
+cd /source
+SYSLOGNG_DIR=syslog-ng-${VERSION}
+SYSLOGNG_TARBALL=${SYSLOGNG_DIR}.tar.gz
+
+./autogen.sh
+
+rm -rf /build/dist-build
+mkdir /build/dist-build
+cd /build/dist-build
+/source/configure --enable-manpages
+make dist
+mv ${SYSLOGNG_TARBALL} /build
+
+echo "Your tarball is in /build, also available on the host in \$(top_srcdir)/dbld/build"

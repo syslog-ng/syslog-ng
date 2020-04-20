@@ -1,0 +1,312 @@
+/*
+ * Copyright (c) 2002-2013 Balabit
+ * Copyright (c) 1998-2011 Balázs Scheidler
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code requires {
+
+#include "filter/filter-expr-parser.h"
+
+}
+
+%code {
+
+#include "filter/filter-expr-grammar.h"
+#include "filter/filter-netmask.h"
+#include "filter/filter-netmask6.h"
+#include "filter/filter-op.h"
+#include "filter/filter-cmp.h"
+#include "filter/filter-in-list.h"
+#include "filter/filter-tags.h"
+#include "filter/filter-call.h"
+#include "filter/filter-re.h"
+#include "filter/filter-pri.h"
+#include "messages.h"
+#include "template/templates.h"
+#include "syslog-names.h"
+#include "plugin.h"
+#include "cfg-grammar.h"
+
+FilterExprNode *last_filter_expr;
+
+}
+
+%name-prefix "filter_expr_"
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {FilterExprNode **result}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_PROGRAM
+%token KW_IN_LIST
+
+%left   ';'
+%left	KW_OR
+%left	KW_AND
+%left   KW_NOT
+%left   KW_LT KW_LE KW_EQ KW_NE KW_GE KW_GT
+%left   KW_NUM_LT KW_NUM_LE KW_NUM_EQ KW_NUM_NE KW_NUM_GE KW_NUM_GT
+
+%type	<node> filter_expr
+%type	<node> filter_simple_expr
+%type	<node> filter_plugin
+%type	<node> filter_comparison
+
+%type   <num> filter_fac_list
+%type   <num> filter_fac
+%type	<num> filter_severity_list
+%type	<num> filter_severity
+
+%type   <token> operator
+
+%%
+
+start
+        : filter_expr                           { *result = $1; if (yychar != YYEMPTY) { cfg_lexer_unput_token(lexer, &yylval); } YYACCEPT; }
+	;
+
+filter_expr
+	: filter_simple_expr			{ $$ = $1; if (!$1) YYERROR; }
+        | KW_NOT filter_expr			{ ((FilterExprNode *) $2)->comp = !(((FilterExprNode *) $2)->comp); $$ = $2; }
+	| filter_expr KW_OR filter_expr		{ $$ = fop_or_new($1, $3); }
+	| filter_expr KW_AND filter_expr	{ $$ = fop_and_new($1, $3); }
+	| filter_expr ';' filter_expr	        { $$ = fop_and_new($1, $3); }
+	|  filter_expr ';'	                { $$ = $1; }
+	| '(' filter_expr ')'			{ $$ = $2; }
+	;
+
+filter_simple_expr
+	: KW_FACILITY '(' filter_fac_list ')'	{ $$ = filter_facility_new($3);  }
+	| KW_FACILITY '(' LL_NUMBER ')'		{ $$ = filter_facility_new(0x80000000 | $3); }
+	| KW_SEVERITY '(' filter_severity_list ')' { $$ = filter_severity_new($3); }
+	| KW_FILTER '(' string ')'		{ $$ = filter_call_new($3, configuration); free($3); }
+	| KW_NETMASK '(' string ')'    { $$ = filter_netmask_new($3); free($3); }
+  | KW_NETMASK6 '(' string ')'   {
+  #if SYSLOG_NG_ENABLE_IPV6
+                                    $$ = filter_netmask6_new($3);
+  #else
+                                    YYERROR;
+  #endif
+                                    free($3);
+                                  }
+        | KW_TAGS '(' string_list ')'           { $$ = filter_tags_new($3); }
+        | KW_IN_LIST '(' string string ')'
+          {
+            const gchar *p = $4;
+            if (p[0] == '$')
+              {
+                msg_warning("Value references in filters should not use the '$' prefix, those are only needed in templates",
+                            evt_tag_str("value", $4),
+                            cfg_lexer_format_location_tag(lexer, &@4));
+                p++;
+              }
+            $$ = filter_in_list_new($3, p);
+            free($3);
+            free($4);
+          }
+        | KW_IN_LIST '(' string KW_VALUE '(' string ')' ')'
+          {
+            const gchar *p = $6;
+            if (p[0] == '$')
+              {
+                msg_warning("Value references in filters should not use the '$' prefix, those are only needed in templates",
+                            evt_tag_str("value", $6),
+                            cfg_lexer_format_location_tag(lexer, &@6));
+                p++;
+              }
+            $$ = filter_in_list_new($3, p);
+            free($3);
+            free($6);
+          }
+	| filter_re					{ $$ = last_filter_expr; }
+	| filter_plugin
+	| filter_comparison
+	;
+
+
+filter_plugin
+        : LL_IDENTIFIER
+          {
+            Plugin *p;
+            gint context = LL_CONTEXT_FILTER;
+            FilterExprNode *node;
+
+            p = cfg_find_plugin(configuration, context, $1);
+            CHECK_ERROR(p, @1, "%s plugin %s not found OR you may not used double quotes in your filter expression", cfg_lexer_lookup_context_name_by_type(context), $1);
+
+            node = (FilterExprNode *) cfg_parse_plugin(configuration, p, &@1, NULL);
+            free($1);
+            if (!node)
+              {
+                YYERROR;
+              }
+            $$ = node;
+          }
+	;
+
+filter_comparison
+	: LL_STRING operator LL_STRING
+          {
+            LogTemplate *left, *right;
+            GError *error = NULL;
+
+            left = log_template_new(configuration, NULL);
+            right = log_template_new(configuration, NULL);
+            CHECK_ERROR_GERROR(log_template_compile(left, $1, &error), @1, error, "compiling the left-hand-side template failed");
+            CHECK_ERROR_GERROR(log_template_compile(right, $3, &error), @3, error, "compiling the right-hand-side template failed");
+
+            free($1);
+            free($3);
+            $$ = fop_cmp_new(left, right, $2);
+          }
+        ;
+
+operator
+	: KW_NUM_LT	{ $$ = yylval.token; }
+	| KW_NUM_LE	{ $$ = yylval.token; }
+	| KW_NUM_EQ     { $$ = yylval.token; }
+	| KW_NUM_NE     { $$ = yylval.token; }
+	| KW_NUM_GE     { $$ = yylval.token; }
+	| KW_NUM_GT     { $$ = yylval.token; }
+	| KW_LT		{ $$ = yylval.token; }
+	| KW_LE		{ $$ = yylval.token; }
+	| KW_EQ         { $$ = yylval.token; }
+	| KW_NE         { $$ = yylval.token; }
+	| KW_GE         { $$ = yylval.token; }
+	| KW_GT         { $$ = yylval.token; }
+	;
+
+filter_re
+        : KW_PROGRAM { last_filter_expr = filter_re_new(LM_V_PROGRAM); } filter_re_params
+	| KW_HOST    { last_filter_expr = filter_re_new(LM_V_HOST); } filter_re_params
+	| KW_MESSAGE { last_filter_expr = filter_re_new(LM_V_MESSAGE); } filter_re_params
+        | KW_SOURCE  { last_filter_expr = filter_source_new();  } filter_re_params
+	| KW_MATCH   { last_filter_expr = filter_match_new(); } filter_match_params
+	;
+
+filter_re_params
+	: '(' string filter_re_opts ')'
+          {
+            GError *error = NULL;
+
+            CHECK_ERROR_GERROR(filter_re_compile_pattern(last_filter_expr, $2, &error), @2, error, "compiling the regexp failed");
+            free($2);
+          }
+	;
+
+filter_re_opts
+        : filter_re_opt filter_re_opts
+        |
+        ;
+
+filter_re_opt
+	: { last_matcher_options = filter_re_get_matcher_options(last_filter_expr); } matcher_option
+        ;
+
+
+filter_match_params
+        : '(' string filter_match_opts ')'
+          {
+            GError *error = NULL;
+
+            CHECK_ERROR_GERROR(filter_re_compile_pattern(last_filter_expr, $2, &error), @2, error, "compiling the regexp failed");
+            free($2);
+
+            if (filter_match_is_usage_obsolete(last_filter_expr))
+              {
+                msg_warning_once("WARNING: the match() filter without the use of the value() "
+                                 "option is deprecated and hinders performance, please use a "
+                                 "more specific filter like message() and/or program() instead",
+                                 cfg_lexer_format_location_tag(lexer, &@0));
+              }
+
+          }
+
+filter_match_opts
+        : filter_match_opt filter_match_opts
+        |
+        ;
+
+filter_match_opt
+        : filter_re_opt
+        | KW_VALUE '(' string ')'
+          {
+            const gchar *p = $3;
+            if (p[0] == '$')
+              {
+                msg_warning("WARNING: value references in filters should not use the '$' prefix, those are only needed in templates, removing automatically",
+                            evt_tag_str("value", $3),
+                            cfg_lexer_format_location_tag(lexer, &@3));
+                p++;
+              }
+            if (p[0] == '(' || strchr(p, '$') != NULL)
+              {
+                msg_error("value() reference for the match() filter cannot contain a full template string, use the template() option or stick to a single value",
+                          evt_tag_str("value", $3),
+                          cfg_lexer_format_location_tag(lexer, &@3));
+                free($3);
+                YYERROR;
+              }
+            filter_match_set_value_handle(last_filter_expr, log_msg_get_value_handle(p));
+            free($3);
+          }
+	| KW_TEMPLATE '(' template_content ')'
+	  {
+            filter_match_set_template_ref(last_filter_expr, $3);
+          }
+        ;
+
+filter_fac_list
+	: filter_fac filter_fac_list		{ $$ = $1 | $2; }
+	| filter_fac				{ $$ = $1; }
+	;
+
+filter_fac
+	: facility_string LL_DOTDOT facility_string
+	  {
+	    $$ = syslog_make_range($1 >> 3, $3 >> 3);
+	  }
+        | facility_string			{ $$ = 1 << ($1 >> 3); }
+	;
+
+filter_severity_list
+	: filter_severity filter_severity_list	{ $$ = $1 | $2; }
+	| filter_severity				{ $$ = $1; }
+	;
+
+filter_severity
+	: severity_string LL_DOTDOT severity_string
+	  {
+	    $$ = syslog_make_range($1, $3);
+	  }
+	| severity_string
+	  {
+	    $$ = 1 << $1;
+	  }
+	;
+
+
+/* INCLUDE_RULES */
+
+%%

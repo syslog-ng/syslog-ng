@@ -1,0 +1,181 @@
+/*
+ * Copyright (c) 2019 Balabit
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+
+#include "afsnmp-parser.h"
+
+}
+
+%code {
+
+#include <strings.h>
+#include "cfg-parser.h"
+#include "cfg-grammar.h"
+#include "syslog-names.h"
+
+#include "messages.h"
+#include "plugin.h"
+#include "afsnmp-grammar.h"
+#include "afsnmpdest.h"
+#include "snmptrapd-parser.h"
+
+}
+
+%name-prefix "afsnmp_"
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {void **instance}
+%parse-param {gpointer arg}
+
+
+/* INCLUDE_DECLS */
+
+%token KW_SNMPDEST
+%token KW_VERSION
+%token KW_SNMP_OBJ
+%token KW_TRAP_OBJ
+%token KW_COMMUNITY
+%token KW_ENGINE_ID
+%token KW_AUTH_USERNAME
+%token KW_AUTH_ALGORITHM
+%token KW_AUTH_PASSWORD
+%token KW_ENC_ALGORITHM
+%token KW_ENC_PASSWORD
+%token KW_TRANSPORT
+%token KW_SNMPTRAPD_PARSER
+%token KW_PREFIX
+%token KW_SET_MESSAGE_MACRO
+
+%type   <ptr> dest_snmpdest
+%type	  <ptr> dest_snmpdest_params
+%type   <ptr> dest_snmpdest_option
+%type	<ptr> parser_expr_snmptrapd
+
+%%
+
+start
+        : LL_CONTEXT_DESTINATION dest_snmpdest { YYACCEPT; }
+        | LL_CONTEXT_PARSER parser_expr_snmptrapd  { YYACCEPT; }
+        ;
+
+dest_snmpdest
+	: KW_SNMPDEST '(' dest_snmpdest_params ')'
+	;
+
+dest_snmpdest_params
+        : { last_driver= *instance = snmpdest_dd_new(configuration); } dest_snmpdest_options {
+          gchar err_msg[256];
+          $$ = last_driver;
+          CHECK_ERROR(snmpdest_check_required_params(last_driver, err_msg), @1, "SNMP: config error: %s", err_msg);
+          }
+        ;
+
+dest_snmpdest_options
+        : dest_snmpdest_option dest_snmpdest_options
+        |
+        ;
+
+dest_snmpdest_option
+        : KW_VERSION '(' string ')' {
+          CHECK_ERROR(!strcmp($3, s_v2c) || !strcmp($3, s_v3), @1, "SNMP: invalid version: %s", $3);
+          snmpdest_dd_set_version(last_driver, $3); free($3);
+          }
+        | KW_HOST '(' string ')' { snmpdest_dd_set_host(last_driver, $3); free($3); }
+        | KW_PORT '(' positive_integer ')' { snmpdest_dd_set_port(last_driver, $3); }
+        | KW_SNMP_OBJ '(' string string string ')' {
+          CHECK_ERROR(snmpdest_dd_set_snmp_obj(last_driver, configuration, $3, $4, $5), @1, "SNMP: error set snmp object");
+          free($3); free($4); free($5);
+          }
+        | KW_TRAP_OBJ '(' string string string ')' { snmpdest_dd_set_trap_obj(last_driver, configuration, $3, $4, $5); free($3); free($4); free($5); }
+        | KW_COMMUNITY '(' string ')' {
+          if (strcmp(snmpdest_dd_get_version(last_driver), s_v2c))
+            msg_warning("WARNING: SNMP: the 'community' is a v2c option");
+          snmpdest_dd_set_community(last_driver, $3); free($3);
+          }
+        | KW_ENGINE_ID '(' string ')' {
+          if (strcmp(snmpdest_dd_get_version(last_driver), s_v3))
+            {
+              msg_warning("WARNING: SNMP: the 'engine_id' is a v3 option");
+            }
+          else
+            {
+              CHECK_ERROR(snmpdest_dd_set_engine_id(last_driver, $3), @1,
+                "SNMP: engine id (%s) shall be a hexadecimal number with a length between 5 and 32 (plus the 0x prefix), see RFC5343 for further details", $3);
+              free($3);
+            }
+          }
+        | KW_AUTH_USERNAME '(' string ')' {
+          if (strcmp(snmpdest_dd_get_version(last_driver), s_v3))
+            msg_warning("WARNING: SNMP: the 'auth_username' is a v3 option");
+
+          snmpdest_dd_set_auth_username(last_driver, $3); free($3);
+          }
+        | KW_AUTH_ALGORITHM '(' string ')' {
+          if (strcmp(snmpdest_dd_get_version(last_driver), s_v3))
+            msg_warning("WARNING: SNMP: the 'auth_algorithm' is a v3 option");
+          CHECK_ERROR(snmpdest_dd_check_auth_algorithm($3), @1, "SNMP: wrong auth algorithm: %s", $3);
+          snmpdest_dd_set_auth_algorithm(last_driver, $3); free($3);
+          }
+        | KW_AUTH_PASSWORD '(' string ')' {
+          if (strcmp(snmpdest_dd_get_version(last_driver), s_v3))
+            msg_warning("WARNING: SNMP: the 'auth_password' is a v3 option");
+          snmpdest_dd_set_auth_password(last_driver, $3); free($3);
+          }
+        | KW_ENC_ALGORITHM '(' string ')' {
+          if (strcmp(snmpdest_dd_get_version(last_driver), s_v3))
+            msg_warning("WARNING: SNMP: the 'enc_algorithm' is a v3 option");
+          CHECK_ERROR(snmpdest_dd_check_enc_algorithm($3), @1, "SNMP: wrong enc algorithm: %s", $3);
+          snmpdest_dd_set_enc_algorithm(last_driver, $3); free($3);
+          }
+        | KW_ENC_PASSWORD '(' string ')' {
+          if (strcmp(snmpdest_dd_get_version(last_driver), s_v3))
+            msg_warning("WARNING: SNMP: the 'enc_password' is a v3 option");
+          snmpdest_dd_set_enc_password(last_driver, $3); free($3);
+          }
+        | KW_LOCAL_TIME_ZONE '(' string ')'           { snmpdest_dd_set_time_zone(last_driver, $3); free($3); }
+        | dest_driver_option
+        ;
+
+parser_expr_snmptrapd
+        : KW_SNMPTRAPD_PARSER '('
+          {
+            last_parser = *instance = (LogParser *) snmptrapd_parser_new(configuration);
+          }
+          snmptrapd_parser_options ')'					{ $$ = last_parser; }
+        ;
+
+snmptrapd_parser_options
+        : snmptrapd_parser_option snmptrapd_parser_options
+        |
+        ;
+
+snmptrapd_parser_option
+        : KW_PREFIX '(' string ')'              { snmptrapd_parser_set_prefix(last_parser, $3); free($3); }
+        | KW_SET_MESSAGE_MACRO '(' yesno ')'    { snmptrapd_parser_set_set_message_macro(last_parser, $3); }
+        | parser_opt
+        ;
+
+
+/* INCLUDE_RULES */
+
+%%

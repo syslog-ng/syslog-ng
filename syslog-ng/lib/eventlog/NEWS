@@ -1,0 +1,63 @@
+eventlog 0.2.8
+	Tue, 25 Mar 2008 21:03:00 +0100
+
+	Build system fixes.
+
+eventlog 0.2.7
+	Thu,  3 Jan 2008 13:27:28 +0100
+
+	Fixed eventlog.conf parsing to avoid crash for invalid syntax.
+
+eventlog 0.2.6
+	Mon, 30 Oct 2006 19:42:35 +0100
+
+	Added build scripts for RHEL3/4, Solaris, and AIX 5.2
+
+
+eventlog 0.2.5
+	Sat, 15 Jul 2006 17:22:32 +0200
+
+	The order of tags is reversed. Previously eventlog generated
+        messages with the tag ordering opposite of what the application
+        requested.  This is now fixed.
+
+eventlog 0.2.4
+	Sat, 03 Dec 2005 11:09:40 +0100
+
+	A proper release in a long time, syslog-ng itself relied on the
+        latest snapshot until now.
+
+	Added debianization files.
+
+	ChangeLog is generated automatically based on tla commits.
+
+eventlog 0.1.2
+	Fri, 10 Jan 2003 10:15:48 +0100
+
+	Added two implementations of the syslog wrapper (macro and dlsym
+	based).
+
+	The dlsym() based can be enabled by configure-ing with the
+	--enable-dlsym-wrapper option.
+
+	The macro based can be used by defining the symbol
+	EVENTLOG_SYSLOG_MACROS preprocessor symbol prior to including
+	evtlog.h.
+
+
+eventlog 0.1.1
+	Tue,  7 Jan 2003 20:11:13 +0100
+
+	Incorporated first comments, evt_log now consumes its parameter, the
+	tag ordering scheme was completely dropped.
+
+	Also updated documentation, added a PORTS file and configuration.txt
+	file
+
+
+eventlog 0.1
+	Mon,  6 Jan 2003 17:09:58 +0100
+
+	This is the initial release of eventlog, a structured event logging
+	API. Not all features are implemented, but the basic building blocks 
+	are in place.

@@ -1,0 +1,210 @@
+## Valgrind suppressions for syslog-ng
+## by Gergely Nagy <algernon@balabit.hu>
+##
+## Some of these suppressions may shadow actual leaks (especially the
+## SSL-related ones at the end), use them with caution!
+
+## dlopen() leaks
+{
+   suppress_dlopen_leak
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:dlopen
+}
+
+{
+   suppress_dlopen_leak2
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:dl_open_worker
+   fun:_dl_catch_error
+}
+
+## Miscellaneous non-leaks and false alarms
+{
+   suppress_journald_open: see https://github.com/systemd/systemd/issues/6539
+   Memcheck:Leak
+   ...
+   fun:journald_open
+   ...
+}
+
+{
+   suppress_syslog_ng_set_argv_space
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:g_process_set_argv_space
+}
+
+{
+   suppress_syslog_ng_iv_work_pool_create
+   Memcheck:Leak
+   fun:*alloc
+   fun:iv_work_pool_create
+   fun:main_loop_io_worker_init
+   fun:main_loop_init
+   fun:main
+}
+
+{
+   suppress_syslog_ng_app_startup
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:app_startup
+   fun:main
+}
+
+{
+     suppress_syslog_ng_option_context_parse
+     Memcheck:Leak
+     fun:*alloc
+     ...
+     fun:g_option_context_parse
+     fun:main
+}
+
+{
+     suppress_syslog_ng_dlopen_module
+     Memcheck:Leak
+     fun:*alloc
+     ...
+     fun:plugin_dlopen_module
+}
+
+{
+     suppress_syslog_ng_plugin_load_module
+     Memcheck:Leak
+     fun:*alloc
+     ...
+     fun:plugin_load_module
+}
+
+{
+     suppress_syslog_ng_plugin_discover_candidate_modules
+     Memcheck:Leak
+     fun:*alloc
+     ...
+     fun:plugin_discover_candidate_modules
+}
+
+{
+     suppress_syslog_ng_g_private_set
+     Memcheck:Leak
+     fun:*alloc
+     ...
+     fun:g_private_set
+     ...
+     fun:clone
+}
+
+{
+     suppress_syslog_ng_msg_limit_internal_message
+     Memcheck:Leak
+     fun:*alloc
+     ...
+     fun:msg_limit_internal_message
+     ...
+     fun:main
+}
+
+{
+     suppress_syslog_ng_main_loop_msg_event_create
+     Memcheck:Leak
+     fun:*alloc
+     ...
+     fun:msg_event_create
+     fun:main_loop_run
+}
+
+{
+     supperess_syslog_ng_log_msg_new_internal
+     Memcheck:Leak
+     fun:*alloc
+     ...
+     fun:log_msg_new_internal
+}
+
+{
+     suppress_syslog_ng_g_process_change_limits
+     Memcheck:Leak
+     fun:*alloc
+     ...
+     fun:g_process_change_limits
+}
+
+##################################################################
+### NOTE: These suppressions may shadow actual memory leaks!   ###
+###       Disable them if you wish to debug SSL-related leaks. ###
+##################################################################
+
+## libssl/libcrypto leaks we don't care about
+{
+   suppress_crypto_SSL_leaks
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   obj:*/libcrypto.so.*
+   fun:SSL_*
+}
+
+{
+   suppress_crypto_RSA_leaks
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   obj:*/libcrypto.so.*
+   fun:RSA_*
+}
+
+{
+   suppress_crypto_BIO_leaks
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   obj:*/libcrypto.so.*
+   fun:BIO_*
+}
+
+{
+   suppress_crypto_OCSP_leaks
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   obj:*/libcrypto.so.*
+   fun:OCSP_*
+}
+
+## TLS/SSL related syslog-ng leaks
+{
+   suppress_syslog_ng_crypto_leaks
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   obj:*/libcrypto.so.*
+   ...
+   obj:*/libsyslog-ng-crypto.so
+}
+
+{
+   suppress_syslog_ng_afsocket_ssl_leaks
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   obj:*/libssl.so.*
+   ...
+   obj:*/libafsocket-tls.so
+}
+
+{
+   suppress_syslog_ng_afsocket_crypto_leaks
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   obj:*/libcrypto.so.*
+   ...
+   obj:*/libafsocket-tls.so
+}

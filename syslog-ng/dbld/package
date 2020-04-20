@@ -1,0 +1,17 @@
+#!/bin/bash -e
+
+. /source/dbld/functions.sh
+
+package_type() {
+    case "$1" in
+      ubuntu-*|debian-*)
+         echo deb
+         ;;
+      centos-*|rhel-*|fedora-*)
+         echo rpm
+         ;;
+    esac
+}
+
+pkg=$(package_type "${OS_PLATFORM}")
+/source/dbld/${pkg}

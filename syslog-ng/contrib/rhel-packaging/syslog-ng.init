@@ -1,0 +1,84 @@
+#!/bin/bash
+#
+# syslog-ng	This starts and stops syslog-ng
+#
+# chkconfig:	2345 12 88
+# description:	syslog-ng is an alternative system logger
+# processname:	syslog-ng
+# pidfile:	/var/run/syslog-ng.pid
+### BEGIN INIT INFO
+# Provides: $syslog-ng
+### END INIT INFO
+
+# Source function library.
+. /etc/init.d/functions
+
+binary="/sbin/syslog-ng"
+
+[ -x $binary ] || exit 0
+
+RETVAL=0
+
+start() {
+	echo -n "Starting syslog-ng: "
+	daemon $binary
+	RETVAL=$?
+	echo
+	[ $RETVAL -eq 0 ] && touch /var/lock/subsys/syslog-ng
+}
+
+stop() {
+	echo -n "Shutting down syslog-ng: "
+	killproc syslog-ng
+	RETVAL=$?
+	echo
+	if [ $RETVAL -eq 0 ]; then
+		rm -f /var/lock/subsys/syslog-ng
+		rm -f /var/run/syslog-ng.pid
+	fi
+}
+
+restart() {
+	echo -n "Restarting syslog-ng: "
+	$binary --syntax-only
+	RETVAL=$?
+	echo
+	if [ $RETVAL -eq 0 ]; then
+		stop
+		sleep 2
+		start
+	fi
+}
+
+reload() {
+	echo -n "Reloading syslog-ng: "
+	$binary --syntax-only
+	RETVAL=$?
+	if [ $RETVAL -eq 0 ]; then
+		killproc syslog-ng -1
+	fi
+}
+
+case "$1" in
+	start)
+		start
+		;;
+	stop)
+		stop
+		;;
+	status)
+		status syslog-ng
+		;;
+	restart)
+		restart
+		;;
+	reload)
+		reload
+		;;
+	condrestart)
+		[ -f /var/lock/subsys/syslog-ng ] && restart
+		;;
+	*)
+		echo "Usage: $0 {start|stop|status|restart|reload|condrestart}"
+		;;
+esac

@@ -1,0 +1,20 @@
+This directory contains unsorted user contributions of syslog-ng. They are
+not maintained, nor supported, but may be useful to some.
+
+NOTE: these were simply copied from syslog-ng 1.6 distribution, therefore
+might not work out-of-the-box for syslog-ng 2.0.
+
+
+init.d.HP-UX 		- sample init script for HP-UX
+init.d.RedHat 		- sample init script for RedHat GNU/Linux
+init.d.SunOS 		- sample init script for Sun Solaris
+init.d.solaris 		- another sample init script for Sun Solaris
+syslog-ng.conf.HP-UX 	- sample configuration for HP-UX
+syslog-ng.conf.RedHat 	- sample configuration for RedHat GNU/Linux
+syslog-ng.conf.SunOS 	- sample configuration for SunOS
+syslog-ng.conf.doc	- sample configuration file with inline documentation as comments
+syslog-ng.vim 		- vim syntax file for syslog-ng.conf
+syslog2ng		- script to convert old syslog.conf to syslog-ng.conf
+relogger.pl		- script to replay syslog messages at the original rate
+fedora-packaging	- directory containing files related to Fedora packaging
+syslog-mc		- syslog multicast client

@@ -1,0 +1,110 @@
+# defauld syslogd config converted from freebsd 6.1
+
+options { dir_perm(0755); perm(0644); 
+	  chain_hostnames(no);
+          keep_hostname(yes); 
+	  };
+
+# Default local source.
+source local {
+	unix-dgram("/var/run/log");
+	unix-dgram("/var/run/logpriv" perm(0600));
+	file("/dev/klog");
+	udp(ip(0.0.0.0) port(514));
+	internal();
+};
+
+# FILTERS: START
+# Filter LEGO bricks to build your castle :)
+# syslog level filters
+filter f_crit_emerg { level(crit..emerg); };
+filter f_err_emerg { level(err..emerg); };
+filter f_warn_emerg { level(warning..emerg); };
+filter f_debug_emerg { level(debug..emerg); };
+filter f_notice_emerg { level(notice..emerg); };
+filter f_info_emerg { level(info..emerg); };
+filter f_info { level(info); };
+filter f_not_authpriv { not facility(authpriv); };
+filter f_debug { level(debug); };
+filter f_emerg { level(emerg); };
+
+# Facility filters
+filter f_mail { facility(mail); };
+filter f_kern { facility(kern); };
+filter f_auth { facility(auth); };
+filter f_lpr { facility(lpr); };
+filter f_news { facility(news); };
+filter f_kern { facility(kern); };
+filter f_security { facility(security); };
+filter f_auth{ facility(auth); };
+filter f_authpriv { facility(authpriv); };
+filter f_ftp { facility(ftp); };
+filter f_cron { facility(cron); };
+
+# program filters
+filter f_startslip { program("startslip"); };
+filter f_ppp { program("ppp"); };
+## FILTERS: END
+
+# DESTINATIONS: START
+destination d_devconsole { file("/dev/console" create_dirs(yes)); };
+destination d_messages { file("/var/log/messages" create_dirs(yes)); };
+destination d_maillog { file("/var/log/maillog" create_dirs(yes)); };
+destination d_security { file("/var/log/security" create_dirs(yes)); };
+destination d_authlog { file("/var/log/auth.log" create_dirs(yes)); };
+destination d_ldperr { file("/var/log/lpd-errs" create_dirs(yes)); };
+destination d_xferlog { file("/var/log/xferlog" create_dirs(yes)); };
+destination d_cron { file("/var/log/cron" create_dirs(yes)); };
+destination d_debuglog { file("/var/log/debug.log" create_dirs(yes)); };
+destination d_usertty { usertty("*"); };
+destination d_slip { file("/var/log/slip.log" create_dirs(yes)); };
+destination d_ppp { file("/var/log/ppp.log" create_dirs(yes)); };
+# DESTINATIONS: END
+
+# LOGS: START
+# *.err;kern.warning;auth.notice;mail.crit		/dev/console
+log { source(local); filter(f_mail); filter(f_crit_emerg); destination(d_devconsole); };
+log { source(local); filter(f_err_emerg); destination(d_devconsole); };
+log { source(local); filter(f_kern); filter(f_warn_emerg); destination(d_devconsole); };
+log { source(local); filter(f_auth); filter(f_notice_emerg); destination(d_devconsole); };
+
+# *.notice;authpriv.none;kern.debug;lpr.info;mail.crit;news.err	/var/log/messages
+log { source(local); filter(f_notice_emerg); filter(f_not_authpriv); destination(d_messages); };
+log { source(local); filter(f_lpr); filter(f_info); destination(d_messages); };
+log { source(local); filter(f_mail); filter(f_crit_emerg); destination(d_messages); };
+log { source(local); filter(f_news); filter(f_err_emerg); destination(d_messages); };
+log { source(local); filter(f_kern); filter(f_debug_emerg); destination(d_messages); };
+
+# mail.info					/var/log/maillog
+log { source(local); filter(f_mail); filter(f_info_emerg); destination(d_maillog); };
+
+## security.*					/var/log/security
+log { source(local); filter(f_security); filter(f_debug_emerg); destination(d_security); };
+
+# auth.info;authpriv.info				/var/log/auth.log
+log { source(local); filter(f_auth); filter(f_info_emerg); destination(d_authlog); };
+log { source(local); filter(f_authpriv); filter(f_info_emerg); destination(d_authlog); };
+
+# lpr.info					/var/log/lpd-errs
+log { source(local); filter(f_lpr); filter(f_info); destination(d_ldperr); };
+
+# ftp.info					/var/log/xferlog
+log { source(local); filter(f_ftp); filter(f_info_emerg); destination(d_xferlog); };
+    
+# cron.*						/var/log/cron
+log { source(local); filter(f_cron); filter(f_debug_emerg); destination(d_cron); };
+
+## *.=debug					/var/log/debug.log
+log { source(local); filter(f_debug); destination(d_debuglog); };
+    
+## *.emerg						*
+log { source(local); filter(f_emerg); destination(d_usertty); };
+
+# !starslip  
+# *.*						/var/log/slip.log
+log { source(local); filter(f_startslip); destination(d_slip); };
+
+# !ppp  
+# *.*						/var/log/ppp.log
+log { source(local); filter(f_ppp); destination(d_ppp); };
+# LOGS: END

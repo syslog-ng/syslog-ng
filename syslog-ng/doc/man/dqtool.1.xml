@@ -1,0 +1,111 @@
+<?xml version="1.0"?>
+<reference xmlns="http://docbook.org/ns/docbook" version="5.0">
+  <info>
+    <productname/>
+    <title>The dqtool tool manual page</title>
+  </info>
+  <refentry xml:id="dqtool.1">
+    <refmeta>
+      <refentrytitle>dqtool</refentrytitle>
+      <manvolnum>1</manvolnum>
+      <refmiscinfo class="version">3.26</refmiscinfo>
+      <refmiscinfo class="source"/>
+    </refmeta>
+    <refnamediv>
+      <refname>dqtool</refname>
+      <refpurpose>Display the contents of a disk-buffer file created with  </refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+      <cmdsynopsis>
+        <command>dqtool</command>
+        <arg>command</arg>
+        <arg>options</arg>
+      </cmdsynopsis>
+    </refsynopsisdiv>
+    <refsection xml:id="dqtool-mandescription">
+      <title>Description</title>
+      <para>NOTE: The dqtool application is distributed with the  system logging application, and is usually part of the syslog-ng package. The latest version of the syslog-ng application is available at the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/log-management">official syslog-ng website</link>.</para>
+      <para>This manual page is only an abstract, for the complete documentation of syslog-ng, see <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/support/documentation/">The  Administrator Guide</link>.</para>
+      <para>The <command>dqtool</command> application is a utility that can be used to display and format the messages stored in a disk-buffer file.</para>
+    </refsection>
+    <refsection xml:id="dqtool-cat">
+      <title>The cat command</title>
+      <cmdsynopsis>
+        <command>cat</command>
+        <arg>options</arg>
+        <arg>file</arg>
+      </cmdsynopsis>
+      <para>Use the <command>cat</command> command to display the log messages stored in the disk-buffer (also called disk-queue) file, and also information from the header of the disk queue file. The messages are printed to the standard output (stdout), so it is possible to use grep and other tools to find particular log messages, e.g., <command>dqtool cat /var/log/messages.lgs |grep 192.168.1.1</command>.</para>
+      <para>The <command>cat</command> command has the following options:</para>
+      <variablelist>
+        <varlistentry>
+          <term><command>--debug</command> or <command>-d</command>
+                    </term>
+          <listitem>
+            <para>Print diagnostic and debugging messages to stderr.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--help</command> or <command>-h</command>
+                    </term>
+          <listitem>
+            <para>Display a brief help message.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--template=&lt;template&gt;</command> or <command>-t</command>
+                    </term>
+          <listitem>
+            <para>Format the messages using the specified template.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--verbose</command> or <command>-v</command>
+                    </term>
+          <listitem>
+            <para>Print verbose messages to stderr.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--version</command> or <command>-V</command>
+                    </term>
+          <listitem>
+            <para>Display version information.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+      <para>Example:<synopsis>./dqtool cat ../var/syslog-ng-00000.qf</synopsis></para>
+      <para>The output looks like:</para>
+      <synopsis>Disk-buffer state loaded; filename='../var/syslog-ng-00000.qf', qout_length='65', qbacklog_length='0', qoverflow_length='9205', qdisk_length='0'
+Mar  3 10:52:05 tristram localprg[1234]: seq: 0000011630, runid: 1267609923, stamp: 2010-03-03T10:52:05 PADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADD
+Mar  3 10:52:05 tristram localprg[1234]: seq: 0000011631, runid: 1267609923, stamp: 2010-03-03T10:52:05 PADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADDPADD</synopsis>
+    </refsection>
+    <refsection>
+      <title>Files</title>
+      <para>
+        <filename>/opt/syslog-ng/bin/dqtool</filename>
+      </para>
+    </refsection>
+    <refsection>
+      <title>See also</title>
+      <para>
+        <link linkend="syslog-ng.conf.5"><command>syslog-ng.conf</command>(5)</link>
+      </para>
+      <para>
+        <link linkend="syslog-ng.8"><command>syslog-ng</command>(8)</link>
+      </para>
+      <note version="5.0">
+        <para>For the detailed documentation of  see <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/index.html"><command>The  3.26 Administrator Guide</command></link></para>
+        <para>If you experience any problems or need help with syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://lists.balabit.hu/mailman/listinfo/syslog-ng"><command>syslog-ng mailing list</command></link>.</para>
+        <para>For news and notifications about of syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://syslog-ng.org/blogs/"><command>syslog-ng blogs</command></link>.</para>
+      </note>
+    </refsection>
+    <refsection version="5.0">
+      <title>Author</title>
+      <para>This manual page was written by the Balabit Documentation Team &lt;documentation@balabit.com&gt;.</para>
+    </refsection>
+    <refsection version="5.0">
+      <title>Copyright</title>
+    </refsection>
+  </refentry>
+</reference>

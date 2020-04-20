@@ -1,0 +1,274 @@
+<?xml version="1.0"?>
+<reference xmlns="http://docbook.org/ns/docbook" version="5.0">
+  <info>
+    <productname/>
+    <title>The loggen manual page</title>
+  </info>
+  <refentry xml:id="loggen.1">
+    <refmeta>
+      <refentrytitle>loggen</refentrytitle>
+      <manvolnum>1</manvolnum>
+      <refmiscinfo class="version">3.26</refmiscinfo>
+      <refmiscinfo class="source"/>
+    </refmeta>
+    <refnamediv>
+      <refname>loggen</refname>
+      <refpurpose>Generate syslog messages at a specified rate</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+      <cmdsynopsis>
+        <command>loggen</command>
+        <arg>options</arg>
+        <command>target</command>
+        <arg>port</arg>
+      </cmdsynopsis>
+    </refsynopsisdiv>
+    <refsection xml:id="loggen-mandescription">
+      <title>Description</title>
+      <para>NOTE: The loggen application is distributed with the syslog-ng system logging application, and is usually part of the syslog-ng package. The latest version of the syslog-ng application is available at <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/log-management">the official syslog-ng website</link>.</para>
+      <para>This manual page is only an abstract, for the complete documentation of syslog-ng, see <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/support/documentation/">The syslog-ng Administrator Guide</link>.</para>
+      <para>The <command>loggen</command> application is tool to test and stress-test your syslog server and the connection to the server. It can send syslog messages to the server at a specified rate, using a number of connection types and protocols, including TCP, UDP, and unix domain sockets. The messages can be generated automatically (repeating the <parameter>PADD</parameter>string over and over), or read from a file or the standard input.</para>
+      <para>When <command>loggen</command> finishes sending the messages, it displays the following statistics:</para>
+      <itemizedlist>
+        <listitem>
+          <para><emphasis>average rate</emphasis>: Average rate the messages were sent in messages/second.</para>
+        </listitem>
+        <listitem>
+          <para><emphasis>count</emphasis>: The total number of messages sent.</para>
+        </listitem>
+        <listitem>
+          <para><emphasis>time</emphasis>: The time required to send the messages in seconds.</para>
+        </listitem>
+        <listitem>
+          <para><emphasis>average message size</emphasis>: The average size of the sent messages in bytes.</para>
+        </listitem>
+        <listitem>
+          <para><emphasis>bandwidth</emphasis>: The average bandwidth used for sending the messages in kilobytes/second.</para>
+        </listitem>
+      </itemizedlist>
+    </refsection>
+    <refsection>
+      <title>Options</title>
+      <variablelist>
+        <varlistentry>
+          <term>
+            <command>--active-connections &lt;number-of-connections&gt;</command>
+          </term>
+          <listitem>
+            <para>Number of connections <command>loggen</command> will use to send messages to the destination. This option is usable only when using TCP or TLS connections to the destination. Default value: 1</para>
+            <para>The <command>loggen</command> utility waits until every connection is established before starting to send messages. See also the <parameter>--idle-connections</parameter> option.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--csv</command> or <command>-C</command>
+                    </term>
+          <listitem>
+            <para>Send the statistics of the sent messages to stdout as CSV. This can be used for plotting the message rate.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--dgram</command> or <command>-D</command>
+                    </term>
+          <listitem>
+            <para>Use datagram socket (UDP or unix-dgram) to send the messages to the target. Requires the <parameter>--inet</parameter> option as well.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--dont-parse</command> or <command>-d</command>
+                    </term>
+          <listitem>
+            <para>Do not parse the lines read from the input files, send them as received.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--help</command> or <command>-h</command>
+                    </term>
+          <listitem>
+            <para>Display a brief help message.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command>--idle-connections &lt;number-of-connections&gt;</command>
+          </term>
+          <listitem>
+            <para>Number of idle connections <command>loggen</command> will establish to the destination. Note that <command>loggen</command> will not send any messages on idle connections, but the connection is kept open using keep-alive messages. This option is usable only when using TCP or TLS connections to the destination. See also the <parameter>--active-connections</parameter> option. Default value: 0</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--inet</command> or <command>-i</command>
+                    </term>
+          <listitem>
+            <para>Use the TCP (by default) or UDP (when used together with the <parameter>--dgram</parameter> option) protocol to send the messages to the target.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--interval &lt;seconds&gt;</command> or <command>-I &lt;seconds&gt;</command>
+                    </term>
+          <listitem>
+            <para>The number of seconds <command>loggen</command> will run. Default value: 10</para>
+            <note version="5.0" xml:base="../common/wnt/note-loggen.xml">
+              <para>Note that when the <parameter>--interval</parameter> and <parameter>--number</parameter> are used together, <command>loggen</command> will send messages until the period set in <parameter>--interval</parameter> expires or the amount of messages set in <parameter>--number</parameter> is reached, whichever happens first.</para>
+            </note>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--ipv6</command> or <command>-6</command>
+                    </term>
+          <listitem>
+            <para>Specify the destination using its IPv6 address. Note that the destination must have a real IPv6 address.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--loop-reading</command> or <command>-l</command>
+                    </term>
+          <listitem>
+            <para>Read the file specified in <parameter>--read-file</parameter> option in loop: loggen will start reading from the beginning of the file when it reaches the end of the file.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--number &lt;number-of-messages&gt;</command> or <command>-n &lt;number-of-messages&gt;</command>
+                    </term>
+          <listitem>
+            <para>Number of messages to generate.</para>
+            <note version="5.0" xml:base="../common/wnt/note-loggen.xml">
+              <para>Note that when the <parameter>--interval</parameter> and <parameter>--number</parameter> are used together, <command>loggen</command> will send messages until the period set in <parameter>--interval</parameter> expires or the amount of messages set in <parameter>--number</parameter> is reached, whichever happens first.</para>
+            </note>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--no-framing</command> or <command>-F</command>
+                    </term>
+          <listitem>
+            <para>Do not use the framing of the IETF-syslog protocol style, even if the <parameter>syslog-proto</parameter> option is set.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--quiet</command> or <command>-Q</command>
+                    </term>
+          <listitem>
+            <para>Output statistics only when the execution of <command>loggen</command> is finished. If not set, the statistics are displayed every second.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--permanent</command> or <command>-T</command>
+                    </term>
+          <listitem>
+            <para>Keep sending logs indefinitely, without time limit.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--rate &lt;message/second&gt;</command> or <command>-r &lt;message/second&gt;</command>
+                    </term>
+          <listitem>
+            <para>The number of messages generated per second for every active connection. Default value: 1000</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--read-file &lt;filename&gt;</command> or <command>-R &lt;filename&gt;</command>
+                    </term>
+          <listitem>
+            <para>Read the messages from a file and send them to the target. See also the <parameter>--skip-tokens</parameter> option.</para>
+            <para>Specify <parameter>-</parameter> as the input file to read messages from the standard input (stdio). Note that when reading messages from the standard input, <command>loggen</command> can only use a single thread. The <parameter>-R -</parameter> parameters must be placed at end of command, like: <command>loggen 127.0.0.1 1061 --read-file -</command></para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--sdata &lt;data-to-send&gt;</command> or <command>-p &lt;data-to-send&gt;</command>
+                    </term>
+          <listitem>
+            <para>Send the argument of the <parameter>--sdata</parameter> option as the SDATA part of IETF-syslog (RFC5424 formatted) messages. Use it together with the <parameter>--syslog-proto</parameter> option. For example: <parameter>--sdata "[test name=\"value\"]</parameter></para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--size &lt;message-size&gt;</command> or <command>-s &lt;message-size&gt;</command>
+                    </term>
+          <listitem>
+            <para>The size of a syslog message in bytes. Default value: 256. Minimum value: 127 bytes, maximum value: 8192 bytes.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+            <command>--skip-tokens &lt;number&gt;</command>
+          </term>
+          <listitem>
+            <para>Skips the specified number of space-separated tokens (words) at the beginning of every line. For example, if the messages in the file look like <parameter>foo bar message</parameter>, <parameter>--skip-tokens 2</parameter> skips the <parameter>foo bar</parameter> part of the line, and sends only the <parameter>message</parameter> part. Works only when used together with the <parameter>--read-file</parameter> parameter. Default value: 0</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--stream</command> or <command>-S</command>
+                    </term>
+          <listitem>
+            <para>Use a stream socket (TCP or unix-stream) to send the messages to the target.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--syslog-proto</command> or <command>-P</command>
+                    </term>
+          <listitem>
+            <para>Use the new IETF-syslog message format as specified in RFC5424. By default, loggen uses the legacy BSD-syslog message format (as described in RFC3164). See also the <parameter>--no-framing</parameter> option.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--unix &lt;/path/to/socket&gt;</command> or <command>-x &lt;/path/to/socket&gt;</command>
+                    </term>
+          <listitem>
+            <para>Use a UNIX domain socket to send the messages to the target.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--use-ssl</command> or <command>-U</command>
+                    </term>
+          <listitem>
+            <para>Use an SSL-encrypted channel to send the messages to the target. Note that it is not possible to check the certificate of the target, or to perform mutual authentication.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--version</command> or <command>-V</command>
+                    </term>
+          <listitem>
+            <para>Display version number of syslog-ng.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </refsection>
+    <refsection>
+      <title>Examples</title>
+      <para>The following command generates 100 messages per second for ten minutes, and sends them to port 2010 of the localhost via TCP. Each message is 300 bytes long.</para>
+      <synopsis>loggen --stream --size 300 --rate 100 --interval 600 127.0.0.1 2010</synopsis>
+      <para>The following command is similar to the one above, but uses the UDP protocol.</para>
+      <synopsis>loggen --inet --dgram --size 300 --rate 100 --interval 600 127.0.0.1 2010</synopsis>
+      <para>Send a single message on TCP6 to the <parameter>::1</parameter> IPv6 address, port <parameter>1061</parameter>:</para>
+      <synopsis>loggen --ipv6 --number 1 ::1 1061</synopsis>
+      <para>Send a single message on UDP6 to the <parameter>::1</parameter> IPv6 address, port <parameter>1061</parameter>:</para>
+      <synopsis>loggen --ipv6 --dgram --number 1 ::1 1061</synopsis>
+      <para>Send a single message using a unix domain-socket:</para>
+      <synopsis>loggen --unix --stream --number 1 &lt;/path/to/socket&gt;</synopsis>
+      <para>Read messages from the standard input (stdio) and send them to the localhost:</para>
+      <synopsis>loggen 127.0.0.1 1061 --read-file -</synopsis>
+    </refsection>
+    <refsection>
+      <title>Files</title>
+      <para>
+        <filename>/opt/syslog-ng/bin/loggen</filename>
+      </para>
+    </refsection>
+    <refsection>
+      <title>See also</title>
+      <para>
+        <link linkend="syslog-ng.conf.5"><command>syslog-ng.conf</command>(5)</link>
+      </para>
+      <note version="5.0">
+        <para>For the detailed documentation of  see <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/index.html"><command>The  3.26 Administrator Guide</command></link></para>
+        <para>If you experience any problems or need help with syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://lists.balabit.hu/mailman/listinfo/syslog-ng"><command>syslog-ng mailing list</command></link>.</para>
+        <para>For news and notifications about of syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://syslog-ng.org/blogs/"><command>syslog-ng blogs</command></link>.</para>
+      </note>
+    </refsection>
+    <refsection version="5.0">
+      <title>Author</title>
+      <para>This manual page was written by the Balabit Documentation Team &lt;documentation@balabit.com&gt;.</para>
+    </refsection>
+    <refsection version="5.0">
+      <title>Copyright</title>
+    </refsection>
+  </refentry>
+</reference>

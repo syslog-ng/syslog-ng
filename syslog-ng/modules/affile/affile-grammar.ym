@@ -1,0 +1,332 @@
+/*
+ * Copyright (c) 2002-2012 Balabit
+ * Copyright (c) 1998-2012 Balázs Scheidler
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#include "affile-parser.h"
+}
+
+
+%code {
+
+#include "file-opener.h"
+#include "affile-source.h"
+#include "wildcard-source.h"
+#include "affile-dest.h"
+#include "cfg-parser.h"
+#include "affile-grammar.h"
+#include "syslog-names.h"
+#include "messages.h"
+#include "plugin.h"
+#include "cfg-grammar.h"
+#include "stdin.h"
+#include "named-pipe.h"
+
+#include <string.h>
+
+FileReaderOptions *last_file_reader_options;
+LogProtoFileReaderOptions *last_log_proto_options;
+WildcardSourceDriver *last_legacy_wildcard_src_driver;
+
+static void
+affile_grammar_set_file_source_driver(AFFileSourceDriver *sd)
+{
+  last_driver = &sd->super.super;
+  last_file_reader_options = &sd->file_reader_options;
+  last_reader_options = &last_file_reader_options->reader_options;
+  last_file_perm_options = &sd->file_opener_options.file_perm_options;
+  last_log_proto_options = file_reader_options_get_log_proto_options(last_file_reader_options);
+}
+
+static void
+affile_grammar_set_wildcard_file_source_driver(WildcardSourceDriver *sd)
+{
+  last_driver = &sd->super.super;
+  last_file_reader_options = &sd->file_reader_options;
+  last_reader_options = &last_file_reader_options->reader_options;
+  last_file_perm_options = &sd->file_opener_options.file_perm_options;
+  last_log_proto_options = file_reader_options_get_log_proto_options(last_file_reader_options);
+}
+
+}
+
+%name-prefix "affile_"
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_FILE
+%token KW_PIPE
+
+%token KW_FSYNC
+%token KW_FOLLOW_FREQ
+%token KW_OVERWRITE_IF_OLDER
+%token KW_MULTI_LINE_MODE
+%token KW_MULTI_LINE_PREFIX
+%token KW_MULTI_LINE_GARBAGE
+%token KW_MULTI_LINE_TIMEOUT
+%token KW_TIME_REAP
+
+%token KW_WILDCARD_FILE
+%token KW_BASE_DIR
+%token KW_FILENAME_PATTERN
+%token KW_RECURSIVE
+%token KW_MAX_FILES
+%token KW_MONITOR_METHOD
+%token KW_FORCE_DIRECTORY_POLLING
+
+%token KW_STDIN
+
+%type	<ptr> source_affile
+%type	<ptr> source_affile_params
+%type	<ptr> source_afpipe_params
+%type	<ptr> source_stdin_params
+%type   <ptr> dest_affile
+%type	<ptr> dest_affile_params
+%type   <ptr> dest_afpipe_params
+
+%%
+
+start
+        : LL_CONTEXT_SOURCE source_affile                        { YYACCEPT; }
+	| LL_CONTEXT_DESTINATION dest_affile			 { YYACCEPT; }
+        ;
+
+source_affile
+	: KW_FILE '(' source_affile_params ')'	{ $$ = $3; }
+	| KW_PIPE '(' source_afpipe_params ')'	{ $$ = $3; }
+	| KW_STDIN '(' source_stdin_params ')'	{ $$ = $3; }
+	| KW_WILDCARD_FILE
+	{
+	  WildcardSourceDriver *sd = (WildcardSourceDriver *) wildcard_sd_new(configuration);;
+	  *instance = &sd->super.super;
+	  affile_grammar_set_wildcard_file_source_driver(sd);
+	} '(' source_wildcard_params ')' { $$ = last_driver; }
+	;
+
+source_wildcard_params
+    : source_wildcard_options
+    ;
+
+source_wildcard_options
+    : source_wildcard_option source_wildcard_options
+    |
+    ;
+
+source_stdin_params
+	:
+	  {
+	    AFFileSourceDriver *sd = (AFFileSourceDriver *) stdin_sd_new(configuration);
+	    *instance = &sd->super.super;
+	    affile_grammar_set_file_source_driver(sd);
+	  }
+          source_affile_options                 { $$ = last_driver; }
+	;
+
+source_affile_params
+	: string
+	  {
+	    if (!affile_is_legacy_wildcard_source($1))
+	      {
+	        AFFileSourceDriver *sd = (AFFileSourceDriver *) affile_sd_new($1, configuration);
+	        *instance = &sd->super.super;
+	        affile_grammar_set_file_source_driver(sd);
+	      }
+	    else
+	      {
+	        WildcardSourceDriver *sd = (WildcardSourceDriver *) wildcard_sd_legacy_new($1, configuration);
+	        last_legacy_wildcard_src_driver = sd;
+	        *instance = &sd->super.super;
+	        affile_grammar_set_wildcard_file_source_driver(sd);
+	      }
+	  }
+          source_affile_options                 { $$ = last_driver; last_legacy_wildcard_src_driver = NULL; free($1); }
+        ;
+
+source_affile_options
+        : source_affile_option source_affile_options
+        | source_legacy_wildcard_option source_affile_options
+        |
+        ;
+
+source_affile_option
+	: KW_FOLLOW_FREQ '(' LL_FLOAT ')'		{ file_reader_options_set_follow_freq(last_file_reader_options, (long) ($3 * 1000)); }
+	| KW_FOLLOW_FREQ '(' nonnegative_integer ')'	{ file_reader_options_set_follow_freq(last_file_reader_options, ($3 * 1000)); }
+	| KW_PAD_SIZE '(' nonnegative_integer ')'	{ last_log_proto_options->pad_size = $3; }
+	| multi_line_option
+	| multi_line_timeout
+	| file_perm_option
+        | source_reader_option
+	| source_driver_option
+        ;
+
+source_wildcard_option
+        : KW_BASE_DIR '(' string ')' { wildcard_sd_set_base_dir(last_driver, $3); free($3); }
+        | KW_FILENAME_PATTERN '(' string ')'
+          {
+	    wildcard_sd_set_filename_pattern(last_driver, $3);
+	    free($3);
+          }
+	| KW_RECURSIVE '(' yesno ')' { wildcard_sd_set_recursive(last_driver, $3); }
+	| KW_MAX_FILES '(' positive_integer ')' { wildcard_sd_set_max_files(last_driver, $3); }
+	| KW_MONITOR_METHOD '(' string ')' { CHECK_ERROR(wildcard_sd_set_monitor_method(last_driver, $3), @3, "Invalid monitor-method"); free($3); }
+	| source_affile_option
+	;
+
+source_legacy_wildcard_option
+	: KW_FORCE_DIRECTORY_POLLING '(' yesno ')'
+	  {
+	    CHECK_ERROR(last_legacy_wildcard_src_driver, @1, "Invalid option, force-directory-polling() can only be used in legacy wildcard file sources");
+	    wildcard_sd_set_monitor_method(&last_legacy_wildcard_src_driver->super.super, $3 ? "poll" : "auto");
+	  }
+	| KW_RECURSIVE '(' yesno ')'
+	  {
+	    CHECK_ERROR(last_legacy_wildcard_src_driver, @1, "Invalid option, recursive() can only be used in legacy wildcard file sources");
+	    wildcard_sd_set_recursive(&last_legacy_wildcard_src_driver->super.super, $3);
+	  }
+	;
+
+source_afpipe_params
+	: string
+	  {
+	    AFFileSourceDriver *sd = (AFFileSourceDriver *) pipe_sd_new($1, configuration);
+	    *instance = &sd->super.super;
+	    affile_grammar_set_file_source_driver(sd);
+	  }
+	  source_afpipe_options				{ $$ = last_driver; free($1); }
+	;
+
+source_afpipe_options
+        : source_afpipe_option source_afpipe_options
+        |
+        ;
+
+source_afpipe_option
+	: KW_OPTIONAL '(' yesno ')'			{ last_driver->optional = $3; }
+	| KW_PAD_SIZE '(' nonnegative_integer ')'	{ last_log_proto_options->pad_size = $3; }
+	| KW_CREATE_DIRS '(' yesno ')'			{ pipe_sd_set_create_dirs(last_driver, $3); }
+	| multi_line_option
+	| file_perm_option
+	| source_reader_option
+	| source_driver_option
+	;
+
+/* NOTE: don't copy this to other drivers blindly, but make it general and
+ * move it to cfg-grammar.y instead */
+
+multi_line_option
+	: KW_MULTI_LINE_MODE '(' string ')'
+          {
+            CHECK_ERROR(log_proto_multi_line_server_options_set_mode(&last_log_proto_options->super, $3), @3, "Invalid multi-line mode");
+	    free($3);
+          }
+	| KW_MULTI_LINE_PREFIX '(' string ')'
+          {
+            GError *error = NULL;
+
+            CHECK_ERROR_GERROR(log_proto_multi_line_server_options_set_prefix(&last_log_proto_options->super, $3, &error), @3, error, "error compiling multi-line regexp");
+            free($3);
+          }
+	| KW_MULTI_LINE_GARBAGE '(' string ')'
+	  {
+            GError *error = NULL;
+
+	    	CHECK_ERROR_GERROR(log_proto_multi_line_server_options_set_garbage(&last_log_proto_options->super, $3, &error), @3, error, "error compiling multi-line regexp");
+	    	free($3);
+	  }
+	;
+
+multi_line_timeout
+	: KW_MULTI_LINE_TIMEOUT '(' nonnegative_integer ')'
+	  {
+	    	file_reader_options_set_multi_line_timeout(last_file_reader_options, ($3 * 1000));
+	  }
+	;
+
+dest_affile
+	: KW_FILE '(' dest_affile_params ')'	{ $$ = $3; }
+	| KW_PIPE '(' dest_afpipe_params ')'    { $$ = $3; }
+	;
+
+dest_affile_params
+	: string
+	  {
+	    last_driver = *instance = affile_dd_new($1, configuration);
+	    last_writer_options = &((AFFileDestDriver *) last_driver)->writer_options;
+	    last_file_perm_options = &((AFFileDestDriver *) last_driver)->file_opener_options.file_perm_options;
+	  }
+	  dest_affile_options                           { $$ = last_driver; free($1); }
+	;
+
+dest_affile_options
+	: dest_affile_option dest_affile_options
+        |
+	;
+
+dest_affile_option
+	: dest_writer_option
+	| dest_driver_option
+        | file_perm_option
+	| KW_OPTIONAL '(' yesno ')'		{ last_driver->optional = $3; }
+	| KW_OVERWRITE_IF_OLDER '(' nonnegative_integer ')'	{ affile_dd_set_overwrite_if_older(last_driver, $3); }
+	| KW_FSYNC '(' yesno ')'		{ affile_dd_set_fsync(last_driver, $3); }
+        | dest_affile_common_option
+	;
+
+dest_afpipe_params
+	: string
+	  {
+	    last_driver = *instance = pipe_dd_new($1, configuration);
+	    last_writer_options = &((AFFileDestDriver *) last_driver)->writer_options;
+	    last_file_perm_options = &((AFFileDestDriver *) last_driver)->file_opener_options.file_perm_options;
+	  }
+	  dest_afpipe_options                   { $$ = last_driver; free($1); }
+	;
+
+dest_afpipe_options
+	: dest_afpipe_option dest_afpipe_options
+	|
+	;
+
+dest_afpipe_option
+	: dest_writer_option
+	| dest_driver_option
+	| file_perm_option
+        | dest_affile_common_option
+	;
+
+dest_affile_common_option
+	: KW_TIME_REAP '(' nonnegative_integer ')'		{ affile_dd_set_time_reap(last_driver, $3); }
+	| KW_CREATE_DIRS '(' yesno ')'		{ affile_dd_set_create_dirs(last_driver, $3); }
+        ;
+
+
+/* INCLUDE_RULES */
+
+%%

@@ -1,0 +1,211 @@
+/*
+ * Copyright (c) 2016 Marc Falzon
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#include "http-parser.h"
+
+}
+
+
+%code {
+
+#include "cfg-grammar.h"
+#include "cfg-parser.h"
+#include "http.h"
+#include "http-grammar.h"
+#include "response-handler.h"
+#include "autodetect-ca-location.h"
+#include "plugin.h"
+
+#include <string.h>
+
+HttpResponseHandler last_response_handler;
+
+}
+
+%name-prefix "http_"
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **instance}
+%parse-param {gpointer arg}
+
+%token KW_HTTP
+%token KW_URL
+%token KW_USER
+%token KW_PASSWORD
+%token KW_USER_AGENT
+%token KW_METHOD
+%token KW_HEADERS
+%token KW_BODY
+%token KW_CA_DIR
+%token KW_CA_FILE
+%token KW_CERT_FILE
+%token KW_KEY_FILE
+%token KW_CIPHER_SUITE
+%token KW_USE_SYSTEM_CERT_STORE
+%token KW_SSL_VERSION
+%token KW_PEER_VERIFY
+%token KW_TIMEOUT
+%token KW_TLS
+%token KW_BATCH_BYTES
+%token KW_BODY_PREFIX
+%token KW_BODY_SUFFIX
+%token KW_DELIMITER
+%token KW_WORKERS
+%token KW_ACCEPT_REDIRECTS
+%token KW_AUTH_HEADER
+%token KW_RESPONSE_ACTION
+%token KW_SUCCESS
+%token KW_RETRY
+%token KW_DROP
+%token KW_DISCONNECT
+
+
+%type   <ptr> driver
+%type   <ptr> http_destination
+%type   <ptr> http_auth_header_plugin
+%type   <ptr> http_response_action
+
+/* INCLUDE_DECLS */
+
+%%
+
+start
+    : driver
+          {
+            *instance = $1;
+            if (yychar != YYEMPTY)
+              cfg_lexer_unput_token(lexer, &yylval);
+            YYACCEPT;
+          }
+    ;
+
+driver
+    : LL_CONTEXT_DESTINATION http_destination          { $$ = $2; }
+    ;
+
+http_destination
+    : KW_HTTP
+      {
+        last_driver = http_dd_new(configuration);
+      }
+      '(' http_options ')'  { $$ = last_driver; }
+    ;
+
+http_options
+    : http_option http_options
+    |
+    ;
+
+http_response_action
+    : KW_SUCCESS { $$ = http_result_success; }
+    | KW_RETRY { $$ = http_result_retry; }
+    | KW_DROP { $$ = http_result_drop; }
+    | KW_DISCONNECT { $$ = http_result_disconnect; }
+    ;
+
+response_action_items
+    : response_action_item response_action_items
+    |
+    ;
+
+response_action_item
+    : positive_integer { last_response_handler.status_code = $1; }
+      LL_ARROW
+      http_response_action { last_response_handler.action = $4;
+                             http_dd_insert_response_handler(last_driver, &last_response_handler);}
+    ;
+
+http_option
+    : KW_URL        '(' string_list ')'        { http_dd_set_urls(last_driver, $3); g_list_free_full($3, free); }
+    | KW_USER       '(' string ')'            { http_dd_set_user(last_driver, $3); free($3); }
+    | KW_PASSWORD   '(' string ')'            { http_dd_set_password(last_driver, $3); free($3); }
+    | KW_USER_AGENT '(' string ')'            { http_dd_set_user_agent(last_driver, $3); free($3); }
+    | KW_HEADERS    '(' string_list ')'       { http_dd_set_headers(last_driver, $3); g_list_free_full($3, free); }
+    | KW_AUTH_HEADER '(' http_auth_header_plugin ')' { http_dd_set_auth_header(last_driver, $3); }
+    | KW_METHOD     '(' string ')'            { http_dd_set_method(last_driver, $3); free($3); }
+    | KW_BODY_PREFIX '(' string ')'           { http_dd_set_body_prefix(last_driver, $3); free($3); }
+    | KW_BODY_SUFFIX '(' string ')'           { http_dd_set_body_suffix(last_driver, $3); free($3); }
+    | KW_DELIMITER  '(' string ')'            { http_dd_set_delimiter(last_driver, $3); free($3); }
+    | KW_BODY       '(' template_content ')'  { http_dd_set_body(last_driver, $3); log_template_unref($3); }
+    | KW_ACCEPT_REDIRECTS '(' yesno ')'       { http_dd_set_accept_redirects(last_driver, $3); }
+    | KW_TIMEOUT '(' nonnegative_integer ')'  { http_dd_set_timeout(last_driver, $3); }
+    | KW_BATCH_BYTES '(' nonnegative_integer ')' { http_dd_set_batch_bytes(last_driver, $3); }
+    | KW_WORKERS '(' positive_integer ')'  { log_threaded_dest_driver_set_num_workers(last_driver, $3); }
+    | threaded_dest_driver_option
+    | http_tls_option
+    | KW_TLS '(' http_tls_options ')'
+    | { last_template_options = http_dd_get_template_options(last_driver); } template_option
+    | KW_RESPONSE_ACTION '(' response_action_items ')'
+    ;
+
+http_tls_options
+    : http_tls_option http_tls_options
+    |
+    ;
+
+http_tls_option
+    : KW_CA_DIR     '(' string ')'            { http_dd_set_ca_dir(last_driver, $3); free($3); }
+    | KW_CA_FILE    '(' path_check ')'        { http_dd_set_ca_file(last_driver, $3); free($3); }
+    | KW_CERT_FILE  '(' path_check ')'        { http_dd_set_cert_file(last_driver, $3); free($3); }
+    | KW_KEY_FILE   '(' path_secret ')'       { http_dd_set_key_file(last_driver, $3); free($3); }
+    | KW_CIPHER_SUITE '(' string ')'          { http_dd_set_cipher_suite(last_driver, $3); free($3); }
+    | KW_SSL_VERSION '(' string ')'           { CHECK_ERROR(http_dd_set_ssl_version(last_driver, $3), @3,
+                                                            "curl: unsupported SSL version: %s", $3);
+                                                free($3); }
+    | KW_USE_SYSTEM_CERT_STORE '(' yesno ')'  {
+        if ($3)
+          {
+            const gchar *ca_dir = auto_detect_ca_dir();
+            const gchar *ca_file = auto_detect_ca_file();
+            CHECK_ERROR(ca_dir || ca_file, @3,
+                        "Failed to autodect system cert store");
+            http_dd_set_ca_file(last_driver, ca_file);
+            http_dd_set_ca_dir(last_driver, ca_dir);
+          }
+      }
+    | KW_PEER_VERIFY '(' yesno ')'            { http_dd_set_peer_verify(last_driver, $3); }
+    ;
+
+http_auth_header_plugin
+    : LL_IDENTIFIER
+    {
+      gint context = LL_CONTEXT_HTTP_AUTH_HEADER;
+      Plugin *p = cfg_find_plugin(configuration, context, $1);
+      CHECK_ERROR(p, @1, "%s plugin %s not found", cfg_lexer_lookup_context_name_by_type(context), $1);
+      HttpAuthHeader *auth_header = (HttpAuthHeader *) cfg_parse_plugin(configuration, p, &@1, NULL);
+      free($1);
+      if (!auth_header)
+        {
+          YYERROR;
+        }
+      $$ = auth_header;
+    }
+    ;
+
+/* INCLUDE_RULES */
+
+%%

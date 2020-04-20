@@ -1,0 +1,211 @@
+/*
+ * Copyright (c) 2002-2013 Balabit
+ * Copyright (c) 1998-2013 Balázs Scheidler
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#include "dbparser-parser.h"
+
+}
+
+
+%code {
+
+#include "dbparser.h"
+#include "cfg-grammar.h"
+#include "groupingby.h"
+#include "cfg-parser.h"
+#include "dbparser-grammar.h"
+#include "syslog-names.h"
+#include "messages.h"
+#include "filter/filter-expr.h"
+#include <string.h>
+
+SyntheticMessage *last_message;
+}
+
+%name-prefix "dbparser_"
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogParser **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_DB_PARSER
+%token KW_GROUPING_BY
+%token KW_INJECT_MODE
+%token KW_INHERIT_MODE
+%token KW_TIMEOUT
+%token KW_TRIGGER
+%token KW_WHERE
+%token KW_HAVING
+%token KW_AGGREGATE
+%token KW_DROP_UNMATCHED
+%token KW_FILE
+%token KW_PROGRAM_TEMPLATE
+%token KW_MESSAGE_TEMPLATE
+%token KW_SORT_KEY
+
+%type <num> stateful_parser_inject_mode
+%type <ptr> synthetic_message
+%type <num> inherit_mode
+%type <num> context_scope
+
+%%
+
+start
+        : LL_CONTEXT_PARSER parser_expr_db                  { YYACCEPT; }
+        ;
+
+parser_expr_db
+        : KW_DB_PARSER '('
+          {
+            last_parser = *instance = (LogParser *) log_db_parser_new(configuration);
+          }
+          parser_db_opts
+          ')'
+	| KW_GROUPING_BY '('
+	  {
+	    last_parser = *instance = grouping_by_new(configuration);
+	  }
+          grouping_by_opts ')'
+        ;
+
+parser_db_opts
+        : parser_db_opt parser_db_opts
+        |
+        ;
+
+/* NOTE: we don't support parser_opt as we don't want the user to specify a template */
+parser_db_opt
+        : KW_FILE '(' path_no_check ')'                		{ log_db_parser_set_db_file(((LogDBParser *) last_parser), $3); free($3); }
+	| KW_DROP_UNMATCHED '(' yesno ')'			{ log_db_parser_set_drop_unmatched(((LogDBParser *) last_parser), $3); };
+        | KW_PROGRAM_TEMPLATE '(' template_content ')'
+          {
+             log_db_parser_set_program_template_ref(last_parser, $3);
+          }
+        | KW_MESSAGE_TEMPLATE '(' template_content ')'    { log_parser_set_template(last_parser, $3); }
+	| stateful_parser_opt
+        ;
+
+stateful_parser_opt
+	: KW_INJECT_MODE '(' stateful_parser_inject_mode ')'	{ stateful_parser_set_inject_mode(((StatefulParser *) last_parser), $3); }
+	| parser_opt
+	;
+
+stateful_parser_inject_mode
+	: string
+	  {
+            $$ = stateful_parser_lookup_inject_mode($1);
+            CHECK_ERROR($$ != -1, @1, "Unknown inject-mode %s", $1);
+            free($1);
+          }
+	| KW_INTERNAL				{ $$ = stateful_parser_lookup_inject_mode("internal"); }
+	;
+
+grouping_by_opts
+	: grouping_by_opt grouping_by_opts
+	|
+	;
+
+grouping_by_opt
+	: KW_KEY '(' template_content ')'                       { grouping_by_set_key_template(last_parser, $3); log_template_unref($3); }
+        | KW_SORT_KEY '(' template_content ')'			{ grouping_by_set_sort_key_template(last_parser, $3); log_template_unref($3); }
+        | KW_SCOPE '(' context_scope ')'                        { grouping_by_set_scope(last_parser, $3); }
+        | KW_WHERE '('
+          {
+            FilterExprNode *filter_expr;
+
+            CHECK_ERROR_WITHOUT_MESSAGE(cfg_parser_parse(&filter_expr_parser, lexer, (gpointer *) &filter_expr, NULL), @1);
+            grouping_by_set_where_condition(last_parser, filter_expr);
+          } ')'
+        | KW_HAVING '('
+          {
+            FilterExprNode *filter_expr;
+
+            CHECK_ERROR_WITHOUT_MESSAGE(cfg_parser_parse(&filter_expr_parser, lexer, (gpointer *) &filter_expr, NULL), @1);
+            grouping_by_set_having_condition(last_parser, filter_expr);
+          } ')'
+	| KW_TIMEOUT '(' nonnegative_integer ')'
+          {
+            CHECK_ERROR($3 >= 1, @1, "timeout() needs to be greater than 1 second");
+
+            grouping_by_set_timeout(last_parser, $3);
+          }
+	| KW_AGGREGATE '(' synthetic_message ')'		{ grouping_by_set_synthetic_message(last_parser, $3); }
+	| KW_TRIGGER '('
+          {
+            FilterExprNode *filter_expr;
+
+            CHECK_ERROR_WITHOUT_MESSAGE(cfg_parser_parse(&filter_expr_parser, lexer, (gpointer *) &filter_expr, NULL), @1);
+            grouping_by_set_trigger_condition(last_parser, filter_expr);
+          } ')'
+	| stateful_parser_opt
+	;
+
+synthetic_message
+	: { last_message = synthetic_message_new(); } synthetic_message_opts { $$ = last_message; }
+	;
+
+
+synthetic_message_opts
+	: synthetic_message_opt synthetic_message_opts
+	|
+	;
+
+synthetic_message_opt
+	: KW_INHERIT_MODE '(' inherit_mode ')'                  { synthetic_message_set_inherit_mode(last_message, $3); }
+	| KW_VALUE '(' string template_content ')'
+	  {
+	    synthetic_message_add_value_template(last_message, $3, $4);
+	    free($3);
+            log_template_unref($4);
+	  }
+	| KW_TAGS '(' string ')'				{ synthetic_message_add_tag(last_message, $3); free($3); }
+	;
+
+inherit_mode
+        : string
+          {
+            $$ = synthetic_message_lookup_inherit_mode($1);
+            free($1);
+            CHECK_ERROR($$ >= 0, @1, "unknown inherit-mode()");
+          }
+        ;
+
+context_scope
+        : string
+          {
+            $$ = correllation_key_lookup_scope($1);
+            free($1);
+            CHECK_ERROR($$ >= 0, @1, "unknown context-scope()");
+          }
+        ;
+
+
+/* INCLUDE_RULES */
+
+%%

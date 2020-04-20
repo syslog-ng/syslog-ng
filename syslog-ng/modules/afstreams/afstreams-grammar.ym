@@ -1,0 +1,92 @@
+/*
+ * Copyright (c) 2002-2011 Balabit
+ * Copyright (c) 1998-2011 Balázs Scheidler
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#include "afstreams-parser.h"
+
+}
+
+
+%code {
+
+#include "afstreams.h"
+#include "cfg-parser.h"
+#include "afstreams-grammar.h"
+#include "messages.h"
+
+extern LogDriver *last_driver;
+
+}
+
+%name-prefix "afstreams_"
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **instance}
+%parse-param {gpointer arg}
+
+
+/* INCLUDE_DECLS */
+
+%token KW_DOOR
+%token KW_SUN_STREAMS
+
+
+%type	<ptr> source_afstreams
+%type	<ptr> source_afstreams_params
+
+%%
+
+start
+  : LL_CONTEXT_SOURCE source_afstreams                        { YYACCEPT; }
+  ;
+
+source_afstreams
+	: KW_SUN_STREAMS '(' source_afstreams_params ')'	{ $$ = $3; }
+	;
+
+source_afstreams_params
+	: string
+	  {
+	    last_driver = *instance = afstreams_sd_new($1, configuration);
+	  }
+	  source_afstreams_options		{ $$ = last_driver; free($1); }
+	;
+
+source_afstreams_options
+	: source_afstreams_option source_afstreams_options
+	|
+	;
+
+source_afstreams_option
+	: KW_DOOR '(' string ')'		{ afstreams_sd_set_sundoor(last_driver, $3); free($3); }
+	| source_driver_option
+	;
+
+
+/* INCLUDE_RULES */
+
+%%

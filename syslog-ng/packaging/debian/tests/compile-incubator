@@ -1,0 +1,2 @@
+#!/bin/sh
+apt-get source --compile syslog-ng-incubator

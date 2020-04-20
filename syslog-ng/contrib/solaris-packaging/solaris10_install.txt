@@ -1,0 +1,138 @@
+Installing syslog-ng on Sun Solaris 10
+
+To successfully install syslog-ng, complete the following simple procedure. Lines starting with # are commands that have to be executed from a command line console.
+
+Procedure 4.5. Installing syslog-ng on Sun Solaris 10
+
+   1.
+
+      Use the your username and password received together with your syslog-ng Premium Edition license to download the following binaries. Make sure to download the package specific for the processor architecture of the host.
+          *
+
+            The syslog-ng Premium Edition package (syslog-ng-premium-edition_<version>) from
+
+            http://www.balabit.com/downloads/files/syslog-ng/binaries/premium-edition/pool/s/syslog-ng-premium-edition/
+          *
+
+            The libdbi8 package from
+
+            http://www.balabit.com/downloads/files/syslog-ng/binaries/premium-edition/pool/l/libdbi8/
+          *
+
+            If you plan to use an SQL destination, download the package corresponding to your database from
+
+            http://www.balabit.com/downloads/files/syslog-ng/binaries/premium-edition/pool/l/libdbi8-drivers/
+
+            Also download the package corresponding to the database, architecture, and Solaris version you plan to use from http://www.sunfreeware.com. The Sunfreeware.com website includes details on installing the database, and any required dependencies.
+
+            Note
+            The database packages contain the full database applications, but syslog-ng does not use the databases, only the .so file. Installing the database packages does not start the database services.
+   2.
+
+      Download or copy the syslog-ng_<version_number>_sparc.pkg.gz package to your computer running Solaris.
+      Download the following packages from the nearest sunfreeware.com mirrors(solaris9 packages):
+      	libiconv-1.11-sol9-sparc-local.gz
+	libgcc-3.4.6-sol9-sparc-local.gz
+
+   3.
+
+      Unpack and install the syslog-ng Premium Edition and the libdbi8 package by issuing the following commands from the command line:
+
+
+      # libiconv-1.11-sol9-sparc-local.gz
+      # libgcc-3.4.6-sol9-sparc-local.gz
+      # gunzip syslog-ng_<version_number>_sparc.pkg.gz
+      # gunzip libdbi8_<version>_<arch>.gz
+      # pkgadd -d libiconv-1.11-sol9-sparc-local
+      # pkgadd -d libgcc-3.4.6-sol9-sparc-local
+      # pkgadd -d syslog-ng_<version_number>_sparc.pkg
+      # pkgadd -d libdbi8_<version>_<arch>.pkg
+                  
+   4.
+
+      If you use an SQL destination, issue the commands corresponding to the database:
+          *
+
+            For MySQL:
+
+            Download and install the following packages from sunfreeware.com:
+	    	- mysql-5.0.41-sol9-sparc-local
+		- openssl-0.9.8e-sol9-sparc-local
+	      # gunzip <pkg>.gz; pkgadd -d <pkg> 
+            # gunzip libdbd8-mysql_<version>_<arch>.gz
+            # pkgadd -d libdbd8-mysql_<version>_<arch>.pkg
+                                    
+          *
+
+            For PostgreSQL:
+
+            Make sure that the SUNWpostgr-libs package has been installed. It's on the Solaris 10 install DVD.
+            # gunzip libdbd8-pgsql_<version>_<arch>.gz
+            # pkgadd -d libdbd8-pgsql_<version>_<arch>.pkg
+                                    
+          *
+
+            For SQLite:
+	    
+	    Download and install the sqlite-3.3.6-sol9-sparc-local package from sunfreeware.com.
+            # gunzip sqlite-3.3.6-sol9-sparc-local.gz 
+            # pkgadd -d sqlite-3.3.6-sol9-sparc-local
+            # gunzip libdbd8-sqlite_<version>_<arch>.gz
+            # pkgadd -d libdbd8-sqlite_<version>_<arch>.pkg
+                                    
+
+   5.
+
+      Rename the syslog-ng.conf.sample file (located under /opt/syslog-ng/etc/) to syslog-ng.conf.
+
+
+      # mv /opt/syslog-ng/etc/syslog-ng.conf.sample \ 
+                      /opt/syslog-ng/etc/syslog-ng.conf
+                  
+   6.
+
+      Modify the syslog-ng.conf to suit your needs. For details on how to configure syslog-ng, see The syslog-ng Administrator Guide, Chapter 3, Configuring syslog-ng.
+   7.
+
+      Disable the original syslogd application.
+
+
+      # svcadm -v disable svc:/system/system-log
+                  
+   8.
+
+      Copy the following files to their proper places by issuing the following commands and modify them if needed.
+
+
+      # cp <sourcedir>/contrib/solaris-packaging/syslog-ng.example.xml /var/svc/manifest/system/syslog-ng.xml
+      # cp <sourcedir>/contrib/solaris-packaging/syslog-ng.method /lib/svc/method/syslog-ng
+      # cp <sourcedir>/contrib/solaris-packaging/syslog-ng@default /etc/default/syslog-ng@default
+                  
+   9.
+
+      Validate and import the syslog-ng.xml file using svccfg.
+
+
+      # svccfg
+      svc:> validate /var/svc/manifest/system/syslog-ng.xml
+      svc:> import /var/svc/manifest/system/syslog-ng.xml
+      svc:> quit
+                  
+  10.
+
+      Enable and start syslog-ng.
+
+
+      # svcadm enable -t svc:/system/syslog-ng:default
+                  
+  11.
+
+      Verify that syslog-ng is running.
+
+
+      # svcs -a | grep syslog
+                  
+
+      You should receive a similar output: online 10:15:01 svc:/system/syslog-ng:default
+
+

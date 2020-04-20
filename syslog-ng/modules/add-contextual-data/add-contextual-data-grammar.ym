@@ -1,0 +1,124 @@
+/*
+ * Copyright (c) 2016 Balabit
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+%code top {
+#include "add-contextual-data-parser.h"
+
+}
+
+
+%code {
+
+#include "add-contextual-data.h"
+#include "cfg-grammar.h"
+#include "add-contextual-data-template-selector.h"
+#include "add-contextual-data-filter-selector.h"
+#include "add-contextual-data-glob-selector.h"
+#include "syslog-names.h"
+#include "messages.h"
+}
+
+
+%name-prefix "add_contextual_data_"
+
+/* this parameter is needed in order to instruct bison to use a complete
+ * argument list for yylex/yyerror */
+
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogParser **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_ADD_CONTEXTUAL_DATA
+%token KW_DATABASE
+%token KW_SELECTOR
+%token KW_DEFAULT_SELECTOR
+%token KW_PREFIX
+%token KW_FILTERS
+%token KW_IGNORE_CASE
+%token KW_GLOB
+
+%type	<ptr> parser_expr_add_contextual_data
+
+%%
+
+start
+        : LL_CONTEXT_PARSER parser_expr_add_contextual_data                  { YYACCEPT; }
+        ;
+
+
+parser_expr_add_contextual_data
+        : KW_ADD_CONTEXTUAL_DATA '('
+          {
+            last_parser = *instance = add_contextual_data_parser_new(configuration);
+          }
+          parser_add_contextual_data_opts
+          ')'
+          { $$ = last_parser; }
+        ;
+
+
+parser_add_contextual_data_opts
+        : parser_add_contextual_data_opt parser_add_contextual_data_opts
+        |
+        ;
+
+parser_add_contextual_data_opt
+        : KW_DATABASE '(' path_no_check ')'
+        {
+            add_contextual_data_set_filename(last_parser, $3);
+            free($3);
+        } 
+        | KW_SELECTOR '(' parser_add_contextual_data_selector_opt ')'
+        | KW_DEFAULT_SELECTOR '(' string ')'
+        {
+            add_contextual_data_set_default_selector(last_parser, $3);
+            free($3);
+        } | KW_PREFIX '(' string ')'
+        {
+            add_contextual_data_set_prefix(last_parser, $3);
+            free($3);
+        } | KW_IGNORE_CASE '(' yesno ')'
+        {
+          add_contextual_data_set_ignore_case(last_parser, $3);
+        };
+
+parser_add_contextual_data_selector_opt
+        : KW_FILTERS '(' string ')'
+          {
+	    add_contextual_data_set_selector(last_parser, add_contextual_data_filter_selector_new(configuration, $3));
+            free($3);
+          }
+        | KW_GLOB '(' template_content ')'
+        {
+            add_contextual_data_set_selector(last_parser, add_contextual_data_glob_selector_new($3));
+        }
+        | template_content
+        {
+            add_contextual_data_set_selector(last_parser, add_contextual_data_template_selector_new($1));
+        };
+
+/* INCLUDE_RULES */
+
+%%

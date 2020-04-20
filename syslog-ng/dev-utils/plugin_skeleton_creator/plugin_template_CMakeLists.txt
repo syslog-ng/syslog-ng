@@ -1,0 +1,17 @@
+module_switch(ENABLE_@PLUGIN_NAME_US@ "Enable @PLUGIN_NAME@")
+if (NOT ENABLE_@PLUGIN_NAME_US@)
+  return()
+endif()
+
+set(@PLUGIN_NAME_US@_SOURCES
+    "@PLUGIN_NAME@-parser.h"
+    "@PLUGIN_NAME@-plugin.c"
+    "@PLUGIN_NAME@-parser.c"
+)
+
+add_module(
+  TARGET @PLUGIN_NAME_US@
+  GRAMMAR @PLUGIN_NAME@-grammar
+  SOURCES ${@PLUGIN_NAME@_SOURCES}
+)
+
