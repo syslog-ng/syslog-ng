@@ -769,7 +769,7 @@ Test(msgparse, test_expected_sd_pairs_3)
   run_parameterized_test(params);
 }
 
-Test(msgparse, test_expected_sd_pairs_too_long)
+Test(msgparse, test_expected_sd_pairs_long)
 {
   struct sdata_pair expected_sd_pairs_test_5[] =
   {
@@ -780,6 +780,18 @@ Test(msgparse, test_expected_sd_pairs_too_long)
   struct sdata_pair expected_sd_pairs_test_5b[] =
   {
     { ".SDATA.a.i", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+    {  NULL, NULL }
+  };
+
+  struct sdata_pair expected_sd_pairs_test_5c[] =
+  {
+    { ".SDATA.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.i", "long_33"},
+    {  NULL, NULL }
+  };
+
+  struct sdata_pair expected_sd_pairs_test_5d[] =
+  {
+    { ".SDATA.a.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "long_33"},
     {  NULL, NULL }
   };
 
@@ -798,32 +810,32 @@ Test(msgparse, test_expected_sd_pairs_too_long)
       expected_sd_pairs_test_5
     },
 
-    // failed to parse to long sd id
+    // parse longer than 32 sd id
     {
-      "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa i=\"long_33\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
-      43,                         // pri
-      0, 0, 0,    // timestamp (sec/usec/zone)
-      "",         // host
-      "syslog-ng", //app
-      "Error processing log message: <132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa>@<aaa i=\"long_33\"] An application event log entry...", // msg
-      "", //sd_str
+      "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa i=\"long_33\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+      132,             // pri
+      1162083599, 156000, 3600,    // timestamp (sec/usec/zone)
+      "mymachine",        // host
+      "evntslog", //app
+      "An application event log entry...", // msg
+      "[aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa i=\"long_33\"]", //sd_str
       0,//processid
       0,//msgid
-      empty_sdata_pairs
+      expected_sd_pairs_test_5c
     },
 
-    // failed to parse to long sd name
+    // parse longer than 32 sd name
     {
-      "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa=\"long_33\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
-      43,             // pri
-      0, 0, 0,    // timestamp (sec/usec/zone)
-      "",        // host
-      "syslog-ng", //app
-      "Error processing log message: <132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa>@<aaa=\"long_33\"] An application event log entry...", // msg
-      "", //sd_str
+      "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [a aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa=\"long_33\"] An application event log entry...",  LP_SYSLOG_PROTOCOL, NULL,
+      132,             // pri
+      1162083599, 156000, 3600,    // timestamp (sec/usec/zone)
+      "mymachine",        // host
+      "evntslog", //app
+      "An application event log entry...", // msg
+      "[a aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa=\"long_33\"]", //sd_str
       0,//processid
       0,//msgid
-      empty_sdata_pairs
+      expected_sd_pairs_test_5d
     },
 
     // too long sdata value gets truncated
