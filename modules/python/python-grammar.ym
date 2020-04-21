@@ -175,6 +175,12 @@ python_sd_custom_option
           free($1);
           free($2);
         }
+        | string LL_ARROW string_or_number
+        {
+          python_sd_set_option(last_driver, $1, $3);
+          free($1);
+          free($3);
+        }
         ;
 
 
@@ -207,6 +213,12 @@ python_fetcher_custom_option
           free($1);
           free($2);
         }
+        | string LL_ARROW string_or_number
+        {
+          python_fetcher_set_option(last_driver, $1, $3);
+          free($1);
+          free($3);
+        }
         ;
 
 
@@ -238,6 +250,13 @@ python_parser_custom_option
           free($1);
           free($2);
         }
+        | string LL_ARROW string_or_number
+        {
+          python_parser_set_option(last_parser, $1, $3);
+          free($1);
+          free($3);
+        }
+
         ;
 
 
@@ -271,6 +290,13 @@ python_http_header_custom_option
           python_http_header_set_option(last_header, $1, $2);
           free($1);
           free($2);
+        }
+        |
+        string LL_ARROW string_or_number
+        {
+          python_http_header_set_option(last_header, $1, $3);
+          free($1);
+          free($3);
         }
         ;
 
