@@ -27,4 +27,10 @@ modules_python_tests_test_python_persist_name_LDADD = $(TEST_LDADD) \
 	-dlpreopen $(top_builddir)/modules/python/libmod-python.la \
 	$(PYTHON_LIBS) $(PREOPEN_SYSLOGFORMAT)
 
+modules_python_tests_test_python_persist_CFLAGS = $(TEST_CFLAGS) $(PYTHON_CFLAGS) \
+	-I$(top_srcdir)/modules/python -I$(top_srcdir)/modules/syslogformat
+modules_python_tests_test_python_persist_LDADD = $(TEST_LDADD) \
+	-dlpreopen $(top_builddir)/modules/python/libmod-python.la \
+	$(PYTHON_LIBS) $(PREOPEN_SYSLOGFORMAT)
+
 EXTRA_DIST += modules/python/tests/CMakeLists.txt
