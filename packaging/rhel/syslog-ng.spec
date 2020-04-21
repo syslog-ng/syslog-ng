@@ -67,7 +67,7 @@ Intentional syntax error to cause rpmbuild to abort.
 %global ivykis_ver 0.36.1
 
 Name: syslog-ng
-Version: 3.26.1
+Version: 3.27.1
 Release: 1%{?dist}
 Summary: Next-generation syslog server
 

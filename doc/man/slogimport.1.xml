@@ -8,7 +8,7 @@
     <refmeta>
       <refentrytitle>slogimport</refentrytitle>
       <manvolnum>1</manvolnum>
-      <refmiscinfo class="version">3.22</refmiscinfo>
+      <refmiscinfo class="version">3.27</refmiscinfo>
       <refmiscinfo class="source"/>
     </refmeta>
     <refnamediv>
@@ -72,7 +72,7 @@
           <term><command>output MAC file</command>
           </term>
           <listitem>
-            <para>The file receiving the new current message authentication code (MAC) of the secure encrypted destination after import. 
+            <para>The file receiving the new current message authentication code (MAC) of the secure encrypted destination after import.
 	    In case an existing file is supplied, new entries will be appended.</para>
           </listitem>
         </varlistentry>
@@ -81,7 +81,7 @@
           <term><command>counter</command>
           </term>
           <listitem>
-            <para>The current log entry counter of the secure encrypted destination after import. 
+            <para>The current log entry counter of the secure encrypted destination after import.
 	    This is required if the log entries to be imported will be appended to an existing secure encrypted destination.</para>
           </listitem>
         </varlistentry>

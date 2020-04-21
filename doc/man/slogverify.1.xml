@@ -8,7 +8,7 @@
     <refmeta>
       <refentrytitle>slogverify</refentrytitle>
       <manvolnum>1</manvolnum>
-      <refmiscinfo class="version">3.22</refmiscinfo>
+      <refmiscinfo class="version">3.27</refmiscinfo>
       <refmiscinfo class="source"/>
     </refmeta>
     <refnamediv>
@@ -76,7 +76,7 @@ slogverify -i <PREVIOUS MAC file file> <PREVIOUS key file>  <input file> <CURREN
 	    <para>
 	      &lt;output file&gt; Decrypted log data will be written into this file.
 	    </para>
-	    <para> 
+	    <para>
 	      [bufferSize] Optional buffer size. The buffer size can be used for performance adjustments in case the
 	    log file to be verified is very large and cannot be processed at once. It is a positive number of log
 	    entries that can be held in memory during verification. The default is 1000.

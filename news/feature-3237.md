@@ -2,7 +2,7 @@
 The value part follows template syntax.
 
 Example
-@version: 3.26
+@version: 3.27
 log {
   source { example-msg-generator(template("message parameter")
                                  num(10)
@@ -12,4 +12,3 @@ log {
          };
   destination { file(/dev/stdout template("$(format-json --scope all-nv-pairs)\n")); };
 };
-

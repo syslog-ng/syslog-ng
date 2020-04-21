@@ -51,7 +51,7 @@ You have to set the path of the class file or the name of the jar file (with ful
 
 Example configuration for this (if you compiled the java file above, and the class file is in the /tmp directory):
 ```
-@version: 3.26
+@version: 3.27
 
 options {
   threaded(yes);
@@ -80,7 +80,7 @@ log{
 ```
 Example configuration using jar files in the class_path (the path inside the jar file has to been set using '.'):
 ```
-@version: 3.26
+@version: 3.27
 
 options {
   threaded(yes);
@@ -122,5 +122,3 @@ so if you get the following error, it means, that the LD_LIBRARY_PATH does not c
 ```
 Error opening plugin module; module='mod-java', error='libjvm.so: cannot open shared object file: No such file or directory'
 ```
-
-
