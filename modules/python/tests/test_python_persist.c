@@ -180,7 +180,7 @@ persist = Persist('persist_name')\n\
 persist['integer'] = 1\n\
 persist['str'] = 'str'\n\
 persist['bytes'] = b'bytes'\n\
-assert sorted([1, 'str', b'bytes']) == sorted([persist[k] for k in persist])";
+assert set([1, 'str', b'bytes']) == set([persist[k] for k in persist])";
 
 Test(python_persist, test_python_persist_iter_returns_proper_types)
 {

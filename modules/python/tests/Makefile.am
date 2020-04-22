@@ -7,7 +7,8 @@ check_PROGRAMS += \
 modules_python_tests_TESTS = \
   modules/python/tests/test_python_logmsg \
   modules/python/tests/test_python_template \
-  modules/python/tests/test_python_persist_name
+  modules/python/tests/test_python_persist_name \
+  modules/python/tests/test_python_persist
 
 modules_python_tests_test_python_logmsg_CFLAGS = $(TEST_CFLAGS) $(PYTHON_CFLAGS) -I$(top_srcdir)/modules/python
 modules_python_tests_test_python_logmsg_LDADD = $(TEST_LDADD) \

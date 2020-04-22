@@ -409,12 +409,12 @@ _py_persist_type_set(PyObject *o, PyObject *k, PyObject *v)
       return -1;
     }
 
-  if (_py_is_string(v))
+  if (PyBytes_Check(v))
+    type = ENTRY_TYPE_BYTES;
+  else if (_py_is_string(v))
     type = ENTRY_TYPE_STRING;
   else if (py_object_is_integer(v))
     type = ENTRY_TYPE_LONG;
-  else if (PyBytes_Check(v))
-    type = ENTRY_TYPE_BYTES;
   else
     {
       PyErr_SetString(PyExc_TypeError, "Value must be either string, integer or bytes");
