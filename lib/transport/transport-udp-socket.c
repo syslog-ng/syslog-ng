@@ -130,7 +130,7 @@ _feed_aux_from_cmsg(LogTransportUDP *self, LogTransportAuxData *aux, struct msgh
 }
 
 #else
-#define _feed_aux_from_cmsg(aux, msg)
+#define _feed_aux_from_cmsg(self, aux, msg)
 #endif
 
 
