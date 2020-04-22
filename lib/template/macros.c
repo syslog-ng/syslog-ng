@@ -206,7 +206,7 @@ LogMacroDef macros[] =
   { "SOURCEIP", M_SOURCE_IP },
   { "DESTIP", M_DEST_IP },
   { "DESTPORT", M_DEST_PORT },
-  { "PROTO", M_PROTO },
+  { "PROTO", M_PROTOCOL },
   { "SEQNUM", M_SEQNUM },
   { "CONTEXT_ID", M_CONTEXT_ID },
   { "_", M_CONTEXT_ID },
@@ -616,7 +616,7 @@ log_macro_expand(GString *result, gint id, gboolean escape, const LogTemplateOpt
       format_uint32_padded(result, 0, 0, 10, port);
       break;
     }
-    case M_PROTO:
+    case M_PROTOCOL:
     {
       format_uint32_padded(result, 0, 0, 10, msg->proto);
       break;
