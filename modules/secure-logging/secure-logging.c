@@ -91,8 +91,8 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
 
   GOptionEntry slog_options[] =
   {
-    { "keyfile", 'k', 0, G_OPTION_ARG_FILENAME, &keypathbuffer, NULL, NULL },
-    { "macfile", 'm', 0, G_OPTION_ARG_FILENAME, &macpathbuffer, NULL, NULL },
+    { "key-file", 'k', 0, G_OPTION_ARG_FILENAME, &keypathbuffer, NULL, NULL },
+    { "mac-file", 'm', 0, G_OPTION_ARG_FILENAME, &macpathbuffer, NULL, NULL },
     { NULL }
   };
 

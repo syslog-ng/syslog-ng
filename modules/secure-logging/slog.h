@@ -42,10 +42,6 @@
 #define OPAD 0x5C
 #define EPAD 0x6A
 
-// Max msg length is 1500 bytes (RFC5424)
-#define MAX_RFC_LEN 1500
-
-#define CUTSTRING "###CUT###"
 
 // Dump contents of an array on STDOUT, byte by byte, converting to hex.
 void outputByteBuffer(unsigned char *buf, int length);

@@ -48,3 +48,4 @@ debian/*.log
 debian/autoreconf.*
 build/
 tags
+TAGS

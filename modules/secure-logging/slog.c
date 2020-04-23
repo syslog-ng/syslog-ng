@@ -304,23 +304,8 @@ void sLogEntry(guint64 numberOfLogEntries, GString *text, unsigned char *mainKey
   // Compute current log entry number
   gchar *counterString = convertToBase64((unsigned char *)&numberOfLogEntries, sizeof(numberOfLogEntries));
 
-  int slen = 0;
-
-  // Max msg length is 1500 bytes (RFC5424)
-  if ((text->len)>MAX_RFC_LEN)
-    {
-
-      slen = MAX_RFC_LEN;
-      g_string_overwrite(text, MAX_RFC_LEN-strlen(CUTSTRING), CUTSTRING);
-
-    }
-  else
-    {
-
-      slen = (int) text->len;
-
-    }
-
+  int slen = slen = (int) text->len;
+  
   // This buffer holds everything: AggregatedMAC, IV, Tag, and CText
   // Binary data cannot be larger than its base64 encoding
   unsigned char bigBuf[AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+slen];
@@ -337,7 +322,6 @@ void sLogEntry(guint64 numberOfLogEntries, GString *text, unsigned char *mainKey
 
       //Encrypt log data
       int ct_length = sLogEncrypt((guchar *)text->str, slen, encKey, iv, ciphertext, tag);
-
       if(ct_length <= 0)
         {
           msg_error("[SLOG] ERROR: Unable to correctly encrypt log message");
