@@ -27,21 +27,17 @@
 
 # kafka support needs librdkafka >= 1.0.0, which is only available on ubuntu-bionic
 # on Debian we don't build java and use Python3 _after_ buster
-debian-jessie		DEB_BUILD_PROFILES="sng-python2 nojava",DH_OPTIONS="-Nsyslog-ng-mod-mongodb -Nsyslog-ng-mod-rdkafka -Nsyslog-ng-mod-amqp -Nsyslog-ng-mod-riemann -Nsyslog-ng-mod-geoip2"
-debian-stretch		DEB_BUILD_PROFILES="sng-python2 nojava",DH_OPTIONS="-Nsyslog-ng-mod-rdkafka"
-debian-buster		DEB_BUILD_PROFILES="sng-python2 nojava",DH_OPTIONS="-Nsyslog-ng-mod-rdkafka"
+debian-stretch		python2,nojava,nokafka
+debian-buster		python2,nojava,nokafka
+debian-testing		python3,nojava
+debian-sid		python3,nojava
 
 # on ubuntu, we fetch java from OBS and start using Python3 at focal onwards.
-ubuntu-trusty		DEB_BUILD_PROFILES="sng-python2",DH_OPTIONS="-Nsyslog-ng-mod-rdkafka"
-ubuntu-xenial		DEB_BUILD_PROFILES="sng-python2",DH_OPTIONS="-Nsyslog-ng-mod-rdkafka"
-ubuntu-bionic		DEB_BUILD_PROFILES="sng-python2"
-ubuntu-eoan		DEB_BUILD_PROFILES="sng-python2"
-ubuntu-focal		DEB_BUILD_PROFILES="sng-python3"
+ubuntu-xenial		python2,nokafka
+ubuntu-bionic		python2
+ubuntu-eoan		python2
+ubuntu-focal		python3
 
-#
-# centos-6 is not supported, however I leave this line here as an example of
-# how to use build.manifest to cusomize a build.
-#
-centos			-											--without kafka --with python2
-centos-6		CFLAGS=-D__be16=guint16,PYTHON_LIBS=-lpython2.6,PYTHON_CFLAGS=-I/usr/include/python2.6 	--without mongodb --with python2
-fedora			-											--with python3 --without python2
+centos-6		python2,nokafka,nomongodb		CFLAGS=-D__be16=guint16,PYTHON_LIBS=-lpython2.6,PYTHON_CFLAGS=-I/usr/include/python2.6
+centos-7		python2,nokafka
+fedora			python3

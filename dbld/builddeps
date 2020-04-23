@@ -1,7 +1,42 @@
 #!/bin/bash
 
+. /dbld/functions.sh
+DBLD_DIR=/dbld
+
+YUM_INSTALL="yum install -y"
+DNF_INSTALL="dnf install -y"
+APT_INSTALL="apt-get install -y --no-install-recommends"
+
 set -e
 set -x
+
+# this function is run first and is responsible for installing stuff that is
+# needed by this script _before_ installing packages from packages.manifest.
+#
+# NOTE: If at all possible don't put anything here.
+function install_dbld_dependencies()
+{
+    case "${OS_PLATFORM}" in
+        centos-6)
+            $YUM_INSTALL wget
+            wget -O /usr/bin/yum-builddep https://raw.githubusercontent.com/rpm-software-management/yum-utils/master/yum-builddep.py
+            chmod +x /usr/bin/yum-builddep
+            sha1sum -c /dbld/images/yum-builddep.sha1
+            ;;
+        centos-*)
+            $YUM_INSTALL wget yum-utils
+            ;;
+        debian-*|ubuntu-*)
+            apt-get update
+            $APT_INSTALL wget gnupg2
+            if [ "${OS_PLATFORM}" = "ubuntu-xenial" ]; then
+                $APT_INSTALL -t xenial-backports debhelper dh-systemd
+            fi
+            ;;
+        fedora-*)
+            ;;
+    esac
+}
 
 function install_cmake() {
     CMAKE_VERSION=3.12.2
@@ -31,7 +66,7 @@ function install_criterion() {
 function install_gosu() {
     GOSU_VERSION=1.10
     ARCHITECTURE=$1
-    cat /helpers/gosu.pubkey | gpg --import
+    cat $DBLD_DIR/images/gosu.pubkey | gpg --import
     download_target "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-${ARCHITECTURE}" /usr/local/bin/gosu
     download_target "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-${ARCHITECTURE}.asc" /usr/local/bin/gosu.asc
     gpg --verify /usr/local/bin/gosu.asc
@@ -64,7 +99,6 @@ function filter_packages_by_platform {
 
 function add_obs_repo {
     PLATFORM=$1
-    apt-get update && apt-get install --no-install-recommends --yes wget gnupg2
     echo "deb http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/x${PLATFORM} ./" | tee /etc/apt/sources.list.d/lbudai.list
     cat | tee /etc/apt/preferences.d/lbudai <<EOF
 Package: *
@@ -82,28 +116,54 @@ function add_copr_repo {
     # PIP installation later.
     case "${OS_PLATFORM}" in
         centos-*)
-            yum install -y yum-plugin-copr
+            $YUM_INSTALL yum-plugin-copr
             yum copr enable -y czanik/syslog-ng-githead
             ;;
         fedora-*)
-            dnf install -y dnf-plugins-core
+            $DNF_INSTALL -y dnf-plugins-core
             dnf copr enable -y czanik/syslog-ng-githead
             ;;
     esac
 }
 
 function add_epel_repo {
-    yum install -y epel-release
+    $YUM_INSTALL epel-release
 }
 
 function install_apt_packages {
     apt-get update -qq -o Acquire::CompressionTypes::Order::=gz
-    filter_packages_by_platform /helpers/packages.manifest | xargs -t apt-get install --no-install-recommends --yes
+    filter_packages_by_platform $DBLD_DIR/packages.manifest | xargs -t $APT_INSTALL --yes
+}
+
+function install_debian_build_deps {
+    DEBIAN_CONTROL_FILE=$DBLD_DIR/extra-files/packaging-debian-control
+    if ! [ -f ${DEBIAN_CONTROL_FILE} ]; then
+        echo "install_debian_build_deps() called from dockerfile but without a Debian control file, make sure that control file is copied over to ${DEBIAN_CONTROL_FILE} by the prepare step"
+        exit 1
+    fi
+    deb_run_build_command mk-build-deps -i ${DEBIAN_CONTROL_FILE} -t "apt-get -y -o Debug::pkgProblemResolver=yes --no-install-recommends"
+}
+
+function install_rpm_build_deps {
+    RPM_SPEC_FILE=$DBLD_DIR/extra-files/syslog-ng.spec
+    if ! [ -f ${RPM_SPEC_FILE} ]; then
+        echo "install_rpm_build_deps() called from dockerfile but without a syslog-ng.spec file, make sure that control file is copied over to ${RPM_SPEC_FILE} by the prepare step"
+        exit 1
+    fi
+
+    case "${OS_PLATFORM}" in
+        centos-*)
+            rpm_run_build_command yum-builddep -y ${RPM_SPEC_FILE}
+            ;;
+        fedora-*)
+            rpm_run_build_command dnf builddep -y ${RPM_SPEC_FILE}
+            ;;
+    esac
 }
 
 function install_yum_packages {
-    yum install -y findutils
-    filter_packages_by_platform /helpers/packages.manifest | xargs yum install -y
+    $YUM_INSTALL findutils
+    filter_packages_by_platform $DBLD_DIR/packages.manifest | xargs $YUM_INSTALL
 }
 
 function install_pip_packages {
@@ -121,11 +181,11 @@ function install_pip_packages {
             python -m pip install --upgrade pip
             ;;
     esac
-    filter_packages_by_platform /helpers/pip_packages.manifest | xargs pip install --ignore-installed -U
+    filter_packages_by_platform $DBLD_DIR/pip_packages.manifest | xargs pip install --ignore-installed -U
 }
 
 function install_lsb_release {
-    apt-get update && apt-get install --no-install-recommends --yes lsb-release
+    apt-get update && $APT_INSTALL lsb-release
 }
 
 function enable_dbgsyms_on_ubuntu {
@@ -136,7 +196,7 @@ function enable_dbgsyms_on_ubuntu {
 }
 
 function install_perf {
-    apt-cache search linux-tools | grep 'linux-tools-.*-generic' | cut -d" " -f1 | tail -n1 | cut -d"-" -f1-4 | xargs apt-get install --no-install-recommends -y
+    apt-cache search linux-tools | grep 'linux-tools-.*-generic' | cut -d" " -f1 | tail -n1 | cut -d"-" -f1-4 | xargs $APT_INSTALL
 }
 
 

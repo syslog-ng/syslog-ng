@@ -1,7 +1,7 @@
 #! /usr/bin/dh-exec
 
 etc/syslog-ng/*
-usr/bin/*
+usr/bin/{dqtool,loggen,pdbtool,persist-tool,update-patterndb}
 usr/sbin/*
 usr/lib/syslog-ng/libsyslog-ng-*.so.*
 usr/lib/syslog-ng/libevtlog-*.so.*

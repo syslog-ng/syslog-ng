@@ -1,4 +1,7 @@
-FROM centos:7
+# this dbld image is special as it will compile syslog-ng against native
+# debian packages instead of pulling our own from OBS.
+
+FROM debian:sid
 LABEL maintainer="Andras Mitzki <andras.mitzki@balabit.com>, Laszlo Szemere <laszlo.szemere@balabit.com>, Balazs Scheidler <balazs.scheidler@oneidentity.com>"
 
 ARG OS_PLATFORM
@@ -6,19 +9,19 @@ ARG COMMIT
 ENV OS_PLATFORM ${OS_PLATFORM}
 LABEL COMMIT=${COMMIT}
 
+ENV DEBIAN_FRONTEND=noninteractive
+ENV DEBCONF_NONINTERACTIVE_SEEN=true
+ENV LANG C.UTF-8
+
 COPY images/fake-sudo.sh /usr/bin/sudo
 COPY images/entrypoint.sh /
 COPY . /dbld/
 
 RUN /dbld/builddeps install_dbld_dependencies
-RUN /dbld/builddeps add_epel_repo
-RUN /dbld/builddeps add_copr_repo
-RUN /dbld/builddeps install_yum_packages
-RUN /dbld/builddeps install_rpm_build_deps
-RUN /dbld/builddeps install_pip_packages
-
+RUN /dbld/builddeps install_apt_packages
+RUN /dbld/builddeps install_debian_build_deps
 RUN /dbld/builddeps install_criterion
-RUN /dbld/builddeps install_gradle
+
 RUN /dbld/builddeps install_gosu amd64
 
 VOLUME /source

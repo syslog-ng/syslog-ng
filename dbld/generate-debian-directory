@@ -1,6 +1,6 @@
 #!/bin/bash
 
-. /source/dbld/functions.sh
+. /dbld/functions.sh
 
 MODE=$1
 

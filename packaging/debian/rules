@@ -66,6 +66,10 @@ else
 PYTHON_VERSION = 3
 endif
 
+ifneq ($(filter sng-nokafka,$(DEB_BUILD_PROFILES)),)
+DH_OPTIONS += -Nsyslog-ng-mod-rdkafka
+endif
+
 # If DH_QUIET is set, then we want silent mode.
 # If DH_VERBOSE is set, we do not want silent mode.
 # If neither is set, we want the default: verbose mode.

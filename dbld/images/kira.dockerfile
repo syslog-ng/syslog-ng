@@ -3,7 +3,5 @@ LABEL maintainer="Andras Mitzki <andras.mitzki@balabit.com>, Laszlo Szemere <las
 
 ENV OS_PLATFORM kira
 
-COPY helpers/* /helpers/
-
-RUN /helpers/dependencies.sh install_apt_packages
-RUN /helpers/dependencies.sh install_pip_packages
+RUN /dbld/builddeps install_apt_packages
+RUN /dbld/builddeps install_pip_packages

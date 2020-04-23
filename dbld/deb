@@ -1,6 +1,6 @@
 #!/bin/bash
 
-. /source/dbld/functions.sh
+. /dbld/functions.sh
 
 function setup_dirs() {
     rm -rf /build/${OS_PLATFORM} && mkdir -p /build/${OS_PLATFORM}
@@ -32,6 +32,7 @@ if [ ! -d debian ]; then
 	echo "You have no Debian packaging in debian/, this should already by in the tarball at this point"
 	exit 1
 fi
-run_build_command dpkg-buildpackage -rfakeroot -d
+
+deb_run_build_command dpkg-buildpackage -rfakeroot -d
 
 capture_debs
