@@ -147,6 +147,7 @@ java_dd_init(LogPipe *s)
       msg_error("Can't compile template",
                 evt_tag_str("template", self->template_string),
                 evt_tag_str("error", error->message));
+      g_error_free(error);
       return FALSE;
     }
 

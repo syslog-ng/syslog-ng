@@ -1191,5 +1191,6 @@ error:
   if (parse_ctx)
     g_markup_parse_context_free(parse_ctx);
   g_hash_table_unref(state.ruleset_patterns);
+  g_error_free(error);
   return success;
 }
