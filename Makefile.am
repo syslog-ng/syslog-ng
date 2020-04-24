@@ -84,7 +84,7 @@ AM_CFLAGS += \
 	-Wold-style-definition \
 	-Wundef \
 	-Wignored-qualifiers \
-	-Wno-override-init
+	-Woverride-init
 endif
 
 TEST_CFLAGS		= -I$(top_srcdir)/libtest -DTOP_SRCDIR=\"$(abs_top_srcdir)\" $(AM_CFLAGS) $(CRITERION_CFLAGS)

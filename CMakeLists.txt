@@ -369,7 +369,7 @@ else()
   set(EXTRA_WARNINGS
     -Wold-style-declaration
     -Wunused-but-set-parameter
-    -Wno-override-init
+    -Woverride-init
     ${EXTRA_WARNINGS}
     )
 endif()
