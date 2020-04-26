@@ -64,7 +64,7 @@ crypto_init(void)
   openssl_init();
   openssl_crypto_init_threading();
 
-  if (RAND_status() < 0 || getenv("RANDFILE"))
+  if (getenv("RANDFILE"))
     {
       char rnd_file[256];
 
@@ -73,10 +73,12 @@ crypto_init(void)
         {
           RAND_load_file(rnd_file, -1);
           randfile_loaded = TRUE;
+          if (RAND_status() < 0)
+            {
+              fprintf(stderr,
+                      "WARNING: a trusted random number source is not available, crypto operations will probably fail. Please set the RANDFILE environment variable.");
+              g_assert_not_reached();
+            }
         }
-
-      if (RAND_status() < 0)
-        fprintf(stderr,
-                "WARNING: a trusted random number source is not available, crypto operations will probably fail. Please set the RANDFILE environment variable.");
     }
 }
