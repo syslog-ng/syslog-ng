@@ -74,6 +74,16 @@ Test(wallclocktime, test_strptime_parses_overflowed_usec)
   cr_expect(wct.wct_usec == 12345);
 }
 
+Test(wallclocktime, test_strptime_usec_parse_finds_character)
+{
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
+  gchar *end;
+
+  end = wall_clock_time_strptime(&wct, "%b %d %Y %H:%M:%S.%f", "Jan 16 2019 18:23:12.boom");
+  cr_assert(end == NULL);
+  cr_expect(wct.wct_usec == 0);
+}
+
 Test(wallclocktime, test_strptime_parses_rfc822_timezone)
 {
   WallClockTime wct = WALL_CLOCK_TIME_INIT;

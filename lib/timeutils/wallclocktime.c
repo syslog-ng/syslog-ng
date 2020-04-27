@@ -413,6 +413,8 @@ recurse:
         case 'f':
         {
           const unsigned char *end = conv_num(bp, &wct->wct_usec, 0, 999999);
+          if (!end)
+            return NULL;
           int digits = end - bp;
 
           /*
