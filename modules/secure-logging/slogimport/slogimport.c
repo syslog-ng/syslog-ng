@@ -38,17 +38,17 @@ int main(int argc, char *argv[])
 {
   GError *error = NULL;
   GOptionContext *context = g_option_context_new("- Import log files using secure logging\n\n  " \
-     "The following argments must be supplied in exactly this order\n\n  " \
-     "HOSTKEYFILE OUTPUTHOSTKEYFILE INPUTLOGFILE " \
-     "OUTPUTLOGFILE INPUTMACFILE OUTPUTMACFILE [COUNTER]\n\n  where\n\n  "
-     "HOSTKEYFILE\t\tThe current host key file\n  "
-     "OUTPUTHOSTKEYFILE\tThe name of the file receiving the newly created host key\n  "
-     "INPUTLOGFILE\t\tThe log file to import\n  "
-     "OUTPUTLOGFILE\t\tThe name of the encrypted log file receiving the import\n  "
-     "INPUTMACFILE\t\tThe current MAC file\n  "
-     "OUTPUTMACFILE\t\tThe resulting MAC file updated after the import\n  "
-     "[COUNTER]\t\tAn optional counter for controlling the import buffer\n\n  "
-     "Arguments in brackets [] are optional, all other arguments are required");
+                                                 "The following argments must be supplied in exactly this order\n\n  " \
+                                                 "HOSTKEYFILE OUTPUTHOSTKEYFILE INPUTLOGFILE " \
+                                                 "OUTPUTLOGFILE INPUTMACFILE OUTPUTMACFILE [COUNTER]\n\n  where\n\n  "
+                                                 "HOSTKEYFILE\t\tThe current host key file\n  "
+                                                 "OUTPUTHOSTKEYFILE\tThe name of the file receiving the newly created host key\n  "
+                                                 "INPUTLOGFILE\t\tThe log file to import\n  "
+                                                 "OUTPUTLOGFILE\t\tThe name of the encrypted log file receiving the import\n  "
+                                                 "INPUTMACFILE\t\tThe current MAC file\n  "
+                                                 "OUTPUTMACFILE\t\tThe resulting MAC file updated after the import\n  "
+                                                 "[COUNTER]\t\tAn optional counter for controlling the import buffer\n\n  "
+                                                 "Arguments in brackets [] are optional, all other arguments are required");
 
   if (!g_option_context_parse (context, &argc, &argv, &error))
     {
@@ -72,13 +72,13 @@ int main(int argc, char *argv[])
   char mac[CMAC_LENGTH];
 
   int index = 1;
-  char* hostkey = argv[index++];
-  char* newhostKey = argv[index++];
-  char* inputlog = argv[index++];
-  char* outputlog = argv[index++];
-  char* inputMAC = argv[index++];
-  char* outputMAC = argv[index++];
-  
+  char *hostkey = argv[index++];
+  char *newhostKey = argv[index++];
+  char *inputlog = argv[index++];
+  char *outputlog = argv[index++];
+  char *inputMAC = argv[index++];
+  char *outputMAC = argv[index++];
+
   // Read key and counter
   size_t counter;
   int ret = readKey(key, &counter, hostkey);
@@ -92,22 +92,22 @@ int main(int argc, char *argv[])
     {
       errno = 0;
       gboolean ok = TRUE;
-      char* counterString = argv[index];
+      char *counterString = argv[index];
       int len = sscanf(counterString, "%zu", &counter);
       if(len <= 0)
-	{
-	  msg_error("[SLOG] ERROR: Invalid counter value", evt_tag_str("value", counterString));
-	  ok = FALSE;
-	}
+        {
+          msg_error("[SLOG] ERROR: Invalid counter value", evt_tag_str("value", counterString));
+          ok = FALSE;
+        }
       if(errno != 0)
-	{
-	  msg_error("[SLOG] ERROR: Unable to process input value", evt_tag_str("error", strerror(errno)));
-	  ok = FALSE;
-	}
+        {
+          msg_error("[SLOG] ERROR: Unable to process input value", evt_tag_str("error", strerror(errno)));
+          ok = FALSE;
+        }
       if(!ok)
-	{
-	  return -1;
-	}
+        {
+          return -1;
+        }
     }
 
   // Open input file
@@ -144,7 +144,7 @@ int main(int argc, char *argv[])
 
       GString *result = g_string_new(NULL);
       GString *inputGString = g_string_new(line);
-      
+
       // Remove trailing '\n' from string
       g_string_truncate(inputGString, (inputGString->len)-1);
 

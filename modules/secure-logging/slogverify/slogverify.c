@@ -65,8 +65,8 @@ int normalMode(int argc, char **argv)
 
   char key[KEY_LENGTH];
   guint64 counter;
-  char* hostkey = argv[1];
-  
+  char *hostkey = argv[1];
+
   msg_info("[SLOG] INFO: Reading key file", evt_tag_str("name", argv[1]));
   int ret = readKey(key, &counter, hostkey);
   if (ret!=1)
@@ -81,7 +81,7 @@ int normalMode(int argc, char **argv)
       return 0;
     }
 
-  char* MACfile = argv[3];
+  char *MACfile = argv[3];
   msg_info("[SLOG] INFO: Reading MAC file", evt_tag_str("name", MACfile));
   FILE *bigMAC = fopen(MACfile, "r");
   if(bigMAC == NULL)
@@ -96,8 +96,8 @@ int normalMode(int argc, char **argv)
       msg_warning("[SLOG] WARNING: Unable to read MAC", evt_tag_str("file", MACfile));
     }
 
-  char* inputlog = argv[2];
-  char* outputlog = argv[4];
+  char *inputlog = argv[2];
+  char *outputlog = argv[4];
   FILE *input = fopen(inputlog, "r");
 
   if(input == NULL)
@@ -153,7 +153,7 @@ int iterativeMode(int argc, char **argv)
   char previousKey[KEY_LENGTH];
   guint64 previousKeyCounter = 0;
 
-  char* prevKey = argv[3];
+  char *prevKey = argv[3];
   msg_info("[SLOG] INFO: Reading previous key file", evt_tag_str("name", prevKey));
   int ret = readKey(previousKey, &previousKeyCounter, prevKey);
   if (ret!=1)
@@ -162,7 +162,7 @@ int iterativeMode(int argc, char **argv)
       return 0;
     }
 
-  char* prevMAC = argv[2];
+  char *prevMAC = argv[2];
   msg_info("[SLOG] INFO: Reading previous MAC file", evt_tag_str("name", prevMAC));
   FILE *previousBigMAC = fopen(prevMAC, "r");
   if(previousBigMAC == NULL)
@@ -177,7 +177,7 @@ int iterativeMode(int argc, char **argv)
       msg_warning("[SLOG] WARNING: Unable to read previous MAC", evt_tag_str("file", prevMAC));
     }
 
-  char* curMAC = argv[5];
+  char *curMAC = argv[5];
   msg_info("[SLOG] INFO: Reading current MAC file", evt_tag_str("name", curMAC));
   FILE *currentBigMAC = fopen(curMAC, "r");
   if(currentBigMAC == NULL)
@@ -192,7 +192,7 @@ int iterativeMode(int argc, char **argv)
       msg_warning("[SLOG] WARNING: Unable to read current MAC", evt_tag_str("file", curMAC));
     }
 
-  char* inputlog = argv[4];
+  char *inputlog = argv[4];
   FILE *input = fopen(inputlog, "r");
   if(input == NULL)
     {
@@ -212,11 +212,12 @@ int iterativeMode(int argc, char **argv)
     }
   fclose(input);
 
-  char* outputlog = argv[6];
-  
+  char *outputlog = argv[6];
+
   msg_info("[SLOG] INFO: Number of lines in file", evt_tag_long("number", entries));
   msg_info("[SLOG] INFO: Restoring and verifying log entries", evt_tag_int("buffer size", bufferSize));
-  ret = iterativeFileVerify(previousMAC, (unsigned char *)previousKey, argv[4], currentMAC, outputlog, entries, bufferSize,
+  ret = iterativeFileVerify(previousMAC, (unsigned char *)previousKey, argv[4], currentMAC, outputlog, entries,
+                            bufferSize,
                             previousKeyCounter);
 
   if (ret == 0)
@@ -233,21 +234,21 @@ int main(int argc, char *argv[])
 {
   GError *error = NULL;
   GOptionContext *context = g_option_context_new("- Log archive verification\n\n  " \
-     "NORMAL MODE: The following argments must be supplied in exactly this order\n\n  " \
-     "HOSTKEY INPUTLOG MACFILE OUTPUTLOG [BUFFERSIZE]\n\n  where\n\n  " \
-     "HOSTKEY\t\tThe current host key file\n  " \
-     "INPUTLOG\t\tThe log file to verify\n  " \
-     "MACFILE\t\tThe current MAC file\n  "
-     "OUTPUTLOG\t\tThe name of the file receiving the cleartext log entries after verification\n  " \
-     "[BUFFERSIZE]\t\tAn optional buffer size useful for verifying very large log files\n\n  " \
-     "ITERATIVE MODE: In addition to the -i option, the following arguments are required\n\n  " \
-     "PREVIOUSMAC PREVIOUSKEY INPUTLOG CURRENTMAC OUTPUTLOG [BUFFERSIZE]\n\n  where\n\n  " \
-     "PREVIOUSMAC\t\tThe current MAC file\n  " \
-     "PREVIOUSKEY\t\tThe current host key file\n  " \
-     "INPUTLOG\t\tThe log file to verify\n  " \
-     "CURRENTMAC\t\tThe current MAC file\n  " \
-     "OUTPUTLOG\t\tThe name of the file receiving the cleartext log entries after verification\n  " \
-     "[BUFFERSIZE]\t\tAn optional buffer size useful for verifying very large log files\n\n  ");
+                                                 "NORMAL MODE: The following argments must be supplied in exactly this order\n\n  " \
+                                                 "HOSTKEY INPUTLOG MACFILE OUTPUTLOG [BUFFERSIZE]\n\n  where\n\n  " \
+                                                 "HOSTKEY\t\tThe current host key file\n  " \
+                                                 "INPUTLOG\t\tThe log file to verify\n  " \
+                                                 "MACFILE\t\tThe current MAC file\n  "
+                                                 "OUTPUTLOG\t\tThe name of the file receiving the cleartext log entries after verification\n  " \
+                                                 "[BUFFERSIZE]\t\tAn optional buffer size useful for verifying very large log files\n\n  " \
+                                                 "ITERATIVE MODE: In addition to the -i option, the following arguments are required\n\n  " \
+                                                 "PREVIOUSMAC PREVIOUSKEY INPUTLOG CURRENTMAC OUTPUTLOG [BUFFERSIZE]\n\n  where\n\n  " \
+                                                 "PREVIOUSMAC\t\tThe current MAC file\n  " \
+                                                 "PREVIOUSKEY\t\tThe current host key file\n  " \
+                                                 "INPUTLOG\t\tThe log file to verify\n  " \
+                                                 "CURRENTMAC\t\tThe current MAC file\n  " \
+                                                 "OUTPUTLOG\t\tThe name of the file receiving the cleartext log entries after verification\n  " \
+                                                 "[BUFFERSIZE]\t\tAn optional buffer size useful for verifying very large log files\n\n  ");
 
   g_option_context_add_main_entries (context, options, NULL);
   if (!g_option_context_parse (context, &argc, &argv, &error))
@@ -271,22 +272,22 @@ int main(int argc, char *argv[])
   if (iterative)
     {
       if (argc < 7)
-	{
-	  printf("%s", g_option_context_get_help(context, TRUE, NULL));
-	  g_option_context_free(context);
-	  return 1;
-	}
+        {
+          printf("%s", g_option_context_get_help(context, TRUE, NULL));
+          g_option_context_free(context);
+          return 1;
+        }
 
       ret = 1 - iterativeMode(argc, argv);
     }
   else
     {
       if (argc < 5)
-	{
-	  printf("%s", g_option_context_get_help(context, TRUE, NULL));
-	  g_option_context_free(context);
-	  return 1;
-	}
+        {
+          printf("%s", g_option_context_get_help(context, TRUE, NULL));
+          g_option_context_free(context);
+          return 1;
+        }
 
       ret = 1 - normalMode(argc, argv);
     }

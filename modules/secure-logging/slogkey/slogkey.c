@@ -52,10 +52,10 @@ int main(int argc, char **argv)
 {
   GError *error = NULL;
   GOptionContext *context = g_option_context_new("- secure logging key management\n\n  " \
-     "Master key generation:     slogkey -m MASTERKEY\n  " \
-     "Host key derivation:       slogkey -d MASTERKEY MACADDRESS SERIALNUMBER HOSTKEYFILE\n  " \
-     "Host key sequence display: slogkey -s HOSTKEY");
-  
+                                                 "Master key generation:     slogkey -m MASTERKEY\n  " \
+                                                 "Host key derivation:       slogkey -d MASTERKEY MACADDRESS SERIALNUMBER HOSTKEYFILE\n  " \
+                                                 "Host key sequence display: slogkey -s HOSTKEY");
+
   g_option_context_add_main_entries (context, entries, NULL);
   if (!g_option_context_parse (context, &argc, &argv, &error))
     {
@@ -89,9 +89,9 @@ int main(int argc, char **argv)
     {
       ok = FALSE;
     }
-  
+
   if (argc >= 2 && !ok)
-    { 
+    {
       printf("%s", g_option_context_get_help(context, TRUE, NULL));
       g_option_context_free(context);
       return -1;
@@ -104,14 +104,14 @@ int main(int argc, char **argv)
       g_option_context_free(context);
       return -1;
     }
-  
+
   // Option parsing successful -> context can be released
-  g_option_context_free(context); 
-  
+  g_option_context_free(context);
+
   int ret = 0;
   int success = 0;
   int index = 1;
-  
+
   // Initialize internal messaging
   msg_init(TRUE);
 
@@ -127,14 +127,14 @@ int main(int argc, char **argv)
           ret = -1;
         }
       else
-	{
-	  success = writeKey((gchar *)masterkey, 0, keyfile);
-	  if(!success)
-	    {
-	      msg_error("[SLOG] ERROR: Unable to write master key to file", evt_tag_str("file", keyfile));
-	      ret = -1;
-	    }
-	}
+        {
+          success = writeKey((gchar *)masterkey, 0, keyfile);
+          if(!success)
+            {
+              msg_error("[SLOG] ERROR: Unable to write master key to file", evt_tag_str("file", keyfile));
+              ret = -1;
+            }
+        }
       return ret;
     }
   else if (sequence)
@@ -169,24 +169,26 @@ int main(int argc, char **argv)
           msg_error("[SLOG] ERROR: Unable to read master key", evt_tag_str("file", masterKeyFileName));
           ret = -1;
         }
-      else {
-	guchar hostKey[KEY_LENGTH];
+      else
+        {
+          guchar hostKey[KEY_LENGTH];
 
-	success = deriveHostKey((guchar *)masterKey, macAddr, serial, hostKey);
-	if(!success)
-	  {
-	    msg_error("[SLOG] ERROR: Unable to derive a host key");
-	    ret = -1;
-	  }
-	else {
-	  success = writeKey((char *)hostKey, 0, hostKeyFileName);
-	  if(success == 0)
-	    {
-	      msg_error("[SLOG] ERROR: Unable to write host key to file", evt_tag_str("file", hostKeyFileName));
-	      ret = -1;
-	    }
-	}
-      }
+          success = deriveHostKey((guchar *)masterKey, macAddr, serial, hostKey);
+          if(!success)
+            {
+              msg_error("[SLOG] ERROR: Unable to derive a host key");
+              ret = -1;
+            }
+          else
+            {
+              success = writeKey((char *)hostKey, 0, hostKeyFileName);
+              if(success == 0)
+                {
+                  msg_error("[SLOG] ERROR: Unable to write host key to file", evt_tag_str("file", hostKeyFileName));
+                  ret = -1;
+                }
+            }
+        }
     }
 
   // Release messaging resources

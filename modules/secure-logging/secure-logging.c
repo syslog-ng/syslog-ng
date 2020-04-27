@@ -162,7 +162,7 @@ tf_slog_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs 
   // If we do not have a good key, just forward input
   if (state->badKey == TRUE)
     {
-      g_string_assign (result, args->argv[0]->str);
+      g_string_append (result, args->argv[0]->str);
       return;
     }
 
