@@ -23,7 +23,7 @@
     </refsynopsisdiv>
     <refsection version="5.0">
       <title>Description</title>
-      <para>The <command>slogimport</command> is used to import plaintext log file into a secure encrypted destination. Using this utility, log files obtained from a previous installation of <command>syslog-ng</command> or another logging system and transfer into a secure encrypted destination. When importing plaintext log files into an existing secure encrypted destination, the current encryption key has to be suupplied in order to preserve consistency.</para>
+      <para>The <command>slogimport</command> is used to import plaintext log file into a secure encrypted destination. Using this utility, log files obtained from a previous installation of <command>syslog-ng</command> or another logging system and transfer into a secure encrypted destination. When importing plaintext log files into an existing secure encrypted destination, the current encryption key has to be supplied in order to preserve consistency.</para>
     </refsection>
 <!--
     slogimport <host key file> <output key file> <input log file> <output log file> <input MAC file> <output MAC file> [counter]

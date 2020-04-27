@@ -34,17 +34,20 @@
 #define MIN_BUF_SIZE 10
 #define MAX_BUF_SIZE 100000
 
-// Return 1 on success, 0 on error
-int standardMode(int argc, char **argv)
-{
-  if (argc<5)
-    {
-      printf("Usage:\n%s <host key file> <input file> <MAC file> <output file> [bufferSize]\n", argv[0]);
-      return 0;
-    }
+// Options
+static gboolean iterative = FALSE;
 
+static GOptionEntry options[] =
+{
+  { "iterative", 'i', 0, G_OPTION_ARG_NONE, &iterative, "Iterative verification", NULL },
+  { NULL }
+};
+
+// Return 1 on success, 0 on error
+int normalMode(int argc, char **argv)
+{
   int bufferSize = 1000;
-  if (argc>5)
+  if (argc > 5)
     {
       int size = atoi(argv[5]);
 
@@ -62,12 +65,13 @@ int standardMode(int argc, char **argv)
 
   char key[KEY_LENGTH];
   guint64 counter;
-
+  char* hostkey = argv[1];
+  
   msg_info("[SLOG] INFO: Reading key file", evt_tag_str("name", argv[1]));
-  int ret = readKey(key, &counter, argv[1]);
+  int ret = readKey(key, &counter, hostkey);
   if (ret!=1)
     {
-      msg_error("[SLOG] ERROR: Key could not be loaded.");
+      msg_error("[SLOG] ERROR: Unable to read host key", evt_tag_str("file", hostkey));
       return 0;
     }
 
@@ -77,25 +81,28 @@ int standardMode(int argc, char **argv)
       return 0;
     }
 
-  msg_info("[SLOG] INFO: Reading MAC file", evt_tag_str("name", argv[3]));
-  FILE *bigMAC = fopen(argv[3], "r");
+  char* MACfile = argv[3];
+  msg_info("[SLOG] INFO: Reading MAC file", evt_tag_str("name", MACfile));
+  FILE *bigMAC = fopen(MACfile, "r");
   if(bigMAC == NULL)
     {
-      msg_error("[SLOG] ERROR: Problem with MAC file");
+      msg_error("[SLOG] ERROR: Unable to read MAC", evt_tag_str("file", MACfile));
       return 0;
     }
 
   unsigned char MAC[CMAC_LENGTH];
-  if (readBigMAC(argv[3], (char *)MAC)==0)
+  if (readBigMAC(MACfile, (char *)MAC)==0)
     {
-      msg_warning("[SLOG] WARNING: Cannot properly read MAC file.");
+      msg_warning("[SLOG] WARNING: Unable to read MAC", evt_tag_str("file", MACfile));
     }
 
-  FILE *input = fopen(argv[2], "r");
+  char* inputlog = argv[2];
+  char* outputlog = argv[4];
+  FILE *input = fopen(inputlog, "r");
 
   if(input == NULL)
     {
-      msg_error("[SLOG] ERROR: Problem with input file");
+      msg_error("[SLOG] ERROR: Unable to open input log", evt_tag_str("file", inputlog));
       return 0;
     }
 
@@ -113,7 +120,7 @@ int standardMode(int argc, char **argv)
 
   msg_info("[SLOG] INFO: Number of lines in file", evt_tag_long("number", entries));
   msg_info("[SLOG] INFO: Restoring and verifying log entries", evt_tag_int("buffer size", bufferSize));
-  ret = fileVerify((unsigned char *)key, argv[2], argv[4], MAC, entries, bufferSize);
+  ret = fileVerify((unsigned char *)key, inputlog, outputlog, MAC, entries, bufferSize);
 
   if (ret == 0)
     {
@@ -126,15 +133,8 @@ int standardMode(int argc, char **argv)
 // Return 1 on success, 0 on error
 int iterativeMode(int argc, char **argv)
 {
-  if (argc<7)
-    {
-      printf("Usage:\n%s -i <PREVIOUS MAC file file> <PREVIOUS key file> <input file> <CURRENT MAC file> <output file> [bufferSize]\n",
-             argv[0]);
-      return 0;
-    }
-
   int bufferSize = 1000;
-  if (argc>7)
+  if (argc > 7)
     {
       int size = atoi(argv[7]);
 
@@ -153,47 +153,50 @@ int iterativeMode(int argc, char **argv)
   char previousKey[KEY_LENGTH];
   guint64 previousKeyCounter = 0;
 
-  msg_info("[SLOG] INFO: Reading previous key file", evt_tag_str("name", argv[3]));
-  int ret = readKey(previousKey, &previousKeyCounter, argv[3]);
+  char* prevKey = argv[3];
+  msg_info("[SLOG] INFO: Reading previous key file", evt_tag_str("name", prevKey));
+  int ret = readKey(previousKey, &previousKeyCounter, prevKey);
   if (ret!=1)
     {
-      msg_error("[SLOG] ERROR: Key could not be loaded.");
+      msg_error("[SLOG] ERROR: Previous key could not be loaded.", evt_tag_str("file", prevKey));
       return 0;
     }
 
-
-  msg_info("[SLOG] INFO: Reading previous MAC file", evt_tag_str("name", argv[2]));
-  FILE *previousBigMAC = fopen(argv[2], "r");
+  char* prevMAC = argv[2];
+  msg_info("[SLOG] INFO: Reading previous MAC file", evt_tag_str("name", prevMAC));
+  FILE *previousBigMAC = fopen(prevMAC, "r");
   if(previousBigMAC == NULL)
     {
-      msg_error("[SLOG] ERROR: Problem with MAC file");
+      msg_error("[SLOG] ERROR: Unable to read previous MAC", evt_tag_str("file", prevMAC));
       return 0;
     }
 
   unsigned char previousMAC[CMAC_LENGTH];
-  if (readBigMAC(argv[2], (char *)previousMAC)==0)
+  if (readBigMAC(prevMAC, (char *)previousMAC)==0)
     {
-      msg_warning("[SLOG] WARNING: Cannot properly read MAC file.");
+      msg_warning("[SLOG] WARNING: Unable to read previous MAC", evt_tag_str("file", prevMAC));
     }
 
-  msg_info("[SLOG] INFO: Reading current MAC file", evt_tag_str("name", argv[5]));
-  FILE *currentBigMAC = fopen(argv[5], "r");
+  char* curMAC = argv[5];
+  msg_info("[SLOG] INFO: Reading current MAC file", evt_tag_str("name", curMAC));
+  FILE *currentBigMAC = fopen(curMAC, "r");
   if(currentBigMAC == NULL)
     {
-      msg_error("[SLOG] ERROR: Problem with MAC file");
+      msg_error("[SLOG] ERROR: Unable to read current MAC", evt_tag_str("file", curMAC));
       return 0;
     }
 
   unsigned char currentMAC[CMAC_LENGTH];
-  if (readBigMAC(argv[5], (char *)currentMAC)==0)
+  if (readBigMAC(curMAC, (char *)currentMAC)==0)
     {
-      msg_warning("[SLOG] WARNING: Cannot properly read MAC file.");
+      msg_warning("[SLOG] WARNING: Unable to read current MAC", evt_tag_str("file", curMAC));
     }
 
-  FILE *input = fopen(argv[4], "r");
+  char* inputlog = argv[4];
+  FILE *input = fopen(inputlog, "r");
   if(input == NULL)
     {
-      msg_error("[SLOG] ERROR: Problem with input file");
+      msg_error("[SLOG] ERROR: Unable to open input log", evt_tag_str("file", inputlog));
       return 0;
     }
 
@@ -209,10 +212,11 @@ int iterativeMode(int argc, char **argv)
     }
   fclose(input);
 
-
+  char* outputlog = argv[6];
+  
   msg_info("[SLOG] INFO: Number of lines in file", evt_tag_long("number", entries));
   msg_info("[SLOG] INFO: Restoring and verifying log entries", evt_tag_int("buffer size", bufferSize));
-  ret = iterativeFileVerify(previousMAC, (unsigned char *)previousKey, argv[4], currentMAC, argv[6], entries, bufferSize,
+  ret = iterativeFileVerify(previousMAC, (unsigned char *)previousKey, argv[4], currentMAC, outputlog, entries, bufferSize,
                             previousKeyCounter);
 
   if (ret == 0)
@@ -224,15 +228,38 @@ int iterativeMode(int argc, char **argv)
 }
 
 
-
 // Return 0 for success and 1 on error
-
 int main(int argc, char *argv[])
 {
-  if (argc<2)
+  GError *error = NULL;
+  GOptionContext *context = g_option_context_new("- Log archive verification\n\n  " \
+     "NORMAL MODE: The following argments must be supplied in exactly this order\n\n  " \
+     "HOSTKEY INPUTLOG MACFILE OUTPUTLOG [BUFFERSIZE]\n\n  where\n\n  " \
+     "HOSTKEY\t\tThe current host key file\n  " \
+     "INPUTLOG\t\tThe log file to verify\n  " \
+     "MACFILE\t\tThe current MAC file\n  "
+     "OUTPUTLOG\t\tThe name of the file receiving the cleartext log entries after verification\n  " \
+     "[BUFFERSIZE]\t\tAn optional buffer size useful for verifying very large log files\n\n  " \
+     "ITERATIVE MODE: In addition to the -i option, the following arguments are required\n\n  " \
+     "PREVIOUSMAC PREVIOUSKEY INPUTLOG CURRENTMAC OUTPUTLOG [BUFFERSIZE]\n\n  where\n\n  " \
+     "PREVIOUSMAC\t\tThe current MAC file\n  " \
+     "PREVIOUSKEY\t\tThe current host key file\n  " \
+     "INPUTLOG\t\tThe log file to verify\n  " \
+     "CURRENTMAC\t\tThe current MAC file\n  " \
+     "OUTPUTLOG\t\tThe name of the file receiving the cleartext log entries after verification\n  " \
+     "[BUFFERSIZE]\t\tAn optional buffer size useful for verifying very large log files\n\n  ");
+
+  g_option_context_add_main_entries (context, options, NULL);
+  if (!g_option_context_parse (context, &argc, &argv, &error))
     {
-      printf("Usage:\n%s <host key file> <input file> <input MAC file> <output file> [bufferSize]\n%s -i <PREVIOUS MAC file file> <PREVIOUS key file> <input file> <CURRENT MAC file> <output file> [bufferSize]\n",
-             argv[0], argv[0]);
+      g_print ("Invalid option: %s\n", error->message);
+      exit (1);
+    }
+
+  if (argc < 2)
+    {
+      printf("%s", g_option_context_get_help(context, TRUE, NULL));
+      g_option_context_free(context);
       return 1;
     }
 
@@ -241,13 +268,27 @@ int main(int argc, char *argv[])
 
   int ret = 0;
 
-  if (strcmp(argv[1], "-i")==0)
+  if (iterative)
     {
-      ret = 1-iterativeMode(argc, argv);
+      if (argc < 7)
+	{
+	  printf("%s", g_option_context_get_help(context, TRUE, NULL));
+	  g_option_context_free(context);
+	  return 1;
+	}
+
+      ret = 1 - iterativeMode(argc, argv);
     }
   else
     {
-      ret = 1-standardMode(argc, argv);
+      if (argc < 5)
+	{
+	  printf("%s", g_option_context_get_help(context, TRUE, NULL));
+	  g_option_context_free(context);
+	  return 1;
+	}
+
+      ret = 1 - normalMode(argc, argv);
     }
 
   // Release messaging resources

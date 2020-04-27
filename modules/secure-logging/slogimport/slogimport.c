@@ -24,8 +24,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #include <glib.h>
+
 #include "messages.h"
 
 
@@ -34,60 +36,106 @@
 
 int main(int argc, char *argv[])
 {
-  if (argc<7)
+  GError *error = NULL;
+  GOptionContext *context = g_option_context_new("- Import log files using secure logging\n\n  " \
+     "The following argments must be supplied in exactly this order\n\n  " \
+     "HOSTKEYFILE OUTPUTHOSTKEYFILE INPUTLOGFILE " \
+     "OUTPUTLOGFILE INPUTMACFILE OUTPUTMACFILE [COUNTER]\n\n  where\n\n  "
+     "HOSTKEYFILE\t\tThe current host key file\n  "
+     "OUTPUTHOSTKEYFILE\tThe name of the file receiving the newly created host key\n  "
+     "INPUTLOGFILE\t\tThe log file to import\n  "
+     "OUTPUTLOGFILE\t\tThe name of the encrypted log file receiving the import\n  "
+     "INPUTMACFILE\t\tThe current MAC file\n  "
+     "OUTPUTMACFILE\t\tThe resulting MAC file updated after the import\n  "
+     "[COUNTER]\t\tAn optional counter for controlling the import buffer\n\n  "
+     "Arguments in brackets [] are optional, all other arguments are required");
+
+  if (!g_option_context_parse (context, &argc, &argv, &error))
     {
-      printf("Usage:\n%s <host key file> <output key file> <input log file> <output log file> <input MAC file> <output MAC file> [counter]\n",
-             argv[0]);
+      g_print ("Invalid option: %s\n", error->message);
+      exit (1);
+    }
+
+  if (argc < 7)
+    {
+      printf("%s", g_option_context_get_help(context, TRUE, NULL));
+      g_option_context_free(context);
       return -1;
     }
+
+  g_option_context_free(context);
 
   // Initialize internal messaging
   msg_init(TRUE);
 
-
   char key[KEY_LENGTH];
   char mac[CMAC_LENGTH];
 
+  int index = 1;
+  char* hostkey = argv[index++];
+  char* newhostKey = argv[index++];
+  char* inputlog = argv[index++];
+  char* outputlog = argv[index++];
+  char* inputMAC = argv[index++];
+  char* outputMAC = argv[index++];
+  
   // Read key and counter
   size_t counter;
-  int ret = readKey(key, &counter, argv[1]);
+  int ret = readKey(key, &counter, hostkey);
   if (ret!=1)
     {
-      perror("Problem with key file.");
+      msg_error("[SLOG] ERROR: Unable to read host key", evt_tag_str("file", hostkey));
       return -1;
     }
 
   if (argc==8)
     {
-      sscanf(argv[7], "%zu", &counter);
+      errno = 0;
+      gboolean ok = TRUE;
+      char* counterString = argv[index];
+      int len = sscanf(counterString, "%zu", &counter);
+      if(len <= 0)
+	{
+	  msg_error("[SLOG] ERROR: Invalid counter value", evt_tag_str("value", counterString));
+	  ok = FALSE;
+	}
+      if(errno != 0)
+	{
+	  msg_error("[SLOG] ERROR: Unable to process input value", evt_tag_str("error", strerror(errno)));
+	  ok = FALSE;
+	}
+      if(!ok)
+	{
+	  return -1;
+	}
     }
 
   // Open input file
-  FILE *inputFile = fopen(argv[3], "r");
+  FILE *inputFile = fopen(inputlog, "r");
   if (inputFile == NULL)
     {
-      msg_error("Problem with input file.");
+      msg_error("[SLOG] ERROR: Unable to open input log file", evt_tag_str("file", inputlog));
       return -1;
     }
 
   // Open output file
-  FILE *outputFile = fopen(argv[4], "w");
+  FILE *outputFile = fopen(outputlog, "w");
   if (outputFile == NULL)
     {
-      msg_error("Problem with output file.");
+      msg_error("[SLOG] ERROR: Unable to open output log file", evt_tag_str("file", outputlog));
       return -1;
     }
 
   // Read MAC (if possible)
-  if (readBigMAC(argv[5], mac)==0)
+  if (readBigMAC(inputMAC, mac)==0)
     {
-      msg_warning("Problem with input MAC file");
+      msg_warning("[SLOG] ERROR: Unable to open input MAC file", evt_tag_str("file", inputMAC));
     }
 
   size_t readLen = 0;
   char *line = NULL;
 
-  msg_info("Importing data");
+  msg_info("Importing data...");
 
   // Parse data
   while(getline(&line, &readLen, inputFile)!=-1)
@@ -96,6 +144,7 @@ int main(int argc, char *argv[])
 
       GString *result = g_string_new(NULL);
       GString *inputGString = g_string_new(line);
+      
       // Remove trailing '\n' from string
       g_string_truncate(inputGString, (inputGString->len)-1);
 
@@ -108,7 +157,6 @@ int main(int argc, char *argv[])
       evolveKey((unsigned char *)key);
       counter++;
 
-
       readLen = 0;
       free(line);
       line = NULL;
@@ -116,17 +164,17 @@ int main(int argc, char *argv[])
 
 
   // Write whole log MAC
-  if (writeBigMAC(argv[6], mac)==0)
+  if (writeBigMAC(outputMAC, mac)==0)
     {
       msg_error("Problem with output MAC file");
       return -1;
     }
 
-  //Write key
-  ret = writeKey(key, counter, argv[2]);
+  // Write key
+  ret = writeKey(key, counter, newhostKey);
   if (ret!=1)
     {
-      msg_error("Problem writing output key file.");
+      msg_error("[SLOG] ERROR: Unable to write new host key", evt_tag_str("file", outputlog));
       return -1;
     }
 
