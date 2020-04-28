@@ -12,7 +12,7 @@ elif [ $MODE = "release" ]; then
 	echo "Validating if your debian/ directory matches current version"
 	DEB_VERSION=`dpkg-parsechangelog -S Version | cut -d - -f1`
 	if [ "${DEB_VERSION}" != "${VERSION}" ]; then
-		echo "The version numbers in debian/changelog do not match the current version number. Cannot generate a release tarball this way"
+		echo "The version numbers in debian/changelog do not match the current version number. Cannot generate a release tarball this way: ${DEB_VERSION} != ${VERSION}"
 		exit 1
 	fi
 fi
