@@ -1,3 +1,9 @@
+syslog-ng (3.27.1-1) UNRELEASED; urgency=medium
+
+  * New upstream release.
+
+ -- Antal Nemes <antal.nemes@quest.com>  Tue, 28 Apr 2020 08:30:27 +0200
+
 syslog-ng (3.26.1-1) UNRELEASED; urgency=medium
 
   * New upstream release.
@@ -659,7 +665,7 @@ syslog-ng (3.3.5-2) unstable; urgency=low
   * Fix FTBFS on non-Linux architectures (closes: #672457).
 
  -- Laszlo Boszormenyi (GCS) <gcs@debian.hu>  Sun, 13 May 2012 00:42:42 +0200
- 
+
 syslog-ng (3.3.5-1) unstable; urgency=low
 
   [ Gergely Nagy <algernon@madhouse-project.org> ]
@@ -675,7 +681,7 @@ syslog-ng (3.3.5-1) unstable; urgency=low
   * Fix the init script to create /dev/xconsole properly on GNU/kFreeBSD.
 
  -- Laszlo Boszormenyi (GCS) <gcs@debian.hu>  Thu, 03 May 2012 08:23:46 +0000
- 
+
 syslog-ng (3.3.5-1~mhp1) unstable; urgency=low
 
   [ Gergely Nagy <algernon@madhouse-project.org> ]
@@ -872,7 +878,7 @@ syslog-ng (3.1.2-2) unstable; urgency=low
 
 syslog-ng (3.1.2-1) unstable; urgency=low
 
-  * New upstream release. 
+  * New upstream release.
   * Update to Standards-Version 3.9.1 .
   * Build depend on libcap-dev to add capability support on Linux archs.
   * Disable statistics logging (closes: #586749) and restore logging to
@@ -901,7 +907,7 @@ syslog-ng (3.1.1-2) unstable; urgency=low
 
 syslog-ng (3.1.1-1) unstable; urgency=low
 
-  * New upstream release. 
+  * New upstream release.
   * Correct program_override for kernel messages (closes: #576550).
 
  -- Laszlo Boszormenyi (GCS) <gcs@debian.hu>  Sat, 17 Apr 2010 10:35:50 +0000
@@ -1158,7 +1164,7 @@ syslog-ng (1.9.8) unstable; urgency=low
   * Fixed config file place back to /etc/syslog-ng/ (Closes: #336981)
 
  -- SZALAY Attila <sasa@debian.org>  Sat, 21 Jan 2006 16:33:19 +0000
- 
+
 syslog-ng (1.9.6) experimental; urgency=low
 
   * New upstream version.
@@ -1235,7 +1241,7 @@ syslog-ng (1.6.5-2) unstable; urgency=low
 
 syslog-ng (1.6.5-1) unstable; urgency=low
 
-  * New upstream version 
+  * New upstream version
 
  -- Magosányi Árpád (mag) <mag@debian.org>  Tue,  2 Nov 2004 01:53:53 +0100
 
@@ -1245,7 +1251,7 @@ syslog-ng (1.6.4-2) unstable; urgency=low
   * Added PATH to init script. Closes: #262224
   * Only one instance of html documentation. Patch from Loic Minier. Closes: #268685
   * Stops only once in prerm. Closes: #268848
-  * New syslog-ng.conf. Closes: #268686 
+  * New syslog-ng.conf. Closes: #268686
   * Added Nate Campi's FAQ. Closes: #268998
 
  -- Magosányi Árpád (mag) <mag@debian.org>  Mon, 13 Sep 2004 17:19:50 +0200
@@ -1259,7 +1265,7 @@ syslog-ng (1.6.4-1) unstable; urgency=low
 syslog-ng (1.6.2-4) unstable; urgency=low
 
   * fixed permissions of default syslog-ng.conf. Closes: #242531
-  * added Nate Campi's expanded syslog-ng.conf to docs. Closes: #241783 
+  * added Nate Campi's expanded syslog-ng.conf to docs. Closes: #241783
   * fixed cut-and-paste errors in manpage of syslog-ng.conf. Closes: #260845
 
  -- Magosányi Árpád (mag) <mag@debian.org>  Sat, 12 Jun 2004 23:27:45 +0200
@@ -1273,7 +1279,7 @@ syslog-ng (1.6.2-3) unstable; urgency=low
 
 syslog-ng (1.6.2-2) unstable; urgency=low
 
-  * Automake build-dependency added. Closes: #237668 
+  * Automake build-dependency added. Closes: #237668
 
  -- Magosányi Árpád (mag) <mag@debian.org>  Fri, 12 Mar 2004 21:44:56 +0100
 
@@ -1300,7 +1306,7 @@ syslog-ng (1.6.0rc4-4) unstable; urgency=low
 
 syslog-ng (1.6.0rc4-3) unstable; urgency=low
 
-  * debian/rules changes to utilize gnu arch (tla) 
+  * debian/rules changes to utilize gnu arch (tla)
 
  -- Magosányi Árpád (mag) <mag@debian.org>  Wed, 15 Oct 2003 17:05:20 +0200
 
