@@ -76,7 +76,7 @@ crypto_init(void)
           if (RAND_status() < 0)
             {
               fprintf(stderr,
-                      "WARNING: a trusted random number source is not available, crypto operations will probably fail. Please set the RANDFILE environment variable.");
+                      "ERROR: a trusted random number source is not available, crypto operations will probably fail. This could be due to the lack of entropy in the RANDFILE or due to insufficient entropy provided by system sources.");
               g_assert_not_reached();
             }
         }
