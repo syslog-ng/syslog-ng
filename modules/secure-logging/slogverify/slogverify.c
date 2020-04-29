@@ -234,21 +234,21 @@ int main(int argc, char *argv[])
 {
   GError *error = NULL;
   GOptionContext *context = g_option_context_new("- Log archive verification\n\n  " \
-                                                 "NORMAL MODE: The following argments must be supplied in exactly this order\n\n  " \
+                                                 "NORMAL MODE: The following arguments must be supplied in exactly this order\n\n  " \
                                                  "HOSTKEY INPUTLOG MACFILE OUTPUTLOG [BUFFERSIZE]\n\n  where\n\n  " \
-                                                 "HOSTKEY\t\tThe current host key file\n  " \
-                                                 "INPUTLOG\t\tThe log file to verify\n  " \
-                                                 "MACFILE\t\tThe current MAC file\n  "
-                                                 "OUTPUTLOG\t\tThe name of the file receiving the cleartext log entries after verification\n  " \
-                                                 "[BUFFERSIZE]\t\tAn optional buffer size useful for verifying very large log files\n\n  " \
+                                                 "HOSTKEY\t\tCurrent host key file\n  " \
+                                                 "INPUTLOG\t\tLog file to verify\n  " \
+                                                 "MACFILE\t\tCurrent MAC file\n  "
+                                                 "OUTPUTLOG\t\tName of the file receiving the cleartext log entries after verification\n  " \
+                                                 "[BUFFERSIZE]\t\tOptional, set buffer size for verifying large log files\n\n  " \
                                                  "ITERATIVE MODE: In addition to the -i option, the following arguments are required\n\n  " \
                                                  "PREVIOUSMAC PREVIOUSKEY INPUTLOG CURRENTMAC OUTPUTLOG [BUFFERSIZE]\n\n  where\n\n  " \
-                                                 "PREVIOUSMAC\t\tThe current MAC file\n  " \
-                                                 "PREVIOUSKEY\t\tThe current host key file\n  " \
-                                                 "INPUTLOG\t\tThe log file to verify\n  " \
-                                                 "CURRENTMAC\t\tThe current MAC file\n  " \
-                                                 "OUTPUTLOG\t\tThe name of the file receiving the cleartext log entries after verification\n  " \
-                                                 "[BUFFERSIZE]\t\tAn optional buffer size useful for verifying very large log files\n\n  ");
+                                                 "PREVIOUSMAC\t\tCurrent MAC file\n  " \
+                                                 "PREVIOUSKEY\t\tCurrent host key file\n  " \
+                                                 "INPUTLOG\t\tLog file to verify\n  " \
+                                                 "CURRENTMAC\t\tCurrent MAC file\n  " \
+                                                 "OUTPUTLOG\t\tName of the file receiving the cleartext log entries after verification\n  " \
+                                                 "[BUFFERSIZE]\t\tOptional, buffer size useful for verifying large log files\n\n  ");
 
   g_option_context_add_main_entries (context, options, NULL);
   if (!g_option_context_parse (context, &argc, &argv, &error))

@@ -320,7 +320,7 @@ void sLogEntry(guint64 numberOfLogEntries, GString *text, unsigned char *mainKey
   if (RAND_bytes(iv, IV_LENGTH)==1)
     {
 
-      //Encrypt log data
+      // Encrypt log data
       int ct_length = sLogEncrypt((guchar *)text->str, slen, encKey, iv, ciphertext, tag);
       if(ct_length <= 0)
         {
@@ -333,7 +333,7 @@ void sLogEntry(guint64 numberOfLogEntries, GString *text, unsigned char *mainKey
           return;
         }
 
-      //Write current log entry number
+      // Write current log entry number
       g_string_printf (output, "%*.*s:", COUNTER_LENGTH, COUNTER_LENGTH, counterString);
       g_free(counterString);
 
@@ -660,7 +660,6 @@ int readBigMAC(gchar *filename, char *outputBuffer)
   if(!macfile)
     {
       // MAC file does not exist -> New MAC file will be created
-      msg_warning("[SLOG] WARNING: MAC file not found", evt_tag_str("File", filename));
       g_clear_error(&myError);
 
       return 0;
@@ -806,7 +805,7 @@ int readKey(char *destKey, guint64 *destCounter, gchar *keypath)
 
   if (key_bytes_read!=KEY_LENGTH+CMAC_LENGTH)
     {
-      msg_error("[SLOG] ERROR: $(slog) parsing failed, key file invalid while reading key and CMAC");
+      msg_error("[SLOG] ERROR: Key file found to be invalid while reading key with CMAC");
 
       status = g_io_channel_shutdown(keyfile, TRUE, &myError);
       g_io_channel_unref(keyfile);

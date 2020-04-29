@@ -38,16 +38,16 @@ int main(int argc, char *argv[])
 {
   GError *error = NULL;
   GOptionContext *context = g_option_context_new("- Import log files using secure logging\n\n  " \
-                                                 "The following argments must be supplied in exactly this order\n\n  " \
-                                                 "HOSTKEYFILE OUTPUTHOSTKEYFILE INPUTLOGFILE " \
-                                                 "OUTPUTLOGFILE INPUTMACFILE OUTPUTMACFILE [COUNTER]\n\n  where\n\n  "
-                                                 "HOSTKEYFILE\t\tThe current host key file\n  "
-                                                 "OUTPUTHOSTKEYFILE\tThe name of the file receiving the newly created host key\n  "
-                                                 "INPUTLOGFILE\t\tThe log file to import\n  "
-                                                 "OUTPUTLOGFILE\t\tThe name of the encrypted log file receiving the import\n  "
-                                                 "INPUTMACFILE\t\tThe current MAC file\n  "
-                                                 "OUTPUTMACFILE\t\tThe resulting MAC file updated after the import\n  "
-                                                 "[COUNTER]\t\tAn optional counter for controlling the import buffer\n\n  "
+                                                 "The following arguments must be supplied in exactly this order\n\n  " \
+                                                 "HOSTKEY OUTPUTHOSTKEY INPUTLOG " \
+                                                 "OUTPUTLOG INPUTMAC OUTPUTMAC [COUNTER]\n\n  where\n\n  "
+                                                 "HOSTKEY\t\tCurrent host key file\n  "
+                                                 "OUTPUTHOSTKEY\t\tFile receiving the newly created host key\n  "
+                                                 "INPUTLOG\t\tLog file to import\n  "
+                                                 "OUTPUTLOG\t\tEncrypted log file receiving the import\n  "
+                                                 "INPUTMAC\t\tCurrent MAC file\n  "
+                                                 "OUTPUTMAC\t\tResulting MAC file updated after the import\n  "
+                                                 "[COUNTER]\t\tOptional counter for controlling the internal import buffer size\n\n  "
                                                  "Arguments in brackets [] are optional, all other arguments are required");
 
   if (!g_option_context_parse (context, &argc, &argv, &error))

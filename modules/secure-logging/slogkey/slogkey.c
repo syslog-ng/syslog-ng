@@ -38,13 +38,13 @@
 // Options
 static gboolean master = FALSE;
 static gboolean host = FALSE;
-static gboolean sequence = FALSE;
+static gboolean counter = FALSE;
 
 static GOptionEntry entries[] =
 {
   { "master-key", 'm', 0, G_OPTION_ARG_NONE, &master, "Generate a master key", NULL },
   { "derive-host-key", 'd', 0, G_OPTION_ARG_NONE, &host, "Derive a host key from an existing master key", NULL },
-  { "sequence", 's', 0, G_OPTION_ARG_NONE, &sequence, "Display current host key sequence counter", NULL },
+  { "counter", 'c', 0, G_OPTION_ARG_NONE, &counter, "Display current host key counter", NULL },
   { NULL }
 };
 
@@ -52,9 +52,9 @@ int main(int argc, char **argv)
 {
   GError *error = NULL;
   GOptionContext *context = g_option_context_new("- secure logging key management\n\n  " \
-                                                 "Master key generation:     slogkey -m MASTERKEY\n  " \
-                                                 "Host key derivation:       slogkey -d MASTERKEY MACADDRESS SERIALNUMBER HOSTKEYFILE\n  " \
-                                                 "Host key sequence display: slogkey -s HOSTKEY");
+                                                 "Master key generation:\tslogkey -m MASTERKEY\n  " \
+                                                 "Host key derivation:\t\tslogkey -d MASTERKEY MACADDRESS SERIALNUMBER HOSTKEY\n  " \
+                                                 "Host key counter display:\tslogkey -c HOSTKEY");
 
   g_option_context_add_main_entries (context, entries, NULL);
   if (!g_option_context_parse (context, &argc, &argv, &error))
@@ -72,20 +72,20 @@ int main(int argc, char **argv)
 
   gboolean ok = TRUE;
 
-  // Optionsע are mutually exclusive
+  // Options are mutually exclusive
   if (master && host)
     {
       ok = FALSE;
     }
-  else if (master && sequence)
+  else if (master && counter)
     {
       ok = FALSE;
     }
-  else if (host && sequence)
+  else if (host && counter)
     {
       ok = FALSE;
     }
-  else if (master && host && sequence)
+  else if (master && host && counter)
     {
       ok = FALSE;
     }
@@ -137,19 +137,19 @@ int main(int argc, char **argv)
         }
       return ret;
     }
-  else if (sequence)
+  else if (counter)
     {
-      // Display key sequence counter
+      // Display key counter
       char key[KEY_LENGTH];
       char *keyfile = argv[index];
-      size_t counter;
-      success = readKey(key, &counter, keyfile);
+      size_t counterValue;
+      success = readKey(key, &counterValue, keyfile);
       if(!success)
         {
           msg_error("[SLOG] ERROR: Unable to read key file", evt_tag_str("file", keyfile));
           return ret;
         }
-      printf("sequence=%zu\n", counter);
+      printf("counter=%zu\n", counterValue);
     }
   else if (host)
     {
@@ -161,9 +161,9 @@ int main(int argc, char **argv)
 
       gchar masterKey[KEY_LENGTH] = { 0 };
 
-      guint64 counter;
+      guint64 counterValue;
 
-      success = readKey((char *)masterKey, &counter, masterKeyFileName);
+      success = readKey((char *)masterKey, &counterValue, masterKeyFileName);
       if (!success)
         {
           msg_error("[SLOG] ERROR: Unable to read master key", evt_tag_str("file", masterKeyFileName));
