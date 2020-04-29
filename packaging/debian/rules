@@ -58,6 +58,8 @@ endif
 
 ifneq ($(filter nojava,$(DEB_BUILD_PROFILES)),)
 DH_OPTIONS += -Nsyslog-ng-mod-java -Nsyslog-ng-mod-kafka -Nsyslog-ng-mod-java-common-lib -Nsyslog-ng-mod-elastic -Nsyslog-ng-mod-java-http -Nsyslog-ng-mod-hdfs
+else
+export GRADLE_USER_HOME = /tmp/gradle
 endif
 
 ifneq ($(filter sng-python2,$(DEB_BUILD_PROFILES)),)
