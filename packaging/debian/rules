@@ -40,6 +40,7 @@ endif
 UMAJOR		   = $(shell dpkg-parsechangelog | sed -n '/^Version:/s/^Version: //p' | cut -d. -f1,2)
 
 export DH_OPTIONS += -O-Bdebian/build-tree --dbg-package=syslog-ng-dbg
+export GRADLE_USER_HOME = /tmp/gradle
 
 CFLAGS		?= $(shell dpkg-buildflags --get CFLAGS)
 LDFLAGS		?= $(shell dpkg-buildflags --get LDFLAGS)
