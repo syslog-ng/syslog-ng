@@ -603,6 +603,9 @@ fi
 %{_datadir}/%{name}/tools/
 
 %changelog
+* Tue Apr 28 2020 Antal Nemes <antal.nemes@quest.com> - 3.27.1-1
+- update to 3.27.1
+
 * Mon Mar  2 2020 Laszlo Budai <laszlo.budai@outlook.com> - 3.26.1-1
 - update to 3.26.1
 
