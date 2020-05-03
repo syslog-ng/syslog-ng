@@ -85,31 +85,15 @@ socket_options_inet_setup_socket(SocketOptions *s, gint fd, GSockAddr *addr, AFS
   if (!socket_options_setup_socket_method(s, fd, addr, dir))
     return FALSE;
 
+#ifdef HAVE_TCP_KEEPALIVE_TIMERS 
   if (self->tcp_keepalive_time > 0)
-    {
-#ifdef TCP_KEEPIDLE
       setsockopt(fd, SOL_TCP, TCP_KEEPIDLE, &self->tcp_keepalive_time, sizeof(self->tcp_keepalive_time));
-#else
-      msg_error("tcp-keepalive-time() is set but no TCP_KEEPIDLE setsockopt on this platform");
-      return FALSE;
-#endif
-    }
+
   if (self->tcp_keepalive_probes > 0)
-    {
-#ifdef TCP_KEEPCNT
       setsockopt(fd, SOL_TCP, TCP_KEEPCNT, &self->tcp_keepalive_probes, sizeof(self->tcp_keepalive_probes));
-#else
-      msg_error("tcp-keepalive-probes() is set but no TCP_KEEPCNT setsockopt on this platform");
-      return FALSE;
-#endif
-    }
+
   if (self->tcp_keepalive_intvl > 0)
-    {
-#ifdef TCP_KEEPINTVL
       setsockopt(fd, SOL_TCP, TCP_KEEPINTVL, &self->tcp_keepalive_intvl, sizeof(self->tcp_keepalive_intvl));
-#else
-      msg_error("tcp-keepalive-intvl() is set but no TCP_KEEPINTVL setsockopt on this platform");
-      return FALSE;
 #endif
     }
 
@@ -231,11 +215,9 @@ socket_options_inet_new_instance(void)
   socket_options_init_instance(&self->super);
   self->super.setup_socket = socket_options_inet_setup_socket;
   self->super.so_keepalive = TRUE;
-#if defined(TCP_KEEPTIME) && defined(TCP_KEEPIDLE) && defined(TCP_KEEPCNT)
   self->tcp_keepalive_time = 60;
   self->tcp_keepalive_intvl = 10;
   self->tcp_keepalive_probes = 6;
-#endif
   self->super.free = socket_options_inet_free;
   return self;
 }

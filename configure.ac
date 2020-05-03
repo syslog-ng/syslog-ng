@@ -1053,6 +1053,13 @@ dnl if test "x$linking_mode" != "xdynamic" -a "x$blb_cv_static_openssl" = "xno";
 dnl	AC_MSG_ERROR([static OpenSSL libraries not found (libssl.a, libcrypto.a and their external dependencies like libz.a), either link OpenSSL statically using the --enable-dynamic-linking, or install a static OpenSSL])
 dnl fi
 
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+#include <netinet/tcp.h>
+#ifndef TCP_KEEPIDLE
+# error macro not defined
+#endif
+]])], [AC_DEFINE(`HAVE_TCP_KEEPIDLE`, `1`)], [])
+
 dnl ***************************************************************************
 dnl libnet headers/libraries
 dnl ***************************************************************************

@@ -884,9 +884,30 @@ inet_socket_option
 	| KW_IP_TOS '(' nonnegative_integer ')'               { ((SocketOptionsInet *) last_sock_options)->ip_tos = $3; }
 	| KW_IP_FREEBIND '(' yesno ')'              { ((SocketOptionsInet *) last_sock_options)->ip_freebind = $3; }
 	| KW_INTERFACE '(' string ')'		    { socket_options_inet_set_interface_name((SocketOptionsInet *) last_sock_options, $3); free($3); }
-	| KW_TCP_KEEPALIVE_TIME '(' nonnegative_integer ')'   { ((SocketOptionsInet *) last_sock_options)->tcp_keepalive_time = $3; }
-	| KW_TCP_KEEPALIVE_INTVL '(' nonnegative_integer ')'  { ((SocketOptionsInet *) last_sock_options)->tcp_keepalive_intvl = $3; }
-	| KW_TCP_KEEPALIVE_PROBES '(' nonnegative_integer ')' { ((SocketOptionsInet *) last_sock_options)->tcp_keepalive_probes = $3; }
+	| KW_TCP_KEEPALIVE_TIME '(' nonnegative_integer ')'
+	   {
+#ifdef HAVE_TCP_KEEPALIVE_TIMERS
+	     ((SocketOptionsInet *) last_sock_options)->tcp_keepalive_time = $3;
+#else
+	     CHECK_ERROR(0, @1, "tcp-keepalive-time() is set but no HAVE_TCP_KEEPALIVE_TIMERS on this platform");
+#endif
+ 	   }
+	| KW_TCP_KEEPALIVE_INTVL '(' nonnegative_integer ')'  
+	   {
+#ifdef HAVE_TCP_KEEPALIVE_TIMERS
+	     ((SocketOptionsInet *) last_sock_options)->tcp_keepalive_intvl = $3;
+#else
+	     CHECK_ERROR(0, @1, "tcp-keepalive-time() is set but no HAVE_TCP_KEEPALIVE_TIMERS on this platform");
+#endif
+	   }
+	| KW_TCP_KEEPALIVE_PROBES '(' nonnegative_integer ')' 
+	   {
+#ifdef HAVE_TCP_KEEPALIVE_TIMERS
+	     ((SocketOptionsInet *) last_sock_options)->tcp_keepalive_probes = $3;
+#else
+	     CHECK_ERROR(0, @1, "tcp-keepalive-probes() is set but no HAVE_TCP_KEEPALIVE_TIMERS on this platform");
+#endif
+	  }
 	;
 
 inet_ip_protocol_option
