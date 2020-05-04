@@ -181,6 +181,15 @@ http_dd_set_cipher_suite(LogDriver *d, const gchar *ciphers)
   self->ciphers = g_strdup(ciphers);
 }
 
+void
+http_dd_set_proxy(LogDriver *d, const gchar *proxy)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+
+  g_free(self->proxy);
+  self->proxy = g_strdup(proxy);
+}
+
 gboolean
 http_dd_set_ssl_version(LogDriver *d, const gchar *value)
 {
@@ -514,6 +523,7 @@ http_dd_free(LogPipe *s)
   g_free(self->cert_file);
   g_free(self->key_file);
   g_free(self->ciphers);
+  g_free(self->proxy);
   g_list_free_full(self->headers, g_free);
   http_auth_header_free(self->auth_header);
   g_mutex_free(self->workers_lock);

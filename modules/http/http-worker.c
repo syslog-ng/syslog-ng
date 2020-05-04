@@ -135,6 +135,9 @@ _setup_static_options_in_curl(HTTPDestinationWorker *self)
   if (owner->ciphers)
     curl_easy_setopt(self->curl, CURLOPT_SSL_CIPHER_LIST, owner->ciphers);
 
+  if (owner->proxy)
+    curl_easy_setopt(self->curl, CURLOPT_PROXY, owner->proxy);
+
   curl_easy_setopt(self->curl, CURLOPT_SSLVERSION, owner->ssl_version);
   curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYHOST, owner->peer_verify ? 2L : 0L);
   curl_easy_setopt(self->curl, CURLOPT_SSL_VERIFYPEER, owner->peer_verify ? 1L : 0L);
