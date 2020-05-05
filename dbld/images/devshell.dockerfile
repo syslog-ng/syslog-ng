@@ -1,4 +1,4 @@
-FROM balabit/syslog-ng-ubuntu-bionic:latest
+FROM balabit/syslog-ng-ubuntu-focal:latest
 ENV OS_PLATFORM devshell
 
 
