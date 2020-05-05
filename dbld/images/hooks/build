@@ -1,0 +1,13 @@
+#!/bin/sh
+
+set +x
+set +e
+
+
+# we are running in dbld/images as current directory and we need dbld
+cd ../..
+DBLD_DIR="./${BUILD_PATH}"
+
+OS_PLATFORM=$(basename $DOCKERFILE_PATH .dockerfile)
+${DBLD_DIR}/prepare-image-build $OS_PLATFORM
+docker build --build-arg=COMMIT=$(git rev-parse --short HEAD) --build-arg=OS_PLATFORM=${OS_PLATFORM} -t $IMAGE_NAME -f ${DBLD_DIR}/$DOCKERFILE_PATH ${DBLD_DIR}
