@@ -42,6 +42,23 @@
 #define OPAD 0x5C
 #define EPAD 0x6A
 
+// Buffer size for import and verification
+#define MIN_BUF_SIZE 10
+#define MAX_BUF_SIZE 4294967295 // 4MB
+#define DEF_BUF_SIZE 1000
+
+// Argument indicators for command line utilities
+#define LONG_OPT_INDICATOR "--"
+#define SHORT_OPT_INDICATOR "-"
+
+typedef struct
+{
+  char *longname;
+  char shortname;
+  char *description;
+  char *type;
+  char *arg;
+} Options;
 
 // Dump contents of an array on STDOUT, byte by byte, converting to hex.
 void outputByteBuffer(unsigned char *buf, int length);
@@ -216,5 +233,20 @@ void deriveEncSubKey(unsigned char *mainKey, unsigned char *encKey);
 void deriveMACSubKey(unsigned char *mainKey, unsigned char *MACKey);
 void PRF(unsigned char *key, unsigned char *originalInput, guint64 inputLength, unsigned char *output,
          guint64 outputLength);
+
+// Print usage message and clean up
+int usage(GOptionContext *ctx, GOptionGroup *grp, char *errormsg);
+
+// Print error message concerning a file
+char *fileError(const char *file);
+
+/*
+ * Callback function to check whether a command line argument represents a valid file name
+ *
+ * Return:
+ * TRUE on success
+ * FALSE on error
+ */
+gboolean validFileNameArg(const gchar *option_name, const gchar *value, gpointer data, GError **error);
 
 #endif

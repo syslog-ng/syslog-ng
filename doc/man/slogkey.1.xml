@@ -8,61 +8,91 @@
     <refmeta>
       <refentrytitle>slogkey</refentrytitle>
       <manvolnum>1</manvolnum>
-      <refmiscinfo class="version">3.22</refmiscinfo>
+      <refmiscinfo class="version">3.27</refmiscinfo>
       <refmiscinfo class="source"/>
     </refmeta>
     <refnamediv>
       <refname>slogkey</refname>
-      <refpurpose>Manage cryptographic keys for use with secure encrypted destination</refpurpose>
+      <refpurpose>Manage cryptographic keys for use with <command>syslog-ng</command> secure logging</refpurpose>
     </refnamediv>
     <refsynopsisdiv>
       <cmdsynopsis>
         <command>slogkey</command>
-        <arg>options <arg>arguments</arg></arg>
+        <arg>options</arg><arg>arguments</arg>
       </cmdsynopsis>
     </refsynopsisdiv>
     <refsection version="5.0">
       <title>Description</title>
-      <para>The <command>slogkey</command> utility is used to manage cryptographic keys for use with a secure encrypted destination. Use this utility to create a master key, derive a host key for a secure encrypted destination and to display the current log entry counter related to a key.</para>
+      <para>The <command>slogkey</command> utility is used to manage cryptographic keys for use with the secure logging module of <command>syslog-ng</command>. Use this utility to create a master key, derive a host key to be used by a secure logging configuration and to display the current sequence counter of a key. The options determine the operating mode and are mutually exclusive.</para>
     </refsection>
-<!--
-
-To generate new master key:
-slogkey -m <master key filename>
-
-To derive a host key:
-slogkey -d <master key filename> <host MAC address> <host serial number> <host key filename>
-
-To show the counter value of a key:
-slogkey -s <key file name>
-
--->
+    <refsection>
+      <title>Arguments</title>
+      <para>The arguments depend on the operating mode.</para>  
+      <variablelist>
+        <?dbfo term-width="1.25in"?>
+        <varlistentry>
+          <term>
+           <command>Master key generation</command>
+          </term>
+          <listitem>
+            <para>Call sequence: &lt;filename&gt;</para>
+	    <para>&lt;filename&gt;: The name of the file to which the master key will be written.</para>
+         </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+           <command>Host key derivation</command>
+          </term>
+          <listitem>
+            <para>Call sequence: &lt;master key filename&gt; &lt;host MAC address&gt; &lt;host serial number&gt; &lt;host key filename&gt;</para>
+	    <para>&lt;master key filename&gt;: The master key from which the host key will be derived.</para>
+	    <para>&lt;host MAC address&gt;: The MAC address of the host on which the key will be used. Instead of the MAC address, any other string that uniquely identifies a host can be supplied, e.g. the company inventory number.</para>
+	    <para>&lt;host serial address&gt;: The serial number of the host on which the key will be used. Instead of the serial number, any other string that uniquely identifies a host can be supplied, e.g. the company inventory number.</para>
+	    <para>&lt;host key filename&gt;: The name of the file to which the host key will be written.</para>
+	  </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+           <command>Sequence counter display</command>
+          </term>
+          <listitem>
+            <para>Call sequence: &lt;host key filename&gt;</para>
+            <para>&lt;host key filename&gt;: The host key file from which the sequence will be read.</para>
+         </listitem>
+        </varlistentry>
+      </variablelist>
+    </refsection>
     <refsection>
       <title>Options</title>
       <variablelist>
         <?dbfo term-width="1.25in"?>
         <varlistentry>
           <term>
-            <command>-m &lt;filename&gt;</command>
+           <command>--master-key</command> or <command>-m</command>
           </term>
           <listitem>
             <para>Generates a mew master key. &lt;filename&gt; is the name of the file storing the newly generated master key.</para>
          </listitem>
         </varlistentry>
         <varlistentry>
-          <term><command>-d</command>
+          <term><command>--derive-key</command> or <command>-d</command>
           </term>
           <listitem>
             <para>Derive a host key using a previously generated master key.</para>
-	    <synopsis>/usr/sbin/slogkey -d &lt;master key filename&gt; &lt;host MAC address&gt; &lt;host serial number&gt; &lt;host key filename&gt;</synopsis>
           </listitem>
         </varlistentry>
         <varlistentry>
-          <term><command>-s</command>
+          <term><command>--counter</command> or <command>-c</command>
           </term>
           <listitem>
-            <para>Display the current log entry counter to which the key relates.</para>
- 	    <synopsis>/usr/bin/slogkey -s &lt;host key filename&gt;</synopsis>
+            <para>Display the current log sequence counter of a key.</para>
+         </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--help</command> or <command>-h</command>
+          </term>
+          <listitem>
+            <para>Display a help message.</para>
          </listitem>
         </varlistentry>
        </variablelist>
@@ -81,10 +111,14 @@ slogkey -s <key file name>
       <para>
         <link linkend="syslog-ng.conf.5"><command>syslog-ng.conf</command>(5)</link>
       </para>
+      <para>
+        <link linkend="secure-logging.7"><command>secure-logging</command>(7)</link>
+      </para>
       <note version="5.0">
         <para>For the detailed documentation of  see <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/index.html"><command>The syslog-ng Administrator Guide</command></link></para>
         <para>If you experience any problems or need help with syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://lists.balabit.hu/mailman/listinfo/syslog-ng"><command>syslog-ng mailing list</command></link>.</para>
         <para>For news and notifications about of syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://syslog-ng.org/blogs/"><command>syslog-ng blogs</command></link>.</para>
+        <para>For specific information requests related to secure logging send a mail to the Airbus Secure Logging Team &lt;secure-logging@airbus.com&gt;.</para>
       </note>
     </refsection>
     <refsection version="5.0">

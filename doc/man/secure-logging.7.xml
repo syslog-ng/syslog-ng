@@ -1,0 +1,99 @@
+<?xml version="1.0"?>
+<reference xmlns="http://docbook.org/ns/docbook" xml:id="secure-logging-man-page" version="5.0">
+  <info>
+    <productname/>
+    <title>The secure logging manual page</title>
+  </info>
+  <refentry xml:id="secure-logging.7">
+    <refmeta>
+      <refentrytitle>secure-logging</refentrytitle>
+      <manvolnum>7</manvolnum>
+      <refmiscinfo class="version">3.27</refmiscinfo>
+      <refmiscinfo class="source"/>
+    </refmeta>
+    <refnamediv>
+      <refname>secure-logging</refname>
+      <refpurpose>Forward integrity and confidentiality for system logs</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+      <cmdsynopsis>
+        <command>$(slog --key-file  &lt;host key file&gt; --mac-file &lt;MAC file&gt; $RAWMSG\n)</command>
+      </cmdsynopsis>
+    </refsynopsisdiv>
+    <refsection version="5.0">
+      <title>Description</title>
+      <para>Secure logging is an extension to <command>syslog-ng</command> providing forward integrity and confidentility of systems logs. It is implemented in form of a module and is configured as a template in the syslog-ng configuration file.</para>
+      <para>The main objective of the secure logging module is to provide tamper evident logging, i.e. to adequately protect log records of an information system and to provide a sensor indicating
+attack attempts. The secure logging module achieves this by authentically encrypting each
+log record with an individual cryptographic key used only once and protecting the integrity of
+the whole log archive by a cryptographic authentication code. Each attempt to tamper
+with either an individual log record or the log archive itself will be immediately detected
+during log archive verification. Therefore, an attacker can no longer tamper with log
+      records without being detected.</para>
+      <para>In order to use the log file created by the secure logging module for analysis, the log file must first be decrypted and its integrity verified. This is achieved with a command line utility that is part of the secure logging module and is installed as part of the  <command>syslog-ng</command> package. This utility can be easily integrated into the import module of existing analysis environments. </para>
+    </refsection>
+    <refsection version="5.0">
+      <title>Key generation</title>
+      <para>Before the secure logging module can be used as part of an existing <command>syslog-ng</command> installation, several preparatory activities need to be performed. </para>
+      <orderedlist numeration="arabic">
+	<listitem> <para>Create a master key</para>
+        </listitem>
+	<listitem> <para>Derive a host key from a previously create master key</para>
+        </listitem>
+	<listitem> <para>Deploy the key on the host where the secure logging module will be used</para>
+        </listitem>
+	</orderedlist>
+    </refsection>
+    <refsection version="5.0">
+      <title>Configuration</title>
+      <para>Describe the configuration here </para>
+    </refsection>      
+    <refsection version="5.0">
+      <title>Log Verification</title>
+      <para>Describe the log archive verification in normal an iterative mode here. </para>
+    </refsection>      
+    <refsection>
+      <title>Files</title>
+      <para>
+        <filename>/usr/bin/slogkey</filename>
+      </para>
+      <para>
+        <filename>/usr/bin/slogimport</filename>
+      </para>
+      <para>
+        <filename>/usr/bin/slogverify</filename>
+      </para>
+      <para>
+        <filename>/etc/syslog-ng.conf</filename>
+      </para>
+    </refsection>
+    <refsection>
+      <title>See also</title>
+      <para>
+        <link linkend="syslog-ng.conf.5"><command>syslog-ng.conf</command>(5)</link>
+      </para>
+      <para>
+        <link linkend="slogkey.1"><command>slogkey</command>(1)</link>
+      </para>
+      <para>
+        <link linkend="slogimport.1"><command>slogimport</command>(1)</link>
+      </para>
+      <para>
+        <link linkend="slogverify.1"><command>slogverify</command>(1)</link>
+      </para>
+      <note version="5.0">
+        <para>For the detailed documentation of  see <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/index.html"><command>The syslog-ng Administrator Guide</command></link></para>
+        <para>If you experience any problems or need help with syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://lists.balabit.hu/mailman/listinfo/syslog-ng"><command>syslog-ng mailing list</command></link>.</para>
+        <para>For news and notifications about of syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://syslog-ng.org/blogs/"><command>syslog-ng blogs</command></link>.</para>
+        <para>For specific information requests related to secure logging send a mail to the Airbus Secure Logging Team &lt;secure-logging@airbus.com&gt;.</para>
+      </note>
+    </refsection>
+    <refsection version="5.0">
+      <title>Author</title>
+      <para>This manual page was written by the Airbus Secure Logging Team &lt;secure-logging@airbus.com&gt;.</para>
+    </refsection>
+    <refsection version="5.0">
+      <title>Copyright</title>
+    </refsection>
+  </refentry>
+</reference>

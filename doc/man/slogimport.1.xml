@@ -8,50 +8,47 @@
     <refmeta>
       <refentrytitle>slogimport</refentrytitle>
       <manvolnum>1</manvolnum>
-      <refmiscinfo class="version">3.22</refmiscinfo>
+      <refmiscinfo class="version">3.27</refmiscinfo>
       <refmiscinfo class="source"/>
     </refmeta>
     <refnamediv>
       <refname>slogimport</refname>
-      <refpurpose>Import existing plaintext log files into secure encrypted destination</refpurpose>
+      <refpurpose>Import existing plaintext log files into <command>syslog-ng</command> secure logging environment</refpurpose>
     </refnamediv>
     <refsynopsisdiv>
       <cmdsynopsis>
         <command>slogimport</command>
-        <arg>arguments</arg>
+        <arg>options</arg><arg>arguments</arg>
       </cmdsynopsis>
     </refsynopsisdiv>
     <refsection version="5.0">
       <title>Description</title>
-      <para>The <command>slogimport</command> is used to import plaintext log file into a secure encrypted destination. Using this utility, log files obtained from a previous installation of <command>syslog-ng</command> or another logging system and transfer into a secure encrypted destination. When importing plaintext log files into an existing secure encrypted destination, the current encryption key has to be supplied in order to preserve consistency.</para>
+      <para>The <command>slogimport</command> is used to import plaintext log file into an existing secure logging environment. Using this utility, log files obtained from a previous installation of <command>syslog-ng</command> or another logging system can be transfered to a secure logging environment. The order of the log entries is preserved. Importing plaintext log files into an existing secure logging environment, required the current encryption key to be supplied in order to preserve consistency.</para>
+      <para>General call sequence: <command>slogimport -k &lt;key file&gt; -m &lt;MAC file&gt; &lt;new key file&gt; &lt;new MAC file&gt; &lt;plain text log&gt;  &lt;output file&gt;  [counter]</command></para>
     </refsection>
-<!--
-    slogimport <host key file> <output key file> <input log file> <output log file> <input MAC file> <output MAC file> [counter]
--->
     <refsection>
       <title>Arguments</title>
       <variablelist>
         <?dbfo term-width="1.25in"?>
         <varlistentry>
-          <term>
-            <command>host keyfile</command>
-          </term>
-          <listitem>
-            <para>The file containing the current encrypted key of the secure encrypted destination configured on the host.</para>
-         </listitem>
-        </varlistentry>
-        <varlistentry>
-          <term><command>output keyfile</command>
+          <term><command>new key file</command>
           </term>
           <listitem>
             <para>The file that will contain the new current encryption key after successful import.</para>
+          </listitem>
+        </varlistentry>
+       <varlistentry>
+          <term><command>new MAC file</command>
+          </term>
+          <listitem>
+            <para>The file receiving the new current message authentication code (MAC) of the secure encrypted destination after import. In case an existing file is supplied, new entries will be appended.</para>
           </listitem>
         </varlistentry>
         <varlistentry>
           <term><command>input log file</command>
           </term>
           <listitem>
-            <para>The plaintext log file that will be import into the secure encrypted destination.</para>
+            <para>The plaintext log file that will be import into the secure logging environment.</para>
           </listitem>
         </varlistentry>
         <varlistentry>
@@ -59,21 +56,6 @@
           </term>
           <listitem>
             <para>The file that will contain the encrypted log entries from the supplied plaintext log file after import.</para>
-          </listitem>
-        </varlistentry>
-        <varlistentry>
-          <term><command>input MAC file</command>
-          </term>
-          <listitem>
-            <para>The file containing the current message authentication code (MAC) of the secure encrypted destination.</para>
-          </listitem>
-        </varlistentry>
-       <varlistentry>
-          <term><command>output MAC file</command>
-          </term>
-          <listitem>
-            <para>The file receiving the new current message authentication code (MAC) of the secure encrypted destination after import. 
-	    In case an existing file is supplied, new entries will be appended.</para>
           </listitem>
         </varlistentry>
        </variablelist>
@@ -86,6 +68,34 @@
           </listitem>
         </varlistentry>
     </refsection>
+    <refsection>
+      <title>Options</title>
+      <variablelist>
+        <?dbfo term-width="1.25in"?>
+        <varlistentry>
+          <term>
+           <command>--key-file</command> or <command>-k</command>
+          </term>
+          <listitem>
+            <para>The current host key from the system where the import shall be performed.</para>
+         </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--mac-file</command> or <command>-m</command>
+          </term>
+          <listitem>
+            <para>The current MAC file from the system where the import shall be performed.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--help</command> or <command>-h</command>
+          </term>
+          <listitem>
+            <para>Display a help message.</para>
+         </listitem>
+        </varlistentry>
+       </variablelist>
+    </refsection>    
     <refsection>
       <title>Files</title>
       <para>
@@ -100,10 +110,14 @@
       <para>
         <link linkend="syslog-ng.conf.5"><command>syslog-ng.conf</command>(5)</link>
       </para>
+      <para>
+        <link linkend="secure-logging.7"><command>secure-logging</command>(7)</link>
+      </para>
       <note version="5.0">
         <para>For the detailed documentation of  see <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/index.html"><command>The syslog-ng Administrator Guide</command></link></para>
         <para>If you experience any problems or need help with syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://lists.balabit.hu/mailman/listinfo/syslog-ng"><command>syslog-ng mailing list</command></link>.</para>
         <para>For news and notifications about of syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://syslog-ng.org/blogs/"><command>syslog-ng blogs</command></link>.</para>
+        <para>For specific information requests related to secure logging send a mail to the Airbus Secure Logging Team &lt;secure-logging@airbus.com&gt;.</para>
       </note>
     </refsection>
     <refsection version="5.0">

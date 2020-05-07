@@ -17,6 +17,7 @@ EXTRA_DIST	+=  \
 		doc/man/slogimport.1.xml \
 		doc/man/slogkey.1.xml \
 		doc/man/slogverify.1.xml \
+		doc/man/secure-logging.7.xml \
 		doc/man/update-manpages.sh \
 		doc/security/bof-2002-09-27.txt \
 		doc/security/dos-2000-11-22.txt \
@@ -35,7 +36,8 @@ man_MANS	+= \
 		doc/man/syslog-ng.conf.5 \
 		doc/man/slogimport.1 \
 		doc/man/slogkey.1 \
-		doc/man/slogverify.1
+		doc/man/slogverify.1 \
+		doc/man/secure-logging.7
 
 EXTRA_DIST	+= $(man_MANS)
 

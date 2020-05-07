@@ -1040,7 +1040,7 @@ int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntr
                 }
               if (logEntryOnDisk-(*nextLogEntry)>1000000)
                 {
-                  msg_info("[SLOG] INFO: Derving key for distant future. This might take some time.",
+                  msg_info("[SLOG] INFO: Deriving key for distant future. This might take some time.",
                            evt_tag_long("next log entry should be", *nextLogEntry), evt_tag_long("key to derive to", logEntryOnDisk),
                            evt_tag_long("number of log entries", *numberOfLogEntries));
                 }
@@ -1259,11 +1259,11 @@ int iterativeFileVerify(unsigned char *previousMAC, unsigned char *mainKey, char
 
   if (keyNumber!=0)
     {
-      msg_info("[SLOG] INFO: We are verifying with a key different from key0", evt_tag_long("key number", keyNumber));
+      msg_info("[SLOG] INFO: Verification using a key different from k0", evt_tag_long("key number", keyNumber));
     }
   else
     {
-      msg_info("[SLOG] INFO: We are verifying starting with key0. Is this really what you want?");
+      msg_info("[SLOG] INFO: Verification starting with k0. Is this really what you want?");
       startedWithZero = 1;
     }
   int ret = 1;
@@ -1888,3 +1888,84 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
 
   return ret;
 }
+
+// Print usage message and clean up
+int usage(GOptionContext *ctx, GOptionGroup *grp, char *errormsg)
+{
+  if(errormsg != NULL)
+    {
+      g_print ("\nERROR: %s\n\n", errormsg);
+    }
+
+  printf("%s", g_option_context_get_help(ctx, TRUE, NULL));
+  g_option_group_unref(grp);
+  g_option_context_free(ctx);
+
+  return 1;
+}
+
+// Print error message concerning a file
+char *fileError(const char *file)
+{
+  GString *errorMessage = g_string_new("Invalid path or non existing regular file: ");
+  g_string_append(errorMessage, file);
+
+  char *message = errorMessage->str;
+  g_string_free(errorMessage, FALSE);
+
+  return message;
+}
+
+/*
+ * Callback function to check whether a command line argument represents a valid file name
+ *
+ * Return:
+ * TRUE on success
+ * FALSE on error
+ */
+gboolean validFileNameArg(const gchar *option_name, const gchar *value, gpointer data, GError **error)
+{
+  gboolean isValid = FALSE;
+  GString *currentOption = g_string_new(option_name);
+  GString *currentValue = g_string_new(value);
+  GString *longOption = g_string_new(LONG_OPT_INDICATOR);
+  GString *shortOption = g_string_new(SHORT_OPT_INDICATOR);
+
+  Options *opts = (Options *)data;
+
+  for(Options *option = opts; option != NULL && option->longname != NULL; option++)
+    {
+      g_string_append(longOption, option->longname);
+      g_string_append_c(shortOption, option->shortname);
+
+      if(g_string_equal(currentOption, longOption) || g_string_equal(currentOption, shortOption))
+        {
+          if(g_file_test(value, G_FILE_TEST_IS_REGULAR))
+            {
+              option->arg = currentValue->str;
+              isValid = TRUE;
+              break;
+            }
+        }
+
+      // Reset for next option argument to check
+      g_string_assign(longOption, LONG_OPT_INDICATOR);
+      g_string_assign(shortOption, SHORT_OPT_INDICATOR);
+    }
+
+  if (!isValid)
+    {
+      *error = g_new0(GError, 1);
+      (*error)->domain = G_FILE_ERROR;
+      (*error)->code = G_OPTION_ERROR_FAILED;
+      (*error)->message = fileError(value);
+    }
+
+  g_string_free(currentOption, TRUE);
+  g_string_free(currentValue, FALSE);
+  g_string_free(longOption, TRUE);
+  g_string_free(shortOption, TRUE);
+
+  return isValid;
+}
+

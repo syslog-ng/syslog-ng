@@ -105,7 +105,7 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
       state->badKey = TRUE;
 
       g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
-		  g_option_context_get_help(ctx, TRUE, NULL));
+                  g_option_context_get_help(ctx, TRUE, NULL));
       g_option_context_free(ctx);
       return FALSE;
     }
@@ -119,12 +119,12 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
       return FALSE;
     }
 
-    if(keypathbuffer == NULL)
+  if(keypathbuffer == NULL)
     {
       state->badKey = TRUE;
 
       g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
-		  "[SLOG] ERROR: Template parsing failed. Invalid or missing key file");
+                  "[SLOG] ERROR: Template parsing failed. Invalid or missing key file");
       g_option_context_free(ctx);
       return FALSE;
     }
@@ -134,7 +134,7 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
       state->badKey = TRUE;
 
       g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
-		  "[SLOG] ERROR: Template parsing failed. Invalid or missing MAC file");
+                  "[SLOG] ERROR: Template parsing failed. Invalid or missing MAC file");
       g_option_context_free(ctx);
       return FALSE;
     }
@@ -152,7 +152,7 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
 
   // Done with argument parsing
   g_option_context_free(ctx);
-  
+
   int res = readKey((char *)state->key, (guint64 *)&(state->numberOfLogEntries), state->keypath);
 
   if (res == 0)
@@ -174,7 +174,7 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
     {
       msg_debug("[SLOG] INFO: Template with key and MAC file successfully initialized.");
     }
-  
+
   return TRUE;
 }
 

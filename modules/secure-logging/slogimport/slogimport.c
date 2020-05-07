@@ -29,41 +29,51 @@
 #include <glib.h>
 
 #include "messages.h"
-
-
 #include "slog.h"
 
+// Arguments and options
+static char *hostkey = NULL;
+static char *newhostKey = NULL;
+static char *inputMAC = NULL;
+static char *outputMAC = NULL;
+static char *inputlog = NULL;
+static char *outputlog = NULL;
+static int bufSize = DEF_BUF_SIZE;
 
 int main(int argc, char *argv[])
 {
+  int index = 0;
+  Options options[] =
+  {
+    { "key-file", 'k', "Current host key file", "FILE", NULL },
+    { "mac-file", 'm', "Current MAC file", "FILE", NULL },
+    { NULL }
+  };
+
+  GOptionEntry entries[] =
+  {
+    { options[index].longname, options[index].shortname, 0, G_OPTION_ARG_CALLBACK, &validFileNameArg, options[index].description, options[index++].type },
+    { options[index].longname, options[index].shortname, 0, G_OPTION_ARG_CALLBACK, &validFileNameArg, options[index].description, options[index++].type },
+    { NULL }
+  };
+
   GError *error = NULL;
-  GOptionContext *context = g_option_context_new("- Import log files using secure logging\n\n  " \
-                                                 "The following arguments must be supplied in exactly this order\n\n  " \
-                                                 "HOSTKEY OUTPUTHOSTKEY INPUTLOG " \
-                                                 "OUTPUTLOG INPUTMAC OUTPUTMAC [COUNTER]\n\n  where\n\n  "
-                                                 "HOSTKEY\t\tCurrent host key file\n  "
-                                                 "OUTPUTHOSTKEY\t\tFile receiving the newly created host key\n  "
-                                                 "INPUTLOG\t\tLog file to import\n  "
-                                                 "OUTPUTLOG\t\tEncrypted log file receiving the import\n  "
-                                                 "INPUTMAC\t\tCurrent MAC file\n  "
-                                                 "OUTPUTMAC\t\tResulting MAC file updated after the import\n  "
-                                                 "[COUNTER]\t\tOptional counter for controlling the internal import buffer size\n\n  "
-                                                 "Arguments in brackets [] are optional, all other arguments are required");
+  GOptionContext *context =
+    g_option_context_new("NEWKEY NEWMAC INPUTLOG OUTPUTLOG [COUNTER] - Import log files using secure logging");
+  GOptionGroup *group = g_option_group_new("Basic options", "Basic log import options", "basic", &options, NULL);
+
+  g_option_group_add_entries(group, entries);
+  g_option_context_set_main_group(context, group);
 
   if (!g_option_context_parse (context, &argc, &argv, &error))
     {
-      g_print ("Invalid option: %s\n", error->message);
-      exit (1);
+      return usage(context, group, error->message);
     }
 
-  if (argc < 7)
+  if(argc < 5 || argc > 6)
     {
-      printf("%s", g_option_context_get_help(context, TRUE, NULL));
-      g_option_context_free(context);
-      return -1;
+      return usage(context, group, NULL);
     }
-
-  g_option_context_free(context);
 
   // Initialize internal messaging
   msg_init(TRUE);
@@ -71,13 +81,36 @@ int main(int argc, char *argv[])
   char key[KEY_LENGTH];
   char mac[CMAC_LENGTH];
 
-  int index = 1;
-  char *hostkey = argv[index++];
-  char *newhostKey = argv[index++];
-  char *inputlog = argv[index++];
-  char *outputlog = argv[index++];
-  char *inputMAC = argv[index++];
-  char *outputMAC = argv[index++];
+  // Assign option arguments
+  index = 0;
+  hostkey = options[index++].arg;
+  inputMAC = options[index++].arg;
+
+  // Input and output file arguments
+  index = 1;
+  newhostKey = argv[index++];
+  if(newhostKey == NULL)
+    {
+      return usage(context, group, NULL);
+    }
+
+  outputMAC = argv[index++];
+  if(outputMAC == NULL)
+    {
+      return usage(context, group, NULL);
+    }
+
+  inputlog = argv[index++];
+  if(!g_file_test(inputlog, G_FILE_TEST_IS_REGULAR))
+    {
+      return usage(context, group, fileError(inputlog));
+    }
+
+  outputlog = argv[index++];
+  if(outputlog == NULL)
+    {
+      return usage(context, group, NULL);
+    }
 
   // Read key and counter
   size_t counter;
@@ -88,25 +121,18 @@ int main(int argc, char *argv[])
       return -1;
     }
 
-  if (argc==8)
+  // Buffer size arguments if applicable
+  if (argc == 6)
     {
-      errno = 0;
-      gboolean ok = TRUE;
-      char *counterString = argv[index];
-      int len = sscanf(counterString, "%zu", &counter);
-      if(len <= 0)
+      bufSize = atoi(argv[index++]);
+
+      if(bufSize <= MIN_BUF_SIZE || bufSize > MAX_BUF_SIZE)
         {
-          msg_error("[SLOG] ERROR: Invalid counter value", evt_tag_str("value", counterString));
-          ok = FALSE;
-        }
-      if(errno != 0)
-        {
-          msg_error("[SLOG] ERROR: Unable to process input value", evt_tag_str("error", strerror(errno)));
-          ok = FALSE;
-        }
-      if(!ok)
-        {
-          return -1;
+          msg_error("[SLOG] ERROR: Invalid buffer size.", evt_tag_int("Size", bufSize),
+                    evt_tag_int("Minimum buffer size", MIN_BUF_SIZE), evt_tag_int("Maximum buffer size", MAX_BUF_SIZE));
+          g_option_group_unref(group);
+          g_option_context_free(context);
+          return 0;
         }
     }
 
