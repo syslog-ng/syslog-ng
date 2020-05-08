@@ -193,3 +193,14 @@ python_evaluate_global_code(GlobalConfig *cfg, const gchar *code, YYLTYPE *yyllo
 
   return result;
 }
+
+void
+propagate_persist_state(GlobalConfig *cfg)
+{
+  g_assert(cfg->state);
+  PyGILState_STATE gstate = PyGILState_Ensure();
+  g_assert(PyModule_AddObject(PyImport_AddModule("_syslogng"),
+                              "persist_state",
+                              PyCapsule_New(cfg->state, "_syslogng.persist_state", NULL)) == 0);
+  PyGILState_Release(gstate);
+}

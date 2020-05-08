@@ -53,6 +53,8 @@ class SyslogNgPaths(object):
                 "stdout": Path(working_dir, "syslog_ng_{}_stdout".format(instance_name)),
             },
             "binary_file_paths": {
+                "slogkey": Path(install_dir, "bin", "slogkey"),
+                "slogverify": Path(install_dir, "bin", "slogverify"),
                 "syslog_ng_binary": Path(install_dir, "sbin", "syslog-ng"),
                 "syslog_ng_ctl": Path(install_dir, "sbin", "syslog-ng-ctl"),
             },
@@ -91,6 +93,12 @@ class SyslogNgPaths(object):
 
     def get_syslog_ng_bin(self):
         return self.__syslog_ng_paths["binary_file_paths"]["syslog_ng_binary"]
+
+    def get_slogkey_bin(self):
+        return self.__syslog_ng_paths["binary_file_paths"]["slogkey"]
+
+    def get_slogverify_bin(self):
+        return self.__syslog_ng_paths["binary_file_paths"]["slogverify"]
 
     def get_syslog_ng_ctl_bin(self):
         return self.__syslog_ng_paths["binary_file_paths"]["syslog_ng_ctl"]

@@ -94,10 +94,16 @@ log_rewrite_set_severity_process(LogRewrite *s, LogMessage **pmsg, const LogPath
   const gint severity = _convert_severity(result);
   if (severity < 0)
     {
-      msg_debug("Warning: invalid severity to set", evt_tag_str("severity", result->str), log_pipe_location_tag(&s->super));
+      msg_debug("Warning: invalid value passed to set-severity()",
+                evt_tag_str("severity", result->str),
+                log_pipe_location_tag(&s->super));
       goto error;
     }
 
+  msg_trace("Setting syslog severity",
+            evt_tag_int("old_severity", LOG_PRI((*pmsg)->pri)),
+            evt_tag_int("new_severity", severity),
+            evt_tag_printf("msg", "%p", *pmsg));
   _set_msg_severity(*pmsg, severity);
 
 error:
@@ -134,6 +140,6 @@ log_rewrite_set_severity_new(LogTemplate *severity, GlobalConfig *cfg)
   self->super.super.free_fn = log_rewrite_set_severity_free;
   self->super.super.clone = log_rewrite_set_severity_clone;
   self->super.process = log_rewrite_set_severity_process;
-  self->severity = severity;
+  self->severity = log_template_ref(severity);
   return &self->super;
 }

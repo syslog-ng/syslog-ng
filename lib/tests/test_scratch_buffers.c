@@ -159,8 +159,8 @@ Test(scratch_buffers, stats_counters_are_updated)
 static void
 setup(void)
 {
-  main_loop_thread_resource_init();
   g_thread_init(NULL);
+  main_loop_thread_resource_init();
   stats_init();
   scratch_buffers_global_init();
   scratch_buffers_allocator_init();

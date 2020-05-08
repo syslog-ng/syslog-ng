@@ -27,6 +27,7 @@ set(SCL_DIRS
     snmptrap
     solaris
     sudo
+    sumologic
     syslogconf
     system
     telegram

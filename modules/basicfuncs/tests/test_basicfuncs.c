@@ -567,3 +567,27 @@ Test(basicfuncs, test_tfurldecode)
   assert_template_format("$(url-decode %)", "");
   assert_template_format("$(url-decode %00a)", "");
 }
+
+Test(basicfuncs, test_functional)
+{
+  LogMessage *msg = log_msg_new_empty();
+  GString *result = g_string_new("");
+
+  LogTemplate *template = log_template_new(configuration, NULL);
+  cr_assert(log_template_compile(template, "Some prefix $(iterate \"$(+ 1 $_)\" 0)", NULL));
+
+  log_template_format(template, msg, NULL, LTZ_LOCAL, 999, "", result);
+  cr_assert_str_eq(result->str, "Some prefix 0");
+
+  g_string_assign(result, "");
+  log_template_format(template, msg, NULL, LTZ_LOCAL, 999, "", result);
+  cr_assert_str_eq(result->str, "Some prefix 1");
+
+  g_string_assign(result, "");
+  log_template_format(template, msg, NULL, LTZ_LOCAL, 999, "", result);
+  cr_assert_str_eq(result->str, "Some prefix 2");
+
+  g_string_free(result, TRUE);
+  log_template_unref(template);
+  log_msg_unref(msg);
+}

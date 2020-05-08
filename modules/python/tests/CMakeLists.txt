@@ -18,3 +18,10 @@ add_unit_test(LIBTEST CRITERION
   DEPENDS syslogformat mod-python "${PYTHON_LIBRARIES}")
 
 set_property(TEST test_python_persist_name APPEND PROPERTY ENVIRONMENT "PYTHONMALLOC=malloc_debug")
+
+add_unit_test(LIBTEST CRITERION
+  TARGET test_python_persist
+  INCLUDES "${PYTHON_INCLUDE_DIR}" "${PYTHON_INCLUDE_DIRS}"
+  DEPENDS syslogformat mod-python "${PYTHON_LIBRARIES}")
+
+set_property(TEST test_python_persist APPEND PROPERTY ENVIRONMENT "PYTHONMALLOC=malloc_debug")

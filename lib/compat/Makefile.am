@@ -1,7 +1,8 @@
 compatincludedir		= ${pkgincludedir}/compat
 
 EXTRA_DIST += \
-	lib/compat/CMakeLists.txt
+	lib/compat/CMakeLists.txt	\
+	lib/compat/glib-g_mkdtemp.c
 
 compatinclude_HEADERS		= 	\
 	lib/compat/compat.h		\
@@ -31,6 +32,6 @@ compat_sources			= 	\
 	lib/compat/time.c		\
 	lib/compat/openssl_support.c	\
 	lib/compat/getent-sun.c		\
-	lib/compat/getent-generic.c	
+	lib/compat/getent-generic.c
 
 include lib/compat/tests/Makefile.am

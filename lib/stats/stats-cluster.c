@@ -233,8 +233,16 @@ stats_cluster_untrack_counter(StatsCluster *self, gint type, StatsCounterItem **
 {
   g_assert(self && (self->live_mask & (1 << type)) && &self->counter_group.counters[type] == (*counter));
   g_assert(self->use_count > 0);
-
   self->use_count--;
+
+  if (self->use_count == 0 && (*counter)->external)
+    {
+      (*counter)->external = FALSE;
+      (*counter)->value_ref = NULL;
+      gint type_mask = 1 << type;
+      self->live_mask &= ~type_mask;
+    }
+
   *counter = NULL;
 }
 

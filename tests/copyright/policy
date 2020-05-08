@@ -45,7 +45,8 @@ dbld/build/.*$
 dbld/release/.*$
 dbld/install/.*$
 dbld/images/.*$
-dbld/(functions\.sh|build\.manifest|tarball-changes\.ignore)$
+dbld/(functions\.sh|(build|packages|pip_packages)\.manifest|tarball-changes\.ignore)$
+dbld/\.dockerignore$
 cmake/.*$
 tests/python_functional/pytest.ini
 tests/python_functional/tox.ini
@@ -57,6 +58,8 @@ modules/secure-logging/tests
 modules/secure-logging/slogimport
 modules/secure-logging/slogverify
 modules/secure-logging/slogkey
+lib/rewrite/rewrite-set-facility\.h
+lib/rewrite/tests/test_set_facility\.c
  LGPLv2.1+_SSL
 autogen\.sh$
 sub-configure\.sh$

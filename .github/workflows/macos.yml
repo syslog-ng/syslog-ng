@@ -24,7 +24,6 @@ jobs:
             --disable-systemd \
             --disable-pacct \
             --disable-smtp \
-            --disable-geoip \
             --enable-all-modules
 
           make --keep-going -j $(sysctl -n hw.physicalcpu) || \

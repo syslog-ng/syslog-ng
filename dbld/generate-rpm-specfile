@@ -1,13 +1,13 @@
 #!/bin/bash
 
-. /source/dbld/functions.sh
+. /dbld/functions.sh
 
 MODE=$1
 
 if [ $MODE = "snapshot" ]; then
     echo "Generating snapshot version in syslog-ng.spec"
-    sed -e "s/^Version: \([0-9.]\+\)/Version: $VERSION/" \
-            -e "s/^Release: \([0-9.]\+\)/Release: \1+`date +%Y%m%dT%H%M%S`/" -i packaging/rhel/syslog-ng.spec
+    sed -e "s/^Version: \([0-9.]\+\).*$/Version: $VERSION/" \
+            -e "s/^Release: \([0-9.]\+\).*$/Release: \1+`date +%Y%m%dT%H%M%S`/" -i packaging/rhel/syslog-ng.spec
 elif [ $MODE = "release" ]; then
     echo "Validating that your RPM specfile matches the current version"
     RPM_VERSION=`grep ^Version packaging/rhel/syslog-ng.spec | cut -d ' ' -f2`

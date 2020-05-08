@@ -316,3 +316,12 @@ Test(multiple_signals_slots,
   signal_slot_connector_free(ssc);
 }
 
+static void
+setup(void)
+{
+  // Optional after glib 2.32
+  g_thread_init(NULL);
+}
+
+TestSuite(basic_signal_slots, .init = setup);
+TestSuite(multiple_signals_slots, .init = setup);

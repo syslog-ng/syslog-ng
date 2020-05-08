@@ -153,3 +153,31 @@ g_connect(int fd, GSockAddr *remote)
       return G_IO_STATUS_NORMAL;
     }
 }
+
+GSockAddr *
+g_socket_get_peer_name(gint fd)
+{
+  GSockAddr *result = NULL;
+  struct sockaddr_storage addr;
+  socklen_t len =  sizeof(addr);
+
+  if (getpeername(fd, (struct sockaddr *)&addr, &len) == 0)
+    {
+      result = g_sockaddr_new((struct sockaddr *)&addr, len);
+    }
+  return result;
+}
+
+GSockAddr *
+g_socket_get_local_name(gint fd)
+{
+  GSockAddr *result = NULL;
+  struct sockaddr_storage addr;
+  socklen_t len =  sizeof(addr);
+
+  if (getsockname(fd, (struct sockaddr *)&addr, &len) == 0)
+    {
+      result = g_sockaddr_new((struct sockaddr *)&addr, len);
+    }
+  return result;
+}

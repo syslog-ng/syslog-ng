@@ -98,7 +98,7 @@ kafka_properties_file_reader_open(KafkaPropertyFileReader *self, const gchar *fi
   return TRUE;
 }
 
-static const gboolean
+static gboolean
 kafka_properties_file_reader_get_line(KafkaPropertyFileReader *self)
 {
   gchar buf[1024];

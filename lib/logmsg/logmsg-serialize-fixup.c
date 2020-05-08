@@ -239,7 +239,8 @@ _fixup_entry(NVHandle old_handle, NVEntry *entry, NVIndexEntry *index_entry, gpo
   if (log_msg_is_handle_sdata(new_handle))
     _fixup_sdata_handle(state, old_handle, new_handle);
 
-  state->handle_changed = (new_handle != old_handle);
+  if (!state->handle_changed)
+    state->handle_changed = (new_handle != old_handle);
 
   if (_is_indirect(entry))
     _fixup_handle_in_indirect_entry(self, entry);

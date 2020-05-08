@@ -466,6 +466,8 @@ setup_rate_change_signals(void)
 int
 main(int argc, char *argv[])
 {
+  g_thread_init(NULL);
+
   GPtrArray *plugin_array = g_ptr_array_new();
   GOptionContext *ctx = g_option_context_new(" target port");
 

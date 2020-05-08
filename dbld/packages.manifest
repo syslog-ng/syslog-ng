@@ -1,0 +1,170 @@
+##################################################
+# packages required to build the docker image
+##################################################
+
+# packages to run gosu installation
+gnupg                           [centos, fedora, debian, ubuntu]
+
+# download various stuff over https
+wget                            [centos, fedora, debian, ubuntu]
+ca-certificates       	        [centos, fedora, debian, ubuntu]
+
+# criterion compilation
+cmake                           [centos, fedora, debian, ubuntu]
+gcc-c++				[centos, fedora]
+
+# to unpack gradle binary package (zip file)
+unzip                           [centos, fedora, debian, ubuntu]
+
+# I dont know why this is needed.
+bzip2                           [centos, fedora, debian, ubuntu]
+
+# Basic interactive tools
+less                            [centos, fedora, debian, ubuntu]
+vim                             [centos, fedora, debian, ubuntu]
+
+#############################################################################
+# Essential build tools not explicitly referenced from
+# Build-Depends/BuildRequires
+#############################################################################
+build-essential                 [debian, ubuntu]
+debhelper                       [debian, ubuntu]
+devscripts                      [debian, ubuntu]
+dh-autoreconf                   [debian, ubuntu]
+dh-exec                         [debian, ubuntu]
+dh-systemd                      [debian, ubuntu]
+dpkg-dev                        [debian, ubuntu]
+equivs                          [debian, ubuntu]
+make                            [centos, fedora]
+rpm-build                       [centos, fedora]
+
+#############################################################################
+# Tarball related tools
+#############################################################################
+# needed to create a tarball from libjson-c
+doxygen                         [ubuntu]
+
+# docbook to generate man pages
+docbook-xsl                     [ubuntu]
+docbook-style-xsl               [fedora]
+
+#############################################################################
+# Build environment dependencies that are not strictly required by syslog-ng
+# but are needed by our dbld functionality.
+#############################################################################
+git                             [centos, fedora, debian, ubuntu]
+ccache                          [centos, fedora, debian, ubuntu]
+
+#############################################################################
+# packages to run successful autogen.sh
+#
+# NOTE: the versions installed may or may not be enough to regenerate
+# configure scripts, especially on older distros).  We only guarantee that
+# autogen.sh successfully runs within TARBALL_IMAGE (ubuntu-bionic at this
+# point).  All the other platforms are best-effort.
+#
+# NOTE/2: debian based platforms always regenerate configure script in their
+# debian/rules, so they will depend on these tools in their Build-Depends
+# lines, so we don't need to list them here.
+#############################################################################
+
+autoconf                    [centos, fedora]
+autoconf-archive            [centos, fedora]
+automake                    [centos, fedora]
+
+#############################################################################
+# syslog-ng core dependencies
+#############################################################################
+
+# Python on various platforms
+
+# Python is needed for two reasons:
+#   - build itself (test scripts, merge-grammar.py, etc)
+#   - python support (e.g. the version used for building modules/python/)
+#
+# We are now using the same version for both.
+
+python-dev                  [debian, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan]
+python-devel                [centos, fedora]
+python3-devel               [fedora]
+python3-dev                 [ubuntu-focal]
+python-pip                      [centos, fedora, debian-stretch, debian-buster, ubuntu-trusty, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan]
+python3-pip                     [centos, debian, ubuntu]
+python-setuptools               [centos, fedora, debian-stretch, debian-buster, ubuntu-trusty, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan]
+python3-setuptools              [centos, debian, ubuntu]
+
+#############################################################################
+# syslog-ng module dependencies
+#
+# This section should preferably be empty. The only reason it is not empty
+# as some things cannot be resolved using the Build-Depends/Requires
+# mechanism. Exact reasoning to add anything to this section needs to be
+# added as comments.
+#############################################################################
+
+# librdkafka-dev on Ubuntu:
+#
+# We support librdkafka based destination on Ubuntu bionic/eoan even though
+# it does not have a recent enough librdkafka, the reason is that as of
+# today, our devshell uses bionic and we want to be able to try stuff that
+# we develop in that module.  Later on this support might be dropped as we
+# migrate to a newer distro.
+#
+# syslog-ng depends on >= 1.0.0, and we install these librdkafka from
+# LBudai's OBS repository.
+#
+# NOTE: even though we Build-Depend on stuff >= 1.0.0, that is not enough,
+# as an apt preferences file prevents installation from OBS without explicit
+# versions. Also, we need to list all recursive dependencies packages as an apt
+# preferences would prevent installation otherwise
+
+librdkafka1=1.0.1-1         [ubuntu-bionic,ubuntu-eoan]
+librdkafka++1=1.0.1-1       [ubuntu-bionic,ubuntu-eoan]
+librdkafka-dev=1.0.1-1      [ubuntu-bionic,ubuntu-eoan]
+
+
+#############################################################################
+# Tools required to run @kira-syslogng, our testbot.
+#############################################################################
+
+faketime                        [kira]
+libdbd-mysql                    [kira]
+lsb-release                     [kira]
+lsof                            [kira]
+netbase                         [kira]
+netcat                          [kira]
+openssh-client                  [kira]
+python-numpy                    [kira]
+python3-numpy                   [kira]
+python-yaml                     [kira]
+python3-yaml                    [kira]
+systemd-sysv                    [kira]
+
+
+#############################################################################
+# Development tools in our devshell.
+#############################################################################
+
+clang                           [devshell]
+dirmngr                         [devshell]
+gdb                             [devshell]
+gdbserver                       [devshell]
+joe                             [devshell]
+lcov                            [devshell]
+libc6-dbg                       [devshell]
+libglib2.0-0-dbgsym             [devshell]
+libjemalloc-dev                 [devshell]
+libjemalloc1-dbgsym             [devshell]
+libpcre2-dbg                    [devshell]
+libssl1.0.0-dbg                 [devshell]
+linux-tools-generic             [devshell]
+locales                         [devshell]
+lsof                            [devshell]
+netcat                          [devshell]
+python-dbg                      [devshell]
+python3-dbg                     [devshell]
+strace                          [devshell]
+valgrind                        [devshell]
+virtualenv                      [devshell]
+openssh-client                  [devshell]
+astyle                          [devshell]

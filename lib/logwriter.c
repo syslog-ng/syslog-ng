@@ -1528,6 +1528,7 @@ log_writer_set_proto(LogWriter *self, LogProtoClient *proto)
       flow_control_funcs.user_data = self;
 
       log_proto_client_set_client_flow_control(self->proto, &flow_control_funcs);
+      log_proto_client_set_options(self->proto, &self->options->proto_options.super);
     }
 }
 

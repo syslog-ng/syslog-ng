@@ -27,17 +27,22 @@
 #
 SUBMODULES="lib/ivykis lib/jsonc"
 GIT=`which git`
+# bootstrap syslog-ng itself
+case `uname -s` in
+	"SunOS") SED="gsed" ;;
+	*) SED="sed" ;;
+esac
 
 include_automake_from_dir_if_exists()
 {
-  local dir=$1
+  dir=$1
   if [ -f "$1/Makefile.am" ];
   then
     grep "include $dir/Makefile.am" Makefile.am
     if [ "$?" -eq "1" ];
     then
       last_include=$(grep ^include Makefile.am|grep Makefile.am|tail -n 1)
-      sed -i s@"$last_include"@"$last_include\ninclude $dir/Makefile.am"@g Makefile.am
+      $SED -i s@"$last_include"@"$last_include\ninclude $dir/Makefile.am"@g Makefile.am
     fi
   fi
 }
@@ -73,7 +78,7 @@ autogen_submodules()
 
 		CONFIGURE_OPTS="--disable-shared --enable-static --with-pic"
 
-		sed -e "s/@__CONFIGURE_OPTS__@/${CONFIGURE_OPTS}/g" ${origdir}/sub-configure.sh >configure.gnu
+		$SED -e "s/@__CONFIGURE_OPTS__@/${CONFIGURE_OPTS}/g" ${origdir}/sub-configure.sh >configure.gnu
 		cd "$origdir"
 	done
 }
@@ -90,7 +95,7 @@ esac
 
 $LIBTOOLIZE --force --copy
 aclocal -I m4 --install
-sed -i -e 's/PKG_PROG_PKG_CONFIG(\[0\.16\])/PKG_PROG_PKG_CONFIG([0.14])/g' aclocal.m4
+$SED -i -e 's/PKG_PROG_PKG_CONFIG(\[0\.16\])/PKG_PROG_PKG_CONFIG([0.14])/g' aclocal.m4
 
 include_automake_from_dir_if_exists debian
 include_automake_from_dir_if_exists tgz2build
