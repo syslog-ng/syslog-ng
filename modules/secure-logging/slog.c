@@ -304,7 +304,7 @@ void sLogEntry(guint64 numberOfLogEntries, GString *text, unsigned char *mainKey
   // Compute current log entry number
   gchar *counterString = convertToBase64((unsigned char *)&numberOfLogEntries, sizeof(numberOfLogEntries));
 
-  int slen = slen = (int) text->len;
+  int slen = (int) text->len;
 
   // This buffer holds everything: AggregatedMAC, IV, Tag, and CText
   // Binary data cannot be larger than its base64 encoding

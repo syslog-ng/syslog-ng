@@ -49,3 +49,6 @@ debian/autoreconf.*
 build/
 tags
 TAGS
+GPATH
+GRTAGS
+GTAGS

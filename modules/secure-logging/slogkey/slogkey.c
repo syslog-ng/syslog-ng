@@ -90,7 +90,15 @@ int main(int argc, char **argv)
       ok = FALSE;
     }
 
-  if (argc >= 2 && !ok)
+  if (!ok)
+    {
+      printf("%s", g_option_context_get_help(context, TRUE, NULL));
+      g_option_context_free(context);
+      return -1;
+    }
+
+  // Master key generation and sequence counter display need one option and a single argument
+  if ((master || counter) && argc > 2)
     {
       printf("%s", g_option_context_get_help(context, TRUE, NULL));
       g_option_context_free(context);

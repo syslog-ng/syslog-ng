@@ -44,7 +44,7 @@
 
 // Buffer size for import and verification
 #define MIN_BUF_SIZE 10
-#define MAX_BUF_SIZE 4294967295 // 4MB
+#define MAX_BUF_SIZE 1073741823 // INT_MAX/2
 #define DEF_BUF_SIZE 1000
 
 // Argument indicators for command line utilities
