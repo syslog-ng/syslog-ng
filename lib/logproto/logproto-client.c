@@ -80,6 +80,7 @@ void
 log_proto_client_options_defaults(LogProtoClientOptions *options)
 {
   options->drop_input = FALSE;
+  options->timeout = 0;
 }
 
 void

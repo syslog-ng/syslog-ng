@@ -82,7 +82,9 @@ AM_CFLAGS += \
 	-Wpointer-sign \
 	-Wmissing-format-attribute \
 	-Wold-style-definition \
-	-Wundef
+	-Wundef \
+	-Wignored-qualifiers \
+	-Woverride-init
 endif
 
 TEST_CFLAGS		= -I$(top_srcdir)/libtest -DTOP_SRCDIR=\"$(abs_top_srcdir)\" $(AM_CFLAGS) $(CRITERION_CFLAGS)

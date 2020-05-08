@@ -8,7 +8,7 @@
     <refmeta>
       <refentrytitle>syslog-ng.conf</refentrytitle>
       <manvolnum>5</manvolnum>
-      <refmiscinfo class="version">3.26</refmiscinfo>
+      <refmiscinfo class="version">3.27</refmiscinfo>
       <refmiscinfo class="source"/>
     </refmeta>
     <refnamediv>
@@ -27,7 +27,7 @@
     </refsection>
     <refsection>
       <title>Basic concepts of </title>
-      
+
         <para>The syslog-ng application reads incoming messages and forwards them to the selected <emphasis>destinations</emphasis>. The syslog-ng application can receive messages from files, remote hosts, and other <emphasis>sources</emphasis>.</para>
         <indexterm>
           <primary>destinations</primary>
@@ -52,7 +52,7 @@
           <primary>rewrite rules</primary>
         </indexterm>
         <para>Other optional elements that can appear in log statements are <emphasis>parsers</emphasis> and <emphasis>rewriting rules</emphasis>. Parsers segment messages into different fields to help processing the messages, while rewrite rules modify the messages by adding, replacing, or removing parts of the messages.</para>
-      
+
     </refsection>
     <refsection>
       <title>Configuring syslog-ng</title>
@@ -129,12 +129,12 @@ source s_demo_stream {
     destination(d1); destination(d2); ...
     flags(flag1[, flag2...]);
 };</synopsis>
-      
+
         <para>The following log statement sends all messages arriving to the localhost to a remote server.</para>
         <synopsis>source s_localhost { network(ip(127.0.0.1) port(1999)); };
 destination d_tcp { network("10.1.2.3" port(1999) localport(999)); };
 log { source(s_localhost); destination(d_tcp); };</synopsis>
-      
+
       <!-- ************************************************************************* -->
       <para version="5.0" xml:base="../common/chunk/para-global-options-intro.xml">The syslog-ng application has a number of global options governing DNS usage, the timestamp format used, and other general points. Each option may have parameters, similarly to driver specifications. To set global options, add an option statement to the syslog-ng configuration file using the following syntax:</para>
       <synopsis version="5.0" xml:base="../common/chunk/synopsis-global-options.xml">options { option1(params); option2(params); ... };</synopsis>
@@ -439,7 +439,7 @@ log { source(s_localhost); destination(d_tcp); };</synopsis>
         <link linkend="syslog-ng.8"><command>syslog-ng</command>(8)</link>
       </para>
       <note version="5.0">
-        <para>For the detailed documentation of  see <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/index.html"><command>The  3.26 Administrator Guide</command></link></para>
+        <para>For the detailed documentation of  see <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/index.html"><command>The  3.27 Administrator Guide</command></link></para>
         <para>If you experience any problems or need help with syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://lists.balabit.hu/mailman/listinfo/syslog-ng"><command>syslog-ng mailing list</command></link>.</para>
         <para>For news and notifications about of syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://syslog-ng.org/blogs/"><command>syslog-ng blogs</command></link>.</para>
       </note>

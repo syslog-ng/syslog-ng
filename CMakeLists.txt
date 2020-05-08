@@ -358,7 +358,8 @@ if (ENABLE_EXTRA_WARNINGS)
     -Wpointer-sign
     -Wmissing-format-attribute
     -Wold-style-definition
-    -Wundef)
+    -Wundef
+    -Wignored-qualifiers)
 
 if ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
   set(EXTRA_WARNINGS
@@ -368,6 +369,7 @@ else()
   set(EXTRA_WARNINGS
     -Wold-style-declaration
     -Wunused-but-set-parameter
+    -Woverride-init
     ${EXTRA_WARNINGS}
     )
 endif()

@@ -2,11 +2,6 @@
 %bcond_with python3
 %bcond_without python2
 
-%if 0%{with python3} && 0%{with python2}
-%{error:Can't build with python2 and python3 at the same type, use one of --with python2 or --with python3}
-Intentional syntax error to cause rpmbuild to abort.
-%endif
-
 %if 0%{with python3}
 %global with_python2 0
 %endif
@@ -67,7 +62,7 @@ Intentional syntax error to cause rpmbuild to abort.
 %global ivykis_ver 0.36.1
 
 Name: syslog-ng
-Version: 3.26.1
+Version: 3.27.1
 Release: 1%{?dist}
 Summary: Next-generation syslog server
 
@@ -94,6 +89,7 @@ BuildRequires: pcre-devel
 BuildRequires: libuuid-devel
 BuildRequires: libesmtp-devel
 BuildRequires: libcurl-devel
+BuildRequires: tzdata
 
 BuildRequires: %{python_devel}
 
@@ -270,6 +266,14 @@ Requires: %{name}%{?_isa} = %{version}-%{release}
 %description http
 This module supports the HTTP destination.
 
+%package slog
+Summary: $(slog) support for %{name}
+Group: Development/Libraries
+Requires: %{name}%{?_isa} = %{version}-%{release}
+
+%description slog
+This module adds support for the $(slog) template function plus command line utilities.
+
 %package python
 Summary:        Python destination support for syslog-ng
 Group:          System/Libraries
@@ -305,7 +309,6 @@ developing applications that use %{name}.
 
 %build
 
-export GEOIP_LIBS=-lGeoIP
 %configure \
     --prefix=%{_prefix} \
     --sysconfdir=%{_sysconfdir}/%{name} \
@@ -335,6 +338,7 @@ export GEOIP_LIBS=-lGeoIP
     %{?with_kafka:--enable-kafka} \
     %{?with_afsnmp:--enable-afsnmp} %{!?with_afsnmp:--disable-afsnmp} \
     %{?with_java:--enable-java} %{!?with_java:--disable-java} \
+    %{?with_maxminddb:--enable-geoip2} %{!?with_maxminddb:--disable-geoip2} \
     %{?with_sql:--enable-sql} \
     %{?with_systemd:--enable-systemd} \
     %{?with_mongodb:--enable-mongodb} \
@@ -446,9 +450,6 @@ fi
 %{_bindir}/dqtool
 %{_bindir}/update-patterndb
 %{_bindir}/persist-tool
-%{_bindir}/slogkey
-%{_bindir}/slogimport
-%{_bindir}/slogverify
 %{_libdir}/lib%{name}-*.so.*
 %{_libdir}/libevtlog-*.so.*
 %{_libdir}/libsecret-storage.so.*
@@ -477,7 +478,6 @@ fi
 %{_libdir}/%{name}/liblinux-kmsg-format.so
 %{_libdir}/%{name}/libmap-value-pairs.so
 %{_libdir}/%{name}/libpseudofile.so
-%{_libdir}/%{name}/libsecure-logging.so
 %{_libdir}/%{name}/libstardate.so
 %{_libdir}/%{name}/libsyslogformat.so
 %{_libdir}/%{name}/libsystem-source.so
@@ -506,9 +506,6 @@ fi
 %{_mandir}/man1/loggen.1*
 %{_mandir}/man1/pdbtool.1*
 %{_mandir}/man1/dqtool.1*
-%{_mandir}/man1/slogkey.1*
-%{_mandir}/man1/slogimport.1*
-%{_mandir}/man1/slogverify.1*
 %{_mandir}/man1/persist-tool.1*
 %{_mandir}/man1/syslog-ng-debun.1*
 %{_mandir}/man1/syslog-ng-ctl.1*
@@ -555,8 +552,8 @@ fi
 %{_libdir}/%{name}/java-modules/*
 %endif
 
-%files geoip
 %if %{with maxminddb}
+%files geoip
 %{_libdir}/%{name}/libgeoip2-plugin.so
 %endif
 
@@ -568,6 +565,15 @@ fi
 %files http
 %{_libdir}/%{name}/libhttp.so
 %{_libdir}/%{name}/libazure-auth-header.so
+
+%files slog
+%{_libdir}/%{name}/libsecure-logging.so
+%{_bindir}/slogkey
+%{_bindir}/slogimport
+%{_bindir}/slogverify
+%{_mandir}/man1/slogkey.1*
+%{_mandir}/man1/slogimport.1*
+%{_mandir}/man1/slogverify.1*
 
 %files python
 %{_libdir}/%{name}/python/syslogng-1.0-py%{py_ver}.egg-info
@@ -597,6 +603,9 @@ fi
 %{_datadir}/%{name}/tools/
 
 %changelog
+* Tue Apr 28 2020 Antal Nemes <antal.nemes@quest.com> - 3.27.1-1
+- update to 3.27.1
+
 * Mon Mar  2 2020 Laszlo Budai <laszlo.budai@outlook.com> - 3.26.1-1
 - update to 3.26.1
 

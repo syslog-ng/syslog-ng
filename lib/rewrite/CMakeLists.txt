@@ -7,6 +7,7 @@ set(REWRITE_HEADERS
     rewrite/rewrite-groupset.h
     rewrite/rewrite-unset.h
     rewrite/rewrite-set-severity.h
+    rewrite/rewrite-set-facility.h
     PARENT_SCOPE
     )
 
@@ -19,6 +20,7 @@ set(REWRITE_SOURCES
     rewrite/rewrite-groupset.c
     rewrite/rewrite-unset.c
     rewrite/rewrite-set-severity.c
+    rewrite/rewrite-set-facility.c
     PARENT_SCOPE
     )
 

@@ -35,6 +35,7 @@
 #include "python-global-code-loader.h"
 #include "python-debugger.h"
 #include "python-http-header.h"
+#include "python-persist.h"
 
 #include "plugin.h"
 #include "plugin-types.h"
@@ -114,6 +115,7 @@ _py_init_interpreter(void)
       py_integer_pointer_init();
       py_log_source_init();
       py_log_fetcher_init();
+      py_persist_init();
       py_global_code_loader_init();
       py_logger_init();
       PyEval_SaveThread();

@@ -26,17 +26,18 @@
 #
 
 # kafka support needs librdkafka >= 1.0.0, which is only available on ubuntu-bionic
-debian			DH_OPTIONS="-Nsyslog-ng-mod-rdkafka"
-debian-jessie		DH_OPTIONS="-Nsyslog-ng-mod-mongodb -Nsyslog-ng-mod-rdkafka -Nsyslog-ng-mod-amqp -Nsyslog-ng-mod-riemann -Nsyslog-ng-mod-geoip2"
-debian-buster		DH_OPTIONS="-Nsyslog-ng-mod-java -Nsyslog-ng-mod-kafka -Nsyslog-ng-mod-rdkafka -Nsyslog-ng-mod-java-common-lib -Nsyslog-ng-mod-elastic -Nsyslog-ng-mod-java-http -Nsyslog-ng-mod-hdfs"
-ubuntu			DH_OPTIONS="-Nsyslog-ng-mod-rdkafka"
-ubuntu-trusty		DH_OPTIONS="-Nsyslog-ng-mod-rdkafka -Nsyslog-ng-mod-riemann"
-ubuntu-bionic
+# on Debian we don't build java and use Python3 _after_ buster
+debian-stretch		python2,nojava,nokafka
+debian-buster		python2,nojava,nokafka
+debian-testing		python3,nojava
+debian-sid		python3,nojava
 
-#
-# centos-6 is not supported, however I leave this line here as an example of
-# how to use build.manifest to cusomize a build.
-#
-centos			-											--without kafka --with python2
-centos-6		CFLAGS=-D__be16=guint16,PYTHON_LIBS=-lpython2.6,PYTHON_CFLAGS=-I/usr/include/python2.6 	--without mongodb --with python2
-fedora			-											--with python3 --without python2
+# on ubuntu, we fetch java from OBS and start using Python3 at focal onwards.
+ubuntu-xenial		python2,nokafka
+ubuntu-bionic		python2
+ubuntu-eoan		python2
+ubuntu-focal		python3
+
+centos-6		python2,nokafka,nomongodb		CFLAGS=-D__be16=guint16,PYTHON_LIBS=-lpython2.6,PYTHON_CFLAGS=-I/usr/include/python2.6
+centos-7		python2,nokafka
+fedora			python3

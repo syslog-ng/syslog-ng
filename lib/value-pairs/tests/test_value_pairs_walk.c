@@ -121,7 +121,7 @@ Test(value_pairs_walker, prefix_dat)
 
   vp = value_pairs_new();
   value_pairs_add_glob_pattern(vp, "root.*", TRUE);
-  msg = log_msg_new("test", 4, NULL, &parse_options);
+  msg = log_msg_new("test", 4, &parse_options);
 
   log_msg_set_value_by_name(msg, "root.test.alma", value, strlen(value));
   log_msg_set_value_by_name(msg, "root.test.korte", value, strlen(value));

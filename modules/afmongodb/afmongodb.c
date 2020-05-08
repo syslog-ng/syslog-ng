@@ -180,10 +180,11 @@ _connect(MongoDBDestDriver *self, gboolean reconnect)
 
   bson_t reply;
   bson_error_t error;
+  bson_t *cmd = BCON_NEW("serverStatus", "1");
   const mongoc_read_prefs_t *read_prefs = mongoc_collection_get_read_prefs(self->coll_obj);
-  gboolean ok = mongoc_client_get_server_status(self->client, (mongoc_read_prefs_t *)read_prefs,
-                                                &reply, &error);
+  gboolean ok = mongoc_client_command_simple(self->client, self->const_db ? : "", cmd, read_prefs, &reply, &error);
   bson_destroy(&reply);
+  bson_destroy(cmd);
   if (!ok)
     {
       msg_error("Error connecting to MongoDB",

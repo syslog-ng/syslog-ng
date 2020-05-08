@@ -30,6 +30,7 @@
 #include "driver.h"
 #include "logreader.h"
 #include "dynamic-window-pool.h"
+#include "atomic-gssize.h"
 
 #include <iv.h>
 
@@ -52,7 +53,7 @@ struct _AFSocketSourceDriver
   LogProtoServerFactory *proto_factory;
   GSockAddr *bind_addr;
   gint max_connections;
-  gint num_connections;
+  atomic_gssize num_connections;
   gint listen_backlog;
   GList *connections;
   SocketOptions *socket_options;

@@ -10,24 +10,27 @@ EXTRA_DIST += \
 	dbld/shell \
 	dbld/rules \
 	dbld/bootstrap	\
+	dbld/make \
 	dbld/build.manifest	\
+	dbld/packages.manifest \
+	dbld/pip_packages.manifest \
+	dbld/images/entrypoint.sh \
+	dbld/images/fake-sudo.sh \
+	dbld/images/gosu.pubkey \
+	dbld/images/yum-builddep.sha1 \
+	dbld/images/debian.prepare.sh \
+	dbld/images/ubuntu.prepare.sh \
+	dbld/images/centos.prepare.sh \
+	dbld/images/fedora.prepare.sh \
 	dbld/images/devshell.dockerfile \
-	dbld/images/helpers/entrypoint.sh \
-	dbld/images/helpers/fake-sudo.sh \
-	dbld/images/helpers/gosu.pubkey \
-	dbld/images/helpers/packages.manifest \
-	dbld/images/helpers/pip_packages.manifest \
-	dbld/images/README.md \
 	dbld/images/centos-6.dockerfile \
 	dbld/images/centos-7.dockerfile \
 	dbld/images/fedora-30.dockerfile \
-	dbld/images/debian-jessie.dockerfile \
 	dbld/images/debian-stretch.dockerfile \
 	dbld/images/debian-buster.dockerfile \
-	dbld/images/ubuntu-trusty.dockerfile \
 	dbld/images/ubuntu-xenial.dockerfile \
 	dbld/images/ubuntu-bionic.dockerfile \
 	dbld/images/ubuntu-eoan.dockerfile \
 	dbld/images/ubuntu-focal.dockerfile \
-	dbld/make \
+	dbld/images/README.md \
 	dbld/README.md

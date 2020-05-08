@@ -6,19 +6,22 @@ ARG COMMIT
 ENV OS_PLATFORM ${OS_PLATFORM}
 LABEL COMMIT=${COMMIT}
 
-COPY helpers/* /helpers/
+COPY images/fake-sudo.sh /usr/bin/sudo
+COPY images/entrypoint.sh /
+COPY . /dbld/
 
-RUN /helpers/dependencies.sh add_epel_repo
-RUN /helpers/dependencies.sh add_copr_repo
-RUN /helpers/dependencies.sh install_yum_packages
-RUN /helpers/dependencies.sh install_pip_packages
+RUN /dbld/builddeps install_dbld_dependencies
+RUN /dbld/builddeps add_epel_repo
+RUN /dbld/builddeps add_copr_repo
+RUN /dbld/builddeps install_yum_packages
+RUN /dbld/builddeps install_rpm_build_deps
+RUN /dbld/builddeps install_pip_packages
 
-RUN /helpers/dependencies.sh install_criterion
-RUN /helpers/dependencies.sh install_gradle
-RUN /helpers/dependencies.sh install_gosu amd64
-RUN mv /helpers/fake-sudo.sh /usr/bin/sudo
+RUN /dbld/builddeps install_criterion
+RUN /dbld/builddeps install_gradle
+RUN /dbld/builddeps install_gosu amd64
 
 VOLUME /source
 VOLUME /build
 
-ENTRYPOINT ["/helpers/entrypoint.sh"]
+ENTRYPOINT ["/entrypoint.sh"]

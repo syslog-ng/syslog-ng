@@ -1,6 +1,6 @@
 #!/bin/bash
 
-. /source/dbld/functions.sh
+. /dbld/functions.sh
 
 RPMBUILD=${HOME}/rpmbuild
 RPMBUILD_SOURCES=${RPMBUILD}/SOURCES
@@ -27,10 +27,9 @@ function capture_rpms() {
 	echo "Your rpms are in /build/${OS_PLATFORM}, also available on the host in \$(top_srcdir)/dbld/build/${OS_PLATFORM}"
 }
 
-
 cd /build
 
 setup_dirs
 prepare_source
-run_build_command rpmbuild --define '_dbld 1' -ta syslog-ng-${VERSION}.tar.gz
+rpm_run_build_command rpmbuild --define '_dbld 1' -ta syslog-ng-${VERSION}.tar.gz
 capture_rpms

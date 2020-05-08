@@ -84,6 +84,7 @@
           <term><command>--mac-file</command> or <command>-m</command>
           </term>
           <listitem>
+
             <para>The current MAC file from the system where the import shall be performed.</para>
           </listitem>
         </varlistentry>

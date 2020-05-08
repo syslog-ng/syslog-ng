@@ -25,7 +25,6 @@ addons:
       - libdbd-sqlite3
       - libdbi0-dev
       - libesmtp-dev
-      - libgeoip-dev
       - libglib2.0-dev
       - libhiredis-dev
       - libivykis-dev
@@ -165,6 +164,7 @@ matrix:
         - make python-pylint
         - make pytest-linters
         - make VERBOSE=1 func-test
+        - export cmake_build=1
         - make pytest-check
 
     - env: B=cmake
@@ -201,7 +201,6 @@ matrix:
             - libdbd-sqlite3
             - libdbi0-dev
             - libesmtp-dev
-            - libgeoip-dev
             - libglib2.0-dev
             - libhiredis-dev
             - libivykis-dev
@@ -263,7 +262,6 @@ matrix:
             - libdbd-sqlite3
             - libdbi0-dev
             - libesmtp-dev
-            - libgeoip-dev
             - libglib2.0-dev
             - libhiredis-dev
             - librabbitmq-dev

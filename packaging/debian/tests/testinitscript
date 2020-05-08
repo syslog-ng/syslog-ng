@@ -1,0 +1,84 @@
+#!/bin/sh
+
+echo "First reboot the host to activate SystemV init system"
+if [ -z "$ADT_REBOOT_MARK" ]
+then
+    cp /usr/share/sysvinit/inittab /etc/inittab
+    sed -i "/ttyS0/ s/^#//" /etc/inittab
+    /tmp/autopkgtest-reboot "fixinit"
+else
+    echo $ADT_REBOOT_MARK
+fi
+
+is_syslogng_run()
+{
+    LINES=$(ps uawx | grep "syslog-ng " | grep -v grep)
+    echo $LINES | grep -q syslog-ng
+    RET=$?
+    return $RET
+}
+
+exit_with_comment()
+{
+    comment=$1
+    exit_code=$2
+    echo $comment
+    ps uawx | grep syslog-ng | grep -v grep
+    sleep 5
+    ps uawx | grep syslog-ng | grep -v grep
+    exit $exit_code
+}
+
+set -e
+echo "Checking if syslog-ng was able to start"
+is_syslogng_run || exit_with_comment "Syslog-ng not runnin, cannot tested" 0
+
+echo "Testing stop parameter"
+/etc/init.d/syslog-ng stop
+
+is_syslogng_run && exit_with_comment "Syslog-ng cannot be stopped" 1
+
+echo "Testing start parameter"
+/etc/init.d/syslog-ng start
+
+is_syslogng_run || exit_with_comment "Syslog-ng cannot be started" 1
+
+echo "Testing restart parameter"
+PIDFILE1=$(cat /var/run/syslog-ng.pid)
+/etc/init.d/syslog-ng restart
+
+is_syslogng_run || exit_with_comment "Syslog-ng stopped during restart" 1
+PIDFILE2=$(cat /var/run/syslog-ng.pid)
+
+test $PIDFILE1 -ne $PIDFILE2 || exit_with_comment "Syslog-ng was not restarted" 1
+
+echo "Stopping syslog-ng for the next test"
+/etc/init.d/syslog-ng stop
+
+is_syslogng_run && exit_with_comment "Syslog-ng cannot be stopped 2" 1
+
+echo "Testing wether restart start syslog-ng or not"
+/etc/init.d/syslog-ng restart
+
+is_syslogng_run || exit_with_comment "Syslog-ng is not started by restart" 1
+
+echo "Testing the try-restart parameter"
+PIDFILE1=$(cat /var/run/syslog-ng.pid)
+/etc/init.d/syslog-ng try-restart
+
+is_syslogng_run || exit_with_comment "Syslog-ng stopped during restart" 1
+PIDFILE2=$(cat /var/run/syslog-ng.pid)
+
+test $PIDFILE1 -ne $PIDFILE2 || exit_with_comment "Syslog-ng was not restarted by try-restart" 1
+
+echo "Stopping syslog-ng before the next test"
+/etc/init.d/syslog-ng stop
+
+is_syslogng_run && exit_with_comment "Syslog-ng cannot be stopped 3" 1
+
+echo "try-restart should not start the daemon if it didn't run before"
+/etc/init.d/syslog-ng try-restart
+
+is_syslogng_run && exit_with_comment "Syslog-ng started by try-restart" 1
+
+exit 0

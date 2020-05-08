@@ -6,6 +6,9 @@
 ## Released under the GPLv2+, see /usr/share/common-licenses/GPL-2 on
 ## Debian systems.
 
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
 # For my own sanity, when debian/rules is ran without any argument,
 # display something meaningful, instead of just running the first
 # override.
@@ -41,13 +44,30 @@ export DH_OPTIONS += -O-Bdebian/build-tree --dbg-package=syslog-ng-dbg
 CFLAGS		?= $(shell dpkg-buildflags --get CFLAGS)
 LDFLAGS		?= $(shell dpkg-buildflags --get LDFLAGS)
 
+MULTIARCH_PATH = $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
 # We want to enforce systemd support on Linux, but disable it
 # everywhere else.
 ifeq ($(shell dpkg-architecture -qDEB_HOST_ARCH_OS),linux)
 SYSTEMD_CONFIGURE_OPTS = --enable-systemd --with-systemd-journal=system
+PACCT_CONFIGURE_OPTS   = --enable-pacct
 else
 SYSTEMD_CONFIGURE_OPTS = --disable-systemd
+PACCT_CONFIGURE_OPTS   = --disable-pacct
+endif
+
+ifneq ($(filter nojava,$(DEB_BUILD_PROFILES)),)
+DH_OPTIONS += -Nsyslog-ng-mod-java -Nsyslog-ng-mod-kafka -Nsyslog-ng-mod-java-common-lib -Nsyslog-ng-mod-elastic -Nsyslog-ng-mod-java-http -Nsyslog-ng-mod-hdfs
+endif
+
+ifneq ($(filter sng-python2,$(DEB_BUILD_PROFILES)),)
+PYTHON_VERSION = 2
+else
+PYTHON_VERSION = 3
+endif
+
+ifneq ($(filter sng-nokafka,$(DEB_BUILD_PROFILES)),)
+DH_OPTIONS += -Nsyslog-ng-mod-rdkafka
 endif
 
 # If DH_QUIET is set, then we want silent mode.
@@ -82,8 +102,6 @@ override_dh_auto_configure:
 		--libdir=/usr/lib/syslog-ng \
 		${SILENT_MODE} \
 		\
-		--with-ivykis=system \
-		--with-jsonc=system \
 		--enable-dynamic-linking \
 		--enable-ssl \
 		--enable-spoof-source \
@@ -91,17 +109,21 @@ override_dh_auto_configure:
 		--enable-sql \
 		--enable-json \
 		--enable-manpages \
-		--enable-pacct \
+		$(PACCT_CONFIGURE_OPTS) \
 		--enable-python \
-		--enable-afsnmp \
-		--enable-riemann=auto \
-		--enable-amqp=auto \
-		--with-librabbitmq-client=system \
+		--with-python=$(PYTHON_VERSION) \
+		--enable-snmp-dest \
+		--enable-http \
 		--enable-mongodb=auto \
-		--with-mongoc=system \
+		--enable-amqp=auto \
 		--enable-kafka=auto \
+		--enable-riemann=auto \
 		--enable-java=auto \
 		\
+		--with-mongoc=system \
+		--with-ivykis=system \
+		--with-jsonc=system \
+		--with-librabbitmq-client=system \
 		\
 		--with-module-dir='$${exec_prefix}/lib/syslog-ng/${UMAJOR}' \
 		--with-systemdsystemunitdir="/lib/systemd/system" \
@@ -114,13 +136,23 @@ override_dh_auto_configure:
 # we override libdir above to place everything useful there. We want
 # the .pc file elsewhere, though, so do that here at install time.
 #
+# Similarly, we want to install python modules to their proper place,
+# and this is a great time to tell the build system where that is.
 # Also removing .la files, these files don't needed and just confuse
 # the list-missing option
 override_dh_auto_install:
-	dh_auto_install -- pkgconfigdir=/usr/lib/pkgconfig
+	dh_auto_install -- \
+		pkgconfigdir=/usr/lib/$(MULTIARCH_PATH)/pkgconfig
 	find . -name \*.la | xargs --no-run-if-empty rm
+	[ ! -f $(CURDIR)/debian/tmp/usr/share/syslog-ng/tools/merge-grammar.py ] || \
+		sed -i 's/ python$$/ python$(PYTHON_VERSION)/' \
+		$(CURDIR)/debian/tmp/usr/share/syslog-ng/tools/merge-grammar.py
 
-override_dh_auto_test: ;
+# To get better test results, and actually see failing tests, we need
+# to pass VERBOSE=1 to make when running the tests. Do that here.
+override_dh_auto_test:
+	# disabled ATM
+	#dh_auto_test -- VERBOSE=1
 
 ##
 #* Overrides for other debhelper commands
@@ -154,6 +186,7 @@ override_dh_installlogcheck:
 # directory. On the other hand, we do want correct dependencies on
 # anything that build-depends on syslog-ng-dev, so lets make a correct
 # shlibs file for that, shall we?
+#
 override_dh_makeshlibs:
 	dh_makeshlibs -n -Xusr/lib/syslog-ng/${UMAJOR}
 
@@ -172,9 +205,17 @@ override_dh_gencontrol:
 override_dh_python2:
 	DH_OPTIONS="" dh_python2
 
+# Sadly, dh_python3 barfs on --dbg-package=, so we work it around by
+# clearing DH_OPTIONS here.
+override_dh_python3:
+	DH_OPTIONS="" dh_python3
+
 ##
 #* Other, non-override targets
 ##
+
+override_dh_missing:
+	dh_missing --fail-missing
 
 # By default, the arch:all syslog-ng package does not need anything
 # built, so build-indep shall be empty. This avoids triggering another
@@ -185,4 +226,4 @@ build-indep: ;
 
 # And for the rest, there is debhelper!
 %:
-	dh $@ --with autoreconf,systemd,python2 --parallel --list-missing
+	dh $@ --with autoreconf,systemd,python$(PYTHON_VERSION)

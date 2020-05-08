@@ -20,6 +20,7 @@
 # COPYING for details.
 #
 #############################################################################
+import argparse
 import logging
 import subprocess
 from datetime import datetime
@@ -38,13 +39,27 @@ from src.testcase_parameters.testcase_parameters import TestcaseParameters
 logger = logging.getLogger(__name__)
 
 
+class InstallDirAction(argparse.Action):
+    def __call__(self, parser, namespace, path, option_string=None):
+        install_dir = Path(path)
+
+        if not install_dir.is_dir():
+            raise argparse.ArgumentTypeError("{0} is not a valid directory".format(path))
+
+        binary = Path(install_dir, "sbin/syslog-ng")
+        if not binary.exists():
+            raise argparse.ArgumentTypeError("{0} not exist".format(binary))
+
+        setattr(namespace, self.dest, path)
+
+
 # Command line options
 def pytest_addoption(parser):
     parser.addoption("--runslow", action="store_true", default=False, help="run slow tests")
     parser.addoption("--run-under", help="Run syslog-ng under selected tool, example tools: [valgrind, strace]")
     parser.addoption(
         "--installdir",
-        action="store",
+        action=InstallDirAction,
         help="Set installdir for installed syslog-ng. Used when installmode is: custom. Example path: '/home/user/syslog-ng/installdir/'",
     )
     parser.addoption(

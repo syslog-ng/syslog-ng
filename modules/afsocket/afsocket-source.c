@@ -26,6 +26,7 @@
 #include "fdhelpers.h"
 #include "gsocket.h"
 #include "stats/stats-registry.h"
+#include "stats/stats-cluster-single.h"
 #include "mainloop.h"
 #include "poll-fd-events.h"
 #include "timeutils/misc.h"
@@ -50,9 +51,34 @@ typedef struct _AFSocketSourceConnection
   LogReader *reader;
   int sock;
   GSockAddr *peer_addr;
+  GSockAddr *local_addr;
 } AFSocketSourceConnection;
 
 static void afsocket_sd_close_connection(AFSocketSourceDriver *self, AFSocketSourceConnection *sc);
+
+static void
+_connections_count_set(AFSocketSourceDriver *self, gssize value)
+{
+  atomic_gssize_set(&self->num_connections, value);
+}
+
+static gssize
+_connections_count_get(AFSocketSourceDriver *self)
+{
+  return atomic_gssize_get(&self->num_connections);
+}
+
+static void
+_connections_count_inc(AFSocketSourceDriver *self)
+{
+  atomic_gssize_inc(&self->num_connections);
+}
+
+static void
+_connections_count_dec(AFSocketSourceDriver *self)
+{
+  atomic_gssize_dec(&self->num_connections);
+}
 
 static gchar *
 _format_sc_name(AFSocketSourceConnection *self, gint format_type)
@@ -121,6 +147,7 @@ afsocket_sc_init(LogPipe *s)
       self->reader = log_reader_new(s->cfg);
       log_reader_open(self->reader, proto, poll_fd_events_new(self->sock));
       log_reader_set_peer_addr(self->reader, self->peer_addr);
+      log_reader_set_local_addr(self->reader, self->local_addr);
     }
 
   log_reader_set_options(self->reader, &self->super,
@@ -205,11 +232,12 @@ afsocket_sc_free(LogPipe *s)
 {
   AFSocketSourceConnection *self = (AFSocketSourceConnection *) s;
   g_sockaddr_unref(self->peer_addr);
+  g_sockaddr_unref(self->local_addr);
   log_pipe_free_method(s);
 }
 
 AFSocketSourceConnection *
-afsocket_sc_new(GSockAddr *peer_addr, int fd, GlobalConfig *cfg)
+afsocket_sc_new(GSockAddr *peer_addr, GSockAddr *local_addr, int fd, GlobalConfig *cfg)
 {
   AFSocketSourceConnection *self = g_new0(AFSocketSourceConnection, 1);
 
@@ -219,6 +247,7 @@ afsocket_sc_new(GSockAddr *peer_addr, int fd, GlobalConfig *cfg)
   self->super.notify = afsocket_sc_notify;
   self->super.free_fn = afsocket_sc_free;
   self->peer_addr = g_sockaddr_ref(peer_addr);
+  self->local_addr = g_sockaddr_ref(local_addr);
   self->sock = fd;
   return self;
 }
@@ -397,11 +426,13 @@ afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *client_add
 
 #endif
 
-  if (self->num_connections >= self->max_connections)
+  if (_connections_count_get(self) >= self->max_connections)
     {
       msg_error("Number of allowed concurrent connections reached, rejecting connection",
                 evt_tag_str("client", g_sockaddr_format(client_addr, buf, sizeof(buf), GSA_FULL)),
                 evt_tag_str("local", g_sockaddr_format(local_addr, buf2, sizeof(buf2), GSA_FULL)),
+                evt_tag_str("group_name", self->super.super.group),
+                log_pipe_location_tag(&self->super.super.super),
                 evt_tag_int("max", self->max_connections));
       return FALSE;
     }
@@ -409,12 +440,12 @@ afsocket_sd_process_connection(AFSocketSourceDriver *self, GSockAddr *client_add
     {
       AFSocketSourceConnection *conn;
 
-      conn = afsocket_sc_new(client_addr, fd, self->super.super.super.cfg);
+      conn = afsocket_sc_new(client_addr, local_addr, fd, self->super.super.super.cfg);
       afsocket_sc_set_owner(conn, self);
       if (log_pipe_init(&conn->super))
         {
           afsocket_sd_add_connection(self, conn);
-          self->num_connections++;
+          _connections_count_inc(self);
           log_pipe_append(&conn->super, &self->super.super.super);
         }
       else
@@ -433,6 +464,7 @@ afsocket_sd_accept(gpointer s)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
   GSockAddr *peer_addr;
+  GSockAddr *local_addr;
   gchar buf1[256], buf2[256];
   gint new_fd;
   gboolean res;
@@ -458,7 +490,9 @@ afsocket_sd_accept(gpointer s)
       g_fd_set_nonblock(new_fd, TRUE);
       g_fd_set_cloexec(new_fd, TRUE);
 
-      res = afsocket_sd_process_connection(self, peer_addr, self->bind_addr, new_fd);
+      local_addr = g_socket_get_local_name(new_fd);
+      res = afsocket_sd_process_connection(self, peer_addr, local_addr, new_fd);
+      g_sockaddr_unref(local_addr);
 
       if (res)
         {
@@ -504,7 +538,7 @@ afsocket_sd_close_connection(AFSocketSourceDriver *self, AFSocketSourceConnectio
   log_pipe_deinit(&sc->super);
   self->connections = g_list_remove(self->connections, sc);
   afsocket_sd_kill_connection(sc);
-  self->num_connections--;
+  _connections_count_dec(self);
 }
 
 static void
@@ -558,10 +592,12 @@ _dynamic_window_realloc(AFSocketSourceDriver *self)
 static void
 _dynamic_window_set_balanced_window(AFSocketSourceDriver *self)
 {
-  if (self->num_connections <= 0)
+  gint number_of_connections= _connections_count_get(self);
+
+  if (number_of_connections <= 0)
     return;
 
-  gsize new_balanced_win = self->dynamic_window_pool->pool_size / self->num_connections;
+  gsize new_balanced_win = self->dynamic_window_pool->pool_size / number_of_connections;
   if (new_balanced_win == 0)
     {
       msg_info("Cannot allocate more dynamic window for new clients. From now, only static window is allocated."
@@ -569,7 +605,7 @@ _dynamic_window_set_balanced_window(AFSocketSourceDriver *self)
                " dynamic-window-size",
                evt_tag_long("total_dynamic_window_size", self->dynamic_window_size),
                evt_tag_int("max_connections", self->max_connections),
-               evt_tag_int("active_connections", self->num_connections),
+               evt_tag_int("active_connections", number_of_connections),
                evt_tag_long("dynamic_window_size_for_existing_clients", self->dynamic_window_pool->balanced_window),
                evt_tag_long("static_window_size", self->reader_options.super.init_window_size));
       return;
@@ -758,13 +794,13 @@ afsocket_sd_restore_kept_alive_connections(AFSocketSourceDriver *self)
       GList *p = NULL;
       self->connections = cfg_persist_config_fetch(cfg, afsocket_sd_format_connections_name(self));
 
-      self->num_connections = 0;
+      _connections_count_set(self, 0);
       for (p = self->connections; p; p = p->next)
         {
           afsocket_sc_set_owner((AFSocketSourceConnection *) p->data, self);
           if (log_pipe_init((LogPipe *) p->data))
             {
-              self->num_connections++;
+              _connections_count_inc(self);
             }
           else
             {
@@ -960,6 +996,45 @@ afsocket_sd_setup_addresses_method(AFSocketSourceDriver *self)
   return TRUE;
 }
 
+static void
+_make_connection_conter_stats_queryable(AFSocketSourceDriver *self)
+{
+  if (self->transport_mapper->sock_type == SOCK_STREAM)
+    {
+      stats_lock();
+      {
+        StatsClusterKey sc_key;
+        stats_cluster_single_key_set_with_name(&sc_key,
+                                               self->transport_mapper->stats_source | SCS_SOURCE,
+                                               self->super.super.group,
+                                               afsocket_sd_format_name(&self->super.super.super),
+                                               "connections");
+        stats_register_external_counter(0, &sc_key, SC_TYPE_SINGLE_VALUE, &self->num_connections);
+        _connections_count_set(self, 0);
+      }
+      stats_unlock();
+    }
+}
+
+static void
+_stop_connection_counter_stats_queryable(AFSocketSourceDriver *self)
+{
+  if (self->transport_mapper->sock_type == SOCK_STREAM)
+    {
+      stats_lock();
+      {
+        StatsClusterKey sc_key;
+        stats_cluster_single_key_set_with_name(&sc_key,
+                                               self->transport_mapper->stats_source | SCS_SOURCE,
+                                               self->super.super.group,
+                                               afsocket_sd_format_name(&self->super.super.super),
+                                               "connections");
+        stats_unregister_external_counter(&sc_key, SC_TYPE_SINGLE_VALUE, &self->num_connections);
+      }
+      stats_unlock();
+    }
+}
+
 gboolean
 afsocket_sd_init_method(LogPipe *s)
 {
@@ -980,7 +1055,11 @@ afsocket_sd_init_method(LogPipe *s)
         }
     }
 
-  return afsocket_sd_restore_kept_alive_connections(self) && afsocket_sd_open_listener(self);
+  gboolean success = afsocket_sd_restore_kept_alive_connections(self) && afsocket_sd_open_listener(self);
+  if (success)
+    _make_connection_conter_stats_queryable(self);
+
+  return success;
 }
 
 gboolean
@@ -990,6 +1069,8 @@ afsocket_sd_deinit_method(LogPipe *s)
 
   afsocket_sd_save_connections(self);
   afsocket_sd_save_listener(self);
+
+  _stop_connection_counter_stats_queryable(self);
 
   if (self->dynamic_window_pool)
     afsocket_sd_save_dynamic_window_pool(self);

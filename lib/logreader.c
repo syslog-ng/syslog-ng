@@ -45,6 +45,15 @@ log_reader_set_peer_addr(LogReader *s, GSockAddr *peer_addr)
 }
 
 void
+log_reader_set_local_addr(LogReader *s, GSockAddr *local_addr)
+{
+  LogReader *self = (LogReader *) s;
+
+  g_sockaddr_unref(self->local_addr);
+  self->local_addr = g_sockaddr_ref(local_addr);
+}
+
+void
 log_reader_set_immediate_check(LogReader *s)
 {
   LogReader *self = (LogReader *) s;
@@ -433,9 +442,11 @@ log_reader_handle_line(LogReader *self, const guchar *line, gint length, LogTran
             evt_tag_printf("line", "%.*s", length, line));
   /* use the current time to get the time zone offset */
   m = log_msg_new((gchar *) line, length,
-                  aux->peer_addr ? : self->peer_addr,
                   &self->options->parse_options);
 
+  log_msg_set_saddr(m, aux->peer_addr ? : self->peer_addr);
+  log_msg_set_daddr(m, aux->local_addr ? : self->local_addr);
+  m->proto = aux->proto;
   log_msg_refcache_start_producer(m);
 
   log_transport_aux_data_foreach(aux, _add_aux_nvpair, m);
@@ -637,6 +648,7 @@ log_reader_free(LogPipe *s)
 
   log_pipe_unref(self->control);
   g_sockaddr_unref(self->peer_addr);
+  g_sockaddr_unref(self->local_addr);
   g_static_mutex_free(&self->pending_close_lock);
   g_cond_free(self->pending_close_cond);
   log_source_free(s);
@@ -657,6 +669,7 @@ _schedule_dynamic_window_realloc(LogSource *s)
 
   log_source_dynamic_window_realloc(s);
 }
+
 
 LogReader *
 log_reader_new(GlobalConfig *cfg)
