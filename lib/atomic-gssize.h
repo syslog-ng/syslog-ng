@@ -27,7 +27,7 @@
 
 #include "syslog-ng.h"
 
-G_STATIC_ASSERT(sizeof(gsize) == sizeof(gpointer));
+G_STATIC_ASSERT(sizeof(gssize) == sizeof(gpointer));
 
 typedef struct
 {
