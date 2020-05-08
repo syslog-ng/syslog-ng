@@ -65,7 +65,7 @@ int main(int argc, char **argv)
 
   if (argc < 2)
     {
-      printf("%s", g_option_context_get_help(context, TRUE, NULL));
+      g_print("%s", g_option_context_get_help(context, TRUE, NULL));
       g_option_context_free(context);
       return -1;
     }
@@ -92,7 +92,7 @@ int main(int argc, char **argv)
 
   if (!ok)
     {
-      printf("%s", g_option_context_get_help(context, TRUE, NULL));
+      g_print("%s", g_option_context_get_help(context, TRUE, NULL));
       g_option_context_free(context);
       return -1;
     }
@@ -100,7 +100,7 @@ int main(int argc, char **argv)
   // Master key generation and sequence counter display need one option and a single argument
   if ((master || counter) && argc > 2)
     {
-      printf("%s", g_option_context_get_help(context, TRUE, NULL));
+      g_print("%s", g_option_context_get_help(context, TRUE, NULL));
       g_option_context_free(context);
       return -1;
     }
@@ -108,7 +108,7 @@ int main(int argc, char **argv)
   // Host key derivation needs one option and four arguments
   if(host && argc != 5)
     {
-      printf("%s", g_option_context_get_help(context, TRUE, NULL));
+      g_print("%s", g_option_context_get_help(context, TRUE, NULL));
       g_option_context_free(context);
       return -1;
     }
@@ -162,10 +162,13 @@ int main(int argc, char **argv)
   else if (host)
     {
       // Arguments
-      gchar *masterKeyFileName = argv[index++];
-      gchar *macAddr = argv[index++];
-      gchar *serial = argv[index++];
-      gchar *hostKeyFileName = argv[index++];
+      gchar *masterKeyFileName = argv[index];
+      index++;
+      gchar *macAddr = argv[index];
+      index++;
+      gchar *serial = argv[index];
+      index++;
+      gchar *hostKeyFileName = argv[index];
 
       gchar masterKey[KEY_LENGTH] = { 0 };
 

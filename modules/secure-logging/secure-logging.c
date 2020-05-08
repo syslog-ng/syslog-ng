@@ -105,7 +105,7 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
       state->badKey = TRUE;
 
       g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
-                  g_option_context_get_help(ctx, TRUE, NULL));
+                  "%s", g_option_context_get_help(ctx, TRUE, NULL));
       g_option_context_free(ctx);
       return FALSE;
     }

@@ -52,8 +52,8 @@ int main(int argc, char *argv[])
 
   GOptionEntry entries[] =
   {
-    { options[index].longname, options[index].shortname, 0, G_OPTION_ARG_CALLBACK, &validFileNameArg, options[index].description, options[index++].type },
-    { options[index].longname, options[index].shortname, 0, G_OPTION_ARG_CALLBACK, &validFileNameArg, options[index].description, options[index++].type },
+    { options[0].longname, options[0].shortname, 0, G_OPTION_ARG_CALLBACK, &validFileNameArg, options[0].description, options[0].type },
+    { options[1].longname, options[1].shortname, 0, G_OPTION_ARG_CALLBACK, &validFileNameArg, options[1].description, options[1].type },
     { NULL }
   };
 
@@ -83,30 +83,35 @@ int main(int argc, char *argv[])
 
   // Assign option arguments
   index = 0;
-  hostkey = options[index++].arg;
-  inputMAC = options[index++].arg;
+  hostkey = options[index].arg;
+  index++;
+  inputMAC = options[index].arg;
 
   // Input and output file arguments
   index = 1;
-  newhostKey = argv[index++];
+  newhostKey = argv[index];
+  index++;
   if(newhostKey == NULL)
     {
       return usage(context, group, NULL);
     }
 
-  outputMAC = argv[index++];
+  outputMAC = argv[index];
+  index++;
   if(outputMAC == NULL)
     {
       return usage(context, group, NULL);
     }
 
-  inputlog = argv[index++];
+  inputlog = argv[index];
+  index++;
   if(!g_file_test(inputlog, G_FILE_TEST_IS_REGULAR))
     {
       return usage(context, group, fileError(inputlog));
     }
 
-  outputlog = argv[index++];
+  outputlog = argv[index];
+  index++;
   if(outputlog == NULL)
     {
       return usage(context, group, NULL);
@@ -124,7 +129,7 @@ int main(int argc, char *argv[])
   // Buffer size arguments if applicable
   if (argc == 6)
     {
-      bufSize = atoi(argv[index++]);
+      bufSize = atoi(argv[index]);
 
       if(bufSize <= MIN_BUF_SIZE || bufSize > MAX_BUF_SIZE)
         {

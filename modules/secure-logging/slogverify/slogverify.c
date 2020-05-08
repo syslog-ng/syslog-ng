@@ -197,11 +197,11 @@ int main(int argc, char *argv[])
 
   GOptionEntry entries[] =
   {
-    { options[index].longname, options[index].shortname, 0, G_OPTION_ARG_NONE, &iterative, options[index++].description, NULL },
-    { options[index].longname, options[index].shortname, 0, G_OPTION_ARG_CALLBACK, &validFileNameArg, options[index].description, options[index++].type },
-    { options[index].longname, options[index].shortname, 0, G_OPTION_ARG_CALLBACK, &validFileNameArg, options[index].description, options[index++].type },
-    { options[index].longname, options[index].shortname, 0, G_OPTION_ARG_CALLBACK, &validFileNameArg, options[index].description, options[index++].type },
-    { options[index].longname, options[index].shortname, 0, G_OPTION_ARG_CALLBACK, &validFileNameArg, options[index].description, options[index++].type },
+    { options[0].longname, options[0].shortname, 0, G_OPTION_ARG_NONE, &iterative, options[0].description, NULL },
+    { options[1].longname, options[1].shortname, 0, G_OPTION_ARG_CALLBACK, &validFileNameArg, options[1].description, options[1].type },
+    { options[2].longname, options[2].shortname, 0, G_OPTION_ARG_CALLBACK, &validFileNameArg, options[2].description, options[2].type },
+    { options[3].longname, options[3].shortname, 0, G_OPTION_ARG_CALLBACK, &validFileNameArg, options[3].description, options[3].type },
+    { options[4].longname, options[4].shortname, 0, G_OPTION_ARG_CALLBACK, &validFileNameArg, options[4].description, options[4].type },
     { NULL }
   };
 
@@ -228,20 +228,26 @@ int main(int argc, char *argv[])
 
   // Assign option arguments
   index = 1;
-  hostKey = options[index++].arg;
-  curMacFile = options[index++].arg;
-  prevHostKey = options[index++].arg;
-  prevMacFile = options[index++].arg;
+  hostKey = options[index].arg;
+  index++;
+  curMacFile = options[index].arg;
+  index++;
+  prevHostKey = options[index].arg;
+  index++;
+  prevMacFile = options[index].arg;
+  index++;
 
   // Input and output file arguments
   index = 1;
-  inputLog = argv[index++];
+  inputLog = argv[index];
+  index++;
   if(!g_file_test(inputLog, G_FILE_TEST_IS_REGULAR))
     {
       return usage(context, group, fileError(inputLog));
     }
 
-  outputLog = argv[index++];
+  outputLog = argv[index];
+  index++;
   if(outputLog == NULL)
     {
       return usage(context, group, NULL);
@@ -250,7 +256,7 @@ int main(int argc, char *argv[])
   // Buffer size arguments if applicable
   if (argc == 4)
     {
-      bufSize = atoi(argv[index++]);
+      bufSize = atoi(argv[index]);
 
       if(bufSize <= MIN_BUF_SIZE || bufSize > MAX_BUF_SIZE)
         {
@@ -258,7 +264,7 @@ int main(int argc, char *argv[])
                     evt_tag_int("Minimum buffer size", MIN_BUF_SIZE), evt_tag_int("Maximum buffer size", MAX_BUF_SIZE));
           g_option_group_unref(group);
           g_option_context_free(context);
-          return 0;
+          return 1;
         }
     }
 
