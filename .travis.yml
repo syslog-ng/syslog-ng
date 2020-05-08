@@ -112,12 +112,12 @@ matrix:
       sudo: required
       addons:
       before_install:
-      - docker pull balabit/syslog-ng-ubuntu-bionic
+      - docker pull balabit/syslog-ng-devshell
       install:
       before_script:
       script:
       - set -e
-      - ./dbld/rules run RUN_COMMAND="cd /source && astyle --version && scripts/style-checker.sh format"
+      - ./dbld/rules run-devshell RUN_COMMAND="cd /source && astyle --version && scripts/style-checker.sh format"
       - git diff --exit-code
 
     - env: B=copyright-check
