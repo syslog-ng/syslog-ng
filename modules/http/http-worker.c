@@ -583,10 +583,18 @@ _flush_on_target(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
 
   HttpResponseReceivedSignalData signal_data =
   {
+    .result = HTTP_RESPONSE_RECEIVED_FORWARD,
     .http_code = http_code
   };
 
   EMIT(owner->super.super.super.super.signal_slot_connector, signal_http_response_received, &signal_data);
+
+  if (signal_data.result == HTTP_RESPONSE_RECEIVED_RESOLVED_ERROR)
+    {
+      msg_debug("HTTP_RESPONSE_RECEIVED_RESOLVED_ERROR, retry",
+                evt_tag_long("http_code", http_code));
+      return LTR_RETRY;
+    }
 
   return _map_http_status_code(self, target->url, http_code);
 }
