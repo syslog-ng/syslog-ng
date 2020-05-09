@@ -27,7 +27,7 @@
 
 #include "syslog-ng.h"
 
-G_STATIC_ASSERT(sizeof(gsize) == sizeof(gpointer));
+G_STATIC_ASSERT(sizeof(gssize) == sizeof(gpointer));
 
 typedef struct
 {
@@ -67,7 +67,7 @@ atomic_gssize_get(atomic_gssize *a)
 static inline void
 atomic_gssize_set(atomic_gssize *a, gssize value)
 {
-  g_atomic_pointer_set(&a->value, (void *) value);
+  g_atomic_pointer_set(&a->value, value);
 }
 
 static inline gsize
