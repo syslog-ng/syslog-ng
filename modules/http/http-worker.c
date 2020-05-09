@@ -173,34 +173,6 @@ _add_header(List *list, const gchar *header, const gchar *value)
 }
 
 static void
-_append_auth_header(List *list, HTTPDestinationDriver *owner)
-{
-  const gchar *auth_header_str = http_auth_header_get_as_string(owner->auth_header);
-  if (!auth_header_str)
-    {
-      if (!http_dd_auth_header_renew(&owner->super.super.super))
-        {
-          msg_warning("WARNING: failed to renew auth header",
-                      evt_tag_str("driver", owner->super.super.super.id),
-                      log_pipe_location_tag(&owner->super.super.super.super));
-          return;
-        }
-      auth_header_str = http_auth_header_get_as_string(owner->auth_header);
-    }
-
-  if (auth_header_str)
-    {
-      list_append(list, auth_header_str);
-    }
-  else
-    {
-      msg_warning("WARNING: auth-header() returned NULL-value",
-                  evt_tag_str("driver", owner->super.super.super.id),
-                  log_pipe_location_tag(&owner->super.super.super.super));
-    }
-}
-
-static void
 _set_error_from_slot_result(const gchar *signal,
                             HttpHeaderRequestSlotResultType result,
                             GError **error)
@@ -280,12 +252,7 @@ _add_common_headers(HTTPDestinationWorker *self)
 static gboolean
 _try_format_request_headers(HTTPDestinationWorker *self, GError **error)
 {
-  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
-
   _add_common_headers(self);
-
-  if (owner->auth_header)
-    _append_auth_header(self->request_headers, owner);
 
   _collect_rest_headers(self, error);
 
@@ -574,13 +541,6 @@ _curl_get_status_code(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *targe
   return TRUE;
 }
 
-static LogThreadedResult
-_renew_header(HTTPDestinationDriver *self)
-{
-  if (!http_dd_auth_header_renew(&self->super.super.super))
-    return LTR_NOT_CONNECTED;
-  return LTR_RETRY;
-}
 
 static LogThreadedResult
 _try_to_custom_map_http_status_to_worker_status(HTTPDestinationWorker *self, const gchar *url, glong http_code)
@@ -627,9 +587,6 @@ _flush_on_target(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
   };
 
   EMIT(owner->super.super.super.super.signal_slot_connector, signal_http_response_received, &signal_data);
-
-  if (http_code == 401 && owner->auth_header)
-    return _renew_header(owner);
 
   return _map_http_status_code(self, target->url, http_code);
 }

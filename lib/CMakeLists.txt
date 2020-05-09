@@ -29,7 +29,6 @@ add_subdirectory(eventlog)
 add_subdirectory(secret-storage)
 add_subdirectory(logthrsource)
 add_subdirectory(logthrdest)
-add_subdirectory(http-auth)
 add_subdirectory(signal-slot-connector)
 
 set(LIB_SUBDIR_HEADERS
@@ -54,7 +53,6 @@ set(LIB_SUBDIR_HEADERS
     ${TIMEUTILS_HEADERS}
     ${LOGTHRDEST_HEADERS}
     ${LOGTHRSOURCE_HEADERS}
-    ${HTTP_AUTH_HEADERS}
     ${SIGNAL_SLOT_CONNECTOR_HEADERS}
     ${CMAKE_CURRENT_BINARY_DIR}/filter/filter-expr-grammar.h
     ${CMAKE_CURRENT_BINARY_DIR}/rewrite/rewrite-expr-grammar.h
@@ -362,7 +360,6 @@ install(FILES ${TRANSPORT_HEADERS} DESTINATION include/syslog-ng/transport)
 install(FILES ${CSV_SCANNER_HEADERS} DESTINATION include/syslog-ng/scanner/csv-scanner)
 install(FILES ${LOGTHRDEST_HEADERS} DESTINATION include/syslog-ng/logthrdest)
 install(FILES ${LOGTHRSOURCE_HEADERS} DESTINATION include/syslog-ng/logthrsource)
-install(FILES ${HTTP_AUTH_HEADERS} DESTINATION include/syslog-ng/http-auth)
 install(FILES ${SIGNAL_SLOT_CONNECTOR_HEADERS} DESTINATION include/syslog-ng/signal-slot-connector)
 
 set(TOOLS
