@@ -45,8 +45,16 @@ struct _HttpHeaderRequestSignalData
   GString *request_body;
 };
 
+typedef enum
+{
+  HTTP_RESPONSE_RECEIVED_RESOLVED_ERROR,
+  HTTP_RESPONSE_RECEIVED_FORWARD,
+  HTTP_RESPONSE_SLOT_PLUGIN_ERROR
+} HttpResponseReceivedSlotResultType;
+
 struct _HttpResponseReceivedSignalData
 {
+  HttpResponseReceivedSlotResultType result;
   glong http_code;
 };
 
