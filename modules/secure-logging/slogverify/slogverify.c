@@ -262,7 +262,6 @@ int main(int argc, char *argv[])
         {
           msg_error("[SLOG] ERROR: Invalid buffer size.", evt_tag_int("Size", bufSize),
                     evt_tag_int("Minimum buffer size", MIN_BUF_SIZE), evt_tag_int("Maximum buffer size", MAX_BUF_SIZE));
-          g_option_group_unref(group);
           g_option_context_free(context);
           return 1;
         }
@@ -275,7 +274,6 @@ int main(int argc, char *argv[])
       if (prevHostKey == NULL || prevMacFile == NULL || curMacFile == NULL)
         {
           printf("%s", g_option_context_get_help(context, TRUE, NULL));
-          g_option_group_unref(group);
           g_option_context_free(context);
           return 1;
         }
@@ -287,7 +285,6 @@ int main(int argc, char *argv[])
       if (hostKey == NULL || curMacFile == NULL)
         {
           printf("%s", g_option_context_get_help(context, TRUE, NULL));
-          g_option_group_unref(group);
           g_option_context_free(context);
           return 1;
         }

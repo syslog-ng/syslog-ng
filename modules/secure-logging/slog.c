@@ -1898,7 +1898,6 @@ int usage(GOptionContext *ctx, GOptionGroup *grp, char *errormsg)
     }
 
   g_print("%s", g_option_context_get_help(ctx, TRUE, NULL));
-  g_option_group_unref(grp);
   g_option_context_free(ctx);
 
   return 1;
