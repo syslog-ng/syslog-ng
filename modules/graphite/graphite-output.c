@@ -75,6 +75,7 @@ tf_graphite_parse_command_line_arguments(TFGraphiteState *self, gint *argc, gcha
 
   success = g_option_context_parse (ctx, argc, argv, &error);
   g_option_context_free (ctx);
+  g_error_free(error);
 
   return success;
 }

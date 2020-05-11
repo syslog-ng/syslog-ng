@@ -435,6 +435,7 @@ _py_string_from_string(const gchar *str, gssize len)
         }
       else
         {
+          g_error_free(error);
           if (len >= 0)
             return PyBytes_FromStringAndSize(str, len);
           else
