@@ -98,6 +98,22 @@ kafka_dest_worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
   return LTR_SUCCESS;
 }
 
+static LogThreadedResult
+kafka_dest_worker_flush(LogThreadedDestWorker *s, LogThreadedFlushMode mode)
+{
+  KafkaDestDriver* owner = (KafkaDestDriver*) s->owner;
+  gint count = rd_kafka_poll(owner->kafka, 0);
+  if (count != 0)
+    {
+      msg_trace("kafka: destination side (worker) rd_kafka_poll() processed some responses",
+                evt_tag_str("topic", owner->topic_name),
+                evt_tag_int("count", count),
+                evt_tag_str("driver", owner->super.super.super.id),
+                log_pipe_location_tag(&owner->super.super.super.super));
+    }
+  return LTR_SUCCESS;
+}
+
 static void
 kafka_dest_worker_free(LogThreadedDestWorker *s)
 {
@@ -114,6 +130,7 @@ kafka_dest_worker_new(LogThreadedDestDriver *o, gint worker_index)
 
   log_threaded_dest_worker_init_instance(&self->super, o, worker_index);
   self->super.insert = kafka_dest_worker_insert;
+  self->super.flush = kafka_dest_worker_flush;
   self->super.free_fn = kafka_dest_worker_free;
 
   self->key = g_string_sized_new(0);

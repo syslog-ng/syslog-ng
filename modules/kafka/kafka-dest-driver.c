@@ -156,12 +156,18 @@ _kafka_delivery_report_cb(rd_kafka_t *rk,
   LogMessage *msg = (LogMessage *) msg_opaque;
   log_msg_unref(msg);
 
-  if (err != RD_KAFKA_RESP_ERR_NO_ERROR)
+  if (err != RD_KAFKA_RESP_ERR_NO_ERROR) {
     // message.send.max.retries exceeded the message was dropped because kafka
     // isn't available.
     stats_counter_inc(self->super.dropped_messages);
-  else
+    msg_trace("kafka: dropped a message",
+              evt_tag_str("topic", self->topic_name),
+              evt_tag_str("error", rd_kafka_err2str(err)),
+              evt_tag_str("driver", self->super.super.super.id),
+              log_pipe_location_tag(&self->super.super.super.super));
+  } else {
     stats_counter_inc(self->super.written_messages);
+  }
 }
 
 static void
@@ -323,7 +329,7 @@ _drain_responses(KafkaDestDriver *self)
   gint count = rd_kafka_poll(self->kafka, 0);
   if (count != 0)
     {
-      msg_trace("kafka: destination side rd_kafka_poll() processed some responses",
+      msg_trace("kafka: destination side (driver) rd_kafka_poll() processed some responses",
                 evt_tag_str("topic", self->topic_name),
                 evt_tag_int("count", count),
                 evt_tag_str("driver", self->super.super.super.id),
