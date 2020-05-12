@@ -55,7 +55,7 @@ _publish_message(KafkaDestWorker *self, LogMessage *msg)
 
   if (rd_kafka_produce(owner->topic,
                        RD_KAFKA_PARTITION_UA,
-                       RD_KAFKA_MSG_F_FREE | RD_KAFKA_MSG_F_BLOCK,
+                       RD_KAFKA_MSG_F_FREE,
                        self->message->str, self->message->len,
                        self->key->len ? self->key->str : NULL, self->key->len,
                        log_msg_ref(msg)) == -1)
