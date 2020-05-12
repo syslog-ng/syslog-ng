@@ -123,7 +123,7 @@ int sLogDecrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *ta
                 unsigned char *iv,
                 unsigned char *plaintext);
 
-void cmac(unsigned char *key, const void *input, guint64 length, unsigned char *out, gsize *outlen);
+void cmac(unsigned char *key, const void *input, gsize length, unsigned char *out, gsize *outlen);
 
 
 gchar *convertToBase64(unsigned char *input, gsize len);
