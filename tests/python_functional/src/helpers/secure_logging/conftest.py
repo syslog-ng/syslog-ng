@@ -78,7 +78,12 @@ class SecureLogging():
         decrypted = Path(tc_parameters.WORKING_DIR, "decrypted.txt")
 
         CommandExecutor().run(
-            [self.slogverify, self.decryption_key, encrypted, self.cmac, decrypted],
+            [
+                self.slogverify,
+                "-k", self.decryption_key,
+                "-m", self.cmac,
+                encrypted, decrypted,
+            ],
             slogverify_stdout,
             slogverify_stderr,
         )
