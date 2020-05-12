@@ -338,23 +338,23 @@ void sLogEntry(guint64 numberOfLogEntries, GString *text, unsigned char *mainKey
       g_free(counterString);
 
 
-      //Write IV, tag, and ciphertext at once
+      // Write IV, tag, and ciphertext at once
       gchar *encodedCtBuf = convertToBase64(ctBuf, IV_LENGTH+AES_BLOCKSIZE+ct_length);
       g_string_append(output, encodedCtBuf);
       g_free(encodedCtBuf);
 
-      //Compute aggregated MAC
-      //Not the first aggregated MAC
+      // Compute aggregated MAC
+      // Not the first aggregated MAC
       if (numberOfLogEntries>0)
         {
           memcpy(bigBuf, inputBigMac, AES_BLOCKSIZE);
 
-          guint64 outlen;
+          gsize outlen;
           cmac(MACKey, bigBuf, AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+ct_length, outputBigMac, &outlen );
         }
-      else   //First aggregated MAC
+      else   // First aggregated MAC
         {
-          guint64 outlen = 0;
+          gsize outlen = 0;
 
           cmac(MACKey, &bigBuf[AES_BLOCKSIZE], IV_LENGTH+AES_BLOCKSIZE+ct_length, outputBigMac, &outlen);
         }
@@ -390,14 +390,14 @@ void deriveKey(unsigned char *dst, guint64 index, guint64 currentKey)
     }
 }
 
-guchar *convertToBin(char *input, guint64 *outLen)
+guchar *convertToBin(char *input, gsize *outLen)
 {
   return g_base64_decode ((const gchar *) input, outLen);
 }
 
-gchar *convertToBase64(unsigned char *input, guint64 len)
+gchar *convertToBase64(unsigned char *input, gsize len)
 {
-  return  g_base64_encode ((const guchar *) input, (gsize) len);
+  return  g_base64_encode ((const guchar *) input, len);
 }
 
 /*
@@ -414,14 +414,16 @@ gchar *convertToBase64(unsigned char *input, guint64 len)
  * If Parameter 5 == 0, there was an error.
  *
  */
-void cmac(unsigned char *key, const void *input, guint64 length, unsigned char *out, guint64 *outlen)
+void cmac(unsigned char *key, const void *input, gsize length, unsigned char *out, gsize *outlen)
 {
   CMAC_CTX *ctx = CMAC_CTX_new();
 
   CMAC_Init(ctx, key, KEY_LENGTH, EVP_aes_256_cbc(), NULL);
   CMAC_Update(ctx, input, length);
 
-  CMAC_Final(ctx, out, outlen);
+  size_t outsize;
+  CMAC_Final(ctx, out, &outsize);
+  *outlen = outsize;
   CMAC_CTX_free(ctx);
 }
 
@@ -465,7 +467,7 @@ void PRF(unsigned char *key, unsigned char *originalInput, guint64 inputLength, 
   // Prepare plaintext
   for (int i=0; i<outputLength/AES_BLOCKSIZE; i++)
     {
-      guint64 outlen;
+      gsize outlen;
       cmac(key, input, AES_BLOCKSIZE, &buf[i*AES_BLOCKSIZE], &outlen);
       input[inputLength-1]++;
     }
@@ -473,7 +475,7 @@ void PRF(unsigned char *key, unsigned char *originalInput, guint64 inputLength, 
   if (outputLength % AES_BLOCKSIZE!=0)
     {
       int index = outputLength/AES_BLOCKSIZE;
-      guint64 outlen;
+      gsize outlen;
       cmac(key, input, AES_BLOCKSIZE, &buf[(index)*AES_BLOCKSIZE], &outlen);
     }
 
@@ -587,7 +589,7 @@ int writeBigMAC(gchar *filename, char *outputBuffer)
       return 0;
     }
 
-  guint64 outlen = 0;
+  gsize outlen = 0;
   status = g_io_channel_write_chars(macfile, outputBuffer, CMAC_LENGTH, &outlen, &error);
   if(status != G_IO_STATUS_NORMAL)
     {
@@ -715,7 +717,7 @@ int readBigMAC(gchar *filename, char *outputBuffer)
       return 0;
     }
 
-  guint64 outlen = 0;
+  gsize outlen = 0;
   unsigned char keyBuffer[KEY_LENGTH];
   bzero(keyBuffer, KEY_LENGTH);
   unsigned char zeroBuffer[CMAC_LENGTH];
@@ -725,7 +727,7 @@ int readBigMAC(gchar *filename, char *outputBuffer)
   unsigned char testOutput[CMAC_LENGTH];
   cmac(keyBuffer, zeroBuffer, CMAC_LENGTH, testOutput, &outlen);
 
-  if (0!=memcmp(testOutput, &macdata[CMAC_LENGTH], CMAC_LENGTH))
+  if (0 != memcmp(testOutput, &macdata[CMAC_LENGTH], CMAC_LENGTH))
     {
       msg_warning("[SLOG] ERROR: MAC computation invalid");
       return 0;
@@ -844,7 +846,7 @@ int readKey(char *destKey, guint64 *destCounter, gchar *keypath)
       return 0;
     }
 
-  guint64 outlen=0;
+  gsize outlen=0;
   unsigned char testOutput[CMAC_LENGTH];
 
   cmac((guchar *)keydata, &(littleEndianCounter), sizeof(littleEndianCounter), testOutput, &outlen);
@@ -1012,7 +1014,7 @@ int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntr
               if (tab != NULL)
                 {
                   char key[CTR_LEN_SIMPLE+1];
-                  snprintf(key, CTR_LEN_SIMPLE+1, "%lu", logEntryOnDisk);
+                  snprintf(key, CTR_LEN_SIMPLE+1, "%"G_GUINT64_FORMAT, logEntryOnDisk);
                   if(g_hash_table_contains(tab, key) == TRUE)
                     {
                       msg_error("[SLOG] ERROR: Duplicate entry detected", evt_tag_long("entry", logEntryOnDisk));
@@ -1051,7 +1053,7 @@ int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntr
           GString *line = input[i];
 
           char *ct = &(line->str)[COUNTER_LENGTH+1];
-          guint64 outputLength;
+          gsize outputLength;
 
           // binBuf = IV + TAG + CT
           guchar *binBuf = convertToBin(ct, &outputLength);
@@ -1071,12 +1073,12 @@ int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntr
               if (pt_length>0)
                 {
                   // Include colon, whitespace, and \0
-                  g_string_append_printf(output[i], "%0*lx: %.*s", CTR_LEN_SIMPLE, logEntryOnDisk, pt_length, pt);
+                  g_string_append_printf(output[i], "%0*"G_GINT64_MODIFIER"x: %.*s", CTR_LEN_SIMPLE, logEntryOnDisk, pt_length, pt);
 
                   if (tab != NULL)
                     {
                       char *key = malloc(CTR_LEN_SIMPLE+1);
-                      snprintf(key, CTR_LEN_SIMPLE+1, "%lu", logEntryOnDisk);
+                      snprintf(key, CTR_LEN_SIMPLE+1, "%"G_GUINT64_FORMAT, logEntryOnDisk);
 
                       if (g_hash_table_insert(tab, key, (gpointer)logEntryOnDisk) == FALSE)
                         {
@@ -1087,9 +1089,9 @@ int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntr
                     }
 
                   // Update BigHMAC
-                  if ((*numberOfLogEntries) == 0UL)   //First aggregated MAC
+                  if ((*numberOfLogEntries) == 0UL)   // First aggregated MAC
                     {
-                      guint64 outlen = 0;
+                      gsize outlen = 0;
 
                       unsigned char MACKey[KEY_LENGTH];
                       deriveMACSubKey(mainKey, MACKey);
@@ -1099,7 +1101,7 @@ int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntr
                   else
                     {
                       // numberOfEntries > 0
-                      guint64 outlen;
+                      gsize outlen;
                       unsigned char bigBuf[AES_BLOCKSIZE+IV_LENGTH+AES_BLOCKSIZE+pt_length];
                       memcpy(bigBuf, cmac_tag, AES_BLOCKSIZE);
                       memcpy(&bigBuf[AES_BLOCKSIZE], binBuf, IV_LENGTH+AES_BLOCKSIZE+pt_length);
@@ -1152,7 +1154,7 @@ int finalizeVerify(guint64 startingEntry, guint64 entriesInFile, unsigned char *
         {
           // Hashtable key
           char key[CTR_LEN_SIMPLE+1];
-          snprintf(key, CTR_LEN_SIMPLE+1, "%lu", i);
+          snprintf(key, CTR_LEN_SIMPLE+1, "%"G_GUINT64_FORMAT, i);
 
           if(g_hash_table_contains(tab, key) == FALSE)
             {
@@ -1954,10 +1956,7 @@ gboolean validFileNameArg(const gchar *option_name, const gchar *value, gpointer
 
   if (!isValid)
     {
-      *error = g_new0(GError, 1);
-      (*error)->domain = G_FILE_ERROR;
-      (*error)->code = G_OPTION_ERROR_FAILED;
-      (*error)->message = fileError(value);
+      *error = g_error_new(G_FILE_ERROR, G_OPTION_ERROR_FAILED, "%s", fileError(value));
     }
 
   g_string_free(currentOption, TRUE);

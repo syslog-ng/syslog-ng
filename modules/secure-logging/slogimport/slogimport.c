@@ -38,7 +38,7 @@ static char *inputMAC = NULL;
 static char *outputMAC = NULL;
 static char *inputlog = NULL;
 static char *outputlog = NULL;
-static int bufSize = DEF_BUF_SIZE;
+static guint64 bufSize = DEF_BUF_SIZE;
 
 int main(int argc, char *argv[])
 {
@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
     }
 
   // Read key and counter
-  size_t counter;
+  guint64 counter;
   int ret = readKey(key, &counter, hostkey);
   if (ret!=1)
     {
@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
   // Buffer size arguments if applicable
   if (argc == 6)
     {
-      bufSize = atoi(argv[index]);
+      sscanf(argv[index], "%"G_GUINT64_FORMAT, &bufSize);
 
       if(bufSize <= MIN_BUF_SIZE || bufSize > MAX_BUF_SIZE)
         {

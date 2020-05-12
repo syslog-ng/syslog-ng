@@ -126,8 +126,8 @@ int sLogDecrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *ta
 void cmac(unsigned char *key, const void *input, guint64 length, unsigned char *out, guint64 *outlen);
 
 
-gchar *convertToBase64(unsigned char *input, guint64 len);
-guchar *convertToBin(char *input, guint64 *outLen);
+gchar *convertToBase64(unsigned char *input, gsize len);
+guchar *convertToBin(char *input, gsize *outLen);
 
 /*
  * Derive key = evolve key multiple times

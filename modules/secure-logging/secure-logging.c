@@ -76,7 +76,6 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
 {
   // Get key filename and store in internal state
   // generate initial BigMAC file
-
   TFSlogState *state = (TFSlogState *) s;
 
   gchar *keypathbuffer = NULL;
@@ -92,20 +91,23 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
 
   GOptionEntry slog_options[] =
   {
-    { "key-file", 'k', 0, G_OPTION_ARG_FILENAME, &keypathbuffer, "Name of the host key file", NULL },
-    { "mac-file", 'm', 0, G_OPTION_ARG_FILENAME, &macpathbuffer, "Name of the MAC file", NULL },
+    { "key-file", 'k', 0, G_OPTION_ARG_FILENAME, &keypathbuffer, "Name of the host key file", "FILE" },
+    { "mac-file", 'm', 0, G_OPTION_ARG_FILENAME, &macpathbuffer, "Name of the MAC file", "FILE" },
     { NULL }
   };
 
-  ctx = g_option_context_new("slog");
+  ctx = g_option_context_new("- Secure logging template");
   g_option_context_add_main_entries(ctx, slog_options, NULL);
 
-  if (!g_option_context_parse(ctx, &argc, &argv, error))
-    {
-      state->badKey = TRUE;
+  GError *argError = NULL;
 
-      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
-                  "%s", g_option_context_get_help(ctx, TRUE, NULL));
+  if (!g_option_context_parse(ctx, &argc, &argv, &argError))
+    {
+      if (argError != NULL)
+        {
+          g_propagate_error (error, argError);
+        }
+
       g_option_context_free(ctx);
       return FALSE;
     }

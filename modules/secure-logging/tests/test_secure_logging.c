@@ -135,7 +135,6 @@ void createLogMessages(gint num, LogMessage **log)
   for(int i = 0; i < num; i++)
     {
       log[i] = create_random_sample_message();
-
     }
 }
 
@@ -179,9 +178,9 @@ GString **verifyMaliciousMessages(GString **templateOutput, size_t totalNumberOf
 
   GHashTable *tab = NULL;
 
-  size_t next = 0;
-  size_t start = 0;
-  size_t numberOfLogEntries = 0UL;
+  guint64 next = 0;
+  guint64 start = 0;
+  guint64 numberOfLogEntries = 0UL;
 
   GString **outputBuffer = (GString **) malloc(sizeof(GString *) * totalNumberOfMessages);
 
@@ -216,9 +215,9 @@ void verifyMessages(GString **templateOutput, LogMessage **original, size_t tota
 
   GHashTable *tab = NULL;
 
-  size_t next = 0;
-  size_t start = 0;
-  size_t numberOfLogEntries = 0UL;
+  guint64 next = 0;
+  guint64 start = 0;
+  guint64 numberOfLogEntries = 0UL;
 
   GString **outputBuffer = (GString **) malloc(sizeof(GString *) * totalNumberOfMessages);
 
@@ -325,9 +324,11 @@ void test_slog_template_format(void)
 {
   cr_log_info("[test_slog_template_format] Start");
 
-  assert_template_failure("$(slog -k keyfile)", "$(slog) parsing failed, invalid number of arguments");
+  assert_template_failure("$(slog -k keyfile)", "[SLOG] ERROR: Template parsing failed. Invalid number of arguments");
   assert_template_failure("$(slog -k keyfile -m)", "Missing argument for -m");
-  assert_template_failure("$(slog -k keyfile -m macfile)", "$(slog) parsing failed, invalid number of arguments");
+  assert_template_failure("$(slog -k -m macfile)", "[SLOG] ERROR: Template parsing failed. Invalid or missing MAC file");
+  assert_template_failure("$(slog -k keyfile -m macfile)",
+                          "[SLOG] ERROR: Template parsing failed. Invalid number of arguments");
   cr_log_info("[test_slog_template_format] Successfully completed");
 }
 
@@ -462,8 +463,22 @@ void test_slog_corrupted_key(void)
   for(size_t i = 0; i < num; i++)
     {
       output[i] = applyTemplate(slog_templ, logs[i]);
+
+      // Create new message from the text content of the original message
       LogMessage *myOut = log_msg_new(output[i]->str, output[i]->len, &test_parse_options);
+
+      // Initialize the new message with value from the original
       log_msg_set_saddr(myOut, logs[i]->saddr);
+      myOut->timestamps[LM_TS_STAMP].ut_sec = logs[i]->timestamps[LM_TS_STAMP].ut_sec;
+      myOut->timestamps[LM_TS_STAMP].ut_usec = logs[i]->timestamps[LM_TS_STAMP].ut_usec;
+      myOut->timestamps[LM_TS_STAMP].ut_gmtoff = logs[i]->timestamps[LM_TS_STAMP].ut_gmtoff;
+      myOut->pri = logs[i]->pri;
+      gssize dlen;
+      log_msg_set_value(myOut, LM_V_HOST, log_msg_get_value(logs[i], LM_V_HOST, &dlen), -1);
+      log_msg_set_value(myOut, LM_V_PROGRAM, log_msg_get_value(logs[i], LM_V_PROGRAM, &dlen), -1);
+      log_msg_set_value(myOut, LM_V_MESSAGE, log_msg_get_value(logs[i], LM_V_MESSAGE, &dlen), -1);
+      log_msg_set_value(myOut, LM_V_PID, log_msg_get_value(logs[i], LM_V_PID, &dlen), -1);
+      log_msg_set_value(myOut, LM_V_MSGID, log_msg_get_value(logs[i], LM_V_MSGID, &dlen), -1);
       assert_log_messages_equal(myOut, logs[i]);
 
       // Release message resources
@@ -515,7 +530,7 @@ void test_slog_malicious_modifications(void)
     {
       entriesToModify[i] = randomNumber(0, num-1);
 
-      //Overwrite with invalid string (invalid with high probability!)
+      // Overwrite with invalid string (invalid with high probability!)
       g_string_overwrite(output[entriesToModify[i]], randomNumber(COUNTER_LENGTH + COLON,
                                                                   (output[entriesToModify[i]]->len)-1), "999999999999999999999999999999999999999999999999999999999999999");
     }
