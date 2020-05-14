@@ -1,4 +1,4 @@
-FROM balabit/syslog-ng-ubuntu-xenial
+FROM balabit/syslog-ng-ubuntu-bionic
 LABEL maintainer="Andras Mitzki <andras.mitzki@balabit.com>, Laszlo Szemere <laszlo.szemere@balabit.com>, Balazs Scheidler <balazs.scheidler@oneidentity.com>"
 
 ENV OS_PLATFORM kira
