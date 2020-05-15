@@ -44,11 +44,6 @@
 // Local parse options
 static MsgFormatOptions test_parse_options;
 
-// Key and MAC for secure logging
-//static guchar masterkey[KEY_LENGTH];
-//static guchar hostkey[KEY_LENGTH];
-//static gchar mac[CMAC_LENGTH];
-
 // Filenames and directory templates
 static gchar *testDirTmpl = "/tmp/slog-XXXXXX/";
 static gchar *hostKeyFile = "host.key";
@@ -60,6 +55,7 @@ static gchar *serial = "CAC7119N43";
 static gchar *prefix = "slog/";
 static gchar *context_id = "test-context-id";
 
+// Data needed to run a test
 typedef struct _testData
 {
   guchar hostKey[KEY_LENGTH];
@@ -378,13 +374,27 @@ void corruptKey(TestData *testData)
 
   guint64 outlen = 0;
 
+  int buflen = KEY_LENGTH + CMAC_LENGTH + sizeof(guint64);
+
+  gchar data[buflen];
+
+  // Overwrite the first 8 byte of the key with random values
+  for(int i = 0; i < buflen; i++)
+    {
+      data[i] = randomNumber(1, 128);
+    }
+
+  // Overwrite the first 8 byte of the key with random values
   for(int i = 0; i < 8; i++)
     {
       testData->hostKey[i] = randomNumber(1, 128);
     }
 
+  // Copy the corrupted key to the buffer
+  memcpy(data, testData->hostKey, KEY_LENGTH);
+
   // Write garbage to key file
-  status = g_io_channel_write_chars(keyfile, (gchar *)testData->hostKey, KEY_LENGTH, &outlen, &error);
+  status = g_io_channel_write_chars(keyfile, data, buflen, &outlen, &error);
 
   cr_assert(status == G_IO_STATUS_NORMAL, "Unable to write updated key to file %s", testData->keyFile->str);
 

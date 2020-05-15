@@ -807,7 +807,7 @@ int readKey(char *destKey, guint64 *destCounter, gchar *keypath)
 
   if (key_bytes_read!=KEY_LENGTH+CMAC_LENGTH)
     {
-      msg_error("[SLOG] ERROR: Key file found to be invalid while reading key with CMAC");
+      msg_error("[SLOG] ERROR: Invalid key file. Missing CMAC");
 
       status = g_io_channel_shutdown(keyfile, TRUE, &myError);
       g_io_channel_unref(keyfile);
@@ -823,7 +823,7 @@ int readKey(char *destKey, guint64 *destCounter, gchar *keypath)
                                    &myError);
   if (status != G_IO_STATUS_NORMAL)
     {
-      cond_msg_error(myError, "[SLOG] ERROR: Cannot read from key file");
+      cond_msg_error(myError, "[SLOG] ERROR: Cannot read counter from key file");
 
       g_clear_error(&myError);
 
@@ -853,7 +853,7 @@ int readKey(char *destKey, guint64 *destCounter, gchar *keypath)
 
   if (0!=memcmp(testOutput, &keydata[KEY_LENGTH], CMAC_LENGTH))
     {
-      msg_warning("[SLOG] ERROR: Host key corrupted. CMAC in key file invalid");
+      msg_warning("[SLOG] ERROR: Host key corrupted. CMAC in key file not matching");
       return 0;
     }
 
