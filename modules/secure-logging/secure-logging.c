@@ -81,6 +81,7 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
   gchar *keypathbuffer = NULL;
   gchar *macpathbuffer = NULL;
   GOptionContext *ctx;
+  GOptionGroup *grp;
 
   if ((mlock(state->key, KEY_LENGTH)!=0)||(mlock(state->bigMAC, CMAC_LENGTH)!=0))
     {
@@ -89,15 +90,25 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
 
   state->badKey = FALSE;
 
+  Options options[] =
+  {
+    { "key-file", 'k', "Name of the host key file", "FILE", NULL },
+    { "mac-file", 'm', "Name of the MAC file", "FILE", NULL },
+    { NULL }
+  };
+
   GOptionEntry slog_options[] =
   {
-    { "key-file", 'k', 0, G_OPTION_ARG_FILENAME, &keypathbuffer, "Name of the host key file", "FILE" },
-    { "mac-file", 'm', 0, G_OPTION_ARG_FILENAME, &macpathbuffer, "Name of the MAC file", "FILE" },
+    { options[0].longname, options[0].shortname, 0, G_OPTION_ARG_CALLBACK, &validFileNameArg, options[0].description, options[0].type },
+    { options[1].longname, options[1].shortname, 0, G_OPTION_ARG_FILENAME, &macpathbuffer, options[1].description, options[1].type },
     { NULL }
   };
 
   ctx = g_option_context_new("- Secure logging template");
-  g_option_context_add_main_entries(ctx, slog_options, NULL);
+  grp = g_option_group_new("Basic options", "Basic template options", "basic", &options, NULL);
+
+  g_option_group_add_entries(grp, slog_options);
+  g_option_context_set_main_group(ctx, grp);
 
   GError *argError = NULL;
 
@@ -120,6 +131,8 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
       g_option_context_free(ctx);
       return FALSE;
     }
+
+  keypathbuffer = options[0].arg;
 
   if(keypathbuffer == NULL)
     {

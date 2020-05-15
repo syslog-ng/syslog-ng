@@ -853,7 +853,7 @@ int readKey(char *destKey, guint64 *destCounter, gchar *keypath)
 
   if (0!=memcmp(testOutput, &keydata[KEY_LENGTH], CMAC_LENGTH))
     {
-      msg_warning("[SLOG] ERROR: $(slog) parsing failed, CMAC in key file invalid");
+      msg_warning("[SLOG] ERROR: Host key corrupted. CMAC in key file invalid");
       return 0;
     }
 
@@ -862,8 +862,6 @@ int readKey(char *destKey, guint64 *destCounter, gchar *keypath)
 
   return 1;
 }
-
-
 
 /*
  * Write key to file
