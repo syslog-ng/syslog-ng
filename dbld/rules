@@ -161,7 +161,10 @@ release: validate-release
 	# the order of these is important, so invoke ourselves recursively
 	# instead of using make dependencies, which can be reordered in parallel builds
 
+	ARTIFACT_DIR=$(RELEASE_DIR)/$(VERSION) && \
+	rm -rf "$$ARTIFACT_DIR" && mkdir -p "$$ARTIFACT_DIR" && rm -rf $(TARBALL) && \
 	$(DBLD_RULES) MODE=release VERSION=$(VERSION) pkg-tarball && \
+	echo "Building the release was successful, artifacts stored in $$ARTIFACT_DIR" && \
 	$(DBLD_RULES) MODE=release VERSION=$(VERSION) tag-release
 
 tag-release:

@@ -22,9 +22,11 @@ function prepare_source() {
 }
 
 function capture_rpms() {
-	mv $RPMBUILD/RPMS/*/*${VERSION}*.rpm /build/${OS_PLATFORM}
-	mv $RPMBUILD/SRPMS/*${VERSION}*.rpm /build/${OS_PLATFORM}
-	echo "Your rpms are in /build/${OS_PLATFORM}, also available on the host in \$(top_srcdir)/dbld/build/${OS_PLATFORM}"
+    mv $RPMBUILD/RPMS/*/*${VERSION}*.rpm /build/${OS_PLATFORM}
+    mv $RPMBUILD/SRPMS/*${VERSION}*.rpm /build/${OS_PLATFORM}
+    echo "Your rpms are in /build/${OS_PLATFORM}, also available on the host in \$(top_srcdir)/dbld/build/${OS_PLATFORM}"
+    capture_artifacts /build/${OS_PLATFORM}/*.rpm
+
 }
 
 cd /build

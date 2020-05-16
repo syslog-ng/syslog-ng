@@ -21,3 +21,5 @@ echo ${VERSION} > VERSION
 
 cd ..
 tar cfz $SYSLOGNG_TARBALL $SYSLOGNG_DIR
+
+capture_artifacts $SYSLOGNG_TARBALL
