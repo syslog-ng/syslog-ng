@@ -19,7 +19,7 @@ DEFAULT_DEB_IMAGE=$(DEFAULT_IMAGE)
 DEFAULT_RPM_IMAGE=centos-7
 DOCKER=docker
 MODE ?= snapshot
-VERSION=$(shell MODE=${MODE} scripts/version.sh)
+VERSION ?= $(shell MODE=${MODE} scripts/version.sh)
 DOCKER_RUN_ARGS=-e USER_NAME_ON_HOST=$(shell whoami)	\
         --network=host --privileged \
 	--ulimit nofile=1024:1024 \
@@ -43,6 +43,7 @@ BUILD_DIR=$(DBLD_DIR)/build
 RELEASE_DIR=$(DBLD_DIR)/release
 TARBALL=$(BUILD_DIR)/syslog-ng-$(VERSION).tar.gz
 GIT=$(shell which git || echo false)
+GIT_RELEASE_TAG=syslog-ng-$(VERSION)
 CONFIGURE_OPTS=--enable-debug --enable-manpages --with-python=2 --prefix=/install $(CONFIGURE_ADD)
 DBLD_RULES=$(MAKE) --no-print-directory -f $(DBLD_DIR)/rules
 
@@ -79,7 +80,7 @@ help:
 	@echo "  root-login: start a 2nd shell (as root) alongside an already running one"
 	@echo "  tarball: generate a tarball in a controlled environment (e.g. docker)"
 	@echo "  pkg-tarball: generate a tarball that includes deb/rpm packaging files"
-	@echo "  release: generate a release tarball/deb package in a controlled environment (e.g. docker)"
+	@echo "  release VERSION=x.y.z: generate a release tarball/deb package in a controlled environment (e.g. docker)"
 	@echo ""
 	@echo "Notable Make variables:"
 	@echo "  CONFIGURE_ADD -- add this to the configure command line in bootstrap"
@@ -130,9 +131,29 @@ rpm: rpm-$(DEFAULT_RPM_IMAGE)
 rpm-%: pkg-tarball
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i  balabit/syslog-ng-$* /dbld/rpm
 
+validate-release:
+	@if [ "`cat VERSION`" != "$(VERSION)" ]; then \
+		echo "The VERSION file in the root of the source tree does not have the version number to be released $(VERSION). Please commit a version bump change first."; \
+		exit 1; \
+	fi;
+	@if $(GIT) rev-parse --verify -q "$(GIT_RELEASE_TAG)" > /dev/null; then \
+		echo "Your git tree already has $(GIT_RELEASE_TAG), this might indicate a duplicate release, please remove that first."; \
+		exit 1; \
+	fi
+	@if ! $(GIT) diff-index --quiet HEAD; then \
+		echo "Your source tree has changed, MODE=release requires a clean tree."; \
+		exit 1; \
+	fi
 
-release: MODE=release
-release: deb
+release: validate-release
+	# the order of these is important, so invoke ourselves recursively
+	# instead of using make dependencies, which can be reordered in parallel builds
+
+	$(DBLD_RULES) MODE=release VERSION=$(VERSION) pkg-tarball && \
+	$(DBLD_RULES) MODE=release VERSION=$(VERSION) tag-release
+
+tag-release:
+	$(GIT) tag $(GIT_RELEASE_TAG)
 
 clean:
 	rm -rf $(BUILD_DIR)/*

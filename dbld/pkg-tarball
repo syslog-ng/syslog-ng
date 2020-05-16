@@ -1,19 +1,13 @@
 #!/bin/bash
 
+# MODE is passed via the environment
+
 . /dbld/functions.sh
 
 cd /source
 
-MODE=$1
 SYSLOGNG_DIR=syslog-ng-${VERSION}
 SYSLOGNG_TARBALL=${SYSLOGNG_DIR}.tar.gz
-
-if [ $MODE = "release" ]; then
-    if ! git diff-index --quiet HEAD; then
-            echo "Your source tree has changed, you can't generate a release tarball this way."
-            exit 1
-    fi
-fi
 
 cd /build
 tar xfz $SYSLOGNG_TARBALL
