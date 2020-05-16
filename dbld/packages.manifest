@@ -35,6 +35,7 @@ dh-exec                         [debian, ubuntu]
 dh-systemd                      [debian, ubuntu]
 dpkg-dev                        [debian, ubuntu]
 equivs                          [debian, ubuntu]
+libdistro-info-perl		[debian, ubuntu]
 make                            [centos, fedora]
 rpm-build                       [centos, fedora]
 

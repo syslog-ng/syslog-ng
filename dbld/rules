@@ -80,6 +80,7 @@ help:
 	@echo "  root-login: start a 2nd shell (as root) alongside an already running one"
 	@echo "  tarball: generate a tarball in a controlled environment (e.g. docker)"
 	@echo "  pkg-tarball: generate a tarball that includes deb/rpm packaging files"
+	@echo "  prepare-release VERSION=x.y.z: prepare the source tree for release, does not commit"
 	@echo "  release VERSION=x.y.z: generate a release tarball/deb package in a controlled environment (e.g. docker)"
 	@echo ""
 	@echo "Notable Make variables:"
@@ -143,9 +144,12 @@ validate-version-for-release:
 		exit 1; \
 	fi
 
+prepare-release: validate-tree-clean validate-version-for-release
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i  balabit/syslog-ng-$(TARBALL_IMAGE) /dbld/prepare-release $(VERSION)
+
 validate-release: validate-tree-clean validate-version-for-release
 	@if [ "`cat VERSION`" != "$(VERSION)" ]; then \
-		echo "The VERSION file in the root of the source tree does not have the version number to be released $(VERSION). Please commit a version bump change first."; \
+		echo "The VERSION file in the root of the source tree does not have the version number to be released $(VERSION). Please commit a version bump change first (or use prepare-release)."; \
 		exit 1; \
 	fi;
 	@if $(GIT) rev-parse --verify -q "$(GIT_RELEASE_TAG)" > /dev/null; then \
