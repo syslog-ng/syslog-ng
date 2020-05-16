@@ -105,7 +105,7 @@ tarball-%: setup
 		echo "Rebuilding, because these contents have changed since the tarball" && \
 		cat $(BUILD_DIR)/tarball-changed-files.txt && \
 		echo "Git status follows:" && \
-		$(GIT) status && \
+		( $(GIT) status || echo "Git not found..." ) && \
 		$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i balabit/syslog-ng-$* /dbld/tarball; \
 	fi
 
@@ -149,7 +149,7 @@ image-kira: image-ubuntu-bionic
 image-devshell: image-ubuntu-focal
 image-%:
 	$(DBLD_DIR)/prepare-image-build $* && \
-        $(DOCKER) build $(DOCKER_BUILD_ARGS) --build-arg=OS_PLATFORM=$* --build-arg=COMMIT=$$($(GIT) rev-parse --short HEAD) --network=host -t balabit/syslog-ng-$* -f $(DBLD_DIR)/images/$*.dockerfile $(DBLD_DIR)
+        $(DOCKER) build $(DOCKER_BUILD_ARGS) --build-arg=OS_PLATFORM=$* --build-arg=COMMIT=$$($(GIT) rev-parse --short HEAD || echo "") --network=host -t balabit/syslog-ng-$* -f $(DBLD_DIR)/images/$*.dockerfile $(DBLD_DIR)
 
 pull-images: $(foreach image,$(BUILDER_IMAGES), pull-image-$(image))
 pull-image: pull-image-$(DEFAULT_IMAGE)
