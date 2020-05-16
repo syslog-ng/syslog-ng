@@ -160,13 +160,14 @@ pull-image-%:
 	$(DOCKER) pull balabit/syslog-ng-$*
 
 cache-image-%:
-	IMAGE=$$(docker images -q balabit/syslog-ng-$*:latest | head -1);						\
-	if [ "$$IMAGE" = "" ]; then 											\
+	@IMAGE=balabit/syslog-ng-$*:latest;										\
+	IMAGE_ID=$$(docker images -q $$IMAGE | head -1);								\
+	if [ "$$IMAGE_ID" = "" ]; then 											\
 		$(MAKE) -f $(DBLD_DIR)/rules pull-image-$*;								\
 	fi;														\
-	IMAGE=$$(docker images -q balabit/syslog-ng-$*:latest | head -1);						\
-	if [ "$$IMAGE" != "" ]; then 											\
-		image_commit=$$(docker inspect  --format '{{ index .Config.Labels "COMMIT"}}' $$IMAGE);			\
+	IMAGE_ID=$$(docker images -q $$IMAGE | head -1);								\
+	if [ "$$IMAGE_ID" != "" ]; then 										\
+		image_commit=$$(docker inspect  --format '{{ index .Config.Labels "COMMIT"}}' $$IMAGE_ID);		\
 		dbld_changes=$$( 											\
 			($(GIT) cat-file -e $${image_commit:-NO_COMMIT_LABEL_IN_DBLD_IMAGE}^{commit} 			\
 				&& $(GIT) diff $${image_commit} -- dbld | wc -l						\
@@ -175,8 +176,9 @@ cache-image-%:
 	else														\
 		dbld_changes=1; 											\
 	fi;														\
-	if [ "$${dbld_changes}" -gt 0 ]; then									\
-		echo "$IMAGE: triggering rebuild, as dbld directory changed since the build of the image, or the cached image has no COMMIT label, or couldn't fetch from dockerhub" &&	\
+	if [ "$${dbld_changes}" -gt 0 ]; then										\
+		echo "Triggering rebuild of $$IMAGE, as dbld directory changed since the build of the image, or the "	\
+			"cached image has no COMMIT label, or couldn't fetch from dockerhub or couldn't find git" &&	\
 		$(MAKE) -f $(DBLD_DIR)/rules image-$*;									\
 	else 														\
 		echo "DBLD version in image matches, not initiating rebuild...";					\
