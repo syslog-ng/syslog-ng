@@ -44,6 +44,7 @@ RELEASE_DIR=$(DBLD_DIR)/release
 TARBALL=$(BUILD_DIR)/syslog-ng-$(VERSION).tar.gz
 GIT=$(shell which git || echo false)
 CONFIGURE_OPTS=--enable-debug --enable-manpages --with-python=2 --prefix=/install $(CONFIGURE_ADD)
+DBLD_RULES=$(MAKE) --no-print-directory -f $(DBLD_DIR)/rules
 
 DOCKER_SHELL=$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti balabit/syslog-ng-$* /dbld/shell
 
@@ -163,7 +164,7 @@ cache-image-%:
 	@IMAGE=balabit/syslog-ng-$*:latest;										\
 	IMAGE_ID=$$(docker images -q $$IMAGE | head -1);								\
 	if [ "$$IMAGE_ID" = "" ]; then 											\
-		$(MAKE) -f $(DBLD_DIR)/rules pull-image-$*;								\
+		$(DBLD_RULES) pull-image-$*;										\
 	fi;														\
 	IMAGE_ID=$$(docker images -q $$IMAGE | head -1);								\
 	if [ "$$IMAGE_ID" != "" ]; then 										\
@@ -179,7 +180,7 @@ cache-image-%:
 	if [ "$${dbld_changes}" -gt 0 ]; then										\
 		echo "Triggering rebuild of $$IMAGE, as dbld directory changed since the build of the image, or the "	\
 			"cached image has no COMMIT label, or couldn't fetch from dockerhub or couldn't find git" &&	\
-		$(MAKE) -f $(DBLD_DIR)/rules image-$*;									\
+		$(DBLD_RULES) image-$*;											\
 	else 														\
 		echo "DBLD version in image matches, not initiating rebuild...";					\
 	fi
