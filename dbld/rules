@@ -164,6 +164,8 @@ release: validate-release
 	ARTIFACT_DIR=$(RELEASE_DIR)/$(VERSION) && \
 	rm -rf "$$ARTIFACT_DIR" && mkdir -p "$$ARTIFACT_DIR" && rm -rf $(TARBALL) && \
 	$(DBLD_RULES) MODE=release VERSION=$(VERSION) pkg-tarball && \
+	$(DBLD_RULES) MODE=release VERSION=$(VERSION) deb && \
+	$(DBLD_RULES) MODE=release VERSION=$(VERSION) rpm && \
 	echo "Building the release was successful, artifacts stored in $$ARTIFACT_DIR" && \
 	$(DBLD_RULES) MODE=release VERSION=$(VERSION) tag-release
 
