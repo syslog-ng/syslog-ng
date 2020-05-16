@@ -137,7 +137,13 @@ validate-tree-clean:
 		exit 1; \
 	fi
 
-validate-release: validate-tree-clean
+validate-version-for-release:
+	@if [ "$$(echo $(VERSION) | sed -e 's/^[0-9]\+\.[0-9]\+.[0-9]\+//')" != "" ]; then \
+		echo "The version number you specified $(VERSION) is not a valid version for a RELEASE. Please supply one using VERSION= via the command line"; \
+		exit 1; \
+	fi
+
+validate-release: validate-tree-clean validate-version-for-release
 	@if [ "`cat VERSION`" != "$(VERSION)" ]; then \
 		echo "The VERSION file in the root of the source tree does not have the version number to be released $(VERSION). Please commit a version bump change first."; \
 		exit 1; \
