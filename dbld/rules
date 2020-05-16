@@ -131,17 +131,19 @@ rpm: rpm-$(DEFAULT_RPM_IMAGE)
 rpm-%: pkg-tarball
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i  balabit/syslog-ng-$* /dbld/rpm
 
-validate-release:
+validate-tree-clean:
+	@if ! $(GIT) diff-index --quiet HEAD; then \
+		echo "Your source tree has changed, this operation requires a clean git tree."; \
+		exit 1; \
+	fi
+
+validate-release: validate-tree-clean
 	@if [ "`cat VERSION`" != "$(VERSION)" ]; then \
 		echo "The VERSION file in the root of the source tree does not have the version number to be released $(VERSION). Please commit a version bump change first."; \
 		exit 1; \
 	fi;
 	@if $(GIT) rev-parse --verify -q "$(GIT_RELEASE_TAG)" > /dev/null; then \
 		echo "Your git tree already has $(GIT_RELEASE_TAG), this might indicate a duplicate release, please remove that first."; \
-		exit 1; \
-	fi
-	@if ! $(GIT) diff-index --quiet HEAD; then \
-		echo "Your source tree has changed, MODE=release requires a clean tree."; \
 		exit 1; \
 	fi
 
