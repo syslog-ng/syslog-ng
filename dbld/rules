@@ -115,7 +115,7 @@ tarball-%: setup
 
 pkg-tarball: pkg-tarball-$(TARBALL_IMAGE)
 pkg-tarball-%: tarball-%
-	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i balabit/syslog-ng-$* /dbld/pkg-tarball $(MODE)
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i balabit/syslog-ng-$* /dbld/pkg-tarball
 
 package: package-$(DEFAULT_IMAGE)
 package-%: pkg-tarball
