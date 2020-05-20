@@ -33,9 +33,9 @@ debian-testing		python3,nojava
 debian-sid		python3,nojava
 
 # on ubuntu, we fetch java from OBS and start using Python3 at focal onwards.
-ubuntu-xenial		python2,nokafka
-ubuntu-bionic		python2
-ubuntu-eoan		python2
+ubuntu-xenial		python2,nokafka,criterion
+ubuntu-bionic		python2,criterion
+ubuntu-eoan		python2,criterion
 ubuntu-focal		python3
 
 centos-6		python2,nokafka,nomongodb		CFLAGS=-D__be16=guint16,PYTHON_LIBS=-lpython2.6,PYTHON_CFLAGS=-I/usr/include/python2.6
