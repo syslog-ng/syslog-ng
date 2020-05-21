@@ -22,11 +22,13 @@
  */
 
 #include <criterion/criterion.h>
+#include <criterion/parameterized.h>
 
 #include "libtest/cr_template.h"
 #include "apphook.h"
 #include "plugin.h"
 #include "cfg.h"
+#include "logmsg/logmsg.h"
 
 void
 setup(void)
@@ -69,4 +71,93 @@ Test(format_welf, test_format_welf_performance)
                     "--exclude .SDATA.* "
                     "..RSTAMP='${R_UNIXTIME}${R_TZ}' "
                     "..TAGS=${TAGS})\n");
+}
+
+typedef struct
+{
+  gchar *name;
+  gchar *value;
+} NVPair;
+
+static LogMessage *
+create_message_with_nvpairs(NVPair *pairs)
+{
+  LogMessage *msg = log_msg_new_empty();
+
+  for (int i = 0; pairs[i].name; i++)
+    {
+      gchar *name = pairs[i].name;
+      gchar *value = pairs[i].value;
+      log_msg_set_value_by_name(msg, name, value, -1);
+    }
+
+  return msg;
+}
+
+static void
+assert_template(LogMessage *msg, const gchar *template_str, const gchar *expected)
+{
+  LogTemplate *template =  log_template_new(configuration, NULL);
+  cr_assert(log_template_compile(template, template_str, NULL));
+  GString *result = g_string_new("");
+
+  log_template_format(template, msg, NULL, 0, 0, NULL, result);
+  cr_assert_str_eq(result->str, expected, "Template (%s) result different: %s != %s",
+                   template_str, result->str, expected);
+
+  g_string_free(result, TRUE);
+  log_template_unref(template);
+}
+
+Test(format_welf, test_space)
+{
+
+  NVPair pairs[] =
+  {
+    {"with_space", "with space"},
+    {NULL, NULL}
+  };
+
+
+  LogMessage *msg = create_message_with_nvpairs(pairs);
+  assert_template(msg, "$(format-welf --key with_space)",
+                  "with_space=\"with space\"");
+  log_msg_unref(msg);
+}
+
+struct test_params
+{
+  gchar *template;
+  gchar *expected;
+};
+
+ParameterizedTestParameters(format_welf, key_and_exclude)
+{
+  static struct test_params params[] =
+  {
+    {"$(format-welf --key prefix.key*)", "prefix.key1=value1 prefix.key2=value2"},
+    {"$(format-welf --key prefix.key1,prefix.key2)", "prefix.key1=value1 prefix.key2=value2"},
+    {"$(format-welf --key prefix.* --exclude prefix.exclude*)", "prefix.key1=value1 prefix.key2=value2"},
+    {"$(format-welf --key prefix.* --exclude prefix.exclude1,prefix.exclude2)", "prefix.key1=value1 prefix.key2=value2"},
+    {"$(format-welf --key prefix.* --exclude prefix.exclude1 --exclude prefix.exclude2)", "prefix.key1=value1 prefix.key2=value2"},
+    {"$(format-welf --key prefix.* --exclude prefix.exclude* --exclude prefix.key2)", "prefix.key1=value1"},
+  };
+
+  return cr_make_param_array(struct test_params, params, sizeof(params)/sizeof(params[0]));
+}
+
+ParameterizedTest(struct test_params *param, format_welf, key_and_exclude)
+{
+  static NVPair pairs[] =
+  {
+    {"prefix.key1", "value1"},
+    {"prefix.key2", "value2"},
+    {"prefix.exclude1", "exclude1"},
+    {"prefix.exclude2", "exclude2"},
+    {NULL, NULL}
+  };
+
+  LogMessage *msg = create_message_with_nvpairs(pairs);
+  assert_template(msg, param->template, param->expected);
+  log_msg_unref(msg);
 }
