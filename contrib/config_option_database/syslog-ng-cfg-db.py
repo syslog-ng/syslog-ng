@@ -140,74 +140,88 @@ def _get_db(rebuild):
     return db
 
 
-def is_option_with_multiple_signature(option):
+def _is_option_with_multiple_signature(option):
     _, arguments_list = option
     return len(arguments_list) > 1
 
 
-def merge_mergeable_options(mergeable_options, options):
+def _merge_arguments(arguments_list):
+    merged_arguments = []
+    for arguments in sorted(arguments_list):
+        if merged_arguments:
+            merged_arguments.append('|')
+        merged_arguments.extend(arguments)
+
+    return merged_arguments
+
+
+def _merge_options(mergeable_options, options):
+    merged_options = options.copy()
+
     for keyword, arguments_list in mergeable_options:
-        merged_arguments = []
-        for arguments in sorted(arguments_list):
-            if merged_arguments:
-                merged_arguments.append('|')
-            merged_arguments.extend(arguments)
+        merged_arguments = _merge_arguments(arguments_list)
 
         for arguments in arguments_list:
-            options.remove([keyword, arguments])
+            merged_options.remove([keyword, arguments])
 
-        options.append([keyword, merged_arguments])
+        merged_options.append([keyword, merged_arguments])
+
+    return merged_options
 
 
-def normalize_options(options):
-    normalized_options = options.copy()
+def _normalize_options(options):
     options_groupped = {}
 
     for keyword, arguments in options:
         if keyword:
             options_groupped.setdefault(keyword, []).append(arguments)
-    mergeable_options = filter(is_option_with_multiple_signature, options_groupped.items())
-    merge_mergeable_options(mergeable_options, normalized_options)
+
+    mergeable_options = filter(_is_option_with_multiple_signature, options_groupped.items())
+    normalized_options = _merge_options(mergeable_options, options)
+
     return sorted(normalized_options)
 
 
-def normalize_arguments(arguments):
+def _normalize_arguments(arguments):
     if not arguments:
         arguments = ['']
     arguments = map(lambda arg: arg if arg else '<empty>', arguments)
+
     return arguments
 
 
-def print_options_helper(block, depth):
+def _print_options_helper(block, depth=1):
     options = block['options']
     blocks = block['blocks']
     indent = '  ' * depth
-    for keyword, arguments in normalize_options(options):
-        arguments = normalize_arguments(arguments)
+
+    for keyword, arguments in _normalize_options(options):
+        arguments = _normalize_arguments(arguments)
         if keyword:
             print(indent + '{}({})'.format(keyword, ' '.join(arguments)))
         else:
             print(indent + '{}'.format(' '.join(arguments)))
+
     for key in sorted(blocks.keys()):
         print(indent + '{}('.format(key))
-        print_options_helper(blocks[key], depth + 1)
+        _print_options_helper(blocks[key], depth + 1)
         print(indent + ')')
 
 
-def print_options(db, context, driver):
+def _print_options(db, context, driver):
     if context not in db:
         print('The context "{}" is not in the database.'.format(context))
-        print_contexts(db)
+        _print_contexts(db)
     elif driver not in db[context]:
         print('The driver "{}" is not in the drivers of context "{}".'.format(driver, context))
-        print_drivers(db, context)
+        _print_drivers(db, context)
     else:
         print('{} {}('.format(context, driver))
-        print_options_helper(db[context][driver], 1)
+        _print_options_helper(db[context][driver])
         print(')')
 
 
-def print_drivers(db, context):
+def _print_drivers(db, context):
     if context in db:
         print('Drivers of context "{}":'.format(context))
         for driver in sorted(db[context]):
@@ -215,10 +229,10 @@ def print_drivers(db, context):
         print('Print the options of DRIVER with `--context {} --driver DRIVER`.'.format(context))
     else:
         print('The context "{}" is not in the database.'.format(context))
-        print_contexts(db)
+        _print_contexts(db)
 
 
-def print_contexts(db):
+def _print_contexts(db):
     print('Valid contexts:')
     for context in sorted(db):
         print('  {}'.format(context))
@@ -231,11 +245,11 @@ def _query(db, args):
     rebuild = args.rebuild
 
     if context and driver:
-        print_options(db, context, driver)
+        _print_options(db, context, driver)
         return
 
     if context and not driver:
-        print_drivers(db, context)
+        _print_drivers(db, context)
         return
 
     if not context and driver:
@@ -243,7 +257,7 @@ def _query(db, args):
         return
 
     if not context and not driver and not rebuild:
-        print_contexts(db)
+        _print_contexts(db)
         return
 
 
