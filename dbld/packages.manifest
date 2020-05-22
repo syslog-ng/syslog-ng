@@ -93,6 +93,14 @@ python3-pip                     [centos, debian, ubuntu]
 python-setuptools               [centos, fedora, debian-stretch, debian-buster, ubuntu-trusty, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan]
 python3-setuptools              [centos, debian, ubuntu]
 
+# libmongoc and libbson packages on various platforms
+# Because we are using fixed version of libmongoc on Bionic, we need to
+# specify non versioned packages on other platforms to continiously support
+
+libbson-dev                 [debian, ubuntu-xenial, ubuntu-eoan]
+libmongoc-dev               [debian, ubuntu-xenial, ubuntu-eoan]
+
+
 #############################################################################
 # syslog-ng module dependencies
 #
@@ -121,6 +129,17 @@ python3-setuptools              [centos, debian, ubuntu]
 librdkafka1=1.0.1-1         [ubuntu-bionic,ubuntu-eoan]
 librdkafka++1=1.0.1-1       [ubuntu-bionic,ubuntu-eoan]
 librdkafka-dev=1.0.1-1      [ubuntu-bionic,ubuntu-eoan]
+
+# libbson* and libmongoc* packages on Ubuntu Bionic:
+#
+# On Bionic there is a cmake building issue with native mongodb packages.
+# To support full featured cmake build on Bionic we need to install newer
+# fixed versioned packages from OBS repository
+
+libbson-1.0=1.15.0-1        [ubuntu-bionic]
+libbson-dev=1.15.0-1        [ubuntu-bionic]
+libmongoc-1.0=1.15.0-1      [ubuntu-bionic]
+libmongoc-dev=1.15.0-1      [ubuntu-bionic]
 
 
 #############################################################################

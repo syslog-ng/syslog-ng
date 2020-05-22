@@ -144,7 +144,7 @@ shell-%: setup
 
 images: $(foreach image,$(IMAGES), image-$(image))
 image: image-$(DEFAULT_IMAGE)
-image-kira: image-ubuntu-xenial
+image-kira: image-ubuntu-bionic
 image-devshell: image-ubuntu-bionic
 image-%:
 	$(DBLD_DIR)/prepare-image-build $* && \
