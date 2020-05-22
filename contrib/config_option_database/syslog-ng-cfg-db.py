@@ -28,7 +28,7 @@ from utils.ConfigOptions import get_driver_options
 from argparse import ArgumentParser
 
 
-def parse_args():
+def _parse_args():
     parser = ArgumentParser()
     parser.add_argument('--context', '-c', type=str, help='e.g.: destination')
     parser.add_argument('--driver', '-d', type=str, help='e.g.: http')
@@ -39,32 +39,32 @@ def parse_args():
     return args
 
 
-def merge_block_stored_as_an_option(keyword, arguments, options, blocks):
+def _merge_block_stored_as_an_option(keyword, arguments, options, blocks):
     options.remove([keyword, arguments])
     if ('', arguments) not in blocks[keyword]['options']:
         blocks[keyword]['options'].append(['', arguments])
 
 
-def merge_blocks_stored_as_options_helper(db_node):
+def _merge_blocks_stored_as_options_helper(db_node):
     options = db_node['options']
     blocks = db_node['blocks']
 
     for keyword, arguments in options.copy():
         if keyword in blocks:
-            merge_block_stored_as_an_option(keyword, arguments, options, blocks)
+            _merge_block_stored_as_an_option(keyword, arguments, options, blocks)
 
     for block in blocks.values():
-        merge_blocks_stored_as_options_helper(block)
+        _merge_blocks_stored_as_options_helper(block)
 
 
-def merge_blocks_stored_as_options(db):
+def _merge_blocks_stored_as_options(db):
     for context in db:
         for driver in db[context]:
-            merge_blocks_stored_as_options_helper(db[context][driver])
+            _merge_blocks_stored_as_options_helper(db[context][driver])
 
 
 def _tweak_db(db):
-    merge_blocks_stored_as_options(db)
+    _merge_blocks_stored_as_options(db)
 
 
 def _get_driver_node(db, context, driver):
@@ -262,7 +262,7 @@ def _query(db, args):
 
 
 def main():
-    args = parse_args()
+    args = _parse_args()
     db = _get_db(rebuild=args.rebuild)
 
     _query(db, args)
