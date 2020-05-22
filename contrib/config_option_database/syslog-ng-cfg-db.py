@@ -63,20 +63,49 @@ def merge_blocks_stored_as_options(db):
             merge_blocks_stored_as_options_helper(db[context][driver])
 
 
-def build_db():
-    db = {}
-    for context, driver, keyword, arguments, parents in get_driver_options():
-        arguments = list(arguments)
-        db.setdefault(context, {})
-        driver_options = {'options': [], 'blocks': {}}
-        for driver_alias in driver.split('/'):
-            db[context].setdefault(driver_alias, driver_options)
-        db_node = db[context][driver_alias]
-        for parent in parents:
-            db_node['blocks'].setdefault(parent, {'options': [], 'blocks': {}})
-            db_node = db_node['blocks'][parent]
-        db_node['options'].append([keyword, arguments])
+def _tweak_db(db):
     merge_blocks_stored_as_options(db)
+
+
+def _get_driver_node(db, context, driver):
+    driver_options = {'options': [], 'blocks': {}}
+
+    for driver_alias in driver.split('/'):
+        db[context].setdefault(driver_alias, driver_options)
+
+    return db[context][driver_alias]
+
+
+def _get_last_parent_node(driver_node, parents):
+    parent_node = driver_node
+
+    for parent in parents:
+        parent_node['blocks'].setdefault(parent, {'options': [], 'blocks': {}})
+        parent_node = parent_node['blocks'][parent]
+
+    return parent_node
+
+
+def _build_db():
+    db = {}
+    options = get_driver_options()
+
+    for option in options:
+        context = option[0]
+        driver = option[1]
+        keyword = option[2]
+        arguments = list(option[3])
+        parents = option[4]
+
+        db.setdefault(context, {})
+
+        driver_node = _get_driver_node(db, context, driver)
+        last_parent_node = _get_last_parent_node(driver_node, parents)
+
+        last_parent_node['options'].append([keyword, arguments])
+
+    _tweak_db(db)
+
     return db
 
 
@@ -103,7 +132,7 @@ def _get_db(rebuild):
     cache_file = _prepare_cache_file()
 
     if rebuild or not cache_file.exists():
-        db = build_db()
+        db = _build_db()
         _save_to_cache(cache_file, db)
     else:
         db = _load_from_cache(cache_file)
