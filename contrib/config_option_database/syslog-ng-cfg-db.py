@@ -225,17 +225,33 @@ def print_contexts(db):
     print('Print the drivers of CONTEXT with `--context CONTEXT`.')
 
 
+def _query(db, args):
+    context = args.context
+    driver = args.driver
+    rebuild = args.rebuild
+
+    if context and driver:
+        print_options(db, context, driver)
+        return
+
+    if context and not driver:
+        print_drivers(db, context)
+        return
+
+    if not context and driver:
+        print('Please define the context of "{}" with `--context CONTEXT`.'.format(driver))
+        return
+
+    if not context and not driver and not rebuild:
+        print_contexts(db)
+        return
+
+
 def main():
     args = parse_args()
     db = _get_db(rebuild=args.rebuild)
-    if args.context and args.driver:
-        print_options(db, args.context, args.driver)
-    elif args.context:
-        print_drivers(db, args.context)
-    elif args.driver:
-        print('Please define the context of "{}" with `--context CONTEXT`.'.format(args.driver))
-    elif not args.rebuild:
-        print_contexts(db)
+
+    _query(db, args)
 
 
 if __name__ == '__main__':
