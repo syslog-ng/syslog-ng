@@ -80,16 +80,34 @@ def build_db():
     return db
 
 
-def get_db(rebuild):
-    cache_file = Path(__file__).parents[0] / '.cache' / 'options.json'
+def _prepare_cache_file():
+    script_dir = Path(__file__).parents[0]
+    cache_file = script_dir / '.cache' / 'options.json'
+
     Path.mkdir(cache_file.parents[0], exist_ok=True)
+
+    return cache_file
+
+
+def _save_to_cache(cache_file, db):
+    with cache_file.open('w') as f:
+        json.dump(db, f, indent=2)
+
+
+def _load_from_cache(cache_file):
+    with cache_file.open() as f:
+        return json.load(f)
+
+
+def _get_db(rebuild):
+    cache_file = _prepare_cache_file()
+
     if rebuild or not cache_file.exists():
         db = build_db()
-        with cache_file.open('w') as f:
-            json.dump(db, f, indent=2)
+        _save_to_cache(cache_file, db)
     else:
-        with cache_file.open() as f:
-            db = json.load(f)
+        db = _load_from_cache(cache_file)
+
     return db
 
 
@@ -180,7 +198,7 @@ def print_contexts(db):
 
 def main():
     args = parse_args()
-    db = get_db(args.rebuild)
+    db = _get_db(rebuild=args.rebuild)
     if args.context and args.driver:
         print_options(db, args.context, args.driver)
     elif args.context:
