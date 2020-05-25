@@ -60,10 +60,11 @@ static gboolean
 _publish_message(KafkaDestWorker *self, LogMessage *msg)
 {
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
+  int block_flag = _is_poller_thread(self) ? 0 : RD_KAFKA_MSG_F_BLOCK;
 
   if (rd_kafka_produce(owner->topic,
                        RD_KAFKA_PARTITION_UA,
-                       RD_KAFKA_MSG_F_FREE | RD_KAFKA_MSG_F_BLOCK,
+                       RD_KAFKA_MSG_F_FREE | block_flag,
                        self->message->str, self->message->len,
                        self->key->len ? self->key->str : NULL, self->key->len,
                        log_msg_ref(msg)) == -1)
