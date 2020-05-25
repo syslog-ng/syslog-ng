@@ -12,16 +12,15 @@ add_library(loggen_helper STATIC ${LOGGEN_HELPER_SOURCE})
 target_include_directories(loggen_helper PUBLIC
   ${CORE_INCLUDE_DIRS}
   ${CMAKE_CURRENT_SOURCE_DIR}
-  ${GLIB_INCLUDE_DIRS}
   ${PROJECT_SOURCE_DIR}/lib
   )
 
 target_link_libraries(
   loggen_helper
   PUBLIC
-  ${GLIB_GMODULE_LIBRARIES}
-  ${GLIB_GTHREAD_LIBRARIES}
-  ${GLIB_LIBRARIES}
+  GLib::GLib
+  GLib::GModule
+  GLib::GThread
   OpenSSL::SSL
   )
 

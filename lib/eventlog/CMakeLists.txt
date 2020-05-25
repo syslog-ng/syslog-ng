@@ -12,13 +12,11 @@ target_include_directories(eventlog
   SYSTEM
   INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
-  PRIVATE
-    ${GLIB_INCLUDE_DIRS}
 )
 
 target_link_libraries(eventlog
   PRIVATE
-    ${GLIB_LIBRARIES}
+    GLib::GLib
 )
 
 install(TARGETS eventlog DESTINATION lib)

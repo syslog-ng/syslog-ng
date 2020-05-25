@@ -296,7 +296,6 @@ bison_target(ParserExprGrammar
 add_flex_bison_dependency(CfgLexer ParserExprGrammar)
 
 set(CORE_INCLUDE_DIRS
-    ${GLIB_INCLUDE_DIRS}
     ${Gettext_INCLUDE_DIR}
     ${IVYKIS_INCLUDE_DIR}
     ${LIBPCRE_INCLUDE_DIRS}
@@ -320,9 +319,9 @@ target_link_libraries(
     syslog-ng
   PUBLIC
     eventlog
-    ${GLIB_GMODULE_LIBRARIES}
-    ${GLIB_GTHREAD_LIBRARIES}
-    ${GLIB_LIBRARIES}
+    GLib::GLib
+    GLib::GThread
+    GLib::GModule
     ${Gettext_LIBRARIES}
     ${IVYKIS_LIBRARY}
     ${LIBPCRE_LIBRARIES}
