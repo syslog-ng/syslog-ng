@@ -157,12 +157,26 @@ kafka_dest_worker_free(LogThreadedDestWorker *s)
   log_threaded_dest_worker_free_method(s);
 }
 
+static gboolean
+_thread_init(LogThreadedDestWorker *s)
+{
+  KafkaDestWorker *self = (KafkaDestWorker *) s;
+  if (_is_poller_thread(self))
+    {
+      KafkaDestDriver *owner = (KafkaDestDriver *) s->owner;
+      s->time_reopen = owner->poll_timeout / 1000;
+    }
+
+  return log_threaded_dest_worker_init_method(s);
+}
+
 LogThreadedDestWorker *
 kafka_dest_worker_new(LogThreadedDestDriver *o, gint worker_index)
 {
   KafkaDestWorker *self = g_new0(KafkaDestWorker, 1);
 
   log_threaded_dest_worker_init_instance(&self->super, o, worker_index);
+  self->super.thread_init = _thread_init;
   self->super.insert = kafka_dest_worker_insert;
   self->super.free_fn = kafka_dest_worker_free;
 
