@@ -217,6 +217,7 @@ log_threaded_dest_driver_flush(LogThreadedDestDriver *self)
 void log_threaded_dest_worker_ack_messages(LogThreadedDestWorker *self, gint batch_size);
 void log_threaded_dest_worker_drop_messages(LogThreadedDestWorker *self, gint batch_size);
 void log_threaded_dest_worker_rewind_messages(LogThreadedDestWorker *self, gint batch_size);
+void log_threaded_dest_worker_wakeup_when_suspended(LogThreadedDestWorker *self);
 gboolean log_threaded_dest_worker_init_method(LogThreadedDestWorker *self);
 void log_threaded_dest_worker_deinit_method(LogThreadedDestWorker *self);
 void log_threaded_dest_worker_init_instance(LogThreadedDestWorker *self,

@@ -581,6 +581,13 @@ _perform_work(gpointer data)
     }
 }
 
+void
+log_threaded_dest_worker_wakeup_when_suspended(LogThreadedDestWorker *self)
+{
+  if (self->suspended)
+    _perform_work(self);
+}
+
 static void
 _flush_timer_cb(gpointer data)
 {
