@@ -310,10 +310,26 @@ log_threaded_source_set_wakeup_func(LogThreadedSourceDriver *self, LogThreadedSo
   self->worker->wakeup = wakeup;
 }
 
+static gboolean
+_is_default_priority_or_facility_set(MsgFormatOptions *parse_options)
+{
+  return parse_options->default_pri != 0xFFFF;
+}
+
+static void
+_apply_default_priority_and_facility(LogThreadedSourceDriver *self, LogMessage *msg)
+{
+  MsgFormatOptions *parse_options = &self->worker_options.parse_options;
+  if (!_is_default_priority_or_facility_set(parse_options))
+    return;
+  msg->pri = parse_options->default_pri;
+}
+
 void
 log_threaded_source_post(LogThreadedSourceDriver *self, LogMessage *msg)
 {
   msg_debug("Incoming log message", evt_tag_str("msg", log_msg_get_value(msg, LM_V_MESSAGE, NULL)));
+  _apply_default_priority_and_facility(self, msg);
   log_source_post(&self->worker->super, msg);
 }
 
