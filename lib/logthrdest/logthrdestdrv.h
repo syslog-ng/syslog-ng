@@ -87,6 +87,7 @@ struct _LogThreadedDestWorker
   gboolean startup_finished;
   gboolean startup_failure;
   GCond *started_up;
+  time_t time_reopen;
 
   gboolean (*thread_init)(LogThreadedDestWorker *s);
   void (*thread_deinit)(LogThreadedDestWorker *s);
