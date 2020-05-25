@@ -37,6 +37,12 @@ typedef struct _KafkaDestWorker
   GString *message;
 } KafkaDestWorker;
 
+static gboolean
+_is_poller_thread(KafkaDestWorker *self)
+{
+  return (self->super.worker_index == 0);
+}
+
 static void
 _format_message_and_key(KafkaDestWorker *self, LogMessage *msg)
 {
@@ -88,7 +94,7 @@ _update_drain_timer(KafkaDestWorker *self)
 {
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
 
-  if (self->super.worker_index != 0)
+  if (!_is_poller_thread(self))
     return;
 
   if (iv_timer_registered(&self->poll_timer))
@@ -107,7 +113,7 @@ _drain_responses(KafkaDestWorker *self)
   /* we are only draining responses in the first worker thread, so all
    * callbacks originate from the same thread and we don't need to
    * synchronize between workers */
-  if (self->super.worker_index != 0)
+  if (!_is_poller_thread(self))
     return;
 
   gint count = rd_kafka_poll(owner->kafka, 0);
