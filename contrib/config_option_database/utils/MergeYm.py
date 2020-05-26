@@ -40,7 +40,7 @@ def merge_grammars(output_filepath):
     declarations = set()
     blocks = r'%%' + '\n'
 
-    for filepath in files[1:]:
+    for filepath in files:
         with filepath.open(encoding='UTF-8') as f:
             in_block = False
             for line in f:
