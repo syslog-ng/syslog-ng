@@ -166,6 +166,16 @@ function install_yum_packages {
     filter_packages_by_platform $DBLD_DIR/packages.manifest | xargs $YUM_INSTALL
 }
 
+function install_pip2_packages {
+    python2 -m pip install --upgrade pip
+    filter_packages_by_platform $DBLD_DIR/pip_packages.manifest | xargs python2 -m pip install --ignore-installed -U
+}
+
+function install_pip3_packages {
+    python3 -m pip install --upgrade pip
+    filter_packages_by_platform $DBLD_DIR/pip_packages.manifest | xargs python3 -m pip install --ignore-installed -U
+}
+
 function install_pip_packages {
     case "${OS_PLATFORM}" in
         centos-6)
