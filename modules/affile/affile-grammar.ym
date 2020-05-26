@@ -176,8 +176,7 @@ source_affile_options
         ;
 
 source_affile_option
-	: KW_FOLLOW_FREQ '(' LL_FLOAT ')'		{ file_reader_options_set_follow_freq(last_file_reader_options, (long) ($3 * 1000)); }
-	| KW_FOLLOW_FREQ '(' nonnegative_integer ')'	{ file_reader_options_set_follow_freq(last_file_reader_options, ($3 * 1000)); }
+	: KW_FOLLOW_FREQ '(' nonnegative_float ')'		{ file_reader_options_set_follow_freq(last_file_reader_options, (long) ($3 * 1000)); }
 	| KW_PAD_SIZE '(' nonnegative_integer ')'	{ last_log_proto_options->pad_size = $3; }
 	| multi_line_option
 	| multi_line_timeout
