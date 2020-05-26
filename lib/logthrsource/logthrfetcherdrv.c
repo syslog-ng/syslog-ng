@@ -24,12 +24,15 @@
 
 #include "logthrfetcherdrv.h"
 #include "messages.h"
+#include "timeutils/misc.h"
+
+#define SEC_TO_MSEC(x) ((x) * 1000)
 
 void
-log_threaded_fetcher_driver_set_fetch_no_data_delay(LogDriver *s, time_t no_data_delay)
+log_threaded_fetcher_driver_set_fetch_no_data_delay(LogDriver *s, gdouble no_data_delay)
 {
   LogThreadedFetcherDriver *self = (LogThreadedFetcherDriver *) s;
-  self->no_data_delay = no_data_delay;
+  self->no_data_delay = (gint64) SEC_TO_MSEC(no_data_delay);
 }
 
 static EVTTAG *
@@ -92,7 +95,7 @@ _start_no_data_timer(LogThreadedFetcherDriver *self)
 {
   iv_validate_now();
   self->no_data_timer.expires  = iv_now;
-  self->no_data_timer.expires.tv_sec += self->no_data_delay;
+  timespec_add_msec(&self->no_data_timer.expires, self->no_data_delay);
   iv_timer_register(&self->no_data_timer);
 }
 
@@ -325,7 +328,7 @@ log_threaded_fetcher_driver_init_method(LogPipe *s)
     self->time_reopen = cfg->time_reopen;
 
   if (self->no_data_delay == -1)
-    self->no_data_delay = cfg->time_reopen;
+    log_threaded_fetcher_driver_set_fetch_no_data_delay(&self->super.super.super, cfg->time_reopen);
 
   return TRUE;
 }

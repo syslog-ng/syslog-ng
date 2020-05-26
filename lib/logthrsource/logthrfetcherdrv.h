@@ -54,7 +54,7 @@ struct _LogThreadedFetcherDriver
 {
   LogThreadedSourceDriver super;
   time_t time_reopen;
-  time_t no_data_delay;
+  gint64 no_data_delay;
   struct iv_task fetch_task;
   struct iv_event wakeup_event;
   struct iv_event shutdown_event;
@@ -77,6 +77,6 @@ gboolean log_threaded_fetcher_driver_init_method(LogPipe *s);
 gboolean log_threaded_fetcher_driver_deinit_method(LogPipe *s);
 void log_threaded_fetcher_driver_free_method(LogPipe *s);
 
-void log_threaded_fetcher_driver_set_fetch_no_data_delay(LogDriver *self, time_t no_data_delay);
+void log_threaded_fetcher_driver_set_fetch_no_data_delay(LogDriver *self, gdouble no_data_delay);
 
 #endif

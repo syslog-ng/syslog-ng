@@ -364,7 +364,7 @@ Test(logthrfetcherdrv, test_no_data)
   s->no_data_first_time = TRUE;
 
   s->num_of_messages_to_generate = 1;
-  s->super.no_data_delay = 1;
+  log_threaded_fetcher_driver_set_fetch_no_data_delay(&s->super.super.super.super, 1);
   s->super.fetch = _fetch_for_no_data;
 
   struct timespec start = {0};

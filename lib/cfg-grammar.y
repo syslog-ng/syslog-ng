@@ -1285,7 +1285,7 @@ threaded_source_driver_option
         ;
 
 threaded_fetcher_driver_option
-        : KW_FETCH_NO_DATA_DELAY '(' nonnegative_integer ')' { log_threaded_fetcher_driver_set_fetch_no_data_delay(last_driver, $3); }
+        : KW_FETCH_NO_DATA_DELAY '(' nonnegative_float ')' { log_threaded_fetcher_driver_set_fetch_no_data_delay(last_driver, $3); }
         ;
 
 threaded_source_driver_option_flags
