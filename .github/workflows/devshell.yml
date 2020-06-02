@@ -1,0 +1,174 @@
+name: CI @ devshell
+
+on: [pull_request, push]
+
+jobs:
+  general:
+    runs-on: ubuntu-18.04
+    container:
+      image: balabit/syslog-ng-devshell:latest
+      env:
+        PYTHONUSERBASE: /github/home/python_packages
+        PATH: /github/home/python_packages/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+        CONFIGURE_FLAGS:
+          --prefix=/github/home/install/syslog-ng
+          --enable-all-modules
+          --with-python=${{ matrix.python }}
+        CMAKE_FLAGS:
+          -DCMAKE_C_FLAGS=-Werror
+          -DCMAKE_INSTALL_PREFIX=/github/home/install/syslog-ng
+          -DPYTHON_VERSION=${{ matrix.python }}
+
+    strategy:
+      matrix:
+        python: [2, 3]
+        build-tool: [autotools, cmake]
+      fail-fast: false
+
+    steps:
+      - name: Checkout syslog-ng source
+        uses: actions/checkout@v1
+
+      - name: autogen.sh
+        if: matrix.build-tool == 'autotools'
+        run: ./autogen.sh
+
+      - name: configure
+        if: matrix.build-tool == 'autotools'
+        run: |
+          mkdir build
+          cd build
+          ../configure $CONFIGURE_FLAGS
+
+      - name: cmake
+        if: matrix.build-tool == 'cmake'
+        run: |
+          mkdir build
+          cd build
+          cmake $CMAKE_FLAGS ..
+
+      - name: make
+        working-directory: ./build
+        run: make V=1 -j $(nproc)
+
+      - name: make check
+        working-directory: ./build
+        run: make V=1 check
+
+      - name: make install
+        working-directory: ./build
+        run: make install
+
+      - name: make func-test
+        working-directory: ./build
+        run: make VERBOSE=1 func-test
+
+      - name: pylib linters
+        working-directory: ./build
+        continue-on-error: true # Fix errors from pylint
+        run: |
+          make python-pep8
+          make python-pylint
+
+      - name: Light
+        working-directory: ./build
+        run: |
+          [ ${{ matrix.build-tool }} = 'cmake' ] && export cmake_build=1
+          make pytest-self-check
+          make pytest-linters
+          make pytest-check
+
+  distcheck:
+    runs-on: ubuntu-18.04
+    container:
+      image: balabit/syslog-ng-devshell:latest
+      env:
+        DISTCHECK_CONFIGURE_FLAGS:
+          CFLAGS=-Werror
+          --prefix=/github/home/install/syslog-ng
+          --with-ivykis=internal
+          --with-jsonc=system
+          --enable-tcp-wrapper
+          --enable-linux-caps
+          --enable-manpages
+          --enable-all-modules
+          --with-python=${{ matrix.python }}
+
+    strategy:
+      matrix:
+        python: [2, 3]
+      fail-fast: false
+
+    steps:
+      - name: Checkout syslog-ng source
+        uses: actions/checkout@v1
+
+      - name: autogen.sh
+        run: ./autogen.sh
+
+      - name: configure
+        run: ./configure $DISTCHECK_CONFIGURE_FLAGS
+
+      - name: distcheck
+        run: |
+          . tests/build-log-cflags-propagation.sh
+          exec_prop_check "make distcheck -j 3 V=1"
+
+  style-check:
+    runs-on: ubuntu-18.04
+    container:
+      image: balabit/syslog-ng-devshell:latest
+
+    steps:
+      - name: Checkout syslog-ng source
+        uses: actions/checkout@v1
+
+      - name: Style check
+        run: |
+          scripts/style-checker.sh format
+          git diff --exit-code > style-problems.diff || (cat style-problems.diff && exit 1)
+
+      - name: "Artifact: style-problems.diff"
+        uses: actions/upload-artifact@v1
+        if: failure()
+        with:
+          name: style-problems.diff
+          path: style-problems.diff
+
+  copyright-check:
+    runs-on: ubuntu-18.04
+    container:
+      image: balabit/syslog-ng-devshell:latest
+      env:
+        COPYRIGHTVERBOSITY: 1
+
+    steps:
+      - name: Checkout syslog-ng source
+        uses: actions/checkout@v1
+
+      - name: Copyright check
+        run: tests/copyright/check.sh . .
+
+      - name: "Artifact: copyright-run.log"
+        uses: actions/upload-artifact@v1
+        if: failure()
+        with:
+          name: copyright-run.log
+          path: copyright-run.log
+
+  commits-check:
+    runs-on: ubuntu-18.04
+    container:
+      image: balabit/syslog-ng-devshell:latest
+
+    steps:
+      - name: Checkout syslog-ng source
+        uses: actions/checkout@v1
+
+      - name: Commits check (Pull request)
+        if: github.event_name == 'pull_request'
+        run: tests/commits/check.sh ${{ github.base_ref }}..${{ github.head_ref }}
+
+      - name: Commits check (Push)
+        if: github.event_name == 'push'
+        run: tests/commits/check.sh
