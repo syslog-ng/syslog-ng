@@ -30,7 +30,6 @@ EXTRA_DIST += \
 	dbld/images/debian-buster.dockerfile \
 	dbld/images/ubuntu-xenial.dockerfile \
 	dbld/images/ubuntu-bionic.dockerfile \
-	dbld/images/ubuntu-eoan.dockerfile \
 	dbld/images/ubuntu-focal.dockerfile \
 	dbld/images/README.md \
 	dbld/README.md
