@@ -84,21 +84,21 @@ automake                    [centos, fedora]
 #
 # We are now using the same version for both.
 
-python-dev                  [debian, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan]
+python-dev                  [debian, ubuntu-xenial, ubuntu-bionic]
 python-devel                [centos, fedora]
 python3-devel               [fedora]
 python3-dev                 [ubuntu-focal]
-python-pip                      [centos, fedora, debian-stretch, debian-buster, ubuntu-trusty, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan]
+python-pip                      [centos, fedora, debian-stretch, debian-buster, ubuntu-trusty, ubuntu-xenial, ubuntu-bionic]
 python3-pip                     [centos, debian, ubuntu]
-python-setuptools               [centos, fedora, debian-stretch, debian-buster, ubuntu-trusty, ubuntu-xenial, ubuntu-bionic, ubuntu-eoan]
+python-setuptools               [centos, fedora, debian-stretch, debian-buster, ubuntu-trusty, ubuntu-xenial, ubuntu-bionic]
 python3-setuptools              [centos, debian, ubuntu]
 
 # libmongoc and libbson packages on various platforms
 # Because we are using fixed version of libmongoc on Bionic, we need to
 # specify non versioned packages on other platforms to continiously support
 
-libbson-dev                 [debian, ubuntu-xenial, ubuntu-eoan]
-libmongoc-dev               [debian, ubuntu-xenial, ubuntu-eoan]
+libbson-dev                 [debian, ubuntu-xenial]
+libmongoc-dev               [debian, ubuntu-xenial]
 
 
 #############################################################################
@@ -112,7 +112,7 @@ libmongoc-dev               [debian, ubuntu-xenial, ubuntu-eoan]
 
 # librdkafka-dev on Ubuntu:
 #
-# We support librdkafka based destination on Ubuntu bionic/eoan even though
+# We support librdkafka based destination on Ubuntu bionic even though
 # it does not have a recent enough librdkafka, the reason is that as of
 # today, our devshell uses bionic and we want to be able to try stuff that
 # we develop in that module.  Later on this support might be dropped as we
@@ -126,9 +126,9 @@ libmongoc-dev               [debian, ubuntu-xenial, ubuntu-eoan]
 # versions. Also, we need to list all recursive dependencies packages as an apt
 # preferences would prevent installation otherwise
 
-librdkafka1=1.0.1-1         [ubuntu-bionic,ubuntu-eoan]
-librdkafka++1=1.0.1-1       [ubuntu-bionic,ubuntu-eoan]
-librdkafka-dev=1.0.1-1      [ubuntu-bionic,ubuntu-eoan]
+librdkafka1=1.0.1-1         [ubuntu-bionic]
+librdkafka++1=1.0.1-1       [ubuntu-bionic]
+librdkafka-dev=1.0.1-1      [ubuntu-bionic]
 
 # libbson* and libmongoc* packages on Ubuntu Bionic:
 #

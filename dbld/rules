@@ -9,7 +9,6 @@ BUILDER_IMAGES=		\
 	debian-sid	\
 	ubuntu-xenial	\
 	ubuntu-bionic \
-	ubuntu-eoan \
 	ubuntu-focal \
 	kira
 
