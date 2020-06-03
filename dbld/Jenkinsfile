@@ -1,7 +1,7 @@
 def jobs = []
 
 if (!params.PLATFORMS)
-    jobs = ["centos-7", "debian-stretch", "debian-buster", "ubuntu-xenial", "ubuntu-bionic", "fedora-30"]
+    jobs = ["centos-7", "debian-stretch", "debian-buster", "ubuntu-xenial", "ubuntu-bionic", "fedora-32"]
 else
     jobs = params.PLATFORMS.split('\n')
 

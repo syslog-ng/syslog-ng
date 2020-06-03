@@ -3,7 +3,7 @@
 BUILDER_IMAGES=		\
 	centos-6 	\
 	centos-7 	\
-	fedora-30	\
+	fedora-32	\
 	debian-stretch	\
 	debian-buster	\
 	debian-sid	\
