@@ -1,2 +1,4 @@
 lib/systemd/system/syslog-ng@.service
 usr/lib/syslog-ng/*/java-modules/dummy.jar
+usr/lib/syslog-ng/syslog-ng/libtest/libsyslog-ng-test.a
+usr/lib/*/pkgconfig/syslog-ng-test.pc

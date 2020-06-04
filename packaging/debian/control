@@ -36,7 +36,8 @@ Build-Depends: debhelper (>= 10~),
                libsnappy-dev,
                libsnmp-dev [linux-any hurd-i386],
                librdkafka-dev (>= 1.0.0) <!sng-nokafka>,
-               openjdk-8-jdk <!nojava>
+               openjdk-8-jdk <!nojava>,
+               gradle (>= 3.5.1~) <!nojava>
 Build-Conflicts: autoconf2.13
 Standards-Version: 4.4.1
 Homepage: https://www.syslog-ng.com/
