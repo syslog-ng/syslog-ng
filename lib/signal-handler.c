@@ -110,6 +110,7 @@ _need_to_save_external_sigaction_handler(gint signum)
   switch (signum)
     {
     case SIGCHLD:
+    case SIGINT:
       return TRUE;
     default:
       return FALSE;
