@@ -21,7 +21,6 @@ RUN /dbld/builddeps install_debian_build_deps
 RUN /dbld/builddeps install_pip_packages
 
 RUN /dbld/builddeps install_criterion
-RUN /dbld/builddeps install_gradle
 RUN /dbld/builddeps install_gosu amd64
 
 VOLUME /source
