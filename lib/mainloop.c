@@ -43,6 +43,7 @@
 #include "scratch-buffers.h"
 #include "timeutils/misc.h"
 #include "stats/stats-control.h"
+#include "signal-handler.h"
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -501,6 +502,7 @@ sig_child_handler(gpointer user_data)
     {
       pid = waitpid(-1, &status, WNOHANG);
       child_manager_sigchild(pid, status);
+      signal_handler_exec_external_handler(SIGCHLD);
     }
   while (pid > 0);
 }
