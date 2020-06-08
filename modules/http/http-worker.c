@@ -174,21 +174,21 @@ _add_header(List *list, const gchar *header, const gchar *value)
 
 static void
 _set_error_from_slot_result(const gchar *signal,
-                            HttpHeaderRequestSlotResultType result,
+                            HttpSlotResultType result,
                             GError **error)
 {
   switch (result)
     {
-    case HTTP_HEADER_REQUEST_SLOT_SUCCESS:
+    case HTTP_SLOT_SUCCESS:
       g_assert(*error == NULL);
       break;
-    case HTTP_HEADER_REQUEST_SLOT_CRITICAL_ERROR:
+    case HTTP_SLOT_CRITICAL_ERROR:
       g_set_error(error, HTTP_HEADER_FORMAT_ERROR,
                   HTTP_HEADER_FORMAT_SLOT_CRITICAL_ERROR,
                   "Critical error during slot execution, signal:%s",
                   signal_http_header_request);
       break;
-    case HTTP_HEADER_REQUEST_SLOT_PLUGIN_ERROR:
+    case HTTP_SLOT_PLUGIN_ERROR:
     default:
       g_set_error(error, HTTP_HEADER_FORMAT_ERROR,
                   HTTP_HEADER_FORMAT_SLOT_NON_CRITICAL_ERROR,
@@ -203,7 +203,7 @@ _collect_rest_headers(HTTPDestinationWorker *self, GError **error)
 {
   HttpHeaderRequestSignalData signal_data =
   {
-    .result = HTTP_HEADER_REQUEST_SLOT_SUCCESS,
+    .result = HTTP_SLOT_SUCCESS,
     .request_headers = self->request_headers,
     .request_body = self->request_body
   };

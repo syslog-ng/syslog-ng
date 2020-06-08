@@ -252,13 +252,13 @@ _append_str_to_list(gpointer data, gpointer user_data)
   list_append(list, data);
 }
 
-static HttpHeaderRequestSlotResultType
+static HttpSlotResultType
 _get_default_error_code(PythonHttpHeaderPlugin *self)
 {
   if (self->mark_errors_as_critical)
-    return HTTP_HEADER_REQUEST_SLOT_CRITICAL_ERROR;
+    return HTTP_SLOT_CRITICAL_ERROR;
 
-  return HTTP_HEADER_REQUEST_SLOT_PLUGIN_ERROR;
+  return HTTP_SLOT_PLUGIN_ERROR;
 }
 
 static void
@@ -322,7 +322,7 @@ _append_headers(PythonHttpHeaderPlugin *self, HttpHeaderRequestSignalData *data)
       goto cleanup;
     }
 
-  data->result = HTTP_HEADER_REQUEST_SLOT_SUCCESS;
+  data->result = HTTP_SLOT_SUCCESS;
 
 cleanup:
   Py_XDECREF(py_args);
