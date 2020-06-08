@@ -180,6 +180,7 @@ _set_error_from_slot_result(const gchar *signal,
   switch (result)
     {
     case HTTP_SLOT_SUCCESS:
+    case HTTP_SLOT_RESOLVED:
       g_assert(*error == NULL);
       break;
     case HTTP_SLOT_CRITICAL_ERROR:
@@ -583,15 +584,15 @@ _flush_on_target(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
 
   HttpResponseReceivedSignalData signal_data =
   {
-    .result = HTTP_RESPONSE_RECEIVED_FORWARD,
+    .result = HTTP_SLOT_SUCCESS,
     .http_code = http_code
   };
 
   EMIT(owner->super.super.super.super.signal_slot_connector, signal_http_response_received, &signal_data);
 
-  if (signal_data.result == HTTP_RESPONSE_RECEIVED_RESOLVED_ERROR)
+  if (signal_data.result == HTTP_SLOT_RESOLVED)
     {
-      msg_debug("HTTP_RESPONSE_RECEIVED_RESOLVED_ERROR, retry",
+      msg_debug("HTTP error resolved issue, retry",
                 evt_tag_long("http_code", http_code));
       return LTR_RETRY;
     }
