@@ -122,9 +122,6 @@ _save_external_sigaction_handler(gint signum, const struct sigaction *external_s
   if (!external_sigaction)
     return;
 
-  if (external_sigaction->sa_handler == SIG_DFL)
-    return;
-
   _set_external_sigaction(signum, external_sigaction);
 }
 
