@@ -25,6 +25,7 @@
 #include "syslog-ng.h"
 
 #include <signal.h>
+#include <string.h>
 
 #if defined(NSIG)
 #  define SIGNAL_HANDLER_ARRAY_SIZE NSIG
@@ -34,21 +35,21 @@
 #  define SIGNAL_HANDLER_ARRAY_SIZE 128
 #endif
 
-static const struct sigaction *external_sigactions[SIGNAL_HANDLER_ARRAY_SIZE];
+static struct sigaction external_sigactions[SIGNAL_HANDLER_ARRAY_SIZE];
 static gboolean internal_sigaction_registered[SIGNAL_HANDLER_ARRAY_SIZE];
 
 static const struct sigaction *
 _get_external_sigaction(gint signum)
 {
   g_assert(signum < SIGNAL_HANDLER_ARRAY_SIZE);
-  return external_sigactions[signum];
+  return &external_sigactions[signum];
 }
 
 static void
 _set_external_sigaction(gint signum, const struct sigaction *external_sigaction)
 {
   g_assert(signum < SIGNAL_HANDLER_ARRAY_SIZE);
-  external_sigactions[signum] = external_sigaction;
+  memcpy(&external_sigactions[signum], external_sigaction, sizeof(struct sigaction));
 }
 
 static gboolean
@@ -68,11 +69,9 @@ _set_internal_sigaction_registered(gint signum)
 void
 signal_handler_exec_external_handler(gint signum)
 {
-  g_assert(signum < SIGNAL_HANDLER_ARRAY_SIZE);
-
   const struct sigaction *external_sigaction = _get_external_sigaction(signum);
 
-  if (!external_sigaction || !external_sigaction->sa_handler)
+  if (!external_sigaction->sa_handler)
     return;
 
   external_sigaction->sa_handler(signum);
@@ -120,7 +119,10 @@ _need_to_save_external_sigaction_handler(gint signum)
 static void
 _save_external_sigaction_handler(gint signum, const struct sigaction *external_sigaction)
 {
-  if (external_sigaction && external_sigaction->sa_handler == SIG_DFL)
+  if (!external_sigaction)
+    return;
+
+  if (external_sigaction->sa_handler == SIG_DFL)
     return;
 
   _set_external_sigaction(signum, external_sigaction);
