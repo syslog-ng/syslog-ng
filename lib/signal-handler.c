@@ -125,6 +125,15 @@ _save_external_sigaction_handler(gint signum, const struct sigaction *external_s
   _set_external_sigaction(signum, external_sigaction);
 }
 
+static void
+_fill_oldact_with_previous_external_sigaction_handler(gint signum, struct sigaction *oldact)
+{
+  if (!oldact)
+    return;
+
+  memcpy(oldact, _get_external_sigaction(signum), sizeof(struct sigaction));
+}
+
 /* This should be as defined in the <signal.h> */
 int
 sigaction(int signum, const struct sigaction *act, struct sigaction *oldact)
@@ -136,7 +145,9 @@ sigaction(int signum, const struct sigaction *act, struct sigaction *oldact)
   if (!_is_internal_sigaction_registered(signum))
     return _register_internal_sigaction(signum, act, oldact);
 
+  _fill_oldact_with_previous_external_sigaction_handler(signum, oldact);
   _save_external_sigaction_handler(signum, act);
+
   return 0;
 }
 
