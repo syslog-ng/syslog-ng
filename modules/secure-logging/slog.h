@@ -47,10 +47,10 @@
 #define MAX_BUF_SIZE 1073741823 // INT_MAX/2
 #define DEF_BUF_SIZE 1000
 
-// Argument indicators for command line utilities
-#define LONG_OPT_INDICATOR "--"
-#define SHORT_OPT_INDICATOR "-"
+// Error message in case of invalid file
+#define FILE_ERROR "Invalid path or non existing regular file: "
 
+// Structure for command line arguments of template and utilities
 typedef struct
 {
   char *longname;
@@ -58,7 +58,7 @@ typedef struct
   char *description;
   char *type;
   char *arg;
-} Options;
+} SLogOptions;
 
 // Dump contents of an array on STDOUT, byte by byte, converting to hex.
 void outputByteBuffer(unsigned char *buf, int length);
@@ -235,10 +235,7 @@ void PRF(unsigned char *key, unsigned char *originalInput, guint64 inputLength, 
          guint64 outputLength);
 
 // Print usage message and clean up
-int usage(GOptionContext *ctx, GOptionGroup *grp, char *errormsg);
-
-// Print error message concerning a file
-char *fileError(const char *file);
+int slog_usage(GOptionContext *ctx, GOptionGroup *grp, GString *errormsg);
 
 /*
  * Callback function to check whether a command line argument represents a valid file name

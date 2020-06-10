@@ -43,7 +43,7 @@ static guint64 bufSize = DEF_BUF_SIZE;
 int main(int argc, char *argv[])
 {
   int index = 0;
-  Options options[] =
+  SLogOptions options[] =
   {
     { "key-file", 'k', "Current host key file", "FILE", NULL },
     { "mac-file", 'm', "Current MAC file", "FILE", NULL },
@@ -67,12 +67,14 @@ int main(int argc, char *argv[])
 
   if (!g_option_context_parse (context, &argc, &argv, &error))
     {
-      return usage(context, group, error->message);
+      GString *errorMsg = g_string_new(error->message);
+
+      return slog_usage(context, group, errorMsg);
     }
 
   if(argc < 5 || argc > 6)
     {
-      return usage(context, group, NULL);
+      return slog_usage(context, group, NULL);
     }
 
   // Initialize internal messaging
@@ -93,28 +95,30 @@ int main(int argc, char *argv[])
   index++;
   if(newhostKey == NULL)
     {
-      return usage(context, group, NULL);
+      return slog_usage(context, group, NULL);
     }
 
   outputMAC = argv[index];
   index++;
   if(outputMAC == NULL)
     {
-      return usage(context, group, NULL);
+      return slog_usage(context, group, NULL);
     }
 
   inputlog = argv[index];
   index++;
   if(!g_file_test(inputlog, G_FILE_TEST_IS_REGULAR))
     {
-      return usage(context, group, fileError(inputlog));
+      GString *errorMsg = g_string_new(FILE_ERROR);
+      g_string_append(errorMsg, inputlog);
+      return slog_usage(context, group, errorMsg);
     }
 
   outputlog = argv[index];
   index++;
   if(outputlog == NULL)
     {
-      return usage(context, group, NULL);
+      return slog_usage(context, group, NULL);
     }
 
   // Read key and counter

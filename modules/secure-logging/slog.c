@@ -36,6 +36,10 @@
 
 #include "slog.h"
 
+// Argument indicators for command line utilities
+#define LONG_OPT_INDICATOR "--"
+#define SHORT_OPT_INDICATOR "-"
+
 // This initialization only works with GCC.
 static unsigned char KEYPATTERN[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE-1) ] = IPAD };
 static unsigned char MACPATTERN[AES_BLOCKSIZE] = { [0 ... (AES_BLOCKSIZE-1) ] = OPAD };
@@ -1075,7 +1079,7 @@ int iterateBuffer(guint64 entriesInBuffer, GString **input, guint64 *nextLogEntr
 
                   if (tab != NULL)
                     {
-                      char *key = malloc(CTR_LEN_SIMPLE+1);
+                      char *key = g_new0(char, CTR_LEN_SIMPLE+1);
                       snprintf(key, CTR_LEN_SIMPLE+1, "%"G_GUINT64_FORMAT, logEntryOnDisk);
 
                       if (g_hash_table_insert(tab, key, (gpointer)logEntryOnDisk) == FALSE)
@@ -1329,8 +1333,8 @@ int iterativeFileVerify(unsigned char *previousMAC, unsigned char *mainKey, char
     }
 
 
-  GString **inputBuffer = (GString **) malloc(sizeof(GString *) * chunkLength);
-  GString **outputBuffer = (GString **) malloc(sizeof(GString *) * chunkLength);
+  GString **inputBuffer = g_new0(GString *, chunkLength);
+  GString **outputBuffer = g_new0(GString *, chunkLength);
 
   if ((outputBuffer==NULL)||(inputBuffer == NULL))
     {
@@ -1633,8 +1637,8 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
       return 0;
     }
 
-  GString **inputBuffer = (GString **) malloc(sizeof(GString *) * chunkLength);
-  GString **outputBuffer = (GString **) malloc(sizeof(GString *) * chunkLength);
+  GString **inputBuffer = g_new0(GString *, chunkLength);
+  GString **outputBuffer = g_new0(GString *, chunkLength);
 
   if ((outputBuffer==NULL)||(inputBuffer == NULL))
     {
@@ -1890,29 +1894,18 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
 }
 
 // Print usage message and clean up
-int usage(GOptionContext *ctx, GOptionGroup *grp, char *errormsg)
+int slog_usage(GOptionContext *ctx, GOptionGroup *grp, GString *errormsg)
 {
   if(errormsg != NULL)
     {
-      g_print ("\nERROR: %s\n\n", errormsg);
+      g_print ("\nERROR: %s\n\n", errormsg->str);
+      g_string_free(errormsg, TRUE);
     }
 
   g_print("%s", g_option_context_get_help(ctx, TRUE, NULL));
   g_option_context_free(ctx);
 
   return 1;
-}
-
-// Print error message concerning a file
-char *fileError(const char *file)
-{
-  GString *errorMessage = g_string_new("Invalid path or non existing regular file: ");
-  g_string_append(errorMessage, file);
-
-  char *message = errorMessage->str;
-  g_string_free(errorMessage, FALSE);
-
-  return message;
 }
 
 /*
@@ -1930,9 +1923,9 @@ gboolean validFileNameArg(const gchar *option_name, const gchar *value, gpointer
   GString *longOption = g_string_new(LONG_OPT_INDICATOR);
   GString *shortOption = g_string_new(SHORT_OPT_INDICATOR);
 
-  Options *opts = (Options *)data;
+  SLogOptions *opts = (SLogOptions *)data;
 
-  for(Options *option = opts; option != NULL && option->longname != NULL; option++)
+  for(SLogOptions *option = opts; option != NULL && option->longname != NULL; option++)
     {
       g_string_append(longOption, option->longname);
       g_string_append_c(shortOption, option->shortname);
@@ -1954,7 +1947,7 @@ gboolean validFileNameArg(const gchar *option_name, const gchar *value, gpointer
 
   if (!isValid)
     {
-      *error = g_error_new(G_FILE_ERROR, G_OPTION_ERROR_FAILED, "%s", fileError(value));
+      *error = g_error_new(G_FILE_ERROR, G_OPTION_ERROR_FAILED, "Invalid path or non existing regular file: %s", value);
     }
 
   g_string_free(currentOption, TRUE);

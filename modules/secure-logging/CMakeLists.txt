@@ -7,7 +7,7 @@ add_library(syslog-ng-secure-logging STATIC ${SECURE_LOGGING_SOURCES})
 target_include_directories(syslog-ng-secure-logging INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(syslog-ng-secure-logging PRIVATE SYSTEM ${OPENSSL_INCLUDE_DIR})
 target_link_libraries(syslog-ng-secure-logging PUBLIC syslog-ng ${OPENSSL_LIBRARIES})
-    
+
 set(SECURE_LOGGING_MODULE_SOURCES
   secure-logging.c
   )

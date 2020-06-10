@@ -90,7 +90,7 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
 
   state->badKey = FALSE;
 
-  Options options[] =
+  SLogOptions options[] =
   {
     { "key-file", 'k', "Name of the host key file", "FILE", NULL },
     { "mac-file", 'm', "Name of the MAC file", "FILE", NULL },
@@ -127,7 +127,7 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
     {
       state->badKey = TRUE;
       g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
-                  "[SLOG] ERROR: Template parsing failed. Invalid number of arguments");
+                  "[SLOG] ERROR: Template parsing failed. Invalid number of arguments. Usage: $(slog --key-file FILE --mac-file FILE $RAWMSG)\\n");
       g_option_context_free(ctx);
       return FALSE;
     }

@@ -57,7 +57,8 @@ int normalMode(char *hostkey, char *MACfile, char *inputlog, char *outputlog, in
 
   if (counter!=0UL)
     {
-      msg_error("Host key read has counter different from 0.", evt_tag_long("Counter", counter));
+      msg_error("[SLOG] ERROR: Initial key k0 is required for verification and descryption but the supplied key read has a counter > 0.",
+                evt_tag_long("Counter", counter));
       return 0;
     }
 
@@ -185,7 +186,7 @@ int iterativeMode(char *prevKey, char *prevMAC, char *curMAC, char *inputlog, ch
 int main(int argc, char *argv[])
 {
   int index = 0;
-  Options options[] =
+  SLogOptions options[] =
   {
     { "iterative", 'i', "Iterative verification", NULL, NULL },
     { "key-file", 'k', "Initial host key file", "FILE", NULL },
@@ -215,12 +216,14 @@ int main(int argc, char *argv[])
 
   if (!g_option_context_parse (context, &argc, &argv, &error))
     {
-      return usage(context, group, error->message);
+      GString *errorMsg = g_string_new(error->message);
+
+      return slog_usage(context, group, errorMsg);
     }
 
   if(argc < 2 || argc > 4)
     {
-      return usage(context, group, NULL);
+      return slog_usage(context, group, NULL);
     }
 
   // Initialize internal messaging
@@ -243,14 +246,16 @@ int main(int argc, char *argv[])
   index++;
   if(!g_file_test(inputLog, G_FILE_TEST_IS_REGULAR))
     {
-      return usage(context, group, fileError(inputLog));
+      GString *errorMsg = g_string_new(FILE_ERROR);
+      g_string_append(errorMsg, inputLog);
+      return slog_usage(context, group, errorMsg);
     }
 
   outputLog = argv[index];
   index++;
   if(outputLog == NULL)
     {
-      return usage(context, group, NULL);
+      return slog_usage(context, group, NULL);
     }
 
   // Buffer size arguments if applicable
