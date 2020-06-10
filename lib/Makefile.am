@@ -165,6 +165,7 @@ pkginclude_HEADERS			+= \
 	lib/serialize.h			\
 	lib/service-management.h	\
 	lib/seqnum.h			\
+	lib/signal-handler.h		\
 	lib/str-format.h		\
 	lib/str-utils.h			\
 	lib/syslog-names.h		\

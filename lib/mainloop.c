@@ -43,6 +43,7 @@
 #include "scratch-buffers.h"
 #include "timeutils/misc.h"
 #include "stats/stats-control.h"
+#include "signal-handler.h"
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -488,6 +489,15 @@ sig_term_handler(gpointer user_data)
 }
 
 static void
+sig_int_handler(gpointer user_data)
+{
+  MainLoop *self = (MainLoop *) user_data;
+
+  main_loop_exit_initiate(self);
+  signal_handler_exec_external_handler(SIGINT);
+}
+
+static void
 sig_child_handler(gpointer user_data)
 {
   pid_t pid;
@@ -501,6 +511,7 @@ sig_child_handler(gpointer user_data)
     {
       pid = waitpid(-1, &status, WNOHANG);
       child_manager_sigchild(pid, status);
+      signal_handler_exec_external_handler(SIGCHLD);
     }
   while (pid > 0);
 }
@@ -539,7 +550,7 @@ setup_signals(MainLoop *self)
   _register_signal_handler(&self->sighup_poll, SIGHUP, sig_hup_handler, self);
   _register_signal_handler(&self->sigchild_poll, SIGCHLD, sig_child_handler, self);
   _register_signal_handler(&self->sigterm_poll, SIGTERM, sig_term_handler, self);
-  _register_signal_handler(&self->sigint_poll, SIGINT, sig_term_handler, self);
+  _register_signal_handler(&self->sigint_poll, SIGINT, sig_int_handler, self);
   _register_signal_handler(&self->sigusr1_poll, SIGUSR1, sig_usr1_handler, self);
 }
 

@@ -23,74 +23,133 @@
  */
 
 #include "syslog-ng.h"
-#include "children.h"
 
 #include <signal.h>
+#include <string.h>
+
+#if defined(NSIG)
+#  define SIGNAL_HANDLER_ARRAY_SIZE NSIG
+#elif defined(_NSIG)
+#  define SIGNAL_HANDLER_ARRAY_SIZE _NSIG
+#else
+#  define SIGNAL_HANDLER_ARRAY_SIZE 128
+#endif
+
+static struct sigaction external_sigactions[SIGNAL_HANDLER_ARRAY_SIZE];
+static gboolean internal_sigaction_registered[SIGNAL_HANDLER_ARRAY_SIZE];
+
+static const struct sigaction *
+_get_external_sigaction(gint signum)
+{
+  g_assert(signum < SIGNAL_HANDLER_ARRAY_SIZE);
+  return &external_sigactions[signum];
+}
+
+static void
+_set_external_sigaction(gint signum, const struct sigaction *external_sigaction)
+{
+  g_assert(signum < SIGNAL_HANDLER_ARRAY_SIZE);
+  memcpy(&external_sigactions[signum], external_sigaction, sizeof(struct sigaction));
+}
+
+static gboolean
+_is_internal_sigaction_registered(gint signum)
+{
+  g_assert(signum < SIGNAL_HANDLER_ARRAY_SIZE);
+  return internal_sigaction_registered[signum];
+}
+
+static void
+_set_internal_sigaction_registered(gint signum)
+{
+  g_assert(signum < SIGNAL_HANDLER_ARRAY_SIZE);
+  internal_sigaction_registered[signum] = TRUE;
+}
+
+void
+signal_handler_exec_external_handler(gint signum)
+{
+  const struct sigaction *external_sigaction = _get_external_sigaction(signum);
+
+  if (!external_sigaction->sa_handler)
+    return;
+
+  external_sigaction->sa_handler(signum);
+}
 
 #if SYSLOG_NG_HAVE_DLFCN_H
 
 #include <dlfcn.h>
 
-static const struct sigaction *sgchld_handler;
-
-void
-trigger_sigchld_handler_chain(int signum)
-{
-  if (sgchld_handler && sgchld_handler->sa_handler)
-    {
-      sgchld_handler->sa_handler(signum);
-    }
-}
-
 static int
-call_original_sigaction(int signum, const struct sigaction *act, struct sigaction *oldact)
+_original_sigaction(int signum, const struct sigaction *act, struct sigaction *oldact)
 {
   static int (*real_sa)(int, const struct sigaction *, struct sigaction *);
 
   if (real_sa == NULL)
-    {
-      real_sa = dlsym(RTLD_NEXT, "sigaction");
-    }
+    real_sa = dlsym(RTLD_NEXT, "sigaction");
+
   return real_sa(signum, act, oldact);
 }
 
-static gboolean
-_save_handler(const struct sigaction *act)
+static gint
+_register_internal_sigaction(gint signum, const struct sigaction *act, struct sigaction *oldact)
 {
-  static gboolean is_first_handler = TRUE;
-  if (is_first_handler)
+  gint result = _original_sigaction(signum, act, oldact);
+
+  if (result == 0)
+    _set_internal_sigaction_registered(signum);
+
+  return result;
+}
+
+static gboolean
+_need_to_save_external_sigaction_handler(gint signum)
+{
+  /* We need to save external sigaction handlers for signums we internally set a handler to. See lib/mainloop.c */
+  switch (signum)
     {
-      is_first_handler = FALSE;
+    case SIGCHLD:
+    case SIGINT:
+      return TRUE;
+    default:
       return FALSE;
     }
+}
 
-  sgchld_handler = act;
+static void
+_save_external_sigaction_handler(gint signum, const struct sigaction *external_sigaction)
+{
+  if (!external_sigaction)
+    return;
 
-  child_manager_register_external_sigchld_handler(&trigger_sigchld_handler_chain);
+  _set_external_sigaction(signum, external_sigaction);
+}
 
-  return TRUE;
+static void
+_fill_oldact_with_previous_external_sigaction_handler(gint signum, struct sigaction *oldact)
+{
+  if (!oldact)
+    return;
+
+  memcpy(oldact, _get_external_sigaction(signum), sizeof(struct sigaction));
 }
 
 /* This should be as defined in the <signal.h> */
 int
 sigaction(int signum, const struct sigaction *act, struct sigaction *oldact)
 {
+  if (!_need_to_save_external_sigaction_handler(signum))
+    return _original_sigaction(signum, act, oldact);
 
-  if (signum == SIGCHLD)
-    {
-      if (act && act->sa_handler == SIG_DFL)
-        {
-          return 0;
-        }
+  /* Internal sigactions are always the first one to arrive to this function. */
+  if (!_is_internal_sigaction_registered(signum))
+    return _register_internal_sigaction(signum, act, oldact);
 
-      if (_save_handler(act))
-        {
-          return 0;
-        }
-    }
+  _fill_oldact_with_previous_external_sigaction_handler(signum, oldact);
+  _save_external_sigaction_handler(signum, act);
 
-
-  return call_original_sigaction(signum, act, oldact);
+  return 0;
 }
-#endif
 
+#endif
