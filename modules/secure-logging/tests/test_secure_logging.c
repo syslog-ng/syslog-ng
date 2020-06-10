@@ -562,7 +562,7 @@ void test_slog_corrupted_key(void)
 
   // Create a collection of log messages
   num = randomNumber(MIN_TEST_MESSAGES, MAX_TEST_MESSAGES);
-  logs = g_new0(LogMessage, num);
+  logs = g_new0(LogMessage *, num);
   createLogMessages(num, logs);
 
   output = g_new0(GString *, num);
