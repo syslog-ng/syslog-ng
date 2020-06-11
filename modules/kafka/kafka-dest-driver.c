@@ -169,7 +169,6 @@ _kafka_delivery_report_cb(rd_kafka_t *rk,
                 evt_tag_str("driver", self->super.super.super.id),
                 log_pipe_location_tag(&self->super.super.super.super));
       log_queue_push_head(queue, msg, &path_options);
-      return;
     }
   else
     {
@@ -181,6 +180,7 @@ _kafka_delivery_report_cb(rd_kafka_t *rk,
                 log_pipe_location_tag(&self->super.super.super.super));
       log_msg_unref(msg);
     }
+  log_threaded_dest_worker_wakeup_when_suspended((LogThreadedDestWorker *) self->super.workers[0]);
 }
 
 static void

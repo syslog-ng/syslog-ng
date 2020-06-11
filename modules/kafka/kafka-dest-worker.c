@@ -37,6 +37,12 @@ typedef struct _KafkaDestWorker
   GString *message;
 } KafkaDestWorker;
 
+static gboolean
+_is_poller_thread(KafkaDestWorker *self)
+{
+  return (self->super.worker_index == 0);
+}
+
 static void
 _format_message_and_key(KafkaDestWorker *self, LogMessage *msg)
 {
@@ -54,10 +60,11 @@ static gboolean
 _publish_message(KafkaDestWorker *self, LogMessage *msg)
 {
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
+  int block_flag = _is_poller_thread(self) ? 0 : RD_KAFKA_MSG_F_BLOCK;
 
   if (rd_kafka_produce(owner->topic,
                        RD_KAFKA_PARTITION_UA,
-                       RD_KAFKA_MSG_F_FREE | RD_KAFKA_MSG_F_BLOCK,
+                       RD_KAFKA_MSG_F_FREE | block_flag,
                        self->message->str, self->message->len,
                        self->key->len ? self->key->str : NULL, self->key->len,
                        log_msg_ref(msg)) == -1)
@@ -88,7 +95,7 @@ _update_drain_timer(KafkaDestWorker *self)
 {
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
 
-  if (self->super.worker_index != 0)
+  if (!_is_poller_thread(self))
     return;
 
   if (iv_timer_registered(&self->poll_timer))
@@ -107,7 +114,7 @@ _drain_responses(KafkaDestWorker *self)
   /* we are only draining responses in the first worker thread, so all
    * callbacks originate from the same thread and we don't need to
    * synchronize between workers */
-  if (self->super.worker_index != 0)
+  if (!_is_poller_thread(self))
     return;
 
   gint count = rd_kafka_poll(owner->kafka, 0);
@@ -150,12 +157,26 @@ kafka_dest_worker_free(LogThreadedDestWorker *s)
   log_threaded_dest_worker_free_method(s);
 }
 
+static gboolean
+_thread_init(LogThreadedDestWorker *s)
+{
+  KafkaDestWorker *self = (KafkaDestWorker *) s;
+  if (_is_poller_thread(self))
+    {
+      KafkaDestDriver *owner = (KafkaDestDriver *) s->owner;
+      s->time_reopen = owner->poll_timeout / 1000;
+    }
+
+  return log_threaded_dest_worker_init_method(s);
+}
+
 LogThreadedDestWorker *
 kafka_dest_worker_new(LogThreadedDestDriver *o, gint worker_index)
 {
   KafkaDestWorker *self = g_new0(KafkaDestWorker, 1);
 
   log_threaded_dest_worker_init_instance(&self->super, o, worker_index);
+  self->super.thread_init = _thread_init;
   self->super.insert = kafka_dest_worker_insert;
   self->super.free_fn = kafka_dest_worker_free;
 

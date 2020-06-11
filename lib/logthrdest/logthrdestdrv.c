@@ -248,7 +248,7 @@ _process_result_drop(LogThreadedDestWorker *self)
   msg_error("Message(s) dropped while sending message to destination",
             evt_tag_str("driver", self->owner->super.super.id),
             evt_tag_int("worker_index", self->worker_index),
-            evt_tag_int("time_reopen", self->owner->time_reopen),
+            evt_tag_int("time_reopen", self->time_reopen),
             evt_tag_int("batch_size", self->batch_size));
 
   _drop_batch(self);
@@ -278,7 +278,7 @@ _process_result_error(LogThreadedDestWorker *self)
                 log_expr_node_location_tag(self->owner->super.super.super.expr_node),
                 evt_tag_int("worker_index", self->worker_index),
                 evt_tag_int("retries", self->retries_on_error_counter),
-                evt_tag_int("time_reopen", self->owner->time_reopen),
+                evt_tag_int("time_reopen", self->time_reopen),
                 evt_tag_int("batch_size", self->batch_size));
       _rewind_batch(self);
       _disconnect_and_suspend(self);
@@ -292,7 +292,7 @@ _process_result_not_connected(LogThreadedDestWorker *self)
            evt_tag_str("driver", self->owner->super.super.id),
            log_expr_node_location_tag(self->owner->super.super.super.expr_node),
            evt_tag_int("worker_index", self->worker_index),
-           evt_tag_int("time_reopen", self->owner->time_reopen),
+           evt_tag_int("time_reopen", self->time_reopen),
            evt_tag_int("batch_size", self->batch_size));
   self->retries_counter = 0;
   _rewind_batch(self);
@@ -459,7 +459,7 @@ _schedule_restart_on_suspend_timeout(LogThreadedDestWorker *self)
 {
   iv_validate_now();
   self->timer_reopen.expires  = iv_now;
-  self->timer_reopen.expires.tv_sec += self->owner->time_reopen;
+  self->timer_reopen.expires.tv_sec += self->time_reopen;
   iv_timer_register(&self->timer_reopen);
 }
 
@@ -579,6 +579,13 @@ _perform_work(gpointer data)
        * outstanding parallel push callbacks automatically.
        */
     }
+}
+
+void
+log_threaded_dest_worker_wakeup_when_suspended(LogThreadedDestWorker *self)
+{
+  if (self->suspended)
+    _perform_work(self);
 }
 
 static void
@@ -770,6 +777,9 @@ _acquire_worker_queue(LogThreadedDestWorker *self)
 gboolean
 log_threaded_dest_worker_init_method(LogThreadedDestWorker *self)
 {
+  if (self->time_reopen == -1)
+    self->time_reopen = self->owner->time_reopen;
+
   if (!_acquire_worker_queue(self))
     return FALSE;
 
@@ -799,6 +809,7 @@ log_threaded_dest_worker_init_instance(LogThreadedDestWorker *self, LogThreadedD
   self->thread_deinit = log_threaded_dest_worker_deinit_method;
   self->free_fn = log_threaded_dest_worker_free_method;
   self->owner = owner;
+  self->time_reopen = -1;
   self->started_up = g_cond_new();
   _init_watches(self);
 }

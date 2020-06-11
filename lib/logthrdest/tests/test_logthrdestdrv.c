@@ -220,7 +220,7 @@ _insert_single_message_connection_failure(LogThreadedDestDriver *s, LogMessage *
 Test(logthrdestdrv, connection_failure_is_considered_an_error_and_retried_indefinitely)
 {
   dd->super.worker.insert = _insert_single_message_connection_failure;
-  dd->super.time_reopen = 0;
+  dd->super.worker.instance.time_reopen = 0;
 
   start_grabbing_messages();
   _generate_message_and_wait_for_processing(dd, dd->super.written_messages);
@@ -247,7 +247,7 @@ _insert_single_message_error_until_drop(LogThreadedDestDriver *s, LogMessage *ms
 Test(logthrdestdrv, error_result_retries_sending_retry_max_times_and_then_drops)
 {
   dd->super.worker.insert = _insert_single_message_error_until_drop;
-  dd->super.time_reopen = 0;
+  dd->super.worker.instance.time_reopen = 0;
   dd->super.retries_on_error_max = 5;
 
   start_grabbing_messages();
@@ -277,7 +277,7 @@ _insert_single_message_error_until_successful(LogThreadedDestDriver *s, LogMessa
 Test(logthrdestdrv, error_result_retries_sending_retry_max_times_and_then_accepts)
 {
   dd->super.worker.insert = _insert_single_message_error_until_successful;
-  dd->super.time_reopen = 0;
+  dd->super.worker.instance.time_reopen = 0;
   dd->super.retries_on_error_max = 5;
 
   start_grabbing_messages();
@@ -364,7 +364,7 @@ Test(logthrdestdrv, batched_set_of_messages_are_dropped_as_a_whole)
 {
   dd->super.worker.insert = _insert_batched_message_drop;
   dd->super.worker.flush = _flush_batched_message_drop;
-  dd->super.time_reopen = 0;
+  dd->super.worker.instance.time_reopen = 0;
 
   start_grabbing_messages();
   _generate_messages_and_wait_for_processing(dd, 10, dd->super.dropped_messages);
@@ -425,7 +425,7 @@ Test(logthrdestdrv,
 {
   dd->super.worker.insert = _insert_batched_message_error_drop;
   dd->super.worker.flush = _flush_batched_message_error_drop;
-  dd->super.time_reopen = 0;
+  dd->super.worker.instance.time_reopen = 0;
   dd->super.retries_on_error_max = 5;
 
   start_grabbing_messages();
@@ -498,7 +498,7 @@ Test(logthrdestdrv,
 
   dd->super.worker.insert = _insert_batched_message_error_success;
   dd->super.worker.flush = _flush_batched_message_error_success;
-  dd->super.time_reopen = 0;
+  dd->super.worker.instance.time_reopen = 0;
   dd->super.retries_on_error_max = 5;
 
   start_grabbing_messages();
@@ -572,7 +572,7 @@ Test(logthrdestdrv,
 
   dd->super.worker.insert = _insert_batched_message_not_connected;
   dd->super.worker.flush = _flush_batched_message_not_connected;
-  dd->super.time_reopen = 0;
+  dd->super.worker.instance.time_reopen = 0;
   dd->super.retries_on_error_max = 5;
 
   start_grabbing_messages();
@@ -718,7 +718,7 @@ Test(logthrdestdrv, test_connect_failure_kicks_in_suspend_retry_logic_which_keep
 
   dd->super.worker.connect = _connect_failure;
   dd->super.worker.insert = _insert_single_message_success;
-  dd->super.time_reopen = 0;
+  dd->super.worker.instance.time_reopen = 0;
   cr_assert(log_pipe_init(&dd->super.super.super.super));
 
   _generate_message_and_wait_for_processing(dd, dd->super.written_messages);
