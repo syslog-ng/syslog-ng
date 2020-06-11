@@ -59,8 +59,8 @@ int main(int argc, char *argv[])
 
   GError *error = NULL;
   GOptionContext *context =
-    g_option_context_new("NEWKEY NEWMAC INPUTLOG OUTPUTLOG [COUNTER] - Import log files using secure logging");
-  GOptionGroup *group = g_option_group_new("Basic options", "Basic log import options", "basic", &options, NULL);
+    g_option_context_new("NEWKEY NEWMAC INPUTLOG OUTPUTLOG [COUNTER] - Encrypt log files using secure logging");
+  GOptionGroup *group = g_option_group_new("Basic options", "Basic log encryption options", "basic", &options, NULL);
 
   g_option_group_add_entries(group, entries);
   g_option_context_set_main_group(context, group);

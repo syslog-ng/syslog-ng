@@ -19,7 +19,7 @@ modules_secure_logging_libsyslog_ng_secure_logging_la_DEPENDENCIES	=	\
 LIBSYSLOG_SECURE_LOGGING = $(top_builddir)/modules/secure-logging/libsyslog-ng-secure-logging.la
 
 modules_secure_logging_libsecure_logging_la_SOURCES = \
-	modules/secure-logging/secure-logging.c                         
+	modules/secure-logging/secure-logging.c
 
 modules_secure_logging_libsecure_logging_la_CFLAGS = \
 	$(AM_CFLAGS)                                 \
@@ -34,7 +34,7 @@ EXTRA_DIST += modules/secure-logging/CMakeLists.txt
 modules/secure-logging modules/secure-logging/ mod-secure-logging: \
 	modules/secure-logging/libsyslog-ng-secure-logging.la      \
 	modules/secure-logging/slogkey/slogkey                     \
-	modules/secure-logging/slogimport/slogimport               \
+	modules/secure-logging/slogencrypt/slogencrypt               \
 	modules/secure-logging/slogverify/slogverify
 
 .PHONY: modules/secure-logging/ mod-secure-logging
@@ -42,4 +42,4 @@ modules/secure-logging modules/secure-logging/ mod-secure-logging: \
 include modules/secure-logging/slogkey/Makefile.am
 include modules/secure-logging/slogverify/Makefile.am
 include modules/secure-logging/tests/Makefile.am
-include modules/secure-logging/slogimport/Makefile.am
+include modules/secure-logging/slogencrypt/Makefile.am

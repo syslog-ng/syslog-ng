@@ -20,7 +20,7 @@ add_module(
   SOURCES ${SECURE_LOGGING_MODULE_SOURCES}
 )
 
-add_subdirectory(slogimport)
+add_subdirectory(slogencrypt)
 add_subdirectory(slogkey)
 add_subdirectory(slogverify)
 add_test_subdirectory(tests)

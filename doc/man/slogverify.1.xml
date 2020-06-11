@@ -2,13 +2,13 @@
 <reference xmlns="http://docbook.org/ns/docbook" version="5.0">
   <info>
     <productname/>
-    <title>The slogverify utility manual page</title>
+    <title>The slogverify manual page</title>
   </info>
   <refentry xml:id="slogverify.1">
     <refmeta>
       <refentrytitle>slogverify</refentrytitle>
       <manvolnum>1</manvolnum>
-      <refmiscinfo class="version">3.27</refmiscinfo>
+      <refmiscinfo class="version">3.28</refmiscinfo>
       <refmiscinfo class="source"/>
     </refmeta>
     <refnamediv>

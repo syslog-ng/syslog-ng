@@ -14,7 +14,7 @@ EXTRA_DIST	+=  \
 		doc/man/syslog-ng-ctl.1.xml \
 		doc/man/syslog-ng.8.xml \
 		doc/man/syslog-ng.conf.5.xml \
-		doc/man/slogimport.1.xml \
+		doc/man/slogencrypt.1.xml \
 		doc/man/slogkey.1.xml \
 		doc/man/slogverify.1.xml \
 		doc/man/secure-logging.7.xml \
@@ -34,7 +34,7 @@ man_MANS	+= \
 		doc/man/syslog-ng-ctl.1 \
 		doc/man/syslog-ng.8 \
 		doc/man/syslog-ng.conf.5 \
-		doc/man/slogimport.1 \
+		doc/man/slogencrypt.1 \
 		doc/man/slogkey.1 \
 		doc/man/slogverify.1 \
 		doc/man/secure-logging.7
