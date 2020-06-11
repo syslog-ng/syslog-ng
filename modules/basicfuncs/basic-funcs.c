@@ -65,6 +65,7 @@ _append_args_with_separator(gint argc, GString *argv[], GString *result, gchar s
 #include "context-funcs.c"
 #include "fname-funcs.c"
 #include "tf-iterate.c"
+#include "tf-map.c"
 
 static Plugin basicfuncs_plugins[] =
 {
@@ -134,6 +135,7 @@ static Plugin basicfuncs_plugins[] =
 
   /* functional */
   TEMPLATE_FUNCTION_PLUGIN(tf_iterate, "iterate"),
+  TEMPLATE_FUNCTION_PLUGIN(tf_map, "map"),
 
 };
 

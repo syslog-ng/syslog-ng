@@ -25,6 +25,7 @@
 #include "libtest/grab-logging.h"
 #include "libtest/testutils.h"
 #include <criterion/criterion.h>
+#include <criterion/parameterized.h>
 
 #include "apphook.h"
 #include "plugin.h"
@@ -568,7 +569,7 @@ Test(basicfuncs, test_tfurldecode)
   assert_template_format("$(url-decode %00a)", "");
 }
 
-Test(basicfuncs, test_functional)
+Test(basicfuncs, test_iterate)
 {
   LogMessage *msg = log_msg_new_empty();
   GString *result = g_string_new("");
@@ -590,4 +591,29 @@ Test(basicfuncs, test_functional)
   g_string_free(result, TRUE);
   log_template_unref(template);
   log_msg_unref(msg);
+}
+
+struct test_params
+{
+  gchar *template;
+  char *expected;
+};
+
+ParameterizedTestParameters(basicfuncs, test_map)
+{
+  static struct test_params params[] =
+  {
+    { "Some prefix $(map \"$(+ 1 $_)\" 0,1,2)", "Some prefix 1,2,3" },
+    { "Some prefix $(map \"$(+ 1 $_)\" $(+ 1 1))", "Some prefix 3" },
+    { "Some prefix $(map \"$(+ 1 $_)\" 0,1,2)", "Some prefix 1,2,3" },
+    { "Some prefix $(map \"$(+ 1 $_)\" '')", "Some prefix " },
+    { "Some prefix $(map $(+ 1 $_) $(map $(+ 1 $_) 0,1,2))", "Some prefix 2,3,4" }, // embedded map
+  };
+
+  return cr_make_param_array(struct test_params, params, sizeof(params)/sizeof(params[0]));
+}
+
+ParameterizedTest(struct test_params *param, basicfuncs, test_map)
+{
+  assert_template_format(param->template, param->expected);
 }
