@@ -35,7 +35,7 @@
            <command>Master key generation</command>
           </term>
           <listitem>
-            <para>Call sequence: &lt;filename&gt;</para>
+            <para>Call sequence: slogkey --masterḱey &lt;filename&gt;</para>
 	    <para>&lt;filename&gt;: The name of the file to which the master key will be written.</para>
          </listitem>
         </varlistentry>
@@ -44,11 +44,14 @@
            <command>Host key derivation</command>
           </term>
           <listitem>
-            <para>Call sequence: &lt;master key filename&gt; &lt;host MAC address&gt; &lt;host serial number&gt; &lt;host key filename&gt;</para>
-	    <para>&lt;master key filename&gt;: The master key from which the host key will be derived.</para>
+            <para>Call sequence: slogkey --derive-key &lt;master key file&gt; &lt;host MAC address&gt; &lt;host serial number&gt; &lt;host key file&gt;</para>
+	    <para>&lt;master key file&gt;: The master key from which the host key will be derived.</para>
 	    <para>&lt;host MAC address&gt;: The MAC address of the host on which the key will be used. Instead of the MAC address, any other string that uniquely identifies a host can be supplied, e.g. the company inventory number.</para>
-	    <para>&lt;host serial address&gt;: The serial number of the host on which the key will be used. Instead of the serial number, any other string that uniquely identifies a host can be supplied, e.g. the company inventory number.</para>
-	    <para>&lt;host key filename&gt;: The name of the file to which the host key will be written.</para>
+	    <para>&lt;host serial number&gt;: The serial number of the host on which the key will be used. Instead of the serial number, any other string that uniquely identifies a host can be supplied, e.g. the company inventory number.</para>
+	    <para>&lt;host key file&gt;: The name of the file to which the host key will be written.</para>
+        <para>NOTE: The newly created host key has its counter set to 0 indicating that it represents the initial host key k0. This host key must be kept secret and not be disclosed to third parties. It will be required to successfully decrypt
+        and verify log archives processed by the secure logging environment. As each log entry will be encrypted with its
+        own key, a new host key will be created after successful processing of a log entry and will replace the previous key. Therefore, the initial host key needs to be stored in a safe place before starting the secure logging environment, as it will be deleted from the log host after processing of the first log entry.</para>
 	  </listitem>
         </varlistentry>
         <varlistentry>
@@ -56,8 +59,8 @@
            <command>Sequence counter display</command>
           </term>
           <listitem>
-            <para>Call sequence: &lt;host key filename&gt;</para>
-            <para>&lt;host key filename&gt;: The host key file from which the sequence will be read.</para>
+            <para>Call sequence: slogkey --counter &lt;host key file&gt;</para>
+            <para>&lt;host key file&gt;: The host key file from which the sequence will be read.</para>
          </listitem>
         </varlistentry>
       </variablelist>

@@ -259,7 +259,7 @@ void verifyMessages(guchar *hostkey, gchar *macFileName, GString **templateOutpu
       log_msg_unref(result);
     }
 
-  free(outputBuffer);
+  g_free(outputBuffer);
 }
 
 // Generate keys to be used for the tests
@@ -667,7 +667,7 @@ void test_slog_malicious_modifications(void)
   log_template_unref(slog_templ);
   g_free(output);
   g_free(logs);
-  free(ob);
+  g_free(ob);
 
   closure(testData);
 }

@@ -1348,8 +1348,8 @@ int iterativeFileVerify(unsigned char *previousMAC, unsigned char *mainKey, char
       g_io_channel_unref(output);
       g_clear_error(&myError);
 
-      free(inputBuffer);
-      free(outputBuffer);
+      g_free(inputBuffer);
+      g_free(outputBuffer);
 
       return 0;
     }
@@ -1403,8 +1403,8 @@ int iterativeFileVerify(unsigned char *previousMAC, unsigned char *mainKey, char
 
               g_clear_error(&myError);
 
-              free(inputBuffer);
-              free(outputBuffer);
+              g_free(inputBuffer);
+              g_free(outputBuffer);
 
               return  0;
             }
@@ -1441,8 +1441,8 @@ int iterativeFileVerify(unsigned char *previousMAC, unsigned char *mainKey, char
 
                   g_clear_error(&myError);
 
-                  free(inputBuffer);
-                  free(outputBuffer);
+                  g_free(inputBuffer);
+                  g_free(outputBuffer);
 
                   return  0;
                 }
@@ -1474,8 +1474,8 @@ int iterativeFileVerify(unsigned char *previousMAC, unsigned char *mainKey, char
 
               g_clear_error(&myError);
 
-              free(inputBuffer);
-              free(outputBuffer);
+              g_free(inputBuffer);
+              g_free(outputBuffer);
 
 
               return  0;
@@ -1513,8 +1513,8 @@ int iterativeFileVerify(unsigned char *previousMAC, unsigned char *mainKey, char
 
                   g_clear_error(&myError);
 
-                  free(inputBuffer);
-                  free(outputBuffer);
+                  g_free(inputBuffer);
+                  g_free(outputBuffer);
 
                   return  0;
                 }
@@ -1532,8 +1532,8 @@ int iterativeFileVerify(unsigned char *previousMAC, unsigned char *mainKey, char
 
   ret = ret * finalizeVerify(startingEntry, entriesInFile, bigMAC, cmac_tag, tab);
 
-  free(inputBuffer);
-  free(outputBuffer);
+  g_free(inputBuffer);
+  g_free(outputBuffer);
 
   g_io_channel_shutdown(input, TRUE, &myError);
   g_io_channel_unref(input);
@@ -1687,8 +1687,8 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
 
           g_clear_error(&myError);
 
-          free(inputBuffer);
-          free(outputBuffer);
+          g_free(inputBuffer);
+          g_free(outputBuffer);
 
           return 0;
         }
@@ -1725,8 +1725,8 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
 
               g_clear_error(&myError);
 
-              free(inputBuffer);
-              free(outputBuffer);
+              g_free(inputBuffer);
+              g_free(outputBuffer);
 
               return 0;
             }
@@ -1759,8 +1759,8 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
 
               g_clear_error(&myError);
 
-              free(inputBuffer);
-              free(outputBuffer);
+              g_free(inputBuffer);
+              g_free(outputBuffer);
 
               return 0;
             }
@@ -1795,8 +1795,8 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
 
                   g_clear_error(&myError);
 
-                  free(inputBuffer);
-                  free(outputBuffer);
+                  g_free(inputBuffer);
+                  g_free(outputBuffer);
 
                   return 0;
                 }
@@ -1828,8 +1828,8 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
 
               g_clear_error(&myError);
 
-              free(inputBuffer);
-              free(outputBuffer);
+              g_free(inputBuffer);
+              g_free(outputBuffer);
 
               return 0;
             }
@@ -1863,8 +1863,8 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
 
                   g_clear_error(&myError);
 
-                  free(inputBuffer);
-                  free(outputBuffer);
+                  g_free(inputBuffer);
+                  g_free(outputBuffer);
 
                   return 0;
                 }
@@ -1877,8 +1877,8 @@ int fileVerify(unsigned char *mainKey, char *inputFileName, char *outputFileName
 
   ret = ret * finalizeVerify(startingEntry, entriesInFile, bigMac, cmac_tag, tab);
 
-  free(inputBuffer);
-  free(outputBuffer);
+  g_free(inputBuffer);
+  g_free(outputBuffer);
 
   g_io_channel_shutdown(input, TRUE, &myError);
   g_io_channel_unref(input);
