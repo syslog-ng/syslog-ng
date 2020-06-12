@@ -175,7 +175,7 @@ stats_publish_and_prune_counters(StatsOptions *options)
 static void
 stats_timer_rearm(StatsOptions *options, struct iv_timer *timer)
 {
-  gint freq = options->log_freq;
+  glong freq = options->log_freq;
 
   if (!freq)
     freq = options->lifetime <= 1 ? 1 : options->lifetime / 2;
