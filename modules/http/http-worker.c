@@ -173,50 +173,23 @@ _add_header(List *list, const gchar *header, const gchar *value)
 }
 
 static void
-_append_auth_header(List *list, HTTPDestinationDriver *owner)
-{
-  const gchar *auth_header_str = http_auth_header_get_as_string(owner->auth_header);
-  if (!auth_header_str)
-    {
-      if (!http_dd_auth_header_renew(&owner->super.super.super))
-        {
-          msg_warning("WARNING: failed to renew auth header",
-                      evt_tag_str("driver", owner->super.super.super.id),
-                      log_pipe_location_tag(&owner->super.super.super.super));
-          return;
-        }
-      auth_header_str = http_auth_header_get_as_string(owner->auth_header);
-    }
-
-  if (auth_header_str)
-    {
-      list_append(list, auth_header_str);
-    }
-  else
-    {
-      msg_warning("WARNING: auth-header() returned NULL-value",
-                  evt_tag_str("driver", owner->super.super.super.id),
-                  log_pipe_location_tag(&owner->super.super.super.super));
-    }
-}
-
-static void
 _set_error_from_slot_result(const gchar *signal,
-                            HttpHeaderRequestSlotResultType result,
+                            HttpSlotResultType result,
                             GError **error)
 {
   switch (result)
     {
-    case HTTP_HEADER_REQUEST_SLOT_SUCCESS:
+    case HTTP_SLOT_SUCCESS:
+    case HTTP_SLOT_RESOLVED:
       g_assert(*error == NULL);
       break;
-    case HTTP_HEADER_REQUEST_SLOT_CRITICAL_ERROR:
+    case HTTP_SLOT_CRITICAL_ERROR:
       g_set_error(error, HTTP_HEADER_FORMAT_ERROR,
                   HTTP_HEADER_FORMAT_SLOT_CRITICAL_ERROR,
                   "Critical error during slot execution, signal:%s",
                   signal_http_header_request);
       break;
-    case HTTP_HEADER_REQUEST_SLOT_PLUGIN_ERROR:
+    case HTTP_SLOT_PLUGIN_ERROR:
     default:
       g_set_error(error, HTTP_HEADER_FORMAT_ERROR,
                   HTTP_HEADER_FORMAT_SLOT_NON_CRITICAL_ERROR,
@@ -231,7 +204,7 @@ _collect_rest_headers(HTTPDestinationWorker *self, GError **error)
 {
   HttpHeaderRequestSignalData signal_data =
   {
-    .result = HTTP_HEADER_REQUEST_SLOT_SUCCESS,
+    .result = HTTP_SLOT_SUCCESS,
     .request_headers = self->request_headers,
     .request_body = self->request_body
   };
@@ -280,12 +253,7 @@ _add_common_headers(HTTPDestinationWorker *self)
 static gboolean
 _try_format_request_headers(HTTPDestinationWorker *self, GError **error)
 {
-  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
-
   _add_common_headers(self);
-
-  if (owner->auth_header)
-    _append_auth_header(self->request_headers, owner);
 
   _collect_rest_headers(self, error);
 
@@ -574,13 +542,6 @@ _curl_get_status_code(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *targe
   return TRUE;
 }
 
-static LogThreadedResult
-_renew_header(HTTPDestinationDriver *self)
-{
-  if (!http_dd_auth_header_renew(&self->super.super.super))
-    return LTR_NOT_CONNECTED;
-  return LTR_RETRY;
-}
 
 static LogThreadedResult
 _try_to_custom_map_http_status_to_worker_status(HTTPDestinationWorker *self, const gchar *url, glong http_code)
@@ -623,13 +584,18 @@ _flush_on_target(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
 
   HttpResponseReceivedSignalData signal_data =
   {
+    .result = HTTP_SLOT_SUCCESS,
     .http_code = http_code
   };
 
   EMIT(owner->super.super.super.super.signal_slot_connector, signal_http_response_received, &signal_data);
 
-  if (http_code == 401 && owner->auth_header)
-    return _renew_header(owner);
+  if (signal_data.result == HTTP_SLOT_RESOLVED)
+    {
+      msg_debug("HTTP error resolved issue, retry",
+                evt_tag_long("http_code", http_code));
+      return LTR_RETRY;
+    }
 
   return _map_http_status_code(self, target->url, http_code);
 }

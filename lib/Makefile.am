@@ -24,7 +24,6 @@ include lib/timeutils/Makefile.am
 include lib/secret-storage/Makefile.am
 include lib/logthrsource/Makefile.am
 include lib/logthrdest/Makefile.am
-include lib/http-auth/Makefile.am
 include lib/signal-slot-connector/Makefile.am
 
 LSNG_RELEASE		= $(shell echo @PACKAGE_VERSION@ | cut -d. -f1,2)

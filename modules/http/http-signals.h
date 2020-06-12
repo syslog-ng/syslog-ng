@@ -33,20 +33,22 @@ typedef struct _HttpResponseReceivedSignalData HttpResponseReceivedSignalData;
 
 typedef enum
 {
-  HTTP_HEADER_REQUEST_SLOT_SUCCESS,
-  HTTP_HEADER_REQUEST_SLOT_CRITICAL_ERROR,
-  HTTP_HEADER_REQUEST_SLOT_PLUGIN_ERROR
-} HttpHeaderRequestSlotResultType;
+  HTTP_SLOT_SUCCESS,
+  HTTP_SLOT_RESOLVED,
+  HTTP_SLOT_CRITICAL_ERROR,
+  HTTP_SLOT_PLUGIN_ERROR,
+} HttpSlotResultType;
 
 struct _HttpHeaderRequestSignalData
 {
-  HttpHeaderRequestSlotResultType result;
+  HttpSlotResultType result;
   List *request_headers;
   GString *request_body;
 };
 
 struct _HttpResponseReceivedSignalData
 {
+  HttpSlotResultType result;
   glong http_code;
 };
 
