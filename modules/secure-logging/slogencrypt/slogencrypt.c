@@ -192,7 +192,9 @@ int main(int argc, char *argv[])
       counter++;
 
       readLen = 0;
-      g_string_free(line, TRUE);
+      free(line);
+      g_string_free(result, TRUE);
+      g_string_free(inputGString, TRUE);
       line = NULL;
     }
 
