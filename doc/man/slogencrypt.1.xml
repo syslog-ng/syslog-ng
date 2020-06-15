@@ -13,7 +13,7 @@
     </refmeta>
     <refnamediv>
       <refname>slogencrypt</refname>
-      <refpurpose>Encrypt existing plaintext log files using the <command>syslog-ng</command> secure logging environment</refpurpose>
+      <refpurpose>Encrypt existing plain text log files using the <command>syslog-ng</command> secure logging environment</refpurpose>
     </refnamediv>
     <refsynopsisdiv>
       <cmdsynopsis>
@@ -23,7 +23,7 @@
     </refsynopsisdiv>
     <refsection version="5.0">
       <title>Description</title>
-      <para>The <command>slogencrypt</command> is used to encrypt plaintext log file using an existing secure logging environment. Using this utility, log files obtained from a previous installation of <command>syslog-ng</command> or another logging system can be transfered to a secure logging environment. The order of the log entries is preserved. Encrypting plaintext log files using an existing secure logging environment, requires the current encryption key to be supplied in order to preserve consistency.</para>
+      <para>The <command>slogencrypt</command> is used to encrypt plain text log file using an existing secure logging environment. Using this utility, log files obtained from a previous installation of <command>syslog-ng</command> or another logging system can be transferred to a secure logging environment. The order of the log entries is preserved. Encrypting plain text log files using an existing secure logging environment, requires the current encryption key to be supplied in order to preserve consistency.</para>
       <para>General call sequence: <command>slogencrypt -k &lt;key file&gt; -m &lt;MAC file&gt; &lt;new key file&gt; &lt;new MAC file&gt; &lt;plain text log&gt;  &lt;output file&gt;  [counter]</command></para>
     </refsection>
     <refsection>
@@ -48,14 +48,14 @@
           <term><command>input log file</command>
           </term>
           <listitem>
-            <para>The plaintext log file that will be encrypted using the secure logging environment.</para>
+            <para>The plain text log file that will be encrypted using the secure logging environment.</para>
           </listitem>
         </varlistentry>
         <varlistentry>
           <term><command>output log file</command>
           </term>
           <listitem>
-            <para>The file that will contain the encrypted log entries from the supplied plaintext log file after encryption.</para>
+            <para>The file that will contain the encrypted log entries from the supplied plain text log file after encryption.</para>
           </listitem>
         </varlistentry>
        </variablelist>

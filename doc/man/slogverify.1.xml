@@ -18,12 +18,15 @@
     <refsynopsisdiv>
       <cmdsynopsis>
         <command>slogverify</command>
-        <arg>arguments</arg>
+        <arg>options</arg>
+        <arg>input file</arg>
+        <arg>output file</arg>
+        <arg>buffers</arg>
       </cmdsynopsis>
     </refsynopsisdiv>
     <refsection version="5.0">
       <title>Description</title>
-      <para>The <command>slogverify</command> utility is used to verify the integrity of cryptographically secured logs and to decrypt log entries produced in a <command>syslog-ng</command> secure logging enviroment.</para>
+      <para>The <command>slogverify</command> utility is used to verify the integrity of cryptographically secured logs and to decrypt log entries produced in a <command>syslog-ng</command> secure logging environment.</para>
       <para>Normal mode: <command>slogverify -k &lt;host key file&gt; -m &lt;input MAC file&gt; &lt;input file&gt; &lt;output file&gt; [buffers]</command></para>
       <para>Iterative mode: <command>slogverify -i -p &lt;previous host key&gt; -r &lt;previous MAC&gt; -m &lt;current MAC&gt; &lt;input file&gt; &lt;output file&gt; [buffers]</command></para>
     </refsection>
@@ -32,17 +35,17 @@
       <variablelist>
         <?dbfo term-width="1.25in"?>
         <varlistentry>
-          <term><command>input log file</command>
+          <term><command>input file</command>
           </term>
           <listitem>
             <para>An encrypted log file from the syslog-ng secure logging environment that will be verified.</para>
           </listitem>
         </varlistentry>
         <varlistentry>
-          <term><command>output log file</command>
+          <term><command>output file</command>
           </term>
           <listitem>
-            <para>The file that will contain the encrypted log entries from the supplied plaintext log file after import.</para>
+            <para>The file that will contain the plain text log entries after decryption and verification.</para>
           </listitem>
         </varlistentry>
        </variablelist>
@@ -65,7 +68,7 @@
            <command>--iterative</command> or <command>-i</command>
           </term>
           <listitem>
-            <para>Iterative mode. This is useful in case the log files are periodically copied from the system on which they where geenerated to central collector. As log rotation, i.e. overwriting log files in order to preserve space cannot be done in a secure logging environment, the iterative mode can be used instead. This works as follows: If a certain storage limit is reached the log file together with the host key and the MAC file is copied to new destination and the old file is deleted. The verification is then performed in iterations, i.e. separately for each file that was retrieved from the log host. For this to work, it is important to always retrieve the corresponding host key and MAC files. The process can be automated, e.g. by calling slogverify in iterative mode from a script.</para>
+            <para>Iterative mode. This is useful in case the log files are periodically copied from the system on which they where generated to central collector. As log rotation, i.e. overwriting log files in order to preserve space cannot be done in a secure logging environment, the iterative mode can be used instead. This works as follows: If a certain storage limit is reached the log file together with the host key and the MAC file is copied to new destination and the old file is deleted. The verification is then performed in iterations, i.e. separately for each file that was retrieved from the log host. For this to work, it is important to always retrieve the corresponding host key and MAC files. The process can be automated, e.g. by calling slogverify in iterative mode from a script.</para>
          </listitem>
         </varlistentry>
         <varlistentry>
@@ -95,7 +98,7 @@
           <term><command>--prev-mac-file</command> or <command>-r</command>
           </term>
           <listitem>
-            <para>The MAC file from the previous log file. This options can only be used in iterative mode.</para>
+            <para>The MAC file from the previous log file. This option can only be used in iterative mode.</para>
           </listitem>
         </varlistentry>
         <varlistentry>
