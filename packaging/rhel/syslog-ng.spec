@@ -73,6 +73,9 @@ Source0: https://github.com/syslog-ng/syslog-ng/releases/download/syslog-ng-%{ve
 Source1: syslog-ng.conf
 Source2: syslog-ng.logrotate
 Source3: syslog-ng.service
+# keeping the original logrotate file for RHEL/CentOS 7
+# under a new name
+Source4: syslog-ng.logrotate7
 
 BuildRequires: pkgconfig
 BuildRequires: libtool
@@ -159,6 +162,9 @@ Obsoletes: syslog-ng-vim < 2.0.8-1
 Conflicts: filesystem < 3
 
 Obsoletes: syslog-ng-json
+%if 0%{?rhel} != 7
+Recommends: syslog-ng-logrotate
+%endif
 
 %description
 syslog-ng is an enhanced log daemon, supporting a wide range of input and
@@ -291,6 +297,15 @@ Requires: %{name}%{?_isa} = %{version}-%{release}
 The %{name}-devel package contains libraries and header files for
 developing applications that use %{name}.
 
+%package logrotate
+Summary: Logrotate script for %{name}
+Group: Development/Libraries
+Requires: %{name}%{?_isa} = %{version}-%{release}
+Conflicts: rsyslog
+
+%description logrotate
+This package provides a logrotate script for syslog-ng. It is only installed if
+ryslog is not on the system.
 
 %prep
 %setup -q
@@ -359,7 +374,15 @@ make DESTDIR=%{buildroot} install
 %{__install} -p -m 644 %{SOURCE1} %{buildroot}%{_sysconfdir}/%{name}/syslog-ng.conf
 
 %{__install} -d -m 755 %{buildroot}%{_sysconfdir}/logrotate.d
+%if 0%{?rhel} == 7
+%{__install} -p -m 644 %{SOURCE4} %{buildroot}%{_sysconfdir}/logrotate.d/syslog
+%endif
+%if 0%{?rhel} == 8
 %{__install} -p -m 644 %{SOURCE2} %{buildroot}%{_sysconfdir}/logrotate.d/syslog
+%endif
+%if 0%{?fedora} >= 28
+%{__install} -p -m 644 %{SOURCE2} %{buildroot}%{_sysconfdir}/logrotate.d/syslog-ng
+%endif
 
 %if %{with systemd}
 %{__install} -p -m 644 %{SOURCE3} %{buildroot}%{_unitdir}/%{name}.service
@@ -438,9 +461,9 @@ fi
 %dir %{_sysconfdir}/%{name}/patterndb.d
 %config(noreplace) %{_sysconfdir}/%{name}/%{name}.conf
 %config(noreplace) %{_sysconfdir}/%{name}/scl.conf
+%if 0%{?rhel} == 7
 %config(noreplace) %{_sysconfdir}/logrotate.d/syslog
-
-
+%endif
 %dir %{_sharedstatedir}/%{name}
 %{_sbindir}/%{name}
 %{_sbindir}/%{name}-debun
@@ -603,7 +626,21 @@ fi
 %{_libdir}/pkgconfig/syslog-ng-native-connector.pc
 %{_datadir}/%{name}/tools/
 
+%if 0%{?rhel} != 7
+%files logrotate
+%if 0%{?rhel} == 8
+%config(noreplace) %{_sysconfdir}/logrotate.d/syslog
+%else
+%config(noreplace) %{_sysconfdir}/logrotate.d/syslog-ng
+%endif
+%endif
+
+
 %changelog
+* Tue Jun 16 2020 Peter Czanik <peter@czanik.hu> - 3.28.1-2
+- rename logrotate file from syslog to syslog-ng on Fedora, move it
+  to subpackage on Fedora & RHEL 8 to fix: rhbz#1802165
+
 * Tue Jun 16 2020 Laszlo Varady <laszlo.varady@balabit.com> - 3.28.1-1
 - update to 3.28.1
 
