@@ -34,6 +34,7 @@
 #include "scratch-buffers.h"
 
 #include <string.h>
+#include <unistd.h>
 
 gboolean accurate_nanosleep = FALSE;
 
@@ -574,6 +575,25 @@ log_source_override_program(LogSource *self, LogMessage *msg)
   log_msg_set_value(msg, LM_V_PROGRAM, self->options->program_override, self->options->program_override_len);
 }
 
+static gchar *
+_get_pid_string(void)
+{
+#define MAX_PID_CHAR_COUNT 20 /* max PID on 64 bit systems is 2^64 - 1, which is 19 characters, +1 for terminating 0 */
+
+  static gchar pid_string[MAX_PID_CHAR_COUNT];
+
+  if (pid_string[0] == '\0')
+    {
+#ifdef _WIN32
+      g_snprintf(pid_string, MAX_PID_CHAR_COUNT, "%lu", GetCurrentProcessId());
+#else
+      g_snprintf(pid_string, MAX_PID_CHAR_COUNT, "%d", getpid());
+#endif
+    }
+
+  return pid_string;
+}
+
 static void
 log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
@@ -589,6 +609,9 @@ log_source_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options
 
   /* $HOST setup */
   log_source_mangle_hostname(self, msg);
+
+  if (self->options->use_syslogng_pid)
+    log_msg_set_value(msg, LM_V_PID, _get_pid_string(), -1);
 
   /* source specific tags */
   if (self->options->tags)
