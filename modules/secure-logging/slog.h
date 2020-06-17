@@ -42,10 +42,23 @@
 #define OPAD 0x5C
 #define EPAD 0x6A
 
-// Max msg length is 1500 bytes (RFC5424)
-#define MAX_RFC_LEN 1500
+// Buffer size for import and verification
+#define MIN_BUF_SIZE 10
+#define MAX_BUF_SIZE 1073741823 // INT_MAX/2
+#define DEF_BUF_SIZE 1000
 
-#define CUTSTRING "###CUT###"
+// Error message in case of invalid file
+#define FILE_ERROR "Invalid path or non existing regular file: "
+
+// Structure for command line arguments of template and utilities
+typedef struct
+{
+  char *longname;
+  char shortname;
+  char *description;
+  char *type;
+  char *arg;
+} SLogOptions;
 
 // Dump contents of an array on STDOUT, byte by byte, converting to hex.
 void outputByteBuffer(unsigned char *buf, int length);
@@ -110,11 +123,11 @@ int sLogDecrypt(unsigned char *ciphertext, int ciphertext_len, unsigned char *ta
                 unsigned char *iv,
                 unsigned char *plaintext);
 
-void cmac(unsigned char *key, const void *input, guint64 length, unsigned char *out, guint64 *outlen);
+void cmac(unsigned char *key, const void *input, gsize length, unsigned char *out, gsize *outlen);
 
 
-gchar *convertToBase64(unsigned char *input, guint64 len);
-guchar *convertToBin(char *input, guint64 *outLen);
+gchar *convertToBase64(unsigned char *input, gsize len);
+guchar *convertToBin(char *input, gsize *outLen);
 
 /*
  * Derive key = evolve key multiple times
@@ -220,5 +233,17 @@ void deriveEncSubKey(unsigned char *mainKey, unsigned char *encKey);
 void deriveMACSubKey(unsigned char *mainKey, unsigned char *MACKey);
 void PRF(unsigned char *key, unsigned char *originalInput, guint64 inputLength, unsigned char *output,
          guint64 outputLength);
+
+// Print usage message and clean up
+int slog_usage(GOptionContext *ctx, GOptionGroup *grp, GString *errormsg);
+
+/*
+ * Callback function to check whether a command line argument represents a valid file name
+ *
+ * Return:
+ * TRUE on success
+ * FALSE on error
+ */
+gboolean validFileNameArg(const gchar *option_name, const gchar *value, gpointer data, GError **error);
 
 #endif

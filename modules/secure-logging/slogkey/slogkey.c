@@ -33,97 +33,173 @@
 #include <openssl/sha.h>
 
 #include "messages.h"
-
 #include "slog.h"
+
+// Options
+static gboolean master = FALSE;
+static gboolean host = FALSE;
+static gboolean counter = FALSE;
+
+static GOptionEntry entries[] =
+{
+  { "master-key", 'm', 0, G_OPTION_ARG_NONE, &master, "Generate a master key", NULL },
+  { "derive-host-key", 'd', 0, G_OPTION_ARG_NONE, &host, "Derive a host key from an existing master key", NULL },
+  { "counter", 'c', 0, G_OPTION_ARG_NONE, &counter, "Display current host key counter", NULL },
+  { NULL }
+};
 
 int main(int argc, char **argv)
 {
-  if (argc<2)
+  GError *error = NULL;
+  GOptionContext *context = g_option_context_new("- secure logging key management\n\n  " \
+                                                 "Master key generation:\tslogkey -m MASTERKEY\n  " \
+                                                 "Host key derivation:\t\tslogkey -d MASTERKEY MACADDRESS SERIALNUMBER HOSTKEY\n  " \
+                                                 "Host key counter display:\tslogkey -c HOSTKEY");
+
+  g_option_context_add_main_entries (context, entries, NULL);
+  if (!g_option_context_parse (context, &argc, &argv, &error))
     {
-      printf("SYNTAX\n======\n\nTo generate new master key:\n%s -m <master key filename>\n\nTo derive a host key:\n%s -d <master key filename> <host MAC address> <host serial number> <host key filename>\n\nTo show the counter value of a key:\n%s -s <key file name>\n\n",
-             argv[0], argv[0], argv[0]);
+      g_print ("Invalid option: %s\n", error->message);
+      exit (1);
+    }
+
+  if (argc < 2)
+    {
+      g_print("%s", g_option_context_get_help(context, TRUE, NULL));
+      g_option_context_free(context);
       return -1;
     }
 
+  gboolean ok = TRUE;
+
+  // Options are mutually exclusive
+  if (master && host)
+    {
+      ok = FALSE;
+    }
+  else if (master && counter)
+    {
+      ok = FALSE;
+    }
+  else if (host && counter)
+    {
+      ok = FALSE;
+    }
+  else if (master && host && counter)
+    {
+      ok = FALSE;
+    }
+
+  if (!ok)
+    {
+      g_print("%s", g_option_context_get_help(context, TRUE, NULL));
+      g_option_context_free(context);
+      return -1;
+    }
+
+  // Master key generation and sequence counter display need one option and a single argument
+  if ((master || counter) && argc > 2)
+    {
+      g_print("%s", g_option_context_get_help(context, TRUE, NULL));
+      g_option_context_free(context);
+      return -1;
+    }
+
+  // Host key derivation needs one option and four arguments
+  if(host && argc != 5)
+    {
+      g_print("%s", g_option_context_get_help(context, TRUE, NULL));
+      g_option_context_free(context);
+      return -1;
+    }
+
+  // Option parsing successful -> context can be released
+  g_option_context_free(context);
+
   int ret = 0;
+  int success = 0;
+  int index = 1;
 
   // Initialize internal messaging
   msg_init(TRUE);
 
-  argc--;
-  if (strcmp(argv[1], "-m")==0)
+  if (master)
     {
       guchar masterkey[KEY_LENGTH];
-      char *keyfile = argv[2];
+      char *keyfile = argv[index];
 
-      ret = generateMasterKey(masterkey);
-      if(!ret)
+      success = generateMasterKey(masterkey);
+      if(!success)
         {
           msg_error("Unable to create master key");
-          return -1;
+          ret = -1;
         }
-
-      ret = writeKey((gchar *)masterkey, 0, keyfile);
-      if(!ret)
+      else
         {
-          msg_error("Unable to write master key to file", evt_tag_str("file", keyfile));
-          return -1;
+          success = writeKey((gchar *)masterkey, 0, keyfile);
+          if(!success)
+            {
+              msg_error("[SLOG] ERROR: Unable to write master key to file", evt_tag_str("file", keyfile));
+              ret = -1;
+            }
         }
       return ret;
     }
-  else if (strcmp(argv[1], "-s")==0)
+  else if (counter)
     {
       // Display key counter
       char key[KEY_LENGTH];
-      char *keyfile = argv[2];
-      size_t counter;
-      ret = readKey(key, &counter, keyfile);
-      if(!ret)
+      char *keyfile = argv[index];
+      guint64 counterValue;
+      success = readKey(key, &counterValue, keyfile);
+      if(!success)
         {
-          msg_error("Unable to read key file", evt_tag_str("file", keyfile));
-          return -1;
+          msg_error("[SLOG] ERROR: Unable to read key file", evt_tag_str("file", keyfile));
+          return ret;
         }
-      printf("This key's counter value is: %zu\n", counter);
+      printf("counter=%zu\n", counterValue);
     }
-  else if (strcmp(argv[1], "-d")==0)
+  else if (host)
     {
       // Arguments
-      gchar *masterKeyFileName = argv[2];
-      gchar *macAddr = argv[3];
-      gchar *serial = argv[4];
-      gchar *hostKeyFileName = argv[5];
+      gchar *masterKeyFileName = argv[index];
+      index++;
+      gchar *macAddr = argv[index];
+      index++;
+      gchar *serial = argv[index];
+      index++;
+      gchar *hostKeyFileName = argv[index];
 
       gchar masterKey[KEY_LENGTH] = { 0 };
 
-      guint64 counter;
+      guint64 counterValue;
 
-      ret = readKey((char *)masterKey, &counter, masterKeyFileName);
-      if (ret == 0)
+      success = readKey((char *)masterKey, &counterValue, masterKeyFileName);
+      if (!success)
         {
-          msg_error("Unable to read master key");
-          return -1;
+          msg_error("[SLOG] ERROR: Unable to read master key", evt_tag_str("file", masterKeyFileName));
+          ret = -1;
         }
-
-      guchar hostKey[KEY_LENGTH];
-
-      ret = deriveHostKey((guchar *)masterKey, macAddr, serial, hostKey);
-      if(!ret)
+      else
         {
-          msg_error("Unable to derive a host key");
-          return -1;
-        }
+          guchar hostKey[KEY_LENGTH];
 
-      ret = writeKey((char *)hostKey, 0, hostKeyFileName);
-      if(ret == 0)
-        {
-          msg_error("Unable to write host key to file", evt_tag_str("file", hostKeyFileName));
-          return -1;
+          success = deriveHostKey((guchar *)masterKey, macAddr, serial, hostKey);
+          if(!success)
+            {
+              msg_error("[SLOG] ERROR: Unable to derive a host key");
+              ret = -1;
+            }
+          else
+            {
+              success = writeKey((char *)hostKey, 0, hostKeyFileName);
+              if(success == 0)
+                {
+                  msg_error("[SLOG] ERROR: Unable to write host key to file", evt_tag_str("file", hostKeyFileName));
+                  ret = -1;
+                }
+            }
         }
-    }
-  else
-    {
-      msg_error("Unknown option.");
-      ret = -1;
     }
 
   // Release messaging resources

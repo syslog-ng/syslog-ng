@@ -1,0 +1,383 @@
+<?xml version="1.0"?>
+<reference xmlns="http://docbook.org/ns/docbook" xml:id="secure-logging-man-page" version="5.0">
+  <info>
+    <productname/>
+    <title>The secure logging manual page</title>
+  </info>
+  <refentry xml:id="secure-logging.7">
+    <refmeta>
+      <refentrytitle>secure-logging</refentrytitle>
+      <manvolnum>7</manvolnum>
+      <refmiscinfo class="version">3.28</refmiscinfo>
+      <refmiscinfo class="source"/>
+    </refmeta>
+    <refnamediv>
+      <refname>secure-logging</refname>
+      <refpurpose>Forward integrity and confidentiality for system logs</refpurpose>
+    </refnamediv>
+    <refsynopsisdiv>
+      <cmdsynopsis>
+        <command>$(slog --key-file  &lt;host key file&gt; --mac-file &lt;MAC file&gt; $RAWMSG)</command>
+      </cmdsynopsis>
+    </refsynopsisdiv>
+    <refsection version="5.0">
+      <title>Description</title>
+      <para>Secure logging is an extension to <command>syslog-ng</command> providing forward integrity and confidentiality of system logs. It is implemented in form of a module and is configured as a template in the <command>syslog-ng</command> configuration file.</para>
+      <para>The main objective of the secure logging module is to provide tamper evident logging, i.e. to adequately protect log records of an information system and to provide a sensor indicating
+attack attempts. The secure logging module achieves this by authentically encrypting each
+log record with an individual cryptographic key used only once and protecting the integrity of
+the whole log archive by a cryptographic authentication code. Each attempt to tamper
+with either an individual log record or the log archive itself will be immediately detected
+during log archive verification. Therefore, an attacker can no longer tamper with log
+      records without being detected.</para>
+      <para>In order to use the log file created by the secure logging module for analysis, the log file must first be decrypted and its integrity verified. This is achieved with a command line utility that is part of the secure logging module and is installed as part of the  <command>syslog-ng</command> package. This utility can easily be integrated into the import module of existing analysis environments. </para>
+      <para>
+      The secure logging environment uses a cryptographic key for encrypting log entries. Each individual log entry is encrypted with its own key which is immediately discarded after successful encryption in order to provide forward integrity. An efficient algorithm generates the key for the next log entry based the key used for encrypting the previous log entry. The resulting chain of keys preserves forward integrity, i.e. a potential attacker cannot deduce the previous key from the current key.</para>
+      <para>In order to ease log verification and analysis, a sequence number is added to each log entry. This sequence number is also added to the encryption key creating a one-to-one correspondence of the encryption key with the log entry. In order to prevent truncation attacks or deletion of individual log entries, a message authentication code (MAC) is iteratively applied to the complete log archive and stored in a separate file. It is used upon verification to check the integrity of the whole log archive. </para>
+      <para>Here is an example of three short original log messages that will be sent to a destination with secure logging enabled:
+      </para>
+<para>
+            <programlisting linenumbering="numbered">
+        <![CDATA[
+This is a log message
+And here comes another log message
+This is a log message with a longer text that is processed without any problems                
+         ]]>
+            </programlisting>
+</para>
+<para>In order to inspect the status of the secure logging environment, one can check the sequence counter by
+querying the key file with the <command>slogkey</command> utility like this:</para>
+<para>
+            <programlisting linenumbering="numbered">
+        <![CDATA[
+user@host:~> slogkey --counter /etc/syslog-ng/host.key 
+counter=3
+        ]]>
+            </programlisting>
+</para>
+<para>Counting starts at zero. This is why the counter is set to three after processing three messages.</para>
+  <para>The output of the secure logging template for the three example messages is shown below. One clearly sees the sequence number that was prepended to each message. The colon indicates the end of the sequence number and the start of the original message. As three message were processed, the sequence counter of the key will be three. </para>
+  <para>
+  <programlisting linenumbering="numbered">
+        <![CDATA[
+AAAAAAAAAAA=:k3/dYpLsgO2tUJKSauo6dycIBzW6OTC3pyA9TP+7AnqFgEojBzgC2rcK4OPfRtr8yg==
+AQAAAAAAAAA=:smw0ATISVgN+BYEu5d7OLBE7aQhHpK9Ro4MndmNgSVrqhcmRCBCj6DUnD6ku0Z29CKJ0N6LAJUgByX4Ev+g=
+AgAAAAAAAAA=:5UVybnKL1EAbgC4CLfd8HpgurjREf4LEN61/yWHSD2hbXjRD4QmQdtbwguT1chzdItKSQASps9QRIvR5Jd4AHzHfqxI4aRgdUBcNbAq26nwUCg5vPWygjmbtQaxZgCJYkry8slxCigmbTVs=
+         ]]>
+            </programlisting>
+  </para>
+<para>The output of a successful verification run is shown below.</para>
+<para>
+            <programlisting linenumbering="numbered">
+        <![CDATA[
+0000000000000000: This is a log message
+0000000000000001: And here comes another log message
+0000000000000002: This is a log message with a longer text that is processed without any problems
+         ]]>
+            </programlisting>
+</para>
+<para>The original log messages have been successfully restored. Additionally, the sequence counter is also prepended to the clear text messages. This helps when in analyzing problems with a particular log entry. As real log files will contain thousands of entries. the sequence counter eases identification of erroneous entries. 
+</para>
+            <para>Before the secure logging module can be used as part of an existing <command>syslog-ng</command> installation, several preparatory activities need to be performed. </para>
+    </refsection>
+    <refsection version="5.0">
+      <title>Key generation</title>
+      <para> In order to bootstrap the system, an initial key k0 must be created and installed on the log host before secure logging environment is started for the first time.</para>
+      <para>
+        The newly created host key k0 has its counter set to 0 indicating that it represents the initial host key k0. This host key k0 must be kept secret and not be disclosed to third parties. It will be required to successfully decrypt
+        and verify log archives processed by the secure logging environment. As each log entry will be encrypted with its
+        own key, a new host key will be created after successful processing of a log entry and will replace the previous key. Therefore, the initial host key needs to be stored in a safe place before starting the secure logging environment, as it will be deleted from the log host after processing of the first log entry. The following steps must be done before starting the secure logging environment. Steps 1 and 2 are performed with the <command>slogkey</command> utility. See <link linkend="slogkey.1"><command>slogkey</command>(1)</link> for details on how to generate a master key and to derive a host key from it. Step 3 and 4 depend on the actual deployment in a target environment.</para>
+      <orderedlist numeration="arabic">
+	<listitem> <para>Create a master key</para>
+        </listitem>
+	<listitem> <para>Derive an initial host key k0 from a previously created master key</para>
+    </listitem>
+<listitem><para>Store the initial host key k0 in a safe location outside of the log host</para></listitem>
+	<listitem> <para>Deploy the key k0 on the log host where the secure logging module will be used</para>
+    </listitem>
+	  </orderedlist>
+    </refsection>
+    <refsection version="5.0">
+      <title>Configuration</title>
+      <para>Secure logging is configured by adding the corresponding statements to the syslog-ng.conf file. See  <link linkend="syslog-ng.conf.5"><command>syslog-ng.conf</command>(5)</link> for information on how to configure <command>syslog-ng</command> using the configuration file. Details can be found in the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/index.html"><command>The syslog-ng Administrator Guide</command></link>.</para>
+
+      <para> Secure logging is implemented as a template and is configured accordingly. Apart from the actual template configuration, no other settings are required in order to activate secure logging. The secure logging is activated by placing the following statement in the configuration file</para>
+      <para><command>template("$(slog --key-file  &lt;host key file&gt; --mac-file &lt;MAC file&gt; $RAWMSG)\n");</command></para>
+      <para>where</para>
+      <para>
+      <variablelist>
+        <?dbfo term-width="1.25in"?>
+        <varlistentry>
+          <term>
+           <command>slog</command>
+          </term>
+          <listitem>
+            <para>The name of the secure logging template function. This name can be also be found by calling <command>syslog-ng</command> with the <command>--module-registry</command> arguments and checking the <command>template-func</command> property of the secure logging module in the corresponding output.</para>
+         </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+           <command>--key-file</command> or <command>-k</command>
+          </term>
+          <listitem>
+            <para>The host key. &lt;host key file&gt; is the full path of the file storing the host key on the log host. If this arguments is not supplied or does not point to a valid regular key file, <command>syslog-ng</command> will not start and a display a corresponding error message.</para>
+         </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>--mac-file</command> or <command>-m</command>
+          </term>
+          <listitem>
+            <para>The MAC file. &lt;MAC file&gt; is the full path of the MAC file on the log host. The file does not need to exist, as it will be automatically created upon the initial start. If the path is not correct, <command>syslog-ng</command> will not start and a display a corresponding error message.</para>
+          </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>$RAWMSG</command> 
+          </term>
+          <listitem>
+            <para>$RAWMSG provides access to the original log message received at the source. This macro is only available if the <command>store-raw-message</command> flag was set for the source. Otherwise, an empty string will be passed to the secure logging template. If access to the original message is not available, e.g. if the source does not support the <command>store-raw-message</command> flag, then the $MSG macro can also be used. In this case, however, the integrity guarantee provided by secure logging is limited to the content that this macro provides and does not protect the complete original message.
+            </para>
+         </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term><command>\n</command> 
+          </term>
+          <listitem>
+            <para>\n is the line separator. This is important, as the secure logging template expects log entries to be separated by a line separator. When detecting a line separator, the log entry is regarded as complete and is encrypted with the current host key. Therefore, only a single line separator is allowed. </para>
+         </listitem>
+        </varlistentry>
+       </variablelist>
+      </para>
+      <para>The secure logging template can be combined with any source or destination within the following limitations:
+      <itemizedlist>
+	<listitem> <para>Sources must be line-oriented. Secure logging uses a line separator in order to distinguish between individual log entries. Sources which provide data in a different format, e.g. in the form of raw data obtained directly from a database system, cannot currently be used with the secure logging template, as the separation of log entries is not clearly defined for this type of data. </para>
+        </listitem>
+	<listitem> <para>Only sources for which the <command>store-raw-message</command> flag is implemented and set do benefit from the integrity guarantee provided by the secure logging template. Secure logging aims at protecting the integrity of complete log messages including all associated meta-data, such as timestamps and host names. <command>syslog-ng</command> parses the log message into its internal format and provide easy access to parts of a message through macros. While this is convenient when rewriting log messages, it is not helpful for secure logging. <command>syslog-ng</command> provides the <command>store-raw-message</command> flag which provides access to a copy of the original log message after parsing. This is the log message processed and protected by the secure logging template. If the source does not support the <command>store-raw-message</command> flag, then the $MSG macro can also be used. However, in this case the integrity guarantee provided by secure logging is limited to the content that this macro provides.</para>
+        </listitem>
+	    <listitem> <para>Log rotation of any kind cannot be used with destinations using secure logging. The reason is that log rotate will overwrite, i.e. delete previous log files. This destroys the cryptographic chain of trust of the log entries making recovery impossible. In order to allow for a an efficient handling of log files, the secure logging environment features iterative verification. Using iterative verification, a log file can be verified in steps. For this to work, the log file must first be downloaded from the log host, together with the corresponding host key and MAC file to a verification host. After this download the log file can be safely deleted from the log host. Verification is then performed on the verification host using the iterative mode of the <command>slogverify</command> utility. See  <link linkend="slogverify.1"><command>slogverify</command>(1)</link> for details.</para>
+        </listitem>
+        </itemizedlist>
+      </para>
+      <para>
+        The following example configuration shows the use of the secure logging template on a file destination. 
+        </para>
+      <para>
+      <programlisting linenumbering="numbered">
+        <![CDATA[
+#############################################################################
+# Minimal syslog-ng.conf file with secure logging enabled. Encrypted log
+# entries will be logged to a single file called /var/log/messages.slog
+#
+
+@version: 3.28
+@include "scl.conf"
+
+source s_local {
+    system();
+    internal();
+};
+
+source s_network {
+    network(
+        transport("udp")
+        port(514)
+        flags(store-raw-message)
+    );
+};
+
+# Secure logging template definition
+template secure_logging { 
+    template("$(slog --key-file /etc/syslog-ng/host.key --mac-file /etc/syslog-ng/mac.dat $RAWMSG)\n");
+};
+
+# This configures a secure logging destination
+destination d_local {
+	file("/var/log/messages.slog" template(secure_logging));
+};
+
+log {
+    source(s_local);
+
+    # This source has the raw message flag set
+    source(s_network);
+
+    # This statement activates secure logging for this destination
+    destination(d_local);
+};
+        ]]>
+      </programlisting>
+      </para>
+    </refsection>      
+    <refsection version="5.0">
+      <title>Log Verification</title>
+      <para>In order to analyze the log file created in a secure logging environment, the log files must be decrypted and their integrity
+      be verified. Verification requires both the initial host key k0 and the corresponding MAC file and is performed with the <command>slogverify</command> utility. It is not normally performed on the log host where the secure logging environment is producing log data. In a typical deployment, log files would be retrieved from the log host and transferred to a central log collector where verification it performed. As verification requires the use of the initial host key k0, it should only be performed in a trusted environment. </para>
+      <refsection version="5.0">
+      <title>Normal mode</title>
+      <para>In normal mode, a complete log archive is verified at once. In a typical environment, this would mean retrieving a log file together with is MAC file from a log host and retrieving the corresponding initial key k0 form a safe location and supplying them to the <command>slogverify </command> utility. A typical call sequence for verification in normal mode would look like this</para>
+      <para><command>slogverify --key-file host0.key --mac-file mac.dat /var/log/messages.slog /var/log/verified/messages
+      </command></para>
+      <para>with</para>
+      <para>
+      <variablelist>
+        <?dbfo term-width="1.25in"?>
+        <varlistentry>
+          <term>
+           <command>host0.key</command>
+          </term>
+          <listitem>
+            <para>The initial host key k0. Supplying the initial key k0 is enough for decrypting all log entries, as the key derivation algorithm is able to generate the necessary keys for all subsequent log entries based on the initial key k0.</para>
+         </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+           <command>mac.dat</command>
+          </term>
+          <listitem>
+            <para>The MAC file from the log host.</para>
+         </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+           <command>/var/log/messages.slog</command>
+          </term>
+          <listitem>
+            <para>The file containing the encrypted log entries as retrieved from a log host.</para>
+         </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+           <command>/var/log/verified/messages</command>
+          </term>
+          <listitem>
+            <para>The file receiving the plain text log after decryption. </para>
+         </listitem>
+        </varlistentry>
+         </variablelist>
+      </para>
+      <para>Log files may become large and not fit into system memory. Verification is therefore performed in chunks. Each part of the log file is transferred to an internal buffer on which verification is performed. After the buffer has been processed, the next chunk is fetched. An optional buffer argument can be supplied to the <command>slogverify</command> utility in order to change the default buffer size of 1000 log entries to a number suitable for the system on which the verification is performed, for example</para>
+      <para><command>slogverify --key-file host.key --mac-file mac.dat /var/log/messages.slog /var/log/verified/messages 8000</command></para>
+      <para> See <link linkend="slogverify.1"><command>slogverify</command>(1)</link> for details on verification in normal mode.</para>
+      </refsection>
+      <refsection version="5.0">
+      <title>Iterative mode</title>
+      <para>
+      Verification in normal mode may not be suitable for some application scenarios. Many log hosts use log rotation in order to preserve storage space. In log rotation, a threshold for the maximum amount of storage space and the number of generations is defined for different type of log files. When either storage space is exhausted or the number of generations is reached, the oldest log file will be overwritten by new incoming log data. This procedure is not possible in secure logging environment, as overwriting, i.e. deleting a log file would break the cryptographic chain that is established between the log entries. This comes as no surprise, as one of the main objectives of secure logging is to protect against deletion of log entries by a potential attacker.</para>
+      <para>In order allow for a procedure similar to log rotation, the secure logging environment features an iterative mode. In iterative mode, log files can be split into different files and each of these files can be verified separately. Care must be taken when performing verification in iterative mode, as each of the different log files needs to be accompanied by a copy of the host key and the MAC files present on the system at the time of retrieval. A typical usage scenario for the iterative mode would look like this:
+      <orderedlist>
+	<listitem> <para>Define a storage threshold for the secure logging file destination. In this example we assume 500MB.</para>
+        </listitem>
+	<listitem> <para>Let the secure logging environment produce log data that is written to the destination until 500MB are reached.</para>
+        </listitem>
+	    <listitem> <para>Stop the secure logging environment and retrieve the log file, the host key and the MAC files from the log host. 
+        </para>
+        </listitem>
+	    <listitem> <para>Delete the log file on the log host but leave host key and MAC file untouched.
+        </para>
+        </listitem>
+	    <listitem> <para>Restart the secure logging environment.
+        </para>
+        </listitem>
+	    <listitem> <para>Perform verification in iterative mode with the log file, the host key and the MAC just retrieved.
+        </para>
+        </listitem>
+          </orderedlist>
+      </para>
+      <para>Steps 2-6 have to repeated each time the log file reaches a size of 50 MB. Assuming that the log file parts will be named after the iteration, e.g. log.1, log.2, log.3, etc. and a similar convention is applied to the host keys and MAC files, a typical call sequence for the validation of a log file part in iterative mode after three iterations will look like this:
+      </para>
+      <para><command>slogverify --iterative --prev-key-file host.key.2 --prev-mac-file mac.dat.2 --mac-file mac.dat /var/log/messages.slog.3 /var/log/verified/messages.3</command></para>
+      <para>with</para>
+      <para>
+      <variablelist>
+        <?dbfo term-width="1.25in"?>
+        <varlistentry>
+          <term>
+           <command>host.key.2</command>
+          </term>
+          <listitem>
+            <para>The host key from the previous iteration. In this example, this is the second iteration.</para>
+         </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+           <command>mac.dat.2</command>
+          </term>
+          <listitem>
+            <para>The MAC file from the previous iteration. In the example, verification is performed during the third iteration, so the MAC file from the second iteration is required.</para>
+         </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+           <command>mac.dat</command>
+          </term>
+          <listitem>
+            <para>The current MAC file from the log host.</para>
+         </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+           <command>/var/log/messages.slog.3</command>
+          </term>
+          <listitem>
+            <para>The file part containing the encrypted log entries as retrieved from the log host during the third iteration.</para>
+         </listitem>
+        </varlistentry>
+        <varlistentry>
+          <term>
+           <command>/var/log/verified/messages.3</command>
+          </term>
+          <listitem>
+            <para>The file receiving the plain text log after decryption during the third iteration. </para>
+         </listitem>
+        </varlistentry>
+      </variablelist>
+    </para>
+      <para>In a real deployment, the above steps would typically be automated using a scripting engine.
+      </para>
+      <para> See <link linkend="slogverify.1"><command>slogverify</command>(1)</link> for details on verification in iterative mode.</para>
+      </refsection>
+    </refsection>      
+    <refsection>
+      <title>Files</title>
+      <para>
+        <filename>/usr/bin/slogkey</filename>
+      </para>
+      <para>
+        <filename>/usr/bin/slogencrypt</filename>
+      </para>
+      <para>
+        <filename>/usr/bin/slogverify</filename>
+      </para>
+      <para>
+        <filename>/etc/syslog-ng.conf</filename>
+      </para>
+    </refsection>
+    <refsection>
+      <title>See also</title>
+      <para>
+        <link linkend="syslog-ng.conf.5"><command>syslog-ng.conf</command>(5)</link>
+      </para>
+      <para>
+        <link linkend="slogkey.1"><command>slogkey</command>(1)</link>
+      </para>
+      <para>
+        <link linkend="slogencrypt.1"><command>slogencrypt</command>(1)</link>
+      </para>
+      <para>
+        <link linkend="slogverify.1"><command>slogverify</command>(1)</link>
+      </para>
+      <note version="5.0">
+        <para>For the detailed documentation of see <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://www.balabit.com/documents/syslog-ng-ose-latest-guides/en/syslog-ng-ose-guide-admin/html/index.html"><command>The syslog-ng Administrator Guide</command></link></para>
+        <para>If you experience any problems or need help with syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://lists.balabit.hu/mailman/listinfo/syslog-ng"><command>syslog-ng mailing list</command></link>.</para>
+        <para>For news and notifications about of syslog-ng, visit the <link xmlns:ns1="http://www.w3.org/1999/xlink" ns1:href="https://syslog-ng.org/blogs/"><command>syslog-ng blogs</command></link>.</para>
+        <para>For specific information requests related to secure logging send a mail to the Airbus Secure Logging Team &lt;secure-logging@airbus.com&gt;.</para>
+      </note>
+    </refsection>
+    <refsection version="5.0">
+      <title>Author</title>
+      <para>This manual page was written by the Airbus Secure Logging Team &lt;secure-logging@airbus.com&gt;.</para>
+    </refsection>
+    <refsection version="5.0">
+      <title>Copyright</title>
+    </refsection>
+  </refentry>
+</reference>

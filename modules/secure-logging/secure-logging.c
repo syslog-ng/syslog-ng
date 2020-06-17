@@ -76,49 +76,88 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
 {
   // Get key filename and store in internal state
   // generate initial BigMAC file
-
   TFSlogState *state = (TFSlogState *) s;
 
-  gchar *keypathbuffer, *macpathbuffer;
+  gchar *keypathbuffer = NULL;
+  gchar *macpathbuffer = NULL;
   GOptionContext *ctx;
+  GOptionGroup *grp;
 
   if ((mlock(state->key, KEY_LENGTH)!=0)||(mlock(state->bigMAC, CMAC_LENGTH)!=0))
     {
-      msg_warning("[SLOG] WARNING: Cannot mlock memory.");
+      msg_warning("[SLOG] WARNING: Unable to acquire memory lock");
     }
 
   state->badKey = FALSE;
 
-  GOptionEntry slog_options[] =
+  SLogOptions options[] =
   {
-    { "keyfile", 'k', 0, G_OPTION_ARG_FILENAME, &keypathbuffer, NULL, NULL },
-    { "macfile", 'm', 0, G_OPTION_ARG_FILENAME, &macpathbuffer, NULL, NULL },
+    { "key-file", 'k', "Name of the host key file", "FILE", NULL },
+    { "mac-file", 'm', "Name of the MAC file", "FILE", NULL },
     { NULL }
   };
 
-  ctx = g_option_context_new("slog");
-  g_option_context_add_main_entries(ctx, slog_options, NULL);
+  GOptionEntry slog_options[] =
+  {
+    { options[0].longname, options[0].shortname, 0, G_OPTION_ARG_CALLBACK, &validFileNameArg, options[0].description, options[0].type },
+    { options[1].longname, options[1].shortname, 0, G_OPTION_ARG_FILENAME, &macpathbuffer, options[1].description, options[1].type },
+    { NULL }
+  };
 
-  if (!g_option_context_parse(ctx, &argc, &argv, error))
+  ctx = g_option_context_new("- Secure logging template");
+  grp = g_option_group_new("Basic options", "Basic template options", "basic", &options, NULL);
+
+  g_option_group_add_entries(grp, slog_options);
+  g_option_context_set_main_group(ctx, grp);
+
+  GError *argError = NULL;
+
+  if (!g_option_context_parse(ctx, &argc, &argv, &argError))
     {
-      state->badKey = TRUE;
+      if (argError != NULL)
+        {
+          g_propagate_error (error, argError);
+        }
+
       g_option_context_free(ctx);
       return FALSE;
     }
-  g_option_context_free(ctx);
-
 
   if (argc < 2)
     {
       state->badKey = TRUE;
       g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
-                  "[SLOG] ERROR: $(slog) parsing failed, invalid number of arguments");
+                  "[SLOG] ERROR: Template parsing failed. Invalid number of arguments. Usage: $(slog --key-file FILE --mac-file FILE $RAWMSG)\\n");
+      g_option_context_free(ctx);
+      return FALSE;
+    }
+
+  keypathbuffer = options[0].arg;
+
+  if(keypathbuffer == NULL)
+    {
+      state->badKey = TRUE;
+
+      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
+                  "[SLOG] ERROR: Template parsing failed. Invalid or missing key file");
+      g_option_context_free(ctx);
+      return FALSE;
+    }
+
+  if(macpathbuffer == NULL)
+    {
+      state->badKey = TRUE;
+
+      g_set_error(error, LOG_TEMPLATE_ERROR, LOG_TEMPLATE_ERROR_COMPILE,
+                  "[SLOG] ERROR: Template parsing failed. Invalid or missing MAC file");
+      g_option_context_free(ctx);
       return FALSE;
     }
 
   if (!tf_simple_func_prepare(self, state, parent, argc, argv, error))
     {
       state->badKey = TRUE;
+      g_option_context_free(ctx);
       return FALSE;
     }
 
@@ -126,26 +165,30 @@ tf_slog_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *parent, gint
   state->keypath = keypathbuffer;
   state->macpath = macpathbuffer;
 
+  // Done with argument parsing
+  g_option_context_free(ctx);
+
   int res = readKey((char *)state->key, (guint64 *)&(state->numberOfLogEntries), state->keypath);
 
   if (res == 0)
     {
       state->badKey = TRUE;
-      msg_warning("[SLOG] WARNING: $(slog) parsing failed, key file not found or invalid. Reverting to cleartext logging.");
+      msg_warning("[SLOG] WARNING: Template parsing failed, key file not found or invalid. Reverting to clear text logging.");
       return TRUE;
     }
 
-  msg_info("SLOG: Key successfully loaded");
+  msg_debug("[SLOG] INFO: Key successfully loaded");
 
   res = readBigMAC(state->macpath, (char *)state->bigMAC);
 
-  if (res == 0)
+  if (res == 0 && state->numberOfLogEntries > 0)
     {
-      msg_warning("[SLOG] WARNING: Aggregated MAC not found or invalid", evt_tag_str("File", state->macpath));
-      return TRUE;
+      msg_warning("[SLOG] ERROR: Aggregated MAC not found or invalid", evt_tag_str("File", state->macpath));
     }
-
-  msg_info("[SLOG] $(slog) template with key and MAC file successfully initialized.");
+  else
+    {
+      msg_debug("[SLOG] INFO: Template with key and MAC file successfully initialized.");
+    }
 
   return TRUE;
 }
@@ -162,7 +205,7 @@ tf_slog_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs 
   // If we do not have a good key, just forward input
   if (state->badKey == TRUE)
     {
-      g_string_assign (result, args->argv[0]->str);
+      g_string_append (result, args->argv[0]->str);
       return;
     }
 
