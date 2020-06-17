@@ -73,7 +73,6 @@ jobs:
       - name: Light
         working-directory: ./build
         run: |
-          [ ${{ matrix.build-tool }} = 'cmake' ] && export cmake_build=1
           make pytest-self-check
           make pytest-linters
           make pytest-check
