@@ -27,7 +27,7 @@
     </refsection>
     <refsection>
       <title>Arguments</title>
-      <para>The arguments depend on the operating mode.</para>  
+      <para>The arguments depend on the operating mode.</para>
       <variablelist>
         <?dbfo term-width="1.25in"?>
         <varlistentry>
@@ -35,7 +35,7 @@
            <command>Master key generation</command>
           </term>
           <listitem>
-            <para>Call sequence: slogkey --masterḱey &lt;filename&gt;</para>
+            <para>Call sequence: slogkey --master-ḱey &lt;filename&gt;</para>
 	    <para>&lt;filename&gt;: The name of the file to which the master key will be written.</para>
          </listitem>
         </varlistentry>
