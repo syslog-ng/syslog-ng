@@ -164,7 +164,6 @@ matrix:
         - make python-pylint
         - make pytest-linters
         - make VERBOSE=1 func-test
-        - export cmake_build=1
         - make pytest-check
 
     - env: B=cmake
