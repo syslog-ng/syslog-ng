@@ -1,1 +1,0 @@
-`file-source`: Throw error, when `follow-freq()` is set with a negative float number.
