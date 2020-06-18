@@ -39,6 +39,12 @@ class FileIO(File):
         content = self.__readable_file.read()
         return content
 
+    def readline(self):
+        if not self.__readable_file:
+            self.__readable_file = self.open_file(mode="r")
+
+        return self.__readable_file.readline()
+
     def write(self, content):
         if self.__writeable_file is None:
             self.__writeable_file = self.open_file(mode="a+")

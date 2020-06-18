@@ -24,7 +24,7 @@ import logging
 
 from src.driver_io.file.file_io import FileIO
 from src.message_reader.message_reader import MessageReader
-from src.message_reader.message_reader import READ_ALL_MESSAGES
+from src.message_reader.message_reader import READ_ALL_AVAILABLE_MESSAGES
 from src.message_reader.single_line_parser import SingleLineParser
 
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 class ConsoleLogReader(object):
     def __init__(self, instance_paths):
         self.__stderr_io = FileIO(instance_paths.get_stderr_path())
-        self.__message_reader = MessageReader(self.__stderr_io.read, SingleLineParser())
+        self.__message_reader = MessageReader(self.__stderr_io.readline, SingleLineParser())
 
     def wait_for_start_message(self):
         syslog_ng_start_message = ["syslog-ng starting up;"]
@@ -55,7 +55,7 @@ class ConsoleLogReader(object):
         if not self.__stderr_io.wait_for_creation():
             raise Exception
 
-        console_log_messages = self.__message_reader.pop_messages(counter=READ_ALL_MESSAGES)
+        console_log_messages = self.__message_reader.pop_messages(counter=READ_ALL_AVAILABLE_MESSAGES)
         console_log_content = "".join(console_log_messages)
 
         result = []
@@ -65,7 +65,7 @@ class ConsoleLogReader(object):
 
     def check_for_unexpected_messages(self, unexpected_messages):
         unexpected_patterns = ["Plugin module not found"]
-        console_log_messages = self.__message_reader.peek_messages(counter=READ_ALL_MESSAGES)
+        console_log_messages = self.__message_reader.peek_messages(counter=READ_ALL_AVAILABLE_MESSAGES)
         if unexpected_messages is not None:
             unexpected_patterns.append(unexpected_messages)
         for unexpected_pattern in unexpected_patterns:
@@ -75,7 +75,7 @@ class ConsoleLogReader(object):
                     raise Exception
 
     def dump_stderr(self, last_n_lines=10):
-        console_log_messages = self.__message_reader.peek_messages(counter=READ_ALL_MESSAGES)
+        console_log_messages = self.__message_reader.peek_messages(counter=READ_ALL_AVAILABLE_MESSAGES)
         logger.error("".join(console_log_messages[-last_n_lines:]))
 
     @staticmethod

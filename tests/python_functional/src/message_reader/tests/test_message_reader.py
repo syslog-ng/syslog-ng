@@ -21,11 +21,13 @@
 # COPYING for details.
 #
 #############################################################################
+import os
+
 import pytest
 
 from src.common.operations import open_file
 from src.message_reader.message_reader import MessageReader
-from src.message_reader.message_reader import READ_ALL_MESSAGES
+from src.message_reader.message_reader import READ_ALL_AVAILABLE_MESSAGES
 from src.message_reader.single_line_parser import SingleLineParser
 
 
@@ -35,6 +37,7 @@ def prepare_input_file(input_content, temp_file):
 
     writeable_file.write(input_content)
     writeable_file.flush()
+    os.fsync(writeable_file.fileno())
     return writeable_file, readable_file
 
 
@@ -92,7 +95,7 @@ def test_multiple_buffer_and_parse(test_message, temp_file):
             ["test message 1\n", "test message 2\n"],
             [],
         ),
-        (  # pop all messages from buffer, 0 = READ_ALL_MESSAGES
+        (  # pop all messages from buffer, 0 = READ_ALL_AVAILABLE_MESSAGES
             "test message 1\ntest message 2\n",
             0,
             ["test message 1\n", "test message 2\n"],
@@ -140,7 +143,7 @@ def test_writing_popping_in_sequence(temp_file):
     writeable_file, readable_file = prepare_input_file(test_message, temp_file)
     single_line_parser = SingleLineParser()
 
-    message_reader = MessageReader(readable_file.read, single_line_parser)
+    message_reader = MessageReader(readable_file.readline, single_line_parser)
 
     assert message_reader.pop_messages(counter=1) == test_message.splitlines(True)
 
@@ -158,7 +161,8 @@ def test_writing_popping_in_sequence(temp_file):
     test_message = "test message 6\ntest message 7\ntest message 8\ntest message 9\n"
     writeable_file.write(test_message)
     writeable_file.flush()
-    assert message_reader.pop_messages(counter=READ_ALL_MESSAGES) == test_message.splitlines(True)
+    os.fsync(writeable_file.fileno())
+    assert message_reader.pop_messages(counter=READ_ALL_AVAILABLE_MESSAGES) == test_message.splitlines(True)
 
     test_message = "test message 10\n"
     writeable_file.write(test_message)
@@ -187,5 +191,5 @@ def test_read_all_messages():
     generator = read_generator()
     message_reader = MessageReader(lambda: next(generator), single_line_parser)
 
-    assert len(message_reader.pop_messages(counter=READ_ALL_MESSAGES)) == 0
-    assert len(message_reader.pop_messages(counter=READ_ALL_MESSAGES)) == 2
+    assert len(message_reader.pop_messages(counter=READ_ALL_AVAILABLE_MESSAGES)) == 0
+    assert len(message_reader.pop_messages(counter=READ_ALL_AVAILABLE_MESSAGES)) == 2
