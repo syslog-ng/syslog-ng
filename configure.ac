@@ -40,7 +40,7 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 dnl ***************************************************************************
 dnl dependencies
 
-GLIB_MIN_VERSION="2.26.1"
+GLIB_MIN_VERSION="2.28"
 OPENSSL_MIN_VERSION="0.9.8"
 LIBDBI_MIN_VERSION="0.9.0"
 LIBRABBITMQ_MIN_VERSION="0.5.3"
@@ -914,6 +914,8 @@ if test "$linking_mode" != "dynamic"; then
 	AC_CHECK_FUNC(g_hash_table_new, blb_cv_static_glib=yes, blb_cv_static_glib=no)
 	LIBS=$old_LIBS
 fi
+
+GLIB_CFLAGS="${GLIB_CFLAGS} -DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_28 -DGLIB_VERSION_MAX_ALLOWED=0x023C00"
 
 old_CPPFLAGS=$CPPFLAGS
 CPPFLAGS="$GLIB_CFLAGS"

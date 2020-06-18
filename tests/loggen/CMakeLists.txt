@@ -9,19 +9,18 @@ set(LOGGEN_HELPER_SOURCE
 
 add_library(loggen_helper STATIC ${LOGGEN_HELPER_SOURCE})
 
-include_directories(loggen_helper PUBLIC
+target_include_directories(loggen_helper PUBLIC
   ${CORE_INCLUDE_DIRS}
   ${CMAKE_CURRENT_SOURCE_DIR}
-  ${GLIB_INCLUDE_DIRS}
   ${PROJECT_SOURCE_DIR}/lib
   )
 
 target_link_libraries(
   loggen_helper
   PUBLIC
-  ${GLIB_GMODULE_LIBRARIES}
-  ${GLIB_GTHREAD_LIBRARIES}
-  ${GLIB_LIBRARIES}
+  GLib::GLib
+  GLib::GModule
+  GLib::GThread
   OpenSSL::SSL
   )
 
@@ -32,14 +31,13 @@ set_target_properties(loggen_helper
 install(TARGETS loggen_helper ARCHIVE DESTINATION ${LOGGEN_PLUGIN_INSTALL_DIR})
 
 # ########### loggen_plugin common static lib for plugins #####
-set(LOGGEN_PLUGIN_SOURCE
+
+add_library(loggen_plugin STATIC
   loggen_plugin.c
   loggen_plugin.h
-  )
+)
 
-add_library(loggen_plugin STATIC ${LOGGEN_HELPER_SOURCE})
-
-include_directories(loggen_plugin PUBLIC loggen_helper)
+target_link_libraries(loggen_plugin PUBLIC loggen_helper)
 
 set_target_properties(loggen_plugin
     PROPERTIES VERSION ${SYSLOG_NG_VERSION}

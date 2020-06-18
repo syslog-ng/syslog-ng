@@ -9,12 +9,11 @@ add_library(secret-storage SHARED ${SECRET_STORAGE_SOURCES})
 
 target_include_directories(secret-storage
   PRIVATE
-    ${GLIB_INCLUDE_DIRS}
     # workaround, "compat" should be a separate static library
     ${PROJECT_SOURCE_DIR}/lib
 )
 
-target_link_libraries(secret-storage PRIVATE ${GLIB_LIBRARIES})
+target_link_libraries(secret-storage PRIVATE GLib::GLib)
 set_target_properties(secret-storage PROPERTIES C_VISIBILITY_PRESET hidden)
 
 install(TARGETS secret-storage LIBRARY DESTINATION lib)

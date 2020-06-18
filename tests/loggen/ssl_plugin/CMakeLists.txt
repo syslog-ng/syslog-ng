@@ -1,6 +1,5 @@
 include_directories(loggen_ssl_plugin
   ${CORE_INCLUDE_DIRS}
-  ${GLIB_INCLUDE_DIRS}
   ${LOGGEN_INCLUDE_DIR}
   )
 
@@ -18,9 +17,9 @@ add_library(loggen_ssl_plugin
 target_link_libraries(
   loggen_ssl_plugin
   loggen_helper
-  ${GLIB_GMODULE_LIBRARIES}
-  ${GLIB_GTHREAD_LIBRARIES}
-  ${GLIB_LIBRARIES}
+  GLib::GLib
+  GLib::GModule
+  GLib::GThread
   OpenSSL::SSL
   )
 

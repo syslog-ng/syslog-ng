@@ -144,7 +144,7 @@ shell-%: setup
 images: $(foreach image,$(IMAGES), image-$(image))
 image: image-$(DEFAULT_IMAGE)
 image-kira: image-ubuntu-bionic
-image-devshell: image-ubuntu-bionic
+image-devshell: image-ubuntu-focal
 image-%:
 	$(DBLD_DIR)/prepare-image-build $* && \
         $(DOCKER) build $(DOCKER_BUILD_ARGS) --build-arg=OS_PLATFORM=$* --build-arg=COMMIT=$$(git rev-parse --short HEAD) --network=host -t balabit/syslog-ng-$* -f $(DBLD_DIR)/images/$*.dockerfile $(DBLD_DIR)

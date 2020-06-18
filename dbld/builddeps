@@ -85,6 +85,11 @@ function install_gradle {
     ldconfig
 }
 
+function install_pip2 {
+    download_target "https://bootstrap.pypa.io/get-pip.py" get-pip.py
+    python2 get-pip.py
+}
+
 function download_target() {
     target=$1
     output=$2
