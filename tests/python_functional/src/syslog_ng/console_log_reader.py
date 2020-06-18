@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 class ConsoleLogReader(object):
     def __init__(self, instance_paths):
         self.__stderr_io = FileIO(instance_paths.get_stderr_path())
-        self.__message_reader = MessageReader(self.__stderr_io.read, SingleLineParser())
+        self.__message_reader = MessageReader(self.__stderr_io.readline, SingleLineParser())
 
     def wait_for_start_message(self):
         syslog_ng_start_message = ["syslog-ng starting up;"]
