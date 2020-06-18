@@ -23,7 +23,7 @@
 from src.common.blocking import DEFAULT_TIMEOUT
 from src.common.blocking import wait_until_true_custom
 
-READ_ALL_MESSAGES = 0
+READ_ALL_AVAILABLE_MESSAGES = 0
 
 
 class MessageReader(object):
@@ -33,7 +33,7 @@ class MessageReader(object):
 
     def __buffer_and_parse(self, counter):
         buffered_chunk = self.__read()
-        if counter == READ_ALL_MESSAGES:
+        if counter == READ_ALL_AVAILABLE_MESSAGES:
             if buffered_chunk:
                 self.__parser.parse_buffer(buffered_chunk)
                 return False
@@ -44,7 +44,7 @@ class MessageReader(object):
             return len(self.__parser.msg_list) >= counter
 
     def __map_counter(self, counter):
-        if counter == READ_ALL_MESSAGES:
+        if counter == READ_ALL_AVAILABLE_MESSAGES:
             return len(self.__parser.msg_list)
         return counter
 
