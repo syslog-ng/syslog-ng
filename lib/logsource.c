@@ -304,8 +304,8 @@ static gboolean
 _reclaim_window_instead_of_rebalance(LogSource *self)
 {
   //check pending_reclaimed
-  gssize total_reclaim = (gssize)atomic_gssize_set_and_get(&self->pending_reclaimed, 0);
-  gssize to_be_reclaimed = (gssize)atomic_gssize_get(&self->window_size_to_be_reclaimed);
+  gssize total_reclaim = atomic_gssize_set_and_get(&self->pending_reclaimed, 0);
+  gssize to_be_reclaimed = atomic_gssize_get(&self->window_size_to_be_reclaimed);
   gboolean reclaim_in_progress = (to_be_reclaimed > 0);
 
   if (total_reclaim > 0)
