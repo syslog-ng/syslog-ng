@@ -43,20 +43,9 @@ _is_shutdown_sent(gint shutdown_rc)
   return shutdown_rc >= 0;
 }
 
-static gint
-log_transport_tls_send_shutdown(LogTransportTLS *self)
+static inline void
+_handle_shutdown_error(LogTransportTLS *self, gint ssl_error)
 {
-  self->sending_shutdown = TRUE;
-  gint shutdown_rc = SSL_shutdown(self->tls_session->ssl);
-
-  if (_is_shutdown_sent(shutdown_rc))
-    {
-      self->sending_shutdown = FALSE;
-      return shutdown_rc;
-    }
-
-  gint ssl_error = SSL_get_error(self->tls_session->ssl, shutdown_rc);
-
   switch (ssl_error)
     {
     case SSL_ERROR_WANT_READ:
@@ -80,6 +69,22 @@ log_transport_tls_send_shutdown(LogTransportTLS *self)
       self->sending_shutdown = FALSE;
       break;
     }
+}
+
+static gint
+log_transport_tls_send_shutdown(LogTransportTLS *self)
+{
+  self->sending_shutdown = TRUE;
+  gint shutdown_rc = SSL_shutdown(self->tls_session->ssl);
+
+  if (_is_shutdown_sent(shutdown_rc))
+    {
+      self->sending_shutdown = FALSE;
+      return shutdown_rc;
+    }
+
+  gint ssl_error = SSL_get_error(self->tls_session->ssl, shutdown_rc);
+  _handle_shutdown_error(self, ssl_error);
 
   return shutdown_rc;
 }
