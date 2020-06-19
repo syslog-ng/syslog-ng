@@ -27,7 +27,7 @@ jobs:
 
     steps:
       - name: Checkout syslog-ng source
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
 
       - name: autogen.sh
         if: matrix.build-tool == 'autotools'
@@ -100,7 +100,7 @@ jobs:
 
     steps:
       - name: Checkout syslog-ng source
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
 
       - name: autogen.sh
         run: ./autogen.sh
@@ -120,7 +120,7 @@ jobs:
 
     steps:
       - name: Checkout syslog-ng source
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
 
       - name: Style check
         run: |
@@ -143,7 +143,7 @@ jobs:
 
     steps:
       - name: Checkout syslog-ng source
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
 
       - name: Copyright check
         run: tests/copyright/check.sh . .
@@ -162,7 +162,7 @@ jobs:
 
     steps:
       - name: Checkout syslog-ng source
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
 
       - name: Commits check (Pull request)
         if: github.event_name == 'pull_request'
