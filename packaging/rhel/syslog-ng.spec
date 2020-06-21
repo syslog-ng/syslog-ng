@@ -569,10 +569,10 @@ fi
 %files slog
 %{_libdir}/%{name}/libsecure-logging.so
 %{_bindir}/slogkey
-%{_bindir}/slogimport
+%{_bindir}/slogencrypt
 %{_bindir}/slogverify
 %{_mandir}/man1/slogkey.1*
-%{_mandir}/man1/slogimport.1*
+%{_mandir}/man1/slogencrypt.1*
 %{_mandir}/man1/slogverify.1*
 
 %files python
