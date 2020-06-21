@@ -55,7 +55,7 @@ tests/python_functional/.pre-commit-config.yaml
 lib/timeutils/zonecache.[ch]$
 modules/secure-logging
 modules/secure-logging/tests
-modules/secure-logging/slogimport
+modules/secure-logging/slogencrypt
 modules/secure-logging/slogverify
 modules/secure-logging/slogkey
 lib/rewrite/rewrite-set-facility\.h
