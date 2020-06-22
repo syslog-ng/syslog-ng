@@ -340,6 +340,11 @@ kafka_dd_init(LogPipe *s)
                 log_pipe_location_tag(&self->super.super.super.super));
       return FALSE;
     }
+  if (strchr(self->topic_name, '$') != NULL)
+    {
+      self->topicname_is_a_template = TRUE;
+      self->topic_hash = g_hash_table_new(g_str_hash, g_str_equal);
+    }
 
   self->kafka = _construct_client(self);
   if (self->kafka == NULL)

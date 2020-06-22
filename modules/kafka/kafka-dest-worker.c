@@ -61,8 +61,10 @@ _publish_message(KafkaDestWorker *self, LogMessage *msg)
 {
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
   int block_flag = _is_poller_thread(self) ? 0 : RD_KAFKA_MSG_F_BLOCK;
-
-  if (rd_kafka_produce(owner->topic,
+  gchar *topicname = g_strdup_printf("worker%d",self->super.worker_index);
+  msg_error("DEBUG STATEMENT TO CHECK INDEX", evt_tag_str("tn", topicname));
+  rd_kafka_topic_t *topic1 = rd_kafka_topic_new(owner->kafka, topicname, NULL);
+  if (rd_kafka_produce(topic1,
                        RD_KAFKA_PARTITION_UA,
                        RD_KAFKA_MSG_F_FREE | block_flag,
                        self->message->str, self->message->len,
@@ -74,17 +76,20 @@ _publish_message(KafkaDestWorker *self, LogMessage *msg)
                 evt_tag_str("error", rd_kafka_err2str(rd_kafka_last_error())),
                 evt_tag_str("driver", owner->super.super.super.id),
                 log_pipe_location_tag(&owner->super.super.super.super));
-
+                g_free(topicname);
+                if (topic1)
+                  rd_kafka_topic_destroy(topic1);
       return FALSE;
     }
-
   msg_debug("kafka: message published",
             evt_tag_str("topic", owner->topic_name),
             evt_tag_str("key", self->key->len ? self->key->str : "NULL"),
             evt_tag_str("message", self->message->str),
             evt_tag_str("driver", owner->super.super.super.id),
             log_pipe_location_tag(&owner->super.super.super.super));
-
+  g_free(topicname);
+  if (topic1)
+    rd_kafka_topic_destroy(topic1);
   /* we passed the allocated buffers to rdkafka, which will eventually free them */
   g_string_steal(self->message);
   return TRUE;
@@ -137,15 +142,48 @@ static LogThreadedResult
 kafka_dest_worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
 {
   KafkaDestWorker *self = (KafkaDestWorker *)s;
+  KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
+  if (owner->topicname_is_a_template)
+    {
+      msg_error("Is a template");
+      GString *topic_name_new = g_string_sized_new(128);
+      LogTemplate *temp_topic_name = log_template_new(configuration, NULL);
+      log_template_compile(temp_topic_name, owner->topic_name, NULL);
+      log_template_format(temp_topic_name, msg, &owner->template_options, LTZ_SEND, self->super.seq_num, NULL, topic_name_new);
+      log_template_unref(temp_topic_name);
+      msg_error("PRINT TOPIC NAME", evt_tag_str("topicname", topic_name_new->str));
+      rd_kafka_topic_t *topic;
+      g_static_mutex_lock(&owner->lock);
+      topic = g_hash_table_lookup(owner->topic_hash, topic_name_new->str);
+      g_static_mutex_unlock(&owner->lock);
+      if(topic)
+       {
+         msg_error("TOPIC ALREADY EXISTS");
+       }
+      else
+      {
+        msg_error("CREATED NEW TOPIC");
+        topic = rd_kafka_topic_new(owner->kafka, topic_name_new->str, NULL);
+        g_static_mutex_lock(&owner->lock);
+        g_hash_table_insert(owner->topic_hash, g_strdup(topic_name_new->str), topic);
+        g_static_mutex_unlock(&owner->lock);
+      }
 
-  _drain_responses(self);
+      g_string_free(topic_name_new, TRUE);
+      return LTR_SUCCESS;
+    }
+  else
+    {
+      msg_error("Not a template");
+      _drain_responses(self);
+      _format_message_and_key(self, msg);
+      if (!_publish_message(self, msg))
+        return LTR_RETRY;
+      _drain_responses(self);
+      return LTR_SUCCESS;
+    }
 
-  _format_message_and_key(self, msg);
-  if (!_publish_message(self, msg))
-    return LTR_RETRY;
-
-  _drain_responses(self);
-  return LTR_SUCCESS;
+  
 }
 
 static void
