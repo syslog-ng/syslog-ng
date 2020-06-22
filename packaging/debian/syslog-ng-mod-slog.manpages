@@ -1,3 +1,3 @@
 debian/tmp/usr/share/man/man1/slogkey.1
-debian/tmp/usr/share/man/man1/slogimport.1
+debian/tmp/usr/share/man/man1/slogencrypt.1
 debian/tmp/usr/share/man/man1/slogverify.1

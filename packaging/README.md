@@ -173,7 +173,7 @@ Description: Enhanced system logging daemon (slog)
     AMQP), files or databases (like PostgreSQL or MongoDB).
  .
  This package provides the $(slog) template functions and command
- line utilities (slogimport, slogverify, slogkey).
+ line utilities (slogencrypt, slogverify, slogkey).
 
 ```
 

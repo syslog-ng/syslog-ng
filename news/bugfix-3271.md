@@ -1,1 +1,0 @@
-crypto: fix hang on boot due to lack of entropy

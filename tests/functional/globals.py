@@ -74,7 +74,7 @@ ssl_port_number = port_number + 1
 port_number_syslog = port_number + 2
 port_number_network = port_number + 3
 
-syslog_ng_version = "3.27"
+syslog_ng_version = "3.28"
 
 current_dir = os.getcwd()
 try:
