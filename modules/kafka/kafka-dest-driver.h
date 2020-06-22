@@ -35,6 +35,8 @@ typedef struct
   LogTemplateOptions template_options;
   LogTemplate *key;
   LogTemplate *message;
+  GHashTable *topic_hash;
+  GStaticMutex lock;
 
   gchar *topic_name;
   GList *config;
@@ -44,6 +46,7 @@ typedef struct
   gint flush_timeout_on_shutdown;
   gint flush_timeout_on_reload;
   gint poll_timeout;
+  gboolean topicname_is_a_template;
 } KafkaDestDriver;
 
 void kafka_dd_set_topic(LogDriver *d, const gchar *topic);
