@@ -574,6 +574,7 @@ fi
 %{_mandir}/man1/slogkey.1*
 %{_mandir}/man1/slogencrypt.1*
 %{_mandir}/man1/slogverify.1*
+%{_mandir}/man7/secure-logging.7*
 
 %files python
 %{_libdir}/%{name}/python/syslogng-1.0-py%{py_ver}.egg-info
