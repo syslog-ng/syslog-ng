@@ -7,25 +7,35 @@ jobs:
     runs-on: ubuntu-18.04
     container:
       image: balabit/syslog-ng-devshell:latest
-      env:
-        PYTHONUSERBASE: /github/home/python_packages
-        PATH: /github/home/python_packages/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-        CONFIGURE_FLAGS:
-          --prefix=/github/home/install/syslog-ng
-          --enable-all-modules
-          --with-python=${{ matrix.python }}
-        CMAKE_FLAGS:
-          -DCMAKE_C_FLAGS=-Werror
-          -DCMAKE_INSTALL_PREFIX=/github/home/install/syslog-ng
-          -DPYTHON_VERSION=${{ matrix.python }}
 
     strategy:
       matrix:
-        python: [2, 3]
+        python: [python2, python3]
         build-tool: [autotools, cmake]
       fail-fast: false
 
     steps:
+      - name: Set ENV variables
+        run: |
+          export PYTHONVERSION=`printf ${{ matrix.python }} | tail -c 1`
+          export PYTHONUSERBASE=${HOME}/python_packages
+          export PATH=${PYTHONUSERBASE}:${PATH}
+          export CONFIGURE_FLAGS="
+            --prefix=${HOME}/install/syslog-ng
+            --enable-all-modules
+            --with-python=${PYTHONVERSION}
+          "
+          export CMAKE_FLAGS="
+            -DCMAKE_C_FLAGS=-Werror
+            -DCMAKE_INSTALL_PREFIX=${HOME}/install/syslog-ng
+            -DPYTHON_VERSION=${PYTHONVERSION}
+          "
+
+          echo "::set-env name=PYTHONUSERBASE::`echo ${PYTHONUSERBASE}`"
+          echo "::set-env name=PATH::`echo ${PATH}`"
+          echo "::set-env name=CONFIGURE_FLAGS::`echo ${CONFIGURE_FLAGS}`"
+          echo "::set-env name=CMAKE_FLAGS::`echo ${CMAKE_FLAGS}`"
+
       - name: Checkout syslog-ng source
         uses: actions/checkout@v2
 
@@ -38,14 +48,14 @@ jobs:
         run: |
           mkdir build
           cd build
-          ../configure $CONFIGURE_FLAGS
+          ../configure ${CONFIGURE_FLAGS}
 
       - name: cmake
         if: matrix.build-tool == 'cmake'
         run: |
           mkdir build
           cd build
-          cmake $CMAKE_FLAGS ..
+          cmake ${CMAKE_FLAGS} ..
 
       - name: make
         working-directory: ./build
@@ -81,24 +91,30 @@ jobs:
     runs-on: ubuntu-18.04
     container:
       image: balabit/syslog-ng-devshell:latest
-      env:
-        DISTCHECK_CONFIGURE_FLAGS:
-          CFLAGS=-Werror
-          --prefix=/github/home/install/syslog-ng
-          --with-ivykis=internal
-          --with-jsonc=system
-          --enable-tcp-wrapper
-          --enable-linux-caps
-          --enable-manpages
-          --enable-all-modules
-          --with-python=${{ matrix.python }}
 
     strategy:
       matrix:
-        python: [2, 3]
+        python: [python2, python3]
       fail-fast: false
 
     steps:
+      - name: Set ENV variables
+        run: |
+          export PYTHONVERSION=`printf ${{ matrix.python }} | tail -c 1`
+          export DISTCHECK_CONFIGURE_FLAGS="
+            CFLAGS=-Werror
+            --prefix=${HOME}/install/syslog-ng
+            --with-ivykis=internal
+            --with-jsonc=system
+            --enable-tcp-wrapper
+            --enable-linux-caps
+            --enable-manpages
+            --enable-all-modules
+            --with-python=${PYTHONVERSION}
+          "
+
+          echo "::set-env name=DISTCHECK_CONFIGURE_FLAGS::`echo ${DISTCHECK_CONFIGURE_FLAGS}`"
+
       - name: Checkout syslog-ng source
         uses: actions/checkout@v2
 
@@ -106,7 +122,7 @@ jobs:
         run: ./autogen.sh
 
       - name: configure
-        run: ./configure $DISTCHECK_CONFIGURE_FLAGS
+        run: ./configure ${DISTCHECK_CONFIGURE_FLAGS}
 
       - name: distcheck
         run: |
