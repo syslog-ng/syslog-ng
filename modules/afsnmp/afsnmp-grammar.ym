@@ -30,12 +30,11 @@
 
 #include <strings.h>
 #include "cfg-parser.h"
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 #include "syslog-names.h"
 
 #include "messages.h"
 #include "plugin.h"
-#include "afsnmp-grammar.h"
 #include "afsnmpdest.h"
 #include "snmptrapd-parser.h"
 

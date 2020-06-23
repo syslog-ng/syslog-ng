@@ -30,8 +30,7 @@
 %code {
 
 #include "cfg-parser.h"
-#include "cfg-grammar.h"
-#include "appmodel-grammar.h"
+#include "cfg-grammar-internal.h"
 #include "messages.h"
 
 Application *last_application;

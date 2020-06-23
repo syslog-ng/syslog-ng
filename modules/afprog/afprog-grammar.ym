@@ -30,11 +30,10 @@
 
 #include "afprog.h"
 #include "cfg-parser.h"
-#include "afprog-grammar.h"
 #include "syslog-names.h"
 #include "messages.h"
 #include "plugin.h"
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 
 #include <string.h>
 

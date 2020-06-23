@@ -37,7 +37,6 @@
 #include "messages.h"
 #include "diskq.h"
 #include "diskq-options.h"
-#include "diskq-grammar.h"
 
 #include <string.h>
 

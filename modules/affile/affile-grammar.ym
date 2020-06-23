@@ -33,11 +33,10 @@
 #include "wildcard-source.h"
 #include "affile-dest.h"
 #include "cfg-parser.h"
-#include "affile-grammar.h"
 #include "syslog-names.h"
 #include "messages.h"
 #include "plugin.h"
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 #include "stdin.h"
 #include "named-pipe.h"
 

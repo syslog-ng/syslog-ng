@@ -31,7 +31,6 @@
 
 #include "afsocket.h"
 #include "cfg-parser.h"
-#include "afsocket-grammar.h"
 #include "afunix-source.h"
 #include "afunix-dest.h"
 #include "afinet-source.h"
@@ -39,7 +38,7 @@
 #include "messages.h"
 #include "syslog-names.h"
 #include "plugin.h"
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 #include "socket-options-inet.h"
 #include "transport-mapper-inet.h"
 #include "service-management.h"

@@ -32,7 +32,7 @@
 
 %code {
 
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 #include "plugin.h"
 #include "kafka-dest-driver.h"
 #include "kafka-props.h"

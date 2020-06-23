@@ -32,9 +32,8 @@
 %code {
 
 #include "syslog-names.h"
-#include "parser/parser-expr-grammar.h"
 #include "plugin.h"
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 
 }
 

@@ -103,6 +103,7 @@ pkginclude_HEADERS			+= \
 	lib/cache.h			\
 	lib/cfg.h			\
 	lib/cfg-grammar.h		\
+	lib/cfg-grammar-internal.h	\
 	lib/cfg-lexer.h			\
 	lib/cfg-lexer-subst.h		\
 	lib/cfg-args.h			\
@@ -267,6 +268,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/window-size-counter.c       \
 	lib/cfg-lex.l			\
 	lib/cfg-grammar.y		\
+	lib/cfg-grammar-internal.c	\
 	lib/block-ref-grammar.y		\
 	lib/pragma-grammar.y		\
 	$(ack_tracker_sources) \

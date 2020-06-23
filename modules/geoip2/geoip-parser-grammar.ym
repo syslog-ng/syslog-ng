@@ -28,8 +28,7 @@
 
 #include "geoip-parser.h"
 #include "cfg-parser.h"
-#include "cfg-grammar.h"
-#include "geoip-parser-grammar.h"
+#include "cfg-grammar-internal.h"
 #include "syslog-names.h"
 #include "messages.h"
 

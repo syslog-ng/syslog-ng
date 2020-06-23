@@ -32,11 +32,10 @@
 
 #include "cfg-parser.h"
 #include "parser.h"
-#include "native-grammar.h"
 #include "syslog-names.h"
 #include "messages.h"
 #include "plugin.h"
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 
 #include <string.h>
 

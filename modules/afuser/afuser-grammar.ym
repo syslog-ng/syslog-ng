@@ -33,7 +33,6 @@
 
 #include "afuser.h"
 #include "cfg-parser.h"
-#include "afuser-grammar.h"
 #include "syslog-names.h"
 #include "messages.h"
 

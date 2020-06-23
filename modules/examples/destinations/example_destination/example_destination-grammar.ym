@@ -30,7 +30,7 @@
 
 #include "example_destination.h"
 
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 #include "plugin.h"
 }
 

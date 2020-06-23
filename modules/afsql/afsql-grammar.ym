@@ -30,9 +30,8 @@
 %code {
 
 #include "afsql.h"
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 #include "cfg-parser.h"
-#include "afsql-grammar.h"
 #include "messages.h"
 #include "plugin.h"
 

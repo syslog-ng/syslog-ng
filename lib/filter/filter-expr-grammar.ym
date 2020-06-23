@@ -30,7 +30,6 @@
 
 %code {
 
-#include "filter/filter-expr-grammar.h"
 #include "filter/filter-netmask.h"
 #include "filter/filter-netmask6.h"
 #include "filter/filter-op.h"
@@ -44,7 +43,7 @@
 #include "template/templates.h"
 #include "syslog-names.h"
 #include "plugin.h"
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 
 FilterExprNode *last_filter_expr;
 

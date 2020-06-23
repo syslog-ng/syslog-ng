@@ -30,7 +30,7 @@
 
 %code {
 
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 #include "cfg-parser.h"
 #include "plugin.h"
 #include "riemann/event.h"

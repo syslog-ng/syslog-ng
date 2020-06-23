@@ -29,11 +29,9 @@
 %code {
 
 #include "cfg-parser.h"
-#include "@PLUGIN_NAME@-grammar.h"
 #include "syslog-names.h"
 #include "messages.h"
 #include "plugin.h"
-#include "cfg-grammar.h"
 
 #include <string.h>
 

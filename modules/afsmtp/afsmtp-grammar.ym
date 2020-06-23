@@ -30,8 +30,7 @@
 %code {
 
 #include "cfg-parser.h"
-#include "cfg-grammar.h"
-#include "afsmtp-grammar.h"
+#include "cfg-grammar-internal.h"
 #include "plugin.h"
 
 extern LogDriver *last_driver;

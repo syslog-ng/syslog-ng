@@ -30,11 +30,7 @@
 
 %code {
 
-#include "cfg-parser.h"
-#include "cfg-grammar.h"
-#include "afamqp-grammar.h"
-#include "plugin.h"
-#include "value-pairs/value-pairs.h"
+#include "cfg-grammar-internal.h"
 
 }
 

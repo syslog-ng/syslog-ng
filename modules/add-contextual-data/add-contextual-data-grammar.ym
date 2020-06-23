@@ -29,7 +29,7 @@
 %code {
 
 #include "add-contextual-data.h"
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 #include "add-contextual-data-template-selector.h"
 #include "add-contextual-data-filter-selector.h"
 #include "add-contextual-data-glob-selector.h"

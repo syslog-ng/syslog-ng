@@ -31,8 +31,7 @@
 #include "kv-parser-parser.h"
 #include "linux-audit-parser.h"
 #include "cfg-parser.h"
-#include "kv-parser-grammar.h"
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 
 }
 

@@ -28,10 +28,9 @@
 
 %code {
 
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 #include "cfg-parser.h"
 #include "http.h"
-#include "http-grammar.h"
 #include "response-handler.h"
 #include "autodetect-ca-location.h"
 #include "plugin.h"
