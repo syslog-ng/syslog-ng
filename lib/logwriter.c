@@ -39,7 +39,6 @@
 #include "timeutils/format.h"
 #include "timeutils/misc.h"
 
-#include <unistd.h>
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>

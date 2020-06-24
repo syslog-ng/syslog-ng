@@ -24,10 +24,6 @@
 #include "reloc.h"
 #include "cache.h"
 
-#include <stdlib.h>
-#include <string.h>
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
