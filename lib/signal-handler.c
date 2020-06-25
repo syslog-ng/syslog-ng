@@ -71,7 +71,7 @@ signal_handler_exec_external_handler(gint signum)
 {
   const struct sigaction *external_sigaction = _get_external_sigaction(signum);
 
-  if (!external_sigaction->sa_handler)
+  if (external_sigaction->sa_handler == SIG_DFL || external_sigaction->sa_handler == SIG_IGN)
     return;
 
   external_sigaction->sa_handler(signum);
