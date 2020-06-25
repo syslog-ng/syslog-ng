@@ -456,7 +456,7 @@ qdisk_pop_head(QDisk *self, GString *record)
 }
 
 static gboolean
-_load_queue(QDisk *self, GQueue *q, gint64 q_ofs, gint32 q_len, gint32 q_count)
+_load_queue(QDisk *self, GQueue *q, gint64 q_ofs, guint32 q_len, guint32 q_count)
 {
   GString *serialized;
   SerializeArchive *sa;
@@ -508,7 +508,7 @@ static gboolean
 _try_to_load_queue(QDisk *self, GQueue *queue, QDiskQueuePosition *pos, gchar *type)
 {
   gint64 ofs;
-  gint32 count, len;
+  guint32 count, len;
 
   count = pos->count;
   len = pos->len;
