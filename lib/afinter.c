@@ -95,6 +95,7 @@ struct _AFInterSource
 {
   LogSource super;
   gint mark_freq;
+  const AFInterSourceOptions *options;
   struct iv_event post;
   struct iv_event schedule_wakeup;
   struct iv_timer mark_timer;
@@ -313,17 +314,20 @@ afinter_source_deinit(LogPipe *s)
 }
 
 static LogSource *
-afinter_source_new(AFInterSourceDriver *owner, LogSourceOptions *options)
+afinter_source_new(AFInterSourceDriver *owner, AFInterSourceOptions *options)
 {
   AFInterSource *self = g_new0(AFInterSource, 1);
 
   log_source_init_instance(&self->super, owner->super.super.super.cfg);
-  log_source_set_options(&self->super, options, owner->super.super.id, NULL, FALSE, FALSE,
+  log_source_set_options(&self->super, &options->super, owner->super.super.id, NULL, FALSE, FALSE,
                          owner->super.super.super.expr_node);
   afinter_source_init_watches(self);
   self->super.super.init = afinter_source_init;
   self->super.super.deinit = afinter_source_deinit;
   self->super.wakeup = afinter_source_wakeup;
+
+  self->options = options;
+
   return &self->super;
 }
 
@@ -343,9 +347,9 @@ afinter_sd_init(LogPipe *s)
       return FALSE;
     }
 
-  log_source_options_init(&self->source_options, cfg, self->super.super.group);
-  self->source_options.stats_level = STATS_LEVEL0;
-  self->source_options.stats_source = stats_register_type("internal");
+  log_source_options_init(&self->source_options.super, cfg, self->super.super.group);
+  self->source_options.super.stats_level = STATS_LEVEL0;
+  self->source_options.super.stats_source = stats_register_type("internal");
   self->source = afinter_source_new(self, &self->source_options);
   log_pipe_append(&self->source->super, s);
 
@@ -397,7 +401,7 @@ afinter_sd_new(GlobalConfig *cfg)
   self->super.super.super.init = afinter_sd_init;
   self->super.super.super.deinit = afinter_sd_deinit;
   self->super.super.super.free_fn = afinter_sd_free;
-  log_source_options_defaults(&self->source_options);
+  log_source_options_defaults(&self->source_options.super);
   return (LogDriver *)&self->super.super;
 }
 

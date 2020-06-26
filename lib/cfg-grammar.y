@@ -647,7 +647,7 @@ source_afinter
 source_afinter_params
         : {
             last_driver = afinter_sd_new(configuration);
-            last_source_options = &((AFInterSourceDriver *) last_driver)->source_options;
+            last_source_options = &((AFInterSourceDriver *) last_driver)->source_options.super;
           }
           source_afinter_options { $$ = last_driver; }
         ;
