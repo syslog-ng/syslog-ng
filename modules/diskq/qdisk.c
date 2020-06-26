@@ -460,7 +460,6 @@ _load_queue(QDisk *self, GQueue *q, gint64 q_ofs, guint32 q_len, guint32 q_count
 {
   GString *serialized;
   SerializeArchive *sa;
-  gint i;
 
   if (q_ofs)
     {
@@ -480,7 +479,7 @@ _load_queue(QDisk *self, GQueue *q, gint64 q_ofs, guint32 q_len, guint32 q_count
           return FALSE;
         }
       sa = serialize_string_archive_new(serialized);
-      for (i = 0; i < q_count; i++)
+      for (guint32 i = 0; i < q_count; i++)
         {
           LogMessage *msg;
 
@@ -495,6 +494,8 @@ _load_queue(QDisk *self, GQueue *q, gint64 q_ofs, guint32 q_len, guint32 q_count
             {
               msg_error("Error reading message from disk-queue file (maybe corrupted file) some messages will be lost",
                         evt_tag_str("filename", self->filename),
+                        evt_tag_long("num_of_messages", q_count),
+                        evt_tag_long("invalid_index", i),
                         evt_tag_int("lost_messages", q_count - i));
               log_msg_unref(msg);
               break;
