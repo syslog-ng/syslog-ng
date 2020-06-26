@@ -31,6 +31,7 @@
 typedef struct AFInterSourceOptions
 {
   LogSourceOptions super;
+  gint queue_capacity;
 } AFInterSourceOptions;
 
 /*

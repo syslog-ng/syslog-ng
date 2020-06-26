@@ -31,8 +31,6 @@
 
 #include <iv_event.h>
 
-#define INTERNAL_MSG_QUEUE_CAPACITY 10000
-
 typedef struct _AFInterSource AFInterSource;
 
 static GStaticMutex internal_msg_lock = G_STATIC_MUTEX_INIT;
@@ -332,6 +330,13 @@ afinter_source_new(AFInterSourceDriver *owner, AFInterSourceOptions *options)
 }
 
 
+void
+afinter_source_options_defaults(AFInterSourceOptions *options)
+{
+  log_source_options_defaults(&options->super);
+  options->queue_capacity = 10000;
+}
+
 static gboolean
 afinter_sd_init(LogPipe *s)
 {
@@ -401,7 +406,9 @@ afinter_sd_new(GlobalConfig *cfg)
   self->super.super.super.init = afinter_sd_init;
   self->super.super.super.deinit = afinter_sd_deinit;
   self->super.super.super.free_fn = afinter_sd_free;
-  log_source_options_defaults(&self->source_options.super);
+
+  afinter_source_options_defaults(&self->source_options);
+
   return (LogDriver *)&self->super.super;
 }
 
@@ -467,7 +474,7 @@ afinter_message_posted(LogMessage *msg)
       stats_unlock();
     }
 
-  if (g_queue_get_length(internal_msg_queue) >= INTERNAL_MSG_QUEUE_CAPACITY)
+  if (g_queue_get_length(internal_msg_queue) >= current_internal_source->options->queue_capacity)
     {
       stats_counter_inc(internal_queue_dropped);
       log_msg_unref(msg);
