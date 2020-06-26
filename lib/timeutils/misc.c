@@ -26,6 +26,7 @@
 #include "timeutils/cache.h"
 #include "messages.h"
 
+#include <errno.h>
 #include <string.h>
 
 /**
@@ -89,7 +90,10 @@ check_nanosleep(void)
       sleep_amount.tv_nsec = 1e5;
 
       while (nanosleep(&sleep_amount, &sleep_amount) < 0)
-        ;
+        {
+          if (errno != EINTR)
+            return FALSE;
+        }
 
       clock_gettime(CLOCK_MONOTONIC, &stop);
       diff = timespec_diff_nsec(&stop, &start);
