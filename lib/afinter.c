@@ -441,7 +441,9 @@ _release_internal_msg_queue(void)
   LogMessage *internal_message = g_queue_pop_head(internal_msg_queue);
   while (internal_message)
     {
+      stats_counter_dec(internal_queue_length);
       log_msg_unref(internal_message);
+
       internal_message = g_queue_pop_head(internal_msg_queue);
     }
   g_queue_free(internal_msg_queue);
