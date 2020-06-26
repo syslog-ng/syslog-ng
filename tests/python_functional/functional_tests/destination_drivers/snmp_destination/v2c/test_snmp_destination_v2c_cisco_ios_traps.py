@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #############################################################################
-# Copyright (c) 2015-2018 Balabit
+# Copyright (c) 2020 One Identity
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -20,28 +20,23 @@
 # COPYING for details.
 #
 #############################################################################
-from src.syslog_ng_ctl.syslog_ng_ctl_cli import SyslogNgCtlCli
-from src.syslog_ng_ctl.syslog_ng_ctl_executor import QueryTypes
+import pytest
+
+from src.helpers.snmptrapd.conftest import *  # noqa:F403, F401
 
 
-class SyslogNgCtl(object):
-    def __init__(self, instance_paths):
-        self.__syslog_ng_ctl_cli = SyslogNgCtlCli(instance_paths)
+@pytest.mark.snmp
+def test_snmp_dest_v2c_cisco_ios_trap(config, syslog_ng, snmptrapd, snmp_test_params):
+    generator_source = config.create_example_msg_generator_source(num=1)
+    snmp_destination = config.create_snmp_destination(
+        host=snmp_test_params.get_ip_address(),
+        port=snmptrapd.get_port(),
+        snmp_obj=snmp_test_params.get_cisco_snmp_obj(),
+        trap_obj=snmp_test_params.get_basic_trap_obj(),
+        version="v2c",
+    )
+    config.create_logpath(statements=[generator_source, snmp_destination])
 
-    def reload(self):
-        return self.__syslog_ng_ctl_cli.reload()
+    syslog_ng.start(config)
 
-    def stop(self):
-        return self.__syslog_ng_ctl_cli.stop()
-
-    def reopen(self):
-        return self.__syslog_ng_ctl_cli.reopen()
-
-    def stats(self, reset=False):
-        return self.__syslog_ng_ctl_cli.stats(reset)
-
-    def query(self, pattern="*", query_type=QueryTypes.QUERY_GET):
-        return self.__syslog_ng_ctl_cli.query(pattern, query_type)
-
-    def is_control_socket_alive(self):
-        return self.__syslog_ng_ctl_cli.is_control_socket_alive()
+    assert snmp_test_params.get_expected_cisco_trap() == snmptrapd.get_traps()

@@ -37,5 +37,9 @@ class SyslogNgCtlCli(object):
         ctl_stats_command = self.__syslog_ng_ctl_executor.construct_ctl_stats_command(reset=reset)
         return self.__syslog_ng_ctl_executor.run_command(command_short_name="stats", command=ctl_stats_command)
 
+    def query(self, pattern, query_type):
+        ctl_query_command = self.__syslog_ng_ctl_executor.construct_ctl_query_command(pattern, query_type)
+        return self.__syslog_ng_ctl_executor.run_command(command_short_name="query", command=ctl_query_command)
+
     def is_control_socket_alive(self):
         return self.stats(reset=False)["exit_code"] == 0

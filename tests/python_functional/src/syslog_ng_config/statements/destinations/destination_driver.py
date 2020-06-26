@@ -20,6 +20,7 @@
 # COPYING for details.
 #
 #############################################################################
+from src.syslog_ng_ctl.driver_stats_handler import DriverStatsHandler
 
 
 class DestinationDriver(object):
@@ -32,3 +33,10 @@ class DestinationDriver(object):
         if options is None:
             options = {}
         self.options = options
+        self.stats_handler = DriverStatsHandler(group_type=self.group_type, driver_name=self.driver_name)
+
+    def get_stats(self):
+        return self.stats_handler.get_stats()
+
+    def get_query(self):
+        return self.stats_handler.get_query()
