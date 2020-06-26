@@ -36,7 +36,7 @@ static CfgLexerKeyword openbsd_keywords[] =
 
 CfgParser openbsd_parser =
 {
-#if ENABLE_DEBUG
+#if SYSLOG_NG_ENABLE_DEBUG
   .debug_flag = &openbsd_debug,
 #endif
   .name = "openbsd",
