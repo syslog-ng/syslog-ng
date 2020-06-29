@@ -1,0 +1,1 @@
+`cfg`: fix config reload crash via introducing `on_config_inited` in LogPipe
