@@ -364,7 +364,7 @@ http_dd_init(LogPipe *s)
 
   http_load_balancer_set_recovery_timeout(self->load_balancer, self->super.time_reopen);
 
-  return log_threaded_dest_driver_start_workers(&self->super);
+  return TRUE;
 }
 
 static void

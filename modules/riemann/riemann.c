@@ -293,7 +293,7 @@ riemann_dd_init(LogPipe *s)
               evt_tag_str("driver", self->super.super.super.id),
               log_pipe_location_tag(&self->super.super.super.super));
 
-  return log_threaded_dest_driver_start_workers(&self->super);
+  return TRUE;
 }
 
 static void

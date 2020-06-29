@@ -576,7 +576,7 @@ python_dd_init(LogPipe *d)
               evt_tag_str("driver", self->super.super.super.id),
               evt_tag_str("class", self->class));
 
-  return log_threaded_dest_driver_start_workers(&self->super);
+  return TRUE;
 
 fail:
   PyGILState_Release(gstate);
