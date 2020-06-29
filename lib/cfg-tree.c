@@ -1451,8 +1451,8 @@ cfg_tree_on_inited(CfgTree *self)
   for (i = 0; i < self->initialized_pipes->len; i++)
     {
       LogPipe *pipe = g_ptr_array_index(self->initialized_pipes, i);
-      
-      if (pipe->on_config_inited && !pipe->on_config_inited(pipe))
+
+      if (!log_pipe_on_config_inited(pipe))
         {
           msg_error("Error executing on_config_inited hook",
                     evt_tag_str("plugin_name", pipe->plugin_name ? pipe->plugin_name : "not a plugin"),

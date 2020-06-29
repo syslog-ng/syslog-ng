@@ -326,6 +326,14 @@ log_pipe_deinit(LogPipe *s)
   return TRUE;
 }
 
+static inline gboolean
+log_pipe_on_config_inited(LogPipe *s)
+{
+  if (s->on_config_inited)
+    return s->on_config_inited(s);
+  return TRUE;
+}
+
 static inline void
 log_pipe_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options);
 
