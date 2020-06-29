@@ -232,6 +232,12 @@ struct _LogPipe
   gboolean (*deinit)(LogPipe *self);
   void (*post_deinit)(LogPipe *self);
 
+  /* this event function is used to perform necessary operation, such as
+   * starting worker thread, and etc. therefore, syslog-ng will terminate if
+   * return value is false.
+   */
+  gboolean (*on_config_inited)(LogPipe *self);
+
   const gchar *(*generate_persist_name)(const LogPipe *self);
   GList *(*arcs)(LogPipe *self);
 
