@@ -455,6 +455,23 @@ qdisk_pop_head(QDisk *self, GString *record)
   return FALSE;
 }
 
+static ssize_t
+_pread_all(int fd, char *buf,  size_t count, off_t offset)
+{
+  size_t already_read = 0;
+
+  while (already_read < count)
+    {
+      ssize_t retval = pread(fd, buf+already_read, count-already_read, offset+already_read);
+      if (retval <= 0)
+        return retval;
+
+      already_read += retval;
+    }
+
+  return count;
+}
+
 static gboolean
 _load_queue(QDisk *self, GQueue *q, gint64 q_ofs, guint32 q_len, guint32 q_count)
 {
@@ -467,7 +484,7 @@ _load_queue(QDisk *self, GQueue *q, gint64 q_ofs, guint32 q_len, guint32 q_count
 
       serialized = g_string_sized_new(q_len);
       g_string_set_size(serialized, q_len);
-      read_len = pread(self->fd, serialized->str, q_len, q_ofs);
+      read_len = _pread_all(self->fd, serialized->str, q_len, q_ofs);
       if (read_len < 0 || read_len != q_len)
         {
           msg_error("Error reading in-memory buffer from disk-queue file",
