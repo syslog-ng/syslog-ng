@@ -1,16 +1,16 @@
-syslog-ng (3.28.1-1) UNRELEASED; urgency=medium
+syslog-ng (3.28.1-1) unstable; urgency=medium
 
   * New upstream release.
 
  -- Laszlo Varady <laszlo.varady@balabit.com>  Tue, 16 Jun 2020 13:07:54 +0200
 
-syslog-ng (3.27.1-1) UNRELEASED; urgency=medium
+syslog-ng (3.27.1-1) unstable; urgency=medium
 
   * New upstream release.
 
  -- Antal Nemes <antal.nemes@quest.com>  Tue, 28 Apr 2020 08:30:27 +0200
 
-syslog-ng (3.26.1-1) UNRELEASED; urgency=medium
+syslog-ng (3.26.1-1) unstable; urgency=medium
 
   * New upstream release.
   * Remove merged in patches.
