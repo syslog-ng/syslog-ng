@@ -16,7 +16,11 @@ install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/install/ DESTINATION ${CMAKE_INSTA
 )
 
 if (BUILD_TESTING)
-add_test(test_pylib_unit ${CMAKE_COMMAND} -E env ${NOSETESTS_BIN} ${CMAKE_CURRENT_SOURCE_DIR}/syslogng)
+    execute_process(COMMAND ${PYTHON_EXECUTABLE} -m pytest --version OUTPUT_QUIET ERROR_QUIET RESULT_VARIABLE IS_PYTEST_INSTALLED)
+    if(IS_PYTEST_INSTALLED EQUAL "0")
+        add_custom_target(test_pylib_unit COMMAND ${CMAKE_COMMAND} -E env ${PYTHON_EXECUTABLE} -m pytest ${CMAKE_CURRENT_SOURCE_DIR}/syslogng)
+        add_dependencies(check test_pylib_unit)
+    endif()
 endif()
 
 add_custom_target(python-pep8 COMMAND ${CMAKE_COMMAND} -E env pep8 --ignore=E501 ${CMAKE_CURRENT_SOURCE_DIR}/syslogng)

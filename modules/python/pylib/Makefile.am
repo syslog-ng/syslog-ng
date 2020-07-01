@@ -51,6 +51,7 @@ UNINSTALL_HOOKS += uninstall-pylib
 CLEAN_HOOKS += clean-pylib
 
 PYSETUP_OPTIONS ?= --root="$(PYTHON_ROOT)" --install-lib="$(python_moduledir)"
+IS_PYTEST_INSTALLED := $(shell ${PYTHON} -m pytest --version > /dev/null 2>&1 ; echo $$?)
 
 install-pylib:
 	(cd $(PYLIB_SRCDIR) && $(PYTHON) setup.py \
@@ -66,13 +67,13 @@ clean-pylib:
 
 python-checks: python-unit python-pep8 python-pylint
 
-if NOSETESTS
 python-unit:
-	@NOSETESTS@ $(PYLIB_SRCDIR)/syslogng
-else
-python-unit:
-	$(error "missing nosetests")
-endif
+	@if [ $(IS_PYTEST_INSTALLED) -eq 0 ]; then \
+			echo "pytest is installed"; \
+			${PYTHON} -m pytest --showlocals --verbosity=3 $(PYLIB_SRCDIR)/syslogng; \
+	else \
+			echo "pytest is not installed, can not run tests"; \
+	fi;
 
 python-pep8:
 	pep8 --ignore=E501 $(PYLIB_SRCDIR)/syslogng
