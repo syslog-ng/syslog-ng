@@ -10,7 +10,7 @@ log {
 	url("http://localhost:9200/_bulk")
 	template("$(format-json
 	--scope rfc5424 
-	--scope dot-nv-pairs --rekey .* --shift 1 --exclude *future_* --exclude *devicegroup_* 
+	--scope dot-nv-pairs --rekey .* --shift 1 --exclude *future_* --exclude *dg_hier_level_*
 	--scope nv-pairs --exclude DATE --key ISODATE @timestamp=${ISODATE})")
     );};
 };

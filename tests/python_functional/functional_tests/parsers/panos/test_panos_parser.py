@@ -24,9 +24,13 @@ import pytest
 
 test_parameters_raw = [
     # Testing SYSTEM branch
-    (r"""<12>Apr 14 16:48:54 paloalto.test.net 1,2020/04/14 16:48:54,unknown,SYSTEM,auth,0,2020/04/14 16:48:54,,auth-fail,,0,0,general,medium,failed authentication for user 'admin'. Reason: Invalid username/password. From: 10.0.10.55.,1718,0x0,0,0,0,0,,paloalto""", "<${PROGRAM}><${.panos.type}><${.panos.event_id}><${.panos.dvc_name}>", "<paloalto_panos><SYSTEM><auth-fail><paloalto>"),
+    (r"""<12>Apr 14 16:48:54 paloalto.test.net 1,2020/04/14 16:48:54,unknown,SYSTEM,auth,0,2020/04/14 16:48:54,,auth-fail,,0,0,general,medium,failed authentication for user 'admin'. Reason: Invalid username/password. From: 10.0.10.55.,1718,0x0,0,0,0,0,,paloalto""", "<${PROGRAM}><${.panos.type}><${.panos.eventid}><${.panos.device_name}>", "<paloalto_panos><SYSTEM><auth-fail><paloalto>"),
+    # Testing SYSTEM branch with extra additions at the end. Should be accepted.
+    (r"""<12>Apr 14 16:48:54 paloalto.test.net 1,2020/04/14 16:48:54,unknown,SYSTEM,auth,0,2020/04/14 16:48:54,,auth-fail,,0,0,general,medium,failed authentication for user 'admin'. Reason: Invalid username/password. From: 10.0.10.55.,1718,0x0,0,0,0,0,,paloalto,foo,bar""", "<${PROGRAM}><${.panos.type}><${.panos.eventid}><${.panos.device_name}>", "<paloalto_panos><SYSTEM><auth-fail><paloalto>"),
     # Testing CONFIG branch
-    (r"""<14>Apr 14 16:54:18 paloalto.test.net 1,2020/04/14 16:54:18,unknown,CONFIG,0,0,2020/04/14 16:54:18,10.0.10.55,,set,admin,Web,Succeeded, deviceconfig system,127,0x0,0,0,0,0,,paloalto""", "<${PROGRAM}><${.panos.type}><${.panos.configuration_path}><${.panos.dvc_name}>", "<paloalto_panos><CONFIG><deviceconfig system><paloalto>"),
+    (r"""<14>Apr 14 16:54:18 paloalto.test.net 1,2020/04/14 16:54:18,unknown,CONFIG,0,0,2020/04/14 16:54:18,10.0.10.55,,set,admin,Web,Succeeded,deviceconfig system,127,0x0,0,0,0,0,,paloalto""", "<${PROGRAM}><${.panos.type}><${.panos.path}><${.panos.device_name}>", "<paloalto_panos><CONFIG><deviceconfig system><paloalto>"),
+    # Testing CONFIG branch, custom logs
+    (r"""<14>Apr 14 16:54:18 paloalto.test.net 1,2020/04/14 16:54:18,unknown,CONFIG,0,0,2020/04/14 16:54:18,10.0.10.55,,set,admin,Web,Succeeded,deviceconfig system,before,after,127,0x0,0,0,0,0,,paloalto""", "<${PROGRAM}><${.panos.type}><${.panos.path}><${.panos.device_name}>", "<paloalto_panos><CONFIG><deviceconfig system><paloalto>"),
 ]
 
 
