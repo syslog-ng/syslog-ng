@@ -94,6 +94,9 @@ class SyslogNgConfig(object):
     def create_checkpoint_parser(self, **options):
         return Parser("checkpoint-parser", **options)
 
+    def create_panos_parser(self, **options):
+        return Parser("panos-parser", **options)
+
     def create_syslog_parser(self, **options):
         return Parser("syslog-parser", **options)
 
