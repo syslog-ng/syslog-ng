@@ -455,14 +455,16 @@ qdisk_pop_head(QDisk *self, GString *record)
   return FALSE;
 }
 
-static ssize_t
-_pread_all(int fd, char *buf,  size_t count, off_t offset)
+ssize_t
+pread_all(int fd, char *buf,  size_t count, off_t offset, gint max_block)
 {
   size_t already_read = 0;
 
   while (already_read < count)
     {
-      ssize_t retval = pread(fd, buf+already_read, count-already_read, offset+already_read);
+      size_t size_to_read = max_block > 0 ? MIN(count-already_read, max_block) : count-already_read;
+
+      ssize_t retval = pread(fd, buf+already_read, size_to_read, offset+already_read);
       if (retval <= 0)
         return retval;
 
@@ -470,6 +472,12 @@ _pread_all(int fd, char *buf,  size_t count, off_t offset)
     }
 
   return count;
+}
+
+static ssize_t
+_pread_all(int fd, char *buf,  size_t count, off_t offset)
+{
+  return pread_all(fd, buf, count, offset, 0);
 }
 
 static gboolean
