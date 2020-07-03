@@ -81,6 +81,7 @@ control_connection_stop_process(ControlConnection *cc, GString *command, gpointe
   GString *result = g_string_new("OK Shutdown initiated");
   MainLoop *main_loop = (MainLoop *) user_data;
 
+  main_loop_cancel_control_command_threads(main_loop);
   main_loop_exit(main_loop);
 
   control_connection_send_reply(cc, result);

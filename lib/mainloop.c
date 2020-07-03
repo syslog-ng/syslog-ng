@@ -160,7 +160,7 @@ struct _MainLoop
   GlobalConfig *new_config;
 
   MainLoopOptions *options;
-  ControlServer *control_server;
+  ControlServerLoop *control_server_loop;
 };
 
 static MainLoop main_loop;
@@ -444,8 +444,6 @@ main_loop_exit_initiate(gpointer user_data)
   if (main_loop_is_terminating(self))
     return;
 
-  control_server_cancel_workers(self->control_server);
-
   app_pre_shutdown();
 
   msg_notice("syslog-ng shutting down",
@@ -613,7 +611,7 @@ main_loop_read_and_init_config(MainLoop *self)
     {
       return 2;
     }
-  self->control_server = control_init(resolvedConfigurablePaths.ctlfilename);
+  self->control_server_loop = control_init(resolvedConfigurablePaths.ctlfilename);
   main_loop_register_control_commands(self);
   stats_register_control_commands();
   return 0;
@@ -631,7 +629,7 @@ main_loop_deinit(MainLoop *self)
 {
   main_loop_free_config(self);
 
-  control_deinit(self->control_server);
+  control_deinit(self->control_server_loop);
 
   iv_event_unregister(&self->exit_requested);
   main_loop_call_deinit();
@@ -683,7 +681,13 @@ main_loop_thread_resource_deinit(void)
 gboolean
 main_loop_is_control_server_running(MainLoop *self)
 {
-  return self->control_server != NULL;
+  return self->control_server_loop != NULL;
+}
+
+void
+main_loop_cancel_control_command_threads(MainLoop *self)
+{
+  control_cancel_workers(self->control_server_loop);
 }
 
 GQuark

@@ -85,6 +85,7 @@ void main_loop_thread_resource_init(void);
 void main_loop_thread_resource_deinit(void);
 
 gboolean main_loop_is_control_server_running(MainLoop *self);
+void main_loop_cancel_control_command_threads(MainLoop *self);
 
 #define MAIN_LOOP_ERROR main_loop_error_quark()
 

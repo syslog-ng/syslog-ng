@@ -28,7 +28,10 @@
 #include "mainloop.h"
 #include "control/control-server.h"
 
-ControlServer *control_init(const gchar *control_name);
-void control_deinit(ControlServer *control_server);
+typedef struct _ControlServerLoop ControlServerLoop;
+
+ControlServerLoop *control_init(const gchar *control_name);
+void control_deinit(ControlServerLoop *self);
+void control_cancel_workers(ControlServerLoop *self);
 
 #endif

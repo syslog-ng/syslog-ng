@@ -25,19 +25,75 @@
 #include "control-main.h"
 #include "control-server.h"
 #include "control-commands.h"
+#include <iv.h>
+#include <iv_event.h>
 
-ControlServer *
+struct _ControlServerLoop
+{
+  GThread *thread;
+  const gchar *control_name;
+  struct iv_event stop_requested;
+  ControlServer *control_server;
+};
+
+static void
+_server_loop_stop(void *user_data)
+{
+  ControlServerLoop *self = (ControlServerLoop *) user_data;
+  iv_event_unregister(&self->stop_requested);
+  iv_quit();
+}
+
+static void
+_register_stop_requested_event(ControlServerLoop *self)
+{
+  IV_EVENT_INIT(&self->stop_requested);
+  self->stop_requested.handler = _server_loop_stop;
+  self->stop_requested.cookie = self;
+  iv_event_register(&self->stop_requested);
+}
+
+static void
+_thread_func(gpointer user_data)
+{
+  ControlServerLoop *server_loop = (ControlServerLoop *) user_data;
+  server_loop->control_server = control_server_new(server_loop->control_name);
+
+  iv_init();
+  {
+    _register_stop_requested_event(server_loop);
+    control_server_start(server_loop->control_server);
+    iv_main();
+    control_server_free(server_loop->control_server);
+  }
+  iv_deinit();
+}
+
+ControlServerLoop *
 control_init(const gchar *control_name)
 {
-  ControlServer *control_server = control_server_new(control_name);
-  control_server_start(control_server);
-  return control_server;
+  ControlServerLoop *self = g_new0(ControlServerLoop, 1);
+  self->control_name = control_name;
+  self->thread = g_thread_new(control_name, (GThreadFunc) _thread_func, self);
+
+  return self;
 }
 
 void
-control_deinit(ControlServer *control_server)
+control_deinit(ControlServerLoop *self)
 {
+  if (!self)
+    return;
+
+  iv_event_post(&self->stop_requested);
+  g_thread_join(self->thread);
+
   reset_control_command_list();
-  if (control_server)
-    control_server_free(control_server);
+  g_free(self);
+}
+
+void
+control_cancel_workers(ControlServerLoop *self)
+{
+  control_server_cancel_workers(self->control_server);
 }
