@@ -5,6 +5,8 @@ modules_examples_destinations_example_destination_libexample_destination_la_SOUR
   modules/examples/destinations/example_destination/example_destination-parser.c        \
   modules/examples/destinations/example_destination/example_destination-parser.h        \
   modules/examples/destinations/example_destination/example_destination-plugin.c        \
+  modules/examples/destinations/example_destination/example_destination_worker.h        \
+  modules/examples/destinations/example_destination/example_destination_worker.c        \
   modules/examples/destinations/example_destination/example_destination.h               \
   modules/examples/destinations/example_destination/example_destination.c
 

@@ -20,20 +20,16 @@
  *
  */
 
-#ifndef EXAMPLE_DESTINATION_H_INCLUDED
-#define EXAMPLE_DESTINATION_H_INCLUDED
+#ifndef EXAMPLE_DESTINATION_WORKER_H_INCLUDED
+#define EXAMPLE_DESTINATION_WORKER_H_INCLUDED 1
 
-#include "driver.h"
 #include "logthrdest/logthrdestdrv.h"
 
-typedef struct
+typedef struct _ExampleDestinationWorker
 {
-  LogThreadedDestDriver super;
-  gchar *filename;
-} ExampleDestinationDriver;
+  LogThreadedDestWorker super;
+} ExampleDestinationWorker;
 
-LogDriver *example_destination_dd_new(GlobalConfig *cfg);
-
-void example_destination_dd_set_filename(LogDriver *d, const gchar *filename);
+LogThreadedDestWorker *example_destination_dw_new(LogThreadedDestDriver *o, gint worker_index);
 
 #endif

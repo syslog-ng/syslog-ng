@@ -21,6 +21,7 @@
  */
 
 #include "example_destination.h"
+#include "example_destination_worker.h"
 #include "example_destination-parser.h"
 
 #include "plugin.h"
@@ -33,12 +34,6 @@
 #include "logthrdest/logthrdestdrv.h"
 
 
-typedef struct
-{
-  LogThreadedDestDriver super;
-  gchar *filename;
-} ExampleDestination;
-
 /*
  * Configuration
  */
@@ -46,7 +41,7 @@ typedef struct
 void
 example_destination_dd_set_filename(LogDriver *d, const gchar *filename)
 {
-  ExampleDestination *self = (ExampleDestination *)d;
+  ExampleDestinationDriver *self = (ExampleDestinationDriver *)d;
 
   g_free(self->filename);
   self->filename = g_strdup(filename);
@@ -59,7 +54,7 @@ example_destination_dd_set_filename(LogDriver *d, const gchar *filename)
 static const gchar *
 _format_stats_instance(LogThreadedDestDriver *d)
 {
-  ExampleDestination *self = (ExampleDestination *)d;
+  ExampleDestinationDriver *self = (ExampleDestinationDriver *)d;
   static gchar persist_name[1024];
 
   g_snprintf(persist_name, sizeof(persist_name),
@@ -70,7 +65,7 @@ _format_stats_instance(LogThreadedDestDriver *d)
 static const gchar *
 _format_persist_name(const LogPipe *d)
 {
-  ExampleDestination *self = (ExampleDestination *)d;
+  ExampleDestinationDriver *self = (ExampleDestinationDriver *)d;
   static gchar persist_name[1024];
 
   if (d->persist_name)
@@ -81,65 +76,10 @@ _format_persist_name(const LogPipe *d)
   return persist_name;
 }
 
-static gboolean
-_connect(LogThreadedDestDriver *s)
-{
-  msg_debug("Connection succeeded",
-            evt_tag_str("driver", s->super.super.id), NULL);
-
-  return TRUE;
-}
-
-static void
-_disconnect(LogThreadedDestDriver *d)
-{
-  ExampleDestination *self = (ExampleDestination *)d;
-
-  msg_debug("Connection closed",
-            evt_tag_str("driver", self->super.super.super.id), NULL);
-}
-
 /*
  * Worker thread
  */
 
-static LogThreadedResult
-_insert(LogThreadedDestDriver *d, LogMessage *msg)
-{
-  ExampleDestination *self = (ExampleDestination *)d;
-
-  fprintf(stderr, "Message sent using file name: %s\n", self->filename);
-
-  return LTR_SUCCESS;
-  /*
-   * LTR_DROP,
-   * LTR_ERROR,
-   * LTR_SUCCESS,
-   * LTR_QUEUED,
-   * LTR_NOT_CONNECTED,
-   * LTR_RETRY,
-  */
-}
-
-static void
-_thread_init(LogThreadedDestDriver *d)
-{
-  ExampleDestination *self = (ExampleDestination *)d;
-
-  msg_debug("Worker thread started",
-            evt_tag_str("driver", self->super.super.super.id),
-            NULL);
-}
-
-static void
-_thread_deinit(LogThreadedDestDriver *d)
-{
-  ExampleDestination *self = (ExampleDestination *)d;
-
-  msg_debug("Worker thread stopped",
-            evt_tag_str("driver", self->super.super.super.id),
-            NULL);
-}
 
 /*
  * Main thread
@@ -148,7 +88,7 @@ _thread_deinit(LogThreadedDestDriver *d)
 static gboolean
 _dd_init(LogPipe *d)
 {
-  ExampleDestination *self = (ExampleDestination *)d;
+  ExampleDestinationDriver *self = (ExampleDestinationDriver *)d;
 
   if (!log_threaded_dest_driver_init_method(d))
     return FALSE;
@@ -165,7 +105,7 @@ _dd_init(LogPipe *d)
 gboolean
 _dd_deinit(LogPipe *s)
 {
-  ExampleDestination *self = (ExampleDestination *)s;
+  ExampleDestinationDriver *self = (ExampleDestinationDriver *)s;
 
   msg_verbose("Deinitializing ExampleDestination",
               evt_tag_str("driver", self->super.super.super.id),
@@ -178,7 +118,7 @@ _dd_deinit(LogPipe *s)
 static void
 _dd_free(LogPipe *d)
 {
-  ExampleDestination *self = (ExampleDestination *)d;
+  ExampleDestinationDriver *self = (ExampleDestinationDriver *)d;
 
   g_free(self->filename);
 
@@ -192,22 +132,17 @@ _dd_free(LogPipe *d)
 LogDriver *
 example_destination_dd_new(GlobalConfig *cfg)
 {
-  ExampleDestination *self = g_new0(ExampleDestination, 1);
+  ExampleDestinationDriver *self = g_new0(ExampleDestinationDriver, 1);
 
   log_threaded_dest_driver_init_instance(&self->super, cfg);
   self->super.super.super.super.init = _dd_init;
   self->super.super.super.super.deinit = _dd_deinit;
   self->super.super.super.super.free_fn = _dd_free;
 
-  self->super.worker.thread_init = _thread_init;
-  self->super.worker.thread_deinit = _thread_deinit;
-  self->super.worker.connect = _connect;
-  self->super.worker.disconnect = _disconnect;
-  self->super.worker.insert = _insert;
-
   self->super.format_stats_instance = _format_stats_instance;
   self->super.super.super.super.generate_persist_name = _format_persist_name;
   self->super.stats_source = stats_register_type("example-destination");
+  self->super.worker.construct = example_destination_dw_new;
 
   return (LogDriver *)self;
 }

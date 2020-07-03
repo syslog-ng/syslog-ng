@@ -9,6 +9,8 @@ set(example_destination_SOURCES
     "example_destination-parser.c"
     "example_destination.h"
     "example_destination.c"
+    "example_destination_worker.h"
+    "example_destination_worker.c"
 )
 
 add_module(
