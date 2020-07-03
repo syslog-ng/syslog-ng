@@ -2,11 +2,14 @@ include modules/examples/sources/msg-generator/Makefile.am
 include modules/examples/sources/threaded-diskq-source/Makefile.am
 include modules/examples/sources/threaded-random-generator/Makefile.am
 include modules/examples/inner-destinations/http-test-slots/Makefile.am
+include modules/examples/destinations/example_destination/Makefile.am
+
 
 EXAMPLE_PLUGINS = \
   $(top_builddir)/modules/examples/sources/libmsg-generator.la \
   $(top_builddir)/modules/examples/sources/libthreaded-diskq-source.la \
-	$(top_builddir)/modules/examples/inner-destinations/http-test-slots/libhttp-test-slots.la
+  $(top_builddir)/modules/examples/inner-destinations/http-test-slots/libhttp-test-slots.la \
+  $(top_builddir)/modules/examples/destinations/example_destination/libexample_destination.la
 
 if HAVE_GETRANDOM
 EXAMPLE_PLUGINS += $(top_builddir)/modules/examples/sources/libthreaded-random-generator.la
