@@ -26,18 +26,29 @@
 #include "control-server.h"
 #include "control-commands.h"
 
-ControlServer *
+struct _ControlServerLoop
+{
+  ControlServer *control_server;
+};
+
+ControlServerLoop *
 control_init(const gchar *control_name)
 {
-  ControlServer *control_server = control_server_new(control_name);
-  control_server_start(control_server);
-  return control_server;
+  ControlServerLoop *self = g_new0(ControlServerLoop, 1);
+  self->control_server = control_server_new(control_name);
+  control_server_start(self->control_server);
+
+  return self;
 }
 
 void
-control_deinit(ControlServer *control_server)
+control_deinit(ControlServerLoop *self)
 {
+  if (!self)
+    return;
+
   reset_control_command_list();
-  if (control_server)
-    control_server_free(control_server);
+  if (self && self->control_server)
+    control_server_free(self->control_server);
+  g_free(self);
 }

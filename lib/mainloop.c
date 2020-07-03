@@ -160,7 +160,7 @@ struct _MainLoop
   GlobalConfig *new_config;
 
   MainLoopOptions *options;
-  ControlServer *control_server;
+  ControlServerLoop *control_server_loop;
 };
 
 static MainLoop main_loop;
@@ -611,7 +611,7 @@ main_loop_read_and_init_config(MainLoop *self)
     {
       return 2;
     }
-  self->control_server = control_init(resolvedConfigurablePaths.ctlfilename);
+  self->control_server_loop = control_init(resolvedConfigurablePaths.ctlfilename);
   main_loop_register_control_commands(self);
   stats_register_control_commands();
   return 0;
@@ -629,7 +629,7 @@ main_loop_deinit(MainLoop *self)
 {
   main_loop_free_config(self);
 
-  control_deinit(self->control_server);
+  control_deinit(self->control_server_loop);
 
   iv_event_unregister(&self->exit_requested);
   main_loop_call_deinit();
