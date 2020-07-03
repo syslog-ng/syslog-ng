@@ -29,7 +29,7 @@ class SyslogNg(object):
         self.__syslog_ng_cli = SyslogNgCli(instance_paths, testcase_parameters)
 
     def start(self, config):
-        self.__syslog_ng_cli.start(config)
+        return self.__syslog_ng_cli.start(config)
 
     def stop(self, unexpected_messages=None):
         self.__syslog_ng_cli.stop(unexpected_messages)
