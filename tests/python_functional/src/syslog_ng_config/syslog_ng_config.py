@@ -30,6 +30,7 @@ from src.syslog_ng_config.statements.destinations.file_destination import FileDe
 from src.syslog_ng_config.statements.destinations.snmp_destination import SnmpDestination
 from src.syslog_ng_config.statements.filters.filter import Filter
 from src.syslog_ng_config.statements.logpath.logpath import LogPath
+from src.syslog_ng_config.statements.parsers.db_parser import DBParser
 from src.syslog_ng_config.statements.parsers.parser import Parser
 from src.syslog_ng_config.statements.rewrite.rewrite import SetTag
 from src.syslog_ng_config.statements.sources.example_msg_generator_source import ExampleMsgGeneratorSource
@@ -102,6 +103,9 @@ class SyslogNgConfig(object):
 
     def create_snmp_destination(self, **options):
         return SnmpDestination(**options)
+
+    def create_db_parser(self, config, **options):
+        return DBParser(config, **options)
 
     def create_logpath(self, statements=None, flags=None):
         logpath = self.__create_logpath_with_conversion(statements, flags)
