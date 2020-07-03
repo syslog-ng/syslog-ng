@@ -26,7 +26,7 @@ include(CMakeParseArguments)
 
 function (add_module)
 
-  cmake_parse_arguments(ADD_MODULE "" "TARGET" "GRAMMAR;SOURCES;DEPENDS;INCLUDES" ${ARGN})
+  cmake_parse_arguments(ADD_MODULE "" "TARGET" "GRAMMAR;SOURCES;DEPENDS;INCLUDES;LIBRARY_TYPE" ${ARGN})
 
   if (ADD_MODULE_GRAMMAR)
     module_generate_y_from_ym(${CMAKE_CURRENT_SOURCE_DIR}/${ADD_MODULE_GRAMMAR} ${CMAKE_CURRENT_BINARY_DIR}/${ADD_MODULE_GRAMMAR})
@@ -41,14 +41,20 @@ function (add_module)
       )
   endif()
 
-  add_library(${ADD_MODULE_TARGET} SHARED ${ADD_MODULE_SOURCES})
+  if (NOT ADD_MODULE_LIBRARY_TYPE)
+    set(ADD_MODULE_LIBRARY_TYPE SHARED)
+  endif()
+
+  add_library(${ADD_MODULE_TARGET} ${ADD_MODULE_LIBRARY_TYPE} ${ADD_MODULE_SOURCES})
   target_include_directories(${ADD_MODULE_TARGET} SYSTEM PRIVATE ${ADD_MODULE_INCLUDES})
   target_include_directories(${ADD_MODULE_TARGET}
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
     PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
   )
   target_link_libraries(${ADD_MODULE_TARGET} PRIVATE ${ADD_MODULE_DEPENDS} syslog-ng)
-  install(TARGETS ${ADD_MODULE_TARGET} LIBRARY DESTINATION lib/syslog-ng COMPONENT ${ADD_MODULE_TARGET})
+
+  if (ADD_MODULE_LIBRARY_TYPE STREQUAL SHARED)
+    install(TARGETS ${ADD_MODULE_TARGET} LIBRARY DESTINATION lib/syslog-ng COMPONENT ${ADD_MODULE_TARGET})
+  endif()
 
 endfunction ()
-
