@@ -32,7 +32,19 @@
 #include "cfg-walker.h"
 #include "logpipe.h"
 
+#include <iv.h>
+#include <iv_event.h>
 #include <string.h>
+
+typedef struct _ControlCommandAsync
+{
+  ControlCommand super;
+  void (*handler)(void *);
+  MainLoop *main_loop;
+  ControlConnection *cc;
+  GString  *command;
+  struct iv_event command_requested;
+} ControlCommandAsync;
 
 static void
 control_connection_message_log(ControlConnection *cc, GString *command, gpointer user_data)
@@ -423,6 +435,11 @@ ControlCommand default_commands_sync[] =
   { NULL, NULL },
 };
 
+ControlCommandAsync default_commands_async[] =
+{
+  { {NULL, NULL }, NULL },
+};
+
 static void
 _register_sync_commands(MainLoop *main_loop)
 {
@@ -435,8 +452,25 @@ _register_sync_commands(MainLoop *main_loop)
     }
 }
 
+static void
+_register_async_commands(MainLoop *main_loop)
+{
+  ControlCommandAsync *cmd;
+  for (gint i = 0; default_commands_async[i].super.command_name != NULL; i++)
+    {
+      cmd = &default_commands_async[i];
+      IV_EVENT_INIT(&cmd->command_requested);
+      cmd->command_requested.handler = cmd->handler;
+      cmd->command_requested.cookie = cmd;
+      cmd->main_loop = main_loop;
+      iv_event_register(&cmd->command_requested);
+      control_register_command(cmd->super.command_name, cmd->super.func, cmd);
+    }
+}
+
 void
 main_loop_register_control_commands(MainLoop *main_loop)
 {
   _register_sync_commands(main_loop);
+  _register_async_commands(main_loop);
 }
