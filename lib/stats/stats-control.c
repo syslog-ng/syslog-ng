@@ -117,13 +117,21 @@ _reset_counters(void)
   stats_unlock();
 }
 
+static GString *
+_send_stats_get_result(ControlConnection *cc, GString *command, gpointer user_data)
+{
+  gchar *stats = stats_generate_csv();
+  GString *response = g_string_new(stats);
+  g_free(stats);
+
+  return response;
+}
+
 static void
 control_connection_send_stats(ControlConnection *cc, GString *command, gpointer user_data)
 {
-  gchar *stats = stats_generate_csv();
-  GString *result = g_string_new(stats);
-  g_free(stats);
-  control_connection_send_reply(cc, result);
+  ThreadedCommandRunner *runner = _thread_command_runner_new(cc, command, user_data);
+  _thread_command_runner_run(runner, _send_stats_get_result);
 }
 
 static void
