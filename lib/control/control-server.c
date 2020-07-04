@@ -30,6 +30,68 @@
 #include <string.h>
 #include <errno.h>
 
+#include <iv.h>
+#include <iv_event.h>
+
+typedef struct _ThreadedCommandRunner
+{
+  ControlConnection *connection;
+  GString *command;
+  gpointer user_data;
+
+  GThread *thread;
+  ControlConnectionCommand func;
+  GString *response;
+  struct iv_event response_received;
+} ThreadedCommandRunner;
+
+static ThreadedCommandRunner *
+_thread_command_runner_new(ControlConnection *cc, GString *cmd, gpointer user_data)
+{
+  ThreadedCommandRunner *self = g_new0(ThreadedCommandRunner, 1);
+  self->connection = cc;
+  self->command = cmd;
+  self->user_data = user_data;
+
+  return self;
+}
+
+static void
+_send_response(gpointer user_data)
+{
+  ThreadedCommandRunner *self = (ThreadedCommandRunner *) user_data;
+  g_thread_join(self->thread);
+  control_connection_send_reply(self->connection, self->response);
+  iv_event_unregister(&self->response_received);
+  g_free(self);
+}
+
+static void
+_thread(gpointer user_data)
+{
+  ThreadedCommandRunner *self = (ThreadedCommandRunner *)user_data;
+  self->response = self->func(self->connection, self->command, self->user_data);
+  iv_event_post(&self->response_received);
+}
+
+static void
+_thread_command_runner_run(ThreadedCommandRunner *self, ControlConnectionCommand func)
+{
+  IV_EVENT_INIT(&self->response_received);
+  self->response_received.handler = _send_response;
+  self->response_received.cookie = self;
+  iv_event_register(&self->response_received);
+  self->func = func;
+  self->thread = g_thread_new(self->command->str, (GThreadFunc) _thread, self);
+}
+
+void control_connection_start_as_thread(ControlConnection *self, ControlConnectionCommand cmd_cb,
+                                        GString *command, gpointer user_data)
+{
+  ThreadedCommandRunner *runner = _thread_command_runner_new(self, command, user_data);
+  _thread_command_runner_run(runner, cmd_cb);
+}
+
 void
 control_server_connection_closed(ControlServer *self, ControlConnection *cc)
 {
