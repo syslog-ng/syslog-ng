@@ -410,7 +410,7 @@ export_config_graph(ControlConnection *cc, GString *command, gpointer user_data)
   control_connection_send_reply(cc, result);
 }
 
-ControlCommand default_commands[] =
+ControlCommand default_commands_sync[] =
 {
   { "LOG", control_connection_message_log },
   { "STOP", control_connection_stop_process },
@@ -424,15 +424,20 @@ ControlCommand default_commands[] =
   { NULL, NULL },
 };
 
+static void
+_register_sync_commands(MainLoop *main_loop)
+{
+  ControlCommand *cmd;
+
+  for (gint i = 0; default_commands_sync[i].command_name != NULL; i++)
+    {
+      cmd = &default_commands_sync[i];
+      control_register_command(cmd->command_name, cmd->func, main_loop);
+    }
+}
+
 void
 main_loop_register_control_commands(MainLoop *main_loop)
 {
-  int i;
-  ControlCommand *cmd;
-
-  for (i = 0; default_commands[i].command_name != NULL; i++)
-    {
-      cmd = &default_commands[i];
-      control_register_command(cmd->command_name, cmd->func, main_loop);
-    }
+  _register_sync_commands(main_loop);
 }
