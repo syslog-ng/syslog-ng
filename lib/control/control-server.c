@@ -76,13 +76,31 @@ _thread(gpointer user_data)
 }
 
 static void
+_thread_command_runner_sync_run(ThreadedCommandRunner *self, ControlConnectionCommand func)
+{
+  msg_warning("Cannot start a separated thread - ControlServer is not running",
+              evt_tag_str("command", self->command->str));
+  control_connection_send_reply(self->connection, func(self->connection, self->command, self->user_data));
+  g_string_free(self->command, TRUE);
+  g_free(self);
+}
+
+static void
 _thread_command_runner_run(ThreadedCommandRunner *self, ControlConnectionCommand func)
 {
   IV_EVENT_INIT(&self->response_received);
   self->response_received.handler = _send_response;
   self->response_received.cookie = self;
-  iv_event_register(&self->response_received);
   self->func = func;
+
+  if (!main_loop_is_control_server_running(main_loop_get_instance()))
+    {
+      _thread_command_runner_sync_run(self, func);
+      return;
+    }
+
+  iv_event_register(&self->response_received);
+
   self->thread = g_thread_new(self->command->str, (GThreadFunc) _thread, self);
 }
 
