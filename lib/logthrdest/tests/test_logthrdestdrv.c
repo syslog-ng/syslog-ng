@@ -146,6 +146,7 @@ _setup_dd(void)
   dd = test_threaded_dd_new(main_loop_get_current_config(main_loop));
 
   cr_assert(log_pipe_init(&dd->super.super.super.super));
+  cr_assert(log_pipe_on_config_inited(&dd->super.super.super.super));
 }
 
 static void
@@ -720,6 +721,7 @@ Test(logthrdestdrv, test_connect_failure_kicks_in_suspend_retry_logic_which_keep
   dd->super.worker.insert = _insert_single_message_success;
   dd->super.worker.instance.time_reopen = 0;
   cr_assert(log_pipe_init(&dd->super.super.super.super));
+  cr_assert(log_pipe_on_config_inited(&dd->super.super.super.super));
 
   _generate_message_and_wait_for_processing(dd, dd->super.written_messages);
   cr_assert(dd->connect_counter == 11, "%d", dd->connect_counter);
