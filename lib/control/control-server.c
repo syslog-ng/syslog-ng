@@ -50,7 +50,7 @@ _thread_command_runner_new(ControlConnection *cc, GString *cmd, gpointer user_da
 {
   ThreadedCommandRunner *self = g_new0(ThreadedCommandRunner, 1);
   self->connection = cc;
-  self->command = cmd;
+  self->command = g_string_new(cmd->str);
   self->user_data = user_data;
 
   return self;
@@ -63,6 +63,7 @@ _send_response(gpointer user_data)
   g_thread_join(self->thread);
   control_connection_send_reply(self->connection, self->response);
   iv_event_unregister(&self->response_received);
+  g_string_free(self->command, TRUE);
   g_free(self);
 }
 
