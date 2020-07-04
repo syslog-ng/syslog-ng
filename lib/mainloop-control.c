@@ -158,9 +158,11 @@ _respond_config_reload_status(gint type, gpointer user_data)
 }
 
 static void
-control_connection_reload(ControlConnection *cc, GString *command, gpointer user_data)
+_control_connection_reload(gpointer user_data)
 {
-  MainLoop *main_loop = (MainLoop *) user_data;
+  ControlCommandAsync *cmd = (ControlCommandAsync *) user_data;
+  MainLoop *main_loop = cmd->main_loop;
+  ControlConnection *cc = cmd->cc;
   static gpointer args[2];
   GError *error = NULL;
 
@@ -178,6 +180,15 @@ control_connection_reload(ControlConnection *cc, GString *command, gpointer user
   args[1] = cc;
   register_application_hook(AH_CONFIG_CHANGED, _respond_config_reload_status, args);
   main_loop_reload_config_commence(main_loop);
+}
+
+static void
+control_connection_reload(ControlConnection *cc, GString *command, gpointer user_data)
+{
+  ControlCommandAsync *cmd = (ControlCommandAsync *) user_data;
+  cmd->cc = cc;
+  cmd->command = command;
+  iv_event_post(&cmd->command_requested);
 }
 
 static void
@@ -426,7 +437,6 @@ ControlCommand default_commands_sync[] =
 {
   { "LOG", control_connection_message_log },
   { "STOP", control_connection_stop_process },
-  { "RELOAD", control_connection_reload },
   { "REOPEN", control_connection_reopen },
   { "CONFIG", control_connection_config },
   { "LICENSE", show_ose_license_info },
@@ -436,9 +446,11 @@ ControlCommand default_commands_sync[] =
   { NULL, NULL },
 };
 
+
 ControlCommandAsync default_commands_async[] =
 {
-  { {NULL, NULL }, NULL },
+  { { "RELOAD", control_connection_reload }, _control_connection_reload },
+  { { NULL, NULL }, NULL },
 };
 
 static void
