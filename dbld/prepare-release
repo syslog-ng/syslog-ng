@@ -35,10 +35,10 @@ function update_version_refs_in_source() {
 
 function perform_updates()
 {
-	update_version
-	update_packaging_debian
-	update_packaging_rhel
-	update_version_refs_in_source
+	update_version && \
+		update_packaging_debian && \
+		update_packaging_rhel && \
+		update_version_refs_in_source
 }
 
 if [ "$VERSION" = "" ]; then
