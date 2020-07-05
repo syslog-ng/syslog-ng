@@ -10,6 +10,11 @@ OLD_MAJOR=$(echo $OLD_VERSION | cut -d. -f1-2)
 NEW_MAJOR=$(echo $VERSION | cut -d. -f1-2)
 USER_EMAIL=$(git config --get user.email || echo "noemail@set.any.where")
 USER_NAME=$(git config --get user.name || echo "unknown user")
+VERSION_FILE_LIST="README.md doc/man/*.xml
+	scl/syslog-ng.conf
+	contrib/openbsd-packaging/syslog-ng.conf
+	packaging/debian/syslog-ng.conf
+	packaging/rhel/syslog-ng.conf"
 
 function update_version() {
 	echo Updating VERSION file
@@ -30,7 +35,7 @@ function update_version_refs_in_source() {
 	echo Updating version references in source files
 	ESCAPED_OLD_MAJOR=$(echo $OLD_MAJOR | sed -e 's/[]\/$*.^[]/\\&/g') &&
 	ESCAPED_NEW_MAJOR=$(echo $NEW_MAJOR | sed -e 's/[\/&]/\\&/g') &&
-	git ls-files | egrep -v "(lib/ivykis)|(lib/jsonc)|(lib/versioning\.h)" | xargs sed -i "s/$ESCAPED_OLD_MAJOR/$ESCAPED_NEW_MAJOR/g"
+	git ls-files $VERSION_FILE_LIST | xargs sed -i "s/$ESCAPED_OLD_MAJOR/$ESCAPED_NEW_MAJOR/g"
 }
 
 function perform_updates()
