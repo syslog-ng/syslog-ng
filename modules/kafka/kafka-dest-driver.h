@@ -35,8 +35,9 @@ typedef struct
   LogTemplateOptions template_options;
   LogTemplate *key;
   LogTemplate *message;
+  LogTemplate *temp_topic_name;
   GHashTable *topic_hash;
-  GStaticMutex lock;
+  GMutex lock;
 
   gchar *topic_name;
   GList *config;
