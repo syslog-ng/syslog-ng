@@ -216,7 +216,8 @@ error:
   if (parse_ctx)
     g_markup_parse_context_free(parse_ctx);
 
-  g_error_free(error);
+  if (error)
+    g_error_free(error);
 
   return success;
 }
@@ -290,7 +291,8 @@ pdbtool_merge(int argc, char *argv[])
     {
       fprintf(stderr, "Error storing patterndb; filename='%s', errror='%s'\n", patterndb_file,
               error ? error->message : "Unknown error");
-      g_error_free(error);
+      if (error)
+        g_error_free(error);
       ok = FALSE;
     }
 
