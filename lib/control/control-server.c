@@ -144,6 +144,9 @@ control_connection_free(ControlConnection *self)
     }
   g_string_free(self->output_buffer, TRUE);
   g_string_free(self->input_buffer, TRUE);
+  g_mutex_clear(&self->async.lock);
+  if (self->async.replies)
+    g_list_free(self->async.replies);
   g_free(self);
 }
 
@@ -165,6 +168,16 @@ control_connection_send_reply(ControlConnection *self, GString *reply)
   g_string_append(self->output_buffer, ".\n");
 
   control_connection_update_watches(self);
+}
+
+void control_connection_send_reply_async(ControlConnection *self, GString *reply)
+{
+  g_mutex_lock(&self->async.lock);
+  {
+    self->async.replies = g_list_append(self->async.replies, reply);
+  }
+  g_mutex_unlock(&self->async.lock);
+  iv_event_post(&self->async.reply_received);
 }
 
 static void
@@ -285,6 +298,27 @@ destroy_connection:
   control_server_connection_closed(self->server, self);
 }
 
+static void
+_send_async_reply(gpointer data, gpointer user_data)
+{
+  GString *reply = (GString *) data;
+  ControlConnection *cc = (ControlConnection *) user_data;
+  control_connection_send_reply(cc, reply);
+}
+
+static void
+_send_async_replies(gpointer user_data)
+{
+  ControlConnection *self = (ControlConnection *) user_data;
+  g_mutex_lock(&self->async.lock);
+  {
+    g_list_foreach(self->async.replies, _send_async_reply, self);
+    g_list_free(self->async.replies);
+    self->async.replies = NULL;
+  }
+  g_mutex_unlock(&self->async.lock);
+}
+
 void
 control_connection_init_instance(ControlConnection *self, ControlServer *server)
 {
@@ -293,7 +327,12 @@ control_connection_init_instance(ControlConnection *self, ControlServer *server)
   self->input_buffer = g_string_sized_new(128);
   self->handle_input = control_connection_io_input;
   self->handle_output = control_connection_io_output;
-  return;
+  g_mutex_init(&self->async.lock);
+  IV_EVENT_INIT(&self->async.reply_received);
+  self->async.replies = NULL;
+  self->async.reply_received.handler = _send_async_replies;
+  self->async.reply_received.cookie = self;
+  iv_event_register(&self->async.reply_received);
 }
 
 
