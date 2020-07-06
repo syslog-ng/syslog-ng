@@ -105,6 +105,8 @@ class SyslogNgCli(object):
 
         logger.info("syslog-ng process has been started with PID: {}\n".format(self.__process.pid))
 
+        return self.__process
+
     def reload(self, config):
         config.write_config(self.__instance_paths.get_config_path())
 

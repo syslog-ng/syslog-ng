@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #############################################################################
-# Copyright (c) 2015-2018 Balabit
+# Copyright (c) 2020 Balabit
+# Copyright (c) 2020 Nobles
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -20,29 +21,22 @@
 # COPYING for details.
 #
 #############################################################################
-from src.syslog_ng.syslog_ng_cli import SyslogNgCli
+import pytest
+
+DEFAULT_PID = "pid"
 
 
-class SyslogNg(object):
-    def __init__(self, instance_paths, testcase_parameters):
-        self.instance_paths = instance_paths
-        self.__syslog_ng_cli = SyslogNgCli(instance_paths, testcase_parameters)
+@pytest.mark.parametrize(
+    "use_syslogng_pid", [("yes", "no")],
+)
+def test_use_syslogng_pid(config, syslog_ng, use_syslogng_pid):
+    generator_source = config.create_example_msg_generator_source(num=1, use_syslogng_pid=use_syslogng_pid, values="PID => {}".format(DEFAULT_PID))
+    file_destination = config.create_file_destination(file_name="output.log", template=config.stringify("PID=$PID\n"))
+    config.create_logpath(statements=[generator_source, file_destination])
 
-    def start(self, config):
-        return self.__syslog_ng_cli.start(config)
-
-    def stop(self, unexpected_messages=None):
-        self.__syslog_ng_cli.stop(unexpected_messages)
-
-    def reload(self, config):
-        self.__syslog_ng_cli.reload(config)
-
-    def restart(self, config):
-        self.__syslog_ng_cli.stop()
-        self.__syslog_ng_cli.start(config)
-
-    def get_version(self):
-        return self.__syslog_ng_cli.get_version()
-
-    def is_process_running(self):
-        return self.__syslog_ng_cli.is_process_running()
+    p = syslog_ng.start(config)
+    if use_syslogng_pid == "yes":
+        expected_value = "PID={}".format(p.pid)
+    else:
+        expected_value = "PID={}".format(DEFAULT_PID)
+    assert file_destination.read_log().strip() == expected_value
