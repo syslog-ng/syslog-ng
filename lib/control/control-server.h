@@ -27,6 +27,8 @@
 #include "control.h"
 #include <stdio.h>
 
+#include <iv_event.h>
+
 #define MAX_CONTROL_LINE_LENGTH 4096
 
 struct _ControlConnection
@@ -48,6 +50,12 @@ struct _ControlConnection
     void (*stop_watches)(ControlConnection *self);
   } events;
 
+  struct
+  {
+    struct iv_event reply_received;
+    GList *replies;
+    GMutex lock;
+  } async;
 };
 
 struct _ControlServer
@@ -69,6 +77,7 @@ void control_connection_start_as_thread(ControlConnection *self, ControlConnecti
                                         GString *command, gpointer user_data);
 
 void control_connection_send_reply(ControlConnection *self, GString *reply);
+void control_connection_send_reply_async(ControlConnection *self, GString *reply);
 void control_connection_start_watches(ControlConnection *self);
 void control_connection_update_watches(ControlConnection *self);
 void control_connection_stop_watches(ControlConnection *self);
