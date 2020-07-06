@@ -75,7 +75,8 @@ tf_graphite_parse_command_line_arguments(TFGraphiteState *self, gint *argc, gcha
 
   success = g_option_context_parse (ctx, argc, argv, &error);
   g_option_context_free (ctx);
-  g_error_free(error);
+  if (error)
+    g_error_free(error);
 
   return success;
 }
@@ -176,4 +177,3 @@ tf_graphite_free_state(gpointer s)
 
 TEMPLATE_FUNCTION(TFGraphiteState, tf_graphite, tf_graphite_prepare, NULL, tf_graphite_call,
                   tf_graphite_free_state, NULL);
-

@@ -34,6 +34,7 @@ class ConsoleLogReader(object):
     def __init__(self, instance_paths):
         self.__stderr_io = FileIO(instance_paths.get_stderr_path())
         self.__message_reader = MessageReader(self.__stderr_io.readline, SingleLineParser())
+        self.__console_log_path = instance_paths.get_stderr_path()
 
     def wait_for_start_message(self):
         syslog_ng_start_message = ["syslog-ng starting up;"]
@@ -64,15 +65,16 @@ class ConsoleLogReader(object):
         return all(result)
 
     def check_for_unexpected_messages(self, unexpected_messages):
-        unexpected_patterns = ["Plugin module not found"]
-        console_log_messages = self.__message_reader.peek_messages(counter=READ_ALL_AVAILABLE_MESSAGES)
+        unexpected_patterns = ["Plugin module not found", "assertion"]
+        with self.__console_log_path.open() as f:
+            console_log_messages = f.readlines()
         if unexpected_messages is not None:
             unexpected_patterns.append(unexpected_messages)
         for unexpected_pattern in unexpected_patterns:
             for console_log_message in console_log_messages:
                 if unexpected_pattern in console_log_message:
                     logger.error("Found unexpected message in console log: {}".format(console_log_message))
-                    raise Exception
+                    raise Exception("Unexpected error log in console", console_log_message)
 
     def dump_stderr(self, last_n_lines=10):
         console_log_messages = self.__message_reader.peek_messages(counter=READ_ALL_AVAILABLE_MESSAGES)
