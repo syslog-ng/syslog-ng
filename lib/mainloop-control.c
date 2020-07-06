@@ -41,8 +41,12 @@ typedef struct _ControlCommandAsync
   ControlCommand super;
   void (*handler)(void *);
   MainLoop *main_loop;
-  ControlConnection *cc;
-  GString  *command;
+  struct
+  {
+    GList *commands;
+    GList *connections;
+    GMutex lock;
+  } args;
   struct iv_event command_requested;
 } ControlCommandAsync;
 
@@ -141,11 +145,33 @@ show_ose_license_info(ControlConnection *cc, GString *command, gpointer user_dat
 }
 
 static void
+_send_response(gpointer data, gpointer user_data)
+{
+  ControlConnection *cc = (ControlConnection *) data;
+  GString *response = (GString *) user_data;
+  control_connection_send_reply_async(cc, g_string_new(response->str));
+}
+
+static void
+_control_command_async_send_response(ControlCommandAsync *cmd, GString *response)
+{
+  g_mutex_lock(&cmd->args.lock);
+  {
+    g_list_foreach(cmd->args.connections, _send_response, response);
+    g_string_free(response, TRUE);
+    g_list_free(cmd->args.commands);
+    g_list_free(cmd->args.connections);
+    cmd->args.commands = NULL;
+    cmd->args.connections = NULL;
+  }
+  g_mutex_unlock(&cmd->args.lock);
+}
+
+static void
 _respond_config_reload_status(gint type, gpointer user_data)
 {
-  gpointer *args = user_data;
-  MainLoop *main_loop = (MainLoop *) args[0];
-  ControlConnection *cc = (ControlConnection *) args[1];
+  ControlCommandAsync *cmd = (ControlCommandAsync *) user_data;
+  MainLoop *main_loop = cmd->main_loop;
   GString *reply;
 
   if (main_loop_was_last_reload_successful(main_loop))
@@ -153,31 +179,29 @@ _respond_config_reload_status(gint type, gpointer user_data)
   else
     reply = g_string_new("FAIL Config reload failed, reverted to previous config");
 
-  control_connection_send_reply(cc, reply);
+  _control_command_async_send_response(cmd, reply);
 }
 
 static void
 _control_connection_reload(gpointer user_data)
 {
+  main_loop_assert_main_thread();
+
   ControlCommandAsync *cmd = (ControlCommandAsync *) user_data;
   MainLoop *main_loop = cmd->main_loop;
-  ControlConnection *cc = cmd->cc;
-  static gpointer args[2];
-  GError *error = NULL;
 
+  GError *error = NULL;
 
   if (!main_loop_reload_config_prepare(main_loop, &error))
     {
       GString *result = g_string_new("");
       g_string_printf(result, "FAIL %s, previous config remained intact", error->message);
       g_clear_error(&error);
-      control_connection_send_reply(cc, result);
+      _control_command_async_send_response(cmd, result);
       return;
     }
 
-  args[0] = main_loop;
-  args[1] = cc;
-  register_application_hook(AH_CONFIG_CHANGED, _respond_config_reload_status, args);
+  register_application_hook(AH_CONFIG_CHANGED, _respond_config_reload_status, cmd);
   main_loop_reload_config_commence(main_loop);
 }
 
@@ -185,9 +209,18 @@ static void
 control_connection_reload(ControlConnection *cc, GString *command, gpointer user_data)
 {
   ControlCommandAsync *cmd = (ControlCommandAsync *) user_data;
-  cmd->cc = cc;
-  cmd->command = command;
-  iv_event_post(&cmd->command_requested);
+  gboolean first_reload = FALSE;
+
+  g_mutex_lock(&cmd->args.lock);
+  {
+    first_reload = cmd->args.commands == NULL;
+    cmd->args.commands = g_list_append(cmd->args.commands, command);
+    cmd->args.connections = g_list_append(cmd->args.connections, cc);
+  }
+  g_mutex_unlock(&cmd->args.lock);
+
+  if (first_reload)
+    iv_event_post(&cmd->command_requested);
 }
 
 static void
@@ -472,6 +505,9 @@ _register_async_commands(MainLoop *main_loop)
     {
       cmd = &default_commands_async[i];
       IV_EVENT_INIT(&cmd->command_requested);
+      g_mutex_init(&cmd->args.lock);
+      cmd->args.commands = NULL;
+      cmd->args.connections = NULL;
       cmd->command_requested.handler = cmd->handler;
       cmd->command_requested.cookie = cmd;
       cmd->main_loop = main_loop;
