@@ -175,14 +175,14 @@ _validate_entry(LogMessageSerializationState *state, NVEntry *entry)
     return FALSE;
 
   /* entry points above the start of the NVTable */
-  if (GPOINTER_TO_UINT(entry) < GPOINTER_TO_UINT(nvtable))
+  if ((guint8 *)(entry) < (guint8 *)(nvtable))
     return FALSE;
 
   /* entry header is inside the allocated NVTable */
-  if (GPOINTER_TO_UINT(entry) + NV_ENTRY_DIRECT_HDR > GPOINTER_TO_UINT(nvtable) + nvtable->size)
+  if ((guint8 *)entry + NV_ENTRY_DIRECT_HDR > (guint8 *)nvtable + nvtable->size)
     return FALSE;
   /* entry as a whole is inside the allocated NVTable */
-  if (GPOINTER_TO_UINT(entry) + entry->alloc_len > GPOINTER_TO_UINT(nvtable) + nvtable->size)
+  if ((guint8 *)entry + entry->alloc_len > ((guint8 *)nvtable + nvtable->size))
     return FALSE;
 
   if (!entry->indirect)
