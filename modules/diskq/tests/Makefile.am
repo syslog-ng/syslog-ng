@@ -47,11 +47,3 @@ modules_diskq_tests_test_diskq_truncate_DEPENDENCIES =	\
 modules_diskq_tests_test_diskq_truncate_SOURCES = \
 	modules/diskq/tests/test_diskq_truncate.c \
 	modules/diskq/tests/test_diskq_tools.h
-
-modules_diskq_tests_test_pread_all_CFLAGS = $(DISKQ_TEST_C_FLAGS)
-modules_diskq_tests_test_pread_all_LDFLAGS = $(DISKQ_TEST_LD_FLAGS)
-modules_diskq_tests_test_pread_all_LDADD = $(DISKQ_TEST_LD_ADD)
-modules_diskq_tests_test_pread_all_DEPENDENCIES =	\
-	$(top_builddir)/modules/diskq/libdisk-buffer.la
-modules_diskq_tests_test_diskq_truncate_SOURCES = \
-	modules/diskq/tests/test_pread_all.c
