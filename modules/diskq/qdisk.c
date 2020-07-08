@@ -455,55 +455,42 @@ qdisk_pop_head(QDisk *self, GString *record)
   return FALSE;
 }
 
-ssize_t
-pread_all(int fd, char *buf,  size_t count, off_t offset, gint max_block)
+static FILE *
+_create_stream(QDisk *self, gint64 offset)
 {
-  size_t already_read = 0;
-
-  while (already_read < count)
+  int fd_copy = dup(self->fd);
+  FILE *f = fdopen(fd_copy, "r");
+  if (!f)
     {
-      size_t size_to_read = max_block > 0 ? MIN(count-already_read, max_block) : count-already_read;
-
-      ssize_t retval = pread(fd, buf+already_read, size_to_read, offset+already_read);
-      if (retval <= 0)
-        return retval;
-
-      already_read += retval;
+      msg_error("Error opening file stream",
+                evt_tag_str("filename", self->filename),
+                evt_tag_error("error"));
+      close(fd_copy);
+      return NULL;
     }
 
-  return count;
-}
+  if (fseek(f, offset, SEEK_SET) != 0)
+    {
+      msg_error("diskq-serializer: error while seeking in file stream",
+                evt_tag_str("filename", self->filename),
+                evt_tag_error("error"));
+      fclose(f);
+      return NULL;
+    }
 
-static ssize_t
-_pread_all(int fd, char *buf,  size_t count, off_t offset)
-{
-  return pread_all(fd, buf, count, offset, 0);
+  return f;
 }
 
 static gboolean
 _load_queue(QDisk *self, GQueue *q, gint64 q_ofs, guint32 q_len, guint32 q_count)
 {
-  GString *serialized;
-  SerializeArchive *sa;
-
   if (q_ofs)
     {
-      gssize read_len;
+      FILE *f = _create_stream(self, q_ofs);
+      if (!f)
+        return FALSE;
 
-      serialized = g_string_sized_new(q_len);
-      g_string_set_size(serialized, q_len);
-      read_len = _pread_all(self->fd, serialized->str, q_len, q_ofs);
-      if (read_len < 0 || read_len != q_len)
-        {
-          msg_error("Error reading in-memory buffer from disk-queue file",
-                    evt_tag_str("filename", self->filename),
-                    evt_tag_long("read_len", read_len),
-                    evt_tag_long("q_len", q_len),
-                    read_len < 0 ? evt_tag_error("error") : evt_tag_str("error", "short read"));
-          g_string_free(serialized, TRUE);
-          return FALSE;
-        }
-      sa = serialize_string_archive_new(serialized);
+      SerializeArchive *sa = serialize_file_archive_new(f);
       for (guint32 i = 0; i < q_count; i++)
         {
           LogMessage *msg;
@@ -526,8 +513,11 @@ _load_queue(QDisk *self, GQueue *q, gint64 q_ofs, guint32 q_len, guint32 q_count
               break;
             }
         }
-      g_string_free(serialized, TRUE);
       serialize_archive_free(sa);
+      if (fclose(f) != 0)
+        msg_warning("Error closing file stream",
+                    evt_tag_str("filename", self->filename),
+                    evt_tag_error("error"));
     }
   return TRUE;
 }
