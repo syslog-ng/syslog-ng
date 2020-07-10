@@ -836,22 +836,40 @@ _finalize_sd_init(gpointer arg)
   return TRUE;
 }
 
-static void
+static gboolean
 _finalize_init_async(gpointer arg)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) arg;
   iv_event_unregister(&self->finalize_init_event);
-  _finalize_sd_init(arg);
+  return _finalize_sd_init(arg);
 }
 
 static gboolean
 _finalize_init(gpointer arg)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) arg;
-  iv_event_post(&self->finalize_init_event); //TODO: post only when needed...
-  // otherwise return _finalize_sd_init()
+  iv_event_post(&self->finalize_init_event);
 
   return TRUE;
+}
+
+static gboolean
+_transport_mapper_init(AFSocketSourceDriver *self)
+{
+  TransportMapperAsyncResult res = transport_mapper_async_init(self->transport_mapper, _finalize_init, self);
+  switch (res)
+    {
+    case TR_MAP_ASYNC_NOT_SUPPORTED:
+      return _finalize_init_async(self);
+    case TR_MAP_ASYNC_REGISTERED_FAILED:
+      return FALSE;
+    case TR_MAP_ASYNC_REGISTERED_SUCCESS:
+      return TRUE;
+    default:
+      g_assert_not_reached();
+      break;
+    }
+  return FALSE;
 }
 
 static gboolean
@@ -879,8 +897,7 @@ _sd_open_stream(AFSocketSourceDriver *self)
     }
   self->fd = sock;
   iv_event_register(&self->finalize_init_event);
-
-  return transport_mapper_async_init(self->transport_mapper, _finalize_init, self);
+  return _transport_mapper_init(self);
 }
 
 static gboolean
@@ -1059,7 +1076,7 @@ static void
 _finalize_init_event_init(AFSocketSourceDriver *self)
 {
   IV_EVENT_INIT(&self->finalize_init_event);
-  self->finalize_init_event.handler = _finalize_init_async;
+  self->finalize_init_event.handler = (void (*)(void *)) _finalize_init_async;
   self->finalize_init_event.cookie = self;
 }
 
