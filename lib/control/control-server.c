@@ -419,6 +419,16 @@ _send_async_replies(gpointer user_data)
   g_mutex_unlock(&self->async.lock);
 }
 
+static void
+_control_connection_init_async(ControlConnection *self)
+{
+  g_mutex_init(&self->async.lock);
+  IV_EVENT_INIT(&self->async.reply_received);
+  self->async.replies = NULL;
+  self->async.reply_received.handler = _send_async_replies;
+  self->async.reply_received.cookie = self;
+}
+
 void
 control_connection_init_instance(ControlConnection *self, ControlServer *server)
 {
@@ -427,18 +437,14 @@ control_connection_init_instance(ControlConnection *self, ControlServer *server)
   self->input_buffer = g_string_sized_new(128);
   self->handle_input = control_connection_io_input;
   self->handle_output = control_connection_io_output;
-  g_mutex_init(&self->async.lock);
-  IV_EVENT_INIT(&self->async.reply_received);
-  self->async.replies = NULL;
-  self->async.reply_received.handler = _send_async_replies;
-  self->async.reply_received.cookie = self;
-  iv_event_register(&self->async.reply_received);
+  _control_connection_init_async(self);
 }
 
 
 void
 control_connection_start_watches(ControlConnection *self)
 {
+  iv_event_register(&self->async.reply_received);
   if (self->events.start_watches)
     self->events.start_watches(self);
 }
@@ -453,6 +459,8 @@ control_connection_update_watches(ControlConnection *self)
 void
 control_connection_stop_watches(ControlConnection *self)
 {
+  iv_event_unregister(&self->async.reply_received);
+
   if (self->events.stop_watches)
     self->events.stop_watches(self);
 }
