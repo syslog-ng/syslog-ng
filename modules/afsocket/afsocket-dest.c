@@ -177,6 +177,15 @@ static void afsocket_dd_try_connect(AFSocketDestDriver *self);
 static gboolean afsocket_dd_setup_connection(AFSocketDestDriver *self);
 
 static void
+_finalize_init(gpointer data)
+{
+  AFSocketDestDriver *self = (AFSocketDestDriver *) data;
+  iv_event_unregister(&self->finalize_init_event);
+
+  afsocket_dd_try_connect(self);
+}
+
+static void
 afsocket_dd_init_watches(AFSocketDestDriver *self)
 {
   IV_FD_INIT(&self->connect_fd);
@@ -189,6 +198,10 @@ afsocket_dd_init_watches(AFSocketDestDriver *self)
    * We'll change this to afsocket_dd_reconnect when the initialization of the
    * connection succeeds.*/
   self->reconnect_timer.handler = (void (*)(void *)) afsocket_dd_try_connect;
+
+  IV_EVENT_INIT(&self->finalize_init_event);
+  self->finalize_init_event.handler = _finalize_init;
+  self->finalize_init_event.cookie = self;
 }
 
 static void
@@ -562,10 +575,11 @@ afsocket_dd_setup_connection(AFSocketDestDriver *self)
 }
 
 static gboolean
-_finalize_init(gpointer arg)
+_finalize_init_async(gpointer arg)
 {
   AFSocketDestDriver *self = (AFSocketDestDriver *)arg;
-  afsocket_dd_try_connect(self);
+  iv_event_post(&self->finalize_init_event);
+
   return TRUE;
 }
 
@@ -575,7 +589,9 @@ _dd_init_stream(AFSocketDestDriver *self)
   if (!afsocket_dd_setup_writer(self))
     return FALSE;
 
-  return transport_mapper_async_init(self->transport_mapper, _finalize_init, self);
+  iv_event_register(&self->finalize_init_event);
+
+  return transport_mapper_async_init(self->transport_mapper, _finalize_init_async, self);
 }
 
 static gboolean
@@ -591,7 +607,8 @@ _dd_init_dgram(AFSocketDestDriver *self)
       return FALSE;
     }
 
-  return _finalize_init(self);
+  afsocket_dd_try_connect(self);
+  return TRUE;
 }
 
 static void

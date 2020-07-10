@@ -31,6 +31,7 @@
 #include "logwriter.h"
 
 #include <iv.h>
+#include <iv_event.h>
 
 typedef struct _AFSocketDestDriver AFSocketDestDriver;
 
@@ -52,6 +53,7 @@ struct _AFSocketDestDriver
   gboolean connection_initialized;
   struct iv_fd connect_fd;
   struct iv_timer reconnect_timer;
+  struct iv_event finalize_init_event;
   SocketOptions *socket_options;
   TransportMapper *transport_mapper;
 
