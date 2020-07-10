@@ -815,7 +815,7 @@ afsocket_sd_restore_kept_alive_connections(AFSocketSourceDriver *self)
 }
 
 static gboolean
-_finalize_init(gpointer arg)
+_finalize_sd_init(gpointer arg)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *)arg;
   /* set up listening source */
@@ -833,6 +833,24 @@ _finalize_init(gpointer arg)
   char buf[256];
   msg_info("Accepting connections",
            evt_tag_str("addr", g_sockaddr_format(self->bind_addr, buf, sizeof(buf), GSA_FULL)));
+  return TRUE;
+}
+
+static void
+_finalize_init_async(gpointer arg)
+{
+  AFSocketSourceDriver *self = (AFSocketSourceDriver *) arg;
+  iv_event_unregister(&self->finalize_init_event);
+  _finalize_sd_init(arg);
+}
+
+static gboolean
+_finalize_init(gpointer arg)
+{
+  AFSocketSourceDriver *self = (AFSocketSourceDriver *) arg;
+  iv_event_post(&self->finalize_init_event); //TODO: post only when needed...
+  // otherwise return _finalize_sd_init()
+
   return TRUE;
 }
 
@@ -860,6 +878,8 @@ _sd_open_stream(AFSocketSourceDriver *self)
         return self->super.super.optional;
     }
   self->fd = sock;
+  iv_event_register(&self->finalize_init_event);
+
   return transport_mapper_async_init(self->transport_mapper, _finalize_init, self);
 }
 
@@ -1035,6 +1055,14 @@ _stop_connection_counter_stats_queryable(AFSocketSourceDriver *self)
     }
 }
 
+static void
+_finalize_init_event_init(AFSocketSourceDriver *self)
+{
+  IV_EVENT_INIT(&self->finalize_init_event);
+  self->finalize_init_event.handler = _finalize_init_async;
+  self->finalize_init_event.cookie = self;
+}
+
 gboolean
 afsocket_sd_init_method(LogPipe *s)
 {
@@ -1042,6 +1070,8 @@ afsocket_sd_init_method(LogPipe *s)
 
   if (!log_src_driver_init_method(s))
     return FALSE;
+
+  _finalize_init_event_init(self);
 
   if (!afsocket_sd_setup_transport(self) || !afsocket_sd_setup_addresses(self))
     return FALSE;
