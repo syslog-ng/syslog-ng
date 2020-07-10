@@ -31,6 +31,13 @@
 typedef struct _TransportMapper TransportMapper;
 typedef gboolean (*TransportMapperAsyncInitCB)(gpointer arg);
 
+typedef enum
+{
+  TR_MAP_ASYNC_NOT_SUPPORTED,
+  TR_MAP_ASYNC_REGISTERED_SUCCESS,
+  TR_MAP_ASYNC_REGISTERED_FAILED
+} TransportMapperAsyncResult;
+
 struct _TransportMapper
 {
   /* the transport() option as specified by the user */
@@ -51,7 +58,7 @@ struct _TransportMapper
   gboolean (*apply_transport)(TransportMapper *self, GlobalConfig *cfg);
   LogTransport *(*construct_log_transport)(TransportMapper *self, gint fd);
   gboolean (*init)(TransportMapper *self);
-  gboolean (*async_init)(TransportMapper *self, TransportMapperAsyncInitCB func, gpointer arg);
+  TransportMapperAsyncResult (*async_init)(TransportMapper *self, TransportMapperAsyncInitCB func, gpointer arg);
   void (*free_fn)(TransportMapper *self);
 };
 
@@ -92,7 +99,7 @@ transport_mapper_init(TransportMapper *self)
   return TRUE;
 }
 
-static inline gboolean
+static inline TransportMapperAsyncResult
 transport_mapper_async_init(TransportMapper *self, TransportMapperAsyncInitCB func, gpointer arg)
 {
   if (self->async_init)
@@ -100,6 +107,6 @@ transport_mapper_async_init(TransportMapper *self, TransportMapperAsyncInitCB fu
       return self->async_init(self, func, arg);
     }
 
-  return func(arg);
+  return TR_MAP_ASYNC_NOT_SUPPORTED;
 }
 #endif

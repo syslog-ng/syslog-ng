@@ -584,6 +584,25 @@ _finalize_init_async(gpointer arg)
 }
 
 static gboolean
+_transport_mapper_async_init(AFSocketDestDriver *self)
+{
+  TransportMapperAsyncResult res = transport_mapper_async_init(self->transport_mapper, _finalize_init_async, self);
+  switch (res)
+    {
+    case TR_MAP_ASYNC_NOT_SUPPORTED:
+      _finalize_init_async(self);
+      return TRUE;
+    case TR_MAP_ASYNC_REGISTERED_SUCCESS:
+      return TRUE;
+    case TR_MAP_ASYNC_REGISTERED_FAILED:
+      return FALSE;
+    default:
+      g_assert_not_reached();
+    }
+  return FALSE;
+}
+
+static gboolean
 _dd_init_stream(AFSocketDestDriver *self)
 {
   if (!afsocket_dd_setup_writer(self))
@@ -591,7 +610,7 @@ _dd_init_stream(AFSocketDestDriver *self)
 
   iv_event_register(&self->finalize_init_event);
 
-  return transport_mapper_async_init(self->transport_mapper, _finalize_init_async, self);
+  return _transport_mapper_async_init(self);
 }
 
 static gboolean

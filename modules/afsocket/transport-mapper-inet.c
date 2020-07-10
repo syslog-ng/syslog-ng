@@ -222,13 +222,13 @@ _call_finalize_init(Secret *secret, gpointer user_data)
     }
 }
 
-static gboolean
+static TransportMapperAsyncResult
 transport_mapper_inet_async_init(TransportMapper *s, TransportMapperAsyncInitCB func, gpointer func_args)
 {
   TransportMapperInet *self = (TransportMapperInet *)s;
 
   if (!self->tls_context)
-    return func(func_args);
+    return TR_MAP_ASYNC_NOT_SUPPORTED;
 
   TLSContextSetupResult tls_ctx_setup_res = tls_context_setup_context(self->tls_context);
 
@@ -238,7 +238,7 @@ transport_mapper_inet_async_init(TransportMapper *s, TransportMapperAsyncInitCB 
     {
       if (key && secret_storage_contains_key(key))
         secret_storage_update_status(key, SECRET_STORAGE_SUCCESS);
-      return func(func_args);
+      return TR_MAP_ASYNC_NOT_SUPPORTED;
     }
 
   if (tls_ctx_setup_res == TLS_CONTEXT_SETUP_BAD_PASSWORD)
@@ -257,10 +257,11 @@ transport_mapper_inet_async_init(TransportMapper *s, TransportMapperAsyncInitCB 
       else
         msg_error("Failed to subscribe for key",
                   evt_tag_str("keyfile", key));
-      return subscribe_res;
+
+      return subscribe_res ? TR_MAP_ASYNC_REGISTERED_SUCCESS : TR_MAP_ASYNC_REGISTERED_FAILED;
     }
 
-  return FALSE;
+  return TR_MAP_ASYNC_REGISTERED_FAILED;
 }
 
 void
