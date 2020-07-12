@@ -207,8 +207,8 @@ scratch_buffers_allocator_deinit(void)
     }
 
   /* remove our values from stats */
-  stats_counter_add(stats_scratch_buffers_count, -scratch_buffers->len);
-  stats_counter_add(stats_scratch_buffers_bytes, -scratch_buffers_bytes_reported);
+  stats_counter_sub(stats_scratch_buffers_count, scratch_buffers->len);
+  stats_counter_sub(stats_scratch_buffers_bytes, scratch_buffers_bytes_reported);
 
   /* free thread local scratch buffers */
   for (int i = 0; i < scratch_buffers->len; i++)

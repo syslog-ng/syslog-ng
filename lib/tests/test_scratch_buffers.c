@@ -127,33 +127,59 @@ Test(scratch_buffers, local_usage_metrics_measure_allocs)
 extern StatsCounterItem *stats_scratch_buffers_count;
 extern StatsCounterItem *stats_scratch_buffers_bytes;
 
-Test(scratch_buffers, stats_counters_are_updated)
+Test(scratch_buffers_stats, stats_counters_are_updated)
 {
   GString *str;
 
-  for (gint count = 1; count <= ITERATIONS; count++)
+  gint allocated_counter = 0;
+  for (gint i = 1; i <= ITERATIONS; i++)
     {
       str = scratch_buffers_alloc();
       cr_assert_not_null(str);
+      allocated_counter++;
 
       /* check through accessor functions */
-      cr_assert(scratch_buffers_get_local_usage_count() == count,
+      cr_assert(scratch_buffers_get_local_usage_count() == allocated_counter,
                 "get_local_usage_count() not returning proper value, value=%d, expected=%d",
-                scratch_buffers_get_local_usage_count(), count);
+                scratch_buffers_get_local_usage_count(), allocated_counter);
 
-      cr_assert(scratch_buffers_get_local_allocation_bytes() == count * DEFAULT_ALLOC_SIZE,
+      cr_assert(scratch_buffers_get_local_allocation_bytes() == allocated_counter * DEFAULT_ALLOC_SIZE,
                 "get_local_allocation_bytes() not returning proper value, value=%ld, expected=%ld",
-                scratch_buffers_get_local_allocation_bytes(), count * DEFAULT_ALLOC_SIZE);
+                scratch_buffers_get_local_allocation_bytes(), allocated_counter * DEFAULT_ALLOC_SIZE);
 
       /* check through metrics */
-      cr_assert(stats_counter_get(stats_scratch_buffers_count) == count,
+      cr_assert(stats_counter_get(stats_scratch_buffers_count) == allocated_counter,
                 "Statistic scratch_buffers_count is not updated properly, value=%d, expected=%d",
-                (gint) stats_counter_get(stats_scratch_buffers_count), count);
+                (gint) stats_counter_get(stats_scratch_buffers_count), allocated_counter);
 
       /* check if byte counter is updated */
       scratch_buffers_update_stats();
-      cr_assert_eq(stats_counter_get(stats_scratch_buffers_bytes), count * DEFAULT_ALLOC_SIZE);
+      cr_assert_eq(stats_counter_get(stats_scratch_buffers_bytes), allocated_counter * DEFAULT_ALLOC_SIZE);
+
+      /* Check internal state is as expected */
+      cr_assert_eq(scratch_buffers_get_local_allocation_count(), allocated_counter,
+                   "Local allocation count is not updated properly, value=%d, expected=%d",
+                   scratch_buffers_get_local_allocation_count(), allocated_counter);
     }
+
+  scratch_buffers_explicit_gc();
+  cr_assert_eq(scratch_buffers_get_local_usage_count(), 0,
+               "get_local_usage_count() failed to reset to 0, value=%d, expected=%d",
+               scratch_buffers_get_local_usage_count(), 0);
+  cr_assert_eq(scratch_buffers_get_local_allocation_count(), allocated_counter,
+               "Local allocation count is not updated properly, value=%d, expected=%d",
+               scratch_buffers_get_local_allocation_count(), allocated_counter);
+  cr_assert_eq(stats_counter_get(stats_scratch_buffers_count), allocated_counter,
+               "Statistic scratch_buffers_count should not be changed, value=%d, expected=%d",
+               (gint) stats_counter_get(stats_scratch_buffers_count), allocated_counter);
+
+  scratch_buffers_allocator_deinit();
+  cr_assert_eq(scratch_buffers_get_local_allocation_count(), 0,
+               "Local allocation count failed to reset 0, value=%d, expected=%d",
+               scratch_buffers_get_local_allocation_count(), 0);
+  cr_assert_eq(stats_counter_get(stats_scratch_buffers_count), 0,
+               "Statistic scratch_buffers_count failed to reset to 0, value=%ld, expected=%d",
+               stats_counter_get(stats_scratch_buffers_count), 0);
 }
 
 static void
@@ -177,4 +203,12 @@ teardown(void)
   stats_destroy();
 }
 
+static void
+stats_test_teardown(void)
+{
+  scratch_buffers_global_deinit();
+  stats_destroy();
+}
+
 TestSuite(scratch_buffers, .init = setup, .fini = teardown);
+TestSuite(scratch_buffers_stats, .init = setup, .fini = stats_test_teardown);
