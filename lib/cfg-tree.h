@@ -183,6 +183,7 @@ gchar *cfg_tree_get_child_id(CfgTree *self, gint content, LogExprNode *node);
 
 gboolean cfg_tree_start(CfgTree *self);
 gboolean cfg_tree_stop(CfgTree *self);
+gboolean cfg_tree_on_inited(CfgTree *self);
 
 void cfg_tree_init_instance(CfgTree *self, GlobalConfig *cfg);
 void cfg_tree_free_instance(CfgTree *self);

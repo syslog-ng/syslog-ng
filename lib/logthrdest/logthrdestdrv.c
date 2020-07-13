@@ -1060,9 +1060,14 @@ log_threaded_dest_driver_init_method(LogPipe *s)
   return TRUE;
 }
 
+/* This method is only used when a LogThreadedDestDriver is directly used
+ * without overriding its on_config_inited method.  If there's an overridden
+ * method, the caller is responsible for explicitly calling _start_workers() at
+ * the end of on_config_inited(). */
 gboolean
-log_threaded_dest_driver_start_workers(LogThreadedDestDriver *self)
+log_threaded_dest_driver_start_workers(LogPipe *s)
 {
+  LogThreadedDestDriver *self = (LogThreadedDestDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config((LogPipe *) self);
   gboolean startup_success = TRUE;
 
@@ -1079,17 +1084,10 @@ log_threaded_dest_driver_start_workers(LogThreadedDestDriver *self)
   return startup_success;
 }
 
-
-/* This method is only used when a LogThreadedDestDriver is directly used
- * without overriding its init method.  If there's an overridden method, the
- * caller is responsible for explicitly calling _start_workers() at the end
- * of init(). */
 static gboolean
 log_threaded_dest_driver_init(LogPipe *s)
 {
-  LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
-
-  return log_threaded_dest_driver_init_method(s) && log_threaded_dest_driver_start_workers(self);
+  return log_threaded_dest_driver_init_method(s);
 }
 
 gboolean
@@ -1138,6 +1136,7 @@ log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalConfig
   self->super.super.super.deinit = log_threaded_dest_driver_deinit_method;
   self->super.super.super.queue = log_threaded_dest_driver_queue;
   self->super.super.super.free_fn = log_threaded_dest_driver_free;
+  self->super.super.super.on_config_inited = log_threaded_dest_driver_start_workers;
   self->time_reopen = -1;
   self->batch_lines = -1;
   self->batch_timeout = -1;

@@ -365,7 +365,11 @@ cfg_init(GlobalConfig *cfg)
   log_template_options_init(&cfg->template_options, cfg);
   if (!cfg_init_modules(cfg))
     return FALSE;
-  return cfg_tree_start(&cfg->tree);
+  if (!cfg_tree_start(&cfg->tree))
+    return FALSE;
+
+  g_assert(cfg_tree_on_inited(&cfg->tree));
+  return TRUE;
 }
 
 gboolean

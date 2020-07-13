@@ -186,25 +186,11 @@ _worker_wakeup(LogSource *s)
   self->wakeup(self->control);
 }
 
-static void
-_start_worker_thread(gint type, gpointer data)
-{
-  LogThreadedSourceWorker *self =  (LogThreadedSourceWorker *) data;
-
-  main_loop_create_worker_thread((WorkerThreadFunc) log_threaded_source_worker_run,
-                                 (WorkerExitNotificationFunc) log_threaded_source_worker_request_exit,
-                                 self, &self->options);
-}
-
 static gboolean
 log_threaded_source_worker_init(LogPipe *s)
 {
-  LogThreadedSourceWorker *self = (LogThreadedSourceWorker *) s;
   if (!log_source_init(s))
     return FALSE;
-
-  /* The worker thread has to be started after CfgTree is completely initialized. */
-  register_application_hook(AH_CONFIG_CHANGED, _start_worker_thread, self);
 
   return TRUE;
 }
@@ -291,6 +277,18 @@ log_threaded_source_driver_free_method(LogPipe *s)
   log_src_driver_free(s);
 }
 
+gboolean
+log_threaded_source_driver_start_worker(LogPipe *s)
+{
+  LogThreadedSourceDriver *self = (LogThreadedSourceDriver *) s;
+
+  main_loop_create_worker_thread((WorkerThreadFunc) log_threaded_source_worker_run,
+                                 (WorkerExitNotificationFunc) log_threaded_source_worker_request_exit,
+                                 self->worker, &self->worker->options);
+
+  return TRUE;
+}
+
 void
 log_threaded_source_driver_set_worker_run_func(LogThreadedSourceDriver *self, LogThreadedSourceWorkerRunFunc run)
 {
@@ -372,4 +370,5 @@ log_threaded_source_driver_init_instance(LogThreadedSourceDriver *self, GlobalCo
   self->super.super.super.init = log_threaded_source_driver_init_method;
   self->super.super.super.deinit = log_threaded_source_driver_deinit_method;
   self->super.super.super.free_fn = log_threaded_source_driver_free_method;
+  self->super.super.super.on_config_inited = log_threaded_source_driver_start_worker;
 }

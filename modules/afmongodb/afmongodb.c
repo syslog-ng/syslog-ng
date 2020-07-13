@@ -515,7 +515,7 @@ _init(LogPipe *s)
   if (!afmongodb_dd_private_uri_init(&self->super.super.super))
     return FALSE;
 
-  return log_threaded_dest_driver_start_workers(&self->super);
+  return TRUE;
 }
 
 static void

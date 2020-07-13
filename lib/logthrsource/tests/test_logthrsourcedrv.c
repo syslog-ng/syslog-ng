@@ -122,6 +122,7 @@ static void
 start_test_threaded_source(TestThreadedSourceDriver *s)
 {
   cr_assert(log_pipe_init(&s->super.super.super.super));
+  cr_assert(log_pipe_on_config_inited(&s->super.super.super.super));
   app_config_changed();
 }
 

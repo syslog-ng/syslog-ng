@@ -160,7 +160,7 @@ java_dd_init(LogPipe *s)
   if (!java_destination_proxy_init(self->proxy))
     return FALSE;
 
-  return log_threaded_dest_driver_start_workers(&self->super);
+  return TRUE;
 }
 
 gboolean

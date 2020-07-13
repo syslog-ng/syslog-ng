@@ -1142,7 +1142,7 @@ afsql_dd_init(LogPipe *s)
   if (afsql_dd_is_transaction_handling_enabled(self))
     log_threaded_dest_driver_set_batch_lines((LogDriver *)self, _batch_lines(self));
 
-  return log_threaded_dest_driver_start_workers(&self->super);
+  return TRUE;
 }
 
 static void
