@@ -139,18 +139,18 @@ Test(scratch_buffers_stats, stats_counters_are_updated)
       allocated_counter++;
 
       /* check through accessor functions */
-      cr_assert(scratch_buffers_get_local_usage_count() == allocated_counter,
-                "get_local_usage_count() not returning proper value, value=%d, expected=%d",
-                scratch_buffers_get_local_usage_count(), allocated_counter);
+      cr_assert_eq(scratch_buffers_get_local_usage_count(), allocated_counter,
+                   "get_local_usage_count() not returning proper value, value=%d, expected=%d",
+                   scratch_buffers_get_local_usage_count(), allocated_counter);
 
-      cr_assert(scratch_buffers_get_local_allocation_bytes() == allocated_counter * DEFAULT_ALLOC_SIZE,
-                "get_local_allocation_bytes() not returning proper value, value=%ld, expected=%ld",
-                scratch_buffers_get_local_allocation_bytes(), allocated_counter * DEFAULT_ALLOC_SIZE);
+      cr_assert_eq(scratch_buffers_get_local_allocation_bytes(), allocated_counter * DEFAULT_ALLOC_SIZE,
+                   "get_local_allocation_bytes() not returning proper value, value=%ld, expected=%ld",
+                   scratch_buffers_get_local_allocation_bytes(), allocated_counter * DEFAULT_ALLOC_SIZE);
 
       /* check through metrics */
-      cr_assert(stats_counter_get(stats_scratch_buffers_count) == allocated_counter,
-                "Statistic scratch_buffers_count is not updated properly, value=%d, expected=%d",
-                (gint) stats_counter_get(stats_scratch_buffers_count), allocated_counter);
+      cr_assert_eq(stats_counter_get(stats_scratch_buffers_count), allocated_counter,
+                   "Statistic scratch_buffers_count is not updated properly, value=%d, expected=%d",
+                   (gint) stats_counter_get(stats_scratch_buffers_count), allocated_counter);
 
       /* check if byte counter is updated */
       scratch_buffers_update_stats();
