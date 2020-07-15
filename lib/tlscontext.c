@@ -572,10 +572,6 @@ _load_dh_fallback(TLSContext *self)
 static gboolean
 tls_context_setup_ecdh(TLSContext *self)
 {
-  /* server only */
-  if (self->mode != TM_SERVER)
-    return TRUE;
-
   if (!_set_optional_ecdh_curve_list(self->ssl_ctx, self->ecdh_curve_list))
     return FALSE;
 
