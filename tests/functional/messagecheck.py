@@ -25,12 +25,6 @@ from log import *
 from control import *
 from messagegen import syslog_prefix
 
-def logstore_reader(fname):
-    try:
-        return os.popen("../../src/logcat %s.lgs" % fname, "r")
-    except OSError as e:
-        print_user("Error opening file: %s, %s" % (fname, str(e)))
-
 def file_reader(fname):
     try:
         return open(fname + ".log", "r")
@@ -109,13 +103,7 @@ def check_reader_expected(reader, messages, settle_time, syslog_prefix, skip_pre
 def check_file_expected(fname, messages, settle_time=1, syslog_prefix=syslog_prefix, skip_prefix = 0):
     print_user("Checking contents of output files: %s" % fname)
     flush_files(settle_time)
-
-    if logstore_store_supported:
-        iter = (file_reader, logstore_reader)
-    else:
-        iter = (file_reader,)
-    for reader in iter:
-        return check_reader_expected(reader(fname), messages, settle_time, syslog_prefix, skip_prefix)
+    return check_reader_expected(file_reader(fname), messages, settle_time, syslog_prefix, skip_prefix)
 
 def check_sql_expected(dbname, tablename, messages, settle_time=1, syslog_prefix="", skip_prefix=0 ):
     print_user("Checking contents of output database %s, table: %s" % (dbname, tablename))
