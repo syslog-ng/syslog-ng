@@ -12,6 +12,14 @@ jobs:
       matrix:
         python: [python2, python3]
         build-tool: [autotools, cmake]
+        cc: [gcc, clang]
+        exclude:
+          - python: python3
+            build-tool: autotools
+            cc: clang
+          - python: python3
+            build-tool: cmake
+            cc: clang
       fail-fast: false
 
     steps:
@@ -20,10 +28,12 @@ jobs:
           export PYTHONVERSION=`printf ${{ matrix.python }} | tail -c 1`
           export PYTHONUSERBASE=${HOME}/python_packages
           export PATH=${PYTHONUSERBASE}:${PATH}
+          export CC=${{ matrix.cc }}
           export CONFIGURE_FLAGS="
             --prefix=${HOME}/install/syslog-ng
             --enable-all-modules
             --with-python=${PYTHONVERSION}
+            `[ $CC = clang ] && echo '--enable-force-gnu99'`
           "
           export CMAKE_FLAGS="
             -DCMAKE_C_FLAGS=-Werror
@@ -35,6 +45,7 @@ jobs:
           echo "::set-env name=PATH::`echo ${PATH}`"
           echo "::set-env name=CONFIGURE_FLAGS::`echo ${CONFIGURE_FLAGS}`"
           echo "::set-env name=CMAKE_FLAGS::`echo ${CMAKE_FLAGS}`"
+          echo "::set-env name=CC::`echo ${CC}`"
 
       - name: Checkout syslog-ng source
         uses: actions/checkout@v2

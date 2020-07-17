@@ -30,6 +30,9 @@
    massive list of includes further below. */
 
 #pragma GCC diagnostic ignored "-Wswitch-default"
+#if (defined(__GNUC__) && __GNUC__ >= 6) || (defined(__clang__) && __clang_major__ >= 10)
+#  pragma GCC diagnostic ignored "-Wmisleading-indentation"
+#endif
 /* YYSTYPE and YYLTYPE is defined by the lexer */
 #include "cfg-lexer.h"
 #include "cfg-path.h"
