@@ -75,6 +75,57 @@ socket_options_inet_try_to_set_interface(SocketOptionsInet *self, gint fd)
 }
 #endif
 
+static inline gboolean
+_tcp_keepalive_timers_supported(void)
+{
+#ifdef SYSLOG_NG_HAVE_TCP_KEEPALIVE_TIMERS
+  return TRUE;
+#else
+  return FALSE;
+#endif
+}
+
+gboolean
+socket_options_inet_set_tcp_keepalive_time(SocketOptionsInet *self, gint tcp_keepalive_time)
+{
+  if (!_tcp_keepalive_timers_supported())
+    return FALSE;
+
+  self->tcp_keepalive_time = tcp_keepalive_time;
+  return TRUE;
+}
+
+gboolean socket_options_inet_set_tcp_keepalive_intvl(SocketOptionsInet *self, gint tcp_keepalive_intvl)
+{
+  if (!_tcp_keepalive_timers_supported())
+    return FALSE;
+
+  self->tcp_keepalive_intvl = tcp_keepalive_intvl;
+  return TRUE;
+}
+
+gboolean socket_options_inet_set_tcp_keepalive_probes(SocketOptionsInet *self, gint tcp_keepalive_probes)
+{
+  if (!_tcp_keepalive_timers_supported())
+    return FALSE;
+
+  self->tcp_keepalive_probes = tcp_keepalive_probes;
+  return TRUE;
+}
+
+static void
+socket_options_inet_setup_tcp_keepalive_timers(SocketOptionsInet *self, gint fd)
+{
+#ifdef SYSLOG_NG_HAVE_TCP_KEEPALIVE_TIMERS
+  if (self->tcp_keepalive_time > 0)
+    setsockopt(fd, SOL_TCP, TCP_KEEPIDLE, &self->tcp_keepalive_time, sizeof(self->tcp_keepalive_time));
+  if (self->tcp_keepalive_probes > 0)
+    setsockopt(fd, SOL_TCP, TCP_KEEPCNT, &self->tcp_keepalive_probes, sizeof(self->tcp_keepalive_probes));
+  if (self->tcp_keepalive_intvl > 0)
+    setsockopt(fd, SOL_TCP, TCP_KEEPINTVL, &self->tcp_keepalive_intvl, sizeof(self->tcp_keepalive_intvl));
+#endif
+}
+
 static gboolean
 socket_options_inet_setup_socket(SocketOptions *s, gint fd, GSockAddr *addr, AFSocketDirection dir)
 {
@@ -85,33 +136,7 @@ socket_options_inet_setup_socket(SocketOptions *s, gint fd, GSockAddr *addr, AFS
   if (!socket_options_setup_socket_method(s, fd, addr, dir))
     return FALSE;
 
-  if (self->tcp_keepalive_time > 0)
-    {
-#ifdef TCP_KEEPIDLE
-      setsockopt(fd, SOL_TCP, TCP_KEEPIDLE, &self->tcp_keepalive_time, sizeof(self->tcp_keepalive_time));
-#else
-      msg_error("tcp-keepalive-time() is set but no TCP_KEEPIDLE setsockopt on this platform");
-      return FALSE;
-#endif
-    }
-  if (self->tcp_keepalive_probes > 0)
-    {
-#ifdef TCP_KEEPCNT
-      setsockopt(fd, SOL_TCP, TCP_KEEPCNT, &self->tcp_keepalive_probes, sizeof(self->tcp_keepalive_probes));
-#else
-      msg_error("tcp-keepalive-probes() is set but no TCP_KEEPCNT setsockopt on this platform");
-      return FALSE;
-#endif
-    }
-  if (self->tcp_keepalive_intvl > 0)
-    {
-#ifdef TCP_KEEPINTVL
-      setsockopt(fd, SOL_TCP, TCP_KEEPINTVL, &self->tcp_keepalive_intvl, sizeof(self->tcp_keepalive_intvl));
-#else
-      msg_error("tcp-keepalive-intvl() is set but no TCP_KEEPINTVL setsockopt on this platform");
-      return FALSE;
-#endif
-    }
+  socket_options_inet_setup_tcp_keepalive_timers(self, fd);
 
   if (self->interface_name)
     {
@@ -231,11 +256,9 @@ socket_options_inet_new_instance(void)
   socket_options_init_instance(&self->super);
   self->super.setup_socket = socket_options_inet_setup_socket;
   self->super.so_keepalive = TRUE;
-#if defined(TCP_KEEPINTVL) && defined(TCP_KEEPIDLE) && defined(TCP_KEEPCNT)
   self->tcp_keepalive_time = 60;
   self->tcp_keepalive_intvl = 10;
   self->tcp_keepalive_probes = 6;
-#endif
   self->super.free = socket_options_inet_free;
   return self;
 }

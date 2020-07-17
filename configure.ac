@@ -1572,6 +1572,14 @@ if test "x$enable_ipv6" = "xauto"; then
         fi
 fi
 
+AC_CHECK_DECLS([TCP_KEEPIDLE, TCP_KEEPINTVL, TCP_KEEPCNT], [], [],
+                [[#include <sys/socket.h>
+                  #include <netinet/in.h>
+                  #include <netinet/tcp.h>]])
+
+if test "x$ac_cv_have_decl_TCP_KEEPIDLE" = "xyes" -a "x$ac_cv_have_decl_TCP_KEEPINTVL" = "xyes" -a "x$ac_cv_have_decl_TCP_KEEPCNT" = "xyes"; then
+        AC_DEFINE(HAVE_TCP_KEEPALIVE_TIMERS, 1, [TCP keepalive timers])
+fi
 
 if test "x$enable_linux_caps" = "xyes" -o "x$enable_linux_caps" = "xauto"; then
         PKG_CHECK_MODULES(LIBCAP, libcap, has_linux_caps="yes", has_linux_caps="no")
