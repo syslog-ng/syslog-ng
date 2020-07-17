@@ -231,7 +231,7 @@ socket_options_inet_new_instance(void)
   socket_options_init_instance(&self->super);
   self->super.setup_socket = socket_options_inet_setup_socket;
   self->super.so_keepalive = TRUE;
-#if defined(TCP_KEEPTIME) && defined(TCP_KEEPIDLE) && defined(TCP_KEEPCNT)
+#if defined(TCP_KEEPINTVL) && defined(TCP_KEEPIDLE) && defined(TCP_KEEPCNT)
   self->tcp_keepalive_time = 60;
   self->tcp_keepalive_intvl = 10;
   self->tcp_keepalive_probes = 6;
