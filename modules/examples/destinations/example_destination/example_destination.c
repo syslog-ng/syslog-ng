@@ -76,15 +76,6 @@ _format_persist_name(const LogPipe *d)
   return persist_name;
 }
 
-/*
- * Worker thread
- */
-
-
-/*
- * Main thread
- */
-
 static gboolean
 _dd_init(LogPipe *d)
 {
@@ -93,24 +84,23 @@ _dd_init(LogPipe *d)
   if (!log_threaded_dest_driver_init_method(d))
     return FALSE;
 
-  msg_verbose("Initializing ExampleDestination",
-              evt_tag_str("driver", self->super.super.super.id),
-              evt_tag_str("filename", self->filename),
-              NULL);
+  if (!self->filename)
+    self->filename = g_strdup("/tmp/example-destination-output.txt");
 
   return TRUE;
 }
 
-
 gboolean
 _dd_deinit(LogPipe *s)
 {
-  ExampleDestinationDriver *self = (ExampleDestinationDriver *)s;
+  /*
+     If you created resources during init,
+     you need to destroy them here.
 
-  msg_verbose("Deinitializing ExampleDestination",
-              evt_tag_str("driver", self->super.super.super.id),
-              evt_tag_str("filename", self->filename),
-              NULL);
+     self->filename is outside of the lifecycle of init-deinit (may be
+     filled during configuration parse), that's why it is deallocated
+     in the free method.
+  */
 
   return log_threaded_dest_driver_deinit_method(s);
 }
@@ -124,10 +114,6 @@ _dd_free(LogPipe *d)
 
   log_threaded_dest_driver_free(d);
 }
-
-/*
- * Plugin glue.
- */
 
 LogDriver *
 example_destination_dd_new(GlobalConfig *cfg)

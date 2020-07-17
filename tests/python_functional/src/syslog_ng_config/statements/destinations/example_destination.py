@@ -20,10 +20,27 @@
 # COPYING for details.
 #
 #############################################################################
+from pathlib2 import Path
+
+import src.testcase_parameters.testcase_parameters as tc_parameters
+from src.message_reader.message_reader import MessageReader
+from src.message_reader.single_line_parser import SingleLineParser
 from src.syslog_ng_config.statements.destinations.destination_driver import DestinationDriver
 
 
 class ExampleDestination(DestinationDriver):
-    def __init__(self, **options):
+    def __init__(self, filename, **options):
         self.driver_name = "example-destination"
-        super(ExampleDestination, self).__init__(None, options)
+        self.path = Path(tc_parameters.WORKING_DIR, filename)
+        super(ExampleDestination, self).__init__(None, dict({"filename": self.path.resolve()}, **options))
+
+    def wait_file_content(self, content):
+        with self.path.open() as f:
+            message_reader = MessageReader(f.readline, SingleLineParser())
+
+            while True:
+                msg = message_reader.pop_messages(1)[0]
+                if content in msg:
+                    return True
+
+            return False

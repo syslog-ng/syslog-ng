@@ -24,10 +24,14 @@
 #define EXAMPLE_DESTINATION_WORKER_H_INCLUDED 1
 
 #include "logthrdest/logthrdestdrv.h"
+#include "thread-utils.h"
+
 
 typedef struct _ExampleDestinationWorker
 {
   LogThreadedDestWorker super;
+  FILE *file;
+  ThreadId thread_id;
 } ExampleDestinationWorker;
 
 LogThreadedDestWorker *example_destination_dw_new(LogThreadedDestDriver *o, gint worker_index);

@@ -21,12 +21,33 @@
  */
 #include "example_destination_worker.h"
 #include "example_destination.h"
+#include "thread-utils.h"
+
+#include <stdio.h>
 
 static LogThreadedResult
 _dw_insert(LogThreadedDestWorker *s, LogMessage *msg)
 {
-  ExampleDestinationDriver *owner = (ExampleDestinationDriver *) s->owner;
-  fprintf(stderr, "Message sent using file name: %s\n", owner->filename);
+  ExampleDestinationWorker *self = (ExampleDestinationWorker *)s;
+
+  GString *string_to_write = g_string_new("");
+  g_string_printf(string_to_write, "thread_id=%lu message=%s\n",
+                  self->thread_id, log_msg_get_value(msg, LM_V_MESSAGE, NULL));
+
+  size_t retval = fwrite(string_to_write->str, 1, string_to_write->len, self->file);
+  if (retval != string_to_write->len)
+    {
+      msg_error("Error while reading file");
+      return LTR_NOT_CONNECTED;
+    }
+
+  if (fflush(self->file) != 0)
+    {
+      msg_error("Error while flushing file");
+      return LTR_NOT_CONNECTED;
+    }
+
+  g_string_free(string_to_write, TRUE);
 
   return LTR_SUCCESS;
   /*
@@ -42,8 +63,15 @@ _dw_insert(LogThreadedDestWorker *s, LogMessage *msg)
 static gboolean
 _connect(LogThreadedDestWorker *s)
 {
-  msg_debug("Connection succeeded",
-            evt_tag_str("driver", s->owner->super.super.id), NULL);
+  ExampleDestinationWorker *self = (ExampleDestinationWorker *)s;
+  ExampleDestinationDriver *owner = (ExampleDestinationDriver *) s->owner;
+
+  self->file = fopen(owner->filename, "a");
+  if (!self->file)
+    {
+      msg_error("Could not open file", evt_tag_error("error"));
+      return FALSE;
+    }
 
   return TRUE;
 }
@@ -51,16 +79,21 @@ _connect(LogThreadedDestWorker *s)
 static void
 _disconnect(LogThreadedDestWorker *s)
 {
-  msg_debug("Connection closed",
-            evt_tag_str("driver", s->owner->super.super.id), NULL);
+  ExampleDestinationWorker *self = (ExampleDestinationWorker *)s;
+
+  fclose(self->file);
 }
 
 static gboolean
 _thread_init(LogThreadedDestWorker *s)
 {
-  msg_debug("Worker thread started",
-            evt_tag_str("driver", s->owner->super.super.id),
-            NULL);
+  ExampleDestinationWorker *self = (ExampleDestinationWorker *)s;
+
+  /*
+    You can create thread specific resources here. In this example, we
+    store the thread id.
+  */
+  self->thread_id = get_thread_id();
 
   return log_threaded_dest_worker_init_method(s);
 }
@@ -68,9 +101,10 @@ _thread_init(LogThreadedDestWorker *s)
 static void
 _thread_deinit(LogThreadedDestWorker *s)
 {
-  msg_debug("Worker thread stopped",
-            evt_tag_str("driver", s->owner->super.super.id),
-            NULL);
+  /*
+    If you created resources during _thread_init,
+    you need to free them here
+  */
 
   log_threaded_dest_worker_deinit_method(s);
 }
@@ -78,9 +112,10 @@ _thread_deinit(LogThreadedDestWorker *s)
 static void
 _dw_free(LogThreadedDestWorker *s)
 {
-  msg_debug("Worker free method called",
-            evt_tag_str("driver", s->owner->super.super.id),
-            NULL);
+  /*
+    If you created resources during new,
+    you need to free them here.
+  */
 
   log_threaded_dest_worker_free_method(s);
 }
