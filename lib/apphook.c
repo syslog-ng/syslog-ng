@@ -56,6 +56,7 @@ typedef struct _ApplicationHookEntry
   gpointer user_data;
 } ApplicationHookEntry;
 
+static GMutex app_hook_run_lock;
 static GList *application_hooks = NULL;
 static gint current_state = AH_STARTUP;
 
@@ -112,6 +113,7 @@ run_application_hook(gint type)
   _update_current_state(type);
 
   msg_debug("Running application hooks", evt_tag_int("hook", type));
+  g_mutex_lock(&app_hook_run_lock);
   for (l = application_hooks; l; l = l_next)
     {
       ApplicationHookEntry *e = l->data;
@@ -129,7 +131,7 @@ run_application_hook(gint type)
           l_next = l->next;
         }
     }
-
+  g_mutex_unlock(&app_hook_run_lock);
 }
 
 static void
@@ -151,6 +153,7 @@ construct_nondumpable_logger(msg_fatal);
 void
 app_startup(void)
 {
+  g_mutex_init(&app_hook_run_lock);
   msg_init(FALSE);
   iv_set_fatal_msg_handler(app_fatal);
   iv_init();
@@ -223,6 +226,7 @@ app_shutdown(void)
   crypto_deinit();
   msg_deinit();
   transport_factory_id_global_deinit();
+  g_mutex_clear(&app_hook_run_lock);
 
 
   /* NOTE: the iv_deinit() call should come here, but there's some exit
