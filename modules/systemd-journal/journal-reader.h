@@ -40,6 +40,7 @@ typedef struct _JournalReaderOptions
   TimeZoneInfo *recv_time_zone_info;
   gchar *prefix;
   guint32 max_field_size;
+  gchar *namespace;
 } JournalReaderOptions;
 
 JournalReader *journal_reader_new(GlobalConfig *cfg, Journald *journal);

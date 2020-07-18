@@ -55,6 +55,13 @@ journald_open(Journald *self, int flags)
   return 0;
 }
 
+int
+journald_open_namespace(Journald *self, const gchar *namespace, int flags)
+{
+  self->opened = TRUE;
+  return 0;
+}
+
 void
 journald_close(Journald *self)
 {

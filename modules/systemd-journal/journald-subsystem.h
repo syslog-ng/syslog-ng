@@ -53,6 +53,9 @@ Journald *journald_new(void);
 void journald_free(Journald *self);
 
 int journald_open(Journald *self, int flags);
+#if SYSLOG_NG_HAVE_JOURNAL_NAMESPACES
+int journald_open_namespace(Journald *self, const gchar *namespace, int flags);
+#endif
 void journald_close(Journald *self);
 int journald_seek_head(Journald *self);
 int journald_seek_tail(Journald *self);
