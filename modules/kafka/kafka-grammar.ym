@@ -56,6 +56,7 @@
 
 %token KW_KAFKA
 %token KW_TOPIC
+%token KW_FALLBACK_TOPIC
 %token KW_CONFIG
 %token KW_WORKERS
 %token KW_FLUSH_TIMEOUT_ON_SHUTDOWN
@@ -82,11 +83,15 @@ kafka_options
         ;
 
 kafka_option
-        : KW_TOPIC '(' string ')'
+        : KW_TOPIC '(' template_content ')'
         {
             kafka_dd_set_topic(last_driver, $3);
-            free($3);
         }
+        | KW_FALLBACK_TOPIC '(' string ')'
+        {
+            kafka_dd_set_fallback_topic(last_driver, $3);
+            free($3);
+        } 
         | KW_CONFIG '(' kafka_properties ')'
         {
             kafka_dd_merge_config(last_driver, $3);

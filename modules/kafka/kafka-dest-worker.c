@@ -35,6 +35,7 @@ typedef struct _KafkaDestWorker
   struct iv_timer poll_timer;
   GString *key;
   GString *message;
+  GString *topic_name_buffer;
 } KafkaDestWorker;
 
 static gboolean
@@ -56,33 +57,51 @@ _format_message_and_key(KafkaDestWorker *self, LogMessage *msg)
                         self->super.seq_num, NULL, self->key);
 }
 
+static rd_kafka_topic_t *
+_calculate_topic_from_template(KafkaDestWorker *self, LogMessage *msg)
+{
+  KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
+  log_template_format(owner->topic_name, msg, &owner->template_options, LTZ_SEND, self->super.seq_num, NULL,
+                      self->topic_name_buffer);
+  rd_kafka_topic_t *topic = kafka_dd_query_insert_topic(owner, self->topic_name_buffer->str);
+
+  if (!topic)
+    {
+      g_assert(owner->fallback_topic != NULL);
+      topic = owner->fallback_topic;
+    }
+
+  return topic;
+}
+
+static rd_kafka_topic_t *
+_get_literal_topic(KafkaDestWorker *self)
+{
+  KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
+
+  return owner->topic;
+}
+
+static rd_kafka_topic_t *
+_calculate_topic(KafkaDestWorker *self, LogMessage *msg)
+{
+  KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
+
+  if (kafka_dd_is_topic_name_a_template(owner))
+    {
+      return _calculate_topic_from_template(self, msg);
+    }
+
+  return _get_literal_topic(self);
+}
+
 static gboolean
 _publish_message(KafkaDestWorker *self, LogMessage *msg)
 {
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
   int block_flag = _is_poller_thread(self) ? 0 : RD_KAFKA_MSG_F_BLOCK;
-  rd_kafka_topic_t *topic;
-  GString *topic_name_new = g_string_sized_new(128);
-  if (owner->topicname_is_a_template)
-    {
-      log_template_format(owner->temp_topic_name, msg, &owner->template_options, LTZ_SEND, self->super.seq_num, NULL,
-                          topic_name_new);
-      g_mutex_lock(&owner->lock);
-      topic = g_hash_table_lookup(owner->topic_hash, topic_name_new->str);
-      g_mutex_unlock(&owner->lock);
-      if(!topic)
-        {
-          topic = rd_kafka_topic_new(owner->kafka, topic_name_new->str, NULL);
-          g_mutex_lock(&owner->lock);
-          g_hash_table_insert(owner->topic_hash, g_strdup(topic_name_new->str), topic);
-          g_mutex_unlock(&owner->lock);
-        }
-    }
-  else
-    {
-      topic = owner->topic;
-      g_string_assign(topic_name_new, owner->topic_name);
-    }
+  rd_kafka_topic_t *topic = _calculate_topic(self, msg);
+
   if (rd_kafka_produce(topic,
                        RD_KAFKA_PARTITION_UA,
                        RD_KAFKA_MSG_F_FREE | block_flag,
@@ -91,23 +110,21 @@ _publish_message(KafkaDestWorker *self, LogMessage *msg)
                        log_msg_ref(msg)) == -1)
     {
       msg_error("kafka: failed to publish message",
-                owner->topicname_is_a_template ? evt_tag_str("topic", topic_name_new->str) :
-                evt_tag_str("topic", owner->topic_name),
+                evt_tag_str("topic", rd_kafka_topic_name(topic)),
                 evt_tag_str("error", rd_kafka_err2str(rd_kafka_last_error())),
                 evt_tag_str("driver", owner->super.super.super.id),
                 log_pipe_location_tag(&owner->super.super.super.super));
-      g_string_free(topic_name_new, TRUE);
+
       return FALSE;
     }
 
   msg_debug("kafka: message published",
-            owner->topicname_is_a_template ? evt_tag_str("topic", topic_name_new->str) :
-            evt_tag_str("topic", owner->topic_name),
+            evt_tag_str("topic", rd_kafka_topic_name(topic)),
             evt_tag_str("key", self->key->len ? self->key->str : "NULL"),
             evt_tag_str("message", self->message->str),
             evt_tag_str("driver", owner->super.super.super.id),
             log_pipe_location_tag(&owner->super.super.super.super));
-  g_string_free(topic_name_new, TRUE);
+
   /* we passed the allocated buffers to rdkafka, which will eventually free them */
   g_string_steal(self->message);
   return TRUE;
@@ -144,8 +161,9 @@ _drain_responses(KafkaDestWorker *self)
   if (count != 0)
     {
       msg_trace("kafka: destination side rd_kafka_poll() processed some responses",
-                owner->topicname_is_a_template ? evt_tag_str("template", owner->topic_name):
-                evt_tag_str("topic", owner->topic_name),
+                kafka_dd_is_topic_name_a_template(owner) ? evt_tag_str("template", owner->topic_name->template):
+                evt_tag_str("topic", owner->topic_name->template),
+                evt_tag_str("fallback_topic", owner->fallback_topic_name ? owner->fallback_topic_name : "NULL"),
                 evt_tag_int("count", count),
                 evt_tag_str("driver", owner->super.super.super.id),
                 log_pipe_location_tag(&owner->super.super.super.super));
@@ -178,6 +196,7 @@ kafka_dest_worker_free(LogThreadedDestWorker *s)
   KafkaDestWorker *self = (KafkaDestWorker *)s;
   g_string_free(self->key, TRUE);
   g_string_free(self->message, TRUE);
+  g_string_free(self->topic_name_buffer, TRUE);
   log_threaded_dest_worker_free_method(s);
 }
 
@@ -210,5 +229,7 @@ kafka_dest_worker_new(LogThreadedDestDriver *o, gint worker_index)
 
   self->key = g_string_sized_new(0);
   self->message = g_string_sized_new(1024);
+  self->topic_name_buffer = g_string_sized_new(256);
+
   return &self->super;
 }
