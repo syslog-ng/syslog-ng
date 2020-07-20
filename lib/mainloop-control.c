@@ -231,11 +231,31 @@ control_connection_reload(ControlConnection *cc, GString *command, gpointer user
 }
 
 static void
-control_connection_reopen(ControlConnection *cc, GString *command, gpointer user_data)
+_control_connection_reopen(gpointer user_data)
 {
+  main_loop_assert_main_thread();
+  ControlCommandAsync *cmd = (ControlCommandAsync *) user_data;
   GString *result = g_string_new("OK Re-open of log destination files initiated");
   app_reopen_files();
-  control_connection_send_reply(cc, result);
+  _control_command_async_send_response(cmd, result);
+}
+
+static void
+control_connection_reopen(ControlConnection *cc, GString *command, gpointer user_data)
+{
+  ControlCommandAsync *cmd = (ControlCommandAsync *) user_data;
+  gboolean first_reopen = FALSE;
+
+  g_mutex_lock(&cmd->args.lock);
+  {
+    first_reopen = cmd->args.commands == NULL;
+    cmd->args.commands = g_list_append(cmd->args.commands, command);
+    cmd->args.connections = g_list_append(cmd->args.connections, cc);
+  }
+  g_mutex_unlock(&cmd->args.lock);
+
+  if (first_reopen)
+    iv_event_post(&cmd->command_requested);
 }
 
 static const gchar *
@@ -490,7 +510,6 @@ ControlCommand default_commands_sync[] =
 {
   { "LOG", control_connection_message_log },
   { "STOP", control_connection_stop_process },
-  { "REOPEN", control_connection_reopen },
   { "CONFIG", control_connection_config },
   { "LICENSE", show_ose_license_info },
   { "PWD", process_credentials },
@@ -503,6 +522,7 @@ ControlCommand default_commands_sync[] =
 ControlCommandAsync default_commands_async[] =
 {
   { { "RELOAD", control_connection_reload }, _control_connection_reload },
+  { { "REOPEN", control_connection_reopen }, _control_connection_reopen },
   { { NULL, NULL }, NULL },
 };
 
