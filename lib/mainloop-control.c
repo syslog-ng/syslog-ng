@@ -97,6 +97,11 @@ control_connection_stop_process(ControlConnection *cc, GString *command, gpointe
   GString *result = g_string_new("OK Shutdown initiated");
   MainLoop *main_loop = (MainLoop *) user_data;
 
+  // We are at ControlLoop which handles the command list, so it is safe
+  // to reset. After reset, all incoming ctl requests will be rejected.
+  // It could be useful when testing with valgrind and sending commands
+  // in an infinite loop.
+  reset_control_command_list();
   main_loop_cancel_control_command_threads(main_loop);
   main_loop_exit(main_loop);
 
