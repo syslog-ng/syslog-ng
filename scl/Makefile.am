@@ -24,6 +24,7 @@ SCL_SUBDIRS	= \
 	pacct		\
 	paloalto 	\
 	rewrite	\
+	signal \
 	slack \
 	snmptrap	\
 	solaris	\

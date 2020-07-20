@@ -24,6 +24,7 @@ set(SCL_DIRS
     pacct
     paloalto
     rewrite
+    signal
     slack
     snmptrap
     solaris
