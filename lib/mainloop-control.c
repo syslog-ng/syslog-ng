@@ -213,7 +213,17 @@ _control_connection_reload(gpointer user_data)
 }
 
 static void
-control_connection_reload(ControlConnection *cc, GString *command, gpointer user_data)
+_control_connection_reopen(gpointer user_data)
+{
+  main_loop_assert_main_thread();
+  ControlCommandAsync *cmd = (ControlCommandAsync *) user_data;
+  GString *result = g_string_new("OK Re-open of log destination files initiated");
+  app_reopen_files();
+  _control_command_async_send_response(cmd, result);
+}
+
+static void
+control_connection_async_runner(ControlConnection *cc, GString *command, gpointer user_data)
 {
   ControlCommandAsync *cmd = (ControlCommandAsync *) user_data;
   gboolean first_reload = FALSE;
@@ -227,34 +237,6 @@ control_connection_reload(ControlConnection *cc, GString *command, gpointer user
   g_mutex_unlock(&cmd->args.lock);
 
   if (first_reload)
-    iv_event_post(&cmd->command_requested);
-}
-
-static void
-_control_connection_reopen(gpointer user_data)
-{
-  main_loop_assert_main_thread();
-  ControlCommandAsync *cmd = (ControlCommandAsync *) user_data;
-  GString *result = g_string_new("OK Re-open of log destination files initiated");
-  app_reopen_files();
-  _control_command_async_send_response(cmd, result);
-}
-
-static void
-control_connection_reopen(ControlConnection *cc, GString *command, gpointer user_data)
-{
-  ControlCommandAsync *cmd = (ControlCommandAsync *) user_data;
-  gboolean first_reopen = FALSE;
-
-  g_mutex_lock(&cmd->args.lock);
-  {
-    first_reopen = cmd->args.commands == NULL;
-    cmd->args.commands = g_list_append(cmd->args.commands, command);
-    cmd->args.connections = g_list_append(cmd->args.connections, cc);
-  }
-  g_mutex_unlock(&cmd->args.lock);
-
-  if (first_reopen)
     iv_event_post(&cmd->command_requested);
 }
 
@@ -521,8 +503,8 @@ ControlCommand default_commands_sync[] =
 
 ControlCommandAsync default_commands_async[] =
 {
-  { { "RELOAD", control_connection_reload }, _control_connection_reload },
-  { { "REOPEN", control_connection_reopen }, _control_connection_reopen },
+  { { "RELOAD", control_connection_async_runner }, _control_connection_reload },
+  { { "REOPEN", control_connection_async_runner }, _control_connection_reopen },
   { { NULL, NULL }, NULL },
 };
 
