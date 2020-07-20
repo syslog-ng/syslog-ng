@@ -27,7 +27,7 @@ if [ $# -gt 0 ]; then
   commit_range=$1
 fi
 
-git log --no-merges --pretty="%H" $commit_range -- | (
+(git log --no-merges --pretty="%H" $commit_range -- || echo "git log failed with $?" 1>&2) | (
   ret=0
   while read commit; do
     commit_has_valid_subject=1

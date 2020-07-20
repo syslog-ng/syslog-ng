@@ -190,10 +190,12 @@ jobs:
     steps:
       - name: Checkout syslog-ng source
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
       - name: Commits check (Pull request)
         if: github.event_name == 'pull_request'
-        run: tests/commits/check.sh ${{ github.base_ref }}..${{ github.head_ref }}
+        run: tests/commits/check.sh origin/${{ github.base_ref }}..HEAD
 
       - name: Commits check (Push)
         if: github.event_name == 'push'
