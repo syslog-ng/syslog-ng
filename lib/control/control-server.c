@@ -26,6 +26,7 @@
 #include "messages.h"
 #include "str-utils.h"
 #include "secret-storage/secret-storage.h"
+#include "thread-utils.h"
 
 #include <string.h>
 #include <errno.h>
@@ -40,6 +41,13 @@ typedef struct _ThreadedCommandRunner
   gpointer user_data;
 
   GThread *thread;
+  struct
+  {
+    GMutex tid_saved_lock;
+    GCond tid_saved_cond;
+    gboolean tid_saved;
+    ThreadId tid;
+  } real_thread;
   ControlConnectionCommand func;
   GString *response;
   struct iv_event response_received;
@@ -52,6 +60,10 @@ _thread_command_runner_new(ControlConnection *cc, GString *cmd, gpointer user_da
   self->connection = cc;
   self->command = g_string_new(cmd->str);
   self->user_data = user_data;
+  g_mutex_init(&self->real_thread.tid_saved_lock);
+  g_cond_init(&self->real_thread.tid_saved_cond);
+  self->real_thread.tid_saved = FALSE;
+  self->real_thread.tid = 0;
 
   return self;
 }
@@ -59,8 +71,29 @@ _thread_command_runner_new(ControlConnection *cc, GString *cmd, gpointer user_da
 static void
 _thread_command_runner_free(ThreadedCommandRunner *self)
 {
+  g_mutex_clear(&self->real_thread.tid_saved_lock);
+  g_cond_clear(&self->real_thread.tid_saved_cond);
   g_string_free(self->command, TRUE);
   g_free(self);
+}
+
+static void
+_thread_command_runner_wait_for_tid_saved(ThreadedCommandRunner *self)
+{
+  g_mutex_lock(&self->real_thread.tid_saved_lock);
+  while (self->real_thread.tid_saved == FALSE)
+    g_cond_wait(&self->real_thread.tid_saved_cond, &self->real_thread.tid_saved_lock);
+  g_mutex_unlock(&self->real_thread.tid_saved_lock);
+}
+
+static void
+_thread_command_runner_save_tid(ThreadedCommandRunner *self)
+{
+  g_mutex_lock(&self->real_thread.tid_saved_lock);
+  self->real_thread.tid = get_thread_id();
+  self->real_thread.tid_saved = TRUE;
+  g_cond_broadcast(&self->real_thread.tid_saved_cond);
+  g_mutex_unlock(&self->real_thread.tid_saved_lock);
 }
 
 static void
@@ -79,6 +112,7 @@ static void
 _thread(gpointer user_data)
 {
   ThreadedCommandRunner *self = (ThreadedCommandRunner *)user_data;
+  _thread_command_runner_save_tid(self);
   self->response = self->func(self->connection, self->command, self->user_data);
   iv_event_post(&self->response_received);
 }
@@ -92,6 +126,7 @@ _thread_command_runner_run(ThreadedCommandRunner *self, ControlConnectionCommand
   iv_event_register(&self->response_received);
   self->func = func;
   self->thread = g_thread_new(self->command->str, (GThreadFunc) _thread, self);
+  _thread_command_runner_wait_for_tid_saved(self);
   ControlServer *server = self->connection->server;
   server->worker_threads = g_list_append(server->worker_threads, self);
 }
@@ -121,6 +156,8 @@ static void
 _delete_thread_command_runner(gpointer data)
 {
   ThreadedCommandRunner *self = (ThreadedCommandRunner *) data;
+  g_assert(self->real_thread.tid_saved == TRUE);
+  thread_cancel(self->real_thread.tid);
   g_thread_join(self->thread);
   _thread_command_runner_free(self);
 }
