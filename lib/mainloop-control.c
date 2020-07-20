@@ -106,9 +106,15 @@ static void
 control_connection_config(ControlConnection *cc, GString *command, gpointer user_data)
 {
   MainLoop *main_loop = (MainLoop *) user_data;
-  GlobalConfig *config = main_loop_get_current_config(main_loop);
+  GlobalConfig *config = main_loop_lock_current_config(main_loop);
   GString *result = g_string_sized_new(128);
   gchar **arguments = g_strsplit(command->str, " ", 0);
+
+  if (!config)
+    {
+      g_string_assign(result, "syslog-ng is being reloaded");
+      goto exit;
+    }
 
   if (g_str_equal(arguments[1], "GET"))
     {
@@ -133,6 +139,7 @@ control_connection_config(ControlConnection *cc, GString *command, gpointer user
   g_string_assign(result, "FAIL Invalid arguments received");
 
 exit:
+  main_loop_unlock_current_config(main_loop);
   g_strfreev(arguments);
   control_connection_send_reply(cc, result);
 }
@@ -320,9 +327,14 @@ static void
 control_connection_list_files(ControlConnection *cc, GString *command, gpointer user_data)
 {
   MainLoop *main_loop = (MainLoop *) user_data;
-  GlobalConfig *config = main_loop_get_current_config(main_loop);
   GString *result = g_string_new("");
 
+  GlobalConfig *config = main_loop_lock_current_config(main_loop);
+  if (!config)
+    {
+      g_string_assign(result, "syslog-ng is being reloaded");
+      goto exit;
+    }
   for (GList *v = config->file_list; v; v = v->next)
     {
       CfgFilePath *cfg_file_path = (CfgFilePath *) v->data;
@@ -332,6 +344,8 @@ control_connection_list_files(ControlConnection *cc, GString *command, gpointer 
   if (result->len == 0)
     g_string_assign(result, "No files available\n");
 
+exit:
+  main_loop_unlock_current_config(main_loop);
   control_connection_send_reply(cc, result);
 }
 
@@ -456,9 +470,16 @@ export_config_graph(ControlConnection *cc, GString *command, gpointer user_data)
   GHashTable *arcs;
 
   MainLoop *main_loop = (MainLoop *) user_data;
-  GlobalConfig *cfg = main_loop_get_current_config(main_loop);
+  GlobalConfig *cfg = main_loop_lock_current_config(main_loop);
+  if (!cfg)
+    {
+      main_loop_unlock_current_config(main_loop);
+      control_connection_send_reply(cc, g_string_new("syslog-ng is being reloaded"));
+      return;
+    }
   cfg_walker_get_graph(cfg->tree.initialized_pipes, &nodes, &arcs);
   GString *result = generate_json(nodes, arcs);
+  main_loop_unlock_current_config(main_loop);
   g_hash_table_destroy(nodes);
   g_hash_table_destroy(arcs);
 
