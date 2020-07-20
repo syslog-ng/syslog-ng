@@ -70,6 +70,8 @@ _send_response(gpointer user_data)
   g_thread_join(self->thread);
   control_connection_send_reply(self->connection, self->response);
   iv_event_unregister(&self->response_received);
+  ControlServer *server = self->connection->server;
+  server->worker_threads = g_list_remove(server->worker_threads, self);
   _thread_command_runner_free(self);
 }
 
@@ -107,6 +109,8 @@ _thread_command_runner_run(ThreadedCommandRunner *self, ControlConnectionCommand
   iv_event_register(&self->response_received);
 
   self->thread = g_thread_new(self->command->str, (GThreadFunc) _thread, self);
+  ControlServer *server = self->connection->server;
+  server->worker_threads = g_list_append(server->worker_threads, self);
 }
 
 void control_connection_start_as_thread(ControlConnection *self, ControlConnectionCommand cmd_cb,
@@ -127,11 +131,25 @@ void
 control_server_init_instance(ControlServer *self, const gchar *path)
 {
   self->control_socket_name = g_strdup(path);
+  self->worker_threads = NULL;
+}
+
+static void
+_delete_thread_command_runner(gpointer data)
+{
+  ThreadedCommandRunner *self = (ThreadedCommandRunner *) data;
+  g_thread_join(self->thread);
+  _thread_command_runner_free(self);
 }
 
 void
 control_server_free(ControlServer *self)
 {
+  // it's not racy as the iv_main() is executed by this thread
+  // posted events are not executed as iv_quit() is already called (before control_server_free)
+  // but it is possible that some ThreadedCommandRunner::thread are still running
+  if (self->worker_threads)
+    g_list_free_full(self->worker_threads, _delete_thread_command_runner);
   if (self->free_fn)
     {
       self->free_fn(self);

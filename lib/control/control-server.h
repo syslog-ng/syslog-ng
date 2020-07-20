@@ -60,6 +60,7 @@ struct _ControlConnection
 
 struct _ControlServer
 {
+  GList *worker_threads;
   gchar *control_socket_name;
   void (*free_fn)(ControlServer *self);
 };
