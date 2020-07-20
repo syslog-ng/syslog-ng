@@ -153,6 +153,7 @@ struct _MainLoop
    * finished.
    */
   GlobalConfig *current_configuration;
+  GMutex current_cfg_lock;
 
   /* the old configuration that is being reloaded */
   GlobalConfig *old_config;
@@ -236,6 +237,11 @@ main_loop_reload_config_revert(gpointer user_data)
 
   cfg_persist_config_move(self->new_config, self->old_config);
   cfg_deinit(self->new_config);
+
+  main_loop_lock_current_config(self);
+  self->current_configuration = self->old_config;
+  main_loop_unlock_current_config(self);
+
   if (!cfg_init(self->old_config))
     {
       /* hmm. hmmm, error reinitializing old configuration, we're hosed.
@@ -248,8 +254,6 @@ main_loop_reload_config_revert(gpointer user_data)
   persist_config_free(self->old_config->persist);
   self->old_config->persist = NULL;
   cfg_free(self->new_config);
-  self->current_configuration = self->old_config;
-
   main_loop_reload_config_finished(self);
 }
 
@@ -286,7 +290,9 @@ main_loop_reload_config_apply(gpointer user_data)
   persist_config_free(self->new_config->persist);
   self->new_config->persist = NULL;
   cfg_free(self->old_config);
+  main_loop_lock_current_config(self);
   self->current_configuration = self->new_config;
+  main_loop_unlock_current_config(self);
   service_management_clear_status();
   msg_notice("Configuration reload request received, reloading configuration");
 
@@ -317,12 +323,19 @@ main_loop_reload_config_prepare(MainLoop *self, GError **error)
 
   service_management_publish_status("Reloading configuration");
 
+  main_loop_lock_current_config(self);
   self->old_config = self->current_configuration;
+  self->current_configuration = NULL;
+  main_loop_unlock_current_config(self);
   self->new_config = cfg_new(0);
   if (!cfg_read_config(self->new_config, resolvedConfigurablePaths.cfgfilename, NULL))
     {
       cfg_free(self->new_config);
       self->new_config = NULL;
+      main_loop_lock_current_config(self);
+      self->current_configuration = self->old_config;
+      main_loop_unlock_current_config(self);
+
       self->old_config = NULL;
       service_management_publish_status("Error parsing new configuration, using the old config");
       g_set_error(error, MAIN_LOOP_ERROR, MAIN_LOOP_ERROR_RELOAD_FAILED,
@@ -384,6 +397,19 @@ main_loop_get_current_config(MainLoop *self)
   return self->current_configuration;
 }
 
+GlobalConfig *
+main_loop_lock_current_config(MainLoop *self)
+{
+  g_mutex_lock(&self->current_cfg_lock);
+  return main_loop_get_current_config(self);
+}
+
+void
+main_loop_unlock_current_config(MainLoop *self)
+{
+  g_mutex_unlock(&self->current_cfg_lock);
+}
+
 /* main_loop_verify_config
  * compares active configuration versus config file */
 
@@ -424,7 +450,17 @@ main_loop_exit_finish(gpointer user_data)
   /* deinit the current configuration, as at this point we _know_ that no
    * threads are running.  This will unregister ivykis tasks and timers
    * that could fire while the configuration is being destructed */
-  cfg_deinit(self->current_configuration);
+  GlobalConfig *current_cfg = main_loop_lock_current_config(self);
+  /*
+   * it is NULL when a reload is in progress (there is a registered SyncCallAction
+   * in this event loop that would be run after reload is finished)
+   * when this callback is executed we know that the reload won't be finished,
+   * as we call iv_quit(), so it is safe to set current_configuration to old_config
+   */
+  if (!current_cfg)
+    self->current_configuration = current_cfg = self->old_config;
+  cfg_deinit(current_cfg);
+  main_loop_unlock_current_config(self);
   iv_quit();
 }
 
@@ -586,6 +622,8 @@ main_loop_init(MainLoop *self, MainLoopOptions *options)
   main_loop_init_events(self);
   setup_signals(self);
 
+
+  g_mutex_init(&self->current_cfg_lock);
   self->current_configuration = cfg_new(0);
 }
 
@@ -620,6 +658,7 @@ main_loop_read_and_init_config(MainLoop *self)
 static void
 main_loop_free_config(MainLoop *self)
 {
+  g_mutex_clear(&self->current_cfg_lock);
   cfg_free(self->current_configuration);
   self->current_configuration = NULL;
 }
