@@ -79,11 +79,12 @@ _register_external_stats_counter(atomic_gssize *ctr, gssize initial_value)
   return counter;
 }
 
-Test(stats_external_counter, external_ctr_is_read_only_for_stats_set, .signal=SIGABRT)
+Test(stats_external_counter, external_ctr_is_read_only_for_stats_set)
 {
   atomic_gssize test_ctr;
   StatsCounterItem *stats_ctr = _register_external_stats_counter(&test_ctr, 11);
   stats_counter_set(stats_ctr, 1);
+  cr_expect_eq(stats_counter_get(stats_ctr), 11);
 };
 
 Test(stats_external_counter, external_ctr_is_read_only_for_stats_inc, .signal=SIGABRT)
