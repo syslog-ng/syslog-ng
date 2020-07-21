@@ -90,9 +90,8 @@ stats_counter_dec(StatsCounterItem *counter)
 static inline void
 stats_counter_set(StatsCounterItem *counter, gsize value)
 {
-  if (counter)
+  if (counter && !stats_counter_read_only(counter))
     {
-      g_assert(!stats_counter_read_only(counter));
       atomic_gssize_racy_set(&counter->value, value);
     }
 }
