@@ -65,8 +65,7 @@ log_msg_parse_pri(LogMessage *self, const guchar **data, gint *length, guint fla
 
   if (left && src[0] == '<')
     {
-      src++;
-      left--;
+      sd_step(&src, &left);
       pri = 0;
       while (left && *src != '>')
         {
@@ -78,14 +77,12 @@ log_msg_parse_pri(LogMessage *self, const guchar **data, gint *length, guint fla
             {
               return FALSE;
             }
-          src++;
-          left--;
+          sd_step(&src, &left);
         }
       self->pri = pri;
       if (left)
         {
-          src++;
-          left--;
+          sd_step(&src, &left);
         }
     }
   /* No priority info in the buffer? Just assign a default. */
@@ -108,8 +105,7 @@ log_msg_parse_skip_chars(LogMessage *self, const guchar **data, gint *length, co
 
   while (max_len && left && _strchr_optimized_for_single_char_haystack(chars, *src))
     {
-      src++;
-      left--;
+      sd_step(&src, &left);
       num_skipped++;
       if (max_len >= 0)
         max_len--;
@@ -127,8 +123,7 @@ log_msg_parse_skip_space(LogMessage *self, const guchar **data, gint *length)
 
   if (left > 0 && *src == ' ')
     {
-      src++;
-      left--;
+      sd_step(&src, &left);
     }
   else
     {
@@ -149,8 +144,7 @@ log_msg_parse_skip_chars_until(LogMessage *self, const guchar **data, gint *leng
 
   while (left && _strchr_optimized_for_single_char_haystack(delims, *src) == 0)
     {
-      src++;
-      left--;
+      sd_step(&src, &left);
       num_skipped++;
     }
   *data = src;
@@ -200,11 +194,9 @@ log_msg_parse_cisco_sequence_id(LogMessage *self, const guchar **data, gint *len
     {
       if (!isdigit(*src))
         return;
-      src++;
-      left--;
+      sd_step(&src, &left);
     }
-  src++;
-  left--;
+  sd_step(&src, &left);
 
   /* if the next char is not space, then we may try to read a date */
 
@@ -230,15 +222,13 @@ log_msg_parse_cisco_timestamp_attributes(LogMessage *self, const guchar **data, 
     {
       if (!(parse_flags & LP_NO_PARSE_DATE))
         log_msg_set_value(self, handles.is_synced, "0", 1);
-      src++;
-      left--;
+      sd_step(&src, &left);
     }
   else if (G_UNLIKELY(src[0] == '.'))
     {
       if (!(parse_flags & LP_NO_PARSE_DATE))
         log_msg_set_value(self, handles.is_synced, "1", 1);
-      src++;
-      left--;
+      sd_step(&src, &left);
     }
   *data = src;
   *length = left;
@@ -308,8 +298,7 @@ log_msg_parse_version(LogMessage *self, const guchar **data, gint *length)
         {
           return FALSE;
         }
-      src++;
-      left--;
+      sd_step(&src, &left);
     }
   if (version != 1)
     return FALSE;
@@ -331,8 +320,7 @@ log_msg_parse_legacy_program_name(LogMessage *self, const guchar **data, gint *l
   prog_start = src;
   while (left && *src != ' ' && *src != '[' && *src != ':')
     {
-      src++;
-      left--;
+      sd_step(&src, &left);
     }
   log_msg_set_value(self, LM_V_PROGRAM, (gchar *) prog_start, src - prog_start);
   if (left > 0 && *src == '[')
@@ -340,8 +328,7 @@ log_msg_parse_legacy_program_name(LogMessage *self, const guchar **data, gint *l
       const guchar *pid_start = src + 1;
       while (left && *src != ' ' && *src != ']' && *src != ':')
         {
-          src++;
-          left--;
+          sd_step(&src, &left);
         }
       if (left)
         {
@@ -349,19 +336,16 @@ log_msg_parse_legacy_program_name(LogMessage *self, const guchar **data, gint *l
         }
       if (left > 0 && *src == ']')
         {
-          src++;
-          left--;
+          sd_step(&src, &left);
         }
     }
   if (left > 0 && *src == ':')
     {
-      src++;
-      left--;
+      sd_step(&src, &left);
     }
   if (left > 0 && *src == ' ')
     {
-      src++;
-      left--;
+      sd_step(&src, &left);
     }
   if ((flags & LP_STORE_LEGACY_MSGHDR))
     {
@@ -475,8 +459,7 @@ log_msg_parse_hostname(LogMessage *self, const guchar **data, gint *length,
           break;
         }
       hostname_buf[dst++] = *src;
-      src++;
-      left--;
+      sd_step(&src, &left);
     }
   hostname_buf[dst] = 0;
 
@@ -555,8 +538,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
   if (left && src[0] == '-')
     {
       /* Nothing to do here */
-      src++;
-      left--;
+      sd_step(&src, &left);
     }
   else if (left && src[0] == '[')
     {
