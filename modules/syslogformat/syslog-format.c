@@ -47,6 +47,14 @@ static struct
   NVHandle raw_message;
 } handles;
 
+static inline void
+sd_step(const guchar **data, gint *left)
+{
+  (*data)++;
+  (*left)--;
+}
+
+
 static gboolean
 log_msg_parse_pri(LogMessage *self, const guchar **data, gint *length, guint flags, guint16 default_pri)
 {
@@ -497,14 +505,6 @@ log_msg_parse_hostname(LogMessage *self, const guchar **data, gint *length,
 
   *data = src;
   *length = left;
-}
-
-
-static inline void
-sd_step(const guchar **data, gint *left)
-{
-  (*data)++;
-  (*left)--;
 }
 
 /**
