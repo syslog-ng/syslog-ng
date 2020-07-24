@@ -66,7 +66,7 @@ _connect(LogThreadedDestWorker *s)
   ExampleDestinationWorker *self = (ExampleDestinationWorker *)s;
   ExampleDestinationDriver *owner = (ExampleDestinationDriver *) s->owner;
 
-  self->file = fopen(owner->filename, "a");
+  self->file = fopen(owner->filename->str, "a");
   if (!self->file)
     {
       msg_error("Could not open file", evt_tag_error("error"));

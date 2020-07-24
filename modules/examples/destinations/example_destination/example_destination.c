@@ -43,8 +43,7 @@ example_destination_dd_set_filename(LogDriver *d, const gchar *filename)
 {
   ExampleDestinationDriver *self = (ExampleDestinationDriver *)d;
 
-  g_free(self->filename);
-  self->filename = g_strdup(filename);
+  g_string_assign(self->filename, filename);
 }
 
 /*
@@ -58,7 +57,7 @@ _format_stats_instance(LogThreadedDestDriver *d)
   static gchar persist_name[1024];
 
   g_snprintf(persist_name, sizeof(persist_name),
-             "example-destination,%s", self->filename);
+             "example-destination,%s", self->filename->str);
   return persist_name;
 }
 
@@ -71,7 +70,7 @@ _format_persist_name(const LogPipe *d)
   if (d->persist_name)
     g_snprintf(persist_name, sizeof(persist_name), "example-destination.%s", d->persist_name);
   else
-    g_snprintf(persist_name, sizeof(persist_name), "example-destination.%s", self->filename);
+    g_snprintf(persist_name, sizeof(persist_name), "example-destination.%s", self->filename->str);
 
   return persist_name;
 }
@@ -84,8 +83,8 @@ _dd_init(LogPipe *d)
   if (!log_threaded_dest_driver_init_method(d))
     return FALSE;
 
-  if (!self->filename)
-    self->filename = g_strdup("/tmp/example-destination-output.txt");
+  if (!self->filename->len)
+    g_string_assign(self->filename, "/tmp/example-destination-output.txt");
 
   return TRUE;
 }
@@ -96,10 +95,6 @@ _dd_deinit(LogPipe *s)
   /*
      If you created resources during init,
      you need to destroy them here.
-
-     self->filename is outside of the lifecycle of init-deinit (may be
-     filled during configuration parse), that's why it is deallocated
-     in the free method.
   */
 
   return log_threaded_dest_driver_deinit_method(s);
@@ -110,7 +105,7 @@ _dd_free(LogPipe *d)
 {
   ExampleDestinationDriver *self = (ExampleDestinationDriver *)d;
 
-  g_free(self->filename);
+  g_string_free(self->filename, TRUE);
 
   log_threaded_dest_driver_free(d);
 }
@@ -119,6 +114,7 @@ LogDriver *
 example_destination_dd_new(GlobalConfig *cfg)
 {
   ExampleDestinationDriver *self = g_new0(ExampleDestinationDriver, 1);
+  self->filename = g_string_new("");
 
   log_threaded_dest_driver_init_instance(&self->super, cfg);
   self->super.super.super.super.init = _dd_init;

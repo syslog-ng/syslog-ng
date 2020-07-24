@@ -29,7 +29,7 @@
 typedef struct
 {
   LogThreadedDestDriver super;
-  gchar *filename;
+  GString *filename;
 } ExampleDestinationDriver;
 
 LogDriver *example_destination_dd_new(GlobalConfig *cfg);
