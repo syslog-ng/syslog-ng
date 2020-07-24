@@ -38,11 +38,11 @@ class ConsoleLogReader(object):
 
     def wait_for_start_message(self):
         syslog_ng_start_message = ["syslog-ng starting up;"]
-        return self.__wait_for_messages_in_console_log(syslog_ng_start_message)
+        return self.wait_for_messages_in_console_log(syslog_ng_start_message)
 
     def wait_for_stop_message(self):
         syslog_ng_stop_message = ["syslog-ng shutting down"]
-        return self.__wait_for_messages_in_console_log(syslog_ng_stop_message)
+        return self.wait_for_messages_in_console_log(syslog_ng_stop_message)
 
     def wait_for_reload_message(self):
         syslog_ng_reload_messages = [
@@ -50,9 +50,12 @@ class ConsoleLogReader(object):
             "Configuration reload request received, reloading configuration",
             "Configuration reload finished",
         ]
-        return self.__wait_for_messages_in_console_log(syslog_ng_reload_messages)
+        return self.wait_for_messages_in_console_log(syslog_ng_reload_messages)
 
-    def __wait_for_messages_in_console_log(self, expected_messages):
+    def wait_for_message_in_console_log(self, expected_message):
+        return self.wait_for_messages_in_console_log(self, [expected_message])
+
+    def wait_for_messages_in_console_log(self, expected_messages):
         if not self.__stderr_io.wait_for_creation():
             raise Exception
 

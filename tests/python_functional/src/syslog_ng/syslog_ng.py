@@ -20,6 +20,7 @@
 # COPYING for details.
 #
 #############################################################################
+from src.syslog_ng.console_log_reader import ConsoleLogReader
 from src.syslog_ng.syslog_ng_cli import SyslogNgCli
 
 
@@ -46,3 +47,11 @@ class SyslogNg(object):
 
     def is_process_running(self):
         return self.__syslog_ng_cli.is_process_running()
+
+    def wait_for_messages_in_console_log(self, expected_messages):
+        assert issubclass(type(expected_messages), list)
+        console_log_reader = ConsoleLogReader(self.instance_paths)
+        return console_log_reader.wait_for_messages_in_console_log(expected_messages)
+
+    def wait_for_message_in_console_log(self, expected_message):
+        return self.wait_for_messages_in_console_log([expected_message])
