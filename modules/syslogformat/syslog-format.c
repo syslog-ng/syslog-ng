@@ -47,11 +47,16 @@ static struct
   NVHandle raw_message;
 } handles;
 
-static inline void
+static inline gboolean
 sd_step(const guchar **data, gint *left)
 {
+  if (*left < 1)
+    return FALSE;
+
   (*data)++;
   (*left)--;
+
+  return TRUE;
 }
 
 
