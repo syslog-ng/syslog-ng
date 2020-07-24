@@ -199,9 +199,11 @@ log_msg_parse_cisco_sequence_id(LogMessage *self, const guchar **data, gint *len
     {
       if (!isdigit(*src))
         return;
-      _process_any_char(&src, &left);
+      if (!_process_any_char(&src, &left))
+        return;
     }
-  _process_any_char(&src, &left);
+  if (!_process_any_char(&src, &left))
+    return;
 
   /* if the next char is not space, then we may try to read a date */
 
