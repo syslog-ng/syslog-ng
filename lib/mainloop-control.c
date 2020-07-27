@@ -182,7 +182,9 @@ _control_command_async_send_response(ControlCommandAsync *cmd, GString *response
 static void
 _respond_config_reload_status(gint type, gpointer user_data)
 {
-  ControlCommandAsync *cmd = (ControlCommandAsync *) user_data;
+  gpointer *args = (gpointer *) user_data;
+  ControlCommandAsync *cmd = (ControlCommandAsync *) args[0];
+  ControlConnection *cc = (ControlConnection *) args[1];
   MainLoop *main_loop = cmd->main_loop;
   GString *reply;
 
@@ -191,14 +193,17 @@ _respond_config_reload_status(gint type, gpointer user_data)
   else
     reply = g_string_new("FAIL Config reload failed, reverted to previous config");
 
-  _control_command_async_send_response(cmd, reply);
+  _send_response(cc, reply);
+  g_string_free(reply, TRUE);
+  g_free(args);
 }
 
 static void
-_control_connection_reload(gpointer user_data)
+__control_connection_reload(gpointer data, gpointer user_data)
 {
   main_loop_assert_main_thread();
 
+  ControlConnection *cc = (ControlConnection *) data;
   ControlCommandAsync *cmd = (ControlCommandAsync *) user_data;
   MainLoop *main_loop = cmd->main_loop;
 
@@ -209,12 +214,30 @@ _control_connection_reload(gpointer user_data)
       GString *result = g_string_new("");
       g_string_printf(result, "FAIL %s, previous config remained intact", error->message);
       g_clear_error(&error);
-      _control_command_async_send_response(cmd, result);
+      _send_response(cc, result);
+      g_string_free(result, TRUE);
       return;
     }
-
-  register_application_hook(AH_CONFIG_CHANGED, _respond_config_reload_status, cmd);
+  gpointer *args = g_new0(gpointer, 2);
+  args[0] = cmd;
+  args[1] = cc;
+  register_application_hook(AH_CONFIG_CHANGED, _respond_config_reload_status, args);
   main_loop_reload_config_commence(main_loop);
+}
+
+static void
+_control_connection_reload(gpointer user_data)
+{
+  ControlCommandAsync *cmd = (ControlCommandAsync *) user_data;
+  g_mutex_lock(&cmd->args.lock);
+  {
+    g_list_foreach(cmd->args.connections, __control_connection_reload, user_data);
+    g_list_free(cmd->args.commands);
+    g_list_free(cmd->args.connections);
+    cmd->args.commands = NULL;
+    cmd->args.connections = NULL;
+  }
+  g_mutex_unlock(&cmd->args.lock);
 }
 
 static void
