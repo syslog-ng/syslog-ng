@@ -117,7 +117,7 @@ control_connection_config(ControlConnection *cc, GString *command, gpointer user
 
   if (!config)
     {
-      g_string_assign(result, "syslog-ng is being reloaded");
+      g_string_assign(result, "FAIL syslog-ng is being reloaded");
       goto exit;
     }
 
@@ -362,7 +362,7 @@ control_connection_list_files(ControlConnection *cc, GString *command, gpointer 
   GlobalConfig *config = main_loop_lock_current_config(main_loop);
   if (!config)
     {
-      g_string_assign(result, "syslog-ng is being reloaded");
+      g_string_assign(result, "FAIL syslog-ng is being reloaded");
       goto exit;
     }
   for (GList *v = config->file_list; v; v = v->next)
@@ -504,7 +504,7 @@ export_config_graph(ControlConnection *cc, GString *command, gpointer user_data)
   if (!cfg)
     {
       main_loop_unlock_current_config(main_loop);
-      control_connection_send_reply(cc, g_string_new("syslog-ng is being reloaded"));
+      control_connection_send_reply(cc, g_string_new("FAIL {\"fail\" : \"syslog-ng is being reloaded\"}"));
       return;
     }
   cfg_walker_get_graph(cfg->tree.initialized_pipes, &nodes, &arcs);
