@@ -44,6 +44,7 @@
 /* INCLUDE_DECLS */
 
 %token KW_VERSION
+%token KW_VERSION_CURRENT
 %token KW_DEFINE
 %token KW_MODULE
 %token KW_REQUIRES
@@ -88,7 +89,12 @@ stmt_with_eol
         ;
 
 version_stmt
-        : KW_VERSION ':' string_or_number
+        : KW_VERSION ':' KW_VERSION_CURRENT
+        {
+          if (!cfg_set_current_version(configuration))
+            PRAGMA_ERROR();
+        }
+        | KW_VERSION ':' string_or_number
           {
             guint parsed_version = process_version_string($3);
             free($3);
