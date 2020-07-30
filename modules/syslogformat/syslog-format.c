@@ -47,6 +47,19 @@ static struct
   NVHandle raw_message;
 } handles;
 
+static inline gboolean
+_process_any_char(const guchar **data, gint *left)
+{
+  if (*left < 1)
+    return FALSE;
+
+  (*data)++;
+  (*left)--;
+
+  return TRUE;
+}
+
+
 static gboolean
 log_msg_parse_pri(LogMessage *self, const guchar **data, gint *length, guint flags, guint16 default_pri)
 {
@@ -57,8 +70,7 @@ log_msg_parse_pri(LogMessage *self, const guchar **data, gint *length, guint fla
 
   if (left && src[0] == '<')
     {
-      src++;
-      left--;
+      _process_any_char(&src, &left);
       pri = 0;
       while (left && *src != '>')
         {
@@ -70,14 +82,12 @@ log_msg_parse_pri(LogMessage *self, const guchar **data, gint *length, guint fla
             {
               return FALSE;
             }
-          src++;
-          left--;
+          _process_any_char(&src, &left);
         }
       self->pri = pri;
       if (left)
         {
-          src++;
-          left--;
+          _process_any_char(&src, &left);
         }
     }
   /* No priority info in the buffer? Just assign a default. */
@@ -100,8 +110,7 @@ log_msg_parse_skip_chars(LogMessage *self, const guchar **data, gint *length, co
 
   while (max_len && left && _strchr_optimized_for_single_char_haystack(chars, *src))
     {
-      src++;
-      left--;
+      _process_any_char(&src, &left);
       num_skipped++;
       if (max_len >= 0)
         max_len--;
@@ -119,8 +128,7 @@ log_msg_parse_skip_space(LogMessage *self, const guchar **data, gint *length)
 
   if (left > 0 && *src == ' ')
     {
-      src++;
-      left--;
+      _process_any_char(&src, &left);
     }
   else
     {
@@ -141,8 +149,7 @@ log_msg_parse_skip_chars_until(LogMessage *self, const guchar **data, gint *leng
 
   while (left && _strchr_optimized_for_single_char_haystack(delims, *src) == 0)
     {
-      src++;
-      left--;
+      _process_any_char(&src, &left);
       num_skipped++;
     }
   *data = src;
@@ -192,11 +199,11 @@ log_msg_parse_cisco_sequence_id(LogMessage *self, const guchar **data, gint *len
     {
       if (!isdigit(*src))
         return;
-      src++;
-      left--;
+      if (!_process_any_char(&src, &left))
+        return;
     }
-  src++;
-  left--;
+  if (!_process_any_char(&src, &left))
+    return;
 
   /* if the next char is not space, then we may try to read a date */
 
@@ -222,15 +229,13 @@ log_msg_parse_cisco_timestamp_attributes(LogMessage *self, const guchar **data, 
     {
       if (!(parse_flags & LP_NO_PARSE_DATE))
         log_msg_set_value(self, handles.is_synced, "0", 1);
-      src++;
-      left--;
+      _process_any_char(&src, &left);
     }
   else if (G_UNLIKELY(src[0] == '.'))
     {
       if (!(parse_flags & LP_NO_PARSE_DATE))
         log_msg_set_value(self, handles.is_synced, "1", 1);
-      src++;
-      left--;
+      _process_any_char(&src, &left);
     }
   *data = src;
   *length = left;
@@ -300,8 +305,7 @@ log_msg_parse_version(LogMessage *self, const guchar **data, gint *length)
         {
           return FALSE;
         }
-      src++;
-      left--;
+      _process_any_char(&src, &left);
     }
   if (version != 1)
     return FALSE;
@@ -323,8 +327,7 @@ log_msg_parse_legacy_program_name(LogMessage *self, const guchar **data, gint *l
   prog_start = src;
   while (left && *src != ' ' && *src != '[' && *src != ':')
     {
-      src++;
-      left--;
+      _process_any_char(&src, &left);
     }
   log_msg_set_value(self, LM_V_PROGRAM, (gchar *) prog_start, src - prog_start);
   if (left > 0 && *src == '[')
@@ -332,8 +335,7 @@ log_msg_parse_legacy_program_name(LogMessage *self, const guchar **data, gint *l
       const guchar *pid_start = src + 1;
       while (left && *src != ' ' && *src != ']' && *src != ':')
         {
-          src++;
-          left--;
+          _process_any_char(&src, &left);
         }
       if (left)
         {
@@ -341,19 +343,16 @@ log_msg_parse_legacy_program_name(LogMessage *self, const guchar **data, gint *l
         }
       if (left > 0 && *src == ']')
         {
-          src++;
-          left--;
+          _process_any_char(&src, &left);
         }
     }
   if (left > 0 && *src == ':')
     {
-      src++;
-      left--;
+      _process_any_char(&src, &left);
     }
   if (left > 0 && *src == ' ')
     {
-      src++;
-      left--;
+      _process_any_char(&src, &left);
     }
   if ((flags & LP_STORE_LEGACY_MSGHDR))
     {
@@ -467,8 +466,7 @@ log_msg_parse_hostname(LogMessage *self, const guchar **data, gint *length,
           break;
         }
       hostname_buf[dst++] = *src;
-      src++;
-      left--;
+      _process_any_char(&src, &left);
     }
   hostname_buf[dst] = 0;
 
@@ -497,14 +495,6 @@ log_msg_parse_hostname(LogMessage *self, const guchar **data, gint *length,
 
   *data = src;
   *length = left;
-}
-
-
-static inline void
-sd_step(const guchar **data, gint *left)
-{
-  (*data)++;
-  (*left)--;
 }
 
 /**
@@ -555,12 +545,11 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
   if (left && src[0] == '-')
     {
       /* Nothing to do here */
-      src++;
-      left--;
+      _process_any_char(&src, &left);
     }
   else if (left && src[0] == '[')
     {
-      sd_step(&src, &left);
+      _process_any_char(&src, &left);
       open_sd++;
       do
         {
@@ -587,7 +576,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
                 {
                   goto error;
                 }
-              sd_step(&src, &left);
+              _process_any_char(&src, &left);
             }
 
           if (pos == 0)
@@ -611,7 +600,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
           while (left && *src != ']')
             {
               if (left && *src == ' ') /* skip the ' ' before the parameter name */
-                sd_step(&src, &left);
+                _process_any_char(&src, &left);
               else
                 goto error;
 
@@ -636,14 +625,14 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
                     {
                       goto error;
                     }
-                  sd_step(&src, &left);
+                  _process_any_char(&src, &left);
                 }
               sd_param_name[pos] = 0;
               strncpy(&sd_value_name[logmsg_sd_prefix_len + 1 + sd_id_len], sd_param_name,
                       sizeof(sd_value_name) - logmsg_sd_prefix_len - 1 - sd_id_len);
 
               if (left && *src == '=')
-                sd_step(&src, &left);
+                _process_any_char(&src, &left);
               else
                 goto error;
 
@@ -653,7 +642,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
                 {
                   gboolean quote = FALSE;
                   /* opening quote */
-                  sd_step(&src, &left);
+                  _process_any_char(&src, &left);
                   pos = 0;
 
                   while (left && (*src != '"' || quote))
@@ -671,7 +660,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
                             }
                           else if (!quote &&  *src == ']')
                             {
-                              sd_step(&src, &left);
+                              _process_any_char(&src, &left);
                               goto error;
                             }
                           if (pos < sizeof(sd_param_value) - 1)
@@ -681,13 +670,13 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
                             }
                           quote = FALSE;
                         }
-                      sd_step(&src, &left);
+                      _process_any_char(&src, &left);
                     }
                   sd_param_value[pos] = 0;
                   sd_param_value_len = pos;
 
                   if (left && *src == '"')/* closing quote */
-                    sd_step(&src, &left);
+                    _process_any_char(&src, &left);
                   else
                     goto error;
                 }
@@ -701,7 +690,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
 
           if (left && *src == ']')
             {
-              sd_step(&src, &left);
+              _process_any_char(&src, &left);
               open_sd--;
             }
           else
@@ -713,7 +702,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
           if (left && *src == '[')
             {
               /* new structured data begins, thus continue iteration */
-              sd_step(&src, &left);
+              _process_any_char(&src, &left);
               open_sd++;
             }
         }
