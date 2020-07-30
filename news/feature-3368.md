@@ -1,0 +1,1 @@
+config: support `@version: current`
