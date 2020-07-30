@@ -67,6 +67,7 @@ process_version_string(gchar *value)
 static CfgLexerKeyword pragma_keywords[] =
 {
   { "version",            KW_VERSION, },
+  { "current",            KW_VERSION_CURRENT },
   { "include",            KW_INCLUDE, },
   { "module",             KW_MODULE, },
   { "define",             KW_DEFINE, },
