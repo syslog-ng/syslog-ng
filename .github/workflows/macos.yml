@@ -14,6 +14,7 @@ jobs:
           export PKG_CONFIG_PATH=/usr/local/opt/openssl/lib/pkgconfig:$PKG_CONFIG_PATH
           export PATH=/usr/local/opt/bison/bin:/usr/local/opt/libnet/bin:$PYTHONUSERBASE/bin:$PATH
 
+          brew update --preinstall
           brew bundle --file=contrib/Brewfile
           pip install --user -r requirements.txt
 
