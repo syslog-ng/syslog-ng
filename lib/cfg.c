@@ -434,6 +434,13 @@ cfg_set_version(GlobalConfig *self, gint version)
 }
 
 gboolean
+cfg_set_current_version(GlobalConfig *self)
+{
+  msg_info("Setting current version as config version", evt_tag_str("version", VERSION_STR_CURRENT));
+  return cfg_set_version(self, VERSION_VALUE_CURRENT);
+}
+
+gboolean
 cfg_allow_config_dups(GlobalConfig *self)
 {
   const gchar *s;
