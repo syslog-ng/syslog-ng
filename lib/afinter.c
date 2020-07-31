@@ -37,6 +37,7 @@ static GStaticMutex internal_msg_lock = G_STATIC_MUTEX_INIT;
 static GQueue *internal_msg_queue;
 static AFInterSource *current_internal_source;
 static StatsCounterItem *internal_queue_length;
+static StatsCounterItem *internal_queue_dropped;
 
 /* the expiration timer of the next MARK message */
 static struct timespec next_mark_target = { -1, 0 };
@@ -73,11 +74,11 @@ static GStaticMutex internal_mark_target_lock = G_STATIC_MUTEX_INIT;
  *
  * If the window is depleted (e.g. flow control is enabled and the
  * destination is unable to process any more messages),
- * current_internal_source will be set to NULL, which means that messages
+ * free_to_send will be set to FALSE, which means that messages
  * will be added to the queue, but the wakeup will not be done.
  *
  * When the window becomes free, log_source_wakeup() is called, which
- * restores the current_internal_source pointer (e.g.  further messages will
+ * restores the free_to_send flag (e.g.  further messages will
  * wake up the source) and also starts emptying the messages accumulated in the queue.
  *
  * Possible races:
@@ -92,6 +93,7 @@ struct _AFInterSource
 {
   LogSource super;
   gint mark_freq;
+  const AFInterSourceOptions *options;
   struct iv_event post;
   struct iv_event schedule_wakeup;
   struct iv_timer mark_timer;
@@ -210,9 +212,8 @@ afinter_source_update_watches(AFInterSource *self)
 {
   if (!log_source_free_to_send(&self->super))
     {
-      /* ok, we go to sleep now. let's disable the post event by setting
-       * current_internal_source to NULL.  Messages get accumulated into
-       * internal_msg_queue.  */
+      /* ok, we go to sleep now. let's disable the post event.
+       * Messages get accumulated into internal_msg_queue.  */
       g_static_mutex_lock(&internal_msg_lock);
       self->free_to_send = FALSE;
       g_static_mutex_unlock(&internal_msg_lock);
@@ -244,14 +245,14 @@ afinter_source_update_watches(AFInterSource *self)
 
       /* Possible race:
        *
-       * Our current_internal_source pointer is set to NULL here (in case
+       * The free_to_send flag is set to FALSE here (in case
        * we're just waking up).  In case the sender submits a message, it'll
-       * not trigger the self->post (since the pointer is NULL).  This is
+       * not trigger the self->post (since free_to_send is FALSE).  This is
        * taken care of by the queue-length check in the locked region below.
        * If the queue has elements, we need to wake up, because we may have
        * lost a wakeup call.  If it happens after the locked region, that
-       * doesn't matter, in that case we already pointed
-       * current_internal_source to ourselves, thus the post event will also
+       * doesn't matter, in that case we already set
+       * free_to_send = TRUE to ourselves, thus the post event will also
        * be triggered.
        */
 
@@ -311,26 +312,42 @@ afinter_source_deinit(LogPipe *s)
 }
 
 static LogSource *
-afinter_source_new(AFInterSourceDriver *owner, LogSourceOptions *options)
+afinter_source_new(AFInterSourceDriver *owner, AFInterSourceOptions *options)
 {
   AFInterSource *self = g_new0(AFInterSource, 1);
 
   log_source_init_instance(&self->super, owner->super.super.super.cfg);
-  log_source_set_options(&self->super, options, owner->super.super.id, NULL, FALSE, FALSE,
+  log_source_set_options(&self->super, &options->super, owner->super.super.id, NULL, FALSE, FALSE,
                          owner->super.super.super.expr_node);
   afinter_source_init_watches(self);
   self->super.super.init = afinter_source_init;
   self->super.super.deinit = afinter_source_deinit;
   self->super.wakeup = afinter_source_wakeup;
+
+  self->options = options;
+
   return &self->super;
 }
 
+
+void
+afinter_source_options_defaults(AFInterSourceOptions *options)
+{
+  log_source_options_defaults(&options->super);
+  options->queue_capacity = 10000;
+}
 
 static gboolean
 afinter_sd_init(LogPipe *s)
 {
   AFInterSourceDriver *self = (AFInterSourceDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
+
+  if (cfg_is_config_version_older(cfg, VERSION_VALUE_3_29))
+    {
+      msg_warning_once("WARNING: The internal_queue_length stat counter has been renamed to internal_source.queued. "
+                       "The old name will be removed in future versions", cfg_format_config_version_tag(cfg));
+    }
 
   if (!log_src_driver_init_method(s))
     return FALSE;
@@ -341,9 +358,9 @@ afinter_sd_init(LogPipe *s)
       return FALSE;
     }
 
-  log_source_options_init(&self->source_options, cfg, self->super.super.group);
-  self->source_options.stats_level = STATS_LEVEL0;
-  self->source_options.stats_source = stats_register_type("internal");
+  log_source_options_init(&self->source_options.super, cfg, self->super.super.group);
+  self->source_options.super.stats_level = STATS_LEVEL0;
+  self->source_options.super.stats_source = stats_register_type("internal");
   self->source = afinter_source_new(self, &self->source_options);
   log_pipe_append(&self->source->super, s);
 
@@ -395,7 +412,9 @@ afinter_sd_new(GlobalConfig *cfg)
   self->super.super.super.init = afinter_sd_init;
   self->super.super.super.deinit = afinter_sd_deinit;
   self->super.super.super.free_fn = afinter_sd_free;
-  log_source_options_defaults(&self->source_options);
+
+  afinter_source_options_defaults(&self->source_options);
+
   return (LogDriver *)&self->super.super;
 }
 
@@ -428,11 +447,33 @@ _release_internal_msg_queue(void)
   LogMessage *internal_message = g_queue_pop_head(internal_msg_queue);
   while (internal_message)
     {
+      stats_counter_dec(internal_queue_length);
       log_msg_unref(internal_message);
+
       internal_message = g_queue_pop_head(internal_msg_queue);
     }
   g_queue_free(internal_msg_queue);
   internal_msg_queue = NULL;
+}
+
+static inline void
+_register_obsolete_stats_alias(StatsCounterItem *internal_queued_ctr)
+{
+  stats_lock();
+  StatsClusterKey sc_key;
+  stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "internal_queue_length", NULL);
+  stats_register_external_counter(0, &sc_key, SC_TYPE_PROCESSED, &internal_queued_ctr->value);
+  stats_unlock();
+}
+
+static inline void
+_unregister_obsolete_stats_alias(StatsCounterItem *internal_queued_ctr)
+{
+  stats_lock();
+  StatsClusterKey sc_key;
+  stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "internal_queue_length", NULL);
+  stats_unregister_external_counter(&sc_key, SC_TYPE_PROCESSED, &internal_queued_ctr->value);
+  stats_unlock();
 }
 
 void
@@ -455,9 +496,19 @@ afinter_message_posted(LogMessage *msg)
 
       stats_lock();
       StatsClusterKey sc_key;
-      stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "internal_queue_length", NULL );
-      stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &internal_queue_length);
+      stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "internal_source", NULL );
+      stats_register_counter(0, &sc_key, SC_TYPE_QUEUED, &internal_queue_length);
+      stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &internal_queue_dropped);
       stats_unlock();
+
+      _register_obsolete_stats_alias(internal_queue_length);
+    }
+
+  if (g_queue_get_length(internal_msg_queue) >= current_internal_source->options->queue_capacity)
+    {
+      stats_counter_inc(internal_queue_dropped);
+      log_msg_unref(msg);
+      goto exit;
     }
 
   g_queue_push_tail(internal_msg_queue, msg);
@@ -486,10 +537,13 @@ afinter_global_deinit(void)
 {
   if (internal_msg_queue)
     {
+      _unregister_obsolete_stats_alias(internal_queue_length);
+
       stats_lock();
       StatsClusterKey sc_key;
-      stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "internal_queue_length", NULL );
-      stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &internal_queue_length);
+      stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "internal_source", NULL );
+      stats_unregister_counter(&sc_key, SC_TYPE_QUEUED, &internal_queue_length);
+      stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &internal_queue_dropped);
       stats_unlock();
       g_queue_free_full(internal_msg_queue, (GDestroyNotify)log_msg_unref);
       internal_msg_queue = NULL;

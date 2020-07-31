@@ -647,7 +647,7 @@ source_afinter
 source_afinter_params
         : {
             last_driver = afinter_sd_new(configuration);
-            last_source_options = &((AFInterSourceDriver *) last_driver)->source_options;
+            last_source_options = &((AFInterSourceDriver *) last_driver)->source_options.super;
           }
           source_afinter_options { $$ = last_driver; }
         ;
@@ -658,7 +658,8 @@ source_afinter_options
         ;
 
 source_afinter_option
-        : source_option
+        : KW_LOG_FIFO_SIZE '(' positive_integer ')'	{ ((AFInterSourceOptions *) last_source_options)->queue_capacity = $3; }
+        | source_option
         ;
 
 
@@ -1130,20 +1131,20 @@ path
             CHECK_ERROR((ret == 0), @1, "File \"%s\" not found: %s", $1, strerror(errno));
             $$ = $1;
 	  }
-	;	
+	;
 
 path_check
     : path { cfg_path_track_file(configuration, $1, "path_check"); }
     ;
-	
+
 path_secret
     : path { cfg_path_track_file(configuration, $1, "path_secret"); }
     ;
-		
+
 path_no_check
     : string { cfg_path_track_file(configuration, $1, "path_no_check"); }
     ;
-	
+
 normalized_flag
         : string                                { $$ = normalize_flag($1); free($1); }
         ;

@@ -28,6 +28,12 @@
 #include "driver.h"
 #include "logsource.h"
 
+typedef struct AFInterSourceOptions
+{
+  LogSourceOptions super;
+  gint queue_capacity;
+} AFInterSourceOptions;
+
 /*
  * This is the actual source driver, linked into the configuration tree.
  */
@@ -35,7 +41,7 @@ typedef struct _AFInterSourceDriver
 {
   LogSrcDriver super;
   LogSource *source;
-  LogSourceOptions source_options;
+  AFInterSourceOptions source_options;
 } AFInterSourceDriver;
 
 void afinter_postpone_mark(gint mark_freq);
