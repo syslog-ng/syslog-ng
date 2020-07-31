@@ -218,6 +218,12 @@ stats_register_external_counter(gint stats_level, const StatsClusterKey *sc_key,
 }
 
 StatsCluster *
+stats_register_alias_counter(gint level, const StatsClusterKey *sc_key, gint type, StatsCounterItem *aliased_counter)
+{
+  return stats_register_external_counter(level, sc_key, type, &aliased_counter->value);
+}
+
+StatsCluster *
 stats_register_counter_and_index(gint stats_level, const StatsClusterKey *sc_key, gint type,
                                  StatsCounterItem **counter)
 {
@@ -315,6 +321,11 @@ stats_unregister_external_counter(const StatsClusterKey *sc_key, gint type,
   stats_cluster_untrack_counter(sc, type, &ctr);
 }
 
+void
+stats_unregister_alias_counter(const StatsClusterKey *sc_key, gint type, StatsCounterItem *aliased_counter)
+{
+  stats_unregister_external_counter(sc_key, type, &aliased_counter->value);
+}
 
 void
 stats_unregister_dynamic_counter(StatsCluster *sc, gint type, StatsCounterItem **counter)
