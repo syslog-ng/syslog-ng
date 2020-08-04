@@ -188,6 +188,7 @@ function install_pip_packages {
     esac
     for python_executable in ${python_executables}; do
         $python_executable -m pip install --upgrade pip
+        $python_executable -m pip install --upgrade setuptools
         filter_packages_by_platform $DBLD_DIR/pip_packages.manifest | xargs $python_executable -m pip install --ignore-installed -U
     done
 }
