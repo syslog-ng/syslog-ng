@@ -38,6 +38,9 @@ StatsCluster *stats_register_counter(gint level, const StatsClusterKey *sc_key, 
 StatsCluster *stats_register_external_counter(gint level, const StatsClusterKey *sc_key, gint type,
                                               atomic_gssize *external_counter);
 
+StatsCluster *stats_register_alias_counter(gint level, const StatsClusterKey *sc_key, gint type,
+                                           StatsCounterItem *aliased_counter);
+
 StatsCluster *stats_register_counter_and_index(gint level, const StatsClusterKey *sc_key, gint type,
                                                StatsCounterItem **counter);
 StatsCluster *stats_register_dynamic_counter(gint stats_level, const StatsClusterKey *sc_key, gint type,
@@ -47,6 +50,7 @@ void stats_register_associated_counter(StatsCluster *handle, gint type, StatsCou
 void stats_unregister_counter(const StatsClusterKey *sc_key, gint type, StatsCounterItem **counter);
 void stats_unregister_external_counter(const StatsClusterKey *sc_key, gint type,
                                        atomic_gssize *external_counter);
+void stats_unregister_alias_counter(const StatsClusterKey *sc_key, gint type, StatsCounterItem *aliased_counter);
 void stats_unregister_dynamic_counter(StatsCluster *handle, gint type, StatsCounterItem **counter);
 
 gboolean stats_contains_counter(const StatsClusterKey *sc_key, gint type);

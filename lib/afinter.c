@@ -462,7 +462,7 @@ _register_obsolete_stats_alias(StatsCounterItem *internal_queued_ctr)
   stats_lock();
   StatsClusterKey sc_key;
   stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "internal_queue_length", NULL);
-  stats_register_external_counter(0, &sc_key, SC_TYPE_PROCESSED, &internal_queued_ctr->value);
+  stats_register_alias_counter(0, &sc_key, SC_TYPE_PROCESSED, internal_queued_ctr);
   stats_unlock();
 }
 
@@ -472,7 +472,7 @@ _unregister_obsolete_stats_alias(StatsCounterItem *internal_queued_ctr)
   stats_lock();
   StatsClusterKey sc_key;
   stats_cluster_logpipe_key_set(&sc_key, SCS_GLOBAL, "internal_queue_length", NULL);
-  stats_unregister_external_counter(&sc_key, SC_TYPE_PROCESSED, &internal_queued_ctr->value);
+  stats_unregister_alias_counter(&sc_key, SC_TYPE_PROCESSED, internal_queued_ctr);
   stats_unlock();
 }
 
