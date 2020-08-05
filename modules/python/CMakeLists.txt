@@ -48,6 +48,8 @@ set(PYTHON_SOURCES
     python-source.c
     python-fetcher.h
     python-fetcher.c
+    python-bookmark.h
+    python-bookmark.c
     compat/compat-python.c
 )
 

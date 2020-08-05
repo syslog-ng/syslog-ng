@@ -63,7 +63,9 @@ modules_python_libmod_python_la_SOURCES		= \
 	modules/python/python-fetcher.h	  \
 	modules/python/python-fetcher.c   \
 	modules/python/python-http-header.h   \
-	modules/python/python-http-header.c
+	modules/python/python-http-header.c \
+	modules/python/python-bookmark.h \
+	modules/python/python-bookmark.c
 
 
 modules_python_libmod_python_la_LDFLAGS		 = \
