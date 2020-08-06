@@ -10,7 +10,7 @@ ack_tracker_include_HEADERS = \
 	lib/ack-tracker/late_ack_tracker.h
 
 ack_tracker_sources = \
-	lib/ack-tracker/early_ack_tracker.c	\
+	lib/ack-tracker/instant_ack_tracker.c	\
 	lib/ack-tracker/late_ack_tracker.c \
 	lib/ack-tracker/late_ack_record_container_static.c \
 	lib/ack-tracker/late_ack_record_container_dynamic.c
