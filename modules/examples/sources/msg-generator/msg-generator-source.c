@@ -172,7 +172,9 @@ msg_generator_source_set_options(MsgGeneratorSource *self, MsgGeneratorSourceOpt
                                  const gchar *stats_id, const gchar *stats_instance, gboolean threaded,
                                  gboolean pos_tracked, LogExprNode *expr_node)
 {
-  log_source_set_options(&self->super, &options->super, stats_id, stats_instance, threaded, pos_tracked, expr_node);
+  log_source_set_options(&self->super, &options->super, stats_id, stats_instance, threaded, expr_node);
+
+  log_source_set_ack_tracker_type(&self->super, pos_tracked ? ACK_CONSECUTIVE : ACK_INSTANT_BOOKMARKLESS);
 
   self->options = options;
 }

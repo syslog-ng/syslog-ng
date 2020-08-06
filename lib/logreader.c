@@ -76,7 +76,8 @@ log_reader_set_options(LogReader *s, LogPipe *control, LogReaderOptions *options
   gboolean pos_tracked = log_proto_server_is_position_tracked(self->proto);
 
   log_source_set_options(&self->super, &options->super, stats_id, stats_instance,
-                         (options->flags & LR_THREADED), pos_tracked, control->expr_node);
+                         (options->flags & LR_THREADED), control->expr_node);
+  log_source_set_ack_tracker_type(&self->super, pos_tracked ? ACK_CONSECUTIVE : ACK_INSTANT_BOOKMARKLESS);
 
   log_pipe_unref(self->control);
   log_pipe_ref(control);

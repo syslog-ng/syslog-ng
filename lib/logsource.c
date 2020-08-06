@@ -671,7 +671,7 @@ _is_window_initialized(LogSource *self)
 void
 log_source_set_options(LogSource *self, LogSourceOptions *options,
                        const gchar *stats_id, const gchar *stats_instance,
-                       gboolean threaded, gboolean pos_tracked, LogExprNode *expr_node)
+                       gboolean threaded, LogExprNode *expr_node)
 {
   /* NOTE: we don't adjust window_size even in case it was changed in the
    * configuration and we received a SIGHUP.  This means that opened
@@ -688,10 +688,15 @@ log_source_set_options(LogSource *self, LogSourceOptions *options,
     g_free(self->stats_instance);
   self->stats_instance = stats_instance ? g_strdup(stats_instance): NULL;
   self->threaded = threaded;
-  self->ack_tracker_type = pos_tracked ? ACK_CONSECUTIVE : ACK_INSTANT_BOOKMARKLESS;
 
   log_pipe_detach_expr_node(&self->super);
   log_pipe_attach_expr_node(&self->super, expr_node);
+}
+
+void
+log_source_set_ack_tracker_type(LogSource *self, AckTrackerType type)
+{
+  self->ack_tracker_type = type;
 }
 
 void
@@ -710,6 +715,7 @@ log_source_init_instance(LogSource *self, GlobalConfig *cfg)
   self->super.init = log_source_init;
   self->super.deinit = log_source_deinit;
   self->window_initialized = FALSE;
+  self->ack_tracker_type = ACK_INSTANT_BOOKMARKLESS;
   self->ack_tracker = NULL;
 }
 

@@ -652,7 +652,8 @@ journal_reader_set_options(LogPipe *s, LogPipe *control, JournalReaderOptions *o
   JournalReader *self = (JournalReader *) s;
 
   log_source_set_options(&self->super, &options->super, stats_id, stats_instance,
-                         (options->flags & JR_THREADED), TRUE, control->expr_node);
+                         (options->flags & JR_THREADED), control->expr_node);
+  log_source_set_ack_tracker_type(&self->super, ACK_CONSECUTIVE);
 
   log_pipe_unref(self->control);
   log_pipe_ref(control);

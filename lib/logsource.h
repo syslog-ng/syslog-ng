@@ -121,7 +121,8 @@ gboolean log_source_deinit(LogPipe *s);
 void log_source_post(LogSource *self, LogMessage *msg);
 
 void log_source_set_options(LogSource *self, LogSourceOptions *options, const gchar *stats_id,
-                            const gchar *stats_instance, gboolean threaded, gboolean pos_tracked, LogExprNode *expr_node);
+                            const gchar *stats_instance, gboolean threaded, LogExprNode *expr_node);
+void log_source_set_ack_tracker_type(LogSource *self, AckTrackerType type);
 void log_source_set_name(LogSource *self, const gchar *name);
 void log_source_mangle_hostname(LogSource *self, LogMessage *msg);
 void log_source_init_instance(LogSource *self, GlobalConfig *cfg);

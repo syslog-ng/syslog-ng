@@ -105,8 +105,10 @@ log_threaded_source_worker_set_options(LogThreadedSourceWorker *self, LogThreade
                                        LogThreadedSourceWorkerOptions *options,
                                        const gchar *stats_id, const gchar *stats_instance)
 {
-  log_source_set_options(&self->super, &options->super, stats_id, stats_instance, TRUE, options->position_tracked,
+  log_source_set_options(&self->super, &options->super, stats_id, stats_instance, TRUE,
                          control->super.super.super.expr_node);
+  log_source_set_ack_tracker_type(&self->super,
+                                  options->position_tracked ? ACK_CONSECUTIVE : ACK_INSTANT_BOOKMARKLESS);
 
   log_pipe_unref(&self->control->super.super.super);
   log_pipe_ref(&control->super.super.super);
