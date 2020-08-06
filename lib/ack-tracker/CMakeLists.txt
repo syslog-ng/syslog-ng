@@ -3,6 +3,7 @@ set(ACK_TRACKER_HEADERS
     ack-tracker/bookmark.h
     ack-tracker/consecutive_ack_record_container.h
     ack-tracker/consecutive_ack_tracker.h
+    ack-tracker/instant_ack_tracker.h
     PARENT_SCOPE)
 
   set(ACK_TRACKER_SOURCES

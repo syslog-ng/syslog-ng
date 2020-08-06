@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 Balabit
- * Copyright (c) 2018 Laszlo Budai <laszlo.budai@outlook.com>
+ * Copyright (c) 2020 One Identity
+ * Copyright (c) 2020 Laszlo Budai <laszlo.budai@outlook.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,30 +22,11 @@
  *
  */
 
-#ifndef CONSECUTIVE_ACK_TRACKER_H_INCLUDED
-#define CONSECUTIVE_ACK_TRACKER_H_INCLUDED
+#ifndef INSTANT_ACK_TRACKER_H_INCLUDED
+#define INSTANT_ACK_TRACKER_H_INCLUDED
 
 #include "ack_tracker.h"
 
-typedef struct _AckTrackerOnAllAcked AckTrackerOnAllAcked;
-
-typedef void (*AckTrackerOnAllAckedFunc)(gpointer);
-
-struct _AckTrackerOnAllAcked
-{
-  AckTrackerOnAllAckedFunc func;
-  gpointer user_data;
-  GDestroyNotify user_data_free_fn;
-};
-
-gboolean consecutive_ack_tracker_is_empty(AckTracker *self);
-void consecutive_ack_tracker_lock(AckTracker *self);
-void consecutive_ack_tracker_unlock(AckTracker *self);
-void consecutive_ack_tracker_set_on_all_acked(AckTracker *s, AckTrackerOnAllAckedFunc func, gpointer user_data,
-                                              GDestroyNotify user_data_free_fn);
-
-AckTracker *consecutive_ack_tracker_new(LogSource *source);
-
+AckTracker *instant_ack_tracker_new(LogSource *source);
 
 #endif
-

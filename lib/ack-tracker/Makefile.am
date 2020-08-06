@@ -7,7 +7,8 @@ ack_tracker_include_HEADERS = \
 	lib/ack-tracker/ack_tracker.h	\
 	lib/ack-tracker/bookmark.h \
 	lib/ack-tracker/consecutive_ack_record_container.h \
-	lib/ack-tracker/consecutive_ack_tracker.h
+	lib/ack-tracker/consecutive_ack_tracker.h \
+	lib/ack-tracker/instant_ack_tracker.h
 
 ack_tracker_sources = \
 	lib/ack-tracker/instant_ack_tracker.c	\
