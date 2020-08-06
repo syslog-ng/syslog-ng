@@ -28,6 +28,12 @@
 #include "syslog-ng.h"
 #include "logsource.h"
 
+typedef enum
+{
+  ACK_CONSECUTIVE,
+  ACK_INSTANT_BOOKMARKLESS,
+} AckTrackerType;
+
 struct _AckTracker
 {
   LogSource *source;
@@ -45,6 +51,7 @@ struct _AckRecord
 
 AckTracker *consecutive_ack_tracker_new(LogSource *source);
 AckTracker *instant_ack_tracker_new(LogSource *source);
+AckTracker *ack_tracker_new(LogSource *source, AckTrackerType type);
 
 static inline void
 ack_tracker_free(AckTracker *self)
