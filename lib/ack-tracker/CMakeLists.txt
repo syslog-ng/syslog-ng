@@ -7,6 +7,7 @@ set(ACK_TRACKER_HEADERS
     PARENT_SCOPE)
 
   set(ACK_TRACKER_SOURCES
+    ack-tracker/ack_tracker.c
     ack-tracker/instant_ack_tracker.c
     ack-tracker/consecutive_ack_tracker.c
     ack-tracker/consecutive_ack_record_container_static.c
