@@ -452,10 +452,8 @@ _create_ack_tracker_if_not_exists(LogSource *self)
 {
   if (!self->ack_tracker)
     {
-      if (self->pos_tracked)
-        self->ack_tracker = consecutive_ack_tracker_new(self);
-      else
-        self->ack_tracker = instant_ack_tracker_new(self);
+      AckTrackerType ack_tracker_type = self->pos_tracked ? ACK_CONSECUTIVE : ACK_INSTANT_BOOKMARKLESS;
+      self->ack_tracker = ack_tracker_new(self, ack_tracker_type);
     }
 }
 
