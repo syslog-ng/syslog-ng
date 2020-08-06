@@ -27,12 +27,7 @@
 
 #include "syslog-ng.h"
 #include "logsource.h"
-
-typedef enum
-{
-  ACK_CONSECUTIVE,
-  ACK_INSTANT_BOOKMARKLESS,
-} AckTrackerType;
+#include "ack_tracker_types.h"
 
 struct _AckTracker
 {
