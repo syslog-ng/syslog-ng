@@ -22,8 +22,8 @@
  *
  */
 
-#include "late_ack_tracker.h"
-#include "late_ack_record_container.h"
+#include "consecutive_ack_tracker.h"
+#include "consecutive_ack_record_container.h"
 #include "bookmark.h"
 #include "syslog-ng.h"
 

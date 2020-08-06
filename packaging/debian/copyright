@@ -22,7 +22,7 @@ Files: lib/ack-tracker.h
        lib/bookmark.h
        lib/instant_ack_tracker.c
        lib/host-id.*
-       lib/late_ack_tracker.c
+       lib/consecutive_ack_tracker.c
        lib/ringbuffer.*
        lib/template/common-template-typedefs.h
 Copyright: Copyright (C) BalaBit IT Ltd.
