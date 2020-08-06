@@ -312,13 +312,6 @@ Test(lexer, at_version_stores_config_version_in_parsed_version_in_hex_form)
   parser->lexer->ignore_pragma = FALSE;
 
   cfg_set_version_without_validation(configuration, 0);
-  _input("@version: 3.28\n\
-foo\n");
-  assert_parser_identifier("foo");
-  cr_assert_eq(configuration->user_version, 0x031c,
-               "@version parsing mismatch, value %04x expected %04x", configuration->user_version, 0x031c);
-
-  cfg_set_version_without_validation(configuration, 0);
   _input("@version: 3.1\n\
 bar\n");
   assert_parser_identifier("bar");
@@ -331,6 +324,18 @@ baz\n");
   assert_parser_identifier("baz");
   cr_assert_eq(configuration->user_version, 0x0305,
                "@version parsing mismatch, value %04x expected %04x", configuration->user_version, 0x0305);
+}
+
+Test(lexer, current_version)
+{
+  parser->lexer->ignore_pragma = FALSE;
+
+  cfg_set_version_without_validation(configuration, 0);
+  _input("@version: current\n\
+foo\n");
+  assert_parser_identifier("foo");
+  cr_assert_eq(configuration->user_version, VERSION_VALUE_CURRENT,
+               "@version parsing mismatch, value %04x expected %04x", configuration->user_version, VERSION_VALUE_CURRENT);
 }
 
 Test(lexer, test_lexer_others)
