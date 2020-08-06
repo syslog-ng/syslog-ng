@@ -60,7 +60,7 @@ _construct_src_transport(FileOpener *self, gint fd)
 static LogProtoServer *
 _construct_src_proto(FileOpener *s, LogTransport *transport, LogProtoFileReaderOptions *proto_options)
 {
-  proto_options->super.super.position_tracking_enabled = TRUE;
+  proto_options->super.super.ack_tracker_type = ACK_CONSECUTIVE;
   return log_proto_file_reader_new(transport, proto_options);
 }
 

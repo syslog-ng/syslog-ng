@@ -29,6 +29,7 @@
 #include "persist-state.h"
 #include "transport/transport-aux-data.h"
 #include "ack-tracker/bookmark.h"
+#include "ack-tracker/ack_tracker_types.h"
 
 typedef struct _LogProtoServer LogProtoServer;
 typedef struct _LogProtoServerOptions LogProtoServerOptions;
@@ -52,7 +53,7 @@ struct _LogProtoServerOptions
   gboolean trim_large_messages;
   gint max_buffer_size;
   gint init_buffer_size;
-  gboolean position_tracking_enabled;
+  AckTrackerType ack_tracker_type;
 };
 
 typedef union LogProtoServerOptionsStorage
@@ -67,7 +68,6 @@ void log_proto_server_options_defaults(LogProtoServerOptions *options);
 void log_proto_server_options_init(LogProtoServerOptions *options, GlobalConfig *cfg);
 void log_proto_server_options_destroy(LogProtoServerOptions *options);
 
-
 typedef void (*LogProtoServerWakeupFunc)(gpointer user_data);
 typedef struct _LogProtoServerWakeupCallback
 {
@@ -81,9 +81,9 @@ struct _LogProtoServer
   const LogProtoServerOptions *options;
   LogTransport *transport;
   AckTracker *ack_tracker;
+
   LogProtoServerWakeupCallback wakeup_callback;
   /* FIXME: rename to something else */
-  gboolean (*is_position_tracked)(LogProtoServer *s);
   LogProtoPrepareAction (*prepare)(LogProtoServer *s, GIOCondition *cond, gint *timeout);
   gboolean (*restart_with_state)(LogProtoServer *s, PersistState *state, const gchar *persist_name);
   LogProtoStatus (*fetch)(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read,
@@ -98,6 +98,12 @@ static inline gboolean
 log_proto_server_validate_options(LogProtoServer *self)
 {
   return self->validate_options(self);
+}
+
+static inline AckTrackerType
+log_proto_server_get_ack_tracker_type(LogProtoServer *self)
+{
+  return self->options->ack_tracker_type;
 }
 
 static inline gboolean
@@ -162,15 +168,6 @@ static inline void
 log_proto_server_reset_error(LogProtoServer *s)
 {
   s->status = LPS_SUCCESS;
-}
-
-static inline gboolean
-log_proto_server_is_position_tracked(LogProtoServer *s)
-{
-  if (s->is_position_tracked)
-    return s->is_position_tracked(s);
-
-  return FALSE;
 }
 
 static inline void
