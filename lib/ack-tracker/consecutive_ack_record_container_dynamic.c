@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2002-2019 Balabit
- * Copyright (c) 2019 Laszlo Budai
+ * Copyright (c) 2019 Laszlo Budai <laszlo.budai@outlook.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,39 +24,39 @@
 
 #include "consecutive_ack_record_container.h"
 
-typedef struct _DynamicLateAckRecordContainer
+typedef struct _DynamicConsecutiveAckRecordContainer
 {
-  LateAckRecordContainer super;
+  ConsecutiveAckRecordContainer super;
   GList *head;
   GList *tail;
   gsize size;
-  LateAckRecord *pending;
-} DynamicLateAckRecordContainer;
+  ConsecutiveAckRecord *pending;
+} DynamicConsecutiveAckRecordContainer;
 
 static gboolean
-_is_empty(const LateAckRecordContainer *s)
+_is_empty(const ConsecutiveAckRecordContainer *s)
 {
-  DynamicLateAckRecordContainer *self = (DynamicLateAckRecordContainer *) s;
+  DynamicConsecutiveAckRecordContainer *self = (DynamicConsecutiveAckRecordContainer *) s;
 
   return (!self->head || self->size == 0);
 }
 
-static LateAckRecord *
-_request_pending(LateAckRecordContainer *s)
+static ConsecutiveAckRecord *
+_request_pending(ConsecutiveAckRecordContainer *s)
 {
-  DynamicLateAckRecordContainer *self = (DynamicLateAckRecordContainer *)s;
+  DynamicConsecutiveAckRecordContainer *self = (DynamicConsecutiveAckRecordContainer *)s;
   if (self->pending)
     return self->pending;
 
-  self->pending = g_new0(LateAckRecord, 1);
+  self->pending = g_new0(ConsecutiveAckRecord, 1);
 
   return self->pending;
 }
 
 static void
-_store_pending(LateAckRecordContainer *s)
+_store_pending(ConsecutiveAckRecordContainer *s)
 {
-  DynamicLateAckRecordContainer *self = (DynamicLateAckRecordContainer *) s;
+  DynamicConsecutiveAckRecordContainer *self = (DynamicConsecutiveAckRecordContainer *) s;
 
   if (self->head == NULL)
     {
@@ -76,15 +76,15 @@ _store_pending(LateAckRecordContainer *s)
 static void
 _free_and_destroy_ack_record(gpointer data)
 {
-  LateAckRecord *rec = (LateAckRecord *)data;
-  late_ack_record_destroy(rec);
+  ConsecutiveAckRecord *rec = (ConsecutiveAckRecord *)data;
+  consecutive_ack_record_destroy(rec);
   g_free(rec);
 }
 
 static void
-_drop(LateAckRecordContainer *s, gsize n)
+_drop(ConsecutiveAckRecordContainer *s, gsize n)
 {
-  DynamicLateAckRecordContainer *self = (DynamicLateAckRecordContainer *) s;
+  DynamicConsecutiveAckRecordContainer *self = (DynamicConsecutiveAckRecordContainer *) s;
 
   if (n == self->size)
     {
@@ -105,22 +105,22 @@ _drop(LateAckRecordContainer *s, gsize n)
   g_list_free_full(delete_head, _free_and_destroy_ack_record);
 }
 
-static LateAckRecord *
-_at(const LateAckRecordContainer *s, gsize idx)
+static ConsecutiveAckRecord *
+_at(const ConsecutiveAckRecordContainer *s, gsize idx)
 {
-  DynamicLateAckRecordContainer *self = (DynamicLateAckRecordContainer *) s;
+  DynamicConsecutiveAckRecordContainer *self = (DynamicConsecutiveAckRecordContainer *) s;
 
-  return (LateAckRecord *) g_list_nth(self->head, idx)->data;
+  return (ConsecutiveAckRecord *) g_list_nth(self->head, idx)->data;
 }
 
 static void
-_free(LateAckRecordContainer *s)
+_free(ConsecutiveAckRecordContainer *s)
 {
-  DynamicLateAckRecordContainer *self = (DynamicLateAckRecordContainer *)s;
+  DynamicConsecutiveAckRecordContainer *self = (DynamicConsecutiveAckRecordContainer *)s;
 
   if (self->pending)
     {
-      late_ack_record_destroy(self->pending);
+      consecutive_ack_record_destroy(self->pending);
       g_free(self->pending);
       self->pending = NULL;
     }
@@ -132,9 +132,9 @@ _free(LateAckRecordContainer *s)
 }
 
 static gsize
-_size(const LateAckRecordContainer *s)
+_size(const ConsecutiveAckRecordContainer *s)
 {
-  DynamicLateAckRecordContainer *self = (DynamicLateAckRecordContainer *)s;
+  DynamicConsecutiveAckRecordContainer *self = (DynamicConsecutiveAckRecordContainer *)s;
 
   return self->size;
 }
@@ -142,15 +142,15 @@ _size(const LateAckRecordContainer *s)
 static inline gboolean
 _ack_range_is_continuous(void *data)
 {
-  LateAckRecord *ack_rec = (LateAckRecord *)data;
+  ConsecutiveAckRecord *ack_rec = (ConsecutiveAckRecord *)data;
 
   return ack_rec->acked;
 }
 
 static gsize
-_get_continual_range_length(const LateAckRecordContainer *s)
+_get_continual_range_length(const ConsecutiveAckRecordContainer *s)
 {
-  DynamicLateAckRecordContainer *self = (DynamicLateAckRecordContainer *)s;
+  DynamicConsecutiveAckRecordContainer *self = (DynamicConsecutiveAckRecordContainer *)s;
   guint32 ack_range_length = 0;
 
   for (GList *it = self->head;
@@ -163,10 +163,10 @@ _get_continual_range_length(const LateAckRecordContainer *s)
   return ack_range_length;
 }
 
-LateAckRecordContainer *
-late_ack_record_container_dynamic_new(void)
+ConsecutiveAckRecordContainer *
+consecutive_ack_record_container_dynamic_new(void)
 {
-  DynamicLateAckRecordContainer *self = g_new0(DynamicLateAckRecordContainer, 1);
+  DynamicConsecutiveAckRecordContainer *self = g_new0(DynamicConsecutiveAckRecordContainer, 1);
 
   self->super.is_empty = _is_empty;
   self->super.request_pending = _request_pending;

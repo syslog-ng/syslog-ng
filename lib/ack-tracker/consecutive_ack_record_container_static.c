@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2002-2019 Balabit
- * Copyright (c) 2019 Laszlo Budai
+ * Copyright (c) 2019 Laszlo Budai <laszlo.budai@outlook.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,25 +25,25 @@
 #include "consecutive_ack_record_container.h"
 #include "ringbuffer.h"
 
-typedef struct _StaticLateAckRecordContainer
+typedef struct _StaticConsecutiveAckRecordContainer
 {
-  LateAckRecordContainer super;
+  ConsecutiveAckRecordContainer super;
   RingBuffer ack_records;
-  LateAckRecord *pending;
-} StaticLateAckRecordContainer;
+  ConsecutiveAckRecord *pending;
+} StaticConsecutiveAckRecordContainer;
 
 static gboolean
-_is_empty(const LateAckRecordContainer *s)
+_is_empty(const ConsecutiveAckRecordContainer *s)
 {
-  StaticLateAckRecordContainer *self = (StaticLateAckRecordContainer *)s;
+  StaticConsecutiveAckRecordContainer *self = (StaticConsecutiveAckRecordContainer *)s;
 
   return ring_buffer_is_empty(&self->ack_records);
 }
 
-static LateAckRecord *
-_request_pending(LateAckRecordContainer *s)
+static ConsecutiveAckRecord *
+_request_pending(ConsecutiveAckRecordContainer *s)
 {
-  StaticLateAckRecordContainer *self = (StaticLateAckRecordContainer *)s;
+  StaticConsecutiveAckRecordContainer *self = (StaticConsecutiveAckRecordContainer *)s;
 
   if (self->pending)
     return self->pending;
@@ -54,26 +54,26 @@ _request_pending(LateAckRecordContainer *s)
 }
 
 static void
-_store_pending(LateAckRecordContainer *s)
+_store_pending(ConsecutiveAckRecordContainer *s)
 {
-  StaticLateAckRecordContainer *self = (StaticLateAckRecordContainer *)s;
+  StaticConsecutiveAckRecordContainer *self = (StaticConsecutiveAckRecordContainer *)s;
   g_assert(ring_buffer_push(&self->ack_records) == self->pending);
   self->pending = NULL;
 }
 
 static void
-_drop(LateAckRecordContainer *s, gsize n)
+_drop(ConsecutiveAckRecordContainer *s, gsize n)
 {
-  StaticLateAckRecordContainer *self = (StaticLateAckRecordContainer *)s;
+  StaticConsecutiveAckRecordContainer *self = (StaticConsecutiveAckRecordContainer *)s;
   int i;
-  LateAckRecord *ack_rec;
+  ConsecutiveAckRecord *ack_rec;
 
   for (i = 0; i < n; i++)
     {
-      ack_rec = (LateAckRecord *)ring_buffer_element_at(&self->ack_records, i);
+      ack_rec = (ConsecutiveAckRecord *)ring_buffer_element_at(&self->ack_records, i);
       ack_rec->acked = FALSE;
 
-      late_ack_record_destroy(ack_rec);
+      consecutive_ack_record_destroy(ack_rec);
 
       ack_rec->bookmark.save = NULL;
       ack_rec->bookmark.destroy = NULL;
@@ -81,18 +81,18 @@ _drop(LateAckRecordContainer *s, gsize n)
   ring_buffer_drop(&self->ack_records, n);
 }
 
-static LateAckRecord *
-_at(const LateAckRecordContainer *s, gsize idx)
+static ConsecutiveAckRecord *
+_at(const ConsecutiveAckRecordContainer *s, gsize idx)
 {
-  StaticLateAckRecordContainer *self = (StaticLateAckRecordContainer *)s;
+  StaticConsecutiveAckRecordContainer *self = (StaticConsecutiveAckRecordContainer *)s;
 
   return ring_buffer_element_at(&self->ack_records, idx);
 }
 
 static void
-_free(LateAckRecordContainer *s)
+_free(ConsecutiveAckRecordContainer *s)
 {
-  StaticLateAckRecordContainer *self = (StaticLateAckRecordContainer *)s;
+  StaticConsecutiveAckRecordContainer *self = (StaticConsecutiveAckRecordContainer *)s;
 
   guint32 count = ring_buffer_count(&self->ack_records);
   _drop(s, count);
@@ -102,9 +102,9 @@ _free(LateAckRecordContainer *s)
 }
 
 static gsize
-_size(const LateAckRecordContainer *s)
+_size(const ConsecutiveAckRecordContainer *s)
 {
-  StaticLateAckRecordContainer *self = (StaticLateAckRecordContainer *)s;
+  StaticConsecutiveAckRecordContainer *self = (StaticConsecutiveAckRecordContainer *)s;
 
   return ring_buffer_count(&self->ack_records);
 }
@@ -112,23 +112,23 @@ _size(const LateAckRecordContainer *s)
 static inline gboolean
 _ack_range_is_continuous(void *data)
 {
-  LateAckRecord *ack_rec = (LateAckRecord *)data;
+  ConsecutiveAckRecord *ack_rec = (ConsecutiveAckRecord *)data;
 
   return ack_rec->acked;
 }
 
 static gsize
-_get_continual_range_length(const LateAckRecordContainer *s)
+_get_continual_range_length(const ConsecutiveAckRecordContainer *s)
 {
-  StaticLateAckRecordContainer *self = (StaticLateAckRecordContainer *)s;
+  StaticConsecutiveAckRecordContainer *self = (StaticConsecutiveAckRecordContainer *)s;
 
   return ring_buffer_get_continual_range_length(&self->ack_records, _ack_range_is_continuous);
 }
 
-LateAckRecordContainer *
-late_ack_record_container_static_new(gsize size)
+ConsecutiveAckRecordContainer *
+consecutive_ack_record_container_static_new(gsize size)
 {
-  StaticLateAckRecordContainer *self = g_new0(StaticLateAckRecordContainer, 1);
+  StaticConsecutiveAckRecordContainer *self = g_new0(StaticConsecutiveAckRecordContainer, 1);
 
   self->super.is_empty = _is_empty;
   self->super.request_pending = _request_pending;
@@ -139,7 +139,7 @@ late_ack_record_container_static_new(gsize size)
   self->super.size = _size;
   self->super.get_continual_range_length = _get_continual_range_length;
 
-  ring_buffer_alloc(&self->ack_records, sizeof(LateAckRecord), size);
+  ring_buffer_alloc(&self->ack_records, sizeof(ConsecutiveAckRecord), size);
 
   return &self->super;
 }

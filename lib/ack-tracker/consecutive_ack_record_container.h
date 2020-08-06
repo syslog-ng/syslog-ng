@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2002-2019 Balabit
- * Copyright (c) 2019 Laszlo Budai
+ * Copyright (c) 2019 Laszlo Budai <laszlo.budai@outlook.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,87 +22,87 @@
  *
  */
 
-#ifndef LATE_ACK_RECORD_CONTAINER_H_INCLUDED
-#define LATE_ACK_RECORD_CONTAINER_H_INCLUDED
+#ifndef CONSECUTIVE_ACK_RECORD_CONTAINER_H_INCLUDED
+#define CONSECUTIVE_ACK_RECORD_CONTAINER_H_INCLUDED
 
 #include "ack_tracker.h"
 
-typedef struct _LateAckRecord
+typedef struct _ConsecutiveAckRecord
 {
   AckRecord super;
   gboolean acked;
   Bookmark bookmark;
-} LateAckRecord;
+} ConsecutiveAckRecord;
 
-typedef struct _LateAckRecordContainer LateAckRecordContainer;
+typedef struct _ConsecutiveAckRecordContainer ConsecutiveAckRecordContainer;
 
-struct _LateAckRecordContainer
+struct _ConsecutiveAckRecordContainer
 {
-  gboolean (*is_empty)(const LateAckRecordContainer *s);
-  LateAckRecord *(*request_pending)(LateAckRecordContainer *s);
-  void (*store_pending)(LateAckRecordContainer *s);
-  void (*drop)(LateAckRecordContainer *s, gsize n);
-  LateAckRecord *(*at)(const LateAckRecordContainer *s, gsize idx);
-  void (*free_fn)(LateAckRecordContainer *s);
-  gsize (*size)(const LateAckRecordContainer *s);
-  gsize (*get_continual_range_length)(const LateAckRecordContainer *s);
+  gboolean (*is_empty)(const ConsecutiveAckRecordContainer *s);
+  ConsecutiveAckRecord *(*request_pending)(ConsecutiveAckRecordContainer *s);
+  void (*store_pending)(ConsecutiveAckRecordContainer *s);
+  void (*drop)(ConsecutiveAckRecordContainer *s, gsize n);
+  ConsecutiveAckRecord *(*at)(const ConsecutiveAckRecordContainer *s, gsize idx);
+  void (*free_fn)(ConsecutiveAckRecordContainer *s);
+  gsize (*size)(const ConsecutiveAckRecordContainer *s);
+  gsize (*get_continual_range_length)(const ConsecutiveAckRecordContainer *s);
 };
 
 static inline void
-late_ack_record_destroy(LateAckRecord *self)
+consecutive_ack_record_destroy(ConsecutiveAckRecord *self)
 {
   if (self->bookmark.destroy)
     self->bookmark.destroy(&(self->bookmark));
 }
 
-LateAckRecordContainer *late_ack_record_container_static_new(gsize size);
-LateAckRecordContainer *late_ack_record_container_dynamic_new(void);
+ConsecutiveAckRecordContainer *consecutive_ack_record_container_static_new(gsize size);
+ConsecutiveAckRecordContainer *consecutive_ack_record_container_dynamic_new(void);
 
 static inline gboolean
-late_ack_record_container_is_empty(LateAckRecordContainer *s)
+consecutive_ack_record_container_is_empty(ConsecutiveAckRecordContainer *s)
 {
   return s->is_empty(s);
 }
 
-static inline LateAckRecord *
-late_ack_record_container_request_pending(LateAckRecordContainer *s)
+static inline ConsecutiveAckRecord *
+consecutive_ack_record_container_request_pending(ConsecutiveAckRecordContainer *s)
 {
   return s->request_pending(s);
 }
 
 static inline void
-late_ack_record_container_store_pending(LateAckRecordContainer *s)
+consecutive_ack_record_container_store_pending(ConsecutiveAckRecordContainer *s)
 {
   s->store_pending(s);
 }
 
 static inline gsize
-late_ack_record_container_size(const LateAckRecordContainer *s)
+consecutive_ack_record_container_size(const ConsecutiveAckRecordContainer *s)
 {
   return s->size(s);
 }
 
 static inline void
-late_ack_record_container_drop(LateAckRecordContainer *s, gsize n)
+consecutive_ack_record_container_drop(ConsecutiveAckRecordContainer *s, gsize n)
 {
-  g_assert(n <= late_ack_record_container_size(s));
+  g_assert(n <= consecutive_ack_record_container_size(s));
   s->drop(s, n);
 }
 
-static inline LateAckRecord *
-late_ack_record_container_at(const LateAckRecordContainer *s, gsize idx)
+static inline ConsecutiveAckRecord *
+consecutive_ack_record_container_at(const ConsecutiveAckRecordContainer *s, gsize idx)
 {
   return s->at(s, idx);
 }
 
 static inline void
-late_ack_record_container_free(LateAckRecordContainer *s)
+consecutive_ack_record_container_free(ConsecutiveAckRecordContainer *s)
 {
   s->free_fn(s);
 }
 
 static inline gsize
-late_ack_record_container_get_continual_range_length(const LateAckRecordContainer *s)
+consecutive_ack_record_container_get_continual_range_length(const ConsecutiveAckRecordContainer *s)
 {
   return s->get_continual_range_length(s);
 }
