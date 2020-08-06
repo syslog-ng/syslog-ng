@@ -451,10 +451,7 @@ static inline void
 _create_ack_tracker_if_not_exists(LogSource *self)
 {
   if (!self->ack_tracker)
-    {
-      AckTrackerType ack_tracker_type = self->pos_tracked ? ACK_CONSECUTIVE : ACK_INSTANT_BOOKMARKLESS;
-      self->ack_tracker = ack_tracker_new(self, ack_tracker_type);
-    }
+    self->ack_tracker = ack_tracker_new(self, self->ack_tracker_type);
 }
 
 gboolean
@@ -691,7 +688,7 @@ log_source_set_options(LogSource *self, LogSourceOptions *options,
     g_free(self->stats_instance);
   self->stats_instance = stats_instance ? g_strdup(stats_instance): NULL;
   self->threaded = threaded;
-  self->pos_tracked = pos_tracked;
+  self->ack_tracker_type = pos_tracked ? ACK_CONSECUTIVE : ACK_INSTANT_BOOKMARKLESS;
 
   log_pipe_detach_expr_node(&self->super);
   log_pipe_attach_expr_node(&self->super, expr_node);

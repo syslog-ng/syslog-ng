@@ -29,6 +29,7 @@
 #include "stats/stats-registry.h"
 #include "window-size-counter.h"
 #include "dynamic-window.h"
+#include "ack-tracker/ack_tracker_types.h"
 
 typedef struct _LogSourceOptions
 {
@@ -66,7 +67,6 @@ struct _LogSource
   LogPipe super;
   LogSourceOptions *options;
   gboolean threaded;
-  gboolean pos_tracked;
   gchar *name;
   gchar *stats_id;
   gchar *stats_instance;
@@ -88,6 +88,7 @@ struct _LogSource
   guint32 ack_count;
   glong window_full_sleep_nsec;
   struct timespec last_ack_rate_time;
+  AckTrackerType ack_tracker_type;
   AckTracker *ack_tracker;
 
   void (*wakeup)(LogSource *s);
