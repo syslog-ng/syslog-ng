@@ -31,6 +31,8 @@ ack_tracker_new(LogSource *source, AckTrackerType type)
 {
   switch (type)
     {
+    case ACK_INSTANT:
+      return instant_ack_tracker_new(source);
     case ACK_INSTANT_BOOKMARKLESS:
       return instant_ack_tracker_bookmarkless_new(source);
     case ACK_CONSECUTIVE:
