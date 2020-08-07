@@ -22,7 +22,7 @@
  *
  */
 
-#include "ack_tracker.h"
+#include "instant_ack_tracker.h"
 #include "bookmark.h"
 #include "syslog-ng.h"
 
@@ -34,32 +34,32 @@ typedef struct _InstantAckRecord
   Bookmark bookmark;
 } InstantAckRecord;
 
-typedef struct _InstantAckTracker
+typedef struct _InstantAckTrackerBookmarkless
 {
   AckTracker super;
 
   InstantAckRecord ack_record_storage;
-} InstantAckTracker;
+} InstantAckTrackerBookmarkless;
 
 static Bookmark *
-instant_ack_tracker_request_bookmark(AckTracker *s)
+_request_bookmark(AckTracker *s)
 {
-  InstantAckTracker *self = (InstantAckTracker *)s;
+  InstantAckTrackerBookmarkless *self = (InstantAckTrackerBookmarkless *)s;
   return &(self->ack_record_storage.bookmark);
 }
 
 static void
-instant_ack_tracker_track_msg(AckTracker *s, LogMessage *msg)
+_track_msg(AckTracker *s, LogMessage *msg)
 {
-  InstantAckTracker *self = (InstantAckTracker *)s;
+  InstantAckTrackerBookmarkless *self = (InstantAckTrackerBookmarkless *)s;
   log_pipe_ref((LogPipe *)self->super.source);
   msg->ack_record = (AckRecord *)(&self->ack_record_storage);
 }
 
 static void
-instant_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type)
+_manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type)
 {
-  InstantAckTracker *self = (InstantAckTracker *)s;
+  InstantAckTrackerBookmarkless *self = (InstantAckTrackerBookmarkless *)s;
 
   log_source_flow_control_adjust(self->super.source, 1);
 
@@ -71,24 +71,24 @@ instant_ack_tracker_manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_t
 }
 
 static void
-instant_ack_tracker_free(AckTracker *s)
+_free(AckTracker *s)
 {
-  InstantAckTracker *self = (InstantAckTracker *)s;
+  InstantAckTrackerBookmarkless *self = (InstantAckTrackerBookmarkless *)s;
 
   g_free(self);
 }
 
 static void
-_setup_callbacks(InstantAckTracker *self)
+_setup_callbacks(InstantAckTrackerBookmarkless *self)
 {
-  self->super.request_bookmark = instant_ack_tracker_request_bookmark;
-  self->super.track_msg = instant_ack_tracker_track_msg;
-  self->super.manage_msg_ack = instant_ack_tracker_manage_msg_ack;
-  self->super.free_fn = instant_ack_tracker_free;
+  self->super.request_bookmark = _request_bookmark;
+  self->super.track_msg = _track_msg;
+  self->super.manage_msg_ack = _manage_msg_ack;
+  self->super.free_fn = _free;
 }
 
 static void
-instant_ack_tracker_init_instance(InstantAckTracker *self, LogSource *source)
+_init_instance(InstantAckTrackerBookmarkless *self, LogSource *source)
 {
   self->super.source = source;
   source->ack_tracker = (AckTracker *)self;
@@ -97,11 +97,11 @@ instant_ack_tracker_init_instance(InstantAckTracker *self, LogSource *source)
 }
 
 AckTracker *
-instant_ack_tracker_new(LogSource *source)
+instant_ack_tracker_bookmarkless_new(LogSource *source)
 {
-  InstantAckTracker *self = (InstantAckTracker *)g_new0(InstantAckTracker, 1);
+  InstantAckTrackerBookmarkless *self = (InstantAckTrackerBookmarkless *)g_new0(InstantAckTrackerBookmarkless, 1);
 
-  instant_ack_tracker_init_instance(self, source);
+  _init_instance(self, source);
 
   return (AckTracker *)self;
 }
