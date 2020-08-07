@@ -32,3 +32,10 @@ add_unit_test(LIBTEST CRITERION
   DEPENDS mod-python "${PYTHON_LIBRARIES}")
 
 set_property(TEST test_python_bookmark APPEND PROPERTY ENVIRONMENT "PYTHONMALLOC=malloc_debug")
+
+add_unit_test(LIBTEST CRITERION
+  TARGET test_python_ack_tracker
+  INCLUDES "${PYTHON_INCLUDE_DIR}" "${PYTHON_INCLUDE_DIRS}"
+  DEPENDS syslogformat mod-python "${PYTHON_LIBRARIES}")
+
+set_property(TEST test_python_ack_tracker APPEND PROPERTY ENVIRONMENT "PYTHONMALLOC=malloc_debug")
