@@ -333,6 +333,12 @@ _compile_pcre_regexp(LogMatcherPcreRe *self, const gchar *re, GError **error)
           return FALSE;
         }
     }
+  if (self->super.flags & LMF_DUPNAMES)
+    {
+      if (!PCRE_DUPNAMES)
+        msg_warning("syslog-ng was compiled against an old PCRE which doesn't support the 'dupnames' flag");
+      flags |= PCRE_DUPNAMES;
+    }
 
   /* complile the regexp */
   self->pattern = pcre_compile2(re, flags, &rc, &errptr, &erroffset, NULL);
@@ -743,6 +749,7 @@ CfgFlagHandler log_matcher_flag_handlers[] =
   { "substring",       CFH_SET, offsetof(LogMatcherOptions, flags), LMF_SUBSTRING     },
   { "prefix",          CFH_SET, offsetof(LogMatcherOptions, flags), LMF_PREFIX        },
   { "disable-jit",     CFH_SET, offsetof(LogMatcherOptions, flags), LMF_DISABLE_JIT   },
+  { "dupnames",        CFH_SET, offsetof(LogMatcherOptions, flags), LMF_DUPNAMES      },
 
   { NULL },
 };
