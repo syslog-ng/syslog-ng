@@ -59,6 +59,15 @@
 
 CfgArgs *last_module_args = NULL;
 
+#if SYSLOG_NG_BISON_MAJOR == 3 && SYSLOG_NG_BISON_MINOR <= 5
+
+/* old bison versions (e.g. 3.5.1 and below) when using api.prefix, didn't
+ * generate the PRAGMA_EMPTY enum, but had YYEMPTY, so let's define
+ * PRAGMA_EMPTY to YYEMPTY, so the grammar itself is able to use the new
+ * style */
+#define PRAGMA_EMPTY YYEMPTY
+#endif
+
 }
 
 %type   <cptr> requires_message
@@ -68,7 +77,7 @@ CfgArgs *last_module_args = NULL;
 
 start
         : { PRAGMA_BEGIN(); }
-          stmt                                  { if (yychar != YYEMPTY) { cfg_lexer_unput_token(lexer, &yylval); } PRAGMA_END(); YYACCEPT; }
+          stmt                                  { if (yychar != PRAGMA_EMPTY) { cfg_lexer_unput_token(lexer, &yylval); } PRAGMA_END(); YYACCEPT; }
 
 stmt
 	: stmt_without_eol LL_EOL

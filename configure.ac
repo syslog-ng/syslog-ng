@@ -427,6 +427,8 @@ if echo "$YACC" | grep -q bison; then
 	bison_version_major=`echo $bison_version | cut -d. -f1`
 	bison_version_minor=`echo $bison_version | cut -d. -f2`
 	bison_version_patch=`echo $bison_version | cut -d. -f3`
+	AC_DEFINE_UNQUOTED(BISON_MAJOR, ${bison_version_major}, "bison version major")
+	AC_DEFINE_UNQUOTED(BISON_MINOR, ${bison_version_minor}, "bison version minor)
 	if ([[ "$bison_version_major" -gt 3 ]]) ||
 	   ([[ "$bison_version_major" -eq 3 ]] && [[ "$bison_version_minor" -gt 4 ]]) ||
 	   ([[ "$bison_version_major" -eq 3 ]] && [[ "$bison_version_minor" -eq 4 ]] && [[ "$bison_version_patch" -ge 2 ]]); then
