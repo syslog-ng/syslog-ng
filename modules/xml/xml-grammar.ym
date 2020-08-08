@@ -39,7 +39,7 @@ XMLScannerOptions *last_xml_scanner_options;
 
 }
 
-%name-prefix "xml_"
+%define api.prefix {xml_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

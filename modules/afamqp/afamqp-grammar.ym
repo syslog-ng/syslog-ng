@@ -34,7 +34,7 @@
 
 }
 
-%name-prefix "afamqp_"
+%define api.prefix {afamqp_}
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {LogDriver **instance}

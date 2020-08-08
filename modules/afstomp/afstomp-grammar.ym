@@ -37,7 +37,7 @@
 
 }
 
-%name-prefix "afstomp_"
+%define api.prefix {afstomp_}
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {LogDriver **instance}

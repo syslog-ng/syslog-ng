@@ -29,6 +29,6 @@
 
 extern CfgParser pseudofile_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(pseudofile_, LogDriver **)
+CFG_PARSER_DECLARE_LEXER_BINDING(pseudofile_, PSEUDOFILE_, LogDriver **)
 
 #endif

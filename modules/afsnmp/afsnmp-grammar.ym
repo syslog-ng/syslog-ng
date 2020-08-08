@@ -40,7 +40,7 @@
 
 }
 
-%name-prefix "afsnmp_"
+%define api.prefix {afsnmp_}
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {void **instance}

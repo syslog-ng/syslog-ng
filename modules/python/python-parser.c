@@ -55,4 +55,4 @@ CfgParser python_parser =
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(python_, void **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(python_, PYTHON_, void **)

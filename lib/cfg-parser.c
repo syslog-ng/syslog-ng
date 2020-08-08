@@ -196,7 +196,7 @@ CfgParser main_parser =
   .parse = main_parse,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(main_, gpointer *)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(main_, MAIN_, gpointer *)
 
 /* display CONTEXT lines before and after the offending line */
 #define CONTEXT 5

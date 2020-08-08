@@ -48,4 +48,4 @@ CfgParser json_parser_parser =
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(json_parser_, LogParser **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(json_parser_, JSON_PARSER_, LogParser **)

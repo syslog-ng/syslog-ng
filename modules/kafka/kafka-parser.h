@@ -32,6 +32,6 @@
 
 extern CfgParser kafka_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(kafka_, LogDriver **)
+CFG_PARSER_DECLARE_LEXER_BINDING(kafka_, KAFKA_, LogDriver **)
 
 #endif

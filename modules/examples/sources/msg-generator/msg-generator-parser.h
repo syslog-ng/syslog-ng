@@ -30,7 +30,7 @@
 
 extern CfgParser msg_generator_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(msg_generator_, LogDriver **)
+CFG_PARSER_DECLARE_LEXER_BINDING(msg_generator_, MSG_GENERATOR_, LogDriver **)
 
 #endif
 

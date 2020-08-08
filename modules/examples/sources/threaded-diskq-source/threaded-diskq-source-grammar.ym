@@ -41,7 +41,7 @@
 
 }
 
-%name-prefix "threaded_diskq_source_"
+%define api.prefix {threaded_diskq_source_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

@@ -35,7 +35,7 @@
 
 }
 
-%name-prefix "syslog_parser_"
+%define api.prefix {syslog_parser_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

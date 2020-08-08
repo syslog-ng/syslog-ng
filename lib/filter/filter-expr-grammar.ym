@@ -49,7 +49,7 @@ FilterExprNode *last_filter_expr;
 
 }
 
-%name-prefix "filter_expr_"
+%define api.prefix {filter_expr_}
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {FilterExprNode **result}

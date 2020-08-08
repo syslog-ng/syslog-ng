@@ -32,6 +32,6 @@
 
 extern CfgParser python_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(python_, void **)
+CFG_PARSER_DECLARE_LEXER_BINDING(python_, PYTHON_, void **)
 
 #endif

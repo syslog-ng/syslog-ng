@@ -71,7 +71,7 @@ gboolean cfg_process_yesno(const gchar *yesno);
 
 extern CfgParser main_parser;
 
-#define CFG_PARSER_DECLARE_LEXER_BINDING(parser_prefix, root_type)             \
+#define CFG_PARSER_DECLARE_LEXER_BINDING(parser_prefix, PARSER_PREFIX, root_type)             \
     int                                                                        \
     parser_prefix ## lex(YYSTYPE *yylval, YYLTYPE *yylloc, CfgLexer *lexer);   \
                                                                                \
@@ -79,7 +79,7 @@ extern CfgParser main_parser;
     parser_prefix ## error(YYLTYPE *yylloc, CfgLexer *lexer, root_type instance, gpointer arg, const char *msg);
 
 
-#define CFG_PARSER_IMPLEMENT_LEXER_BINDING(parser_prefix, root_type)          \
+#define CFG_PARSER_IMPLEMENT_LEXER_BINDING(parser_prefix, PARSER_PREFIX, root_type)          \
     int                                                                       \
     parser_prefix ## lex(YYSTYPE *yylval, YYLTYPE *yylloc, CfgLexer *lexer)   \
     {                                                                         \
@@ -100,6 +100,6 @@ extern CfgParser main_parser;
 void report_syntax_error(CfgLexer *lexer, YYLTYPE *yylloc, const char *what, const char *msg,
                          gboolean in_main_grammar);
 
-CFG_PARSER_DECLARE_LEXER_BINDING(main_, gpointer *)
+CFG_PARSER_DECLARE_LEXER_BINDING(main_, MAIN_, gpointer *)
 
 #endif

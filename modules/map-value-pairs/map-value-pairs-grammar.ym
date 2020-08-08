@@ -35,7 +35,7 @@
 #include "plugin.h"
 }
 
-%name-prefix "map_value_pairs_"
+%define api.prefix {map_value_pairs_}
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {LogParser **instance}

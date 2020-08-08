@@ -46,4 +46,4 @@ CfgParser tags_parser_parser =
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(tags_parser_, LogParser **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(tags_parser_, TAGS_PARSER_, LogParser **)

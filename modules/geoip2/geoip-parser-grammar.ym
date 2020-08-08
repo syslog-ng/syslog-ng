@@ -34,7 +34,7 @@
 
 }
 
-%name-prefix "geoip2_parser_"
+%define api.prefix {geoip2_parser_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

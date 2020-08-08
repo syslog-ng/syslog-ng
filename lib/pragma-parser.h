@@ -31,6 +31,6 @@ extern CfgParser pragma_parser;
 
 guint process_version_string(gchar *value);
 
-CFG_PARSER_DECLARE_LEXER_BINDING(pragma_, gpointer *)
+CFG_PARSER_DECLARE_LEXER_BINDING(pragma_, PRAGMA_, gpointer *)
 
 #endif

@@ -39,7 +39,7 @@
 
 }
 
-%name-prefix "openbsd_"
+%define api.prefix {openbsd_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

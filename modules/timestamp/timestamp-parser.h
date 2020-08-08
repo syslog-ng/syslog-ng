@@ -29,6 +29,6 @@
 
 extern CfgParser timestamp_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(timestamp_, gpointer *)
+CFG_PARSER_DECLARE_LEXER_BINDING(timestamp_, TIMESTAMP_, gpointer *)
 
 #endif

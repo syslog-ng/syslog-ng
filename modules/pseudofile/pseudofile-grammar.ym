@@ -39,7 +39,7 @@ extern LogDriver *last_driver;
 
 }
 
-%name-prefix "pseudofile_"
+%define api.prefix {pseudofile_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

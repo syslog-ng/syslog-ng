@@ -37,7 +37,7 @@
 
 }
 
-%name-prefix "afsql_"
+%define api.prefix {afsql_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

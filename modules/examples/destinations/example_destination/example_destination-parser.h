@@ -28,6 +28,6 @@
 
 extern CfgParser example_destination_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(example_destination_, LogDriver **)
+CFG_PARSER_DECLARE_LEXER_BINDING(example_destination_, EXAMPLE_DESTINATION_, LogDriver **)
 
 #endif

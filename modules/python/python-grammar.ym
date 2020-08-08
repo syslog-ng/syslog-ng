@@ -46,7 +46,7 @@ PythonHttpHeaderPlugin *last_header;
 
 }
 
-%name-prefix "python_"
+%define api.prefix {python_}
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {void **instance}

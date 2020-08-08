@@ -28,6 +28,6 @@
 
 extern CfgParser json_parser_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(json_parser_, LogParser **)
+CFG_PARSER_DECLARE_LEXER_BINDING(json_parser_, JSON_PARSER_, LogParser **)
 
 #endif

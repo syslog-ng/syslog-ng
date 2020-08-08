@@ -33,7 +33,7 @@
 #include "plugin.h"
 }
 
-%name-prefix "redis_"
+%define api.prefix {redis_}
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {LogDriver **instance}

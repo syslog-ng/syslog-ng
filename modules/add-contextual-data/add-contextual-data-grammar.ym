@@ -38,7 +38,7 @@
 }
 
 
-%name-prefix "add_contextual_data_"
+%define api.prefix {add_contextual_data_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

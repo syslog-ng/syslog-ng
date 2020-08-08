@@ -37,7 +37,7 @@
 
 }
 
-%name-prefix "parser_expr_"
+%define api.prefix {parser_expr_}
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {LogExprNode **result}

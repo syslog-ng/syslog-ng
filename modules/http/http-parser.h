@@ -28,7 +28,7 @@
 
 extern CfgParser http_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(http_, LogDriver **)
+CFG_PARSER_DECLARE_LEXER_BINDING(http_, HTTP_, LogDriver **)
 
 #endif
 

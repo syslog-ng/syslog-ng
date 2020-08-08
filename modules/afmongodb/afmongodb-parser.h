@@ -30,6 +30,6 @@
 
 extern CfgParser afmongodb_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(afmongodb_, LogDriver **)
+CFG_PARSER_DECLARE_LEXER_BINDING(afmongodb_, AFMONGODB_, LogDriver **)
 
 #endif

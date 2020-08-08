@@ -41,7 +41,7 @@ JournalReaderOptions *last_journal_reader_options;
 
 }
 
-%name-prefix "systemd_journal_"
+%define api.prefix {systemd_journal_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

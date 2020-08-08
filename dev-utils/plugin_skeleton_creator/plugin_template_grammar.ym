@@ -37,7 +37,7 @@
 
 }
 
-%name-prefix "@PLUGIN_NAME_US@_"
+%define api.prefix {@PLUGIN_NAME_US@_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

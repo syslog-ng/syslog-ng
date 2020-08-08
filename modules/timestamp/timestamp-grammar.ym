@@ -40,7 +40,7 @@
 
 }
 
-%name-prefix "timestamp_"
+%define api.prefix {timestamp_}
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {gpointer *instance}

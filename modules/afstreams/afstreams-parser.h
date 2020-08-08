@@ -29,6 +29,6 @@
 
 extern CfgParser afstreams_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(afstreams_, LogDriver **)
+CFG_PARSER_DECLARE_LEXER_BINDING(afstreams_, AFSTREAMS_, LogDriver **)
 
 #endif

@@ -28,6 +28,6 @@
 
 extern CfgParser geoip2_parser_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(geoip2_parser_, LogParser **)
+CFG_PARSER_DECLARE_LEXER_BINDING(geoip2_parser_, GEOIP2_PARSER_, LogParser **)
 
 #endif

@@ -34,7 +34,7 @@
 #include "plugin.h"
 }
 
-%name-prefix "example_destination_"
+%define api.prefix {example_destination_}
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {LogDriver **instance}

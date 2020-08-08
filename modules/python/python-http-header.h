@@ -34,5 +34,4 @@ void python_http_header_set_class(PythonHttpHeaderPlugin *self, gchar *class);
 void python_http_header_set_option(PythonHttpHeaderPlugin *self, gchar *key, gchar *value);
 void python_http_header_set_mark_errors_as_critical(PythonHttpHeaderPlugin *self, gboolean enable);
 
-
 #endif

@@ -47,4 +47,4 @@ CfgParser geoip2_parser_parser =
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(geoip2_parser_, LogParser **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(geoip2_parser_, GEOIP2_PARSER_, LogParser **)

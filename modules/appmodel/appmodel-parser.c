@@ -46,4 +46,4 @@ CfgParser appmodel_parser =
   .cleanup = NULL,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(appmodel_, gpointer *)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(appmodel_, APPMODEL_, gpointer *)

@@ -53,4 +53,4 @@ CfgParser diskq_parser =
 
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(diskq_, LogDriverPlugin **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(diskq_, DISKQ_, LogDriverPlugin **)

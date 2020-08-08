@@ -35,7 +35,7 @@
 
 }
 
-%name-prefix "pragma_"
+%define api.prefix {pragma_}
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {gpointer *result}

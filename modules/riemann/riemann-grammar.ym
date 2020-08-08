@@ -36,7 +36,7 @@
 #include "riemann/event.h"
 }
 
-%name-prefix "riemann_"
+%define api.prefix {riemann_}
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {LogDriver **instance}

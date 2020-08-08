@@ -29,6 +29,6 @@
 
 extern CfgParser riemann_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(riemann_, LogDriver **)
+CFG_PARSER_DECLARE_LEXER_BINDING(riemann_, RIEMANN_, LogDriver **)
 
 #endif

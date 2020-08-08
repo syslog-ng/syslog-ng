@@ -46,4 +46,4 @@ CfgParser example_destination_parser =
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(example_destination_, LogDriver **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(example_destination_, EXAMPLE_DESTINATION_, LogDriver **)

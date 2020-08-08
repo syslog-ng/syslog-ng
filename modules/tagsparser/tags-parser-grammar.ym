@@ -37,7 +37,7 @@
 
 }
 
-%name-prefix "tags_parser_"
+%define api.prefix {tags_parser_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

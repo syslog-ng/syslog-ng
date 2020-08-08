@@ -46,4 +46,4 @@ CfgParser java_parser =
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(java_, LogDriver **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(java_, JAVA_, LogDriver **)

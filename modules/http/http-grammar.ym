@@ -41,7 +41,7 @@ HttpResponseHandler last_response_handler;
 
 }
 
-%name-prefix "http_"
+%define api.prefix {http_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

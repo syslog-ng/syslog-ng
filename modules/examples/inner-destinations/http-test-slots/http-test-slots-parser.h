@@ -29,6 +29,6 @@
 
 extern CfgParser http_test_slots_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(http_test_slots_, LogDriverPlugin **);
+CFG_PARSER_DECLARE_LEXER_BINDING(http_test_slots_, HTTP_TEST_SLOTS_, LogDriverPlugin **);
 
 #endif

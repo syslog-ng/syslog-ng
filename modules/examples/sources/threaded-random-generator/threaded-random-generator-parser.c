@@ -49,4 +49,4 @@ CfgParser threaded_random_generator_parser =
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(threaded_random_generator_, LogDriver **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(threaded_random_generator_, THREADED_RANDOM_GENERATOR_, LogDriver **)

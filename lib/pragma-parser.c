@@ -86,4 +86,4 @@ CfgParser pragma_parser =
   .parse = pragma_parse,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(pragma_, gpointer *)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(pragma_, PRAGMA_, gpointer *)

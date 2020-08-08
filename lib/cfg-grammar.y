@@ -37,7 +37,6 @@
 #include "cfg-lexer.h"
 #include "cfg-grammar-internal.h"
 
-
 /* uses struct declarations instead of the typedefs to avoid having to
  * include logreader/logwriter/driver.h, which defines the typedefs.  This
  * is to avoid including unnecessary dependencies into grammars that are not
@@ -45,7 +44,7 @@
 
 }
 
-%name-prefix "main_"
+%define api.prefix {main_}
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {gpointer *dummy}
@@ -56,8 +55,9 @@
 %require "3.4.2"
 %locations
 %define api.pure
-%pure-parser
-%error-verbose
+%define api.value.type {YYSTYPE}
+%define api.location.type {YYLTYPE}
+%define parse.error verbose
 
 %code {
 

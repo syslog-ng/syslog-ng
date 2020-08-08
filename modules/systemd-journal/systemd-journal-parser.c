@@ -49,4 +49,4 @@ CfgParser systemd_journal_parser =
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(systemd_journal_, LogDriver **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(systemd_journal_, SYSTEMD_JOURNAL_, LogDriver **)

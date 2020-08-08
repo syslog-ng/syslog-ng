@@ -30,6 +30,6 @@
 
 extern CfgParser afstomp_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(afstomp_, LogDriver **)
+CFG_PARSER_DECLARE_LEXER_BINDING(afstomp_, AFSTOMP_, LogDriver **)
 
 #endif

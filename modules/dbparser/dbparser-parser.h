@@ -29,6 +29,6 @@
 
 extern CfgParser dbparser_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(dbparser_, LogParser **)
+CFG_PARSER_DECLARE_LEXER_BINDING(dbparser_, DBPARSER_, LogParser **)
 
 #endif

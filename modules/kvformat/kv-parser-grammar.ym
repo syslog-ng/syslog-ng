@@ -35,7 +35,7 @@
 
 }
 
-%name-prefix "kv_parser_"
+%define api.prefix {kv_parser_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

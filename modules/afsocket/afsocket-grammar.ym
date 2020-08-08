@@ -116,7 +116,7 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 
 }
 
-%name-prefix "afsocket_"
+%define api.prefix {afsocket_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

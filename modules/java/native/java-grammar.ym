@@ -37,7 +37,7 @@
 
 }
 
-%name-prefix "java_"
+%define api.prefix {java_}
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {LogDriver **instance}

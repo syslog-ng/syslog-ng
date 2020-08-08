@@ -47,7 +47,7 @@
 
 }
 
-%name-prefix "rewrite_expr_"
+%define api.prefix {rewrite_expr_}
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {LogExprNode **result}

@@ -68,7 +68,7 @@ affile_grammar_set_wildcard_file_source_driver(WildcardSourceDriver *sd)
 
 }
 
-%name-prefix "affile_"
+%define api.prefix {affile_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

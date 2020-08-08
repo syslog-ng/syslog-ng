@@ -37,7 +37,7 @@
 
 }
 
-%name-prefix "csvparser_"
+%define api.prefix {csvparser_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

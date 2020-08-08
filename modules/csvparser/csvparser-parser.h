@@ -29,6 +29,6 @@
 
 extern CfgParser csvparser_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(csvparser_, LogParser **)
+CFG_PARSER_DECLARE_LEXER_BINDING(csvparser_, CSVPARSER_, LogParser **)
 
 #endif

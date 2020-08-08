@@ -39,7 +39,7 @@
 
 }
 
-%name-prefix "kafka_"
+%define api.prefix {kafka_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

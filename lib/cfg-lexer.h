@@ -42,7 +42,6 @@ typedef struct _CfgIncludeLevel CfgIncludeLevel;
 typedef struct _CfgTokenBlock CfgTokenBlock;
 
 /* the location type to carry location information from the lexer to the grammar */
-#define YYLTYPE YYLTYPE
 typedef struct YYLTYPE
 {
   int first_line;
@@ -51,7 +50,6 @@ typedef struct YYLTYPE
   int last_column;
   CfgIncludeLevel *level;
 } YYLTYPE;
-#define YYLTYPE_IS_TRIVIAL 1
 
 /* symbol type that carries token related information to the grammar */
 typedef struct YYSTYPE
@@ -68,8 +66,6 @@ typedef struct YYSTYPE
     gpointer node;
   };
 } YYSTYPE;
-#define YYSTYPE_IS_TRIVIAL 1
-#define YYSTYPE_IS_DECLARED 1
 
 #define KWS_NORMAL        0
 #define KWS_OBSOLETE      1
