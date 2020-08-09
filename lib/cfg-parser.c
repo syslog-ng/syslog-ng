@@ -270,14 +270,15 @@ _report_file_location(const gchar *filename, YYLTYPE *yylloc)
 {
   FILE *f;
   gint lineno = 0;
-  gchar buf[1024];
+  gsize buflen = 65520;
+  gchar *buf = g_malloc(buflen);
   GPtrArray *context = g_ptr_array_new();
   gint error_index = 0;
 
   f = fopen(filename, "r");
   if (f)
     {
-      while (fgets(buf, sizeof(buf), f))
+      while (fgets(buf, buflen, f))
         {
           lineno++;
           if (lineno > (gint) yylloc->first_line + CONTEXT)
@@ -297,6 +298,7 @@ _report_file_location(const gchar *filename, YYLTYPE *yylloc)
   _print_underlined_source_block(yylloc, (gchar **) context->pdata, error_index);
 
 exit:
+  g_free(buf);
   g_ptr_array_foreach(context, (GFunc) g_free, NULL);
   g_ptr_array_free(context, TRUE);
 }
