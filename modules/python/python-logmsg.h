@@ -31,6 +31,7 @@ typedef struct _PyLogMessage
 {
   PyObject_HEAD
   LogMessage *msg;
+  PyObject *bookmark_data;
 } PyLogMessage;
 
 extern PyTypeObject py_log_message_type;
