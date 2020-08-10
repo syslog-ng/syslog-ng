@@ -167,7 +167,7 @@ _query_counter_hash(const gchar *key_str)
       if (_is_pattern_matches_key(pattern, key))
         {
           StatsCounterItem *counter = (StatsCounterItem *) value;
-          counters = g_list_append(counters, counter);
+          counters = g_list_prepend(counters, counter);
 
           if (single_match)
             break;
@@ -176,7 +176,7 @@ _query_counter_hash(const gchar *key_str)
   g_static_mutex_unlock(&stats_query_mutex);
 
   g_pattern_spec_free(pattern);
-  return counters;
+  return g_list_reverse(counters);
 }
 
 static GList *
@@ -210,10 +210,10 @@ _get_aggregated_counters_from_views(GList *views)
         continue;
 
       view->aggregate(counters, &view->counter);
-      aggregated_counters = g_list_append(aggregated_counters, view->counter);
+      aggregated_counters = g_list_prepend(aggregated_counters, view->counter);
       g_list_free(counters);
     }
-  return aggregated_counters;
+  return g_list_reverse(aggregated_counters);
 }
 
 static GList *
@@ -234,7 +234,7 @@ _get_views(const gchar *filter)
       if (_is_pattern_matches_key(pattern, key))
         {
           ViewRecord *view = (ViewRecord *) value;
-          views = g_list_append(views, view);
+          views = g_list_prepend(views, view);
 
           if (single_match)
             break;
@@ -243,7 +243,7 @@ _get_views(const gchar *filter)
   g_static_mutex_unlock(&stats_query_mutex);
 
   g_pattern_spec_free(pattern);
-  return views;
+  return g_list_reverse(views);
 }
 
 static GList *
