@@ -336,9 +336,6 @@ AC_ARG_WITH(python2-home,
               [  --with-python2-home=path Use path as a hard-coded Python home directory that can not be overwritten by the PYTHONHOME environment variable],
               python2_home_dir=$with_python2_home)
 
-AC_ARG_WITH(nosetests,
-              [  --with-nosetests=ABSOLUTE_PATH    Specify nosetests location])
-
 AC_ARG_WITH(pylint,
               [  --with-pylint=ABSOLUTE_PATH    Specify pylint location])
 
@@ -1460,23 +1457,8 @@ else
 fi
 
 dnl ***************************************************************************
-dnl nosetests, pylint
+dnl pylint
 dnl ***************************************************************************
-
-if test "x$with_nosetests" != "x"; then
-    NOSETESTS=$with_nosetests
-else
-    if test "$python_found" = "yes"; then
-      if test "$python_version" = "3"; then
-          AC_CHECK_PROG(NOSETESTS, nosetests3, nosetests3)
-          if test "x$NOSETESTS" == "x"; then
-            AC_CHECK_PROG(NOSETESTS, nosetests, nosetests)
-          fi
-      else
-          AC_CHECK_PROG(NOSETESTS, nosetests, nosetests)
-      fi
-    fi
-fi
 
 if test "x$with_pylint" != "x"; then
     PYLINT=$with_pylint
@@ -1905,11 +1887,9 @@ AM_CONDITIONAL([HAVE_INOTIFY], [test x$ac_cv_func_inotify_init = xyes])
 AM_CONDITIONAL([HAVE_GETRANDOM], [test x$ac_cv_func_getrandom = xyes])
 AM_CONDITIONAL([HAVE_FMEMOPEN], [test x$ac_cv_func_fmemopen = xyes])
 AM_CONDITIONAL(ENABLE_IPV6, [test $enable_ipv6 = yes])
-AM_CONDITIONAL(NOSETESTS, [test "x$NOSETESTS" != "x"])
 AM_CONDITIONAL(PYLINT, [test "x$PYLINT" != "x"])
 
 
-AC_SUBST(NOSETESTS)
 AC_SUBST(PYLINT)
 AC_SUBST(timezonedir)
 AC_SUBST(pidfiledir)

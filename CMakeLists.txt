@@ -240,21 +240,7 @@ endif ()
 
 MESSAGE(STATUS "Detected pythonlib version: ${PYTHONLIBS_VERSION_STRING}")
 
-set (NOSETESTS "" CACHE STRING "nosetests binary")
 set (PYLINT "" CACHE STRING "pylint binary")
-
-if (NOSETESTS)
-  set(NOSETESTS_BIN ${NOSETESTS})
-else ()
-  if (PYTHON_VERSION STREQUAL "3")
-    find_program(NOSETESTS_BIN "nosetests3")
-      if (NOT NOSETESTS_BIN)
-        find_program(NOSETESTS_BIN "nosetests")
-      endif()
-  else ()
-    find_program(NOSETESTS_BIN "nosetests")
-  endif ()
-endif()
 
 if (PYLINT)
   set(PYLINT_BIN ${PYLINT})

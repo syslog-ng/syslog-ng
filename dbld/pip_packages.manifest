@@ -1,5 +1,4 @@
 # pip packages for successful run unit tests
-nose                    [centos, fedora, debian, ubuntu, devshell]
 ply                     [centos, fedora, debian, ubuntu, devshell]
 
 # pip packages for kira tests
