@@ -136,7 +136,7 @@ _construct_proto(FileReader *self, gint fd)
   format_handler = reader_options->parse_options.format_handler;
   if ((format_handler && format_handler->construct_proto))
     {
-      proto_options->super.super.position_tracking_enabled = TRUE;
+      proto_options->super.super.ack_tracker_type = ACK_CONSECUTIVE;
       return format_handler->construct_proto(&reader_options->parse_options, transport, &proto_options->super.super);
     }
 

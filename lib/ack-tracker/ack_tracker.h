@@ -27,6 +27,7 @@
 
 #include "syslog-ng.h"
 #include "logsource.h"
+#include "ack_tracker_types.h"
 
 struct _AckTracker
 {
@@ -43,8 +44,7 @@ struct _AckRecord
   AckTracker *tracker;
 };
 
-AckTracker *late_ack_tracker_new(LogSource *source);
-AckTracker *early_ack_tracker_new(LogSource *source);
+AckTracker *ack_tracker_new(LogSource *source, AckTrackerType type);
 
 static inline void
 ack_tracker_free(AckTracker *self)

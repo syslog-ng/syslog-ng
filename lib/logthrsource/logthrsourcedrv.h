@@ -43,7 +43,7 @@ typedef struct _LogThreadedSourceWorkerOptions
 {
   LogSourceOptions super;
   MsgFormatOptions parse_options;
-  gboolean position_tracked;
+  AckTrackerType ack_tracker_type;
 } LogThreadedSourceWorkerOptions;
 
 struct _LogThreadedSourceDriver
