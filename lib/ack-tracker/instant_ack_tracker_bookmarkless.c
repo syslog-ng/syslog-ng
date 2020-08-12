@@ -26,6 +26,11 @@
 #include "bookmark.h"
 #include "syslog-ng.h"
 
+typedef struct _InstantAckTrackerBookmarklessFactory
+{
+  AckTrackerFactory super;
+} InstantAckTrackerBookmarklessFactory;
+
 typedef struct _InstantAckRecord
 {
   AckRecord super;
@@ -106,3 +111,25 @@ instant_ack_tracker_bookmarkless_new(LogSource *source)
   return (AckTracker *)self;
 }
 
+static AckTracker *
+_factory_create(AckTrackerFactory *s, LogSource *source)
+{
+  return instant_ack_tracker_bookmarkless_new(source);
+}
+
+static void
+_factory_free(AckTrackerFactory *s)
+{
+  InstantAckTrackerBookmarklessFactory *self = (InstantAckTrackerBookmarklessFactory *)s;
+  g_free(self);
+}
+
+AckTrackerFactory *
+instant_ack_tracker_bookmarkless_factory_new(void)
+{
+  InstantAckTrackerBookmarklessFactory *factory = g_new0(InstantAckTrackerBookmarklessFactory, 1);
+  factory->super.create = _factory_create;
+  factory->super.free_fn = _factory_free;
+
+  return &factory->super;
+}
