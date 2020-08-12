@@ -27,6 +27,11 @@
 #include "bookmark.h"
 #include "syslog-ng.h"
 
+typedef struct _ConsecutiveAckTrackerFactory
+{
+  AckTrackerFactory super;
+} ConsecutiveAckTrackerFactory;
+
 typedef struct ConsecutiveAckTracker
 {
   AckTracker super;
@@ -268,4 +273,30 @@ consecutive_ack_tracker_new(LogSource *source)
 
   return (AckTracker *)self;
 }
+
+static AckTracker *
+_factory_create(AckTrackerFactory *s, LogSource *source)
+{
+  return consecutive_ack_tracker_new(source);
+}
+
+static void
+_factory_free(AckTrackerFactory *s)
+{
+  ConsecutiveAckTrackerFactory *self = (ConsecutiveAckTrackerFactory *)s;
+  g_free(self);
+}
+
+AckTrackerFactory *
+consecutive_ack_tracker_factory_new(void)
+{
+  ConsecutiveAckTrackerFactory *factory = g_new0(ConsecutiveAckTrackerFactory, 1);
+  factory->super.create = _factory_create;
+  factory->super.free_fn = _factory_free;
+
+  return &factory->super;
+}
+
+
+
 

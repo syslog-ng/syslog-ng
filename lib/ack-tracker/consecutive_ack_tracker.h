@@ -26,6 +26,7 @@
 #define CONSECUTIVE_ACK_TRACKER_H_INCLUDED
 
 #include "ack_tracker.h"
+#include "ack_tracker_factory.h"
 
 typedef struct _AckTrackerOnAllAcked AckTrackerOnAllAcked;
 
@@ -45,7 +46,7 @@ void consecutive_ack_tracker_set_on_all_acked(AckTracker *s, AckTrackerOnAllAcke
                                               GDestroyNotify user_data_free_fn);
 
 AckTracker *consecutive_ack_tracker_new(LogSource *source);
-
+AckTrackerFactory *consecutive_ack_tracker_factory_new(void);
 
 #endif
 
