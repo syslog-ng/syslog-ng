@@ -9,7 +9,6 @@ set(ACK_TRACKER_HEADERS
     PARENT_SCOPE)
 
   set(ACK_TRACKER_SOURCES
-    ack-tracker/ack_tracker.c
     ack-tracker/ack_tracker_factory.c
     ack-tracker/instant_ack_tracker.c
     ack-tracker/instant_ack_tracker_bookmarkless.c
