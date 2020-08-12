@@ -43,13 +43,21 @@ _instant_factory_free(AckTrackerFactory *s)
   g_free(self);
 }
 
+static void
+_init_instance(AckTrackerFactory *s)
+{
+  ack_tracker_factory_init_instance(s);
+
+  s->create = _instant_factory_create;
+  s->free_fn = _instant_factory_free;
+  s->type = ACK_INSTANT;
+}
+
 AckTrackerFactory *
 instant_ack_tracker_factory_new(void)
 {
   InstantAckTrackerFactory *factory = g_new0(InstantAckTrackerFactory, 1);
-  factory->super.create = _instant_factory_create;
-  factory->super.free_fn = _instant_factory_free;
-  factory->super.type = ACK_INSTANT;
+  _init_instance(&factory->super);
 
   return &factory->super;
 }

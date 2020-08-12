@@ -44,13 +44,21 @@ _factory_free(AckTrackerFactory *s)
   g_free(self);
 }
 
+static void
+_init_instance(AckTrackerFactory *s)
+{
+  ack_tracker_factory_init_instance(s);
+
+  s->create = _factory_create;
+  s->free_fn = _factory_free;
+  s->type = ACK_CONSECUTIVE;
+}
+
 AckTrackerFactory *
 consecutive_ack_tracker_factory_new(void)
 {
   ConsecutiveAckTrackerFactory *factory = g_new0(ConsecutiveAckTrackerFactory, 1);
-  factory->super.create = _factory_create;
-  factory->super.free_fn = _factory_free;
-  factory->super.type = ACK_CONSECUTIVE;
+  _init_instance(&factory->super);
 
   return &factory->super;
 }

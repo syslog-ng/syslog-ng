@@ -455,7 +455,7 @@ _create_ack_tracker_if_not_exists(LogSource *self)
     {
       AckTrackerFactory *factory = ack_tracker_factory_new(self->ack_tracker_type);
       self->ack_tracker = ack_tracker_factory_create(factory, self);
-      ack_tracker_factory_free(factory);
+      ack_tracker_factory_unref(factory);
     }
 }
 

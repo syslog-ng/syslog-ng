@@ -43,6 +43,43 @@ _ack_tracker_factory_new(AckTrackerType type)
     }
 }
 
+void
+ack_tracker_factory_init_instance(AckTrackerFactory *self)
+{
+  g_atomic_counter_set(&self->ref_cnt, 1);
+}
+
+AckTrackerFactory *
+ack_tracker_factory_ref(AckTrackerFactory *self)
+{
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt) > 0);
+
+  if (self)
+    {
+      g_atomic_counter_inc(&self->ref_cnt);
+    }
+
+  return self;
+}
+
+static inline void
+_free(AckTrackerFactory *self)
+{
+  if (self && self->free_fn)
+    self->free_fn(self);
+}
+
+void
+ack_tracker_factory_unref(AckTrackerFactory *self)
+{
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
+
+  if (self && (g_atomic_counter_dec_and_test(&self->ref_cnt)))
+    {
+      _free(self);
+    }
+}
+
 AckTrackerFactory *
 ack_tracker_factory_new(AckTrackerType type)
 {

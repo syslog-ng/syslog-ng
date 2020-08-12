@@ -28,11 +28,13 @@
 #include "syslog-ng.h"
 #include "logsource.h"
 #include "ack_tracker_types.h"
+#include "atomic.h"
 
 typedef struct _AckTrackerFactory AckTrackerFactory;
 
 struct _AckTrackerFactory
 {
+  GAtomicCounter ref_cnt;
   AckTrackerType type;
   AckTracker *(*create)(AckTrackerFactory *self, LogSource *source);
   void (*free_fn)(AckTrackerFactory *self);
@@ -45,19 +47,16 @@ ack_tracker_factory_create(AckTrackerFactory *self, LogSource *source)
   return self->create(self, source);
 }
 
-static inline void
-ack_tracker_factory_free(AckTrackerFactory *self)
-{
-  if (self && self->free_fn)
-    self->free_fn(self);
-}
-
 static inline AckTrackerType
 ack_tracker_factory_get_type(AckTrackerFactory *self)
 {
   g_assert(self);
   return self->type;
 }
+
+void ack_tracker_factory_init_instance(AckTrackerFactory *self);
+AckTrackerFactory *ack_tracker_factory_ref(AckTrackerFactory *self);
+void ack_tracker_factory_unref(AckTrackerFactory *self);
 
 AckTrackerFactory *ack_tracker_factory_new(AckTrackerType type);
 AckTrackerFactory *instant_ack_tracker_factory_new(void);
