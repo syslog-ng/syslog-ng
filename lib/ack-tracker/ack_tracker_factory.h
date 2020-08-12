@@ -33,6 +33,7 @@ typedef struct _AckTrackerFactory AckTrackerFactory;
 
 struct _AckTrackerFactory
 {
+  AckTrackerType type;
   AckTracker *(*create)(AckTrackerFactory *self, LogSource *source);
   void (*free_fn)(AckTrackerFactory *self);
 };
@@ -49,6 +50,13 @@ ack_tracker_factory_free(AckTrackerFactory *self)
 {
   if (self && self->free_fn)
     self->free_fn(self);
+}
+
+static inline AckTrackerType
+ack_tracker_factory_get_type(AckTrackerFactory *self)
+{
+  g_assert(self);
+  return self->type;
 }
 
 AckTrackerFactory *ack_tracker_factory_new(AckTrackerType type);

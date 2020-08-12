@@ -27,8 +27,8 @@
 #include "consecutive_ack_tracker.h"
 #include "ack_tracker.h"
 
-AckTrackerFactory *
-ack_tracker_factory_new(AckTrackerType type)
+static AckTrackerFactory *
+_ack_tracker_factory_new(AckTrackerType type)
 {
   switch (type)
     {
@@ -41,4 +41,13 @@ ack_tracker_factory_new(AckTrackerType type)
     default:
       g_assert_not_reached();
     }
+}
+
+AckTrackerFactory *
+ack_tracker_factory_new(AckTrackerType type)
+{
+  AckTrackerFactory *factory = _ack_tracker_factory_new(type);
+  factory->type = type;
+
+  return factory;
 }
