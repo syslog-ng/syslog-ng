@@ -961,5 +961,5 @@ log_proto_buffered_server_init(LogProtoBufferedServer *self, LogTransport *trans
   else
     self->convert = (GIConv) -1;
   self->stream_based = TRUE;
-  self-> pos_tracking = (options->ack_tracker_type != ACK_INSTANT_BOOKMARKLESS);
+  self->pos_tracking = log_proto_server_is_position_tracked(&self->super);
 }
