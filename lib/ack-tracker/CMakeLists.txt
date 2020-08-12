@@ -1,5 +1,6 @@
 set(ACK_TRACKER_HEADERS
     ack-tracker/ack_tracker.h
+    ack-tracker/ack_tracker_factory.h
     ack-tracker/ack_tracker_types.h
     ack-tracker/bookmark.h
     ack-tracker/consecutive_ack_record_container.h
