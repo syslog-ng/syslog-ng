@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2020 One Identity
- * Copyright (c) 2020 Laszlo Budai <laszlo.budai@outlook.com>
+ * Copyright (c) 2002-2014 Balabit
+ * Copyright (c) 2014 Laszlo Budai
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,47 +34,33 @@ typedef struct _InstantAckRecord
   Bookmark bookmark;
 } InstantAckRecord;
 
-typedef struct _InstantAckTracker
+typedef struct _InstantAckTrackerBookmarkless
 {
   AckTracker super;
-  InstantAckRecord *pending_ack_record;
-} InstantAckTracker;
+
+  InstantAckRecord ack_record_storage;
+} InstantAckTrackerBookmarkless;
 
 static Bookmark *
 _request_bookmark(AckTracker *s)
 {
-  InstantAckTracker *self = (InstantAckTracker *)s;
-  if (!self->pending_ack_record)
-    self->pending_ack_record = g_new0(InstantAckRecord, 1);
-
-  return &(self->pending_ack_record->bookmark);
+  InstantAckTrackerBookmarkless *self = (InstantAckTrackerBookmarkless *)s;
+  return &(self->ack_record_storage.bookmark);
 }
 
 static void
 _track_msg(AckTracker *s, LogMessage *msg)
 {
-  InstantAckTracker *self = (InstantAckTracker *)s;
+  InstantAckTrackerBookmarkless *self = (InstantAckTrackerBookmarkless *)s;
   log_pipe_ref((LogPipe *)self->super.source);
-  self->pending_ack_record->bookmark.persist_state = s->source->super.cfg->state;
-  self->pending_ack_record->super.tracker = s;
-  msg->ack_record = (AckRecord *) self->pending_ack_record;
-  self->pending_ack_record = NULL;
-}
-
-static void
-_save_bookmark(LogMessage *msg)
-{
-  InstantAckRecord *ack_rec = (InstantAckRecord *) msg->ack_record;
-  bookmark_save(&ack_rec->bookmark);
+  msg->ack_record = (AckRecord *)(&self->ack_record_storage);
 }
 
 static void
 _manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type)
 {
-  InstantAckTracker *self = (InstantAckTracker *)s;
+  InstantAckTrackerBookmarkless *self = (InstantAckTrackerBookmarkless *)s;
 
-  _save_bookmark(msg);
-  g_free(msg->ack_record);
   log_source_flow_control_adjust(self->super.source, 1);
 
   if (ack_type == AT_SUSPENDED)
@@ -87,15 +73,13 @@ _manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type)
 static void
 _free(AckTracker *s)
 {
-  InstantAckTracker *self = (InstantAckTracker *)s;
-  if (self->pending_ack_record)
-    g_free(self->pending_ack_record);
+  InstantAckTrackerBookmarkless *self = (InstantAckTrackerBookmarkless *)s;
 
   g_free(self);
 }
 
 static void
-_setup_callbacks(InstantAckTracker *self)
+_setup_callbacks(InstantAckTrackerBookmarkless *self)
 {
   self->super.request_bookmark = _request_bookmark;
   self->super.track_msg = _track_msg;
@@ -104,18 +88,18 @@ _setup_callbacks(InstantAckTracker *self)
 }
 
 static void
-_init_instance(InstantAckTracker *self, LogSource *source)
+_init_instance(InstantAckTrackerBookmarkless *self, LogSource *source)
 {
   self->super.source = source;
   source->ack_tracker = (AckTracker *)self;
-  self->pending_ack_record = NULL;
+  self->ack_record_storage.super.tracker = (AckTracker *)self;
   _setup_callbacks(self);
 }
 
 AckTracker *
-instant_ack_tracker_new(LogSource *source)
+instant_ack_tracker_bookmarkless_new(LogSource *source)
 {
-  InstantAckTracker *self = (InstantAckTracker *)g_new0(InstantAckTracker, 1);
+  InstantAckTrackerBookmarkless *self = (InstantAckTrackerBookmarkless *)g_new0(InstantAckTrackerBookmarkless, 1);
 
   _init_instance(self, source);
 

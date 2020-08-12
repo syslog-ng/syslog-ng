@@ -28,5 +28,6 @@
 #include "ack_tracker.h"
 
 AckTracker *instant_ack_tracker_new(LogSource *source);
+AckTracker *instant_ack_tracker_bookmarkless_new(LogSource *source);
 
 #endif

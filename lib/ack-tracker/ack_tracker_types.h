@@ -29,6 +29,7 @@ typedef enum
 {
   ACK_CONSECUTIVE,
   ACK_INSTANT_BOOKMARKLESS,
+  ACK_INSTANT,
 } AckTrackerType;
 
 #endif
