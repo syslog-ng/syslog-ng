@@ -32,4 +32,10 @@ typedef enum
   ACK_INSTANT,
 } AckTrackerType;
 
+static inline gboolean
+ack_tracker_type_is_position_tracked(AckTrackerType type)
+{
+  return (type != ACK_INSTANT_BOOKMARKLESS);
+}
+
 #endif
