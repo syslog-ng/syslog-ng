@@ -23,8 +23,14 @@
  */
 
 #include "instant_ack_tracker.h"
+#include "ack_tracker.h"
 #include "bookmark.h"
 #include "syslog-ng.h"
+
+typedef struct _InstantAckTrackerFactory
+{
+  AckTrackerFactory super;
+} InstantAckTrackerFactory;
 
 typedef struct _InstantAckRecord
 {
@@ -122,3 +128,25 @@ instant_ack_tracker_new(LogSource *source)
   return (AckTracker *)self;
 }
 
+static AckTracker *
+_factory_create(AckTrackerFactory *s, LogSource *source)
+{
+  return instant_ack_tracker_new(source);
+}
+
+static void
+_factory_free(AckTrackerFactory *s)
+{
+  InstantAckTrackerFactory *self = (InstantAckTrackerFactory *)s;
+  g_free(self);
+}
+
+AckTrackerFactory *
+instant_ack_tracker_factory_new(void)
+{
+  InstantAckTrackerFactory *factory = g_new0(InstantAckTrackerFactory, 1);
+  factory->super.create = _factory_create;
+  factory->super.free_fn = _factory_free;
+
+  return &factory->super;
+}
