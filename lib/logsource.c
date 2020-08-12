@@ -30,6 +30,7 @@
 #include "msg-stats.h"
 #include "logmsg/tags.h"
 #include "ack-tracker/ack_tracker.h"
+#include "ack-tracker/ack_tracker_factory.h"
 #include "timeutils/misc.h"
 #include "scratch-buffers.h"
 
@@ -451,7 +452,11 @@ static inline void
 _create_ack_tracker_if_not_exists(LogSource *self)
 {
   if (!self->ack_tracker)
-    self->ack_tracker = ack_tracker_new(self, self->ack_tracker_type);
+    {
+      AckTrackerFactory *factory = ack_tracker_factory_new(self->ack_tracker_type);
+      self->ack_tracker = ack_tracker_factory_create(factory, self);
+      ack_tracker_factory_free(factory);
+    }
 }
 
 gboolean
