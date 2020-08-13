@@ -45,7 +45,26 @@ typedef struct _BatchedAckTracker
   guint batch_size;
   OnBatchAckedFunctor on_batch_acked;
   BatchedAckRecord *pending_ack_record;
+  GMutex acked_records_lock;
+  gulong acked_records_num;
+  GList *acked_records;
 } BatchedAckTracker;
+
+static void
+_ack_record_free(AckRecord *s)
+{
+  BatchedAckRecord *self = (BatchedAckRecord *) s;
+  bookmark_destroy(&self->super.bookmark);
+
+  g_free(self);
+}
+
+static void
+_ack_batch(BatchedAckTracker *self, GList *ack_records)
+{
+  self->on_batch_acked.func(ack_records, self->on_batch_acked.user_data);
+  g_list_free_full(ack_records, (GDestroyNotify) _ack_record_free);
+}
 
 static Bookmark *
 _request_bookmark(AckTracker *s)
@@ -75,10 +94,48 @@ _track_msg(AckTracker *s, LogMessage *msg)
   self->pending_ack_record = NULL;
 }
 
+static GList *
+_append_ack_record_to_batch(BatchedAckTracker *self, AckRecord *ack_record)
+{
+  GList *full_batch = NULL;
+  g_mutex_lock(&self->acked_records_lock);
+  {
+    self->acked_records = g_list_prepend(self->acked_records, ack_record);
+    ++self->acked_records_num;
+    if (self->acked_records_num == self->batch_size)
+      {
+        full_batch = self->acked_records;
+        self->acked_records = NULL;
+        self->acked_records_num = 0;
+      }
+  }
+  g_mutex_unlock(&self->acked_records_lock);
+
+  return full_batch;
+}
+
 static void
 _manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type)
 {
-  // TODO -> collect ack record, when batch is full-> ack all, note: need a lock
+  BatchedAckTracker *self = (BatchedAckTracker *) s;
+  log_source_flow_control_adjust(self->super.source, 1);
+
+  if (ack_type == AT_SUSPENDED)
+    log_source_flow_control_suspend(self->super.source);
+
+  if (ack_type != AT_ABORTED)
+    {
+      GList *full_batch = _append_ack_record_to_batch(self, msg->ack_record);
+      if (full_batch)
+        _ack_batch(self, full_batch);
+    }
+  else
+    {
+      _ack_record_free(msg->ack_record);
+    }
+
+  log_msg_unref(msg);
+  log_pipe_unref((LogPipe *)self->super.source);
 }
 
 static void
@@ -91,6 +148,12 @@ static void
 _free(AckTracker *s)
 {
   BatchedAckTracker *self = (BatchedAckTracker *) s;
+  g_mutex_clear(&self->acked_records_lock);
+  if (self->acked_records)
+    _ack_batch(self, self->acked_records);
+
+  if (self->pending_ack_record)
+    _ack_record_free(&self->pending_ack_record->super);
 
   g_free(self);
 }
@@ -122,6 +185,8 @@ _init(AckTracker *s, LogSource *source, guint timeout, guint batch_size,
 
   self->on_batch_acked.func = cb;
   self->on_batch_acked.user_data = user_data;
+
+  g_mutex_init(&self->acked_records_lock);
 }
 
 AckTracker *
