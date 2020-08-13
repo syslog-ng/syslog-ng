@@ -16,6 +16,7 @@ set(ACK_TRACKER_HEADERS
     ack-tracker/consecutive_ack_record_container_static.c
     ack-tracker/consecutive_ack_record_container_dynamic.c
     ack-tracker/instant_ack_tracker_factory.c
+    ack-tracker/instant_ack_tracker_bookmarkless_factory.c
     PARENT_SCOPE)
 
 add_test_subdirectory(tests)

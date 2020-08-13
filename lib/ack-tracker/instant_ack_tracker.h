@@ -25,12 +25,9 @@
 #ifndef INSTANT_ACK_TRACKER_H_INCLUDED
 #define INSTANT_ACK_TRACKER_H_INCLUDED
 
-#include "ack_tracker_factory.h"
 #include "ack_tracker.h"
 
 AckTracker *instant_ack_tracker_new(LogSource *source);
 AckTracker *instant_ack_tracker_bookmarkless_new(LogSource *source);
-
-AckTrackerFactory *instant_ack_tracker_bookmarkless_factory_new(void);
 
 #endif

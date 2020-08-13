@@ -22,45 +22,34 @@
  *
  */
 
-#ifndef ACK_TRACKER_FACTORY_H_INCLUDED
-#define ACK_TRACKER_FACTORY_H_INCLUDED
+#include "ack_tracker_factory.h"
+#include "instant_ack_tracker.h"
 
-#include "syslog-ng.h"
-#include "logsource.h"
-#include "ack_tracker_types.h"
-
-typedef struct _AckTrackerFactory AckTrackerFactory;
-
-struct _AckTrackerFactory
+typedef struct _InstantAckTrackerBookmarklessFactory
 {
-  AckTrackerType type;
-  AckTracker *(*create)(AckTrackerFactory *self, LogSource *source);
-  void (*free_fn)(AckTrackerFactory *self);
-};
+  AckTrackerFactory super;
+} InstantAckTrackerBookmarklessFactory;
 
-static inline AckTracker *
-ack_tracker_factory_create(AckTrackerFactory *self, LogSource *source)
+static AckTracker *
+_factory_create(AckTrackerFactory *s, LogSource *source)
 {
-  g_assert(self && self->create);
-  return self->create(self, source);
+  return instant_ack_tracker_bookmarkless_new(source);
 }
 
-static inline void
-ack_tracker_factory_free(AckTrackerFactory *self)
+static void
+_factory_free(AckTrackerFactory *s)
 {
-  if (self && self->free_fn)
-    self->free_fn(self);
+  InstantAckTrackerBookmarklessFactory *self = (InstantAckTrackerBookmarklessFactory *)s;
+  g_free(self);
 }
 
-static inline AckTrackerType
-ack_tracker_factory_get_type(AckTrackerFactory *self)
+AckTrackerFactory *
+instant_ack_tracker_bookmarkless_factory_new(void)
 {
-  g_assert(self);
-  return self->type;
+  InstantAckTrackerBookmarklessFactory *factory = g_new0(InstantAckTrackerBookmarklessFactory, 1);
+  factory->super.create = _factory_create;
+  factory->super.free_fn = _factory_free;
+  factory->super.type = ACK_INSTANT_BOOKMARKLESS;
+
+  return &factory->super;
 }
-
-AckTrackerFactory *ack_tracker_factory_new(AckTrackerType type);
-AckTrackerFactory *instant_ack_tracker_factory_new(void);
-AckTrackerFactory *instant_ack_tracker_bookmarkless_factory_new(void);
-
-#endif
