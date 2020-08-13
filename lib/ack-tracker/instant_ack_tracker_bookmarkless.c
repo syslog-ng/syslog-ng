@@ -31,7 +31,6 @@ typedef struct _InstantAckRecord
   AckRecord super;
   void *padding;
   /* bookmark contains a binary container which has to be aligned */
-  Bookmark bookmark;
 } InstantAckRecord;
 
 typedef struct _InstantAckTrackerBookmarkless
@@ -45,7 +44,7 @@ static Bookmark *
 _request_bookmark(AckTracker *s)
 {
   InstantAckTrackerBookmarkless *self = (InstantAckTrackerBookmarkless *)s;
-  return &(self->ack_record_storage.bookmark);
+  return &(self->ack_record_storage.super.bookmark);
 }
 
 static void

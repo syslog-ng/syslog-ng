@@ -28,6 +28,7 @@
 #include "syslog-ng.h"
 #include "logsource.h"
 #include "ack_tracker_types.h"
+#include "bookmark.h"
 
 struct _AckTracker
 {
@@ -42,6 +43,7 @@ struct _AckTracker
 struct _AckRecord
 {
   AckTracker *tracker;
+  Bookmark bookmark;
 };
 
 static inline void

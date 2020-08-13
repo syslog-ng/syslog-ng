@@ -115,7 +115,7 @@ _is_bookmark_saving_enabled(ConsecutiveAckTracker *self)
 static void
 _ack_record_save_bookmark(ConsecutiveAckRecord *ack_record)
 {
-  Bookmark *bookmark = &(ack_record->bookmark);
+  Bookmark *bookmark = &(ack_record->super.bookmark);
 
   bookmark_save(bookmark);
 }
@@ -188,11 +188,11 @@ consecutive_ack_tracker_request_bookmark(AckTracker *s)
 
   if (self->pending_ack_record)
     {
-      self->pending_ack_record->bookmark.persist_state = s->source->super.cfg->state;
+      self->pending_ack_record->super.bookmark.persist_state = s->source->super.cfg->state;
 
       self->pending_ack_record->super.tracker = (AckTracker *)self;
 
-      return &(self->pending_ack_record->bookmark);
+      return &(self->pending_ack_record->super.bookmark);
     }
 
   return NULL;

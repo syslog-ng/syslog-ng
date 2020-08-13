@@ -75,8 +75,8 @@ _drop(ConsecutiveAckRecordContainer *s, gsize n)
 
       consecutive_ack_record_destroy(ack_rec);
 
-      ack_rec->bookmark.save = NULL;
-      ack_rec->bookmark.destroy = NULL;
+      ack_rec->super.bookmark.save = NULL;
+      ack_rec->super.bookmark.destroy = NULL;
     }
   ring_buffer_drop(&self->ack_records, n);
 }

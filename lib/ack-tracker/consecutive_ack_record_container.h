@@ -31,7 +31,6 @@ typedef struct _ConsecutiveAckRecord
 {
   AckRecord super;
   gboolean acked;
-  Bookmark bookmark;
 } ConsecutiveAckRecord;
 
 typedef struct _ConsecutiveAckRecordContainer ConsecutiveAckRecordContainer;
@@ -51,7 +50,7 @@ struct _ConsecutiveAckRecordContainer
 static inline void
 consecutive_ack_record_destroy(ConsecutiveAckRecord *self)
 {
-  bookmark_destroy(&self->bookmark);
+  bookmark_destroy(&self->super.bookmark);
 }
 
 ConsecutiveAckRecordContainer *consecutive_ack_record_container_static_new(gsize size);

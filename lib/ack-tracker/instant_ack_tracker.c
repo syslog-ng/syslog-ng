@@ -31,8 +31,6 @@ typedef struct _InstantAckRecord
 {
   AckRecord super;
   void *padding;
-  /* bookmark contains a binary container which has to be aligned */
-  Bookmark bookmark;
 } InstantAckRecord;
 
 typedef struct _InstantAckTracker
@@ -48,7 +46,7 @@ _request_bookmark(AckTracker *s)
   if (!self->pending_ack_record)
     self->pending_ack_record = g_new0(InstantAckRecord, 1);
 
-  return &(self->pending_ack_record->bookmark);
+  return &(self->pending_ack_record->super.bookmark);
 }
 
 static void
@@ -56,7 +54,7 @@ _track_msg(AckTracker *s, LogMessage *msg)
 {
   InstantAckTracker *self = (InstantAckTracker *)s;
   log_pipe_ref((LogPipe *)self->super.source);
-  self->pending_ack_record->bookmark.persist_state = s->source->super.cfg->state;
+  self->pending_ack_record->super.bookmark.persist_state = s->source->super.cfg->state;
   self->pending_ack_record->super.tracker = s;
   msg->ack_record = (AckRecord *) self->pending_ack_record;
   self->pending_ack_record = NULL;
@@ -65,15 +63,13 @@ _track_msg(AckTracker *s, LogMessage *msg)
 static void
 _save_bookmark(LogMessage *msg)
 {
-  InstantAckRecord *ack_rec = (InstantAckRecord *) msg->ack_record;
-  bookmark_save(&ack_rec->bookmark);
+  bookmark_save(&msg->ack_record->bookmark);
 }
 
 static void
 _ack_record_free(AckRecord *s)
 {
-  InstantAckRecord *self = (InstantAckRecord *) s;
-  bookmark_destroy(&self->bookmark);
+  bookmark_destroy(&s->bookmark);
 
   g_free(s);
 }

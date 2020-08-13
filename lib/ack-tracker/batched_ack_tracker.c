@@ -30,7 +30,6 @@
 typedef struct _BatchedAckRecord
 {
   AckRecord super;
-  Bookmark bookmark;
 } BatchedAckRecord;
 
 typedef struct _OnBatchAckedFunctor
@@ -55,7 +54,7 @@ _request_bookmark(AckTracker *s)
   if (!self->pending_ack_record)
     self->pending_ack_record = g_new0(BatchedAckRecord, 1);
 
-  return &(self->pending_ack_record->bookmark);
+  return &(self->pending_ack_record->super.bookmark);
 }
 
 static void
@@ -63,7 +62,7 @@ _assign_pending_ack_record_to_msg(BatchedAckTracker *self, LogMessage *msg)
 {
   LogSource *source = self->super.source;
   log_pipe_ref((LogPipe *) source);
-  self->pending_ack_record->bookmark.persist_state = source->super.cfg->state;
+  self->pending_ack_record->super.bookmark.persist_state = source->super.cfg->state;
   self->pending_ack_record->super.tracker = &self->super;
   msg->ack_record = (AckRecord *) self->pending_ack_record;
 }
