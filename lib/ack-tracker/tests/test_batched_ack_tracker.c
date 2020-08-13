@@ -56,6 +56,73 @@ _deinit_log_source(LogSource *src)
   log_pipe_unref(&src->super);
 }
 
+typedef struct _TestBookmarkData
+{
+  guint *saved_ctr;
+  guint *destroy_ctr;
+} TestBookmarkData;
+
+static void
+_save_bookmark(Bookmark *bookmark)
+{
+  TestBookmarkData *bookmark_data = (TestBookmarkData *) &bookmark->container;
+  (*bookmark_data->saved_ctr)++;
+}
+
+static void
+_destroy_bookmark(Bookmark *bookmark)
+{
+  TestBookmarkData *bookmark_data = (TestBookmarkData *) &bookmark->container;
+  (*bookmark_data->destroy_ctr)++;
+}
+
+static void
+_fill_bookmark(Bookmark *bookmark, guint *saved_ctr, guint *destroy_ctr)
+{
+  TestBookmarkData *bookmark_data = (TestBookmarkData *) &bookmark->container;
+
+  bookmark_data->saved_ctr = saved_ctr;
+  bookmark_data->destroy_ctr = destroy_ctr;
+  bookmark->save = _save_bookmark;
+  bookmark->destroy = _destroy_bookmark;
+}
+
+typedef struct _TestLogPipeDst
+{
+  LogPipe super;
+} TestLogPipeDst;
+
+static gboolean
+_test_logpipe_dst_init(LogPipe *s)
+{
+  return TRUE;
+}
+
+static void
+_test_logpipe_dst_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
+{
+}
+
+static TestLogPipeDst *
+_init_test_logpipe_dst(void)
+{
+  TestLogPipeDst *dst = g_new0(TestLogPipeDst, 1);
+
+  log_pipe_init_instance(&dst->super, cfg);
+  dst->super.init = _test_logpipe_dst_init;
+  dst->super.queue = _test_logpipe_dst_queue;
+
+  cr_assert(log_pipe_init(&dst->super));
+
+  return dst;
+}
+
+static void
+_deinit_test_logpipe_dst(TestLogPipeDst *dst)
+{
+  log_pipe_deinit(&dst->super);
+  log_pipe_unref(&dst->super);
+}
 static void
 _setup(void)
 {
@@ -89,6 +156,53 @@ Test(batched_ack_tracker, request_bookmark_returns_the_same_until_not_track_msg)
   log_source_post(src, msg);
   Bookmark *bm3 = ack_tracker_request_bookmark(ack_tracker);
   cr_expect_neq(bm3, bm1);
-  log_msg_unref(msg);
   _deinit_log_source(src);
+}
+
+static void
+_ack(AckRecord *rec)
+{
+  bookmark_save(&rec->bookmark);
+}
+
+static void
+_ack_all(GList *ack_records, gpointer user_data)
+{
+  g_list_foreach(ack_records, (GFunc) _ack, user_data);
+}
+
+Test(batched_ack_tracker, bookmark_saving)
+{
+  LogSource *src = _init_log_source(batched_ack_tracker_factory_new(0, 2, _ack_all, NULL));
+  TestLogPipeDst *dst = _init_test_logpipe_dst();
+  log_pipe_append(&src->super, &dst->super);
+  cr_assert_not_null(src->ack_tracker);
+  AckTracker *ack_tracker = src->ack_tracker;
+  Bookmark *bm = ack_tracker_request_bookmark(ack_tracker);
+  guint saved_ctr = 0;
+  guint destroy_ctr = 0;
+  _fill_bookmark(bm, &saved_ctr, &destroy_ctr);
+  LogMessage *msg1 = log_msg_new_empty();
+  cr_expect_eq(window_size_counter_get(&src->window_size, NULL), 10);
+  log_source_post(src, msg1);
+  cr_expect_eq(window_size_counter_get(&src->window_size, NULL), 9);
+  cr_assert_eq(msg1->ack_record->tracker, ack_tracker);
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  log_msg_ack(msg1, &path_options, AT_PROCESSED);
+  cr_expect_eq(saved_ctr, 0);
+  cr_expect_eq(destroy_ctr, 0);
+  cr_expect_eq(window_size_counter_get(&src->window_size, NULL), 10);
+  LogMessage *msg2 = log_msg_new_empty();
+  bm = ack_tracker_request_bookmark(ack_tracker);
+  _fill_bookmark(bm, &saved_ctr, &destroy_ctr);
+  log_source_post(src, msg2);
+  cr_expect_eq(window_size_counter_get(&src->window_size, NULL), 9);
+  log_msg_ack(msg2, &path_options, AT_PROCESSED);
+  cr_expect_eq(window_size_counter_get(&src->window_size, NULL), 10);
+  cr_expect_eq(saved_ctr, 2);
+  cr_expect_eq(destroy_ctr, 2);
+  log_msg_unref(msg1);
+  log_msg_unref(msg2);
+  _deinit_log_source(src);
+  _deinit_test_logpipe_dst(dst);
 }
