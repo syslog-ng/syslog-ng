@@ -53,4 +53,13 @@ bookmark_save(Bookmark *self)
     }
 }
 
+static inline void
+bookmark_destroy(Bookmark *self)
+{
+  if (self->destroy)
+    {
+      self->destroy(self);
+    }
+}
+
 #endif

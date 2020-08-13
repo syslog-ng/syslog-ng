@@ -51,8 +51,7 @@ struct _ConsecutiveAckRecordContainer
 static inline void
 consecutive_ack_record_destroy(ConsecutiveAckRecord *self)
 {
-  if (self->bookmark.destroy)
-    self->bookmark.destroy(&(self->bookmark));
+  bookmark_destroy(&self->bookmark);
 }
 
 ConsecutiveAckRecordContainer *consecutive_ack_record_container_static_new(gsize size);
