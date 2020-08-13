@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2020 One Identity
- * Copyright (c) 2020 Laszlo Budai <laszlo.budai@outlook.com>
+ * Copyright (c) 2020 Laszlo Budai
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,15 +22,34 @@
  *
  */
 
-#ifndef INSTANT_ACK_TRACKER_H_INCLUDED
-#define INSTANT_ACK_TRACKER_H_INCLUDED
-
 #include "ack_tracker_factory.h"
-#include "ack_tracker.h"
+#include "instant_ack_tracker.h"
 
-AckTracker *instant_ack_tracker_new(LogSource *source);
-AckTracker *instant_ack_tracker_bookmarkless_new(LogSource *source);
+typedef struct _InstantAckTrackerFactory
+{
+  AckTrackerFactory super;
+} InstantAckTrackerFactory;
 
-AckTrackerFactory *instant_ack_tracker_bookmarkless_factory_new(void);
+static AckTracker *
+_instant_factory_create(AckTrackerFactory *s, LogSource *source)
+{
+  return instant_ack_tracker_new(source);
+}
 
-#endif
+static void
+_instant_factory_free(AckTrackerFactory *s)
+{
+  InstantAckTrackerFactory *self = (InstantAckTrackerFactory *)s;
+  g_free(self);
+}
+
+AckTrackerFactory *
+instant_ack_tracker_factory_new(void)
+{
+  InstantAckTrackerFactory *factory = g_new0(InstantAckTrackerFactory, 1);
+  factory->super.create = _instant_factory_create;
+  factory->super.free_fn = _instant_factory_free;
+  factory->super.type = ACK_INSTANT;
+
+  return &factory->super;
+}

@@ -60,5 +60,6 @@ ack_tracker_factory_get_type(AckTrackerFactory *self)
 }
 
 AckTrackerFactory *ack_tracker_factory_new(AckTrackerType type);
+AckTrackerFactory *instant_ack_tracker_factory_new(void);
 
 #endif
