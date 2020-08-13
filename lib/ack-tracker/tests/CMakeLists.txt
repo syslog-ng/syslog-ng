@@ -1,2 +1,3 @@
 add_unit_test(CRITERION TARGET test_consecutive_ack_record_container)
 add_unit_test(CRITERION TARGET test_instant_ack_tracker)
+add_unit_test(CRITERION TARGET test_ack_tracker_factory)
