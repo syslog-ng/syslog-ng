@@ -146,7 +146,7 @@ _dummy_on_batch_acked(GList *ack_records, gpointer user_data)
 
 Test(batched_ack_tracker, request_bookmark_returns_the_same_until_not_track_msg)
 {
-  LogSource *src = _init_log_source(batched_ack_tracker_factory_new(0, 0, _dummy_on_batch_acked, NULL));
+  LogSource *src = _init_log_source(batched_ack_tracker_factory_new(0, 1, _dummy_on_batch_acked, NULL));
   cr_assert_not_null(src->ack_tracker);
   AckTracker *ack_tracker = src->ack_tracker;
   Bookmark *bm1 = ack_tracker_request_bookmark(ack_tracker);

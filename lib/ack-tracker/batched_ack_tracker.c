@@ -196,6 +196,7 @@ batched_ack_tracker_new(LogSource *source, guint timeout, guint batch_size,
   BatchedAckTracker *self = g_new0(BatchedAckTracker, 1);
 
   _init(&self->super, source, timeout, batch_size, on_batch_acked, user_data);
+  g_assert(batch_size > 0);
   /*
    * It is mandatory to process the batched ACKs
    * */
