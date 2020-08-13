@@ -27,24 +27,46 @@
 #include "syslog-ng.h"
 #include "logsource.h"
 
+typedef struct _BatchedAckRecord
+{
+  AckRecord super;
+  Bookmark bookmark;
+} BatchedAckRecord;
+
 typedef struct _BatchedAckTracker
 {
   AckTracker super;
   guint timeout;
   guint batch_size;
+  BatchedAckRecord *pending_ack_record;
 } BatchedAckTracker;
 
 static Bookmark *
 _request_bookmark(AckTracker *s)
 {
-  // TODO -> create pending ack record
-  return NULL;
+  BatchedAckTracker *self = (BatchedAckTracker *) s;
+  if (!self->pending_ack_record)
+    self->pending_ack_record = g_new0(BatchedAckRecord, 1);
+
+  return &(self->pending_ack_record->bookmark);
+}
+
+static void
+_assign_pending_ack_record_to_msg(BatchedAckTracker *self, LogMessage *msg)
+{
+  LogSource *source = self->super.source;
+  log_pipe_ref((LogPipe *) source);
+  self->pending_ack_record->bookmark.persist_state = source->super.cfg->state;
+  self->pending_ack_record->super.tracker = &self->super;
+  msg->ack_record = (AckRecord *) self->pending_ack_record;
 }
 
 static void
 _track_msg(AckTracker *s, LogMessage *msg)
 {
-  // TODO -> assign ack record to msg, pending: null
+  BatchedAckTracker *self = (BatchedAckTracker *)s;
+  _assign_pending_ack_record_to_msg(self, msg);
+  self->pending_ack_record = NULL;
 }
 
 static void
@@ -78,14 +100,18 @@ _setup_callbacks(AckTracker *s)
 }
 
 static void
-_init(AckTracker *s, guint timeout, guint batch_size)
+_init(AckTracker *s, LogSource *source, guint timeout, guint batch_size)
 {
   BatchedAckTracker *self = (BatchedAckTracker *) s;
 
   _setup_callbacks(s);
 
+  s->source = source;
+  source->ack_tracker = s;
+
   self->timeout = timeout;
   self->batch_size = batch_size;
+  self->pending_ack_record = NULL;
 }
 
 AckTracker *
@@ -93,7 +119,7 @@ batched_ack_tracker_new(LogSource *source, guint timeout, guint batch_size)
 {
   BatchedAckTracker *self = g_new0(BatchedAckTracker, 1);
 
-  _init(&self->super, timeout, batch_size);
+  _init(&self->super, source, timeout, batch_size);
 
   return &self->super;
 }
