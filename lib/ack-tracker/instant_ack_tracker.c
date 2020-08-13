@@ -70,12 +70,21 @@ _save_bookmark(LogMessage *msg)
 }
 
 static void
+_ack_record_free(AckRecord *s)
+{
+  InstantAckRecord *self = (InstantAckRecord *) s;
+  bookmark_destroy(&self->bookmark);
+
+  g_free(s);
+}
+
+static void
 _manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type)
 {
   InstantAckTracker *self = (InstantAckTracker *)s;
 
   _save_bookmark(msg);
-  g_free(msg->ack_record);
+  _ack_record_free(msg->ack_record);
   log_source_flow_control_adjust(self->super.source, 1);
 
   if (ack_type == AT_SUSPENDED)
