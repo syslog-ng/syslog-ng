@@ -12,6 +12,7 @@ set(ACK_TRACKER_HEADERS
   set(ACK_TRACKER_SOURCES
     ack-tracker/ack_tracker_factory.c
     ack-tracker/batched_ack_tracker.c
+    ack-tracker/batched_ack_tracker_factory.c
     ack-tracker/instant_ack_tracker.c
     ack-tracker/instant_ack_tracker_bookmarkless.c
     ack-tracker/consecutive_ack_tracker.c

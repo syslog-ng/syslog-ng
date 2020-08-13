@@ -30,13 +30,15 @@ Test(AckTrackerFactory, position_tracking)
   AckTrackerFactory *instant = instant_ack_tracker_factory_new();
   AckTrackerFactory *bookmarkless = instant_ack_tracker_bookmarkless_factory_new();
   AckTrackerFactory *consecutive = consecutive_ack_tracker_factory_new();
+  AckTrackerFactory *batched = batched_ack_tracker_factory_new(0, 0);
 
   cr_expect(ack_tracker_type_is_position_tracked(instant->type));
   cr_expect_not(ack_tracker_type_is_position_tracked(bookmarkless->type));
   cr_expect(ack_tracker_type_is_position_tracked(consecutive->type));
-
+  cr_expect(ack_tracker_type_is_position_tracked(batched->type));
 
   ack_tracker_factory_unref(instant);
   ack_tracker_factory_unref(bookmarkless);
   ack_tracker_factory_unref(consecutive);
+  ack_tracker_factory_unref(batched);
 }

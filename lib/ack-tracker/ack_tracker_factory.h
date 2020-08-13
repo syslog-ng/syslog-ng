@@ -59,5 +59,6 @@ void ack_tracker_factory_unref(AckTrackerFactory *self);
 AckTrackerFactory *instant_ack_tracker_factory_new(void);
 AckTrackerFactory *instant_ack_tracker_bookmarkless_factory_new(void);
 AckTrackerFactory *consecutive_ack_tracker_factory_new(void);
+AckTrackerFactory *batched_ack_tracker_factory_new(guint timeout, guint batch_size);
 
 #endif

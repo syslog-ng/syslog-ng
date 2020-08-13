@@ -16,6 +16,7 @@ ack_tracker_include_HEADERS = \
 ack_tracker_sources = \
 	lib/ack-tracker/ack_tracker_factory.c \
 	lib/ack-tracker/batched_ack_tracker.c \
+	lib/ack-tracker/batched_ack_tracker_factory.c \
 	lib/ack-tracker/instant_ack_tracker.c \
 	lib/ack-tracker/instant_ack_tracker_bookmarkless.c	\
 	lib/ack-tracker/consecutive_ack_tracker.c \
