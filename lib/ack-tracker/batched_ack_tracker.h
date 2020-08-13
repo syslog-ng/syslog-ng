@@ -27,6 +27,10 @@
 
 #include "ack_tracker.h"
 
-AckTracker *batched_ack_tracker_new(LogSource *source, guint timeout, guint batch_size);
+typedef void (*BatchedAckTrackerOnBatchAcked)(GList *ack_records, gpointer user_data);
+
+AckTracker *batched_ack_tracker_new(LogSource *source, guint timeout, guint batch_size,
+                                    BatchedAckTrackerOnBatchAcked on_batch_acked,
+                                    gpointer user_data);
 
 #endif

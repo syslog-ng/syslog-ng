@@ -33,6 +33,11 @@ typedef struct _BatchedAckTrackerFactory
     guint timeout;
     guint batch_size;
   } options;
+  struct
+  {
+    BatchedAckTrackerOnBatchAcked func;
+    gpointer user_data;
+  } on_batch_acked;
 } BatchedAckTrackerFactory;
 
 
@@ -41,7 +46,8 @@ _factory_create(AckTrackerFactory *s, LogSource *source)
 {
   BatchedAckTrackerFactory *self = (BatchedAckTrackerFactory *) s;
 
-  return batched_ack_tracker_new(source, self->options.timeout, self->options.batch_size);
+  return batched_ack_tracker_new(source, self->options.timeout, self->options.batch_size,
+                                 self->on_batch_acked.func, self->on_batch_acked.user_data);
 }
 
 static void
@@ -53,12 +59,17 @@ _factory_free(AckTrackerFactory *s)
 }
 
 static void
-_init_instance(AckTrackerFactory *s, guint timeout,  guint batch_size)
+_init_instance(AckTrackerFactory *s, guint timeout, guint batch_size,
+               BatchedAckTrackerOnBatchAcked cb, gpointer user_data)
 {
   BatchedAckTrackerFactory *self = (BatchedAckTrackerFactory *) s;
   ack_tracker_factory_init_instance(s);
+
   self->options.timeout = timeout;
   self->options.batch_size = batch_size;
+
+  self->on_batch_acked.func = cb;
+  self->on_batch_acked.user_data = user_data;
 
   s->create = _factory_create;
   s->free_fn = _factory_free;
@@ -66,10 +77,12 @@ _init_instance(AckTrackerFactory *s, guint timeout,  guint batch_size)
 }
 
 AckTrackerFactory *
-batched_ack_tracker_factory_new(guint timeout, guint batch_size)
+batched_ack_tracker_factory_new(guint timeout, guint batch_size,
+                                BatchedAckTrackerOnBatchAcked cb,
+                                gpointer user_data)
 {
   BatchedAckTrackerFactory *factory = g_new0(BatchedAckTrackerFactory, 1);
-  _init_instance(&factory->super, timeout, batch_size);
+  _init_instance(&factory->super, timeout, batch_size, cb, user_data);
 
   return &factory->super;
 }

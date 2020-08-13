@@ -33,11 +33,18 @@ typedef struct _BatchedAckRecord
   Bookmark bookmark;
 } BatchedAckRecord;
 
+typedef struct _OnBatchAckedFunctor
+{
+  BatchedAckTrackerOnBatchAcked func;
+  gpointer user_data;
+} OnBatchAckedFunctor;
+
 typedef struct _BatchedAckTracker
 {
   AckTracker super;
   guint timeout;
   guint batch_size;
+  OnBatchAckedFunctor on_batch_acked;
   BatchedAckRecord *pending_ack_record;
 } BatchedAckTracker;
 
@@ -100,7 +107,8 @@ _setup_callbacks(AckTracker *s)
 }
 
 static void
-_init(AckTracker *s, LogSource *source, guint timeout, guint batch_size)
+_init(AckTracker *s, LogSource *source, guint timeout, guint batch_size,
+      BatchedAckTrackerOnBatchAcked cb, gpointer user_data)
 {
   BatchedAckTracker *self = (BatchedAckTracker *) s;
 
@@ -112,14 +120,22 @@ _init(AckTracker *s, LogSource *source, guint timeout, guint batch_size)
   self->timeout = timeout;
   self->batch_size = batch_size;
   self->pending_ack_record = NULL;
+
+  self->on_batch_acked.func = cb;
+  self->on_batch_acked.user_data = user_data;
 }
 
 AckTracker *
-batched_ack_tracker_new(LogSource *source, guint timeout, guint batch_size)
+batched_ack_tracker_new(LogSource *source, guint timeout, guint batch_size,
+                        BatchedAckTrackerOnBatchAcked on_batch_acked, gpointer user_data)
 {
   BatchedAckTracker *self = g_new0(BatchedAckTracker, 1);
 
-  _init(&self->super, source, timeout, batch_size);
+  _init(&self->super, source, timeout, batch_size, on_batch_acked, user_data);
+  /*
+   * It is mandatory to process the batched ACKs
+   * */
+  g_assert(self->on_batch_acked.func != NULL);
 
   return &self->super;
 }

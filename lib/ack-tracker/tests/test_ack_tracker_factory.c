@@ -25,12 +25,17 @@
 #include <criterion/criterion.h>
 #include "ack-tracker/ack_tracker_factory.h"
 
+static void
+_dummy_on_batch_acked(GList *ack_records, gpointer user_data)
+{
+}
+
 Test(AckTrackerFactory, position_tracking)
 {
   AckTrackerFactory *instant = instant_ack_tracker_factory_new();
   AckTrackerFactory *bookmarkless = instant_ack_tracker_bookmarkless_factory_new();
   AckTrackerFactory *consecutive = consecutive_ack_tracker_factory_new();
-  AckTrackerFactory *batched = batched_ack_tracker_factory_new(0, 0);
+  AckTrackerFactory *batched = batched_ack_tracker_factory_new(0, 0, _dummy_on_batch_acked, NULL);
 
   cr_expect(ack_tracker_type_is_position_tracked(instant->type));
   cr_expect_not(ack_tracker_type_is_position_tracked(bookmarkless->type));

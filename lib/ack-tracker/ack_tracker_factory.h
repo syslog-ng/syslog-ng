@@ -29,6 +29,7 @@
 #include "logsource.h"
 #include "ack_tracker_types.h"
 #include "atomic.h"
+#include "batched_ack_tracker.h"
 
 struct _AckTrackerFactory
 {
@@ -59,6 +60,8 @@ void ack_tracker_factory_unref(AckTrackerFactory *self);
 AckTrackerFactory *instant_ack_tracker_factory_new(void);
 AckTrackerFactory *instant_ack_tracker_bookmarkless_factory_new(void);
 AckTrackerFactory *consecutive_ack_tracker_factory_new(void);
-AckTrackerFactory *batched_ack_tracker_factory_new(guint timeout, guint batch_size);
+AckTrackerFactory *batched_ack_tracker_factory_new(guint timeout, guint batch_size,
+                                                   BatchedAckTrackerOnBatchAcked cb,
+                                                   gpointer user_data);
 
 #endif
