@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2018 Balabit
- * Copyright (c) 2018 Laszlo Budai <laszlo.budai@outlook.com>
+ * Copyright (c) 2002-2014 Balabit
+ * Copyright (c) 2014 Laszlo Budai
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,29 +22,35 @@
  *
  */
 
-#ifndef CONSECUTIVE_ACK_TRACKER_H_INCLUDED
-#define CONSECUTIVE_ACK_TRACKER_H_INCLUDED
+#include "ack_tracker_factory.h"
+#include "consecutive_ack_tracker.h"
 
-#include "ack_tracker.h"
-
-typedef struct _AckTrackerOnAllAcked AckTrackerOnAllAcked;
-
-typedef void (*AckTrackerOnAllAckedFunc)(gpointer);
-
-struct _AckTrackerOnAllAcked
+typedef struct _ConsecutiveAckTrackerFactory
 {
-  AckTrackerOnAllAckedFunc func;
-  gpointer user_data;
-  GDestroyNotify user_data_free_fn;
-};
+  AckTrackerFactory super;
+} ConsecutiveAckTrackerFactory;
 
-gboolean consecutive_ack_tracker_is_empty(AckTracker *self);
-void consecutive_ack_tracker_lock(AckTracker *self);
-void consecutive_ack_tracker_unlock(AckTracker *self);
-void consecutive_ack_tracker_set_on_all_acked(AckTracker *s, AckTrackerOnAllAckedFunc func, gpointer user_data,
-                                              GDestroyNotify user_data_free_fn);
 
-AckTracker *consecutive_ack_tracker_new(LogSource *source);
+static AckTracker *
+_factory_create(AckTrackerFactory *s, LogSource *source)
+{
+  return consecutive_ack_tracker_new(source);
+}
 
-#endif
+static void
+_factory_free(AckTrackerFactory *s)
+{
+  ConsecutiveAckTrackerFactory *self = (ConsecutiveAckTrackerFactory *)s;
+  g_free(self);
+}
 
+AckTrackerFactory *
+consecutive_ack_tracker_factory_new(void)
+{
+  ConsecutiveAckTrackerFactory *factory = g_new0(ConsecutiveAckTrackerFactory, 1);
+  factory->super.create = _factory_create;
+  factory->super.free_fn = _factory_free;
+  factory->super.type = ACK_CONSECUTIVE;
+
+  return &factory->super;
+}
