@@ -27,7 +27,7 @@
 #include "bookmark.h"
 #include "syslog-ng.h"
 
-typedef struct ConsecutiveAckTracker
+typedef struct _ConsecutiveAckTracker
 {
   AckTracker super;
   ConsecutiveAckRecord *pending_ack_record;
