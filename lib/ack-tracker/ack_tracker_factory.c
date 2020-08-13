@@ -47,7 +47,6 @@ AckTrackerFactory *
 ack_tracker_factory_new(AckTrackerType type)
 {
   AckTrackerFactory *factory = _ack_tracker_factory_new(type);
-  factory->type = type;
 
   return factory;
 }
