@@ -39,6 +39,9 @@ typedef struct _SocketOptionsInet
 } SocketOptionsInet;
 
 void socket_options_inet_set_interface_name(SocketOptionsInet *self, const gchar *interface);
+gboolean socket_options_inet_set_tcp_keepalive_time(SocketOptionsInet *self, gint tcp_keepalive_time);
+gboolean socket_options_inet_set_tcp_keepalive_intvl(SocketOptionsInet *self, gint tcp_keepalive_intvl);
+gboolean socket_options_inet_set_tcp_keepalive_probes(SocketOptionsInet *self, gint tcp_keepalive_probes);
 
 SocketOptionsInet *socket_options_inet_new_instance(void);
 SocketOptions *socket_options_inet_new(void);
