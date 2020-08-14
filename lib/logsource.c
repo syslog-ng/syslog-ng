@@ -699,12 +699,6 @@ log_source_set_options(LogSource *self, LogSourceOptions *options,
 }
 
 void
-log_source_set_ack_tracker_type(LogSource *self, AckTrackerType type)
-{
-  self->ack_tracker_type = type;
-}
-
-void
 log_source_set_ack_tracker_factory(LogSource *self, AckTrackerFactory *factory)
 {
   ack_tracker_factory_unref(self->ack_tracker_factory);
@@ -727,7 +721,6 @@ log_source_init_instance(LogSource *self, GlobalConfig *cfg)
   self->super.init = log_source_init;
   self->super.deinit = log_source_deinit;
   self->window_initialized = FALSE;
-  self->ack_tracker_type = ACK_INSTANT_BOOKMARKLESS;
   self->ack_tracker_factory = instant_ack_tracker_bookmarkless_factory_new();
   self->ack_tracker = NULL;
 }

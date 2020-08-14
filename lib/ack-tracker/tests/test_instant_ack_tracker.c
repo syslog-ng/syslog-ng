@@ -98,7 +98,6 @@ _init_log_source(AckTrackerFactory *factory)
   log_source_init_instance(src, cfg);
   log_source_options_init(options, cfg, "testgroup");
   log_source_set_options(src, options, "test_stats_id", "test_stats_instance", TRUE, NULL);
-  log_source_set_ack_tracker_type(src, ack_tracker_factory_get_type(factory));
   log_source_set_ack_tracker_factory(src, factory);
 
   cr_assert(log_pipe_init(&src->super));

@@ -175,7 +175,6 @@ log_proto_server_options_defaults(LogProtoServerOptions *options)
   options->trim_large_messages = -1;
   options->init_buffer_size = -1;
   options->max_buffer_size = -1;
-  options->ack_tracker_type = ACK_INSTANT_BOOKMARKLESS;
   options->ack_tracker_factory = instant_ack_tracker_bookmarkless_factory_new();
 }
 

@@ -29,7 +29,6 @@
 #include "persist-state.h"
 #include "transport/transport-aux-data.h"
 #include "ack-tracker/bookmark.h"
-#include "ack-tracker/ack_tracker_types.h"
 
 typedef struct _LogProtoServer LogProtoServer;
 typedef struct _LogProtoServerOptions LogProtoServerOptions;
@@ -53,7 +52,6 @@ struct _LogProtoServerOptions
   gboolean trim_large_messages;
   gint max_buffer_size;
   gint init_buffer_size;
-  AckTrackerType ack_tracker_type;
   AckTrackerFactory *ack_tracker_factory;
 };
 
@@ -100,12 +98,6 @@ static inline gboolean
 log_proto_server_validate_options(LogProtoServer *self)
 {
   return self->validate_options(self);
-}
-
-static inline AckTrackerType
-log_proto_server_get_ack_tracker_type(LogProtoServer *self)
-{
-  return self->options->ack_tracker_type;
 }
 
 static inline gboolean

@@ -139,7 +139,6 @@ _construct_proto(FileReader *self, gint fd)
     {
       log_proto_server_options_set_ack_tracker_factory(&proto_options->super.super,
                                                        consecutive_ack_tracker_factory_new());
-      proto_options->super.super.ack_tracker_type = ACK_CONSECUTIVE;
       return format_handler->construct_proto(&reader_options->parse_options, transport, &proto_options->super.super);
     }
 

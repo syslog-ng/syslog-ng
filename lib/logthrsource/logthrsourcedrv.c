@@ -108,7 +108,6 @@ log_threaded_source_worker_set_options(LogThreadedSourceWorker *self, LogThreade
 {
   log_source_set_options(&self->super, &options->super, stats_id, stats_instance, TRUE,
                          control->super.super.super.expr_node);
-  log_source_set_ack_tracker_type(&self->super, options->ack_tracker_type);
   log_source_set_ack_tracker_factory(&self->super, ack_tracker_factory_ref(options->ack_tracker_factory));
 
   log_pipe_unref(&self->control->super.super.super);
