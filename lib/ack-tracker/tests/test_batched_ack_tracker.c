@@ -27,6 +27,8 @@
 #include "ack-tracker/ack_tracker_factory.h"
 #include "logsource.h"
 #include "apphook.h"
+#include "timeutils/misc.h"
+#include <iv.h>
 
 GlobalConfig *cfg;
 
@@ -199,6 +201,68 @@ Test(batched_ack_tracker, bookmark_saving)
   cr_expect_eq(window_size_counter_get(&src->window_size, NULL), 9);
   log_msg_ack(msg2, &path_options, AT_PROCESSED);
   cr_expect_eq(window_size_counter_get(&src->window_size, NULL), 10);
+  cr_expect_eq(saved_ctr, 2);
+  cr_expect_eq(destroy_ctr, 2);
+  log_msg_unref(msg1);
+  log_msg_unref(msg2);
+  _deinit_log_source(src);
+  _deinit_test_logpipe_dst(dst);
+}
+
+static void
+_iv_quit(void *user_data)
+{
+  iv_quit();
+}
+
+static void
+_run_iv_main_for_n_seconds(gint seconds)
+{
+  struct iv_timer wait_timer;
+  IV_TIMER_INIT(&wait_timer);
+  wait_timer.cookie = NULL;
+  wait_timer.handler = _iv_quit;
+
+  iv_validate_now();
+  wait_timer.expires = iv_now;
+  timespec_add_msec(&wait_timer.expires, seconds * 1000);
+
+  iv_timer_register(&wait_timer);
+
+  iv_main();
+}
+
+Test(batched_ack_tracker, batch_timeout)
+{
+  LogSource *src = _init_log_source(batched_ack_tracker_factory_new(500, 3, _ack_all, NULL));
+  TestLogPipeDst *dst = _init_test_logpipe_dst();
+  log_pipe_append(&src->super, &dst->super);
+  cr_assert_not_null(src->ack_tracker);
+  AckTracker *ack_tracker = src->ack_tracker;
+  Bookmark *bm = ack_tracker_request_bookmark(ack_tracker);
+  guint saved_ctr = 0;
+  guint destroy_ctr = 0;
+  _fill_bookmark(bm, &saved_ctr, &destroy_ctr);
+  LogMessage *msg1 = log_msg_new_empty();
+  cr_expect_eq(window_size_counter_get(&src->window_size, NULL), 10);
+  log_source_post(src, msg1);
+  cr_expect_eq(window_size_counter_get(&src->window_size, NULL), 9);
+  cr_assert_eq(msg1->ack_record->tracker, ack_tracker);
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  log_msg_ack(msg1, &path_options, AT_PROCESSED);
+  cr_expect_eq(saved_ctr, 0);
+  cr_expect_eq(destroy_ctr, 0);
+  cr_expect_eq(window_size_counter_get(&src->window_size, NULL), 10);
+  LogMessage *msg2 = log_msg_new_empty();
+  bm = ack_tracker_request_bookmark(ack_tracker);
+  _fill_bookmark(bm, &saved_ctr, &destroy_ctr);
+  log_source_post(src, msg2);
+  cr_expect_eq(window_size_counter_get(&src->window_size, NULL), 9);
+  log_msg_ack(msg2, &path_options, AT_PROCESSED);
+  cr_expect_eq(window_size_counter_get(&src->window_size, NULL), 10);
+
+  _run_iv_main_for_n_seconds(1);
+
   cr_expect_eq(saved_ctr, 2);
   cr_expect_eq(destroy_ctr, 2);
   log_msg_unref(msg1);
