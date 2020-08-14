@@ -26,6 +26,7 @@
 #include "mainloop-worker.h"
 #include "messages.h"
 #include "apphook.h"
+#include "ack-tracker/ack_tracker_factory.h"
 
 #include <iv.h>
 
@@ -108,6 +109,7 @@ log_threaded_source_worker_set_options(LogThreadedSourceWorker *self, LogThreade
   log_source_set_options(&self->super, &options->super, stats_id, stats_instance, TRUE,
                          control->super.super.super.expr_node);
   log_source_set_ack_tracker_type(&self->super, options->ack_tracker_type);
+  log_source_set_ack_tracker_factory(&self->super, ack_tracker_factory_ref(options->ack_tracker_factory));
 
   log_pipe_unref(&self->control->super.super.super);
   log_pipe_ref(&control->super.super.super);
@@ -120,7 +122,7 @@ log_threaded_source_worker_options_defaults(LogThreadedSourceWorkerOptions *opti
   log_source_options_defaults(&options->super);
   msg_format_options_defaults(&options->parse_options);
   options->parse_options.flags |= LP_SYSLOG_PROTOCOL;
-  options->ack_tracker_type = ACK_INSTANT_BOOKMARKLESS;
+  options->ack_tracker_factory = NULL;
 }
 
 void
