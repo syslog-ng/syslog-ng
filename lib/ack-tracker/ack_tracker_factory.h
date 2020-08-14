@@ -56,7 +56,6 @@ void ack_tracker_factory_init_instance(AckTrackerFactory *self);
 AckTrackerFactory *ack_tracker_factory_ref(AckTrackerFactory *self);
 void ack_tracker_factory_unref(AckTrackerFactory *self);
 
-AckTrackerFactory *ack_tracker_factory_new(AckTrackerType type);
 AckTrackerFactory *instant_ack_tracker_factory_new(void);
 AckTrackerFactory *instant_ack_tracker_bookmarkless_factory_new(void);
 AckTrackerFactory *consecutive_ack_tracker_factory_new(void);

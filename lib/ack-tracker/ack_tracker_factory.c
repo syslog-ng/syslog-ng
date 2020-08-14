@@ -27,22 +27,6 @@
 #include "consecutive_ack_tracker.h"
 #include "ack_tracker.h"
 
-static AckTrackerFactory *
-_ack_tracker_factory_new(AckTrackerType type)
-{
-  switch (type)
-    {
-    case ACK_INSTANT:
-      return instant_ack_tracker_factory_new();
-    case ACK_INSTANT_BOOKMARKLESS:
-      return instant_ack_tracker_bookmarkless_factory_new();
-    case ACK_CONSECUTIVE:
-      return consecutive_ack_tracker_factory_new();
-    default:
-      g_assert_not_reached();
-    }
-}
-
 void
 ack_tracker_factory_init_instance(AckTrackerFactory *self)
 {
@@ -78,12 +62,4 @@ ack_tracker_factory_unref(AckTrackerFactory *self)
     {
       _free(self);
     }
-}
-
-AckTrackerFactory *
-ack_tracker_factory_new(AckTrackerType type)
-{
-  AckTrackerFactory *factory = _ack_tracker_factory_new(type);
-
-  return factory;
 }
