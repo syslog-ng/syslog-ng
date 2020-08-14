@@ -144,20 +144,26 @@ TestSuite(batched_ack_tracker, .init = _setup, .fini = _teardown);
 static void
 _dummy_on_batch_acked(GList *ack_records, gpointer user_data)
 {
+  gboolean *acked = (gboolean *) user_data;
+  *acked = TRUE;
 }
 
 Test(batched_ack_tracker, request_bookmark_returns_the_same_until_not_track_msg)
 {
-  LogSource *src = _init_log_source(batched_ack_tracker_factory_new(0, 1, _dummy_on_batch_acked, NULL));
+  gboolean acked = FALSE;
+  LogSource *src = _init_log_source(batched_ack_tracker_factory_new(0, 1, _dummy_on_batch_acked, &acked));
   cr_assert_not_null(src->ack_tracker);
   AckTracker *ack_tracker = src->ack_tracker;
   Bookmark *bm1 = ack_tracker_request_bookmark(ack_tracker);
   Bookmark *bm2 = ack_tracker_request_bookmark(ack_tracker);
   cr_expect_eq(bm1, bm2);
   LogMessage *msg = log_msg_new_empty();
-  log_source_post(src, msg);
+  ack_tracker_track_msg(ack_tracker, msg);
+  cr_expect_not(acked);
   Bookmark *bm3 = ack_tracker_request_bookmark(ack_tracker);
   cr_expect_neq(bm3, bm1);
+  ack_tracker_manage_msg_ack(ack_tracker, msg, AT_PROCESSED);
+  cr_expect(acked);
   _deinit_log_source(src);
 }
 
