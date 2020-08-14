@@ -705,6 +705,13 @@ log_source_set_ack_tracker_type(LogSource *self, AckTrackerType type)
 }
 
 void
+log_source_set_ack_tracker_factory(LogSource *self, AckTrackerFactory *factory)
+{
+  ack_tracker_factory_unref(self->ack_tracker_factory);
+  self->ack_tracker_factory = factory;
+}
+
+void
 log_source_set_name(LogSource *self, const gchar *name)
 {
   g_free(self->name);
@@ -721,6 +728,7 @@ log_source_init_instance(LogSource *self, GlobalConfig *cfg)
   self->super.deinit = log_source_deinit;
   self->window_initialized = FALSE;
   self->ack_tracker_type = ACK_INSTANT_BOOKMARKLESS;
+  self->ack_tracker_factory = instant_ack_tracker_bookmarkless_factory_new();
   self->ack_tracker = NULL;
 }
 
@@ -735,6 +743,7 @@ log_source_free(LogPipe *s)
   log_pipe_detach_expr_node(&self->super);
   log_pipe_free_method(s);
 
+  ack_tracker_factory_unref(self->ack_tracker_factory);
   ack_tracker_free(self->ack_tracker);
   self->ack_tracker = NULL;
 
