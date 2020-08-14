@@ -54,6 +54,7 @@ struct _LogProtoServerOptions
   gint max_buffer_size;
   gint init_buffer_size;
   AckTrackerType ack_tracker_type;
+  AckTrackerFactory *ack_tracker_factory;
 };
 
 typedef union LogProtoServerOptionsStorage
@@ -64,6 +65,7 @@ typedef union LogProtoServerOptionsStorage
 
 gboolean log_proto_server_options_validate(const LogProtoServerOptions *options);
 gboolean log_proto_server_options_set_encoding(LogProtoServerOptions *s, const gchar *encoding);
+void log_proto_server_options_set_ack_tracker_factory(LogProtoServerOptions *s, AckTrackerFactory *factory);
 void log_proto_server_options_defaults(LogProtoServerOptions *options);
 void log_proto_server_options_init(LogProtoServerOptions *options, GlobalConfig *cfg);
 void log_proto_server_options_destroy(LogProtoServerOptions *options);
@@ -190,6 +192,7 @@ log_proto_server_wakeup_cb_call(LogProtoServerWakeupCallback *wakeup_callback)
     wakeup_callback->func(wakeup_callback->user_data);
 }
 
+AckTrackerFactory *log_proto_server_get_ack_tracker_factory(LogProtoServer *s);
 gboolean log_proto_server_validate_options_method(LogProtoServer *s);
 void log_proto_server_init(LogProtoServer *s, LogTransport *transport, const LogProtoServerOptions *options);
 void log_proto_server_free_method(LogProtoServer *s);

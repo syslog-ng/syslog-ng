@@ -30,8 +30,6 @@
 #include "ack_tracker_types.h"
 #include "atomic.h"
 
-typedef struct _AckTrackerFactory AckTrackerFactory;
-
 struct _AckTrackerFactory
 {
   GAtomicCounter ref_cnt;
