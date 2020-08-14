@@ -102,12 +102,6 @@ log_proto_server_validate_options(LogProtoServer *self)
   return self->validate_options(self);
 }
 
-static inline gboolean
-log_proto_server_is_position_tracked(LogProtoServer *self)
-{
-  return ack_tracker_type_is_position_tracked(self->options->ack_tracker_type);
-}
-
 static inline AckTrackerType
 log_proto_server_get_ack_tracker_type(LogProtoServer *self)
 {
@@ -193,6 +187,8 @@ log_proto_server_wakeup_cb_call(LogProtoServerWakeupCallback *wakeup_callback)
 }
 
 AckTrackerFactory *log_proto_server_get_ack_tracker_factory(LogProtoServer *s);
+gboolean log_proto_server_is_position_tracked(LogProtoServer *s);
+
 gboolean log_proto_server_validate_options_method(LogProtoServer *s);
 void log_proto_server_init(LogProtoServer *s, LogTransport *transport, const LogProtoServerOptions *options);
 void log_proto_server_free_method(LogProtoServer *s);

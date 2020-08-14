@@ -108,6 +108,14 @@ log_proto_server_get_ack_tracker_factory(LogProtoServer *s)
 }
 
 gboolean
+log_proto_server_is_position_tracked(LogProtoServer *s)
+{
+  AckTrackerType type = ack_tracker_factory_get_type(log_proto_server_get_ack_tracker_factory(s));
+
+  return ack_tracker_type_is_position_tracked(type);
+}
+
+gboolean
 log_proto_server_validate_options_method(LogProtoServer *s)
 {
   return TRUE;
