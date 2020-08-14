@@ -47,6 +47,9 @@ typedef struct _ThreadedCommandRunner
     GCond tid_saved_cond;
     gboolean tid_saved;
     ThreadId tid;
+    GMutex state_lock;
+    gboolean cancelled;
+    gboolean finished;
   } real_thread;
   ControlConnectionCommand func;
   GString *response;
@@ -62,6 +65,7 @@ _thread_command_runner_new(ControlConnection *cc, GString *cmd, gpointer user_da
   self->user_data = user_data;
   g_mutex_init(&self->real_thread.tid_saved_lock);
   g_cond_init(&self->real_thread.tid_saved_cond);
+  g_mutex_init(&self->real_thread.state_lock);
   self->real_thread.tid_saved = FALSE;
   self->real_thread.tid = 0;
 
@@ -73,6 +77,7 @@ _thread_command_runner_free(ThreadedCommandRunner *self)
 {
   g_mutex_clear(&self->real_thread.tid_saved_lock);
   g_cond_clear(&self->real_thread.tid_saved_cond);
+  g_mutex_clear(&self->real_thread.state_lock);
   g_string_free(self->command, TRUE);
   g_free(self);
 }
@@ -114,7 +119,13 @@ _thread(gpointer user_data)
   ThreadedCommandRunner *self = (ThreadedCommandRunner *)user_data;
   _thread_command_runner_save_tid(self);
   self->response = self->func(self->connection, self->command, self->user_data);
-  iv_event_post(&self->response_received);
+  g_mutex_lock(&self->real_thread.state_lock);
+  {
+    self->real_thread.finished = TRUE;
+    if (!self->real_thread.cancelled)
+      iv_event_post(&self->response_received);
+  }
+  g_mutex_unlock(&self->real_thread.state_lock);
 }
 
 static void
@@ -161,9 +172,24 @@ _delete_thread_command_runner(gpointer data)
 {
   ThreadedCommandRunner *self = (ThreadedCommandRunner *) data;
   g_assert(self->real_thread.tid_saved == TRUE);
-  thread_cancel(self->real_thread.tid);
-  g_thread_join(self->thread);
-  _thread_command_runner_free(self);
+  gboolean has_to_free = FALSE;
+
+  g_mutex_lock(&self->real_thread.state_lock);
+  {
+    self->real_thread.cancelled = TRUE;
+    if (!self->real_thread.finished)
+      {
+        thread_cancel(self->real_thread.tid);
+        has_to_free = TRUE;
+      }
+  }
+  g_mutex_unlock(&self->real_thread.state_lock);
+
+  if (has_to_free)
+    {
+      g_thread_join(self->thread);
+      _thread_command_runner_free(self);
+    }
 }
 
 void
