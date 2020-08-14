@@ -26,6 +26,8 @@
 #include "bookmark.h"
 #include "syslog-ng.h"
 #include "logsource.h"
+#include "timeutils/misc.h"
+#include <iv.h>
 
 typedef struct _BatchedAckRecord
 {
@@ -48,6 +50,8 @@ typedef struct _BatchedAckTracker
   GMutex acked_records_lock;
   gulong acked_records_num;
   GList *acked_records;
+  struct iv_timer batch_timer;
+  gboolean watches_running;
 } BatchedAckTracker;
 
 static void
@@ -115,6 +119,79 @@ _append_ack_record_to_batch(BatchedAckTracker *self, AckRecord *ack_record)
 }
 
 static void
+_stop_batch_timer(BatchedAckTracker *self)
+{
+  if (iv_timer_registered(&self->batch_timer))
+    iv_timer_unregister(&self->batch_timer);
+}
+
+static void
+_start_batch_timer(BatchedAckTracker *self)
+{
+  if (self->timeout <= 0)
+    return;
+
+  iv_validate_now();
+  self->batch_timer.expires = iv_now;
+  timespec_add_msec(&self->batch_timer.expires, self->timeout);
+
+  iv_timer_register(&self->batch_timer);
+}
+
+static void
+_restart_batch_timer(BatchedAckTracker *self)
+{
+  _stop_batch_timer(self);
+  _start_batch_timer(self);
+}
+
+static void
+_batch_timeout(gpointer data)
+{
+  BatchedAckTracker *self = (BatchedAckTracker *) data;
+  GList *batch = NULL;
+  g_mutex_lock(&self->acked_records_lock);
+  {
+    batch = self->acked_records;
+    self->acked_records = NULL;
+    self->acked_records_num = 0;
+  }
+  g_mutex_unlock(&self->acked_records_lock);
+  if (batch)
+    {
+      _ack_batch(self, batch);
+    }
+}
+
+static void
+_init_watches(BatchedAckTracker *self)
+{
+  IV_TIMER_INIT(&self->batch_timer);
+  self->batch_timer.cookie = self;
+  self->batch_timer.handler = _batch_timeout;
+}
+
+static void
+_start_watches(BatchedAckTracker *self)
+{
+  if (!self->watches_running)
+    {
+      _start_batch_timer(self);
+      self->watches_running = TRUE;
+    }
+}
+
+static void
+_stop_watches(BatchedAckTracker *self)
+{
+  if (self->watches_running)
+    {
+      _stop_batch_timer(self);
+      self->watches_running = FALSE;
+    }
+}
+
+static void
 _manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type)
 {
   BatchedAckTracker *self = (BatchedAckTracker *) s;
@@ -127,7 +204,10 @@ _manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type)
     {
       GList *full_batch = _append_ack_record_to_batch(self, msg->ack_record);
       if (full_batch)
-        _ack_batch(self, full_batch);
+        {
+          _ack_batch(self, full_batch);
+          _restart_batch_timer(self);
+        }
     }
   else
     {
@@ -149,6 +229,9 @@ _free(AckTracker *s)
 {
   BatchedAckTracker *self = (BatchedAckTracker *) s;
   g_mutex_clear(&self->acked_records_lock);
+
+  _stop_watches(self);
+
   if (self->acked_records)
     _ack_batch(self, self->acked_records);
 
@@ -187,6 +270,8 @@ _init(AckTracker *s, LogSource *source, guint timeout, guint batch_size,
   self->on_batch_acked.user_data = user_data;
 
   g_mutex_init(&self->acked_records_lock);
+  _init_watches(self);
+  _start_watches(self);
 }
 
 AckTracker *
