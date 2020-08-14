@@ -33,6 +33,7 @@
 #include "poll-fd-events.h"
 #include "poll-file-changes.h"
 #include "poll-multiline-file-changes.h"
+#include "ack-tracker/ack_tracker_factory.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -136,6 +137,8 @@ _construct_proto(FileReader *self, gint fd)
   format_handler = reader_options->parse_options.format_handler;
   if ((format_handler && format_handler->construct_proto))
     {
+      log_proto_server_options_set_ack_tracker_factory(&proto_options->super.super,
+                                                       consecutive_ack_tracker_factory_new());
       proto_options->super.super.ack_tracker_type = ACK_CONSECUTIVE;
       return format_handler->construct_proto(&reader_options->parse_options, transport, &proto_options->super.super);
     }
