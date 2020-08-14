@@ -219,12 +219,6 @@ _manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type)
 }
 
 static void
-_disable_bookmark_saving(AckTracker *self)
-{
-  // TODO -> ??
-}
-
-static void
 _free(AckTracker *s)
 {
   BatchedAckTracker *self = (BatchedAckTracker *) s;
@@ -247,7 +241,6 @@ _setup_callbacks(AckTracker *s)
   s->request_bookmark = _request_bookmark;
   s->track_msg = _track_msg;
   s->manage_msg_ack = _manage_msg_ack;
-  s->disable_bookmark_saving = _disable_bookmark_saving;
   s->free_fn = _free;
 }
 
