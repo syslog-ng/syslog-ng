@@ -57,6 +57,7 @@ struct _ControlServer
   void (*free_fn)(ControlServer *self);
 };
 
+void control_server_cancel_workers(ControlServer *self);
 void control_server_connection_closed(ControlServer *self, ControlConnection *cc);
 void control_server_start(ControlServer *self);
 void control_server_free(ControlServer *self);

@@ -148,11 +148,34 @@ _thread_command_runner_run(ThreadedCommandRunner *self, ControlConnectionCommand
   server->worker_threads = g_list_append(server->worker_threads, self);
 }
 
-void control_connection_start_as_thread(ControlConnection *self, ControlConnectionCommand cmd_cb,
-                                        GString *command, gpointer user_data)
+void
+control_connection_start_as_thread(ControlConnection *self, ControlConnectionCommand cmd_cb,
+                                   GString *command, gpointer user_data)
 {
   ThreadedCommandRunner *runner = _thread_command_runner_new(self, command, user_data);
   _thread_command_runner_run(runner, cmd_cb);
+}
+
+static void
+_delete_thread_command_runner(gpointer data)
+{
+  ThreadedCommandRunner *self = (ThreadedCommandRunner *) data;
+  g_assert(self->real_thread.tid_saved == TRUE);
+  thread_cancel(self->real_thread.tid);
+  g_thread_join(self->thread);
+  _thread_command_runner_free(self);
+}
+
+void
+control_server_cancel_workers(ControlServer *self)
+{
+  if (self->worker_threads)
+    {
+      msg_warning("Cancelling control server worker threads");
+      g_list_free_full(self->worker_threads, _delete_thread_command_runner);
+      msg_warning("Control server worker threads has been cancelled.");
+      self->worker_threads = NULL;
+    }
 }
 
 void
@@ -169,16 +192,6 @@ control_server_init_instance(ControlServer *self, const gchar *path)
   self->worker_threads = NULL;
 }
 
-static void
-_delete_thread_command_runner(gpointer data)
-{
-  ThreadedCommandRunner *self = (ThreadedCommandRunner *) data;
-  g_assert(self->real_thread.tid_saved == TRUE);
-  thread_cancel(self->real_thread.tid);
-  g_thread_join(self->thread);
-  _thread_command_runner_free(self);
-}
-
 void
 control_server_free(ControlServer *self)
 {
@@ -187,6 +200,7 @@ control_server_free(ControlServer *self)
   // but it is possible that some ThreadedCommandRunner::thread are still running
   if (self->worker_threads)
     g_list_free_full(self->worker_threads, _delete_thread_command_runner);
+
   if (self->free_fn)
     {
       self->free_fn(self);
