@@ -25,6 +25,7 @@
 #include "logreader.h"
 #include "mainloop-call.h"
 #include "ack-tracker/ack_tracker.h"
+#include "ack-tracker/ack_tracker_factory.h"
 
 static void log_reader_io_handle_in(gpointer s);
 static gboolean log_reader_fetch_log(LogReader *self);
@@ -77,6 +78,8 @@ log_reader_set_options(LogReader *s, LogPipe *control, LogReaderOptions *options
   log_source_set_options(&self->super, &options->super, stats_id, stats_instance,
                          (options->flags & LR_THREADED), control->expr_node);
   log_source_set_ack_tracker_type(&self->super, log_proto_server_get_ack_tracker_type(self->proto));
+  AckTrackerFactory *factory = log_proto_server_get_ack_tracker_factory(self->proto);
+  log_source_set_ack_tracker_factory(&self->super, ack_tracker_factory_ref(factory));
 
   log_pipe_unref(self->control);
   log_pipe_ref(control);
