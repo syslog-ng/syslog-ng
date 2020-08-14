@@ -444,6 +444,8 @@ main_loop_exit_initiate(gpointer user_data)
   if (main_loop_is_terminating(self))
     return;
 
+  control_server_cancel_workers(self->control_server);
+
   app_pre_shutdown();
 
   msg_notice("syslog-ng shutting down",
