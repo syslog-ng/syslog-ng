@@ -26,8 +26,19 @@
 #define _SNG_PYTHON_ACK_TRACKER_H
 
 #include "python-module.h"
-#include "ack-tracker/ack_tracker.h"
+#include "ack-tracker/ack_tracker_factory.h"
+
+typedef struct _PyAckTrackerFactory
+{
+  PyObject_HEAD
+  AckTrackerFactory *ack_tracker_factory;
+  PyObject *ack_callback;
+} PyAckTrackerFactory;
+
+extern PyTypeObject py_ack_tracker_factory_type;
+extern PyTypeObject py_instant_ack_tracker_factory_type;
 
 void py_ack_tracker_init(void);
+int py_is_ack_tracker_factory(PyObject *obj);
 
 #endif
