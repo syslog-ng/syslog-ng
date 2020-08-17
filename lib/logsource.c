@@ -730,6 +730,9 @@ log_source_free(LogPipe *s)
 {
   LogSource *self = (LogSource *) s;
 
+  ack_tracker_free(self->ack_tracker);
+  self->ack_tracker = NULL;
+
   g_free(self->name);
   g_free(self->stats_id);
   g_free(self->stats_instance);
@@ -737,9 +740,6 @@ log_source_free(LogPipe *s)
   log_pipe_free_method(s);
 
   ack_tracker_factory_unref(self->ack_tracker_factory);
-  ack_tracker_free(self->ack_tracker);
-  self->ack_tracker = NULL;
-
   if (G_UNLIKELY(dynamic_window_is_enabled(&self->dynamic_window)))
     _release_dynamic_window(self);
 }

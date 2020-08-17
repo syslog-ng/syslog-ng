@@ -28,6 +28,7 @@
 #include "logsource.h"
 #include "timeutils/misc.h"
 #include <iv.h>
+#include <iv_event.h>
 
 typedef struct _BatchedAckRecord
 {
@@ -51,6 +52,7 @@ typedef struct _BatchedAckTracker
   gulong acked_records_num;
   GList *acked_records;
   struct iv_timer batch_timer;
+  struct iv_event request_restart_timer;
   gboolean watches_running;
 } BatchedAckTracker;
 
@@ -164,11 +166,22 @@ _batch_timeout(gpointer data)
 }
 
 static void
+_restart_timer_requested(gpointer data)
+{
+  BatchedAckTracker *self = (BatchedAckTracker *) data;
+  _restart_batch_timer(self);
+}
+
+static void
 _init_watches(BatchedAckTracker *self)
 {
   IV_TIMER_INIT(&self->batch_timer);
   self->batch_timer.cookie = self;
   self->batch_timer.handler = _batch_timeout;
+
+  IV_EVENT_INIT(&self->request_restart_timer);
+  self->request_restart_timer.cookie = self;
+  self->request_restart_timer.handler = _restart_timer_requested;
 }
 
 static void
@@ -177,6 +190,7 @@ _start_watches(BatchedAckTracker *self)
   if (!self->watches_running)
     {
       _start_batch_timer(self);
+      iv_event_register(&self->request_restart_timer);
       self->watches_running = TRUE;
     }
 }
@@ -186,6 +200,7 @@ _stop_watches(BatchedAckTracker *self)
 {
   if (self->watches_running)
     {
+      iv_event_unregister(&self->request_restart_timer);
       _stop_batch_timer(self);
       self->watches_running = FALSE;
     }
@@ -206,7 +221,7 @@ _manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type)
       if (full_batch)
         {
           _ack_batch(self, full_batch);
-          _restart_batch_timer(self);
+          iv_event_post(&self->request_restart_timer);
         }
     }
   else
