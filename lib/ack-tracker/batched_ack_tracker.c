@@ -163,6 +163,7 @@ _batch_timeout(gpointer data)
     {
       _ack_batch(self, batch);
     }
+  _start_batch_timer(self);
 }
 
 static void
