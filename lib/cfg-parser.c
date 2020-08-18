@@ -270,14 +270,15 @@ _report_file_location(const gchar *filename, YYLTYPE *yylloc)
 {
   FILE *f;
   gint lineno = 0;
-  gchar buf[1024];
+  gsize buflen = 65520;
+  gchar *buf = g_malloc(buflen);
   GPtrArray *context = g_ptr_array_new();
   gint error_index = 0;
 
   f = fopen(filename, "r");
   if (f)
     {
-      while (fgets(buf, sizeof(buf), f))
+      while (fgets(buf, buflen, f))
         {
           lineno++;
           if (lineno > (gint) yylloc->first_line + CONTEXT)
@@ -297,6 +298,7 @@ _report_file_location(const gchar *filename, YYLTYPE *yylloc)
   _print_underlined_source_block(yylloc, (gchar **) context->pdata, error_index);
 
 exit:
+  g_free(buf);
   g_ptr_array_foreach(context, (GFunc) g_free, NULL);
   g_ptr_array_free(context, TRUE);
 }
@@ -330,32 +332,42 @@ report_syntax_error(CfgLexer *lexer, YYLTYPE *yylloc, const char *what, const ch
 
   for (from = level; from >= lexer->include_stack; from--)
     {
+      YYLTYPE *from_lloc;
+
       if (from == level)
         {
+          /* the location on the initial level is the one we get as
+           * argument, instead of what we have in the lexer's state.  This
+           * is because the lexer might be one token in advance (because of
+           * LALR) and the grammar is kind enough to pass us the original
+           * location.  */
+
+          from_lloc = yylloc;
           fprintf(stderr, "Error parsing %s, %s in %s:%d:%d-%d:%d:\n",
                   what,
                   msg,
-                  from->lloc.level->name,
-                  from->lloc.first_line,
-                  from->lloc.first_column,
-                  from->lloc.last_line,
-                  from->lloc.last_column);
+                  from_lloc->level->name,
+                  from_lloc->first_line,
+                  from_lloc->first_column,
+                  from_lloc->last_line,
+                  from_lloc->last_column);
         }
       else
         {
+          from_lloc = &from->lloc;
           fprintf(stderr, "Included from %s:%d:%d-%d:%d:\n", from->name,
-                  from->lloc.first_line,
-                  from->lloc.first_column,
-                  from->lloc.last_line,
-                  from->lloc.last_column);
+                  from_lloc->first_line,
+                  from_lloc->first_column,
+                  from_lloc->last_line,
+                  from_lloc->last_column);
         }
       if (from->include_type == CFGI_FILE)
         {
-          _report_file_location(from->name, &from->lloc);
+          _report_file_location(from->name, from_lloc);
         }
       else if (from->include_type == CFGI_BUFFER)
         {
-          _report_buffer_location(from->buffer.original_content, &from->lloc);
+          _report_buffer_location(from->buffer.original_content, from_lloc);
         }
       fprintf(stderr, "\n");
     }

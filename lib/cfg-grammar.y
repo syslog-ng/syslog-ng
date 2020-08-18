@@ -903,7 +903,7 @@ template_content_inner
           CHECK_ERROR_GERROR(log_template_compile(last_template, $3, &error), @3, error, "Error compiling template");
           free($3);
 
-          CHECK_ERROR_GERROR(log_template_set_type_hint(last_template, $1, &error), @1, error, "Error setting the template type-hint");
+          CHECK_ERROR_GERROR(log_template_set_type_hint(last_template, $1, &error), @1, error, "Error setting the template type-hint \"%s\"", $1);
           free($1);
         }
         ;
@@ -985,7 +985,7 @@ options_item
         | KW_MARK_MODE '(' KW_INTERNAL ')'         { cfg_set_mark_mode(configuration, "internal"); }
         | KW_MARK_MODE '(' string ')'
           {
-            CHECK_ERROR(cfg_lookup_mark_mode($3) > 0 && cfg_lookup_mark_mode($3) != MM_GLOBAL, @3, "illegal global mark-mode");
+            CHECK_ERROR(cfg_lookup_mark_mode($3) > 0 && cfg_lookup_mark_mode($3) != MM_GLOBAL, @3, "illegal global mark-mode \"%s\"", $3);
             cfg_set_mark_mode(configuration, $3);
             free($3);
           }
@@ -1295,7 +1295,7 @@ threaded_fetcher_driver_option
 threaded_source_driver_option_flags
 	: string threaded_source_driver_option_flags
         {
-          CHECK_ERROR(msg_format_options_process_flag(log_threaded_source_driver_get_parse_options(last_driver), $1), @1, "Unknown flag %s", $1);
+          CHECK_ERROR(msg_format_options_process_flag(log_threaded_source_driver_get_parse_options(last_driver), $1), @1, "Unknown flag \"%s\"", $1);
           free($1);
         }
         |
@@ -1331,7 +1331,7 @@ source_reader_option
 	;
 
 source_reader_option_flags
-        : string source_reader_option_flags     { CHECK_ERROR(log_reader_options_process_flag(last_reader_options, $1), @1, "Unknown flag %s", $1); free($1); }
+        : string source_reader_option_flags     { CHECK_ERROR(log_reader_options_process_flag(last_reader_options, $1), @1, "Unknown flag \"%s\"", $1); free($1); }
         | KW_CHECK_HOSTNAME source_reader_option_flags     { log_reader_options_process_flag(last_reader_options, "check-hostname"); }
 	|
 	;
@@ -1342,7 +1342,7 @@ source_proto_option
           {
             CHECK_ERROR(log_proto_server_options_set_encoding(last_proto_server_options, $3),
                         @3,
-                        "unknown encoding %s", $3);
+                        "unknown encoding \"%s\"", $3);
             free($3);
           }
         | KW_LOG_MSG_SIZE '(' positive_integer ')'      { last_proto_server_options->max_msg_size = $3; }
@@ -1397,7 +1397,7 @@ dest_writer_option
         | KW_MARK_MODE '(' KW_INTERNAL ')'      { log_writer_options_set_mark_mode(last_writer_options, "internal"); }
 	| KW_MARK_MODE '(' string ')'
 	  {
-	    CHECK_ERROR(cfg_lookup_mark_mode($3) != -1, @3, "illegal mark mode: %s", $3);
+	    CHECK_ERROR(cfg_lookup_mark_mode($3) != -1, @3, "illegal mark mode \"%s\"", $3);
             log_writer_options_set_mark_mode(last_writer_options, $3);
             free($3);
           }
@@ -1434,7 +1434,7 @@ template_option
         {
           gint on_error;
 
-          CHECK_ERROR(log_template_on_error_parse($3, &on_error), @3, "Invalid on-error() setting");
+          CHECK_ERROR(log_template_on_error_parse($3, &on_error), @3, "Invalid on-error() setting \"%s\"", $3);
           free($3);
 
           log_template_options_set_on_error(last_template_options, on_error);
@@ -1442,12 +1442,12 @@ template_option
 	;
 
 matcher_option
-        : KW_TYPE '(' string ')'		{ CHECK_ERROR(log_matcher_options_set_type(last_matcher_options, $3), @3, "unknown matcher type"); free($3); }
+        : KW_TYPE '(' string ')'		{ CHECK_ERROR(log_matcher_options_set_type(last_matcher_options, $3), @3, "unknown matcher type \"%s\"", $3); free($3); }
         | KW_FLAGS '(' matcher_flags ')'
         ;
 
 matcher_flags
-        : string matcher_flags			{ CHECK_ERROR(log_matcher_options_process_flag(last_matcher_options, $1), @1, "unknown matcher flag"); free($1); }
+        : string matcher_flags			{ CHECK_ERROR(log_matcher_options_process_flag(last_matcher_options, $1), @1, "unknown matcher flag \"%s\"", $1); free($1); }
         |
         ;
 
