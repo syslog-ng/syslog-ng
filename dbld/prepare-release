@@ -1,0 +1,64 @@
+#!/bin/bash
+
+set -e
+
+cd /source
+VERSION=$1
+
+OLD_VERSION=`cat VERSION`
+OLD_MAJOR=$(echo $OLD_VERSION | cut -d. -f1-2)
+NEW_MAJOR=$(echo $VERSION | cut -d. -f1-2)
+USER_EMAIL=$(git config --get user.email || echo "noemail@set.any.where")
+USER_NAME=$(git config --get user.name || echo "unknown user")
+VERSION_FILE_LIST="README.md doc/man/*.xml
+	scl/syslog-ng.conf
+	contrib/openbsd-packaging/syslog-ng.conf
+	packaging/debian/syslog-ng.conf
+	packaging/rhel/syslog-ng.conf"
+
+function update_version() {
+	echo Updating VERSION file
+	echo $VERSION > VERSION
+}
+
+function update_packaging_debian() {
+	echo Updating Debian packaging
+	DEB_FULLNAME=$USER_NAME DEB_EMAIL=$USER_EMAIL debchange --distribution unstable --newversion "$VERSION-1" -c packaging/debian/changelog "New upstream release $VERSION"
+}
+
+function update_packaging_rhel() {
+	echo Updating RHEL packaging
+	sed -i -e "/^%changelog/ a * `date '+%a %b %e %Y'` $USER_NAME <$USER_EMAIL> - $VERSION-1\n- updated to $VERSION\n" packaging/rhel/syslog-ng.spec
+}
+
+function update_version_refs_in_source() {
+	echo Updating version references in source files
+	ESCAPED_OLD_MAJOR=$(echo $OLD_MAJOR | sed -e 's/[]\/$*.^[]/\\&/g') &&
+	ESCAPED_NEW_MAJOR=$(echo $NEW_MAJOR | sed -e 's/[\/&]/\\&/g') &&
+	git ls-files $VERSION_FILE_LIST | xargs sed -i "s/$ESCAPED_OLD_MAJOR/$ESCAPED_NEW_MAJOR/g"
+}
+
+function perform_updates()
+{
+	update_version && \
+		update_packaging_debian && \
+		update_packaging_rhel && \
+		update_version_refs_in_source
+}
+
+if [ "$VERSION" = "" ]; then
+	echo "Please supply version number as first argument"
+	exit 1
+fi
+
+if ! git diff-index --quiet HEAD; then
+	echo "This script only operates on a clean git tree and git is required"
+	exit 1
+fi
+
+if perform_updates; then
+	echo "The proposed version changes have been saved as local changes. Review and commit them or abort using 'git reset --hard'."
+else
+	echo "Updating the files have failed, falling back to the original state."
+	git reset --hard
+fi

@@ -124,10 +124,17 @@ Releases and precompiled tarballs are available on [GitHub][github-repo].
 
  [github-repo]: https://github.com/syslog-ng/syslog-ng/releases
 
-To compile from source, the usual drill applies (assuming you have
-the required dependencies):
+To compile from source, the easiest is to use `dbld`, a docker based,
+self-hosted compile/build/release infrastructure within the source tree. See
+`dbld/README.md` for more information.
+
+For the brave souls who want to compile syslog-ng from scratch, the usual
+drill applies:
 
     $ ./configure && make && make install
+
+The extra effort in contrast with the dbld based build is the need to fetch
+and install all build dependencies of syslog-ng (of which there are a few).
 
 If you don't have a configure script (because of cloning from git, for example),
 run `./autogen.sh` to generate it.

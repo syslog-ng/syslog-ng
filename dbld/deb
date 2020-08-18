@@ -18,6 +18,8 @@ function prepare_source() {
 function capture_debs() {
     mv /build/*.deb /build/${OS_PLATFORM}
     echo "Your debs are in /build/${OS_PLATFORM}, also available on the host in \$(top_srcdir)/dbld/build/${OS_PLATFORM}"
+
+    capture_artifacts /build/${OS_PLATFORM}/*.deb
 }
 
 cd /build

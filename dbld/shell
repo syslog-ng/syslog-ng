@@ -1,11 +1,17 @@
 #!/bin/bash
 
-echo -e "\n\nWelcome to the syslog-ng developer's shell...\n"
+echo -e "\n\nWelcome to the syslog-ng developer's shell... ($OS_PLATFORM)\n"
 
 echo -e "You can find the source in /source, you can build the source using:\n"
 echo -e "\t\$ cd /build"
 echo -e "\t\$ /source/configure"
 echo -e "\t\$ make"
-echo -e "If configure is not yet available, run dbld/rules bootstrap first or manually execute autogen.sh in the source dir"
+echo -e "If configure is not yet available, run '/dbld/bootstrap' (in the container) or"
+echo -e "'./dbld/rules bootstrap' (on the host) or manually execute autogen.sh in the "
+echo -e "source dir.\n"
+
+if [ "$OS_PLATFORM" != "devshell" ]; then
+	echo -e "NOTE: the 'devshell' dbld image is more developer friendly, you might want to use that"
+fi
 cd /source
 HISTFILE=/build/.bash_history exec bash

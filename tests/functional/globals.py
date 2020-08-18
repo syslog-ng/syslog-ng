@@ -29,6 +29,10 @@ def get_module_path_from_binary():
     module_path = os.popen("%s --version | grep \"Module-Path:\" | cut -d ' ' -f 2" % get_syslog_ng_binary(), 'r').read().strip()
     return module_path
 
+def get_config_version_from_binary():
+    config_version = os.popen("%s --version | grep \"Config version:\" | cut -d ':' -f 2" % get_syslog_ng_binary(), 'r').read().strip()
+    return config_version
+
 def format_module_path_for_intree_modules():
     module_path = ''
     for (root, dirs, files) in os.walk(os.path.abspath(os.path.join(os.environ['top_builddir'], 'modules'))):
