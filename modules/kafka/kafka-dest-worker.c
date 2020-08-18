@@ -28,16 +28,6 @@
 #include "timeutils/misc.h"
 #include <zlib.h>
 
-
-typedef struct _KafkaDestWorker
-{
-  LogThreadedDestWorker super;
-  struct iv_timer poll_timer;
-  GString *key;
-  GString *message;
-  GString *topic_name_buffer;
-} KafkaDestWorker;
-
 static gboolean
 _is_poller_thread(KafkaDestWorker *self)
 {
@@ -57,42 +47,60 @@ _format_message_and_key(KafkaDestWorker *self, LogMessage *msg)
                         self->super.seq_num, NULL, self->key);
 }
 
-static rd_kafka_topic_t *
-_calculate_topic_from_template(KafkaDestWorker *self, LogMessage *msg)
+const gchar *
+kafka_dest_worker_resolve_template_topic_name(KafkaDestWorker *self, LogMessage *msg)
 {
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
   log_template_format(owner->topic_name, msg, &owner->template_options, LTZ_SEND, self->super.seq_num, NULL,
                       self->topic_name_buffer);
-  rd_kafka_topic_t *topic = kafka_dd_query_insert_topic(owner, self->topic_name_buffer->str);
 
-  if (!topic)
+  GError *error = NULL;
+
+  if (kafka_dd_validate_topic_name(self->topic_name_buffer->str, &error))
     {
-      g_assert(owner->fallback_topic != NULL);
-      topic = owner->fallback_topic;
+      return self->topic_name_buffer->str;
     }
+
+  msg_error("Error constructing topic", evt_tag_str("topic_name", self->topic_name_buffer->str),
+            evt_tag_str("driver", owner->super.super.super.id),
+            log_pipe_location_tag(&owner->super.super.super.super),
+            evt_tag_str("error message", error->message));
+
+  g_error_free(error);
+
+  return owner->fallback_topic_name;
+}
+
+rd_kafka_topic_t *
+kafka_dest_worker_calculate_topic_from_template(KafkaDestWorker *self, LogMessage *msg)
+{
+  KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
+  rd_kafka_topic_t *topic = kafka_dd_query_insert_topic(owner, kafka_dest_worker_resolve_template_topic_name(self, msg));
+
+  g_assert(topic);
 
   return topic;
 }
 
-static rd_kafka_topic_t *
-_get_literal_topic(KafkaDestWorker *self)
+rd_kafka_topic_t *
+kafka_dest_worker_get_literal_topic(KafkaDestWorker *self)
 {
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
 
   return owner->topic;
 }
 
-static rd_kafka_topic_t *
-_calculate_topic(KafkaDestWorker *self, LogMessage *msg)
+rd_kafka_topic_t *
+kafka_dest_worker_calculate_topic(KafkaDestWorker *self, LogMessage *msg)
 {
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
 
   if (kafka_dd_is_topic_name_a_template(owner))
     {
-      return _calculate_topic_from_template(self, msg);
+      return kafka_dest_worker_calculate_topic_from_template(self, msg);
     }
 
-  return _get_literal_topic(self);
+  return kafka_dest_worker_get_literal_topic(self);
 }
 
 static gboolean
@@ -100,7 +108,7 @@ _publish_message(KafkaDestWorker *self, LogMessage *msg)
 {
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
   int block_flag = _is_poller_thread(self) ? 0 : RD_KAFKA_MSG_F_BLOCK;
-  rd_kafka_topic_t *topic = _calculate_topic(self, msg);
+  rd_kafka_topic_t *topic = kafka_dest_worker_calculate_topic(self, msg);
 
   if (rd_kafka_produce(topic,
                        RD_KAFKA_PARTITION_UA,

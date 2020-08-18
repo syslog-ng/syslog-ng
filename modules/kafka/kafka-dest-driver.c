@@ -125,7 +125,6 @@ kafka_dd_is_topic_name_a_template(KafkaDestDriver *self)
 {
   return self->topic == NULL;
 }
-
 /* methods */
 
 static const gchar *
@@ -177,41 +176,46 @@ _contains_valid_pattern(const gchar *name)
   return TRUE;
 }
 
-static gboolean
-_validate_topic_name(KafkaDestDriver *self, const gchar *name)
+GQuark
+topic_name_error_quark(void)
+{
+  return g_quark_from_static_string("invalid-topic-name-error-quark");
+}
+
+gboolean
+kafka_dd_validate_topic_name(const gchar *name, GError **error)
 {
   gint len = strlen(name);
+
   if (len == 0)
     {
-      msg_error("kafka: topic name is illegal, it can't be empty",
-                evt_tag_str("driver", self->super.super.super.id),
-                log_pipe_location_tag(&self->super.super.super.super));
+      g_set_error(error, TOPIC_NAME_ERROR, TOPIC_LENGTH_ZERO,
+                  "kafka: topic name is illegal, it can't be empty");
+
       return FALSE;
     }
 
   if ((!g_strcmp0(name, ".")) || !g_strcmp0(name, ".."))
     {
-      msg_error("kafka: topic name cannot be . or ..", evt_tag_str("topic", name),
-                evt_tag_str("driver", self->super.super.super.id),
-                log_pipe_location_tag(&self->super.super.super.super));
+      g_set_error(error, TOPIC_NAME_ERROR, TOPIC_DOT_TWO_DOTS,
+                  "kafka: topic name cannot be . or ..");
+
       return FALSE;
     }
 
   if (len > 249)
     {
-      msg_error("kafka: topic name cannot be longer than 249 characters", evt_tag_str("topic", name),
-                evt_tag_int("length", len),
-                evt_tag_str("driver", self->super.super.super.id),
-                log_pipe_location_tag(&self->super.super.super.super));
+      g_set_error(error, TOPIC_NAME_ERROR, TOPIC_EXCEEDS_MAX_LENGTH,
+                  "kafka: topic name cannot be longer than 249 characters");
+
       return FALSE;
     }
 
   if (!_contains_valid_pattern(name))
     {
-      msg_error("kafka: topic name is illegal as it contains characters other than pattern [\\-\\._a-zA-Z0-9]+",
-                evt_tag_str("topic", name),
-                evt_tag_str("driver", self->super.super.super.id),
-                log_pipe_location_tag(&self->super.super.super.super));
+      g_set_error(error, TOPIC_NAME_ERROR, TOPIC_INVALID_PATTERN,
+                  "kafka: topic name %s is illegal as it contains characters other than pattern [-._a-zA-Z0-9]+", name);
+
       return FALSE;
     }
 
@@ -222,32 +226,43 @@ rd_kafka_topic_t *
 _construct_topic(KafkaDestDriver *self, const gchar *name)
 {
   g_assert(self->kafka != NULL);
-  if (_validate_topic_name(self, name))
+
+  GError *error = NULL;
+
+  if (kafka_dd_validate_topic_name(name, &error))
     {
       return rd_kafka_topic_new(self->kafka, name, NULL);
     }
+
+  msg_error("Error constructing topic", evt_tag_str("topic_name", name),
+            evt_tag_str("driver", self->super.super.super.id),
+            log_pipe_location_tag(&self->super.super.super.super),
+            evt_tag_str("error message", error->message));
+  g_error_free(error);
+
   return NULL;
 }
 
 rd_kafka_topic_t *
 kafka_dd_query_insert_topic(KafkaDestDriver *self, const gchar *name)
 {
-  g_mutex_lock(&self->topics_lock);
+  g_mutex_lock(self->topics_lock);
   rd_kafka_topic_t *topic = g_hash_table_lookup(self->topics, name);
 
   if (topic)
     {
-      g_mutex_unlock(&self->topics_lock);
+      g_mutex_unlock(self->topics_lock);
       return topic;
     }
 
   topic = _construct_topic(self, name);
+
   if (topic)
     {
       g_hash_table_insert(self->topics, g_strdup(name), topic);
     }
 
-  g_mutex_unlock(&self->topics_lock);
+  g_mutex_unlock(self->topics_lock);
   return topic;
 }
 
@@ -444,9 +459,9 @@ _init_template_topic_name(KafkaDestDriver *self)
       return FALSE;
     }
 
-  self->fallback_topic = _construct_topic(self, self->fallback_topic_name);
+  rd_kafka_topic_t *fallback_topic = _construct_topic(self, self->fallback_topic_name);
 
-  if (self->fallback_topic == NULL)
+  if (fallback_topic == NULL)
     {
       msg_error("kafka: error constructing the fallback topic object",
                 evt_tag_str("fallback_topic", self->fallback_topic_name),
@@ -456,6 +471,8 @@ _init_template_topic_name(KafkaDestDriver *self)
     }
 
   self->topics = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify) rd_kafka_topic_destroy);
+  g_hash_table_insert(self->topics, g_strdup(self->fallback_topic_name), fallback_topic);
+
   return TRUE;
 }
 
@@ -466,6 +483,33 @@ _topic_name_is_a_template(KafkaDestDriver *self)
 }
 
 static gboolean
+_init_literal_topic_name(KafkaDestDriver *self)
+{
+  self->topic = _construct_topic(self, self->topic_name->template);
+
+  if (self->topic == NULL)
+    {
+      msg_error("kafka: error constructing the kafka topic object",
+                evt_tag_str("topic", self->topic_name->template),
+                evt_tag_str("driver", self->super.super.super.id),
+                log_pipe_location_tag(&self->super.super.super.super));
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
+static gboolean
+_init_topic_name(KafkaDestDriver *self)
+{
+  if (_topic_name_is_a_template(self))
+    return _init_template_topic_name(self);
+  else
+    return _init_literal_topic_name(self);
+}
+
+
+gboolean
 kafka_dd_init(LogPipe *s)
 {
   KafkaDestDriver *self = (KafkaDestDriver *)s;
@@ -482,37 +526,21 @@ kafka_dd_init(LogPipe *s)
       return FALSE;
     }
 
-  self->kafka = _construct_client(self);
-  if (self->kafka == NULL)
+  if (!self->kafka)
     {
-      msg_error("kafka: error constructing kafka connection object, perhaps metadata.broker.list property is missing?",
-                evt_tag_str("topic", self->topic_name->template),
-                evt_tag_str("driver", self->super.super.super.id),
-                log_pipe_location_tag(&self->super.super.super.super));
-      return FALSE;
-    }
-
-  if (_topic_name_is_a_template(self))
-    {
-      if (!_init_template_topic_name(self))
+      self->kafka = _construct_client(self);
+      if (self->kafka == NULL)
         {
-          return FALSE;
-        }
-    }
-
-  else
-    {
-      self->topic = _construct_topic(self, self->topic_name->template);
-
-      if (self->topic == NULL)
-        {
-          msg_error("kafka: error constructing the kafka topic object",
+          msg_error("kafka: error constructing kafka connection object, perhaps metadata.broker.list property is missing?",
                     evt_tag_str("topic", self->topic_name->template),
                     evt_tag_str("driver", self->super.super.super.id),
                     log_pipe_location_tag(&self->super.super.super.super));
           return FALSE;
         }
     }
+
+  if (!_init_topic_name(self))
+    return FALSE;
 
   if (self->message == NULL)
     {
@@ -554,14 +582,12 @@ kafka_dd_free(LogPipe *d)
   log_template_unref(self->message);
   if (self->topic)
     rd_kafka_topic_destroy(self->topic);
-  if (self->fallback_topic)
-    rd_kafka_topic_destroy(self->fallback_topic);
   if (self->fallback_topic_name)
     g_free(self->fallback_topic_name);
   if (self->kafka)
     rd_kafka_destroy(self->kafka);
   log_template_unref(self->topic_name);
-  g_mutex_free(&self->topics_lock);
+  g_mutex_free(self->topics_lock);
   g_free(self->bootstrap_servers);
   kafka_property_list_free(self->config);
   log_threaded_dest_driver_free(d);
@@ -589,6 +615,8 @@ kafka_dd_new(GlobalConfig *cfg)
   self->flush_timeout_on_shutdown = 60000;
   self->flush_timeout_on_reload = 1000;
   self->poll_timeout = 1000;
+
+  self->topics_lock = g_mutex_new();
 
   log_template_options_defaults(&self->template_options);
 

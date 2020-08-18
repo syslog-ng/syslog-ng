@@ -37,18 +37,29 @@ typedef struct
   LogTemplate *message;
   LogTemplate *topic_name;
   GHashTable *topics;
-  GMutex topics_lock;
+  GMutex *topics_lock;
 
   GList *config;
   gchar *bootstrap_servers;
   gchar *fallback_topic_name;
   rd_kafka_topic_t *topic;
-  rd_kafka_topic_t *fallback_topic;
   rd_kafka_t *kafka;
   gint flush_timeout_on_shutdown;
   gint flush_timeout_on_reload;
   gint poll_timeout;
 } KafkaDestDriver;
+
+#define TOPIC_NAME_ERROR topic_name_error_quark()
+
+GQuark topic_name_error_quark(void);
+
+enum KafkaTopicError
+{
+  TOPIC_LENGTH_ZERO,
+  TOPIC_DOT_TWO_DOTS,
+  TOPIC_EXCEEDS_MAX_LENGTH,
+  TOPIC_INVALID_PATTERN,
+};
 
 void kafka_dd_set_topic(LogDriver *d, LogTemplate *topic);
 void kafka_dd_set_fallback_topic(LogDriver *d, const gchar *fallback_topic);
@@ -59,6 +70,8 @@ void kafka_dd_set_message_ref(LogDriver *d, LogTemplate *message);
 void kafka_dd_set_flush_timeout_on_shutdown(LogDriver *d, gint shutdown_timeout);
 void kafka_dd_set_flush_timeout_on_reload(LogDriver *d, gint reload_timeout);
 void kafka_dd_set_poll_timeout(LogDriver *d, gint poll_timeout);
+
+gboolean kafka_dd_validate_topic_name(const gchar *name, GError **error);
 gboolean kafka_dd_is_topic_name_a_template(KafkaDestDriver *self);
 rd_kafka_topic_t *kafka_dd_query_insert_topic(KafkaDestDriver *self, const gchar *name);
 LogTemplateOptions *kafka_dd_get_template_options(LogDriver *d);
