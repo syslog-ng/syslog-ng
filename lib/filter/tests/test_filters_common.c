@@ -213,7 +213,9 @@ testcase_with_backref_chk(const gchar *msg,
     }
   else
     {
-      cr_assert_eq(strncmp(value_msg, value, length), 0,
+      const gint value_len = strlen(value);
+      cr_assert_eq(length, value_len);
+      cr_assert_eq(strncmp(value_msg, value, value_len), 0,
                    "Filter test failed (value chk); msg='%s', expected_value='%s', value_in_msg='%s'",
                    msg, value, value_msg);
     }
