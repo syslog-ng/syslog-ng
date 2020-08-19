@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2014 Balabit
- * Copyright (c) 2014 Laszlo Budai
+ * Copyright (c) 2020 One Identity
+ * Copyright (c) 2020 Laszlo Budai
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,44 +22,44 @@
  *
  */
 
-#ifndef BOOKMARK_H_INCLUDED
-#define BOOKMARK_H_INCLUDED
+#include "ack_tracker_factory.h"
+#include "instant_ack_tracker.h"
+#include "consecutive_ack_tracker.h"
+#include "ack_tracker.h"
 
-#include "syslog-ng.h"
-#include "persist-state.h"
-
-#define MAX_BOOKMARK_DATA_LENGTH (128)
-
-typedef struct _BookmarkContainer
+void
+ack_tracker_factory_init_instance(AckTrackerFactory *self)
 {
-  /* Bookmark structure should be aligned (ie. HPUX-11v2 ia64) */
-  gint64 other_state[MAX_BOOKMARK_DATA_LENGTH/sizeof(gint64)];
-} BookmarkContainer;
+  g_atomic_counter_set(&self->ref_cnt, 1);
+}
 
-struct _Bookmark
+AckTrackerFactory *
+ack_tracker_factory_ref(AckTrackerFactory *self)
 {
-  PersistState *persist_state;
-  void (*save)(Bookmark *self);
-  void (*destroy)(Bookmark *self);
-  BookmarkContainer container;
-};
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt) > 0);
 
-static inline void
-bookmark_save(Bookmark *self)
-{
-  if (self->save)
+  if (self)
     {
-      self->save(self);
+      g_atomic_counter_inc(&self->ref_cnt);
     }
+
+  return self;
 }
 
 static inline void
-bookmark_destroy(Bookmark *self)
+_free(AckTrackerFactory *self)
 {
-  if (self->destroy)
-    {
-      self->destroy(self);
-    }
+  if (self && self->free_fn)
+    self->free_fn(self);
 }
 
-#endif
+void
+ack_tracker_factory_unref(AckTrackerFactory *self)
+{
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
+
+  if (self && (g_atomic_counter_dec_and_test(&self->ref_cnt)))
+    {
+      _free(self);
+    }
+}

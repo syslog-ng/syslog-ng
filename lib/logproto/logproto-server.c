@@ -27,6 +27,7 @@
 #include "cfg.h"
 #include "plugin.h"
 #include "plugin-types.h"
+#include "ack-tracker/ack_tracker_factory.h"
 
 /**
  * Find the character terminating the buffer.
@@ -100,6 +101,20 @@ find_eom(const guchar *s, gsize n)
   return NULL;
 }
 
+AckTrackerFactory *
+log_proto_server_get_ack_tracker_factory(LogProtoServer *s)
+{
+  return s->options->ack_tracker_factory;
+}
+
+gboolean
+log_proto_server_is_position_tracked(LogProtoServer *s)
+{
+  AckTrackerType type = ack_tracker_factory_get_type(log_proto_server_get_ack_tracker_factory(s));
+
+  return ack_tracker_type_is_position_tracked(type);
+}
+
 gboolean
 log_proto_server_validate_options_method(LogProtoServer *s)
 {
@@ -146,6 +161,13 @@ log_proto_server_options_set_encoding(LogProtoServerOptions *self, const gchar *
 }
 
 void
+log_proto_server_options_set_ack_tracker_factory(LogProtoServerOptions *self, AckTrackerFactory *factory)
+{
+  ack_tracker_factory_unref(self->ack_tracker_factory);
+  self->ack_tracker_factory = factory;
+}
+
+void
 log_proto_server_options_defaults(LogProtoServerOptions *options)
 {
   memset(options, 0, sizeof(*options));
@@ -153,7 +175,7 @@ log_proto_server_options_defaults(LogProtoServerOptions *options)
   options->trim_large_messages = -1;
   options->init_buffer_size = -1;
   options->max_buffer_size = -1;
-  options->ack_tracker_type = ACK_INSTANT_BOOKMARKLESS;
+  options->ack_tracker_factory = instant_ack_tracker_bookmarkless_factory_new();
 }
 
 void
@@ -194,6 +216,7 @@ void
 log_proto_server_options_destroy(LogProtoServerOptions *options)
 {
   g_free(options->encoding);
+  ack_tracker_factory_unref(options->ack_tracker_factory);
   if (options->destroy)
     options->destroy(options);
   options->initialized = FALSE;

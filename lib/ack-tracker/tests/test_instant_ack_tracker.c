@@ -24,6 +24,7 @@
 
 #include <criterion/criterion.h>
 #include "ack-tracker/instant_ack_tracker.h"
+#include "ack-tracker/ack_tracker_factory.h"
 #include "logsource.h"
 #include "apphook.h"
 
@@ -87,7 +88,7 @@ _deinit_test_logpipe_dst(TestLogPipeDst *dst)
 }
 
 static LogSource *
-_init_log_source(AckTrackerType type)
+_init_log_source(AckTrackerFactory *factory)
 {
   LogSource *src = g_new0(LogSource, 1);
   LogSourceOptions *options = g_new0(LogSourceOptions, 1);
@@ -97,7 +98,7 @@ _init_log_source(AckTrackerType type)
   log_source_init_instance(src, cfg);
   log_source_options_init(options, cfg, "testgroup");
   log_source_set_options(src, options, "test_stats_id", "test_stats_instance", TRUE, NULL);
-  log_source_set_ack_tracker_type(src, type);
+  log_source_set_ack_tracker_factory(src, factory);
 
   cr_assert(log_pipe_init(&src->super));
 
@@ -130,7 +131,7 @@ TestSuite(instant_ack_tracker_bookmarkless, .init = _setup, .fini = _teardown);
 
 Test(instant_ack_tracker_bookmarkless, request_bookmark_returns_the_same_bookmark)
 {
-  LogSource *src = _init_log_source(ACK_INSTANT_BOOKMARKLESS);
+  LogSource *src = _init_log_source(instant_ack_tracker_bookmarkless_factory_new());
   cr_assert_not_null(src->ack_tracker);
   AckTracker *ack_tracker = src->ack_tracker;
   Bookmark *bm1 = ack_tracker_request_bookmark(ack_tracker);
@@ -141,7 +142,7 @@ Test(instant_ack_tracker_bookmarkless, request_bookmark_returns_the_same_bookmar
 
 Test(instant_ack_tracker_bookmarkless, bookmark_save_not_called_when_acked)
 {
-  LogSource *src = _init_log_source(ACK_INSTANT_BOOKMARKLESS);
+  LogSource *src = _init_log_source(instant_ack_tracker_bookmarkless_factory_new());
   TestLogPipeDst *dst = _init_test_logpipe_dst();
   log_pipe_append(&src->super, &dst->super);
   cr_assert_not_null(src->ack_tracker);
@@ -167,7 +168,7 @@ Test(instant_ack_tracker_bookmarkless, bookmark_save_not_called_when_acked)
 
 Test(instant_ack_tracker_bookmarkless, same_bookmark_for_all_messages)
 {
-  LogSource *src = _init_log_source(ACK_INSTANT_BOOKMARKLESS);
+  LogSource *src = _init_log_source(instant_ack_tracker_bookmarkless_factory_new());
   cr_assert_not_null(src->ack_tracker);
   AckTracker *ack_tracker = src->ack_tracker;
   Bookmark *bm1 = ack_tracker_request_bookmark(ack_tracker);
@@ -187,7 +188,7 @@ TestSuite(instant_ack_tracker, .init = _setup, .fini = _teardown);
 
 Test(instant_ack_tracker, request_bookmark_returns_same_bookmarks_until_pending_not_assigned)
 {
-  LogSource *src = _init_log_source(ACK_INSTANT);
+  LogSource *src = _init_log_source(instant_ack_tracker_factory_new());
   cr_assert_not_null(src->ack_tracker);
   AckTracker *ack_tracker = src->ack_tracker;
   Bookmark *bm1 = ack_tracker_request_bookmark(ack_tracker);
@@ -205,7 +206,7 @@ Test(instant_ack_tracker, request_bookmark_returns_same_bookmarks_until_pending_
 
 Test(instant_ack_tracker, bookmark_saving)
 {
-  LogSource *src = _init_log_source(ACK_INSTANT);
+  LogSource *src = _init_log_source(instant_ack_tracker_factory_new());
   TestLogPipeDst *dst = _init_test_logpipe_dst();
   log_pipe_append(&src->super, &dst->super);
   cr_assert_not_null(src->ack_tracker);

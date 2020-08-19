@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2014 Balabit
- * Copyright (c) 2014 Laszlo Budai
+ * Copyright (c) 2020 One Identity
+ * Copyright (c) 2020 Laszlo Budai
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,44 +22,42 @@
  *
  */
 
-#ifndef BOOKMARK_H_INCLUDED
-#define BOOKMARK_H_INCLUDED
+#include "ack_tracker_factory.h"
+#include "instant_ack_tracker.h"
 
-#include "syslog-ng.h"
-#include "persist-state.h"
-
-#define MAX_BOOKMARK_DATA_LENGTH (128)
-
-typedef struct _BookmarkContainer
+typedef struct _InstantAckTrackerFactory
 {
-  /* Bookmark structure should be aligned (ie. HPUX-11v2 ia64) */
-  gint64 other_state[MAX_BOOKMARK_DATA_LENGTH/sizeof(gint64)];
-} BookmarkContainer;
+  AckTrackerFactory super;
+} InstantAckTrackerFactory;
 
-struct _Bookmark
+static AckTracker *
+_instant_factory_create(AckTrackerFactory *s, LogSource *source)
 {
-  PersistState *persist_state;
-  void (*save)(Bookmark *self);
-  void (*destroy)(Bookmark *self);
-  BookmarkContainer container;
-};
-
-static inline void
-bookmark_save(Bookmark *self)
-{
-  if (self->save)
-    {
-      self->save(self);
-    }
+  return instant_ack_tracker_new(source);
 }
 
-static inline void
-bookmark_destroy(Bookmark *self)
+static void
+_instant_factory_free(AckTrackerFactory *s)
 {
-  if (self->destroy)
-    {
-      self->destroy(self);
-    }
+  InstantAckTrackerFactory *self = (InstantAckTrackerFactory *)s;
+  g_free(self);
 }
 
-#endif
+static void
+_init_instance(AckTrackerFactory *s)
+{
+  ack_tracker_factory_init_instance(s);
+
+  s->create = _instant_factory_create;
+  s->free_fn = _instant_factory_free;
+  s->type = ACK_INSTANT;
+}
+
+AckTrackerFactory *
+instant_ack_tracker_factory_new(void)
+{
+  InstantAckTrackerFactory *factory = g_new0(InstantAckTrackerFactory, 1);
+  _init_instance(&factory->super);
+
+  return &factory->super;
+}

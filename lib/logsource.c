@@ -30,6 +30,7 @@
 #include "msg-stats.h"
 #include "logmsg/tags.h"
 #include "ack-tracker/ack_tracker.h"
+#include "ack-tracker/ack_tracker_factory.h"
 #include "timeutils/misc.h"
 #include "scratch-buffers.h"
 
@@ -451,7 +452,11 @@ static inline void
 _create_ack_tracker_if_not_exists(LogSource *self)
 {
   if (!self->ack_tracker)
-    self->ack_tracker = ack_tracker_new(self, self->ack_tracker_type);
+    {
+      if (!self->ack_tracker_factory)
+        self->ack_tracker_factory = instant_ack_tracker_bookmarkless_factory_new();
+      self->ack_tracker = ack_tracker_factory_create(self->ack_tracker_factory, self);
+    }
 }
 
 gboolean
@@ -694,9 +699,10 @@ log_source_set_options(LogSource *self, LogSourceOptions *options,
 }
 
 void
-log_source_set_ack_tracker_type(LogSource *self, AckTrackerType type)
+log_source_set_ack_tracker_factory(LogSource *self, AckTrackerFactory *factory)
 {
-  self->ack_tracker_type = type;
+  ack_tracker_factory_unref(self->ack_tracker_factory);
+  self->ack_tracker_factory = factory;
 }
 
 void
@@ -715,7 +721,7 @@ log_source_init_instance(LogSource *self, GlobalConfig *cfg)
   self->super.init = log_source_init;
   self->super.deinit = log_source_deinit;
   self->window_initialized = FALSE;
-  self->ack_tracker_type = ACK_INSTANT_BOOKMARKLESS;
+  self->ack_tracker_factory = instant_ack_tracker_bookmarkless_factory_new();
   self->ack_tracker = NULL;
 }
 
@@ -724,15 +730,16 @@ log_source_free(LogPipe *s)
 {
   LogSource *self = (LogSource *) s;
 
+  ack_tracker_free(self->ack_tracker);
+  self->ack_tracker = NULL;
+
   g_free(self->name);
   g_free(self->stats_id);
   g_free(self->stats_instance);
   log_pipe_detach_expr_node(&self->super);
   log_pipe_free_method(s);
 
-  ack_tracker_free(self->ack_tracker);
-  self->ack_tracker = NULL;
-
+  ack_tracker_factory_unref(self->ack_tracker_factory);
   if (G_UNLIKELY(dynamic_window_is_enabled(&self->dynamic_window)))
     _release_dynamic_window(self);
 }

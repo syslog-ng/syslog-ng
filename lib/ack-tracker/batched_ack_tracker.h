@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2014 Balabit
- * Copyright (c) 2014 Laszlo Budai
+ * Copyright (c) 2020 One Identity
+ * Copyright (c) 2020 Laszlo Budai
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,44 +22,15 @@
  *
  */
 
-#ifndef BOOKMARK_H_INCLUDED
-#define BOOKMARK_H_INCLUDED
+#ifndef BATCHED_ACK_TRACKER_H_INCLUDED
+#define BATCHED_ACK_TRACKER_H_INCLUDED
 
-#include "syslog-ng.h"
-#include "persist-state.h"
+#include "ack_tracker.h"
 
-#define MAX_BOOKMARK_DATA_LENGTH (128)
+typedef void (*BatchedAckTrackerOnBatchAcked)(GList *ack_records, gpointer user_data);
 
-typedef struct _BookmarkContainer
-{
-  /* Bookmark structure should be aligned (ie. HPUX-11v2 ia64) */
-  gint64 other_state[MAX_BOOKMARK_DATA_LENGTH/sizeof(gint64)];
-} BookmarkContainer;
-
-struct _Bookmark
-{
-  PersistState *persist_state;
-  void (*save)(Bookmark *self);
-  void (*destroy)(Bookmark *self);
-  BookmarkContainer container;
-};
-
-static inline void
-bookmark_save(Bookmark *self)
-{
-  if (self->save)
-    {
-      self->save(self);
-    }
-}
-
-static inline void
-bookmark_destroy(Bookmark *self)
-{
-  if (self->destroy)
-    {
-      self->destroy(self);
-    }
-}
+AckTracker *batched_ack_tracker_new(LogSource *source, guint timeout, guint batch_size,
+                                    BatchedAckTrackerOnBatchAcked on_batch_acked,
+                                    gpointer user_data);
 
 #endif

@@ -24,6 +24,7 @@
 #include "transport/transport-file.h"
 #include "logproto-file-writer.h"
 #include "messages.h"
+#include "ack-tracker/ack_tracker_factory.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -60,7 +61,8 @@ _construct_src_transport(FileOpener *self, gint fd)
 static LogProtoServer *
 _construct_src_proto(FileOpener *s, LogTransport *transport, LogProtoFileReaderOptions *proto_options)
 {
-  proto_options->super.super.ack_tracker_type = ACK_CONSECUTIVE;
+  log_proto_server_options_set_ack_tracker_factory(&proto_options->super.super,
+                                                   consecutive_ack_tracker_factory_new());
   return log_proto_file_reader_new(transport, proto_options);
 }
 

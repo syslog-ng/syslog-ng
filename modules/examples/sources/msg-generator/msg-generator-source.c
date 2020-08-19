@@ -28,6 +28,7 @@
 #include "logmsg/logmsg.h"
 #include "template/templates.h"
 #include "timeutils/misc.h"
+#include "ack-tracker/ack_tracker_factory.h"
 
 #include <iv.h>
 
@@ -174,7 +175,9 @@ msg_generator_source_set_options(MsgGeneratorSource *self, MsgGeneratorSourceOpt
 {
   log_source_set_options(&self->super, &options->super, stats_id, stats_instance, threaded, expr_node);
 
-  log_source_set_ack_tracker_type(&self->super, pos_tracked ? ACK_CONSECUTIVE : ACK_INSTANT_BOOKMARKLESS);
+  AckTrackerFactory *factory = pos_tracked ? consecutive_ack_tracker_factory_new() :
+                               instant_ack_tracker_bookmarkless_factory_new();
+  log_source_set_ack_tracker_factory(&self->super, factory);
 
   self->options = options;
 }

@@ -22,21 +22,42 @@
  *
  */
 
-#ifndef ACK_TRACKER_TYPES_H_INCLUDED
-#define ACK_TRACKER_TYPES_H_INCLUDED
+#include "ack_tracker_factory.h"
+#include "instant_ack_tracker.h"
 
-typedef enum
+typedef struct _InstantAckTrackerBookmarklessFactory
 {
-  ACK_CONSECUTIVE,
-  ACK_INSTANT_BOOKMARKLESS,
-  ACK_INSTANT,
-  ACK_BATCHED
-} AckTrackerType;
+  AckTrackerFactory super;
+} InstantAckTrackerBookmarklessFactory;
 
-static inline gboolean
-ack_tracker_type_is_position_tracked(AckTrackerType type)
+static AckTracker *
+_factory_create(AckTrackerFactory *s, LogSource *source)
 {
-  return (type != ACK_INSTANT_BOOKMARKLESS);
+  return instant_ack_tracker_bookmarkless_new(source);
 }
 
-#endif
+static void
+_factory_free(AckTrackerFactory *s)
+{
+  InstantAckTrackerBookmarklessFactory *self = (InstantAckTrackerBookmarklessFactory *)s;
+  g_free(self);
+}
+
+static void
+_init_instance(AckTrackerFactory *s)
+{
+  ack_tracker_factory_init_instance(s);
+
+  s->create = _factory_create;
+  s->free_fn = _factory_free;
+  s->type = ACK_INSTANT_BOOKMARKLESS;
+}
+
+AckTrackerFactory *
+instant_ack_tracker_bookmarkless_factory_new(void)
+{
+  InstantAckTrackerBookmarklessFactory *factory = g_new0(InstantAckTrackerBookmarklessFactory, 1);
+  _init_instance(&factory->super);
+
+  return &factory->super;
+}

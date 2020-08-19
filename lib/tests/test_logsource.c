@@ -82,7 +82,6 @@ test_source_init(LogSourceOptions *options)
 
   log_source_options_init(options, cfg, TEST_SOURCE_GROUP);
   log_source_set_options(&source->super, options, TEST_STATS_ID, TEST_STATS_INSTANCE, TRUE, NULL);
-  log_source_set_ack_tracker_type(&source->super, ACK_INSTANT_BOOKMARKLESS);
   cr_assert(log_pipe_init(&source->super.super));
   return &source->super;
 }

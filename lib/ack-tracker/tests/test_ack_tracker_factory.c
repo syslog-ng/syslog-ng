@@ -22,23 +22,28 @@
  *
  */
 
-#include "ack_tracker.h"
-#include "instant_ack_tracker.h"
-#include "consecutive_ack_tracker.h"
+#include <criterion/criterion.h>
+#include "ack-tracker/ack_tracker_factory.h"
 
-AckTracker *
-ack_tracker_new(LogSource *source, AckTrackerType type)
+static void
+_dummy_on_batch_acked(GList *ack_records, gpointer user_data)
 {
-  switch (type)
-    {
-    case ACK_INSTANT:
-      return instant_ack_tracker_new(source);
-    case ACK_INSTANT_BOOKMARKLESS:
-      return instant_ack_tracker_bookmarkless_new(source);
-    case ACK_CONSECUTIVE:
-      return consecutive_ack_tracker_new(source);
-    default:
-      g_assert_not_reached();
-    }
 }
 
+Test(AckTrackerFactory, position_tracking)
+{
+  AckTrackerFactory *instant = instant_ack_tracker_factory_new();
+  AckTrackerFactory *bookmarkless = instant_ack_tracker_bookmarkless_factory_new();
+  AckTrackerFactory *consecutive = consecutive_ack_tracker_factory_new();
+  AckTrackerFactory *batched = batched_ack_tracker_factory_new(0, 1, _dummy_on_batch_acked, NULL);
+
+  cr_expect(ack_tracker_type_is_position_tracked(instant->type));
+  cr_expect_not(ack_tracker_type_is_position_tracked(bookmarkless->type));
+  cr_expect(ack_tracker_type_is_position_tracked(consecutive->type));
+  cr_expect(ack_tracker_type_is_position_tracked(batched->type));
+
+  ack_tracker_factory_unref(instant);
+  ack_tracker_factory_unref(bookmarkless);
+  ack_tracker_factory_unref(consecutive);
+  ack_tracker_factory_unref(batched);
+}

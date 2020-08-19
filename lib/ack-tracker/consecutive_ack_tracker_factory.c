@@ -22,44 +22,43 @@
  *
  */
 
-#ifndef BOOKMARK_H_INCLUDED
-#define BOOKMARK_H_INCLUDED
+#include "ack_tracker_factory.h"
+#include "consecutive_ack_tracker.h"
 
-#include "syslog-ng.h"
-#include "persist-state.h"
-
-#define MAX_BOOKMARK_DATA_LENGTH (128)
-
-typedef struct _BookmarkContainer
+typedef struct _ConsecutiveAckTrackerFactory
 {
-  /* Bookmark structure should be aligned (ie. HPUX-11v2 ia64) */
-  gint64 other_state[MAX_BOOKMARK_DATA_LENGTH/sizeof(gint64)];
-} BookmarkContainer;
+  AckTrackerFactory super;
+} ConsecutiveAckTrackerFactory;
 
-struct _Bookmark
-{
-  PersistState *persist_state;
-  void (*save)(Bookmark *self);
-  void (*destroy)(Bookmark *self);
-  BookmarkContainer container;
-};
 
-static inline void
-bookmark_save(Bookmark *self)
+static AckTracker *
+_factory_create(AckTrackerFactory *s, LogSource *source)
 {
-  if (self->save)
-    {
-      self->save(self);
-    }
+  return consecutive_ack_tracker_new(source);
 }
 
-static inline void
-bookmark_destroy(Bookmark *self)
+static void
+_factory_free(AckTrackerFactory *s)
 {
-  if (self->destroy)
-    {
-      self->destroy(self);
-    }
+  ConsecutiveAckTrackerFactory *self = (ConsecutiveAckTrackerFactory *)s;
+  g_free(self);
 }
 
-#endif
+static void
+_init_instance(AckTrackerFactory *s)
+{
+  ack_tracker_factory_init_instance(s);
+
+  s->create = _factory_create;
+  s->free_fn = _factory_free;
+  s->type = ACK_CONSECUTIVE;
+}
+
+AckTrackerFactory *
+consecutive_ack_tracker_factory_new(void)
+{
+  ConsecutiveAckTrackerFactory *factory = g_new0(ConsecutiveAckTrackerFactory, 1);
+  _init_instance(&factory->super);
+
+  return &factory->super;
+}

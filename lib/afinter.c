@@ -319,7 +319,6 @@ afinter_source_new(AFInterSourceDriver *owner, AFInterSourceOptions *options)
   log_source_init_instance(&self->super, owner->super.super.super.cfg);
   log_source_set_options(&self->super, &options->super, owner->super.super.id, NULL, FALSE,
                          owner->super.super.super.expr_node);
-  log_source_set_ack_tracker_type(&self->super, ACK_INSTANT_BOOKMARKLESS);
   afinter_source_init_watches(self);
   self->super.super.init = afinter_source_init;
   self->super.super.deinit = afinter_source_deinit;

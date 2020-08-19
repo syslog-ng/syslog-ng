@@ -52,6 +52,7 @@ typedef struct _PluginContext PluginContext;
 typedef struct _Bookmark Bookmark;
 typedef struct _AckTracker AckTracker;
 typedef struct _AckRecord AckRecord;
+typedef struct _AckTrackerFactory AckTrackerFactory;
 typedef struct _StatsClusterKey StatsClusterKey;
 
 /* configuration being parsed, used by the bison generated code, NULL whenever parsing is finished. */

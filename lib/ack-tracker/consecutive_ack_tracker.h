@@ -46,6 +46,5 @@ void consecutive_ack_tracker_set_on_all_acked(AckTracker *s, AckTrackerOnAllAcke
 
 AckTracker *consecutive_ack_tracker_new(LogSource *source);
 
-
 #endif
 
