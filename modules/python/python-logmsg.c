@@ -169,11 +169,12 @@ py_log_message_new(LogMessage *msg)
 static PyObject *
 py_log_message_new_empty(PyTypeObject *subtype, PyObject *args, PyObject *kwds)
 {
+  PyObject *bookmark_data = NULL;
   const gchar *message = NULL;
   gint message_length = 0;
 
-  static const gchar *kwlist[] = {"message", NULL};
-  if (!PyArg_ParseTupleAndKeywords(args, kwds, "|z#", (gchar **) kwlist, &message, &message_length))
+  static const gchar *kwlist[] = {"message", "bookmark", NULL};
+  if (!PyArg_ParseTupleAndKeywords(args, kwds, "|z#O", (gchar **) kwlist, &message, &message_length, &bookmark_data))
     return NULL;
 
   PyLogMessage *self = (PyLogMessage *) subtype->tp_alloc(subtype, 0);
@@ -186,6 +187,9 @@ py_log_message_new_empty(PyTypeObject *subtype, PyObject *args, PyObject *kwds)
 
   if (message)
     log_msg_set_value(self->msg, LM_V_MESSAGE, message, message_length);
+
+  Py_XINCREF(bookmark_data);
+  self->bookmark_data = bookmark_data;
 
   return (PyObject *) self;
 }
