@@ -54,6 +54,7 @@ struct _PythonSourceDriver
     PyObject *suspend_method;
     PyObject *wakeup_method;
     PyObject *generate_persist_name;
+    PyAckTrackerFactory *ack_tracker_factory;
   } py;
 };
 
@@ -185,6 +186,7 @@ _py_free_bindings(PythonSourceDriver *self)
   Py_CLEAR(self->py.suspend_method);
   Py_CLEAR(self->py.wakeup_method);
   Py_CLEAR(self->py.generate_persist_name);
+  Py_CLEAR(self->py.ack_tracker_factory);
 }
 
 static gboolean
@@ -371,6 +373,30 @@ _py_parse_options_new(PythonSourceDriver *self, MsgFormatOptions *parse_options)
 }
 
 static gboolean
+_py_init_ack_tracker_factory(PythonSourceDriver *self)
+{
+  PyObject *py_ack_tracker_factory = _py_get_attr_or_null(self->py.instance, "ack_tracker");
+
+  if (!py_ack_tracker_factory)
+    return TRUE;
+
+  if (!py_is_ack_tracker_factory(py_ack_tracker_factory))
+    {
+      msg_error("Python source attribute ack_tracker needs to be an AckTracker subtype",
+                evt_tag_str("driver", self->super.super.super.id),
+                evt_tag_str("class", self->class));
+      return FALSE;
+    }
+
+  self->py.ack_tracker_factory = (PyAckTrackerFactory *) py_ack_tracker_factory;
+
+  AckTrackerFactory *ack_tracker_factory = self->py.ack_tracker_factory->ack_tracker_factory;
+  self->super.worker_options.ack_tracker_factory = ack_tracker_factory_ref(ack_tracker_factory);
+
+  return TRUE;
+}
+
+static gboolean
 _py_set_parse_options(PythonSourceDriver *self)
 {
   MsgFormatOptions *parse_options = log_threaded_source_driver_get_parse_options(&self->super.super.super);
@@ -445,6 +471,9 @@ _py_sd_init(PythonSourceDriver *self)
     goto error;
 
   if (!_py_init_object(self))
+    goto error;
+
+  if (!_py_init_ack_tracker_factory(self))
     goto error;
 
   if (!_py_set_parse_options(self))
