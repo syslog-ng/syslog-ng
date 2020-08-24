@@ -265,6 +265,15 @@ _ack_partial_batch(BatchedAckTracker *self)
   _ack_batch(self, partial_batch);
 }
 
+static gboolean
+_init(AckTracker *s)
+{
+  BatchedAckTracker *self = (BatchedAckTracker *)s;
+  _start_watches(self);
+
+  return TRUE;
+}
+
 static void
 _deinit(AckTracker *s)
 {
@@ -280,12 +289,13 @@ _setup_callbacks(AckTracker *s)
   s->track_msg = _track_msg;
   s->manage_msg_ack = _manage_msg_ack;
   s->free_fn = _free;
+  s->init = _init;
   s->deinit = _deinit;
 }
 
 static void
-_init(AckTracker *s, LogSource *source, guint timeout, guint batch_size,
-      BatchedAckTrackerOnBatchAcked cb, gpointer user_data)
+_init_instance(AckTracker *s, LogSource *source, guint timeout, guint batch_size,
+               BatchedAckTrackerOnBatchAcked cb, gpointer user_data)
 {
   BatchedAckTracker *self = (BatchedAckTracker *) s;
 
@@ -303,7 +313,6 @@ _init(AckTracker *s, LogSource *source, guint timeout, guint batch_size,
 
   g_mutex_init(&self->acked_records_lock);
   _init_watches(self);
-  _start_watches(self);
 }
 
 AckTracker *
@@ -312,7 +321,7 @@ batched_ack_tracker_new(LogSource *source, guint timeout, guint batch_size,
 {
   BatchedAckTracker *self = g_new0(BatchedAckTracker, 1);
 
-  _init(&self->super, source, timeout, batch_size, on_batch_acked, user_data);
+  _init_instance(&self->super, source, timeout, batch_size, on_batch_acked, user_data);
   g_assert(batch_size > 0);
   /*
    * It is mandatory to process the batched ACKs
