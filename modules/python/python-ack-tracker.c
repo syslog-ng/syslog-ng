@@ -66,6 +66,32 @@ py_instant_ack_tracker_factory_new(PyTypeObject *subtype, PyObject *args, PyObje
   return (PyObject *) self;
 }
 
+static PyObject *
+py_consecutive_ack_tracker_factory_new(PyTypeObject *subtype, PyObject *args, PyObject *kwds)
+{
+  PyObject *ack_callback;
+  static const gchar *kwlist[] = {"ack_callback", NULL};
+  if (!PyArg_ParseTupleAndKeywords(args, kwds, "O", (gchar **) kwlist, &ack_callback))
+    return NULL;
+
+  if (!PyCallable_Check(ack_callback))
+    {
+      PyErr_Format(PyExc_TypeError, "A callable object is expected (ack_callback)");
+      return NULL;
+    }
+
+  PyAckTrackerFactory *self = (PyAckTrackerFactory *) subtype->tp_alloc(subtype, 0);
+  if (!self)
+    return NULL;
+
+  Py_XINCREF(ack_callback);
+  self->ack_callback = ack_callback;
+
+  self->ack_tracker_factory = consecutive_ack_tracker_factory_new();
+
+  return (PyObject *) self;
+}
+
 int
 py_is_ack_tracker_factory(PyObject *obj)
 {
@@ -96,6 +122,18 @@ PyTypeObject py_instant_ack_tracker_factory_type =
   0,
 };
 
+PyTypeObject py_consecutive_ack_tracker_factory_type =
+{
+  PyVarObject_HEAD_INIT(&PyType_Type, 0)
+  .tp_name = "ConsecutiveAckTrackerFactory",
+  .tp_basicsize = sizeof(PyAckTrackerFactory),
+  .tp_dealloc = (destructor) py_ack_tracker_factory_free,
+  .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+  .tp_doc = "ConsecutiveAckTrackerFactory",
+  .tp_new = py_consecutive_ack_tracker_factory_new,
+  0,
+};
+
 void
 py_ack_tracker_init(void)
 {
@@ -105,4 +143,9 @@ py_ack_tracker_init(void)
   PyType_Ready(&py_instant_ack_tracker_factory_type);
   PyModule_AddObject(PyImport_AddModule("_syslogng"), "InstantAckTracker",
                      (PyObject *) &py_instant_ack_tracker_factory_type);
+
+  py_consecutive_ack_tracker_factory_type.tp_base = &py_ack_tracker_factory_type;
+  PyType_Ready(&py_consecutive_ack_tracker_factory_type);
+  PyModule_AddObject(PyImport_AddModule("_syslogng"), "ConsecutiveAckTracker",
+                     (PyObject *) &py_consecutive_ack_tracker_factory_type);
 }
