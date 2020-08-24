@@ -38,6 +38,7 @@ struct _AckTracker
   void (*manage_msg_ack)(AckTracker *self, LogMessage *msg, AckType ack_type);
   void (*free_fn)(AckTracker *self);
   void (*disable_bookmark_saving)(AckTracker *self);
+  gboolean (*init)(AckTracker *self);
   void (*deinit)(AckTracker *self);
 };
 
@@ -81,6 +82,15 @@ ack_tracker_disable_bookmark_saving(AckTracker *self)
     {
       self->disable_bookmark_saving(self);
     }
+}
+
+static inline gboolean
+ack_tracker_init(AckTracker *self)
+{
+  if (self && self->init)
+    return self->init(self);
+
+  return TRUE;
 }
 
 static inline void
