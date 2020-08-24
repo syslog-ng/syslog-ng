@@ -252,12 +252,35 @@ _free(AckTracker *s)
 }
 
 static void
+_ack_partial_batch(BatchedAckTracker *self)
+{
+  GList *partial_batch = NULL;
+  g_mutex_lock(&self->acked_records_lock);
+  {
+    partial_batch = self->acked_records;
+    self->acked_records = NULL;
+    self->acked_records_num = 0;
+  }
+  g_mutex_unlock(&self->acked_records_lock);
+  _ack_batch(self, partial_batch);
+}
+
+static void
+_deinit(AckTracker *s)
+{
+  BatchedAckTracker *self = (BatchedAckTracker *) s;
+  _stop_watches(self);
+  _ack_partial_batch(self);
+}
+
+static void
 _setup_callbacks(AckTracker *s)
 {
   s->request_bookmark = _request_bookmark;
   s->track_msg = _track_msg;
   s->manage_msg_ack = _manage_msg_ack;
   s->free_fn = _free;
+  s->deinit = _deinit;
 }
 
 static void
