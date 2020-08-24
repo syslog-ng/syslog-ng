@@ -30,6 +30,7 @@
 #include "msg_parse_lib.h"
 
 #include <criterion/criterion.h>
+#include <criterion/parameterized.h>
 
 static PyObject *_python_main;
 static PyObject *_python_main_dict;
@@ -79,5 +80,60 @@ void teardown(void)
 
 TestSuite(python_ack_tracker, .init = setup, .fini = teardown);
 
+static PyObject *
+ack_callback(PyObject *self, PyObject *args)
 {
+  Py_RETURN_NONE;
+}
+
+static PyMethodDef test_ack_callback =
+{
+  "ack_callback", ack_callback, METH_VARARGS, "Test ack callback"
+};
+
+struct AckTrackerFactoryTestParams
+{
+  PyTypeObject *ack_tracker_factory_type;
+  AckTrackerType expected_ack_tracker_type;
+};
+
+ParameterizedTestParameters(python_ack_tracker, test_ack_tracker_factory)
+{
+  static struct AckTrackerFactoryTestParams params[2];
+
+  /* PyAckTrackerFactory types and AckTrackerFactoryTestParams are all globals.
+   * Static initialization order is undefined.
+   */
+  params[0] = (struct AckTrackerFactoryTestParams)
+  {
+    &py_instant_ack_tracker_factory_type, ACK_INSTANT
+  };
+  params[1] = (struct AckTrackerFactoryTestParams)
+  {
+    &py_consecutive_ack_tracker_factory_type, ACK_CONSECUTIVE
+  };
+
+  return cr_make_param_array(struct AckTrackerFactoryTestParams, params, G_N_ELEMENTS(params));
+}
+
+ParameterizedTest(struct AckTrackerFactoryTestParams *param, python_ack_tracker, test_ack_tracker_factory)
+{
+  PyGILState_STATE gstate = PyGILState_Ensure();
+
+  PyObject *factory_args = Py_BuildValue("(N)", PyCFunction_New(&test_ack_callback, NULL));
+  log_msg_new_empty();
+  PyObject *py_ack_tracker_factory_obj = PyObject_CallObject((PyObject *) param->ack_tracker_factory_type,
+                                                             factory_args);
+  Py_XDECREF(factory_args);
+
+  cr_assert_not_null(py_ack_tracker_factory_obj);
+  cr_assert(py_is_ack_tracker_factory(py_ack_tracker_factory_obj));
+
+  PyAckTrackerFactory *py_ack_tracker_factory = (PyAckTrackerFactory *) py_ack_tracker_factory_obj;
+  cr_assert_not_null(py_ack_tracker_factory->ack_tracker_factory);
+  cr_assert_eq(ack_tracker_factory_get_type(py_ack_tracker_factory->ack_tracker_factory),
+               param->expected_ack_tracker_type);
+
+  Py_XDECREF(py_ack_tracker_factory);
+  PyGILState_Release(gstate);
 }
