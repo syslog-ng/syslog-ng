@@ -253,7 +253,7 @@ tls_session_verify_callback(int ok, X509_STORE_CTX *ctx)
           ok = 1;
           break;
         default:
-          msg_notice("Error occured during certificate validation",
+          msg_notice("Error occurred during certificate validation",
                      evt_tag_int("error", X509_STORE_CTX_get_error(ctx)),
                      tls_context_format_location_tag(self->ctx));
           break;

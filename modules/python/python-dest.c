@@ -197,7 +197,7 @@ _py_invoke_open(PythonDestDriver *self)
       if (ret == Py_None)
         {
           msg_warning_once("Since " VERSION_3_25 ", the return value of open method in python destination "
-                           "is used as success/failure indicator. Please use return True or return False explicitely",
+                           "is used as success/failure indicator. Please use return True or return False explicitly",
                            evt_tag_str("class", self->class));
           result = TRUE;
         }

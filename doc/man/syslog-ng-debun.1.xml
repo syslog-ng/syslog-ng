@@ -198,7 +198,7 @@
           <para>Wait 10 seconds (<userinput>-t 10</userinput>)</para>
         </listitem>
         <listitem>
-          <para>Stop syslog-ng debuging</para>
+          <para>Stop syslog-ng debugging</para>
         </listitem>
         <listitem>
           <para>Start syslog-ng</para>

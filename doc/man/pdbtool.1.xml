@@ -192,7 +192,7 @@
           <term><command>--file=&lt;filename-with-path&gt;</command> or <command>-f</command>
                     </term>
           <listitem>
-            <para>Process the messages of the specified log file with the pattern database. This option allows to classify messages offline, and to apply the pattern database to already existing logfiles. To read the messages from the standard input (stdin), specify a hyphen (<parameter>-</parameter>) character instead of a filename.</para>
+            <para>Process the messages of the specified log file with the pattern database. This option allows one to classify messages offline, and to apply the pattern database to already existing logfiles. To read the messages from the standard input (stdin), specify a hyphen (<parameter>-</parameter>) character instead of a filename.</para>
           </listitem>
         </varlistentry>
         <varlistentry>

@@ -57,7 +57,7 @@ int normalMode(char *hostkey, char *MACfile, char *inputlog, char *outputlog, in
 
   if (counter!=0UL)
     {
-      msg_error("[SLOG] ERROR: Initial key k0 is required for verification and descryption but the supplied key read has a counter > 0.",
+      msg_error("[SLOG] ERROR: Initial key k0 is required for verification and decryption but the supplied key read has a counter > 0.",
                 evt_tag_long("Counter", counter));
       return 0;
     }
