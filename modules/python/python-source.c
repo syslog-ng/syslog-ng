@@ -29,6 +29,8 @@
 #include "str-utils.h"
 #include "string-list.h"
 #include "python-persist.h"
+#include "python-ack-tracker.h"
+#include "python-bookmark.h"
 
 #include <structmember.h>
 
@@ -487,6 +489,26 @@ error:
   return FALSE;
 }
 
+static gboolean
+_py_sd_fill_bookmark(PythonSourceDriver *self, PyLogMessage *pymsg)
+{
+  if (!self->py.ack_tracker_factory)
+    {
+      PyErr_Format(PyExc_RuntimeError,
+                   "Bookmarks can not be used without creating an AckTracker instance (self.ack_tracker)");
+      return FALSE;
+    }
+
+  AckTracker *ack_tracker = ((LogSource *)self->super.worker)->ack_tracker;
+  Bookmark *bookmark = ack_tracker_request_bookmark(ack_tracker);
+
+  PyBookmark *py_bookmark = py_bookmark_new(pymsg->bookmark_data, self->py.ack_tracker_factory->ack_callback);
+  py_bookmark_fill(bookmark, py_bookmark);
+  Py_XDECREF(py_bookmark);
+
+  return TRUE;
+}
+
 static PyObject *
 py_log_source_post(PyObject *s, PyObject *args, PyObject *kwrds)
 {
@@ -524,6 +546,12 @@ py_log_source_post(PyObject *s, PyObject *args, PyObject *kwrds)
       msg_error("Incorrectly suspended source, dropping message",
                 evt_tag_str("driver", sd->super.super.super.id));
       Py_RETURN_NONE;
+    }
+
+  if (pymsg->bookmark_data && pymsg->bookmark_data != Py_None)
+    {
+      if (!_py_sd_fill_bookmark(sd, pymsg))
+        return NULL;
     }
 
   /* keep a reference until the PyLogMessage instance is freed */
