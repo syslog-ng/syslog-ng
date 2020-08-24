@@ -137,6 +137,7 @@ log_threaded_source_worker_options_destroy(LogThreadedSourceWorkerOptions *optio
 {
   log_source_options_destroy(&options->super);
   msg_format_options_destroy(&options->parse_options);
+  ack_tracker_factory_unref(options->ack_tracker_factory);
 }
 
 /* The wakeup lock must be held before calling this function. */
