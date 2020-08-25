@@ -465,6 +465,11 @@ log_source_init(LogPipe *s)
   LogSource *self = (LogSource *) s;
 
   _create_ack_tracker_if_not_exists(self);
+  if (!ack_tracker_init(self->ack_tracker))
+    {
+      msg_error("Failed to initialize AckTracker");
+      return FALSE;
+    }
 
   stats_lock();
   StatsClusterKey sc_key;
@@ -484,6 +489,7 @@ gboolean
 log_source_deinit(LogPipe *s)
 {
   LogSource *self = (LogSource *) s;
+  ack_tracker_deinit(self->ack_tracker);
 
   stats_lock();
   StatsClusterKey sc_key;

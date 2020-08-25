@@ -176,6 +176,11 @@ _ack(AckRecord *rec)
 static void
 _ack_all(GList *ack_records, gpointer user_data)
 {
+  if (user_data)
+    {
+      gboolean *cb_called = (gboolean *) user_data;
+      *cb_called = TRUE;
+    }
   g_list_foreach(ack_records, (GFunc) _ack, user_data);
 }
 
@@ -266,6 +271,49 @@ Test(batched_ack_tracker, batch_timeout)
   cr_expect_eq(window_size_counter_get(&src->window_size, NULL), 9);
   log_msg_ack(msg2, &path_options, AT_PROCESSED);
   cr_expect_eq(window_size_counter_get(&src->window_size, NULL), 10);
+
+  _run_iv_main_for_n_seconds(1);
+
+  cr_expect_eq(saved_ctr, 2);
+  cr_expect_eq(destroy_ctr, 2);
+  log_msg_unref(msg1);
+  log_msg_unref(msg2);
+  _deinit_log_source(src);
+  _deinit_test_logpipe_dst(dst);
+}
+
+Test(batched_ack_tracker, deinit_acks_partial_batch)
+{
+  gboolean ack_cb_called = FALSE;
+  LogSource *src = _init_log_source(batched_ack_tracker_factory_new(2000, 3, _ack_all, &ack_cb_called));
+  TestLogPipeDst *dst = _init_test_logpipe_dst();
+  log_pipe_append(&src->super, &dst->super);
+  cr_assert_not_null(src->ack_tracker);
+  AckTracker *ack_tracker = src->ack_tracker;
+  Bookmark *bm = ack_tracker_request_bookmark(ack_tracker);
+  guint saved_ctr = 0;
+  guint destroy_ctr = 0;
+  _fill_bookmark(bm, &saved_ctr, &destroy_ctr);
+  LogMessage *msg1 = log_msg_new_empty();
+  cr_expect_eq(window_size_counter_get(&src->window_size, NULL), 10);
+  log_source_post(src, msg1);
+  cr_expect_eq(window_size_counter_get(&src->window_size, NULL), 9);
+  cr_assert_eq(msg1->ack_record->tracker, ack_tracker);
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  log_msg_ack(msg1, &path_options, AT_PROCESSED);
+  cr_expect_eq(saved_ctr, 0);
+  cr_expect_eq(destroy_ctr, 0);
+  cr_expect_eq(window_size_counter_get(&src->window_size, NULL), 10);
+  LogMessage *msg2 = log_msg_new_empty();
+  bm = ack_tracker_request_bookmark(ack_tracker);
+  _fill_bookmark(bm, &saved_ctr, &destroy_ctr);
+  log_source_post(src, msg2);
+  cr_expect_eq(window_size_counter_get(&src->window_size, NULL), 9);
+  log_msg_ack(msg2, &path_options, AT_PROCESSED);
+  cr_expect_eq(window_size_counter_get(&src->window_size, NULL), 10);
+
+  ack_tracker_deinit(ack_tracker);
+  cr_expect(ack_cb_called);
 
   _run_iv_main_for_n_seconds(1);
 
