@@ -73,8 +73,12 @@ ParameterizedTestParameters(filter, test_filter_regexp_backref_chk)
     {.msg = "<15>Oct 15 16:17:02 host openvpn[2499]: alma fa", .field = LM_V_MESSAGE, .regexp = "(?P<a>a)(?P<l>l)(?P<MM>m)(?P<aa>a) (?P<fa>fa)", .flags = LMF_STORE_MATCHES, .expected_result = TRUE, .name = "aaaa", .value = NULL},
     {.msg = "<15>Oct 15 16:17:03 host openvpn[2499]: alma fa", .field = LM_V_MESSAGE, .regexp = "(?P<a>a)(?P<l>l)(?P<MM>m)(?P<aa>a) (?P<fa_name>fa)", .flags = LMF_STORE_MATCHES, .expected_result = TRUE, .name = "fa_name", .value = "fa"},
     {.msg = "<15>Oct 15 16:17:04 host openvpn[2499]: al fa", .field = LM_V_MESSAGE, .regexp = "(a)(l) (fa)", .flags = LMF_STORE_MATCHES, .expected_result = TRUE, .name = "2", .value = "l"},
+    {.msg = "<15>Oct 15 16:17:04 host openvpn[2499]: al fa", .field = LM_V_MESSAGE, .regexp = "(a)(l) (fa)", .flags = LMF_STORE_MATCHES, .expected_result = TRUE, .name = "3", .value = "fa"},
     {.msg = "<15>Oct 15 16:17:05 host openvpn[2499]: al fa", .field = LM_V_MESSAGE, .regexp = "(a)(l) (fa)", .flags = LMF_STORE_MATCHES, .expected_result = TRUE, .name = "0", .value = "al fa"},
-    {.msg = "<15>Oct 15 16:17:06 host openvpn[2499]: al fa", .field = LM_V_MESSAGE, .regexp = "(a)(l) (fa)", .flags = LMF_STORE_MATCHES, .expected_result = TRUE, .name = "233", .value = NULL}
+    {.msg = "<15>Oct 15 16:17:06 host openvpn[2499]: al fa", .field = LM_V_MESSAGE, .regexp = "(a)(l) (fa)", .flags = LMF_STORE_MATCHES, .expected_result = TRUE, .name = "233", .value = NULL},
+    {.msg = "<15>Oct 15 16:17:06 host openvpn[2499]: foobar bar", .field = LM_V_MESSAGE, .regexp = "(?<foobar>foobar) (?<foo>foo)?(?<bar>bar)", .flags = LMF_STORE_MATCHES, .expected_result = TRUE, .name = "bar", .value = "bar"},
+    {.msg = "<15>Oct 15 16:17:06 host openvpn[2499]: foobar bar", .field = LM_V_MESSAGE, .regexp = "(?<foobar>foobar) (?<foo>foo)?(?<bar>bar)", .flags = LMF_STORE_MATCHES, .expected_result = TRUE, .name = "foobar", .value = "foobar"},
+    {.msg = "<15>Oct 15 16:17:06 host openvpn[2499]: foobar bar", .field = LM_V_MESSAGE, .regexp = "(?<foobar>foobar) (?<foo>foo)?(?<bar>bar)", .flags = LMF_STORE_MATCHES, .expected_result = TRUE, .name = "foo", .value = NULL},
   };
 
   return cr_make_param_array(FilterParamRegexp, test_data_list, G_N_ELEMENTS(test_data_list));

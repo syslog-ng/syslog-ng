@@ -430,7 +430,7 @@ log_matcher_pcre_re_feed_named_substrings(LogMatcher *s, LogMessage *msg, int *m
          and the substring itself.
        */
       tabptr = name_table;
-      for (i = 0; i < namecount; i++)
+      for (i = 0; i < namecount; i++, tabptr += name_entry_size)
         {
           int n = (tabptr[0] << 8) | tabptr[1];
           gint begin_index = matches[2 * n];
@@ -440,7 +440,6 @@ log_matcher_pcre_re_feed_named_substrings(LogMatcher *s, LogMessage *msg, int *m
             continue;
 
           log_msg_set_value_by_name(msg, tabptr + 2, value + begin_index, end_index - begin_index);
-          tabptr += name_entry_size;
         }
     }
 }
