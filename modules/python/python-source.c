@@ -644,6 +644,9 @@ python_sd_deinit(LogPipe *s)
 {
   PythonSourceDriver *self = (PythonSourceDriver *) s;
 
+  AckTracker *ack_tracker = _py_sd_get_ack_tracker(self);
+  ack_tracker_deinit(ack_tracker);
+
   PyGILState_STATE gstate = PyGILState_Ensure();
   _py_invoke_deinit(self);
   PyGILState_Release(gstate);

@@ -611,6 +611,9 @@ python_fetcher_deinit(LogPipe *s)
 {
   PythonFetcherDriver *self = (PythonFetcherDriver *) s;
 
+  AckTracker *ack_tracker = _py_fetcher_get_ack_tracker(self);
+  ack_tracker_deinit(ack_tracker);
+
   PyGILState_STATE gstate = PyGILState_Ensure();
   _py_invoke_deinit(self);
   PyGILState_Release(gstate);
