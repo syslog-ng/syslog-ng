@@ -489,6 +489,12 @@ error:
   return FALSE;
 }
 
+static inline AckTracker *
+_py_sd_get_ack_tracker(PythonSourceDriver *self)
+{
+  return ((LogSource *) self->super.worker)->ack_tracker;
+}
+
 static gboolean
 _py_sd_fill_bookmark(PythonSourceDriver *self, PyLogMessage *pymsg)
 {
@@ -499,7 +505,7 @@ _py_sd_fill_bookmark(PythonSourceDriver *self, PyLogMessage *pymsg)
       return FALSE;
     }
 
-  AckTracker *ack_tracker = ((LogSource *)self->super.worker)->ack_tracker;
+  AckTracker *ack_tracker = _py_sd_get_ack_tracker(self);
   Bookmark *bookmark = ack_tracker_request_bookmark(ack_tracker);
 
   PyBookmark *py_bookmark = py_bookmark_new(pymsg->bookmark_data, self->py.ack_tracker_factory->ack_callback);
