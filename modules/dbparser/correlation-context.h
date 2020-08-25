@@ -20,11 +20,11 @@
  * COPYING for details.
  *
  */
-#ifndef PATTERNDB_CORRELLATION_CONTEXT_H_INCLUDED
-#define PATTERNDB_CORRELLATION_CONTEXT_H_INCLUDED
+#ifndef PATTERNDB_CORRELATION_CONTEXT_H_INCLUDED
+#define PATTERNDB_CORRELATION_CONTEXT_H_INCLUDED
 
 #include "syslog-ng.h"
-#include "correllation-key.h"
+#include "correlation-key.h"
 #include "timerwheel.h"
 #include "logmsg/logmsg.h"
 #include "template/templates.h"

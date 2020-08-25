@@ -20,7 +20,7 @@
  * COPYING for details.
  *
  */
-#include "correllation-key.h"
+#include "correlation-key.h"
 #include "logmsg/logmsg.h"
 #include <string.h>
 

@@ -20,36 +20,20 @@
  * COPYING for details.
  *
  */
-#include "correllation.h"
-#include "correllation-key.h"
-#include "correllation-context.h"
+#ifndef PATTERNDB_CORRELATION_H_INCLUDED
+#define PATTERNDB_CORRELATION_H_INCLUDED
 
-void
-correllation_state_init_instance(CorrellationState *self)
+#include "syslog-ng.h"
+#include "correlation-key.h"
+
+typedef struct _CorrellationState
 {
-  self->state = g_hash_table_new_full(correllation_key_hash, correllation_key_equal, NULL,
-                                      (GDestroyNotify) correllation_context_unref);
-}
+  GHashTable *state;
+} CorrellationState;
 
-void
-correllation_state_deinit_instance(CorrellationState *self)
-{
-  if (self->state)
-    g_hash_table_destroy(self->state);
-}
+void correllation_state_init_instance(CorrellationState *self);
+void correllation_state_deinit_instance(CorrellationState *self);
+CorrellationState *correllation_state_new(void);
+void correllation_state_free(CorrellationState *self);
 
-CorrellationState *
-correllation_state_new(void)
-{
-  CorrellationState *self = g_new0(CorrellationState, 1);
-
-  correllation_state_init_instance(self);
-  return self;
-}
-
-void
-correllation_state_free(CorrellationState *self)
-{
-  correllation_state_deinit_instance(self);
-  g_free(self);
-}
+#endif

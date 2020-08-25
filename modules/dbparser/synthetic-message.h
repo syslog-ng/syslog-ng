@@ -24,7 +24,7 @@
 #define PATTERNDB_SYNTHETIC_MESSAGE_H_INCLUDED
 
 #include "syslog-ng.h"
-#include "correllation-context.h"
+#include "correlation-context.h"
 #include "template/templates.h"
 
 typedef enum

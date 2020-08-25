@@ -25,12 +25,12 @@ set(PATTERNDB_SOURCES
     pdb-ratelimit.h
     pdb-lookup-params.h
     pdb-lookup-params.c
-    correllation.c
-    correllation.h
-    correllation-key.c
-    correllation-key.h
-    correllation-context.c
-    correllation-context.h
+    correlation.c
+    correlation.h
+    correlation-key.c
+    correlation-key.h
+    correlation-context.c
+    correlation-context.h
     synthetic-message.c
     synthetic-message.h
     synthetic-context.c

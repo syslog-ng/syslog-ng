@@ -24,7 +24,7 @@
 #ifndef PATTERNDB_PDB_RATELIMIT_H_INCLUDED
 #define PATTERNDB_PDB_RATELIMIT_H_INCLUDED
 
-#include "correllation-key.h"
+#include "correlation-key.h"
 
 /* This class encapsulates a rate-limit state stored in
    db->state. */

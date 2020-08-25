@@ -21,8 +21,8 @@
  */
 
 #include "groupingby.h"
-#include "correllation.h"
-#include "correllation-context.h"
+#include "correlation.h"
+#include "correlation-context.h"
 #include "synthetic-message.h"
 #include "messages.h"
 #include "str-utils.h"

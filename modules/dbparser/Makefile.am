@@ -27,12 +27,12 @@ modules_dbparser_libsyslog_ng_patterndb_la_SOURCES	=	\
 	modules/dbparser/pdb-ratelimit.h			\
 	modules/dbparser/pdb-lookup-params.h			\
 	modules/dbparser/pdb-lookup-params.c			\
-	modules/dbparser/correllation.c				\
-	modules/dbparser/correllation.h				\
-	modules/dbparser/correllation-key.c			\
-	modules/dbparser/correllation-key.h			\
-	modules/dbparser/correllation-context.c			\
-	modules/dbparser/correllation-context.h			\
+	modules/dbparser/correlation.c				\
+	modules/dbparser/correlation.h				\
+	modules/dbparser/correlation-key.c			\
+	modules/dbparser/correlation-key.h			\
+	modules/dbparser/correlation-context.c			\
+	modules/dbparser/correlation-context.h			\
 	modules/dbparser/synthetic-message.c			\
 	modules/dbparser/synthetic-message.h			\
 	modules/dbparser/synthetic-context.c			\

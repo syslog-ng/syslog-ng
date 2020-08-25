@@ -24,7 +24,7 @@
 #define PATTERNDB_SYNTHETIC_CONTEXT_H_INCLUDED
 
 #include "syslog-ng.h"
-#include "correllation-key.h"
+#include "correlation-key.h"
 #include "template/templates.h"
 
 typedef struct _SyntheticContext

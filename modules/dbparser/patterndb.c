@@ -30,7 +30,7 @@
 #include "pdb-context.h"
 #include "pdb-ratelimit.h"
 #include "pdb-lookup-params.h"
-#include "correllation.h"
+#include "correlation.h"
 #include "logmsg/logmsg.h"
 #include "template/templates.h"
 #include "str-utils.h"

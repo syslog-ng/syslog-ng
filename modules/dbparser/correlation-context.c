@@ -20,7 +20,7 @@
  * COPYING for details.
  *
  */
-#include "correllation-context.h"
+#include "correlation-context.h"
 #include "logmsg/logmsg.h"
 #include "scratch-buffers.h"
 #include <string.h>
