@@ -28,7 +28,7 @@ unset CDPATH
 cd $BASEDIR/../
 
 if [ "$VERSION" != "" ]; then
-  echo $VERSION
+  echo $VERSION | tr -d '\n'
 elif [ -d .git ] && GIT_VERSION=$(git describe --tags --dirty --abbrev=7); then
   echo $GIT_VERSION | sed 's/^syslog-ng-//' | tr '-' '.' | tr -d '\n'
 else
