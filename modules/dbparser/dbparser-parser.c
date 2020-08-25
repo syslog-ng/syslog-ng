@@ -35,7 +35,7 @@ static CfgLexerKeyword dbparser_keywords[] =
   { "grouping_by",        KW_GROUPING_BY },
   { "file",               KW_FILE },
 
-  /* correllate options */
+  /* correlate options */
   { "inject_mode",        KW_INJECT_MODE },
   { "drop_unmatched",     KW_DROP_UNMATCHED },
   { "key",                KW_KEY },

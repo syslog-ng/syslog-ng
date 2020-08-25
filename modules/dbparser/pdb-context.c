@@ -23,21 +23,21 @@
 #include "pdb-context.h"
 
 static void
-pdb_context_free(CorrellationContext *s)
+pdb_context_free(CorrelationContext *s)
 {
   PDBContext *self = (PDBContext *) s;
 
   if (self->rule)
     pdb_rule_unref(self->rule);
-  correllation_context_free_method(s);
+  correlation_context_free_method(s);
 }
 
 PDBContext *
-pdb_context_new(CorrellationKey *key)
+pdb_context_new(CorrelationKey *key)
 {
   PDBContext *self = g_new0(PDBContext, 1);
 
-  correllation_context_init(&self->super, key);
+  correlation_context_init(&self->super, key);
   self->super.free_fn = pdb_context_free;
   return self;
 }

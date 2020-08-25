@@ -69,7 +69,7 @@ _compare_messages_with_nontrivial_template(gconstpointer a, gconstpointer b, gpo
 }
 
 void
-correllation_context_sort(CorrellationContext *self, LogTemplate *sort_key)
+correlation_context_sort(CorrelationContext *self, LogTemplate *sort_key)
 {
   if (log_template_is_trivial(sort_key))
     g_ptr_array_sort_with_data(self->messages, _compare_messages_with_trivial_template, sort_key);
@@ -78,7 +78,7 @@ correllation_context_sort(CorrellationContext *self, LogTemplate *sort_key)
 }
 
 void
-correllation_context_init(CorrellationContext *self, const CorrellationKey *key)
+correlation_context_init(CorrelationContext *self, const CorrelationKey *key)
 {
   self->messages = g_ptr_array_new();
   memcpy(&self->key, key, sizeof(self->key));
@@ -90,11 +90,11 @@ correllation_context_init(CorrellationContext *self, const CorrellationKey *key)
   if (self->key.host)
     self->key.host = g_strdup(self->key.host);
   self->ref_cnt = 1;
-  self->free_fn = correllation_context_free_method;
+  self->free_fn = correlation_context_free_method;
 }
 
 void
-correllation_context_free_method(CorrellationContext *self)
+correlation_context_free_method(CorrelationContext *self)
 {
   gint i;
 
@@ -113,24 +113,24 @@ correllation_context_free_method(CorrellationContext *self)
   g_free(self->key.session_id);
 }
 
-CorrellationContext *
-correllation_context_new(CorrellationKey *key)
+CorrelationContext *
+correlation_context_new(CorrelationKey *key)
 {
-  CorrellationContext *self = g_new0(CorrellationContext, 1);
+  CorrelationContext *self = g_new0(CorrelationContext, 1);
 
-  correllation_context_init(self, key);
+  correlation_context_init(self, key);
   return self;
 }
 
-CorrellationContext *
-correllation_context_ref(CorrellationContext *self)
+CorrelationContext *
+correlation_context_ref(CorrelationContext *self)
 {
   self->ref_cnt++;
   return self;
 }
 
 void
-correllation_context_unref(CorrellationContext *self)
+correlation_context_unref(CorrelationContext *self)
 {
   if (--self->ref_cnt == 0)
     {

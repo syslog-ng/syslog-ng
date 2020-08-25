@@ -75,7 +75,7 @@ parse_msg_ref(LogTemplateCompiler *self)
       self->cursor++;
       if ((*self->cursor) >= '0' && (*self->cursor) <= '9')
         {
-          /* syntax: ${name}@1 to denote the log message index in the correllation state */
+          /* syntax: ${name}@1 to denote the log message index in the correlation state */
           while ((*self->cursor) >= '0' && (*self->cursor) <= '9')
             {
               self->msg_ref += self->msg_ref * 10 + ((*self->cursor) - '0');

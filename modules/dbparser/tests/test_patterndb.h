@@ -98,16 +98,16 @@
     </rule>\
     <rule provider='test' id='10a' class='system' context-scope='program' context-id='$PID' context-timeout='60'>\
      <patterns>\
-      <pattern>correllated-message-based-on-pid</pattern>\
+      <pattern>correlated-message-based-on-pid</pattern>\
      </patterns>\
      <values>\
-      <value name='correllated-msg-context-id'>${CONTEXT_ID}</value>\
-      <value name='correllated-msg-context-length'>$(context-length)</value>\
+      <value name='correlated-msg-context-id'>${CONTEXT_ID}</value>\
+      <value name='correlated-msg-context-length'>$(context-length)</value>\
      </values>\
     </rule>\
     <rule provider='test' id='10b' class='violation' context-scope='program' context-id='$PID' context-timeout='60'>\
      <patterns>\
-      <pattern>correllated-message-with-action-on-match</pattern>\
+      <pattern>correlated-message-with-action-on-match</pattern>\
      </patterns>\
      <actions>\
        <action trigger='match'>\
@@ -117,7 +117,7 @@
              <value name='context-id'>${CONTEXT_ID}</value>\
            </values>\
            <tags>\
-             <tag>correllated-msg-tag</tag>\
+             <tag>correlated-msg-tag</tag>\
            </tags>\
          </message>\
        </action>\
@@ -125,7 +125,7 @@
     </rule>\
     <rule provider='test' id='10c' class='violation' context-scope='program' context-id='$PID' context-timeout='60'>\
      <patterns>\
-      <pattern>correllated-message-with-action-on-timeout</pattern>\
+      <pattern>correlated-message-with-action-on-timeout</pattern>\
      </patterns>\
      <actions>\
        <action trigger='timeout'>\
@@ -139,7 +139,7 @@
     </rule>\
     <rule provider='test' id='10d' class='violation' context-scope='program' context-id='$PID' context-timeout='60'>\
      <patterns>\
-      <pattern>correllated-message-with-action-condition</pattern>\
+      <pattern>correlated-message-with-action-condition</pattern>\
      </patterns>\
      <actions>\
        <action trigger='match' condition='\"${PID}\" ne \"" MYPID "\"' >\
@@ -160,7 +160,7 @@
     </rule>\
     <rule provider='test' id='10e' class='violation' context-scope='program' context-id='$PID' context-timeout='60'>\
      <patterns>\
-      <pattern>correllated-message-with-rate-limited-action</pattern>\
+      <pattern>correlated-message-with-rate-limited-action</pattern>\
      </patterns>\
      <actions>\
        <action trigger='match' rate='1/60'>\
@@ -174,7 +174,7 @@
     </rule>\
     <rule provider='test' id='10f' class='violation' context-scope='program' context-id='$PROGRAM' context-timeout='60'>\
      <patterns>\
-      <pattern>correllated-message-with-action-condition-filter</pattern>\
+      <pattern>correlated-message-with-action-condition-filter</pattern>\
      </patterns>\
      <actions>\
        <action trigger='match' condition='message(\"filter-not-exists\" type(pcre))' >\
@@ -276,7 +276,7 @@
     </rule>\
     <rule provider='test' id='13' class='violation' context-id='1000' context-timeout='60' context-scope='program'>\
      <patterns>\
-      <pattern>correllated-message-that-uses-context-created-by-rule-id#12</pattern>\
+      <pattern>correlated-message-that-uses-context-created-by-rule-id#12</pattern>\
      </patterns>\
      <values>\
        <value name='triggering-message'>${MESSAGE}@1 assd</value>\
@@ -284,7 +284,7 @@
     </rule>\
     <rule provider='test' id='14' class='violation' context-id='1001' context-timeout='60' context-scope='program'>\
      <patterns>\
-      <pattern>correllated-message-with-action-to-create-context</pattern>\
+      <pattern>correlated-message-with-action-to-create-context</pattern>\
      </patterns>\
      <values>\
        <value name='rule-msg-context-id'>${.classifier.context_id}</value>\
@@ -304,7 +304,7 @@
     </rule>\
     <rule provider='test' id='15' class='violation' context-id='1002' context-timeout='60' context-scope='program'>\
      <patterns>\
-      <pattern>correllated-message-that-uses-context-created-by-rule-id#14</pattern>\
+      <pattern>correlated-message-that-uses-context-created-by-rule-id#14</pattern>\
      </patterns>\
      <values>\
        <value name='triggering-message'>${MESSAGE}@1 assd</value>\

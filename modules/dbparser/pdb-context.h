@@ -27,18 +27,18 @@
 #include "pdb-rule.h"
 
 /**************************************************************************
- * PDBContext, represents a correllation state in the state hash table, is
+ * PDBContext, represents a correlation state in the state hash table, is
  * marked with PSK_CONTEXT in the hash table key
  **************************************************************************/
 
-/* This class encapsulates a correllation context, keyed by CorrellationKey, type == PSK_RULE. */
+/* This class encapsulates a correlation context, keyed by CorrelationKey, type == PSK_RULE. */
 typedef struct _PDBContext
 {
-  CorrellationContext super;
+  CorrelationContext super;
   /* back reference to the last rule touching this context */
   PDBRule *rule;
 } PDBContext;
 
-PDBContext *pdb_context_new(CorrellationKey *key);
+PDBContext *pdb_context_new(CorrelationKey *key);
 
 #endif

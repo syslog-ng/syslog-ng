@@ -43,7 +43,7 @@ synthetic_context_set_context_timeout(SyntheticContext *self, gint timeout)
 void
 synthetic_context_set_context_scope(SyntheticContext *self, const gchar *scope, GError **error)
 {
-  int context_scope = correllation_key_lookup_scope(scope);
+  int context_scope = correlation_key_lookup_scope(scope);
   if (context_scope < 0)
     {
       self->scope = RCS_GLOBAL;

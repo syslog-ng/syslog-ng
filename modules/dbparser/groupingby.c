@@ -39,11 +39,11 @@ typedef struct _GroupingBy
   struct iv_timer tick;
   TimerWheel *timer_wheel;
   GTimeVal last_tick;
-  CorrellationState *correllation;
+  CorrelationState *correlation;
   LogTemplate *key_template;
   LogTemplate *sort_key_template;
   gint timeout;
-  CorrellationScope scope;
+  CorrelationScope scope;
   SyntheticMessage *synthetic_message;
   FilterExprNode *trigger_condition_expr;
   FilterExprNode *where_condition_expr;
@@ -52,7 +52,7 @@ typedef struct _GroupingBy
 
 typedef struct
 {
-  CorrellationState *correllation;
+  CorrelationState *correlation;
   TimerWheel *timer_wheel;
 } GroupingByPersistData;
 
@@ -61,7 +61,7 @@ static NVHandle context_id_handle = 0;
 static void
 _free_persist_data(GroupingByPersistData *self)
 {
-  correllation_state_free(self->correllation);
+  correlation_state_free(self->correlation);
   timer_wheel_free(self->timer_wheel);
   g_free(self);
 }
@@ -85,7 +85,7 @@ grouping_by_set_sort_key_template(LogParser *s, LogTemplate *sort_key)
 }
 
 void
-grouping_by_set_scope(LogParser *s, CorrellationScope scope)
+grouping_by_set_scope(LogParser *s, CorrelationScope scope)
 {
   GroupingBy *self = (GroupingBy *) s;
 
@@ -143,7 +143,7 @@ grouping_by_set_time(GroupingBy *self, const UnixTime *ls)
   /* clamp the current time between the timestamp of the current message
    * (low limit) and the current system time (high limit).  This ensures
    * that incorrect clocks do not skew the current time know by the
-   * correllation engine too much. */
+   * correlation engine too much. */
 
   cached_g_current_time(&now);
   self->last_tick = now;
@@ -159,7 +159,7 @@ grouping_by_set_time(GroupingBy *self, const UnixTime *ls)
 
 /*
  * This function can be called any time when pattern-db is not processing
- * messages, but we expect the correllation timer to move forward.  It
+ * messages, but we expect the correlation timer to move forward.  It
  * doesn't need to be called absolutely regularly as it'll use the current
  * system time to determine how much time has passed since the last
  * invocation.  See the timing comment at pattern_db_process() for more
@@ -212,7 +212,7 @@ grouping_by_timer_tick(gpointer s)
 }
 
 static gboolean
-_evaluate_filter(FilterExprNode *expr, CorrellationContext *context)
+_evaluate_filter(FilterExprNode *expr, CorrelationContext *context)
 {
   return filter_expr_eval_with_context(expr,
                                        (LogMessage **) context->messages->pdata,
@@ -220,7 +220,7 @@ _evaluate_filter(FilterExprNode *expr, CorrellationContext *context)
 }
 
 static gboolean
-_evaluate_having(GroupingBy *self, CorrellationContext *context)
+_evaluate_having(GroupingBy *self, CorrelationContext *context)
 {
   if (!self->having_condition_expr)
     return TRUE;
@@ -229,7 +229,7 @@ _evaluate_having(GroupingBy *self, CorrellationContext *context)
 }
 
 static gboolean
-_evaluate_trigger(GroupingBy *self, CorrellationContext *context)
+_evaluate_trigger(GroupingBy *self, CorrelationContext *context)
 {
   if (!self->trigger_condition_expr)
     return FALSE;
@@ -238,7 +238,7 @@ _evaluate_trigger(GroupingBy *self, CorrellationContext *context)
 }
 
 static LogMessage *
-grouping_by_generate_synthetic_msg(GroupingBy *self, CorrellationContext *context)
+grouping_by_generate_synthetic_msg(GroupingBy *self, CorrelationContext *context)
 {
   LogMessage *msg = NULL;
 
@@ -256,16 +256,16 @@ grouping_by_generate_synthetic_msg(GroupingBy *self, CorrellationContext *contex
 }
 
 static LogMessage *
-grouping_by_update_context_and_generate_msg(GroupingBy *self, CorrellationContext *context)
+grouping_by_update_context_and_generate_msg(GroupingBy *self, CorrelationContext *context)
 {
   if (self->sort_key_template)
-    correllation_context_sort(context, self->sort_key_template);
+    correlation_context_sort(context, self->sort_key_template);
 
   LogMessage *msg = grouping_by_generate_synthetic_msg(self, context);
 
-  g_hash_table_remove(self->correllation->state, &context->key);
+  g_hash_table_remove(self->correlation->state, &context->key);
 
-  /* correllation_context_free is automatically called when returning from
+  /* correlation_context_free is automatically called when returning from
      this function by the timerwheel code as a destroy notify
      callback. */
 
@@ -275,10 +275,10 @@ grouping_by_update_context_and_generate_msg(GroupingBy *self, CorrellationContex
 static void
 grouping_by_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data)
 {
-  CorrellationContext *context = user_data;
+  CorrelationContext *context = user_data;
   GroupingBy *self = (GroupingBy *) timer_wheel_get_associated_data(wheel);
 
-  msg_debug("Expiring grouping-by() correllation context",
+  msg_debug("Expiring grouping-by() correlation context",
             evt_tag_long("utc", timer_wheel_get_time(wheel)),
             evt_tag_str("context-id", context->key.session_id),
             log_pipe_location_tag(&self->super.super.super));
@@ -302,33 +302,33 @@ grouping_by_format_persist_name(LogParser *s)
   return persist_name;
 }
 
-static CorrellationContext *
+static CorrelationContext *
 _lookup_or_create_context(GroupingBy *self, LogMessage *msg)
 {
-  CorrellationContext *context;
-  CorrellationKey key;
+  CorrelationContext *context;
+  CorrelationKey key;
   GString *buffer = scratch_buffers_alloc();
 
   log_template_format(self->key_template, msg, NULL, LTZ_LOCAL, 0, NULL, buffer);
   log_msg_set_value(msg, context_id_handle, buffer->str, -1);
 
-  correllation_key_init(&key, self->scope, msg, buffer->str);
-  context = g_hash_table_lookup(self->correllation->state, &key);
+  correlation_key_init(&key, self->scope, msg, buffer->str);
+  context = g_hash_table_lookup(self->correlation->state, &key);
   if (!context)
     {
-      msg_debug("Correllation context lookup failure, starting a new context",
+      msg_debug("Correlation context lookup failure, starting a new context",
                 evt_tag_str("key", key.session_id),
                 evt_tag_int("timeout", self->timeout),
                 evt_tag_int("expiration", timer_wheel_get_time(self->timer_wheel) + self->timeout),
                 log_pipe_location_tag(&self->super.super.super));
 
-      context = correllation_context_new(&key);
-      g_hash_table_insert(self->correllation->state, &context->key, context);
+      context = correlation_context_new(&key);
+      g_hash_table_insert(self->correlation->state, &context->key, context);
       g_string_steal(buffer);
     }
   else
     {
-      msg_debug("Correllation context lookup successful",
+      msg_debug("Correlation context lookup successful",
                 evt_tag_str("key", key.session_id),
                 evt_tag_int("timeout", self->timeout),
                 evt_tag_int("expiration", timer_wheel_get_time(self->timer_wheel) + self->timeout),
@@ -346,12 +346,12 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
   g_static_mutex_lock(&self->lock);
   grouping_by_set_time(self, &msg->timestamps[LM_TS_STAMP]);
 
-  CorrellationContext *context = _lookup_or_create_context(self, msg);
+  CorrelationContext *context = _lookup_or_create_context(self, msg);
   g_ptr_array_add(context->messages, log_msg_ref(msg));
 
   if (_evaluate_trigger(self, context))
     {
-      msg_verbose("Correllation trigger() met, closing state",
+      msg_verbose("Correlation trigger() met, closing state",
                   evt_tag_str("key", context->key.session_id),
                   evt_tag_int("timeout", self->timeout),
                   evt_tag_int("num_messages", context->messages->len),
@@ -385,7 +385,7 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
       else
         {
           context->timer = timer_wheel_add_timer(self->timer_wheel, self->timeout, grouping_by_expire_entry,
-                                                 correllation_context_ref(context), (GDestroyNotify) correllation_context_unref);
+                                                 correlation_context_ref(context), (GDestroyNotify) correlation_context_unref);
         }
     }
 
@@ -417,19 +417,19 @@ grouping_by_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_
 }
 
 static void
-_load_correllation_state(GroupingBy *self, GlobalConfig *cfg)
+_load_correlation_state(GroupingBy *self, GlobalConfig *cfg)
 {
   GroupingByPersistData *persist_data = cfg_persist_config_fetch(cfg,
                                         grouping_by_format_persist_name(&self->super.super));
   if (persist_data)
     {
-      self->correllation = persist_data->correllation;
+      self->correlation = persist_data->correlation;
       self->timer_wheel = persist_data->timer_wheel;
       timer_wheel_set_associated_data(self->timer_wheel, log_pipe_ref((LogPipe *)self), (GDestroyNotify)log_pipe_unref);
     }
   else
     {
-      self->correllation = correllation_state_new();
+      self->correlation = correlation_state_new();
       self->timer_wheel = timer_wheel_new();
       timer_wheel_set_associated_data(self->timer_wheel, log_pipe_ref((LogPipe *)self), (GDestroyNotify)log_pipe_unref);
     }
@@ -461,7 +461,7 @@ grouping_by_init(LogPipe *s)
       return FALSE;
     }
 
-  _load_correllation_state(self, cfg);
+  _load_correlation_state(self, cfg);
 
   iv_validate_now();
   IV_TIMER_INIT(&self->tick);
@@ -486,12 +486,12 @@ static void
 _store_data_in_persist(GroupingBy *self, GlobalConfig *cfg)
 {
   GroupingByPersistData *persist_data = g_new0(GroupingByPersistData, 1);
-  persist_data->correllation = self->correllation;
+  persist_data->correlation = self->correlation;
   persist_data->timer_wheel = self->timer_wheel;
 
   cfg_persist_config_add(cfg, grouping_by_format_persist_name(&self->super.super), persist_data,
                          (GDestroyNotify) _free_persist_data, FALSE);
-  self->correllation = NULL;
+  self->correlation = NULL;
   self->timer_wheel = NULL;
 }
 

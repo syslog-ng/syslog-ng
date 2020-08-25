@@ -30,7 +30,7 @@
 typedef struct _SyntheticContext
 {
   gint timeout;
-  CorrellationScope scope;
+  CorrelationScope scope;
   LogTemplate *id_template;
 } SyntheticContext;
 

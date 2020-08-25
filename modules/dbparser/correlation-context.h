@@ -29,32 +29,32 @@
 #include "logmsg/logmsg.h"
 #include "template/templates.h"
 
-/* This class encapsulates a correllation context, keyed by CorrellationKey, type == PSK_RULE. */
-typedef struct _CorrellationContext CorrellationContext;
-struct _CorrellationContext
+/* This class encapsulates a correlation context, keyed by CorrelationKey, type == PSK_RULE. */
+typedef struct _CorrelationContext CorrelationContext;
+struct _CorrelationContext
 {
   /* key in the hashtable. */
-  CorrellationKey key;
+  CorrelationKey key;
   /* timeout timer */
   TWEntry *timer;
   /* messages belonging to this context */
   GPtrArray *messages;
   gint ref_cnt;
-  void (*free_fn)(CorrellationContext *s);
+  void (*free_fn)(CorrelationContext *s);
 };
 
 static inline LogMessage *
-correllation_context_get_last_message(CorrellationContext *self)
+correlation_context_get_last_message(CorrelationContext *self)
 {
   return (LogMessage *) g_ptr_array_index(self->messages, self->messages->len - 1);
 }
 
-void correllation_context_init(CorrellationContext *self, const CorrellationKey *key);
-void correllation_context_free_method(CorrellationContext *self);
-void correllation_context_sort(CorrellationContext *self, LogTemplate *sort_key);
-CorrellationContext *correllation_context_new(CorrellationKey *key);
-CorrellationContext *correllation_context_ref(CorrellationContext *self);
-void correllation_context_unref(CorrellationContext *self);
+void correlation_context_init(CorrelationContext *self, const CorrelationKey *key);
+void correlation_context_free_method(CorrelationContext *self);
+void correlation_context_sort(CorrelationContext *self, LogTemplate *sort_key);
+CorrelationContext *correlation_context_new(CorrelationKey *key);
+CorrelationContext *correlation_context_ref(CorrelationContext *self);
+void correlation_context_unref(CorrelationContext *self);
 
 
 #endif

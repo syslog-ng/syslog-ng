@@ -115,7 +115,7 @@ synthetic_message_add_value_template(SyntheticMessage *self, const gchar *name, 
 }
 
 void
-synthetic_message_apply(SyntheticMessage *self, CorrellationContext *context, LogMessage *msg)
+synthetic_message_apply(SyntheticMessage *self, CorrelationContext *context, LogMessage *msg)
 {
   gint i;
 
@@ -164,10 +164,10 @@ _generate_new_message_with_timestamp_of_the_triggering_message(UnixTime *msgstam
 }
 
 LogMessage *
-_generate_message_inheriting_properties_from_the_entire_context(CorrellationContext *context)
+_generate_message_inheriting_properties_from_the_entire_context(CorrelationContext *context)
 {
   LogMessage *genmsg = _generate_message_inheriting_properties_from_the_last_message(
-                         correllation_context_get_last_message(context));
+                         correlation_context_get_last_message(context));
 
   log_msg_merge_context(genmsg, (LogMessage **) context->messages->pdata, context->messages->len);
   return genmsg;
@@ -189,9 +189,9 @@ _generate_default_message(SyntheticMessageInheritMode inherit_mode, LogMessage *
 }
 
 static LogMessage *
-_generate_default_message_from_context(SyntheticMessageInheritMode inherit_mode, CorrellationContext *context)
+_generate_default_message_from_context(SyntheticMessageInheritMode inherit_mode, CorrelationContext *context)
 {
-  LogMessage *triggering_msg = correllation_context_get_last_message(context);
+  LogMessage *triggering_msg = correlation_context_get_last_message(context);
 
   if (inherit_mode != RAC_MSG_INHERIT_CONTEXT)
     return _generate_default_message(inherit_mode, triggering_msg);
@@ -200,7 +200,7 @@ _generate_default_message_from_context(SyntheticMessageInheritMode inherit_mode,
 }
 
 LogMessage *
-synthetic_message_generate_with_context(SyntheticMessage *self, CorrellationContext *context)
+synthetic_message_generate_with_context(SyntheticMessage *self, CorrelationContext *context)
 {
   LogMessage *genmsg;
 
@@ -232,7 +232,7 @@ synthetic_message_generate_without_context(SyntheticMessage *self, LogMessage *m
 
   genmsg = _generate_default_message(self->inherit_mode, msg);
 
-  /* no context, which means no correllation. The action
+  /* no context, which means no correlation. The action
    * rule contains the generated message at @0 and the one
    * which triggered the rule in @1.
    *
@@ -242,7 +242,7 @@ synthetic_message_generate_without_context(SyntheticMessage *self, LogMessage *m
    */
   LogMessage *dummy_msgs[] = { msg, genmsg, NULL };
   GPtrArray dummy_ptr_array = { .pdata = (void **) dummy_msgs, .len = 2 };
-  CorrellationContext dummy_context = { .messages = &dummy_ptr_array, 0 };
+  CorrelationContext dummy_context = { .messages = &dummy_ptr_array, 0 };
 
   synthetic_message_apply(self, &dummy_context, genmsg);
   return genmsg;
