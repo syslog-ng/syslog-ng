@@ -209,7 +209,7 @@ log_threaded_source_worker_free(LogPipe *s)
   log_pipe_unref(&self->control->super.super.super);
   self->control = NULL;
 
-  log_source_free(s);
+  log_pipe_unref(s);
 }
 
 static LogThreadedSourceWorker *
@@ -217,6 +217,7 @@ log_threaded_source_worker_new(GlobalConfig *cfg)
 {
   LogThreadedSourceWorker *self = g_new0(LogThreadedSourceWorker, 1);
   log_source_init_instance(&self->super, cfg);
+  log_pipe_ref(&self->super.super);
 
   wakeup_cond_init(&self->wakeup_cond);
 
