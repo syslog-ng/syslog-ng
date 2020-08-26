@@ -265,7 +265,7 @@ G_STATIC_ASSERT(G_STRUCT_OFFSET(LogPipe, queue) - G_STRUCT_OFFSET(LogPipe, flags
 extern gboolean (*pipe_single_step_hook)(LogPipe *pipe, LogMessage *msg, const LogPathOptions *path_options);
 
 LogPipe *log_pipe_ref(LogPipe *self);
-void log_pipe_unref(LogPipe *self);
+gboolean log_pipe_unref(LogPipe *self);
 LogPipe *log_pipe_new(GlobalConfig *cfg);
 void log_pipe_init_instance(LogPipe *self, GlobalConfig *cfg);
 void log_pipe_forward_notify(LogPipe *self, gint notify_code, gpointer user_data);
