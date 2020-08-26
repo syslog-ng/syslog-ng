@@ -25,6 +25,8 @@
 #include "python-main.h"
 #include "python-fetcher.h"
 #include "python-source.h"
+#include "python-bookmark.h"
+#include "python-ack-tracker.h"
 #include "mainloop-worker.h"
 #include "mainloop.h"
 #include "python-persist.h"
@@ -50,6 +52,8 @@ _py_init_interpreter(void)
   PyEval_InitThreads();
   py_log_fetcher_init();
   py_log_source_init();
+  py_bookmark_init();
+  py_ack_tracker_init();
   PyEval_SaveThread();
 }
 

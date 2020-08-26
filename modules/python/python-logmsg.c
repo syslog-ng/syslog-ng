@@ -148,6 +148,7 @@ static void
 py_log_message_free(PyLogMessage *self)
 {
   log_msg_unref(self->msg);
+  Py_CLEAR(self->bookmark_data);
   Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
@@ -161,17 +162,19 @@ py_log_message_new(LogMessage *msg)
     return NULL;
 
   self->msg = log_msg_ref(msg);
+  self->bookmark_data = NULL;
   return (PyObject *) self;
 }
 
 static PyObject *
 py_log_message_new_empty(PyTypeObject *subtype, PyObject *args, PyObject *kwds)
 {
+  PyObject *bookmark_data = NULL;
   const gchar *message = NULL;
   gint message_length = 0;
 
-  static const gchar *kwlist[] = {"message", NULL};
-  if (!PyArg_ParseTupleAndKeywords(args, kwds, "|z#", (gchar **) kwlist, &message, &message_length))
+  static const gchar *kwlist[] = {"message", "bookmark", NULL};
+  if (!PyArg_ParseTupleAndKeywords(args, kwds, "|z#O", (gchar **) kwlist, &message, &message_length, &bookmark_data))
     return NULL;
 
   PyLogMessage *self = (PyLogMessage *) subtype->tp_alloc(subtype, 0);
@@ -179,10 +182,14 @@ py_log_message_new_empty(PyTypeObject *subtype, PyObject *args, PyObject *kwds)
     return NULL;
 
   self->msg = log_msg_new_empty();
+  self->bookmark_data = NULL;
   invalidate_cached_time();
 
   if (message)
     log_msg_set_value(self->msg, LM_V_MESSAGE, message, message_length);
+
+  Py_XINCREF(bookmark_data);
+  self->bookmark_data = bookmark_data;
 
   return (PyObject *) self;
 }
@@ -372,6 +379,23 @@ py_log_message_set_timestamp(PyLogMessage *self, PyObject *args, PyObject *kwrds
 }
 
 static PyObject *
+py_log_message_set_bookmark(PyLogMessage *self, PyObject *args, PyObject *kwrds)
+{
+  PyObject *bookmark_data;
+
+  static const gchar *kwlist[] = {"bookmark", NULL};
+  if (!PyArg_ParseTupleAndKeywords(args, kwrds, "O", (gchar **) kwlist, &bookmark_data))
+    return NULL;
+
+  Py_CLEAR(self->bookmark_data);
+
+  Py_XINCREF(bookmark_data);
+  self->bookmark_data = bookmark_data;
+
+  Py_RETURN_NONE;
+}
+
+static PyObject *
 py_log_message_parse(PyObject *_none, PyObject *args, PyObject *kwrds)
 {
   const gchar *raw_msg;
@@ -405,6 +429,7 @@ py_log_message_parse(PyObject *_none, PyObject *args, PyObject *kwrds)
     }
 
   py_msg->msg = log_msg_new(raw_msg, raw_msg_length, parse_options);
+  py_msg->bookmark_data = NULL;
 
   return (PyObject *) py_msg;
 }
@@ -414,6 +439,7 @@ static PyMethodDef py_log_message_methods[] =
   { "keys", (PyCFunction)_logmessage_get_keys_method, METH_NOARGS, "Return keys." },
   { "set_pri", (PyCFunction)py_log_message_set_pri, METH_VARARGS | METH_KEYWORDS, "Set priority" },
   { "set_timestamp", (PyCFunction)py_log_message_set_timestamp, METH_VARARGS | METH_KEYWORDS, "Set timestamp" },
+  { "set_bookmark", (PyCFunction)py_log_message_set_bookmark, METH_VARARGS | METH_KEYWORDS, "Set bookmark" },
   { "parse", (PyCFunction)py_log_message_parse, METH_STATIC|METH_VARARGS|METH_KEYWORDS, "Parse and create LogMessage" },
   {NULL}
 };

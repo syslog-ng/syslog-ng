@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2015 Balabit
- * Copyright (c) 2015 Balazs Scheidler <balazs.scheidler@balabit.com>
+ * Copyright (c) 2020 One Identity
+ * Copyright (c) 2020 László Várady
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,23 +22,27 @@
  *
  */
 
-#ifndef _SNG_PYTHON_LOGMSG_H
-#define _SNG_PYTHON_LOGMSG_H
+#ifndef _SNG_PYTHON_BOOKMARK_H
+#define _SNG_PYTHON_BOOKMARK_H
 
 #include "python-module.h"
+#include "ack-tracker/bookmark.h"
 
-typedef struct _PyLogMessage
+typedef struct _PyBookmark
 {
   PyObject_HEAD
-  LogMessage *msg;
-  PyObject *bookmark_data;
-} PyLogMessage;
+  PyObject *data;
+  PyObject *save;
+} PyBookmark;
 
-extern PyTypeObject py_log_message_type;
+extern PyTypeObject py_bookmark_type;
 
-PyObject *py_log_message_new(LogMessage *msg);
-void py_log_message_init(void);
+PyBookmark *py_bookmark_new(PyObject *data, PyObject *save);
+void py_bookmark_fill(Bookmark *bookmark, PyBookmark *py_bookmark);
 
-int py_is_log_message(PyObject *obj);
+void py_bookmark_init(void);
+
+int py_is_bookmark(PyObject *obj);
+PyBookmark *bookmark_to_py_bookmark(Bookmark *bookmark);
 
 #endif

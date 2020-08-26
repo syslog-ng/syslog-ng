@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2015 Balabit
- * Copyright (c) 2015 Balazs Scheidler <balazs.scheidler@balabit.com>
+ * Copyright (c) 2020 One Identity
+ * Copyright (c) 2020 László Várady
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,23 +22,25 @@
  *
  */
 
-#ifndef _SNG_PYTHON_LOGMSG_H
-#define _SNG_PYTHON_LOGMSG_H
+#ifndef _SNG_PYTHON_ACK_TRACKER_H
+#define _SNG_PYTHON_ACK_TRACKER_H
 
 #include "python-module.h"
+#include "ack-tracker/ack_tracker_factory.h"
 
-typedef struct _PyLogMessage
+typedef struct _PyAckTrackerFactory
 {
   PyObject_HEAD
-  LogMessage *msg;
-  PyObject *bookmark_data;
-} PyLogMessage;
+  AckTrackerFactory *ack_tracker_factory;
+  PyObject *ack_callback;
+} PyAckTrackerFactory;
 
-extern PyTypeObject py_log_message_type;
+extern PyTypeObject py_ack_tracker_factory_type;
+extern PyTypeObject py_instant_ack_tracker_factory_type;
+extern PyTypeObject py_consecutive_ack_tracker_factory_type;
+extern PyTypeObject py_batched_ack_tracker_factory_type;
 
-PyObject *py_log_message_new(LogMessage *msg);
-void py_log_message_init(void);
-
-int py_is_log_message(PyObject *obj);
+void py_ack_tracker_init(void);
+int py_is_ack_tracker_factory(PyObject *obj);
 
 #endif

@@ -28,6 +28,7 @@ try:
     from _syslogng import LogTemplate, LogTemplateException, LTZ_LOCAL, LTZ_SEND
     from _syslogng import Logger
     from _syslogng import Persist as SlngPersist
+    from _syslogng import InstantAckTracker, ConsecutiveAckTracker, BatchedAckTracker
 
     class Persist(SlngPersist):
         def __init__(self, persist_name, defaults=None):
