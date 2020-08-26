@@ -615,6 +615,12 @@ _journal_open(JournalReader *self)
           journal_namespace = self->options->namespace;
         }
     }
+
+  if (journal_namespace)
+    {
+      g_free(self->persist_name);
+      self->persist_name = g_strdup_printf("systemd_journal(%s)", self->options->namespace);
+    }
   gint res = journald_open_namespace(self->journal, journal_namespace, journal_flags);
 #else
   gint res = journald_open(self->journal, SD_JOURNAL_LOCAL_ONLY);
