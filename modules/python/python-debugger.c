@@ -117,10 +117,11 @@ python_fetch_debugger_command(void)
   if (!ret)
     {
       gchar buf[256];
+      _py_format_exception_text(buf, sizeof(buf));
 
       msg_error("Error calling debugger fetch_command",
                 evt_tag_str("function", DEBUGGER_FETCH_COMMAND),
-                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+                evt_tag_str("exception", buf));
       _py_finish_exception_handling();
       goto exit;
     }

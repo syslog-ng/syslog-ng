@@ -48,14 +48,16 @@ static PyObject *
 _py_invoke_template_function(const gchar *function_name, LogMessage *msg, gint argc, GString *argv[])
 {
   PyObject *callable, *ret, *args;
-  gchar buf[256];
 
   callable = _py_resolve_qualified_name(function_name);
   if (!callable)
     {
+      gchar buf[256];
+      _py_format_exception_text(buf, sizeof(buf));
+
       msg_error("$(python): Error looking up Python function",
                 evt_tag_str("function", function_name),
-                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+                evt_tag_str("exception", buf));
       _py_finish_exception_handling();
       return NULL;
     }
@@ -71,9 +73,12 @@ _py_invoke_template_function(const gchar *function_name, LogMessage *msg, gint a
 
   if (!ret)
     {
+      gchar buf[256];
+      _py_format_exception_text(buf, sizeof(buf));
+
       msg_error("$(python): Error invoking Python function",
                 evt_tag_str("function", function_name),
-                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+                evt_tag_str("exception", buf));
       _py_finish_exception_handling();
       return NULL;
     }
