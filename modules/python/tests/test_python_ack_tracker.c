@@ -121,7 +121,6 @@ ParameterizedTest(struct AckTrackerFactoryTestParams *param, python_ack_tracker,
   PyGILState_STATE gstate = PyGILState_Ensure();
 
   PyObject *factory_args = Py_BuildValue("(N)", PyCFunction_New(&test_ack_callback, NULL));
-  log_msg_new_empty();
   PyObject *py_ack_tracker_factory_obj = PyObject_CallObject((PyObject *) param->ack_tracker_factory_type,
                                                              factory_args);
   Py_XDECREF(factory_args);
