@@ -168,6 +168,13 @@ _py_invoke_wakeup(PythonSourceDriver *self)
   _ps_py_invoke_void_function(self, self->py.wakeup_method, NULL);
 }
 
+static void
+_py_invoke_finalize(PythonSourceDriver *self)
+{
+  if (self->py.instance)
+    _ps_py_invoke_void_method_by_name(self, "finalize");
+}
+
 static gboolean
 _py_is_log_source(PyObject *obj)
 {
@@ -660,6 +667,7 @@ python_sd_free(LogPipe *s)
   PythonSourceDriver *self = (PythonSourceDriver *) s;
 
   PyGILState_STATE gstate = PyGILState_Ensure();
+  _py_invoke_finalize(self);
   _py_free_bindings(self);
   PyGILState_Release(gstate);
 
