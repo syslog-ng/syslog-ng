@@ -150,6 +150,7 @@ _restart_batch_timer(BatchedAckTracker *self)
 static void
 _batch_timeout(gpointer data)
 {
+  msg_debug("BatchedAckTracker::batch_timeout");
   BatchedAckTracker *self = (BatchedAckTracker *) data;
   GList *batch = NULL;
   g_mutex_lock(&self->acked_records_lock);
@@ -237,6 +238,7 @@ _manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type)
 static void
 _free(AckTracker *s)
 {
+  msg_debug("BatchedAckTracker::free");
   BatchedAckTracker *self = (BatchedAckTracker *) s;
   g_mutex_clear(&self->acked_records_lock);
 
