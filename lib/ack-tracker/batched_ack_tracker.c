@@ -52,7 +52,10 @@ typedef struct _BatchedAckTracker
   gulong acked_records_num;
   GList *acked_records;
   struct iv_timer batch_timer;
+  struct iv_event request_destroy;
   struct iv_event request_restart_timer;
+  gboolean has_pending_request_restart_timer;
+  GMutex pending_request_restart_timer_lock;
   gboolean watches_running;
 } BatchedAckTracker;
 
@@ -150,6 +153,7 @@ _restart_batch_timer(BatchedAckTracker *self)
 static void
 _batch_timeout(gpointer data)
 {
+  msg_trace("BatchedAckTracker::batch_timeout");
   BatchedAckTracker *self = (BatchedAckTracker *) data;
   GList *batch = NULL;
   g_mutex_lock(&self->acked_records_lock);
@@ -170,7 +174,63 @@ static void
 _restart_timer_requested(gpointer data)
 {
   BatchedAckTracker *self = (BatchedAckTracker *) data;
-  _restart_batch_timer(self);
+  g_mutex_lock(&self->pending_request_restart_timer_lock);
+  {
+    g_assert(self->has_pending_request_restart_timer);
+    self->has_pending_request_restart_timer = FALSE;
+    if (!log_pipe_unref(&self->super.source->super))
+      _restart_batch_timer(self);
+  }
+  g_mutex_unlock(&self->pending_request_restart_timer_lock);
+}
+
+static void
+_start_watches(BatchedAckTracker *self)
+{
+  if (!self->watches_running)
+    {
+      _start_batch_timer(self);
+      self->watches_running = TRUE;
+    }
+}
+
+static void
+_stop_watches(BatchedAckTracker *self)
+{
+  if (self->watches_running)
+    {
+      _stop_batch_timer(self);
+      self->watches_running = FALSE;
+    }
+}
+
+static void
+__free(AckTracker *s)
+{
+  msg_trace("BatchedAckTracker::free");
+  BatchedAckTracker *self = (BatchedAckTracker *) s;
+  g_mutex_clear(&self->acked_records_lock);
+
+  self->has_pending_request_restart_timer = TRUE;
+  _stop_watches(self);
+  g_mutex_clear(&self->pending_request_restart_timer_lock);
+
+  if (self->acked_records)
+    _ack_batch(self, self->acked_records);
+
+  if (self->pending_ack_record)
+    _ack_record_free(&self->pending_ack_record->super);
+
+  iv_event_unregister(&self->request_restart_timer);
+  iv_event_unregister(&self->request_destroy);
+  g_free(self);
+}
+
+static void
+_destroy(gpointer data)
+{
+  BatchedAckTracker *self = (BatchedAckTracker *) data;
+  __free(&self->super);
 }
 
 static void
@@ -183,34 +243,32 @@ _init_watches(BatchedAckTracker *self)
   IV_EVENT_INIT(&self->request_restart_timer);
   self->request_restart_timer.cookie = self;
   self->request_restart_timer.handler = _restart_timer_requested;
+
+  IV_EVENT_INIT(&self->request_destroy);
+  self->request_destroy.cookie = self;
+  self->request_destroy.handler = _destroy;
 }
 
 static void
-_start_watches(BatchedAckTracker *self)
+_request_batch_timer_restart(BatchedAckTracker *self)
 {
-  if (!self->watches_running)
-    {
-      _start_batch_timer(self);
-      iv_event_register(&self->request_restart_timer);
-      self->watches_running = TRUE;
-    }
-}
-
-static void
-_stop_watches(BatchedAckTracker *self)
-{
-  if (self->watches_running)
-    {
-      iv_event_unregister(&self->request_restart_timer);
-      _stop_batch_timer(self);
-      self->watches_running = FALSE;
-    }
+  g_mutex_lock(&self->pending_request_restart_timer_lock);
+  {
+    if (!self->has_pending_request_restart_timer)
+      {
+        self->has_pending_request_restart_timer = TRUE;
+        log_pipe_ref(&self->super.source->super);
+        iv_event_post(&self->request_restart_timer);
+      }
+  }
+  g_mutex_unlock(&self->pending_request_restart_timer_lock);
 }
 
 static void
 _manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type)
 {
   BatchedAckTracker *self = (BatchedAckTracker *) s;
+  gboolean need_to_restart_batch_timer = FALSE;
   log_source_flow_control_adjust(self->super.source, 1);
 
   if (ack_type == AT_SUSPENDED)
@@ -222,7 +280,7 @@ _manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type)
       if (full_batch)
         {
           _ack_batch(self, full_batch);
-          iv_event_post(&self->request_restart_timer);
+          need_to_restart_batch_timer = TRUE;
         }
     }
   else
@@ -231,24 +289,18 @@ _manage_msg_ack(AckTracker *s, LogMessage *msg, AckType ack_type)
     }
 
   log_msg_unref(msg);
-  log_pipe_unref((LogPipe *)self->super.source);
+  if (!log_pipe_unref((LogPipe *)self->super.source) && need_to_restart_batch_timer)
+    {
+      _request_batch_timer_restart(self);
+    }
 }
 
 static void
 _free(AckTracker *s)
 {
+  msg_trace("BatchedAckTracker::request destroy");
   BatchedAckTracker *self = (BatchedAckTracker *) s;
-  g_mutex_clear(&self->acked_records_lock);
-
-  _stop_watches(self);
-
-  if (self->acked_records)
-    _ack_batch(self, self->acked_records);
-
-  if (self->pending_ack_record)
-    _ack_record_free(&self->pending_ack_record->super);
-
-  g_free(self);
+  iv_event_post(&self->request_destroy);
 }
 
 static void
@@ -312,7 +364,10 @@ _init_instance(AckTracker *s, LogSource *source, guint timeout, guint batch_size
   self->on_batch_acked.user_data = user_data;
 
   g_mutex_init(&self->acked_records_lock);
+  g_mutex_init(&self->pending_request_restart_timer_lock);
   _init_watches(self);
+  iv_event_register(&self->request_restart_timer);
+  iv_event_register(&self->request_destroy);
 }
 
 AckTracker *

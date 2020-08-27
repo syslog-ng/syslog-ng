@@ -116,7 +116,7 @@ _free(LogPipe *self)
   g_free(self);
 }
 
-void
+gboolean
 log_pipe_unref(LogPipe *self)
 {
   g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
@@ -124,7 +124,10 @@ log_pipe_unref(LogPipe *self)
   if (self && (g_atomic_counter_dec_and_test(&self->ref_cnt)))
     {
       _free(self);
+      return TRUE;
     }
+
+  return FALSE;
 }
 
 void
