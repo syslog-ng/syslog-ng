@@ -190,7 +190,6 @@ _start_watches(BatchedAckTracker *self)
   if (!self->watches_running)
     {
       _start_batch_timer(self);
-      iv_event_register(&self->request_restart_timer);
       self->watches_running = TRUE;
     }
 }
@@ -200,7 +199,6 @@ _stop_watches(BatchedAckTracker *self)
 {
   if (self->watches_running)
     {
-      iv_event_unregister(&self->request_restart_timer);
       _stop_batch_timer(self);
       self->watches_running = FALSE;
     }
@@ -223,6 +221,7 @@ __free(AckTracker *s)
   if (self->pending_ack_record)
     _ack_record_free(&self->pending_ack_record->super);
 
+  iv_event_unregister(&self->request_restart_timer);
   iv_event_unregister(&self->request_destroy);
   g_free(self);
 }
@@ -367,6 +366,7 @@ _init_instance(AckTracker *s, LogSource *source, guint timeout, guint batch_size
   g_mutex_init(&self->acked_records_lock);
   g_mutex_init(&self->pending_request_restart_timer_lock);
   _init_watches(self);
+  iv_event_register(&self->request_restart_timer);
   iv_event_register(&self->request_destroy);
 }
 
