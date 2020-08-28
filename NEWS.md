@@ -3,16 +3,6 @@
 
 ## Highlights
 
-<Fill this block manually from the blocks below>
-
-## Features
-
- * snmptrap: improve error message when missing dependency
-   ([#3363](https://github.com/syslog-ng/syslog-ng/pull/3363))
- * disk queue: reduce memory usage during load
-   ([#3352](https://github.com/syslog-ng/syslog-ng/pull/3352))
- * config: support `@version: current`
-   ([#3368](https://github.com/syslog-ng/syslog-ng/pull/3368))
  * `panos-parser()`: parse Palo Alto PAN-OS logs
 
    Example:
@@ -26,18 +16,27 @@
 
      destination {
       elasticsearch-http(
-      index("syslog-ng-${YEAR}-${MONTH}-${DAY}")
-      type("")
-      url("http://localhost:9200/_bulk")
-      template("$(format-json
-      --scope rfc5424
-      --scope dot-nv-pairs --rekey .* --shift 1 --exclude *future_* --exclude *dg_hier_level_*
-      --scope nv-pairs --exclude DATE --key ISODATE @timestamp=${ISODATE})")
-        );
+        index("syslog-ng-${YEAR}-${MONTH}-${DAY}")
+        type("")
+        url("http://localhost:9200/_bulk")
+        template("$(format-json
+          --scope rfc5424
+          --scope dot-nv-pairs --rekey .* --shift 1 --exclude *future_* --exclude *dg_hier_level_*
+          --scope nv-pairs --exclude DATE --key ISODATE @timestamp=${ISODATE})")
+      );
      };
    };
    ```
    ([#3234](https://github.com/syslog-ng/syslog-ng/pull/3234))
+
+## Features
+
+ * snmptrap: improve error message when missing dependency
+   ([#3363](https://github.com/syslog-ng/syslog-ng/pull/3363))
+ * disk queue: reduce memory usage during load
+   ([#3352](https://github.com/syslog-ng/syslog-ng/pull/3352))
+ * config: support `@version: current`
+   ([#3368](https://github.com/syslog-ng/syslog-ng/pull/3368))
  * Allow dupnames flag to be used in PCRE expressions, allowing duplicate names for named subpatterns
    as explained here: https://www.pcre.org/original/doc/html/pcrepattern.html#SEC16 .
 
