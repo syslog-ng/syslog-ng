@@ -1,3 +1,9 @@
+syslog-ng (3.29.1-1) unstable; urgency=medium
+
+  * New upstream release 3.29.1
+
+ -- Laszlo Varady <stentor@x260>  Fri, 28 Aug 2020 12:13:25 +0000
+
 syslog-ng (3.28.1-1) unstable; urgency=medium
 
   * New upstream release.
