@@ -211,6 +211,8 @@ _insert_to_dict(gpointer key, gpointer value, gpointer dict)
   PyObject *key_pyobj = _py_string_from_string((gchar *) key, -1);
   PyObject *value_pyobj = _py_string_from_string((gchar *) value, -1);
   PyDict_SetItem( (PyObject *) dict, key_pyobj, value_pyobj);
+  Py_XDECREF(key_pyobj);
+  Py_XDECREF(value_pyobj);
 }
 
 PyObject *
