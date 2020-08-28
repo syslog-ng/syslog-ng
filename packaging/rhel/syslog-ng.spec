@@ -637,6 +637,9 @@ fi
 
 
 %changelog
+* Fri Aug 28 2020 Laszlo Budai <laszlo.budai@outlook.com> - 3.29.1-1
+- updated to 3.29.1
+
 * Tue Jun 16 2020 Peter Czanik <peter@czanik.hu> - 3.28.1-2
 - rename logrotate file from syslog to syslog-ng on Fedora, move it
   to subpackage on Fedora & RHEL 8 to fix: rhbz#1802165
