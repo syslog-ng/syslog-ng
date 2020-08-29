@@ -209,7 +209,7 @@ enumerate_plugins(const gchar *plugin_path, GPtrArray *plugin_array, GOptionCont
       ERROR("hint: you can use the %s environmental variable to specify plugin path\n", "SYSLOGNG_PREFIX");
     }
 
-  DEBUG("%d plugin successfuly loaded\n", plugin_array->len);
+  DEBUG("%d plugin successfully loaded\n", plugin_array->len);
   return plugin_array->len;
 }
 

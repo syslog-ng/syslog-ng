@@ -20,19 +20,19 @@
  * COPYING for details.
  *
  */
-#include "correllation-key.h"
+#include "correlation-key.h"
 #include "logmsg/logmsg.h"
 #include <string.h>
 
 
 /*********************************************************
- * CorrellationKey, is the key in the state hash table
+ * CorrelationKey, is the key in the state hash table
  *********************************************************/
 
 guint
-correllation_key_hash(gconstpointer k)
+correlation_key_hash(gconstpointer k)
 {
-  CorrellationKey *key = (CorrellationKey *) k;
+  CorrelationKey *key = (CorrelationKey *) k;
   guint hash;
 
   hash = (key->scope << 30);
@@ -54,10 +54,10 @@ correllation_key_hash(gconstpointer k)
 }
 
 gboolean
-correllation_key_equal(gconstpointer k1, gconstpointer k2)
+correlation_key_equal(gconstpointer k1, gconstpointer k2)
 {
-  CorrellationKey *key1 = (CorrellationKey *) k1;
-  CorrellationKey *key2 = (CorrellationKey *) k2;
+  CorrelationKey *key1 = (CorrelationKey *) k1;
+  CorrelationKey *key2 = (CorrelationKey *) k2;
 
   if (key1->scope != key2->scope)
     return FALSE;
@@ -84,9 +84,9 @@ correllation_key_equal(gconstpointer k1, gconstpointer k2)
   return TRUE;
 }
 
-/* fills a CorrellationKey structure with borrowed values */
+/* fills a CorrelationKey structure with borrowed values */
 void
-correllation_key_init(CorrellationKey *self, CorrellationScope scope, LogMessage *msg, gchar *session_id)
+correlation_key_init(CorrelationKey *self, CorrelationScope scope, LogMessage *msg, gchar *session_id)
 {
   memset(self, 0, sizeof(*self));
   self->scope = scope;
@@ -110,7 +110,7 @@ correllation_key_init(CorrellationKey *self, CorrellationScope scope, LogMessage
 }
 
 gint
-correllation_key_lookup_scope(const gchar *scope)
+correlation_key_lookup_scope(const gchar *scope)
 {
   if (strcasecmp(scope, "global") ==  0)
     return RCS_GLOBAL;

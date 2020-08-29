@@ -640,11 +640,11 @@ static GOptionEntry match_options[] =
   },
   {
     "debug-pattern", 'D', 0, G_OPTION_ARG_NONE, &debug_pattern,
-    "Print debuging information on pattern matching", NULL
+    "Print debugging information on pattern matching", NULL
   },
   {
     "debug-csv", 'C', 0, G_OPTION_ARG_NONE, &debug_pattern_parse,
-    "Output debuging information in parseable format", NULL
+    "Output debugging information in parseable format", NULL
   },
   {
     "color-out", 'c', 0, G_OPTION_ARG_NONE, &color_out,
@@ -858,7 +858,7 @@ static GOptionEntry test_options[] =
   },
   {
     "debug", 'D', 0, G_OPTION_ARG_NONE, &debug_pattern,
-    "Print debuging information on non-matching patterns", NULL
+    "Print debugging information on non-matching patterns", NULL
   },
   {
     "color-out", 'c', 0, G_OPTION_ARG_NONE, &color_out,

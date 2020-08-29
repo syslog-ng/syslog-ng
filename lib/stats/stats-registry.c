@@ -197,7 +197,7 @@ _register_external_counter(gint stats_level, const StatsClusterKey *sc_key, gint
  * @type: the counter type (processed, dropped, etc)
  * @counter: returned pointer to the counter
  *
- * This fuction registers a general purpose counter. Whenever multiple
+ * This function registers a general purpose counter. Whenever multiple
  * objects touch the same counter all of these should register the counter
  * with the same name. Internally the stats subsystem counts the number of
  * users of the same counter in this case, thus the counter will only be

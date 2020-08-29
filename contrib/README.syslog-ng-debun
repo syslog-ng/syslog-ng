@@ -45,7 +45,7 @@ usage examples:
 	* start syslog-ng in debug mode with default params, syslog's debug
 	  messages are also appearing on your console
 	* wait 10 seconds
-	* stop syslog-ng debuging
+	* stop syslog-ng debugging
 	* start system's syslog-ng
 	* stops packet capturing
 

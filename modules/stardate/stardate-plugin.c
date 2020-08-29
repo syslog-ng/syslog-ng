@@ -43,7 +43,7 @@ const ModuleInfo module_info =
 {
   .canonical_name = "stardate",
   .version = SYSLOG_NG_VERSION,
-  .description = "This fuction provides stardate template function: "
+  .description = "This function provides stardate template function: "
   "fractional years. Example: $(stardate [--digits 2] $UNIXTIME).",
   .core_revision = SYSLOG_NG_SOURCE_REVISION,
   .plugins = stardate_plugins,

@@ -28,7 +28,7 @@
  ***************************************************************************/
 
 PDBRateLimit *
-pdb_rate_limit_new(CorrellationKey *key)
+pdb_rate_limit_new(CorrelationKey *key)
 {
   PDBRateLimit *self = g_new0(PDBRateLimit, 1);
 

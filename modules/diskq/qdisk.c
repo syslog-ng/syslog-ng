@@ -859,7 +859,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
       memset(&tmp, 0, sizeof(tmp));
       if (!pwrite_strict(self->fd, &tmp, sizeof(tmp), 0))
         {
-          msg_error("Error occurred while initalizing the new queue file",
+          msg_error("Error occurred while initializing the new queue file",
                     evt_tag_str("filename", self->filename),
                     evt_tag_error("error"));
           munmap((void *)self->hdr, sizeof(QDiskFileHeader));

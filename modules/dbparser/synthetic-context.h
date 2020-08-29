@@ -24,13 +24,13 @@
 #define PATTERNDB_SYNTHETIC_CONTEXT_H_INCLUDED
 
 #include "syslog-ng.h"
-#include "correllation-key.h"
+#include "correlation-key.h"
 #include "template/templates.h"
 
 typedef struct _SyntheticContext
 {
   gint timeout;
-  CorrellationScope scope;
+  CorrelationScope scope;
   LogTemplate *id_template;
 } SyntheticContext;
 

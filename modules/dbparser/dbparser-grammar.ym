@@ -199,7 +199,7 @@ inherit_mode
 context_scope
         : string
           {
-            $$ = correllation_key_lookup_scope($1);
+            $$ = correlation_key_lookup_scope($1);
             free($1);
             CHECK_ERROR($$ >= 0, @1, "unknown context-scope()");
           }

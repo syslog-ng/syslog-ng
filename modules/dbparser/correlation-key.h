@@ -20,30 +20,30 @@
  * COPYING for details.
  *
  */
-#ifndef PATTERNDB_CORRELLATION_KEY_H_INCLUDED
-#define PATTERNDB_CORRELLATION_KEY_H_INCLUDED
+#ifndef PATTERNDB_CORRELATION_KEY_H_INCLUDED
+#define PATTERNDB_CORRELATION_KEY_H_INCLUDED
 
 #include "syslog-ng.h"
 
 /* rule context scope */
 typedef enum
 {
-  /* correllation happens globally, e.g. log messages even on different hosts are considered */
+  /* correlation happens globally, e.g. log messages even on different hosts are considered */
   RCS_GLOBAL,
-  /* correllation happens inside the same host only, e.g. messages from other hosts are not considered */
+  /* correlation happens inside the same host only, e.g. messages from other hosts are not considered */
   RCS_HOST,
-  /* correllation happens for the same program only, e.g. messages from other programs are not considered */
+  /* correlation happens for the same program only, e.g. messages from other programs are not considered */
   RCS_PROGRAM,
-  /* correllation happens for the same process only, e.g. messages from a different program/pid are not considered */
+  /* correlation happens for the same process only, e.g. messages from a different program/pid are not considered */
   RCS_PROCESS,
-} CorrellationScope;
+} CorrelationScope;
 
-gint correllation_key_lookup_scope(const gchar *scope);
+gint correlation_key_lookup_scope(const gchar *scope);
 
 /* Our state hash contains a mixed set of values, they are either
- * correllation contexts or the state entry required by rate limiting.
+ * correlation contexts or the state entry required by rate limiting.
  */
-typedef struct _CorrellationKey
+typedef struct _CorrelationKey
 {
   const gchar *host;
   const gchar *program;
@@ -52,12 +52,12 @@ typedef struct _CorrellationKey
 
   /* we use guint8 to limit the size of this structure, we can have 10s of
    * thousands of this structure present in memory */
-  guint8 /* CorrellationScope */ scope;
-} CorrellationKey;
+  guint8 /* CorrelationScope */ scope;
+} CorrelationKey;
 
 
-guint correllation_key_hash(gconstpointer k);
-gboolean correllation_key_equal(gconstpointer k1, gconstpointer k2);
-void correllation_key_init(CorrellationKey *self, CorrellationScope scope, LogMessage *msg, gchar *session_id);
+guint correlation_key_hash(gconstpointer k);
+gboolean correlation_key_equal(gconstpointer k1, gconstpointer k2);
+void correlation_key_init(CorrelationKey *self, CorrelationScope scope, LogMessage *msg, gchar *session_id);
 
 #endif

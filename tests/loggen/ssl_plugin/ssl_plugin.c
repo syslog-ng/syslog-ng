@@ -123,7 +123,7 @@ start(PluginOption *option)
 {
   if (!option)
     {
-      ERROR("invalid option refernce\n");
+      ERROR("invalid option reference\n");
       return FALSE;
     }
 
@@ -185,7 +185,7 @@ start(PluginOption *option)
     {
       if (! g_cond_wait_until(thread_connected, thread_lock, end_time))
         {
-          ERROR("timeout occured while waiting for connections\n");
+          ERROR("timeout occurred while waiting for connections\n");
           break;
         }
     }
@@ -204,7 +204,7 @@ stop(PluginOption *option)
 {
   if (!option)
     {
-      ERROR("invalid option refernce\n");
+      ERROR("invalid option reference\n");
       return;
     }
 

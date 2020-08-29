@@ -88,7 +88,7 @@ gboolean multitransport_switch(MultiTransport *self, const TransportFactoryId *f
 
   _do_transport_switch(self, transport, transport_factory);
 
-  msg_debug("Transport switch succeded",
+  msg_debug("Transport switch succeeded",
             evt_tag_str("new-active-transport", self->active_transport->name));
 
   return TRUE;

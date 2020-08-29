@@ -37,7 +37,7 @@
  * several times. */
 typedef struct _LogTemplateInvokeArgs
 {
-  /* context in case of correllation */
+  /* context in case of correlation */
   LogMessage **messages;
   gint num_messages;
 

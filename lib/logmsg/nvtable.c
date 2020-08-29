@@ -65,7 +65,7 @@ nv_registry_alloc_handle(NVRegistry *self, const gchar *name)
   if (len > 255)
     {
       msg_error("Value names cannot be longer than 255 characters, "
-                "this value will always expand to the emptry string",
+                "this value will always expand to the empty string",
                 evt_tag_str("value", name));
       goto exit;
     }

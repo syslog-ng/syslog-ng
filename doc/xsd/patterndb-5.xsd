@@ -342,7 +342,7 @@
                         <xs:annotation>
                             <xs:documentation>
                                 Specifies that the action is to be executed when
-                                the correllation timeout elapses without
+                                the correlation timeout elapses without
                                 matching a further rule.
                             </xs:documentation>
                         </xs:annotation>

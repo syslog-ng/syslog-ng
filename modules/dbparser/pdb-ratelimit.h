@@ -24,19 +24,19 @@
 #ifndef PATTERNDB_PDB_RATELIMIT_H_INCLUDED
 #define PATTERNDB_PDB_RATELIMIT_H_INCLUDED
 
-#include "correllation-key.h"
+#include "correlation-key.h"
 
 /* This class encapsulates a rate-limit state stored in
    db->state. */
 typedef struct _PDBRateLimit
 {
   /* key in the hashtable. NOTE: host/program/pid/session_id are allocated, thus they need to be freed when the structure is freed. */
-  CorrellationKey key;
+  CorrelationKey key;
   gint buckets;
   guint64 last_check;
 } PDBRateLimit;
 
-PDBRateLimit *pdb_rate_limit_new(CorrellationKey *key);
+PDBRateLimit *pdb_rate_limit_new(CorrelationKey *key);
 void pdb_rate_limit_free(PDBRateLimit *self);
 
 #endif

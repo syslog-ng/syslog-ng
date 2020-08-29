@@ -95,7 +95,7 @@ _start_failback_timer(AFInetDestDriverFailover *self)
 }
 
 static void
-_tcp_probe_succeded(AFInetDestDriverFailover *self)
+_tcp_probe_succeeded(AFInetDestDriverFailover *self)
 {
   self->probes_received++;
   msg_notice("Probing primary server successful",
@@ -158,7 +158,7 @@ _handle_tcp_probe_socket(gpointer s)
     iv_fd_unregister(&self->fd);
 
   if (_socket_succeeded(self))
-    _tcp_probe_succeded(self);
+    _tcp_probe_succeeded(self);
   else
     _tcp_probe_failed(self);
 }
@@ -182,7 +182,7 @@ _tcp_probe_primary_server(AFInetDestDriverFailover *self)
   if (_connect_normal(iostatus))
     {
       msg_notice("Successfully connected to primary");
-      _tcp_probe_succeded(self);
+      _tcp_probe_succeeded(self);
       return;
     }
 

@@ -20,36 +20,36 @@
  * COPYING for details.
  *
  */
-#include "correllation.h"
-#include "correllation-key.h"
-#include "correllation-context.h"
+#include "correlation.h"
+#include "correlation-key.h"
+#include "correlation-context.h"
 
 void
-correllation_state_init_instance(CorrellationState *self)
+correlation_state_init_instance(CorrelationState *self)
 {
-  self->state = g_hash_table_new_full(correllation_key_hash, correllation_key_equal, NULL,
-                                      (GDestroyNotify) correllation_context_unref);
+  self->state = g_hash_table_new_full(correlation_key_hash, correlation_key_equal, NULL,
+                                      (GDestroyNotify) correlation_context_unref);
 }
 
 void
-correllation_state_deinit_instance(CorrellationState *self)
+correlation_state_deinit_instance(CorrelationState *self)
 {
   if (self->state)
     g_hash_table_destroy(self->state);
 }
 
-CorrellationState *
-correllation_state_new(void)
+CorrelationState *
+correlation_state_new(void)
 {
-  CorrellationState *self = g_new0(CorrellationState, 1);
+  CorrelationState *self = g_new0(CorrelationState, 1);
 
-  correllation_state_init_instance(self);
+  correlation_state_init_instance(self);
   return self;
 }
 
 void
-correllation_state_free(CorrellationState *self)
+correlation_state_free(CorrelationState *self)
 {
-  correllation_state_deinit_instance(self);
+  correlation_state_deinit_instance(self);
   g_free(self);
 }

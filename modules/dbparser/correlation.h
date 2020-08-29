@@ -20,20 +20,20 @@
  * COPYING for details.
  *
  */
-#ifndef PATTERNDB_CORRELLATION_H_INCLUDED
-#define PATTERNDB_CORRELLATION_H_INCLUDED
+#ifndef PATTERNDB_CORRELATION_H_INCLUDED
+#define PATTERNDB_CORRELATION_H_INCLUDED
 
 #include "syslog-ng.h"
-#include "correllation-key.h"
+#include "correlation-key.h"
 
-typedef struct _CorrellationState
+typedef struct _CorrelationState
 {
   GHashTable *state;
-} CorrellationState;
+} CorrelationState;
 
-void correllation_state_init_instance(CorrellationState *self);
-void correllation_state_deinit_instance(CorrellationState *self);
-CorrellationState *correllation_state_new(void);
-void correllation_state_free(CorrellationState *self);
+void correlation_state_init_instance(CorrelationState *self);
+void correlation_state_deinit_instance(CorrelationState *self);
+CorrelationState *correlation_state_new(void);
+void correlation_state_free(CorrelationState *self);
 
 #endif

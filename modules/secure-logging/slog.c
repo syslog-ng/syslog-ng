@@ -581,7 +581,7 @@ int writeBigMAC(gchar *filename, char *outputBuffer)
     {
       msg_error("[SLOG] ERROR: Unable to set encoding for MAC data",
                 evt_tag_str("File", filename));
-      cond_msg_error(error, "Addtional information");
+      cond_msg_error(error, "Additional information");
 
       g_clear_error(&error);
 
