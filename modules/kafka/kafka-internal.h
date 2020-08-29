@@ -1,8 +1,7 @@
 /*
- * Copyright (c) 2013 Tihamer Petrovics <tihameri@gmail.com>
- * Copyright (c) 2014 Pierre-Yves Ritschard <pyr@spootnik.org>
- * Copyright (c) 2019 Balabit
- * Copyright (c) 2019 Balazs Scheidler
+ * Copyright (c) 2020 Balabit
+ * Copyright (c) 2020 Balazs Scheidler
+ * Copyright (c) 2020 Vivin Peris
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -22,20 +21,19 @@
  * COPYING for details.
  *
  */
-#ifndef KAFKA_DEST_WORKER_H_INCLUDED
-#define KAFKA_DEST_WORKER_H_INCLUDED
+
+#ifndef KAFKA_INTERNAL_H_INCLUDED
+#define KAFKA_INTERNAL_H_INCLUDED
 
 #include "logthrdest/logthrdestdrv.h"
+#include <librdkafka/rdkafka.h>
+#include "kafka-dest-worker.h"
 
-typedef struct _KafkaDestWorker
-{
-  LogThreadedDestWorker super;
-  struct iv_timer poll_timer;
-  GString *key;
-  GString *message;
-  GString *topic_name_buffer;
-} KafkaDestWorker;
-
-LogThreadedDestWorker *kafka_dest_worker_new(LogThreadedDestDriver *owner, gint worker_index);
+gchar *kafka_dest_worker_resolve_template_topic_name(KafkaDestWorker *self, LogMessage *msg);
+rd_kafka_topic_t *kafka_dest_worker_calculate_topic_from_template(KafkaDestWorker *self, LogMessage *msg);
+rd_kafka_topic_t *kafka_dest_worker_get_literal_topic(KafkaDestWorker *self);
+rd_kafka_topic_t *kafka_dest_worker_calculate_topic(KafkaDestWorker *self, LogMessage *msg);
+gboolean kafka_dd_init(LogPipe *s);
 
 #endif
+
