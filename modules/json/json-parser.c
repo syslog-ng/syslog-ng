@@ -109,8 +109,8 @@ json_parser_process_single(struct json_object *jso,
       break;
     case json_type_int:
       parsed = TRUE;
-      g_string_printf(value, "%i",
-                      json_object_get_int(jso));
+      g_string_printf(value, "%"PRId64,
+                      json_object_get_int64(jso));
       break;
     case json_type_string:
       parsed = TRUE;
