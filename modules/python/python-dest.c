@@ -230,8 +230,10 @@ _as_int(PyObject *obj)
   if (result == -1 && PyErr_Occurred())
     {
       gchar buf[256];
+      _py_format_exception_text(buf, sizeof(buf));
+
       msg_error("Error converting PyObject to int. Retrying message later",
-                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+                evt_tag_str("exception", buf));
       _py_finish_exception_handling();
       return LTR_ERROR;
     }
@@ -346,11 +348,12 @@ _py_init_bindings(PythonDestDriver *self)
   if (!self->py.class)
     {
       gchar buf[256];
+      _py_format_exception_text(buf, sizeof(buf));
 
       msg_error("Error looking Python driver class",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("class", self->class),
-                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+                evt_tag_str("exception", buf));
       _py_finish_exception_handling();
       return FALSE;
     }
@@ -368,11 +371,12 @@ _py_init_bindings(PythonDestDriver *self)
   if (!self->py.instance)
     {
       gchar buf[256];
+      _py_format_exception_text(buf, sizeof(buf));
 
       msg_error("Error instantiating Python driver class",
                 evt_tag_str("driver", self->super.super.super.id),
                 evt_tag_str("class", self->class),
-                evt_tag_str("exception", _py_format_exception_text(buf, sizeof(buf))));
+                evt_tag_str("exception", buf));
       _py_finish_exception_handling();
       return FALSE;
     }
