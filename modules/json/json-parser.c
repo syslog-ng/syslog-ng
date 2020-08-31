@@ -145,7 +145,7 @@ json_parser_process_single(struct json_object *jso,
     case json_type_null:
       break;
     default:
-      msg_error("JSON parser encountered an unknown type, skipping",
+      msg_debug("JSON parser encountered an unknown type, skipping",
                 evt_tag_str("key", obj_key));
       break;
     }
@@ -239,7 +239,7 @@ json_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_
   jso = json_tokener_parse_ex(tok, input, input_len);
   if (tok->err != json_tokener_success || !jso)
     {
-      msg_error("json-parser(): failed to parse JSON payload",
+      msg_debug("json-parser(): failed to parse JSON payload",
                 evt_tag_str ("input", input),
                 tok->err != json_tokener_success ? evt_tag_str ("json_error", json_tokener_error_desc(tok->err)) : NULL);
       json_tokener_free (tok);
@@ -250,7 +250,7 @@ json_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_
   log_msg_make_writable(pmsg, path_options);
   if (!json_parser_extract(self, jso, *pmsg))
     {
-      msg_error("json-parser(): failed to extract JSON members into name-value pairs. The parsed/extracted JSON payload was not an object",
+      msg_debug("json-parser(): failed to extract JSON members into name-value pairs. The parsed/extracted JSON payload was not an object",
                 evt_tag_str("input", input),
                 evt_tag_str("extract_prefix", self->extract_prefix));
       json_object_put(jso);
