@@ -52,17 +52,21 @@ struct _ControlConnection
 
 struct _ControlServer
 {
+  GList *worker_threads;
   gchar *control_socket_name;
   void (*free_fn)(ControlServer *self);
 };
 
-
+void control_server_cancel_workers(ControlServer *self);
 void control_server_connection_closed(ControlServer *self, ControlConnection *cc);
 void control_server_start(ControlServer *self);
 void control_server_free(ControlServer *self);
 void control_server_init_instance(ControlServer *self, const gchar *path);
 ControlServer *control_server_new(const gchar *path);
 
+typedef GString *(*ControlConnectionCommand)(ControlConnection *cc, GString *command, gpointer user_data);
+void control_connection_start_as_thread(ControlConnection *self, ControlConnectionCommand cmd_cb,
+                                        GString *command, gpointer user_data);
 
 void control_connection_send_reply(ControlConnection *self, GString *reply);
 void control_connection_start_watches(ControlConnection *self);

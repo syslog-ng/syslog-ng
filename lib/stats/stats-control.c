@@ -60,13 +60,20 @@ _reset_counters(void)
   stats_unlock();
 }
 
+static GString *
+_send_stats_get_result(ControlConnection *cc, GString *command, gpointer user_data)
+{
+  gchar *stats = stats_generate_csv();
+  GString *response = g_string_new(stats);
+  g_free(stats);
+
+  return response;
+}
+
 static void
 control_connection_send_stats(ControlConnection *cc, GString *command, gpointer user_data)
 {
-  gchar *stats = stats_generate_csv();
-  GString *result = g_string_new(stats);
-  g_free(stats);
-  control_connection_send_reply(cc, result);
+  control_connection_start_as_thread(cc, _send_stats_get_result, command, user_data);
 }
 
 static void

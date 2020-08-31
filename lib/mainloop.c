@@ -444,6 +444,8 @@ main_loop_exit_initiate(gpointer user_data)
   if (main_loop_is_terminating(self))
     return;
 
+  control_server_cancel_workers(self->control_server);
+
   app_pre_shutdown();
 
   msg_notice("syslog-ng shutting down",
@@ -676,6 +678,12 @@ void
 main_loop_thread_resource_deinit(void)
 {
   g_cond_free(thread_halt_cond);
+}
+
+gboolean
+main_loop_is_control_server_running(MainLoop *self)
+{
+  return self->control_server != NULL;
 }
 
 GQuark

@@ -51,4 +51,14 @@ threads_equal(ThreadId thread_a, ThreadId thread_b)
 #endif
 }
 
+static inline void
+thread_cancel(ThreadId tid)
+{
+#ifndef _WIN32
+  pthread_cancel(tid);
+#else
+  TerminateThread(tid, 0);
+#endif
+}
+
 #endif
