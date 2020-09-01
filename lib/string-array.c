@@ -32,33 +32,46 @@ struct _StringArray
 StringArray *
 string_array_new(guint initial_size)
 {
-  return NULL;
+  if (initial_size == 0)
+    initial_size = 1;
+
+  StringArray *self = g_new0(StringArray, 1);
+  self->array = g_ptr_array_sized_new(initial_size);
+  g_ptr_array_set_free_func(self->array, g_free);
+
+  return self;
 }
 
 void
-string_array_free(StringArray *array)
+string_array_free(StringArray *self)
 {
+  g_ptr_array_unref(self->array);
+  g_free(self);
 }
 
 gchar *
-string_array_element_at(StringArray *array, guint idx)
+string_array_element_at(StringArray *self, guint idx)
 {
-  return NULL;
+  g_assert(idx < self->array->len);
+
+  return g_ptr_array_index(self->array, idx);
 }
 
 void
-string_array_add(StringArray *array, gchar *str)
+string_array_add(StringArray *self, gchar *str)
 {
+  g_ptr_array_add(self->array, str);
 }
 
 guint
-string_array_len(StringArray *array)
+string_array_len(StringArray *self)
 {
-  return 0;
+  return self->array->len;
 }
 
 void
-string_array_foreach(StringArray *array, StringArrayFunc func, gpointer user_data)
+string_array_foreach(StringArray *self, StringArrayFunc func, gpointer user_data)
 {
+  g_ptr_array_foreach(self->array, (GFunc) func, user_data);
 }
 
