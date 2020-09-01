@@ -129,6 +129,7 @@ set (LIB_HEADERS
     serialize.h
     service-management.h
     seqnum.h
+    string-array.h
     str-format.h
     str-utils.h
     syslog-names.h
@@ -216,6 +217,7 @@ set(LIB_SOURCES
     scratch-buffers.c
     serialize.c
     service-management.c
+    string-array.c
     str-format.c
     str-utils.c
     syslog-names.c

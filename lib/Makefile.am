@@ -165,6 +165,7 @@ pkginclude_HEADERS			+= \
 	lib/service-management.h	\
 	lib/seqnum.h			\
 	lib/signal-handler.h		\
+	lib/string-array.h \
 	lib/str-format.h		\
 	lib/str-utils.h			\
 	lib/syslog-names.h		\
@@ -250,6 +251,7 @@ lib_libsyslog_ng_la_SOURCES		= \
 	lib/scratch-buffers.c		\
 	lib/serialize.c			\
 	lib/service-management.c	\
+	lib/string-array.c \
 	lib/str-format.c		\
 	lib/str-utils.c			\
 	lib/syslog-names.c		\
