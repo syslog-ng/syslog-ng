@@ -25,13 +25,6 @@
 #include <criterion/criterion.h>
 #include "string-array.h"
 
-static void
-_concatenate(GString *str, gpointer result)
-{
-  GString *result_str = (GString *) result;
-  result = g_string_append(result_str, str->str);
-}
-
 Test(string_array, basic_tests)
 {
   StringArray *str_array = string_array_new(3);
@@ -58,11 +51,13 @@ Test(string_array, basic_tests)
       cr_expect_str_eq(string_array_element_at(str_array, i)->str, strings[i]);
     }
 
-  GString *concatenated_str = g_string_new("");
-  string_array_foreach(str_array, _concatenate, concatenated_str);
+  GString *concatenated_str = string_array_join(str_array, TRUE);
   cr_expect_str_eq(concatenated_str->str, concatenated_str_expected);
-
   g_string_free(concatenated_str, TRUE);
+
+  string_array_add(str_array, g_string_new("test"));
+  cr_expect_str_eq(string_array_element_at(str_array, 0)->str, "test");
+
   string_array_free(str_array);
 }
 

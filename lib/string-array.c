@@ -81,3 +81,39 @@ string_array_foreach(StringArray *self, StringArrayFunc func, gpointer user_data
 {
   g_ptr_array_foreach(self->array, (GFunc) func, user_data);
 }
+
+static void
+_len(GString *str, gpointer user_data)
+{
+  gsize *len = (gsize *) user_data;
+  *len += str->len;
+}
+
+static gsize
+_total_str_len(StringArray *self)
+{
+  gsize len = 0;
+  string_array_foreach(self, _len, &len);
+
+  return len;
+}
+
+static void
+_join(GString *str, gpointer user_data)
+{
+  GString *joined_str = (GString *) user_data;
+  g_string_append(joined_str, str->str);
+}
+
+GString *
+string_array_join(StringArray *self, gboolean free_elements)
+{
+  gsize len = _total_str_len(self);
+  GString *str = g_string_sized_new(len + 1);
+  string_array_foreach(self, _join, str);
+  if (free_elements)
+    self->array = g_ptr_array_remove_range(self->array, 0, string_array_len(self));
+
+  return str;
+}
+

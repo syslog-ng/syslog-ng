@@ -37,5 +37,6 @@ GString *string_array_element_at(StringArray *self, guint idx);
 void string_array_add(StringArray *self, GString *str);
 guint string_array_len(StringArray *self);
 void string_array_foreach(StringArray *self, StringArrayFunc func, gpointer user_data);
+GString *string_array_join(StringArray *self, gboolean free_elements);
 
 #endif
