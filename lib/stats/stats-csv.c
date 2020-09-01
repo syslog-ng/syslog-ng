@@ -87,7 +87,7 @@ stats_format_csv(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointe
   g_free(s_instance);
 }
 
-gchar *
+GString *
 stats_generate_csv(void)
 {
   StringArray *csv_array = string_array_new(16);
@@ -101,5 +101,5 @@ stats_generate_csv(void)
   GString *csv = string_array_join(csv_array, TRUE);
   string_array_free(csv_array);
 
-  return g_string_free(csv, FALSE);
+  return csv;
 }

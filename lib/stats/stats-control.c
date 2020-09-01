@@ -63,11 +63,7 @@ _reset_counters(void)
 static GString *
 _send_stats_get_result(ControlConnection *cc, GString *command, gpointer user_data)
 {
-  gchar *stats = stats_generate_csv();
-  GString *response = g_string_new(stats);
-  g_free(stats);
-
-  return response;
+  return stats_generate_csv();
 }
 
 static void
