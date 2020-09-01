@@ -9,6 +9,7 @@ lib_tests_TESTS		= \
 	lib/tests/test_rcptid		\
 	lib/tests/test_lexer        	\
 	lib/tests/test_pragma        	\
+	lib/tests/test_string_array \
 	lib/tests/test_str_format   	\
 	lib/tests/test_string_list	\
 	lib/tests/test_runid        	\
@@ -92,6 +93,10 @@ lib_tests_test_runid_CFLAGS	=	\
 lib_tests_test_runid_LDADD	=	\
 	$(TEST_LDADD)
 
+lib_tests_test_string_array_CFLAGS	=	\
+	$(TEST_CFLAGS)
+lib_tests_test_string_array_LDADD	=	\
+	$(TEST_LDADD)
 
 lib_tests_test_str_format_CFLAGS	=	\
 	$(TEST_CFLAGS)
