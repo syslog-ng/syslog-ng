@@ -29,6 +29,13 @@ struct _StringArray
   GPtrArray *array;
 };
 
+static void
+_string_free(gpointer user_data)
+{
+  GString *str = (GString *) user_data;
+  g_string_free(str, TRUE);
+}
+
 StringArray *
 string_array_new(guint initial_size)
 {
@@ -37,7 +44,7 @@ string_array_new(guint initial_size)
 
   StringArray *self = g_new0(StringArray, 1);
   self->array = g_ptr_array_sized_new(initial_size);
-  g_ptr_array_set_free_func(self->array, g_free);
+  g_ptr_array_set_free_func(self->array, _string_free);
 
   return self;
 }
@@ -49,7 +56,7 @@ string_array_free(StringArray *self)
   g_free(self);
 }
 
-gchar *
+GString *
 string_array_element_at(StringArray *self, guint idx)
 {
   g_assert(idx < self->array->len);
@@ -58,7 +65,7 @@ string_array_element_at(StringArray *self, guint idx)
 }
 
 void
-string_array_add(StringArray *self, gchar *str)
+string_array_add(StringArray *self, GString *str)
 {
   g_ptr_array_add(self->array, str);
 }
@@ -74,4 +81,3 @@ string_array_foreach(StringArray *self, StringArrayFunc func, gpointer user_data
 {
   g_ptr_array_foreach(self->array, (GFunc) func, user_data);
 }
-

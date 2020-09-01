@@ -28,13 +28,13 @@
 #include "syslog-ng.h"
 
 typedef struct _StringArray StringArray;
-typedef void (*StringArrayFunc)(const gchar *str, gpointer user_data);
+typedef void (*StringArrayFunc)(GString *str, gpointer user_data);
 
 StringArray *string_array_new(guint initial_size);
 void string_array_free(StringArray *self);
 
-gchar *string_array_element_at(StringArray *self, guint idx);
-void string_array_add(StringArray *self, gchar *str);
+GString *string_array_element_at(StringArray *self, guint idx);
+void string_array_add(StringArray *self, GString *str);
 guint string_array_len(StringArray *self);
 void string_array_foreach(StringArray *self, StringArrayFunc func, gpointer user_data);
 

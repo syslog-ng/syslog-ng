@@ -26,10 +26,10 @@
 #include "string-array.h"
 
 static void
-_concatenate(const gchar *str, gpointer result)
+_concatenate(GString *str, gpointer result)
 {
   GString *result_str = (GString *) result;
-  result = g_string_append(result_str, str);
+  result = g_string_append(result_str, str->str);
 }
 
 Test(string_array, basic_tests)
@@ -49,13 +49,13 @@ Test(string_array, basic_tests)
 
   for (guint i = 0; i < 4; i++)
     {
-      string_array_add(str_array, g_strdup(strings[i]));
+      string_array_add(str_array, g_string_new(strings[i]));
       cr_expect_eq(string_array_len(str_array), i+1);
     }
 
   for (guint i = 0; i < 4; i++)
     {
-      cr_expect_str_eq(string_array_element_at(str_array, i), strings[i]);
+      cr_expect_str_eq(string_array_element_at(str_array, i)->str, strings[i]);
     }
 
   GString *concatenated_str = g_string_new("");
