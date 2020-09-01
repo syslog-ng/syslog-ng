@@ -24,6 +24,7 @@
 #include "stats/stats-csv.h"
 #include "stats/stats-registry.h"
 #include "utf8utils.h"
+#include "string-array.h"
 
 #include <string.h>
 
@@ -60,7 +61,7 @@ stats_format_csv_escapevar(const gchar *var)
 static void
 stats_format_csv(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data)
 {
-  GString *csv = (GString *) user_data;
+  StringArray *csv_array = (StringArray *) user_data;
   gchar *s_id, *s_instance, *tag_name;
   gchar buf[32];
   gchar state;
@@ -76,24 +77,29 @@ stats_format_csv(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointe
     state = 'a';
 
   tag_name = stats_format_csv_escapevar(stats_cluster_get_type_name(sc, type));
+  GString *csv = g_string_new("");
   g_string_append_printf(csv, "%s;%s;%s;%c;%s;%"G_GSIZE_FORMAT"\n",
                          stats_cluster_get_component_name(sc, buf, sizeof(buf)),
                          s_id, s_instance, state, tag_name, stats_counter_get(&sc->counter_group.counters[type]));
+  string_array_add(csv_array, csv);
   g_free(tag_name);
   g_free(s_id);
   g_free(s_instance);
 }
 
-
 gchar *
 stats_generate_csv(void)
 {
-  GString *csv = g_string_sized_new(1024);
-
-  g_string_append_printf(csv, "%s;%s;%s;%s;%s;%s\n", "SourceName", "SourceId", "SourceInstance", "State", "Type",
+  StringArray *csv_array = string_array_new(16);
+  GString *header = g_string_new("");
+  g_string_append_printf(header, "%s;%s;%s;%s;%s;%s\n", "SourceName", "SourceId", "SourceInstance", "State", "Type",
                          "Number");
+  string_array_add(csv_array, header);
   stats_lock();
-  stats_foreach_counter(stats_format_csv, csv);
+  stats_foreach_counter(stats_format_csv, csv_array);
   stats_unlock();
+  GString *csv = string_array_join(csv_array, TRUE);
+  string_array_free(csv_array);
+
   return g_string_free(csv, FALSE);
 }
