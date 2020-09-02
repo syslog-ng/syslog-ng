@@ -59,6 +59,10 @@ struct _Journald
 
 typedef int
 (*SD_JOURNAL_OPEN)(sd_journal **ret, int flags);
+#if SYSLOG_NG_HAVE_JOURNAL_NAMESPACES
+typedef int
+(*SD_JOURNAL_OPEN_NAMESPACE)(sd_journal **ret, const char *namespace, int flags);
+#endif
 typedef void
 (*SD_JOURNAL_CLOSE)(sd_journal *j);
 typedef int
@@ -85,6 +89,9 @@ typedef int
 (*SD_JOURNAL_GET_REALTIME_USEC)(sd_journal *j, guint64 *usec);
 
 static SD_JOURNAL_OPEN sd_journal_open;
+#if SYSLOG_NG_HAVE_JOURNAL_NAMESPACES
+static SD_JOURNAL_OPEN_NAMESPACE sd_journal_open_namespace;
+#endif
 static SD_JOURNAL_CLOSE sd_journal_close;
 static SD_JOURNAL_SEEK_HEAD sd_journal_seek_head;
 static SD_JOURNAL_SEEK_TAIL sd_journal_seek_tail;
@@ -112,6 +119,11 @@ _load_journald_symbols(void)
 {
   if (!LOAD_SYMBOL(journald_module, sd_journal_open))
     return FALSE;
+
+#if SYSLOG_NG_HAVE_JOURNAL_NAMESPACES
+  if (!LOAD_SYMBOL(journald_module, sd_journal_open_namespace))
+    return FALSE;
+#endif
 
   if (!LOAD_SYMBOL(journald_module, sd_journal_close))
     return FALSE;
@@ -180,6 +192,14 @@ journald_open(Journald *self, int flags)
 {
   return sd_journal_open(&self->journal, flags);
 }
+
+#if SYSLOG_NG_HAVE_JOURNAL_NAMESPACES
+int
+journald_open_namespace(Journald *self, const gchar *namespace, int flags)
+{
+  return sd_journal_open_namespace(&self->journal, namespace, flags);
+}
+#endif
 
 void
 journald_close(Journald *self)

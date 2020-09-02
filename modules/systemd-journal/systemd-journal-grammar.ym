@@ -57,6 +57,7 @@ JournalReaderOptions *last_journal_reader_options;
 %token KW_SYSTEMD_JOURNAL
 %token KW_PREFIX
 %token KW_MAX_FIELD_SIZE
+%token KW_NAMESPACE
 
 %type   <ptr> source_systemd_journal
 %type   <ptr> source_systemd_journal_params
@@ -117,6 +118,13 @@ source_systemd_journal_option
         | KW_MAX_FIELD_SIZE '(' positive_integer ')'
           {
             last_journal_reader_options->max_field_size = $3;
+          }
+        | KW_NAMESPACE '(' string ')'
+          {
+            if (last_journal_reader_options->namespace)
+              free(last_journal_reader_options->namespace);
+            last_journal_reader_options->namespace = strdup($3);
+            free($3);
           }
         | KW_LOG_FETCH_LIMIT '(' positive_integer ')'
           {

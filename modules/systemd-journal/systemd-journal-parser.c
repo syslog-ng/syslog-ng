@@ -34,6 +34,7 @@ static CfgLexerKeyword systemd_journal_keywords[] =
   { "systemd_journal",            KW_SYSTEMD_JOURNAL },
   { "prefix",                     KW_PREFIX },
   { "max_field_size",             KW_MAX_FIELD_SIZE },
+  { "namespace",                  KW_NAMESPACE },
   { NULL }
 };
 

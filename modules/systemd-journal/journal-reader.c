@@ -585,6 +585,43 @@ _add_poll_events(JournalReader *self)
   return TRUE;
 }
 
+static gint
+_journal_open(JournalReader *self)
+{
+#if SYSLOG_NG_HAVE_JOURNAL_NAMESPACES
+  gint journal_flags = SD_JOURNAL_LOCAL_ONLY;
+  gchar *journal_namespace = NULL;
+
+  if (strcmp(self->options->namespace, "*") == 0)
+    {
+      journal_flags |= SD_JOURNAL_ALL_NAMESPACES;
+      if (strlen(self->options->namespace) > 1)
+        {
+          msg_warning("namespace('*'): discarding everything after the asterisk");
+        }
+    }
+  else if (strncmp(self->options->namespace, "+", 1) == 0)
+    {
+      journal_flags |= SD_JOURNAL_INCLUDE_DEFAULT_NAMESPACE;
+      if (strlen(self->options->namespace) > 1)
+        {
+          journal_namespace = self->options->namespace + 1;
+        }
+    }
+  else
+    {
+      if (strlen(self->options->namespace) > 0)
+        {
+          journal_namespace = self->options->namespace;
+        }
+    }
+  gint res = journald_open_namespace(self->journal, journal_namespace, journal_flags);
+#else
+  gint res = journald_open(self->journal, SD_JOURNAL_LOCAL_ONLY);
+#endif
+  return res;
+}
+
 static gboolean
 _init(LogPipe *s)
 {
@@ -599,7 +636,7 @@ _init(LogPipe *s)
   if (!log_source_init(s))
     return FALSE;
 
-  gint res = journald_open(self->journal, SD_JOURNAL_LOCAL_ONLY);
+  gint res = _journal_open(self);
   if (res < 0)
     {
       msg_error("Error opening the journal",
@@ -727,6 +764,18 @@ journal_reader_options_init(JournalReaderOptions *options, GlobalConfig *cfg, co
           options->prefix = g_strdup(default_prefix);
         }
     }
+#if SYSLOG_NG_HAVE_JOURNAL_NAMESPACES
+  if (options->namespace == NULL)
+    {
+      const gchar *default_namespace = "*";
+      options->namespace = g_strdup(default_namespace);
+    }
+#else
+  if (options->namespace)
+    {
+      msg_warning("namespace() option on systemd-journal() will have no effect! (systemd < v245)");
+    }
+#endif
   options->initialized = TRUE;
 }
 
@@ -760,6 +809,11 @@ journal_reader_options_destroy(JournalReaderOptions *options)
     {
       time_zone_info_free(options->recv_time_zone_info);
       options->recv_time_zone_info = NULL;
+    }
+  if (options->namespace)
+    {
+      g_free(options->namespace);
+      options->namespace = NULL;
     }
   options->initialized = FALSE;
 }

@@ -54,6 +54,7 @@ LRMQ_MIN_VERSION="0.0.1"
 LRC_MIN_VERSION="1.6.0"
 JOURNALD_MIN_VERSION="195"
 LIBSYSTEMD_MIN_VERSION="209"
+LIBSYSTEMD_WITH_JOURNAL_NAMESPACES_MIN_VERSION="245"
 JAVA_MIN_VERSION="1.7"
 GRADLE_MIN_VERSION="2.2"
 HIREDIS_MIN_VERSION="0.11.0"
@@ -1406,6 +1407,9 @@ dnl ***************************************************************************
 PKG_CHECK_MODULES(libsystemd, libsystemd >= ${LIBSYSTEMD_MIN_VERSION},
                   have_libsystemd="yes", have_libsystemd="no")
 
+PKG_CHECK_MODULES(libsystemd, libsystemd >= ${LIBSYSTEMD_WITH_JOURNAL_NAMESPACES_MIN_VERSION},
+                  journal_namespaces="yes", journal_namespaces="no")
+
 dnl ***************************************************************************
 dnl python checks
 dnl ***************************************************************************
@@ -1809,6 +1813,7 @@ journald_mode()
 AC_DEFINE_UNQUOTED(JOURNALD_OFF, 0, ["Disable systemd-journal source"])
 AC_DEFINE_UNQUOTED(JOURNALD_OPTIONAL, 1, ["Enable systemd-journal source if journald is available"])
 AC_DEFINE_UNQUOTED(JOURNALD_SYSTEM, 2, ["Force systemd-journal source to use system's journald"])
+AC_DEFINE_UNQUOTED(HAVE_JOURNAL_NAMESPACES, `(test "$journal_namespaces" = "yes" ) && echo 1 || echo 0`, [have journal namespaces])
 
 AC_DEFINE_UNQUOTED(VERSION, "$PACKAGE_VERSION", [version number])
 AC_DEFINE_UNQUOTED(SOURCE_REVISION, "$SOURCE_REVISION", [source revision])
