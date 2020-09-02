@@ -79,7 +79,6 @@ void setup(void)
   _init_python_main();
 
   empty_cfg = cfg_new_snippet();
-  empty_cfg->filename  = g_strdup("dummy");
 }
 
 void teardown(void)

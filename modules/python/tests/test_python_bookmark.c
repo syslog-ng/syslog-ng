@@ -120,6 +120,7 @@ Test(python_bookmark, test_bookmark_saving)
 
     cr_assert_eq(PyList_Size(saved_bookmarks), 1);
 
+    Py_CLEAR(py_bookmark);
     Py_CLEAR(saved_bookmarks);
     PyGILState_Release(gstate);
   }
