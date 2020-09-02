@@ -780,6 +780,58 @@ journal_reader_options_init(JournalReaderOptions *options, GlobalConfig *cfg, co
 }
 
 void
+journal_reader_options_set_default_severity(JournalReaderOptions *self, gint severity)
+{
+  if (self->default_pri == 0xFFFF)
+    self->default_pri = LOG_USER;
+  self->default_pri = (self->default_pri & ~7) | severity;
+}
+
+void
+journal_reader_options_set_default_facility(JournalReaderOptions *self, gint facility)
+{
+  if (self->default_pri == 0xFFFF)
+    self->default_pri = LOG_NOTICE;
+  self->default_pri = (self->default_pri & 7) | facility;
+}
+
+void
+journal_reader_options_set_time_zone(JournalReaderOptions *self, gchar *time_zone)
+{
+  if (self->recv_time_zone)
+    g_free(self->recv_time_zone);
+  self->recv_time_zone = g_strdup(time_zone);
+}
+
+void
+journal_reader_options_set_prefix(JournalReaderOptions *self, gchar *prefix)
+{
+  if (self->prefix)
+    g_free(self->prefix);
+  self->prefix = g_strdup(prefix);
+}
+
+void
+journal_reader_options_set_max_field_size(JournalReaderOptions *self, gint max_field_size)
+{
+  self->max_field_size = max_field_size;
+}
+
+void
+journal_reader_options_set_namespace(JournalReaderOptions *self, gchar *namespace)
+{
+  if (self->namespace)
+    g_free(self->namespace);
+  self->namespace = g_strdup(namespace);
+}
+
+void
+journal_reader_options_set_log_fetch_limit(JournalReaderOptions *self, gint log_fetch_limit)
+{
+  self->fetch_limit = log_fetch_limit;
+}
+
+void
 journal_reader_options_defaults(JournalReaderOptions *options)
 {
   log_source_options_defaults(&options->super);

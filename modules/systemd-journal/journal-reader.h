@@ -49,6 +49,13 @@ void journal_reader_set_options(LogPipe *s, LogPipe *control, JournalReaderOptio
                                 const gchar *stats_instance);
 
 void journal_reader_options_init(JournalReaderOptions *options, GlobalConfig *cfg, const gchar *group_name);
+void journal_reader_options_set_default_severity(JournalReaderOptions *self, gint severity);
+void journal_reader_options_set_default_facility(JournalReaderOptions *self, gint facility);
+void journal_reader_options_set_time_zone(JournalReaderOptions *self, gchar *time_zone);
+void journal_reader_options_set_prefix(JournalReaderOptions *self, gchar *prefix);
+void journal_reader_options_set_max_field_size(JournalReaderOptions *self, gint max_field_size);
+void journal_reader_options_set_namespace(JournalReaderOptions *self, gchar *namespace);
+void journal_reader_options_set_log_fetch_limit(JournalReaderOptions *self, gint log_fetch_limit);
 void journal_reader_options_defaults(JournalReaderOptions *options);
 void journal_reader_options_destroy(JournalReaderOptions *options);
 
