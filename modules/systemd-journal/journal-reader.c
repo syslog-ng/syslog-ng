@@ -585,41 +585,61 @@ _add_poll_events(JournalReader *self)
   return TRUE;
 }
 
-static gint
-_journal_open(JournalReader *self)
-{
 #if SYSLOG_NG_HAVE_JOURNAL_NAMESPACES
-  gint journal_flags = SD_JOURNAL_LOCAL_ONLY;
-  gchar *journal_namespace = NULL;
-
-  if (strcmp(self->options->namespace, "*") == 0)
+static void
+_journal_process_namespace(gchar *namespace_option, gchar **journal_namespace, gint *journal_flags)
+{
+  if (strcmp(namespace_option, "*") == 0)
     {
-      journal_flags |= SD_JOURNAL_ALL_NAMESPACES;
-      if (strlen(self->options->namespace) > 1)
+      *journal_flags |= SD_JOURNAL_ALL_NAMESPACES;
+      if (strlen(namespace_option) > 1)
         {
           msg_warning("namespace('*'): discarding everything after the asterisk");
         }
     }
-  else if (strncmp(self->options->namespace, "+", 1) == 0)
+  else if (strncmp(namespace_option, "+", 1) == 0)
     {
-      journal_flags |= SD_JOURNAL_INCLUDE_DEFAULT_NAMESPACE;
-      if (strlen(self->options->namespace) > 1)
+      *journal_flags |= SD_JOURNAL_INCLUDE_DEFAULT_NAMESPACE;
+      if (strlen(namespace_option) > 1)
         {
-          journal_namespace = self->options->namespace + 1;
+          *journal_namespace = namespace_option + 1;
         }
     }
   else
     {
-      if (strlen(self->options->namespace) > 0)
+      if (strlen(namespace_option) > 0)
         {
-          journal_namespace = self->options->namespace;
+          *journal_namespace = namespace_option;
         }
     }
-  gint res = journald_open_namespace(self->journal, journal_namespace, journal_flags);
-#else
-  gint res = journald_open(self->journal, SD_JOURNAL_LOCAL_ONLY);
+}
 #endif
-  return res;
+
+static gint
+_journal_open(JournalReader *self)
+{
+  gint journal_flags = SD_JOURNAL_LOCAL_ONLY;
+
+#if SYSLOG_NG_HAVE_JOURNAL_NAMESPACES
+  gchar *journal_namespace = NULL;
+  _journal_process_namespace(self->options->namespace, &journal_namespace, &journal_flags);
+  return journald_open_namespace(self->journal, journal_namespace, journal_flags);
+#else
+  return journald_open(self->journal, journal_flags);
+#endif
+}
+
+static void
+_init_persist_name(JournalReader *self)
+{
+#if SYSLOG_NG_HAVE_JOURNAL_NAMESPACES
+  if (strcmp(self->options->namespace, "*") != 0)
+    {
+      self->persist_name = g_strdup_printf("systemd_journal(%s)", self->options->namespace);
+      return;
+    }
+#endif
+  self->persist_name = g_strdup("systemd-journal");
 }
 
 static gboolean
@@ -632,6 +652,8 @@ _init(LogPipe *s)
       msg_error("The configuration must not contain more than one systemd-journal() source");
       return FALSE;
     }
+
+  _init_persist_name(self);
 
   if (!log_source_init(s))
     return FALSE;
@@ -728,7 +750,7 @@ journal_reader_new(GlobalConfig *cfg, Journald *journal)
   self->super.super.init = _init;
   self->super.super.deinit = _deinit;
   self->super.super.free_fn = _free;
-  self->persist_name = g_strdup("systemd-journal");
+  self->persist_name = NULL;
   self->journal = journal;
   _init_watches(self);
   return self;

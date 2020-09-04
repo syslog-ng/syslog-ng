@@ -44,7 +44,6 @@ typedef struct _JournalReaderOptions
 } JournalReaderOptions;
 
 JournalReader *journal_reader_new(GlobalConfig *cfg, Journald *journal);
-void journal_reader_set_persist_name(JournalReader *self, gchar *persist_name);
 void journal_reader_set_options(LogPipe *s, LogPipe *control, JournalReaderOptions *options, const gchar *stats_id,
                                 const gchar *stats_instance);
 
