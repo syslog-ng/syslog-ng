@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 class File(object):
     def __init__(self, file_path):
-        self.__file_path = file_path
+        self.file_path = file_path
         self.__opened_file = None
 
     def __del__(self):
@@ -39,16 +39,16 @@ class File(object):
             self.__opened_file = None
 
     def __is_file_exist(self):
-        return self.__file_path.exists()
+        return self.file_path.exists()
 
     def wait_for_creation(self):
         file_created = wait_until_true(self.__is_file_exist)
         if file_created:
-            logger.debug("File has been created:\n{}".format(self.__file_path))
+            logger.debug("File has been created:\n{}".format(self.file_path))
         else:
-            logger.debug("File not created:\n{}".format(self.__file_path))
+            logger.debug("File not created:\n{}".format(self.file_path))
         return file_created
 
     def open_file(self, mode):
-        self.__opened_file = open_file(self.__file_path, mode)
+        self.__opened_file = open_file(self.file_path, mode)
         return self.__opened_file

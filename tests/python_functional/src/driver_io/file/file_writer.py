@@ -20,7 +20,10 @@
 # COPYING for details.
 #
 #############################################################################
+import logging
+
 from src.driver_io.file.file import File
+logger = logging.getLogger(__name__)
 
 
 class FileWriter(File):
@@ -41,3 +44,9 @@ class FileWriter(File):
     def __write(content, writeable_file):
         writeable_file.write(content)
         writeable_file.flush()
+
+    def write_log(self, formatted_log, counter=1):
+        for __i in range(0, counter):
+            self.write(formatted_log)
+        written_description = "Content has been written to\nresource: {}\nnumber of times: {}\ncontent: {}\n".format(self.file_path, counter, formatted_log)
+        logger.info(written_description)

@@ -31,7 +31,6 @@ import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.common.blocking import wait_until_true
 from src.driver_io.file.file_reader import FileReader
 from src.executors.process_executor import ProcessExecutor
-from src.syslog_ng_config.statements.destinations.destination_reader import DestinationReader
 
 
 class SNMPtrapd(object):
@@ -94,8 +93,8 @@ class SNMPtrapd(object):
         return self.port
 
     def get_traps(self):
-        file_reader = DestinationReader(FileReader)
-        logs = file_reader.read_all_logs(self.snmptrapd_log)
+        file_reader = FileReader(self.snmptrapd_log)
+        logs = file_reader.read_all_logs()
         trap_list = []
         for log_line in logs:
             res = re.match('({})(.*)'.format(self.TRAP_LOG_PREFIX), log_line)
@@ -104,8 +103,8 @@ class SNMPtrapd(object):
         return sorted(trap_list)
 
     def get_raw_traps(self):
-        file_reader = DestinationReader(FileReader)
-        return file_reader.read_all_logs(self.snmptrapd_log)
+        file_reader = FileReader(self.snmptrapd_log)
+        return file_reader.read_all_logs()
 
 
 @pytest.fixture

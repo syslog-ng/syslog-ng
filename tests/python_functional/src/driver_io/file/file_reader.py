@@ -20,7 +20,14 @@
 # COPYING for details.
 #
 #############################################################################
+import logging
+
 from src.driver_io.file.file import File
+from src.message_reader.message_reader import MessageReader
+from src.message_reader.message_reader import READ_ALL_AVAILABLE_MESSAGES
+from src.message_reader.single_line_parser import SingleLineParser
+
+logger = logging.getLogger(__name__)
 
 
 class FileReader(File):
@@ -44,3 +51,17 @@ class FileReader(File):
 
         return self.__readable_file.readline()
 
+    def read_log(self):
+        return self.read_logs(counter=1)[0]
+
+    def read_logs(self, counter):
+        self.wait_for_creation()
+        message_reader = MessageReader(self.read, SingleLineParser())
+        self.__reader = message_reader
+        messages = self.__reader.pop_messages(counter)
+        read_description = "Content has been read from\nresource: {}\ncontent: {}\n".format(self.file_path, messages)
+        logger.info(read_description)
+        return messages
+
+    def read_all_logs(self):
+        return self.read_logs(READ_ALL_AVAILABLE_MESSAGES)
