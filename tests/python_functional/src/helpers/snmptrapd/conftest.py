@@ -29,7 +29,7 @@ from psutil import TimeoutExpired
 
 import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.common.blocking import wait_until_true
-from src.driver_io.file.file_io import FileIO
+from src.driver_io.file.file_reader import FileReader
 from src.executors.process_executor import ProcessExecutor
 from src.syslog_ng_config.statements.destinations.destination_reader import DestinationReader
 
@@ -94,7 +94,7 @@ class SNMPtrapd(object):
         return self.port
 
     def get_traps(self):
-        file_reader = DestinationReader(FileIO)
+        file_reader = DestinationReader(FileReader)
         logs = file_reader.read_all_logs(self.snmptrapd_log)
         trap_list = []
         for log_line in logs:
@@ -104,7 +104,7 @@ class SNMPtrapd(object):
         return sorted(trap_list)
 
     def get_raw_traps(self):
-        file_reader = DestinationReader(FileIO)
+        file_reader = DestinationReader(FileReader)
         return file_reader.read_all_logs(self.snmptrapd_log)
 
 

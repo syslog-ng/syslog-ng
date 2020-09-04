@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #############################################################################
-# Copyright (c) 2015-2018 Balabit
+# Copyright (c) 2015-2020 Balabit
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -20,26 +20,27 @@
 # COPYING for details.
 #
 #############################################################################
-from pathlib2 import Path
-
-import src.testcase_parameters.testcase_parameters as tc_parameters
-from src.driver_io.file.file_reader import FileReader
-from src.syslog_ng_config.statements.destinations.destination_driver import DestinationDriver
-from src.syslog_ng_config.statements.destinations.destination_reader import DestinationReader
+from src.driver_io.file.file import File
 
 
-class FileDestination(DestinationDriver):
-    def __init__(self, file_name, **options):
-        self.driver_name = "file"
-        self.path = Path(tc_parameters.WORKING_DIR, file_name)
-        super(FileDestination, self).__init__([self.path], options)
-        self.destination_reader = DestinationReader(FileReader)
+class FileReader(File):
+    def __init__(self, file_path):
+        super(FileReader, self).__init__(file_path)
+        self.__readable_file = None
 
-    def get_path(self):
-        return self.path
+    def read(self, position=None):
+        if not self.__readable_file:
+            self.__readable_file = self.open_file(mode="r")
 
-    def read_log(self):
-        return self.destination_reader.read_logs(self.get_path(), counter=1)[0]
+        if position is not None:
+            self.__readable_file.seek(position)
 
-    def read_logs(self, counter):
-        return self.destination_reader.read_logs(self.get_path(), counter=counter)
+        content = self.__readable_file.read()
+        return content
+
+    def readline(self):
+        if not self.__readable_file:
+            self.__readable_file = self.open_file(mode="r")
+
+        return self.__readable_file.readline()
+

@@ -23,7 +23,7 @@
 from pathlib2 import Path
 
 import src.testcase_parameters.testcase_parameters as tc_parameters
-from src.driver_io.file.file_io import FileIO
+from src.driver_io.file.file_writer import FileWriter
 from src.syslog_ng_config.statements.sources.source_driver import SourceDriver
 from src.syslog_ng_config.statements.sources.source_writer import SourceWriter
 
@@ -33,7 +33,7 @@ class FileSource(SourceDriver):
         self.driver_name = "file"
         self.path = Path(tc_parameters.WORKING_DIR, file_name)
         super(FileSource, self).__init__([self.path], options)
-        self.source_writer = SourceWriter(FileIO)
+        self.source_writer = SourceWriter(FileWriter)
 
     def get_path(self):
         return self.path

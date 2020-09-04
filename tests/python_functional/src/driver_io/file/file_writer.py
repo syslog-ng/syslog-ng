@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #############################################################################
-# Copyright (c) 2015-2018 Balabit
+# Copyright (c) 2015-2020 Balabit
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -23,27 +23,10 @@
 from src.driver_io.file.file import File
 
 
-class FileIO(File):
+class FileWriter(File):
     def __init__(self, file_path):
-        super(FileIO, self).__init__(file_path)
-        self.__readable_file = None
+        super(FileWriter, self).__init__(file_path)
         self.__writeable_file = None
-
-    def read(self, position=None):
-        if not self.__readable_file:
-            self.__readable_file = self.open_file(mode="r")
-
-        if position is not None:
-            self.__readable_file.seek(position)
-
-        content = self.__readable_file.read()
-        return content
-
-    def readline(self):
-        if not self.__readable_file:
-            self.__readable_file = self.open_file(mode="r")
-
-        return self.__readable_file.readline()
 
     def write(self, content):
         if self.__writeable_file is None:
