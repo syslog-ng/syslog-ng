@@ -32,8 +32,8 @@ def test_db_parser(config, syslog_ng):
     patterndb_config = DBParserConfig("program_name", [{"class": "patterndb", "rule": "some number: @NUMBER:foo@"}])
     db_parser = config.create_db_parser(patterndb_config)
 
-    file_destination = config.create_file_destination(file_name="output.log", template=config.stringify('foo=$foo class=${.classifier.class}\n'))
+    file_destination, file_reader = config.create_file_destination_and_reader(file_name="output.log", template=config.stringify('foo=$foo class=${.classifier.class}\n'))
     config.create_logpath(statements=[generator_source, db_parser, file_destination])
 
     syslog_ng.start(config)
-    assert file_destination.read_log().strip() == "foo=5 class=patterndb"
+    assert file_reader.read_log().strip() == "foo=5 class=patterndb"

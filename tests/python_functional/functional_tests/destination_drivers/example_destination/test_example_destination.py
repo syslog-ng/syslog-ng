@@ -24,8 +24,8 @@
 
 def test_example_destination_parser(config, syslog_ng):
     generator_source = config.create_example_msg_generator_source(num=1, template=config.stringify("message text"))
-    example_destination = config.create_example_destination(filename="output.txt")
+    example_destination, example_destination_reader = config.create_example_destination_and_reader(filename="output.txt")
     config.create_logpath(statements=[generator_source, example_destination])
 
     syslog_ng.start(config)
-    assert example_destination.wait_file_content("message text")
+    assert "message text" in example_destination_reader.read_log()

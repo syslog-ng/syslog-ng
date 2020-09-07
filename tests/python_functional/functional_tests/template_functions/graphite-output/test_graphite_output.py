@@ -26,9 +26,9 @@ def test_graphite_output(config, syslog_ng):
     template = "$(graphite-output --timestamp 'custom_timestamp' --key test.*)\n"
 
     generator_source = config.create_example_msg_generator_source(num=1, values="test.key1 => value1 test.key2 => value2")
-    file_destination = config.create_file_destination(file_name="output.log", template=config.stringify(template))
+    file_destination, file_reader = config.create_file_destination_and_reader(file_name="output.log", template=config.stringify(template))
 
     config.create_logpath(statements=[generator_source, file_destination])
     syslog_ng.start(config)
-    log = file_destination.read_logs(2)
+    log = file_reader.read_logs(2)
     assert log == ["test.key1 value1 custom_timestamp\n", "test.key2 value2 custom_timestamp\n"]

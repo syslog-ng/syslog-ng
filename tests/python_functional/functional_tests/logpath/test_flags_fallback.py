@@ -23,11 +23,11 @@
 from src.message_builder.log_message import LogMessage
 
 
-def write_msg_with_fields(file_source, bsd_formatter, hostname):
+def write_msg_with_fields(file_writer, bsd_formatter, hostname):
     log_message = LogMessage().hostname(hostname)
     input_message = bsd_formatter.format_message(log_message)
     expected_message = bsd_formatter.format_message(log_message.remove_priority())
-    file_source.write_log(input_message)
+    file_writer.write_log(input_message)
     return expected_message
 
 
@@ -44,26 +44,26 @@ def test_flags_fallback(config, syslog_ng, bsd_formatter):
 
     config.update_global_options(keep_hostname="yes")
 
-    file_source = config.create_file_source(file_name="input.log")
+    file_source, file_writer = config.create_file_source_and_writer(file_name="input.log")
     host_filter = config.create_filter(host="'host-A'")
-    file_destination1 = config.create_file_destination(file_name="output1.log")
-    file_destination2 = config.create_file_destination(file_name="output2.log")
+    file_destination1, file_reader1 = config.create_file_destination_and_reader(file_name="output1.log")
+    file_destination2, file_reader2 = config.create_file_destination_and_reader(file_name="output2.log")
 
     inner_logpath1 = config.create_inner_logpath(statements=[host_filter, file_destination1])
     inner_logpath2 = config.create_inner_logpath(statements=[file_destination2], flags="fallback")
 
     config.create_logpath(statements=[file_source, inner_logpath1, inner_logpath2])
 
-    expected_message1 = write_msg_with_fields(file_source, bsd_formatter, "host-A")
-    expected_message2 = write_msg_with_fields(file_source, bsd_formatter, "host-B")
+    expected_message1 = write_msg_with_fields(file_writer, bsd_formatter, "host-A")
+    expected_message2 = write_msg_with_fields(file_writer, bsd_formatter, "host-B")
 
     syslog_ng.start(config)
 
-    dest1_logs = file_destination1.read_log()
+    dest1_logs = file_reader1.read_log()
     # host("host-A") matches on first and second messages
     assert expected_message1 in dest1_logs
 
-    dest2_logs = file_destination2.read_log()
+    dest2_logs = file_reader2.read_log()
     # only third message should arrive here, because of
     # flags(fallback), only this messages was not matched before
     assert expected_message2 in dest2_logs

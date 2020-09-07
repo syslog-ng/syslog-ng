@@ -33,7 +33,7 @@ def test_snmp_dest_v2c_using_macros_in_snmp_obj(config, syslog_ng, snmptrapd, sn
     message = "test message"
     input_message = "<38>Feb 11 21:27:22 testhost {}[9999]: {}\n".format(program, message)
 
-    file_source = config.create_file_source(file_name="input.log")
+    file_source, file_writer = config.create_file_source_and_writer(file_name="input.log")
 
     snmp_destination = config.create_snmp_destination(
         host=snmp_test_params.get_ip_address(),
@@ -48,7 +48,7 @@ def test_snmp_dest_v2c_using_macros_in_snmp_obj(config, syslog_ng, snmptrapd, sn
         version="v2c",
     )
     config.create_logpath(statements=[file_source, snmp_destination])
-    file_source.write_log(input_message)
+    file_writer.write_log(input_message)
 
     syslog_ng.start(config)
 

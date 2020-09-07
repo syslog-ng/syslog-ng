@@ -31,7 +31,7 @@ DEFAULT_PID = "pid"
 )
 def test_use_syslogng_pid(config, syslog_ng, use_syslogng_pid):
     generator_source = config.create_example_msg_generator_source(num=1, use_syslogng_pid=use_syslogng_pid, values="PID => {}".format(DEFAULT_PID))
-    file_destination = config.create_file_destination(file_name="output.log", template=config.stringify("PID=$PID\n"))
+    file_destination, file_reader = config.create_file_destination_and_reader(file_name="output.log", template=config.stringify("PID=$PID\n"))
     config.create_logpath(statements=[generator_source, file_destination])
 
     p = syslog_ng.start(config)
@@ -39,4 +39,4 @@ def test_use_syslogng_pid(config, syslog_ng, use_syslogng_pid):
         expected_value = "PID={}".format(p.pid)
     else:
         expected_value = "PID={}".format(DEFAULT_PID)
-    assert file_destination.read_log().strip() == expected_value
+    assert file_reader.read_log().strip() == expected_value

@@ -33,11 +33,12 @@ expected_log = "Feb 11 21:27:22 testhost testprogram[9999]: test message\n"
     ], ids=["with_one_log", "with_ten_logs"],
 )
 def test_acceptance(config, syslog_ng, input_log, expected_log, counter):
-    file_source = config.create_file_source(file_name="input.log")
-    file_destination = config.create_file_destination(file_name="output.log")
+    file_source, file_writer = config.create_file_source_and_writer(file_name="input.log")
+    file_destination, file_reader = config.create_file_destination_and_reader(file_name="output.log")
     config.create_logpath(statements=[file_source, file_destination])
     config.update_global_options(keep_hostname="yes")
 
-    file_source.write_log(input_log, counter)
+    file_writer.write_log(input_log, counter)
     syslog_ng.start(config)
-    assert file_destination.read_logs(counter) == [expected_log] * counter
+
+    assert file_reader.read_logs(counter) == [expected_log] * counter

@@ -32,9 +32,9 @@ def test_flags_catch_all(config, syslog_ng, log_message, bsd_formatter):
     # input logs:
     # Oct 11 22:14:15 host-A testprogram: message from host-A
 
-    file_source = config.create_file_source(file_name="input.log")
-    file_destination = config.create_file_destination(file_name="output.log")
-    catch_all_destination = config.create_file_destination(file_name="catchall_output.log")
+    file_source, file_writer = config.create_file_source_and_writer(file_name="input.log")
+    file_destination, file_reader = config.create_file_destination_and_reader(file_name="output.log")
+    catch_all_destination, catch_all_destination_reader = config.create_file_destination_and_reader(file_name="catchall_output.log")
 
     inner_logpath = config.create_inner_logpath(statements=[file_destination])
 
@@ -44,15 +44,15 @@ def test_flags_catch_all(config, syslog_ng, log_message, bsd_formatter):
 
     input_message = bsd_formatter.format_message(log_message)
     expected_message = bsd_formatter.format_message(log_message.remove_priority())
-    file_source.write_log(input_message)
+    file_writer.write_log(input_message)
 
     syslog_ng.start(config)
 
-    destination_log = file_destination.read_log()
+    destination_log = file_reader.read_log()
     # message should arrived into destination1
     assert expected_message in destination_log
 
-    catch_all_destination_log = catch_all_destination.read_log()
+    catch_all_destination_log = catch_all_destination_reader.read_log()
     # message should arrived into catch_all_destination
     # there is a flags(catch-all)
     assert expected_message in catch_all_destination_log

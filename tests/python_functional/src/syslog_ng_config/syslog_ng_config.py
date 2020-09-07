@@ -23,6 +23,7 @@
 import logging
 
 from src.common.operations import cast_to_list
+from src.driver_io.file.file_reader import FileReader
 from src.driver_io.file.file_writer import FileWriter
 from src.syslog_ng_config.renderer import ConfigRenderer
 from src.syslog_ng_config.statement_group import StatementGroup
@@ -78,8 +79,10 @@ class SyslogNgConfig(object):
     def update_global_options(self, **options):
         self.__syslog_ng_config["global_options"].update(options)
 
-    def create_file_source(self, **options):
-        return FileSource(**options)
+    def create_file_source_and_writer(self, **options):
+        file_source = FileSource(**options)
+        file_writer = FileWriter(file_source.get_path())
+        return file_source, file_writer
 
     def create_example_msg_generator_source(self, **options):
         return ExampleMsgGeneratorSource(**options)
@@ -102,11 +105,15 @@ class SyslogNgConfig(object):
     def create_syslog_parser(self, **options):
         return Parser("syslog-parser", **options)
 
-    def create_file_destination(self, **options):
-        return FileDestination(**options)
+    def create_file_destination_and_reader(self, **options):
+        file_destination = FileDestination(**options)
+        file_reader = FileReader(file_destination.get_path())
+        return file_destination, file_reader
 
-    def create_example_destination(self, **options):
-        return ExampleDestination(**options)
+    def create_example_destination_and_reader(self, **options):
+        example_destination = ExampleDestination(**options)
+        example_destination_reader = FileReader(example_destination.get_path())
+        return example_destination, example_destination_reader
 
     def create_snmp_destination(self, **options):
         return SnmpDestination(**options)

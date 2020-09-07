@@ -23,11 +23,11 @@
 from src.message_builder.log_message import LogMessage
 
 
-def write_msg_with_fields(file_source, bsd_formatter, hostname, program):
+def write_msg_with_fields(file_writer, bsd_formatter, hostname, program):
     log_message = LogMessage().hostname(hostname).program(program)
     input_message = bsd_formatter.format_message(log_message)
     expected_message = bsd_formatter.format_message(log_message.remove_priority())
-    file_source.write_log(input_message)
+    file_writer.write_log(input_message)
     return expected_message
 
 
@@ -48,13 +48,13 @@ def test_multiple_flags(config, syslog_ng, bsd_formatter):
 
     config.update_global_options(keep_hostname="yes")
 
-    file_source = config.create_file_source(file_name="input.log")
+    file_source, file_writer = config.create_file_source_and_writer(file_name="input.log")
     host_filter = config.create_filter(host="'host-A'")
     program_filter = config.create_filter(program="'app-A'")
-    file_destination1 = config.create_file_destination(file_name="output1.log")
-    file_destination2 = config.create_file_destination(file_name="output2.log")
-    file_destination3 = config.create_file_destination(file_name="output3.log")
-    file_destination4 = config.create_file_destination(file_name="output4.log")
+    file_destination1, file_reader1 = config.create_file_destination_and_reader(file_name="output1.log")
+    file_destination2, file_reader2 = config.create_file_destination_and_reader(file_name="output2.log")
+    file_destination3, file_reader3 = config.create_file_destination_and_reader(file_name="output3.log")
+    file_destination4, file_reader4 = config.create_file_destination_and_reader(file_name="output4.log")
 
     second_level_logpath1 = config.create_inner_logpath(statements=[host_filter, file_destination1], flags="final")
     second_level_logpath2 = config.create_inner_logpath(statements=[program_filter, file_destination2])
@@ -65,29 +65,29 @@ def test_multiple_flags(config, syslog_ng, bsd_formatter):
     )
     config.create_logpath(statements=[file_destination4], flags="catch-all")
 
-    expected_message1 = write_msg_with_fields(file_source, bsd_formatter, "host-A", "app-A")
-    expected_message2 = write_msg_with_fields(file_source, bsd_formatter, "host-A", "app-B")
-    expected_message3 = write_msg_with_fields(file_source, bsd_formatter, "host-B", "app-A")
-    expected_message4 = write_msg_with_fields(file_source, bsd_formatter, "host-B", "app-B")
+    expected_message1 = write_msg_with_fields(file_writer, bsd_formatter, "host-A", "app-A")
+    expected_message2 = write_msg_with_fields(file_writer, bsd_formatter, "host-A", "app-B")
+    expected_message3 = write_msg_with_fields(file_writer, bsd_formatter, "host-B", "app-A")
+    expected_message4 = write_msg_with_fields(file_writer, bsd_formatter, "host-B", "app-B")
 
     syslog_ng.start(config)
 
-    dest1_logs = file_destination1.read_logs(counter=2)
+    dest1_logs = file_reader1.read_logs(counter=2)
     # host("host-A") matches on first and second messages
     assert expected_message1 in dest1_logs
     assert expected_message2 in dest1_logs
 
-    dest2_logs = file_destination2.read_logs(counter=1)
+    dest2_logs = file_reader2.read_logs(counter=1)
     # program("app-A") matches on first and third messages, but flags(final)
     # in previous logpath() say that first message can not arrived here
     assert expected_message3 in dest2_logs
 
-    dest3_logs = file_destination3.read_logs(counter=1)
+    dest3_logs = file_reader3.read_logs(counter=1)
     # only fourth message should arrive here, because of
     # flags(fallback), only this messages was not matched before
     assert expected_message4 in dest3_logs
 
-    dest4_logs = file_destination4.read_logs(counter=4)
+    dest4_logs = file_reader4.read_logs(counter=4)
     # every message should arrived into destination4
     # there is a flags(catch-all)
     assert expected_message1 in dest4_logs
