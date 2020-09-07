@@ -206,6 +206,11 @@ AC_ARG_ENABLE(gprof,
 AC_ARG_ENABLE(memtrace,
               [  --enable-memtrace   Enable alternative leak debugging code.])
 
+AC_ARG_WITH(sanitizer,
+              [  --with-sanitizer=[address/undefined/etc...]
+                                         Enables compiler sanitizer supports (default: no)]
+              ,,with_sanitizer="no")
+
 AC_ARG_ENABLE(dynamic-linking,
               [  --enable-dynamic-linking        Link everything dynamically.],,enable_dynamic_linking="auto")
 
@@ -1694,6 +1699,14 @@ dnl ***************************************************************************
 dnl check fmemopen
 dnl ***************************************************************************
 AC_CHECK_FUNCS([fmemopen])
+
+dnl ***************************************************************************
+dnl sanitizer
+dnl ***************************************************************************
+
+if  test "x$with_sanitizer" != "xno"; then
+   CFLAGS="$CFLAGS -O1 -fsanitize=$with_sanitizer -fno-omit-frame-pointer"
+fi
 
 dnl ***************************************************************************
 dnl default modules to be loaded
