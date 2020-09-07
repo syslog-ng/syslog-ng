@@ -422,7 +422,7 @@ zone_info_parser(unsigned char **input, gboolean is64bitData, gint *version)
     }
 
   /* http://osdir.com/ml/time.tz/2006-02/msg00041.html */
-  /* We dont nead this flags to compute the wall time of the timezone*/
+  /* We don't need this flags to compute the wall time of the timezone*/
 
   /* Ignore isstd flags */
   for (i=0; i<isstdcnt; i++)

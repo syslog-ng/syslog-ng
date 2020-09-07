@@ -37,7 +37,7 @@ ParameterizedTestParameters(reloc, test_path)
 {
   static LookupParameter test_data_list[] =
   {
-    {"/opt/syslog-ng", "/opt/syslog-ng"}, /* absoulte path remains unchanged */
+    {"/opt/syslog-ng", "/opt/syslog-ng"}, /* absolute path remains unchanged */
     {"${prefix}/bin", "/test/bin"}, /* variables are resolved */
     {"/foo/${prefix}/bar", "/foo//test/bar"}, /* variables are resolved in the middle */
     {"${foo}/bin", "/foo/bin"}, /* variables are resolved recursively */

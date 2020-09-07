@@ -42,7 +42,7 @@ static StatsCounterItem *internal_queue_dropped;
 /* the expiration timer of the next MARK message */
 static struct timespec next_mark_target = { -1, 0 };
 /* as different sources from different threads can call afinter_postpone_mark,
-   and we use the value in the init thread, we need to syncronize the value references
+   and we use the value in the init thread, we need to synchronize the value references
 */
 static GStaticMutex internal_mark_target_lock = G_STATIC_MUTEX_INIT;
 

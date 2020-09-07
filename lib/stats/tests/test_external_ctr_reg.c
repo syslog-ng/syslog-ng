@@ -179,7 +179,7 @@ Test(stats_external_counter, register_same_ctr_as_external_after_internal_unregi
     stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &counter);
     // assert, SIGABRT:
     stats_register_external_counter(0, &sc_key, SC_TYPE_PROCESSED, &test_ctr);
-    // this is beacuse we are not unset the live mask even when the use_ctr is 0...
+    // this is because we are not unset the live mask even when the use_ctr is 0...
     // I'm not sure if it is correct, but we have other unit tests, where we expect the same behaviour
     /*  counter = stats_get_counter(&sc_key, SC_TYPE_PROCESSED);
         cr_expect_eq(counter->value_ref, &test_ctr);

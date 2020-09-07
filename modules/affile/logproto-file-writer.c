@@ -108,9 +108,9 @@ log_proto_file_writer_flush(LogProtoClient *s)
       /* add the lengths of the following messages */
       while (i < self->buf_count)
         self->partial_len += self->buffer[i++].iov_len;
-      /* allocate and copy the remaning data */
+      /* allocate and copy the remaining data */
       self->partial = (guchar *)g_malloc(self->partial_len);
-      ofs = sum - rc; /* the length of the remaning (not processed) chunk in the first message */
+      ofs = sum - rc; /* the length of the remaining (not processed) chunk in the first message */
       pos = self->buffer[i0].iov_len - ofs;
       memcpy(self->partial, (guchar *) self->buffer[i0].iov_base + pos, ofs);
       i = i0 + 1;
@@ -128,7 +128,7 @@ log_proto_file_writer_flush(LogProtoClient *s)
       log_proto_client_msg_ack(&self->super, self->buf_count);
     }
 
-  /* free the previous message strings (the remaning part has been copied to the partial buffer) */
+  /* free the previous message strings (the remaining part has been copied to the partial buffer) */
   for (i = 0; i < self->buf_count; ++i)
     g_free(self->buffer[i].iov_base);
   self->buf_count = 0;

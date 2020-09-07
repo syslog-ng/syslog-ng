@@ -565,7 +565,7 @@ snmpdest_dd_session_init(SNMPDestDriver *self)
 
       /*
        * setup the engineID based on IP addr.  Need a different
-       * algorthim here.  This will cause problems with agents on the
+       * algorithm here.  This will cause problems with agents on the
        * same machine sending traps.
        */
       setup_engineID(NULL, NULL);
