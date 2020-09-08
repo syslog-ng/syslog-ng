@@ -507,7 +507,7 @@ Test(log_message, test_message_size)
   cr_assert_eq(msg_size, log_msg_get_size(msg)); // Tag is not increased until tag id 65
 
   char *tag_name = strdup("00tagname");
-  // (*8 to convert ot bits) + no need plus 1 bcause we already added one tag: test_tag_storage
+  // (*8 to convert to bits) + no need plus 1 bcause we already added one tag: test_tag_storage
   for (int i = 0; i < GLIB_SIZEOF_LONG*8; i++)
     {
       sprintf(tag_name, "%dtagname", i);

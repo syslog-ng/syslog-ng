@@ -114,7 +114,7 @@ struct _LogWriter
  * success. This is more complex when disk buffering is used, in which case
  * messages are put to the "disk buffer" first and acknowledged immediately.
  * (this way the reader never stops when the disk buffer area is not yet
- * full). When disk buffer reaches its limit, messages are added to the the
+ * full). When disk buffer reaches its limit, messages are added to the
  * usual GQueue and messages get acknowledged when they are moved to the
  * disk buffer.
  *

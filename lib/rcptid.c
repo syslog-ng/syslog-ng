@@ -155,7 +155,7 @@ rcptid_generate_id(void)
 }
 
 /*restore RCTPID from persist file, if possible, else
-  create new enrty point with "next.rcptid" name*/
+  create new entry point with "next.rcptid" name*/
 gboolean
 rcptid_init(PersistState *state, gboolean use_rcptid)
 {

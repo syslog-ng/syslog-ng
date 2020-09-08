@@ -103,7 +103,7 @@ enum
 
 /* macros (not NV pairs!) that syslog-ng knows about. This was the
  * earliest mechanism for inserting message-specific information into
- * texts. It is now superseeded by name-value pairs where the value is
+ * texts. It is now superseded by name-value pairs where the value is
  * text, but remains to be used for time and other metadata.
  */
 typedef struct _LogMacroDef

@@ -32,7 +32,7 @@
  * Some information about how we embed the Python interpreter:
  *  - instead of using the __main__ module, we use a separate _syslogng_main
  *    module as we want to replace it every time syslog-ng is reloaded
- *  - hanlding of our separate main module is implemented by this module
+ *  - handling of our separate main module is implemented by this module
  *  - this separate __main__ module requires some magic though (most of it
  *    is in _py_construct_main_module(), see below.
  *  - the PyObject reference to the current main module is stored in the

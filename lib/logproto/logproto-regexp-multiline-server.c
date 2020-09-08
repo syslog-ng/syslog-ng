@@ -44,7 +44,7 @@ multi_line_regexp_compile(const gchar *regexp, GError **error)
 
   g_return_val_if_fail(error == NULL || *error == NULL, FALSE);
 
-  /* complile the regexp */
+  /* compile the regexp */
   self->pattern = pcre_compile2(regexp, 0, &rc, &errptr, &erroffset, NULL);
   if (!self->pattern)
     {

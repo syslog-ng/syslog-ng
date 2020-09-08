@@ -122,7 +122,7 @@ Test(unixtime, unix_time_fix_timezone_with_tzinfo_to_a_zone_backwards_during_spr
 
   _fix_timezone_with_tzinfo(&base_ut, &ut, 0, "EST5EDT");
 
-  /* we are at exactly the the DST start time */
+  /* we are at exactly the DST start time */
   cr_assert(ut.ut_sec == 1552201200);
   /* thus the resulting timezone is EDT and not EST */
   cr_assert(ut.ut_gmtoff == -4*3600);
@@ -181,7 +181,7 @@ Test(unixtime, unix_time_fix_timezone_with_tzinfo_to_a_zone_forwards_during_spri
    * Mar 31 2019 03:00:00 CEST */
   _fix_timezone_with_tzinfo(&base_ut, &ut, 0, "CET");
 
-  /* we are at exactly the the DST start time */
+  /* we are at exactly the DST start time */
   cr_assert(ut.ut_sec == 1553994000);
   /* thus the resulting timezone is EDT and not EST */
   cr_assert(ut.ut_gmtoff == 2*3600);

@@ -340,7 +340,7 @@ _compile_pcre_regexp(LogMatcherPcreRe *self, const gchar *re, GError **error)
       flags |= PCRE_DUPNAMES;
     }
 
-  /* complile the regexp */
+  /* compile the regexp */
   self->pattern = pcre_compile2(re, flags, &rc, &errptr, &erroffset, NULL);
   if (!self->pattern)
     {

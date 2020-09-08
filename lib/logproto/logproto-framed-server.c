@@ -187,7 +187,7 @@ _is_trimmed_part_completely_fetched(LogProtoFramedServer *self)
   return self->buffer_end >= self->frame_len;
 }
 
-/* Returns TRUE if successfully finished consuming the data. Othwerwise it is not finished, but
+/* Returns TRUE if successfully finished consuming the data. Otherwise it is not finished, but
  * there is nothing left to read (or there was a read error) and expects to be called again. */
 static gboolean
 _consume_trimmed_part(LogProtoFramedServer *self, gboolean *may_read,

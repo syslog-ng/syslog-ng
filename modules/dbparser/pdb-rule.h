@@ -28,7 +28,7 @@
 
 /* this class encapsulates a the verdict of a rule in the pattern
  * database and is stored as the "value" member in the RADIX tree
- * node. It contains a reference the the original rule in the rule
+ * node. It contains a reference to the original rule in the rule
  * database. */
 typedef struct _PDBRule PDBRule;
 struct _PDBRule

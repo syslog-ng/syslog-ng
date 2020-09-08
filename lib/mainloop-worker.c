@@ -347,7 +347,7 @@ _worker_thread_func(gpointer st)
   /* NOTE: this assert aims to validate that the worker thread in fact
    * invokes main_loop_worker_invoke_batch_callbacks() during its operation.
    * Please do so every once a couple of messages, hopefully you have a
-   * natural barrier that let's you decide when, the easiest would be
+   * natural barrier that lets you decide when, the easiest would be
    * log-fetch-limit(), but other limits may also be applicable.
    */
   g_assert(iv_list_empty(&batch_callbacks));

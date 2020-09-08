@@ -37,7 +37,7 @@ typedef struct _HTTPLoadBalancerClient HTTPLoadBalancerClient;
 typedef struct _HTTPLoadBalancer HTTPLoadBalancer;
 
 
-/* NOTE: this struct represents an actual HTTP target URL.  The existance of
+/* NOTE: this struct represents an actual HTTP target URL.  The existence of
  * this structure is ensured even in multi-threaded environments.  Some of
  * the members of the struct are read-only and are _always_ available
  * without locking.  Others are protected by the LoadBalancer's lock and

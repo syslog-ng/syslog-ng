@@ -447,7 +447,7 @@ log_msg_init_queue_node(LogMessage *msg, LogMessageQueueNode *node, const LogPat
  * Allocates a new LogMessageQueueNode instance to be enqueued in a
  * LogQueue.
  *
- * NOTE: Assumed to be runnning in the source thread, and that the same
+ * NOTE: Assumed to be running in the source thread, and that the same
  * LogMessage instance is only put into queue from the same thread (e.g.
  * the related fields are _NOT_ locked).
  */

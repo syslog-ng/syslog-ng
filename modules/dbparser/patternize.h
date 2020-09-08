@@ -48,7 +48,7 @@ typedef struct _Patternizer
   gdouble support_treshold;
   const gchar *delimiters;
 
-  // NOTE: for now, we store all logs read in in the memory.
+  // NOTE: for now, we store all logs read in the memory.
   // This brings in some obvious constraints and should be solved
   // in a more optimized way later.
   GPtrArray *logs;

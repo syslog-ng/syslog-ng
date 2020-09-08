@@ -413,7 +413,7 @@ main_loop_verify_config(GString *result, MainLoop *self)
 }
 
 /************************************************************************************
- * syncronized exit
+ * synchronized exit
  ************************************************************************************/
 
 static void
