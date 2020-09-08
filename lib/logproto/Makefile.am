@@ -11,6 +11,7 @@ logprotoinclude_HEADERS = \
 	lib/logproto/logproto-framed-server.h	\
 	lib/logproto/logproto-text-client.h  \
 	lib/logproto/logproto-text-server.h	\
+	lib/logproto/logproto-proxied-text-server.h	\
 	lib/logproto/logproto-indented-multiline-server.h \
 	lib/logproto/logproto-regexp-multiline-server.h \
 	lib/logproto/logproto-multiline-server.h \
@@ -27,6 +28,7 @@ logproto_sources = \
 	lib/logproto/logproto-framed-server.c	\
 	lib/logproto/logproto-text-client.c  \
 	lib/logproto/logproto-text-server.c	\
+	lib/logproto/logproto-proxied-text-server.c	\
 	lib/logproto/logproto-indented-multiline-server.c \
 	lib/logproto/logproto-regexp-multiline-server.c \
 	lib/logproto/logproto-multiline-server.c \

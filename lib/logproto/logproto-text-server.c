@@ -417,7 +417,7 @@ log_proto_text_server_flush(LogProtoBufferedServer *s)
   self->cached_eol_pos = 0;
 }
 
-static void
+void
 log_proto_text_server_free(LogProtoServer *s)
 {
   LogProtoTextServer *self = (LogProtoTextServer *) s;
