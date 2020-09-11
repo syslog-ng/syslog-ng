@@ -622,3 +622,27 @@ ParameterizedTest(struct test_params *param, basicfuncs, test_map)
 {
   assert_template_format(param->template, param->expected);
 }
+
+ParameterizedTestParameters(basicfuncs, test_filter)
+{
+  static struct test_params params[] =
+  {
+    { "Some prefix $(filter ('1' == '1') 0,1,2)", "Some prefix 0,1,2" },
+    { "$(filter ('$_' le '1') 0,1,2)", "0,1" },
+    { "$(filter ('$(% $_ 2)' eq '0') 0,1,2,3)", "0,2" },
+    { "Something $(filter ('$_' eq '0') '')", "Something " },
+    { "$(filter ('1' eq '0') '')", "" },
+    { "$(filter message('árvíztűrőtükörfúrógép') 'doesnotchange')", "doesnotchange" },
+    { "$(filter (message('árvíz') and ('$APP.VALUE' == 'value')) 'doesnotchange')", "doesnotchange" },
+    { "$(filter (message('donotmatch') or ('$APP.VALUE' == 'value')) 'doesnotchange')", "doesnotchange" },
+    { "$(filter ('$YEAR' ge '1900') 'doesnotchange')", "doesnotchange" },
+    { "$(filter ('$YEAR' le '1900') 'doesnotchange')", "" },
+  };
+
+  return cr_make_param_array(struct test_params, params, sizeof(params)/sizeof(params[0]));
+}
+
+ParameterizedTest(struct test_params *param, basicfuncs, test_filter)
+{
+  assert_template_format(param->template, param->expected);
+}

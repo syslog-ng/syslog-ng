@@ -66,6 +66,7 @@ _append_args_with_separator(gint argc, GString *argv[], GString *result, gchar s
 #include "fname-funcs.c"
 #include "tf-iterate.c"
 #include "tf-map.c"
+#include "tf-filter.c"
 
 static Plugin basicfuncs_plugins[] =
 {
@@ -136,7 +137,7 @@ static Plugin basicfuncs_plugins[] =
   /* functional */
   TEMPLATE_FUNCTION_PLUGIN(tf_iterate, "iterate"),
   TEMPLATE_FUNCTION_PLUGIN(tf_map, "map"),
-
+  TEMPLATE_FUNCTION_PLUGIN(tf_filter, "filter"),
 };
 
 gboolean
