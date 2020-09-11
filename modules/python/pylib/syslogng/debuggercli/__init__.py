@@ -21,11 +21,31 @@
 #############################################################################
 
 from __future__ import absolute_import
-from syslogng.debuggercli.readline import setup_readline
 
+def is_readline_available():
+    try:
+        import readline
+    except ImportError:
+        return False
+    return True
+
+def is_editline_available():
+    try:
+        import editline
+    except ImportError:
+        return False
+    return True
+
+def setup_read_or_editline():
+    if is_readline_available():
+        from syslogng.debuggercli.readline import setup_readline
+        setup_readline()
+    elif is_editline_available():
+        from syslogng.debuggercli.editline import setup_editline
+        setup_editline()
 
 def fetch_command():
-    setup_readline()
+    setup_read_or_editline()
     try:
         input_function = raw_input
     except NameError:
