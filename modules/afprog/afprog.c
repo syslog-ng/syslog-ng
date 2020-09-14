@@ -33,6 +33,7 @@
 #include "logproto/logproto-text-client.h"
 #include "poll-fd-events.h"
 
+#include <sys/resource.h>
 #include <sys/types.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -91,10 +92,38 @@ _exec_program(const gchar *cmdline)
   execl("/bin/sh", "/bin/sh", "-c", cmdline, NULL);
 }
 
+static void
+_close_all_fd(void)
+{
+  struct rlimit rlp;
+  if (getrlimit(RLIMIT_NOFILE, &rlp) < 0)
+    {
+      /*
+       * Failing to query max *fd*, still closing an arbitrary range might make sense,
+       * tring with some arbitrary big number. The only issue could be that it cannot
+       * close all of the needed *fd* and fail to bind to a socket (original issue).
+       */
+      rlp.rlim_max = 10000;
+    }
+
+  for (int i = rlp.rlim_max; i > 2; --i)
+    {
+      close(i);
+    }
+}
+
+static void
+_wait_for_child_closing_fds(int pipe[2])
+{
+  gchar buff[1];
+  while (read(pipe[0], buff, 1) != 0);
+}
+
 static gboolean
 afprogram_popen(AFProgramProcessInfo *process_info, GIOCondition cond, gint *fd)
 {
   int msg_pipe[2];
+  int sync_pipe[2];
 
   g_return_val_if_fail(cond == G_IO_IN || cond == G_IO_OUT, FALSE);
 
@@ -106,12 +135,24 @@ afprogram_popen(AFProgramProcessInfo *process_info, GIOCondition cond, gint *fd)
       return FALSE;
     }
 
+  if (pipe(sync_pipe) == -1)
+    {
+      msg_error("Error creating program pipe",
+                evt_tag_str("cmdline", process_info->cmdline->str),
+                evt_tag_error(EVT_TAG_OSERROR));
+      close(msg_pipe[0]);
+      close(msg_pipe[1]);
+      return FALSE;
+    }
+
   if ((process_info->pid = fork()) < 0)
     {
       msg_error("Error in fork()",
                 evt_tag_error(EVT_TAG_OSERROR));
       close(msg_pipe[0]);
       close(msg_pipe[1]);
+      close(sync_pipe[0]);
+      close(sync_pipe[1]);
       return FALSE;
     }
 
@@ -141,9 +182,12 @@ afprogram_popen(AFProgramProcessInfo *process_info, GIOCondition cond, gint *fd)
           dup2(devnull, 1);
           dup2(devnull, 2);
         }
+      dup2(sync_pipe[1], 3);
       close(devnull);
       close(msg_pipe[0]);
       close(msg_pipe[1]);
+
+      _close_all_fd();
 
       if (process_info->inherit_environment)
         _exec_program(process_info->cmdline->str);
@@ -152,6 +196,11 @@ afprogram_popen(AFProgramProcessInfo *process_info, GIOCondition cond, gint *fd)
 
       _exit(127);
     }
+
+  close(sync_pipe[1]);
+  _wait_for_child_closing_fds(sync_pipe);
+  close(sync_pipe[0]);
+
   if (cond == G_IO_IN)
     {
       *fd = msg_pipe[0];
