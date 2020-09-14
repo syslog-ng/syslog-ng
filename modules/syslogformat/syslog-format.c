@@ -525,19 +525,22 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
    *
    *   [exampleSDID@0 iut="3" eventSource="Application" eventID="1011"][examplePriority@0 class="high"]
    *
+   * NOTE: To increase compatibility, we modified the parser to accept longer than 32 character
+   * SD-ID's and SD-PARAM's. However there is still a practical limit (255 characters) for the
+   * values, since currently NVPairs can not store longer ID's.
    */
 
   gboolean ret = FALSE;
   const guchar *src = *data;
   /* ASCII string */
-  gchar sd_id_name[33];
+  gchar sd_id_name[256];
   gsize sd_id_len;
-  gchar sd_param_name[33];
+  gchar sd_param_name[256];
 
   /* UTF-8 string */
   gchar sd_param_value[options->sdata_param_value_max + 1];
   gsize sd_param_value_len;
-  gchar sd_value_name[66];
+  gchar sd_value_name[256];
 
   guint open_sd = 0;
   gint left = *length, pos;
@@ -559,8 +562,8 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
           pos = 0;
           while (left && *src != ' ' && *src != ']')
             {
-              /* the sd_id_name is max 32, the other chars are only stored in the self->sd_str*/
-              if (pos < sizeof(sd_id_name) - 1)
+              /* the sd_id_name is max 255, the other chars are only stored in the self->sd_str*/
+              if (pos < sizeof(sd_id_name) - 1 - logmsg_sd_prefix_len)
                 {
                   if (isascii(*src) && *src != '=' && *src != ' ' && *src != ']' && *src != '"')
                     {
@@ -585,7 +588,6 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
           sd_id_name[pos] = 0;
           sd_id_len = pos;
           strcpy(sd_value_name, logmsg_sd_prefix);
-          /* this strcat is safe, as sd_id_name is at most 32 chars */
           strncpy(sd_value_name + logmsg_sd_prefix_len, sd_id_name, sizeof(sd_value_name) - logmsg_sd_prefix_len);
           if (*src == ']')
             {
@@ -611,7 +613,7 @@ log_msg_parse_sd(LogMessage *self, const guchar **data, gint *length, const MsgF
               pos = 0;
               while (left && *src != '=')
                 {
-                  if (pos < sizeof(sd_param_name) - 1)
+                  if (pos < sizeof(sd_param_name) - 1 - sd_id_len)
                     {
                       if (isascii(*src) && *src != '=' && *src != ' ' && *src != ']' && *src != '"')
                         {
