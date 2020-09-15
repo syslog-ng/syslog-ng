@@ -1,0 +1,77 @@
+###########################################################################################
+#
+# This job creates a draft release into GitHub's releases section.
+#
+# It is automatically started, when a "Release candidate" PR is merged.
+# Its progress is commented at the "Release candidate" PR.
+#
+# The job can also be started manually, if necessary.
+#
+# When the job is finished, one must visit https://github.com/syslog-ng/syslog-ng/releases,
+# double check the generated draft release, and manually release it.
+#
+###########################################################################################
+
+name: Draft release
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [closed]
+
+jobs:
+  draft-release:
+    runs-on: ubuntu-latest
+    if: (github.event_name == 'workflow_dispatch') ||
+        (github.event.pull_request.merged && contains(github.event.pull_request.labels.*.name, 'version-bump'))
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      JOB_NAME: "**Draft release** job"
+      CURRENT_JOB_URL: https://github.com/${{ github.repository_owner }}/syslog-ng/actions/runs/${{ github.run_id }}
+      COMMENT_ENDPOINT: repos/${{ github.repository_owner }}/syslog-ng/issues/${{ github.event.number }}/comments
+      RELEASES_URL: https://github.com/${{ github.repository_owner }}/syslog-ng/releases
+    steps:
+      - name: "Comment: job started"
+        if: github.event_name == 'pull_request'
+        run: |
+          COMMENT="${JOB_NAME} started: ${CURRENT_JOB_URL}."
+
+          hub api \
+            ${COMMENT_ENDPOINT} \
+            --field body="${COMMENT}"
+
+      - name: Checkout syslog-ng source
+        uses: actions/checkout@v2
+
+      - name: "DBLD: release"
+        run: |
+          ./dbld/rules release VERSION=`cat VERSION`
+
+      - name: Create draft release
+        run: |
+          RELEASE_NAME=syslog-ng-`cat VERSION`
+          sed "1 i${RELEASE_NAME}\n" NEWS.md > /tmp/message
+
+          hub release create \
+            --draft \
+            --file /tmp/message \
+            --attach dbld/build/${RELEASE_NAME}.tar.gz \
+            ${RELEASE_NAME}
+
+      - name: "Comment: job success"
+        if: github.event_name == 'pull_request' && success()
+        run: |
+          COMMENT="${JOB_NAME} finished successfully. Please check the Releases page: ${RELEASES_URL}"
+
+          hub api \
+            ${COMMENT_ENDPOINT} \
+            --field body="${COMMENT}"
+
+      - name: "Comment: job failed"
+        if: github.event_name == 'pull_request' && failure()
+        run: |
+          COMMENT="${JOB_NAME} failed."
+
+          hub api \
+            ${COMMENT_ENDPOINT} \
+            --field body="${COMMENT}"
