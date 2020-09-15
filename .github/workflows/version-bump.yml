@@ -1,0 +1,95 @@
+###########################################################################################################
+#
+# This job creates a version bump branch based on master, and opens a PR from it.
+#
+# The branch will have the version bumped in all necessary parts of the code,
+# and it will generate the NEWS.md content from the NEWS snippets.
+#
+# Organization members have the chance to add or modify the commits on the branch, if necessary.
+#
+# The job will also generate a tarball, and reference it in the PR's description.
+#
+# The job cannot be started, if there is an open PR with the version given.
+#
+# Manual steps:
+#  1. Navigate to https://github.com/syslog-ng/syslog-ng/actions.
+#  2. Choose the "Version bump" job.
+#  3. Click "Run workflow".
+#  4. Fill the new release version, and click "Run workflow".
+#  5. When the PR is opened, double check the changes, if necessary, add commits.
+#  6. When the PR is merged, the "Draft release" job will automatically start.
+#
+###########################################################################################################
+
+name: Version bump
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'VERSION'
+        required: true
+
+jobs:
+  version-bump:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.PAT_FOR_ACTIONS }}
+      RELEASE_VERSION: ${{ github.event.inputs.release_version }}
+      VERSION_BUMP_BRANCH: version/${{ github.event.inputs.release_version }}
+      CURRENT_RUN_URL: https://github.com/${{ github.repository_owner }}/syslog-ng/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Checkout syslog-ng source
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Check existing PR
+        run: |
+          EXSISTS=$(hub pr list --state=open --head=${VERSION_BUMP_BRANCH} | wc -l)
+
+          if [ ${EXSISTS} -ne 0 ]
+          then
+            echo "There is a PR already open for this version. Please close it before running this job."
+            exit 1
+          fi
+
+      - name: Configure git user
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+      - name: Create git branch
+        run: |
+          git switch -c ${VERSION_BUMP_BRANCH}
+
+      - name: "DBLD: prepare-release"
+        run: |
+          ./dbld/rules prepare-release VERSION=${RELEASE_VERSION}
+          git commit -a -s -m "version: bumped to ${RELEASE_VERSION}"
+
+      - name: Generate NEWS.md
+        run: |
+          ./news/create-newsfile.py
+          git commit -a -s -m "NEWS: generate for ${RELEASE_VERSION}"
+
+      - name: "DBLD: release"
+        run: |
+          ./dbld/rules release VERSION=${RELEASE_VERSION}
+
+      - name: Upload tarball
+        uses: actions/upload-artifact@v2
+        with:
+          name: syslog-ng-${{ env.RELEASE_VERSION }}
+          path: dbld/build/syslog-ng-${{ env.RELEASE_VERSION }}.tar.gz
+
+      - name: Open Pull Request
+        run: |
+          TITLE="Version: ${RELEASE_VERSION}"
+          DESCRIPTION="Tarball is available at: ${CURRENT_RUN_URL}"
+          echo -e "${TITLE}\n\n${DESCRIPTION}" > /tmp/message
+
+          git push --force origin ${VERSION_BUMP_BRANCH}
+          hub pull-request \
+            --file /tmp/message \
+            --labels "version-bump"
