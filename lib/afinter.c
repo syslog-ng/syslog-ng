@@ -134,6 +134,10 @@ afinter_source_run(gpointer s)
 
   iv_event_register(&self->exit);
 
+  g_static_mutex_lock(&internal_msg_lock);
+  self->free_to_send = TRUE;
+  g_static_mutex_unlock(&internal_msg_lock);
+
   iv_main();
 
   iv_event_unregister(&self->exit);
@@ -327,7 +331,7 @@ afinter_source_init(LogPipe *s)
 
   g_static_mutex_lock(&internal_msg_lock);
   current_internal_source = self;
-  self->free_to_send = TRUE;
+
   g_static_mutex_unlock(&internal_msg_lock);
 
   return TRUE;
