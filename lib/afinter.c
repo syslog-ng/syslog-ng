@@ -187,8 +187,6 @@ afinter_source_mark(gpointer s)
   AFInterSource *self = (AFInterSource *) s;
   struct timespec nmt;
 
-  main_loop_assert_main_thread();
-
   g_static_mutex_lock(&internal_mark_target_lock);
   nmt = next_mark_target;
   g_static_mutex_unlock(&internal_mark_target_lock);
