@@ -353,7 +353,7 @@ afinter_source_deinit(LogPipe *s)
   iv_event_unregister(&self->schedule_wakeup);
 
   afinter_source_stop_watches(self);
-  return log_source_deinit(s);
+  return log_source_deinit(&self->super.super);
 }
 
 static LogSource *
