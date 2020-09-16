@@ -123,7 +123,6 @@ afinter_source_post(gpointer s)
       log_source_post(&self->super, msg);
     }
   afinter_source_update_watches(self);
-  main_loop_worker_invoke_batch_callbacks();
 }
 
 static void afinter_source_start_watches(AFInterSource *self);
@@ -173,9 +172,11 @@ afinter_sd_start_thread(LogPipe *s)
 {
   AFInterSourceDriver *self = (AFInterSourceDriver *) s;
 
+  self->worker_options.is_external_input = TRUE;
+
   main_loop_create_worker_thread((WorkerThreadFunc) afinter_source_run,
                                  (WorkerExitNotificationFunc) afinter_source_request_exit,
-                                 self->source, NULL);
+                                 self->source, &self->worker_options);
 
   return TRUE;
 }
