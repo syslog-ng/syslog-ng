@@ -123,7 +123,11 @@ afinter_source_post(gpointer s)
       log_source_post(&self->super, msg);
     }
   afinter_source_update_watches(self);
+  main_loop_worker_invoke_batch_callbacks();
 }
+
+static void afinter_source_start_watches(AFInterSource *self);
+static void afinter_source_stop_watches(AFInterSource *self);
 
 static void
 afinter_source_run(gpointer s)
@@ -132,15 +136,25 @@ afinter_source_run(gpointer s)
 
   iv_init();
 
+  /* post event is used by other threads and can only be unregistered if
+   * current_afinter_source is set to NULL in a thread safe manner */
+  iv_event_register(&self->post);
+  iv_event_register(&self->schedule_wakeup);
   iv_event_register(&self->exit);
 
   g_static_mutex_lock(&internal_msg_lock);
   self->free_to_send = TRUE;
   g_static_mutex_unlock(&internal_msg_lock);
 
+  afinter_source_start_watches(self);
+
   iv_main();
 
   iv_event_unregister(&self->exit);
+  iv_event_unregister(&self->post);
+  iv_event_unregister(&self->schedule_wakeup);
+
+  afinter_source_stop_watches(self);
 
   iv_deinit();
 }
@@ -152,6 +166,7 @@ afinter_source_request_exit(gpointer s)
 
   iv_event_post(&self->exit);
 }
+
 
 static gboolean
 afinter_sd_start_thread(LogPipe *s)
@@ -322,16 +337,8 @@ afinter_source_init(LogPipe *s)
   afinter_postpone_mark(self->mark_freq);
   self->mark_timer.expires = next_mark_target;
 
-  /* post event is used by other threads and can only be unregistered if
-   * current_afinter_source is set to NULL in a thread safe manner */
-  iv_event_register(&self->post);
-  iv_event_register(&self->schedule_wakeup);
-
-  afinter_source_start_watches(self);
-
   g_static_mutex_lock(&internal_msg_lock);
   current_internal_source = self;
-
   g_static_mutex_unlock(&internal_msg_lock);
 
   return TRUE;
@@ -346,13 +353,6 @@ afinter_source_deinit(LogPipe *s)
   current_internal_source = NULL;
   g_static_mutex_unlock(&internal_msg_lock);
 
-  /* the post handler can now be unregistered as current_internal_source is
-   * set to NULL.  Locks are only used as a memory barrier.  */
-
-  iv_event_unregister(&self->post);
-  iv_event_unregister(&self->schedule_wakeup);
-
-  afinter_source_stop_watches(self);
   return log_source_deinit(&self->super.super);
 }
 
