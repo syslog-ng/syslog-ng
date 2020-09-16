@@ -37,6 +37,13 @@ def print_usage_if_needed():
                          "It also deletes the entry files.").parse_args()
 
 
+def _exec(command):
+    proc = Popen(command, cwd=str(root_dir), stdout=PIPE, shell=True)
+    stdout, _ = proc.communicate()
+    stdout = stdout.decode()
+    return stdout
+
+
 def create_block(block_name, files):
     block = '## {}\n\n'.format(block_name)
     for f in files:
@@ -53,9 +60,7 @@ def create_block(block_name, files):
 
 
 def get_news_version():
-    proc = Popen(r'git show HEAD:NEWS.md'.split(), cwd=str(root_dir), stdout=PIPE)
-    stdout, _ = proc.communicate()
-    stdout = stdout.decode()
+    stdout = _exec(r'git show HEAD:NEWS.md')
     return stdout[:stdout.index('\n')]
 
 
@@ -115,7 +120,7 @@ def create_newsfile(news):
 
 def cleanup():
     print("Cleaning up entry files with `git rm news/*-*.md`:")
-    Popen("git rm news/*-*.md".split(), cwd=str(root_dir))
+    _exec("git rm news/*-*.md")
 
 
 def create_news_content():
