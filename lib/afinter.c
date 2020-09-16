@@ -96,6 +96,7 @@ struct _AFInterSource
   const AFInterSourceOptions *options;
   struct iv_event post;
   struct iv_event schedule_wakeup;
+  struct iv_event exit;
   struct iv_timer mark_timer;
   struct iv_task restart_task;
   gboolean watches_running:1, free_to_send:1;
@@ -131,7 +132,11 @@ afinter_source_run(gpointer s)
 
   iv_init();
 
+  iv_event_register(&self->exit);
+
   iv_main();
+
+  iv_event_unregister(&self->exit);
 
   iv_deinit();
 }
@@ -141,6 +146,7 @@ afinter_source_request_exit(gpointer s)
 {
   AFInterSource *self = (AFInterSource *) s;
 
+  iv_event_post(&self->exit);
 }
 
 static gboolean
@@ -210,6 +216,9 @@ afinter_source_init_watches(AFInterSource *self)
   IV_EVENT_INIT(&self->schedule_wakeup);
   self->schedule_wakeup.cookie = self;
   self->schedule_wakeup.handler = (void (*)(void *)) afinter_source_update_watches;
+  IV_EVENT_INIT(&self->exit);
+  self->exit.cookie = NULL;
+  self->exit.handler = (void (*)(void *)) iv_quit;
   IV_TASK_INIT(&self->restart_task);
   self->restart_task.cookie = self;
   self->restart_task.handler = afinter_source_post;
