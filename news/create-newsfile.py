@@ -59,20 +59,23 @@ def create_block(block_name, files):
     return block
 
 
-def get_news_version():
+def get_last_version():
     stdout = _exec(r'git show HEAD:NEWS.md')
     return stdout[:stdout.index('\n')]
 
 
+def get_next_version():
+    next_version = (root_dir / 'VERSION').read_text().rstrip()
+    if next_version == get_last_version():
+        print('VERSION file contains the same version as the current NEWS.md file.\n'
+              'Please bump the VERSION file. Exiting...')
+        exit(1)
+    return next_version
+
+
 def create_version():
-    version = (root_dir / 'VERSION').read_text().rstrip()
-    news_version = get_news_version()
-    if version == news_version:
-        print('VERSION file contains the same version as the current NEWS.md file.\n' \
-              'Probably you are trying to create the newsfile before bumping the `VERSION` file.\n' \
-              'Please provide version to be released.')
-        version = input('Version to be released: ')
-    return '{}\n{}\n\n'.format(version, len(version) * '=')
+    next_version = get_next_version()
+    return '{}\n{}\n\n'.format(next_version, len(next_version) * '=')
 
 
 def create_highlights_block():
