@@ -23,6 +23,7 @@
 
 import re
 import sys
+import textwrap
 from argparse import ArgumentParser
 from pathlib import Path
 from subprocess import PIPE, Popen
@@ -30,6 +31,19 @@ from subprocess import PIPE, Popen
 news_dir = Path(__file__).resolve().parent
 root_dir = news_dir.parent
 newsfile = root_dir / 'NEWS.md'
+
+team_members = [
+    "Andras Mitzki",
+    "Antal Nemes",
+    "Attila Szakacs",
+    "Balazs Scheidler",
+    "Gabor Nagy",
+    "Laszlo Budai",
+    "Laszlo Szemere",
+    "László Várady",
+    "Norbert Takacs",
+    "Zoltan Pallagi",
+]
 
 
 def print_usage_if_needed():
@@ -102,6 +116,16 @@ def create_standard_blocks():
 
 
 def create_credits_block():
+    def wrap(contributors):
+        concatted = ", ".join([c.replace(" ", "\0") for c in contributors])
+        return textwrap.fill(concatted, width=70).replace("\0", " ")
+
+    stdout = _exec(r'git rev-list --no-merges --format=format:%an syslog-ng-' + get_last_version() + r'..HEAD | '
+                   r'grep -Ev "^commit [a-z0-9]{40}$" | sort | uniq')
+    contributors = stdout.rstrip().split('\n')
+    contributors += team_members
+    contributors = sorted(list(set(contributors)))
+
     return '## Credits\n' \
            '\n' \
            'syslog-ng is developed as a community project, and as such it relies\n' \
@@ -113,7 +137,7 @@ def create_credits_block():
            '\n' \
            'We would like to thank the following people for their contribution:\n' \
            '\n' \
-           '<Fill this by the internal news file creating tool>\n'
+           '{}\n'.format(wrap(contributors))
 
 
 def create_newsfile(news):
