@@ -146,6 +146,7 @@ afinter_source_run(gpointer s)
   g_static_mutex_unlock(&internal_msg_lock);
 
   afinter_source_start_watches(self);
+  afinter_source_update_watches(self);
 
   iv_main();
 
