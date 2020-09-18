@@ -33,7 +33,7 @@ typedef struct _FilterTags
 } FilterTags;
 
 static gboolean
-filter_tags_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
+filter_tags_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemplateEvalOptions *options)
 {
   FilterTags *self = (FilterTags *)s;
   LogMessage *msg = msgs[num_msg - 1];

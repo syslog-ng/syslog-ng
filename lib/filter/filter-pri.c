@@ -33,7 +33,7 @@ typedef struct _FilterPri
 } FilterPri;
 
 static gboolean
-filter_facility_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
+filter_facility_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemplateEvalOptions *options)
 {
   FilterPri *self = (FilterPri *) s;
   LogMessage *msg = msgs[num_msg - 1];
@@ -70,7 +70,7 @@ filter_facility_new(guint32 facilities)
 }
 
 static gboolean
-filter_severity_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
+filter_severity_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemplateEvalOptions *options)
 {
   FilterPri *self = (FilterPri *) s;
   LogMessage *msg = msgs[num_msg - 1];

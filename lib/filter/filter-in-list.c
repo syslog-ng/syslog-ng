@@ -39,7 +39,7 @@ typedef struct _FilterInList
 } FilterInList;
 
 static gboolean
-filter_in_list_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
+filter_in_list_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemplateEvalOptions *options)
 {
   FilterInList *self = (FilterInList *)s;
   LogMessage *msg = msgs[num_msg - 1];

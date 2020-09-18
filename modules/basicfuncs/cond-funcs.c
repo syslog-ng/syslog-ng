@@ -162,7 +162,7 @@ tf_if_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *a
 {
   TFCondState *state = (TFCondState *) s;
 
-  if (filter_expr_eval_with_context(state->filter, args->messages, args->num_messages))
+  if (filter_expr_eval_with_context(state->filter, args->messages, args->num_messages, args->options))
     {
       log_template_append_format_with_context(state->super.argv_templates[0],
                                               args->messages, args->num_messages, args->options, result);

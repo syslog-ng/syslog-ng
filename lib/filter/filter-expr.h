@@ -40,7 +40,7 @@ struct _FilterExprNode
           modify:1; /* this filter changes the log message */
   const gchar *type;
   gboolean (*init)(FilterExprNode *self, GlobalConfig *cfg);
-  gboolean (*eval)(FilterExprNode *self, LogMessage **msg, gint num_msg);
+  gboolean (*eval)(FilterExprNode *self, LogMessage **msg, gint num_msg, LogTemplateEvalOptions *options);
   void (*free_fn)(FilterExprNode *self);
   StatsCounterItem *matched;
   StatsCounterItem *not_matched;
@@ -56,9 +56,11 @@ filter_expr_init(FilterExprNode *self, GlobalConfig *cfg)
 }
 
 gboolean filter_expr_eval(FilterExprNode *self, LogMessage *msg);
-gboolean filter_expr_eval_with_context(FilterExprNode *self, LogMessage **msgs, gint num_msg);
+gboolean filter_expr_eval_with_context(FilterExprNode *self, LogMessage **msgs, gint num_msg,
+                                       LogTemplateEvalOptions *options);
 gboolean filter_expr_eval_root(FilterExprNode *self, LogMessage **msg, const LogPathOptions *path_options);
 gboolean filter_expr_eval_root_with_context(FilterExprNode *self, LogMessage **msgs, gint num_msg,
+                                            LogTemplateEvalOptions *options,
                                             const LogPathOptions *path_options);
 void filter_expr_node_init_instance(FilterExprNode *self);
 FilterExprNode *filter_expr_ref(FilterExprNode *self);

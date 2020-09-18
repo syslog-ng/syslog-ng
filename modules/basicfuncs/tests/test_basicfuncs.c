@@ -609,6 +609,10 @@ ParameterizedTestParameters(basicfuncs, test_map)
     { "Some prefix $(map \"$(+ 1 $_)\" 0,1,2)", "Some prefix 1,2,3" },
     { "Some prefix $(map \"$(+ 1 $_)\" '')", "Some prefix " },
     { "Some prefix $(map $(+ 1 $_) $(map $(+ 1 $_) 0,1,2))", "Some prefix 2,3,4" }, // embedded map
+    { "Some prefix $(map \"$(if ('$_' eq '1') 'same' 'different')\" 0,1,2)", "Some prefix different,same,different" },
+    { "Some prefix $(map \"$(if ('$_' le '1') 'smaller' 'larger')\" 0,1,2)", "Some prefix smaller,smaller,larger" },
+    { "Some prefix $(map \"$(if ('$_' ge '1') 'larger' 'smaller')\" 0,1,2)", "Some prefix smaller,larger,larger"},
+    { "$(map \"$(if ('$(echo $_)' eq '1') 'same' 'different')\" 0,1,2)", "different,same,different"},
   };
 
   return cr_make_param_array(struct test_params, params, sizeof(params)/sizeof(params[0]));

@@ -271,7 +271,7 @@ _is_action_triggered(PatternDB *db, PDBProcessParams *process_params, PDBActionT
     {
       if (context
           && !filter_expr_eval_with_context(action->condition, (LogMessage **) context->super.messages->pdata,
-                                            context->super.messages->len))
+                                            context->super.messages->len, &DEFAULT_TEMPLATE_EVAL_OPTIONS))
         return FALSE;
       if (!context && !filter_expr_eval(action->condition, msg))
         return FALSE;

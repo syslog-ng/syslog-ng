@@ -37,7 +37,7 @@ typedef struct _FilterNetmask
 } FilterNetmask;
 
 static gboolean
-filter_netmask_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
+filter_netmask_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemplateEvalOptions *options)
 {
   FilterNetmask *self = (FilterNetmask *) s;
   struct in_addr *addr, addr_storage;

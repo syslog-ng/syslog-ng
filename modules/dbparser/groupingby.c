@@ -216,7 +216,7 @@ _evaluate_filter(FilterExprNode *expr, CorrelationContext *context)
 {
   return filter_expr_eval_with_context(expr,
                                        (LogMessage **) context->messages->pdata,
-                                       context->messages->len);
+                                       context->messages->len, &DEFAULT_TEMPLATE_EVAL_OPTIONS);
 }
 
 static gboolean
