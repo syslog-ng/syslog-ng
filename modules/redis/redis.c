@@ -285,8 +285,10 @@ static inline void _fill_template(RedisDriver *self, LogMessage *msg, LogTemplat
   else
     {
       GString *buffer = scratch_buffers_alloc();
-      log_template_format(template, msg, &self->template_options, LTZ_SEND,
-                          self->super.worker.instance.seq_num, NULL, buffer);
+      LogTemplateEvalOptions options = {&self->template_options, LTZ_SEND,
+                                        self->super.worker.instance.seq_num, NULL
+                                       };
+      log_template_format(template, msg, &options, buffer);
       *size = buffer->len;
       *str = buffer->str;
     }

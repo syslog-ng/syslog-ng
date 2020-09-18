@@ -257,8 +257,10 @@ static void
 _smtp_message_add_recipient_from_template(smtp_message_t self, AFSMTPDriver *driver, LogTemplate *template,
                                           LogMessage *msg)
 {
-  log_template_format(template, msg, &driver->template_options, LTZ_SEND,
-                      driver->super.worker.instance.seq_num, NULL, driver->str);
+  LogTemplateEvalOptions options = {&driver->template_options, LTZ_SEND,
+                                    driver->super.worker.instance.seq_num, NULL
+                                   };
+  log_template_format(template, msg, &options, driver->str);
   smtp_add_recipient(self, afsmtp_wash_string (driver->str->str));
 }
 
@@ -280,8 +282,10 @@ afsmtp_dd_msg_add_header(AFSMTPHeader *hdr, gpointer user_data)
   LogMessage *msg = ((gpointer *)user_data)[1];
   smtp_message_t message = ((gpointer *)user_data)[2];
 
-  log_template_format(hdr->template, msg, &self->template_options, LTZ_LOCAL,
-                      self->super.worker.instance.seq_num, NULL, self->str);
+  LogTemplateEvalOptions options = {&self->template_options, LTZ_LOCAL,
+                                    self->super.worker.instance.seq_num, NULL
+                                   };
+  log_template_format(hdr->template, msg, &options, self->str);
 
   smtp_set_header(message, hdr->name, afsmtp_wash_string (self->str->str), NULL);
   smtp_set_header_option(message, hdr->name, Hdr_OVERRIDE, 1);
@@ -393,16 +397,20 @@ __build_message(AFSMTPDriver *self, LogMessage *msg, smtp_session_t session)
 
   message = smtp_add_message(session);
 
-  log_template_format(self->mail_from->template, msg, &self->template_options, LTZ_SEND,
-                      self->super.worker.instance.seq_num, NULL, self->str);
+  LogTemplateEvalOptions options = {&self->template_options, LTZ_SEND,
+                                    self->super.worker.instance.seq_num, NULL
+                                   };
+  log_template_format(self->mail_from->template, msg, &options, self->str);
   smtp_set_reverse_path(message, afsmtp_wash_string(self->str->str));
 
   /* Defaults */
   smtp_set_header(message, "To", NULL, NULL);
   smtp_set_header(message, "From", NULL, NULL);
 
-  log_template_format(self->subject_template, msg, &self->template_options, LTZ_SEND,
-                      self->super.worker.instance.seq_num, NULL, self->str);
+  LogTemplateEvalOptions eval_options = {&self->template_options, LTZ_SEND,
+                                         self->super.worker.instance.seq_num, NULL
+                                        };
+  log_template_format(self->subject_template, msg, &eval_options, self->str);
   smtp_set_header(message, "Subject", afsmtp_wash_string(self->str->str));
   smtp_set_header_option(message, "Subject", Hdr_OVERRIDE, 1);
 
@@ -422,9 +430,7 @@ __build_message(AFSMTPDriver *self, LogMessage *msg, smtp_session_t session)
    * recognise headers, and will append them to the end of the body.
    */
   g_string_assign(self->str, "X-Mailer: syslog-ng " SYSLOG_NG_VERSION "\r\n\r\n");
-  log_template_append_format(self->body_template, msg, &self->template_options,
-                             LTZ_SEND, self->super.worker.instance.seq_num,
-                             NULL, self->str);
+  log_template_append_format(self->body_template, msg, &eval_options, self->str);
   smtp_set_message_str(message, self->str->str);
   return message;
 }

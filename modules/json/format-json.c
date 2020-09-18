@@ -345,8 +345,9 @@ tf_json_call(LogTemplateFunction *self, gpointer s,
 
   for (gint i = 0; i < args->num_messages; i++)
     {
-      gboolean r = tf_json_append(result, state->vp, args->messages[i], args->opts, args->seq_num, args->tz);
-      if (!r && (args->opts->on_error & ON_ERROR_DROP_MESSAGE))
+      gboolean r = tf_json_append(result, state->vp, args->messages[i], args->options->opts, args->options->seq_num,
+                                  args->options->tz);
+      if (!r && (args->options->opts->on_error & ON_ERROR_DROP_MESSAGE))
         {
           g_string_set_size(result, orig_size);
           return;
@@ -445,8 +446,10 @@ tf_flat_json_call(LogTemplateFunction *self, gpointer s,
 
   for (gint i = 0; i < args->num_messages; i++)
     {
-      gboolean r = tf_flat_json_append(result, state->vp, args->messages[i], args->opts, args->seq_num, args->tz);
-      if (!r && (args->opts->on_error & ON_ERROR_DROP_MESSAGE))
+      // TODO, context_id missing
+      gboolean r = tf_flat_json_append(result, state->vp, args->messages[i], args->options->opts, args->options->seq_num,
+                                       args->options->tz);
+      if (!r && (args->options->opts->on_error & ON_ERROR_DROP_MESSAGE))
         {
           g_string_set_size(result, orig_size);
           return;

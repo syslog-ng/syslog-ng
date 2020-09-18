@@ -715,7 +715,8 @@ affile_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
       GString *filename;
 
       filename = g_string_sized_new(32);
-      log_template_format(self->filename_template, msg, &self->writer_options.template_options, LTZ_LOCAL, 0, NULL, filename);
+      LogTemplateEvalOptions options = {&self->writer_options.template_options, LTZ_LOCAL, 0, NULL};
+      log_template_format(self->filename_template, msg, &options, filename);
 
       g_static_mutex_lock(&self->lock);
       if (self->writer_hash)

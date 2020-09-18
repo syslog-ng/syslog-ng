@@ -635,15 +635,14 @@ afamqp_worker_publish(AMQPDestDriver *self, LogMessage *msg)
   props.delivery_mode = self->persistent;
   props.headers = table;
 
-  log_template_format(self->routing_key_template, msg, &self->template_options, LTZ_LOCAL,
-                      self->super.worker.instance.seq_num,
-                      NULL, routing_key);
+  LogTemplateEvalOptions options = {&self->template_options, LTZ_LOCAL,
+                                    self->super.worker.instance.seq_num, NULL
+                                   };
+  log_template_format(self->routing_key_template, msg, &options, routing_key);
 
   if (self->body_template)
     {
-      log_template_format(self->body_template, msg, &self->template_options, LTZ_LOCAL,
-                          self->super.worker.instance.seq_num,
-                          NULL, body);
+      log_template_format(self->body_template, msg, &options, body);
       body_bytes = amqp_cstring_bytes(body->str);
     }
 

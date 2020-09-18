@@ -43,8 +43,7 @@ _resolve(AddContextualDataSelector *s, LogMessage *msg)
   GString *selector_str = g_string_new(NULL);
   AddContextualDataTemplateSelector *self = (AddContextualDataTemplateSelector *)s;
 
-  log_template_format(self->selector_template, msg, NULL, LTZ_LOCAL, 0, NULL,
-                      selector_str);
+  log_template_format(self->selector_template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, selector_str);
 
   return g_string_free(selector_str, FALSE);
 }

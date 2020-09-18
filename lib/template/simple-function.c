@@ -31,7 +31,7 @@ log_template_append_format_recursive(LogTemplate *self, const LogTemplateInvokeA
 {
   log_template_append_format_with_context(self,
                                           args->messages, args->num_messages,
-                                          args->opts, args->tz, args->seq_num, args->context_id, result);
+                                          args->options, result);
 }
 
 

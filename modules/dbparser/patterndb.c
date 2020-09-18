@@ -329,14 +329,14 @@ _execute_action_create_context(PatternDB *db, PDBProcessParams *process_params)
       context_msg = synthetic_message_generate_with_context(syn_message, &triggering_context->super);
       log_template_format_with_context(syn_context->id_template,
                                        (LogMessage **) triggering_context->super.messages->pdata, triggering_context->super.messages->len,
-                                       NULL, LTZ_LOCAL, 0, NULL, buffer);
+                                       &DEFAULT_TEMPLATE_EVAL_OPTIONS, buffer);
     }
   else
     {
       context_msg = synthetic_message_generate_without_context(syn_message, triggering_msg);
       log_template_format(syn_context->id_template,
                           triggering_msg,
-                          NULL, LTZ_LOCAL, 0, NULL, buffer);
+                          &DEFAULT_TEMPLATE_EVAL_OPTIONS, buffer);
     }
 
   msg_debug("Explicit create-context action, starting a new context",
@@ -606,7 +606,7 @@ _pattern_db_process_matching_rule(PatternDB *self, PDBProcessParams *process_par
     {
       CorrelationKey key;
 
-      log_template_format(rule->context.id_template, msg, NULL, LTZ_LOCAL, 0, NULL, buffer);
+      log_template_format(rule->context.id_template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, buffer);
       log_msg_set_value(msg, context_id_handle, buffer->str, -1);
 
       correlation_key_init(&key, rule->context.scope, msg, buffer->str);

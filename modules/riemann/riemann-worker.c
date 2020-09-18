@@ -98,8 +98,10 @@ riemann_dd_field_string_maybe_add(riemann_event_t *event, LogMessage *msg,
   if (!template)
     return;
 
-  log_template_format(template, msg, template_options, LTZ_SEND,
-                      seq_num, NULL, target);
+  LogTemplateEvalOptions options = {template_options, LTZ_SEND,
+                                    seq_num, NULL
+                                   };
+  log_template_format(template, msg, &options, target);
 
   if (target->len != 0)
     riemann_event_set(event, ftype, target->str, RIEMANN_EVENT_FIELD_NONE);
@@ -115,8 +117,10 @@ riemann_dd_field_integer_maybe_add(riemann_event_t *event, LogMessage *msg,
   if (!template)
     return;
 
-  log_template_format(template, msg, template_options, LTZ_SEND,
-                      seq_num, NULL, target);
+  LogTemplateEvalOptions options = {template_options, LTZ_SEND,
+                                    seq_num, NULL
+                                   };
+  log_template_format(template, msg, &options, target);
 
   if (target->len != 0)
     {
@@ -167,8 +171,10 @@ riemann_add_metric_to_event(RiemannDestWorker *self, riemann_event_t *event, Log
 {
   RiemannDestDriver *owner = (RiemannDestDriver *) self->super.owner;
 
-  log_template_format(owner->fields.metric, msg, &owner->template_options,
-                      LTZ_SEND, self->super.seq_num, NULL, str);
+  LogTemplateEvalOptions options = {&owner->template_options,
+                                    LTZ_SEND, self->super.seq_num, NULL
+                                   };
+  log_template_format(owner->fields.metric, msg, &options, str);
 
   if (str->len == 0)
     return TRUE;
@@ -215,9 +221,10 @@ riemann_add_ttl_to_event(RiemannDestWorker *self, riemann_event_t *event, LogMes
   RiemannDestDriver *owner = (RiemannDestDriver *) self->super.owner;
   gdouble d;
 
-  log_template_format(owner->fields.ttl, msg, &owner->template_options,
-                      LTZ_SEND, self->super.seq_num, NULL,
-                      str);
+  LogTemplateEvalOptions options = {&owner->template_options,
+                                    LTZ_SEND, self->super.seq_num, NULL
+                                   };
+  log_template_format(owner->fields.ttl, msg, &options, str);
 
   if (str->len == 0)
     return TRUE;

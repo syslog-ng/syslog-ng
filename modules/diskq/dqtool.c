@@ -190,7 +190,8 @@ dqtool_cat(int argc, char *argv[])
       while ((log_msg = log_queue_pop_head(lq, &local_options)) != NULL)
         {
           /* format log */
-          log_template_format(template, log_msg, &configuration->template_options, LTZ_LOCAL, 0, NULL, msg);
+          LogTemplateEvalOptions eval_options = {&configuration->template_options, LTZ_LOCAL, 0, NULL};
+          log_template_format(template, log_msg, &eval_options, msg);
           log_msg_unref(log_msg);
           log_msg = NULL;
 

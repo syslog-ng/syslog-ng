@@ -150,15 +150,13 @@ GString *applyTemplate(LogTemplate *templ, LogMessage *msg)
 {
   GString *output = g_string_new(prefix);
 
+  LogTemplateEvalOptions options = {NULL, LTZ_LOCAL, 999, context_id};
   // Execute secure logging template
   log_template_append_format_with_context(
     templ,       // Secure logging template
     &msg,        // Message(s) to pass to the template
     1,           // Number of message to pass to the template
-    NULL,        // Template options (no options in this case)
-    LTZ_LOCAL,   // Timezone
-    999,         // Sequence number for recursive template invocations
-    context_id,  // Context identifiertc.logtc.log
+    &options,
     output);     // Output string after applying the template
 
   return output;
@@ -686,7 +684,7 @@ void test_slog_performance(void)
   start_stopwatch();
   for (i = 0; i < PERFORMANCE_COUNTER; i++)
     {
-      log_template_format(slog_templ, msg, NULL, LTZ_LOCAL, 0, NULL, res);
+      log_template_format(slog_templ, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, res);
     }
   stop_stopwatch_and_display_result(PERFORMANCE_COUNTER, "%-90.*s", (int)strlen(slog_templ->template) - 1,
                                     slog_templ->template);

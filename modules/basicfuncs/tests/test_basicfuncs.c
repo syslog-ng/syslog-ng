@@ -577,15 +577,16 @@ Test(basicfuncs, test_iterate)
   LogTemplate *template = log_template_new(configuration, NULL);
   cr_assert(log_template_compile(template, "Some prefix $(iterate \"$(+ 1 $_)\" 0)", NULL));
 
-  log_template_format(template, msg, NULL, LTZ_LOCAL, 999, "", result);
+  LogTemplateEvalOptions options = {NULL, LTZ_LOCAL, 999, ""};
+  log_template_format(template, msg, &options, result);
   cr_assert_str_eq(result->str, "Some prefix 0");
 
   g_string_assign(result, "");
-  log_template_format(template, msg, NULL, LTZ_LOCAL, 999, "", result);
+  log_template_format(template, msg, &options, result);
   cr_assert_str_eq(result->str, "Some prefix 1");
 
   g_string_assign(result, "");
-  log_template_format(template, msg, NULL, LTZ_LOCAL, 999, "", result);
+  log_template_format(template, msg, &options, result);
   cr_assert_str_eq(result->str, "Some prefix 2");
 
   g_string_free(result, TRUE);

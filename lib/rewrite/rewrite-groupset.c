@@ -45,7 +45,8 @@ log_rewrite_groupset_foreach_func(const gchar *name, TypeHint type,
 
   result = scratch_buffers_alloc();
 
-  log_template_format(template, msg, NULL, LTZ_LOCAL, 0, value, result);
+  LogTemplateEvalOptions options = {NULL, LTZ_LOCAL, 0, value};
+  log_template_format(template, msg, &options, result);
 
   NVHandle handle = log_msg_get_value_handle(name);
   log_msg_set_value(msg, handle, result->str, result->len);

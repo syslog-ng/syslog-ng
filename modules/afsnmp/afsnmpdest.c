@@ -409,12 +409,13 @@ snmpdest_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
   GList *snmp_template = self->snmp_templates;
   GString *fs = g_string_sized_new(128);
 
+  LogTemplateEvalOptions options = {&self->template_options, LTZ_LOCAL, 0, NULL};
   /* go through the snmp objects and add them to the message */
   while (snmp_obj)
     {
       oid_cnt = parse_oid_tokens(snmp_obj->data, parsed_oids, MAX_OIDS);
 
-      log_template_format(snmp_template->data, msg, &self->template_options, LTZ_LOCAL, 0, NULL, fs);
+      log_template_format(snmp_template->data, msg, &options, fs);
 
       gint code = *((gint *)snmp_code->data);
       sanitize_fs(fs, code);

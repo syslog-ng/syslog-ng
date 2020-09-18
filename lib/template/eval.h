@@ -54,13 +54,22 @@ struct _LogTemplateOptions
   gint on_error;
 };
 
-void log_template_format(LogTemplate *self, LogMessage *lm, const LogTemplateOptions *opts, gint tz, gint32 seq_num,
-                         const gchar *context_id, GString *result);
-void log_template_append_format(LogTemplate *self, LogMessage *lm, const LogTemplateOptions *opts, gint tz,
-                                gint32 seq_num, const gchar *context_id, GString *result);
+typedef struct _LogTemplateEvalOptions
+{
+  /* options for recursive template evaluation, inherited from the parent */
+  const LogTemplateOptions *opts;
+  gint tz;
+  gint seq_num;
+  const gchar *context_id;
+} LogTemplateEvalOptions;
+
+#define DEFAULT_TEMPLATE_EVAL_OPTIONS ((LogTemplateEvalOptions){NULL, LTZ_LOCAL, 0, NULL})
+
+void log_template_format(LogTemplate *self, LogMessage *lm, LogTemplateEvalOptions *options, GString *result);
+void log_template_append_format(LogTemplate *self, LogMessage *lm, LogTemplateEvalOptions *options, GString *result);
 void log_template_append_format_with_context(LogTemplate *self, LogMessage **messages, gint num_messages,
-                                             const LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result);
+                                             LogTemplateEvalOptions *options, GString *result);
 void log_template_format_with_context(LogTemplate *self, LogMessage **messages, gint num_messages,
-                                      const LogTemplateOptions *opts, gint tz, gint32 seq_num, const gchar *context_id, GString *result);
+                                      LogTemplateEvalOptions *options, GString *result);
 
 #endif

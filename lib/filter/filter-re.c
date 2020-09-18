@@ -213,7 +213,7 @@ filter_match_eval_against_template(FilterExprNode *s, LogMessage **msgs, gint nu
 
   buffer = scratch_buffers_alloc();
 
-  log_template_format(self->template, msg, NULL, LTZ_LOCAL, 0, NULL, buffer);
+  log_template_format(self->template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, buffer);
   return filter_re_eval_string(&self->super.super, msg, LM_V_NONE, buffer->str, buffer->len);
 }
 

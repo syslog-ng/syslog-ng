@@ -166,7 +166,8 @@ assert_template_format_with_escaping_and_context_msgs(const gchar *template, gbo
   GString *res = g_string_new(prefix);
   const gchar *context_id = "test-context-id";
 
-  log_template_append_format_with_context(templ, msgs, num_messages, NULL, LTZ_LOCAL, 999, context_id, res);
+  LogTemplateEvalOptions options = {NULL, LTZ_LOCAL, 999, context_id};
+  log_template_append_format_with_context(templ, msgs, num_messages, &options, res);
   cr_assert(strncmp(res->str, prefix, prefix_len) == 0,
             "the prefix was overwritten by the template, template=%s, res=%s, expected_prefix=%s",
             template, res->str, prefix);
@@ -284,7 +285,7 @@ perftest_template(gchar *template)
   start_stopwatch();
   for (i = 0; i < BENCHMARK_COUNT; i++)
     {
-      log_template_format(templ, msg, NULL, LTZ_LOCAL, 0, NULL, res);
+      log_template_format(templ, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, res);
     }
   stop_stopwatch_and_display_result(BENCHMARK_COUNT,
                                     "      %-90.*s",

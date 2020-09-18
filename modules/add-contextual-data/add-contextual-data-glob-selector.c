@@ -93,7 +93,7 @@ _find_first_matching_glob(AddContextualDataGlobSelector *self, LogMessage *msg)
   GString *string = scratch_buffers_alloc();
   GString *string_reversed = scratch_buffers_alloc();
 
-  log_template_format(self->glob_template, msg, NULL, LTZ_LOCAL, 0, NULL, string);
+  log_template_format(self->glob_template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, string);
   g_string_assign(string_reversed, string->str);
   g_strreverse(string_reversed->str);
   for (gint i = 0; i < self->globs->len; i++)

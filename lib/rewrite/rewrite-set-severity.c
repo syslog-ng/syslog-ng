@@ -89,7 +89,7 @@ log_rewrite_set_severity_process(LogRewrite *s, LogMessage **pmsg, const LogPath
 
   log_msg_make_writable(pmsg, path_options);
 
-  log_template_format(self->severity, *pmsg, NULL, LTZ_LOCAL, 0, NULL, result);
+  log_template_format(self->severity, *pmsg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, result);
 
   const gint severity = _convert_severity(result);
   if (severity < 0)

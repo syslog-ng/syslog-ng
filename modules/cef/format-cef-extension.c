@@ -178,10 +178,12 @@ tf_cef_call(LogTemplateFunction *self, gpointer s,
   gboolean r = TRUE;
   gsize orig_size = result->len;
 
+  // TODO, missing context_id
   for (i = 0; i < args->num_messages; i++)
-    r &= tf_cef_append(result, state->vp, args->messages[i], args->opts, args->seq_num, args->tz);
+    r &= tf_cef_append(result, state->vp, args->messages[i], args->options->opts, args->options->seq_num,
+                       args->options->tz);
 
-  if (!r && (args->opts->on_error & ON_ERROR_DROP_MESSAGE))
+  if (!r && (args->options->opts->on_error & ON_ERROR_DROP_MESSAGE))
     g_string_set_size(result, orig_size);
 }
 

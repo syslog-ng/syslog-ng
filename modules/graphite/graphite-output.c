@@ -142,7 +142,7 @@ tf_graphite_format(GString *result, ValuePairs *vp, LogMessage *msg, const LogTe
 
   userdata.result = result;
   userdata.formatted_unixtime = g_string_new("");
-  log_template_format(timestamp_template, msg, NULL, 0, 0, NULL, userdata.formatted_unixtime);
+  log_template_format(timestamp_template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, userdata.formatted_unixtime);
 
   return_value = value_pairs_foreach(vp, tf_graphite_foreach_func, msg, 0, time_zone_mode, template_options, &userdata);
 
@@ -159,10 +159,12 @@ tf_graphite_call(LogTemplateFunction *self, gpointer s,
   gboolean r = TRUE;
   gsize orig_size = result->len;
 
+  // TODO, missing context_id
   for (i = 0; i < args->num_messages; i++)
-    r &= tf_graphite_format(result, state->vp, args->messages[i], args->opts, state->timestamp_template, args->tz);
+    r &= tf_graphite_format(result, state->vp, args->messages[i], args->options->opts, state->timestamp_template,
+                            args->options->tz);
 
-  if (!r && (args->opts->on_error & ON_ERROR_DROP_MESSAGE))
+  if (!r && (args->options->opts->on_error & ON_ERROR_DROP_MESSAGE))
     g_string_set_size(result, orig_size);
 }
 

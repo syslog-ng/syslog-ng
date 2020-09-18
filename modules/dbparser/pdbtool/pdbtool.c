@@ -373,7 +373,7 @@ pdbtool_pdb_emit(LogMessage *msg, gboolean synthetic, gpointer user_data)
         }
       else
         {
-          log_template_format(template, msg, NULL, LTZ_LOCAL, 0, NULL, output);
+          log_template_format(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, output);
           printf("%s", output->str);
         }
     }

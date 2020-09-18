@@ -969,10 +969,15 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
           g_string_append_c(result, ' ');
           if (lm->flags & LF_UTF8)
             g_string_append_len(result, "\xEF\xBB\xBF", 3);
+          LogTemplateEvalOptions options =
+          {
+            &self->options->template_options,
+            LTZ_SEND,
+            seq_num, NULL,
+          };
+
           log_template_append_format(self->options->template, lm,
-                                     &self->options->template_options,
-                                     LTZ_SEND,
-                                     seq_num, NULL,
+                                     &options,
                                      result);
         }
       else
@@ -1010,11 +1015,14 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
 
       if (template)
         {
-          log_template_format(template, lm,
-                              &self->options->template_options,
-                              LTZ_SEND,
-                              seq_num, NULL,
-                              result);
+          LogTemplateEvalOptions options =
+          {
+            &self->options->template_options,
+            LTZ_SEND,
+            seq_num, NULL
+          };
+
+          log_template_format(template, lm, &options, result);
 
         }
       else
