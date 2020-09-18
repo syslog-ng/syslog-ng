@@ -26,5 +26,6 @@
 #define COMMON_TYPEDEFS_H_INCLUDED
 
 typedef struct _LogTemplateOptions LogTemplateOptions;
+typedef struct _LogTemplate LogTemplate;
 
 #endif
