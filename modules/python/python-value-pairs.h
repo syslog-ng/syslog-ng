@@ -28,7 +28,7 @@
 #include "python-module.h"
 #include "value-pairs/value-pairs.h"
 
-gboolean py_value_pairs_apply(ValuePairs *vp, const LogTemplateOptions *template_options, guint32 seq_num,
+gboolean py_value_pairs_apply(ValuePairs *vp, LogTemplateEvalOptions *options,
                               LogMessage *msg, PyObject **result);
 
 #endif

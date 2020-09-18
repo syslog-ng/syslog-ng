@@ -302,9 +302,8 @@ afstomp_worker_publish(STOMPDestDriver *self, LogMessage *msg)
       stomp_frame_add_header(&frame, "receipt", seq_num);
     };
 
-  value_pairs_foreach(self->vp, afstomp_vp_foreach, msg,
-                      self->super.worker.instance.seq_num, LTZ_SEND,
-                      &self->template_options, &frame);
+  LogTemplateEvalOptions options = {&self->template_options, LTZ_SEND, self->super.worker.instance.seq_num, NULL};
+  value_pairs_foreach(self->vp, afstomp_vp_foreach, msg, &options, &frame);
 
   afstomp_set_frame_body(self, body, &frame, msg);
 

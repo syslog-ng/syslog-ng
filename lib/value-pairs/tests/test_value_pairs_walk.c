@@ -126,7 +126,8 @@ Test(value_pairs_walker, prefix_dat)
   log_msg_set_value_by_name(msg, "root.test.alma", value, strlen(value));
   log_msg_set_value_by_name(msg, "root.test.korte", value, strlen(value));
 
-  value_pairs_walk(vp, test_vp_obj_start, test_vp_value, test_vp_obj_stop, msg, 0, LTZ_LOCAL, &template_options, NULL);
+  LogTemplateEvalOptions options = {&template_options, LTZ_LOCAL, 0, NULL};
+  value_pairs_walk(vp, test_vp_obj_start, test_vp_value, test_vp_obj_stop, msg, &options, NULL);
   value_pairs_unref(vp);
   log_msg_unref(msg);
 };
@@ -151,4 +152,3 @@ teardown(void)
 }
 
 TestSuite(value_pairs_walker, .init = setup, .fini = teardown);
-

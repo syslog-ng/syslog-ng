@@ -77,7 +77,8 @@ log_rewrite_groupset_process(LogRewrite *s, LogMessage **msg, const LogPathOptio
   log_msg_make_writable(msg, path_options);
   userdata.msg = *msg;
   userdata.template = self->replacement;
-  value_pairs_foreach(self->query, self->vp_func, *msg, 0, LTZ_LOCAL, &cfg->template_options, &userdata);
+  LogTemplateEvalOptions options = {&cfg->template_options, LTZ_LOCAL, 0, NULL};
+  value_pairs_foreach(self->query, self->vp_func, *msg, &options, &userdata);
 }
 
 static void

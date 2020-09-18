@@ -115,7 +115,7 @@ python_worker_vp_add_one(const gchar *name,
 /** Main code **/
 
 gboolean
-py_value_pairs_apply(ValuePairs *vp, const LogTemplateOptions *template_options, guint32 seq_num, LogMessage *msg,
+py_value_pairs_apply(ValuePairs *vp, LogTemplateEvalOptions *options, LogMessage *msg,
                      PyObject **dict)
 {
   gpointer args[2];
@@ -123,12 +123,11 @@ py_value_pairs_apply(ValuePairs *vp, const LogTemplateOptions *template_options,
 
   *dict = PyDict_New();
 
-  args[0] = (gpointer) template_options;
+  args[0] = (gpointer) options->opts;
   args[1] = *dict;
 
   vp_ok = value_pairs_foreach(vp, python_worker_vp_add_one,
-                              msg, seq_num, LTZ_LOCAL, template_options,
-                              args);
+                              msg, options, args);
   if (!vp_ok)
     {
       Py_DECREF(*dict);

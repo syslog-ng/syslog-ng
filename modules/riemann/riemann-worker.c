@@ -298,10 +298,12 @@ riemann_worker_insert_one(RiemannDestWorker *self, LogMessage *msg)
                              (gpointer)event);
 
       if (owner->fields.attributes)
-        value_pairs_foreach(owner->fields.attributes,
-                            riemann_dd_field_add_attribute_vp,
-                            msg, self->super.seq_num, LTZ_SEND,
-                            &owner->template_options, event);
+        {
+          LogTemplateEvalOptions options = {&owner->template_options, LTZ_SEND, self->super.seq_num, NULL};
+          value_pairs_foreach(owner->fields.attributes,
+                              riemann_dd_field_add_attribute_vp,
+                              msg, &options, event);
+        }
       msg_trace("riemann: adding message to Riemann event",
                 evt_tag_str("server", owner->server),
                 evt_tag_int("port", owner->port),

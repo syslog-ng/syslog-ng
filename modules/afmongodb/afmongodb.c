@@ -370,13 +370,12 @@ _worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
 
   bson_reinit(self->bson);
 
+  LogTemplateEvalOptions options = {&self->template_options, LTZ_SEND, self->super.worker.instance.seq_num, NULL};
   success = value_pairs_walk(self->vp,
                              _vp_obj_start,
                              _vp_process_value,
                              _vp_obj_end,
-                             msg, self->super.worker.instance.seq_num,
-                             LTZ_SEND,
-                             &self->template_options,
+                             msg, &options,
                              self);
 
   if (!success)
@@ -384,16 +383,14 @@ _worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
       if (!drop_silently)
         {
           msg_error("Failed to format message for MongoDB, dropping message",
-                    evt_tag_value_pairs("message", self->vp, msg, self->super.worker.instance.seq_num,
-                                        LTZ_SEND, &self->template_options),
+                    evt_tag_value_pairs("message", self->vp, msg, &options),
                     evt_tag_str("driver", self->super.super.super.id));
         }
       return LTR_DROP;
     }
 
   msg_debug("Outgoing message to MongoDB destination",
-            evt_tag_value_pairs("message", self->vp, msg, self->super.worker.instance.seq_num, LTZ_SEND,
-                                &self->template_options),
+            evt_tag_value_pairs("message", self->vp, msg, &options),
             evt_tag_str("driver", self->super.super.super.id));
 
   bson_error_t error;

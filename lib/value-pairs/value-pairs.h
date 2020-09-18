@@ -56,20 +56,17 @@ void value_pairs_add_transforms(ValuePairs *vp, ValuePairsTransformSet *vpts);
 
 gboolean value_pairs_foreach_sorted(ValuePairs *vp, VPForeachFunc func,
                                     GCompareFunc compare_func,
-                                    LogMessage *msg, gint32 seq_num, gint tz,
-                                    const LogTemplateOptions *template_options,
+                                    LogMessage *msg, LogTemplateEvalOptions *options,
                                     gpointer user_data);
 gboolean value_pairs_foreach(ValuePairs *vp, VPForeachFunc func,
-                             LogMessage *msg, gint32 seq_num, gint tz,
-                             const LogTemplateOptions *template_options,
+                             LogMessage *msg, LogTemplateEvalOptions *options,
                              gpointer user_data);
 
 gboolean value_pairs_walk(ValuePairs *vp,
                           VPWalkCallbackFunc obj_start_func,
                           VPWalkValueCallbackFunc process_value_func,
                           VPWalkCallbackFunc obj_end_func,
-                          LogMessage *msg, gint32 seq_num, gint tz,
-                          const LogTemplateOptions *template_options,
+                          LogMessage *msg, LogTemplateEvalOptions *options,
                           gpointer user_data);
 
 ValuePairs *value_pairs_new(void);
