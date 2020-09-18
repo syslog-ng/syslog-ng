@@ -1,40 +1,65 @@
-name: macOS-latest
+name: macOS
 
 on: [pull_request, push]
 
 jobs:
-  build-and-check:
+  general:
     runs-on: macOS-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: build-and-check
-        run: |
-          set -e
-          export PYTHONUSERBASE=$HOME/python_packages
-          export PKG_CONFIG_PATH=/usr/local/opt/openssl/lib/pkgconfig:$PKG_CONFIG_PATH
-          export PATH=/usr/local/opt/bison/bin:/usr/local/opt/libnet/bin:$PYTHONUSERBASE/bin:$PATH
+      - name: Checkout syslog-ng source
+        uses: actions/checkout@v2
 
+      - name: Install dependencies
+        run: |
           brew update --preinstall
           brew bundle --file=contrib/Brewfile
           pip install --user -r requirements.txt
 
-          ./autogen.sh
-          ./configure \
-            --with-ivykis=system \
-            --disable-sun-streams \
-            --disable-systemd \
-            --disable-pacct \
-            --disable-smtp \
+      - name: Set ENV variables
+        run: |
+          export PYTHONUSERBASE=${HOME}/python_packages
+          export PKG_CONFIG_PATH=/usr/local/opt/openssl/lib/pkgconfig:$PKG_CONFIG_PATH
+          export PATH=/usr/local/opt/bison/bin:/usr/local/opt/libnet/bin:${PYTHONUSERBASE}/bin:$PATH
+          export THREADS=$(sysctl -n hw.physicalcpu)
+          export CONFIGURE_FLAGS="
+            --with-ivykis=system
+            --disable-sun-streams
+            --disable-systemd
+            --disable-pacct
+            --disable-smtp
             --enable-all-modules
+          "
 
-          make --keep-going -j $(sysctl -n hw.physicalcpu) || \
+          echo "::set-env name=PYTHONUSERBASE::`echo ${PYTHONUSERBASE}`"
+          echo "::set-env name=PKG_CONFIG_PATH::`echo ${PKG_CONFIG_PATH}`"
+          echo "::set-env name=PATH::`echo ${PATH}`"
+          echo "::set-env name=THREADS::`echo ${THREADS}`"
+          echo "::set-env name=CONFIGURE_FLAGS::`echo ${CONFIGURE_FLAGS}`"
+
+      - name: autogen.sh
+        run: |
+          ./autogen.sh
+
+      - name: configure
+        run: |
+          ./configure ${CONFIGURE_FLAGS}
+
+      - name: make
+        run: |
+          set -e
+
+          make --keep-going -j ${THREADS} || \
             { \
               S=$?; \
               make V=1; \
               return $S; \
             }
 
-          make --keep-going check -j $(sysctl -n hw.physicalcpu) || \
+      - name: make check
+        run: |
+          set -e
+
+          make --keep-going check -j ${THREADS} || \
             { \
               S=$?; \
               echo "Output of first test invocation:"; \
