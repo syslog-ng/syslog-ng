@@ -17,7 +17,7 @@ brew "openssl"
 
 brew "gradle"
 brew "python", link: false
-brew "python@2", link: true, force: true
+brew "python@3", link: true, force: true
 brew "hiredis"
 brew "libdbi"
 brew "libnet"
