@@ -75,7 +75,8 @@ tf_map_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeArgs *
       const gchar *current_value = list_scanner_get_current_value(&scanner);
       _append_comma_between_list_elements_if_needed(result, initial_len);
       GString *buffer = scratch_buffers_alloc();
-      LogTemplateEvalOptions options = {NULL, LTZ_LOCAL, 0, current_value};
+      LogTemplateEvalOptions options = *args->options;
+      options.context_id = current_value;
       log_template_format(state->template, msg, &options, buffer);
       str_repr_encode_append(result, buffer->str, -1, ",");
     }
