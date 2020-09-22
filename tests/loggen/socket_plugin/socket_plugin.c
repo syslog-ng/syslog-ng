@@ -394,10 +394,10 @@ active_thread_func(gpointer user_data)
           str_len = generate_message(message, MAX_MESSAGE_LENGTH, thread_context->index, count++);
 
           if (str_len < 0)
-          {
-            ERROR("can't generate more log lines. end of input file?\n");
-            break;
-          }
+            {
+              ERROR("can't generate more log lines. end of input file?\n");
+              break;
+            }
 
           connection_error = send_msg(fd, message, str_len);
 
@@ -425,16 +425,16 @@ send_msg(int fd, char *msg, size_t msg_len)
 {
   ssize_t sent = 0;
   while (sent < strlen(msg))
-  {
-    ssize_t rc = send_plain(fd, msg + sent, strlen(msg) - sent);
-    if (rc < 0)
     {
-      ERROR("error sending buffer on %d (rc=%zd)\n", fd, rc);
-      errno = ECONNABORTED;
-      return TRUE;
+      ssize_t rc = send_plain(fd, msg + sent, strlen(msg) - sent);
+      if (rc < 0)
+        {
+          ERROR("error sending buffer on %d (rc=%zd)\n", fd, rc);
+          errno = ECONNABORTED;
+          return TRUE;
+        }
+      sent += rc;
     }
-    sent += rc;
-  }
   return FALSE;
 }
 
