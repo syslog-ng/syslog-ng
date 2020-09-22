@@ -9,7 +9,7 @@
 static gboolean
 _log_proto_proxied_text_server_parse_header(LogProtoProxiedTextServer *self, const guchar *msg, gsize msg_len)
 {
-    GString *input = g_string_new_len(msg, msg_len);
+    GString *input = g_string_new_len((const gchar *)msg, msg_len);
     int matches = 0;
     int compares = -1;
 
