@@ -33,6 +33,8 @@
 #include <sys/socket.h>
 #include <openssl/err.h>
 
+#define HEADER_BUF_SIZE 128
+
 static int debug = 0;
 
 int
@@ -294,4 +296,24 @@ close_ssl_connection(SSL *ssl)
   SSL_free(ssl);
 
   DEBUG("SSL connection closed\n");
+}
+
+int
+generate_proxy_header(char *buffer, int buffer_size, int thread_id)
+{
+  gchar header[HEADER_BUF_SIZE];
+
+  gint oct1 = g_random_int_range(1, 100);
+  gint oct2 = g_random_int_range(101, 200);
+  gint port = g_random_int_range(5000, 10000);
+
+  gint header_len = g_snprintf(header, HEADER_BUF_SIZE, "PROXY TCP4 192.168.1.%d 192.168.1.%d %d 514\n",
+                               oct1, oct2, port);
+
+  if (header_len > buffer_size)
+    ERROR("PROXY protocol header is longer than the provided buffer; buf=%p\n", buffer);
+
+  memcpy(buffer, header, header_len);
+
+  return header_len;
 }

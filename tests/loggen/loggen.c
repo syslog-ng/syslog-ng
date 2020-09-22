@@ -57,6 +57,7 @@ static PluginOption global_plugin_option =
   .target = NULL,
   .port = NULL,
   .rate = 1000,
+  .proxied = FALSE,
 };
 
 static char *sdata_value = NULL;
@@ -80,6 +81,7 @@ static GOptionEntry loggen_options[] =
   { "interval", 'I', 0, G_OPTION_ARG_INT, &global_plugin_option.interval, "Number of seconds to run the test for", "<sec>" },
   { "permanent", 'T', 0, G_OPTION_ARG_NONE, &global_plugin_option.permanent, "Send logs without time limit", NULL},
   { "syslog-proto", 'P', 0, G_OPTION_ARG_NONE, &syslog_proto, "Use the new syslog-protocol message format (see also framing)", NULL },
+  { "proxied", 'H', 0, G_OPTION_ARG_NONE, &global_plugin_option.proxied, "Generate PROXY protocol v1 header", NULL },
   { "sdata", 'p', 0, G_OPTION_ARG_STRING, &sdata_value, "Send the given sdata (e.g. \"[test name=\\\"value\\\"]\") in case of syslog-proto", NULL },
   { "no-framing", 'F', G_OPTION_ARG_NONE, G_OPTION_ARG_NONE, &noframing, "Don't use syslog-protocol style framing, even if syslog-proto is set", NULL },
   { "active-connections", 0, 0, G_OPTION_ARG_INT, &global_plugin_option.active_connections, "Number of active connections to the server (default = 1)", "<number>" },

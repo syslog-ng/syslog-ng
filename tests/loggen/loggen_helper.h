@@ -52,6 +52,7 @@ int connect_ip_socket(int sock_type, const char *target, const char *port, int u
 int connect_unix_domain_socket(int sock_type, const char *path);
 SSL *open_ssl_connection(int sock_fd);
 void close_ssl_connection(SSL *ssl);
+int generate_proxy_header(char *buffer, int buffer_size, int thread_id);
 
 #define ERROR(format,...) do {\
   gchar *base = g_path_get_basename(__FILE__);\

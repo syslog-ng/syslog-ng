@@ -45,6 +45,7 @@ static gboolean       start(PluginOption *option);
 static void           stop(PluginOption *option);
 static gpointer       active_thread_func(gpointer user_data);
 static gpointer       idle_thread_func(gpointer user_data);
+static gboolean       send_msg(int fd, char *msg, size_t msg_len);
 static ssize_t        send_plain(int fd, void *buf, size_t length);
 static gint           get_thread_count(void);
 static void           set_generate_message(generate_message_func gen_message);
@@ -379,30 +380,30 @@ active_thread_func(gpointer user_data)
           break;
         }
 
-      int str_len = generate_message(message, MAX_MESSAGE_LENGTH, thread_context->index, count++);
-
-      if (str_len < 0)
+      int str_len;
+      if (thread_context->option->proxied && !thread_context->proxy_header_sent)
         {
-          ERROR("can't generate more log lines. end of input file?\n");
-          break;
-        }
+          str_len = generate_proxy_header(message, MAX_MESSAGE_LENGTH, thread_context->index);
+          thread_context->proxy_header_sent = TRUE;
+          DEBUG("Generated PROXY protocol v1 header; len=%d\n", str_len);
 
-      ssize_t sent = 0;
-      while (sent < strlen(message))
+          connection_error = send_msg(fd, message, str_len);
+        }
+      else
         {
-          ssize_t rc = send_plain(fd, message + sent, strlen(message) - sent);
-          if (rc < 0)
-            {
-              ERROR("error sending buffer on %d (rc=%zd)\n", fd, rc);
-              errno = ECONNABORTED;
-              connection_error = TRUE;
-              break;
-            }
-          sent += rc;
-        }
+          str_len = generate_message(message, MAX_MESSAGE_LENGTH, thread_context->index, count++);
 
-      thread_context->sent_messages++;
-      thread_context->buckets--;
+          if (str_len < 0)
+          {
+            ERROR("can't generate more log lines. end of input file?\n");
+            break;
+          }
+
+          connection_error = send_msg(fd, message, str_len);
+
+          thread_context->sent_messages++;
+          thread_context->buckets--;
+        }
     }
   DEBUG("thread (%s,%p) finished\n", loggen_plugin_info.name, g_thread_self());
 
@@ -417,6 +418,24 @@ active_thread_func(gpointer user_data)
   g_free(thread_context);
   g_thread_exit(NULL);
   return NULL;
+}
+
+static gboolean
+send_msg(int fd, char *msg, size_t msg_len)
+{
+  ssize_t sent = 0;
+  while (sent < strlen(msg))
+  {
+    ssize_t rc = send_plain(fd, msg + sent, strlen(msg) - sent);
+    if (rc < 0)
+    {
+      ERROR("error sending buffer on %d (rc=%zd)\n", fd, rc);
+      errno = ECONNABORTED;
+      return TRUE;
+    }
+    sent += rc;
+  }
+  return FALSE;
 }
 
 static ssize_t
