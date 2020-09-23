@@ -316,7 +316,7 @@ nv_table_deserialize_22(SerializeArchive *sa)
   if(!res)
     return NULL;
 
-  res->ref_cnt = 1;
+  g_atomic_counter_set(&res->ref_cnt, 1);
   res->borrowed = FALSE;
 
   if (!_deserialize_struct_22(sa, res))
@@ -453,7 +453,7 @@ nv_table_deserialize_legacy(SerializeArchive *sa)
     return NULL;
 
   res->borrowed = FALSE;
-  res->ref_cnt = 1;
+  g_atomic_counter_set(&res->ref_cnt, 1);
 
   if (!_deserialize_blob_v22(sa, res, nv_table_get_top(res), swap_bytes))
     {
