@@ -1407,7 +1407,7 @@ dnl ***************************************************************************
 PKG_CHECK_MODULES(libsystemd, libsystemd >= ${LIBSYSTEMD_MIN_VERSION},
                   have_libsystemd="yes", have_libsystemd="no")
 
-PKG_CHECK_MODULES(libsystemd, libsystemd >= ${LIBSYSTEMD_WITH_JOURNAL_NAMESPACES_MIN_VERSION},
+PKG_CHECK_MODULES(libsystemd_namespaces, libsystemd >= ${LIBSYSTEMD_WITH_JOURNAL_NAMESPACES_MIN_VERSION},
                   journal_namespaces="yes", journal_namespaces="no")
 
 dnl ***************************************************************************
