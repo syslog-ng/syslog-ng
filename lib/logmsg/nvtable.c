@@ -674,7 +674,7 @@ nv_table_init(NVTable *self, gsize alloc_length, gint num_static_entries)
   self->used = 0;
   self->index_size = 0;
   self->num_static_entries = num_static_entries;
-  self->ref_cnt = 1;
+  g_atomic_counter_set(&self->ref_cnt, 1);
   self->borrowed = FALSE;
   memset(&self->static_entries[0], 0, self->num_static_entries * sizeof(self->static_entries[0]));
 }
@@ -718,7 +718,7 @@ nv_table_realloc(NVTable *self, NVTable **new)
   if (new_size == old_size)
     return FALSE;
 
-  if (self->ref_cnt == 1 && !self->borrowed)
+  if (g_atomic_counter_get(&self->ref_cnt) == 1 && !self->borrowed)
     {
       *new = self = g_realloc(self, new_size);
 
@@ -735,7 +735,7 @@ nv_table_realloc(NVTable *self, NVTable **new)
       /* we only copy the header first */
       memcpy(*new, self, sizeof(NVTable) + self->num_static_entries * sizeof(self->static_entries[0]) + self->index_size *
              sizeof(NVIndexEntry));
-      (*new)->ref_cnt = 1;
+      g_atomic_counter_set(&((*new)->ref_cnt), 1);
       (*new)->borrowed = FALSE;
       (*new)->size = new_size;
 
@@ -751,14 +751,14 @@ nv_table_realloc(NVTable *self, NVTable **new)
 NVTable *
 nv_table_ref(NVTable *self)
 {
-  self->ref_cnt++;
+  g_atomic_counter_inc(&self->ref_cnt);
   return self;
 }
 
 void
 nv_table_unref(NVTable *self)
 {
-  if ((--self->ref_cnt == 0) && !self->borrowed)
+  if (g_atomic_counter_dec_and_test(&self->ref_cnt) && !self->borrowed)
     {
       g_free(self);
     }
@@ -789,7 +789,7 @@ nv_table_clone(NVTable *self, gint additional_space)
   memcpy(new, self, sizeof(NVTable) + self->num_static_entries * sizeof(self->static_entries[0]) + self->index_size *
          sizeof(NVIndexEntry));
   new->size = new_size;
-  new->ref_cnt = 1;
+  g_atomic_counter_set(&new->ref_cnt, 1);
   new->borrowed = FALSE;
 
   memcpy(NV_TABLE_ADDR(new, new->size - new->used),

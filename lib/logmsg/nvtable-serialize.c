@@ -150,7 +150,7 @@ _read_header(SerializeArchive *sa, NVTable **nvtable)
     goto error;
 
   res->borrowed = FALSE;
-  res->ref_cnt = 1;
+  g_atomic_counter_set(&res->ref_cnt, 1);
   *nvtable = res;
   return TRUE;
 

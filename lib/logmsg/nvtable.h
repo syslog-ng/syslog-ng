@@ -27,6 +27,7 @@
 
 #include "syslog-ng.h"
 #include "nvhandle-descriptors.h"
+#include "atomic.h"
 
 typedef struct _NVTable NVTable;
 typedef struct _NVRegistry NVRegistry;
@@ -237,8 +238,8 @@ struct _NVTable
    * versions, but index_size is a more descriptive name */
   guint16 index_size;
   guint8 num_static_entries;
-  guint8 ref_cnt:7,
-         borrowed:1; /* specifies if the memory used by NVTable was borrowed from the container struct */
+  GAtomicCounter ref_cnt;
+  gboolean borrowed;
 
   /* variable data, see memory layout in the comment above */
   union
