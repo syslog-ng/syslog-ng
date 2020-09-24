@@ -57,6 +57,7 @@ class SyslogNgPaths(object):
                 "slogverify": Path(install_dir, "bin", "slogverify"),
                 "syslog_ng_binary": Path(install_dir, "sbin", "syslog-ng"),
                 "syslog_ng_ctl": Path(install_dir, "sbin", "syslog-ng-ctl"),
+                "loggen": Path(install_dir, "bin", "loggen"),
             },
         }
         return self
@@ -102,6 +103,9 @@ class SyslogNgPaths(object):
 
     def get_syslog_ng_ctl_bin(self):
         return self.__syslog_ng_paths["binary_file_paths"]["syslog_ng_ctl"]
+
+    def get_loggen_bin(self):
+        return self.__syslog_ng_paths["binary_file_paths"]["loggen"]
 
     def register_external_tool_output_path(self, external_tool):
         self.__syslog_ng_paths['file_paths'].update(
