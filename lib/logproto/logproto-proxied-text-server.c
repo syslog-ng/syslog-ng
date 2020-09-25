@@ -68,7 +68,11 @@ _log_proto_proxied_text_server_handshake(LogProtoServer *s)
   status = self->fetch_from_buffer(&self->super.super.super, &msg, &msg_len, &may_read, NULL, NULL);
 
   if (status != LPS_SUCCESS)
-    return status;
+    {
+      if (status == LPS_AGAIN)
+        self->handshake_done = FALSE;
+      return status;
+    }
 
   parsable = _log_proto_proxied_text_server_parse_header(self, msg, msg_len);
 
