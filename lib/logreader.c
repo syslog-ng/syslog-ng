@@ -428,6 +428,8 @@ log_reader_process_handshake(LogReader *self)
       return status == LPS_ERROR ? NC_READ_ERROR : NC_CLOSE;
     case LPS_SUCCESS:
       break;
+    case LPS_AGAIN:
+      break;
     default:
       g_assert_not_reached();
       break;
@@ -503,6 +505,8 @@ log_reader_fetch_log(LogReader *self)
           g_sockaddr_unref(aux.peer_addr);
           return NC_READ_ERROR;
         case LPS_SUCCESS:
+          break;
+        case LPS_AGAIN:
           break;
         default:
           g_assert_not_reached();
