@@ -146,18 +146,27 @@ public class SyslogNgClassLoader {
     return Integer.parseInt(versionStr[0]);
   }
 
-  private void expandClassPath(URL[] urls) throws Exception {
-    if (javaVersion() >= 9) {
-      InternalMessageSender.debug("Extend classpath according to java version 9");
-      classLoader = URLClassLoader.newInstance(urls ,classLoader);
-      Thread.currentThread().setContextClassLoader(classLoader);
-    }
-    else {
-      Method method = URLClassLoader.class.getDeclaredMethod("addURL", new Class[]{URL.class});
-      method.setAccessible(true);
-      for (URL url:urls) {
-        method.invoke(classLoader, new Object[]{url});
-      }
+  private void expandClassPath_java9(URL[] urls) throws Exception {
+    InternalMessageSender.debug("Extend classpath according to java version 9");
+    classLoader = URLClassLoader.newInstance(urls, classLoader);
+    Thread.currentThread().setContextClassLoader(classLoader);
+  }
+
+  private void expandClassPath_prior_to_java9(URL[] urls) throws Exception {
+    InternalMessageSender.debug("Extend classpath according to java version < 9");
+    Method method = URLClassLoader.class.getDeclaredMethod("addURL", new Class[]{URL.class});
+    method.setAccessible(true);
+    for (URL url:urls) {
+      method.invoke(classLoader, new Object[]{url});
     }
   }
+
+  private void expandClassPath(URL[] urls) throws Exception {
+    if (javaVersion() >= 9) {
+      expandClassPath_java9(urls);
+    } else {
+      expandClassPath_prior_to_java9(urls);
+    }
+  }
+
 }
