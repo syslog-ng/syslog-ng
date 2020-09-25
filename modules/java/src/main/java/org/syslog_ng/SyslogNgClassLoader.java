@@ -147,7 +147,17 @@ public class SyslogNgClassLoader {
   }
 
   private void expandClassPath(URL[] urls) throws Exception {
-    classLoader = URLClassLoader.newInstance(urls ,classLoader);
-    Thread.currentThread().setContextClassLoader(classLoader);  
+    if (javaVersion() >= 9) {
+      InternalMessageSender.debug("Extend classpath according to java version 9");
+      classLoader = URLClassLoader.newInstance(urls ,classLoader);
+      Thread.currentThread().setContextClassLoader(classLoader);
+    }
+    else {
+      Method method = URLClassLoader.class.getDeclaredMethod("addURL", new Class[]{URL.class});
+      method.setAccessible(true);
+      for (URL url:urls) {
+        method.invoke(classLoader, new Object[]{url});
+      }
+    }
   }
 }
