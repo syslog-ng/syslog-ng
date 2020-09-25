@@ -137,6 +137,15 @@ public class SyslogNgClassLoader {
     return urls;
   }
 
+  private static int javaVersion() {
+    String[] versionStr = System.getProperty("java.version").split("\\.");
+
+    if (versionStr[0].equals("1"))
+      return Integer.parseInt(versionStr[1]);
+
+    return Integer.parseInt(versionStr[0]);
+  }
+
   private void expandClassPath(URL[] urls) throws Exception {
     classLoader = URLClassLoader.newInstance(urls ,classLoader);
     Thread.currentThread().setContextClassLoader(classLoader);  
