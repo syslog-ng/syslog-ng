@@ -58,7 +58,7 @@ jobs:
             --attach dbld/build/${RELEASE_NAME}.tar.gz \
             ${RELEASE_NAME}
 
-      - name: "Comment status"
+      - name: "Comment: job status"
         if: github.event_name == 'pull_request' && always()
         run: |
           if [ ${{ job.status }} = 'success' ]
