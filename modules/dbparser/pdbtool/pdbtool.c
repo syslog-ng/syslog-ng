@@ -484,7 +484,8 @@ pdbtool_match(int argc, char *argv[])
         }
       transport = log_transport_file_new(fd);
       proto = log_proto_text_server_new(transport, &proto_options);
-      eof = log_proto_server_fetch(proto, &buf, &buflen, &may_read, NULL, NULL) != LPS_SUCCESS;
+      LogProtoStatus status = log_proto_server_fetch(proto, &buf, &buflen, &may_read, NULL, NULL);
+      eof = status != (LPS_SUCCESS && status != LPS_AGAIN);
     }
 
   if (!debug_pattern)
@@ -601,7 +602,8 @@ pdbtool_match(int argc, char *argv[])
       if (G_LIKELY(proto))
         {
           buf = NULL;
-          eof = log_proto_server_fetch(proto, &buf, &buflen, &may_read, NULL, NULL) != LPS_SUCCESS;
+          LogProtoStatus status = log_proto_server_fetch(proto, &buf, &buflen, &may_read, NULL, NULL);
+          eof = (status != LPS_SUCCESS && status != LPS_AGAIN);
         }
       else
         {
