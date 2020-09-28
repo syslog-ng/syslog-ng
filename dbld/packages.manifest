@@ -91,7 +91,7 @@ python-devel                [centos, fedora]
 python3-devel               [fedora]
 python3-dev                 [ubuntu-focal]
 python-pip                      [centos, fedora, debian-stretch, debian-buster, ubuntu-trusty, ubuntu-xenial, ubuntu-bionic]
-python3-pip                     [centos, debian, ubuntu]
+python3-pip                     [debian, ubuntu]
 
 # libmongoc and libbson packages on various platforms
 # Because we are using fixed version of libmongoc on Bionic, we need to
