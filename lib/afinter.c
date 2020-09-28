@@ -150,6 +150,10 @@ afinter_source_run(gpointer s)
 
   iv_main();
 
+  g_static_mutex_lock(&internal_msg_lock);
+  current_internal_source = NULL;
+  g_static_mutex_unlock(&internal_msg_lock);
+
   iv_event_unregister(&self->exit);
   iv_event_unregister(&self->post);
   iv_event_unregister(&self->schedule_wakeup);
