@@ -36,6 +36,7 @@ from src.syslog_ng_config.statements.parsers.parser import Parser
 from src.syslog_ng_config.statements.rewrite.rewrite import SetTag
 from src.syslog_ng_config.statements.sources.example_msg_generator_source import ExampleMsgGeneratorSource
 from src.syslog_ng_config.statements.sources.file_source import FileSource
+from src.syslog_ng_config.statements.sources.network_source import NetworkSource
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +84,9 @@ class SyslogNgConfig(object):
 
     def create_example_msg_generator_source(self, **options):
         return ExampleMsgGeneratorSource(**options)
+
+    def create_network_source(self, **options):
+        return NetworkSource(**options)
 
     def create_rewrite_set_tag(self, tag, **options):
         return SetTag(tag, **options)
