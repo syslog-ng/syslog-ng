@@ -109,8 +109,8 @@ class SNMPtrapd(object):
 
 
 @pytest.fixture
-def snmptrapd(some_port):
-    server = SNMPtrapd(some_port)
+def snmptrapd(port_allocator):
+    server = SNMPtrapd(port_allocator())
     server.start()
     yield server
     server.stop()
