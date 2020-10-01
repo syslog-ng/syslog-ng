@@ -577,15 +577,16 @@ Test(basicfuncs, test_iterate)
   LogTemplate *template = log_template_new(configuration, NULL);
   cr_assert(log_template_compile(template, "Some prefix $(iterate \"$(+ 1 $_)\" 0)", NULL));
 
-  log_template_format(template, msg, NULL, LTZ_LOCAL, 999, "", result);
+  LogTemplateEvalOptions options = {NULL, LTZ_LOCAL, 999, ""};
+  log_template_format(template, msg, &options, result);
   cr_assert_str_eq(result->str, "Some prefix 0");
 
   g_string_assign(result, "");
-  log_template_format(template, msg, NULL, LTZ_LOCAL, 999, "", result);
+  log_template_format(template, msg, &options, result);
   cr_assert_str_eq(result->str, "Some prefix 1");
 
   g_string_assign(result, "");
-  log_template_format(template, msg, NULL, LTZ_LOCAL, 999, "", result);
+  log_template_format(template, msg, &options, result);
   cr_assert_str_eq(result->str, "Some prefix 2");
 
   g_string_free(result, TRUE);
@@ -608,12 +609,40 @@ ParameterizedTestParameters(basicfuncs, test_map)
     { "Some prefix $(map \"$(+ 1 $_)\" 0,1,2)", "Some prefix 1,2,3" },
     { "Some prefix $(map \"$(+ 1 $_)\" '')", "Some prefix " },
     { "Some prefix $(map $(+ 1 $_) $(map $(+ 1 $_) 0,1,2))", "Some prefix 2,3,4" }, // embedded map
+    { "Some prefix $(map \"$(if ('$_' eq '1') 'same' 'different')\" 0,1,2)", "Some prefix different,same,different" },
+    { "Some prefix $(map \"$(if ('$_' le '1') 'smaller' 'larger')\" 0,1,2)", "Some prefix smaller,smaller,larger" },
+    { "Some prefix $(map \"$(if ('$_' ge '1') 'larger' 'smaller')\" 0,1,2)", "Some prefix smaller,larger,larger"},
+    { "$(map \"$(if ('$(echo $_)' eq '1') 'same' 'different')\" 0,1,2)", "different,same,different"},
   };
 
   return cr_make_param_array(struct test_params, params, sizeof(params)/sizeof(params[0]));
 }
 
 ParameterizedTest(struct test_params *param, basicfuncs, test_map)
+{
+  assert_template_format(param->template, param->expected);
+}
+
+ParameterizedTestParameters(basicfuncs, test_filter)
+{
+  static struct test_params params[] =
+  {
+    { "Some prefix $(filter ('1' == '1') 0,1,2)", "Some prefix 0,1,2" },
+    { "$(filter ('$_' le '1') 0,1,2)", "0,1" },
+    { "$(filter ('$(% $_ 2)' eq '0') 0,1,2,3)", "0,2" },
+    { "Something $(filter ('$_' eq '0') '')", "Something " },
+    { "$(filter ('1' eq '0') '')", "" },
+    { "$(filter message('árvíztűrőtükörfúrógép') 'doesnotchange')", "doesnotchange" },
+    { "$(filter (message('árvíz') and ('$APP.VALUE' == 'value')) 'doesnotchange')", "doesnotchange" },
+    { "$(filter (message('donotmatch') or ('$APP.VALUE' == 'value')) 'doesnotchange')", "doesnotchange" },
+    { "$(filter ('$YEAR' ge '1900') 'doesnotchange')", "doesnotchange" },
+    { "$(filter ('$YEAR' le '1900') 'doesnotchange')", "" },
+  };
+
+  return cr_make_param_array(struct test_params, params, sizeof(params)/sizeof(params[0]));
+}
+
+ParameterizedTest(struct test_params *param, basicfuncs, test_filter)
 {
   assert_template_format(param->template, param->expected);
 }

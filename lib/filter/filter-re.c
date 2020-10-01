@@ -55,7 +55,7 @@ filter_re_eval_string(FilterExprNode *s, LogMessage *msg, gint value_handle, con
 }
 
 static gboolean
-filter_re_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
+filter_re_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemplateEvalOptions *options)
 {
   FilterRE *self = (FilterRE *) s;
   NVTable *payload;
@@ -179,7 +179,8 @@ filter_match_set_template_ref(FilterExprNode *s, LogTemplate *template)
 }
 
 static gboolean
-filter_match_eval_against_program_pid_msg(FilterExprNode *s, LogMessage **msgs, gint num_msg)
+filter_match_eval_against_program_pid_msg(FilterExprNode *s, LogMessage **msgs, gint num_msg,
+                                          LogTemplateEvalOptions *options)
 {
   FilterMatch *self = (FilterMatch *) s;
 
@@ -204,7 +205,7 @@ filter_match_eval_against_program_pid_msg(FilterExprNode *s, LogMessage **msgs, 
 }
 
 static gboolean
-filter_match_eval_against_template(FilterExprNode *s, LogMessage **msgs, gint num_msg)
+filter_match_eval_against_template(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemplateEvalOptions *options)
 {
   FilterMatch *self = (FilterMatch *) s;
 
@@ -213,12 +214,13 @@ filter_match_eval_against_template(FilterExprNode *s, LogMessage **msgs, gint nu
 
   buffer = scratch_buffers_alloc();
 
-  log_template_format(self->template, msg, NULL, LTZ_LOCAL, 0, NULL, buffer);
+  log_template_format(self->template, msg, options, buffer);
   return filter_re_eval_string(&self->super.super, msg, LM_V_NONE, buffer->str, buffer->len);
 }
 
 static gboolean
-filter_match_eval_against_trivial_template(FilterExprNode *s, LogMessage **msgs, gint num_msg)
+filter_match_eval_against_trivial_template(FilterExprNode *s, LogMessage **msgs, gint num_msg,
+                                           LogTemplateEvalOptions *options)
 {
   FilterMatch *self = (FilterMatch *) s;
 

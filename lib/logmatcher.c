@@ -170,7 +170,7 @@ log_matcher_string_replace(LogMatcher *s, LogMessage *msg, gint value_handle, co
             new_value = g_string_sized_new(value_len);
 
           g_string_append_len(new_value, value + current_ofs, start_ofs - current_ofs);
-          log_template_append_format(replacement, msg, NULL, LTZ_LOCAL, 0, NULL, new_value);
+          log_template_append_format(replacement, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, new_value);
           current_ofs = end_ofs;
 
           if ((self->super.flags & LMF_GLOBAL) == 0)
@@ -614,7 +614,7 @@ log_matcher_pcre_re_replace(LogMatcher *s, LogMessage *msg, gint value_handle, c
           /* append non-matching portion */
           g_string_append_len(new_value, &value[last_offset], matches[0] - last_offset);
           /* replacement */
-          log_template_append_format(replacement, msg, NULL, LTZ_LOCAL, 0, NULL, new_value);
+          log_template_append_format(replacement, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, new_value);
 
           last_match_was_empty = (matches[0] == matches[1]);
           start_offset = last_offset = matches[1];

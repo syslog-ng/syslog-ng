@@ -102,7 +102,7 @@ _add_context_data_to_message(gpointer pmsg, const ContextualDataRecord *record)
   LogMessage *msg = (LogMessage *) pmsg;
   GString *result = scratch_buffers_alloc();
 
-  log_template_format(record->value, msg, NULL, LTZ_LOCAL, 0, NULL, result);
+  log_template_format(record->value, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, result);
   log_msg_set_value(msg, record->value_handle, result->str, result->len);
 }
 

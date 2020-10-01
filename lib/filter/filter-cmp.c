@@ -61,7 +61,7 @@ fop_compare(FilterCmp *self, const gchar *left, const gchar *right)
 }
 
 static gboolean
-fop_cmp_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
+fop_cmp_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemplateEvalOptions *options)
 {
   FilterCmp *self = (FilterCmp *) s;
 
@@ -69,8 +69,8 @@ fop_cmp_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
   GString *left_buf = scratch_buffers_alloc_and_mark(&marker);
   GString *right_buf = scratch_buffers_alloc();
 
-  log_template_format_with_context(self->left, msgs, num_msg, NULL, LTZ_LOCAL, 0, NULL, left_buf);
-  log_template_format_with_context(self->right, msgs, num_msg, NULL, LTZ_LOCAL, 0, NULL, right_buf);
+  log_template_format_with_context(self->left, msgs, num_msg, options, left_buf);
+  log_template_format_with_context(self->right, msgs, num_msg, options, right_buf);
 
   gboolean result = FALSE;
 

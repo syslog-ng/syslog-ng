@@ -39,20 +39,19 @@ _format_message_and_key(KafkaDestWorker *self, LogMessage *msg)
 {
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
 
-  log_template_format(owner->message, msg, &owner->template_options, LTZ_SEND,
-                      self->super.seq_num, NULL, self->message);
+  LogTemplateEvalOptions options = {&owner->template_options, LTZ_SEND, self->super.seq_num, NULL};
+  log_template_format(owner->message, msg, &options, self->message);
 
   if (owner->key)
-    log_template_format(owner->key, msg, &owner->template_options, LTZ_SEND,
-                        self->super.seq_num, NULL, self->key);
+    log_template_format(owner->key, msg, &options, self->key);
 }
 
 const gchar *
 kafka_dest_worker_resolve_template_topic_name(KafkaDestWorker *self, LogMessage *msg)
 {
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
-  log_template_format(owner->topic_name, msg, &owner->template_options, LTZ_SEND, self->super.seq_num, NULL,
-                      self->topic_name_buffer);
+  LogTemplateEvalOptions options = {&owner->template_options, LTZ_SEND, self->super.seq_num, NULL};
+  log_template_format(owner->topic_name, msg, &options, self->topic_name_buffer);
 
   GError *error = NULL;
 

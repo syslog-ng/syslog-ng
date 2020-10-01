@@ -389,10 +389,9 @@ _tf_num_parse_arg_with_message(const TFSimpleFuncState *state,
                                gint64 *number)
 {
   GString *formatted_template = scratch_buffers_alloc();
-  gint on_error = args->opts->on_error;
+  gint on_error = args->options->opts->on_error;
 
-  log_template_format(state->argv_templates[0], message, args->opts, args->tz,
-                      args->seq_num, args->context_id, formatted_template);
+  log_template_format(state->argv_templates[0], message, args->options, formatted_template);
 
   if (!parse_dec_number(formatted_template->str, number))
     {

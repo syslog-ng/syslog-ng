@@ -34,7 +34,7 @@ typedef struct _FilterCall
 } FilterCall;
 
 static gboolean
-filter_call_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
+filter_call_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemplateEvalOptions *options)
 {
   gboolean res = FALSE;
   FilterCall *self = (FilterCall *) s;
@@ -42,7 +42,7 @@ filter_call_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
   if (self->filter_expr)
     {
       /* rule is assumed to contain a single filter pipe */
-      res = filter_expr_eval_with_context(self->filter_expr, msgs, num_msg);
+      res = filter_expr_eval_with_context(self->filter_expr, msgs, num_msg, options);
     }
 
   if (res)

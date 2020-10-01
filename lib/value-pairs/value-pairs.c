@@ -243,16 +243,12 @@ vp_pairs_foreach(gpointer data, gpointer user_data)
 {
   ValuePairs *vp = ((gpointer *)user_data)[0];
   LogMessage *msg = ((gpointer *)user_data)[2];
-  gint32 seq_num = GPOINTER_TO_INT (((gpointer *)user_data)[3]);
+  LogTemplateEvalOptions *options = ((gpointer *)user_data)[3];
   VPResults *results = ((gpointer *)user_data)[5];
-  const LogTemplateOptions *template_options = ((gpointer *)user_data)[6];
   GString *sb = scratch_buffers_alloc();
   VPPairConf *vpc = (VPPairConf *)data;
-  gint time_zone_mode = GPOINTER_TO_INT (((gpointer *)user_data)[7]);
 
-  log_template_append_format((LogTemplate *)vpc->template, msg,
-                             template_options,
-                             time_zone_mode, seq_num, NULL, sb);
+  log_template_append_format((LogTemplate *)vpc->template, msg, options, sb);
 
   if (vp->omit_empty_values && sb->len == 0)
     return;
@@ -364,8 +360,7 @@ vp_update_builtin_list_of_values(ValuePairs *vp)
 }
 
 static void
-vp_merge_builtins(ValuePairs *vp, VPResults *results, LogMessage *msg, gint32 seq_num, gint time_zone_mode,
-                  const LogTemplateOptions *template_options)
+vp_merge_builtins(ValuePairs *vp, VPResults *results, LogMessage *msg, LogTemplateEvalOptions *options)
 {
   gint i;
   GString *sb;
@@ -379,8 +374,7 @@ vp_merge_builtins(ValuePairs *vp, VPResults *results, LogMessage *msg, gint32 se
       switch (spec->type)
         {
         case VPT_MACRO:
-          log_macro_expand(sb, spec->id, FALSE,
-                           template_options, time_zone_mode, seq_num, NULL, msg);
+          log_macro_expand(sb, spec->id, FALSE, options, msg);
           break;
         case VPT_NVPAIR:
         {
@@ -424,14 +418,10 @@ vp_foreach_helper(const gchar *name, gpointer ndx_as_pointer, gpointer data)
 gboolean
 value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
                             GCompareFunc compare_func,
-                            LogMessage *msg, gint32 seq_num, gint time_zone_mode,
-                            const LogTemplateOptions *template_options,
+                            LogMessage *msg, LogTemplateEvalOptions *options,
                             gpointer user_data)
 {
-  gpointer args[] = { vp, func, msg, GINT_TO_POINTER (seq_num), user_data, NULL,
-                      /* remove constness, we are not using that pointer non-const anyway */
-                      (LogTemplateOptions *) template_options, GINT_TO_POINTER(time_zone_mode)
-                    };
+  gpointer args[] = { vp, func, msg, options, user_data, NULL};
   gboolean result = TRUE;
   VPResults results;
   gpointer helper_args[] = { &results, func, user_data, &result };
@@ -449,7 +439,7 @@ value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
     nv_table_foreach(msg->payload, logmsg_registry,
                      (NVTableForeachFunc) vp_msg_nvpairs_foreach, args);
 
-  vp_merge_builtins(vp, &results, msg, seq_num, time_zone_mode, template_options);
+  vp_merge_builtins(vp, &results, msg, options);
 
   /* Merge the explicit key-value pairs too */
   g_ptr_array_foreach(vp->vpairs, (GFunc)vp_pairs_foreach, args);
@@ -464,12 +454,11 @@ value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
 
 gboolean
 value_pairs_foreach(ValuePairs *vp, VPForeachFunc func,
-                    LogMessage *msg, gint32 seq_num, gint time_zone_mode,
-                    const LogTemplateOptions *template_options,
+                    LogMessage *msg, LogTemplateEvalOptions *options,
                     gpointer user_data)
 {
   return value_pairs_foreach_sorted(vp, func, (GCompareFunc) strcmp,
-                                    msg, seq_num, time_zone_mode, template_options, user_data);
+                                    msg, options, user_data);
 }
 
 /*******************************************************************************
@@ -788,8 +777,7 @@ value_pairs_walk(ValuePairs *vp,
                  VPWalkCallbackFunc obj_start_func,
                  VPWalkValueCallbackFunc process_value_func,
                  VPWalkCallbackFunc obj_end_func,
-                 LogMessage *msg, gint32 seq_num, gint time_zone_mode,
-                 const LogTemplateOptions *template_options,
+                 LogMessage *msg, LogTemplateEvalOptions *options,
                  gpointer user_data)
 {
   vp_walk_state_t state;
@@ -804,7 +792,7 @@ value_pairs_walk(ValuePairs *vp,
   state.obj_start(NULL, NULL, NULL, NULL, NULL, user_data);
   result = value_pairs_foreach_sorted(vp, value_pairs_walker,
                                       (GCompareFunc)vp_walk_cmp, msg,
-                                      seq_num, time_zone_mode, template_options, &state);
+                                      options, &state);
   vp_walker_stack_unwind_all_containers(&state);
   state.obj_end(NULL, NULL, NULL, NULL, NULL, user_data);
   vp_stack_destroy(&state.stack);

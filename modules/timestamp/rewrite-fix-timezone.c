@@ -55,7 +55,7 @@ _process(LogRewrite *s, LogMessage **pmsg, const LogPathOptions *path_options)
   GString *result = scratch_buffers_alloc();
   LogMessage *msg = *pmsg;
 
-  log_template_format(self->zone_template, msg, NULL, LTZ_LOCAL, 0, NULL, result);
+  log_template_format(self->zone_template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, result);
 
   UnixTime stamp = msg->timestamps[self->stamp];
   glong implied_gmtoff = stamp.ut_gmtoff;

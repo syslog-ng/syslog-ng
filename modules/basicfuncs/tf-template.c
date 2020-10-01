@@ -169,8 +169,8 @@ tf_template_call(LogTemplateFunction *self, gpointer s, const LogTemplateInvokeA
       return;
     }
 
-  log_template_append_format_with_context(invoked_template, args->messages, args->num_messages, args->opts,
-                                          args->tz, args->seq_num, args->context_id, result);
+  log_template_append_format_with_context(invoked_template, args->messages, args->num_messages,
+                                          args->options, result);
   log_template_unref(invoked_template);
 }
 

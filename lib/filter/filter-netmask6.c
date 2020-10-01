@@ -96,7 +96,7 @@ _in6_addr_compare(const struct in6_addr *address1, const struct in6_addr *addres
 }
 
 static gboolean
-_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
+_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemplateEvalOptions *options)
 {
   FilterNetmask6 *self = (FilterNetmask6 *) s;
   LogMessage *msg = msgs[num_msg - 1];

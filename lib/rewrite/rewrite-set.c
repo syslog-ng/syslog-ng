@@ -52,7 +52,9 @@ log_rewrite_set_process(LogRewrite *s, LogMessage **pmsg, const LogPathOptions *
   GString *result;
 
   result = scratch_buffers_alloc();
-  log_template_format(self->value_template, *pmsg, &self->template_options, LTZ_SEND, 0, NULL, result);
+
+  LogTemplateEvalOptions options = {&self->template_options, LTZ_SEND, 0, NULL};
+  log_template_format(self->value_template, *pmsg, &options, result);
 
   log_msg_make_writable(pmsg, path_options);
   log_msg_set_value(*pmsg, self->super.value_handle, result->str, result->len);

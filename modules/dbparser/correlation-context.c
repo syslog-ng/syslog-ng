@@ -60,8 +60,8 @@ _compare_messages_with_nontrivial_template(gconstpointer a, gconstpointer b, gpo
   GString *am_key = scratch_buffers_alloc_and_mark(&mark);
   GString *bm_key = scratch_buffers_alloc();
 
-  log_template_format(sort_key, am, NULL, LTZ_LOCAL, 0, NULL, am_key);
-  log_template_format(sort_key, bm, NULL, LTZ_LOCAL, 0, NULL, bm_key);
+  log_template_format(sort_key, am, &DEFAULT_TEMPLATE_EVAL_OPTIONS, am_key);
+  log_template_format(sort_key, bm, &DEFAULT_TEMPLATE_EVAL_OPTIONS, bm_key);
   gint result = strcmp(am_key->str, bm_key->str);
 
   scratch_buffers_reclaim_marked(mark);

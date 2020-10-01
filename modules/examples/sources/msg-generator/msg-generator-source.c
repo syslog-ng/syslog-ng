@@ -101,7 +101,7 @@ _add_name_value(gpointer key, gpointer value, gpointer data)
   LogTemplate *val = (LogTemplate *) value;
   LogMessage *msg = (LogMessage *) data;
   GString *msg_body = g_string_sized_new(128);
-  log_template_format(val, msg, NULL, LTZ_LOCAL, 0, NULL, msg_body);
+  log_template_format(val, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, msg_body);
   log_msg_set_value_by_name(msg, name, msg_body->str, msg_body->len);
   g_string_free(msg_body, TRUE);
 
@@ -120,7 +120,7 @@ _send_generated_message(MsgGeneratorSource *self)
   if (self->options->template)
     {
       GString *msg_body = g_string_sized_new(128);
-      log_template_format(self->options->template, msg, NULL, LTZ_LOCAL, 0, NULL, msg_body);
+      log_template_format(self->options->template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, msg_body);
       log_msg_set_value(msg, LM_V_MESSAGE, msg_body->str, msg_body->len);
       g_string_free(msg_body, TRUE);
     }

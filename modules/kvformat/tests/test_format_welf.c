@@ -101,7 +101,7 @@ assert_template(LogMessage *msg, const gchar *template_str, const gchar *expecte
   cr_assert(log_template_compile(template, template_str, NULL));
   GString *result = g_string_new("");
 
-  log_template_format(template, msg, NULL, 0, 0, NULL, result);
+  log_template_format(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, result);
   cr_assert_str_eq(result->str, expected, "Template (%s) result different: %s != %s",
                    template_str, result->str, expected);
 

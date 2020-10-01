@@ -216,7 +216,7 @@ _evaluate_filter(FilterExprNode *expr, CorrelationContext *context)
 {
   return filter_expr_eval_with_context(expr,
                                        (LogMessage **) context->messages->pdata,
-                                       context->messages->len);
+                                       context->messages->len, &DEFAULT_TEMPLATE_EVAL_OPTIONS);
 }
 
 static gboolean
@@ -309,7 +309,7 @@ _lookup_or_create_context(GroupingBy *self, LogMessage *msg)
   CorrelationKey key;
   GString *buffer = scratch_buffers_alloc();
 
-  log_template_format(self->key_template, msg, NULL, LTZ_LOCAL, 0, NULL, buffer);
+  log_template_format(self->key_template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, buffer);
   log_msg_set_value(msg, context_id_handle, buffer->str, -1);
 
   correlation_key_init(&key, self->scope, msg, buffer->str);

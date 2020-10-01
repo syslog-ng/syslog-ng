@@ -88,7 +88,7 @@ log_rewrite_set_facility_process(LogRewrite *s, LogMessage **pmsg, const LogPath
 
   log_msg_make_writable(pmsg, path_options);
 
-  log_template_format(self->facility, *pmsg, NULL, LTZ_LOCAL, 0, NULL, result);
+  log_template_format(self->facility, *pmsg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, result);
 
   const gint facility = _convert_facility(result->str);
   if (facility < 0)

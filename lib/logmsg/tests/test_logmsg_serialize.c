@@ -119,7 +119,8 @@ _check_deserialized_message(LogMessage *msg, SerializeArchive *sa)
   log_template_compile(template, "${ISODATE}", NULL);
 
   cfg->template_options.frac_digits = 3;
-  log_template_append_format(template, msg, &cfg->template_options, LTZ_SEND, 0, NULL, output);
+  LogTemplateEvalOptions options = {&cfg->template_options, LTZ_SEND, 0, NULL};
+  log_template_append_format(template, msg, &options, output);
   cr_assert_str_eq(output->str, "2006-10-29T01:59:59.156+01:00", ERROR_MSG);
 
   cr_assert_str_eq(log_msg_get_value(msg, LM_V_HOST, NULL), "mymachine", ERROR_MSG);

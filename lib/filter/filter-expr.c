@@ -42,24 +42,25 @@ filter_expr_node_init_instance(FilterExprNode *self)
  * do that.
  */
 gboolean
-filter_expr_eval_with_context(FilterExprNode *self, LogMessage **msg, gint num_msg)
+filter_expr_eval_with_context(FilterExprNode *self, LogMessage **msg, gint num_msg, LogTemplateEvalOptions *options)
 {
   gboolean res;
 
   g_assert(num_msg > 0);
 
-  res = self->eval(self, msg, num_msg);
+  res = self->eval(self, msg, num_msg, options);
   return res;
 }
 
 gboolean
 filter_expr_eval(FilterExprNode *self, LogMessage *msg)
 {
-  return filter_expr_eval_with_context(self, &msg, 1);
+  return filter_expr_eval_with_context(self, &msg, 1, &DEFAULT_TEMPLATE_EVAL_OPTIONS);
 }
 
 gboolean
 filter_expr_eval_root_with_context(FilterExprNode *self, LogMessage **msg, gint num_msg,
+                                   LogTemplateEvalOptions *options,
                                    const LogPathOptions *path_options)
 {
   g_assert(num_msg > 0);
@@ -67,13 +68,13 @@ filter_expr_eval_root_with_context(FilterExprNode *self, LogMessage **msg, gint 
   if (self->modify)
     log_msg_make_writable(&msg[num_msg - 1], path_options);
 
-  return filter_expr_eval_with_context(self, msg, num_msg);
+  return filter_expr_eval_with_context(self, msg, num_msg, options);
 }
 
 gboolean
 filter_expr_eval_root(FilterExprNode *self, LogMessage **msg, const LogPathOptions *path_options)
 {
-  return filter_expr_eval_root_with_context(self, msg, 1, path_options);
+  return filter_expr_eval_root_with_context(self, msg, 1, &DEFAULT_TEMPLATE_EVAL_OPTIONS, path_options);
 }
 
 FilterExprNode *

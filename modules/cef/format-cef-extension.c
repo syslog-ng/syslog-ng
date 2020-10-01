@@ -154,19 +154,17 @@ tf_cef_walker(const gchar *name, TypeHint type, const gchar *value, gsize value_
 }
 
 static gboolean
-tf_cef_append(GString *result, ValuePairs *vp, LogMessage *msg,
-              const LogTemplateOptions *template_options, gint32 seq_num, gint time_zone_mode)
+tf_cef_append(GString *result, ValuePairs *vp, LogMessage *msg, LogTemplateEvalOptions *options)
 {
   CefWalkerState state;
 
   state.need_separator = FALSE;
   state.buffer = result;
-  state.template_options = template_options;
+  state.template_options = options->opts;
 
   return value_pairs_foreach_sorted(vp, tf_cef_walker,
                                     (GCompareFunc) tf_cef_walk_cmp, msg,
-                                    seq_num, time_zone_mode, template_options,
-                                    &state);
+                                    options, &state);
 }
 
 static void
@@ -179,9 +177,9 @@ tf_cef_call(LogTemplateFunction *self, gpointer s,
   gsize orig_size = result->len;
 
   for (i = 0; i < args->num_messages; i++)
-    r &= tf_cef_append(result, state->vp, args->messages[i], args->opts, args->seq_num, args->tz);
+    r &= tf_cef_append(result, state->vp, args->messages[i], args->options);
 
-  if (!r && (args->opts->on_error & ON_ERROR_DROP_MESSAGE))
+  if (!r && (args->options->opts->on_error & ON_ERROR_DROP_MESSAGE))
     g_string_set_size(result, orig_size);
 }
 

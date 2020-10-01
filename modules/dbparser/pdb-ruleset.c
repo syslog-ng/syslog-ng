@@ -72,7 +72,7 @@ _calculate_program(PDBLookupParams *lookup, LogMessage *msg, gssize *program_len
     return log_msg_get_value(msg, lookup->program_handle, program_len);
 
   GString *program = scratch_buffers_alloc();
-  log_template_format(lookup->program_template, msg, NULL, LTZ_LOCAL, 0, NULL, program);
+  log_template_format(lookup->program_template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, program);
   *program_len = program->len;
   return program->str;
 }

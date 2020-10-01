@@ -66,12 +66,12 @@ fop_init_instance(FilterOp *self)
 }
 
 static gboolean
-fop_or_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
+fop_or_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemplateEvalOptions *options)
 {
   FilterOp *self = (FilterOp *) s;
 
-  return (filter_expr_eval_with_context(self->left, msgs, num_msg)
-          || filter_expr_eval_with_context(self->right, msgs, num_msg)) ^ s->comp;
+  return (filter_expr_eval_with_context(self->left, msgs, num_msg, options)
+          || filter_expr_eval_with_context(self->right, msgs, num_msg, options)) ^ s->comp;
 }
 
 FilterExprNode *
@@ -88,12 +88,12 @@ fop_or_new(FilterExprNode *e1, FilterExprNode *e2)
 }
 
 static gboolean
-fop_and_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg)
+fop_and_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemplateEvalOptions *options)
 {
   FilterOp *self = (FilterOp *) s;
 
-  return (filter_expr_eval_with_context(self->left, msgs, num_msg)
-          && filter_expr_eval_with_context(self->right, msgs, num_msg)) ^ s->comp;
+  return (filter_expr_eval_with_context(self->left, msgs, num_msg, options)
+          && filter_expr_eval_with_context(self->right, msgs, num_msg, options)) ^ s->comp;
 }
 
 FilterExprNode *
