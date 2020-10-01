@@ -1322,8 +1322,8 @@ log_writer_idle_timeout(void *cookie)
   LogWriter *self = (LogWriter *) cookie;
 
   g_assert(!self->io_job.working);
-  msg_notice("Destination timeout has elapsed, closing connection",
-             evt_tag_int("fd", log_proto_client_get_fd(self->proto)));
+  msg_verbose("Destination timeout has elapsed, closing connection",
+              evt_tag_int("fd", log_proto_client_get_fd(self->proto)));
 
   log_pipe_notify(self->control, NC_CLOSE, self);
 }
