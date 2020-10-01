@@ -27,6 +27,7 @@
 
 #include "driver.h"
 #include "logsource.h"
+#include "mainloop-worker.h"
 
 typedef struct AFInterSourceOptions
 {
@@ -42,6 +43,7 @@ typedef struct _AFInterSourceDriver
   LogSrcDriver super;
   LogSource *source;
   AFInterSourceOptions source_options;
+  WorkerOptions worker_options;
 } AFInterSourceDriver;
 
 void afinter_postpone_mark(gint mark_freq);

@@ -96,6 +96,7 @@ struct _AFInterSource
   const AFInterSourceOptions *options;
   struct iv_event post;
   struct iv_event schedule_wakeup;
+  struct iv_event exit;
   struct iv_timer mark_timer;
   struct iv_task restart_task;
   gboolean watches_running:1, free_to_send:1;
@@ -124,13 +125,73 @@ afinter_source_post(gpointer s)
   afinter_source_update_watches(self);
 }
 
+static void afinter_source_start_watches(AFInterSource *self);
+static void afinter_source_stop_watches(AFInterSource *self);
+
+static void
+afinter_source_run(gpointer s)
+{
+  AFInterSource *self = (AFInterSource *) s;
+
+  iv_init();
+
+  /* post event is used by other threads and can only be unregistered if
+   * current_afinter_source is set to NULL in a thread safe manner */
+  iv_event_register(&self->post);
+  iv_event_register(&self->schedule_wakeup);
+  iv_event_register(&self->exit);
+
+  g_static_mutex_lock(&internal_msg_lock);
+  self->free_to_send = TRUE;
+  g_static_mutex_unlock(&internal_msg_lock);
+
+  afinter_source_start_watches(self);
+  afinter_source_update_watches(self);
+
+  iv_main();
+
+  g_static_mutex_lock(&internal_msg_lock);
+  current_internal_source = NULL;
+  g_static_mutex_unlock(&internal_msg_lock);
+
+  iv_event_unregister(&self->exit);
+  iv_event_unregister(&self->post);
+  iv_event_unregister(&self->schedule_wakeup);
+
+  afinter_source_stop_watches(self);
+
+  iv_deinit();
+}
+
+static void
+afinter_source_request_exit(gpointer s)
+{
+  AFInterSource *self = (AFInterSource *) s;
+
+  iv_event_post(&self->exit);
+}
+
+
+static gboolean
+afinter_sd_start_thread(LogPipe *s)
+{
+  AFInterSourceDriver *self = (AFInterSourceDriver *) s;
+
+  self->worker_options.is_external_input = TRUE;
+
+  main_loop_create_worker_thread((WorkerThreadFunc) afinter_source_run,
+                                 (WorkerExitNotificationFunc) afinter_source_request_exit,
+                                 self->source, &self->worker_options);
+
+  return TRUE;
+}
+
+
 static void
 afinter_source_mark(gpointer s)
 {
   AFInterSource *self = (AFInterSource *) s;
   struct timespec nmt;
-
-  main_loop_assert_main_thread();
 
   g_static_mutex_lock(&internal_mark_target_lock);
   nmt = next_mark_target;
@@ -178,6 +239,9 @@ afinter_source_init_watches(AFInterSource *self)
   IV_EVENT_INIT(&self->schedule_wakeup);
   self->schedule_wakeup.cookie = self;
   self->schedule_wakeup.handler = (void (*)(void *)) afinter_source_update_watches;
+  IV_EVENT_INIT(&self->exit);
+  self->exit.cookie = NULL;
+  self->exit.handler = (void (*)(void *)) iv_quit;
   IV_TASK_INIT(&self->restart_task);
   self->restart_task.cookie = self;
   self->restart_task.handler = afinter_source_post;
@@ -277,16 +341,8 @@ afinter_source_init(LogPipe *s)
   afinter_postpone_mark(self->mark_freq);
   self->mark_timer.expires = next_mark_target;
 
-  /* post event is used by other threads and can only be unregistered if
-   * current_afinter_source is set to NULL in a thread safe manner */
-  iv_event_register(&self->post);
-  iv_event_register(&self->schedule_wakeup);
-
-  afinter_source_start_watches(self);
-
   g_static_mutex_lock(&internal_msg_lock);
   current_internal_source = self;
-  self->free_to_send = TRUE;
   g_static_mutex_unlock(&internal_msg_lock);
 
   return TRUE;
@@ -301,14 +357,7 @@ afinter_source_deinit(LogPipe *s)
   current_internal_source = NULL;
   g_static_mutex_unlock(&internal_msg_lock);
 
-  /* the post handler can now be unregistered as current_internal_source is
-   * set to NULL.  Locks are only used as a memory barrier.  */
-
-  iv_event_unregister(&self->post);
-  iv_event_unregister(&self->schedule_wakeup);
-
-  afinter_source_stop_watches(self);
-  return log_source_deinit(s);
+  return log_source_deinit(&self->super.super);
 }
 
 static LogSource *
@@ -412,6 +461,7 @@ afinter_sd_new(GlobalConfig *cfg)
   self->super.super.super.init = afinter_sd_init;
   self->super.super.super.deinit = afinter_sd_deinit;
   self->super.super.super.free_fn = afinter_sd_free;
+  self->super.super.super.on_config_inited = afinter_sd_start_thread;
 
   afinter_source_options_defaults(&self->source_options);
 

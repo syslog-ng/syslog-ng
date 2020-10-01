@@ -368,6 +368,13 @@ cfg_init(GlobalConfig *cfg)
   if (!cfg_tree_start(&cfg->tree))
     return FALSE;
 
+  /*
+   * TLDR: A half-initialized pipeline turned out to be really hard to deinitialize
+   * correctly when dedicated source/destination threads are spawned (because we
+   * would have to wait for workers to stop and guarantee some internal
+   * task/timer/fdwatch ordering in ivykis during this action).
+   * See: https://github.com/syslog-ng/syslog-ng/pull/3176#issuecomment-638849597
+   */
   g_assert(cfg_tree_on_inited(&cfg->tree));
   return TRUE;
 }
