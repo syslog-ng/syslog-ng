@@ -20,7 +20,6 @@
 # COPYING for details.
 #
 #############################################################################
-from src.helpers.secure_logging.conftest import *  # noqa:F403, F401
 
 seqnum = "$(iterate $(+ 1 $_) 0)"
 message_base = "example-message"
