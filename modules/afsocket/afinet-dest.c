@@ -198,13 +198,19 @@ void
 afinet_dd_set_tls_context(LogDriver *s, TLSContext *tls_context)
 {
   AFInetDestDriver *self = (AFInetDestDriver *) s;
-  AFInetDestDriverTLSVerifyData *verify_data;
-  TLSVerifier *verifier;
-
-  verify_data = afinet_dd_tls_verify_data_new(tls_context, _afinet_dd_get_hostname(self));
-  verifier = tls_verifier_new(afinet_dd_verify_callback, verify_data, afinet_dd_tls_verify_data_free);
   transport_mapper_inet_set_tls_context((TransportMapperInet *) self->super.transport_mapper, tls_context);
-  transport_mapper_inet_set_tls_verifier((TransportMapperInet *) self->super.transport_mapper, verifier);
+}
+
+void
+afinet_dd_setup_tls_verifier(AFInetDestDriver *self)
+{
+  TransportMapperInet *transport_mapper_inet = (TransportMapperInet *) self->super.transport_mapper;
+
+  AFInetDestDriverTLSVerifyData *verify_data;
+  verify_data = afinet_dd_tls_verify_data_new(transport_mapper_inet->tls_context, _afinet_dd_get_hostname(self));
+  TLSVerifier *verifier = tls_verifier_new(afinet_dd_verify_callback, verify_data, afinet_dd_tls_verify_data_free);
+
+  transport_mapper_inet_set_tls_verifier(transport_mapper_inet, verifier);
 }
 
 void
@@ -336,6 +342,9 @@ afinet_dd_setup_addresses(AFSocketDestDriver *s)
 
   if (_is_failover_used(self))
     afinet_dd_failover_next(self->failover);
+
+  if (_is_tls_used(self))
+    afinet_dd_setup_tls_verifier(self);
 
   if (!_setup_dest_addr(self))
     return FALSE;
