@@ -67,7 +67,7 @@ _counter_group_init_with_name(StatsCounterGroupInit *self, StatsCounterGroup *co
   counter_group->counters = g_new0(StatsCounterItem, SC_TYPE_SINGLE_MAX);
   counter_group->capacity = SC_TYPE_SINGLE_MAX;
 
-  const gchar **counter_names = g_new0(const char *, 1);
+  const gchar **counter_names = g_new0(const gchar *, 1);
   counter_names[0] = self->counter.name;
   counter_group->counter_names = counter_names;
 
