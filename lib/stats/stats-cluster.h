@@ -59,7 +59,11 @@ struct _StatsCounterGroup
 
 struct _StatsCounterGroupInit
 {
-  const gchar **counter_names;
+  union
+  {
+    const gchar **names;
+    const gchar *name;
+  } counter;
   void (*init)(StatsCounterGroupInit *self, StatsCounterGroup *counter_group);
   gboolean (*equals)(const StatsCounterGroupInit *self, const StatsCounterGroupInit *other);
 };

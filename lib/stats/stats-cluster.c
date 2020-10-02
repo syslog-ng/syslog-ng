@@ -179,7 +179,7 @@ stats_counter_group_init_equals(const StatsCounterGroupInit *self, const StatsCo
   if (self->equals)
     return self->equals(self, other);
 
-  return (self->init == other->init) && (self->counter_names == other->counter_names);
+  return (self->init == other->init) && (self->counter.names == other->counter.names);
 }
 
 gboolean
