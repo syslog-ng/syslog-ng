@@ -22,8 +22,6 @@
 #############################################################################
 import pytest
 
-from src.helpers.snmptrapd.conftest import *  # noqa:F403, F401
-
 
 @pytest.mark.snmp
 def test_snmp_dest_reload_stat(config, syslog_ng, syslog_ng_ctl, snmptrapd, snmp_test_params):

@@ -134,3 +134,9 @@ def version(request):
     binary_path = str(Path(installdir, "sbin", "syslog-ng"))
     version_output = subprocess.check_output([binary_path, "--version"]).decode()
     return version_output.splitlines()[1].split()[2]
+
+
+pytest_plugins = (
+    "src.helpers.snmptrapd.SNMPtrapd",
+    "src.helpers.snmptrapd.SNMPTestParams",
+)

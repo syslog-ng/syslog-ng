@@ -22,8 +22,6 @@
 #############################################################################
 import pytest
 
-from src.helpers.snmptrapd.conftest import *  # noqa:F403, F401
-
 
 @pytest.mark.snmp
 def test_snmp_dest_wrong_version(config, syslog_ng, snmptrapd, snmp_test_params):

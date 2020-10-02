@@ -22,8 +22,6 @@
 #############################################################################
 import pytest
 
-from src.helpers.snmptrapd.conftest import *  # noqa:F403, F401
-
 
 @pytest.mark.snmp
 def test_snmp_dest_v2c_using_macros_in_snmp_obj(config, syslog_ng, snmptrapd, snmp_test_params):
