@@ -178,7 +178,7 @@ Test(transport_mapper_inet, test_udp_apply_transport_sets_defaults)
 Test(transport_mapper_inet, test_udp_apply_fails_when_tls_context_is_set)
 {
   transport_mapper = transport_mapper_udp_new();
-  transport_mapper_inet_set_tls_context((TransportMapperInet *) transport_mapper, create_dummy_tls_context(), NULL);
+  transport_mapper_inet_set_tls_context((TransportMapperInet *) transport_mapper, create_dummy_tls_context());
   assert_transport_mapper_apply_fails(transport_mapper, "udp");
 }
 
@@ -209,7 +209,7 @@ Test(transport_mapper_inet, test_network_transport_udp_apply_transport_sets_defa
 Test(transport_mapper_inet, test_network_transport_udp_apply_fails_when_tls_context_is_set)
 {
   transport_mapper = transport_mapper_network_new();
-  transport_mapper_inet_set_tls_context((TransportMapperInet *) transport_mapper, create_dummy_tls_context(), NULL);
+  transport_mapper_inet_set_tls_context((TransportMapperInet *) transport_mapper, create_dummy_tls_context());
   assert_transport_mapper_apply_fails(transport_mapper, "udp");
 }
 
@@ -234,7 +234,7 @@ Test(transport_mapper_inet, test_network_transport_tls_apply_fails_without_tls_c
 Test(transport_mapper_inet, test_network_transport_tls_apply_transport_sets_defaults)
 {
   transport_mapper = transport_mapper_network_new();
-  transport_mapper_inet_set_tls_context((TransportMapperInet *) transport_mapper, create_dummy_tls_context(), NULL);
+  transport_mapper_inet_set_tls_context((TransportMapperInet *) transport_mapper, create_dummy_tls_context());
   assert_transport_mapper_apply(transport_mapper, "tls");
   assert_transport_mapper_tcp_socket(transport_mapper);
 
@@ -271,7 +271,7 @@ Test(transport_mapper_inet, test_syslog_transport_udp_apply_transport_sets_defau
 Test(transport_mapper_inet, test_syslog_transport_udp_apply_fails_when_tls_context_is_set)
 {
   transport_mapper = transport_mapper_syslog_new();
-  transport_mapper_inet_set_tls_context((TransportMapperInet *) transport_mapper, create_dummy_tls_context(), NULL);
+  transport_mapper_inet_set_tls_context((TransportMapperInet *) transport_mapper, create_dummy_tls_context());
   assert_transport_mapper_apply_fails(transport_mapper, "udp");
 }
 
@@ -296,7 +296,7 @@ Test(transport_mapper_inet, test_syslog_transport_tls_apply_fails_without_tls_co
 Test(transport_mapper_inet, test_syslog_transport_tls_apply_transport_sets_defaults)
 {
   transport_mapper = transport_mapper_syslog_new();
-  transport_mapper_inet_set_tls_context((TransportMapperInet *) transport_mapper, create_dummy_tls_context(), NULL);
+  transport_mapper_inet_set_tls_context((TransportMapperInet *) transport_mapper, create_dummy_tls_context());
   assert_transport_mapper_apply(transport_mapper, "tls");
   assert_transport_mapper_tcp_socket(transport_mapper);
 

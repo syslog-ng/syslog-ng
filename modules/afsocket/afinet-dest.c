@@ -195,7 +195,8 @@ afinet_dd_set_tls_context(LogDriver *s, TLSContext *tls_context)
 
   verify_data = afinet_dd_tls_verify_data_new(tls_context, _afinet_dd_get_hostname(self));
   verifier = tls_verifier_new(afinet_dd_verify_callback, verify_data, afinet_dd_tls_verify_data_free);
-  transport_mapper_inet_set_tls_context((TransportMapperInet *) self->super.transport_mapper, tls_context, verifier);
+  transport_mapper_inet_set_tls_context((TransportMapperInet *) self->super.transport_mapper, tls_context);
+  transport_mapper_inet_set_tls_verifier((TransportMapperInet *) self->super.transport_mapper, verifier);
 }
 
 void
