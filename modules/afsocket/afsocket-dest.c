@@ -729,7 +729,7 @@ afsocket_dd_init_instance(AFSocketDestDriver *self,
   self->super.super.super.free_fn = afsocket_dd_free;
   self->super.super.super.notify = afsocket_dd_notify;
   self->super.super.super.generate_persist_name = afsocket_dd_format_name;
-  self->setup_addresses = afsocket_dd_setup_addresses;
+  self->setup_addresses = afsocket_dd_setup_addresses_method;
   self->construct_writer = afsocket_dd_construct_writer_method;
   self->transport_mapper = transport_mapper;
   self->socket_options = socket_options;
