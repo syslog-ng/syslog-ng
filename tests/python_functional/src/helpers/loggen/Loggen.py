@@ -125,7 +125,7 @@ class Loggen(object):
     def start(
         self, target, port, inet=None, unix=None, stream=None, dgram=None, use_ssl=None, dont_parse=None, read_file=None, skip_tokens=None, loop_reading=None,
         rate=None, interval=None, permanent=None, syslog_proto=None, proxied=None, sdata=None, no_framing=None, active_connections=None,
-        idle_connections=None, ipv6=None, debug=None, number=None, csv=None, quiet=None,
+        idle_connections=None, ipv6=None, debug=None, number=None, csv=None, quiet=None, size=None,
     ):
 
         if self.loggen_proc is not None and self.loggen_proc.is_running():
@@ -138,7 +138,7 @@ class Loggen(object):
         self.parameters = self.__decode_start_parameters(
             inet, unix, stream, dgram, use_ssl, dont_parse, read_file, skip_tokens, loop_reading,
             rate, interval, permanent, syslog_proto, proxied, sdata, no_framing, active_connections,
-            idle_connections, ipv6, debug, number, csv, quiet,
+            idle_connections, ipv6, debug, number, csv, quiet, size,
         )
 
         self.loggen_proc = ProcessExecutor().start(
