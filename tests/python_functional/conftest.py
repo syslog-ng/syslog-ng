@@ -137,6 +137,7 @@ def version(request):
 
 
 pytest_plugins = (
+    "src.helpers.loggen.Loggen",
     "src.helpers.snmptrapd.SNMPtrapd",
     "src.helpers.snmptrapd.SNMPTestParams",
 )
