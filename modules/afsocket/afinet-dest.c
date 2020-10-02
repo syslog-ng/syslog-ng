@@ -172,6 +172,14 @@ afinet_dd_tls_verify_data_free(gpointer s)
 }
 
 static gboolean
+_is_tls_used(const AFInetDestDriver *self)
+{
+  TransportMapperInet *transport_mapper_inet = (TransportMapperInet *) self->super.transport_mapper;
+
+  return transport_mapper_inet->tls_context != NULL;
+}
+
+static gboolean
 _is_failover_used(const AFInetDestDriver *self)
 {
   return self->failover != NULL;
