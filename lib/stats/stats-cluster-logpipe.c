@@ -59,6 +59,6 @@ stats_cluster_logpipe_key_set(StatsClusterKey *key, guint16 component, const gch
 {
   stats_cluster_key_set(key, component, id, instance, (StatsCounterGroupInit)
   {
-    tag_names, _counter_group_logpipe_init
+    .counter_names = tag_names, .init = _counter_group_logpipe_init, .equals = NULL
   });
 }

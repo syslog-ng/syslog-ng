@@ -50,7 +50,7 @@ stats_cluster_single_key_set(StatsClusterKey *key, guint16 component, const gcha
 {
   stats_cluster_key_set(key, component, id, instance, (StatsCounterGroupInit)
   {
-    tag_names, _counter_group_init
+    .counter_names = tag_names, .init = _counter_group_init, .equals = NULL
   });
 }
 
@@ -83,7 +83,7 @@ stats_cluster_single_key_set_with_name(StatsClusterKey *key, guint16 component, 
 {
   stats_cluster_key_set(key, component, id, instance, (StatsCounterGroupInit)
   {
-    tag_names, _counter_group_init_with_name, _group_init_equals
+    .counter_names = tag_names, .init = _counter_group_init_with_name, .equals = _group_init_equals
   });
   key->counter_group_init.counter_names = g_new0(const char *, 1);
   key->counter_group_init.counter_names[0] = name;
