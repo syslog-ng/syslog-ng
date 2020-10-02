@@ -21,6 +21,7 @@
 # COPYING for details.
 #
 #############################################################################
+import pytest
 
 
 class BSDFormat(object):
@@ -42,3 +43,8 @@ class BSDFormat(object):
         if add_new_line:
             formatted_message += "\n"
         return formatted_message
+
+
+@pytest.fixture
+def bsd_formatter():
+    return BSDFormat()
