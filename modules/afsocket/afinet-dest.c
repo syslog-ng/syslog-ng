@@ -231,11 +231,22 @@ afinet_dd_add_failovers(LogDriver *s, GList *failovers)
 }
 
 void
+afinet_dd_fail_back_to_primary(gpointer s, gint fd, GSockAddr *saddr)
+{
+  AFInetDestDriver *self = (AFInetDestDriver *) s;
+
+  if (_is_tls_used(self))
+    afinet_dd_setup_tls_verifier(self);
+
+  afsocket_dd_connected_with_fd(s, fd, saddr);
+}
+
+void
 afinet_dd_enable_failback(LogDriver *s)
 {
   AFInetDestDriver *self = (AFInetDestDriver *) s;
   g_assert(self->failover != NULL);
-  afinet_dd_failover_enable_failback(self->failover, &self->super, afsocket_dd_connected_with_fd);
+  afinet_dd_failover_enable_failback(self->failover, &self->super, afinet_dd_fail_back_to_primary);
 }
 
 void
