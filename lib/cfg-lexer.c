@@ -25,7 +25,6 @@
 #include "cfg-lexer.h"
 #include "cfg-lexer-subst.h"
 #include "cfg-block-generator.h"
-#include "cfg-lex.h"
 #include "cfg-grammar.h"
 #include "block-ref-parser.h"
 #include "pragma-parser.h"
@@ -38,6 +37,12 @@
 #include <glob.h>
 #include <sys/stat.h>
 
+/* include header for generated lexer */
+#define YYSTYPE CFG_STYPE
+#define YYLTYPE CFG_LTYPE
+#include "cfg-lex.h"
+#undef YYSTYPE
+#undef YYLTYPE
 
 /*
  * A token block is a series of tokens to be injected into the tokens
@@ -142,7 +147,7 @@ cfg_lexer_get_context_description(CfgLexer *self)
 
 /* this can only be called from the grammar */
 static CfgIncludeLevel *
-_find_closest_file_inclusion(CfgLexer *self, YYLTYPE *yylloc)
+_find_closest_file_inclusion(CfgLexer *self, CFG_LTYPE *yylloc)
 {
   for (gint level_ndx = self->include_depth; level_ndx >= 0; level_ndx--)
     {
@@ -155,7 +160,7 @@ _find_closest_file_inclusion(CfgLexer *self, YYLTYPE *yylloc)
 }
 
 const gchar *
-cfg_lexer_format_location(CfgLexer *self, YYLTYPE *yylloc, gchar *buf, gsize buf_len)
+cfg_lexer_format_location(CfgLexer *self, CFG_LTYPE *yylloc, gchar *buf, gsize buf_len)
 {
   CfgIncludeLevel *level;
 
@@ -170,7 +175,7 @@ cfg_lexer_format_location(CfgLexer *self, YYLTYPE *yylloc, gchar *buf, gsize buf
 }
 
 EVTTAG *
-cfg_lexer_format_location_tag(CfgLexer *self, YYLTYPE *yylloc)
+cfg_lexer_format_location_tag(CfgLexer *self, CFG_LTYPE *yylloc)
 {
   gchar buf[256];
 
@@ -178,7 +183,7 @@ cfg_lexer_format_location_tag(CfgLexer *self, YYLTYPE *yylloc)
 }
 
 int
-cfg_lexer_lookup_keyword(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc, const char *token)
+cfg_lexer_lookup_keyword(CfgLexer *self, CFG_STYPE *yylval, CFG_LTYPE *yylloc, const char *token)
 {
   GList *l;
 
@@ -778,10 +783,10 @@ cfg_lexer_find_generator_plugin(CfgLexer *self, GlobalConfig *cfg, gint context,
   return p;
 }
 
-static YYSTYPE
-cfg_lexer_copy_token(const YYSTYPE *original)
+static CFG_STYPE
+cfg_lexer_copy_token(const CFG_STYPE *original)
 {
-  YYSTYPE dest;
+  CFG_STYPE dest;
   int type = original->type;
   dest.type = type;
 
@@ -808,7 +813,7 @@ cfg_lexer_copy_token(const YYSTYPE *original)
 }
 
 void
-cfg_lexer_unput_token(CfgLexer *self, YYSTYPE *yylval)
+cfg_lexer_unput_token(CfgLexer *self, CFG_STYPE *yylval)
 {
   CfgTokenBlock *block;
 
@@ -818,23 +823,23 @@ cfg_lexer_unput_token(CfgLexer *self, YYSTYPE *yylval)
 }
 
 /*
- * NOTE: the caller is expected to manage the YYSTYPE instance itself (as
+ * NOTE: the caller is expected to manage the CFG_STYPE instance itself (as
  * this is the way it is defined by the lexer), this function only frees its
  * contents.
  */
 void
-cfg_lexer_free_token(YYSTYPE *token)
+cfg_lexer_free_token(CFG_STYPE *token)
 {
   if (token->type == LL_STRING || token->type == LL_IDENTIFIER || token->type == LL_BLOCK)
     free(token->cptr);
 }
 
 static int
-_invoke__cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
+_invoke__cfg_lexer_lex(CfgLexer *self, CFG_STYPE *yylval, CFG_LTYPE *yylloc)
 {
   if (setjmp(self->fatal_error))
     {
-      YYLTYPE *cur_lloc = &self->include_stack[self->include_depth].lloc;
+      CFG_LTYPE *cur_lloc = &self->include_stack[self->include_depth].lloc;
 
       *yylloc = *cur_lloc;
       return LL_ERROR;
@@ -843,10 +848,10 @@ _invoke__cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
 }
 
 static gboolean
-cfg_lexer_consume_next_injected_token(CfgLexer *self, gint *tok, YYSTYPE *yylval, YYLTYPE *yylloc)
+cfg_lexer_consume_next_injected_token(CfgLexer *self, gint *tok, CFG_STYPE *yylval, CFG_LTYPE *yylloc)
 {
   CfgTokenBlock *block;
-  YYSTYPE *token;
+  CFG_STYPE *token;
 
   while (self->token_blocks)
     {
@@ -876,7 +881,7 @@ cfg_lexer_consume_next_injected_token(CfgLexer *self, gint *tok, YYSTYPE *yylval
 }
 
 static gint
-cfg_lexer_lex_next_token(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
+cfg_lexer_lex_next_token(CfgLexer *self, CFG_STYPE *yylval, CFG_LTYPE *yylloc)
 {
   yylval->type = 0;
 
@@ -898,7 +903,7 @@ cfg_lexer_append_preprocessed_output(CfgLexer *self, const gchar *token_text)
 }
 
 static gboolean
-cfg_lexer_parse_and_run_block_generator(CfgLexer *self, Plugin *p, YYSTYPE *yylval)
+cfg_lexer_parse_and_run_block_generator(CfgLexer *self, Plugin *p, CFG_STYPE *yylval)
 {
   gpointer *args = NULL;
   CfgIncludeLevel *level = &self->include_stack[self->include_depth];
@@ -977,7 +982,7 @@ cfg_lexer_parse_pragma(CfgLexer *self)
 }
 
 static CfgLexerPreprocessResult
-cfg_lexer_preprocess(CfgLexer *self, gint tok, YYSTYPE *yylval, YYLTYPE *yylloc)
+cfg_lexer_preprocess(CfgLexer *self, gint tok, CFG_STYPE *yylval, CFG_LTYPE *yylloc)
 {
   /*
    * NOTE:
@@ -1037,7 +1042,7 @@ cfg_lexer_preprocess(CfgLexer *self, gint tok, YYSTYPE *yylval, YYLTYPE *yylloc)
 }
 
 int
-cfg_lexer_lex(CfgLexer *self, YYSTYPE *yylval, YYLTYPE *yylloc)
+cfg_lexer_lex(CfgLexer *self, CFG_STYPE *yylval, CFG_LTYPE *yylloc)
 {
   /*
    * NOTE:
@@ -1215,27 +1220,27 @@ cfg_lexer_lookup_context_name_by_type(gint type)
 /* token blocks */
 
 void
-cfg_token_block_add_and_consume_token(CfgTokenBlock *self, YYSTYPE *token)
+cfg_token_block_add_and_consume_token(CfgTokenBlock *self, CFG_STYPE *token)
 {
   g_assert(self->pos == 0);
   g_array_append_val(self->tokens, *token);
 }
 
 void
-cfg_token_block_add_token(CfgTokenBlock *self, YYSTYPE *token)
+cfg_token_block_add_token(CfgTokenBlock *self, CFG_STYPE *token)
 {
-  YYSTYPE copied_token = cfg_lexer_copy_token(token);
+  CFG_STYPE copied_token = cfg_lexer_copy_token(token);
   cfg_token_block_add_and_consume_token(self, &copied_token);
 }
 
-YYSTYPE *
+CFG_STYPE *
 cfg_token_block_get_token(CfgTokenBlock *self)
 {
   if (self->pos < self->tokens->len)
     {
-      YYSTYPE *result;
+      CFG_STYPE *result;
 
-      result = &g_array_index(self->tokens, YYSTYPE, self->pos);
+      result = &g_array_index(self->tokens, CFG_STYPE, self->pos);
       self->pos++;
       return result;
     }
@@ -1247,7 +1252,7 @@ cfg_token_block_new(void)
 {
   CfgTokenBlock *self = g_new0(CfgTokenBlock, 1);
 
-  self->tokens = g_array_new(FALSE, TRUE, sizeof(YYSTYPE));
+  self->tokens = g_array_new(FALSE, TRUE, sizeof(CFG_STYPE));
   return self;
 }
 
@@ -1258,7 +1263,7 @@ cfg_token_block_free(CfgTokenBlock *self)
     {
       for (gint i = self->pos; i < self->tokens->len; i++)
         {
-          YYSTYPE *token = &g_array_index(self->tokens, YYSTYPE, i);
+          CFG_STYPE *token = &g_array_index(self->tokens, CFG_STYPE, i);
 
           cfg_lexer_free_token(token);
         }

@@ -50,8 +50,8 @@ cfg_parser_mock_new(void)
 {
   CfgParserMock *self = g_new0(CfgParserMock, 1);
 
-  self->yylval = g_new0(YYSTYPE, 1);
-  self->yylloc = g_new0(YYLTYPE, 1);
+  self->yylval = g_new0(CFG_STYPE, 1);
+  self->yylloc = g_new0(CFG_LTYPE, 1);
   self->yylval->type = LL_CONTEXT_ROOT;
   self->yylloc->first_column = 1;
   self->yylloc->first_line = 1;

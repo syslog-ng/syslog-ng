@@ -103,8 +103,8 @@ _extract_string_literal(const gchar *value)
 {
   CfgLexer *lexer;
   gint token, look_ahead_token;
-  YYSTYPE yylval, look_ahead_yylval;
-  YYLTYPE yylloc, look_ahead_yylloc;
+  CFG_STYPE yylval, look_ahead_yylval;
+  CFG_LTYPE yylloc, look_ahead_yylloc;
   gchar *result = NULL;
 
   lexer = cfg_lexer_new_buffer(configuration, value, strlen(value));

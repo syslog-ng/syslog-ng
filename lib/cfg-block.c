@@ -202,7 +202,7 @@ cfg_block_free_instance(CfgBlockGenerator *s)
  * Construct a user defined block.
  */
 CfgBlockGenerator *
-cfg_block_new(gint context, const gchar *name, const gchar *content, CfgArgs *arg_defs, YYLTYPE *lloc)
+cfg_block_new(gint context, const gchar *name, const gchar *content, CfgArgs *arg_defs, CFG_LTYPE *lloc)
 {
   CfgBlock *self = g_new0(CfgBlock, 1);
 

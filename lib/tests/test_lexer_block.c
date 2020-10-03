@@ -30,7 +30,7 @@
 
 #include "criterion/criterion.h"
 
-YYLTYPE yyloc;
+CFG_LTYPE yyloc;
 GString *result;
 
 static void

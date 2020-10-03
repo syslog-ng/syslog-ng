@@ -38,7 +38,7 @@ yy_input_run_backtick_substitution(CfgLexer *self, gchar *buf, gsize buf_size, g
 {
   gchar *res;
   GError *error = NULL;
-  YYLTYPE *cur_lloc = &self->include_stack[self->include_depth].lloc;
+  CFG_LTYPE *cur_lloc = &self->include_stack[self->include_depth].lloc;
 
   res = cfg_lexer_subst_args_in_input(self->cfg->globals, NULL, NULL, buf, -1, len, &error);
   if (!res)
@@ -74,7 +74,7 @@ yy_input_run_backtick_substitution(CfgLexer *self, gchar *buf, gsize buf_size, g
 static gboolean
 yy_patch_include_statement(CfgLexer *self, gchar *buf, gsize buf_size, gsize *len)
 {
-  YYLTYPE *cur_lloc = &self->include_stack[self->include_depth].lloc;
+  CFG_LTYPE *cur_lloc = &self->include_stack[self->include_depth].lloc;
 
   gchar *p = buf;
   p += strspn(p, " \t");
@@ -158,7 +158,7 @@ yy_filter_input(CfgLexer *self, gchar *buf, gsize buf_size)
 
 #define YY_USER_ACTION                                                  \
   do {                                                                  \
-    YYLTYPE *cur_lloc = &yyextra->include_stack[yyextra->include_depth].lloc; \
+    CFG_LTYPE *cur_lloc = &yyextra->include_stack[yyextra->include_depth].lloc; \
     if (YY_START == INITIAL)                                            \
       {                                                                 \
         cur_lloc->first_column = cur_lloc->last_column;                 \
@@ -247,6 +247,10 @@ _cfg_lex_extend_token_location_to_next_line(CfgLexer *lexer)
   level->lloc.last_line++;
   level->lloc.last_column = 1;
 }
+
+#define YYSTYPE CFG_STYPE
+#define YYLTYPE CFG_LTYPE
+
 %}
 
 %option bison-bridge bison-locations reentrant

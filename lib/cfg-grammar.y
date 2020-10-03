@@ -55,8 +55,8 @@
 %require "3.4.2"
 %locations
 %define api.pure
-%define api.value.type {YYSTYPE}
-%define api.location.type {YYLTYPE}
+%define api.value.type {CFG_STYPE}
+%define api.location.type {CFG_LTYPE}
 %define parse.error verbose
 
 %code {

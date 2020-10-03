@@ -40,7 +40,7 @@ MainLoopOptions main_loop_options = {0};
 static PyObject *_python_main;
 static PyObject *_python_main_dict;
 
-YYLTYPE yyltype;
+CFG_LTYPE yyltype;
 GlobalConfig *empty_cfg;
 
 static void
