@@ -36,14 +36,13 @@ class FileIO(File):
         if position is not None:
             self.__readable_file.seek(position)
 
-        content = self.__readable_file.read()
+        content = ""
+        buffer = None
+        while buffer != "":
+            buffer = self.__readable_file.readline()
+            content += buffer
+
         return content
-
-    def readline(self):
-        if not self.__readable_file:
-            self.__readable_file = self.open_file(mode="r")
-
-        return self.__readable_file.readline()
 
     def write(self, content):
         if self.__writeable_file is None:
