@@ -43,5 +43,8 @@ class SyslogNgCtl(object):
     def query(self, pattern="*", query_type=QueryTypes.QUERY_GET):
         return self.__syslog_ng_ctl_cli.query(pattern, query_type)
 
+    def credentials_add(self, credential, secret):
+        return self.__syslog_ng_ctl_cli.credentials_add(credential, secret)
+
     def is_control_socket_alive(self):
         return self.__syslog_ng_ctl_cli.is_control_socket_alive()

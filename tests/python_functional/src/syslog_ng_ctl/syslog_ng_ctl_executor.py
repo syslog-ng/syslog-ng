@@ -67,6 +67,10 @@ class SyslogNgCtlExecutor(object):
         return stats_command
 
     @staticmethod
+    def construct_ctl_credentials_command(credential, secret):
+        return ["credentials", "add", credential, secret]
+
+    @staticmethod
     def construct_ctl_query_command(pattern, query_type):
         query_command = ["query"]
 
