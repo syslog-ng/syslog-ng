@@ -74,7 +74,10 @@ class PortAllocator():
     CURRENT_DYNAMIC_PORT = 30000
 
 
-@pytest.fixture(scope="module")
-def some_port():
-    PortAllocator.CURRENT_DYNAMIC_PORT += 1
-    return PortAllocator.CURRENT_DYNAMIC_PORT
+@pytest.fixture(scope="session")
+def port_allocator():
+    def get_next_port():
+        PortAllocator.CURRENT_DYNAMIC_PORT += 1
+        return PortAllocator.CURRENT_DYNAMIC_PORT
+
+    return get_next_port
