@@ -48,18 +48,18 @@ class EditlineCompleteHook(object):
         return self._last_completions
 
 class MyEditLineCompleter(lineeditor.Completer):
-    def __init__(self, subeditor, completer, namespace: dict = None):
+    def __init__(self, subeditor, completer, namespace = None):
         super().__init__(subeditor, namespace)
         self._default_display_matches = self.subeditor.display_matches
         self.subeditor.display_matches = self.display_matches
         self.completer = completer 
         self.subeditor.completer = self.complete
 
-    def complete(self, text:str) -> list:
+    def complete(self, text):
         self.matches = self.completer.complete(text)
         return self.matches
 
-    def display_matches(self, matches: list):
+    def display_matches(self, matches):
         self.subeditor._display_matches(self.matches)
 
 
