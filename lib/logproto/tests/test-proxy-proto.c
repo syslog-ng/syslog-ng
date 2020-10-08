@@ -99,3 +99,28 @@ ParameterizedTest(ProtocolHeaderTestParams *params, log_proto, test_proxy_protoc
 
   log_proto_server_free(proto);
 }
+
+Test(log_proto, test_proxy_protocol_handshake_and_fetch_success)
+{
+  LogTransport *transport = log_transport_mock_records_new("PROXY TCP4 1.1.1.1 2.2.2.2 3333 4444\r\n", -1,
+                                                           "test message\n", -1,
+                                                           LTM_EOF);
+  LogProtoServer *proto = log_proto_proxied_text_server_new(transport, get_inited_proto_server_options());
+
+  cr_assert_eq(log_proto_server_handshake(proto), LPS_SUCCESS);
+  assert_proto_server_fetch(proto, "test message", -1);
+
+  log_proto_server_free(proto);
+}
+
+Test(log_proto, test_proxy_protocol_handshake_failed)
+{
+  LogTransport *transport = log_transport_mock_records_new("invalid header\r\n", -1,
+                                                           "test message\n", -1,
+                                                           LTM_EOF);
+  LogProtoServer *proto = log_proto_proxied_text_server_new(transport, get_inited_proto_server_options());
+
+  cr_assert_eq(log_proto_server_handshake(proto), LPS_ERROR);
+
+  log_proto_server_free(proto);
+}
