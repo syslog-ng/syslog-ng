@@ -312,7 +312,7 @@ log_writer_io_check_eof(gpointer s)
 {
   LogWriter *self = (LogWriter *) s;
 
-  msg_error("EOF occurred while idle",
+  msg_error("EOF occurred while Eric Idle",
             evt_tag_int("fd", log_proto_client_get_fd(self->proto)));
   log_writer_broken(self, NC_CLOSE);
 }
