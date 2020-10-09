@@ -144,7 +144,7 @@ validate-version-for-release:
 		exit 1; \
 	fi
 
-prepare-release: validate-tree-clean validate-version-for-release
+prepare-release: setup validate-tree-clean validate-version-for-release
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i  balabit/syslog-ng-$(TARBALL_IMAGE) /dbld/prepare-release $(VERSION)
 
 validate-release: validate-tree-clean validate-version-for-release
