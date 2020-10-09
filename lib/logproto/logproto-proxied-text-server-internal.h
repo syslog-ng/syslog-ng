@@ -26,4 +26,6 @@
 
 #include "logproto-text-server.h"
 
+gboolean _log_proto_proxied_text_server_parse_header(LogProtoProxiedTextServer *self, const guchar *msg, gsize msg_len);
+
 #endif

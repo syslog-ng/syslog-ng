@@ -29,7 +29,7 @@
 #define PROXY_TCP_HDR "PROXY TCP%d %s %s %d %d"
 #define PROXY_UNKNOWN_HDR "PROXY UNKNOWN"
 
-static gboolean
+gboolean
 _log_proto_proxied_text_server_parse_header(LogProtoProxiedTextServer *self, const guchar *msg, gsize msg_len)
 {
   GString *input = g_string_new_len((const gchar *)msg, msg_len);
