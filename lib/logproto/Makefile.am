@@ -12,6 +12,7 @@ logprotoinclude_HEADERS = \
 	lib/logproto/logproto-text-client.h  \
 	lib/logproto/logproto-text-server.h	\
 	lib/logproto/logproto-proxied-text-server.h	\
+	lib/logproto/logproto-proxied-text-server-internal.h	\
 	lib/logproto/logproto-indented-multiline-server.h \
 	lib/logproto/logproto-regexp-multiline-server.h \
 	lib/logproto/logproto-multiline-server.h \

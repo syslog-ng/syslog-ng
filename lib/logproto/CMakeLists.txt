@@ -14,6 +14,7 @@ set(LOGPROTO_HEADERS
     logproto/logproto-text-client.h
     logproto/logproto-text-server.h
     logproto/logproto-proxied-text-server.h
+    logproto/logproto-proxied-text-server-internal.h
     PARENT_SCOPE)
 
 set(LOGPROTO_SOURCES
