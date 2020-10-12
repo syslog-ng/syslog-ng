@@ -49,8 +49,6 @@ ParameterizedTestParameters(log_proto, test_proxy_protocol_parse_header)
     { "PROXY TCP4 1.1.1.1 2.2.2.2 3333 4444\n",               TRUE }, // WRONG TERMINATION
     { "PROXY UNKNOWN\r",                                      TRUE }, // WRONG TERMINATION
     { "PROXY TCP4 1.1.1.1 2.2.2.2 3333 4444\r",               TRUE }, // WRONG TERMINATION
-    { "PROXY UNKNOWN",                                        FALSE }, // WRONG TERMINATION
-    { "PROXY TCP4 1.1.1.1 2.2.2.2 3333 4444",                 FALSE }, // WRONG TERMINATION
     { "PROXY\r\n",                                            FALSE },
     { "PROXY TCP4\r\n",                                       FALSE },
     { "PROXY TCP4 1.1.1.1\r\n",                               FALSE },
