@@ -78,9 +78,11 @@ ParameterizedTestParameters(log_proto, test_proxy_protocol_parse_header)
     { "PROXY TCP4 1.1.1.1 2.2.2.2 33333 -1\r\n",              FALSE }, // WRONG PORT
     { "PROXY TCP4 1.1.1.1 2.2.2.2 33333 65536\r\n",           FALSE }, // WRONG PORT
 
-    { "PROXY TCP4 padpadpadpadpadpadpadpadpadpadpadpadpad"
+    {
+      "PROXY TCP4 padpadpadpadpadpadpadpadpadpadpadpadpad"
       "padpadpadpadpadpadpadpadpadpadpadpadpadpadpadpadpad"
-      "padpadpadpadpadpadpadpadpadpadpadpadpadpadpadpadpad",  FALSE } // TOO LONG
+      "padpadpadpadpadpadpadpadpadpadpadpadpadpadpadpadpad",  FALSE
+    } // TOO LONG
   };
 
   return cr_make_param_array(ProtocolHeaderTestParams, test_params, G_N_ELEMENTS(test_params));
@@ -91,8 +93,8 @@ ParameterizedTest(ProtocolHeaderTestParams *params, log_proto, test_proxy_protoc
   LogProtoServer *proto = log_proto_proxied_text_server_new(log_transport_mock_records_new("", -1, LTM_EOF),
                                                             get_inited_proto_server_options());
   gboolean valid = _log_proto_proxied_text_server_parse_header((LogProtoProxiedTextServer *)proto,
-                                                               params->proxy_header,
-                                                               strlen(params->proxy_header));
+                   params->proxy_header,
+                   strlen(params->proxy_header));
 
   cr_assert_eq(valid, params->valid,
                "This should be %s: %s", params->valid ? "valid" : "invalid", params->proxy_header);
