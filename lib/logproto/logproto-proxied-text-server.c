@@ -21,36 +21,121 @@
  *
  */
 
-#include <stdio.h>
 
+#include <stdio.h>
+#include <stdlib.h>
 #include "messages.h"
 #include "logproto-proxied-text-server.h"
+#include "str-utils.h"
 
-#define PROXY_TCP_HDR "PROXY TCP%d %s %s %d %d"
-#define PROXY_UNKNOWN_HDR "PROXY UNKNOWN"
+#define PROXY_HDR_TCP4 "PROXY TCP4 "
+#define PROXY_HDR_TCP6 "PROXY TCP6 "
+#define PROXY_HDR_UNKNOWN "PROXY UNKNOWN"
+
+static gboolean
+_check_header(const guchar *msg, gsize msg_len, const gchar *expected_header, gsize *header_len)
+{
+  gint expected_hdr_len = strlen(expected_header);
+  if (msg_len < expected_hdr_len)
+    return FALSE;
+
+  *header_len = expected_hdr_len;
+
+  return strncmp((const gchar *)msg, expected_header, expected_hdr_len) == 0;
+}
+
+static gboolean
+_is_proxy_proto_tcp4(const guchar *msg, gsize msg_len, gsize *header_len)
+{
+  return _check_header(msg, msg_len, PROXY_HDR_TCP4, header_len);
+}
+
+static gboolean
+_is_proxy_proto_tcp6(const guchar *msg, gsize msg_len, gsize *header_len)
+{
+  return _check_header(msg, msg_len, PROXY_HDR_TCP6, header_len);
+}
+
+static gboolean
+_is_proxy_unknown(const guchar *msg, gsize msg_len, gsize *header_len)
+{
+  return _check_header(msg, msg_len, PROXY_HDR_UNKNOWN, header_len);
+}
+
+static gboolean
+_parse_unknown_header(LogProtoProxiedTextServer *self, const guchar *msg, gsize msg_len)
+{
+  if (msg_len == 0)
+    return TRUE;
+
+  msg_warning("PROXY UNKNOWN header contains unexpected paramters",
+              evt_tag_printf("parameters", "%.*s", (gint) msg_len, msg));
+
+  return TRUE;
+}
+
+static gboolean
+_parse_tcp_header(LogProtoProxiedTextServer *self, const guchar *msg, gsize msg_len)
+{
+  if (msg_len == 0)
+    return FALSE;
+
+  GString *params_str = g_string_new_len((const gchar *)msg, msg_len);
+  gboolean result = FALSE;
+  msg_debug("PROXY header params", evt_tag_str("params", (const gchar *)msg));
+
+  gchar **params = strsplit(params_str->str, ' ', 5);
+  gint params_n = g_strv_length(params);
+  if (params_n < 4)
+    goto ret;
+
+  strncpy(self->info->src_ip, params[0], IP_BUF_SIZE - 1);
+  strncpy(self->info->dst_ip, params[1], IP_BUF_SIZE - 1);
+
+  self->info->src_port = atoi(params[2]);
+  if (self->info->src_port > 65535 || self->info->src_port < 0)
+    msg_warning("PROXT TCP header contains invalid src port", evt_tag_str("src port", params[2]));
+
+  self->info->dst_port = atoi(params[3]);
+  if (self->info->dst_port > 65535 || self->info->dst_port < 0)
+    msg_warning("PROXT TCP header contains invalid dst port", evt_tag_str("dst port", params[2]));
+
+  if (params_n > 4)
+    msg_warning("PROXY TCP header contains unexpected paramaters", evt_tag_str("parameters", params[4]));
+
+  result = TRUE;
+ret:
+  if (params)
+    g_strfreev(params);
+  g_string_free(params_str, TRUE);
+
+  return result;
+}
 
 static gboolean
 _log_proto_proxied_text_server_parse_header(LogProtoProxiedTextServer *self, const guchar *msg, gsize msg_len)
 {
-  GString *input = g_string_new_len((const gchar *)msg, msg_len);
-  int matches = 0;
-  int compares = -1;
+  gsize header_len = 0;
 
-  matches = sscanf(input->str, PROXY_TCP_HDR, &self->info->ip_version, self->info->src_ip, self->info->dst_ip,
-                   &self->info->src_port, &self->info->dst_port);
-
-  if (matches != 5)
-    compares = strcmp(input->str, PROXY_UNKNOWN_HDR);
-
-  g_string_free(input, TRUE);
-
-  if (compares == 0)
+  if (_is_proxy_unknown(msg, msg_len, &header_len))
     {
-      msg_info("PROXY UNKOWN valid protocol header received");
       self->info->unknown = TRUE;
+      return _parse_unknown_header(self, msg + header_len, msg_len - header_len);
     }
 
-  return (matches == 5 || compares == 0) ? TRUE : FALSE;
+  if (_is_proxy_proto_tcp4(msg, msg_len, &header_len))
+    {
+      self->info->ip_version = 4;
+      return _parse_tcp_header(self, msg + header_len, msg_len - header_len);
+    }
+
+  if (_is_proxy_proto_tcp6(msg, msg_len, &header_len))
+    {
+      self->info->ip_version = 6;
+      return _parse_tcp_header(self, msg + header_len, msg_len - header_len);
+    }
+
+  return FALSE;
 }
 
 static void
