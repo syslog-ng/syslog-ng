@@ -31,7 +31,7 @@
 
 typedef struct
 {
-  const guchar *proxy_header;
+  const gchar *proxy_header;
   gboolean valid;
 } ProtocolHeaderTestParams;
 
@@ -93,7 +93,7 @@ ParameterizedTest(ProtocolHeaderTestParams *params, log_proto, test_proxy_protoc
   LogProtoServer *proto = log_proto_proxied_text_server_new(log_transport_mock_records_new("", -1, LTM_EOF),
                                                             get_inited_proto_server_options());
   gboolean valid = _log_proto_proxied_text_server_parse_header((LogProtoProxiedTextServer *)proto,
-                   params->proxy_header,
+                   (const guchar *)params->proxy_header,
                    strlen(params->proxy_header));
 
   cr_assert_eq(valid, params->valid,
