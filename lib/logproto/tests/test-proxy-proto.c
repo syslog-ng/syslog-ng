@@ -21,7 +21,6 @@
  *
  */
 #include "logproto/logproto-proxied-text-server.h"
-#include "logproto/logproto-proxied-text-server-internal.h"
 
 #include "mock-transport.h"
 #include "proto_lib.h"
@@ -90,12 +89,11 @@ ParameterizedTestParameters(log_proto, test_proxy_protocol_parse_header)
 
 ParameterizedTest(ProtocolHeaderTestParams *params, log_proto, test_proxy_protocol_parse_header)
 {
-  LogProtoServer *proto = log_proto_proxied_text_server_new(log_transport_mock_records_new("", -1, LTM_EOF),
+  LogProtoServer *proto = log_proto_proxied_text_server_new(log_transport_mock_records_new(params->proxy_header,
+                                                            -1, LTM_EOF),
                                                             get_inited_proto_server_options());
-  gboolean valid = _log_proto_proxied_text_server_parse_header((LogProtoProxiedTextServer *)proto,
-                   (const guchar *)params->proxy_header,
-                   strlen(params->proxy_header));
 
+  gboolean valid = log_proto_server_handshake(proto) == LPS_SUCCESS;
   cr_assert_eq(valid, params->valid,
                "This should be %s: %s", params->valid ? "valid" : "invalid", params->proxy_header);
 
