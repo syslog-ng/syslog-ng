@@ -115,4 +115,44 @@ _strchr_optimized_for_single_char_haystack(const char *str, int c)
   return strchr(str + 1, c);
 }
 
+/*
+ * strsplit() splits the `str` into `maxtokens` pieces.
+ * This version skips multiple `delims`.
+ *
+ */
+static inline
+gchar **strsplit(const gchar *str, char delim, gint maxtokens)
+{
+  if (!str || delim == '\0')
+    return NULL;
+
+  const gchar *delim_pos = NULL;
+  const gchar *remainder = str;
+  GPtrArray *array = g_ptr_array_new();
+
+  if (maxtokens < 1)
+    maxtokens = G_MAXINT;
+
+  for (delim_pos = strchr(remainder, delim); delim_pos && maxtokens; maxtokens--)
+    {
+      const gchar *d = delim_pos;
+      while (d && *d++ == delim);
+      if (!d)
+        break;
+      --d;
+      gint len = delim_pos - remainder;
+
+      if (len > 0)
+        g_ptr_array_add(array, g_strndup(remainder, len));
+      remainder = d;
+      delim_pos = strchr(remainder, delim);
+    }
+
+  if (remainder)
+    g_ptr_array_add(array, g_strdup(remainder));
+  g_ptr_array_add(array, NULL);
+
+  return (gchar **) g_ptr_array_free(array, FALSE);
+}
+
 #endif

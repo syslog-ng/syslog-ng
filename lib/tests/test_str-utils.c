@@ -87,3 +87,69 @@ ParameterizedTest(StrChrTestData *test_data, str_utils, test_str_utils_find_char
   cr_assert_eq((result - test_data->str), test_data->ofs,
                "Expected the strchr() return value to point right to the specified offset");
 }
+
+Test(strsplit, when_tokens_not_limited_find_all_tokens)
+{
+  gchar **tokens = strsplit("  ABB   CCC DDDD          111", ' ', 0);
+
+  gint tokens_n = g_strv_length(tokens);
+  cr_expect_eq(tokens_n, 4);
+  cr_expect_str_eq(tokens[0], "ABB");
+  cr_expect_str_eq(tokens[1], "CCC");
+  cr_expect_str_eq(tokens[2], "DDDD");
+  cr_expect_str_eq(tokens[3], "111");
+  cr_expect_null(tokens[4]);
+
+  g_strfreev(tokens);
+}
+
+Test(strsplit, when_string_without_delim_return_the_string)
+{
+  gchar **tokens = strsplit("111", ' ', 0);
+
+  gint tokens_n = g_strv_length(tokens);
+  cr_expect_eq(tokens_n, 1);
+
+  cr_expect_str_eq(tokens[0], "111");
+  cr_expect_null(tokens[1]);
+
+  g_strfreev(tokens);
+}
+
+Test(strsplit, when_empty_string_return_the_empty_string)
+{
+  gchar **tokens = strsplit("", ' ', 0);
+  gint tokens_n = g_strv_length(tokens);
+  cr_expect_eq(tokens_n, 1);
+
+  cr_expect_str_eq(tokens[0], "");
+  cr_expect_null(tokens[1]);
+
+  g_strfreev(tokens);
+}
+
+Test(strsplit, when_null_str_or_null_delim_return_null)
+{
+  gchar **tokens = strsplit(NULL, ' ', 0);
+  cr_expect_null(tokens);
+
+  tokens = strsplit(NULL, '\0', 0);
+  cr_expect_null(tokens);
+
+  tokens = strsplit("AAA ", '\0', 0);
+  cr_expect_null(tokens);
+}
+
+Test(strsplit, when_tokens_limited_join_remaining_tokens)
+{
+  gchar **tokens = strsplit("  ABB   CCC DDDD          111", ' ', 3);
+
+  gint tokens_n = g_strv_length(tokens);
+  cr_expect_eq(tokens_n, 3);
+  cr_expect_str_eq(tokens[0], "ABB");
+  cr_expect_str_eq(tokens[1], "CCC");
+  cr_expect_str_eq(tokens[2], "DDDD          111");
+  cr_expect_null(tokens[3]);
+
+  g_strfreev(tokens);
+}
