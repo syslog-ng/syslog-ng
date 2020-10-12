@@ -45,10 +45,10 @@ ParameterizedTestParameters(log_proto, test_proxy_protocol_parse_header)
     { "PROXY TCP6 ::1 ::2 3333 4444\r\n",                     TRUE },
 
     /* INVALID PROTO */
-    { "PROXY UNKNOWN\n",                                      FALSE }, // WRONG TERMINATION
-    { "PROXY TCP4 1.1.1.1 2.2.2.2 3333 4444\n",               FALSE }, // WRONG TERMINATION
-    { "PROXY UNKNOWN\r",                                      FALSE }, // WRONG TERMINATION
-    { "PROXY TCP4 1.1.1.1 2.2.2.2 3333 4444\r",               FALSE }, // WRONG TERMINATION
+    { "PROXY UNKNOWN\n",                                      TRUE }, // WRONG TERMINATION
+    { "PROXY TCP4 1.1.1.1 2.2.2.2 3333 4444\n",               TRUE }, // WRONG TERMINATION
+    { "PROXY UNKNOWN\r",                                      TRUE }, // WRONG TERMINATION
+    { "PROXY TCP4 1.1.1.1 2.2.2.2 3333 4444\r",               TRUE }, // WRONG TERMINATION
     { "PROXY UNKNOWN",                                        FALSE }, // WRONG TERMINATION
     { "PROXY TCP4 1.1.1.1 2.2.2.2 3333 4444",                 FALSE }, // WRONG TERMINATION
     { "PROXY\r\n",                                            FALSE },
@@ -56,26 +56,32 @@ ParameterizedTestParameters(log_proto, test_proxy_protocol_parse_header)
     { "PROXY TCP4 1.1.1.1\r\n",                               FALSE },
     { "PROXY TCP4 1.1.1.1 2.2.2.2\r\n",                       FALSE },
     { "PROXY TCP4 1.1.1.1 2.2.2.2 3333\r\n",                  FALSE },
-    { "PROXY TCP4 1.1.1.1 2.2.2.2 3333 4444 extra param\r\n", FALSE },
+    { "PROXY TCP4 1.1.1.1 2.2.2.2 3333 4444 extra param\r\n", TRUE},
 
-    /* EXTRA WHITESPACE */
+    /* EXTRA WHITESPACE - PERMISSIVE */
+    { "PROXY TCP4  1.1.1.1 2.2.2.2 3333 4444\r\n",            TRUE },
+    { "PROXY TCP4 1.1.1.1  2.2.2.2 3333 4444\r\n",            TRUE },
+    { "PROXY TCP4 1.1.1.1 2.2.2.2  3333 4444\r\n",            TRUE },
+    { "PROXY TCP4 1.1.1.1 2.2.2.2 3333  4444\r\n",            TRUE },
+    { "PROXY TCP4 1.1.1.1 2.2.2.2 3333 4444 \r\n",            TRUE },
+
+    /* EXTRA WHITESPACE BEFORE PARAMETERS */
     { "PROXY  TCP4 1.1.1.1 2.2.2.2 3333 4444\r\n",            FALSE },
-    { "PROXY TCP4  1.1.1.1 2.2.2.2 3333 4444\r\n",            FALSE },
-    { "PROXY TCP4 1.1.1.1  2.2.2.2 3333 4444\r\n",            FALSE },
-    { "PROXY TCP4 1.1.1.1 2.2.2.2  3333 4444\r\n",            FALSE },
-    { "PROXY TCP4 1.1.1.1 2.2.2.2 3333  4444\r\n",            FALSE },
-    { "PROXY TCP4 1.1.1.1 2.2.2.2 3333 4444 \r\n",            FALSE },
 
-    /* INVALID ARGUMENTS */
-    { "PROXY TCP3 1.1.1.1 2.2.2.2 3333 4444\r\n",             FALSE }, // WRONG IP PROTO
-    { "PROXY TCP6 1.1.1.1 2.2.2.2 3333 4444\r\n",             FALSE }, // WRONG IP PROTO
-    { "PROXY TCP4 ::1 ::2 3333 4444\r\n",                     FALSE }, // WRONG IP PROTO
-    { "PROXY TCP4 1.1.1 2.2.2.2 3333 4444\r\n",               FALSE }, // WRONG IP
-    { "PROXY TCP4 1.1.1.1.1 2.2.2.2 3333 4444\r\n",           FALSE }, // WRONG IP
-    { "PROXY TCP6 ::1::0 ::1 3333 4444\r\n",                  FALSE }, // WRONG IP
-    { "PROXY TCP4 1.1.1.1 2.2.2.2 33333 0\r\n",               FALSE }, // WRONG PORT
-    { "PROXY TCP4 1.1.1.1 2.2.2.2 33333 -1\r\n",              FALSE }, // WRONG PORT
-    { "PROXY TCP4 1.1.1.1 2.2.2.2 33333 65536\r\n",           FALSE }, // WRONG PORT
+
+    /* INVALID ARGUMENTS - PERMISSIVE */
+    { "PROXY TCP6 1.1.1.1 2.2.2.2 3333 4444\r\n",             TRUE }, // WRONG IP PROTO
+    { "PROXY TCP4 ::1 ::2 3333 4444\r\n",                     TRUE }, // WRONG IP PROTO
+    { "PROXY TCP4 1.1.1 2.2.2.2 3333 4444\r\n",               TRUE }, // WRONG IP
+    { "PROXY TCP4 1.1.1.1.1 2.2.2.2 3333 4444\r\n",           TRUE }, // WRONG IP
+    { "PROXY TCP6 ::1::0 ::1 3333 4444\r\n",                  TRUE }, // WRONG IP
+    { "PROXY TCP4 1.1.1.1 2.2.2.2 33333 0\r\n",               TRUE }, // WRONG PORT
+    { "PROXY TCP4 1.1.1.1 2.2.2.2 33333 -1\r\n",              TRUE }, // WRONG PORT
+    { "PROXY TCP4 1.1.1.1 2.2.2.2 33333 65536\r\n",           TRUE }, // WRONG PORT
+
+    /* INVALID ARGUMENT(S)*/
+    { "PROXY TCP3 1.1.1.1 2.2.2.2 3333 4444\r\n",             FALSE}, // WRONG IP PROTO
+
 
     {
       "PROXY TCP4 padpadpadpadpadpadpadpadpadpadpadpadpad"
