@@ -31,13 +31,29 @@
 #define PROXY_HDR_TCP4 "PROXY TCP4 "
 #define PROXY_HDR_TCP6 "PROXY TCP6 "
 #define PROXY_HDR_UNKNOWN "PROXY UNKNOWN"
+#define PROXY_PROTO_HDR_MAX_LEN_RFC 108
+#define PROXY_PROTO_HDR_MAX_LEN (PROXY_PROTO_HDR_MAX_LEN_RFC * 2)
 
 static gboolean
 _check_header(const guchar *msg, gsize msg_len, const gchar *expected_header, gsize *header_len)
 {
+  if (msg_len > PROXY_PROTO_HDR_MAX_LEN_RFC)
+    {
+      msg_warning("PROXY proto header length exceeds max. length defined by specification",
+                  evt_tag_long("length", msg_len),
+                  evt_tag_str("header", (const gchar *)msg));
+    }
+
   gint expected_hdr_len = strlen(expected_header);
-  if (msg_len < expected_hdr_len)
-    return FALSE;
+  if (msg_len > PROXY_PROTO_HDR_MAX_LEN || msg_len < expected_hdr_len)
+    {
+      msg_error("PROXY proto header with invalid header length",
+                evt_tag_int("max_parsable_length", PROXY_PROTO_HDR_MAX_LEN),
+                evt_tag_int("max_length_by_spec", PROXY_PROTO_HDR_MAX_LEN_RFC),
+                evt_tag_long("length", msg_len),
+                evt_tag_str("header", (const gchar *)msg));
+      return FALSE;
+    }
 
   *header_len = expected_hdr_len;
 
