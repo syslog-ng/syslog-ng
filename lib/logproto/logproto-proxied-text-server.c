@@ -203,12 +203,9 @@ _log_proto_proxied_text_server_handshake(LogProtoServer *s)
   // Fetch a line from the transport layer
   status = log_proto_buffered_server_fetch(&self->super.super.super, &msg, &msg_len, &may_read, NULL, NULL);
 
+  self->handshake_done = (status == LPS_SUCCESS);
   if (status != LPS_SUCCESS)
-    {
-      if (status == LPS_AGAIN)
-        self->handshake_done = FALSE;
-      return status;
-    }
+    return status;
 
   parsable = _log_proto_proxied_text_server_parse_header(self, msg, msg_len);
 
@@ -231,13 +228,7 @@ _log_proto_proxied_text_server_handshake_in_progress(LogProtoServer *s)
 {
   LogProtoProxiedTextServer *self = (LogProtoProxiedTextServer *) s;
 
-  // Run handshake() only once
-  if (!self->handshake_done)
-    {
-      self->handshake_done = TRUE;
-      return TRUE;
-    }
-  return FALSE;
+  return !self->handshake_done;
 }
 
 static LogProtoStatus
