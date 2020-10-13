@@ -35,7 +35,7 @@
 #define PROXY_PROTO_HDR_MAX_LEN (PROXY_PROTO_HDR_MAX_LEN_RFC * 2)
 
 static gboolean
-_check_header(const guchar *msg, gsize msg_len, const gchar *expected_header, gsize *header_len)
+_check_header_length(const guchar *msg, gsize msg_len)
 {
   if (msg_len > PROXY_PROTO_HDR_MAX_LEN_RFC)
     {
@@ -44,8 +44,7 @@ _check_header(const guchar *msg, gsize msg_len, const gchar *expected_header, gs
                   evt_tag_str("header", (const gchar *)msg));
     }
 
-  gint expected_hdr_len = strlen(expected_header);
-  if (msg_len > PROXY_PROTO_HDR_MAX_LEN || msg_len < expected_hdr_len)
+  if (msg_len > PROXY_PROTO_HDR_MAX_LEN)
     {
       msg_error("PROXY proto header with invalid header length",
                 evt_tag_int("max_parsable_length", PROXY_PROTO_HDR_MAX_LEN),
@@ -55,9 +54,19 @@ _check_header(const guchar *msg, gsize msg_len, const gchar *expected_header, gs
       return FALSE;
     }
 
-  *header_len = expected_hdr_len;
+  return TRUE;
+}
 
-  return strncmp((const gchar *)msg, expected_header, expected_hdr_len) == 0;
+static gboolean
+_check_header(const guchar *msg, gsize msg_len, const gchar *expected_header, gsize *header_len)
+{
+  gsize expected_header_length = strlen(expected_header);
+
+  if (msg_len < expected_header_length)
+    return FALSE;
+
+  *header_len = expected_header_length;
+  return strncmp((const gchar *)msg, expected_header, expected_header_length) == 0;
 }
 
 static gboolean
@@ -132,6 +141,9 @@ static gboolean
 _log_proto_proxied_text_server_parse_header(LogProtoProxiedTextServer *self, const guchar *msg, gsize msg_len)
 {
   gsize header_len = 0;
+
+  if (!_check_header_length(msg, msg_len))
+    return FALSE;
 
   if (_is_proxy_unknown(msg, msg_len, &header_len))
     {
