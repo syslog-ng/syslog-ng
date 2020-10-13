@@ -263,7 +263,7 @@ _log_proto_proxied_text_server_free(LogProtoServer *s)
 
   msg_debug("Freeing PROXY protocol source driver", evt_tag_printf("driver", "%p", self));
 
-  g_free((gpointer) self->info);
+  g_free(self->info);
 
   log_proto_text_server_free(&self->super.super.super);
 
