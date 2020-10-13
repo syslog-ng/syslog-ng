@@ -835,7 +835,7 @@ log_proto_buffered_server_flush(LogProtoBufferedServer *self, const guchar **msg
  * Returns: TRUE to indicate success, FALSE otherwise. The returned
  * msg can be NULL even if no failure occurred.
  **/
-static LogProtoStatus
+LogProtoStatus
 log_proto_buffered_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read,
                                 LogTransportAuxData *aux, Bookmark *bookmark)
 {

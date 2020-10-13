@@ -201,7 +201,7 @@ _log_proto_proxied_text_server_handshake(LogProtoServer *s)
   LogProtoProxiedTextServer *self = (LogProtoProxiedTextServer *) s;
 
   // Fetch a line from the transport layer
-  status = self->fetch_from_buffer(&self->super.super.super, &msg, &msg_len, &may_read, NULL, NULL);
+  status = log_proto_buffered_server_fetch(&self->super.super.super, &msg, &msg_len, &may_read, NULL, NULL);
 
   if (status != LPS_SUCCESS)
     {
@@ -246,7 +246,8 @@ _log_proto_proxied_text_server_fetch(LogProtoServer *s, const guchar **msg, gsiz
 {
   LogProtoProxiedTextServer *self = (LogProtoProxiedTextServer *) s;
 
-  LogProtoStatus status = self->fetch_from_buffer(&self->super.super.super, msg, msg_len, may_read, aux, bookmark);
+  LogProtoStatus status = log_proto_buffered_server_fetch(&self->super.super.super, msg, msg_len, may_read, aux,
+                                                          bookmark);
 
   if (status != LPS_SUCCESS)
     return status;
@@ -277,8 +278,6 @@ _log_proto_proxied_text_server_init(LogProtoProxiedTextServer *self, LogTranspor
   msg_info("Initializing PROXY protocol source driver", evt_tag_printf("driver", "%p", self));
 
   log_proto_text_server_init(&self->super, transport, options);
-
-  self->fetch_from_buffer = self->super.super.super.fetch;
 
   self->super.super.super.fetch = _log_proto_proxied_text_server_fetch;
   self->super.super.super.free_fn = _log_proto_proxied_text_server_free;

@@ -120,4 +120,7 @@ void log_proto_buffered_server_init(LogProtoBufferedServer *self, LogTransport *
                                     const LogProtoServerOptions *options);
 void log_proto_buffered_server_free_method(LogProtoServer *s);
 
+LogProtoStatus log_proto_buffered_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len,
+                                               gboolean *may_read, LogTransportAuxData *aux, Bookmark *bookmark);
+
 #endif

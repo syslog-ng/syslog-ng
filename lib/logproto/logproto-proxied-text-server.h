@@ -50,10 +50,6 @@ typedef struct _LogProtoProxiedTextServer
 
   // Flag to only run handshake() once
   gboolean handshake_done;
-
-  // Since LogProtoTextServer doesn't export fetch_from_buffer(), we will save a reference here
-  LogProtoStatus (*fetch_from_buffer)(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read,
-                                      LogTransportAuxData *aux, Bookmark *bookmark);
 } LogProtoProxiedTextServer;
 
 LogProtoServer *log_proto_proxied_text_server_new(LogTransport *transport, const LogProtoServerOptions *options);
