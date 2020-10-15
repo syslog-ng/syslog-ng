@@ -3,7 +3,8 @@
 ##################################################
 
 # packages to run gosu installation
-gnupg                           [centos, fedora, debian, ubuntu]
+gnupg                           [centos, fedora]
+gosu				[ubuntu, debian]
 
 # download various stuff over https
 wget                            [centos, fedora, debian, ubuntu]
