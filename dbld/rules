@@ -15,7 +15,7 @@ BUILDER_IMAGES=		\
 
 IMAGES=${BUILDER_IMAGES} devshell
 DEFAULT_IMAGE ?= ubuntu-bionic
-TARBALL_IMAGE ?= ubuntu-bionic
+TARBALL_IMAGE ?= tarball
 DEFAULT_DEB_IMAGE=ubuntu-bionic
 DEFAULT_RPM_IMAGE=centos-7
 DOCKER=docker
