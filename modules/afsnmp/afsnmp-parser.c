@@ -59,4 +59,4 @@ CfgParser afsnmp_parser =
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(afsnmp_, void **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(afsnmp_, AFSNMP_, void **)

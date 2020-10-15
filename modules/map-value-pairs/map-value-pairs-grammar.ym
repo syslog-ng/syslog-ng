@@ -30,12 +30,12 @@
 
 %code {
 
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 #include "cfg-parser.h"
 #include "plugin.h"
 }
 
-%name-prefix "map_value_pairs_"
+%define api.prefix {map_value_pairs_}
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {LogParser **instance}

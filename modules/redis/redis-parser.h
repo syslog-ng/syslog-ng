@@ -29,6 +29,6 @@
 
 extern CfgParser redis_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(redis_, LogDriver **)
+CFG_PARSER_DECLARE_LEXER_BINDING(redis_, REDIS_, LogDriver **)
 
 #endif

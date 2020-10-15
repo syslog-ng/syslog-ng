@@ -30,11 +30,10 @@
 
 #include "systemd-journal.h"
 #include "cfg-parser.h"
-#include "systemd-journal-grammar.h"
 #include "syslog-names.h"
 #include "messages.h"
 #include "plugin.h"
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 
 #include <string.h>
 
@@ -42,7 +41,7 @@ JournalReaderOptions *last_journal_reader_options;
 
 }
 
-%name-prefix "systemd_journal_"
+%define api.prefix {systemd_journal_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

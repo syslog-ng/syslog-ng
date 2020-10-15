@@ -29,6 +29,6 @@
 
 extern CfgParser afsmtp_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(afsmtp_, LogDriver **)
+CFG_PARSER_DECLARE_LEXER_BINDING(afsmtp_, AFSMTP_, LogDriver **)
 
 #endif

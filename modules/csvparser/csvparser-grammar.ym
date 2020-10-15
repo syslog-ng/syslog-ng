@@ -31,14 +31,13 @@
 
 #include "csvparser.h"
 #include "cfg-parser.h"
-#include "cfg-grammar.h"
-#include "csvparser-grammar.h"
+#include "cfg-grammar-internal.h"
 #include "syslog-names.h"
 #include "messages.h"
 
 }
 
-%name-prefix "csvparser_"
+%define api.prefix {csvparser_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

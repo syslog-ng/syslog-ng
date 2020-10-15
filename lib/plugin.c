@@ -81,6 +81,13 @@ plugin_construct(Plugin *self)
   return NULL;
 }
 
+static void
+plugin_free(Plugin *plugin)
+{
+  if (plugin->free_fn)
+    plugin->free_fn(plugin);
+}
+
 static gboolean
 _is_log_pipe(Plugin *self)
 {
@@ -303,6 +310,7 @@ plugin_register(PluginContext *context, Plugin *p, gint number)
           msg_debug("Attempted to register the same plugin multiple times, dropping the old one",
                     evt_tag_str("context", cfg_lexer_lookup_context_name_by_type(p[i].type)),
                     evt_tag_str("name", p[i].name));
+          plugin_free(existing_plugin);
           context->plugins = g_list_remove(context->plugins, existing_plugin);
         }
       context->plugins = g_list_prepend(context->plugins, &p[i]);
@@ -517,17 +525,11 @@ plugin_discover_candidate_modules(PluginContext *context)
   g_strfreev(mod_paths);
 }
 
-static void
-_free_plugin(Plugin *plugin, gpointer user_data)
-{
-  if (plugin->free_fn)
-    plugin->free_fn(plugin);
-}
 
 static void
 _free_plugins(PluginContext *context)
 {
-  g_list_foreach(context->plugins, (GFunc) _free_plugin, NULL);
+  g_list_foreach(context->plugins, (GFunc) plugin_free, NULL);
   g_list_free(context->plugins);
   context->plugins = NULL;
 }

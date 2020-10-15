@@ -31,7 +31,7 @@
 
 }
 
-%name-prefix "block_ref_"
+%define api.prefix {block_ref_}
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {CfgArgs **result}

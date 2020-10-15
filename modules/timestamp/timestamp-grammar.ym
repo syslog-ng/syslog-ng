@@ -29,7 +29,7 @@
 
 %code {
 
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 #include "cfg-parser.h"
 #include "plugin.h"
 #include "parser/parser-expr.h"
@@ -40,7 +40,7 @@
 
 }
 
-%name-prefix "timestamp_"
+%define api.prefix {timestamp_}
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {gpointer *instance}

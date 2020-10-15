@@ -58,4 +58,4 @@ CfgParser add_contextual_data_parser =
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(add_contextual_data_, LogParser **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(add_contextual_data_, ADD_CONTEXTUAL_DATA_, LogParser **)

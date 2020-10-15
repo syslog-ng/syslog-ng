@@ -31,12 +31,11 @@
 #include "kv-parser-parser.h"
 #include "linux-audit-parser.h"
 #include "cfg-parser.h"
-#include "kv-parser-grammar.h"
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 
 }
 
-%name-prefix "kv_parser_"
+%define api.prefix {kv_parser_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

@@ -28,7 +28,7 @@
 
 extern CfgParser azure_auth_header_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(azure_auth_header_, LogDriverPlugin **);
+CFG_PARSER_DECLARE_LEXER_BINDING(azure_auth_header_, AZURE_AUTH_HEADER_, LogDriverPlugin **);
 
 #endif
 

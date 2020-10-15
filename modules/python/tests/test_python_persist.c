@@ -31,7 +31,7 @@ static PyObject *_python_main_dict;
 
 static GlobalConfig *cfg;
 
-YYLTYPE yyltype;
+CFG_LTYPE yyltype;
 GlobalConfig *empty_cfg;
 
 static void

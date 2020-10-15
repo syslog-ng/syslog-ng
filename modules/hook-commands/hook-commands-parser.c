@@ -49,4 +49,4 @@ CfgParser hook_commands_parser =
   .cleanup = (void (*)(gpointer)) log_driver_plugin_free,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(hook_commands_, LogDriverPlugin **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(hook_commands_, HOOK_COMMANDS_, LogDriverPlugin **)

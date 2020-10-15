@@ -27,6 +27,6 @@
 
 extern CfgParser kv_parser_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(kv_parser_, LogParser **)
+CFG_PARSER_DECLARE_LEXER_BINDING(kv_parser_, KV_PARSER_, LogParser **)
 
 #endif

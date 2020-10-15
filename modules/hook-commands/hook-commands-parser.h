@@ -28,6 +28,6 @@
 
 extern CfgParser hook_commands_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(hook_commands_, LogDriverPlugin **)
+CFG_PARSER_DECLARE_LEXER_BINDING(hook_commands_, HOOK_COMMANDS_, LogDriverPlugin **)
 
 #endif

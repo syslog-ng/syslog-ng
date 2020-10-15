@@ -30,15 +30,14 @@
 %code {
 
 #include "afsql.h"
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 #include "cfg-parser.h"
-#include "afsql-grammar.h"
 #include "messages.h"
 #include "plugin.h"
 
 }
 
-%name-prefix "afsql_"
+%define api.prefix {afsql_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

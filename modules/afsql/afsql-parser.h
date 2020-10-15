@@ -29,6 +29,6 @@
 
 extern CfgParser afsql_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(afsql_, LogDriver **)
+CFG_PARSER_DECLARE_LEXER_BINDING(afsql_, AFSQL_, LogDriver **)
 
 #endif

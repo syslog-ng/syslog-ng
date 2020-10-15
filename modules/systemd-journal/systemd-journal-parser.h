@@ -29,6 +29,6 @@
 
 extern CfgParser systemd_journal_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(systemd_journal_, LogDriver **)
+CFG_PARSER_DECLARE_LEXER_BINDING(systemd_journal_, SYSTEMD_JOURNAL_, LogDriver **)
 
 #endif

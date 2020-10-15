@@ -49,4 +49,4 @@ __attribute__((__visibility__("hidden"))) CfgParser native_parser =
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(native_, LogParser **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(native_, NATIVE_, LogParser **)

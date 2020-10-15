@@ -30,6 +30,6 @@
 
 extern CfgParser afsnmp_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(afsnmp_, void **)
+CFG_PARSER_DECLARE_LEXER_BINDING(afsnmp_, AFSNMP_, void **)
 
 #endif

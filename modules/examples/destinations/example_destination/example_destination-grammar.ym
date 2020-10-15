@@ -30,11 +30,11 @@
 
 #include "example_destination.h"
 
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 #include "plugin.h"
 }
 
-%name-prefix "example_destination_"
+%define api.prefix {example_destination_}
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {LogDriver **instance}

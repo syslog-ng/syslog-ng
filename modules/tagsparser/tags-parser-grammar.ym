@@ -31,14 +31,13 @@
 
 #include "tags-parser.h"
 #include "cfg-parser.h"
-#include "cfg-grammar.h"
-#include "tags-parser-grammar.h"
+#include "cfg-grammar-internal.h"
 #include "syslog-names.h"
 #include "messages.h"
 
 }
 
-%name-prefix "tags_parser_"
+%define api.prefix {tags_parser_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

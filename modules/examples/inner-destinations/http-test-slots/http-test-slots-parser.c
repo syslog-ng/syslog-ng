@@ -46,4 +46,4 @@ CfgParser http_test_slots_parser =
   .cleanup = (void (*)(gpointer)) log_driver_plugin_free
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(http_test_slots_, LogDriverPlugin **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(http_test_slots_, HTTP_TEST_SLOTS_, LogDriverPlugin **)

@@ -30,6 +30,6 @@
 
 extern CfgParser rewrite_expr_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(rewrite_expr_, LogExprNode **)
+CFG_PARSER_DECLARE_LEXER_BINDING(rewrite_expr_, REWRITE_EXPR_, LogExprNode **)
 
 #endif

@@ -77,4 +77,4 @@ CfgParser http_parser =
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(http_, LogDriver **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(http_, HTTP_, LogDriver **)

@@ -37,7 +37,7 @@ HttpTestSlotsPlugin *last_http_test_slots;
 
 }
 
-%name-prefix "http_test_slots_"
+%define api.prefix {http_test_slots_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

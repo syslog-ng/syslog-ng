@@ -30,6 +30,6 @@
 
 extern CfgParser tags_parser_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(tags_parser_, LogParser **)
+CFG_PARSER_DECLARE_LEXER_BINDING(tags_parser_, TAGS_PARSER_, LogParser **)
 
 #endif

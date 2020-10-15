@@ -29,6 +29,6 @@
 
 extern CfgParser syslog_parser_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(syslog_parser_, LogParser **)
+CFG_PARSER_DECLARE_LEXER_BINDING(syslog_parser_, SYSLOG_PARSER_, LogParser **)
 
 #endif

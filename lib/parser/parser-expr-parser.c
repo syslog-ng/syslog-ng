@@ -44,4 +44,4 @@ CfgParser parser_expr_parser =
   .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) parser_expr_parse,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(parser_expr_, LogExprNode **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(parser_expr_, PARSER_EXPR_, LogExprNode **)

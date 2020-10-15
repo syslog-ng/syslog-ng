@@ -45,4 +45,4 @@ CfgParser map_value_pairs_parser =
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(map_value_pairs_, LogParser **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(map_value_pairs_, MAP_VALUE_PAIRS_, LogParser **)

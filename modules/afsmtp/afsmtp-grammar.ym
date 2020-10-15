@@ -30,15 +30,14 @@
 %code {
 
 #include "cfg-parser.h"
-#include "cfg-grammar.h"
-#include "afsmtp-grammar.h"
+#include "cfg-grammar-internal.h"
 #include "plugin.h"
 
 extern LogDriver *last_driver;
 
 }
 
-%name-prefix "afsmtp_"
+%define api.prefix {afsmtp_}
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {LogDriver **instance}

@@ -30,10 +30,9 @@
 %code {
 
 #include "dbparser.h"
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 #include "groupingby.h"
 #include "cfg-parser.h"
-#include "dbparser-grammar.h"
 #include "syslog-names.h"
 #include "messages.h"
 #include "filter/filter-expr.h"
@@ -42,7 +41,7 @@
 SyntheticMessage *last_message;
 }
 
-%name-prefix "dbparser_"
+%define api.prefix {dbparser_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

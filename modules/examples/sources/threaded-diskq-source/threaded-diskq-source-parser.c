@@ -47,4 +47,4 @@ CfgParser threaded_diskq_source_parser =
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(threaded_diskq_source_, LogDriver **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(threaded_diskq_source_, THREADED_DISKQ_SOURCE_, LogDriver **)

@@ -29,6 +29,6 @@
 
 extern CfgParser openbsd_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(openbsd_, LogDriver **)
+CFG_PARSER_DECLARE_LEXER_BINDING(openbsd_, OPENBSD_, LogDriver **)
 
 #endif

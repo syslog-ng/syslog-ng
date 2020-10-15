@@ -35,46 +35,16 @@
 #endif
 /* YYSTYPE and YYLTYPE is defined by the lexer */
 #include "cfg-lexer.h"
-#include "cfg-path.h"
-#include "afinter.h"
-#include "type-hinting.h"
-#include "filter/filter-expr-parser.h"
-#include "filter/filter-pipe.h"
-#include "parser/parser-expr-parser.h"
-#include "rewrite/rewrite-expr-parser.h"
-#include "logmatcher.h"
-#include "logthrdest/logthrdestdrv.h"
-#include "logthrsource/logthrsourcedrv.h"
-#include "logthrsource/logthrfetcherdrv.h"
-#include "str-utils.h"
-#include <sys/stat.h>
+#include "cfg-grammar-internal.h"
 
 /* uses struct declarations instead of the typedefs to avoid having to
  * include logreader/logwriter/driver.h, which defines the typedefs.  This
  * is to avoid including unnecessary dependencies into grammars that are not
  * themselves reader/writer based */
 
-extern struct _LogSourceOptions *last_source_options;
-extern struct _LogReaderOptions *last_reader_options;
-extern struct _LogProtoServerOptions *last_proto_server_options;
-extern struct _LogProtoClientOptions *last_proto_client_options;
-extern struct _LogWriterOptions *last_writer_options;
-extern struct _FilePermOptions *last_file_perm_options;
-extern struct _MsgFormatOptions *last_msg_format_options;
-extern struct _LogDriver *last_driver;
-extern struct _LogParser *last_parser;
-extern struct _LogTemplateOptions *last_template_options;
-extern struct _LogTemplate *last_template;
-extern struct _ValuePairs *last_value_pairs;
-extern struct _ValuePairsTransformSet *last_vp_transset;
-extern struct _LogMatcherOptions *last_matcher_options;
-extern struct _HostResolveOptions *last_host_resolve_options;
-extern struct _StatsOptions *last_stats_options;
-extern struct _LogRewrite *last_rewrite;
-
 }
 
-%name-prefix "main_"
+%define api.prefix {main_}
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {gpointer *dummy}
@@ -82,11 +52,12 @@ extern struct _LogRewrite *last_rewrite;
 
 /* START_DECLS */
 
-%require "2.4.1"
+%require "3.4.2"
 %locations
 %define api.pure
-%pure-parser
-%error-verbose
+%define api.value.type {CFG_STYPE}
+%define api.location.type {CFG_LTYPE}
+%define parse.error verbose
 
 %code {
 
@@ -358,58 +329,6 @@ extern struct _LogRewrite *last_rewrite;
 
 %token KW_FETCH_NO_DATA_DELAY         10513
 /* END_DECLS */
-
-%code {
-
-#include "cfg-parser.h"
-#include "cfg.h"
-#include "cfg-tree.h"
-#include "cfg-block.h"
-#include "template/templates.h"
-#include "template/user-function.h"
-#include "logreader.h"
-#include "logpipe.h"
-#include "parser/parser-expr.h"
-#include "rewrite/rewrite-expr.h"
-#include "rewrite/rewrite-expr-parser.h"
-#include "filter/filter-expr-parser.h"
-#include "value-pairs/value-pairs.h"
-#include "file-perms.h"
-#include "block-ref-parser.h"
-#include "plugin.h"
-#include "logwriter.h"
-#include "messages.h"
-
-#include "syslog-names.h"
-
-#include <netinet/in.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "cfg-grammar.h"
-
-LogDriver *last_driver;
-LogParser *last_parser;
-LogSourceOptions *last_source_options;
-LogProtoServerOptions *last_proto_server_options;
-LogProtoClientOptions *last_proto_client_options;
-LogReaderOptions *last_reader_options;
-LogWriterOptions *last_writer_options;
-MsgFormatOptions *last_msg_format_options;
-FilePermOptions *last_file_perm_options;
-LogTemplateOptions *last_template_options;
-LogTemplate *last_template;
-CfgArgs *last_block_args;
-ValuePairs *last_value_pairs;
-ValuePairsTransformSet *last_vp_transset;
-LogMatcherOptions *last_matcher_options;
-HostResolveOptions *last_host_resolve_options;
-StatsOptions *last_stats_options;
-DNSCacheOptions *last_dns_cache_options;
-LogRewrite *last_rewrite;
-
-}
 
 %type   <ptr> expr_stmt
 %type   <ptr> source_stmt

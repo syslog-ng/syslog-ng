@@ -79,4 +79,4 @@ CfgParser filter_expr_parser =
   .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) filter_expr_parse,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(filter_expr_, FilterExprNode **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(filter_expr_, FILTER_EXPR_, FilterExprNode **)

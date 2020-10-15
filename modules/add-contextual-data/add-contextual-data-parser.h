@@ -28,5 +28,5 @@
 
 extern CfgParser add_contextual_data_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(add_contextual_data_, LogParser **)
+CFG_PARSER_DECLARE_LEXER_BINDING(add_contextual_data_, ADD_CONTEXTUAL_DATA_, LogParser **)
 #endif

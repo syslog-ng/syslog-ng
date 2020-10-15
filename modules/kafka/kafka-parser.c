@@ -65,4 +65,4 @@ CfgParser kafka_parser =
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(kafka_, LogDriver **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(kafka_, KAFKA_, LogDriver **)

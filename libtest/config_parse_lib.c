@@ -58,7 +58,7 @@ parse_plugin_config(const gchar *config_to_parse, gint context, gpointer arg)
   gpointer result = NULL;
   CfgLexer *old_lexer = configuration->lexer;
   CfgLexer *lexer = NULL;
-  YYLTYPE *yylloc = NULL;
+  CFG_LTYPE *yylloc = NULL;
   Plugin *plugin = NULL;
   gchar **delimited;
 
@@ -76,7 +76,7 @@ parse_plugin_config(const gchar *config_to_parse, gint context, gpointer arg)
       goto finish;
     }
 
-  yylloc = g_new0(YYLTYPE, 1);
+  yylloc = g_new0(CFG_LTYPE, 1);
   yylloc->first_column = 1;
   yylloc->first_line = 1;
   yylloc->last_column = 1;

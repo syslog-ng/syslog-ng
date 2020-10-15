@@ -36,7 +36,7 @@ AzureAuthHeaderPlugin *last_header;
 
 }
 
-%name-prefix "azure_auth_header_"
+%define api.prefix {azure_auth_header_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

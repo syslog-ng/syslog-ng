@@ -32,17 +32,25 @@
 
 #include "cfg-parser.h"
 #include "parser.h"
-#include "native-grammar.h"
 #include "syslog-names.h"
 #include "messages.h"
 #include "plugin.h"
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 
 #include <string.h>
 
+#if SYSLOG_NG_BISON_MAJOR == 3 && SYSLOG_NG_BISON_MINOR <= 5
+
+/* old bison versions (e.g. 3.5.1 and below) when using api.prefix, didn't
+ * generate the NATIVE_EMPTY enum, but had YYEMPTY, so let's define
+ * NATIVE_EMPTY to YYEMPTY, so the grammar itself is able to use the new
+ * style */
+#define NATIVE_EMPTY YYEMPTY
+#endif
+
 }
 
-%name-prefix "native_"
+%define api.prefix {native_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */
@@ -64,7 +72,7 @@ start
   : native
     {
       *instance = $1;
-      if (yychar != YYEMPTY)
+      if (yychar != NATIVE_EMPTY)
         cfg_lexer_unput_token(lexer, &yylval);
       YYACCEPT;
     }

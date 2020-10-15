@@ -32,13 +32,22 @@
 %code {
 
 #include "syslog-names.h"
-#include "parser/parser-expr-grammar.h"
 #include "plugin.h"
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
+
+#if SYSLOG_NG_BISON_MAJOR == 3 && SYSLOG_NG_BISON_MINOR <= 5
+
+/* old bison versions (e.g. 3.5.1 and below) when using api.prefix, didn't
+ * generate the PARSER_EXPR_EMPTY enum, but had YYEMPTY, so let's define
+ * PARSER_EXPR_EMPTY to YYEMPTY, so the grammar itself is able to use the new
+ * style */
+#define PARSER_EXPR_EMPTY YYEMPTY
+#endif
+
 
 }
 
-%name-prefix "parser_expr_"
+%define api.prefix {parser_expr_}
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {LogExprNode **result}
@@ -52,7 +61,7 @@
 %%
 
 start
-        : parser_expr_list                       { *result = $1; if (yychar != YYEMPTY) { cfg_lexer_unput_token(lexer, &yylval); } YYACCEPT; }
+        : parser_expr_list                       { *result = $1; if (yychar != PARSER_EXPR_EMPTY) { cfg_lexer_unput_token(lexer, &yylval); } YYACCEPT; }
 	;
 
 parser_expr_list

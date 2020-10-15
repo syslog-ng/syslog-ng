@@ -185,7 +185,7 @@ _py_evaluate_global_code(PythonConfig *pc, const gchar *filename, const gchar *c
 }
 
 gboolean
-python_evaluate_global_code(GlobalConfig *cfg, const gchar *code, YYLTYPE *yylloc)
+python_evaluate_global_code(GlobalConfig *cfg, const gchar *code, CFG_LTYPE *yylloc)
 {
   PyGILState_STATE gstate;
   gchar buf[256];

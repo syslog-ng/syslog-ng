@@ -31,11 +31,11 @@
 
 #include "syslog-parser.h"
 #include "syslog-names.h"
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 
 }
 
-%name-prefix "syslog_parser_"
+%define api.prefix {syslog_parser_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

@@ -29,18 +29,17 @@
 
 %code {
 
-#include "pseudofile-grammar.h"
 #include "pseudofile.h"
 #include "cfg-parser.h"
 #include "syslog-names.h"
 #include "messages.h"
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 
 extern LogDriver *last_driver;
 
 }
 
-%name-prefix "pseudofile_"
+%define api.prefix {pseudofile_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

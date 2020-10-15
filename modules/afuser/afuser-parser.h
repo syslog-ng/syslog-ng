@@ -29,6 +29,6 @@
 
 extern CfgParser afuser_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(afuser_, LogDriver **)
+CFG_PARSER_DECLARE_LEXER_BINDING(afuser_, AFUSER_, LogDriver **)
 
 #endif

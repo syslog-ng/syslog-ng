@@ -37,7 +37,7 @@
 
 %code {
 
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 #include "cfg-parser.h"
 #include "plugin.h"
 #include "syslog-names.h"
@@ -46,7 +46,7 @@ PythonHttpHeaderPlugin *last_header;
 
 }
 
-%name-prefix "python_"
+%define api.prefix {python_}
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {void **instance}

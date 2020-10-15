@@ -57,4 +57,4 @@ CfgParser rewrite_expr_parser =
   .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) rewrite_expr_parse,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(rewrite_expr_, LogExprNode **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(rewrite_expr_, REWRITE_EXPR_, LogExprNode **)

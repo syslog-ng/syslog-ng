@@ -30,7 +30,7 @@
 
 extern CfgParser threaded_diskq_source_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(threaded_diskq_source_, LogDriver **)
+CFG_PARSER_DECLARE_LEXER_BINDING(threaded_diskq_source_, THREADED_DISKQ_SOURCE_, LogDriver **)
 
 #endif
 

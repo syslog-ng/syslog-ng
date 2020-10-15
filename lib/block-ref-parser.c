@@ -47,4 +47,4 @@ CfgParser block_ref_parser =
   .cleanup = (void (*)(gpointer))cfg_args_unref
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(block_ref_, CfgArgs **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(block_ref_, BLOCK_REF_, CfgArgs **)

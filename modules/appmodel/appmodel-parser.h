@@ -29,6 +29,6 @@
 
 extern CfgParser appmodel_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(appmodel_, gpointer *)
+CFG_PARSER_DECLARE_LEXER_BINDING(appmodel_, APPMODEL_, gpointer *)
 
 #endif

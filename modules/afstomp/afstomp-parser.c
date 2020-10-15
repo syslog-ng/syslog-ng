@@ -54,4 +54,4 @@ CfgParser afstomp_parser =
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(afstomp_, LogDriver **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(afstomp_, AFSTOMP_, LogDriver **)

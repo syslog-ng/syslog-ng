@@ -256,10 +256,10 @@ cfg_find_plugin(GlobalConfig *cfg, gint plugin_type, const gchar *plugin_name)
 /* construct a plugin instance by parsing its relevant portion from the
  * configuration file */
 gpointer
-cfg_parse_plugin(GlobalConfig *cfg, Plugin *plugin, YYLTYPE *yylloc, gpointer arg)
+cfg_parse_plugin(GlobalConfig *cfg, Plugin *plugin, CFG_LTYPE *yylloc, gpointer arg)
 {
   CfgTokenBlock *block;
-  YYSTYPE token;
+  CFG_STYPE token;
 
 
   /* we add two tokens to an inserted token-block:

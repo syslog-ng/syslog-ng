@@ -29,6 +29,6 @@
 
 extern CfgParser map_value_pairs_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(map_value_pairs_, LogParser **)
+CFG_PARSER_DECLARE_LEXER_BINDING(map_value_pairs_, MAP_VALUE_PAIRS_, LogParser **)
 
 #endif

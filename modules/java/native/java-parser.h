@@ -30,6 +30,6 @@
 
 extern CfgParser java_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(java_, LogDriver **)
+CFG_PARSER_DECLARE_LEXER_BINDING(java_, JAVA_, LogDriver **)
 
 #endif

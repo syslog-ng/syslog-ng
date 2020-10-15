@@ -31,18 +31,17 @@
 #include "threaded-random-generator.h"
 #include "logthrsource/logthrsourcedrv.h"
 #include "cfg-parser.h"
-#include "threaded-random-generator-grammar.h"
 #include "syslog-names.h"
 #include "messages.h"
 #include "plugin.h"
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 #include "template/templates.h"
 
 #include <string.h>
 
 }
 
-%name-prefix "threaded_random_generator_"
+%define api.prefix {threaded_random_generator_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

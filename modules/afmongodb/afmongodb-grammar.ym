@@ -29,13 +29,13 @@
 
 %code {
 
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 #include "plugin.h"
 #include "value-pairs/value-pairs.h"
 
 }
 
-%name-prefix "afmongodb_"
+%define api.prefix {afmongodb_}
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {LogDriver **instance}

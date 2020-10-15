@@ -28,14 +28,13 @@
 
 #include "geoip-parser.h"
 #include "cfg-parser.h"
-#include "cfg-grammar.h"
-#include "geoip-parser-grammar.h"
+#include "cfg-grammar-internal.h"
 #include "syslog-names.h"
 #include "messages.h"
 
 }
 
-%name-prefix "geoip2_parser_"
+%define api.prefix {geoip2_parser_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

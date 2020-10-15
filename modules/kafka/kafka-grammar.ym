@@ -32,14 +32,14 @@
 
 %code {
 
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 #include "plugin.h"
 #include "kafka-dest-driver.h"
 #include "kafka-props.h"
 
 }
 
-%name-prefix "kafka_"
+%define api.prefix {kafka_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

@@ -30,14 +30,13 @@
 
 #include "json-parser.h"
 #include "cfg-parser.h"
-#include "json-parser-grammar.h"
 #include "syslog-names.h"
 #include "messages.h"
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 
 }
 
-%name-prefix "json_parser_"
+%define api.prefix {json_parser_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

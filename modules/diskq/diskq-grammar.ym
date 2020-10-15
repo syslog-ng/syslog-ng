@@ -37,7 +37,6 @@
 #include "messages.h"
 #include "diskq.h"
 #include "diskq-options.h"
-#include "diskq-grammar.h"
 
 #include <string.h>
 
@@ -46,7 +45,7 @@ DiskQueueOptions *last_options;
 
 }
 
-%name-prefix "diskq_"
+%define api.prefix {diskq_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

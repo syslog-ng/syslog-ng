@@ -31,13 +31,13 @@
 %code {
 
 #include "cfg-parser.h"
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 #include "java-config.h"
 #include "plugin.h"
 
 }
 
-%name-prefix "java_"
+%define api.prefix {java_}
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {LogDriver **instance}

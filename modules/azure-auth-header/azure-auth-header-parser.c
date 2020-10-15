@@ -51,4 +51,4 @@ CfgParser azure_auth_header_parser =
   .cleanup = (void (*)(gpointer)) log_driver_plugin_free,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(azure_auth_header_, LogDriverPlugin **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(azure_auth_header_, AZURE_AUTH_HEADER_, LogDriverPlugin **)

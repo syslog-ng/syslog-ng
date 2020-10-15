@@ -31,11 +31,10 @@
 #include "msg-generator.h"
 #include "msg-generator-source-options.h"
 #include "cfg-parser.h"
-#include "msg-generator-grammar.h"
 #include "syslog-names.h"
 #include "messages.h"
 #include "plugin.h"
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 #include "template/templates.h"
 
 #include <string.h>
@@ -44,7 +43,7 @@ MsgGeneratorSourceOptions *last_msg_generator_source_options;
 
 }
 
-%name-prefix "msg_generator_"
+%define api.prefix {msg_generator_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

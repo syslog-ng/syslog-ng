@@ -43,7 +43,7 @@ HookCommandsPlugin *last_hook_commands;
 
 }
 
-%name-prefix "hook_commands_"
+%define api.prefix {hook_commands_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */

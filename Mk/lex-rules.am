@@ -15,7 +15,7 @@ endif
 	$(AM_V_at) touch $@
 
 .y.c:
-	$(AM_V_YACC)$(am__skipyacc) $(SHELL) $(YLWRAP) $< y.tab.c $@ y.tab.h $*.h y.output $*.output -- $(YACCCOMPILE) 2>&1 | ($(EGREP) -v "(warning: ([0-9]+ )?(nonterminal|rule)s? useless in grammar)|(^updating|unchanged)" || true)
+	$(AM_V_YACC)$(am__skipyacc) $(SHELL) $(YLWRAP) $< y.tab.c $@ y.tab.h $*.h y.output $*.output -- $(YACCCOMPILE)
 
 .y.h:
-	$(AM_V_YACC)$(am__skipyacc) $(SHELL) $(YLWRAP) $< y.tab.c $@ y.tab.h $*.h y.output $*.output -- $(YACCCOMPILE) 2>&1 | ($(EGREP) -v "(warning: ([0-9]+ )?(nonterminal|rule)s? useless in grammar)|(^updating|unchanged)" || true)
+	$(AM_V_YACC)$(am__skipyacc) $(SHELL) $(YLWRAP) $< y.tab.c $@ y.tab.h $*.h y.output $*.output -- $(YACCCOMPILE)

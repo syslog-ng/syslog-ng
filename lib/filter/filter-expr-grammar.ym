@@ -30,7 +30,6 @@
 
 %code {
 
-#include "filter/filter-expr-grammar.h"
 #include "filter/filter-netmask.h"
 #include "filter/filter-netmask6.h"
 #include "filter/filter-op.h"
@@ -44,13 +43,23 @@
 #include "template/templates.h"
 #include "syslog-names.h"
 #include "plugin.h"
-#include "cfg-grammar.h"
+#include "cfg-grammar-internal.h"
 
 FilterExprNode *last_filter_expr;
 
+#if SYSLOG_NG_BISON_MAJOR == 3 && SYSLOG_NG_BISON_MINOR <= 5
+
+/* old bison versions (e.g. 3.5.1 and below) when using api.prefix, didn't
+ * generate the FILTER_EXPR_EMPTY enum, but had YYEMPTY, so let's define
+ * FILTER_EXPR_EMPTY to YYEMPTY, so the grammar itself is able to use the new
+ * style */
+#define FILTER_EXPR_EMPTY YYEMPTY
+#endif
+
+
 }
 
-%name-prefix "filter_expr_"
+%define api.prefix {filter_expr_}
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {FilterExprNode **result}
@@ -83,7 +92,7 @@ FilterExprNode *last_filter_expr;
 %%
 
 start
-        : filter_expr                           { *result = $1; if (yychar != YYEMPTY) { cfg_lexer_unput_token(lexer, &yylval); } YYACCEPT; }
+        : filter_expr                           { *result = $1; if (yychar != FILTER_EXPR_EMPTY) { cfg_lexer_unput_token(lexer, &yylval); } YYACCEPT; }
 	;
 
 filter_expr

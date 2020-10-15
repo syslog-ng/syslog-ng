@@ -50,4 +50,4 @@ CfgParser msg_generator_parser =
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(msg_generator_, LogDriver **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(msg_generator_, MSG_GENERATOR_, LogDriver **)

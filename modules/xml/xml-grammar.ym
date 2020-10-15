@@ -28,8 +28,7 @@
 %code {
 #include "xml.h"
 #include "cfg-parser.h"
-#include "cfg-grammar.h"
-#include "xml-grammar.h"
+#include "cfg-grammar-internal.h"
 #include "syslog-names.h"
 #include "messages.h"
 #include "plugin.h"
@@ -40,7 +39,7 @@ XMLScannerOptions *last_xml_scanner_options;
 
 }
 
-%name-prefix "xml_"
+%define api.prefix {xml_}
 
 /* this parameter is needed in order to instruct bison to use a complete
  * argument list for yylex/yyerror */
