@@ -176,7 +176,7 @@ function install_pip_packages {
         fedora-32)
             python_executables="python"
             ;;
-        ubuntu-focal)
+        ubuntu-focal|tarball)
             python_executables="python3"
             ;;
         devshell|kira)
