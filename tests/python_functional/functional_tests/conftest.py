@@ -21,6 +21,7 @@
 #
 #############################################################################
 import logging
+import os
 
 import pytest
 from pathlib2 import Path
@@ -62,11 +63,19 @@ def pytest_runtest_setup(item):
         item.user_properties.append(("relative_working_dir", working_dir))
 
 
+def light_extra_files(target_dir):
+    if "LIGHT_EXTRA_FILES" in os.environ:
+        for f in os.environ["LIGHT_EXTRA_FILES"].split(":"):
+            if Path(f).exists():
+                copy_file(f, target_dir)
+
+
 @pytest.fixture(autouse=True)
 def setup(request):
     testcase_parameters = request.getfixturevalue("testcase_parameters")
 
     copy_file(testcase_parameters.get_testcase_file(), testcase_parameters.get_working_dir())
+    light_extra_files(testcase_parameters.get_working_dir())
     request.addfinalizer(lambda: logger.info("Report file path\n{}\n".format(calculate_report_file_path(testcase_parameters.get_working_dir()))))
 
 
