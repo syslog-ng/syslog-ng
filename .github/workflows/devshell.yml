@@ -80,23 +80,41 @@ jobs:
         working-directory: ./build
         run: make install
 
+      - name: Light
+        id: light
+        working-directory: ./build
+        run: |
+          make pytest-self-check
+          make pytest-check
+
       - name: make func-test
         working-directory: ./build
         run: make VERBOSE=1 func-test
 
-      - name: pylib linters
-        working-directory: ./build
-        continue-on-error: true # Fix errors from pylint
+      - name: "Prepare artifact: light-reports"
+        id: prepare-light-reports
+        if: always() && steps.light.outcome == 'failure'
         run: |
-          make python-pep8
-          make python-pylint
+          if [ ${{ matrix.build-tool }} = 'autotools' ]
+          then
+            REPORTS_DIR=build/reports
+          elif [ ${{ matrix.build-tool }} = 'cmake' ]
+          then
+            REPORTS_DIR=build/tests/python_functional/reports
+          else
+            echo Unrecognized build tool: ${{ matrix.build-tool }}.
+            exit 1
+          fi
 
-      - name: Light
-        working-directory: ./build
-        run: |
-          make pytest-self-check
-          make pytest-linters
-          make pytest-check
+          cp -r ${REPORTS_DIR} /tmp/light-reports
+          rm -f `find /tmp/light-reports -type p,s`
+
+      - name: "Artifact: light-reports"
+        uses: actions/upload-artifact@v2
+        if: always() && steps.prepare-light-reports.outcome == 'success'
+        with:
+          name: light-reports-${{ matrix.build-tool }}-${{ matrix.cc }}-${{ matrix.python }}
+          path: /tmp/light-reports
 
   distcheck:
     runs-on: ubuntu-18.04
@@ -149,17 +167,38 @@ jobs:
       - name: Checkout syslog-ng source
         uses: actions/checkout@v2
 
-      - name: Style check
+      - name: Prepare
+        run: |
+          ./autogen.sh
+          mkdir build && cd build
+          ../configure
+
+      - name: Style check (C)
+        id: c-style-check
         run: |
           scripts/style-checker.sh format
-          git diff --exit-code > style-problems.diff || (cat style-problems.diff && exit 1)
+          git diff --exit-code > c-style-problems.diff || \
+            (cat c-style-problems.diff && git reset --hard HEAD && exit 1)
 
-      - name: "Artifact: style-problems.diff"
-        uses: actions/upload-artifact@v1
-        if: failure()
+      - name: Style check (pylib)
+        if: always()
+        working-directory: ./build
+        continue-on-error: true # Fix errors from pylint
+        run: |
+          make python-pep8 && make python-pylint || (git reset --hard HEAD && exit 1)
+
+      - name: Style check (Light)
+        if: always()
+        working-directory: ./build
+        run: |
+          make pytest-linters || (git reset --hard HEAD && exit 1)
+
+      - name: "Artifact: c-style-problems"
+        uses: actions/upload-artifact@v2
+        if: always() && steps.c-style-check.outcome == 'failure'
         with:
-          name: style-problems.diff
-          path: style-problems.diff
+          name: c-style-problems
+          path: c-style-problems.diff
 
   copyright-check:
     runs-on: ubuntu-18.04
