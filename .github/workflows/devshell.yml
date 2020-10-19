@@ -81,6 +81,7 @@ jobs:
         run: make install
 
       - name: Light
+        id: light
         working-directory: ./build
         run: |
           make pytest-self-check
@@ -89,6 +90,31 @@ jobs:
       - name: make func-test
         working-directory: ./build
         run: make VERBOSE=1 func-test
+
+      - name: "Prepare artifact: light-reports"
+        id: prepare-light-reports
+        if: always() && steps.light.outcome == 'failure'
+        run: |
+          if [ ${{ matrix.build-tool }} = 'autotools' ]
+          then
+            REPORTS_DIR=build/reports
+          elif [ ${{ matrix.build-tool }} = 'cmake' ]
+          then
+            REPORTS_DIR=build/tests/python_functional/reports
+          else
+            echo Unrecognized build tool: ${{ matrix.build-tool }}.
+            exit 1
+          fi
+
+          cp -r ${REPORTS_DIR} /tmp/light-reports
+          rm -f `find /tmp/light-reports -type p,s`
+
+      - name: "Artifact: light-reports"
+        uses: actions/upload-artifact@v2
+        if: always() && steps.prepare-light-reports.outcome == 'success'
+        with:
+          name: light-reports-${{ matrix.build-tool }}-${{ matrix.cc }}-${{ matrix.python }}
+          path: /tmp/light-reports
 
   distcheck:
     runs-on: ubuntu-18.04
