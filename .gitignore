@@ -48,6 +48,7 @@ debian/build-tree/
 debian/*.log
 debian/autoreconf.*
 build/
+tests/python_functional/reports
 tags
 TAGS
 GPATH
