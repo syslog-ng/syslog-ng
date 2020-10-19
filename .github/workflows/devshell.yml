@@ -95,7 +95,6 @@ jobs:
         working-directory: ./build
         run: |
           make pytest-self-check
-          make pytest-linters
           make pytest-check
 
   distcheck:
@@ -149,17 +148,31 @@ jobs:
       - name: Checkout syslog-ng source
         uses: actions/checkout@v2
 
-      - name: Style check
+      - name: Prepare
+        run: |
+          ./autogen.sh
+          mkdir build && cd build
+          ../configure
+
+      - name: Style check (C)
+        id: c-style-check
         run: |
           scripts/style-checker.sh format
-          git diff --exit-code > style-problems.diff || (cat style-problems.diff && exit 1)
+          git diff --exit-code > c-style-problems.diff || \
+            (cat c-style-problems.diff && git reset --hard HEAD && exit 1)
 
-      - name: "Artifact: style-problems.diff"
-        uses: actions/upload-artifact@v1
-        if: failure()
+      - name: Style check (Light)
+        if: always()
+        working-directory: ./build
+        run: |
+          make pytest-linters || (git reset --hard HEAD && exit 1)
+
+      - name: "Artifact: c-style-problems"
+        uses: actions/upload-artifact@v2
+        if: always() && steps.c-style-check.outcome == 'failure'
         with:
-          name: style-problems.diff
-          path: style-problems.diff
+          name: c-style-problems
+          path: c-style-problems.diff
 
   copyright-check:
     runs-on: ubuntu-18.04
