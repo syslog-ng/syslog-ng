@@ -835,7 +835,7 @@ log_proto_buffered_server_flush(LogProtoBufferedServer *self, const guchar **msg
  * Returns: TRUE to indicate success, FALSE otherwise. The returned
  * msg can be NULL even if no failure occurred.
  **/
-static LogProtoStatus
+LogProtoStatus
 log_proto_buffered_server_fetch(LogProtoServer *s, const guchar **msg, gsize *msg_len, gboolean *may_read,
                                 LogTransportAuxData *aux, Bookmark *bookmark)
 {
@@ -882,6 +882,7 @@ log_proto_buffered_server_fetch(LogProtoServer *s, const guchar **msg, gsize *ms
               break;
 
             case G_IO_STATUS_AGAIN:
+              result = LPS_AGAIN;
               goto exit;
 
             case G_IO_STATUS_ERROR:
@@ -898,11 +899,11 @@ log_proto_buffered_server_fetch(LogProtoServer *s, const guchar **msg, gsize *ms
 exit:
 
   /* result contains our result, but once an error happens, the error condition remains persistent */
-  if (result != LPS_SUCCESS)
+  if (result != LPS_SUCCESS && result != LPS_AGAIN)
     self->super.status = result;
   else
     {
-      if (bookmark && *msg)
+      if (result == LPS_SUCCESS && bookmark && *msg)
         {
           _buffered_server_bookmark_fill(self, bookmark);
           _buffered_server_update_pos(&self->super);

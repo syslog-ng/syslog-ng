@@ -42,6 +42,7 @@ typedef struct _plugin_option
   const char *target; /* command line argument */
   const char *port;
   int  rate;
+  gboolean proxied;
 } PluginOption;
 
 typedef struct _thread_data
@@ -52,6 +53,7 @@ typedef struct _thread_data
   struct timeval start_time;
   struct timeval last_throttle_check;
   long buckets;
+  gboolean proxy_header_sent;
 } ThreadData;
 
 typedef GOptionEntry *(*get_option_func)(void);

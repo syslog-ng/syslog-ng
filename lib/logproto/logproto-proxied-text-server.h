@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2012 Balabit
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2020 One Identity
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,19 +21,37 @@
  *
  */
 
-#ifndef LOGPROTO_H_INCLUDED
-#define LOGPROTO_H_INCLUDED
+#ifndef LOGPROTO_PROXIED_TEXT_SERVER
+#define LOGPROTO_PROXIED_TEXT_SERVER
 
-#include "transport/logtransport.h"
+#include "logproto-text-server.h"
 
-typedef enum
+#define IP_BUF_SIZE 64
+
+struct ProxyProtoInfo
 {
-  LPS_SUCCESS,
-  LPS_ERROR,
-  LPS_EOF,
-  LPS_PARTIAL,
-  LPS_AGAIN,
-} LogProtoStatus;
+  gboolean unknown;
 
+  gchar src_ip[IP_BUF_SIZE];
+  gchar dst_ip[IP_BUF_SIZE];
+
+  int ip_version;
+  int src_port;
+  int dst_port;
+};
+
+typedef struct _LogProtoProxiedTextServer
+{
+  LogProtoTextServer super;
+
+  // Info received from the proxied that should be added as LogTransportAuxData to
+  // any message received through this server instance.
+  struct ProxyProtoInfo *info;
+
+  // Flag to only run handshake() once
+  gboolean handshake_done;
+} LogProtoProxiedTextServer;
+
+LogProtoServer *log_proto_proxied_text_server_new(LogTransport *transport, const LogProtoServerOptions *options);
 
 #endif

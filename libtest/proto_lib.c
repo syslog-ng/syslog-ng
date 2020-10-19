@@ -50,6 +50,8 @@ proto_server_fetch(LogProtoServer *proto, const guchar **msg, gsize *msg_len)
     {
       log_transport_aux_data_init(&aux);
       status = log_proto_server_fetch(proto, msg, msg_len, &may_read, &aux, &bookmark);
+      if (status == LPS_AGAIN)
+        status = LPS_SUCCESS;
     }
   while (status == LPS_SUCCESS && *msg == NULL && may_read);
 
@@ -155,6 +157,8 @@ assert_proto_server_fetch_ignored_eof(LogProtoServer *proto)
   start_grabbing_messages();
   log_transport_aux_data_init(&aux);
   status = log_proto_server_fetch(proto, &msg, &msg_len, &may_read, &aux, &bookmark);
+  if (status == LPS_AGAIN)
+    status = LPS_SUCCESS;
   assert_proto_server_status(proto, status, LPS_SUCCESS);
   cr_assert_null(msg, "when an EOF is ignored msg must be NULL");
   cr_assert_null(aux.peer_addr, "returned saddr must be NULL on success");
