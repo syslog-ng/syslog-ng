@@ -84,13 +84,6 @@ jobs:
         working-directory: ./build
         run: make VERBOSE=1 func-test
 
-      - name: pylib linters
-        working-directory: ./build
-        continue-on-error: true # Fix errors from pylint
-        run: |
-          make python-pep8
-          make python-pylint
-
       - name: Light
         working-directory: ./build
         run: |
@@ -160,6 +153,13 @@ jobs:
           scripts/style-checker.sh format
           git diff --exit-code > c-style-problems.diff || \
             (cat c-style-problems.diff && git reset --hard HEAD && exit 1)
+
+      - name: Style check (pylib)
+        if: always()
+        working-directory: ./build
+        continue-on-error: true # Fix errors from pylint
+        run: |
+          make python-pep8 && make python-pylint || (git reset --hard HEAD && exit 1)
 
       - name: Style check (Light)
         if: always()
