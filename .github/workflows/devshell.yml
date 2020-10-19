@@ -80,15 +80,15 @@ jobs:
         working-directory: ./build
         run: make install
 
-      - name: make func-test
-        working-directory: ./build
-        run: make VERBOSE=1 func-test
-
       - name: Light
         working-directory: ./build
         run: |
           make pytest-self-check
           make pytest-check
+
+      - name: make func-test
+        working-directory: ./build
+        run: make VERBOSE=1 func-test
 
   distcheck:
     runs-on: ubuntu-18.04
