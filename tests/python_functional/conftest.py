@@ -29,6 +29,7 @@ import pytest
 from pathlib2 import Path
 
 import src.testcase_parameters.testcase_parameters as tc_parameters
+from src.helpers.loggen.loggen import Loggen
 from src.message_builder.bsd_format import BSDFormat
 from src.message_builder.log_message import LogMessage
 from src.syslog_ng.syslog_ng import SyslogNg
@@ -136,6 +137,8 @@ def version(request):
     return version_output.splitlines()[1].split()[2]
 
 
-pytest_plugins = (
-    "src.helpers.loggen.loggen",
-)
+@pytest.fixture
+def loggen(testcase_parameters):
+    server = Loggen()
+    yield server
+    server.stop()

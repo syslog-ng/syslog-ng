@@ -20,7 +20,6 @@
 # COPYING for details.
 #
 #############################################################################
-import pytest
 from pathlib2 import Path
 from psutil import TimeoutExpired
 
@@ -181,10 +180,3 @@ class Loggen(object):
         index_end = content.find(end_pattern, index_start)
 
         return int(content[index_start:index_end])
-
-
-@pytest.fixture
-def loggen(testcase_parameters):
-    server = Loggen()
-    yield server
-    server.stop()
