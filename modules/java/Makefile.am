@@ -1,4 +1,14 @@
-if ENABLE_JAVA
+JAVA_FILES = \
+    InternalMessageSender.java \
+    SyslogNgClassLoader.java \
+    LogMessage.java \
+    LogTemplate.java \
+    LogPipe.java \
+    LogDestination.java \
+    TextLogDestination.java \
+    StructuredLogDestination.java \
+    DummyTextDestination.java \
+    DummyStructuredDestination.java
 
 JAVA_DST_DIR=$(DESTDIR)/$(moduledir)/java-modules
 JAVA_BUILDDIR=$(top_builddir)/modules/java
@@ -6,6 +16,8 @@ SYSLOG_NG_CORE_SRC_DIR = $(top_srcdir)/modules/java/src/main/java/org/syslog_ng
 SYSLOG_NG_CORE_CLASSES_DIR=$(top_builddir)/modules/java/syslog-ng-core/classes
 SYSLOG_NG_CORE_PACKAGE_DIR=$(top_builddir)/modules/java/syslog-ng-core/classes/org/syslog_ng
 SYSLOG_NG_CORE_LIBS_DIR=$(top_builddir)/modules/java/syslog-ng-core/libs
+
+if ENABLE_JAVA
 
 LogDestination_CLASS_DEPS = \
 	$(SYSLOG_NG_CORE_PACKAGE_DIR)/LogPipe.class
@@ -103,18 +115,6 @@ modules_java_libmod_java_la_LDFLAGS = \
 modules_java_libmod_java_la_DEPENDENCIES  = \
         $(MODULE_DEPS_LIBS)
 
-JAVA_FILES = \
-    InternalMessageSender.java \
-    SyslogNgClassLoader.java \
-    LogMessage.java \
-    LogTemplate.java \
-    LogPipe.java \
-    LogDestination.java \
-    TextLogDestination.java \
-    StructuredLogDestination.java \
-    DummyTextDestination.java \
-    DummyStructuredDestination.java
-
 JAVA_HEADER_FILES = \
    $(JAVA_BUILDDIR)/org_syslog_ng_LogMessage.h \
    $(JAVA_BUILDDIR)/org_syslog_ng_LogDestination.h \
@@ -122,6 +122,11 @@ JAVA_HEADER_FILES = \
    $(JAVA_BUILDDIR)/org_syslog_ng_InternalMessageSender.h
 
 JAVA_CLASS_FILES = $(patsubst %.java, $(SYSLOG_NG_CORE_PACKAGE_DIR)/%.class, $(JAVA_FILES))
+
+
+BUILT_SOURCES += $(JAVA_HEADER_FILES)
+CLEANFILES += $(JAVA_HEADER_FILES)
+
 endif
 
 BUILT_SOURCES += \
@@ -135,16 +140,15 @@ EXTRA_DIST += \
     modules/java/tools/syslog-ng.conf.example	\
     $(patsubst %, $(SYSLOG_NG_CORE_SRC_DIR)/%, $(JAVA_FILES))
 
+.SECONDEXPANSION:
+
 if ENABLE_JAVA
 
-BUILT_SOURCES += $(JAVA_HEADER_FILES)
-CLEANFILES += $(JAVA_HEADER_FILES)
-
-endif
-
-.SECONDEXPANSION:
+# this needs to come after .SECONDEXPANSION
 
 $(JAVA_CLASS_FILES): $(SYSLOG_NG_CORE_PACKAGE_DIR)/%.class: $(SYSLOG_NG_CORE_SRC_DIR)/%.java $(SYSLOG_NG_CORE_CLASSES_DIR) $$($$*_CLASS_DEPS)
 	$(AM_V_GEN)$(JAVAC) -classpath  $(SYSLOG_NG_CORE_CLASSES_DIR) -d $(SYSLOG_NG_CORE_CLASSES_DIR) $<
+
+endif
 
 .PHONY: java-binaries java-headers java-install-exec-hook java-uninstall-exec-hook java-clean-hook all-local
