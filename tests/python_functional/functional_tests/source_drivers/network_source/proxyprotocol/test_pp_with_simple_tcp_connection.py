@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #############################################################################
-# Copyright (c) 2015-2018 Balabit
+# Copyright (c) 2020 One Identity
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -20,31 +20,20 @@
 # COPYING for details.
 #
 #############################################################################
-from src.syslog_ng_ctl.syslog_ng_ctl_cli import SyslogNgCtlCli
-from src.syslog_ng_ctl.syslog_ng_ctl_executor import QueryTypes
+from src.common.blocking import wait_until_true
+
+NUMBER_OF_MESSAGES = 10
 
 
-class SyslogNgCtl(object):
-    def __init__(self, instance_paths):
-        self.__syslog_ng_ctl_cli = SyslogNgCtlCli(instance_paths)
+def test_pp_with_simple_tcp_connection(config, port_allocator, syslog_ng, loggen):
+    network_source = config.create_network_source(ip="localhost", port=port_allocator(), transport="proxied-tcp")
+    file_destination = config.create_file_destination(file_name="output.log")
+    config.create_logpath(statements=[network_source, file_destination])
 
-    def reload(self):
-        return self.__syslog_ng_ctl_cli.reload()
+    syslog_ng.start(config)
 
-    def stop(self):
-        return self.__syslog_ng_ctl_cli.stop()
+    loggen.start(network_source.options["ip"], network_source.options["port"], inet=True, stream=True, number=NUMBER_OF_MESSAGES)
+    wait_until_true(lambda: loggen.get_sent_message_count() == NUMBER_OF_MESSAGES)
 
-    def reopen(self):
-        return self.__syslog_ng_ctl_cli.reopen()
-
-    def stats(self, reset=False):
-        return self.__syslog_ng_ctl_cli.stats(reset)
-
-    def query(self, pattern="*", query_type=QueryTypes.QUERY_GET):
-        return self.__syslog_ng_ctl_cli.query(pattern, query_type)
-
-    def credentials_add(self, credential, secret):
-        return self.__syslog_ng_ctl_cli.credentials_add(credential, secret)
-
-    def is_control_socket_alive(self):
-        return self.__syslog_ng_ctl_cli.is_control_socket_alive()
+    # We could check the source side stats, too, but it is not yet implemented
+    assert not file_destination.get_path().exists()

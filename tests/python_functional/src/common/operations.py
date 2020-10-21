@@ -43,11 +43,22 @@ def cast_to_list(items):
     return [items]
 
 
-def copy_shared_file(shared_file_name, syslog_ng_testcase):
-    shared_dir = syslog_ng_testcase.testcase_parameters.get_shared_dir()
-    copy_file(Path(shared_dir, shared_file_name), tc_parameters.WORKING_DIR)
+def copy_shared_file(testcase_parameters, shared_file_name):
+    shared_dir = testcase_parameters.get_shared_dir()
+    copy_file(Path(shared_dir, shared_file_name), testcase_parameters.get_working_dir())
+    return Path(testcase_parameters.get_working_dir(), shared_file_name)
 
 
 def delete_session_file(shared_file_name):
     shared_file_name = Path(tc_parameters.WORKING_DIR, shared_file_name)
     shared_file_name.unlink()
+
+
+def create_file(file, content=None):
+    if Path(file).exists():
+        raise Exception("File aready exists, override is prohibited.", file)
+
+    f = open(str(file), "w")
+    if content:
+        f.write(content)
+    f.close()

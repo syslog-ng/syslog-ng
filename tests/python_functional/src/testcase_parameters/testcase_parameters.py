@@ -39,7 +39,7 @@ class TestcaseParameters(object):
             elif item[0] == "relative_working_dir":
                 self.relative_working_dir = None
                 self.set_relative_working_dir(item[1])
-        absolute_framework_dir = Path.cwd()
+        absolute_framework_dir = Path(__file__).parents[2]
         self.testcase_parameters = {
             "dirs": {
                 "install_dir": Path(pytest_request.config.getoption("--installdir")),

@@ -41,5 +41,9 @@ class SyslogNgCtlCli(object):
         ctl_query_command = self.__syslog_ng_ctl_executor.construct_ctl_query_command(pattern, query_type)
         return self.__syslog_ng_ctl_executor.run_command(command_short_name="query", command=ctl_query_command)
 
+    def credentials_add(self, credential, secret):
+        ctl_credentials_command = self.__syslog_ng_ctl_executor.construct_ctl_credentials_command(credential, secret)
+        return self.__syslog_ng_ctl_executor.run_command(command_short_name="credentials", command=ctl_credentials_command)
+
     def is_control_socket_alive(self):
         return self.stats(reset=False)["exit_code"] == 0
