@@ -318,6 +318,7 @@ ryslog is not on the system.
 
 # fix Python path
 %{__sed} -i 's|^#!/usr/bin/env python|#!%{__python3}|' lib/merge-grammar.py
+touch -r lib/cfg-grammar.y lib/merge-grammar.py
 
 # fix executable perms on contrib files
 %{__chmod} -c a-x contrib/syslog2ng
