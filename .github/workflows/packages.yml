@@ -1,0 +1,63 @@
+name: Binary packages
+
+on: [pull_request, push]
+
+
+jobs:
+  tarball:
+    runs-on: ubuntu-18.04
+
+    steps:
+      - name: Checkout syslog-ng source
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Docker image
+        run: ./dbld/rules cache-image-tarball
+
+      - name: Tarball
+        run: ./dbld/rules pkg-tarball
+
+      - name: Store tarball as artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: tarball
+          path: dbld/build/*.tar.gz
+
+  packages:
+    runs-on: ubuntu-18.04
+    needs: tarball
+    strategy:
+      matrix:
+        distro: [centos-7, ubuntu-focal]
+      fail-fast: false
+
+    steps:
+      - name: Checkout syslog-ng source
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Docker image
+        run: ./dbld/rules cache-image-${{ matrix.distro }}
+
+      - name: Cleanup git based files
+        run: rm -rf *
+
+      - name: Fetch tarball artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: tarball
+
+      - name: Extract tarball
+        run: mkdir syslog-ng && tar --strip-components=1 -xf syslog-ng*.tar.gz -C syslog-ng && ls -lR
+
+      - name: Binary for ${{ matrix.distro }}
+        run: cd syslog-ng && ./dbld/rules package-${{ matrix.distro }}
+
+      - name: Store packages as artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: package-${{ matrix.distro }}
+          path: syslog-ng/dbld/build/${{ matrix.distro }}/*
