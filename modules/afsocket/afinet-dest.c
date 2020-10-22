@@ -172,6 +172,14 @@ afinet_dd_tls_verify_data_free(gpointer s)
 }
 
 static gboolean
+_is_tls_used(const AFInetDestDriver *self)
+{
+  TransportMapperInet *transport_mapper_inet = (TransportMapperInet *) self->super.transport_mapper;
+
+  return transport_mapper_inet->tls_context != NULL;
+}
+
+static gboolean
 _is_failover_used(const AFInetDestDriver *self)
 {
   return self->failover != NULL;
@@ -190,12 +198,19 @@ void
 afinet_dd_set_tls_context(LogDriver *s, TLSContext *tls_context)
 {
   AFInetDestDriver *self = (AFInetDestDriver *) s;
-  AFInetDestDriverTLSVerifyData *verify_data;
-  TLSVerifier *verifier;
+  transport_mapper_inet_set_tls_context((TransportMapperInet *) self->super.transport_mapper, tls_context);
+}
 
-  verify_data = afinet_dd_tls_verify_data_new(tls_context, _afinet_dd_get_hostname(self));
-  verifier = tls_verifier_new(afinet_dd_verify_callback, verify_data, afinet_dd_tls_verify_data_free);
-  transport_mapper_inet_set_tls_context((TransportMapperInet *) self->super.transport_mapper, tls_context, verifier);
+void
+afinet_dd_setup_tls_verifier(AFInetDestDriver *self)
+{
+  TransportMapperInet *transport_mapper_inet = (TransportMapperInet *) self->super.transport_mapper;
+
+  AFInetDestDriverTLSVerifyData *verify_data;
+  verify_data = afinet_dd_tls_verify_data_new(transport_mapper_inet->tls_context, _afinet_dd_get_hostname(self));
+  TLSVerifier *verifier = tls_verifier_new(afinet_dd_verify_callback, verify_data, afinet_dd_tls_verify_data_free);
+
+  transport_mapper_inet_set_tls_verifier(transport_mapper_inet, verifier);
 }
 
 void
@@ -216,11 +231,22 @@ afinet_dd_add_failovers(LogDriver *s, GList *failovers)
 }
 
 void
+afinet_dd_fail_back_to_primary(gpointer s, gint fd, GSockAddr *saddr)
+{
+  AFInetDestDriver *self = (AFInetDestDriver *) s;
+
+  if (_is_tls_used(self))
+    afinet_dd_setup_tls_verifier(self);
+
+  afsocket_dd_connected_with_fd(s, fd, saddr);
+}
+
+void
 afinet_dd_enable_failback(LogDriver *s)
 {
   AFInetDestDriver *self = (AFInetDestDriver *) s;
   g_assert(self->failover != NULL);
-  afinet_dd_failover_enable_failback(self->failover, &self->super, afsocket_dd_connected_with_fd);
+  afinet_dd_failover_enable_failback(self->failover, &self->super, afinet_dd_fail_back_to_primary);
 }
 
 void
@@ -327,6 +353,9 @@ afinet_dd_setup_addresses(AFSocketDestDriver *s)
 
   if (_is_failover_used(self))
     afinet_dd_failover_next(self->failover);
+
+  if (_is_tls_used(self))
+    afinet_dd_setup_tls_verifier(self);
 
   if (!_setup_dest_addr(self))
     return FALSE;

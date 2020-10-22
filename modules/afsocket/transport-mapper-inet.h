@@ -72,9 +72,15 @@ transport_mapper_inet_get_port_change_warning(TransportMapper *s)
 }
 
 static inline void
-transport_mapper_inet_set_tls_context(TransportMapperInet *self, TLSContext *tls_context, TLSVerifier *tls_verifier)
+transport_mapper_inet_set_tls_context(TransportMapperInet *self, TLSContext *tls_context)
 {
   self->tls_context = tls_context;
+}
+
+static inline void
+transport_mapper_inet_set_tls_verifier(TransportMapperInet *self, TLSVerifier *tls_verifier)
+{
+  tls_verifier_unref(self->tls_verifier);
   self->tls_verifier = tls_verifier;
 }
 
