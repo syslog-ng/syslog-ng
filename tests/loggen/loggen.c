@@ -57,7 +57,6 @@ static PluginOption global_plugin_option =
   .target = NULL,
   .port = NULL,
   .rate = 1000,
-  .proxied = FALSE,
 };
 
 static char *sdata_value = NULL;
@@ -71,6 +70,7 @@ static int read_from_file = 0;
 static gint64 raw_message_length = 0;
 static gint64 *thread_stat_count = NULL;
 static gint64 *thread_stat_count_last = NULL;
+static gboolean proxied = FALSE;
 
 static GMutex *message_counter_lock = NULL;
 
@@ -81,7 +81,7 @@ static GOptionEntry loggen_options[] =
   { "interval", 'I', 0, G_OPTION_ARG_INT, &global_plugin_option.interval, "Number of seconds to run the test for", "<sec>" },
   { "permanent", 'T', 0, G_OPTION_ARG_NONE, &global_plugin_option.permanent, "Send logs without time limit", NULL},
   { "syslog-proto", 'P', 0, G_OPTION_ARG_NONE, &syslog_proto, "Use the new syslog-protocol message format (see also framing)", NULL },
-  { "proxied", 'H', 0, G_OPTION_ARG_NONE, &global_plugin_option.proxied, "Generate PROXY protocol v1 header", NULL },
+  { "proxied", 'H', 0, G_OPTION_ARG_NONE, &proxied, "Generate PROXY protocol v1 header", NULL },
   { "sdata", 'p', 0, G_OPTION_ARG_STRING, &sdata_value, "Send the given sdata (e.g. \"[test name=\\\"value\\\"]\") in case of syslog-proto", NULL },
   { "no-framing", 'F', G_OPTION_ARG_NONE, G_OPTION_ARG_NONE, &noframing, "Don't use syslog-protocol style framing, even if syslog-proto is set", NULL },
   { "active-connections", 0, 0, G_OPTION_ARG_INT, &global_plugin_option.active_connections, "Number of active connections to the server (default = 1)", "<number>" },
@@ -97,14 +97,22 @@ static GOptionEntry loggen_options[] =
 /* This is the callback function called by plugins when
  * they need a new log line */
 int
-generate_message(char *buffer, int buffer_size, int thread_id, unsigned long seq)
+generate_message(char *buffer, int buffer_size, ThreadData *thread_context, unsigned long seq)
 {
   int str_len;
 
+  if (proxied && !thread_context->proxy_header_sent)
+    {
+      str_len = generate_proxy_header(buffer, buffer_size, thread_context->index);
+      thread_context->proxy_header_sent = TRUE;
+      DEBUG("Generated PROXY protocol v1 header; len=%d\n", str_len);
+      return str_len;
+    }
+
   if (read_from_file)
-    str_len = read_next_message_from_file(buffer, buffer_size, syslog_proto, thread_id);
+    str_len = read_next_message_from_file(buffer, buffer_size, syslog_proto, thread_context->index);
   else
-    str_len = generate_log_line(buffer, buffer_size, syslog_proto, thread_id, seq);
+    str_len = generate_log_line(buffer, buffer_size, syslog_proto, thread_context->index, seq);
 
   if (str_len < 0)
     return -1;
@@ -114,7 +122,7 @@ generate_message(char *buffer, int buffer_size, int thread_id, unsigned long seq
   raw_message_length += str_len;
 
   if (thread_stat_count && csv)
-    thread_stat_count[thread_id]+=1;
+    thread_stat_count[thread_context->index]+=1;
 
   g_mutex_unlock(message_counter_lock);
 

@@ -42,7 +42,6 @@ typedef struct _plugin_option
   const char *target; /* command line argument */
   const char *port;
   int  rate;
-  gboolean proxied;
 } PluginOption;
 
 typedef struct _thread_data
@@ -59,7 +58,7 @@ typedef struct _thread_data
 typedef GOptionEntry *(*get_option_func)(void);
 typedef gboolean (*start_plugin_func)(PluginOption *option);
 typedef void (*stop_plugin_func)(PluginOption *option);
-typedef int (*generate_message_func)(char *buffer, int buffer_size, int thread_id, unsigned long seq);
+typedef int (*generate_message_func)(char *buffer, int buffer_size, ThreadData *thread_context, unsigned long seq);
 typedef void (*set_generate_message_func)(generate_message_func gen_message);
 typedef int (*get_thread_count_func)(void);
 typedef gboolean (*is_plugin_activated_func)(void);
