@@ -177,9 +177,13 @@ validate-release: validate-tree-clean validate-version-for-release
 		exit 1; \
 	fi
 
+#
+# release:
+#
+# the order of these is important, so invoke ourselves recursively
+# instead of using make dependencies, which can be reordered in parallel builds
+#
 release: validate-release
-	# the order of these is important, so invoke ourselves recursively
-	# instead of using make dependencies, which can be reordered in parallel builds
 
 	ARTIFACT_DIR=$(RELEASE_DIR)/$(VERSION) && \
 	rm -rf "$$ARTIFACT_DIR" && mkdir -p "$$ARTIFACT_DIR" && rm -rf $(TARBALL) && \
