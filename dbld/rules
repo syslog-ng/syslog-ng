@@ -124,9 +124,21 @@ tarball-%: tarball-from-root
 	fi
 
 
+
 pkg-tarball: pkg-tarball-$(TARBALL_IMAGE)
+
+#
+# pkg-tarball-%:
+#
+# NOTE: first check if the tarball is already a pkg-tarball (containing
+# packaging files).  This might happen if we try to reuse a cached tarball
+# and we can spare some time by avoiding the pulling of the tarball image as
+# well as not having to run the scripts that add the packaging files
+#
 pkg-tarball-%: tarball-%
-	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i balabit/syslog-ng-$* /dbld/pkg-tarball
+	@if ! tar --strip-components=1 --show-transformed-names  -tvf $(TARBALL) | grep  ' debian/rules$$' > /dev/null; then \
+		$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i balabit/syslog-ng-$* /dbld/pkg-tarball; \
+	fi
 
 package: package-$(DEFAULT_IMAGE)
 package-%: pkg-tarball
