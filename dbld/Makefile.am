@@ -1,12 +1,16 @@
 EXTRA_DIST += \
 	dbld/functions.sh \
 	dbld/tarball \
+	dbld/tarball-changes.ignore \
 	dbld/pkg-tarball \
 	dbld/package \
 	dbld/rpm \
 	dbld/deb \
 	dbld/generate-rpm-specfile \
 	dbld/generate-debian-directory \
+	dbld/prepare-image-build \
+	dbld/prepare-release \
+	dbld/builddeps \
 	dbld/shell \
 	dbld/rules \
 	dbld/bootstrap	\
