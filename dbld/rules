@@ -42,7 +42,8 @@ ROOT_DIR=$(shell pwd)
 DBLD_DIR=$(ROOT_DIR)/dbld
 BUILD_DIR=$(DBLD_DIR)/build
 RELEASE_DIR=$(DBLD_DIR)/release
-TARBALL=$(BUILD_DIR)/syslog-ng-$(VERSION).tar.gz
+TARBALL_BASENAME=syslog-ng-$(VERSION).tar.gz
+TARBALL=$(BUILD_DIR)/$(TARBALL_BASENAME)
 GIT=$(shell which git || echo false)
 GIT_RELEASE_TAG=syslog-ng-$(VERSION)
 CONFIGURE_OPTS=--enable-debug --enable-manpages --with-python=2 --prefix=/install $(CONFIGURE_ADD)
@@ -97,9 +98,15 @@ bootstrap-%: setup
 make-%: setup
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i  balabit/syslog-ng-$(DEFAULT_IMAGE) /dbld/make $(MAKE_ARGS) $*
 
+tarball-from-root: setup
+	@if [ -f $(ROOT_DIR)/../$(TARBALL_BASENAME) ] && [ ! -f $(TARBALL) ]; then \
+		cp $(ROOT_DIR)/../$(TARBALL_BASENAME) $(TARBALL); \
+	fi
+
 tarball: tarball-$(TARBALL_IMAGE)
-tarball-%: setup
-	@if [ -f $(TARBALL) ]; then \
+tarball-%: tarball-from-root
+	@echo "Checking $(TARBALL) if it is up-to-date..."; \
+	if [ -f $(TARBALL) ]; then \
 		TARBALL_CHANGES=`find $(ROOT_DIR) -newer $(TARBALL) | sed -e 's,^$(ROOT_DIR),,' | grep -v -f $(DBLD_DIR)/tarball-changes.ignore | tee $(BUILD_DIR)/tarball-changed-files.txt | wc -l`; \
 	fi; \
 	if [ ! -f $(TARBALL) ] || [ "$${TARBALL_CHANGES}" -gt 0 ]; then \
