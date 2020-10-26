@@ -1181,7 +1181,11 @@ tls_verify_certificate_name(X509 *cert, const gchar *host_name)
               else if (gen_name->type == GEN_IPADD)
                 {
                   gchar dotted_ip[64] = {0};
-                  if (inet_ntop(AF_INET, gen_name->d.iPAddress->data, dotted_ip, sizeof(dotted_ip)))
+                  int addr_family = AF_INET;
+                  if (gen_name->d.iPAddress->length == 16)
+                    addr_family = AF_INET6;
+
+                  if (inet_ntop(addr_family, gen_name->d.iPAddress->data, dotted_ip, sizeof(dotted_ip)))
                     {
                       g_strlcpy(pattern_buf, dotted_ip, sizeof(pattern_buf));
                       found = TRUE;
