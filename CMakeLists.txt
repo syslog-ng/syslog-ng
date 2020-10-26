@@ -26,6 +26,7 @@ include(external_or_find_package)
 include(add_module)
 include(add_tests)
 include(module_switch)
+include(BISON_GEN)
 
 set(MEMORYCHECK_SUPPRESSIONS_FILE "${PROJECT_SOURCE_DIR}/tests/valgrind/unit-test-leak.supp")
 set(MEMORYCHECK_COMMAND_OPTIONS "--num-callers=30 --sim-hints=no-nptl-pthread-stackcache --gen-suppressions=all --leak-check=full --freelist-vol=200000000 --freelist-big-blocks=10000000 --malloc-fill=55 --free-fill=AA")
@@ -176,8 +177,8 @@ set(CMAKE_C_STANDARD 99)
 find_package(BISON 3.4.2 REQUIRED)
 
 string(REGEX MATCH "^([0-9]+)\\.([0-9]+)\\..*$" _dummy "${BISON_VERSION}")
-set(SYSLOG_NG_BISON_MAJOR "${CMAKE_MATCH_1}")
-set(SYSLOG_NG_BISON_MINOR "${CMAKE_MATCH_2}")
+set(BISON_MAJOR "${CMAKE_MATCH_1}")
+set(BISON_MINOR "${CMAKE_MATCH_2}")
 
 set(GLIB_COMPILE_DEFINITIONS
   GLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_28

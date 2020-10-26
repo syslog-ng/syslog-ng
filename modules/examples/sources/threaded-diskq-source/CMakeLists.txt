@@ -14,7 +14,8 @@ target_include_directories(threaded-diskq-source
 )
 
 generate_y_from_ym(modules/examples/sources/threaded-diskq-source/threaded-diskq-source-grammar)
-bison_target(MsgGeneratorGrammar
-    ${CMAKE_CURRENT_BINARY_DIR}/threaded-diskq-source-grammar.y
-    ${CMAKE_CURRENT_BINARY_DIR}/threaded-diskq-source-grammar.c
-    COMPILE_FLAGS ${BISON_FLAGS})
+BISON_GEN(
+  NAME MsgGeneratorGrammar
+  INPUT ${CMAKE_CURRENT_BINARY_DIR}/threaded-diskq-source-grammar.y
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/threaded-diskq-source-grammar
+  COMPILE_FLAGS ${BISON_FLAGS})
