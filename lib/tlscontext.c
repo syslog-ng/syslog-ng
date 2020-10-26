@@ -1180,11 +1180,13 @@ tls_verify_certificate_name(X509 *cert, const gchar *host_name)
                 }
               else if (gen_name->type == GEN_IPADD)
                 {
-                  char *dotted_ip = inet_ntoa(*(struct in_addr *) gen_name->d.iPAddress->data);
-
-                  g_strlcpy(pattern_buf, dotted_ip, sizeof(pattern_buf));
-                  found = TRUE;
-                  result = strcasecmp(host_name, pattern_buf) == 0;
+                  gchar dotted_ip[64] = {0};
+                  if (inet_ntop(AF_INET, gen_name->d.iPAddress->data, dotted_ip, sizeof(dotted_ip)))
+                    {
+                      g_strlcpy(pattern_buf, dotted_ip, sizeof(pattern_buf));
+                      found = TRUE;
+                      result = strcasecmp(host_name, pattern_buf) == 0;
+                    }
                 }
             }
           sk_GENERAL_NAME_free(alt_names);
