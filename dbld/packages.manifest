@@ -90,6 +90,7 @@ python-dev                  [debian-stretch, debian-buster, ubuntu-xenial, ubunt
 python2-dev                 [debian-sid]
 python-devel                [centos, fedora]
 python3-devel               [fedora]
+python-unversioned-command  [fedora]
 python3-dev                 [ubuntu-focal]
 python-pip                      [centos, fedora, debian-stretch, debian-buster, ubuntu-trusty, ubuntu-xenial, ubuntu-bionic]
 python3-pip                     [debian, ubuntu]
