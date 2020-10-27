@@ -13,13 +13,6 @@ jobs:
         python: [python2, python3]
         build-tool: [autotools, cmake]
         cc: [gcc, clang]
-        exclude:
-          - python: python3
-            build-tool: autotools
-            cc: clang
-          - python: python3
-            build-tool: cmake
-            cc: clang
       fail-fast: false
 
     steps:
