@@ -20,8 +20,6 @@
 # COPYING for details.
 #
 #############################################################################
-import src.testcase_parameters.testcase_parameters as tc_parameters
-from src.common.operations import create_file
 
 TEMPLATE = r'"${PROXIED_SRCIP} ${PROXIED_DSTIP} ${PROXIED_SRCPORT} ${PROXIED_DSTPORT} ${PROXIED_IP_VERSION} ${MESSAGE}\n"'
 INPUT_MESSAGES = "PROXY TCP4 1.1.1.1 2.2.2.2 3333 4444\r\n" \
@@ -34,15 +32,13 @@ EXPECTED_MESSAGE2 = "1.1.1.1 2.2.2.2 3333 4444 4 message 2\n"
 
 
 def test_pp_reload(config, syslog_ng, loggen, port_allocator):
-    loggen_input_path = str(tc_parameters.WORKING_DIR) + "/loggen_input.txt"
-
     network_source = config.create_network_source(ip="localhost", port=port_allocator(), transport='"proxied-tcp"', flags="no-parse")
     file_destination = config.create_file_destination(file_name="output.log", template=TEMPLATE)
     config.create_logpath(statements=[network_source, file_destination])
 
     syslog_ng.start(config)
-    create_file(loggen_input_path, INPUT_MESSAGES)
-    loggen.start(network_source.options["ip"], network_source.options["port"], stream=True, permanent=True, rate=1, read_file=loggen_input_path, dont_parse=True)
+
+    network_source.write_log(INPUT_MESSAGES, rate=1)
 
     # With the current loggen implementation there is no way to properly timing messages.
     # Here I made an assumption that with rate=1, there will be messages which will arrive

@@ -20,9 +20,6 @@
 # COPYING for details.
 #
 #############################################################################
-import src.testcase_parameters.testcase_parameters as tc_parameters
-from src.common.operations import create_file
-from src.helpers.loggen.loggen import Loggen
 
 TEMPLATE = r'"${PROXIED_SRCIP} ${PROXIED_DSTIP} ${PROXIED_SRCPORT} ${PROXIED_DSTPORT} ${PROXIED_IP_VERSION} ${MESSAGE}\n"'
 
@@ -50,21 +47,9 @@ def test_pp_with_multiple_clients(config, port_allocator, syslog_ng):
 
     syslog_ng.start(config)
 
-    client_A_loggen_input_path = str(tc_parameters.WORKING_DIR) + "/client_A_loggen_input.txt"
-    client_B_loggen_input_path = str(tc_parameters.WORKING_DIR) + "/client_B_loggen_input.txt"
-
-    create_file(client_A_loggen_input_path, CLIENT_A_INPUT)
-    create_file(client_B_loggen_input_path, CLIENT_B_INPUT)
-
     # These 2 run simultaneously
-    Loggen().start(
-        network_source.options["ip"], network_source.options["port"], inet=True,
-        stream=True, permanent=True, read_file=client_A_loggen_input_path, dont_parse=True, rate=1,
-    )
-    Loggen().start(
-        network_source.options["ip"], network_source.options["port"], inet=True,
-        stream=True, permanent=True, read_file=client_B_loggen_input_path, dont_parse=True, rate=1,
-    )
+    network_source.write_log(CLIENT_A_INPUT, rate=1)
+    network_source.write_log(CLIENT_B_INPUT, rate=1)
 
     output_messages = file_destination.read_logs(counter=4)
     assert sorted(output_messages) == sorted(CLIENT_A_EXPECTED + CLIENT_B_EXPECTED)

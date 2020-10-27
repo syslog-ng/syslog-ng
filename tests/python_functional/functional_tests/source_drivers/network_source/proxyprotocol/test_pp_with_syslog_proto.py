@@ -20,7 +20,6 @@
 # COPYING for details.
 #
 #############################################################################
-from src.common.operations import create_file
 
 PROXY_PROTO_HEADER = "PROXY TCP4 192.168.1.1 192.168.1.2 20000 20001\r\n"
 RFC3164_EXAMPLE = "<34>Oct 11 22:14:15 mymachine su: 'su root' failed for lonvick on /dev/pts/8\n"

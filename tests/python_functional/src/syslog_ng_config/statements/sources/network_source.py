@@ -51,5 +51,5 @@ class NetworkSource(SourceDriver):
         self.driver_name = "network"
         super(NetworkSource, self).__init__(options=options)
 
-    def write_log(self, formatted_content):
-        self.io.write(formatted_content)
+    def write_log(self, formatted_content, rate=None):
+        self.io.write(formatted_content, rate=rate)
