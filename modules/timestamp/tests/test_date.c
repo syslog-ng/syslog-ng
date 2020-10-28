@@ -141,6 +141,12 @@ ParameterizedTestParameters(date, test_date_parser)
 
     { "1446128356 +01:00", NULL, "%s %z", LM_TS_STAMP, "2015-10-29T15:19:16+01:00" },
     { "1446128356", "Europe/Budapest", "%s", LM_TS_STAMP, "2015-10-29T15:19:16+01:00" },
+
+    /* %Y-%m-%d %H:%M:%S %z */
+    { "2015-01-26 00:40:07 PDT", NULL, "%Y-%m-%d %H:%M:%S %z", LM_TS_STAMP, "2015-01-26T00:40:07-07:00" },
+    { "2015-01-26 00:40:07 EDT", NULL, "%Y-%m-%d %H:%M:%S %z", LM_TS_STAMP, "2015-01-26T00:40:07-04:00" },
+    { "2015-01-26 00:40:07 CET", NULL, "%Y-%m-%d %H:%M:%S %z", LM_TS_STAMP, "2015-01-26T00:40:07+01:00" },
+
   };
 
   return cr_make_param_array(struct date_params, params, sizeof(params) / sizeof(struct date_params));
