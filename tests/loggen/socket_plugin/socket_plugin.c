@@ -380,30 +380,18 @@ active_thread_func(gpointer user_data)
           break;
         }
 
-      int str_len;
-      if (thread_context->option->proxied && !thread_context->proxy_header_sent)
+      int str_len = generate_message(message, MAX_MESSAGE_LENGTH, thread_context, count++);
+
+      if (str_len < 0)
         {
-          str_len = generate_proxy_header(message, MAX_MESSAGE_LENGTH, thread_context->index);
-          thread_context->proxy_header_sent = TRUE;
-          DEBUG("Generated PROXY protocol v1 header; len=%d\n", str_len);
-
-          connection_error = send_msg(fd, message, str_len);
+          ERROR("can't generate more log lines. end of input file?\n");
+          break;
         }
-      else
-        {
-          str_len = generate_message(message, MAX_MESSAGE_LENGTH, thread_context->index, count++);
 
-          if (str_len < 0)
-            {
-              ERROR("can't generate more log lines. end of input file?\n");
-              break;
-            }
+      connection_error = send_msg(fd, message, str_len);
 
-          connection_error = send_msg(fd, message, str_len);
-
-          thread_context->sent_messages++;
-          thread_context->buckets--;
-        }
+      thread_context->sent_messages++;
+      thread_context->buckets--;
     }
   DEBUG("thread (%s,%p) finished\n", loggen_plugin_info.name, g_thread_self());
 

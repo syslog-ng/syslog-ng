@@ -358,7 +358,7 @@ active_thread_func(gpointer user_data)
           break;
         }
 
-      int str_len = generate_message(message, MAX_MESSAGE_LENGTH, thread_context->index, count++);
+      int str_len = generate_message(message, MAX_MESSAGE_LENGTH, thread_context, count++);
 
       if (str_len < 0)
         {

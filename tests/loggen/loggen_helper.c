@@ -34,6 +34,8 @@
 #include <openssl/err.h>
 
 #define HEADER_BUF_SIZE 128
+#define IP_ADDRESS_MAX_LENGTH 15
+#define IP_PORT_MAX_LENGTH 5
 
 static int debug = 0;
 
@@ -299,16 +301,38 @@ close_ssl_connection(SSL *ssl)
 }
 
 int
-generate_proxy_header(char *buffer, int buffer_size, int thread_id)
+generate_proxy_header(char *buffer, int buffer_size, int thread_id, const char *proxy_src_ip, const char *proxy_dst_ip,
+                      const char *proxy_src_port, const char *proxy_dst_port)
 {
   gchar header[HEADER_BUF_SIZE];
 
-  gint oct1 = g_random_int_range(1, 100);
-  gint oct2 = g_random_int_range(101, 200);
-  gint port = g_random_int_range(5000, 10000);
+  gchar ip_src_random[IP_ADDRESS_MAX_LENGTH + 1];
+  gchar ip_dst_random[IP_ADDRESS_MAX_LENGTH + 1];
+  gchar port_random[IP_PORT_MAX_LENGTH + 1];
 
-  gint header_len = g_snprintf(header, HEADER_BUF_SIZE, "PROXY TCP4 192.168.1.%d 192.168.1.%d %d 514\n",
-                               oct1, oct2, port);
+  if (proxy_src_ip == NULL)
+    {
+      gint oct1 = g_random_int_range(1, 100);
+      g_snprintf(ip_src_random, IP_ADDRESS_MAX_LENGTH + 1, "192.168.1.%d", oct1);
+    }
+
+  if (proxy_dst_ip == NULL)
+    {
+      gint oct2 = g_random_int_range(1, 100);
+      g_snprintf(ip_dst_random, IP_ADDRESS_MAX_LENGTH + 1, "192.168.1.%d", oct2);
+    }
+
+  if (proxy_src_port == NULL)
+    {
+      gint port = g_random_int_range(5000, 10000);
+      g_snprintf(port_random, IP_PORT_MAX_LENGTH + 1, "%d", port);
+    }
+
+  gint header_len = g_snprintf(header, HEADER_BUF_SIZE, "PROXY TCP4 %s %s %s %s\n",
+                               proxy_src_ip == NULL ? ip_src_random : proxy_src_ip,
+                               proxy_dst_ip == NULL ? ip_dst_random : proxy_dst_ip,
+                               proxy_src_port == NULL ? port_random : proxy_src_port,
+                               proxy_dst_port == NULL ? "514" : proxy_dst_port);
 
   if (header_len > buffer_size)
     ERROR("PROXY protocol header is longer than the provided buffer; buf=%p\n", buffer);
