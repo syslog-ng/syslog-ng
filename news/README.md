@@ -22,8 +22,5 @@ How to create the `NEWS.md` file for the release
 
  1. Run `news/create-newsfile.py` (`python3` required)
  2. Fill the `Highlights` section in the newly created `NEWS.md` file.
- 3. Fill the contributors part of the `Credits` section.
-    The internal news file creating tool can generate it for you.
 
-Note, the script uses the `VERSION` file, so it is advised to run the script, after the version is bumped,
-or make sure, that you fill the version correctly by yourself.
+Note, the script uses the `VERSION` file, so it is necessary bump the version there, before running the script.
