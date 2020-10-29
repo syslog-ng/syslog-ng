@@ -4,8 +4,6 @@ set(CSVPARSER_SOURCES
     csvparser-parser.c
     csvparser-parser.h
     csvparser-plugin.c
-    ${CMAKE_CURRENT_BINARY_DIR}/csvparser-grammar.h
-    ${CMAKE_CURRENT_BINARY_DIR}/csvparser-grammar.c
 )
 
 add_module(

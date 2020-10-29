@@ -3,7 +3,8 @@
 ##################################################
 
 # packages to run gosu installation
-gnupg                           [centos, fedora, debian, ubuntu]
+gnupg                           [centos, fedora]
+gosu				[ubuntu, debian]
 
 # download various stuff over https
 wget                            [centos, fedora, debian, ubuntu]
@@ -43,10 +44,10 @@ rpm-build                       [centos, fedora]
 # Tarball related tools
 #############################################################################
 # needed to create a tarball from libjson-c
-doxygen                         [ubuntu]
+doxygen                         [tarball]
 
 # docbook to generate man pages
-docbook-xsl                     [ubuntu]
+docbook-xsl                     [tarball]
 docbook-style-xsl               [fedora]
 
 #############################################################################
@@ -61,7 +62,7 @@ ccache                          [centos, fedora, debian, ubuntu]
 #
 # NOTE: the versions installed may or may not be enough to regenerate
 # configure scripts, especially on older distros).  We only guarantee that
-# autogen.sh successfully runs within TARBALL_IMAGE (ubuntu-bionic at this
+# autogen.sh successfully runs within TARBALL_IMAGE (debian-testing at this
 # point).  All the other platforms are best-effort.
 #
 # NOTE/2: debian based platforms always regenerate configure script in their
@@ -89,6 +90,7 @@ python-dev                  [debian-stretch, debian-buster, ubuntu-xenial, ubunt
 python2-dev                 [debian-sid]
 python-devel                [centos, fedora]
 python3-devel               [fedora]
+python-unversioned-command  [fedora]
 python3-dev                 [ubuntu-focal]
 python-pip                      [centos, fedora, debian-stretch, debian-buster, ubuntu-trusty, ubuntu-xenial, ubuntu-bionic]
 python3-pip                     [debian, ubuntu]

@@ -8,13 +8,14 @@ BUILDER_IMAGES=		\
 	debian-buster	\
 	debian-sid	\
 	ubuntu-xenial	\
-	ubuntu-bionic \
-	ubuntu-focal \
-	kira
+	ubuntu-bionic	\
+	ubuntu-focal	\
+	kira		\
+	tarball
 
 IMAGES=${BUILDER_IMAGES} devshell
 DEFAULT_IMAGE ?= ubuntu-bionic
-TARBALL_IMAGE ?= ubuntu-bionic
+TARBALL_IMAGE ?= tarball
 DEFAULT_DEB_IMAGE=ubuntu-bionic
 DEFAULT_RPM_IMAGE=centos-7
 DOCKER=docker
@@ -189,6 +190,7 @@ images: $(foreach image,$(IMAGES), image-$(image))
 image: image-$(DEFAULT_IMAGE)
 image-kira: image-ubuntu-focal
 image-devshell: image-ubuntu-focal
+image-tarball: image-debian-testing
 image-%:
 	$(DBLD_DIR)/prepare-image-build $* && \
         $(DOCKER) build $(DOCKER_BUILD_ARGS) --build-arg=OS_PLATFORM=$* --build-arg=COMMIT=$$($(GIT) rev-parse --short HEAD || echo "") --network=host -t balabit/syslog-ng-$* -f $(DBLD_DIR)/images/$*.dockerfile $(DBLD_DIR)

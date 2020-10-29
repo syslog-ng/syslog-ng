@@ -19,7 +19,8 @@ target_include_directories(threaded-random-generator
 )
 
 generate_y_from_ym(modules/examples/sources/threaded-random-generator/threaded-random-generator-grammar)
-bison_target(MsgGeneratorGrammar
-    ${CMAKE_CURRENT_BINARY_DIR}/threaded-random-generator-grammar.y
-    ${CMAKE_CURRENT_BINARY_DIR}/threaded-random-generator-grammar.c
-    COMPILE_FLAGS ${BISON_FLAGS})
+BISON_GEN(
+  NAME MsgGeneratorGrammar
+  INPUT ${CMAKE_CURRENT_BINARY_DIR}/threaded-random-generator-grammar.y
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/threaded-random-generator-grammar
+  COMPILE_FLAGS ${BISON_FLAGS})

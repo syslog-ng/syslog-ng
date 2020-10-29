@@ -13,9 +13,10 @@ set (NATIVE_HEADERS
     )
 
 generate_y_from_ym (modules/native/native-grammar)
-bison_target(NativeGrammar
-    ${CMAKE_CURRENT_BINARY_DIR}/native-grammar.y
-    ${CMAKE_CURRENT_BINARY_DIR}/native-grammar.c
+BISON_GEN(
+    NAME NativeGrammar
+    INPUT ${CMAKE_CURRENT_BINARY_DIR}/native-grammar.y
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/native-grammar
     COMPILE_FLAGS ${BISON_FLAGS})
 
 if (ENABLE_NATIVE)
