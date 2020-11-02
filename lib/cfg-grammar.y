@@ -236,6 +236,9 @@
 %token KW_LOCAL_TIME_ZONE             10204
 %token KW_FORMAT                      10205
 
+/* destination writer options */
+%token KW_TRUNCATE_SIZE               10206
+
 /* timers */
 %token KW_TIME_REOPEN                 10210
 %token KW_TIME_REAP                   10211
@@ -1312,6 +1315,7 @@ dest_writer_option
 	                                        }
 	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_writer_options_set_template_escape(last_writer_options, $3); }
 	| KW_PAD_SIZE '(' nonnegative_integer ')'         { last_writer_options->padding = $3; }
+	| KW_TRUNCATE_SIZE '(' nonnegative_integer ')'         { last_writer_options->truncate_size = $3; }
 	| KW_MARK_FREQ '(' nonnegative_integer ')'        { last_writer_options->mark_freq = $3; }
         | KW_MARK_MODE '(' KW_INTERNAL ')'      { log_writer_options_set_mark_mode(last_writer_options, "internal"); }
 	| KW_MARK_MODE '(' string ')'

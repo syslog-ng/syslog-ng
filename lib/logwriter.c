@@ -1093,6 +1093,11 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
         }
 
     }
+
+  if (self->options->truncate_size != -1 && result->len > self->options->truncate_size)
+    {
+      g_string_truncate(result, self->options->truncate_size);
+    }
 }
 
 static void
@@ -1690,6 +1695,7 @@ log_writer_options_defaults(LogWriterOptions *options)
   options->padding = 0;
   options->mark_mode = MM_GLOBAL;
   options->mark_freq = -1;
+  options->truncate_size = -1;
   host_resolve_options_defaults(&options->host_resolve_options);
 }
 
