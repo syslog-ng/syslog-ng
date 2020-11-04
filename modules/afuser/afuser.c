@@ -93,6 +93,16 @@ _utmp_entry_matches(UtmpEntry *ut, GString *username)
   return FALSE;
 }
 
+static gchar *
+_get_utmp_username(UtmpEntry *ut)
+{
+#ifdef SYSLOG_NG_HAVE_MODERN_UTMP
+  return ut->ut_user;
+#else
+  return ut->ut_name;
+#endif
+}
+
 G_LOCK_DEFINE_STATIC(utmp_lock);
 
 static void
@@ -134,11 +144,7 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
             line[0] = 0;
           strncpy(p, ut->ut_line, sizeof(line) - (p - line));
           msg_debug("Posting message to user terminal",
-#ifdef SYSLOG_NG_HAVE_MODERN_UTMP
-                    evt_tag_str("user", ut->ut_user),
-#else
-                    evt_tag_str("user", ut->ut_name),
-#endif
+                    evt_tag_str("user", _get_utmp_username(ut)),
                     evt_tag_str("line", line));
           fd = open(line, O_NOCTTY | O_APPEND | O_WRONLY | O_NONBLOCK);
           if (fd != -1)
