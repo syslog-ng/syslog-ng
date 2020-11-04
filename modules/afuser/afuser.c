@@ -147,16 +147,22 @@ afuser_dd_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
                     evt_tag_str("user", _get_utmp_username(ut)),
                     evt_tag_str("line", line));
           fd = open(line, O_NOCTTY | O_APPEND | O_WRONLY | O_NONBLOCK);
-          if (fd != -1)
+          if (fd == -1)
             {
-              if (write(fd, buf, strlen(buf)) < 0 && errno == EAGAIN)
-                {
-                  msg_notice("Writing to the user terminal has blocked for writing, disabling for 10 minutes",
-                             evt_tag_str("user", self->username->str));
-                  self->disable_until = now + 600;
-                }
-              close(fd);
+              msg_error("Opening tty device failed, disabling usertty() for 10 minutes",
+                        evt_tag_str("user", _get_utmp_username(ut)),
+                        evt_tag_str("line", line),
+                        evt_tag_error("errno"));
+              self->disable_until = now + 600;
+              continue;
             }
+          if (write(fd, buf, strlen(buf)) < 0 && errno == EAGAIN)
+            {
+              msg_notice("Writing to the user terminal has blocked for writing, disabling for 10 minutes",
+                         evt_tag_str("user", self->username->str));
+              self->disable_until = now + 600;
+            }
+          close(fd);
         }
     }
   _close_utmp();
