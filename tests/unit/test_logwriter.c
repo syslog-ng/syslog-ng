@@ -157,8 +157,8 @@ _assert_logwriter_output(LogWriterTestCase c)
     {
       templ = log_template_new(configuration, "dummy");
       log_template_compile(templ, c.template, &error);
+      opt.template = templ;
     }
-  opt.template = templ;
   msg = init_msg(c.msg, c.is_rfc5424);
   queue = log_queue_fifo_new(1000, NULL);
   writer = log_writer_new(c.writer_flags, configuration);
