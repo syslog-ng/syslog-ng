@@ -146,10 +146,8 @@ _assert_logwriter_output(LogWriterTestCase c)
   LogWriterOptions opt = {0};
   LogQueue *queue;
 
-  static TimeZoneInfo *tzinfo = NULL;
+  TimeZoneInfo *tzinfo = time_zone_info_new(NULL);
 
-  if (!tzinfo)
-    tzinfo = time_zone_info_new(NULL);
   opt.options = LWO_NO_MULTI_LINE | LWO_NO_STATS | LWO_SHARE_STATS;
   opt.template_options.time_zone_info[LTZ_SEND]=tzinfo;
 
