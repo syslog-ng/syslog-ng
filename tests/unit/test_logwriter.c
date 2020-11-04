@@ -125,14 +125,13 @@ init_msg(const gchar *msg_string, gboolean use_syslog_protocol)
 }
 
 void
-_tear_down(LogTemplate *template, LogWriter *writer, LogMessage *msg, LogQueue *queue, GString *result_msg)
+_tear_down(LogWriter *writer, LogMessage *msg, LogQueue *queue, GString *result_msg, LogWriterOptions *writer_options)
 {
-  if (template)
-    log_template_unref(template);
   log_pipe_unref((LogPipe *) writer);
   log_msg_unref(msg);
   log_queue_unref(queue);
   g_string_free(result_msg, TRUE);
+  log_writer_options_destroy(writer_options);
 }
 
 void
@@ -148,8 +147,9 @@ _assert_logwriter_output(LogWriterTestCase c)
 
   TimeZoneInfo *tzinfo = time_zone_info_new(NULL);
 
-  opt.options = LWO_NO_MULTI_LINE | LWO_NO_STATS | LWO_SHARE_STATS;
+  log_writer_options_defaults(&opt);
   opt.template_options.time_zone_info[LTZ_SEND]=tzinfo;
+  log_writer_options_init(&opt, configuration, LWO_NO_MULTI_LINE | LWO_NO_STATS | LWO_SHARE_STATS);
 
   if (c.template)
     {
@@ -166,7 +166,7 @@ _assert_logwriter_output(LogWriterTestCase c)
   log_writer_format_log(writer, msg, result_msg);
   cr_assert_str_eq(result_msg->str, c.expected_value, "Expected: %s, actual: %s", c.expected_value, result_msg->str);
 
-  _tear_down(templ, writer, msg, queue, result_msg);
+  _tear_down(writer, msg, queue, result_msg, &opt);
 }
 
 Test(logwriter, test_logwriter)
