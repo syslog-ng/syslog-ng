@@ -50,6 +50,8 @@
 #  define _GNU_SOURCE 1
 #endif
 
+static const gint MAX_UDP_PAYLOAD_SIZE = 65507;
+
 typedef struct _AFInetDestDriverTLSVerifyData
 {
   TLSContext *tls_context;
@@ -432,6 +434,14 @@ afinet_dd_init(LogPipe *s)
         }
     }
 #endif
+
+  if (self->super.transport_mapper->sock_type == SOCK_DGRAM)
+    {
+      if (self->super.writer_options.truncate_size == -1)
+        {
+          self->super.writer_options.truncate_size = MAX_UDP_PAYLOAD_SIZE;
+        }
+    }
 
   if (_is_failover_used(self))
     {
