@@ -1,4 +1,4 @@
-FROM balabit/syslog-ng-ubuntu-focal:latest
+FROM balabit/syslog-ng-tarball:latest
 ENV OS_PLATFORM devshell
 
 

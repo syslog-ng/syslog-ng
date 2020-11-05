@@ -208,7 +208,7 @@ shell-%: setup
 images: $(foreach image,$(IMAGES), image-$(image))
 image: image-$(DEFAULT_IMAGE)
 image-kira: image-ubuntu-focal
-image-devshell: image-ubuntu-focal
+image-devshell: image-tarball
 image-tarball: image-debian-testing
 image-%:
 	$(DBLD_DIR)/prepare-image-build $* && \
