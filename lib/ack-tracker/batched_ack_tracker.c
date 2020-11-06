@@ -48,14 +48,14 @@ typedef struct _BatchedAckTracker
   guint batch_size;
   OnBatchAckedFunctor on_batch_acked;
   BatchedAckRecord *pending_ack_record;
-  GMutex acked_records_lock;
+  GMutex *acked_records_lock;
   gulong acked_records_num;
   GList *acked_records;
   struct iv_timer batch_timer;
   struct iv_event request_destroy;
   struct iv_event request_restart_timer;
   gboolean has_pending_request_restart_timer;
-  GMutex pending_request_restart_timer_lock;
+  GMutex *pending_request_restart_timer_lock;
   gboolean watches_running;
 } BatchedAckTracker;
 
@@ -107,7 +107,7 @@ static GList *
 _append_ack_record_to_batch(BatchedAckTracker *self, AckRecord *ack_record)
 {
   GList *full_batch = NULL;
-  g_mutex_lock(&self->acked_records_lock);
+  g_mutex_lock(self->acked_records_lock);
   {
     self->acked_records = g_list_prepend(self->acked_records, ack_record);
     ++self->acked_records_num;
@@ -118,7 +118,7 @@ _append_ack_record_to_batch(BatchedAckTracker *self, AckRecord *ack_record)
         self->acked_records_num = 0;
       }
   }
-  g_mutex_unlock(&self->acked_records_lock);
+  g_mutex_unlock(self->acked_records_lock);
 
   return full_batch;
 }
@@ -156,13 +156,13 @@ _batch_timeout(gpointer data)
   msg_trace("BatchedAckTracker::batch_timeout");
   BatchedAckTracker *self = (BatchedAckTracker *) data;
   GList *batch = NULL;
-  g_mutex_lock(&self->acked_records_lock);
+  g_mutex_lock(self->acked_records_lock);
   {
     batch = self->acked_records;
     self->acked_records = NULL;
     self->acked_records_num = 0;
   }
-  g_mutex_unlock(&self->acked_records_lock);
+  g_mutex_unlock(self->acked_records_lock);
   if (batch)
     {
       _ack_batch(self, batch);
@@ -174,14 +174,14 @@ static void
 _restart_timer_requested(gpointer data)
 {
   BatchedAckTracker *self = (BatchedAckTracker *) data;
-  g_mutex_lock(&self->pending_request_restart_timer_lock);
+  g_mutex_lock(self->pending_request_restart_timer_lock);
   {
     g_assert(self->has_pending_request_restart_timer);
     self->has_pending_request_restart_timer = FALSE;
     if (!log_pipe_unref(&self->super.source->super))
       _restart_batch_timer(self);
   }
-  g_mutex_unlock(&self->pending_request_restart_timer_lock);
+  g_mutex_unlock(self->pending_request_restart_timer_lock);
 }
 
 static void
@@ -209,11 +209,11 @@ __free(AckTracker *s)
 {
   msg_trace("BatchedAckTracker::free");
   BatchedAckTracker *self = (BatchedAckTracker *) s;
-  g_mutex_clear(&self->acked_records_lock);
+  g_mutex_free(self->acked_records_lock);
 
   self->has_pending_request_restart_timer = TRUE;
   _stop_watches(self);
-  g_mutex_clear(&self->pending_request_restart_timer_lock);
+  g_mutex_free(self->pending_request_restart_timer_lock);
 
   if (self->acked_records)
     _ack_batch(self, self->acked_records);
@@ -252,7 +252,7 @@ _init_watches(BatchedAckTracker *self)
 static void
 _request_batch_timer_restart(BatchedAckTracker *self)
 {
-  g_mutex_lock(&self->pending_request_restart_timer_lock);
+  g_mutex_lock(self->pending_request_restart_timer_lock);
   {
     if (!self->has_pending_request_restart_timer)
       {
@@ -261,7 +261,7 @@ _request_batch_timer_restart(BatchedAckTracker *self)
         iv_event_post(&self->request_restart_timer);
       }
   }
-  g_mutex_unlock(&self->pending_request_restart_timer_lock);
+  g_mutex_unlock(self->pending_request_restart_timer_lock);
 }
 
 static void
@@ -307,13 +307,13 @@ static void
 _ack_partial_batch(BatchedAckTracker *self)
 {
   GList *partial_batch = NULL;
-  g_mutex_lock(&self->acked_records_lock);
+  g_mutex_lock(self->acked_records_lock);
   {
     partial_batch = self->acked_records;
     self->acked_records = NULL;
     self->acked_records_num = 0;
   }
-  g_mutex_unlock(&self->acked_records_lock);
+  g_mutex_unlock(self->acked_records_lock);
   _ack_batch(self, partial_batch);
 }
 
@@ -363,8 +363,8 @@ _init_instance(AckTracker *s, LogSource *source, guint timeout, guint batch_size
   self->on_batch_acked.func = cb;
   self->on_batch_acked.user_data = user_data;
 
-  g_mutex_init(&self->acked_records_lock);
-  g_mutex_init(&self->pending_request_restart_timer_lock);
+  self->acked_records_lock = g_mutex_new();
+  self->pending_request_restart_timer_lock = g_mutex_new();
   _init_watches(self);
   iv_event_register(&self->request_restart_timer);
   iv_event_register(&self->request_destroy);
