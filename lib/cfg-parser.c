@@ -83,6 +83,7 @@ static CfgLexerKeyword main_keywords[] =
   /* option items */
   { "flags",              KW_FLAGS },
   { "pad_size",           KW_PAD_SIZE },
+  { "truncate_size",      KW_TRUNCATE_SIZE },
   { "mark_freq",          KW_MARK_FREQ },
   { "mark",               KW_MARK_FREQ, KWS_OBSOLETE, "mark_freq" },
   { "mark_mode",          KW_MARK_MODE },

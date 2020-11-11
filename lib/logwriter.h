@@ -71,6 +71,7 @@ typedef struct _LogWriterOptions
   gint mark_freq;
   gint stats_level;
   gint stats_source;
+  gint truncate_size;
 } LogWriterOptions;
 
 typedef struct _LogWriter LogWriter;

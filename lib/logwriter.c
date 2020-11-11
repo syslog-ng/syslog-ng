@@ -25,6 +25,7 @@
 #include "logwriter.h"
 #include "messages.h"
 #include "stats/stats-registry.h"
+#include "stats/stats-cluster-single.h"
 #include "hostname.h"
 #include "host-resolve.h"
 #include "seqnum.h"
@@ -69,6 +70,11 @@ struct _LogWriter
   StatsCounterItem *suppressed_messages;
   StatsCounterItem *processed_messages;
   StatsCounterItem *written_messages;
+  struct
+  {
+    StatsCounterItem *count;
+    StatsCounterItem *bytes;
+  } truncated;
   LogPipe *control;
   LogWriterOptions *options;
   LogMessage *last_msg;
@@ -1093,6 +1099,16 @@ log_writer_format_log(LogWriter *self, LogMessage *lm, GString *result)
         }
 
     }
+
+  if (self->options->truncate_size != -1 && result->len > self->options->truncate_size)
+    {
+      const gint truncated_bytes = result->len - self->options->truncate_size;
+
+      g_string_truncate(result, self->options->truncate_size);
+
+      stats_counter_inc(self->truncated.count);
+      stats_counter_add(self->truncated.bytes, truncated_bytes);
+    }
 }
 
 static void
@@ -1388,6 +1404,19 @@ _register_counters(LogWriter *self)
     stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
     stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_WRITTEN, &self->written_messages);
     log_queue_register_stats_counters(self->queue, self->options->stats_level, &sc_key);
+
+    StatsClusterKey sc_key_truncated_count;
+    stats_cluster_single_key_set_with_name(&sc_key_truncated_count, self->options->stats_source | SCS_DESTINATION,
+                                           self->stats_id, self->stats_instance, "truncated_count");
+    stats_register_counter(self->options->stats_level, &sc_key_truncated_count, SC_TYPE_SINGLE_VALUE,
+                           &self->truncated.count);
+
+    StatsClusterKey sc_key_truncated_bytes;
+    stats_cluster_single_key_set_with_name(&sc_key_truncated_bytes, self->options->stats_source | SCS_DESTINATION,
+                                           self->stats_id, self->stats_instance, "truncated_bytes");
+    stats_register_counter(self->options->stats_level, &sc_key_truncated_bytes, SC_TYPE_SINGLE_VALUE,
+                           &self->truncated.bytes);
+
   }
   stats_unlock();
 }
@@ -1441,6 +1470,17 @@ _unregister_counters(LogWriter *self)
     stats_unregister_counter(&sc_key, SC_TYPE_SUPPRESSED, &self->suppressed_messages);
     stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
     stats_unregister_counter(&sc_key, SC_TYPE_WRITTEN, &self->written_messages);
+
+    StatsClusterKey sc_key_truncated_count;
+    stats_cluster_single_key_set_with_name(&sc_key_truncated_count, self->options->stats_source | SCS_DESTINATION,
+                                           self->stats_id, self->stats_instance, "truncated_count");
+    stats_unregister_counter(&sc_key_truncated_count, SC_TYPE_SINGLE_VALUE, &self->truncated.count);
+
+    StatsClusterKey sc_key_truncated_bytes;
+    stats_cluster_single_key_set_with_name(&sc_key_truncated_bytes, self->options->stats_source | SCS_DESTINATION,
+                                           self->stats_id, self->stats_instance, "truncated_bytes");
+    stats_unregister_counter(&sc_key_truncated_bytes, SC_TYPE_SINGLE_VALUE, &self->truncated.bytes);
+
     log_queue_unregister_stats_counters(self->queue, &sc_key);
   }
   stats_unlock();
@@ -1690,6 +1730,7 @@ log_writer_options_defaults(LogWriterOptions *options)
   options->padding = 0;
   options->mark_mode = MM_GLOBAL;
   options->mark_freq = -1;
+  options->truncate_size = -1;
   host_resolve_options_defaults(&options->host_resolve_options);
 }
 
