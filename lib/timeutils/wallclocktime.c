@@ -245,7 +245,6 @@ static int first_wday_of(int yr);
 #define HAVE_HOUR(s)    (s & S_HOUR)
 #define HAVE_USEC(s)    (s & S_USEC)
 
-static char gmt[] = { "GMT" };
 static char utc[] = { "UTC" };
 /* RFC-822/RFC-2822 */
 static const char *const nast[5] =
@@ -273,9 +272,9 @@ gchar *
 wall_clock_time_strptime(WallClockTime *wct, const gchar *format, const gchar *input)
 {
   unsigned char c;
-  const unsigned char *bp, *ep;
+  const unsigned char *bp, *ep, *zname;
   int alt_format, i, split_year = 0, neg = 0, state = 0,
-                     day_offset = -1, week_offset = 0, offs;
+                     day_offset = -1, week_offset = 0, offs, mandatory;
   const char *new_fmt;
 
   bp = (const unsigned char *)input;
@@ -607,30 +606,8 @@ recurse:
           continue;
 
         case 'Z':
-          if (strncmp((const char *)bp, gmt, 3) == 0 ||
-              strncmp((const char *)bp, utc, 3) == 0)
-            {
-              wct->tm.tm_isdst = 0;
-              wct->wct_gmtoff = 0;
-              wct->wct_zone = gmt;
-              bp += 3;
-            }
-          else
-            {
-              ep = find_string(bp, &i, (const char *const *)tzname, NULL, 2);
-              if (ep != NULL)
-                {
-                  wct->tm.tm_isdst = i;
-#ifdef SYSLOG_NG_HAVE_TIMEZONE
-                  wct->wct_gmtoff = -(timezone);
-#endif
-                  wct->wct_zone = tzname[i];
-                }
-              bp = ep;
-            }
-          continue;
-
         case 'z':
+          mandatory = c == 'z';
           /*
            * We recognize all ISO 8601 formats:
            * Z  = Zulu time/UTC
@@ -648,9 +625,11 @@ recurse:
            * [A-IL-M] = -1 ... -9 (J not used)
            * [N-Y]  = +1 ... +12
            */
-          while (isspace(*bp))
-            bp++;
+          if (mandatory)
+            while (isspace(*bp))
+              bp++;
 
+          zname = bp;
           switch (*bp++)
             {
             case 'G':
@@ -691,6 +670,18 @@ recurse:
                   bp = ep;
                   continue;
                 }
+              ep = find_string(bp, &i, (const char *const *)tzname, NULL, 2);
+              if (ep != NULL)
+                {
+                  wct->tm.tm_isdst = i;
+#ifdef SYSLOG_NG_HAVE_TIMEZONE
+                  wct->wct_gmtoff = -(timezone);
+#endif
+                  wct->wct_zone = tzname[i];
+                  bp = ep;
+                  continue;
+                }
+
 
               if ((*bp >= 'A' && *bp <= 'I') ||
                   (*bp >= 'L' && *bp <= 'Y'))
@@ -728,22 +719,27 @@ recurse:
           switch (i)
             {
             case 2:
-              offs *= 100;
+              offs *= 60;
               break;
             case 4:
               i = offs % 100;
+              offs /= 100;
               if (i >= 60)
-                return NULL;
+                goto out;
               /* Convert minutes into decimal */
-              offs = (offs / 100) * 100 + (i * 50) / 30;
+              offs = offs * 3600 + i * 60;
               break;
             default:
-              return NULL;
+out:
+              if (mandatory)
+                return NULL;
+              bp = zname;
+              continue;
             }
           if (neg)
             offs = -offs;
           wct->tm.tm_isdst = 0; /* XXX */
-          wct->wct_gmtoff = (offs * 3600) / 100;
+          wct->wct_gmtoff = offs;
           wct->wct_zone = utc; /* XXX */
           continue;
 
