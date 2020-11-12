@@ -23,7 +23,7 @@ function update_version() {
 
 function update_packaging_debian() {
 	echo Updating Debian packaging
-	DEB_FULLNAME=$USER_NAME DEB_EMAIL=$USER_EMAIL debchange --distribution unstable --newversion "$VERSION-1" -c packaging/debian/changelog "New upstream release $VERSION"
+	DEBFULLNAME=$USER_NAME DEBEMAIL=$USER_EMAIL debchange --distribution unstable --newversion "$VERSION-1" -c packaging/debian/changelog "New upstream release $VERSION"
 }
 
 function update_packaging_rhel() {
