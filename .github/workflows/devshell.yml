@@ -181,10 +181,12 @@ jobs:
           make python-pep8 && make python-pylint || (git reset --hard HEAD && exit 1)
 
       - name: Style check (Light)
+        id: light-style-check
         if: always()
         working-directory: ./build
         run: |
-          make pytest-linters || (git reset --hard HEAD && exit 1)
+          make pytest-linters || \
+            (git diff > ../light-style-problems.diff ; git reset --hard HEAD && exit 1)
 
       - name: "Artifact: c-style-problems"
         uses: actions/upload-artifact@v2
@@ -192,6 +194,13 @@ jobs:
         with:
           name: c-style-problems
           path: c-style-problems.diff
+
+      - name: "Artifact: light-style-problems"
+        uses: actions/upload-artifact@v2
+        if: always() && steps.light-style-check.outcome == 'failure'
+        with:
+          name: light-style-problems
+          path: light-style-problems.diff
 
   copyright-check:
     runs-on: ubuntu-18.04

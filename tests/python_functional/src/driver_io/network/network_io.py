@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #############################################################################
-# Copyright (c) 2015-2018 Balabit
+# Copyright (c) 2020 One Identity
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License version 2 as published
@@ -20,35 +20,33 @@
 # COPYING for details.
 #
 #############################################################################
-import logging
+from enum import Enum
 
 from pathlib2 import Path
 
 import src.testcase_parameters.testcase_parameters as tc_parameters
-from src.driver_io.file.file_io import FileIO
-from src.syslog_ng_config.statements.sources.source_driver import SourceDriver
+from src.common.random_id import get_unique_id
+from src.driver_io.file.file import File
+from src.helpers.loggen.loggen import Loggen
 
-logger = logging.getLogger(__name__)
 
+class NetworkIO():
+    def __init__(self, ip, port, transport):
+        self.__ip = ip
+        self.__port = port
+        self.__transport = transport
 
-class FileSource(SourceDriver):
-    def __init__(self, file_name, **options):
-        self.driver_name = "file"
-        self.set_path(file_name)
-        self.io = FileIO(self.get_path())
-        super(FileSource, self).__init__([self.path], options)
+    def write(self, content, rate=None):
+        loggen_input_file_path = Path(tc_parameters.WORKING_DIR, "loggen_input_{}.txt".format(get_unique_id()))
+        loggen_input_file = File(loggen_input_file_path)
+        with loggen_input_file.open_file(mode="a+") as f:
+            f.write(content)
 
-    def get_path(self):
-        return self.path
+        Loggen().start(self.__ip, self.__port, read_file=str(loggen_input_file_path), dont_parse=True, permanent=True, rate=rate, **self.__transport.value)
 
-    def set_path(self, pathname):
-        self.path = Path(tc_parameters.WORKING_DIR, pathname)
-
-    def write_log(self, formatted_log, counter=1):
-        for _ in range(counter):
-            self.io.write(formatted_log)
-        logger.info(
-            "Content has been written to\nresource: {}\n"
-            "number of times: {}\n"
-            "content: {}\n".format(self.get_path(), counter, formatted_log),
-        )
+    class Transport(Enum):
+        TCP = {"inet": True, "stream": True}
+        UDP = {"dgram": True}
+        TLS = {"use_ssl": True}
+        PROXIED_TCP = {"inet": True, "stream": True}
+        PROXIED_TLS = {"use_ssl": True}

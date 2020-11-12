@@ -20,9 +20,7 @@
 # COPYING for details.
 #
 #############################################################################
-import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.common.operations import copy_shared_file
-from src.common.operations import create_file
 
 TEMPLATE = r'"${PROXIED_SRCIP} ${PROXIED_DSTIP} ${PROXIED_SRCPORT} ${PROXIED_DSTPORT} ${PROXIED_IP_VERSION} ${MESSAGE}\n"'
 INPUT_MESSAGES = "PROXY TCP4 1.1.1.1 2.2.2.2 3333 4444\r\n" \
@@ -50,8 +48,6 @@ def test_pp_tls(config, syslog_ng, port_allocator, loggen, testcase_parameters):
 
     syslog_ng.start(config)
 
-    loggen_input_path = str(tc_parameters.WORKING_DIR) + "loggen_input.txt"
-    create_file(loggen_input_path, INPUT_MESSAGES)
-    loggen.start(target=network_source.options["ip"], port=network_source.options["port"], use_ssl=True, permanent=True, read_file=loggen_input_path, dont_parse=True)
+    network_source.write_log(INPUT_MESSAGES)
 
     assert file_destination.read_log() == EXPECTED_MESSAGES

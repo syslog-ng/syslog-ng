@@ -20,8 +20,6 @@
 # COPYING for details.
 #
 #############################################################################
-import src.testcase_parameters.testcase_parameters as tc_parameters
-from src.common.operations import create_file
 
 PROXY_PROTO_HEADER = "PROXY TCP4 192.168.1.1 192.168.1.2 20000 20001\r\n"
 RFC3164_EXAMPLE = "<34>Oct 11 22:14:15 mymachine su: 'su root' failed for lonvick on /dev/pts/8\n"
@@ -29,8 +27,6 @@ RFC3164_EXAMPLE_WITHOUT_PRI = "Oct 11 22:14:15 mymachine su: 'su root' failed fo
 
 
 def test_pp_with_syslog_proto(config, port_allocator, syslog_ng, loggen):
-    loggen_input_path = str(tc_parameters.WORKING_DIR) + "/loggen_input.txt"
-
     network_source = config.create_network_source(ip="localhost", port=port_allocator(), transport="proxied-tcp")
     file_destination = config.create_file_destination(file_name="output.log")
     config.create_logpath(statements=[network_source, file_destination])
@@ -38,10 +34,6 @@ def test_pp_with_syslog_proto(config, port_allocator, syslog_ng, loggen):
 
     syslog_ng.start(config)
 
-    create_file(loggen_input_path, PROXY_PROTO_HEADER + RFC3164_EXAMPLE)
-    loggen.start(
-        network_source.options["ip"], network_source.options["port"],
-        inet=True, stream=True, permanent=True, read_file=loggen_input_path, dont_parse=True,
-    )
+    network_source.write_log(PROXY_PROTO_HEADER + RFC3164_EXAMPLE)
 
     assert file_destination.read_log() == RFC3164_EXAMPLE_WITHOUT_PRI

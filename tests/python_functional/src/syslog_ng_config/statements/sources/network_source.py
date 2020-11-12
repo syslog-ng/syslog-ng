@@ -20,11 +20,36 @@
 # COPYING for details.
 #
 #############################################################################
+from src.driver_io.network.network_io import NetworkIO
 from src.syslog_ng_config.statements.sources.source_driver import SourceDriver
+
+
+def map_transport(transport):
+    mapping = {
+        "tcp": NetworkIO.Transport.TCP,
+        "udp": NetworkIO.Transport.UDP,
+        "tls": NetworkIO.Transport.TLS,
+        "proxied-tcp": NetworkIO.Transport.PROXIED_TCP,
+        "proxied-tls": NetworkIO.Transport.PROXIED_TLS,
+    }
+    transport = transport.replace("_", "-").replace("'", "").replace('"', "").lower()
+
+    return mapping[transport]
+
+
+def create_io(options):
+    ip = options["ip"] if "ip" in options else "localhost"
+    transport = options["transport"] if "transport" in options else "tcp"
+
+    return NetworkIO(ip, options["port"], map_transport(transport))
 
 
 class NetworkSource(SourceDriver):
     def __init__(self, **options):
+        self.io = create_io(options)
+
         self.driver_name = "network"
         super(NetworkSource, self).__init__(options=options)
-        self.source_writer = None  # Will be added later, using Loggen
+
+    def write_log(self, formatted_content, rate=None):
+        self.io.write(formatted_content, rate=rate)
