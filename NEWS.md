@@ -182,5 +182,5 @@ We would like to thank the following people for their contribution:
 
 Andras Mitzki, Antal Nemes, Attila Szakacs, Balazs Scheidler,
 Boris Korzun, Gabor Nagy, Laszlo Budai, Laszlo Szemere, László Várady,
-Norbert Takacs, Peter Kokai, Vivin Peris, Zoltan Pallagi, bjoe2k4,
-github-actions
+Norbert Takacs, Peter Kokai, Viktor Juhasz, Vivin Peris, Zoltan Pallagi,
+bjoe2k4
