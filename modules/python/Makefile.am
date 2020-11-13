@@ -79,7 +79,6 @@ modules_python_libmod_python_la_DEPENDENCIES=	\
 
 modules/python mod-python: modules/python/libmod-python.la
 
-include modules/python/tests/Makefile.am
 else
 modules/python mod-python:
 endif
@@ -100,3 +99,5 @@ EXTRA_DIST					+= \
 	modules/python/CMakeLists.txt
 
 .PHONY: modules/python mod-python
+
+include modules/python/tests/Makefile.am
