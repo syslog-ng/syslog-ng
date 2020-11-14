@@ -148,7 +148,7 @@ struct _NVEntry
     {
       guint32 value_len;
       /* variable data, first the name of this entry, then the value, both are NUL terminated */
-      gchar data[0];
+      gchar data[];
     } vdirect;
 
     NVReferencedSlice vindirect;
