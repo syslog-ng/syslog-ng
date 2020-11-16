@@ -5,6 +5,7 @@ EXTRA_DIST	+= scripts/update-patterndb.in \
 	scripts/make-and-check.sh	\
 	scripts/rm-extra-msg-sentinel.sh	\
 	scripts/version.sh	\
+	scripts/test-grep.sh	\
 	scripts/style-checker.sh
 
 install-exec-local:
