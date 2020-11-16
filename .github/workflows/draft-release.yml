@@ -51,6 +51,7 @@ jobs:
         run: |
           RELEASE_NAME=syslog-ng-`cat VERSION`
           sed "1 i${RELEASE_NAME}\n" NEWS.md > /tmp/message
+          mv dbld/build/${RELEASE_NAME}.orig.tar.gz dbld/build/${RELEASE_NAME}.tar.gz
 
           hub release create \
             --draft \
