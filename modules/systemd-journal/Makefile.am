@@ -18,7 +18,6 @@ modules_systemd_journal_libsdjournal_la_LIBADD = $(MODULE_DEPS_LIBS) $(libsystem
 modules_systemd_journal_libsdjournal_la_LDFLAGS = $(MODULE_LDFLAGS)
 modules_systemd_journal_libsdjournal_la_DEPENDENCIES = $(MODULE_DEPS_LIBS)
 
-include modules/systemd-journal/tests/Makefile.am
 modules/systemd-journal mod-systemd-journal: modules/systemd-journal/libsdjournal.la
 else
 modules/systemd-journal mod-systemd-journal:
@@ -33,3 +32,5 @@ EXTRA_DIST +=	\
 	modules/systemd-journal/systemd-journal-grammar.ym
 
 .PHONY: modules/systemd-journal mod-systemd-journal
+
+include modules/systemd-journal/tests/Makefile.am
