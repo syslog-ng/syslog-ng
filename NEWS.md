@@ -3,7 +3,8 @@
 
 ## Highlights
 
-<Fill this block manually from the blocks below>
+ * filter template function
+ * support [proxy-protocol](https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt)
 
 ## Features
 
