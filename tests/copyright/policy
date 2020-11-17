@@ -51,6 +51,7 @@ cmake/.*$
 tests/python_functional/pytest.ini
 tests/python_functional/tox.ini
 tests/python_functional/.pre-commit-config.yaml
+.github/workflows/.*$
  LGPLv2.1+_SSL,non-balabit
 lib/timeutils/zonecache.[ch]$
 modules/secure-logging

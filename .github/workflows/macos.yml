@@ -17,11 +17,12 @@ jobs:
 
       - name: Set ENV variables
         run: |
-          export PYTHONUSERBASE=${HOME}/python_packages
-          export PKG_CONFIG_PATH=/usr/local/opt/openssl/lib/pkgconfig:$PKG_CONFIG_PATH
-          export PATH=/usr/local/opt/bison/bin:/usr/local/opt/libnet/bin:${PYTHONUSERBASE}/bin:$PATH
-          export THREADS=$(sysctl -n hw.physicalcpu)
-          export CONFIGURE_FLAGS="
+          . .github/workflows/gh_export.sh
+
+          PYTHONUSERBASE="${HOME}/python_packages"
+          PKG_CONFIG_PATH="/usr/local/opt/openssl/lib/pkgconfig:$PKG_CONFIG_PATH"
+          THREADS="$(sysctl -n hw.physicalcpu)"
+          CONFIGURE_FLAGS="
             --with-ivykis=system
             --disable-sun-streams
             --disable-systemd
@@ -30,11 +31,8 @@ jobs:
             --enable-all-modules
           "
 
-          echo "::set-env name=PYTHONUSERBASE::`echo ${PYTHONUSERBASE}`"
-          echo "::set-env name=PKG_CONFIG_PATH::`echo ${PKG_CONFIG_PATH}`"
-          echo "::set-env name=PATH::`echo ${PATH}`"
-          echo "::set-env name=THREADS::`echo ${THREADS}`"
-          echo "::set-env name=CONFIGURE_FLAGS::`echo ${CONFIGURE_FLAGS}`"
+          gh_export PYTHONUSERBASE PKG_CONFIG_PATH THREADS CONFIGURE_FLAGS
+          echo "/usr/local/opt/bison/bin:/usr/local/opt/libnet/bin:${PYTHONUSERBASE}/bin" >> $GITHUB_PATH
 
       - name: autogen.sh
         run: |

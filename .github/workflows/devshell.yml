@@ -16,32 +16,30 @@ jobs:
       fail-fast: false
 
     steps:
+      - name: Checkout syslog-ng source
+        uses: actions/checkout@v2
+
       - name: Set ENV variables
         run: |
-          export PYTHONVERSION=`printf ${{ matrix.python }} | tail -c 1`
-          export PYTHONUSERBASE=${HOME}/python_packages
-          export PATH=${PYTHONUSERBASE}:${PATH}
-          export CC=${{ matrix.cc }}
-          export CONFIGURE_FLAGS="
+          . .github/workflows/gh_export.sh
+
+          PYTHONVERSION="`printf ${{ matrix.python }} | tail -c 1`"
+          PYTHONUSERBASE="${HOME}/python_packages"
+          CC="${{ matrix.cc }}"
+          CONFIGURE_FLAGS="
             --prefix=${HOME}/install/syslog-ng
             --enable-all-modules
             --with-python=${PYTHONVERSION}
-            `[ $CC = clang ] && echo '--enable-force-gnu99'`
+            `[ $CC = clang ] && echo '--enable-force-gnu99' || true`
           "
-          export CMAKE_FLAGS="
+          CMAKE_FLAGS="
             -DCMAKE_C_FLAGS=-Werror
             -DCMAKE_INSTALL_PREFIX=${HOME}/install/syslog-ng
             -DPYTHON_VERSION=${PYTHONVERSION}
           "
+          gh_export PYTHONVERSION PYTHONUSERBASE CC CONFIGURE_FLAGS CMAKE_FLAGS
 
-          echo "::set-env name=PYTHONUSERBASE::`echo ${PYTHONUSERBASE}`"
-          echo "::set-env name=PATH::`echo ${PATH}`"
-          echo "::set-env name=CONFIGURE_FLAGS::`echo ${CONFIGURE_FLAGS}`"
-          echo "::set-env name=CMAKE_FLAGS::`echo ${CMAKE_FLAGS}`"
-          echo "::set-env name=CC::`echo ${CC}`"
-
-      - name: Checkout syslog-ng source
-        uses: actions/checkout@v2
+          echo "${HOME}/python_packages" >> $GITHUB_PATH
 
       - name: autogen.sh
         if: matrix.build-tool == 'autotools'
@@ -120,10 +118,15 @@ jobs:
       fail-fast: false
 
     steps:
+      - name: Checkout syslog-ng source
+        uses: actions/checkout@v2
+
       - name: Set ENV variables
         run: |
-          export PYTHONVERSION=`printf ${{ matrix.python }} | tail -c 1`
-          export DISTCHECK_CONFIGURE_FLAGS="
+          . .github/workflows/gh_export.sh
+
+          PYTHONVERSION=`printf ${{ matrix.python }} | tail -c 1`
+          DISTCHECK_CONFIGURE_FLAGS="
             CFLAGS=-Werror
             --prefix=${HOME}/install/syslog-ng
             --with-ivykis=internal
@@ -135,10 +138,7 @@ jobs:
             --with-python=${PYTHONVERSION}
           "
 
-          echo "::set-env name=DISTCHECK_CONFIGURE_FLAGS::`echo ${DISTCHECK_CONFIGURE_FLAGS}`"
-
-      - name: Checkout syslog-ng source
-        uses: actions/checkout@v2
+          gh_export DISTCHECK_CONFIGURE_FLAGS
 
       - name: autogen.sh
         run: ./autogen.sh
