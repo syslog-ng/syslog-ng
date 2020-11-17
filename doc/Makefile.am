@@ -24,8 +24,7 @@ EXTRA_DIST	+=  \
 		doc/xsd/examples/patterndb-1.xml \
 		$(xsd_DATA)
 
-if ENABLE_MANPAGES
-man_MANS	+= \
+manpages	= \
 		doc/man/dqtool.1 \
 		doc/man/loggen.1 \
 		doc/man/pdbtool.1 \
@@ -39,11 +38,22 @@ man_MANS	+= \
 		doc/man/slogverify.1 \
 		doc/man/secure-logging.7
 
-EXTRA_DIST	+= $(man_MANS)
+# "dist" will always need the manpages, so we either need the documentation
+# tools, or the make dist needs to run from a release tarball, which ships
+# the manual pages.
 
-# NOTE: this uses a hard-coded path for the XSL stylesheets, but the
-# end-result is also included in the tarball. If so need be, this can
-# be overridden from the make command line or via the environment.
+EXTRA_DIST	+= $(manpages)
+
+if ENABLE_MANPAGES_INSTALL
+
+man_MANS        += $(manpages)
+
+endif
+
+if ENABLE_MANPAGES
+
+# we only clean manpages if we have the ability to regenerate them
+CLEANFILES      += $(manpages)
 
 sysconfdir_e = $(shell echo "${sysconfdir}" | sed -e "s,-,\\\\\\\\-,g")
 prefix_e = $(shell echo "${prefix}" | sed -e "s,-,\\\\\\\\-,g")
@@ -53,4 +63,16 @@ doc/man/%: doc/man/%.xml
 	$(AM_V_at) $(NOOP) # docbook-xsl v1.79.1. See https://sourceforge.net/p/docbook/bugs/1381/
 	$(AM_V_GEN)sed -e '1h;2,$$H;$$!d;g' -e "s/>\s\+</></g" <$< | xsltproc --xinclude --output $@ ${XSL_STYLESHEET} -
 	$(AM_V_at)sed -e 's,/opt/syslog\\*-ng/etc,$(sysconfdir_e),g' -e 's,/opt/syslog\\*-ng/,$(prefix_e)/,g' <$@ >$@.tmp && mv $@.tmp $@
+else
+
+doc/man/%: doc/man/%.xml
+	@echo "Error: unable to generate manual pages"
+	@echo ""
+	@echo "The generation manual pages was not enabled using --enable-manpages to configure and generated "
+	@echo "versions do not seem to be available (which should be if you are building from a release tarball) "
+	@echo "or the man page sources were changed."
+	@echo ""
+	@echo "Either build from an official release tarball or install documentation tools and run configure with --enable-manpages"
+	@exit 1
+
 endif
