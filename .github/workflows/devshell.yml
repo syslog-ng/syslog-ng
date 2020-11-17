@@ -16,16 +16,12 @@ jobs:
       fail-fast: false
 
     steps:
+      - name: Checkout syslog-ng source
+        uses: actions/checkout@v2
+
       - name: Set ENV variables
         run: |
-          gh_export() {
-            while [ "x$1" != "x" ]; do
-              echo "$1<<__EOF__" >> $GITHUB_ENV
-              eval echo \$$1     >> $GITHUB_ENV
-              echo "__EOF__"     >> $GITHUB_ENV
-              shift;
-            done
-          }
+          . .github/workflows/gh_export.sh
 
           PYTHONVERSION="`printf ${{ matrix.python }} | tail -c 1`"
           PYTHONUSERBASE="${HOME}/python_packages"
@@ -44,9 +40,6 @@ jobs:
           gh_export PYTHONVERSION PYTHONUSERBASE CC CONFIGURE_FLAGS CMAKE_FLAGS
 
           echo "${HOME}/python_packages" >> $GITHUB_PATH
-
-      - name: Checkout syslog-ng source
-        uses: actions/checkout@v2
 
       - name: autogen.sh
         if: matrix.build-tool == 'autotools'
@@ -125,16 +118,13 @@ jobs:
       fail-fast: false
 
     steps:
+      - name: Checkout syslog-ng source
+        uses: actions/checkout@v2
+
       - name: Set ENV variables
         run: |
-          gh_export() {
-            while [ "x$1" != "x" ]; do
-              echo "$1<<__EOF__" >> $GITHUB_ENV
-              eval echo \$$1     >> $GITHUB_ENV
-              echo "__EOF__"     >> $GITHUB_ENV
-              shift;
-            done
-          }
+          . .github/workflows/gh_export.sh
+
           PYTHONVERSION=`printf ${{ matrix.python }} | tail -c 1`
           DISTCHECK_CONFIGURE_FLAGS="
             CFLAGS=-Werror
@@ -149,9 +139,6 @@ jobs:
           "
 
           gh_export DISTCHECK_CONFIGURE_FLAGS
-
-      - name: Checkout syslog-ng source
-        uses: actions/checkout@v2
 
       - name: autogen.sh
         run: ./autogen.sh

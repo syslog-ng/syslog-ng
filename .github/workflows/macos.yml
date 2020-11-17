@@ -17,14 +17,8 @@ jobs:
 
       - name: Set ENV variables
         run: |
-          gh_export() {
-            while [ "x$1" != "x" ]; do
-              echo "$1<<__EOF__" >> $GITHUB_ENV
-              eval echo \$$1     >> $GITHUB_ENV
-              echo "__EOF__"     >> $GITHUB_ENV
-              shift;
-            done
-          }
+          . .github/workflows/gh_export.sh
+
           PYTHONUSERBASE="${HOME}/python_packages"
           PKG_CONFIG_PATH="/usr/local/opt/openssl/lib/pkgconfig:$PKG_CONFIG_PATH"
           THREADS="$(sysctl -n hw.physicalcpu)"
