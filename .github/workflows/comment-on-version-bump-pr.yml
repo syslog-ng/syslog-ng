@@ -25,14 +25,12 @@ jobs:
 
       - name: Check if version bump PR is open
         run: |
+          . .github/workflows/gh-tools.sh
+
           PR_NUMBER=$(hub pr list --state=open --format="%I %l%n" | grep "version-bump" | grep -Po "^[0-9]+") || true
 
-          if [ -n ${PR_NUMBER} ]
-          then
-            echo "PR_NUMBER=${PR_NUMBER}" >> $GITHUB_ENV
-          else
-            echo "No version bump PR is open. Skipping."
-          fi
+          [ -z ${PR_NUMBER} ] && echo "No version bump PR is open. Skipping."
+          gh_export PR_NUMBER
 
       - name: Comment
         if: env.PR_NUMBER != ''
