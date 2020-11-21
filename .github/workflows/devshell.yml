@@ -25,7 +25,7 @@ jobs:
 
       - name: Set ENV variables
         run: |
-          . .github/workflows/gh_export.sh
+          . .github/workflows/gh-tools.sh
 
           PYTHONVERSION="`printf ${{ matrix.python }} | tail -c 1`"
           PYTHONUSERBASE="${HOME}/python_packages"
@@ -127,7 +127,7 @@ jobs:
 
       - name: Set ENV variables
         run: |
-          . .github/workflows/gh_export.sh
+          . .github/workflows/gh-tools.sh
 
           PYTHONVERSION=`printf ${{ matrix.python }} | tail -c 1`
           DISTCHECK_CONFIGURE_FLAGS="
