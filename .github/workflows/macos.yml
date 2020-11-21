@@ -17,7 +17,7 @@ jobs:
 
       - name: Set ENV variables
         run: |
-          . .github/workflows/gh_export.sh
+          . .github/workflows/gh-tools.sh
 
           PYTHONUSERBASE="${HOME}/python_packages"
           PKG_CONFIG_PATH="/usr/local/opt/openssl/lib/pkgconfig:$PKG_CONFIG_PATH"
