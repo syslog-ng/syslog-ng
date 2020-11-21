@@ -38,8 +38,7 @@ jobs:
             -DPYTHON_VERSION=${PYTHONVERSION}
           "
           gh_export PYTHONVERSION PYTHONUSERBASE CC CONFIGURE_FLAGS CMAKE_FLAGS
-
-          echo "${HOME}/python_packages" >> $GITHUB_PATH
+          gh_path "${PYTHONUSERBASE}"
 
       - name: autogen.sh
         if: matrix.build-tool == 'autotools'

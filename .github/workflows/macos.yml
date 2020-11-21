@@ -32,7 +32,7 @@ jobs:
           "
 
           gh_export PYTHONUSERBASE PKG_CONFIG_PATH THREADS CONFIGURE_FLAGS
-          echo "/usr/local/opt/bison/bin:/usr/local/opt/libnet/bin:${PYTHONUSERBASE}/bin" >> $GITHUB_PATH
+          gh_path "/usr/local/opt/bison/bin:/usr/local/opt/libnet/bin:${PYTHONUSERBASE}/bin"
 
       - name: autogen.sh
         run: |
