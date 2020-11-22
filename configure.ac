@@ -1510,6 +1510,8 @@ if test "x$enable_manpages_install" = "xauto"; then
     dnl do we have the generated manpages (part of the tarball but not in git)
     if test -f doc/man/syslog-ng.8 -o "x$enable_manpages" = "xyes"; then
         enable_manpages_install=yes
+    else
+        enable_manpages_install=no
     fi
 fi
 
