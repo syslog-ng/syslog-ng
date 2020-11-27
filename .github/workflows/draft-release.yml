@@ -49,14 +49,14 @@ jobs:
 
       - name: Create draft release
         run: |
-          RELEASE_NAME=syslog-ng-`cat VERSION`
+          VERSION=`cat VERSION`
+          RELEASE_NAME=syslog-ng-$VERSION
           sed "1 i${RELEASE_NAME}\n" NEWS.md > /tmp/message
-          mv dbld/build/${RELEASE_NAME}.tar.gz.orig dbld/build/${RELEASE_NAME}.tar.gz
 
           hub release create \
             --draft \
             --file /tmp/message \
-            --attach dbld/build/${RELEASE_NAME}.tar.gz \
+            --attach dbld/build/release/${VERSION}/${RELEASE_NAME}.tar.gz \
             ${RELEASE_NAME}
 
       - name: "Comment: job status"
