@@ -81,7 +81,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: syslog-ng-${{ env.RELEASE_VERSION }}
-          path: dbld/build/syslog-ng-${{ env.RELEASE_VERSION }}.tar.gz
+          path: dbld/release/${{ env.RELEASE_VERSION }}/syslog-ng-${{ env.RELEASE_VERSION }}.tar.gz
 
       - name: Open Pull Request
         run: |
