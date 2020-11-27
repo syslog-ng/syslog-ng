@@ -153,9 +153,13 @@ function validate_container() {
 function capture_artifacts()
 {
 	if [ "$MODE" = "release" ]; then
+		ARTIFACT_DIR=${ARTIFACT_DIR:-/dbld/release/$VERSION}
+		echo "Capturing artifacts:" "$*" "into" ${ARTIFACT_DIR}
 		for artifact in "$*"; do
-			cp ${artifact} /dbld/release/${VERSION}
+			cp ${artifact} "${ARTIFACT_DIR}"
 		done
+		echo "The current list of artifacts:"
+		ls -l ${ARTIFACT_DIR}
 	fi
 }
 
