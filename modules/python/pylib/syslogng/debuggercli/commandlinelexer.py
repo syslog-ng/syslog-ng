@@ -30,7 +30,7 @@ CLL_QUOTED_CHAR = 2
 
 
 class CommandLineLexer(Lexer):
-    """This an inperfect lexer for both the debug language and template functions"""
+    """This an imperfect lexer for both the debug language and template functions"""
     def __init__(self):
         self._tokens = []
         self._input = ''
