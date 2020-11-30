@@ -42,7 +42,8 @@ ROOT_DIR=$(shell pwd)
 DBLD_DIR=$(ROOT_DIR)/dbld
 BUILD_DIR=$(DBLD_DIR)/build
 RELEASE_DIR=$(DBLD_DIR)/release
-TARBALL=$(BUILD_DIR)/syslog-ng-$(VERSION).tar.gz
+TARBALL_BASENAME=syslog-ng-$(VERSION).tar.gz
+TARBALL=$(BUILD_DIR)/$(TARBALL_BASENAME)
 GIT=$(shell which git || echo false)
 GIT_RELEASE_TAG=syslog-ng-$(VERSION)
 CONFIGURE_OPTS=--enable-debug --enable-manpages --with-python=2 --prefix=/install $(CONFIGURE_ADD)
@@ -97,9 +98,15 @@ bootstrap-%: setup
 make-%: setup
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i  balabit/syslog-ng-$(DEFAULT_IMAGE) /dbld/make $(MAKE_ARGS) $*
 
+tarball-from-root: setup
+	@if [ -f $(ROOT_DIR)/../$(TARBALL_BASENAME) ] && [ ! -f $(TARBALL) ]; then \
+		cp $(ROOT_DIR)/../$(TARBALL_BASENAME) $(TARBALL); \
+	fi
+
 tarball: tarball-$(TARBALL_IMAGE)
-tarball-%: setup
-	@if [ -f $(TARBALL) ]; then \
+tarball-%: tarball-from-root
+	@echo "Checking $(TARBALL) if it is up-to-date..."; \
+	if [ -f $(TARBALL) ]; then \
 		TARBALL_CHANGES=`find $(ROOT_DIR) -newer $(TARBALL) | sed -e 's,^$(ROOT_DIR),,' | grep -v -f $(DBLD_DIR)/tarball-changes.ignore | tee $(BUILD_DIR)/tarball-changed-files.txt | wc -l`; \
 	fi; \
 	if [ ! -f $(TARBALL) ] || [ "$${TARBALL_CHANGES}" -gt 0 ]; then \
@@ -117,9 +124,21 @@ tarball-%: setup
 	fi
 
 
+
 pkg-tarball: pkg-tarball-$(TARBALL_IMAGE)
+
+#
+# pkg-tarball-%:
+#
+# NOTE: first check if the tarball is already a pkg-tarball (containing
+# packaging files).  This might happen if we try to reuse a cached tarball
+# and we can spare some time by avoiding the pulling of the tarball image as
+# well as not having to run the scripts that add the packaging files
+#
 pkg-tarball-%: tarball-%
-	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i balabit/syslog-ng-$* /dbld/pkg-tarball
+	@if ! tar --strip-components=1 --show-transformed-names  -tvf $(TARBALL) | grep  ' debian/rules$$' > /dev/null; then \
+		$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i balabit/syslog-ng-$* /dbld/pkg-tarball; \
+	fi
 
 package: package-$(DEFAULT_IMAGE)
 package-%: pkg-tarball
@@ -158,9 +177,13 @@ validate-release: validate-tree-clean validate-version-for-release
 		exit 1; \
 	fi
 
+#
+# release:
+#
+# the order of these is important, so invoke ourselves recursively
+# instead of using make dependencies, which can be reordered in parallel builds
+#
 release: validate-release
-	# the order of these is important, so invoke ourselves recursively
-	# instead of using make dependencies, which can be reordered in parallel builds
 
 	ARTIFACT_DIR=$(RELEASE_DIR)/$(VERSION) && \
 	rm -rf "$$ARTIFACT_DIR" && mkdir -p "$$ARTIFACT_DIR" && rm -rf $(TARBALL) && \
