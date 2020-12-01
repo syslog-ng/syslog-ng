@@ -344,8 +344,12 @@ g_thread_new(const gchar *name, GThreadFunc func, gpointer data)
 gboolean
 g_cond_wait_until (GCond *cond, GMutex *mutex, gint64 end_time)
 {
-  glong diff_in_sec = (end_time - g_get_monotonic_time())/G_TIME_SPAN_SECOND;
-  GTimeVal tv = {.tv_sec = g_get_monotonic_time() + diff_in_sec, .tv_usec = 0};
+  gint64 diff_in_millisec = (end_time - g_get_monotonic_time()) / G_TIME_SPAN_MILLISECOND;
+
+  GTimeVal tv;
+  g_get_current_time(&tv);
+  g_time_val_add(&tv, diff_in_millisec * 1000);
+
   return g_cond_timed_wait(cond, mutex, &tv);
 }
 #endif
