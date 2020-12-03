@@ -149,7 +149,7 @@ _assert_logwriter_output(LogWriterTestCase c)
 
   log_writer_options_defaults(&opt);
   opt.template_options.time_zone_info[LTZ_SEND]=tzinfo;
-  log_writer_options_init(&opt, configuration, LWO_NO_MULTI_LINE | LWO_NO_STATS | LWO_SHARE_STATS);
+  log_writer_options_init(&opt, configuration, LWO_NO_MULTI_LINE | LWO_NO_STATS);
 
   if (c.template)
     {
