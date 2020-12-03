@@ -22,7 +22,8 @@
 #
 #############################################################################
 
-$1 2>&1 | tee $1.result
+$1 > $1.result 2>&1
+exit_status=$?
 
 if egrep -q 'ERROR: (LeakSanitizer|AddressSanitizer)' $1.result; then
    echo "SAN report detected"
@@ -32,3 +33,4 @@ fi
 # keep only result file if test failed
 rm -f -- $1.result
 
+exit $exit_status
