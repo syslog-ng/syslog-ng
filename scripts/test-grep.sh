@@ -31,6 +31,8 @@ if egrep -q 'ERROR: (LeakSanitizer|AddressSanitizer)' $1.result; then
 fi
 
 # keep only result file if test failed
-rm -f -- $1.result
+if test $exit_status -eq 0 ; then
+  rm -f -- $1.result
+fi
 
 exit $exit_status
