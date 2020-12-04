@@ -305,4 +305,6 @@ Test(type_hints, test_invalid_datetime_cast)
   cr_assert_not_null(error);
   cr_assert_eq(error->domain, TYPE_HINTING_ERROR);
   cr_assert_eq(error->code, TYPE_HINTING_INVALID_CAST);
+
+  g_clear_error(&error);
 }
