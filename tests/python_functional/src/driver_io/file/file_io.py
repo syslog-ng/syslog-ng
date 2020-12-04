@@ -20,7 +20,7 @@
 # COPYING for details.
 #
 #############################################################################
-from src.driver_io.file.file import File
+from src.common.file import File
 
 
 class FileIO(File):
