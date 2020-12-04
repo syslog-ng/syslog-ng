@@ -29,12 +29,9 @@ class FileIO(File):
         self.__readable_file = None
         self.__writeable_file = None
 
-    def read(self, position=None):
+    def read(self):
         if not self.__readable_file:
             self.__readable_file = self.open(mode="r")
-
-        if position is not None:
-            self.__readable_file.seek(position)
 
         content = ""
         buffer = None

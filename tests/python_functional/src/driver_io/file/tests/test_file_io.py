@@ -45,4 +45,3 @@ def test_file_io_rewrite_read(temp_file):
     assert fileio.read() == content1
     content2 = "message 2\n"
     fileio.rewrite(content2)
-    assert fileio.read(position=0) == content2
