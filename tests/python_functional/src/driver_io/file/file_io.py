@@ -27,7 +27,7 @@ class FileIO(File):
     def __init__(self, file_path):
         super(FileIO, self).__init__(file_path)
         self.__readable_file = None
-        self.__writeable_file = None
+        self.__writeable_file = File(file_path)
 
     def read(self):
         if not self.__readable_file:
@@ -42,11 +42,7 @@ class FileIO(File):
         return content
 
     def write(self, content):
-        if self.__writeable_file is None:
-            self.__writeable_file = self.open(mode="a+")
-        self.__write(content, self.__writeable_file)
+        if not self.__writeable_file.is_opened():
+            self.__writeable_file.open("a+")
 
-    @staticmethod
-    def __write(content, writeable_file):
-        writeable_file.write(content)
-        writeable_file.flush()
+        self.__writeable_file.write(content)
