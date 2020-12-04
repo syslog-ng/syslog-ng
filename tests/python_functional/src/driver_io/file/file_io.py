@@ -46,10 +46,6 @@ class FileIO(File):
             self.__writeable_file = self.open(mode="a+")
         self.__write(content, self.__writeable_file)
 
-    def rewrite(self, content):
-        rewriteable_file = self.open(mode="w+")
-        self.__write(content, rewriteable_file)
-
     @staticmethod
     def __write(content, writeable_file):
         writeable_file.write(content)
