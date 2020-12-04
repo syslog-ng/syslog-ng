@@ -23,9 +23,8 @@
 from src.common.file import File
 
 
-class FileIO(File):
+class FileIO():
     def __init__(self, file_path):
-        super(FileIO, self).__init__(file_path)
         self.__readable_file = File(file_path)
         self.__writeable_file = File(file_path)
 
