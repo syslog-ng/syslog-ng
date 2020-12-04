@@ -31,7 +31,7 @@ class FileIO(File):
 
     def read(self, position=None):
         if not self.__readable_file:
-            self.__readable_file = self.open_file(mode="r")
+            self.__readable_file = self.open(mode="r")
 
         if position is not None:
             self.__readable_file.seek(position)
@@ -46,11 +46,11 @@ class FileIO(File):
 
     def write(self, content):
         if self.__writeable_file is None:
-            self.__writeable_file = self.open_file(mode="a+")
+            self.__writeable_file = self.open(mode="a+")
         self.__write(content, self.__writeable_file)
 
     def rewrite(self, content):
-        rewriteable_file = self.open_file(mode="w+")
+        rewriteable_file = self.open(mode="w+")
         self.__write(content, rewriteable_file)
 
     @staticmethod

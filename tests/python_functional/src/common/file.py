@@ -49,6 +49,6 @@ class File(object):
             logger.debug("File not created:\n{}".format(self.__file_path))
         return file_created
 
-    def open_file(self, mode):
+    def open(self, mode):
         self.__opened_file = open_file(self.__file_path, mode)
         return self.__opened_file
