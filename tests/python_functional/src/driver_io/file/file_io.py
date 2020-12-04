@@ -26,20 +26,24 @@ from src.common.file import File
 class FileIO(File):
     def __init__(self, file_path):
         super(FileIO, self).__init__(file_path)
-        self.__readable_file = None
+        self.__readable_file = File(file_path)
         self.__writeable_file = File(file_path)
 
-    def read(self):
-        if not self.__readable_file:
-            self.__readable_file = self.open(mode="r")
+    def read_number_of_lines(self, counter):
+        if not self.__readable_file.is_opened():
+            if not self.__readable_file.wait_for_creation():
+                raise Exception("{} was not created in time.".format(self.__readable_file.path))
+            self.__readable_file.open("r")
 
-        content = ""
-        buffer = None
-        while buffer != "":
-            buffer = self.__readable_file.readline()
-            content += buffer
+        return self.__readable_file.wait_for_number_of_lines(counter)
 
-        return content
+    def read_until_lines(self, lines):
+        if not self.__readable_file.is_opened():
+            if not self.__readable_file.wait_for_creation():
+                raise Exception("{} was not created in time.".format(self.__readable_file.path))
+            self.__readable_file.open("r")
+
+        return self.__readable_file.wait_for_lines(lines)
 
     def write(self, content):
         if not self.__writeable_file.is_opened():
