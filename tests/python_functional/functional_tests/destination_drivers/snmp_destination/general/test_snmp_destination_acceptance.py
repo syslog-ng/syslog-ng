@@ -39,6 +39,5 @@ def test_snmp_dest_acceptance(config, syslog_ng, snmptrapd, snmp_test_params):
 
     syslog_ng.start(config)
 
-    received_traps = snmptrapd.get_traps()
-    assert snmp_test_params.get_expected_basic_trap() == received_traps
-    assert any(snmp_test_params.get_default_community() in line for line in snmptrapd.get_raw_traps())
+    expected_traps = snmp_test_params.get_expected_basic_trap()
+    assert expected_traps == snmptrapd.get_traps(len(expected_traps))

@@ -41,8 +41,8 @@ def test_snmp_dest_reload_stat(config, syslog_ng, syslog_ng_ctl, snmptrapd, snmp
 
     syslog_ng.start(config)
 
-    received_traps = snmptrapd.get_traps()
-    assert received_traps == snmp_test_params.get_expected_basic_trap()
+    expected_traps = snmp_test_params.get_expected_basic_trap()
+    assert expected_traps == snmptrapd.get_traps(len(expected_traps))
 
     assert snmp_destination.get_query() == {'written': expected_message_counter, 'processed': expected_message_counter, 'dropped': 0, 'queued': 0}
     assert snmp_destination.get_stats() == {'written': expected_message_counter, 'processed': expected_message_counter, 'dropped': 0, 'queued': 0}
@@ -50,8 +50,9 @@ def test_snmp_dest_reload_stat(config, syslog_ng, syslog_ng_ctl, snmptrapd, snmp
     syslog_ng.reload(config)
     expected_message_counter += message_counter  # example_msg_generator source generates a new message on reload
 
-    received_traps = snmptrapd.get_traps()
-    for expected_trap in snmp_test_params.get_expected_basic_trap():
+    expected_traps = snmp_test_params.get_expected_basic_trap() * 2
+    received_traps = snmptrapd.get_traps(len(expected_traps))
+    for expected_trap in expected_traps:
         assert received_traps.count(expected_trap) == expected_message_counter
 
     assert snmp_destination.get_query() == {'written': expected_message_counter, 'processed': expected_message_counter, 'dropped': 0, 'queued': 0}

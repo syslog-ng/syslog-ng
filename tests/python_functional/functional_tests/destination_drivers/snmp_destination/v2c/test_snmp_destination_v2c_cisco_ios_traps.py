@@ -39,4 +39,5 @@ def test_snmp_dest_v2c_cisco_ios_trap(config, syslog_ng, snmptrapd, snmp_test_pa
 
     syslog_ng.start(config)
 
-    assert snmp_test_params.get_expected_cisco_trap() == snmptrapd.get_traps()
+    expected_traps = snmp_test_params.get_expected_cisco_trap()
+    assert expected_traps == snmptrapd.get_traps(len(expected_traps))
