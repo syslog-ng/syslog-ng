@@ -246,6 +246,7 @@ VALGRIND_FLAGS = \
 
 VALGRIND_memcheck_FLAGS = \
   --leak-check=full \
+  --trace-children=yes \
   --freelist-vol=200''000''000 \
   --freelist-big-blocks=10''000''000 \
   --malloc-fill=55 \
