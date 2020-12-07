@@ -22,7 +22,11 @@
 #
 #############################################################################
 
-$1 2>&1 | tee $1.result
+$1 > $1.result 2>&1
+exit_status=$?
+# Put error messages into test-suite.log (as automake does)
+# on passed cases, output is not redirected into test-suite.log
+cat $1.result
 
 if egrep -q 'ERROR: (LeakSanitizer|AddressSanitizer)' $1.result; then
    echo "SAN report detected"
@@ -30,5 +34,8 @@ if egrep -q 'ERROR: (LeakSanitizer|AddressSanitizer)' $1.result; then
 fi
 
 # keep only result file if test failed
-rm -f -- $1.result
+if test $exit_status -eq 0 ; then
+  rm -f -- $1.result
+fi
 
+exit $exit_status
