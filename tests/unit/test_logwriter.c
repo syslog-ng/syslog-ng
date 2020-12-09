@@ -36,6 +36,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <iv.h>
 
 MsgFormatOptions parse_options;
 
@@ -50,6 +51,9 @@ const gchar *EXPECTED_MSG_SYSLOG_STR =
 const gchar *EXPECTED_MSG_SYSLOG_STR_T =
   "<132>1 2006-10-29T01:59:59+01:00 mymachine evntslog 3535 ID47 [exampleSDID@0 iut=\"3\" eventSource=\"Application\" "
   "eventID=\"1011\"][examplePriority@0 class=\"high\"] ID47 BOMAn application event log entry...\n";
+
+const gchar *EXPECTED_MSG_SYSLOG_STR_T_TRUNCATE =
+  "<132>1 2006-10-29T01:59:59+01:00 mymachine evntslog 3535 ID47";
 
 const gchar *EXPECTED_MSG_SYSLOG_TO_BSD_STR =
   "<132>Oct 29 01:59:59 mymachine evntslog[3535]: BOMAn application event log entry...\n";
@@ -73,13 +77,19 @@ const gchar *MSG_BSD_STR = "<155>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323
 
 const gchar *EXPECTED_MSG_BSD_STR = "Feb 11 10:34:56 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép\n";
 
+const gchar *EXPECTED_MSG_BSD_STR_TRUNCATE = "Feb 11 10:34:56 bzorp syslog-ng[23323]:";
+
 const gchar *EXPECTED_MSG_BSD_STR_T = "155 23323 árvíztűrőtükörfúrógép";
+
+const gchar *EXPECTED_MSG_BSD_STR_T_TRUNCATE = "155 23323 árvíztűrő";
 
 const gchar *EXPECTED_MSG_BSD_TO_SYSLOG_STR =
   "<155>1 2006-02-11T10:34:56+01:00 bzorp syslog-ng 23323 - - árvíztűrőtükörfúrógép\n";
 
 const gchar *EXPECTED_MSG_BSD_TO_PROTO_STR =
   "<155>Feb 11 10:34:56 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép\n";
+
+const gchar *EXPECTED_MSG_BSD_TO_PROTO_STR_TRUNCATE = "<155>Feb 11 10:34:56 bz";
 
 const gchar *MSG_ZERO_PRI = "<0>2006-02-11T10:34:56+01:00 bzorp syslog-ng[23323]:árvíztűrőtükörfúrógép";
 
@@ -99,6 +109,7 @@ typedef struct _LogWriterTestCase
   const gboolean is_rfc5424;
   const gchar *template;
   const guint writer_flags;
+  gint truncate_size;
   const gchar *expected_value;
 } LogWriterTestCase;
 
@@ -127,6 +138,7 @@ init_msg(const gchar *msg_string, gboolean use_syslog_protocol)
 void
 _tear_down(LogWriter *writer, LogMessage *msg, LogQueue *queue, GString *result_msg, LogWriterOptions *writer_options)
 {
+  cr_expect(log_pipe_deinit((LogPipe *)writer));
   log_pipe_unref((LogPipe *) writer);
   log_msg_unref(msg);
   log_queue_unref(queue);
@@ -149,7 +161,9 @@ _assert_logwriter_output(LogWriterTestCase c)
 
   log_writer_options_defaults(&opt);
   opt.template_options.time_zone_info[LTZ_SEND]=tzinfo;
-  log_writer_options_init(&opt, configuration, LWO_NO_MULTI_LINE | LWO_NO_STATS | LWO_SHARE_STATS);
+  log_writer_options_init(&opt, configuration, LWO_NO_MULTI_LINE | LWO_NO_STATS);
+  if (c.truncate_size > 0)
+    opt.truncate_size = c.truncate_size;
 
   if (c.template)
     {
@@ -163,8 +177,10 @@ _assert_logwriter_output(LogWriterTestCase c)
 
   log_writer_set_options(writer, NULL, &opt, NULL, NULL);
   log_writer_set_queue(writer, queue);
+  cr_assert(log_pipe_init((LogPipe *)writer), "LogWriter initialization failed");
   log_writer_format_log(writer, msg, result_msg);
-  cr_assert_str_eq(result_msg->str, c.expected_value, "Expected: %s, actual: %s", c.expected_value, result_msg->str);
+  cr_assert_str_eq(result_msg->str, c.expected_value, "Expected: %s, actual: %s (truncate_size:%d)",
+                   c.expected_value, result_msg->str, c.truncate_size);
 
   _tear_down(writer, msg, queue, result_msg, &opt);
 }
@@ -174,20 +190,27 @@ Test(logwriter, test_logwriter)
   configuration = cfg_new_snippet();
   LogWriterTestCase test_cases[] =
   {
-    {MSG_SYSLOG_STR, TRUE, NULL, LW_SYSLOG_PROTOCOL, EXPECTED_MSG_SYSLOG_STR},
-    {MSG_SYSLOG_STR, TRUE, "$MSGID $MSG", LW_SYSLOG_PROTOCOL, EXPECTED_MSG_SYSLOG_STR_T},
-    {MSG_SYSLOG_EMPTY_STR, TRUE, NULL, LW_SYSLOG_PROTOCOL, EXPECTED_MSG_SYSLOG_EMPTY_STR},
-    {MSG_SYSLOG_EMPTY_STR, TRUE, "$MSGID", LW_SYSLOG_PROTOCOL, EXPECTED_MSG_SYSLOG_EMPTY_STR_T},
-    {MSG_SYSLOG_STR, TRUE, NULL, LW_FORMAT_PROTO, EXPECTED_MSG_SYSLOG_TO_BSD_STR},
-    {MSG_SYSLOG_STR, TRUE, NULL, LW_FORMAT_FILE, EXPECTED_MSG_SYSLOG_TO_FILE_STR},
-    {MSG_BSD_STR, FALSE, NULL, LW_FORMAT_FILE, EXPECTED_MSG_BSD_STR},
-    {MSG_BSD_STR, FALSE, "$PRI $PID $MSG", LW_FORMAT_FILE, EXPECTED_MSG_BSD_STR_T},
-    {MSG_BSD_STR, FALSE, NULL, LW_FORMAT_PROTO, EXPECTED_MSG_BSD_TO_PROTO_STR},
-    {MSG_BSD_STR, FALSE, NULL, LW_SYSLOG_PROTOCOL, EXPECTED_MSG_BSD_TO_SYSLOG_STR},
-    {MSG_BSD_EMPTY_STR, FALSE, NULL, LW_FORMAT_PROTO, EXPECTED_MSG_BSD_EMPTY_STR},
-    {MSG_BSD_EMPTY_STR, FALSE, "$PID", LW_FORMAT_PROTO, EXPECTED_MSG_BSD_EMPTY_STR_T},
-    {MSG_ZERO_PRI, FALSE, NULL, LW_FORMAT_PROTO, EXPECTED_MSG_ZERO_PRI_STR},
-    {MSG_ZERO_PRI, FALSE, "$PRI", LW_FORMAT_PROTO, EXPECTED_MSG_ZERO_PRI_STR_T},
+    {MSG_SYSLOG_STR, TRUE, NULL, LW_SYSLOG_PROTOCOL, 0, EXPECTED_MSG_SYSLOG_STR},
+    {MSG_SYSLOG_STR, TRUE, "$MSGID $MSG", LW_SYSLOG_PROTOCOL, 0, EXPECTED_MSG_SYSLOG_STR_T},
+    {MSG_SYSLOG_STR, TRUE, "$MSGID $MSG", LW_SYSLOG_PROTOCOL, strlen(EXPECTED_MSG_SYSLOG_STR_T_TRUNCATE), EXPECTED_MSG_SYSLOG_STR_T_TRUNCATE},
+    // test that truncate doesn't apply on smaller messages
+    {MSG_SYSLOG_STR, TRUE, "$MSGID $MSG", LW_SYSLOG_PROTOCOL, strlen(EXPECTED_MSG_SYSLOG_STR_T), EXPECTED_MSG_SYSLOG_STR_T},
+    {MSG_SYSLOG_EMPTY_STR, TRUE, NULL, LW_SYSLOG_PROTOCOL, 0, EXPECTED_MSG_SYSLOG_EMPTY_STR},
+    {MSG_SYSLOG_EMPTY_STR, TRUE, "$MSGID", LW_SYSLOG_PROTOCOL, 0, EXPECTED_MSG_SYSLOG_EMPTY_STR_T},
+    {MSG_SYSLOG_STR, TRUE, NULL, LW_FORMAT_PROTO, 0, EXPECTED_MSG_SYSLOG_TO_BSD_STR},
+    {MSG_SYSLOG_STR, TRUE, NULL, LW_FORMAT_FILE, 0, EXPECTED_MSG_SYSLOG_TO_FILE_STR},
+    {MSG_BSD_STR, FALSE, NULL, LW_FORMAT_FILE, 0, EXPECTED_MSG_BSD_STR},
+    {MSG_BSD_STR, FALSE, NULL, LW_FORMAT_FILE, strlen(EXPECTED_MSG_BSD_STR_TRUNCATE), EXPECTED_MSG_BSD_STR_TRUNCATE},
+    {MSG_BSD_STR, FALSE, NULL, LW_FORMAT_FILE, strlen(EXPECTED_MSG_BSD_STR), EXPECTED_MSG_BSD_STR},
+    {MSG_BSD_STR, FALSE, "$PRI $PID $MSG", LW_FORMAT_FILE, 0, EXPECTED_MSG_BSD_STR_T},
+    {MSG_BSD_STR, FALSE, "$PRI $PID $MSG", LW_FORMAT_FILE, strlen(EXPECTED_MSG_BSD_STR_T_TRUNCATE), EXPECTED_MSG_BSD_STR_T_TRUNCATE},
+    {MSG_BSD_STR, FALSE, NULL, LW_FORMAT_PROTO, 0, EXPECTED_MSG_BSD_TO_PROTO_STR},
+    {MSG_BSD_STR, FALSE, NULL, LW_FORMAT_PROTO, strlen(EXPECTED_MSG_BSD_TO_PROTO_STR_TRUNCATE), EXPECTED_MSG_BSD_TO_PROTO_STR_TRUNCATE},
+    {MSG_BSD_STR, FALSE, NULL, LW_SYSLOG_PROTOCOL, 0, EXPECTED_MSG_BSD_TO_SYSLOG_STR},
+    {MSG_BSD_EMPTY_STR, FALSE, NULL, LW_FORMAT_PROTO, 0, EXPECTED_MSG_BSD_EMPTY_STR},
+    {MSG_BSD_EMPTY_STR, FALSE, "$PID", LW_FORMAT_PROTO, 0, EXPECTED_MSG_BSD_EMPTY_STR_T},
+    {MSG_ZERO_PRI, FALSE, NULL, LW_FORMAT_PROTO, 0, EXPECTED_MSG_ZERO_PRI_STR},
+    {MSG_ZERO_PRI, FALSE, "$PRI", LW_FORMAT_PROTO, 0, EXPECTED_MSG_ZERO_PRI_STR_T},
   };
   gint i, nr_of_cases;
 
@@ -203,5 +226,8 @@ Test(logwriter, test_logwriter)
   for (i = 0; i < nr_of_cases; i++)
     _assert_logwriter_output(test_cases[i]);
 
+  msg_format_options_destroy(&parse_options);
   app_shutdown();
+  iv_deinit();
+  cfg_free(configuration);
 }
