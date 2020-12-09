@@ -49,15 +49,16 @@ jobs:
 
       - name: Create draft release
         run: |
-          RELEASE_NAME=syslog-ng-`cat VERSION`
+          VERSION=`cat VERSION`
+          RELEASE_TAG=syslog-ng-$VERSION
+          RELEASE_NAME=${RELEASE_TAG}
           sed "1 i${RELEASE_NAME}\n" NEWS.md > /tmp/message
-          mv dbld/build/${RELEASE_NAME}.tar.gz.orig dbld/build/${RELEASE_NAME}.tar.gz
 
           hub release create \
             --draft \
             --file /tmp/message \
-            --attach dbld/build/${RELEASE_NAME}.tar.gz \
-            ${RELEASE_NAME}
+            --attach dbld/release/${VERSION}/${RELEASE_NAME}.tar.gz \
+            ${RELEASE_TAG}
 
       - name: "Comment: job status"
         if: github.event_name == 'pull_request' && always()
