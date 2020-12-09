@@ -217,8 +217,8 @@ ParameterizedTestParameters(type_hints, test_double_cast)
 static void
 cr_assert_gdouble_eq(gdouble a, gdouble b)
 {
-  const gint is_a_inf = isinf((long double)a);
-  const gint is_b_inf = isinf((long double)a);
+  const gint is_a_inf = isinf(a);
+  const gint is_b_inf = isinf(b);
 
   cr_assert_eq(is_a_inf, is_b_inf);
   if (is_a_inf && is_b_inf)
@@ -305,4 +305,6 @@ Test(type_hints, test_invalid_datetime_cast)
   cr_assert_not_null(error);
   cr_assert_eq(error->domain, TYPE_HINTING_ERROR);
   cr_assert_eq(error->code, TYPE_HINTING_INVALID_CAST);
+
+  g_clear_error(&error);
 }

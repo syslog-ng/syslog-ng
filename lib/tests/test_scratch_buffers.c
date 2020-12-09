@@ -174,9 +174,6 @@ Test(scratch_buffers_stats, stats_counters_are_updated)
                (gint) stats_counter_get(stats_scratch_buffers_count), allocated_counter);
 
   scratch_buffers_allocator_deinit();
-  cr_assert_eq(scratch_buffers_get_local_allocation_count(), 0,
-               "Local allocation count failed to reset 0, value=%d, expected=%d",
-               scratch_buffers_get_local_allocation_count(), 0);
   cr_assert_eq(stats_counter_get(stats_scratch_buffers_count), 0,
                "Statistic scratch_buffers_count failed to reset to 0, value=%ld, expected=%d",
                stats_counter_get(stats_scratch_buffers_count), 0);
