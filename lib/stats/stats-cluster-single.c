@@ -41,7 +41,7 @@ _counter_group_init(StatsCounterGroupInit *self, StatsCounterGroup *counter_grou
 {
   counter_group->counters = g_new0(StatsCounterItem, SC_TYPE_SINGLE_MAX);
   counter_group->capacity = SC_TYPE_SINGLE_MAX;
-  counter_group->counter_names = self->counter_names;
+  counter_group->counter_names = self->counter.names;
   counter_group->free_fn = _counter_group_free;
 }
 
@@ -50,7 +50,7 @@ stats_cluster_single_key_set(StatsClusterKey *key, guint16 component, const gcha
 {
   stats_cluster_key_set(key, component, id, instance, (StatsCounterGroupInit)
   {
-    tag_names, _counter_group_init
+    .counter.names = tag_names, .init = _counter_group_init, .equals = NULL
   });
 }
 
@@ -66,15 +66,19 @@ _counter_group_init_with_name(StatsCounterGroupInit *self, StatsCounterGroup *co
 {
   counter_group->counters = g_new0(StatsCounterItem, SC_TYPE_SINGLE_MAX);
   counter_group->capacity = SC_TYPE_SINGLE_MAX;
-  counter_group->counter_names = self->counter_names;
+
+  const gchar **counter_names = g_new0(const gchar *, 1);
+  counter_names[0] = self->counter.name;
+  counter_group->counter_names = counter_names;
+
   counter_group->free_fn = _counter_group_with_name_free;
 }
 
 static gboolean
 _group_init_equals(const StatsCounterGroupInit *self, const StatsCounterGroupInit *other)
 {
-  g_assert(self != NULL && other != NULL && self->counter_names != NULL && other->counter_names != NULL);
-  return (self->init == other->init) && (g_strcmp0(self->counter_names[0], other->counter_names[0]) == 0);
+  g_assert(self != NULL && other != NULL && self->counter.name != NULL && other->counter.name != NULL);
+  return (self->init == other->init) && (g_strcmp0(self->counter.name, other->counter.name) == 0);
 }
 
 void
@@ -83,9 +87,7 @@ stats_cluster_single_key_set_with_name(StatsClusterKey *key, guint16 component, 
 {
   stats_cluster_key_set(key, component, id, instance, (StatsCounterGroupInit)
   {
-    tag_names, _counter_group_init_with_name, _group_init_equals
+    .counter.name = name, .init = _counter_group_init_with_name, .equals = _group_init_equals
   });
-  key->counter_group_init.counter_names = g_new0(const char *, 1);
-  key->counter_group_init.counter_names[0] = name;
 }
 
