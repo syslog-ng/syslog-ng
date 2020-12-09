@@ -36,6 +36,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <iv.h>
 
 MsgFormatOptions parse_options;
 
@@ -203,5 +204,8 @@ Test(logwriter, test_logwriter)
   for (i = 0; i < nr_of_cases; i++)
     _assert_logwriter_output(test_cases[i]);
 
+  msg_format_options_destroy(&parse_options);
   app_shutdown();
+  iv_deinit();
+  cfg_free(configuration);
 }
