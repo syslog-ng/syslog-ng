@@ -69,10 +69,6 @@ struct _PatternDB
   TimerWheel *timer_wheel;
   GTimeVal last_tick;
 
-  /* process_params used by the timer expiration callback.  Should only be
-   * set with the write lock held and only during the duration of
-   * timer_wheel_set_time() */
-  PDBProcessParams *timer_process_params;
   PatternDBEmitFunc emit;
   gpointer emit_data;
 };
@@ -421,7 +417,7 @@ pattern_db_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data, gpoi
   PDBContext *context = user_data;
   PatternDB *pdb = (PatternDB *) timer_wheel_get_associated_data(wheel);
   LogMessage *msg = correlation_context_get_last_message(&context->super);
-  PDBProcessParams *process_params = pdb->timer_process_params;
+  PDBProcessParams *process_params = caller_context;
 
   msg_debug("Expiring patterndb correlation context",
             evt_tag_str("last_rule", context->rule->rule_id),
@@ -451,11 +447,9 @@ pattern_db_timer_tick(PatternDB *self)
 {
   GTimeVal now;
   glong diff;
-  PDBProcessParams process_params_p = {0};
-  PDBProcessParams *process_params = &process_params_p;
+  PDBProcessParams process_params = {0};
 
   g_static_rw_lock_writer_lock(&self->lock);
-  self->timer_process_params = process_params;
   cached_g_current_time(&now);
   diff = g_time_val_diff(&now, &self->last_tick);
 
@@ -463,7 +457,7 @@ pattern_db_timer_tick(PatternDB *self)
     {
       glong diff_sec = (glong) (diff / 1e6);
 
-      timer_wheel_set_time(self->timer_wheel, timer_wheel_get_time(self->timer_wheel) + diff_sec, NULL);
+      timer_wheel_set_time(self->timer_wheel, timer_wheel_get_time(self->timer_wheel) + diff_sec, &process_params);
       msg_debug("Advancing patterndb current time because of timer tick",
                 evt_tag_long("utc", timer_wheel_get_time(self->timer_wheel)));
       /* update last_tick, take the fraction of the seconds not calculated into this update into account */
@@ -479,9 +473,9 @@ pattern_db_timer_tick(PatternDB *self)
        */
       self->last_tick = now;
     }
-  self->timer_process_params = NULL;
+
   g_static_rw_lock_writer_unlock(&self->lock);
-  _flush_emitted_messages(self, process_params);
+  _flush_emitted_messages(self, &process_params);
 }
 
 /* NOTE: lock should be acquired for writing before calling this function. */
@@ -501,16 +495,7 @@ _advance_time_based_on_message(PatternDB *self, PDBProcessParams *process_params
   if (ls->ut_sec < now.tv_sec)
     now.tv_sec = ls->ut_sec;
 
-  /* the expire callback uses this pointer to find the process_params it
-   * needs to emit messages.  ProcessParams itself is a per-thread value,
-   * however the timer callback is executing with the writer lock held.
-   * There's no other mechanism to pass this pointer to the timer callback,
-   * so we add it to PatternDB, but make sure it is properly protected by
-   * locks.
-   * */
-  self->timer_process_params = process_params;
-  timer_wheel_set_time(self->timer_wheel, now.tv_sec, NULL);
-  self->timer_process_params = NULL;
+  timer_wheel_set_time(self->timer_wheel, now.tv_sec, process_params);
 
   msg_debug("Advancing patterndb current time because of an incoming message",
             evt_tag_long("utc", timer_wheel_get_time(self->timer_wheel)));
@@ -519,17 +504,14 @@ _advance_time_based_on_message(PatternDB *self, PDBProcessParams *process_params
 void
 pattern_db_advance_time(PatternDB *self, gint timeout)
 {
-  PDBProcessParams process_params_p = {0};
-  PDBProcessParams *process_params = &process_params_p;
+  PDBProcessParams process_params= {0};
   time_t new_time;
 
   g_static_rw_lock_writer_lock(&self->lock);
   new_time = timer_wheel_get_time(self->timer_wheel) + timeout;
-  self->timer_process_params = process_params;
-  timer_wheel_set_time(self->timer_wheel, new_time, NULL);
-  self->timer_process_params = NULL;
+  timer_wheel_set_time(self->timer_wheel, new_time, &process_params);
   g_static_rw_lock_writer_unlock(&self->lock);
-  _flush_emitted_messages(self, process_params);
+  _flush_emitted_messages(self, &process_params);
 }
 
 gboolean
@@ -750,15 +732,12 @@ pattern_db_debug_ruleset(PatternDB *self, LogMessage *msg, GArray *dbg_list)
 void
 pattern_db_expire_state(PatternDB *self)
 {
-  PDBProcessParams process_params_p = {0};
-  PDBProcessParams *process_params = &process_params_p;
+  PDBProcessParams process_params = {0};
 
   g_static_rw_lock_writer_lock(&self->lock);
-  self->timer_process_params = process_params;
-  timer_wheel_expire_all(self->timer_wheel, NULL);
-  self->timer_process_params = NULL;
+  timer_wheel_expire_all(self->timer_wheel, &process_params);
   g_static_rw_lock_writer_unlock(&self->lock);
-  _flush_emitted_messages(self, process_params);
+  _flush_emitted_messages(self, &process_params);
 
 }
 
