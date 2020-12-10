@@ -306,7 +306,7 @@ _execute_action_message(PatternDB *db, PDBProcessParams *process_params)
   log_msg_unref(genmsg);
 }
 
-static void pattern_db_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data);
+static void pattern_db_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data, gpointer caller_context);
 
 static void
 _execute_action_create_context(PatternDB *db, PDBProcessParams *process_params)
@@ -416,7 +416,7 @@ _execute_rule_actions(PatternDB *db, PDBProcessParams *process_params, PDBAction
  */
 
 static void
-pattern_db_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data)
+pattern_db_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data, gpointer caller_context)
 {
   PDBContext *context = user_data;
   PatternDB *pdb = (PatternDB *) timer_wheel_get_associated_data(wheel);
@@ -463,7 +463,7 @@ pattern_db_timer_tick(PatternDB *self)
     {
       glong diff_sec = (glong) (diff / 1e6);
 
-      timer_wheel_set_time(self->timer_wheel, timer_wheel_get_time(self->timer_wheel) + diff_sec);
+      timer_wheel_set_time(self->timer_wheel, timer_wheel_get_time(self->timer_wheel) + diff_sec, NULL);
       msg_debug("Advancing patterndb current time because of timer tick",
                 evt_tag_long("utc", timer_wheel_get_time(self->timer_wheel)));
       /* update last_tick, take the fraction of the seconds not calculated into this update into account */
@@ -509,7 +509,7 @@ _advance_time_based_on_message(PatternDB *self, PDBProcessParams *process_params
    * locks.
    * */
   self->timer_process_params = process_params;
-  timer_wheel_set_time(self->timer_wheel, now.tv_sec);
+  timer_wheel_set_time(self->timer_wheel, now.tv_sec, NULL);
   self->timer_process_params = NULL;
 
   msg_debug("Advancing patterndb current time because of an incoming message",
@@ -526,7 +526,7 @@ pattern_db_advance_time(PatternDB *self, gint timeout)
   g_static_rw_lock_writer_lock(&self->lock);
   new_time = timer_wheel_get_time(self->timer_wheel) + timeout;
   self->timer_process_params = process_params;
-  timer_wheel_set_time(self->timer_wheel, new_time);
+  timer_wheel_set_time(self->timer_wheel, new_time, NULL);
   self->timer_process_params = NULL;
   g_static_rw_lock_writer_unlock(&self->lock);
   _flush_emitted_messages(self, process_params);
@@ -755,7 +755,7 @@ pattern_db_expire_state(PatternDB *self)
 
   g_static_rw_lock_writer_lock(&self->lock);
   self->timer_process_params = process_params;
-  timer_wheel_expire_all(self->timer_wheel);
+  timer_wheel_expire_all(self->timer_wheel, NULL);
   self->timer_process_params = NULL;
   g_static_rw_lock_writer_unlock(&self->lock);
   _flush_emitted_messages(self, process_params);

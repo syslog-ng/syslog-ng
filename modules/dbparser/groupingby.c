@@ -151,7 +151,7 @@ grouping_by_set_time(GroupingBy *self, const UnixTime *ls)
   if (ls->ut_sec < now.tv_sec)
     now.tv_sec = ls->ut_sec;
 
-  timer_wheel_set_time(self->timer_wheel, now.tv_sec);
+  timer_wheel_set_time(self->timer_wheel, now.tv_sec, NULL);
   msg_debug("Advancing grouping-by() current time because of an incoming message",
             evt_tag_long("utc", timer_wheel_get_time(self->timer_wheel)),
             log_pipe_location_tag(&self->super.super.super));
@@ -179,7 +179,7 @@ _grouping_by_timer_tick(GroupingBy *self)
     {
       glong diff_sec = (glong)(diff / 1e6);
 
-      timer_wheel_set_time(self->timer_wheel, timer_wheel_get_time(self->timer_wheel) + diff_sec);
+      timer_wheel_set_time(self->timer_wheel, timer_wheel_get_time(self->timer_wheel) + diff_sec, NULL);
       msg_debug("Advancing grouping-by() current time because of timer tick",
                 evt_tag_long("utc", timer_wheel_get_time(self->timer_wheel)),
                 log_pipe_location_tag(&self->super.super.super));
@@ -273,7 +273,7 @@ grouping_by_update_context_and_generate_msg(GroupingBy *self, CorrelationContext
 }
 
 static void
-grouping_by_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data)
+grouping_by_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data, gpointer caller_context)
 {
   CorrelationContext *context = user_data;
   GroupingBy *self = (GroupingBy *) timer_wheel_get_associated_data(wheel);
