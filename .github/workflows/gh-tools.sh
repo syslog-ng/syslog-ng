@@ -7,3 +7,8 @@ gh_export()
         shift;
     done
 }
+
+gh_path()
+{
+    echo "$1" >> $GITHUB_PATH
+}

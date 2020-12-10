@@ -25,7 +25,7 @@ jobs:
 
       - name: Set ENV variables
         run: |
-          . .github/workflows/gh_export.sh
+          . .github/workflows/gh-tools.sh
 
           PYTHONVERSION="`printf ${{ matrix.python }} | tail -c 1`"
           PYTHONUSERBASE="${HOME}/python_packages"
@@ -42,8 +42,7 @@ jobs:
             -DPYTHON_VERSION=${PYTHONVERSION}
           "
           gh_export PYTHONVERSION PYTHONUSERBASE CC CONFIGURE_FLAGS CMAKE_FLAGS
-
-          echo "${HOME}/python_packages" >> $GITHUB_PATH
+          gh_path "${PYTHONUSERBASE}"
 
       - name: autogen.sh
         if: matrix.build-tool == 'autotools'
@@ -127,7 +126,7 @@ jobs:
 
       - name: Set ENV variables
         run: |
-          . .github/workflows/gh_export.sh
+          . .github/workflows/gh-tools.sh
 
           PYTHONVERSION=`printf ${{ matrix.python }} | tail -c 1`
           DISTCHECK_CONFIGURE_FLAGS="
@@ -148,7 +147,7 @@ jobs:
         run: ./autogen.sh
 
       - name: configure
-        run: ./configure ${DISTCHECK_CONFIGURE_FLAGS}
+        run: ./configure --disable-all-modules --enable-manpages
 
       - name: distcheck
         run: |

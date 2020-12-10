@@ -1,5 +1,3 @@
-if ENABLE_PYTHON
-
 EXTRA_DIST += \
 	modules/python/pylib/syslogng/__init__.py				\
 	modules/python/pylib/syslogng/debuggercli/__init__.py			\
@@ -40,6 +38,9 @@ EXTRA_DIST += \
 	modules/python/pylib/pylintrc						\
 	modules/python/pylib/test_pylib.sh	\
 	modules/python/pylib/CMakeLists.txt
+
+if ENABLE_PYTHON
+
 
 PYLIB_PATH = modules/python/pylib
 PYLIB_BUILDDIR = $(abs_builddir)/$(PYLIB_PATH)
