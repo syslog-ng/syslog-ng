@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -e
+
+VERSION=$1
+
+if [ "`cat VERSION`" != "${VERSION}" ]; then
+	echo "The VERSION file in the root of the source tree does not have the version number to be released ${VERSION}. Please commit a version bump change first (or use prepare-release)."
+	exit 1
+fi

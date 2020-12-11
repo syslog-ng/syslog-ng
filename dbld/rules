@@ -158,20 +158,18 @@ validate-tree-clean:
 		exit 1; \
 	fi
 
-validate-version-for-release:
+validate-version-format:
 	@if [ "$$(echo $(VERSION) | sed -e 's/^[0-9]\+\.[0-9]\+.[0-9]\+//')" != "" ]; then \
 		echo "The version number you specified $(VERSION) is not a valid version for a RELEASE. Please supply one using VERSION= via the command line"; \
 		exit 1; \
 	fi
 
-prepare-release: setup validate-tree-clean validate-version-for-release
+prepare-release: setup validate-tree-clean validate-version-format
 	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i  balabit/syslog-ng-$(TARBALL_IMAGE) /dbld/prepare-release $(VERSION)
 
-validate-release: validate-tree-clean validate-version-for-release
-	@if [ "`cat VERSION`" != "$(VERSION)" ]; then \
-		echo "The VERSION file in the root of the source tree does not have the version number to be released $(VERSION). Please commit a version bump change first (or use prepare-release)."; \
-		exit 1; \
-	fi;
+validate-release: validate-tree-clean validate-version-format
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i  balabit/syslog-ng-$(TARBALL_IMAGE) /dbld/validate-release-version $(VERSION)
+
 	@if $(GIT) rev-parse --verify -q "$(GIT_RELEASE_TAG)" > /dev/null; then \
 		echo "Your git tree already has $(GIT_RELEASE_TAG), this might indicate a duplicate release, please remove that first."; \
 		exit 1; \
