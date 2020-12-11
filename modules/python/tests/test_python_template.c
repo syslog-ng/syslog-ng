@@ -53,7 +53,7 @@ _py_init_interpreter(void)
   }
   PyGILState_Release(gstate);
 
-  PyEval_InitThreads();
+  py_init_threads();
   py_log_message_init();
   py_log_template_init();
   py_integer_pointer_init();

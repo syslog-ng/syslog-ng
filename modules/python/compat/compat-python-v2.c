@@ -55,6 +55,12 @@ py_init_argv(void)
   PySys_SetArgvEx(1, argv, 0);
 }
 
+void
+py_init_threads(void)
+{
+  PyEval_InitThreads();
+}
+
 PyObject *
 int_as_pyobject(gint num)
 {
