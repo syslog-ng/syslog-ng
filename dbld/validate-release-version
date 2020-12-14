@@ -1,0 +1,37 @@
+#!/bin/bash
+
+set -e
+
+cd /source
+
+VERSION=$1
+MAJOR=$(echo ${VERSION} | cut -d. -f1)
+MINOR=$(echo ${VERSION} | cut -d. -f2)
+
+function validate_VERSION_file() {
+	if [ "`cat VERSION`" != "${VERSION}" ]; then
+		echo "The VERSION file in the root of the source tree does not have the version number to be released ${VERSION}. Please commit a version bump change first (or use prepare-release)."
+		exit 1
+	fi
+}
+
+function grep_pattern_in_versioning_h() {
+	VERSIONING_H="lib/versioning.h"
+	PATTERN=$1
+
+	if ! grep --perl-regexp "${PATTERN}" ${VERSIONING_H} > /dev/null; then
+		echo "${PATTERN} was not found in ${VERSIONING_H}"
+		exit 1
+	fi
+}
+
+function validate_versioning_h_file() {
+	grep_pattern_in_versioning_h "^#define VERSION_${MAJOR}_${MINOR} \"syslog-ng ${MAJOR}.${MINOR}\"$"
+	grep_pattern_in_versioning_h "^#define VERSION_VALUE_${MAJOR}_${MINOR} 0x[a-f0-9]{4}$"
+	grep_pattern_in_versioning_h "^#define VERSION_VALUE_CURRENT +VERSION_VALUE_${MAJOR}_${MINOR}$"
+	grep_pattern_in_versioning_h "^#define VERSION_STR_CURRENT +\"${MAJOR}.${MINOR}\"$"
+	grep_pattern_in_versioning_h "^#define VERSION_PRODUCT_CURRENT VERSION_${MAJOR}_${MINOR}$"
+}
+
+validate_VERSION_file
+validate_versioning_h_file

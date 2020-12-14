@@ -6,8 +6,12 @@ cd /source
 VERSION=$1
 
 OLD_VERSION=`cat VERSION`
-OLD_MAJOR=$(echo $OLD_VERSION | cut -d. -f1-2)
-NEW_MAJOR=$(echo $VERSION | cut -d. -f1-2)
+OLD_MAJOR=$(echo $OLD_VERSION | cut -d. -f1)
+OLD_MINOR=$(echo $OLD_VERSION | cut -d. -f2)
+OLD_PATCH=$(echo $OLD_VERSION | cut -d. -f3)
+NEW_MAJOR=$(echo $VERSION | cut -d. -f1)
+NEW_MINOR=$(echo $VERSION | cut -d. -f2)
+NEW_PATCH=$(echo $VERSION | cut -d. -f3)
 USER_EMAIL=$(git config --get user.email || echo "noemail@set.any.where")
 USER_NAME=$(git config --get user.name || echo "unknown user")
 VERSION_FILE_LIST="README.md doc/man/*.xml
@@ -34,9 +38,33 @@ function update_packaging_rhel() {
 
 function update_version_refs_in_source() {
 	echo Updating version references in source files
-	ESCAPED_OLD_MAJOR=$(echo $OLD_MAJOR | sed -e 's/[]\/$*.^[]/\\&/g') &&
-	ESCAPED_NEW_MAJOR=$(echo $NEW_MAJOR | sed -e 's/[\/&]/\\&/g') &&
-	git ls-files $VERSION_FILE_LIST | xargs sed -i "s/$ESCAPED_OLD_MAJOR/$ESCAPED_NEW_MAJOR/g"
+	ESCAPED_OLD_MAJOR_AND_MINOR=$(echo $OLD_MAJOR.$OLD_MINOR | sed -e 's/[]\/$*.^[]/\\&/g') &&
+	ESCAPED_NEW_MAJOR_AND_MINOR=$(echo $NEW_MAJOR.$NEW_MINOR | sed -e 's/[\/&]/\\&/g') &&
+	git ls-files $VERSION_FILE_LIST | xargs sed -i "s/$ESCAPED_OLD_MAJOR_AND_MINOR/$ESCAPED_NEW_MAJOR_AND_MINOR/g"
+}
+
+function update_versioning_h() {
+	echo Updating versioning.h
+	VERSIONING_H="lib/versioning.h"
+
+	if grep "^#define VERSION_${NEW_MAJOR}_${NEW_MINOR} \"syslog-ng ${NEW_MAJOR}.${NEW_MINOR}\"$" ${VERSIONING_H}; then
+		echo "VERSION_${NEW_MAJOR}_${NEW_MINOR} is already defined."
+	else
+		sed -i "/^#define VERSION_${OLD_MAJOR}_${OLD_MINOR} \"syslog-ng ${OLD_MAJOR}.${OLD_MINOR}\"$/a#define VERSION_${NEW_MAJOR}_${NEW_MINOR} \"syslog-ng ${NEW_MAJOR}.${NEW_MINOR}\"" ${VERSIONING_H}
+	fi
+
+	OLD_HEX=$(grep "#define VERSION_VALUE_${OLD_MAJOR}_${OLD_MINOR}" ${VERSIONING_H} | grep -o "0x.*$")
+	NEW_HEX=$(printf "0x%04X" $((${OLD_HEX} + 0x0001)) | tr "[:upper:]" "[:lower:]")
+
+	if grep "^#define VERSION_VALUE_${NEW_MAJOR}_${NEW_MINOR} ${NEW_HEX}$" ${VERSIONING_H}; then
+		echo "VERSION_VALUE_${NEW_MAJOR}_${NEW_MINOR} is already defined."
+	else
+		sed -i "/^#define VERSION_VALUE_${OLD_MAJOR}_${OLD_MINOR} ${OLD_HEX}$/a#define VERSION_VALUE_${NEW_MAJOR}_${NEW_MINOR} ${NEW_HEX}" ${VERSIONING_H}
+	fi
+
+	sed -i "s/^#define VERSION_VALUE_CURRENT   VERSION_VALUE_${OLD_MAJOR}_${OLD_MINOR}$/#define VERSION_VALUE_CURRENT   VERSION_VALUE_${NEW_MAJOR}_${NEW_MINOR}/g" ${VERSIONING_H}
+	sed -i "s/^#define VERSION_STR_CURRENT     \"${OLD_MAJOR}.${OLD_MINOR}\"$/#define VERSION_STR_CURRENT     \"${NEW_MAJOR}.${NEW_MINOR}\"/g" ${VERSIONING_H}
+	sed -i "s/^#define VERSION_PRODUCT_CURRENT VERSION_${OLD_MAJOR}_${OLD_MINOR}$/#define VERSION_PRODUCT_CURRENT VERSION_${NEW_MAJOR}_${NEW_MINOR}/g" ${VERSIONING_H}
 }
 
 function perform_updates()
@@ -44,7 +72,8 @@ function perform_updates()
 	update_version && \
 		update_packaging_debian && \
 		update_packaging_rhel && \
-		update_version_refs_in_source
+		update_version_refs_in_source && \
+		update_versioning_h
 }
 
 if [ "$VERSION" = "" ]; then
