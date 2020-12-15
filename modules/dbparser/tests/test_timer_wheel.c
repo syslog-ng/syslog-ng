@@ -37,7 +37,7 @@ gint num_callbacks;
 guint64 prev_now;
 
 void
-timer_callback(TimerWheel *self, guint64 now, gpointer user_data)
+timer_callback(TimerWheel *self, guint64 now, gpointer user_data, gpointer caller_context)
 {
   guint64 expires = *(guint64 *) user_data;
 
@@ -78,7 +78,7 @@ test_wheel(gint seed)
   srand(seed);
   wheel = timer_wheel_new();
   _test_assoc_data(wheel);
-  timer_wheel_set_time(wheel, 1);
+  timer_wheel_set_time(wheel, 1, NULL);
   for (i = 0; i < NUM_TIMERS; i++)
     {
       guint64 expires;
@@ -119,7 +119,7 @@ test_wheel(gint seed)
           expected_callbacks--;
         }
     }
-  timer_wheel_set_time(wheel, latest + 1);
+  timer_wheel_set_time(wheel, latest + 1, NULL);
   cr_assert_eq(num_callbacks, expected_callbacks, "Error: not enough callbacks received, "
                "num_callbacks=%d, expected=%d\n",
                num_callbacks, expected_callbacks);

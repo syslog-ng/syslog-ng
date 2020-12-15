@@ -289,7 +289,7 @@ timer_wheel_cascade(TimerWheel *self)
  * Main time adjustment function
  */
 void
-timer_wheel_set_time(TimerWheel *self, guint64 new_now)
+timer_wheel_set_time(TimerWheel *self, guint64 new_now, gpointer caller_context)
 {
   /* time is not allowed to go backwards */
   if (self->now >= new_now)
@@ -320,7 +320,7 @@ timer_wheel_set_time(TimerWheel *self, guint64 new_now)
         entry = iv_list_entry(lh, TWEntry, list);
 
         tw_entry_unlink(entry);
-        entry->callback(self, self->now, entry->user_data);
+        entry->callback(self, self->now, entry->user_data, caller_context);
         tw_entry_free(entry);
         self->num_timers--;
       }
@@ -344,12 +344,12 @@ timer_wheel_get_time(TimerWheel *self)
 }
 
 void
-timer_wheel_expire_all(TimerWheel *self)
+timer_wheel_expire_all(TimerWheel *self, gpointer caller_context)
 {
   guint64 now;
 
   now = self->now;
-  timer_wheel_set_time(self, (guint64) -1);
+  timer_wheel_set_time(self, (guint64) -1, caller_context);
   self->now = now;
 }
 

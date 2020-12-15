@@ -58,6 +58,69 @@ typedef struct
 
 static NVHandle context_id_handle = 0;
 
+
+#define EXPECTED_NUMBER_OF_MESSAGES_EMITTED 32
+typedef struct _GPMessageEmitter
+{
+  gpointer emitted_messages[EXPECTED_NUMBER_OF_MESSAGES_EMITTED];
+  GPtrArray *emitted_messages_overflow;
+  gint num_emitted_messages;
+} GPMessageEmitter;
+
+
+/* This function is called to populate the emitted_messages array in
+ * msg_emitter.  It only manipulates per-thread data structure so it does
+ * not require locks but does not mind them being locked either.  */
+static void
+_emit_message(GPMessageEmitter *msg_emitter, LogMessage *msg)
+{
+  if (msg_emitter->num_emitted_messages < EXPECTED_NUMBER_OF_MESSAGES_EMITTED)
+    {
+      msg_emitter->emitted_messages[msg_emitter->num_emitted_messages++] = log_msg_ref(msg);
+      return;
+    }
+
+  if (!msg_emitter->emitted_messages_overflow)
+    msg_emitter->emitted_messages_overflow = g_ptr_array_new();
+
+  g_ptr_array_add(msg_emitter->emitted_messages_overflow, log_msg_ref(msg));
+}
+
+static void
+_send_emitted_message_array(GroupingBy *self, gpointer *values, gsize len)
+{
+  for (gint i = 0; i < len; i++)
+    {
+      LogMessage *msg = values[i];
+      stateful_parser_emit_synthetic(&self->super, msg);
+      log_msg_unref(msg);
+    }
+}
+
+/* This function is called to flush the accumulated list of messages that
+ * are generated during processing.  We must not hold any locks within
+ * GroupingBy when doing this, as it will cause log_pipe_queue() calls to
+ * subsequent elements in the message pipeline, which in turn may recurse
+ * into PatternDB.  This works as msg_emitter itself is per-thread
+ * (actually an auto variable on the stack), and this is called without
+ * locks held at the end of a process() invocation. */
+static void
+_flush_emitted_messages(GroupingBy *self, GPMessageEmitter *msg_emitter)
+{
+  _send_emitted_message_array(self, msg_emitter->emitted_messages, msg_emitter->num_emitted_messages);
+  msg_emitter->num_emitted_messages = 0;
+
+  if (!msg_emitter->emitted_messages_overflow)
+    return;
+
+  _send_emitted_message_array(self, msg_emitter->emitted_messages_overflow->pdata,
+                              msg_emitter->emitted_messages_overflow->len);
+
+  g_ptr_array_free(msg_emitter->emitted_messages_overflow, TRUE);
+  msg_emitter->emitted_messages_overflow = NULL;
+
+}
+
 static void
 _free_persist_data(GroupingByPersistData *self)
 {
@@ -136,7 +199,7 @@ grouping_by_set_synthetic_message(LogParser *s, SyntheticMessage *message)
 
 /* NOTE: lock should be acquired for writing before calling this function. */
 void
-grouping_by_set_time(GroupingBy *self, const UnixTime *ls)
+grouping_by_set_time(GroupingBy *self, const UnixTime *ls, GPMessageEmitter *msg_emitter)
 {
   GTimeVal now;
 
@@ -151,7 +214,7 @@ grouping_by_set_time(GroupingBy *self, const UnixTime *ls)
   if (ls->ut_sec < now.tv_sec)
     now.tv_sec = ls->ut_sec;
 
-  timer_wheel_set_time(self->timer_wheel, now.tv_sec);
+  timer_wheel_set_time(self->timer_wheel, now.tv_sec, msg_emitter);
   msg_debug("Advancing grouping-by() current time because of an incoming message",
             evt_tag_long("utc", timer_wheel_get_time(self->timer_wheel)),
             log_pipe_location_tag(&self->super.super.super));
@@ -171,6 +234,8 @@ _grouping_by_timer_tick(GroupingBy *self)
   GTimeVal now;
   glong diff;
 
+  GPMessageEmitter msg_emitter = {0};
+
   g_static_mutex_lock(&self->lock);
   cached_g_current_time(&now);
   diff = g_time_val_diff(&now, &self->last_tick);
@@ -179,7 +244,7 @@ _grouping_by_timer_tick(GroupingBy *self)
     {
       glong diff_sec = (glong)(diff / 1e6);
 
-      timer_wheel_set_time(self->timer_wheel, timer_wheel_get_time(self->timer_wheel) + diff_sec);
+      timer_wheel_set_time(self->timer_wheel, timer_wheel_get_time(self->timer_wheel) + diff_sec, &msg_emitter);
       msg_debug("Advancing grouping-by() current time because of timer tick",
                 evt_tag_long("utc", timer_wheel_get_time(self->timer_wheel)),
                 log_pipe_location_tag(&self->super.super.super));
@@ -197,6 +262,7 @@ _grouping_by_timer_tick(GroupingBy *self)
       self->last_tick = now;
     }
   g_static_mutex_unlock(&self->lock);
+  _flush_emitted_messages(self, &msg_emitter);
 }
 
 static void
@@ -273,9 +339,10 @@ grouping_by_update_context_and_generate_msg(GroupingBy *self, CorrelationContext
 }
 
 static void
-grouping_by_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data)
+grouping_by_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data, gpointer caller_context)
 {
   CorrelationContext *context = user_data;
+  GPMessageEmitter *msg_emitter = caller_context;
   GroupingBy *self = (GroupingBy *) timer_wheel_get_associated_data(wheel);
 
   msg_debug("Expiring grouping-by() correlation context",
@@ -286,7 +353,7 @@ grouping_by_expire_entry(TimerWheel *wheel, guint64 now, gpointer user_data)
   LogMessage *msg = grouping_by_update_context_and_generate_msg(self, context);
   if (msg)
     {
-      stateful_parser_emit_synthetic(&self->super, msg);
+      _emit_message(msg_emitter, msg);
       log_msg_unref(msg);
     }
 }
@@ -342,9 +409,10 @@ _lookup_or_create_context(GroupingBy *self, LogMessage *msg)
 static gboolean
 _perform_groupby(GroupingBy *self, LogMessage *msg)
 {
+  GPMessageEmitter msg_emitter = {0};
 
   g_static_mutex_lock(&self->lock);
-  grouping_by_set_time(self, &msg->timestamps[LM_TS_STAMP]);
+  grouping_by_set_time(self, &msg->timestamps[LM_TS_STAMP], &msg_emitter);
 
   CorrelationContext *context = _lookup_or_create_context(self, msg);
   g_ptr_array_add(context->messages, log_msg_ref(msg));
@@ -364,6 +432,7 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
       LogMessage *genmsg = grouping_by_update_context_and_generate_msg(self, context);
 
       g_static_mutex_unlock(&self->lock);
+      _flush_emitted_messages(self, &msg_emitter);
 
       if (genmsg)
         {
@@ -392,6 +461,7 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
   log_msg_write_protect(msg);
 
   g_static_mutex_unlock(&self->lock);
+  _flush_emitted_messages(self, &msg_emitter);
 
   return TRUE;
 }
