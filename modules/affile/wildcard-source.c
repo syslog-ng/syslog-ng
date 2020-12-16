@@ -77,11 +77,20 @@ _remove_file_reader(FileReader *reader, gpointer user_data)
     }
   log_pipe_unref(&reader->super);
 
-  gchar *full_path = pending_file_list_pop(self->waiting_list);
-  if (full_path)
+  for (GList *pending_iterator = pending_file_list_begin(self->waiting_list);
+       pending_iterator != pending_file_list_end(self->waiting_list);
+       pending_iterator = pending_file_list_next(pending_iterator))
     {
+      gchar *full_path = pending_iterator->data;
+      if (g_hash_table_lookup_extended(self->file_readers, full_path, NULL, NULL))
+        {
+          continue;
+        }
+      pending_file_list_steal(self->waiting_list, pending_iterator);
       _create_file_reader(self, full_path);
+      g_list_free_1(pending_iterator);
       g_free(full_path);
+      break;
     }
 }
 
