@@ -33,6 +33,7 @@ jobs:
             --disable-pacct
             --disable-smtp
             --enable-all-modules
+            --with-python=3
           "
 
           gh_export PYTHONUSERBASE PKG_CONFIG_PATH THREADS CONFIGURE_FLAGS
