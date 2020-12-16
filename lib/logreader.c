@@ -81,8 +81,7 @@ log_reader_set_options(LogReader *s, LogPipe *control, LogReaderOptions *options
   log_source_set_ack_tracker_factory(&self->super, ack_tracker_factory_ref(factory));
 
   log_pipe_unref(self->control);
-  log_pipe_ref(control);
-  self->control = control;
+  self->control = log_pipe_ref(control);
 
   self->options = options;
   log_proto_server_set_options(self->proto, &self->options->proto_options.super);
