@@ -927,10 +927,9 @@ static const gchar *
 find_sd_id_in_key(gint sd_id_len, const gchar *sdata_elem, const gchar *sdata_name,
                   gint sdata_name_len)
 {
-  const gchar *sd_id_sep;
   if (sd_id_len)
     {
-      sd_id_sep = sdata_elem + sd_id_len;
+      const gchar *sd_id_sep = sdata_elem + sd_id_len;
       if (sd_id_sep - sdata_name == sdata_name_len)
         {
           /* Standalone sdata e.g. [[UserData.updatelist@18372.4]] */
