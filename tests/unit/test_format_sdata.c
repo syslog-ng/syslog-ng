@@ -27,24 +27,61 @@
 #include "logmsg/logmsg.h"
 #include "apphook.h"
 
+static LogMessage *msg = NULL;
+static GString *result = NULL;
 
 void
 setup(void)
 {
   app_startup();
+  msg = log_msg_new_empty();
+  result = g_string_new(NULL);
 }
 
 void
 teardown(void)
 {
+  g_string_free(result, true);
+  result = NULL;
+  log_msg_unref(msg);
+  msg = NULL;
+
   app_shutdown();
 }
 
 TestSuite(sdata_format, .init = setup, .fini = teardown);
 
 
-Test(sdata_format, dummy)
+Test(sdata_format, no_sdata)
 {
-  cr_assert(true);
+  log_msg_format_sdata(msg, result, 0);
+
+  cr_assert_str_eq(result->str, "");
+}
+
+Test(sdata_format, sequence_id_from_argument)
+{
+  log_msg_format_sdata(msg, result, 112);
+
+  cr_assert_str_eq(result->str, "[meta sequenceId=\"112\"]");
+}
+
+Test(sdata_format, sequence_id_from_msg)
+{
+  log_msg_set_value_by_name(msg, ".SDATA.meta.sequenceId", "111", -1);
+
+  log_msg_format_sdata(msg, result, 0);
+
+  cr_assert_str_eq(result->str, "[meta sequenceId=\"111\"]");
+}
+
+Test(sdata_format, sequence_id_from_msg_and_argument)
+{
+  log_msg_set_value_by_name(msg, ".SDATA.meta.sequenceId", "111", -1);
+
+  log_msg_format_sdata(msg, result, 112);
+
+  cr_assert_str_eq(result->str, "[meta sequenceId=\"111\"]");
+
 }
 
