@@ -55,6 +55,14 @@ py_init_argv(void)
   PySys_SetArgvEx(1, argv, 0);
 }
 
+void
+py_init_threads(void)
+{
+#if (PY_MAJOR_VERSION == 3 && PY_MINOR_VERSION < 7)
+  PyEval_InitThreads();
+#endif
+}
+
 PyObject *
 int_as_pyobject(gint num)
 {

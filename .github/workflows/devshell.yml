@@ -138,6 +138,8 @@ jobs:
             --enable-linux-caps
             --enable-manpages
             --enable-all-modules
+            --disable-java
+            --disable-java-modules
             --with-python=${PYTHONVERSION}
           "
 

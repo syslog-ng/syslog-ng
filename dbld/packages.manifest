@@ -44,10 +44,10 @@ rpm-build                       [centos, fedora]
 # Tarball related tools
 #############################################################################
 # needed to create a tarball from libjson-c
-doxygen                         [tarball, devshell]
+doxygen                         [tarball]
 
 # docbook to generate man pages
-docbook-xsl                     [tarball, devshell]
+docbook-xsl                     [tarball]
 docbook-style-xsl               [fedora]
 
 #############################################################################
@@ -180,7 +180,7 @@ libglib2.0-0-dbgsym             [devshell]
 libjemalloc-dev                 [devshell]
 libjemalloc2-dbgsym             [devshell]
 libssl1.1-dbgsym                [devshell]
-linux-tools-generic             [devshell]
+linux-perf                      [devshell]
 locales                         [devshell]
 lsof                            [devshell]
 netcat                          [devshell]

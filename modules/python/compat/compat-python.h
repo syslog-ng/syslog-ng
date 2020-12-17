@@ -44,6 +44,7 @@
 
 void py_setup_python_home(void);
 void py_init_argv(void);
+void py_init_threads(void);
 PyObject *int_as_pyobject(gint num);
 
 gint pyobject_as_int(PyObject *object);
