@@ -927,25 +927,25 @@ static const gchar *
 find_sd_id_in_key(gint sd_id_len, const gchar *sdata_elem, const gchar *sdata_name,
                   gint sdata_name_len)
 {
-  const gchar *dot;
+  const gchar *sd_id_sep;
   if (sd_id_len)
     {
-      dot = sdata_elem + sd_id_len;
-      if (dot - sdata_name != sdata_name_len)
+      sd_id_sep = sdata_elem + sd_id_len;
+      if (sd_id_sep - sdata_name != sdata_name_len)
         {
-          g_assert((dot - sdata_name < sdata_name_len) && *dot == '.');
+          g_assert((sd_id_sep - sdata_name < sdata_name_len) && *sd_id_sep == '.');
         }
       else
         {
           /* Standalone sdata e.g. [[UserData.updatelist@18372.4]] */
-          dot = NULL;
+          sd_id_sep = NULL;
         }
     }
   else
     {
-      dot = memrchr(sdata_elem, '.', sdata_name_len - 7);
+      sd_id_sep = memrchr(sdata_elem, '.', sdata_name_len - 7);
     }
-  return dot;
+  return sd_id_sep;
 }
 
 void
