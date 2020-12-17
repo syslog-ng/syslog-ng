@@ -944,9 +944,8 @@ find_sd_id_in_key(gint sd_id_len, const gchar *sdata_elem, const gchar *sdata_na
       return sd_id_sep;
     }
 
-  sd_id_sep = memrchr(sdata_elem, '.', sdata_name_len - 7);
 
-  return sd_id_sep;
+  return memrchr(sdata_elem, '.', sdata_name_len - 7);
 }
 
 void
