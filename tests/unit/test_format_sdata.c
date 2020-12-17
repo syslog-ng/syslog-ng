@@ -82,6 +82,16 @@ Test(sdata_format, sequence_id_from_msg_and_argument)
   log_msg_format_sdata(msg, result, 112);
 
   cr_assert_str_eq(result->str, "[meta sequenceId=\"111\"]");
+}
+
+Test(sdata_format, sdata)
+{
+  log_msg_set_value_by_name(msg, ".SDATA.junos.reason", "TCP FIN", -1);
+  log_msg_set_value_by_name(msg, ".SDATA.foo.bar.reason", "TCP FIN", -1);
+
+  log_msg_format_sdata(msg, result, 0);
+
+  cr_assert_str_eq(result->str, "[foo.bar reason=\"TCP FIN\"][junos reason=\"TCP FIN\"]");
 
 }
 
