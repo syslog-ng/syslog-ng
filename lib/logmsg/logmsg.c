@@ -940,12 +940,7 @@ log_msg_append_format_sdata(const LogMessage *self, GString *result,  guint32 se
 
   seqid = log_msg_get_value(self, meta_seqid, &seqid_length);
   APPEND_ZERO(seqid, seqid, seqid_length);
-  if (seqid[0])
-    /* Message stores sequenceId */
-    has_seq_num = TRUE;
-  else
-    /* Message hasn't sequenceId */
-    has_seq_num = FALSE;
+  has_seq_num = !!seqid[0];
 
   for (i = 0; i < self->num_sdata; i++)
     {
