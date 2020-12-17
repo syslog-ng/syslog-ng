@@ -931,14 +931,14 @@ find_sd_id_in_key(gint sd_id_len, const gchar *sdata_elem, const gchar *sdata_na
   if (sd_id_len)
     {
       sd_id_sep = sdata_elem + sd_id_len;
-      if (sd_id_sep - sdata_name != sdata_name_len)
-        {
-          g_assert((sd_id_sep - sdata_name < sdata_name_len) && *sd_id_sep == '.');
-        }
-      else
+      if (sd_id_sep - sdata_name == sdata_name_len)
         {
           /* Standalone sdata e.g. [[UserData.updatelist@18372.4]] */
           sd_id_sep = NULL;
+        }
+      else
+        {
+          g_assert((sd_id_sep - sdata_name < sdata_name_len) && *sd_id_sep == '.');
         }
     }
   else
