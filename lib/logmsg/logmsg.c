@@ -923,6 +923,31 @@ log_msg_sdata_append_escaped(GString *result, const gchar *sstr, gssize len)
     }
 }
 
+static const gchar *
+find_sd_id_in_key(gint sd_id_len, const gchar *sdata_elem, const gchar *sdata_name,
+                  gint sdata_name_len)
+{
+  const gchar *dot;
+  if (sd_id_len)
+    {
+      dot = sdata_elem + sd_id_len;
+      if (dot - sdata_name != sdata_name_len)
+        {
+          g_assert((dot - sdata_name < sdata_name_len) && *dot == '.');
+        }
+      else
+        {
+          /* Standalone sdata e.g. [[UserData.updatelist@18372.4]] */
+          dot = NULL;
+        }
+    }
+  else
+    {
+      dot = memrchr(sdata_elem, '.', sdata_name_len - 7);
+    }
+  return dot;
+}
+
 void
 log_msg_append_format_sdata(const LogMessage *self, GString *result,  guint32 seq_num)
 {
@@ -963,23 +988,7 @@ log_msg_append_format_sdata(const LogMessage *self, GString *result,  guint32 se
       sdata_elem = sdata_name + 7;
       sd_id_len = (handle_flags >> 8);
 
-      if (sd_id_len)
-        {
-          dot = sdata_elem + sd_id_len;
-          if (dot - sdata_name != sdata_name_len)
-            {
-              g_assert((dot - sdata_name < sdata_name_len) && *dot == '.');
-            }
-          else
-            {
-              /* Standalone sdata e.g. [[UserData.updatelist@18372.4]] */
-              dot = NULL;
-            }
-        }
-      else
-        {
-          dot = memrchr(sdata_elem, '.', sdata_name_len - 7);
-        }
+      dot = find_sd_id_in_key(sd_id_len, sdata_elem, sdata_name, sdata_name_len);
 
       if (G_LIKELY(dot))
         {
