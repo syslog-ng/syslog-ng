@@ -940,11 +940,12 @@ find_sd_id_in_key(gint sd_id_len, const gchar *sdata_elem, const gchar *sdata_na
         {
           g_assert((sd_id_sep - sdata_name < sdata_name_len) && *sd_id_sep == '.');
         }
+
+      return sd_id_sep;
     }
-  else
-    {
-      sd_id_sep = memrchr(sdata_elem, '.', sdata_name_len - 7);
-    }
+
+  sd_id_sep = memrchr(sdata_elem, '.', sdata_name_len - 7);
+
   return sd_id_sep;
 }
 
