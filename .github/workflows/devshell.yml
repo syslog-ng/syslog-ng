@@ -33,6 +33,8 @@ jobs:
           CONFIGURE_FLAGS="
             --prefix=${HOME}/install/syslog-ng
             --enable-all-modules
+            --disable-java
+            --disable-java-modules
             --with-python=${PYTHONVERSION}
             `[ $CC = clang ] && echo '--enable-force-gnu99' || true`
           "
