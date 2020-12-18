@@ -45,15 +45,8 @@ def init_env():
         if e.errno != errno.EEXIST:
             raise
 
-
-def seed_rnd():
-    # Some platforms lack kernel supported random numbers, on those we have to explicitly seed the RNG.
-    # using a fixed RND input does not matter as we are not protecting real data in this test program.
-    try:
-        import base64
-        import socket
-        import ssl
-        rnd = base64.decodebytes("""k/zFvqjGWdhStmhfOeTNtTs89P8soknF1J9kSQrz8hKdrjIutqTXMfIqCNUb7DXrMykMW+wKd1Pg
+def get_seed_input():
+    raw_input =  """k/zFvqjGWdhStmhfOeTNtTs89P8soknF1J9kSQrz8hKdrjIutqTXMfIqCNUb7DXrMykMW+wKd1Pg
 DwaUwxKmlaU1ItOek+jNUWVw9ZOSI1EmsXVgu+Hu7URgmeyY0A3WsDmMzR0Z2wTcRFSuINgBP8LC
 8SG27gJZVOoVv09pfY9WyjvUYwg1jBdTfEM+qcDQKOACx4DH+SzO0bOOJMfMbR2iFaq18b/TCeQN
 kRy9Lz2WvBsByQoXw/afxiu5xzn0MHoxTMCZCTjIyhGXzO/R2yj3eBVc5vxc5oxG3/EdjGnhmn/L
@@ -71,7 +64,23 @@ VW5iRZrvI0sdxt5Ud0TjNqXRGxuVczSuwpQwwxBn0ogr9DoRnp375PwGGh1/yqimW/+OStwP3cRR
 yXEg6Zq1CvuYF/E6el4h9GylxkU7wEM2Ti9QJY4n3YsHyesalERqdd9xx5t7ADRodpMpZXoZGbrS
 vccp3zMzS/aEZRuxky1/qjrAEh8OVA58e82jQqTdY8OQ/kKOu/gUgKBnHAvLkB/020p0CNbq6HjY
 l625DLckaYmOPTh0ECFKzhaPF+/LNmzD36ToOAeuNjfbUjiUVGfntr2mc4E8mUFyo+TskrkSfw==
-""".encode())
+""".encode()
+
+    import sys
+    import base64
+    if sys.version_info.major == 2:
+      return base64.decodestring(raw_input)
+    else:
+      return base64.decodebytes(raw_input)
+
+
+def seed_rnd():
+    # Some platforms lack kernel supported random numbers, on those we have to explicitly seed the RNG.
+    # using a fixed RND input does not matter as we are not protecting real data in this test program.
+    try:
+        import socket
+        import ssl
+        rnd = get_seed_input()
         ssl.RAND_add(rnd, 1024)
         if not ssl.RAND_status():
             raise "PRNG not seeded"
