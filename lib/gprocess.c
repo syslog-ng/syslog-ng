@@ -683,7 +683,13 @@ g_process_change_limits(void)
   struct rlimit limit;
 
   getrlimit(RLIMIT_NOFILE, &limit);
+
+#if defined(__APPLE__) && defined(__MACH__)
+  limit.rlim_cur = MIN(OPEN_MAX, limit.rlim_max);
+#else
   limit.rlim_cur = limit.rlim_max;
+#endif
+
   if (process_opts.fd_limit_min)
     {
       limit.rlim_cur = limit.rlim_max = process_opts.fd_limit_min;
