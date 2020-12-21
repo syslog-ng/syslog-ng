@@ -147,3 +147,104 @@ Test(hashed_queue, no_duplication)
   g_free(f3);
   pending_file_list_free(queue);
 }
+
+Test(hashed_queue, reverse_iterator_in_empty)
+{
+  PendingFileList *queue = pending_file_list_new();
+
+  GList *f1 = pending_file_list_begin(queue);
+  cr_assert_null(f1);
+
+  pending_file_list_free(queue);
+}
+
+Test(hashed_queue, reverse_iterator_one_entry)
+{
+  PendingFileList *queue = pending_file_list_new();
+  pending_file_list_add(queue, "file1");
+
+  GList *f1 = pending_file_list_begin(queue);
+
+  cr_assert_not_null(f1);
+  cr_assert_str_eq(f1->data, "file1");
+
+  pending_file_list_free(queue);
+}
+
+Test(hashed_queue, reverse_iterator_two_entry)
+{
+  PendingFileList *queue = pending_file_list_new();
+  pending_file_list_add(queue, "file3");
+  pending_file_list_add(queue, "file1");
+
+  GList *f1 = pending_file_list_begin(queue);
+
+  cr_assert_not_null(f1);
+  cr_assert_str_eq(f1->data, "file3");
+
+  pending_file_list_free(queue);
+}
+
+Test(hashed_queue, reverse_iterator_second_entry)
+{
+  PendingFileList *queue = pending_file_list_new();
+  pending_file_list_add(queue, "file1");
+  pending_file_list_add(queue, "file2");
+  pending_file_list_add(queue, "file3");
+
+  GList *it = pending_file_list_begin(queue);
+  it = pending_file_list_next(it);
+
+  cr_assert_not_null(it);
+  cr_assert_str_eq(it->data, "file2");
+
+  pending_file_list_free(queue);
+}
+
+Test(hashed_queue, reverse_iterator_count_entries)
+{
+  PendingFileList *queue = pending_file_list_new();
+  pending_file_list_add(queue, "file1");
+  pending_file_list_add(queue, "file2");
+  pending_file_list_add(queue, "file3");
+
+  gint length = 0;
+  for (GList *it = pending_file_list_begin(queue); it != pending_file_list_end(queue);
+       it = pending_file_list_next(it))
+    ++length;
+
+  cr_assert_eq(length, 3);
+
+  pending_file_list_free(queue);
+}
+
+Test(hashed_queue, steal_from_empty)
+{
+  PendingFileList *queue = pending_file_list_new();
+
+  GList *it = pending_file_list_begin(queue);
+  pending_file_list_steal(queue, it);
+
+  cr_assert_null(it);
+
+  pending_file_list_free(queue);
+}
+
+Test(hashed_queue, steal_from_one_entry)
+{
+  PendingFileList *queue = pending_file_list_new();
+  pending_file_list_add(queue, "file1");
+
+  GList *it = pending_file_list_begin(queue);
+  pending_file_list_steal(queue, it);
+
+  cr_assert_not_null(it);
+  cr_assert_str_eq(it->data, "file1");
+
+  cr_assert_null(pending_file_list_begin(queue));
+
+  g_free(it->data);
+  g_list_free_1(it);
+
+  pending_file_list_free(queue);
+}

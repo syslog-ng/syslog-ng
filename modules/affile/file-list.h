@@ -35,4 +35,10 @@ gchar *pending_file_list_pop(PendingFileList *self);
 
 gboolean pending_file_list_remove(PendingFileList *self, const gchar *value);
 
+void pending_file_list_steal(PendingFileList *self, GList *entry);
+
+GList *pending_file_list_begin(PendingFileList *self);
+GList *pending_file_list_end(PendingFileList *self);
+GList *pending_file_list_next(GList *it);
+
 #endif /* MODULES_AFFILE_HASHED_QUEUE_H_ */
