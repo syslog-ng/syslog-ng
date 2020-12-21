@@ -13,11 +13,18 @@ jobs:
       - name: Checkout syslog-ng source
         uses: actions/checkout@v2
 
+      - name: Unlinking preinstalled Python 2 (workaround)
+        # The python@3 brew package has to be installed and linked system-wide (it's a dependency of glib and syslog-ng)
+        # The macos-latest GitHub runner has Python 2.7 preinstalled as a pkg, this prevents linking the python@3
+        # brew package, even when linking is forced.
+        run : |
+          find /usr/local/bin/ -lname "*Python.framework*" -delete
+
       - name: Install dependencies
         run: |
           brew update --preinstall
           brew bundle --file=contrib/Brewfile
-          pip install --user -r requirements.txt
+          pip3 install --user -r requirements.txt
 
       - name: Set ENV variables
         run: |
