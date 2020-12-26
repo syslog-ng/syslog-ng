@@ -79,6 +79,8 @@ include(CheckCSourceCompiles)
 
 add_definitions(-D_GNU_SOURCE=1)
 add_definitions(-D_LARGEFILE64_SOURCE=1)
+add_definitions(-D__APPLE_USE_RFC_3542)
+
 
 include(CheckSockaddrStorage)
 if (HAVE_STRUCT_SOCKADDR_STORAGE)
