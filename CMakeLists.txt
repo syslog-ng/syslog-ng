@@ -198,9 +198,11 @@ check_symbol_exists(g_canonicalize_filename "glib.h" SYSLOG_NG_HAVE_G_CANONICALI
 check_symbol_exists(g_hash_table_contains "glib.h" SYSLOG_NG_HAVE_G_HASH_TABLE_CONTAINS)
 
 find_package(RabbitMQ)
-set(CMAKE_REQUIRED_INCLUDES ${RabbitMQ_INCLUDE_DIR})
-set(CMAKE_REQUIRED_LIBRARIES ${RabbitMQ_LIBRARY})
-check_symbol_exists(amqp_ssl_socket_set_verify_peer "amqp.h;amqp_ssl_socket.h" SYSLOG_NG_HAVE_AMQP_SSL_SOCKET_SET_VERIFY_PEER)
+if (RabbitMQ_FOUND)
+  set(CMAKE_REQUIRED_INCLUDES ${RabbitMQ_INCLUDE_DIR})
+  set(CMAKE_REQUIRED_LIBRARIES ${RabbitMQ_LIBRARY})
+  check_symbol_exists(amqp_ssl_socket_set_verify_peer "amqp.h;amqp_ssl_socket.h" SYSLOG_NG_HAVE_AMQP_SSL_SOCKET_SET_VERIFY_PEER)
+endif()
 
 
 set (SYSLOG_NG_USE_CONST_IVYKIS_MOCK 1)
