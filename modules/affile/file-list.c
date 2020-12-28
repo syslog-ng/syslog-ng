@@ -56,11 +56,14 @@ void pending_file_list_add(PendingFileList *self, const gchar *value)
 
 gchar *pending_file_list_pop(PendingFileList *self)
 {
-  gchar *data = g_queue_pop_head(self->priority_queue);
-  if (data)
-    {
-      g_hash_table_steal(self->index_storage, data);
-    }
+  GList *it = pending_file_list_begin(self);
+  if (it == pending_file_list_end(self))
+    return NULL;
+
+  gchar *data = it->data;
+  pending_file_list_steal(self, it);
+  g_list_free_1(it);
+
   return data;
 }
 
@@ -76,4 +79,30 @@ gboolean pending_file_list_remove(PendingFileList *self, const gchar *value)
       is_deleted = TRUE;
     }
   return is_deleted;
+}
+
+void pending_file_list_steal(PendingFileList *self, GList *entry)
+{
+  if (!entry) return;
+
+  GList *element = g_hash_table_lookup(self->index_storage, entry->data);
+  g_assert(element);
+
+  g_hash_table_steal(self->index_storage, element->data);
+  g_queue_unlink(self->priority_queue, entry);
+}
+
+GList *pending_file_list_begin(PendingFileList *self)
+{
+  return self->priority_queue->head;
+}
+
+GList *pending_file_list_end(PendingFileList *self)
+{
+  return NULL;
+}
+
+GList *pending_file_list_next(GList *it)
+{
+  return it->next;
 }
