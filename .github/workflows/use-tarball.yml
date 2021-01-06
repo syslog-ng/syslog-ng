@@ -14,11 +14,13 @@ jobs:
         run: |
           echo "${{ toJson(github.event) }}"
 
+      - name: Download artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: ${{ github.event.workflow_run.workflow_id }}
+          artifact: tarball
+          workflow_conclusion: success
 
-
-
-#      - name: Download artifact
-#        uses: dawidd6/action-download-artifact@v2
-#        with:
-#          workflow: ${{ github.event.workflow_run.workflow_id }}
-#          workflow_conclusion: success
+      - name: ls -l
+        run: |
+          ls -lR

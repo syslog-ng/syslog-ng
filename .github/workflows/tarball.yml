@@ -15,34 +15,12 @@ jobs:
       - name: Checkout syslog-ng source
         uses: actions/checkout@v2
 
-      - name: Set ENV variables
+      - name: dummy tarball
         run: |
-          . .github/workflows/gh-tools.sh
+          echo "This is a dummy to make stuff faster, not even a tar file" | gzip > syslog-ng-1.2.3.tar.gz
 
-          PYTHONVERSION=3
-          DISTCHECK_CONFIGURE_FLAGS="
-            CFLAGS=-Werror
-            --prefix=${HOME}/install/syslog-ng
-            --with-ivykis=internal
-            --with-jsonc=system
-            --enable-tcp-wrapper
-            --enable-linux-caps
-            --enable-manpages
-            --enable-all-modules
-            --disable-java
-            --disable-java-modules
-            --with-python=${PYTHONVERSION}
-          "
-
-          gh_export DISTCHECK_CONFIGURE_FLAGS
-
-      - name: autogen.sh
-        run: ./autogen.sh
-
-      - name: configure
-        run: ./configure --disable-all-modules --enable-manpages
-
-      - name: distcheck
-        run: |
-          . tests/build-log-cflags-propagation.sh
-          exec_prop_check "make distcheck -j 3 V=1"
+      - name: Store tarball as artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: tarball
+          path: syslog-ng-*.tar.gz
