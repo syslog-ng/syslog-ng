@@ -112,52 +112,6 @@ jobs:
           name: light-reports-${{ matrix.build-tool }}-${{ matrix.cc }}-${{ matrix.python }}
           path: /tmp/light-reports
 
-  distcheck:
-    runs-on: ubuntu-18.04
-    container:
-      image: balabit/syslog-ng-devshell:latest
-
-    strategy:
-      matrix:
-        python: [python2, python3]
-      fail-fast: false
-
-    steps:
-      - name: Checkout syslog-ng source
-        uses: actions/checkout@v2
-
-      - name: Set ENV variables
-        run: |
-          . .github/workflows/gh-tools.sh
-
-          PYTHONVERSION=`printf ${{ matrix.python }} | tail -c 1`
-          DISTCHECK_CONFIGURE_FLAGS="
-            CFLAGS=-Werror
-            --prefix=${HOME}/install/syslog-ng
-            --with-ivykis=internal
-            --with-jsonc=system
-            --enable-tcp-wrapper
-            --enable-linux-caps
-            --enable-manpages
-            --enable-all-modules
-            --disable-java
-            --disable-java-modules
-            --with-python=${PYTHONVERSION}
-          "
-
-          gh_export DISTCHECK_CONFIGURE_FLAGS
-
-      - name: autogen.sh
-        run: ./autogen.sh
-
-      - name: configure
-        run: ./configure --disable-all-modules --enable-manpages
-
-      - name: distcheck
-        run: |
-          . tests/build-log-cflags-propagation.sh
-          exec_prop_check "make distcheck -j 3 V=1"
-
   style-check:
     runs-on: ubuntu-18.04
     container:
