@@ -1,0 +1,24 @@
+name: use tarball
+
+on:
+  workflow_run:
+    workflows:
+      - tarball
+
+jobs:
+  use-tarball:
+    runs-on: ubuntu-18.04
+
+    steps:
+      - name: Debug
+        run: |
+          echo "${{ toJson(github.event) }}"
+
+
+
+
+#      - name: Download artifact
+#        uses: dawidd6/action-download-artifact@v2
+#        with:
+#          workflow: ${{ github.event.workflow_run.workflow_id }}
+#          workflow_conclusion: success
