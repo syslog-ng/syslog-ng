@@ -28,6 +28,8 @@
 #include "tls-support.h"
 #include "compat/socket.h"
 
+#include <iv.h>
+
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <string.h>
@@ -239,6 +241,7 @@ resolve_hostname_to_sockaddr(GSockAddr **addr, gint family, const gchar *name)
 #else
   result = resolve_hostname_to_sockaddr_using_gethostbyname(addr, family, name);
 #endif
+  iv_invalidate_now();
   return result;
 }
 
@@ -366,10 +369,14 @@ resolve_sockaddr_to_inet_or_inet6_hostname(gsize *result_len, GSockAddr *saddr,
 const gchar *
 resolve_sockaddr_to_hostname(gsize *result_len, GSockAddr *saddr, const HostResolveOptions *host_resolve_options)
 {
+  const gchar *res;
+
   if (is_sockaddr_local(saddr))
-    return resolve_sockaddr_to_local_hostname(result_len, saddr, host_resolve_options);
+    res = resolve_sockaddr_to_local_hostname(result_len, saddr, host_resolve_options);
   else
-    return resolve_sockaddr_to_inet_or_inet6_hostname(result_len, saddr, host_resolve_options);
+    res = resolve_sockaddr_to_inet_or_inet6_hostname(result_len, saddr, host_resolve_options);
+  iv_invalidate_now();
+  return res;
 }
 
 /****************************************************************************
@@ -386,7 +393,9 @@ resolve_hostname_to_hostname(gsize *result_len, const gchar *hname, HostResolveO
   else
     convert_hostname_to_short_hostname(hostname_buffer, sizeof(hostname_buffer));
 
-  return hostname_apply_options(-1, result_len, hname, host_resolve_options);
+  const gchar *res = hostname_apply_options(-1, result_len, hname, host_resolve_options);
+  iv_invalidate_now();
+  return res;
 }
 
 /****************************************************************************

@@ -362,6 +362,7 @@ afinet_dd_setup_addresses(AFSocketDestDriver *s)
   if (!_setup_dest_addr(self))
     return FALSE;
 
+  iv_invalidate_now();
   return TRUE;
 }
 
