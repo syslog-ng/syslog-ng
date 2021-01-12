@@ -228,6 +228,13 @@ resolve_hostname_to_sockaddr_using_gethostbyname(GSockAddr **addr, gint family, 
 }
 #endif
 
+static inline void
+_attempt_to_invalidate_iv_now(void)
+{
+  if (iv_inited())
+    iv_invalidate_now();
+}
+
 gboolean
 resolve_hostname_to_sockaddr(GSockAddr **addr, gint family, const gchar *name)
 {
@@ -241,7 +248,9 @@ resolve_hostname_to_sockaddr(GSockAddr **addr, gint family, const gchar *name)
 #else
   result = resolve_hostname_to_sockaddr_using_gethostbyname(addr, family, name);
 #endif
-  iv_invalidate_now();
+
+  _attempt_to_invalidate_iv_now();
+
   return result;
 }
 
@@ -375,7 +384,9 @@ resolve_sockaddr_to_hostname(gsize *result_len, GSockAddr *saddr, const HostReso
     res = resolve_sockaddr_to_local_hostname(result_len, saddr, host_resolve_options);
   else
     res = resolve_sockaddr_to_inet_or_inet6_hostname(result_len, saddr, host_resolve_options);
-  iv_invalidate_now();
+
+  _attempt_to_invalidate_iv_now();
+
   return res;
 }
 
@@ -394,7 +405,9 @@ resolve_hostname_to_hostname(gsize *result_len, const gchar *hname, HostResolveO
     convert_hostname_to_short_hostname(hostname_buffer, sizeof(hostname_buffer));
 
   const gchar *res = hostname_apply_options(-1, result_len, hname, host_resolve_options);
-  iv_invalidate_now();
+
+  _attempt_to_invalidate_iv_now();
+
   return res;
 }
 
