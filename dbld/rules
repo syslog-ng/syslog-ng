@@ -222,6 +222,7 @@ pull-image-%:
 cache-image-%:
 	@IMAGE=balabit/syslog-ng-$*:latest;										\
 	IMAGE_ID=$$(docker images -q $$IMAGE | head -1);								\
+	WATCHED_FILES="dbld packaging/rhel/syslog-ng.spec packaging/debian/control";					\
 	if [ "$$IMAGE_ID" = "" ]; then 											\
 		$(DBLD_RULES) pull-image-$*;										\
 	fi;														\
@@ -230,7 +231,7 @@ cache-image-%:
 		image_commit=$$(docker inspect  --format '{{ index .Config.Labels "COMMIT"}}' $$IMAGE_ID);		\
 		dbld_changes=$$( 											\
 			($(GIT) cat-file -e $${image_commit:-NO_COMMIT_LABEL_IN_DBLD_IMAGE}^{commit} 			\
-				&& $(GIT) diff $${image_commit} -- dbld | wc -l						\
+				&& $(GIT) diff $${image_commit} -- $${WATCHED_FILES} | wc -l				\
 				|| echo 1)										\
 		);													\
 	else														\
