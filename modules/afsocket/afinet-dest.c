@@ -429,7 +429,7 @@ afinet_dd_init(LogPipe *s)
           if (!self->lnet_ctx)
             {
               msg_error("Error initializing raw socket, spoof-source support disabled",
-                        evt_tag_str("error", NULL));
+                        evt_tag_str("error", error));
             }
         }
     }
