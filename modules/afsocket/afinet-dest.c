@@ -430,7 +430,7 @@ afinet_dd_init(LogPipe *s)
           if (!self->lnet_ctx)
             {
               msg_error("Error initializing raw socket, spoof-source support disabled",
-                        evt_tag_str("error", NULL));
+                        evt_tag_str("error", error));
             }
         }
     }
@@ -549,11 +549,6 @@ afinet_dd_construct_ipv6_packet(AFInetDestDriver *self, LogMessage *msg, GString
                          0);
   if (udp == -1)
     return FALSE;
-
-  /* There seems to be a bug in libnet 1.1.2 that is triggered when
-   * checksumming UDP6 packets. This is a workaround below. */
-
-  libnet_toggle_checksum(self->lnet_ctx, udp, LIBNET_OFF);
 
   memcpy(&ln_src, &src.sin6_addr, sizeof(ln_src));
   memcpy(&ln_dst, &dst->sin6_addr, sizeof(ln_dst));
