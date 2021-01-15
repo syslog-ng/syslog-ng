@@ -153,6 +153,7 @@ CfgFlagHandler msg_format_flag_handlers[] =
   { "expect-hostname",            CFH_SET, offsetof(MsgFormatOptions, flags), LP_EXPECT_HOSTNAME },
   { "no-hostname",              CFH_CLEAR, offsetof(MsgFormatOptions, flags), LP_EXPECT_HOSTNAME },
   { "guess-timezone",             CFH_SET, offsetof(MsgFormatOptions, flags), LP_GUESS_TIMEZONE },
+  { "no-header",                  CFH_SET, offsetof(MsgFormatOptions, flags), LP_NO_HEADER },
 
   { NULL },
 };

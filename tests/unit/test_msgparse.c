@@ -1175,3 +1175,20 @@ Test(msgparse, test_simple_message)
   };
   run_parameterized_test(params);
 }
+
+Test(msgparse, test_no_header_flag)
+{
+  struct msgparse_params params[] =
+  {
+    {
+      .msg = "<189>some message",
+      .parse_flags = LP_NO_HEADER,
+      .expected_pri = 189,
+      .expected_program = "",
+      .expected_host = "",
+      .expected_msg = "some message",
+    },
+    {NULL}
+  };
+  run_parameterized_test(params);
+}

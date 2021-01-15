@@ -833,7 +833,8 @@ log_msg_parse_legacy(const MsgFormatOptions *parse_options,
       goto error;
     }
 
-  log_msg_parse_legacy_header(self, &src, &left, parse_options);
+  if ((parse_options->flags & LP_NO_HEADER) == 0)
+    log_msg_parse_legacy_header(self, &src, &left, parse_options);
 
   if (parse_options->flags & LP_SANITIZE_UTF8 && !g_utf8_validate((gchar *) src, left, NULL))
     {

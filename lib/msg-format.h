@@ -57,6 +57,7 @@ enum
   LP_NO_PARSE_DATE = 0x0400,
   LP_STORE_RAW_MESSAGE = 0x0800,
   LP_GUESS_TIMEZONE = 0x1000,
+  LP_NO_HEADER = 0x2000,
 };
 
 typedef struct _MsgFormatHandler MsgFormatHandler;
