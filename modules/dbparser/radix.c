@@ -982,6 +982,7 @@ r_insert_node(RNode *root, gchar *key, gpointer value, RNodeGetValueFunc value_f
               if (!node)
                 {
                   node = r_new_node(NULL, NULL);
+                  node->pdb_location = g_strdup(location);
                   node->parser = parser_node;
 
                   r_add_pchild(root, node);
@@ -1013,7 +1014,8 @@ r_insert_node(RNode *root, gchar *key, gpointer value, RNodeGetValueFunc value_f
                                 evt_tag_str("name", log_msg_get_value_name(node->parser->handle, NULL)),
                                 evt_tag_str("value", value_func ? value_func(value) : "unknown"),
                                 evt_tag_str("other-value", value_func ? value_func(node->value) : "unknown"),
-                                evt_tag_str("location", location));
+                                evt_tag_str("location", location),
+                                evt_tag_str("other-location", node->pdb_location));
                     }
                 }
             }
@@ -1515,7 +1517,7 @@ r_find_all_applicable_nodes(RNode *root, gchar *key, gint keylen, RNodeGetValueF
 RNode *
 r_new_node(const gchar *key, gpointer value)
 {
-  RNode *node = g_malloc(sizeof(RNode));
+  RNode *node = g_malloc0(sizeof(RNode));
 
   node->key = g_strdup(key);
   node->keylen = (key ? strlen(key) : -1);
@@ -1550,6 +1552,8 @@ r_free_node(RNode *node, void (*free_fn)(gpointer data))
 
   if (node->key)
     g_free(node->key);
+
+  g_free(node->pdb_location);
 
   if (node->value && free_fn)
     free_fn(node->value);

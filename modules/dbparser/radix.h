@@ -92,6 +92,7 @@ struct _RNode
   gint keylen;
   RParserNode *parser;
   gpointer value;
+  gchar *pdb_location;
   guint num_children;
   RNode **children;
 
