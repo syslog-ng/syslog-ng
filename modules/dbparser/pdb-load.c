@@ -98,6 +98,7 @@ typedef struct _PDBLoader
 typedef struct _PDBProgramPattern
 {
   gchar *pattern;
+  gchar *pdb_location;
   PDBRule *rule;
 } PDBProgramPattern;
 
@@ -106,6 +107,7 @@ pdb_program_pattern_clear(PDBProgramPattern *self)
 {
   pdb_rule_unref(self->rule);
   g_free(self->pattern);
+  g_free(self->pdb_location);
 }
 
 
@@ -124,6 +126,15 @@ _pdb_state_stack_pop(PDBStateStack *self)
   self->top--;
 
   return self->stack[self->top];
+}
+
+static gchar *
+_pdb_format_location(PDBLoader *state)
+{
+  gint line, column;
+
+  g_markup_parse_context_get_position(state->context, &line, &column);
+  return g_strdup_printf("%s:%d:%d", state->filename, line, column);
 }
 
 static void G_GNUC_PRINTF(3, 4)
@@ -352,7 +363,7 @@ _populate_ruleset_radix(gpointer key, gpointer value, gpointer user_data)
   gchar *pattern = key;
   PDBProgram *program = (PDBProgram *) value;
 
-  r_insert_node(state->ruleset->programs, pattern, pdb_program_ref(program), NULL);
+  r_insert_node(state->ruleset->programs, pattern, pdb_program_ref(program), NULL, program->pdb_location);
 }
 
 static void
@@ -428,7 +439,8 @@ _pdbl_ruleset_end(PDBLoader *state, const gchar *element_name, GError **error)
           r_insert_node(program->rules,
                         program_pattern->pattern,
                         pdb_rule_ref(program_pattern->rule),
-                        (RNodeGetValueFunc) pdb_rule_get_name);
+                        (RNodeGetValueFunc) pdb_rule_get_name,
+                        program_pattern->pdb_location);
           pdb_program_pattern_clear(program_pattern);
         }
 
@@ -451,6 +463,7 @@ _pdbl_ruleset_pattern_text(PDBLoader *state, const gchar *text, gsize text_len, 
         {
           /* create new program specific radix */
           state->current_program = pdb_program_new();
+          state->current_program->pdb_location = _pdb_format_location(state);
           g_hash_table_insert(state->ruleset_patterns, g_strdup(text), state->current_program);
         }
 
@@ -861,6 +874,7 @@ _pdbl_rule_pattern_text(PDBLoader *state, const gchar *text, gsize text_len, GEr
 
   program_pattern.pattern = g_strdup(text);
   program_pattern.rule = pdb_rule_ref(state->current_rule);
+  program_pattern.pdb_location = _pdb_format_location(state);
   g_array_append_val(state->program_patterns, program_pattern);
 
   return TRUE;

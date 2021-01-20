@@ -56,6 +56,7 @@ pdb_program_unref(PDBProgram *s)
       if (self->rules)
         r_free_node(self->rules, (void (*)(void *)) pdb_rule_unref);
 
+      g_free(self->pdb_location);
       g_free(self);
     }
 }

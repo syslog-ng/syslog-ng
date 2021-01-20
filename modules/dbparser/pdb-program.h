@@ -35,6 +35,7 @@
 typedef struct _PDBProgram
 {
   guint ref_cnt;
+  gchar *pdb_location;
   RNode *rules;
 } PDBProgram;
 
