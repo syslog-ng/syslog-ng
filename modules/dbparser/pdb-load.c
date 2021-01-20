@@ -101,6 +101,13 @@ typedef struct _PDBProgramPattern
   PDBRule *rule;
 } PDBProgramPattern;
 
+static void
+pdb_program_pattern_clear(PDBProgramPattern *self)
+{
+  pdb_rule_unref(self->rule);
+  g_free(self->pattern);
+}
+
 
 static void
 _pdb_state_stack_push(PDBStateStack *self, gint state)
@@ -420,9 +427,9 @@ _pdbl_ruleset_end(PDBLoader *state, const gchar *element_name, GError **error)
 
           r_insert_node(program->rules,
                         program_pattern->pattern,
-                        program_pattern->rule,
+                        pdb_rule_ref(program_pattern->rule),
                         (RNodeGetValueFunc) pdb_rule_get_name);
-          g_free(program_pattern->pattern);
+          pdb_program_pattern_clear(program_pattern);
         }
 
       state->current_program = NULL;
