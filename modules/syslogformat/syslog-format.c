@@ -722,33 +722,12 @@ error:
   return ret;
 }
 
-
-/**
- * log_msg_parse_legacy:
- * @self: LogMessage instance to store parsed information into
- * @data: message
- * @length: length of the message pointed to by @data
- * @flags: value affecting how the message is parsed (bits from LP_*)
- *
- * Parse an RFC3164 formatted log message and store the parsed information
- * in @self. Parsing is affected by the bits set @flags argument.
- **/
 static gboolean
-log_msg_parse_legacy(const MsgFormatOptions *parse_options,
-                     const guchar *data, gint length,
-                     LogMessage *self, gint *position)
+log_msg_parse_legacy_header(LogMessage *self, const guchar **data, gint *length, const MsgFormatOptions *parse_options)
 {
-  const guchar *src;
-  gint left;
+  const guchar *src = *data;
+  gint left = *length;
   GTimeVal now;
-
-  src = (const guchar *) data;
-  left = length;
-
-  if (!log_msg_parse_pri(self, &src, &left, parse_options->flags, parse_options->default_pri))
-    {
-      goto error;
-    }
 
   log_msg_parse_cisco_sequence_id(self, &src, &left);
   log_msg_parse_skip_chars(self, &src, &left, " ", -1);
@@ -823,6 +802,39 @@ log_msg_parse_legacy(const MsgFormatOptions *parse_options,
           log_msg_parse_legacy_program_name(self, &src, &left, parse_options->flags);
         }
     }
+  *data = src;
+  *length = left;
+  return TRUE;
+}
+
+/**
+ * log_msg_parse_legacy:
+ * @self: LogMessage instance to store parsed information into
+ * @data: message
+ * @length: length of the message pointed to by @data
+ * @flags: value affecting how the message is parsed (bits from LP_*)
+ *
+ * Parse an RFC3164 formatted log message and store the parsed information
+ * in @self. Parsing is affected by the bits set @flags argument.
+ **/
+static gboolean
+log_msg_parse_legacy(const MsgFormatOptions *parse_options,
+                     const guchar *data, gint length,
+                     LogMessage *self, gint *position)
+{
+  const guchar *src;
+  gint left;
+
+  src = (const guchar *) data;
+  left = length;
+
+  if (!log_msg_parse_pri(self, &src, &left, parse_options->flags, parse_options->default_pri))
+    {
+      goto error;
+    }
+
+  if ((parse_options->flags & LP_NO_HEADER) == 0)
+    log_msg_parse_legacy_header(self, &src, &left, parse_options);
 
   if (parse_options->flags & LP_SANITIZE_UTF8 && !g_utf8_validate((gchar *) src, left, NULL))
     {
