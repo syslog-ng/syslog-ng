@@ -243,6 +243,12 @@ r_parser_set(gchar *str, gint *len, const gchar *param, gpointer state, RParserM
   return FALSE;
 }
 
+gboolean
+r_parser_optionalset(gchar *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
+{
+  r_parser_set(str, len, param, state, match);
+  return TRUE;
+}
 
 gboolean
 r_parser_email(gchar *str, gint *len, const gchar *param, gpointer state, RParserMatch *match)
@@ -709,6 +715,21 @@ r_new_pnode(gchar *key)
         {
           g_free(parser_node);
           msg_error("Missing SET parser parameters",
+                    evt_tag_str("type", params[0]));
+          parser_node = NULL;
+        }
+    }
+  else if (strcmp(params[0], "OPTIONALSET") == 0)
+    {
+      if (params_len == 3)
+        {
+          parser_node->parse = r_parser_optionalset;
+          parser_node->type = RPT_OPTIONALSET;
+        }
+      else
+        {
+          g_free(parser_node);
+          msg_error("Missing OPTIONALSET parser parameters",
                     evt_tag_str("type", params[0]));
           parser_node = NULL;
         }

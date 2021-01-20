@@ -257,6 +257,8 @@ Test(dbparser, test_parsers, .init = test_setup, .fini = test_teardown)
   insert_node(root, "AAA@NUMBER:invalid=@AAA");
   insert_node(root, "AAA@SET@AAA");
   insert_node(root, "AAA@SET:set@AAA");
+  insert_node(root, "AAA@OPTIONALSET@AAA");
+  insert_node(root, "AAA@OPTIONALSET:set@AAA");
   insert_node(root, "AAA@MACADDR@AAA");
   insert_node(root, "newline@NUMBER@\n2ndline\n");
   insert_node(root, "AAA@PCRE:set@AAA");
@@ -943,6 +945,21 @@ ParameterizedTestParameters(dbparser, test_radix_search_matches)
       .node_to_insert = {"@SET:set:  @", NULL},
       .key = "  aaa",
       .expected_pattern = {"set", "  ", NULL},
+    },
+    {
+      .node_to_insert = {"@OPTIONALSET:set:  @", NULL},
+      .key = " aaa",
+      .expected_pattern = {"set", " ", NULL},
+    },
+    {
+      .node_to_insert = {"@OPTIONALSET:set:  @", NULL},
+      .key = "  aaa",
+      .expected_pattern = {"set", "  ", NULL},
+    },
+    {
+      .node_to_insert = {"@OPTIONALSET:set:  @", NULL},
+      .key = "aaa",
+      .expected_pattern = {"set", "", NULL},
     },
     /* test_mcaddr_matches */
     {
