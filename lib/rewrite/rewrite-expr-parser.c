@@ -36,6 +36,7 @@ static CfgLexerKeyword rewrite_expr_keywords[] =
   { "subst",              KW_SUBST },
   { "set_tag",            KW_SET_TAG },
   { "clear_tag",          KW_CLEAR_TAG },
+  { "set_pri",            KW_SET_PRI },
   { "set_severity",       KW_SET_SEVERITY },
   { "set_facility",       KW_SET_FACILITY },
 
