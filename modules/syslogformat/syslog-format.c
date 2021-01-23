@@ -1001,9 +1001,6 @@ syslog_format_handler(const MsgFormatOptions *parse_options,
       return;
     }
 
-  if (parse_options->flags & LP_ASSUME_UTF8)
-    self->flags |= LF_UTF8;
-
   self->initial_parse = TRUE;
   if (parse_options->flags & LP_SYSLOG_PROTOCOL)
     success = log_msg_parse_syslog_proto(parse_options, data, length, self, &problem_position);

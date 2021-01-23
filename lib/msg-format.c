@@ -74,6 +74,8 @@ msg_format_postprocess_message(MsgFormatOptions *options, LogMessage *msg)
     }
   if (options->flags & LP_LOCAL)
     msg->flags |= LF_LOCAL;
+  if (options->flags & LP_ASSUME_UTF8)
+    msg->flags |= LF_UTF8;
 }
 
 void
