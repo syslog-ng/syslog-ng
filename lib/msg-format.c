@@ -51,21 +51,20 @@ msg_format_inject_parse_error(LogMessage *msg, const guchar *data, gsize length,
 void
 msg_format_parse(MsgFormatOptions *options, const guchar *data, gsize length, LogMessage *msg)
 {
-  if (G_LIKELY(options->format_handler))
-    {
-      msg_trace("Initial message parsing follows");
-      options->format_handler->parse(options, data, length, msg);
-      if (options->flags & LP_NO_PARSE_DATE)
-        {
-          msg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_RECVD];
-          unix_time_set_timezone(&msg->timestamps[LM_TS_STAMP],
-                                 time_zone_info_get_offset(options->recv_time_zone_info,
-                                                           msg->timestamps[LM_TS_RECVD].ut_sec));
-        }
-    }
-  else
+  if (G_UNLIKELY(!options->format_handler))
     {
       log_msg_set_value(msg, LM_V_MESSAGE, "Error parsing message, format module is not loaded", -1);
+      return;
+    }
+
+  msg_trace("Initial message parsing follows");
+  options->format_handler->parse(options, data, length, msg);
+  if (options->flags & LP_NO_PARSE_DATE)
+    {
+      msg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_RECVD];
+      unix_time_set_timezone(&msg->timestamps[LM_TS_STAMP],
+                             time_zone_info_get_offset(options->recv_time_zone_info,
+                                                       msg->timestamps[LM_TS_RECVD].ut_sec));
     }
 }
 
