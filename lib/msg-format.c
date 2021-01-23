@@ -48,6 +48,18 @@ msg_format_inject_parse_error(LogMessage *msg, const guchar *data, gsize length,
   msg->pri = LOG_SYSLOG | LOG_ERR;
 }
 
+static void
+msg_format_postprocess_message(MsgFormatOptions *options, LogMessage *msg)
+{
+  if (options->flags & LP_NO_PARSE_DATE)
+    {
+      msg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_RECVD];
+      unix_time_set_timezone(&msg->timestamps[LM_TS_STAMP],
+                             time_zone_info_get_offset(options->recv_time_zone_info,
+                                                       msg->timestamps[LM_TS_RECVD].ut_sec));
+    }
+}
+
 void
 msg_format_parse(MsgFormatOptions *options, const guchar *data, gsize length, LogMessage *msg)
 {
@@ -59,13 +71,7 @@ msg_format_parse(MsgFormatOptions *options, const guchar *data, gsize length, Lo
 
   msg_trace("Initial message parsing follows");
   options->format_handler->parse(options, data, length, msg);
-  if (options->flags & LP_NO_PARSE_DATE)
-    {
-      msg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_RECVD];
-      unix_time_set_timezone(&msg->timestamps[LM_TS_STAMP],
-                             time_zone_info_get_offset(options->recv_time_zone_info,
-                                                       msg->timestamps[LM_TS_RECVD].ut_sec));
-    }
+  msg_format_postprocess_message(options, msg);
 }
 
 void
