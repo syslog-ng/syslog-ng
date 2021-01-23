@@ -373,8 +373,6 @@ linux_kmsg_format_handler(const MsgFormatOptions *parse_options,
       return;
     }
 
-  self->flags |= LF_UTF8;
-
   self->initial_parse = TRUE;
 
   success = log_msg_parse_kmsg(self, data, length, &problem_position);
