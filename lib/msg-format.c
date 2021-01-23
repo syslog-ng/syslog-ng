@@ -50,7 +50,12 @@ msg_format_inject_parse_error(LogMessage *msg, const guchar *data, gsize length,
 }
 
 static void
-msg_format_postprocess_message(MsgFormatOptions *options, LogMessage *msg)
+msg_format_preprocess_message(MsgFormatOptions *options, const guchar *data, gsize length, LogMessage *msg)
+{
+}
+
+static void
+msg_format_postprocess_message(MsgFormatOptions *options, const guchar *data, gsize length, LogMessage *msg)
 {
   if (options->flags & LP_NO_PARSE_DATE)
     {
@@ -88,8 +93,9 @@ msg_format_parse(MsgFormatOptions *options, const guchar *data, gsize length, Lo
     }
 
   msg_trace("Initial message parsing follows");
+  msg_format_preprocess_message(options, data, length, msg);
   options->format_handler->parse(options, data, length, msg);
-  msg_format_postprocess_message(options, msg);
+  msg_format_postprocess_message(options, data, length, msg);
 }
 
 void
