@@ -38,8 +38,9 @@ static CfgLexerKeyword csvparser_keywords[] =
   { "delimiters",  KW_DELIMITERS },
   { "quotes",      KW_QUOTES },
   { "quote_pairs", KW_QUOTE_PAIRS },
-  { "chars",       KW_CHARS},
-  { "strings",     KW_STRINGS},
+  { "chars",       KW_CHARS },
+  { "strings",     KW_STRINGS },
+  { "drop_invalid",KW_DROP_INVALID },
   { "null",        KW_NULL },
   { NULL }
 };
