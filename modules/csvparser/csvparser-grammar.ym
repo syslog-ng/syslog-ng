@@ -59,8 +59,10 @@
 %token KW_NULL
 %token KW_CHARS
 %token KW_STRINGS
+%token KW_DROP_INVALID
 
 %type	<ptr> parser_expr_csv
+%type   <cptr> parser_csv_flag
 %type   <num> parser_csv_flags
 %type   <num> parser_csv_dialect
 
@@ -90,6 +92,7 @@ parser_csv_opt
         /* CSVParser related options */
         : KW_FLAGS '(' parser_csv_flags ')'     { CHECK_ERROR(csv_parser_set_flags(last_parser, $3), @3, "only one escape style can be used in the flags argument"); }
         | KW_PREFIX '(' string ')'              { csv_parser_set_prefix(last_parser, $3); free($3); }
+	| KW_DROP_INVALID '(' yesno ')'         { csv_parser_set_drop_invalid(last_parser, $3); }
         /* CSVScanner related options */
         | KW_DIALECT '(' parser_csv_dialect ')' { csv_scanner_options_set_dialect(csv_parser_get_scanner_options(last_parser), $3); }
         | KW_DELIMITERS '(' parser_csv_delimiters ')'
@@ -116,7 +119,7 @@ parser_csv_delimiters_opt
         ;
 
 parser_csv_flags
-        : normalized_flag parser_csv_flags
+        : parser_csv_flag parser_csv_flags
           {
             guint32 flag = csv_parser_lookup_flag($1);
             CHECK_ERROR(flag != 0, @1, "unknown csv-parser() flag %s", $1);
@@ -125,6 +128,11 @@ parser_csv_flags
           }
         |					{ $$ = 0; }
         ;
+
+parser_csv_flag
+        : normalized_flag			{ $$ = $1; }
+	| KW_DROP_INVALID			{ $$ = strdup(lexer->token_text->str); };
+	;
 
 parser_csv_dialect
         : normalized_flag                       {
