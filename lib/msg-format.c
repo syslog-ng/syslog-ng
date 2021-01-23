@@ -26,6 +26,7 @@
 #include "cfg.h"
 #include "plugin.h"
 #include "plugin-types.h"
+#include "find-crlf.h"
 
 void
 msg_format_inject_parse_error(LogMessage *msg, const guchar *data, gsize length, gint problem_position)
@@ -57,6 +58,19 @@ msg_format_postprocess_message(MsgFormatOptions *options, LogMessage *msg)
       unix_time_set_timezone(&msg->timestamps[LM_TS_STAMP],
                              time_zone_info_get_offset(options->recv_time_zone_info,
                                                        msg->timestamps[LM_TS_RECVD].ut_sec));
+    }
+  if (G_UNLIKELY(options->flags & LP_NO_MULTI_LINE))
+    {
+      gssize msg_len;
+      gchar *msg_text;
+      gchar *p;
+
+      p = msg_text = (gchar *) log_msg_get_value(msg, LM_V_MESSAGE, &msg_len);
+      while ((p = find_cr_or_lf(p, msg_text + msg_len - p)))
+        {
+          *p = ' ';
+          p++;
+        }
     }
 }
 

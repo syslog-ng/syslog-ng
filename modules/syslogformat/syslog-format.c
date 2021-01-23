@@ -987,7 +987,6 @@ syslog_format_handler(const MsgFormatOptions *parse_options,
 {
   gboolean success;
   gint problem_position = 0;
-  gchar *p;
 
   while (length > 0 && (data[length - 1] == '\n' || data[length - 1] == '\0'))
     length--;
@@ -1021,19 +1020,6 @@ syslog_format_handler(const MsgFormatOptions *parse_options,
       return;
     }
 
-  if (G_UNLIKELY(parse_options->flags & LP_NO_MULTI_LINE))
-    {
-      gssize msglen;
-      gchar *msg;
-
-      p = msg = (gchar *) log_msg_get_value(self, LM_V_MESSAGE, &msglen);
-      while ((p = find_cr_or_lf(p, msg + msglen - p)))
-        {
-          *p = ' ';
-          p++;
-        }
-
-    }
 }
 
 void
