@@ -72,6 +72,8 @@ msg_format_postprocess_message(MsgFormatOptions *options, LogMessage *msg)
           p++;
         }
     }
+  if (options->flags & LP_LOCAL)
+    msg->flags |= LF_LOCAL;
 }
 
 void
