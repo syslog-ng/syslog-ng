@@ -104,7 +104,7 @@ log_source_free_to_send(LogSource *self)
 static inline gint
 log_source_get_init_window_size(LogSource *self)
 {
-  return self->options->init_window_size;
+  return self->initial_window_size;
 }
 
 static inline void

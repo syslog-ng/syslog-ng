@@ -219,7 +219,7 @@ log_source_dynamic_window_update_statistics(LogSource *self)
 static void
 _reclaim_dynamic_window(LogSource *self, gsize window_size)
 {
-  g_assert(self->full_window_size - window_size >= self->options->init_window_size);
+  g_assert(self->full_window_size - window_size >= self->initial_window_size);
   atomic_gssize_set(&self->window_size_to_be_reclaimed, window_size);
 }
 
@@ -228,7 +228,7 @@ _release_dynamic_window(LogSource *self)
 {
   g_assert(self->ack_tracker == NULL);
 
-  gsize dynamic_part = self->full_window_size - self->options->init_window_size;
+  gsize dynamic_part = self->full_window_size - self->initial_window_size;
   msg_trace("Releasing dynamic part of the window", evt_tag_int("dynamic_window_to_be_released", dynamic_part),
             log_pipe_location_tag(&self->super));
 
@@ -334,7 +334,7 @@ _reclaim_window_instead_of_rebalance(LogSource *self)
 static void
 _dynamic_window_rebalance(LogSource *self)
 {
-  gsize current_dynamic_win = self->full_window_size - self->options->init_window_size;
+  gsize current_dynamic_win = self->full_window_size - self->initial_window_size;
   gboolean have_to_increase = current_dynamic_win < self->dynamic_window.pool->balanced_window;
   gboolean have_to_decrease = current_dynamic_win > self->dynamic_window.pool->balanced_window;
 
@@ -343,7 +343,7 @@ _dynamic_window_rebalance(LogSource *self)
             evt_tag_printf("connection", "%p", self),
             evt_tag_int("full_window", self->full_window_size),
             evt_tag_int("dynamic_win", current_dynamic_win),
-            evt_tag_int("static_window", self->options->init_window_size),
+            evt_tag_int("static_window", self->initial_window_size),
             evt_tag_int("balanced_window", self->dynamic_window.pool->balanced_window),
             evt_tag_int("avg_free", dynamic_window_stat_get_avg(&self->dynamic_window.stat)));
 
