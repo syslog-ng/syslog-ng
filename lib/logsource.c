@@ -670,6 +670,8 @@ _initialize_window(LogSource *self, gint init_window_size)
 {
   self->window_initialized = TRUE;
   window_size_counter_set(&self->window_size, init_window_size);
+
+  self->initial_window_size = init_window_size;
   self->full_window_size = init_window_size;
 }
 
