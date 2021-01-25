@@ -7,6 +7,7 @@ set(SCL_DIRS
     default-network-drivers
     elasticsearch
     ewmm
+    fortigate
     graphite
     graylog2
     hdfs
