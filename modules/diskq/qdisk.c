@@ -777,6 +777,14 @@ _update_header_with_default_values(QDisk *self)
   self->hdr->backlog_len = 0;
 }
 
+static gboolean
+_create_path(const gchar *filename)
+{
+  FilePermOptions fpermoptions;
+  file_perm_options_defaults(&fpermoptions);
+  return file_perm_options_create_containing_directory(&fpermoptions, filename);
+}
+
 gboolean
 qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 {
@@ -810,6 +818,13 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
         {
           new_file = TRUE;
         }
+    }
+  if (!_create_path(filename))
+    {
+      msg_error("Error creating dir for disk-queue file",
+                evt_tag_str("filename", filename),
+                evt_tag_error("error"));
+      return FALSE;
     }
 
   self->filename = g_strdup(filename);
