@@ -876,11 +876,15 @@ pdbtool_walk_tree(RNode *root, gint level, gboolean program)
 {
   gint i;
 
+  printf("[%d]\t", level);
   for (i = 0; i < level; i++)
-    printf(" ");
+    printf("  ");
 
   if (root->parser)
-    printf("@%s:%s@ ", r_parser_type_name(root->parser->type), log_msg_get_value_name(root->parser->handle, NULL));
+    printf("@%s:%s@ [%s]",
+           r_parser_type_name(root->parser->type),
+           log_msg_get_value_name(root->parser->handle, NULL),
+           root->pdb_location ? : "");
   printf("'%s' ", root->key ? (gchar *) root->key : "");
 
   if (root->value)

@@ -54,7 +54,7 @@ insert_node_with_value(RNode *root, const gchar *key, const gpointer value)
    * and it might be a read-only string literal */
 
   dup = g_strdup(key);
-  r_insert_node(root, dup, value ? : (gpointer)key, NULL);
+  r_insert_node(root, dup, value ? : (gpointer)key, NULL, NULL);
   g_free(dup);
 }
 

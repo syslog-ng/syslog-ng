@@ -849,7 +849,7 @@ r_add_child(RNode *parent, RNode *child)
 }
 
 static inline void
-r_add_child_check(RNode *root, gchar *key, gpointer value, RNodeGetValueFunc value_func)
+r_add_child_check(RNode *root, gchar *key, gpointer value, RNodeGetValueFunc value_func, const gchar *location)
 {
   gchar *at;
 
@@ -866,12 +866,12 @@ r_add_child_check(RNode *root, gchar *key, gpointer value, RNodeGetValueFunc val
 
           /* and insert the rest beginning from @ under the newly created literal node */
           *at = '@';
-          r_insert_node(child, at, value, value_func);
+          r_insert_node(child, at, value, value_func, location);
         }
       else
         {
           /* @ is the first so let's insert it simply and let insert_node handle @ */
-          r_insert_node(root, key, value, value_func);
+          r_insert_node(root, key, value, value_func, location);
         }
     }
   else
@@ -945,7 +945,7 @@ r_find_child_by_first_character(RNode *root, char key)
 }
 
 void
-r_insert_node(RNode *root, gchar *key, gpointer value, RNodeGetValueFunc value_func)
+r_insert_node(RNode *root, gchar *key, gpointer value, RNodeGetValueFunc value_func, const gchar *location)
 {
   RNode *node;
   gint keylen = strlen(key);
@@ -980,12 +980,13 @@ r_insert_node(RNode *root, gchar *key, gpointer value, RNodeGetValueFunc value_f
                 msg_error("Duplicate key in parser radix tree",
                           evt_tag_str("key", "@"),
                           evt_tag_str("value", value_func ? value_func(value) : "unknown"),
-                          evt_tag_str("other-value", value_func ? value_func(node->value) : "unknown"));
+                          evt_tag_str("other-value", value_func ? value_func(node->value) : "unknown"),
+                          evt_tag_str("location", location));
             }
 
           /* go down building the tree if there is key left */
           if (keylen > 2)
-            r_insert_node(node, key + 2, value, value_func);
+            r_insert_node(node, key + 2, value, value_func, location);
 
         }
       else if ((keylen >= 2) && (end = strchr((const gchar *)key + 1, '@')) != NULL)
@@ -1002,6 +1003,7 @@ r_insert_node(RNode *root, gchar *key, gpointer value, RNodeGetValueFunc value_f
               if (!node)
                 {
                   node = r_new_node(NULL, NULL);
+                  node->pdb_location = g_strdup(location);
                   node->parser = parser_node;
 
                   r_add_pchild(root, node);
@@ -1015,7 +1017,7 @@ r_insert_node(RNode *root, gchar *key, gpointer value, RNodeGetValueFunc value_f
               if ((end - key) < (keylen - 1))
                 {
                   /* the key is not over so go on building the tree */
-                  r_insert_node(node, end + 1, value, value_func);
+                  r_insert_node(node, end + 1, value, value_func, location);
                 }
               else
                 {
@@ -1029,10 +1031,12 @@ r_insert_node(RNode *root, gchar *key, gpointer value, RNodeGetValueFunc value_f
                     {
                       /* FIXME: print parser type in string format */
                       msg_error("Duplicate parser node in radix tree",
-                                evt_tag_int("type", node->parser->type),
+                                evt_tag_str("type", r_parser_type_name(node->parser->type)),
                                 evt_tag_str("name", log_msg_get_value_name(node->parser->handle, NULL)),
                                 evt_tag_str("value", value_func ? value_func(value) : "unknown"),
-                                evt_tag_str("other-value", value_func ? value_func(node->value) : "unknown"));
+                                evt_tag_str("other-value", value_func ? value_func(node->value) : "unknown"),
+                                evt_tag_str("location", location),
+                                evt_tag_str("other-location", node->pdb_location));
                     }
                 }
             }
@@ -1041,7 +1045,8 @@ r_insert_node(RNode *root, gchar *key, gpointer value, RNodeGetValueFunc value_f
       else
         msg_error("Key contains '@' without escaping",
                   evt_tag_str("key", key),
-                  evt_tag_str("value", value_func ? value_func(value) : "unknown"));
+                  evt_tag_str("value", value_func ? value_func(value) : "unknown"),
+                  evt_tag_str("location", location));
     }
   else
     {
@@ -1067,13 +1072,13 @@ r_insert_node(RNode *root, gchar *key, gpointer value, RNodeGetValueFunc value_f
             {
               /* @ is always a singel node, and we also have an @ so insert us under root */
               if (key[i] == '@')
-                r_insert_node(root, key + i, value, value_func);
+                r_insert_node(root, key + i, value, value_func, location);
               else
-                r_insert_node(node, key + i, value, value_func);
+                r_insert_node(node, key + i, value, value_func, location);
             }
           else
             {
-              r_add_child_check(root, key + i, value, value_func);
+              r_add_child_check(root, key + i, value, value_func, location);
             }
         }
       else if (i == keylen && i == nodelen)
@@ -1085,7 +1090,8 @@ r_insert_node(RNode *root, gchar *key, gpointer value, RNodeGetValueFunc value_f
           else
             msg_error("Duplicate key in radix tree",
                       evt_tag_str("key", key),
-                      evt_tag_str("value", value_func ? value_func(value) : "unknown"));
+                      evt_tag_str("value", value_func ? value_func(value) : "unknown"),
+                      evt_tag_str("location", location));
         }
       else if (i > 0 && i < nodelen)
         {
@@ -1121,7 +1127,7 @@ r_insert_node(RNode *root, gchar *key, gpointer value, RNodeGetValueFunc value_f
           if (i < keylen)
             {
               /* we add a new sub tree */
-              r_add_child_check(root, key + i, value, value_func);
+              r_add_child_check(root, key + i, value, value_func, location);
             }
           else
             {
@@ -1132,7 +1138,7 @@ r_insert_node(RNode *root, gchar *key, gpointer value, RNodeGetValueFunc value_f
       else
         {
           /* simply a new children */
-          r_add_child_check(root, key + i, value, value_func);
+          r_add_child_check(root, key + i, value, value_func, location);
         }
     }
 }
@@ -1532,7 +1538,7 @@ r_find_all_applicable_nodes(RNode *root, gchar *key, gint keylen, RNodeGetValueF
 RNode *
 r_new_node(const gchar *key, gpointer value)
 {
-  RNode *node = g_malloc(sizeof(RNode));
+  RNode *node = g_malloc0(sizeof(RNode));
 
   node->key = g_strdup(key);
   node->keylen = (key ? strlen(key) : -1);
@@ -1567,6 +1573,8 @@ r_free_node(RNode *node, void (*free_fn)(gpointer data))
 
   if (node->key)
     g_free(node->key);
+
+  g_free(node->pdb_location);
 
   if (node->value && free_fn)
     free_fn(node->value);
