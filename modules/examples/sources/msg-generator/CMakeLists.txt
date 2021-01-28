@@ -17,8 +17,7 @@ target_include_directories(msg-generator
 )
 
 generate_y_from_ym(modules/examples/sources/msg-generator/msg-generator-grammar)
-BISON_GEN(
-  NAME MsgGeneratorGrammar
-  INPUT ${CMAKE_CURRENT_BINARY_DIR}/msg-generator-grammar.y
-  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/msg-generator-grammar
-  COMPILE_FLAGS ${BISON_FLAGS})
+bison_target(MsgGeneratorGrammar
+    ${CMAKE_CURRENT_BINARY_DIR}/msg-generator-grammar.y
+    ${CMAKE_CURRENT_BINARY_DIR}/msg-generator-grammar.c
+    COMPILE_FLAGS ${BISON_FLAGS})

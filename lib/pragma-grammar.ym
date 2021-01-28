@@ -59,15 +59,6 @@
 
 CfgArgs *last_module_args = NULL;
 
-#if SYSLOG_NG_BISON_MAJOR == 3 && SYSLOG_NG_BISON_MINOR <= 5
-
-/* old bison versions (e.g. 3.5.1 and below) when using api.prefix, didn't
- * generate the PRAGMA_EMPTY enum, but had YYEMPTY, so let's define
- * PRAGMA_EMPTY to YYEMPTY, so the grammar itself is able to use the new
- * style */
-#define PRAGMA_EMPTY YYEMPTY
-#endif
-
 }
 
 %type   <cptr> requires_message

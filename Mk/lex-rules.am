@@ -16,8 +16,6 @@ endif
 
 .y.c:
 	$(AM_V_YACC)$(am__skipyacc) $(SHELL) $(YLWRAP) $< y.tab.c $@ y.tab.h $*.h y.output $*.output -- $(YACCCOMPILE)
-	$(AM_V_at) nlinit=`echo 'nl="'; echo '"'`; eval "$$nlinit"; \
-	$(SED) -i -e "1i\\$${nl}#define SYSLOG_NG_BISON_MAJOR @bison_version_major@$${nl}1i\\$${nl}#define SYSLOG_NG_BISON_MINOR @bison_version_minor@"  $@
 
 .y.h:
 	$(AM_V_YACC)$(am__skipyacc) $(SHELL) $(YLWRAP) $< y.tab.c $@ y.tab.h $*.h y.output $*.output -- $(YACCCOMPILE)

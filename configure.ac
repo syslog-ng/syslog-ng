@@ -433,8 +433,6 @@ if echo "$YACC" | grep -q bison; then
 	bison_version_major=`echo $bison_version | cut -d. -f1`
 	bison_version_minor=`echo $bison_version | cut -d. -f2`
 	bison_version_patch=`echo $bison_version | cut -d. -f3`
-	AC_SUBST(bison_version_major)
-	AC_SUBST(bison_version_minor)
 	if ([[ "$bison_version_major" -gt 3 ]]) ||
 	   ([[ "$bison_version_major" -eq 3 ]] && [[ "$bison_version_minor" -gt 4 ]]) ||
 	   ([[ "$bison_version_major" -eq 3 ]] && [[ "$bison_version_minor" -eq 4 ]] && [[ "$bison_version_patch" -ge 2 ]]); then

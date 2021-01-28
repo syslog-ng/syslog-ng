@@ -39,16 +39,6 @@
 
 HttpResponseHandler last_response_handler;
 
-#if SYSLOG_NG_BISON_MAJOR == 3 && SYSLOG_NG_BISON_MINOR <= 5
-
-/* old bison versions (e.g. 3.5.1 and below) when using api.prefix, didn't
- * generate the HTTP_EMPTY enum, but had YYEMPTY, so let's define
- * HTTP_EMPTY to YYEMPTY, so the grammar itself is able to use the new
- * style */
-#define HTTP_EMPTY YYEMPTY
-#endif
-
-
 }
 
 %define api.prefix {http_}

@@ -46,16 +46,6 @@
 
 #include <string.h>
 
-#if SYSLOG_NG_BISON_MAJOR == 3 && SYSLOG_NG_BISON_MINOR <= 5
-
-/* old bison versions (e.g. 3.5.1 and below) when using api.prefix, didn't
- * generate the REWRITE_EXPR_EMPTY enum, but had YYEMPTY, so let's define
- * REWRITE_EXPR_EMPTY to YYEMPTY, so the grammar itself is able to use the new
- * style */
-#define REWRITE_EXPR_EMPTY YYEMPTY
-#endif
-
-
 }
 
 %define api.prefix {rewrite_expr_}
