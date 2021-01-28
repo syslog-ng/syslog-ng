@@ -28,11 +28,10 @@ set(OPENBSD_SYS_DRIVER_SOURCES
 
 generate_y_from_ym(modules/openbsd/openbsd-grammar)
 
-BISON_GEN(
-  NAME openbsdGrammar
-  INPUT ${CMAKE_CURRENT_BINARY_DIR}/openbsd-grammar.y
-  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/openbsd-grammar
-  COMPILE_FLAGS ${BISON_FLAGS})
+bison_target(openbsdGrammar
+    ${CMAKE_CURRENT_BINARY_DIR}/openbsd-grammar.y
+    ${CMAKE_CURRENT_BINARY_DIR}/openbsd-grammar.c
+    COMPILE_FLAGS ${BISON_FLAGS})
 
 add_library(openbsd SHARED ${openbsd_SOURCES})
 target_include_directories(openbsd

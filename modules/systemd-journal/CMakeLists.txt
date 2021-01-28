@@ -16,11 +16,10 @@ set (JOURNALD_SOURCES
 
 generate_y_from_ym(modules/systemd-journal/systemd-journal-grammar)
 
-BISON_GEN(
-  NAME SystemdJournalGrammar
-  INPUT ${CMAKE_CURRENT_BINARY_DIR}/systemd-journal-grammar.y
-  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/systemd-journal-grammar
-  COMPILE_FLAGS ${BISON_FLAGS})
+bison_target(SystemdJournalGrammar
+  ${CMAKE_CURRENT_BINARY_DIR}/systemd-journal-grammar.y
+  ${CMAKE_CURRENT_BINARY_DIR}/systemd-journal-grammar.c
+COMPILE_FLAGS ${BISON_FLAGS})
 
 if (ENABLE_JOURNALD)
     add_library(sdjournal SHARED ${JOURNALD_SOURCES})
