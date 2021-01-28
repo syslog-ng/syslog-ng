@@ -434,11 +434,11 @@ if echo "$YACC" | grep -q bison; then
 	bison_version_minor=`echo $bison_version | cut -d. -f2`
 	bison_version_patch=`echo $bison_version | cut -d. -f3`
 	if ([[ "$bison_version_major" -gt 3 ]]) ||
-	   ([[ "$bison_version_major" -eq 3 ]] && [[ "$bison_version_minor" -gt 4 ]]) ||
-	   ([[ "$bison_version_major" -eq 3 ]] && [[ "$bison_version_minor" -eq 4 ]] && [[ "$bison_version_patch" -ge 2 ]]); then
+	   ([[ "$bison_version_major" -eq 3 ]] && [[ "$bison_version_minor" -gt 7 ]]) ||
+	   ([[ "$bison_version_major" -eq 3 ]] && [[ "$bison_version_minor" -eq 7 ]] && [[ "$bison_version_patch" -ge 6 ]]); then
 		yacc_ok=1
 	else
-		AC_MSG_WARN([bison is found, but your bison version $bison_version is not recent enough, at least 3.4.2 is required])
+		AC_MSG_WARN([bison is found, but your bison version $bison_version is not recent enough, at least 3.7.6 is required])
 	fi
 fi
 
@@ -447,7 +447,7 @@ if test $yacc_ok = 0; then
 		AC_MSG_WARN([No proper bison found, you'll not be able to change lib/cfg-grammar.y])
 		YACC="echo Required bison not found && false"
 	else
-		AC_MSG_ERROR([syslog-ng requires bison 3.4.2 or later. Your source tree seems to be from git, which doesn't have the bison generated files (like cfg-grammar.c). Please install/upgrade bison or use a distribution tarball.])
+		AC_MSG_ERROR([syslog-ng requires bison 3.7.6 or later. Your source tree seems to be from git, which doesn't have the bison generated files (like cfg-grammar.c). Please install/upgrade bison or use a distribution tarball.])
 	fi
 fi
 

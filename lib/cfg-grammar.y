@@ -52,7 +52,7 @@
 
 /* START_DECLS */
 
-%require "3.4.2"
+%require "3.7.6"
 %locations
 %define api.pure
 %define api.value.type {CFG_STYPE}
