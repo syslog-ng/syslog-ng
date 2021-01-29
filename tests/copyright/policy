@@ -61,6 +61,8 @@ modules/secure-logging/slogverify
 modules/secure-logging/slogkey
 lib/rewrite/rewrite-set-facility\.h
 lib/rewrite/tests/test_set_facility\.c
+lib/rewrite/rewrite-set-pri\.h
+lib/rewrite/rewrite-set-pri\.c
  LGPLv2.1+_SSL
 autogen\.sh$
 sub-configure\.sh$
