@@ -26,29 +26,20 @@
 #include "timeutils/cache.h"
 #include "apphook.h"
 
-static void _setup_timezone_changed_hook(void);
-
 static void
 _reset_timezone_apphook(gint type, gpointer user_data)
 {
   invalidate_timeutils_cache();
-  _setup_timezone_changed_hook();
-}
-
-static void
-_setup_timezone_changed_hook(void)
-{
-  /* We are using the STOPPED hook as the timezone related variables (tzname
-   * and timezone) may be changed without locking by other threads.  At
-   * AH_CONFIG_STOPPED those threads should have stopped already, so nothing
-   * touches the global variables.  Hopefully. */
-
-  register_application_hook(AH_CONFIG_STOPPED, _reset_timezone_apphook, NULL);
 }
 
 void
 timeutils_global_init(void)
 {
   invalidate_timeutils_cache();
-  _setup_timezone_changed_hook();
+
+  /* We are using the STOPPED hook as the timezone related variables (tzname
+   * and timezone) may be changed without locking by other threads.  At
+   * AH_CONFIG_STOPPED those threads should have stopped already, so nothing
+   * touches the global variables.  Hopefully. */
+  register_application_hook(AH_CONFIG_STOPPED, _reset_timezone_apphook, NULL, AHM_RUN_REPEAT);
 }
