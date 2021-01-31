@@ -297,7 +297,7 @@ static void
 setup(void)
 {
   setenv("TZ", "CET", TRUE);
-  tzset();
+  invalidate_timeutils_cache();
 }
 
 static void

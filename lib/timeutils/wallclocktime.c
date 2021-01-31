@@ -276,6 +276,7 @@ wall_clock_time_strptime(WallClockTime *wct, const gchar *format, const gchar *i
   int alt_format, i, split_year = 0, neg = 0, state = 0,
                      day_offset = -1, week_offset = 0, offs, mandatory;
   const char *new_fmt;
+  const char *const *system_tznames;
 
   bp = (const unsigned char *)input;
 
@@ -670,14 +671,13 @@ recurse:
                   bp = ep;
                   continue;
                 }
-              ep = find_string(bp, &i, (const char *const *)tzname, NULL, 2);
+              system_tznames = cached_get_system_tznames();
+              ep = find_string(bp, &i, system_tznames, NULL, 2);
               if (ep != NULL)
                 {
                   wct->tm.tm_isdst = i;
-#ifdef SYSLOG_NG_HAVE_TIMEZONE
-                  wct->wct_gmtoff = -(timezone);
-#endif
-                  wct->wct_zone = tzname[i];
+                  wct->wct_gmtoff = -cached_get_system_tzofs();
+                  wct->wct_zone = system_tznames[i];
                   bp = ep;
                   continue;
                 }

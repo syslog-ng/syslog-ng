@@ -71,11 +71,9 @@ _construct_logmsg(const gchar *msg)
 void
 setup(void)
 {
-  app_startup();
-
   setlocale (LC_ALL, "C");
   setenv("TZ", "CET-1", TRUE);
-  tzset();
+  app_startup();
 
   configuration = cfg_new_snippet();
 
