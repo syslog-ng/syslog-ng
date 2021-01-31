@@ -579,7 +579,7 @@ afinter_register_posted_hook(gint hook_type, gpointer user_data)
 void
 afinter_global_init(void)
 {
-  register_application_hook(AH_CONFIG_CHANGED, afinter_register_posted_hook, NULL);
+  register_application_hook(AH_CONFIG_CHANGED, afinter_register_posted_hook, NULL, AHM_RUN_ONCE);
 }
 
 void

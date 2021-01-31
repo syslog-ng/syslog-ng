@@ -42,7 +42,7 @@ _hook_counter(gint type, gpointer user_data)
 Test(test_apphook, post_daemon_hook)
 {
   gint triggered_count = 0;
-  register_application_hook(AH_POST_DAEMONIZED, _hook_counter, (gpointer)&triggered_count);
+  register_application_hook(AH_POST_DAEMONIZED, _hook_counter, (gpointer)&triggered_count, AHM_RUN_ONCE);
   cr_assert(app_is_starting_up());
   app_post_daemonized();
 
@@ -52,7 +52,7 @@ Test(test_apphook, post_daemon_hook)
 Test(test_apphook, post_daemon_triggered_twice)
 {
   gint triggered_count = 0;
-  register_application_hook(AH_POST_DAEMONIZED, _hook_counter, (gpointer)&triggered_count);
+  register_application_hook(AH_POST_DAEMONIZED, _hook_counter, (gpointer)&triggered_count, AHM_RUN_ONCE);
 
   app_post_daemonized();
   app_post_daemonized();
@@ -63,7 +63,7 @@ Test(test_apphook, post_daemon_triggered_twice)
 Test(test_apphook, pre_shutdown_hook)
 {
   gint triggered_count = 0;
-  register_application_hook(AH_PRE_SHUTDOWN, _hook_counter, (gpointer)&triggered_count);
+  register_application_hook(AH_PRE_SHUTDOWN, _hook_counter, (gpointer)&triggered_count, AHM_RUN_ONCE);
 
   app_pre_shutdown();
 
@@ -73,7 +73,7 @@ Test(test_apphook, pre_shutdown_hook)
 Test(test_apphook, shutdown_hook)
 {
   gint triggered_count = 0;
-  register_application_hook(AH_SHUTDOWN, _hook_counter, (gpointer)&triggered_count);
+  register_application_hook(AH_SHUTDOWN, _hook_counter, (gpointer)&triggered_count, AHM_RUN_ONCE);
 
   app_startup(); //This is needed for shutdown
   app_shutdown();
@@ -84,7 +84,7 @@ Test(test_apphook, shutdown_hook)
 Test(test_apphook, config_changed)
 {
   gint triggered_count = 0;
-  register_application_hook(AH_CONFIG_CHANGED, _hook_counter, (gpointer)&triggered_count);
+  register_application_hook(AH_CONFIG_CHANGED, _hook_counter, (gpointer)&triggered_count, AHM_RUN_ONCE);
 
   app_config_changed();
 
@@ -95,7 +95,7 @@ Test(test_apphook, config_changed)
 Test(test_apphook, reopen_hook)
 {
   gint triggered_count = 0;
-  register_application_hook(AH_REOPEN_FILES, _hook_counter, (gpointer)&triggered_count);
+  register_application_hook(AH_REOPEN_FILES, _hook_counter, (gpointer)&triggered_count, AHM_RUN_ONCE);
 
   app_reopen_files();
 
@@ -106,26 +106,46 @@ static void
 _re_registering_hook(gint type, gpointer user_data)
 {
   _hook_counter(type, user_data);
-  register_application_hook(type, _re_registering_hook, user_data);
+  register_application_hook(type, _re_registering_hook, user_data, AHM_RUN_ONCE);
 }
 
 Test(test_apphook, hook_register_from_hook)
 {
   gint triggered_count = 0;
 
-  register_application_hook(AH_REOPEN_FILES, _re_registering_hook, (gpointer)&triggered_count);
+  register_application_hook(AH_REOPEN_FILES, _re_registering_hook, (gpointer)&triggered_count, AHM_RUN_ONCE);
 
   app_reopen_files();
   cr_assert_eq(triggered_count, 1);
+}
+
+static void
+_repeated_hook(gint type, gpointer user_data)
+{
+  _hook_counter(type, user_data);
+}
+
+Test(test_apphook, hook_run_mode_repeat_repeats_hook_invocation_multiple_times)
+{
+  gint triggered_count = 0;
+
+  register_application_hook(AH_REOPEN_FILES, _repeated_hook, (gpointer)&triggered_count, AHM_RUN_REPEAT);
+
+  app_reopen_files();
+  cr_assert_eq(triggered_count, 1);
+  app_reopen_files();
+  cr_assert_eq(triggered_count, 2);
+  app_reopen_files();
+  cr_assert_eq(triggered_count, 3);
 }
 
 Test(test_apphook, hook_register_from_hook_and_other_not_triggered_hooks)
 {
   gint triggered_count = 0;
 
-  register_application_hook(AH_PRE_SHUTDOWN, NULL, NULL);
-  register_application_hook(AH_REOPEN_FILES, _re_registering_hook, (gpointer)&triggered_count);
-  register_application_hook(AH_PRE_SHUTDOWN, NULL, NULL);
+  register_application_hook(AH_PRE_SHUTDOWN, NULL, NULL, AHM_RUN_ONCE);
+  register_application_hook(AH_REOPEN_FILES, _re_registering_hook, (gpointer)&triggered_count, AHM_RUN_ONCE);
+  register_application_hook(AH_PRE_SHUTDOWN, NULL, NULL, AHM_RUN_ONCE);
 
   app_reopen_files();
   cr_assert_eq(triggered_count, 1);
@@ -134,13 +154,13 @@ Test(test_apphook, hook_register_from_hook_and_other_not_triggered_hooks)
 Test(test_apphook, trigger_all_state_hook)
 {
   gint triggered_count = 0;
-  register_application_hook(AH_POST_DAEMONIZED, _hook_counter, (gpointer)&triggered_count);
-  register_application_hook(AH_RUNNING, _hook_counter, (gpointer)&triggered_count);
-  register_application_hook(AH_PRE_SHUTDOWN, _hook_counter, (gpointer)&triggered_count);
-  register_application_hook(AH_SHUTDOWN, _hook_counter, (gpointer)&triggered_count);
+  register_application_hook(AH_POST_DAEMONIZED, _hook_counter, (gpointer)&triggered_count, AHM_RUN_ONCE);
+  register_application_hook(AH_RUNNING, _hook_counter, (gpointer)&triggered_count, AHM_RUN_ONCE);
+  register_application_hook(AH_PRE_SHUTDOWN, _hook_counter, (gpointer)&triggered_count, AHM_RUN_ONCE);
+  register_application_hook(AH_SHUTDOWN, _hook_counter, (gpointer)&triggered_count, AHM_RUN_ONCE);
 
-  register_application_hook(AH_CONFIG_CHANGED, _hook_counter, (gpointer)&triggered_count);
-  register_application_hook(AH_REOPEN_FILES, _hook_counter, (gpointer)&triggered_count);
+  register_application_hook(AH_CONFIG_CHANGED, _hook_counter, (gpointer)&triggered_count, AHM_RUN_ONCE);
+  register_application_hook(AH_REOPEN_FILES, _hook_counter, (gpointer)&triggered_count, AHM_RUN_ONCE);
 
   app_startup();
   app_post_daemonized();
@@ -150,7 +170,7 @@ Test(test_apphook, trigger_all_state_hook)
   cr_assert_eq(triggered_count, 2);
 
   /* check that a state that has already passed would be invoked immediately */
-  register_application_hook(AH_POST_DAEMONIZED, _hook_counter, (gpointer)&triggered_count);
+  register_application_hook(AH_POST_DAEMONIZED, _hook_counter, (gpointer)&triggered_count, AHM_RUN_ONCE);
 
   cr_assert_eq(triggered_count, 3);
 

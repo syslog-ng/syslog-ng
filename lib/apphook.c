@@ -53,6 +53,7 @@
 typedef struct _ApplicationHookEntry
 {
   gint type;
+  ApplicationHookRunMode run_mode;
   ApplicationHookFunc func;
   gpointer user_data;
 } ApplicationHookEntry;
@@ -73,7 +74,7 @@ app_is_shutting_down(void)
 }
 
 void
-register_application_hook(gint type, ApplicationHookFunc func, gpointer user_data)
+register_application_hook(gint type, ApplicationHookFunc func, gpointer user_data, ApplicationHookRunMode run_mode)
 {
   if (type > __AH_STATE_MAX || current_state < type)
     {
@@ -82,6 +83,7 @@ register_application_hook(gint type, ApplicationHookFunc func, gpointer user_dat
       entry->type = type;
       entry->func = func;
       entry->user_data = user_data;
+      entry->run_mode = run_mode;
 
       application_hooks = g_list_prepend(application_hooks, entry);
     }
@@ -121,9 +123,17 @@ run_application_hook(gint type)
         {
           l_next = l->next;
           e->func(type, e->user_data);
-          application_hooks = g_list_remove_link(application_hooks, l);
-          g_free(e);
-          g_list_free_1(l);
+
+          if (e->run_mode == AHM_RUN_ONCE)
+            {
+              application_hooks = g_list_remove_link(application_hooks, l);
+              g_free(e);
+              g_list_free_1(l);
+            }
+          else
+            {
+              g_assert(e->run_mode == AHM_RUN_REPEAT);
+            }
         }
       else
         {
