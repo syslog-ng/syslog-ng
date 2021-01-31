@@ -269,9 +269,18 @@ main_loop_reload_config_apply(gpointer user_data)
       is_reloading_scheduled = FALSE;
       return;
     }
+
   self->old_config->persist = persist_config_new();
   cfg_deinit(self->old_config);
   cfg_persist_config_move(self->old_config, self->new_config);
+
+  /* The threads have stopped, deinit methods were called, but
+   * self->current_configuration still points to the old config.  We either
+   * go to the new config is cfg_init() is successful (just below) or revert
+   * to the old one if it's not.
+   * */
+
+  app_config_stopped();
 
   self->last_config_reload_successful = cfg_init(self->new_config);
   if (!self->last_config_reload_successful)
@@ -609,6 +618,7 @@ main_loop_read_and_init_config(MainLoop *self)
       return 0;
     }
 
+  app_config_stopped();
   if (!main_loop_initialize_state(self->current_configuration, resolvedConfigurablePaths.persist_file))
     {
       return 2;

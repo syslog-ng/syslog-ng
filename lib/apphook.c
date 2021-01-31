@@ -239,10 +239,16 @@ app_shutdown(void)
 }
 
 void
+app_config_stopped(void)
+{
+  run_application_hook(AH_CONFIG_STOPPED);
+  res_init();
+}
+
+void
 app_config_changed(void)
 {
   run_application_hook(AH_CONFIG_CHANGED);
-  res_init();
 }
 
 void
