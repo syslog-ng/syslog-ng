@@ -43,6 +43,7 @@
 #include "secret-storage/nondumpable-allocator.h"
 #include "secret-storage/secret-storage.h"
 #include "transport/transport-factory-id.h"
+#include "timeutils/timeutils.h"
 #include "msg-stats.h"
 
 #include <iv.h>
@@ -177,6 +178,7 @@ app_startup(void)
   transport_factory_id_global_init();
   scratch_buffers_global_init();
   msg_stats_init();
+  timeutils_global_init();
 }
 
 void

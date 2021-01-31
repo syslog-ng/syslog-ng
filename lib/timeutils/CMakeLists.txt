@@ -5,6 +5,7 @@ set(TIMEUTILS_HEADERS
     timeutils/format.h
     timeutils/misc.h
     timeutils/names.h
+    timeutils/timeutils.h
     timeutils/unixtime.h
     timeutils/zonecache.h
     timeutils/zonedb.h
@@ -19,6 +20,7 @@ set(TIMEUTILS_SOURCES
     timeutils/format.c
     timeutils/misc.c
     timeutils/names.c
+    timeutils/timeutils.c
     timeutils/unixtime.c
     timeutils/zonecache.c
     timeutils/zonedb.c

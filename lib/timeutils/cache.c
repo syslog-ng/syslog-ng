@@ -254,18 +254,3 @@ cached_get_time_zone_info(const gchar *tz)
   TimeZoneInfo *result = cache_lookup(cache.tzinfo.zones, tz);
   return result;
 }
-
-void timeutils_setup_timezone_hook(void);
-
-static void
-timeutils_reset_timezone(gint type, gpointer user_data)
-{
-  invalidate_timeutils_cache();
-  timeutils_setup_timezone_hook();
-}
-
-void
-timeutils_setup_timezone_hook(void)
-{
-  register_application_hook(AH_CONFIG_CHANGED, timeutils_reset_timezone, NULL);
-}

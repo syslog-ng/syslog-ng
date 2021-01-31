@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2021 Balazs Scheidler <bazsi77@gmail.com>
  * Copyright (c) 2002-2018 Balabit
  * Copyright (c) 1998-2018 Balázs Scheidler
  *
@@ -21,42 +22,28 @@
  * COPYING for details.
  *
  */
+#include "timeutils/timeutils.h"
+#include "timeutils/cache.h"
+#include "apphook.h"
 
-#ifndef TIMEUTILS_CACHE_H_INCLUDED
-#define TIMEUTILS_CACHE_H_INCLUDED
+static void _setup_timezone_changed_hook(void);
 
-#include "timeutils/wallclocktime.h"
-#include "timeutils/zoneinfo.h"
-
-time_t cached_mktime(struct tm *tm);
-void cached_localtime(time_t *when, struct tm *tm);
-void cached_gmtime(time_t *when, struct tm *tm);
-
-
-static inline void
-cached_localtime_wct(time_t *when, WallClockTime *wct)
+static void
+_reset_timezone_apphook(gint type, gpointer user_data)
 {
-  cached_localtime(when, &wct->tm);
+  invalidate_timeutils_cache();
+  _setup_timezone_changed_hook();
 }
 
-static inline time_t
-cached_mktime_wct(WallClockTime *wct)
+static void
+_setup_timezone_changed_hook(void)
 {
-  return cached_mktime(&wct->tm);
+  register_application_hook(AH_CONFIG_CHANGED, _reset_timezone_apphook, NULL);
 }
 
-static inline void
-cached_gmtime_wct(time_t *when, WallClockTime *wct)
+void
+timeutils_global_init(void)
 {
-  cached_gmtime(when, &wct->tm);
+  invalidate_timeutils_cache();
+  _setup_timezone_changed_hook();
 }
-
-void invalidate_cached_time(void);
-void set_cached_time(GTimeVal *timeval);
-void cached_g_current_time(GTimeVal *result);
-time_t cached_g_current_time_sec(void);
-TimeZoneInfo *cached_get_time_zone_info(const gchar *tz);
-
-void invalidate_timeutils_cache(void);
-
-#endif
