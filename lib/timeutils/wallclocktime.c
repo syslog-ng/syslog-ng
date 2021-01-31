@@ -698,7 +698,11 @@ recurse:
                   bp++;
                   continue;
                 }
-              return NULL;
+              if (mandatory)
+                return NULL;
+
+              bp = zname;
+              continue;
             }
           offs = 0;
           for (i = 0; i < 4; )
