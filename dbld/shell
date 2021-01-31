@@ -14,4 +14,4 @@ if [ "$OS_PLATFORM" != "devshell" ]; then
 	echo -e "NOTE: the 'devshell' dbld image is more developer friendly, you might want to use that"
 fi
 cd /source
-HISTFILE=/build/.bash_history exec bash
+HOME=/build exec bash

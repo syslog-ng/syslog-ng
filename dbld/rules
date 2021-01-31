@@ -36,7 +36,7 @@ DOCKER_RUN_ARGS=-e USER_NAME_ON_HOST=$(shell whoami)	\
 	-e GRADLE_USER_HOME=/build/gradle-home \
 	-e GRADLE_PROJECT_CACHE_DIR=/build/gradle-cache \
 	-e GRADLE_FLAGS=--build-cache \
-	$(if $(wildcard ${HOME}/.gitconfig),-v ${HOME}/.gitconfig:${HOME}/.gitconfig)
+	$(if $(wildcard ${HOME}/.gitconfig),-v ${HOME}/.gitconfig:/build/.gitconfig)
 DOCKER_BUILD_ARGS=
 ROOT_DIR=$(shell pwd)
 DBLD_DIR=$(ROOT_DIR)/dbld
