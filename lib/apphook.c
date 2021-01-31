@@ -48,7 +48,6 @@
 
 #include <iv.h>
 #include <iv_work.h>
-#include <resolv.h>
 
 typedef struct _ApplicationHookEntry
 {
@@ -254,7 +253,6 @@ void
 app_config_stopped(void)
 {
   run_application_hook(AH_CONFIG_STOPPED);
-  res_init();
 }
 
 void
