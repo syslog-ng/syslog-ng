@@ -201,7 +201,7 @@ log_tags_global_init(void)
   log_tags_list = g_new0(LogTag, log_tags_list_size);
 
   g_static_mutex_unlock(&log_tags_lock);
-  register_application_hook(AH_CONFIG_CHANGED, (ApplicationHookFunc) log_tags_reinit_stats, NULL, AHM_RUN_ONCE);
+  register_application_hook(AH_CONFIG_CHANGED, (ApplicationHookFunc) log_tags_reinit_stats, NULL, AHM_RUN_REPEAT);
 }
 
 void
