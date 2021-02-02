@@ -1084,12 +1084,6 @@ log_threaded_dest_driver_start_workers(LogPipe *s)
   return startup_success;
 }
 
-static gboolean
-log_threaded_dest_driver_init(LogPipe *s)
-{
-  return log_threaded_dest_driver_init_method(s);
-}
-
 gboolean
 log_threaded_dest_driver_deinit_method(LogPipe *s)
 {
@@ -1132,7 +1126,7 @@ log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalConfig
 
   self->worker_options.is_output_thread = TRUE;
 
-  self->super.super.super.init = log_threaded_dest_driver_init;
+  self->super.super.super.init = log_threaded_dest_driver_init_method;
   self->super.super.super.deinit = log_threaded_dest_driver_deinit_method;
   self->super.super.super.queue = log_threaded_dest_driver_queue;
   self->super.super.super.free_fn = log_threaded_dest_driver_free;
