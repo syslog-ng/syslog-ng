@@ -771,6 +771,8 @@ _acquire_worker_queue(LogThreadedDestWorker *self)
   if (!self->queue)
     return FALSE;
 
+  log_queue_set_use_backlog(self->queue, TRUE);
+
   return TRUE;
 }
 
@@ -780,10 +782,6 @@ log_threaded_dest_worker_init_method(LogThreadedDestWorker *self)
   if (self->time_reopen == -1)
     self->time_reopen = self->owner->time_reopen;
 
-  if (!_acquire_worker_queue(self))
-    return FALSE;
-
-  log_queue_set_use_backlog(self->queue, TRUE);
   _register_worker_stats(self);
 
   return TRUE;
@@ -1033,7 +1031,7 @@ _format_seqnum_persist_name(LogThreadedDestDriver *self)
   return persist_name;
 }
 
-static void
+static gboolean
 _create_workers(LogThreadedDestDriver *self)
 {
   /* free previous workers array if set to cope with num_workers change */
@@ -1042,8 +1040,14 @@ _create_workers(LogThreadedDestDriver *self)
 
   for (self->created_workers = 0; self->created_workers < self->num_workers; self->created_workers++)
     {
-      self->workers[self->created_workers] = _construct_worker(self, self->created_workers);
+      LogThreadedDestWorker *dw = _construct_worker(self, self->created_workers);
+
+      self->workers[self->created_workers] = dw;
+      if (!_acquire_worker_queue(dw))
+        return FALSE;
     }
+
+  return TRUE;
 }
 
 gboolean
@@ -1066,7 +1070,9 @@ log_threaded_dest_driver_init_method(LogPipe *s)
     init_sequence_number(&self->shared_seq_num);
 
   _register_stats(self);
-  _create_workers(self);
+
+  if (!_create_workers(self))
+    return FALSE;
 
   return TRUE;
 }
