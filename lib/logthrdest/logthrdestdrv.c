@@ -930,24 +930,18 @@ _request_worker_exit(gpointer s)
 }
 
 static gboolean
-_start_worker_thread(LogThreadedDestDriver *self)
+_start_worker_thread(LogThreadedDestWorker *self)
 {
-  gint worker_index = self->workers_started;
-  LogThreadedDestWorker *dw = _construct_worker(self, worker_index);
-
   msg_debug("Starting dedicated worker thread",
-            evt_tag_int("worker_index", worker_index),
-            evt_tag_str("driver", self->super.super.id),
-            log_expr_node_location_tag(self->super.super.super.expr_node));
-  g_assert(self->workers[worker_index] == NULL);
-  self->workers[worker_index] = dw;
-  self->workers_started++;
+            evt_tag_int("worker_index", self->worker_index),
+            evt_tag_str("driver", self->owner->super.super.id),
+            log_expr_node_location_tag(self->owner->super.super.super.expr_node));
 
   main_loop_create_worker_thread(_worker_thread,
                                  _request_worker_exit,
-                                 dw, &self->worker_options);
-  _wait_for_startup_finished(dw);
-  return !dw->startup_failure;
+                                 self, &self->owner->worker_options);
+  _wait_for_startup_finished(self);
+  return !self->startup_failure;
 }
 
 void
@@ -1039,6 +1033,19 @@ _format_seqnum_persist_name(LogThreadedDestDriver *self)
   return persist_name;
 }
 
+static void
+_create_workers(LogThreadedDestDriver *self)
+{
+  /* free previous workers array if set to cope with num_workers change */
+  g_free(self->workers);
+  self->workers = g_new0(LogThreadedDestWorker *, self->num_workers);
+
+  for (self->created_workers = 0; self->created_workers < self->num_workers; self->created_workers++)
+    {
+      self->workers[self->created_workers] = _construct_worker(self, self->created_workers);
+    }
+}
+
 gboolean
 log_threaded_dest_driver_init_method(LogPipe *s)
 {
@@ -1053,10 +1060,8 @@ log_threaded_dest_driver_init_method(LogPipe *s)
   if (cfg && self->time_reopen == -1)
     self->time_reopen = cfg->time_reopen;
 
-  /* free previous workers array if set to cope with num_workers change */
-  g_free(self->workers);
-  self->workers = g_new0(LogThreadedDestWorker *, self->num_workers);
-  self->workers_started = 0;
+  _create_workers(self);
+
   return TRUE;
 }
 
@@ -1069,7 +1074,6 @@ log_threaded_dest_driver_start_workers(LogPipe *s)
 {
   LogThreadedDestDriver *self = (LogThreadedDestDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config((LogPipe *) self);
-  gboolean startup_success = TRUE;
 
   self->shared_seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg,
                                          _format_seqnum_persist_name(self)));
@@ -1077,11 +1081,13 @@ log_threaded_dest_driver_start_workers(LogPipe *s)
     init_sequence_number(&self->shared_seq_num);
 
   _register_stats(self);
-  for (gint i = 0; startup_success && i < self->num_workers; i++)
+
+  for (gint worker_index = 0; worker_index < self->num_workers; worker_index++)
     {
-      startup_success &= _start_worker_thread(self);
+      if (!_start_worker_thread(self->workers[worker_index]))
+        return FALSE;
     }
-  return startup_success;
+  return TRUE;
 }
 
 gboolean
@@ -1100,7 +1106,7 @@ log_threaded_dest_driver_deinit_method(LogPipe *s)
 
   if (!_is_worker_compat_mode(self))
     {
-      for (int i = 0; i < self->workers_started; i++)
+      for (int i = 0; i < self->created_workers; i++)
         log_threaded_dest_worker_free(self->workers[i]);
     }
 
