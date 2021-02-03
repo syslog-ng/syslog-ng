@@ -215,27 +215,11 @@ _collect_nvpair_names_from_logmsg(NVHandle handle, const gchar *name, const gcha
 }
 
 static gboolean
-_is_key_assigned_to_match_handle(const gchar *s)
-{
-  char *end = NULL;
-  long val = strtol(s, &end, 10);
-
-  if (*end == '\0' && (val >= 0 && val <= 255))
-    return TRUE;
-
-  return FALSE;
-}
-
-static gboolean
 _is_macro_name_visible_to_user(LogMessage *logmsg, const gchar *name)
 {
-  gssize value_len;
+  NVHandle handle = log_msg_get_value_handle(name);
 
-  return (!_is_key_blacklisted(name) &&
-          (!_is_key_assigned_to_match_handle(name) ||
-           (_is_key_assigned_to_match_handle(name) &&
-            log_msg_get_value_by_name(logmsg, name, &value_len) != NULL
-            && value_len > 0)));
+  return log_msg_is_handle_macro(handle) && !_is_key_blacklisted(name);
 }
 
 static void
