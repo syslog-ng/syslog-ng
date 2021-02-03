@@ -215,10 +215,8 @@ _collect_nvpair_names_from_logmsg(NVHandle handle, const gchar *name, const gcha
 }
 
 static gboolean
-_is_macro_name_visible_to_user(const gchar *name)
+_is_macro_name_visible_to_user(const gchar *name, NVHandle handle)
 {
-  NVHandle handle = log_msg_get_value_handle(name);
-
   return log_msg_is_handle_macro(handle) && !_is_key_blacklisted(name);
 }
 
@@ -226,9 +224,10 @@ static void
 _collect_macro_names(gpointer key, gpointer value, gpointer user_data)
 {
   const gchar *name = (const gchar *)key;
+  NVHandle handle = GPOINTER_TO_UINT(value);
   PyObject *list = (PyObject *)user_data;
 
-  if (_is_macro_name_visible_to_user(name))
+  if (_is_macro_name_visible_to_user(name, handle))
     {
       PyObject *py_name = PyBytes_FromString(name);
       PyList_Append(list, py_name);
