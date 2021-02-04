@@ -63,6 +63,11 @@ TLS_BLOCK_START
       time_t value;
     } mktime;
   } cache;
+  struct
+  {
+    glong timezone;
+    gchar *tzname[2];
+  } state;
 }
 TLS_BLOCK_END;
 
@@ -73,12 +78,67 @@ static gboolean faking_time;
 #define invalidate_time_task __tls_deref(invalidate_time_task)
 #define local_gencounter     __tls_deref(local_gencounter)
 #define cache                __tls_deref(cache)
+#define state                __tls_deref(state)
 
-static gint timeutils_cache_gencounter = 0;
+static struct
+{
 
-#if !defined(SYSLOG_NG_HAVE_LOCALTIME_R) || !defined(SYSLOG_NG_HAVE_GMTIME_R)
+  /* generation counter for the timezone cache.  To invalidate the thread
+   * specific cache, just increase this using g_atomic_int_inc().  Any
+   * threads would check if this was changed to see if they need to reset
+   * their own cache.  */
+  gint cache_gencounter;
+
+  /* copy of the timezone related global variables that might be changed by
+   * _any_ localtime() call in any libraries that we use.  We save this
+   * information right after a tzset() call, which happens at reload, with
+   * our threads not running, i.e.  at a race free point.  Then later on,
+   * threads copy these into their own cache in a thread synchronized
+   * manner.  */
+  glong timezone;
+  gchar *tzname[2];
+} global_state;
+
+
 static GStaticMutex localtime_lock = G_STATIC_MUTEX_INIT;
+
+/* NOTE: this function assumes that localtime_lock() is held */
+static void
+_capture_timezone_state_from_variables(void)
+{
+  g_free(global_state.tzname[0]);
+  g_free(global_state.tzname[1]);
+
+  /* these are fetching from the tzname & timezone globals.  We cannot use
+   * those variables directly as they are managed by the libc functions, and
+   * which can be changed in other threads in any localtime() (non _r) call
+   * in any of the code of syslog-ng/dependent libraries.
+   *
+   * This function is only invoked when the global timezone state should be
+   * static, as we are either just starting up or being reloaded.
+   **/
+
+  global_state.tzname[0] = g_strdup(tzname[0]);
+  global_state.tzname[1] = g_strdup(tzname[1]);
+#ifdef SYSLOG_NG_HAVE_TIMEZONE
+  global_state.timezone = timezone;
+#else
+  global_state.timezone = -1;
 #endif
+}
+
+/* NOTE: copy the contents of the global cache to thread local variables */
+static void
+_copy_timezone_state_to_locals(void)
+{
+  g_free(state.tzname[0]);
+  g_free(state.tzname[1]);
+
+  state.tzname[0] = g_strdup(global_state.tzname[0]);
+  state.tzname[1] = g_strdup(global_state.tzname[1]);
+  state.timezone = global_state.timezone;
+}
+
 
 static void
 _clean_timeutils_cache(void)
@@ -93,11 +153,16 @@ _clean_timeutils_cache(void)
 static void
 _validate_timeutils_cache(void)
 {
-  gint gencounter = g_atomic_int_get(&timeutils_cache_gencounter);
+  gint gencounter = g_atomic_int_get(&global_state.cache_gencounter);
 
   if (G_UNLIKELY(gencounter != local_gencounter))
     {
       _clean_timeutils_cache();
+
+      g_static_mutex_lock(&localtime_lock);
+      _copy_timezone_state_to_locals();
+      g_static_mutex_unlock(&localtime_lock);
+
       local_gencounter = gencounter;
     }
 }
@@ -105,9 +170,12 @@ _validate_timeutils_cache(void)
 void
 invalidate_timeutils_cache(void)
 {
+  g_static_mutex_lock(&localtime_lock);
   tzset();
+  _capture_timezone_state_from_variables();
+  g_static_mutex_unlock(&localtime_lock);
 
-  g_atomic_int_inc(&timeutils_cache_gencounter);
+  g_atomic_int_inc(&global_state.cache_gencounter);
 }
 
 void
@@ -253,4 +321,18 @@ cached_get_time_zone_info(const gchar *tz)
     cache.tzinfo.zones = time_zone_cache_new();
   TimeZoneInfo *result = cache_lookup(cache.tzinfo.zones, tz);
   return result;
+}
+
+glong
+cached_get_system_tzofs(void)
+{
+  _validate_timeutils_cache();
+  return state.timezone;
+}
+
+const gchar *const *
+cached_get_system_tznames(void)
+{
+  _validate_timeutils_cache();
+  return (const gchar *const *) &state.tzname;
 }

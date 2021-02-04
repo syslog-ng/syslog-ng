@@ -38,7 +38,12 @@ _reset_timezone_apphook(gint type, gpointer user_data)
 static void
 _setup_timezone_changed_hook(void)
 {
-  register_application_hook(AH_CONFIG_CHANGED, _reset_timezone_apphook, NULL);
+  /* We are using the STOPPED hook as the timezone related variables (tzname
+   * and timezone) may be changed without locking by other threads.  At
+   * AH_CONFIG_STOPPED those threads should have stopped already, so nothing
+   * touches the global variables.  Hopefully. */
+
+  register_application_hook(AH_CONFIG_STOPPED, _reset_timezone_apphook, NULL);
 }
 
 void
