@@ -719,7 +719,7 @@ recurse:
           switch (i)
             {
             case 2:
-              offs *= 60;
+              offs *= 3600;
               break;
             case 4:
               i = offs % 100;
