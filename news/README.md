@@ -9,6 +9,8 @@ How to create a newsfile entry
      * `other`: Other important, but not categorized change.
     You can query the next PR ID with the `next_pr_id.py` script, but it could be a good practice to add the commit,
     containing the news entry, after you have opened your PR, as you will know your PR ID then.
+    Multiple news entries can be created for a single PR, if necessary. The file name is numbered in that case:
+    `<type>-<pr-id>-<n>.md`.
  2. Fill it with the summary of the PR.
      * You can use any markdown formatting.
      * Please make sure, that there are no lines longer than 120 characters.

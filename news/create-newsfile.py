@@ -62,10 +62,12 @@ def create_block(block_name, files):
     block = '## {}\n\n'.format(block_name)
     for f in files:
         entry = ''
-        try:
-            pr_id = re.findall(r'\d+.md$', f.name)[0][:-3]
-        except IndexError:
+        match_pr_id = re.search(r'(\d+)(-\d+)?.md$', f.name)
+        if not match_pr_id:
             sys.exit('Invalid filename: {}'.format(f.name))
+
+        pr_id = match_pr_id.group(1)
+
         entry += ' * {}\n([#{}](https://github.com/syslog-ng/syslog-ng/pull/{}))'.format(f.read_text().rstrip(), pr_id, pr_id)
         entry = entry.replace('\n', '\n   ')
         block += entry + '\n'
