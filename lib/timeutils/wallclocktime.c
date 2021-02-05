@@ -698,7 +698,11 @@ recurse:
                   bp++;
                   continue;
                 }
-              return NULL;
+              if (mandatory)
+                return NULL;
+
+              bp = zname;
+              continue;
             }
           offs = 0;
           for (i = 0; i < 4; )
@@ -719,7 +723,7 @@ recurse:
           switch (i)
             {
             case 2:
-              offs *= 60;
+              offs *= 3600;
               break;
             case 4:
               i = offs % 100;
