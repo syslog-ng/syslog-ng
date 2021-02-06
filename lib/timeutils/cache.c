@@ -102,6 +102,26 @@ static struct
 
 static GStaticMutex localtime_lock = G_STATIC_MUTEX_INIT;
 
+static glong
+_get_system_tzofs(void)
+{
+#ifdef SYSLOG_NG_HAVE_TIMEZONE
+  /* global variable */
+  return timezone;
+#elif SYSLOG_NG_HAVE_STRUCT_TM_TM_GMTOFF
+  time_t t = time(NULL);
+  struct tm *tm;
+
+  /* we can't call the cached APIs because the localtime_lock is held, but
+   * this is not performance critical.  */
+  tm = localtime(&t);
+  return -tm->tm_gmtoff;
+#else
+  return -1;
+#endif
+
+}
+
 /* NOTE: this function assumes that localtime_lock() is held */
 static void
 _capture_timezone_state_from_variables(void)
@@ -120,11 +140,7 @@ _capture_timezone_state_from_variables(void)
 
   global_state.tzname[0] = g_strdup(tzname[0]);
   global_state.tzname[1] = g_strdup(tzname[1]);
-#ifdef SYSLOG_NG_HAVE_TIMEZONE
-  global_state.timezone = timezone;
-#else
-  global_state.timezone = -1;
-#endif
+  global_state.timezone = _get_system_tzofs();
 }
 
 /* NOTE: copy the contents of the global cache to thread local variables */
