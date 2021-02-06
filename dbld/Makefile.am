@@ -27,7 +27,6 @@ EXTRA_DIST += \
 	dbld/images/centos.prepare.sh \
 	dbld/images/fedora.prepare.sh \
 	dbld/images/devshell.dockerfile \
-	dbld/images/centos-6.dockerfile \
 	dbld/images/centos-7.dockerfile \
 	dbld/images/fedora-32.dockerfile \
 	dbld/images/debian-stretch.dockerfile \
