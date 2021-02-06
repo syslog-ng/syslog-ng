@@ -222,6 +222,45 @@ Test(wallclocktime, test_strptime_percent_Z_allows_timezone_to_be_optional)
   cr_expect_str_eq(end, "+3");
 }
 
+Test(wallclocktime, test_strptime_zone_parsing_takes_daylight_saving_into_account_when_using_the_local_timezone)
+{
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
+  gchar *end;
+
+  /* this is a daylight saving zone name, in which case both wct.wct_isdst
+   * and wct.wct_gmtoff must indicate this */
+  end = wall_clock_time_strptime(&wct, "%b %d %Y %H:%M:%S %z", "May  7 2021 09:29:12 CEST");
+
+  cr_assert(*end == 0);
+  cr_expect(wct.wct_year == 121);
+  cr_expect(wct.wct_mon == 4);
+  cr_expect(wct.wct_mday == 7);
+
+  cr_expect(wct.wct_hour == 9);
+  cr_expect(wct.wct_min == 29);
+  cr_expect(wct.wct_sec == 12);
+  cr_expect(wct.wct_usec == 0);
+
+  cr_expect(wct.wct_isdst > 0);
+  cr_expect(wct.wct_gmtoff == 2*3600, "Unexpected timezone offset: %ld, expected 2*3600", wct.wct_gmtoff);
+
+  end = wall_clock_time_strptime(&wct, "%b %d %Y %H:%M:%S %z", "Feb  7 2021 09:29:12 CET");
+
+  cr_assert(*end == 0);
+  cr_expect(wct.wct_year == 121);
+  cr_expect(wct.wct_mon == 1);
+  cr_expect(wct.wct_mday == 7);
+
+  cr_expect(wct.wct_hour == 9);
+  cr_expect(wct.wct_min == 29);
+  cr_expect(wct.wct_sec == 12);
+  cr_expect(wct.wct_usec == 0);
+
+  cr_expect(wct.wct_isdst == 0);
+  cr_expect(wct.wct_gmtoff == 1*3600, "Unexpected timezone offset: %ld, expected 1*3600", wct.wct_gmtoff);
+
+}
+
 static void
 _guess_missing_year(WallClockTime *wct, gint mon)
 {
