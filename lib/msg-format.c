@@ -60,6 +60,10 @@ msg_format_inject_parse_error(LogMessage *msg, const guchar *data, gsize length,
 static void
 msg_format_preprocess_message(MsgFormatOptions *options, const guchar *data, gsize length, LogMessage *msg)
 {
+  if (options->flags & LP_STORE_RAW_MESSAGE)
+    {
+      log_msg_set_value(msg, LOG_MSG_GET_VALUE_HANDLE_STATIC("RAWMSG"), (gchar *) data, _rstripped_message_length(data, length));
+    }
 }
 
 static void
