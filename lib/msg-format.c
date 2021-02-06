@@ -28,6 +28,14 @@
 #include "plugin-types.h"
 #include "find-crlf.h"
 
+static gsize
+_rstripped_message_length(const guchar *data, gsize length)
+{
+  while (length > 0 && (data[length - 1] == '\n' || data[length - 1] == '\0'))
+    length--;
+  return length;
+}
+
 void
 msg_format_inject_parse_error(LogMessage *msg, const guchar *data, gsize length, gint problem_position)
 {
@@ -83,6 +91,20 @@ msg_format_postprocess_message(MsgFormatOptions *options, const guchar *data, gs
     msg->flags |= LF_UTF8;
 }
 
+static void
+msg_format_process_message(MsgFormatOptions *options, const guchar *data, gsize length, LogMessage *msg)
+{
+  if ((options->flags & LP_NOPARSE) == 0)
+    {
+      options->format_handler->parse(options, data, length, msg);
+    }
+  else
+    {
+      log_msg_set_value(msg, LM_V_MESSAGE, (gchar *) data, _rstripped_message_length(data, length));
+      msg->pri = options->default_pri;
+    }
+}
+
 void
 msg_format_parse(MsgFormatOptions *options, const guchar *data, gsize length, LogMessage *msg)
 {
@@ -94,7 +116,7 @@ msg_format_parse(MsgFormatOptions *options, const guchar *data, gsize length, Lo
 
   msg_trace("Initial message parsing follows");
   msg_format_preprocess_message(options, data, length, msg);
-  options->format_handler->parse(options, data, length, msg);
+  msg_format_process_message(options, data, length, msg);
   msg_format_postprocess_message(options, data, length, msg);
 }
 

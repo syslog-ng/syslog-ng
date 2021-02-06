@@ -994,13 +994,6 @@ syslog_format_handler(const MsgFormatOptions *parse_options,
   if (parse_options->flags & LP_STORE_RAW_MESSAGE)
     log_msg_set_value(self, handles.raw_message, (gchar *) data, length);
 
-  if (parse_options->flags & LP_NOPARSE)
-    {
-      log_msg_set_value(self, LM_V_MESSAGE, (gchar *) data, length);
-      self->pri = parse_options->default_pri;
-      return;
-    }
-
   self->initial_parse = TRUE;
   if (parse_options->flags & LP_SYSLOG_PROTOCOL)
     success = log_msg_parse_syslog_proto(parse_options, data, length, self, &problem_position);

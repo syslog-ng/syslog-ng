@@ -366,17 +366,8 @@ linux_kmsg_format_handler(const MsgFormatOptions *parse_options,
   while (length > 0 && (data[length - 1] == '\n' || data[length - 1] == '\0'))
     length--;
 
-  if (parse_options->flags & LP_NOPARSE)
-    {
-      log_msg_set_value(self, LM_V_MESSAGE, (gchar *) data, length);
-      self->pri = parse_options->default_pri;
-      return;
-    }
-
   self->initial_parse = TRUE;
-
   success = log_msg_parse_kmsg(self, data, length, &problem_position);
-
   self->initial_parse = FALSE;
 
   if (G_UNLIKELY(!success))
