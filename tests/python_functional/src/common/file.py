@@ -21,15 +21,37 @@
 #
 #############################################################################
 import logging
+import shutil
 
 from pathlib2 import Path
 
+import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.common.blocking import DEFAULT_TIMEOUT
 from src.common.blocking import wait_until_true
 from src.common.blocking import wait_until_true_custom
-from src.common.operations import open_file
 
 logger = logging.getLogger(__name__)
+
+
+def open_file(file_path, mode):
+    # Python 2 compatibility note: open() can work only with string representation of path
+    return open(str(file_path), mode)
+
+
+def copy_file(src_file_path, dst_dir):
+    # Python 2 compatibility note: shutil.copy() can work only with string representation of path
+    shutil.copy(str(src_file_path), str(dst_dir))
+
+
+def copy_shared_file(testcase_parameters, shared_file_name):
+    shared_dir = testcase_parameters.get_shared_dir()
+    copy_file(Path(shared_dir, shared_file_name), testcase_parameters.get_working_dir())
+    return Path(testcase_parameters.get_working_dir(), shared_file_name)
+
+
+def delete_session_file(shared_file_name):
+    shared_file_name = Path(tc_parameters.WORKING_DIR, shared_file_name)
+    shared_file_name.unlink()
 
 
 class File(object):

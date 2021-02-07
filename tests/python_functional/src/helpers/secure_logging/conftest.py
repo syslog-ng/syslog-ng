@@ -24,7 +24,7 @@ import pytest
 from pathlib2 import Path
 
 import src.testcase_parameters.testcase_parameters as tc_parameters
-from src.common.operations import copy_file
+from src.common.file import copy_file
 from src.executors.command_executor import CommandExecutor
 from src.syslog_ng.syslog_ng_paths import SyslogNgPaths
 
