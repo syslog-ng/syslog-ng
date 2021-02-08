@@ -600,15 +600,15 @@ afsmtp_dd_init(LogPipe *s)
   AFSMTPDriver *self = (AFSMTPDriver *)s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
-  if (!log_threaded_dest_driver_init_method(s))
-    return FALSE;
-
   msg_verbose("Initializing SMTP destination",
               evt_tag_str("driver", self->super.super.super.id),
               evt_tag_str("host", self->host),
               evt_tag_int("port", self->port));
 
   if (!__check_required_options(self))
+    return FALSE;
+
+  if (!log_threaded_dest_driver_init_method(s))
     return FALSE;
 
   log_template_options_init(&self->template_options, cfg);

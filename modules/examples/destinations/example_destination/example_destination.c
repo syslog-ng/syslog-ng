@@ -80,11 +80,11 @@ _dd_init(LogPipe *d)
 {
   ExampleDestinationDriver *self = (ExampleDestinationDriver *)d;
 
-  if (!log_threaded_dest_driver_init_method(d))
-    return FALSE;
-
   if (!self->filename->len)
     g_string_assign(self->filename, "/tmp/example-destination-output.txt");
+
+  if (!log_threaded_dest_driver_init_method(d))
+    return FALSE;
 
   return TRUE;
 }

@@ -1114,8 +1114,6 @@ afsql_dd_init(LogPipe *s)
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
-  if (!log_threaded_dest_driver_init_method(s))
-    return FALSE;
   if (!_update_legacy_persist_name_if_exists(self))
     return FALSE;
   if (!_initialize_dbi())
@@ -1135,6 +1133,9 @@ afsql_dd_init(LogPipe *s)
     }
 
   if (!_init_fields_from_columns_and_values(self))
+    return FALSE;
+
+  if (!log_threaded_dest_driver_init_method(s))
     return FALSE;
 
   log_template_options_init(&self->template_options, cfg);

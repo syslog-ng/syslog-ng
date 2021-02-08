@@ -502,14 +502,14 @@ _init(LogPipe *s)
   MongoDBDestDriver *self = (MongoDBDestDriver *)s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
-  if (!log_threaded_dest_driver_init_method(s))
-    return FALSE;
-
   log_template_options_init(&self->template_options, cfg);
 
   _init_value_pairs_dot_to_underscore_transformation(self);
 
   if (!afmongodb_dd_private_uri_init(&self->super.super.super))
+    return FALSE;
+
+  if (!log_threaded_dest_driver_init_method(s))
     return FALSE;
 
   return TRUE;
