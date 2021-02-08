@@ -63,6 +63,7 @@ lib/rewrite/rewrite-set-facility\.h
 lib/rewrite/tests/test_set_facility\.c
 lib/rewrite/rewrite-set-pri\.h
 lib/rewrite/rewrite-set-pri\.c
+lib/timeutils/timeutils\.h
  LGPLv2.1+_SSL
 autogen\.sh$
 sub-configure\.sh$

@@ -28,6 +28,12 @@
 #include "timeutils/wallclocktime.h"
 #include "timeutils/zoneinfo.h"
 
+/* the thread safe variant of the global "timezone" */
+glong cached_get_system_tzofs(void);
+
+/* the thread safe variant of the global "tzname" */
+const gchar *const *cached_get_system_tznames(void);
+
 time_t cached_mktime(struct tm *tm);
 void cached_localtime(time_t *when, struct tm *tm);
 void cached_gmtime(time_t *when, struct tm *tm);
@@ -58,6 +64,5 @@ time_t cached_g_current_time_sec(void);
 TimeZoneInfo *cached_get_time_zone_info(const gchar *tz);
 
 void invalidate_timeutils_cache(void);
-void timeutils_setup_timezone_hook(void);
 
 #endif

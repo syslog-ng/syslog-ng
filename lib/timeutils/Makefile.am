@@ -9,6 +9,7 @@ timeutilsinclude_HEADERS =	\
   lib/timeutils/format.h	\
   lib/timeutils/misc.h	\
   lib/timeutils/names.h	\
+  lib/timeutils/timeutils.h	\
   lib/timeutils/unixtime.h	\
   lib/timeutils/zonecache.h	\
   lib/timeutils/zonedb.h	\
@@ -22,6 +23,7 @@ timeutils_sources =		\
  lib/timeutils/format.c		\
  lib/timeutils/misc.c		\
  lib/timeutils/names.c		\
+ lib/timeutils/timeutils.c	\
  lib/timeutils/unixtime.c	\
  lib/timeutils/zonecache.c	\
  lib/timeutils/zonedb.c		\

@@ -44,6 +44,13 @@
  * "struct tm" around for conversions, rather we contain one instance and
  * provide wrapper macros so that fields that are present in struct tm are
  * used from there, those that aren't will be part of the wrapper structure.
+ *
+ * NOTE on thread safety: the wct_zone field is a pointer to a dynamically
+ * allocated string, that is managed in a thread-specific location (in
+ * cache.c), the pointer could become stale across a syslog-ng reload.  In
+ * general it is not a good idea to pass WallClockTime instances between
+ * threads, if the wct_zone field was initialized by cached_localtime() and
+ * friends, unless you ensure this field does not become stale.
  */
 typedef struct _WallClockTime WallClockTime;
 struct _WallClockTime

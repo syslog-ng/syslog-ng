@@ -42,8 +42,9 @@ enum
 
   /* these happen from time to time and don't update the current state of
    * the process */
-  AH_CONFIG_CHANGED,
-  AH_REOPEN_FILES,
+  AH_CONFIG_STOPPED,   /* configuration is deinitialized, threads have stopped */
+  AH_CONFIG_CHANGED,   /* configuration changed, threads are running again */
+  AH_REOPEN_FILES,     /* reopen files signal from syslog-ng-ctl */
 };
 
 /* state-like hook entry points */
@@ -54,6 +55,7 @@ void app_pre_shutdown(void);
 void app_shutdown(void);
 
 /* stateless entry points */
+void app_config_stopped(void);
 void app_config_changed(void);
 void app_reopen_files(void);
 

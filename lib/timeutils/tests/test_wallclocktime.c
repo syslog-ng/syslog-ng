@@ -137,7 +137,7 @@ Test(wallclocktime, test_strptime_percent_z_parses_rfc822_timezone)
   /* local timezone */
   wct.wct_gmtoff = -1;
   end = wall_clock_time_strptime(&wct, "%b %d %Y %H:%M:%S %z", "Jan 16 2019 18:23:12 CET");
-  cr_expect(wct.wct_gmtoff == 1*3600, "Unexpected timezone offset: %ld, expected 0", wct.wct_gmtoff);
+  cr_expect(wct.wct_gmtoff == 1*3600, "Unexpected timezone offset: %ld, expected 1*3600", wct.wct_gmtoff);
 
   /* military zones */
   wct.wct_gmtoff = -1;
@@ -208,7 +208,7 @@ Test(wallclocktime, test_strptime_percent_Z_allows_timezone_to_be_optional)
 
   wct.wct_gmtoff = -1;
   end = wall_clock_time_strptime(&wct, "%b %d %Y %H:%M:%S %Z", "Jan 16 2019 18:23:12 Y");
-  cr_expect(wct.wct_gmtoff == 12*3600, "Unexpected timezone offset: %ld, expected -1", wct.wct_gmtoff);
+  cr_expect(wct.wct_gmtoff == 12*3600, "Unexpected timezone offset: %ld, expected 12*3600", wct.wct_gmtoff);
 
   /* invalid timezone offset, too short */
   wct.wct_gmtoff = -1;
@@ -220,6 +220,45 @@ Test(wallclocktime, test_strptime_percent_Z_allows_timezone_to_be_optional)
   end = wall_clock_time_strptime(&wct, "%b %d %Y %H:%M:%S %Z", "Jan 16 2019 18:23:12 +3");
   cr_expect(end != NULL);
   cr_expect_str_eq(end, "+3");
+}
+
+Test(wallclocktime, test_strptime_zone_parsing_takes_daylight_saving_into_account_when_using_the_local_timezone)
+{
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
+  gchar *end;
+
+  /* this is a daylight saving zone name, in which case both wct.wct_isdst
+   * and wct.wct_gmtoff must indicate this */
+  end = wall_clock_time_strptime(&wct, "%b %d %Y %H:%M:%S %z", "May  7 2021 09:29:12 CEST");
+
+  cr_assert(*end == 0);
+  cr_expect(wct.wct_year == 121);
+  cr_expect(wct.wct_mon == 4);
+  cr_expect(wct.wct_mday == 7);
+
+  cr_expect(wct.wct_hour == 9);
+  cr_expect(wct.wct_min == 29);
+  cr_expect(wct.wct_sec == 12);
+  cr_expect(wct.wct_usec == 0);
+
+  cr_expect(wct.wct_isdst > 0);
+  cr_expect(wct.wct_gmtoff == 2*3600, "Unexpected timezone offset: %ld, expected 2*3600", wct.wct_gmtoff);
+
+  end = wall_clock_time_strptime(&wct, "%b %d %Y %H:%M:%S %z", "Feb  7 2021 09:29:12 CET");
+
+  cr_assert(*end == 0);
+  cr_expect(wct.wct_year == 121);
+  cr_expect(wct.wct_mon == 1);
+  cr_expect(wct.wct_mday == 7);
+
+  cr_expect(wct.wct_hour == 9);
+  cr_expect(wct.wct_min == 29);
+  cr_expect(wct.wct_sec == 12);
+  cr_expect(wct.wct_usec == 0);
+
+  cr_expect(wct.wct_isdst == 0);
+  cr_expect(wct.wct_gmtoff == 1*3600, "Unexpected timezone offset: %ld, expected 1*3600", wct.wct_gmtoff);
+
 }
 
 static void
@@ -297,7 +336,7 @@ static void
 setup(void)
 {
   setenv("TZ", "CET", TRUE);
-  tzset();
+  invalidate_timeutils_cache();
 }
 
 static void
