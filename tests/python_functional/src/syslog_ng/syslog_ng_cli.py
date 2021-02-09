@@ -109,9 +109,11 @@ class SyslogNgCli(object):
         config.write_config(self.__instance_paths.get_config_path())
 
         # effective reload
-        self.__syslog_ng_ctl.reload()
+        result = self.__syslog_ng_ctl.reload()
 
         # wait for reload and check reload result
+        if result["exit_code"] != 0:
+            self.__error_handling("Control socket fails to reload syslog-ng")
         if not self.__wait_for_control_socket_alive():
             self.__error_handling("Control socket not alive")
         if not self.__console_log_reader.wait_for_reload_message():
