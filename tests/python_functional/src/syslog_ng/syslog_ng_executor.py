@@ -31,9 +31,9 @@ class SyslogNgExecutor(object):
         self.__process_executor = ProcessExecutor()
         self.__command_executor = CommandExecutor()
 
-    def run_process(self):
+    def run_process(self, stderr, debug, trace, verbose, startup_debug, no_caps, config_path, persist_path, pid_path, control_socket_path):
         return self.__process_executor.start(
-            command=self.__construct_syslog_ng_process(),
+            command=self.__construct_syslog_ng_process(stderr, debug, trace, verbose, startup_debug, no_caps, config_path, persist_path, pid_path, control_socket_path),
             stdout_path=self.__instance_paths.get_stdout_path(),
             stderr_path=self.__instance_paths.get_stderr_path(),
         )
@@ -112,16 +112,16 @@ class SyslogNgExecutor(object):
 
     def __construct_syslog_ng_process(
         self,
-        stderr=True,
-        debug=True,
-        trace=True,
-        verbose=True,
-        startup_debug=True,
-        no_caps=True,
-        config_path=None,
-        persist_path=None,
-        pid_path=None,
-        control_socket_path=None,
+        stderr,
+        debug,
+        trace,
+        verbose,
+        startup_debug,
+        no_caps,
+        config_path,
+        persist_path,
+        pid_path,
+        control_socket_path,
     ):
         syslog_ng_process_args = [self.__instance_paths.get_syslog_ng_bin()]
         syslog_ng_process_args += ["--foreground", "--enable-core"]

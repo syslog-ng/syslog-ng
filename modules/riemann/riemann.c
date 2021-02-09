@@ -256,15 +256,15 @@ riemann_dd_init(LogPipe *s)
   RiemannDestDriver *self = (RiemannDestDriver *)s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
-  if (!log_threaded_dest_driver_init_method(s))
-    return FALSE;
-
   log_template_options_init(&self->template_options, cfg);
 
   if (!self->server)
     self->server = g_strdup("127.0.0.1");
   if (self->port == -1)
     self->port = 5555;
+
+  if (!log_threaded_dest_driver_init_method(s))
+    return FALSE;
 
   if (!self->fields.host)
     {

@@ -515,9 +515,6 @@ kafka_dd_init(LogPipe *s)
   KafkaDestDriver *self = (KafkaDestDriver *)s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
-  if (!log_threaded_dest_driver_init_method(s))
-    return FALSE;
-
   if (!self->topic_name)
     {
       msg_error("kafka: the topic() argument is required for kafka destinations",
@@ -540,6 +537,9 @@ kafka_dd_init(LogPipe *s)
     }
 
   if (!_init_topic_name(self))
+    return FALSE;
+
+  if (!log_threaded_dest_driver_init_method(s))
     return FALSE;
 
   if (self->message == NULL)

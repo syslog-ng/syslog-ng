@@ -390,15 +390,15 @@ redis_dd_init(LogPipe *s)
   RedisDriver *self = (RedisDriver *)s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
-  if (!log_threaded_dest_driver_init_method(s))
-    return FALSE;
-
   if (g_list_length(self->arguments) == 0)
     {
       msg_error("Error initializing Redis destination, command option MUST be set",
                 log_pipe_location_tag(s));
       return FALSE;
     }
+
+  if (!log_threaded_dest_driver_init_method(s))
+    return FALSE;
 
   log_template_options_init(&self->template_options, cfg);
 

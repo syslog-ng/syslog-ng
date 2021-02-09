@@ -624,9 +624,6 @@ snmpdest_dd_init(LogPipe *s)
   SNMPDestDriver *self = (SNMPDestDriver *)s;
   GlobalConfig *cfg = log_pipe_get_config(s);
 
-  if (!log_threaded_dest_driver_init_method(s))
-    return FALSE;
-
   msg_verbose("Initializing SNMP destination",
               evt_tag_str("driver", self->super.super.super.id),
               evt_tag_str("host", self->host),
@@ -638,6 +635,9 @@ snmpdest_dd_init(LogPipe *s)
       msg_error(err_msg);
       return FALSE;
     }
+
+  if (!log_threaded_dest_driver_init_method(s))
+    return FALSE;
 
   log_template_options_init(&self->template_options, cfg);
   return TRUE;
