@@ -73,18 +73,16 @@ class SyslogNgCli(object):
         def is_alive(s):
             if not s.is_process_running():
                 self.__process = None
-                raise Exception("syslog-ng is not running")
+                self.__error_handling("syslog-ng is not running")
             return s.__syslog_ng_ctl.is_control_socket_alive()
         return wait_until_true(is_alive, self)
 
     def __wait_for_start(self):
         # wait for start and check start result
         if not self.__wait_for_control_socket_alive():
-            self.__error_handling()
-            raise Exception("Control socket not alive")
+            self.__error_handling("Control socket not alive")
         if not self.__console_log_reader.wait_for_start_message():
-            self.__error_handling()
-            raise Exception("Start message not arrived")
+            self.__error_handling("Start message not arrived")
 
     def __start_syslog_ng(self):
         if self.__external_tool:
@@ -111,15 +109,15 @@ class SyslogNgCli(object):
         config.write_config(self.__instance_paths.get_config_path())
 
         # effective reload
-        self.__syslog_ng_ctl.reload()
+        result = self.__syslog_ng_ctl.reload()
 
         # wait for reload and check reload result
+        if result["exit_code"] != 0:
+            self.__error_handling("Control socket fails to reload syslog-ng")
         if not self.__wait_for_control_socket_alive():
-            self.__error_handling()
-            raise Exception("Control socket not alive")
+            self.__error_handling("Control socket not alive")
         if not self.__console_log_reader.wait_for_reload_message():
-            self.__error_handling()
-            raise Exception("Reload message not arrived")
+            self.__error_handling("Reload message not arrived")
         logger.info("syslog-ng process has been reloaded with PID: {}\n".format(self.__process.pid))
 
     def stop(self, unexpected_messages=None):
@@ -130,13 +128,11 @@ class SyslogNgCli(object):
 
             # wait for stop and check stop result
             if result["exit_code"] != 0:
-                self.__error_handling()
+                self.__error_handling("Control socket fails to stop syslog-ng")
             if not wait_until_false(self.is_process_running):
-                self.__error_handling()
-                raise Exception("syslog-ng did not stop")
+                self.__error_handling("syslog-ng did not stop")
             if not self.__console_log_reader.wait_for_stop_message():
-                self.__error_handling()
-                raise Exception("Stop message not arrived")
+                self.__error_handling("Stop message not arrived")
             self.__console_log_reader.check_for_unexpected_messages(unexpected_messages)
             if self.__external_tool == "valgrind":
                 self.__console_log_reader.handle_valgrind_log(self.__instance_paths.get_external_tool_output_path(self.__external_tool))
@@ -144,9 +140,10 @@ class SyslogNgCli(object):
             logger.info("syslog-ng process has been stopped with PID: {}\n".format(saved_pid))
 
     # Helper functions
-    def __error_handling(self):
+    def __error_handling(self, error_message):
         self.__console_log_reader.dump_stderr()
         self.__handle_core_file()
+        raise Exception(error_message)
 
     def __handle_core_file(self):
         if not self.is_process_running():
