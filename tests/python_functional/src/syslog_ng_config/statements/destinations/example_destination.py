@@ -23,9 +23,7 @@
 from pathlib2 import Path
 
 import src.testcase_parameters.testcase_parameters as tc_parameters
-from src.common.blocking import wait_until_true
-from src.message_reader.message_reader import MessageReader
-from src.message_reader.single_line_parser import SingleLineParser
+from src.driver_io.file.file_io import FileIO
 from src.syslog_ng_config.statements.destinations.destination_driver import DestinationDriver
 
 
@@ -33,17 +31,17 @@ class ExampleDestination(DestinationDriver):
     def __init__(self, filename, **options):
         self.driver_name = "example-destination"
         self.path = Path(tc_parameters.WORKING_DIR, filename)
+        self.io = FileIO(self.path)
         super(ExampleDestination, self).__init__(None, dict({"filename": self.path.resolve()}, **options))
 
-    def wait_file_content(self, content):
-        wait_until_true(self.path.exists)
+    def get_path(self):
+        return self.path
 
-        with self.path.open() as f:
-            message_reader = MessageReader(f.readline, SingleLineParser())
+    def read_log(self):
+        return self.read_logs(1)[0]
 
-            while True:
-                msg = message_reader.pop_messages(1)[0]
-                if content in msg:
-                    return True
+    def read_logs(self, counter):
+        return self.io.read_number_of_lines(counter)
 
-            return False
+    def read_until_logs(self, logs):
+        return self.io.read_until_lines(logs)

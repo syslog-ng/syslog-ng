@@ -28,11 +28,11 @@ def test_internal_source_with_threaded_destination(config, syslog_ng):
     config.create_logpath(statements=[internal_source, example_destination])
 
     syslog_ng.start(config, stderr=False, debug=True, trace=False, verbose=False)
-    assert example_destination.wait_file_content("syslog-ng starting up")
+    assert example_destination.read_until_logs(["syslog-ng starting up"])
 
     for _ in range(0, 5):
         syslog_ng.reload(config)
-        assert example_destination.wait_file_content("Configuration reload finished")
+        assert example_destination.read_until_logs(["Configuration reload finished"])
 
     syslog_ng.stop()
-    assert example_destination.wait_file_content("syslog-ng shutting down")
+    assert example_destination.read_until_logs(["syslog-ng shutting down"])
