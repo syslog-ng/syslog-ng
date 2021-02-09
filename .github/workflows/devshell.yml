@@ -11,17 +11,24 @@ jobs:
     runs-on: ubuntu-18.04
     container:
       image: balabit/syslog-ng-devshell:latest
+      options: --privileged --ulimit core=-1
 
     strategy:
       matrix:
-        python: [python2, python3]
-        build-tool: [autotools, cmake]
-        cc: [gcc, clang]
+        python: [python3]
+        build-tool: [autotools]
+        cc: [gcc]
       fail-fast: false
 
     steps:
       - name: Checkout syslog-ng source
         uses: actions/checkout@v2
+
+      - name: "Prepare corefiles directory"
+        run: |
+          ulimit -c unlimited
+          mkdir ${HOME}/corefiles
+          echo '${HOME}/corefiles/core.%h.%e.%t' > /proc/sys/kernel/core_pattern
 
       - name: Set ENV variables
         run: |
@@ -111,6 +118,13 @@ jobs:
         with:
           name: light-reports-${{ matrix.build-tool }}-${{ matrix.cc }}-${{ matrix.python }}
           path: /tmp/light-reports
+
+      - name: "Artifact: corefiles"
+        uses: actions/upload-artifact@v2
+        if: always()
+        with:
+          name: corefiles
+          path: ${HOME}/corefiles
 
   distcheck:
     runs-on: ubuntu-18.04
