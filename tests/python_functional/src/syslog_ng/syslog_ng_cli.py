@@ -126,7 +126,7 @@ class SyslogNgCli(object):
 
             # wait for stop and check stop result
             if result["exit_code"] != 0:
-                self.__error_handling()
+                self.__error_handling("Control socket fails to stop syslog-ng")
             if not wait_until_false(self.is_process_running):
                 self.__error_handling("syslog-ng did not stop")
             if not self.__console_log_reader.wait_for_stop_message():
