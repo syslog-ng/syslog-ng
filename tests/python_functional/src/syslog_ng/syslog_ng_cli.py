@@ -42,6 +42,16 @@ class SyslogNgCli(object):
         self.__syslog_ng_ctl = SyslogNgCtl(instance_paths)
         self.__external_tool = testcase_parameters.get_external_tool()
         self.__process = None
+        self.__stderr = None
+        self.__debug = None
+        self.__trace = None
+        self.__verbose = None
+        self.__startup_debug = None
+        self.__no_caps = None
+        self.__config_path = None
+        self.__persist_path = None
+        self.__pid_path = None
+        self.__control_socket_path = None
 
     # Application commands
     def get_version(self):
@@ -88,11 +98,13 @@ class SyslogNgCli(object):
         if self.__external_tool:
             self.__process = self.__syslog_ng_executor.run_process_with_external_tool(self.__external_tool)
         else:
-            self.__process = self.__syslog_ng_executor.run_process()
-        self.__wait_for_start()
+            self.__process = self.__syslog_ng_executor.run_process(self.__stderr, self.__debug, self.__trace, self.__verbose, self.__startup_debug, self.__no_caps, self.__config_path, self.__persist_path, self.__pid_path, self.__control_socket_path)
+        if self.__stderr and self.__debug and self.__verbose:
+            self.__wait_for_start()
 
     # Process commands
-    def start(self, config):
+    def start(self, config, stderr, debug, trace, verbose, startup_debug, no_caps, config_path, persist_path, pid_path, control_socket_path):
+        self.set_start_parameters(stderr, debug, trace, verbose, startup_debug, no_caps, config_path, persist_path, pid_path, control_socket_path)
         if self.__process:
             raise Exception("syslog-ng has been already started")
 
@@ -116,8 +128,9 @@ class SyslogNgCli(object):
             self.__error_handling("Control socket fails to reload syslog-ng")
         if not self.__wait_for_control_socket_alive():
             self.__error_handling("Control socket not alive")
-        if not self.__console_log_reader.wait_for_reload_message():
-            self.__error_handling("Reload message not arrived")
+        if self.__stderr and self.__debug and self.__verbose:
+            if not self.__console_log_reader.wait_for_reload_message():
+                self.__error_handling("Reload message not arrived")
         logger.info("syslog-ng process has been reloaded with PID: {}\n".format(self.__process.pid))
 
     def stop(self, unexpected_messages=None):
@@ -131,8 +144,9 @@ class SyslogNgCli(object):
                 self.__error_handling("Control socket fails to stop syslog-ng")
             if not wait_until_false(self.is_process_running):
                 self.__error_handling("syslog-ng did not stop")
-            if not self.__console_log_reader.wait_for_stop_message():
-                self.__error_handling("Stop message not arrived")
+            if self.__stderr and self.__debug and self.__verbose:
+                if not self.__console_log_reader.wait_for_stop_message():
+                    self.__error_handling("Stop message not arrived")
             self.__console_log_reader.check_for_unexpected_messages(unexpected_messages)
             if self.__external_tool == "valgrind":
                 self.__console_log_reader.handle_valgrind_log(self.__instance_paths.get_external_tool_output_path(self.__external_tool))
@@ -155,3 +169,15 @@ class SyslogNgCli(object):
                 core_file.replace(Path(tc_parameters.WORKING_DIR, core_file))
             if core_file_found:
                 raise Exception("syslog-ng core file was found and processed")
+
+    def set_start_parameters(self, stderr, debug, trace, verbose, startup_debug, no_caps, config_path, persist_path, pid_path, control_socket_path):
+        self.__stderr = stderr
+        self.__debug = debug
+        self.__trace = trace
+        self.__verbose = verbose
+        self.__startup_debug = startup_debug
+        self.__no_caps = no_caps
+        self.__config_path = config_path
+        self.__persist_path = persist_path
+        self.__pid_path = pid_path
+        self.__control_socket_path = control_socket_path
