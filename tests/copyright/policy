@@ -87,6 +87,7 @@ modules/add-contextual-data/add-contextual-data-glob-selector\.[ch]$
 modules/add-contextual-data/tests/test_glob_selector\.c$
 modules/affile/tests/test_file_writer\.c$
 scl/fortigate/.*\.conf$
+scl/cee/.*\.conf$
  GPLv2+_SSL
 contib/config_option_database
 news/create-newsfile.py
