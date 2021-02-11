@@ -1,5 +1,6 @@
 SCL_SUBDIRS	= \
 	apache		\
+	cee		\
 	cim		\
 	cisco		\
 	collectd \

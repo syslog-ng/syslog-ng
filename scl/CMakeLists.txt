@@ -1,5 +1,6 @@
 set(SCL_DIRS
     apache
+    cee
     cim
     checkpoint
     cisco
