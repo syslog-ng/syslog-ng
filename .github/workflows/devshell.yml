@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-18.04
     container:
       image: balabit/syslog-ng-devshell:latest
+      options: --privileged --ulimit core=-1
 
     strategy:
       matrix:
@@ -23,15 +24,24 @@ jobs:
       - name: Checkout syslog-ng source
         uses: actions/checkout@v2
 
-      - name: Set ENV variables
+      - name: Setup environment
         run: |
           . .github/workflows/gh-tools.sh
 
+          # Setup corefiles
+          ulimit -c unlimited
+          COREFILES_DIR=/tmp/corefiles
+          mkdir ${COREFILES_DIR}
+          echo "${COREFILES_DIR}/core.%h.%e.%t" > /proc/sys/kernel/core_pattern
+
+          # Setup build time environment variables
           PYTHONVERSION="`printf ${{ matrix.python }} | tail -c 1`"
           PYTHONUSERBASE="${HOME}/python_packages"
           CC="${{ matrix.cc }}"
+          SYSLOG_NG_INSTALL_DIR=${HOME}/install/syslog-ng
           CONFIGURE_FLAGS="
-            --prefix=${HOME}/install/syslog-ng
+            --prefix=${SYSLOG_NG_INSTALL_DIR}
+            --enable-debug
             --enable-all-modules
             --disable-java
             --disable-java-modules
@@ -39,11 +49,12 @@ jobs:
             `[ $CC = clang ] && echo '--enable-force-gnu99' || true`
           "
           CMAKE_FLAGS="
+            -DCMAKE_BUILD_TYPE=Debug
             -DCMAKE_C_FLAGS=-Werror
             -DCMAKE_INSTALL_PREFIX=${HOME}/install/syslog-ng
             -DPYTHON_VERSION=${PYTHONVERSION}
           "
-          gh_export PYTHONVERSION PYTHONUSERBASE CC CONFIGURE_FLAGS CMAKE_FLAGS
+          gh_export COREFILES_DIR PYTHONVERSION PYTHONUSERBASE CC SYSLOG_NG_INSTALL_DIR CONFIGURE_FLAGS CMAKE_FLAGS
           gh_path "${PYTHONUSERBASE}"
 
       - name: autogen.sh
@@ -111,6 +122,20 @@ jobs:
         with:
           name: light-reports-${{ matrix.build-tool }}-${{ matrix.cc }}-${{ matrix.python }}
           path: /tmp/light-reports
+
+      - name: Dump corefile backtrace
+        working-directory: ${{ env.COREFILES_DIR }}
+        if: failure()
+        run: |
+          find -name "core.*syslog-ng*" -exec \
+            gdb --ex="thread apply all bt full" --ex="quit" ${SYSLOG_NG_INSTALL_DIR}/sbin/syslog-ng --core {} \;
+
+      - name: "Artifact: corefiles"
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: corefiles-${{ matrix.build-tool }}-${{ matrix.cc }}-${{ matrix.python }}
+          path: ${{ env.COREFILES_DIR }}
 
   distcheck:
     runs-on: ubuntu-18.04

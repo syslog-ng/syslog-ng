@@ -55,8 +55,6 @@ typedef struct
     PyObject *open;
     PyObject *send;
     PyObject *flush;
-    PyObject *log_template_options;
-    PyObject *seqnum;
     PyObject *generate_persist_name;
     GPtrArray *_refs_to_clean;
   } py;
@@ -360,12 +358,13 @@ _py_init_bindings(PythonDestDriver *self)
 
   _inject_worker_insert_result_consts(self);
 
-  self->py.log_template_options = py_log_template_options_new(&self->template_options);
-  PyObject_SetAttrString(self->py.class, "template_options", self->py.log_template_options);
-  Py_DECREF(self->py.log_template_options);
-  self->py.seqnum = py_integer_pointer_new(&self->super.worker.instance.seq_num);
-  PyObject_SetAttrString(self->py.class, "seqnum", self->py.seqnum);
-  Py_DECREF(self->py.seqnum);
+  PyObject *py_log_template_options = py_log_template_options_new(&self->template_options);
+  PyObject_SetAttrString(self->py.class, "template_options", py_log_template_options);
+  Py_DECREF(py_log_template_options);
+
+  PyObject *py_seqnum = py_integer_pointer_new(&self->super.worker.instance.seq_num);
+  PyObject_SetAttrString(self->py.class, "seqnum", py_seqnum);
+  Py_DECREF(py_seqnum);
 
   self->py.instance = _py_invoke_function(self->py.class, NULL, self->class, self->super.super.super.id);
   if (!self->py.instance)
@@ -405,8 +404,6 @@ _py_init_bindings(PythonDestDriver *self)
   g_ptr_array_add(self->py._refs_to_clean, self->py.open);
   g_ptr_array_add(self->py._refs_to_clean, self->py.flush);
   g_ptr_array_add(self->py._refs_to_clean, self->py.send);
-  g_ptr_array_add(self->py._refs_to_clean, self->py.log_template_options);
-  g_ptr_array_add(self->py._refs_to_clean, self->py.seqnum);
   g_ptr_array_add(self->py._refs_to_clean, self->py.generate_persist_name);
 
   return TRUE;
