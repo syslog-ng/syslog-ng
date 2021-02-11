@@ -17,12 +17,6 @@ set -x
 function install_dbld_dependencies()
 {
     case "${OS_PLATFORM}" in
-        centos-6)
-            $YUM_INSTALL wget
-            wget -O /usr/bin/yum-builddep https://raw.githubusercontent.com/rpm-software-management/yum-utils/master/yum-builddep.py
-            chmod +x /usr/bin/yum-builddep
-            sha1sum -c /dbld/images/yum-builddep.sha1
-            ;;
         centos-*)
             $YUM_INSTALL wget yum-utils
             ;;
@@ -188,11 +182,6 @@ function install_pip_packages {
     esac
     for python_executable in ${python_executables}; do
         case "${OS_PLATFORM}" in
-            centos-6)
-                pip install --upgrade pip==9.0.3
-                pip install --upgrade setuptools
-                filter_packages_by_platform $DBLD_DIR/pip_packages.manifest | xargs pip install --ignore-installed -U
-                ;;
             centos-7|ubuntu-xenial)
                 $python_executable -m pip install --upgrade "pip < 21.0"
                 $python_executable -m pip install --upgrade setuptools
