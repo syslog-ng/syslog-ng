@@ -981,20 +981,21 @@ error:
 
 gboolean
 syslog_format_handler(const MsgFormatOptions *parse_options,
+                      LogMessage *msg,
                       const guchar *data, gsize length,
-                      LogMessage *self, gsize *problem_position)
+                      gsize *problem_position)
 {
   gboolean success;
 
   while (length > 0 && (data[length - 1] == '\n' || data[length - 1] == '\0'))
     length--;
 
-  self->initial_parse = TRUE;
+  msg->initial_parse = TRUE;
   if (parse_options->flags & LP_SYSLOG_PROTOCOL)
-    success = log_msg_parse_syslog_proto(parse_options, data, length, self, problem_position);
+    success = log_msg_parse_syslog_proto(parse_options, data, length, msg, problem_position);
   else
-    success = log_msg_parse_legacy(parse_options, data, length, self, problem_position);
-  self->initial_parse = FALSE;
+    success = log_msg_parse_legacy(parse_options, data, length, msg, problem_position);
+  msg->initial_parse = FALSE;
 
   return success;
 }

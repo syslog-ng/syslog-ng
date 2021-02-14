@@ -58,7 +58,7 @@ msg_format_inject_parse_error(LogMessage *msg, const guchar *data, gsize length,
 }
 
 static void
-msg_format_preprocess_message(MsgFormatOptions *options, const guchar *data, gsize length, LogMessage *msg)
+msg_format_preprocess_message(MsgFormatOptions *options, LogMessage *msg, const guchar *data, gsize length)
 {
   if (options->flags & LP_STORE_RAW_MESSAGE)
     {
@@ -67,7 +67,7 @@ msg_format_preprocess_message(MsgFormatOptions *options, const guchar *data, gsi
 }
 
 static void
-msg_format_postprocess_message(MsgFormatOptions *options, const guchar *data, gsize length, LogMessage *msg)
+msg_format_postprocess_message(MsgFormatOptions *options, LogMessage *msg, const guchar *data, gsize length)
 {
   if (options->flags & LP_NO_PARSE_DATE)
     {
@@ -96,11 +96,11 @@ msg_format_postprocess_message(MsgFormatOptions *options, const guchar *data, gs
 }
 
 static gboolean
-msg_format_process_message(MsgFormatOptions *options, const guchar *data, gsize length, LogMessage *msg, gsize *problem_position)
+msg_format_process_message(MsgFormatOptions *options, LogMessage *msg, const guchar *data, gsize length, gsize *problem_position)
 {
   if ((options->flags & LP_NOPARSE) == 0)
     {
-      return options->format_handler->parse(options, data, length, msg, problem_position);
+      return options->format_handler->parse(options, msg, data, length, problem_position);
     }
   else
     {
@@ -111,7 +111,7 @@ msg_format_process_message(MsgFormatOptions *options, const guchar *data, gsize 
 }
 
 void
-msg_format_parse(MsgFormatOptions *options, const guchar *data, gsize length, LogMessage *msg)
+msg_format_parse(MsgFormatOptions *options, LogMessage *msg, const guchar *data, gsize length)
 {
   if (G_UNLIKELY(!options->format_handler))
     {
@@ -120,14 +120,14 @@ msg_format_parse(MsgFormatOptions *options, const guchar *data, gsize length, Lo
     }
 
   msg_trace("Initial message parsing follows");
-  msg_format_preprocess_message(options, data, length, msg);
+  msg_format_preprocess_message(options, msg, data, length);
 
   gsize problem_position = 0;
 
-  if (!msg_format_process_message(options, data, length, msg, &problem_position))
+  if (!msg_format_process_message(options, msg, data, length, &problem_position))
     msg_format_inject_parse_error(msg, data, _rstripped_message_length(data, length), problem_position);
 
-  msg_format_postprocess_message(options, data, length, msg);
+  msg_format_postprocess_message(options, msg, data, length);
 }
 
 void

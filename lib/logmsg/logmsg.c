@@ -1337,7 +1337,7 @@ log_msg_new(const gchar *msg, gint length,
   LogMessage *self = log_msg_alloc(_determine_payload_size(length, parse_options));
 
   log_msg_init(self);
-  msg_format_parse(parse_options, (guchar *) msg, length, self);
+  msg_format_parse(parse_options, self, (guchar *) msg, length);
   return self;
 }
 

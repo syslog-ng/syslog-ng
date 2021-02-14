@@ -36,7 +36,7 @@ syslog_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pat
             evt_tag_str ("input", input),
             evt_tag_printf("msg", "%p", *pmsg));
 
-  msg_format_parse(&self->parse_options, (guchar *) input, input_len, msg);
+  msg_format_parse(&self->parse_options, msg, (guchar *) input, input_len);
   return TRUE;
 }
 

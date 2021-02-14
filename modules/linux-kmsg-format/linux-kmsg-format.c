@@ -357,17 +357,18 @@ error:
 
 gboolean
 linux_kmsg_format_handler(const MsgFormatOptions *parse_options,
+                          LogMessage *msg,
                           const guchar *data, gsize length,
-                          LogMessage *self, gsize *problem_position)
+                          gsize *problem_position)
 {
   gboolean success;
 
   while (length > 0 && (data[length - 1] == '\n' || data[length - 1] == '\0'))
     length--;
 
-  self->initial_parse = TRUE;
-  success = log_msg_parse_kmsg(self, data, length, problem_position);
-  self->initial_parse = FALSE;
+  msg->initial_parse = TRUE;
+  success = log_msg_parse_kmsg(msg, data, length, problem_position);
+  msg->initial_parse = FALSE;
 
   return success;
 }
