@@ -83,7 +83,7 @@ struct _MsgFormatHandler
    */
   LogProtoServer *(*construct_proto)(const MsgFormatOptions *options, LogTransport *transport,
                                      const LogProtoServerOptions *proto_options);
-  void (*parse)(const MsgFormatOptions *options, const guchar *data, gsize length, LogMessage *msg);
+  gboolean (*parse)(const MsgFormatOptions *options, const guchar *data, gsize length, LogMessage *msg, gsize *problem_position);
 };
 
 void msg_format_parse(MsgFormatOptions *options, const guchar *data, gsize length, LogMessage *msg);
@@ -94,7 +94,5 @@ void msg_format_options_destroy(MsgFormatOptions *parse_options);
 void msg_format_options_copy(MsgFormatOptions *options, const MsgFormatOptions *source);
 
 gboolean msg_format_options_process_flag(MsgFormatOptions *options, const gchar *flag);
-
-void msg_format_inject_parse_error(LogMessage *msg, const guchar *data, gsize length, gint problem_position);
 
 #endif

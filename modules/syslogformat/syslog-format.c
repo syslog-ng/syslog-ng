@@ -820,7 +820,7 @@ log_msg_parse_legacy_header(LogMessage *self, const guchar **data, gint *length,
 static gboolean
 log_msg_parse_legacy(const MsgFormatOptions *parse_options,
                      const guchar *data, gint length,
-                     LogMessage *self, gint *position)
+                     LogMessage *self, gsize *position)
 {
   const guchar *src;
   gint left;
@@ -877,7 +877,7 @@ error:
  **/
 static gboolean
 log_msg_parse_syslog_proto(const MsgFormatOptions *parse_options, const guchar *data, gint length, LogMessage *self,
-                           gint *position)
+                           gsize *position)
 {
   /**
    *  SYSLOG-MSG      = HEADER SP STRUCTURED-DATA [SP MSG]
@@ -979,31 +979,24 @@ error:
   return FALSE;
 }
 
-
-void
+gboolean
 syslog_format_handler(const MsgFormatOptions *parse_options,
                       const guchar *data, gsize length,
-                      LogMessage *self)
+                      LogMessage *self, gsize *problem_position)
 {
   gboolean success;
-  gint problem_position = 0;
 
   while (length > 0 && (data[length - 1] == '\n' || data[length - 1] == '\0'))
     length--;
 
   self->initial_parse = TRUE;
   if (parse_options->flags & LP_SYSLOG_PROTOCOL)
-    success = log_msg_parse_syslog_proto(parse_options, data, length, self, &problem_position);
+    success = log_msg_parse_syslog_proto(parse_options, data, length, self, problem_position);
   else
-    success = log_msg_parse_legacy(parse_options, data, length, self, &problem_position);
+    success = log_msg_parse_legacy(parse_options, data, length, self, problem_position);
   self->initial_parse = FALSE;
 
-  if (G_UNLIKELY(!success))
-    {
-      msg_format_inject_parse_error(self, data, length, problem_position);
-      return;
-    }
-
+  return success;
 }
 
 void

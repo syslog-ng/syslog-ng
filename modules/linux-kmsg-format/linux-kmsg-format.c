@@ -315,7 +315,7 @@ kmsg_parse_key_value_pair(const guchar *data, gsize *pos, gsize length,
 }
 
 static gboolean
-log_msg_parse_kmsg(LogMessage *msg, const guchar *data, gsize length, gint *position)
+log_msg_parse_kmsg(LogMessage *msg, const guchar *data, gsize length, gsize *position)
 {
   gsize pos = 0;
 
@@ -355,26 +355,21 @@ error:
   return FALSE;
 }
 
-void
+gboolean
 linux_kmsg_format_handler(const MsgFormatOptions *parse_options,
                           const guchar *data, gsize length,
-                          LogMessage *self)
+                          LogMessage *self, gsize *problem_position)
 {
   gboolean success;
-  gint problem_position = 0;
 
   while (length > 0 && (data[length - 1] == '\n' || data[length - 1] == '\0'))
     length--;
 
   self->initial_parse = TRUE;
-  success = log_msg_parse_kmsg(self, data, length, &problem_position);
+  success = log_msg_parse_kmsg(self, data, length, problem_position);
   self->initial_parse = FALSE;
 
-  if (G_UNLIKELY(!success))
-    {
-      msg_format_inject_parse_error(self, data, length, problem_position);
-      return;
-    }
+  return success;
 }
 
 #ifdef __linux__
