@@ -110,8 +110,8 @@ msg_format_process_message(MsgFormatOptions *options, LogMessage *msg, const guc
     }
 }
 
-void
-msg_format_parse(MsgFormatOptions *options, LogMessage *msg, const guchar *data, gsize length)
+gboolean
+msg_format_parse_conditional(MsgFormatOptions *options, LogMessage *msg, const guchar *data, gsize length, gsize *problem_position)
 {
   if (G_UNLIKELY(!options->format_handler))
     {
@@ -124,12 +124,25 @@ msg_format_parse(MsgFormatOptions *options, LogMessage *msg, const guchar *data,
 
   msg_format_preprocess_message(options, msg, data, length);
 
-  gsize problem_position = 0;
-
-  if (!msg_format_process_message(options, msg, data, length, &problem_position))
-    msg_format_inject_parse_error(msg, data, _rstripped_message_length(data, length), problem_position);
+  if (!msg_format_process_message(options, msg, data, length, problem_position))
+    return FALSE;
 
   msg_format_postprocess_message(options, msg, data, length);
+  return TRUE;
+}
+
+void
+msg_format_parse(MsgFormatOptions *options, LogMessage *msg, const guchar *data, gsize length)
+{
+  gsize problem_position = 0;
+
+  if (!msg_format_parse_conditional(options, msg, data, length, &problem_position))
+    {
+      msg_format_inject_parse_error(msg, data, _rstripped_message_length(data, length), problem_position);
+
+      /* the injected error message needs to be postprocessed too */
+      msg_format_postprocess_message(options, msg, data, length);
+    }
 }
 
 void

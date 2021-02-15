@@ -86,6 +86,7 @@ struct _MsgFormatHandler
   gboolean (*parse)(const MsgFormatOptions *options, LogMessage *msg, const guchar *data, gsize length, gsize *problem_position);
 };
 
+gboolean msg_format_parse_conditional(MsgFormatOptions *options, LogMessage *msg, const guchar *data, gsize length, gsize *problem_position);
 void msg_format_parse(MsgFormatOptions *options, LogMessage *msg, const guchar *data, gsize length);
 
 void msg_format_options_defaults(MsgFormatOptions *options);
