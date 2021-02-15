@@ -115,8 +115,11 @@ msg_format_parse(MsgFormatOptions *options, LogMessage *msg, const guchar *data,
 {
   if (G_UNLIKELY(!options->format_handler))
     {
-      log_msg_set_value(msg, LM_V_MESSAGE, "Error parsing message, format module is not loaded", -1);
-      return;
+      gchar buf[256];
+
+      g_snprintf(buf, sizeof(buf), "Error parsing message, format module %s is not loaded", options->format);
+      log_msg_set_value(msg, LM_V_MESSAGE, buf, -1);
+      return FALSE;
     }
 
   msg_format_preprocess_message(options, msg, data, length);
