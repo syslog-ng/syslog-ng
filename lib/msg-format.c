@@ -119,7 +119,6 @@ msg_format_parse(MsgFormatOptions *options, LogMessage *msg, const guchar *data,
       return;
     }
 
-  msg_trace("Initial message parsing follows");
   msg_format_preprocess_message(options, msg, data, length);
 
   gsize problem_position = 0;
