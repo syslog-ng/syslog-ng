@@ -37,7 +37,7 @@
 
 #define PERSIST_FILE_INITIAL_SIZE 16384
 #define PERSIST_STATE_KEY_BLOCK_SIZE 4096
-#define PERSIST_FILE_WATERMARK 4096
+#define PERSIST_FILE_WATERMARK 8448
 
 /*
  * The syslog-ng persistent state is a set of name-value pairs,
