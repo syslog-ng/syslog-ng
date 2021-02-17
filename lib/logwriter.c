@@ -1714,7 +1714,7 @@ log_writer_new(guint32 flags, GlobalConfig *cfg)
   g_static_mutex_init(&self->pending_proto_lock);
   self->pending_proto_cond = g_cond_new();
 
-  log_pipe_add_info((LogPipe *)self, "writer");
+  log_pipe_add_info(&self->super, "writer");
 
   return self;
 }
