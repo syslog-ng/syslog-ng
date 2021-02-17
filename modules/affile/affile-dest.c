@@ -813,5 +813,11 @@ affile_dd_new(gchar *filename, GlobalConfig *cfg)
 void
 affile_dd_global_init(void)
 {
-  register_application_hook(AH_REOPEN_FILES, affile_dd_register_reopen_hook, NULL);
+  static gboolean initialized = FALSE;
+
+  if (!initialized)
+    {
+      register_application_hook(AH_REOPEN_FILES, affile_dd_register_reopen_hook, NULL);
+      initialized = TRUE;
+    }
 }
