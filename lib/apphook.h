@@ -47,6 +47,12 @@ enum
   AH_REOPEN_FILES,     /* reopen files signal from syslog-ng-ctl */
 };
 
+typedef enum
+{
+  AHM_RUN_ONCE,
+  AHM_RUN_REPEAT,
+} ApplicationHookRunMode;
+
 /* state-like hook entry points */
 void app_startup(void);
 void app_post_daemonized(void);
@@ -64,7 +70,9 @@ typedef void (*ApplicationHookFunc)(gint type, gpointer user_data);
 gboolean app_is_starting_up(void);
 gboolean app_is_shutting_down(void);
 
-void register_application_hook(gint type, ApplicationHookFunc func, gpointer user_data);
+void register_application_hook(gint type,
+                               ApplicationHookFunc func, gpointer user_data,
+                               ApplicationHookRunMode run_mode);
 
 void app_thread_start(void);
 void app_thread_stop(void);

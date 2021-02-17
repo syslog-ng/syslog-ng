@@ -201,7 +201,7 @@ afstreams_sd_init(LogPipe *s)
            * not inherited through forks, and syslog-ng forks during
            * startup, but _after_ the configuration was initialized */
 
-          register_application_hook(AH_POST_DAEMONIZED, afstreams_init_door, self);
+          register_application_hook(AH_POST_DAEMONIZED, afstreams_init_door, self, AHM_RUN_ONCE);
         }
       if (!log_pipe_init((LogPipe *) self->reader))
         {

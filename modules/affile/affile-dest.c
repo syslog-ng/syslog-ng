@@ -374,8 +374,6 @@ static void
 affile_dd_register_reopen_hook(gint hook_type, gpointer user_data)
 {
   g_list_foreach(affile_dest_drivers, affile_dd_reopen_all_writers, NULL);
-
-  register_application_hook(AH_REOPEN_FILES, affile_dd_register_reopen_hook, NULL);
 }
 
 void
@@ -817,7 +815,7 @@ affile_dd_global_init(void)
 
   if (!initialized)
     {
-      register_application_hook(AH_REOPEN_FILES, affile_dd_register_reopen_hook, NULL);
+      register_application_hook(AH_REOPEN_FILES, affile_dd_register_reopen_hook, NULL, AHM_RUN_REPEAT);
       initialized = TRUE;
     }
 }

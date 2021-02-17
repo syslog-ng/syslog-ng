@@ -163,7 +163,7 @@ control_connection_reload(ControlConnection *cc, GString *command, gpointer user
 
   args[0] = main_loop;
   args[1] = cc;
-  register_application_hook(AH_CONFIG_CHANGED, _respond_config_reload_status, args);
+  register_application_hook(AH_CONFIG_CHANGED, _respond_config_reload_status, args, AHM_RUN_ONCE);
   main_loop_reload_config_commence(main_loop);
 }
 

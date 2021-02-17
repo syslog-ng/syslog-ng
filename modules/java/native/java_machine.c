@@ -81,7 +81,7 @@ java_machine_ref(void)
        * therefore the reference counter must be incremented before that.
        * But we are in the _ref() function, so the counter must be updated as below.  */
       g_atomic_counter_inc(&global_jvm->ref_cnt);
-      register_application_hook(AH_SHUTDOWN, java_machine_unref_callback, global_jvm);
+      register_application_hook(AH_SHUTDOWN, java_machine_unref_callback, global_jvm, AHM_RUN_ONCE);
     }
   return global_jvm;
 }

@@ -322,7 +322,7 @@ scratch_buffers_unregister_stats(void)
 void
 scratch_buffers_global_init(void)
 {
-  register_application_hook(AH_RUNNING, (ApplicationHookFunc) scratch_buffers_register_stats, NULL);
+  register_application_hook(AH_RUNNING, (ApplicationHookFunc) scratch_buffers_register_stats, NULL, AHM_RUN_ONCE);
 }
 
 void

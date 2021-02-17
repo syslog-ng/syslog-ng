@@ -1883,7 +1883,7 @@ log_msg_global_init(void)
   /* NOTE: we always initialize counters as they are on stats-level(0),
    * however we need to defer that as the stats subsystem may not be
    * operational yet */
-  register_application_hook(AH_RUNNING, (ApplicationHookFunc) log_msg_register_stats, NULL);
+  register_application_hook(AH_RUNNING, (ApplicationHookFunc) log_msg_register_stats, NULL, AHM_RUN_ONCE);
 }
 
 

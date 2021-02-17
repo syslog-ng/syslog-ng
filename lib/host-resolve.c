@@ -27,12 +27,14 @@
 #include "cfg.h"
 #include "tls-support.h"
 #include "compat/socket.h"
+#include "apphook.h"
 
 #include <iv.h>
 
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <string.h>
+#include <resolv.h>
 
 #if !defined(SYSLOG_NG_HAVE_GETADDRINFO) || !defined(SYSLOG_NG_HAVE_GETNAMEINFO)
 G_LOCK_DEFINE_STATIC(resolv_lock);
@@ -469,4 +471,16 @@ host_resolve_options_init(HostResolveOptions *options, HostResolveOptions *globa
 void
 host_resolve_options_destroy(HostResolveOptions *options)
 {
+}
+
+static void
+_reinit_resolver(gint type, gpointer user_data)
+{
+  res_init();
+}
+
+void
+host_resolve_global_init(void)
+{
+  register_application_hook(AH_CONFIG_STOPPED, _reinit_resolver, NULL, AHM_RUN_REPEAT);
 }
