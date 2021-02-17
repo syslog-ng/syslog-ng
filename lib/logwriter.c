@@ -1452,8 +1452,6 @@ log_writer_init(LogPipe *s)
       log_writer_postpone_mark_timer(self);
     }
 
-  log_pipe_add_info(s, "writer");
-
   return TRUE;
 }
 
@@ -1715,6 +1713,8 @@ log_writer_new(guint32 flags, GlobalConfig *cfg)
   g_static_mutex_init(&self->suppress_lock);
   g_static_mutex_init(&self->pending_proto_lock);
   self->pending_proto_cond = g_cond_new();
+
+  log_pipe_add_info((LogPipe *)self, "writer");
 
   return self;
 }
