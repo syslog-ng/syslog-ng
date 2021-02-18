@@ -37,7 +37,7 @@
 
 #define PERSIST_FILE_INITIAL_SIZE 16384
 #define PERSIST_STATE_KEY_BLOCK_SIZE 4096
-#define PERSIST_FILE_WATERMARK 8448
+#define PERSIST_FILE_MAX_ENTRY_SIZE 8448
 
 /*
  * The syslog-ng persistent state is a set of name-value pairs,
@@ -209,7 +209,7 @@ _commit_store(PersistState *self)
 static gboolean
 _check_watermark(PersistState *self)
 {
-  return (self->current_ofs + PERSIST_FILE_WATERMARK < self->current_size);
+  return (self->current_ofs + PERSIST_FILE_MAX_ENTRY_SIZE < self->current_size);
 }
 
 static inline gboolean
@@ -227,6 +227,12 @@ persist_state_run_error_handler(PersistState *self)
 
 /* "value" layer that handles memory block allocation in the file, without working with keys */
 
+static inline void
+_check_max_entry_size(guint32 size)
+{
+  g_assert(size + sizeof(PersistValueHeader) <= PERSIST_FILE_MAX_ENTRY_SIZE);
+}
+
 static PersistEntryHandle
 _alloc_value(PersistState *self, guint32 orig_size, gboolean in_use, guint8 version)
 {
@@ -237,6 +243,8 @@ _alloc_value(PersistState *self, guint32 orig_size, gboolean in_use, guint8 vers
   /* round up size to 8 bytes boundary */
   if ((size & 0x7))
     size = ((size >> 3) + 1) << 3;
+
+  _check_max_entry_size(size);
 
   if (!_check_free_space(self, size))
     {
