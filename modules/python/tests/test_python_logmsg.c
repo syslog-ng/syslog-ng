@@ -280,3 +280,37 @@ Test(python_log_message, test_py_log_message_parse)
   Py_DECREF(py_msg);
   PyGILState_Release(gstate);
 }
+
+Test(python_log_message, test_python_logmessage_keys)
+{
+  const gchar *expected_key = "test_key";
+  LogMessage *msg = log_msg_new_internal(LOG_INFO | LOG_SYSLOG, "test");
+  log_msg_set_value_by_name(msg, expected_key, "value", -1);
+
+  log_msg_get_value_handle("unused_value");
+
+  PyGILState_STATE gstate = PyGILState_Ensure();
+  PyObject *py_msg = py_log_message_new(msg);
+
+  PyObject *keys = _py_invoke_method_by_name(py_msg, "keys", NULL, "PyLogMessageTest", NULL);
+  cr_assert_not_null(keys);
+  cr_assert(PyList_Check(keys));
+
+  for (Py_ssize_t i = 0; i < PyList_Size(keys); ++i)
+    {
+      PyObject *py_key = PyList_GetItem(keys, i);
+      const gchar *key = _py_get_string_as_string(py_key);
+      cr_assert_not_null(key);
+
+      NVHandle handle = log_msg_get_value_handle(key);
+      cr_assert(g_strcmp0(key, expected_key) == 0
+                || log_msg_is_handle_macro(handle)
+                || handle == LM_V_MESSAGE
+                || handle == LM_V_PROGRAM
+                || handle == LM_V_PID, "Unexpected key found in PyLogMessage: %s", key);
+    }
+
+  Py_XDECREF(keys);
+  Py_XDECREF(py_msg);
+  PyGILState_Release(gstate);
+}
