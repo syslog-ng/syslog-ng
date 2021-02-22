@@ -1,0 +1,1 @@
+`kafka-c`: fix a double LogMessage acknowledgement bug, which can cause crash with segmentation fault or exit with sigabrt. The issue affects both flow-controlled and non-flow-controlled log paths and it's triggered in case previously published messages failed to be delivered to Kafka.

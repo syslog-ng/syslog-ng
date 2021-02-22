@@ -282,7 +282,7 @@ _kafka_delivery_report_cb(rd_kafka_t *rk,
     {
       LogThreadedDestWorker *worker = (LogThreadedDestWorker *) self->super.workers[0];
       LogQueue *queue = worker->queue;
-      LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+      LogPathOptions path_options = LOG_PATH_OPTIONS_INIT_NOACK;
 
       msg_debug("kafka: delivery report for message came back with an error, putting it back to our queue",
                 evt_tag_str("topic", self->topic_name->template),
