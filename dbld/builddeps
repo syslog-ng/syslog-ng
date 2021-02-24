@@ -183,14 +183,14 @@ function install_pip_packages {
     for python_executable in ${python_executables}; do
         case "${OS_PLATFORM}" in
             centos-7|ubuntu-xenial)
-                $python_executable -m pip install --upgrade "pip < 21.0"
-                $python_executable -m pip install --upgrade setuptools
-                filter_packages_by_platform $DBLD_DIR/pip_packages.manifest | xargs $python_executable -m pip install --ignore-installed -U
+                $python_executable -m pip install --no-cache-dir --upgrade "pip < 21.0"
+                $python_executable -m pip install --no-cache-dir --upgrade setuptools
+                filter_packages_by_platform $DBLD_DIR/pip_packages.manifest | xargs $python_executable -m pip install --no-cache-dir --ignore-installed -U
                 ;;
             *)
-                $python_executable -m pip install --upgrade pip
-                $python_executable -m pip install --upgrade setuptools
-                filter_packages_by_platform $DBLD_DIR/pip_packages.manifest | xargs $python_executable -m pip install --ignore-installed -U
+                $python_executable -m pip install --no-cache-dir --upgrade pip
+                $python_executable -m pip install --no-cache-dir --upgrade setuptools
+                filter_packages_by_platform $DBLD_DIR/pip_packages.manifest | xargs $python_executable -m pip install --no-cache-dir --ignore-installed -U
                 ;;
         esac
     done
