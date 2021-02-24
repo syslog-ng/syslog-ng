@@ -27,5 +27,6 @@
 #include "driver.h"
 
 LogDriver *afuser_dd_new(gchar *user, GlobalConfig *cfg);
+void afuser_dd_set_time_reopen(LogDriver *s, time_t time_reopen);
 
 #endif
