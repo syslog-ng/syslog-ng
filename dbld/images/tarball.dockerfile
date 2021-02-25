@@ -7,3 +7,4 @@ LABEL COMMIT=${COMMIT}
 
 RUN /dbld/builddeps install_apt_packages
 RUN /dbld/builddeps install_pip_packages
+RUN /dbld/builddeps install_bison_from_source

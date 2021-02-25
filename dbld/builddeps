@@ -223,6 +223,33 @@ function install_perf {
     esac
 }
 
+function install_bison_from_source {
+    BISON_VERSION=3.7.5
+    cd /tmp
+    wget https://ftp.gnu.org/gnu/bison/bison-${BISON_VERSION}.tar.gz
+    tar xvfz bison-${BISON_VERSION}.tar.gz
+    cd bison-${BISON_VERSION}
+    cat <<EOF | patch -p1
+diff --git a/src/tables.c b/src/tables.c
+index b04a496e..60e3ec93 100644
+--- a/src/tables.c
++++ b/src/tables.c
+@@ -186,8 +186,8 @@ pos_set_set (int pos)
+       bitset_resize (pos_set, new_size);
+       // Shift all the bits by DELTA.
+       // FIXME: add bitset_assign, and bitset_shift?
+-      for (int i = new_size - 1; delta <= i ; --i)
+-        if (bitset_test (pos_set, i))
++      for (int i = old_size - 1; i >= -delta ; --i)
++        if (i >= 0 && bitset_test (pos_set, i))
+           bitset_set (pos_set, i + delta);
+         else
+           bitset_reset (pos_set, i + delta);
+EOF
+    ./configure --prefix=/usr/local --disable-nls
+    make && make install
+}
+
 
 # DO NOT REMOVE!
 "$@"
