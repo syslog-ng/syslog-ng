@@ -122,6 +122,7 @@ _publish_message(KafkaDestWorker *self, LogMessage *msg)
                 evt_tag_str("driver", owner->super.super.super.id),
                 log_pipe_location_tag(&owner->super.super.super.super));
 
+      log_msg_unref(msg);
       return FALSE;
     }
 
