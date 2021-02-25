@@ -215,38 +215,19 @@ _collect_nvpair_names_from_logmsg(NVHandle handle, const gchar *name, const gcha
 }
 
 static gboolean
-_is_key_assigned_to_match_handle(const gchar *s)
+_is_macro_name_visible_to_user(const gchar *name, NVHandle handle)
 {
-  char *end = NULL;
-  long val = strtol(s, &end, 10);
-
-  if (*end == '\0' && (val >= 0 && val <= 255))
-    return TRUE;
-
-  return FALSE;
-}
-
-static gboolean
-_is_macro_name_visible_to_user(LogMessage *logmsg, const gchar *name)
-{
-  gssize value_len;
-
-  return (!_is_key_blacklisted(name) &&
-          (!_is_key_assigned_to_match_handle(name) ||
-           (_is_key_assigned_to_match_handle(name) &&
-            log_msg_get_value_by_name(logmsg, name, &value_len) != NULL
-            && value_len > 0)));
+  return log_msg_is_handle_macro(handle) && !_is_key_blacklisted(name);
 }
 
 static void
 _collect_macro_names(gpointer key, gpointer value, gpointer user_data)
 {
-  gpointer *args = (gpointer *)user_data;
-  LogMessage *logmsg = (LogMessage *)args[0];
-  PyObject *list = (PyObject *)args[1];
   const gchar *name = (const gchar *)key;
+  NVHandle handle = GPOINTER_TO_UINT(value);
+  PyObject *list = (PyObject *)user_data;
 
-  if (_is_macro_name_visible_to_user(logmsg, name))
+  if (_is_macro_name_visible_to_user(name, handle))
     {
       PyObject *py_name = PyBytes_FromString(name);
       PyList_Append(list, py_name);
@@ -261,8 +242,7 @@ _logmessage_get_keys_method(PyLogMessage *self)
   LogMessage *msg = self->msg;
 
   log_msg_values_foreach(msg, _collect_nvpair_names_from_logmsg, (gpointer) keys);
-  gpointer registry_foreach_args[] = { msg, keys };
-  log_msg_registry_foreach(_collect_macro_names, (gpointer) registry_foreach_args);
+  log_msg_registry_foreach(_collect_macro_names, keys);
 
   return keys;
 }
