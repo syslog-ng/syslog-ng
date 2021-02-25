@@ -164,7 +164,7 @@ system_sysblock_add_freebsd_klog(GString *sysblock, const gchar *release)
       strncmp(release, "9.0", 3) == 0)
     system_sysblock_add_file(sysblock, "/dev/klog", 1, "kernel", "no-parse", NULL, FALSE);
   else
-    system_sysblock_add_file(sysblock, "/dev/klog", 0, "kernel", "no-parse", NULL, FALSE);
+    system_sysblock_add_file(sysblock, "/dev/klog", 0, "kernel", NULL, NULL, FALSE);
 }
 
 static gboolean
