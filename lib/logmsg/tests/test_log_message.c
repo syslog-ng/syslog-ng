@@ -80,6 +80,7 @@ static void
 assert_log_msg_clear_clears_all_properties(LogMessage *message, NVHandle nv_handle,
                                            NVHandle sd_handle, const gchar *tag_name)
 {
+  message->flags |= LF_LOCAL + LF_UTF8 + LF_INTERNAL + LF_MARK;
   log_msg_clear(message);
 
   cr_assert_str_empty(log_msg_get_value(message, nv_handle, NULL),
@@ -91,6 +92,10 @@ assert_log_msg_clear_clears_all_properties(LogMessage *message, NVHandle nv_hand
   cr_assert_null(message->saddr, "Message still contains an saddr after log_msg_clear");
   cr_assert_not(log_msg_is_tag_by_name(message, tag_name),
                 "Message still contains a valid tag after log_msg_clear");
+  cr_assert((message->flags & LF_LOCAL) == 0, "Message still contains the 'local' flag after log_msg_clear");
+  cr_assert((message->flags & LF_UTF8) == 0, "Message still contains the 'utf8' flag after log_msg_clear");
+  cr_assert((message->flags & LF_MARK) == 0, "Message still contains the 'mark' flag after log_msg_clear");
+  cr_assert((message->flags & LF_INTERNAL) == 0, "Message still contains the 'internal' flag after log_msg_clear");
 }
 
 static void

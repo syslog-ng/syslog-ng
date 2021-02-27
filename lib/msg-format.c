@@ -58,6 +58,7 @@ msg_format_inject_parse_error(LogMessage *msg, const guchar *data, gsize length,
   g_string_printf(buf, "%d", (int) getpid());
   log_msg_set_value(msg, LM_V_PID, buf->str, buf->len);
 
+  msg->flags |= LF_LOCAL;
   msg->pri = LOG_SYSLOG | LOG_ERR;
 }
 

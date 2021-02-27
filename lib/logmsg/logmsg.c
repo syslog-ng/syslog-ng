@@ -1194,7 +1194,8 @@ log_msg_clear(LogMessage *self)
     g_sockaddr_unref(self->daddr);
   self->daddr = NULL;
 
-  self->flags |= LF_STATE_OWN_MASK;
+  /* clear "local", "utf8", "internal", "mark" and similar flags, we start afresh */
+  self->flags = LF_STATE_OWN_MASK;
 }
 
 static inline LogMessage *
