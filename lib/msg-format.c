@@ -27,6 +27,7 @@
 #include "plugin.h"
 #include "plugin-types.h"
 #include "find-crlf.h"
+#include "scratch-buffers.h"
 
 static gsize
 _rstripped_message_length(const guchar *data, gsize length)
@@ -39,20 +40,23 @@ _rstripped_message_length(const guchar *data, gsize length)
 static void
 msg_format_inject_parse_error(LogMessage *msg, const guchar *data, gsize length, gint problem_position)
 {
-  gchar buf[2048];
+  GString *buf = scratch_buffers_alloc();
 
   log_msg_clear(msg);
 
   msg->timestamps[LM_TS_STAMP] = msg->timestamps[LM_TS_RECVD];
   log_msg_set_value(msg, LM_V_HOST, "", 0);
 
-  g_snprintf(buf, sizeof(buf), "Error processing log message: %.*s>@<%.*s", (gint) problem_position-1,
-             data, (gint) (length-problem_position+1), data+problem_position-1);
+  if (problem_position > 0)
+    g_string_printf(buf, "Error processing log message: %.*s>@<%.*s", (gint) problem_position-1,
+                    data, (gint) (length-problem_position+1), data+problem_position-1);
+  else
+    g_string_printf(buf, "Error processing log message: %.*s", (gint) length, data);
 
-  log_msg_set_value(msg, LM_V_MESSAGE, buf, -1);
+  log_msg_set_value(msg, LM_V_MESSAGE, buf->str, buf->len);
   log_msg_set_value(msg, LM_V_PROGRAM, "syslog-ng", 9);
-  g_snprintf(buf, sizeof(buf), "%d", (int) getpid());
-  log_msg_set_value(msg, LM_V_PID, buf, -1);
+  g_string_printf(buf, "%d", (int) getpid());
+  log_msg_set_value(msg, LM_V_PID, buf->str, buf->len);
 
   msg->pri = LOG_SYSLOG | LOG_ERR;
 }
