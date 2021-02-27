@@ -790,8 +790,7 @@ log_msg_parse_legacy_header(LogMessage *self, const guchar **data, gint *length,
       /* Different format */
 
       /* A kernel message? Use 'kernel' as the program name. */
-      if ((self->flags & LF_INTERNAL) == 0 && ((self->pri & LOG_FACMASK) == LOG_KERN &&
-                                               (self->flags & LF_LOCAL) != 0))
+      if (((self->pri & LOG_FACMASK) == LOG_KERN && (parse_options->flags & LP_LOCAL) != 0))
         {
           log_msg_set_value(self, LM_V_PROGRAM, "kernel", 6);
         }
