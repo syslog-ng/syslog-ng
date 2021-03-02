@@ -1,69 +1,6 @@
-
-%bcond_with python3
-%bcond_without python2
-
-%if 0%{with python3}
-%global with_python2 0
-%endif
-
-%if 0%{with python2}
-%global with_python3 0
-%endif
-
-%if 0%{?rhel} >= 7 || 0%{?fedora} >= 28
-%bcond_without sql
-%bcond_without mongodb
-%bcond_without systemd
-%bcond_without redis
-%bcond_without riemann
-%bcond_without maxminddb
-%bcond_without amqp
-%bcond_without java
-%bcond_without kafka
-%bcond_without afsnmp
-
-%if 0%{with python2}
-%global		python_devel python-devel
-%global         py_ver  %{python_version}
-%endif
-
-%if 0%{with python3}
-
-%if 0%{?rhel} == 7
-%global		python_devel python36-devel
-%global         py_ver  3.6
-%else
-%global		python_devel python3-devel
-%global         py_ver  %{python3_version}
-%endif
-
-%endif
-
-%else
-
-%if 0%{rhel} == 6
-%bcond_with sql
-%bcond_with mongodb
-%bcond_with systemd
-%bcond_with redis
-%bcond_with riemann
-%bcond_with maxminddb
-%bcond_with amqp
-%bcond_without java
-%bcond_with kafka
-%bcond_without afsnmp
-%global        python_devel python-devel
-%global        py_ver  2.6
-%else
-%{error:Unsupported distro, we currently only try to build on RHEL >= 7 or Fedora >= 30}
-%endif
-
-%endif
-%global ivykis_ver 0.36.1
-
 Name: syslog-ng
 Version: 3.30.1
-Release: 1%{?dist}
+Release: 2%{?dist}
 Summary: Next-generation syslog server
 
 Group: System Environment/Daemons
@@ -77,9 +14,38 @@ Source3: syslog-ng.service
 # under a new name
 Source4: syslog-ng.logrotate7
 
+
+%bcond_without sql
+%bcond_without mongodb
+%bcond_without systemd
+%bcond_without redis
+%bcond_without riemann
+%bcond_without maxminddb
+%bcond_without amqp
+%bcond_without kafka
+%bcond_without afsnmp
+
+
+%if 0%{?rhel} == 7
+%global		python_devel python36-devel
+%global         py_ver  3.6
+%else
+%global		python_devel python3-devel
+%global         py_ver  %{python3_version}
+%endif
+
+%if 0%{?rhel} >= 7 || 0%{?fedora} <= 32
+%bcond_without java
+%else
+%bcond_with java
+%endif
+
+%global ivykis_ver 0.36.1
+
 BuildRequires: pkgconfig
 BuildRequires: libtool
-BuildRequires: bison, flex
+BuildRequires: bison
+BuildRequires: flex
 BuildRequires: libxslt
 BuildRequires: glib2-devel
 BuildRequires: ivykis-devel
@@ -92,7 +58,6 @@ BuildRequires: pcre-devel
 BuildRequires: libuuid-devel
 BuildRequires: libesmtp-devel
 BuildRequires: libcurl-devel
-BuildRequires: tzdata
 
 BuildRequires: %{python_devel}
 
@@ -126,15 +91,7 @@ BuildRequires: cyrus-sasl-devel
 %endif
 
 %if %{with java}
-# java dependencies
 BuildRequires: java-devel
-
-%if 0%{?_dbld} != 1
-# within dbld these dependencies are already installed from upstream (e.g. not via RPMs)
-BuildRequires: gradle
-BuildRequires: syslog-ng-java-deps
-%endif
-
 %endif
 
 %if %{with kafka}
@@ -146,8 +103,9 @@ BuildRequires: zlib-devel
 BuildRequires: net-snmp-devel
 %endif
 
-%if 0%{?rhel} == 7 || 0%{?rhel} == 6
+%if 0%{?rhel} == 7
 BuildRequires: tcp_wrappers-devel
+Obsoletes: syslog-ng-json
 %endif
 
 Requires: logrotate
@@ -161,7 +119,6 @@ Obsoletes: syslog-ng-vim < 2.0.8-1
 # Fedora 17’s unified filesystem (/usr-move)
 Conflicts: filesystem < 3
 
-Obsoletes: syslog-ng-json
 %if 0%{?rhel} != 7
 Recommends: syslog-ng-logrotate
 %endif
@@ -236,7 +193,8 @@ Group:          System/Libraries
 Requires:       %{name} = %{version}
 
 %description java
-This package provides java destination support for syslog-ng.
+This package provides java destination support for syslog-ng. It
+only contains the java bindings, no drivers.
 
 
 %package geoip
@@ -333,7 +291,7 @@ touch -r lib/cfg-grammar.y lib/merge-grammar.py
     --with-module-dir=%{_libdir}/%{name} \
     --with-systemdsystemunitdir=%{_unitdir} \
     --with-ivykis=system \
-%if 0%{?rhel} == 7 || 0%{?rhel} == 6
+%if 0%{?rhel} == 7
     --enable-tcp-wrapper \
 %else
     --disable-tcp-wrapper \
@@ -350,6 +308,7 @@ touch -r lib/cfg-grammar.y lib/merge-grammar.py
     --disable-static \
     --enable-dynamic-linking \
     --enable-python \
+    --disable-java-modules \
     --with-python=%{py_ver} \
     %{?with_kafka:--enable-kafka} \
     %{?with_afsnmp:--enable-afsnmp} %{!?with_afsnmp:--disable-afsnmp} \
@@ -638,21 +597,21 @@ fi
 
 
 %changelog
-* Thu Nov 12 2020 github-actions <github-actions@github.com> - 3.30.1-1
-- updated to 3.30.1
+* Wed Feb  3 2021 Peter Czanik <peter@czanik.hu> - 3.30.1-2
+- update to 3.30.1
+- remove Python 2 support
+- remove CentOS 6 support
 
-* Fri Aug 28 2020 Laszlo Budai <laszlo.budai@outlook.com> - 3.29.1-1
-- updated to 3.29.1
+* Mon Aug 17 2020 Peter Czanik <peter@czanik.hu> - 3.28.1-2
+- keep obsolate Obsolates about syslog-ng-json only for EL7
 
-* Tue Jun 16 2020 Peter Czanik <peter@czanik.hu> - 3.28.1-2
-- rename logrotate file from syslog to syslog-ng on Fedora, move it
-  to subpackage on Fedora & RHEL 8 to fix: rhbz#1802165
-
-* Tue Jun 16 2020 Laszlo Varady <laszlo.varady@balabit.com> - 3.28.1-1
+* Mon Jun 22 2020 Peter Czanik <peter@czanik.hu> - 3.28.1-1
 - update to 3.28.1
+- disable compiling java modules
 
-* Tue Apr 28 2020 Antal Nemes <antal.nemes@quest.com> - 3.27.1-1
-- update to 3.27.1
+* Tue Jun 16 2020 Peter Czanik <peter@czanik.hu> - 3.27.1-1
+- raneme logrotate file from syslog to syslog-ng on Fedora, move it
+  to subpackage on Fedora & RHEL 8 to fix: rhbz#1802165
 
 * Mon Mar  2 2020 Laszlo Budai <laszlo.budai@outlook.com> - 3.26.1-1
 - update to 3.26.1
