@@ -1,5 +1,5 @@
-FROM fedora:32
-LABEL maintainer="Andras Mitzki <andras.mitzki@balabit.com>, Laszlo Szemere <laszlo.szemere@balabit.com>, Balazs Scheidler <balazs.scheidler@oneidentity.com>"
+FROM fedora:33
+LABEL maintainer="Andras Mitzki <andras.mitzki@balabit.com>, Laszlo Szemere <laszlo.szemere@balabit.com>, Balazs Scheidler <bazsi77@gmail.com>"
 
 ARG OS_PLATFORM
 ARG COMMIT
