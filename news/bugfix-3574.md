@@ -1,1 +1,0 @@
-`affile`: Fix improper initialization in affile and LogWriter to avoid memory leak when reloading
