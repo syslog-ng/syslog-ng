@@ -34,7 +34,7 @@ jobs:
     needs: tarball
     strategy:
       matrix:
-        distro: [centos-7, ubuntu-focal, fedora-33]
+        distro: [centos-7, ubuntu-focal, fedora-33, debian-testing]
       fail-fast: false
 
     steps:
