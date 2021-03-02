@@ -1,5 +1,5 @@
 Name: syslog-ng
-Version: 3.30.1
+Version: 3.31.1
 Release: 2%{?dist}
 Summary: Next-generation syslog server
 
@@ -597,6 +597,9 @@ fi
 
 
 %changelog
+* Tue Mar  2 2021 github-actions <github-actions@github.com> - 3.31.1-1
+- updated to 3.31.1
+
 * Wed Feb  3 2021 Peter Czanik <peter@czanik.hu> - 3.30.1-2
 - update to 3.30.1
 - remove Python 2 support
