@@ -1,174 +1,134 @@
-3.30.1
+3.31.1
 ======
 
 ## Highlights
 
- * filter template function
- * support [proxy-protocol](https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt)
+ * fortigate-parser(): new parser to parse fortigate logs
+
+   Example:
+   ```
+   log {
+     source { network(transport("udp") flags(no-parse)); };
+     parser { fortigate-parser(); };
+     destination { };
+   };
+   ```
+
+   An adapter to automatically recognize fortigate logs in app-parser() has
+   also been added.
+   ([#3536](https://github.com/syslog-ng/syslog-ng/pull/3536))
+
+ * `patterndb`: Added `OPTIONALSET` parser. It works the same as `SET`, but continues, even if none of the
+   characters is found.
+   ([#3540](https://github.com/syslog-ng/syslog-ng/pull/3540))
 
 ## Features
 
- * `kafka` (C implementation):
-    * Added template support to `topic()`.
-    * Added `fallback-topic()` option, which will be used, if the templated `topic()` yields an invalid topic name.
-   ([#3372](https://github.com/syslog-ng/syslog-ng/pull/3372))
- * transport: add proxy-protocol support
+ * `syslog-parser()`: add no-header flag to tell syslog-ng to parse only the
+   PRI field of an incoming message, everything else is just put into $MSG.
+   ([#3538](https://github.com/syslog-ng/syslog-ng/pull/3538))
+ * `set-pri()`: this new rewrite operation allows you to change the PRI value
+   of a message based on the string directly parsed out of a syslog header.
+   ([#3546](https://github.com/syslog-ng/syslog-ng/pull/3546))
+ * telegram: option to send silent message
    
-   http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt
-   
-   <details>
-     <summary>Example config, click to expand!</summary>
-   
-   ```
-   @version: 3.29
-   
-   source s_tcp_pp {
-       network(
-           port(7777)
-   #        transport("proxied-tcp")
-           transport("proxied-tls")
-           tls(
-                key-file("/openssl/certs/certs/server/server.rsa")
-                cert-file("openssl/certs/certs/server/server.crt")
-                ca-dir("/openssl/certs/certs/CA")
-   #             peer-verify("optional-untrusted")
-                peer-verify("required-trusted")
-            )
-       );
-   };
-   
-   destination d_file {
-       file("/var/log/pp.log" template("$(format-json --scope nv-pairs)\n"));
-   };
-   
-   log {
-       source(s_tcp_pp);
-       destination(d_file);
-   };
+   Example:
    
    ```
-   
-   </details>
-   ([#3437](https://github.com/syslog-ng/syslog-ng/pull/3437))
- * `filter`: new template function
-   
-   The new introduced `filter` template function will allow filtering lists based on a filter expression.
-   
-   For example this snippet removes odd numbers
+   destination { telegram(bot-id(...) chat-id(...) disable_notification(true)); };
    ```
-   log {
-     source { example-msg-generator(num(1) values(INPUT => "0,1,2,3")); };
-     destination {
-        file("/dev/stdout"
-              template("$(filter ('$(% $_ 2)' eq '0') $INPUT)\n)")
-        );
-     };
-   };
-   ```
-   ([#3426](https://github.com/syslog-ng/syslog-ng/pull/3426))
- * file, network, program destinations: : new truncate_size option introduced to truncate an output message to a specified max size. default value is -1 (disabled).
-   
-   ```
-   network("127.0.0.1" truncate_size(100));
-   ```
-   
-   new stats counters:
-   ```
-   dst.network;d_local#0;udp,127.0.0.1:1111;a;truncated_count;1
-   dst.network;d_local#0;udp,127.0.0.1:1111;a;truncated_bytes;1
-   ```
-   ([#3474](https://github.com/syslog-ng/syslog-ng/pull/3474))
- * network: add FreeBSD support for the `so_reuseport(yes)` the same as in linux `SO_REUSEPORT` (FreeBSD uses `SO_REUSEPORT_LB` flag).
-   ([#3438](https://github.com/syslog-ng/syslog-ng/pull/3438))
- * date-parser: %z accepts local timezone std format as well
-   ([#3453](https://github.com/syslog-ng/syslog-ng/pull/3453))
- * `syslog-format`: accepting longer sdata keys
-   
-   Triggered by https://github.com/syslog-ng/syslog-ng/issues/3197
-   At the end of the discussion in the mentioned issue, we decided
-   to change the parser and accept longer than 32 character ID's.
-   ([#3244](https://github.com/syslog-ng/syslog-ng/pull/3244))
- * systemd-journal: add namespace() option
-   This option accepts a string which is identical to the `--namespace` option of journalctl.
-   For systems defining this option with a `systemd` version older than `v245` a warning is issued.
-   ([#3358](https://github.com/syslog-ng/syslog-ng/pull/3358))
+   ([#3558](https://github.com/syslog-ng/syslog-ng/pull/3558))
+ * `app-parser()`: added automatic classification & parsing for project Lumberjack/Mitre CEE formatted logs
+   ([#3569](https://github.com/syslog-ng/syslog-ng/pull/3569))
+ * diskq: if the dir() path provided by the user does not exists, syslog-ng creates the path with the same permission as the running instance
+   ([#3550](https://github.com/syslog-ng/syslog-ng/pull/3550))
 
 ## Bugfixes
 
- * date-parse: %Z should parse the same timezones as %z not just local and gmt
-   ([#3453](https://github.com/syslog-ng/syslog-ng/pull/3453))
- * python: printing the exception instead of None (if compiled with clang)
-   ([#3405](https://github.com/syslog-ng/syslog-ng/pull/3405))
- * network/udp: message was lost (not sent) if it was too large, and a time reopen amount of time needed to expire to send the next message lowering the thoughtput. now it is truncated at 65507.
-   ([#3474](https://github.com/syslog-ng/syslog-ng/pull/3474))
- * tlscontext: support IPv6 X509v3 Subject Alternative Name
+ * `network()`, `syslog()` destinations: fix reconnection timer when DNS lookups are slow
    
-   Fixes #3465
-   ([#3466](https://github.com/syslog-ng/syslog-ng/pull/3466))
- * `map`: pass `$_` to `if` correctly.
+   After a long-lasting DNS query, syslog-ng did not wait the specified time (`time_reopen()`)
+   before reconnecting to a destination. This has been fixed.
+   ([#3526](https://github.com/syslog-ng/syslog-ng/pull/3526))
+ * cmake: minor fixes
+   ([#3523](https://github.com/syslog-ng/syslog-ng/pull/3523))
+ * `stats-level()`: fix processing the changes in the stats-level() global
+   option: changes in stats-level() were not reflected in syslog
+   facility/severity related and message tag related counters after first
+   configuration reload. These counters continued to operate according to the
+   value of stats-level() at the first reload.
+   ([#3561](https://github.com/syslog-ng/syslog-ng/pull/3561))
+ * `date-parser()`: fix hour-only timezone parsing
    
-   Prior this patchset, `if` did not receive `$_` correctly.
+   If the timestamp contains a short timezone offset (e.g. hours only), the
+   recent change in strptime() introduces an error, it interprets those
+   numbers as minutes instead of hours. For example: Jan 16 2019 18:23:12 +05
+   ([#3555](https://github.com/syslog-ng/syslog-ng/pull/3555))
+ * `loggen`: fix undefined timeout while connecting to network sources (`glib < 2.32`)
    
-   After this change, these configurations will work:
+   When compiling syslog-ng with old glib versions (< 2.32), `loggen` could fail due a timeout bug.
+   This has been fixed.
+   ([#3504](https://github.com/syslog-ng/syslog-ng/pull/3504))
+ * `grouping-by()`: fix deadlock when context expires
    
-   ```
-   log {
-     source { example-msg-generator(num(1) values(INPUT => "0,1,2,3")); };
-     destination {
-        file("/dev/stdout"
-              template("$(map $(if ('$(% $_ 2)' eq '0') 'even' 'odd') $INPUT)'\n)")
-        );
-     };
-   };
-   ```
-   ([#3426](https://github.com/syslog-ng/syslog-ng/pull/3426))
- * systemd-journal: add namespace to the persist name
-   ([#3407](https://github.com/syslog-ng/syslog-ng/pull/3407))
- * `syslog-ng`: fixed numerous spelling mistakes in messages generated by syslog-ng
-   ([#3398](https://github.com/syslog-ng/syslog-ng/pull/3398))
- * network: fix TLS certificate hostname verification when using `failover()` servers
+   In certain cases, the `grouping-by()` parser could get stuck when a message
+   context expired, causing a deadlock in syslog-ng.
    
-   For TLS certificate hostname verification, the certificate's hostname needs to be compared to the configured hostname
-   of the primary and each failover server. syslog-ng used always the primary server's name incorrectly.
-   ([#3447](https://github.com/syslog-ng/syslog-ng/pull/3447))
- * afsocket: syslog-ng fails to bind() after config revert
+   This has been fixed.
+   ([#3515](https://github.com/syslog-ng/syslog-ng/pull/3515))
+ * `date-parser`: Fixed a crash, which occured sometimes when `%z` was used.
+   ([#3553](https://github.com/syslog-ng/syslog-ng/pull/3553))
+ * `date-parser`: `%z`. We no longer ignore daylight saving time when calculating the GMT offset.
+   ([#3553](https://github.com/syslog-ng/syslog-ng/pull/3553))
+ * `kafka-c`: fix a double LogMessage acknowledgement bug, which can cause crash with segmentation fault or exit with sigabrt. The issue affects both flow-controlled and non-flow-controlled log paths and it's triggered in case previously published messages failed to be delivered to Kafka.
+   ([#3583](https://github.com/syslog-ng/syslog-ng/pull/3583))
+ * `python destination`: Fixed a rare crash during reload.
+   ([#3568](https://github.com/syslog-ng/syslog-ng/pull/3568))
+ * `date-parser()`: fix non-mandatory parsing of timezone name
    
-   When having a program source or destination and a network destination in the
-   config, if we reload with an invalid config, syslog-ng crashes, as it cannot init
-   the old network source, because its address is in use.
-   ([#3416](https://github.com/syslog-ng/syslog-ng/pull/3416))
- * syslog-ng-ctl: when syslog-ng gets stuck on executing a heavy stats-ctl command, should be
-   able to do a graceful shutdown when it is requested.
-   ([#3349](https://github.com/syslog-ng/syslog-ng/pull/3349))
- * json-parser: fix parsing 64 bit numbers (currently 32 bit was a limit)
-   ([#3403](https://github.com/syslog-ng/syslog-ng/pull/3403))
- * usertty(): on each tty open error an error mesage and a 10 minutes long disabling of the usertty() destination has been added.
-   Until now, the usertty() destination were only disabled for blocking write() calls.
-   ([#3473](https://github.com/syslog-ng/syslog-ng/pull/3473))
+   When %Z is used, the presence of the timezone qualifier is not mandatory,
+   so don't fail that case.
+   ([#3555](https://github.com/syslog-ng/syslog-ng/pull/3555))
+ * `wildcard-file()`: fix infrequent crash when file renamed/recreated
+   
+   The wildcard-file source crashed when a file being processed was replaced by
+   a new one on the same path (renamed, deleted+recreated, rotated, etc.).
+   ([#3513](https://github.com/syslog-ng/syslog-ng/pull/3513))
+ * Remove the no-parse flag in system() source from FreeBSD kernel 
+   messages, so the message header is no more part of the message.
+   ([#3586](https://github.com/syslog-ng/syslog-ng/pull/3586))
+ * Fix abort on macOS Big Sur
+   
+   A basic subset of syslog-ng's functionality now works on the latest macOS version.
+   ([#3522](https://github.com/syslog-ng/syslog-ng/pull/3522))
+ * `affile`: Fix improper initialization in affile and LogWriter to avoid memory leak when reloading
+   ([#3574](https://github.com/syslog-ng/syslog-ng/pull/3574))
+ * `udp destination`: Fixed a bug, where the packet's checksum was not calculated,
+   when `spoof-source(yes)` and `ip-protocol(6)` were set.
+   ([#3528](https://github.com/syslog-ng/syslog-ng/pull/3528))
+ * `python`: fix LogMessage.keys() listing non-existenting keys and duplicates
+   ([#3557](https://github.com/syslog-ng/syslog-ng/pull/3557))
+
+## Packaging
+
+ * Simplify spec file by removing obsolete technologies:
+   - remove RHEL 6 support
+   - remove Python 2 support
+   - keep Java support, but remove Java-based drivers (HDFS, etc.)
+   ([#3587](https://github.com/syslog-ng/syslog-ng/pull/3587))
+ * `libnet`: Minimal libnet version is now 1.1.6.
+   ([#3528](https://github.com/syslog-ng/syslog-ng/pull/3528))
+ * configure: added new --enable-manpages-install option along with the
+   existing --enable-manpages. The new option would install pre-existing
+   manpages even without the DocBook tools installed.
+   ([#3493](https://github.com/syslog-ng/syslog-ng/pull/3493))
 
 ## Notes to developers
 
- * Proxy protocol support added to loggen.
-   
-   Four new options added to loggen to suppport the proxy protocol:
-   * --proxied : Generate PROXY protocol v1 header
-   * --proxy-src-ip : Set the source IP for the PROXY protocol v1 header. If not specified a random IP address generated (192.168.1.X).
-   * --proxy-dst-ip : Set the destination IP for the PROXY protocol v1 header. If not specified a random IP address generated (192.168.1.X).
-   * --proxy-src-port : Set the source port for the PROXY protocol v1 header. If not specified a random port generated in the range 5000-10000.
-   * --proxy-dst-port : Set the destination port for the PROXY protocol v1 header. If not specified the port number 514 will be used.
-   ([#3462](https://github.com/syslog-ng/syslog-ng/pull/3462))
- * `bison`: Minimum required version is now 3.4.2.
-   You still only need `bison`, if you are building from git source or changing the grammar in the released source tarball.
-   ([#2526](https://github.com/syslog-ng/syslog-ng/pull/2526))
- * Template evaluation related function signatures changed.
-   
-   A new structure `LogTemplateEvalOptions` is introduced to group parameters together.
-   ([#3426](https://github.com/syslog-ng/syslog-ng/pull/3426))
-
-## Other changes
-
- * json-parser: change every per message logs that was higher than debug to debug
-   ([#3401](https://github.com/syslog-ng/syslog-ng/pull/3401))
+ * `apphook`: the concept of hook run modes were introduced, adding support for
+   two modes: AHM_RUN_ONCE (the original behavior) and AHM_RUN_REPEAT (the new
+   behavior with the hook repeatedly called after registration).
+   ([#3561](https://github.com/syslog-ng/syslog-ng/pull/3561))
 
 ## Credits
 
@@ -181,7 +141,7 @@ of syslog-ng, contribute.
 
 We would like to thank the following people for their contribution:
 
-Andras Mitzki, Antal Nemes, Attila Szakacs, Balazs Scheidler,
-Boris Korzun, Gabor Nagy, Laszlo Budai, Laszlo Szemere, László Várady,
-Norbert Takacs, Peter Kokai, Viktor Juhasz, Vivin Peris, Zoltan Pallagi,
-bjoe2k4
+0140454, Andras Mitzki, Antal Nemes, Attila Szakacs, Balazs Scheidler,
+egorbeliy, Gabor Nagy, Laszlo Budai, Laszlo Szemere, László Várady,
+Michael Ducharme, Norbert Takacs, Peter Czanik, Peter Kokai, Pratik raj,
+Ryan Faircloth, Zoltan Pallagi

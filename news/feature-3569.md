@@ -1,1 +1,0 @@
-`app-parser()`: added automatic classification & parsing for project Lumberjack/Mitre CEE formatted logs
