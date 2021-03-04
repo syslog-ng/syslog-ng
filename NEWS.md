@@ -139,6 +139,6 @@ of syslog-ng, contribute.
 We would like to thank the following people for their contribution:
 
 0140454, Andras Mitzki, Antal Nemes, Attila Szakacs, Balazs Scheidler,
-Gabor Nagy, Laszlo Budai, Laszlo Szemere, László Várady,
-Norbert Takacs, Peter Czanik (CzP), Peter Kokai, Pratik raj,
-Zoltan Pallagi, github-actions
+egorbeliy, Gabor Nagy, Laszlo Budai, Laszlo Szemere, László Várady,
+Michael Ducharme, Norbert Takacs, Peter Czanik, Peter Kokai, Pratik raj,
+Ryan Faircloth, Zoltan Pallagi
