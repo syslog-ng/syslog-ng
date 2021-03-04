@@ -1,0 +1,7 @@
+# The directory is kept due to docker creating the directory
+# if not exists with root permission. If the directory exists,
+# docker will not change the permission.
+# Ignore everything in this directory
+*
+# Except this file
+!.gitignore
