@@ -3,30 +3,33 @@
 
 ## Highlights
 
-<Fill this block manually from the blocks below>
+ * fortigate-parser(): new parser to parse fortigate logs
 
-## Features
+   Example:
+   ```
+   log {
+     source { network(transport("udp") flags(no-parse)); };
+     parser { fortigate-parser(); };
+     destination { };
+   };
+   ```
+
+   An adapter to automatically recognize fortigate logs in app-parser() has
+   also been added.
+   ([#3536](https://github.com/syslog-ng/syslog-ng/pull/3536))
 
  * `patterndb`: Added `OPTIONALSET` parser. It works the same as `SET`, but continues, even if none of the
    characters is found.
    ([#3540](https://github.com/syslog-ng/syslog-ng/pull/3540))
+
+## Features
+
  * `syslog-parser()`: add no-header flag to tell syslog-ng to parse only the
    PRI field of an incoming message, everything else is just put into $MSG.
    ([#3538](https://github.com/syslog-ng/syslog-ng/pull/3538))
  * `set-pri()`: this new rewrite operation allows you to change the PRI value
    of a message based on the string directly parsed out of a syslog header.
    ([#3546](https://github.com/syslog-ng/syslog-ng/pull/3546))
- * fortigate-parser(): add a new parser to parse fortigate logs
-   
-   log {
-     source { network(transport("udp") flags(no-parse)); };
-     parser { fortigate-parser(); };
-     destination { };
-   };
-   
-   An adapter to automatically recognize fortigate logs in app-parser() has
-   also been added.
-   ([#3536](https://github.com/syslog-ng/syslog-ng/pull/3536))
  * telegram: option to send silent message
    
    Example:
