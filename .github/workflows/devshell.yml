@@ -80,8 +80,9 @@ jobs:
         run: make V=1 -j $(nproc)
 
       - name: make check
+        id: make_check
         working-directory: ./build
-        run: make V=1 check
+        run: make V=1 check || (cat test-suite.log && false)
 
       - name: make install
         working-directory: ./build
@@ -97,6 +98,13 @@ jobs:
       - name: make func-test
         working-directory: ./build
         run: make VERBOSE=1 func-test
+
+      - name: "Artifact: test-suite.log"
+        uses: actions/upload-artifact@v2
+        if: always() && steps.make_check.outcome == 'failure'
+        with:
+          name: test-suite-${{ matrix.build-tool }}-${{ matrix.cc }}-${{ matrix.python }}
+          path: ${{ github.workspace }}/build/test-suite.log
 
       - name: "Prepare artifact: light-reports"
         id: prepare-light-reports
