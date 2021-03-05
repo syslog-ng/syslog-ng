@@ -97,7 +97,6 @@ struct _AFFileDestWriter
   LogWriter *writer;
   time_t last_msg_stamp;
   time_t last_open_stamp;
-  time_t time_reopen;
   gboolean reopen_pending, queue_pending;
 };
 
@@ -137,10 +136,7 @@ affile_dw_reopen(AFFileDestWriter *self)
 {
   int fd;
   struct stat st;
-  GlobalConfig *cfg = log_pipe_get_config(&self->super);
   LogProtoClient *proto = NULL;
-
-  self->time_reopen = cfg->time_reopen;
 
   msg_verbose("Initializing destination file writer",
               evt_tag_str("template", self->owner->filename_template->template),
@@ -262,7 +258,7 @@ affile_dw_queue(LogPipe *s, LogMessage *lm, const LogPathOptions *path_options)
 
   if (!log_writer_opened(self->writer) &&
       !self->reopen_pending &&
-      (self->last_open_stamp < self->last_msg_stamp - self->time_reopen))
+      (self->last_open_stamp < self->last_msg_stamp - self->owner->writer_options.time_reopen))
     {
       self->reopen_pending = TRUE;
       /* if the file couldn't be opened, try it again every time_reopen seconds */
@@ -342,7 +338,6 @@ affile_dw_new(const gchar *filename, GlobalConfig *cfg)
   self->super.free_fn = affile_dw_free;
   self->super.queue = affile_dw_queue;
   self->super.notify = affile_dw_notify;
-  self->time_reopen = 60;
 
   /* we have to take care about freeing filename later.
      This avoids a move of the filename. */
