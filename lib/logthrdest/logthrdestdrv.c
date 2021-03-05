@@ -69,6 +69,14 @@ log_threaded_dest_driver_set_batch_timeout(LogDriver *s, gint batch_timeout)
   self->batch_timeout = batch_timeout;
 }
 
+void
+log_threaded_dest_driver_set_time_reopen(LogDriver *s, time_t time_reopen)
+{
+  LogThreadedDestDriver *self = (LogThreadedDestDriver *) s;
+
+  self->time_reopen = time_reopen;
+}
+
 /* this should be used in combination with LTR_EXPLICIT_ACK_MGMT to actually confirm message delivery. */
 void
 log_threaded_dest_worker_ack_messages(LogThreadedDestWorker *self, gint batch_size)
