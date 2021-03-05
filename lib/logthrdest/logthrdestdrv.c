@@ -1061,7 +1061,7 @@ log_threaded_dest_driver_init_method(LogPipe *s)
 
   self->under_termination = FALSE;
 
-  if (cfg && self->time_reopen == -1)
+  if (self->time_reopen == -1)
     self->time_reopen = cfg->time_reopen;
 
   self->shared_seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg,

@@ -137,12 +137,10 @@ affile_dw_reopen(AFFileDestWriter *self)
 {
   int fd;
   struct stat st;
-  GlobalConfig *cfg;
+  GlobalConfig *cfg = log_pipe_get_config(&self->super);
   LogProtoClient *proto = NULL;
 
-  cfg = log_pipe_get_config(&self->super);
-  if (cfg)
-    self->time_reopen = cfg->time_reopen;
+  self->time_reopen = cfg->time_reopen;
 
   msg_verbose("Initializing destination file writer",
               evt_tag_str("template", self->owner->filename_template->template),

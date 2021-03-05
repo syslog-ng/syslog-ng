@@ -260,8 +260,7 @@ afprogram_sd_init(LogPipe *s)
   if (!log_src_driver_init_method(s))
     return FALSE;
 
-  if (cfg)
-    log_reader_options_init(&self->reader_options, cfg, self->super.super.group);
+  log_reader_options_init(&self->reader_options, cfg, self->super.super.group);
 
   msg_verbose("Starting source program",
               evt_tag_str("cmdline", self->process_info.cmdline->str));

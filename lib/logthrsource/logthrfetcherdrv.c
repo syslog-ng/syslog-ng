@@ -324,7 +324,7 @@ log_threaded_fetcher_driver_init_method(LogPipe *s)
 
   g_assert(self->fetch);
 
-  if (cfg && self->time_reopen == -1)
+  if (self->time_reopen == -1)
     self->time_reopen = cfg->time_reopen;
 
   if (self->no_data_delay == -1)
