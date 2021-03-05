@@ -229,7 +229,7 @@ afsocket_dd_start_reconnect_timer(AFSocketDestDriver *self)
   iv_validate_now();
 
   self->reconnect_timer.expires = iv_now;
-  timespec_add_msec(&self->reconnect_timer.expires, self->time_reopen * 1000L);
+  timespec_add_msec(&self->reconnect_timer.expires, self->writer_options.time_reopen * 1000L);
   iv_timer_register(&self->reconnect_timer);
 }
 
@@ -315,7 +315,7 @@ _afsocket_dd_connection_in_progress(AFSocketDestDriver *self)
                     evt_tag_int("fd", self->fd),
                     evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf, sizeof(buf), GSA_FULL)),
                     evt_tag_error(EVT_TAG_OSERROR),
-                    evt_tag_int("time_reopen", self->time_reopen));
+                    evt_tag_int("time_reopen", self->writer_options.time_reopen));
           goto error_reconnect;
         }
       if (error)
@@ -324,7 +324,7 @@ _afsocket_dd_connection_in_progress(AFSocketDestDriver *self)
                     evt_tag_int("fd", self->fd),
                     evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf, sizeof(buf), GSA_FULL)),
                     evt_tag_errno(EVT_TAG_OSERROR, error),
-                    evt_tag_int("time_reopen", self->time_reopen));
+                    evt_tag_int("time_reopen", self->writer_options.time_reopen));
           goto error_reconnect;
         }
     }
@@ -396,7 +396,7 @@ _dd_reconnect(AFSocketDestDriver *self, gboolean request_setup_addr)
   if ((request_setup_addr && !afsocket_dd_setup_addresses(self)) || !afsocket_dd_start_connect(self))
     {
       msg_error("Initiating connection failed, reconnecting",
-                evt_tag_int("time_reopen", self->time_reopen));
+                evt_tag_int("time_reopen", self->writer_options.time_reopen));
       afsocket_dd_start_reconnect_timer(self);
     }
 }
@@ -425,7 +425,7 @@ afsocket_dd_try_connect(AFSocketDestDriver *self)
   if ((!afsocket_dd_setup_addresses(self)) || !afsocket_dd_setup_connection(self))
     {
       msg_error("Initiating connection failed, reconnecting",
-                evt_tag_int("time_reopen", self->time_reopen));
+                evt_tag_int("time_reopen", self->writer_options.time_reopen));
       afsocket_dd_start_reconnect_timer(self);
       return;
     }
@@ -550,10 +550,6 @@ afsocket_dd_setup_writer(AFSocketDestDriver *self)
 static gboolean
 afsocket_dd_setup_connection(AFSocketDestDriver *self)
 {
-  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
-
-  self->time_reopen = cfg->time_reopen;
-
   if (!log_writer_opened(self->writer))
     _dd_reconnect_with_current_addresses(self);
 
@@ -693,7 +689,7 @@ afsocket_dd_notify(LogPipe *s, gint notify_code, gpointer user_data)
       msg_notice((notify_code == NC_CLOSE) ? "Syslog connection closed" : "Syslog connection broken",
                  evt_tag_int("fd", self->fd),
                  evt_tag_str("server", g_sockaddr_format(self->dest_addr, buf, sizeof(buf), GSA_FULL)),
-                 evt_tag_int("time_reopen", self->time_reopen));
+                 evt_tag_int("time_reopen", self->writer_options.time_reopen));
       afsocket_dd_start_reconnect_timer(self);
       break;
     default:
@@ -735,7 +731,6 @@ afsocket_dd_init_instance(AFSocketDestDriver *self,
   self->socket_options = socket_options;
   self->connections_kept_alive_across_reloads = TRUE;
   self->close_on_input = TRUE;
-  self->time_reopen = cfg->time_reopen;
   self->connection_initialized = FALSE;
 
 
