@@ -1326,6 +1326,7 @@ dest_writer_option
             log_writer_options_set_mark_mode(last_writer_options, $3);
             free($3);
           }
+	| KW_TIME_REOPEN '(' positive_integer ')' { last_writer_options->time_reopen = $3; }
         | { last_template_options = &last_writer_options->template_options; } template_option
 	;
 
