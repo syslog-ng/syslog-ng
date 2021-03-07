@@ -185,6 +185,35 @@ Test(log_message, test_log_message_can_be_cleared)
   log_message_test_params_free(params);
 }
 
+Test(log_message, test_log_msg_clear_handles_cloned_noninline_tags_properly)
+{
+  LogMessage *msg = _construct_log_message();
+
+  for (gint i = 0; i < 100; i++)
+    {
+      gchar tag_name[32];
+
+      g_snprintf(tag_name, sizeof(tag_name), "tag%d", i);
+      log_msg_set_tag_by_name(msg, tag_name);
+    }
+
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  LogMessage *cloned = log_msg_clone_cow(msg, &path_options);
+
+  log_msg_clear(cloned);
+
+  for (gint i = 0; i < 100; i++)
+    {
+      gchar tag_name[32];
+
+      g_snprintf(tag_name, sizeof(tag_name), "tag%d", i);
+      cr_assert(log_msg_is_tag_by_name(cloned, tag_name) == FALSE);
+    }
+  log_msg_unref(cloned);
+  log_msg_unref(msg);
+
+}
+
 Test(log_message, test_rcptid_is_automatically_assigned_to_a_newly_created_log_message)
 {
   LogMessage *msg;

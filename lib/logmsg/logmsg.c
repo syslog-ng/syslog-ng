@@ -1174,7 +1174,10 @@ log_msg_clear(LogMessage *self)
         memset(self->tags, 0, self->num_tags * sizeof(self->tags[0]));
     }
   else
-    self->tags = NULL;
+    {
+      self->tags = NULL;
+      self->num_tags = 0;
+    }
 
   self->num_matches = 0;
   if (!log_msg_chk_flag(self, LF_STATE_OWN_SDATA))
