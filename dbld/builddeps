@@ -167,7 +167,7 @@ function install_yum_packages {
 
 function install_pip_packages {
     case "${OS_PLATFORM}" in
-        fedora-32)
+        fedora-*)
             python_executables="python"
             ;;
         ubuntu-focal|tarball)
