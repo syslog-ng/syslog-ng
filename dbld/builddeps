@@ -80,7 +80,7 @@ function install_gradle {
 }
 
 function install_pip2 {
-    download_target "https://bootstrap.pypa.io/2.7/get-pip.py" get-pip.py
+    download_target "https://bootstrap.pypa.io/pip/2.7/get-pip.py" get-pip.py
     python2 get-pip.py
 }
 
