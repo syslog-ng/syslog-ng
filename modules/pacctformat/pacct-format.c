@@ -99,7 +99,9 @@ pacct_register_handles(void)
 }
 
 gboolean
-pacct_format_handler(const MsgFormatOptions *options, LogMessage *msg, const guchar *data, gsize length, gsize *problem_position)
+pacct_format_handler(const MsgFormatOptions *options, LogMessage *msg,
+                     const guchar *data, gsize length,
+                     gsize *problem_position)
 {
   acct_t *rec;
   gsize len;

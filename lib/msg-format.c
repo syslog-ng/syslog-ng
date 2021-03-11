@@ -63,16 +63,19 @@ msg_format_inject_parse_error(LogMessage *msg, const guchar *data, gsize length,
 }
 
 static void
-msg_format_preprocess_message(MsgFormatOptions *options, LogMessage *msg, const guchar *data, gsize length)
+msg_format_preprocess_message(MsgFormatOptions *options, LogMessage *msg,
+                              const guchar *data, gsize length)
 {
   if (options->flags & LP_STORE_RAW_MESSAGE)
     {
-      log_msg_set_value(msg, LOG_MSG_GET_VALUE_HANDLE_STATIC("RAWMSG"), (gchar *) data, _rstripped_message_length(data, length));
+      log_msg_set_value(msg, LOG_MSG_GET_VALUE_HANDLE_STATIC("RAWMSG"),
+                        (gchar *) data, _rstripped_message_length(data, length));
     }
 }
 
 static void
-msg_format_postprocess_message(MsgFormatOptions *options, LogMessage *msg, const guchar *data, gsize length)
+msg_format_postprocess_message(MsgFormatOptions *options, LogMessage *msg,
+                               const guchar *data, gsize length)
 {
   if (options->flags & LP_NO_PARSE_DATE)
     {
@@ -101,7 +104,9 @@ msg_format_postprocess_message(MsgFormatOptions *options, LogMessage *msg, const
 }
 
 static gboolean
-msg_format_process_message(MsgFormatOptions *options, LogMessage *msg, const guchar *data, gsize length, gsize *problem_position)
+msg_format_process_message(MsgFormatOptions *options, LogMessage *msg,
+                           const guchar *data, gsize length,
+                           gsize *problem_position)
 {
   if ((options->flags & LP_NOPARSE) == 0)
     {
@@ -116,7 +121,9 @@ msg_format_process_message(MsgFormatOptions *options, LogMessage *msg, const guc
 }
 
 gboolean
-msg_format_parse_conditional(MsgFormatOptions *options, LogMessage *msg, const guchar *data, gsize length, gsize *problem_position)
+msg_format_parse_conditional(MsgFormatOptions *options, LogMessage *msg,
+                             const guchar *data, gsize length,
+                             gsize *problem_position)
 {
   if (G_UNLIKELY(!options->format_handler))
     {
@@ -137,7 +144,8 @@ msg_format_parse_conditional(MsgFormatOptions *options, LogMessage *msg, const g
 }
 
 void
-msg_format_parse(MsgFormatOptions *options, LogMessage *msg, const guchar *data, gsize length)
+msg_format_parse(MsgFormatOptions *options, LogMessage *msg,
+                 const guchar *data, gsize length)
 {
   gsize problem_position = 0;
 
