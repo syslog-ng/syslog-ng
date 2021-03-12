@@ -15,7 +15,6 @@ jobs:
 
     strategy:
       matrix:
-        python: [python2, python3]
         build-tool: [autotools, cmake]
         cc: [gcc, clang]
       fail-fast: false
@@ -35,7 +34,6 @@ jobs:
           echo "${COREFILES_DIR}/core.%h.%e.%t" > /proc/sys/kernel/core_pattern
 
           # Setup build time environment variables
-          PYTHONVERSION="`printf ${{ matrix.python }} | tail -c 1`"
           PYTHONUSERBASE="${HOME}/python_packages"
           CC="${{ matrix.cc }}"
           SYSLOG_NG_INSTALL_DIR=${HOME}/install/syslog-ng
@@ -45,16 +43,16 @@ jobs:
             --enable-all-modules
             --disable-java
             --disable-java-modules
-            --with-python=${PYTHONVERSION}
+            --with-python=3
             `[ $CC = clang ] && echo '--enable-force-gnu99' || true`
           "
           CMAKE_FLAGS="
             -DCMAKE_BUILD_TYPE=Debug
             -DCMAKE_C_FLAGS=-Werror
             -DCMAKE_INSTALL_PREFIX=${HOME}/install/syslog-ng
-            -DPYTHON_VERSION=${PYTHONVERSION}
+            -DPYTHON_VERSION=3
           "
-          gh_export COREFILES_DIR PYTHONVERSION PYTHONUSERBASE CC SYSLOG_NG_INSTALL_DIR CONFIGURE_FLAGS CMAKE_FLAGS
+          gh_export COREFILES_DIR PYTHONUSERBASE CC SYSLOG_NG_INSTALL_DIR CONFIGURE_FLAGS CMAKE_FLAGS
           gh_path "${PYTHONUSERBASE}"
 
       - name: autogen.sh
@@ -103,7 +101,7 @@ jobs:
         uses: actions/upload-artifact@v2
         if: always() && steps.make_check.outcome == 'failure'
         with:
-          name: test-suite-${{ matrix.build-tool }}-${{ matrix.cc }}-${{ matrix.python }}
+          name: test-suite-${{ matrix.build-tool }}-${{ matrix.cc }}
           path: ${{ github.workspace }}/build/test-suite.log
 
       - name: "Prepare artifact: light-reports"
@@ -128,7 +126,7 @@ jobs:
         uses: actions/upload-artifact@v2
         if: always() && steps.prepare-light-reports.outcome == 'success'
         with:
-          name: light-reports-${{ matrix.build-tool }}-${{ matrix.cc }}-${{ matrix.python }}
+          name: light-reports-${{ matrix.build-tool }}-${{ matrix.cc }}
           path: /tmp/light-reports
 
       - name: Dump corefile backtrace
@@ -142,18 +140,13 @@ jobs:
         uses: actions/upload-artifact@v2
         if: failure()
         with:
-          name: corefiles-${{ matrix.build-tool }}-${{ matrix.cc }}-${{ matrix.python }}
+          name: corefiles-${{ matrix.build-tool }}-${{ matrix.cc }}
           path: ${{ env.COREFILES_DIR }}
 
   distcheck:
     runs-on: ubuntu-18.04
     container:
       image: balabit/syslog-ng-devshell:latest
-
-    strategy:
-      matrix:
-        python: [python2, python3]
-      fail-fast: false
 
     steps:
       - name: Checkout syslog-ng source
@@ -163,7 +156,6 @@ jobs:
         run: |
           . .github/workflows/gh-tools.sh
 
-          PYTHONVERSION=`printf ${{ matrix.python }} | tail -c 1`
           DISTCHECK_CONFIGURE_FLAGS="
             CFLAGS=-Werror
             --prefix=${HOME}/install/syslog-ng
@@ -175,7 +167,7 @@ jobs:
             --enable-all-modules
             --disable-java
             --disable-java-modules
-            --with-python=${PYTHONVERSION}
+            --with-python=3
           "
 
           gh_export DISTCHECK_CONFIGURE_FLAGS
