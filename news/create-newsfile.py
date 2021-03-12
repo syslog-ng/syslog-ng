@@ -46,6 +46,15 @@ team_members = [
 ]
 
 
+blocks = [
+    ('Features', 'feature-*.md'),
+    ('Bugfixes', 'bugfix-*.md'),
+    ('Packaging', 'packaging-*.md'),
+    ('Notes to developers', 'developer-note-*.md'),
+    ('Other changes', 'other-*.md'),
+]
+
+
 def print_usage_if_needed():
     ArgumentParser(usage="\rCreates NEWS.md file from the entries in the news/ folder.\n"
                          "It also deletes the entry files.").parse_args()
@@ -102,13 +111,6 @@ def create_highlights_block():
 
 def create_standard_blocks():
     standard_blocks = ''
-    blocks = [
-        ('Features', 'feature-*.md'),
-        ('Bugfixes', 'bugfix-*.md'),
-        ('Packaging', 'packaging-*.md'),
-        ('Notes to developers', 'developer-note-*.md'),
-        ('Other changes', 'other-*.md'),
-    ]
     for block_name, glob in blocks:
         entries = list(news_dir.glob(glob))
         if len(entries) > 0:
