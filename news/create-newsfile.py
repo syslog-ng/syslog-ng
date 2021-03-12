@@ -166,7 +166,8 @@ def main():
     news = create_news_content()
     create_newsfile(news)
     cleanup()
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
