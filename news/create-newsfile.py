@@ -82,15 +82,14 @@ def get_last_version():
 
 def get_next_version():
     next_version = (root_dir / 'VERSION').read_text().rstrip()
+    return next_version
+
+def create_version():
+    next_version = get_next_version()
     if next_version == get_last_version():
         print('VERSION file contains the same version as the current NEWS.md file.\n'
               'Please bump the VERSION file. Exiting...')
         exit(1)
-    return next_version
-
-
-def create_version():
-    next_version = get_next_version()
     return '{}\n{}\n\n'.format(next_version, len(next_version) * '=')
 
 
