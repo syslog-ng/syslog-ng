@@ -71,7 +71,7 @@ jobs:
       - name: Generate NEWS.md
         run: |
           ./news/create-newsfile.py
-          git commit -a -s -m "NEWS: generate for ${RELEASE_VERSION}"
+          git diff-index --quiet HEAD NEWS.md || git commit -a -s -m "NEWS: generate for ${RELEASE_VERSION}"
 
       - name: "DBLD: release"
         run: |
