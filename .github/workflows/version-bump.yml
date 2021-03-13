@@ -91,5 +91,6 @@ jobs:
 
           git push --force origin ${VERSION_BUMP_BRANCH}
           hub pull-request \
+            --base ${GITHUB_REF} \
             --file /tmp/message \
             --labels "version-bump"
