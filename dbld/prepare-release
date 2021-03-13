@@ -54,7 +54,7 @@ function update_versioning_h() {
 	fi
 
 	OLD_HEX=$(grep "#define VERSION_VALUE_${OLD_MAJOR}_${OLD_MINOR}" ${VERSIONING_H} | grep -o "0x.*$")
-	NEW_HEX=$(printf "0x%04X" $((${OLD_HEX} + 0x0001)) | tr "[:upper:]" "[:lower:]")
+	NEW_HEX=$(printf "0x%04X" $((${NEW_MAJOR} * 256 + ${NEW_MINOR})) | tr "[:upper:]" "[:lower:]")
 
 	if grep "^#define VERSION_VALUE_${NEW_MAJOR}_${NEW_MINOR} ${NEW_HEX}$" ${VERSIONING_H}; then
 		echo "VERSION_VALUE_${NEW_MAJOR}_${NEW_MINOR} is already defined."
