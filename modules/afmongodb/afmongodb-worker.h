@@ -1,5 +1,7 @@
 /*
- * Copyright (c) 2010-2016 Balabit
+ * Copyright (c) 2010-2021 One Identity
+ * Copyright (c) 2010-2014 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2021 László Várady
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,27 +22,22 @@
  *
  */
 
-#ifndef AFMONGODB_PRIVATE_H_
-#define AFMONGODB_PRIVATE_H_
+#ifndef AFMONGODB_WORKER_H_INCLUDED
+#define AFMONGODB_WORKER_H_INCLUDED
 
 #include "syslog-ng.h"
 #include "mongoc.h"
 #include "logthrdest/logthrdestdrv.h"
-#include "value-pairs/value-pairs.h"
 
-typedef struct _MongoDBDestDriver
+typedef struct MongoDBDestWorker
 {
-  LogThreadedDestDriver super;
+  LogThreadedDestWorker super;
 
-  gchar *coll;
-  GString *uri_str;
+  mongoc_client_t *client;
+  mongoc_collection_t *coll_obj;
+  bson_t *bson;
+} MongoDBDestWorker;
 
-  LogTemplateOptions template_options;
-
-  ValuePairs *vp;
-
-  const gchar *const_db;
-  mongoc_uri_t *uri_obj;
-} MongoDBDestDriver;
+LogThreadedDestWorker *afmongodb_dw_new(LogThreadedDestDriver *owner, gint worker_index);
 
 #endif

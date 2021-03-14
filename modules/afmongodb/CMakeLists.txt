@@ -11,6 +11,8 @@ if (ENABLE_MONGODB)
   set(AFMONGODB_SOURCES
     "afmongodb.h"
     "afmongodb.c"
+    "afmongodb-worker.h"
+    "afmongodb-worker.c"
     "afmongodb-parser.h"
     "afmongodb-parser.c"
     "afmongodb-private.h"

@@ -24,12 +24,10 @@
 
 #include "afmongodb.h"
 #include "afmongodb-parser.h"
+#include "afmongodb-worker.h"
 #include "apphook.h"
 #include "messages.h"
 #include "stats/stats-registry.h"
-#include "logmsg/nvtable.h"
-#include "logqueue.h"
-#include "value-pairs/evttag.h"
 #include "plugin.h"
 #include "plugin-types.h"
 
@@ -138,288 +136,6 @@ _format_persist_name(const LogPipe *s)
          : _format_instance_id(self, "afmongodb(%s)");
 }
 
-static void
-_worker_disconnect(LogThreadedDestDriver *s)
-{
-  MongoDBDestDriver *self = (MongoDBDestDriver *)s;
-
-  mongoc_client_destroy(self->client);
-  self->client = NULL;
-}
-
-static gboolean
-_connect(MongoDBDestDriver *self, gboolean reconnect)
-{
-  if (!self->client)
-    {
-      self->client = mongoc_client_new_from_uri(self->uri_obj);
-
-      if (!self->client)
-        {
-          msg_error("Error creating MongoDB URI",
-                    evt_tag_str("driver", self->super.super.super.id));
-          return FALSE;
-        }
-    }
-
-  if (!self->coll_obj)
-    {
-      self->coll_obj = mongoc_client_get_collection(self->client, self->const_db, self->coll);
-
-      if (!self->coll_obj)
-        {
-          msg_error("Error getting specified MongoDB collection",
-                    evt_tag_str("collection", self->coll),
-                    evt_tag_str("driver", self->super.super.super.id));
-
-          mongoc_client_destroy(self->client);
-          self->client = NULL;
-
-          return FALSE;
-        }
-    }
-
-  bson_t reply;
-  bson_error_t error;
-  bson_t *cmd = BCON_NEW("serverStatus", "1");
-  const mongoc_read_prefs_t *read_prefs = mongoc_collection_get_read_prefs(self->coll_obj);
-  gboolean ok = mongoc_client_command_simple(self->client, self->const_db ? : "", cmd, read_prefs, &reply, &error);
-  bson_destroy(&reply);
-  bson_destroy(cmd);
-  if (!ok)
-    {
-      msg_error("Error connecting to MongoDB",
-                evt_tag_str("driver", self->super.super.super.id),
-                evt_tag_str("reason", error.message));
-
-      mongoc_collection_destroy(self->coll_obj);
-      self->coll_obj = NULL;
-      mongoc_client_destroy(self->client);
-      self->client = NULL;
-
-      return FALSE;
-    }
-
-  return TRUE;
-}
-
-/*
- * Worker thread
- */
-static gboolean
-_vp_obj_start(const gchar *name,
-              const gchar *prefix, gpointer *prefix_data,
-              const gchar *prev, gpointer *prev_data,
-              gpointer user_data)
-{
-  bson_t *o;
-
-  if (prefix_data)
-    {
-      o = bson_new();
-      *prefix_data = o;
-    }
-  return FALSE;
-}
-
-static gboolean
-_vp_obj_end(const gchar *name,
-            const gchar *prefix, gpointer *prefix_data,
-            const gchar *prev, gpointer *prev_data,
-            gpointer user_data)
-{
-  MongoDBDestDriver *self = (MongoDBDestDriver *)user_data;
-  bson_t *root;
-
-  if (prev_data)
-    root = (bson_t *)*prev_data;
-  else
-    root = self->bson;
-
-  if (prefix_data)
-    {
-      bson_t *d = (bson_t *)*prefix_data;
-
-      bson_append_document(root, name, -1, d);
-      bson_destroy(d);
-    }
-  return FALSE;
-}
-
-static gboolean
-_vp_process_value(const gchar *name, const gchar *prefix, TypeHint type,
-                  const gchar *value, gsize value_len, gpointer *prefix_data, gpointer user_data)
-{
-  bson_t *o;
-  MongoDBDestDriver *self = (MongoDBDestDriver *)user_data;
-  gboolean fallback = self->template_options.on_error & ON_ERROR_FALLBACK_TO_STRING;
-
-  if (prefix_data)
-    o = (bson_t *)*prefix_data;
-  else
-    o = self->bson;
-
-  switch (type)
-    {
-    case TYPE_HINT_BOOLEAN:
-    {
-      gboolean b;
-
-      if (type_cast_to_boolean(value, &b, NULL))
-        bson_append_bool(o, name, -1, b);
-      else
-        {
-          gboolean r = type_cast_drop_helper(self->template_options.on_error, value, "boolean");
-
-          if (fallback)
-            bson_append_utf8(o, name, -1, value, value_len);
-          else
-            return r;
-        }
-      break;
-    }
-    case TYPE_HINT_INT32:
-    {
-      gint32 i;
-
-      if (type_cast_to_int32(value, &i, NULL))
-        bson_append_int32(o, name, -1, i);
-      else
-        {
-          gboolean r = type_cast_drop_helper(self->template_options.on_error, value, "int32");
-
-          if (fallback)
-            bson_append_utf8(o, name, -1, value, value_len);
-          else
-            return r;
-        }
-      break;
-    }
-    case TYPE_HINT_INT64:
-    {
-      gint64 i;
-
-      if (type_cast_to_int64(value, &i, NULL))
-        bson_append_int64(o, name, -1, i);
-      else
-        {
-          gboolean r = type_cast_drop_helper(self->template_options.on_error, value, "int64");
-
-          if (fallback)
-            bson_append_utf8(o, name, -1, value, value_len);
-          else
-            return r;
-        }
-
-      break;
-    }
-    case TYPE_HINT_DOUBLE:
-    {
-      gdouble d;
-
-      if (type_cast_to_double(value, &d, NULL))
-        bson_append_double(o, name, -1, d);
-      else
-        {
-          gboolean r = type_cast_drop_helper(self->template_options.on_error, value, "double");
-          if (fallback)
-            bson_append_utf8(o, name, -1, value, value_len);
-          else
-            return r;
-        }
-
-      break;
-    }
-    case TYPE_HINT_DATETIME:
-    {
-      guint64 i;
-
-      if (type_cast_to_datetime_int(value, &i, NULL))
-        bson_append_date_time(o, name, -1, (gint64)i);
-      else
-        {
-          gboolean r = type_cast_drop_helper(self->template_options.on_error, value, "datetime");
-
-          if (fallback)
-            bson_append_utf8(o, name, -1, value, value_len);
-          else
-            return r;
-        }
-
-      break;
-    }
-    case TYPE_HINT_STRING:
-    case TYPE_HINT_LITERAL:
-      bson_append_utf8(o, name, -1, value, value_len);
-      break;
-    default:
-      return TRUE;
-    }
-
-  return FALSE;
-}
-
-static LogThreadedResult
-_worker_insert(LogThreadedDestDriver *s, LogMessage *msg)
-{
-  MongoDBDestDriver *self = (MongoDBDestDriver *)s;
-  gboolean success;
-  gboolean drop_silently = self->template_options.on_error & ON_ERROR_SILENT;
-
-  if (!_connect(self, TRUE))
-    return LTR_NOT_CONNECTED;
-
-  bson_reinit(self->bson);
-
-  LogTemplateEvalOptions options = {&self->template_options, LTZ_SEND, self->super.worker.instance.seq_num, NULL};
-  success = value_pairs_walk(self->vp,
-                             _vp_obj_start,
-                             _vp_process_value,
-                             _vp_obj_end,
-                             msg, &options,
-                             self);
-
-  if (!success)
-    {
-      if (!drop_silently)
-        {
-          msg_error("Failed to format message for MongoDB, dropping message",
-                    evt_tag_value_pairs("message", self->vp, msg, &options),
-                    evt_tag_str("driver", self->super.super.super.id));
-        }
-      return LTR_DROP;
-    }
-
-  msg_debug("Outgoing message to MongoDB destination",
-            evt_tag_value_pairs("message", self->vp, msg, &options),
-            evt_tag_str("driver", self->super.super.super.id));
-
-  bson_error_t error;
-  success = mongoc_collection_insert(self->coll_obj, MONGOC_INSERT_NONE,
-                                     (const bson_t *)self->bson, NULL, &error);
-  if (!success)
-    {
-      if (error.domain == MONGOC_ERROR_STREAM)
-        {
-          msg_error("Network error while inserting into MongoDB",
-                    evt_tag_int("time_reopen", self->super.time_reopen),
-                    evt_tag_str("reason", error.message),
-                    evt_tag_str("driver", self->super.super.super.id));
-          return LTR_NOT_CONNECTED;
-        }
-      else
-        {
-          msg_error("Failed to insert into MongoDB",
-                    evt_tag_int("time_reopen", self->super.time_reopen),
-                    evt_tag_str("reason", error.message),
-                    evt_tag_str("driver", self->super.super.super.id));
-          return LTR_ERROR;
-        }
-    }
-
-  return LTR_SUCCESS;
-}
-
 gboolean
 afmongodb_dd_private_uri_init(LogDriver *d)
 {
@@ -453,25 +169,6 @@ afmongodb_dd_private_uri_init(LogDriver *d)
               evt_tag_str("driver", self->super.super.super.id));
 
   return TRUE;
-}
-
-static void
-_worker_thread_init(LogThreadedDestDriver *d)
-{
-  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
-
-  _connect(self, FALSE);
-
-  self->bson = bson_sized_new(4096);
-}
-
-static void
-_worker_thread_deinit(LogThreadedDestDriver *d)
-{
-  MongoDBDestDriver *self = (MongoDBDestDriver *)d;
-
-  bson_destroy(self->bson);
-  self->bson = NULL;
 }
 
 /*
@@ -526,8 +223,6 @@ _free(LogPipe *d)
 
   if (self->uri_obj)
     mongoc_uri_destroy(self->uri_obj);
-  if (self->coll_obj)
-    mongoc_collection_destroy(self->coll_obj);
 
   log_threaded_dest_driver_free(d);
 }
@@ -574,12 +269,9 @@ afmongodb_dd_new(GlobalConfig *cfg)
   self->super.super.super.super.free_fn = _free;
   self->super.super.super.super.generate_persist_name = _format_persist_name;
 
-  self->super.worker.thread_init = _worker_thread_init;
-  self->super.worker.thread_deinit = _worker_thread_deinit;
-  self->super.worker.disconnect = _worker_disconnect;
-  self->super.worker.insert = _worker_insert;
   self->super.format_stats_instance = _format_stats_instance;
   self->super.stats_source = stats_register_type("mongodb");
+  self->super.worker.construct = afmongodb_dw_new;
 
   afmongodb_dd_set_collection(&self->super.super.super, "messages");
 
