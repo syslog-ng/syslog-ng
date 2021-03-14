@@ -48,7 +48,6 @@ typedef struct _MongoDBDestDriver
   mongoc_client_t *client;
   mongoc_collection_t *coll_obj;
 
-  GString *current_value;
   bson_t *bson;
 } MongoDBDestDriver;
 

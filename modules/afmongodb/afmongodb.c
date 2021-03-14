@@ -461,8 +461,6 @@ _worker_thread_init(LogThreadedDestDriver *d)
 
   _connect(self, FALSE);
 
-  self->current_value = g_string_sized_new(256);
-
   self->bson = bson_sized_new(4096);
 }
 
@@ -470,12 +468,6 @@ static void
 _worker_thread_deinit(LogThreadedDestDriver *d)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
-
-  if (self->current_value)
-    {
-      g_string_free(self->current_value, TRUE);
-      self->current_value = NULL;
-    }
 
   bson_destroy(self->bson);
   self->bson = NULL;
