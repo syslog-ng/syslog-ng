@@ -24,6 +24,7 @@
 
 #include "afmongodb.h"
 #include "afmongodb-parser.h"
+#include "apphook.h"
 #include "messages.h"
 #include "stats/stats-registry.h"
 #include "logmsg/nvtable.h"
@@ -527,8 +528,7 @@ _free(LogPipe *d)
     mongoc_uri_destroy(self->uri_obj);
   if (self->coll_obj)
     mongoc_collection_destroy(self->coll_obj);
-  if (self->client)
-    mongoc_cleanup();
+
   log_threaded_dest_driver_free(d);
 }
 
@@ -536,12 +536,37 @@ _free(LogPipe *d)
  * Plugin glue.
  */
 
+static void
+afmongodb_global_init(void)
+{
+  mongoc_init();
+}
+
+static void
+afmongodb_global_deinit(void)
+{
+  mongoc_cleanup();
+}
+
+static void
+afmongodb_register_global_initializers(void)
+{
+  static gboolean initialized = FALSE;
+
+  if (!initialized)
+    {
+      register_application_hook(AH_STARTUP, (ApplicationHookFunc) afmongodb_global_init, NULL, AHM_RUN_ONCE);
+      register_application_hook(AH_SHUTDOWN, (ApplicationHookFunc) afmongodb_global_deinit, NULL, AHM_RUN_ONCE);
+      initialized = TRUE;
+    }
+}
+
 LogDriver *
 afmongodb_dd_new(GlobalConfig *cfg)
 {
   MongoDBDestDriver *self = g_new0(MongoDBDestDriver, 1);
 
-  mongoc_init();
+  afmongodb_register_global_initializers();
 
   log_threaded_dest_driver_init_instance(&self->super, cfg);
 
