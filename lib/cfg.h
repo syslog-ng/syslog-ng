@@ -159,6 +159,7 @@ gboolean cfg_is_shutting_down(GlobalConfig *cfg);
 void cfg_free(GlobalConfig *self);
 gboolean cfg_init(GlobalConfig *cfg);
 gboolean cfg_deinit(GlobalConfig *cfg);
+gboolean cfg_compile_templates(GlobalConfig *cfg);
 
 PersistConfig *persist_config_new(void);
 void persist_config_free(PersistConfig *self);

@@ -813,3 +813,52 @@ cfg_get_filename(const GlobalConfig *cfg)
   return cfg->filename;
 }
 
+
+
+gboolean _compile_template(LogTemplate *self, GlobalConfig *cfg)
+{
+  if (self->compiled_template)
+    return TRUE;
+
+  if (self->def_inline)
+    {
+      // Not a template block, so it could be a refeference.
+      LogTemplate *template_block = g_hash_table_lookup(cfg->tree.templates, self->raw_template);
+      if (template_block)
+        {
+          // Found a template block with a name, compile it first, than copy it.
+          if (!_compile_template(template_block, cfg))
+            return FALSE;
+          
+          log_template_copy(template_block, self);
+          return TRUE;
+        }
+    }
+  
+  GError *error = NULL;
+  gboolean res = log_template_compile(self, self->raw_template, &error);
+  if (error)
+    {
+      msg_error("Error compiling template",
+                evt_tag_str("name", self->name),
+                evt_tag_str("error", error->message));
+      g_error_free(error);
+    }
+
+  return res;
+}
+
+gboolean
+cfg_compile_templates(GlobalConfig *cfg)
+{
+  GHashTableIter iter;
+  gpointer key, value;
+  
+  g_hash_table_iter_init(&iter, cfg->tree.templates);
+  while(g_hash_table_iter_next(&iter, &key, &value))
+    {
+      if(!_compile_template((LogTemplate *)value, cfg))
+        return FALSE;
+    }
+  return TRUE;
+}

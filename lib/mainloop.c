@@ -613,6 +613,11 @@ main_loop_read_and_init_config(MainLoop *self)
       return 1;
     }
 
+  if (!cfg_compile_templates(self->current_configuration))
+    {
+      return 1;
+    }
+
   if (options->syntax_only || options->preprocess_into)
     {
       return 0;
