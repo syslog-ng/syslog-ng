@@ -424,9 +424,6 @@ tls_context_setup_verify_mode(TLSContext *self)
 
   switch (self->verify_mode)
     {
-    case TVM_NONE:
-      verify_mode = SSL_VERIFY_NONE;
-      break;
     case TVM_OPTIONAL | TVM_UNTRUSTED:
       verify_mode = SSL_VERIFY_NONE;
       break;
@@ -910,11 +907,10 @@ tls_verifier_unref(TLSVerifier *self)
 gboolean
 tls_context_set_verify_mode_by_name(TLSContext *self, const gchar *mode_str)
 {
-  if (strcasecmp(mode_str, "none") == 0)
-    self->verify_mode = TVM_NONE;
-  else if (strcasecmp(mode_str, "optional-trusted") == 0 || strcasecmp(mode_str, "optional_trusted") == 0)
+  if (strcasecmp(mode_str, "optional-trusted") == 0 || strcasecmp(mode_str, "optional_trusted") == 0)
     self->verify_mode = TVM_OPTIONAL | TVM_TRUSTED;
-  else if (strcasecmp(mode_str, "optional-untrusted") == 0 || strcasecmp(mode_str, "optional_untrusted") == 0)
+  else if (strcasecmp(mode_str, "optional-untrusted") == 0 || strcasecmp(mode_str, "optional_untrusted") == 0
+           || strcasecmp(mode_str, "none") == 0)
     self->verify_mode = TVM_OPTIONAL | TVM_UNTRUSTED;
   else if (strcasecmp(mode_str, "required-trusted") == 0 || strcasecmp(mode_str, "required_trusted") == 0)
     self->verify_mode = TVM_REQUIRED | TVM_TRUSTED;
