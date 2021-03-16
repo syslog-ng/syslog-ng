@@ -26,3 +26,4 @@
 
 GlobalConfig *configuration;
 int cfg_parser_debug;
+int template_seq_num;

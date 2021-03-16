@@ -57,5 +57,6 @@ typedef struct _StatsClusterKey StatsClusterKey;
 
 /* configuration being parsed, used by the bison generated code, NULL whenever parsing is finished. */
 extern GlobalConfig *configuration;
+extern int template_seq_num;
 
 #endif

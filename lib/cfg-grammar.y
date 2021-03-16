@@ -813,16 +813,14 @@ template_items
 template_content_inner
         : string
         {
-          GError *error = NULL;
-
-          CHECK_ERROR_GERROR(log_template_compile(last_template, $1, &error), @1, error, "Error compiling template");
+          log_template_set_raw_template(last_template, $1);
           free($1);
         }
         | LL_IDENTIFIER '(' string ')'
         {
           GError *error = NULL;
 
-          CHECK_ERROR_GERROR(log_template_compile(last_template, $3, &error), @3, error, "Error compiling template");
+          log_template_set_raw_template(last_template, $3);
           free($3);
 
           CHECK_ERROR_GERROR(log_template_set_type_hint(last_template, $1, &error), @1, error, "Error setting the template type-hint \"%s\"", $1);
@@ -1110,11 +1108,16 @@ facility_string
 
 parser_opt
         : KW_TEMPLATE '(' string ')'            {
-                                                  LogTemplate *template;
-                                                  GError *error = NULL;
+                                                  gchar _buf[255];
+                                                  sprintf(_buf, "INLINE-%d", template_seq_num);
+                                                  template_seq_num++;
 
-                                                  template = cfg_tree_check_inline_template(&configuration->tree, $3, &error);
-                                                  CHECK_ERROR_GERROR(template != NULL, @3, error, "Error compiling template");
+                                                  LogTemplate *template = log_template_new(configuration, _buf);
+                                                  log_template_set_raw_template(template, $3);
+                                                  template->def_inline = TRUE;
+                                                  cfg_tree_add_template(&configuration->tree, template);
+
+                                                  last_writer_options->template = template;
                                                   log_parser_set_template(last_parser, template);
                                                   free($3);
                                                 }
@@ -1307,11 +1310,18 @@ dest_writer_option
 	| KW_FLUSH_TIMEOUT '(' positive_integer ')'	{ }
         | KW_SUPPRESS '(' nonnegative_integer ')'            { last_writer_options->suppress = $3; }
 	| KW_TEMPLATE '(' string ')'       	{
-                                                  GError *error = NULL;
+							gchar _buf[255];
+							sprintf(_buf, "INLINE-%d", template_seq_num);
+							template_seq_num++;
 
-                                                  last_writer_options->template = cfg_tree_check_inline_template(&configuration->tree, $3, &error);
-                                                  CHECK_ERROR_GERROR(last_writer_options->template != NULL, @3, error, "Error compiling template");
-	                                          free($3);
+							LogTemplate *template = log_template_new(configuration, _buf);
+							log_template_set_raw_template(template, $3);
+							template->def_inline = TRUE;
+							cfg_tree_add_template(&configuration->tree, template);
+
+							last_writer_options->template = template;
+
+							free($3);
 	                                        }
 	| KW_TEMPLATE_ESCAPE '(' yesno ')'	{ log_writer_options_set_template_escape(last_writer_options, $3); }
 	| KW_PAD_SIZE '(' nonnegative_integer ')'         { last_writer_options->padding = $3; }
