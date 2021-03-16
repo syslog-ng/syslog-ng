@@ -56,6 +56,7 @@ struct _LogTemplate
 {
   GAtomicCounter ref_cnt;
   gchar *name;
+  gchar *raw_template;
   gchar *template;
   GList *compiled_template;
   GlobalConfig *cfg;
@@ -86,5 +87,9 @@ void log_template_global_deinit(void);
 
 gboolean log_template_on_error_parse(const gchar *on_error, gint *out);
 void log_template_options_set_on_error(LogTemplateOptions *options, gint on_error);
+
+
+void log_template_set_raw_template(LogTemplate *self, const gchar *raw_template);
+void log_template_copy(LogTemplate *from, LogTemplate *to);
 
 #endif

@@ -25,6 +25,36 @@
 #include "template/repr.h"
 
 LogTemplateElem *
+log_template_elem_clone(const LogTemplateElem *from)
+{
+  LogTemplateElem *e;
+  e = g_new0(LogTemplateElem, 1);
+  
+  e->type = from->type;
+  e->text_len = from->text_len;
+  e->text = g_strdup(from->text);
+  e->default_value = g_strdup(from->default_value);
+  e->msg_ref = from->msg_ref;
+  e->type = from->type;
+
+  switch (from->type) 
+  {
+    case LTE_MACRO:
+      e->macro = from->macro;
+    break;
+
+    case LTE_VALUE:
+      e->value_handle = from->value_handle;
+    break;
+
+    case LTE_FUNC:
+      // TODO (We should make a proper deep copy)
+      e->func = from->func;
+    break;
+  }
+}
+
+LogTemplateElem *
 log_template_elem_new_macro(const gchar *text, guint macro, gchar *default_value, gint msg_ref)
 {
   LogTemplateElem *e;

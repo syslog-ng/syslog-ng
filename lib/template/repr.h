@@ -60,6 +60,7 @@ LogTemplateElem *log_template_elem_new_value(const gchar *text, gchar *value_nam
 LogTemplateElem *log_template_elem_new_func(LogTemplate *template,
                                             const gchar *text, gint argc, gchar *argv[], gint msg_ref,
                                             GError **error);
+LogTemplateElem *log_template_elem_clone(const LogTemplateElem *from);
 
 void log_template_elem_free_list(GList *el);
 

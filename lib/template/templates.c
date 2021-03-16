@@ -119,9 +119,36 @@ log_template_reset_compiled(LogTemplate *self)
   self->trivial = FALSE;
 }
 
+
+void log_template_set_raw_template(LogTemplate *self, const gchar *raw_template)
+{
+  g_free(self->raw_template);
+  self->raw_template = g_strdup(raw_template);
+}
+
+gpointer _copy_func(gconstpointer src, gpointer data)
+{
+  LogTemplateElem *tmp = log_template_elem_clone((LogTemplateElem *)src);
+  return (gpointer)tmp;
+}
+
+void log_template_copy(LogTemplate *from, LogTemplate *to)
+{
+  to->template = g_strdup(from->template);
+  to->compiled_template = g_list_copy_deep(from->compiled_template, _copy_func, NULL);
+  to->cfg = from->cfg;
+  to->escape = from->escape;
+  to->def_inline = from->def_inline;
+  to->trivial = from->trivial;
+  to->type_hint = from->type_hint;
+}
+
 gboolean
 log_template_compile(LogTemplate *self, const gchar *template, GError **error)
 {
+  if (self->compiled_template)
+    return TRUE;
+
   LogTemplateCompiler compiler;
   gboolean result;
 
@@ -212,6 +239,7 @@ log_template_free(LogTemplate *self)
   log_template_reset_compiled(self);
   g_free(self->name);
   g_free(self->template);
+  g_free(self->raw_template);
   g_free(self);
 }
 
