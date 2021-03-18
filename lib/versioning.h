@@ -162,7 +162,6 @@
 #define VERSION_VALUE_3_29 0x031d
 #define VERSION_VALUE_3_30 0x031e
 #define VERSION_VALUE_3_31 0x031f
-#define VERSION_VALUE_3_31 0x0320
 
 /* config version code, in the same format as GlobalConfig->version */
 #define VERSION_VALUE_CURRENT   VERSION_VALUE_3_31
