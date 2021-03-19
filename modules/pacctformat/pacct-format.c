@@ -98,12 +98,15 @@ pacct_register_handles(void)
   PACCT_REGISTER(ac_comm);
 }
 
-void
-pacct_format_handler(const MsgFormatOptions *options, const guchar *data, gsize length, LogMessage *msg)
+gboolean
+pacct_format_handler(const MsgFormatOptions *options, LogMessage *msg,
+                     const guchar *data, gsize length,
+                     gsize *problem_position)
 {
   acct_t *rec;
   gsize len;
 
+  *problem_position = 0;
   if (length < sizeof(*rec))
     {
       gchar *buf;
@@ -112,7 +115,7 @@ pacct_format_handler(const MsgFormatOptions *options, const guchar *data, gsize 
                             (gint) length, (gint) sizeof(*rec));
       log_msg_set_value(msg, LM_V_MESSAGE, buf, -1);
       g_free(buf);
-      return;
+      return TRUE;
     }
   rec = (acct_t *) data;
   if (rec->ac_version != 3)
@@ -123,7 +126,7 @@ pacct_format_handler(const MsgFormatOptions *options, const guchar *data, gsize 
                             rec->ac_version);
       log_msg_set_value(msg, LM_V_MESSAGE, buf, -1);
       g_free(buf);
-      return;
+      return TRUE;
     }
   if (G_UNLIKELY(!handles_registered))
     {
@@ -152,6 +155,7 @@ pacct_format_handler(const MsgFormatOptions *options, const guchar *data, gsize 
   else
     len = ACCT_COMM;
   log_msg_set_value(msg, handle_ac_comm, rec->ac_comm, len);
+  return TRUE;
 }
 
 static LogProtoServer *

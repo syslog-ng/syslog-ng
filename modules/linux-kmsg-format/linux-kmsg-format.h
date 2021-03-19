@@ -26,9 +26,10 @@
 
 #include "msg-format.h"
 
-void linux_kmsg_format_handler(const MsgFormatOptions *parse_options,
-                               const guchar *data, gsize length,
-                               LogMessage *self);
+gboolean linux_kmsg_format_handler(const MsgFormatOptions *parse_options,
+                                   LogMessage *msg,
+                                   const guchar *data, gsize length,
+                                   gsize *problem_position);
 
 void linux_msg_format_init (void);
 

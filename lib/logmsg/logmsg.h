@@ -259,6 +259,31 @@ gboolean log_msg_is_handle_macro(NVHandle handle);
 gboolean log_msg_is_handle_sdata(NVHandle handle);
 gboolean log_msg_is_handle_match(NVHandle handle);
 
+/*
+ * This macros allows the caching of a NVHandle (e.g.  the numeric
+ * identifier of a name-value pair) in a static variable.  This simplifies
+ * call sites by
+ *   1) not needed an extra initialization step to look up the handle, _or_
+ *   2) not having to open code a similar caching mechanism.
+ *
+ * NOTE: that the check itself is racy and there might be two threads
+ * executing the if() at the same time, and if they do they would _both_
+ * perform log_msg_get_value_handle().  The reason is that this is not a
+ * problem is that the handles are constant within the same execution, so
+ * both the winner and loser of the race would eventually set the cache to
+ * the right value.  And albeit this 2nd lookup is unnecessary, this would
+ * happen only a limited number of times (until the variables becomes
+ * visible for all CPUs), from which point on there's no race.
+ */
+#define LOG_MSG_GET_VALUE_HANDLE_STATIC(name) \
+  ({                                                              \
+    static NVHandle __log_msg_value_handle = 0;                   \
+                                                                  \
+    if (G_UNLIKELY(!__log_msg_value_handle))                      \
+      __log_msg_value_handle = log_msg_get_value_handle(name);    \
+    __log_msg_value_handle;                                       \
+  })
+
 static inline gboolean
 log_msg_is_handle_settable_with_an_indirect_value(NVHandle handle)
 {

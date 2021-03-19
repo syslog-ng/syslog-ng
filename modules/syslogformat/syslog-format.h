@@ -26,9 +26,10 @@
 
 #include "msg-format.h"
 
-void syslog_format_handler(const MsgFormatOptions *parse_options,
-                           const guchar *data, gsize length,
-                           LogMessage *self);
+gboolean syslog_format_handler(const MsgFormatOptions *parse_options,
+                               LogMessage *msg,
+                               const guchar *data, gsize length,
+                               gsize *problem_position);
 
 void syslog_format_init(void);
 
