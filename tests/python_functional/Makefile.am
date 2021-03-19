@@ -1,7 +1,15 @@
 export top_srcdir
 
 EXTRA_DIST += \
-	tests/python_functional/CMakeLists.txt
+	tests/python_functional/CMakeLists.txt \
+	tests/python_functional/conftest.py \
+	tests/python_functional/Makefile.am \
+	tests/python_functional/pytest.ini \
+	tests/python_functional/shared_files \
+	tests/python_functional/tox.ini
+
+include tests/python_functional/functional_tests/Makefile.am
+include tests/python_functional/src/Makefile.am
 
 PYTEST_SUBDIR=
 PYTEST_VERBOSE=false
