@@ -46,6 +46,15 @@ team_members = [
 ]
 
 
+blocks = [
+    ('Features', 'feature-*.md'),
+    ('Bugfixes', 'bugfix-*.md'),
+    ('Packaging', 'packaging-*.md'),
+    ('Notes to developers', 'developer-note-*.md'),
+    ('Other changes', 'other-*.md'),
+]
+
+
 def print_usage_if_needed():
     ArgumentParser(usage="\rCreates NEWS.md file from the entries in the news/ folder.\n"
                          "It also deletes the entry files.").parse_args()
@@ -82,17 +91,11 @@ def get_last_version():
 
 def get_next_version():
     next_version = (root_dir / 'VERSION').read_text().rstrip()
-    if next_version == get_last_version():
-        print('VERSION file contains the same version as the current NEWS.md file.\n'
-              'Please bump the VERSION file. Exiting...')
-        exit(1)
     return next_version
-
 
 def create_version():
     next_version = get_next_version()
     return '{}\n{}\n\n'.format(next_version, len(next_version) * '=')
-
 
 def create_highlights_block():
     return '## Highlights\n' \
@@ -103,19 +106,14 @@ def create_highlights_block():
 
 def create_standard_blocks():
     standard_blocks = ''
-    blocks = [
-        ('Features', 'feature-*.md'),
-        ('Bugfixes', 'bugfix-*.md'),
-        ('Packaging', 'packaging-*.md'),
-        ('Notes to developers', 'developer-note-*.md'),
-        ('Other changes', 'other-*.md'),
-    ]
     for block_name, glob in blocks:
         entries = list(news_dir.glob(glob))
         if len(entries) > 0:
             standard_blocks += create_block(block_name, entries)
     return standard_blocks
 
+def check_if_news_entries_are_present():
+    return any(news_dir.glob("*-*.md"))
 
 def create_credits_block():
     def wrap(contributors):
@@ -159,13 +157,24 @@ def create_news_content():
     news += create_credits_block()
     return news
 
+def check_if_news_is_already_uptodate():
+    return get_last_version() == get_next_version()
 
 def main():
     print_usage_if_needed()
-    news = create_news_content()
-    create_newsfile(news)
-    cleanup()
+
+    if check_if_news_is_already_uptodate():
+        if check_if_news_entries_are_present():
+            print('NEWS.md file is already up-to-date with VERSION but news entries still exist (news/*.md).\n'
+                  'Remove NEWS entries or bump the VERSION file.\n')
+            return 1
+        print("NEWS file is already up-to-date, no new NEWS entries, assuming it has been manually prepared")
+    else:
+        news = create_news_content()
+        create_newsfile(news)
+        cleanup()
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
