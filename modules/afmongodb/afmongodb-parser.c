@@ -33,7 +33,8 @@ static CfgLexerKeyword afmongodb_keywords[] =
   { "mongodb", KW_MONGODB },
   { "uri", KW_URI },
   { "collection", KW_COLLECTION },
-  { }
+  { "workers", KW_WORKERS },
+  { NULL }
 };
 
 CfgParser afmongodb_parser =

@@ -47,6 +47,7 @@
 %token KW_MONGODB
 %token KW_URI
 %token KW_COLLECTION
+%token KW_WORKERS
 
 %%
 
@@ -76,6 +77,7 @@ afmongodb_option
         {
             afmongodb_dd_set_value_pairs(last_driver, $1);
         }
+    | KW_WORKERS '(' positive_integer ')'  { log_threaded_dest_driver_set_num_workers(last_driver, $3); }
     | threaded_dest_driver_option
     | { last_template_options = afmongodb_dd_get_template_options(last_driver); } template_option
     ;
