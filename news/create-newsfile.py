@@ -44,6 +44,9 @@ team_members = [
     "Norbert Takacs",
     "Zoltan Pallagi",
 ]
+exclude_contributor_list = [
+    "github-actions",
+]
 
 
 blocks = [
@@ -124,6 +127,7 @@ def create_credits_block():
                    r'grep -Ev "^commit [a-z0-9]{40}$" | sort | uniq')
     contributors = stdout.rstrip().split('\n')
     contributors += team_members
+    contributors = filter(lambda x : x not in exclude_contributor_list, contributors)
     contributors = sorted(set(contributors))
 
     return '## Credits\n' \
