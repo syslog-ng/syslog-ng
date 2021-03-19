@@ -220,6 +220,23 @@ _init(LogPipe *s)
   return TRUE;
 }
 
+static gboolean
+_deinit(LogPipe *s)
+{
+  MongoDBDestDriver *self = (MongoDBDestDriver *)s;
+
+  if(!log_threaded_dest_driver_deinit_method(s))
+    return FALSE;
+
+  if (self->pool)
+    mongoc_client_pool_destroy(self->pool);
+
+  if (self->uri_obj)
+    mongoc_uri_destroy(self->uri_obj);
+
+  return TRUE;
+}
+
 static void
 _free(LogPipe *d)
 {
@@ -235,12 +252,6 @@ _free(LogPipe *d)
   g_free(self->coll);
 
   value_pairs_unref(self->vp);
-
-  if (self->pool)
-    mongoc_client_pool_destroy(self->pool);
-
-  if (self->uri_obj)
-    mongoc_uri_destroy(self->uri_obj);
 
   log_threaded_dest_driver_free(d);
 }
@@ -284,6 +295,7 @@ afmongodb_dd_new(GlobalConfig *cfg)
   log_threaded_dest_driver_init_instance(&self->super, cfg);
 
   self->super.super.super.super.init = _init;
+  self->super.super.super.super.deinit = _deinit;
   self->super.super.super.super.free_fn = _free;
   self->super.super.super.super.generate_persist_name = _format_persist_name;
 
