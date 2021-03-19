@@ -32,12 +32,16 @@ static void
 _worker_disconnect(LogThreadedDestWorker *s)
 {
   MongoDBDestWorker *self = (MongoDBDestWorker *)s;
+  MongoDBDestDriver *owner = (MongoDBDestDriver *) self->super.owner;
 
   mongoc_collection_destroy(self->coll_obj);
   self->coll_obj = NULL;
 
-  mongoc_client_destroy(self->client);
-  self->client = NULL;
+  if (self->client)
+    {
+      mongoc_client_pool_push(owner->pool, self->client);
+      self->client = NULL;
+    }
 }
 
 static gboolean
@@ -47,7 +51,7 @@ _connect(MongoDBDestWorker *self, gboolean reconnect)
 
   if (!self->client)
     {
-      self->client = mongoc_client_new_from_uri(owner->uri_obj);
+      self->client = mongoc_client_pool_pop(owner->pool);
 
       if (!self->client)
         {
@@ -67,7 +71,7 @@ _connect(MongoDBDestWorker *self, gboolean reconnect)
                     evt_tag_str("collection", owner->coll),
                     evt_tag_str("driver", owner->super.super.super.id));
 
-          mongoc_client_destroy(self->client);
+          mongoc_client_pool_push(owner->pool, self->client);
           self->client = NULL;
 
           return FALSE;
@@ -89,7 +93,7 @@ _connect(MongoDBDestWorker *self, gboolean reconnect)
 
       mongoc_collection_destroy(self->coll_obj);
       self->coll_obj = NULL;
-      mongoc_client_destroy(self->client);
+      mongoc_client_pool_push(owner->pool, self->client);
       self->client = NULL;
 
       return FALSE;

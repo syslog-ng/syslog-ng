@@ -41,6 +41,7 @@ typedef struct _MongoDBDestDriver
 
   const gchar *const_db;
   mongoc_uri_t *uri_obj;
+  mongoc_client_pool_t *pool;
 } MongoDBDestDriver;
 
 #endif

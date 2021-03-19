@@ -171,6 +171,18 @@ afmongodb_dd_private_uri_init(LogDriver *d)
   return TRUE;
 }
 
+gboolean
+afmongodb_dd_client_pool_init(MongoDBDestDriver *self)
+{
+  self->pool = mongoc_client_pool_new(self->uri_obj);
+  if (!self->pool)
+    return FALSE;
+
+  mongoc_client_pool_max_size(self->pool, self->super.num_workers);
+
+  return TRUE;
+}
+
 /*
  * Main thread
  */
@@ -199,6 +211,9 @@ _init(LogPipe *s)
   if (!afmongodb_dd_private_uri_init(&self->super.super.super))
     return FALSE;
 
+  if (!afmongodb_dd_client_pool_init(self))
+    return FALSE;
+
   if (!log_threaded_dest_driver_init_method(s))
     return FALSE;
 
@@ -220,6 +235,9 @@ _free(LogPipe *d)
   g_free(self->coll);
 
   value_pairs_unref(self->vp);
+
+  if (self->pool)
+    mongoc_client_pool_destroy(self->pool);
 
   if (self->uri_obj)
     mongoc_uri_destroy(self->uri_obj);
