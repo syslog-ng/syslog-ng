@@ -76,7 +76,7 @@ static GOptionEntry loggen_options[] =
   { NULL }
 };
 
-PluginInfo loggen_plugin_info =
+PluginInfo socket_loggen_plugin_info =
 {
   .name = "socket-plugin",
   .get_options_list = get_options,
@@ -175,7 +175,7 @@ start(PluginOption *option)
       data->option = option;
       data->index = j;
 
-      GThread *thread_id = g_thread_new(loggen_plugin_info.name, active_thread_func, (gpointer)data);
+      GThread *thread_id = g_thread_new(socket_loggen_plugin_info.name, active_thread_func, (gpointer)data);
       g_ptr_array_add(thread_array, (gpointer) thread_id);
     }
 
@@ -185,7 +185,7 @@ start(PluginOption *option)
       data->option = option;
       data->index = j;
 
-      GThread *thread_id = g_thread_new(loggen_plugin_info.name, idle_thread_func, (gpointer)data);
+      GThread *thread_id = g_thread_new(socket_loggen_plugin_info.name, idle_thread_func, (gpointer)data);
       g_ptr_array_add(thread_array, (gpointer) thread_id);
     }
 
@@ -281,7 +281,7 @@ idle_thread_func(gpointer user_data)
 
   g_mutex_unlock(thread_lock);
 
-  DEBUG("thread (%s,%p) created. wait for start ...\n", loggen_plugin_info.name, g_thread_self());
+  DEBUG("thread (%s,%p) created. wait for start ...\n", socket_loggen_plugin_info.name, g_thread_self());
   g_mutex_lock(thread_lock);
   while (!thread_run)
     {
@@ -289,7 +289,7 @@ idle_thread_func(gpointer user_data)
     }
   g_mutex_unlock(thread_lock);
 
-  DEBUG("thread (%s,%p) started. (r=%d,c=%d)\n", loggen_plugin_info.name, g_thread_self(), option->rate,
+  DEBUG("thread (%s,%p) started. (r=%d,c=%d)\n", socket_loggen_plugin_info.name, g_thread_self(), option->rate,
         option->number_of_messages);
 
   while (fd > 0 && thread_run && active_thread_count > 0)
@@ -347,7 +347,7 @@ active_thread_func(gpointer user_data)
 
   g_mutex_unlock(thread_lock);
 
-  DEBUG("thread (%s,%p) created. wait for start ...\n", loggen_plugin_info.name, g_thread_self());
+  DEBUG("thread (%s,%p) created. wait for start ...\n", socket_loggen_plugin_info.name, g_thread_self());
   g_mutex_lock(thread_lock);
   while (!thread_run)
     {
@@ -355,7 +355,7 @@ active_thread_func(gpointer user_data)
     }
   g_mutex_unlock(thread_lock);
 
-  DEBUG("thread (%s,%p) started. (r=%d,c=%d)\n", loggen_plugin_info.name, g_thread_self(), option->rate,
+  DEBUG("thread (%s,%p) started. (r=%d,c=%d)\n", socket_loggen_plugin_info.name, g_thread_self(), option->rate,
         option->number_of_messages);
 
   unsigned long count = 0;
@@ -393,7 +393,7 @@ active_thread_func(gpointer user_data)
       thread_context->sent_messages++;
       thread_context->buckets--;
     }
-  DEBUG("thread (%s,%p) finished\n", loggen_plugin_info.name, g_thread_self());
+  DEBUG("thread (%s,%p) finished\n", socket_loggen_plugin_info.name, g_thread_self());
 
   g_free((gpointer)message);
   g_mutex_lock(thread_lock);
