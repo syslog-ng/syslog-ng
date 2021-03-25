@@ -276,6 +276,7 @@ void log_pipe_detach_expr_node(LogPipe *self);
 static inline GlobalConfig *
 log_pipe_get_config(LogPipe *s)
 {
+  g_assert(s->cfg);
   return s->cfg;
 }
 

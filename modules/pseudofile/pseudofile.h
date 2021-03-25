@@ -28,6 +28,7 @@
 
 LogTemplateOptions *pseudofile_dd_get_template_options(LogDriver *s);
 void pseudofile_dd_set_template(LogDriver *self, LogTemplate *template);
+void pseudofile_dd_set_time_reopen(LogDriver *s, time_t time_reopen);
 LogDriver *pseudofile_dd_new(gchar *user, GlobalConfig *cfg);
 
 #endif

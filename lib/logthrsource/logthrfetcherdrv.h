@@ -78,5 +78,6 @@ gboolean log_threaded_fetcher_driver_deinit_method(LogPipe *s);
 void log_threaded_fetcher_driver_free_method(LogPipe *s);
 
 void log_threaded_fetcher_driver_set_fetch_no_data_delay(LogDriver *self, gdouble no_data_delay);
+void log_threaded_fetcher_driver_set_time_reopen(LogDriver *s, time_t time_reopen);
 
 #endif

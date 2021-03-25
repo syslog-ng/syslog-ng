@@ -69,6 +69,14 @@ log_threaded_dest_driver_set_batch_timeout(LogDriver *s, gint batch_timeout)
   self->batch_timeout = batch_timeout;
 }
 
+void
+log_threaded_dest_driver_set_time_reopen(LogDriver *s, time_t time_reopen)
+{
+  LogThreadedDestDriver *self = (LogThreadedDestDriver *) s;
+
+  self->time_reopen = time_reopen;
+}
+
 /* this should be used in combination with LTR_EXPLICIT_ACK_MGMT to actually confirm message delivery. */
 void
 log_threaded_dest_worker_ack_messages(LogThreadedDestWorker *self, gint batch_size)
@@ -1061,7 +1069,7 @@ log_threaded_dest_driver_init_method(LogPipe *s)
 
   self->under_termination = FALSE;
 
-  if (cfg && self->time_reopen == -1)
+  if (self->time_reopen == -1)
     self->time_reopen = cfg->time_reopen;
 
   self->shared_seq_num = GPOINTER_TO_INT(cfg_persist_config_fetch(cfg,

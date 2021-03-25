@@ -237,5 +237,6 @@ void log_threaded_dest_driver_set_max_retries_on_error(LogDriver *s, gint max_re
 void log_threaded_dest_driver_set_num_workers(LogDriver *s, gint num_workers);
 void log_threaded_dest_driver_set_batch_lines(LogDriver *s, gint batch_lines);
 void log_threaded_dest_driver_set_batch_timeout(LogDriver *s, gint batch_timeout);
+void log_threaded_dest_driver_set_time_reopen(LogDriver *s, time_t time_reopen);
 
 #endif

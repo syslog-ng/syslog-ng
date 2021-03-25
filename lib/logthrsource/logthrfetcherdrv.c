@@ -35,6 +35,13 @@ log_threaded_fetcher_driver_set_fetch_no_data_delay(LogDriver *s, gdouble no_dat
   self->no_data_delay = (gint64) SEC_TO_MSEC(no_data_delay);
 }
 
+void
+log_threaded_fetcher_driver_set_time_reopen(LogDriver *s, time_t time_reopen)
+{
+  LogThreadedFetcherDriver *self = (LogThreadedFetcherDriver *) s;
+  self->time_reopen = time_reopen;
+}
+
 static EVTTAG *
 _tag_driver(LogThreadedFetcherDriver *f)
 {
@@ -324,7 +331,7 @@ log_threaded_fetcher_driver_init_method(LogPipe *s)
 
   g_assert(self->fetch);
 
-  if (cfg && self->time_reopen == -1)
+  if (self->time_reopen == -1)
     self->time_reopen = cfg->time_reopen;
 
   if (self->no_data_delay == -1)

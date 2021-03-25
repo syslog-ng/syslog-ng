@@ -37,6 +37,7 @@ typedef struct _PseudoFileDestDriver
   LogTemplate *template;
   gchar *pseudofile_name;
   time_t suspend_until;
+  time_t time_reopen;
 } PseudoFileDestDriver;
 
 /*
@@ -71,6 +72,14 @@ pseudofile_dd_set_template(LogDriver *s, LogTemplate *template)
 
   log_template_unref(self->template);
   self->template = template;
+}
+
+void
+pseudofile_dd_set_time_reopen(LogDriver *s, time_t time_reopen)
+{
+  PseudoFileDestDriver *self = (PseudoFileDestDriver *) s;
+
+  self->time_reopen = time_reopen;
 }
 
 static void
@@ -151,9 +160,7 @@ _is_output_suspended(PseudoFileDestDriver *self, time_t now)
 static void
 _suspend_output(PseudoFileDestDriver *self, time_t now)
 {
-  GlobalConfig *cfg = log_pipe_get_config(&self->super.super.super);
-
-  self->suspend_until = now + cfg->time_reopen;
+  self->suspend_until = now + self->time_reopen;
 }
 
 static void
@@ -188,6 +195,9 @@ pseudofile_dd_init(LogPipe *s)
 
   log_template_options_init(&self->template_options, cfg);
 
+  if (self->time_reopen == -1)
+    self->time_reopen = cfg->time_reopen;
+
   if (!self->template)
     {
       msg_error("The template() option for pseudofile() is mandatory", log_pipe_location_tag(s));
@@ -219,5 +229,6 @@ pseudofile_dd_new(gchar *pseudofile_name, GlobalConfig *cfg)
   self->super.super.super.queue = pseudofile_dd_queue;
   self->super.super.super.free_fn = pseudofile_dd_free;
   self->pseudofile_name = g_strdup(pseudofile_name);
+  self->time_reopen = -1;
   return &self->super.super;
 }

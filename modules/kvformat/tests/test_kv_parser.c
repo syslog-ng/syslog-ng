@@ -26,6 +26,7 @@
 
 #include <criterion/criterion.h>
 
+GlobalConfig *cfg;
 LogParser *kv_parser;
 
 static LogMessage *
@@ -62,7 +63,8 @@ void
 setup(void)
 {
   app_startup();
-  kv_parser = kv_parser_new(NULL);
+  cfg = cfg_new_snippet();
+  kv_parser = kv_parser_new(cfg);
   log_pipe_init((LogPipe *)kv_parser);
 }
 
@@ -72,6 +74,7 @@ teardown(void)
   log_pipe_deinit((LogPipe *)kv_parser);
   log_pipe_unref(&kv_parser->super);
   scratch_buffers_explicit_gc();
+  cfg_free(cfg);
   app_shutdown();
 }
 

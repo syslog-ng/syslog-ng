@@ -60,10 +60,21 @@ extern LogDriver *last_driver;
 
 start
 	: LL_CONTEXT_DESTINATION dest_afuser			 { last_driver = *instance = $2; YYACCEPT; }
-        ;
+	;
 
 dest_afuser
-	: KW_USERTTY '(' string ')'		{ $$ = afuser_dd_new($3, configuration); free($3); }
+	: KW_USERTTY '(' string { last_driver = afuser_dd_new($3, configuration); }
+		afuser_opts
+		')' { $$ = last_driver; free($3); }
+	;
+
+afuser_opts
+	: afuser_opt afuser_opts
+	|
+	;
+
+afuser_opt
+	: KW_TIME_REOPEN '(' positive_integer ')' { afuser_dd_set_time_reopen(last_driver, $3); }
 	;
 
 /* INCLUDE_RULES */
