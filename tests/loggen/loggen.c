@@ -155,6 +155,41 @@ gboolean is_plugin_already_loaded(GPtrArray *plugin_array, const gchar *name)
   return FALSE;
 }
 
+/* receives a filename and returns a PluginInfo or NULL */
+static PluginInfo *
+load_plugin_info_with_fname(const gchar *plugin_path, const gchar *fname)
+{
+  if (!g_str_has_suffix(fname, G_MODULE_SUFFIX) || !g_str_has_prefix(fname, LOGGEN_PLUGIN_LIB_PREFIX) ||
+      !g_str_has_suffix(fname, LOGGEN_PLUGIN_LIB_SUFFIX))
+    return NULL;
+
+  gchar *full_lib_path = g_build_filename(plugin_path, fname, NULL);
+  GModule *module = g_module_open(full_lib_path, G_MODULE_BIND_LAZY);
+  g_free(full_lib_path);
+
+  if (!module)
+    {
+      ERROR("error opening plugin module %s (%s)\n", fname, g_module_error());
+      return NULL;
+    }
+
+  gchar plugin_name[LOGGEN_PLUGIN_NAME_MAXSIZE + 1];
+  gchar *extracted_fname = g_strndup(fname + strlen(LOGGEN_PLUGIN_LIB_PREFIX),
+                                     strlen(fname) - strlen(LOGGEN_PLUGIN_LIB_PREFIX) - strlen(LOGGEN_PLUGIN_LIB_SUFFIX));
+  g_snprintf(plugin_name, LOGGEN_PLUGIN_NAME_MAXSIZE, "%s_%s", extracted_fname, LOGGEN_PLUGIN_INFO);
+  g_free(extracted_fname);
+
+  /* get plugin info from lib file */
+  PluginInfo *plugin;
+  if (!g_module_symbol(module, plugin_name, (gpointer *) &plugin))
+    {
+      DEBUG("%s isn't a plugin for loggen. skip it. (%s)\n", fname, g_module_error());
+      g_module_close(module);
+      return NULL;
+    }
+  return plugin;
+}
+
 /* return value means the number of successfully loaded plugins */
 static int
 enumerate_plugins(const gchar *plugin_path, GPtrArray *plugin_array, GOptionContext *ctx)
@@ -174,30 +209,11 @@ enumerate_plugins(const gchar *plugin_path, GPtrArray *plugin_array, GOptionCont
   /* add common options to help context: */
   g_option_context_add_main_entries(ctx, loggen_options, 0);
 
-  GModule *module = NULL;
   while ((fname = g_dir_read_name(dir)))
     {
-      if (!g_str_has_suffix(fname, G_MODULE_SUFFIX))
+      PluginInfo *plugin = load_plugin_info_with_fname(plugin_path, fname);
+      if(!plugin)
         continue;
-
-      gchar *full_lib_path = g_build_filename(plugin_path, fname, NULL);
-      module = g_module_open(full_lib_path, G_MODULE_BIND_LAZY);
-      g_free(full_lib_path);
-
-      if (!module)
-        {
-          ERROR("error opening plugin module %s (%s)\n", fname, g_module_error());
-          continue;
-        }
-
-      /* get plugin info from lib file */
-      PluginInfo *plugin;
-      if (!g_module_symbol(module, LOGGEN_PLUGIN_INFO, (gpointer *) &plugin))
-        {
-          DEBUG("%s isn't a plugin for loggen. skip it. (%s)\n", fname, g_module_error());
-          g_module_close(module);
-          continue;
-        }
 
       if (is_plugin_already_loaded(plugin_array, plugin->name))
         {

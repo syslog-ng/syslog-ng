@@ -29,6 +29,9 @@
 #include <sys/time.h>
 
 #define LOGGEN_PLUGIN_INFO "loggen_plugin_info"
+#define LOGGEN_PLUGIN_LIB_PREFIX "libloggen_"
+#define LOGGEN_PLUGIN_LIB_SUFFIX "_plugin.so"
+#define LOGGEN_PLUGIN_NAME_MAXSIZE 100
 
 typedef struct _plugin_option
 {
