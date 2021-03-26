@@ -22,19 +22,15 @@
 #############################################################################
 import logging
 
-from src.driver_io.file.file_io import FileIO
-from src.message_reader.message_reader import MessageReader
-from src.message_reader.message_reader import READ_ALL_AVAILABLE_MESSAGES
-from src.message_reader.single_line_parser import SingleLineParser
+from src.common.file import File
 
 logger = logging.getLogger(__name__)
 
 
 class ConsoleLogReader(object):
     def __init__(self, instance_paths):
-        self.__stderr_io = FileIO(instance_paths.get_stderr_path())
-        self.__message_reader = MessageReader(self.__stderr_io.read, SingleLineParser())
-        self.__console_log_path = instance_paths.get_stderr_path()
+        self.__stderr_path = instance_paths.get_stderr_path()
+        self.__stderr_file = File(self.__stderr_path)
 
     def wait_for_start_message(self):
         syslog_ng_start_message = ["syslog-ng starting up;"]
@@ -56,32 +52,34 @@ class ConsoleLogReader(object):
         return self.wait_for_messages_in_console_log(self, [expected_message])
 
     def wait_for_messages_in_console_log(self, expected_messages):
-        if not self.__stderr_io.wait_for_creation():
-            raise Exception
+        if not self.__stderr_file.is_opened():
+            self.__stderr_file.wait_for_creation()
+            self.__stderr_file.open("r")
+        return self.__stderr_file.wait_for_lines(expected_messages, timeout=5)
 
-        console_log_messages = self.__message_reader.pop_messages(counter=READ_ALL_AVAILABLE_MESSAGES)
-        console_log_content = "".join(console_log_messages)
-
-        result = []
-        for expected_message in expected_messages:
-            result.append(expected_message in console_log_content)
-        return all(result)
-
-    def check_for_unexpected_messages(self, unexpected_messages):
+    def check_for_unexpected_messages(self, unexpected_messages=None):
         unexpected_patterns = ["Plugin module not found", "assertion"]
-        with self.__console_log_path.open() as f:
-            console_log_messages = f.readlines()
         if unexpected_messages is not None:
-            unexpected_patterns.append(unexpected_messages)
+            unexpected_patterns.extend(unexpected_messages)
+
+        stderr = self.__read_all_from_stderr_file()
+
         for unexpected_pattern in unexpected_patterns:
-            for console_log_message in console_log_messages:
+            for console_log_message in stderr.split("\n"):
                 if unexpected_pattern in console_log_message:
                     logger.error("Found unexpected message in console log: {}".format(console_log_message))
                     raise Exception("Unexpected error log in console", console_log_message)
 
     def dump_stderr(self, last_n_lines=10):
-        console_log_messages = self.__message_reader.peek_messages(counter=READ_ALL_AVAILABLE_MESSAGES)
-        logger.error("".join(console_log_messages[-last_n_lines:]))
+        stderr = self.__read_all_from_stderr_file()
+        logger.error("\n".join(stderr.split("\n")[-last_n_lines:]))
+
+    def __read_all_from_stderr_file(self):
+        stderr_file_from_the_beginning = File(self.__stderr_path)
+        stderr_file_from_the_beginning.open("r")
+        stderr = stderr_file_from_the_beginning.read()
+        stderr_file_from_the_beginning.close()
+        return stderr
 
     @staticmethod
     def handle_valgrind_log(valgrind_log_path):

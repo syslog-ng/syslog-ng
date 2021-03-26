@@ -20,7 +20,7 @@
 # COPYING for details.
 #
 #############################################################################
-from src.common.operations import copy_shared_file
+from src.common.file import copy_shared_file
 
 TEMPLATE = r'"${PROXIED_SRCIP} ${PROXIED_DSTIP} ${PROXIED_SRCPORT} ${PROXIED_DSTPORT} ${PROXIED_IP_VERSION} ${MESSAGE}\n"'
 INPUT_MESSAGES = "PROXY TCP4 1.1.1.1 2.2.2.2 3333 4444\r\n" \

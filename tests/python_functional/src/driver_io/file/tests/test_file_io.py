@@ -26,23 +26,13 @@ from src.driver_io.file.file_io import FileIO
 def test_file_io_write_read(temp_file, test_message):
     fileio = FileIO(temp_file)
     fileio.write(test_message)
-    output = fileio.read()
-    assert test_message == output
+    output = fileio.read_number_of_lines(1)
+    assert [test_message] == output
 
 
 def test_file_io_multiple_write_read(temp_file, test_message):
     fileio = FileIO(temp_file)
     fileio.write(test_message)
     fileio.write(test_message)
-    output = fileio.read()
-    assert test_message + test_message == output
-
-
-def test_file_io_rewrite_read(temp_file):
-    fileio = FileIO(temp_file)
-    content1 = "message 1\n"
-    fileio.write(content1)
-    assert fileio.read() == content1
-    content2 = "message 2\n"
-    fileio.rewrite(content2)
-    assert fileio.read(position=0) == content2
+    output = fileio.read_number_of_lines(2)
+    assert [test_message, test_message] == output

@@ -3,6 +3,7 @@
 EXTRA_DIST += \
 	tests/python_functional/src/common/blocking.py \
 	tests/python_functional/src/common/__init__.py \
+	tests/python_functional/src/common/file.py \
 	tests/python_functional/src/common/network_operations.py \
 	tests/python_functional/src/common/operations.py \
 	tests/python_functional/src/common/pytest_operations.py \
@@ -11,7 +12,6 @@ EXTRA_DIST += \
 	tests/python_functional/src/common/tests/test_blocking.py \
 	tests/python_functional/src/conftest.py \
 	tests/python_functional/src/driver_io/file/file_io.py \
-	tests/python_functional/src/driver_io/file/file.py \
 	tests/python_functional/src/driver_io/file/__init__.py \
 	tests/python_functional/src/driver_io/file/tests/__init__.py \
 	tests/python_functional/src/driver_io/file/tests/test_file_io.py \
@@ -36,17 +36,10 @@ EXTRA_DIST += \
 	tests/python_functional/src/message_builder/__init__.py \
 	tests/python_functional/src/message_builder/log_message.py \
 	tests/python_functional/src/message_builder/tests/__init__.py \
-	tests/python_functional/src/message_reader/__init__.py \
-	tests/python_functional/src/message_reader/message_reader.py \
-	tests/python_functional/src/message_reader/single_line_parser.py \
-	tests/python_functional/src/message_reader/tests/__init__.py \
-	tests/python_functional/src/message_reader/tests/test_message_reader.py \
-	tests/python_functional/src/message_reader/tests/test_single_line_parser.py \
 	tests/python_functional/src/syslog_ng_config/__init__.py \
 	tests/python_functional/src/syslog_ng_config/renderer.py \
 	tests/python_functional/src/syslog_ng_config/statement_group.py \
 	tests/python_functional/src/syslog_ng_config/statements/destinations/destination_driver.py \
-	tests/python_functional/src/syslog_ng_config/statements/destinations/destination_reader.py \
 	tests/python_functional/src/syslog_ng_config/statements/destinations/example_destination.py \
 	tests/python_functional/src/syslog_ng_config/statements/destinations/file_destination.py \
 	tests/python_functional/src/syslog_ng_config/statements/destinations/__init__.py \

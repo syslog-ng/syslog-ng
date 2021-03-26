@@ -37,4 +37,5 @@ def test_snmp_dest_missing_snmp_obj(config, syslog_ng, snmptrapd, snmp_test_para
 
     syslog_ng.start(config)
 
-    assert snmp_test_params.get_expected_empty_trap() == snmptrapd.get_traps()
+    expected_traps = snmp_test_params.get_expected_empty_trap()
+    assert expected_traps == snmptrapd.get_traps(len(expected_traps))

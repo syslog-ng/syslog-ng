@@ -25,8 +25,8 @@ from enum import Enum
 from pathlib2 import Path
 
 import src.testcase_parameters.testcase_parameters as tc_parameters
+from src.common.file import File
 from src.common.random_id import get_unique_id
-from src.driver_io.file.file import File
 from src.helpers.loggen.loggen import Loggen
 
 
@@ -38,9 +38,11 @@ class NetworkIO():
 
     def write(self, content, rate=None):
         loggen_input_file_path = Path(tc_parameters.WORKING_DIR, "loggen_input_{}.txt".format(get_unique_id()))
+
         loggen_input_file = File(loggen_input_file_path)
-        with loggen_input_file.open_file(mode="a+") as f:
-            f.write(content)
+        loggen_input_file.open(mode="w")
+        loggen_input_file.write(content)
+        loggen_input_file.close()
 
         Loggen().start(self.__ip, self.__port, read_file=str(loggen_input_file_path), dont_parse=True, permanent=True, rate=rate, **self.__transport.value)
 

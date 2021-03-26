@@ -20,40 +20,32 @@
 # COPYING for details.
 #
 #############################################################################
-from src.driver_io.file.file import File
+from src.common.file import File
 
 
-class FileIO(File):
+class FileIO():
     def __init__(self, file_path):
-        super(FileIO, self).__init__(file_path)
-        self.__readable_file = None
-        self.__writeable_file = None
+        self.__readable_file = File(file_path)
+        self.__writeable_file = File(file_path)
 
-    def read(self, position=None):
-        if not self.__readable_file:
-            self.__readable_file = self.open_file(mode="r")
+    def read_number_of_lines(self, counter):
+        if not self.__readable_file.is_opened():
+            if not self.__readable_file.wait_for_creation():
+                raise Exception("{} was not created in time.".format(self.__readable_file.path))
+            self.__readable_file.open("r")
 
-        if position is not None:
-            self.__readable_file.seek(position)
+        return self.__readable_file.wait_for_number_of_lines(counter)
 
-        content = ""
-        buffer = None
-        while buffer != "":
-            buffer = self.__readable_file.readline()
-            content += buffer
+    def read_until_lines(self, lines):
+        if not self.__readable_file.is_opened():
+            if not self.__readable_file.wait_for_creation():
+                raise Exception("{} was not created in time.".format(self.__readable_file.path))
+            self.__readable_file.open("r")
 
-        return content
+        return self.__readable_file.wait_for_lines(lines)
 
     def write(self, content):
-        if self.__writeable_file is None:
-            self.__writeable_file = self.open_file(mode="a+")
-        self.__write(content, self.__writeable_file)
+        if not self.__writeable_file.is_opened():
+            self.__writeable_file.open("a+")
 
-    def rewrite(self, content):
-        rewriteable_file = self.open_file(mode="w+")
-        self.__write(content, rewriteable_file)
-
-    @staticmethod
-    def __write(content, writeable_file):
-        writeable_file.write(content)
-        writeable_file.flush()
+        self.__writeable_file.write(content)

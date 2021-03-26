@@ -42,5 +42,7 @@ def test_snmp_dest_v2c_custom_community(config, syslog_ng, snmptrapd, snmp_test_
 
     syslog_ng.start(config)
 
-    assert snmp_test_params.get_expected_basic_trap() == snmptrapd.get_traps()
-    assert any(test_community in line for line in snmptrapd.get_raw_traps())
+    expected_traps = snmp_test_params.get_expected_basic_trap()
+
+    assert expected_traps == snmptrapd.get_traps(len(expected_traps))
+    assert test_community in snmptrapd.get_log()

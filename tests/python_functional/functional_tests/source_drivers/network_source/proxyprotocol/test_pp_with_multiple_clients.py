@@ -25,10 +25,10 @@ TEMPLATE = r'"${PROXIED_SRCIP} ${PROXIED_DSTIP} ${PROXIED_SRCPORT} ${PROXIED_DST
 
 CLIENT_A_INPUT = "PROXY TCP4 1.1.1.1 2.2.2.2 3333 4444\r\n" \
                  "message A 0\n" \
-                 "message A 1"
+                 "message A 1\n"
 CLIENT_B_INPUT = "PROXY TCP4 5.5.5.5 6.6.6.6 7777 8888\r\n" \
                  "message B 0\n" \
-                 "message B 1"
+                 "message B 1\n"
 
 CLIENT_A_EXPECTED = (
     "1.1.1.1 2.2.2.2 3333 4444 4 message A 0\n",

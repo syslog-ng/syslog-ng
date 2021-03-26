@@ -22,8 +22,8 @@
 #############################################################################
 import logging
 
+from src.common.file import File
 from src.common.operations import cast_to_list
-from src.driver_io.file.file_io import FileIO
 from src.syslog_ng_config.renderer import ConfigRenderer
 from src.syslog_ng_config.statement_group import StatementGroup
 from src.syslog_ng_config.statements.destinations.example_destination import ExampleDestination
@@ -66,7 +66,10 @@ class SyslogNgConfig(object):
         else:
             rendered_config = ConfigRenderer(self.__syslog_ng_config).get_rendered_config()
         logger.info("Generated syslog-ng config\n{}\n".format(rendered_config))
-        FileIO(config_path).rewrite(rendered_config)
+
+        f = File(config_path)
+        with f.open('w+') as config_file:
+            config_file.write(rendered_config)
 
     def set_version(self, version):
         self.__syslog_ng_config["version"] = version

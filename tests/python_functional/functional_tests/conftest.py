@@ -27,7 +27,7 @@ import pytest
 from pathlib2 import Path
 
 import src.testcase_parameters.testcase_parameters as tc_parameters
-from src.common.operations import copy_file
+from src.common.file import copy_file
 from src.common.pytest_operations import calculate_testcase_name
 
 logger = logging.getLogger(__name__)

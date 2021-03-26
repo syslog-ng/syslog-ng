@@ -60,4 +60,4 @@ def test_snmp_dest_v2c_using_macros_in_snmp_obj(config, syslog_ng, snmptrapd, sn
         '.1.3.6.1.6.3.1.1.4.1.0 = OID: .1.3.6.1.4.1.9.9.41.2.0.1',
     ]
 
-    assert expected_traps == snmptrapd.get_traps()
+    assert expected_traps == snmptrapd.get_traps(len(expected_traps))
