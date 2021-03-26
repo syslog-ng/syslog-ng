@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Balabit-Europe Kft. 2019-2020. (c) All rights reserved.
+# One Identity Hungary Kft. 2020-2021. (c) All rights reserved.
+
+# Licensing and use governed by the GNU GPL version 2 license
+
 ### Exit error codes
 #
 # 0: everything went fine
@@ -11,6 +16,10 @@
 # 250: unsupported os/distribution/version
 # 249: conflicting parameters
 # 248: internal error at task selection
+# 247: internal error at callback task selection
+# 246: syslog-ng not installed
+# 245: invalid plugin metadata
+# 244: tty not available
 
 EL_FC=
 EL_TE=
@@ -92,29 +101,36 @@ setup_vars() {
 	echo "Detected RHEL/CentOS/Oracle Linux ${OS_VERSION}."
 	case "${OS_VERSION}" in
 		5.*)
-			
+
 			EL_FC="syslog_ng.el5.fc.in"
 			EL_TE="syslog_ng.el5.te.in"
 			;;
 		6.*)
 			EL_FC="syslog_ng.el6.fc.in"
-			
+
 			local MINORVER 
 			MINORVER=$( cut -d. -f 2 <<<"${OS_VERSION}" )
 			if [ "${MINORVER}" -lt 5 ]; then
 				EL_TE="syslog_ng.el6.0to4.te.in"
 			else
-				EL_TE="syslog_ng.el67.te.in"
+				EL_TE="syslog_ng.el6.5up.te.in"
 				    
 				# 601/tcp and 601/udp are allowed by default on RHEL6.5+, so there is no need to enable them
 				omit_allowed_ports
 			fi
 			;;
 		7.*)
-			EL_FC="syslog_ng.el7.fc.in"
-			EL_TE="syslog_ng.el67.te.in"
-			
+			EL_FC="syslog_ng.el78.fc.in"
+			EL_TE="syslog_ng.el7.te.in"
+
 			# 601/tcp and 601/udp are allowed by default on RHEL7, so there is no need to enable them
+			omit_allowed_ports
+			;;
+		8.*)
+			EL_FC="syslog_ng.el78.fc.in"
+			EL_TE="syslog_ng.el8.te.in"
+
+			# 601/tcp and 601/udp are allowed by default on RHEL8, so there is no need to enable them
 			omit_allowed_ports
 			;;
 		*)
@@ -152,12 +168,19 @@ remove_trainling_slash() {
 	# the trailing slash in the install path (if present) breaks file context rules
 	# thus it needs to be removed (provided that the install path is not "/" itself)
 	sed -e 's:^\(.\+\)/$:\1:'
+
+filter_bogus_build_output() {
+	#filter misleading output caused by RHEL bug 1861968
+	fgrep -v /usr/share/selinux/devel/include/services/container.if
 }
 
 
 build_module() {
 	echo "Building and Loading Policy"
-	make -f /usr/share/selinux/devel/Makefile syslog_ng.pp || exit 252
+	build_output=$( make -f /usr/share/selinux/devel/Makefile syslog_ng.pp 2>&1 )
+	retval=${?}
+	filter_bogus_build_output <<<"${build_output}"
+	[ ${retval} -eq 0 ] || exit 252
 }
 
 
@@ -172,22 +195,28 @@ add_ports() {
 
 
 install_module() {
-	/usr/sbin/semodule -i syslog_ng.pp -v || exit 251
+	if semodule -l | grep -qw syslog_ng; then
+		echo "The Syslog-ng SELinux policy module is already installed. Nothing to do..."
+		echo "If it belongs to a previous version, then you will have to remove it first."
+	else
+		/usr/sbin/semodule -i syslog_ng.pp -v || exit 251
 
-	# set up syslog-ng specific ports
-	PORTS=
-	for port in ${SYSLOG_NG_TCP_PORTS}; do PORTS="${PORTS} ${port}/tcp"; done
-	for port in ${SYSLOG_NG_UDP_PORTS}; do PORTS="${PORTS} ${port}/udp"; done
-	add_ports "${PORTS}"
-	
-	# Fixing the file context
-	/sbin/restorecon -F -Rv "${INSTALL_PATH}"
-	[ -f /etc/init.d/syslog-ng ] && /sbin/restorecon -F -v /etc/init.d/syslog-ng
-	[ -f /etc/rc.d/init.d/syslog-ng ] && /sbin/restorecon -F -v /etc/rc.d/init.d/syslog-ng
-	/sbin/restorecon -F -Rv /dev/log
-	
-	echo -e "\nPlease restart syslog-ng. You can find more information about this in the README file."
+		# set up syslog-ng specific ports
+		PORTS=
+		for port in ${SYSLOG_NG_TCP_PORTS}; do PORTS="${PORTS} ${port}/tcp"; done
+		for port in ${SYSLOG_NG_UDP_PORTS}; do PORTS="${PORTS} ${port}/udp"; done
+		add_ports "${PORTS}"
+
+		# Fixing the file context
+		/sbin/restorecon -F -Rv "${INSTALL_PATH}"
+		[ -f /etc/init.d/syslog-ng ] && /sbin/restorecon -F -v /etc/init.d/syslog-ng
+		[ -f /etc/rc.d/init.d/syslog-ng ] && /sbin/restorecon -F -v /etc/rc.d/init.d/syslog-ng
+		/sbin/restorecon -F -Rv /dev/log
+
+		echo -e "\nPlease restart syslog-ng. You can find more information about this in the README file."
+	fi
 }
+
 
 remove_ports() {
 	for entry in ${@}; do
@@ -197,27 +226,28 @@ remove_ports() {
 	done
 }
 
+
 remove_module() {
-	if semodule -l | grep -q syslog_ng; then
+	if semodule -l | grep -qw syslog_ng; then
 		echo -n "Removing Syslog-ng SELinux policy module... "
-		
+
 		semodule --remove=syslog_ng
-		
+
 		# unconfigure syslog-ng specific ports
 		PORTS=
 		for port in ${SYSLOG_NG_TCP_PORTS}; do PORTS="${PORTS} ${port}/tcp"; done
 		for port in ${SYSLOG_NG_UDP_PORTS}; do PORTS="${PORTS} ${port}/udp"; done
 		remove_ports "${PORTS}"
-		
+
 		[ -f syslog_ng.pp ] && rm -f syslog_ng.pp
 		[ -f syslog_ng.te ] && rm -f syslog_ng.te
 		[ -f syslog_ng.fc ] && rm -f syslog_ng.fc
 		[ -f syslog_ng.if ] && rm -f syslog_ng.if
 		[ -d tmp ] && rm -Rf tmp
-		
+
 		echo "done."
 	else
-		echo "No installed Syslog-ng SELinux policy module was found. Nothing to do..."
+		echo "No installed Syslog-ng SELinux policy module was found. No removal is necessary. Skipping..."
 	fi
 }
 
@@ -276,9 +306,9 @@ case "${TASK_SELECTED}" in
 				query_install_path
 			done
 		fi
-		
-		INSTALL_PATH=$( remove_trainling_slash <<<"${INPUT}" )
-		
+
+		INSTALL_PATH=$( remove_trailing_slash <<<"${INPUT}" )
+
 		detect_os_version
 		setup_vars
 		prepare_files
