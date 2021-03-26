@@ -1,4 +1,4 @@
-FILE CONTEXTS:
+FILE CONTEXTS FOR SYSLOG-NG:
 
   /dev/log:                                                               devlog_t
   /opt/syslog-ng:                                                         usr_t
@@ -19,12 +19,36 @@ FILE CONTEXTS:
   /opt/syslog-ng/var/syslog-ng.persist:                                   syslogd_var_lib_t
   /etc/rc.d/init.d/syslog-ng:                                             syslogd_initrc_exec_t
 
-PROCESS LABEL (RHEL7):
-  when syslog-ng was started by init (by systemctl or during boot):
+FILE CONTEXTS FOR THE WINDOWS EVENT COLLECTOR MODULE (PREMIUM EDITION ONLY):
+
+  /opt/syslog-ng/etc/wec.yaml*:                                           wec_conf_t
+  /opt/syslog-ng/libexec/wec:                                             wec_exec_t
+  /opt/syslog-ng/sbin/wec:                                                wec_exec_t
+  /opt/syslog-ng/var/wecstate:                                            wec_state_t
+  /opt/syslog-ng/var/wecstate/*:                                          wec_state_t
+  /opt/syslog-ng/var/run/wec.sock:                                        wec_sock_t
+  /opt/syslog-ng/var/wec.log:                                             wec_log_t
+
+
+PROCESS LABEL (RHEL8):
+  when syslog-ng was started by systemd (by systemctl or during boot):
     system_u:system_r:syslogd_t:s0
 
   when syslog-ng was started manually (/opt/syslog-ng/sbin/syslog-ng -Fevd):
-    unconfined_u:system_r:unconfined_t:s0-s0:c0.c1023 
+    unconfined_u:system_r:unconfined_t:s0-s0:c0.c1023
+
+  when wec was started by systemd (by systemctl or during boot):
+    system_u:system_r:wec_t:s0
+
+PROCESS LABEL (RHEL7):
+  when syslog-ng was started by systemd (by systemctl or during boot):
+    system_u:system_r:syslogd_t:s0
+
+  when syslog-ng was started manually (/opt/syslog-ng/sbin/syslog-ng -Fevd):
+    unconfined_u:system_r:unconfined_t:s0-s0:c0.c1023
+
+  when wec was started by systemd (by systemctl or during boot):
+    system_u:system_r:wec_t:s0
 
 PROCESS LABEL (RHEL6):
   when syslog-ng was started by init during boot:
@@ -35,7 +59,13 @@ PROCESS LABEL (RHEL6):
 
   when syslog-ng was started manually (/opt/syslog-ng/sbin/syslog-ng -Fevd)
     unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023
-    
+
+  when wec was started by init during boot:
+    system_u:system_r:wec_t:s0
+
+  when wec was started by init, but manually (service syslog-ng start)
+    unconfined_u:system_r:wec_t:s0
+
 PROCESS LABEL (RHEL5):
   when syslog-ng was started by init during boot:
     system_u:system_r:syslogd_t:s0
