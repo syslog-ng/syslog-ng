@@ -1022,6 +1022,12 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
     }
 
 
+  if (!first_pipe && !last_pipe)
+    {
+      /* this is an empty sequence, insert a do-nothing LogPipe */
+      first_pipe = last_pipe = cfg_tree_new_pipe(self, node);
+    }
+
 
   /* NOTE: if flow control is enabled, then we either need to have an
    * embedded log statement (in which case first_pipe is set, as we're not
@@ -1031,12 +1037,6 @@ cfg_tree_compile_sequence(CfgTree *self, LogExprNode *node,
 
   g_assert(((node->flags & LC_FLOW_CONTROL) && (first_pipe || source_join_pipe)) ||
            !(node->flags & LC_FLOW_CONTROL));
-
-  if (!first_pipe && !last_pipe)
-    {
-      /* this is an empty sequence, insert a do-nothing LogPipe */
-      first_pipe = last_pipe = cfg_tree_new_pipe(self, node);
-    }
 
   if (!node_properties_propagated)
     {
