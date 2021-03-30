@@ -135,5 +135,6 @@ wall_clock_time_is_set(WallClockTime *wct)
 void wall_clock_time_unset(WallClockTime *wct);
 gchar *wall_clock_time_strptime(WallClockTime *wct, const gchar *format, const gchar *input);
 void wall_clock_time_guess_missing_year(WallClockTime *self);
+void wall_clock_time_guess_missing_fields(WallClockTime *self);
 
 #endif

@@ -873,6 +873,53 @@ wall_clock_time_guess_missing_year(WallClockTime *self)
     }
 }
 
+void
+wall_clock_time_guess_missing_fields(WallClockTime *self)
+{
+  /*
+   * The missing cases for date can be divided into three types:
+   * 1) missing all fileds -> use current date
+   * 2) only miss year -> guess year based on current year and month (current
+   * year, last year or next year)
+   * 3) the rest of the cases don't make much sense, so zero initialization of
+   * the missing field makes sense. And the year is initializeed to the current
+   *  one.
+   */
+  time_t now;
+  struct tm tm;
+
+  now = cached_g_current_time_sec();
+  cached_localtime(&now, &tm);
+
+  if (self->wct_year == -1 && self->wct_mon == -1 && self->wct_mday == -1)
+    {
+      self->wct_year = tm.tm_year;
+      self->wct_mon = tm.tm_mon;
+      self->wct_mday = tm.tm_mday;
+    }
+  else if (self->wct_year == -1 && self->wct_mon != -1 && self->wct_mday != -1)
+    {
+      self->wct_year = determine_year_for_month(self->wct_mon, &tm);
+    }
+  else
+    {
+      if (self->wct_year == -1)
+        self->wct_year = tm.tm_year;
+      if (self->wct_mon == -1)
+        self->wct_mon = 0;
+      if (self->wct_mday == -1)
+        self->wct_mday = 1;  // day of the month - [1, 31]
+    }
+
+  if (self->wct_hour == -1)
+    self->wct_hour = 0;
+  if (self->wct_min == -1)
+    self->wct_min = 0;
+  if (self->wct_sec == -1)
+    self->wct_sec = 0;
+}
+
+
 /*
  * Calculate the week day of the first day of a year. Valid for
  * the Gregorian calendar, which began Sept 14, 1752 in the UK

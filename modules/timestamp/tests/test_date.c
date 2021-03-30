@@ -168,6 +168,15 @@ ParameterizedTestParameters(date, test_date_parser)
     { "2015-01-26 00:40:07 EDT", NULL, "%Y-%m-%d %H:%M:%S %Z", LM_TS_STAMP, "2015-01-26T00:40:07-04:00" },
     { "2015-01-26 00:40:07 CET", NULL, "%Y-%m-%d %H:%M:%S %Z", LM_TS_STAMP, "2015-01-26T00:40:07+01:00" },
 
+    /* Try with different missing fields*/
+    { "10:30:00 PDT", NULL, "%H:%M:%S %Z", LM_TS_STAMP, "2015-12-30T10:30:00-07:00" },
+    { "03-17 10:30:00 PDT", NULL, "%m-%d %H:%M:%S %Z", LM_TS_STAMP, "2015-03-17T10:30:00-07:00" },
+    { "03 10:30:00 PDT", NULL, "%m %H:%M:%S %Z", LM_TS_STAMP, "2015-03-01T10:30:00-07:00" },
+    { "2015-03 10:30:00 EDT", NULL, "%Y-%m %H:%M:%S %Z", LM_TS_STAMP, "2015-03-01T10:30:00-04:00" },
+    { "2015-03-01 EDT", NULL, "%Y-%m-%d %Z", LM_TS_STAMP, "2015-03-01T00:00:00-04:00" },
+    { "2015-03 EDT", NULL, "%Y-%m %Z", LM_TS_STAMP, "2015-03-01T00:00:00-04:00" },
+    { "2015-03-01 10:30 EDT", NULL, "%Y-%m-%d %H:%M %Z", LM_TS_STAMP, "2015-03-01T10:30:00-04:00" },
+
   };
 
   return cr_make_param_array(struct date_params, params, sizeof(params) / sizeof(struct date_params));

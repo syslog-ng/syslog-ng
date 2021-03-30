@@ -332,6 +332,67 @@ Test(wallclocktime, guess_year_returns_next_year)
     cr_assert(_guessed_year_is_current_year(&wct, mon));
 }
 
+Test(wallclocktime, test_strptime_parses_without_date)
+{
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
+  gchar *end;
+
+  /* Thu Dec 19 22:25:44 CET 2019 */
+  fake_time(1576790744);
+
+  end = wall_clock_time_strptime(&wct, "%H:%M:%S %Z", "10:30:00 CET");
+  wall_clock_time_guess_missing_fields(&wct);
+  cr_expect(end != NULL);
+  cr_expect(wct.wct_year == 119);
+  cr_expect(wct.wct_mon == 11);
+  cr_expect(wct.wct_mday == 19);
+}
+
+Test(wallclocktime, test_strptime_parses_without_mday)
+{
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
+  gchar *end;
+
+  /* Thu Dec 19 22:25:44 CET 2019 */
+  fake_time(1576790744);
+
+  end = wall_clock_time_strptime(&wct, "%Y-%m %H:%M:%S %Z", "2015-03 10:30:00 CET");
+  wall_clock_time_guess_missing_fields(&wct);
+  cr_expect(end != NULL);
+  cr_expect(wct.wct_mday == 1);
+}
+
+Test(wallclocktime, test_strptime_parses_without_time)
+{
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
+  gchar *end;
+
+  /* Thu Dec 19 22:25:44 CET 2019 */
+  fake_time(1576790744);
+
+  end = wall_clock_time_strptime(&wct, "%Y-%m-%d %Z", "2015-03-01 CET");
+  wall_clock_time_guess_missing_fields(&wct);
+  cr_expect(end != NULL);
+  cr_expect(wct.wct_hour == 0);
+  cr_expect(wct.wct_min == 0);
+  cr_expect(wct.wct_sec == 0);
+}
+
+Test(wallclocktime, test_strptime_parses_without_second)
+{
+  WallClockTime wct = WALL_CLOCK_TIME_INIT;
+  gchar *end;
+
+  /* Thu Dec 19 22:25:44 CET 2019 */
+  fake_time(1576790744);
+
+  end = wall_clock_time_strptime(&wct, "%Y-%m-%d %H:%M %Z", "2015-03-01 10:30 CET");
+  wall_clock_time_guess_missing_fields(&wct);
+  cr_expect(end != NULL);
+  cr_expect(wct.wct_min == 30);
+  cr_expect(wct.wct_sec == 0);
+}
+
 static void
 setup(void)
 {
