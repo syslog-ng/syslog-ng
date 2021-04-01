@@ -1,6 +1,7 @@
 SCL_SUBDIRS	= \
 	apache		\
 	cee		\
+	ai_tagging	\
 	cim		\
 	cisco		\
 	collectd \

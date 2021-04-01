@@ -1,5 +1,6 @@
 set(SCL_DIRS
     apache
+    ai_tagging
     cee
     cim
     checkpoint
