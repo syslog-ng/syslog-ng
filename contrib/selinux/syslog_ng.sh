@@ -23,9 +23,15 @@
 # 243: invalid plugin encountered #1
 # 242: invalid plugin encountered #2
 # 241: invalid plugin encountered #3
+# 240: include file cannot be loaded
 
 cd $( dirname $( readlink -f "${0}" ) )
-[ -f include/common.sh.inc ] && source include/common.sh.inc
+if [ -f include/common.sh.inc ]; then
+    . include/common.sh.inc
+else
+    echo "Cannot find the include file 'include/common.sh.inc'!" >&2
+    exit 240
+fi
 
 EL_FC=
 EL_TE=
@@ -284,7 +290,7 @@ plugin_check_feature() {
 			fi
 			;;
 		*)
-			echo "Invalid plugin metadata PLUGIN_FEATURE: \'${1}\'!" >&2
+			echo "Invalid plugin metadata PLUGIN_FEATURE: '${1}'!" >&2
 			exit 245
 			;;
 	esac
@@ -362,13 +368,13 @@ validate_plugin_metadata() {
 	OSE_SUPPORT_ADDED_VERSION="${5}"
 
 	if [[ ( -z "${PLUGIN_NAME}" || -z "${PLUGIN_FEATURE}" ) || ( -z "${PE_SUPPORT_ADDED_VERSION}" && -z "${OSE_SUPPORT_ADDED_VERSION}" ) ]]; then
-		echo "Invalid plugin was encountered in directory: \'${plugin_dir}\'!" >&2
+		echo "Invalid plugin was encountered in directory: '${plugin_dir}'!" >&2
 		exit 243 
 	elif [[ ( "${PLUGIN_FEATURE}" == "PE_ONLY" && -z "${PE_SUPPORT_ADDED_VERSION}" ) || ( "${PLUGIN_FEATURE}" == "OSE_ONLY" && -z "${OSE_SUPPORT_ADDED_VERSION}" ) ]]; then
-		echo "Invalid plugin was encountered in directory: \'${plugin_dir}\'!" >&2
+		echo "Invalid plugin was encountered in directory: '${plugin_dir}'!" >&2
 		exit 242
 	elif [[ ( "${PLUGIN_FEATURE}" == "ALL" ) && ( -z "${PE_SUPPORT_ADDED_VERSION}" || -z "${OSE_SUPPORT_ADDED_VERSION}" ) ]]; then
-		echo "Invalid plugin was encountered in directory: \'${plugin_dir}\'!" >&2
+		echo "Invalid plugin was encountered in directory: '${plugin_dir}'!" >&2
 		exit 241
 	fi
 }
