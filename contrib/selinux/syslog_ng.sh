@@ -168,7 +168,7 @@ init_plugin_db() {
 
 
 query_plugins() {
-# Metadata valiables for the current plugin
+# Metadata variables for the current plugin
 # 
 # PLUGIN_NAME: name of the module that the plugin adds support for
 # PLUGIN_FEATURE: possible values: ALL, PE_ONLY, OSE_ONLY, NONE
@@ -481,7 +481,7 @@ install_precheck() {
 
 
 install_module() {
-	if semodule -l | grep -qw syslog_ng; then
+	if /usr/sbin/semodule -l | grep -qw syslog_ng; then
 		echo "The Syslog-ng SELinux policy module is already installed. Nothing to do..."
 		echo "If it belongs to a previous version, then you will have to remove it first."
 	else
@@ -499,7 +499,7 @@ install_module() {
 		[ -f /etc/rc.d/init.d/syslog-ng ] && /sbin/restorecon -F -v /etc/rc.d/init.d/syslog-ng
 		/sbin/restorecon -F -Rv /dev/log
 
-		echo -e "\nPlease restart syslog-ng. You can find more information about this in the README file."
+		echo -e "\nInstallation of the Syslog-ng SELinux policy module finished.\nPlease restart syslog-ng. You can find more information about this in the README file."
 	fi
 }
 
@@ -514,10 +514,10 @@ remove_ports() {
 
 
 remove_module() {
-	if semodule -l | grep -qw syslog_ng; then
+	if /usr/sbin/semodule -l | grep -qw syslog_ng; then
 		echo -n "Removing Syslog-ng SELinux policy module... "
 
-		semodule --remove=syslog_ng
+		/usr/sbin/semodule --remove=syslog_ng
 
 		# unconfigure syslog-ng specific ports
 		PORTS=
