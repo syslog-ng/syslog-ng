@@ -156,7 +156,6 @@ fetch_plugin_choice() {
 
 get_plugin_list() {
 	while IFS= read -r -d $'\0' plugin_dir; do
-		#[ -n "${plugin_dir}" ] && 
 		echo "${plugin_dir}"
 	done < <( find plugins -maxdepth 1 -type d -a ! -name plugins -print0 | sort -zn )
 }
