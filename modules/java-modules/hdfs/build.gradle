@@ -1,10 +1,10 @@
 project.buildDir = syslogBuildDir+'/hdfs/gradle'
 
 dependencies {
-    compile 'org.apache.hadoop:hadoop-hdfs:2.7.3'
-    compile 'org.apache.hadoop:hadoop-common:2.7.3'
-    compile name: 'syslog-ng-common'
-    compile name: 'syslog-ng-core'
-    compile 'log4j:log4j:1.2.17'
+    implementation 'org.apache.hadoop:hadoop-hdfs:2.7.3'
+    implementation 'org.apache.hadoop:hadoop-common:2.7.3'
+    implementation name: 'syslog-ng-common'
+    implementation name: 'syslog-ng-core'
+    implementation 'log4j:log4j:1.2.17'
 }
 
