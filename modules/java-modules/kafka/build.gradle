@@ -1,12 +1,12 @@
 project.buildDir = syslogBuildDir + '/kafka/gradle'
 
 dependencies {
-  compile 'org.apache.kafka:kafka-clients:0.9.0.0'
-  compile name: 'syslog-ng-common'
-  compile name: 'syslog-ng-core'
-  testCompile 'junit:junit:4.12'
-  testCompile 'org.hamcrest:hamcrest-core:1.3'
-  compile 'log4j:log4j:1.2.17'
+  implementation 'org.apache.kafka:kafka-clients:0.9.0.0'
+  implementation name: 'syslog-ng-common'
+  implementation name: 'syslog-ng-core'
+  testImplementation 'junit:junit:4.12'
+  testImplementation 'org.hamcrest:hamcrest-core:1.3'
+  implementation 'log4j:log4j:1.2.17'
 
 }
 

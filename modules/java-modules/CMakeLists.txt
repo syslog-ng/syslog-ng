@@ -1,5 +1,5 @@
 if (ENABLE_JAVA)
-find_package(Gradle 2.2)
+find_package(Gradle 3.4)
 
 set (GRADLE_WORKDIR ${CMAKE_CURRENT_BINARY_DIR}/.gradle)
 set (SYSLOG_DEPS_DIR ${PROJECT_BINARY_DIR}/modules/java)
