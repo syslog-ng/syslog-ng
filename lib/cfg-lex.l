@@ -36,6 +36,10 @@
 static gboolean
 yy_input_run_backtick_substitution(CfgLexer *self, gchar *buf, gsize buf_size, gsize *len)
 {
+  if (cfg_lexer_is_backtick_substitution_postponed(self))
+    {
+      return TRUE;
+    }
   gchar *res;
   GError *error = NULL;
   CFG_LTYPE *cur_lloc = &self->include_stack[self->include_depth].lloc;
