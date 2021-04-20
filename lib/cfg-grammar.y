@@ -851,7 +851,7 @@ block_stmt
         : KW_BLOCK
           { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_DEF, block_def_keywords, "block definition"); }
           LL_IDENTIFIER LL_IDENTIFIER
-          '(' { last_block_args = cfg_args_new(); } block_definition ')'
+          '(' { cfg_lexer_postpone_backtick_substition(lexer); last_block_args = cfg_args_new(); } block_definition ')'
           { cfg_lexer_push_context(lexer, LL_CONTEXT_BLOCK_CONTENT, NULL, "block content"); }
           LL_BLOCK
           {
@@ -871,6 +871,7 @@ block_stmt
             free($4);
             free($10);
             last_block_args = NULL;
+            cfg_lexer_enable_immediate_backtick_substition(lexer);
           }
         ;
 
@@ -892,7 +893,11 @@ block_arg
           LL_BLOCK
           {
             cfg_lexer_pop_context(lexer);
-            cfg_args_set(last_block_args, $1, $3); free($1); free($3);
+            if ($3 && cfg_lexer_is_backtick_substitution_postponed(lexer) && strchr($3, '`'))
+              cfg_args_set(last_block_args, $3, $3);
+            cfg_args_set(last_block_args, $1, $3);
+            free($1);
+            free($3);
           }
         ;
 
