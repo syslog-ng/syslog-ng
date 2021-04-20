@@ -205,6 +205,28 @@ _append_value(CfgLexerSubst *self, const gchar *value, GError **error)
   return result;
 }
 
+static gboolean
+_is_backtick_eval_required(CfgLexerSubst *self, const gchar *input)
+{
+  return input && strchr(input, '`') && _lookup_value(self, input);
+}
+
+static gboolean
+_append_backtick_resolved_value(CfgLexerSubst *self, const gchar *value, GError **error)
+{
+  gsize out_len = 0;
+  gchar *final_value = cfg_lexer_subst_args_in_input(self->globals, self->defs, self->args, value, strlen(value),
+                                                     &out_len, error);
+  if (*error)
+    {
+      g_free(final_value);
+      return FALSE;
+    }
+  gboolean res = _append_value(self, final_value, error);
+  g_free(final_value);
+  return res;
+}
+
 gchar *
 cfg_lexer_subst_invoke(CfgLexerSubst *self, const gchar *input, gssize input_len, gsize *output_length, GError **error)
 {
@@ -254,8 +276,17 @@ cfg_lexer_subst_invoke(CfgLexerSubst *self, const gchar *input, gssize input_len
               name = g_strndup(ref_start, p - ref_start);
               value = _lookup_value(self, name);
               g_free(name);
-              if (!_append_value(self, value ? : "", error))
-                goto error;
+              if (_is_backtick_eval_required(self, value))
+                {
+                  msg_info("backtick_eval_req", evt_tag_str("value", value));
+                  if (!_append_backtick_resolved_value(self, value, error))
+                    goto error;
+                }
+              else
+                {
+                  if (!_append_value(self, value ? : "", error))
+                    goto error;
+                }
             }
         }
       else if (!backtick)
