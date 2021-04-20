@@ -177,6 +177,7 @@ struct _CfgLexer
   GString *token_text;
   GlobalConfig *cfg;
   gboolean non_pragma_seen:1, ignore_pragma:1;
+  gboolean backtick_subst_postponed:1;
 };
 
 /* pattern buffer */
@@ -200,6 +201,9 @@ gboolean cfg_lexer_include_buffer_without_backtick_substitution(CfgLexer *self,
     const gchar *name, const gchar *buffer, gsize length);
 const gchar *cfg_lexer_format_location(CfgLexer *self, CFG_LTYPE *yylloc, gchar *buf, gsize buf_len);
 EVTTAG *cfg_lexer_format_location_tag(CfgLexer *self, CFG_LTYPE *yylloc);
+gboolean cfg_lexer_is_backtick_substitution_postponed(CfgLexer *self);
+void cfg_lexer_postpone_backtick_substition(CfgLexer *self);
+void cfg_lexer_enable_immediate_backtick_substition(CfgLexer *self);
 
 /* context tracking */
 void cfg_lexer_push_context(CfgLexer *self, gint context, CfgLexerKeyword *keywords, const gchar *desc);

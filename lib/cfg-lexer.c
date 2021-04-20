@@ -182,6 +182,24 @@ cfg_lexer_format_location_tag(CfgLexer *self, CFG_LTYPE *yylloc)
   return evt_tag_str("location", cfg_lexer_format_location(self, yylloc, buf, sizeof(buf)));
 }
 
+gboolean
+cfg_lexer_is_backtick_substitution_postponed(CfgLexer *self)
+{
+  return self->backtick_subst_postponed;
+}
+
+void
+cfg_lexer_postpone_backtick_substition(CfgLexer *self)
+{
+  self->backtick_subst_postponed = TRUE;
+}
+
+void
+cfg_lexer_enable_immediate_backtick_substition(CfgLexer *self)
+{
+  self->backtick_subst_postponed = FALSE;
+}
+
 int
 cfg_lexer_lookup_keyword(CfgLexer *self, CFG_STYPE *yylval, CFG_LTYPE *yylloc, const char *token)
 {
