@@ -11,22 +11,38 @@
 # 250: unsupported os/distribution/version
 # 249: conflicting parameters
 # 248: internal error at task selection
+# 246: syslog-ng not installed
+# 244: tty not available
 
 EL_FC=
 EL_TE=
 OS_VERSION=
 INSTALL_PATH="/opt/syslog-ng"
-# ports 514/udp, 6514/udp and 6514/tcp are allowed by default
-# if you wish to add further ports, just add them to the end of the list
+# RHEL8 note: ports 10514/tcp, 10514/udp, 20514/tcp and 20514/udp have been
+#  allowed by default
+#
+# Post-RHEL6.5 note: ports 514/udp, 6514/udp and 6514/tcp are allowed by default
+#  if you wish to add further ports, just add them to the end of the list
 SYSLOG_NG_TCP_PORTS="601"
 SYSLOG_NG_UDP_PORTS="601"
 TASK_SELECTED="install_default"
 INPUT=
 
+get_console_tty() {
+	if is_available tty; then
+		CONSOLE_TTY=$( tty )
+	else
+		echo "The 'tty' binary is not available!" >&2
+		exit 244
+	fi
+}
+
+
 query_install_path() {
 	echo -n "Please enter your installation path for Syslog-ng PE: [${INSTALL_PATH}] "
-	read INPUT
+	read INPUT <"${CONSOLE_TTY}"
 }
+
 
 check_dir() {
 	if [ -d "${1}" ]; then
@@ -37,12 +53,37 @@ check_dir() {
 	fi
 }
 
+
 verify_input() {
 	INPUT="${INPUT:-${INSTALL_PATH}}"
 	echo -n "You have entered '${INPUT}'. Is this correct? [y/N] "
-	read ACCEPT
+	read ACCEPT <"${CONSOLE_TTY}"
 	if [ "x${ACCEPT}x" != "xyx" ]; then return 0; fi
 	check_dir "${INPUT}" && return 1 || return 0
+}
+
+
+is_available () {
+	which "$1" >/dev/null 2>&1;
+}
+
+
+syslog_ng_is_not_installed() {
+	if is_available syslog-ng; then
+		return 1
+	elif [ -x "${INSTALL_PATH}/sbin/syslog-ng" ]; then
+		return 1
+	else
+		return 0
+	fi
+}
+
+
+install_precheck() {
+	if syslog_ng_is_not_installed; then
+		echo "Syslog-ng does not seem to be installed!" >&2
+		exit 246
+	fi
 }
 
 
@@ -104,17 +145,24 @@ setup_vars() {
 			if [ "${MINORVER}" -lt 5 ]; then
 				EL_TE="syslog_ng.el6.0to4.te.in"
 			else
-				EL_TE="syslog_ng.el67.te.in"
+				EL_TE="syslog_ng.el6.5up.te.in"
 				    
 				# 601/tcp and 601/udp are allowed by default on RHEL6.5+, so there is no need to enable them
 				omit_allowed_ports
 			fi
 			;;
 		7.*)
-			EL_FC="syslog_ng.el7.fc.in"
-			EL_TE="syslog_ng.el67.te.in"
+			EL_FC="syslog_ng.el78.fc.in"
+			EL_TE="syslog_ng.el7.te.in"
 			
 			# 601/tcp and 601/udp are allowed by default on RHEL7, so there is no need to enable them
+			omit_allowed_ports
+			;;
+		8.*)
+			EL_FC="syslog_ng.el78.fc.in"
+			EL_TE="syslog_ng.el8.te.in"
+
+			# 601/tcp and 601/udp are allowed by default on RHEL8, so there is no need to enable them
 			omit_allowed_ports
 			;;
 		*)
@@ -155,9 +203,18 @@ remove_trainling_slash() {
 }
 
 
+filter_bogus_build_output() {
+	#filter misleading output caused by RHEL bug 1861968
+	fgrep -v /usr/share/selinux/devel/include/services/container.if
+}
+
+
 build_module() {
 	echo "Building and Loading Policy"
-	make -f /usr/share/selinux/devel/Makefile syslog_ng.pp || exit 252
+	build_output=$( make -f /usr/share/selinux/devel/Makefile syslog_ng.pp 2>&1 )
+	retval=${?}
+	filter_bogus_build_output <<<"${build_output}"
+	[ ${retval} -eq 0 ] || exit 252
 }
 
 
@@ -172,21 +229,26 @@ add_ports() {
 
 
 install_module() {
-	/usr/sbin/semodule -i syslog_ng.pp -v || exit 251
+	if /usr/sbin/semodule -l | grep -qw syslog_ng; then
+		echo "The Syslog-ng SELinux policy module is already installed. Nothing to do..."
+		echo "If it belongs to a previous version, then you will have to remove it first."
+	else
+		/usr/sbin/semodule -i syslog_ng.pp -v || exit 251
 
-	# set up syslog-ng specific ports
-	PORTS=
-	for port in ${SYSLOG_NG_TCP_PORTS}; do PORTS="${PORTS} ${port}/tcp"; done
-	for port in ${SYSLOG_NG_UDP_PORTS}; do PORTS="${PORTS} ${port}/udp"; done
-	add_ports "${PORTS}"
-	
-	# Fixing the file context
-	/sbin/restorecon -F -Rv "${INSTALL_PATH}"
-	[ -f /etc/init.d/syslog-ng ] && /sbin/restorecon -F -v /etc/init.d/syslog-ng
-	[ -f /etc/rc.d/init.d/syslog-ng ] && /sbin/restorecon -F -v /etc/rc.d/init.d/syslog-ng
-	/sbin/restorecon -F -Rv /dev/log
-	
-	echo -e "\nPlease restart syslog-ng. You can find more information about this in the README file."
+		# set up syslog-ng specific ports
+		PORTS=
+		for port in ${SYSLOG_NG_TCP_PORTS}; do PORTS="${PORTS} ${port}/tcp"; done
+		for port in ${SYSLOG_NG_UDP_PORTS}; do PORTS="${PORTS} ${port}/udp"; done
+		add_ports "${PORTS}"
+
+		# Fixing the file context
+		/sbin/restorecon -F -Rv "${INSTALL_PATH}"
+		[ -f /etc/init.d/syslog-ng ] && /sbin/restorecon -F -v /etc/init.d/syslog-ng
+		[ -f /etc/rc.d/init.d/syslog-ng ] && /sbin/restorecon -F -v /etc/rc.d/init.d/syslog-ng
+		/sbin/restorecon -F -Rv /dev/log
+
+		echo -e "\nInstallation of the Syslog-ng SELinux policy module finished.\nPlease restart syslog-ng. You can find more information about this in the README file."
+	fi
 }
 
 remove_ports() {
@@ -198,10 +260,10 @@ remove_ports() {
 }
 
 remove_module() {
-	if semodule -l | grep -q syslog_ng; then
+	if /usr/sbin/semodule -l | grep -q syslog_ng; then
 		echo -n "Removing Syslog-ng SELinux policy module... "
 		
-		semodule --remove=syslog_ng
+		/usr/sbin/semodule --remove=syslog_ng
 		
 		# unconfigure syslog-ng specific ports
 		PORTS=
@@ -217,7 +279,7 @@ remove_module() {
 		
 		echo "done."
 	else
-		echo "No installed Syslog-ng SELinux policy module was found. Nothing to do..."
+		echo "No installed Syslog-ng SELinux policy module was found. No removal is necessary. Skipping..."
 	fi
 }
 
@@ -270,6 +332,8 @@ case "${TASK_SELECTED}" in
 			exit 254
 		fi
 		
+		get_console_tty
+
 		if [ -z "${INPUT}" ]; then 
 			query_install_path
 			while verify_input; do
@@ -280,6 +344,7 @@ case "${TASK_SELECTED}" in
 		INSTALL_PATH=$( remove_trainling_slash <<<"${INPUT}" )
 		
 		detect_os_version
+		install_precheck
 		setup_vars
 		prepare_files
 		build_module

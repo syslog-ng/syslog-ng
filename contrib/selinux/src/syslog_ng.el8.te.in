@@ -1,0 +1,6 @@
+require {
+        type syslogd_t, syslogd_exec_t;
+}
+
+allow syslogd_t syslogd_exec_t:file execute_no_trans;
+
