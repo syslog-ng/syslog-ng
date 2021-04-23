@@ -4,5 +4,6 @@ LABEL maintainer="Andras Mitzki <andras.mitzki@balabit.com>, Laszlo Szemere <las
 ENV OS_PLATFORM kira
 
 RUN /dbld/builddeps install_apt_packages
+RUN /dbld/builddeps install_bison_from_source
 RUN /dbld/builddeps install_pip2
 RUN /dbld/builddeps install_pip_packages
