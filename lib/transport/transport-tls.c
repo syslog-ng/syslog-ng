@@ -135,8 +135,11 @@ log_transport_tls_read_method(LogTransport *s, gpointer buf, gsize buflen, LogTr
               rc = (log_transport_tls_send_shutdown(self) >= 0) ? 0 : -1;
               break;
             case SSL_ERROR_SYSCALL:
-              rc = -1;
-              /* errno is set accordingly */
+              // https://github.com/openssl/openssl/pull/11400
+              // There is a known bug in OpenSSL where it reports SSL_ERROR_SYSCALL without setting
+              // the proper errno value. The mentioned PR were reverted because lot of legacy code
+              // were broken by the fix. OpenSSL 3.0.0 will contain it.
+              rc = (errno == 0) ? 0 : -1;
               break;
             default:
               goto tls_error;
@@ -191,6 +194,16 @@ log_transport_tls_write_method(LogTransport *s, const gpointer buf, gsize buflen
           break;
         case SSL_ERROR_SYSCALL:
           /* errno is set accordingly */
+
+          // https://github.com/openssl/openssl/pull/11400
+          // There is a known bug in OpenSSL where it reports SSL_ERROR_SYSCALL without setting
+          // the proper errno value. The mentioned PR were reverted because lot of legacy code
+          // were broken by the fix. OpenSSL 3.0.0 will contain it.
+          if (errno == 0)
+            {
+              rc = -1;
+              errno = ECONNRESET;
+            }
           break;
         default:
           goto tls_error;
