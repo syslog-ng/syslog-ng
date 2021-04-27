@@ -1194,6 +1194,7 @@ static const gchar *lexer_contexts[] =
   [LL_CONTEXT_CLIENT_PROTO] = "client-proto",
   [LL_CONTEXT_SERVER_PROTO] = "server-proto",
   [LL_CONTEXT_OPTIONS] = "options",
+  [LL_CONTEXT_CONFIG] = "config",
 };
 
 gint

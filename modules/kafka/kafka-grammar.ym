@@ -52,6 +52,7 @@
 /* INCLUDE_DECLS */
 
 %type <ptr> kafka_properties
+%type <ptr> kafka_properties_list
 %type <ptr> kafka_property
 
 %token KW_KAFKA
@@ -123,7 +124,20 @@ kafka_option
         ;
 
 kafka_properties
-        : kafka_property kafka_properties			{ $$ = g_list_prepend($2, $1); }
+	:
+	{
+		static CfgLexerKeyword empty_keywords[] = {{ CFG_KEYWORD_STOP }};
+		cfg_lexer_push_context(lexer, LL_CONTEXT_CONFIG, empty_keywords, "kafka_config_block");
+	}
+	kafka_properties_list
+	{
+		cfg_lexer_pop_context(lexer);
+		$$ = $2;
+	}
+	;
+
+kafka_properties_list
+        : kafka_property kafka_properties_list			{ $$ = g_list_prepend($2, $1); }
         |							{ $$ = NULL; }
         ;
 
