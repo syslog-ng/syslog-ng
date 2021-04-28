@@ -27,6 +27,7 @@
 #include "compat/openssl_support.h"
 #include "secret-storage/secret-storage.h"
 
+#include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <stdio.h>
