@@ -35,6 +35,15 @@
 #define getservbyport_r _compat_generic__getservbyport_r
 #define getservbyname_r _compat_generic__getservbyname_r
 
+#elif defined(__OpenBSD__)
+
+#include "getent-openbsd.h"
+
+#define getprotobynumber_r _compat_openbsd__getprotobynumber_r
+#define getprotobyname_r _compat_openbsd__getprotobyname_r
+#define getservbyport_r _compat_openbsd__getservbyport_r
+#define getservbyname_r _compat_openbsd__getservbyname_r
+
 #elif defined(sun) || defined(__sun)
 
 #include "getent-sun.h"
