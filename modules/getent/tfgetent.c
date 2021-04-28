@@ -20,7 +20,7 @@
  * COPYING for details.
  */
 
-#if defined(sun) || defined(__sun)
+#if defined(sun) || defined(__sun) || defined(__OpenBSD__)
 #define _POSIX_PTHREAD_SEMANTICS
 #endif
 
