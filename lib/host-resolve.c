@@ -36,6 +36,10 @@
 #include <string.h>
 #include <resolv.h>
 
+#ifndef AI_V4MAPPED
+#define AI_V4MAPPED 0
+#endif
+
 #if !defined(SYSLOG_NG_HAVE_GETADDRINFO) || !defined(SYSLOG_NG_HAVE_GETNAMEINFO)
 G_LOCK_DEFINE_STATIC(resolv_lock);
 #endif
