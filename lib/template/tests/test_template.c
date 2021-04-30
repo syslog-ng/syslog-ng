@@ -373,6 +373,8 @@ Test(template, test_single_values_and_literal_strings_are_considered_trivial)
 {
   LogMessage *msg = create_sample_message();
 
+  assert_template_trivial_value("", msg, "");
+  assert_template_trivial_value(" ", msg, " ");
   assert_template_trivial_value("literal", msg, "literal");
   assert_template_trivial_value("$1", msg, "first-match");
   assert_template_trivial_value("$MSG", msg, "árvíztűrőtükörfúrógép");

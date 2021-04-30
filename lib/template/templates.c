@@ -40,6 +40,9 @@ log_template_get_trivial_value(LogTemplate *self, LogMessage *msg, gssize *value
 {
   g_assert(self->trivial);
 
+  if (!self->compiled_template)
+    return "";
+
   LogTemplateElem *e = (LogTemplateElem *) self->compiled_template->data;
 
   switch (e->type)
@@ -70,9 +73,9 @@ _calculate_triviality(LogTemplate *self)
   if (self->escape)
     return FALSE;
 
-  /* no compiled template */
+  /* empty templates are trivial */
   if (self->compiled_template == NULL)
-    return FALSE;
+    return TRUE;
 
   /* more than one element */
   if (self->compiled_template->next != NULL)
