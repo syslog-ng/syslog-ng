@@ -30,6 +30,34 @@
 #include "cfg.h"
 
 gboolean
+log_template_is_literal_string(const LogTemplate *self)
+{
+  if (!self->compiled_template)
+    return TRUE;
+
+  if (self->escape || self->compiled_template->next)
+    return FALSE;
+
+  return log_template_elem_is_literal_string((LogTemplateElem *) self->compiled_template->data);
+}
+
+const gchar *
+log_template_get_literal_value(const LogTemplate *self, gssize *value_len)
+{
+  g_assert(log_template_is_literal_string(self));
+
+  if (!self->compiled_template)
+    return "";
+
+  LogTemplateElem *e = (LogTemplateElem *) self->compiled_template->data;
+
+  if (value_len)
+    *value_len = e->text_len;
+
+  return e->text;
+}
+
+gboolean
 log_template_is_trivial(LogTemplate *self)
 {
   return self->trivial;

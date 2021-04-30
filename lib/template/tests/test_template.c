@@ -422,3 +422,36 @@ Test(template, test_non_trivial_templates)
   cr_assert_not(log_template_is_trivial(template), "Hard macros are not trivial");
   log_template_unref(template);
 }
+
+static void
+assert_template_literal_value(const gchar *template_code, const gchar *expected_value)
+{
+  LogTemplate *template = compile_template(template_code, FALSE);
+
+  cr_assert(log_template_is_literal_string(template));
+
+  const gchar *literal_val = log_template_get_literal_value(template, NULL);
+  cr_assert_str_eq(literal_val, expected_value);
+
+  GString *formatted_value = g_string_sized_new(64);
+  LogMessage *msg = create_sample_message();
+  log_template_format(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value);
+  cr_assert_str_eq(literal_val, formatted_value->str,
+                   "Formatted and literal value does not match: '%s' - '%s'", literal_val, formatted_value->str);
+
+  log_msg_unref(msg);
+  g_string_free(formatted_value, TRUE);
+  log_template_unref(template);
+}
+
+Test(template, test_literal_string_templates)
+{
+  assert_template_literal_value("", "");
+  assert_template_literal_value(" ", " ");
+  assert_template_literal_value("literal string", "literal string");
+  assert_template_literal_value("$$not a macro", "$not a macro");
+
+  LogTemplate *template = compile_template("a b c d $MSG", FALSE);
+  cr_assert_not(log_template_is_literal_string(template));
+  log_template_unref(template);
+}
