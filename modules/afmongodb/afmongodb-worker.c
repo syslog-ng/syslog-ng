@@ -45,6 +45,29 @@ _worker_disconnect(LogThreadedDestWorker *s)
 }
 
 static gboolean
+_switch_collection(MongoDBDestWorker *self, const gchar *collection)
+{
+  MongoDBDestDriver *owner = (MongoDBDestDriver *) self->super.owner;
+
+  if (!self->client)
+    return FALSE;
+
+  mongoc_collection_destroy(self->coll_obj);
+  self->coll_obj = mongoc_client_get_collection(self->client, owner->const_db, collection);
+
+  if (!self->coll_obj)
+    {
+      msg_error("Error getting specified MongoDB collection",
+                evt_tag_str("collection", collection),
+                evt_tag_str("driver", owner->super.super.super.id));
+
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
+static gboolean
 _connect(MongoDBDestWorker *self, gboolean reconnect)
 {
   MongoDBDestDriver *owner = (MongoDBDestDriver *) self->super.owner;
@@ -63,17 +86,10 @@ _connect(MongoDBDestWorker *self, gboolean reconnect)
 
   if (!self->coll_obj)
     {
-      self->coll_obj = mongoc_client_get_collection(self->client, owner->const_db, owner->coll);
-
-      if (!self->coll_obj)
+      if (!_switch_collection(self, owner->coll))
         {
-          msg_error("Error getting specified MongoDB collection",
-                    evt_tag_str("collection", owner->coll),
-                    evt_tag_str("driver", owner->super.super.super.id));
-
           mongoc_client_pool_push(owner->pool, self->client);
           self->client = NULL;
-
           return FALSE;
         }
     }
