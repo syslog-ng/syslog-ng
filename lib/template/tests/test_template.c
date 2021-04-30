@@ -379,5 +379,11 @@ Test(template, test_single_values_and_literal_strings_are_considered_trivial)
   assert_template_trivial_value("$HOST", msg, "bzorp");
   assert_template_trivial_value("${APP.VALUE}", msg, "value");
 
+  LogTemplate *template = log_template_new(configuration, NULL);
+  cr_assert_not(log_template_compile(template, "$1 $2 ${MSG invalid", NULL));
+  cr_assert(log_template_is_trivial(template), "Invalid templates are trivial");
+  cr_assert(g_str_has_prefix(log_template_get_trivial_value(template, NULL, NULL), "error in template"));
+  log_template_unref(template);
+
   log_msg_unref(msg);
 }
