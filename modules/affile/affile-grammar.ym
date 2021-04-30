@@ -273,13 +273,13 @@ dest_affile
 	;
 
 dest_affile_params
-	: string
+	: template_content
 	  {
 	    last_driver = *instance = affile_dd_new($1, configuration);
 	    last_writer_options = &((AFFileDestDriver *) last_driver)->writer_options;
 	    last_file_perm_options = &((AFFileDestDriver *) last_driver)->file_opener_options.file_perm_options;
 	  }
-	  dest_affile_options                           { $$ = last_driver; free($1); }
+	  dest_affile_options                           { $$ = last_driver; }
 	;
 
 dest_affile_options
@@ -298,13 +298,13 @@ dest_affile_option
 	;
 
 dest_afpipe_params
-	: string
+	: template_content
 	  {
 	    last_driver = *instance = pipe_dd_new($1, configuration);
 	    last_writer_options = &((AFFileDestDriver *) last_driver)->writer_options;
 	    last_file_perm_options = &((AFFileDestDriver *) last_driver)->file_opener_options.file_perm_options;
 	  }
-	  dest_afpipe_options                   { $$ = last_driver; free($1); }
+	  dest_afpipe_options                   { $$ = last_driver; }
 	;
 
 dest_afpipe_options

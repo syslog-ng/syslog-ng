@@ -143,9 +143,9 @@ pipe_sd_new(gchar *filename, GlobalConfig *cfg)
 }
 
 LogDriver *
-pipe_dd_new(gchar *filename, GlobalConfig *cfg)
+pipe_dd_new(LogTemplate *filename_template, GlobalConfig *cfg)
 {
-  AFFileDestDriver *self = affile_dd_new_instance(filename, cfg);
+  AFFileDestDriver *self = affile_dd_new_instance(filename_template, cfg);
 
   self->writer_options.stats_source = stats_register_type("pipe");
   self->file_opener = file_opener_for_named_pipes_new();
