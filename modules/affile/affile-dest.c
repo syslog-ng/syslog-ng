@@ -607,7 +607,8 @@ affile_dd_open_writer(gpointer args[])
     {
       if (!self->single_writer)
         {
-          next = affile_dw_new(self->filename_template->template, log_pipe_get_config(&self->super.super.super));
+          next = affile_dw_new(log_template_get_literal_value(self->filename_template, NULL),
+                               log_pipe_get_config(&self->super.super.super));
           affile_dw_set_owner(next, self);
           if (next && log_pipe_init(&next->super))
             {
@@ -775,7 +776,7 @@ affile_dd_new_instance(LogTemplate *filename_template, GlobalConfig *cfg)
   self->writer_options.stats_level = STATS_LEVEL1;
   self->writer_flags = LW_FORMAT_FILE;
 
-  if (strchr(filename_template->template, '$') != NULL)
+  if (!log_template_is_literal_string(filename_template))
     {
       self->filename_is_a_template = TRUE;
     }
