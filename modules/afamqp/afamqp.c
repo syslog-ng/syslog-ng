@@ -170,21 +170,21 @@ afamqp_dd_set_exchange_type(LogDriver *d, const gchar *exchange_type)
 }
 
 void
-afamqp_dd_set_routing_key(LogDriver *d, const gchar *routing_key)
+afamqp_dd_set_routing_key(LogDriver *d, LogTemplate *routing_key_template)
 {
   AMQPDestDriver *self = (AMQPDestDriver *) d;
 
-  log_template_compile(self->routing_key_template, routing_key, NULL);
+  log_template_unref(self->routing_key_template);
+  self->routing_key_template = routing_key_template;
 }
 
 void
-afamqp_dd_set_body(LogDriver *d, const gchar *body)
+afamqp_dd_set_body(LogDriver *d, LogTemplate *body_template)
 {
   AMQPDestDriver *self = (AMQPDestDriver *) d;
 
-  if (!self->body_template)
-    self->body_template = log_template_new(configuration, NULL);
-  log_template_compile(self->body_template, body, NULL);
+  log_template_unref(self->body_template);
+  self->body_template = body_template;
 }
 
 void
@@ -794,6 +794,7 @@ afamqp_dd_new(GlobalConfig *cfg)
   self->super.stats_source = stats_register_type("amqp");
 
   self->routing_key_template = log_template_new(cfg, NULL);
+  log_template_compile_literal_string(self->routing_key_template, "");
 
   LogDriver *driver = &self->super.super.super;
   afamqp_dd_set_auth_method(driver, "plain");
@@ -802,7 +803,6 @@ afamqp_dd_new(GlobalConfig *cfg)
   afamqp_dd_set_port(driver, 5672);
   afamqp_dd_set_exchange(driver, "syslog");
   afamqp_dd_set_exchange_type(driver, "fanout");
-  afamqp_dd_set_routing_key(driver, "");
   afamqp_dd_set_persistent(driver, TRUE);
   afamqp_dd_set_exchange_declare(driver, FALSE);
   afamqp_dd_set_max_channel(driver, AMQP_DEFAULT_MAX_CHANNELS);
