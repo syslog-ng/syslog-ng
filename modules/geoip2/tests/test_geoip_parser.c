@@ -65,7 +65,7 @@ parse_geoip_into_log_message_no_check(const gchar *template_format)
   cloned_parser = (LogParser *) log_pipe_clone(&geoip_parser->super);
 
   LogTemplate *template = log_template_new(NULL, NULL);
-  log_template_compile(template, template_format, NULL);
+  cr_assert(log_template_compile(template, template_format, NULL));
   log_parser_set_template(cloned_parser, template);
 
   log_pipe_init(&cloned_parser->super);

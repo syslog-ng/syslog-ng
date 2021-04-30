@@ -85,7 +85,7 @@ create_template(const gchar *type_hint_string, const gchar *template_string)
   LogTemplate *template;
 
   template = log_template_new(configuration, NULL);
-  log_template_compile(template, template_string, NULL);
+  cr_assert(log_template_compile(template, template_string, NULL));
   log_template_set_type_hint(template, type_hint_string, NULL);
   return template;
 }
