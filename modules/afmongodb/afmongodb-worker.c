@@ -64,6 +64,7 @@ _switch_collection(MongoDBDestWorker *self, const gchar *collection)
       return FALSE;
     }
 
+  msg_debug("Switching MongoDB collection", evt_tag_str("new_collection", collection));
   return TRUE;
 }
 
