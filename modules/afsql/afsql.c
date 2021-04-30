@@ -130,11 +130,12 @@ afsql_dd_set_database(LogDriver *s, const gchar *database)
 }
 
 void
-afsql_dd_set_table(LogDriver *s, const gchar *table)
+afsql_dd_set_table(LogDriver *s, LogTemplate *table_template)
 {
   AFSqlDestDriver *self = (AFSqlDestDriver *) s;
 
-  log_template_compile(self->table, table, NULL);
+  log_template_unref(self->table);
+  self->table = table_template;
 }
 
 void
@@ -1210,7 +1211,7 @@ afsql_dd_new(GlobalConfig *cfg)
   self->ignore_tns_config = FALSE;
 
   self->table = log_template_new(configuration, NULL);
-  log_template_compile(self->table, "messages", NULL);
+  log_template_compile_literal_string(self->table, "messages");
   self->failed_message_counter = 0;
 
   self->session_statements = NULL;

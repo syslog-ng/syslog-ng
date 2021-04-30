@@ -110,7 +110,7 @@ void afsql_dd_set_port(LogDriver *s, const gchar *port);
 void afsql_dd_set_user(LogDriver *s, const gchar *user);
 void afsql_dd_set_password(LogDriver *s, const gchar *password);
 void afsql_dd_set_database(LogDriver *s, const gchar *database);
-void afsql_dd_set_table(LogDriver *s, const gchar *table);
+void afsql_dd_set_table(LogDriver *s, LogTemplate *table_template);
 void afsql_dd_set_columns(LogDriver *s, GList *columns);
 void afsql_dd_set_values(LogDriver *s, GList *values);
 void afsql_dd_set_null_value(LogDriver *s, const gchar *null);
