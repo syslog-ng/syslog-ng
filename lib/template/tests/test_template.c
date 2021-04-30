@@ -387,3 +387,36 @@ Test(template, test_single_values_and_literal_strings_are_considered_trivial)
 
   log_msg_unref(msg);
 }
+
+Test(template, test_non_trivial_templates)
+{
+  LogTemplate *template;
+
+  template = compile_template("$1", TRUE);
+  cr_assert_not(log_template_is_trivial(template), "Escaped template is not trivial");
+  log_template_unref(template);
+
+  template = compile_template("$1 $2", FALSE);
+  cr_assert_not(log_template_is_trivial(template), "Multi-element template is not trivial");
+  log_template_unref(template);
+
+  template = compile_template("$1 literal", FALSE);
+  cr_assert_not(log_template_is_trivial(template), "Multi-element template is not trivial");
+  log_template_unref(template);
+
+  template = compile_template("pre${1}", FALSE);
+  cr_assert_not(log_template_is_trivial(template), "Single-value template with preliminary text is not trivial");
+  log_template_unref(template);
+
+  template = compile_template("${MSG}@3", FALSE);
+  cr_assert_not(log_template_is_trivial(template), "Template referencing non-last context element is not trivial");
+  log_template_unref(template);
+
+  template = compile_template("$(echo test)", FALSE);
+  cr_assert_not(log_template_is_trivial(template), "Template functions are not trivial");
+  log_template_unref(template);
+
+  template = compile_template("$DATE", FALSE);
+  cr_assert_not(log_template_is_trivial(template), "Hard macros are not trivial");
+  log_template_unref(template);
+}
