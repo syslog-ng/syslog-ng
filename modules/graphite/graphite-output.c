@@ -45,7 +45,14 @@ tf_graphite_set_timestamp(const gchar *option_name, const gchar *value,
   TFGraphiteArgumentsUserData *args = (TFGraphiteArgumentsUserData *) data;
 
   args->state->timestamp_template = log_template_new(args->cfg, NULL);
-  log_template_compile(args->state->timestamp_template, value, NULL);
+
+  if (!log_template_compile(args->state->timestamp_template, value, error))
+    {
+      log_template_unref(args->state->timestamp_template);
+      args->state->timestamp_template = NULL;
+      return FALSE;
+    }
+
   return TRUE;
 };
 
