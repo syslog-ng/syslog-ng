@@ -178,6 +178,8 @@ log_template_compile_literal_string(LogTemplate *self, const gchar *literal)
   self->template = g_strdup(literal);
   self->compiled_template = g_list_append(self->compiled_template,
                                           log_template_elem_new_macro(literal, M_NONE, NULL, 0));
+
+  self->trivial = _calculate_triviality(self);
 }
 
 void

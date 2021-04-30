@@ -455,3 +455,16 @@ Test(template, test_literal_string_templates)
   cr_assert_not(log_template_is_literal_string(template));
   log_template_unref(template);
 }
+
+Test(template, test_compile_literal_string)
+{
+  LogTemplate *template = log_template_new(configuration, NULL);
+  log_template_compile_literal_string(template, "test literal");
+
+  cr_assert(log_template_is_literal_string(template));
+  cr_assert(log_template_is_trivial(template));
+
+  cr_assert_str_eq(log_template_get_literal_value(template, NULL), "test literal");
+
+  log_template_unref(template);
+}
