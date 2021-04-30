@@ -80,6 +80,33 @@ _switch_collection(MongoDBDestWorker *self, const gchar *collection)
 }
 
 static gboolean
+_check_server_status(MongoDBDestWorker *self, const mongoc_read_prefs_t *read_prefs)
+{
+  MongoDBDestDriver *owner = (MongoDBDestDriver *) self->super.owner;
+
+  bson_t reply;
+  bson_error_t error;
+
+  if (!self->client)
+    return FALSE;
+
+  bson_t *cmd = BCON_NEW("serverStatus", "1");
+  gboolean ok = mongoc_client_command_simple(self->client, owner->const_db ? : "", cmd, read_prefs, &reply, &error);
+  bson_destroy(&reply);
+  bson_destroy(cmd);
+
+  if (!ok)
+    {
+      msg_error("Error connecting to MongoDB",
+                evt_tag_str("driver", owner->super.super.super.id),
+                evt_tag_str("reason", error.message));
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
+static gboolean
 _connect(MongoDBDestWorker *self, gboolean reconnect)
 {
   MongoDBDestDriver *owner = (MongoDBDestDriver *) self->super.owner;
@@ -114,23 +141,13 @@ _connect(MongoDBDestWorker *self, gboolean reconnect)
       read_prefs = mongoc_collection_get_read_prefs(self->coll_obj);
     }
 
-  bson_t reply;
-  bson_error_t error;
-  bson_t *cmd = BCON_NEW("serverStatus", "1");
-  gboolean ok = mongoc_client_command_simple(self->client, owner->const_db ? : "", cmd, read_prefs, &reply, &error);
-  bson_destroy(&reply);
-  bson_destroy(cmd);
-  if (!ok)
-    {
-      msg_error("Error connecting to MongoDB",
-                evt_tag_str("driver", owner->super.super.super.id),
-                evt_tag_str("reason", error.message));
 
+  if (!_check_server_status(self, read_prefs))
+    {
       mongoc_collection_destroy(self->coll_obj);
       self->coll_obj = NULL;
       mongoc_client_pool_push(owner->pool, self->client);
       self->client = NULL;
-
       return FALSE;
     }
 
