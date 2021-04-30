@@ -34,7 +34,10 @@ typedef struct MongoDBDestWorker
   LogThreadedDestWorker super;
 
   mongoc_client_t *client;
+
+  GString *collection;
   mongoc_collection_t *coll_obj;
+
   bson_t *bson;
 } MongoDBDestWorker;
 

@@ -69,10 +69,7 @@ afmongodb_option
         {
             afmongodb_dd_set_uri(last_driver, $3); free($3);
         }
-    | KW_COLLECTION '(' string ')'
-        {
-            afmongodb_dd_set_collection(last_driver, $3); free($3);
-        }
+    | KW_COLLECTION '(' template_content ')' { afmongodb_dd_set_collection(last_driver, $3); }
     | value_pair_option
         {
             afmongodb_dd_set_value_pairs(last_driver, $1);

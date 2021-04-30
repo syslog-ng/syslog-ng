@@ -26,14 +26,16 @@
 #include "syslog-ng.h"
 #include "mongoc.h"
 #include "logthrdest/logthrdestdrv.h"
+#include "template/templates.h"
 #include "value-pairs/value-pairs.h"
 
 typedef struct _MongoDBDestDriver
 {
   LogThreadedDestDriver super;
 
-  gchar *coll;
   GString *uri_str;
+  LogTemplate *collection_template;
+  gboolean collection_is_literal_string;
 
   LogTemplateOptions template_options;
 

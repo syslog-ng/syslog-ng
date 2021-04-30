@@ -26,12 +26,13 @@
 
 #include "syslog-ng.h"
 #include "driver.h"
+#include "template/templates.h"
 #include "value-pairs/value-pairs.h"
 
 LogDriver *afmongodb_dd_new(GlobalConfig *cfg);
 
 void afmongodb_dd_set_uri(LogDriver *d, const gchar *uri);
-void afmongodb_dd_set_collection(LogDriver *d, const gchar *collection);
+void afmongodb_dd_set_collection(LogDriver *d, LogTemplate *collection_template);
 void afmongodb_dd_set_value_pairs(LogDriver *d, ValuePairs *vp);
 
 LogTemplateOptions *afmongodb_dd_get_template_options(LogDriver *s);

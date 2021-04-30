@@ -63,12 +63,14 @@ afmongodb_dd_set_uri(LogDriver *d, const gchar *uri)
 }
 
 void
-afmongodb_dd_set_collection(LogDriver *d, const gchar *collection)
+afmongodb_dd_set_collection(LogDriver *d, LogTemplate *collection_template)
 {
   MongoDBDestDriver *self = (MongoDBDestDriver *)d;
 
-  g_free(self->coll);
-  self->coll = g_strdup(collection);
+  log_template_unref(self->collection_template);
+  self->collection_template = collection_template;
+
+  self->collection_is_literal_string = log_template_is_literal_string(self->collection_template);
 }
 
 void
@@ -113,7 +115,7 @@ _format_instance_id(const LogThreadedDestDriver *d, const gchar *format)
       if (!replica_set)
         replica_set = "";
 
-      const gchar *coll = self->coll ? self->coll : "";
+      const gchar *coll = self->collection_template->template ? self->collection_template->template : "";
 
       g_snprintf(args, sizeof(args), "%s,%s,%s,%s", first_host, db, replica_set, coll);
     }
@@ -165,7 +167,7 @@ afmongodb_dd_private_uri_init(LogDriver *d)
   msg_verbose("Initializing MongoDB destination",
               evt_tag_str("uri", self->uri_str->str),
               evt_tag_str("db", self->const_db),
-              evt_tag_str("collection", self->coll),
+              evt_tag_str("collection", self->collection_template->template),
               evt_tag_str("driver", self->super.super.super.id));
 
   return TRUE;
@@ -249,7 +251,7 @@ _free(LogPipe *d)
       g_string_free(self->uri_str, TRUE);
       self->uri_str = NULL;
     }
-  g_free(self->coll);
+  log_template_unref(self->collection_template);
 
   value_pairs_unref(self->vp);
 
@@ -303,7 +305,9 @@ afmongodb_dd_new(GlobalConfig *cfg)
   self->super.stats_source = stats_register_type("mongodb");
   self->super.worker.construct = afmongodb_dw_new;
 
-  afmongodb_dd_set_collection(&self->super.super.super, "messages");
+  LogTemplate *template = log_template_new(cfg, NULL);
+  log_template_compile_literal_string(template, "messages");
+  afmongodb_dd_set_collection(&self->super.super.super, template);
 
   log_template_options_defaults(&self->template_options);
   afmongodb_dd_set_value_pairs(&self->super.super.super, value_pairs_new_default(cfg));

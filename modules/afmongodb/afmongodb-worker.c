@@ -44,6 +44,17 @@ _worker_disconnect(LogThreadedDestWorker *s)
     }
 }
 
+static const gchar *
+_format_collection_template(MongoDBDestWorker *self, LogMessage *msg)
+{
+  MongoDBDestDriver *owner = (MongoDBDestDriver *) self->super.owner;
+
+  LogTemplateEvalOptions options = { &owner->template_options, LTZ_SEND, self->super.seq_num, NULL };
+  log_template_format(owner->collection_template, msg, &options, self->collection);
+
+  return self->collection->str;
+}
+
 static gboolean
 _switch_collection(MongoDBDestWorker *self, const gchar *collection)
 {
@@ -85,20 +96,27 @@ _connect(MongoDBDestWorker *self, gboolean reconnect)
         }
     }
 
-  if (!self->coll_obj)
+  const mongoc_read_prefs_t *read_prefs = NULL;
+
+  if (owner->collection_is_literal_string && !self->coll_obj)
     {
-      if (!_switch_collection(self, owner->coll))
+      const gchar *collection = log_template_get_literal_value(owner->collection_template, NULL);
+
+      if (!_switch_collection(self, collection))
         {
           mongoc_client_pool_push(owner->pool, self->client);
           self->client = NULL;
           return FALSE;
         }
+
+      g_string_assign(self->collection, collection);
+
+      read_prefs = mongoc_collection_get_read_prefs(self->coll_obj);
     }
 
   bson_t reply;
   bson_error_t error;
   bson_t *cmd = BCON_NEW("serverStatus", "1");
-  const mongoc_read_prefs_t *read_prefs = mongoc_collection_get_read_prefs(self->coll_obj);
   gboolean ok = mongoc_client_command_simple(self->client, owner->const_db ? : "", cmd, read_prefs, &reply, &error);
   bson_destroy(&reply);
   bson_destroy(cmd);
@@ -314,6 +332,14 @@ _worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
             evt_tag_value_pairs("message", owner->vp, msg, &options),
             evt_tag_str("driver", owner->super.super.super.id));
 
+
+  if (!owner->collection_is_literal_string)
+    {
+      const gchar *new_collection = _format_collection_template(self, msg);
+      if (!_switch_collection(self, new_collection))
+        return LTR_ERROR;
+    }
+
   bson_error_t error;
   success = mongoc_collection_insert(self->coll_obj, MONGOC_INSERT_NONE,
                                      (const bson_t *)self->bson, NULL, &error);
@@ -345,6 +371,8 @@ _worker_thread_init(LogThreadedDestWorker *s)
 {
   MongoDBDestWorker *self = (MongoDBDestWorker *) s;
 
+  self->collection = g_string_sized_new(64);
+
   _connect(self, FALSE);
 
   self->bson = bson_sized_new(4096);
@@ -359,6 +387,9 @@ _worker_thread_deinit(LogThreadedDestWorker *s)
 
   bson_destroy(self->bson);
   self->bson = NULL;
+
+  g_string_free(self->collection, TRUE);
+  self->collection = NULL;
 
   log_threaded_dest_worker_deinit_method(s);
 }
