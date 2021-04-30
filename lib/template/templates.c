@@ -109,11 +109,14 @@ _calculate_triviality(LogTemplate *self)
   if (self->compiled_template->next != NULL)
     return FALSE;
 
-  LogTemplateElem *e = (LogTemplateElem *) self->compiled_template->data;
+  const LogTemplateElem *e = (LogTemplateElem *) self->compiled_template->data;
 
   /* reference to non-last element of the context, that's not trivial */
   if (e->msg_ref > 0)
     return FALSE;
+
+  if (log_template_elem_is_literal_string(e))
+    return TRUE;
 
   switch (e->type)
     {
@@ -121,10 +124,6 @@ _calculate_triviality(LogTemplate *self)
       /* functions are never trivial */
       return FALSE;
     case LTE_MACRO:
-      /* Macros are trivial if they only contain a text but not a real
-       * macro.  Empty strings are represented this way.  */
-      if (e->macro == M_NONE)
-        return TRUE;
       if (e->text_len > 0)
         return FALSE;
 
