@@ -355,8 +355,16 @@ assert_template_trivial_value(const gchar *template_code, LogMessage *msg, const
   LogTemplate *template = compile_template(template_code, FALSE);
 
   cr_assert(log_template_is_trivial(template));
-  cr_assert_str_eq(log_template_get_trivial_value(template, msg, NULL), expected_value);
 
+  const gchar *trivial_value = log_template_get_trivial_value(template, msg, NULL);
+  cr_assert_str_eq(trivial_value, expected_value);
+
+  GString *formatted_value = g_string_sized_new(64);
+  log_template_format(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value);
+  cr_assert_str_eq(trivial_value, formatted_value->str,
+                   "Formatted and trivial value does not match: '%s' - '%s'", trivial_value, formatted_value->str);
+
+  g_string_free(formatted_value, TRUE);
   log_template_unref(template);
 }
 
