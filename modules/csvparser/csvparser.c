@@ -161,8 +161,14 @@ csv_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *path_o
     }
 
   gboolean result = TRUE;
-  if (self->drop_invalid)
-    result = csv_scanner_is_scan_complete(&scanner);
+  if (self->drop_invalid && !csv_scanner_is_scan_complete(&scanner))
+    {
+      msg_debug("csv-parser() failed",
+                evt_tag_str("error", "csv-parser() failed to parse its input and drop-invalid(yes) was specified"),
+                evt_tag_str("input", input));
+
+      result = FALSE;
+    }
   csv_scanner_deinit(&scanner);
 
   return result;

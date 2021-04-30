@@ -14,6 +14,6 @@ extraction:
       - export LD_LIBRARY_PATH=/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server:$LD_LIBRARY_PATH
       - export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
 
-      - cd /tmp && wget https://ftp.gnu.org/gnu/bison/bison-3.6.4.tar.gz && tar -xzf bison-3.6.4.tar.gz
-      - cd /tmp/bison-3.6.4 && ./configure --prefix=/tmp/bison && make all install
+      - cd /tmp && wget https://ftp.gnu.org/gnu/bison/bison-3.7.6.tar.gz && tar -xzf bison-3.7.6.tar.gz
+      - cd /tmp/bison-3.7.6 && ./configure --prefix=/tmp/bison && make all install
       - export PATH=/tmp/bison/bin/:$PATH

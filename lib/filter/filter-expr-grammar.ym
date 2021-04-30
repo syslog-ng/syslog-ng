@@ -47,16 +47,6 @@
 
 FilterExprNode *last_filter_expr;
 
-#if SYSLOG_NG_BISON_MAJOR == 3 && SYSLOG_NG_BISON_MINOR <= 5
-
-/* old bison versions (e.g. 3.5.1 and below) when using api.prefix, didn't
- * generate the FILTER_EXPR_EMPTY enum, but had YYEMPTY, so let's define
- * FILTER_EXPR_EMPTY to YYEMPTY, so the grammar itself is able to use the new
- * style */
-#define FILTER_EXPR_EMPTY YYEMPTY
-#endif
-
-
 }
 
 %define api.prefix {filter_expr_}

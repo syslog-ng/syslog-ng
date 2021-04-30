@@ -12,11 +12,10 @@ set(HTTP_TEST_SLOTS_SOURCES
 
 generate_y_from_ym(modules/examples/inner-destinations/http-test-slots/http-test-slots-grammar)
 
-BISON_GEN(
-  NAME HttpTestSlotsGrammar
-  INPUT ${CMAKE_CURRENT_BINARY_DIR}/http-test-slots-grammar.y
-  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/http-test-slots-grammar
-  COMPILE_FLAGS ${BISON_FLAGS})
+bison_target(HttpTestSlotsGrammar
+      ${CMAKE_CURRENT_BINARY_DIR}/http-test-slots-grammar.y
+      ${CMAKE_CURRENT_BINARY_DIR}/http-test-slots-grammar.c
+      COMPILE_FLAGS ${BISON_FLAGS})
 
 add_library(http-test-slots STATIC ${HTTP_TEST_SLOTS_SOURCES})
 

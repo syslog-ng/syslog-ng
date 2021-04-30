@@ -59,10 +59,9 @@ endfunction()
 
 generate_y_from_ym(modules/java/native/java-grammar modules/java/java-grammar)
 
-BISON_GEN(
-    NAME ModJavaGrammar
-    INPUT ${CMAKE_CURRENT_BINARY_DIR}/java-grammar.y
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/java-grammar
+bison_target(ModJavaGrammar
+    ${CMAKE_CURRENT_BINARY_DIR}/java-grammar.y
+    ${CMAKE_CURRENT_BINARY_DIR}/java-grammar.c
     COMPILE_FLAGS ${BISON_FLAGS})
 
 find_package(Java 1.7)
