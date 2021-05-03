@@ -504,6 +504,14 @@ Test(lexer, generator_plugins_are_expanded)
   cfg_lexer_pop_context(lexer);
 }
 
+Test(lexer, context_name_lookup)
+{
+  for (int i=LL_CONTEXT_MAX-1; i >= 1; --i)
+    {
+      cr_assert_eq(i, cfg_lexer_lookup_context_type_by_name(cfg_lexer_lookup_context_name_by_type(i)));
+    }
+}
+
 static void
 setup(void)
 {

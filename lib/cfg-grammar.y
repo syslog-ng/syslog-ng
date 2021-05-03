@@ -141,6 +141,10 @@
 %token LL_CONTEXT_CLIENT_PROTO        17
 %token LL_CONTEXT_SERVER_PROTO        18
 %token LL_CONTEXT_OPTIONS             19
+%token LL_CONTEXT_CONFIG              20
+
+/* this is a placeholder for unit tests, must be the latest & largest */
+%token LL_CONTEXT_MAX                 21
 
 
 /* statements */
