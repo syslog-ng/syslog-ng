@@ -390,10 +390,13 @@ active_thread_func(gpointer user_data)
 
       connection_error = send_msg(fd, message, str_len);
 
-      thread_context->sent_messages++;
-      thread_context->buckets--;
+      if(!connection_error)
+        {
+          thread_context->sent_messages++;
+          thread_context->buckets--;
+        }
 
-      if(connection_error && option->reconnect)
+      if(connection_error && option->reconnect && thread_run)
         {
           shutdown(fd, SHUT_RDWR);
           close(fd);
