@@ -203,7 +203,7 @@ Test(json_parser, test_json_parser_works_with_templates)
   LogTemplate *template;
 
   template = log_template_new(NULL, NULL);
-  log_template_compile(template, "{'foo':'bar'}", NULL);
+  log_template_compile_literal_string(template, "{'foo':'bar'}");
 
   LogParser *json_parser = json_parser_new(NULL);
   log_parser_set_template(json_parser, template);

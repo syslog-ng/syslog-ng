@@ -109,7 +109,7 @@ dest_afsql_option
         | KW_DBD_OPTION '(' string string ')'    { afsql_dd_add_dbd_option(last_driver, $3, $4); free($3); free($4); }
         | KW_PASSWORD '(' string ')'		{ afsql_dd_set_password(last_driver, $3); free($3); }
         | KW_DATABASE '(' string ')'		{ afsql_dd_set_database(last_driver, $3); free($3); }
-        | KW_TABLE '(' string ')'		{ afsql_dd_set_table(last_driver, $3); free($3); }
+        | KW_TABLE '(' template_content ')'	{ afsql_dd_set_table(last_driver, $3); }
         | KW_COLUMNS '(' string_list ')'	{ afsql_dd_set_columns(last_driver, $3); }
         | KW_INDEXES '(' string_list ')'        { afsql_dd_set_indexes(last_driver, $3); }
         | KW_VALUES '(' dest_afsql_values ')'		{ afsql_dd_set_values(last_driver, $3); }

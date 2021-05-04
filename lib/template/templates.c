@@ -30,6 +30,34 @@
 #include "cfg.h"
 
 gboolean
+log_template_is_literal_string(const LogTemplate *self)
+{
+  if (!self->compiled_template)
+    return TRUE;
+
+  if (self->escape || self->compiled_template->next)
+    return FALSE;
+
+  return log_template_elem_is_literal_string((LogTemplateElem *) self->compiled_template->data);
+}
+
+const gchar *
+log_template_get_literal_value(const LogTemplate *self, gssize *value_len)
+{
+  g_assert(log_template_is_literal_string(self));
+
+  if (!self->compiled_template)
+    return "";
+
+  LogTemplateElem *e = (LogTemplateElem *) self->compiled_template->data;
+
+  if (value_len)
+    *value_len = e->text_len;
+
+  return e->text;
+}
+
+gboolean
 log_template_is_trivial(LogTemplate *self)
 {
   return self->trivial;
@@ -39,6 +67,9 @@ const gchar *
 log_template_get_trivial_value(LogTemplate *self, LogMessage *msg, gssize *value_len)
 {
   g_assert(self->trivial);
+
+  if (!self->compiled_template)
+    return "";
 
   LogTemplateElem *e = (LogTemplateElem *) self->compiled_template->data;
 
@@ -70,19 +101,22 @@ _calculate_triviality(LogTemplate *self)
   if (self->escape)
     return FALSE;
 
-  /* no compiled template */
+  /* empty templates are trivial */
   if (self->compiled_template == NULL)
-    return FALSE;
+    return TRUE;
 
   /* more than one element */
   if (self->compiled_template->next != NULL)
     return FALSE;
 
-  LogTemplateElem *e = (LogTemplateElem *) self->compiled_template->data;
+  const LogTemplateElem *e = (LogTemplateElem *) self->compiled_template->data;
 
   /* reference to non-last element of the context, that's not trivial */
   if (e->msg_ref > 0)
     return FALSE;
+
+  if (log_template_elem_is_literal_string(e))
+    return TRUE;
 
   switch (e->type)
     {
@@ -90,10 +124,6 @@ _calculate_triviality(LogTemplate *self)
       /* functions are never trivial */
       return FALSE;
     case LTE_MACRO:
-      /* Macros are trivial if they only contain a text but not a real
-       * macro.  Empty strings are represented this way.  */
-      if (e->macro == M_NONE)
-        return TRUE;
       if (e->text_len > 0)
         return FALSE;
 
@@ -148,6 +178,8 @@ log_template_compile_literal_string(LogTemplate *self, const gchar *literal)
   self->template = g_strdup(literal);
   self->compiled_template = g_list_append(self->compiled_template,
                                           log_template_elem_new_macro(literal, M_NONE, NULL, 0));
+
+  self->trivial = _calculate_triviality(self);
 }
 
 void

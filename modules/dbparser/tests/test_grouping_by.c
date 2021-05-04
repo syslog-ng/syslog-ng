@@ -32,7 +32,7 @@ _get_template(const gchar *template, GlobalConfig *cfg)
 {
   LogTemplate *self = log_template_new(cfg, "dummy");
 
-  log_template_compile(self, template, NULL);
+  cr_assert(log_template_compile(self, template, NULL));
 
   return self;
 }
@@ -123,5 +123,3 @@ teardown(void)
 }
 
 TestSuite(grouping_by, .init = setup, .fini = teardown);
-
-

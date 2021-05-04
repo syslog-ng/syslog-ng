@@ -39,7 +39,7 @@ _create_template(const gchar *str)
 {
   GError *error = NULL;
   LogTemplate *template = log_template_new(cfg, NULL);
-  log_template_compile(template, str, &error);
+  cr_assert(log_template_compile(template, str, &error));
 
   cr_expect_null(error);
 

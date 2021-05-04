@@ -105,7 +105,7 @@ create_template(const gchar *template)
   LogTemplate *t;
 
   t = log_template_new(configuration, NULL);
-  log_template_compile(t, template, NULL);
+  cr_assert(log_template_compile(t, template, NULL));
   return t;
 }
 
@@ -240,5 +240,3 @@ teardown(void)
   scratch_buffers_explicit_gc();
   app_shutdown();
 }
-
-

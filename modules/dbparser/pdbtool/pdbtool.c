@@ -412,11 +412,17 @@ pdbtool_match(int argc, char *argv[])
 
   if (template_string)
     {
-      gchar *t;
+      GError *error = NULL;
 
-      t = g_strcompress(template_string);
+      gchar *t = g_strcompress(template_string);
       template = log_template_new(configuration, NULL);
-      log_template_compile(template, t, NULL);
+      if (!log_template_compile(template, t, &error))
+        {
+          fprintf(stderr, "Error compiling template: %s, error: %s\n", template->template, error->message);
+          g_clear_error(&error);
+          g_free(t);
+          return 1;
+        }
       g_free(t);
 
     }

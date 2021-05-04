@@ -99,7 +99,7 @@ Test(kv_parser, test_using_template_to_parse_input)
   LogTemplate *template;
 
   template = log_template_new(NULL, NULL);
-  log_template_compile(template, "foo=bar", NULL);
+  log_template_compile_literal_string(template, "foo=bar");
   log_parser_set_template(kv_parser, template);
   msg = parse_kv_into_log_message("foo=this-value-doesnot-matter-as-template-overrides");
   assert_log_message_value(msg, log_msg_get_value_handle("foo"), "bar");

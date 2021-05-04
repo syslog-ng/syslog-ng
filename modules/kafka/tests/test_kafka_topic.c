@@ -73,7 +73,7 @@ _init_topic_names(LogDriver *driver, const gchar *topic, const gchar *fallback_t
 {
   LogTemplate *topic_name = log_template_new(configuration, NULL);
 
-  log_template_compile(topic_name, topic, NULL);
+  cr_assert(log_template_compile(topic_name, topic, NULL));
   kafka_dd_set_topic(driver, topic_name);
   kafka_dd_set_fallback_topic(driver, fallback_topic);
 }

@@ -103,7 +103,7 @@ testcase_replace(const gchar *log, const gchar *re, gchar *replacement, const gc
   log_matcher_compile(m, re, NULL);
 
   r = log_template_new(configuration, NULL);
-  log_template_compile(r, replacement, NULL);
+  cr_assert(log_template_compile(r, replacement, NULL));
 
   NVTable *nv_table = nv_table_ref(msg->payload);
   value = log_msg_get_value(msg, nonasciiz, &msglen);

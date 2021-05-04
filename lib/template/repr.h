@@ -26,6 +26,7 @@
 #define TEMPLATE_REPR_H_INCLUDED
 
 #include "template/function.h"
+#include "template/macros.h"
 #include "logmsg/logmsg.h"
 
 enum
@@ -60,6 +61,12 @@ LogTemplateElem *log_template_elem_new_value(const gchar *text, gchar *value_nam
 LogTemplateElem *log_template_elem_new_func(LogTemplate *template,
                                             const gchar *text, gint argc, gchar *argv[], gint msg_ref,
                                             GError **error);
+
+static inline gboolean
+log_template_elem_is_literal_string(const LogTemplateElem *self)
+{
+  return self->type == LTE_MACRO && self->macro == M_NONE;
+}
 
 void log_template_elem_free_list(GList *el);
 

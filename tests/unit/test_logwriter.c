@@ -168,7 +168,7 @@ _assert_logwriter_output(LogWriterTestCase c)
   if (c.template)
     {
       templ = log_template_new(configuration, "dummy");
-      log_template_compile(templ, c.template, &error);
+      cr_assert(log_template_compile(templ, c.template, &error));
       opt.template = templ;
     }
   msg = init_msg(c.msg, c.is_rfc5424);

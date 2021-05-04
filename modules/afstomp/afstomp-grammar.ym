@@ -73,7 +73,7 @@ afstomp_option
         : KW_HOST '(' string ')'		{ afstomp_dd_set_host(last_driver, $3); free($3); }
         | KW_PORT '(' positive_integer ')'		{ afstomp_dd_set_port(last_driver, $3); }
         | KW_STOMP_DESTINATION '(' string ')'	{ afstomp_dd_set_destination(last_driver, $3); free($3); }
-        | KW_BODY '(' string ')'		{ afstomp_dd_set_body(last_driver, $3); free($3); }
+        | KW_BODY '(' template_content ')'	{ afstomp_dd_set_body(last_driver, $3); }
         | KW_PERSISTENT '(' yesno ')'		{ afstomp_dd_set_persistent(last_driver, $3); }
         | KW_ACK '(' yesno ')'			{ afstomp_dd_set_ack(last_driver, $3); }
         | KW_USERNAME '(' string ')'		{ afstomp_dd_set_user(last_driver, $3); free($3); }

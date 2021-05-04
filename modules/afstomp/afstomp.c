@@ -109,14 +109,12 @@ afstomp_dd_set_destination(LogDriver *d, const gchar *destination)
 }
 
 void
-afstomp_dd_set_body(LogDriver *d, const gchar *body)
+afstomp_dd_set_body(LogDriver *d, LogTemplate *body_template)
 {
   STOMPDestDriver *self = (STOMPDestDriver *) d;
-  GlobalConfig *cfg = log_pipe_get_config((LogPipe *)d);
 
-  if (!self->body_template)
-    self->body_template = log_template_new(cfg, NULL);
-  log_template_compile(self->body_template, body, NULL);
+  log_template_unref(self->body_template);
+  self->body_template = body_template;
 }
 
 void

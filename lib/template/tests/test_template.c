@@ -349,35 +349,122 @@ Test(template, test_template_function_args)
                          "49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64");
 }
 
+static void
+assert_template_trivial_value(const gchar *template_code, LogMessage *msg, const gchar *expected_value)
+{
+  LogTemplate *template = compile_template(template_code, FALSE);
+
+  cr_assert(log_template_is_trivial(template));
+
+  const gchar *trivial_value = log_template_get_trivial_value(template, msg, NULL);
+  cr_assert_str_eq(trivial_value, expected_value);
+
+  GString *formatted_value = g_string_sized_new(64);
+  log_template_format(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value);
+  cr_assert_str_eq(trivial_value, formatted_value->str,
+                   "Formatted and trivial value does not match: '%s' - '%s'", trivial_value, formatted_value->str);
+
+  g_string_free(formatted_value, TRUE);
+  log_template_unref(template);
+}
+
+
 Test(template, test_single_values_and_literal_strings_are_considered_trivial)
 {
-  LogTemplate *template;
   LogMessage *msg = create_sample_message();
 
-  template = compile_template("literal", FALSE);
-  cr_assert(log_template_is_trivial(template));
-  cr_assert_str_eq(log_template_get_trivial_value(template, msg, NULL), "literal");
-  log_template_unref(template);
+  assert_template_trivial_value("", msg, "");
+  assert_template_trivial_value(" ", msg, " ");
+  assert_template_trivial_value("literal", msg, "literal");
+  assert_template_trivial_value("$1", msg, "first-match");
+  assert_template_trivial_value("$MSG", msg, "árvíztűrőtükörfúrógép");
+  assert_template_trivial_value("$HOST", msg, "bzorp");
+  assert_template_trivial_value("${APP.VALUE}", msg, "value");
 
-  template = compile_template("$1", FALSE);
-  cr_assert(log_template_is_trivial(template));
-  cr_assert_str_eq(log_template_get_trivial_value(template, msg, NULL), "first-match");
-  log_template_unref(template);
-
-  template = compile_template("$MSG", FALSE);
-  cr_assert(log_template_is_trivial(template));
-  cr_assert_str_eq(log_template_get_trivial_value(template, msg, NULL), "árvíztűrőtükörfúrógép");
-  log_template_unref(template);
-
-  template = compile_template("$HOST", FALSE);
-  cr_assert(log_template_is_trivial(template));
-  cr_assert_str_eq(log_template_get_trivial_value(template, msg, NULL), "bzorp");
-  log_template_unref(template);
-
-  template = compile_template("${APP.VALUE}", FALSE);
-  cr_assert(log_template_is_trivial(template));
-  cr_assert_str_eq(log_template_get_trivial_value(template, msg, NULL), "value");
+  LogTemplate *template = log_template_new(configuration, NULL);
+  cr_assert_not(log_template_compile(template, "$1 $2 ${MSG invalid", NULL));
+  cr_assert(log_template_is_trivial(template), "Invalid templates are trivial");
+  cr_assert(g_str_has_prefix(log_template_get_trivial_value(template, NULL, NULL), "error in template"));
   log_template_unref(template);
 
   log_msg_unref(msg);
+}
+
+Test(template, test_non_trivial_templates)
+{
+  LogTemplate *template;
+
+  template = compile_template("$1", TRUE);
+  cr_assert_not(log_template_is_trivial(template), "Escaped template is not trivial");
+  log_template_unref(template);
+
+  template = compile_template("$1 $2", FALSE);
+  cr_assert_not(log_template_is_trivial(template), "Multi-element template is not trivial");
+  log_template_unref(template);
+
+  template = compile_template("$1 literal", FALSE);
+  cr_assert_not(log_template_is_trivial(template), "Multi-element template is not trivial");
+  log_template_unref(template);
+
+  template = compile_template("pre${1}", FALSE);
+  cr_assert_not(log_template_is_trivial(template), "Single-value template with preliminary text is not trivial");
+  log_template_unref(template);
+
+  template = compile_template("${MSG}@3", FALSE);
+  cr_assert_not(log_template_is_trivial(template), "Template referencing non-last context element is not trivial");
+  log_template_unref(template);
+
+  template = compile_template("$(echo test)", FALSE);
+  cr_assert_not(log_template_is_trivial(template), "Template functions are not trivial");
+  log_template_unref(template);
+
+  template = compile_template("$DATE", FALSE);
+  cr_assert_not(log_template_is_trivial(template), "Hard macros are not trivial");
+  log_template_unref(template);
+}
+
+static void
+assert_template_literal_value(const gchar *template_code, const gchar *expected_value)
+{
+  LogTemplate *template = compile_template(template_code, FALSE);
+
+  cr_assert(log_template_is_literal_string(template));
+
+  const gchar *literal_val = log_template_get_literal_value(template, NULL);
+  cr_assert_str_eq(literal_val, expected_value);
+
+  GString *formatted_value = g_string_sized_new(64);
+  LogMessage *msg = create_sample_message();
+  log_template_format(template, msg, &DEFAULT_TEMPLATE_EVAL_OPTIONS, formatted_value);
+  cr_assert_str_eq(literal_val, formatted_value->str,
+                   "Formatted and literal value does not match: '%s' - '%s'", literal_val, formatted_value->str);
+
+  log_msg_unref(msg);
+  g_string_free(formatted_value, TRUE);
+  log_template_unref(template);
+}
+
+Test(template, test_literal_string_templates)
+{
+  assert_template_literal_value("", "");
+  assert_template_literal_value(" ", " ");
+  assert_template_literal_value("literal string", "literal string");
+  assert_template_literal_value("$$not a macro", "$not a macro");
+
+  LogTemplate *template = compile_template("a b c d $MSG", FALSE);
+  cr_assert_not(log_template_is_literal_string(template));
+  log_template_unref(template);
+}
+
+Test(template, test_compile_literal_string)
+{
+  LogTemplate *template = log_template_new(configuration, NULL);
+  log_template_compile_literal_string(template, "test literal");
+
+  cr_assert(log_template_is_literal_string(template));
+  cr_assert(log_template_is_trivial(template));
+
+  cr_assert_str_eq(log_template_get_literal_value(template, NULL), "test literal");
+
+  log_template_unref(template);
 }
