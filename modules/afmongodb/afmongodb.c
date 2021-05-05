@@ -30,6 +30,7 @@
 #include "stats/stats-registry.h"
 #include "plugin.h"
 #include "plugin-types.h"
+#include "syslog-ng.h"
 
 #include <time.h>
 
@@ -38,6 +39,8 @@
 #define DEFAULT_URI \
       "mongodb://127.0.0.1:27017/syslog"\
       "?wtimeoutMS=60000&socketTimeoutMS=60000&connectTimeoutMS=60000"
+
+#define DEFAULT_SERVER_SELECTION_TIMEOUT 3000
 
 /*
  * Configuration
@@ -138,6 +141,16 @@ _format_persist_name(const LogPipe *s)
          : _format_instance_id(self, "afmongodb(%s)");
 }
 
+static inline void
+_uri_set_default_server_selection_timeout(mongoc_uri_t *uri_obj)
+{
+#if SYSLOG_NG_HAVE_DECL_MONGOC_URI_SET_OPTION_AS_INT32
+  gint32 server_selection_timeout = mongoc_uri_get_option_as_int32(uri_obj, MONGOC_URI_SERVERSELECTIONTIMEOUTMS,
+                                    DEFAULT_SERVER_SELECTION_TIMEOUT);
+  mongoc_uri_set_option_as_int32(uri_obj, MONGOC_URI_SERVERSELECTIONTIMEOUTMS, server_selection_timeout);
+#endif
+}
+
 gboolean
 afmongodb_dd_private_uri_init(LogDriver *d)
 {
@@ -154,6 +167,8 @@ afmongodb_dd_private_uri_init(LogDriver *d)
                 evt_tag_str("driver", self->super.super.super.id));
       return FALSE;
     }
+
+  _uri_set_default_server_selection_timeout(self->uri_obj);
 
   self->const_db = mongoc_uri_get_database(self->uri_obj);
   if (!self->const_db || !strlen(self->const_db))
