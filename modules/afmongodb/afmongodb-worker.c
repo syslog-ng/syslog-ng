@@ -107,8 +107,9 @@ _check_server_status(MongoDBDestWorker *self, const mongoc_read_prefs_t *read_pr
 }
 
 static gboolean
-_connect(MongoDBDestWorker *self, gboolean reconnect)
+_worker_connect(LogThreadedDestWorker *s)
 {
+  MongoDBDestWorker *self = (MongoDBDestWorker *)s;
   MongoDBDestDriver *owner = (MongoDBDestDriver *) self->super.owner;
 
   if (!self->client)
@@ -321,9 +322,6 @@ _worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
   gboolean success;
   gboolean drop_silently = owner->template_options.on_error & ON_ERROR_SILENT;
 
-  if (!_connect(self, TRUE))
-    return LTR_NOT_CONNECTED;
-
   bson_reinit(self->bson);
 
   LogTemplateEvalOptions options = {&owner->template_options, LTZ_SEND, self->super.seq_num, NULL};
@@ -389,9 +387,6 @@ _worker_thread_init(LogThreadedDestWorker *s)
   MongoDBDestWorker *self = (MongoDBDestWorker *) s;
 
   self->collection = g_string_sized_new(64);
-
-  _connect(self, FALSE);
-
   self->bson = bson_sized_new(4096);
 
   return log_threaded_dest_worker_init_method(s);
@@ -420,6 +415,7 @@ afmongodb_dw_new(LogThreadedDestDriver *owner, gint worker_index)
 
   self->super.thread_init = _worker_thread_init;
   self->super.thread_deinit = _worker_thread_deinit;
+  self->super.connect = _worker_connect;
   self->super.disconnect = _worker_disconnect;
   self->super.insert = _worker_insert;
 
