@@ -80,7 +80,7 @@ openbsd_create_newsyslog_socket(OpenBSDDriver *self)
     }
 
   close(self->pair[1]);
-  self->pair[1] = NULL;
+  self->pair[1] = -1;
 
   return self->pair[0];
 }
@@ -88,17 +88,17 @@ openbsd_create_newsyslog_socket(OpenBSDDriver *self)
 static void
 openbsd_close_newsyslog_socket(OpenBSDDriver *self)
 {
-  if (self->pair[0])
+  if (self->pair[0] != -1)
     close(self->pair[0]);
-  self->pair[0] = NULL;
+  self->pair[0] = -1;
 
-  if (self->pair[1])
+  if (self->pair[1] != -1)
     close(self->pair[1]);
-  self->pair[1] = NULL;
+  self->pair[1] = -1;
 
-  if (self->klog)
+  if (self->klog != -1)
     close(self->klog);
-  self->klog    = NULL;
+  self->klog    = -1;
 }
 
 static gboolean
@@ -171,6 +171,10 @@ openbsd_sd_new(GlobalConfig *cfg)
   OpenBSDDriver *self = g_new0(OpenBSDDriver, 1);
 
   log_src_driver_init_instance(&self->super, cfg);
+
+  self->klog = -1;
+  self->pair[0] = -1;
+  self->pair[1] = -1;
 
   self->super.super.super.init    = _openbsd_sd_init;
   self->super.super.super.deinit  = _openbsd_sd_deinit;
