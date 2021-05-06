@@ -26,6 +26,7 @@
 #include "mainloop.h"
 #include "modules/afmongodb/afmongodb-parser.h"
 #include "logthrdest/logthrdestdrv.h"
+#include "template/templates.h"
 
 static int _tests_failed = 0;
 static GlobalConfig *test_cfg;
@@ -172,7 +173,9 @@ _test_uri_correct(void)
   afmongodb_dd_set_uri(mongodb, "mongodb://localhost:1234/syslog-ng");
   _expect_uri_in_log("uri", "localhost:1234/syslog-ng", "syslog-ng", "messages");
 
-  afmongodb_dd_set_collection(mongodb, "messages2");
+  LogTemplate *collection = log_template_new(test_cfg, NULL);
+  log_template_compile_literal_string(collection, "messages2");
+  afmongodb_dd_set_collection(mongodb, collection);
   _expect_uri_in_log("collection", "127.0.0.1:27017/syslog" SAFEOPTS, "syslog", "messages2");
 }
 

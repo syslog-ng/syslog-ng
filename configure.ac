@@ -1254,6 +1254,15 @@ if test "x$with_mongoc" = "xno" && test "x$enable_mongodb" = "xyes"; then
    AC_MSG_ERROR([Could not find mongo-c-driver, and MongoDB support was explicitly enabled.])
 fi
 
+if test "x$with_mongoc" = "xyes"; then
+CPPFLAGS_SAVE="$CPPFLAGS"
+CPPFLAGS="$CPPFLAGS $LIBMONGO_CFLAGS"
+
+AC_CHECK_DECLS([mongoc_uri_set_option_as_int32], [], [], [[#include <mongoc.h>]])
+
+CPPFLAGS="$CPPFLAGS_SAVE"
+fi
+
 dnl ***************************************************************************
 dnl libesmtp headers/libraries
 dnl ***************************************************************************

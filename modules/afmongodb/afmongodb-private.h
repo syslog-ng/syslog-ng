@@ -26,30 +26,24 @@
 #include "syslog-ng.h"
 #include "mongoc.h"
 #include "logthrdest/logthrdestdrv.h"
-#include "string-list.h"
+#include "template/templates.h"
 #include "value-pairs/value-pairs.h"
 
 typedef struct _MongoDBDestDriver
 {
   LogThreadedDestDriver super;
 
-  /* Shared between main/writer; only read by the writer, never
-   written */
-  gchar *coll;
   GString *uri_str;
+  LogTemplate *collection_template;
+  gboolean collection_is_literal_string;
 
   LogTemplateOptions template_options;
 
   ValuePairs *vp;
 
-  /* Writer-only stuff */
   const gchar *const_db;
   mongoc_uri_t *uri_obj;
-  mongoc_client_t *client;
-  mongoc_collection_t *coll_obj;
-
-  GString *current_value;
-  bson_t *bson;
+  mongoc_client_pool_t *pool;
 } MongoDBDestDriver;
 
 #endif

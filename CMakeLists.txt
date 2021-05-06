@@ -402,8 +402,6 @@ if (SANITIZER)
 endif()
 
 
-
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/syslog-ng-config.h.in ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-config.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 add_subdirectory(Mk)
@@ -416,6 +414,8 @@ add_subdirectory(syslog-ng-ctl)
 add_test_subdirectory(libtest)
 add_subdirectory(tests)
 add_subdirectory(persist-tool)
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/syslog-ng-config.h.in ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-config.h)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/syslog-ng-config.h DESTINATION include/syslog-ng)
 

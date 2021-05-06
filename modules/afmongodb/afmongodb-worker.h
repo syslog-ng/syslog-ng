@@ -1,6 +1,7 @@
 /*
- * Copyright (c) 2010-2015 Balabit
+ * Copyright (c) 2010-2021 One Identity
  * Copyright (c) 2010-2014 Gergely Nagy <algernon@balabit.hu>
+ * Copyright (c) 2021 László Várady
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -21,31 +22,25 @@
  *
  */
 
-#include "afmongodb.h"
-#include "cfg-parser.h"
-#include "afmongodb-grammar.h"
+#ifndef AFMONGODB_WORKER_H_INCLUDED
+#define AFMONGODB_WORKER_H_INCLUDED
 
-extern int afmongodb_debug;
-int afmongodb_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
+#include "syslog-ng.h"
+#include "mongoc.h"
+#include "logthrdest/logthrdestdrv.h"
 
-static CfgLexerKeyword afmongodb_keywords[] =
+typedef struct MongoDBDestWorker
 {
-  { "mongodb", KW_MONGODB },
-  { "uri", KW_URI },
-  { "collection", KW_COLLECTION },
-  { "workers", KW_WORKERS },
-  { NULL }
-};
+  LogThreadedDestWorker super;
 
-CfgParser afmongodb_parser =
-{
-#if SYSLOG_NG_ENABLE_DEBUG
-  .debug_flag = &afmongodb_debug,
+  mongoc_client_t *client;
+
+  GString *collection;
+  mongoc_collection_t *coll_obj;
+
+  bson_t *bson;
+} MongoDBDestWorker;
+
+LogThreadedDestWorker *afmongodb_dw_new(LogThreadedDestDriver *owner, gint worker_index);
+
 #endif
-  .name = "afmongodb",
-  .keywords = afmongodb_keywords,
-  .parse = (int (*)(CfgLexer *lexer, gpointer *instance, gpointer)) afmongodb_parse,
-  .cleanup = (void (*)(gpointer)) log_pipe_unref,
-};
-
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(afmongodb_, AFMONGODB_, LogDriver **)
