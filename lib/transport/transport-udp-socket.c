@@ -40,7 +40,7 @@ struct _LogTransportUDP
 
 #if defined(SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR)
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined(__OpenBSD__)
 
 GSockAddr *
 _extract_dest_ip4_addr_from_cmsg(struct cmsghdr *cmsg, GSockAddr *bind_addr)
@@ -190,7 +190,7 @@ log_transport_udp_setup_fd(LogTransportUDP *self, gint fd)
 
   if (self->super.address_family == AF_INET)
     {
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined(__OpenBSD__)
       setsockopt(fd, IPPROTO_IP, IP_RECVDSTADDR, &on, sizeof(on));
 #else
       setsockopt(fd, IPPROTO_IP, IP_PKTINFO, &on, sizeof(on));

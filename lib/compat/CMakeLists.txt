@@ -11,6 +11,7 @@ set(COMPAT_HEADERS
     compat/pcre.h
     compat/getent.h
     compat/getent-sun.h
+    compat/getent-openbsd.h
     compat/getent-generic.h
     compat/un.h
     PARENT_SCOPE)
@@ -27,6 +28,7 @@ set(COMPAT_SOURCES
     compat/time.c
     compat/openssl_support.c
     compat/getent-sun.c
+    compat/getent-openbsd.c
     compat/getent-generic.c
     PARENT_SCOPE)
 
