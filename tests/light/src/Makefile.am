@@ -46,6 +46,7 @@ EXTRA_DIST += \
 	tests/light/src/syslog_ng_config/statements/destinations/example_destination.py \
 	tests/light/src/syslog_ng_config/statements/destinations/file_destination.py \
 	tests/light/src/syslog_ng_config/statements/destinations/__init__.py \
+	tests/light/src/syslog_ng_config/statements/destinations/network_destination.py \
 	tests/light/src/syslog_ng_config/statements/destinations/snmp_destination.py \
 	tests/light/src/syslog_ng_config/statements/filters/filter.py \
 	tests/light/src/syslog_ng_config/statements/filters/__init__.py \
