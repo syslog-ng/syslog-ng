@@ -5,6 +5,7 @@ EXTRA_DIST += \
 	tests/light/functional_tests/config_change/test_manipulating_config_between_reload.py \
 	tests/light/functional_tests/conftest.py \
 	tests/light/functional_tests/destination_drivers/example_destination/test_example_destination.py \
+	tests/light/functional_tests/destination_drivers/network_destination/test_network_destination_transport.py \
 	tests/light/functional_tests/destination_drivers/snmp_destination/general/test_snmp_destination_acceptance.py \
 	tests/light/functional_tests/destination_drivers/snmp_destination/general/test_snmp_destination_missing_snmp_obj.py \
 	tests/light/functional_tests/destination_drivers/snmp_destination/general/test_snmp_destination_missing_trap_obj.py \
