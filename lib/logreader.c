@@ -507,10 +507,10 @@ log_reader_fetch_log(LogReader *self)
       switch (status)
         {
         case LPS_EOF:
-          g_sockaddr_unref(aux.peer_addr);
+          log_transport_aux_data_destroy(&aux);
           return NC_CLOSE;
         case LPS_ERROR:
-          g_sockaddr_unref(aux.peer_addr);
+          log_transport_aux_data_destroy(&aux);
           return NC_READ_ERROR;
         case LPS_SUCCESS:
           break;
