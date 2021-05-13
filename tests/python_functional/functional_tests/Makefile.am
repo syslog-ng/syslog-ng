@@ -37,5 +37,6 @@ EXTRA_DIST += \
 	tests/python_functional/functional_tests/source_drivers/network_source/proxyprotocol/test_pp_with_syslog_proto.py \
 	tests/python_functional/functional_tests/source_options/test_use_syslogng_pid.py \
 	tests/python_functional/functional_tests/template_functions/graphite-output/test_graphite_output.py \
-	tests/python_functional/functional_tests/template_functions/slog/test_secure_logging.py
+	tests/python_functional/functional_tests/template_functions/slog/test_secure_logging.py \
+	tests/python_functional/functional_tests/tools/loggen/test_loggen_with_reconnect.py
 

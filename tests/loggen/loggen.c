@@ -57,6 +57,7 @@ static PluginOption global_plugin_option =
   .target = NULL,
   .port = NULL,
   .rate = 1000,
+  .reconnect = 0,
 };
 
 static char *sdata_value = NULL;
@@ -99,6 +100,7 @@ static GOptionEntry loggen_options[] =
   { "number", 'n', 0, G_OPTION_ARG_INT, &global_plugin_option.number_of_messages, "Number of messages to generate", "<number>" },
   { "quiet", 'Q', 0, G_OPTION_ARG_NONE, &quiet, "Don't print the msg/sec data", NULL },
   { "debug", 0, 0, G_OPTION_ARG_NONE, &debug, "Enable loggen debug messages", NULL },
+  { "reconnect", 0, 0, G_OPTION_ARG_NONE, &global_plugin_option.reconnect, "Attempt to reconnect when destination connections are lost", NULL},
   { NULL }
 };
 

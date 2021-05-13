@@ -390,8 +390,40 @@ active_thread_func(gpointer user_data)
 
       connection_error = send_msg(fd, message, str_len);
 
-      thread_context->sent_messages++;
-      thread_context->buckets--;
+      if(!connection_error)
+        {
+          thread_context->sent_messages++;
+          thread_context->buckets--;
+        }
+
+      if(connection_error && option->reconnect && thread_run)
+        {
+          shutdown(fd, SHUT_RDWR);
+          close(fd);
+
+          ERROR("destination connection %s:%s (%p) is lost, try to reconnect\n", option->target, option->port, g_thread_self());
+          if (unix_socket_x)
+            fd = connect_unix_domain_socket(sock_type, option->target);
+          else
+            fd = connect_ip_socket(sock_type, option->target, option->port, option->use_ipv6);
+
+          while(fd < 0 && !thread_check_exit_criteria(thread_context))
+            {
+              ERROR("can not reconnect to %s:%s (%p), try again after %d sec\n", option->target, option->port, g_thread_self(), 1);
+              g_usleep(1e6);
+
+              if (unix_socket_x)
+                fd = connect_unix_domain_socket(sock_type, option->target);
+              else
+                fd = connect_ip_socket(sock_type, option->target, option->port, option->use_ipv6);
+            }
+
+          if(fd > 0)
+            {
+              DEBUG("(%d) reconnected to server on socket %d (%p)\n", thread_context->index, fd, g_thread_self());
+              connection_error = FALSE;
+            }
+        }
     }
   DEBUG("thread (%s,%p) finished\n", socket_loggen_plugin_info.name, g_thread_self());
 

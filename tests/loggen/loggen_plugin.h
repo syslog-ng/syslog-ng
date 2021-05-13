@@ -45,6 +45,7 @@ typedef struct _plugin_option
   const char *target; /* command line argument */
   const char *port;
   int  rate;
+  int reconnect;
 } PluginOption;
 
 typedef struct _thread_data
