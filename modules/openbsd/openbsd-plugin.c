@@ -36,9 +36,9 @@ static Plugin openbsd_plugins[] =
 };
 
 gboolean
-openbsd_module_init(GlobalConfig *cfg, CfgArgs *args)
+openbsd_module_init(PluginContext *context, CfgArgs *args)
 {
-  plugin_register(cfg, openbsd_plugins, G_N_ELEMENTS(openbsd_plugins));
+  plugin_register(context, openbsd_plugins, G_N_ELEMENTS(openbsd_plugins));
   return TRUE;
 }
 
