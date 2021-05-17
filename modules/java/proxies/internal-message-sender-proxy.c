@@ -36,3 +36,12 @@ Java_org_syslog_1ng_InternalMessageSender_createInternalMessage(JNIEnv *env, jcl
       (*env)->ReleaseStringUTFChars(env, message, c_str);
     }
 }
+
+JNIEXPORT jint JNICALL
+Java_org_syslog_1ng_InternalMessageSender_getLevel(JNIEnv *env, jclass cls)
+{
+  if (trace_flag || debug_flag)
+    return org_syslog_ng_InternalMessageSender_LevelDebug;
+
+  return org_syslog_ng_InternalMessageSender_LevelInfo;
+}

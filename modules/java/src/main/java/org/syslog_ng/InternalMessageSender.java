@@ -57,5 +57,7 @@ public class InternalMessageSender {
     createInternalMessage(LevelDebug, message);
   }
 
+  public native static int getLevel();
+
   private native static void createInternalMessage(int level, String message);
 };
