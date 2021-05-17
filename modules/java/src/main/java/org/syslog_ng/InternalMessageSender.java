@@ -26,12 +26,12 @@
 package org.syslog_ng;
 
 public class InternalMessageSender {
-  private static final int LevelFatal = 2;
-  private static final int LevelError = 3;
-  private static final int LevelWarning = 4;
-  private static final int LevelNotice = 5;
-  private static final int LevelInfo = 6;
-  private static final int LevelDebug = 7;
+  public static final int LevelFatal = 2;
+  public static final int LevelError = 3;
+  public static final int LevelWarning = 4;
+  public static final int LevelNotice = 5;
+  public static final int LevelInfo = 6;
+  public static final int LevelDebug = 7;
 
   public static void fatal(String message) {
     createInternalMessage(LevelFatal, message);
@@ -56,5 +56,6 @@ public class InternalMessageSender {
   public static void debug(String message) {
     createInternalMessage(LevelDebug, message);
   }
+
   private native static void createInternalMessage(int level, String message);
 };
