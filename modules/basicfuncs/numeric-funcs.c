@@ -63,7 +63,7 @@ number_as_int(Number number)
   if (number.value_type == Integer)
     return number.value_data.raw_integer;
 
-  return number.value_data.raw_float;
+  return (gint64) number.value_data.raw_float;
 }
 
 void
@@ -350,7 +350,7 @@ tf_num_ceil(LogMessage *msg, gint argc, GString *argv[], GString *result)
       return;
     }
 
-  format_int64_padded(result, 0, ' ', 10, ceil(number_as_double(n)));
+  format_int64_padded(result, 0, ' ', 10, (gint64)ceil(number_as_double(n)));
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_num_ceil);
@@ -377,7 +377,7 @@ tf_num_floor(LogMessage *msg, gint argc, GString *argv[], GString *result)
       return;
     }
 
-  format_int64_padded(result, 0, ' ', 10, floor(number_as_double(n)));
+  format_int64_padded(result, 0, ' ', 10, (gint64)floor(number_as_double(n)));
 }
 
 TEMPLATE_FUNCTION_SIMPLE(tf_num_floor);
