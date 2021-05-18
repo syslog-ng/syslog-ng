@@ -334,10 +334,10 @@ py_datetime_to_logstamp(PyObject *py_timestamp, UnixTime *logstamp)
   if (!_datetime_get_gmtoff(py_timestamp, &local_gmtoff))
     return FALSE;
   if (local_gmtoff == -1)
-    local_gmtoff = get_local_timezone_ofs(posix_timestamp);
+    local_gmtoff = get_local_timezone_ofs((time_t) posix_timestamp);
 
-  logstamp->ut_sec = (time_t) posix_timestamp;
-  logstamp->ut_usec = posix_timestamp * 10e5 - logstamp->ut_sec * 10e5;
+  logstamp->ut_sec = (gint64) posix_timestamp;
+  logstamp->ut_usec = (guint32) (posix_timestamp * 1000000 - logstamp->ut_sec * 1000000);
   logstamp->ut_gmtoff = local_gmtoff;
 
   return TRUE;
