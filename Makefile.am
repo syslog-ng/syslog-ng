@@ -87,7 +87,8 @@ AM_CFLAGS += \
 	-Wold-style-definition \
 	-Wundef \
 	-Wignored-qualifiers \
-	-Woverride-init
+	-Woverride-init \
+	-Wfloat-conversion
 endif
 
 if ENABLE_DEBUG
