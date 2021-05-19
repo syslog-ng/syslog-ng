@@ -328,7 +328,7 @@ afsocket_sd_set_dynamic_window_size(LogDriver *s, gint dynamic_window_size)
 }
 
 void
-afsocket_sd_set_dynamic_window_stats_freq(LogDriver *s, gfloat stats_freq)
+afsocket_sd_set_dynamic_window_stats_freq(LogDriver *s, gdouble stats_freq)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
 
