@@ -41,7 +41,7 @@ int allow_severity = 0;
 int deny_severity = 0;
 #endif
 
-static const gfloat DYNAMIC_WINDOW_TIMER_MSECS = 1000;
+static const glong DYNAMIC_WINDOW_TIMER_MSECS = 1000;
 static const gsize DYNAMIC_WINDOW_REALLOC_TICKS = 5;
 
 typedef struct _AFSocketSourceConnection
@@ -332,7 +332,7 @@ afsocket_sd_set_dynamic_window_stats_freq(LogDriver *s, gfloat stats_freq)
 {
   AFSocketSourceDriver *self = (AFSocketSourceDriver *) s;
 
-  self->dynamic_window_stats_freq = stats_freq * 1000.0f;
+  self->dynamic_window_stats_freq = (glong) (stats_freq * 1000);
 }
 
 void

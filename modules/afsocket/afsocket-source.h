@@ -45,7 +45,7 @@ struct _AFSocketSourceDriver
   struct iv_timer dynamic_window_timer;
   gsize dynamic_window_size;
   gsize dynamic_window_timer_tick;
-  gfloat dynamic_window_stats_freq;
+  glong dynamic_window_stats_freq;
   gint dynamic_window_realloc_ticks;
   gint fd;
   LogReaderOptions reader_options;
