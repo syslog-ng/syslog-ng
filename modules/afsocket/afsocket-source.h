@@ -45,7 +45,7 @@ struct _AFSocketSourceDriver
   struct iv_timer dynamic_window_timer;
   gsize dynamic_window_size;
   gsize dynamic_window_timer_tick;
-  gfloat dynamic_window_stats_freq;
+  glong dynamic_window_stats_freq;
   gint dynamic_window_realloc_ticks;
   gint fd;
   LogReaderOptions reader_options;
@@ -79,7 +79,7 @@ void afsocket_sd_set_keep_alive(LogDriver *self, gint enable);
 void afsocket_sd_set_max_connections(LogDriver *self, gint max_connections);
 void afsocket_sd_set_listen_backlog(LogDriver *self, gint listen_backlog);
 void afsocket_sd_set_dynamic_window_size(LogDriver *self, gint dynamic_window_size);
-void afsocket_sd_set_dynamic_window_stats_freq(LogDriver *self, gfloat stats_freq);
+void afsocket_sd_set_dynamic_window_stats_freq(LogDriver *self, gdouble stats_freq);
 void afsocket_sd_set_dynamic_window_realloc_ticks(LogDriver *self, gint realloc_ticks);
 
 static inline gboolean

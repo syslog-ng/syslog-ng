@@ -80,7 +80,7 @@ thread_check_time_bucket(ThreadData *thread_context)
       long msec = (1000 / thread_context->option->rate) + 1;
 
       tspec.tv_sec = msec / 1000;
-      tspec.tv_nsec = (msec % 1000) * 1e6;
+      tspec.tv_nsec = (msec % 1000) * 1000000;
       while (nanosleep(&tspec, &tspec) < 0 && errno == EINTR)
         ;
       return TRUE;

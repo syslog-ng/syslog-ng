@@ -373,7 +373,8 @@ if (ENABLE_EXTRA_WARNINGS)
     -Wmissing-format-attribute
     -Wold-style-definition
     -Wundef
-    -Wignored-qualifiers)
+    -Wignored-qualifiers
+    -Wfloat-conversion)
 
 if ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
   set(EXTRA_WARNINGS

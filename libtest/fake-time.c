@@ -27,7 +27,7 @@
 void
 fake_time(time_t now)
 {
-  GTimeVal tv = { now, 123 * 1e3 };
+  GTimeVal tv = { now, 123 * 1000 };
 
   set_cached_time(&tv);
 }
