@@ -281,25 +281,16 @@ _kafka_delivery_report_cb(rd_kafka_t *rk,
                           void *opaque, void *msg_opaque)
 {
   KafkaDestDriver *self = (KafkaDestDriver *) opaque;
-  LogMessage *msg = (LogMessage *) msg_opaque;
-
-  /* we already ACKed back this message to syslog-ng, it was kept in
-   * librdkafka queues so far but successfully delivered, let's unref it */
 
   if (err != RD_KAFKA_RESP_ERR_NO_ERROR)
     {
-      LogThreadedDestWorker *worker = (LogThreadedDestWorker *) self->super.workers[0];
-      LogQueue *queue = worker->queue;
-      LogPathOptions path_options = LOG_PATH_OPTIONS_INIT_NOACK;
-
-      msg_debug("kafka: delivery report for message came back with an error, putting it back to our queue",
+      msg_debug("kafka: delivery report for message came back with an error, message is lost",
                 evt_tag_str("topic", self->topic_name->template),
                 evt_tag_str("fallback_topic", self->fallback_topic_name),
                 evt_tag_printf("message", "%.*s", (int) MIN(len, 128), (char *) payload),
                 evt_tag_str("error", rd_kafka_err2str(err)),
                 evt_tag_str("driver", self->super.super.super.id),
                 log_pipe_location_tag(&self->super.super.super.super));
-      log_queue_push_head(queue, msg, &path_options);
     }
   else
     {
@@ -310,9 +301,7 @@ _kafka_delivery_report_cb(rd_kafka_t *rk,
                 evt_tag_str("error", rd_kafka_err2str(err)),
                 evt_tag_str("driver", self->super.super.super.id),
                 log_pipe_location_tag(&self->super.super.super.super));
-      log_msg_unref(msg);
     }
-  log_threaded_dest_worker_wakeup_when_suspended((LogThreadedDestWorker *) self->super.workers[0]);
 }
 
 static void
@@ -447,7 +436,7 @@ _flush_inflight_messages(KafkaDestDriver *self)
 
   if (outq_len != 0)
     msg_notice("kafka: timeout while waiting for the librdkafka queue to empty, the "
-               "remaining entries will be purged and readded to the syslog-ng queue",
+               "remaining entries will be purged and lost",
                evt_tag_int("timeout", timeout),
                evt_tag_int("outq_len", outq_len));
 }
@@ -457,8 +446,7 @@ _purge_remaining_messages(KafkaDestDriver *self)
 {
   /* we are purging all messages, those ones that are sitting in the queue
    * and also those that were sent and not yet acknowledged.  The purged
-   * messages will generate failed delivery reports, which in turn will put
-   * them back to the head of our queue. */
+   * messages will generate failed delivery reports. */
 
   /* FIXME: Need to check their order!!!! */
 

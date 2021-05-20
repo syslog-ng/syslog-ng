@@ -114,7 +114,7 @@ _publish_message(KafkaDestWorker *self, LogMessage *msg)
                        RD_KAFKA_MSG_F_FREE | block_flag,
                        self->message->str, self->message->len,
                        self->key->len ? self->key->str : NULL, self->key->len,
-                       log_msg_ref(msg)) == -1)
+                       NULL) == -1)
     {
       msg_error("kafka: failed to publish message",
                 evt_tag_str("topic", rd_kafka_topic_name(topic)),
@@ -122,7 +122,6 @@ _publish_message(KafkaDestWorker *self, LogMessage *msg)
                 evt_tag_str("driver", owner->super.super.super.id),
                 log_pipe_location_tag(&owner->super.super.super.super));
 
-      log_msg_unref(msg);
       return FALSE;
     }
 
