@@ -103,6 +103,91 @@ kafka_dest_worker_calculate_topic(KafkaDestWorker *self, LogMessage *msg)
 }
 
 static gboolean
+_transaction_init(KafkaDestWorker *self)
+{
+#ifdef SYSLOG_NG_HAVE_RD_KAFKA_INIT_TRANSACTIONS
+  KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
+
+  if (!owner->transaction_commit)
+    return TRUE;
+
+  if (owner->transaction_inited)
+    return TRUE;
+
+  rd_kafka_error_t *error = rd_kafka_init_transactions(owner->kafka, -1);
+  if (error)
+    {
+      msg_error("kafka: init_transactions failed",
+                evt_tag_str("topic", owner->topic_name->template),
+                evt_tag_str("error", rd_kafka_error_string(error)),
+                evt_tag_str("driver", owner->super.super.super.id),
+                log_pipe_location_tag(&owner->super.super.super.super));
+      return FALSE;
+    }
+  owner->transaction_inited = TRUE;
+#endif
+
+  return TRUE;
+}
+
+static gboolean
+_transaction_commit(KafkaDestWorker *self)
+{
+  KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
+
+  if (!owner->transaction_commit)
+    return TRUE;
+
+  rd_kafka_error_t *error = rd_kafka_commit_transaction(owner->kafka, -1);
+  if (error)
+    {
+      msg_error("kafka: Failed to commit transaction",
+                evt_tag_str("topic", owner->topic_name->template),
+                evt_tag_str("error", rd_kafka_err2str(rd_kafka_error_code(error))),
+                log_pipe_location_tag(&owner->super.super.super.super));
+
+      if (rd_kafka_error_txn_requires_abort(error))
+        {
+          rd_kafka_error_t *abort_error = rd_kafka_abort_transaction(owner->kafka, -1);
+          if (abort_error)
+            {
+              msg_error("kafka: Failed to abort transaction",
+                        evt_tag_str("topic", owner->topic_name->template),
+                        evt_tag_str("error", rd_kafka_err2str(rd_kafka_error_code(abort_error))),
+                        log_pipe_location_tag(&owner->super.super.super.super));
+              rd_kafka_error_destroy(abort_error);
+            }
+        }
+      rd_kafka_error_destroy(error);
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
+static gboolean
+_transaction_begin(KafkaDestWorker *self)
+{
+  KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
+
+  if (!owner->transaction_commit)
+    return TRUE;
+
+  rd_kafka_error_t *error = rd_kafka_begin_transaction(owner->kafka);
+  if (error)
+    {
+      msg_error("kafka: failed to start new transaction",
+                evt_tag_str("topic", owner->topic_name->template),
+                evt_tag_str("error", rd_kafka_err2str(rd_kafka_error_code(error))),
+                log_pipe_location_tag(&owner->super.super.super.super));
+      rd_kafka_error_destroy(error);
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
+static gboolean
 _publish_message(KafkaDestWorker *self, LogMessage *msg)
 {
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
@@ -124,6 +209,7 @@ _publish_message(KafkaDestWorker *self, LogMessage *msg)
 
       return FALSE;
     }
+
 
   msg_debug("kafka: message published",
             evt_tag_str("topic", rd_kafka_topic_name(topic)),
@@ -189,8 +275,17 @@ kafka_dest_worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
 
   _drain_responses(self);
 
+  if (!_transaction_init(self))
+    return LTR_RETRY;
+
+  if (!_transaction_begin(self))
+    return LTR_RETRY;
+
   _format_message_and_key(self, msg);
   if (!_publish_message(self, msg))
+    return LTR_RETRY;
+
+  if (!_transaction_commit(self))
     return LTR_RETRY;
 
   _drain_responses(self);

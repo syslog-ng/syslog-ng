@@ -48,6 +48,7 @@ typedef struct
   gint flush_timeout_on_shutdown;
   gint flush_timeout_on_reload;
   gint poll_timeout;
+  gboolean transaction_inited;
 } KafkaDestDriver;
 
 #define TOPIC_NAME_ERROR topic_name_error_quark()

@@ -372,6 +372,10 @@ _construct_client(KafkaDestDriver *self)
   _conf_set_prop(conf, "metadata.broker.list", self->bootstrap_servers);
   _conf_set_prop(conf, "topic.partitioner", "murmur2_random");
 
+  if (self->transaction_commit)
+    _conf_set_prop(conf, "transactional.id",
+                   log_pipe_get_persist_name(&self->super.super.super.super));
+
   _apply_config_props(conf, self->config);
   rd_kafka_conf_set_log_cb(conf, _kafka_log_callback);
   rd_kafka_conf_set_dr_cb(conf, _kafka_delivery_report_cb);
@@ -527,7 +531,6 @@ _init_topic_name(KafkaDestDriver *self)
     return _init_literal_topic_name(self);
 }
 
-
 gboolean
 kafka_dd_init(LogPipe *s)
 {
@@ -560,6 +563,27 @@ kafka_dd_init(LogPipe *s)
                     log_pipe_location_tag(&self->super.super.super.super));
           return FALSE;
         }
+      self->transaction_inited = FALSE;
+    }
+
+
+  if (self->transaction_commit)
+    {
+      /*
+       * The transaction api works on the rd_kafka client level,
+       * and packing multiple kafka operation into an atomic one.
+       * But it bundles them by calling the same operations,
+       * there is no way to selectivly bundle calls.
+       * Thus a worker cannot have its own dedicated transaction.
+       *
+       */
+      if (self->super.num_workers > 1)
+        {
+          msg_info("kafka: in case of sync_send(yes) option the number of workers limited to 1", evt_tag_int("configured_workers",
+                   self->super.num_workers), evt_tag_int("workers", 1));
+          log_threaded_dest_driver_set_num_workers(&self->super.super.super, 1);
+        }
+
     }
 
   if (!_init_topic_name(self))
