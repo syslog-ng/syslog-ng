@@ -112,6 +112,14 @@ kafka_dd_set_poll_timeout(LogDriver *d, gint poll_timeout)
   self->poll_timeout = poll_timeout;
 }
 
+void
+kafka_dd_set_transaction_commit(LogDriver *d, gboolean transaction_commit)
+{
+  KafkaDestDriver *self = (KafkaDestDriver *)d;
+
+  self->transaction_commit = transaction_commit;
+}
+
 LogTemplateOptions *
 kafka_dd_get_template_options(LogDriver *d)
 {

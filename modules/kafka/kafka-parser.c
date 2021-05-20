@@ -41,7 +41,7 @@ static CfgLexerKeyword kafka_keywords[] =
 
   { "key",            KW_KEY },
   { "message",        KW_MESSAGE },
-  { "sync_send",      KW_SYNC_SEND, KWS_OBSOLETE, "The sync-send() option is ignored by the librdkafka implementation of kafka"},
+  { "sync_send",      KW_SYNC_SEND},
   { "properties_file", KW_PROPERTIES_FILE, KWS_OBSOLETE, "Please list the file content in the config() option." },
   { "bootstrap_servers", KW_BOOTSTRAP_SERVERS },
   { "workers",        KW_WORKERS },
