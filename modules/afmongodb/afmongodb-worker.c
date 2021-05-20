@@ -34,7 +34,8 @@ _worker_disconnect(LogThreadedDestWorker *s)
   MongoDBDestWorker *self = (MongoDBDestWorker *)s;
   MongoDBDestDriver *owner = (MongoDBDestDriver *) self->super.owner;
 
-  mongoc_collection_destroy(self->coll_obj);
+  if (self->coll_obj)
+    mongoc_collection_destroy(self->coll_obj);
   self->coll_obj = NULL;
 
   if (self->client)
@@ -63,7 +64,9 @@ _switch_collection(MongoDBDestWorker *self, const gchar *collection)
   if (!self->client)
     return FALSE;
 
-  mongoc_collection_destroy(self->coll_obj);
+  if (self->coll_obj)
+    mongoc_collection_destroy(self->coll_obj);
+
   self->coll_obj = mongoc_client_get_collection(self->client, owner->const_db, collection);
 
   if (!self->coll_obj)
@@ -397,7 +400,8 @@ _worker_thread_deinit(LogThreadedDestWorker *s)
 {
   MongoDBDestWorker *self = (MongoDBDestWorker *) s;
 
-  bson_destroy(self->bson);
+  if (self->bson)
+    bson_destroy(self->bson);
   self->bson = NULL;
 
   g_string_free(self->collection, TRUE);
