@@ -479,7 +479,7 @@ _init_template_topic_name(KafkaDestDriver *self)
 static gboolean
 _topic_name_is_a_template(KafkaDestDriver *self)
 {
-  return (strchr(self->topic_name->template, '$') != NULL);
+  return !log_template_is_literal_string(self->topic_name);
 }
 
 static gboolean
