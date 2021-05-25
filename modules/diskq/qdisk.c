@@ -200,13 +200,13 @@ qdisk_is_space_avail(QDisk *self, gint at_least)
 
 }
 
-static gboolean
+static void
 _truncate_file(QDisk *self, off_t expected_size)
 {
   if (ftruncate(self->fd, expected_size) == 0)
     {
       self->file_size = expected_size;
-      return TRUE;
+      return;
     }
 
   off_t file_size = -1;
@@ -226,8 +226,6 @@ _truncate_file(QDisk *self, off_t expected_size)
             evt_tag_long("expected-size", expected_size),
             evt_tag_long("file-size", file_size),
             evt_tag_int("fd", self->fd));
-
-  return FALSE;
 }
 
 static gint64
