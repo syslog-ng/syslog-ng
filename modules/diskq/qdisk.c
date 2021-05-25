@@ -201,35 +201,33 @@ qdisk_is_space_avail(QDisk *self, gint at_least)
 }
 
 static gboolean
-_truncate_file(QDisk *self, off_t new_size)
+_truncate_file(QDisk *self, off_t expected_size)
 {
-  gboolean success = TRUE;
-
-  if (ftruncate(self->fd, new_size) < 0)
+  if (ftruncate(self->fd, expected_size) == 0)
     {
-      success = FALSE;
-      off_t file_size = -1;
-
-      struct stat st;
-      if (fstat(self->fd, &st) < 0)
-        {
-          msg_error("truncate file: cannot stat",
-                    evt_tag_error("error"));
-        }
-      else
-        {
-          file_size = st.st_size;
-        }
-
-      msg_error("Error truncating disk-queue file",
-                evt_tag_error("error"),
-                evt_tag_str("filename", self->filename),
-                evt_tag_long("expected-size", new_size),
-                evt_tag_long("file_size", file_size),
-                evt_tag_int("fd", self->fd));
+      self->file_size = expected_size;
+      return TRUE;
     }
 
-  return success;
+  off_t file_size = -1;
+  struct stat st;
+  if (fstat(self->fd, &st) < 0)
+    {
+      msg_error("truncate file: cannot stat", evt_tag_error("error"));
+    }
+  else
+    {
+      file_size = st.st_size;
+    }
+
+  msg_error("Error truncating disk-queue file",
+            evt_tag_error("error"),
+            evt_tag_str("filename", self->filename),
+            evt_tag_long("expected-size", expected_size),
+            evt_tag_long("file-size", file_size),
+            evt_tag_int("fd", self->fd));
+
+  return FALSE;
 }
 
 static gint64
