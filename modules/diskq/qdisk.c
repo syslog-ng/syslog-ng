@@ -245,18 +245,19 @@ qdisk_get_lowest_used_queue_offset(QDisk *self)
 }
 
 static void
-qdisk_try_to_truncate_file_to_minimal(QDisk *self)
+_truncate_file_to_minimal(QDisk *self)
 {
   if (qdisk_is_file_empty(self))
     {
       _truncate_file(self, QDISK_RESERVED_SPACE);
+      return;
     }
-  else
-    {
-      gint64 file_end_offset = qdisk_get_lowest_used_queue_offset(self);
-      if(file_end_offset > QDISK_RESERVED_SPACE)
-        _truncate_file(self, file_end_offset);
-    }
+
+  gint64 file_end_offset = qdisk_get_lowest_used_queue_offset(self);
+  if (file_end_offset <= QDISK_RESERVED_SPACE)
+    return;
+
+  _truncate_file(self, file_end_offset);
 }
 
 
@@ -622,7 +623,7 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
       self->file_size = QDISK_RESERVED_SPACE;
       if (!self->options->read_only)
         {
-          qdisk_try_to_truncate_file_to_minimal(self);
+          _truncate_file_to_minimal(self);
         }
 
       msg_info("Disk-buffer state loaded",
