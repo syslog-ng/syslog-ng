@@ -133,6 +133,7 @@ _transaction_init(KafkaDestWorker *self)
 static LogThreadedResult
 _transaction_commit(KafkaDestWorker *self)
 {
+#ifdef SYSLOG_NG_HAVE_RD_KAFKA_INIT_TRANSACTIONS
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
 
   if (!owner->transaction_commit)
@@ -161,6 +162,7 @@ _transaction_commit(KafkaDestWorker *self)
       rd_kafka_error_destroy(error);
       return LTR_RETRY;
     }
+#endif
 
   return LTR_SUCCESS;
 }
@@ -168,6 +170,7 @@ _transaction_commit(KafkaDestWorker *self)
 static LogThreadedResult
 _transaction_begin(KafkaDestWorker *self)
 {
+#ifdef SYSLOG_NG_HAVE_RD_KAFKA_INIT_TRANSACTIONS
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
 
   if (!owner->transaction_commit)
@@ -183,6 +186,7 @@ _transaction_begin(KafkaDestWorker *self)
       rd_kafka_error_destroy(error);
       return LTR_RETRY;
     }
+#endif
 
   return LTR_SUCCESS;
 }
