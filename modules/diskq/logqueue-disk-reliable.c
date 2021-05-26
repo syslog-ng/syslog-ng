@@ -119,7 +119,7 @@ _ack_backlog(LogQueueDisk *s, guint num_msg_to_ack)
       qdisk_dec_backlog (self->super.qdisk);
     }
 exit_reliable:
-  qdisk_reset_file_if_possible (self->super.qdisk);
+  qdisk_reset_file_if_empty(self->super.qdisk);
 }
 
 static gint
