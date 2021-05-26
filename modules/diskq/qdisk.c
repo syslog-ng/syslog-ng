@@ -209,7 +209,6 @@ _truncate_file(QDisk *self, off_t expected_size)
       return;
     }
 
-  off_t file_size = -1;
   struct stat st;
   if (fstat(self->fd, &st) < 0)
     {
@@ -217,14 +216,14 @@ _truncate_file(QDisk *self, off_t expected_size)
     }
   else
     {
-      file_size = st.st_size;
+      self->file_size = st.st_size;
     }
 
   msg_error("Error truncating disk-queue file",
             evt_tag_error("error"),
             evt_tag_str("filename", self->filename),
             evt_tag_long("expected-size", expected_size),
-            evt_tag_long("file-size", file_size),
+            evt_tag_long("file-size", self->file_size),
             evt_tag_int("fd", self->fd));
 }
 
@@ -246,22 +245,18 @@ qdisk_get_lowest_used_queue_offset(QDisk *self)
 }
 
 static void
-qdisk_try_to_truncate_file_to_minimal(QDisk *self, gint64 *new_file_end_offset)
+qdisk_try_to_truncate_file_to_minimal(QDisk *self)
 {
-  gint64 file_end_offset = 0;
   if (qdisk_is_file_empty(self))
     {
       _truncate_file(self, QDISK_RESERVED_SPACE);
-      file_end_offset = QDISK_RESERVED_SPACE;
     }
   else
     {
-      file_end_offset = qdisk_get_lowest_used_queue_offset(self);
+      gint64 file_end_offset = qdisk_get_lowest_used_queue_offset(self);
       if(file_end_offset > QDISK_RESERVED_SPACE)
         _truncate_file(self, file_end_offset);
     }
-  if (new_file_end_offset)
-    *new_file_end_offset = file_end_offset;
 }
 
 
@@ -344,7 +339,10 @@ qdisk_push_tail(QDisk *self, GString *record)
                     evt_tag_long("new size",  self->hdr->write_head));
           _truncate_file(self, self->hdr->write_head);
         }
-      self->file_size = self->hdr->write_head;
+      else
+        {
+          self->file_size = self->hdr->write_head;
+        }
 
       if (_is_qdisk_overwritten(self) && self->hdr->backlog_head  != QDISK_RESERVED_SPACE)
         {
@@ -621,12 +619,11 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
       if (!_load_non_reliable_queues(self, qout, qbacklog, qoverflow))
         return FALSE;
 
-      gint64 end_ofs = QDISK_RESERVED_SPACE;
+      self->file_size = QDISK_RESERVED_SPACE;
       if (!self->options->read_only)
         {
-          qdisk_try_to_truncate_file_to_minimal(self, &end_ofs);
+          qdisk_try_to_truncate_file_to_minimal(self);
         }
-      self->file_size = MAX(end_ofs, QDISK_RESERVED_SPACE);
 
       msg_info("Disk-buffer state loaded",
                evt_tag_str("filename", self->filename),
