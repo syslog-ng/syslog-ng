@@ -567,6 +567,22 @@ _load_non_reliable_queues(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *q
 
 #define _clear(obj) memset(&obj, 0, sizeof(obj));
 
+static gint64
+_number_of_messages(QDisk *self)
+{
+  if (self->options->reliable)
+    {
+      return self->hdr->length + self->hdr->backlog_len;
+    }
+  else
+    {
+      return self->hdr->length +
+             self->hdr->qbacklog_pos.count +
+             self->hdr->qout_pos.count +
+             self->hdr->qoverflow_pos.count;
+    }
+}
+
 static void
 _reset_queue_pointers(QDisk *self)
 {
@@ -618,10 +634,16 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
 
       msg_info("Disk-buffer state loaded",
                evt_tag_str("filename", self->filename),
-               evt_tag_long("qout_length", self->hdr->qout_pos.count),
-               evt_tag_long("qbacklog_length", self->hdr->qbacklog_pos.count),
-               evt_tag_long("qoverflow_length", self->hdr->qoverflow_pos.count),
-               evt_tag_long("qdisk_length", self->hdr->length));
+               evt_tag_long("number_of_messages", _number_of_messages(self)));
+
+      msg_debug("Disk-buffer internal state",
+                evt_tag_str("filename", self->filename),
+                evt_tag_long("qout_length", self->hdr->qout_pos.count),
+                evt_tag_long("qbacklog_length", self->hdr->qbacklog_pos.count),
+                evt_tag_long("qoverflow_length", self->hdr->qoverflow_pos.count),
+                evt_tag_long("qdisk_length", self->hdr->length),
+                evt_tag_long("read_head", self->hdr->read_head),
+                evt_tag_long("write_head", self->hdr->write_head));
 
       _reset_queue_pointers(self);
     }
@@ -632,15 +654,15 @@ _load_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
       self->file_size = st.st_size;
       msg_info("Reliable disk-buffer state loaded",
                evt_tag_str("filename", self->filename),
-               evt_tag_long("queue_length", self->hdr->length),
-               evt_tag_long("size", self->hdr->write_head - self->hdr->read_head));
+               evt_tag_long("number_of_messages", _number_of_messages(self)));
 
       msg_debug("Reliable disk-buffer internal state",
                 evt_tag_str("filename", self->filename),
+                evt_tag_long("queue_length", self->hdr->length),
+                evt_tag_long("backlog_len", self->hdr->backlog_len),
                 evt_tag_long("backlog_head", self->hdr->backlog_head),
                 evt_tag_long("read_head", self->hdr->read_head),
-                evt_tag_long("write_head", self->hdr->write_head),
-                evt_tag_long("backlog_len", self->hdr->backlog_len));
+                evt_tag_long("write_head", self->hdr->write_head));
     }
 
   return TRUE;
