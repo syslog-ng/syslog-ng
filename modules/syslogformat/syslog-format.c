@@ -382,7 +382,7 @@ _init_parse_hostname_invalid_chars(void)
                 i == '.' || i == ':' ||
                 i == '@' || i == '/'))
             {
-              invalid_chars[i >> 8] |= 1 << (i % 8);
+              invalid_chars[i / 8] |= 1 << (i % 8);
             }
         }
       invalid_chars[0] |= 0x1;
@@ -461,7 +461,7 @@ log_msg_parse_hostname(LogMessage *self, const guchar **data, gint *length,
           break;
         }
 
-      if (G_UNLIKELY((flags & LP_CHECK_HOSTNAME) && (invalid_chars[((guint) *src) >> 8] & (1 << (((guint) *src) % 8)))))
+      if (G_UNLIKELY((flags & LP_CHECK_HOSTNAME) && (invalid_chars[((guint8) *src) / 8] & (1 << (((guint8) *src) % 8)))))
         {
           break;
         }
