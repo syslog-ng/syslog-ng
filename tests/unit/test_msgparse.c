@@ -453,6 +453,15 @@ Test(msgparse, test_hostname)
       "openvpn[2499]: PTHREAD support initialized", // msg
       NULL, NULL, NULL, ignore_sdata_pairs
     },
+    {
+      "<7>2006-10-29T02:00:00.156+01:00 bzorp openvpn[2499]: PTHREAD support initialized", LP_CHECK_HOSTNAME | LP_EXPECT_HOSTNAME, NULL,
+      7,             // pri
+      1162083600, 156000, 3600,    // timestamp (sec/usec/zone)
+      "bzorp",                // host
+      "openvpn",        // openvpn
+      "PTHREAD support initialized", // msg
+      NULL, "2499", NULL, ignore_sdata_pairs
+    },
     {NULL}
   };
 
