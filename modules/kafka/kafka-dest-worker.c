@@ -108,9 +108,6 @@ _transaction_init(KafkaDestWorker *self)
 #ifdef SYSLOG_NG_HAVE_RD_KAFKA_INIT_TRANSACTIONS
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
 
-  if (!owner->transaction_commit)
-    return LTR_SUCCESS;
-
   if (owner->transaction_inited)
     return LTR_SUCCESS;
 
@@ -135,9 +132,6 @@ _transaction_commit(KafkaDestWorker *self)
 {
 #ifdef SYSLOG_NG_HAVE_RD_KAFKA_INIT_TRANSACTIONS
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
-
-  if (!owner->transaction_commit)
-    return TRUE;
 
   rd_kafka_error_t *error = rd_kafka_commit_transaction(owner->kafka, -1);
   if (error)
@@ -172,9 +166,6 @@ _transaction_begin(KafkaDestWorker *self)
 {
 #ifdef SYSLOG_NG_HAVE_RD_KAFKA_INIT_TRANSACTIONS
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
-
-  if (!owner->transaction_commit)
-    return TRUE;
 
   rd_kafka_error_t *error = rd_kafka_begin_transaction(owner->kafka);
   if (error)
@@ -276,6 +267,20 @@ static LogThreadedResult
 kafka_dest_worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
 {
   KafkaDestWorker *self = (KafkaDestWorker *)s;
+
+  _format_message_and_key(self, msg);
+  if (!_publish_message(self, msg))
+    return LTR_RETRY;
+
+  _drain_responses(self);
+  return LTR_SUCCESS;
+}
+
+static LogThreadedResult
+kafka_dest_worker_transactional_insert(LogThreadedDestWorker *s, LogMessage *msg)
+{
+  KafkaDestWorker *self = (KafkaDestWorker *)s;
+
   LogThreadedResult result;
 
   _drain_responses(self);
@@ -288,15 +293,14 @@ kafka_dest_worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
   if (result != LTR_SUCCESS)
     return result;
 
-  _format_message_and_key(self, msg);
-  if (!_publish_message(self, msg))
-    return LTR_RETRY;
+  result = kafka_dest_worker_insert(s, msg);
+  if (result != LTR_SUCCESS)
+    return result;
 
   result = _transaction_commit(self);
   if (result != LTR_SUCCESS)
     return result;
 
-  _drain_responses(self);
   return LTR_SUCCESS;
 }
 
@@ -323,6 +327,20 @@ _thread_init(LogThreadedDestWorker *s)
   return log_threaded_dest_worker_init_method(s);
 }
 
+static void
+_set_insert(KafkaDestWorker *self)
+{
+  KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
+  if (owner->transaction_commit)
+    {
+      self->super.insert = kafka_dest_worker_transactional_insert;
+    }
+  else
+    {
+      self->super.insert = kafka_dest_worker_insert;
+    }
+}
+
 LogThreadedDestWorker *
 kafka_dest_worker_new(LogThreadedDestDriver *o, gint worker_index)
 {
@@ -330,8 +348,9 @@ kafka_dest_worker_new(LogThreadedDestDriver *o, gint worker_index)
 
   log_threaded_dest_worker_init_instance(&self->super, o, worker_index);
   self->super.thread_init = _thread_init;
-  self->super.insert = kafka_dest_worker_insert;
   self->super.free_fn = kafka_dest_worker_free;
+
+  _set_insert(self);
 
   IV_TIMER_INIT(&self->poll_timer);
   self->poll_timer.cookie = self;
