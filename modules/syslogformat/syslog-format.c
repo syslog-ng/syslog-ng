@@ -382,11 +382,17 @@ _init_parse_hostname_invalid_chars(void)
                 i == '.' || i == ':' ||
                 i == '@' || i == '/'))
             {
-              invalid_chars[i >> 8] |= 1 << (i % 8);
+              invalid_chars[i / 8] |= 1 << (i % 8);
             }
         }
       invalid_chars[0] |= 0x1;
     }
+}
+
+static inline gboolean
+_is_invalid_hostname_char(guchar c)
+{
+  return invalid_chars[c / 8] & (1 << (c % 8));
 }
 
 typedef struct _IPv6Heuristics
@@ -461,7 +467,7 @@ log_msg_parse_hostname(LogMessage *self, const guchar **data, gint *length,
           break;
         }
 
-      if (G_UNLIKELY((flags & LP_CHECK_HOSTNAME) && (invalid_chars[((guint) *src) >> 8] & (1 << (((guint) *src) % 8)))))
+      if (G_UNLIKELY((flags & LP_CHECK_HOSTNAME) && _is_invalid_hostname_char(*src)))
         {
           break;
         }
