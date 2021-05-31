@@ -5,6 +5,7 @@ EXTRA_DIST += \
 	tests/light/src/common/blocking.py \
 	tests/light/src/common/__init__.py \
 	tests/light/src/common/file.py \
+	tests/light/src/common/network.py \
 	tests/light/src/common/network_operations.py \
 	tests/light/src/common/operations.py \
 	tests/light/src/common/pytest_operations.py \
