@@ -20,7 +20,9 @@
 # COPYING for details.
 #
 #############################################################################
+import socket
 from enum import Enum
+from enum import IntEnum
 
 from pathlib2 import Path
 
@@ -31,10 +33,11 @@ from src.helpers.loggen.loggen import Loggen
 
 
 class NetworkIO():
-    def __init__(self, ip, port, transport):
+    def __init__(self, ip, port, transport, ip_proto_version=None):
         self.__ip = ip
         self.__port = port
         self.__transport = transport
+        self.__ip_proto_version = NetworkIO.IPProtoVersion.V4 if ip_proto_version is None else ip_proto_version
 
     def write(self, content, rate=None):
         loggen_input_file_path = Path(tc_parameters.WORKING_DIR, "loggen_input_{}.txt".format(get_unique_id()))
@@ -45,6 +48,10 @@ class NetworkIO():
         loggen_input_file.close()
 
         Loggen().start(self.__ip, self.__port, read_file=str(loggen_input_file_path), dont_parse=True, permanent=True, rate=rate, **self.__transport.value)
+
+    class IPProtoVersion(IntEnum):
+        V4 = socket.AF_INET
+        V6 = socket.AF_INET6
 
     class Transport(Enum):
         TCP = {"inet": True, "stream": True}
