@@ -1,6 +1,7 @@
 
 #find -name '*.py'|awk '{ print "\ttests/light/src/"substr($0,3); }'|sort
 EXTRA_DIST += \
+	tests/light/src/common/asynchronous.py \
 	tests/light/src/common/blocking.py \
 	tests/light/src/common/__init__.py \
 	tests/light/src/common/file.py \
