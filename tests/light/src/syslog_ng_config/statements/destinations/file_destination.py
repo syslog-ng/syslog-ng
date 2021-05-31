@@ -41,7 +41,7 @@ class FileDestination(DestinationDriver):
         return self.read_logs(1)[0]
 
     def read_logs(self, counter):
-        return self.io.read_number_of_lines(counter)
+        return self.io.read_number_of_messages(counter)
 
     def read_until_logs(self, logs):
-        return self.io.read_until_lines(logs)
+        return self.io.read_until_messages(logs)

@@ -26,7 +26,7 @@ from src.driver_io.file.file_io import FileIO
 def test_file_io_write_read(temp_file, test_message):
     fileio = FileIO(temp_file)
     fileio.write(test_message)
-    output = fileio.read_number_of_lines(1)
+    output = fileio.read_number_of_messages(1)
     assert [test_message] == output
 
 
@@ -34,5 +34,5 @@ def test_file_io_multiple_write_read(temp_file, test_message):
     fileio = FileIO(temp_file)
     fileio.write(test_message)
     fileio.write(test_message)
-    output = fileio.read_number_of_lines(2)
+    output = fileio.read_number_of_messages(2)
     assert [test_message, test_message] == output
