@@ -20,6 +20,7 @@ EXTRA_DIST += \
 	tests/light/src/driver_io/__init__.py \
 	tests/light/src/driver_io/network/__init__.py \
 	tests/light/src/driver_io/network/network_io.py \
+	tests/light/src/driver_io/message_readers.py \
 	tests/light/src/executors/command_executor.py \
 	tests/light/src/executors/__init__.py \
 	tests/light/src/executors/process_executor.py \
