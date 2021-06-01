@@ -41,7 +41,7 @@ void
 mqtt_dd_set_topic(LogDriver *d, const gchar *topic)
 {
   MQTTDestinationDriver *self = (MQTTDestinationDriver *)d;
-  // TODO
+  g_string_assign(self->topic, topic);
 }
 
 
