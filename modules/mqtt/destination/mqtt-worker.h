@@ -19,3 +19,22 @@
  * COPYING for details.
  *
  */
+
+#ifndef MQTT_DESTINATION_WORKER_H_INCLUDED
+#define MQTT_DESTINATION_WORKER_H_INCLUDED
+
+#include "logthrdest/logthrdestdrv.h"
+#include "thread-utils.h"
+#include "MQTTClient.h"
+
+typedef struct _MQTTDestinationWorker
+{
+  LogThreadedDestWorker super;
+  MQTTClient client;
+  GString *topic;
+} MQTTDestinationWorker;
+
+LogThreadedDestWorker *mqtt_dw_new(LogThreadedDestDriver *o, gint worker_index);
+
+
+#endif /* MQTT_DESTINATION_WORKER_H_INCLUDED */

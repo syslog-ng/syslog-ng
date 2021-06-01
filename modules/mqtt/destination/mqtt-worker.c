@@ -19,3 +19,101 @@
  * COPYING for details.
  *
  */
+
+
+#include "mqtt-worker.h"
+#include "mqtt-destination.h"
+#include "thread-utils.h"
+#include "apphook.h"
+
+#include <stdio.h>
+
+static void
+_mqtt_send(LogThreadedDestWorker *s, gchar *msg)
+{
+  MQTTDestinationWorker *self = (MQTTDestinationWorker *)s;
+
+  // TODO
+}
+
+static LogThreadedResult
+_insert(LogThreadedDestWorker *s, LogMessage *msg)
+{
+  MQTTDestinationWorker *self = (MQTTDestinationWorker *)s;
+
+  // TODO
+
+  //_mqtt_send(...);
+
+  return LTR_SUCCESS;
+  /*
+   * LTR_DROP,
+   * LTR_ERROR,
+   * LTR_SUCCESS,
+   * LTR_QUEUED,
+   * LTR_NOT_CONNECTED,
+   * LTR_RETRY,
+  */
+}
+
+
+static gboolean
+_connect(LogThreadedDestWorker *s)
+{
+  MQTTDestinationWorker *self = (MQTTDestinationWorker *)s;
+  MQTTDestinationDriver *owner = (MQTTDestinationDriver *) s->owner;
+
+  // TODO
+
+  return TRUE;
+}
+
+static void
+_disconnect(LogThreadedDestWorker *s)
+{
+  MQTTDestinationWorker *self = (MQTTDestinationWorker *)s;
+
+  // TODO
+}
+
+static gboolean
+_thread_init(LogThreadedDestWorker *s)
+{
+  MQTTDestinationWorker *self = (MQTTDestinationWorker *)s;
+  MQTTDestinationDriver *owner = (MQTTDestinationDriver *) s->owner;
+
+  // TODO
+
+  return log_threaded_dest_worker_init_method(s);
+}
+
+static void
+_thread_deinit(LogThreadedDestWorker *s)
+{
+  MQTTDestinationWorker *self = (MQTTDestinationWorker *)s;
+
+  // TODO
+
+  log_threaded_dest_worker_deinit_method(s);
+}
+
+static void
+_free(LogThreadedDestWorker *s)
+{
+  MQTTDestinationWorker *self = (MQTTDestinationWorker *)s;
+
+  // TODO
+
+  log_threaded_dest_worker_free_method(s);
+}
+
+
+LogThreadedDestWorker *
+mqtt_dw_new(LogThreadedDestDriver *o, gint worker_index)
+{
+  MQTTDestinationWorker *self = g_new0(MQTTDestinationWorker, 1);
+
+  // TODO
+
+  return &self->super;
+}
