@@ -68,8 +68,11 @@ _format_stats_instance(LogThreadedDestDriver *d)
   MQTTDestinationDriver *self = (MQTTDestinationDriver *)d;
   static gchar stats_instance[1024];
 
-  // TODO
-
+  if (((LogPipe *)d)->persist_name)
+    g_snprintf(stats_instance, sizeof(stats_instance), "%s", ((LogPipe *)d)->persist_name);
+  else
+    g_snprintf(stats_instance, sizeof(stats_instance),
+               "mqtt,%s", self->topic->str);
   return stats_instance;
 }
 
