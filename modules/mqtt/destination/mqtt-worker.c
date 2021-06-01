@@ -64,12 +64,17 @@ static LogThreadedResult
 _insert(LogThreadedDestWorker *s, LogMessage *msg)
 {
   MQTTDestinationWorker *self = (MQTTDestinationWorker *)s;
+  LogThreadedResult result = LTR_SUCCESS;
 
-  // TODO
+  GString *string_to_write = g_string_new("");
+  g_string_printf(string_to_write, "message=%s\n",
+                  log_msg_get_value(msg, LM_V_MESSAGE, NULL));
 
-  //_mqtt_send(...);
+  result = _mqtt_send(s, string_to_write->str);
 
-  return LTR_SUCCESS;
+  g_string_free(string_to_write, TRUE);
+
+  return result;
   /*
    * LTR_DROP,
    * LTR_ERROR,
