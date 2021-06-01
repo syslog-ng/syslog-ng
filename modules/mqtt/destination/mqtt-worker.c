@@ -28,6 +28,8 @@
 
 #include <stdio.h>
 
+#define DISCONNECT_TIMEOUT 10000
+
 static void
 _mqtt_send(LogThreadedDestWorker *s, gchar *msg)
 {
@@ -85,7 +87,7 @@ _disconnect(LogThreadedDestWorker *s)
 {
   MQTTDestinationWorker *self = (MQTTDestinationWorker *)s;
 
-  // TODO
+  MQTTClient_disconnect(self->client, DISCONNECT_TIMEOUT);
 }
 
 static gboolean
