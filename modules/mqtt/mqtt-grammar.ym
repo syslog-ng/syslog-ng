@@ -19,3 +19,55 @@
  * COPYING for details.
  *
  */
+
+
+%code requires {
+
+#include "mqtt-parser.h"
+
+}
+
+%code {
+
+#include "mqtt-destination.h"
+
+#include "cfg-grammar-internal.h"
+#include "plugin.h"
+}
+
+%define api.prefix {mqtt_destination_}
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_MQTT
+%token KW_TOPIC
+%token KW_KEEPALIVE
+
+%%
+
+start
+        : LL_CONTEXT_DESTINATION KW_MQTT
+          {
+            last_driver = *instance = mqtt_dd_new(configuration);
+          }
+          '(' mqtt_destination_options ')' { YYACCEPT; }
+;
+
+mqtt_destination_options
+        : mqtt_destination_option mqtt_destination_options
+        |
+        ;
+
+mqtt_destination_option
+        : KW_TOPIC '(' string ')'               { mqtt_dd_set_topic(last_driver, $3); free($3); }
+        | KW_KEEPALIVE '(' positive_integer ')' { mqtt_dd_set_keepalive(last_driver, $3);       }
+        | threaded_dest_driver_option
+        ;
+
+/* INCLUDE_RULES */
+
+%%
