@@ -108,8 +108,17 @@ mqtt_dd_new(GlobalConfig *cfg)
 {
   MQTTDestinationDriver *self = g_new0(MQTTDestinationDriver, 1);
 
+  log_threaded_dest_driver_init_instance(&self->super, cfg);
+  
   _set_default_value(self);
-  // TODO
+
+  self->super.super.super.super.init = _init;
+  self->super.super.super.super.free_fn = _free;
+
+  self->super.format_stats_instance = _format_stats_instance;
+  self->super.super.super.super.generate_persist_name = _format_persist_name;
+  self->super.stats_source = stats_register_type("mqtt-destination");
+  self->super.worker.construct = mqtt_dw_new;
 
   return (LogDriver *)self;
 }
