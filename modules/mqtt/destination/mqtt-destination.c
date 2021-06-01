@@ -88,7 +88,24 @@ _init(LogPipe *d)
 {
   MQTTDestinationDriver *self = (MQTTDestinationDriver *)d;
 
-  // TODO
+  if (self->topic->len == 0)
+    {
+      msg_error("ERROR, topic must be set!"); 
+      return FALSE;
+    }
+
+  if (self->super.batch_lines != -1 || self->super.batch_timeout != -1)
+    {
+      msg_error("The mqtt destination does not support the batching of messages, so none of the batching related parameters can be set (batch-timeout, batch-lines)",
+                evt_tag_str("driver", self->super.super.super.id),
+                log_pipe_location_tag(&self->super.super.super.super));
+      return FALSE;
+    }
+
+  if (!log_threaded_dest_driver_init_method(d))
+    {
+      return FALSE;
+    }
 
   return TRUE;
 }
