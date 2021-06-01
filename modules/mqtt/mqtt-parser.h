@@ -19,3 +19,15 @@
  * COPYING for details.
  *
  */
+
+#ifndef MQTT_PARSER_H_INCLUDED
+#define MQTT_PARSER_H_INCLUDED
+
+#include "cfg-parser.h"
+#include "driver.h"
+
+extern CfgParser mqtt_destination_parser;
+
+CFG_PARSER_DECLARE_LEXER_BINDING(mqtt_destination_, MQTT_DESTINATION_, LogDriver **)
+
+#endif /* MQTT_PARSER_H_INCLUDED */
