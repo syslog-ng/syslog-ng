@@ -19,3 +19,25 @@
  * COPYING for details.
  *
  */
+
+
+#ifndef MQTT_DESTINATION_H_INCLUDED
+#define MQTT_DESTINATION_H_INCLUDED
+
+#include "driver.h"
+#include "logthrdest/logthrdestdrv.h"
+
+typedef struct
+{
+  LogThreadedDestDriver super;
+  GString  *topic;
+  gint      keepalive;
+} MQTTDestinationDriver;
+
+LogDriver *mqtt_dd_new(GlobalConfig *cfg);
+
+void mqtt_dd_set_topic(LogDriver *d, const gchar *topic);
+void mqtt_dd_set_keepalive (LogDriver *d, const gint keepalive);
+
+
+#endif /* MQTT_DESTINATION_H_INCLUDED */

@@ -19,3 +19,97 @@
  * COPYING for details.
  *
  */
+
+#include "mqtt-destination.h"
+#include "mqtt-worker.h"
+
+#include "plugin.h"
+#include "messages.h"
+#include "misc.h"
+#include "stats/stats-registry.h"
+#include "logqueue.h"
+#include "driver.h"
+#include "plugin-types.h"
+#include "logthrdest/logthrdestdrv.h"
+
+/*
+ * Configuration
+ */
+
+
+void
+mqtt_dd_set_topic(LogDriver *d, const gchar *topic)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *)d;
+  // TODO
+}
+
+
+void
+mqtt_dd_set_keepalive (LogDriver *d, const gint keepalive)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *)d;
+  // TODO
+}
+
+/*
+ * Utilities
+ */
+static const gchar *
+_format_stats_instance(LogThreadedDestDriver *d)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *)d;
+  static gchar stats_instance[1024];
+
+  // TODO
+
+  return stats_instance;
+}
+
+static const gchar *
+_format_persist_name(const LogPipe *d)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *)d;
+  static gchar persist_name[1024];
+
+  // TODO
+
+  return persist_name;
+}
+
+static void
+_set_default_value(MQTTDestinationDriver *self)
+{
+  // TODO
+}
+
+static gboolean
+_init(LogPipe *d)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *)d;
+
+  // TODO
+
+  return TRUE;
+}
+
+static void
+_free(LogPipe *d)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *)d;
+
+  // TODO
+
+  log_threaded_dest_driver_free(d);
+}
+
+LogDriver *
+mqtt_dd_new(GlobalConfig *cfg)
+{
+  MQTTDestinationDriver *self = g_new0(MQTTDestinationDriver, 1);
+
+  _set_default_value(self);
+  // TODO
+
+  return (LogDriver *)self;
+}
