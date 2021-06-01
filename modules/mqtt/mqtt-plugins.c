@@ -19,3 +19,36 @@
  * COPYING for details.
  *
  */
+
+
+#include "cfg-parser.h"
+#include "plugin.h"
+#include "plugin-types.h"
+
+extern CfgParser mqtt_destination_parser;
+
+static Plugin mqtt_plugins[] =
+{
+  {
+    .type = LL_CONTEXT_DESTINATION,
+    .name = "mqtt",
+    .parser = &mqtt_destination_parser
+  }
+};
+
+gboolean
+mqtt_module_init(PluginContext *context, CfgArgs *args)
+{
+  plugin_register(context, mqtt_plugins, G_N_ELEMENTS(mqtt_plugins));
+  return TRUE;
+}
+
+const ModuleInfo module_info =
+{
+  .canonical_name = "mqtt",
+  .version = SYSLOG_NG_VERSION,
+  .description = "MQTT plugins",
+  .core_revision = SYSLOG_NG_SOURCE_REVISION,
+  .plugins = mqtt_plugins,
+  .plugins_len = G_N_ELEMENTS(mqtt_plugins),
+};
