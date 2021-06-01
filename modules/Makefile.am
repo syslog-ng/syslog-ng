@@ -32,6 +32,7 @@ include modules/kafka/Makefile.am
 include modules/kvformat/Makefile.am
 include modules/linux-kmsg-format/Makefile.am
 include modules/map-value-pairs/Makefile.am
+include modules/mqtt/Makefile.am
 include modules/native/Makefile.am
 include modules/openbsd/Makefile.am
 include modules/pacctformat/Makefile.am
@@ -60,7 +61,8 @@ SYSLOG_NG_MODULES	=	\
 	mod-python mod-java mod-java-modules mod-kvformat mod-date \
 	mod-native mod-cef mod-add-contextual-data mod-diskq mod-getent \
 	mod-map-value-pairs mod-tags-parser mod-xml \
-	mod-appmodel mod-openbsd mod-snmp mod-secure-logging
+	mod-appmodel mod-openbsd mod-snmp mod-secure-logging \
+	mod-mqtt
 
 modules modules/: ${SYSLOG_NG_MODULES}
 

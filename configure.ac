@@ -285,6 +285,15 @@ AC_ARG_WITH(libesmtp,
              AC_HELP_STRING([--with-libesmtp=DIR],
                             [use libesmtp library from (prefix) directory DIR]),,)
 
+AC_ARG_ENABLE(mqtt,
+              [  --enable-mqtt          Disable MQTT support (default: auto)]
+              ,,enable_mqtt="auto")
+
+AC_ARG_WITH(libpaho-mqtt,
+             AC_HELP_STRING([--with-libpaho-mqtt=DIR],
+                            [use libpaho-mqtt library from (prefix) directory DIR]),,)
+
+
 AC_ARG_ENABLE(http,
               [  --disable-http          Disable http support (default: auto)]
               ,,enable_http="auto")
@@ -371,7 +380,7 @@ if test "x$enable_all_modules" != "xauto"; then
 
    MODULES="spoof_source sun_streams sql pacct mongodb json amqp stomp \
             redis systemd geoip2 riemann ipv6 smtp native python java java_modules \
-            http afsnmp kafka"
+            http afsnmp kafka mqtt"
    for mod in ${MODULES}; do
        modstate=$(eval echo \$enable_${mod})
        if test "x$modstate" = "xauto"; then
@@ -1298,6 +1307,32 @@ if test "x$enable_smtp" != "xno" && test "x$with_libesmtp" != "xno"; then
 	enable_smtp=$libesmtp
 fi
 
+
+dnl ***************************************************************************
+dnl libmqtt headers/libraries
+dnl ***************************************************************************
+
+if test "x$enable_mqtt" = "xyes" || test "x$enable_mqtt" = "xauto"; then
+	if test "x$with_libpaho_mqtt" != "x"; then
+		CPPFLAGS_SAVE="$CPPFLAGS"
+		LDFLAGS_SAVE="$LDFLAGS"
+		CPPFLAGS="$CPPFLAGS -I$with_libpaho_mqtt/include"
+		LDFLAGS="$LDFLAGS -L$with_libpaho_mqtt -lpaho-mqtt3c"
+		AC_CHECK_HEADER(MQTTClient.h, [LIBPAHO_MQTT_CFLAGS="-I$with_libpaho_mqtt/include"
+						LIBPAHO_MQTT_LIBS="-L$with_libpaho_mqtt/lib -lpaho-mqtt3c"
+						libpaho_mqtt="yes"], [libpaho_mqtt=no])
+
+		CPPFLAGS="$CPPFLAGS_SAVE"
+		LDFLAGS="$LDFLAGS_SAVE"
+	else
+		AC_CHECK_LIB(paho-mqtt3c, MQTTClient_create, LIBPAHO_MQTT_LIBS="-lpaho-mqtt3c"; libpaho_mqtt="yes", libpaho_mqtt="no")
+	fi
+	if test "x$enable_mqtt" = "xyes" && test "x$libpaho_mqtt" = "xno"; then
+		AC_MSG_ERROR(libPAHO_MQTT not found)
+	fi
+	enable_mqtt=$libpaho_mqtt
+fi
+
 dnl ***************************************************************************
 dnl libcurl headers/libraries
 dnl ***************************************************************************
@@ -1930,6 +1965,7 @@ AM_CONDITIONAL(ENABLE_OPENBSD_SYSTEM_SOURCE, [test "$enable_openbsd_system_sourc
 AM_CONDITIONAL(ENABLE_PACCT, [test "$enable_pacct" = "yes"])
 AM_CONDITIONAL(ENABLE_MONGODB, [test "$enable_mongodb" = "yes"])
 AM_CONDITIONAL(ENABLE_SMTP, [test "$enable_smtp" = "yes"])
+AM_CONDITIONAL(ENABLE_MQTT, [test "$enable_mqtt" = "yes"])
 AM_CONDITIONAL(ENABLE_HTTP, [test "$enable_http" = "yes"])
 AM_CONDITIONAL(ENABLE_AMQP, [test "$enable_amqp" = "yes"])
 AM_CONDITIONAL(ENABLE_STOMP, [test "$enable_stomp" = "yes"])
@@ -1994,6 +2030,8 @@ AC_SUBST(LIBDBI_CFLAGS)
 AC_SUBST(LIBMONGO_LIBS)
 AC_SUBST(LIBMONGO_CFLAGS)
 AC_SUBST(LIBMONGO_SUBDIRS)
+AC_SUBST(LIBPAHO_MQTT_CFLAGS)
+AC_SUBST(LIBPAHO_MQTT_LIBS)
 AC_SUBST(LIBESMTP_CFLAGS)
 AC_SUBST(LIBESMTP_LIBS)
 AC_SUBST(LIBCURL_CFLAGS)
@@ -2076,6 +2114,7 @@ echo "  SMTP support (module)       : ${enable_smtp:=no}"
 echo "  HTTP support (module)       : ${enable_http:=no}"
 echo "  AMQP destination (module)   : ${enable_amqp:=no}"
 echo "  STOMP destination (module)  : ${enable_stomp:=no}"
+echo "  MQTT destination (module)   : ${enable_mqtt:=no}"
 echo "  GEOIP2 support (module)     : ${enable_geoip2:=no}"
 echo "  Redis support (module)      : ${enable_redis:=no}"
 echo "  Kafka support (module)      : ${enable_kafka:=no}"
