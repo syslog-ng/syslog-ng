@@ -79,7 +79,11 @@ _format_persist_name(const LogPipe *d)
   MQTTDestinationDriver *self = (MQTTDestinationDriver *)d;
   static gchar persist_name[1024];
 
-  // TODO
+  if (d->persist_name)
+    g_snprintf(persist_name, sizeof(persist_name), "mqtt-destination.%s", d->persist_name);
+  else
+    g_snprintf(persist_name, sizeof(persist_name), "mqtt-destination.(%s)", 
+               self->topic->str);
 
   return persist_name;
 }
