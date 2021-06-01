@@ -82,7 +82,19 @@ _thread_init(LogThreadedDestWorker *s)
   MQTTDestinationWorker *self = (MQTTDestinationWorker *)s;
   MQTTDestinationDriver *owner = (MQTTDestinationDriver *) s->owner;
 
-  // TODO
+  gint rc;
+
+  if ((rc = MQTTClient_create(&self->client, owner->address->str,
+                              log_pipe_get_persist_name(&owner->super.super.super.super),
+                              MQTTCLIENT_PERSISTENCE_NONE, NULL)) != MQTTCLIENT_SUCCESS)
+    {
+      msg_error("Error creating mqtt client",
+                evt_tag_str("address", owner->address->str),
+                evt_tag_str("error code", MQTTClient_strerror(rc)),
+                evt_tag_str("driver", self->super.owner->super.super.id),
+                log_pipe_location_tag(&self->super.owner->super.super.super));
+      return FALSE;
+    }
 
   return log_threaded_dest_worker_init_method(s);
 }
