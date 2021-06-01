@@ -102,7 +102,7 @@ _free(LogThreadedDestWorker *s)
 {
   MQTTDestinationWorker *self = (MQTTDestinationWorker *)s;
 
-  // TODO
+  g_string_free(self->topic, TRUE);
 
   log_threaded_dest_worker_free_method(s);
 }
