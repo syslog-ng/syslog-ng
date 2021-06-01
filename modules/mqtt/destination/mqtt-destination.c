@@ -49,7 +49,7 @@ void
 mqtt_dd_set_keepalive (LogDriver *d, const gint keepalive)
 {
   MQTTDestinationDriver *self = (MQTTDestinationDriver *)d;
-  // TODO
+  self->keepalive = keepalive;
 }
 
 /*
