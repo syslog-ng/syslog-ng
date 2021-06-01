@@ -98,7 +98,7 @@ _free(LogPipe *d)
 {
   MQTTDestinationDriver *self = (MQTTDestinationDriver *)d;
 
-  // TODO
+  g_string_free(self->topic, TRUE);
 
   log_threaded_dest_driver_free(d);
 }
