@@ -104,7 +104,7 @@ _thread_deinit(LogThreadedDestWorker *s)
 {
   MQTTDestinationWorker *self = (MQTTDestinationWorker *)s;
 
-  // TODO
+  MQTTClient_destroy(&self->client);
 
   log_threaded_dest_worker_deinit_method(s);
 }
