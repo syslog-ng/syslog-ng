@@ -28,14 +28,36 @@
 
 #include <stdio.h>
 
+#define PUBLISH_TIMEOUT    10000L
 #define DISCONNECT_TIMEOUT 10000
 
-static void
+
+static LogThreadedResult
 _mqtt_send(LogThreadedDestWorker *s, gchar *msg)
 {
   MQTTDestinationWorker *self = (MQTTDestinationWorker *)s;
 
-  // TODO
+  MQTTClient_message pubmsg = MQTTClient_message_initializer;
+  MQTTClient_deliveryToken token;
+  gint rc;
+  LogThreadedResult result = LTR_SUCCESS;
+
+  pubmsg.payload = msg;
+  pubmsg.payloadlen = (int)strlen(msg);
+  pubmsg.qos = 0;
+  pubmsg.retained = 0;
+
+  rc = MQTTClient_publishMessage(self->client, self->topic->str, &pubmsg, &token);
+  msg_debug("Outgoing message to MQTT destination", evt_tag_str("topic", topic),
+            evt_tag_str("message", msg), log_pipe_location_tag(&owner->super.super.super.super));
+
+
+  if (result != LTR_SUCCESS)
+    return result;
+
+  rc = MQTTClient_waitForCompletion(self->client, token, PUBLISH_TIMEOUT);
+
+  return result;
 }
 
 static LogThreadedResult
