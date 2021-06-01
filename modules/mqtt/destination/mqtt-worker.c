@@ -62,8 +62,20 @@ _connect(LogThreadedDestWorker *s)
 {
   MQTTDestinationWorker *self = (MQTTDestinationWorker *)s;
   MQTTDestinationDriver *owner = (MQTTDestinationDriver *) s->owner;
+  gint rc;
 
-  // TODO
+  MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
+
+  conn_opts.keepAliveInterval = owner->keepalive;
+  conn_opts.cleansession = FALSE;
+  if ((rc = MQTTClient_connect(self->client, &conn_opts)) != MQTTCLIENT_SUCCESS)
+    {
+      msg_error("Error connecting mqtt client",
+                evt_tag_str("error code", MQTTClient_strerror(rc)),
+                evt_tag_str("driver", self->super.owner->super.super.id),
+                log_pipe_location_tag(&self->super.owner->super.super.super));
+      return FALSE;
+    }
 
   return TRUE;
 }
