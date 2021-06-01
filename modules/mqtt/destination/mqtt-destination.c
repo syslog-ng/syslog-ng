@@ -33,6 +33,13 @@
 #include "logthrdest/logthrdestdrv.h"
 
 /*
+ * Default values
+ */
+
+#define DEFAULT_KEEPALIVE 60
+
+
+/*
  * Configuration
  */
 
@@ -78,9 +85,9 @@ _format_persist_name(const LogPipe *d)
 }
 
 static void
-_set_default_value(MQTTDestinationDriver *self)
+_set_default_value(MQTTDestinationDriver *self, GlobalConfig *cfg)
 {
-  // TODO
+  self->keepalive     = DEFAULT_KEEPALIVE;
 }
 
 static gboolean
@@ -126,8 +133,8 @@ mqtt_dd_new(GlobalConfig *cfg)
   MQTTDestinationDriver *self = g_new0(MQTTDestinationDriver, 1);
 
   log_threaded_dest_driver_init_instance(&self->super, cfg);
-  
-  _set_default_value(self);
+
+  _set_default_value(self, cfg);
 
   self->super.super.super.super.init = _init;
   self->super.super.super.super.free_fn = _free;
