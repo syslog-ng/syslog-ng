@@ -38,6 +38,7 @@
 
 #define DEFAULT_ADDRESS "tcp://localhost:1883"
 #define DEFAULT_KEEPALIVE 60
+#define DEFAULT_QOS 0
 
 
 /*
@@ -65,6 +66,13 @@ mqtt_dd_set_address(LogDriver *d, const gchar *address)
   MQTTDestinationDriver *self = (MQTTDestinationDriver *)d;
 
   g_string_assign(self->address, address);
+}
+
+void
+mqtt_dd_set_qos (LogDriver *d, const gint qos)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *)d;
+  self->qos = qos;
 }
 
 /*
@@ -106,6 +114,7 @@ _set_default_value(MQTTDestinationDriver *self, GlobalConfig *cfg)
   self->address       = g_string_new(DEFAULT_ADDRESS);
 
   self->keepalive     = DEFAULT_KEEPALIVE;
+  self->qos           = DEFAULT_QOS;
 }
 
 static gboolean

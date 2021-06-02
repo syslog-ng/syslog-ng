@@ -47,6 +47,7 @@
 %token KW_TOPIC
 %token KW_KEEPALIVE
 %token KW_ADDRESS
+%token KW_QOS
 
 %%
 
@@ -71,6 +72,11 @@ mqtt_destination_option
             CHECK_ERROR(mqtt_dd_validate_address($3), @1, "Invalid address");
             mqtt_dd_set_address(last_driver, $3);
             free($3);
+          }
+        | KW_QOS '(' nonnegative_integer ')'
+          {
+            CHECK_ERROR(0 <= $3 && $3 <= 2, @1, "Allowed QOS values: 0, 1, 2");
+            mqtt_dd_set_qos(last_driver, $3);
           }
         | threaded_dest_driver_option
         ;

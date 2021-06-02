@@ -98,6 +98,7 @@ static LogThreadedResult
 _mqtt_send(LogThreadedDestWorker *s, gchar *msg)
 {
   MQTTDestinationWorker *self = (MQTTDestinationWorker *)s;
+  MQTTDestinationDriver *owner = (MQTTDestinationDriver *) s->owner;
 
   MQTTClient_message pubmsg = MQTTClient_message_initializer;
   MQTTClient_deliveryToken token;
@@ -106,7 +107,7 @@ _mqtt_send(LogThreadedDestWorker *s, gchar *msg)
 
   pubmsg.payload = msg;
   pubmsg.payloadlen = (int)strlen(msg);
-  pubmsg.qos = 0;
+  pubmsg.qos = owner->qos;
   pubmsg.retained = 0;
 
   rc = MQTTClient_publishMessage(self->client, self->topic->str, &pubmsg, &token);
