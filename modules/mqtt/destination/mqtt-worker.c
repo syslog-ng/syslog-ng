@@ -31,6 +31,46 @@
 #define PUBLISH_TIMEOUT    10000L
 #define DISCONNECT_TIMEOUT 10000
 
+static LogThreadedResult
+_publish_result_evaluation (LogThreadedDestWorker *self, gint result)
+{
+  switch(result)
+    {
+    case MQTTCLIENT_SUCCESS:
+      return LTR_SUCCESS;
+
+    case MQTTCLIENT_DISCONNECTED:
+      msg_error("Disconnected during publish!",
+                log_pipe_location_tag(&self->owner->super.super.super));
+      return LTR_NOT_CONNECTED;
+
+    case MQTTCLIENT_MAX_MESSAGES_INFLIGHT:
+      msg_error("Max message inflight! (publish)",
+                log_pipe_location_tag(&self->owner->super.super.super));
+      return LTR_ERROR;
+
+    case MQTTCLIENT_FAILURE:
+      msg_error("Failure during publishing!",
+                log_pipe_location_tag(&self->owner->super.super.super));
+      return LTR_ERROR;
+
+    case MQTTCLIENT_PERSISTENCE_ERROR:
+      g_assert_not_reached();
+    case MQTTCLIENT_BAD_QOS:
+      g_assert_not_reached();
+    case MQTTCLIENT_BAD_STRUCTURE:
+      g_assert_not_reached();
+    default:
+      g_assert_not_reached();
+
+    case MQTTCLIENT_NULL_PARAMETER:
+    case MQTTCLIENT_BAD_UTF8_STRING:
+      msg_error("An unrecoverable error occurred during publish, dropping message.",
+                evt_tag_str("error code", MQTTClient_strerror(result)),
+                log_pipe_location_tag(&self->owner->super.super.super));
+      return LTR_DROP;
+    }
+}
 
 static LogThreadedResult
 _wait_result_evaluation(LogThreadedDestWorker *self, gint result)
@@ -73,6 +113,9 @@ _mqtt_send(LogThreadedDestWorker *s, gchar *msg)
   msg_debug("Outgoing message to MQTT destination", evt_tag_str("topic", topic),
             evt_tag_str("message", msg), log_pipe_location_tag(&owner->super.super.super.super));
 
+
+
+  result = _publish_result_evaluation (&self->super, rc);
 
   if (result != LTR_SUCCESS)
     return result;
