@@ -33,6 +33,28 @@
 
 
 static LogThreadedResult
+_wait_result_evaluation(LogThreadedDestWorker *self, gint result)
+{
+  switch(result)
+    {
+    case MQTTCLIENT_SUCCESS:
+      return LTR_SUCCESS;
+
+    case MQTTCLIENT_DISCONNECTED:
+      msg_error("Disconnected while waiting the response!",
+                log_pipe_location_tag(&self->owner->super.super.super));
+      return LTR_NOT_CONNECTED;
+
+    case MQTTCLIENT_FAILURE:
+    default:
+      msg_error("Error while waiting the response!",
+                evt_tag_str("error code", MQTTClient_strerror(result)),
+                log_pipe_location_tag(&self->owner->super.super.super));
+      return LTR_ERROR;
+    }
+}
+
+static LogThreadedResult
 _mqtt_send(LogThreadedDestWorker *s, gchar *msg)
 {
   MQTTDestinationWorker *self = (MQTTDestinationWorker *)s;
@@ -56,6 +78,7 @@ _mqtt_send(LogThreadedDestWorker *s, gchar *msg)
     return result;
 
   rc = MQTTClient_waitForCompletion(self->client, token, PUBLISH_TIMEOUT);
+  result = _wait_result_evaluation(&self->super, rc);
 
   return result;
 }
