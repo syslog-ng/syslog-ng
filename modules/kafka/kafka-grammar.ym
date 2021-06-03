@@ -63,7 +63,6 @@
 %token KW_FLUSH_TIMEOUT_ON_SHUTDOWN
 %token KW_FLUSH_TIMEOUT_ON_RELOAD
 %token KW_POLL_TIMEOUT
-%token KW_CLIENT_LIB_DIR
 %token KW_BOOTSTRAP_SERVERS
 %token KW_SYNC_SEND
 %token KW_PROPERTIES_FILE
@@ -116,7 +115,6 @@ kafka_option
 	| KW_FLUSH_TIMEOUT_ON_SHUTDOWN '(' nonnegative_integer ')'    { kafka_dd_set_flush_timeout_on_shutdown(last_driver, $3); }
 	| KW_FLUSH_TIMEOUT_ON_RELOAD '(' nonnegative_integer ')'      { kafka_dd_set_flush_timeout_on_reload(last_driver, $3); }
         | KW_POLL_TIMEOUT '(' nonnegative_integer ')'                 { kafka_dd_set_poll_timeout(last_driver, $3); }
-        | KW_CLIENT_LIB_DIR '(' string ')'                            { free($3); }
 	| KW_BOOTSTRAP_SERVERS '(' string ')'                         { kafka_dd_set_bootstrap_servers(last_driver, $3); free($3); }
 	| KW_SYNC_SEND '(' yesno ')'                                  { CHECK_ERROR($3 != 1, @3, "sync-send(yes) is not supported by the librdkafka based implementation of kafka()"); }
         | dest_driver_option
