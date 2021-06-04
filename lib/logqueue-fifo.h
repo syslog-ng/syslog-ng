@@ -30,4 +30,6 @@
 LogQueue *log_queue_fifo_new(gint log_fifo_size, const gchar *persist_name);
 LogQueue *log_queue_fifo_legacy_new(gint log_fifo_size, const gchar *persist_name);
 
+QueueType log_queue_fifo_get_type(void);
+
 #endif
