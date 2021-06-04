@@ -272,6 +272,12 @@ log_dest_driver_acquire_memory_queue(LogDestDriver *self, const gchar *persist_n
   if (persist_name)
     queue = cfg_persist_config_fetch(cfg, persist_name);
 
+  if (queue && !log_queue_has_type(queue, log_queue_fifo_get_type()))
+    {
+      log_queue_unref(queue);
+      queue = NULL;
+    }
+
   if (!queue)
     {
       queue = _create_memory_queue(self, persist_name);
