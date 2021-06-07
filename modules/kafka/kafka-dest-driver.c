@@ -522,6 +522,13 @@ kafka_dd_init(LogPipe *s)
                 log_pipe_location_tag(&self->super.super.super.super));
       return FALSE;
     }
+  if (!self->bootstrap_servers)
+    {
+      msg_error("kafka: the bootstrap-servers() option is required for kafka destinations",
+                evt_tag_str("driver", self->super.super.super.id),
+                log_pipe_location_tag(&self->super.super.super.super));
+      return FALSE;
+    }
 
   if (!self->kafka)
     {
