@@ -328,9 +328,13 @@ _thread_init(LogThreadedDestWorker *s)
 }
 
 static void
-_set_insert(KafkaDestWorker *self)
+_set_methods(KafkaDestWorker *self)
 {
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
+
+  self->super.thread_init = _thread_init;
+  self->super.free_fn = kafka_dest_worker_free;
+
   if (owner->transaction_commit)
     {
       self->super.insert = kafka_dest_worker_transactional_insert;
@@ -347,10 +351,8 @@ kafka_dest_worker_new(LogThreadedDestDriver *o, gint worker_index)
   KafkaDestWorker *self = g_new0(KafkaDestWorker, 1);
 
   log_threaded_dest_worker_init_instance(&self->super, o, worker_index);
-  self->super.thread_init = _thread_init;
-  self->super.free_fn = kafka_dest_worker_free;
 
-  _set_insert(self);
+  _set_methods(self);
 
   IV_TIMER_INIT(&self->poll_timer);
   self->poll_timer.cookie = self;
