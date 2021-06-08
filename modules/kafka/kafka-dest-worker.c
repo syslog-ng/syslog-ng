@@ -327,6 +327,42 @@ kafka_dest_worker_transactional_insert(LogThreadedDestWorker *s, LogMessage *msg
   return LTR_SUCCESS;
 }
 
+static LogThreadedResult
+kafka_dest_worker_batch_transactional_insert(LogThreadedDestWorker *s, LogMessage *msg)
+{
+  KafkaDestWorker *self = (KafkaDestWorker *)s;
+
+  if (!_transaction_init(self))
+    return LTR_RETRY;
+
+  if (self->super.batch_size == 1)
+    {
+      if (!_transaction_begin(self))
+        return LTR_RETRY;
+    }
+
+  LogThreadedResult result = kafka_dest_worker_insert(s, msg);
+  if (result != LTR_SUCCESS)
+    return result;
+
+  return LTR_QUEUED;
+}
+
+static LogThreadedResult
+kafka_dest_worker_transactional_flush(LogThreadedDestWorker *s, LogThreadedFlushMode expedite)
+{
+  KafkaDestWorker *self = (KafkaDestWorker *)s;
+
+  if (self->super.batch_size == 0)
+    return LTR_SUCCESS;
+
+  LogThreadedResult result = _transaction_commit(self);
+  if (result != LTR_SUCCESS)
+    return result;
+
+  return LTR_SUCCESS;
+}
+
 static void
 kafka_dest_worker_free(LogThreadedDestWorker *s)
 {
@@ -381,8 +417,16 @@ _set_methods(KafkaDestWorker *self)
 
   if (owner->transaction_commit)
     {
-      self->super.insert = kafka_dest_worker_transactional_insert;
       self->super.connect = kafka_dest_worker_connect;
+      if (owner->super.batch_lines > 0)
+        {
+          self->super.insert = kafka_dest_worker_batch_transactional_insert;
+          self->super.flush = kafka_dest_worker_transactional_flush;
+        }
+      else
+        {
+          self->super.insert = kafka_dest_worker_transactional_insert;
+        }
     }
   else
     {
