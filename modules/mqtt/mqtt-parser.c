@@ -36,6 +36,7 @@ static CfgLexerKeyword mqtt_destination_keywords[] =
   { "topic", KW_TOPIC },
   { "keepalive", KW_KEEPALIVE },
   { "qos", KW_QOS },
+  { "template", KW_MESSAGE_TEMPLATE },
   { NULL }
 };
 

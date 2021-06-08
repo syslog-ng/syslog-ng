@@ -39,7 +39,7 @@
 #define DEFAULT_ADDRESS "tcp://localhost:1883"
 #define DEFAULT_KEEPALIVE 60
 #define DEFAULT_QOS 0
-
+#define DEFAULT_MESSAGE_TEMPLATE "$ISODATE $HOST $MSGHDR$MSG"
 
 /*
  * Configuration
@@ -73,6 +73,15 @@ mqtt_dd_set_qos (LogDriver *d, const gint qos)
 {
   MQTTDestinationDriver *self = (MQTTDestinationDriver *)d;
   self->qos = qos;
+}
+
+void
+mqtt_dd_set_message_template_ref(LogDriver *d, LogTemplate *message)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *)d;
+
+  log_template_unref(self->message);
+  self->message = message;
 }
 
 /*
@@ -115,6 +124,11 @@ _set_default_value(MQTTDestinationDriver *self, GlobalConfig *cfg)
 
   self->keepalive     = DEFAULT_KEEPALIVE;
   self->qos           = DEFAULT_QOS;
+  self->message       = log_template_new(cfg, NULL);
+
+  log_template_compile(self->message, DEFAULT_MESSAGE_TEMPLATE, NULL);
+
+  log_template_options_init(&self->template_options, cfg);
 }
 
 static gboolean
@@ -151,6 +165,9 @@ _free(LogPipe *d)
 
   g_string_free(self->topic, TRUE);
   g_string_free(self->address, TRUE);
+
+  log_template_options_destroy(&self->template_options);
+  log_template_unref(self->message);
 
   log_threaded_dest_driver_free(d);
 }
@@ -200,3 +217,10 @@ mqtt_dd_validate_address(const gchar *address)
   return TRUE;
 }
 
+LogTemplateOptions *
+mqtt_dd_get_template_options(LogDriver *s)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *) s;
+
+  return &self->template_options;
+}

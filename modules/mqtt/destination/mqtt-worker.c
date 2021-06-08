@@ -127,19 +127,26 @@ _mqtt_send(LogThreadedDestWorker *s, gchar *msg)
   return result;
 }
 
+static void
+_format_message(LogThreadedDestWorker *s, LogMessage *msg)
+{
+  MQTTDestinationWorker *self = (MQTTDestinationWorker *)s;
+  MQTTDestinationDriver *owner = (MQTTDestinationDriver *) self->super.owner;
+
+  LogTemplateEvalOptions options = {&owner->template_options, LTZ_SEND, self->super.seq_num, NULL};
+
+  log_template_format(owner->message, msg, &options, self->string_to_write);
+}
+
 static LogThreadedResult
 _insert(LogThreadedDestWorker *s, LogMessage *msg)
 {
   MQTTDestinationWorker *self = (MQTTDestinationWorker *)s;
   LogThreadedResult result = LTR_SUCCESS;
 
-  GString *string_to_write = g_string_new("");
-  g_string_printf(string_to_write, "message=%s\n",
-                  log_msg_get_value(msg, LM_V_MESSAGE, NULL));
+  _format_message(s, msg);
 
-  result = _mqtt_send(s, string_to_write->str);
-
-  g_string_free(string_to_write, TRUE);
+  result = _mqtt_send(s, self->string_to_write->str);
 
   return result;
   /*
@@ -223,6 +230,7 @@ _free(LogThreadedDestWorker *s)
   MQTTDestinationWorker *self = (MQTTDestinationWorker *)s;
 
   g_string_free(self->topic, TRUE);
+  g_string_free(self->string_to_write, TRUE);
 
   log_threaded_dest_worker_free_method(s);
 }
@@ -234,6 +242,8 @@ mqtt_dw_new(LogThreadedDestDriver *o, gint worker_index)
   MQTTDestinationWorker *self = g_new0(MQTTDestinationWorker, 1);
 
   self->topic = g_string_new("");
+
+  self->string_to_write = g_string_new("");
 
   log_threaded_dest_worker_init_instance(&self->super, o, worker_index);
   self->super.thread_init = _thread_init;

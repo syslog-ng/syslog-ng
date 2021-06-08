@@ -34,6 +34,9 @@ typedef struct
   GString  *address;
   gint      keepalive;
   gint      qos;
+
+  LogTemplate *message;
+  LogTemplateOptions template_options;
 } MQTTDestinationDriver;
 
 LogDriver *mqtt_dd_new(GlobalConfig *cfg);
@@ -42,7 +45,9 @@ void mqtt_dd_set_topic(LogDriver *d, const gchar *topic);
 void mqtt_dd_set_keepalive (LogDriver *d, const gint keepalive);
 void mqtt_dd_set_address(LogDriver *d, const gchar *address);
 void mqtt_dd_set_qos (LogDriver *d, const gint qos);
+void mqtt_dd_set_message_template_ref(LogDriver *d, LogTemplate *message);
 
+LogTemplateOptions *mqtt_dd_get_template_options(LogDriver *s);
 
 gboolean mqtt_dd_validate_address(const gchar *address);
 
