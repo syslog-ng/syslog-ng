@@ -38,6 +38,7 @@ public class SyslogNgInternalLogger extends AppenderSkeleton {
         if (logger.getAppender(SyslogNgInternalLogger.NAME) == null) {
             logger.removeAllAppenders();
             logger.addAppender(new SyslogNgInternalLogger());
+            logger.setLevel(SyslogNgInternalLogger.getLevel());
         }
     }
 
@@ -84,4 +85,22 @@ public class SyslogNgInternalLogger extends AppenderSkeleton {
         }
     }
 
+    public static Level getLevel() {
+        switch (InternalMessageSender.getLevel()) {
+        case InternalMessageSender.LevelFatal:
+            return Level.FATAL;
+        case InternalMessageSender.LevelError:
+            return Level.ERROR;
+        case InternalMessageSender.LevelWarning:
+            return Level.WARN;
+        case InternalMessageSender.LevelNotice:
+            return Level.INFO;
+        case InternalMessageSender.LevelInfo:
+            return Level.INFO;
+        case InternalMessageSender.LevelDebug:
+            return Level.DEBUG;
+        }
+
+        return Level.OFF;
+    }
 }

@@ -28,11 +28,20 @@
 JNIEXPORT void JNICALL
 Java_org_syslog_1ng_InternalMessageSender_createInternalMessage(JNIEnv *env, jclass cls, jint pri, jstring message)
 {
-  if ((pri != org_syslog_ng_InternalMessageSender_MsgDebug) || debug_flag)
+  if ((pri != org_syslog_ng_InternalMessageSender_LevelDebug) || debug_flag)
     {
       const char *c_str = (*env)->GetStringUTFChars(env, message, 0);
       msg_event_suppress_recursions_and_send(msg_event_create(pri, c_str, NULL));
 
       (*env)->ReleaseStringUTFChars(env, message, c_str);
     }
+}
+
+JNIEXPORT jint JNICALL
+Java_org_syslog_1ng_InternalMessageSender_getLevel(JNIEnv *env, jclass cls)
+{
+  if (trace_flag || debug_flag)
+    return org_syslog_ng_InternalMessageSender_LevelDebug;
+
+  return org_syslog_ng_InternalMessageSender_LevelInfo;
 }
