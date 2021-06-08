@@ -328,6 +328,28 @@ _conf_set_prop(rd_kafka_conf_t *conf, const gchar *name, const gchar *value)
  * Main thread
  */
 
+
+static gboolean
+_is_property_protected(const gchar *property_name)
+{
+  static gchar *protected_properties[] =
+  {
+    "bootstrap.servers",
+    "metadata.broker.list",
+  };
+
+  for (gint i = 0; i < G_N_ELEMENTS(protected_properties); i++)
+    {
+      if (strcmp(property_name, protected_properties[i]) == 0)
+        {
+          msg_warning("kafka: protected config properties cannot be overridden",
+                      evt_tag_str("name", property_name));
+          return TRUE;
+        }
+    }
+  return FALSE;
+}
+
 static gboolean
 _apply_config_props(rd_kafka_conf_t *conf, GList *props)
 {
@@ -336,7 +358,8 @@ _apply_config_props(rd_kafka_conf_t *conf, GList *props)
   for (ll = props; ll != NULL; ll = g_list_next(ll))
     {
       KafkaProperty *kp = ll->data;
-      _conf_set_prop(conf, kp->name, kp->value);
+      if (!_is_property_protected(kp->name))
+        _conf_set_prop(conf, kp->name, kp->value);
     }
   return TRUE;
 }
