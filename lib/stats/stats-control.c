@@ -60,13 +60,18 @@ _reset_counters(void)
   stats_unlock();
 }
 
+static void
+_append_csv_records(const gchar *record, gpointer user_data)
+{
+  GString *response = (GString *) user_data;
+  g_string_append_printf(response, "%s", record);
+}
+
 static GString *
 _send_stats_get_result(ControlConnection *cc, GString *command, gpointer user_data)
 {
-  gchar *stats = stats_generate_csv(NULL, NULL);
-  GString *response = g_string_new(stats);
-  g_free(stats);
-
+  GString *response = g_string_sized_new(1024);
+  stats_generate_csv(_append_csv_records, response);
   return response;
 }
 
