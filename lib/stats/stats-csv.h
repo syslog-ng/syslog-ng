@@ -26,6 +26,8 @@
 
 #include "syslog-ng.h"
 
-gchar *stats_generate_csv(void);
+typedef void (*csv_record_cb)(const char *line, gpointer user_data);
+
+gchar *stats_generate_csv(csv_record_cb process_record, gpointer user_data);
 
 #endif

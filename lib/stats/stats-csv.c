@@ -85,9 +85,8 @@ stats_format_csv(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointe
   g_free(s_instance);
 }
 
-
 gchar *
-stats_generate_csv(void)
+stats_generate_csv(csv_record_cb process_record, gpointer user_data)
 {
   GString *csv = g_string_sized_new(1024);
 
