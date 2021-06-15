@@ -46,12 +46,22 @@
  */
 
 void
-mqtt_dd_set_topic(LogDriver *d, const gchar *topic)
+mqtt_dd_set_topic_template(LogDriver *d, LogTemplate *topic)
 {
   MQTTDestinationDriver *self = (MQTTDestinationDriver *)d;
-  g_string_assign(self->topic, topic);
+
+  log_template_unref(self->topic_name);
+  self->topic_name = topic;
 }
 
+void
+mqtt_dd_set_fallback_topic(LogDriver *d, const gchar *fallback_topic)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *)d;
+
+  g_free(self->fallback_topic_name);
+  self->fallback_topic_name = g_strdup(fallback_topic);
+}
 
 void
 mqtt_dd_set_keepalive (LogDriver *d, const gint keepalive)
@@ -132,13 +142,21 @@ _set_default_value(MQTTDestinationDriver *self, GlobalConfig *cfg)
 }
 
 static gboolean
+_topic_name_is_a_template(MQTTDestinationDriver *self)
+{
+  return !log_template_is_literal_string(self->topic_name);
+}
+
+static gboolean
 _init(LogPipe *d)
 {
   MQTTDestinationDriver *self = (MQTTDestinationDriver *)d;
 
-  if (self->topic->len == 0)
+  if (!self->topic_name)
     {
-      msg_error("ERROR, topic must be set!"); 
+      msg_error("mqtt: the topic() argument is required for mqtt destinations",
+                evt_tag_str("driver", self->super.super.super.id),
+                log_pipe_location_tag(&self->super.super.super.super));
       return FALSE;
     }
 
@@ -155,6 +173,14 @@ _init(LogPipe *d)
       return FALSE;
     }
 
+  if (_topic_name_is_a_template(self) && self->fallback_topic_name == NULL)
+    {
+      msg_error("mqtt: the fallback_topic() argument is required if topic is templated for mqtt destinations",
+                evt_tag_str("driver", self->super.super.super.id),
+                log_pipe_location_tag(&self->super.super.super.super));
+      return FALSE;
+    }
+
   return TRUE;
 }
 
@@ -163,8 +189,12 @@ _free(LogPipe *d)
 {
   MQTTDestinationDriver *self = (MQTTDestinationDriver *)d;
 
-  g_string_free(self->topic, TRUE);
   g_string_free(self->address, TRUE);
+
+  if (self->fallback_topic_name)
+    g_free(self->fallback_topic_name);
+
+  log_template_unref(self->topic_name);
 
   log_template_options_destroy(&self->template_options);
   log_template_unref(self->message);
@@ -223,4 +253,26 @@ mqtt_dd_get_template_options(LogDriver *s)
   MQTTDestinationDriver *self = (MQTTDestinationDriver *) s;
 
   return &self->template_options;
+}
+
+gboolean
+mqtt_dd_validate_topic_name(const gchar *name, GError **error)
+{
+  gint len = strlen(name);
+
+  if (len == 0)
+    {
+      g_set_error(error, TOPIC_NAME_ERROR, TOPIC_LENGTH_ZERO,
+                  "mqtt dest: topic name is illegal, it can't be empty");
+
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
+GQuark
+topic_name_error_quark(void)
+{
+  return g_quark_from_static_string("invalid-topic-name-error-quark");
 }

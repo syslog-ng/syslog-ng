@@ -94,8 +94,33 @@ _wait_result_evaluation(LogThreadedDestWorker *self, gint result)
     }
 }
 
+static const gchar *
+mqtt_dest_worker_resolve_template_topic_name(MQTTDestinationWorker *self, LogMessage *msg)
+{
+  MQTTDestinationDriver *owner = (MQTTDestinationDriver *) self->super.owner;
+
+  LogTemplateEvalOptions options = {&owner->template_options, LTZ_SEND, self->super.seq_num, NULL};
+  log_template_format(owner->topic_name, msg, &options, self->topic_name_buffer);
+
+  GError *error = NULL;
+
+  if (mqtt_dd_validate_topic_name(self->topic_name_buffer->str, &error))
+    {
+      return self->topic_name_buffer->str;
+    }
+
+  msg_error("Error constructing topic", evt_tag_str("topic_name", self->topic_name_buffer->str),
+            evt_tag_str("driver", owner->super.super.super.id),
+            log_pipe_location_tag(&owner->super.super.super.super),
+            evt_tag_str("error message", error->message));
+
+  g_error_free(error);
+
+  return owner->fallback_topic_name;
+}
+
 static LogThreadedResult
-_mqtt_send(LogThreadedDestWorker *s, gchar *msg)
+_mqtt_send(LogThreadedDestWorker *s, gchar *msg, const gchar *topic)
 {
   MQTTDestinationWorker *self = (MQTTDestinationWorker *)s;
   MQTTDestinationDriver *owner = (MQTTDestinationDriver *) s->owner;
@@ -110,11 +135,9 @@ _mqtt_send(LogThreadedDestWorker *s, gchar *msg)
   pubmsg.qos = owner->qos;
   pubmsg.retained = 0;
 
-  rc = MQTTClient_publishMessage(self->client, self->topic->str, &pubmsg, &token);
+  rc = MQTTClient_publishMessage(self->client, topic, &pubmsg, &token);
   msg_debug("Outgoing message to MQTT destination", evt_tag_str("topic", topic),
             evt_tag_str("message", msg), log_pipe_location_tag(&owner->super.super.super.super));
-
-
 
   result = _publish_result_evaluation (&self->super, rc);
 
@@ -146,7 +169,7 @@ _insert(LogThreadedDestWorker *s, LogMessage *msg)
 
   _format_message(s, msg);
 
-  result = _mqtt_send(s, self->string_to_write->str);
+  result = _mqtt_send(s, self->string_to_write->str, mqtt_dest_worker_resolve_template_topic_name(self, msg));
 
   return result;
   /*
@@ -229,8 +252,8 @@ _free(LogThreadedDestWorker *s)
 {
   MQTTDestinationWorker *self = (MQTTDestinationWorker *)s;
 
-  g_string_free(self->topic, TRUE);
   g_string_free(self->string_to_write, TRUE);
+  g_string_free(self->topic_name_buffer, TRUE);
 
   log_threaded_dest_worker_free_method(s);
 }
@@ -241,9 +264,8 @@ mqtt_dw_new(LogThreadedDestDriver *o, gint worker_index)
 {
   MQTTDestinationWorker *self = g_new0(MQTTDestinationWorker, 1);
 
-  self->topic = g_string_new("");
-
   self->string_to_write = g_string_new("");
+  self->topic_name_buffer = g_string_new("");
 
   log_threaded_dest_worker_init_instance(&self->super, o, worker_index);
   self->super.thread_init = _thread_init;

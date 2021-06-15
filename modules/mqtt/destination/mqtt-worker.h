@@ -34,6 +34,7 @@ typedef struct _MQTTDestinationWorker
   GString *topic;
 
   GString *string_to_write;
+  GString *topic_name_buffer;
 } MQTTDestinationWorker;
 
 LogThreadedDestWorker *mqtt_dw_new(LogThreadedDestDriver *o, gint worker_index);
