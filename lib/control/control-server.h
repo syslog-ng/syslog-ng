@@ -69,6 +69,8 @@ void control_connection_start_as_thread(ControlConnection *self, ControlConnecti
                                         GString *command, gpointer user_data);
 
 void control_connection_send_reply(ControlConnection *self, GString *reply);
+void control_connection_send_batched_reply(ControlConnection *self, GString *reply);
+void control_connection_send_close_batch(ControlConnection *self);
 void control_connection_start_watches(ControlConnection *self);
 void control_connection_update_watches(ControlConnection *self);
 void control_connection_stop_watches(ControlConnection *self);

@@ -60,6 +60,7 @@ static ThreadedCommandRunner *
 _thread_command_runner_new(ControlConnection *cc, GString *cmd, gpointer user_data)
 {
   ThreadedCommandRunner *self = g_new0(ThreadedCommandRunner, 1);
+  // todo: wrapper?-> send_reply_threaded()...
   self->connection = cc;
   self->command = g_string_new(cmd->str);
   self->user_data = user_data;
@@ -133,7 +134,11 @@ _thread_command_runner_sync_run(ThreadedCommandRunner *self, ControlConnectionCo
 {
   msg_warning("Cannot start a separated thread - ControlServer is not running",
               evt_tag_str("command", self->command->str));
-  control_connection_send_reply(self->connection, func(self->connection, self->command, self->user_data));
+
+  GString *response = func(self->connection, self->command, self->user_data);
+  if (response)
+    control_connection_send_reply(self->connection, response);
+
   _thread_command_runner_free(self);
 }
 
@@ -248,6 +253,31 @@ control_connection_free(ControlConnection *self)
 }
 
 void
+control_connection_send_batched_reply(ControlConnection *self, GString *reply)
+{
+  g_string_append(self->output_buffer, reply->str);
+  g_string_free(reply, TRUE);
+
+  self->waiting_for_output = FALSE;
+
+  g_assert(self->output_buffer->len > 0);
+
+  control_connection_update_watches(self);
+}
+
+void
+control_connection_send_close_batch(ControlConnection *self)
+{
+  if (self->output_buffer->str[self->output_buffer->len - 1] != '\n')
+    {
+      g_string_append_c(self->output_buffer, '\n');
+    }
+
+  g_string_append(self->output_buffer, ".\n");
+  control_connection_update_watches(self);
+}
+
+void
 control_connection_send_reply(ControlConnection *self, GString *reply)
 {
   g_string_assign(self->output_buffer, reply->str);
@@ -262,6 +292,7 @@ control_connection_send_reply(ControlConnection *self, GString *reply)
     {
       g_string_append_c(self->output_buffer, '\n');
     }
+
   g_string_append(self->output_buffer, ".\n");
 
   control_connection_update_watches(self);
@@ -287,6 +318,11 @@ control_connection_io_output(gpointer s)
   else
     {
       self->pos += rc;
+      if (self->pos == self->output_buffer->len)
+        {
+          g_string_assign(self->output_buffer, "");
+          self->pos = 0;
+        }
     }
   control_connection_update_watches(self);
 }
