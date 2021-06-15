@@ -66,18 +66,32 @@ _reset_counters(void)
 }
 
 static void
-_append_csv_records(const gchar *record, gpointer user_data)
+_send_batched_response(const gchar *record, gpointer user_data)
 {
-  GString *response = (GString *) user_data;
-  g_string_append_printf(response, "%s", record);
+  //TODO: a) can be set globally; b) len vs counter.
+  static const gsize BATCH_LEN = 1;
+
+  gpointer *args = (gpointer *) user_data;
+  ControlConnection *cc = (ControlConnection *) args[0];
+  GString **batch = (GString **) args[1];
+
+  g_string_append_printf(*batch, "%s", record);
+
+  if ((*batch)->len > BATCH_LEN)
+    {
+      control_connection_send_batched_reply(cc, *batch);
+      *batch = g_string_sized_new(1024);
+    }
 }
 
 static GString *
 _send_stats_get_result(ControlConnection *cc, GString *command, gpointer user_data)
 {
   GString *response = g_string_sized_new(1024);
-  stats_generate_csv(_append_csv_records, response);
-  return response;
+  gpointer args[] = {cc, &response};
+  stats_generate_csv(_send_batched_response, args);
+  control_connection_send_close_batch(cc);
+  return NULL;
 }
 
 static void
