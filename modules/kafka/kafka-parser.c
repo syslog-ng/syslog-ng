@@ -36,18 +36,14 @@ static CfgLexerKeyword kafka_keywords[] =
 
   /* https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md */
   { "config",         KW_CONFIG },
-  { "option",         KW_CONFIG, KWS_OBSOLETE, "The option() argument has been obsoleted in favour of config()" },
   { "flush_timeout_on_shutdown", KW_FLUSH_TIMEOUT_ON_SHUTDOWN },
   { "flush_timeout_on_reload",   KW_FLUSH_TIMEOUT_ON_RELOAD },
 
   { "key",            KW_KEY },
   { "message",        KW_MESSAGE },
-  { "template",       KW_MESSAGE, KWS_OBSOLETE, "Please use message() instead" },
-  { "client_lib_dir", KW_CLIENT_LIB_DIR, KWS_OBSOLETE, "The client-lib-dir() option is ignored by the librdkafka implementation of kafka"},
   { "sync_send",      KW_SYNC_SEND, KWS_OBSOLETE, "The sync-send() option is ignored by the librdkafka implementation of kafka"},
-  { "properties_file", KW_PROPERTIES_FILE },
+  { "properties_file", KW_PROPERTIES_FILE, KWS_OBSOLETE, "Please list the file content in the config() option." },
   { "bootstrap_servers", KW_BOOTSTRAP_SERVERS },
-  { "kafka_bootstrap_servers", KW_BOOTSTRAP_SERVERS, KWS_OBSOLETE, "Please use bootstrap-servers option" },
   { "workers",        KW_WORKERS },
   { "poll_timeout",   KW_POLL_TIMEOUT },
   { "kafka_c",        KW_KAFKA },   /* compatibility with incubator naming */
