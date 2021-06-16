@@ -262,13 +262,16 @@ control_connection_free(ControlConnection *self)
     g_string_free(self->output_buffer, TRUE);
   g_string_free(self->input_buffer, TRUE);
   g_queue_free_full(self->response_batches, _g_string_destroy);
+  g_mutex_free(self->response_batches_lock);
   g_free(self);
 }
 
 void
 control_connection_send_batched_reply(ControlConnection *self, GString *reply)
 {
+  g_mutex_lock(self->response_batches_lock);
   g_queue_push_tail(self->response_batches, reply);
+  g_mutex_unlock(self->response_batches_lock);
 
   self->waiting_for_output = FALSE;
 
@@ -278,15 +281,18 @@ control_connection_send_batched_reply(ControlConnection *self, GString *reply)
 void
 control_connection_send_close_batch(ControlConnection *self)
 {
+  g_mutex_lock(self->response_batches_lock);
   GString *last = (GString *) g_queue_peek_tail(self->response_batches);
   if (last)
     {
       if (last->str[last->len - 1] != '\n')
         g_string_append_c(last, '\n');
       g_string_append(last, ".\n");
+      g_mutex_unlock(self->response_batches_lock);
     }
   else
     {
+      g_mutex_unlock(self->response_batches_lock);
       control_connection_send_batched_reply(self, g_string_new("\n.\n"));
     }
 }
@@ -306,7 +312,9 @@ control_connection_io_output(gpointer s)
 
   if (!self->output_buffer)
     {
+      g_mutex_lock(self->response_batches_lock);
       self->output_buffer = g_queue_pop_head(self->response_batches);
+      g_mutex_unlock(self->response_batches_lock);
       self->pos = 0;
     }
 
@@ -328,7 +336,9 @@ control_connection_io_output(gpointer s)
       if (self->pos == self->output_buffer->len)
         {
           g_string_free(self->output_buffer, TRUE);
+          g_mutex_lock(self->response_batches_lock);
           self->output_buffer = g_queue_pop_head(self->response_batches);
+          g_mutex_unlock(self->response_batches_lock);
           self->pos = 0;
         }
     }
@@ -338,8 +348,10 @@ control_connection_io_output(gpointer s)
 void
 control_connection_wait_for_output(ControlConnection *self)
 {
+  g_mutex_lock(self->response_batches_lock);
   if (g_queue_is_empty(self->response_batches) && !self->output_buffer)
     self->waiting_for_output = TRUE;
+  g_mutex_unlock(self->response_batches_lock);
   control_connection_update_watches(self);
 }
 
@@ -437,6 +449,7 @@ control_connection_init_instance(ControlConnection *self, ControlServer *server)
   self->handle_input = control_connection_io_input;
   self->handle_output = control_connection_io_output;
   self->response_batches = g_queue_new();
+  self->response_batches_lock = g_mutex_new();
   return;
 }
 
