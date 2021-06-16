@@ -31,6 +31,7 @@
 
 struct _ControlConnection
 {
+  GQueue *response_batches;
   gboolean waiting_for_output;
   GString *input_buffer;
   GString *output_buffer;

@@ -240,6 +240,13 @@ control_server_free(ControlServer *self)
   g_free(self);
 }
 
+static void
+_g_string_destroy(gpointer user_data)
+{
+  GString *str = (GString *) user_data;
+  g_string_free(str, TRUE);
+}
+
 void
 control_connection_free(ControlConnection *self)
 {
@@ -247,20 +254,23 @@ control_connection_free(ControlConnection *self)
     {
       self->free_fn(self);
     }
-  g_string_free(self->output_buffer, TRUE);
+  /*
+   * when write() fails, control_connection_closed() is called,
+   * which then calls this free func and in this case output_buffer is not NULL
+   * */
+  if (self->output_buffer)
+    g_string_free(self->output_buffer, TRUE);
   g_string_free(self->input_buffer, TRUE);
+  g_queue_free_full(self->response_batches, _g_string_destroy);
   g_free(self);
 }
 
 void
 control_connection_send_batched_reply(ControlConnection *self, GString *reply)
 {
-  g_string_append(self->output_buffer, reply->str);
-  g_string_free(reply, TRUE);
+  g_queue_push_tail(self->response_batches, reply);
 
   self->waiting_for_output = FALSE;
-
-  g_assert(self->output_buffer->len > 0);
 
   control_connection_update_watches(self);
 }
@@ -268,34 +278,24 @@ control_connection_send_batched_reply(ControlConnection *self, GString *reply)
 void
 control_connection_send_close_batch(ControlConnection *self)
 {
-  if (self->output_buffer->str[self->output_buffer->len - 1] != '\n')
+  GString *last = (GString *) g_queue_peek_tail(self->response_batches);
+  if (last)
     {
-      g_string_append_c(self->output_buffer, '\n');
+      if (last->str[last->len - 1] != '\n')
+        g_string_append_c(last, '\n');
+      g_string_append(last, ".\n");
     }
-
-  g_string_append(self->output_buffer, ".\n");
-  control_connection_update_watches(self);
+  else
+    {
+      control_connection_send_batched_reply(self, g_string_new("\n.\n"));
+    }
 }
 
 void
 control_connection_send_reply(ControlConnection *self, GString *reply)
 {
-  g_string_assign(self->output_buffer, reply->str);
-  g_string_free(reply, TRUE);
-
-  self->pos = 0;
-  self->waiting_for_output = FALSE;
-
-  g_assert(self->output_buffer->len > 0);
-
-  if (self->output_buffer->str[self->output_buffer->len - 1] != '\n')
-    {
-      g_string_append_c(self->output_buffer, '\n');
-    }
-
-  g_string_append(self->output_buffer, ".\n");
-
-  control_connection_update_watches(self);
+  control_connection_send_batched_reply(self, reply);
+  control_connection_send_close_batch(self);
 }
 
 static void
@@ -304,6 +304,13 @@ control_connection_io_output(gpointer s)
   ControlConnection *self = (ControlConnection *) s;
   gint rc;
 
+  if (!self->output_buffer)
+    {
+      self->output_buffer = g_queue_pop_head(self->response_batches);
+      self->pos = 0;
+    }
+
+  g_assert(self->output_buffer);
   rc = self->write(self, self->output_buffer->str + self->pos, self->output_buffer->len - self->pos);
   if (rc < 0)
     {
@@ -320,7 +327,8 @@ control_connection_io_output(gpointer s)
       self->pos += rc;
       if (self->pos == self->output_buffer->len)
         {
-          g_string_assign(self->output_buffer, "");
+          g_string_free(self->output_buffer, TRUE);
+          self->output_buffer = g_queue_pop_head(self->response_batches);
           self->pos = 0;
         }
     }
@@ -330,7 +338,7 @@ control_connection_io_output(gpointer s)
 void
 control_connection_wait_for_output(ControlConnection *self)
 {
-  if (self->output_buffer->len == 0)
+  if (g_queue_is_empty(self->response_batches) && !self->output_buffer)
     self->waiting_for_output = TRUE;
   control_connection_update_watches(self);
 }
@@ -425,10 +433,10 @@ void
 control_connection_init_instance(ControlConnection *self, ControlServer *server)
 {
   self->server = server;
-  self->output_buffer = g_string_sized_new(256);
   self->input_buffer = g_string_sized_new(128);
   self->handle_input = control_connection_io_input;
   self->handle_output = control_connection_io_output;
+  self->response_batches = g_queue_new();
   return;
 }
 
