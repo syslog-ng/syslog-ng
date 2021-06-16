@@ -25,7 +25,6 @@ set(KAFKA_SOURCES
   kafka-plugin.c
   kafka-dest-driver.c
   kafka-dest-worker.c
-  kafka-plugin.c
   kafka-props.c
   kafka-internal.h
 )
