@@ -198,6 +198,7 @@ control_server_cancel_workers(ControlServer *self)
 {
   if (self->worker_threads)
     {
+      self->cancelled = TRUE; // racy, but it's okay
       msg_warning("Cancelling control server worker threads");
       g_list_free_full(self->worker_threads, _delete_thread_command_runner);
       msg_warning("Control server worker threads has been cancelled.");
@@ -217,6 +218,7 @@ control_server_init_instance(ControlServer *self, const gchar *path)
 {
   self->control_socket_name = g_strdup(path);
   self->worker_threads = NULL;
+  self->cancelled = FALSE;
 }
 
 void
