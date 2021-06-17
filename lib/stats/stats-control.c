@@ -58,7 +58,7 @@ static void
 _reset_counters(void)
 {
   stats_lock();
-  stats_foreach_counter(_reset_counter_if_needed, NULL);
+  stats_foreach_counter(_reset_counter_if_needed, NULL, NULL);
   stats_unlock();
   stats_aggregator_lock();
   stats_aggregator_registry_reset();
@@ -89,7 +89,7 @@ _send_stats_get_result(ControlConnection *cc, GString *command, gpointer user_da
 {
   GString *response = g_string_sized_new(1024);
   gpointer args[] = {cc, &response};
-  stats_generate_csv(_send_batched_response, args);
+  stats_generate_csv(_send_batched_response, args, &cc->server->cancelled);
   control_connection_send_close_batch(cc);
   return NULL;
 }

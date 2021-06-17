@@ -57,8 +57,8 @@ gboolean stats_contains_counter(const StatsClusterKey *sc_key, gint type);
 StatsCounterItem *stats_get_counter(const StatsClusterKey *sc_key, gint type);
 StatsCluster *stats_get_cluster(const StatsClusterKey *sc_key);
 
-void stats_foreach_counter(StatsForeachCounterFunc func, gpointer user_data);
-void stats_foreach_cluster(StatsForeachClusterFunc func, gpointer user_data);
+void stats_foreach_counter(StatsForeachCounterFunc func, gpointer user_data, gboolean *cancelled);
+void stats_foreach_cluster(StatsForeachClusterFunc func, gpointer user_data, gboolean *cancelled);
 void stats_foreach_cluster_remove(StatsForeachClusterRemoveFunc func, gpointer user_data);
 
 void stats_registry_init(void);
