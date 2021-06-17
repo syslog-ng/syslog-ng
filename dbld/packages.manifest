@@ -112,37 +112,6 @@ libmongoc-dev               [debian, ubuntu-xenial]
 # added as comments.
 #############################################################################
 
-# librdkafka-dev on Ubuntu:
-#
-# We support librdkafka based destination on Ubuntu bionic even though
-# it does not have a recent enough librdkafka, the reason is that as of
-# today, our devshell uses bionic and we want to be able to try stuff that
-# we develop in that module.  Later on this support might be dropped as we
-# migrate to a newer distro.
-#
-# syslog-ng depends on >= 1.0.0, and we install these librdkafka from
-# LBudai's OBS repository.
-#
-# NOTE: even though we Build-Depend on stuff >= 1.0.0, that is not enough,
-# as an apt preferences file prevents installation from OBS without explicit
-# versions. Also, we need to list all recursive dependencies packages as an apt
-# preferences would prevent installation otherwise
-
-librdkafka1=1.0.1-1         [ubuntu-bionic]
-librdkafka++1=1.0.1-1       [ubuntu-bionic]
-librdkafka-dev=1.0.1-1      [ubuntu-bionic]
-
-# libbson* and libmongoc* packages on Ubuntu Bionic:
-#
-# On Bionic there is a cmake building issue with native mongodb packages.
-# To support full featured cmake build on Bionic we need to install newer
-# fixed versioned packages from OBS repository
-
-libbson-1.0=1.15.0-1        [ubuntu-bionic]
-libbson-dev=1.15.0-1        [ubuntu-bionic]
-libmongoc-1.0=1.15.0-1      [ubuntu-bionic]
-libmongoc-dev=1.15.0-1      [ubuntu-bionic]
-
 
 #############################################################################
 # Tools required to run @kira-syslogng, our testbot.

@@ -1,6 +1,3 @@
-# this dbld image is special as it will compile syslog-ng against native
-# debian packages instead of pulling our own from OBS.
-
 FROM debian:testing
 LABEL maintainer="Andras Mitzki <andras.mitzki@balabit.com>, Laszlo Szemere <laszlo.szemere@balabit.com>, Balazs Scheidler <balazs.scheidler@oneidentity.com>"
 

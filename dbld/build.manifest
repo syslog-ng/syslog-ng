@@ -32,9 +32,9 @@ debian-buster		python2,nojava,nokafka
 debian-testing		python3,nojava
 debian-sid		python3,nojava
 
-# on ubuntu, we fetch java from OBS and start using Python3 at focal onwards.
+# on ubuntu, we start using Python3 at focal onwards.
 ubuntu-xenial		python2,nokafka,nojava
-ubuntu-bionic		python2
+ubuntu-bionic		python2,nokafka
 ubuntu-focal		python3
 
 centos-7		python2,nokafka
