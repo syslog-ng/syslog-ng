@@ -57,6 +57,7 @@ struct _ControlConnection
 struct _ControlServer
 {
   GList *worker_threads;
+  gboolean cancelled;
   gchar *control_socket_name;
   void (*free_fn)(ControlServer *self);
 };
