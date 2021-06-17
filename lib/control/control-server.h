@@ -25,6 +25,7 @@
 
 #include "syslog-ng.h"
 #include "control.h"
+#include <iv_event.h>
 #include <stdio.h>
 
 #define MAX_CONTROL_LINE_LENGTH 4096
@@ -33,6 +34,7 @@ struct _ControlConnection
 {
   GQueue *response_batches;
   GMutex *response_batches_lock;
+  struct iv_event evt_response_added;
   gboolean waiting_for_output;
   GString *input_buffer;
   GString *output_buffer;

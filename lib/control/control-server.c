@@ -259,6 +259,7 @@ control_connection_free(ControlConnection *self)
   g_string_free(self->input_buffer, TRUE);
   g_queue_free_full(self->response_batches, _g_string_destroy);
   g_mutex_free(self->response_batches_lock);
+  iv_event_unregister(&self->evt_response_added);
   g_free(self);
 }
 
@@ -271,7 +272,7 @@ control_connection_send_batched_reply(ControlConnection *self, GString *reply)
 
   self->waiting_for_output = FALSE;
 
-  control_connection_update_watches(self);
+  iv_event_post(&self->evt_response_added);
 }
 
 void
@@ -437,6 +438,13 @@ destroy_connection:
   control_server_connection_closed(self->server, self);
 }
 
+static void
+_on_evt_response_added(gpointer user_data)
+{
+  ControlConnection *self = (ControlConnection *) user_data;
+  control_connection_update_watches(self);
+}
+
 void
 control_connection_init_instance(ControlConnection *self, ControlServer *server)
 {
@@ -446,6 +454,13 @@ control_connection_init_instance(ControlConnection *self, ControlServer *server)
   self->handle_output = control_connection_io_output;
   self->response_batches = g_queue_new();
   self->response_batches_lock = g_mutex_new();
+
+  IV_EVENT_INIT(&self->evt_response_added);
+  self->evt_response_added.cookie = self;
+  self->evt_response_added.handler = _on_evt_response_added;
+
+  iv_event_register(&self->evt_response_added);
+
   return;
 }
 
