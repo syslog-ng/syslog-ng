@@ -1,4 +1,4 @@
-find_package(rdkafka 1.0.0)
+find_package(rdkafka 1.1.0)
 
 if (RDKAFKA_FOUND)
   option(ENABLE_KAFKA "Enable kafka module" ON)
