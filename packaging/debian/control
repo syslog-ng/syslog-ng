@@ -35,7 +35,7 @@ Build-Depends: debhelper (>= 10~),
                libcurl4-openssl-dev,
                libsnappy-dev,
                libsnmp-dev [linux-any hurd-i386],
-               librdkafka-dev (>= 1.0.0) <!sng-nokafka>,
+               librdkafka-dev (>= 1.1.0) <!sng-nokafka>,
                openjdk-8-jdk <!nojava>,
                gradle (>= 3.5.1~) <!nojava>
 Build-Conflicts: autoconf2.13
