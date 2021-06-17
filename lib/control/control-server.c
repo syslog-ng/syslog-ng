@@ -52,8 +52,7 @@ typedef struct _ThreadedCommandRunner
     gboolean finished;
   } real_thread;
   ControlConnectionCommand func;
-  GString *response;
-  struct iv_event response_received;
+  struct iv_event thread_finished;
 } ThreadedCommandRunner;
 
 static ThreadedCommandRunner *
@@ -103,12 +102,11 @@ _thread_command_runner_save_tid(ThreadedCommandRunner *self)
 }
 
 static void
-_send_response(gpointer user_data)
+_on_thread_finished(gpointer user_data)
 {
   ThreadedCommandRunner *self = (ThreadedCommandRunner *) user_data;
   g_thread_join(self->thread);
-  control_connection_send_reply(self->connection, self->response);
-  iv_event_unregister(&self->response_received);
+  iv_event_unregister(&self->thread_finished);
   ControlServer *server = self->connection->server;
   server->worker_threads = g_list_remove(server->worker_threads, self);
   _thread_command_runner_free(self);
@@ -119,12 +117,12 @@ _thread(gpointer user_data)
 {
   ThreadedCommandRunner *self = (ThreadedCommandRunner *)user_data;
   _thread_command_runner_save_tid(self);
-  self->response = self->func(self->connection, self->command, self->user_data);
+  self->func(self->connection, self->command, self->user_data);
   g_mutex_lock(self->real_thread.state_lock);
   {
     self->real_thread.finished = TRUE;
     if (!self->real_thread.cancelled)
-      iv_event_post(&self->response_received);
+      iv_event_post(&self->thread_finished);
   }
   g_mutex_unlock(self->real_thread.state_lock);
 }
@@ -135,9 +133,7 @@ _thread_command_runner_sync_run(ThreadedCommandRunner *self, ControlConnectionCo
   msg_warning("Cannot start a separated thread - ControlServer is not running",
               evt_tag_str("command", self->command->str));
 
-  GString *response = func(self->connection, self->command, self->user_data);
-  if (response)
-    control_connection_send_reply(self->connection, response);
+  func(self->connection, self->command, self->user_data);
 
   _thread_command_runner_free(self);
 }
@@ -145,9 +141,9 @@ _thread_command_runner_sync_run(ThreadedCommandRunner *self, ControlConnectionCo
 static void
 _thread_command_runner_run(ThreadedCommandRunner *self, ControlConnectionCommand func)
 {
-  IV_EVENT_INIT(&self->response_received);
-  self->response_received.handler = _send_response;
-  self->response_received.cookie = self;
+  IV_EVENT_INIT(&self->thread_finished);
+  self->thread_finished.handler = _on_thread_finished;
+  self->thread_finished.cookie = self;
   self->func = func;
 
   if (!main_loop_is_control_server_running(main_loop_get_instance()))
@@ -156,7 +152,7 @@ _thread_command_runner_run(ThreadedCommandRunner *self, ControlConnectionCommand
       return;
     }
 
-  iv_event_register(&self->response_received);
+  iv_event_register(&self->thread_finished);
 
   self->thread = g_thread_new(self->command->str, (GThreadFunc) _thread, self);
   _thread_command_runner_wait_for_tid_saved(self);
