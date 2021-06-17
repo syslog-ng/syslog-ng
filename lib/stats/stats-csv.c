@@ -90,7 +90,7 @@ stats_format_csv(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointe
 }
 
 void
-stats_generate_csv(csv_record_cb process_record, gpointer user_data)
+stats_generate_csv(csv_record_cb process_record, gpointer user_data, gboolean *cancelled)
 {
   GString *csv = g_string_sized_new(512);
 
@@ -100,6 +100,6 @@ stats_generate_csv(csv_record_cb process_record, gpointer user_data)
   g_string_free(csv, TRUE);
   gpointer format_csv_args[] = {process_record, user_data};
   stats_lock();
-  stats_foreach_counter(stats_format_csv, format_csv_args);
+  stats_foreach_counter(stats_format_csv, format_csv_args, cancelled);
   stats_unlock();
 }

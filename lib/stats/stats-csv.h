@@ -28,6 +28,6 @@
 
 typedef void (*csv_record_cb)(const char *record, gpointer user_data);
 
-void stats_generate_csv(csv_record_cb process_record, gpointer user_data);
+void stats_generate_csv(csv_record_cb process_record, gpointer user_data, gboolean *cancelled);
 
 #endif
