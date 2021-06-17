@@ -74,7 +74,6 @@ Test(kafka_config, test_mandatory_options)
 static void
 _setup_kafka_property(LogDriver *driver, const gchar *name, const gchar *value)
 {
-  KafkaDestDriver *self = (KafkaDestDriver *)driver;
   KafkaProperty *prop = kafka_property_new(name, value);
   GList *property_list = g_list_prepend(NULL, prop);
   kafka_dd_merge_config(driver, property_list);
