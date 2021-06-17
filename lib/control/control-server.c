@@ -41,6 +41,7 @@ typedef struct _ThreadedCommandRunner
   gpointer user_data;
 
   GThread *thread;
+  //TODO: remove real_thread
   struct
   {
     GMutex tid_saved_lock;
@@ -59,8 +60,7 @@ static ThreadedCommandRunner *
 _thread_command_runner_new(ControlConnection *cc, GString *cmd, gpointer user_data)
 {
   ThreadedCommandRunner *self = g_new0(ThreadedCommandRunner, 1);
-  // todo: wrapper?-> send_reply_threaded()...
-  self->connection = cc;
+  self->connection = control_connection_ref(cc);
   self->command = g_string_new(cmd->str);
   self->user_data = user_data;
   g_mutex_init(&self->real_thread.tid_saved_lock);
@@ -79,6 +79,7 @@ _thread_command_runner_free(ThreadedCommandRunner *self)
   g_cond_clear(&self->real_thread.tid_saved_cond);
   g_mutex_clear(&self->real_thread.state_lock);
   g_string_free(self->command, TRUE);
+  control_connection_unref(self->connection);
   g_free(self);
 }
 
@@ -209,7 +210,7 @@ void
 control_server_connection_closed(ControlServer *self, ControlConnection *cc)
 {
   control_connection_stop_watches(cc);
-  control_connection_free(cc);
+  control_connection_unref(cc);
 }
 
 void
@@ -244,8 +245,8 @@ _g_string_destroy(gpointer user_data)
   g_string_free(str, TRUE);
 }
 
-void
-control_connection_free(ControlConnection *self)
+static void
+_control_connection_free(ControlConnection *self)
 {
   if (self->free_fn)
     {
@@ -449,6 +450,7 @@ _on_evt_response_added(gpointer user_data)
 void
 control_connection_init_instance(ControlConnection *self, ControlServer *server)
 {
+  g_atomic_counter_set(&self->ref_cnt, 1);
   self->server = server;
   self->input_buffer = g_string_sized_new(128);
   self->handle_input = control_connection_io_input;
@@ -465,17 +467,42 @@ control_connection_init_instance(ControlConnection *self, ControlServer *server)
   return;
 }
 
+ControlConnection *
+control_connection_ref(ControlConnection *self)
+{
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt) > 0);
+
+  if (self)
+    g_atomic_counter_inc(&self->ref_cnt);
+
+  return self;
+}
+
+void
+control_connection_unref(ControlConnection *self)
+{
+  g_assert(!self || g_atomic_counter_get(&self->ref_cnt));
+
+  if (self && (g_atomic_counter_dec_and_test(&self->ref_cnt)))
+    _control_connection_free(self);
+}
 
 void
 control_connection_start_watches(ControlConnection *self)
 {
   if (self->events.start_watches)
-    self->events.start_watches(self);
+    {
+      self->watches_are_running = TRUE;
+      self->events.start_watches(self);
+    }
 }
 
 void
 control_connection_update_watches(ControlConnection *self)
 {
+  if (!self->watches_are_running)
+    return;
+
   if (self->events.update_watches)
     self->events.update_watches(self);
 }
@@ -484,5 +511,8 @@ void
 control_connection_stop_watches(ControlConnection *self)
 {
   if (self->events.stop_watches)
-    self->events.stop_watches(self);
+    {
+      self->events.stop_watches(self);
+      self->watches_are_running = FALSE;
+    }
 }
