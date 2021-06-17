@@ -15,7 +15,6 @@ COPY images/entrypoint.sh /
 COPY . /dbld/
 
 RUN /dbld/builddeps install_dbld_dependencies
-RUN /dbld/builddeps add_obs_repo Ubuntu_18.04
 RUN /dbld/builddeps install_apt_packages
 RUN /dbld/builddeps install_debian_build_deps
 RUN /dbld/builddeps install_pip_packages

@@ -96,18 +96,6 @@ function filter_packages_by_platform {
     grep -v "#" ${FILENAME} | grep -e "${OS_PLATFORM}" -e "${OS_GROUP}[^-]" | cut -d"[" -f1
 }
 
-function add_obs_repo {
-    PLATFORM=$1
-    echo "deb http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/x${PLATFORM} ./" | tee /etc/apt/sources.list.d/lbudai.list
-    cat | tee /etc/apt/preferences.d/lbudai <<EOF
-Package: *
-Pin: origin "download.opensuse.org"
-Pin-Priority: 1
-EOF
-    wget -qO - http://download.opensuse.org/repositories/home:/laszlo_budai:/syslog-ng/x${PLATFORM}/Release.key | apt-key add -
-    apt-get update
-}
-
 function add_copr_repo {
 
     # NOTE: we are removing dnf/yum plugins after enabling copr as they
