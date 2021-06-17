@@ -180,7 +180,6 @@ _delete_thread_command_runner(gpointer data)
     self->real_thread.cancelled = TRUE;
     if (!self->real_thread.finished)
       {
-        thread_cancel(self->real_thread.tid);
         has_to_free = TRUE;
       }
   }
