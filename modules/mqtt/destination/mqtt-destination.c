@@ -36,13 +36,13 @@
  * Default values
  */
 
+#define DEFAULT_ADDRESS "tcp://localhost:1883"
 #define DEFAULT_KEEPALIVE 60
 
 
 /*
  * Configuration
  */
-
 
 void
 mqtt_dd_set_topic(LogDriver *d, const gchar *topic)
@@ -59,6 +59,14 @@ mqtt_dd_set_keepalive (LogDriver *d, const gint keepalive)
   self->keepalive = keepalive;
 }
 
+void
+mqtt_dd_set_address(LogDriver *d, const gchar *address)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *)d;
+
+  g_string_assign(self->address, address);
+}
+
 /*
  * Utilities
  */
@@ -71,8 +79,9 @@ _format_stats_instance(LogThreadedDestDriver *d)
   if (((LogPipe *)d)->persist_name)
     g_snprintf(stats_instance, sizeof(stats_instance), "%s", ((LogPipe *)d)->persist_name);
   else
-    g_snprintf(stats_instance, sizeof(stats_instance),
-               "mqtt,%s", self->topic->str);
+    g_snprintf(stats_instance, sizeof(stats_instance), "mqtt,%s,%s", self->address->str,
+               self->topic_name->template);
+
   return stats_instance;
 }
 
@@ -85,8 +94,8 @@ _format_persist_name(const LogPipe *d)
   if (d->persist_name)
     g_snprintf(persist_name, sizeof(persist_name), "mqtt-destination.%s", d->persist_name);
   else
-    g_snprintf(persist_name, sizeof(persist_name), "mqtt-destination.(%s)", 
-               self->topic->str);
+    g_snprintf(persist_name, sizeof(persist_name), "mqtt-destination.(%s,%s)", self->address->str,
+               self->topic_name->template);
 
   return persist_name;
 }
@@ -94,6 +103,8 @@ _format_persist_name(const LogPipe *d)
 static void
 _set_default_value(MQTTDestinationDriver *self, GlobalConfig *cfg)
 {
+  self->address       = g_string_new(DEFAULT_ADDRESS);
+
   self->keepalive     = DEFAULT_KEEPALIVE;
 }
 
@@ -130,6 +141,7 @@ _free(LogPipe *d)
   MQTTDestinationDriver *self = (MQTTDestinationDriver *)d;
 
   g_string_free(self->topic, TRUE);
+  g_string_free(self->address, TRUE);
 
   log_threaded_dest_driver_free(d);
 }
@@ -153,3 +165,29 @@ mqtt_dd_new(GlobalConfig *cfg)
 
   return (LogDriver *)self;
 }
+
+static gboolean
+_validate_protocol(const gchar *address)
+{
+  const gchar *valid_type[] = {"tcp", "ssl", "ws", "wss"};
+  gint i;
+
+  for (i = 0; i < G_N_ELEMENTS(valid_type); ++i)
+    if (strncmp(valid_type[i], address, strlen(valid_type[i])) == 0)
+      return TRUE;
+
+  return FALSE;
+}
+
+gboolean
+mqtt_dd_validate_address(const gchar *address)
+{
+  if (strstr(address, "://") == NULL)
+    return FALSE;
+
+  if (!_validate_protocol(address))
+    return FALSE;
+
+  return TRUE;
+}
+

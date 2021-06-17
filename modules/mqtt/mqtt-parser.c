@@ -32,6 +32,7 @@ int mqtt_destination_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 static CfgLexerKeyword mqtt_destination_keywords[] =
 {
   { "mqtt", KW_MQTT },
+  { "address", KW_ADDRESS },
   { "topic", KW_TOPIC },
   { "keepalive", KW_KEEPALIVE },
   { NULL }

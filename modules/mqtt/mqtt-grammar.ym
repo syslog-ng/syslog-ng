@@ -46,6 +46,7 @@
 %token KW_MQTT
 %token KW_TOPIC
 %token KW_KEEPALIVE
+%token KW_ADDRESS
 
 %%
 
@@ -65,6 +66,12 @@ mqtt_destination_options
 mqtt_destination_option
         : KW_TOPIC '(' string ')'               { mqtt_dd_set_topic(last_driver, $3); free($3); }
         | KW_KEEPALIVE '(' positive_integer ')' { mqtt_dd_set_keepalive(last_driver, $3);       }
+        | KW_ADDRESS '(' string ')'
+          {
+            CHECK_ERROR(mqtt_dd_validate_address($3), @1, "Invalid address");
+            mqtt_dd_set_address(last_driver, $3);
+            free($3);
+          }
         | threaded_dest_driver_option
         ;
 

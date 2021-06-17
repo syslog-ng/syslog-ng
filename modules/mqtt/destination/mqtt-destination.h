@@ -31,6 +31,7 @@ typedef struct
 {
   LogThreadedDestDriver super;
   GString  *topic;
+  GString  *address;
   gint      keepalive;
 } MQTTDestinationDriver;
 
@@ -38,6 +39,8 @@ LogDriver *mqtt_dd_new(GlobalConfig *cfg);
 
 void mqtt_dd_set_topic(LogDriver *d, const gchar *topic);
 void mqtt_dd_set_keepalive (LogDriver *d, const gint keepalive);
+void mqtt_dd_set_address(LogDriver *d, const gchar *address);
 
+gboolean mqtt_dd_validate_address(const gchar *address);
 
 #endif /* MQTT_DESTINATION_H_INCLUDED */
