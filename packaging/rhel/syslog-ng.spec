@@ -24,6 +24,7 @@ Source4: syslog-ng.logrotate7
 %bcond_without amqp
 %bcond_without kafka
 %bcond_without afsnmp
+%bcond_without mqtt
 
 
 %if 0%{?rhel} == 7
@@ -97,6 +98,10 @@ BuildRequires: java-devel
 %if %{with kafka}
 BuildRequires: librdkafka-devel
 BuildRequires: zlib-devel
+%endif
+
+%if %{with mqtt}
+BuildRequires: paho-c-devel
 %endif
 
 %if %{with afsnmp}
@@ -186,6 +191,14 @@ Requires: %{name}%{?_isa} = %{version}-%{release}
 
 %description afsnmp
 This module supports sending SNMP traps using net-snmp.
+
+%package mqtt
+Summary: mqtt support for %{name}
+Group: Development/Libraries
+Requires: %{name}%{?_isa} = %{version}-%{release}
+
+%description mqtt
+This module supports sending logs to mqtt through MQTT.
 
 %package java
 Summary:        Java destination support for syslog-ng
@@ -307,6 +320,7 @@ ryslog is not on the system.
     --disable-java-modules \
     --with-python=%{py_ver} \
     %{?with_kafka:--enable-kafka} \
+    %{?with_mqtt:--enable-mqtt} \
     %{?with_afsnmp:--enable-afsnmp} %{!?with_afsnmp:--disable-afsnmp} \
     %{?with_java:--enable-java} %{!?with_java:--disable-java} \
     %{?with_maxminddb:--enable-geoip2} %{!?with_maxminddb:--disable-geoip2} \
@@ -519,6 +533,11 @@ fi
 %if %{with afsnmp}
 %files afsnmp
 %{_libdir}/%{name}/libafsnmp.so
+%endif
+
+%if %{with mqtt}
+%files mqtt
+%{_libdir}/%{name}/libmqtt.so
 %endif
 
 %files smtp

@@ -37,7 +37,8 @@ Build-Depends: debhelper (>= 10~),
                libsnmp-dev [linux-any hurd-i386],
                librdkafka-dev (>= 1.1.0) <!sng-nokafka>,
                openjdk-8-jdk <!nojava>,
-               gradle (>= 3.5.1~) <!nojava>
+               gradle (>= 3.5.1~) <!nojava>,
+               libpaho-mqtt-dev <!sng-nomqtt>
 Build-Conflicts: autoconf2.13
 Standards-Version: 4.4.1
 Homepage: https://www.syslog-ng.com/
@@ -768,3 +769,27 @@ Description: Enhanced system logging daemon (HTTP destination implemented in Jav
  .
  This package provides an HTTP destination, allowing one to send syslog messages as HTTP
  PUT messages to an http server.
+
+Package: syslog-ng-mod-mqtt
+Architecture: any
+Multi-Arch: foreign
+Depends: ${shlibs:Depends}, ${misc:Depends}, syslog-ng-core (>= ${source:Version}), syslog-ng-core (<< ${source:Version}.1~)
+Description: Enhanced system logging daemon (MQTT plugins)
+ syslog-ng is an enhanced log daemon, supporting a wide range of input
+ and output methods: syslog, unstructured text, message queues,
+ databases (SQL and NoSQL alike) and more.
+ .
+ Key features:
+ .
+  * receive and send RFC3164 and RFC5424 style syslog messages
+  * work with any kind of unstructured data
+  * receive and send JSON formatted messages
+  * classify and structure logs with builtin parsers (csv-parser(),
+    db-parser(), etc.)
+  * normalize, crunch and process logs as they flow through the system
+  * hand on messages for further processing using message queues (like
+    AMQP), files or databases (like PostgreSQL or MongoDB).
+ .
+ This package provides the MQTT plugin, that allows receiving and sending 
+ MQTT messages.
+ 
