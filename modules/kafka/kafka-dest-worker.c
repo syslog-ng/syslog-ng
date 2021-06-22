@@ -102,11 +102,11 @@ kafka_dest_worker_calculate_topic(KafkaDestWorker *self, LogMessage *msg)
   return kafka_dest_worker_get_literal_topic(self);
 }
 
+#ifdef SYSLOG_NG_HAVE_RD_KAFKA_INIT_TRANSACTIONS
 static LogThreadedResult
 _handle_transaction_error(KafkaDestWorker *self, rd_kafka_error_t *error)
 {
   g_assert(error);
-#ifdef SYSLOG_NG_HAVE_RD_KAFKA_INIT_TRANSACTIONS
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
 
   if (rd_kafka_error_txn_requires_abort(error))
@@ -122,11 +122,11 @@ _handle_transaction_error(KafkaDestWorker *self, rd_kafka_error_t *error)
         }
     }
 
-#endif
   rd_kafka_error_destroy(error);
 
   return LTR_RETRY;
 }
+#endif
 
 static LogThreadedResult
 _transaction_init(KafkaDestWorker *self)
@@ -145,7 +145,7 @@ _transaction_init(KafkaDestWorker *self)
                 evt_tag_str("error", rd_kafka_error_string(error)),
                 evt_tag_str("driver", owner->super.super.super.id),
                 log_pipe_location_tag(&owner->super.super.super.super));
-      return LTR_RETRY;
+      return _handle_transaction_error(self, error);
     }
   owner->transaction_inited = TRUE;
 #endif
@@ -187,8 +187,7 @@ _transaction_begin(KafkaDestWorker *self)
                 evt_tag_str("topic", owner->topic_name->template),
                 evt_tag_str("error", rd_kafka_err2str(rd_kafka_error_code(error))),
                 log_pipe_location_tag(&owner->super.super.super.super));
-      rd_kafka_error_destroy(error);
-      return LTR_RETRY;
+      return _handle_transaction_error(self, error);
     }
 #endif
 
