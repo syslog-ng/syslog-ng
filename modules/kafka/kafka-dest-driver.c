@@ -535,6 +535,20 @@ _init_topic_name(KafkaDestDriver *self)
     return _init_literal_topic_name(self);
 }
 
+static void
+_destroy_kafka(LogDriver *s)
+{
+  KafkaDestDriver *self = (KafkaDestDriver *)s;
+
+  if (self->topics)
+    g_hash_table_unref(self->topics);
+  if (self->topic)
+    rd_kafka_topic_destroy(self->topic);
+
+  if (self->kafka)
+    rd_kafka_destroy(self->kafka);
+}
+
 gboolean
 kafka_dd_init(LogPipe *s)
 {
@@ -630,16 +644,11 @@ kafka_dd_free(LogPipe *d)
   KafkaDestDriver *self = (KafkaDestDriver *)d;
 
   log_template_options_destroy(&self->template_options);
-  if (self->topics)
-    g_hash_table_unref(self->topics);
-  log_template_unref(self->key);
-  log_template_unref(self->message);
-  if (self->topic)
-    rd_kafka_topic_destroy(self->topic);
+  _destroy_kafka(&self->super.super.super);
   if (self->fallback_topic_name)
     g_free(self->fallback_topic_name);
-  if (self->kafka)
-    rd_kafka_destroy(self->kafka);
+  log_template_unref(self->key);
+  log_template_unref(self->message);
   log_template_unref(self->topic_name);
   g_mutex_free(self->topics_lock);
   g_free(self->bootstrap_servers);
