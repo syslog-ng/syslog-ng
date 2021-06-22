@@ -575,7 +575,7 @@ kafka_dd_init(LogPipe *s)
       self->kafka = _construct_client(self);
       if (self->kafka == NULL)
         {
-          msg_error("kafka: error constructing kafka connection object, perhaps metadata.broker.list property is missing?",
+          msg_error("kafka: error constructing kafka connection object",
                     evt_tag_str("topic", self->topic_name->template),
                     evt_tag_str("driver", self->super.super.super.id),
                     log_pipe_location_tag(&self->super.super.super.super));
