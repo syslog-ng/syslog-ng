@@ -108,6 +108,7 @@ _handle_transaction_error(KafkaDestWorker *self, rd_kafka_error_t *error)
 {
   g_assert(error);
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
+  LogThreadedResult result = LTR_RETRY;
 
   if (rd_kafka_error_txn_requires_abort(error))
     {
@@ -119,12 +120,22 @@ _handle_transaction_error(KafkaDestWorker *self, rd_kafka_error_t *error)
                     evt_tag_str("error", rd_kafka_err2str(rd_kafka_error_code(abort_error))),
                     log_pipe_location_tag(&owner->super.super.super.super));
           rd_kafka_error_destroy(abort_error);
+          goto _exit;
         }
     }
 
+  if (rd_kafka_error_is_retriable(error))
+    {
+      result = LTR_RETRY;
+      goto _exit;
+    }
+
+  result = LTR_NOT_CONNECTED;
+
+_exit:
   rd_kafka_error_destroy(error);
 
-  return LTR_RETRY;
+  return result;
 }
 #endif
 
@@ -339,6 +350,27 @@ _thread_init(LogThreadedDestWorker *s)
   return log_threaded_dest_worker_init_method(s);
 }
 
+static gboolean
+kafka_dest_worker_connect(LogThreadedDestWorker *s)
+{
+  KafkaDestWorker *self = (KafkaDestWorker *)s;
+  KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
+
+  static gboolean first_init = FALSE;
+  if (!first_init)
+    {
+      g_assert(owner->kafka);
+      first_init = TRUE;
+      return TRUE;
+    }
+
+  if (!kafka_dd_reopen(&owner->super.super.super))
+    {
+      return FALSE;
+    }
+  return TRUE;
+}
+
 static void
 _set_methods(KafkaDestWorker *self)
 {
@@ -350,6 +382,7 @@ _set_methods(KafkaDestWorker *self)
   if (owner->transaction_commit)
     {
       self->super.insert = kafka_dest_worker_transactional_insert;
+      self->super.connect = kafka_dest_worker_connect;
     }
   else
     {
