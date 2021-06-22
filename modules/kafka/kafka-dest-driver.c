@@ -550,6 +550,27 @@ _destroy_kafka(LogDriver *s)
 }
 
 gboolean
+kafka_dd_reopen(LogDriver *s)
+{
+  KafkaDestDriver *self = (KafkaDestDriver *)s;
+  _destroy_kafka(s);
+
+  self->kafka = _construct_client(self);
+  if (self->kafka == NULL)
+    {
+      msg_error("kafka: error constructing kafka connection object",
+                evt_tag_str("topic", self->topic_name->template),
+                evt_tag_str("driver", self->super.super.super.id),
+                log_pipe_location_tag(&self->super.super.super.super));
+      return FALSE;
+    }
+
+  self->transaction_inited = FALSE;
+
+  return TRUE;
+}
+
+gboolean
 kafka_dd_init(LogPipe *s)
 {
   KafkaDestDriver *self = (KafkaDestDriver *)s;
@@ -570,18 +591,9 @@ kafka_dd_init(LogPipe *s)
       return FALSE;
     }
 
-  if (!self->kafka)
+  if (!kafka_dd_reopen(&self->super.super.super))
     {
-      self->kafka = _construct_client(self);
-      if (self->kafka == NULL)
-        {
-          msg_error("kafka: error constructing kafka connection object",
-                    evt_tag_str("topic", self->topic_name->template),
-                    evt_tag_str("driver", self->super.super.super.id),
-                    log_pipe_location_tag(&self->super.super.super.super));
-          return FALSE;
-        }
-      self->transaction_inited = FALSE;
+      return FALSE;
     }
 
 

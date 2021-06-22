@@ -64,6 +64,7 @@ enum KafkaTopicError
 };
 
 void kafka_dd_set_topic(LogDriver *d, LogTemplate *topic);
+gboolean kafka_dd_reopen(LogDriver *d);
 void kafka_dd_set_fallback_topic(LogDriver *d, const gchar *fallback_topic);
 void kafka_dd_merge_config(LogDriver *d, GList *props);
 void kafka_dd_set_bootstrap_servers(LogDriver *d, const gchar *bootstrap_servers);
