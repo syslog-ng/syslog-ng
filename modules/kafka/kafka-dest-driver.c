@@ -564,6 +564,8 @@ kafka_dd_reopen(LogDriver *s)
                 log_pipe_location_tag(&self->super.super.super.super));
       return FALSE;
     }
+  if (!_init_topic_name(self))
+    return FALSE;
 
   self->transaction_inited = FALSE;
 
@@ -615,9 +617,6 @@ kafka_dd_init(LogPipe *s)
         }
 
     }
-
-  if (!_init_topic_name(self))
-    return FALSE;
 
   if (!log_threaded_dest_driver_init_method(s))
     return FALSE;
