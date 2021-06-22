@@ -103,6 +103,32 @@ kafka_dest_worker_calculate_topic(KafkaDestWorker *self, LogMessage *msg)
 }
 
 static LogThreadedResult
+_handle_transaction_error(KafkaDestWorker *self, rd_kafka_error_t *error)
+{
+  g_assert(error);
+#ifdef SYSLOG_NG_HAVE_RD_KAFKA_INIT_TRANSACTIONS
+  KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
+
+  if (rd_kafka_error_txn_requires_abort(error))
+    {
+      rd_kafka_error_t *abort_error = rd_kafka_abort_transaction(owner->kafka, -1);
+      if (abort_error)
+        {
+          msg_error("kafka: Failed to abort transaction",
+                    evt_tag_str("topic", owner->topic_name->template),
+                    evt_tag_str("error", rd_kafka_err2str(rd_kafka_error_code(abort_error))),
+                    log_pipe_location_tag(&owner->super.super.super.super));
+          rd_kafka_error_destroy(abort_error);
+        }
+    }
+
+#endif
+  rd_kafka_error_destroy(error);
+
+  return LTR_RETRY;
+}
+
+static LogThreadedResult
 _transaction_init(KafkaDestWorker *self)
 {
 #ifdef SYSLOG_NG_HAVE_RD_KAFKA_INIT_TRANSACTIONS
@@ -141,20 +167,7 @@ _transaction_commit(KafkaDestWorker *self)
                 evt_tag_str("error", rd_kafka_err2str(rd_kafka_error_code(error))),
                 log_pipe_location_tag(&owner->super.super.super.super));
 
-      if (rd_kafka_error_txn_requires_abort(error))
-        {
-          rd_kafka_error_t *abort_error = rd_kafka_abort_transaction(owner->kafka, -1);
-          if (abort_error)
-            {
-              msg_error("kafka: Failed to abort transaction",
-                        evt_tag_str("topic", owner->topic_name->template),
-                        evt_tag_str("error", rd_kafka_err2str(rd_kafka_error_code(abort_error))),
-                        log_pipe_location_tag(&owner->super.super.super.super));
-              rd_kafka_error_destroy(abort_error);
-            }
-        }
-      rd_kafka_error_destroy(error);
-      return LTR_RETRY;
+      return _handle_transaction_error(self, error);
     }
 #endif
 
