@@ -1278,15 +1278,19 @@ if test "x$enable_smtp" != "xno" && test "x$with_libesmtp" != "xno"; then
 		CPPFLAGS="$CPPFLAGS_SAVE"
 		LDFLAGS="$LDFLAGS_SAVE"
 	else
-		AC_MSG_CHECKING(for libESMTP)
-		if libesmtp-config --version >/dev/null 2>&1; then
-			AC_MSG_RESULT(yes)
-			LIBESMTP_CFLAGS="`libesmtp-config --cflags`"
-			LIBESMTP_LIBS="`libesmtp-config --libs`"
-		else
-			AC_MSG_RESULT(no)
-			libesmtp=no
-		fi
+		PKG_CHECK_MODULES(LIBESMTP, libesmtp-1.0, libesmtp="yes", libesmtp="no")
+		if test "x$libesmtp" = "xno"; then
+			AC_MSG_CHECKING(for libESMTP with libesmtp-config)
+			if libesmtp-config --version >/dev/null 2>&1; then
+				AC_MSG_RESULT(yes)
+				LIBESMTP_CFLAGS="`libesmtp-config --cflags`"
+				LIBESMTP_LIBS="`libesmtp-config --libs`"
+				libesmtp="yes"
+			else
+				AC_MSG_RESULT(no)
+				libesmtp=no
+			fi
+                fi
 	fi
 	if test "x$enable_smtp" = "xyes" && test "x$libesmtp" = "xno"; then
 		AC_MSG_ERROR(libESMTP not found)
