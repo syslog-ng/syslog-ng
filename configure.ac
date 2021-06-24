@@ -1455,6 +1455,9 @@ if test "x$enable_python" != "xno"; then
       [[0-9]].[[0-9]])
           with_python="python-${with_python}"
           ;;
+      [[0-9]].[[0-9][0-9]])
+          with_python="python-${with_python}"
+          ;;
     esac
 
     PKG_CHECK_MODULES(PYTHON, $with_python-embed, python_found="yes", [
