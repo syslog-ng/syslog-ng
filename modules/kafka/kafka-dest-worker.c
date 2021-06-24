@@ -102,17 +102,17 @@ kafka_dest_worker_calculate_topic(KafkaDestWorker *self, LogMessage *msg)
   return kafka_dest_worker_get_literal_topic(self);
 }
 
-static gboolean
+static LogThreadedResult
 _transaction_init(KafkaDestWorker *self)
 {
 #ifdef SYSLOG_NG_HAVE_RD_KAFKA_INIT_TRANSACTIONS
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
 
   if (!owner->transaction_commit)
-    return TRUE;
+    return LTR_SUCCESS;
 
   if (owner->transaction_inited)
-    return TRUE;
+    return LTR_SUCCESS;
 
   rd_kafka_error_t *error = rd_kafka_init_transactions(owner->kafka, -1);
   if (error)
@@ -122,15 +122,15 @@ _transaction_init(KafkaDestWorker *self)
                 evt_tag_str("error", rd_kafka_error_string(error)),
                 evt_tag_str("driver", owner->super.super.super.id),
                 log_pipe_location_tag(&owner->super.super.super.super));
-      return FALSE;
+      return LTR_RETRY;
     }
   owner->transaction_inited = TRUE;
 #endif
 
-  return TRUE;
+  return LTR_SUCCESS;
 }
 
-static gboolean
+static LogThreadedResult
 _transaction_commit(KafkaDestWorker *self)
 {
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
@@ -159,13 +159,13 @@ _transaction_commit(KafkaDestWorker *self)
             }
         }
       rd_kafka_error_destroy(error);
-      return FALSE;
+      return LTR_RETRY;
     }
 
-  return TRUE;
+  return LTR_SUCCESS;
 }
 
-static gboolean
+static LogThreadedResult
 _transaction_begin(KafkaDestWorker *self)
 {
   KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
@@ -181,10 +181,10 @@ _transaction_begin(KafkaDestWorker *self)
                 evt_tag_str("error", rd_kafka_err2str(rd_kafka_error_code(error))),
                 log_pipe_location_tag(&owner->super.super.super.super));
       rd_kafka_error_destroy(error);
-      return FALSE;
+      return LTR_RETRY;
     }
 
-  return TRUE;
+  return LTR_SUCCESS;
 }
 
 static gboolean
@@ -272,21 +272,25 @@ static LogThreadedResult
 kafka_dest_worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
 {
   KafkaDestWorker *self = (KafkaDestWorker *)s;
+  LogThreadedResult result;
 
   _drain_responses(self);
 
-  if (!_transaction_init(self))
-    return LTR_RETRY;
+  result = _transaction_init(self);
+  if (result != LTR_SUCCESS)
+    return result;
 
-  if (!_transaction_begin(self))
-    return LTR_RETRY;
+  result = _transaction_begin(self);
+  if (result != LTR_SUCCESS)
+    return result;
 
   _format_message_and_key(self, msg);
   if (!_publish_message(self, msg))
     return LTR_RETRY;
 
-  if (!_transaction_commit(self))
-    return LTR_RETRY;
+  result = _transaction_commit(self);
+  if (result != LTR_SUCCESS)
+    return result;
 
   _drain_responses(self);
   return LTR_SUCCESS;
