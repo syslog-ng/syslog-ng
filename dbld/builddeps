@@ -197,8 +197,8 @@ function enable_dbgsyms {
             apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 428D7C01 C8CAB6595FDFF622
             ;;
         devshell|debian*)
-            echo "deb http://deb.debian.org/debian-debug/ $(lsb_release -rs)-debug main" | tee -a /etc/apt/sources.list
-            echo "deb http://deb.debian.org/debian-debug/ $(lsb_release -rs)-proposed-updates-debug main" | tee -a /etc/apt/sources.list
+            echo "deb http://deb.debian.org/debian-debug/ $(lsb_release -cs)-debug main" | tee -a /etc/apt/sources.list
+            echo "deb http://deb.debian.org/debian-debug/ $(lsb_release -cs)-proposed-updates-debug main" | tee -a /etc/apt/sources.list
             ;;
     esac
 }
