@@ -308,7 +308,7 @@ _kafka_delivery_report_cb(rd_kafka_t *rk,
     }
 }
 
-static void
+static gboolean
 _conf_set_prop(rd_kafka_conf_t *conf, const gchar *name, const gchar *value)
 {
   gchar errbuf[1024];
@@ -322,7 +322,9 @@ _conf_set_prop(rd_kafka_conf_t *conf, const gchar *name, const gchar *value)
                 evt_tag_str("name", name),
                 evt_tag_str("value", value),
                 evt_tag_str("error", errbuf));
+      return FALSE;
     }
+  return TRUE;
 }
 
 /*
@@ -360,7 +362,8 @@ _apply_config_props(rd_kafka_conf_t *conf, GList *props)
     {
       KafkaProperty *kp = ll->data;
       if (!_is_property_protected(kp->name))
-        _conf_set_prop(conf, kp->name, kp->value);
+        if (!_conf_set_prop(conf, kp->name, kp->value))
+          return FALSE;
     }
   return TRUE;
 }
@@ -373,14 +376,17 @@ _construct_client(KafkaDestDriver *self)
   gchar errbuf[1024];
 
   conf = rd_kafka_conf_new();
-  _conf_set_prop(conf, "metadata.broker.list", self->bootstrap_servers);
-  _conf_set_prop(conf, "topic.partitioner", "murmur2_random");
+  if (!_conf_set_prop(conf, "metadata.broker.list", self->bootstrap_servers))
+    return NULL;
+  if (!_conf_set_prop(conf, "topic.partitioner", "murmur2_random"))
+    return NULL;
 
   if (self->transaction_commit)
     _conf_set_prop(conf, "transactional.id",
                    log_pipe_get_persist_name(&self->super.super.super.super));
 
-  _apply_config_props(conf, self->config);
+  if (!_apply_config_props(conf, self->config))
+    return NULL;
   rd_kafka_conf_set_log_cb(conf, _kafka_log_callback);
   rd_kafka_conf_set_dr_cb(conf, _kafka_delivery_report_cb);
   rd_kafka_conf_set_opaque(conf, self);
