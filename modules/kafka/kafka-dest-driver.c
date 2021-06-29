@@ -462,8 +462,6 @@ _purge_remaining_messages(KafkaDestDriver *self)
    * and also those that were sent and not yet acknowledged.  The purged
    * messages will generate failed delivery reports. */
 
-  /* FIXME: Need to check their order!!!! */
-
   rd_kafka_purge(self->kafka, RD_KAFKA_PURGE_F_QUEUE | RD_KAFKA_PURGE_F_INFLIGHT);
   rd_kafka_poll(self->kafka, 0);
 
