@@ -1,5 +1,7 @@
 FROM ubuntu:xenial
 LABEL maintainer="Andras Mitzki <andras.mitzki@balabit.com>, Laszlo Szemere <laszlo.szemere@balabit.com>, Balazs Scheidler <balazs.scheidler@oneidentity.com>"
+ENV OS_DISTRIBUTION=ubuntu
+ENV OS_DISTRIBUTION_CODE_NAME=xenial
 
 ARG OS_PLATFORM
 ARG COMMIT

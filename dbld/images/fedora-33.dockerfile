@@ -1,5 +1,7 @@
 FROM fedora:33
 LABEL maintainer="Andras Mitzki <andras.mitzki@balabit.com>, Laszlo Szemere <laszlo.szemere@balabit.com>, Balazs Scheidler <bazsi77@gmail.com>"
+ENV OS_DISTRIBUTION=fedora
+ENV OS_DISTRIBUTION_CODE_NAME=33
 
 ARG OS_PLATFORM
 ARG COMMIT

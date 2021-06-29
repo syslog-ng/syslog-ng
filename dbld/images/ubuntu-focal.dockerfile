@@ -1,5 +1,7 @@
 FROM ubuntu:focal
 LABEL maintainer="Laszlo Budai <laszlo.budai@outlook.com>, Andras Mitzki <andras.mitzki@balabit.com>, Laszlo Szemere <laszlo.szemere@balabit.com>, Balazs Scheidler <balazs.scheidler@oneidentity.com>"
+ENV OS_DISTRIBUTION=ubuntu
+ENV OS_DISTRIBUTION_CODE_NAME=focal
 
 ARG OS_PLATFORM
 ARG COMMIT
