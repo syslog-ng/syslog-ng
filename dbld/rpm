@@ -7,7 +7,7 @@ RPMBUILD_SOURCES=${RPMBUILD}/SOURCES
 
 function setup_dirs() {
 	mkdir -p $RPMBUILD_SOURCES
-	rm -rf /build/${OS_PLATFORM} && mkdir -p /build/${OS_PLATFORM}
+	rm -rf /build/${IMAGE_PLATFORM} && mkdir -p /build/${IMAGE_PLATFORM}
 }
 
 function copy_rpm_packaging_src_files_to_build_folder() {
@@ -23,10 +23,10 @@ function prepare_source() {
 }
 
 function capture_rpms() {
-    mv $RPMBUILD/RPMS/*/*${VERSION}*.rpm /build/${OS_PLATFORM}
-    mv $RPMBUILD/SRPMS/*${VERSION}*.rpm /build/${OS_PLATFORM}
-    echo "Your rpms are in /build/${OS_PLATFORM}, also available on the host in \$(top_srcdir)/dbld/build/${OS_PLATFORM}"
-    capture_artifacts /build/${OS_PLATFORM}/*.rpm
+    mv $RPMBUILD/RPMS/*/*${VERSION}*.rpm /build/${IMAGE_PLATFORM}
+    mv $RPMBUILD/SRPMS/*${VERSION}*.rpm /build/${IMAGE_PLATFORM}
+    echo "Your rpms are in /build/${IMAGE_PLATFORM}, also available on the host in \$(top_srcdir)/dbld/build/${IMAGE_PLATFORM}"
+    capture_artifacts /build/${IMAGE_PLATFORM}/*.rpm
 
 }
 

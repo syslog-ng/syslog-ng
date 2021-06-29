@@ -13,5 +13,5 @@ package_type() {
     esac
 }
 
-pkg=$(package_type "${OS_PLATFORM}")
+pkg=$(package_type "${IMAGE_PLATFORM}")
 /dbld/${pkg}

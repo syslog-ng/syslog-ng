@@ -16,18 +16,18 @@ set -x
 # NOTE: If at all possible don't put anything here.
 function install_dbld_dependencies()
 {
-    case "${OS_PLATFORM}" in
-        centos-*)
+    case "${OS_DISTRIBUTION}" in
+        centos)
             $YUM_INSTALL wget yum-utils
             ;;
-        debian-*|ubuntu-*)
+        debian|ubuntu)
             apt-get update
             $APT_INSTALL wget gnupg2
-            if [ "${OS_PLATFORM}" = "ubuntu-xenial" ]; then
+            if [ "${OS_DISTRIBUTION_CODE_NAME}" = "xenial" ]; then
                 $APT_INSTALL -t xenial-backports debhelper dh-systemd
             fi
             ;;
-        fedora-*)
+        fedora)
             ;;
     esac
 }
@@ -92,8 +92,7 @@ function download_target() {
 
 function filter_packages_by_platform {
     FILENAME=$1
-    OS_GROUP=$(echo ${OS_PLATFORM} | cut -d"-" -f1)
-    grep -v "#" ${FILENAME} | grep -e "${OS_PLATFORM}" -e "${OS_GROUP}[^-]" | cut -d"[" -f1
+    grep -v "#" ${FILENAME} | grep -e "${IMAGE_PLATFORM}" -e "${OS_DISTRIBUTION}[^-]" | cut -d"[" -f1
 }
 
 function add_copr_repo {
@@ -101,12 +100,12 @@ function add_copr_repo {
     # NOTE: we are removing dnf/yum plugins after enabling copr as they
     # install a couple of Python dependencies which then conflict with our
     # PIP installation later.
-    case "${OS_PLATFORM}" in
-        centos-*)
+    case "${OS_DISTRIBUTION}" in
+        centos)
             $YUM_INSTALL yum-plugin-copr
             yum copr enable -y czanik/syslog-ng-githead
             ;;
-        fedora-*)
+        fedora)
             $DNF_INSTALL -y dnf-plugins-core
             dnf copr enable -y czanik/syslog-ng-githead
             ;;
@@ -138,11 +137,11 @@ function install_rpm_build_deps {
         exit 1
     fi
 
-    case "${OS_PLATFORM}" in
-        centos-*)
+    case "${OS_DISTRIBUTION}" in
+        centos)
             rpm_run_build_command yum-builddep -y ${RPM_SPEC_FILE}
             ;;
-        fedora-*)
+        fedora)
             rpm_run_build_command dnf builddep -y ${RPM_SPEC_FILE}
             ;;
     esac
@@ -154,7 +153,7 @@ function install_yum_packages {
 }
 
 function install_pip_packages {
-    case "${OS_PLATFORM}" in
+    case "${IMAGE_PLATFORM}" in
         fedora-*)
             python_executables="python"
             ;;
@@ -169,7 +168,7 @@ function install_pip_packages {
             ;;
     esac
     for python_executable in ${python_executables}; do
-        case "${OS_PLATFORM}" in
+        case "${IMAGE_PLATFORM}" in
             centos-7|ubuntu-xenial)
                 $python_executable -m pip install --no-cache-dir --upgrade "pip < 21.0"
                 $python_executable -m pip install --no-cache-dir --upgrade setuptools
@@ -190,22 +189,22 @@ function install_lsb_release {
 
 function enable_dbgsyms {
     install_lsb_release
-    case "${OS_PLATFORM}" in
-        ubuntu*)
-            echo "deb http://ddebs.ubuntu.com $(lsb_release -cs) main restricted universe multiverse" | tee -a /etc/apt/sources.list.d/ddebs.list
-            echo "deb http://ddebs.ubuntu.com $(lsb_release -cs)-updates main restricted universe multiverse" | tee -a /etc/apt/sources.list.d/ddebs.list
+    case "${OS_DISTRIBUTION}" in
+        ubuntu)
+            echo "deb http://ddebs.ubuntu.com ${OS_DISTRIBUTION_CODE_NAME} main restricted universe multiverse" | tee -a /etc/apt/sources.list.d/ddebs.list
+            echo "deb http://ddebs.ubuntu.com ${OS_DISTRIBUTION_CODE_NAME}-updates main restricted universe multiverse" | tee -a /etc/apt/sources.list.d/ddebs.list
             apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 428D7C01 C8CAB6595FDFF622
             ;;
-        devshell|debian*)
-            echo "deb http://deb.debian.org/debian-debug/ $(lsb_release -rs)-debug main" | tee -a /etc/apt/sources.list
-            echo "deb http://deb.debian.org/debian-debug/ $(lsb_release -rs)-proposed-updates-debug main" | tee -a /etc/apt/sources.list
+        debian)
+            echo "deb http://deb.debian.org/debian-debug/ ${OS_DISTRIBUTION_CODE_NAME}-debug main" | tee -a /etc/apt/sources.list
+            echo "deb http://deb.debian.org/debian-debug/ ${OS_DISTRIBUTION_CODE_NAME}-proposed-updates-debug main" | tee -a /etc/apt/sources.list
             ;;
     esac
 }
 
 function install_perf {
-    case "${OS_PLATFORM}" in
-        ubuntu*)
+    case "${OS_DISTRIBUTION}" in
+        ubuntu)
             apt-cache search linux-tools | grep 'linux-tools-.*-generic' | cut -d" " -f1 | tail -n1 | cut -d"-" -f1-4 | xargs $APT_INSTALL
             ;;
     esac

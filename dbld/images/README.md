@@ -11,8 +11,8 @@ We are starting from the official base images of the distributions.
 
 ### ENV
 
-OS_PLATFORM -- The platform name (e.g.  ubuntu-xenial) is encoded in the
-               $OS_PLATFORM variable during build and runtime of all images.
+IMAGE_PLATFORM -- The platform name (e.g.  ubuntu-xenial) is encoded in the
+                  $IMAGE_PLATFORM variable during build and runtime of all images.
 
 COMMIT -- the sha1 of the git commit in the syslog-ng source tree that was
           used to generate the image.

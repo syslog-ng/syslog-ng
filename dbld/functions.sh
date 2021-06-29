@@ -16,7 +16,6 @@ function _map_env_null()
 }
 
 function run_build_command_with_build_manifest_parameters() {
-	OS=$(echo $OS_PLATFORM |  cut -d '-' -f 1)
 	map_environment=$1
 	map_cmdline=$2
 	shift 2
@@ -27,7 +26,7 @@ function run_build_command_with_build_manifest_parameters() {
 	TMPDIR=$(mktemp -d)
 
 	IFS=$'\t'
-	egrep -e "^${OS}([^-]|$)" -e "^${OS_PLATFORM}" /dbld/build.manifest | sort -r | head -1 | while read os featureflags env cmdline; do
+	egrep -e "^${OS_DISTRIBUTION}([^-]|$)" -e "^${IMAGE_PLATFORM}" /dbld/build.manifest | sort -r | head -1 | while read os featureflags env cmdline; do
 		unset IFS
 		echo $os $featureflags $env $cmdline
 		declare -a env_values

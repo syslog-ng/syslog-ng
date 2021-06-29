@@ -1,8 +1,8 @@
 FROM balabit/syslog-ng-debian-testing:latest
 
-ARG OS_PLATFORM
+ARG ARG_IMAGE_PLATFORM
 ARG COMMIT
-ENV OS_PLATFORM tarball
+ENV IMAGE_PLATFORM ${ARG_IMAGE_PLATFORM}
 LABEL COMMIT=${COMMIT}
 
 RUN /dbld/builddeps install_apt_packages

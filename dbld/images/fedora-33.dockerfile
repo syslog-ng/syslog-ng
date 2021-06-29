@@ -3,9 +3,9 @@ LABEL maintainer="Andras Mitzki <andras.mitzki@balabit.com>, Laszlo Szemere <las
 ENV OS_DISTRIBUTION=fedora
 ENV OS_DISTRIBUTION_CODE_NAME=33
 
-ARG OS_PLATFORM
+ARG ARG_IMAGE_PLATFORM
 ARG COMMIT
-ENV OS_PLATFORM ${OS_PLATFORM}
+ENV IMAGE_PLATFORM ${ARG_IMAGE_PLATFORM}
 LABEL COMMIT=${COMMIT}
 
 COPY images/fake-sudo.sh /usr/bin/sudo
