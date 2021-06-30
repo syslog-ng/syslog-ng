@@ -286,6 +286,10 @@ _kafka_delivery_report_cb(rd_kafka_t *rk,
 {
   KafkaDestDriver *self = (KafkaDestDriver *) opaque;
 
+  /* delivery callback will be called from the the thread where rd_kafka_poll is called,
+   * which could be any worker and not just worker#0 due to the kafka_dd_shutdown in thread_init
+   * and the main thread too. Driver/worker state modification should be done carefully.
+   */
   if (err != RD_KAFKA_RESP_ERR_NO_ERROR)
     {
       msg_debug("kafka: delivery report for message came back with an error, message is lost",
@@ -643,13 +647,26 @@ kafka_dd_init(LogPipe *s)
   return TRUE;
 }
 
+void
+kafka_dd_shutdown(LogThreadedDestDriver *s)
+{
+  KafkaDestDriver *self = (KafkaDestDriver *)s;
+
+  /* this can be called from the worker threads and
+   * during reloda/shutdown from the main thread (deinit)
+   * No need to lock here, as librdkafka API is thread safe, it does the locking for us.
+   */
+
+  _flush_inflight_messages(self);
+  _purge_remaining_messages(self);
+}
+
 static gboolean
 kafka_dd_deinit(LogPipe *s)
 {
   KafkaDestDriver *self = (KafkaDestDriver *)s;
 
-  _flush_inflight_messages(self);
-  _purge_remaining_messages(self);
+  kafka_dd_shutdown(&self->super);
   return log_threaded_dest_driver_deinit_method(s);
 }
 

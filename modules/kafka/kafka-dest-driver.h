@@ -70,6 +70,7 @@ void kafka_dd_merge_config(LogDriver *d, GList *props);
 void kafka_dd_set_bootstrap_servers(LogDriver *d, const gchar *bootstrap_servers);
 void kafka_dd_set_key_ref(LogDriver *d, LogTemplate *key);
 void kafka_dd_set_message_ref(LogDriver *d, LogTemplate *message);
+void kafka_dd_shutdown(LogThreadedDestDriver *s);
 void kafka_dd_set_flush_timeout_on_shutdown(LogDriver *d, gint shutdown_timeout);
 void kafka_dd_set_flush_timeout_on_reload(LogDriver *d, gint reload_timeout);
 void kafka_dd_set_poll_timeout(LogDriver *d, gint poll_timeout);
