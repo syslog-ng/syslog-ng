@@ -426,7 +426,7 @@ _flush_inflight_messages(KafkaDestDriver *self)
 {
   rd_kafka_resp_err_t err;
   gint outq_len = rd_kafka_outq_len(self->kafka);
-  gint timeout = _get_flush_timeout(self);
+  gint timeout_ms = _get_flush_timeout(self);
 
   if (outq_len > 0)
     {
@@ -435,11 +435,11 @@ _flush_inflight_messages(KafkaDestDriver *self)
                  evt_tag_str("topic", self->topic_name->template),
                  evt_tag_str("fallback_topic", self->fallback_topic_name),
                  evt_tag_int("outq_len", outq_len),
-                 evt_tag_int("timeout", timeout),
+                 evt_tag_int("timeout_ms", timeout_ms),
                  evt_tag_str("driver", self->super.super.super.id),
                  log_pipe_location_tag(&self->super.super.super.super));
     }
-  err = rd_kafka_flush(self->kafka, timeout);
+  err = rd_kafka_flush(self->kafka, timeout_ms);
   if (err != RD_KAFKA_RESP_ERR_NO_ERROR)
     {
       msg_error("kafka: error flushing accumulated messages during shutdown, rd_kafka_flush() returned failure, this might indicate that some in-flight messages are lost",
@@ -455,7 +455,7 @@ _flush_inflight_messages(KafkaDestDriver *self)
   if (outq_len != 0)
     msg_notice("kafka: timeout while waiting for the librdkafka queue to empty, the "
                "remaining entries will be purged and lost",
-               evt_tag_int("timeout", timeout),
+               evt_tag_int("timeout_ms", timeout_ms),
                evt_tag_int("outq_len", outq_len));
 }
 
