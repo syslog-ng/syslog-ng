@@ -112,6 +112,18 @@ kafka_dd_set_poll_timeout(LogDriver *d, gint poll_timeout)
   self->poll_timeout = poll_timeout;
 }
 
+void
+kafka_dd_set_transaction_commit(LogDriver *d, gboolean transaction_commit)
+{
+#ifndef SYSLOG_NG_HAVE_RD_KAFKA_INIT_TRANSACTIONS
+  msg_warning_once("syslog-ng version does not support transactional api, because the librdkafka version does not support it");
+#else
+  KafkaDestDriver *self = (KafkaDestDriver *)d;
+
+  self->transaction_commit = transaction_commit;
+#endif
+}
+
 LogTemplateOptions *
 kafka_dd_get_template_options(LogDriver *d)
 {
@@ -273,25 +285,16 @@ _kafka_delivery_report_cb(rd_kafka_t *rk,
                           void *opaque, void *msg_opaque)
 {
   KafkaDestDriver *self = (KafkaDestDriver *) opaque;
-  LogMessage *msg = (LogMessage *) msg_opaque;
-
-  /* we already ACKed back this message to syslog-ng, it was kept in
-   * librdkafka queues so far but successfully delivered, let's unref it */
 
   if (err != RD_KAFKA_RESP_ERR_NO_ERROR)
     {
-      LogThreadedDestWorker *worker = (LogThreadedDestWorker *) self->super.workers[0];
-      LogQueue *queue = worker->queue;
-      LogPathOptions path_options = LOG_PATH_OPTIONS_INIT_NOACK;
-
-      msg_debug("kafka: delivery report for message came back with an error, putting it back to our queue",
+      msg_debug("kafka: delivery report for message came back with an error, message is lost",
                 evt_tag_str("topic", self->topic_name->template),
                 evt_tag_str("fallback_topic", self->fallback_topic_name),
                 evt_tag_printf("message", "%.*s", (int) MIN(len, 128), (char *) payload),
                 evt_tag_str("error", rd_kafka_err2str(err)),
                 evt_tag_str("driver", self->super.super.super.id),
                 log_pipe_location_tag(&self->super.super.super.super));
-      log_queue_push_head(queue, msg, &path_options);
     }
   else
     {
@@ -302,12 +305,10 @@ _kafka_delivery_report_cb(rd_kafka_t *rk,
                 evt_tag_str("error", rd_kafka_err2str(err)),
                 evt_tag_str("driver", self->super.super.super.id),
                 log_pipe_location_tag(&self->super.super.super.super));
-      log_msg_unref(msg);
     }
-  log_threaded_dest_worker_wakeup_when_suspended((LogThreadedDestWorker *) self->super.workers[0]);
 }
 
-static void
+static gboolean
 _conf_set_prop(rd_kafka_conf_t *conf, const gchar *name, const gchar *value)
 {
   gchar errbuf[1024];
@@ -321,7 +322,9 @@ _conf_set_prop(rd_kafka_conf_t *conf, const gchar *name, const gchar *value)
                 evt_tag_str("name", name),
                 evt_tag_str("value", value),
                 evt_tag_str("error", errbuf));
+      return FALSE;
     }
+  return TRUE;
 }
 
 /*
@@ -359,7 +362,8 @@ _apply_config_props(rd_kafka_conf_t *conf, GList *props)
     {
       KafkaProperty *kp = ll->data;
       if (!_is_property_protected(kp->name))
-        _conf_set_prop(conf, kp->name, kp->value);
+        if (!_conf_set_prop(conf, kp->name, kp->value))
+          return FALSE;
     }
   return TRUE;
 }
@@ -372,10 +376,17 @@ _construct_client(KafkaDestDriver *self)
   gchar errbuf[1024];
 
   conf = rd_kafka_conf_new();
-  _conf_set_prop(conf, "metadata.broker.list", self->bootstrap_servers);
-  _conf_set_prop(conf, "topic.partitioner", "murmur2_random");
+  if (!_conf_set_prop(conf, "metadata.broker.list", self->bootstrap_servers))
+    return NULL;
+  if (!_conf_set_prop(conf, "topic.partitioner", "murmur2_random"))
+    return NULL;
 
-  _apply_config_props(conf, self->config);
+  if (self->transaction_commit)
+    _conf_set_prop(conf, "transactional.id",
+                   log_pipe_get_persist_name(&self->super.super.super.super));
+
+  if (!_apply_config_props(conf, self->config))
+    return NULL;
   rd_kafka_conf_set_log_cb(conf, _kafka_log_callback);
   rd_kafka_conf_set_dr_cb(conf, _kafka_delivery_report_cb);
   rd_kafka_conf_set_opaque(conf, self);
@@ -439,7 +450,7 @@ _flush_inflight_messages(KafkaDestDriver *self)
 
   if (outq_len != 0)
     msg_notice("kafka: timeout while waiting for the librdkafka queue to empty, the "
-               "remaining entries will be purged and readded to the syslog-ng queue",
+               "remaining entries will be purged and lost",
                evt_tag_int("timeout", timeout),
                evt_tag_int("outq_len", outq_len));
 }
@@ -449,8 +460,7 @@ _purge_remaining_messages(KafkaDestDriver *self)
 {
   /* we are purging all messages, those ones that are sitting in the queue
    * and also those that were sent and not yet acknowledged.  The purged
-   * messages will generate failed delivery reports, which in turn will put
-   * them back to the head of our queue. */
+   * messages will generate failed delivery reports. */
 
   /* FIXME: Need to check their order!!!! */
 
@@ -531,6 +541,42 @@ _init_topic_name(KafkaDestDriver *self)
     return _init_literal_topic_name(self);
 }
 
+static void
+_destroy_kafka(LogDriver *s)
+{
+  KafkaDestDriver *self = (KafkaDestDriver *)s;
+
+  if (self->topics)
+    g_hash_table_unref(self->topics);
+  if (self->topic)
+    rd_kafka_topic_destroy(self->topic);
+
+  if (self->kafka)
+    rd_kafka_destroy(self->kafka);
+}
+
+gboolean
+kafka_dd_reopen(LogDriver *s)
+{
+  KafkaDestDriver *self = (KafkaDestDriver *)s;
+  _destroy_kafka(s);
+
+  self->kafka = _construct_client(self);
+  if (self->kafka == NULL)
+    {
+      msg_error("kafka: error constructing kafka connection object",
+                evt_tag_str("topic", self->topic_name->template),
+                evt_tag_str("driver", self->super.super.super.id),
+                log_pipe_location_tag(&self->super.super.super.super));
+      return FALSE;
+    }
+  if (!_init_topic_name(self))
+    return FALSE;
+
+  self->transaction_inited = FALSE;
+
+  return TRUE;
+}
 
 gboolean
 kafka_dd_init(LogPipe *s)
@@ -553,21 +599,30 @@ kafka_dd_init(LogPipe *s)
       return FALSE;
     }
 
-  if (!self->kafka)
+  if (!kafka_dd_reopen(&self->super.super.super))
     {
-      self->kafka = _construct_client(self);
-      if (self->kafka == NULL)
-        {
-          msg_error("kafka: error constructing kafka connection object, perhaps metadata.broker.list property is missing?",
-                    evt_tag_str("topic", self->topic_name->template),
-                    evt_tag_str("driver", self->super.super.super.id),
-                    log_pipe_location_tag(&self->super.super.super.super));
-          return FALSE;
-        }
+      return FALSE;
     }
 
-  if (!_init_topic_name(self))
-    return FALSE;
+
+  if (self->transaction_commit)
+    {
+      /*
+       * The transaction api works on the rd_kafka client level,
+       * and packing multiple kafka operation into an atomic one.
+       * But it bundles them by calling the same operations,
+       * there is no way to selectivly bundle calls.
+       * Thus a worker cannot have its own dedicated transaction.
+       *
+       */
+      if (self->super.num_workers > 1)
+        {
+          msg_info("kafka: in case of sync_send(yes) option the number of workers limited to 1", evt_tag_int("configured_workers",
+                   self->super.num_workers), evt_tag_int("workers", 1));
+          log_threaded_dest_driver_set_num_workers(&self->super.super.super, 1);
+        }
+
+    }
 
   if (!log_threaded_dest_driver_init_method(s))
     return FALSE;
@@ -606,16 +661,11 @@ kafka_dd_free(LogPipe *d)
   KafkaDestDriver *self = (KafkaDestDriver *)d;
 
   log_template_options_destroy(&self->template_options);
-  if (self->topics)
-    g_hash_table_unref(self->topics);
-  log_template_unref(self->key);
-  log_template_unref(self->message);
-  if (self->topic)
-    rd_kafka_topic_destroy(self->topic);
+  _destroy_kafka(&self->super.super.super);
   if (self->fallback_topic_name)
     g_free(self->fallback_topic_name);
-  if (self->kafka)
-    rd_kafka_destroy(self->kafka);
+  log_template_unref(self->key);
+  log_template_unref(self->message);
   log_template_unref(self->topic_name);
   g_mutex_free(self->topics_lock);
   g_free(self->bootstrap_servers);

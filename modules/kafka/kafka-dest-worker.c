@@ -102,6 +102,109 @@ kafka_dest_worker_calculate_topic(KafkaDestWorker *self, LogMessage *msg)
   return kafka_dest_worker_get_literal_topic(self);
 }
 
+#ifdef SYSLOG_NG_HAVE_RD_KAFKA_INIT_TRANSACTIONS
+static LogThreadedResult
+_handle_transaction_error(KafkaDestWorker *self, rd_kafka_error_t *error)
+{
+  g_assert(error);
+  KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
+  LogThreadedResult result = LTR_RETRY;
+
+  if (rd_kafka_error_txn_requires_abort(error))
+    {
+      rd_kafka_error_t *abort_error = rd_kafka_abort_transaction(owner->kafka, -1);
+      if (abort_error)
+        {
+          msg_error("kafka: Failed to abort transaction",
+                    evt_tag_str("topic", owner->topic_name->template),
+                    evt_tag_str("error", rd_kafka_err2str(rd_kafka_error_code(abort_error))),
+                    log_pipe_location_tag(&owner->super.super.super.super));
+          rd_kafka_error_destroy(abort_error);
+          goto _exit;
+        }
+    }
+
+  if (rd_kafka_error_is_retriable(error))
+    {
+      result = LTR_RETRY;
+      goto _exit;
+    }
+
+  result = LTR_NOT_CONNECTED;
+
+_exit:
+  rd_kafka_error_destroy(error);
+
+  return result;
+}
+#endif
+
+static LogThreadedResult
+_transaction_init(KafkaDestWorker *self)
+{
+#ifdef SYSLOG_NG_HAVE_RD_KAFKA_INIT_TRANSACTIONS
+  KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
+
+  if (owner->transaction_inited)
+    return LTR_SUCCESS;
+
+  rd_kafka_error_t *error = rd_kafka_init_transactions(owner->kafka, -1);
+  if (error)
+    {
+      msg_error("kafka: init_transactions failed",
+                evt_tag_str("topic", owner->topic_name->template),
+                evt_tag_str("error", rd_kafka_error_string(error)),
+                evt_tag_str("driver", owner->super.super.super.id),
+                log_pipe_location_tag(&owner->super.super.super.super));
+      return _handle_transaction_error(self, error);
+    }
+  owner->transaction_inited = TRUE;
+#endif
+
+  return LTR_SUCCESS;
+}
+
+static LogThreadedResult
+_transaction_commit(KafkaDestWorker *self)
+{
+#ifdef SYSLOG_NG_HAVE_RD_KAFKA_INIT_TRANSACTIONS
+  KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
+
+  rd_kafka_error_t *error = rd_kafka_commit_transaction(owner->kafka, -1);
+  if (error)
+    {
+      msg_error("kafka: Failed to commit transaction",
+                evt_tag_str("topic", owner->topic_name->template),
+                evt_tag_str("error", rd_kafka_err2str(rd_kafka_error_code(error))),
+                log_pipe_location_tag(&owner->super.super.super.super));
+
+      return _handle_transaction_error(self, error);
+    }
+#endif
+
+  return LTR_SUCCESS;
+}
+
+static LogThreadedResult
+_transaction_begin(KafkaDestWorker *self)
+{
+#ifdef SYSLOG_NG_HAVE_RD_KAFKA_INIT_TRANSACTIONS
+  KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
+
+  rd_kafka_error_t *error = rd_kafka_begin_transaction(owner->kafka);
+  if (error)
+    {
+      msg_error("kafka: failed to start new transaction",
+                evt_tag_str("topic", owner->topic_name->template),
+                evt_tag_str("error", rd_kafka_err2str(rd_kafka_error_code(error))),
+                log_pipe_location_tag(&owner->super.super.super.super));
+      return _handle_transaction_error(self, error);
+    }
+#endif
+
+  return LTR_SUCCESS;
+}
+
 static gboolean
 _publish_message(KafkaDestWorker *self, LogMessage *msg)
 {
@@ -114,7 +217,7 @@ _publish_message(KafkaDestWorker *self, LogMessage *msg)
                        RD_KAFKA_MSG_F_FREE | block_flag,
                        self->message->str, self->message->len,
                        self->key->len ? self->key->str : NULL, self->key->len,
-                       log_msg_ref(msg)) == -1)
+                       NULL) == -1)
     {
       msg_error("kafka: failed to publish message",
                 evt_tag_str("topic", rd_kafka_topic_name(topic)),
@@ -122,9 +225,9 @@ _publish_message(KafkaDestWorker *self, LogMessage *msg)
                 evt_tag_str("driver", owner->super.super.super.id),
                 log_pipe_location_tag(&owner->super.super.super.super));
 
-      log_msg_unref(msg);
       return FALSE;
     }
+
 
   msg_debug("kafka: message published",
             evt_tag_str("topic", rd_kafka_topic_name(topic)),
@@ -188,13 +291,39 @@ kafka_dest_worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
 {
   KafkaDestWorker *self = (KafkaDestWorker *)s;
 
-  _drain_responses(self);
-
   _format_message_and_key(self, msg);
   if (!_publish_message(self, msg))
     return LTR_RETRY;
 
   _drain_responses(self);
+  return LTR_SUCCESS;
+}
+
+static LogThreadedResult
+kafka_dest_worker_transactional_insert(LogThreadedDestWorker *s, LogMessage *msg)
+{
+  KafkaDestWorker *self = (KafkaDestWorker *)s;
+
+  LogThreadedResult result;
+
+  _drain_responses(self);
+
+  result = _transaction_init(self);
+  if (result != LTR_SUCCESS)
+    return result;
+
+  result = _transaction_begin(self);
+  if (result != LTR_SUCCESS)
+    return result;
+
+  result = kafka_dest_worker_insert(s, msg);
+  if (result != LTR_SUCCESS)
+    return result;
+
+  result = _transaction_commit(self);
+  if (result != LTR_SUCCESS)
+    return result;
+
   return LTR_SUCCESS;
 }
 
@@ -221,15 +350,54 @@ _thread_init(LogThreadedDestWorker *s)
   return log_threaded_dest_worker_init_method(s);
 }
 
+static gboolean
+kafka_dest_worker_connect(LogThreadedDestWorker *s)
+{
+  KafkaDestWorker *self = (KafkaDestWorker *)s;
+  KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
+
+  static gboolean first_init = FALSE;
+  if (!first_init)
+    {
+      g_assert(owner->kafka);
+      first_init = TRUE;
+      return TRUE;
+    }
+
+  if (!kafka_dd_reopen(&owner->super.super.super))
+    {
+      return FALSE;
+    }
+  return TRUE;
+}
+
+static void
+_set_methods(KafkaDestWorker *self)
+{
+  KafkaDestDriver *owner = (KafkaDestDriver *) self->super.owner;
+
+  self->super.thread_init = _thread_init;
+  self->super.free_fn = kafka_dest_worker_free;
+
+  if (owner->transaction_commit)
+    {
+      self->super.insert = kafka_dest_worker_transactional_insert;
+      self->super.connect = kafka_dest_worker_connect;
+    }
+  else
+    {
+      self->super.insert = kafka_dest_worker_insert;
+    }
+}
+
 LogThreadedDestWorker *
 kafka_dest_worker_new(LogThreadedDestDriver *o, gint worker_index)
 {
   KafkaDestWorker *self = g_new0(KafkaDestWorker, 1);
 
   log_threaded_dest_worker_init_instance(&self->super, o, worker_index);
-  self->super.thread_init = _thread_init;
-  self->super.insert = kafka_dest_worker_insert;
-  self->super.free_fn = kafka_dest_worker_free;
+
+  _set_methods(self);
 
   IV_TIMER_INIT(&self->poll_timer);
   self->poll_timer.cookie = self;
