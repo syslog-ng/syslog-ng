@@ -468,14 +468,6 @@ _purge_remaining_messages(KafkaDestDriver *self)
 
   rd_kafka_purge(self->kafka, RD_KAFKA_PURGE_F_QUEUE | RD_KAFKA_PURGE_F_INFLIGHT);
   rd_kafka_poll(self->kafka, 0);
-
-  gint outq_len = rd_kafka_outq_len(self->kafka);
-  if (outq_len != 0)
-    msg_notice("kafka: failed to completely empty rdkafka queues, as we still have entries in "
-               "the queue after flush() and purge(), this is probably causing a memory leak, "
-               "please contact syslog-ng authors for support",
-               evt_tag_int("outq_len", outq_len));
-
 }
 
 static gboolean
@@ -661,12 +653,25 @@ kafka_dd_shutdown(LogThreadedDestDriver *s)
   _purge_remaining_messages(self);
 }
 
+static void
+_check_for_remaining_messages(KafkaDestDriver *self)
+{
+  gint outq_len = rd_kafka_outq_len(self->kafka);
+  if (outq_len != 0)
+    msg_notice("kafka: failed to completely empty rdkafka queues, as we still have entries in "
+               "the queue after flush() and purge(), this is probably causing a memory leak, "
+               "please contact syslog-ng authors for support",
+               evt_tag_int("outq_len", outq_len));
+}
+
 static gboolean
 kafka_dd_deinit(LogPipe *s)
 {
   KafkaDestDriver *self = (KafkaDestDriver *)s;
 
   kafka_dd_shutdown(&self->super);
+  _check_for_remaining_messages(self);
+
   return log_threaded_dest_driver_deinit_method(s);
 }
 
