@@ -286,6 +286,10 @@ _kafka_delivery_report_cb(rd_kafka_t *rk,
 {
   KafkaDestDriver *self = (KafkaDestDriver *) opaque;
 
+  /* delivery callback will be called from the the thread where rd_kafka_poll is called,
+   * which could be any worker and not just worker#0 due to the kafka_dd_shutdown in thread_init
+   * and the main thread too. Driver/worker state modification should be done carefully.
+   */
   if (err != RD_KAFKA_RESP_ERR_NO_ERROR)
     {
       msg_debug("kafka: delivery report for message came back with an error, message is lost",
@@ -422,7 +426,7 @@ _flush_inflight_messages(KafkaDestDriver *self)
 {
   rd_kafka_resp_err_t err;
   gint outq_len = rd_kafka_outq_len(self->kafka);
-  gint timeout = _get_flush_timeout(self);
+  gint timeout_ms = _get_flush_timeout(self);
 
   if (outq_len > 0)
     {
@@ -431,11 +435,11 @@ _flush_inflight_messages(KafkaDestDriver *self)
                  evt_tag_str("topic", self->topic_name->template),
                  evt_tag_str("fallback_topic", self->fallback_topic_name),
                  evt_tag_int("outq_len", outq_len),
-                 evt_tag_int("timeout", timeout),
+                 evt_tag_int("timeout_ms", timeout_ms),
                  evt_tag_str("driver", self->super.super.super.id),
                  log_pipe_location_tag(&self->super.super.super.super));
     }
-  err = rd_kafka_flush(self->kafka, timeout);
+  err = rd_kafka_flush(self->kafka, timeout_ms);
   if (err != RD_KAFKA_RESP_ERR_NO_ERROR)
     {
       msg_error("kafka: error flushing accumulated messages during shutdown, rd_kafka_flush() returned failure, this might indicate that some in-flight messages are lost",
@@ -451,7 +455,7 @@ _flush_inflight_messages(KafkaDestDriver *self)
   if (outq_len != 0)
     msg_notice("kafka: timeout while waiting for the librdkafka queue to empty, the "
                "remaining entries will be purged and lost",
-               evt_tag_int("timeout", timeout),
+               evt_tag_int("timeout_ms", timeout_ms),
                evt_tag_int("outq_len", outq_len));
 }
 
@@ -462,18 +466,8 @@ _purge_remaining_messages(KafkaDestDriver *self)
    * and also those that were sent and not yet acknowledged.  The purged
    * messages will generate failed delivery reports. */
 
-  /* FIXME: Need to check their order!!!! */
-
   rd_kafka_purge(self->kafka, RD_KAFKA_PURGE_F_QUEUE | RD_KAFKA_PURGE_F_INFLIGHT);
   rd_kafka_poll(self->kafka, 0);
-
-  gint outq_len = rd_kafka_outq_len(self->kafka);
-  if (outq_len != 0)
-    msg_notice("kafka: failed to completely empty rdkafka queues, as we still have entries in "
-               "the queue after flush() and purge(), this is probably causing a memory leak, "
-               "please contact syslog-ng authors for support",
-               evt_tag_int("outq_len", outq_len));
-
 }
 
 static gboolean
@@ -645,13 +639,39 @@ kafka_dd_init(LogPipe *s)
   return TRUE;
 }
 
+void
+kafka_dd_shutdown(LogThreadedDestDriver *s)
+{
+  KafkaDestDriver *self = (KafkaDestDriver *)s;
+
+  /* this can be called from the worker threads and
+   * during reloda/shutdown from the main thread (deinit)
+   * No need to lock here, as librdkafka API is thread safe, it does the locking for us.
+   */
+
+  _flush_inflight_messages(self);
+  _purge_remaining_messages(self);
+}
+
+static void
+_check_for_remaining_messages(KafkaDestDriver *self)
+{
+  gint outq_len = rd_kafka_outq_len(self->kafka);
+  if (outq_len != 0)
+    msg_notice("kafka: failed to completely empty rdkafka queues, as we still have entries in "
+               "the queue after flush() and purge(), this is probably causing a memory leak, "
+               "please contact syslog-ng authors for support",
+               evt_tag_int("outq_len", outq_len));
+}
+
 static gboolean
 kafka_dd_deinit(LogPipe *s)
 {
   KafkaDestDriver *self = (KafkaDestDriver *)s;
 
-  _flush_inflight_messages(self);
-  _purge_remaining_messages(self);
+  kafka_dd_shutdown(&self->super);
+  _check_for_remaining_messages(self);
+
   return log_threaded_dest_driver_deinit_method(s);
 }
 
