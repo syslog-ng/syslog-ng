@@ -1,6 +1,9 @@
 FROM balabit/syslog-ng-tarball:latest
 ENV OS_PLATFORM devshell
 
+ARG COMMIT
+LABEL COMMIT=${COMMIT}
+
 
 RUN /dbld/builddeps enable_dbgsyms
 RUN /dbld/builddeps install_perf
