@@ -6,6 +6,7 @@ SCL_SUBDIRS	= \
 	collectd \
 	checkpoint	\
 	default-network-drivers	\
+	discord \
 	elasticsearch	\
 	ewmm		\
 	fortigate	\

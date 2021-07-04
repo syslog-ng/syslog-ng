@@ -6,6 +6,7 @@ set(SCL_DIRS
     cisco
     collectd
     default-network-drivers
+    discord
     elasticsearch
     ewmm
     fortigate
