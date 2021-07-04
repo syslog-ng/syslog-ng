@@ -202,6 +202,10 @@ Test(basicfuncs, test_str_funcs)
   assert_template_format("$(substr $HOST -1)", "p");
   assert_template_format("$(substr $HOST -2 1)", "r");
 
+  assert_template_format("$(substr 'ssstring-shorter-than-the-specified-length' 2 1400)",
+                         "string-shorter-than-the-specified-length");
+
+
   assert_template_format("$(strip ${APP.STRIP1})", "value");
   assert_template_format("$(strip ${APP.STRIP2})", "value");
   assert_template_format("$(strip ${APP.STRIP3})", "value");
