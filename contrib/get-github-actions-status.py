@@ -29,7 +29,8 @@ def main():
     workflow = sys.argv[1]
     while True:
         runs = get_workflow_runs(workflow)
-        latest_run = max(runs, key=lambda run: run["updated_at"])
+        not_pr_runs = filter(lambda run: run["event"] != "pull_request", runs)
+        latest_run = max(not_pr_runs, key=lambda run: run["updated_at"])
 
         if latest_run["status"] != "completed":
             print("Job is still running. Trying again in 10 minutes.")
