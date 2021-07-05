@@ -1,5 +1,5 @@
 Name: syslog-ng
-Version: 3.32.1
+Version: 3.33.1
 Release: 2%{?dist}
 Summary: Next-generation syslog server
 
@@ -612,6 +612,9 @@ fi
 
 
 %changelog
+* Mon Jul  5 2021 github-actions <github-actions@github.com> - 3.33.1-1
+- updated to 3.33.1
+
 * Fri May  7 2021 github-actions <github-actions@github.com> - 3.32.1-1
 - updated to 3.32.1
 
