@@ -1,6 +1,8 @@
 set(SYSLOG_NG_DISK_BUFFER_SOURCES
     diskq-options.h
     diskq-options.c
+    diskq-config.h
+    diskq-config.c
     logqueue-disk.c
     logqueue-disk.h
     logqueue-disk-non-reliable.c

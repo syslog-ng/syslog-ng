@@ -22,6 +22,7 @@
  */
 
 #include "diskq.h"
+#include "diskq-config.h"
 
 #include "driver.h"
 #include "messages.h"
@@ -157,7 +158,7 @@ _attach(LogDriverPlugin *s, LogDriver *d)
   if (self->options.qout_size < 0)
     self->options.qout_size = 64;
   if (self->options.truncate_size_ratio < 0)
-    self->options.truncate_size_ratio = 0.01;
+    self->options.truncate_size_ratio = disk_queue_config_get_truncate_size_ratio(cfg);
 
   dd->acquire_queue = _acquire_queue;
   dd->release_queue = _release_queue;

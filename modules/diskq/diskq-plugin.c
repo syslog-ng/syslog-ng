@@ -34,6 +34,11 @@ static Plugin diskq_plugins[] =
     .name = "disk_buffer",
     .parser = &diskq_parser,
   },
+  {
+    .type = LL_CONTEXT_OPTIONS,
+    .name = "disk_buffer",
+    .parser = &diskq_parser,
+  },
 };
 
 #ifndef STATIC

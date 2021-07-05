@@ -5,6 +5,8 @@ module_LTLIBRARIES += modules/diskq/libdisk-buffer.la
 modules_diskq_libsyslog_ng_disk_buffer_la_SOURCES = \
   modules/diskq/diskq-options.h \
   modules/diskq/diskq-options.c \
+  modules/diskq/diskq-config.h \
+  modules/diskq/diskq-config.c \
   modules/diskq/logqueue-disk.c \
   modules/diskq/logqueue-disk.h \
   modules/diskq/logqueue-disk-non-reliable.c \
