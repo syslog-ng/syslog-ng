@@ -1,101 +1,135 @@
-3.32.1
+3.33.1
 ======
 
 ## Highlights
 
- * `mongodb()`: add `workers()` support (multi-threaded connection pooling)
-   
-   The MongoDB driver now supports the `workers()` option, which specifies the
-   number of parallel workers to be used.
-   Workers are based on the connection pooling feature of the MongoDB C library.
-   
-   This increases the throughput of the MongoDB destination driver.
-   
-   Example:
-   
+ * MQTT destination
+
+   The new `mqtt()` destination can be used to publish messages using the MQTT protocol.
+   Currently MQTT 3.1.1 and 3.1 are supported.
+
+   Supported transports: `tcp`, `ws`.
+
+   Example config:
    ```
    destination {
-     mongodb(
-       uri("mongodb://hostA,hostB/syslog?replicaSet=my_rs&wtimeoutMS=10000&socketTimeoutMS=10000&connectTimeoutMS=10000&serverSelectionTimeoutMS=5000")
-       collection("messages")
-       workers(8)
-     );
+     mqtt{
+       address("tcp://localhost:1883"),
+       topic("syslog/$HOST"),
+       fallback-topic("syslog/fallback"))
+     };
    };
    ```
-   ([#3621](https://github.com/syslog-ng/syslog-ng/pull/3621))
- * `mongodb()`: template support for the `collection()` option
-   
-   The `collection()` option of the MongoDB destination driver now accepts
-   templates, for example:
-   
+
+   Note: MQTT 5.0 and TLS (`ssl://`, `wss://`) are currently not supported.
+   ([#3703](https://github.com/syslog-ng/syslog-ng/pull/3703))
+
+ * `discord()` destination
+
+   syslog-ng now has a webhook-based Discord destination.
+   Example usage:
    ```
    destination {
-     mongodb(
-       uri("mongodb://host/syslog")
-       collection("${HOST}_messages")
-     );
+     discord(url("https://discord.com/api/webhooks/x/y"));
    };
    ```
-   ([#3621](https://github.com/syslog-ng/syslog-ng/pull/3621))
+
+   The following options can be used to customize the destination further:
+
+   `avatar-url()`, `username("$HOST-bot")`, `tts(true)`, `template("${MSG:-[empty message]}")`.
+   ([#3717](https://github.com/syslog-ng/syslog-ng/pull/3717))
 
 ## Features
 
- * `time-reopen`: Support the `time-reopen()` option on the driver level for the following drivers:
-    * sources: `example-diskq-source`, `python-fetcher`
-    * destinations: `amqp`, `example-destination`, `file`, `http`, `mongodb`, `network`, `pipe`,
-                    `program`, `pseudofile`, `python`, `redis`, `riemann`, `smtp`, `sql`, `stomp`,
-                    `syslog`, `tcp`, `tcp6`, `udp`, `udp6`, `unix-dgram`, `unix-stream`, `usertty`
-   ([#3585](https://github.com/syslog-ng/syslog-ng/pull/3585))
- * `csv-parser()`: add drop-invalid() option along with the already existing
-   flag with the same name. This is to improve the consistency of the
-   configuration language.
-   ([#3547](https://github.com/syslog-ng/syslog-ng/pull/3547))
- * `usertty() destination`: Support changing the terminal disable timeout with the `time-reopen()` option.
-   Default timeout change to 60 from 600. If you wish to use the old 600 timeout, add `time-reopen(600)`
-   to your config in the `usertty()` driver.
-   ([#3585](https://github.com/syslog-ng/syslog-ng/pull/3585))
- * `syslog-parser()`: add a new drop-invalid() option that allows the use of
-   syslog-parser() in if statements. Normally a syslog-parser() injects an
-   error message instead of failing.
-   ([#3565](https://github.com/syslog-ng/syslog-ng/pull/3565))
+ * kafka-c: batching support in case of sync-send(yes)
+
+   ```
+   kafka-c(
+    bootstrap-server("localhost:9092")
+    topic("syslog-ng")
+    sync-send(yes)
+    batch-lines(10)
+    batch-timeout(10000)
+   );
+   ```
+
+   Note1: batch-lines are accepted in case of sync-send(no), but no batching is done.
+   Note2: messages are still sent one at a time to kafka, the batch yields multiple message per transaction.
+   ([#3699](https://github.com/syslog-ng/syslog-ng/pull/3699))
+
+ * kafka-c: sync-send(yes) enables synchronous message delivery, reducing the possibility of message loss.
+
+   ```
+   kafka-c(
+     bootstrap-server("localhost:9092")
+     topic("syslog-ng")
+     sync-send(yes)
+   );
+   ```
+
+   Warning: this option also reduces significantly the performance of kafka-c driver.
+   ([#3681](https://github.com/syslog-ng/syslog-ng/pull/3681))
+
+ * `disk-buffer`: Now we optimize the file truncating frequency of disk-buffer.
+
+   The new behavior saves IO time, but loses some disk space, which is configurable with a new option.
+   The new option in the config is settable at 2 places:
+   * `truncate-size-ratio()` in the `disk-buffer()` block, which affects the given disk-buffer.
+   * `disk-buffer(truncate-size-ratio())` in the global `options` block, which affects every disk-buffer
+     which did not set `truncate-size-ratio()` itself.
+   The default value is 0.01, which operates well with most disk-buffers.
+
+   If the possible size reduction of the truncation does not reach `truncate-size-ratio()` x `disk-buf-size()`,
+   we do not truncate the disk-buffer.
+
+   To completely turn off truncating (maximal disk space loss, maximal IO time saved) set `truncate-size-ratio(1)`,
+   or to mimic the old behavior (minimal disk space loss, minimal IO time saved) set `truncate-size-ratio(0)`.
+   ([#3689](https://github.com/syslog-ng/syslog-ng/pull/3689))
+
 
 ## Bugfixes
 
- * date-parser: if the timestamp pattern did not covered a field (for example seconds) that field had undefined value
-   
-   The missing fields are initialized according to the following rules:
-    1) missing all fields -> use current date
-    2) only miss year -> guess year based on current year and month (current year, last year or next year)
-    3) the rest of the cases don't make much sense, so zero initialization of the missing field makes sense. And the year is initialized to the current one.
-   ([#3615](https://github.com/syslog-ng/syslog-ng/pull/3615))
- * Fix compilation issues on OpenBSD
-   
-   syslog-ng can now be compiled on OpenBSD.
-   ([#3661](https://github.com/syslog-ng/syslog-ng/pull/3661))
- * loggen: debug message printed wrong plugin name (ssl-plugin instead of socket_plugin)
-   ([#3624](https://github.com/syslog-ng/syslog-ng/pull/3624))
- * tls: fixup EOF detection issue in tls (before 3.0 version)
-   
-   syslog-ng error message:
-   "I/O error occurred while reading; fd='13', error='Success (0)'"
-   ([#3618](https://github.com/syslog-ng/syslog-ng/pull/3618))
- * kafka: the config() block couldn't contain option that is already a keyword in syslog-ng (example: retries)
-   ([#3658](https://github.com/syslog-ng/syslog-ng/pull/3658))
- * templates: fixed error reporting when invalid templates were specified
-   
-   The `amqp()`, `file()` destination, `sql()`, `stomp()`, `pdbtool`, and
-   `graphite()` plugins had template options that did not report errors at startup
-   when invalid values were specified.
-   ([#3660](https://github.com/syslog-ng/syslog-ng/pull/3660))
+ * `syslog-format`: fixing the check-hostname(yes|no) option
+
+   The check-hostname(yes|no) option detected every value as invalid, causing a parse error when enabled.
+   ([#3690](https://github.com/syslog-ng/syslog-ng/pull/3690))
+ * `disk-buffer()`: fix crash when switching between disk-based and memory queues
+
+   When a disk-buffer was removed from the configuration and the new config was
+   applied by reloading syslog-ng, a crash occurred.
+   ([#3700](https://github.com/syslog-ng/syslog-ng/pull/3700))
+ * `logpath`: Fixed a message write protection bug, where message modifications (rewrite rules, parsers, etc.)
+   leaked through preceding path elements. This may have resulted not only in unwanted/undefined message modification,
+   but in certain cases crash as well.
+   ([#3708](https://github.com/syslog-ng/syslog-ng/pull/3708))
+ * `mongodb()`: fix crash with older mongo-c-driver versions
+
+   syslog-ng crashed (was aborted) when the `mongodb()` destination was used with
+   older mongo-c-driver versions (< v1.11.0).
+   ([#3677](https://github.com/syslog-ng/syslog-ng/pull/3677))
+ * `java()`: fix debug logging of Java-based destinations
+
+   Java debug logging was not enabled previously when syslog-ng was started in debug/trace mode. This has been fixed.
+   ([#3679](https://github.com/syslog-ng/syslog-ng/pull/3679))
+ * kafka-c: fixed a hang during shutdown/reload, when multiple workers is used (workers() option is set to 2 or higher) and the librdkafka internal queue is filled.
+   (error message was `kafka: failed to publish message; topic='test-topic', error='Local: Queue full'`)
+   ([#3711](https://github.com/syslog-ng/syslog-ng/pull/3711))
 
 ## Packaging
 
- * bison: minimum version of bison is bumped to 3.7.6
-   ([#3547](https://github.com/syslog-ng/syslog-ng/pull/3547))
- * java-modules: the minimum version of gradle changed from 2.2 to 3.4
-   ([#3645](https://github.com/syslog-ng/syslog-ng/pull/3645))
- * light: add to the release tarball
-   ([#3613](https://github.com/syslog-ng/syslog-ng/pull/3613))
+ * kafka: minimum version of librdkafka is changed from 1.0.0 to 1.1.0
+   ([#3706](https://github.com/syslog-ng/syslog-ng/pull/3706))
+ * configure: now supporting python with two digit minor version
+   ([#3713](https://github.com/syslog-ng/syslog-ng/pull/3713))
+
+## Other changes
+
+ * kafka: removed some deprecated options: client-lib-dir(), option(), template(), kafka-bootstrap-servers()
+   ([#3698](https://github.com/syslog-ng/syslog-ng/pull/3698))
+ * kafka: properties-file() option is deprecated. Please list the librdkafka properties in the config() option in syslog-ng's configuration.
+   ([#3698](https://github.com/syslog-ng/syslog-ng/pull/3698))
+ * `smtp()`: libesmtp is now detected via pkg-config
+   ([#3669](https://github.com/syslog-ng/syslog-ng/pull/3669))
 
 ## Credits
 
@@ -108,7 +142,7 @@ of syslog-ng, contribute.
 
 We would like to thank the following people for their contribution:
 
-Andras Mitzki, Attila Szakacs, Balazs Scheidler,
-Gabor Nagy, Janos SZIGETVARI, Laszlo Budai, Laszlo Szemere,
-LittleFish33, László Várady, Ming Liu, Norbert Takacs, Peter Kokai,
-Todd C. Miller, Yi Fan Yu, Zoltan Pallagi
+Andras Mitzki, Antal Nemes, Attila Szakacs, Balazs Scheidler,
+Balázs Barkó, Benedek Cserhati, Gabor Nagy, L4rS6, Laszlo Budai, Laszlo Szemere,
+LittleFish33, László Várady, Norbert Takacs, Peter Czanik, Peter Kokai,
+Todd C. Miller, Tomáš Mózes, Zoltan Pallagi

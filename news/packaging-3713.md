@@ -1,1 +1,0 @@
-configure: now supporting python with two digit minor version
