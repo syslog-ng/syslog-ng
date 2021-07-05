@@ -62,6 +62,13 @@ log_multiplexer_deinit(LogPipe *self)
   return TRUE;
 }
 
+static gboolean
+_has_multiple_arcs(LogMultiplexer *self)
+{
+  gint num_arcs = self->next_hops->len + (self->super.pipe_next ? 1 : 0);
+  return num_arcs > 1;
+}
+
 static void
 log_multiplexer_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_options)
 {
@@ -73,7 +80,8 @@ log_multiplexer_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
   gint fallback;
 
   local_options.matched = &matched;
-  if (self->next_hops->len > 1)
+
+  if (_has_multiple_arcs(self))
     {
       log_msg_write_protect(msg);
     }
@@ -103,10 +111,6 @@ log_multiplexer_queue(LogPipe *s, LogMessage *msg, const LogPathOptions *path_op
                 break;
             }
         }
-    }
-  if (self->next_hops->len > 1)
-    {
-      log_msg_write_unprotect(msg);
     }
 
   /* NOTE: non of our multiplexed destinations delivered this message, let's

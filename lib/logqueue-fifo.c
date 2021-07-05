@@ -695,3 +695,9 @@ log_queue_fifo_legacy_new(gint log_fifo_size, const gchar *persist_name)
   self->use_legacy_fifo_size = TRUE;
   return &self->super;
 }
+
+QueueType
+log_queue_fifo_get_type(void)
+{
+  return log_queue_fifo_type;
+}

@@ -242,7 +242,7 @@ log_src_driver_free(LogPipe *s)
 /* LogDestDriver */
 
 static LogQueue *
-_create_log_queue(LogDestDriver *self, const gchar *persist_name)
+_create_memory_queue(LogDestDriver *self, const gchar *persist_name)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super);
 
@@ -264,7 +264,7 @@ _create_log_queue(LogDestDriver *self, const gchar *persist_name)
 
 /* returns a reference */
 static LogQueue *
-log_dest_driver_acquire_queue_method(LogDestDriver *self, const gchar *persist_name)
+log_dest_driver_acquire_memory_queue(LogDestDriver *self, const gchar *persist_name)
 {
   GlobalConfig *cfg = log_pipe_get_config(&self->super.super);
   LogQueue *queue = NULL;
@@ -272,9 +272,15 @@ log_dest_driver_acquire_queue_method(LogDestDriver *self, const gchar *persist_n
   if (persist_name)
     queue = cfg_persist_config_fetch(cfg, persist_name);
 
+  if (queue && !log_queue_has_type(queue, log_queue_fifo_get_type()))
+    {
+      log_queue_unref(queue);
+      queue = NULL;
+    }
+
   if (!queue)
     {
-      queue = _create_log_queue(self, persist_name);
+      queue = _create_memory_queue(self, persist_name);
       log_queue_set_throttle(queue, self->throttle);
     }
   return queue;
@@ -382,7 +388,7 @@ log_dest_driver_init_instance(LogDestDriver *self, GlobalConfig *cfg)
   self->super.super.init = log_dest_driver_init_method;
   self->super.super.deinit = log_dest_driver_deinit_method;
   self->super.super.queue = log_dest_driver_queue_method;
-  self->acquire_queue = log_dest_driver_acquire_queue_method;
+  self->acquire_queue = log_dest_driver_acquire_memory_queue;
   self->release_queue = log_dest_driver_release_queue_method;
   self->log_fifo_size = -1;
   self->throttle = 0;

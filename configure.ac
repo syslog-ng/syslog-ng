@@ -1393,6 +1393,18 @@ if test "$enable_kafka" = "yes" && test "$with_librdkafka" = "no"; then
        AC_MSG_ERROR([Could not find librdkafka, and Kafka support was explicitly enabled.])
 fi
 
+dnl
+dnl Check if librdkafka has transactional api
+dnl
+
+old_LIBS=$LIBS
+old_CFLAGS=$CFLAGS
+LIBS=$LIBRDKAFKA_LIBS
+CFLAGS=$LIBRDKAFKA_CFLAGS
+AC_CHECK_FUNCS(rd_kafka_init_transactions)
+LIBS=$old_LIBS
+CFLAGS=$old_CFLAGS
+
 
 if test "x$enable_native" = "xyes" -o "x$enable_native" = "xauto"; then
     AC_CONFIG_FILES([syslog-ng-native-connector.pc])
@@ -1453,6 +1465,9 @@ if test "x$enable_python" != "xno"; then
           with_python="python${with_python}"
           ;;
       [[0-9]].[[0-9]])
+          with_python="python-${with_python}"
+          ;;
+      [[0-9]].[[0-9][0-9]])
           with_python="python-${with_python}"
           ;;
     esac

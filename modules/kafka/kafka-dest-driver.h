@@ -39,6 +39,7 @@ typedef struct
   GHashTable *topics;
   GMutex *topics_lock;
 
+  gboolean transaction_commit;
   GList *config;
   gchar *bootstrap_servers;
   gchar *fallback_topic_name;
@@ -47,6 +48,7 @@ typedef struct
   gint flush_timeout_on_shutdown;
   gint flush_timeout_on_reload;
   gint poll_timeout;
+  gboolean transaction_inited;
 } KafkaDestDriver;
 
 #define TOPIC_NAME_ERROR topic_name_error_quark()
@@ -62,14 +64,17 @@ enum KafkaTopicError
 };
 
 void kafka_dd_set_topic(LogDriver *d, LogTemplate *topic);
+gboolean kafka_dd_reopen(LogDriver *d);
 void kafka_dd_set_fallback_topic(LogDriver *d, const gchar *fallback_topic);
 void kafka_dd_merge_config(LogDriver *d, GList *props);
 void kafka_dd_set_bootstrap_servers(LogDriver *d, const gchar *bootstrap_servers);
 void kafka_dd_set_key_ref(LogDriver *d, LogTemplate *key);
 void kafka_dd_set_message_ref(LogDriver *d, LogTemplate *message);
+void kafka_dd_shutdown(LogThreadedDestDriver *s);
 void kafka_dd_set_flush_timeout_on_shutdown(LogDriver *d, gint shutdown_timeout);
 void kafka_dd_set_flush_timeout_on_reload(LogDriver *d, gint reload_timeout);
 void kafka_dd_set_poll_timeout(LogDriver *d, gint poll_timeout);
+void kafka_dd_set_transaction_commit(LogDriver *d, gboolean transaction_commit);
 
 gboolean kafka_dd_validate_topic_name(const gchar *name, GError **error);
 gboolean kafka_dd_is_topic_name_a_template(KafkaDestDriver *self);
