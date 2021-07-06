@@ -127,6 +127,7 @@
 #define VERSION_3_30 "syslog-ng 3.30"
 #define VERSION_3_31 "syslog-ng 3.31"
 #define VERSION_3_32 "syslog-ng 3.32"
+#define VERSION_3_33 "syslog-ng 3.33"
 
 /* VERSION_VALUE_* references versions as integers to be compared against stuff like cfg->user_version */
 /* VERSION_STR_* references versions as strings to be shown to the user */
@@ -164,6 +165,7 @@
 #define VERSION_VALUE_3_30 0x031e
 #define VERSION_VALUE_3_31 0x031f
 #define VERSION_VALUE_3_32 0x0320
+#define VERSION_VALUE_3_33 0x0321
 
 /* config version code, in the same format as GlobalConfig->version */
 #define VERSION_VALUE_CURRENT   VERSION_VALUE_3_32
@@ -174,8 +176,8 @@
  * meaning of any setting in the configuration file.  Basically, it is the
  * highest value passed to any cfg_is_config_version_older() call.
  */
-#define VERSION_VALUE_LAST_SEMANTIC_CHANGE  VERSION_VALUE_3_29
-#define VERSION_STR_LAST_SEMANTIC_CHANGE    "3.29"
+#define VERSION_VALUE_LAST_SEMANTIC_CHANGE  VERSION_VALUE_3_33
+#define VERSION_STR_LAST_SEMANTIC_CHANGE    "3.33"
 
 #define version_convert_from_user(v)  (v)
 
