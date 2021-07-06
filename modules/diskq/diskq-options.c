@@ -79,6 +79,12 @@ disk_queue_options_mem_buf_length_set(DiskQueueOptions *self, gint mem_buf_lengt
 }
 
 void
+disk_queue_options_set_truncate_size_ratio(DiskQueueOptions *self, gdouble truncate_size_ratio)
+{
+  self->truncate_size_ratio = truncate_size_ratio;
+}
+
+void
 disk_queue_options_check_plugin_settings(DiskQueueOptions *self)
 {
   if (self->reliable)
@@ -128,6 +134,7 @@ disk_queue_options_set_default_options(DiskQueueOptions *self)
   self->mem_buf_size = -1;
   self->qout_size = -1;
   self->dir = g_strdup(get_installation_path_for(SYSLOG_NG_PATH_LOCALSTATEDIR));
+  self->truncate_size_ratio = -1;
 }
 
 void

@@ -47,8 +47,6 @@
 
 #define PATH_QDISK              PATH_LOCALSTATEDIR
 
-#define TRUNCATE_SIZE_RATIO 0.01
-
 typedef union _QDiskFileHeader
 {
   struct
@@ -213,7 +211,7 @@ static gboolean
 _possible_size_reduction_reaches_truncate_threshold(QDisk *self, gint64 expected_size)
 {
   gint64 possible_size_reduction = self->file_size - expected_size;
-  gint64 truncate_threshold = (gint64)(qdisk_get_maximum_size(self) * TRUNCATE_SIZE_RATIO);
+  gint64 truncate_threshold = (gint64)(qdisk_get_maximum_size(self) * self->options->truncate_size_ratio);
   return possible_size_reduction >= truncate_threshold;
 }
 

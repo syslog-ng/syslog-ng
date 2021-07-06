@@ -156,6 +156,8 @@ _attach(LogDriverPlugin *s, LogDriver *d)
     self->options.mem_buf_length = cfg->log_fifo_size;
   if (self->options.qout_size < 0)
     self->options.qout_size = 64;
+  if (self->options.truncate_size_ratio < 0)
+    self->options.truncate_size_ratio = 0.01;
 
   dd->acquire_queue = _acquire_queue;
   dd->release_queue = _release_queue;
