@@ -201,9 +201,9 @@ qdisk_is_space_avail(QDisk *self, gint at_least)
 }
 
 static void
-_truncate_file(QDisk *self, off_t expected_size)
+_truncate_file(QDisk *self, gint64 expected_size)
 {
-  if (ftruncate(self->fd, expected_size) == 0)
+  if (ftruncate(self->fd, (off_t) expected_size) == 0)
     {
       self->file_size = expected_size;
       return;
@@ -216,7 +216,7 @@ _truncate_file(QDisk *self, off_t expected_size)
     }
   else
     {
-      self->file_size = st.st_size;
+      self->file_size = (gint64) st.st_size;
     }
 
   msg_error("Error truncating disk-queue file",
