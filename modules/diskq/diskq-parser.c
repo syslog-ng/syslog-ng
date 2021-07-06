@@ -38,6 +38,7 @@ static CfgLexerKeyword diskq_keywords[] =
   { "mem_buf_size",      KW_MEM_BUF_SIZE },
   { "qout_size",         KW_QOUT_SIZE },
   { "dir",               KW_DIR },
+  { "truncate_size_ratio", KW_TRUNCATE_SIZE_RATIO },
   { NULL }
 };
 

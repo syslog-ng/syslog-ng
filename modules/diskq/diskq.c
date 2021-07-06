@@ -22,6 +22,7 @@
  */
 
 #include "diskq.h"
+#include "diskq-config.h"
 
 #include "driver.h"
 #include "messages.h"
@@ -130,6 +131,22 @@ _release_queue(LogDestDriver *dd, LogQueue *queue)
     }
 }
 
+static void
+_set_default_truncate_size_ratio(DiskQDestPlugin *self, GlobalConfig *cfg)
+{
+  if (cfg_is_config_version_older(cfg, VERSION_VALUE_3_33))
+    {
+      msg_warning_once("WARNING: the truncation of the disk-buffer files is changed starting with "
+                       VERSION_3_33 ". You are using an older config version and your config does not "
+                       "set the truncate-size-ratio() option. We will not use the new truncating logic "
+                       "with this config for compatibility.");
+      self->options.truncate_size_ratio = 0;
+      return;
+    }
+
+  self->options.truncate_size_ratio = disk_queue_config_get_truncate_size_ratio(cfg);
+}
+
 static gboolean
 _attach(LogDriverPlugin *s, LogDriver *d)
 {
@@ -156,6 +173,8 @@ _attach(LogDriverPlugin *s, LogDriver *d)
     self->options.mem_buf_length = cfg->log_fifo_size;
   if (self->options.qout_size < 0)
     self->options.qout_size = 64;
+  if (self->options.truncate_size_ratio < 0)
+    _set_default_truncate_size_ratio(self, cfg);
 
   dd->acquire_queue = _acquire_queue;
   dd->release_queue = _release_queue;

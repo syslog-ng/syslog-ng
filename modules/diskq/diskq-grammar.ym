@@ -22,6 +22,8 @@
  *
  */
 
+%type <fnum> float_between_0_and_1
+
 %code top {
 #pragma GCC diagnostic ignored "-Wswitch-default"
 
@@ -37,6 +39,7 @@
 #include "messages.h"
 #include "diskq.h"
 #include "diskq-options.h"
+#include "diskq-config.h"
 
 #include <string.h>
 
@@ -65,12 +68,14 @@ DiskQueueOptions *last_options;
 %token KW_MEM_BUF_SIZE
 %token KW_QOUT_SIZE
 %token KW_DIR
+%token KW_TRUNCATE_SIZE_RATIO
 
 
 %%
 
 start
 	: LL_CONTEXT_INNER_DEST dest_diskq { YYACCEPT; }
+	| LL_CONTEXT_OPTIONS KW_DISK_BUFFER '(' diskq_global_options ')' { YYACCEPT; }
 	;
 
 dest_diskq
@@ -96,6 +101,20 @@ dest_diskq_option
         | KW_DISK_BUF_SIZE '(' nonnegative_integer64 ')' { disk_queue_options_disk_buf_size_set(last_options, $3); }
         | KW_QOUT_SIZE '(' nonnegative_integer ')'       { disk_queue_options_qout_size_set(last_options, $3); }
         | KW_DIR '(' string ')'                          { disk_queue_options_set_dir(last_options, $3); free($3); }
+        | KW_TRUNCATE_SIZE_RATIO '(' float_between_0_and_1 ')' { disk_queue_options_set_truncate_size_ratio(last_options, $3); }
+        ;
+
+diskq_global_options
+        : diskq_global_option diskq_global_options
+        |
+        ;
+
+diskq_global_option
+        : KW_TRUNCATE_SIZE_RATIO '(' float_between_0_and_1 ')' { disk_queue_config_set_truncate_size_ratio(configuration, $3); }
+        ;
+
+float_between_0_and_1
+        : nonnegative_float { CHECK_ERROR(($1 <= 1), @1, "It cannot be bigger, than 1"); }
         ;
 
 /* INCLUDE_RULES */

@@ -27,6 +27,7 @@
 #include "diskq.h"
 #include "qdisk.c"
 #include "apphook.h"
+#include "diskq-config.h"
 
 #include "queue_utils_lib.h"
 #include "test_diskq_tools.h"
@@ -192,14 +193,20 @@ Test(diskq_truncate, test_diskq_truncate_without_diskbuffer_used)
 }
 
 static LogQueue *
-_create_reliable_diskqueue(gchar *filename, DiskQueueOptions *options)
+_create_reliable_diskqueue(gchar *filename, DiskQueueOptions *options, gboolean use_backlog,
+                           gdouble truncate_size_ratio)
 {
   LogQueue *q;
   unlink(filename);
 
   _construct_options(options, 1100000, 0, TRUE);
+
+  if (truncate_size_ratio < 0)
+    truncate_size_ratio = disk_queue_config_get_truncate_size_ratio(configuration);
+  options->truncate_size_ratio = truncate_size_ratio;
+
   q = log_queue_disk_reliable_new(options, "persist-name");
-  log_queue_set_use_backlog(q, FALSE);
+  log_queue_set_use_backlog(q, use_backlog);
   log_queue_disk_load_queue(q, filename);
   return q;
 }
@@ -216,7 +223,7 @@ Test(diskq_truncate, test_diskq_truncate_on_push)
   GString *filename = g_string_new("test_dq_truncate_on_write.rqf");
 
   DiskQueueOptions options;
-  q = _create_reliable_diskqueue(filename->str, &options);
+  q = _create_reliable_diskqueue(filename->str, &options, FALSE, -1);
   cr_assert_eq(log_queue_get_length(q), 0, "No messages should be in a newly created disk-queue file!");
 
   // 1. fill it until its FULL
@@ -257,6 +264,121 @@ Test(diskq_truncate, test_diskq_truncate_on_push)
   _save_diskqueue(q);
 }
 
+static void
+_assert_cursors_are_at_start(LogQueue *q)
+{
+  QDisk *qdisk = ((LogQueueDisk *)q)->qdisk;
+
+  cr_assert_eq(qdisk->hdr->read_head, QDISK_RESERVED_SPACE, "Read head was not reset!");
+  cr_assert_eq(qdisk->hdr->write_head, QDISK_RESERVED_SPACE, "Write head was not reset!");
+  cr_assert_eq(qdisk->hdr->backlog_head, QDISK_RESERVED_SPACE, "Backlog head was not reset!");
+}
+
+Test(diskq_truncate, test_diskq_truncate_size_ratio_default)
+{
+  const gint truncate_threshold = (gint)(1100000 * disk_queue_config_get_truncate_size_ratio(configuration));
+  const gint empty_log_msg_size = 134;
+  const gint below_threshold_message_number = truncate_threshold / empty_log_msg_size;
+  const gint above_threshold_message_number = below_threshold_message_number + 1;
+
+  LogQueue *q;
+  GString *filename = g_string_new("test_dq_truncate_size_ratio_default.rqf");
+
+  DiskQueueOptions options;
+  q = _create_reliable_diskqueue(filename->str, &options, TRUE, -1);
+  cr_assert_eq(log_queue_get_length(q), 0, "No messages should be in a newly created disk-queue file!");
+
+  // 1. fill it just below the truncate threshold
+  feed_some_messages(q, below_threshold_message_number);
+  cr_assert_eq(log_queue_get_length(q), below_threshold_message_number,
+               "Not all messages have been queued!");
+  const gint64 below_threshold_file_size = _get_file_size(q);
+
+  // 2. process all messages, no truncate should happen yet, but all 3 heads should be moved to QDISK_RESERVED_SPACE
+  send_some_messages(q, below_threshold_message_number);
+  log_queue_ack_backlog(q, below_threshold_message_number);
+  cr_assert_eq(_get_file_size(q), below_threshold_file_size,
+               "Unexpected disk-queue file truncate happened when we were below the truncate threshold!");
+  _assert_cursors_are_at_start(q);
+
+  // 3. fill it just above the truncate threshold
+  feed_some_messages(q, above_threshold_message_number);
+  cr_assert_eq(log_queue_get_length(q), above_threshold_message_number,
+               "Not all messages have been queued!");
+
+  // 4. process all messages, we should truncate
+  send_some_messages(q, above_threshold_message_number);
+  log_queue_ack_backlog(q, above_threshold_message_number);
+  cr_assert_eq(_get_file_size(q), QDISK_RESERVED_SPACE,
+               "Disk-queue file truncate should have happened when we were above the truncate threshold!");
+
+  _assert_diskq_actual_file_size_with_stored(q);
+
+  unlink(filename->str);
+  g_string_free(filename, TRUE);
+
+  _save_diskqueue(q);
+}
+
+Test(diskq_truncate, test_diskq_truncate_size_ratio_0)
+{
+  LogQueue *q;
+  GString *filename = g_string_new("test_dq_truncate_size_ratio_0.rqf");
+
+  DiskQueueOptions options;
+  q = _create_reliable_diskqueue(filename->str, &options, TRUE, 0);
+  cr_assert_eq(log_queue_get_length(q), 0, "No messages should be in a newly created disk-queue file!");
+
+  // 1. feed 1 message
+  feed_some_messages(q, 1);
+  cr_assert_eq(log_queue_get_length(q), 1,
+               "Not all messages have been queued!");
+
+  // 2. process the message, we should truncate even for that 1, and all 3 heads should be moved to QDISK_RESERVED_SPACE
+  send_some_messages(q, 1);
+  log_queue_ack_backlog(q, 1);
+  cr_assert_eq(_get_file_size(q), QDISK_RESERVED_SPACE,
+               "Disk-queue file truncate should have happened, because truncate-size-ratio(0) was set!");
+  _assert_cursors_are_at_start(q);
+
+  _assert_diskq_actual_file_size_with_stored(q);
+
+  unlink(filename->str);
+  g_string_free(filename, TRUE);
+
+  _save_diskqueue(q);
+}
+
+Test(diskq_truncate, test_diskq_truncate_size_ratio_1)
+{
+  const gint full_disk_message_number = 8194; // measured for disk_buf_size 1100000
+  LogQueue *q;
+  GString *filename = g_string_new("test_dq_truncate_size_ratio_1.rqf");
+
+  DiskQueueOptions options;
+  q = _create_reliable_diskqueue(filename->str, &options, TRUE, 1);
+  cr_assert_eq(log_queue_get_length(q), 0, "No messages should be in a newly created disk-queue file!");
+
+  // 1. feed to full
+  feed_some_messages(q, full_disk_message_number);
+  cr_assert_eq(log_queue_get_length(q), full_disk_message_number,
+               "Not all messages have been queued!");
+  const gint64 full_file_size = _get_file_size(q);
+
+  // 2. process the messages, we should not truncate, but all 3 heads should be moved to QDISK_RESERVED_SPACE
+  send_some_messages(q, full_disk_message_number);
+  log_queue_ack_backlog(q, full_disk_message_number);
+  cr_assert_eq(_get_file_size(q), full_file_size,
+               "Unexpected disk-queue file truncate happened when truncate-size-ratio(1) was set!");
+  _assert_cursors_are_at_start(q);
+
+  _assert_diskq_actual_file_size_with_stored(q);
+
+  unlink(filename->str);
+  g_string_free(filename, TRUE);
+
+  _save_diskqueue(q);
+}
 
 static void
 setup(void)
