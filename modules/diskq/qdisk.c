@@ -47,6 +47,8 @@
 
 #define PATH_QDISK              PATH_LOCALSTATEDIR
 
+#define TRUNCATE_SIZE_RATIO 0.01
+
 typedef union _QDiskFileHeader
 {
   struct
@@ -200,9 +202,30 @@ qdisk_is_space_avail(QDisk *self, gint at_least)
 
 }
 
+static gboolean
+_ftruncate_would_reduce_file(QDisk *self, gint64 expected_size)
+{
+  gint64 expected_size_change = expected_size - self->file_size;
+  return expected_size_change < 0;
+}
+
+static gboolean
+_possible_size_reduction_reaches_truncate_threshold(QDisk *self, gint64 expected_size)
+{
+  gint64 possible_size_reduction = self->file_size - expected_size;
+  gint64 truncate_threshold = (gint64)(qdisk_get_maximum_size(self) * TRUNCATE_SIZE_RATIO);
+  return possible_size_reduction >= truncate_threshold;
+}
+
 static void
 _truncate_file(QDisk *self, gint64 expected_size)
 {
+  if (_ftruncate_would_reduce_file(self, expected_size) &&
+      !_possible_size_reduction_reaches_truncate_threshold(self, expected_size))
+    {
+      return;
+    }
+
   if (ftruncate(self->fd, (off_t) expected_size) == 0)
     {
       self->file_size = expected_size;
