@@ -168,9 +168,9 @@
 #define VERSION_VALUE_3_33 0x0321
 
 /* config version code, in the same format as GlobalConfig->version */
-#define VERSION_VALUE_CURRENT   VERSION_VALUE_3_32
-#define VERSION_STR_CURRENT     "3.32"
-#define VERSION_PRODUCT_CURRENT VERSION_3_32
+#define VERSION_VALUE_CURRENT   VERSION_VALUE_3_33
+#define VERSION_STR_CURRENT     "3.33"
+#define VERSION_PRODUCT_CURRENT VERSION_3_33
 
 /* this value points to the last syslog-ng version where we changed the
  * meaning of any setting in the configuration file.  Basically, it is the
