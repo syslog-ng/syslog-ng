@@ -39,6 +39,7 @@ jobs:
             --disable-systemd
             --disable-pacct
             --disable-smtp
+            --disable-mqtt
             --enable-all-modules
             --with-python=3
           "

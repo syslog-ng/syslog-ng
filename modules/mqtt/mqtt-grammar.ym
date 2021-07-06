@@ -1,0 +1,91 @@
+/*
+ * Copyright (c) 2021 One Identity
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published
+ * by the Free Software Foundation, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ * As an additional exemption you are allowed to compile & link against the
+ * OpenSSL libraries as published by the OpenSSL project. See the file
+ * COPYING for details.
+ *
+ */
+
+
+%code requires {
+
+#include "mqtt-parser.h"
+
+}
+
+%code {
+
+#include "mqtt-destination.h"
+
+#include "cfg-grammar-internal.h"
+#include "plugin.h"
+}
+
+%define api.prefix {mqtt_destination_}
+%lex-param {CfgLexer *lexer}
+%parse-param {CfgLexer *lexer}
+%parse-param {LogDriver **instance}
+%parse-param {gpointer arg}
+
+/* INCLUDE_DECLS */
+
+%token KW_MQTT
+%token KW_TOPIC
+%token KW_FALLBACK_TOPIC
+%token KW_KEEPALIVE
+%token KW_ADDRESS
+%token KW_QOS
+%token KW_MESSAGE_TEMPLATE
+
+%%
+
+start
+        : LL_CONTEXT_DESTINATION KW_MQTT
+          {
+            last_driver = *instance = mqtt_dd_new(configuration);
+          }
+          '(' mqtt_destination_options ')' { YYACCEPT; }
+;
+
+mqtt_destination_options
+        : mqtt_destination_option mqtt_destination_options
+        |
+        ;
+
+mqtt_destination_option
+        : KW_TOPIC '(' template_content ')'     { mqtt_dd_set_topic_template(last_driver, $3);  }
+        | KW_FALLBACK_TOPIC '(' string ')'      { mqtt_dd_set_fallback_topic(last_driver, $3); free($3); }
+        | KW_KEEPALIVE '(' positive_integer ')' { mqtt_dd_set_keepalive(last_driver, $3);       }
+        | KW_ADDRESS '(' string ')'
+          {
+            CHECK_ERROR(mqtt_dd_validate_address($3), @1, "Invalid address");
+            mqtt_dd_set_address(last_driver, $3);
+            free($3);
+          }
+        | KW_QOS '(' nonnegative_integer ')'
+          {
+            CHECK_ERROR(0 <= $3 && $3 <= 2, @1, "Allowed QOS values: 0, 1, 2");
+            mqtt_dd_set_qos(last_driver, $3);
+          }
+        | KW_TEMPLATE '(' template_content ')'   { mqtt_dd_set_message_template_ref(last_driver, $3); }
+        | threaded_dest_driver_option
+        | { last_template_options = mqtt_dd_get_template_options(last_driver); } template_option
+        ;
+
+/* INCLUDE_RULES */
+
+%%
