@@ -1,9 +1,11 @@
 FROM centos:7
 LABEL maintainer="Andras Mitzki <andras.mitzki@balabit.com>, Laszlo Szemere <laszlo.szemere@balabit.com>, Balazs Scheidler <balazs.scheidler@oneidentity.com>"
+ENV OS_DISTRIBUTION=centos
+ENV OS_DISTRIBUTION_CODE_NAME=7
 
-ARG OS_PLATFORM
+ARG ARG_IMAGE_PLATFORM
 ARG COMMIT
-ENV OS_PLATFORM ${OS_PLATFORM}
+ENV IMAGE_PLATFORM ${ARG_IMAGE_PLATFORM}
 LABEL COMMIT=${COMMIT}
 
 COPY images/fake-sudo.sh /usr/bin/sudo

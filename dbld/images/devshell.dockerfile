@@ -1,5 +1,9 @@
 FROM balabit/syslog-ng-tarball:latest
-ENV OS_PLATFORM devshell
+
+ARG ARG_IMAGE_PLATFORM
+ARG COMMIT
+ENV IMAGE_PLATFORM ${ARG_IMAGE_PLATFORM}
+LABEL COMMIT=${COMMIT}
 
 
 RUN /dbld/builddeps enable_dbgsyms

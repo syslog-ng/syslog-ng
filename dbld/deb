@@ -3,7 +3,7 @@
 . /dbld/functions.sh
 
 function setup_dirs() {
-    rm -rf /build/${OS_PLATFORM} && mkdir -p /build/${OS_PLATFORM}
+    rm -rf /build/${IMAGE_PLATFORM} && mkdir -p /build/${IMAGE_PLATFORM}
 }
 
 function prepare_source() {
@@ -16,10 +16,10 @@ function prepare_source() {
 }
 
 function capture_debs() {
-    mv /build/*.deb /build/${OS_PLATFORM}
-    echo "Your debs are in /build/${OS_PLATFORM}, also available on the host in \$(top_srcdir)/dbld/build/${OS_PLATFORM}"
+    mv /build/*.deb /build/${IMAGE_PLATFORM}
+    echo "Your debs are in /build/${IMAGE_PLATFORM}, also available on the host in \$(top_srcdir)/dbld/build/${IMAGE_PLATFORM}"
 
-    capture_artifacts /build/${OS_PLATFORM}/*.deb
+    capture_artifacts /build/${IMAGE_PLATFORM}/*.deb
 }
 
 cd /build
