@@ -149,7 +149,7 @@ Test(kafka_topic, test_resolve_template_topic_name)
   kafka_dd_set_bootstrap_servers(driver, "test-server:9092");
   _init_topic_names(driver, "$kafka_topic", "fallbacktopicname");
 
-  cr_assert(kafka_dd_init((LogPipe *) driver));
+  cr_assert(log_pipe_init((LogPipe *) driver));
 
   KafkaDestDriver *kafka_driver = (KafkaDestDriver *) driver;
 
@@ -179,7 +179,7 @@ Test(kafka_topic, test_calculate_topic_from_template)
   kafka_dd_set_bootstrap_servers(driver, "test-server:9092");
   _init_topic_names(driver, "$kafka_topic", "fallbackhere");
 
-  cr_assert(kafka_dd_init((LogPipe *) driver));
+  cr_assert(log_pipe_init((LogPipe *) driver));
 
   KafkaDestDriver *kafka_driver = (KafkaDestDriver *) driver;
 
@@ -211,7 +211,7 @@ Test(kafka_topic, test_get_literal_topic)
 
   kafka_dd_set_bootstrap_servers(driver, "test-server:9092");
   _init_topic_names(driver, "topicname", "fallback");
-  cr_assert(kafka_dd_init((LogPipe *) driver));
+  cr_assert(log_pipe_init((LogPipe *) driver));
 
   KafkaDestDriver *kafka_driver = (KafkaDestDriver *) driver;
 
@@ -237,7 +237,7 @@ Test(kafka_topic, test_calculate_topic)
   kafka_dd_set_bootstrap_servers(driver, "test-server:9092");
   _init_topic_names(driver, "$kafka_topic", "fallbackhere");
 
-  cr_assert(kafka_dd_init((LogPipe *) driver));
+  cr_assert(log_pipe_init((LogPipe *) driver));
 
   KafkaDestDriver *kafka_driver = (KafkaDestDriver *) driver;
 
