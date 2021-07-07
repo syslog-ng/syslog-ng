@@ -381,6 +381,90 @@ Test(diskq_truncate, test_diskq_truncate_size_ratio_1)
 }
 
 static void
+_feed_one_large_message(LogQueue *q)
+{
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  path_options.ack_needed = q->use_backlog;
+  path_options.flow_control_requested = TRUE;
+
+  LogMessage *msg = log_msg_new_empty();
+  log_msg_set_value(msg, LM_V_MESSAGE, "almafalmafalmafalmafalmafalmafalmafalmafalmafalmafalmafa", -1);
+  log_msg_add_ack(msg, &path_options);
+  msg->ack_func = test_ack;
+
+  log_queue_push_tail(q, msg, &path_options);
+}
+
+Test(diskq_truncate, test_diskq_no_truncate_wrap)
+{
+  const gint just_under_max_size_message_number = 8239;
+  const gint some_messages_to_let_write_head_wrap = 500;
+  gint unprocessed_messages_in_buffer = 0;
+  LogQueue *q;
+  GString *filename = g_string_new("test_dq_no_truncate_wrap.rqf");
+
+  DiskQueueOptions options;
+  q = _create_reliable_diskqueue(filename->str, &options, TRUE, 1);
+  cr_assert_eq(log_queue_get_length(q), 0, "No messages should be in a newly created disk-queue file!");
+
+  QDisk *qdisk = ((LogQueueDisk *)q)->qdisk;
+
+  // 1. feed to full
+  feed_some_messages(q, just_under_max_size_message_number);
+  cr_assert_eq(log_queue_get_length(q), just_under_max_size_message_number,
+               "Not all messages have been queued!");
+  unprocessed_messages_in_buffer += just_under_max_size_message_number;
+
+  // 2. process some messages, so write_head can wrap
+  send_some_messages(q, some_messages_to_let_write_head_wrap);
+  log_queue_ack_backlog(q, some_messages_to_let_write_head_wrap);
+  unprocessed_messages_in_buffer -= some_messages_to_let_write_head_wrap;
+
+  // 3. feed 1 large msg to make file_size big
+  _feed_one_large_message(q);
+  cr_assert(qdisk->hdr->write_head < qdisk->hdr->read_head, "write_head should have wrapped");
+  cr_assert(qdisk->file_size > 1100000, "file_size should be bigger than max size");
+  unprocessed_messages_in_buffer += 1;
+
+  // 4. send and ack all messages
+  send_some_messages(q, unprocessed_messages_in_buffer);
+  log_queue_ack_backlog(q, unprocessed_messages_in_buffer);
+  cr_assert(qdisk->hdr->length == 0, "qdisk len should be 0");
+  unprocessed_messages_in_buffer = 0;
+
+  // 5. feed to full
+  feed_some_messages(q, just_under_max_size_message_number);
+  cr_assert_eq(log_queue_get_length(q), just_under_max_size_message_number,
+               "Not all messages have been queued!");
+  unprocessed_messages_in_buffer += just_under_max_size_message_number;
+
+  // 6. process some messages, so write_head can wrap
+  send_some_messages(q, some_messages_to_let_write_head_wrap);
+  log_queue_ack_backlog(q, some_messages_to_let_write_head_wrap);
+  unprocessed_messages_in_buffer -= some_messages_to_let_write_head_wrap;
+
+  // 7. feed 2 to wrap write_head and to add one message to the beginning
+  feed_some_messages(q, 1);
+  cr_assert(qdisk->hdr->write_head == QDISK_RESERVED_SPACE, "write_head should have wrapped");
+  feed_some_messages(q, 1);
+  unprocessed_messages_in_buffer += 2;
+
+  // 8. process all messages
+  send_some_messages(q, unprocessed_messages_in_buffer);
+  log_queue_ack_backlog(q, unprocessed_messages_in_buffer);
+  cr_assert(qdisk->hdr->length == 0, "qdisk len should be 0");
+  cr_assert(qdisk->hdr->write_head == qdisk->hdr->read_head, "read_head should be at write_head's position");
+  unprocessed_messages_in_buffer = 0;
+
+  _assert_diskq_actual_file_size_with_stored(q);
+
+  unlink(filename->str);
+  g_string_free(filename, TRUE);
+
+  _save_diskqueue(q);
+}
+
+static void
 setup(void)
 {
   msg_init(TRUE); // internal messages will go to stderr(), msg_init() is idempotent
