@@ -1,7 +1,7 @@
 find_package(eclipse-paho-mqtt-c)
 
-module_switch(MQTT_DESTINATION "Enable mqtt_destination" eclipse-paho-mqtt-c_FOUND)
-if (NOT MQTT_DESTINATION)
+module_switch(ENABLE_MQTT "Enable mqtt_destination" eclipse-paho-mqtt-c_FOUND)
+if (NOT ENABLE_MQTT)
   return()
 endif()
 
