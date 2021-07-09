@@ -47,6 +47,8 @@
 
 #define PATH_QDISK              PATH_LOCALSTATEDIR
 
+#define QDISK_HDR_VERSION_CURRENT 1
+
 typedef union _QDiskFileHeader
 {
   struct
@@ -815,21 +817,27 @@ qdisk_save_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
   return TRUE;
 }
 
-static void
-_update_header_with_default_values(QDisk *self)
-{
-  self->hdr->big_endian = TRUE;
-  self->hdr->version = 1;
-  self->hdr->backlog_head = self->hdr->read_head;
-  self->hdr->backlog_len = 0;
-}
-
 static gboolean
 _create_path(const gchar *filename)
 {
   FilePermOptions fpermoptions;
   file_perm_options_defaults(&fpermoptions);
   return file_perm_options_create_containing_directory(&fpermoptions, filename);
+}
+
+static gboolean
+_is_header_version_current(QDisk *self)
+{
+  return self->hdr->version == QDISK_HDR_VERSION_CURRENT;
+}
+
+static void
+_upgrade_header(QDisk *self)
+{
+  self->hdr->big_endian = TRUE;
+  self->hdr->backlog_head = self->hdr->read_head;
+  self->hdr->backlog_len = 0;
+  self->hdr->version = QDISK_HDR_VERSION_CURRENT;
 }
 
 gboolean
@@ -930,7 +938,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
           self->fd = -1;
           return FALSE;
         }
-      self->hdr->version = 1;
+      self->hdr->version = QDISK_HDR_VERSION_CURRENT;
       self->hdr->big_endian = (G_BYTE_ORDER == G_BIG_ENDIAN);
 
       self->hdr->read_head = QDISK_RESERVED_SPACE;
@@ -964,8 +972,11 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
           self->fd = -1;
           return FALSE;
         }
-      if (self->hdr->version == 0)
-        _update_header_with_default_values(self);
+
+      if (!_is_header_version_current(self))
+        {
+          _upgrade_header(self);
+        }
 
       if ((self->hdr->big_endian && G_BYTE_ORDER == G_LITTLE_ENDIAN) ||
           (!self->hdr->big_endian && G_BYTE_ORDER == G_BIG_ENDIAN))
