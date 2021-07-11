@@ -36,6 +36,8 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 
+#define TEST_DISKQ_SIZE 1100000
+
 
 static LogQueue *
 _get_non_reliable_diskqueue(gchar *filename, DiskQueueOptions *options)
@@ -52,7 +54,7 @@ _create_non_reliable_diskqueue(gchar *filename, DiskQueueOptions *options)
   LogQueue *q;
   unlink(filename);
 
-  _construct_options(options, 1100000, 0, FALSE);
+  _construct_options(options, TEST_DISKQ_SIZE, 0, FALSE);
   options->qout_size = 40;
   q = _get_non_reliable_diskqueue(filename, options);
   return q;
@@ -199,7 +201,7 @@ _create_reliable_diskqueue(gchar *filename, DiskQueueOptions *options, gboolean 
   LogQueue *q;
   unlink(filename);
 
-  _construct_options(options, 1100000, 0, TRUE);
+  _construct_options(options, TEST_DISKQ_SIZE, 0, TRUE);
 
   if (truncate_size_ratio < 0)
     truncate_size_ratio = disk_queue_config_get_truncate_size_ratio(configuration);
@@ -214,7 +216,7 @@ _create_reliable_diskqueue(gchar *filename, DiskQueueOptions *options, gboolean 
 
 Test(diskq_truncate, test_diskq_truncate_on_push)
 {
-  const gint full_disk_message_number = 8194; // measured for disk_buf_size 1100000
+  const gint full_disk_message_number = 8194; // measured for disk_buf_size TEST_DISKQ_SIZE
   const gint read_is_on_end_message_number  = full_disk_message_number - 200;
   const gint write_wraps_message_number = read_is_on_end_message_number - 200;
   const gint read_wraps_message_number = 300;
@@ -276,7 +278,7 @@ _assert_cursors_are_at_start(LogQueue *q)
 
 Test(diskq_truncate, test_diskq_truncate_size_ratio_default)
 {
-  const gint truncate_threshold = (gint)(1100000 * disk_queue_config_get_truncate_size_ratio(configuration));
+  const gint truncate_threshold = (gint)(TEST_DISKQ_SIZE * disk_queue_config_get_truncate_size_ratio(configuration));
   const gint empty_log_msg_size = 134;
   const gint below_threshold_message_number = truncate_threshold / empty_log_msg_size;
   const gint above_threshold_message_number = below_threshold_message_number + 1;
@@ -351,7 +353,7 @@ Test(diskq_truncate, test_diskq_truncate_size_ratio_0)
 
 Test(diskq_truncate, test_diskq_truncate_size_ratio_1)
 {
-  const gint full_disk_message_number = 8194; // measured for disk_buf_size 1100000
+  const gint full_disk_message_number = 8194; // measured for disk_buf_size TEST_DISKQ_SIZE
   LogQueue *q;
   GString *filename = g_string_new("test_dq_truncate_size_ratio_1.rqf");
 
@@ -397,7 +399,7 @@ _feed_one_large_message(LogQueue *q)
 
 Test(diskq_truncate, test_diskq_no_truncate_wrap)
 {
-  const gint just_under_max_size_message_number = 8239;
+  const gint just_under_max_size_message_number = 8239; // measured for disk_buf_size TEST_DISKQ_SIZE
   const gint some_messages_to_let_write_head_wrap = 500;
   gint unprocessed_messages_in_buffer = 0;
   LogQueue *q;
@@ -423,7 +425,7 @@ Test(diskq_truncate, test_diskq_no_truncate_wrap)
   // 3. feed 1 large msg to make file_size big
   _feed_one_large_message(q);
   cr_assert(qdisk_get_writer_head(qdisk) < qdisk_get_reader_head(qdisk), "write_head should have wrapped");
-  cr_assert(qdisk->file_size > 1100000, "file_size should be bigger than max size");
+  cr_assert(qdisk->file_size > TEST_DISKQ_SIZE, "file_size should be bigger than max size");
   unprocessed_messages_in_buffer += 1;
 
   // 4. send and ack all messages
