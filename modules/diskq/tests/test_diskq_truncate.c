@@ -49,13 +49,19 @@ _get_non_reliable_diskqueue(gchar *filename, DiskQueueOptions *options)
 }
 
 static LogQueue *
-_create_non_reliable_diskqueue(gchar *filename, DiskQueueOptions *options)
+_create_non_reliable_diskqueue(gchar *filename, DiskQueueOptions *options, gint qout_size, gdouble truncate_size_ratio)
 {
   LogQueue *q;
   unlink(filename);
 
   _construct_options(options, TEST_DISKQ_SIZE, 0, FALSE);
-  options->qout_size = 40;
+
+  options->qout_size = qout_size;
+
+  if (truncate_size_ratio < 0)
+    truncate_size_ratio = disk_queue_config_get_truncate_size_ratio(configuration);
+  options->truncate_size_ratio = truncate_size_ratio;
+
   q = _get_non_reliable_diskqueue(filename, options);
   return q;
 }
@@ -141,7 +147,7 @@ _test_diskq_truncate(TruncateTestParams params)
   DiskQueueOptions options;
 
   cr_assert(cfg_init(configuration), "cfg_init failed!");
-  q = _create_non_reliable_diskqueue(params.filename, &options);
+  q = _create_non_reliable_diskqueue(params.filename, &options, 40, 0);
   cr_assert_eq(log_queue_get_length(q), 0, "No messages should be in a newly created disk-queue file!");
 
   feed_some_messages(q, params.number_of_msgs_to_push);
@@ -464,6 +470,38 @@ Test(diskq_truncate, test_diskq_no_truncate_wrap)
   unlink(filename->str);
   g_string_free(filename, TRUE);
 
+  _save_diskqueue(q);
+}
+
+Test(diskq_truncate, test_non_reliable_diskq_restart_with_truncation_disabled)
+{
+  const gint qout_size = 128;
+  const gint just_under_max_size_message_number = 8239 + qout_size; // measured for disk_buf_size TEST_DISKQ_SIZE
+
+  GString *filename = g_string_new("test_dq_non_reliable_restart.rqf");
+
+  DiskQueueOptions options;
+  LogQueue *q = _create_non_reliable_diskqueue(filename->str, &options, qout_size, 1);
+  cr_assert_eq(log_queue_get_length(q), 0, "No messages should be in a newly created disk-queue file!");
+
+  QDisk *qdisk = ((LogQueueDisk *)q)->qdisk;
+
+  feed_some_messages(q, just_under_max_size_message_number);
+
+  // Restart
+  _save_diskqueue(q);
+  q = _get_non_reliable_diskqueue(filename->str, &options);
+  qdisk = ((LogQueueDisk *)q)->qdisk;
+
+  send_some_messages(q, just_under_max_size_message_number);
+
+  cr_assert_eq(log_queue_get_length(q), 0, "Not all messages have been queued!");
+  cr_assert(qdisk_get_writer_head(qdisk) == qdisk_get_reader_head(qdisk), "read_head should be at write_head's position");
+
+  _assert_diskq_actual_file_size_with_stored(q);
+
+  unlink(filename->str);
+  g_string_free(filename, TRUE);
   _save_diskqueue(q);
 }
 
