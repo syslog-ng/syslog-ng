@@ -38,7 +38,7 @@
 
 
 static LogQueue *
-_get_diskqueue(gchar *filename, DiskQueueOptions *options)
+_get_non_reliable_diskqueue(gchar *filename, DiskQueueOptions *options)
 {
   LogQueue *q = log_queue_disk_non_reliable_new(options, NULL);
   log_queue_set_use_backlog(q, FALSE);
@@ -47,14 +47,14 @@ _get_diskqueue(gchar *filename, DiskQueueOptions *options)
 }
 
 static LogQueue *
-_create_diskqueue(gchar *filename, DiskQueueOptions *options)
+_create_non_reliable_diskqueue(gchar *filename, DiskQueueOptions *options)
 {
   LogQueue *q;
   unlink(filename);
 
   _construct_options(options, 1100000, 0, FALSE);
   options->qout_size = 40;
-  q = _get_diskqueue(filename, options);
+  q = _get_non_reliable_diskqueue(filename, options);
   return q;
 }
 
@@ -139,7 +139,7 @@ _test_diskq_truncate(TruncateTestParams params)
   DiskQueueOptions options;
 
   cr_assert(cfg_init(configuration), "cfg_init failed!");
-  q = _create_diskqueue(params.filename, &options);
+  q = _create_non_reliable_diskqueue(params.filename, &options);
   cr_assert_eq(log_queue_get_length(q), 0, "No messages should be in a newly created disk-queue file!");
 
   feed_some_messages(q, params.number_of_msgs_to_push);
@@ -153,7 +153,7 @@ _test_diskq_truncate(TruncateTestParams params)
 
   _save_diskqueue(q);
 
-  q = _get_diskqueue(params.filename, &options);
+  q = _get_non_reliable_diskqueue(params.filename, &options);
   cr_assert_eq(log_queue_get_length(q), params.number_of_msgs_to_push - params.number_of_msgs_to_pop,
                "Invalid number of messages in disk-queue after opened existing one");
   _assert_diskq_actual_file_size_with_stored(q);
