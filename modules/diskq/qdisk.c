@@ -247,6 +247,8 @@ _maybe_truncate_file(QDisk *self, gint64 expected_size)
       return;
     }
 
+  msg_debug("Truncating queue file", evt_tag_str("filename", self->filename), evt_tag_long("new size", expected_size));
+
   if (ftruncate(self->fd, (off_t) expected_size) == 0)
     {
       self->file_size = expected_size;
@@ -387,8 +389,6 @@ qdisk_push_tail(QDisk *self, GString *record)
     {
       if (self->file_size > self->hdr->write_head)
         {
-          msg_debug("Unused area ahead of write_head, truncate queue file",
-                    evt_tag_long("new size",  self->hdr->write_head));
           _maybe_truncate_file(self, self->hdr->write_head);
         }
       else
@@ -1107,8 +1107,6 @@ qdisk_reset_file_if_empty(QDisk *self)
 {
   if (!qdisk_is_file_empty(self))
     return;
-
-  msg_debug("Queue file became empty, truncating file", evt_tag_str("filename", self->filename));
 
   self->hdr->read_head = QDISK_RESERVED_SPACE;
   self->hdr->write_head = QDISK_RESERVED_SPACE;
