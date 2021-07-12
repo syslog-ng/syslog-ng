@@ -286,7 +286,7 @@ AC_ARG_WITH(libesmtp,
                             [use libesmtp library from (prefix) directory DIR]),,)
 
 AC_ARG_ENABLE(mqtt,
-              [  --enable-mqtt          Disable MQTT support (default: auto)]
+              [  --disable-mqtt          Disable MQTT support (default: auto)]
               ,,enable_mqtt="auto")
 
 AC_ARG_WITH(libpaho-mqtt,
