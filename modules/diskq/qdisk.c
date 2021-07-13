@@ -100,15 +100,15 @@ pwrite_strict(gint fd, const void *buf, size_t count, off_t offset)
 
 
 static gboolean
-_is_position_eof(QDisk *self, gint64 position)
+_is_position_after_disk_buf_size(QDisk *self, gint64 position)
 {
-  return position >= self->file_size;
+  return position > self->options->disk_buf_size;
 }
 
 static guint64
-_correct_position_if_eof(QDisk *self, gint64 *position)
+_correct_position_if_after_disk_buf_size(QDisk *self, gint64 *position)
 {
-  if (_is_position_eof(self, *position))
+  if (_is_position_after_disk_buf_size(self, *position))
     {
       *position = QDISK_RESERVED_SPACE;
     }
@@ -154,9 +154,8 @@ qdisk_started(QDisk *self)
 static inline gboolean
 _is_qdisk_overwritten(QDisk *self)
 {
-  return self->hdr->write_head > self->options->disk_buf_size;
+  return _is_position_after_disk_buf_size(self, self->hdr->write_head);
 }
-
 
 static inline gboolean
 _is_backlog_head_prevent_write_head(QDisk *self)
@@ -462,7 +461,7 @@ qdisk_pop_head(QDisk *self, GString *record)
 
       if (self->hdr->read_head > self->hdr->write_head)
         {
-          self->hdr->read_head = _correct_position_if_eof(self, &self->hdr->read_head);
+          self->hdr->read_head = _correct_position_if_after_disk_buf_size(self, &self->hdr->read_head);
         }
 
       self->hdr->length--;
@@ -1061,7 +1060,7 @@ qdisk_skip_record(QDisk *self, guint64 position)
   new_position += record_length + sizeof(record_length);
   if (new_position > self->hdr->write_head)
     {
-      new_position = _correct_position_if_eof(self, (gint64 *)&new_position);
+      new_position = _correct_position_if_after_disk_buf_size(self, (gint64 *)&new_position);
     }
   return new_position;
 }
