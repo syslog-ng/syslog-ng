@@ -192,6 +192,14 @@ qdisk_is_space_avail(QDisk *self, gint at_least)
 {
   /* sizeof(guint32): record_length is a 4 bytes long value which is stored before each serialized LogMessage */
   gint64 msg_len = at_least + sizeof(guint32);
+  /* write follows read (e.g. we are appending to the file) OR
+   * there's enough space between write and read.
+   *
+   * If write follows read we need to check two things:
+   *   - either we are below the maximum limit (GINT64_FROM_BE(self->hdr->write_head) < self->options->disk_buf_size)
+   *   - or we can wrap around (GINT64_FROM_BE(self->hdr->read_head) != QDISK_RESERVED_SPACE)
+   * If neither of the above is true, the buffer is full.
+   */
   return (
            (_is_backlog_head_prevent_write_head(self)) &&
            (_is_write_head_less_than_max_size(self) || _is_able_to_reset_write_head_to_beginning_of_qdisk(self))
@@ -315,14 +323,6 @@ qdisk_push_tail(QDisk *self, GString *record)
       self->hdr->write_head = QDISK_RESERVED_SPACE;
     }
 
-  /* write follows read (e.g. we are appending to the file) OR
-   * there's enough space between write and read.
-   *
-   * If write follows read we need to check two things:
-   *   - either we are below the maximum limit (GINT64_FROM_BE(self->hdr->write_head) < self->options->disk_buf_size)
-   *   - or we can wrap around (GINT64_FROM_BE(self->hdr->read_head) != QDISK_RESERVED_SPACE)
-   * If neither of the above is true, the buffer is full.
-   */
   if (!qdisk_is_space_avail(self, record->len))
     return FALSE;
 
