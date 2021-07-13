@@ -67,6 +67,8 @@ typedef union _QDiskFileHeader
     QDiskQueuePosition qoverflow_pos;
     gint64 backlog_head;
     gint64 backlog_len;
+
+    gboolean use_old_read_head_wrap_condition;
   };
   gchar _pad2[QDISK_RESERVED_SPACE];
 } QDiskFileHeader;
@@ -78,7 +80,6 @@ struct _QDisk
   gint fd;
   gint64 file_size;
   QDiskFileHeader *hdr;
-  gboolean use_old_read_head_wrap_condition;
   DiskQueueOptions *options;
 };
 
@@ -111,14 +112,13 @@ _is_position_after_disk_buf_size(QDisk *self, gint64 position)
 static guint64
 _correct_position_if_after_disk_buf_size(QDisk *self, gint64 *position)
 {
-  if (G_UNLIKELY(self->use_old_read_head_wrap_condition))
+  if (G_UNLIKELY(self->hdr->use_old_read_head_wrap_condition))
     {
       gboolean position_is_eof = *position >= self->file_size;
       if (position_is_eof)
         {
           *position = QDISK_RESERVED_SPACE;
-          self->use_old_read_head_wrap_condition = FALSE;
-          self->hdr->version = QDISK_HDR_VERSION_CURRENT;
+          self->hdr->use_old_read_head_wrap_condition = FALSE;
         }
       return *position;
     }
@@ -858,15 +858,10 @@ _upgrade_header(QDisk *self)
     {
       struct stat st;
       gboolean file_was_overwritten = (fstat(self->fd, &st) != 0 || st.st_size > self->options->disk_buf_size);
-      if (file_was_overwritten)
-        {
-          self->use_old_read_head_wrap_condition = TRUE;
-        }
-      else
-        {
-          self->hdr->version = QDISK_HDR_VERSION_CURRENT;
-        }
+      self->hdr->use_old_read_head_wrap_condition = file_was_overwritten;
     }
+
+  self->hdr->version = QDISK_HDR_VERSION_CURRENT;
 }
 
 gboolean
@@ -974,6 +969,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
       self->hdr->write_head = QDISK_RESERVED_SPACE;
       self->hdr->backlog_head = self->hdr->read_head;
       self->hdr->length = 0;
+      self->hdr->use_old_read_head_wrap_condition = FALSE;
       self->file_size = self->hdr->write_head;
 
       if (!qdisk_save_state(self, qout, qbacklog, qoverflow))
@@ -1024,6 +1020,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
           self->hdr->qoverflow_pos.count = GUINT32_SWAP_LE_BE(self->hdr->qoverflow_pos.count);
           self->hdr->backlog_head = GUINT64_SWAP_LE_BE(self->hdr->backlog_head);
           self->hdr->backlog_len = GUINT64_SWAP_LE_BE(self->hdr->backlog_len);
+          self->hdr->use_old_read_head_wrap_condition = GUINT32_SWAP_LE_BE(self->hdr->use_old_read_head_wrap_condition);
           self->hdr->big_endian = (G_BYTE_ORDER == G_BIG_ENDIAN);
         }
       if (!_load_state(self, qout, qbacklog, qoverflow))
