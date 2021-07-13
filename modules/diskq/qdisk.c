@@ -297,9 +297,24 @@ qdisk_get_empty_space(QDisk *self)
   return bpos - wpos;
 }
 
+static gboolean
+_could_not_wrap_write_head_last_push_but_now_can(QDisk *self)
+{
+  return _is_qdisk_overwritten(self) && _is_able_to_reset_write_head_to_beginning_of_qdisk(self);
+}
+
 gboolean
 qdisk_push_tail(QDisk *self, GString *record)
 {
+  if (_could_not_wrap_write_head_last_push_but_now_can(self))
+    {
+      /*
+       * We can safely move the write_head to the beginning, but still
+       * not sure, if this message will have space. We move the write_head
+       * then check the available space compared to the new position.
+       */
+      self->hdr->write_head = QDISK_RESERVED_SPACE;
+    }
 
   /* write follows read (e.g. we are appending to the file) OR
    * there's enough space between write and read.
@@ -366,14 +381,16 @@ qdisk_push_tail(QDisk *self, GString *record)
           self->file_size = self->hdr->write_head;
         }
 
-      if (_is_qdisk_overwritten(self) && self->hdr->backlog_head  != QDISK_RESERVED_SPACE)
+      if (_is_qdisk_overwritten(self) && _is_able_to_reset_write_head_to_beginning_of_qdisk(self))
         {
           /* we were appending to the file, we are over the limit, and space
            * is available before the read head. truncate and wrap.
            *
-           * Otherwise we let the write_head over size limits for a bit and
-           * for the next message, the condition at the beginning of this
-           * function will cause the push to fail */
+           * Otherwise try to wrap again in the beginning of the next push.
+           *
+           * This way we guarantee, that only a part of 1 message is written after
+           * disk_buf_size.
+           */
           self->hdr->write_head = QDISK_RESERVED_SPACE;
         }
     }
