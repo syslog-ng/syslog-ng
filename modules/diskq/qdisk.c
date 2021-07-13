@@ -29,6 +29,7 @@
 #include "stats/stats-registry.h"
 #include "reloc.h"
 #include "compat/lfs.h"
+#include "scratch-buffers.h"
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -351,13 +352,19 @@ qdisk_push_tail(QDisk *self, GString *record)
       return FALSE;
     }
 
-  if (!pwrite_strict(self->fd, (gchar *) &record_length, sizeof(record_length), self->hdr->write_head) ||
-      !pwrite_strict(self->fd, record->str, record->len, self->hdr->write_head + sizeof(record_length)))
+  ScratchBuffersMarker marker;
+  GString *msg_buffer = scratch_buffers_alloc_and_mark(&marker);
+
+  g_string_append_len(msg_buffer, ((gchar *) &record_length), sizeof(record_length));
+  g_string_append_len(msg_buffer, (record->str), record->len);
+  if (!pwrite_strict(self->fd, msg_buffer->str, msg_buffer->len, self->hdr->write_head))
     {
       msg_error("Error writing disk-queue file",
                 evt_tag_error("error"));
+      scratch_buffers_reclaim_marked(marker);
       return FALSE;
     }
+  scratch_buffers_reclaim_marked(marker);
 
   self->hdr->write_head = self->hdr->write_head + record->len + sizeof(record_length);
 
