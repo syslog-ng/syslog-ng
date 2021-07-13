@@ -47,7 +47,7 @@
 
 #define PATH_QDISK              PATH_LOCALSTATEDIR
 
-#define QDISK_HDR_VERSION_CURRENT 1
+#define QDISK_HDR_VERSION_CURRENT 2
 
 typedef union _QDiskFileHeader
 {
@@ -78,6 +78,7 @@ struct _QDisk
   gint fd;
   gint64 file_size;
   QDiskFileHeader *hdr;
+  gboolean use_v1_wrap_condition;
   DiskQueueOptions *options;
 };
 
@@ -110,6 +111,18 @@ _is_position_after_disk_buf_size(QDisk *self, gint64 position)
 static guint64
 _correct_position_if_after_disk_buf_size(QDisk *self, gint64 *position)
 {
+  if (G_UNLIKELY(self->use_v1_wrap_condition))
+    {
+      gboolean position_is_eof = *position >= self->file_size;
+      if (position_is_eof)
+        {
+          *position = QDISK_RESERVED_SPACE;
+          self->use_v1_wrap_condition = FALSE;
+          self->hdr->version = QDISK_HDR_VERSION_CURRENT;
+        }
+      return *position;
+    }
+
   if (_is_position_after_disk_buf_size(self, *position))
     {
       *position = QDISK_RESERVED_SPACE;
@@ -228,7 +241,8 @@ static void
 _truncate_file(QDisk *self, gint64 expected_size)
 {
   if (_ftruncate_would_reduce_file(self, expected_size) &&
-      !_possible_size_reduction_reaches_truncate_threshold(self, expected_size))
+      !_possible_size_reduction_reaches_truncate_threshold(self, expected_size) &&
+      G_LIKELY(!self->use_v1_wrap_condition))
     {
       return;
     }
@@ -834,10 +848,27 @@ _is_header_version_current(QDisk *self)
 static void
 _upgrade_header(QDisk *self)
 {
-  self->hdr->big_endian = TRUE;
-  self->hdr->backlog_head = self->hdr->read_head;
-  self->hdr->backlog_len = 0;
-  self->hdr->version = QDISK_HDR_VERSION_CURRENT;
+  if (self->hdr->version == 0)
+    {
+      self->hdr->big_endian = TRUE;
+      self->hdr->backlog_head = self->hdr->read_head;
+      self->hdr->backlog_len = 0;
+    }
+
+  if (self->hdr->version < 2)
+    {
+      struct stat st;
+      gboolean file_was_overwritten = (fstat(self->fd, &st) != 0 || st.st_size > self->options->disk_buf_size);
+      if (file_was_overwritten)
+        {
+          self->use_v1_wrap_condition = TRUE;
+        }
+      else
+        {
+          self->use_v1_wrap_condition = FALSE;
+          self->hdr->version = QDISK_HDR_VERSION_CURRENT;
+        }
+    }
 }
 
 gboolean
