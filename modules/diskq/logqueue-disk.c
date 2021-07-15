@@ -189,15 +189,6 @@ log_queue_disk_load_queue(LogQueue *s, const gchar *filename)
   return FALSE;
 }
 
-gboolean
-log_queue_disk_is_reliable(LogQueue *s)
-{
-  LogQueueDisk *self = (LogQueueDisk *) s;
-  if (self->is_reliable)
-    return self->is_reliable(self);
-  return FALSE;
-}
-
 const gchar *
 log_queue_disk_get_filename(LogQueue *s)
 {
