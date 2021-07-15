@@ -47,6 +47,8 @@
 
 #define PATH_QDISK              PATH_LOCALSTATEDIR
 
+#define QDISK_HDR_VERSION_CURRENT 2
+
 typedef union _QDiskFileHeader
 {
   struct
@@ -65,6 +67,8 @@ typedef union _QDiskFileHeader
     QDiskQueuePosition qoverflow_pos;
     gint64 backlog_head;
     gint64 backlog_len;
+
+    guint8 use_v1_wrap_condition;
   };
   gchar _pad2[QDISK_RESERVED_SPACE];
 } QDiskFileHeader;
@@ -100,15 +104,26 @@ pwrite_strict(gint fd, const void *buf, size_t count, off_t offset)
 
 
 static gboolean
-_is_position_eof(QDisk *self, gint64 position)
+_is_position_after_disk_buf_size(QDisk *self, gint64 position)
 {
-  return position >= self->file_size;
+  return position > self->options->disk_buf_size;
 }
 
 static guint64
-_correct_position_if_eof(QDisk *self, gint64 *position)
+_correct_position_if_after_disk_buf_size(QDisk *self, gint64 *position)
 {
-  if (_is_position_eof(self, *position))
+  if (G_UNLIKELY(self->hdr->use_v1_wrap_condition))
+    {
+      gboolean position_is_eof = *position >= self->file_size;
+      if (position_is_eof)
+        {
+          *position = QDISK_RESERVED_SPACE;
+          self->hdr->use_v1_wrap_condition = FALSE;
+        }
+      return *position;
+    }
+
+  if (_is_position_after_disk_buf_size(self, *position))
     {
       *position = QDISK_RESERVED_SPACE;
     }
@@ -154,9 +169,8 @@ qdisk_started(QDisk *self)
 static inline gboolean
 _is_qdisk_overwritten(QDisk *self)
 {
-  return self->hdr->write_head > self->options->disk_buf_size;
+  return _is_position_after_disk_buf_size(self, self->hdr->write_head);
 }
-
 
 static inline gboolean
 _is_backlog_head_prevent_write_head(QDisk *self)
@@ -193,6 +207,14 @@ qdisk_is_space_avail(QDisk *self, gint at_least)
 {
   /* sizeof(guint32): record_length is a 4 bytes long value which is stored before each serialized LogMessage */
   gint64 msg_len = at_least + sizeof(guint32);
+  /* write follows read (e.g. we are appending to the file) OR
+   * there's enough space between write and read.
+   *
+   * If write follows read we need to check two things:
+   *   - either we are below the maximum limit (GINT64_FROM_BE(self->hdr->write_head) < self->options->disk_buf_size)
+   *   - or we can wrap around (GINT64_FROM_BE(self->hdr->read_head) != QDISK_RESERVED_SPACE)
+   * If neither of the above is true, the buffer is full.
+   */
   return (
            (_is_backlog_head_prevent_write_head(self)) &&
            (_is_write_head_less_than_max_size(self) || _is_able_to_reset_write_head_to_beginning_of_qdisk(self))
@@ -216,13 +238,16 @@ _possible_size_reduction_reaches_truncate_threshold(QDisk *self, gint64 expected
 }
 
 static void
-_truncate_file(QDisk *self, gint64 expected_size)
+_maybe_truncate_file(QDisk *self, gint64 expected_size)
 {
   if (_ftruncate_would_reduce_file(self, expected_size) &&
-      !_possible_size_reduction_reaches_truncate_threshold(self, expected_size))
+      !_possible_size_reduction_reaches_truncate_threshold(self, expected_size) &&
+      G_LIKELY(!self->hdr->use_v1_wrap_condition))
     {
       return;
     }
+
+  msg_debug("Truncating queue file", evt_tag_str("filename", self->filename), evt_tag_long("new size", expected_size));
 
   if (ftruncate(self->fd, (off_t) expected_size) == 0)
     {
@@ -270,7 +295,7 @@ _truncate_file_to_minimal(QDisk *self)
 {
   if (qdisk_is_file_empty(self))
     {
-      _truncate_file(self, QDISK_RESERVED_SPACE);
+      _maybe_truncate_file(self, QDISK_RESERVED_SPACE);
       return;
     }
 
@@ -278,7 +303,7 @@ _truncate_file_to_minimal(QDisk *self)
   if (file_end_offset <= QDISK_RESERVED_SPACE)
     return;
 
-  _truncate_file(self, file_end_offset);
+  _maybe_truncate_file(self, file_end_offset);
 }
 
 
@@ -297,18 +322,25 @@ qdisk_get_empty_space(QDisk *self)
   return bpos - wpos;
 }
 
+static gboolean
+_could_not_wrap_write_head_last_push_but_now_can(QDisk *self)
+{
+  return _is_qdisk_overwritten(self) && _is_able_to_reset_write_head_to_beginning_of_qdisk(self);
+}
+
 gboolean
 qdisk_push_tail(QDisk *self, GString *record)
 {
+  if (_could_not_wrap_write_head_last_push_but_now_can(self))
+    {
+      /*
+       * We can safely move the write_head to the beginning, but still
+       * not sure, if this message will have space. We move the write_head
+       * then check the available space compared to the new position.
+       */
+      self->hdr->write_head = QDISK_RESERVED_SPACE;
+    }
 
-  /* write follows read (e.g. we are appending to the file) OR
-   * there's enough space between write and read.
-   *
-   * If write follows read we need to check two things:
-   *   - either we are below the maximum limit (GINT64_FROM_BE(self->hdr->write_head) < self->options->disk_buf_size)
-   *   - or we can wrap around (GINT64_FROM_BE(self->hdr->read_head) != QDISK_RESERVED_SPACE)
-   * If neither of the above is true, the buffer is full.
-   */
   if (!qdisk_is_space_avail(self, record->len))
     return FALSE;
 
@@ -357,23 +389,23 @@ qdisk_push_tail(QDisk *self, GString *record)
     {
       if (self->file_size > self->hdr->write_head)
         {
-          msg_debug("Unused area ahead of write_head, truncate queue file",
-                    evt_tag_long("new size",  self->hdr->write_head));
-          _truncate_file(self, self->hdr->write_head);
+          _maybe_truncate_file(self, self->hdr->write_head);
         }
       else
         {
           self->file_size = self->hdr->write_head;
         }
 
-      if (_is_qdisk_overwritten(self) && self->hdr->backlog_head  != QDISK_RESERVED_SPACE)
+      if (_is_qdisk_overwritten(self) && _is_able_to_reset_write_head_to_beginning_of_qdisk(self))
         {
           /* we were appending to the file, we are over the limit, and space
            * is available before the read head. truncate and wrap.
            *
-           * Otherwise we let the write_head over size limits for a bit and
-           * for the next message, the condition at the beginning of this
-           * function will cause the push to fail */
+           * Otherwise try to wrap again in the beginning of the next push.
+           *
+           * This way we guarantee, that only a part of 1 message is written after
+           * disk_buf_size.
+           */
           self->hdr->write_head = QDISK_RESERVED_SPACE;
         }
     }
@@ -445,7 +477,7 @@ qdisk_pop_head(QDisk *self, GString *record)
 
       if (self->hdr->read_head > self->hdr->write_head)
         {
-          self->hdr->read_head = _correct_position_if_eof(self, &self->hdr->read_head);
+          self->hdr->read_head = _correct_position_if_after_disk_buf_size(self, &self->hdr->read_head);
         }
 
       self->hdr->length--;
@@ -799,21 +831,38 @@ qdisk_save_state(QDisk *self, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow)
   return TRUE;
 }
 
-static void
-_update_header_with_default_values(QDisk *self)
-{
-  self->hdr->big_endian = TRUE;
-  self->hdr->version = 1;
-  self->hdr->backlog_head = self->hdr->read_head;
-  self->hdr->backlog_len = 0;
-}
-
 static gboolean
 _create_path(const gchar *filename)
 {
   FilePermOptions fpermoptions;
   file_perm_options_defaults(&fpermoptions);
   return file_perm_options_create_containing_directory(&fpermoptions, filename);
+}
+
+static gboolean
+_is_header_version_current(QDisk *self)
+{
+  return self->hdr->version == QDISK_HDR_VERSION_CURRENT;
+}
+
+static void
+_upgrade_header(QDisk *self)
+{
+  if (self->hdr->version == 0)
+    {
+      self->hdr->big_endian = TRUE;
+      self->hdr->backlog_head = self->hdr->read_head;
+      self->hdr->backlog_len = 0;
+    }
+
+  if (self->hdr->version < 2)
+    {
+      struct stat st;
+      gboolean file_was_overwritten = (fstat(self->fd, &st) != 0 || st.st_size > self->options->disk_buf_size);
+      self->hdr->use_v1_wrap_condition = file_was_overwritten;
+    }
+
+  self->hdr->version = QDISK_HDR_VERSION_CURRENT;
 }
 
 gboolean
@@ -914,13 +963,14 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
           self->fd = -1;
           return FALSE;
         }
-      self->hdr->version = 1;
+      self->hdr->version = QDISK_HDR_VERSION_CURRENT;
       self->hdr->big_endian = (G_BYTE_ORDER == G_BIG_ENDIAN);
 
       self->hdr->read_head = QDISK_RESERVED_SPACE;
       self->hdr->write_head = QDISK_RESERVED_SPACE;
       self->hdr->backlog_head = self->hdr->read_head;
       self->hdr->length = 0;
+      self->hdr->use_v1_wrap_condition = FALSE;
       self->file_size = self->hdr->write_head;
 
       if (!qdisk_save_state(self, qout, qbacklog, qoverflow))
@@ -948,8 +998,11 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
           self->fd = -1;
           return FALSE;
         }
-      if (self->hdr->version == 0)
-        _update_header_with_default_values(self);
+
+      if (!_is_header_version_current(self))
+        {
+          _upgrade_header(self);
+        }
 
       if ((self->hdr->big_endian && G_BYTE_ORDER == G_LITTLE_ENDIAN) ||
           (!self->hdr->big_endian && G_BYTE_ORDER == G_BIG_ENDIAN))
@@ -1044,7 +1097,7 @@ qdisk_skip_record(QDisk *self, guint64 position)
   new_position += record_length + sizeof(record_length);
   if (new_position > self->hdr->write_head)
     {
-      new_position = _correct_position_if_eof(self, (gint64 *)&new_position);
+      new_position = _correct_position_if_after_disk_buf_size(self, (gint64 *)&new_position);
     }
   return new_position;
 }
@@ -1055,13 +1108,11 @@ qdisk_reset_file_if_empty(QDisk *self)
   if (!qdisk_is_file_empty(self))
     return;
 
-  msg_debug("Queue file became empty, truncating file", evt_tag_str("filename", self->filename));
-
   self->hdr->read_head = QDISK_RESERVED_SPACE;
   self->hdr->write_head = QDISK_RESERVED_SPACE;
   self->hdr->backlog_head = QDISK_RESERVED_SPACE;
 
-  _truncate_file(self, QDISK_RESERVED_SPACE);
+  _maybe_truncate_file(self, QDISK_RESERVED_SPACE);
 }
 
 DiskQueueOptions *
