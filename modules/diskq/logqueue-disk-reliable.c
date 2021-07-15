@@ -217,7 +217,7 @@ _pop_head(LogQueueDisk *s, LogPathOptions *path_options)
 
   if (msg == NULL)
     {
-      msg = s->read_message(s, path_options);
+      msg = log_queue_disk_read_message(s, path_options);
       if (msg)
         {
           path_options->ack_needed = FALSE;
@@ -244,7 +244,7 @@ _push_tail(LogQueueDisk *s, LogMessage *msg, LogPathOptions *local_options, cons
   LogQueueDiskReliable *self = (LogQueueDiskReliable *) s;
 
   gint64 last_wpos = qdisk_get_writer_head (self->super.qdisk);
-  if (!s->write_message(s, msg))
+  if (!log_queue_disk_write_message(s, msg))
     {
       /* we were not able to store the msg, warn */
       msg_error("Destination reliable queue full, dropping message",

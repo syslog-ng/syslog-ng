@@ -101,7 +101,7 @@ _get_next_message(LogQueueDiskNonReliable *self, LogPathOptions *path_options)
   path_options->ack_needed = TRUE;
   if (qdisk_get_length (self->super.qdisk) > 0)
     {
-      result = self->super.read_message(&self->super, path_options);
+      result = log_queue_disk_read_message(&self->super, path_options);
       if(result)
         {
           log_queue_memory_usage_add(&self->super.super, log_msg_get_size(result));
@@ -162,7 +162,7 @@ _move_messages_from_overflow(LogQueueDiskNonReliable *self)
         }
       else
         {
-          if (self->super.write_message(&self->super, msg))
+          if (log_queue_disk_write_message(&self->super, msg))
             {
               log_queue_memory_usage_sub(&self->super.super, log_msg_get_size(msg));
             }
@@ -263,7 +263,7 @@ _pop_head (LogQueueDisk *s, LogPathOptions *path_options)
     }
   if (msg == NULL)
     {
-      msg = s->read_message(s, path_options);
+      msg = log_queue_disk_read_message(s, path_options);
       if (msg)
         {
           path_options->ack_needed = FALSE;
@@ -321,7 +321,7 @@ _push_tail (LogQueueDisk *s, LogMessage *msg, LogPathOptions *local_options, con
     }
   else
     {
-      if (self->qoverflow->length != 0 || !s->write_message(s, msg))
+      if (self->qoverflow->length != 0 || !log_queue_disk_write_message(s, msg))
         {
           if (HAS_SPACE_IN_QUEUE(self->qoverflow))
             {

@@ -249,8 +249,8 @@ _pop_disk(LogQueueDisk *self, LogMessage **msg)
   return TRUE;
 }
 
-static LogMessage *
-_read_message(LogQueueDisk *self, LogPathOptions *path_options)
+LogMessage *
+log_queue_disk_read_message(LogQueueDisk *self, LogPathOptions *path_options)
 {
   LogMessage *msg = NULL;
   do
@@ -274,8 +274,8 @@ _read_message(LogQueueDisk *self, LogPathOptions *path_options)
   return msg;
 }
 
-static gboolean
-_write_message(LogQueueDisk *self, LogMessage *msg)
+gboolean
+log_queue_disk_write_message(LogQueueDisk *self, LogMessage *msg)
 {
   GString *serialized;
   SerializeArchive *sa;
@@ -342,7 +342,4 @@ log_queue_disk_init_instance(LogQueueDisk *self, const gchar *persist_name)
   self->super.rewind_backlog = _rewind_backlog;
   self->super.rewind_backlog_all = _backlog_all;
   self->super.free_fn = _free;
-
-  self->read_message = _read_message;
-  self->write_message = _write_message;
 }
