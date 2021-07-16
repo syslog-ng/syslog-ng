@@ -1138,7 +1138,7 @@ qdisk_stop(QDisk *self)
   self->options = NULL;
 }
 
-gssize
+static gssize
 qdisk_read(QDisk *self, gpointer buffer, gsize bytes_to_read, gint64 position)
 {
   gssize res;
