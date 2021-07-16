@@ -82,6 +82,5 @@ const gchar *qdisk_get_filename(QDisk *self);
 
 gssize qdisk_read(QDisk *self, gpointer buffer, gsize bytes_to_read, gint64 position);
 guint64 qdisk_skip_record(QDisk *self, guint64 position);
-ssize_t pread_all(int fd, char *buf,  size_t count, off_t offset, gint max_block);
 
 #endif /* QDISK_H_ */
