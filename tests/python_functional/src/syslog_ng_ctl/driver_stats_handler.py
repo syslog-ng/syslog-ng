@@ -28,12 +28,15 @@ class DriverStatsHandler(object):
     def __init__(self, group_type, driver_name):
         if group_type == "destination":
             statement_short_name = "dst"
+            self.component = "{}.{}".format(statement_short_name, driver_name)
         elif group_type == "source":
             statement_short_name = "src"
+            self.component = "{}.{}".format(statement_short_name, driver_name)
+        elif group_type == "parser":
+            self.component = "{}".format(group_type)
         else:
             raise Exception("Unknown group_type: {}".format(group_type))
 
-        self.component = "{}.{}".format(statement_short_name, driver_name)
         self.syslog_ng_ctl = SyslogNgCtl(tc_parameters.INSTANCE_PATH)
 
     def build_query_pattern(self):
@@ -49,7 +52,7 @@ class DriverStatsHandler(object):
         )
 
     def parse_result(self, result, result_type):
-        statistical_elements = ["memory_usage", "written", "processed", "dropped", "queued", "stamp"]
+        statistical_elements = ["memory_usage", "written", "processed", "dropped", "queued", "stamp", "discarded"]
         parsed_output = {}
         for stat_element in statistical_elements:
             for line in result:
