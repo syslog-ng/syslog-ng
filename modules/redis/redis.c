@@ -203,7 +203,6 @@ redis_dd_new(GlobalConfig *cfg)
   redis_dd_set_port((LogDriver *)self, 6379);
   redis_dd_set_auth((LogDriver *)self, NULL);
   redis_dd_set_timeout((LogDriver *)self, 10);
-
   self->command = g_string_sized_new(32);
 
   log_template_options_defaults(&self->template_options);
