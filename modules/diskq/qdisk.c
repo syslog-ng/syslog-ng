@@ -435,6 +435,8 @@ qdisk_pop_head(QDisk *self, GString *record)
       self->hdr->read_head = QDISK_RESERVED_SPACE;
       res = pread(self->fd, (gchar *) &record_length, sizeof(record_length), self->hdr->read_head);
     }
+  record_length = GUINT32_FROM_BE(record_length);
+
   if (res != sizeof(record_length))
     {
       msg_error("Error reading disk-queue file, cannot read record-length",
@@ -444,7 +446,6 @@ qdisk_pop_head(QDisk *self, GString *record)
       return FALSE;
     }
 
-  record_length = GUINT32_FROM_BE(record_length);
   if (_is_record_length_reached_hard_limit(record_length))
     {
       msg_warning("Disk-queue file contains possibly invalid record-length",
