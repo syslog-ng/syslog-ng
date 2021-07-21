@@ -422,79 +422,77 @@ _is_record_length_reached_hard_limit(guint32 record_length)
 gboolean
 qdisk_pop_head(QDisk *self, GString *record)
 {
-  if (self->hdr->read_head != self->hdr->write_head)
+  if (self->hdr->read_head == self->hdr->write_head)
+    return FALSE;
+
+  guint32 record_length;
+  gssize res;
+  res = pread(self->fd, (gchar *) &record_length, sizeof(record_length), self->hdr->read_head);
+
+  if (res == 0)
     {
-      guint32 record_length;
-      gssize res;
+      /* hmm, we are either at EOF or at hdr->qout_ofs, we need to wrap */
+      self->hdr->read_head = QDISK_RESERVED_SPACE;
       res = pread(self->fd, (gchar *) &record_length, sizeof(record_length), self->hdr->read_head);
-
-      if (res == 0)
-        {
-          /* hmm, we are either at EOF or at hdr->qout_ofs, we need to wrap */
-          self->hdr->read_head = QDISK_RESERVED_SPACE;
-          res = pread(self->fd, (gchar *) &record_length, sizeof(record_length), self->hdr->read_head);
-        }
-      if (res != sizeof(record_length))
-        {
-          msg_error("Error reading disk-queue file, cannot read record-length",
-                    evt_tag_str("error", res < 0 ? g_strerror(errno) : "short read"),
-                    evt_tag_str("filename", self->filename),
-                    evt_tag_long("offset", self->hdr->read_head));
-          return FALSE;
-        }
-
-      record_length = GUINT32_FROM_BE(record_length);
-      if (_is_record_length_reached_hard_limit(record_length))
-        {
-          msg_warning("Disk-queue file contains possibly invalid record-length",
-                      evt_tag_int("rec_length", record_length),
-                      evt_tag_str("filename", self->filename),
-                      evt_tag_long("offset", self->hdr->read_head));
-          return FALSE;
-        }
-      else if (record_length == 0)
-        {
-          msg_error("Disk-queue file contains empty record",
-                    evt_tag_int("rec_length", record_length),
-                    evt_tag_str("filename", self->filename),
-                    evt_tag_long("offset", self->hdr->read_head));
-          return FALSE;
-        }
-
-      g_string_set_size(record, record_length);
-      res = pread(self->fd, record->str, record_length, self->hdr->read_head + sizeof(record_length));
-      if (res != record_length)
-        {
-          msg_error("Error reading disk-queue file",
-                    evt_tag_str("filename", self->filename),
-                    evt_tag_str("error", res < 0 ? g_strerror(errno) : "short read"),
-                    evt_tag_int("expected read length", record_length),
-                    evt_tag_int("actually read", res));
-          return FALSE;
-        }
-
-      self->hdr->read_head = self->hdr->read_head + record->len + sizeof(record_length);
-
-      if (self->hdr->read_head > self->hdr->write_head)
-        {
-          self->hdr->read_head = _correct_position_if_after_disk_buf_size(self, &self->hdr->read_head);
-        }
-
-      self->hdr->length--;
-      if (!self->options->reliable)
-        {
-          self->hdr->backlog_head = self->hdr->read_head;
-
-          g_assert(self->hdr->backlog_len == 0);
-          if (!self->options->read_only)
-            {
-              qdisk_reset_file_if_empty(self);
-            }
-        }
-      return TRUE;
-
     }
-  return FALSE;
+  if (res != sizeof(record_length))
+    {
+      msg_error("Error reading disk-queue file, cannot read record-length",
+                evt_tag_str("error", res < 0 ? g_strerror(errno) : "short read"),
+                evt_tag_str("filename", self->filename),
+                evt_tag_long("offset", self->hdr->read_head));
+      return FALSE;
+    }
+
+  record_length = GUINT32_FROM_BE(record_length);
+  if (_is_record_length_reached_hard_limit(record_length))
+    {
+      msg_warning("Disk-queue file contains possibly invalid record-length",
+                  evt_tag_int("rec_length", record_length),
+                  evt_tag_str("filename", self->filename),
+                  evt_tag_long("offset", self->hdr->read_head));
+      return FALSE;
+    }
+  else if (record_length == 0)
+    {
+      msg_error("Disk-queue file contains empty record",
+                evt_tag_int("rec_length", record_length),
+                evt_tag_str("filename", self->filename),
+                evt_tag_long("offset", self->hdr->read_head));
+      return FALSE;
+    }
+
+  g_string_set_size(record, record_length);
+  res = pread(self->fd, record->str, record_length, self->hdr->read_head + sizeof(record_length));
+  if (res != record_length)
+    {
+      msg_error("Error reading disk-queue file",
+                evt_tag_str("filename", self->filename),
+                evt_tag_str("error", res < 0 ? g_strerror(errno) : "short read"),
+                evt_tag_int("expected read length", record_length),
+                evt_tag_int("actually read", res));
+      return FALSE;
+    }
+
+  self->hdr->read_head = self->hdr->read_head + record->len + sizeof(record_length);
+
+  if (self->hdr->read_head > self->hdr->write_head)
+    {
+      self->hdr->read_head = _correct_position_if_after_disk_buf_size(self, &self->hdr->read_head);
+    }
+
+  self->hdr->length--;
+  if (!self->options->reliable)
+    {
+      self->hdr->backlog_head = self->hdr->read_head;
+
+      g_assert(self->hdr->backlog_len == 0);
+      if (!self->options->read_only)
+        {
+          qdisk_reset_file_if_empty(self);
+        }
+    }
+  return TRUE;
 }
 
 static FILE *
