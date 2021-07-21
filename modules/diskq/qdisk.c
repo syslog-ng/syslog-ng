@@ -499,15 +499,15 @@ qdisk_pop_head(QDisk *self, GString *record)
     return FALSE;
 
   guint32 record_length;
-  gssize res = _read_record_length_from_disk(self, &record_length);
-  if (res == 0)
+  gssize bytes_read = _read_record_length_from_disk(self, &record_length);
+  if (bytes_read == 0)
     {
       /* hmm, we are either at EOF or at hdr->qout_ofs, we need to wrap */
       self->hdr->read_head = QDISK_RESERVED_SPACE;
-      res = _read_record_length_from_disk(self, &record_length);
+      bytes_read = _read_record_length_from_disk(self, &record_length);
     }
 
-  if (!_is_record_length_valid(self, res, record_length))
+  if (!_is_record_length_valid(self, bytes_read, record_length))
     return FALSE;
 
   if (!_read_record_from_disk(self, record, record_length))
