@@ -461,7 +461,8 @@ qdisk_pop_head(QDisk *self, GString *record)
                   evt_tag_long("offset", self->hdr->read_head));
       return FALSE;
     }
-  else if (record_length == 0)
+
+  if (record_length == 0)
     {
       msg_error("Disk-queue file contains empty record",
                 evt_tag_int("rec_length", record_length),
