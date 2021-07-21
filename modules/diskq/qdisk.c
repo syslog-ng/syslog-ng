@@ -429,25 +429,13 @@ _is_record_length_reached_hard_limit(guint32 record_length)
   return record_length > MAX_RECORD_LENGTH;
 }
 
-gboolean
-qdisk_pop_head(QDisk *self, GString *record)
+static gssize
+_is_record_length_valid(QDisk *self, gssize bytes_read, guint32 record_length)
 {
-  if (self->hdr->read_head == self->hdr->write_head)
-    return FALSE;
-
-  guint32 record_length;
-  gssize res = _read_record_length_from_disk(self, &record_length);
-  if (res == 0)
-    {
-      /* hmm, we are either at EOF or at hdr->qout_ofs, we need to wrap */
-      self->hdr->read_head = QDISK_RESERVED_SPACE;
-      res = _read_record_length_from_disk(self, &record_length);
-    }
-
-  if (res != sizeof(record_length))
+  if (bytes_read != sizeof(record_length))
     {
       msg_error("Error reading disk-queue file, cannot read record-length",
-                evt_tag_str("error", res < 0 ? g_strerror(errno) : "short read"),
+                evt_tag_str("error", bytes_read < 0 ? g_strerror(errno) : "short read"),
                 evt_tag_str("filename", self->filename),
                 evt_tag_long("offset", self->hdr->read_head));
       return FALSE;
@@ -470,6 +458,27 @@ qdisk_pop_head(QDisk *self, GString *record)
                 evt_tag_long("offset", self->hdr->read_head));
       return FALSE;
     }
+
+  return TRUE;
+}
+
+gboolean
+qdisk_pop_head(QDisk *self, GString *record)
+{
+  if (self->hdr->read_head == self->hdr->write_head)
+    return FALSE;
+
+  guint32 record_length;
+  gssize res = _read_record_length_from_disk(self, &record_length);
+  if (res == 0)
+    {
+      /* hmm, we are either at EOF or at hdr->qout_ofs, we need to wrap */
+      self->hdr->read_head = QDISK_RESERVED_SPACE;
+      res = _read_record_length_from_disk(self, &record_length);
+    }
+
+  if (!_is_record_length_valid(self, res, record_length))
+    return FALSE;
 
   g_string_set_size(record, record_length);
   res = pread(self->fd, record->str, record_length, self->hdr->read_head + sizeof(record_length));
