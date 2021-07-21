@@ -413,6 +413,16 @@ qdisk_push_tail(QDisk *self, GString *record)
   return TRUE;
 }
 
+static gssize
+_read_record_length_from_disk(QDisk *self, guint32 *record_length)
+{
+  gssize bytes_read = pread(self->fd, (gchar *)record_length, sizeof(guint32), self->hdr->read_head);
+
+  *record_length = GUINT32_FROM_BE(*record_length);
+
+  return bytes_read;
+}
+
 static inline gboolean
 _is_record_length_reached_hard_limit(guint32 record_length)
 {
@@ -426,16 +436,13 @@ qdisk_pop_head(QDisk *self, GString *record)
     return FALSE;
 
   guint32 record_length;
-  gssize res;
-  res = pread(self->fd, (gchar *) &record_length, sizeof(record_length), self->hdr->read_head);
-
+  gssize res = _read_record_length_from_disk(self, &record_length);
   if (res == 0)
     {
       /* hmm, we are either at EOF or at hdr->qout_ofs, we need to wrap */
       self->hdr->read_head = QDISK_RESERVED_SPACE;
-      res = pread(self->fd, (gchar *) &record_length, sizeof(record_length), self->hdr->read_head);
+      res = _read_record_length_from_disk(self, &record_length);
     }
-  record_length = GUINT32_FROM_BE(record_length);
 
   if (res != sizeof(record_length))
     {
