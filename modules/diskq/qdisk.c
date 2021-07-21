@@ -462,6 +462,25 @@ _is_record_length_valid(QDisk *self, gssize bytes_read, guint32 record_length)
   return TRUE;
 }
 
+static gboolean
+_read_record_from_disk(QDisk *self, GString *record, guint32 record_length)
+{
+  g_string_set_size(record, record_length);
+
+  gssize bytes_read = pread(self->fd, record->str, record_length, self->hdr->read_head + sizeof(record_length));
+  if (bytes_read != record_length)
+    {
+      msg_error("Error reading disk-queue file",
+                evt_tag_str("filename", self->filename),
+                evt_tag_str("error", bytes_read < 0 ? g_strerror(errno) : "short read"),
+                evt_tag_int("expected read length", record_length),
+                evt_tag_int("actually read", bytes_read));
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
 gboolean
 qdisk_pop_head(QDisk *self, GString *record)
 {
@@ -480,17 +499,8 @@ qdisk_pop_head(QDisk *self, GString *record)
   if (!_is_record_length_valid(self, res, record_length))
     return FALSE;
 
-  g_string_set_size(record, record_length);
-  res = pread(self->fd, record->str, record_length, self->hdr->read_head + sizeof(record_length));
-  if (res != record_length)
-    {
-      msg_error("Error reading disk-queue file",
-                evt_tag_str("filename", self->filename),
-                evt_tag_str("error", res < 0 ? g_strerror(errno) : "short read"),
-                evt_tag_int("expected read length", record_length),
-                evt_tag_int("actually read", res));
-      return FALSE;
-    }
+  if (!_read_record_from_disk(self, record, record_length))
+    return FALSE;
 
   self->hdr->read_head = self->hdr->read_head + record->len + sizeof(record_length);
 
