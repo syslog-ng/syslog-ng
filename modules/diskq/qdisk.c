@@ -481,6 +481,17 @@ _read_record_from_disk(QDisk *self, GString *record, guint32 record_length)
   return TRUE;
 }
 
+static gint64
+_calculate_new_read_head_position(QDisk *self, guint32 record_length)
+{
+  gint64 new_read_head_position = self->hdr->read_head + record_length + sizeof(record_length);
+
+  if (new_read_head_position > self->hdr->write_head)
+    new_read_head_position = _correct_position_if_after_disk_buf_size(self, &new_read_head_position);
+
+  return new_read_head_position;
+}
+
 gboolean
 qdisk_pop_head(QDisk *self, GString *record)
 {
@@ -502,14 +513,9 @@ qdisk_pop_head(QDisk *self, GString *record)
   if (!_read_record_from_disk(self, record, record_length))
     return FALSE;
 
-  self->hdr->read_head = self->hdr->read_head + record_length + sizeof(record_length);
-
-  if (self->hdr->read_head > self->hdr->write_head)
-    {
-      self->hdr->read_head = _correct_position_if_after_disk_buf_size(self, &self->hdr->read_head);
-    }
-
+  self->hdr->read_head = _calculate_new_read_head_position(self, record_length);
   self->hdr->length--;
+
   if (!self->options->reliable)
     {
       self->hdr->backlog_head = self->hdr->read_head;
