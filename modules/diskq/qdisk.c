@@ -502,7 +502,7 @@ qdisk_pop_head(QDisk *self, GString *record)
   if (!_read_record_from_disk(self, record, record_length))
     return FALSE;
 
-  self->hdr->read_head = self->hdr->read_head + record->len + sizeof(record_length);
+  self->hdr->read_head = self->hdr->read_head + record_length + sizeof(record_length);
 
   if (self->hdr->read_head > self->hdr->write_head)
     {
