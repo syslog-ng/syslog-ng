@@ -463,6 +463,25 @@ _is_record_length_valid(QDisk *self, gssize bytes_read, guint32 record_length)
 }
 
 static gboolean
+_try_reading_record_length(QDisk *self, guint32 *record_length)
+{
+  guint32 read_record_length;
+  gssize bytes_read = _read_record_length_from_disk(self, &read_record_length);
+  if (bytes_read == 0)
+    {
+      /* hmm, we are either at EOF or at hdr->qout_ofs, we need to wrap */
+      self->hdr->read_head = QDISK_RESERVED_SPACE;
+      bytes_read = _read_record_length_from_disk(self, &read_record_length);
+    }
+
+  if (!_is_record_length_valid(self, bytes_read, read_record_length))
+    return FALSE;
+
+  *record_length = read_record_length;
+  return TRUE;
+}
+
+static gboolean
 _read_record_from_disk(QDisk *self, GString *record, guint32 record_length)
 {
   g_string_set_size(record, record_length);
@@ -499,15 +518,7 @@ qdisk_pop_head(QDisk *self, GString *record)
     return FALSE;
 
   guint32 record_length;
-  gssize bytes_read = _read_record_length_from_disk(self, &record_length);
-  if (bytes_read == 0)
-    {
-      /* hmm, we are either at EOF or at hdr->qout_ofs, we need to wrap */
-      self->hdr->read_head = QDISK_RESERVED_SPACE;
-      bytes_read = _read_record_length_from_disk(self, &record_length);
-    }
-
-  if (!_is_record_length_valid(self, bytes_read, record_length))
+  if (!_try_reading_record_length(self, &record_length))
     return FALSE;
 
   if (!_read_record_from_disk(self, record, record_length))
