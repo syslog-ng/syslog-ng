@@ -34,14 +34,16 @@ newsfile = root_dir / 'NEWS.md'
 
 team_members = [
     "Andras Mitzki",
-    "Antal Nemes",
     "Attila Szakacs",
+    "Balázs Barkó",
     "Balazs Scheidler",
+    "Benedek Cserhati",
     "Gabor Nagy",
-    "Laszlo Budai",
     "Laszlo Szemere",
     "László Várady",
     "Norbert Takacs",
+    "Parrag Szilárd",
+    "Peter Kokai",
     "Zoltan Pallagi",
 ]
 exclude_contributor_list = [
