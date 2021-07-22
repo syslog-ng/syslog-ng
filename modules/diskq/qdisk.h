@@ -53,6 +53,7 @@ gboolean qdisk_is_space_avail(QDisk *self, gint at_least);
 gint64 qdisk_get_empty_space(QDisk *self);
 gboolean qdisk_push_tail(QDisk *self, GString *record);
 gboolean qdisk_pop_head(QDisk *self, GString *record);
+gboolean qdisk_remove_head(QDisk *self);
 gboolean qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow);
 void qdisk_init_instance(QDisk *self, DiskQueueOptions *options, const gchar *file_id);
 void qdisk_stop(QDisk *self);

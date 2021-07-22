@@ -547,6 +547,21 @@ qdisk_pop_head(QDisk *self, GString *record)
   return TRUE;
 }
 
+gboolean
+qdisk_remove_head(QDisk *self)
+{
+  if (self->hdr->read_head == self->hdr->write_head)
+    return FALSE;
+
+  guint32 record_length;
+  if (!_try_reading_record_length(self, &record_length))
+    return FALSE;
+
+  _update_positions_after_read(self, record_length);
+
+  return TRUE;
+}
+
 static FILE *
 _create_stream(QDisk *self, gint64 offset)
 {
