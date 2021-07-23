@@ -119,7 +119,7 @@ python_dd_option
         | KW_LOADERS python_dd_loaders
         | KW_IMPORTS python_dd_loaders
         | KW_OPTIONS '(' python_dd_custom_options ')'
-        | threaded_dest_driver_option
+        | threaded_dest_driver_general_option
         | threaded_dest_driver_batch_option
         | value_pair_option
           {

@@ -66,7 +66,7 @@ example_destination_option
             example_destination_dd_set_filename(last_driver, $3);
             free($3);
           }
-        | threaded_dest_driver_option
+        | threaded_dest_driver_general_option
 ;
 
 /* INCLUDE_RULES */

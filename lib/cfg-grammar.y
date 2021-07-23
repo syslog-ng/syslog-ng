@@ -1200,7 +1200,7 @@ threaded_dest_driver_batch_option
         ;
 
 /* implies dest_driver_option */
-threaded_dest_driver_option
+threaded_dest_driver_general_option
 	: KW_RETRIES '(' positive_integer ')'
         {
           log_threaded_dest_driver_set_max_retries_on_error(last_driver, $3);
