@@ -182,6 +182,7 @@
 %token KW_TYPE                        10083
 %token KW_STATS_MAX_DYNAMIC           10084
 %token KW_MIN_IW_SIZE_PER_READER      10085
+%token KW_WORKERS                     10086
 %token KW_BATCH_LINES                 10087
 %token KW_BATCH_TIMEOUT               10088
 %token KW_TRIM_LARGE_MESSAGES         10089
@@ -1197,6 +1198,10 @@ dest_driver_option
 threaded_dest_driver_batch_option
         : KW_BATCH_LINES '(' nonnegative_integer ')' { log_threaded_dest_driver_set_batch_lines(last_driver, $3); }
         | KW_BATCH_TIMEOUT '(' positive_integer ')' { log_threaded_dest_driver_set_batch_timeout(last_driver, $3); }
+        ;
+
+threaded_dest_driver_workers_option
+        : KW_WORKERS '(' positive_integer ')'  { log_threaded_dest_driver_set_num_workers(last_driver, $3); }
         ;
 
 /* implies dest_driver_option */

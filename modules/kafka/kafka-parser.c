@@ -43,7 +43,6 @@ static CfgLexerKeyword kafka_keywords[] =
   { "message",        KW_MESSAGE },
   { "sync_send",      KW_SYNC_SEND},
   { "bootstrap_servers", KW_BOOTSTRAP_SERVERS },
-  { "workers",        KW_WORKERS },
   { "poll_timeout",   KW_POLL_TIMEOUT },
   { "kafka_c",        KW_KAFKA },   /* compatibility with incubator naming */
   { NULL }

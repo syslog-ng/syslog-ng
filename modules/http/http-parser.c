@@ -62,7 +62,6 @@ static CfgLexerKeyword http_keywords[] =
   { "body_prefix",      KW_BODY_PREFIX },
   { "body_suffix",      KW_BODY_SUFFIX },
   { "delimiter",        KW_DELIMITER },
-  { "workers",          KW_WORKERS },
   { NULL }
 };
 
