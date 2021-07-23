@@ -121,6 +121,7 @@ dest_afsql_option
 
 	| { last_template_options = &((AFSqlDestDriver *) last_driver)->template_options; } template_option
 	| threaded_dest_driver_option
+        | threaded_dest_driver_batch_option
         ;
 
 dest_afsql_values

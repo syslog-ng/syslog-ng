@@ -87,6 +87,7 @@ java_dest_option
           }
         | KW_OPTIONS '(' java_dest_custom_options ')'
         | threaded_dest_driver_option
+        | threaded_dest_driver_batch_option
         | { last_template_options = java_dd_get_template_options(last_driver); } template_option
         ;
 

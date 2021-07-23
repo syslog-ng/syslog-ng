@@ -154,6 +154,7 @@ http_option
     | KW_BATCH_BYTES '(' nonnegative_integer ')' { http_dd_set_batch_bytes(last_driver, $3); }
     | KW_WORKERS '(' positive_integer ')'  { log_threaded_dest_driver_set_num_workers(last_driver, $3); }
     | threaded_dest_driver_option
+    | threaded_dest_driver_batch_option
     | http_tls_option
     | KW_TLS '(' http_tls_options ')'
     | { last_template_options = http_dd_get_template_options(last_driver); } template_option
