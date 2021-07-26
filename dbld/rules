@@ -19,6 +19,7 @@ TARBALL_IMAGE ?= tarball
 DEFAULT_DEB_IMAGE=ubuntu-bionic
 DEFAULT_RPM_IMAGE=centos-7
 DOCKER=docker
+CONTAINER_REGISTRY ?= balabit
 MODE ?= snapshot
 VERSION ?= $(shell MODE=${MODE} scripts/version.sh)
 DOCKER_RUN_ARGS=-e USER_NAME_ON_HOST=$(shell whoami)	\
@@ -49,7 +50,7 @@ GIT_RELEASE_TAG=syslog-ng-$(VERSION)
 CONFIGURE_OPTS=--enable-debug --enable-manpages --with-python=2 --prefix=/install $(CONFIGURE_ADD)
 DBLD_RULES=$(MAKE) --no-print-directory -f $(DBLD_DIR)/rules
 
-DOCKER_SHELL=$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti balabit/syslog-ng-$* /dbld/shell
+DOCKER_SHELL=$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti ${CONTAINER_REGISTRY}/syslog-ng-$* /dbld/shell
 
 -include dbld/rules.conf
 
@@ -93,10 +94,10 @@ help:
 
 bootstrap: bootstrap-$(DEFAULT_IMAGE)
 bootstrap-%: setup
-	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm  -i  balabit/syslog-ng-$* /dbld/bootstrap
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm  -i  ${CONTAINER_REGISTRY}/syslog-ng-$* /dbld/bootstrap
 
 make-%: setup
-	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i  balabit/syslog-ng-$(DEFAULT_IMAGE) /dbld/make $(MAKE_ARGS) $*
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i  ${CONTAINER_REGISTRY}/syslog-ng-$(DEFAULT_IMAGE) /dbld/make $(MAKE_ARGS) $*
 
 tarball-from-root: setup
 	@if [ -f $(ROOT_DIR)/../$(TARBALL_BASENAME) ] && [ ! -f $(TARBALL) ]; then \
@@ -118,7 +119,7 @@ tarball-%: tarball-from-root
 		fi; \
 		echo "Git status follows:" && \
 		( $(GIT) status || echo "Git not found..." ) && \
-		$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i balabit/syslog-ng-$* /dbld/tarball; \
+		$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i ${CONTAINER_REGISTRY}/syslog-ng-$* /dbld/tarball; \
 	else \
 		echo "Tarball $(TARBALL) is up to date (except files excluded by $(DBLD_DIR)/tarball-changes.ignore)"; \
 	fi
@@ -137,20 +138,20 @@ pkg-tarball: pkg-tarball-$(TARBALL_IMAGE)
 #
 pkg-tarball-%: tarball-%
 	@if ! tar --strip-components=1 --show-transformed-names  -tvf $(TARBALL) | grep  ' debian/rules$$' > /dev/null; then \
-		$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i balabit/syslog-ng-$* /dbld/pkg-tarball; \
+		$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i ${CONTAINER_REGISTRY}/syslog-ng-$* /dbld/pkg-tarball; \
 	fi
 
 package: package-$(DEFAULT_IMAGE)
 package-%: pkg-tarball
-	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i  balabit/syslog-ng-$* /dbld/package
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i  ${CONTAINER_REGISTRY}/syslog-ng-$* /dbld/package
 
 deb: deb-$(DEFAULT_DEB_IMAGE)
 deb-%: pkg-tarball
-	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i  balabit/syslog-ng-$* /dbld/deb
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i  ${CONTAINER_REGISTRY}/syslog-ng-$* /dbld/deb
 
 rpm: rpm-$(DEFAULT_RPM_IMAGE)
 rpm-%: pkg-tarball
-	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i  balabit/syslog-ng-$* /dbld/rpm
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i  ${CONTAINER_REGISTRY}/syslog-ng-$* /dbld/rpm
 
 validate-tree-clean:
 	@if ! $(GIT) diff-index --quiet HEAD; then \
@@ -165,10 +166,10 @@ validate-version-format:
 	fi
 
 prepare-release: setup validate-tree-clean validate-version-format
-	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i  balabit/syslog-ng-$(TARBALL_IMAGE) /dbld/prepare-release $(VERSION)
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i  ${CONTAINER_REGISTRY}/syslog-ng-$(TARBALL_IMAGE) /dbld/prepare-release $(VERSION)
 
 validate-release: validate-tree-clean validate-version-format
-	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i  balabit/syslog-ng-$(TARBALL_IMAGE) /dbld/validate-release-version $(VERSION)
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -i  ${CONTAINER_REGISTRY}/syslog-ng-$(TARBALL_IMAGE) /dbld/validate-release-version $(VERSION)
 
 	@if $(GIT) rev-parse --verify -q "$(GIT_RELEASE_TAG)" > /dev/null; then \
 		echo "Your git tree already has $(GIT_RELEASE_TAG), this might indicate a duplicate release, please remove that first."; \
@@ -198,7 +199,7 @@ clean:
 run: run-$(DEFAULT_IMAGE)
 run: RUN_COMMAND=echo Specify RUN_COMMAND to do something sensible here
 run-%: setup
-	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti balabit/syslog-ng-$* bash -c "$(RUN_COMMAND)"
+	$(DOCKER) run $(DOCKER_RUN_ARGS) --rm -ti ${CONTAINER_REGISTRY}/syslog-ng-$* bash -c "$(RUN_COMMAND)"
 
 shell: shell-$(DEFAULT_IMAGE)
 shell-%: setup
@@ -212,15 +213,15 @@ image-devshell: image-tarball
 image-tarball: image-debian-testing
 image-%:
 	$(DBLD_DIR)/prepare-image-build $* && \
-        $(DOCKER) build $(DOCKER_BUILD_ARGS) --build-arg=ARG_IMAGE_PLATFORM=$* --build-arg=COMMIT=$$($(GIT) rev-parse --short HEAD || echo "") --network=host -t balabit/syslog-ng-$* -f $(DBLD_DIR)/images/$*.dockerfile $(DBLD_DIR)
+        $(DOCKER) build $(DOCKER_BUILD_ARGS) --build-arg=ARG_IMAGE_PLATFORM=$* --build-arg=COMMIT=$$($(GIT) rev-parse --short HEAD || echo "") --build-arg=CONTAINER_REGISTRY=${CONTAINER_REGISTRY} --network=host -t ${CONTAINER_REGISTRY}/syslog-ng-$* -f $(DBLD_DIR)/images/$*.dockerfile $(DBLD_DIR)
 
 pull-images: $(foreach image,$(BUILDER_IMAGES), pull-image-$(image))
 pull-image: pull-image-$(DEFAULT_IMAGE)
 pull-image-%:
-	$(DOCKER) pull balabit/syslog-ng-$*
+	$(DOCKER) pull ${CONTAINER_REGISTRY}/syslog-ng-$*
 
 cache-image-%:
-	@IMAGE=balabit/syslog-ng-$*:latest;										\
+	@IMAGE=${CONTAINER_REGISTRY}/syslog-ng-$*:latest;										\
 	IMAGE_ID=$$(docker images -q $$IMAGE | head -1);								\
 	WATCHED_FILES="dbld packaging/rhel/syslog-ng.spec packaging/debian/control";					\
 	if [ "$$IMAGE_ID" = "" ]; then 											\

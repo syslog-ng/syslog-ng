@@ -1,4 +1,5 @@
-FROM balabit/syslog-ng-tarball:latest
+ARG CONTAINER_REGISTRY
+FROM $CONTAINER_REGISTRY/syslog-ng-tarball:latest
 
 ARG ARG_IMAGE_PLATFORM
 ARG COMMIT
