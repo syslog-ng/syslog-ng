@@ -49,8 +49,6 @@ gchar *persist_file_path;
 gchar *assign_persist_name;
 gboolean relocate_all;
 gboolean display_version;
-gboolean debug_flag;
-gboolean verbose_flag;
 gboolean assign_help;
 
 static GOptionEntry cat_options[] =
