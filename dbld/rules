@@ -19,7 +19,7 @@ TARBALL_IMAGE ?= tarball
 DEFAULT_DEB_IMAGE=ubuntu-bionic
 DEFAULT_RPM_IMAGE=centos-7
 DOCKER=docker
-CONTAINER_REGISTRY ?= balabit
+CONTAINER_REGISTRY ?= ghcr.io/syslog-ng
 MODE ?= snapshot
 VERSION ?= $(shell MODE=${MODE} scripts/version.sh)
 DOCKER_RUN_ARGS=-e USER_NAME_ON_HOST=$(shell whoami)	\
