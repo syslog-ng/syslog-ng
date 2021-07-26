@@ -1,0 +1,42 @@
+name: Compile dbld-images
+
+on:
+  pull_request:
+  push:
+    paths:
+      - .github/workflows/dbld-images.yml
+      # List is from dbld/rules cache-image-% "WATCHED_FILES"
+      - "dbld/**"
+      - "packaging/rhel/syslog-ng.spec"
+      - "packaging/debian/control"
+  schedule:
+    - cron: '00 03 * * *'
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    env:
+      CONTAINER_REGISTRY: "ghcr.io/${{ github.repository_owner }}"
+  
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v2
+
+      - name: Build the images
+        run: dbld/rules images -j $(nproc)
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push the images
+        run: |
+          IMAGES=$(docker image ls --filter "reference=${{ env.CONTAINER_REGISTRY }}/syslog-ng-*:latest" --format '{{.Repository}}:{{.Tag}}')
+          for IMAGE in $IMAGES; do
+            echo "Pushing image: $IMAGE"
+            docker push $IMAGE
+          done
