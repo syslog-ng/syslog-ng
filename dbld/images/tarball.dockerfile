@@ -1,4 +1,5 @@
-FROM balabit/syslog-ng-debian-testing:latest
+ARG CONTAINER_REGISTRY
+FROM $CONTAINER_REGISTRY/syslog-ng-debian-testing:latest
 
 ARG ARG_IMAGE_PLATFORM
 ARG COMMIT
