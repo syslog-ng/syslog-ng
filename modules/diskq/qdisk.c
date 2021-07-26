@@ -104,13 +104,13 @@ pwrite_strict(gint fd, const void *buf, size_t count, off_t offset)
 }
 
 
-static gboolean
+static inline gboolean
 _is_position_after_disk_buf_size(QDisk *self, gint64 position)
 {
   return position > self->options->disk_buf_size;
 }
 
-static guint64
+static inline guint64
 _correct_position_if_after_disk_buf_size(QDisk *self, gint64 *position)
 {
   if (G_UNLIKELY(self->hdr->use_v1_wrap_condition))
@@ -223,14 +223,14 @@ qdisk_is_space_avail(QDisk *self, gint at_least)
 
 }
 
-static gboolean
+static inline gboolean
 _ftruncate_would_reduce_file(QDisk *self, gint64 expected_size)
 {
   gint64 expected_size_change = expected_size - self->file_size;
   return expected_size_change < 0;
 }
 
-static gboolean
+static inline gboolean
 _possible_size_reduction_reaches_truncate_threshold(QDisk *self, gint64 expected_size)
 {
   gint64 possible_size_reduction = self->file_size - expected_size;
@@ -274,7 +274,7 @@ _maybe_truncate_file(QDisk *self, gint64 expected_size)
             evt_tag_int("fd", self->fd));
 }
 
-static gint64
+static inline gint64
 qdisk_get_lowest_used_queue_offset(QDisk *self)
 {
   gint64 lowest_offset = G_MAXINT64;
@@ -323,7 +323,7 @@ qdisk_get_empty_space(QDisk *self)
   return bpos - wpos;
 }
 
-static gboolean
+static inline gboolean
 _could_not_wrap_write_head_last_push_but_now_can(QDisk *self)
 {
   return _is_qdisk_overwritten(self) && _is_able_to_reset_write_head_to_beginning_of_qdisk(self);
@@ -420,7 +420,7 @@ qdisk_push_tail(QDisk *self, GString *record)
   return TRUE;
 }
 
-static gssize
+static inline gssize
 _read_record_length_from_disk(QDisk *self, guint32 *record_length)
 {
   gssize bytes_read = pread(self->fd, (gchar *)record_length, sizeof(guint32), self->hdr->read_head);
@@ -436,7 +436,7 @@ _is_record_length_reached_hard_limit(guint32 record_length)
   return record_length > MAX_RECORD_LENGTH;
 }
 
-static gssize
+static inline gssize
 _is_record_length_valid(QDisk *self, gssize bytes_read, guint32 record_length)
 {
   if (bytes_read != sizeof(record_length))
@@ -469,7 +469,7 @@ _is_record_length_valid(QDisk *self, gssize bytes_read, guint32 record_length)
   return TRUE;
 }
 
-static gboolean
+static inline gboolean
 _try_reading_record_length(QDisk *self, guint32 *record_length)
 {
   guint32 read_record_length;
@@ -488,7 +488,7 @@ _try_reading_record_length(QDisk *self, guint32 *record_length)
   return TRUE;
 }
 
-static gboolean
+static inline gboolean
 _read_record_from_disk(QDisk *self, GString *record, guint32 record_length)
 {
   g_string_set_size(record, record_length);
@@ -507,7 +507,7 @@ _read_record_from_disk(QDisk *self, GString *record, guint32 record_length)
   return TRUE;
 }
 
-static gint64
+static inline gint64
 _calculate_new_read_head_position(QDisk *self, guint32 record_length)
 {
   gint64 new_read_head_position = self->hdr->read_head + record_length + sizeof(record_length);
@@ -518,7 +518,7 @@ _calculate_new_read_head_position(QDisk *self, guint32 record_length)
   return new_read_head_position;
 }
 
-static void
+static inline void
 _update_positions_after_read(QDisk *self, guint32 record_length)
 {
   self->hdr->read_head = _calculate_new_read_head_position(self, record_length);
@@ -911,7 +911,7 @@ _create_path(const gchar *filename)
   return file_perm_options_create_containing_directory(&fpermoptions, filename);
 }
 
-static gboolean
+static inline gboolean
 _is_header_version_current(QDisk *self)
 {
   return self->hdr->version == QDISK_HDR_VERSION_CURRENT;
