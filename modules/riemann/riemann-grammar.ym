@@ -143,7 +143,8 @@ riemann_option
           {
             riemann_dd_set_field_attributes(last_driver, last_value_pairs);
           }
-        | threaded_dest_driver_option
+        | threaded_dest_driver_general_option
+        | threaded_dest_driver_batch_option
         | KW_TLS '(' riemann_tls_options ')'
         | { last_template_options = riemann_dd_get_template_options(last_driver); } template_option
         ;

@@ -120,7 +120,8 @@ dest_afsql_option
 	| KW_CREATE_STATEMENT_APPEND '(' string ')' { afsql_dd_set_create_statement_append(last_driver, $3); free($3); }
 
 	| { last_template_options = &((AFSqlDestDriver *) last_driver)->template_options; } template_option
-	| threaded_dest_driver_option
+	| threaded_dest_driver_general_option
+        | threaded_dest_driver_batch_option
         ;
 
 dest_afsql_values

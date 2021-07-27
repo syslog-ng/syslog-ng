@@ -95,7 +95,7 @@ afamqp_option
 	| KW_FRAME_SIZE '(' positive_integer ')'   { afamqp_dd_set_frame_size(last_driver, $3); }
 	| KW_HEARTBEAT '(' nonnegative_integer ')' { afamqp_dd_set_offered_heartbeat(last_driver, $3); }
 	| value_pair_option                        { afamqp_dd_set_value_pairs(last_driver, $1); }
-	| threaded_dest_driver_option
+	| threaded_dest_driver_general_option
 	| afamqp_tls_option
 	| KW_TLS '(' afamqp_tls_options ')'
 	| { last_template_options = afamqp_dd_get_template_options(last_driver); } template_option

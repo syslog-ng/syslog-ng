@@ -59,7 +59,6 @@
 %token KW_TOPIC
 %token KW_FALLBACK_TOPIC
 %token KW_CONFIG
-%token KW_WORKERS
 %token KW_FLUSH_TIMEOUT_ON_SHUTDOWN
 %token KW_FLUSH_TIMEOUT_ON_RELOAD
 %token KW_POLL_TIMEOUT
@@ -103,13 +102,14 @@ kafka_option
         {
             kafka_dd_set_message_ref(last_driver, $3);
         }
-        | KW_WORKERS '(' nonnegative_integer ')'                      { log_threaded_dest_driver_set_num_workers(last_driver, $3); }
 	| KW_FLUSH_TIMEOUT_ON_SHUTDOWN '(' nonnegative_integer ')'    { kafka_dd_set_flush_timeout_on_shutdown(last_driver, $3); }
 	| KW_FLUSH_TIMEOUT_ON_RELOAD '(' nonnegative_integer ')'      { kafka_dd_set_flush_timeout_on_reload(last_driver, $3); }
         | KW_POLL_TIMEOUT '(' nonnegative_integer ')'                 { kafka_dd_set_poll_timeout(last_driver, $3); }
 	| KW_BOOTSTRAP_SERVERS '(' string ')'                         { kafka_dd_set_bootstrap_servers(last_driver, $3); free($3); }
 	| KW_SYNC_SEND '(' yesno ')'                                  { kafka_dd_set_transaction_commit(last_driver, $3); }
-        | threaded_dest_driver_option
+        | threaded_dest_driver_general_option
+        | threaded_dest_driver_batch_option
+        | threaded_dest_driver_workers_option
         | { last_template_options = kafka_dd_get_template_options(last_driver); } template_option
         ;
 
