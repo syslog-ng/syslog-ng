@@ -342,31 +342,17 @@ qdisk_push_tail(QDisk *self, GString *record)
       self->hdr->write_head = QDISK_RESERVED_SPACE;
     }
 
-  if (!qdisk_is_space_avail(self, record->len))
+  if (!qdisk_is_space_avail(self, record->len - sizeof(guint32)))
     return FALSE;
 
-  guint32 record_length = GUINT32_TO_BE(record->len);
-  if (record_length == 0)
-    {
-      msg_error("Error writing empty message into the disk-queue file");
-      return FALSE;
-    }
-
-  ScratchBuffersMarker marker;
-  GString *msg_buffer = scratch_buffers_alloc_and_mark(&marker);
-
-  g_string_append_len(msg_buffer, ((gchar *) &record_length), sizeof(record_length));
-  g_string_append_len(msg_buffer, (record->str), record->len);
-  if (!pwrite_strict(self->fd, msg_buffer->str, msg_buffer->len, self->hdr->write_head))
+  if (!pwrite_strict(self->fd, record->str, record->len, self->hdr->write_head))
     {
       msg_error("Error writing disk-queue file",
                 evt_tag_error("error"));
-      scratch_buffers_reclaim_marked(marker);
       return FALSE;
     }
-  scratch_buffers_reclaim_marked(marker);
 
-  self->hdr->write_head = self->hdr->write_head + record->len + sizeof(record_length);
+  self->hdr->write_head = self->hdr->write_head + record->len;
 
 
   /* NOTE: we only wrap around if the read head is before the write,
@@ -615,6 +601,28 @@ exit:
 
   serialize_archive_free(sa);
   return error == NULL;
+}
+
+gboolean
+qdisk_deserialize_msg(QDisk *self, GString *serialized, LogMessage **msg)
+{
+  SerializeArchive *sa = serialize_string_archive_new(serialized);
+  LogMessage *local_msg = log_msg_new_empty();
+
+  if (!log_msg_deserialize(local_msg, sa))
+    {
+      msg_error("Error deserializing message from the disk-queue file",
+                evt_tag_str("filename", qdisk_get_filename(self)));
+
+      log_msg_unref(local_msg);
+      serialize_archive_free(sa);
+      return FALSE;
+    }
+
+  *msg = local_msg;
+
+  serialize_archive_free(sa);
+  return TRUE;
 }
 
 static FILE *

@@ -91,38 +91,31 @@ log_queue_disk_free_method(LogQueueDisk *self)
 static gboolean
 _pop_disk(LogQueueDisk *self, LogMessage **msg)
 {
-  SerializeArchive *sa;
-
-  *msg = NULL;
-
   if (!qdisk_started(self->qdisk))
     return FALSE;
 
   ScratchBuffersMarker marker;
   GString *read_serialized = scratch_buffers_alloc_and_mark(&marker);
 
+  gint64 read_head = qdisk_get_reader_head(self->qdisk);
+
   if (!qdisk_pop_head(self->qdisk, read_serialized))
     {
+      msg_error("Cannot read correct message from disk-queue file",
+                evt_tag_str("filename", qdisk_get_filename(self->qdisk)),
+                evt_tag_int("read_head", read_head));
       scratch_buffers_reclaim_marked(marker);
       return FALSE;
     }
 
-  sa = serialize_string_archive_new(read_serialized);
-  *msg = log_msg_new_empty();
-
-  if (!log_msg_deserialize(*msg, sa))
+  if (!qdisk_deserialize_msg(self->qdisk, read_serialized, msg))
     {
-      serialize_archive_free(sa);
-      log_msg_unref(*msg);
-      scratch_buffers_reclaim_marked(marker);
-      *msg = NULL;
-      msg_error("Can't read correct message from disk-queue file",
+      msg_error("Cannot read correct message from disk-queue file",
                 evt_tag_str("filename", qdisk_get_filename(self->qdisk)),
-                evt_tag_long("read_position", qdisk_get_reader_head(self->qdisk)));
-      return TRUE;
+                evt_tag_int("read_head", read_head));
+      *msg = NULL;
     }
 
-  serialize_archive_free(sa);
   scratch_buffers_reclaim_marked(marker);
 
   return TRUE;
