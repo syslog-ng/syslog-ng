@@ -26,8 +26,6 @@
 
 #include "compat/compat.h"
 
-#define GLIB_DISABLE_DEPRECATION_WARNINGS 1
-
 #include <glib.h>
 
 #ifndef SYSLOG_NG_HAVE_G_LIST_COPY_DEEP
