@@ -82,4 +82,6 @@ const gchar *qdisk_get_filename(QDisk *self);
 
 guint64 qdisk_skip_record(QDisk *self, guint64 position);
 
+gboolean qdisk_serialize_msg(QDisk *self, LogMessage *msg, GString *serialized);
+
 #endif /* QDISK_H_ */

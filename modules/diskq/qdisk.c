@@ -569,6 +569,54 @@ qdisk_remove_head(QDisk *self)
   return TRUE;
 }
 
+static gboolean
+_overwrite_with_real_record_length(GString *serialized)
+{
+  guint32 record_length = GUINT32_TO_BE(serialized->len - sizeof(guint32));
+  if (record_length == 0)
+    return FALSE;
+
+  g_string_overwrite_len(serialized, 0, (gchar *) &record_length, sizeof(guint32));
+  return TRUE;
+}
+
+gboolean
+qdisk_serialize_msg(QDisk *self, LogMessage *msg, GString *serialized)
+{
+  gchar *error = NULL;
+  SerializeArchive *sa = serialize_string_archive_new(serialized);
+
+  /* Leave space for the real record_length for later */
+  if (!serialize_write_uint32(sa, 0))
+    {
+      error = "cannot write record length";
+      goto exit;
+    }
+
+  if (!log_msg_serialize(msg, sa, self->options->compaction ? LMSF_COMPACTION : 0))
+    {
+      error = "cannot serialize LogMessage";
+      goto exit;
+    }
+
+  if (!_overwrite_with_real_record_length(serialized))
+    {
+      error = "message is empty";
+      goto exit;
+    }
+
+exit:
+  if (error)
+    {
+      msg_error("Error serializing message for the disk-queue file",
+                evt_tag_str("error", error),
+                evt_tag_str("filename", qdisk_get_filename(self)));
+    }
+
+  serialize_archive_free(sa);
+  return error == NULL;
+}
+
 static FILE *
 _create_stream(QDisk *self, gint64 offset)
 {

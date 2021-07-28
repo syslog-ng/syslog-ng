@@ -156,8 +156,6 @@ log_queue_disk_read_message(LogQueueDisk *self, LogPathOptions *path_options)
 gboolean
 log_queue_disk_write_message(LogQueueDisk *self, LogMessage *msg)
 {
-  SerializeArchive *sa;
-  DiskQueueOptions *options = qdisk_get_options(self->qdisk);
   gboolean consumed = FALSE;
 
   if (qdisk_started(self->qdisk) && qdisk_is_space_avail(self->qdisk, 64))
@@ -165,13 +163,17 @@ log_queue_disk_write_message(LogQueueDisk *self, LogMessage *msg)
       ScratchBuffersMarker marker;
       GString *write_serialized = scratch_buffers_alloc_and_mark(&marker);
 
-      sa = serialize_string_archive_new(write_serialized);
-      log_msg_serialize(msg, sa, options->compaction ? LMSF_COMPACTION : 0);
+      if (!qdisk_serialize_msg(self->qdisk, msg, write_serialized))
+        {
+          scratch_buffers_reclaim_marked(marker);
+          return FALSE;
+        }
+
       consumed = qdisk_push_tail(self->qdisk, write_serialized);
-      serialize_archive_free(sa);
 
       scratch_buffers_reclaim_marked(marker);
     }
+
   return consumed;
 }
 
