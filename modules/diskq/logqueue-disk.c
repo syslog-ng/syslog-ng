@@ -29,6 +29,7 @@
 #include "stats/stats-registry.h"
 #include "reloc.h"
 #include "qdisk.h"
+#include "scratch-buffers.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -189,15 +190,6 @@ log_queue_disk_load_queue(LogQueue *s, const gchar *filename)
   return FALSE;
 }
 
-gboolean
-log_queue_disk_is_reliable(LogQueue *s)
-{
-  LogQueueDisk *self = (LogQueueDisk *) s;
-  if (self->is_reliable)
-    return self->is_reliable(self);
-  return FALSE;
-}
-
 const gchar *
 log_queue_disk_get_filename(LogQueue *s)
 {
@@ -222,7 +214,6 @@ _free(LogQueue *s)
 static gboolean
 _pop_disk(LogQueueDisk *self, LogMessage **msg)
 {
-  GString *serialized;
   SerializeArchive *sa;
 
   *msg = NULL;
@@ -230,21 +221,23 @@ _pop_disk(LogQueueDisk *self, LogMessage **msg)
   if (!qdisk_started(self->qdisk))
     return FALSE;
 
-  serialized = g_string_sized_new(64);
-  if (!qdisk_pop_head(self->qdisk, serialized))
+  ScratchBuffersMarker marker;
+  GString *read_serialized = scratch_buffers_alloc_and_mark(&marker);
+
+  if (!qdisk_pop_head(self->qdisk, read_serialized))
     {
-      g_string_free(serialized, TRUE);
+      scratch_buffers_reclaim_marked(marker);
       return FALSE;
     }
 
-  sa = serialize_string_archive_new(serialized);
+  sa = serialize_string_archive_new(read_serialized);
   *msg = log_msg_new_empty();
 
   if (!log_msg_deserialize(*msg, sa))
     {
-      g_string_free(serialized, TRUE);
       serialize_archive_free(sa);
       log_msg_unref(*msg);
+      scratch_buffers_reclaim_marked(marker);
       *msg = NULL;
       msg_error("Can't read correct message from disk-queue file",
                 evt_tag_str("filename", qdisk_get_filename(self->qdisk)),
@@ -253,13 +246,13 @@ _pop_disk(LogQueueDisk *self, LogMessage **msg)
     }
 
   serialize_archive_free(sa);
+  scratch_buffers_reclaim_marked(marker);
 
-  g_string_free(serialized, TRUE);
   return TRUE;
 }
 
-static LogMessage *
-_read_message(LogQueueDisk *self, LogPathOptions *path_options)
+LogMessage *
+log_queue_disk_read_message(LogQueueDisk *self, LogPathOptions *path_options)
 {
   LogMessage *msg = NULL;
   do
@@ -283,21 +276,24 @@ _read_message(LogQueueDisk *self, LogPathOptions *path_options)
   return msg;
 }
 
-static gboolean
-_write_message(LogQueueDisk *self, LogMessage *msg)
+gboolean
+log_queue_disk_write_message(LogQueueDisk *self, LogMessage *msg)
 {
-  GString *serialized;
   SerializeArchive *sa;
   DiskQueueOptions *options = qdisk_get_options(self->qdisk);
   gboolean consumed = FALSE;
+
   if (qdisk_started(self->qdisk) && qdisk_is_space_avail(self->qdisk, 64))
     {
-      serialized = g_string_sized_new(64);
-      sa = serialize_string_archive_new(serialized);
+      ScratchBuffersMarker marker;
+      GString *write_serialized = scratch_buffers_alloc_and_mark(&marker);
+
+      sa = serialize_string_archive_new(write_serialized);
       log_msg_serialize(msg, sa, options->compaction ? LMSF_COMPACTION : 0);
-      consumed = qdisk_push_tail(self->qdisk, serialized);
+      consumed = qdisk_push_tail(self->qdisk, write_serialized);
       serialize_archive_free(sa);
-      g_string_free(serialized, TRUE);
+
+      scratch_buffers_reclaim_marked(marker);
     }
   return consumed;
 }
@@ -351,7 +347,4 @@ log_queue_disk_init_instance(LogQueueDisk *self, const gchar *persist_name)
   self->super.rewind_backlog = _rewind_backlog;
   self->super.rewind_backlog_all = _backlog_all;
   self->super.free_fn = _free;
-
-  self->read_message = _read_message;
-  self->write_message = _write_message;
 }

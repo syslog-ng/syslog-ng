@@ -53,6 +53,7 @@ gboolean qdisk_is_space_avail(QDisk *self, gint at_least);
 gint64 qdisk_get_empty_space(QDisk *self);
 gboolean qdisk_push_tail(QDisk *self, GString *record);
 gboolean qdisk_pop_head(QDisk *self, GString *record);
+gboolean qdisk_remove_head(QDisk *self);
 gboolean qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, GQueue *qoverflow);
 void qdisk_init_instance(QDisk *self, DiskQueueOptions *options, const gchar *file_id);
 void qdisk_stop(QDisk *self);
@@ -79,8 +80,6 @@ gint qdisk_get_memory_size(QDisk *self);
 gboolean qdisk_is_read_only(QDisk *self);
 const gchar *qdisk_get_filename(QDisk *self);
 
-gssize qdisk_read(QDisk *self, gpointer buffer, gsize bytes_to_read, gint64 position);
 guint64 qdisk_skip_record(QDisk *self, guint64 position);
-ssize_t pread_all(int fd, char *buf,  size_t count, off_t offset, gint max_block);
 
 #endif /* QDISK_H_ */
