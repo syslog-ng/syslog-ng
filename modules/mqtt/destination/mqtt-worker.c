@@ -25,6 +25,7 @@
 #include "mqtt-destination.h"
 #include "thread-utils.h"
 #include "apphook.h"
+#include "messages.h"
 
 #include <stdio.h>
 
@@ -182,6 +183,13 @@ _insert(LogThreadedDestWorker *s, LogMessage *msg)
   */
 }
 
+static gint
+_log_ssl_errors(const gchar *str, gsize len, gpointer u)
+{
+  msg_error("MQTT TLS error", evt_tag_printf("line", "%.*s", (gint) len, str));
+  return TRUE;
+}
+
 static MQTTClient_SSLOptions
 _create_ssl_options(MQTTDestinationWorker *self)
 {
@@ -197,6 +205,7 @@ _create_ssl_options(MQTTDestinationWorker *self)
   ssl_opts.enableServerCertAuth = owner->peer_verify;
   ssl_opts.verify = owner->peer_verify;
   ssl_opts.disableDefaultTrustStore = !owner->use_system_cert_store;
+  ssl_opts.ssl_error_cb = _log_ssl_errors;
 
   return ssl_opts;
 }
