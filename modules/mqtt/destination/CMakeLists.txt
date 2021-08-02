@@ -8,7 +8,7 @@ set(MQTT_DEST_SOURCES
 
 add_module(
   TARGET mqtt-destination
-  DEPENDS eclipse-paho-mqtt-c::paho-mqtt3c
+  DEPENDS eclipse-paho-mqtt-c::paho-mqtt3cs
   SOURCES ${MQTT_DEST_SOURCES}
   LIBRARY_TYPE STATIC # STATIC: Built as part of a larger libmqtt module
 )
