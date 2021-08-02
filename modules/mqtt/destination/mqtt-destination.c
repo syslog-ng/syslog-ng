@@ -262,10 +262,25 @@ _topic_name_is_a_template(MQTTDestinationDriver *self)
   return !log_template_is_literal_string(self->topic_name);
 }
 
+static void
+_mqtt_internal_log(enum MQTTCLIENT_TRACE_LEVELS level, gchar *message)
+{
+  if (level >= MQTTCLIENT_TRACE_ERROR)
+    {
+      msg_error("MQTT error", evt_tag_str("error_message", message));
+      return;
+    }
+
+  msg_trace("MQTT debug", evt_tag_str("message", message));
+}
+
 static gboolean
 _init(LogPipe *d)
 {
   MQTTDestinationDriver *self = (MQTTDestinationDriver *)d;
+
+  MQTTClient_setTraceCallback(_mqtt_internal_log);
+  MQTTClient_setTraceLevel(MQTTCLIENT_TRACE_PROTOCOL);
 
   if (!self->topic_name)
     {
