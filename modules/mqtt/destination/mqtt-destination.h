@@ -30,9 +30,9 @@
 typedef struct
 {
   LogThreadedDestDriver super;
-  GString  *address;
-  gint      keepalive;
-  gint      qos;
+  GString *address;
+  gint keepalive;
+  gint qos;
 
   LogTemplate *message;
   LogTemplateOptions template_options;

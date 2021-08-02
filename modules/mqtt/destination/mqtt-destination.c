@@ -130,11 +130,11 @@ _format_persist_name(const LogPipe *d)
 static void
 _set_default_value(MQTTDestinationDriver *self, GlobalConfig *cfg)
 {
-  self->address       = g_string_new(DEFAULT_ADDRESS);
+  self->address = g_string_new(DEFAULT_ADDRESS);
 
-  self->keepalive     = DEFAULT_KEEPALIVE;
-  self->qos           = DEFAULT_QOS;
-  self->message       = log_template_new(cfg, NULL);
+  self->keepalive = DEFAULT_KEEPALIVE;
+  self->qos = DEFAULT_QOS;
+  self->message = log_template_new(cfg, NULL);
 
   log_template_compile(self->message, DEFAULT_MESSAGE_TEMPLATE, NULL);
 
