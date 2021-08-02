@@ -32,6 +32,10 @@
 #include "plugin-types.h"
 #include "logthrdest/logthrdestdrv.h"
 
+#include <MQTTClient.h>
+
+#include <strings.h>
+
 /*
  * Default values
  */
@@ -120,6 +124,87 @@ void mqtt_dd_set_password(LogDriver *d, const gchar *password)
   self->password = g_strdup(password);
 }
 
+void
+mqtt_dd_set_ca_dir(LogDriver *d, const gchar *ca_dir)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *) d;
+
+  g_free(self->ca_dir);
+  self->ca_dir = g_strdup(ca_dir);
+}
+
+void
+mqtt_dd_set_ca_file(LogDriver *d, const gchar *ca_file)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *) d;
+
+  g_free(self->ca_file);
+  self->ca_file = g_strdup(ca_file);
+}
+
+void
+mqtt_dd_set_cert_file(LogDriver *d, const gchar *cert_file)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *) d;
+
+  g_free(self->cert_file);
+  self->cert_file = g_strdup(cert_file);
+}
+
+void
+mqtt_dd_set_key_file(LogDriver *d, const gchar *key_file)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *) d;
+
+  g_free(self->key_file);
+  self->key_file = g_strdup(key_file);
+}
+
+void
+mqtt_dd_set_cipher_suite(LogDriver *d, const gchar *ciphers)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *) d;
+
+  g_free(self->ciphers);
+  self->ciphers = g_strdup(ciphers);
+}
+
+gboolean
+mqtt_dd_set_ssl_version(LogDriver *d, const gchar *value)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *) d;
+
+  if (strcasecmp(value, "default") == 0)
+    self->ssl_version = MQTT_SSL_VERSION_DEFAULT;
+  else if (strcasecmp(value, "tlsv1_0") == 0)
+    self->ssl_version = MQTT_SSL_VERSION_TLS_1_0;
+  else if (strcasecmp(value, "tlsv1_1") == 0)
+    self->ssl_version = MQTT_SSL_VERSION_TLS_1_1;
+  else if (strcasecmp(value, "tlsv1_2") == 0)
+    self->ssl_version = MQTT_SSL_VERSION_TLS_1_2;
+  else
+    return FALSE;
+
+  return TRUE;
+}
+
+void
+mqtt_dd_set_peer_verify(LogDriver *d, gboolean verify)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *) d;
+
+  self->peer_verify = verify;
+}
+
+void
+mqtt_dd_use_system_cert_store(LogDriver *d, gboolean use_system_cert_store)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *) d;
+
+  /* TODO: auto_detect_ca_file() from the HTTP module */
+  self->use_system_cert_store = use_system_cert_store;
+}
+
 /*
  * Utilities
  */
@@ -161,6 +246,10 @@ _set_default_value(MQTTDestinationDriver *self, GlobalConfig *cfg)
   self->keepalive = DEFAULT_KEEPALIVE;
   self->qos = DEFAULT_QOS;
   self->message = log_template_new(cfg, NULL);
+
+  self->ssl_version = MQTT_SSL_VERSION_DEFAULT;
+  self->peer_verify = TRUE;
+  self->use_system_cert_store = FALSE;
 
   log_template_compile(self->message, DEFAULT_MESSAGE_TEMPLATE, NULL);
 
@@ -220,6 +309,12 @@ _free(LogPipe *d)
   g_free(self->username);
   g_free(self->password);
   g_free(self->http_proxy);
+
+  g_free(self->ca_dir);
+  g_free(self->ca_file);
+  g_free(self->cert_file);
+  g_free(self->key_file);
+  g_free(self->ciphers);
 
   if (self->fallback_topic_name)
     g_free(self->fallback_topic_name);

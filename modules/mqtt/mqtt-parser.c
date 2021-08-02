@@ -40,6 +40,15 @@ static CfgLexerKeyword mqtt_destination_keywords[] =
   { "username", KW_USERNAME },
   { "password", KW_PASSWORD },
   { "http_proxy", KW_HTTP_PROXY },
+  { "tls", KW_TLS },
+  { "ca_dir", KW_CA_DIR },
+  { "ca_file", KW_CA_FILE },
+  { "cert_file", KW_CERT_FILE },
+  { "key_file", KW_KEY_FILE },
+  { "cipher_suite", KW_CIPHER_SUITE },
+  { "peer_verify", KW_PEER_VERIFY },
+  { "use_system_cert_store", KW_USE_SYSTEM_CERT_STORE },
+  { "ssl_version", KW_SSL_VERSION },
   { NULL }
 };
 

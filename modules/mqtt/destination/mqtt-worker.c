@@ -182,6 +182,24 @@ _insert(LogThreadedDestWorker *s, LogMessage *msg)
   */
 }
 
+static MQTTClient_SSLOptions
+_create_ssl_options(MQTTDestinationWorker *self)
+{
+  MQTTDestinationDriver *owner = (MQTTDestinationDriver *) self->super.owner;
+
+  MQTTClient_SSLOptions ssl_opts = MQTTClient_SSLOptions_initializer;
+  ssl_opts.trustStore = owner->ca_file;
+  ssl_opts.CApath = owner->ca_dir;
+  ssl_opts.keyStore = owner->cert_file;
+  ssl_opts.privateKey = owner->key_file;
+  ssl_opts.enabledCipherSuites = owner->ciphers;
+  ssl_opts.sslVersion = owner->ssl_version;
+  ssl_opts.enableServerCertAuth = owner->peer_verify;
+  ssl_opts.verify = owner->peer_verify;
+  ssl_opts.disableDefaultTrustStore = !owner->use_system_cert_store;
+
+  return ssl_opts;
+}
 
 static gboolean
 _connect(LogThreadedDestWorker *s)
@@ -201,6 +219,9 @@ _connect(LogThreadedDestWorker *s)
       conn_opts.httpProxy = owner->http_proxy;
       conn_opts.httpsProxy = owner->http_proxy;
     }
+
+  MQTTClient_SSLOptions ssl_opts = _create_ssl_options(self);
+  conn_opts.ssl = &ssl_opts;
 
   if ((rc = MQTTClient_connect(self->client, &conn_opts)) != MQTTCLIENT_SUCCESS)
     {
