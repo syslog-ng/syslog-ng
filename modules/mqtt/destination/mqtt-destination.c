@@ -272,7 +272,7 @@ mqtt_dd_validate_topic_name(const gchar *name, GError **error)
 }
 
 GQuark
-topic_name_error_quark(void)
+mqtt_topic_name_error_quark(void)
 {
   return g_quark_from_static_string("invalid-topic-name-error-quark");
 }

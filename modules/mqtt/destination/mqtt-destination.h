@@ -41,9 +41,9 @@ typedef struct
   gchar *fallback_topic_name;
 } MQTTDestinationDriver;
 
-#define TOPIC_NAME_ERROR topic_name_error_quark()
+#define TOPIC_NAME_ERROR mqtt_topic_name_error_quark()
 
-GQuark topic_name_error_quark(void);
+GQuark mqtt_topic_name_error_quark(void);
 
 enum MQTTTopicError
 {
