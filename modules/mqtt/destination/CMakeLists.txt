@@ -2,7 +2,6 @@
 set(MQTT_DEST_SOURCES
     mqtt-destination.c
     mqtt-destination.h
-    mqtt-plugin.c
     mqtt-worker.c
     mqtt-worker.h
 )
@@ -13,4 +12,3 @@ add_module(
   SOURCES ${MQTT_DEST_SOURCES}
   LIBRARY_TYPE STATIC # STATIC: Built as part of a larger libmqtt module
 )
-

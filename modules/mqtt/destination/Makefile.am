@@ -1,7 +1,6 @@
 if ENABLE_MQTT
 noinst_LTLIBRARIES      += modules/mqtt/destination/libmqtt_destination.la
 modules_mqtt_destination_libmqtt_destination_la_SOURCES = \
-  modules/mqtt/destination/mqtt-plugin.c        \
   modules/mqtt/destination/mqtt-worker.h        \
   modules/mqtt/destination/mqtt-worker.c        \
   modules/mqtt/destination/mqtt-destination.h   \
