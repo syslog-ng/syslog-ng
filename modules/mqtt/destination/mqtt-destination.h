@@ -34,6 +34,9 @@ typedef struct
   gint keepalive;
   gint qos;
 
+  gchar *username;
+  gchar *password;
+
   LogTemplate *message;
   LogTemplateOptions template_options;
 
@@ -59,6 +62,8 @@ void mqtt_dd_set_address(LogDriver *d, const gchar *address);
 void mqtt_dd_set_qos (LogDriver *d, const gint qos);
 void mqtt_dd_set_message_template_ref(LogDriver *d, LogTemplate *message);
 
+void mqtt_dd_set_username(LogDriver *d, const gchar *username);
+void mqtt_dd_set_password(LogDriver *d, const gchar *password);
 gboolean mqtt_dd_validate_topic_name(const gchar *name, GError **error);
 
 LogTemplateOptions *mqtt_dd_get_template_options(LogDriver *s);

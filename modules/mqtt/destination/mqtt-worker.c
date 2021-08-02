@@ -191,9 +191,11 @@ _connect(LogThreadedDestWorker *s)
   gint rc;
 
   MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
-
   conn_opts.keepAliveInterval = owner->keepalive;
   conn_opts.cleansession = FALSE;
+  conn_opts.username = owner->username;
+  conn_opts.password = owner->password;
+
   if ((rc = MQTTClient_connect(self->client, &conn_opts)) != MQTTCLIENT_SUCCESS)
     {
       msg_error("Error connecting mqtt client",

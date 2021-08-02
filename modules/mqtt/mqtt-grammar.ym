@@ -50,6 +50,8 @@
 %token KW_ADDRESS
 %token KW_QOS
 %token KW_MESSAGE_TEMPLATE
+%token KW_USERNAME
+%token KW_PASSWORD
 
 %%
 
@@ -82,6 +84,8 @@ mqtt_destination_option
             mqtt_dd_set_qos(last_driver, $3);
           }
         | KW_TEMPLATE '(' template_content ')'   { mqtt_dd_set_message_template_ref(last_driver, $3); }
+        | KW_USERNAME '(' string ')'             { mqtt_dd_set_username(last_driver, $3); free($3); }
+        | KW_PASSWORD '(' string ')'             { mqtt_dd_set_password(last_driver, $3); free($3); }
         | threaded_dest_driver_general_option
         | { last_template_options = mqtt_dd_get_template_options(last_driver); } template_option
         ;
