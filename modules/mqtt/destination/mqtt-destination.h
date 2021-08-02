@@ -36,6 +36,7 @@ typedef struct
 
   gchar *username;
   gchar *password;
+  gchar *http_proxy;
 
   LogTemplate *message;
   LogTemplateOptions template_options;
@@ -64,6 +65,7 @@ void mqtt_dd_set_message_template_ref(LogDriver *d, LogTemplate *message);
 
 void mqtt_dd_set_username(LogDriver *d, const gchar *username);
 void mqtt_dd_set_password(LogDriver *d, const gchar *password);
+void mqtt_dd_set_http_proxy(LogDriver *d, const gchar *http_proxy);
 gboolean mqtt_dd_validate_topic_name(const gchar *name, GError **error);
 
 LogTemplateOptions *mqtt_dd_get_template_options(LogDriver *s);

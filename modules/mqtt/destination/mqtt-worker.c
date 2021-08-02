@@ -196,6 +196,12 @@ _connect(LogThreadedDestWorker *s)
   conn_opts.username = owner->username;
   conn_opts.password = owner->password;
 
+  if (owner->http_proxy)
+    {
+      conn_opts.httpProxy = owner->http_proxy;
+      conn_opts.httpsProxy = owner->http_proxy;
+    }
+
   if ((rc = MQTTClient_connect(self->client, &conn_opts)) != MQTTCLIENT_SUCCESS)
     {
       msg_error("Error connecting mqtt client",

@@ -39,6 +39,7 @@ static CfgLexerKeyword mqtt_destination_keywords[] =
   { "qos", KW_QOS },
   { "username", KW_USERNAME },
   { "password", KW_PASSWORD },
+  { "http_proxy", KW_HTTP_PROXY },
   { NULL }
 };
 

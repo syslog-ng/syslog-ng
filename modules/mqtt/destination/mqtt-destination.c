@@ -94,6 +94,16 @@ mqtt_dd_set_message_template_ref(LogDriver *d, LogTemplate *message)
   self->message = message;
 }
 
+
+void
+mqtt_dd_set_http_proxy(LogDriver *d, const gchar *http_proxy)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *) d;
+
+  g_free(self->http_proxy);
+  self->http_proxy = g_strdup(http_proxy);
+}
+
 void mqtt_dd_set_username(LogDriver *d, const gchar *username)
 {
   MQTTDestinationDriver *self = (MQTTDestinationDriver *) d;
@@ -209,6 +219,7 @@ _free(LogPipe *d)
 
   g_free(self->username);
   g_free(self->password);
+  g_free(self->http_proxy);
 
   if (self->fallback_topic_name)
     g_free(self->fallback_topic_name);
