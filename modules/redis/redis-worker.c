@@ -112,8 +112,8 @@ redis_worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
             evt_tag_str("command", _argv_to_string(self)));
 
   status = LTR_SUCCESS;
-  freeReplyObject(reply);
 exit:
+  freeReplyObject(reply);
   scratch_buffers_reclaim_marked(marker);
   return status;
 }
