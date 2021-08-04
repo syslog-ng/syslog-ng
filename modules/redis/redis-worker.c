@@ -87,6 +87,7 @@ redis_worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
 {
   RedisDestWorker *self = (RedisDestWorker *)s;
   RedisDriver *owner = (RedisDriver *) self->super.owner;
+  LogThreadedResult status = LTR_ERROR;
 
   ScratchBuffersMarker marker;
   scratch_buffers_mark(&marker);
@@ -102,17 +103,30 @@ redis_worker_insert(LogThreadedDestWorker *s, LogMessage *msg)
                 evt_tag_str("command", _argv_to_string(self)),
                 evt_tag_str("error", self->c->errstr),
                 evt_tag_int("time_reopen", self->super.time_reopen));
-      scratch_buffers_reclaim_marked(marker);
-      return LTR_ERROR;
+
+      goto exit;
+    }
+
+  if (reply->type == REDIS_REPLY_ERROR)
+    {
+      msg_error("REDIS server error, suspending",
+                evt_tag_str("driver", owner->super.super.super.id),
+                evt_tag_str("command", _argv_to_string(self)),
+                evt_tag_str("error", reply->str),
+                evt_tag_int("time_reopen", self->super.time_reopen));
+
+      goto exit;
     }
 
   msg_debug("REDIS command sent",
             evt_tag_str("driver", owner->super.super.super.id),
             evt_tag_str("command", _argv_to_string(self)));
 
+  status = LTR_SUCCESS;
+exit:
   freeReplyObject(reply);
   scratch_buffers_reclaim_marked(marker);
-  return LTR_SUCCESS;
+  return status;
 }
 
 
