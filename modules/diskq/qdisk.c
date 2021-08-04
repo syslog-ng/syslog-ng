@@ -206,8 +206,6 @@ qdisk_is_file_empty(QDisk *self)
 gboolean
 qdisk_is_space_avail(QDisk *self, gint at_least)
 {
-  /* sizeof(guint32): record_length is a 4 bytes long value which is stored before each serialized LogMessage */
-  gint64 msg_len = at_least + sizeof(guint32);
   /* write follows read (e.g. we are appending to the file) OR
    * there's enough space between write and read.
    *
@@ -219,7 +217,7 @@ qdisk_is_space_avail(QDisk *self, gint at_least)
   return (
            (_is_backlog_head_prevent_write_head(self)) &&
            (_is_write_head_less_than_max_size(self) || _is_able_to_reset_write_head_to_beginning_of_qdisk(self))
-         ) || (_is_free_space_between_write_head_and_backlog_head(self, msg_len));
+         ) || (_is_free_space_between_write_head_and_backlog_head(self, at_least));
 
 }
 
@@ -342,7 +340,7 @@ qdisk_push_tail(QDisk *self, GString *record)
       self->hdr->write_head = QDISK_RESERVED_SPACE;
     }
 
-  if (!qdisk_is_space_avail(self, record->len - sizeof(guint32)))
+  if (!qdisk_is_space_avail(self, record->len))
     return FALSE;
 
   if (!pwrite_strict(self->fd, record->str, record->len, self->hdr->write_head))
