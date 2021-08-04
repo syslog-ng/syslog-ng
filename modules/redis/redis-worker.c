@@ -309,10 +309,10 @@ redis_worker_connect(LogThreadedDestWorker *s)
 
   if (self->c && check_connection_to_redis(self))
     return TRUE;
-  if (self->c)
-    redisFree(self->c);
-
-  self->c = redisConnectWithTimeout(owner->host, owner->port, owner->timeout);
+  else if (self->c)
+    redisReconnect(self->c);
+  else
+    self->c = redisConnectWithTimeout(owner->host, owner->port, owner->timeout);
 
   if (self->c == NULL || self->c->err)
     {
