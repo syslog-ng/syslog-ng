@@ -277,27 +277,12 @@ _drop_msg(LogQueueDiskReliable *self, LogMessage *msg, const LogPathOptions *pat
 }
 
 static gboolean
-_write_message_to_disk(LogQueueDisk *self, LogMessage *msg)
+_write_message_to_disk(LogQueueDisk *self, GString *serialized_msg)
 {
-  gboolean consumed = FALSE;
+  if (!qdisk_started(self->qdisk) || qdisk_is_space_avail(self->qdisk, serialized_msg))
+    return FALSE;
 
-  if (qdisk_started(self->qdisk) && qdisk_is_space_avail(self->qdisk, 64))
-    {
-      ScratchBuffersMarker marker;
-      GString *write_serialized = scratch_buffers_alloc_and_mark(&marker);
-
-      if (!qdisk_serialize_msg(self->qdisk, msg, write_serialized))
-        {
-          scratch_buffers_reclaim_marked(marker);
-          return FALSE;
-        }
-
-      consumed = qdisk_push_tail(self->qdisk, write_serialized);
-
-      scratch_buffers_reclaim_marked(marker);
-    }
-
-  return consumed;
+  return qdisk_push_tail(self->qdisk, serialized_msg);
 }
 
 static void
@@ -305,12 +290,24 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   LogQueueDiskReliable *self = (LogQueueDiskReliable *)s;
 
+  ScratchBuffersMarker marker;
+  GString *serialized_msg = scratch_buffers_alloc_and_mark(&marker);
+  if (!qdisk_serialize_msg(self->super.qdisk, msg, serialized_msg))
+    {
+      msg_error("Failed to serialize message for reliable disk-buffer, dropping message",
+                evt_tag_str("filename", qdisk_get_filename (self->super.qdisk)),
+                evt_tag_str("persist_name", s->persist_name));
+      _drop_msg(self, msg, path_options);
+      scratch_buffers_reclaim_marked(marker);
+      return;
+    }
+
   g_static_mutex_lock(&s->lock);
 
   LogPathOptions local_options = *path_options;
 
   gint64 last_wpos = qdisk_get_writer_head (self->super.qdisk);
-  if (!_write_message_to_disk(&self->super, msg))
+  if (!_write_message_to_disk(&self->super, serialized_msg))
     {
       /* we were not able to store the msg, warn */
       msg_error("Destination reliable queue full, dropping message",
@@ -320,9 +317,12 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
                 evt_tag_long("disk_buf_size", qdisk_get_maximum_size (self->super.qdisk)),
                 evt_tag_str("persist_name", s->persist_name));
       _drop_msg(self, msg, path_options);
+      scratch_buffers_reclaim_marked(marker);
       g_static_mutex_unlock(&s->lock);
       return;
     }
+
+  scratch_buffers_reclaim_marked(marker);
 
   /* check the remaining space: if it is less than the mem_buf_size, the message cannot be acked */
   if (qdisk_get_empty_space(self->super.qdisk) < qdisk_get_memory_size (self->super.qdisk))
