@@ -286,6 +286,11 @@ _push_tail(LogQueueDisk *s, LogMessage *msg, LogPathOptions *local_options, cons
 }
 
 static void
+_push_head(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
+{
+}
+
+static void
 _free_queue(LogQueueDisk *s)
 {
   LogQueueDiskReliable *self = (LogQueueDiskReliable *) s;
@@ -329,6 +334,7 @@ _set_virtual_functions(LogQueueDisk *self)
   self->rewind_backlog = _rewind_backlog;
   self->pop_head = _pop_head;
   self->push_tail = _push_tail;
+  self->super.push_head = _push_head;
   self->free_fn = _free_queue;
   self->load_queue = _load_queue;
   self->start = _start;

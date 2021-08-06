@@ -302,14 +302,18 @@ _pop_head (LogQueueDisk *s, LogPathOptions *path_options)
 }
 
 static void
-_push_head (LogQueueDisk *s, LogMessage *msg, const LogPathOptions *path_options)
+_push_head(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
 {
-  LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *) s;
+  LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *)s;
 
-  g_queue_push_head (self->qout, LOG_PATH_OPTIONS_TO_POINTER (path_options));
-  g_queue_push_head (self->qout, msg);
-  log_queue_queued_messages_inc(&self->super.super);
-  log_queue_memory_usage_add(&self->super.super, log_msg_get_size(msg));
+  g_static_mutex_lock(&s->lock);
+
+  g_queue_push_head(self->qout, LOG_PATH_OPTIONS_TO_POINTER (path_options));
+  g_queue_push_head(self->qout, msg);
+  log_queue_queued_messages_inc(s);
+  log_queue_memory_usage_add(s, log_msg_get_size(msg));
+
+  g_static_mutex_unlock(&s->lock);
 }
 
 static gboolean
@@ -420,7 +424,7 @@ _set_virtual_functions (LogQueueDisk *self)
   self->super.ack_backlog = _ack_backlog;
   self->rewind_backlog = _rewind_backlog;
   self->pop_head = _pop_head;
-  self->push_head = _push_head;
+  self->super.push_head = _push_head;
   self->push_tail = _push_tail;
   self->start = _start;
   self->free_fn = _freefn;

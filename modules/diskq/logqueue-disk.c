@@ -71,19 +71,6 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
   g_static_mutex_unlock(&self->super.lock);
 }
 
-static void
-_push_head(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
-{
-  LogQueueDisk *self = (LogQueueDisk *) s;
-
-  g_static_mutex_lock(&self->super.lock);
-  if (self->push_head)
-    {
-      self->push_head(self, msg, path_options);
-    }
-  g_static_mutex_unlock(&self->super.lock);
-}
-
 static LogMessage *
 _pop_head(LogQueue *s, LogPathOptions *path_options)
 {
@@ -312,7 +299,6 @@ log_queue_disk_init_instance(LogQueueDisk *self, const gchar *persist_name)
 
   self->super.type = log_queue_disk_type;
   self->super.push_tail = _push_tail;
-  self->super.push_head = _push_head;
   self->super.pop_head = _pop_head;
   self->super.rewind_backlog = _rewind_backlog;
   self->super.rewind_backlog_all = _backlog_all;
