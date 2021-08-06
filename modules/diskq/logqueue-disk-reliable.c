@@ -200,9 +200,12 @@ _rewind_backlog_all(LogQueue *s)
 }
 
 static LogMessage *
-_pop_head(LogQueueDisk *s, LogPathOptions *path_options)
+_pop_head(LogQueue *s, LogPathOptions *path_options)
 {
-  LogQueueDiskReliable *self = (LogQueueDiskReliable *) s;
+  LogQueueDiskReliable *self = (LogQueueDiskReliable *)s;
+
+  g_static_mutex_lock(&s->lock);
+
   LogMessage *msg = NULL;
   if (self->qreliable->length > 0)
     {
@@ -211,11 +214,11 @@ _pop_head(LogQueueDisk *s, LogPathOptions *path_options)
       if (pos == qdisk_get_reader_head (self->super.qdisk))
         {
           msg = g_queue_pop_head (self->qreliable);
-          log_queue_memory_usage_sub(&self->super.super, log_msg_get_size(msg));
+          log_queue_memory_usage_sub(s, log_msg_get_size(msg));
 
           POINTER_TO_LOG_PATH_OPTIONS (g_queue_pop_head (self->qreliable), path_options);
-          _skip_message (s);
-          if (self->super.super.use_backlog)
+          _skip_message (&self->super);
+          if (s->use_backlog)
             {
               log_msg_ref (msg);
               g_queue_push_tail (self->qbacklog, temppos);
@@ -236,7 +239,7 @@ _pop_head(LogQueueDisk *s, LogPathOptions *path_options)
 
   if (msg == NULL)
     {
-      msg = log_queue_disk_read_message(s, path_options);
+      msg = log_queue_disk_read_message(&self->super, path_options);
       if (msg)
         {
           path_options->ack_needed = FALSE;
@@ -245,7 +248,7 @@ _pop_head(LogQueueDisk *s, LogPathOptions *path_options)
 
   if (msg != NULL)
     {
-      if (self->super.super.use_backlog)
+      if (s->use_backlog)
         {
           qdisk_inc_backlog(self->super.qdisk);
         }
@@ -253,7 +256,11 @@ _pop_head(LogQueueDisk *s, LogPathOptions *path_options)
         {
           qdisk_set_backlog_head(self->super.qdisk, qdisk_get_reader_head(self->super.qdisk));
         }
+      log_queue_queued_messages_dec(s);
     }
+
+  g_static_mutex_unlock(&s->lock);
+
   return msg;
 }
 
@@ -347,7 +354,7 @@ _set_virtual_functions(LogQueueDisk *self)
   self->super.ack_backlog = _ack_backlog;
   self->super.rewind_backlog = _rewind_backlog;
   self->super.rewind_backlog_all = _rewind_backlog_all;
-  self->pop_head = _pop_head;
+  self->super.pop_head = _pop_head;
   self->push_tail = _push_tail;
   self->super.push_head = _push_head;
   self->super.free_fn = _free;

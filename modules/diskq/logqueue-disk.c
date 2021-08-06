@@ -71,26 +71,6 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
   g_static_mutex_unlock(&self->super.lock);
 }
 
-static LogMessage *
-_pop_head(LogQueue *s, LogPathOptions *path_options)
-{
-  LogQueueDisk *self = (LogQueueDisk *) s;
-  LogMessage *msg = NULL;
-
-  msg = NULL;
-  g_static_mutex_lock(&self->super.lock);
-  if (self->pop_head)
-    {
-      msg = self->pop_head(self, path_options);
-    }
-  if (msg != NULL)
-    {
-      log_queue_queued_messages_dec(&self->super);
-    }
-  g_static_mutex_unlock(&self->super.lock);
-  return msg;
-}
-
 gboolean
 log_queue_disk_save_queue(LogQueue *s, gboolean *persistent)
 {
@@ -265,5 +245,4 @@ log_queue_disk_init_instance(LogQueueDisk *self, const gchar *persist_name)
 
   self->super.type = log_queue_disk_type;
   self->super.push_tail = _push_tail;
-  self->super.pop_head = _pop_head;
 }

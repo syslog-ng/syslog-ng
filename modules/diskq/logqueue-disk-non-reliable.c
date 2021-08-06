@@ -270,20 +270,22 @@ _rewind_backlog_all(LogQueue *s)
 }
 
 static LogMessage *
-_pop_head (LogQueueDisk *s, LogPathOptions *path_options)
+_pop_head(LogQueue *s, LogPathOptions *path_options)
 {
-  LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *) s;
+  LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *)s;
   LogMessage *msg = NULL;
+
+  g_static_mutex_lock(&s->lock);
 
   if (self->qout->length > 0)
     {
       msg = g_queue_pop_head (self->qout);
       POINTER_TO_LOG_PATH_OPTIONS (g_queue_pop_head (self->qout), path_options);
-      log_queue_memory_usage_sub(&self->super.super, log_msg_get_size(msg));
+      log_queue_memory_usage_sub(s, log_msg_get_size(msg));
     }
   if (msg == NULL)
     {
-      msg = log_queue_disk_read_message(s, path_options);
+      msg = log_queue_disk_read_message(&self->super, path_options);
       if (msg)
         {
           path_options->ack_needed = FALSE;
@@ -295,20 +297,24 @@ _pop_head (LogQueueDisk *s, LogPathOptions *path_options)
         {
           msg = g_queue_pop_head (self->qoverflow);
           POINTER_TO_LOG_PATH_OPTIONS (g_queue_pop_head (self->qoverflow), path_options);
-          log_queue_memory_usage_sub(&self->super.super, log_msg_get_size(msg));
+          log_queue_memory_usage_sub(s, log_msg_get_size(msg));
         }
     }
 
   if (msg != NULL)
     {
-      if (self->super.super.use_backlog)
+      if (s->use_backlog)
         {
           log_msg_ref (msg);
           g_queue_push_tail (self->qbacklog, msg);
           g_queue_push_tail (self->qbacklog, LOG_PATH_OPTIONS_TO_POINTER (path_options));
         }
       _move_disk (self);
+      log_queue_queued_messages_dec(s);
     }
+
+  g_static_mutex_unlock(&s->lock);
+
   return msg;
 }
 
@@ -438,7 +444,7 @@ _set_virtual_functions (LogQueueDisk *self)
   self->super.ack_backlog = _ack_backlog;
   self->super.rewind_backlog = _rewind_backlog;
   self->super.rewind_backlog_all = _rewind_backlog_all;
-  self->pop_head = _pop_head;
+  self->super.pop_head = _pop_head;
   self->super.push_head = _push_head;
   self->push_tail = _push_tail;
   self->start = _start;
