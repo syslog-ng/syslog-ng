@@ -367,22 +367,33 @@ _restart(LogQueueDisk *s, DiskQueueOptions *options)
   qdisk_init_instance(self->super.qdisk, options, "SLRQ");
 }
 
-
-static void
-_set_virtual_functions(LogQueueDisk *self)
+static inline void
+_set_logqueue_virtual_functions(LogQueue *s)
 {
-  self->super.get_length = _get_length;
-  self->super.ack_backlog = _ack_backlog;
-  self->super.rewind_backlog = _rewind_backlog;
-  self->super.rewind_backlog_all = _rewind_backlog_all;
-  self->super.pop_head = _pop_head;
-  self->super.push_tail = _push_tail;
-  self->super.push_head = _push_head;
-  self->super.free_fn = _free;
-  self->load_queue = _load_queue;
-  self->start = _start;
-  self->save_queue = _save_queue;
-  self->restart = _restart;
+  s->get_length = _get_length;
+  s->ack_backlog = _ack_backlog;
+  s->rewind_backlog = _rewind_backlog;
+  s->rewind_backlog_all = _rewind_backlog_all;
+  s->pop_head = _pop_head;
+  s->push_tail = _push_tail;
+  s->push_head = _push_head;
+  s->free_fn = _free;
+}
+
+static inline void
+_set_logqueue_disk_virtual_functions(LogQueueDisk *s)
+{
+  s->load_queue = _load_queue;
+  s->start = _start;
+  s->save_queue = _save_queue;
+  s->restart = _restart;
+}
+
+static inline void
+_set_virtual_functions(LogQueueDiskReliable *self)
+{
+  _set_logqueue_virtual_functions(&self->super.super);
+  _set_logqueue_disk_virtual_functions(&self->super);
 }
 
 LogQueue *
@@ -398,6 +409,6 @@ log_queue_disk_reliable_new(DiskQueueOptions *options, const gchar *persist_name
     }
   self->qreliable = g_queue_new();
   self->qbacklog = g_queue_new();
-  _set_virtual_functions(&self->super);
+  _set_virtual_functions(self);
   return &self->super.super;
 }
