@@ -215,22 +215,27 @@ _move_disk (LogQueueDiskNonReliable *self)
 }
 
 static void
-_ack_backlog (LogQueueDisk *s, guint num_msg_to_ack)
+_ack_backlog(LogQueue *s, gint num_msg_to_ack)
 {
-  LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *) s;
+  LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *)s;
   LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   guint i;
 
+  g_static_mutex_lock(&s->lock);
+
   for (i = 0; i < num_msg_to_ack; i++)
     {
       if (self->qbacklog->length < ITEM_NUMBER_PER_MESSAGE)
-        return;
+        goto exit;
       msg = g_queue_pop_head (self->qbacklog);
       POINTER_TO_LOG_PATH_OPTIONS (g_queue_pop_head (self->qbacklog), &path_options);
       log_msg_unref (msg);
       log_msg_ack (msg, &path_options, AT_PROCESSED);
     }
+
+exit:
+  g_static_mutex_unlock(&s->lock);
 }
 
 static void
@@ -412,7 +417,7 @@ static void
 _set_virtual_functions (LogQueueDisk *self)
 {
   self->super.get_length = _get_length;
-  self->ack_backlog = _ack_backlog;
+  self->super.ack_backlog = _ack_backlog;
   self->rewind_backlog = _rewind_backlog;
   self->pop_head = _pop_head;
   self->push_head = _push_head;

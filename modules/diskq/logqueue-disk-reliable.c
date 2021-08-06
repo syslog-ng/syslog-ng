@@ -73,12 +73,14 @@ _get_length(LogQueue *s)
 }
 
 static void
-_ack_backlog(LogQueueDisk *s, guint num_msg_to_ack)
+_ack_backlog(LogQueue *s, gint num_msg_to_ack)
 {
-  LogQueueDiskReliable *self = (LogQueueDiskReliable *) s;
+  LogQueueDiskReliable *self = (LogQueueDiskReliable *)s;
   LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   guint i;
+
+  g_static_mutex_lock(&s->lock);
 
   for (i = 0; i < num_msg_to_ack; i++)
     {
@@ -111,6 +113,7 @@ _ack_backlog(LogQueueDisk *s, guint num_msg_to_ack)
     }
 exit_reliable:
   qdisk_reset_file_if_empty(self->super.qdisk);
+  g_static_mutex_unlock(&s->lock);
 }
 
 static gint
@@ -322,7 +325,7 @@ static void
 _set_virtual_functions(LogQueueDisk *self)
 {
   self->super.get_length = _get_length;
-  self->ack_backlog = _ack_backlog;
+  self->super.ack_backlog = _ack_backlog;
   self->rewind_backlog = _rewind_backlog;
   self->pop_head = _pop_head;
   self->push_tail = _push_tail;
