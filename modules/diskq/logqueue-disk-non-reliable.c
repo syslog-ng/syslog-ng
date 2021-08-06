@@ -387,15 +387,18 @@ _free_queue (GQueue *q)
 }
 
 static void
-_freefn (LogQueueDisk *s)
+_free(LogQueue *s)
 {
-  LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *) s;
+  LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *)s;
+
   _free_queue (self->qoverflow);
   self->qoverflow = NULL;
   _free_queue (self->qout);
   self->qout = NULL;
   _free_queue (self->qbacklog);
   self->qbacklog = NULL;
+
+  log_queue_disk_free_method(&self->super);
 }
 
 static gboolean
@@ -439,7 +442,7 @@ _set_virtual_functions (LogQueueDisk *self)
   self->super.push_head = _push_head;
   self->push_tail = _push_tail;
   self->start = _start;
-  self->free_fn = _freefn;
+  self->super.free_fn = _free;
   self->load_queue = _load_queue;
   self->save_queue = _save_queue;
   self->restart = _restart;

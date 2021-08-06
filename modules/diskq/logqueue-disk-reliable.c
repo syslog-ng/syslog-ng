@@ -302,15 +302,18 @@ _push_head(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
 }
 
 static void
-_free_queue(LogQueueDisk *s)
+_free(LogQueue *s)
 {
-  LogQueueDiskReliable *self = (LogQueueDiskReliable *) s;
+  LogQueueDiskReliable *self = (LogQueueDiskReliable *)s;
+
   _empty_queue(self->qreliable);
   _empty_queue(self->qbacklog);
   g_queue_free(self->qreliable);
   self->qreliable = NULL;
   g_queue_free(self->qbacklog);
   self->qbacklog = NULL;
+
+  log_queue_disk_free_method(&self->super);
 }
 
 static gboolean
@@ -347,7 +350,7 @@ _set_virtual_functions(LogQueueDisk *self)
   self->pop_head = _pop_head;
   self->push_tail = _push_tail;
   self->super.push_head = _push_head;
-  self->free_fn = _free_queue;
+  self->super.free_fn = _free;
   self->load_queue = _load_queue;
   self->start = _start;
   self->save_queue = _save_queue;

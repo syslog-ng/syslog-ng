@@ -127,18 +127,13 @@ log_queue_disk_get_filename(LogQueue *s)
   return qdisk_get_filename(self->qdisk);
 }
 
-static void
-_free(LogQueue *s)
+void
+log_queue_disk_free_method(LogQueueDisk *self)
 {
-  LogQueueDisk *self = (LogQueueDisk *) s;
-
-  if (self->free_fn)
-    self->free_fn(self);
-
   qdisk_stop(self->qdisk);
   qdisk_free(self->qdisk);
 
-  log_queue_free_method(s);
+  log_queue_free_method(&self->super);
 }
 
 static gboolean
@@ -271,5 +266,4 @@ log_queue_disk_init_instance(LogQueueDisk *self, const gchar *persist_name)
   self->super.type = log_queue_disk_type;
   self->super.push_tail = _push_tail;
   self->super.pop_head = _pop_head;
-  self->super.free_fn = _free;
 }
