@@ -333,10 +333,25 @@ _push_head(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
   g_static_mutex_unlock(&s->lock);
 }
 
-static gboolean
-_push_tail (LogQueueDisk *s, LogMessage *msg, LogPathOptions *local_options, const LogPathOptions *path_options)
+static void
+_drop_msg(LogQueueDiskNonReliable *self, LogMessage *msg, const LogPathOptions *path_options)
 {
-  LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *) s;
+  stats_counter_inc(self->super.super.dropped_messages);
+
+  if (path_options->flow_control_requested)
+    log_msg_ack(msg, path_options, AT_SUSPENDED);
+  else
+    log_msg_drop(msg, path_options, AT_PROCESSED);
+}
+
+static void
+_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
+{
+  LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *)s;
+
+  g_static_mutex_lock(&s->lock);
+
+  LogPathOptions local_options = *path_options;
 
   if (HAS_SPACE_IN_QUEUE(self->qout) && qdisk_get_length (self->super.qdisk) == 0)
     {
@@ -347,33 +362,43 @@ _push_tail (LogQueueDisk *s, LogMessage *msg, LogPathOptions *local_options, con
       g_queue_push_tail (self->qout, LOG_PATH_OPTIONS_FOR_BACKLOG);
       log_msg_ref (msg);
 
-      log_queue_memory_usage_add(&self->super.super, log_msg_get_size(msg));
+      log_queue_memory_usage_add(s, log_msg_get_size(msg));
     }
   else
     {
-      if (self->qoverflow->length != 0 || !log_queue_disk_write_message(s, msg))
+      if (self->qoverflow->length != 0 || !log_queue_disk_write_message(&self->super, msg))
         {
           if (HAS_SPACE_IN_QUEUE(self->qoverflow))
             {
               g_queue_push_tail (self->qoverflow, msg);
               g_queue_push_tail (self->qoverflow, LOG_PATH_OPTIONS_TO_POINTER (path_options));
               log_msg_ref (msg);
-              local_options->ack_needed = FALSE;
-              log_queue_memory_usage_add(&self->super.super, log_msg_get_size(msg));
+              local_options.ack_needed = FALSE;
+              log_queue_memory_usage_add(s, log_msg_get_size(msg));
             }
           else
             {
               msg_debug ("Destination queue full, dropping message",
                          evt_tag_str  ("filename", qdisk_get_filename (self->super.qdisk)),
-                         evt_tag_long ("queue_len", _get_length(&s->super)),
+                         evt_tag_long ("queue_len", log_queue_get_length(s)),
                          evt_tag_int  ("mem_buf_length", self->qoverflow_size),
                          evt_tag_long ("disk_buf_size", qdisk_get_maximum_size (self->super.qdisk)),
-                         evt_tag_str  ("persist_name", self->super.super.persist_name));
-              return FALSE;
+                         evt_tag_str  ("persist_name", s->persist_name));
+              _drop_msg(self, msg, path_options);
+              g_static_mutex_unlock(&s->lock);
+              return;
             }
         }
     }
-  return TRUE;
+
+  log_queue_push_notify(s);
+  log_queue_queued_messages_inc(s);
+  log_msg_ack(msg, &local_options, AT_PROCESSED);
+  log_msg_unref(msg);
+
+  g_static_mutex_unlock(&s->lock);
+
+  return;
 }
 
 static void
@@ -446,7 +471,7 @@ _set_virtual_functions (LogQueueDisk *self)
   self->super.rewind_backlog_all = _rewind_backlog_all;
   self->super.pop_head = _pop_head;
   self->super.push_head = _push_head;
-  self->push_tail = _push_tail;
+  self->super.push_tail = _push_tail;
   self->start = _start;
   self->super.free_fn = _free;
   self->load_queue = _load_queue;

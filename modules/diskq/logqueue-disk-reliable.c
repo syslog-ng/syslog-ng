@@ -264,23 +264,39 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
   return msg;
 }
 
-static gboolean
-_push_tail(LogQueueDisk *s, LogMessage *msg, LogPathOptions *local_options, const LogPathOptions *path_options)
+static void
+_drop_msg(LogQueueDiskReliable *self, LogMessage *msg, const LogPathOptions *path_options)
 {
-  LogQueueDiskReliable *self = (LogQueueDiskReliable *) s;
+  stats_counter_inc(self->super.super.dropped_messages);
+
+  if (path_options->flow_control_requested)
+    log_msg_ack(msg, path_options, AT_SUSPENDED);
+  else
+    log_msg_drop(msg, path_options, AT_PROCESSED);
+}
+
+static void
+_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
+{
+  LogQueueDiskReliable *self = (LogQueueDiskReliable *)s;
+
+  g_static_mutex_lock(&s->lock);
+
+  LogPathOptions local_options = *path_options;
 
   gint64 last_wpos = qdisk_get_writer_head (self->super.qdisk);
-  if (!log_queue_disk_write_message(s, msg))
+  if (!log_queue_disk_write_message(&self->super, msg))
     {
       /* we were not able to store the msg, warn */
       msg_error("Destination reliable queue full, dropping message",
                 evt_tag_str("filename", qdisk_get_filename (self->super.qdisk)),
-                evt_tag_long("queue_len", _get_length(&s->super)),
+                evt_tag_long("queue_len", _get_length(s)),
                 evt_tag_int("mem_buf_size", qdisk_get_memory_size (self->super.qdisk)),
                 evt_tag_long("disk_buf_size", qdisk_get_maximum_size (self->super.qdisk)),
-                evt_tag_str("persist_name", self->super.super.persist_name));
-
-      return FALSE;
+                evt_tag_str("persist_name", s->persist_name));
+      _drop_msg(self, msg, path_options);
+      g_static_mutex_unlock(&s->lock);
+      return;
     }
 
   /* check the remaining space: if it is less than the mem_buf_size, the message cannot be acked */
@@ -296,11 +312,16 @@ _push_tail(LogQueueDisk *s, LogMessage *msg, LogPathOptions *local_options, cons
       g_queue_push_tail (self->qreliable, LOG_PATH_OPTIONS_TO_POINTER(path_options));
       log_msg_ref (msg);
 
-      log_queue_memory_usage_add(&self->super.super, log_msg_get_size(msg));
-      local_options->ack_needed = FALSE;
+      log_queue_memory_usage_add(s, log_msg_get_size(msg));
+      local_options.ack_needed = FALSE;
     }
 
-  return TRUE;
+  log_queue_push_notify(s);
+  log_queue_queued_messages_inc(s);
+  log_msg_ack(msg, &local_options, AT_PROCESSED);
+  log_msg_unref(msg);
+
+  g_static_mutex_unlock(&s->lock);
 }
 
 static void
@@ -355,7 +376,7 @@ _set_virtual_functions(LogQueueDisk *self)
   self->super.rewind_backlog = _rewind_backlog;
   self->super.rewind_backlog_all = _rewind_backlog_all;
   self->super.pop_head = _pop_head;
-  self->push_tail = _push_tail;
+  self->super.push_tail = _push_tail;
   self->super.push_head = _push_head;
   self->super.free_fn = _free;
   self->load_queue = _load_queue;

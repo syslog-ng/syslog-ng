@@ -35,8 +35,6 @@ struct _LogQueueDisk
 {
   LogQueue super;
   QDisk *qdisk;         /* disk based queue */
-  gboolean (*push_tail)(LogQueueDisk *s, LogMessage *msg, LogPathOptions *local_options,
-                        const LogPathOptions *path_options);
   gboolean (*save_queue)(LogQueueDisk *s, gboolean *persistent);
   gboolean (*load_queue)(LogQueueDisk *s, const gchar *filename);
   gboolean (*start)(LogQueueDisk *s, const gchar *filename);

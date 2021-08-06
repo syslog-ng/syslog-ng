@@ -43,34 +43,6 @@
 
 QueueType log_queue_disk_type = "DISK";
 
-static void
-_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
-{
-  LogQueueDisk *self = (LogQueueDisk *) s;
-  LogPathOptions local_options = *path_options;
-  g_static_mutex_lock(&self->super.lock);
-  if (self->push_tail)
-    {
-      if (self->push_tail(self, msg, &local_options, path_options))
-        {
-          log_queue_push_notify (&self->super);
-          log_queue_queued_messages_inc(&self->super);
-          log_msg_ack(msg, &local_options, AT_PROCESSED);
-          log_msg_unref(msg);
-          g_static_mutex_unlock(&self->super.lock);
-          return;
-        }
-    }
-  stats_counter_inc (self->super.dropped_messages);
-
-  if (path_options->flow_control_requested)
-    log_msg_ack(msg, path_options, AT_SUSPENDED);
-  else
-    log_msg_drop(msg, path_options, AT_PROCESSED);
-
-  g_static_mutex_unlock(&self->super.lock);
-}
-
 gboolean
 log_queue_disk_save_queue(LogQueue *s, gboolean *persistent)
 {
@@ -244,5 +216,4 @@ log_queue_disk_init_instance(LogQueueDisk *self, const gchar *persist_name)
   self->qdisk = qdisk_new();
 
   self->super.type = log_queue_disk_type;
-  self->super.push_tail = _push_tail;
 }
