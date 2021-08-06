@@ -152,21 +152,18 @@ _write_message_to_disk(LogQueueDisk *self, LogMessage *msg)
 {
   gboolean consumed = FALSE;
 
-  if (qdisk_started(self->qdisk))
+  ScratchBuffersMarker marker;
+  GString *write_serialized = scratch_buffers_alloc_and_mark(&marker);
+
+  if (!qdisk_serialize_msg(self->qdisk, msg, write_serialized))
     {
-      ScratchBuffersMarker marker;
-      GString *write_serialized = scratch_buffers_alloc_and_mark(&marker);
-
-      if (!qdisk_serialize_msg(self->qdisk, msg, write_serialized))
-        {
-          scratch_buffers_reclaim_marked(marker);
-          return FALSE;
-        }
-
-      consumed = qdisk_push_tail(self->qdisk, write_serialized);
-
       scratch_buffers_reclaim_marked(marker);
+      return FALSE;
     }
+
+  consumed = qdisk_push_tail(self->qdisk, write_serialized);
+
+  scratch_buffers_reclaim_marked(marker);
 
   return consumed;
 }

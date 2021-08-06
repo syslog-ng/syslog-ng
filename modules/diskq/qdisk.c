@@ -330,6 +330,9 @@ _could_not_wrap_write_head_last_push_but_now_can(QDisk *self)
 gboolean
 qdisk_push_tail(QDisk *self, GString *record)
 {
+  if (!qdisk_started(self))
+    return FALSE;
+
   if (_could_not_wrap_write_head_last_push_but_now_can(self))
     {
       /*

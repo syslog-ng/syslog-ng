@@ -276,15 +276,6 @@ _drop_msg(LogQueueDiskReliable *self, LogMessage *msg, const LogPathOptions *pat
     log_msg_drop(msg, path_options, AT_PROCESSED);
 }
 
-static gboolean
-_write_message_to_disk(LogQueueDisk *self, GString *serialized_msg)
-{
-  if (!qdisk_started(self->qdisk))
-    return FALSE;
-
-  return qdisk_push_tail(self->qdisk, serialized_msg);
-}
-
 static void
 _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
 {
@@ -307,7 +298,7 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
   LogPathOptions local_options = *path_options;
 
   gint64 last_wpos = qdisk_get_writer_head (self->super.qdisk);
-  if (!_write_message_to_disk(&self->super, serialized_msg))
+  if (!qdisk_push_tail(self->super.qdisk, serialized_msg))
     {
       /* we were not able to store the msg, warn */
       msg_error("Destination reliable queue full, dropping message",
