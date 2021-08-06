@@ -25,6 +25,7 @@
 #include "logpipe.h"
 #include "messages.h"
 #include "syslog-ng.h"
+#include "scratch-buffers.h"
 
 #define ITEM_NUMBER_PER_MESSAGE 2
 
@@ -146,6 +147,30 @@ _has_movable_message(LogQueueDiskNonReliable *self)
              || qdisk_is_space_avail (self->super.qdisk, 4096));
 }
 
+static gboolean
+_write_message_to_disk(LogQueueDisk *self, LogMessage *msg)
+{
+  gboolean consumed = FALSE;
+
+  if (qdisk_started(self->qdisk) && qdisk_is_space_avail(self->qdisk, 64))
+    {
+      ScratchBuffersMarker marker;
+      GString *write_serialized = scratch_buffers_alloc_and_mark(&marker);
+
+      if (!qdisk_serialize_msg(self->qdisk, msg, write_serialized))
+        {
+          scratch_buffers_reclaim_marked(marker);
+          return FALSE;
+        }
+
+      consumed = qdisk_push_tail(self->qdisk, write_serialized);
+
+      scratch_buffers_reclaim_marked(marker);
+    }
+
+  return consumed;
+}
+
 static void
 _move_messages_from_overflow(LogQueueDiskNonReliable *self)
 {
@@ -166,7 +191,7 @@ _move_messages_from_overflow(LogQueueDiskNonReliable *self)
         }
       else
         {
-          if (log_queue_disk_write_message(&self->super, msg))
+          if (_write_message_to_disk(&self->super, msg))
             {
               log_queue_memory_usage_sub(&self->super.super, log_msg_get_size(msg));
             }
@@ -366,7 +391,7 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
     }
   else
     {
-      if (self->qoverflow->length != 0 || !log_queue_disk_write_message(&self->super, msg))
+      if (self->qoverflow->length != 0 || !_write_message_to_disk(&self->super, msg))
         {
           if (HAS_SPACE_IN_QUEUE(self->qoverflow))
             {

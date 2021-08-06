@@ -26,6 +26,7 @@
 #include "logpipe.h"
 #include "logqueue-disk-reliable.h"
 #include "messages.h"
+#include "scratch-buffers.h"
 
 /*pessimistic default for reliable disk queue 10000 x 16 kbyte*/
 #define PESSIMISTIC_MEM_BUF_SIZE 10000 * 16 *1024
@@ -275,6 +276,30 @@ _drop_msg(LogQueueDiskReliable *self, LogMessage *msg, const LogPathOptions *pat
     log_msg_drop(msg, path_options, AT_PROCESSED);
 }
 
+static gboolean
+_write_message_to_disk(LogQueueDisk *self, LogMessage *msg)
+{
+  gboolean consumed = FALSE;
+
+  if (qdisk_started(self->qdisk) && qdisk_is_space_avail(self->qdisk, 64))
+    {
+      ScratchBuffersMarker marker;
+      GString *write_serialized = scratch_buffers_alloc_and_mark(&marker);
+
+      if (!qdisk_serialize_msg(self->qdisk, msg, write_serialized))
+        {
+          scratch_buffers_reclaim_marked(marker);
+          return FALSE;
+        }
+
+      consumed = qdisk_push_tail(self->qdisk, write_serialized);
+
+      scratch_buffers_reclaim_marked(marker);
+    }
+
+  return consumed;
+}
+
 static void
 _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
 {
@@ -285,7 +310,7 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
   LogPathOptions local_options = *path_options;
 
   gint64 last_wpos = qdisk_get_writer_head (self->super.qdisk);
-  if (!log_queue_disk_write_message(&self->super, msg))
+  if (!_write_message_to_disk(&self->super, msg))
     {
       /* we were not able to store the msg, warn */
       msg_error("Destination reliable queue full, dropping message",

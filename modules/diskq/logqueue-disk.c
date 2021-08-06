@@ -146,30 +146,6 @@ log_queue_disk_read_message(LogQueueDisk *self, LogPathOptions *path_options)
   return msg;
 }
 
-gboolean
-log_queue_disk_write_message(LogQueueDisk *self, LogMessage *msg)
-{
-  gboolean consumed = FALSE;
-
-  if (qdisk_started(self->qdisk) && qdisk_is_space_avail(self->qdisk, 64))
-    {
-      ScratchBuffersMarker marker;
-      GString *write_serialized = scratch_buffers_alloc_and_mark(&marker);
-
-      if (!qdisk_serialize_msg(self->qdisk, msg, write_serialized))
-        {
-          scratch_buffers_reclaim_marked(marker);
-          return FALSE;
-        }
-
-      consumed = qdisk_push_tail(self->qdisk, write_serialized);
-
-      scratch_buffers_reclaim_marked(marker);
-    }
-
-  return consumed;
-}
-
 static void
 _restart_diskq(LogQueueDisk *self)
 {
