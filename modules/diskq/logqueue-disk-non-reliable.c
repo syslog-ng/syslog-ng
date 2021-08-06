@@ -496,8 +496,7 @@ log_queue_disk_non_reliable_new(DiskQueueOptions *options, const gchar *persist_
 {
   g_assert(options->reliable == FALSE);
   LogQueueDiskNonReliable *self = g_new0(LogQueueDiskNonReliable, 1);
-  log_queue_disk_init_instance(&self->super, persist_name);
-  qdisk_init_instance(self->super.qdisk, options, "SLQF");
+  log_queue_disk_init_instance(&self->super, options, "SLQF", persist_name);
   self->qbacklog = g_queue_new ();
   self->qout = g_queue_new ();
   self->qoverflow = g_queue_new ();

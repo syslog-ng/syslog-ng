@@ -47,7 +47,7 @@ QDiskQueuePosition;
 
 typedef struct _QDisk QDisk;
 
-QDisk *qdisk_new(void);
+QDisk *qdisk_new(DiskQueueOptions *options, const gchar *file_id);
 
 gboolean qdisk_is_space_avail(QDisk *self, gint at_least);
 gint64 qdisk_get_empty_space(QDisk *self);

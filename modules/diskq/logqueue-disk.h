@@ -46,7 +46,8 @@ extern QueueType log_queue_disk_type;
 const gchar *log_queue_disk_get_filename(LogQueue *self);
 gboolean log_queue_disk_save_queue(LogQueue *self, gboolean *persistent);
 gboolean log_queue_disk_load_queue(LogQueue *self, const gchar *filename);
-void log_queue_disk_init_instance(LogQueueDisk *self, const gchar *persist_name);
+void log_queue_disk_init_instance(LogQueueDisk *self, DiskQueueOptions *options, const gchar *qdisk_file_id,
+                                  const gchar *persist_name);
 void log_queue_disk_restart_corrupted(LogQueueDisk *self);
 void log_queue_disk_free_method(LogQueueDisk *self);
 

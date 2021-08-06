@@ -210,10 +210,11 @@ log_queue_disk_restart_corrupted(LogQueueDisk *self)
 
 
 void
-log_queue_disk_init_instance(LogQueueDisk *self, const gchar *persist_name)
+log_queue_disk_init_instance(LogQueueDisk *self, DiskQueueOptions *options, const gchar *qdisk_file_id,
+                             const gchar *persist_name)
 {
   log_queue_init_instance(&self->super, persist_name);
-  self->qdisk = qdisk_new();
-
   self->super.type = log_queue_disk_type;
+
+  self->qdisk = qdisk_new(options, qdisk_file_id);
 }

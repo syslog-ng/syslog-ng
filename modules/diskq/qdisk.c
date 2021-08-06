@@ -1290,8 +1290,9 @@ qdisk_free(QDisk *self)
 }
 
 QDisk *
-qdisk_new(void)
+qdisk_new(DiskQueueOptions *options, const gchar *file_id)
 {
   QDisk *self = g_new0(QDisk, 1);
+  qdisk_init_instance(self, options, file_id);
   return self;
 }
