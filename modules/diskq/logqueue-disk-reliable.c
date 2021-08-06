@@ -165,13 +165,16 @@ _rewind_from_qbacklog(LogQueueDiskReliable *self, gint64 new_pos)
 
 
 static void
-_rewind_backlog(LogQueueDisk *s, guint rewind_count)
+_rewind_backlog(LogQueue *s, guint rewind_count)
 {
   guint i;
 
   guint number_of_messages_stay_in_backlog;
   gint64 new_read_head;
-  LogQueueDiskReliable *self = (LogQueueDiskReliable *) s;
+  LogQueueDiskReliable *self = (LogQueueDiskReliable *)s;
+
+  g_static_mutex_lock(&s->lock);
+
   rewind_count = MIN(rewind_count, qdisk_get_backlog_count (self->super.qdisk));
   number_of_messages_stay_in_backlog = qdisk_get_backlog_count (self->super.qdisk) - rewind_count;
   new_read_head = qdisk_get_backlog_head (self->super.qdisk);
@@ -185,7 +188,15 @@ _rewind_backlog(LogQueueDisk *s, guint rewind_count)
   qdisk_set_reader_head (self->super.qdisk, new_read_head);
   qdisk_set_length (self->super.qdisk, qdisk_get_length (self->super.qdisk) + rewind_count);
 
-  log_queue_queued_messages_add(&self->super.super, rewind_count);
+  log_queue_queued_messages_add(s, rewind_count);
+
+  g_static_mutex_unlock(&s->lock);
+}
+
+static void
+_rewind_backlog_all(LogQueue *s)
+{
+  _rewind_backlog(s, -1);
 }
 
 static LogMessage *
@@ -331,7 +342,8 @@ _set_virtual_functions(LogQueueDisk *self)
 {
   self->super.get_length = _get_length;
   self->super.ack_backlog = _ack_backlog;
-  self->rewind_backlog = _rewind_backlog;
+  self->super.rewind_backlog = _rewind_backlog;
+  self->super.rewind_backlog_all = _rewind_backlog_all;
   self->pop_head = _pop_head;
   self->push_tail = _push_tail;
   self->super.push_head = _push_head;

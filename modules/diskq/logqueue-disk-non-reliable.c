@@ -239,10 +239,13 @@ exit:
 }
 
 static void
-_rewind_backlog (LogQueueDisk *s, guint rewind_count)
+_rewind_backlog(LogQueue *s, guint rewind_count)
 {
   guint i;
-  LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *) s;
+  LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *)s;
+
+  g_static_mutex_lock(&s->lock);
+
   rewind_count = MIN(rewind_count, _get_message_number_in_queue(self->qbacklog));
 
   for (i = 0; i < rewind_count; i++)
@@ -253,9 +256,17 @@ _rewind_backlog (LogQueueDisk *s, guint rewind_count)
       g_queue_push_head (self->qout, ptr_opt);
       g_queue_push_head (self->qout, ptr_msg);
 
-      log_queue_queued_messages_inc(&self->super.super);
-      log_queue_memory_usage_add(&self->super.super, log_msg_get_size((LogMessage *)ptr_msg));
+      log_queue_queued_messages_inc(s);
+      log_queue_memory_usage_add(s, log_msg_get_size((LogMessage *)ptr_msg));
     }
+
+  g_static_mutex_unlock(&s->lock);
+}
+
+static void
+_rewind_backlog_all(LogQueue *s)
+{
+  _rewind_backlog(s, -1);
 }
 
 static LogMessage *
@@ -422,7 +433,8 @@ _set_virtual_functions (LogQueueDisk *self)
 {
   self->super.get_length = _get_length;
   self->super.ack_backlog = _ack_backlog;
-  self->rewind_backlog = _rewind_backlog;
+  self->super.rewind_backlog = _rewind_backlog;
+  self->super.rewind_backlog_all = _rewind_backlog_all;
   self->pop_head = _pop_head;
   self->super.push_head = _push_head;
   self->push_tail = _push_tail;

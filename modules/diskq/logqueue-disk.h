@@ -38,7 +38,6 @@ struct _LogQueueDisk
   gboolean (*push_tail)(LogQueueDisk *s, LogMessage *msg, LogPathOptions *local_options,
                         const LogPathOptions *path_options);
   LogMessage *(*pop_head)(LogQueueDisk *s, LogPathOptions *path_options);
-  void (*rewind_backlog)(LogQueueDisk *s, guint rewind_count);
   gboolean (*save_queue)(LogQueueDisk *s, gboolean *persistent);
   gboolean (*load_queue)(LogQueueDisk *s, const gchar *filename);
   gboolean (*start)(LogQueueDisk *s, const gchar *filename);

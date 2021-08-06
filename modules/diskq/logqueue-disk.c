@@ -91,35 +91,6 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
   return msg;
 }
 
-static void
-_rewind_backlog(LogQueue *s, guint rewind_count)
-{
-  LogQueueDisk *self = (LogQueueDisk *) s;
-  g_static_mutex_lock(&self->super.lock);
-
-  if (self->rewind_backlog)
-    {
-      self->rewind_backlog (self, rewind_count);
-    }
-
-  g_static_mutex_unlock(&self->super.lock);
-}
-
-void
-_backlog_all(LogQueue *s)
-{
-  LogQueueDisk *self = (LogQueueDisk *) s;
-
-  g_static_mutex_lock(&self->super.lock);
-
-  if (self->rewind_backlog)
-    {
-      self->rewind_backlog(self, -1);
-    }
-
-  g_static_mutex_unlock(&self->super.lock);
-}
-
 gboolean
 log_queue_disk_save_queue(LogQueue *s, gboolean *persistent)
 {
@@ -300,7 +271,5 @@ log_queue_disk_init_instance(LogQueueDisk *self, const gchar *persist_name)
   self->super.type = log_queue_disk_type;
   self->super.push_tail = _push_tail;
   self->super.pop_head = _pop_head;
-  self->super.rewind_backlog = _rewind_backlog;
-  self->super.rewind_backlog_all = _backlog_all;
   self->super.free_fn = _free;
 }
