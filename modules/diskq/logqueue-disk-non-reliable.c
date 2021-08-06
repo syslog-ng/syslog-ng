@@ -86,11 +86,15 @@ _get_message_number_in_queue(GQueue *queue)
 #define HAS_SPACE_IN_QUEUE(queue) _get_message_number_in_queue(queue) < queue ## _size
 
 static gint64
-_get_length (LogQueueDisk *s)
+_get_length(LogQueue *s)
 {
-  LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *) s;
+  LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *)s;
+
+  if (!qdisk_started(self->super.qdisk))
+    return 0;
+
   return _get_message_number_in_queue(self->qout)
-         + qdisk_get_length (s->qdisk)
+         + qdisk_get_length(self->super.qdisk)
          + _get_message_number_in_queue(self->qoverflow);
 }
 
@@ -335,7 +339,7 @@ _push_tail (LogQueueDisk *s, LogMessage *msg, LogPathOptions *local_options, con
             {
               msg_debug ("Destination queue full, dropping message",
                          evt_tag_str  ("filename", qdisk_get_filename (self->super.qdisk)),
-                         evt_tag_long ("queue_len", _get_length(s)),
+                         evt_tag_long ("queue_len", _get_length(&s->super)),
                          evt_tag_int  ("mem_buf_length", self->qoverflow_size),
                          evt_tag_long ("disk_buf_size", qdisk_get_maximum_size (self->super.qdisk)),
                          evt_tag_str  ("persist_name", self->super.super.persist_name));
@@ -407,7 +411,7 @@ _restart(LogQueueDisk *s, DiskQueueOptions *options)
 static void
 _set_virtual_functions (LogQueueDisk *self)
 {
-  self->get_length = _get_length;
+  self->super.get_length = _get_length;
   self->ack_backlog = _ack_backlog;
   self->rewind_backlog = _rewind_backlog;
   self->pop_head = _pop_head;

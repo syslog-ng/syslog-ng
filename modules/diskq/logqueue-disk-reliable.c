@@ -62,9 +62,14 @@ _empty_queue(GQueue *self)
 }
 
 static gint64
-_get_length(LogQueueDisk *self)
+_get_length(LogQueue *s)
 {
-  return qdisk_get_length(self->qdisk);
+  LogQueueDiskReliable *self = (LogQueueDiskReliable *)s;
+
+  if (!qdisk_started(self->super.qdisk))
+    return 0;
+
+  return qdisk_get_length(self->super.qdisk);
 }
 
 static void
@@ -249,7 +254,7 @@ _push_tail(LogQueueDisk *s, LogMessage *msg, LogPathOptions *local_options, cons
       /* we were not able to store the msg, warn */
       msg_error("Destination reliable queue full, dropping message",
                 evt_tag_str("filename", qdisk_get_filename (self->super.qdisk)),
-                evt_tag_long("queue_len", _get_length(s)),
+                evt_tag_long("queue_len", _get_length(&s->super)),
                 evt_tag_int("mem_buf_size", qdisk_get_memory_size (self->super.qdisk)),
                 evt_tag_long("disk_buf_size", qdisk_get_maximum_size (self->super.qdisk)),
                 evt_tag_str("persist_name", self->super.super.persist_name));
@@ -316,7 +321,7 @@ _restart(LogQueueDisk *s, DiskQueueOptions *options)
 static void
 _set_virtual_functions(LogQueueDisk *self)
 {
-  self->get_length = _get_length;
+  self->super.get_length = _get_length;
   self->ack_backlog = _ack_backlog;
   self->rewind_backlog = _rewind_backlog;
   self->pop_head = _pop_head;

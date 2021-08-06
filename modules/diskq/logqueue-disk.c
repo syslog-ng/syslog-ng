@@ -43,19 +43,6 @@
 
 QueueType log_queue_disk_type = "DISK";
 
-static gint64
-_get_length(LogQueue *s)
-{
-  LogQueueDisk *self = (LogQueueDisk *) s;
-  gint64 qdisk_length = 0;
-
-  if (qdisk_started(self->qdisk) && self->get_length)
-    {
-      qdisk_length = self->get_length(self);
-    }
-  return qdisk_length;
-}
-
 static void
 _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
 {
@@ -339,7 +326,6 @@ log_queue_disk_init_instance(LogQueueDisk *self, const gchar *persist_name)
   self->qdisk = qdisk_new();
 
   self->super.type = log_queue_disk_type;
-  self->super.get_length = _get_length;
   self->super.push_tail = _push_tail;
   self->super.push_head = _push_head;
   self->super.pop_head = _pop_head;
