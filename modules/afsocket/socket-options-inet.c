@@ -136,7 +136,6 @@ socket_options_inet_setup_socket(SocketOptions *s, gint fd, GSockAddr *addr, AFS
   if (!socket_options_setup_socket_method(s, fd, addr, dir))
     return FALSE;
 
-  socket_options_inet_setup_tcp_keepalive_timers(self, fd);
 
   if (self->interface_name)
     {
@@ -233,6 +232,18 @@ socket_options_inet_setup_socket(SocketOptions *s, gint fd, GSockAddr *addr, AFS
   return TRUE;
 }
 
+static gboolean
+socket_options_inet_setup_peer_socket(SocketOptions *s, gint fd, GSockAddr *addr)
+{
+  SocketOptionsInet *self = (SocketOptionsInet *) s;
+
+  if(!socket_options_setup_peer_socket_method(s, fd, addr))
+    return FALSE;
+  socket_options_inet_setup_tcp_keepalive_timers(self, fd);
+  return TRUE;
+
+}
+
 void
 socket_options_inet_set_interface_name(SocketOptionsInet *self, const gchar *interface_name)
 {
@@ -255,6 +266,7 @@ socket_options_inet_new_instance(void)
 
   socket_options_init_instance(&self->super);
   self->super.setup_socket = socket_options_inet_setup_socket;
+  self->super.setup_peer_socket =  socket_options_inet_setup_peer_socket;
   self->super.so_keepalive = TRUE;
   self->tcp_keepalive_time = 60;
   self->tcp_keepalive_intvl = 10;

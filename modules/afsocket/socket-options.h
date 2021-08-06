@@ -42,10 +42,12 @@ struct _SocketOptions
   gint so_keepalive;
   gboolean so_reuseport;
   gboolean (*setup_socket)(SocketOptions *s, gint sock, GSockAddr *bind_addr, AFSocketDirection dir);
+  gboolean (*setup_peer_socket)(SocketOptions *s, gint sock, GSockAddr *bind_addr);
   void (*free)(gpointer s);
 };
 
 gboolean socket_options_setup_socket_method(SocketOptions *self, gint fd, GSockAddr *bind_addr, AFSocketDirection dir);
+gboolean socket_options_setup_peer_socket_method(SocketOptions *self, gint fd, GSockAddr *bind_addr);
 void socket_options_init_instance(SocketOptions *self);
 SocketOptions *socket_options_new(void);
 
@@ -53,6 +55,12 @@ static inline gboolean
 socket_options_setup_socket(SocketOptions *s, gint sock, GSockAddr *bind_addr, AFSocketDirection dir)
 {
   return s->setup_socket(s, sock, bind_addr, dir);
+}
+
+static inline gboolean
+socket_options_setup_peer_socket(SocketOptions *s, gint sock, GSockAddr *bind_addr)
+{
+  return s->setup_peer_socket(s, sock, bind_addr);
 }
 
 static inline void
