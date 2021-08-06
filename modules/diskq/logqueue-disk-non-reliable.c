@@ -148,24 +148,20 @@ _has_movable_message(LogQueueDiskNonReliable *self)
 }
 
 static gboolean
-_write_message_to_disk(LogQueueDisk *self, LogMessage *msg)
+_serialize_and_write_message_to_disk(LogQueueDiskNonReliable *self, LogMessage *msg)
 {
-  gboolean consumed = FALSE;
-
   ScratchBuffersMarker marker;
   GString *write_serialized = scratch_buffers_alloc_and_mark(&marker);
-
-  if (!qdisk_serialize_msg(self->qdisk, msg, write_serialized))
+  if (!qdisk_serialize_msg(self->super.qdisk, msg, write_serialized))
     {
       scratch_buffers_reclaim_marked(marker);
       return FALSE;
     }
 
-  consumed = qdisk_push_tail(self->qdisk, write_serialized);
+  gboolean success = qdisk_push_tail(self->super.qdisk, write_serialized);
 
   scratch_buffers_reclaim_marked(marker);
-
-  return consumed;
+  return success;
 }
 
 static void
@@ -188,7 +184,7 @@ _move_messages_from_overflow(LogQueueDiskNonReliable *self)
         }
       else
         {
-          if (_write_message_to_disk(&self->super, msg))
+          if (_serialize_and_write_message_to_disk(self, msg))
             {
               log_queue_memory_usage_sub(&self->super.super, log_msg_get_size(msg));
             }
@@ -366,10 +362,62 @@ _drop_msg(LogQueueDiskNonReliable *self, LogMessage *msg, const LogPathOptions *
     log_msg_drop(msg, path_options, AT_PROCESSED);
 }
 
+/* _is_msg_serialization_needed_hint() must be called without holding the queue's lock.
+ * This can only be used _as a hint_ for performance considerations, because as soon as the lock
+ * is released, there will be no guarantee that the result of this function remain correct. */
+static inline gboolean
+_is_msg_serialization_needed_hint(LogQueueDiskNonReliable *self)
+{
+  g_static_mutex_lock(&self->super.super.lock);
+
+  gboolean msg_serialization_needed = FALSE;
+
+  if (HAS_SPACE_IN_QUEUE(self->qout) && qdisk_get_length(self->super.qdisk) == 0)
+    goto exit;
+
+  if (self->qoverflow->length != 0)
+    goto exit;
+
+  if (!qdisk_started(self->super.qdisk) || !qdisk_is_space_avail(self->super.qdisk, 64))
+    goto exit;
+
+  msg_serialization_needed = TRUE;
+
+exit:
+  g_static_mutex_unlock(&self->super.super.lock);
+  return msg_serialization_needed;
+}
+
+static gboolean
+_ensure_serialized_and_write_to_disk(LogQueueDiskNonReliable *self, LogMessage *msg, GString *serialized_msg)
+{
+  if (serialized_msg)
+    return qdisk_push_tail(self->super.qdisk, serialized_msg);
+
+  return _serialize_and_write_message_to_disk(self, msg);
+}
+
 static void
 _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *)s;
+
+  ScratchBuffersMarker marker;
+  GString *serialized_msg = NULL;
+
+  if (_is_msg_serialization_needed_hint(self))
+    {
+      serialized_msg = scratch_buffers_alloc_and_mark(&marker);
+      if (!qdisk_serialize_msg(self->super.qdisk, msg, serialized_msg))
+        {
+          msg_error("Failed to serialize message for non-reliable disk-buffer, dropping message",
+                    evt_tag_str("filename", qdisk_get_filename (self->super.qdisk)),
+                    evt_tag_str("persist_name", s->persist_name));
+          _drop_msg(self, msg, path_options);
+          scratch_buffers_reclaim_marked(marker);
+          return;
+        }
+    }
 
   g_static_mutex_lock(&s->lock);
 
@@ -388,7 +436,7 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
     }
   else
     {
-      if (self->qoverflow->length != 0 || !_write_message_to_disk(&self->super, msg))
+      if (self->qoverflow->length != 0 || !_ensure_serialized_and_write_to_disk(self, msg, serialized_msg))
         {
           if (HAS_SPACE_IN_QUEUE(self->qoverflow))
             {
@@ -407,8 +455,7 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
                          evt_tag_long ("disk_buf_size", qdisk_get_maximum_size (self->super.qdisk)),
                          evt_tag_str  ("persist_name", s->persist_name));
               _drop_msg(self, msg, path_options);
-              g_static_mutex_unlock(&s->lock);
-              return;
+              goto exit;
             }
         }
     }
@@ -418,9 +465,10 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
   log_msg_ack(msg, &local_options, AT_PROCESSED);
   log_msg_unref(msg);
 
+exit:
   g_static_mutex_unlock(&s->lock);
-
-  return;
+  if (serialized_msg)
+    scratch_buffers_reclaim_marked(marker);
 }
 
 static void
