@@ -279,7 +279,7 @@ _drop_msg(LogQueueDiskReliable *self, LogMessage *msg, const LogPathOptions *pat
 static gboolean
 _write_message_to_disk(LogQueueDisk *self, GString *serialized_msg)
 {
-  if (!qdisk_started(self->qdisk) || qdisk_is_space_avail(self->qdisk, serialized_msg))
+  if (!qdisk_started(self->qdisk))
     return FALSE;
 
   return qdisk_push_tail(self->qdisk, serialized_msg);

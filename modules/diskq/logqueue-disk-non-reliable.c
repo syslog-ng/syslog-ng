@@ -152,7 +152,7 @@ _write_message_to_disk(LogQueueDisk *self, LogMessage *msg)
 {
   gboolean consumed = FALSE;
 
-  if (qdisk_started(self->qdisk) && qdisk_is_space_avail(self->qdisk, 64))
+  if (qdisk_started(self->qdisk))
     {
       ScratchBuffersMarker marker;
       GString *write_serialized = scratch_buffers_alloc_and_mark(&marker);
