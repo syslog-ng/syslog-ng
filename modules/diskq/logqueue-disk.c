@@ -152,7 +152,7 @@ log_queue_disk_drop_message(LogQueueDisk *self, LogMessage *msg, const LogPathOp
   stats_counter_inc(self->super.dropped_messages);
 
   if (path_options->flow_control_requested)
-    log_msg_ack(msg, path_options, AT_SUSPENDED);
+    log_msg_drop(msg, path_options, AT_SUSPENDED);
   else
     log_msg_drop(msg, path_options, AT_PROCESSED);
 }
