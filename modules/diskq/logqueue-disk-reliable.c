@@ -266,17 +266,6 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
 }
 
 static void
-_drop_msg(LogQueueDiskReliable *self, LogMessage *msg, const LogPathOptions *path_options)
-{
-  stats_counter_inc(self->super.super.dropped_messages);
-
-  if (path_options->flow_control_requested)
-    log_msg_ack(msg, path_options, AT_SUSPENDED);
-  else
-    log_msg_drop(msg, path_options, AT_PROCESSED);
-}
-
-static void
 _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
 {
   LogQueueDiskReliable *self = (LogQueueDiskReliable *)s;
@@ -288,7 +277,7 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
       msg_error("Failed to serialize message for reliable disk-buffer, dropping message",
                 evt_tag_str("filename", qdisk_get_filename (self->super.qdisk)),
                 evt_tag_str("persist_name", s->persist_name));
-      _drop_msg(self, msg, path_options);
+      log_queue_disk_drop_message(&self->super, msg, path_options);
       scratch_buffers_reclaim_marked(marker);
       return;
     }
@@ -307,7 +296,7 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
                 evt_tag_int("mem_buf_size", qdisk_get_memory_size (self->super.qdisk)),
                 evt_tag_long("disk_buf_size", qdisk_get_maximum_size (self->super.qdisk)),
                 evt_tag_str("persist_name", s->persist_name));
-      _drop_msg(self, msg, path_options);
+      log_queue_disk_drop_message(&self->super, msg, path_options);
       scratch_buffers_reclaim_marked(marker);
       g_static_mutex_unlock(&s->lock);
       return;

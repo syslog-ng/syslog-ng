@@ -53,5 +53,6 @@ void log_queue_disk_free_method(LogQueueDisk *self);
 
 
 LogMessage *log_queue_disk_read_message(LogQueueDisk *self, LogPathOptions *path_options);
+void log_queue_disk_drop_message(LogQueueDisk *self, LogMessage *msg, const LogPathOptions *path_options);
 
 #endif
