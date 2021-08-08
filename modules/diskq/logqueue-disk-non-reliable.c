@@ -377,6 +377,43 @@ _ensure_serialized_and_write_to_disk(LogQueueDiskNonReliable *self, LogMessage *
   return _serialize_and_write_message_to_disk(self, msg);
 }
 
+static inline void
+_push_tail_qout(LogQueueDiskNonReliable *self, LogMessage *msg, const LogPathOptions *path_options)
+{
+  /* simple push never generates flow-control enabled entries to qout, they only get there
+   * when rewinding the backlog */
+
+  g_queue_push_tail(self->qout, msg);
+  g_queue_push_tail(self->qout, LOG_PATH_OPTIONS_FOR_BACKLOG);
+
+  log_queue_memory_usage_add(&self->super.super, log_msg_get_size(msg));
+
+  log_msg_ack(msg, path_options, AT_PROCESSED);
+}
+
+static inline void
+_push_tail_qoverflow(LogQueueDiskNonReliable *self, LogMessage *msg, const LogPathOptions *path_options)
+{
+  g_queue_push_tail(self->qoverflow, msg);
+  g_queue_push_tail(self->qoverflow, LOG_PATH_OPTIONS_TO_POINTER(path_options));
+
+  log_queue_memory_usage_add(&self->super.super, log_msg_get_size(msg));
+
+  /* no ack */
+}
+
+static inline gboolean
+_push_tail_disk(LogQueueDiskNonReliable *self, LogMessage *msg, const LogPathOptions *path_options,
+                GString *serialized_msg)
+{
+  if (!_ensure_serialized_and_write_to_disk(self, msg, serialized_msg))
+    return FALSE;
+
+  log_msg_ack(msg, path_options, AT_PROCESSED);
+  log_msg_unref(msg);
+  return TRUE;
+}
+
 static void
 _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
 {
@@ -401,49 +438,33 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
 
   g_static_mutex_lock(&s->lock);
 
-  LogPathOptions local_options = *path_options;
-
   if (HAS_SPACE_IN_QUEUE(self->qout) && qdisk_get_length(self->super.qdisk) == 0)
     {
-      /* simple push never generates flow-control enabled entries to qout, they only get there
-       * when rewinding the backlog */
-
-      g_queue_push_tail(self->qout, msg);
-      g_queue_push_tail(self->qout, LOG_PATH_OPTIONS_FOR_BACKLOG);
-      log_msg_ref(msg);
-
-      log_queue_memory_usage_add(s, log_msg_get_size(msg));
+      _push_tail_qout(self, msg, path_options);
+      goto queued;
     }
-  else
+
+  if (self->qoverflow->length != 0 || !_push_tail_disk(self, msg, path_options, serialized_msg))
     {
-      if (self->qoverflow->length != 0 || !_ensure_serialized_and_write_to_disk(self, msg, serialized_msg))
+      if (HAS_SPACE_IN_QUEUE(self->qoverflow))
         {
-          if (HAS_SPACE_IN_QUEUE(self->qoverflow))
-            {
-              g_queue_push_tail(self->qoverflow, msg);
-              g_queue_push_tail(self->qoverflow, LOG_PATH_OPTIONS_TO_POINTER(path_options));
-              log_msg_ref(msg);
-              local_options.ack_needed = FALSE;
-              log_queue_memory_usage_add(s, log_msg_get_size(msg));
-            }
-          else
-            {
-              msg_debug("Destination queue full, dropping message",
-                        evt_tag_str("filename", qdisk_get_filename(self->super.qdisk)),
-                        evt_tag_long("queue_len", log_queue_get_length(s)),
-                        evt_tag_int("mem_buf_length", self->qoverflow_size),
-                        evt_tag_long("disk_buf_size", qdisk_get_maximum_size(self->super.qdisk)),
-                        evt_tag_str("persist_name", s->persist_name));
-              log_queue_disk_drop_message(&self->super, msg, path_options);
-              goto exit;
-            }
+          _push_tail_qoverflow(self, msg, path_options);
+          goto queued;
         }
+
+      msg_debug("Destination queue full, dropping message",
+                evt_tag_str("filename", qdisk_get_filename(self->super.qdisk)),
+                evt_tag_long("queue_len", log_queue_get_length(s)),
+                evt_tag_int("mem_buf_length", self->qoverflow_size),
+                evt_tag_long("disk_buf_size", qdisk_get_maximum_size(self->super.qdisk)),
+                evt_tag_str("persist_name", s->persist_name));
+      log_queue_disk_drop_message(&self->super, msg, path_options);
+      goto exit;
     }
 
+queued:
   log_queue_push_notify(s);
   log_queue_queued_messages_inc(s);
-  log_msg_ack(msg, &local_options, AT_PROCESSED);
-  log_msg_unref(msg);
 
 exit:
   g_static_mutex_unlock(&s->lock);
