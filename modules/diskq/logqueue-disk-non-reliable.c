@@ -339,16 +339,7 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
 static void
 _push_head(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
 {
-  LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *)s;
-
-  g_static_mutex_lock(&s->lock);
-
-  g_queue_push_head(self->qout, LOG_PATH_OPTIONS_TO_POINTER(path_options));
-  g_queue_push_head(self->qout, msg);
-  log_queue_queued_messages_inc(s);
-  log_queue_memory_usage_add(s, log_msg_get_size(msg));
-
-  g_static_mutex_unlock(&s->lock);
+  g_assert_not_reached();
 }
 
 /* _is_msg_serialization_needed_hint() must be called without holding the queue's lock.
