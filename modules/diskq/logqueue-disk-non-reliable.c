@@ -84,7 +84,7 @@ _get_message_number_in_queue(GQueue *queue)
   return queue->length / ITEM_NUMBER_PER_MESSAGE;
 }
 
-#define HAS_SPACE_IN_QUEUE(queue) _get_message_number_in_queue(queue) < queue ## _size
+#define HAS_SPACE_IN_QUEUE(queue) (_get_message_number_in_queue(queue) < queue ## _size)
 
 static gint64
 _get_length(LogQueue *s)
