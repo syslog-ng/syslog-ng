@@ -332,6 +332,7 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
 static void
 _push_head(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
 {
+  g_assert_not_reached();
 }
 
 static void
