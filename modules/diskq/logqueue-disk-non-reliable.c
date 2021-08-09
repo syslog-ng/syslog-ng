@@ -248,8 +248,8 @@ _ack_backlog(LogQueue *s, gint num_msg_to_ack)
         goto exit;
       msg = g_queue_pop_head(self->qbacklog);
       POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(self->qbacklog), &path_options);
-      log_msg_unref(msg);
       log_msg_ack(msg, &path_options, AT_PROCESSED);
+      log_msg_unref(msg);
     }
 
 exit:
