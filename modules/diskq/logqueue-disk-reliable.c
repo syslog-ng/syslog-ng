@@ -31,6 +31,14 @@
 /*pessimistic default for reliable disk queue 10000 x 16 kbyte*/
 #define PESSIMISTIC_MEM_BUF_SIZE 10000 * 16 *1024
 
+static inline void
+_push_to_memory_queue_tail(GQueue *queue, gint64 *position, LogMessage *msg, const LogPathOptions *path_options)
+{
+  g_queue_push_tail(queue, position);
+  g_queue_push_tail(queue, msg);
+  g_queue_push_tail(queue, LOG_PATH_OPTIONS_TO_POINTER(path_options));
+}
+
 static gboolean
 _start(LogQueueDisk *s, const gchar *filename)
 {
@@ -222,9 +230,7 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
           if (s->use_backlog)
             {
               log_msg_ref(msg);
-              g_queue_push_tail(self->qbacklog, temppos);
-              g_queue_push_tail(self->qbacklog, msg);
-              g_queue_push_tail(self->qbacklog, LOG_PATH_OPTIONS_TO_POINTER(path_options));
+              _push_to_memory_queue_tail(self->qbacklog, temppos, msg, path_options);
             }
           else
             {
@@ -312,10 +318,8 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
        */
       gint64 *temppos = g_malloc(sizeof(gint64));
       *temppos = message_position;
-      g_queue_push_tail(self->qreliable, temppos);
-      g_queue_push_tail(self->qreliable, msg);
-      g_queue_push_tail(self->qreliable, LOG_PATH_OPTIONS_TO_POINTER(path_options));
       log_msg_ref(msg);
+      _push_to_memory_queue_tail(self->qreliable, temppos, msg, path_options);
 
       log_queue_memory_usage_add(s, log_msg_get_size(msg));
       local_options.ack_needed = FALSE;
