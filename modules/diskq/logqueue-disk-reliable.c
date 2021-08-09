@@ -39,6 +39,14 @@ _push_to_memory_queue_tail(GQueue *queue, gint64 *position, LogMessage *msg, con
   g_queue_push_tail(queue, LOG_PATH_OPTIONS_TO_POINTER(path_options));
 }
 
+static inline void
+_pop_from_memory_queue_head(GQueue *queue, gint64 **position, LogMessage **msg, LogPathOptions *path_options)
+{
+  *position = g_queue_pop_head(queue);
+  *msg = g_queue_pop_head(queue);
+  POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(queue), path_options);
+}
+
 static gboolean
 _start(LogQueueDisk *s, const gchar *filename)
 {
@@ -59,11 +67,10 @@ _empty_queue(GQueue *self)
 {
   while (self && self->length > 0)
     {
+      gint64 *temppos;
+      LogMessage *msg;
       LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-
-      gint64 *temppos = g_queue_pop_head(self);
-      LogMessage *msg = g_queue_pop_head(self);
-      POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(self), &path_options);
+      _pop_from_memory_queue_head(self, &temppos, &msg, &path_options);
 
       g_free(temppos);
       log_msg_drop(msg, &path_options, AT_PROCESSED);
