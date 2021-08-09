@@ -140,11 +140,16 @@ _add_message_to_qout(LogQueueDiskNonReliable *self, LogMessage *msg, LogPathOpti
 }
 
 static inline gboolean
+_can_push_to_qout(LogQueueDiskNonReliable *self)
+{
+  return HAS_SPACE_IN_QUEUE(self->qout) && qdisk_get_length(self->super.qdisk) == 0;
+}
+
+static inline gboolean
 _has_movable_message(LogQueueDiskNonReliable *self)
 {
   return self->qoverflow->length > 0
-         && ((HAS_SPACE_IN_QUEUE(self->qout) && qdisk_get_length(self->super.qdisk) == 0)
-             || qdisk_is_space_avail(self->super.qdisk, 4096));
+         && (_can_push_to_qout(self) || qdisk_is_space_avail(self->super.qdisk, 4096));
 }
 
 static gboolean
@@ -175,7 +180,7 @@ _move_messages_from_overflow(LogQueueDiskNonReliable *self)
       msg = g_queue_pop_head(self->qoverflow);
       POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(self->qoverflow), &path_options);
 
-      if (qdisk_get_length(self->super.qdisk) == 0 && HAS_SPACE_IN_QUEUE(self->qout))
+      if (_can_push_to_qout(self))
         {
           /* we can skip qdisk, go straight to qout */
           g_queue_push_tail(self->qout, msg);
@@ -373,7 +378,7 @@ _is_msg_serialization_needed_hint(LogQueueDiskNonReliable *self)
 
   gboolean msg_serialization_needed = FALSE;
 
-  if (HAS_SPACE_IN_QUEUE(self->qout) && qdisk_get_length(self->super.qdisk) == 0)
+  if (_can_push_to_qout(self))
     goto exit;
 
   if (self->qoverflow->length != 0)
@@ -459,7 +464,8 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
 
   g_static_mutex_lock(&s->lock);
 
-  if (HAS_SPACE_IN_QUEUE(self->qout) && qdisk_get_length(self->super.qdisk) == 0)
+  /* we push messages into queue segments in the following order: qoverflow, disk, qout */
+  if (_can_push_to_qout(self))
     {
       _push_tail_qout(self, msg, path_options);
       goto queued;
