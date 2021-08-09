@@ -287,6 +287,34 @@ _rewind_backlog_all(LogQueue *s)
   _rewind_backlog(s, -1);
 }
 
+static inline LogMessage *
+_pop_head_qout(LogQueueDiskNonReliable *self, LogPathOptions *path_options)
+{
+  LogMessage *msg = g_queue_pop_head(self->qout);
+  POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(self->qout), path_options);
+  log_queue_memory_usage_sub(&self->super.super, log_msg_get_size(msg));
+
+  return msg;
+}
+
+static inline LogMessage *
+_pop_head_qoverflow(LogQueueDiskNonReliable *self, LogPathOptions *path_options)
+{
+  LogMessage *msg = g_queue_pop_head(self->qoverflow);
+  POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(self->qoverflow), path_options);
+  log_queue_memory_usage_sub(&self->super.super, log_msg_get_size(msg));
+
+  return msg;
+}
+
+static inline void
+_push_tail_qbacklog(LogQueueDiskNonReliable *self, LogMessage *msg, LogPathOptions *path_options)
+{
+  log_msg_ref(msg);
+  g_queue_push_tail(self->qbacklog, msg);
+  g_queue_push_tail(self->qbacklog, LOG_PATH_OPTIONS_TO_POINTER(path_options));
+}
+
 static LogMessage *
 _pop_head(LogQueue *s, LogPathOptions *path_options)
 {
@@ -297,42 +325,35 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
 
   if (self->qout->length > 0)
     {
-      msg = g_queue_pop_head(self->qout);
-      POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(self->qout), path_options);
-      log_queue_memory_usage_sub(s, log_msg_get_size(msg));
-    }
-  if (msg == NULL)
-    {
-      msg = log_queue_disk_read_message(&self->super, path_options);
+      msg = _pop_head_qout(self, path_options);
       if (msg)
-        {
-          path_options->ack_needed = FALSE;
-        }
-    }
-  if (msg == NULL)
-    {
-      if (self->qoverflow->length > 0 && qdisk_is_read_only(self->super.qdisk))
-        {
-          msg = g_queue_pop_head(self->qoverflow);
-          POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(self->qoverflow), path_options);
-          log_queue_memory_usage_sub(s, log_msg_get_size(msg));
-        }
+        goto success;
     }
 
-  if (msg != NULL)
+  msg = log_queue_disk_read_message(&self->super, path_options);
+  if (msg)
     {
-      if (s->use_backlog)
-        {
-          log_msg_ref(msg);
-          g_queue_push_tail(self->qbacklog, msg);
-          g_queue_push_tail(self->qbacklog, LOG_PATH_OPTIONS_TO_POINTER(path_options));
-        }
-      _move_disk(self);
-      log_queue_queued_messages_dec(s);
+      path_options->ack_needed = FALSE;
+      goto success;
     }
+
+  if (self->qoverflow->length > 0 && qdisk_is_read_only(self->super.qdisk))
+    msg = _pop_head_qoverflow(self, path_options);
+
+  if (!msg)
+    {
+      g_static_mutex_unlock(&s->lock);
+      return NULL;
+    }
+
+success:
+  if (s->use_backlog)
+    _push_tail_qbacklog(self, msg, path_options);
+
+  _move_disk(self);
+  log_queue_queued_messages_dec(s);
 
   g_static_mutex_unlock(&s->lock);
-
   return msg;
 }
 
