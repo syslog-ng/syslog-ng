@@ -47,7 +47,7 @@ QDiskQueuePosition;
 
 typedef struct _QDisk QDisk;
 
-QDisk *qdisk_new(void);
+QDisk *qdisk_new(DiskQueueOptions *options, const gchar *file_id);
 
 gboolean qdisk_is_space_avail(QDisk *self, gint at_least);
 gint64 qdisk_get_empty_space(QDisk *self);
@@ -81,5 +81,8 @@ gboolean qdisk_is_read_only(QDisk *self);
 const gchar *qdisk_get_filename(QDisk *self);
 
 guint64 qdisk_skip_record(QDisk *self, guint64 position);
+
+gboolean qdisk_serialize_msg(QDisk *self, LogMessage *msg, GString *serialized);
+gboolean qdisk_deserialize_msg(QDisk *self, GString *serialized, LogMessage **msg);
 
 #endif /* QDISK_H_ */

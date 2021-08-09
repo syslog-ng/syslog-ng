@@ -35,17 +35,9 @@ struct _LogQueueDisk
 {
   LogQueue super;
   QDisk *qdisk;         /* disk based queue */
-  gint64 (*get_length)(LogQueueDisk *s);
-  gboolean (*push_tail)(LogQueueDisk *s, LogMessage *msg, LogPathOptions *local_options,
-                        const LogPathOptions *path_options);
-  void (*push_head)(LogQueueDisk *s, LogMessage *msg, const LogPathOptions *path_options);
-  LogMessage *(*pop_head)(LogQueueDisk *s, LogPathOptions *path_options);
-  void (*ack_backlog)(LogQueueDisk *s, guint num_msg_to_ack);
-  void (*rewind_backlog)(LogQueueDisk *s, guint rewind_count);
   gboolean (*save_queue)(LogQueueDisk *s, gboolean *persistent);
   gboolean (*load_queue)(LogQueueDisk *s, const gchar *filename);
   gboolean (*start)(LogQueueDisk *s, const gchar *filename);
-  void (*free_fn)(LogQueueDisk *s);
   void (*restart)(LogQueueDisk *self, DiskQueueOptions *options);
 };
 
@@ -54,11 +46,12 @@ extern QueueType log_queue_disk_type;
 const gchar *log_queue_disk_get_filename(LogQueue *self);
 gboolean log_queue_disk_save_queue(LogQueue *self, gboolean *persistent);
 gboolean log_queue_disk_load_queue(LogQueue *self, const gchar *filename);
-void log_queue_disk_init_instance(LogQueueDisk *self, const gchar *persist_name);
+void log_queue_disk_init_instance(LogQueueDisk *self, DiskQueueOptions *options, const gchar *qdisk_file_id,
+                                  const gchar *persist_name);
 void log_queue_disk_restart_corrupted(LogQueueDisk *self);
+void log_queue_disk_free_method(LogQueueDisk *self);
 
 
 LogMessage *log_queue_disk_read_message(LogQueueDisk *self, LogPathOptions *path_options);
-gboolean log_queue_disk_write_message(LogQueueDisk *self, LogMessage *msg);
 
 #endif

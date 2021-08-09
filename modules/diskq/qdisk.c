@@ -206,8 +206,6 @@ qdisk_is_file_empty(QDisk *self)
 gboolean
 qdisk_is_space_avail(QDisk *self, gint at_least)
 {
-  /* sizeof(guint32): record_length is a 4 bytes long value which is stored before each serialized LogMessage */
-  gint64 msg_len = at_least + sizeof(guint32);
   /* write follows read (e.g. we are appending to the file) OR
    * there's enough space between write and read.
    *
@@ -219,7 +217,7 @@ qdisk_is_space_avail(QDisk *self, gint at_least)
   return (
            (_is_backlog_head_prevent_write_head(self)) &&
            (_is_write_head_less_than_max_size(self) || _is_able_to_reset_write_head_to_beginning_of_qdisk(self))
-         ) || (_is_free_space_between_write_head_and_backlog_head(self, msg_len));
+         ) || (_is_free_space_between_write_head_and_backlog_head(self, at_least));
 
 }
 
@@ -332,6 +330,9 @@ _could_not_wrap_write_head_last_push_but_now_can(QDisk *self)
 gboolean
 qdisk_push_tail(QDisk *self, GString *record)
 {
+  if (!qdisk_started(self))
+    return FALSE;
+
   if (_could_not_wrap_write_head_last_push_but_now_can(self))
     {
       /*
@@ -345,28 +346,14 @@ qdisk_push_tail(QDisk *self, GString *record)
   if (!qdisk_is_space_avail(self, record->len))
     return FALSE;
 
-  guint32 record_length = GUINT32_TO_BE(record->len);
-  if (record_length == 0)
-    {
-      msg_error("Error writing empty message into the disk-queue file");
-      return FALSE;
-    }
-
-  ScratchBuffersMarker marker;
-  GString *msg_buffer = scratch_buffers_alloc_and_mark(&marker);
-
-  g_string_append_len(msg_buffer, ((gchar *) &record_length), sizeof(record_length));
-  g_string_append_len(msg_buffer, (record->str), record->len);
-  if (!pwrite_strict(self->fd, msg_buffer->str, msg_buffer->len, self->hdr->write_head))
+  if (!pwrite_strict(self->fd, record->str, record->len, self->hdr->write_head))
     {
       msg_error("Error writing disk-queue file",
                 evt_tag_error("error"));
-      scratch_buffers_reclaim_marked(marker);
       return FALSE;
     }
-  scratch_buffers_reclaim_marked(marker);
 
-  self->hdr->write_head = self->hdr->write_head + record->len + sizeof(record_length);
+  self->hdr->write_head = self->hdr->write_head + record->len;
 
 
   /* NOTE: we only wrap around if the read head is before the write,
@@ -566,6 +553,76 @@ qdisk_remove_head(QDisk *self)
 
   _update_positions_after_read(self, record_length);
 
+  return TRUE;
+}
+
+static gboolean
+_overwrite_with_real_record_length(GString *serialized)
+{
+  guint32 record_length = GUINT32_TO_BE(serialized->len - sizeof(guint32));
+  if (record_length == 0)
+    return FALSE;
+
+  g_string_overwrite_len(serialized, 0, (gchar *) &record_length, sizeof(guint32));
+  return TRUE;
+}
+
+gboolean
+qdisk_serialize_msg(QDisk *self, LogMessage *msg, GString *serialized)
+{
+  gchar *error = NULL;
+  SerializeArchive *sa = serialize_string_archive_new(serialized);
+
+  /* Leave space for the real record_length for later */
+  if (!serialize_write_uint32(sa, 0))
+    {
+      error = "cannot write record length";
+      goto exit;
+    }
+
+  if (!log_msg_serialize(msg, sa, self->options->compaction ? LMSF_COMPACTION : 0))
+    {
+      error = "cannot serialize LogMessage";
+      goto exit;
+    }
+
+  if (!_overwrite_with_real_record_length(serialized))
+    {
+      error = "message is empty";
+      goto exit;
+    }
+
+exit:
+  if (error)
+    {
+      msg_error("Error serializing message for the disk-queue file",
+                evt_tag_str("error", error),
+                evt_tag_str("filename", qdisk_get_filename(self)));
+    }
+
+  serialize_archive_free(sa);
+  return error == NULL;
+}
+
+gboolean
+qdisk_deserialize_msg(QDisk *self, GString *serialized, LogMessage **msg)
+{
+  SerializeArchive *sa = serialize_string_archive_new(serialized);
+  LogMessage *local_msg = log_msg_new_empty();
+
+  if (!log_msg_deserialize(local_msg, sa))
+    {
+      msg_error("Error deserializing message from the disk-queue file",
+                evt_tag_str("filename", qdisk_get_filename(self)));
+
+      log_msg_unref(local_msg);
+      serialize_archive_free(sa);
+      return FALSE;
+    }
+
+  *msg = local_msg;
+
+  serialize_archive_free(sa);
   return TRUE;
 }
 
@@ -1290,8 +1347,9 @@ qdisk_free(QDisk *self)
 }
 
 QDisk *
-qdisk_new(void)
+qdisk_new(DiskQueueOptions *options, const gchar *file_id)
 {
   QDisk *self = g_new0(QDisk, 1);
+  qdisk_init_instance(self, options, file_id);
   return self;
 }
