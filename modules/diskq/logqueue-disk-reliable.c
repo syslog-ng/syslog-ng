@@ -32,17 +32,24 @@
 #define PESSIMISTIC_MEM_BUF_SIZE 10000 * 16 *1024
 
 static inline void
-_push_to_memory_queue_tail(GQueue *queue, gint64 *position, LogMessage *msg, const LogPathOptions *path_options)
+_push_to_memory_queue_tail(GQueue *queue, gint64 position, LogMessage *msg, const LogPathOptions *path_options)
 {
-  g_queue_push_tail(queue, position);
+  gint64 *allocated_position = g_malloc(sizeof(gint64));
+  *allocated_position = position;
+
+  g_queue_push_tail(queue, allocated_position);
   g_queue_push_tail(queue, msg);
   g_queue_push_tail(queue, LOG_PATH_OPTIONS_TO_POINTER(path_options));
 }
 
 static inline void
-_pop_from_memory_queue_head(GQueue *queue, gint64 **position, LogMessage **msg, LogPathOptions *path_options)
+_pop_from_memory_queue_head(GQueue *queue, gint64 *position, LogMessage **msg, LogPathOptions *path_options)
 {
-  *position = g_queue_pop_head(queue);
+  gint64 *allocated_position = g_queue_pop_head(queue);
+
+  *position = *allocated_position;
+  g_free(allocated_position);
+
   *msg = g_queue_pop_head(queue);
   POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(queue), path_options);
 }
@@ -74,12 +81,11 @@ _empty_queue(GQueue *self)
 {
   while (self && self->length > 0)
     {
-      gint64 *temppos;
+      gint64 temppos;
       LogMessage *msg;
       LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
       _pop_from_memory_queue_head(self, &temppos, &msg, &path_options);
 
-      g_free(temppos);
       log_msg_drop(msg, &path_options, AT_PROCESSED);
     }
 }
@@ -107,8 +113,7 @@ _ack_backlog(LogQueue *s, gint num_msg_to_ack)
 
   for (i = 0; i < num_msg_to_ack; i++)
     {
-      gint64 pos;
-      if (qdisk_get_backlog_head(self->super.qdisk) == qdisk_get_head_position(self->super.qdisk))
+      if (qdisk_get_backlog_head (self->super.qdisk) == qdisk_get_head_position(self->super.qdisk))
         {
           goto exit_reliable;
         }
@@ -116,12 +121,11 @@ _ack_backlog(LogQueue *s, gint num_msg_to_ack)
         {
           if (_peek_memory_queue_head_position(self->qbacklog) == qdisk_get_backlog_head(self->super.qdisk))
             {
-              gint64 *position;
-              _pop_from_memory_queue_head(self->qbacklog, position, &msg, &path_options);
+              gint64 position;
+              _pop_from_memory_queue_head(self->qbacklog, &position, &msg, &path_options);
 
               log_msg_ack(msg, &path_options, AT_PROCESSED);
               log_msg_unref(msg);
-              g_free(position);
             }
         }
       guint64 new_backlog = qdisk_get_backlog_head(self->super.qdisk);
@@ -229,8 +233,8 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
     {
       if (_peek_memory_queue_head_position(self->qreliable) == qdisk_get_head_position(self->super.qdisk))
         {
-          gint64 *position;
-          _pop_from_memory_queue_head(self->qreliable, position, &msg, path_options);
+          gint64 position;
+          _pop_from_memory_queue_head(self->qreliable, &position, &msg, path_options);
           log_queue_memory_usage_sub(s, log_msg_get_size(msg));
 
           _skip_message(&self->super);
@@ -240,9 +244,6 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
               log_msg_ref(msg);
               _push_to_memory_queue_tail(self->qbacklog, position, msg, path_options);
             }
-          else {
-            g_free(position);
-          }
         }
     }
 
@@ -318,10 +319,8 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
       /* we have reached the reserved buffer size, keep the msg in memory
        * the message is written but into the overflow area
        */
-      gint64 *temppos = g_malloc(sizeof(gint64));
-      *temppos = message_position;
       log_msg_ref(msg);
-      _push_to_memory_queue_tail(self->qreliable, temppos, msg, path_options);
+      _push_to_memory_queue_tail(self->qreliable, message_position, msg, path_options);
 
       log_queue_memory_usage_add(s, log_msg_get_size(msg));
       local_options.ack_needed = FALSE;
