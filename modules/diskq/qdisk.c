@@ -327,6 +327,15 @@ _could_not_wrap_write_head_last_push_but_now_can(QDisk *self)
   return _is_qdisk_overwritten(self) && _is_able_to_reset_write_head_to_beginning_of_qdisk(self);
 }
 
+gint64
+qdisk_get_next_tail_position(QDisk *self)
+{
+  if (_could_not_wrap_write_head_last_push_but_now_can(self))
+    return QDISK_RESERVED_SPACE;
+
+  return self->hdr->write_head;
+}
+
 gboolean
 qdisk_push_tail(QDisk *self, GString *record)
 {
@@ -515,6 +524,12 @@ _update_positions_after_read(QDisk *self, guint32 record_length)
           qdisk_reset_file_if_empty(self);
         }
     }
+}
+
+gint64
+qdisk_get_head_position(QDisk *self)
+{
+  return self->hdr->read_head;
 }
 
 gboolean
