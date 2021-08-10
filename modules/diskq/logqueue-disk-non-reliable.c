@@ -205,8 +205,8 @@ _move_messages_from_overflow(LogQueueDiskNonReliable *self)
     }
 }
 
-static void
-_move_disk(LogQueueDiskNonReliable *self)
+static inline void
+_maybe_move_messages_among_queue_segments(LogQueueDiskNonReliable *self)
 {
   LogMessage *msg;
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
@@ -350,7 +350,7 @@ success:
   if (s->use_backlog)
     _push_tail_qbacklog(self, msg, path_options);
 
-  _move_disk(self);
+  _maybe_move_messages_among_queue_segments(self);
   log_queue_queued_messages_dec(s);
 
   g_static_mutex_unlock(&s->lock);
