@@ -251,17 +251,17 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
           log_msg_ref(msg);
           _push_to_memory_queue_tail(self->qbacklog, position, msg, path_options);
         }
+
+      goto exit;
     }
 
-  if (msg == NULL)
+  msg = log_queue_disk_read_message(&self->super, path_options);
+  if (msg)
     {
-      msg = log_queue_disk_read_message(&self->super, path_options);
-      if (msg)
-        {
-          path_options->ack_needed = FALSE;
-        }
+      path_options->ack_needed = FALSE;
     }
 
+exit:
   if (msg != NULL)
     {
       if (s->use_backlog)
