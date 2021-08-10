@@ -461,12 +461,6 @@ _try_reading_record_length(QDisk *self, guint32 *record_length)
 {
   guint32 read_record_length;
   gssize bytes_read = _read_record_length_from_disk(self, &read_record_length);
-  if (bytes_read == 0)
-    {
-      /* hmm, we are either at EOF or at hdr->qout_ofs, we need to wrap */
-      self->hdr->read_head = QDISK_RESERVED_SPACE;
-      bytes_read = _read_record_length_from_disk(self, &read_record_length);
-    }
 
   if (!_is_record_length_valid(self, bytes_read, read_record_length))
     return FALSE;
