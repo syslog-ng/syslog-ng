@@ -30,6 +30,7 @@
 
 /*pessimistic default for reliable disk queue 10000 x 16 kbyte*/
 #define PESSIMISTIC_MEM_BUF_SIZE 10000 * 16 *1024
+#define ENTRIES_PER_MSG_IN_MEM_Q 3
 
 static inline void
 _push_to_memory_queue_tail(GQueue *queue, gint64 position, LogMessage *msg, const LogPathOptions *path_options)
@@ -264,6 +265,18 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
       goto exit;
     }
 
+  if (_is_next_message_in_qout(self))
+    {
+      /*
+       * Fast path: use the message from the memory, saving a disk read and a deserialization.
+       */
+      gint64 position;
+      _pop_from_memory_queue_head(self->qout, &position, &msg, path_options);
+      log_queue_memory_usage_sub(s, log_msg_get_size(msg));
+      _skip_message(&self->super);
+      goto exit;
+    }
+
   msg = log_queue_disk_read_message(&self->super, path_options);
   if (msg)
     {
@@ -292,6 +305,13 @@ static inline gboolean
 _is_reserved_buffer_size_reached(LogQueueDiskReliable *self)
 {
   return qdisk_get_empty_space(self->super.qdisk) < qdisk_get_memory_size(self->super.qdisk);
+}
+
+static inline gboolean
+_is_space_available_in_qout(LogQueueDiskReliable *self)
+{
+  gint num_of_messages_in_qout = g_queue_get_length(self->qout) / ENTRIES_PER_MSG_IN_MEM_Q;
+  return num_of_messages_in_qout < self->qout_size;
 }
 
 static void
@@ -342,6 +362,20 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
     }
 
   log_msg_ack(msg, path_options, AT_PROCESSED);
+
+  if (_is_space_available_in_qout(self))
+    {
+      /*
+       * Keep the message in memory for fast-path.
+       * Set its ack_needed to FALSE, because we have already acked it.
+       */
+      LogPathOptions local_options = *path_options;
+      local_options.ack_needed = FALSE;
+      _push_to_memory_queue_tail(self->qout, message_position, msg, &local_options);
+      log_queue_memory_usage_add(s, log_msg_get_size(msg));
+      goto exit;
+    }
+
   log_msg_unref(msg);
 
 exit:
@@ -363,6 +397,7 @@ _free(LogQueue *s)
 
   _empty_queue(self->qreliable);
   _empty_queue(self->qbacklog);
+  _empty_queue(self->qout);
   g_queue_free(self->qreliable);
   self->qreliable = NULL;
   g_queue_free(self->qbacklog);
@@ -378,6 +413,7 @@ _load_queue(LogQueueDisk *s, const gchar *filename)
 {
   LogQueueDiskReliable *self = (LogQueueDiskReliable *) s;
   _empty_queue(self->qreliable);
+  _empty_queue(self->qout);
   return qdisk_start(s->qdisk, filename, NULL, NULL, NULL);
 }
 
