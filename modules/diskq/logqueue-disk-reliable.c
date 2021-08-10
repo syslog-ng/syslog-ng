@@ -230,6 +230,15 @@ _is_next_message_in_qreliable(LogQueueDiskReliable *self)
   return _peek_memory_queue_head_position(self->qreliable) == qdisk_get_head_position(self->super.qdisk);
 }
 
+static inline gboolean
+_is_next_message_in_qout(LogQueueDiskReliable *self)
+{
+  if (self->qout->length == 0)
+    return FALSE;
+
+  return _peek_memory_queue_head_position(self->qout) == qdisk_get_head_position(self->super.qdisk);
+}
+
 static LogMessage *
 _pop_head(LogQueue *s, LogPathOptions *path_options)
 {
@@ -358,6 +367,8 @@ _free(LogQueue *s)
   self->qreliable = NULL;
   g_queue_free(self->qbacklog);
   self->qbacklog = NULL;
+  g_queue_free(self->qout);
+  self->qout = NULL;
 
   log_queue_disk_free_method(&self->super);
 }
@@ -426,6 +437,7 @@ log_queue_disk_reliable_new(DiskQueueOptions *options, const gchar *persist_name
     }
   self->qreliable = g_queue_new();
   self->qbacklog = g_queue_new();
+  self->qout = g_queue_new();
   _set_virtual_functions(self);
   return &self->super.super;
 }

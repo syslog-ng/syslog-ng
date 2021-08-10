@@ -31,6 +31,7 @@ typedef struct _LogQueueDiskReliable
   LogQueueDisk super;
   GQueue *qreliable;
   GQueue *qbacklog;
+  GQueue *qout;
 } LogQueueDiskReliable;
 
 LogQueue *log_queue_disk_reliable_new(DiskQueueOptions *options, const gchar *persist_name);
