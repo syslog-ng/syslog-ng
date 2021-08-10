@@ -438,6 +438,7 @@ log_queue_disk_reliable_new(DiskQueueOptions *options, const gchar *persist_name
   self->qreliable = g_queue_new();
   self->qbacklog = g_queue_new();
   self->qout = g_queue_new();
+  self->qout_size = options->qout_size;
   _set_virtual_functions(self);
   return &self->super.super;
 }
