@@ -274,6 +274,12 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
   return msg;
 }
 
+static inline gboolean
+_is_reserved_buffer_size_reached(LogQueueDiskReliable *self)
+{
+  return qdisk_get_empty_space(self->super.qdisk) < qdisk_get_memory_size(self->super.qdisk);
+}
+
 static void
 _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
 {
@@ -293,8 +299,6 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
 
   g_static_mutex_lock(&s->lock);
 
-  LogPathOptions local_options = *path_options;
-
   gint64 message_position = qdisk_get_next_tail_position(self->super.qdisk);
   if (!qdisk_push_tail(self->super.qdisk, serialized_msg))
     {
@@ -313,24 +317,22 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
 
   scratch_buffers_reclaim_marked(marker);
 
-  /* check the remaining space: if it is less than the mem_buf_size, the message cannot be acked */
-  if (qdisk_get_empty_space(self->super.qdisk) < qdisk_get_memory_size(self->super.qdisk))
+  if (_is_reserved_buffer_size_reached(self))
     {
-      /* we have reached the reserved buffer size, keep the msg in memory
-       * the message is written but into the overflow area
+      /*
+       * Keep the message in memory, and do not ack it, so flow-control can kick in.
        */
-      log_msg_ref(msg);
       _push_to_memory_queue_tail(self->qreliable, message_position, msg, path_options);
-
       log_queue_memory_usage_add(s, log_msg_get_size(msg));
-      local_options.ack_needed = FALSE;
+      goto exit;
     }
 
-  log_queue_push_notify(s);
-  log_queue_queued_messages_inc(s);
-  log_msg_ack(msg, &local_options, AT_PROCESSED);
+  log_msg_ack(msg, path_options, AT_PROCESSED);
   log_msg_unref(msg);
 
+exit:
+  log_queue_push_notify(s);
+  log_queue_queued_messages_inc(s);
   g_static_mutex_unlock(&s->lock);
 }
 
