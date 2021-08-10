@@ -221,6 +221,15 @@ _rewind_backlog_all(LogQueue *s)
   _rewind_backlog(s, -1);
 }
 
+static inline gboolean
+_is_next_message_in_qreliable(LogQueueDiskReliable *self)
+{
+  if (self->qreliable->length == 0)
+    return FALSE;
+
+  return _peek_memory_queue_head_position(self->qreliable) == qdisk_get_head_position(self->super.qdisk);
+}
+
 static LogMessage *
 _pop_head(LogQueue *s, LogPathOptions *path_options)
 {
@@ -229,21 +238,18 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
   g_static_mutex_lock(&s->lock);
 
   LogMessage *msg = NULL;
-  if (self->qreliable->length > 0)
+  if (_is_next_message_in_qreliable(self))
     {
-      if (_peek_memory_queue_head_position(self->qreliable) == qdisk_get_head_position(self->super.qdisk))
+      gint64 position;
+      _pop_from_memory_queue_head(self->qreliable, &position, &msg, path_options);
+      log_queue_memory_usage_sub(s, log_msg_get_size(msg));
+
+      _skip_message(&self->super);
+
+      if (s->use_backlog)
         {
-          gint64 position;
-          _pop_from_memory_queue_head(self->qreliable, &position, &msg, path_options);
-          log_queue_memory_usage_sub(s, log_msg_get_size(msg));
-
-          _skip_message(&self->super);
-
-          if (s->use_backlog)
-            {
-              log_msg_ref(msg);
-              _push_to_memory_queue_tail(self->qbacklog, position, msg, path_options);
-            }
+          log_msg_ref(msg);
+          _push_to_memory_queue_tail(self->qbacklog, position, msg, path_options);
         }
     }
 
