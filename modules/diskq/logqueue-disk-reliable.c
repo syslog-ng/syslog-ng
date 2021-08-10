@@ -234,10 +234,10 @@ static LogMessage *
 _pop_head(LogQueue *s, LogPathOptions *path_options)
 {
   LogQueueDiskReliable *self = (LogQueueDiskReliable *)s;
+  LogMessage *msg = NULL;
 
   g_static_mutex_lock(&s->lock);
 
-  LogMessage *msg = NULL;
   if (_is_next_message_in_qreliable(self))
     {
       gint64 position;
@@ -262,21 +262,20 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
     }
 
 exit:
-  if (msg != NULL)
+  if (!msg)
     {
-      if (s->use_backlog)
-        {
-          qdisk_inc_backlog(self->super.qdisk);
-        }
-      else
-        {
-          qdisk_set_backlog_head(self->super.qdisk, qdisk_get_head_position(self->super.qdisk));
-        }
-      log_queue_queued_messages_dec(s);
+      g_static_mutex_unlock(&s->lock);
+      return NULL;
     }
 
-  g_static_mutex_unlock(&s->lock);
+  if (s->use_backlog)
+    qdisk_inc_backlog(self->super.qdisk);
+  else
+    qdisk_set_backlog_head(self->super.qdisk, qdisk_get_head_position(self->super.qdisk));
 
+  log_queue_queued_messages_dec(s);
+
+  g_static_mutex_unlock(&s->lock);
   return msg;
 }
 
