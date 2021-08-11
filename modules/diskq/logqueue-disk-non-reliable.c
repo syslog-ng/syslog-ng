@@ -351,17 +351,6 @@ _push_head(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
   g_static_mutex_unlock(&s->lock);
 }
 
-static void
-_drop_msg(LogQueueDiskNonReliable *self, LogMessage *msg, const LogPathOptions *path_options)
-{
-  stats_counter_inc(self->super.super.dropped_messages);
-
-  if (path_options->flow_control_requested)
-    log_msg_ack(msg, path_options, AT_SUSPENDED);
-  else
-    log_msg_drop(msg, path_options, AT_PROCESSED);
-}
-
 /* _is_msg_serialization_needed_hint() must be called without holding the queue's lock.
  * This can only be used _as a hint_ for performance considerations, because as soon as the lock
  * is released, there will be no guarantee that the result of this function remain correct. */
@@ -413,7 +402,7 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
           msg_error("Failed to serialize message for non-reliable disk-buffer, dropping message",
                     evt_tag_str("filename", qdisk_get_filename (self->super.qdisk)),
                     evt_tag_str("persist_name", s->persist_name));
-          _drop_msg(self, msg, path_options);
+          log_queue_disk_drop_message(&self->super, msg, path_options);
           scratch_buffers_reclaim_marked(marker);
           return;
         }
@@ -454,7 +443,7 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
                          evt_tag_int  ("mem_buf_length", self->qoverflow_size),
                          evt_tag_long ("disk_buf_size", qdisk_get_maximum_size (self->super.qdisk)),
                          evt_tag_str  ("persist_name", s->persist_name));
-              _drop_msg(self, msg, path_options);
+              log_queue_disk_drop_message(&self->super, msg, path_options);
               goto exit;
             }
         }
