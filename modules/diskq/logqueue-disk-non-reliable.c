@@ -99,39 +99,11 @@ _get_length(LogQueue *s)
          + _get_message_number_in_queue(self->qoverflow);
 }
 
-static LogMessage *
-_get_next_message(LogQueueDiskNonReliable *self, LogPathOptions *path_options)
-{
-  LogMessage *result = NULL;
-  path_options->ack_needed = TRUE;
-  if (qdisk_get_length(self->super.qdisk) > 0)
-    {
-      result = log_queue_disk_read_message(&self->super, path_options);
-      if (result)
-        {
-          log_queue_memory_usage_add(&self->super.super, log_msg_get_size(result));
-          path_options->ack_needed = FALSE;
-        }
-    }
-  return result;
-}
-
 static inline gboolean
 _could_move_into_qout(LogQueueDiskNonReliable *self)
 {
   /* NOTE: we only load half the qout queue at a time */
   return (_get_message_number_in_queue(self->qout) < (self->qout_size / 2));
-}
-
-static void
-_add_message_to_qout(LogQueueDiskNonReliable *self, LogMessage *msg, LogPathOptions *path_options)
-{
-  /* NOTE: we always generate flow-control disabled entries into
-   * qout, they only get there via backlog rewind */
-
-  g_queue_push_tail(self->qout, msg);
-  g_queue_push_tail(self->qout, LOG_PATH_OPTIONS_FOR_BACKLOG);
-  log_msg_ack(msg, path_options, AT_PROCESSED);
 }
 
 static inline gboolean
@@ -208,15 +180,23 @@ _move_messages_from_overflow(LogQueueDiskNonReliable *self)
 static void
 _move_messages_from_disk_to_qout(LogQueueDiskNonReliable *self)
 {
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+
   do
     {
-      LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-      LogMessage *msg = _get_next_message(self, &path_options);
+      if (qdisk_get_length(self->super.qdisk) <= 0)
+        break;
+
+      LogMessage *msg = log_queue_disk_read_message(&self->super, &path_options);
 
       if (!msg)
         break;
 
-      _add_message_to_qout(self, msg, &path_options);
+      /* NOTE: we always generate flow-control disabled entries into
+       * qout, they only get there via backlog rewind */
+      g_queue_push_tail(self->qout, msg);
+      g_queue_push_tail(self->qout, LOG_PATH_OPTIONS_FOR_BACKLOG);
+      log_queue_memory_usage_add(&self->super.super, log_msg_get_size(msg));
     }
   while (_could_move_into_qout(self));
 }
