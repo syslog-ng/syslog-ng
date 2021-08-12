@@ -113,7 +113,7 @@ _can_push_to_qout(LogQueueDiskNonReliable *self)
 }
 
 static inline gboolean
-_has_movable_message(LogQueueDiskNonReliable *self)
+_qoverflow_has_movable_message(LogQueueDiskNonReliable *self)
 {
   return self->qoverflow->length > 0
          && (_can_push_to_qout(self) || qdisk_is_space_avail(self->super.qdisk, 4096));
@@ -142,7 +142,7 @@ _move_messages_from_overflow(LogQueueDiskNonReliable *self)
   LogMessage *msg;
   LogPathOptions path_options;
   /* move away as much entries from the overflow area as possible */
-  while (_has_movable_message(self))
+  while (_qoverflow_has_movable_message(self))
     {
       msg = g_queue_pop_head(self->qoverflow);
       POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(self->qoverflow), &path_options);
