@@ -82,7 +82,7 @@ _load_queue(ThreadedDiskqSourceDriver *self)
     {
       self->diskq_options.disk_buf_size = 1;
       self->diskq_options.mem_buf_size = 128;
-      self->diskq_options.qout_size = 128;
+      self->diskq_options.qout_size = 1000;
       self->queue = log_queue_disk_non_reliable_new(&self->diskq_options, NULL);
     }
 
