@@ -100,13 +100,6 @@ _get_length(LogQueue *s)
 }
 
 static inline gboolean
-_could_move_into_qout(LogQueueDiskNonReliable *self)
-{
-  /* NOTE: we only load half the qout queue at a time */
-  return (_get_message_number_in_queue(self->qout) < (self->qout_size / 2));
-}
-
-static inline gboolean
 _can_push_to_qout(LogQueueDiskNonReliable *self)
 {
   return HAS_SPACE_IN_QUEUE(self->qout) && qdisk_get_length(self->super.qdisk) == 0;
@@ -197,7 +190,7 @@ _move_messages_from_disk_to_qout(LogQueueDiskNonReliable *self)
       g_queue_push_tail(self->qout, LOG_PATH_OPTIONS_FOR_BACKLOG);
       log_queue_memory_usage_add(&self->super.super, log_msg_get_size(msg));
     }
-  while (_could_move_into_qout(self));
+  while (HAS_SPACE_IN_QUEUE(self->qout));
 }
 
 static inline void
