@@ -205,31 +205,33 @@ _move_messages_from_overflow(LogQueueDiskNonReliable *self)
     }
 }
 
+static void
+_move_messages_from_disk_to_qout(LogQueueDiskNonReliable *self)
+{
+  do
+    {
+      LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+      LogMessage *msg = _get_next_message(self, &path_options);
+
+      if (!msg)
+        break;
+
+      _add_message_to_qout(self, msg, &path_options);
+    }
+  while (_could_move_into_qout(self));
+}
+
 static inline void
 _maybe_move_messages_among_queue_segments(LogQueueDiskNonReliable *self)
 {
-  LogMessage *msg;
-  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-
   if (qdisk_is_read_only(self->super.qdisk))
     return;
 
-  /* stupid message mover between queues */
-
   if (self->qout->length == 0 && self->qout_size > 0)
-    {
-      do
-        {
-          msg = _get_next_message(self, &path_options);
+    _move_messages_from_disk_to_qout(self);
 
-          if (msg)
-            {
-              _add_message_to_qout(self, msg, &path_options);
-            }
-        }
-      while (msg && _could_move_into_qout(self));
-    }
-  _move_messages_from_overflow(self);
+  if (self->qoverflow->length > 0)
+    _move_messages_from_overflow(self);
 }
 
 static void
