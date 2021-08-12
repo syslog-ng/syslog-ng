@@ -113,11 +113,6 @@ _get_next_message(LogQueueDiskNonReliable *self, LogPathOptions *path_options)
           path_options->ack_needed = FALSE;
         }
     }
-  else if (self->qoverflow->length > 0)
-    {
-      result = g_queue_pop_head(self->qoverflow);
-      POINTER_TO_LOG_PATH_OPTIONS(g_queue_pop_head(self->qoverflow), path_options);
-    }
   return result;
 }
 
