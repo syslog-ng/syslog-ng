@@ -152,13 +152,15 @@ _move_messages_from_overflow(LogQueueDiskNonReliable *self)
           /* we can skip qdisk, go straight to qout */
           g_queue_push_tail(self->qout, msg);
           g_queue_push_tail(self->qout, LOG_PATH_OPTIONS_FOR_BACKLOG);
-          log_msg_ref(msg);
+          log_msg_ack(msg, &path_options, AT_PROCESSED);
         }
       else
         {
           if (_serialize_and_write_message_to_disk(self, msg))
             {
               log_queue_memory_usage_sub(&self->super.super, log_msg_get_size(msg));
+              log_msg_ack(msg, &path_options, AT_PROCESSED);
+              log_msg_unref(msg);
             }
           else
             {
@@ -168,12 +170,9 @@ _move_messages_from_overflow(LogQueueDiskNonReliable *self)
                */
               g_queue_push_head(self->qoverflow, LOG_PATH_OPTIONS_TO_POINTER(&path_options));
               g_queue_push_head(self->qoverflow, msg);
-              log_msg_ref(msg);
               break;
             }
         }
-      log_msg_ack(msg, &path_options, AT_PROCESSED);
-      log_msg_unref(msg);
     }
 }
 
