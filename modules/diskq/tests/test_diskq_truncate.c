@@ -35,6 +35,7 @@
 
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <math.h>
 
 #define TEST_DISKQ_SIZE 1100000
 
@@ -72,6 +73,30 @@ _save_diskqueue(LogQueue *q)
   gboolean persistent;
   log_queue_disk_save_queue(q, &persistent);
   log_queue_unref(q);
+}
+
+static gsize
+_calculate_serialized_empty_message_size(QDisk *qdisk)
+{
+  LogMessage *msg = log_msg_new_empty();
+  GString *serialized_msg = g_string_new(NULL);
+
+  cr_assert(qdisk_serialize_msg(qdisk, msg, serialized_msg));
+  gsize size = serialized_msg->len;
+
+  g_string_free(serialized_msg, TRUE);
+  log_msg_unref(msg);
+  return size;
+}
+
+static gint64
+_calculate_full_disk_message_num(QDisk *qdisk)
+{
+  /*
+   * Assumes that only empty messages are stored.
+   */
+  gsize msg_size = _calculate_serialized_empty_message_size(qdisk);
+  return (gint64) ceil((qdisk->options->disk_buf_size - QDISK_RESERVED_SPACE) / (double) msg_size);
 }
 
 static gint64
@@ -222,17 +247,19 @@ _create_reliable_diskqueue(gchar *filename, DiskQueueOptions *options, gboolean 
 
 Test(diskq_truncate, test_diskq_truncate_on_push)
 {
-  const gint full_disk_message_number = 8194; // measured for disk_buf_size TEST_DISKQ_SIZE
-  const gint read_is_on_end_message_number  = full_disk_message_number - 200;
-  const gint write_wraps_message_number = read_is_on_end_message_number - 200;
-  const gint read_wraps_message_number = 300;
-  const gint trigger_truncate_message_number = 1;
   LogQueue *q;
   GString *filename = g_string_new("test_dq_truncate_on_write.rqf");
 
   DiskQueueOptions options;
   q = _create_reliable_diskqueue(filename->str, &options, FALSE, 0);
   cr_assert_eq(log_queue_get_length(q), 0, "No messages should be in a newly created disk-queue file!");
+
+  QDisk *qdisk = ((LogQueueDisk *)q)->qdisk;
+  const gint full_disk_message_number = _calculate_full_disk_message_num(qdisk);
+  const gint read_is_on_end_message_number  = full_disk_message_number - 200;
+  const gint write_wraps_message_number = read_is_on_end_message_number - 200;
+  const gint read_wraps_message_number = 300;
+  const gint trigger_truncate_message_number = 1;
 
   // 1. fill it until its FULL
   feed_some_messages(q, full_disk_message_number);
@@ -284,17 +311,18 @@ _assert_cursors_are_at_start(LogQueue *q)
 
 Test(diskq_truncate, test_diskq_truncate_size_ratio_default)
 {
-  const gint truncate_threshold = (gint)(TEST_DISKQ_SIZE * disk_queue_config_get_truncate_size_ratio(configuration));
-  const gint empty_log_msg_size = 134;
-  const gint below_threshold_message_number = truncate_threshold / empty_log_msg_size;
-  const gint above_threshold_message_number = below_threshold_message_number + 1;
-
   LogQueue *q;
   GString *filename = g_string_new("test_dq_truncate_size_ratio_default.rqf");
 
   DiskQueueOptions options;
   q = _create_reliable_diskqueue(filename->str, &options, TRUE, -1);
   cr_assert_eq(log_queue_get_length(q), 0, "No messages should be in a newly created disk-queue file!");
+
+  QDisk *qdisk = ((LogQueueDisk *)q)->qdisk;
+  const gint truncate_threshold = (gint)(TEST_DISKQ_SIZE * disk_queue_config_get_truncate_size_ratio(configuration));
+  const gint empty_log_msg_size = _calculate_serialized_empty_message_size(qdisk);
+  const gint below_threshold_message_number = truncate_threshold / empty_log_msg_size;
+  const gint above_threshold_message_number = below_threshold_message_number + 1;
 
   // 1. fill it just below the truncate threshold
   feed_some_messages(q, below_threshold_message_number);
@@ -359,13 +387,15 @@ Test(diskq_truncate, test_diskq_truncate_size_ratio_0)
 
 Test(diskq_truncate, test_diskq_truncate_size_ratio_1)
 {
-  const gint full_disk_message_number = 8194; // measured for disk_buf_size TEST_DISKQ_SIZE
   LogQueue *q;
   GString *filename = g_string_new("test_dq_truncate_size_ratio_1.rqf");
 
   DiskQueueOptions options;
   q = _create_reliable_diskqueue(filename->str, &options, TRUE, 1);
   cr_assert_eq(log_queue_get_length(q), 0, "No messages should be in a newly created disk-queue file!");
+
+  QDisk *qdisk = ((LogQueueDisk *)q)->qdisk;
+  const gint full_disk_message_number = _calculate_full_disk_message_num(qdisk);
 
   // 1. feed to full
   feed_some_messages(q, full_disk_message_number);
@@ -405,8 +435,6 @@ _feed_one_large_message(LogQueue *q)
 
 Test(diskq_truncate, test_diskq_no_truncate_wrap)
 {
-  const gint just_under_max_size_message_number = 8239; // measured for disk_buf_size TEST_DISKQ_SIZE
-  const gint some_messages_to_let_write_head_wrap = 500;
   gint unprocessed_messages_in_buffer = 0;
   LogQueue *q;
   GString *filename = g_string_new("test_dq_no_truncate_wrap.rqf");
@@ -416,6 +444,8 @@ Test(diskq_truncate, test_diskq_no_truncate_wrap)
   cr_assert_eq(log_queue_get_length(q), 0, "No messages should be in a newly created disk-queue file!");
 
   QDisk *qdisk = ((LogQueueDisk *)q)->qdisk;
+  const gint just_under_max_size_message_number = _calculate_full_disk_message_num(qdisk) - 1;
+  const gint some_messages_to_let_write_head_wrap = 500;
 
   // 1. feed to full
   feed_some_messages(q, just_under_max_size_message_number);
@@ -476,8 +506,6 @@ Test(diskq_truncate, test_diskq_no_truncate_wrap)
 Test(diskq_truncate, test_non_reliable_diskq_restart_with_truncation_disabled)
 {
   const gint qout_size = 128;
-  const gint just_under_max_size_message_number = 8239 + qout_size; // measured for disk_buf_size TEST_DISKQ_SIZE
-  const gint some_messages_to_let_write_head_wrap = 500;
 
   GString *filename = g_string_new("test_dq_non_reliable_restart.rqf");
 
@@ -486,6 +514,8 @@ Test(diskq_truncate, test_non_reliable_diskq_restart_with_truncation_disabled)
   cr_assert_eq(log_queue_get_length(q), 0, "No messages should be in a newly created disk-queue file!");
 
   QDisk *qdisk = ((LogQueueDisk *)q)->qdisk;
+  const gint just_under_max_size_message_number = (_calculate_full_disk_message_num(qdisk) + qout_size) - 1;
+  const gint some_messages_to_let_write_head_wrap = 500;
 
   // 1. feed to full
   feed_some_messages(q, just_under_max_size_message_number);
