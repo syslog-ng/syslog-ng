@@ -278,10 +278,6 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
     }
 
   msg = log_queue_disk_read_message(&self->super, path_options);
-  if (msg)
-    {
-      path_options->ack_needed = FALSE;
-    }
 
 exit:
   if (!msg)

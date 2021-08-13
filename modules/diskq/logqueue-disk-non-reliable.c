@@ -172,22 +172,19 @@ _move_messages_from_overflow(LogQueueDiskNonReliable *self)
 static void
 _move_messages_from_disk_to_qout(LogQueueDiskNonReliable *self)
 {
-  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
-
   do
     {
       if (qdisk_get_length(self->super.qdisk) <= 0)
         break;
 
+      LogPathOptions path_options;
       LogMessage *msg = log_queue_disk_read_message(&self->super, &path_options);
 
       if (!msg)
         break;
 
-      /* NOTE: we always generate flow-control disabled entries into
-       * qout, they only get there via backlog rewind */
       g_queue_push_tail(self->qout, msg);
-      g_queue_push_tail(self->qout, LOG_PATH_OPTIONS_FOR_BACKLOG);
+      g_queue_push_tail(self->qout, LOG_PATH_OPTIONS_TO_POINTER(&path_options));
       log_queue_memory_usage_add(&self->super.super, log_msg_get_size(msg));
     }
   while (HAS_SPACE_IN_QUEUE(self->qout));
@@ -303,10 +300,7 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
 
   msg = log_queue_disk_read_message(&self->super, path_options);
   if (msg)
-    {
-      path_options->ack_needed = FALSE;
-      goto success;
-    }
+    goto success;
 
   if (self->qoverflow->length > 0 && qdisk_is_read_only(self->super.qdisk))
     msg = _pop_head_qoverflow(self, path_options);
