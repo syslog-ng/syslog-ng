@@ -327,6 +327,15 @@ _could_not_wrap_write_head_last_push_but_now_can(QDisk *self)
   return _is_qdisk_overwritten(self) && _is_able_to_reset_write_head_to_beginning_of_qdisk(self);
 }
 
+gint64
+qdisk_get_next_tail_position(QDisk *self)
+{
+  if (_could_not_wrap_write_head_last_push_but_now_can(self))
+    return QDISK_RESERVED_SPACE;
+
+  return self->hdr->write_head;
+}
+
 gboolean
 qdisk_push_tail(QDisk *self, GString *record)
 {
@@ -461,12 +470,6 @@ _try_reading_record_length(QDisk *self, guint32 *record_length)
 {
   guint32 read_record_length;
   gssize bytes_read = _read_record_length_from_disk(self, &read_record_length);
-  if (bytes_read == 0)
-    {
-      /* hmm, we are either at EOF or at hdr->qout_ofs, we need to wrap */
-      self->hdr->read_head = QDISK_RESERVED_SPACE;
-      bytes_read = _read_record_length_from_disk(self, &read_record_length);
-    }
 
   if (!_is_record_length_valid(self, bytes_read, read_record_length))
     return FALSE;
@@ -521,6 +524,12 @@ _update_positions_after_read(QDisk *self, guint32 record_length)
           qdisk_reset_file_if_empty(self);
         }
     }
+}
+
+gint64
+qdisk_get_head_position(QDisk *self)
+{
+  return self->hdr->read_head;
 }
 
 gboolean

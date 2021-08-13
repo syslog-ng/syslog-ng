@@ -86,7 +86,7 @@ _ack_backlog(LogQueue *s, gint num_msg_to_ack)
   for (i = 0; i < num_msg_to_ack; i++)
     {
       gint64 pos;
-      if (qdisk_get_backlog_head (self->super.qdisk) == qdisk_get_reader_head (self->super.qdisk))
+      if (qdisk_get_backlog_head(self->super.qdisk) == qdisk_get_head_position(self->super.qdisk))
         {
           goto exit_reliable;
         }
@@ -212,7 +212,7 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
     {
       gint64 *temppos = g_queue_pop_head (self->qreliable);
       gint64 pos = *temppos;
-      if (pos == qdisk_get_reader_head (self->super.qdisk))
+      if (pos == qdisk_get_head_position(self->super.qdisk))
         {
           msg = g_queue_pop_head (self->qreliable);
           log_queue_memory_usage_sub(s, log_msg_get_size(msg));
@@ -255,7 +255,7 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
         }
       else
         {
-          qdisk_set_backlog_head(self->super.qdisk, qdisk_get_reader_head(self->super.qdisk));
+          qdisk_set_backlog_head(self->super.qdisk, qdisk_get_head_position(self->super.qdisk));
         }
       log_queue_queued_messages_dec(s);
     }
@@ -286,7 +286,7 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
 
   LogPathOptions local_options = *path_options;
 
-  gint64 last_wpos = qdisk_get_writer_head (self->super.qdisk);
+  gint64 message_position = qdisk_get_next_tail_position(self->super.qdisk);
   if (!qdisk_push_tail(self->super.qdisk, serialized_msg))
     {
       /* we were not able to store the msg, warn */
@@ -311,7 +311,7 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
        * the message is written but into the overflow area
        */
       gint64 *temppos = g_malloc (sizeof(gint64));
-      *temppos = last_wpos;
+      *temppos = message_position;
       g_queue_push_tail (self->qreliable, temppos);
       g_queue_push_tail (self->qreliable, msg);
       g_queue_push_tail (self->qreliable, LOG_PATH_OPTIONS_TO_POINTER(path_options));
