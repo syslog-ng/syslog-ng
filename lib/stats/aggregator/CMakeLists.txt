@@ -4,4 +4,5 @@ set(STATS_AGGREGATOR_HEADERS
 
 set(STATS_AGGREGATOR_SOURCES
     stats/aggregator/stats-aggregator.c
+    stats/aggregator/stats-maximum.c
     PARENT_SCOPE)
