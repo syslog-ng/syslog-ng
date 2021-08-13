@@ -231,7 +231,7 @@ Test(diskq_truncate, test_diskq_truncate_on_push)
   GString *filename = g_string_new("test_dq_truncate_on_write.rqf");
 
   DiskQueueOptions options;
-  q = _create_reliable_diskqueue(filename->str, &options, FALSE, -1);
+  q = _create_reliable_diskqueue(filename->str, &options, FALSE, 0);
   cr_assert_eq(log_queue_get_length(q), 0, "No messages should be in a newly created disk-queue file!");
 
   // 1. fill it until its FULL
