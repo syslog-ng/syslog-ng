@@ -127,17 +127,17 @@ log_queue_disk_read_message(LogQueueDisk *self, LogPathOptions *path_options)
   LogMessage *msg = NULL;
   do
     {
-      if (qdisk_get_length (self->qdisk) == 0)
+      if (qdisk_get_length(self->qdisk) == 0)
         {
           break;
         }
-      if (!_pop_disk (self, &msg))
+      if (!_pop_disk(self, &msg))
         {
           msg_error("Error reading from disk-queue file, dropping disk queue",
                     evt_tag_str("filename", qdisk_get_filename(self->qdisk)));
           log_queue_disk_restart_corrupted(self);
           if (msg)
-            log_msg_unref (msg);
+            log_msg_unref(msg);
           msg = NULL;
           return NULL;
         }

@@ -905,17 +905,17 @@ _save_queue(QDisk *self, GQueue *q, QDiskQueuePosition *q_pos)
         {
           if (!qdisk_write_serialized_string_to_file(self, serialized, &current_offset))
             goto error;
-          if(!queue_start_position)
+          if (!queue_start_position)
             queue_start_position = current_offset;
           written_bytes += serialized->len;
           g_string_truncate(serialized, 0);
         }
     }
-  if(serialized->len)
+  if (serialized->len)
     {
       if (!qdisk_write_serialized_string_to_file(self, serialized, &current_offset))
         goto error;
-      if(!queue_start_position)
+      if (!queue_start_position)
         queue_start_position = current_offset;
       written_bytes += serialized->len;
     }
@@ -1077,7 +1077,7 @@ qdisk_start(QDisk *self, const gchar *filename, GQueue *qout, GQueue *qbacklog, 
     {
       self->hdr = g_malloc(sizeof(QDiskFileHeader));
       memcpy(self->hdr, p, sizeof(QDiskFileHeader));
-      munmap(p, sizeof(QDiskFileHeader) );
+      munmap(p, sizeof(QDiskFileHeader));
       p = NULL;
     }
   else
@@ -1230,7 +1230,7 @@ qdisk_skip_record(QDisk *self, guint64 position)
 {
   guint64 new_position = position;
   guint32 record_length;
-  qdisk_read (self, (gchar *) &record_length, sizeof(record_length), position);
+  qdisk_read(self, (gchar *) &record_length, sizeof(record_length), position);
   record_length = GUINT32_FROM_BE(record_length);
   new_position += record_length + sizeof(record_length);
   if (new_position > self->hdr->write_head)
