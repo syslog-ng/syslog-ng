@@ -122,6 +122,12 @@ void stats_cluster_untrack_counter(StatsCluster *self, gint type, StatsCounterIt
 gboolean stats_cluster_is_alive(StatsCluster *self, gint type);
 gboolean stats_cluster_is_indexed(StatsCluster *self, gint type);
 
+static inline gboolean
+stats_cluster_is_orphaned(StatsCluster *self)
+{
+  return self->use_count == 0;
+}
+
 StatsCluster *stats_cluster_new(const StatsClusterKey *key);
 StatsCluster *stats_cluster_dynamic_new(const StatsClusterKey *key);
 void stats_cluster_free(StatsCluster *self);

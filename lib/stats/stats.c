@@ -93,7 +93,7 @@ stats_cluster_is_expired(StatsOptions *options, StatsCluster *sc, time_t now)
     return FALSE;
 
   /* this entry is being updated, cannot be too old */
-  if (sc->use_count > 0)
+  if (!stats_cluster_is_orphaned(sc))
     return FALSE;
 
   /* check if timestamp is stored, no timestamp means we can't expire it.

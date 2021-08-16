@@ -23,6 +23,7 @@
  */
 #include "stats/stats-csv.h"
 #include "stats/stats-registry.h"
+#include "stats/stats-cluster.h"
 #include "utf8utils.h"
 
 #include <string.h>
@@ -70,7 +71,7 @@ stats_format_csv(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointe
 
   if (sc->dynamic)
     state = 'd';
-  else if (sc->use_count == 0)
+  else if (stats_cluster_is_orphaned(sc))
     state = 'o';
   else
     state = 'a';
