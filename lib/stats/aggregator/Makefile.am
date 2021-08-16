@@ -8,4 +8,5 @@ statsaggregatorinclude_HEADERS = \
 
 statsaggregator_sources = \
 	lib/stats/aggregator/stats-aggregator.c	\
+	lib/stats/aggregator/stats-average.c		\
 	lib/stats/aggregator/stats-maximum.c

@@ -61,4 +61,6 @@ void stats_aggregator_unregister(StatsAggregator *self);
 
 StatsAggregator *stats_aggregator_maximum_new(gint level, StatsClusterKey *sc_key);
 
+StatsAggregator *stats_aggregator_average_new(gint level, StatsClusterKey *sc_key);
+
 #endif /* STATS_AGGREGATOR_H */
