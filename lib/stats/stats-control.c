@@ -27,6 +27,7 @@
 #include "stats/stats-counter.h"
 #include "stats/stats-registry.h"
 #include "stats/stats-cluster.h"
+#include "stats/aggregator/stats-aggregator-registry.h"
 #include "stats/stats-query-commands.h"
 #include "control/control-commands.h"
 #include "control/control-server.h"
@@ -59,6 +60,9 @@ _reset_counters(void)
   stats_lock();
   stats_foreach_counter(_reset_counter_if_needed, NULL);
   stats_unlock();
+  stats_aggregator_lock();
+  stats_aggregator_registry_reset();
+  stats_aggregator_unlock();
 }
 
 static GString *
@@ -96,6 +100,9 @@ control_connection_remove_orphans(ControlConnection *cc, GString *command, gpoin
 {
   GString *result = g_string_new("OK Orphaned statistics have been removed.");
 
+  stats_aggregator_lock();
+  stats_aggregator_remove_orphaned_stats();
+  stats_aggregator_unlock();
   stats_lock();
   stats_foreach_cluster_remove(_is_cluster_orphaned, NULL);
   stats_unlock();
