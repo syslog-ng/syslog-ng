@@ -25,11 +25,16 @@
 #include "stats/stats-registry.h"
 #include "stats/stats-query.h"
 #include "cfg.h"
+#include "iv.h"
+#include "timeutils/cache.h"
+#include "mainloop.h"
 
+#define FREQUENCY_OF_UPDATE 60
 
 typedef struct
 {
   GHashTable *aggregators;
+  struct iv_timer update_timer;
 } StatsAggregatorContainer;
 
 static StatsAggregatorContainer stats_container;
@@ -37,6 +42,57 @@ static StatsAggregatorContainer stats_container;
 static GStaticMutex stats_aggregator_mutex = G_STATIC_MUTEX_INIT;
 static gboolean stats_aggregator_locked;
 
+static void
+_update_func (gpointer _key, gpointer _value, gpointer _user_data)
+{
+  StatsAggregator *self = (StatsAggregator *) _value;
+
+  if (!stats_aggregator_is_orphaned(self))
+    stats_aggregator_aggregate(self);
+}
+
+static void
+_start_timer(void)
+{
+  main_loop_assert_main_thread();
+  iv_validate_now();
+  stats_container.update_timer.expires = iv_now;
+  stats_container.update_timer.expires.tv_sec += FREQUENCY_OF_UPDATE;
+
+  iv_timer_register(&stats_container.update_timer);
+}
+
+static void
+_update(void *cookie)
+{
+  g_hash_table_foreach(stats_container.aggregators, _update_func, NULL);
+
+  if(g_hash_table_size(stats_container.aggregators) > 0
+      && !iv_timer_registered(&stats_container.update_timer))
+    _start_timer();
+}
+
+static void
+_init_timer(void)
+{
+  IV_TIMER_INIT(&stats_container.update_timer);
+  stats_container.update_timer.cookie = NULL;
+  stats_container.update_timer.handler = _update;
+}
+
+static void
+_stop_timer(void)
+{
+  main_loop_assert_main_thread();
+  if (iv_timer_registered(&stats_container.update_timer))
+    iv_timer_unregister(&stats_container.update_timer);
+}
+
+static void
+_deinit_timer(void)
+{
+  _stop_timer();
+}
 
 void
 stats_aggregator_lock(void)
@@ -121,12 +177,16 @@ stats_aggregator_registry_deinit(void)
   g_hash_table_destroy(stats_container.aggregators);
   stats_container.aggregators = NULL;
   g_static_mutex_free(&stats_aggregator_mutex);
+  _deinit_timer();
 }
 
 static void
 _insert_to_table(StatsAggregator *value)
 {
   g_hash_table_insert(stats_container.aggregators, &value->key, value);
+
+  if (!iv_timer_registered(&stats_container.update_timer))
+    _start_timer();
 }
 
 static gboolean
