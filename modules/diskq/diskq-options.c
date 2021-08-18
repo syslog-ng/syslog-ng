@@ -29,14 +29,6 @@
 void
 disk_queue_options_qout_size_set(DiskQueueOptions *self, gint qout_size)
 {
-  if (qout_size < 64)
-    {
-      msg_warning("WARNING: The configured qout size is smaller than the minimum allowed",
-                  evt_tag_int("configured_size", qout_size),
-                  evt_tag_int("minimum_allowed_size", 64),
-                  evt_tag_int("new_size", 64));
-      qout_size = 64;
-    }
   self->qout_size = qout_size;
 }
 
@@ -146,5 +138,3 @@ disk_queue_options_destroy(DiskQueueOptions *self)
       self->dir = NULL;
     }
 }
-
-

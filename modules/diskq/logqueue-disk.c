@@ -143,6 +143,10 @@ log_queue_disk_read_message(LogQueueDisk *self, LogPathOptions *path_options)
         }
     }
   while (msg == NULL);
+
+  if (msg)
+    path_options->ack_needed = FALSE;
+
   return msg;
 }
 
