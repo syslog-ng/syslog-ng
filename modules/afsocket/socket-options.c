@@ -134,10 +134,19 @@ socket_options_setup_socket_method(SocketOptions *self, gint fd, GSockAddr *bind
   return TRUE;
 }
 
+gboolean
+socket_options_setup_peer_socket_method(SocketOptions *self, gint fd, GSockAddr *bind_addr)
+{
+  if (self->so_keepalive && !_setup_keepalive(fd))
+    return FALSE;
+  return TRUE;
+}
+
 void
 socket_options_init_instance(SocketOptions *self)
 {
   self->setup_socket = socket_options_setup_socket_method;
+  self->setup_peer_socket = socket_options_setup_peer_socket_method;
   self->free = g_free;
 }
 

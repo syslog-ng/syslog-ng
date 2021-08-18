@@ -496,6 +496,8 @@ afsocket_sd_accept(gpointer s)
 
       if (res)
         {
+          socket_options_setup_peer_socket(self->socket_options, new_fd, peer_addr);
+
           if (peer_addr->sa.sa_family != AF_UNIX)
             msg_notice("Syslog connection accepted",
                        evt_tag_int("fd", new_fd),
