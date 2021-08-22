@@ -186,7 +186,10 @@ _insert(LogThreadedDestWorker *s, LogMessage *msg)
 static gint
 _log_ssl_errors(const gchar *str, gsize len, gpointer u)
 {
-  msg_error("MQTT TLS error", evt_tag_printf("line", "%.*s", (gint) len, str));
+  MQTTDestinationWorker *self = (MQTTDestinationWorker *) u;
+
+  msg_error("MQTT TLS error", evt_tag_printf("line", "%.*s", (gint) len, str),
+            log_pipe_location_tag(&self->super.owner->super.super.super));
   return TRUE;
 }
 
@@ -206,6 +209,7 @@ _create_ssl_options(MQTTDestinationWorker *self)
   ssl_opts.verify = owner->peer_verify;
   ssl_opts.disableDefaultTrustStore = !owner->use_system_cert_store;
   ssl_opts.ssl_error_cb = _log_ssl_errors;
+  ssl_opts.ssl_error_context = self;
 
   return ssl_opts;
 }
