@@ -114,6 +114,8 @@ const gchar *stats_cluster_get_component_name(StatsCluster *self, gchar *buf, gs
 
 void stats_cluster_foreach_counter(StatsCluster *self, StatsForeachCounterFunc func, gpointer user_data);
 
+StatsClusterKey *stats_cluster_key_clone(StatsClusterKey *dst, const StatsClusterKey *src);
+void stats_cluster_key_cloned_free(StatsClusterKey *self);
 gboolean stats_cluster_key_equal(const StatsClusterKey *key1, const StatsClusterKey *key2);
 gboolean stats_cluster_equal(const StatsCluster *sc1, const StatsCluster *sc2);
 guint stats_cluster_hash(const StatsCluster *self);
