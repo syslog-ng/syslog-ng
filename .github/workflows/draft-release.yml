@@ -47,6 +47,12 @@ jobs:
         run: |
           ./dbld/rules release VERSION=`cat VERSION`
 
+      - name: Store release tarball as artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: tarball
+          path: dbld/release/${VERSION}/${RELEASE_NAME}.tar.gz
+
       - name: Create draft release
         run: |
           VERSION=`cat VERSION`
@@ -73,3 +79,48 @@ jobs:
           hub api \
             ${COMMENT_ENDPOINT} \
             --field body="${COMMENT}"
+
+  packages:
+    runs-on: ubuntu-latest
+    needs: draft-release
+    strategy:
+      matrix:
+        distro:
+        - debian-stretch
+        - debian-buster
+        - debian-sid
+        - ubuntu-xenial
+        - ubuntu-bionic
+        - ubuntu-focal
+      fail-fast: false
+
+    steps:
+      - name: Create a working directory
+        run: |
+          MY_WORKSPACE=$(mktemp --tmpdir=${GITHUB_WORKSPACE} -d tarball-XXXXX)
+          MY_WORKSPACE_NAME=${MY_WORKSPACE##"${GITHUB_WORKSPACE}/"}
+          echo "MY_WORKSPACE_NAME=${MY_WORKSPACE_NAME}" >> ${GITHUB_ENV}
+
+      - name: Fetch tarball artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: tarball
+          path: ${{ env.MY_WORKSPACE_NAME }}
+
+      - name: Extract tarball
+        run: cd ${GITHUB_WORKSPACE}/${MY_WORKSPACE_NAME} && mkdir syslog-ng && tar --strip-components=1 -xf syslog-ng*.tar.gz -C syslog-ng && ls -lR
+
+      - name: Image for ${{ matrix.distro }}
+        run: cd ${GITHUB_WORKSPACE}/${MY_WORKSPACE_NAME}/syslog-ng && ./dbld/rules image-${{ matrix.distro }}
+
+      - name: Binary for ${{ matrix.distro }}
+        run: cd ${GITHUB_WORKSPACE}/${MY_WORKSPACE_NAME}/syslog-ng && ./dbld/rules package-${{ matrix.distro }}
+
+      # Note: azure/CLI docker container mounts the GITHUB_WORKSPACE folder and changes the environment variable.
+      - name: Upload the package
+        uses: azure/CLI@v1
+        env:
+          SRC_PATH: ${{ env.MY_WORKSPACE_NAME }}/syslog-ng/dbld/build/${{ matrix.distro }}
+          DST_PATH: incoming-release/${{ github.run_id }}/${{ matrix.distro }}
+        with:
+          inlineScript: az storage blob upload-batch --sas-token '${{ secrets.AZURE_SAS_TOKEN }}' --account-name 'syslogngose' --source ${GITHUB_WORKSPACE}/${SRC_PATH} --destination ${DST_PATH}
