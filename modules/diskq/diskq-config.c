@@ -34,7 +34,7 @@ disk_queue_config_free(ModuleConfig *s)
 static void
 _set_default_values(DiskQueueConfig *self)
 {
-  self->truncate_size_ratio = 0.01;
+  self->truncate_size_ratio = 0.1;
 }
 
 DiskQueueConfig *

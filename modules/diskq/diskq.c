@@ -172,7 +172,7 @@ _attach(LogDriverPlugin *s, LogDriver *d)
   if (self->options.mem_buf_length < 0)
     self->options.mem_buf_length = cfg->log_fifo_size;
   if (self->options.qout_size < 0)
-    self->options.qout_size = 64;
+    self->options.qout_size = 1000;
   if (self->options.truncate_size_ratio < 0)
     _set_default_truncate_size_ratio(self, cfg);
 
