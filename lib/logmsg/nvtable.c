@@ -167,6 +167,12 @@ nv_table_alloc_value(NVTable *self, gsize alloc_size)
   entry->indirect = FALSE;
   entry->referenced = FALSE;
   entry->unset = FALSE;
+  entry->type_present = TRUE;
+  entry->type = 0;
+
+  /* initialize __reserved field (at the same type as type_present is TRUE,
+   * so that future extensions have another byte to use) */
+  entry->__reserved = 0;
   return entry;
 }
 
