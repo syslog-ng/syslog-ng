@@ -146,11 +146,19 @@ struct _NVEntry
       guint8 indirect:1,
              referenced:1,
              unset:1,
-             __bit_padding:5;
+             type_present:1,
+             __bit_padding:4;
     };
     guint8 flags;
   };
   guint8 name_len;
+  guint8 type;
+
+  /* NOTE: this field fills an empty padding byte, so if you are adding
+   * fields, please remove this.  This is now zero initialized as of the
+   * first version of syslog-ng that contain this member.  Earlier versions
+   * had an uninitialized padding byte here.  */
+  guint8 __reserved;
   guint32 alloc_len;
   union
   {
