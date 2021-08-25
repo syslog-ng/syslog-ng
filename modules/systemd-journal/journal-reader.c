@@ -265,6 +265,7 @@ _handle_message(JournalReader *self)
   gpointer args[] = {msg, self->options};
 
   journald_foreach_data(self->journal, _handle_data, args);
+
   _set_message_timestamp(self, msg);
   _set_program(self->options, msg);
 

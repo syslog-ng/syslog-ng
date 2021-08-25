@@ -324,6 +324,8 @@ _format_stats_instance(LogThreadedDestDriver *s)
 gboolean
 http_dd_deinit(LogPipe *s)
 {
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *)s;
+  log_threaded_dest_driver_unregister_aggregated_stats(&self->super);
   return log_threaded_dest_driver_deinit_method(s);
 }
 
@@ -364,6 +366,7 @@ http_dd_init(LogPipe *s)
 
   http_load_balancer_set_recovery_timeout(self->load_balancer, self->super.time_reopen);
 
+  log_threaded_dest_driver_register_aggregated_stats(&self->super);
   return TRUE;
 }
 

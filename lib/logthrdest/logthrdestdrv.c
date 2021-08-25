@@ -23,6 +23,8 @@
  */
 
 #include "stats/stats-cluster-logpipe.h"
+#include "stats/stats-cluster-single.h"
+#include "stats/aggregator/stats-aggregator-registry.h"
 #include "logthrdestdrv.h"
 #include "seqnum.h"
 #include "scratch-buffers.h"
@@ -998,6 +1000,63 @@ _init_stats_key(LogThreadedDestDriver *self, StatsClusterKey *sc_key)
                                 self->format_stats_instance(self));
 }
 
+void
+log_threaded_dest_driver_insert_msg_length_stats(LogThreadedDestDriver *self, gsize len)
+{
+  stats_aggregator_insert_data(self->max_message_size, len);
+  stats_aggregator_insert_data(self->average_messages_size, len);
+}
+
+void
+log_threaded_dest_driver_insert_batch_length_stats(LogThreadedDestDriver *self, gsize len)
+{
+  stats_aggregator_insert_data(self->max_batch_size, len);
+  stats_aggregator_insert_data(self->average_batch_size, len);
+}
+
+void
+log_threaded_dest_driver_register_aggregated_stats(LogThreadedDestDriver *self)
+{
+  stats_aggregator_lock();
+  StatsClusterKey sc_key;
+
+  stats_cluster_single_key_set_with_name(&sc_key, self->stats_source | SCS_DESTINATION, self->super.super.id,
+                                         self->format_stats_instance(self), "msg_size_max");
+  stats_register_aggregator_maximum(0, &sc_key, &self->max_message_size);
+
+  stats_cluster_single_key_set_with_name(&sc_key, self->stats_source | SCS_DESTINATION, self->super.super.id,
+                                         self->format_stats_instance(self), "msg_size_avg");
+  stats_register_aggregator_average(0, &sc_key, &self->average_messages_size);
+
+  stats_cluster_single_key_set_with_name(&sc_key, self->stats_source | SCS_DESTINATION, self->super.super.id,
+                                         self->format_stats_instance(self), "batch_size_max");
+  stats_register_aggregator_maximum(0, &sc_key, &self->max_batch_size);
+
+  stats_cluster_single_key_set_with_name(&sc_key, self->stats_source | SCS_DESTINATION, self->super.super.id,
+                                         self->format_stats_instance(self), "batch_size_avg");
+  stats_register_aggregator_average(0, &sc_key, &self->average_batch_size);
+
+  stats_cluster_single_key_set_with_name(&sc_key, self->stats_source | SCS_DESTINATION, self->super.super.id,
+                                         self->format_stats_instance(self), "eps");
+  stats_register_aggregator_cps(0, &sc_key, self->written_messages, &self->CPS);
+
+  stats_aggregator_unlock();
+}
+
+void
+log_threaded_dest_driver_unregister_aggregated_stats(LogThreadedDestDriver *self)
+{
+  stats_aggregator_lock();
+
+  stats_unregister_aggregator_maximum(&self->max_message_size);
+  stats_unregister_aggregator_average(&self->average_messages_size);
+  stats_unregister_aggregator_maximum(&self->max_batch_size);
+  stats_unregister_aggregator_average(&self->average_batch_size);
+  stats_unregister_aggregator_cps(&self->CPS);
+
+  stats_aggregator_unlock();
+}
+
 static void
 _register_stats(LogThreadedDestDriver *self)
 {
@@ -1009,6 +1068,7 @@ _register_stats(LogThreadedDestDriver *self)
     stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
     stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
     stats_register_counter(0, &sc_key, SC_TYPE_WRITTEN, &self->written_messages);
+
   }
   stats_unlock();
 }
@@ -1024,6 +1084,7 @@ _unregister_stats(LogThreadedDestDriver *self)
     stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
     stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
     stats_unregister_counter(&sc_key, SC_TYPE_WRITTEN, &self->written_messages);
+
   }
   stats_unlock();
 }
