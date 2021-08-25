@@ -84,7 +84,11 @@ _clone_stats_cluster_key(StatsClusterKey *dst, const StatsClusterKey *src)
   dst->component = src->component;
   dst->id = g_strdup(src->id ? : "");
   dst->instance = g_strdup(src->instance ? : "");
-  dst->counter_group_init = src->counter_group_init;
+
+  if (src->counter_group_init.clone)
+    src->counter_group_init.clone(&dst->counter_group_init, &src->counter_group_init);
+  else
+    dst->counter_group_init = src->counter_group_init;
 
   return dst;
 }
@@ -104,6 +108,9 @@ _stats_cluster_key_cloned_free(StatsClusterKey *self)
 {
   g_free((gchar *)(self->id));
   g_free((gchar *)(self->instance));
+
+  if (self->counter_group_init.cloned_free)
+    self->counter_group_init.cloned_free(&self->counter_group_init);
 }
 
 void

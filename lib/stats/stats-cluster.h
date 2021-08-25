@@ -66,6 +66,8 @@ struct _StatsCounterGroupInit
   } counter;
   void (*init)(StatsCounterGroupInit *self, StatsCounterGroup *counter_group);
   gboolean (*equals)(const StatsCounterGroupInit *self, const StatsCounterGroupInit *other);
+  void (*clone)(StatsCounterGroupInit *dst, const StatsCounterGroupInit *src);
+  void (*cloned_free)(StatsCounterGroupInit *self);
 };
 
 gboolean stats_counter_group_init_equals(const StatsCounterGroupInit *self, const StatsCounterGroupInit *other);
