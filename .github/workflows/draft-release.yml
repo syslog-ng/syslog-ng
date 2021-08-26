@@ -85,14 +85,19 @@ jobs:
     needs: draft-release
     strategy:
       matrix:
-        distro:
-        - debian-stretch
-        - debian-buster
-        - debian-sid
-        - ubuntu-xenial
-        - ubuntu-bionic
-        - ubuntu-focal
+        dbld-builder-images:
+        - [ 'debian-stretch',   'deb' ]
+        - [ 'debian-buster',    'deb' ]
+        - [ 'debian-sid',       'deb' ]
+        - [ 'ubuntu-xenial',    'deb' ]
+        - [ 'ubuntu-bionic',    'deb' ]
+        - [ 'ubuntu-focal',     'deb' ]
+        - [ 'centos-7',         'rpm' ]
+        - [ 'fedora-33',        'rpm' ]
       fail-fast: false
+    env:
+      DISTRIBUTION: ${{ matrix.dbld-builder-images[0] }}
+      PACKAGE_MANAGER: ${{ matrix.dbld-builder-images[1] }}
 
     steps:
       - name: Create a working directory
@@ -110,17 +115,18 @@ jobs:
       - name: Extract tarball
         run: cd ${GITHUB_WORKSPACE}/${MY_WORKSPACE_NAME} && mkdir syslog-ng && tar --strip-components=1 -xf syslog-ng*.tar.gz -C syslog-ng && ls -lR
 
-      - name: Image for ${{ matrix.distro }}
-        run: cd ${GITHUB_WORKSPACE}/${MY_WORKSPACE_NAME}/syslog-ng && ./dbld/rules image-${{ matrix.distro }}
+      - name: Image for ${{ env.DISTRIBUTION }}
+        run: cd ${GITHUB_WORKSPACE}/${MY_WORKSPACE_NAME}/syslog-ng && ./dbld/rules image-${{ env.DISTRIBUTION }}
 
-      - name: Binary for ${{ matrix.distro }}
-        run: cd ${GITHUB_WORKSPACE}/${MY_WORKSPACE_NAME}/syslog-ng && ./dbld/rules package-${{ matrix.distro }}
+      - name: Binary for ${{ env.DISTRIBUTION }}
+        run: cd ${GITHUB_WORKSPACE}/${MY_WORKSPACE_NAME}/syslog-ng && ./dbld/rules package-${{ env.DISTRIBUTION }}
 
       # Note: azure/CLI docker container mounts the GITHUB_WORKSPACE folder and changes the environment variable.
       - name: Upload the package
+        if: env.PACKAGE_MANAGER == 'deb'
         uses: azure/CLI@v1
         env:
-          SRC_PATH: ${{ env.MY_WORKSPACE_NAME }}/syslog-ng/dbld/build/${{ matrix.distro }}
-          DST_PATH: incoming-release/${{ github.run_id }}/${{ matrix.distro }}
+          SRC_PATH: ${{ env.MY_WORKSPACE_NAME }}/syslog-ng/dbld/build/${{ env.DISTRIBUTION }}
+          DST_PATH: incoming-release/${{ github.run_id }}/${{ env.DISTRIBUTION }}
         with:
           inlineScript: az storage blob upload-batch --sas-token '${{ secrets.AZURE_SAS_TOKEN }}' --account-name 'syslogngose' --source ${GITHUB_WORKSPACE}/${SRC_PATH} --destination ${DST_PATH}
