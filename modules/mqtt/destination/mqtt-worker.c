@@ -25,6 +25,7 @@
 #include "mqtt-destination.h"
 #include "thread-utils.h"
 #include "apphook.h"
+#include "messages.h"
 
 #include <stdio.h>
 
@@ -182,6 +183,36 @@ _insert(LogThreadedDestWorker *s, LogMessage *msg)
   */
 }
 
+static gint
+_log_ssl_errors(const gchar *str, gsize len, gpointer u)
+{
+  MQTTDestinationWorker *self = (MQTTDestinationWorker *) u;
+
+  msg_error("MQTT TLS error", evt_tag_printf("line", "%.*s", (gint) len, str),
+            log_pipe_location_tag(&self->super.owner->super.super.super));
+  return TRUE;
+}
+
+static MQTTClient_SSLOptions
+_create_ssl_options(MQTTDestinationWorker *self)
+{
+  MQTTDestinationDriver *owner = (MQTTDestinationDriver *) self->super.owner;
+
+  MQTTClient_SSLOptions ssl_opts = MQTTClient_SSLOptions_initializer;
+  ssl_opts.trustStore = owner->ca_file;
+  ssl_opts.CApath = owner->ca_dir;
+  ssl_opts.keyStore = owner->cert_file;
+  ssl_opts.privateKey = owner->key_file;
+  ssl_opts.enabledCipherSuites = owner->ciphers;
+  ssl_opts.sslVersion = owner->ssl_version;
+  ssl_opts.enableServerCertAuth = owner->peer_verify;
+  ssl_opts.verify = owner->peer_verify;
+  ssl_opts.disableDefaultTrustStore = !owner->use_system_cert_store;
+  ssl_opts.ssl_error_cb = _log_ssl_errors;
+  ssl_opts.ssl_error_context = self;
+
+  return ssl_opts;
+}
 
 static gboolean
 _connect(LogThreadedDestWorker *s)
@@ -191,9 +222,20 @@ _connect(LogThreadedDestWorker *s)
   gint rc;
 
   MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
-
   conn_opts.keepAliveInterval = owner->keepalive;
   conn_opts.cleansession = FALSE;
+  conn_opts.username = owner->username;
+  conn_opts.password = owner->password;
+
+  if (owner->http_proxy)
+    {
+      conn_opts.httpProxy = owner->http_proxy;
+      conn_opts.httpsProxy = owner->http_proxy;
+    }
+
+  MQTTClient_SSLOptions ssl_opts = _create_ssl_options(self);
+  conn_opts.ssl = &ssl_opts;
+
   if ((rc = MQTTClient_connect(self->client, &conn_opts)) != MQTTCLIENT_SUCCESS)
     {
       msg_error("Error connecting mqtt client",

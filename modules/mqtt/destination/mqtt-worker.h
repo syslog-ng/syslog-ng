@@ -25,7 +25,8 @@
 
 #include "logthrdest/logthrdestdrv.h"
 #include "thread-utils.h"
-#include "MQTTClient.h"
+
+#include <MQTTClient.h>
 
 typedef struct _MQTTDestinationWorker
 {

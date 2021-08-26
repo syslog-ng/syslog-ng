@@ -1317,15 +1317,15 @@ if test "x$enable_mqtt" = "xyes" || test "x$enable_mqtt" = "xauto"; then
 		CPPFLAGS_SAVE="$CPPFLAGS"
 		LDFLAGS_SAVE="$LDFLAGS"
 		CPPFLAGS="$CPPFLAGS -I$with_libpaho_mqtt/include"
-		LDFLAGS="$LDFLAGS -L$with_libpaho_mqtt -lpaho-mqtt3c"
+		LDFLAGS="$LDFLAGS -L$with_libpaho_mqtt -lpaho-mqtt3cs"
 		AC_CHECK_HEADER(MQTTClient.h, [LIBPAHO_MQTT_CFLAGS="-I$with_libpaho_mqtt/include"
-						LIBPAHO_MQTT_LIBS="-L$with_libpaho_mqtt/lib -lpaho-mqtt3c"
+						LIBPAHO_MQTT_LIBS="-L$with_libpaho_mqtt/lib -lpaho-mqtt3cs"
 						libpaho_mqtt="yes"], [libpaho_mqtt=no])
 
 		CPPFLAGS="$CPPFLAGS_SAVE"
 		LDFLAGS="$LDFLAGS_SAVE"
 	else
-		AC_CHECK_LIB(paho-mqtt3c, MQTTClient_create, LIBPAHO_MQTT_LIBS="-lpaho-mqtt3c"; libpaho_mqtt="yes", libpaho_mqtt="no")
+		AC_CHECK_LIB(paho-mqtt3cs, MQTTClient_create, LIBPAHO_MQTT_LIBS="-lpaho-mqtt3cs"; libpaho_mqtt="yes", libpaho_mqtt="no")
 	fi
 	if test "x$enable_mqtt" = "xyes" && test "x$libpaho_mqtt" = "xno"; then
 		AC_MSG_ERROR(libPAHO_MQTT not found)

@@ -32,6 +32,10 @@
 #include "plugin-types.h"
 #include "logthrdest/logthrdestdrv.h"
 
+#include <MQTTClient.h>
+
+#include <strings.h>
+
 /*
  * Default values
  */
@@ -94,6 +98,113 @@ mqtt_dd_set_message_template_ref(LogDriver *d, LogTemplate *message)
   self->message = message;
 }
 
+
+void
+mqtt_dd_set_http_proxy(LogDriver *d, const gchar *http_proxy)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *) d;
+
+  g_free(self->http_proxy);
+  self->http_proxy = g_strdup(http_proxy);
+}
+
+void mqtt_dd_set_username(LogDriver *d, const gchar *username)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *) d;
+
+  g_free(self->username);
+  self->username = g_strdup(username);
+}
+
+void mqtt_dd_set_password(LogDriver *d, const gchar *password)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *) d;
+
+  g_free(self->password);
+  self->password = g_strdup(password);
+}
+
+void
+mqtt_dd_set_ca_dir(LogDriver *d, const gchar *ca_dir)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *) d;
+
+  g_free(self->ca_dir);
+  self->ca_dir = g_strdup(ca_dir);
+}
+
+void
+mqtt_dd_set_ca_file(LogDriver *d, const gchar *ca_file)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *) d;
+
+  g_free(self->ca_file);
+  self->ca_file = g_strdup(ca_file);
+}
+
+void
+mqtt_dd_set_cert_file(LogDriver *d, const gchar *cert_file)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *) d;
+
+  g_free(self->cert_file);
+  self->cert_file = g_strdup(cert_file);
+}
+
+void
+mqtt_dd_set_key_file(LogDriver *d, const gchar *key_file)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *) d;
+
+  g_free(self->key_file);
+  self->key_file = g_strdup(key_file);
+}
+
+void
+mqtt_dd_set_cipher_suite(LogDriver *d, const gchar *ciphers)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *) d;
+
+  g_free(self->ciphers);
+  self->ciphers = g_strdup(ciphers);
+}
+
+gboolean
+mqtt_dd_set_ssl_version(LogDriver *d, const gchar *value)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *) d;
+
+  if (strcasecmp(value, "default") == 0)
+    self->ssl_version = MQTT_SSL_VERSION_DEFAULT;
+  else if (strcasecmp(value, "tlsv1_0") == 0)
+    self->ssl_version = MQTT_SSL_VERSION_TLS_1_0;
+  else if (strcasecmp(value, "tlsv1_1") == 0)
+    self->ssl_version = MQTT_SSL_VERSION_TLS_1_1;
+  else if (strcasecmp(value, "tlsv1_2") == 0)
+    self->ssl_version = MQTT_SSL_VERSION_TLS_1_2;
+  else
+    return FALSE;
+
+  return TRUE;
+}
+
+void
+mqtt_dd_set_peer_verify(LogDriver *d, gboolean verify)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *) d;
+
+  self->peer_verify = verify;
+}
+
+void
+mqtt_dd_use_system_cert_store(LogDriver *d, gboolean use_system_cert_store)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *) d;
+
+  /* TODO: auto_detect_ca_file() from the HTTP module */
+  self->use_system_cert_store = use_system_cert_store;
+}
+
 /*
  * Utilities
  */
@@ -130,11 +241,15 @@ _format_persist_name(const LogPipe *d)
 static void
 _set_default_value(MQTTDestinationDriver *self, GlobalConfig *cfg)
 {
-  self->address       = g_string_new(DEFAULT_ADDRESS);
+  self->address = g_string_new(DEFAULT_ADDRESS);
 
-  self->keepalive     = DEFAULT_KEEPALIVE;
-  self->qos           = DEFAULT_QOS;
-  self->message       = log_template_new(cfg, NULL);
+  self->keepalive = DEFAULT_KEEPALIVE;
+  self->qos = DEFAULT_QOS;
+  self->message = log_template_new(cfg, NULL);
+
+  self->ssl_version = MQTT_SSL_VERSION_DEFAULT;
+  self->peer_verify = TRUE;
+  self->use_system_cert_store = FALSE;
 
   log_template_compile(self->message, DEFAULT_MESSAGE_TEMPLATE, NULL);
 
@@ -147,10 +262,25 @@ _topic_name_is_a_template(MQTTDestinationDriver *self)
   return !log_template_is_literal_string(self->topic_name);
 }
 
+static void
+_mqtt_internal_log(enum MQTTCLIENT_TRACE_LEVELS level, gchar *message)
+{
+  if (level >= MQTTCLIENT_TRACE_ERROR)
+    {
+      msg_error("MQTT error", evt_tag_str("error_message", message));
+      return;
+    }
+
+  msg_trace("MQTT debug", evt_tag_str("message", message));
+}
+
 static gboolean
 _init(LogPipe *d)
 {
   MQTTDestinationDriver *self = (MQTTDestinationDriver *)d;
+
+  MQTTClient_setTraceCallback(_mqtt_internal_log);
+  MQTTClient_setTraceLevel(MQTTCLIENT_TRACE_PROTOCOL);
 
   if (!self->topic_name)
     {
@@ -190,6 +320,16 @@ _free(LogPipe *d)
   MQTTDestinationDriver *self = (MQTTDestinationDriver *)d;
 
   g_string_free(self->address, TRUE);
+
+  g_free(self->username);
+  g_free(self->password);
+  g_free(self->http_proxy);
+
+  g_free(self->ca_dir);
+  g_free(self->ca_file);
+  g_free(self->cert_file);
+  g_free(self->key_file);
+  g_free(self->ciphers);
 
   if (self->fallback_topic_name)
     g_free(self->fallback_topic_name);
@@ -272,7 +412,7 @@ mqtt_dd_validate_topic_name(const gchar *name, GError **error)
 }
 
 GQuark
-topic_name_error_quark(void)
+mqtt_topic_name_error_quark(void)
 {
   return g_quark_from_static_string("invalid-topic-name-error-quark");
 }
