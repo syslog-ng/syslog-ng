@@ -52,3 +52,4 @@ class NetworkIO():
         TLS = {"use_ssl": True}
         PROXIED_TCP = {"inet": True, "stream": True}
         PROXIED_TLS = {"use_ssl": True}
+        PROXIED_TLS_PASSTHROUGH = {"use_ssl": True, "proxied_tls_passthrough": True}
