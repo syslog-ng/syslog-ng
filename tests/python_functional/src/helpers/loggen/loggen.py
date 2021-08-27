@@ -42,7 +42,7 @@ class Loggen(object):
     def __decode_start_parameters(
         self, inet, unix, stream, dgram, use_ssl, dont_parse, read_file, skip_tokens, loop_reading,
         rate, interval, permanent, syslog_proto, proxied, sdata, no_framing, active_connections,
-        idle_connections, ipv6, debug, number, csv, quiet, size, reconnect,
+        idle_connections, ipv6, debug, number, csv, quiet, size, reconnect, proxied_tls_passthrough,
         proxy_src_ip, proxy_dst_ip, proxy_src_port, proxy_dst_port,
     ):
 
@@ -102,6 +102,9 @@ class Loggen(object):
         if proxy_dst_port is not None:
             start_parameters.append("--proxy-dst-port={}".format(proxy_dst_port))
 
+        if proxied_tls_passthrough is True:
+            start_parameters.append("--proxied-tls-passthrough")
+
         if sdata is True:
             start_parameters.append("--sdata")
 
@@ -140,8 +143,8 @@ class Loggen(object):
     def start(
         self, target, port, inet=None, unix=None, stream=None, dgram=None, use_ssl=None, dont_parse=None, read_file=None, skip_tokens=None, loop_reading=None,
         rate=None, interval=None, permanent=None, syslog_proto=None, proxied=None, sdata=None, no_framing=None, active_connections=None,
-        idle_connections=None, ipv6=None, debug=None, number=None, csv=None, quiet=None, size=None, reconnect=None, proxy_src_ip=None,
-        proxy_dst_ip=None, proxy_src_port=None, proxy_dst_port=None,
+        idle_connections=None, ipv6=None, debug=None, number=None, csv=None, quiet=None, size=None, reconnect=None, proxied_tls_passthrough=None,
+        proxy_src_ip=None, proxy_dst_ip=None, proxy_src_port=None, proxy_dst_port=None,
     ):
 
         if self.loggen_proc is not None and self.loggen_proc.is_running():
@@ -154,8 +157,8 @@ class Loggen(object):
         self.parameters = self.__decode_start_parameters(
             inet, unix, stream, dgram, use_ssl, dont_parse, read_file, skip_tokens, loop_reading,
             rate, interval, permanent, syslog_proto, proxied, sdata, no_framing, active_connections,
-            idle_connections, ipv6, debug, number, csv, quiet, size, reconnect, proxy_src_ip,
-            proxy_dst_ip, proxy_src_port, proxy_dst_port,
+            idle_connections, ipv6, debug, number, csv, quiet, size, reconnect, proxied_tls_passthrough,
+            proxy_src_ip, proxy_dst_ip, proxy_src_port, proxy_dst_port,
         )
 
         self.loggen_proc = ProcessExecutor().start(
