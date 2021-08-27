@@ -298,6 +298,17 @@ _init(LogPipe *d)
       return FALSE;
     }
 
+#if !SYSLOG_NG_HAVE_PAHO_HTTP_PROXY
+  if (self->http_proxy)
+    {
+      msg_warning_once("WARNING: the http-proxy() option of the mqtt() destination "
+                       "is not supported on the current libpaho-mqtt version. "
+                       "If you would like to use this feature, update to at least libpaho-mqtt 1.3.7");
+      g_free(self->http_proxy);
+      self->http_proxy = NULL;
+    }
+#endif
+
   if (!log_threaded_dest_driver_init_method(d))
     {
       return FALSE;

@@ -227,11 +227,13 @@ _connect(LogThreadedDestWorker *s)
   conn_opts.username = owner->username;
   conn_opts.password = owner->password;
 
+#if SYSLOG_NG_HAVE_PAHO_HTTP_PROXY
   if (owner->http_proxy)
     {
       conn_opts.httpProxy = owner->http_proxy;
       conn_opts.httpsProxy = owner->http_proxy;
     }
+#endif
 
   MQTTClient_SSLOptions ssl_opts = _create_ssl_options(self);
   conn_opts.ssl = &ssl_opts;

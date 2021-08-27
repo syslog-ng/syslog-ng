@@ -1330,6 +1330,24 @@ if test "x$enable_mqtt" = "xyes" || test "x$enable_mqtt" = "xauto"; then
 	if test "x$enable_mqtt" = "xyes" && test "x$libpaho_mqtt" = "xno"; then
 		AC_MSG_ERROR(libPAHO_MQTT not found)
 	fi
+
+	if test "x$libpaho_mqtt" = "xyes"; then
+		CPPFLAGS_SAVE="$CPPFLAGS"
+		LDFLAGS_SAVE="$LDFLAGS"
+		CPPFLAGS="$CPPFLAGS $LIBPAHO_MQTT_CFLAGS"
+		LDFLAGS="$LDFLAGS $LIBPAHO_MQTT_LIBS"
+
+		AC_CHECK_MEMBER([MQTTClient_connectOptions.httpProxy],
+				[have_paho_http_proxy=1],
+				[have_paho_http_proxy=0],
+				[[#include "MQTTClient.h"]])
+
+		CPPFLAGS="$CPPFLAGS_SAVE"
+		LDFLAGS="$LDFLAGS_SAVE"
+
+		AC_DEFINE_UNQUOTED(HAVE_PAHO_HTTP_PROXY, $have_paho_http_proxy, [libpaho-mqtt supports MQTTClient_connectOptions::httpProxy])
+	fi
+
 	enable_mqtt=$libpaho_mqtt
 fi
 
