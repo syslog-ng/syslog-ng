@@ -62,10 +62,12 @@ static gint active_thread_count;
 static gint idle_thread_count;
 
 static int use_ssl = 0;
+static int proxied_tls_passthrough = 0;
 
 static GOptionEntry loggen_options[] =
 {
   { "use-ssl", 'U', 0, G_OPTION_ARG_NONE, &use_ssl,  "Use ssl layer", NULL },
+  { "proxied-tls-passthrough", 0, 0, G_OPTION_ARG_NONE, &proxied_tls_passthrough, "Send the PROXY protocol v1 header before the encrypted payload", NULL },
   { NULL }
 };
 
@@ -296,6 +298,25 @@ active_thread_func(gpointer user_data)
   char *message = g_malloc0(MAX_MESSAGE_LENGTH+1);
 
   int sock_fd = connect_ip_socket(SOCK_STREAM, option->target, option->port, option->use_ipv6);
+  int str_len;
+  if(proxied_tls_passthrough)
+    {
+      str_len = generate_proxy_header(message, MAX_MESSAGE_LENGTH, thread_context->index, option->proxy_src_ip,
+                                      option->proxy_dst_ip,
+                                      option->proxy_src_port,
+                                      option->proxy_dst_port);
+      DEBUG("Generated PROXY protocol v1 header; len=%d\n", str_len);
+      int rc = send(sock_fd, message, str_len, 0);
+      if (rc < 0)
+        {
+          ERROR("Error sending buffer on %d (rc=%d)\n", sock_fd, rc);
+        }
+      else if(rc == str_len)
+        {
+          DEBUG("Sent PROXY protocol v1 header; len=%d\n", str_len);
+        }
+
+    }
 
   SSL *ssl = open_ssl_connection(sock_fd);
 
@@ -349,7 +370,7 @@ active_thread_func(gpointer user_data)
           break;
         }
 
-      int str_len = generate_message(message, MAX_MESSAGE_LENGTH, thread_context, count++);
+      str_len = generate_message(message, MAX_MESSAGE_LENGTH, thread_context, count++);
 
       if (str_len < 0)
         {
