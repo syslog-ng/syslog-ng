@@ -203,16 +203,15 @@ _update_entry(LogMessageSerializationState *state, NVEntry *entry)
 {
   if ((state->nvtable_flags & NVT_SUPPORTS_UNSET) == 0)
     {
-      /* if this was serialized with a syslog-ng that didn't support unset, make sure that:
-       *   1) unset is set to FALSE
-       *   2) the rest of the bits are cleared too
+      /* if this was serialized with a syslog-ng that didn't support unset or types, make sure that:
+       *   1) only the bits that were present in that version might be set
+       *   2) the rest of the bits are cleared
        *
        * This is needed as earlier syslog-ng versions unfortunately didn't
        * set the flags to 0, so it might contain garbage.  Anything that is
        * past NVT_SUPPORTS_UNSET however sets these bits to zero to make
        * adding new flags easier. */
-      entry->unset = FALSE;
-      entry->__bit_padding = 0;
+      entry->flags = entry->flags & NVENTRY_FLAGS_DEFINED_IN_LEGACY_FORMATS;
     }
   return TRUE;
 }

@@ -34,6 +34,8 @@
 #define NVT_SF_BE           0x1
 #define NVT_SUPPORTS_UNSET  0x2
 
+#define NVENTRY_FLAGS_DEFINED_IN_LEGACY_FORMATS 0x3
+
 NVTable *nv_table_deserialize(LogMessageSerializationState *state);
 gboolean nv_table_serialize(LogMessageSerializationState *state, NVTable *self);
 gboolean nv_table_fixup_handles(LogMessageSerializationState *state);
