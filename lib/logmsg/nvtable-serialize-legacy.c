@@ -146,6 +146,8 @@ _deserialize_old_entry(GString *old_nvtable_payload, guint32 old_offset,
   new_entry = (NVEntry *) (payload_start - _calculate_new_alloc_len(old_entry));
   new_entry->flags = old_entry->flags & NVENTRY_FLAGS_DEFINED_IN_LEGACY_FORMATS;
   new_entry->unset = FALSE;
+  new_entry->type_present = TRUE;
+  new_entry->type = 0;
   new_entry->name_len = old_entry->name_len;
   new_entry->alloc_len = _calculate_new_alloc_len(old_entry);
 
