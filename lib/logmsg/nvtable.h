@@ -133,6 +133,16 @@ struct _NVEntry
     {
       /* make sure you don't exceed 8 bits here. So if you want to add new
        * bits, decrease the size of __bit_padding below */
+
+      /* some of these bits were not zero initialized in the past, which we
+       * are fixing by the use of the NVT_SUPPORTS_UNSET flag in the NVTable
+       * header.  If that flag is not present, we fix all but the originally
+       * existing bit fields to zero (both in current and legacy
+       * deserializers).  We are using
+       * NVENTRY_FLAGS_DEFINED_IN_LEGACY_FORMATS as a bitmask to mask out
+       * "indirect" and "referenced" in the "flags" member below, which is
+       * unioned on the bitfield.
+       */
       guint8 indirect:1,
              referenced:1,
              unset:1,
