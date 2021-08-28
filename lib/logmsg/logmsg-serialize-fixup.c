@@ -213,6 +213,11 @@ _update_entry(LogMessageSerializationState *state, NVEntry *entry)
        * adding new flags easier. */
       entry->flags = entry->flags & NVENTRY_FLAGS_DEFINED_IN_LEGACY_FORMATS;
     }
+  if (!entry->type_present)
+    {
+      entry->type_present = TRUE;
+      entry->type = 0;
+    }
   return TRUE;
 }
 
