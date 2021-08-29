@@ -56,7 +56,7 @@ _add_matches_to_message(LogMessage *msg, GArray *matches, NVHandle ref_handle, c
         }
       else if (ref_handle != LM_V_NONE && log_msg_is_handle_settable_with_an_indirect_value(match->handle))
         {
-          log_msg_set_value_indirect(msg, match->handle, ref_handle, match->type, match->ofs, match->len);
+          log_msg_set_value_indirect_with_type(msg, match->handle, ref_handle, match->ofs, match->len, match->type);
         }
       else
         {

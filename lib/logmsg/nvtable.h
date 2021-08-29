@@ -117,7 +117,6 @@ typedef struct _NVReferencedSlice
   NVHandle handle;
   guint32 ofs;
   guint32 len;
-  guint8 type;
 } NVReferencedSlice;
 
 /*
@@ -295,11 +294,15 @@ struct _NVTable
  * static values */
 #define NV_TABLE_MIN_BYTES  128
 
-gboolean nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, const gchar *value,
-                            gsize value_len, gboolean *new_entry);
+gboolean nv_table_add_value(NVTable *self, NVHandle handle,
+                            const gchar *name, gsize name_len,
+                            const gchar *value, gsize value_len,
+                            NVType type, gboolean *new_entry);
 gboolean nv_table_unset_value(NVTable *self, NVHandle handle);
-gboolean nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, gsize name_len,
-                                     NVReferencedSlice *referenced_slice, gboolean *new_entry);
+gboolean nv_table_add_value_indirect(NVTable *self, NVHandle handle,
+                                     const gchar *name, gsize name_len,
+                                     NVReferencedSlice *referenced_slice,
+                                     NVType type, gboolean *new_entry);
 
 gboolean nv_table_foreach(NVTable *self, NVRegistry *registry, NVTableForeachFunc func, gpointer user_data);
 gboolean nv_table_foreach_entry(NVTable *self, NVTableForeachEntryFunc func, gpointer user_data);

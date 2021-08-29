@@ -143,7 +143,7 @@ _create_message_to_be_serialized(const gchar *raw_msg, const int raw_msg_len)
   log_msg_set_value(msg, test_handle, "test_value", -1);
 
   NVHandle indirect_handle = log_msg_get_value_handle("indirect_1");
-  log_msg_set_value_indirect(msg, indirect_handle, test_handle, 0, 5, 3);
+  log_msg_set_value_indirect(msg, indirect_handle, test_handle, 5, 3);
 
   log_msg_set_value_by_name(msg, "unset_value", "foobar", -1);
   log_msg_unset_value_by_name(msg, "unset_value");

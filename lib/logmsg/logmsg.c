@@ -511,7 +511,7 @@ _value_invalidates_legacy_header(NVHandle handle)
 }
 
 void
-log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize value_len)
+log_msg_set_value_with_type(LogMessage *self, NVHandle handle, const gchar *value, gssize value_len, NVType type)
 {
   const gchar *name;
   gssize name_len;
@@ -547,7 +547,7 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
   /* we need a loop here as a single realloc may not be enough. Might help
    * if we pass how much bytes we need though. */
 
-  while (!nv_table_add_value(self->payload, handle, name, name_len, value, value_len, &new_entry))
+  while (!nv_table_add_value(self->payload, handle, name, name_len, value, value_len, type, &new_entry))
     {
       /* error allocating string in payload, reallocate */
       guint32 old_size = self->payload->size;
@@ -571,6 +571,12 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
 
   if (_value_invalidates_legacy_header(handle))
     log_msg_unset_value(self, LM_V_LEGACY_MSGHDR);
+}
+
+void
+log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize value_len)
+{
+  log_msg_set_value_with_type(self, handle, value, value_len, 0);
 }
 
 void
@@ -614,8 +620,9 @@ log_msg_unset_value_by_name(LogMessage *self, const gchar *name)
 }
 
 void
-log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handle, guint8 type, guint16 ofs,
-                           guint16 len)
+log_msg_set_value_indirect_with_type(LogMessage *self, NVHandle handle,
+                                     NVHandle ref_handle, guint16 ofs, guint16 len,
+                                     NVType type)
 {
   const gchar *name;
   gssize name_len;
@@ -652,10 +659,9 @@ log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handl
     .handle = ref_handle,
     .ofs = ofs,
     .len = len,
-    .type = type
   };
 
-  while (!nv_table_add_value_indirect(self->payload, handle, name, name_len, &referenced_slice, &new_entry))
+  while (!nv_table_add_value_indirect(self->payload, handle, name, name_len, &referenced_slice, type, &new_entry))
     {
       /* error allocating string in payload, reallocate */
       if (!nv_table_realloc(self->payload, &self->payload))
@@ -671,6 +677,13 @@ log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handl
 
   if (new_entry)
     log_msg_update_sdata(self, handle, name, name_len);
+}
+
+void
+log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handle,
+                           guint16 ofs, guint16 len)
+{
+  log_msg_set_value_indirect_with_type(self, handle, ref_handle, ofs, len, 0);
 }
 
 gboolean
@@ -690,11 +703,21 @@ log_msg_set_match(LogMessage *self, gint index_, const gchar *value, gssize valu
 }
 
 void
-log_msg_set_match_indirect(LogMessage *self, gint index_, NVHandle ref_handle, guint8 type, guint16 ofs, guint16 len)
+log_msg_set_match_indirect(LogMessage *self, gint index_, NVHandle ref_handle, guint16 ofs, guint16 len)
 {
   g_assert(index_ < 256);
 
-  log_msg_set_value_indirect(self, match_handles[index_], ref_handle, type, ofs, len);
+  log_msg_set_value_indirect(self, match_handles[index_], ref_handle, ofs, len);
+}
+
+void
+log_msg_set_match_indirect_with_type(LogMessage *self, gint index_,
+                                     NVHandle ref_handle, guint16 ofs, guint16 len,
+                                     NVType type)
+{
+  g_assert(index_ < 256);
+
+  log_msg_set_value_indirect_with_type(self, match_handles[index_], ref_handle, ofs, len, type);
 }
 
 void

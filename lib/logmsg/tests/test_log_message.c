@@ -333,7 +333,7 @@ Test(log_message, test_log_msg_set_value_indirect_with_self_referencing_handle_r
   LogMessageTestParams *params = log_message_test_params_new();
   gssize value_len;
 
-  log_msg_set_value_indirect(params->message, params->nv_handle, params->nv_handle, 0, 0, 5);
+  log_msg_set_value_indirect(params->message, params->nv_handle, params->nv_handle, 0, 5);
   cr_assert_str_eq(log_msg_get_value(params->message, params->nv_handle, &value_len), "value",
                    "indirect self-reference value doesn't match");
 
@@ -567,7 +567,7 @@ Test(log_message, when_get_indirect_value_with_null_value_len_abort_instead_of_s
   LogMessageTestParams *params = log_message_test_params_new();
 
   NVHandle indirect = log_msg_get_value_handle("INDIRECT");
-  log_msg_set_value_indirect(params->message, indirect, params->nv_handle, 0, 0, 5);
+  log_msg_set_value_indirect(params->message, indirect, params->nv_handle, 0, 5);
   log_msg_get_value(params->message, indirect, NULL);
 
   log_message_test_params_free(params);

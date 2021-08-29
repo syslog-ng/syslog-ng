@@ -332,14 +332,19 @@ typedef gboolean (*LogMessageTagsForeachFunc)(const LogMessage *self, LogTagId t
                                               gpointer user_data);
 
 void log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *new_value, gssize length);
-void log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handle, guint8 type, guint16 ofs,
-                                guint16 len);
+void log_msg_set_value_with_type(LogMessage *self, NVHandle handle, const gchar *value, gssize value_len, NVType type);
+
+void log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handle,
+                                guint16 ofs, guint16 len);
+void log_msg_set_value_indirect_with_type(LogMessage *self, NVHandle handle, NVHandle ref_handle,
+                                          guint16 ofs, guint16 len, NVType type);
 void log_msg_unset_value(LogMessage *self, NVHandle handle);
 void log_msg_unset_value_by_name(LogMessage *self, const gchar *name);
 gboolean log_msg_values_foreach(const LogMessage *self, NVTableForeachFunc func, gpointer user_data);
 void log_msg_set_match(LogMessage *self, gint index, const gchar *value, gssize value_len);
-void log_msg_set_match_indirect(LogMessage *self, gint index, NVHandle ref_handle, guint8 type, guint16 ofs,
-                                guint16 len);
+void log_msg_set_match_indirect(LogMessage *self, gint index, NVHandle ref_handle, guint16 ofs, guint16 len);
+void log_msg_set_match_indirect_with_type(LogMessage *self, gint index, NVHandle ref_handle,
+                                          guint16 ofs, guint16 len, NVType type);
 void log_msg_clear_matches(LogMessage *self);
 
 static inline void

@@ -156,7 +156,7 @@ Test(python_log_message, test_python_logmessage_set_value_indirect)
 
     gssize len = strlen(test_value);
     NVHandle indirect_key_handle = log_msg_get_value_handle("indirect");
-    log_msg_set_value_indirect(msg, indirect_key_handle, test_key_handle, 0, 0, len);
+    log_msg_set_value_indirect(msg, indirect_key_handle, test_key_handle, 0, len);
 
     const gchar *get_value_indirect = "indirect = test_msg['indirect']";
     PyRun_String(get_value_indirect, Py_file_input, _python_main_dict, _python_main_dict);

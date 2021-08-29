@@ -190,7 +190,7 @@ testcase_with_backref_chk(const gchar *msg,
   log_msg_set_value_by_name(logmsg, "MESSAGE2", buf, -1);
 
   /* add a non-zero terminated indirect value which contains the whole message */
-  log_msg_set_value_indirect(logmsg, nonasciiz, log_msg_get_value_handle("MESSAGE2"), 0, 0, msglen);
+  log_msg_set_value_indirect(logmsg, nonasciiz, log_msg_get_value_handle("MESSAGE2"), 0, msglen);
 
   nv_table = nv_table_ref(logmsg->payload);
   res = filter_expr_eval(f, logmsg);
