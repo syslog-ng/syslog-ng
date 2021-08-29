@@ -214,15 +214,21 @@ nv_table_resolve_direct(NVTable *self, NVEntry *entry, gssize *length)
 }
 
 static inline const gchar *
-nv_table_resolve_entry(NVTable *self, NVEntry *entry, gssize *length)
+nv_table_resolve_entry(NVTable *self, NVEntry *entry, gssize *length, NVType *type)
 {
   if (entry->unset)
     {
+      if (type)
+        *type = 0;
       if (length)
         *length = 0;
       return null_string;
     }
-  else if (entry->indirect)
+
+  if (type)
+    *type = entry->type;
+
+  if (entry->indirect)
     return nv_table_resolve_indirect(self, entry, length);
   else
     return nv_table_resolve_direct(self, entry, length);
@@ -544,7 +550,7 @@ nv_table_copy_referenced_value(NVTable *self, NVEntry *ref_entry, NVHandle handl
 {
 
   gssize ref_length;
-  const gchar *ref_value = nv_table_resolve_entry(self, ref_entry, &ref_length);
+  const gchar *ref_value = nv_table_resolve_entry(self, ref_entry, &ref_length, NULL);
 
   if (ref_slice->ofs > ref_length)
     {
@@ -631,11 +637,13 @@ nv_table_call_foreach(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entry
   gpointer func_data = ((gpointer *) user_data)[3];
   const gchar *value;
   gssize value_len;
+  NVType type;
 
   if (entry->unset)
     return FALSE;
-  value = nv_table_resolve_entry(self, entry, &value_len);
-  return func(handle, nv_registry_get_handle_name(registry, handle, NULL), value, value_len, func_data);
+
+  value = nv_table_resolve_entry(self, entry, &value_len, &type);
+  return func(handle, nv_registry_get_handle_name(registry, handle, NULL), value, value_len, type, func_data);
 }
 
 gboolean

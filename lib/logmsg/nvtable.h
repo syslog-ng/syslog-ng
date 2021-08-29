@@ -34,8 +34,9 @@ typedef struct _NVIndexEntry NVIndexEntry;
 typedef struct _NVEntry NVEntry;
 typedef guint32 NVHandle;
 typedef guint8 NVType;
-typedef gboolean (*NVTableForeachFunc)(NVHandle handle, const gchar *name, const gchar *value, gssize value_len,
-                                       gpointer user_data);
+typedef gboolean (*NVTableForeachFunc)(NVHandle handle, const gchar *name,
+                                       const gchar *value, gssize value_len,
+                                       NVType type, gpointer user_data);
 typedef gboolean (*NVTableForeachEntryFunc)(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entry,
                                             gpointer user_data);
 

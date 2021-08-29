@@ -203,7 +203,7 @@ static PyMappingMethods py_log_message_mapping =
 
 static gboolean
 _collect_nvpair_names_from_logmsg(NVHandle handle, const gchar *name, const gchar *value, gssize value_len,
-                                  gpointer user_data)
+                                  NVType type, gpointer user_data)
 {
   PyObject *list = (PyObject *)user_data;
 

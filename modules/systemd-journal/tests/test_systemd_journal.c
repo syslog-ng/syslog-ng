@@ -405,7 +405,9 @@ _test_field_size_init(TestCase *self, TestSource *src, Journald *journal, Journa
 }
 
 gboolean
-__check_value_len(NVHandle handle, const gchar *name, const gchar *value, gssize value_len, gpointer user_data)
+__check_value_len(NVHandle handle, const gchar *name,
+                  const gchar *value, gssize value_len,
+                  NVType type, gpointer user_data)
 {
   TestCase *self = user_data;
   gchar *error_message = g_strdup_printf("Bad value size; name: %s, value: %s len: %ld", name, value, value_len);

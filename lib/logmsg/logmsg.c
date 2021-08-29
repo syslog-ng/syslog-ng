@@ -1255,12 +1255,12 @@ log_msg_alloc(gsize payload_size)
 }
 
 static gboolean
-_merge_value(NVHandle handle, const gchar *name, const gchar *value, gssize value_len, gpointer user_data)
+_merge_value(NVHandle handle, const gchar *name, const gchar *value, gssize value_len, NVType type, gpointer user_data)
 {
   LogMessage *msg = (LogMessage *) user_data;
 
   if (!nv_table_is_value_set(msg->payload, handle))
-    log_msg_set_value(msg, handle, value, value_len);
+    log_msg_set_value_with_type(msg, handle, value, value_len, type);
   return FALSE;
 }
 
