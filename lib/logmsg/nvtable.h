@@ -33,6 +33,7 @@ typedef struct _NVRegistry NVRegistry;
 typedef struct _NVIndexEntry NVIndexEntry;
 typedef struct _NVEntry NVEntry;
 typedef guint32 NVHandle;
+typedef guint8 NVType;
 typedef gboolean (*NVTableForeachFunc)(NVHandle handle, const gchar *name, const gchar *value, gssize value_len,
                                        gpointer user_data);
 typedef gboolean (*NVTableForeachEntryFunc)(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entry,
@@ -150,7 +151,7 @@ struct _NVEntry
     guint8 flags;
   };
   guint8 name_len;
-  guint8 type;
+  NVType type;
 
   /* NOTE: this field fills an empty padding byte, so if you are adding
    * fields, please remove this.  This is now zero initialized as of the
