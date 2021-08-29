@@ -354,7 +354,7 @@ _make_entry_direct(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entry, g
       gssize value_len;
 
       value = nv_table_resolve_indirect(self, entry, &value_len);
-      if (!nv_table_add_value(self, handle, entry->vindirect.name, entry->name_len, value, value_len, NULL))
+      if (!nv_table_add_value(self, handle, entry->vindirect.name, entry->name_len, value, value_len, entry->type, NULL))
         {
           /* nvtable full, but we can't realloc it ourselves,
            * propagate this back as a failure of
@@ -386,7 +386,7 @@ nv_table_break_references_to_entry(NVTable *self, NVHandle handle, NVEntry *entr
 
 static inline void
 _overwrite_with_a_direct_entry(NVTable *self, NVHandle handle, NVEntry *entry, const gchar *name, gsize name_len,
-                               const gchar *value, gsize value_len)
+                               const gchar *value, gsize value_len, NVType type)
 {
   gchar *dst;
 
@@ -421,11 +421,15 @@ _overwrite_with_a_direct_entry(NVTable *self, NVHandle handle, NVEntry *entry, c
       entry->vdirect.data[entry->name_len + 1 + value_len] = 0;
     }
   entry->unset = FALSE;
+  entry->type = type;
 }
 
 gboolean
-nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name_len, const gchar *value,
-                   gsize value_len, gboolean *new_entry)
+nv_table_add_value(NVTable *self, NVHandle handle,
+                   const gchar *name, gsize name_len,
+                   const gchar *value, gsize value_len,
+                   NVType type,
+                   gboolean *new_entry)
 {
   NVEntry *entry;
   guint32 ofs;
@@ -441,7 +445,7 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
 
   if (entry && entry->alloc_len >= NV_ENTRY_DIRECT_SIZE(entry->name_len, value_len))
     {
-      _overwrite_with_a_direct_entry(self, handle, entry, name, name_len, value, value_len);
+      _overwrite_with_a_direct_entry(self, handle, entry, name, name_len, value, value_len, type);
       return TRUE;
     }
   else if (!entry && new_entry)
@@ -460,6 +464,7 @@ nv_table_add_value(NVTable *self, NVHandle handle, const gchar *name, gsize name
     {
       return FALSE;
     }
+  entry->type = type;
 
   ofs = nv_table_get_ofs_for_an_entry(self, entry);
   entry->vdirect.value_len = value_len;
@@ -508,13 +513,13 @@ nv_table_unset_value(NVTable *self, NVHandle handle)
 
 static void
 nv_table_set_indirect_entry(NVTable *self, NVHandle handle, NVEntry *entry, const gchar *name, gsize name_len,
-                            const NVReferencedSlice *referenced_slice)
+                            const NVReferencedSlice *referenced_slice, NVType type)
 {
   entry->vindirect.handle = referenced_slice->handle;
   entry->vindirect.ofs = referenced_slice->ofs;
   entry->vindirect.len = referenced_slice->len;
   entry->vindirect.__deprecated_type_field = 0;
-  entry->type = referenced_slice->type;
+  entry->type = type;
 
   if (entry->indirect)
     return;
@@ -535,7 +540,7 @@ nv_table_set_indirect_entry(NVTable *self, NVHandle handle, NVEntry *entry, cons
 
 static gboolean
 nv_table_copy_referenced_value(NVTable *self, NVEntry *ref_entry, NVHandle handle, const gchar *name,
-                               gsize name_len, NVReferencedSlice *ref_slice, gboolean *new_entry)
+                               gsize name_len, NVReferencedSlice *ref_slice, NVType type, gboolean *new_entry)
 {
 
   gssize ref_length;
@@ -551,12 +556,12 @@ nv_table_copy_referenced_value(NVTable *self, NVEntry *ref_entry, NVHandle handl
       ref_slice->len = MIN(ref_slice->ofs + ref_slice->len, ref_length) - ref_slice->ofs;
     }
 
-  return nv_table_add_value(self, handle, name, name_len, ref_value + ref_slice->ofs, ref_slice->len, new_entry);
+  return nv_table_add_value(self, handle, name, name_len, ref_value + ref_slice->ofs, ref_slice->len, type, new_entry);
 }
 
 gboolean
 nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, gsize name_len,
-                            NVReferencedSlice *referenced_slice, gboolean *new_entry)
+                            NVReferencedSlice *referenced_slice, NVType type, gboolean *new_entry)
 {
   NVEntry *entry, *ref_entry;
   NVIndexEntry *index_entry, *index_slot;
@@ -570,7 +575,7 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
     {
       /* NOTE: uh-oh, the to-be-referenced value is already an indirect
        * reference, this is not supported, copy the stuff */
-      return nv_table_copy_referenced_value(self, ref_entry, handle, name, name_len, referenced_slice, new_entry);
+      return nv_table_copy_referenced_value(self, ref_entry, handle, name, name_len, referenced_slice, type, new_entry);
     }
 
   entry = nv_table_get_entry(self, handle, &index_entry, &index_slot);
@@ -590,7 +595,7 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
   if (entry && (entry->alloc_len >= NV_ENTRY_INDIRECT_SIZE(name_len)))
     {
       /* this value already exists and the new reference fits in the old space */
-      nv_table_set_indirect_entry(self, handle, entry, name, name_len, referenced_slice);
+      nv_table_set_indirect_entry(self, handle, entry, name, name_len, referenced_slice, type);
       ref_entry->referenced = TRUE;
       return TRUE;
     }
@@ -609,7 +614,7 @@ nv_table_add_value_indirect(NVTable *self, NVHandle handle, const gchar *name, g
 
   ofs = nv_table_get_ofs_for_an_entry(self, entry);
 
-  nv_table_set_indirect_entry(self, handle, entry, name, name_len, referenced_slice);
+  nv_table_set_indirect_entry(self, handle, entry, name, name_len, referenced_slice, type);
   ref_entry->referenced = TRUE;
 
   nv_table_set_table_entry(self, handle, ofs, index_entry);
@@ -838,7 +843,10 @@ _compact_foreach_entry(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entr
     {
       value = nv_table_resolve_direct(old, entry, &value_len);
 
-      gboolean value_successfully_added = nv_table_add_value(new, handle, name, name_len, value, value_len, NULL);
+      gboolean value_successfully_added =
+        nv_table_add_value(new, handle,
+                           name, name_len, value, value_len,
+                           entry->type, NULL);
       g_assert(value_successfully_added);
     }
   else
@@ -847,10 +855,14 @@ _compact_foreach_entry(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entr
       {
         .handle = entry->vindirect.handle,
         .ofs = entry->vindirect.ofs,
-        .len = entry->vindirect.len,
-        .type = entry->type
+        .len = entry->vindirect.len
       };
-      gboolean value_successfully_added = nv_table_add_value_indirect(new, handle, name, name_len, &referenced_slice, NULL);
+
+      gboolean value_successfully_added =
+        nv_table_add_value_indirect(new, handle,
+                                    name, name_len,
+                                    &referenced_slice,
+                                    entry->type, NULL);
       g_assert(value_successfully_added);
     }
 
