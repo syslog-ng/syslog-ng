@@ -116,7 +116,17 @@ typedef struct _NVReferencedSlice
   NVHandle handle;
   guint32 ofs;
   guint32 len;
-  guint8 type;
+
+  /* NOTE: this type field was promoted up into NVEntry, so we won't need
+   * the "type" field here, we are moving the value stored here in existing
+   * serialized messages in _update_entry() in logmsg-serialize-fixup.c.  We
+   * might be able to reuse this byte once we drop compatibility with
+   * version 26 of the LogMessage serialization format.
+   *
+   * NOTE: we zero out this field upon reading and then reserializing a message.
+   */
+
+  guint8 __deprecated_type_field;
 
   gchar name[0];
 } NVReferencedSlice;
