@@ -514,7 +514,7 @@ nv_table_set_indirect_entry(NVTable *self, NVHandle handle, NVEntry *entry, cons
   entry->vindirect.ofs = referenced_slice->ofs;
   entry->vindirect.len = referenced_slice->len;
   entry->vindirect.__deprecated_type_field = 0;
-  entry->type = referenced_slice->__deprecated_type_field;
+  entry->type = referenced_slice->type;
 
   if (entry->indirect)
     return;
@@ -843,7 +843,14 @@ _compact_foreach_entry(NVHandle handle, NVEntry *entry, NVIndexEntry *index_entr
     }
   else
     {
-      gboolean value_successfully_added = nv_table_add_value_indirect(new, handle, name, name_len, &entry->vindirect, NULL);
+      NVReferencedSlice referenced_slice =
+      {
+        .handle = entry->vindirect.handle,
+        .ofs = entry->vindirect.ofs,
+        .len = entry->vindirect.len,
+        .type = entry->type
+      };
+      gboolean value_successfully_added = nv_table_add_value_indirect(new, handle, name, name_len, &referenced_slice, NULL);
       g_assert(value_successfully_added);
     }
 
