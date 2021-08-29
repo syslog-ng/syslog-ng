@@ -216,7 +216,13 @@ _update_entry(LogMessageSerializationState *state, NVEntry *entry)
   if (!entry->type_present)
     {
       entry->type_present = TRUE;
-      entry->type = 0;
+      if (entry->indirect)
+        {
+          entry->type = entry->vindirect.__deprecated_type_field;
+          entry->vindirect.__deprecated_type_field = 0;
+        }
+      else
+        entry->type = 0;
     }
   return TRUE;
 }

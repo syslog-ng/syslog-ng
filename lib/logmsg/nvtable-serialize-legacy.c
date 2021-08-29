@@ -146,8 +146,16 @@ _deserialize_old_entry(GString *old_nvtable_payload, guint32 old_offset,
   new_entry = (NVEntry *) (payload_start - _calculate_new_alloc_len(old_entry));
   new_entry->flags = old_entry->flags & NVENTRY_FLAGS_DEFINED_IN_LEGACY_FORMATS;
   new_entry->unset = FALSE;
-  new_entry->type_present = TRUE;
-  new_entry->type = 0;
+
+
+  /* This old data format does not have "type_present" set, so leave it as
+   * FALSE and "type" fields uninitialized.  Initializing those would be
+   * covered by log_msg_fixup_handles_after_deserialization() later.  We
+   * simply behave as if we deserialized an old, but not ancient (e.g.  16
+   * bit ofs) LogMessage.
+   * */
+
+  new_entry->type_present = FALSE;
   new_entry->name_len = old_entry->name_len;
   new_entry->alloc_len = _calculate_new_alloc_len(old_entry);
 
@@ -160,7 +168,9 @@ _deserialize_old_entry(GString *old_nvtable_payload, guint32 old_offset,
   else
     {
       new_entry->vindirect.handle = old_entry->vindirect.handle;
-      new_entry->vindirect.type = old_entry->vindirect.type;
+      new_entry->vindirect.__deprecated_type_field = old_entry->vindirect.type;
+
+      /* */
       new_entry->vindirect.ofs = old_entry->vindirect.ofs;
       new_entry->vindirect.len = old_entry->vindirect.len;
       memcpy(&new_entry->vindirect.name, &old_entry->vindirect.name,

@@ -513,7 +513,8 @@ nv_table_set_indirect_entry(NVTable *self, NVHandle handle, NVEntry *entry, cons
   entry->vindirect.handle = referenced_slice->handle;
   entry->vindirect.ofs = referenced_slice->ofs;
   entry->vindirect.len = referenced_slice->len;
-  entry->vindirect.type = referenced_slice->type;
+  entry->vindirect.__deprecated_type_field = 0;
+  entry->type = referenced_slice->__deprecated_type_field;
 
   if (entry->indirect)
     return;
