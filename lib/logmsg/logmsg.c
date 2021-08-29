@@ -652,7 +652,7 @@ log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handl
     .handle = ref_handle,
     .ofs = ofs,
     .len = len,
-    .__deprecated_type_field = type
+    .type = type
   };
 
   while (!nv_table_add_value_indirect(self->payload, handle, name, name_len, &referenced_slice, &new_entry))
