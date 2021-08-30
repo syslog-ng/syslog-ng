@@ -5,6 +5,7 @@ if (NOT ENABLE_MQTT)
   return()
 endif()
 
+CHECK_STRUCT_HAS_MEMBER("MQTTClient_connectOptions" "httpProxy" "MQTTClient.h" SYSLOG_NG_HAVE_PAHO_HTTP_PROXY)
 
 add_subdirectory(destination)
 
