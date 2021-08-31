@@ -24,17 +24,25 @@
 #include "ctl-stats.h"
 
 static gboolean stats_options_reset_is_set = FALSE;
+static gboolean stats_options_remove_orphans = FALSE;
 
 GOptionEntry stats_options[] =
 {
   { "reset", 'r', 0, G_OPTION_ARG_NONE, &stats_options_reset_is_set, "reset counters", NULL },
+  { "remove-orphans", 'o', 0, G_OPTION_ARG_NONE, &stats_options_remove_orphans, "remove orphaned statistics", NULL},
   { NULL,    0,   0, G_OPTION_ARG_NONE, NULL,                        NULL,             NULL }
 };
 
 static const gchar *
 _stats_command_builder(void)
 {
-  return stats_options_reset_is_set ? "RESET_STATS" : "STATS";
+  if (stats_options_reset_is_set)
+    return "RESET_STATS";
+
+  if (stats_options_remove_orphans)
+    return "REMOVE_ORPHANED_STATS";
+
+  return "STATS";
 }
 
 gint

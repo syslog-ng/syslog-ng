@@ -93,7 +93,7 @@ stats_cluster_is_expired(StatsOptions *options, StatsCluster *sc, time_t now)
     return FALSE;
 
   /* this entry is being updated, cannot be too old */
-  if (sc->use_count > 0)
+  if (!stats_cluster_is_orphaned(sc))
     return FALSE;
 
   /* check if timestamp is stored, no timestamp means we can't expire it.
@@ -126,7 +126,6 @@ stats_prune_cluster(StatsCluster *sc, StatsTimerState *st)
       if ((st->oldest_counter) == 0 || st->oldest_counter > tstamp)
         st->oldest_counter = tstamp;
       st->dropped_counters++;
-      stats_query_deindex_cluster(sc);
     }
   return expired;
 }

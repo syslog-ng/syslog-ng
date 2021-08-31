@@ -404,7 +404,12 @@ _foreach_cluster_remove_helper(gpointer key, gpointer value, gpointer user_data)
   gpointer func_data = args[1];
   StatsCluster *sc = (StatsCluster *) value;
 
-  return func(sc, func_data);
+  gboolean should_be_removed = func(sc, func_data);
+
+  if (should_be_removed)
+    stats_query_deindex_cluster(sc);
+
+  return should_be_removed;
 }
 
 void
@@ -456,4 +461,3 @@ stats_registry_deinit(void)
   stats_cluster_container.dynamic_clusters = NULL;
   g_static_mutex_free(&stats_mutex);
 }
-
