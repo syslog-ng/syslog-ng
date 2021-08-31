@@ -140,6 +140,7 @@ endif
 
 ${check_PROGRAMS}: LDFLAGS+=${test_ldflags}
 
+noinst_PROGRAMS         =
 noinst_LIBRARIES	=
 noinst_DATA		=
 noinst_LTLIBRARIES	=

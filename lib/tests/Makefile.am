@@ -29,7 +29,7 @@ EXTRA_DIST += lib/tests/CMakeLists.txt
 check_PROGRAMS		+= ${lib_tests_TESTS}
 
 if ENABLE_TESTING
-noinst_PROGRAMS 	= \
+noinst_PROGRAMS 	+= \
 	lib/tests/test_host_resolve
 
 lib_tests_test_host_resolve_CFLAGS	=	\
