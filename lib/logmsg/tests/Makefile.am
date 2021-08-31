@@ -37,3 +37,10 @@ lib_logmsg_tests_test_logmsg_ack_CFLAGS = $(TEST_CFLAGS)
 
 lib_logmsg_tests_test_nvhandle_desc_array_LDADD = $(TEST_LDADD)
 lib_logmsg_tests_test_nvhandle_desc_array_CFLAGS = $(TEST_CFLAGS)
+
+noinst_PROGRAMS +=				\
+	lib/logmsg/tests/dump_logmsg
+
+lib_logmsg_tests_dump_logmsg_CFLAGS = $(TEST_CFLAGS)
+lib_logmsg_tests_dump_logmsg_LDADD = $(TEST_LDADD) $(PREOPEN_SYSLOGFORMAT)
+
