@@ -1017,6 +1017,8 @@ log_threaded_dest_driver_insert_batch_length_stats(LogThreadedDestDriver *self, 
 void
 log_threaded_dest_driver_register_aggregated_stats(LogThreadedDestDriver *self)
 {
+  StatsClusterKey sc_key_eps_input;
+  _init_stats_key(self, &sc_key_eps_input);
   stats_aggregator_lock();
   StatsClusterKey sc_key;
 
@@ -1038,7 +1040,7 @@ log_threaded_dest_driver_register_aggregated_stats(LogThreadedDestDriver *self)
 
   stats_cluster_single_key_set_with_name(&sc_key, self->stats_source | SCS_DESTINATION, self->super.super.id,
                                          self->format_stats_instance(self), "eps");
-  stats_register_aggregator_cps(0, &sc_key, self->written_messages, &self->CPS);
+  stats_register_aggregator_cps(0, &sc_key, &sc_key_eps_input, SC_TYPE_WRITTEN, &self->CPS);
 
   stats_aggregator_unlock();
 }

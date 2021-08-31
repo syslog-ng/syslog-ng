@@ -50,6 +50,8 @@ typedef struct
   time_t init_time;
   time_t last_add_time;
 
+  StatsCluster *sc_input;
+  gint stats_type_input;
   StatsCounterItem *input_counter;
 
   CPSLogic hour;
@@ -115,6 +117,22 @@ _reset_CPS_logic_values(CPSLogic *self)
 }
 
 static void
+_track_input_counter(StatsAggregatorCPS *self)
+{
+  StatsCounterItem *input_counter = stats_cluster_get_counter(self->sc_input, self->stats_type_input);
+  self->input_counter = input_counter;
+  g_assert(self->input_counter != NULL);
+
+  stats_cluster_track_counter(self->sc_input, self->stats_type_input);
+}
+
+static void
+_untrack_input_counter(StatsAggregatorCPS *self)
+{
+  stats_cluster_untrack_counter(self->sc_input, self->stats_type_input, &self->input_counter);
+}
+
+static void
 _register_CPS(CPSLogic *self, StatsClusterKey *sc_key, gint level, gint type)
 {
   if(!self->output_counter)
@@ -150,7 +168,7 @@ _register(StatsAggregator *s)
 {
   StatsAggregatorCPS *self = (StatsAggregatorCPS *)s;
   _register_CPSs(self);
-  // track input counter
+  _track_input_counter(self);
 }
 
 static void
@@ -192,7 +210,7 @@ _unregister(StatsAggregator *s)
 {
   StatsAggregatorCPS *self = (StatsAggregatorCPS *)s;
   _unregister_CPSs(self);
-  // untrack input counter
+  _untrack_input_counter(self);
 }
 
 static inline gdouble
@@ -254,25 +272,24 @@ _aggregate(StatsAggregator *s)
   _aggregate_CPS_logic(self, &self->day, &now);
   _aggregate_CPS_logic(self, &self->start, &now);
 
-  if (stats_aggregator_is_orphaned(self))
+  if (stats_aggregator_is_orphaned(&self->super))
     {
       _unregister(s);
     }
 }
 
 static void
-_set_values(StatsAggregatorCPS *self, StatsCounterItem *input_counter)
+_reset_time(StatsAggregatorCPS *self)
 {
   self->init_time = cached_g_current_time_sec();
   self->last_add_time = 0;
-  self->input_counter = input_counter;
 }
 
 static void
 _reset(StatsAggregator *s)
 {
   StatsAggregatorCPS *self = (StatsAggregatorCPS *)s;
-  _set_values(self, self->input_counter);
+  _reset_time(self);
   _reset_CPS_logic_values(&self->hour);
   _reset_CPS_logic_values(&self->day);
   _reset_CPS_logic_values(&self->start);
@@ -302,14 +319,20 @@ _set_virtual_function(StatsAggregatorCPS *self )
   self->super.unregister_aggr = _unregister;
 }
 
-
 StatsAggregator *
-stats_aggregator_cps_new(gint level, StatsClusterKey *sc_key, StatsCounterItem *input_counter)
+stats_aggregator_cps_new(gint level, StatsClusterKey *sc_key, StatsClusterKey *sc_key_input, gint stats_type)
 {
   StatsAggregatorCPS *self = g_new0(StatsAggregatorCPS, 1);
   stats_aggregator_init_instance(&self->super, sc_key, level);
   _set_virtual_function(self);
-  _set_values(self, input_counter);
+
+  stats_lock();
+  self->sc_input = stats_get_cluster(sc_key_input);
+  g_assert(self->sc_input != NULL);
+  stats_unlock();
+
+  self->stats_type_input = stats_type;
+  _reset_time(self);
 
   self->hour.duration = HOUR_IN_SEC;
   self->day.duration = DAY_IN_SEC;

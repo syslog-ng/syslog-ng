@@ -336,8 +336,8 @@ stats_unregister_dynamic_counter(StatsCluster *sc, gint type, StatsCounterItem *
   stats_cluster_untrack_counter(sc, type, counter);
 }
 
-static StatsCluster *
-_lookup_cluster(const StatsClusterKey *sc_key)
+StatsCluster *
+stats_get_cluster(const StatsClusterKey *sc_key)
 {
   g_assert(stats_locked);
 
@@ -354,7 +354,7 @@ stats_contains_counter(const StatsClusterKey *sc_key, gint type)
 {
   g_assert(stats_locked);
 
-  StatsCluster *sc = _lookup_cluster(sc_key);
+  StatsCluster *sc = stats_get_cluster(sc_key);
   if (!sc)
     {
       return FALSE;
@@ -367,7 +367,7 @@ StatsCounterItem *
 stats_get_counter(const StatsClusterKey *sc_key, gint type)
 {
   g_assert(stats_locked);
-  StatsCluster *sc = _lookup_cluster(sc_key);
+  StatsCluster *sc = stats_get_cluster(sc_key);
 
   if (!sc)
     return NULL;

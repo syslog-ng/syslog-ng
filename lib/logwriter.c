@@ -1405,7 +1405,7 @@ log_writer_init_watches(LogWriter *self)
 }
 
 static void
-_register_aggregated_stats(LogWriter *self)
+_register_aggregated_stats(LogWriter *self, StatsClusterKey *sc_key_input, gint stats_type)
 {
   stats_aggregator_lock();
   StatsClusterKey sc_key;
@@ -1420,7 +1420,7 @@ _register_aggregated_stats(LogWriter *self)
 
   stats_cluster_single_key_set_with_name(&sc_key, self->options->stats_source | SCS_DESTINATION, self->stats_id,
                                          self->stats_instance, "eps");
-  stats_register_aggregator_cps(self->options->stats_level, &sc_key, self->written_messages, &self->CPS);
+  stats_register_aggregator_cps(self->options->stats_level, &sc_key, sc_key_input, stats_type, &self->CPS);
 
   stats_aggregator_unlock();
 }
@@ -1441,33 +1441,31 @@ static void
 _register_counters(LogWriter *self)
 {
   stats_lock();
-  {
-    StatsClusterKey sc_key;
-    stats_cluster_logpipe_key_set(&sc_key, self->options->stats_source | SCS_DESTINATION, self->stats_id,
-                                  self->stats_instance);
+  StatsClusterKey sc_key;
+  stats_cluster_logpipe_key_set(&sc_key, self->options->stats_source | SCS_DESTINATION, self->stats_id,
+                                self->stats_instance);
 
-    if (self->options->suppress > 0)
-      stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_SUPPRESSED, &self->suppressed_messages);
-    stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
-    stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
-    stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_WRITTEN, &self->written_messages);
-    log_queue_register_stats_counters(self->queue, self->options->stats_level, &sc_key);
+  if (self->options->suppress > 0)
+    stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_SUPPRESSED, &self->suppressed_messages);
+  stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
+  stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
+  stats_register_counter(self->options->stats_level, &sc_key, SC_TYPE_WRITTEN, &self->written_messages);
+  log_queue_register_stats_counters(self->queue, self->options->stats_level, &sc_key);
 
-    StatsClusterKey sc_key_truncated_count;
-    stats_cluster_single_key_set_with_name(&sc_key_truncated_count, self->options->stats_source | SCS_DESTINATION,
-                                           self->stats_id, self->stats_instance, "truncated_count");
-    stats_register_counter(self->options->stats_level, &sc_key_truncated_count, SC_TYPE_SINGLE_VALUE,
-                           &self->truncated.count);
+  StatsClusterKey sc_key_truncated_count;
+  stats_cluster_single_key_set_with_name(&sc_key_truncated_count, self->options->stats_source | SCS_DESTINATION,
+                                         self->stats_id, self->stats_instance, "truncated_count");
+  stats_register_counter(self->options->stats_level, &sc_key_truncated_count, SC_TYPE_SINGLE_VALUE,
+                         &self->truncated.count);
 
-    StatsClusterKey sc_key_truncated_bytes;
-    stats_cluster_single_key_set_with_name(&sc_key_truncated_bytes, self->options->stats_source | SCS_DESTINATION,
-                                           self->stats_id, self->stats_instance, "truncated_bytes");
-    stats_register_counter(self->options->stats_level, &sc_key_truncated_bytes, SC_TYPE_SINGLE_VALUE,
-                           &self->truncated.bytes);
+  StatsClusterKey sc_key_truncated_bytes;
+  stats_cluster_single_key_set_with_name(&sc_key_truncated_bytes, self->options->stats_source | SCS_DESTINATION,
+                                         self->stats_id, self->stats_instance, "truncated_bytes");
+  stats_register_counter(self->options->stats_level, &sc_key_truncated_bytes, SC_TYPE_SINGLE_VALUE,
+                         &self->truncated.bytes);
 
-  }
   stats_unlock();
-  _register_aggregated_stats(self);
+  _register_aggregated_stats(self, &sc_key, SC_TYPE_WRITTEN);
 }
 
 static gboolean

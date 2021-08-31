@@ -266,7 +266,8 @@ stats_unregister_aggregator_average(StatsAggregator **s)
 }
 
 void
-stats_register_aggregator_cps(gint level, StatsClusterKey *sc_key, StatsCounterItem *counter, StatsAggregator **s)
+stats_register_aggregator_cps(gint level, StatsClusterKey *sc_key, StatsClusterKey *sc_key_input, gint stats_type,
+                              StatsAggregator **s)
 {
   g_assert(stats_aggregator_locked);
 
@@ -278,7 +279,7 @@ stats_register_aggregator_cps(gint level, StatsClusterKey *sc_key, StatsCounterI
 
   if (!_is_in_table(sc_key))
     {
-      *s = stats_aggregator_cps_new(level, sc_key, counter);
+      *s = stats_aggregator_cps_new(level, sc_key, sc_key_input, stats_type);
       _insert_to_table(*s);
     }
   else

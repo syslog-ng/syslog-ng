@@ -44,7 +44,7 @@ void stats_unregister_aggregator_maximum(StatsAggregator **s);
 void stats_register_aggregator_average(gint level, StatsClusterKey *sc_key, StatsAggregator **s);
 void stats_unregister_aggregator_average(StatsAggregator **s);
 
-void stats_register_aggregator_cps(gint level, StatsClusterKey *sc_key, StatsCounterItem *counter,
+void stats_register_aggregator_cps(gint level, StatsClusterKey *sc_key, StatsClusterKey *sc_key_input, gint stats_type,
                                    StatsAggregator **s);
 void stats_unregister_aggregator_cps(StatsAggregator **s);
 

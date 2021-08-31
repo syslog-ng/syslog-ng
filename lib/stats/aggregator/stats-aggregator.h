@@ -63,6 +63,7 @@ StatsAggregator *stats_aggregator_maximum_new(gint level, StatsClusterKey *sc_ke
 
 StatsAggregator *stats_aggregator_average_new(gint level, StatsClusterKey *sc_key);
 
-StatsAggregator *stats_aggregator_cps_new(gint level, StatsClusterKey *sc_key, StatsCounterItem *counter);
+StatsAggregator *stats_aggregator_cps_new(gint level, StatsClusterKey *sc_key, StatsClusterKey *sc_key_input,
+                                          gint stats_type);
 
 #endif /* STATS_AGGREGATOR_H */
