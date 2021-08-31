@@ -44,3 +44,8 @@ noinst_PROGRAMS +=				\
 lib_logmsg_tests_dump_logmsg_CFLAGS = $(TEST_CFLAGS)
 lib_logmsg_tests_dump_logmsg_LDADD = $(TEST_LDADD) $(PREOPEN_SYSLOGFORMAT)
 
+.PHONY: dump-logmsg
+dump-logmsg: lib/logmsg/tests/dump_logmsg
+	DIR=lib/logmsg/tests/messages/ && \
+	mkdir -p $${DIR} && \
+	lib/logmsg/tests/dump_logmsg $(VERSION) > $${DIR}/syslog-ng-$(VERSION)-msg.h
