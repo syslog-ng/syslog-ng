@@ -49,6 +49,7 @@ typedef struct
   StatsAggregator super;
   time_t init_time;
   time_t last_add_time;
+  gboolean registered;
 
   StatsCluster *sc_input;
   gint stats_type_input;
@@ -130,6 +131,7 @@ static void
 _untrack_input_counter(StatsAggregatorCPS *self)
 {
   stats_cluster_untrack_counter(self->sc_input, self->stats_type_input, &self->input_counter);
+  self->input_counter = NULL;
 }
 
 static void
@@ -167,8 +169,13 @@ static void
 _register(StatsAggregator *s)
 {
   StatsAggregatorCPS *self = (StatsAggregatorCPS *)s;
+
+  if (self->registered)
+    return;
+
   _register_CPSs(self);
   _track_input_counter(self);
+  self->registered = TRUE;
 }
 
 static void
@@ -209,8 +216,14 @@ static void
 _unregister(StatsAggregator *s)
 {
   StatsAggregatorCPS *self = (StatsAggregatorCPS *)s;
+
+  /* unregister() needs to be idempotent, so we can unregister it only after it reaches 0 CPS */
+  if (!self->registered)
+    return;
+
   _unregister_CPSs(self);
   _untrack_input_counter(self);
+  self->registered = FALSE;
 }
 
 static inline gdouble
@@ -273,9 +286,7 @@ _aggregate(StatsAggregator *s)
   _aggregate_CPS_logic(self, &self->start, &now);
 
   if (stats_aggregator_is_orphaned(&self->super))
-    {
-      _unregister(s);
-    }
+    _unregister(s);
 }
 
 static void
