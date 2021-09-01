@@ -117,6 +117,7 @@ libmongoc-dev               [debian, ubuntu-xenial]
 # Tools required to run @kira-syslogng, our testbot.
 #############################################################################
 
+gdb                             [kira]
 faketime                        [kira]
 libdbd-mysql                    [kira]
 lsb-release                     [kira]
