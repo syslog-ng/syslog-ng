@@ -28,6 +28,7 @@
 #include "timeutils/cache.h"
 #include "stats/stats-cluster.h"
 #include <math.h>
+#include "messages.h"
 
 #define HOUR_IN_SEC 3600 /* 60*60 */
 #define DAY_IN_SEC 86400 /* 60*60*24 */
@@ -261,10 +262,19 @@ static void
 _calc_average(StatsAggregatorCPS *self, CPSLogic *logic, time_t *now)
 {
   gsize elapsed_time = (gsize)_calc_sec_between_time(&self->init_time, now);
-  gsize to_divide = (_is_less_then_duration(self, logic, now)) ? elapsed_time : logic->duration;
-  if (to_divide <= 0) to_divide = 1;
+  gsize divisor = (_is_less_then_duration(self, logic, now)) ? elapsed_time : logic->duration;
+  if (divisor <= 0) divisor = 1;
+  gsize sum = _get_sum(logic);
 
-  _set_average(logic, (_get_sum(logic) / to_divide));
+  _set_average(logic, (sum / divisor));
+
+  msg_trace("stats-aggregator-cps",
+            evt_tag_printf("name: %s_%s_%s", self->super.key.id, (self->super.key.instance) ? self->super.key.instance : "",
+                           logic->name),
+            evt_tag_long("sum", sum),
+            evt_tag_long("divisor", divisor),
+            evt_tag_long("cps", (sum/divisor)),
+            evt_tag_long("delta_time_since_start", elapsed_time));
 }
 
 static void

@@ -28,6 +28,7 @@
 #include "iv.h"
 #include "timeutils/cache.h"
 #include "mainloop.h"
+#include "messages.h"
 
 #define FREQUENCY_OF_UPDATE 60
 
@@ -65,6 +66,7 @@ _start_timer(void)
 static void
 _update(void *cookie)
 {
+  msg_trace("stats-aggregator-registry update");
   g_hash_table_foreach(stats_container.aggregators, _update_func, NULL);
 
   if(g_hash_table_size(stats_container.aggregators) > 0
