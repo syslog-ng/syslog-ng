@@ -672,6 +672,9 @@ _flush(LogThreadedDestWorker *s, LogThreadedFlushMode mode)
       retval = _flush_on_target(self, target);
       if (retval == LTR_SUCCESS)
         {
+          gsize msg_length = self->request_body->len;
+          log_threaded_dest_driver_insert_batch_length_stats(self->super.owner, msg_length);
+
           http_load_balancer_set_target_successful(owner->load_balancer, target);
           break;
         }
@@ -718,7 +721,10 @@ _insert_batched(LogThreadedDestWorker *s, LogMessage *msg)
 {
   HTTPDestinationWorker *self = (HTTPDestinationWorker *) s;
 
+  gsize orig_msg_len = self->request_body->len;
   _add_message_to_batch(self, msg);
+  gsize diff_msg_len = self->request_body->len - orig_msg_len;
+  log_threaded_dest_driver_insert_msg_length_stats(self->super.owner, diff_msg_len);
 
   if (_should_initiate_flush(self))
     {
@@ -732,7 +738,11 @@ _insert_single(LogThreadedDestWorker *s, LogMessage *msg)
 {
   HTTPDestinationWorker *self = (HTTPDestinationWorker *) s;
 
+  gsize orig_msg_len = self->request_body->len;
   _add_message_to_batch(self, msg);
+  gsize diff_msg_len = self->request_body->len - orig_msg_len;
+  log_threaded_dest_driver_insert_msg_length_stats(self->super.owner, diff_msg_len);
+
   _add_msg_specific_headers(self, msg);
 
   return log_threaded_dest_worker_flush(&self->super, LTF_FLUSH_NORMAL);

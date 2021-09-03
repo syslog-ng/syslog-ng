@@ -2,6 +2,8 @@ statsincludedir			= ${pkgincludedir}/stats
 
 EXTRA_DIST += lib/stats/CMakeLists.txt
 
+include lib/stats/aggregator/Makefile.am
+
 statsinclude_HEADERS = \
 	lib/stats/stats.h			\
 	lib/stats/stats-control.h		\
@@ -25,6 +27,7 @@ stats_sources = \
 	lib/stats/stats-query.c			\
 	lib/stats/stats-query-commands.c \
 	lib/stats/stats-cluster-logpipe.c \
-	lib/stats/stats-cluster-single.c
+	lib/stats/stats-cluster-single.c \
+	$(statsaggregator_sources)
 
 include lib/stats/tests/Makefile.am

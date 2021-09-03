@@ -28,6 +28,7 @@
 #include "syslog-ng.h"
 #include "driver.h"
 #include "stats/stats-registry.h"
+#include "stats/aggregator/stats-aggregator.h"
 #include "logqueue.h"
 #include "mainloop-worker.h"
 #include "seqnum.h"
@@ -108,6 +109,11 @@ struct _LogThreadedDestDriver
   StatsCounterItem *dropped_messages;
   StatsCounterItem *processed_messages;
   StatsCounterItem *written_messages;
+  StatsAggregator *max_message_size;
+  StatsAggregator *average_messages_size;
+  StatsAggregator *max_batch_size;
+  StatsAggregator *average_batch_size;
+  StatsAggregator *CPS;
 
   gint batch_lines;
   gint batch_timeout;
@@ -225,6 +231,11 @@ void log_threaded_dest_worker_init_instance(LogThreadedDestWorker *self,
                                             gint worker_index);
 void log_threaded_dest_worker_free_method(LogThreadedDestWorker *self);
 void log_threaded_dest_worker_free(LogThreadedDestWorker *self);
+
+void log_threaded_dest_driver_insert_msg_length_stats(LogThreadedDestDriver *self, gsize len);
+void log_threaded_dest_driver_insert_batch_length_stats(LogThreadedDestDriver *self, gsize len);
+void log_threaded_dest_driver_register_aggregated_stats(LogThreadedDestDriver *self);
+void log_threaded_dest_driver_unregister_aggregated_stats(LogThreadedDestDriver *self);
 
 gboolean log_threaded_dest_driver_deinit_method(LogPipe *s);
 gboolean log_threaded_dest_driver_init_method(LogPipe *s);
