@@ -86,18 +86,19 @@ jobs:
     strategy:
       matrix:
         dbld-builder-images:
-        - [ 'debian-stretch',   'deb' ]
-        - [ 'debian-buster',    'deb' ]
-        - [ 'debian-sid',       'deb' ]
-        - [ 'ubuntu-xenial',    'deb' ]
-        - [ 'ubuntu-bionic',    'deb' ]
-        - [ 'ubuntu-focal',     'deb' ]
-        - [ 'centos-7',         'rpm' ]
-        - [ 'fedora-33',        'rpm' ]
+        - { distro: 'debian-stretch',  pkg: 'deb', upload: 'true' }
+        - { distro: 'debian-buster',   pkg: 'deb', upload: 'true' }
+        - { distro: 'debian-sid',      pkg: 'deb', upload: 'true' }
+        - { distro: 'ubuntu-xenial',   pkg: 'deb', upload: 'true' }
+        - { distro: 'ubuntu-bionic',   pkg: 'deb', upload: 'true' }
+        - { distro: 'ubuntu-focal',    pkg: 'deb', upload: 'true' }
+        - { distro: 'centos-7',        pkg: 'rpm', upload: 'false' }
+        - { distro: 'fedora-33',       pkg: 'rpm', upload: 'false' }
       fail-fast: false
     env:
-      DISTRIBUTION: ${{ matrix.dbld-builder-images[0] }}
-      PACKAGE_MANAGER: ${{ matrix.dbld-builder-images[1] }}
+      DISTRIBUTION: ${{ matrix.dbld-builder-images.distro }}
+      PACKAGE_FORMAT: ${{ matrix.dbld-builder-images.pkg }}
+      UPLOAD: ${{ matrix.dbld-builder-images.upload }}
 
     steps:
       - name: Create a working directory
@@ -123,7 +124,7 @@ jobs:
 
       # Note: azure/CLI docker container mounts the GITHUB_WORKSPACE folder and changes the environment variable.
       - name: Upload the package
-        if: env.PACKAGE_MANAGER == 'deb'
+        if: env.UPLOAD == 'true'
         uses: azure/CLI@v1
         env:
           SRC_PATH: ${{ env.MY_WORKSPACE_NAME }}/syslog-ng/dbld/build/${{ env.DISTRIBUTION }}
