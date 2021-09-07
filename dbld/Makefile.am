@@ -32,8 +32,12 @@ EXTRA_DIST += \
 	dbld/images/debian-stretch.dockerfile \
 	dbld/images/debian-buster.dockerfile \
 	dbld/images/debian-sid.dockerfile \
+	dbld/images/debian-testing.dockerfile \
 	dbld/images/ubuntu-xenial.dockerfile \
 	dbld/images/ubuntu-bionic.dockerfile \
 	dbld/images/ubuntu-focal.dockerfile \
+	dbld/images/kira.dockerfile \
+	dbld/images/tarball.dockerfile \
+	dbld/images/hooks/build \
 	dbld/images/README.md \
 	dbld/README.md
