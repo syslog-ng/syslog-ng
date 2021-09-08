@@ -1268,6 +1268,7 @@ CPPFLAGS_SAVE="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS $LIBMONGO_CFLAGS"
 
 AC_CHECK_DECLS([mongoc_uri_set_option_as_int32], [], [], [[#include <mongoc.h>]])
+AC_CHECK_DECLS([MONGOC_URI_SERVERSELECTIONTIMEOUTMS], [], [], [[#include <mongoc.h>]])
 
 CPPFLAGS="$CPPFLAGS_SAVE"
 fi

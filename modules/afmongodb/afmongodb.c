@@ -144,7 +144,7 @@ _format_persist_name(const LogPipe *s)
 static inline void
 _uri_set_default_server_selection_timeout(mongoc_uri_t *uri_obj)
 {
-#if SYSLOG_NG_HAVE_DECL_MONGOC_URI_SET_OPTION_AS_INT32
+#if SYSLOG_NG_HAVE_DECL_MONGOC_URI_SET_OPTION_AS_INT32 && SYSLOG_NG_HAVE_DECL_MONGOC_URI_SERVERSELECTIONTIMEOUTMS
   gint32 server_selection_timeout = mongoc_uri_get_option_as_int32(uri_obj, MONGOC_URI_SERVERSELECTIONTIMEOUTMS,
                                     DEFAULT_SERVER_SELECTION_TIMEOUT);
   mongoc_uri_set_option_as_int32(uri_obj, MONGOC_URI_SERVERSELECTIONTIMEOUTMS, server_selection_timeout);
