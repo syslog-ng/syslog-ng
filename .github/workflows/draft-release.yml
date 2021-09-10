@@ -43,27 +43,35 @@ jobs:
       - name: Checkout syslog-ng source
         uses: actions/checkout@v2
 
+      - name: Setup environment
+        run: |
+          . .github/workflows/gh-tools.sh
+
+          VERSION=`cat VERSION`
+          RELEASE_TAG=syslog-ng-$VERSION
+          RELEASE_NAME=${RELEASE_TAG}
+          TARBALL_PATH=dbld/release/${VERSION}/${RELEASE_NAME}.tar.gz
+
+          gh_export VERSION RELEASE_TAG RELEASE_NAME TARBALL_PATH
+
       - name: "DBLD: release"
         run: |
-          ./dbld/rules release VERSION=`cat VERSION`
+          ./dbld/rules release VERSION=${VERSION}
 
       - name: Store release tarball as artifact
         uses: actions/upload-artifact@v2
         with:
           name: tarball
-          path: dbld/release/${VERSION}/${RELEASE_NAME}.tar.gz
+          path: ${{ env.TARBALL_PATH }}
 
       - name: Create draft release
         run: |
-          VERSION=`cat VERSION`
-          RELEASE_TAG=syslog-ng-$VERSION
-          RELEASE_NAME=${RELEASE_TAG}
           sed "1 i${RELEASE_NAME}\n" NEWS.md > /tmp/message
 
           hub release create \
             --draft \
             --file /tmp/message \
-            --attach dbld/release/${VERSION}/${RELEASE_NAME}.tar.gz \
+            --attach ${TARBALL_PATH} \
             ${RELEASE_TAG}
 
       - name: "Comment: job status"
