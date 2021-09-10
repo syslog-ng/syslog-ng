@@ -154,17 +154,17 @@ function install_yum_packages {
 
 function install_pip_packages {
     case "${IMAGE_PLATFORM}" in
-        fedora-*)
-            python_executables="python"
+        ubuntu-xenial|ubuntu-bionic)
+            python_executables="python2"
             ;;
-        ubuntu-focal|tarball)
-            python_executables="python3"
+        debian-stretch|debian-buster)
+            python_executables="python2"
             ;;
         devshell|kira)
             python_executables="python2 python3"
             ;;
         *)
-            python_executables="python2"
+            python_executables="python3"
             ;;
     esac
     for python_executable in ${python_executables}; do
