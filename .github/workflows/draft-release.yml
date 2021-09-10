@@ -60,6 +60,7 @@ jobs:
 
       - name: Store release tarball as artifact
         uses: actions/upload-artifact@v2
+        if-no-files-found: error
         with:
           name: tarball
           path: ${{ env.TARBALL_PATH }}
