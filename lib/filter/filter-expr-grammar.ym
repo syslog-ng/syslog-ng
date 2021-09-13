@@ -39,6 +39,7 @@
 #include "filter/filter-call.h"
 #include "filter/filter-re.h"
 #include "filter/filter-pri.h"
+#include "filter/filter-throttle.h"
 #include "messages.h"
 #include "template/templates.h"
 #include "syslog-names.h"
@@ -71,6 +72,7 @@ FilterExprNode *last_filter_expr;
 %type	<node> filter_simple_expr
 %type	<node> filter_plugin
 %type	<node> filter_comparison
+%type	<node> filter_throttle
 
 %type   <num> filter_fac_list
 %type   <num> filter_fac
@@ -141,6 +143,7 @@ filter_simple_expr
 	| filter_re					{ $$ = last_filter_expr; }
 	| filter_plugin
 	| filter_comparison
+	| filter_throttle   { $$ = last_filter_expr; }
 	;
 
 
@@ -305,6 +308,15 @@ filter_severity
 	  }
 	;
 
+filter_throttle_args
+  : '(', KW_VALUE '(' string ')' LL_NUMBER ')'
+          {
+            filter_throttle_init(last_filter_expr, log_msg_get_value_handle($4), $6);
+            free($4);
+          }
+
+filter_throttle
+  : KW_THROTTLE { last_filter_expr = filter_throttle_new(); } filter_throttle_args
 
 /* INCLUDE_RULES */
 
