@@ -233,7 +233,7 @@ _print_underline(const gchar *line, gint whitespace_before, gint number_of_caret
 }
 
 static void
-_print_underlined_source_block(CFG_LTYPE *yylloc, gchar **lines, gint error_index)
+_print_underlined_source_block(const CFG_LTYPE *yylloc, gchar **lines, gint error_index)
 {
   gint line_ndx;
   gchar line_prefix[12];
@@ -268,7 +268,7 @@ _print_underlined_source_block(CFG_LTYPE *yylloc, gchar **lines, gint error_inde
 }
 
 static void
-_report_file_location(const gchar *filename, CFG_LTYPE *yylloc)
+_report_file_location(const gchar *filename, const CFG_LTYPE *yylloc)
 {
   FILE *f;
   gint lineno = 0;
@@ -306,7 +306,7 @@ exit:
 }
 
 static void
-_report_buffer_location(const gchar *buffer_content, CFG_LTYPE *yylloc)
+_report_buffer_location(const gchar *buffer_content, const CFG_LTYPE *yylloc)
 {
   gchar **lines = g_strsplit(buffer_content, "\n", yylloc->first_line + CONTEXT + 1);
   gint num_lines = g_strv_length(lines);
@@ -328,13 +328,14 @@ exit:
 }
 
 void
-report_syntax_error(CfgLexer *lexer, CFG_LTYPE *yylloc, const char *what, const char *msg, gboolean in_main_grammar)
+report_syntax_error(CfgLexer *lexer, const CFG_LTYPE *yylloc, const char *what, const char *msg,
+                    gboolean in_main_grammar)
 {
   CfgIncludeLevel *level = yylloc->level, *from;
 
   for (from = level; from >= lexer->include_stack; from--)
     {
-      CFG_LTYPE *from_lloc;
+      const CFG_LTYPE *from_lloc;
 
       if (from == level)
         {
