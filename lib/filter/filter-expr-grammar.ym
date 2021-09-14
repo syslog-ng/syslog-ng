@@ -314,6 +314,10 @@ filter_throttle_args
             filter_throttle_init(last_filter_expr, log_msg_get_value_handle($4), $6);
             free($4);
           }
+  | '(' LL_NUMBER ')'
+          {
+            filter_throttle_init(last_filter_expr, 0, $2);
+          }
 
 filter_throttle
   : KW_THROTTLE { last_filter_expr = filter_throttle_new(); } filter_throttle_args

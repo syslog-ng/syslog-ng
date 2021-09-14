@@ -72,9 +72,16 @@ filter_throttle_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemp
   const gchar *key;
   gssize len = 0;
 
-  LogMessage *msg = msgs[num_msg-1];
-  key = log_msg_get_value(msg, self->key_handle, &len);
-  APPEND_ZERO(key, key, len);
+  if (self->key_handle)
+    {
+      LogMessage *msg = msgs[num_msg-1];
+      key = log_msg_get_value(msg, self->key_handle, &len);
+      APPEND_ZERO(key, key, len);
+    }
+  else
+    {
+      key = "";
+    }
 
   rl = g_hash_table_lookup(self->rate_limits, key);
 
