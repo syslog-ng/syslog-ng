@@ -72,7 +72,7 @@ jobs:
 
       # Note: azure/CLI docker container mounts the GITHUB_WORKSPACE folder and changes the environment variable.
       - name: Upload the package
-        if: env.UPLOAD == 'true'
+        if: env.UPLOAD == 'true' && github.repository_owner == 'syslog-ng'
         uses: azure/CLI@v1
         env:
           SRC_PATH: ${{ env.MY_WORKSPACE_NAME }}/syslog-ng/dbld/build/${{ env.DISTRIBUTION }}
