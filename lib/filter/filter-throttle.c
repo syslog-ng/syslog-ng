@@ -39,6 +39,7 @@ typedef struct _ThrottleRateLimit
   gchar *key;
   gint tokens;
   GTimeVal last_check;
+  GMutex *ratelimit_lock;
 } ThrottleRateLimit;
 
 ThrottleRateLimit *
@@ -47,6 +48,7 @@ throttle_ratelimit_new(const gchar *key)
   ThrottleRateLimit *self = g_new0(ThrottleRateLimit, 1);
   if (key)
     self->key = g_strdup(key);
+  self->ratelimit_lock = g_mutex_new();
   return self;
 }
 
@@ -55,6 +57,7 @@ throttle_ratelimit_free(ThrottleRateLimit *self)
 {
   if (self->key)
     g_free(self->key);
+  g_mutex_free(self->ratelimit_lock);
   g_free(self);
 }
 
@@ -78,6 +81,7 @@ filter_throttle_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemp
   GTimeVal now;
   glong diff;
   gint num_new_tokens;
+  gboolean within_ratelimit;
   g_get_current_time(&now);
 
   if (!rl)
@@ -86,31 +90,39 @@ filter_throttle_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemp
       g_hash_table_insert(self->rate_limits, &rl->key, rl);
     }
 
-  if (rl->last_check.tv_sec == 0)
-    {
-      rl->last_check = now;
-      rl->tokens = self->rate;
-      diff = 0;
-    }
-  else
-    {
-      diff = g_time_val_diff(&now, &rl->last_check);
-    }
+  g_mutex_lock(rl->ratelimit_lock);
+  {
+    if (rl->last_check.tv_sec == 0)
+      {
+        rl->last_check = now;
+        rl->tokens = self->rate;
+        diff = 0;
+      }
+    else
+      {
+        diff = g_time_val_diff(&now, &rl->last_check);
+      }
 
-  num_new_tokens = (diff * self->rate) / G_USEC_PER_SEC;
-  if (num_new_tokens)
-    {
-      rl->tokens = MIN(self->rate, rl->tokens + num_new_tokens);
-      rl->last_check = now;
-    }
+    num_new_tokens = (diff * self->rate) / G_USEC_PER_SEC;
+    if (num_new_tokens)
+      {
+        rl->tokens = MIN(self->rate, rl->tokens + num_new_tokens);
+        rl->last_check = now;
+      }
 
-  if (num_msg > 0 && rl->tokens > 0)
-    {
-      rl->tokens -= num_msg;
-      return TRUE;
-    }
+    if (num_msg > 0 && rl->tokens > 0)
+      {
+        rl->tokens -= num_msg;
+        within_ratelimit = TRUE;
+      }
+    else
+      {
+        within_ratelimit = FALSE;
+      }
+  }
+  g_mutex_unlock(rl->ratelimit_lock);
 
-  return FALSE;
+  return within_ratelimit;
 }
 
 static void
