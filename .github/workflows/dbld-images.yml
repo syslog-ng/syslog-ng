@@ -27,6 +27,7 @@ jobs:
         run: dbld/rules images -j $(nproc)
 
       - name: Log in to the Container registry
+        if: github.repository_owner == 'syslog-ng' && github.ref == 'refs/heads/master'
         uses: docker/login-action@v1
         with:
           registry: ghcr.io
@@ -34,6 +35,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push the images
+        if: github.repository_owner == 'syslog-ng' && github.ref == 'refs/heads/master'
         run: |
           IMAGES=$(docker image ls --filter "reference=${{ env.CONTAINER_REGISTRY }}/syslog-ng-*:latest" --format '{{.Repository}}:{{.Tag}}')
           for IMAGE in $IMAGES; do
