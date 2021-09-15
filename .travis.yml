@@ -81,9 +81,6 @@ branches:
   except:
     - /wip/
 notifications:
-  irc:
-    channels:
-      - "irc.freenode.org#balabit"
   webhooks:
       urls:
         - https://webhooks.gitter.im/e/1c6e3a6f10348748585a
