@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Balabit
+ * Copyright (c) 2021 One Identity
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,69 +38,85 @@ typedef struct _FilterThrottle
 typedef struct _ThrottleRateLimit
 {
   gint tokens;
+  gint rate;
   GTimeVal last_check;
-  GMutex *ratelimit_lock;
+  GMutex *lock;
 } ThrottleRateLimit;
 
 static ThrottleRateLimit *
-throttle_ratelimit_new()
+throttle_ratelimit_new(gint rate)
 {
   ThrottleRateLimit *self = g_new0(ThrottleRateLimit, 1);
-  self->ratelimit_lock = g_mutex_new();
+
+  GTimeVal now;
+  g_get_current_time(&now);
+  self->last_check = now;
+  self->lock = g_mutex_new();
+  self->rate = rate;
+  self->tokens = rate;
+
   return self;
 }
 
 static void
 throttle_ratelimit_free(ThrottleRateLimit *self)
 {
-  g_mutex_free(self->ratelimit_lock);
+  g_mutex_free(self->lock);
   g_free(self);
 }
 
 static void
-throttle_ratelimit_add_new_tokens(ThrottleRateLimit *self, gint rate)
+throttle_ratelimit_add_new_tokens(ThrottleRateLimit *self)
 {
-  glong diff;
+  glong usec_since_last_fill;
   gint num_new_tokens;
   GTimeVal now;
   g_get_current_time(&now);
+  usec_since_last_fill = g_time_val_diff(&now, &self->last_check);
 
-  if (self->last_check.tv_sec == 0)
-    {
-      self->last_check = now;
-      self->tokens = rate;
-      diff = 0;
-    }
-  else
-    {
-      diff = g_time_val_diff(&now, &self->last_check);
-    }
-
-  num_new_tokens = (diff * rate) / G_USEC_PER_SEC;
+  num_new_tokens = (usec_since_last_fill * self->rate) / G_USEC_PER_SEC;
   if (num_new_tokens)
     {
-      self->tokens = MIN(rate, self->tokens + num_new_tokens);
-      self->last_check = now;
+      g_mutex_lock(self->lock);
+      {
+        self->tokens = MIN(self->rate, self->tokens + num_new_tokens);
+        self->last_check = now;
+      }
+      g_mutex_unlock(self->lock);
     }
 }
 
 static gboolean
 throttle_ratelimit_try_consume_tokens(ThrottleRateLimit *self, gint num_tokens)
 {
-  if (self->tokens >= num_tokens)
-    {
-      self->tokens -= num_tokens;
-      return TRUE;
-    }
-  return FALSE;
+  gboolean within_ratelimit;
+  g_mutex_lock(self->lock);
+  {
+    if (self->tokens >= num_tokens)
+      {
+        self->tokens -= num_tokens;
+        within_ratelimit = TRUE;
+      }
+    else
+      {
+        within_ratelimit = FALSE;
+      }
+  }
+  g_mutex_unlock(self->lock);
+  return within_ratelimit;
+}
+
+static gboolean
+throttle_ratelimit_process_new_logs(ThrottleRateLimit *self, gint num_new_logs)
+{
+  throttle_ratelimit_add_new_tokens(self);
+  return throttle_ratelimit_try_consume_tokens(self, num_new_logs);
 }
 
 static gboolean
 filter_throttle_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemplateEvalOptions *options)
 {
   FilterThrottle *self = (FilterThrottle *)s;
-  if (self->rate == 0)
-    return FALSE;
 
   const gchar *key;
   gssize len = 0;
@@ -117,7 +133,6 @@ filter_throttle_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemp
     }
 
   ThrottleRateLimit *rl;
-  gboolean within_ratelimit;
 
   g_mutex_lock(self->map_lock);
   {
@@ -125,20 +140,13 @@ filter_throttle_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemp
 
     if (!rl)
       {
-        rl = throttle_ratelimit_new();
+        rl = throttle_ratelimit_new(self->rate);
         g_hash_table_insert(self->rate_limits, g_strdup(key), rl);
       }
   }
   g_mutex_unlock(self->map_lock);
 
-  g_mutex_lock(rl->ratelimit_lock);
-  {
-    throttle_ratelimit_add_new_tokens(rl, self->rate);
-    within_ratelimit = throttle_ratelimit_try_consume_tokens(rl, num_msg);
-  }
-  g_mutex_unlock(rl->ratelimit_lock);
-
-  return within_ratelimit;
+  return throttle_ratelimit_process_new_logs(rl, num_msg);
 }
 
 static void
@@ -150,27 +158,29 @@ filter_throttle_free(FilterExprNode *s)
   g_mutex_free(self->map_lock);
 }
 
-gboolean
+static gboolean
 filter_throttle_init(FilterExprNode *s, GlobalConfig *cfg)
 {
   FilterThrottle *self = (FilterThrottle *)s;
 
   if (self->rate <= 0)
     {
-      msg_error("throttle: the rate() argument is required, and must be non negative in throttle filters");
+      msg_error("throttle: the rate() argument is required, and must be non zero in throttle filters");
       return FALSE;
     }
 
   return TRUE;
 }
 
-void filter_throttle_set_key(FilterExprNode *s, NVHandle key_handle)
+void
+filter_throttle_set_key(FilterExprNode *s, NVHandle key_handle)
 {
   FilterThrottle *self = (FilterThrottle *)s;
   self->key_handle = key_handle;
 }
 
-void filter_throttle_set_rate(FilterExprNode *s, gint rate)
+void
+filter_throttle_set_rate(FilterExprNode *s, gint rate)
 {
   FilterThrottle *self = (FilterThrottle *)s;
   self->rate = rate;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Balabit
+ * Copyright (c) 2021 One Identity
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,7 +28,6 @@
 
 FilterExprNode *filter_throttle_new(void);
 
-gboolean filter_throttle_init(FilterExprNode *s, GlobalConfig *cfg);
 void filter_throttle_set_key(FilterExprNode *s, NVHandle key_handle);
 void filter_throttle_set_rate(FilterExprNode *s, gint rate);
 
