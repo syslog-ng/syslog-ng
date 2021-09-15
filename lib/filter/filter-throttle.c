@@ -31,34 +31,68 @@ typedef struct _FilterThrottle
   FilterExprNode super;
   NVHandle key_handle;
   gint rate;
+  GMutex *map_lock;
   GHashTable *rate_limits;
 } FilterThrottle;
 
 typedef struct _ThrottleRateLimit
 {
-  gchar *key;
   gint tokens;
   GTimeVal last_check;
   GMutex *ratelimit_lock;
 } ThrottleRateLimit;
 
-ThrottleRateLimit *
-throttle_ratelimit_new(const gchar *key)
+static ThrottleRateLimit *
+throttle_ratelimit_new()
 {
   ThrottleRateLimit *self = g_new0(ThrottleRateLimit, 1);
-  if (key)
-    self->key = g_strdup(key);
   self->ratelimit_lock = g_mutex_new();
   return self;
 }
 
-void
+static void
 throttle_ratelimit_free(ThrottleRateLimit *self)
 {
-  if (self->key)
-    g_free(self->key);
   g_mutex_free(self->ratelimit_lock);
   g_free(self);
+}
+
+static void
+throttle_ratelimit_add_new_tokens(ThrottleRateLimit *self, gint rate)
+{
+  glong diff;
+  gint num_new_tokens;
+  GTimeVal now;
+  g_get_current_time(&now);
+
+  if (self->last_check.tv_sec == 0)
+    {
+      self->last_check = now;
+      self->tokens = rate;
+      diff = 0;
+    }
+  else
+    {
+      diff = g_time_val_diff(&now, &self->last_check);
+    }
+
+  num_new_tokens = (diff * rate) / G_USEC_PER_SEC;
+  if (num_new_tokens)
+    {
+      self->tokens = MIN(rate, self->tokens + num_new_tokens);
+      self->last_check = now;
+    }
+}
+
+static gboolean
+throttle_ratelimit_try_consume_tokens(ThrottleRateLimit *self, gint num_tokens)
+{
+  if (self->tokens >= num_tokens)
+    {
+      self->tokens -= num_tokens;
+      return TRUE;
+    }
+  return FALSE;
 }
 
 static gboolean
@@ -68,7 +102,6 @@ filter_throttle_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemp
   if (self->rate == 0)
     return FALSE;
 
-  ThrottleRateLimit *rl;
   const gchar *key;
   gssize len = 0;
 
@@ -83,49 +116,25 @@ filter_throttle_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemp
       key = "";
     }
 
-  rl = g_hash_table_lookup(self->rate_limits, key);
-
-  GTimeVal now;
-  glong diff;
-  gint num_new_tokens;
+  ThrottleRateLimit *rl;
   gboolean within_ratelimit;
-  g_get_current_time(&now);
 
-  if (!rl)
-    {
-      rl = throttle_ratelimit_new(key);
-      g_hash_table_insert(self->rate_limits, &rl->key, rl);
-    }
+  g_mutex_lock(self->map_lock);
+  {
+    rl = g_hash_table_lookup(self->rate_limits, key);
+
+    if (!rl)
+      {
+        rl = throttle_ratelimit_new();
+        g_hash_table_insert(self->rate_limits, g_strdup(key), rl);
+      }
+  }
+  g_mutex_unlock(self->map_lock);
 
   g_mutex_lock(rl->ratelimit_lock);
   {
-    if (rl->last_check.tv_sec == 0)
-      {
-        rl->last_check = now;
-        rl->tokens = self->rate;
-        diff = 0;
-      }
-    else
-      {
-        diff = g_time_val_diff(&now, &rl->last_check);
-      }
-
-    num_new_tokens = (diff * self->rate) / G_USEC_PER_SEC;
-    if (num_new_tokens)
-      {
-        rl->tokens = MIN(self->rate, rl->tokens + num_new_tokens);
-        rl->last_check = now;
-      }
-
-    if (num_msg > 0 && rl->tokens > 0)
-      {
-        rl->tokens -= num_msg;
-        within_ratelimit = TRUE;
-      }
-    else
-      {
-        within_ratelimit = FALSE;
-      }
+    throttle_ratelimit_add_new_tokens(rl, self->rate);
+    within_ratelimit = throttle_ratelimit_try_consume_tokens(rl, num_msg);
   }
   g_mutex_unlock(rl->ratelimit_lock);
 
@@ -138,16 +147,33 @@ filter_throttle_free(FilterExprNode *s)
   FilterThrottle *self = (FilterThrottle *) s;
 
   g_hash_table_destroy(self->rate_limits);
+  g_mutex_free(self->map_lock);
 }
 
 gboolean
-filter_throttle_init(FilterExprNode *s, NVHandle key_handle, gint rate)
+filter_throttle_init(FilterExprNode *s, GlobalConfig *cfg)
+{
+  FilterThrottle *self = (FilterThrottle *)s;
+
+  if (self->rate <= 0)
+    {
+      msg_error("throttle: the rate() argument is required, and must be non negative in throttle filters");
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
+void filter_throttle_set_key(FilterExprNode *s, NVHandle key_handle)
 {
   FilterThrottle *self = (FilterThrottle *)s;
   self->key_handle = key_handle;
-  self->rate = rate;
+}
 
-  return TRUE;
+void filter_throttle_set_rate(FilterExprNode *s, gint rate)
+{
+  FilterThrottle *self = (FilterThrottle *)s;
+  self->rate = rate;
 }
 
 FilterExprNode *
@@ -156,8 +182,10 @@ filter_throttle_new(void)
   FilterThrottle *self = g_new0(FilterThrottle, 1);
   filter_expr_node_init_instance(&self->super);
 
+  self->super.init = filter_throttle_init;
   self->super.eval = filter_throttle_eval;
   self->super.free_fn = filter_throttle_free;
+  self->map_lock = g_mutex_new();
   self->rate_limits = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify)throttle_ratelimit_free);
 
   return &self->super;

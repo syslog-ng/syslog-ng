@@ -28,6 +28,8 @@
 
 FilterExprNode *filter_throttle_new(void);
 
-gboolean filter_throttle_init(FilterExprNode *s, NVHandle key_handle, gint rate);
+gboolean filter_throttle_init(FilterExprNode *s, GlobalConfig *cfg);
+void filter_throttle_set_key(FilterExprNode *s, NVHandle key_handle);
+void filter_throttle_set_rate(FilterExprNode *s, gint rate);
 
 #endif

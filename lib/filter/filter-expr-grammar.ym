@@ -60,6 +60,7 @@ FilterExprNode *last_filter_expr;
 
 %token KW_PROGRAM
 %token KW_IN_LIST
+%token KW_RATE
 
 %left   ';'
 %left	KW_OR
@@ -308,19 +309,24 @@ filter_severity
 	  }
 	;
 
-filter_throttle_args
-  : '(', KW_VALUE '(' string ')' LL_NUMBER ')'
+filter_throttle_arg
+  : KW_VALUE '(' string ')'
           {
-            filter_throttle_init(last_filter_expr, log_msg_get_value_handle($4), $6);
-            free($4);
+            filter_throttle_set_key(last_filter_expr, log_msg_get_value_handle($3));
+            free($3);
           }
-  | '(' LL_NUMBER ')'
+  | KW_RATE '(' LL_NUMBER ')'
           {
-            filter_throttle_init(last_filter_expr, 0, $2);
+            filter_throttle_set_rate(last_filter_expr, $3);
           }
 
+filter_throttle_args
+  : filter_throttle_arg filter_throttle_args
+  |
+  ;
+
 filter_throttle
-  : KW_THROTTLE { last_filter_expr = filter_throttle_new(); } filter_throttle_args
+  : KW_THROTTLE { last_filter_expr = filter_throttle_new(); } '(' filter_throttle_args ')'
 
 /* INCLUDE_RULES */
 
