@@ -84,12 +84,16 @@ signal_handler_exec_external_handler(gint signum)
 static int
 _original_sigaction(int signum, const struct sigaction *act, struct sigaction *oldact)
 {
+#ifdef __NetBSD__
+  __libc_sigaction14(signum, act, oldact);
+#else
   static int (*real_sa)(int, const struct sigaction *, struct sigaction *);
 
   if (real_sa == NULL)
     real_sa = dlsym(RTLD_NEXT, "sigaction");
 
   return real_sa(signum, act, oldact);
+#endif
 }
 
 static gint
