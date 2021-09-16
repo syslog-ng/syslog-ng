@@ -9,8 +9,8 @@
 
 BEGIN {
 	# Handle the various platforms- determine proper log device
-	"/bin/uname -s" | getline sysname;
-	close("/bin/uname -s");
+	"uname -s" | getline sysname;
+	close("uname -s");
 	if (sysname == "SunOS") {
 		LOGDEVTYPE="sun-streams";
 		LOGDEVPATH="/dev/log";
