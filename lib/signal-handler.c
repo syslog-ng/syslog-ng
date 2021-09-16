@@ -85,7 +85,7 @@ static int
 _original_sigaction(int signum, const struct sigaction *act, struct sigaction *oldact)
 {
 #ifdef __NetBSD__
-  __libc_sigaction14(signum, act, oldact);
+  return __libc_sigaction14(signum, act, oldact);
 #else
   static int (*real_sa)(int, const struct sigaction *, struct sigaction *);
 
