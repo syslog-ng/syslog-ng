@@ -5,7 +5,7 @@
 # Translator from syslog.conf to syslog-ng.conf
 # by Jonathan W. Marks <j-marks@uiuc.edu>
 #
-# Rev 2
+# Rev 2.1
 
 BEGIN {
 	# Handle the various platforms- determine proper log device
@@ -13,10 +13,16 @@ BEGIN {
 	close("/bin/uname -s");
 	if (sysname == "SunOS") {
 		LOGDEVTYPE="sun-streams";
+		LOGDEVPATH="/dev/log";
 	} else if (sysname == "AIX") {
 		LOGDEVTYPE="unix-dgram";
+		LOGDEVPATH="/dev/log";
 	} else if (sysname == "Linux") {
 		LOGDEVTYPE="unix-stream";
+		LOGDEVPATH="/dev/log";
+	} else if (sysname == "NetBSD") {
+		LOGDEVTYPE="unix-dgram";
+		LOGDEVPATH="/var/run/log";
 	} else {
 		print "!!! Unsupported system: " sysname ".";
 		exit 1;
@@ -29,7 +35,7 @@ BEGIN {
 
 	print \
 "source local {\n" \
-"	" LOGDEVTYPE "(\"/dev/log\");\n" \
+"	" LOGDEVTYPE "(\"" LOGDEVPATH "\");\n" \
 "	udp(ip(0.0.0.0) port(514));\n" \
 "	internal();\n" \
 "};\n";
