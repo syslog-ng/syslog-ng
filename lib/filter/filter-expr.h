@@ -41,6 +41,7 @@ struct _FilterExprNode
   const gchar *type;
   gboolean (*init)(FilterExprNode *self, GlobalConfig *cfg);
   gboolean (*eval)(FilterExprNode *self, LogMessage **msg, gint num_msg, LogTemplateEvalOptions *options);
+  FilterExprNode *(*clone)(FilterExprNode *self);
   void (*free_fn)(FilterExprNode *self);
   StatsCounterItem *matched;
   StatsCounterItem *not_matched;

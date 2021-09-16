@@ -186,6 +186,18 @@ filter_throttle_set_rate(FilterExprNode *s, gint rate)
   self->rate = rate;
 }
 
+static FilterExprNode *
+filter_throttle_clone(FilterExprNode *s)
+{
+  FilterThrottle *self = (FilterThrottle *)s;
+
+  FilterExprNode *cloned_self =filter_throttle_new();
+  filter_throttle_set_key(cloned_self, self->key_handle);
+  filter_throttle_set_rate(cloned_self, self->rate);
+
+  return cloned_self;
+}
+
 FilterExprNode *
 filter_throttle_new(void)
 {
@@ -195,6 +207,7 @@ filter_throttle_new(void)
   self->super.init = filter_throttle_init;
   self->super.eval = filter_throttle_eval;
   self->super.free_fn = filter_throttle_free;
+  self->super.clone = filter_throttle_clone;
   self->map_lock = g_mutex_new();
   self->rate_limits = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, (GDestroyNotify)throttle_ratelimit_free);
 
