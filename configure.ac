@@ -1562,7 +1562,7 @@ else
     if test "$python_found" = "yes"; then
       if test "$python_version" = "3"; then
           AC_CHECK_PROG(PYLINT, pylint3, pylint3)
-          if test "x$PYLINT" == "x"; then
+          if test "x$PYLINT" = "x"; then
             AC_CHECK_PROG(PYLINT, pylint, pylint)
           fi
       else

@@ -54,7 +54,7 @@ AC_DEFUN([AX_CHECK_JAVA_VERSION],
   JAVA_HOME_CHECKER="/usr/libexec/java_home"
 
   if test "x$JAVAC_BIN" != "x"; then
-    if test "x$DONT_RESOLVE_JAVA_BIN_LINKS" == "x"; then
+    if test "x$DONT_RESOLVE_JAVA_BIN_LINKS" = "x"; then
       JAVAC_BIN=`AX_READLINK([$JAVAC_BIN])`
       JAVAH_BIN=`AX_READLINK([$JAVAH_BIN])`
       JAR_BIN=`AX_READLINK([$JAR_BIN])`
