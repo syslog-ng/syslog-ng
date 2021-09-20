@@ -310,9 +310,9 @@ Test(template, test_escaping)
 {
   assert_template_format_with_escaping("${APP.QVALUE}", FALSE, "\"value\"");
   assert_template_format_with_escaping("${APP.QVALUE}", TRUE, "\\\"value\\\"");
-  assert_template_format_with_escaping("$(if (\"${APP.VALUE}\" == \"value\") \"${APP.QVALUE}\" \"${APP.QVALUE}\")",
+  assert_template_format_with_escaping("$(if (\"${APP.VALUE}\" eq \"value\") \"${APP.QVALUE}\" \"${APP.QVALUE}\")",
                                        FALSE, "\"value\"");
-  assert_template_format_with_escaping("$(if (\"${APP.VALUE}\" == \"value\") \"${APP.QVALUE}\" \"${APP.QVALUE}\")",
+  assert_template_format_with_escaping("$(if (\"${APP.VALUE}\" eq \"value\") \"${APP.QVALUE}\" \"${APP.QVALUE}\")",
                                        TRUE, "\\\"value\\\"");
 }
 
