@@ -36,6 +36,8 @@ class DriverStatsHandler(object):
             self.component = "{}.{}".format(statement_short_name, driver_name)
         elif group_type == "parser":
             self.component = "{}".format(group_type)
+        elif group_type == "filter":
+            self.component = "{}".format(group_type)
         else:
             raise Exception("Unknown group_type: {}".format(group_type))
 

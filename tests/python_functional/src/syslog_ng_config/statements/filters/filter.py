@@ -20,18 +20,25 @@
 # COPYING for details.
 #
 #############################################################################
+from src.syslog_ng_ctl.driver_stats_handler import DriverStatsHandler
 
 
 class Filter(object):
     group_type = "filter"
 
-    def __init__(self, positional_parameters, **options):
+    def __init__(self, driver_name, positional_parameters, **options):
         self.options = options
-        self.driver_name = ""
+        self.driver_name = driver_name
         self.positional_parameters = positional_parameters
+        self.stats_handler = DriverStatsHandler(group_type=self.group_type, driver_name=self.driver_name)
+
+    def get_stats(self):
+        return self.stats_handler.get_stats()
+
+    def get_query(self):
+        return self.stats_handler.get_query()
 
 
 class Match(Filter):
     def __init__(self, match_string, **options):
-        super(Match, self).__init__([match_string], **options)
-        self.driver_name = "match"
+        super(Match, self).__init__("match", [match_string], **options)
