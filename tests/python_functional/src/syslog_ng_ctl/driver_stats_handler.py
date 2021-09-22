@@ -20,6 +20,8 @@
 # COPYING for details.
 #
 #############################################################################
+import re
+
 import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.syslog_ng_ctl.syslog_ng_ctl import SyslogNgCtl
 
@@ -51,18 +53,31 @@ class DriverStatsHandler(object):
             delimiter,
         )
 
+    def __parse_query_result(self, line: str):
+        split = re.split(r"\.|=", line)
+        if len(split) < 2:
+            return dict()
+
+        key, value = split[-2:]
+        return {key: int(value)}
+
+    def __parse_stats_result(self, line):
+        split = line.split(";")
+        if len(split) < 2:
+            return dict()
+
+        key, value = split[-2:]
+        return {key: int(value)}
+
     def parse_result(self, result, result_type):
-        statistical_elements = ["memory_usage", "written", "processed", "dropped", "queued", "stamp", "discarded"]
         parsed_output = {}
-        for stat_element in statistical_elements:
-            for line in result:
-                if stat_element in line:
-                    if result_type == "query":
-                        parsed_output.update({stat_element: int(line.split(".")[-1].split("=")[-1])})
-                    elif result_type == "stats":
-                        parsed_output.update({stat_element: int(line.split(".")[-1].split(";")[-1])})
-                    else:
-                        raise Exception("Unknown result_type: {}".format(result_type))
+        for line in result:
+            if result_type == "query":
+                parsed_output.update(self.__parse_query_result(line))
+            elif result_type == "stats":
+                parsed_output.update(self.__parse_stats_result(line))
+            else:
+                raise Exception("Unknown result_type: {}".format(result_type))
         return parsed_output
 
     def filter_stats_result(self, stats_result, stats_pattern):
