@@ -84,8 +84,7 @@ mqtt_destination_option
         | KW_KEEPALIVE '(' positive_integer ')' { mqtt_dd_set_keepalive(last_driver, $3);       }
         | KW_ADDRESS '(' string ')'
           {
-            CHECK_ERROR(mqtt_dd_validate_address($3), @1, "Invalid address");
-            mqtt_dd_set_address(last_driver, $3);
+            CHECK_ERROR(mqtt_client_options_set_address(last_options, $3), @1, "Invalid address");
             free($3);
           }
         | KW_QOS '(' nonnegative_integer ')'

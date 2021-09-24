@@ -18,6 +18,8 @@ modules_mqtt_libmqtt_la_CPPFLAGS  =           \
 modules_mqtt_libmqtt_la_SOURCES = \
   modules/mqtt/mqtt-plugins.c     \
   modules/mqtt/mqtt-grammar.y     \
+  modules/mqtt/mqtt-options.c      \
+  modules/mqtt/mqtt-options.h      \
   modules/mqtt/mqtt-parser.c      \
   modules/mqtt/mqtt-parser.h
 

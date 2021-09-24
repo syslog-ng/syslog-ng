@@ -10,6 +10,8 @@ CHECK_STRUCT_HAS_MEMBER("MQTTClient_connectOptions" "httpProxy" "MQTTClient.h" S
 add_subdirectory(destination)
 
 set(MQTT_SOURCES
+    mqtt-options.c
+    mqtt-options.h
     mqtt-parser.c
     mqtt-parser.h
     mqtt-plugins.c
