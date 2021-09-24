@@ -1,5 +1,5 @@
 ARG CONTAINER_REGISTRY
-FROM $CONTAINER_REGISTRY/syslog-ng-debian-testing:latest
+FROM $CONTAINER_REGISTRY/dbld-debian-testing:latest
 
 ARG ARG_IMAGE_PLATFORM
 ARG COMMIT

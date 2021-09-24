@@ -51,7 +51,7 @@ jobs:
       - name: Push the images
         if: env.UPLOAD_IMAGES == 'true'
         run: |
-          IMAGES=$(docker image ls --filter "reference=${{ env.CONTAINER_REGISTRY }}/syslog-ng-*:latest" --format '{{.Repository}}:{{.Tag}}')
+          IMAGES=$(docker image ls --filter "reference=${{ env.CONTAINER_REGISTRY }}/dbld-*:latest" --format '{{.Repository}}:{{.Tag}}')
           for IMAGE in $IMAGES; do
             echo "Pushing image: $IMAGE"
             docker push $IMAGE
