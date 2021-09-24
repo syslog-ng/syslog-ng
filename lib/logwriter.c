@@ -1718,7 +1718,7 @@ log_writer_reopen(LogWriter *s, LogProtoClient *proto)
       g_mutex_lock(&self->pending_proto_lock);
       while (self->pending_proto_present)
         {
-          g_cond_wait(self->pending_proto_cond, g_static_mutex_get_mutex(&self->pending_proto_lock));
+          g_cond_wait(self->pending_proto_cond, &self->pending_proto_lock);
         }
       g_mutex_unlock(&self->pending_proto_lock);
     }

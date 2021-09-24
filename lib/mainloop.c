@@ -375,7 +375,7 @@ block_till_workers_exit(void)
   g_mutex_lock(&workers_running_lock);
   while (main_loop_workers_running)
     {
-      if (!g_cond_timed_wait(thread_halt_cond, g_static_mutex_get_mutex(&workers_running_lock), &end_time))
+      if (!g_cond_timed_wait(thread_halt_cond, &workers_running_lock, &end_time))
         {
           /* timeout has passed. */
           fprintf(stderr, "Main thread timed out (15s) while waiting workers threads to exit. "

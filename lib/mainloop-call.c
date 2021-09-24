@@ -73,7 +73,7 @@ main_loop_call(MainLoopTaskFunc func, gpointer user_data, gboolean wait)
       g_mutex_unlock(&call_info.lock);
 
       while (call_info.pending)
-        g_cond_wait(call_info.cond, g_static_mutex_get_mutex(&main_task_lock));
+        g_cond_wait(call_info.cond, &main_task_lock);
     }
   else
     {
@@ -91,7 +91,7 @@ main_loop_call(MainLoopTaskFunc func, gpointer user_data, gboolean wait)
   if (wait)
     {
       while (call_info.pending)
-        g_cond_wait(call_info.cond, g_static_mutex_get_mutex(&main_task_lock));
+        g_cond_wait(call_info.cond, &main_task_lock);
     }
   g_mutex_unlock(&main_task_lock);
   return call_info.result;

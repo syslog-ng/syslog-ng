@@ -268,7 +268,7 @@ log_reader_close_proto(LogReader *self)
       g_mutex_lock(&self->pending_close_lock);
       while (self->pending_close)
         {
-          g_cond_wait(self->pending_close_cond, g_static_mutex_get_mutex(&self->pending_close_lock));
+          g_cond_wait(self->pending_close_cond, &self->pending_close_lock);
         }
       g_mutex_unlock(&self->pending_close_lock);
     }
