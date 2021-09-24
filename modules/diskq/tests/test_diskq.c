@@ -174,7 +174,7 @@ Test(diskq, testcase_ack_and_rewind_messages)
 #define MESSAGES_SUM (FEEDERS * MESSAGES_PER_FEEDER)
 #define TEST_RUNS 10
 
-GStaticMutex tlock;
+GMutex tlock;
 glong sum_time;
 
 static gpointer
@@ -209,9 +209,9 @@ threaded_feed(gpointer args)
   main_loop_worker_invoke_batch_callbacks();
   g_get_current_time(&end);
   diff = g_time_val_diff(&end, &start);
-  g_static_mutex_lock(&tlock);
+  g_mutex_lock(&tlock);
   sum_time += diff;
-  g_static_mutex_unlock(&tlock);
+  g_mutex_unlock(&tlock);
   main_loop_worker_thread_stop();
   log_msg_unref(tmpl);
   return NULL;

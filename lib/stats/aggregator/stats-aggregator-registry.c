@@ -40,7 +40,7 @@ typedef struct
 
 static StatsAggregatorContainer stats_container;
 
-static GStaticMutex stats_aggregator_mutex = G_STATIC_MUTEX_INIT;
+static GMutex stats_aggregator_mutex;
 static gboolean stats_aggregator_locked;
 
 static void
@@ -99,7 +99,7 @@ _deinit_timer(void)
 void
 stats_aggregator_lock(void)
 {
-  g_static_mutex_lock(&stats_aggregator_mutex);
+  g_mutex_lock(&stats_aggregator_mutex);
   stats_aggregator_locked = TRUE;
 }
 
@@ -107,7 +107,7 @@ void
 stats_aggregator_unlock(void)
 {
   stats_aggregator_locked = FALSE;
-  g_static_mutex_unlock(&stats_aggregator_mutex);
+  g_mutex_unlock(&stats_aggregator_mutex);
 }
 
 static void
@@ -167,7 +167,7 @@ stats_aggregator_registry_init(void)
   stats_container.aggregators = g_hash_table_new_full((GHashFunc) _stats_cluster_key_hash,
                                                       (GEqualFunc) stats_cluster_key_equal, NULL, NULL);
   _init_timer();
-  g_static_mutex_init(&stats_aggregator_mutex);
+  g_mutex_init(&stats_aggregator_mutex);
 }
 
 void
@@ -178,7 +178,7 @@ stats_aggregator_registry_deinit(void)
   stats_aggregator_unlock();
   g_hash_table_destroy(stats_container.aggregators);
   stats_container.aggregators = NULL;
-  g_static_mutex_free(&stats_aggregator_mutex);
+  g_mutex_clear(&stats_aggregator_mutex);
   _deinit_timer();
 }
 

@@ -35,7 +35,7 @@
 typedef struct _GroupingBy
 {
   StatefulParser super;
-  GStaticMutex lock;
+  GMutex lock;
   struct iv_timer tick;
   TimerWheel *timer_wheel;
   GTimeVal last_tick;
@@ -236,7 +236,7 @@ _grouping_by_timer_tick(GroupingBy *self)
 
   GPMessageEmitter msg_emitter = {0};
 
-  g_static_mutex_lock(&self->lock);
+  g_mutex_lock(&self->lock);
   cached_g_current_time(&now);
   diff = g_time_val_diff(&now, &self->last_tick);
 
@@ -261,7 +261,7 @@ _grouping_by_timer_tick(GroupingBy *self)
        */
       self->last_tick = now;
     }
-  g_static_mutex_unlock(&self->lock);
+  g_mutex_unlock(&self->lock);
   _flush_emitted_messages(self, &msg_emitter);
 }
 
@@ -411,7 +411,7 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
 {
   GPMessageEmitter msg_emitter = {0};
 
-  g_static_mutex_lock(&self->lock);
+  g_mutex_lock(&self->lock);
   grouping_by_set_time(self, &msg->timestamps[LM_TS_STAMP], &msg_emitter);
 
   CorrelationContext *context = _lookup_or_create_context(self, msg);
@@ -431,7 +431,7 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
 
       LogMessage *genmsg = grouping_by_update_context_and_generate_msg(self, context);
 
-      g_static_mutex_unlock(&self->lock);
+      g_mutex_unlock(&self->lock);
       _flush_emitted_messages(self, &msg_emitter);
 
       if (genmsg)
@@ -460,7 +460,7 @@ _perform_groupby(GroupingBy *self, LogMessage *msg)
 
   log_msg_write_protect(msg);
 
-  g_static_mutex_unlock(&self->lock);
+  g_mutex_unlock(&self->lock);
   _flush_emitted_messages(self, &msg_emitter);
 
   return TRUE;
@@ -599,7 +599,7 @@ grouping_by_free(LogPipe *s)
 {
   GroupingBy *self = (GroupingBy *) s;
 
-  g_static_mutex_free(&self->lock);
+  g_mutex_clear(&self->lock);
   log_template_unref(self->key_template);
   log_template_unref(self->sort_key_template);
   if (self->synthetic_message)
@@ -622,7 +622,7 @@ grouping_by_new(GlobalConfig *cfg)
   self->super.super.super.deinit = grouping_by_deinit;
   self->super.super.super.clone = grouping_by_clone;
   self->super.super.process = grouping_by_process;
-  g_static_mutex_init(&self->lock);
+  g_mutex_init(&self->lock);
   self->scope = RCS_GLOBAL;
   cached_g_current_time(&self->last_tick);
   self->timeout = -1;

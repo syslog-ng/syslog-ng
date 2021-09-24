@@ -45,7 +45,7 @@ typedef struct _AFInetDestDriver
 #if SYSLOG_NG_ENABLE_SPOOF_SOURCE
   gboolean spoof_source;
   struct libnet_context *lnet_ctx;
-  GStaticMutex lnet_lock;
+  GMutex lnet_lock;
   GString *lnet_buffer;
   guint spoof_source_max_msglen;
 #endif

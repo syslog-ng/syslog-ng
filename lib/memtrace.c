@@ -66,7 +66,7 @@ typedef struct _ZMemTraceEntry
 typedef struct _ZMemTraceHead
 {
   guint32 list;
-  GStaticMutex lock;
+  GMutex lock;
   gulong size;
 } ZMemTraceHead;
 
@@ -87,7 +87,7 @@ ZMemTraceEntry mem_trace_heap[MEMTRACE_HEAP_SIZE];
 guint32 mem_trace_free_list = -1;
 guint32 mem_block_count = 0, mem_allocated_size = 0, mem_alloc_count = 0;
 gboolean mem_trace_initialized = FALSE;
-GStaticMutex mem_trace_lock = G_STATIC_MUTEX_INIT;
+GMutex mem_trace_lock;
 gint mem_trace_log_fd = -1;
 gchar *mem_trace_filename = "/var/tmp/zorp-memtrace.log";
 gboolean mem_trace_canaries = TRUE;
@@ -122,7 +122,7 @@ z_mem_trace_init(gchar *tracefile)
       for (i = 0; i < MEMTRACE_HASH_SIZE; i++)
         {
           mem_trace_hash[i].list = -1;
-          g_static_mutex_init(&mem_trace_hash[i].lock);
+          g_mutex_init(&mem_trace_hash[i].lock);
         }
       old_malloc = dlsym(RTLD_NEXT, "malloc");
       old_free = dlsym(RTLD_NEXT, "free");
@@ -220,7 +220,7 @@ z_mem_trace_dump(void)
       ZMemTraceEntry *entry;
       int cur;
 
-      g_static_mutex_lock(&head->lock);
+      g_mutex_lock(&head->lock);
       cur = head->list;
       while (cur != -1)
         {
@@ -237,7 +237,7 @@ z_mem_trace_dump(void)
             }
           cur = entry->next;
         }
-      g_static_mutex_unlock(&head->lock);
+      g_mutex_unlock(&head->lock);
     }
 }
 
@@ -321,7 +321,7 @@ z_mem_trace_add(gpointer ptr, gint size, gpointer backtrace[])
   gchar backtrace_buf[8192];
 
   hash = z_mem_trace_hash((guint32) ptr);
-  g_static_mutex_lock(&mem_trace_lock);
+  g_mutex_lock(&mem_trace_lock);
   if (mem_trace_free_list == -1)
     {
       return FALSE;
@@ -338,19 +338,19 @@ z_mem_trace_add(gpointer ptr, gint size, gpointer backtrace[])
   new = &mem_trace_heap[new_ndx];
   mem_trace_free_list = mem_trace_heap[mem_trace_free_list].next;
 
-  g_static_mutex_unlock(&mem_trace_lock);
+  g_mutex_unlock(&mem_trace_lock);
 
   new->ptr = (guint32) ptr;
   new->size = size;
   memmove(new->backtrace, backtrace, sizeof(new->backtrace));
   head = &mem_trace_hash[hash];
 
-  g_static_mutex_lock(&head->lock);
+  g_mutex_lock(&head->lock);
 
   new->next = head->list;
   head->list = new_ndx;
 
-  g_static_mutex_unlock(&head->lock);
+  g_mutex_unlock(&head->lock);
 #if REALLY_TRACE_MALLOC
   z_mem_trace_printf("memtrace addblock; ptr=%p, size=%d, backtrace=%s\n", ptr, size, z_mem_trace_format_bt(backtrace,
                      backtrace_buf, sizeof(backtrace_buf)));
@@ -369,7 +369,7 @@ z_mem_trace_del(gpointer ptr)
   hash = z_mem_trace_hash((guint32) ptr);
   head = &mem_trace_hash[hash];
 
-  g_static_mutex_lock(&head->lock);
+  g_mutex_lock(&head->lock);
 
   prev = &head->list;
   cur = head->list;
@@ -381,15 +381,15 @@ z_mem_trace_del(gpointer ptr)
 
   if (cur == -1)
     {
-      g_static_mutex_unlock(&head->lock);
+      g_mutex_unlock(&head->lock);
 
       return FALSE;
     }
 
   *prev = mem_trace_heap[cur].next;
-  g_static_mutex_unlock(&head->lock);
+  g_mutex_unlock(&head->lock);
 
-  g_static_mutex_lock(&mem_trace_lock);
+  g_mutex_lock(&mem_trace_lock);
 
   entry = &mem_trace_heap[cur];
 #if REALLY_TRACE_MALLOC
@@ -401,7 +401,7 @@ z_mem_trace_del(gpointer ptr)
   mem_trace_free_list = cur;
   mem_block_count--;
   mem_allocated_size -= mem_trace_heap[cur].size;
-  g_static_mutex_unlock(&mem_trace_lock);
+  g_mutex_unlock(&mem_trace_lock);
 
   return TRUE;
 }
@@ -431,18 +431,18 @@ z_mem_trace_getsize(gpointer ptr)
   hash = z_mem_trace_hash((guint32) ptr);
   head = &mem_trace_hash[hash];
 
-  g_static_mutex_lock(&head->lock);
+  g_mutex_lock(&head->lock);
   cur = z_mem_trace_lookup_chain(ptr, head);
 
   if (cur != -1)
     {
       size = mem_trace_heap[cur].size;
-      g_static_mutex_unlock(&head->lock);
+      g_mutex_unlock(&head->lock);
 
       return size;
     }
 
-  g_static_mutex_unlock(&head->lock);
+  g_mutex_unlock(&head->lock);
 
   return -1;
 }

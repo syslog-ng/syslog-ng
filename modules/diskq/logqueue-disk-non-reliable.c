@@ -229,7 +229,7 @@ _rewind_backlog(LogQueue *s, guint rewind_count)
   guint i;
   LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *)s;
 
-  g_static_mutex_lock(&s->lock);
+  g_mutex_lock(&s->lock);
 
   rewind_count = MIN(rewind_count, _get_message_number_in_queue(self->qbacklog));
 
@@ -245,7 +245,7 @@ _rewind_backlog(LogQueue *s, guint rewind_count)
       log_queue_memory_usage_add(s, log_msg_get_size((LogMessage *)ptr_msg));
     }
 
-  g_static_mutex_unlock(&s->lock);
+  g_mutex_unlock(&s->lock);
 }
 
 static void
@@ -289,7 +289,7 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
   LogQueueDiskNonReliable *self = (LogQueueDiskNonReliable *)s;
   LogMessage *msg = NULL;
 
-  g_static_mutex_lock(&s->lock);
+  g_mutex_lock(&s->lock);
 
   if (self->qout->length > 0)
     {
@@ -307,14 +307,14 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
 
   if (!msg)
     {
-      g_static_mutex_unlock(&s->lock);
+      g_mutex_unlock(&s->lock);
       return NULL;
     }
 
 success:
   _maybe_move_messages_among_queue_segments(self);
 
-  g_static_mutex_unlock(&s->lock);
+  g_mutex_unlock(&s->lock);
 
   if (s->use_backlog)
     _push_tail_qbacklog(self, msg, path_options);
@@ -336,7 +336,7 @@ _push_head(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
 static inline gboolean
 _is_msg_serialization_needed_hint(LogQueueDiskNonReliable *self)
 {
-  g_static_mutex_lock(&self->super.super.lock);
+  g_mutex_lock(&self->super.super.lock);
 
   gboolean msg_serialization_needed = FALSE;
 
@@ -352,7 +352,7 @@ _is_msg_serialization_needed_hint(LogQueueDiskNonReliable *self)
   msg_serialization_needed = TRUE;
 
 exit:
-  g_static_mutex_unlock(&self->super.super.lock);
+  g_mutex_unlock(&self->super.super.lock);
   return msg_serialization_needed;
 }
 
@@ -424,7 +424,7 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
         }
     }
 
-  g_static_mutex_lock(&s->lock);
+  g_mutex_lock(&s->lock);
 
   /* we push messages into queue segments in the following order: qoverflow, disk, qout */
   if (_can_push_to_qout(self))
@@ -456,7 +456,7 @@ queued:
   log_queue_queued_messages_inc(s);
 
 exit:
-  g_static_mutex_unlock(&s->lock);
+  g_mutex_unlock(&s->lock);
   if (serialized_msg)
     scratch_buffers_reclaim_marked(marker);
 }

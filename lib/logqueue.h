@@ -57,7 +57,7 @@ struct _LogQueue
     atomic_gssize queued_messages;
   } stats_cache;
 
-  GStaticMutex lock;
+  GMutex lock;
   LogQueuePushNotifyFunc parallel_push_notify;
   gpointer parallel_push_data;
   GDestroyNotify parallel_push_data_destroy;

@@ -96,7 +96,7 @@ volatile gint main_loop_workers_running;
 
 ThreadId main_thread_handle;
 GCond *thread_halt_cond;
-GStaticMutex workers_running_lock = G_STATIC_MUTEX_INIT;
+GMutex workers_running_lock;
 
 struct _MainLoop
 {
@@ -372,7 +372,7 @@ block_till_workers_exit(void)
   g_get_current_time(&end_time);
   g_time_val_add(&end_time, 15 * G_USEC_PER_SEC);
 
-  g_static_mutex_lock(&workers_running_lock);
+  g_mutex_lock(&workers_running_lock);
   while (main_loop_workers_running)
     {
       if (!g_cond_timed_wait(thread_halt_cond, g_static_mutex_get_mutex(&workers_running_lock), &end_time))
@@ -384,7 +384,7 @@ block_till_workers_exit(void)
         }
     }
 
-  g_static_mutex_unlock(&workers_running_lock);
+  g_mutex_unlock(&workers_running_lock);
 }
 
 GlobalConfig *
@@ -588,6 +588,7 @@ main_loop_init(MainLoop *self, MainLoopOptions *options)
 {
   service_management_publish_status("Starting up...");
 
+  g_mutex_init(&workers_running_lock);
   self->options = options;
   scratch_buffers_automatic_gc_init();
   main_loop_worker_init();
@@ -649,7 +650,7 @@ main_loop_deinit(MainLoop *self)
   main_loop_worker_deinit();
   block_till_workers_exit();
   scratch_buffers_automatic_gc_deinit();
-  g_static_mutex_free(&workers_running_lock);
+  g_mutex_clear(&workers_running_lock);
 }
 
 void

@@ -93,7 +93,7 @@ ml_batched_timer_update(MlBatchedTimer *self, struct timespec *next_expires)
 
   if (ml_batched_timer_expiration_changed(self, next_expires))
     {
-      g_static_mutex_lock(&self->lock);
+      g_mutex_lock(&self->lock);
 
       /* check if we've lost the race */
       if (ml_batched_timer_expiration_changed(self, next_expires))
@@ -101,11 +101,11 @@ ml_batched_timer_update(MlBatchedTimer *self, struct timespec *next_expires)
           /* we need to update the timer */
           self->expires = *next_expires;
           self->ref_cookie(self->cookie);
-          g_static_mutex_unlock(&self->lock);
+          g_mutex_unlock(&self->lock);
           main_loop_call((MainLoopTaskFunc) ml_batched_timer_perform_update, self, FALSE);
         }
       else
-        g_static_mutex_unlock(&self->lock);
+        g_mutex_unlock(&self->lock);
     }
 }
 
@@ -153,7 +153,7 @@ ml_batched_timer_unregister(MlBatchedTimer *self)
 void
 ml_batched_timer_init(MlBatchedTimer *self)
 {
-  g_static_mutex_init(&self->lock);
+  g_mutex_init(&self->lock);
   IV_TIMER_INIT(&self->timer);
   self->timer.cookie = self;
   self->timer.handler = (void (*)(void *)) ml_batched_timer_handle;
@@ -163,5 +163,5 @@ ml_batched_timer_init(MlBatchedTimer *self)
 void
 ml_batched_timer_free(MlBatchedTimer *self)
 {
-  g_static_mutex_free(&self->lock);
+  g_mutex_clear(&self->lock);
 }

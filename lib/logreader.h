@@ -84,7 +84,7 @@ struct _LogReader
    * the previous work is finished */
   gboolean pending_close;
   GCond *pending_close_cond;
-  GStaticMutex pending_close_lock;
+  GMutex pending_close_lock;
 
   struct iv_timer idle_timer;
 };

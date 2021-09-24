@@ -265,12 +265,12 @@ log_reader_close_proto(LogReader *self)
 
   if (!main_loop_is_main_thread())
     {
-      g_static_mutex_lock(&self->pending_close_lock);
+      g_mutex_lock(&self->pending_close_lock);
       while (self->pending_close)
         {
           g_cond_wait(self->pending_close_cond, g_static_mutex_get_mutex(&self->pending_close_lock));
         }
-      g_static_mutex_unlock(&self->pending_close_lock);
+      g_mutex_unlock(&self->pending_close_lock);
     }
 }
 
@@ -373,13 +373,13 @@ log_reader_work_finished(void *s)
        * log_writer_reopen() call, quite possibly coming from a
        * non-main thread. */
 
-      g_static_mutex_lock(&self->pending_close_lock);
+      g_mutex_lock(&self->pending_close_lock);
 
       log_reader_apply_proto_and_poll_events(self, NULL, NULL);
       self->pending_close = FALSE;
 
       g_cond_signal(self->pending_close_cond);
-      g_static_mutex_unlock(&self->pending_close_lock);
+      g_mutex_unlock(&self->pending_close_lock);
     }
 
   if (self->notify_code)
@@ -704,7 +704,7 @@ log_reader_free(LogPipe *s)
   log_pipe_unref(self->control);
   g_sockaddr_unref(self->peer_addr);
   g_sockaddr_unref(self->local_addr);
-  g_static_mutex_free(&self->pending_close_lock);
+  g_mutex_clear(&self->pending_close_lock);
   g_cond_free(self->pending_close_cond);
   log_source_free(s);
 }
@@ -739,7 +739,7 @@ log_reader_new(GlobalConfig *cfg)
   self->super.schedule_dynamic_window_realloc = _schedule_dynamic_window_realloc;
   self->immediate_check = FALSE;
   log_reader_init_watches(self);
-  g_static_mutex_init(&self->pending_close_lock);
+  g_mutex_init(&self->pending_close_lock);
   self->pending_close_cond = g_cond_new();
   return self;
 }

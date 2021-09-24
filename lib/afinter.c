@@ -33,7 +33,7 @@
 
 typedef struct _AFInterSource AFInterSource;
 
-static GStaticMutex internal_msg_lock = G_STATIC_MUTEX_INIT;
+static GMutex internal_msg_lock;
 static GQueue *internal_msg_queue;
 static AFInterSource *current_internal_source;
 static StatsCounterItem *internal_queue_length;
@@ -44,7 +44,7 @@ static struct timespec next_mark_target = { -1, 0 };
 /* as different sources from different threads can call afinter_postpone_mark,
    and we use the value in the init thread, we need to synchronize the value references
 */
-static GStaticMutex internal_mark_target_lock = G_STATIC_MUTEX_INIT;
+static GMutex internal_mark_target_lock;
 
 /*
  * This class is parallel to LogReader, e.g. it hangs on the
@@ -113,9 +113,9 @@ afinter_source_post(gpointer s)
 
   while (log_source_free_to_send(&self->super))
     {
-      g_static_mutex_lock(&internal_msg_lock);
+      g_mutex_lock(&internal_msg_lock);
       msg = g_queue_pop_head(internal_msg_queue);
-      g_static_mutex_unlock(&internal_msg_lock);
+      g_mutex_unlock(&internal_msg_lock);
       if (!msg)
         break;
 
@@ -141,18 +141,18 @@ afinter_source_run(gpointer s)
   iv_event_register(&self->schedule_wakeup);
   iv_event_register(&self->exit);
 
-  g_static_mutex_lock(&internal_msg_lock);
+  g_mutex_lock(&internal_msg_lock);
   self->free_to_send = TRUE;
-  g_static_mutex_unlock(&internal_msg_lock);
+  g_mutex_unlock(&internal_msg_lock);
 
   afinter_source_start_watches(self);
   afinter_source_update_watches(self);
 
   iv_main();
 
-  g_static_mutex_lock(&internal_msg_lock);
+  g_mutex_lock(&internal_msg_lock);
   current_internal_source = NULL;
-  g_static_mutex_unlock(&internal_msg_lock);
+  g_mutex_unlock(&internal_msg_lock);
 
   iv_event_unregister(&self->exit);
   iv_event_unregister(&self->post);
@@ -193,9 +193,9 @@ afinter_source_mark(gpointer s)
   AFInterSource *self = (AFInterSource *) s;
   struct timespec nmt;
 
-  g_static_mutex_lock(&internal_mark_target_lock);
+  g_mutex_lock(&internal_mark_target_lock);
   nmt = next_mark_target;
-  g_static_mutex_unlock(&internal_mark_target_lock);
+  g_mutex_unlock(&internal_mark_target_lock);
 
   if (nmt.tv_sec <= self->mark_timer.expires.tv_sec)
     {
@@ -278,9 +278,9 @@ afinter_source_update_watches(AFInterSource *self)
     {
       /* ok, we go to sleep now. let's disable the post event.
        * Messages get accumulated into internal_msg_queue.  */
-      g_static_mutex_lock(&internal_msg_lock);
+      g_mutex_lock(&internal_msg_lock);
       self->free_to_send = FALSE;
-      g_static_mutex_unlock(&internal_msg_lock);
+      g_mutex_unlock(&internal_msg_lock);
 
       /* Possible race:
        *
@@ -320,11 +320,11 @@ afinter_source_update_watches(AFInterSource *self)
        * be triggered.
        */
 
-      g_static_mutex_lock(&internal_msg_lock);
+      g_mutex_lock(&internal_msg_lock);
       if (internal_msg_queue && g_queue_get_length(internal_msg_queue) > 0)
         iv_task_register(&self->restart_task);
       self->free_to_send = TRUE;
-      g_static_mutex_unlock(&internal_msg_lock);
+      g_mutex_unlock(&internal_msg_lock);
     }
 }
 
@@ -341,9 +341,9 @@ afinter_source_init(LogPipe *s)
   afinter_postpone_mark(self->mark_freq);
   self->mark_timer.expires = next_mark_target;
 
-  g_static_mutex_lock(&internal_msg_lock);
+  g_mutex_lock(&internal_msg_lock);
   current_internal_source = self;
-  g_static_mutex_unlock(&internal_msg_lock);
+  g_mutex_unlock(&internal_msg_lock);
 
   return TRUE;
 }
@@ -353,9 +353,9 @@ afinter_source_deinit(LogPipe *s)
 {
   AFInterSource *self = (AFInterSource *) s;
 
-  g_static_mutex_lock(&internal_msg_lock);
+  g_mutex_lock(&internal_msg_lock);
   current_internal_source = NULL;
-  g_static_mutex_unlock(&internal_msg_lock);
+  g_mutex_unlock(&internal_msg_lock);
 
   return log_source_deinit(&self->super.super);
 }
@@ -478,16 +478,16 @@ afinter_postpone_mark(gint mark_freq)
   if (mark_freq > 0)
     {
       iv_validate_now();
-      g_static_mutex_lock(&internal_mark_target_lock);
+      g_mutex_lock(&internal_mark_target_lock);
       next_mark_target = iv_now;
       next_mark_target.tv_sec += mark_freq;
-      g_static_mutex_unlock(&internal_mark_target_lock);
+      g_mutex_unlock(&internal_mark_target_lock);
     }
   else
     {
-      g_static_mutex_lock(&internal_mark_target_lock);
+      g_mutex_lock(&internal_mark_target_lock);
       next_mark_target.tv_sec = -1;
-      g_static_mutex_unlock(&internal_mark_target_lock);
+      g_mutex_unlock(&internal_mark_target_lock);
     }
 }
 
@@ -529,7 +529,7 @@ _unregister_obsolete_stats_alias(StatsCounterItem *internal_queued_ctr)
 void
 afinter_message_posted(LogMessage *msg)
 {
-  g_static_mutex_lock(&internal_msg_lock);
+  g_mutex_lock(&internal_msg_lock);
   if (!current_internal_source)
     {
       if (internal_msg_queue)
@@ -567,7 +567,7 @@ afinter_message_posted(LogMessage *msg)
   if (current_internal_source->free_to_send)
     iv_event_post(&current_internal_source->post);
 exit:
-  g_static_mutex_unlock(&internal_msg_lock);
+  g_mutex_unlock(&internal_msg_lock);
 }
 
 static void

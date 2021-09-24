@@ -36,7 +36,7 @@
 struct _LogDBParser
 {
   StatefulParser super;
-  GStaticMutex lock;
+  GMutex lock;
   struct iv_timer tick;
   PatternDB *db;
   gchar *db_file;
@@ -193,22 +193,22 @@ log_db_parser_process(LogParser *s, LogMessage **pmsg, const LogPathOptions *pat
        * the lock, recheck the condition to rule out parallel database
        * reloads. This avoids a lock in the fast path. */
 
-      g_static_mutex_lock(&self->lock);
+      g_mutex_lock(&self->lock);
 
       if (!self->db_file_reloading && (self->db_file_last_check == 0
                                        || self->db_file_last_check < (*pmsg)->timestamps[LM_TS_RECVD].ut_sec - 5))
         {
           self->db_file_last_check = (*pmsg)->timestamps[LM_TS_RECVD].ut_sec;
           self->db_file_reloading = TRUE;
-          g_static_mutex_unlock(&self->lock);
+          g_mutex_unlock(&self->lock);
 
           /* only one thread may come here, the others may continue to use self->db, until we update it here. */
           log_db_parser_reload_database(self);
 
-          g_static_mutex_lock(&self->lock);
+          g_mutex_lock(&self->lock);
           self->db_file_reloading = FALSE;
         }
-      g_static_mutex_unlock(&self->lock);
+      g_mutex_unlock(&self->lock);
     }
   if (self->db)
     {
@@ -275,7 +275,7 @@ log_db_parser_free(LogPipe *s)
   LogDBParser *self = (LogDBParser *) s;
 
   log_template_unref(self->program_template);
-  g_static_mutex_free(&self->lock);
+  g_mutex_clear(&self->lock);
 
   if (self->db)
     pattern_db_free(self->db);
@@ -297,7 +297,7 @@ log_db_parser_new(GlobalConfig *cfg)
   self->super.super.super.clone = log_db_parser_clone;
   self->super.super.process = log_db_parser_process;
   self->db_file = g_strdup(get_installation_path_for(PATH_PATTERNDB_FILE));
-  g_static_mutex_init(&self->lock);
+  g_mutex_init(&self->lock);
   if (cfg_is_config_version_older(cfg, VERSION_VALUE_3_3))
     {
       msg_warning_once("WARNING: The default behaviour for injecting messages in db-parser() has changed in " VERSION_3_3

@@ -96,34 +96,34 @@ log_queue_push_notify(LogQueue *self)
       self->parallel_push_data_destroy = NULL;
       self->parallel_push_notify = NULL;
 
-      g_static_mutex_unlock(&self->lock);
+      g_mutex_unlock(&self->lock);
 
       func(user_data);
       if (destroy && user_data)
         destroy(user_data);
 
-      g_static_mutex_lock(&self->lock);
+      g_mutex_lock(&self->lock);
     }
 }
 
 void
 log_queue_reset_parallel_push(LogQueue *self)
 {
-  g_static_mutex_lock(&self->lock);
+  g_mutex_lock(&self->lock);
   self->parallel_push_notify = NULL;
   self->parallel_push_data = NULL;
-  g_static_mutex_unlock(&self->lock);
+  g_mutex_unlock(&self->lock);
 }
 
 void
 log_queue_set_parallel_push(LogQueue *self, LogQueuePushNotifyFunc parallel_push_notify, gpointer user_data,
                             GDestroyNotify user_data_destroy)
 {
-  g_static_mutex_lock(&self->lock);
+  g_mutex_lock(&self->lock);
   self->parallel_push_notify = parallel_push_notify;
   self->parallel_push_data = user_data;
   self->parallel_push_data_destroy = user_data_destroy;
-  g_static_mutex_unlock(&self->lock);
+  g_mutex_unlock(&self->lock);
 }
 
 /*
@@ -138,7 +138,7 @@ log_queue_check_items(LogQueue *self, gint *timeout, LogQueuePushNotifyFunc para
 {
   gint64 num_elements;
 
-  g_static_mutex_lock(&self->lock);
+  g_mutex_lock(&self->lock);
 
   /* drop reference to the previous callback/userdata */
   if (self->parallel_push_data && self->parallel_push_data_destroy)
@@ -150,7 +150,7 @@ log_queue_check_items(LogQueue *self, gint *timeout, LogQueuePushNotifyFunc para
       self->parallel_push_notify = parallel_push_notify;
       self->parallel_push_data = user_data;
       self->parallel_push_data_destroy = user_data_destroy;
-      g_static_mutex_unlock(&self->lock);
+      g_mutex_unlock(&self->lock);
       return FALSE;
     }
 
@@ -161,7 +161,7 @@ log_queue_check_items(LogQueue *self, gint *timeout, LogQueuePushNotifyFunc para
   self->parallel_push_notify = NULL;
   self->parallel_push_data = NULL;
 
-  g_static_mutex_unlock(&self->lock);
+  g_mutex_unlock(&self->lock);
 
   /* recalculate buckets, throttle is only running in the output thread, no need to lock it. */
 
@@ -257,13 +257,13 @@ log_queue_init_instance(LogQueue *self, const gchar *persist_name)
   self->free_fn = log_queue_free_method;
 
   self->persist_name = persist_name ? g_strdup(persist_name) : NULL;
-  g_static_mutex_init(&self->lock);
+  g_mutex_init(&self->lock);
 }
 
 void
 log_queue_free_method(LogQueue *self)
 {
-  g_static_mutex_free(&self->lock);
+  g_mutex_clear(&self->lock);
   g_free(self->persist_name);
   g_free(self);
 }

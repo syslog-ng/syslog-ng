@@ -591,7 +591,7 @@ afinet_dd_spoof_write_message(AFInetDestDriver *self, LogMessage *msg, const Log
 {
   g_assert(self->super.transport_mapper->sock_type == SOCK_DGRAM);
 
-  g_static_mutex_lock(&self->lnet_lock);
+  g_mutex_lock(&self->lnet_lock);
 
   if (!self->lnet_buffer)
     self->lnet_buffer = g_string_sized_new(self->spoof_source_max_msglen);
@@ -619,7 +619,7 @@ afinet_dd_spoof_write_message(AFInetDestDriver *self, LogMessage *msg, const Log
   log_msg_unref(msg);
 
 finish:
-  g_static_mutex_unlock(&self->lnet_lock);
+  g_mutex_unlock(&self->lnet_lock);
   return success;
 }
 
@@ -670,7 +670,7 @@ afinet_dd_free(LogPipe *s)
 #if SYSLOG_NG_ENABLE_SPOOF_SOURCE
   if (self->lnet_buffer)
     g_string_free(self->lnet_buffer, TRUE);
-  g_static_mutex_free(&self->lnet_lock);
+  g_mutex_clear(&self->lnet_lock);
 #endif
   afsocket_dd_free(s);
 }
@@ -692,7 +692,7 @@ afinet_dd_new_instance(TransportMapper *transport_mapper, gchar *hostname, Globa
   self->primary = g_strdup(hostname);
 
 #if SYSLOG_NG_ENABLE_SPOOF_SOURCE
-  g_static_mutex_init(&self->lnet_lock);
+  g_mutex_init(&self->lnet_lock);
   self->spoof_source_max_msglen = 1024;
 #endif
   return self;
