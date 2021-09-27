@@ -8,7 +8,7 @@ on:
 
 jobs:
   general:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     container:
       image: ghcr.io/syslog-ng/dbld-devshell:latest
       options: --privileged --ulimit core=-1
@@ -144,7 +144,7 @@ jobs:
           path: ${{ env.COREFILES_DIR }}
 
   distcheck:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     container:
       image: ghcr.io/syslog-ng/dbld-devshell:latest
 
@@ -184,7 +184,7 @@ jobs:
           exec_prop_check "make distcheck -j 3 V=1"
 
   style-check:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     container:
       image: ghcr.io/syslog-ng/dbld-devshell:latest
 
@@ -235,7 +235,7 @@ jobs:
           path: light-style-problems.diff
 
   copyright-check:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     container:
       image: ghcr.io/syslog-ng/dbld-devshell:latest
       env:
@@ -256,7 +256,7 @@ jobs:
           path: copyright-run.log
 
   commits-check:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     container:
       image: ghcr.io/syslog-ng/dbld-devshell:latest
 
