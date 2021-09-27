@@ -72,18 +72,18 @@ throttle_ratelimit_add_new_tokens(ThrottleRateLimit *self)
   gint num_new_tokens;
   GTimeVal now;
   g_get_current_time(&now);
-  usec_since_last_fill = g_time_val_diff(&now, &self->last_check);
+  g_mutex_lock(self->lock);
+  {
+    usec_since_last_fill = g_time_val_diff(&now, &self->last_check);
 
-  num_new_tokens = (usec_since_last_fill * self->rate) / G_USEC_PER_SEC;
-  if (num_new_tokens)
-    {
-      g_mutex_lock(self->lock);
+    num_new_tokens = (usec_since_last_fill * self->rate) / G_USEC_PER_SEC;
+    if (num_new_tokens)
       {
         self->tokens = MIN(self->rate, self->tokens + num_new_tokens);
         self->last_check = now;
       }
-      g_mutex_unlock(self->lock);
-    }
+  }
+  g_mutex_unlock(self->lock);
 }
 
 static gboolean
