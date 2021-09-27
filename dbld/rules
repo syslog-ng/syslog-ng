@@ -225,7 +225,7 @@ cache-image-%:
 	IMAGE_ID=$$(docker images -q $$IMAGE | head -1);								\
 	WATCHED_FILES="dbld packaging/rhel/syslog-ng.spec packaging/debian/control";					\
 	if [ "$$IMAGE_ID" = "" ]; then 											\
-		$(DBLD_RULES) pull-image-$*;										\
+		$(DBLD_RULES) pull-image-$* || echo "Image pull failed, continuing...";					\
 	fi;														\
 	IMAGE_ID=$$(docker images -q $$IMAGE | head -1);								\
 	if [ "$$IMAGE_ID" != "" ]; then 										\
