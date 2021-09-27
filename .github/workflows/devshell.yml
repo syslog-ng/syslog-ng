@@ -1,16 +1,77 @@
 name: CI @ devshell
 
 on:
-  pull_request:
+  pull_request_target:
   push:
   schedule:
     - cron: '00 21 * * *'
 
 jobs:
+  cache-image-devshell:
+    runs-on: ubuntu-latest
+
+    outputs:
+      docker-image: ${{ steps.determine-actual-image.outputs.docker-image }}
+
+    env:
+      CACHED_IMAGE_NAME: ghcr.io/syslog-ng/dbld-devshell:latest
+
+    steps:
+      - name: Checkout syslog-ng source
+        uses: actions/checkout@v2
+
+      - name: Determine cached image ID
+        run: |
+          ./dbld/rules pull-image-devshell || true # remove the || true
+          CACHED_IMAGE_ID=$(docker images -q ${CACHED_IMAGE_NAME})
+
+          . .github/workflows/gh-tools.sh
+          gh_export CACHED_IMAGE_ID
+
+      - name: cache-image-devshell
+        run: |
+          ./dbld/rules cache-image-devshell
+
+      - name: Determine actual image
+        id: determine-actual-image
+        run: |
+          CURRENT_IMAGE_ID=$(docker images -q ${CACHED_IMAGE_NAME})
+          if [[ "${CURRENT_IMAGE_ID}" == "${CACHED_IMAGE_ID}" ]]
+          then
+            DOCKER_IMAGE=${CACHED_IMAGE_NAME}
+            USE_CACHED_IMAGE=true
+          else
+            DOCKER_IMAGE=ghcr.io/${{ github.actor }}/dbld-devshell:ci-${{ github.run_id }}
+            USE_CACHED_IMAGE=false
+            docker tag ${CACHED_IMAGE_NAME} ${DOCKER_IMAGE}
+          fi
+
+          echo "Using image: ${DOCKER_IMAGE}"
+
+          . .github/workflows/gh-tools.sh
+          gh_export USE_CACHED_IMAGE
+          echo "::set-output name=docker-image::${DOCKER_IMAGE}"
+
+      - name: Log in to the Container registry
+        if: env.USE_CACHED_IMAGE == 'false'
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload the temporary docker image
+        if: env.USE_CACHED_IMAGE == 'false'
+        run: |
+          docker push ${{ steps.determine-actual-image.outputs.docker-image }}
+
   general:
     runs-on: ubuntu-latest
+
+    needs: cache-image-devshell
+
     container:
-      image: ghcr.io/syslog-ng/dbld-devshell:latest
+      image: ${{ needs.cache-image-devshell.outputs.docker-image }}
       options: --privileged --ulimit core=-1
 
     strategy:
@@ -145,8 +206,11 @@ jobs:
 
   distcheck:
     runs-on: ubuntu-latest
+
+    needs: cache-image-devshell
+
     container:
-      image: ghcr.io/syslog-ng/dbld-devshell:latest
+      image: ${{ needs.cache-image-devshell.outputs.docker-image }}
 
     steps:
       - name: Checkout syslog-ng source
@@ -185,8 +249,11 @@ jobs:
 
   style-check:
     runs-on: ubuntu-latest
+
+    needs: cache-image-devshell
+
     container:
-      image: ghcr.io/syslog-ng/dbld-devshell:latest
+      image: ${{ needs.cache-image-devshell.outputs.docker-image }}
 
     steps:
       - name: Checkout syslog-ng source
@@ -236,8 +303,11 @@ jobs:
 
   copyright-check:
     runs-on: ubuntu-latest
+
+    needs: cache-image-devshell
+
     container:
-      image: ghcr.io/syslog-ng/dbld-devshell:latest
+      image: ${{ needs.cache-image-devshell.outputs.docker-image }}
       env:
         COPYRIGHTVERBOSITY: 1
 
@@ -257,8 +327,11 @@ jobs:
 
   commits-check:
     runs-on: ubuntu-latest
+
+    needs: cache-image-devshell
+
     container:
-      image: ghcr.io/syslog-ng/dbld-devshell:latest
+      image: ${{ needs.cache-image-devshell.outputs.docker-image }}
 
     steps:
       - name: Checkout syslog-ng source
