@@ -116,6 +116,11 @@ function add_epel_repo {
     $YUM_INSTALL epel-release
 }
 
+function add_powertools_repo {
+    $YUM_INSTALL dnf-plugins-core
+    dnf config-manager --set-enabled powertools
+}
+
 function install_apt_packages {
     apt-get update -qq -o Acquire::CompressionTypes::Order::=gz
     filter_packages_by_platform $DBLD_DIR/packages.manifest | xargs -t $APT_INSTALL --yes

@@ -88,12 +88,14 @@ automake                    [centos, fedora]
 
 python-dev                  [debian-stretch, debian-buster, ubuntu-xenial, ubuntu-bionic]
 python2-dev                 [debian-sid]
-python-devel                [centos, fedora]
+python-devel                [centos-7, fedora]
 python3-devel               [fedora]
 python-unversioned-command  [fedora]
 python3-dev                 [ubuntu-focal]
-python-pip                      [centos, fedora, debian-stretch, debian-buster, ubuntu-trusty, ubuntu-xenial, ubuntu-bionic]
+python-pip                      [centos-7, fedora, debian-stretch, debian-buster, ubuntu-trusty, ubuntu-xenial, ubuntu-bionic]
 python3-pip                     [debian, ubuntu]
+python39-devel              [centos-8]
+python39-pip              [centos-8]
 
 # libmongoc and libbson packages on various platforms
 # Because we are using fixed version of libmongoc on Bionic, we need to

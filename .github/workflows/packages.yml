@@ -35,7 +35,7 @@ jobs:
     strategy:
       matrix:
         distro: 
-        - centos-7
+        - centos-8
         - debian-bullseye
         - debian-testing
         - fedora-33

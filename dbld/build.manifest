@@ -41,4 +41,5 @@ ubuntu-bionic		python2,nocriterion,nokafka,nomqtt
 ubuntu-focal		python3,nocriterion,nomqtt
 
 centos-7		python2
+centos-8        python3,nojava
 fedora			python3

@@ -42,6 +42,7 @@ jobs:
         - { distro: 'ubuntu-bionic',   pkg: 'deb', upload: 'true' }
         - { distro: 'ubuntu-focal',    pkg: 'deb', upload: 'true' }
         - { distro: 'centos-7',        pkg: 'rpm', upload: 'false' }
+        - { distro: 'centos-8',        pkg: 'rpm', upload: 'false' }
         - { distro: 'fedora-33',       pkg: 'rpm', upload: 'false' }
       fail-fast: false
     env:
