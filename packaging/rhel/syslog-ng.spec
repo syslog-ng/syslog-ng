@@ -27,12 +27,17 @@ Source4: syslog-ng.logrotate7
 %bcond_without mqtt
 
 
+%if 0%{?rhel} == 8
+%global		python_devel python39-devel
+%global         py_ver  3.9
+%else
 %if 0%{?rhel} == 7
 %global		python_devel python36-devel
 %global         py_ver  3.6
 %else
 %global		python_devel python3-devel
 %global         py_ver  %{python3_version}
+%endif
 %endif
 
 %if 0%{?rhel} >= 7 || 0%{?fedora} <= 32
