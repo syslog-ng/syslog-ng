@@ -3,7 +3,17 @@ lib_logmsg_tests_TESTS =                       \
  lib/logmsg/tests/test_timestamp_serialize  \
  lib/logmsg/tests/test_tags
 
-EXTRA_DIST += lib/logmsg/tests/CMakeLists.txt
+EXTRA_DIST += lib/logmsg/tests/CMakeLists.txt \
+	lib/logmsg/tests/messages/syslog-ng-3.17.1-msg.h \
+	lib/logmsg/tests/messages/syslog-ng-3.18.1-msg.h \
+	lib/logmsg/tests/messages/syslog-ng-3.21.1-msg.h \
+	lib/logmsg/tests/messages/syslog-ng-3.25.1-msg.h \
+	lib/logmsg/tests/messages/syslog-ng-3.26.1-msg.h \
+	lib/logmsg/tests/messages/syslog-ng-3.28.1-msg.h \
+	lib/logmsg/tests/messages/syslog-ng-3.29.1-msg.h \
+	lib/logmsg/tests/messages/syslog-ng-3.30.1-msg.h \
+	lib/logmsg/tests/messages/syslog-ng-pe-6.0-msg.h
+
 
 check_PROGRAMS       += ${lib_logmsg_tests_TESTS}
 
