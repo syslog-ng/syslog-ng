@@ -30,6 +30,7 @@
 #include "plugin.h"
 #include "logmsg/logmsg-serialize.h"
 #include <criterion/criterion.h>
+#include <criterion/parameterized.h>
 
 GlobalConfig *cfg;
 
@@ -38,8 +39,6 @@ GlobalConfig *cfg;
 #define ERROR_MSG "Failed at %s(%d)", __FILE__, __LINE__
 
 MsgFormatOptions parse_options;
-
-#include "messages/syslog-ng-pe-6.0-msg.h"
 
 static void
 _alloc_dummy_values_to_change_handle_values_across_restarts(void)
@@ -290,6 +289,54 @@ Test(logmsg_serialize, existing_and_given_ts_processed)
   log_msg_unref(msg);
   serialize_archive_free(sa);
   g_string_free(stream, TRUE);
+}
+
+#include "messages/syslog-ng-pe-6.0-msg.h"
+#include "messages/syslog-ng-3.17.1-msg.h"
+#include "messages/syslog-ng-3.18.1-msg.h"
+#include "messages/syslog-ng-3.21.1-msg.h"
+#include "messages/syslog-ng-3.25.1-msg.h"
+#include "messages/syslog-ng-3.26.1-msg.h"
+#include "messages/syslog-ng-3.28.1-msg.h"
+#include "messages/syslog-ng-3.29.1-msg.h"
+#include "messages/syslog-ng-3.30.1-msg.h"
+
+
+ParameterizedTestParameters(logmsg_serialize, test_deserialization_of_legacy_messages)
+{
+  static struct iovec messages[] =
+  {
+    { serialized_message_3_17_1, sizeof(serialized_message_3_17_1) },
+    { serialized_message_3_18_1, sizeof(serialized_message_3_18_1) },
+    { serialized_message_3_21_1, sizeof(serialized_message_3_21_1) },
+    { serialized_message_3_25_1, sizeof(serialized_message_3_25_1) },
+    { serialized_message_3_26_1, sizeof(serialized_message_3_26_1) },
+    { serialized_message_3_28_1, sizeof(serialized_message_3_28_1) },
+    { serialized_message_3_29_1, sizeof(serialized_message_3_29_1) },
+    { serialized_message_3_30_1, sizeof(serialized_message_3_30_1) },
+  };
+
+  return cr_make_param_array(struct iovec, messages, G_N_ELEMENTS(messages));
+}
+
+
+ParameterizedTest(struct iovec *param, logmsg_serialize, test_deserialization_of_legacy_messages)
+{
+  GString serialized = {0};
+  serialized.allocated_len = 0;
+  serialized.len = param->iov_len;
+  serialized.str = param->iov_base;
+  LogMessage *msg = log_msg_new_empty();
+
+  SerializeArchive *sa = serialize_string_archive_new(&serialized);
+  _reset_log_msg_registry();
+
+  cr_assert(log_msg_deserialize(msg, sa), ERROR_MSG);
+
+  _check_deserialized_message(msg, sa);
+
+  log_msg_unref(msg);
+  serialize_archive_free(sa);
 }
 
 Test(logmsg_serialize, pe_serialized_message)
