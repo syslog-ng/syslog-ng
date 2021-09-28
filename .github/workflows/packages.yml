@@ -36,7 +36,7 @@ jobs:
       matrix:
         distro: 
         - centos-7
-        - debian-buster
+        - debian-bullseye
         - debian-testing
         - fedora-33
         - ubuntu-focal

@@ -1,7 +1,7 @@
-FROM debian:sid
+FROM debian:bullseye
 LABEL maintainer="Andras Mitzki <andras.mitzki@balabit.com>, Laszlo Szemere <laszlo.szemere@balabit.com>, Balazs Scheidler <balazs.scheidler@oneidentity.com>"
 ENV OS_DISTRIBUTION=debian
-ENV OS_DISTRIBUTION_CODE_NAME=sid
+ENV OS_DISTRIBUTION_CODE_NAME=bullseye
 
 ARG ARG_IMAGE_PLATFORM
 ARG COMMIT

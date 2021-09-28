@@ -5,6 +5,7 @@ BUILDER_IMAGES=		\
 	fedora-33	\
 	debian-stretch	\
 	debian-buster	\
+	debian-bullseye	\
 	debian-testing	\
 	debian-sid	\
 	ubuntu-xenial	\

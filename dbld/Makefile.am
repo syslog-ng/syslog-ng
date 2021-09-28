@@ -31,6 +31,7 @@ EXTRA_DIST += \
 	dbld/images/fedora-33.dockerfile \
 	dbld/images/debian-stretch.dockerfile \
 	dbld/images/debian-buster.dockerfile \
+	dbld/images/debian-bullseye.dockerfile \
 	dbld/images/debian-sid.dockerfile \
 	dbld/images/debian-testing.dockerfile \
 	dbld/images/ubuntu-xenial.dockerfile \
