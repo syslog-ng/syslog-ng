@@ -1,0 +1,67 @@
+name: Compile dbld-images
+
+on:
+  pull_request:
+  push:
+    paths:
+      - .github/workflows/dbld-images.yml
+      # List is from dbld/rules cache-image-% "WATCHED_FILES"
+      - "dbld/**"
+      - "packaging/rhel/syslog-ng.spec"
+      - "packaging/debian/control"
+  schedule:
+    - cron: '00 03 * * *'
+  workflow_dispatch:
+    inputs:
+      upload_images:
+        description: Should we upload the images into GitHub Packages? (true/false)
+        required: false
+        default: "false"
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    env:
+      CONTAINER_REGISTRY: "ghcr.io/${{ github.repository_owner }}"
+  
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v2
+
+      - name: Build the images
+        run: dbld/rules images -j $(nproc)
+
+      - name: Should we upload the images?
+        run: |
+          if [ "${{ github.event.inputs.upload_images }}" = "true" ] || \
+             ( \
+              [ "${{ github.repository_owner }}" = "syslog-ng" ] && \
+              [ "${{ github.ref }}" = "refs/heads/master" ] && \
+              [ "${{ github.event_name }}" = "push" ] \
+            )
+          then
+            UPLOAD_IMAGES_INTERNAL="true"
+          else
+            UPLOAD_IMAGES_INTERNAL="false"
+          fi
+
+          . .github/workflows/gh-tools.sh
+          gh_export UPLOAD_IMAGES_INTERNAL
+
+      - name: Log in to the Container registry
+        if: env.UPLOAD_IMAGES_INTERNAL == 'true'
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push the images
+        if: env.UPLOAD_IMAGES_INTERNAL == 'true'
+        run: |
+          IMAGES=$(docker image ls --filter "reference=${{ env.CONTAINER_REGISTRY }}/dbld-*:latest" --format '{{.Repository}}:{{.Tag}}')
+          for IMAGE in $IMAGES; do
+            echo "Pushing image: $IMAGE"
+            docker push $IMAGE
+          done

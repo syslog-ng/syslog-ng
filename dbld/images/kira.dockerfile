@@ -1,4 +1,5 @@
-FROM balabit/syslog-ng-ubuntu-focal
+ARG CONTAINER_REGISTRY
+FROM $CONTAINER_REGISTRY/dbld-ubuntu-focal
 LABEL maintainer="Andras Mitzki <andras.mitzki@balabit.com>, Laszlo Szemere <laszlo.szemere@balabit.com>, Balazs Scheidler <balazs.scheidler@oneidentity.com>"
 
 ARG ARG_IMAGE_PLATFORM
