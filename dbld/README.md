@@ -17,7 +17,7 @@ command (without parameters it will run without any side effect), or read
 the source code on [GitHub](rules).
 
 Almost every `dbld/rules` command runs in a Docker container.  You can use
-the pre-built containers from [DockerHub](https://hub.docker.com/u/balabit/)
+the pre-built containers from [GitHub](https://github.com/syslog-ng?tab=packages&repo_name=syslog-ng)
 or build your own images with the `dbld/rules image-<os>` command.
 
 The source code and build products are mounted externally in the following locations:
