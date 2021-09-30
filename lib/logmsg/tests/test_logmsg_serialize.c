@@ -306,6 +306,7 @@ ParameterizedTestParameters(logmsg_serialize, test_deserialization_of_legacy_mes
 {
   static struct iovec messages[] =
   {
+    { serialized_pe_msg, sizeof(serialized_pe_msg) },
     { serialized_message_3_17_1, sizeof(serialized_message_3_17_1) },
     { serialized_message_3_18_1, sizeof(serialized_message_3_18_1) },
     { serialized_message_3_21_1, sizeof(serialized_message_3_21_1) },
@@ -326,25 +327,6 @@ ParameterizedTest(struct iovec *param, logmsg_serialize, test_deserialization_of
   serialized.allocated_len = 0;
   serialized.len = param->iov_len;
   serialized.str = param->iov_base;
-  LogMessage *msg = log_msg_new_empty();
-
-  SerializeArchive *sa = serialize_string_archive_new(&serialized);
-  _reset_log_msg_registry();
-
-  cr_assert(log_msg_deserialize(msg, sa), ERROR_MSG);
-
-  _check_deserialized_message(msg, sa);
-
-  log_msg_unref(msg);
-  serialize_archive_free(sa);
-}
-
-Test(logmsg_serialize, pe_serialized_message)
-{
-  GString serialized = {0};
-  serialized.allocated_len = 0;
-  serialized.len = sizeof(_serialized_pe_msg);
-  serialized.str = (gchar *)_serialized_pe_msg;
   LogMessage *msg = log_msg_new_empty();
 
   SerializeArchive *sa = serialize_string_archive_new(&serialized);
