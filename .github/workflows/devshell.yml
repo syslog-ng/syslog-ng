@@ -10,7 +10,7 @@ jobs:
   general:
     runs-on: ubuntu-18.04
     container:
-      image: balabit/syslog-ng-devshell:latest
+      image: ghcr.io/syslog-ng/dbld-devshell:latest
       options: --privileged --ulimit core=-1
 
     strategy:
@@ -146,7 +146,7 @@ jobs:
   distcheck:
     runs-on: ubuntu-18.04
     container:
-      image: balabit/syslog-ng-devshell:latest
+      image: ghcr.io/syslog-ng/dbld-devshell:latest
 
     steps:
       - name: Checkout syslog-ng source
@@ -186,7 +186,7 @@ jobs:
   style-check:
     runs-on: ubuntu-18.04
     container:
-      image: balabit/syslog-ng-devshell:latest
+      image: ghcr.io/syslog-ng/dbld-devshell:latest
 
     steps:
       - name: Checkout syslog-ng source
@@ -237,7 +237,7 @@ jobs:
   copyright-check:
     runs-on: ubuntu-18.04
     container:
-      image: balabit/syslog-ng-devshell:latest
+      image: ghcr.io/syslog-ng/dbld-devshell:latest
       env:
         COPYRIGHTVERBOSITY: 1
 
@@ -258,7 +258,7 @@ jobs:
   commits-check:
     runs-on: ubuntu-18.04
     container:
-      image: balabit/syslog-ng-devshell:latest
+      image: ghcr.io/syslog-ng/dbld-devshell:latest
 
     steps:
       - name: Checkout syslog-ng source
