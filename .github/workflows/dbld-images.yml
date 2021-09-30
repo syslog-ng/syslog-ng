@@ -22,12 +22,17 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    env:
-      CONTAINER_REGISTRY: "ghcr.io/${{ github.repository_owner }}"
-  
     steps:
       - name: Checkout source code
         uses: actions/checkout@v2
+
+      - name: Set container registry
+        run: |
+          CONTAINER_REGISTRY="ghcr.io/${{ github.repository_owner }}"
+          CONTAINER_REGISTRY="$(echo "$CONTAINER_REGISTRY" | tr '[:upper:]' '[:lower:]')"
+
+          . .github/workflows/gh-tools.sh
+          gh_export CONTAINER_REGISTRY
 
       - name: Build the images
         run: dbld/rules images -j $(nproc)
