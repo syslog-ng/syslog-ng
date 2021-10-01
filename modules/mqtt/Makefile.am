@@ -1,8 +1,10 @@
 include modules/mqtt/destination/Makefile.am
+include modules/mqtt/source/Makefile.am
 
 if ENABLE_MQTT
 MQTT_PLUGINS = \
-  $(top_builddir)/modules/mqtt/destination/libmqtt_destination.la
+  $(top_builddir)/modules/mqtt/destination/libmqtt_destination.la \
+  $(top_builddir)/modules/mqtt/source/libmqtt_source.la
 
 
 module_LTLIBRARIES += modules/mqtt/libmqtt.la
@@ -12,6 +14,8 @@ modules_mqtt_libmqtt_la_CPPFLAGS  =           \
   $(LIBPAHO_MQTT_CFLAGS)                      \
   -I$(top_srcdir)/modules/mqtt/destination/   \
   -I$(top_builddir)/modules/mqtt/destination/ \
+  -I$(top_srcdir)/modules/mqtt/source/   \
+  -I$(top_builddir)/modules/mqtt/source/ \
   -I$(top_srcdir)/modules/mqtt/               \
   -I$(top_builddir)/modules/mqtt/
 
