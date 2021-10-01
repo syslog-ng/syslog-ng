@@ -31,7 +31,7 @@ jobs:
           . .github/workflows/gh-tools.sh
 
           PYTHONUSERBASE="${HOME}/python_packages"
-          PKG_CONFIG_PATH="/usr/local/opt/openssl/lib/pkgconfig:$PKG_CONFIG_PATH"
+          PKG_CONFIG_PATH="$(brew --prefix)/opt/openssl@1.1/lib/pkgconfig:$PKG_CONFIG_PATH"
           THREADS="$(sysctl -n hw.physicalcpu)"
           CONFIGURE_FLAGS="
             --with-ivykis=system
