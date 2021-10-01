@@ -30,6 +30,8 @@
 %code {
 
 #include "mqtt-destination.h"
+#include "mqtt-source.h"
+#include "syslog-names.h"
 
 #include "cfg-grammar-internal.h"
 #include "plugin.h"
@@ -38,7 +40,7 @@
 MQTTClientOptions *last_options;
 }
 
-%define api.prefix {mqtt_destination_}
+%define api.prefix {mqtt_}
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {LogDriver **instance}
@@ -75,6 +77,12 @@ start
             last_options = mqtt_dd_get_options(last_driver);
           }
           '(' mqtt_destination_options ')' { YYACCEPT; }
+        | LL_CONTEXT_SOURCE KW_MQTT
+          {
+            last_driver = *instance = mqtt_sd_new(configuration);
+            last_options = mqtt_sd_get_options(last_driver);
+          }
+          '(' mqtt_source_options ')' { YYACCEPT; }
 ;
 
 mqtt_destination_options
@@ -89,6 +97,17 @@ mqtt_destination_option
         | KW_FALLBACK_TOPIC '(' string ')'      { mqtt_dd_set_fallback_topic(last_driver, $3); free($3); }
         | KW_TEMPLATE '(' template_content ')'   { mqtt_dd_set_message_template_ref(last_driver, $3); }
         | { last_template_options = mqtt_dd_get_template_options(last_driver); } template_option
+        ;
+
+mqtt_source_options
+        : mqtt_source_option mqtt_source_options
+        |
+        ;
+
+mqtt_source_option
+        : threaded_source_driver_option
+        | mqtt_option
+        | KW_TOPIC '(' string ')' { mqtt_sd_set_topic(last_driver, $3); free($3); }
         ;
 
 mqtt_option

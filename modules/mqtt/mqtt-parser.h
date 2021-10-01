@@ -26,8 +26,9 @@
 #include "cfg-parser.h"
 #include "driver.h"
 
-extern CfgParser mqtt_destination_parser;
+extern CfgParser mqtt_parser;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(mqtt_destination_, MQTT_DESTINATION_, LogDriver **)
+CFG_PARSER_DECLARE_LEXER_BINDING(mqtt_, MQTT_, LogDriver **)
+
 
 #endif /* MQTT_PARSER_H_INCLUDED */

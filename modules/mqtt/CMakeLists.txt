@@ -7,6 +7,8 @@ endif()
 
 CHECK_STRUCT_HAS_MEMBER("MQTTClient_connectOptions" "httpProxy" "MQTTClient.h" SYSLOG_NG_HAVE_PAHO_HTTP_PROXY)
 
+set(MQTT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
 set(MQTT_COMMON
     mqtt-options.c
     mqtt-options.h

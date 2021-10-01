@@ -26,14 +26,19 @@
 #include "plugin-types.h"
 #include <MQTTClient.h>
 
-extern CfgParser mqtt_destination_parser;
+extern CfgParser mqtt_parser;
 
 static Plugin mqtt_plugins[] =
 {
   {
     .type = LL_CONTEXT_DESTINATION,
     .name = "mqtt",
-    .parser = &mqtt_destination_parser
+    .parser = &mqtt_parser
+  },
+  {
+    .type = LL_CONTEXT_SOURCE,
+    .name = "mqtt",
+    .parser = &mqtt_parser
   }
 };
 
