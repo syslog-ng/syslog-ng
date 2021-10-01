@@ -225,6 +225,45 @@ function install_bison_from_source {
     make && make install
 }
 
+function fix_glib_atomic_warning {
+    cat <<EOF | patch -d /usr/include/glib-2.0/  -p1
+commit f304df34c7335526ef08701dc0b4a35f03299249
+Author: Emmanuel Fleury <emmanuel.fleury@gmail.com>
+Date:   Wed May 26 16:52:30 2021 +0200
+
+    Coerce type cast to void* because it causes compiler warnings
+
+    glib/gtestutils.c:4261:11: warning: incompatible pointer types passing 'gpointer *' (aka 'void **') to parameter of type 'GSList **' (aka 'struct _GSList **')
+      while (!g_atomic_pointer_compare_and_exchange (test_filename_free_list, node->next, node));
+              ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    glib/gatomic.h:215:44: note: expanded from macro 'g_atomic_pointer_compare_and_exchange'
+        __atomic_compare_exchange_n ((atomic), &gapcae_oldval, (newval), FALSE, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST) ? TRUE : FALSE; \
+                                               ^~~~~~~~~~~~~~
+
+diff --git a/glib/gatomic.h b/glib/gatomic.h
+index 5583fb0c9..5eba1dbc7 100644
+--- a/glib/gatomic.h
++++ b/glib/gatomic.h
+@@ -157,7 +157,7 @@ G_END_DECLS
+     gint gaicae_oldval = (oldval);                                           \\
+     G_STATIC_ASSERT (sizeof *(atomic) == sizeof (gint));                     \\
+     (void) (0 ? *(atomic) ^ (newval) ^ (oldval) : 1);                        \\
+-    __atomic_compare_exchange_n ((atomic), &gaicae_oldval, (newval), FALSE, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST) ? TRUE : FALSE; \\
++    __atomic_compare_exchange_n ((atomic), (void *) (&(gaicae_oldval)), (newval), FALSE, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST) ? TRUE : FALSE; \\
+   }))
+ #define g_atomic_int_add(atomic, val) \\
+   (G_GNUC_EXTENSION ({                                                       \\
+@@ -208,7 +208,7 @@ G_END_DECLS
+     gpointer gapcae_oldval = (gpointer)(oldval);                             \\
+     G_STATIC_ASSERT (sizeof *(atomic) == sizeof (gpointer));                 \\
+     (void) (0 ? (gpointer) *(atomic) : NULL);                                \\
+-    __atomic_compare_exchange_n ((atomic), &gapcae_oldval, (newval), FALSE, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST) ? TRUE : FALSE; \\
++    __atomic_compare_exchange_n ((atomic), (void *) (&(gapcae_oldval)), (newval), FALSE, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST) ? TRUE : FALSE; \\
+   }))
+ #endif /* defined(glib_typeof) */
+ #define g_atomic_pointer_add(atomic, val) \\
+EOF
+}
 
 # DO NOT REMOVE!
 "$@"
