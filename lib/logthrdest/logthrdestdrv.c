@@ -657,11 +657,11 @@ _init_watches(LogThreadedDestWorker *self)
 static void
 _signal_startup_finished(LogThreadedDestWorker *self, gboolean thread_failure)
 {
-  g_mutex_lock(self->owner->lock);
+  g_mutex_lock(&self->owner->lock);
   self->startup_finished = TRUE;
   self->startup_failure |= thread_failure;
   g_cond_signal(self->started_up);
-  g_mutex_unlock(self->owner->lock);
+  g_mutex_unlock(&self->owner->lock);
 }
 
 static void
@@ -679,10 +679,10 @@ _signal_startup_failure(LogThreadedDestWorker *self)
 static void
 _wait_for_startup_finished(LogThreadedDestWorker *self)
 {
-  g_mutex_lock(self->owner->lock);
+  g_mutex_lock(&self->owner->lock);
   while (!self->startup_finished)
-    g_cond_wait(self->started_up, self->owner->lock);
-  g_mutex_unlock(self->owner->lock);
+    g_cond_wait(self->started_up, &self->owner->lock);
+  g_mutex_unlock(&self->owner->lock);
 }
 
 static void
@@ -1195,7 +1195,7 @@ log_threaded_dest_driver_free(LogPipe *s)
   LogThreadedDestDriver *self = (LogThreadedDestDriver *)s;
 
   log_threaded_dest_worker_free_method(&self->worker.instance);
-  g_mutex_free(self->lock);
+  g_mutex_clear(&self->lock);
   g_free(self->workers);
   log_dest_driver_free((LogPipe *)self);
 }
@@ -1220,7 +1220,7 @@ log_threaded_dest_driver_init_instance(LogThreadedDestDriver *self, GlobalConfig
 
   self->retries_on_error_max = MAX_RETRIES_ON_ERROR_DEFAULT;
   self->retries_max = MAX_RETRIES_BEFORE_SUSPEND_DEFAULT;
-  self->lock = g_mutex_new();
+  g_mutex_init(&self->lock);
   log_threaded_dest_worker_init_instance(&self->worker.instance, self, 0);
   _init_worker_compat_layer(&self->worker.instance);
 }

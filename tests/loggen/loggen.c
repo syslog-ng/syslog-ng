@@ -77,7 +77,7 @@ static char *proxy_dst_ip = NULL;
 static char *proxy_src_port = NULL;
 static char *proxy_dst_port = NULL;
 
-static GMutex *message_counter_lock = NULL;
+static GMutex message_counter_lock;
 
 static GOptionEntry loggen_options[] =
 {
@@ -128,14 +128,14 @@ generate_message(char *buffer, int buffer_size, ThreadData *thread_context, unsi
   if (str_len < 0)
     return -1;
 
-  g_mutex_lock(message_counter_lock);
+  g_mutex_lock(&message_counter_lock);
   sent_messages_num++;
   raw_message_length += str_len;
 
   if (thread_stat_count && csv)
     thread_stat_count[thread_context->index]+=1;
 
-  g_mutex_unlock(message_counter_lock);
+  g_mutex_unlock(&message_counter_lock);
 
   return str_len;
 }
@@ -384,9 +384,9 @@ print_statistic(struct timeval *start_time)
       guint64 diff_usec = time_val_diff_in_usec(&now, &last_ts_format);
       if (diff_usec > 0)
         {
-          g_mutex_lock(message_counter_lock);
+          g_mutex_lock(&message_counter_lock);
           count = sent_messages_num;
-          g_mutex_unlock(message_counter_lock);
+          g_mutex_unlock(&message_counter_lock);
 
           if (count > last_count && last_count > 0)
             {
@@ -406,11 +406,11 @@ print_statistic(struct timeval *start_time)
 
       for (int j=0; j < global_plugin_option.active_connections; j++)
         {
-          g_mutex_lock(message_counter_lock);
+          g_mutex_lock(&message_counter_lock);
           double msg_count_diff = ((double) (thread_stat_count[j]-thread_stat_count_last[j]) * USEC_PER_SEC) / diff_usec;
           thread_stat_count_last[j] = thread_stat_count[j];
           count = thread_stat_count[j];
-          g_mutex_unlock(message_counter_lock);
+          g_mutex_unlock(&message_counter_lock);
 
           fprintf(stderr, "%d;%lu.%06lu;%.2lf;%"G_GINT64_FORMAT"\n",
                   j,
@@ -566,7 +566,7 @@ main(int argc, char *argv[])
       return 1;
     }
 
-  message_counter_lock = g_mutex_new();
+  g_mutex_init(&message_counter_lock);
 
   init_logline_generator(plugin_array);
   init_csv_statistics();
@@ -579,8 +579,7 @@ main(int argc, char *argv[])
 
   close_file_reader(global_plugin_option.active_connections);
 
-  if (message_counter_lock)
-    g_mutex_free(message_counter_lock);
+  g_mutex_clear(&message_counter_lock);
   g_free((gpointer)global_plugin_option.target);
   g_free((gpointer)global_plugin_option.port);
   g_option_context_free(ctx);

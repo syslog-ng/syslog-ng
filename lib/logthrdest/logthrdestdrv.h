@@ -104,7 +104,7 @@ const gchar *log_threaded_result_to_str(LogThreadedResult self);
 struct _LogThreadedDestDriver
 {
   LogDestDriver super;
-  GMutex *lock;
+  GMutex lock;
 
   StatsCounterItem *dropped_messages;
   StatsCounterItem *processed_messages;

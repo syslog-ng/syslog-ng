@@ -35,7 +35,7 @@
 typedef struct
 {
   LogThreadedDestDriver super;
-  GMutex *workers_lock;
+  GMutex workers_lock;
   HTTPLoadBalancer *load_balancer;
 
   /* this is the first URL in load-balanced configurations and serves as the

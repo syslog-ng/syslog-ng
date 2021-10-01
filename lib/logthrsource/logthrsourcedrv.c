@@ -32,7 +32,7 @@
 
 typedef struct _WakeupCondition
 {
-  GMutex *lock;
+  GMutex lock;
   GCond *cond;
   gboolean awoken;
 } WakeupCondition;
@@ -53,7 +53,7 @@ struct _LogThreadedSourceWorker
 static void
 wakeup_cond_init(WakeupCondition *cond)
 {
-  cond->lock = g_mutex_new();
+  g_mutex_init(&cond->lock);
   cond->cond = g_cond_new();
   cond->awoken = TRUE;
 }
@@ -62,19 +62,19 @@ static void
 wakeup_cond_destroy(WakeupCondition *cond)
 {
   g_cond_free(cond->cond);
-  g_mutex_free(cond->lock);
+  g_mutex_clear(&cond->lock);
 }
 
 static inline void
 wakeup_cond_lock(WakeupCondition *cond)
 {
-  g_mutex_lock(cond->lock);
+  g_mutex_lock(&cond->lock);
 }
 
 static inline void
 wakeup_cond_unlock(WakeupCondition *cond)
 {
-  g_mutex_unlock(cond->lock);
+  g_mutex_unlock(&cond->lock);
 }
 
 /* The wakeup lock must be held before calling this function. */
@@ -83,16 +83,16 @@ wakeup_cond_wait(WakeupCondition *cond)
 {
   cond->awoken = FALSE;
   while (!cond->awoken)
-    g_cond_wait(cond->cond, cond->lock);
+    g_cond_wait(cond->cond, &cond->lock);
 }
 
 static inline void
 wakeup_cond_signal(WakeupCondition *cond)
 {
-  g_mutex_lock(cond->lock);
+  g_mutex_lock(&cond->lock);
   cond->awoken = TRUE;
   g_cond_signal(cond->cond);
-  g_mutex_unlock(cond->lock);
+  g_mutex_unlock(&cond->lock);
 }
 
 static LogPipe *

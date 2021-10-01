@@ -70,7 +70,7 @@ struct _PersistState
   gchar *temp_filename;
   gint fd;
   gint mapped_counter;
-  GMutex *mapped_lock;
+  GMutex mapped_lock;
   GCond *mapped_release_cond;
   guint32 current_size;
   guint32 current_ofs;

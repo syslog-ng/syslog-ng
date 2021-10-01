@@ -121,9 +121,9 @@ typedef struct _PersistValueHeader
 static void
 _wait_until_map_release(PersistState *self)
 {
-  g_mutex_lock(self->mapped_lock);
+  g_mutex_lock(&self->mapped_lock);
   while (self->mapped_counter)
-    g_cond_wait(self->mapped_release_cond, self->mapped_lock);
+    g_cond_wait(self->mapped_release_cond, &self->mapped_lock);
 }
 
 static gboolean
@@ -177,7 +177,7 @@ _grow_store(PersistState *self, guint32 new_size)
     }
   result = TRUE;
 exit:
-  g_mutex_unlock(self->mapped_lock);
+  g_mutex_unlock(&self->mapped_lock);
   return result;
 }
 
@@ -730,9 +730,9 @@ persist_state_map_entry(PersistState *self, PersistEntryHandle handle)
   /* we count the number of mapped entries in order to know if we're
    * safe to remap the file region */
   g_assert(handle);
-  g_mutex_lock(self->mapped_lock);
+  g_mutex_lock(&self->mapped_lock);
   self->mapped_counter++;
-  g_mutex_unlock(self->mapped_lock);
+  g_mutex_unlock(&self->mapped_lock);
   return (gpointer) (((gchar *) self->current_map) + (guint32) handle);
 }
 
@@ -742,14 +742,14 @@ persist_state_map_entry(PersistState *self, PersistEntryHandle handle)
 void
 persist_state_unmap_entry(PersistState *self, PersistEntryHandle handle)
 {
-  g_mutex_lock(self->mapped_lock);
+  g_mutex_lock(&self->mapped_lock);
   g_assert(self->mapped_counter >= 1);
   self->mapped_counter--;
   if (self->mapped_counter == 0)
     {
       g_cond_signal(self->mapped_release_cond);
     }
-  g_mutex_unlock(self->mapped_lock);
+  g_mutex_unlock(&self->mapped_lock);
 }
 
 static PersistValueHeader *
@@ -965,9 +965,9 @@ persist_state_commit(PersistState *self)
 static void
 _destroy(PersistState *self)
 {
-  g_mutex_lock(self->mapped_lock);
+  g_mutex_lock(&self->mapped_lock);
   g_assert(self->mapped_counter == 0);
-  g_mutex_unlock(self->mapped_lock);
+  g_mutex_unlock(&self->mapped_lock);
 
   if (self->fd >= 0)
     close(self->fd);
@@ -975,7 +975,7 @@ _destroy(PersistState *self)
     munmap(self->current_map, self->current_size);
   unlink(self->temp_filename);
 
-  g_mutex_free(self->mapped_lock);
+  g_mutex_clear(&self->mapped_lock);
   g_cond_free(self->mapped_release_cond);
   g_free(self->temp_filename);
   g_free(self->committed_filename);
@@ -987,7 +987,7 @@ _init(PersistState *self, gchar *committed_filename, gchar *temp_filename)
 {
   self->keys = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
   self->current_ofs = sizeof(PersistFileHeader);
-  self->mapped_lock = g_mutex_new();
+  g_mutex_init(&self->mapped_lock);
   self->mapped_release_cond = g_cond_new();
   self->version = 4;
   self->fd = -1;

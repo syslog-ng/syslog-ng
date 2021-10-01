@@ -28,7 +28,7 @@
 
 typedef struct _Tracer
 {
-  GMutex *breakpoint_mutex;
+  GMutex breakpoint_mutex;
   GCond *breakpoint_cond;
   GCond *resume_cond;
   gboolean breakpoint_hit;
