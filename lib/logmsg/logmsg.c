@@ -576,6 +576,8 @@ log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *value, gssize 
 void
 log_msg_unset_value(LogMessage *self, NVHandle handle)
 {
+  g_assert(!log_msg_is_write_protected(self));
+
   if (!log_msg_chk_flag(self, LF_STATE_OWN_PAYLOAD))
     {
       self->payload = nv_table_clone(self->payload, 0);
