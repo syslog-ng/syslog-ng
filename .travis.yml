@@ -9,6 +9,7 @@ matrix:
     - env: B=cmake-arm
       compiler: gcc
       sudo: required
+      dist: focal
       arch: arm64
       addons:
         apt:
