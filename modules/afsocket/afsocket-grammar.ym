@@ -40,6 +40,7 @@
 #include "plugin.h"
 #include "cfg-grammar-internal.h"
 #include "socket-options-inet.h"
+#include "socket-options-unix.h"
 #include "transport-mapper-inet.h"
 #include "service-management.h"
 
@@ -148,6 +149,7 @@ systemd_syslog_grammar_set_source_driver(SystemDSyslogSourceDriver *sd)
 %token KW_TCP_KEEPALIVE_TIME
 %token KW_TCP_KEEPALIVE_PROBES
 %token KW_TCP_KEEPALIVE_INTVL
+%token KW_SO_PASSCRED
 %token KW_LISTEN_BACKLOG
 %token KW_SPOOF_SOURCE
 %token KW_SPOOF_SOURCE_MAX_MSGLEN
@@ -286,7 +288,7 @@ source_afunix_option
 	| source_afsocket_stream_params		{}
 	| source_reader_option			{}
 	| source_driver_option
-	| socket_option				{}
+	| unix_socket_option			{}
 	| KW_OPTIONAL '(' yesno ')'		{ last_driver->optional = $3; }
 	| KW_PASS_UNIX_CREDENTIALS '(' yesno ')'
 	  {
@@ -875,6 +877,11 @@ socket_option
 	| KW_SO_KEEPALIVE '(' yesno ')'             { last_sock_options->so_keepalive = $3; }
 	| KW_SO_REUSEPORT '(' yesno ')'             { last_sock_options->so_reuseport = $3; }
 	;
+
+unix_socket_option
+        : socket_option
+        | KW_SO_PASSCRED '(' yesno ')'              { socket_options_unix_set_so_passcred(last_sock_options, $3); }
+        ;
 
 inet_socket_option
 	: socket_option

@@ -80,6 +80,8 @@ static CfgLexerKeyword afsocket_keywords[] =
   { "tcp_keepalive_time", KW_TCP_KEEPALIVE_TIME },
   { "tcp_keepalive_probes", KW_TCP_KEEPALIVE_PROBES },
   { "tcp_keepalive_intvl", KW_TCP_KEEPALIVE_INTVL },
+  { "so_passcred",        KW_SO_PASSCRED },
+  { "local_creds",        KW_SO_PASSCRED },   /* BSD specific alias */
   { "spoof_source",       KW_SPOOF_SOURCE },
   { "spoof_source_max_msglen", KW_SPOOF_SOURCE_MAX_MSGLEN },
   { "transport",          KW_TRANSPORT },
