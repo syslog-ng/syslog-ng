@@ -29,8 +29,8 @@ modules_afsocket_libafsocket_la_SOURCES	=	\
 	modules/afsocket/transport-mapper-unix.h 	\
 	modules/afsocket/transport-unix-socket.c	\
 	modules/afsocket/transport-unix-socket.h	\
-	modules/afsocket/unix-credentials.c		\
-	modules/afsocket/unix-credentials.h		\
+	modules/afsocket/compat-unix-creds.c		\
+	modules/afsocket/compat-unix-creds.h		\
 	modules/afsocket/afsocket-grammar.y		\
 	modules/afsocket/afsocket-parser.c		\
 	modules/afsocket/afsocket-parser.h		\

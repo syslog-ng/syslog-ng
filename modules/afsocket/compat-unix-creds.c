@@ -21,29 +21,16 @@
  *
  */
 
-#ifndef _SYSLOG_NG_UNIX_CREDENTIALS_H
-#define _SYSLOG_NG_UNIX_CREDENTIALS_H
+#include "compat-unix-creds.h"
 
-#include <sys/types.h>
-#include <sys/socket.h>
-
-#include "syslog-ng.h"
-
-#if defined(__linux__)
-# if SYSLOG_NG_HAVE_STRUCT_UCRED && SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR
-# define CRED_PASS_SUPPORTED
-# define cred_t struct ucred
-# define cred_get(c,x) (c->x)
-# endif
-#elif defined(__FreeBSD__)
-# if SYSLOG_NG_HAVE_STRUCT_CMSGCRED && SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR
-#  define CRED_PASS_SUPPORTED
-#  define SCM_CREDENTIALS SCM_CREDS
-#  define cred_t struct cmsgcred
-#  define cred_get(c,x) (c->cmcred_##x)
-# endif
+void
+setsockopt_so_passcred(gint fd, gint onoff)
+{
+#ifdef LOCAL_CREDS
+  setsockopt(fd, 0, LOCAL_CREDS, &onoff, sizeof(onoff));
+#else
+#ifdef SO_PASSCRED
+  setsockopt(fd, SOL_SOCKET, SO_PASSCRED, &onoff, sizeof(onoff));
 #endif
-
-void socket_set_pass_credentials(gint fd);
-
 #endif
+}

@@ -29,8 +29,8 @@ set(AFSOCKET_SOURCES
     transport-mapper-unix.h
     transport-unix-socket.c
     transport-unix-socket.h
-    unix-credentials.c
-    unix-credentials.h
+    compat-unix-creds.c
+    compat-unix-creds.h
     afsocket-grammar.y
     afsocket-parser.c
     afsocket-parser.h

@@ -22,7 +22,7 @@
  */
 #include "transport-mapper-unix.h"
 #include "transport-unix-socket.h"
-#include "unix-credentials.h"
+#include "compat-unix-creds.h"
 #include "stats/stats-registry.h"
 
 #include <sys/types.h>
@@ -53,7 +53,7 @@ _construct_log_transport(TransportMapper *s, gint fd)
   LogTransport *transport = _create_log_transport(s, fd);
 
   if (self->pass_unix_credentials)
-    socket_set_pass_credentials(fd);
+    setsockopt_so_passcred(fd, TRUE);
 
   return transport;
 }
