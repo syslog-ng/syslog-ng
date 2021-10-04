@@ -1,5 +1,7 @@
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/syslog-ng/syslog-ng?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=body_badge)
-[![Build Status](https://travis-ci.org/syslog-ng/syslog-ng.svg?branch=master)](https://travis-ci.org/syslog-ng/syslog-ng)
+[![Build Status](https://github.com/syslog-ng/syslog-ng/actions/workflows/devshell.yml/badge.svg)](https://github.com/syslog-ng/syslog-ng/actions/workflows/devshell.yml)
+[![Binary packages](https://github.com/syslog-ng/syslog-ng/actions/workflows/packages.yml/badge.svg)](https://github.com/syslog-ng/syslog-ng/actions/workflows/packages.yml)
+[![Compile dbld-images](https://github.com/syslog-ng/syslog-ng/actions/workflows/dbld-images.yml/badge.svg)](https://github.com/syslog-ng/syslog-ng/actions/workflows/dbld-images.yml)
 
 syslog-ng
 =========
