@@ -38,6 +38,7 @@ lib_logmsg_tests_test_logmsg_ack_CFLAGS = $(TEST_CFLAGS)
 lib_logmsg_tests_test_nvhandle_desc_array_LDADD = $(TEST_LDADD)
 lib_logmsg_tests_test_nvhandle_desc_array_CFLAGS = $(TEST_CFLAGS)
 
+if ENABLE_TESTING
 noinst_PROGRAMS +=				\
 	lib/logmsg/tests/dump_logmsg
 
@@ -49,3 +50,5 @@ dump-logmsg: lib/logmsg/tests/dump_logmsg
 	DIR=lib/logmsg/tests/messages/ && \
 	mkdir -p $${DIR} && \
 	lib/logmsg/tests/dump_logmsg $(VERSION) > $${DIR}/syslog-ng-$(VERSION)-msg.h
+
+endif
