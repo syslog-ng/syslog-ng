@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2021 Balazs Scheidler <bazsi77@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,14 +19,29 @@
  * COPYING for details.
  *
  */
-#ifndef TRANSPORT_MAPPER_UNIX_H_INCLUDED
-#define TRANSPORT_MAPPER_UNIX_H_INCLUDED
+#include "socket-options-unix.h"
+#include "compat-unix-creds.h"
 
-#include "transport-mapper.h"
+static gboolean
+socket_options_unix_setup_socket(SocketOptions *s, gint fd, GSockAddr *addr, AFSocketDirection dir)
+{
+  SocketOptionsUnix *self = (SocketOptionsUnix *) s;
 
-typedef struct _TransportMapperUnix TransportMapperUnix;
+  if (!socket_options_setup_socket_method(s, fd, addr, dir))
+    return FALSE;
 
-TransportMapper *transport_mapper_unix_dgram_new(void);
-TransportMapper *transport_mapper_unix_stream_new(void);
+  setsockopt_so_passcred(fd, self->so_passcred);
 
-#endif
+  return TRUE;
+}
+
+SocketOptions *
+socket_options_unix_new(void)
+{
+  SocketOptionsUnix *self = g_new0(SocketOptionsUnix, 1);
+
+  socket_options_init_instance(&self->super);
+  self->super.setup_socket = socket_options_unix_setup_socket;
+  self->so_passcred = TRUE;
+  return &self->super;
+}

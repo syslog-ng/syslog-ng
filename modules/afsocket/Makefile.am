@@ -19,6 +19,8 @@ modules_afsocket_libafsocket_la_SOURCES	=	\
 	modules/afsocket/afinet-dest-failover.h		\
 	modules/afsocket/socket-options-inet.c		\
 	modules/afsocket/socket-options-inet.h   	\
+	modules/afsocket/socket-options-unix.c		\
+	modules/afsocket/socket-options-unix.h   	\
 	modules/afsocket/transport-mapper-inet.c 	\
 	modules/afsocket/transport-mapper-inet.h 	\
 	modules/afsocket/afunix-source.c		\

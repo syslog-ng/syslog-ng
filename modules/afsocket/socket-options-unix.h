@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2021 Balazs Scheidler <bazsi77@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,14 +19,25 @@
  * COPYING for details.
  *
  */
-#ifndef TRANSPORT_MAPPER_UNIX_H_INCLUDED
-#define TRANSPORT_MAPPER_UNIX_H_INCLUDED
+#ifndef SOCKET_OPTIONS_UNIX_H_INCLUDED
+#define SOCKET_OPTIONS_UNIX_H_INCLUDED
 
-#include "transport-mapper.h"
+#include "socket-options.h"
 
-typedef struct _TransportMapperUnix TransportMapperUnix;
+typedef struct _SocketOptionsUnix
+{
+  SocketOptions super;
+  gint so_passcred;
+} SocketOptionsUnix;
 
-TransportMapper *transport_mapper_unix_dgram_new(void);
-TransportMapper *transport_mapper_unix_stream_new(void);
+static inline void
+socket_options_unix_set_so_passcred(SocketOptions *s, gint so_passcred)
+{
+  SocketOptionsUnix *self = (SocketOptionsUnix *) s;
+
+  self->so_passcred = so_passcred;
+}
+
+SocketOptions *socket_options_unix_new(void);
 
 #endif

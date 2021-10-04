@@ -27,6 +27,8 @@ set(AFSOCKET_SOURCES
     afunix-dest.h
     transport-mapper-unix.c
     transport-mapper-unix.h
+    socket-options-unix.c
+    socket-options-unix.h
     transport-unix-socket.c
     transport-unix-socket.h
     compat-unix-creds.c

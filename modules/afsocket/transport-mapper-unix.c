@@ -22,7 +22,6 @@
  */
 #include "transport-mapper-unix.h"
 #include "transport-unix-socket.h"
-#include "compat-unix-creds.h"
 #include "stats/stats-registry.h"
 
 #include <sys/types.h>
@@ -33,29 +32,15 @@
 struct _TransportMapperUnix
 {
   TransportMapper super;
-  gchar *filename;
-  gboolean pass_unix_credentials;
 };
 
 static LogTransport *
-_create_log_transport(TransportMapper *s, gint fd)
+_construct_log_transport(TransportMapper *s, gint fd)
 {
   if (s->sock_type == SOCK_DGRAM)
     return log_transport_unix_dgram_socket_new(fd);
   else
     return log_transport_unix_stream_socket_new(fd);
-}
-
-static LogTransport *
-_construct_log_transport(TransportMapper *s, gint fd)
-{
-  TransportMapperUnix *self = (TransportMapperUnix *) s;
-  LogTransport *transport = _create_log_transport(s, fd);
-
-  if (self->pass_unix_credentials)
-    setsockopt_so_passcred(fd, TRUE);
-
-  return transport;
 }
 
 static TransportMapperUnix *
@@ -68,13 +53,6 @@ transport_mapper_unix_new_instance(const gchar *transport, gint sock_type)
   self->super.address_family = AF_UNIX;
   self->super.sock_type = sock_type;
   return self;
-}
-
-void
-transport_mapper_unix_set_pass_unix_credentials(TransportMapper *s, gboolean pass)
-{
-  TransportMapperUnix *self = (TransportMapperUnix *) s;
-  self->pass_unix_credentials = pass;
 }
 
 TransportMapper *
