@@ -3,4 +3,4 @@
 set -e
 
 cd /build
-make "$@"
+make ${VERSION:+VERSION=$VERSION} "$@"
