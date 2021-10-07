@@ -64,7 +64,8 @@ gboolean filter_expr_eval_root_with_context(FilterExprNode *self, LogMessage **m
                                             LogTemplateEvalOptions *options,
                                             const LogPathOptions *path_options);
 void filter_expr_node_init_instance(FilterExprNode *self);
-FilterExprNode *filter_expr_ref(FilterExprNode *self);
 void filter_expr_unref(FilterExprNode *self);
+
+FilterExprNode *filter_expr_clone(FilterExprNode *self);
 
 #endif

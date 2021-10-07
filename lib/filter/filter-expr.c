@@ -77,7 +77,7 @@ filter_expr_eval_root(FilterExprNode *self, LogMessage **msg, const LogPathOptio
   return filter_expr_eval_root_with_context(self, msg, 1, &DEFAULT_TEMPLATE_EVAL_OPTIONS, path_options);
 }
 
-FilterExprNode *
+static FilterExprNode *
 filter_expr_ref(FilterExprNode *self)
 {
   self->ref_cnt++;
@@ -93,4 +93,15 @@ filter_expr_unref(FilterExprNode *self)
         self->free_fn(self);
       g_free(self);
     }
+}
+
+FilterExprNode *
+filter_expr_clone(FilterExprNode *self)
+{
+  if (self->clone)
+    {
+      return self->clone(self);
+    }
+
+  return filter_expr_ref(self);
 }

@@ -85,7 +85,7 @@ filter_call_init(FilterExprNode *s, GlobalConfig *cfg)
 
       LogFilterPipe *filter_pipe = (LogFilterPipe *) rule->children->object;
 
-      self->filter_expr = filter_expr_ref(filter_pipe->expr);
+      self->filter_expr = filter_expr_clone(filter_pipe->expr);
       if (!filter_expr_init(self->filter_expr, cfg))
         return FALSE;
       self->super.modify = self->filter_expr->modify;
@@ -140,4 +140,14 @@ filter_call_new(gchar *rule, GlobalConfig *cfg)
   self->rule = g_strdup(rule);
 
   return &self->super;
+}
+
+FilterExprNode *
+filter_call_clone(FilterExprNode *s)
+{
+  FilterCall *self = (FilterCall *) s;
+  FilterExprNode *cloned_self = filter_call_new(self->rule, configuration);
+  filter_call_init(cloned_self, configuration);
+
+  return cloned_self;
 }

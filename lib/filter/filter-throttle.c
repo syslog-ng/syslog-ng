@@ -191,7 +191,7 @@ filter_throttle_clone(FilterExprNode *s)
 {
   FilterThrottle *self = (FilterThrottle *)s;
 
-  FilterExprNode *cloned_self =filter_throttle_new();
+  FilterExprNode *cloned_self = filter_throttle_new();
   filter_throttle_set_key(cloned_self, self->key_handle);
   filter_throttle_set_rate(cloned_self, self->rate);
 

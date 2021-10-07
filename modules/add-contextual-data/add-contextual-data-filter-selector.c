@@ -115,7 +115,7 @@ static FilterExprNode *
 _init_filter_from_log_node(GlobalConfig *cfg, LogExprNode *node)
 {
   LogFilterPipe *filter_pipe = (LogFilterPipe *) node->children->object;
-  FilterExprNode *selected_filter = filter_expr_ref(filter_pipe->expr);
+  FilterExprNode *selected_filter = filter_expr_clone(filter_pipe->expr);
 
   filter_expr_init(selected_filter, cfg);
 
