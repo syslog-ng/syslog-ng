@@ -517,10 +517,6 @@ log_matcher_pcre_re_match(LogMatcher *s, LogMessage *msg, gint value_handle, con
     }
   else
     {
-      if(self->nv_prefix != NULL)
-        {
-          log_msg_set_value_by_name(msg, self->nv_prefix, value, strlen(value));
-        }
       if ((s->flags & LMF_STORE_MATCHES))
         {
           log_matcher_pcre_re_feed_backrefs(s, msg, value_handle, matches, rc, value);
