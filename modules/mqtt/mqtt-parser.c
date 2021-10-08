@@ -37,6 +37,7 @@ static CfgLexerKeyword mqtt_keywords[] =
   { "fallback_topic", KW_FALLBACK_TOPIC },
   { "keepalive", KW_KEEPALIVE },
   { "qos", KW_QOS },
+  { "client_id", KW_CLIENT_ID },
   { "username", KW_USERNAME },
   { "password", KW_PASSWORD },
   { "http_proxy", KW_HTTP_PROXY },

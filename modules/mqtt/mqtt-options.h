@@ -35,6 +35,7 @@ struct _MQTTClientOptions
   gint keepalive;
   gchar *address;
   gint qos;
+  gchar *client_id;
 
   gchar *username;
   gchar *password;
@@ -58,6 +59,7 @@ void mqtt_client_options_destroy(MQTTClientOptions *self);
 void mqtt_client_options_set_keepalive (MQTTClientOptions *self, const gint keepalive);
 gboolean mqtt_client_options_set_address(MQTTClientOptions *self, const gchar *address);
 void mqtt_client_options_set_qos (MQTTClientOptions *self, const gint qos);
+gboolean mqtt_client_options_set_client_id(MQTTClientOptions *self, const gchar *client_id);
 
 void mqtt_client_options_set_username(MQTTClientOptions *self, const gchar *username);
 void mqtt_client_options_set_password(MQTTClientOptions *self, const gchar *password);
@@ -77,6 +79,7 @@ void mqtt_client_options_set_log_ssl_error_fn(MQTTClientOptions *self, gpointer 
 
 gchar *mqtt_client_options_get_address(MQTTClientOptions *self);
 gint mqtt_client_options_get_qos(MQTTClientOptions *self);
+gchar *mqtt_client_options_get_client_id(MQTTClientOptions *self);
 
 void mqtt_client_options_to_mqtt_client_connection_option(MQTTClientOptions *self, MQTTClient_connectOptions *conn_opts,
                                                           MQTTClient_SSLOptions *ssl_opts);

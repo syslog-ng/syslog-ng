@@ -75,6 +75,7 @@ void
 mqtt_client_options_destroy(MQTTClientOptions *self)
 {
   g_free(self->address);
+  g_free(self->client_id);
 
   g_free(self->username);
   g_free(self->password);
@@ -110,6 +111,17 @@ mqtt_client_options_set_qos (MQTTClientOptions *self, const gint qos)
   self->qos = qos;
 }
 
+gboolean
+mqtt_client_options_set_client_id(MQTTClientOptions *self, const gchar *client_id)
+{
+  if(strcmp("", client_id) == 0)
+    return FALSE;
+
+  g_free(self->client_id);
+  self->client_id = g_strdup(client_id);
+
+  return TRUE;
+}
 
 void
 mqtt_client_options_set_username(MQTTClientOptions *self, const gchar *username)
@@ -216,6 +228,12 @@ gint
 mqtt_client_options_get_qos(MQTTClientOptions *self)
 {
   return self->qos;
+}
+
+gchar *
+mqtt_client_options_get_client_id(MQTTClientOptions *self)
+{
+  return self->client_id;
 }
 
 static void

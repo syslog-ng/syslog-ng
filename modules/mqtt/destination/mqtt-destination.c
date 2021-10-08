@@ -136,6 +136,29 @@ _topic_name_is_a_template(MQTTDestinationDriver *self)
   return !log_template_is_literal_string(self->topic_name);
 }
 
+static void
+_set_client_id(LogPipe *d)
+{
+  MQTTDestinationDriver *self = (MQTTDestinationDriver *)d;
+  gchar *tmp_client_id;
+
+  GlobalConfig *cfg = log_pipe_get_config(d);
+
+  if (cfg_is_config_version_older(cfg, VERSION_VALUE_3_35))
+    {
+      msg_warning_once("MQTT WARNING: you are using the old version, the default client id is different in the newer config",
+                       evt_tag_str("clint_id", _format_persist_name(d)),
+                       evt_tag_str("driver", self->super.super.super.id),
+                       log_pipe_location_tag(&self->super.super.super.super));
+      tmp_client_id = g_strdup(_format_persist_name(d));
+    }
+  else
+    tmp_client_id = g_strdup_printf("syslog-ng-destination-%s", self->topic_name->template);
+
+  mqtt_client_options_set_client_id(&self->options, tmp_client_id);
+  g_free(tmp_client_id);
+}
+
 static gboolean
 _init(LogPipe *d)
 {
@@ -172,6 +195,9 @@ _init(LogPipe *d)
                 log_pipe_location_tag(&self->super.super.super.super));
       return FALSE;
     }
+
+  if (mqtt_client_options_get_client_id(&self->options) == NULL)
+    _set_client_id(d);
 
   return TRUE;
 }
