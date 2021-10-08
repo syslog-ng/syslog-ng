@@ -572,3 +572,73 @@ Test(log_message, when_get_indirect_value_with_null_value_len_abort_instead_of_s
 
   log_message_test_params_free(params);
 }
+
+Test(log_message, test_cow_writing_cloned_message)
+{
+  LogMessage *msg = _construct_log_message();
+  log_msg_set_value_by_name(msg, "orig_name", "orig_value", -1);
+
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  LogMessage *cloned = log_msg_clone_cow(msg, &path_options);
+
+  log_msg_set_value_by_name(cloned, "cloned_name", "cloned_value", -1);
+  log_msg_set_value_by_name(cloned, "orig_name", "modified_value", -1);
+
+  cr_assert_str_eq(log_msg_get_value_by_name(msg, "orig_name", NULL), "orig_value",
+                   "Modifications on a COW-cloned message should not leak into the original message; actual: %s, expected: %s",
+                   log_msg_get_value_by_name(msg, "orig_name", NULL), "orig_value");
+
+  NVHandle cloned_name = log_msg_get_value_handle("cloned_name");
+  gssize value_length;
+  cr_assert_null(log_msg_get_value_if_set(msg, cloned_name, &value_length),
+                 "Modifications on a COW-cloned message should not leak into the original message");
+
+  log_msg_unref(cloned);
+  log_msg_unref(msg);
+}
+
+
+Test(log_message, test_cow_make_writable)
+{
+  LogMessage *msg = _construct_log_message();
+  log_msg_set_value_by_name(msg, "orig_name", "orig_value", -1);
+
+  log_msg_write_protect(msg);
+  cr_assert(log_msg_is_write_protected(msg));
+
+  LogMessage *orig_msg = log_msg_ref(msg);
+
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  log_msg_make_writable(&msg, &path_options);
+
+  log_msg_set_value_by_name(msg, "orig_name2", "orig_value2", -1);
+
+  NVHandle orig_name2 = log_msg_get_value_handle("orig_name2");
+  gssize value_length;
+  cr_assert_null(log_msg_get_value_if_set(orig_msg, orig_name2, &value_length),
+                 "Modifications on a COW-cloned message should not leak into the original message");
+
+  log_msg_unref(orig_msg);
+  log_msg_unref(msg);
+}
+
+Test(log_message, test_cow_unset_value)
+{
+  LogMessage *msg = _construct_log_message();
+  log_msg_set_value_by_name(msg, "orig_name", "orig_value", -1);
+  log_msg_write_protect(msg);
+
+  LogMessage *orig_msg = log_msg_ref(msg);
+
+  LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
+  log_msg_make_writable(&msg, &path_options);
+
+  log_msg_unset_value_by_name(msg, "orig_name");
+
+  cr_assert_str_eq(log_msg_get_value_by_name(orig_msg, "orig_name", NULL), "orig_value",
+                   "Unsetting a value in a COW-cloned message should not unset the value in the original message; actual: %s, expected: %s",
+                   log_msg_get_value_by_name(orig_msg, "orig_name", NULL), "orig_value");
+
+  log_msg_unref(orig_msg);
+  log_msg_unref(msg);
+}
