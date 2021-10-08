@@ -48,16 +48,21 @@ slng_verbose(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
     g_snprintf(buff, 255, "LOG %s %s\n", mode,
                strncasecmp(verbose_set, "on", 2) == 0 || verbose_set[0] == '1' ? "ON" : "OFF");
 
-  g_strup(buff);
+  gchar *command = g_ascii_strup(buff, -1);
 
-  rsp = slng_run_command(buff);
+  rsp = slng_run_command(command);
   if (rsp == NULL)
-    return 1;
+    {
+      ret = 1;
+      goto error;
+    }
 
   ret = process_response_status(rsp);
   printf("%s\n", rsp->str);
 
   g_string_free(rsp, TRUE);
+error:
+  g_free(command);
 
   return ret;
 }
