@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from typing import List
 
@@ -27,6 +28,7 @@ class ContainerSynchronizer:
         self.__client = ContainerClient.from_connection_string(
             conn_str=connection_string, container_name=container_name
         )
+        self.__logger = ContainerSynchronizer.__create_logger()
 
     @property
     def local_files(self) -> List[Path]:
@@ -41,6 +43,8 @@ class ContainerSynchronizer:
     def __download_file(self, relative_file_path: str) -> None:
         download_path = Path(self.local_dir.root_dir, relative_file_path).resolve()
 
+        self.__log_info("Downloading file.", remote_path=relative_file_path, local_path=str(download_path))
+
         download_path.parent.mkdir(parents=True, exist_ok=True)
         with download_path.open("wb") as downloaded_blob:
             blob_data = self.__client.download_blob(relative_file_path)
@@ -48,6 +52,8 @@ class ContainerSynchronizer:
 
     def __upload_file(self, relative_file_path: str) -> None:
         local_path = Path(self.local_dir.root_dir, relative_file_path)
+
+        self.__log_info("Uploading file.", local_path=str(local_path), remote_path=relative_file_path)
 
         with local_path.open("rb") as local_file_data:
             self.__client.upload_blob(relative_file_path, local_file_data, overwrite=True)
@@ -67,3 +73,15 @@ class ContainerSynchronizer:
     def sync_to_remote(self) -> None:
         # TODO: implement
         pass
+
+    @staticmethod
+    def __create_logger() -> logging.Logger:
+        logger = logging.getLogger("ContainerSynchronizer")
+        logger.setLevel(logging.INFO)
+        return logger
+
+    def __log_info(self, message: str, **kwargs: str) -> None:
+        log = "[{} :: {}]\t{}".format(self.__client.container_name, str(self.remote_dir.working_dir), message)
+        if len(kwargs) > 0:
+            log += "\t{}".format(kwargs)
+        self.__logger.info(log)
