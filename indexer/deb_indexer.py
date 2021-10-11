@@ -3,6 +3,8 @@ from subprocess import call
 
 from .indexer import Indexer, ClientSecretCredential
 
+CURRENT_DIR = Path(__file__).parent.resolve()
+
 
 class DebIndexer(Indexer):
     def __init__(
@@ -11,7 +13,9 @@ class DebIndexer(Indexer):
         incoming_container_sub_dir: Path,
         dist_dir: Path,
         cdn_credential: ClientSecretCredential,
+        apt_conf_file_path: Path,
     ) -> None:
+        self.__apt_conf_file_path = apt_conf_file_path
         super().__init__(
             container_connection_string=container_connection_string,
             incoming_container_sub_dir=incoming_container_sub_dir,
@@ -59,8 +63,25 @@ class DebIndexer(Indexer):
                     raise ChildProcessError("`{}` failed in dir: {}. rc={}.".format(" ".join(command), dir, status))
 
     def __create_release_file(self, indexed_dir: Path) -> None:
-        #  TODO: implement
-        pass
+        command = ["apt-ftparchive", "release", "."]
+
+        release_file_path = Path(indexed_dir, "Release")
+        with release_file_path.open("w") as release_file:
+            self._log_info(
+                "Creating `Release` file.",
+                command=" ".join(command),
+                dir=str(indexed_dir),
+                output_file_path=str(release_file_path),
+                APT_CONFIG=str(self.__apt_conf_file_path),
+            )
+            status = call(
+                command,
+                stdout=release_file,
+                cwd=str(indexed_dir),
+                env={"APT_CONFIG": str(self.__apt_conf_file_path)},
+            )
+            if status != 0:
+                raise ChildProcessError("`{}` failed in dir: {}. rc={}.".format(" ".join(command), dir, status))
 
     def _index_pkgs(self, incoming_dir: Path, indexed_dir: Path) -> None:
         self.__move_files_from_incoming_to_indexed(incoming_dir, indexed_dir)
@@ -82,6 +103,7 @@ class ReleaseDebIndexer(DebIndexer):
             incoming_container_sub_dir=Path("release", run_id),
             dist_dir=Path("stable"),
             cdn_credential=cdn_credential,
+            apt_conf_file_path=Path(CURRENT_DIR, "apt_conf", "stable.conf"),
         )
 
     def _sign_pkgs(self, indexed_dir: Path) -> None:
@@ -100,6 +122,7 @@ class NightlyDebIndexer(DebIndexer):
             incoming_container_sub_dir=Path("nightly"),
             dist_dir=Path("nightly"),
             cdn_credential=cdn_credential,
+            apt_conf_file_path=Path(CURRENT_DIR, "apt_conf", "nightly.conf"),
         )
 
     def _sign_pkgs(self, indexed_dir: Path) -> None:
