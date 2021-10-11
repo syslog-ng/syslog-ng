@@ -1,4 +1,6 @@
 import logging
+from enum import Enum, auto
+from hashlib import md5
 from pathlib import Path
 from typing import List
 
@@ -19,6 +21,13 @@ class WorkingDir:
     @property
     def working_dir(self) -> Path:
         return self.__working_dir
+
+
+class FileSyncState(Enum):
+    IN_SYNC = auto()
+    DIFFERENT = auto()
+    NOT_IN_REMOTE = auto()
+    NOT_IN_LOCAL = auto()
 
 
 class ContainerSynchronizer:
@@ -74,6 +83,55 @@ class ContainerSynchronizer:
     def sync_to_remote(self) -> None:
         # TODO: implement
         pass
+
+    def __get_md5_of_remote_file(self, relative_file_path: str) -> bytearray:
+        for file in self.remote_files:
+            if file["name"] == relative_file_path:
+                return file["content_settings"]["content_md5"]
+        raise FileNotFoundError
+
+    def __get_md5_of_local_file(self, relative_file_path: str) -> bytes:
+        file = Path(self.local_dir.root_dir, relative_file_path)
+        return md5(file.read_bytes()).digest()
+
+    def __get_file_sync_state(self, relative_file_path: str) -> FileSyncState:
+        try:
+            remote_md5 = self.__get_md5_of_remote_file(relative_file_path)
+        except FileNotFoundError:
+            self.__log_info(
+                "Local file is not available remotely.",
+                local_path=str(Path(self.local_dir.root_dir, relative_file_path)),
+                unavailable_remote_path=str(Path(self.remote_dir.root_dir, relative_file_path)),
+            )
+            return FileSyncState.NOT_IN_REMOTE
+
+        try:
+            local_md5 = self.__get_md5_of_local_file(relative_file_path)
+        except FileNotFoundError:
+            self.__log_info(
+                "Remote file is not available locally.",
+                remote_path=str(Path(self.remote_dir.root_dir, relative_file_path)),
+                unavailable_local_path=str(Path(self.local_dir.root_dir, relative_file_path)),
+            )
+            return FileSyncState.NOT_IN_LOCAL
+
+        if remote_md5 != local_md5:
+            self.__log_info(
+                "File differs locally and remotely.",
+                remote_path=str(Path(self.remote_dir.root_dir, relative_file_path)),
+                local_path=str(Path(self.local_dir.root_dir, relative_file_path)),
+                remote_md5sum=remote_md5.hex(),
+                local_md5sum=local_md5.hex(),
+            )
+            return FileSyncState.DIFFERENT
+
+        self.__log_info(
+            "File is in sync.",
+            remote_path=str(Path(self.remote_dir.root_dir, relative_file_path)),
+            local_path=str(Path(self.local_dir.root_dir, relative_file_path)),
+            md5sum=remote_md5.hex(),
+        )
+        return FileSyncState.IN_SYNC
 
     @staticmethod
     def __create_logger() -> logging.Logger:
