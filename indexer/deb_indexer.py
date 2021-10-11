@@ -1,4 +1,5 @@
 from pathlib import Path
+from subprocess import call
 
 from .indexer import Indexer, ClientSecretCredential
 
@@ -32,8 +33,30 @@ class DebIndexer(Indexer):
             file.rename(new_path)
 
     def __create_packages_files(self, indexed_dir: Path) -> None:
-        #  TODO: implement
-        pass
+        base_command = ["apt-ftparchive", "packages"]
+        # Need to exec the commands in the `apt` dir.
+        # APT wants to have the `Filename` field in the `Packages` file to start with `dists`.
+        dir = indexed_dir.parents[1]
+
+        for pkg_dir in list(indexed_dir.rglob("binary-amd64")):
+            relative_pkg_dir = pkg_dir.relative_to(dir)
+            command = base_command + [str(relative_pkg_dir)]
+
+            packages_file_path = Path(pkg_dir, "Packages")
+            with packages_file_path.open("w") as packages_file:
+                self._log_info(
+                    "Creating `Packages` file.",
+                    command=" ".join(command),
+                    dir=str(dir),
+                    output_file_path=str(packages_file_path),
+                )
+                status = call(
+                    command,
+                    stdout=packages_file,
+                    cwd=str(dir),
+                )
+                if status != 0:
+                    raise ChildProcessError("`{}` failed in dir: {}. rc={}.".format(" ".join(command), dir, status))
 
     def __create_release_file(self, indexed_dir: Path) -> None:
         #  TODO: implement
