@@ -125,5 +125,9 @@ class NightlyDebIndexer(DebIndexer):
             apt_conf_file_path=Path(CURRENT_DIR, "apt_conf", "nightly.conf"),
         )
 
+    def _index_pkgs(self, incoming_dir: Path, indexed_dir: Path) -> None:
+        # TODO: remove old (older than x days old) packages from indexed dir
+        return super()._index_pkgs(incoming_dir, indexed_dir)
+
     def _sign_pkgs(self, indexed_dir: Path) -> None:
         pass  # We do not sign the nightly package
