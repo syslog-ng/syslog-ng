@@ -175,7 +175,6 @@ test_read_wakeup(void)
 
 Test(test_thread_wakeup, testcase)
 {
-  g_thread_init(NULL);
 
   g_mutex_init(&thread_lock);
   thread_startup = g_cond_new();

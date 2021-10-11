@@ -171,7 +171,6 @@ app_startup(void)
   afinter_global_init();
   child_manager_init();
   alarm_init();
-  g_thread_init(NULL);
   main_loop_thread_resource_init();
   stats_init();
   tzset();

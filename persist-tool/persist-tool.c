@@ -47,10 +47,6 @@ load_state_handler_modules(GlobalConfig *cfg)
 static gboolean
 persist_tool_start_state(PersistTool *self)
 {
-  if (!g_threads_got_initialized)
-    {
-      g_thread_init(NULL);
-    }
   main_thread_handle = get_thread_id();
   self->state = persist_state_new(self->persist_filename);
 

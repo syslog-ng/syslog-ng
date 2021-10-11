@@ -493,11 +493,6 @@ dqtool_relocate(int argc, char *argv[])
   if (!_relocate_validate_options())
     return 1;
 
-  if (!g_threads_got_initialized)
-    {
-      g_thread_init(NULL);
-    }
-
   main_thread_handle = get_thread_id();
 
   PersistState *state = persist_state_new(persist_file_path);
@@ -560,11 +555,6 @@ dqtool_assign(int argc, char *argv[])
 
   if (!_assign_validate_options())
     return 1;
-
-  if (!g_threads_got_initialized)
-    {
-      g_thread_init(NULL);
-    }
 
   main_thread_handle = get_thread_id();
 
