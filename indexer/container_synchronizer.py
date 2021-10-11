@@ -30,13 +30,13 @@ class ContainerSynchronizer:
 
     @property
     def local_files(self) -> List[Path]:
-        # TODO: implement
-        pass
+        dirs_and_files = list(self.local_dir.working_dir.rglob("*"))
+        return list(filter(lambda path: path.is_file(), dirs_and_files))
 
     @property
     def remote_files(self) -> List[dict]:
-        # TODO: implement
-        pass
+        file_name_prefix = "{}/".format(self.remote_dir.working_dir)
+        return [dict(blob) for blob in self.__client.list_blobs(name_starts_with=file_name_prefix)]
 
     def __download_file(self, relative_file_path: str) -> None:
         # TODO: implement
