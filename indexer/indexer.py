@@ -1,3 +1,4 @@
+import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
 
@@ -24,6 +25,7 @@ class Indexer(ABC):
             container_name=Indexer.INDEXED_CONTAINER_NAME,
             sub_dir=indexed_container_sub_dir,
         )
+        self.__logger = Indexer.__create_logger()
 
     def __sync_from_remote(self) -> None:
         self.__incoming_container.sync_from_remote()
@@ -56,3 +58,15 @@ class Indexer(ABC):
 
         self.__sync_to_remote()
         self.__refresh_cdn_cache()
+
+    @staticmethod
+    def __create_logger() -> logging.Logger:
+        logger = logging.getLogger("Indexer")
+        logger.setLevel(logging.INFO)
+        return logger
+
+    def _log_info(self, message: str, **kwargs: str) -> None:
+        log = message
+        if len(kwargs) > 0:
+            log += "\t{}".format(kwargs)
+        self.__logger.info(log)
