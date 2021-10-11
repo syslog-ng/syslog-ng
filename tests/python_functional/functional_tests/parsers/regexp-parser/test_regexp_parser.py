@@ -27,7 +27,6 @@ import pytest
 test_parameters_raw = [
     ("foo", '''""''', '''"(?<key>foo)"''', "", "${key}", True, True, "foo"),
     ("foo", '''""''', '''"(?<key>fo*)"''', "", "${key}", True, True, "foo"),
-    ("foo", '''"reg"''', '''"fo*"''', "", "${reg}", True, True, "foo"),
     ("foo", '''".reg."''', '''"(?<key>foo)"''', "", "${.reg.key}", True, True, "foo"),
     ("foo", '''".reg."''', '''"(?<key>foo)"''', "", "${key}", True, True, ""),
     ("foo", '''".reg."''', '''"(?<key>foo)|(?<key>bar)"''', "dupnames", "${.reg.key}", True, True, "foo"),
@@ -42,7 +41,7 @@ test_parameters_raw = [
 @pytest.mark.parametrize(
     "input_message, prefix, patterns, flags, template, compile_result, expected_result, expected_value", test_parameters_raw,
     ids=[
-        "match_literally", "match_regular_expression", "match_without_reference_saving",
+        "match_literally", "match_regular_expression",
         "match_with_prefix", "match_with_prefix_and_wrong_template", "match_with_dupnames", "unmatch_case",
         "match_ignore_case_flag", "match_multiple_regular_expressions", "regular_expression_compile_error",
         "check_MSG_macro",
