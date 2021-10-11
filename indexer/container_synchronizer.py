@@ -59,12 +59,13 @@ class ContainerSynchronizer:
             self.__client.upload_blob(relative_file_path, local_file_data, overwrite=True)
 
     def __delete_local_file(self, relative_file_path: str) -> None:
-        # TODO: implement
-        pass
+        local_file_path = Path(self.local_dir.root_dir, relative_file_path).resolve()
+        self.__log_info("Deleting local file.", local_path=str(local_file_path))
+        local_file_path.unlink()
 
     def __delete_remote_file(self, relative_file_path: str) -> None:
-        # TODO: implement
-        pass
+        self.__log_info("Deleting remote file.", remote_path=relative_file_path)
+        self.__client.delete_blob(relative_file_path)
 
     def sync_from_remote(self) -> None:
         # TODO: implement
