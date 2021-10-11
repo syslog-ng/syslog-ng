@@ -2,7 +2,7 @@ import logging
 from enum import Enum, auto
 from hashlib import md5
 from pathlib import Path
-from typing import List
+from typing import List, Union
 
 from azure.storage.blob import ContainerClient
 
@@ -38,6 +38,7 @@ class ContainerSynchronizer:
             conn_str=connection_string, container_name=container_name
         )
         self.__logger = ContainerSynchronizer.__create_logger()
+        self.__remote_files_cache: Union[List[dict], None] = None
 
     @property
     def local_files(self) -> List[Path]:
@@ -46,8 +47,13 @@ class ContainerSynchronizer:
 
     @property
     def remote_files(self) -> List[dict]:
+        if self.__remote_files_cache is not None:
+            return self.__remote_files_cache
+
         file_name_prefix = "{}/".format(self.remote_dir.working_dir)
-        return [dict(blob) for blob in self.__client.list_blobs(name_starts_with=file_name_prefix)]
+        self.__remote_files_cache = [dict(blob) for blob in self.__client.list_blobs(name_starts_with=file_name_prefix)]
+
+        return self.__remote_files_cache
 
     def __download_file(self, relative_file_path: str) -> None:
         download_path = Path(self.local_dir.root_dir, relative_file_path).resolve()
@@ -121,6 +127,7 @@ class ContainerSynchronizer:
             remote_workdir=str(self.remote_dir.working_dir),
             local_workdir=str(self.local_dir.working_dir),
         )
+        self.__invalidate_remote_files_cache()
 
     def __get_md5_of_remote_file(self, relative_file_path: str) -> bytearray:
         for file in self.remote_files:
@@ -185,6 +192,9 @@ class ContainerSynchronizer:
         for remote_file in self.remote_files:
             files.add(self.__get_relative_file_path_for_remote_file(remote_file))
         return sorted(files)
+
+    def __invalidate_remote_files_cache(self) -> None:
+        self.__remote_files_cache = None
 
     @staticmethod
     def __create_logger() -> logging.Logger:
