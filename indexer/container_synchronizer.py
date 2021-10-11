@@ -133,6 +133,21 @@ class ContainerSynchronizer:
         )
         return FileSyncState.IN_SYNC
 
+    def __get_relative_file_path_for_local_file(self, file: Path) -> str:
+        return str(file.relative_to(self.local_dir.root_dir))
+
+    def __get_relative_file_path_for_remote_file(self, file: dict) -> str:
+        return file["name"]
+
+    @property
+    def __all_files(self) -> List[str]:
+        files = set()
+        for local_file in self.local_files:
+            files.add(self.__get_relative_file_path_for_local_file(local_file))
+        for remote_file in self.remote_files:
+            files.add(self.__get_relative_file_path_for_remote_file(remote_file))
+        return sorted(files)
+
     @staticmethod
     def __create_logger() -> logging.Logger:
         logger = logging.getLogger("ContainerSynchronizer")
