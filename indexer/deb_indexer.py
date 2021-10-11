@@ -19,8 +19,17 @@ class DebIndexer(Indexer):
         )
 
     def __move_files_from_incoming_to_indexed(self, incoming_dir: Path, indexed_dir: Path) -> None:
-        #  TODO: implement
-        pass
+        for file in filter(lambda path: path.is_file(), incoming_dir.rglob("*")):
+            relative_path = file.relative_to(incoming_dir)
+            platform = relative_path.parent
+            file_name = relative_path.name
+
+            new_path = Path(indexed_dir, platform, "binary-amd64", file_name)
+
+            self._log_info("Moving file.", src_path=str(file), dst_path=str(new_path))
+
+            new_path.parent.mkdir(parents=True, exist_ok=True)
+            file.rename(new_path)
 
     def __create_packages_files(self, indexed_dir: Path) -> None:
         #  TODO: implement
