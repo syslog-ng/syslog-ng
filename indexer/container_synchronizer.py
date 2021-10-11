@@ -39,12 +39,18 @@ class ContainerSynchronizer:
         return [dict(blob) for blob in self.__client.list_blobs(name_starts_with=file_name_prefix)]
 
     def __download_file(self, relative_file_path: str) -> None:
-        # TODO: implement
-        pass
+        download_path = Path(self.local_dir.root_dir, relative_file_path).resolve()
+
+        download_path.parent.mkdir(parents=True, exist_ok=True)
+        with download_path.open("wb") as downloaded_blob:
+            blob_data = self.__client.download_blob(relative_file_path)
+            blob_data.readinto(downloaded_blob)
 
     def __upload_file(self, relative_file_path: str) -> None:
-        # TODO: implement
-        pass
+        local_path = Path(self.local_dir.root_dir, relative_file_path)
+
+        with local_path.open("rb") as local_file_data:
+            self.__client.upload_blob(relative_file_path, local_file_data, overwrite=True)
 
     def __delete_local_file(self, relative_file_path: str) -> None:
         # TODO: implement
