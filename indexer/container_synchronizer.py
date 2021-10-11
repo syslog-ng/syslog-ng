@@ -77,12 +77,50 @@ class ContainerSynchronizer:
         self.__client.delete_blob(relative_file_path)
 
     def sync_from_remote(self) -> None:
-        # TODO: implement
-        pass
+        self.__log_info(
+            "Syncing content from remote.",
+            remote_workdir=str(self.remote_dir.working_dir),
+            local_workdir=str(self.local_dir.working_dir),
+        )
+        for file in self.__all_files:
+            sync_state = self.__get_file_sync_state(file)
+            if sync_state == FileSyncState.IN_SYNC:
+                continue
+            if sync_state == FileSyncState.DIFFERENT or sync_state == FileSyncState.NOT_IN_LOCAL:
+                self.__download_file(file)
+                continue
+            if sync_state == FileSyncState.NOT_IN_REMOTE:
+                self.__delete_local_file(file)
+                continue
+            raise NotImplementedError("Unexpected FileSyncState: {}".format(sync_state))
+        self.__log_info(
+            "Successfully synced remote content.",
+            remote_workdir=str(self.remote_dir.working_dir),
+            local_workdir=str(self.local_dir.working_dir),
+        )
 
     def sync_to_remote(self) -> None:
-        # TODO: implement
-        pass
+        self.__log_info(
+            "Syncing content to remote.",
+            local_workdir=str(self.local_dir.working_dir),
+            remote_workdir=str(self.remote_dir.working_dir),
+        )
+        for file in self.__all_files:
+            sync_state = self.__get_file_sync_state(file)
+            if sync_state == FileSyncState.IN_SYNC:
+                continue
+            if sync_state == FileSyncState.DIFFERENT or sync_state == FileSyncState.NOT_IN_REMOTE:
+                self.__upload_file(file)
+                continue
+            if sync_state == FileSyncState.NOT_IN_LOCAL:
+                self.__delete_remote_file(file)
+                continue
+            raise NotImplementedError("Unexpected FileSyncState: {}".format(sync_state))
+        self.__log_info(
+            "Successfully synced local content.",
+            remote_workdir=str(self.remote_dir.working_dir),
+            local_workdir=str(self.local_dir.working_dir),
+        )
 
     def __get_md5_of_remote_file(self, relative_file_path: str) -> bytearray:
         for file in self.remote_files:
