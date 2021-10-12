@@ -77,6 +77,6 @@ jobs:
         uses: azure/CLI@v1
         env:
           SRC_PATH: ${{ env.MY_WORKSPACE_NAME }}/syslog-ng/dbld/build/${{ env.DISTRIBUTION }}
-          DST_PATH: incoming-nightly/${{ env.DISTRIBUTION }}
+          DST_PATH: incoming/nightly/${{ env.DISTRIBUTION }}
         with:
           inlineScript: az storage blob upload-batch --sas-token '${{ secrets.AZURE_SAS_TOKEN }}' --account-name 'syslogngose' --source ${GITHUB_WORKSPACE}/${SRC_PATH} --destination ${DST_PATH}
