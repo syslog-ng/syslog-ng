@@ -60,7 +60,7 @@ gboolean log_stderr = FALSE;
 gboolean skip_timestamp_on_stderr = FALSE;
 static MsgPostFunc msg_post_func;
 static EVTCONTEXT *evt_context;
-static GStaticPrivate msg_context_private = G_STATIC_PRIVATE_INIT;
+static GPrivate msg_context_private = G_PRIVATE_INIT(g_free);
 static GMutex evtlog_lock;
 
 static MsgContext *
@@ -68,11 +68,11 @@ msg_get_context(void)
 {
   MsgContext *context;
 
-  context = g_static_private_get(&msg_context_private);
+  context = g_private_get(&msg_context_private);
   if (!context)
     {
       context = g_new0(MsgContext, 1);
-      g_static_private_set(&msg_context_private, context, g_free);
+      g_private_replace(&msg_context_private, context);
     }
   return context;
 }
