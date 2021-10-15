@@ -286,10 +286,10 @@ Test(diskq, testcase_with_threads)
 
       for (j = 0; j < FEEDERS; j++)
         {
-          thread_feed[j] = g_thread_create(threaded_feed, q, TRUE, NULL);
+          thread_feed[j] = g_thread_new(NULL, threaded_feed, q);
         }
 
-      thread_consume = g_thread_create(threaded_consume, q, TRUE, NULL);
+      thread_consume = g_thread_new(NULL, threaded_consume, q);
 
       for (j = 0; j < FEEDERS; j++)
         {

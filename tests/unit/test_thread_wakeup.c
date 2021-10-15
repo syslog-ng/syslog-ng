@@ -77,7 +77,7 @@ create_test_thread(GThreadFunc thread_func, gpointer data)
 
   thread_exit = FALSE;
   thread_started = FALSE;
-  t = g_thread_create(thread_func, data, TRUE, NULL);
+  t = g_thread_new(NULL, thread_func, data);
   g_mutex_lock(&thread_lock);
   while (!thread_started)
     g_cond_wait(thread_startup, &thread_lock);

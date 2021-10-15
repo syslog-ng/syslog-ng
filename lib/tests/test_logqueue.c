@@ -264,11 +264,11 @@ Test(logqueue, test_with_threads)
       for (j = 0; j < FEEDERS; j++)
         {
           fprintf(stderr, "starting feed thread %d\n", j);
-          other_threads[j] = g_thread_create(_output_thread, NULL, TRUE, NULL);
-          thread_feed[j] = g_thread_create(_threaded_feed, q, TRUE, NULL);
+          other_threads[j] = g_thread_new(NULL, _output_thread, NULL);
+          thread_feed[j] = g_thread_new(NULL, _threaded_feed, q);
         }
 
-      thread_consume = g_thread_create(_threaded_consume, q, TRUE, NULL);
+      thread_consume = g_thread_new(NULL, _threaded_consume, q);
 
       for (j = 0; j < FEEDERS; j++)
         {
@@ -408,7 +408,7 @@ Test(logqueue, log_queue_fifo_should_drop_only_non_flow_controlled_messages_thre
   log_queue_set_use_backlog(q, TRUE);
   _register_stats_counters(q);
 
-  GThread *thread = g_thread_create(_flow_control_feed_thread, q, TRUE, NULL);
+  GThread *thread = g_thread_new(NULL, _flow_control_feed_thread, q);
   g_thread_join(thread);
 
   cr_assert_eq(stats_counter_get(q->dropped_messages), 3);

@@ -97,7 +97,7 @@ assert_template_format_multi_thread(const gchar *template, const gchar *expected
   args[1] = templ;
   for (i = 0; i < 16; i++)
     {
-      threads[i] = g_thread_create(format_template_thread, args, TRUE, NULL);
+      threads[i] = g_thread_new(NULL, format_template_thread, args);
     }
 
   thread_start = TRUE;
