@@ -4,4 +4,6 @@ RUN apt update && apt install -y \
   python3-pip
 
 RUN pip install \
-  azure-storage-blob
+  azure-storage-blob \
+  azure-mgmt-cdn \
+  azure-identity
