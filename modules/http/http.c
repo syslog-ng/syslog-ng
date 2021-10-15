@@ -394,7 +394,6 @@ http_dd_free(LogPipe *s)
   g_free(self->ciphers);
   g_free(self->proxy);
   g_list_free_full(self->headers, g_free);
-  g_mutex_clear(&self->workers_lock);
   http_load_balancer_free(self->load_balancer);
   http_response_handlers_free(self->response_handlers);
 
@@ -427,7 +426,6 @@ http_dd_new(GlobalConfig *cfg)
   self->body_prefix = g_string_new("");
   self->body_suffix = g_string_new("");
   self->delimiter = g_string_new("\n");
-  g_mutex_init(&self->workers_lock);
   self->load_balancer = http_load_balancer_new();
   curl_version_info_data *curl_info = curl_version_info(CURLVERSION_NOW);
   if (!self->user_agent)
