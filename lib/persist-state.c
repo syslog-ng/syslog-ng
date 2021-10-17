@@ -123,7 +123,7 @@ _wait_until_map_release(PersistState *self)
 {
   g_mutex_lock(&self->mapped_lock);
   while (self->mapped_counter)
-    g_cond_wait(self->mapped_release_cond, &self->mapped_lock);
+    g_cond_wait(&self->mapped_release_cond, &self->mapped_lock);
 }
 
 static gboolean
@@ -747,7 +747,7 @@ persist_state_unmap_entry(PersistState *self, PersistEntryHandle handle)
   self->mapped_counter--;
   if (self->mapped_counter == 0)
     {
-      g_cond_signal(self->mapped_release_cond);
+      g_cond_signal(&self->mapped_release_cond);
     }
   g_mutex_unlock(&self->mapped_lock);
 }
@@ -976,7 +976,7 @@ _destroy(PersistState *self)
   unlink(self->temp_filename);
 
   g_mutex_clear(&self->mapped_lock);
-  g_cond_free(self->mapped_release_cond);
+  g_cond_clear(&self->mapped_release_cond);
   g_free(self->temp_filename);
   g_free(self->committed_filename);
   g_hash_table_destroy(self->keys);
@@ -988,7 +988,7 @@ _init(PersistState *self, gchar *committed_filename, gchar *temp_filename)
   self->keys = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
   self->current_ofs = sizeof(PersistFileHeader);
   g_mutex_init(&self->mapped_lock);
-  self->mapped_release_cond = g_cond_new();
+  g_cond_init(&self->mapped_release_cond);
   self->version = 4;
   self->fd = -1;
   self->committed_filename = committed_filename;

@@ -40,7 +40,7 @@ struct _MainLoopTaskCallSite
   gpointer result;
   gboolean pending;
   gboolean wait;
-  GCond *cond;
+  GCond cond;
   GMutex lock;
 };
 
@@ -73,7 +73,7 @@ main_loop_call(MainLoopTaskFunc func, gpointer user_data, gboolean wait)
       g_mutex_unlock(&call_info.lock);
 
       while (call_info.pending)
-        g_cond_wait(call_info.cond, &main_task_lock);
+        g_cond_wait(&call_info.cond, &main_task_lock);
     }
   else
     {
@@ -91,7 +91,7 @@ main_loop_call(MainLoopTaskFunc func, gpointer user_data, gboolean wait)
   if (wait)
     {
       while (call_info.pending)
-        g_cond_wait(call_info.cond, &main_task_lock);
+        g_cond_wait(&call_info.cond, &main_task_lock);
     }
   g_mutex_unlock(&main_task_lock);
   return call_info.result;
@@ -119,7 +119,7 @@ main_loop_call_handler(gpointer user_data)
 
       g_mutex_lock(&main_task_lock);
       if (site->wait)
-        g_cond_signal(site->cond);
+        g_cond_signal(&site->cond);
     }
   g_mutex_unlock(&main_task_lock);
 }
@@ -127,15 +127,14 @@ main_loop_call_handler(gpointer user_data)
 void
 main_loop_call_thread_init(void)
 {
-  call_info.cond = g_cond_new();
+  g_cond_init(&call_info.cond);
   g_mutex_init(&call_info.lock);
 }
 
 void
 main_loop_call_thread_deinit(void)
 {
-  if (call_info.cond)
-    g_cond_free(call_info.cond);
+  g_cond_clear(&call_info.cond);
   g_mutex_clear(&call_info.lock);
 }
 

@@ -38,7 +38,7 @@
 
 gboolean thread_exit = FALSE;
 gboolean thread_started;
-GCond *thread_startup;
+GCond thread_startup;
 GMutex thread_lock;
 pthread_t thread_handle;
 
@@ -65,7 +65,7 @@ signal_startup(void)
   thread_handle = pthread_self();
   g_mutex_lock(&thread_lock);
   thread_started = TRUE;
-  g_cond_signal(thread_startup);
+  g_cond_signal(&thread_startup);
   g_mutex_unlock(&thread_lock);
 }
 
@@ -80,7 +80,7 @@ create_test_thread(GThreadFunc thread_func, gpointer data)
   t = g_thread_new(NULL, thread_func, data);
   g_mutex_lock(&thread_lock);
   while (!thread_started)
-    g_cond_wait(thread_startup, &thread_lock);
+    g_cond_wait(&thread_startup, &thread_lock);
   g_mutex_unlock(&thread_lock);
   nsleep.tv_sec = 0;
   nsleep.tv_nsec = 1e6;
@@ -177,10 +177,11 @@ Test(test_thread_wakeup, testcase)
 {
 
   g_mutex_init(&thread_lock);
-  thread_startup = g_cond_new();
+  g_cond_init(&thread_startup);
 
   cr_assert(test_accept_wakeup());
   cr_assert(test_read_wakeup());
 
   g_mutex_clear(&thread_lock);
+  g_cond_clear(&thread_startup);
 }

@@ -44,7 +44,7 @@ typedef struct _ThreadedCommandRunner
   struct
   {
     GMutex tid_saved_lock;
-    GCond *tid_saved_cond;
+    GCond tid_saved_cond;
     gboolean tid_saved;
     ThreadId tid;
     GMutex state_lock;
@@ -64,7 +64,7 @@ _thread_command_runner_new(ControlConnection *cc, GString *cmd, gpointer user_da
   self->command = g_string_new(cmd->str);
   self->user_data = user_data;
   g_mutex_init(&self->real_thread.tid_saved_lock);
-  self->real_thread.tid_saved_cond = g_cond_new();
+  g_cond_init(&self->real_thread.tid_saved_cond);
   g_mutex_init(&self->real_thread.state_lock);
   self->real_thread.tid_saved = FALSE;
   self->real_thread.tid = 0;
@@ -76,7 +76,7 @@ static void
 _thread_command_runner_free(ThreadedCommandRunner *self)
 {
   g_mutex_clear(&self->real_thread.tid_saved_lock);
-  g_cond_free(self->real_thread.tid_saved_cond);
+  g_cond_clear(&self->real_thread.tid_saved_cond);
   g_mutex_clear(&self->real_thread.state_lock);
   g_string_free(self->command, TRUE);
   g_free(self);
@@ -87,7 +87,7 @@ _thread_command_runner_wait_for_tid_saved(ThreadedCommandRunner *self)
 {
   g_mutex_lock(&self->real_thread.tid_saved_lock);
   while (self->real_thread.tid_saved == FALSE)
-    g_cond_wait(self->real_thread.tid_saved_cond, &self->real_thread.tid_saved_lock);
+    g_cond_wait(&self->real_thread.tid_saved_cond, &self->real_thread.tid_saved_lock);
   g_mutex_unlock(&self->real_thread.tid_saved_lock);
 }
 
@@ -97,7 +97,7 @@ _thread_command_runner_save_tid(ThreadedCommandRunner *self)
   g_mutex_lock(&self->real_thread.tid_saved_lock);
   self->real_thread.tid = get_thread_id();
   self->real_thread.tid_saved = TRUE;
-  g_cond_broadcast(self->real_thread.tid_saved_cond);
+  g_cond_broadcast(&self->real_thread.tid_saved_cond);
   g_mutex_unlock(&self->real_thread.tid_saved_lock);
 }
 

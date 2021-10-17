@@ -33,7 +33,7 @@
 typedef struct _WakeupCondition
 {
   GMutex lock;
-  GCond *cond;
+  GCond cond;
   gboolean awoken;
 } WakeupCondition;
 
@@ -54,14 +54,14 @@ static void
 wakeup_cond_init(WakeupCondition *cond)
 {
   g_mutex_init(&cond->lock);
-  cond->cond = g_cond_new();
+  g_cond_init(&cond->cond);
   cond->awoken = TRUE;
 }
 
 static void
 wakeup_cond_destroy(WakeupCondition *cond)
 {
-  g_cond_free(cond->cond);
+  g_cond_clear(&cond->cond);
   g_mutex_clear(&cond->lock);
 }
 
@@ -83,7 +83,7 @@ wakeup_cond_wait(WakeupCondition *cond)
 {
   cond->awoken = FALSE;
   while (!cond->awoken)
-    g_cond_wait(cond->cond, &cond->lock);
+    g_cond_wait(&cond->cond, &cond->lock);
 }
 
 static inline void
@@ -91,7 +91,7 @@ wakeup_cond_signal(WakeupCondition *cond)
 {
   g_mutex_lock(&cond->lock);
   cond->awoken = TRUE;
-  g_cond_signal(cond->cond);
+  g_cond_signal(&cond->cond);
   g_mutex_unlock(&cond->lock);
 }
 

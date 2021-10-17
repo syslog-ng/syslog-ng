@@ -41,7 +41,7 @@
 #include <stdio.h>
 #include <string.h>
 
-GCond *thread_ping;
+GCond thread_ping;
 GMutex thread_lock;
 gboolean thread_start;
 
@@ -60,7 +60,7 @@ format_template_thread(gpointer s)
 
   g_mutex_lock(&thread_lock);
   while (!thread_start)
-    g_cond_wait(thread_ping, &thread_lock);
+    g_cond_wait(&thread_ping, &thread_lock);
   g_mutex_unlock(&thread_lock);
 
   result = g_string_sized_new(0);
@@ -92,7 +92,7 @@ assert_template_format_multi_thread(const gchar *template, const gchar *expected
   args[2] = (gpointer) expected;
 
   thread_start = FALSE;
-  thread_ping = g_cond_new();
+  g_cond_init(&thread_ping);
   g_mutex_init(&thread_lock);
   args[1] = templ;
   for (i = 0; i < 16; i++)
@@ -102,13 +102,13 @@ assert_template_format_multi_thread(const gchar *template, const gchar *expected
 
   thread_start = TRUE;
   g_mutex_lock(&thread_lock);
-  g_cond_broadcast(thread_ping);
+  g_cond_broadcast(&thread_ping);
   g_mutex_unlock(&thread_lock);
   for (i = 0; i < 16; i++)
     {
       g_thread_join(threads[i]);
     }
-  g_cond_free(thread_ping);
+  g_cond_clear(&thread_ping);
   g_mutex_clear(&thread_lock);
   log_template_unref(templ);
   log_msg_unref(msg);

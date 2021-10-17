@@ -95,7 +95,7 @@ volatile gint main_loop_workers_running;
  */
 
 ThreadId main_thread_handle;
-GCond *thread_halt_cond;
+GCond thread_halt_cond;
 GMutex workers_running_lock;
 
 struct _MainLoop
@@ -367,15 +367,12 @@ main_loop_reload_config(MainLoop *self)
 static void
 block_till_workers_exit(void)
 {
-  GTimeVal end_time;
-
-  g_get_current_time(&end_time);
-  g_time_val_add(&end_time, 15 * G_USEC_PER_SEC);
+  gint64 end_time = g_get_monotonic_time() + 15 * G_USEC_PER_SEC;
 
   g_mutex_lock(&workers_running_lock);
   while (main_loop_workers_running)
     {
-      if (!g_cond_timed_wait(thread_halt_cond, &workers_running_lock, &end_time))
+      if (!g_cond_wait_until(&thread_halt_cond, &workers_running_lock, end_time))
         {
           /* timeout has passed. */
           fprintf(stderr, "Main thread timed out (15s) while waiting workers threads to exit. "
@@ -681,14 +678,14 @@ main_loop_add_options(GOptionContext *ctx)
 void
 main_loop_thread_resource_init(void)
 {
-  thread_halt_cond = g_cond_new();
+  g_cond_init(&thread_halt_cond);
   main_thread_handle = get_thread_id();
 }
 
 void
 main_loop_thread_resource_deinit(void)
 {
-  g_cond_free(thread_halt_cond);
+  g_cond_clear(&thread_halt_cond);
 }
 
 gboolean

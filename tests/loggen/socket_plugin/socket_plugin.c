@@ -56,8 +56,8 @@ static GPtrArray      *thread_array = NULL;
 static gboolean thread_run;
 static generate_message_func generate_message;
 static GMutex thread_lock;
-static GCond *thread_start = NULL;
-static GCond *thread_connected = NULL;
+static GCond thread_start;
+static GCond thread_connected;
 static gint connect_finished;
 static gint active_thread_count;
 static gint idle_thread_count;
@@ -157,8 +157,8 @@ start(PluginOption *option)
   thread_array = g_ptr_array_new();
 
   g_mutex_init(&thread_lock);
-  thread_start = g_cond_new();
-  thread_connected = g_cond_new();
+  g_cond_init(&thread_start);
+  g_cond_init(&thread_connected);
 
   active_thread_count  = option->active_connections;
   idle_thread_count = option->idle_connections;
@@ -192,7 +192,7 @@ start(PluginOption *option)
   g_mutex_lock(&thread_lock);
   while (connect_finished != option->active_connections + option->idle_connections)
     {
-      if (! g_cond_wait_until(thread_connected, &thread_lock, end_time))
+      if (! g_cond_wait_until(&thread_connected, &thread_lock, end_time))
         {
           ERROR("timeout occurred while waiting for connections\n");
           break;
@@ -200,7 +200,7 @@ start(PluginOption *option)
     }
 
   /* start all threads */
-  g_cond_broadcast(thread_start);
+  g_cond_broadcast(&thread_start);
   thread_run = TRUE;
   g_mutex_unlock(&thread_lock);
 
@@ -233,6 +233,8 @@ stop(PluginOption *option)
     }
 
   g_mutex_clear(&thread_lock);
+  g_cond_clear(&thread_start);
+  g_cond_clear(&thread_connected);
 
   DEBUG("all %d+%d threads have been stopped\n",
         option->active_connections,
@@ -272,7 +274,7 @@ idle_thread_func(gpointer user_data)
   connect_finished++;
 
   if (connect_finished == option->active_connections + option->idle_connections)
-    g_cond_broadcast(thread_connected);
+    g_cond_broadcast(&thread_connected);
 
   g_mutex_unlock(&thread_lock);
 
@@ -280,7 +282,7 @@ idle_thread_func(gpointer user_data)
   g_mutex_lock(&thread_lock);
   while (!thread_run)
     {
-      g_cond_wait(thread_start, &thread_lock);
+      g_cond_wait(&thread_start, &thread_lock);
     }
   g_mutex_unlock(&thread_lock);
 
@@ -338,7 +340,7 @@ active_thread_func(gpointer user_data)
   connect_finished++;
 
   if (connect_finished == option->active_connections + option->idle_connections)
-    g_cond_broadcast(thread_connected);
+    g_cond_broadcast(&thread_connected);
 
   g_mutex_unlock(&thread_lock);
 
@@ -346,7 +348,7 @@ active_thread_func(gpointer user_data)
   g_mutex_lock(&thread_lock);
   while (!thread_run)
     {
-      g_cond_wait(thread_start, &thread_lock);
+      g_cond_wait(&thread_start, &thread_lock);
     }
   g_mutex_unlock(&thread_lock);
 

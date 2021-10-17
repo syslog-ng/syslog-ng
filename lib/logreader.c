@@ -268,7 +268,7 @@ log_reader_close_proto(LogReader *self)
       g_mutex_lock(&self->pending_close_lock);
       while (self->pending_close)
         {
-          g_cond_wait(self->pending_close_cond, &self->pending_close_lock);
+          g_cond_wait(&self->pending_close_cond, &self->pending_close_lock);
         }
       g_mutex_unlock(&self->pending_close_lock);
     }
@@ -378,7 +378,7 @@ log_reader_work_finished(void *s)
       log_reader_apply_proto_and_poll_events(self, NULL, NULL);
       self->pending_close = FALSE;
 
-      g_cond_signal(self->pending_close_cond);
+      g_cond_signal(&self->pending_close_cond);
       g_mutex_unlock(&self->pending_close_lock);
     }
 
@@ -705,7 +705,7 @@ log_reader_free(LogPipe *s)
   g_sockaddr_unref(self->peer_addr);
   g_sockaddr_unref(self->local_addr);
   g_mutex_clear(&self->pending_close_lock);
-  g_cond_free(self->pending_close_cond);
+  g_cond_clear(&self->pending_close_cond);
   log_source_free(s);
 }
 
@@ -740,7 +740,7 @@ log_reader_new(GlobalConfig *cfg)
   self->immediate_check = FALSE;
   log_reader_init_watches(self);
   g_mutex_init(&self->pending_close_lock);
-  self->pending_close_cond = g_cond_new();
+  g_cond_init(&self->pending_close_cond);
   return self;
 }
 

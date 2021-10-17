@@ -43,7 +43,7 @@ typedef struct _TestThreadedFetcherDriver
   gboolean no_data_first_time;
 
   GMutex lock;
-  GCond *cond;
+  GCond cond;
 
 } TestThreadedFetcherDriver;
 
@@ -81,7 +81,7 @@ test_threaded_fetcher_free(LogPipe *s)
 {
   TestThreadedFetcherDriver *self = (TestThreadedFetcherDriver *) s;
 
-  g_cond_free(self->cond);
+  g_cond_clear(&self->cond);
   g_mutex_clear(&self->lock);
 
   log_threaded_fetcher_driver_free_method(s);
@@ -109,7 +109,7 @@ test_threaded_fetcher_new(GlobalConfig *cfg)
   log_threaded_fetcher_driver_init_instance(&self->super, cfg);
 
   g_mutex_init(&self->lock);
-  self->cond = g_cond_new();
+  g_cond_init(&self->cond);
 
   self->super.super.super.super.super.init = test_threaded_fetcher_driver_init_method;
 
@@ -139,7 +139,7 @@ wait_for_messages(TestThreadedFetcherDriver *s)
 {
   g_mutex_lock(&s->lock);
   while (s->num_of_messages_to_generate > 0)
-    g_cond_wait(s->cond, &s->lock);
+    g_cond_wait(&s->cond, &s->lock);
   g_mutex_unlock(&s->lock);
 }
 
@@ -188,7 +188,7 @@ _fetch(LogThreadedFetcherDriver *s)
   g_mutex_lock(&self->lock);
   if (self->num_of_messages_to_generate <= 0)
     {
-      g_cond_signal(self->cond);
+      g_cond_signal(&self->cond);
       g_mutex_unlock(&self->lock);
       return (LogThreadedFetchResult)
       {
@@ -277,7 +277,7 @@ _fetch_for_try_again_test(LogThreadedFetcherDriver *s)
   g_mutex_lock(&self->lock);
   if (self->num_of_messages_to_generate <= 0)
     {
-      g_cond_signal(self->cond);
+      g_cond_signal(&self->cond);
       g_mutex_unlock(&self->lock);
       return (LogThreadedFetchResult)
       {
@@ -339,7 +339,7 @@ _fetch_for_no_data(LogThreadedFetcherDriver *s)
   g_mutex_lock(&self->lock);
   if (self->num_of_messages_to_generate <= 0)
     {
-      g_cond_signal(self->cond);
+      g_cond_signal(&self->cond);
       g_mutex_unlock(&self->lock);
       return (LogThreadedFetchResult)
       {

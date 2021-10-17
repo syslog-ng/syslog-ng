@@ -104,7 +104,7 @@ struct _LogWriter
   LogProtoClient *proto, *pending_proto;
   gboolean watches_running:1, suspended:1, waiting_for_throttle:1;
   gboolean pending_proto_present;
-  GCond *pending_proto_cond;
+  GCond pending_proto_cond;
   GMutex pending_proto_lock;
 };
 
@@ -230,7 +230,7 @@ log_writer_work_finished(gpointer s)
       log_writer_set_proto(self, self->pending_proto);
       log_writer_set_pending_proto(self, NULL, FALSE);
 
-      g_cond_signal(self->pending_proto_cond);
+      g_cond_signal(&self->pending_proto_cond);
       g_mutex_unlock(&self->pending_proto_lock);
     }
 
@@ -1581,7 +1581,7 @@ log_writer_free(LogPipe *s)
   ml_batched_timer_free(&self->suppress_timer);
   g_mutex_clear(&self->suppress_lock);
   g_mutex_clear(&self->pending_proto_lock);
-  g_cond_free(self->pending_proto_cond);
+  g_cond_clear(&self->pending_proto_cond);
 
   log_pipe_free_method(s);
 }
@@ -1718,7 +1718,7 @@ log_writer_reopen(LogWriter *s, LogProtoClient *proto)
       g_mutex_lock(&self->pending_proto_lock);
       while (self->pending_proto_present)
         {
-          g_cond_wait(self->pending_proto_cond, &self->pending_proto_lock);
+          g_cond_wait(&self->pending_proto_cond, &self->pending_proto_lock);
         }
       g_mutex_unlock(&self->pending_proto_lock);
     }
@@ -1761,7 +1761,7 @@ log_writer_new(guint32 flags, GlobalConfig *cfg)
   log_writer_init_watches(self);
   g_mutex_init(&self->suppress_lock);
   g_mutex_init(&self->pending_proto_lock);
-  self->pending_proto_cond = g_cond_new();
+  g_cond_init(&self->pending_proto_cond);
 
   log_pipe_add_info(&self->super, "writer");
 
