@@ -181,4 +181,6 @@ Test(test_thread_wakeup, testcase)
 
   cr_assert(test_accept_wakeup());
   cr_assert(test_read_wakeup());
+
+  g_mutex_clear(&thread_lock);
 }
