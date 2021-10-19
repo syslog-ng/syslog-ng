@@ -55,6 +55,24 @@ fop_free(FilterExprNode *s)
 
   filter_expr_unref(self->left);
   filter_expr_unref(self->right);
+  g_free((gchar *) self->super.type);
+}
+
+FilterExprNode *
+fop_clone(FilterExprNode *s)
+{
+  FilterOp *self = (FilterOp *) s;
+  FilterOp *cloned_self = g_new0(FilterOp, 1);
+  filter_expr_node_init_instance(&cloned_self->super);
+
+  cloned_self->super.init = fop_init;
+  cloned_self->super.free_fn = fop_free;
+  cloned_self->super.clone = fop_clone;
+  cloned_self->super.eval = self->super.eval;
+  cloned_self->left = filter_expr_clone(self->left);
+  cloned_self->right = filter_expr_clone(self->right);
+  cloned_self->super.type = g_strdup(self->super.type);
+  return &cloned_self->super;
 }
 
 static void
@@ -63,6 +81,7 @@ fop_init_instance(FilterOp *self)
   filter_expr_node_init_instance(&self->super);
   self->super.init = fop_init;
   self->super.free_fn = fop_free;
+  self->super.clone = fop_clone;
 }
 
 static gboolean
@@ -83,7 +102,7 @@ fop_or_new(FilterExprNode *e1, FilterExprNode *e2)
   self->super.eval = fop_or_eval;
   self->left = e1;
   self->right = e2;
-  self->super.type = "OR";
+  self->super.type = g_strdup("OR");
   return &self->super;
 }
 
@@ -105,6 +124,6 @@ fop_and_new(FilterExprNode *e1, FilterExprNode *e2)
   self->super.eval = fop_and_eval;
   self->left = e1;
   self->right = e2;
-  self->super.type = "AND";
+  self->super.type = g_strdup("AND");
   return &self->super;
 }

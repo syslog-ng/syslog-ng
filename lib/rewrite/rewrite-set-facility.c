@@ -117,7 +117,7 @@ log_rewrite_set_facility_clone(LogPipe *s)
                                   s->cfg);
 
   if (self->super.condition)
-    cloned->super.condition = filter_expr_ref(self->super.condition);
+    cloned->super.condition = filter_expr_clone(self->super.condition);
 
   return &cloned->super.super;
 }

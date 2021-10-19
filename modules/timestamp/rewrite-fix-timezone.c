@@ -86,7 +86,7 @@ _clone(LogPipe *s)
   rewrite_fix_time_zone_set_zone_template_ref(cloned, log_template_ref(self->zone_template));
   rewrite_fix_time_zone_set_time_stamp(cloned, self->stamp);
   if (self->super.condition)
-    cloned->condition = filter_expr_ref(self->super.condition);
+    cloned->condition = filter_expr_clone(self->super.condition);
 
   return &cloned->super;
 }

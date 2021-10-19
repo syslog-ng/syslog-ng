@@ -111,7 +111,7 @@ log_rewrite_groupset_clone(LogPipe *s)
   cloned->vp_func = self->vp_func;
 
   if (self->super.condition)
-    cloned->super.condition = filter_expr_ref(self->super.condition);
+    cloned->super.condition = filter_expr_clone(self->super.condition);
 
   return &cloned->super.super;
 };

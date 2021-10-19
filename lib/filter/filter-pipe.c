@@ -90,7 +90,9 @@ static LogPipe *
 log_filter_pipe_clone(LogPipe *s)
 {
   LogFilterPipe *self = (LogFilterPipe *) s;
-  LogPipe *cloned = log_filter_pipe_new(filter_expr_ref(self->expr), s->cfg);
+  FilterExprNode *expr = filter_expr_clone(self->expr);
+
+  LogPipe *cloned = log_filter_pipe_new(expr, s->cfg);
   ((LogFilterPipe *)cloned)->name = g_strdup(self->name);
   return cloned;
 }

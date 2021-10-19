@@ -39,6 +39,7 @@
 #include "filter/filter-call.h"
 #include "filter/filter-re.h"
 #include "filter/filter-pri.h"
+#include "filter/filter-throttle.h"
 #include "messages.h"
 #include "template/templates.h"
 #include "syslog-names.h"
@@ -59,6 +60,7 @@ FilterExprNode *last_filter_expr;
 
 %token KW_PROGRAM
 %token KW_IN_LIST
+%token KW_RATE
 
 %left   ';'
 %left	KW_OR
@@ -71,6 +73,7 @@ FilterExprNode *last_filter_expr;
 %type	<node> filter_simple_expr
 %type	<node> filter_plugin
 %type	<node> filter_comparison
+%type	<node> filter_throttle
 
 %type   <num> filter_fac_list
 %type   <num> filter_fac
@@ -141,6 +144,7 @@ filter_simple_expr
 	| filter_re					{ $$ = last_filter_expr; }
 	| filter_plugin
 	| filter_comparison
+	| filter_throttle   { $$ = last_filter_expr; }
 	;
 
 
@@ -305,6 +309,26 @@ filter_severity
 	  }
 	;
 
+filter_throttle_arg
+  : KW_VALUE '(' string ')'
+          {
+            filter_throttle_set_key(last_filter_expr, log_msg_get_value_handle($3));
+            free($3);
+          }
+  | KW_RATE '(' positive_integer ')'
+          {
+            filter_throttle_set_rate(last_filter_expr, $3);
+          }
+  ;
+
+filter_throttle_args
+  : filter_throttle_arg filter_throttle_args
+  |
+  ;
+
+filter_throttle
+  : KW_THROTTLE { last_filter_expr = filter_throttle_new(); } '(' filter_throttle_args ')'
+  ;
 
 /* INCLUDE_RULES */
 
