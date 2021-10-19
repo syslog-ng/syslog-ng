@@ -39,7 +39,7 @@ def add_common_optional_arguments(parser: ArgumentParser) -> None:
     parser.add_argument(
         "--log-file",
         type=str,
-        help="Also log into this file.",
+        help="Also log more verbosely into this file.",
     )
 
 
@@ -89,11 +89,16 @@ def parse_args() -> dict:
 
 
 def init_logging(args: dict) -> None:
-    handlers = [
-        logging.StreamHandler(),
-    ]
+    handlers = []
+
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(logging.INFO)
+    handlers.append(stream_handler)
+
     if "log_file" in args.keys() and args["log_file"] is not None:
-        handlers.append(logging.FileHandler(args["log_file"]))
+        file_handler = logging.FileHandler(args["log_file"])
+        file_handler.setLevel(logging.DEBUG)
+        handlers.append(file_handler)
 
     logging.basicConfig(
         format="%(asctime)s\t[%(name)s]\t%(message)s",
