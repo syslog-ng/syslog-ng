@@ -151,7 +151,7 @@ class ContainerSynchronizer:
         try:
             remote_md5 = self.__get_md5_of_remote_file(relative_file_path)
         except FileNotFoundError:
-            self.__log_info(
+            self.__log_debug(
                 "Local file is not available remotely.",
                 local_path=str(Path(self.local_dir.root_dir, relative_file_path)),
                 unavailable_remote_path=str(Path(self.remote_dir.root_dir, relative_file_path)),
@@ -161,7 +161,7 @@ class ContainerSynchronizer:
         try:
             local_md5 = self.__get_md5_of_local_file(relative_file_path)
         except FileNotFoundError:
-            self.__log_info(
+            self.__log_debug(
                 "Remote file is not available locally.",
                 remote_path=str(Path(self.remote_dir.root_dir, relative_file_path)),
                 unavailable_local_path=str(Path(self.local_dir.root_dir, relative_file_path)),
@@ -169,7 +169,7 @@ class ContainerSynchronizer:
             return FileSyncState.NOT_IN_LOCAL
 
         if remote_md5 != local_md5:
-            self.__log_info(
+            self.__log_debug(
                 "File differs locally and remotely.",
                 remote_path=str(Path(self.remote_dir.root_dir, relative_file_path)),
                 local_path=str(Path(self.local_dir.root_dir, relative_file_path)),
@@ -178,7 +178,7 @@ class ContainerSynchronizer:
             )
             return FileSyncState.DIFFERENT
 
-        self.__log_info(
+        self.__log_debug(
             "File is in sync.",
             remote_path=str(Path(self.remote_dir.root_dir, relative_file_path)),
             local_path=str(Path(self.local_dir.root_dir, relative_file_path)),
@@ -207,11 +207,19 @@ class ContainerSynchronizer:
     @staticmethod
     def __create_logger() -> logging.Logger:
         logger = logging.getLogger("ContainerSynchronizer")
-        logger.setLevel(logging.INFO)
+        logger.setLevel(logging.DEBUG)
         return logger
 
-    def __log_info(self, message: str, **kwargs: str) -> None:
+    def __prepare_log(self, message: str, **kwargs: str) -> str:
         log = "[{} :: {}]\t{}".format(self.__client.container_name, str(self.remote_dir.working_dir), message)
         if len(kwargs) > 0:
             log += "\t{}".format(kwargs)
+        return log
+
+    def __log_info(self, message: str, **kwargs: str) -> None:
+        log = self.__prepare_log(message, **kwargs)
         self.__logger.info(log)
+
+    def __log_debug(self, message: str, **kwargs: str) -> None:
+        log = self.__prepare_log(message, **kwargs)
+        self.__logger.debug(log)
