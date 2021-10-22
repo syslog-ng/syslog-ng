@@ -113,24 +113,36 @@ throttle_ratelimit_process_new_logs(ThrottleRateLimit *self, gint num_new_logs)
   return throttle_ratelimit_try_consume_tokens(self, num_new_logs);
 }
 
+static const gchar *
+filter_throttle_generate_key(FilterExprNode *s, LogMessage *msg, LogTemplateEvalOptions *options,
+                             gssize *len)
+{
+  FilterThrottle *self = (FilterThrottle *)s;
+
+  static const gchar *key;
+
+  if (self->key_handle)
+    {
+      key = log_msg_get_value(msg, self->key_handle, len);
+    }
+  else
+    {
+      key = "";
+      len = 0;
+    }
+
+  return key;
+}
+
 static gboolean
 filter_throttle_eval(FilterExprNode *s, LogMessage **msgs, gint num_msg, LogTemplateEvalOptions *options)
 {
   FilterThrottle *self = (FilterThrottle *)s;
 
-  const gchar *key;
+  LogMessage *msg = msgs[num_msg - 1];
   gssize len = 0;
-
-  if (self->key_handle)
-    {
-      LogMessage *msg = msgs[num_msg-1];
-      key = log_msg_get_value(msg, self->key_handle, &len);
-      APPEND_ZERO(key, key, len);
-    }
-  else
-    {
-      key = "";
-    }
+  const gchar *key = filter_throttle_generate_key(s, msg, options, &len);
+  APPEND_ZERO(key, key, len);
 
   ThrottleRateLimit *rl;
 
