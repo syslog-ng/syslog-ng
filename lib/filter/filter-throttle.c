@@ -30,6 +30,7 @@ typedef struct _FilterThrottle
 {
   FilterExprNode super;
   NVHandle key_handle;
+  LogTemplate *key_template;
   gint rate;
   GMutex *map_lock;
   GHashTable *rate_limits;
@@ -114,12 +115,30 @@ throttle_ratelimit_process_new_logs(ThrottleRateLimit *self, gint num_new_logs)
 }
 
 static const gchar *
+filter_throttle_generate_key_template(FilterExprNode *s, LogMessage *msg, LogTemplateEvalOptions *options, gssize *len)
+{
+  FilterThrottle *self = (FilterThrottle *)s;
+
+  GString *key = scratch_buffers_alloc();
+
+  log_template_format(self->key_template, msg, options, key);
+
+  *len = key->len;
+
+  return key->str;
+}
+
+static const gchar *
 filter_throttle_generate_key(FilterExprNode *s, LogMessage *msg, LogTemplateEvalOptions *options,
                              gssize *len)
 {
   FilterThrottle *self = (FilterThrottle *)s;
 
   static const gchar *key;
+
+  if (self->key_template)
+    return filter_throttle_generate_key_template(s, msg, options, len);
+
 
   if (self->key_handle)
     {
@@ -166,6 +185,7 @@ filter_throttle_free(FilterExprNode *s)
 {
   FilterThrottle *self = (FilterThrottle *) s;
 
+  log_template_unref(self->key_template);
   g_hash_table_destroy(self->rate_limits);
   g_mutex_free(self->map_lock);
 }
@@ -192,6 +212,14 @@ filter_throttle_set_key(FilterExprNode *s, NVHandle key_handle)
 }
 
 void
+filter_throttle_set_key_template(FilterExprNode *s, LogTemplate *template)
+{
+  FilterThrottle *self = (FilterThrottle *)s;
+  log_template_unref(self->key_template);
+  self->key_template = log_template_ref(template);
+}
+
+void
 filter_throttle_set_rate(FilterExprNode *s, gint rate)
 {
   FilterThrottle *self = (FilterThrottle *)s;
@@ -205,6 +233,7 @@ filter_throttle_clone(FilterExprNode *s)
 
   FilterExprNode *cloned_self = filter_throttle_new();
   filter_throttle_set_key(cloned_self, self->key_handle);
+  filter_throttle_set_key_template(cloned_self, self->key_template);
   filter_throttle_set_rate(cloned_self, self->rate);
 
   return cloned_self;
