@@ -119,6 +119,11 @@ filter_throttle_generate_key_template(FilterExprNode *s, LogMessage *msg, LogTem
 {
   FilterThrottle *self = (FilterThrottle *)s;
 
+  if (log_template_is_trivial(self->key_template))
+    {
+      return log_template_get_trivial_value(self->key_template, msg, len);
+    }
+
   GString *key = scratch_buffers_alloc();
 
   log_template_format(self->key_template, msg, options, key);
