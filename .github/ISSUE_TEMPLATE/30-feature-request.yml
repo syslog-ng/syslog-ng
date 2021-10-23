@@ -1,0 +1,25 @@
+name: Feature request
+description: Use this template for raising a feature request.
+labels: ["enhancement"]
+
+body:
+  - type: textarea
+    attributes:
+      label: Description of the problem
+      description: Is your feature request related to a problem? Please describe. Ex. I'm always frustrated when [...]
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Proposed solution
+      description: Describe the solution you'd like.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Alternatives
+      description: Describe any alternative solutions or features you've considered.
+  - type: textarea
+    attributes:
+      label: Additional context
+      description: Add any other context or screenshots about the feature request here.
