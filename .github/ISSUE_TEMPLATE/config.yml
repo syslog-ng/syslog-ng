@@ -1,0 +1,7 @@
+contact_links:
+  - name: "Mailing list: syslog-ng@lists.balabit.hu"
+    url: https://lists.balabit.hu/mailman/listinfo/syslog-ng
+    about: You can also ask us questions here.
+  - name: Gitter
+    url: https://gitter.im/syslog-ng/syslog-ng
+    about: You can also ask us questions here.
