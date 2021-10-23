@@ -1,0 +1,29 @@
+name: Documentation issue
+description: Use this template for reporting an issue in the documentation.
+labels: ["doc-bug"]
+
+body:
+  - type: input
+    attributes:
+      label: Documentation version
+      description: In which version of syslog-ng's documentation did you see the issue?
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Incorrect section
+      description: Which section of the documentation is wrong? Please include a link to it, if that is possible.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Description of the problem
+      description: Which statements of the documentation are inaccurate?
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Proposed solution
+      description: What do you think the correction should be?
+    validations:
+      required: true
