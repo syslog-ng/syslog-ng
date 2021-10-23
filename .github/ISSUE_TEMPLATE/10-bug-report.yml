@@ -1,0 +1,81 @@
+name: Bug report
+description: Use this template for reporting a bug.
+labels: ["bug"]
+
+body:
+  - type: markdown
+    attributes:
+      value: "# syslog-ng"
+  - type: textarea
+    attributes:
+      label: Version of syslog-ng
+      description: |
+        Output of:
+        ```
+        $ syslog-ng --version
+        ```
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Platform
+      description: Name and version of OS
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Debug bundle
+      description: |
+        If possible, create a debug bundle on your system with the `syslog-ng-debun` script which is included in the `syslog-ng` package.
+
+        Overview of the CLI options of syslog-ng-debun:
+        ```
+        -r: run actual information gathering
+        -d: run syslog-ng in debug mode
+        -p: perform packet capture
+        -s: do strace
+        -t: timeout period for running debug/pcap/strace
+        -w: wait period before starting debug mode
+        -l: light information gathering (respects privacy)
+        -R: alternate installation directory for syslog-ng
+        ```
+
+        E.g.:
+        ```
+        $ syslog-ng-debun -r
+        ```
+  - type: markdown
+    attributes:
+      value: "# Issue"
+  - type: textarea
+    attributes:
+      label: Failure
+      description: |
+        Backtrace, error messages and detailed description of the failure.
+
+        ```
+        $ gdb syslog-ng
+        (gdb) run
+        ```
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Steps to reproduce
+      description: A description of how to trigger this bug.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Configuration
+      description: |
+        Relevant parts of the config.
+        E.g. the output of:
+        ```
+        $ cat /path/to/syslog-ng.conf
+        ```
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Input and output logs
