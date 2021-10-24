@@ -236,9 +236,6 @@ TEST_EXTENSIONS = .sh
 
 VALGRIND_SUPPRESSIONS_FILES = $(top_srcdir)/tests/valgrind/unit-test-leak.supp
 EXTRA_DIST += syslog-ng.supp	\
-	.github/ISSUE_TEMPLATE/10-bug-report.md	\
-	.github/ISSUE_TEMPLATE/20-documentation-issue.md	\
-	.github/ISSUE_TEMPLATE/30-feature-request.md	\
 	GPL.txt	\
 	LGPL.txt	\
 	CMakeLists.txt
