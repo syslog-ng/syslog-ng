@@ -100,8 +100,28 @@ class ReleaseDebIndexer(DebIndexer):
         utils.execute_command(command, env=env)
 
     def __create_release_gpg_file(self, release_file_path: Path, gnupghome: str) -> None:
-        # TODO: implement
-        pass
+        release_gpg_file_path = Path(release_file_path.parent, "Release.gpg")
+        command = [
+            "gpg",
+            "--output",
+            str(release_gpg_file_path),
+            "--armor",
+            "--detach-sign",
+            "--sign",
+            str(release_file_path),
+        ]
+        env = {"GNUPGHOME": gnupghome}
+
+        if release_gpg_file_path.exists():
+            self._log_info("Removing old `Release.gpg` file.", release_gpg_file_path=str(release_gpg_file_path))
+            release_gpg_file_path.unlink()
+
+        self._log_info(
+            "Creating `Release.gpg` file.",
+            release_file_path=str(release_file_path),
+            release_gpg_file_path=str(release_gpg_file_path),
+        )
+        utils.execute_command(command, env=env)
 
     def __create_inrelease_file(self, release_file_path: Path, gnupghome: str) -> None:
         # TODO: implement
