@@ -101,7 +101,7 @@ class ReleaseDebIndexer(DebIndexer):
         cdn_credential: ClientSecretCredential,
         gpg_key_path: Path,
     ) -> None:
-        self.__gpg_key_path = gpg_key_path
+        self.__gpg_key_path = gpg_key_path.expanduser()
         super().__init__(
             container_connection_string=container_connection_string,
             incoming_container_sub_dir=Path("release", run_id),
