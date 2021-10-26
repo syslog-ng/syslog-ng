@@ -1,6 +1,7 @@
 import re
 from pathlib import Path
 from typing import List
+from tempfile import TemporaryDirectory
 
 from .indexer import Indexer, ClientSecretCredential
 from . import utils
@@ -91,9 +92,25 @@ class ReleaseDebIndexer(DebIndexer):
             apt_conf_file_path=Path(CURRENT_DIR, "apt_conf", "stable.conf"),
         )
 
-    def _sign_pkgs(self, indexed_dir: Path) -> None:
-        #  TODO: implement
+    def __add_gpg_key_to_chain(self, gnupghome: str) -> None:
+        # TODO: implement
         pass
+
+    def __create_release_gpg_file(self, release_file_path: Path, gnupghome: str) -> None:
+        # TODO: implement
+        pass
+
+    def __create_inrelease_file(self, release_file_path: Path, gnupghome: str) -> None:
+        # TODO: implement
+        pass
+
+    def _sign_pkgs(self, indexed_dir: Path) -> None:
+        gnupghome = TemporaryDirectory()
+        release_file_path = Path(indexed_dir, "Release")
+
+        self.__add_gpg_key_to_chain(gnupghome.name)
+        self.__create_release_gpg_file(release_file_path, gnupghome.name)
+        self.__create_inrelease_file(release_file_path, gnupghome.name)
 
 
 class NightlyDebIndexer(DebIndexer):
