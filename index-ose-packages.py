@@ -1,6 +1,7 @@
 #!/bin/env python3
 import logging
 from argparse import ArgumentParser, _ArgumentGroup, _SubParsersAction
+from pathlib import Path
 from typing import List
 
 from azure.identity import ClientSecretCredential
@@ -131,7 +132,7 @@ def main() -> None:
                 container_connection_string=args["container_connection_string"],
                 cdn_credential=cdn_credential,
                 run_id=args["run_id"],
-                gpg_key_path=args["gpg_key_path"],
+                gpg_key_path=Path(args["gpg_key_path"]),
             )
         )
     else:
