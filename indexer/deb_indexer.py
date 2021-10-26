@@ -1,9 +1,9 @@
 import re
 from pathlib import Path
-from subprocess import call
 from typing import List
 
 from .indexer import Indexer, ClientSecretCredential
+from . import utils
 
 CURRENT_DIR = Path(__file__).parent.resolve()
 
@@ -53,40 +53,21 @@ class DebIndexer(Indexer):
 
             packages_file_path = Path(pkg_dir, "Packages")
             with packages_file_path.open("w") as packages_file:
-                self._log_info(
-                    "Creating `Packages` file.",
-                    command=" ".join(command),
-                    dir=str(dir),
-                    output_file_path=str(packages_file_path),
-                )
-                status = call(
-                    command,
-                    stdout=packages_file,
-                    cwd=str(dir),
-                )
-                if status != 0:
-                    raise ChildProcessError("`{}` failed in dir: {}. rc={}.".format(" ".join(command), dir, status))
+                self._log_info("Creating `Packages` file.", packages_file_path=str(packages_file_path))
+                utils.execute_command(command, dir=dir, stdout=packages_file)
 
     def __create_release_file(self, indexed_dir: Path) -> None:
         command = ["apt-ftparchive", "release", "."]
 
         release_file_path = Path(indexed_dir, "Release")
         with release_file_path.open("w") as release_file:
-            self._log_info(
-                "Creating `Release` file.",
-                command=" ".join(command),
-                dir=str(indexed_dir),
-                output_file_path=str(release_file_path),
-                APT_CONFIG=str(self.__apt_conf_file_path),
-            )
-            status = call(
+            self._log_info("Creating `Release` file.", release_file_path=str(release_file_path))
+            utils.execute_command(
                 command,
+                dir=indexed_dir,
                 stdout=release_file,
-                cwd=str(indexed_dir),
                 env={"APT_CONFIG": str(self.__apt_conf_file_path)},
             )
-            if status != 0:
-                raise ChildProcessError("`{}` failed in dir: {}. rc={}.".format(" ".join(command), dir, status))
 
     def _index_pkgs(self, indexed_dir: Path) -> None:
         self.__create_packages_files(indexed_dir)
