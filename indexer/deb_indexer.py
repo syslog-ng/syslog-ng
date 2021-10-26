@@ -124,8 +124,28 @@ class ReleaseDebIndexer(DebIndexer):
         utils.execute_command(command, env=env)
 
     def __create_inrelease_file(self, release_file_path: Path, gnupghome: str) -> None:
-        # TODO: implement
-        pass
+        inrelease_file_path = Path(release_file_path.parent, "InRelease")
+        command = [
+            "gpg",
+            "--output",
+            str(inrelease_file_path),
+            "--armor",
+            "--sign",
+            "--clearsign",
+            str(release_file_path),
+        ]
+        env = {"GNUPGHOME": gnupghome}
+
+        if inrelease_file_path.exists():
+            self._log_info("Removing old `InRelease` file.", inrelease_file_path=str(inrelease_file_path))
+            inrelease_file_path.unlink()
+
+        self._log_info(
+            "Creating `InRelease` file.",
+            release_file_path=str(release_file_path),
+            inrelease_file_path=str(inrelease_file_path),
+        )
+        utils.execute_command(command, env=env)
 
     def _sign_pkgs(self, indexed_dir: Path) -> None:
         gnupghome = TemporaryDirectory()
