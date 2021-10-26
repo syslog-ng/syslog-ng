@@ -93,8 +93,11 @@ class ReleaseDebIndexer(DebIndexer):
         )
 
     def __add_gpg_key_to_chain(self, gnupghome: str) -> None:
-        # TODO: implement
-        pass
+        command = ["gpg", "--import", str(self.__gpg_key_path)]
+        env = {"GNUPGHOME": gnupghome}
+
+        self._log_info("Adding GPG key to chain.", gpg_key_path=str(self.__gpg_key_path))
+        utils.execute_command(command, env=env)
 
     def __create_release_gpg_file(self, release_file_path: Path, gnupghome: str) -> None:
         # TODO: implement
