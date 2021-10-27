@@ -2,7 +2,7 @@ import logging
 from enum import Enum, auto
 from hashlib import md5
 from pathlib import Path
-from typing import List, Union
+from typing import List, Optional
 
 from azure.storage.blob import ContainerClient
 
@@ -38,7 +38,7 @@ class ContainerSynchronizer:
             conn_str=connection_string, container_name=container_name
         )
         self.__logger = ContainerSynchronizer.__create_logger()
-        self.__remote_files_cache: Union[List[dict], None] = None
+        self.__remote_files_cache: Optional[List[dict]] = None
 
     @property
     def local_files(self) -> List[Path]:
