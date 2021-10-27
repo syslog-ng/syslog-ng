@@ -47,7 +47,11 @@ class Indexer(ABC):
         self.__indexed_container.sync_from_remote()
 
     @abstractmethod
-    def _index_pkgs(self, incoming_dir: Path, indexed_dir: Path) -> None:
+    def _prepare_indexed_dir(self, incoming_dir: Path, indexed_dir: Path) -> None:
+        pass
+
+    @abstractmethod
+    def _index_pkgs(self, indexed_dir: Path) -> None:
         pass
 
     @abstractmethod
@@ -83,7 +87,8 @@ class Indexer(ABC):
 
         self.__sync_from_remote()
 
-        self._index_pkgs(incoming_dir, indexed_dir)
+        self._prepare_indexed_dir(incoming_dir, indexed_dir)
+        self._index_pkgs(indexed_dir)
         self._sign_pkgs(indexed_dir)
 
         self.__sync_to_remote()

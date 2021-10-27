@@ -36,6 +36,9 @@ class DebIndexer(Indexer):
             new_path.parent.mkdir(parents=True, exist_ok=True)
             file.rename(new_path)
 
+    def _prepare_indexed_dir(self, incoming_dir: Path, indexed_dir: Path) -> None:
+        self.__move_files_from_incoming_to_indexed(incoming_dir, indexed_dir)
+
     def __create_packages_files(self, indexed_dir: Path) -> None:
         base_command = ["apt-ftparchive", "packages"]
         # Need to exec the commands in the `apt` dir.
@@ -83,8 +86,7 @@ class DebIndexer(Indexer):
             if status != 0:
                 raise ChildProcessError("`{}` failed in dir: {}. rc={}.".format(" ".join(command), dir, status))
 
-    def _index_pkgs(self, incoming_dir: Path, indexed_dir: Path) -> None:
-        self.__move_files_from_incoming_to_indexed(incoming_dir, indexed_dir)
+    def _index_pkgs(self, indexed_dir: Path) -> None:
         self.__create_packages_files(indexed_dir)
         self.__create_release_file(indexed_dir)
 
@@ -125,9 +127,9 @@ class NightlyDebIndexer(DebIndexer):
             apt_conf_file_path=Path(CURRENT_DIR, "apt_conf", "nightly.conf"),
         )
 
-    def _index_pkgs(self, incoming_dir: Path, indexed_dir: Path) -> None:
+    def _prepare_indexed_dir(self, incoming_dir: Path, indexed_dir: Path) -> None:
         # TODO: remove old (older than x days old) packages from indexed dir
-        return super()._index_pkgs(incoming_dir, indexed_dir)
+        return super()._prepare_indexed_dir(incoming_dir, indexed_dir)
 
     def _sign_pkgs(self, indexed_dir: Path) -> None:
         pass  # We do not sign the nightly package
