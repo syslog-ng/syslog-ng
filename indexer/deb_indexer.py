@@ -1,5 +1,7 @@
+import re
 from pathlib import Path
 from subprocess import call
+from typing import List
 
 from .indexer import Indexer, ClientSecretCredential
 
@@ -114,6 +116,8 @@ class ReleaseDebIndexer(DebIndexer):
 
 
 class NightlyDebIndexer(DebIndexer):
+    PKGS_TO_KEEP = 10
+
     def __init__(
         self,
         container_connection_string: str,
@@ -127,9 +131,38 @@ class NightlyDebIndexer(DebIndexer):
             apt_conf_file_path=Path(CURRENT_DIR, "apt_conf", "nightly.conf"),
         )
 
+    def __get_pkg_timestamps_in_dir(self, dir: Path) -> List[str]:
+        timestamp_regexp = re.compile(r"\+([^_]+)_")
+        pkg_timestamps: List[str] = []
+
+        for deb_file in dir.rglob("syslog-ng-core*.deb"):
+            pkg_timestamp = timestamp_regexp.findall(deb_file.name)[0]
+            pkg_timestamps.append(pkg_timestamp)
+        pkg_timestamps.sort()
+
+        return pkg_timestamps
+
+    def __remove_pkgs_with_timestamp(self, dir: Path, timestamps_to_remove: List[str]) -> None:
+        for timestamp in timestamps_to_remove:
+            for deb_file in dir.rglob("*{}*.deb".format(timestamp)):
+                self._log_info("Removing old nightly package.", path=str(deb_file.resolve()))
+                deb_file.unlink()
+
+    def __remove_old_pkgs(self, indexed_dir: Path) -> None:
+        platform_dirs = list(filter(lambda path: path.is_dir(), indexed_dir.glob("*")))
+
+        for platform_dir in platform_dirs:
+            pkg_timestamps = self.__get_pkg_timestamps_in_dir(platform_dir)
+
+            if len(pkg_timestamps) <= NightlyDebIndexer.PKGS_TO_KEEP:
+                continue
+
+            timestamps_to_remove = pkg_timestamps[: -NightlyDebIndexer.PKGS_TO_KEEP]
+            self.__remove_pkgs_with_timestamp(platform_dir, timestamps_to_remove)
+
     def _prepare_indexed_dir(self, incoming_dir: Path, indexed_dir: Path) -> None:
-        # TODO: remove old (older than x days old) packages from indexed dir
-        return super()._prepare_indexed_dir(incoming_dir, indexed_dir)
+        super()._prepare_indexed_dir(incoming_dir, indexed_dir)
+        self.__remove_old_pkgs(indexed_dir)
 
     def _sign_pkgs(self, indexed_dir: Path) -> None:
         pass  # We do not sign the nightly package
