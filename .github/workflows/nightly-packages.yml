@@ -37,6 +37,7 @@ jobs:
         - { distro: 'debian-stretch',  pkg: 'deb', upload: 'true' }
         - { distro: 'debian-buster',   pkg: 'deb', upload: 'true' }
         - { distro: 'debian-bullseye', pkg: 'deb', upload: 'true' }
+        - { distro: 'debian-testing',  pkg: 'deb', upload: 'true' }
         - { distro: 'debian-sid',      pkg: 'deb', upload: 'true' }
         - { distro: 'ubuntu-xenial',   pkg: 'deb', upload: 'true' }
         - { distro: 'ubuntu-bionic',   pkg: 'deb', upload: 'true' }
