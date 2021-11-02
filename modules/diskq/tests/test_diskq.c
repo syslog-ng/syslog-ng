@@ -64,7 +64,7 @@ Test(diskq, testcase_zero_diskbuf_and_normal_acks)
   log_queue_set_use_backlog(q, TRUE);
 
   filename = g_string_sized_new(32);
-  g_string_sprintf(filename, "test-normal_acks.qf");
+  g_string_printf(filename, "test-normal_acks.qf");
   unlink(filename->str);
   log_queue_disk_load_queue(q, filename->str);
   fed_messages = 0;
@@ -97,7 +97,7 @@ Test(diskq, testcase_zero_diskbuf_alternating_send_acks)
   log_queue_set_use_backlog(q, TRUE);
 
   filename = g_string_sized_new(32);
-  g_string_sprintf(filename, "test-send_acks.qf");
+  g_string_printf(filename, "test-send_acks.qf");
   unlink(filename->str);
   log_queue_disk_load_queue(q, filename->str);
   fed_messages = 0;
@@ -139,7 +139,7 @@ Test(diskq, testcase_ack_and_rewind_messages)
   cr_assert_eq(stats_counter_get(q->queued_messages), 0, "queued messages: %d", __LINE__);
 
   filename = g_string_sized_new(32);
-  g_string_sprintf(filename, "test-rewind_and_acks.qf");
+  g_string_printf(filename, "test-rewind_and_acks.qf");
   unlink(filename->str);
   log_queue_disk_load_queue(q, filename->str);
 
@@ -280,7 +280,7 @@ Test(diskq, testcase_with_threads)
 
       q = log_queue_disk_reliable_new(&options, NULL);
       filename = g_string_sized_new(32);
-      g_string_sprintf(filename, "test-%04d.qf", i);
+      g_string_printf(filename, "test-%04d.qf", i);
       unlink(filename->str);
       log_queue_disk_load_queue(q, filename->str);
 
