@@ -37,64 +37,11 @@ gchar *g_canonicalize_filename (const gchar *filename,
                                 const gchar *relative_to);
 #endif
 
-#ifndef g_atomic_pointer_add
-
-/* This implementation was copied from glib 2.46, copyright Ryan Lortie
- * under the LGPL 2 or later, which is compatible with our LGPL 2.1 license.
- * NOTE: this code only runs if we are running on an old glib version (e.g.
- * older than 2.32)
- * */
-
-#define g_atomic_pointer_add(atomic, val) \
-  (G_GNUC_EXTENSION ({                                                       \
-    G_STATIC_ASSERT (sizeof *(atomic) == sizeof (gpointer));                 \
-    (void) (0 ? (gpointer) *(atomic) : NULL);                                \
-    (void) (0 ? (val) ^ (val) : 1);                                          \
-    (gssize) __sync_fetch_and_add ((atomic), (val));                         \
-  }))
-#define g_atomic_pointer_or(atomic, val) \
-  (G_GNUC_EXTENSION ({                                                       \
-    G_STATIC_ASSERT (sizeof *(atomic) == sizeof (gpointer));                 \
-    (void) (0 ? (gpointer) *(atomic) : NULL);                                \
-    (void) (0 ? (val) ^ (val) : 1);                                          \
-    (gsize) __sync_fetch_and_or ((atomic), (val));                           \
-  }))
-#define g_atomic_pointer_xor(atomic, val) \
-  (G_GNUC_EXTENSION ({                                                       \
-    G_STATIC_ASSERT (sizeof *(atomic) == sizeof (gpointer));                 \
-    (void) (0 ? (gpointer) *(atomic) : NULL);                                \
-    (void) (0 ? (val) ^ (val) : 1);                                          \
-    (gsize) __sync_fetch_and_xor ((atomic), (val));                          \
-  }))
-#define g_atomic_pointer_and(atomic, val) \
-  (G_GNUC_EXTENSION ({                                                       \
-    G_STATIC_ASSERT (sizeof *(atomic) == sizeof (gpointer));                 \
-    (void) (0 ? (gpointer) *(atomic) : NULL);                                \
-    (void) (0 ? (val) ^ (val) : 1);                                          \
-    (gsize) __sync_fetch_and_and ((atomic), (val));                          \
-  }))
-
-#endif
-
-#ifndef SYSLOG_NG_HAVE_G_QUEUE_FREE_FULL
-void g_queue_free_full(GQueue *queue, GDestroyNotify free_func);
-#endif
-
-#ifndef SYSLOG_NG_HAVE_G_LIST_FREE_FULL
-void g_list_free_full (GList *list, GDestroyNotify free_func);
-#endif
-
 #ifndef SYSLOG_NG_HAVE_G_PTR_ARRAY_FIND_WITH_EQUAL_FUNC
 gboolean g_ptr_array_find_with_equal_func (GPtrArray *haystack,
                                            gconstpointer needle,
                                            GEqualFunc equal_func,
                                            guint *index_);
-#endif
-
-#ifndef SYSLOG_NG_HAVE_G_HASH_TABLE_CONTAINS
-gboolean
-g_hash_table_contains (GHashTable    *hash_table,
-                       gconstpointer  key);
 #endif
 
 #if !GLIB_CHECK_VERSION(2, 54, 0)
@@ -110,19 +57,6 @@ gboolean slng_g_hash_table_insert (GHashTable *hash_table, gpointer key, gpointe
 #if !GLIB_CHECK_VERSION(2, 64, 0)
 #define g_utf8_get_char_validated g_utf8_get_char_validated_fixed
 gunichar g_utf8_get_char_validated_fixed (const gchar *p, gssize max_len);
-#endif
-
-#if !GLIB_CHECK_VERSION(2, 32, 0)
-GThread *g_thread_new(const gchar *name, GThreadFunc func, gpointer data);
-#endif
-
-#if !GLIB_CHECK_VERSION(2, 32, 0)
-gboolean g_cond_wait_until (GCond *cond, GMutex *mutex, gint64 end_time);
-#endif
-
-#if !GLIB_CHECK_VERSION(2, 30, 0)
-gchar *g_mkdtemp_full (gchar *tmpl, gint mode);
-gchar *g_mkdtemp (gchar *tmpl);
 #endif
 
 #endif
