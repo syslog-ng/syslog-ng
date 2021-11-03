@@ -160,12 +160,25 @@ Simply invoke the following command as root:
     # apt-get install syslog-ng
 
 The latest versions of syslog-ng are available for a wide range of Debian
-and Ubuntu releases and architectures from an
-[unofficial repository](https://build.opensuse.org/project/show/home:laszlo_budai:syslog-ng).
+and Ubuntu releases from our APT repository.
 
- [madhouse-repo]: http://asylum.madhouse-project.org/projects/debian/
+The packages and the APT repository are provided "as is" without warranty of any kind, on a best-effort level.
 
-For instructions on how to install syslog-ng on Debian/Ubuntu distributions, see the blog post [Installing the latest syslog-ng on Ubuntu and other DEB distributions](https://syslog-ng.com/blog/installing-the-latest-syslog-ng-on-ubuntu-and-other-deb-distributions/).
+Installation steps:
+
+1. Download and install the release signing key:
+
+    ```
+    wget -qO - https://ose-repo.syslog-ng.com/apt/syslog-ng-ose-pub.asc | sudo apt-key add -
+    ```
+
+2. Add the repository containing the latest stable build of syslog-ng to the APT sources. For example, on Ubuntu 20.04:
+
+    ```
+    echo "deb https://ose-repo.syslog-ng.com/apt/ stable ubuntu-focal" | sudo tee -a /etc/apt/sources.list.d/syslog-ng-ose.list
+    ```
+
+3. Run `apt-get update`
 
 ### Fedora
 
