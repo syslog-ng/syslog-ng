@@ -222,7 +222,7 @@ _update_entry(LogMessageSerializationState *state, NVEntry *entry)
           entry->vindirect.__deprecated_type_field = 0;
         }
       else
-        entry->type = 0;
+        entry->type = LM_VT_STRING;
     }
   return TRUE;
 }

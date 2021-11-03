@@ -142,6 +142,34 @@ enum
   __UNUSED_LF_LEGACY_MSGHDR    = 0x00020000,
 };
 
+typedef NVType LogMessageValueType;
+enum _LogMessageValueType
+{
+  /* Everything is represented as a string, formatted in a type specific
+   * automatically parseable format.
+   *
+   * Please note that these values are part of the serialized LogMessage
+   * format, so changing these would cause incompatibilities in type
+   * recognition. Add new types at the end.
+   */
+  LM_VT_STRING = 0,
+  LM_VT_LITERAL = 1,
+  LM_VT_BOOLEAN = 2,
+  LM_VT_INT32 = 3,
+  LM_VT_INT64 = 4,
+  LM_VT_DOUBLE = 5,
+  LM_VT_DATETIME = 6,
+  LM_VT_LIST = 7,
+
+  /* extremal value to indicate "unset" state.
+   *
+   * NOTE: THIS IS NOT THE DEFAULT for actual values even if type is
+   * unspecified, those cases default to LM_VT_STRING.
+   */
+  LM_VT_NONE = 255
+};
+
+
 typedef struct _LogMessageQueueNode
 {
   struct iv_list_head list;
@@ -332,19 +360,19 @@ typedef gboolean (*LogMessageTagsForeachFunc)(const LogMessage *self, LogTagId t
                                               gpointer user_data);
 
 void log_msg_set_value(LogMessage *self, NVHandle handle, const gchar *new_value, gssize length);
-void log_msg_set_value_with_type(LogMessage *self, NVHandle handle, const gchar *value, gssize value_len, NVType type);
+void log_msg_set_value_with_type(LogMessage *self, NVHandle handle, const gchar *value, gssize value_len, LogMessageValueType type);
 
 void log_msg_set_value_indirect(LogMessage *self, NVHandle handle, NVHandle ref_handle,
                                 guint16 ofs, guint16 len);
 void log_msg_set_value_indirect_with_type(LogMessage *self, NVHandle handle, NVHandle ref_handle,
-                                          guint16 ofs, guint16 len, NVType type);
+                                          guint16 ofs, guint16 len, LogMessageValueType type);
 void log_msg_unset_value(LogMessage *self, NVHandle handle);
 void log_msg_unset_value_by_name(LogMessage *self, const gchar *name);
 gboolean log_msg_values_foreach(const LogMessage *self, NVTableForeachFunc func, gpointer user_data);
 void log_msg_set_match(LogMessage *self, gint index, const gchar *value, gssize value_len);
 void log_msg_set_match_indirect(LogMessage *self, gint index, NVHandle ref_handle, guint16 ofs, guint16 len);
 void log_msg_set_match_indirect_with_type(LogMessage *self, gint index, NVHandle ref_handle,
-                                          guint16 ofs, guint16 len, NVType type);
+                                          guint16 ofs, guint16 len, LogMessageValueType type);
 void log_msg_clear_matches(LogMessage *self);
 
 static inline void
