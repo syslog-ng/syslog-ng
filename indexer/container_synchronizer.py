@@ -4,7 +4,7 @@ from hashlib import md5
 from pathlib import Path
 from typing import List, Optional
 
-from azure.storage.blob import ContainerClient
+from azure.storage.blob import ContainerClient, BlobClient
 
 DEFAULT_ROOT_DIR = Path("/tmp/container_synchronizer")
 
@@ -136,6 +136,17 @@ class ContainerSynchronizer:
             local_workdir=str(self.local_dir.working_dir),
         )
         self.__invalidate_remote_files_cache()
+
+    def create_snapshot_of_remote(self) -> None:
+        self.__log_info("Creating snapshot of the remote container.")
+        for file in self.remote_files:
+            blob_client: BlobClient = self.__client.get_blob_client(file["name"])
+            snapshot_properties = blob_client.create_snapshot()
+            self.__log_debug(
+                "Successfully created snapshot of remote file.",
+                remote_path=self.__get_relative_file_path_for_remote_file(file),
+                snapshot_properties=snapshot_properties,
+            )
 
     def __get_md5_of_remote_file(self, relative_file_path: str) -> bytearray:
         for file in self.remote_files:
