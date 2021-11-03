@@ -601,7 +601,7 @@ r_new_pnode(gchar *key)
 
   parser_node->first = CHAR_MIN;
   parser_node->last = CHAR_MAX;
-
+  parser_node->value_type = LM_VT_STRING;
   if (strcmp(params[0], "IPv4") == 0)
     {
       parser_node->parse = r_parser_ipv4;
@@ -628,6 +628,7 @@ r_new_pnode(gchar *key)
     {
       parser_node->parse = r_parser_number;
       parser_node->parser_type = RPT_NUMBER;
+      parser_node->value_type = LM_VT_INT64;
       parser_node->first = '-';
       parser_node->last = '9';
     }
@@ -638,6 +639,7 @@ r_new_pnode(gchar *key)
       parser_node->parser_type = RPT_FLOAT;
       parser_node->first = '-';
       parser_node->last = '9';
+      parser_node->value_type = LM_VT_DOUBLE;
     }
   else if (strcmp(params[0], "STRING") == 0)
     {
@@ -1324,7 +1326,7 @@ _fixup_match_offsets(RFindNodeState *state, RParserNode *parser_node, gint extra
        * REF_MATCH and we only need to duplicate the
        * result if the string is indeed modified
        */
-      match->type = parser_node->parser_type;
+      match->type = parser_node->value_type;
       match->ofs = match->ofs + remaining_key - state->whole_key;
       match->len = (gint16) match->len + extracted_match_len;
       match->handle = parser_node->handle;
