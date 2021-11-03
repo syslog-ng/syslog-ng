@@ -24,3 +24,9 @@ def execute_command(
     )
     if rc != 0:
         raise ChildProcessError("`{}` failed. dir={} env={} rc={}.".format(" ".join(command), dir, env, rc))
+
+
+def move_file_without_overwrite(src: Path, dst: Path) -> None:
+    if dst.exists():
+        raise FileExistsError("Refusing to move file, destination already exists. src={} dst={}".format(src, dst))
+    src.rename(dst)

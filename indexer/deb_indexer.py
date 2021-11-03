@@ -37,7 +37,7 @@ class DebIndexer(Indexer):
             self._log_info("Moving file.", src_path=str(file), dst_path=str(new_path))
 
             new_path.parent.mkdir(parents=True, exist_ok=True)
-            file.rename(new_path)
+            utils.move_file_without_overwrite(file, new_path)
 
     def _prepare_indexed_dir(self, incoming_dir: Path, indexed_dir: Path) -> None:
         self.__move_files_from_incoming_to_indexed(incoming_dir, indexed_dir)
