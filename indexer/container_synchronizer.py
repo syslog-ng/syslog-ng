@@ -6,7 +6,7 @@ from typing import List, Optional
 
 from azure.storage.blob import ContainerClient
 
-DEFAULT_ROOT_DIR = Path("/tmp")
+DEFAULT_ROOT_DIR = Path("/tmp/container_synchronizer")
 
 
 class WorkingDir:
