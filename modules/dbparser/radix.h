@@ -77,6 +77,7 @@ typedef struct _RParserNode
   gchar first;
   gchar last;
   guint8 parser_type;
+  LogMessageValueType value_type;
   NVHandle handle;
 
   gboolean (*parse)(gchar *str, gint *len, const gchar *param, gpointer state, RParserMatch *match);
