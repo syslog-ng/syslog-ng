@@ -337,7 +337,7 @@ static gboolean debug_pattern_parse = FALSE;
 gboolean
 pdbtool_match_values(NVHandle handle, const gchar *name,
                      const gchar *value, gssize length,
-                     NVType type, gpointer user_data)
+                     LogMessageValueType type, gpointer user_data)
 {
   gint *ret = user_data;
 

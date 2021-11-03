@@ -259,7 +259,7 @@ vp_pairs_foreach(gpointer data, gpointer user_data)
 static gboolean
 vp_msg_nvpairs_foreach(NVHandle handle, const gchar *name,
                        const gchar *value, gssize value_len,
-                       NVType type, gpointer user_data)
+                       LogMessageValueType type, gpointer user_data)
 {
   ValuePairs *vp = ((gpointer *)user_data)[0];
   VPResults *results = ((gpointer *)user_data)[5];
