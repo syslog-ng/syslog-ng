@@ -1,6 +1,6 @@
 FROM ubuntu:focal
 
-RUN apt update && apt install -y \
+RUN apt-get update && apt-get install -y \
   python3-pip \
   apt-utils
 
