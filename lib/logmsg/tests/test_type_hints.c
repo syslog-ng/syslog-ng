@@ -24,7 +24,7 @@
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
 
-#include "type-hinting.h"
+#include "logmsg/type-hinting.h"
 #include "apphook.h"
 
 #include <stdlib.h>

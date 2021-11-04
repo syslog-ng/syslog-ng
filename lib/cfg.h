@@ -33,7 +33,7 @@
 #include "persist-state.h"
 #include "template/templates.h"
 #include "host-resolve.h"
-#include "type-hinting.h"
+#include "logmsg/type-hinting.h"
 #include "stats/stats.h"
 #include "dnscache.h"
 #include "file-perms.h"
