@@ -28,6 +28,7 @@
 
 FilterExprNode *filter_throttle_new(void);
 
+void filter_throttle_set_key_template(FilterExprNode *s, LogTemplate *template);
 void filter_throttle_set_key(FilterExprNode *s, NVHandle key_handle);
 void filter_throttle_set_rate(FilterExprNode *s, gint rate);
 

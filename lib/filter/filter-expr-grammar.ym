@@ -310,10 +310,10 @@ filter_severity
 	;
 
 filter_throttle_arg
-  : KW_VALUE '(' string ')'
+  : KW_TEMPLATE '(' template_content ')'
           {
-            filter_throttle_set_key(last_filter_expr, log_msg_get_value_handle($3));
-            free($3);
+            filter_throttle_set_key_template(last_filter_expr, $3);
+            log_template_unref($3);
           }
   | KW_RATE '(' positive_integer ')'
           {
