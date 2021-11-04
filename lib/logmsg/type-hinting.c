@@ -62,8 +62,6 @@ type_hint_parse(const gchar *hint, TypeHint *out_type, GError **error)
     *out_type = TYPE_HINT_LIST;
   else if (strcmp(hint, "boolean") == 0)
     *out_type = TYPE_HINT_BOOLEAN;
-  else if (strcmp(hint, "default") == 0)
-    *out_type = TYPE_HINT_DEFAULT;
   else
     {
       g_set_error(error, TYPE_HINTING_ERROR, TYPE_HINTING_INVALID_TYPE,

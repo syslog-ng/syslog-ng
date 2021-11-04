@@ -70,7 +70,6 @@ ParameterizedTestParameters(type_hints, test_type_hint_parse)
     {"int64",     TYPE_HINT_INT64},
     {"double",    TYPE_HINT_DOUBLE},
     {"datetime",  TYPE_HINT_DATETIME},
-    {"default",   TYPE_HINT_DEFAULT}
   };
 
   return cr_make_param_array(StringHintPair, string_value_pairs,
