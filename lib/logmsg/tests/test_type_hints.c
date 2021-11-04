@@ -69,6 +69,7 @@ ParameterizedTestParameters(type_hints, test_type_hint_parse)
     {"int",       LM_VT_INT32},
     {"int32",     LM_VT_INT32},
     {"int64",     LM_VT_INT64},
+    {"float",     LM_VT_DOUBLE},
     {"double",    LM_VT_DOUBLE},
     {"datetime",  LM_VT_DATETIME},
   };

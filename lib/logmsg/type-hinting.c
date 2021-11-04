@@ -54,7 +54,7 @@ type_hint_parse(const gchar *hint, LogMessageValueType *out_type, GError **error
     *out_type = LM_VT_INT32;
   else if (strcmp(hint, "int64") == 0)
     *out_type = LM_VT_INT64;
-  else if (strcmp(hint, "double") == 0)
+  else if (strcmp(hint, "double") == 0 || strcmp(hint, "float") == 0)
     *out_type = LM_VT_DOUBLE;
   else if (strcmp(hint, "datetime") == 0)
     *out_type = LM_VT_DATETIME;
