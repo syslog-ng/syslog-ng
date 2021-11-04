@@ -21,7 +21,7 @@
  *
  */
 
-#include "type-hinting.h"
+#include "logmsg/type-hinting.h"
 #include "apphook.h"
 #include <glib.h>
 

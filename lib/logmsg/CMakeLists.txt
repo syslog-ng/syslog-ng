@@ -11,6 +11,7 @@ set(LOGMSG_HEADERS
     logmsg/tags-serialize.h
     logmsg/timestamp-serialize.h
     logmsg/tags.h
+    logmsg/type-hinting.h
     PARENT_SCOPE)
 
 set(LOGMSG_SOURCES
@@ -25,6 +26,7 @@ set(LOGMSG_SOURCES
     logmsg/tags-serialize.c
     logmsg/timestamp-serialize.c
     logmsg/tags.c
+    logmsg/type-hinting.c
     PARENT_SCOPE)
 
 add_test_subdirectory(tests)

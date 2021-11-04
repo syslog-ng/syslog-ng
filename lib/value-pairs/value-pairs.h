@@ -27,8 +27,8 @@
 
 #include "syslog-ng.h"
 #include "logmsg/nvtable.h"
+#include "logmsg/type-hinting.h"
 #include "value-pairs/transforms.h"
-#include "type-hinting.h"
 #include "template/templates.h"
 #include "atomic.h"
 

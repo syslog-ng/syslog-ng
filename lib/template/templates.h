@@ -28,7 +28,7 @@
 #include "syslog-ng.h"
 #include "eval.h"
 #include "timeutils/zoneinfo.h"
-#include "type-hinting.h"
+#include "logmsg/type-hinting.h"
 #include "common-template-typedefs.h"
 #include "atomic.h"
 

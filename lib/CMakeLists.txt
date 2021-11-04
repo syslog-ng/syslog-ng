@@ -138,7 +138,6 @@ set (LIB_HEADERS
     tls-support.h
     thread-utils.h
     tlscontext.h
-    type-hinting.h
     uuid.h
     userdb.h
     utf8utils.h
@@ -222,7 +221,6 @@ set(LIB_SOURCES
     str-utils.c
     syslog-names.c
     string-list.c
-    type-hinting.c
     ringbuffer.c
     crypto.c
     tlscontext.c
