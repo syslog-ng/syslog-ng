@@ -2,7 +2,8 @@ FROM ubuntu:focal
 
 RUN apt-get update && apt-get install -y \
   python3-pip \
-  apt-utils
+  apt-utils \
+  gnupg2
 
 RUN pip install \
   azure-storage-blob \
