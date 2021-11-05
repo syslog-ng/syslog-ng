@@ -436,8 +436,7 @@ value_pairs_foreach_sorted (ValuePairs *vp, VPForeachFunc func,
    */
   if (vp->scopes & (VPS_NV_PAIRS + VPS_DOT_NV_PAIRS + VPS_SDATA + VPS_RFC5424) ||
       vp->patterns->len > 0)
-    nv_table_foreach(msg->payload, logmsg_registry,
-                     vp_msg_nvpairs_foreach, args);
+    log_msg_values_foreach(msg, vp_msg_nvpairs_foreach, args);
 
   vp_merge_builtins(vp, &results, msg, options);
 
