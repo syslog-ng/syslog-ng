@@ -565,3 +565,27 @@ Test(log_proto, test_log_proto_text_server_rewinding_the_initial_line_results_in
   test_log_proto_text_server_rewinding_the_initial_line_results_in_an_empty_message(log_transport_mock_stream_new);
   test_log_proto_text_server_rewinding_the_initial_line_results_in_an_empty_message(log_transport_mock_records_new);
 }
+
+Test(log_proto, test_log_proto_text_server_io_eagain)
+{
+  LogProtoServer *proto;
+
+  proto = construct_test_proto(
+            log_transport_mock_stream_new(
+              "01234567\n", -1,
+              LTM_INJECT_ERROR(EAGAIN),
+              LTM_EOF));
+
+  Bookmark bookmark;
+  LogTransportAuxData aux;
+  gboolean may_read = TRUE;
+  const guchar *msg = NULL;
+  gsize msg_len;
+
+  log_transport_aux_data_init(&aux);
+  cr_assert_eq(log_proto_server_fetch(proto, &msg, &msg_len, &may_read, &aux, &bookmark), LPS_SUCCESS);
+  cr_assert_eq(log_proto_server_fetch(proto, &msg, &msg_len, &may_read, &aux, &bookmark), LPS_AGAIN);
+  cr_assert_eq(log_proto_server_fetch(proto, &msg, &msg_len, &may_read, &aux, &bookmark), LPS_EOF);
+
+  log_proto_server_free(proto);
+}
