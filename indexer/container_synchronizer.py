@@ -88,7 +88,7 @@ class ContainerSynchronizer:
 
     def __delete_remote_file(self, relative_file_path: str) -> None:
         self.__log_info("Deleting remote file.", remote_path=relative_file_path)
-        self.__client.delete_blob(relative_file_path)
+        self.__client.delete_blob(relative_file_path, delete_snapshots="include")
 
     def sync_from_remote(self) -> None:
         self.__log_info(
