@@ -12,7 +12,8 @@ CURRENT_DIR = Path(__file__).parent.resolve()
 class DebIndexer(Indexer):
     def __init__(
         self,
-        container_connection_string: str,
+        incoming_container_connection_string: str,
+        indexed_container_connection_string: str,
         incoming_container_sub_dir: Path,
         dist_dir: Path,
         cdn_credential: ClientSecretCredential,
@@ -20,7 +21,8 @@ class DebIndexer(Indexer):
     ) -> None:
         self.__apt_conf_file_path = apt_conf_file_path
         super().__init__(
-            container_connection_string=container_connection_string,
+            incoming_container_connection_string=incoming_container_connection_string,
+            indexed_container_connection_string=indexed_container_connection_string,
             incoming_container_sub_dir=incoming_container_sub_dir,
             indexed_container_sub_dir=Path("apt", "dists", dist_dir),
             cdn_credential=cdn_credential,
@@ -78,14 +80,21 @@ class DebIndexer(Indexer):
 class ReleaseDebIndexer(DebIndexer):
     def __init__(
         self,
-        container_connection_string: str,
+        full_permission_container_connection_string: str,
+        no_delete_permission_container_connection_string: str,
         run_id: str,
         cdn_credential: ClientSecretCredential,
         gpg_key_path: Path,
     ) -> None:
+        ReleaseDebIndexer.__check_connection_strings(
+            full_permission_container_connection_string=full_permission_container_connection_string,
+            no_delete_permission_container_connection_string=no_delete_permission_container_connection_string,
+        )
+
         self.__gpg_key_path = gpg_key_path.expanduser()
         super().__init__(
-            container_connection_string=container_connection_string,
+            incoming_container_connection_string=full_permission_container_connection_string,
+            indexed_container_connection_string=no_delete_permission_container_connection_string,
             incoming_container_sub_dir=Path("release", run_id),
             dist_dir=Path("stable"),
             cdn_credential=cdn_credential,
@@ -155,17 +164,28 @@ class ReleaseDebIndexer(DebIndexer):
         self.__create_release_gpg_file(release_file_path, gnupghome.name)
         self.__create_inrelease_file(release_file_path, gnupghome.name)
 
+    @staticmethod
+    def __check_connection_strings(
+        full_permission_container_connection_string: str,
+        no_delete_permission_container_connection_string: str,
+    ) -> None:
+        assert full_permission_container_connection_string != no_delete_permission_container_connection_string, (
+            "Same token was provided to the full and no-delete-permission connection strings. "
+            "Please make sure you provide the right ones."
+        )
+
 
 class NightlyDebIndexer(DebIndexer):
     PKGS_TO_KEEP = 10
 
     def __init__(
         self,
-        container_connection_string: str,
+        full_permission_container_connection_string: str,
         cdn_credential: ClientSecretCredential,
     ) -> None:
         super().__init__(
-            container_connection_string=container_connection_string,
+            incoming_container_connection_string=full_permission_container_connection_string,
+            indexed_container_connection_string=full_permission_container_connection_string,
             incoming_container_sub_dir=Path("nightly"),
             dist_dir=Path("nightly"),
             cdn_credential=cdn_credential,

@@ -21,18 +21,19 @@ class Indexer(ABC):
 
     def __init__(
         self,
-        container_connection_string: str,
+        incoming_container_connection_string: str,
+        indexed_container_connection_string: str,
         incoming_container_sub_dir: Path,
         indexed_container_sub_dir: Path,
         cdn_credential: ClientSecretCredential,
     ) -> None:
         self.__incoming_container = ContainerSynchronizer(
-            connection_string=container_connection_string,
+            connection_string=incoming_container_connection_string,
             container_name=Indexer.INCOMING_CONTAINER_NAME,
             sub_dir=incoming_container_sub_dir,
         )
         self.__indexed_container = ContainerSynchronizer(
-            connection_string=container_connection_string,
+            connection_string=indexed_container_connection_string,
             container_name=Indexer.INDEXED_CONTAINER_NAME,
             sub_dir=indexed_container_sub_dir,
         )

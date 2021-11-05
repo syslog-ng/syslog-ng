@@ -11,10 +11,13 @@ from indexer import Indexer, NightlyDebIndexer, ReleaseDebIndexer
 
 def add_common_required_arguments(required_argument_group: _ArgumentGroup) -> None:
     required_argument_group.add_argument(
-        "--container-connection-string",
+        "--full-permission-container-connection-string",
         type=str,
         required=True,
-        help='The "Connection string", generated in the "Shared access signature" menu of the "Storage account".',
+        help=(
+            'The "Connection string", generated in the "Shared access signature" menu of the "Storage account".'
+            "This token must have full permissions, including permission to delete."
+        ),
     )
     required_argument_group.add_argument(
         "--cdn-client-id",
@@ -77,6 +80,15 @@ def prepare_stable_subparser(subparsers: _SubParsersAction) -> None:
         required=True,
         help="The path of the GPG key, used to sign the indexed packages.",
     )
+    required_argument_group.add_argument(
+        "--no-delete-permission-container-connection-string",
+        type=str,
+        required=True,
+        help=(
+            'The "Connection string", generated in the "Shared access signature" menu of the "Storage account".'
+            "This token must not have permission to delete."
+        ),
+    )
 
 
 def parse_args() -> dict:
@@ -122,14 +134,17 @@ def main() -> None:
     if args["suite"] == "nightly":
         indexers.append(
             NightlyDebIndexer(
-                container_connection_string=args["container_connection_string"],
+                full_permission_container_connection_string=args["full_permission_container_connection_string"],
                 cdn_credential=cdn_credential,
             )
         )
     elif args["suite"] == "stable":
         indexers.append(
             ReleaseDebIndexer(
-                container_connection_string=args["container_connection_string"],
+                full_permission_container_connection_string=args["full_permission_container_connection_string"],
+                no_delete_permission_container_connection_string=args[
+                    "no_delete_permission_container_connection_string"
+                ],
                 cdn_credential=cdn_credential,
                 run_id=args["run_id"],
                 gpg_key_path=Path(args["gpg_key_path"]),
