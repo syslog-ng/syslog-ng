@@ -240,8 +240,8 @@ log_transport_mock_read_method(LogTransport *s, gpointer buf, gsize count, LogTr
         }
       break;
     case DATA_ERROR:
-      self->current_value_ndx++;
       errno = g_array_index(self->value, data_t, self->current_value_ndx).error_code;
+      self->current_value_ndx++;
       return -1;
     default:
       g_assert_not_reached();
