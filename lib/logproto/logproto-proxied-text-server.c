@@ -207,7 +207,7 @@ log_proto_proxied_text_server_prepare(LogProtoServer *s, GIOCondition *cond, gin
 }
 
 static inline LogProtoStatus
-_fetch_into_proxy_buffer(LogProtoProxiedTextServer *self, gsize *hdr_len)
+_fetch_into_proxy_buffer(LogProtoProxiedTextServer *self)
 {
   while(self->proxy_header_buff_len < PROXY_PROTO_HDR_MAX_LEN)
     {
@@ -235,7 +235,6 @@ _fetch_into_proxy_buffer(LogProtoProxiedTextServer *self, gsize *hdr_len)
       self->proxy_header_buff[self->proxy_header_buff_len] = '\0';
       if (self->proxy_header_buff[self->proxy_header_buff_len - 1] == '\n')
         {
-          *hdr_len = self->proxy_header_buff_len;
           return LPS_SUCCESS;
         }
 
@@ -263,40 +262,27 @@ _log_proto_proxied_text_server_switch_to_tls(LogProtoProxiedTextServer *self)
 static LogProtoStatus
 _log_proto_proxied_text_server_handshake(LogProtoServer *s)
 {
-  const guchar *msg;
-  gsize msg_len;
-  gboolean may_read = TRUE;
-  gboolean parsable;
-  LogProtoStatus status;
-
   LogProtoProxiedTextServer *self = (LogProtoProxiedTextServer *) s;
 
-  // Fetch a line from the transport layer
-  if(self->has_to_switch_to_tls)
-    {
-      status = _fetch_into_proxy_buffer(self, &msg_len);
-      msg = self->proxy_header_buff;
-    }
-  else
-    {
-      status = log_proto_buffered_server_fetch(&self->super.super.super, &msg, &msg_len, &may_read, NULL, NULL);
-    }
+  LogProtoStatus status = _fetch_into_proxy_buffer(self);
+
   self->handshake_done = (status == LPS_SUCCESS);
   if (status != LPS_SUCCESS)
     return status;
 
-  parsable = _log_proto_proxied_text_server_parse_header(self, msg, msg_len);
+  gboolean parsable = _log_proto_proxied_text_server_parse_header(self, self->proxy_header_buff,
+                      self->proxy_header_buff_len);
 
-  msg_debug("PROXY protocol header received", evt_tag_printf("line", "%.*s", (gint) msg_len, msg));
+  msg_debug("PROXY protocol header received", evt_tag_printf("line", "%.*s",
+                                                             (gint) self->proxy_header_buff_len, self->proxy_header_buff));
 
   if (parsable)
     {
       msg_info("PROXY protocol header parsed successfully");
+
       if (self->has_to_switch_to_tls)
-        {
-          _log_proto_proxied_text_server_switch_to_tls(self);
-          self->handshake_done = TRUE;
-        }
+        _log_proto_proxied_text_server_switch_to_tls(self);
+
       return LPS_SUCCESS;
     }
   else
@@ -361,19 +347,14 @@ _log_proto_proxied_text_server_init(LogProtoProxiedTextServer *self, LogTranspor
   return;
 }
 
-static LogProtoProxiedTextServer *
-_log_proto_proxied_text_server_new(LogTransport *transport, const LogProtoServerOptions *options)
-{
-  LogProtoProxiedTextServer *self = g_new0(LogProtoProxiedTextServer, 1);
-  self->info = g_new0(struct ProxyProtoInfo, 1);
-  return self;
-}
-
 LogProtoServer *
 log_proto_proxied_text_server_new(LogTransport *transport, const LogProtoServerOptions *options)
 {
-  LogProtoProxiedTextServer *self =  _log_proto_proxied_text_server_new(transport, options);
+  LogProtoProxiedTextServer *self = g_new0(LogProtoProxiedTextServer, 1);
+  self->info = g_new0(struct ProxyProtoInfo, 1);
+
   _log_proto_proxied_text_server_init(self, transport, options);
+
   return &self->super.super.super;
 }
 
@@ -381,8 +362,9 @@ log_proto_proxied_text_server_new(LogTransport *transport, const LogProtoServerO
 LogProtoServer *
 log_proto_proxied_text_tls_passthrough_server_new(LogTransport *transport, const LogProtoServerOptions *options)
 {
-  LogProtoProxiedTextServer *self =  _log_proto_proxied_text_server_new(transport, options);
-  _log_proto_proxied_text_server_init(self, transport, options);
+  LogProtoProxiedTextServer *self = (LogProtoProxiedTextServer *) log_proto_proxied_text_server_new(transport, options);
+
   self->has_to_switch_to_tls = TRUE;
+
   return &self->super.super.super;
 }
