@@ -35,13 +35,13 @@ Test(mock_transport, test_mock_transport_read)
   cr_assert(transport);
 
   log_transport_mock_inject_data(transport, "chunk1", sizeof("chunk1"));
+  log_transport_mock_inject_data(transport, LTM_INJECT_ERROR(EAGAIN));
   log_transport_mock_inject_data(transport, "chunk2", sizeof("chunk2"));
 
   gchar buffer[100];
   log_transport_read((LogTransport *)transport, buffer, sizeof(buffer), NULL);
   cr_assert_str_eq(buffer, "chunk1");
 
-  /* Only odd reads result in data transfer. Every even read results in EAGAIN */
   int rc;
   rc = log_transport_read((LogTransport *)transport, buffer, sizeof(buffer), NULL);
   cr_assert_eq(rc, -1);
