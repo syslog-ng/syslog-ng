@@ -510,6 +510,20 @@ Test(log_message, test_macro_is_always_a_string)
   log_msg_unref(msg);
 }
 
+Test(log_message, test_macro_value_is_set_and_is_a_string)
+{
+  LogMessage *msg;
+  LogMessageValueType type;
+  const gchar *value;
+
+  msg = log_msg_new_empty();
+  value = log_msg_get_value_if_set_with_type(msg, log_msg_get_value_handle("FACILITY"), NULL, &type);
+  cr_assert_str_eq(value, "user");
+  cr_assert(type == LM_VT_STRING);
+
+  log_msg_unref(msg);
+}
+
 #define DEFUN_KEY_VALUE(name, key, value, size) \
   gchar name ## _key[size]; \
   gchar name ## _value[size]; \
