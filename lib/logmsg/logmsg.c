@@ -380,7 +380,7 @@ log_msg_is_value_name_valid(const gchar *value)
 }
 
 const gchar *
-log_msg_get_macro_value(const LogMessage *self, gint id, gssize *value_len)
+log_msg_get_macro_value(const LogMessage *self, gint id, gssize *value_len, LogMessageValueType *type)
 {
   GString *value;
 
@@ -395,6 +395,8 @@ log_msg_get_macro_value(const LogMessage *self, gint id, gssize *value_len)
   log_macro_expand_simple(value, id, self);
   if (value_len)
     *value_len = value->len;
+  if (type)
+    *type = LM_VT_STRING;
   return value->str;
 }
 

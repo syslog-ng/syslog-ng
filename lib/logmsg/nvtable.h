@@ -416,7 +416,7 @@ nv_table_is_value_set(NVTable *self, NVHandle handle)
 }
 
 static inline const gchar *
-nv_table_get_value_if_set(NVTable *self, NVHandle handle, gssize *length)
+nv_table_get_value_if_set(NVTable *self, NVHandle handle, gssize *length, NVType *type)
 {
   NVEntry *entry;
 
@@ -428,6 +428,8 @@ nv_table_get_value_if_set(NVTable *self, NVHandle handle, gssize *length)
       return NULL;
     }
 
+  if (type)
+    *type = entry->type;
   if (!entry->indirect)
     {
       if (length)
@@ -438,12 +440,16 @@ nv_table_get_value_if_set(NVTable *self, NVHandle handle, gssize *length)
 }
 
 static inline const gchar *
-nv_table_get_value(NVTable *self, NVHandle handle, gssize *length)
+nv_table_get_value(NVTable *self, NVHandle handle, gssize *length, NVType *type)
 {
-  const gchar *value = nv_table_get_value_if_set(self, handle, length);
+  const gchar *value = nv_table_get_value_if_set(self, handle, length, type);
 
   if (!value)
-    return null_string;
+    {
+      if (type)
+        *type = 0;
+      return null_string;
+    }
   return value;
 }
 

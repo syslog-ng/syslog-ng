@@ -462,6 +462,54 @@ Test(log_message, test_sdata_value_omits_unset_values)
   log_msg_unref(msg);
 }
 
+Test(log_message, test_value_retains_type_information)
+{
+  LogMessage *msg;
+  LogMessageValueType type;
+  const gchar *value;
+
+  msg = log_msg_new_empty();
+
+  /* unset */
+  value = log_msg_get_value_by_name_with_type(msg, "nvpair", NULL, &type);
+  cr_assert_str_empty(value);
+  cr_assert(type == LM_VT_STRING);
+
+  /* set with a specific type */
+  log_msg_set_value_by_name_with_type(msg, "nvpair", "value", -1, LM_VT_LITERAL);
+  value = log_msg_get_value_by_name_with_type(msg, "nvpair", NULL, &type);
+  cr_assert_str_eq(value, "value");
+  cr_assert(type == LM_VT_LITERAL);
+
+  /* changed with a specific type */
+  log_msg_set_value_by_name_with_type(msg, "nvpair", "123", -1, LM_VT_INT32);
+  value = log_msg_get_value_by_name_with_type(msg, "nvpair", NULL, &type);
+  cr_assert_str_eq(value, "123");
+  cr_assert(type == LM_VT_INT32);
+
+  /* unset becomes string again */
+  log_msg_unset_value_by_name(msg, "nvpair");
+  value = log_msg_get_value_by_name_with_type(msg, "nvpair", NULL, &type);
+  cr_assert_str_empty(value, "value");
+  cr_assert(type == LM_VT_STRING);
+
+  log_msg_unref(msg);
+}
+
+Test(log_message, test_macro_is_always_a_string)
+{
+  LogMessage *msg;
+  LogMessageValueType type;
+  const gchar *value;
+
+  msg = log_msg_new_empty();
+  value = log_msg_get_value_by_name_with_type(msg, "FACILITY", NULL, &type);
+  cr_assert_str_eq(value, "user");
+  cr_assert(type == LM_VT_STRING);
+
+  log_msg_unref(msg);
+}
+
 #define DEFUN_KEY_VALUE(name, key, value, size) \
   gchar name ## _key[size]; \
   gchar name ## _value[size]; \
