@@ -44,7 +44,7 @@ assert_nvtable(NVTable *tab, NVHandle handle, gchar *expected_value, gssize expe
   const gchar *value;
   gssize length;
 
-  value = nv_table_get_value(tab, handle, &length);
+  value = nv_table_get_value(tab, handle, &length, NULL);
 
   cr_assert_eq(length, expected_length,
                "NVTable value mismatch, value=%.*s, expected=%.*s\n",
@@ -995,27 +995,27 @@ Test(nvtable, test_nvtable_unset_values)
   gboolean success;
 
   tab = nv_table_new(STATIC_VALUES, STATIC_VALUES, 1024);
-  value = nv_table_get_value(tab, DYN_HANDLE, &size);
+  value = nv_table_get_value(tab, DYN_HANDLE, &size, NULL);
   cr_assert_not_null(value);
   cr_assert_eq(value[0], 0);
   cr_assert_eq(size, 0);
 
   size = 1;
-  value = nv_table_get_value_if_set(tab, DYN_HANDLE, &size);
+  value = nv_table_get_value_if_set(tab, DYN_HANDLE, &size, NULL);
   cr_assert_null(value);
   cr_assert_eq(size, 0);
 
   success = nv_table_add_value(tab, DYN_HANDLE, DYN_NAME, strlen(DYN_NAME), "foo", 3, 0, NULL);
   cr_assert(success);
   size = 1;
-  value = nv_table_get_value_if_set(tab, DYN_HANDLE, &size);
+  value = nv_table_get_value_if_set(tab, DYN_HANDLE, &size, NULL);
   cr_assert_not_null(value);
   cr_assert_arr_eq(value, "foo", 3);
   cr_assert_eq(size, 3);
 
   nv_table_unset_value(tab, DYN_HANDLE);
   size = 1;
-  value = nv_table_get_value_if_set(tab, DYN_HANDLE, &size);
+  value = nv_table_get_value_if_set(tab, DYN_HANDLE, &size, NULL);
   cr_assert_null(value);
   cr_assert_eq(size, 0);
 
@@ -1037,14 +1037,14 @@ Test(nvtable, test_nvtable_unset_copies_indirect_references)
     STATIC_HANDLE, 1, 5
   }, 0, NULL);
 
-  value = nv_table_get_value(tab, DYN_HANDLE, &size);
+  value = nv_table_get_value(tab, DYN_HANDLE, &size, NULL);
   cr_assert_not_null(value);
   cr_assert(strncmp(value, "tatic", 5) == 0);
   cr_assert_eq(size, 5);
 
   nv_table_unset_value(tab, STATIC_HANDLE);
 
-  value = nv_table_get_value(tab, DYN_HANDLE, &size);
+  value = nv_table_get_value(tab, DYN_HANDLE, &size, NULL);
   cr_assert_not_null(value);
   cr_assert(strncmp(value, "tatic", 5) == 0);
   cr_assert_eq(size, 5);
@@ -1071,17 +1071,17 @@ Test(nvtable, test_nvtable_compact_copies_name_value_pairs)
   tab2 = nv_table_compact(tab1);
   nv_table_unref(tab1);
 
-  value = nv_table_get_value(tab2, DYN_HANDLE, &size);
+  value = nv_table_get_value(tab2, DYN_HANDLE, &size, NULL);
   cr_assert_not_null(value);
   cr_assert_str_eq(value, "dyn-foo");
   cr_assert_eq(size, 7);
 
-  value = nv_table_get_value(tab2, STATIC_HANDLE, &size);
+  value = nv_table_get_value(tab2, STATIC_HANDLE, &size, NULL);
   cr_assert_not_null(value);
   cr_assert_str_eq(value, "static-foo");
   cr_assert_eq(size, 10);
 
-  value = nv_table_get_value(tab2, DYN_HANDLE+1, &size);
+  value = nv_table_get_value(tab2, DYN_HANDLE+1, &size, NULL);
   cr_assert_not_null(value);
   cr_assert(strncmp(value, "tatic", size) == 0);
   cr_assert_eq(size, 5);
@@ -1112,17 +1112,17 @@ Test(nvtable, test_nvtable_compact_skips_unset_values)
 
   nv_table_unref(tab1);
 
-  value = nv_table_get_value(tab2, DYN_HANDLE, &size);
+  value = nv_table_get_value(tab2, DYN_HANDLE, &size, NULL);
   cr_assert_not_null(value);
   cr_assert_str_eq(value, "");
   cr_assert_eq(size, 0);
 
-  value = nv_table_get_value(tab2, STATIC_HANDLE, &size);
+  value = nv_table_get_value(tab2, STATIC_HANDLE, &size, NULL);
   cr_assert_not_null(value);
   cr_assert_str_eq(value, "static-foo");
   cr_assert_eq(size, 10);
 
-  value = nv_table_get_value(tab2, DYN_HANDLE+1, &size);
+  value = nv_table_get_value(tab2, DYN_HANDLE+1, &size, NULL);
   cr_assert_not_null(value);
   cr_assert(strncmp(value, "tatic", size) == 0);
   cr_assert_eq(size, 5);
