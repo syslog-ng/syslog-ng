@@ -134,15 +134,15 @@ Test(json_parser, test_json_parser_validate_type_representation)
   json_parser_set_prefix(json_parser, ".prefix.");
   msg = parse_json_into_log_message("{'int': 123, 'booltrue': true, 'boolfalse': false, 'double': 1.23, 'object': {'member1': 'foo', 'member2': 'bar'}, 'array': [1, 2, 3], 'null': null}",
                                     json_parser);
-  assert_log_message_value(msg, log_msg_get_value_handle(".prefix.int"), "123");
-  assert_log_message_value(msg, log_msg_get_value_handle(".prefix.booltrue"), "true");
-  assert_log_message_value(msg, log_msg_get_value_handle(".prefix.boolfalse"), "false");
-  assert_log_message_value(msg, log_msg_get_value_handle(".prefix.double"), "1.230000");
-  assert_log_message_value(msg, log_msg_get_value_handle(".prefix.object.member1"), "foo");
-  assert_log_message_value(msg, log_msg_get_value_handle(".prefix.object.member2"), "bar");
-  assert_log_message_value(msg, log_msg_get_value_handle(".prefix.array[0]"), "1");
-  assert_log_message_value(msg, log_msg_get_value_handle(".prefix.array[1]"), "2");
-  assert_log_message_value(msg, log_msg_get_value_handle(".prefix.array[2]"), "3");
+  assert_log_message_value_and_type_by_name(msg, ".prefix.int", "123", LM_VT_INT64);
+  assert_log_message_value_and_type_by_name(msg, ".prefix.booltrue", "true", LM_VT_BOOLEAN);
+  assert_log_message_value_and_type_by_name(msg, ".prefix.boolfalse", "false", LM_VT_BOOLEAN);
+  assert_log_message_value_and_type_by_name(msg, ".prefix.double", "1.230000", LM_VT_DOUBLE);
+  assert_log_message_value_and_type_by_name(msg, ".prefix.object.member1", "foo", LM_VT_STRING);
+  assert_log_message_value_and_type_by_name(msg, ".prefix.object.member2", "bar", LM_VT_STRING);
+  assert_log_message_value_and_type_by_name(msg, ".prefix.array[0]", "1", LM_VT_INT64);
+  assert_log_message_value_and_type_by_name(msg, ".prefix.array[1]", "2", LM_VT_INT64);
+  assert_log_message_value_and_type_by_name(msg, ".prefix.array[2]", "3", LM_VT_INT64);
   log_msg_unref(msg);
   log_pipe_unref(&json_parser->super);
 }

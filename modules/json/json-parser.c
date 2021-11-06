@@ -85,6 +85,7 @@ json_parser_process_single(struct json_object *jso,
 {
   GString *key, *value;
   gboolean parsed = FALSE;
+  LogMessageValueType type = LM_VT_STRING;
 
   if (!jso)
     return;
@@ -101,21 +102,25 @@ json_parser_process_single(struct json_object *jso,
         g_string_assign(value, "true");
       else
         g_string_assign(value, "false");
+      type = LM_VT_BOOLEAN;
       break;
     case json_type_double:
       parsed = TRUE;
       g_string_printf(value, "%f",
                       json_object_get_double(jso));
+      type = LM_VT_DOUBLE;
       break;
     case json_type_int:
       parsed = TRUE;
       g_string_printf(value, "%"PRId64,
                       json_object_get_int64(jso));
+      type = LM_VT_INT64;
       break;
     case json_type_string:
       parsed = TRUE;
       g_string_assign(value,
                       json_object_get_string(jso));
+      type = LM_VT_STRING;
       break;
     case json_type_object:
       if (prefix)
@@ -156,16 +161,10 @@ json_parser_process_single(struct json_object *jso,
         {
           g_string_assign(key, prefix);
           g_string_append(key, obj_key);
-          log_msg_set_value_by_name(msg,
-                                    key->str,
-                                    value->str,
-                                    value->len);
+          log_msg_set_value_by_name_with_type(msg, key->str, value->str, value->len, type);
         }
       else
-        log_msg_set_value_by_name(msg,
-                                  obj_key,
-                                  value->str,
-                                  value->len);
+        log_msg_set_value_by_name_with_type(msg, obj_key, value->str, value->len, type);
     }
 
   scratch_buffers_reclaim_marked(marker);
