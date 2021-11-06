@@ -287,7 +287,7 @@ vp_msg_nvpairs_foreach(NVHandle handle, const gchar *name,
   sb = scratch_buffers_alloc();
 
   g_string_append_len(sb, value, value_len);
-  vp_results_insert(results, vp_transform_apply(vp, name), LM_VT_STRING, sb);
+  vp_results_insert(results, vp_transform_apply(vp, name), type, sb);
 
   return FALSE;
 }
@@ -368,6 +368,7 @@ vp_merge_builtins(ValuePairs *vp, VPResults *results, LogMessage *msg, LogTempla
   for (i = 0; i < vp->builtins->len; i++)
     {
       ValuePairSpec *spec = (ValuePairSpec *) g_ptr_array_index(vp->builtins, i);
+      LogMessageValueType type;
 
       sb = scratch_buffers_alloc();
 
@@ -375,13 +376,14 @@ vp_merge_builtins(ValuePairs *vp, VPResults *results, LogMessage *msg, LogTempla
         {
         case VPT_MACRO:
           log_macro_expand(sb, spec->id, FALSE, options, msg);
+          type = LM_VT_STRING;
           break;
         case VPT_NVPAIR:
         {
           const gchar *nv;
           gssize len;
 
-          nv = log_msg_get_value(msg, (NVHandle) spec->id, &len);
+          nv = log_msg_get_value_with_type(msg, (NVHandle) spec->id, &len, &type);
           g_string_append_len(sb, nv, len);
           break;
         }
@@ -394,7 +396,7 @@ vp_merge_builtins(ValuePairs *vp, VPResults *results, LogMessage *msg, LogTempla
           continue;
         }
 
-      vp_results_insert(results, vp_transform_apply(vp, spec->name), LM_VT_STRING, sb);
+      vp_results_insert(results, vp_transform_apply(vp, spec->name), type, sb);
     }
 }
 
