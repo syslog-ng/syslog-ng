@@ -36,7 +36,7 @@
 gboolean success = TRUE;
 
 gboolean
-vp_keys_foreach(const gchar *name, TypeHint type, const gchar *value,
+vp_keys_foreach(const gchar *name, LogMessageValueType type, const gchar *value,
                 gsize value_len, gpointer user_data)
 {
   gpointer *args = (gpointer *) user_data;

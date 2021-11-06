@@ -208,23 +208,23 @@ tf_json_append_list(const gchar *name, const gchar *value, gsize value_len,
 }
 
 static gboolean
-tf_json_append_with_type_hint(const gchar *name, TypeHint type, json_state_t *state, const gchar *value,
+tf_json_append_with_type_hint(const gchar *name, LogMessageValueType type, json_state_t *state, const gchar *value,
                               const gssize value_len, const gboolean on_error)
 {
   switch (type)
     {
-    case TYPE_HINT_STRING:
-    case TYPE_HINT_DATETIME:
+    case LM_VT_STRING:
+    case LM_VT_DATETIME:
     default:
       tf_json_append_value(name, value, value_len, state, TRUE);
       break;
-    case TYPE_HINT_LITERAL:
+    case LM_VT_LITERAL:
       tf_json_append_literal(name, value, value_len, state);
       break;
-    case TYPE_HINT_LIST:
+    case LM_VT_LIST:
       tf_json_append_list(name, value, value_len, state);
       break;
-    case TYPE_HINT_INT32:
+    case LM_VT_INT32:
     {
       gint32 i32;
       const gchar *v = value;
@@ -243,7 +243,7 @@ tf_json_append_with_type_hint(const gchar *name, TypeHint type, json_state_t *st
         }
       break;
     }
-    case TYPE_HINT_INT64:
+    case LM_VT_INT64:
     {
       gint64 i64;
       const gchar *v = value;
@@ -262,7 +262,7 @@ tf_json_append_with_type_hint(const gchar *name, TypeHint type, json_state_t *st
         }
       break;
     }
-    case TYPE_HINT_DOUBLE:
+    case LM_VT_DOUBLE:
     {
       gdouble d;
       const gchar *v = value;
@@ -281,7 +281,7 @@ tf_json_append_with_type_hint(const gchar *name, TypeHint type, json_state_t *st
         }
       break;
     }
-    case TYPE_HINT_BOOLEAN:
+    case LM_VT_BOOLEAN:
     {
       gboolean b;
       const gchar *v = value;
@@ -307,7 +307,7 @@ tf_json_append_with_type_hint(const gchar *name, TypeHint type, json_state_t *st
 
 static gboolean
 tf_json_value(const gchar *name, const gchar *prefix,
-              TypeHint type, const gchar *value, gsize value_len,
+              LogMessageValueType type, const gchar *value, gsize value_len,
               gpointer *prefix_data, gpointer user_data)
 {
   json_state_t *state = (json_state_t *)user_data;
@@ -395,7 +395,7 @@ _join_name(const gchar *prefix, const gchar  *subfix)
 
 static gboolean
 tf_flat_json_value(const gchar *name, const gchar *prefix,
-                   TypeHint type, const gchar *value, gsize value_len,
+                   LogMessageValueType type, const gchar *value, gsize value_len,
                    gpointer *prefix_data, gpointer user_data)
 {
   json_state_t *state = (json_state_t *)user_data;

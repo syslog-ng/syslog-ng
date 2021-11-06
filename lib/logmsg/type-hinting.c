@@ -38,30 +38,30 @@ type_hinting_error_quark(void)
 }
 
 gboolean
-type_hint_parse(const gchar *hint, TypeHint *out_type, GError **error)
+type_hint_parse(const gchar *hint, LogMessageValueType *out_type, GError **error)
 {
   if (hint == NULL)
     {
-      *out_type = TYPE_HINT_STRING;
+      *out_type = LM_VT_STRING;
       return TRUE;
     }
 
   if (strcmp(hint, "string") == 0)
-    *out_type = TYPE_HINT_STRING;
+    *out_type = LM_VT_STRING;
   else if (strcmp(hint, "literal") == 0)
-    *out_type = TYPE_HINT_LITERAL;
+    *out_type = LM_VT_LITERAL;
   else if (strcmp(hint, "int32") == 0 || strcmp(hint, "int") == 0)
-    *out_type = TYPE_HINT_INT32;
+    *out_type = LM_VT_INT32;
   else if (strcmp(hint, "int64") == 0)
-    *out_type = TYPE_HINT_INT64;
+    *out_type = LM_VT_INT64;
   else if (strcmp(hint, "double") == 0)
-    *out_type = TYPE_HINT_DOUBLE;
+    *out_type = LM_VT_DOUBLE;
   else if (strcmp(hint, "datetime") == 0)
-    *out_type = TYPE_HINT_DATETIME;
+    *out_type = LM_VT_DATETIME;
   else if (strcmp(hint, "list") == 0)
-    *out_type = TYPE_HINT_LIST;
+    *out_type = LM_VT_LIST;
   else if (strcmp(hint, "boolean") == 0)
-    *out_type = TYPE_HINT_BOOLEAN;
+    *out_type = LM_VT_BOOLEAN;
   else
     {
       g_set_error(error, TYPE_HINTING_ERROR, TYPE_HINTING_INVALID_TYPE,

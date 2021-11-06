@@ -98,7 +98,7 @@ test_vp_obj_stop(const gchar *name,
 
 static gboolean
 test_vp_value(const gchar *name, const gchar *prefix,
-              TypeHint type, const gchar *value, gsize value_len,
+              LogMessageValueType type, const gchar *value, gsize value_len,
               gpointer *prefix_data, gpointer user_data)
 {
   cr_expect_str_eq(prefix, "root.test", "Wrong prefix");

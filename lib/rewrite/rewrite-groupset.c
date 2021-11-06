@@ -34,7 +34,7 @@ typedef struct _LogRewriteGroupSetCallbackData
 
 /* TODO escape '\0' when passing down the value */
 static gboolean
-log_rewrite_groupset_foreach_func(const gchar *name, TypeHint type,
+log_rewrite_groupset_foreach_func(const gchar *name, LogMessageValueType type,
                                   const gchar *value, gsize value_len,
                                   gpointer user_data)
 {
@@ -55,7 +55,7 @@ log_rewrite_groupset_foreach_func(const gchar *name, TypeHint type,
 }
 
 static gboolean
-log_rewrite_groupunset_foreach_func(const gchar *name, TypeHint type,
+log_rewrite_groupunset_foreach_func(const gchar *name, LogMessageValueType type,
                                     const gchar *value, gsize value_len,
                                     gpointer user_data)
 {
