@@ -26,6 +26,7 @@
 #define TYPE_HINTING_H
 
 #include "syslog-ng.h"
+#include "logmsg/logmsg.h"
 
 #define TYPE_HINTING_ERROR type_hinting_error_quark()
 
@@ -37,20 +38,7 @@ enum TypeHintingError
   TYPE_HINTING_INVALID_CAST,
 };
 
-typedef enum
-{
-  TYPE_HINT_STRING,
-  TYPE_HINT_LITERAL,
-  TYPE_HINT_BOOLEAN,
-  TYPE_HINT_INT32,
-  TYPE_HINT_INT64,
-  TYPE_HINT_DOUBLE,
-  TYPE_HINT_DATETIME,
-  TYPE_HINT_LIST,
-  TYPE_HINT_DEFAULT,
-} TypeHint;
-
-gboolean type_hint_parse(const gchar *hint, TypeHint *out_hint, GError **error);
+gboolean type_hint_parse(const gchar *hint, LogMessageValueType *out_hint, GError **error);
 
 gboolean type_cast_drop_helper(gint drop_flags, const gchar *value,
                                const gchar *type_hint);

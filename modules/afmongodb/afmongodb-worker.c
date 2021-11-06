@@ -202,7 +202,7 @@ _vp_obj_end(const gchar *name,
 }
 
 static gboolean
-_vp_process_value(const gchar *name, const gchar *prefix, TypeHint type,
+_vp_process_value(const gchar *name, const gchar *prefix, LogMessageValueType type,
                   const gchar *value, gsize value_len, gpointer *prefix_data, gpointer user_data)
 {
   bson_t *o;
@@ -218,7 +218,7 @@ _vp_process_value(const gchar *name, const gchar *prefix, TypeHint type,
 
   switch (type)
     {
-    case TYPE_HINT_BOOLEAN:
+    case LM_VT_BOOLEAN:
     {
       gboolean b;
 
@@ -235,7 +235,7 @@ _vp_process_value(const gchar *name, const gchar *prefix, TypeHint type,
         }
       break;
     }
-    case TYPE_HINT_INT32:
+    case LM_VT_INT32:
     {
       gint32 i;
 
@@ -252,7 +252,7 @@ _vp_process_value(const gchar *name, const gchar *prefix, TypeHint type,
         }
       break;
     }
-    case TYPE_HINT_INT64:
+    case LM_VT_INT64:
     {
       gint64 i;
 
@@ -270,7 +270,7 @@ _vp_process_value(const gchar *name, const gchar *prefix, TypeHint type,
 
       break;
     }
-    case TYPE_HINT_DOUBLE:
+    case LM_VT_DOUBLE:
     {
       gdouble d;
 
@@ -287,7 +287,7 @@ _vp_process_value(const gchar *name, const gchar *prefix, TypeHint type,
 
       break;
     }
-    case TYPE_HINT_DATETIME:
+    case LM_VT_DATETIME:
     {
       guint64 i;
 
@@ -305,8 +305,8 @@ _vp_process_value(const gchar *name, const gchar *prefix, TypeHint type,
 
       break;
     }
-    case TYPE_HINT_STRING:
-    case TYPE_HINT_LITERAL:
+    case LM_VT_STRING:
+    case LM_VT_LITERAL:
       bson_append_utf8(o, name, -1, value, value_len);
       break;
     default:

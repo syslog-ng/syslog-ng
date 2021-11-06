@@ -51,7 +51,7 @@ tf_format_welf_prepare(LogTemplateFunction *self, gpointer s, LogTemplate *paren
 }
 
 static gboolean
-tf_format_welf_foreach(const gchar *name, TypeHint type, const gchar *value,
+tf_format_welf_foreach(const gchar *name, LogMessageValueType type, const gchar *value,
                        gsize value_len, gpointer user_data)
 {
   TFWelfIterState *iter_state = (TFWelfIterState *) user_data;

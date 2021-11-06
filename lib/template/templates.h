@@ -60,7 +60,7 @@ struct _LogTemplate
   GList *compiled_template;
   GlobalConfig *cfg;
   guint escape:1, def_inline:1, trivial:1;
-  TypeHint type_hint;
+  LogMessageValueType type_hint;
 };
 
 /* appends the formatted output into result */

@@ -125,7 +125,7 @@ typedef struct _TFGraphiteForeachUserData
 
 /* TODO escape '\0' when passing down the value */
 static gboolean
-tf_graphite_foreach_func(const gchar *name, TypeHint type, const gchar *value,
+tf_graphite_foreach_func(const gchar *name, LogMessageValueType type, const gchar *value,
                          gsize value_len, gpointer user_data)
 {
   TFGraphiteForeachUserData *data = (TFGraphiteForeachUserData *) user_data;

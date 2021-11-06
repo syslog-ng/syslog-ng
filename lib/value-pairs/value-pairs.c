@@ -54,7 +54,7 @@ typedef struct
 
   GString *name;
   GString *value;
-  TypeHint type_hint;
+  LogMessageValueType type_hint;
 } VPResultValue;
 
 typedef struct
@@ -181,7 +181,7 @@ vp_pair_conf_free(VPPairConf *vpc)
 }
 
 static void
-vp_result_value_init(VPResultValue *rv, GString *name, TypeHint type_hint, GString *value)
+vp_result_value_init(VPResultValue *rv, GString *name, LogMessageValueType type_hint, GString *value)
 {
   rv->type_hint = type_hint;
   rv->name = name;
@@ -204,7 +204,7 @@ vp_results_deinit(VPResults *results)
 }
 
 static void
-vp_results_insert(VPResults *results, GString *name, TypeHint type_hint, GString *value)
+vp_results_insert(VPResults *results, GString *name, LogMessageValueType type_hint, GString *value)
 {
   VPResultValue *rv;
   gint ndx = results->values->len;
@@ -287,7 +287,7 @@ vp_msg_nvpairs_foreach(NVHandle handle, const gchar *name,
   sb = scratch_buffers_alloc();
 
   g_string_append_len(sb, value, value_len);
-  vp_results_insert(results, vp_transform_apply(vp, name), TYPE_HINT_STRING, sb);
+  vp_results_insert(results, vp_transform_apply(vp, name), LM_VT_STRING, sb);
 
   return FALSE;
 }
@@ -394,7 +394,7 @@ vp_merge_builtins(ValuePairs *vp, VPResults *results, LogMessage *msg, LogTempla
           continue;
         }
 
-      vp_results_insert(results, vp_transform_apply(vp, spec->name), TYPE_HINT_STRING, sb);
+      vp_results_insert(results, vp_transform_apply(vp, spec->name), LM_VT_STRING, sb);
     }
 }
 
@@ -734,7 +734,7 @@ vp_walker_start_containers_for_name(vp_walk_state_t *state,
 }
 
 static gboolean
-value_pairs_walker(const gchar *name, TypeHint type, const gchar *value, gsize value_len,
+value_pairs_walker(const gchar *name, LogMessageValueType type, const gchar *value, gsize value_len,
                    gpointer user_data)
 {
   vp_walk_state_t *state = (vp_walk_state_t *)user_data;

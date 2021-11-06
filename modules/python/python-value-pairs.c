@@ -69,7 +69,7 @@ add_string_to_dict(PyObject *dict, const gchar *name, const char *value, gsize v
 
 static gboolean
 python_worker_vp_add_one(const gchar *name,
-                         TypeHint type, const gchar *value, gsize value_len,
+                         LogMessageValueType type, const gchar *value, gsize value_len,
                          gpointer user_data)
 {
   const LogTemplateOptions *template_options = (const LogTemplateOptions *)((gpointer *)user_data)[0];
@@ -79,8 +79,8 @@ python_worker_vp_add_one(const gchar *name,
 
   switch (type)
     {
-    case TYPE_HINT_INT32:
-    case TYPE_HINT_INT64:
+    case LM_VT_INT32:
+    case LM_VT_INT64:
     {
       gint64 i;
 
@@ -100,7 +100,7 @@ python_worker_vp_add_one(const gchar *name,
         }
       break;
     }
-    case TYPE_HINT_STRING:
+    case LM_VT_STRING:
       add_string_to_dict(dict, name, value, value_len);
       break;
     default:
