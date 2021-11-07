@@ -174,11 +174,19 @@ load_plugin_info_with_fname(const gchar *plugin_path, const gchar *fname)
       return NULL;
     }
 
+
+  /* libloggen_name_of_the_plugin.{so,dll,dylib} */
+  const gchar *fname_start = fname + strlen(LOGGEN_PLUGIN_LIB_PREFIX);
+  const gchar *fname_end = strrchr(fname_start, '_');
+  if (!fname_end)
+    {
+      ERROR("error opening plugin module %s, module filename does not fit the pattern\n", fname);
+      return NULL;
+    }
+  const gint fname_len = fname_end - fname_start;
+
   gchar plugin_name[LOGGEN_PLUGIN_NAME_MAXSIZE + 1];
-  gchar *extracted_fname = g_strndup(fname + strlen(LOGGEN_PLUGIN_LIB_PREFIX),
-                                     strlen(fname) - strlen(LOGGEN_PLUGIN_LIB_PREFIX) - strlen(LOGGEN_PLUGIN_LIB_SUFFIX));
-  g_snprintf(plugin_name, LOGGEN_PLUGIN_NAME_MAXSIZE, "%s_%s", extracted_fname, LOGGEN_PLUGIN_INFO);
-  g_free(extracted_fname);
+  g_snprintf(plugin_name, LOGGEN_PLUGIN_NAME_MAXSIZE, "%.*s_%s", fname_len, fname_start, LOGGEN_PLUGIN_INFO);
 
   /* get plugin info from lib file */
   PluginInfo *plugin;
