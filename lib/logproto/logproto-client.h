@@ -197,13 +197,14 @@ void log_proto_client_init(LogProtoClient *s, LogTransport *transport, const Log
 void log_proto_client_free(LogProtoClient *s);
 void log_proto_client_free_method(LogProtoClient *s);
 
-#define DEFINE_LOG_PROTO_CLIENT(prefix) \
+#define DEFINE_LOG_PROTO_CLIENT(prefix, options...) \
   static gpointer                                                       \
   prefix ## _client_plugin_construct(Plugin *self)            \
   {                                                                     \
     static LogProtoClientFactory proto = {                              \
       .construct = prefix ## _client_new,                               \
       .stateful  = FALSE,                                               \
+      ##options \
     };                                                                  \
     return &proto;                                                      \
   }
