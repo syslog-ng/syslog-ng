@@ -39,7 +39,7 @@ DEFINE_LOG_PROTO_SERVER(log_proto_dgram);
 DEFINE_LOG_PROTO_CLIENT(log_proto_text);
 DEFINE_LOG_PROTO_SERVER(log_proto_text);
 DEFINE_LOG_PROTO_SERVER(log_proto_proxied_text);
-DEFINE_LOG_PROTO_SERVER(log_proto_proxied_text_tls_passthrough);
+DEFINE_LOG_PROTO_SERVER(log_proto_proxied_text_tls_passthrough, .use_multitransport = TRUE);
 DEFINE_LOG_PROTO_SERVER(log_proto_indented_multiline);
 DEFINE_LOG_PROTO_CLIENT(log_proto_framed);
 DEFINE_LOG_PROTO_SERVER(log_proto_framed);
