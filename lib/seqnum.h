@@ -45,11 +45,7 @@ step_sequence_number(gint32 *seqnum)
 static inline gint32
 step_sequence_number_atomic(gint32 *seqnum)
 {
-#if GLIB_CHECK_VERSION(2, 30, 0)
   return (gint32)g_atomic_int_add(seqnum, 1);
-#else
-  return (gint32)g_atomic_int_exchange_and_add(seqnum, 1);
-#endif
 }
 
 

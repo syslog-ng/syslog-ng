@@ -32,7 +32,7 @@ typedef struct _ConsecutiveAckTracker
   AckTracker super;
   ConsecutiveAckRecord *pending_ack_record;
   ConsecutiveAckRecordContainer *ack_records;
-  GStaticMutex mutex;
+  GMutex mutex;
   AckTrackerOnAllAcked on_all_acked;
   gboolean bookmark_saving_disabled;
 } ConsecutiveAckTracker;
@@ -41,14 +41,14 @@ void
 consecutive_ack_tracker_lock(AckTracker *s)
 {
   ConsecutiveAckTracker *self = (ConsecutiveAckTracker *)s;
-  g_static_mutex_lock(&self->mutex);
+  g_mutex_lock(&self->mutex);
 }
 
 void
 consecutive_ack_tracker_unlock(AckTracker *s)
 {
   ConsecutiveAckTracker *self = (ConsecutiveAckTracker *)s;
-  g_static_mutex_unlock(&self->mutex);
+  g_mutex_unlock(&self->mutex);
 }
 
 void
@@ -209,7 +209,7 @@ consecutive_ack_tracker_free(AckTracker *s)
       handler->user_data_free_fn(handler->user_data);
     }
 
-  g_static_mutex_free(&self->mutex);
+  g_mutex_clear(&self->mutex);
 
   consecutive_ack_record_container_free(self->ack_records);
 
@@ -245,7 +245,7 @@ consecutive_ack_tracker_init_instance(ConsecutiveAckTracker *self, LogSource *so
   self->super.source = source;
   source->ack_tracker = (AckTracker *)self;
   self->ack_records = ack_records;
-  g_static_mutex_init(&self->mutex);
+  g_mutex_init(&self->mutex);
   _setup_callbacks(self);
 }
 

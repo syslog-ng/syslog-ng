@@ -110,7 +110,7 @@ _ack_backlog(LogQueue *s, gint num_msg_to_ack)
   LogPathOptions path_options = LOG_PATH_OPTIONS_INIT;
   guint i;
 
-  g_static_mutex_lock(&s->lock);
+  g_mutex_lock(&s->lock);
 
   for (i = 0; i < num_msg_to_ack; i++)
     {
@@ -136,7 +136,7 @@ _ack_backlog(LogQueue *s, gint num_msg_to_ack)
     }
 exit_reliable:
   qdisk_reset_file_if_empty(self->super.qdisk);
-  g_static_mutex_unlock(&s->lock);
+  g_mutex_unlock(&s->lock);
 }
 
 static gint
@@ -196,7 +196,7 @@ _rewind_backlog(LogQueue *s, guint rewind_count)
   gint64 new_read_head;
   LogQueueDiskReliable *self = (LogQueueDiskReliable *)s;
 
-  g_static_mutex_lock(&s->lock);
+  g_mutex_lock(&s->lock);
 
   rewind_count = MIN(rewind_count, qdisk_get_backlog_count(self->super.qdisk));
   number_of_messages_stay_in_backlog = qdisk_get_backlog_count(self->super.qdisk) - rewind_count;
@@ -213,7 +213,7 @@ _rewind_backlog(LogQueue *s, guint rewind_count)
 
   log_queue_queued_messages_add(s, rewind_count);
 
-  g_static_mutex_unlock(&s->lock);
+  g_mutex_unlock(&s->lock);
 }
 
 static void
@@ -246,7 +246,7 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
   LogQueueDiskReliable *self = (LogQueueDiskReliable *)s;
   LogMessage *msg = NULL;
 
-  g_static_mutex_lock(&s->lock);
+  g_mutex_lock(&s->lock);
 
   if (_is_next_message_in_qreliable(self))
     {
@@ -282,7 +282,7 @@ _pop_head(LogQueue *s, LogPathOptions *path_options)
 exit:
   if (!msg)
     {
-      g_static_mutex_unlock(&s->lock);
+      g_mutex_unlock(&s->lock);
       return NULL;
     }
 
@@ -293,7 +293,7 @@ exit:
 
   log_queue_queued_messages_dec(s);
 
-  g_static_mutex_unlock(&s->lock);
+  g_mutex_unlock(&s->lock);
   return msg;
 }
 
@@ -327,7 +327,7 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
       return;
     }
 
-  g_static_mutex_lock(&s->lock);
+  g_mutex_lock(&s->lock);
 
   gint64 message_position = qdisk_get_next_tail_position(self->super.qdisk);
   if (!qdisk_push_tail(self->super.qdisk, serialized_msg))
@@ -341,7 +341,7 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
                 evt_tag_str("persist_name", s->persist_name));
       log_queue_disk_drop_message(&self->super, msg, path_options);
       scratch_buffers_reclaim_marked(marker);
-      g_static_mutex_unlock(&s->lock);
+      g_mutex_unlock(&s->lock);
       return;
     }
 
@@ -377,7 +377,7 @@ _push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *path_options)
 exit:
   log_queue_push_notify(s);
   log_queue_queued_messages_inc(s);
-  g_static_mutex_unlock(&s->lock);
+  g_mutex_unlock(&s->lock);
 }
 
 static void

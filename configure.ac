@@ -40,7 +40,7 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 dnl ***************************************************************************
 dnl dependencies
 
-GLIB_MIN_VERSION="2.28"
+GLIB_MIN_VERSION="2.32"
 OPENSSL_MIN_VERSION="0.9.8"
 LIBDBI_MIN_VERSION="0.9.0"
 LIBRABBITMQ_MIN_VERSION="0.5.3"
@@ -932,7 +932,7 @@ if test "$linking_mode" != "dynamic"; then
 	LIBS=$old_LIBS
 fi
 
-GLIB_CFLAGS="${GLIB_CFLAGS} -DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_28 -DGLIB_VERSION_MAX_ALLOWED=0x023C00"
+GLIB_CFLAGS="${GLIB_CFLAGS} -DGLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_32"
 
 old_CPPFLAGS=$CPPFLAGS
 CPPFLAGS="$GLIB_CFLAGS"
@@ -942,11 +942,8 @@ LDFLAGS="$LDFLAGS $GLIB_LIBS"
 old_LIBS=$LIBS
 LIBS="$LIBS $GLIB_LIBS"
 AC_CHECK_FUNCS(g_list_copy_deep \
-  g_queue_free_full \
-  g_list_free_full \
   g_ptr_array_find_with_equal_func \
-  g_canonicalize_filename \
-  g_hash_table_contains)
+  g_canonicalize_filename)
 LIBS=$old_LIBS
 
 AC_CACHE_CHECK(sanity checking Glib headers,

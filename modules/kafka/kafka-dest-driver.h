@@ -37,7 +37,7 @@ typedef struct
   LogTemplate *message;
   LogTemplate *topic_name;
   GHashTable *topics;
-  GMutex *topics_lock;
+  GMutex topics_lock;
 
   gboolean transaction_commit;
   GList *config;

@@ -47,10 +47,6 @@ load_state_handler_modules(GlobalConfig *cfg)
 static gboolean
 persist_tool_start_state(PersistTool *self)
 {
-  if (!g_threads_got_initialized)
-    {
-      g_thread_init(NULL);
-    }
   main_thread_handle = get_thread_id();
   self->state = persist_state_new(self->persist_filename);
 
@@ -235,9 +231,7 @@ main(int argc, char *argv[])
       if (strcmp(modes[mode].mode, mode_string) == 0)
         {
           ctx = g_option_context_new(modes[mode].parameter_description);
-#if GLIB_CHECK_VERSION (2, 12, 0)
           g_option_context_set_summary(ctx, modes[mode].description);
-#endif
           g_option_context_add_main_entries(ctx, modes[mode].options, NULL );
           break;
         }

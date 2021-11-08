@@ -33,7 +33,7 @@ typedef struct _AFFileDestWriter AFFileDestWriter;
 typedef struct _AFFileDestDriver
 {
   LogDestDriver super;
-  GStaticMutex lock;
+  GMutex lock;
   LogTemplate *filename_template;
   AFFileDestWriter *single_writer;
   gboolean filename_is_a_template;

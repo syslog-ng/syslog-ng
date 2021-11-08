@@ -180,19 +180,15 @@ find_package(BISON 3.7.6 REQUIRED)
 string(REGEX MATCH "^([0-9]+)\\.([0-9]+)\\..*$" _dummy "${BISON_VERSION}")
 
 set(GLIB_COMPILE_DEFINITIONS
-  GLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_28
-  GLIB_VERSION_MAX_ALLOWED=0x023C00
+  GLIB_VERSION_MIN_REQUIRED=GLIB_VERSION_2_32
 )
-find_package(GLIB COMPONENTS gmodule gthread 2.28.1 REQUIRED)
+find_package(GLIB 2.32.0 REQUIRED COMPONENTS gmodule gthread)
 
 set(CMAKE_REQUIRED_INCLUDES ${GLIB_INCLUDE_DIRS})
 set(CMAKE_REQUIRED_LIBRARIES ${GLIB_LIBRARIES})
 check_symbol_exists(g_list_copy_deep "glib.h" SYSLOG_NG_HAVE_G_LIST_COPY_DEEP)
-check_symbol_exists(g_queue_free_full "glib.h" SYSLOG_NG_HAVE_G_QUEUE_FREE_FULL)
-check_symbol_exists(g_list_free_full "glib.h" SYSLOG_NG_HAVE_G_LIST_FREE_FULL)
 check_symbol_exists(g_ptr_array_find_with_equal_func "glib.h" SYSLOG_NG_HAVE_G_PTR_ARRAY_FIND_WITH_EQUAL_FUNC)
 check_symbol_exists(g_canonicalize_filename "glib.h" SYSLOG_NG_HAVE_G_CANONICALIZE_FILENAME)
-check_symbol_exists(g_hash_table_contains "glib.h" SYSLOG_NG_HAVE_G_HASH_TABLE_CONTAINS)
 
 find_package(RabbitMQ)
 if (RabbitMQ_FOUND)

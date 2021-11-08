@@ -87,7 +87,7 @@ struct _LogThreadedDestWorker
   gboolean suspended;
   gboolean startup_finished;
   gboolean startup_failure;
-  GCond *started_up;
+  GCond started_up;
   time_t time_reopen;
 
   gboolean (*thread_init)(LogThreadedDestWorker *s);
@@ -104,7 +104,7 @@ const gchar *log_threaded_result_to_str(LogThreadedResult self);
 struct _LogThreadedDestDriver
 {
   LogDestDriver super;
-  GMutex *lock;
+  GMutex lock;
 
   StatsCounterItem *dropped_messages;
   StatsCounterItem *processed_messages;

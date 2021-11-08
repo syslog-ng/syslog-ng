@@ -1,8 +1,7 @@
 compatincludedir		= ${pkgincludedir}/compat
 
 EXTRA_DIST += \
-	lib/compat/CMakeLists.txt	\
-	lib/compat/glib-g_mkdtemp.c
+	lib/compat/CMakeLists.txt
 
 compatinclude_HEADERS		= 	\
 	lib/compat/compat.h		\

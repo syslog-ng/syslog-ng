@@ -54,9 +54,9 @@ static GPtrArray      *thread_array = NULL;
 
 static gboolean thread_run;
 static generate_message_func generate_message;
-static GMutex *thread_lock = NULL;
-static GCond *thread_start = NULL;
-static GCond *thread_connected = NULL;
+static GMutex thread_lock;
+static GCond thread_start;
+static GCond thread_connected;
 static gint connect_finished;
 static gint active_thread_count;
 static gint idle_thread_count;
@@ -101,13 +101,9 @@ set_generate_message(generate_message_func gen_message)
 static gint
 get_thread_count(void)
 {
-  if (!thread_lock)
-    return 0;
-
-  int num;
-  g_mutex_lock(thread_lock);
-  num = active_thread_count + idle_thread_count;
-  g_mutex_unlock(thread_lock);
+  g_mutex_lock(&thread_lock);
+  int num = active_thread_count + idle_thread_count;
+  g_mutex_unlock(&thread_lock);
 
   return num;
 }
@@ -145,9 +141,9 @@ start(PluginOption *option)
 
   thread_array = g_ptr_array_new();
 
-  thread_lock = g_mutex_new();
-  thread_start = g_cond_new();
-  thread_connected = g_cond_new();
+  g_mutex_init(&thread_lock);
+  g_cond_init(&thread_start);
+  g_cond_init(&thread_connected);
 
   active_thread_count = option->active_connections;
   idle_thread_count = option->idle_connections;
@@ -180,10 +176,10 @@ start(PluginOption *option)
   gint64 end_time;
   end_time = g_get_monotonic_time () + CONNECTION_TIMEOUT_SEC * G_TIME_SPAN_SECOND;
 
-  g_mutex_lock(thread_lock);
+  g_mutex_lock(&thread_lock);
   while (connect_finished != option->active_connections + option->idle_connections)
     {
-      if (! g_cond_wait_until(thread_connected, thread_lock, end_time))
+      if (! g_cond_wait_until(&thread_connected, &thread_lock, end_time))
         {
           ERROR("timeout occurred while waiting for connections\n");
           break;
@@ -191,10 +187,10 @@ start(PluginOption *option)
     }
 
   /* start all threads */
-  g_cond_broadcast(thread_start);
+  g_cond_broadcast(&thread_start);
   thread_run = TRUE;
 
-  g_mutex_unlock(thread_lock);
+  g_mutex_unlock(&thread_lock);
 
   return TRUE;
 }
@@ -226,14 +222,9 @@ stop(PluginOption *option)
 
   crypto_deinit();
 
-  if (thread_lock)
-    g_mutex_free(thread_lock);
-
-  if (thread_start)
-    g_cond_free(thread_start);
-
-  if (thread_connected)
-    g_cond_free(thread_connected);
+  g_mutex_clear(&thread_lock);
+  g_cond_clear(&thread_start);
+  g_cond_clear(&thread_connected);
 
   DEBUG("all %d+%d threads have been stopped\n",
         option->active_connections,
@@ -259,21 +250,21 @@ idle_thread_func(gpointer user_data)
       DEBUG("(%d) connected to server on socket (%p)\n", thread_index, g_thread_self());
     }
 
-  g_mutex_lock(thread_lock);
+  g_mutex_lock(&thread_lock);
   connect_finished++;
 
   if (connect_finished == option->active_connections + option->idle_connections)
-    g_cond_broadcast(thread_connected);
+    g_cond_broadcast(&thread_connected);
 
-  g_mutex_unlock(thread_lock);
+  g_mutex_unlock(&thread_lock);
 
   DEBUG("thread (%s,%p) created. wait for start ...\n", ssl_loggen_plugin_info.name, g_thread_self());
-  g_mutex_lock(thread_lock);
+  g_mutex_lock(&thread_lock);
   while (!thread_run)
     {
-      g_cond_wait(thread_start, thread_lock);
+      g_cond_wait(&thread_start, &thread_lock);
     }
-  g_mutex_unlock(thread_lock);
+  g_mutex_unlock(&thread_lock);
 
   DEBUG("thread (%s,%p) started. (r=%d,c=%d)\n", ssl_loggen_plugin_info.name, g_thread_self(), option->rate,
         option->number_of_messages);
@@ -283,9 +274,9 @@ idle_thread_func(gpointer user_data)
       g_usleep(10*1000);
     }
 
-  g_mutex_lock(thread_lock);
+  g_mutex_lock(&thread_lock);
   idle_thread_count--;
-  g_mutex_unlock(thread_lock);
+  g_mutex_unlock(&thread_lock);
 
   close_ssl_connection(ssl);
   shutdown(sock_fd, SHUT_RDWR);
@@ -317,21 +308,21 @@ active_thread_func(gpointer user_data)
       DEBUG("(%d) connected to server on socket (%p)\n", thread_context->index, g_thread_self());
     }
 
-  g_mutex_lock(thread_lock);
+  g_mutex_lock(&thread_lock);
   connect_finished++;
 
   if (connect_finished == option->active_connections + option->idle_connections)
-    g_cond_broadcast(thread_connected);
+    g_cond_broadcast(&thread_connected);
 
-  g_mutex_unlock(thread_lock);
+  g_mutex_unlock(&thread_lock);
 
   DEBUG("thread (%s,%p) created. wait for start ...\n", ssl_loggen_plugin_info.name, g_thread_self());
-  g_mutex_lock(thread_lock);
+  g_mutex_lock(&thread_lock);
   while (!thread_run)
     {
-      g_cond_wait(thread_start, thread_lock);
+      g_cond_wait(&thread_start, &thread_lock);
     }
-  g_mutex_unlock(thread_lock);
+  g_mutex_unlock(&thread_lock);
 
   DEBUG("thread (%s,%p) started. (r=%d,c=%d)\n", ssl_loggen_plugin_info.name, g_thread_self(), option->rate,
         option->number_of_messages);
@@ -414,9 +405,9 @@ active_thread_func(gpointer user_data)
     }
   DEBUG("thread (%s,%p) finished\n", ssl_loggen_plugin_info.name, g_thread_self());
 
-  g_mutex_lock(thread_lock);
+  g_mutex_lock(&thread_lock);
   active_thread_count--;
-  g_mutex_unlock(thread_lock);
+  g_mutex_unlock(&thread_lock);
 
   g_free((gpointer)message);
   close_ssl_connection(ssl);

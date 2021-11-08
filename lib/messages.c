@@ -60,19 +60,19 @@ gboolean log_stderr = FALSE;
 gboolean skip_timestamp_on_stderr = FALSE;
 static MsgPostFunc msg_post_func;
 static EVTCONTEXT *evt_context;
-static GStaticPrivate msg_context_private = G_STATIC_PRIVATE_INIT;
-static GStaticMutex evtlog_lock = G_STATIC_MUTEX_INIT;
+static GPrivate msg_context_private = G_PRIVATE_INIT(g_free);
+static GMutex evtlog_lock;
 
 static MsgContext *
 msg_get_context(void)
 {
   MsgContext *context;
 
-  context = g_static_private_get(&msg_context_private);
+  context = g_private_get(&msg_context_private);
   if (!context)
     {
       context = g_new0(MsgContext, 1);
-      g_static_private_set(&msg_context_private, context, g_free);
+      g_private_replace(&msg_context_private, context);
     }
   return context;
 }
@@ -216,7 +216,7 @@ msg_event_create(gint prio, const gchar *desc, EVTTAG *tag1, ...)
   EVTREC *e;
   va_list va;
 
-  g_static_mutex_lock(&evtlog_lock);
+  g_mutex_lock(&evtlog_lock);
   e = evt_rec_init(evt_context, prio, desc);
   if (tag1)
     {
@@ -225,7 +225,7 @@ msg_event_create(gint prio, const gchar *desc, EVTTAG *tag1, ...)
       evt_rec_add_tagsv(e, va);
       va_end(va);
     }
-  g_static_mutex_unlock(&evtlog_lock);
+  g_mutex_unlock(&evtlog_lock);
   return e;
 }
 
@@ -238,9 +238,9 @@ msg_event_create_from_desc(gint prio, const char *desc)
 void
 msg_event_free(EVTREC *e)
 {
-  g_static_mutex_lock(&evtlog_lock);
+  g_mutex_lock(&evtlog_lock);
   evt_rec_free(e);
-  g_static_mutex_unlock(&evtlog_lock);
+  g_mutex_unlock(&evtlog_lock);
 }
 
 void

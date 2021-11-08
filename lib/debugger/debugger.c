@@ -330,7 +330,7 @@ _interactive_console_thread_func(Debugger *self)
 void
 debugger_start_console(Debugger *self)
 {
-  g_thread_create((GThreadFunc) _interactive_console_thread_func, self, FALSE, NULL);
+  g_thread_new(NULL, (GThreadFunc) _interactive_console_thread_func, self);
 }
 
 gboolean

@@ -493,11 +493,6 @@ dqtool_relocate(int argc, char *argv[])
   if (!_relocate_validate_options())
     return 1;
 
-  if (!g_threads_got_initialized)
-    {
-      g_thread_init(NULL);
-    }
-
   main_thread_handle = get_thread_id();
 
   PersistState *state = persist_state_new(persist_file_path);
@@ -560,11 +555,6 @@ dqtool_assign(int argc, char *argv[])
 
   if (!_assign_validate_options())
     return 1;
-
-  if (!g_threads_got_initialized)
-    {
-      g_thread_init(NULL);
-    }
 
   main_thread_handle = get_thread_id();
 
@@ -690,9 +680,7 @@ main(int argc, char *argv[])
       if (strcmp(modes[mode].mode, mode_string) == 0)
         {
           ctx = g_option_context_new(mode_string);
-#if GLIB_CHECK_VERSION (2, 12, 0)
           g_option_context_set_summary(ctx, modes[mode].description);
-#endif
           g_option_context_add_main_entries(ctx, modes[mode].options, NULL);
           g_option_context_add_main_entries(ctx, dqtool_options, NULL);
           break;

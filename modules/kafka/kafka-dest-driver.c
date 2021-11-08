@@ -258,12 +258,12 @@ _construct_topic(KafkaDestDriver *self, const gchar *name)
 rd_kafka_topic_t *
 kafka_dd_query_insert_topic(KafkaDestDriver *self, const gchar *name)
 {
-  g_mutex_lock(self->topics_lock);
+  g_mutex_lock(&self->topics_lock);
   rd_kafka_topic_t *topic = g_hash_table_lookup(self->topics, name);
 
   if (topic)
     {
-      g_mutex_unlock(self->topics_lock);
+      g_mutex_unlock(&self->topics_lock);
       return topic;
     }
 
@@ -274,7 +274,7 @@ kafka_dd_query_insert_topic(KafkaDestDriver *self, const gchar *name)
       g_hash_table_insert(self->topics, g_strdup(name), topic);
     }
 
-  g_mutex_unlock(self->topics_lock);
+  g_mutex_unlock(&self->topics_lock);
   return topic;
 }
 
@@ -687,7 +687,7 @@ kafka_dd_free(LogPipe *d)
   log_template_unref(self->key);
   log_template_unref(self->message);
   log_template_unref(self->topic_name);
-  g_mutex_free(self->topics_lock);
+  g_mutex_clear(&self->topics_lock);
   g_free(self->bootstrap_servers);
   kafka_property_list_free(self->config);
   log_threaded_dest_driver_free(d);
@@ -716,7 +716,7 @@ kafka_dd_new(GlobalConfig *cfg)
   self->flush_timeout_on_reload = 1000;
   self->poll_timeout = 1000;
 
-  self->topics_lock = g_mutex_new();
+  g_mutex_init(&self->topics_lock);
 
   log_template_options_defaults(&self->template_options);
 

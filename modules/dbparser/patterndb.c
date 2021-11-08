@@ -61,7 +61,7 @@ typedef struct _PDBProcessParams
 
 struct _PatternDB
 {
-  GStaticRWLock lock;
+  GRWLock lock;
   PDBRuleSet *ruleset;
   CorrelationState correlation;
   LogTemplate *program_template;
@@ -449,7 +449,7 @@ pattern_db_timer_tick(PatternDB *self)
   glong diff;
   PDBProcessParams process_params = {0};
 
-  g_static_rw_lock_writer_lock(&self->lock);
+  g_rw_lock_writer_lock(&self->lock);
   cached_g_current_time(&now);
   diff = g_time_val_diff(&now, &self->last_tick);
 
@@ -474,7 +474,7 @@ pattern_db_timer_tick(PatternDB *self)
       self->last_tick = now;
     }
 
-  g_static_rw_lock_writer_unlock(&self->lock);
+  g_rw_lock_writer_unlock(&self->lock);
   _flush_emitted_messages(self, &process_params);
 }
 
@@ -507,10 +507,10 @@ pattern_db_advance_time(PatternDB *self, gint timeout)
   PDBProcessParams process_params= {0};
   time_t new_time;
 
-  g_static_rw_lock_writer_lock(&self->lock);
+  g_rw_lock_writer_lock(&self->lock);
   new_time = timer_wheel_get_time(self->timer_wheel) + timeout;
   timer_wheel_set_time(self->timer_wheel, new_time, &process_params);
-  g_static_rw_lock_writer_unlock(&self->lock);
+  g_rw_lock_writer_unlock(&self->lock);
   _flush_emitted_messages(self, &process_params);
 }
 
@@ -527,11 +527,11 @@ pattern_db_reload_ruleset(PatternDB *self, GlobalConfig *cfg, const gchar *pdb_f
     }
   else
     {
-      g_static_rw_lock_writer_lock(&self->lock);
+      g_rw_lock_writer_lock(&self->lock);
       if (self->ruleset)
         pdb_rule_set_free(self->ruleset);
       self->ruleset = new_ruleset;
-      g_static_rw_lock_writer_unlock(&self->lock);
+      g_rw_lock_writer_unlock(&self->lock);
       return TRUE;
     }
 }
@@ -583,7 +583,7 @@ _pattern_db_process_matching_rule(PatternDB *self, PDBProcessParams *process_par
   LogMessage *msg = process_params->msg;
   GString *buffer = g_string_sized_new(32);
 
-  g_static_rw_lock_writer_lock(&self->lock);
+  g_rw_lock_writer_lock(&self->lock);
   if (rule->context.id_template)
     {
       CorrelationKey key;
@@ -646,7 +646,7 @@ _pattern_db_process_matching_rule(PatternDB *self, PDBProcessParams *process_par
   _execute_rule_actions(self, process_params, RAT_MATCH);
 
   pdb_rule_unref(rule);
-  g_static_rw_lock_writer_unlock(&self->lock);
+  g_rw_lock_writer_unlock(&self->lock);
 
   if (context)
     log_msg_write_protect(msg);
@@ -659,9 +659,9 @@ _pattern_db_advance_time_and_flush_expired(PatternDB *self, LogMessage *msg)
 {
   PDBProcessParams process_params = {0};
 
-  g_static_rw_lock_writer_lock(&self->lock);
+  g_rw_lock_writer_lock(&self->lock);
   _advance_time_based_on_message(self, &process_params, &msg->timestamps[LM_TS_STAMP]);
-  g_static_rw_lock_writer_unlock(&self->lock);
+  g_rw_lock_writer_unlock(&self->lock);
   _flush_emitted_messages(self, &process_params);
 }
 
@@ -679,15 +679,15 @@ _pattern_db_process(PatternDB *self, PDBLookupParams *lookup, GArray *dbg_list)
   PDBProcessParams process_params_p = {0};
   PDBProcessParams *process_params = &process_params_p;
 
-  g_static_rw_lock_reader_lock(&self->lock);
+  g_rw_lock_reader_lock(&self->lock);
   if (_pattern_db_is_empty(self))
     {
-      g_static_rw_lock_reader_unlock(&self->lock);
+      g_rw_lock_reader_unlock(&self->lock);
       return FALSE;
     }
   process_params->rule = pdb_ruleset_lookup(self->ruleset, lookup, dbg_list);
   process_params->msg = msg;
-  g_static_rw_lock_reader_unlock(&self->lock);
+  g_rw_lock_reader_unlock(&self->lock);
 
   _pattern_db_advance_time_and_flush_expired(self, msg);
 
@@ -734,9 +734,9 @@ pattern_db_expire_state(PatternDB *self)
 {
   PDBProcessParams process_params = {0};
 
-  g_static_rw_lock_writer_lock(&self->lock);
+  g_rw_lock_writer_lock(&self->lock);
   timer_wheel_expire_all(self->timer_wheel, &process_params);
-  g_static_rw_lock_writer_unlock(&self->lock);
+  g_rw_lock_writer_unlock(&self->lock);
   _flush_emitted_messages(self, &process_params);
 
 }
@@ -764,10 +764,10 @@ _destroy_state(PatternDB *self)
 void
 pattern_db_forget_state(PatternDB *self)
 {
-  g_static_rw_lock_writer_lock(&self->lock);
+  g_rw_lock_writer_lock(&self->lock);
   _destroy_state(self);
   _init_state(self);
-  g_static_rw_lock_writer_unlock(&self->lock);
+  g_rw_lock_writer_unlock(&self->lock);
 }
 
 PatternDB *
@@ -778,7 +778,7 @@ pattern_db_new(void)
   self->ruleset = pdb_rule_set_new();
   _init_state(self);
   cached_g_current_time(&self->last_tick);
-  g_static_rw_lock_init(&self->lock);
+  g_rw_lock_init(&self->lock);
   return self;
 }
 
@@ -789,7 +789,7 @@ pattern_db_free(PatternDB *self)
   if (self->ruleset)
     pdb_rule_set_free(self->ruleset);
   _destroy_state(self);
-  g_static_rw_lock_free(&self->lock);
+  g_rw_lock_clear(&self->lock);
   g_free(self);
 }
 

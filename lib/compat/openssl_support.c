@@ -84,18 +84,18 @@ _init_threadid_callback(void)
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
 
 static gint ssl_lock_count;
-static GStaticMutex *ssl_locks;
+static GMutex *ssl_locks;
 
 static void
 _ssl_locking_callback(int mode, int type, const char *file, int line)
 {
   if (mode & CRYPTO_LOCK)
     {
-      g_static_mutex_lock(&ssl_locks[type]);
+      g_mutex_lock(&ssl_locks[type]);
     }
   else
     {
-      g_static_mutex_unlock(&ssl_locks[type]);
+      g_mutex_unlock(&ssl_locks[type]);
     }
 }
 
@@ -105,10 +105,10 @@ _init_locks(void)
   gint i;
 
   ssl_lock_count = CRYPTO_num_locks();
-  ssl_locks = g_new(GStaticMutex, ssl_lock_count);
+  ssl_locks = g_new(GMutex, ssl_lock_count);
   for (i = 0; i < ssl_lock_count; i++)
     {
-      g_static_mutex_init(&ssl_locks[i]);
+      g_mutex_init(&ssl_locks[i]);
     }
   CRYPTO_set_locking_callback(_ssl_locking_callback);
 }
@@ -120,7 +120,7 @@ _deinit_locks(void)
 
   for (i = 0; i < ssl_lock_count; i++)
     {
-      g_static_mutex_free(&ssl_locks[i]);
+      g_mutex_clear(&ssl_locks[i]);
     }
   g_free(ssl_locks);
 }

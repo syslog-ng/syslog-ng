@@ -65,7 +65,7 @@ void http_lb_client_deinit(HTTPLoadBalancerClient *);
 
 struct _HTTPLoadBalancer
 {
-  GStaticMutex lock;
+  GMutex lock;
   HTTPLoadBalancerTarget *targets;
   gint num_targets;
   gint num_clients;

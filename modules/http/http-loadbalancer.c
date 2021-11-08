@@ -191,14 +191,14 @@ http_load_balancer_choose_target(HTTPLoadBalancer *self, HTTPLoadBalancerClient 
 {
   HTTPLoadBalancerTarget *new_target;
 
-  g_static_mutex_lock(&self->lock);
+  g_mutex_lock(&self->lock);
 
   new_target = lbc->target;
   if (_check_recovery(self, lbc, &new_target) ||
       _check_rebalance(self, lbc, &new_target))
     _switch_target(self, lbc, new_target);
 
-  g_static_mutex_unlock(&self->lock);
+  g_mutex_unlock(&self->lock);
   return lbc->target;
 }
 
@@ -222,16 +222,16 @@ http_load_balancer_drop_all_targets(HTTPLoadBalancer *self)
 void
 http_load_balancer_track_client(HTTPLoadBalancer *self, HTTPLoadBalancerClient *lbc)
 {
-  g_static_mutex_lock(&self->lock);
+  g_mutex_lock(&self->lock);
   self->num_clients++;
   _recalculate_clients_per_target_goals(self);
-  g_static_mutex_unlock(&self->lock);
+  g_mutex_unlock(&self->lock);
 }
 
 void
 http_load_balancer_set_target_failed(HTTPLoadBalancer *self, HTTPLoadBalancerTarget *target)
 {
-  g_static_mutex_lock(&self->lock);
+  g_mutex_lock(&self->lock);
   if (target->state != HTTP_TARGET_FAILED)
     {
       msg_debug("Load balancer target failed, removing from rotation",
@@ -241,13 +241,13 @@ http_load_balancer_set_target_failed(HTTPLoadBalancer *self, HTTPLoadBalancerTar
       _recalculate_clients_per_target_goals(self);
     }
   target->last_failure_time = time(NULL);
-  g_static_mutex_unlock(&self->lock);
+  g_mutex_unlock(&self->lock);
 }
 
 void
 http_load_balancer_set_target_successful(HTTPLoadBalancer *self, HTTPLoadBalancerTarget *target)
 {
-  g_static_mutex_lock(&self->lock);
+  g_mutex_lock(&self->lock);
   if (target->state != HTTP_TARGET_OPERATIONAL)
     {
       msg_debug("Load balancer target recovered, adding back to rotation",
@@ -256,7 +256,7 @@ http_load_balancer_set_target_successful(HTTPLoadBalancer *self, HTTPLoadBalance
       target->state = HTTP_TARGET_OPERATIONAL;
       _recalculate_clients_per_target_goals(self);
     }
-  g_static_mutex_unlock(&self->lock);
+  g_mutex_unlock(&self->lock);
 }
 
 void
@@ -270,7 +270,7 @@ http_load_balancer_new(void)
 {
   HTTPLoadBalancer *self = g_new0(HTTPLoadBalancer, 1);
 
-  g_static_mutex_init(&self->lock);
+  g_mutex_init(&self->lock);
   self->recovery_timeout = 60;
   return self;
 }
@@ -280,6 +280,6 @@ http_load_balancer_free(HTTPLoadBalancer *self)
 {
   http_load_balancer_drop_all_targets(self);
   g_free(self->targets);
-  g_static_mutex_free(&self->lock);
+  g_mutex_clear(&self->lock);
   g_free(self);
 }

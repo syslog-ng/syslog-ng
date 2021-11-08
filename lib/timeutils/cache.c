@@ -100,7 +100,7 @@ static struct
 } global_state;
 
 
-static GStaticMutex localtime_lock = G_STATIC_MUTEX_INIT;
+static GMutex localtime_lock;
 
 static glong
 _get_system_tzofs(void)
@@ -175,9 +175,9 @@ _validate_timeutils_cache(void)
     {
       _clean_timeutils_cache();
 
-      g_static_mutex_lock(&localtime_lock);
+      g_mutex_lock(&localtime_lock);
       _copy_timezone_state_to_locals();
-      g_static_mutex_unlock(&localtime_lock);
+      g_mutex_unlock(&localtime_lock);
 
       local_gencounter = gencounter;
     }
@@ -186,10 +186,10 @@ _validate_timeutils_cache(void)
 void
 invalidate_timeutils_cache(void)
 {
-  g_static_mutex_lock(&localtime_lock);
+  g_mutex_lock(&localtime_lock);
   tzset();
   _capture_timezone_state_from_variables();
-  g_static_mutex_unlock(&localtime_lock);
+  g_mutex_unlock(&localtime_lock);
 
   g_atomic_int_inc(&global_state.cache_gencounter);
 }
@@ -292,10 +292,10 @@ cached_localtime(time_t *when, struct tm *tm)
 #else
       struct tm *ltm;
 
-      g_static_mutex_lock(&localtime_lock);
+      g_mutex_lock(&localtime_lock);
       ltm = localtime(when);
       *tm = *ltm;
-      g_static_mutex_unlock(&localtime_lock);
+      g_mutex_unlock(&localtime_lock);
 #endif
       cache.localtime.buckets[i].tm = *tm;
       cache.localtime.buckets[i].when = *when;
@@ -320,10 +320,10 @@ cached_gmtime(time_t *when, struct tm *tm)
 #else
       struct tm *ltm;
 
-      g_static_mutex_lock(&localtime_lock);
+      g_mutex_lock(&localtime_lock);
       ltm = gmtime(when);
       *tm = *ltm;
-      g_static_mutex_unlock(&localtime_lock);
+      g_mutex_unlock(&localtime_lock);
 #endif
       cache.gmtime.buckets[i].tm = *tm;
       cache.gmtime.buckets[i].when = *when;

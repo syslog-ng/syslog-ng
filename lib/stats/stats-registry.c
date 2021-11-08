@@ -40,7 +40,7 @@ _number_of_dynamic_clusters(void)
   return g_hash_table_size(stats_cluster_container.dynamic_clusters);
 }
 
-static GStaticMutex stats_mutex = G_STATIC_MUTEX_INIT;
+static GMutex stats_mutex;
 gboolean stats_locked;
 
 static void
@@ -55,7 +55,7 @@ _insert_cluster(StatsCluster *sc)
 void
 stats_lock(void)
 {
-  g_static_mutex_lock(&stats_mutex);
+  g_mutex_lock(&stats_mutex);
   stats_locked = TRUE;
 }
 
@@ -63,7 +63,7 @@ void
 stats_unlock(void)
 {
   stats_locked = FALSE;
-  g_static_mutex_unlock(&stats_mutex);
+  g_mutex_unlock(&stats_mutex);
 }
 
 static StatsCluster *
@@ -449,7 +449,7 @@ stats_registry_init(void)
                                              (GEqualFunc) stats_cluster_equal, NULL,
                                              (GDestroyNotify) stats_cluster_free);
 
-  g_static_mutex_init(&stats_mutex);
+  g_mutex_init(&stats_mutex);
 }
 
 void
@@ -459,5 +459,5 @@ stats_registry_deinit(void)
   g_hash_table_destroy(stats_cluster_container.dynamic_clusters);
   stats_cluster_container.static_clusters = NULL;
   stats_cluster_container.dynamic_clusters = NULL;
-  g_static_mutex_free(&stats_mutex);
+  g_mutex_clear(&stats_mutex);
 }

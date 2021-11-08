@@ -203,6 +203,12 @@ const gchar *builtin_value_names[] =
   NULL,
 };
 
+static void
+__free_macro_value(void *val)
+{
+  g_string_free((GString *) val, TRUE);
+}
+
 static NVHandle match_handles[256];
 NVRegistry *logmsg_registry;
 const char logmsg_sd_prefix[] = ".SDATA.";
@@ -213,7 +219,7 @@ static StatsCounterItem *count_msg_clones;
 static StatsCounterItem *count_payload_reallocs;
 static StatsCounterItem *count_sdata_updates;
 static StatsCounterItem *count_allocated_bytes;
-static GStaticPrivate priv_macro_value = G_STATIC_PRIVATE_INIT;
+static GPrivate priv_macro_value = G_PRIVATE_INIT(__free_macro_value);
 
 void
 log_msg_write_protect(LogMessage *self)
@@ -373,23 +379,16 @@ log_msg_is_value_name_valid(const gchar *value)
     return TRUE;
 }
 
-
-static void
-__free_macro_value(void *val)
-{
-  g_string_free((GString *) val, TRUE);
-}
-
 const gchar *
 log_msg_get_macro_value(const LogMessage *self, gint id, gssize *value_len)
 {
   GString *value;
 
-  value = g_static_private_get(&priv_macro_value);
+  value = g_private_get(&priv_macro_value);
   if (!value)
     {
       value = g_string_sized_new(256);
-      g_static_private_set(&priv_macro_value, value, __free_macro_value);
+      g_private_replace(&priv_macro_value, value);
     }
   g_string_truncate(value, 0);
 

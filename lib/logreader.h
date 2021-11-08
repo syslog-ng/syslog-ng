@@ -83,8 +83,8 @@ struct _LogReader
    * self->poll_events, they get applied to the production ones as soon as
    * the previous work is finished */
   gboolean pending_close;
-  GCond *pending_close_cond;
-  GStaticMutex pending_close_lock;
+  GCond pending_close_cond;
+  GMutex pending_close_lock;
 
   struct iv_timer idle_timer;
 };

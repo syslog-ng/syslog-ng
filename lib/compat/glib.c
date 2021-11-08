@@ -58,29 +58,6 @@ g_list_copy_deep(GList     *list,
 
 #endif
 
-#ifndef SYSLOG_NG_HAVE_G_QUEUE_FREE_FULL
-
-void
-g_queue_free_full(GQueue *queue, GDestroyNotify free_func)
-{
-  g_queue_foreach(queue, (GFunc) free_func, NULL);
-  g_queue_free(queue);
-}
-
-#endif
-
-#ifndef SYSLOG_NG_HAVE_G_LIST_FREE_FULL
-
-void
-g_list_free_full (GList *list, GDestroyNotify free_func)
-{
-  g_list_foreach (list, (GFunc) free_func, NULL);
-  g_list_free (list);
-}
-
-#endif
-
-
 #ifndef SYSLOG_NG_HAVE_G_PTR_ARRAY_FIND_WITH_EQUAL_FUNC
 gboolean
 g_ptr_array_find_with_equal_func (GPtrArray     *haystack,
@@ -248,17 +225,6 @@ g_canonicalize_filename (const gchar *filename,
 
 #endif
 
-#ifndef SYSLOG_NG_HAVE_G_HASH_TABLE_CONTAINS
-gboolean
-g_hash_table_contains (GHashTable    *hash_table,
-                       gconstpointer  key)
-{
-  gpointer orig_key;
-  gpointer value;
-  return g_hash_table_lookup_extended(hash_table, key, &orig_key, &value);
-}
-#endif
-
 #if !GLIB_CHECK_VERSION(2, 54, 0)
 /**
  * g_base64_encode:
@@ -330,30 +296,4 @@ g_utf8_get_char_validated_fixed(const gchar *p, gssize max_len)
 
   return g_utf8_get_char_validated(p, max_len);
 }
-#endif
-
-#if !GLIB_CHECK_VERSION(2, 32, 0)
-GThread *
-g_thread_new(const gchar *name, GThreadFunc func, gpointer data)
-{
-  return g_thread_create(func, data, TRUE, NULL);
-}
-#endif
-
-#if !GLIB_CHECK_VERSION(2, 32, 0)
-gboolean
-g_cond_wait_until (GCond *cond, GMutex *mutex, gint64 end_time)
-{
-  gint64 diff_in_millisec = (end_time - g_get_monotonic_time()) / G_TIME_SPAN_MILLISECOND;
-
-  GTimeVal tv;
-  g_get_current_time(&tv);
-  g_time_val_add(&tv, diff_in_millisec * 1000);
-
-  return g_cond_timed_wait(cond, mutex, &tv);
-}
-#endif
-
-#if !GLIB_CHECK_VERSION(2, 30, 0)
-#include "glib-g_mkdtemp.c"
 #endif

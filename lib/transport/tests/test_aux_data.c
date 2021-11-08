@@ -65,7 +65,7 @@ _concat_nvpairs_helper(const gchar *name, const gchar *value, gsize value_len, g
 {
   GString *concatenated = (GString *) user_data;
 
-  g_string_sprintfa(concatenated, "%s=%s\n", name, value);
+  g_string_append_printf(concatenated, "%s=%s\n", name, value);
   cr_assert_eq(value_len, strlen(value), "foreach() length mismatch");
 }
 

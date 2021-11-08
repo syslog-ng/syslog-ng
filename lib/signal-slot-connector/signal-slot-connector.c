@@ -72,7 +72,7 @@ struct _SignalSlotConnector
 {
   // map<Signal, set<SlotFunctor>> connections;
   GHashTable *connections;
-  GMutex *lock; // connect/disconnect guarded by lock, emit is not
+  GMutex lock; // connect/disconnect guarded by lock, emit is not
 };
 
 static GList *
@@ -105,7 +105,7 @@ signal_slot_connect(SignalSlotConnector *self, Signal signal, Slot slot, gpointe
   g_assert(signal != NULL);
   g_assert(slot != NULL);
 
-  g_mutex_lock(self->lock);
+  g_mutex_lock(&self->lock);
 
   GList *slots = g_hash_table_lookup(self->connections, signal);
 
@@ -132,7 +132,7 @@ signal_slot_connect(SignalSlotConnector *self, Signal signal, Slot slot, gpointe
                            "connect(connector=%p,signal=%s,slot=%p,object=%p)",
                            self, signal, slot, object));
 exit_:
-  g_mutex_unlock(self->lock);
+  g_mutex_unlock(&self->lock);
 }
 
 static void
@@ -149,7 +149,7 @@ signal_slot_disconnect(SignalSlotConnector *self, Signal signal, Slot slot, gpoi
   g_assert(signal != NULL);
   g_assert(slot != NULL);
 
-  g_mutex_lock(self->lock);
+  g_mutex_lock(&self->lock);
 
   GList *slots = g_hash_table_lookup(self->connections, signal);
 
@@ -200,7 +200,7 @@ signal_slot_disconnect(SignalSlotConnector *self, Signal signal, Slot slot, gpoi
   g_list_free_full(slotfunctor_node, _slot_functor_free);
 
 exit_:
-  g_mutex_unlock(self->lock);
+  g_mutex_unlock(&self->lock);
 }
 
 static void
@@ -255,7 +255,7 @@ signal_slot_connector_new(void)
                                             NULL,
                                             _destroy_list_of_slots);
 
-  self->lock = g_mutex_new();
+  g_mutex_init(&self->lock);
 
   return self;
 }
@@ -263,7 +263,7 @@ signal_slot_connector_new(void)
 void
 signal_slot_connector_free(SignalSlotConnector *self)
 {
-  g_mutex_free(self->lock);
+  g_mutex_clear(&self->lock);
   g_hash_table_unref(self->connections);
   g_free(self);
 }

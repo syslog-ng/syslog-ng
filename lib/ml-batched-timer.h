@@ -32,7 +32,7 @@
 /* timer which only updates */
 typedef struct _MlBatchedTimer
 {
-  GStaticMutex lock;
+  GMutex lock;
   struct iv_timer timer;
   struct timespec expires;
   gpointer cookie;

@@ -63,7 +63,7 @@ static gint main_loop_jobs_running;
 static struct iv_task main_loop_workers_reenable_jobs_task;
 
 /* thread ID allocation */
-static GStaticMutex main_loop_workers_idmap_lock = G_STATIC_MUTEX_INIT;
+static GMutex main_loop_workers_idmap_lock;
 
 static guint64 main_loop_workers_idmap[MAIN_LOOP_WORKER_TYPE_MAX];
 
@@ -72,7 +72,7 @@ _allocate_thread_id(void)
 {
   gint id;
 
-  g_static_mutex_lock(&main_loop_workers_idmap_lock);
+  g_mutex_lock(&main_loop_workers_idmap_lock);
 
   /* NOTE: this algorithm limits the number of I/O worker threads to 64,
    * since the ID map is stored in a single 64 bit integer.  If we ever need
@@ -94,20 +94,20 @@ _allocate_thread_id(void)
             }
         }
     }
-  g_static_mutex_unlock(&main_loop_workers_idmap_lock);
+  g_mutex_unlock(&main_loop_workers_idmap_lock);
 }
 
 static void
 _release_thread_id(void)
 {
-  g_static_mutex_lock(&main_loop_workers_idmap_lock);
+  g_mutex_lock(&main_loop_workers_idmap_lock);
   if (main_loop_worker_id)
     {
       const gint id = main_loop_worker_id & (sizeof(guint64) * CHAR_BIT - 1);
       main_loop_workers_idmap[main_loop_worker_type] &= ~(1ULL << (id - 1));
       main_loop_worker_id = 0;
     }
-  g_static_mutex_unlock(&main_loop_workers_idmap_lock);
+  g_mutex_unlock(&main_loop_workers_idmap_lock);
 }
 
 /* NOTE: only used by the unit test program to emulate worker threads with
@@ -178,9 +178,9 @@ main_loop_worker_thread_start(void *cookie)
   _allocate_thread_id();
   INIT_IV_LIST_HEAD(&batch_callbacks);
 
-  g_static_mutex_lock(&workers_running_lock);
+  g_mutex_lock(&workers_running_lock);
   main_loop_workers_running++;
-  g_static_mutex_unlock(&workers_running_lock);
+  g_mutex_unlock(&workers_running_lock);
 
   app_thread_start();
 }
@@ -192,10 +192,10 @@ main_loop_worker_thread_stop(void)
   app_thread_stop();
   _release_thread_id();
 
-  g_static_mutex_lock(&workers_running_lock);
+  g_mutex_lock(&workers_running_lock);
   main_loop_workers_running--;
-  g_cond_signal(thread_halt_cond);
-  g_static_mutex_unlock(&workers_running_lock);
+  g_cond_signal(&thread_halt_cond);
+  g_mutex_unlock(&workers_running_lock);
 }
 
 void
@@ -360,7 +360,6 @@ void
 main_loop_create_worker_thread(WorkerThreadFunc func, WorkerExitNotificationFunc terminate_func, gpointer data,
                                WorkerOptions *worker_options)
 {
-  GThread *h;
   WorkerThreadParams *p;
 
   main_loop_assert_main_thread();
@@ -373,8 +372,7 @@ main_loop_create_worker_thread(WorkerThreadFunc func, WorkerExitNotificationFunc
   main_loop_worker_job_start();
   if (terminate_func)
     _register_exit_notification_callback(terminate_func, data);
-  h = g_thread_create_full(_worker_thread_func, p, 1024 * 1024, FALSE, TRUE, G_THREAD_PRIORITY_NORMAL, NULL);
-  g_assert(h != NULL);
+  g_thread_new(NULL, _worker_thread_func, p);
 }
 
 static void

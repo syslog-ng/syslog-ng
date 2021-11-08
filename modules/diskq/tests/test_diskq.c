@@ -64,7 +64,7 @@ Test(diskq, testcase_zero_diskbuf_and_normal_acks)
   log_queue_set_use_backlog(q, TRUE);
 
   filename = g_string_sized_new(32);
-  g_string_sprintf(filename, "test-normal_acks.qf");
+  g_string_printf(filename, "test-normal_acks.qf");
   unlink(filename->str);
   log_queue_disk_load_queue(q, filename->str);
   fed_messages = 0;
@@ -97,7 +97,7 @@ Test(diskq, testcase_zero_diskbuf_alternating_send_acks)
   log_queue_set_use_backlog(q, TRUE);
 
   filename = g_string_sized_new(32);
-  g_string_sprintf(filename, "test-send_acks.qf");
+  g_string_printf(filename, "test-send_acks.qf");
   unlink(filename->str);
   log_queue_disk_load_queue(q, filename->str);
   fed_messages = 0;
@@ -139,7 +139,7 @@ Test(diskq, testcase_ack_and_rewind_messages)
   cr_assert_eq(stats_counter_get(q->queued_messages), 0, "queued messages: %d", __LINE__);
 
   filename = g_string_sized_new(32);
-  g_string_sprintf(filename, "test-rewind_and_acks.qf");
+  g_string_printf(filename, "test-rewind_and_acks.qf");
   unlink(filename->str);
   log_queue_disk_load_queue(q, filename->str);
 
@@ -174,7 +174,7 @@ Test(diskq, testcase_ack_and_rewind_messages)
 #define MESSAGES_SUM (FEEDERS * MESSAGES_PER_FEEDER)
 #define TEST_RUNS 10
 
-GStaticMutex tlock;
+GMutex tlock;
 glong sum_time;
 
 static gpointer
@@ -209,9 +209,9 @@ threaded_feed(gpointer args)
   main_loop_worker_invoke_batch_callbacks();
   g_get_current_time(&end);
   diff = g_time_val_diff(&end, &start);
-  g_static_mutex_lock(&tlock);
+  g_mutex_lock(&tlock);
   sum_time += diff;
-  g_static_mutex_unlock(&tlock);
+  g_mutex_unlock(&tlock);
   main_loop_worker_thread_stop();
   log_msg_unref(tmpl);
   return NULL;
@@ -280,16 +280,16 @@ Test(diskq, testcase_with_threads)
 
       q = log_queue_disk_reliable_new(&options, NULL);
       filename = g_string_sized_new(32);
-      g_string_sprintf(filename, "test-%04d.qf", i);
+      g_string_printf(filename, "test-%04d.qf", i);
       unlink(filename->str);
       log_queue_disk_load_queue(q, filename->str);
 
       for (j = 0; j < FEEDERS; j++)
         {
-          thread_feed[j] = g_thread_create(threaded_feed, q, TRUE, NULL);
+          thread_feed[j] = g_thread_new(NULL, threaded_feed, q);
         }
 
-      thread_consume = g_thread_create(threaded_consume, q, TRUE, NULL);
+      thread_consume = g_thread_new(NULL, threaded_consume, q);
 
       for (j = 0; j < FEEDERS; j++)
         {

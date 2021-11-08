@@ -144,7 +144,7 @@ log_queue_fifo_is_empty_racy(LogQueue *s)
 {
   LogQueueFifo *self = (LogQueueFifo *) s;
   gboolean has_message_in_queue = FALSE;
-  g_static_mutex_lock(&self->super.lock);
+  g_mutex_lock(&self->super.lock);
   if (log_queue_fifo_get_length(s) > 0)
     {
       has_message_in_queue = TRUE;
@@ -157,7 +157,7 @@ log_queue_fifo_is_empty_racy(LogQueue *s)
           has_message_in_queue |= self->input_queues[i].finish_cb_registered;
         }
     }
-  g_static_mutex_unlock(&self->super.lock);
+  g_mutex_unlock(&self->super.lock);
   return !has_message_in_queue;
 }
 
@@ -291,10 +291,10 @@ log_queue_fifo_move_input(gpointer user_data)
 
   g_assert(thread_id >= 0);
 
-  g_static_mutex_lock(&self->super.lock);
+  g_mutex_lock(&self->super.lock);
   log_queue_fifo_move_input_unlocked(self, thread_id);
   log_queue_push_notify(&self->super);
-  g_static_mutex_unlock(&self->super.lock);
+  g_mutex_unlock(&self->super.lock);
   self->input_queues[thread_id].finish_cb_registered = FALSE;
   log_queue_unref(&self->super);
   return NULL;
@@ -386,12 +386,12 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
 
   /* slow path, put the pending item and the whole input queue to the wait_queue */
 
-  g_static_mutex_lock(&self->super.lock);
+  g_mutex_lock(&self->super.lock);
 
   if (_message_has_to_be_dropped(self, path_options))
     {
       stats_counter_inc(self->super.dropped_messages);
-      g_static_mutex_unlock(&self->super.lock);
+      g_mutex_unlock(&self->super.lock);
 
       _drop_message(msg, path_options);
 
@@ -414,7 +414,7 @@ log_queue_fifo_push_tail(LogQueue *s, LogMessage *msg, const LogPathOptions *pat
   log_queue_queued_messages_inc(&self->super);
 
   log_queue_memory_usage_add(&self->super, log_msg_get_size(msg));
-  g_static_mutex_unlock(&self->super.lock);
+  g_mutex_unlock(&self->super.lock);
 
   log_msg_unref(msg);
 }
@@ -464,13 +464,13 @@ log_queue_fifo_pop_head(LogQueue *s, LogPathOptions *path_options)
   if (self->output_queue.len == 0)
     {
       /* slow path, output queue is empty, get some elements from the wait queue */
-      g_static_mutex_lock(&self->super.lock);
+      g_mutex_lock(&self->super.lock);
       iv_list_splice_tail_init(&self->wait_queue.items, &self->output_queue.items);
       self->output_queue.len = self->wait_queue.len;
       self->output_queue.non_flow_controlled_len = self->wait_queue.non_flow_controlled_len;
       self->wait_queue.len = 0;
       self->wait_queue.non_flow_controlled_len = 0;
-      g_static_mutex_unlock(&self->super.lock);
+      g_mutex_unlock(&self->super.lock);
     }
 
   if (self->output_queue.len > 0)

@@ -94,7 +94,7 @@ struct _LogWriter
   struct iv_task immed_io_task;
   struct iv_event queue_filled;
   MainLoopIOWorkerJob io_job;
-  GStaticMutex suppress_lock;
+  GMutex suppress_lock;
   MlBatchedTimer suppress_timer;
   MlBatchedTimer mark_timer;
   struct iv_timer reopen_timer;
@@ -104,8 +104,8 @@ struct _LogWriter
   LogProtoClient *proto, *pending_proto;
   gboolean watches_running:1, suspended:1, waiting_for_throttle:1;
   gboolean pending_proto_present;
-  GCond *pending_proto_cond;
-  GStaticMutex pending_proto_lock;
+  GCond pending_proto_cond;
+  GMutex pending_proto_lock;
 };
 
 /**
@@ -224,14 +224,14 @@ log_writer_work_finished(gpointer s)
        * log_writer_reopen() call, quite possibly coming from a
        * non-main thread. */
 
-      g_static_mutex_lock(&self->pending_proto_lock);
+      g_mutex_lock(&self->pending_proto_lock);
       log_writer_free_proto(self);
 
       log_writer_set_proto(self, self->pending_proto);
       log_writer_set_pending_proto(self, NULL, FALSE);
 
-      g_cond_signal(self->pending_proto_cond);
-      g_static_mutex_unlock(&self->pending_proto_lock);
+      g_cond_signal(&self->pending_proto_cond);
+      g_mutex_unlock(&self->pending_proto_lock);
     }
 
   if (!self->work_result)
@@ -643,14 +643,14 @@ log_writer_suppress_timeout(gpointer pt)
   /* NOTE: this will probably do nothing as we are the timer callback, but
    * we may not do it with the suppress_lock held */
   ml_batched_timer_cancel(&self->suppress_timer);
-  g_static_mutex_lock(&self->suppress_lock);
+  g_mutex_lock(&self->suppress_lock);
 
   /* NOTE: we may be waken up an extra time if the suppress_timer setup race
    * is lost, see the comment at log_writer_is_msg_suppressed() for an
    * explanation */
   if (self->last_msg_count > 0)
     log_writer_emit_suppress_summary(self);
-  g_static_mutex_unlock(&self->suppress_lock);
+  g_mutex_unlock(&self->suppress_lock);
 
   return FALSE;
 }
@@ -739,7 +739,7 @@ log_writer_is_msg_suppressed(LogWriter *self, LogMessage *lm)
   if (self->options->suppress <= 0)
     return FALSE;
 
-  g_static_mutex_lock(&self->suppress_lock);
+  g_mutex_lock(&self->suppress_lock);
   if (self->last_msg)
     {
       if (_is_time_within_the_suppress_timeout(self, lm) &&
@@ -752,7 +752,7 @@ log_writer_is_msg_suppressed(LogWriter *self, LogMessage *lm)
 
           /* we only create the timer if this is the first suppressed message, otherwise it is already running. */
           need_to_arm_suppress_timer = self->last_msg_count == 1;
-          g_static_mutex_unlock(&self->suppress_lock);
+          g_mutex_unlock(&self->suppress_lock);
 
           /* this has to be outside of suppress_lock */
           if (need_to_arm_suppress_timer)
@@ -774,7 +774,7 @@ log_writer_is_msg_suppressed(LogWriter *self, LogMessage *lm)
     }
 
   log_writer_record_last_message(self, lm);
-  g_static_mutex_unlock(&self->suppress_lock);
+  g_mutex_unlock(&self->suppress_lock);
   if (need_to_cancel_suppress_timer)
     ml_batched_timer_cancel(&self->suppress_timer);
   return FALSE;
@@ -1579,9 +1579,9 @@ log_writer_free(LogPipe *s)
   g_free(self->stats_instance);
   ml_batched_timer_free(&self->mark_timer);
   ml_batched_timer_free(&self->suppress_timer);
-  g_static_mutex_free(&self->suppress_lock);
-  g_static_mutex_free(&self->pending_proto_lock);
-  g_cond_free(self->pending_proto_cond);
+  g_mutex_clear(&self->suppress_lock);
+  g_mutex_clear(&self->pending_proto_lock);
+  g_cond_clear(&self->pending_proto_cond);
 
   log_pipe_free_method(s);
 }
@@ -1715,12 +1715,12 @@ log_writer_reopen(LogWriter *s, LogProtoClient *proto)
 
   if (!main_loop_is_main_thread())
     {
-      g_static_mutex_lock(&self->pending_proto_lock);
+      g_mutex_lock(&self->pending_proto_lock);
       while (self->pending_proto_present)
         {
-          g_cond_wait(self->pending_proto_cond, g_static_mutex_get_mutex(&self->pending_proto_lock));
+          g_cond_wait(&self->pending_proto_cond, &self->pending_proto_lock);
         }
-      g_static_mutex_unlock(&self->pending_proto_lock);
+      g_mutex_unlock(&self->pending_proto_lock);
     }
 }
 
@@ -1759,9 +1759,9 @@ log_writer_new(guint32 flags, GlobalConfig *cfg)
   init_sequence_number(&self->seq_num);
 
   log_writer_init_watches(self);
-  g_static_mutex_init(&self->suppress_lock);
-  g_static_mutex_init(&self->pending_proto_lock);
-  self->pending_proto_cond = g_cond_new();
+  g_mutex_init(&self->suppress_lock);
+  g_mutex_init(&self->pending_proto_lock);
+  g_cond_init(&self->pending_proto_cond);
 
   log_pipe_add_info(&self->super, "writer");
 
