@@ -269,7 +269,7 @@ _calc_average(StatsAggregatorCPS *self, CPSLogic *logic, time_t *now)
   _set_average(logic, (sum / divisor));
 
   msg_trace("stats-aggregator-cps",
-            evt_tag_printf("name: %s_%s_%s", self->super.key.id, (self->super.key.instance) ? self->super.key.instance : "",
+            evt_tag_printf("name", "%s_%s_%s", self->super.key.id, (self->super.key.instance) ? self->super.key.instance : "",
                            logic->name),
             evt_tag_long("sum", sum),
             evt_tag_long("divisor", divisor),
