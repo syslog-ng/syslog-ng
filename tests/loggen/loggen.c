@@ -161,7 +161,8 @@ gboolean is_plugin_already_loaded(GPtrArray *plugin_array, const gchar *name)
 static PluginInfo *
 load_plugin_info_with_fname(const gchar *plugin_path, const gchar *fname)
 {
-  if (!g_str_has_suffix(fname, G_MODULE_SUFFIX) || !g_str_has_prefix(fname, LOGGEN_PLUGIN_LIB_PREFIX))
+  if (strlen(fname) <= strlen(LOGGEN_PLUGIN_LIB_PREFIX) || !g_str_has_suffix(fname, G_MODULE_SUFFIX)
+      || !g_str_has_prefix(fname, LOGGEN_PLUGIN_LIB_PREFIX))
     return NULL;
 
   gchar *full_lib_path = g_build_filename(plugin_path, fname, NULL);
