@@ -73,12 +73,14 @@ assert_log_message_value_unset_by_name(LogMessage *self, const gchar *name)
 }
 
 void
-assert_log_message_value(LogMessage *self, NVHandle handle, const gchar *expected_value)
+assert_log_message_value_and_type(LogMessage *self, NVHandle handle,
+                                  const gchar *expected_value, LogMessageValueType expected_type)
 {
   gssize key_name_length;
   gssize value_length;
+  LogMessageValueType actual_type;
   const gchar *key_name = log_msg_get_value_name(handle, &key_name_length);
-  const gchar *actual_value_r = log_msg_get_value(self, handle, &value_length);
+  const gchar *actual_value_r = log_msg_get_value_with_type(self, handle, &value_length, &actual_type);
   gchar *actual_value = g_strndup(actual_value_r, value_length);
 
   if (expected_value)
@@ -88,12 +90,31 @@ assert_log_message_value(LogMessage *self, NVHandle handle, const gchar *expecte
     }
   else
     cr_assert_str_eq(actual_value, "", "No value is expected for key %s but its value is %s", key_name, actual_value);
+
+  if (expected_type != LM_VT_NONE)
+    cr_assert_eq(actual_type, expected_type,
+                 "Invalid value type for key %s; actual: %d, expected %d", key_name, actual_type, expected_type);
+
+  g_free(actual_value);
+}
+
+void
+assert_log_message_value(LogMessage *self, NVHandle handle, const gchar *expected_value)
+{
+  assert_log_message_value_and_type(self, handle, expected_value, LM_VT_NONE);
+}
+
+void
+assert_log_message_value_and_type_by_name(LogMessage *self, const gchar *name,
+                                          const gchar *expected_value, LogMessageValueType expected_type)
+{
+  assert_log_message_value_and_type(self, log_msg_get_value_handle(name), expected_value, expected_type);
 }
 
 void
 assert_log_message_value_by_name(LogMessage *self, const gchar *name, const gchar *expected_value)
 {
-  assert_log_message_value(self, log_msg_get_value_handle(name), expected_value);
+  assert_log_message_value_and_type_by_name(self, name, expected_value, LM_VT_NONE);
 }
 
 void
