@@ -62,6 +62,8 @@ type_hint_parse(const gchar *hint, LogMessageValueType *out_type, GError **error
     *out_type = LM_VT_LIST;
   else if (strcmp(hint, "boolean") == 0)
     *out_type = LM_VT_BOOLEAN;
+  else if (strcmp(hint, "null") == 0)
+    *out_type = LM_VT_NULL;
   else
     {
       g_set_error(error, TYPE_HINTING_ERROR, TYPE_HINTING_INVALID_TYPE,
