@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2014 Balabit
+ * Copyright (c) 2014 Gergely Nagy
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,14 +20,30 @@
  * COPYING for details.
  *
  */
-#ifndef TRANSPORT_MAPPER_UNIX_H_INCLUDED
-#define TRANSPORT_MAPPER_UNIX_H_INCLUDED
 
-#include "transport-mapper.h"
+#ifndef _SYSLOG_NG_UNIX_CREDENTIALS_H
+#define _SYSLOG_NG_UNIX_CREDENTIALS_H
 
-typedef struct _TransportMapperUnix TransportMapperUnix;
+#include <sys/types.h>
+#include <sys/socket.h>
 
-TransportMapper *transport_mapper_unix_dgram_new(void);
-TransportMapper *transport_mapper_unix_stream_new(void);
+#include "syslog-ng.h"
+
+#if defined(__linux__)
+# if SYSLOG_NG_HAVE_STRUCT_UCRED && SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR
+# define CRED_PASS_SUPPORTED
+# define cred_t struct ucred
+# define cred_get(c,x) (c->x)
+# endif
+#elif defined(__FreeBSD__)
+# if SYSLOG_NG_HAVE_STRUCT_CMSGCRED && SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR
+#  define CRED_PASS_SUPPORTED
+#  define SCM_CREDENTIALS SCM_CREDS
+#  define cred_t struct cmsgcred
+#  define cred_get(c,x) (c->cmcred_##x)
+# endif
+#endif
+
+void setsockopt_so_passcred(gint fd, gint enable);
 
 #endif

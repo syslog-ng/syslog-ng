@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2013 Balázs Scheidler
+ * Copyright (c) 2014 Balabit
+ * Copyright (c) 2014 Gergely Nagy
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,14 +20,17 @@
  * COPYING for details.
  *
  */
-#ifndef TRANSPORT_MAPPER_UNIX_H_INCLUDED
-#define TRANSPORT_MAPPER_UNIX_H_INCLUDED
 
-#include "transport-mapper.h"
+#include "compat-unix-creds.h"
 
-typedef struct _TransportMapperUnix TransportMapperUnix;
-
-TransportMapper *transport_mapper_unix_dgram_new(void);
-TransportMapper *transport_mapper_unix_stream_new(void);
-
+void
+setsockopt_so_passcred(gint fd, gint onoff)
+{
+#ifdef LOCAL_CREDS
+  setsockopt(fd, 0, LOCAL_CREDS, &onoff, sizeof(onoff));
+#else
+#ifdef SO_PASSCRED
+  setsockopt(fd, SOL_SOCKET, SO_PASSCRED, &onoff, sizeof(onoff));
 #endif
+#endif
+}

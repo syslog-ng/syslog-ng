@@ -27,10 +27,12 @@ set(AFSOCKET_SOURCES
     afunix-dest.h
     transport-mapper-unix.c
     transport-mapper-unix.h
+    socket-options-unix.c
+    socket-options-unix.h
     transport-unix-socket.c
     transport-unix-socket.h
-    unix-credentials.c
-    unix-credentials.h
+    compat-unix-creds.c
+    compat-unix-creds.h
     afsocket-grammar.y
     afsocket-parser.c
     afsocket-parser.h

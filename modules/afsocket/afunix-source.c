@@ -25,6 +25,7 @@
 #include "messages.h"
 #include "gprocess.h"
 #include "transport-mapper-unix.h"
+#include "socket-options-unix.h"
 
 #include <string.h>
 #include <sys/types.h>
@@ -86,6 +87,30 @@ afunix_sd_apply_perms_to_socket(AFUnixSourceDriver *self)
   return TRUE;
 }
 
+static void
+afunix_sd_propagate_legacy_pass_unix_credentials_option(AFUnixSourceDriver *self, GlobalConfig *cfg)
+{
+  if (self->pass_unix_credentials == -1 && cfg->pass_unix_credentials == -1)
+    {
+      /* both local & global legacy options are unset, we use the values as
+       * specified by the new so-passcred() option (TRUE by default) */
+    }
+  else if (self->pass_unix_credentials != -1)
+    {
+      /* legacy, local option is set, force SO_PASSCRED to that value */
+      socket_options_unix_set_so_passcred(self->super.socket_options, self->pass_unix_credentials);
+    }
+  else if (cfg->pass_unix_credentials != -1)
+    {
+      /* legacy, global option is set, force SO_PASSCRED to that value, this
+       * way a local so-passcred() cannot override a global
+       * pass-unix-credentials() option */
+
+      socket_options_unix_set_so_passcred(self->super.socket_options, cfg->pass_unix_credentials);
+    }
+
+}
+
 static gboolean
 afunix_sd_init(LogPipe *s)
 {
@@ -95,11 +120,9 @@ afunix_sd_init(LogPipe *s)
   if (self->create_dirs == -1)
     self->create_dirs = cfg->create_dirs;
 
-  if (self->pass_unix_credentials == -1)
-    self->pass_unix_credentials = cfg->pass_unix_credentials;
+  afunix_sd_propagate_legacy_pass_unix_credentials_option(self, cfg);
 
   file_perm_options_inherit_dont_change(&self->file_perm_options);
-  afunix_sd_set_pass_unix_credentials(self, self->pass_unix_credentials);
 
   return afsocket_sd_init_method(s) &&
          afunix_sd_apply_perms_to_socket(self);
@@ -119,7 +142,7 @@ afunix_sd_new_instance(TransportMapper *transport_mapper, gchar *filename, Globa
 {
   AFUnixSourceDriver *self = g_new0(AFUnixSourceDriver, 1);
 
-  afsocket_sd_init_instance(&self->super, socket_options_new(), transport_mapper, cfg);
+  afsocket_sd_init_instance(&self->super, socket_options_unix_new(), transport_mapper, cfg);
 
   self->super.super.super.super.init = afunix_sd_init;
   self->super.super.super.super.free_fn = afunix_sd_free;
@@ -142,8 +165,6 @@ void
 afunix_sd_set_pass_unix_credentials(AFUnixSourceDriver *self, gboolean pass)
 {
   self->pass_unix_credentials = pass;
-
-  transport_mapper_unix_set_pass_unix_credentials(self->super.transport_mapper, pass);
 }
 
 void

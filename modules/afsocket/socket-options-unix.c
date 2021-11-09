@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2014 Balabit
- * Copyright (c) 2014 Gergely Nagy
+ * Copyright (c) 2021 Balazs Scheidler <bazsi77@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,30 +19,29 @@
  * COPYING for details.
  *
  */
+#include "socket-options-unix.h"
+#include "compat-unix-creds.h"
 
-#ifndef _SYSLOG_NG_UNIX_CREDENTIALS_H
-#define _SYSLOG_NG_UNIX_CREDENTIALS_H
+static gboolean
+socket_options_unix_setup_socket(SocketOptions *s, gint fd, GSockAddr *addr, AFSocketDirection dir)
+{
+  SocketOptionsUnix *self = (SocketOptionsUnix *) s;
 
-#include <sys/types.h>
-#include <sys/socket.h>
+  if (!socket_options_setup_socket_method(s, fd, addr, dir))
+    return FALSE;
 
-#include "syslog-ng.h"
+  setsockopt_so_passcred(fd, self->so_passcred);
 
-#if defined(__linux__)
-# if SYSLOG_NG_HAVE_STRUCT_UCRED && SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR
-# define CRED_PASS_SUPPORTED
-# define cred_t struct ucred
-# define cred_get(c,x) (c->x)
-# endif
-#elif defined(__FreeBSD__)
-# if SYSLOG_NG_HAVE_STRUCT_CMSGCRED && SYSLOG_NG_HAVE_CTRLBUF_IN_MSGHDR
-#  define CRED_PASS_SUPPORTED
-#  define SCM_CREDENTIALS SCM_CREDS
-#  define cred_t struct cmsgcred
-#  define cred_get(c,x) (c->cmcred_##x)
-# endif
-#endif
+  return TRUE;
+}
 
-void socket_set_pass_credentials(gint fd);
+SocketOptions *
+socket_options_unix_new(void)
+{
+  SocketOptionsUnix *self = g_new0(SocketOptionsUnix, 1);
 
-#endif
+  socket_options_init_instance(&self->super);
+  self->super.setup_socket = socket_options_unix_setup_socket;
+  self->so_passcred = TRUE;
+  return &self->super;
+}

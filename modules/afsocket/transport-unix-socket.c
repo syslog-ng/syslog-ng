@@ -25,7 +25,7 @@
 #include "transport/transport-socket.h"
 #include "scratch-buffers.h"
 #include "str-format.h"
-#include "unix-credentials.h"
+#include "compat-unix-creds.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>

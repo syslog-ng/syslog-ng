@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2014 Balabit
- * Copyright (c) 2014 Gergely Nagy
+ * Copyright (c) 2021 Balazs Scheidler <bazsi77@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published
@@ -20,25 +19,25 @@
  * COPYING for details.
  *
  */
+#ifndef SOCKET_OPTIONS_UNIX_H_INCLUDED
+#define SOCKET_OPTIONS_UNIX_H_INCLUDED
 
-#include "syslog-ng.h"
-#include "unix-credentials.h"
+#include "socket-options.h"
 
-
-void
-socket_set_pass_credentials(gint fd)
+typedef struct _SocketOptionsUnix
 {
-#if defined(CRED_PASS_SUPPORTED)
-#if defined(LOCAL_CREDS) || defined(SO_PASSCRED)
-  static gint one = 1;
-#endif
+  SocketOptions super;
+  gint so_passcred;
+} SocketOptionsUnix;
 
-#ifdef LOCAL_CREDS
-  setsockopt(fd, 0, LOCAL_CREDS, &one, sizeof(one));
-#else
-#ifdef SO_PASSCRED
-  setsockopt(fd, SOL_SOCKET, SO_PASSCRED, &one, sizeof(one));
-#endif
-#endif
-#endif
+static inline void
+socket_options_unix_set_so_passcred(SocketOptions *s, gint so_passcred)
+{
+  SocketOptionsUnix *self = (SocketOptionsUnix *) s;
+
+  self->so_passcred = so_passcred;
 }
+
+SocketOptions *socket_options_unix_new(void);
+
+#endif

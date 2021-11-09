@@ -497,7 +497,7 @@ cfg_new(gint version)
 
   dns_cache_options_defaults(&self->dns_cache_options);
   self->threaded = TRUE;
-  self->pass_unix_credentials = TRUE;
+  self->pass_unix_credentials = -1;
 
   log_template_options_defaults(&self->template_options);
   self->template_options.ts_format = TS_FMT_BSD;
