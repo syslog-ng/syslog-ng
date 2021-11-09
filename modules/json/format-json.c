@@ -301,6 +301,11 @@ tf_json_append_with_type_hint(const gchar *name, LogMessageValueType type, json_
         }
       break;
     }
+    case LM_VT_NULL:
+    {
+      tf_json_append_value(name, "null", -1, state, FALSE);
+      break;
+    }
     }
   return FALSE;
 }
