@@ -87,9 +87,6 @@ json_parser_process_single(struct json_object *jso,
   gboolean parsed = FALSE;
   LogMessageValueType type = LM_VT_STRING;
 
-  if (!jso)
-    return;
-
   ScratchBuffersMarker marker;
   key = scratch_buffers_alloc_and_mark(&marker);
   value = scratch_buffers_alloc();
@@ -148,6 +145,24 @@ json_parser_process_single(struct json_object *jso,
       break;
     }
     case json_type_null:
+
+      /* null values are represented as an empty string (so when expands to
+       * "nothing" in type unaware situations, while type-aware consumers
+       * may reproduce it as a NULL).
+       *
+       * I was thinking about using a very specific string representation
+       * (e.g.  "NULL" as a value), however if we encounter a null at a
+       * place where we might also have a sub-object, and we explicitly
+       * reference a field within that sub-object, we would get an empty
+       * string in that case too (due to the key being unknown).  All in
+       * all, the base case is I think to use an empty string as value, and
+       * LM_VT_NULL as type.  Type aware consumers would ignore the string
+       * anyway.
+       */
+
+      parsed = TRUE;
+      g_string_truncate(value, 0);
+      type = LM_VT_NULL;
       break;
     default:
       msg_debug("JSON parser encountered an unknown type, skipping",
