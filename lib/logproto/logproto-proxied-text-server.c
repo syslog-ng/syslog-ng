@@ -248,15 +248,17 @@ _fetch_into_proxy_buffer(LogProtoProxiedTextServer *self)
   return LPS_ERROR;
 }
 
-static void
+static gboolean
 _log_proto_proxied_text_server_switch_to_tls(LogProtoProxiedTextServer *self)
 {
   if (!multitransport_switch((MultiTransport *)self->super.super.super.transport, transport_factory_tls_id()))
     {
       msg_error("proxied-tls failed to switch to TLS");
-      return;
+      return FALSE;
     }
+
   msg_debug("proxied-tls switch to TLS: OK");
+  return TRUE;
 }
 
 static LogProtoStatus
@@ -280,8 +282,8 @@ _log_proto_proxied_text_server_handshake(LogProtoServer *s)
     {
       msg_info("PROXY protocol header parsed successfully");
 
-      if (self->has_to_switch_to_tls)
-        _log_proto_proxied_text_server_switch_to_tls(self);
+      if (self->has_to_switch_to_tls && !_log_proto_proxied_text_server_switch_to_tls(self))
+        return LPS_ERROR;
 
       return LPS_SUCCESS;
     }
