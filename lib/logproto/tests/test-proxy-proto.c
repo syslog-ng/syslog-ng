@@ -28,6 +28,8 @@
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
 
+#include <errno.h>
+
 typedef struct
 {
   const gchar *proxy_header;
@@ -179,4 +181,68 @@ Test(log_proto, test_proxy_protocol_aux_data)
   g_string_free(aux_nv_concated, TRUE);
   log_transport_aux_data_destroy(&aux);
   log_proto_server_free(proto);
+}
+
+
+static void
+assert_handshake_is_taking_place(LogProtoServer *proto)
+{
+  gint timeout;
+  GIOCondition cond;
+
+
+  cr_assert_eq(log_proto_server_prepare(proto, &cond, &timeout), LPPA_POLL_IO);
+  cr_assert_eq(cond, G_IO_IN);
+
+  cr_assert(log_proto_server_handshake_in_progress(proto));
+
+}
+
+Test(log_proto, test_proxy_protocol_header_partial_read)
+{
+  LogTransportMock *transport = (LogTransportMock *) log_transport_mock_records_new(LTM_EOF);
+  const char *proxy_header_segments[] = {"P", "ROXY TCP4 ", "1.1.1.1 ", "2.2.2.2 3333 ", "4444\r\n"};
+  size_t length = G_N_ELEMENTS(proxy_header_segments);
+
+  for(size_t i = 0; i < length; i++)
+    {
+      log_transport_mock_inject_data(transport, proxy_header_segments[i], -1);
+      log_transport_mock_inject_data(transport, LTM_INJECT_ERROR(EAGAIN));
+    }
+
+  log_transport_mock_inject_data(transport, "test message\n", -1);
+
+  LogProtoServer *proto = log_proto_proxied_text_server_new((LogTransport *) transport,
+                                                            get_inited_proto_server_options());
+
+  for(size_t i = 0; i < length - 1; i++)
+    {
+      assert_handshake_is_taking_place(proto);
+      cr_assert_eq(log_proto_server_handshake(proto), LPS_AGAIN);
+    }
+
+  cr_assert_eq(log_proto_server_handshake(proto), LPS_SUCCESS);
+  cr_assert_not(log_proto_server_handshake_in_progress(proto));
+
+
+
+  const gchar *expected = "PROXIED_SRCIP:1.1.1.1 PROXIED_DSTIP:2.2.2.2 "
+                          "PROXIED_SRCPORT:3333 PROXIED_DSTPORT:4444 "
+                          "PROXIED_IP_VERSION:4 ";
+  LogTransportAuxData aux;
+  log_transport_aux_data_init(&aux);
+  get_aux_data_from_next_message(proto, &aux);
+
+  GString *aux_nv_concated = g_string_new(NULL);
+  log_transport_aux_data_foreach(&aux, concat_nv, aux_nv_concated);
+  cr_assert_str_eq(aux_nv_concated->str, expected);
+
+  g_string_free(aux_nv_concated, TRUE);
+  log_transport_aux_data_destroy(&aux);
+
+
+
+
+  log_proto_server_free(proto);
+
 }
