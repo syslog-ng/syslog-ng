@@ -27,12 +27,17 @@ Source4: syslog-ng.logrotate7
 %bcond_without mqtt
 
 
+%if 0%{?rhel} == 8
+%global		python_devel python39-devel
+%global         py_ver  3.9
+%else
 %if 0%{?rhel} == 7
 %global		python_devel python36-devel
 %global         py_ver  3.6
 %else
 %global		python_devel python3-devel
 %global         py_ver  %{python3_version}
+%endif
 %endif
 
 %if 0%{?rhel} >= 7 || 0%{?fedora} <= 32
@@ -312,6 +317,7 @@ ryslog is not on the system.
     --with-linux-caps=auto \
     --enable-json \
     --enable-ssl \
+    --enable-pacct \
     --enable-smtp \
     --enable-shared \
     --disable-static \
@@ -478,6 +484,7 @@ fi
 %{_libdir}/%{name}/libtags-parser.so
 %{_libdir}/%{name}/libtfgetent.so
 %{_libdir}/%{name}/libxml.so
+%{_libdir}/%{name}/libpacctformat.so
 
 %if %{with systemd}
 %{_unitdir}/%{name}.service
