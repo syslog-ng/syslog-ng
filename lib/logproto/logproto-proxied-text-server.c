@@ -26,13 +26,13 @@
 #include <stdlib.h>
 #include "messages.h"
 #include "logproto-proxied-text-server.h"
+#include "transport/multitransport.h"
+#include "transport/transport-factory-tls.h"
 #include "str-utils.h"
 
 #define PROXY_HDR_TCP4 "PROXY TCP4 "
 #define PROXY_HDR_TCP6 "PROXY TCP6 "
 #define PROXY_HDR_UNKNOWN "PROXY UNKNOWN"
-#define PROXY_PROTO_HDR_MAX_LEN_RFC 108
-#define PROXY_PROTO_HDR_MAX_LEN (PROXY_PROTO_HDR_MAX_LEN_RFC * 2)
 
 static gboolean
 _check_header_length(const guchar *msg, gsize msg_len)
@@ -189,31 +189,102 @@ _log_proto_proxied_text_server_add_aux_data(LogProtoProxiedTextServer *self, Log
   return;
 }
 
+static LogProtoPrepareAction
+log_proto_proxied_text_server_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout)
+{
+  LogProtoProxiedTextServer *self = (LogProtoProxiedTextServer *) s;
+
+  *cond = s->transport->cond;
+
+  if(self->handshake_done)
+    return log_proto_text_server_prepare_method(s, cond, timeout);
+
+  /* if there's no pending I/O in the transport layer, then we want to do a read */
+  if (*cond == 0)
+    *cond = G_IO_IN;
+
+  return LPPA_POLL_IO;
+}
+
+static inline LogProtoStatus
+_fetch_into_proxy_buffer(LogProtoProxiedTextServer *self)
+{
+  while(self->proxy_header_buff_len < PROXY_PROTO_HDR_MAX_LEN)
+    {
+      gssize rc = log_transport_read(self->super.super.super.transport,
+                                     &(self->proxy_header_buff[self->proxy_header_buff_len]),
+                                     sizeof(gchar), NULL);
+      if(rc < 0)
+        {
+          if (errno == EAGAIN)
+            return LPS_AGAIN;
+          else
+            {
+              msg_error("I/O error occurred while reading proxy header", evt_tag_int(EVT_TAG_FD,
+                        self->super.super.super.transport->fd),
+                        evt_tag_error(EVT_TAG_OSERROR));
+              return LPS_ERROR;
+            }
+        }
+
+      /* permissive termination */
+      if(rc == 0)
+        return LPS_SUCCESS;
+
+      self->proxy_header_buff_len++;
+      self->proxy_header_buff[self->proxy_header_buff_len] = '\0';
+      if (self->proxy_header_buff[self->proxy_header_buff_len - 1] == '\n')
+        {
+          return LPS_SUCCESS;
+        }
+
+    }
+
+  msg_error("PROXY proto header with invalid header length",
+            evt_tag_int("max_parsable_length", PROXY_PROTO_HDR_MAX_LEN),
+            evt_tag_int("max_length_by_spec", PROXY_PROTO_HDR_MAX_LEN_RFC),
+            evt_tag_long("length", self->proxy_header_buff_len),
+            evt_tag_str("header", (const gchar *)self->proxy_header_buff));
+  return LPS_ERROR;
+}
+
+static gboolean
+_log_proto_proxied_text_server_switch_to_tls(LogProtoProxiedTextServer *self)
+{
+  if (!multitransport_switch((MultiTransport *)self->super.super.super.transport, transport_factory_tls_id()))
+    {
+      msg_error("proxied-tls failed to switch to TLS");
+      return FALSE;
+    }
+
+  msg_debug("proxied-tls switch to TLS: OK");
+  return TRUE;
+}
+
 static LogProtoStatus
 _log_proto_proxied_text_server_handshake(LogProtoServer *s)
 {
-  const guchar *msg;
-  gsize msg_len;
-  gboolean may_read = TRUE;
-  gboolean parsable;
-  LogProtoStatus status;
-
   LogProtoProxiedTextServer *self = (LogProtoProxiedTextServer *) s;
 
-  // Fetch a line from the transport layer
-  status = log_proto_buffered_server_fetch(&self->super.super.super, &msg, &msg_len, &may_read, NULL, NULL);
+  LogProtoStatus status = _fetch_into_proxy_buffer(self);
 
   self->handshake_done = (status == LPS_SUCCESS);
   if (status != LPS_SUCCESS)
     return status;
 
-  parsable = _log_proto_proxied_text_server_parse_header(self, msg, msg_len);
+  gboolean parsable = _log_proto_proxied_text_server_parse_header(self, self->proxy_header_buff,
+                      self->proxy_header_buff_len);
 
-  msg_debug("PROXY protocol header received", evt_tag_printf("line", "%.*s", (gint) msg_len, msg));
+  msg_debug("PROXY protocol header received", evt_tag_printf("line", "%.*s",
+                                                             (gint) self->proxy_header_buff_len, self->proxy_header_buff));
 
   if (parsable)
     {
       msg_info("PROXY protocol header parsed successfully");
+
+      if (self->has_to_switch_to_tls && !_log_proto_proxied_text_server_switch_to_tls(self))
+        return LPS_ERROR;
+
       return LPS_SUCCESS;
     }
   else
@@ -227,7 +298,6 @@ static gboolean
 _log_proto_proxied_text_server_handshake_in_progress(LogProtoServer *s)
 {
   LogProtoProxiedTextServer *self = (LogProtoProxiedTextServer *) s;
-
   return !self->handshake_done;
 }
 
@@ -274,10 +344,10 @@ _log_proto_proxied_text_server_init(LogProtoProxiedTextServer *self, LogTranspor
   self->super.super.super.free_fn = _log_proto_proxied_text_server_free;
   self->super.super.super.handshake_in_progess = _log_proto_proxied_text_server_handshake_in_progress;
   self->super.super.super.handshake = _log_proto_proxied_text_server_handshake;
+  self->super.super.super.prepare = log_proto_proxied_text_server_prepare;
 
   return;
 }
-
 
 LogProtoServer *
 log_proto_proxied_text_server_new(LogTransport *transport, const LogProtoServerOptions *options)
@@ -286,6 +356,17 @@ log_proto_proxied_text_server_new(LogTransport *transport, const LogProtoServerO
   self->info = g_new0(struct ProxyProtoInfo, 1);
 
   _log_proto_proxied_text_server_init(self, transport, options);
+
+  return &self->super.super.super;
+}
+
+
+LogProtoServer *
+log_proto_proxied_text_tls_passthrough_server_new(LogTransport *transport, const LogProtoServerOptions *options)
+{
+  LogProtoProxiedTextServer *self = (LogProtoProxiedTextServer *) log_proto_proxied_text_server_new(transport, options);
+
+  self->has_to_switch_to_tls = TRUE;
 
   return &self->super.super.super;
 }

@@ -27,6 +27,8 @@
 #include "logproto-text-server.h"
 
 #define IP_BUF_SIZE 64
+#define PROXY_PROTO_HDR_MAX_LEN_RFC 108
+#define PROXY_PROTO_HDR_MAX_LEN (PROXY_PROTO_HDR_MAX_LEN_RFC * 2)
 
 struct ProxyProtoInfo
 {
@@ -50,8 +52,14 @@ typedef struct _LogProtoProxiedTextServer
 
   // Flag to only run handshake() once
   gboolean handshake_done;
+  gboolean has_to_switch_to_tls;
+
+  guchar proxy_header_buff[PROXY_PROTO_HDR_MAX_LEN + 1];
+  gsize proxy_header_buff_len;
 } LogProtoProxiedTextServer;
 
 LogProtoServer *log_proto_proxied_text_server_new(LogTransport *transport, const LogProtoServerOptions *options);
+LogProtoServer *log_proto_proxied_text_tls_passthrough_server_new(LogTransport *transport,
+    const LogProtoServerOptions *options);
 
 #endif

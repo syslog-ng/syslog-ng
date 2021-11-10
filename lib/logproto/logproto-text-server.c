@@ -83,8 +83,8 @@ log_proto_get_char_size_for_fixed_encoding(const gchar *encoding)
 }
 
 
-static LogProtoPrepareAction
-log_proto_text_server_prepare(LogProtoServer *s, GIOCondition *cond, gint *timeout)
+LogProtoPrepareAction
+log_proto_text_server_prepare_method(LogProtoServer *s, GIOCondition *cond, gint *timeout)
 {
   LogProtoTextServer *self = (LogProtoTextServer *) s;
   gboolean avail;
@@ -432,7 +432,7 @@ void
 log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport, const LogProtoServerOptions *options)
 {
   log_proto_buffered_server_init(&self->super, transport, options);
-  self->super.super.prepare = log_proto_text_server_prepare;
+  self->super.super.prepare = log_proto_text_server_prepare_method;
   self->super.super.free_fn = log_proto_text_server_free;
   self->super.fetch_from_buffer = log_proto_text_server_fetch_from_buffer;
   self->super.flush = log_proto_text_server_flush;

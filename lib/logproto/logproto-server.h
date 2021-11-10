@@ -193,12 +193,13 @@ log_proto_server_set_ack_tracker(LogProtoServer *s, AckTracker *ack_tracker)
   s->ack_tracker = ack_tracker;
 }
 
-#define DEFINE_LOG_PROTO_SERVER(prefix) \
+#define DEFINE_LOG_PROTO_SERVER(prefix, options...) \
   static gpointer                                                       \
   prefix ## _server_plugin_construct(Plugin *self)                      \
   {                                                                     \
     static LogProtoServerFactory proto = {                              \
       .construct = prefix ## _server_new,                       \
+      ##options \
     };                                                                  \
     return &proto;                                                      \
   }

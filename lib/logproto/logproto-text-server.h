@@ -65,6 +65,7 @@ LogProtoServer *log_proto_text_server_new(LogTransport *transport, const LogProt
 void log_proto_text_server_free(LogProtoServer *self);
 void log_proto_text_server_init(LogProtoTextServer *self, LogTransport *transport,
                                 const LogProtoServerOptions *options);
+LogProtoPrepareAction log_proto_text_server_prepare_method(LogProtoServer *s, GIOCondition *cond, gint *timeout);
 
 static inline gint
 log_proto_text_server_accumulate_line(LogProtoTextServer *self,
