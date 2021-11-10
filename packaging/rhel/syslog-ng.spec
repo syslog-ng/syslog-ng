@@ -317,6 +317,7 @@ ryslog is not on the system.
     --with-linux-caps=auto \
     --enable-json \
     --enable-ssl \
+    --enable-pacct \
     --enable-smtp \
     --enable-shared \
     --disable-static \
@@ -483,6 +484,7 @@ fi
 %{_libdir}/%{name}/libtags-parser.so
 %{_libdir}/%{name}/libtfgetent.so
 %{_libdir}/%{name}/libxml.so
+%{_libdir}/%{name}/libpacctformat.so
 
 %if %{with systemd}
 %{_unitdir}/%{name}.service
