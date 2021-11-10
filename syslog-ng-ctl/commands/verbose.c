@@ -38,8 +38,6 @@ GOptionEntry verbose_options[] =
 gint
 slng_verbose(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 {
-  gint ret = 0;
-  GString *rsp = NULL;
   gchar buff[256];
 
   if (!verbose_set)
@@ -50,18 +48,8 @@ slng_verbose(int argc, char *argv[], const gchar *mode, GOptionContext *ctx)
 
   gchar *command = g_ascii_strup(buff, -1);
 
-  rsp = slng_run_command(command);
-  if (rsp == NULL)
-    {
-      ret = 1;
-      goto error;
-    }
+  gint ret = dispatch_command(command);
 
-  ret = process_response_status(rsp);
-  printf("%s\n", rsp->str);
-
-  g_string_free(rsp, TRUE);
-error:
   g_free(command);
 
   return ret;
