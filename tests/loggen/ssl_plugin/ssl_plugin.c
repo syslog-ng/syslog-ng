@@ -289,6 +289,32 @@ idle_thread_func(gpointer user_data)
   return NULL;
 }
 
+static inline void
+send_plaintext_proxy_header(ThreadData *thread_context, int sock_fd, char *buf, size_t buf_size)
+{
+  PluginOption *option = thread_context->option;
+
+  int proxy_header_len = generate_proxy_header(buf, buf_size, thread_context->index, option->proxy_src_ip,
+                                               option->proxy_dst_ip, option->proxy_src_port, option->proxy_dst_port);
+
+  DEBUG("Generated PROXY protocol v1 header; len=%d\n", proxy_header_len);
+
+  size_t sent = 0;
+  while (sent < proxy_header_len)
+    {
+      int rc = send(sock_fd, buf + sent, proxy_header_len - sent, 0);
+      if (rc < 0)
+        {
+          ERROR("Error sending buffer on %d (rc=%d)\n", sock_fd, rc);
+          return;
+        }
+
+      sent += rc;
+    }
+
+  DEBUG("Sent PROXY protocol v1 header; len=%d\n", proxy_header_len);
+}
+
 gpointer
 active_thread_func(gpointer user_data)
 {
@@ -298,25 +324,9 @@ active_thread_func(gpointer user_data)
   char *message = g_malloc0(MAX_MESSAGE_LENGTH+1);
 
   int sock_fd = connect_ip_socket(SOCK_STREAM, option->target, option->port, option->use_ipv6);
-  int str_len;
-  if(proxied_tls_passthrough)
-    {
-      str_len = generate_proxy_header(message, MAX_MESSAGE_LENGTH, thread_context->index, option->proxy_src_ip,
-                                      option->proxy_dst_ip,
-                                      option->proxy_src_port,
-                                      option->proxy_dst_port);
-      DEBUG("Generated PROXY protocol v1 header; len=%d\n", str_len);
-      int rc = send(sock_fd, message, str_len, 0);
-      if (rc < 0)
-        {
-          ERROR("Error sending buffer on %d (rc=%d)\n", sock_fd, rc);
-        }
-      else if(rc == str_len)
-        {
-          DEBUG("Sent PROXY protocol v1 header; len=%d\n", str_len);
-        }
 
-    }
+  if(proxied_tls_passthrough)
+    send_plaintext_proxy_header(thread_context, sock_fd, message, MAX_MESSAGE_LENGTH);
 
   SSL *ssl = open_ssl_connection(sock_fd);
 
@@ -370,7 +380,7 @@ active_thread_func(gpointer user_data)
           break;
         }
 
-      str_len = generate_message(message, MAX_MESSAGE_LENGTH, thread_context, count++);
+      int str_len = generate_message(message, MAX_MESSAGE_LENGTH, thread_context, count++);
 
       if (str_len < 0)
         {
@@ -406,6 +416,8 @@ active_thread_func(gpointer user_data)
 
           ERROR("destination connection %s:%s (%p) is lost, try to reconnect\n", option->target, option->port, g_thread_self());
           sock_fd = connect_ip_socket(SOCK_STREAM, option->target, option->port, option->use_ipv6);
+          if(proxied_tls_passthrough)
+            send_plaintext_proxy_header(thread_context, sock_fd, message, MAX_MESSAGE_LENGTH);
           ssl = open_ssl_connection(sock_fd);
 
           while(ssl == NULL && !thread_check_exit_criteria(thread_context))
@@ -414,6 +426,8 @@ active_thread_func(gpointer user_data)
               g_usleep(1e6);
 
               sock_fd = connect_ip_socket(SOCK_STREAM, option->target, option->port, option->use_ipv6);
+              if(proxied_tls_passthrough)
+                send_plaintext_proxy_header(thread_context, sock_fd, message, MAX_MESSAGE_LENGTH);
               ssl = open_ssl_connection(sock_fd);
             }
 
