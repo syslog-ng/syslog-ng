@@ -1,184 +1,133 @@
-3.34.1
+3.35.1
 ======
+
+## syslog-ng OSE APT repository
+
+From now on, Ubuntu and Debian packages will be published with every syslog-ng release in the form of an APT repository.
+
+We, syslog-ng developers, provide these packages and the APT repository "as is" without warranty of any kind,
+on a best-effort level.
+
+Currently, syslog-ng packages are released for the following distribution versions (x86-64):
+  - Debian: bullseye, buster, stretch, sid, testing
+  - Ubuntu: Impish, Focal, Bionic, Xenial
+
+For instructions on how to install syslog-ng on Debian/Ubuntu distributions, see the
+[README](https://github.com/syslog-ng/syslog-ng/blob/master/README.md#debianubuntu).
 
 ## Highlights
 
- * `regexp-parser()`: new parser that can parse messages with regular expressions
+ * `throttle()`: added a new `filter` that allows rate limiting messages based on arbitrary keys in each message.
+   Note: messages over the rate limit are dropped (just like in any other filter).
 
-   Example:
    ```
-   regexp-parser(
-     template("${MESSAGE}")
-     prefix(".regexp.")
-     patterns("(?<DN>foo)", "(?<DN>ball)")
-   );
+   filter f_throttle {
+     throttle(
+       template("$HOST")
+       rate(5000)
+     );
+   };
    ```
+   ([#3781](https://github.com/syslog-ng/syslog-ng/pull/3781))
 
-   `regexp-parser()` can be used as an intuitive replacement for regexp filters
-   that had their `store-matches` flag set in order to save those matches.
-
-   ([#3702](https://github.com/syslog-ng/syslog-ng/pull/3702))
-
- * `redis()`: `workers()` and batching support
-
-   The Redis driver now support the `workers()` option, which specifies the
-   number of parallel workers, and the `batch-lines()` option.
-
-   This could drastically increase the throughput of the Redis destination driver.
-
-   Example:
-   ```
-   redis(
-       host("localhost")
-       port(6379)
-       command("HINCRBY", "hosts", "$HOST", "1")
-       workers(8)
-       batch-lines(100)
-       batch-timeout(10000)
-       log-fifo-size(100000)
-   );
-   ```
-   ([#3732](https://github.com/syslog-ng/syslog-ng/pull/3732),
-    [#3745](https://github.com/syslog-ng/syslog-ng/pull/3745))
-
- * `mqtt()`: TLS and WebSocket Secure support
-
-   The MQTT destination now supports TLS and WSS.
+ * `mqtt()`: added a new `source` that can be used to receive messages using the MQTT protocol.
+   Supported transports: `tcp`, `ws`, `ssl`, `wss`
 
    Example config:
    ```
-   mqtt(
-     address("ssl://localhost:8883")
-     topic("syslog/$HOST")
-     fallback-topic("syslog/fallback")
-
-     tls(
-       ca-file("/path/to/ca.crt")
-       key-file("/path/to/client.key")
-       cert-file("/path/to/client.crt")
-       peer-verify(yes)
-     )
-   );
+   source {
+       mqtt{
+           topic("sub1"),
+           address("tcp://localhost:4445")
+       };
+   };
    ```
-   ([#3747](https://github.com/syslog-ng/syslog-ng/pull/3747))
+   ([#3809](https://github.com/syslog-ng/syslog-ng/pull/3809))
 
 ## Features
+ * `afsocket`: Socket options, such as ip-ttl() or tcp-keepalive-time(), are
+   traditionally named by their identifier defined in socket(7) and unix(7) man
+   pages.  This was not the case with the pass-unix-credentials() option, which -
+   unlike other similar options - was also possible to set globally.
 
- * `system()` source: added support for NetBSD
-   ([#3761](https://github.com/syslog-ng/syslog-ng/pull/3761))
+   A new option called so-passcred() is now introduced, which works similarly
+   how other socket related options do, which also made possible a nice code
+   cleanup in the related code sections.  Of course the old name remains
+   supported in compatibility modes.
 
- * `stats`: new statistics counter
+   The PR also implements a new source flag `ignore-aux-data`, which causes
+   syslog-ng not to propagate transport-level auxiliary information to log
+   messages.  Auxiliary information includes for example the pid/uid of the
+   sending process in the case of UNIX based transports, OR the X.509
+   certificate information in case of SSL/TLS encrypted data streams.
 
-   The following statistics are now available for the HTTP destination, and
-   other file and network based sources/destinations:
+   By setting flags(ignore-aux-data) one can improve performance at the cost of
+   making this information unavailable in the log messages received through
+   affected sources.
+   ([#3670](https://github.com/syslog-ng/syslog-ng/pull/3670))
+ * `network`: add support for PROXY header before TLS payload
 
-   - `msg_size_max`/`msg_size_avg`: Shows the largest/average message size of the given source/destination that has
-     been measured so far.
-   - `batch_size_max`/`batch_size_avg`: When batching is enabled, then this shows the
-     largest/average batch size of the given source/destination that has been measured so far.
+   This new transport method called `proxied-tls-passthrough` is capable of detecting the
+   [PROXY header](http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt) before the TLS payload.
+   Loggen has been updated with the`--proxied-tls-passthrough` option for testing purposes.
 
-   - `eps_last_1h`, `eps_last_24h`, `eps_since_start`: Events per second, measured for the last hour,
-     for the last 24 hours, and since syslog-ng startup, respectively.
-
-   Notes:
-   - Message sizes are calculated from the incoming raw message length on the source side, and from the outgoing
-     formatted message length on the destination side.
-   - EPS counters are just approximate values, they are updated every minute.
-   ([#3753](https://github.com/syslog-ng/syslog-ng/pull/3753))
-
- * `mqtt()`: username/password authentication
-
-   Example config:
    ```
-   mqtt(
-     address("tcp://localhost:1883")
-     topic("syslog/messages")
-     username("user")
-     password("passwd")
-   );
+   source s_proxied_tls_passthrough{
+     network(
+       port(1234)
+       transport("proxied-tls-passthrough"),
+       tls(
+         key-file("/path/to/server_key.pem"),
+         cert-file("/path/to/server_cert.pem"),
+         ca-dir("/path/to/ca/")
+       )
+     );
+   };
    ```
-
-   Note: The password is transmitted in cleartext without using `ssl://` or `wss://`.
-   ([#3747](https://github.com/syslog-ng/syslog-ng/pull/3747))
-
- * `mqtt()`: new option `http-proxy()` for specifying HTTP/HTTPS proxy for WebSocket connections
-   ([#3747](https://github.com/syslog-ng/syslog-ng/pull/3747))
-
- * `syslog-ng-ctl`: new flag for pruning statistics
-
-   `syslog-ng-ctl stats --remove-orphans` can be used to remove "orphaned" statistic counters.
-   It is useful when, for example, a templated file destination (`$YEAR.$MONTH.$DAY`) produces a lot of stats,
-   and one wants to remove those abandoned counters occasionally/conditionally.
-   ([#3760](https://github.com/syslog-ng/syslog-ng/pull/3760))
-
- * `disk-buffer()`: added a new option to reliable disk-buffer: `qout-size()`.
-
-   This option sets the number of messages that are stored in the memory in addition
-   to storing them on disk. The default value is 1000.
-
-   This serves performance purposes and offers the same no-message-loss guarantees as
-   before.
-
-   It can be used to maintain a higher throughput when only a small number of messages
-   are waiting in the disk-buffer.
-   ([#3754](https://github.com/syslog-ng/syslog-ng/pull/3754))
+   ([#3770](https://github.com/syslog-ng/syslog-ng/pull/3770))
+ * `mqtt() destination`: added `client-id` option. It specifies the unique client ID sent to the broker.
+   ([#3809](https://github.com/syslog-ng/syslog-ng/pull/3809))
 
 ## Bugfixes
 
- * `network(), syslog()`: fixed network sources on NetBSD
+ * `unset()`, `groupunset()`: fix unwanted removal of values on different log paths
 
-   On NetBSD, TCP-based network sources closed their listeners shortly after
-   startup due to a non-portable TCP keepalive setting. This has been fixed.
-   ([#3751](https://github.com/syslog-ng/syslog-ng/pull/3751))
+   Due to a copy-on-write bug, `unset()` and `groupunset()` not only removed values
+   from the appropriate log paths, but from all the others where the same message
+   went through. This has been fixed.
+   ([#3803](https://github.com/syslog-ng/syslog-ng/pull/3803))
+ * `regexp-parser()`: fix storing unnamed capture groups under `prefix()`
+   ([#3810](https://github.com/syslog-ng/syslog-ng/pull/3810))
+ * `loggen`: cannot detect plugins on platforms with non .so shared libs (osx)
+   ([#3832](https://github.com/syslog-ng/syslog-ng/pull/3832))
 
- * `disk-buffer()`: fixed a very rare case, where the reliable disk-buffer never resumed
-   after triggering `flow-control`.
-   ([#3752](https://github.com/syslog-ng/syslog-ng/pull/3752))
+## Packaging
 
- * `disk-buffer()`: fixed a rare memory leak that occurred when `mem-buf-length()`
-   or `mem-buf-size()` was configured incorrectly
-   ([#3750](https://github.com/syslog-ng/syslog-ng/pull/3750))
+ * `debian/control`: Added `libcriterion-dev` as a build dependency, where it is available from APT.
+   (`debian-bullseye`, `debian-testing`, `debian-sid`)
+   ([#3794](https://github.com/syslog-ng/syslog-ng/pull/3794))
+ * `centos-7`: `kafka` and `mqtt` modules are now packaged.
 
- * `redis()`: fixed command errors that were not detected and marked as successful delivery
-   ([#3748](https://github.com/syslog-ng/syslog-ng/pull/3748))
+   The following packages are used as dependencies:
+    * `librdkafka-devel` from EPEL 7
+    * `paho-c-devel` from copr:copr.fedorainfracloud.org:czanik:syslog-ng-githead
+   ([#3797](https://github.com/syslog-ng/syslog-ng/pull/3797))
+ * `debian`: Added bullseye support.
+   ([#3794](https://github.com/syslog-ng/syslog-ng/pull/3794))
+ * `bison`: support build with bison 3.8
+   ([#3784](https://github.com/syslog-ng/syslog-ng/pull/3784))
 
 ## Notes to developers
 
- * Light framework: new proxy-related options are supported with loggen:
-   `--proxy-src-ip`, `--proxy-dst-ip`, `--proxy-src-port`, `--proxy-dst-port`
-   ([#3766](https://github.com/syslog-ng/syslog-ng/pull/3766))
+ * `dbld`: As new distributions use python3 by default it makes sense to explicitly state older platforms which use python2
+   instead of the other way around, so it is not necessary to add that new platform to the python3 case.
+   ([#3780](https://github.com/syslog-ng/syslog-ng/pull/3780))
+ * `dbld`: move dbld image cache from DockerHub to GitHub
 
- * `log-threaded-dest`: descendant drivers from LogThreadedDest no longer inherit
-   batch-lines() and batch-timeout() automatically. Each driver have to opt-in for
-   these options with `log_threaded_dest_driver_batch_option`.
-
-   `log_threaded_dest_driver_option` has been renamed to `log_threaded_dest_driver_general_option`,
-   and `log_threaded_dest_driver_workers_option` have been added similarly to the
-   batch-related options.
-   ([#3741](https://github.com/syslog-ng/syslog-ng/pull/3741))
-
-## Other changes
-
- * `disk-buffer()`: performance improvements
-
-   Based on our measurements, the following can be expected compared to the previous syslog-ng release (v3.33.1):
-   - non-reliable disk buffer: up to 50% performance gain;
-   - reliable disk buffer: up to 80% increase in performance.
-
-   ([#3743](https://github.com/syslog-ng/syslog-ng/pull/3743), [#3746](https://github.com/syslog-ng/syslog-ng/pull/3746),
-   [#3754](https://github.com/syslog-ng/syslog-ng/pull/3754), [#3756](https://github.com/syslog-ng/syslog-ng/pull/3756),
-   [#3757](https://github.com/syslog-ng/syslog-ng/pull/3757))
-
- * `disk-buffer()`: the default value of the following options has been changed for performance reasons:
-     - `truncate-size-ratio()`: from 0.01 to 0.1 (from 1% to 10%)
-     - `qout-size()`: from 64 to 1000 (this affects only the non-reliable disk buffer)
-   ([#3757](https://github.com/syslog-ng/syslog-ng/pull/3757))
-
- * `kafka-c()`: `properties-file()` option is removed
-
-   Please list librdkafka properties in the `config()` option in syslog-ng's configuration.
-   See librdkafka configuration [here](https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md).
-   ([#3704](https://github.com/syslog-ng/syslog-ng/pull/3704))
+   In 2021, GitHub introduced the GitHub Packages service. Among other
+   repositories - it provides a standard Docker registry. DBLD uses
+   this registry, to avoid unnecessary rebuilding of the images.
+   ([#3782](https://github.com/syslog-ng/syslog-ng/pull/3782))
 
 ## Credits
 
@@ -191,7 +140,8 @@ of syslog-ng, contribute.
 
 We would like to thank the following people for their contribution:
 
-Andras Mitzki, Attila Szakacs, Balazs Scheidler, Balázs Barkó,
-Benedek Cserhati, Fabrice Fontaine, Gabor Nagy, Laszlo Szemere,
-LittleFish33, László Várady, Norbert Takacs, Parrag Szilárd,
-Peter Czanik, Peter Kokai, Zoltan Pallagi
+Andras Mitzki, Antal Nemes, Attila Szakacs, Balazs Scheidler,
+Balázs Barkó, Benedek Cserhati, Colin Douch, Gabor Nagy, Laszlo Szemere,
+László Várady, Norbert Takacs, Parrag Szilárd, Peter Czanik (CzP),
+Peter Kokai, Robert Paschedag, Ryan Faircloth, Szilárd Parrag,
+Thomas Klausner, Zoltan Pallagi
