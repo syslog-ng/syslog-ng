@@ -55,6 +55,7 @@ MQTTClientOptions *last_options;
 %token KW_ADDRESS
 %token KW_QOS
 %token KW_CLIENT_ID
+%token KW_CLEANSESSION
 %token KW_MESSAGE_TEMPLATE
 %token KW_USERNAME
 %token KW_PASSWORD
@@ -102,6 +103,7 @@ mqtt_destination_option
 
 mqtt_source_options
         : mqtt_source_option mqtt_source_options
+        | KW_CLEANSESSION '(' yesno ')'          { mqtt_client_options_set_cleansession(last_options, $3); }
         |
         ;
 

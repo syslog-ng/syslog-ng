@@ -38,6 +38,7 @@ static CfgLexerKeyword mqtt_keywords[] =
   { "keepalive", KW_KEEPALIVE },
   { "qos", KW_QOS },
   { "client_id", KW_CLIENT_ID },
+  { "cleansession", KW_CLEANSESSION },
   { "username", KW_USERNAME },
   { "password", KW_PASSWORD },
   { "http_proxy", KW_HTTP_PROXY },

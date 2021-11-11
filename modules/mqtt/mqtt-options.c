@@ -124,6 +124,12 @@ mqtt_client_options_set_client_id(MQTTClientOptions *self, const gchar *client_i
 }
 
 void
+mqtt_client_options_set_cleansession(MQTTClientOptions *self, gboolean cleansession)
+{
+  self->cleansession = cleansession;
+}
+
+void
 mqtt_client_options_set_username(MQTTClientOptions *self, const gchar *username)
 {
   g_free(self->username);
@@ -259,7 +265,7 @@ mqtt_client_options_to_mqtt_client_connection_option(MQTTClientOptions *self, MQ
 {
   *conn_opts = (MQTTClient_connectOptions) MQTTClient_connectOptions_initializer;
   conn_opts->keepAliveInterval = self->keepalive;
-  conn_opts->cleansession = FALSE;
+  conn_opts->cleansession = self->cleansession;
   conn_opts->username = self->username;
   conn_opts->password = self->password;
 

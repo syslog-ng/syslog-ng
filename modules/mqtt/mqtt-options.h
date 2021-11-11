@@ -36,6 +36,7 @@ struct _MQTTClientOptions
   gchar *address;
   gint qos;
   gchar *client_id;
+  gboolean cleansession;
 
   gchar *username;
   gchar *password;
@@ -60,6 +61,7 @@ void mqtt_client_options_set_keepalive (MQTTClientOptions *self, const gint keep
 gboolean mqtt_client_options_set_address(MQTTClientOptions *self, const gchar *address);
 void mqtt_client_options_set_qos (MQTTClientOptions *self, const gint qos);
 gboolean mqtt_client_options_set_client_id(MQTTClientOptions *self, const gchar *client_id);
+void mqtt_client_options_set_cleansession(MQTTClientOptions *self, gboolean cleansession);
 
 void mqtt_client_options_set_username(MQTTClientOptions *self, const gchar *username);
 void mqtt_client_options_set_password(MQTTClientOptions *self, const gchar *password);
