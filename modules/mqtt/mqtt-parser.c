@@ -25,11 +25,11 @@
 #include "mqtt-grammar.h"
 
 
-extern int mqtt_destination_debug;
+extern int mqtt_debug;
 
-int mqtt_destination_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
+int mqtt_parse(CfgLexer *lexer, LogDriver **instance, gpointer arg);
 
-static CfgLexerKeyword mqtt_destination_keywords[] =
+static CfgLexerKeyword mqtt_keywords[] =
 {
   { "mqtt", KW_MQTT },
   { "address", KW_ADDRESS },
@@ -37,6 +37,8 @@ static CfgLexerKeyword mqtt_destination_keywords[] =
   { "fallback_topic", KW_FALLBACK_TOPIC },
   { "keepalive", KW_KEEPALIVE },
   { "qos", KW_QOS },
+  { "client_id", KW_CLIENT_ID },
+  { "cleansession", KW_CLEANSESSION },
   { "username", KW_USERNAME },
   { "password", KW_PASSWORD },
   { "http_proxy", KW_HTTP_PROXY },
@@ -52,15 +54,15 @@ static CfgLexerKeyword mqtt_destination_keywords[] =
   { NULL }
 };
 
-CfgParser mqtt_destination_parser =
+CfgParser mqtt_parser =
 {
 #if SYSLOG_NG_ENABLE_DEBUG
-  .debug_flag = &mqtt_destination_debug,
+  .debug_flag = &mqtt_debug,
 #endif
-  .name = "mqtt_destination",
-  .keywords = mqtt_destination_keywords,
-  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) mqtt_destination_parse,
+  .name = "mqtt",
+  .keywords = mqtt_keywords,
+  .parse = (gint (*)(CfgLexer *, gpointer *, gpointer)) mqtt_parse,
   .cleanup = (void (*)(gpointer)) log_pipe_unref,
 };
 
-CFG_PARSER_IMPLEMENT_LEXER_BINDING(mqtt_destination_, MQTT_DESTINATION_, LogDriver **)
+CFG_PARSER_IMPLEMENT_LEXER_BINDING(mqtt_, MQTT_, LogDriver **)

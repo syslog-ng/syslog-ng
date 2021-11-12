@@ -24,22 +24,44 @@
 #include "cfg-parser.h"
 #include "plugin.h"
 #include "plugin-types.h"
+#include <MQTTClient.h>
 
-extern CfgParser mqtt_destination_parser;
+extern CfgParser mqtt_parser;
 
 static Plugin mqtt_plugins[] =
 {
   {
     .type = LL_CONTEXT_DESTINATION,
     .name = "mqtt",
-    .parser = &mqtt_destination_parser
+    .parser = &mqtt_parser
+  },
+  {
+    .type = LL_CONTEXT_SOURCE,
+    .name = "mqtt",
+    .parser = &mqtt_parser
   }
 };
+
+static void
+_mqtt_internal_log(enum MQTTCLIENT_TRACE_LEVELS level, gchar *message)
+{
+  if (level >= MQTTCLIENT_TRACE_ERROR)
+    {
+      msg_error("MQTT error", evt_tag_str("error_message", message));
+      return;
+    }
+
+  msg_trace("MQTT debug", evt_tag_str("message", message));
+}
 
 gboolean
 mqtt_module_init(PluginContext *context, CfgArgs *args)
 {
   plugin_register(context, mqtt_plugins, G_N_ELEMENTS(mqtt_plugins));
+
+  MQTTClient_setTraceCallback(_mqtt_internal_log);
+  MQTTClient_setTraceLevel(MQTTCLIENT_TRACE_PROTOCOL);
+
   return TRUE;
 }
 

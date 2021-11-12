@@ -30,12 +30,17 @@
 %code {
 
 #include "mqtt-destination.h"
+#include "mqtt-source.h"
+#include "syslog-names.h"
 
 #include "cfg-grammar-internal.h"
 #include "plugin.h"
+#include "mqtt-options.h"
+
+MQTTClientOptions *last_options;
 }
 
-%define api.prefix {mqtt_destination_}
+%define api.prefix {mqtt_}
 %lex-param {CfgLexer *lexer}
 %parse-param {CfgLexer *lexer}
 %parse-param {LogDriver **instance}
@@ -49,6 +54,8 @@
 %token KW_KEEPALIVE
 %token KW_ADDRESS
 %token KW_QOS
+%token KW_CLIENT_ID
+%token KW_CLEANSESSION
 %token KW_MESSAGE_TEMPLATE
 %token KW_USERNAME
 %token KW_PASSWORD
@@ -69,8 +76,15 @@ start
         : LL_CONTEXT_DESTINATION KW_MQTT
           {
             last_driver = *instance = mqtt_dd_new(configuration);
+            last_options = mqtt_dd_get_options(last_driver);
           }
           '(' mqtt_destination_options ')' { YYACCEPT; }
+        | LL_CONTEXT_SOURCE KW_MQTT
+          {
+            last_driver = *instance = mqtt_sd_new(configuration);
+            last_options = mqtt_sd_get_options(last_driver);
+          }
+          '(' mqtt_source_options ')' { YYACCEPT; }
 ;
 
 mqtt_destination_options
@@ -79,27 +93,43 @@ mqtt_destination_options
         ;
 
 mqtt_destination_option
-        : KW_TOPIC '(' template_content ')'     { mqtt_dd_set_topic_template(last_driver, $3);  }
+        : threaded_dest_driver_general_option
+        | mqtt_option
+        | KW_TOPIC '(' template_content ')'     { mqtt_dd_set_topic_template(last_driver, $3);  }
         | KW_FALLBACK_TOPIC '(' string ')'      { mqtt_dd_set_fallback_topic(last_driver, $3); free($3); }
-        | KW_KEEPALIVE '(' positive_integer ')' { mqtt_dd_set_keepalive(last_driver, $3);       }
+        | KW_TEMPLATE '(' template_content ')'   { mqtt_dd_set_message_template_ref(last_driver, $3); }
+        | { last_template_options = mqtt_dd_get_template_options(last_driver); } template_option
+        ;
+
+mqtt_source_options
+        : mqtt_source_option mqtt_source_options
+        | KW_CLEANSESSION '(' yesno ')'          { mqtt_client_options_set_cleansession(last_options, $3); }
+        |
+        ;
+
+mqtt_source_option
+        : threaded_source_driver_option
+        | mqtt_option
+        | KW_TOPIC '(' string ')' { mqtt_sd_set_topic(last_driver, $3); free($3); }
+        ;
+
+mqtt_option
+        : KW_KEEPALIVE '(' positive_integer ')' { mqtt_client_options_set_keepalive(last_options, $3);       }
         | KW_ADDRESS '(' string ')'
           {
-            CHECK_ERROR(mqtt_dd_validate_address($3), @1, "Invalid address");
-            mqtt_dd_set_address(last_driver, $3);
+            CHECK_ERROR(mqtt_client_options_set_address(last_options, $3), @1, "Invalid address");
             free($3);
           }
         | KW_QOS '(' nonnegative_integer ')'
           {
             CHECK_ERROR(0 <= $3 && $3 <= 2, @1, "Allowed QOS values: 0, 1, 2");
-            mqtt_dd_set_qos(last_driver, $3);
+            mqtt_client_options_set_qos(last_options, $3);
           }
-        | KW_TEMPLATE '(' template_content ')'   { mqtt_dd_set_message_template_ref(last_driver, $3); }
-        | KW_USERNAME '(' string ')'             { mqtt_dd_set_username(last_driver, $3); free($3); }
-        | KW_PASSWORD '(' string ')'             { mqtt_dd_set_password(last_driver, $3); free($3); }
-        | KW_HTTP_PROXY '(' string ')'           { mqtt_dd_set_http_proxy(last_driver, $3); free($3); }
+        | KW_CLIENT_ID '(' string ')'            { CHECK_ERROR(mqtt_client_options_set_client_id(last_options, $3), @3, "mqtt: client_id can't be empty"); free($3); }
+        | KW_USERNAME '(' string ')'             { mqtt_client_options_set_username(last_options, $3); free($3); }
+        | KW_PASSWORD '(' string ')'             { mqtt_client_options_set_password(last_options, $3); free($3); }
+        | KW_HTTP_PROXY '(' string ')'           { mqtt_client_options_set_http_proxy(last_options, $3); free($3); }
         | KW_TLS '(' mqtt_tls_options ')'
-        | threaded_dest_driver_general_option
-        | { last_template_options = mqtt_dd_get_template_options(last_driver); } template_option
         ;
 
 mqtt_tls_options
@@ -108,16 +138,16 @@ mqtt_tls_options
     ;
 
 mqtt_tls_option
-    : KW_CA_DIR     '(' string ')'            { mqtt_dd_set_ca_dir(last_driver, $3); free($3); }
-    | KW_CA_FILE    '(' path_check ')'        { mqtt_dd_set_ca_file(last_driver, $3); free($3); }
-    | KW_CERT_FILE  '(' path_check ')'        { mqtt_dd_set_cert_file(last_driver, $3); free($3); }
-    | KW_KEY_FILE   '(' path_secret ')'       { mqtt_dd_set_key_file(last_driver, $3); free($3); }
-    | KW_CIPHER_SUITE '(' string ')'          { mqtt_dd_set_cipher_suite(last_driver, $3); free($3); }
-    | KW_SSL_VERSION '(' string ')'           { CHECK_ERROR(mqtt_dd_set_ssl_version(last_driver, $3), @3,
+    : KW_CA_DIR     '(' string ')'            { mqtt_client_options_set_ca_dir(last_options, $3); free($3); }
+    | KW_CA_FILE    '(' path_check ')'        { mqtt_client_options_set_ca_file(last_options, $3); free($3); }
+    | KW_CERT_FILE  '(' path_check ')'        { mqtt_client_options_set_cert_file(last_options, $3); free($3); }
+    | KW_KEY_FILE   '(' path_secret ')'       { mqtt_client_options_set_key_file(last_options, $3); free($3); }
+    | KW_CIPHER_SUITE '(' string ')'          { mqtt_client_options_set_cipher_suite(last_options, $3); free($3); }
+    | KW_SSL_VERSION '(' string ')'           { CHECK_ERROR(mqtt_client_options_set_ssl_version(last_options, $3), @3,
                                                             "mqtt: unsupported SSL version: %s", $3);
                                                 free($3); }
-    | KW_PEER_VERIFY '(' yesno ')'            { mqtt_dd_set_peer_verify(last_driver, $3); }
-    | KW_USE_SYSTEM_CERT_STORE '(' yesno ')'  { mqtt_dd_use_system_cert_store(last_driver, $3); }
+    | KW_PEER_VERIFY '(' yesno ')'            { mqtt_client_options_set_peer_verify(last_options, $3); }
+    | KW_USE_SYSTEM_CERT_STORE '(' yesno ')'  { mqtt_client_options_use_system_cert_store(last_options, $3); }
     ;
 
 /* INCLUDE_RULES */

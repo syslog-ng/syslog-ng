@@ -20,15 +20,27 @@
  *
  */
 
-#ifndef MQTT_PARSER_H_INCLUDED
-#define MQTT_PARSER_H_INCLUDED
+#ifndef MQTT_SOURCE_H_INCLUDE
+#define MQTT_SOURCE_H_INCLUDE
 
-#include "cfg-parser.h"
-#include "driver.h"
+#include "mqtt-options.h"
+#include "logthrsource/logthrfetcherdrv.h"
+#include "atomic.h"
+#include <MQTTClient.h>
 
-extern CfgParser mqtt_parser;
+typedef struct _MQTTSourceDriver MQTTSourceDriver;
 
-CFG_PARSER_DECLARE_LEXER_BINDING(mqtt_, MQTT_, LogDriver **)
+struct _MQTTSourceDriver
+{
+  LogThreadedFetcherDriver super;
+  MQTTClientOptions options;
+  MQTTClient client;
+  gchar *topic;
+};
 
 
-#endif /* MQTT_PARSER_H_INCLUDED */
+LogDriver *mqtt_sd_new(GlobalConfig *cfg);
+MQTTClientOptions *mqtt_sd_get_options(LogDriver *s);
+void mqtt_sd_set_topic(LogDriver *s, const gchar *topic);
+
+#endif /* MQTT_SOURCE_H_INCLUDE */
