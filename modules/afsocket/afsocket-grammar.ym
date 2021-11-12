@@ -618,11 +618,14 @@ dest_failback_probe_option
 	| KW_SUCCESSFUL_PROBES_REQUIRED '(' positive_integer ')' { afinet_dd_set_failback_successful_probes_required(last_driver, $3); }
 	;
 
+dest_afinet_dgram_option
+	: KW_SPOOF_SOURCE '(' yesno ')'		{ afinet_dd_set_spoof_source(last_driver, $3); }
+	| KW_SPOOF_SOURCE_MAX_MSGLEN '(' positive_integer ')' { afinet_dd_set_spoof_source_max_msglen(last_driver, $3); }
+	;
 
 dest_afinet_udp_option
 	: dest_afinet_option
-	| KW_SPOOF_SOURCE '(' yesno ')'		{ afinet_dd_set_spoof_source(last_driver, $3); }
-	| KW_SPOOF_SOURCE_MAX_MSGLEN '(' positive_integer ')' { afinet_dd_set_spoof_source_max_msglen(last_driver, $3); }
+	| dest_afinet_dgram_option
 	;
 
 dest_afinet_tcp_params
@@ -741,7 +744,7 @@ dest_afsocket_transport
             transport_mapper_set_transport(last_transport_mapper, $3);
           }
         ')'	{ free($3); }
-	| KW_SPOOF_SOURCE '(' yesno ')'		         { afinet_dd_set_spoof_source(last_driver, $3); }
+	| dest_afinet_dgram_option
 	| KW_TLS
 	  {
             gchar buf[256];
