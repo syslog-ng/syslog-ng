@@ -25,6 +25,7 @@
 #include "json-parser.h"
 #include "dot-notation.h"
 #include "scratch-buffers.h"
+#include "str-repr/encode.h"
 
 #include <string.h>
 #include <ctype.h>
@@ -160,24 +161,33 @@ json_parser_process_single(struct json_object *jso,
       break;
     case json_type_array:
     {
-      gint i, plen;
+      g_string_truncate(value, 0);
 
-      g_string_assign(key, obj_key);
-
-      plen = key->len;
-
-      for (i = 0; i < json_object_array_length(jso); i++)
+      type = LM_VT_LIST;
+      for (gint i = 0; i < json_object_array_length(jso); i++)
         {
-          g_string_truncate(key, plen);
-          g_string_append_printf(key, "[%d]", i);
-          json_parser_process_single(json_object_array_get_idx(jso, i),
-                                     prefix,
-                                     key->str, msg);
+          struct json_object *el = json_object_array_get_idx(jso, i);
+          GString *element_value = scratch_buffers_alloc();
+          LogMessageValueType element_type;
+
+          if (json_parser_extract_value(el, element_value, &element_type))
+            {
+              if (i != 0)
+                g_string_append_c(value, ',');
+              str_repr_encode_append(value, element_value->str, element_value->len, NULL);
+            }
+          else
+            {
+              /* unknown type, encode the entire array as JSON */
+              g_string_assign(value, json_object_to_json_string_ext(jso, JSON_C_TO_STRING_PLAIN));
+              type = LM_VT_JSON;
+              break;
+            }
         }
-      break;
-    }
+
       parsed = TRUE;
       break;
+    }
     default:
       msg_debug("JSON parser encountered an unknown type, skipping",
                 evt_tag_str("key", obj_key));
