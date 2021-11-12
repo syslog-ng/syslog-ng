@@ -22,7 +22,7 @@ EXTRA_DIST +=	\
 	cmake/Modules/FindLIBCAP.cmake	\
 	cmake/Modules/FindLibDBI.cmake	\
 	cmake/Modules/FindLibMaxMindDB.cmake	\
-	cmake/Modules/FindLibNet.cmake	\
+	cmake/Modules/FindLIBNET.cmake	\
 	cmake/Modules/FindNetSnmp.cmake	\
 	cmake/Modules/FindPackageMessage.cmake	\
 	cmake/Modules/FindRabbitMQ.cmake	\

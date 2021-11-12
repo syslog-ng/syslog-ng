@@ -206,7 +206,7 @@ endif()
 
 find_package(OpenSSL REQUIRED)
 find_package(FLEX REQUIRED)
-find_package(LibNet REQUIRED)
+find_package(LIBNET REQUIRED)
 find_package(Resolv REQUIRED)
 find_package(Wrap)
 find_package(criterion)
