@@ -398,7 +398,7 @@ log_matcher_pcre_re_feed_backrefs(LogMatcher *s, LogMessage *msg, gint value_han
   gint i;
   gboolean indirect = _shall_set_values_indirectly(value_handle);
 
-  for (i = 0; i < (RE_MAX_MATCHES) && i < match_num; i++)
+  for (i = 0; i < (LOGMSG_MAX_MATCHES) && i < match_num; i++)
     {
       gint begin_index = matches[2 * i];
       gint end_index = matches[2 * i + 1];
@@ -488,8 +488,8 @@ log_matcher_pcre_re_match(LogMatcher *s, LogMessage *msg, gint value_handle, con
 
   if (pcre_fullinfo(self->pattern, self->extra, PCRE_INFO_CAPTURECOUNT, &num_matches) < 0)
     g_assert_not_reached();
-  if (num_matches > RE_MAX_MATCHES)
-    num_matches = RE_MAX_MATCHES;
+  if (num_matches > LOGMSG_MAX_MATCHES)
+    num_matches = LOGMSG_MAX_MATCHES;
 
   matches_size = 3 * (num_matches + 1);
   matches = g_alloca(matches_size * sizeof(gint));
@@ -542,8 +542,8 @@ log_matcher_pcre_re_replace(LogMatcher *s, LogMessage *msg, gint value_handle, c
 
   if (pcre_fullinfo(self->pattern, self->extra, PCRE_INFO_CAPTURECOUNT, &num_matches) < 0)
     g_assert_not_reached();
-  if (num_matches > RE_MAX_MATCHES)
-    num_matches = RE_MAX_MATCHES;
+  if (num_matches > LOGMSG_MAX_MATCHES)
+    num_matches = LOGMSG_MAX_MATCHES;
 
   matches_size = 3 * (num_matches + 1);
   matches = g_alloca(matches_size * sizeof(gint));
@@ -625,7 +625,7 @@ log_matcher_pcre_re_replace(LogMatcher *s, LogMessage *msg, gint value_handle, c
       else
         {
           /* if the output array was too small, truncate the number of
-             captures to RE_MAX_MATCHES */
+             captures to LOGMSG_MAX_MATCHES */
 
           if (rc == 0)
             rc = matches_size / 3;

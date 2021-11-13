@@ -142,8 +142,8 @@ r_parser_pcre(gchar *str, gint *len, const gchar *param, gpointer state, RParser
 
   if (pcre_fullinfo(self->re, self->extra, PCRE_INFO_CAPTURECOUNT, &num_matches) < 0)
     g_assert_not_reached();
-  if (num_matches > RE_MAX_MATCHES)
-    num_matches = RE_MAX_MATCHES;
+  if (num_matches > LOGMSG_MAX_MATCHES)
+    num_matches = LOGMSG_MAX_MATCHES;
 
   gsize matches_size = 3 * (num_matches + 1);
   gint *matches = g_alloca(matches_size * sizeof(gint));
