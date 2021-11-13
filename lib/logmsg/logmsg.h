@@ -62,7 +62,7 @@ typedef struct _LogPathOptions LogPathOptions;
 
 typedef void (*LMAckFunc)(LogMessage *lm, AckType ack_type);
 
-#define RE_MAX_MATCHES 256
+#define LOGMSG_MAX_MATCHES 256
 
 typedef enum
 {
