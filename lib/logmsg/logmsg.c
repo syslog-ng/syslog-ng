@@ -711,13 +711,21 @@ log_msg_values_foreach(const LogMessage *self, NVTableForeachFunc func, gpointer
 }
 
 void
-log_msg_set_match(LogMessage *self, gint index_, const gchar *value, gssize value_len)
+log_msg_set_match_with_type(LogMessage *self, gint index_,
+                            const gchar *value, gssize value_len,
+                            LogMessageValueType type)
 {
-  g_assert(index_ < 256);
+  g_assert(index_ < LOGMSG_MAX_MATCHES);
 
   if (index_ >= self->num_matches)
     self->num_matches = index_ + 1;
-  log_msg_set_value(self, match_handles[index_], value, value_len);
+  log_msg_set_value_with_type(self, match_handles[index_], value, value_len, type);
+}
+
+void
+log_msg_set_match(LogMessage *self, gint index_, const gchar *value, gssize value_len)
+{
+  log_msg_set_match_with_type(self, index_, value, value_len, LM_VT_STRING);
 }
 
 void
