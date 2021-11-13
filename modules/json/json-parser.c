@@ -251,6 +251,29 @@ json_parser_process_object(struct json_object *jso,
   }
 }
 
+static void
+json_parser_process_array(struct json_object *jso,
+                          const gchar *prefix,
+                          LogMessage *msg)
+{
+  for (gint i = 0; i < json_object_array_length(jso) && i < LOGMSG_MAX_MATCHES; i++)
+    {
+      struct json_object *el = json_object_array_get_idx(jso, i);
+      GString *element_value = scratch_buffers_alloc();
+      LogMessageValueType element_type;
+
+      if (json_parser_extract_string_from_simple_json_object(el, element_value, &element_type))
+        {
+          log_msg_set_match_with_type(msg, i + 1, element_value->str, element_value->len, element_type);
+        }
+      else
+        {
+          /* unknown type, encode the entire value as JSON */
+          log_msg_set_match_with_type(msg, i + 1, json_object_to_json_string_ext(el, JSON_C_TO_STRING_PLAIN), -1, LM_VT_LITERAL);
+        }
+    }
+}
+
 static gboolean
 json_parser_extract(JSONParser *self, struct json_object *jso, LogMessage *msg)
 {
@@ -263,6 +286,11 @@ json_parser_extract(JSONParser *self, struct json_object *jso, LogMessage *msg)
   if (json_object_is_type(jso, json_type_object))
     {
       json_parser_process_object(jso, self->prefix, msg);
+      return TRUE;
+    }
+  if (json_object_is_type(jso, json_type_array))
+    {
+      json_parser_process_array(jso, self->prefix, msg);
       return TRUE;
     }
   return FALSE;
