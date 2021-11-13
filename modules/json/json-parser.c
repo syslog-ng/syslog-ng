@@ -257,13 +257,15 @@ json_parser_extract(JSONParser *self, struct json_object *jso, LogMessage *msg)
   if (self->extract_prefix)
     jso = json_extract(jso, self->extract_prefix);
 
-  if (!jso || !json_object_is_type(jso, json_type_object))
-    {
-      return FALSE;
-    }
+  if (!jso)
+    return FALSE;
 
-  json_parser_process_object(jso, self->prefix, msg);
-  return TRUE;
+  if (json_object_is_type(jso, json_type_object))
+    {
+      json_parser_process_object(jso, self->prefix, msg);
+      return TRUE;
+    }
+  return FALSE;
 }
 
 #ifndef JSON_C_VERSION
