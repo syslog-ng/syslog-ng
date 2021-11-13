@@ -217,11 +217,12 @@ Test(json_parser, test_json_parser_int64_mid)
   log_pipe_unref(&json_parser->super);
 }
 
-Test(json_parser, test_json_parser_fails_for_non_object_top_element)
+Test(json_parser, test_json_parser_fails_for_non_object_and_non_array_top_element)
 {
   LogParser *json_parser = json_parser_new(NULL);
-  assert_json_parser_fails("[1, 2, 3]", json_parser);
-  assert_json_parser_fails("", json_parser);
+  assert_json_parser_fails("true", json_parser);
+  assert_json_parser_fails("null", json_parser);
+  assert_json_parser_fails("10", json_parser);
   log_pipe_unref(&json_parser->super);
 }
 
@@ -233,6 +234,23 @@ Test(json_parser, test_json_parser_extracts_subobjects_if_extract_prefix_is_spec
   json_parser_set_extract_prefix(json_parser, "[0]");
   msg = parse_json_into_log_message("[{'foo':'bar'}, {'bar':'foo'}]", json_parser);
   assert_log_message_value(msg, log_msg_get_value_handle("foo"), "bar");
+  log_msg_unref(msg);
+  log_pipe_unref(&json_parser->super);
+}
+
+Test(json_parser, test_json_parser_extracts_array_elements_into_matches)
+{
+  LogMessage *msg;
+  LogParser *json_parser = json_parser_new(NULL);
+
+  msg = parse_json_into_log_message("[42,true,null,{'foo':'bar'}, {'bar':'foo'}]", json_parser);
+  assert_log_message_value_unset_by_name(msg, "0");
+  assert_log_message_value_and_type_by_name(msg, "1", "42", LM_VT_INT64);
+  assert_log_message_value_and_type_by_name(msg, "2", "true", LM_VT_BOOLEAN);
+  assert_log_message_value_and_type_by_name(msg, "3", "", LM_VT_NULL);
+  assert_log_message_value_and_type_by_name(msg, "4", "{\"foo\":\"bar\"}", LM_VT_JSON);
+  assert_log_message_value_and_type_by_name(msg, "5", "{\"bar\":\"foo\"}", LM_VT_JSON);
+  cr_assert(msg->num_matches == 6);
   log_msg_unref(msg);
   log_pipe_unref(&json_parser->super);
 }
