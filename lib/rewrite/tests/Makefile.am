@@ -1,6 +1,7 @@
 lib_rewrite_tests_TESTS = \
     lib/rewrite/tests/test_rewrite \
     lib/rewrite/tests/test_set_pri \
+    lib/rewrite/tests/test_rename \
     lib/rewrite/tests/test_set_severity \
     lib/rewrite/tests/test_set_facility
 
@@ -13,6 +14,11 @@ lib_rewrite_tests_test_rewrite_LDADD = $(TEST_LDADD)    \
     $(PREOPEN_SYSLOGFORMAT)
 lib_rewrite_tests_test_rewrite_SOURCES =    \
     lib/rewrite/tests/test_rewrite.c
+
+lib_rewrite_tests_test_rename_CFLAGS = $(TEST_CFLAGS)
+lib_rewrite_tests_test_rename_LDADD = $(TEST_LDADD)
+lib_rewrite_tests_test_rename_SOURCES =    \
+    lib/rewrite/tests/test_rename.c
 
 lib_rewrite_tests_test_set_severity_CFLAGS = $(TEST_CFLAGS)
 lib_rewrite_tests_test_set_severity_LDADD = $(TEST_LDADD)

@@ -33,6 +33,7 @@
 #include "rewrite/rewrite-set-tag.h"
 #include "rewrite/rewrite-set.h"
 #include "rewrite/rewrite-unset.h"
+#include "rewrite/rewrite-rename.h"
 #include "rewrite/rewrite-subst.h"
 #include "rewrite/rewrite-groupset.h"
 #include "rewrite/rewrite-set-pri.h"
@@ -65,6 +66,7 @@
 %token KW_GROUP_UNSET
 %token KW_SET
 %token KW_UNSET
+%token KW_RENAME
 %token KW_SUBST
 %token KW_VALUES
 %token KW_SET_SEVERITY
@@ -108,6 +110,11 @@ rewrite_expr
             last_rewrite = log_rewrite_unset_new(configuration);
           }
           '(' rewrite_set_opts ')'              { $$ = last_rewrite; }
+        | KW_RENAME
+          {
+            last_rewrite = log_rewrite_rename_new(configuration);
+          }
+          '(' rewrite_rename_opts ')'              { $$ = last_rewrite; }
 	| KW_SET_TAG '(' string 
 	  { 
 	    last_rewrite = log_rewrite_set_tag_new($3, TRUE, configuration);
@@ -194,6 +201,17 @@ rewrite_subst_opts
 rewrite_subst_opt
 	: { last_matcher_options = log_rewrite_subst_get_matcher_options(last_rewrite); } matcher_option
 	| rewrite_expr_opt
+        ;
+
+rewrite_rename_opts
+        : rewrite_rename_opt rewrite_rename_opts
+        |
+        ;
+
+rewrite_rename_opt
+        : KW_SOURCE '(' string ')' { log_rewrite_rename_set_source(last_rewrite, $3); free($3); }
+        | KW_DESTINATION '(' string ')' { log_rewrite_rename_set_destination(last_rewrite, $3); free($3); }
+        | rewrite_condition_opt
         ;
 
 rewrite_set_opts
