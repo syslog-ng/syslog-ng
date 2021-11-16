@@ -1,4 +1,4 @@
-find_package(NetSnmp)
+find_package(NETSNMP)
 
 module_switch(ENABLE_AFSNMP "Enable afsnmp module" NETSNMP_FOUND)
 

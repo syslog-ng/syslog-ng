@@ -1,4 +1,4 @@
-find_package(LibDBI)
+find_package(LIBDBI)
 find_package(OpenSSL)
 
 module_switch(ENABLE_SQL "Enable SQL plugin" LIBDBI_FOUND)
