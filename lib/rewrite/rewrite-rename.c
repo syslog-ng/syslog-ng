@@ -59,13 +59,7 @@ log_rewrite_rename_process(LogRewrite *s, LogMessage **pmsg, const LogPathOption
 
   log_msg_make_writable(pmsg, path_options);
 
-  gssize value_len = 0;
-  const gchar *value = log_msg_get_value_if_set(*pmsg, self->source_handle, &value_len);
-  if (!value)
-    return;
-
-  log_msg_set_value(*pmsg, self->destination_handle, value, value_len);
-  log_msg_unset_value(*pmsg, self->source_handle);
+  log_msg_rename_value(*pmsg, self->source_handle, self->destination_handle);
 }
 
 static LogPipe *
