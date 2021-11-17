@@ -48,9 +48,7 @@ _perform_rewrite(LogRewrite *rewrite, LogMessage *msg_)
 static void
 _perform_rename(const gchar *from, const char *to, LogMessage *msg_)
 {
-  LogRewrite *rename = log_rewrite_rename_new(cfg);
-  log_rewrite_rename_set_source(rename, from);
-  log_rewrite_rename_set_destination(rename, to);
+  LogRewrite *rename = log_rewrite_rename_new(cfg, log_msg_get_value_handle(from), log_msg_get_value_handle(to));
 
   _perform_rewrite(rename, msg_);
 }
@@ -98,8 +96,7 @@ Test(rename, rename_not_existing)
 
 Test(rename, source_option_mandatory)
 {
-  LogRewrite *rename = log_rewrite_rename_new(cfg);
-  log_rewrite_rename_set_destination(rename, "A");
+  LogRewrite *rename = log_rewrite_rename_new(cfg, 0, LM_V_MESSAGE);
 
   cr_assert_not(log_pipe_init(&rename->super));
 
@@ -108,8 +105,7 @@ Test(rename, source_option_mandatory)
 
 Test(rename, destination_option_mandatory)
 {
-  LogRewrite *rename = log_rewrite_rename_new(cfg);
-  log_rewrite_rename_set_source(rename, "A");
+  LogRewrite *rename = log_rewrite_rename_new(cfg, LM_V_MESSAGE, 0);
 
   cr_assert_not(log_pipe_init(&rename->super));
 

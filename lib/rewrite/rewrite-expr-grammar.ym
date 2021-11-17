@@ -110,11 +110,16 @@ rewrite_expr
             last_rewrite = log_rewrite_unset_new(configuration);
           }
           '(' rewrite_set_opts ')'              { $$ = last_rewrite; }
-        | KW_RENAME
+        | KW_RENAME '(' string string
           {
-            last_rewrite = log_rewrite_rename_new(configuration);
+            NVHandle from = log_msg_get_value_handle($3);
+            NVHandle to = log_msg_get_value_handle($4);
+            free($3);
+            free($4);
+
+            last_rewrite = log_rewrite_rename_new(configuration, from, to);
           }
-          '(' rewrite_rename_opts ')'              { $$ = last_rewrite; }
+          rewrite_rename_opts ')'              { $$ = last_rewrite; }
 	| KW_SET_TAG '(' string 
 	  { 
 	    last_rewrite = log_rewrite_set_tag_new($3, TRUE, configuration);
@@ -209,9 +214,7 @@ rewrite_rename_opts
         ;
 
 rewrite_rename_opt
-        : KW_SOURCE '(' string ')' { log_rewrite_rename_set_source(last_rewrite, $3); free($3); }
-        | KW_DESTINATION '(' string ')' { log_rewrite_rename_set_destination(last_rewrite, $3); free($3); }
-        | rewrite_condition_opt
+        : rewrite_condition_opt
         ;
 
 rewrite_set_opts

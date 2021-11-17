@@ -33,22 +33,6 @@ struct _LogRewriteRename
   NVHandle destination_handle;
 };
 
-void
-log_rewrite_rename_set_source(LogRewrite *s, const gchar *source)
-{
-  LogRewriteRename *self = (LogRewriteRename *) s;
-
-  self->source_handle = log_msg_get_value_handle(source);
-}
-
-void
-log_rewrite_rename_set_destination(LogRewrite *s, const gchar *destination)
-{
-  LogRewriteRename *self = (LogRewriteRename *) s;
-
-  self->destination_handle = log_msg_get_value_handle(destination);
-}
-
 static void
 log_rewrite_rename_process(LogRewrite *s, LogMessage **pmsg, const LogPathOptions *path_options)
 {
@@ -68,9 +52,7 @@ log_rewrite_rename_clone(LogPipe *s)
   LogRewriteRename *self = (LogRewriteRename *) s;
   LogRewriteRename *cloned;
 
-  cloned = (LogRewriteRename *) log_rewrite_rename_new(s->cfg);
-  cloned->source_handle = self->source_handle;
-  cloned->destination_handle = self->destination_handle;
+  cloned = (LogRewriteRename *) log_rewrite_rename_new(s->cfg, self->source_handle, self->destination_handle);
 
   if (self->super.condition)
     cloned->super.condition = filter_expr_clone(self->super.condition);
@@ -98,9 +80,12 @@ log_rewrite_rename_init(LogPipe *s)
 }
 
 LogRewrite *
-log_rewrite_rename_new(GlobalConfig *cfg)
+log_rewrite_rename_new(GlobalConfig *cfg, NVHandle source, NVHandle destination)
 {
   LogRewriteRename *self = g_new0(LogRewriteRename, 1);
+
+  self->source_handle = source;
+  self->destination_handle = destination;
 
   log_rewrite_init_instance(&self->super, cfg);
   self->super.super.init = log_rewrite_rename_init;

@@ -27,9 +27,6 @@
 
 #include "rewrite/rewrite-expr.h"
 
-LogRewrite *log_rewrite_rename_new(GlobalConfig *cfg);
-
-void log_rewrite_rename_set_source(LogRewrite *s, const gchar *source);
-void log_rewrite_rename_set_destination(LogRewrite *s, const gchar *destination);
+LogRewrite *log_rewrite_rename_new(GlobalConfig *cfg, NVHandle source, NVHandle destination);
 
 #endif
