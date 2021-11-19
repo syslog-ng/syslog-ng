@@ -2,11 +2,12 @@
 import logging
 from argparse import ArgumentParser, _ArgumentGroup, _SubParsersAction
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
 
 from azure.identity import ClientSecretCredential
 
 from indexer import Indexer, NightlyDebIndexer, ReleaseDebIndexer
+from remote_storage_synchronizer import AzureContainerSynchronizer, RemoteStorageSynchronizer
 
 
 def add_common_required_arguments(required_argument_group: _ArgumentGroup) -> None:
@@ -119,9 +120,32 @@ def init_logging(args: dict) -> None:
     )
 
 
+def construct_synchronizers(args: dict) -> Tuple[RemoteStorageSynchronizer, RemoteStorageSynchronizer]:
+    incoming_remote_storage_synchronizer = AzureContainerSynchronizer(
+        connection_string=args["full_permission_container_connection_string"],
+        container_name="incoming",
+    )
+
+    if args["suite"] == "nightly":
+        indexed_connection_string = args["full_permission_container_connection_string"]
+    elif args["suite"] == "stable":
+        indexed_connection_string = args["no_delete_permission_container_connection_string"]
+    else:
+        raise NotImplementedError("Unexpected suite: {}".format(args["suite"]))
+
+    indexed_remote_storage_synchronizer = AzureContainerSynchronizer(
+        connection_string=indexed_connection_string,
+        container_name="$web",
+    )
+
+    return incoming_remote_storage_synchronizer, indexed_remote_storage_synchronizer
+
+
 def main() -> None:
     args = parse_args()
     init_logging(args)
+
+    incoming_remote_storage_synchronizer, indexed_remote_storage_synchronizer = construct_synchronizers(args)
 
     cdn_credential = ClientSecretCredential(
         tenant_id=args["cdn_tenant_id"],
@@ -134,17 +158,16 @@ def main() -> None:
     if args["suite"] == "nightly":
         indexers.append(
             NightlyDebIndexer(
-                full_permission_container_connection_string=args["full_permission_container_connection_string"],
+                incoming_remote_storage_synchronizer=incoming_remote_storage_synchronizer,
+                indexed_remote_storage_synchronizer=indexed_remote_storage_synchronizer,
                 cdn_credential=cdn_credential,
             )
         )
     elif args["suite"] == "stable":
         indexers.append(
             ReleaseDebIndexer(
-                full_permission_container_connection_string=args["full_permission_container_connection_string"],
-                no_delete_permission_container_connection_string=args[
-                    "no_delete_permission_container_connection_string"
-                ],
+                incoming_remote_storage_synchronizer=incoming_remote_storage_synchronizer,
+                indexed_remote_storage_synchronizer=indexed_remote_storage_synchronizer,
                 cdn_credential=cdn_credential,
                 run_id=args["run_id"],
                 gpg_key_path=Path(args["gpg_key_path"]),

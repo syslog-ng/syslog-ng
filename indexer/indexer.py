@@ -7,13 +7,10 @@ from azure.identity import ClientSecretCredential
 from azure.mgmt.cdn import CdnManagementClient
 from azure.mgmt.cdn.models import PurgeParameters
 
-from remote_storage_synchronizer import AzureContainerSynchronizer
+from remote_storage_synchronizer import RemoteStorageSynchronizer
 
 
 class Indexer(ABC):
-    INCOMING_CONTAINER_NAME = "secret"
-    INDEXED_CONTAINER_NAME = "secret"
-
     CDN_RESOURCE_GROUP_NAME = "secret"
     CDN_PROFILE_NAME = "secret"
     CDN_ENDPOINT_NAME = "secret"
@@ -21,22 +18,17 @@ class Indexer(ABC):
 
     def __init__(
         self,
-        incoming_container_connection_string: str,
-        indexed_container_connection_string: str,
-        incoming_container_sub_dir: Path,
-        indexed_container_sub_dir: Path,
+        incoming_remote_storage_synchronizer: RemoteStorageSynchronizer,
+        incoming_sub_dir: Path,
+        indexed_remote_storage_synchronizer: RemoteStorageSynchronizer,
+        indexed_sub_dir: Path,
         cdn_credential: ClientSecretCredential,
     ) -> None:
-        self.__incoming_container = AzureContainerSynchronizer(
-            connection_string=incoming_container_connection_string,
-            container_name=Indexer.INCOMING_CONTAINER_NAME,
-        )
-        self.__indexed_container = AzureContainerSynchronizer(
-            connection_string=indexed_container_connection_string,
-            container_name=Indexer.INDEXED_CONTAINER_NAME,
-        )
-        self.__incoming_container.set_sub_dir(incoming_container_sub_dir)
-        self.__indexed_container.set_sub_dir(indexed_container_sub_dir)
+        self.__incoming_remote_storage_synchronizer = incoming_remote_storage_synchronizer
+        self.__indexed_remote_storage_synchronizer = indexed_remote_storage_synchronizer
+        self.__incoming_remote_storage_synchronizer.set_sub_dir(incoming_sub_dir)
+        self.__indexed_remote_storage_synchronizer.set_sub_dir(indexed_sub_dir)
+
         self.__cdn = CdnManagementClient(
             credential=cdn_credential,
             subscription_id=Indexer.CDN_ENDPOINT_SUBSCRIPTION_ID,
@@ -44,8 +36,8 @@ class Indexer(ABC):
         self.__logger = Indexer.__create_logger()
 
     def __sync_from_remote(self) -> None:
-        self.__incoming_container.sync_from_remote()
-        self.__indexed_container.sync_from_remote()
+        self.__incoming_remote_storage_synchronizer.sync_from_remote()
+        self.__indexed_remote_storage_synchronizer.sync_from_remote()
 
     @abstractmethod
     def _prepare_indexed_dir(self, incoming_dir: Path, indexed_dir: Path) -> None:
@@ -60,14 +52,14 @@ class Indexer(ABC):
         pass
 
     def __create_snapshot_of_indexed(self) -> None:
-        self.__indexed_container.create_snapshot_of_remote()
+        self.__indexed_remote_storage_synchronizer.create_snapshot_of_remote()
 
     def __sync_to_remote(self) -> None:
-        self.__incoming_container.sync_to_remote()
-        self.__indexed_container.sync_to_remote()
+        self.__incoming_remote_storage_synchronizer.sync_to_remote()
+        self.__indexed_remote_storage_synchronizer.sync_to_remote()
 
     def __refresh_cdn_cache(self) -> None:
-        path = str(Path("/", self.__indexed_container.remote_dir.working_dir, "*"))
+        path = str(Path("/", self.__indexed_remote_storage_synchronizer.remote_dir.working_dir, "*"))
 
         self._log_info("Refreshing CDN cache.", path=path)
 
@@ -86,8 +78,8 @@ class Indexer(ABC):
         self._log_info("Successfully refreshed CDN cache.", path=path)
 
     def index(self) -> None:
-        incoming_dir = self.__incoming_container.local_dir.working_dir
-        indexed_dir = self.__indexed_container.local_dir.working_dir
+        incoming_dir = self.__incoming_remote_storage_synchronizer.local_dir.working_dir
+        indexed_dir = self.__indexed_remote_storage_synchronizer.local_dir.working_dir
 
         self.__sync_from_remote()
 
