@@ -86,6 +86,7 @@ struct _QDisk
 
 #define QDISK_ERROR qdisk_error_quark()
 #define QDISK_ERROR_SERIALIZE 0
+#define QDISK_ERROR_DESERIALIZE 1
 
 GQuark
 qdisk_error_quark(void)
@@ -620,25 +621,19 @@ exit:
 }
 
 gboolean
-qdisk_deserialize_msg(QDisk *self, GString *serialized, LogMessage **msg)
+qdisk_deserialize(GString *serialized, QDiskDeSerializeFunc deserialize_func, gpointer user_data, GError **error)
 {
   SerializeArchive *sa = serialize_string_archive_new(serialized);
-  LogMessage *local_msg = log_msg_new_empty();
 
-  if (!log_msg_deserialize(local_msg, sa))
+  if (!deserialize_func(sa, user_data))
     {
-      msg_error("Error deserializing message from the disk-queue file",
-                evt_tag_str("filename", qdisk_get_filename(self)));
-
-      log_msg_unref(local_msg);
-      serialize_archive_free(sa);
-      return FALSE;
+      g_set_error(error, QDISK_ERROR, QDISK_ERROR_DESERIALIZE, "failed to deserialize data");
+      goto exit;
     }
 
-  *msg = local_msg;
-
+exit:
   serialize_archive_free(sa);
-  return TRUE;
+  return *error == NULL;
 }
 
 static FILE *
