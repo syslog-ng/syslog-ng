@@ -9,7 +9,7 @@ from .remote_storage_synchronizer import FileSyncState, RemoteStorageSynchronize
 DEFAULT_ROOT_DIR = Path("/tmp/container_synchronizer")
 
 
-class ContainerSynchronizer(RemoteStorageSynchronizer):
+class AzureContainerSynchronizer(RemoteStorageSynchronizer):
     def __init__(self, connection_string: str, container_name: str, sub_dir: Path) -> None:
         self.__client = ContainerClient.from_connection_string(
             conn_str=connection_string, container_name=container_name

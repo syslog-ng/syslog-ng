@@ -7,7 +7,7 @@ from azure.identity import ClientSecretCredential
 from azure.mgmt.cdn import CdnManagementClient
 from azure.mgmt.cdn.models import PurgeParameters
 
-from remote_storage_synchronizer import ContainerSynchronizer
+from remote_storage_synchronizer import AzureContainerSynchronizer
 
 
 class Indexer(ABC):
@@ -27,12 +27,12 @@ class Indexer(ABC):
         indexed_container_sub_dir: Path,
         cdn_credential: ClientSecretCredential,
     ) -> None:
-        self.__incoming_container = ContainerSynchronizer(
+        self.__incoming_container = AzureContainerSynchronizer(
             connection_string=incoming_container_connection_string,
             container_name=Indexer.INCOMING_CONTAINER_NAME,
             sub_dir=incoming_container_sub_dir,
         )
-        self.__indexed_container = ContainerSynchronizer(
+        self.__indexed_container = AzureContainerSynchronizer(
             connection_string=indexed_container_connection_string,
             container_name=Indexer.INDEXED_CONTAINER_NAME,
             sub_dir=indexed_container_sub_dir,
