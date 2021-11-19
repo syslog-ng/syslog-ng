@@ -1,44 +1,25 @@
-import logging
-from enum import Enum, auto
 from hashlib import md5
 from pathlib import Path
 from typing import List, Optional
 
-from azure.storage.blob import ContainerClient, BlobClient
+from azure.storage.blob import BlobClient, ContainerClient
+
+from .remote_storage_synchronizer import FileSyncState, RemoteStorageSynchronizer
 
 DEFAULT_ROOT_DIR = Path("/tmp/container_synchronizer")
 
 
-class WorkingDir:
-    def __init__(self, root_dir: Path, sub_dir: Path) -> None:
-        self.__root_dir = root_dir
-        self.__working_dir = Path(root_dir, sub_dir)
-
-    @property
-    def root_dir(self) -> Path:
-        return self.__root_dir
-
-    @property
-    def working_dir(self) -> Path:
-        return self.__working_dir
-
-
-class FileSyncState(Enum):
-    IN_SYNC = auto()
-    DIFFERENT = auto()
-    NOT_IN_REMOTE = auto()
-    NOT_IN_LOCAL = auto()
-
-
-class ContainerSynchronizer:
+class ContainerSynchronizer(RemoteStorageSynchronizer):
     def __init__(self, connection_string: str, container_name: str, sub_dir: Path) -> None:
-        self.remote_dir = WorkingDir(Path(""), sub_dir)
-        self.local_dir = WorkingDir(Path(DEFAULT_ROOT_DIR, container_name), sub_dir)
         self.__client = ContainerClient.from_connection_string(
             conn_str=connection_string, container_name=container_name
         )
-        self.__logger = ContainerSynchronizer.__create_logger()
         self.__remote_files_cache: Optional[List[dict]] = None
+        super().__init__(
+            remote_root_dir=Path(""),
+            local_root_dir=Path(DEFAULT_ROOT_DIR, container_name),
+            sub_dir=sub_dir,
+        )
 
     @property
     def local_files(self) -> List[Path]:
@@ -58,7 +39,7 @@ class ContainerSynchronizer:
     def __download_file(self, relative_file_path: str) -> None:
         download_path = Path(self.local_dir.root_dir, relative_file_path).resolve()
 
-        self.__log_info(
+        self._log_info(
             "Downloading file.",
             remote_path=relative_file_path,
             local_path=str(download_path),
@@ -72,7 +53,7 @@ class ContainerSynchronizer:
     def __upload_file(self, relative_file_path: str) -> None:
         local_path = Path(self.local_dir.root_dir, relative_file_path)
 
-        self.__log_info(
+        self._log_info(
             "Uploading file.",
             local_path=str(local_path),
             remote_path=relative_file_path,
@@ -83,15 +64,15 @@ class ContainerSynchronizer:
 
     def __delete_local_file(self, relative_file_path: str) -> None:
         local_file_path = Path(self.local_dir.root_dir, relative_file_path).resolve()
-        self.__log_info("Deleting local file.", local_path=str(local_file_path))
+        self._log_info("Deleting local file.", local_path=str(local_file_path))
         local_file_path.unlink()
 
     def __delete_remote_file(self, relative_file_path: str) -> None:
-        self.__log_info("Deleting remote file.", remote_path=relative_file_path)
+        self._log_info("Deleting remote file.", remote_path=relative_file_path)
         self.__client.delete_blob(relative_file_path, delete_snapshots="include")
 
     def sync_from_remote(self) -> None:
-        self.__log_info(
+        self._log_info(
             "Syncing content from remote.",
             remote_workdir=str(self.remote_dir.working_dir),
             local_workdir=str(self.local_dir.working_dir),
@@ -107,14 +88,14 @@ class ContainerSynchronizer:
                 self.__delete_local_file(file)
                 continue
             raise NotImplementedError("Unexpected FileSyncState: {}".format(sync_state))
-        self.__log_info(
+        self._log_info(
             "Successfully synced remote content.",
             remote_workdir=str(self.remote_dir.working_dir),
             local_workdir=str(self.local_dir.working_dir),
         )
 
     def sync_to_remote(self) -> None:
-        self.__log_info(
+        self._log_info(
             "Syncing content to remote.",
             local_workdir=str(self.local_dir.working_dir),
             remote_workdir=str(self.remote_dir.working_dir),
@@ -130,7 +111,7 @@ class ContainerSynchronizer:
                 self.__delete_remote_file(file)
                 continue
             raise NotImplementedError("Unexpected FileSyncState: {}".format(sync_state))
-        self.__log_info(
+        self._log_info(
             "Successfully synced local content.",
             remote_workdir=str(self.remote_dir.working_dir),
             local_workdir=str(self.local_dir.working_dir),
@@ -138,11 +119,11 @@ class ContainerSynchronizer:
         self.__invalidate_remote_files_cache()
 
     def create_snapshot_of_remote(self) -> None:
-        self.__log_info("Creating snapshot of the remote container.")
+        self._log_info("Creating snapshot of the remote container.")
         for file in self.remote_files:
             blob_client: BlobClient = self.__client.get_blob_client(file["name"])
             snapshot_properties = blob_client.create_snapshot()
-            self.__log_debug(
+            self._log_debug(
                 "Successfully created snapshot of remote file.",
                 remote_path=self.__get_relative_file_path_for_remote_file(file),
                 snapshot_properties=snapshot_properties,
@@ -162,7 +143,7 @@ class ContainerSynchronizer:
         try:
             remote_md5 = self.__get_md5_of_remote_file(relative_file_path)
         except FileNotFoundError:
-            self.__log_debug(
+            self._log_debug(
                 "Local file is not available remotely.",
                 local_path=str(Path(self.local_dir.root_dir, relative_file_path)),
                 unavailable_remote_path=str(Path(self.remote_dir.root_dir, relative_file_path)),
@@ -172,7 +153,7 @@ class ContainerSynchronizer:
         try:
             local_md5 = self.__get_md5_of_local_file(relative_file_path)
         except FileNotFoundError:
-            self.__log_debug(
+            self._log_debug(
                 "Remote file is not available locally.",
                 remote_path=str(Path(self.remote_dir.root_dir, relative_file_path)),
                 unavailable_local_path=str(Path(self.local_dir.root_dir, relative_file_path)),
@@ -180,7 +161,7 @@ class ContainerSynchronizer:
             return FileSyncState.NOT_IN_LOCAL
 
         if remote_md5 != local_md5:
-            self.__log_debug(
+            self._log_debug(
                 "File differs locally and remotely.",
                 remote_path=str(Path(self.remote_dir.root_dir, relative_file_path)),
                 local_path=str(Path(self.local_dir.root_dir, relative_file_path)),
@@ -189,7 +170,7 @@ class ContainerSynchronizer:
             )
             return FileSyncState.DIFFERENT
 
-        self.__log_debug(
+        self._log_debug(
             "File is in sync.",
             remote_path=str(Path(self.remote_dir.root_dir, relative_file_path)),
             local_path=str(Path(self.local_dir.root_dir, relative_file_path)),
@@ -215,22 +196,6 @@ class ContainerSynchronizer:
     def __invalidate_remote_files_cache(self) -> None:
         self.__remote_files_cache = None
 
-    @staticmethod
-    def __create_logger() -> logging.Logger:
-        logger = logging.getLogger("ContainerSynchronizer")
-        logger.setLevel(logging.DEBUG)
-        return logger
-
-    def __prepare_log(self, message: str, **kwargs: str) -> str:
+    def _prepare_log(self, message: str, **kwargs: str) -> str:
         log = "[{} :: {}]\t{}".format(self.__client.container_name, str(self.remote_dir.working_dir), message)
-        if len(kwargs) > 0:
-            log += "\t{}".format(kwargs)
-        return log
-
-    def __log_info(self, message: str, **kwargs: str) -> None:
-        log = self.__prepare_log(message, **kwargs)
-        self.__logger.info(log)
-
-    def __log_debug(self, message: str, **kwargs: str) -> None:
-        log = self.__prepare_log(message, **kwargs)
-        self.__logger.debug(log)
+        return super()._prepare_log(log, **kwargs)
