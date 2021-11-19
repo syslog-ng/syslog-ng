@@ -5,9 +5,9 @@ from pathlib import Path
 
 
 class WorkingDir:
-    def __init__(self, root_dir: Path, sub_dir: Path) -> None:
+    def __init__(self, root_dir: Path) -> None:
         self.__root_dir = root_dir
-        self.__working_dir = Path(root_dir, sub_dir)
+        self.__working_dir = root_dir
 
     @property
     def root_dir(self) -> Path:
@@ -16,6 +16,9 @@ class WorkingDir:
     @property
     def working_dir(self) -> Path:
         return self.__working_dir
+
+    def set_sub_dir(self, sub_dir: Path) -> None:
+        self.__working_dir = Path(self.__root_dir, sub_dir)
 
 
 class FileSyncState(Enum):
@@ -26,9 +29,9 @@ class FileSyncState(Enum):
 
 
 class RemoteStorageSynchronizer(ABC):
-    def __init__(self, remote_root_dir: Path, local_root_dir: Path, sub_dir: Path) -> None:
-        self.remote_dir = WorkingDir(remote_root_dir, sub_dir)
-        self.local_dir = WorkingDir(local_root_dir, sub_dir)
+    def __init__(self, remote_root_dir: Path, local_root_dir: Path) -> None:
+        self.remote_dir = WorkingDir(remote_root_dir)
+        self.local_dir = WorkingDir(local_root_dir)
 
         self.__logger = RemoteStorageSynchronizer.__create_logger()
 
@@ -43,6 +46,10 @@ class RemoteStorageSynchronizer(ABC):
     @abstractmethod
     def create_snapshot_of_remote(self) -> None:
         pass
+
+    def set_sub_dir(self, sub_dir: Path) -> None:
+        self.remote_dir.set_sub_dir(sub_dir)
+        self.local_dir.set_sub_dir(sub_dir)
 
     @staticmethod
     def __create_logger() -> logging.Logger:

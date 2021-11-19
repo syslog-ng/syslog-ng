@@ -30,13 +30,13 @@ class Indexer(ABC):
         self.__incoming_container = AzureContainerSynchronizer(
             connection_string=incoming_container_connection_string,
             container_name=Indexer.INCOMING_CONTAINER_NAME,
-            sub_dir=incoming_container_sub_dir,
         )
         self.__indexed_container = AzureContainerSynchronizer(
             connection_string=indexed_container_connection_string,
             container_name=Indexer.INDEXED_CONTAINER_NAME,
-            sub_dir=indexed_container_sub_dir,
         )
+        self.__incoming_container.set_sub_dir(incoming_container_sub_dir)
+        self.__indexed_container.set_sub_dir(indexed_container_sub_dir)
         self.__cdn = CdnManagementClient(
             credential=cdn_credential,
             subscription_id=Indexer.CDN_ENDPOINT_SUBSCRIPTION_ID,

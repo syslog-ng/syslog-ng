@@ -10,7 +10,7 @@ DEFAULT_ROOT_DIR = Path("/tmp/azure_container_synchronizer")
 
 
 class AzureContainerSynchronizer(RemoteStorageSynchronizer):
-    def __init__(self, connection_string: str, container_name: str, sub_dir: Path) -> None:
+    def __init__(self, connection_string: str, container_name: str) -> None:
         self.__client = ContainerClient.from_connection_string(
             conn_str=connection_string, container_name=container_name
         )
@@ -18,7 +18,6 @@ class AzureContainerSynchronizer(RemoteStorageSynchronizer):
         super().__init__(
             remote_root_dir=Path(""),
             local_root_dir=Path(DEFAULT_ROOT_DIR, container_name),
-            sub_dir=sub_dir,
         )
 
     @property
