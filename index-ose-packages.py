@@ -4,8 +4,7 @@ from argparse import ArgumentParser, _ArgumentGroup, _SubParsersAction
 from pathlib import Path
 from typing import List, Tuple
 
-from azure.identity import ClientSecretCredential
-
+from cdn import AzureCDN, CDN
 from indexer import Indexer, NightlyDebIndexer, ReleaseDebIndexer
 from remote_storage_synchronizer import AzureContainerSynchronizer, RemoteStorageSynchronizer
 
@@ -141,17 +140,26 @@ def construct_synchronizers(args: dict) -> Tuple[RemoteStorageSynchronizer, Remo
     return incoming_remote_storage_synchronizer, indexed_remote_storage_synchronizer
 
 
+def construct_cdn(args: dict) -> CDN:
+    cdn = AzureCDN(
+        resource_group_name="secret",
+        profile_name="secret",
+        endpoint_name="secret",
+        endpoint_subscription_id="secret",
+        tenant_id=args["cdn_tenant_id"],
+        client_id=args["cdn_client_id"],
+        client_secret=args["cdn_client_secret"],
+    )
+
+    return cdn
+
+
 def main() -> None:
     args = parse_args()
     init_logging(args)
 
     incoming_remote_storage_synchronizer, indexed_remote_storage_synchronizer = construct_synchronizers(args)
-
-    cdn_credential = ClientSecretCredential(
-        tenant_id=args["cdn_tenant_id"],
-        client_id=args["cdn_client_id"],
-        client_secret=args["cdn_client_secret"],
-    )
+    cdn = construct_cdn(args)
 
     indexers: List[Indexer] = []
 
@@ -160,7 +168,7 @@ def main() -> None:
             NightlyDebIndexer(
                 incoming_remote_storage_synchronizer=incoming_remote_storage_synchronizer,
                 indexed_remote_storage_synchronizer=indexed_remote_storage_synchronizer,
-                cdn_credential=cdn_credential,
+                cdn=cdn,
             )
         )
     elif args["suite"] == "stable":
@@ -168,7 +176,7 @@ def main() -> None:
             ReleaseDebIndexer(
                 incoming_remote_storage_synchronizer=incoming_remote_storage_synchronizer,
                 indexed_remote_storage_synchronizer=indexed_remote_storage_synchronizer,
-                cdn_credential=cdn_credential,
+                cdn=cdn,
                 run_id=args["run_id"],
                 gpg_key_path=Path(args["gpg_key_path"]),
             )

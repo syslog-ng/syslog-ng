@@ -2,41 +2,25 @@ import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
 
-from azure.identity import ClientSecretCredential
-from cdn.azure_cdn import AzureCDN
-
+from cdn import CDN
 from remote_storage_synchronizer import RemoteStorageSynchronizer
 
 
 class Indexer(ABC):
-    CDN_RESOURCE_GROUP_NAME = "secret"
-    CDN_PROFILE_NAME = "secret"
-    CDN_ENDPOINT_NAME = "secret"
-    CDN_ENDPOINT_SUBSCRIPTION_ID = "secret"
-
     def __init__(
         self,
         incoming_remote_storage_synchronizer: RemoteStorageSynchronizer,
         incoming_sub_dir: Path,
         indexed_remote_storage_synchronizer: RemoteStorageSynchronizer,
         indexed_sub_dir: Path,
-        cdn_credential: ClientSecretCredential,
+        cdn: CDN,
     ) -> None:
         self.__incoming_remote_storage_synchronizer = incoming_remote_storage_synchronizer
         self.__indexed_remote_storage_synchronizer = indexed_remote_storage_synchronizer
         self.__incoming_remote_storage_synchronizer.set_sub_dir(incoming_sub_dir)
         self.__indexed_remote_storage_synchronizer.set_sub_dir(indexed_sub_dir)
 
-        self.__cdn = AzureCDN(
-            resource_group_name=Indexer.CDN_RESOURCE_GROUP_NAME,
-            profile_name=Indexer.CDN_PROFILE_NAME,
-            endpoint_name=Indexer.CDN_ENDPOINT_NAME,
-            endpoint_subscription_id=Indexer.CDN_ENDPOINT_SUBSCRIPTION_ID,
-            # Accessing protected variables is bad, but this will be changed in the next commit.
-            tenant_id=cdn_credential._tenant_id,
-            client_id=cdn_credential._client_id,
-            client_secret=cdn_credential._client_credential,
-        )
+        self.__cdn = cdn
         self.__logger = Indexer.__create_logger()
 
     def __sync_from_remote(self) -> None:
