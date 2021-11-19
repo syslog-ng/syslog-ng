@@ -154,10 +154,7 @@ def construct_cdn(args: dict) -> CDN:
     return cdn
 
 
-def main() -> None:
-    args = parse_args()
-    init_logging(args)
-
+def construct_indexers(args: dict) -> List[Indexer]:
     incoming_remote_storage_synchronizer, indexed_remote_storage_synchronizer = construct_synchronizers(args)
     cdn = construct_cdn(args)
 
@@ -184,6 +181,14 @@ def main() -> None:
     else:
         raise NotImplementedError("Unexpected suite: {}".format(args["suite"]))
 
+    return indexers
+
+
+def main() -> None:
+    args = parse_args()
+    init_logging(args)
+
+    indexers = construct_indexers(args)
     for indexer in indexers:
         indexer.index()
 
