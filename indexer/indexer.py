@@ -2,10 +2,8 @@ import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
 
-from azure.core.polling import LROPoller
 from azure.identity import ClientSecretCredential
-from azure.mgmt.cdn import CdnManagementClient
-from azure.mgmt.cdn.models import PurgeParameters
+from cdn.azure_cdn import AzureCDN
 
 from remote_storage_synchronizer import RemoteStorageSynchronizer
 
@@ -29,9 +27,15 @@ class Indexer(ABC):
         self.__incoming_remote_storage_synchronizer.set_sub_dir(incoming_sub_dir)
         self.__indexed_remote_storage_synchronizer.set_sub_dir(indexed_sub_dir)
 
-        self.__cdn = CdnManagementClient(
-            credential=cdn_credential,
-            subscription_id=Indexer.CDN_ENDPOINT_SUBSCRIPTION_ID,
+        self.__cdn = AzureCDN(
+            resource_group_name=Indexer.CDN_RESOURCE_GROUP_NAME,
+            profile_name=Indexer.CDN_PROFILE_NAME,
+            endpoint_name=Indexer.CDN_ENDPOINT_NAME,
+            endpoint_subscription_id=Indexer.CDN_ENDPOINT_SUBSCRIPTION_ID,
+            # Accessing protected variables is bad, but this will be changed in the next commit.
+            tenant_id=cdn_credential._tenant_id,
+            client_id=cdn_credential._client_id,
+            client_secret=cdn_credential._client_credential,
         )
         self.__logger = Indexer.__create_logger()
 
@@ -59,23 +63,8 @@ class Indexer(ABC):
         self.__indexed_remote_storage_synchronizer.sync_to_remote()
 
     def __refresh_cdn_cache(self) -> None:
-        path = str(Path("/", self.__indexed_remote_storage_synchronizer.remote_dir.working_dir, "*"))
-
-        self._log_info("Refreshing CDN cache.", path=path)
-
-        poller: LROPoller = self.__cdn.endpoints.begin_purge_content(
-            resource_group_name=Indexer.CDN_RESOURCE_GROUP_NAME,
-            profile_name=Indexer.CDN_PROFILE_NAME,
-            endpoint_name=Indexer.CDN_ENDPOINT_NAME,
-            content_file_paths=PurgeParameters(content_paths=[path]),
-        )
-        poller.wait()
-
-        status = poller.status()
-        if not status == "Succeeded":
-            raise Exception("Failed to refresh CDN cache. status: {}".format(status))
-
-        self._log_info("Successfully refreshed CDN cache.", path=path)
+        path = Path(self.__indexed_remote_storage_synchronizer.remote_dir.working_dir, "*")
+        self.__cdn.refresh_cache(path)
 
     def index(self) -> None:
         incoming_dir = self.__incoming_remote_storage_synchronizer.local_dir.working_dir
