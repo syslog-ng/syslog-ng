@@ -7,7 +7,7 @@ from azure.identity import ClientSecretCredential
 from azure.mgmt.cdn import CdnManagementClient
 from azure.mgmt.cdn.models import PurgeParameters
 
-from .container_synchronizer import ContainerSynchronizer
+from remote_storage_synchronizer import ContainerSynchronizer
 
 
 class Indexer(ABC):
