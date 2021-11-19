@@ -24,6 +24,8 @@ import pytest
 
 test_parameters_raw = [
     (r"""<189>29: foo: *Apr 29 13:58:40.411: %SYS-5-CONFIG_I: Configured from console by console""", "${.app.name}", "cisco"),
+    (r"""<189>29: foo: .Nov 19 13:58:40.411: %SYS-5-CONFIG_I: Configured from console by console""", "${.app.name}", "cisco"),
+    (r"""<189>29: foo: Nov 19 13:58:40.411: %SYS-5-CONFIG_I: Configured from console by console""", "${.app.name}", "cisco"),
     (r"""<190>30: foo: *Apr 29 13:58:46.411: %SYS-6-LOGGINGHOST_STARTSTOP: Logging to host 192.168.1.239 stopped - CLI initiated""", "${.app.name}", "cisco"),
     (r"""<190>31: foo: *Apr 29 13:58:46.411: %SYS-6-LOGGINGHOST_STARTSTOP: Logging to host 192.168.1.239 started - CLI initiated<189>32: 0.0.0.0: *Apr 29 13:59:12.491: %SYS-5-CONFIG_I: Configured from console by console<189>33: 0.0.0.0: *Apr 29 13:59:26.415: %SYS-5-CONFIG_I: Configured from console by console<189>34: 0.0.0.0: *Apr 29 13:59:56.603: %SYS-5-CONFIG_I: Configured from console by console^[[<189>35: *Apr 29 14:00:16.059: %SYS-5-CONFIG_I: Configured from console by console""", "${.app.name}", "cisco"),
     (r"""<190>32: foo: *Apr 29 13:58:46.411: %SYSMGR-STANDBY-3-SHUTDOWN_START: The System Manager has started the shutdown procedure.""", "${.app.name}", "cisco"),
