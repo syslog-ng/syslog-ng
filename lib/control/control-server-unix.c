@@ -32,6 +32,7 @@
 typedef struct _ControlServerUnix
 {
   ControlServer super;
+  gchar *control_socket_name;
   gint control_socket;
   struct iv_fd control_listen;
 } ControlServerUnix;
@@ -172,25 +173,25 @@ control_server_unix_start(ControlServer *s)
   ControlServerUnix *self = (ControlServerUnix *)s;
   GSockAddr *saddr;
 
-  saddr = g_sockaddr_unix_new(self->super.control_socket_name);
+  saddr = g_sockaddr_unix_new(self->control_socket_name);
   self->control_socket = socket(PF_UNIX, SOCK_STREAM, 0);
   if (self->control_socket == -1)
     {
       msg_error("Error opening control socket, external controls will not be available",
-                evt_tag_str("socket", self->super.control_socket_name));
+                evt_tag_str("socket", self->control_socket_name));
       return;
     }
   if (g_bind(self->control_socket, saddr) != G_IO_STATUS_NORMAL)
     {
       msg_error("Error opening control socket, bind() failed",
-                evt_tag_str("socket", self->super.control_socket_name),
+                evt_tag_str("socket", self->control_socket_name),
                 evt_tag_error("error"));
       goto error;
     }
   if (listen(self->control_socket, 255) < 0)
     {
       msg_error("Error opening control socket, listen() failed",
-                evt_tag_str("socket", self->super.control_socket_name),
+                evt_tag_str("socket", self->control_socket_name),
                 evt_tag_error("error"));
       goto error;
     }
@@ -224,6 +225,8 @@ control_server_unix_free(ControlServer *s)
     {
       close(self->control_socket);
     }
+  g_free(self->control_socket_name);
+
 }
 
 ControlServer *
@@ -231,8 +234,9 @@ control_server_unix_new(const gchar *path)
 {
   ControlServerUnix *self = g_new(ControlServerUnix, 1);
 
-  control_server_init_instance(&self->super, path);
+  control_server_init_instance(&self->super);
   self->super.start = control_server_unix_start;
+  self->control_socket_name = g_strdup(path);
   IV_FD_INIT(&self->control_listen);
   self->super.free_fn = control_server_unix_free;
   return &self->super;

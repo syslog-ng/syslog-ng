@@ -35,7 +35,6 @@ struct _ControlServer
 {
   GList *worker_threads;
   gboolean cancelled;
-  gchar *control_socket_name;
   void (*start)(ControlServer *s);
   void (*free_fn)(ControlServer *self);
 };
@@ -44,7 +43,7 @@ void control_server_cancel_workers(ControlServer *self);
 void control_server_connection_closed(ControlServer *self, ControlConnection *cc);
 void control_server_stop(ControlServer *self);
 void control_server_free(ControlServer *self);
-void control_server_init_instance(ControlServer *self, const gchar *path);
+void control_server_init_instance(ControlServer *self);
 
 static inline void
 control_server_start(ControlServer *self)

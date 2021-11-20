@@ -178,9 +178,8 @@ control_server_connection_closed(ControlServer *self, ControlConnection *cc)
 }
 
 void
-control_server_init_instance(ControlServer *self, const gchar *path)
+control_server_init_instance(ControlServer *self)
 {
-  self->control_socket_name = g_strdup(path);
   self->worker_threads = NULL;
   self->cancelled = FALSE;
 }
@@ -206,6 +205,5 @@ control_server_free(ControlServer *self)
     {
       self->free_fn(self);
     }
-  g_free(self->control_socket_name);
   g_free(self);
 }

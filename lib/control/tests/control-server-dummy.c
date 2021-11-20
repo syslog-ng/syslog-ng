@@ -21,6 +21,7 @@
  *
  */
 #include "control-server-dummy.h"
+#include "control/control-connection.h"
 #include <string.h>
 
 typedef struct _ControlConnectionDummy
@@ -131,6 +132,6 @@ control_server_dummy_new(void)
 {
   ControlServerDummy *self = g_new0(ControlServerDummy, 1);
 
-  control_server_init_instance(&self->super, "dummy-socket-name");
+  control_server_init_instance(&self->super);
   return &self->super;
 }
