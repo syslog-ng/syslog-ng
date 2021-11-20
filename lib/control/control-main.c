@@ -39,5 +39,8 @@ control_deinit(ControlServer *control_server)
 {
   reset_control_command_list();
   if (control_server)
-    control_server_free(control_server);
+    {
+      control_server_stop(control_server);
+      control_server_free(control_server);
+    }
 }

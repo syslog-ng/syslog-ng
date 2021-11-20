@@ -194,14 +194,22 @@ control_server_init_instance(ControlServer *self, const gchar *path)
 }
 
 void
-control_server_free(ControlServer *self)
+control_server_stop(ControlServer *self)
 {
   // it's not racy as the iv_main() is executed by this thread
   // posted events are not executed as iv_quit() is already called (before control_server_free)
   // but it is possible that some ThreadedCommandRunner::thread are still running
   if (self->worker_threads)
-    g_list_free_full(self->worker_threads, _delete_thread_command_runner);
+    {
+      g_list_free_full(self->worker_threads, _delete_thread_command_runner);
+      self->worker_threads = NULL;
+    }
+}
 
+void
+control_server_free(ControlServer *self)
+{
+  g_assert(self->worker_threads == NULL);
   if (self->free_fn)
     {
       self->free_fn(self);

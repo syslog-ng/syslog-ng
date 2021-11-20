@@ -68,6 +68,7 @@ struct _ControlServer
 void control_server_cancel_workers(ControlServer *self);
 void control_server_connection_closed(ControlServer *self, ControlConnection *cc);
 void control_server_start(ControlServer *self);
+void control_server_stop(ControlServer *self);
 void control_server_free(ControlServer *self);
 void control_server_init_instance(ControlServer *self, const gchar *path);
 ControlServer *control_server_new(const gchar *path);
