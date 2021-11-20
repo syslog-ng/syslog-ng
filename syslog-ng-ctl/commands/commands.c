@@ -73,7 +73,7 @@ slng_send_cmd(const gchar *cmd)
 }
 
 gint
-slng_run_command(const gchar *command, response_handle cb, gpointer user_data)
+slng_run_command(const gchar *command, CommandResponseHandlerFunc cb, gpointer user_data)
 {
   if (!slng_send_cmd(command))
     return 1;

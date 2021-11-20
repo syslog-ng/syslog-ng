@@ -87,7 +87,7 @@ control_client_send_command(ControlClient *self, const gchar *cmd)
 #define BUFF_LEN 8192
 
 gint
-control_client_read_reply(ControlClient *self, response_handle response_handler, gpointer user_data)
+control_client_read_reply(ControlClient *self, CommandResponseHandlerFunc response_handler, gpointer user_data)
 {
   gint retval = 0;
   gssize len = 0;
