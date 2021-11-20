@@ -23,7 +23,7 @@
  */
 #include "mainloop.h"
 #include "control/control-commands.h"
-#include "control/control-server.h"
+#include "control/control-connection.h"
 #include "messages.h"
 #include "cfg.h"
 #include "cfg-path.h"

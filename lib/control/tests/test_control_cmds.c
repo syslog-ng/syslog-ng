@@ -27,6 +27,7 @@
 #include "messages.h"
 #include "control/control.h"
 #include "control/control-commands.h"
+#include "control/control-connection.h"
 #include "control-server-dummy.h"
 #include "mainloop-control.h"
 #include "stats/stats-control.h"

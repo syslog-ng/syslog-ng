@@ -31,6 +31,7 @@
 #include "stats/stats-query-commands.h"
 #include "control/control-commands.h"
 #include "control/control-server.h"
+#include "control/control-connection.h"
 
 static void
 _reset_counter(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data)

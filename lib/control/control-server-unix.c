@@ -22,6 +22,7 @@
  */
 
 #include "control-server.h"
+#include "control-connection.h"
 #include "messages.h"
 
 #include "gsocket.h"

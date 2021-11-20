@@ -3,6 +3,7 @@ set(CONTROL_HEADERS
     control/control-commands.h
     control/control-main.h
     control/control-server.h
+    control/control-connection.h
     PARENT_SCOPE)
 
 set(CONTROL_SOURCES
@@ -11,6 +12,7 @@ set(CONTROL_SOURCES
     control/control-main.c
     control/control-server.c
     control/control-server-unix.c
+    control/control-connection.c
     PARENT_SCOPE)
 
 add_test_subdirectory(tests)

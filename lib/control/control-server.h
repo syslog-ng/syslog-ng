@@ -31,32 +31,6 @@
 
 #define MAX_CONTROL_LINE_LENGTH 4096
 
-struct _ControlConnection
-{
-  GAtomicCounter ref_cnt;
-  GQueue *response_batches;
-  GMutex response_batches_lock;
-  struct iv_event evt_response_added;
-  gboolean waiting_for_output;
-  gboolean watches_are_running;
-  GString *input_buffer;
-  GString *output_buffer;
-  gsize pos;
-  ControlServer *server;
-  int (*read)(ControlConnection *self, gpointer buffer, gsize size);
-  int (*write)(ControlConnection *self, gpointer buffer, gsize size);
-  void (*handle_input)(gpointer s);
-  void (*handle_output)(gpointer s);
-  void (*free_fn)(ControlConnection *self);
-  struct
-  {
-    void (*start_watches)(ControlConnection *self);
-    void (*update_watches)(ControlConnection *self);
-    void (*stop_watches)(ControlConnection *self);
-  } events;
-
-};
-
 struct _ControlServer
 {
   GList *worker_threads;
@@ -77,15 +51,5 @@ typedef GString *(*ControlConnectionCommand)(ControlConnection *cc, GString *com
 void control_connection_start_as_thread(ControlConnection *self, ControlConnectionCommand cmd_cb,
                                         GString *command, gpointer user_data);
 
-void control_connection_send_reply(ControlConnection *self, GString *reply);
-void control_connection_send_batched_reply(ControlConnection *self, GString *reply);
-void control_connection_send_close_batch(ControlConnection *self);
-void control_connection_start_watches(ControlConnection *self);
-void control_connection_update_watches(ControlConnection *self);
-void control_connection_stop_watches(ControlConnection *self);
-void control_connection_init_instance(ControlConnection *self, ControlServer *server);
-
-ControlConnection *control_connection_ref(ControlConnection *self);
-void control_connection_unref(ControlConnection *self);
 
 #endif
