@@ -177,11 +177,12 @@ control_server_connection_closed(ControlServer *self, ControlConnection *cc)
   control_connection_unref(cc);
 }
 
-void
-control_server_init_instance(ControlServer *self)
+gboolean
+control_server_start_method(ControlServer *self)
 {
-  self->worker_threads = NULL;
-  self->cancelled = FALSE;
+  /* NOTE: this is a placeholder and is empty for now.  Derived
+   * ControlServer implementations must call this at startup */
+  return TRUE;
 }
 
 void
@@ -195,6 +196,15 @@ control_server_stop(ControlServer *self)
       g_list_free_full(self->worker_threads, _delete_thread_command_runner);
       self->worker_threads = NULL;
     }
+}
+
+
+void
+control_server_init_instance(ControlServer *self)
+{
+  self->worker_threads = NULL;
+  self->cancelled = FALSE;
+  self->start = control_server_start_method;
 }
 
 void

@@ -167,7 +167,7 @@ error:
   ;
 }
 
-void
+static gboolean
 control_server_unix_start(ControlServer *s)
 {
   ControlServerUnix *self = (ControlServerUnix *)s;
@@ -179,7 +179,7 @@ control_server_unix_start(ControlServer *s)
     {
       msg_error("Error opening control socket, external controls will not be available",
                 evt_tag_str("socket", self->control_socket_name));
-      return;
+      goto error;
     }
   if (g_bind(self->control_socket, saddr) != G_IO_STATUS_NORMAL)
     {
@@ -202,7 +202,7 @@ control_server_unix_start(ControlServer *s)
   iv_fd_set_handler_in(&self->control_listen, _control_socket_accept);
 
   g_sockaddr_unref(saddr);
-  return;
+  return control_server_start_method(s);
 error:
   if (self->control_socket != -1)
     {
@@ -210,7 +210,7 @@ error:
       self->control_socket = -1;
     }
   g_sockaddr_unref(saddr);
-  return;
+  return FALSE;
 }
 
 void
