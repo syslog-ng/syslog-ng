@@ -12,7 +12,6 @@ controlinclude_HEADERS = \
 	lib/control/control-connection.h
 
 control_sources = \
-	lib/control/control.c			\
 	lib/control/control-commands.c		\
 	lib/control/control-main.c		\
 	lib/control/control-server.c		\

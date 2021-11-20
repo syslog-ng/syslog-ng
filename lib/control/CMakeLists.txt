@@ -8,7 +8,6 @@ set(CONTROL_HEADERS
     PARENT_SCOPE)
 
 set(CONTROL_SOURCES
-    control/control.c
     control/control-commands.c
     control/control-main.c
     control/control-server.c
