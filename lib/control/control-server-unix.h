@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2002-2013 Balabit
- * Copyright (c) 1998-2012 Balázs Scheidler
+ * Copyright (c) 2021 Balazs Scheidler <bazsi77@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,26 +21,9 @@
  * COPYING for details.
  *
  */
+#ifndef CONTROL_SERVER_UNIX_H
+#define CONTROL_SERVER_UNIX_H
 
-#include "control-main.h"
-#include "control-server-unix.h"
-#include "control-commands.h"
+ControlServer *control_server_unix_new(const gchar *path);
 
-ControlServer *
-control_init(const gchar *control_name)
-{
-  ControlServer *control_server = control_server_unix_new(control_name);
-  control_server_start(control_server);
-  return control_server;
-}
-
-void
-control_deinit(ControlServer *control_server)
-{
-  reset_control_command_list();
-  if (control_server)
-    {
-      control_server_stop(control_server);
-      control_server_free(control_server);
-    }
-}
+#endif

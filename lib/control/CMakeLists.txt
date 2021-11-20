@@ -3,6 +3,7 @@ set(CONTROL_HEADERS
     control/control-commands.h
     control/control-main.h
     control/control-server.h
+    control/control-server-unix.h
     control/control-connection.h
     PARENT_SCOPE)
 

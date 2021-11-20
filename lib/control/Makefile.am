@@ -8,6 +8,7 @@ controlinclude_HEADERS = \
 	lib/control/control-commands.h		\
 	lib/control/control-main.h		\
 	lib/control/control-server.h		\
+	lib/control/control-server-unix.h	\
 	lib/control/control-connection.h
 
 control_sources = \

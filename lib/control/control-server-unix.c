@@ -116,7 +116,7 @@ control_connection_unix_free(ControlConnection *s)
 }
 
 ControlConnection *
-control_connection_new(ControlServer *server, gint sock)
+control_connection_unix_new(ControlServer *server, gint sock)
 {
   ControlConnectionUnix *self = g_new0(ControlConnectionUnix, 1);
 
@@ -133,7 +133,7 @@ control_connection_new(ControlServer *server, gint sock)
 }
 
 static void
-control_socket_accept(void *cookie)
+_control_socket_accept(void *cookie)
 {
   ControlServerUnix *self = (ControlServerUnix *)cookie;
   gint conn_socket;
@@ -152,7 +152,7 @@ control_socket_accept(void *cookie)
     }
 
 
-  cc = control_connection_new(&self->super, conn_socket);
+  cc = control_connection_unix_new(&self->super, conn_socket);
 
   /* NOTE: with the call below, the reference to the control connection (cc)
    * will be taken over by the various I/O callbacks, Those will return to
@@ -167,7 +167,7 @@ error:
 }
 
 void
-control_server_start(ControlServer *s)
+control_server_unix_start(ControlServer *s)
 {
   ControlServerUnix *self = (ControlServerUnix *)s;
   GSockAddr *saddr;
@@ -198,7 +198,7 @@ control_server_start(ControlServer *s)
   self->control_listen.fd = self->control_socket;
   self->control_listen.cookie = self;
   iv_fd_register(&self->control_listen);
-  iv_fd_set_handler_in(&self->control_listen, control_socket_accept);
+  iv_fd_set_handler_in(&self->control_listen, _control_socket_accept);
 
   g_sockaddr_unref(saddr);
   return;
@@ -227,11 +227,12 @@ control_server_unix_free(ControlServer *s)
 }
 
 ControlServer *
-control_server_new(const gchar *path)
+control_server_unix_new(const gchar *path)
 {
   ControlServerUnix *self = g_new(ControlServerUnix, 1);
 
   control_server_init_instance(&self->super, path);
+  self->super.start = control_server_unix_start;
   IV_FD_INIT(&self->control_listen);
   self->super.free_fn = control_server_unix_free;
   return &self->super;
