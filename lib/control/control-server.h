@@ -44,6 +44,7 @@ void control_server_cancel_workers(ControlServer *self);
 void control_server_connection_closed(ControlServer *self, ControlConnection *cc);
 gboolean control_server_start_method(ControlServer *self);
 void control_server_stop_method(ControlServer *self);
+void control_server_free_method(ControlServer *self);
 void control_server_free(ControlServer *self);
 void control_server_init_instance(ControlServer *self);
 

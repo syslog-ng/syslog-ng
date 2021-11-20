@@ -213,10 +213,11 @@ error:
   return FALSE;
 }
 
-void
-control_server_unix_free(ControlServer *s)
+static void
+control_server_unix_stop(ControlServer *s)
 {
   ControlServerUnix *self = (ControlServerUnix *)s;
+
   if (iv_fd_registered(&self->control_listen))
     {
       iv_fd_unregister(&self->control_listen);
@@ -225,8 +226,17 @@ control_server_unix_free(ControlServer *s)
     {
       close(self->control_socket);
     }
-  g_free(self->control_socket_name);
+  control_server_stop_method(s);
+}
 
+void
+control_server_unix_free(ControlServer *s)
+{
+  ControlServerUnix *self = (ControlServerUnix *)s;
+
+  g_assert(!iv_fd_registered(&self->control_listen));
+  g_free(self->control_socket_name);
+  control_server_free_method(s);
 }
 
 ControlServer *
@@ -236,8 +246,9 @@ control_server_unix_new(const gchar *path)
 
   control_server_init_instance(&self->super);
   self->super.start = control_server_unix_start;
+  self->super.stop = control_server_unix_stop;
+  self->super.free_fn = control_server_unix_free;
   self->control_socket_name = g_strdup(path);
   IV_FD_INIT(&self->control_listen);
-  self->super.free_fn = control_server_unix_free;
   return &self->super;
 }

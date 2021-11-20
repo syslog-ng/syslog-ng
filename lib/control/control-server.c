@@ -198,6 +198,10 @@ control_server_stop_method(ControlServer *self)
     }
 }
 
+void
+control_server_free_method(ControlServer *self)
+{
+}
 
 void
 control_server_init_instance(ControlServer *self)
@@ -206,6 +210,7 @@ control_server_init_instance(ControlServer *self)
   self->cancelled = FALSE;
   self->start = control_server_start_method;
   self->stop = control_server_stop_method;
+  self->free_fn = control_server_free_method;
 }
 
 void
