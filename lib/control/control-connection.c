@@ -152,7 +152,6 @@ control_connection_io_input(void *s)
   gchar *nl;
   gint rc;
   gint orig_len;
-  GList *iter;
 
   if (self->input_buffer->len > MAX_CONTROL_LINE_LENGTH)
     {
@@ -209,16 +208,14 @@ control_connection_io_input(void *s)
       return;
     }
 
-  iter = g_list_find_custom(get_control_command_list(), command->str,
-                            (GCompareFunc)control_command_start_with_command);
-  if (iter == NULL)
+  ControlCommand *cmd_desc = control_find_command(command->str);
+  if (cmd_desc == NULL)
     {
       msg_error("Unknown command read on control channel, closing control channel",
                 evt_tag_str("command", command->str));
       g_string_free(command, TRUE);
       goto destroy_connection;
     }
-  ControlCommand *cmd_desc = (ControlCommand *) iter->data;
 
   cmd_desc->func(self, command, cmd_desc->user_data);
   control_connection_wait_for_output(self);
