@@ -186,7 +186,7 @@ control_server_start_method(ControlServer *self)
 }
 
 void
-control_server_stop(ControlServer *self)
+control_server_stop_method(ControlServer *self)
 {
   // it's not racy as the iv_main() is executed by this thread
   // posted events are not executed as iv_quit() is already called (before control_server_free)
@@ -205,6 +205,7 @@ control_server_init_instance(ControlServer *self)
   self->worker_threads = NULL;
   self->cancelled = FALSE;
   self->start = control_server_start_method;
+  self->stop = control_server_stop_method;
 }
 
 void

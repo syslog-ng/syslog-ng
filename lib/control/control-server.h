@@ -36,13 +36,14 @@ struct _ControlServer
   GList *worker_threads;
   gboolean cancelled;
   gboolean (*start)(ControlServer *s);
+  void (*stop)(ControlServer *s);
   void (*free_fn)(ControlServer *self);
 };
 
 void control_server_cancel_workers(ControlServer *self);
 void control_server_connection_closed(ControlServer *self, ControlConnection *cc);
 gboolean control_server_start_method(ControlServer *self);
-void control_server_stop(ControlServer *self);
+void control_server_stop_method(ControlServer *self);
 void control_server_free(ControlServer *self);
 void control_server_init_instance(ControlServer *self);
 
@@ -52,6 +53,13 @@ control_server_start(ControlServer *self)
   if (self->start)
     return self->start(self);
   return TRUE;
+}
+
+static inline void
+control_server_stop(ControlServer *self)
+{
+  if (self->stop)
+    self->stop(self);
 }
 
 typedef GString *(*ControlConnectionCommand)(ControlConnection *cc, GString *command, gpointer user_data);
