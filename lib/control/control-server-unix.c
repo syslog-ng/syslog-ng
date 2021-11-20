@@ -78,10 +78,10 @@ control_connection_unix_stop_watches(ControlConnection *s)
 static gboolean
 _pending_output(ControlConnection *s)
 {
-  g_mutex_lock(s->response_batches_lock);
+  g_mutex_lock(&s->response_batches_lock);
   gboolean result = (s->output_buffer && s->output_buffer->len > s->pos) ||
                     !g_queue_is_empty(s->response_batches);
-  g_mutex_unlock(s->response_batches_lock);
+  g_mutex_unlock(&s->response_batches_lock);
   return result;
 }
 

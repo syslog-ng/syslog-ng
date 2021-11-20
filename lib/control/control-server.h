@@ -35,7 +35,7 @@ struct _ControlConnection
 {
   GAtomicCounter ref_cnt;
   GQueue *response_batches;
-  GMutex *response_batches_lock;
+  GMutex response_batches_lock;
   struct iv_event evt_response_added;
   gboolean waiting_for_output;
   gboolean watches_are_running;
