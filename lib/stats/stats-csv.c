@@ -62,7 +62,7 @@ static void
 stats_format_csv(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointer user_data)
 {
   gpointer *args = (gpointer *) user_data;
-  csv_record_cb process_record = (csv_record_cb) args[0];
+  StatsCSVRecordFunc process_record = (StatsCSVRecordFunc) args[0];
   gpointer process_record_arg = args[1];
   gchar *s_id, *s_instance, *tag_name;
   gchar buf[32];
@@ -91,7 +91,7 @@ stats_format_csv(StatsCluster *sc, gint type, StatsCounterItem *counter, gpointe
 }
 
 void
-stats_generate_csv(csv_record_cb process_record, gpointer user_data, gboolean *cancelled)
+stats_generate_csv(StatsCSVRecordFunc process_record, gpointer user_data, gboolean *cancelled)
 {
   GString *csv = g_string_sized_new(512);
 
