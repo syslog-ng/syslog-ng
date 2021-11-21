@@ -56,6 +56,15 @@ assert_log_message_doesnt_have_tag(LogMessage *log_message, const gchar *tag_nam
   cr_assert_not(log_msg_is_tag_by_name(log_message, tag_name), "Expected message not to have '%s' tag", tag_name);
 }
 
+assert_log_message_value_unset(LogMessage *self, NVHandle handle)
+{
+  gssize key_name_length;
+  const gchar *key_name = log_msg_get_value_name(handle, &key_name_length);
+  const gchar *value = log_msg_get_value_if_set(self, handle, &key_name_length);
+
+  cr_assert(value == NULL, "Expected value for key %s to be unset but the actual value is %s", key_name, value);
+}
+
 void
 assert_log_message_value(LogMessage *self, NVHandle handle, const gchar *expected_value)
 {
