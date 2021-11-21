@@ -69,12 +69,15 @@ _check_deserialized_message(LogMessage *msg)
 {
   assert_template_format_msg("${ISODATE}", "2006-10-29T01:59:59.156+01:00", msg);
 
-  assert_log_message_value(msg, LM_V_HOST, "mymachine");
-  assert_log_message_value(msg, LM_V_PROGRAM, "evntslog");
-  assert_log_message_value(msg, LM_V_MESSAGE, "An application event log entry...");
+  assert_log_message_value_and_type(msg, LM_V_HOST, "mymachine", LM_VT_STRING);
+  assert_log_message_value_and_type(msg, LM_V_PROGRAM, "evntslog", LM_VT_STRING);
+  assert_log_message_value_and_type(msg, LM_V_MESSAGE, "An application event log entry...", LM_VT_STRING);
   assert_log_message_value_unset(msg, log_msg_get_value_handle("unset_value"));
 
-  assert_log_message_value(msg, log_msg_get_value_handle(".SDATA.exampleSDID@0.eventSource"), "Application");
+  assert_log_message_value_and_type(msg,
+                                    log_msg_get_value_handle(".SDATA.exampleSDID@0.eventSource"),
+                                    "Application",
+                                    LM_VT_STRING);
   cr_assert_eq(msg->pri, 132, ERROR_MSG);
 }
 
