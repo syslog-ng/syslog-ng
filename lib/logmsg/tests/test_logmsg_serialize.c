@@ -29,10 +29,10 @@
 #include "cfg.h"
 #include "plugin.h"
 #include "logmsg/logmsg-serialize.h"
+#include "msg_parse_lib.h"
+#include "cr_template.h"
 #include <criterion/criterion.h>
 #include <criterion/parameterized.h>
-
-GlobalConfig *cfg;
 
 #define RAW_MSG "<132>1 2006-10-29T01:59:59.156+01:00 mymachine evntslog - - [exampleSDID@0 iut=\"3\" eventSource=\"Application\"] An application event log entry..."
 
@@ -66,23 +66,15 @@ _reset_log_msg_registry(void)
 static void
 _check_deserialized_message(LogMessage *msg, SerializeArchive *sa)
 {
-  GString *output = g_string_new("");
-  LogTemplate *template = log_template_new(cfg, NULL);
-  log_template_compile(template, "${ISODATE}", NULL);
+  assert_template_format_msg("${ISODATE}", "2006-10-29T01:59:59.156+01:00", msg);
 
-  cfg->template_options.frac_digits = 3;
-  LogTemplateEvalOptions options = {&cfg->template_options, LTZ_SEND, 0, NULL};
-  log_template_append_format(template, msg, &options, output);
-  cr_assert_str_eq(output->str, "2006-10-29T01:59:59.156+01:00", ERROR_MSG);
+  assert_log_message_value(msg, LM_V_HOST, "mymachine");
+  assert_log_message_value(msg, LM_V_PROGRAM, "evntslog");
+  assert_log_message_value(msg, LM_V_MESSAGE, "An application event log entry...");
+  assert_log_message_value_unset(msg, log_msg_get_value_handle("unset_value"));
 
-  cr_assert_str_eq(log_msg_get_value(msg, LM_V_HOST, NULL), "mymachine", ERROR_MSG);
-  cr_assert_str_eq(log_msg_get_value(msg, LM_V_PROGRAM, NULL), "evntslog", ERROR_MSG);
-  cr_assert_str_eq(log_msg_get_value(msg, LM_V_MESSAGE, NULL), "An application event log entry...", ERROR_MSG);
-  cr_assert_null(log_msg_get_value_if_set(msg, log_msg_get_value_handle("unset_value"), NULL), ERROR_MSG);
-  cr_assert_str_eq(log_msg_get_value_by_name(msg, ".SDATA.exampleSDID@0.eventSource", NULL), "Application", ERROR_MSG);
+  assert_log_message_value(msg, log_msg_get_value_handle(".SDATA.exampleSDID@0.eventSource"), "Application");
   cr_assert_eq(msg->pri, 132, ERROR_MSG);
-  log_template_unref(template);
-  g_string_free(output, TRUE);
 }
 
 static LogMessage *
@@ -402,16 +394,19 @@ static void
 setup(void)
 {
   app_startup();
-  cfg = cfg_new_snippet();
-  cfg_load_module(cfg, "syslogformat");
+
+  init_template_tests();
+  configuration->template_options.frac_digits = 3;
+
   msg_format_options_defaults(&parse_options);
-  msg_format_options_init(&parse_options, cfg);
+  msg_format_options_init(&parse_options, configuration);
+
 }
 
 static void
 teardown(void)
 {
-  cfg_free(cfg);
+  deinit_template_tests();
   app_shutdown();
 }
 
