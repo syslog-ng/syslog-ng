@@ -78,7 +78,8 @@ assert_log_message_value(LogMessage *self, NVHandle handle, const gchar *expecte
   gssize key_name_length;
   gssize value_length;
   const gchar *key_name = log_msg_get_value_name(handle, &key_name_length);
-  const gchar *actual_value = log_msg_get_value(self, handle, &value_length);
+  const gchar *actual_value_r = log_msg_get_value(self, handle, &value_length);
+  gchar *actual_value = g_strndup(actual_value_r, value_length);
 
   if (expected_value)
     {
