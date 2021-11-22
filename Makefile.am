@@ -43,8 +43,7 @@ EXTRA_DIST		= ${BUILT_SOURCES} VERSION NEWS.md autogen.sh \
 			  syslog-ng-ctl/CMakeLists.txt	\
 			  requirements.txt	\
 			  README.md	\
-			  .astylerc	\
-			  .travis.yml
+			  .astylerc
 
 
 pkgconfigdir		= $(libdir)/pkgconfig
