@@ -88,10 +88,12 @@ _create_message_to_be_serialized(const gchar *raw_msg, const int raw_msg_len)
   NVHandle test_handle = log_msg_get_value_handle("aaa");
 
   LogMessage *msg = log_msg_new(raw_msg, raw_msg_len, &parse_options);
-  log_msg_set_value(msg, test_handle, "test_value", -1);
+  log_msg_set_value(msg, test_handle, "test_value53", -1);
 
   NVHandle indirect_handle = log_msg_get_value_handle("indirect_1");
   log_msg_set_value_indirect(msg, indirect_handle, test_handle, 5, 3);
+  NVHandle indirect_with_type_handle = log_msg_get_value_handle("indirect_2");
+  log_msg_set_value_indirect_with_type(msg, indirect_with_type_handle, test_handle, 10, 2, LM_VT_INT64);
 
   log_msg_set_value_by_name(msg, "unset_value", "foobar", -1);
   log_msg_unset_value_by_name(msg, "unset_value");
@@ -141,8 +143,6 @@ _deserialize_message_from_string(const guint8 *serialized, gsize serialized_len)
 
 Test(logmsg_serialize, serialize)
 {
-  NVHandle indirect_handle = 0;
-  gssize length = 0;
   GString *stream = g_string_new("");
 
   SerializeArchive *sa = _serialize_message_for_test(stream, RAW_MSG);
@@ -161,9 +161,9 @@ Test(logmsg_serialize, serialize)
 
   _check_deserialized_message(msg);
 
-  indirect_handle = log_msg_get_value_handle("indirect_1");
-  const gchar *indirect_value = log_msg_get_value(msg, indirect_handle, &length);
-  cr_assert(0==strncmp(indirect_value, "value", length), ERROR_MSG);
+  assert_log_message_value(msg, log_msg_get_value_handle("indirect_1"), "val");
+
+  assert_log_message_value_and_type(msg, log_msg_get_value_handle("indirect_2"), "53", LM_VT_INT64);
 
   log_msg_unref(msg);
   serialize_archive_free(sa);
